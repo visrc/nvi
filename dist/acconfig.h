@@ -1,4 +1,4 @@
-/* $Id: acconfig.h,v 8.8 1996/02/28 19:32:00 bostic Exp $ (Berkeley) $Date: 1996/02/28 19:32:00 $ */
+/* $Id: acconfig.h,v 8.9 1996/02/29 18:55:00 bostic Exp $ (Berkeley) $Date: 1996/02/29 18:55:00 $ */
 
 /* Define to `int' if <sys/types.h> doesn't define.  */
 #undef ssize_t
@@ -33,10 +33,10 @@
 /* Define if you have the DB __hash_open call in the C library. */
 #undef HAVE_DB_HASH_OPEN
 
-/* Define if you have the chsize(2) system call.
+/* Define if you have the chsize(2) system call. */
 #undef HAVE_FTRUNCATE_CHSIZE
 
-/* Define if you have the ftruncate(2) system call.
+/* Define if you have the ftruncate(2) system call. */
 #undef HAVE_FTRUNCATE_FTRUNCATE
 
 /* Define if you have fcntl(2) style locking. */
