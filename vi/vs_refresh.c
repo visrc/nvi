@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 9.17 1995/01/30 15:08:12 bostic Exp $ (Berkeley) $Date: 1995/01/30 15:08:12 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 9.18 1995/01/31 11:28:03 bostic Exp $ (Berkeley) $Date: 1995/01/31 11:28:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -37,6 +37,14 @@ static int	svi_modeline __P((SCR *));
 #define	PAINT_CURSOR	0x01			/* Update cursor. */
 #define	PAINT_FLUSH	0x02			/* Flush to screen. */
 static int	svi_paint __P((SCR *, u_int));
+
+/* Bell test/clear macros. */
+#define	IS_BELLSCHED(sp)						\
+	F_ISSET((sp), S_BELLSCHED) || F_ISSET((sp)->gp, G_BELLSCHED)
+#define	CLR_BELL(sp) {							\
+	F_CLR((sp), S_BELLSCHED);					\
+	F_CLR((sp)->gp, G_BELLSCHED);					\
+}
 
 int
 svi_refresh(sp)
@@ -167,10 +175,9 @@ svi_paint(sp, flags)
 	 * pretty sure I don't care.
 	 */
 	if (IS_ONELINE(sp)) {
-		if (F_ISSET(sp, S_BELLSCHED) || F_ISSET(sp->gp, G_BELLSCHED)) {
+		if (IS_BELLSCHED(sp)) {
 			(void)sp->e_bell(sp);
-			F_CLR(sp, S_BELLSCHED);
-			F_CLR(sp->gp, G_BELLSCHED);
+			CLR_BELL(sp);
 		}
 		if (!KEYS_WAITING(sp) && MSGS_WAITING(sp))
 			svi_msgflush(sp, 1);
@@ -708,10 +715,9 @@ number:	if (O_ISSET(sp, O_NUMBER) &&
 	 *	standard status line.
 	 */
 	if (!F_ISSET(svp, SVI_INFOLINE) && !KEYS_WAITING(sp)) {
-		if (F_ISSET(sp, S_BELLSCHED) || F_ISSET(sp->gp, G_BELLSCHED)) {
+		if (IS_BELLSCHED(sp)) {
 			(void)sp->e_bell(sp);
-			F_CLR(sp, S_BELLSCHED);
-			F_CLR(sp->gp, G_BELLSCHED);
+			CLR_BELL(sp);
 		}
 		if (MSGS_WAITING(sp))
 			svi_msgflush(sp, 1);
