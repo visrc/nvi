@@ -44,11 +44,13 @@ static const char sccsid[] = "";
 #include "Xm/FileSB.h"
 #include "Xm/SelectioB.h"
 
+#include <sys/queue.h>
+
 #include <bitstring.h>
 #include <stdio.h>
-#include <sys/queue.h>
+
 #include "../common/common.h"
-#include "../ip/ip.h"
+#include "../ip_vi/ip.h"
 
 #define	BufferSize	1024
 

@@ -1,10 +1,12 @@
-#include <stdio.h>
-#include <string.h>
 #include <X11/Intrinsic.h>
 #include <X11/StringDefs.h>
 #include <X11/Shell.h>
 #include <X11/Xatom.h>
-#include "xutilities.h"
+
+#include <stdio.h>
+#include <string.h>
+
+#include "ipc_mutil.h"
 
 static Colormap	cmap = 0;
 static Display	*cmap_display = 0;

@@ -1,70 +1,20 @@
-/* TODO List:
- *	scrollbars	Need protocol messages that tell us what to display
- *			in the scrollbars.  Suggestion:
- *				scrollbar( bottom, lines, home )
- *				bottom is $
- *				lines is lines shown in the window
- *					(takes wrap into account)
- *				home is the line number ot the top visible line
+/*-
+ * Copyright (c) 1996
+ *	Rob Zimmermann.  All rights reserved.
  *
- *			On the way back send scroll( top )
- *
- *			User should be able to enable/disable bar display
- *
- *			<yuch!> horizontal scrollbar
- *
- *	expose_func
- *	insert/delete	When we have a partially obscured window, we only
- *			refresh a single line after scrolling.  I believe this
- *			is due to the exposure events all showing up after
- *			the scrolling is completed (pipe_input_func does all
- *			of the scrolling and then we get back to XtMainLoop)
- *
- *	split		Ought to be able to put a title on each pane
- *			Need protocol messages to shift focus
- *
- *	bell		user settable visible bell
- *
- *	busy		don't understand the protocol
- *
- *	mouse		need to send IPO_MOVE_CARET( row, column )
- *			(note that screen code does not know about tabs or
- *			line wraps)
- *			Connect to window manager cut buffer
- *			need to send IPO_EXTEND_SELECT( r1, c1, r2, c1 )
- *			otherwise core and screen duplicate selection logic
- *			Need to determine correct screen for event.  Not
- *			needed until split is implemented.
- *
- *	arrow keys	need to define a protocol.  I can easily send
- *			the vt100 sequences (and currently do).
- *			In general, we need to define what special keys
- *			do (for example PageUp) and what happens when we
- *			are in Insert mode.
- *
- *			Suggestion: IPO_COMMAND( string ).  vi core can
- *			take it as a command even when in insert mode.
- *
- *	icon		Is currently B&W.  To get a color icon, would
- *			require a lot of work or that bostic pick up
- *			the xpm library.
+ * See the LICENSE file for redistribution information.
  */
 
 #include "config.h"
 
-#include <sys/types.h>
-#include <sys/ioctl.h>
-#include <sys/queue.h>
+#ifndef lint
+static const char sccsid[] = "$Id: m_main.c,v 8.7 1996/11/27 09:26:21 bostic Exp $ (Berkeley) $Date: 1996/11/27 09:26:21 $";
+#endif /* not lint */
 
-#include <bitstring.h>
-#include <ctype.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
+#include "config.h"
+
+#include <sys/types.h>
+#include <sys/queue.h>
 
 #include "X11/Intrinsic.h"
 #include "X11/StringDefs.h"
@@ -76,18 +26,29 @@
 #include "Xm/ScrollBar.h"
 #include "Xm/MainW.h"
 
+#include <bitstring.h>
+#include <ctype.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
 #if XtSpecificationRelease == 4
 #define	ArgcType	Cardinal *
 #else
 #define	ArgcType	int *
 #endif
 
-#include "xutilities.h"
-#include "nvi.xbm"
-
 #include "../common/common.h"
-#include "../ip/ip.h"
+#include "../ip_vi/ip.h"
+#include "ipc_mutil.h"
+#include "ipc_extern.h"
 #include "pathnames.h"
+
+#include "nvi.xbm"
 
 int	i_fd, o_fd;				/* Input/output fd's. */
 
@@ -96,12 +57,10 @@ void	attach __P((void));
 void	ip_cur_end __P((void));
 void	ip_cur_init __P((void));
 void	ip_read __P((void));
-int	ip_send __P((char *, IP_BUF *));
 void	ip_siginit __P((void));
 int	ip_trans __P((char *, size_t, size_t *));
 void	onchld __P((int));
 void	onintr __P((int));
-void	trace __P((const char *, ...));
 void	usage __P((void));
 static	void	f_copy();
 static	void	f_paste();
@@ -111,7 +70,6 @@ static	void	f_clear();
 /*
  * describes a single 'screen' implemented in X widgetry
  */
-
 typedef	struct {
     Widget	parent,		/* the pane */
 		area,		/* text goes here */
@@ -271,60 +229,10 @@ nomem()
 #define REALLOC( ptr, size )	\
 	((ptr == NULL) ? malloc(size) : realloc(ptr,size))
 
-
-#if ! defined(__STDC__)
-#define	memmove(a,b,c)	bcopy( b,a,c )
-#endif
-
-
-/*
- * TR --
- *	debugging trace routine.
- */
-#ifdef TR
-
-#ifdef __STDC__
-#include <stdarg.h>
-#else
-#include <varargs.h>
-#endif
-
-#define	TRACE( args )	trace args
-
-void
-#ifdef __STDC__
-trace(const char *fmt, ...)
-#else
-trace(fmt, va_alist)
-	char *fmt;
-	va_dcl
-#endif
-{
-	static FILE *tfp;
-	va_list ap;
-
-	if (tfp == NULL && (tfp = fopen(TR, "w")) == NULL)
-		tfp = stderr;
-	
-#ifdef __STDC__
-	va_start(ap, fmt);
-#else
-	va_start(ap);
-#endif
-	(void)vfprintf(tfp, fmt, ap);
-	va_end(ap);
-
-	(void)fflush(tfp);
-}
-
-#else
-#define	TRACE( args )
-#endif
-
 void
 usage()
 {
-	(void)fprintf(stderr, "usage: ip_cl [-D]\n");
+	(void)fprintf(stderr, "usage: vi_motif [-D] [vi arguments]\n");
 	exit(1);
 }
 
@@ -469,13 +377,17 @@ XtInputId	id;
     /* Read waiting vi messags and translate to X calls. */
     switch (nr = read( *source, bp + len, blen - len)) {
     case 0:
-	    TRACE( ("empty input from vi\n") );
+#ifdef TR
+	    trace("empty input from vi\n");
+#endif
 	    return;
     case -1:
 	    perror("ip_cl: read");
 	    exit (1);
     default:
-	    TRACE( ("input from vi, %d bytes read\n", nr) );
+#ifdef TR
+	    trace("input from vi, %d bytes read\n", nr);
+#endif
 	    break;
     }
 
@@ -506,7 +418,9 @@ xvi_screen	*this_screen;
     ipb.val2 = this_screen->cols;
     ipb.code = IPO_RESIZE;
 
-    TRACE( ("resize_func ( %d x %d )\n", this_screen->rows, this_screen->cols) );
+#ifdef TR
+    trace("resize_func ( %d x %d )\n", this_screen->rows, this_screen->cols);
+#endif
 
     /* send up the pipe */
     ip_send("12", &ipb);
@@ -681,7 +595,9 @@ XtPointer	call_data;
     if ( call_data == NULL ) {
 
 	/* vi core calls this when it wants a full refresh */
-	TRACE( ("expose_func:  full refresh\n") );
+#ifdef TR
+	trace("expose_func:  full refresh\n");
+#endif
 
 	XClearWindow( XtDisplay(this_screen->area),
 		      XtWindow(this_screen->area)
@@ -700,10 +616,12 @@ XtPointer	call_data;
 			     );
 
 		/* X calls here when XCopyArea exposes new bits */
-		TRACE( ("expose_func (X):  (x=%d,y=%d,w=%d,h=%d), count=%d\n",
+#ifdef TR
+		trace("expose_func (X):  (x=%d,y=%d,w=%d,h=%d), count=%d\n",
 			     gev->x, gev->y,
 			     gev->width, gev->height,
-			     gev->count ) );
+			     gev->count);
+#endif
 
 		/* more coming?  do it then */
 		if ( gev->count > 0 ) return;
@@ -722,10 +640,12 @@ XtPointer	call_data;
 			     );
 
 		/* Motif calls here when DrawingArea is exposed */
-		TRACE( ("expose_func (Motif):  (x=%d,y=%d,w=%d,h=%d), count=%d\n",
+#ifdef TR
+		trace("expose_func (Motif):  (x=%d,y=%d,w=%d,h=%d), count=%d\n",
 			     xev->x, xev->y,
 			     xev->width, xev->height,
-			     xev->count ) );
+			     xev->count);
+#endif
 
 		/* more coming?  do it then */
 		if ( xev->count > 0 ) return;
@@ -812,7 +732,9 @@ Cardinal        *cardinal;
 	ip_send("s", &ipb);
     }
 
-    TRACE( ("insert_string {%.*s}\n", strlen( *str ), *str ) );
+#ifdef TR
+    trace("insert_string {%.*s}\n", strlen( *str ), *str );
+#endif
 }
 
 
@@ -1436,7 +1358,9 @@ static	void	f_copy( buffer, len )
 	int	*len;
 #endif
 {
-    TRACE( ( "f_copy() called" ) );
+#ifdef TR
+    trace("f_copy() called");
+#endif
     *buffer	= clipboard;
     *len	= clipboard_length;
 }
@@ -1448,7 +1372,9 @@ static	void	f_paste( widget, buffer, length )
     /* NOTE:  when multiple panes are implemented, we need to find
      * the correct screen.  For now, there is only one.
      */
-    TRACE( ("f_paste() called with '%*.*s'\n", length, length, buffer ) );
+#ifdef TR
+    trace("f_paste() called with '%*.*s'\n", length, length, buffer);
+#endif
 }
 
 
@@ -1461,7 +1387,9 @@ Widget	widget;
 {
     xvi_screen	*cur_screen;
 
-    TRACE( ( "f_clear() called" ) );
+#ifdef TR
+    trace("f_clear() called");
+#endif
 
     XtVaGetValues( widget, XmNuserData, &cur_screen, 0 );
 
@@ -1531,6 +1459,7 @@ int		newx;
     draw_caret( this_screen );
 }
 
+#include "ipc_mfunc.c"
 
 
 int
@@ -1611,309 +1540,6 @@ main(argc, argv)
 	XtAppMainLoop( ctx );
 }
 
-
-/*
- * ip_trans --
- *	Translate vi messages into X calls.
- */
-int
-ip_trans(bp, len, skipp)
-	char *bp;
-	size_t len, *skipp;
-{
-	IP_BUF ipb;
-	size_t cno, lno, nlen, oldy, oldx, spcnt;
-	int ch;
-	char *fmt, *p;
-
-	switch (bp[0]) {
-	case IPO_ADDSTR:
-	case IPO_RENAME:
-		fmt = "s";
-		break;
-	case IPO_BUSY:
-		fmt = "s1";
-		break;
-	case IPO_ATTRIBUTE:
-	case IPO_MOVE:
-		fmt = "12";
-		break;
-	case IPO_REWRITE:
-		fmt = "1";
-		break;
-	default:
-		fmt = "";
-	}
-
-	nlen = IPO_CODE_LEN;
-	p = bp + IPO_CODE_LEN;
-	for (; *fmt != '\0'; ++fmt)
-		switch (*fmt) {
-		case '1':
-			nlen += IPO_INT_LEN;
-			if (len < nlen)
-				return (0);
-			memcpy((char*)&ipb.val1, p, IPO_INT_LEN);
-			ipb.val1 = ntohl(ipb.val1);
-			p += IPO_INT_LEN;
-			break;
-		case '2':
-			nlen += IPO_INT_LEN;
-			if (len < nlen)
-				return (0);
-			memcpy((char*)&ipb.val2, p, IPO_INT_LEN);
-			ipb.val2 = ntohl(ipb.val2);
-			p += IPO_INT_LEN;
-			break;
-		case 's':
-			nlen += IPO_INT_LEN;
-			if (len < nlen)
-				return (0);
-			memcpy((char*)&ipb.len, p, IPO_INT_LEN);
-			ipb.len = ntohl(ipb.len);
-			p += IPO_INT_LEN;
-			nlen += ipb.len;
-			if (len < nlen)
-				return (0);
-			ipb.str = p;
-			p += ipb.len;
-			break;
-		}
-	*skipp += nlen;
-
-	switch (bp[0]) {
-
-	case IPO_ADDSTR:
-		TRACE( ("addnstr {%.*s}\n", (int)ipb.len, ipb.str) );
-
-		/* add to backing store */
-		memcpy( CharAt(cur_screen, cur_screen->cury, cur_screen->curx),
-			ipb.str,
-			ipb.len
-			);
-		memset( FlagAt(cur_screen, cur_screen->cury, cur_screen->curx),
-			cur_screen->color,
-			ipb.len
-			);
-
-		/* draw from backing store */
-		draw_text( cur_screen,
-			   cur_screen->cury,
-			   cur_screen->curx,
-			   ipb.len
-			   );
-
-		/* advance the caret */
-		move_caret( cur_screen,
-			    cur_screen->cury,
-			    cur_screen->curx + ipb.len
-			    );
-		break;
-
-	case IPO_ATTRIBUTE:
-		switch (ipb.val1) {
-		case SA_ALTERNATE:
-			TRACE( ("attr: alternate\n") );
-			/*
-			 * XXX
-			 * Nothing.
-			 */
-			break;
-		case SA_INVERSE:
-			TRACE( ("attr: inverse\n") );
-			cur_screen->color = ipb.val2;
-			break;
-		default:
-			abort();
-			/* NOTREACHED */
-		}
-		break;
-
-	case IPO_BELL:
-		/* future... implement visible bell */
-		XBell( XtDisplay( cur_screen->area ), 0 );
-		TRACE( ("bell\n") );
-		break;
-
-	case IPO_BUSY:
-		TRACE( ("busy %d {%.*s}\n", ipb.val1, (int)ipb.len, ipb.str) );
-
-#if 0
-		/* I'm just guessing here, but I believe we are
-		 * supposed to set the busy cursor when the text
-		 * is non-null, and restore the default cursor otherwise.
-		 */
-		set_cursor( cur_screen, ipb.len != 0 );
-#endif
-		break;
-
-	case IPO_CLRTOEOL:
-		{
-		int len = cur_screen->cols - cur_screen->curx;
-		char *ptr = CharAt(cur_screen, cur_screen->cury, cur_screen->curx);
-
-		TRACE( ("clrtoeol\n") );
-
-		/* clear backing store */
-		memset( ptr, ' ', len );
-		memset( FlagAt(cur_screen, cur_screen->cury, cur_screen->curx),
-			COLOR_STANDARD,
-			len
-			);
-
-		/* draw from backing store */
-		draw_text( cur_screen,
-			   cur_screen->cury,
-			   cur_screen->curx,
-			   len
-			   );
-		}
-		break;
-
-	case IPO_DELETELN:
-		{
-		int y = cur_screen->cury,
-		    rows = cur_screen->rows - y,
-		    len = cur_screen->cols * rows,
-		    height,
-		    width;
-
-		TRACE( ("deleteln\n") );
-
-		/* don't want to copy the caret! */
-		erase_caret( cur_screen );
-
-		/* adjust backing store and the flags */
-		memmove( CharAt( cur_screen, y, 0 ),
-			 CharAt( cur_screen, y+1, 0 ),
-			 len
-			 );
-		memmove( FlagAt( cur_screen, y, 0 ),
-			 FlagAt( cur_screen, y+1, 0 ),
-			 len
-			 );
-
-		/* move the bits on the screen */
-		width = cur_screen->ch_width * cur_screen->cols;
-		height = cur_screen->ch_height * rows;
-
-		XCopyArea( XtDisplay(cur_screen->area),		/* display */
-			   XtWindow(cur_screen->area),		/* src */
-			   XtWindow(cur_screen->area),		/* dest */
-			   copy_gc,				/* context */
-			   0, YTOP( cur_screen, y+1 ),		/* srcx, srcy */
-			   width, height,
-			   0, YTOP( cur_screen, y )		/* dstx, dsty */
-			   );
-
-		}
-
-		/* need to let X take over */
-		XmUpdateDisplay( cur_screen->area );
-		return 0;
-
-	case IPO_INSERTLN:
-		{
-		int y = cur_screen->cury,
-		    rows = cur_screen->rows - (1+y),
-		    height,
-		    width;
-		char *from = CharAt( cur_screen, y, 0 ),
-		     *to = CharAt( cur_screen, y+1, 0 );
-
-		/* don't want to copy the caret! */
-		erase_caret( cur_screen );
-
-		/* adjust backing store */
-		memmove( to, from, cur_screen->cols * rows );
-		memset( from, ' ', cur_screen->cols );
-
-		/* and the backing store */
-		from = FlagAt( cur_screen, y, 0 ),
-		to = FlagAt( cur_screen, y+1, 0 );
-		memmove( to, from, cur_screen->cols * rows );
-		memset( from, COLOR_STANDARD, cur_screen->cols );
-
-		/* move the bits on the screen */
-		width = cur_screen->ch_width * cur_screen->cols;
-		height = cur_screen->ch_height * rows;
-
-		XCopyArea( XtDisplay(cur_screen->area),		/* display */
-			   XtWindow(cur_screen->area),		/* src */
-			   XtWindow(cur_screen->area),		/* dest */
-			   copy_gc,				/* context */
-			   0, YTOP( cur_screen, y ),		/* srcx, srcy */
-			   width, height,
-			   0, YTOP( cur_screen, y+1 )		/* dstx, dsty */
-			   );
-
-		TRACE( ("insertln\n") );
-		}
-
-		/* need to let X take over */
-		XmUpdateDisplay( cur_screen->area );
-		return 0;
-
-	case IPO_MOVE:
-		TRACE( ("move: %lu %lu\n", (u_long)ipb.val1, (u_long)ipb.val2) );
-		move_caret( cur_screen, ipb.val1, ipb.val2 );
-		break;
-
-	case IPO_REDRAW:
-		TRACE( ("redraw\n") );
-		expose_func( 0, cur_screen, 0 );
-		break;
-
-	case IPO_REFRESH:
-#if 0
-		/* force synchronous update of the widget */
-		XmUpdateDisplay( cur_screen->area );
-#endif
-		break;
-
-	case IPO_RENAME:
-		/* Future:  Attach a title to each screen.  For now,
-		 * we change the title of the shell
-		 */
-		TRACE( ("rename {%.*s}\n", (int)ipb.len, ipb.str) );
-		XtVaSetValues( top_level,
-			       XmNtitle,	ipb.str,
-			       0
-			       );
-		break;
-
-	case IPO_REWRITE:
-#if 0
-		TRACE( ("rewrite {%lu}\n", (u_long)ipb.val1) );
-		getyx(stdscr, oldy, oldx);
-		for (lno = ipb.val1, cno = spcnt = 0;;) {
-			(void)move(lno, cno);
-			ch = winch(stdscr);
-			if (isblank(ch))
-				++spcnt;
-			else {
-				(void)move(lno, cno - spcnt);
-				for (; spcnt > 0; --spcnt)
-					(void)addch(' ');
-				(void)addch(ch);
-			}
-			if (++cno >= cols)
-				break;
-		}
-		(void)move(oldy, oldx);
-#endif
-		break;
-
-	default:
-		/*
-		 * XXX: Protocol is out of sync?  
-		 */
-		abort();
-	}
-
-	return (1);
-}
-
 /*
  * arg_format
  */
@@ -1961,89 +1587,6 @@ ip_siginit()
 }
 
 /*
- * ip_send --
- *	Construct and send an IP buffer.
- */
-int
-ip_send(fmt, ipbp)
-	char *fmt;
-	IP_BUF *ipbp;
-{
-	static char *bp;
-	static size_t blen;
-	size_t off;
-	u_int32_t ilen;
-	int nlen, n, nw;
-	char *p;
-
-	/* have not created the channel to vi yet? */
-	if ( o_fd == 0 )
-		return (0);
-
-	if (blen == 0 && (bp = malloc(blen = 512)) == NULL)
-		nomem();
-
-	p = bp;
-	nlen = 0;
-	*p++ = ipbp->code;
-	nlen += IPO_CODE_LEN;
-
-	if (fmt != NULL)
-		for (; *fmt != '\0'; ++fmt)
-			switch (*fmt) {
-			case '1':			/* Value 1. */
-				ilen = htonl(ipbp->val1);
-				goto value;
-			case '2':			/* Value 2. */
-				ilen = htonl(ipbp->val2);
-value:				nlen += IPO_INT_LEN;
-				if (nlen >= blen) {
-					blen = blen * 2 + nlen;
-					off = p - bp;
-					if ((bp = realloc(bp, blen)) == NULL)
-						nomem();
-					p = bp + off;
-				}
-				memmove(p, &ilen, IPO_INT_LEN);
-				p += IPO_INT_LEN;
-				break;
-			case 's':			/* String. */
-				ilen = ipbp->len;	/* XXX: conversion. */
-				ilen = htonl(ilen);
-				nlen += IPO_INT_LEN + ipbp->len;
-				if (nlen >= blen) {
-					blen = blen * 2 + nlen;
-					off = p - bp;
-					if ((bp = realloc(bp, blen)) == NULL)
-						nomem();
-					p = bp + off;
-				}
-				memmove(p, &ilen, IPO_INT_LEN);
-				p += IPO_INT_LEN;
-				memmove(p, ipbp->str, ipbp->len);
-				p += ipbp->len;
-				break;
-			}
-#ifdef TR
-	TRACE( ("WROTE: ") );
-	for (n = p - bp, p = bp; n > 0; --n, ++p)
-		if (isprint(*p))
-			(void)TRACE( ("%c", *p) );
-		else
-			TRACE( ("<%x>", (u_char)*p) );
-	TRACE( ("\n") );
-#endif
-
-	for (n = p - bp, p = bp; n > 0; n -= nw, p += nw)
-		if ((nw = write(o_fd, p, n)) < 0) {
-			perror("ip_cl: write");
-			exit(1);
-		}
-
-	return (0);
-}
-
-/*
  * onchld --
  *	Handle SIGCHLD.
  */
@@ -2068,27 +1611,3 @@ onintr(signo)
 	(void)signal(SIGINT, SIG_DFL);
 	kill(getpid(), SIGINT);
 }
-
-void
-attach()
-{
-	int fd;
-	char ch;
-
-	(void)printf("process %lu waiting, enter <CR> to continue: ",
-	    (u_long)getpid());
-	(void)fflush(stdout);
-
-	if ((fd = open(_PATH_TTY, O_RDONLY, 0)) < 0) {
-		perror(_PATH_TTY);
-		exit (1);;
-	}
-	do {
-		if (read(fd, &ch, 1) != 1) {
-			(void)close(fd);
-			return;
-		}
-	} while (ch != '\n' && ch != '\r');
-	(void)close(fd);
-}
-
