@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 5.36 1993/05/08 16:07:54 bostic Exp $ (Berkeley) $Date: 1993/05/08 16:07:54 $
+ *	$Id: screen.h,v 5.37 1993/05/09 15:57:33 bostic Exp $ (Berkeley) $Date: 1993/05/09 15:57:33 $
  */
 
 /*
@@ -249,7 +249,6 @@ typedef struct _scr {
 #define	S_REFRESH	0x0080000	/* Refresh the screen. */
 #define	S_RESIZE	0x0100000	/* Resize the screen. */
 #define	S_UPDATE_MODE	0x0200000	/* Don't repaint modeline. */
-#define	S_UPDATE_SCREEN	0x0400000	/* Don't repaint screen. */
 
 #define	S_SCREEN_RETAIN			/* Retain at screen create. */	\
 	(S_MODE_EX | S_MODE_VI | S_ISFROMTTY)
