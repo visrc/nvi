@@ -25,7 +25,7 @@ cd $S/build.local && make cleandocs docs
 
 # cleanup
 cd $S && allout
-cd $S && mv build.local RCS/
+cd $S && mv ip ip_cl build.local RCS/
 find . -type d \! -perm 775
 find . \( -name '*.rej' -o -name '*.orig' \)
 find . -name RCS -prune -o -name SCCS -prune -o \
