@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 8.16 1993/10/04 17:58:46 bostic Exp $ (Berkeley) $Date: 1993/10/04 17:58:46 $";
+static char sccsid[] = "$Id: options_f.c,v 8.17 1993/10/05 18:00:00 bostic Exp $ (Berkeley) $Date: 1993/10/05 18:00:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -23,12 +23,16 @@ static char sccsid[] = "$Id: options_f.c,v 8.16 1993/10/04 17:58:46 bostic Exp $
 
 static int	opt_putenv __P((char *));
 
-#define	DECL(f)	int							\
+#define	DECL(f)								\
+	int								\
 	f(sp, op, str, val)						\
 		SCR *sp;						\
 		OPTION *op;						\
 		char *str;						\
 		u_long val;
+#define	CALL(f)								\
+	f(sp, op, str, val)
+
 #define	turnoff	val
 
 static int ps_list __P((SCR *));
@@ -429,7 +433,7 @@ DECL(f_term)
 	if (opt_putenv(buf))
 		return (1);
 
-	if (sp->s_term != NULL && sp->s_term(sp))
+	if (sp->s_optchange != NULL && sp->s_optchange(sp, O_TERM))
 		return (1);
 
 	if (set_window_size(sp, 0, 0))
@@ -443,16 +447,12 @@ DECL(f_w300)
 	if (baud_from_bval(sp) >= 1200)
 		return (0);
 
-	if (val < MINIMUM_SCREEN_ROWS) {
-		msgq(sp, M_ERR, "Screen lines too small, less than %d.",
-		    MINIMUM_SCREEN_ROWS);
+	if (CALL(f_window))
 		return (1);
-	}
+
 	if (val > O_VAL(sp, O_LINES) - 1)
 		val = O_VAL(sp, O_LINES) - 1;
 	O_VAL(sp, O_W300) = val;
-	O_VAL(sp, O_WINDOW) = val;
-	O_VAL(sp, O_SCROLL) = val / 2;
 	return (0);
 }
 
@@ -465,16 +465,12 @@ DECL(f_w1200)
 	if (v < 1200 || v > 4800)
 		return (0);
 
-	if (val < MINIMUM_SCREEN_ROWS) {
-		msgq(sp, M_ERR, "Screen lines too small, less than %d.",
-		    MINIMUM_SCREEN_ROWS);
+	if (CALL(f_window))
 		return (1);
-	}
+
 	if (val > O_VAL(sp, O_LINES) - 1)
 		val = O_VAL(sp, O_LINES) - 1;
 	O_VAL(sp, O_W1200) = val;
-	O_VAL(sp, O_WINDOW) = val;
-	O_VAL(sp, O_SCROLL) = val / 2;
 	return (0);
 }
 
@@ -487,23 +483,19 @@ DECL(f_w9600)
 	if (v <= 4800)
 		return (0);
 
-	if (val < MINIMUM_SCREEN_ROWS) {
-		msgq(sp, M_ERR, "Screen lines too small, less than %d.",
-		    MINIMUM_SCREEN_ROWS);
+	if (CALL(f_window))
 		return (1);
-	}
+
 	if (val > O_VAL(sp, O_LINES) - 1)
 		val = O_VAL(sp, O_LINES) - 1;
 	O_VAL(sp, O_W9600) = val;
-	O_VAL(sp, O_WINDOW) = val;
-	O_VAL(sp, O_SCROLL) = val / 2;
 	return (0);
 }
 
 DECL(f_window)
 {
 	if (val < MINIMUM_SCREEN_ROWS) {
-		msgq(sp, M_ERR, "Screen lines too small, less than %d.",
+		msgq(sp, M_ERR, "Window too small, less than %d.",
 		    MINIMUM_SCREEN_ROWS);
 		return (1);
 	}
@@ -511,6 +503,10 @@ DECL(f_window)
 		val = O_VAL(sp, O_LINES) - 1;
 	O_VAL(sp, O_WINDOW) = val;
 	O_VAL(sp, O_SCROLL) = val / 2;
+
+	if (sp->s_optchange != NULL && sp->s_optchange(sp, O_WINDOW))
+		return (1);
+
 	return (0);
 }
 
