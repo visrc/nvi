@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 5.13 1992/05/28 13:48:21 bostic Exp $ (Berkeley) $Date: 1992/05/28 13:48:21 $
+ *	$Id: vi.h,v 5.14 1992/06/03 09:26:30 bostic Exp $ (Berkeley) $Date: 1992/06/03 09:26:30 $
  */
 
 #include "exf.h"
@@ -87,6 +87,9 @@ extern VIKEYS vikeys[MAXVIKEY + 1];
 	if (cnt < 1)							\
 		cnt = (val);						\
 }
+
+/* Definition of a "word". */
+#define	inword(ch)	(isalnum(ch) || (ch) == '_')
 
 int	v_again __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_at __P((VICMDARG *, MARK *, MARK *, MARK *));
