@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 10.14 1995/10/19 13:16:04 bostic Exp $ (Berkeley) $Date: 1995/10/19 13:16:04 $";
+static char sccsid[] = "$Id: ex_subst.c,v 10.15 1995/10/19 20:19:40 bostic Exp $ (Berkeley) $Date: 1995/10/19 20:19:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,10 +30,9 @@ static char sccsid[] = "$Id: ex_subst.c,v 10.14 1995/10/19 13:16:04 bostic Exp $
 #define	SUB_FIRST	0x01		/* The 'r' flag isn't reasonable. */
 #define	SUB_MUSTSETR	0x02		/* The 'r' flag is required. */
 
-static __inline int
-		regsub __P((SCR *,
-		    char *, char **, size_t *, size_t *, regmatch_t [10]));
-static int	s __P((SCR *, EXCMD *, char *, regex_t *, u_int));
+static int regsub
+    __P((SCR *, char *, char **, size_t *, size_t *, regmatch_t [10]));
+static int s __P((SCR *, EXCMD *, char *, regex_t *, u_int));
 
 /*
  * ex_s --
@@ -362,15 +361,19 @@ s(sp, cmdp, s, re, flags)
 	EVENT ev;
 	MARK from, to;
 	TEXTH tiq;
-	recno_t elno, lno;
+	recno_t elno, lno, slno;
 	regmatch_t match[10];
-	size_t blen, cnt, last, lbclen, lblen, len, llen, offset, saved_offset;
+	size_t blen, cnt, last, lbclen, lblen, len, llen;
+	size_t offset, saved_offset, scno;
 	int cflag, lflag, nflag, pflag, rflag;
 	int didsub, do_eol_match, eflags, empty_ok, eval;
 	int linechanged, matched, quit, rval;
 	char *bp, *lb;
 
 	NEEDFILE(sp, cmdp);
+
+	slno = sp->lno;
+	scno = sp->cno;
 
 	/*
 	 * !!!
@@ -687,6 +690,13 @@ quit:				quit = 1;
 			}
 		}
 
+		/*
+		 * Set the cursor to the last position changed, converting
+		 * from 1-based to 0-based.
+		 */
+		sp->lno = lno;
+		sp->cno = match[0].rm_so;
+
 		/* Copy the bytes before the match into the build buffer. */
 		BUILD(sp, s + offset, match[0].rm_so);
 
@@ -831,20 +841,25 @@ endmatch:	if (!linechanged)
 			if (pflag)
 				(void)ex_print(sp, cmdp, &from, &to, E_C_PRINT);
 		}
-
-		/* Set the cursor to the last line changed. */
-		sp->lno = lno;
 	}
 
 	/*
 	 * !!!
-	 * Move the cursor to the first non-blank of the last line change.
+	 * Historically, vi attempted to leave the cursor at the same place if
+	 * the substitution was done at the current cursor position.  Otherwise
+	 * it moved it to the first non-blank of the last line changed.  There
+	 * were some problems: for example, :s/$/foo/ with the cursor on the
+	 * last character of the line left the cursor on the last character, or
+	 * the & command with multiple occurrences of the matching string in the
+	 * line usually left the cursor in a fairly random position.
 	 *
-	 * XXX
-	 * This is NOT backward compatible with historic vi, which always
-	 * moved to the last line actually changed.
+	 * We try to do the same thing, with the exception that if the user is
+	 * doing substitution with confirmation, we move to the last line about
+	 * which the user was consulted, as opposed to the last line that they
+	 * actually changed.  This prevents a screen flash if the user doesn't
+	 * change many of the possible lines.
 	 */
-	if (!sp->c_suffix) {
+	if (!sp->c_suffix && (sp->lno != slno || sp->cno != scno)) {
 		sp->cno = 0;
 		(void)nonblank(sp, sp->lno, &sp->cno);
 	}
@@ -877,7 +892,7 @@ err:		rval = 1;
  * regsub --
  * 	Do the substitution for a regular expression.
  */
-static __inline int
+static int
 regsub(sp, ip, lbp, lbclenp, lblenp, match)
 	SCR *sp;
 	char *ip;			/* Input line. */
