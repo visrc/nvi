@@ -6,65 +6,101 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_replace.c,v 5.7 1992/10/10 14:02:20 bostic Exp $ (Berkeley) $Date: 1992/10/10 14:02:20 $";
+static char sccsid[] = "$Id: v_replace.c,v 5.8 1992/10/24 14:23:49 bostic Exp $ (Berkeley) $Date: 1992/10/24 14:23:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
+#include <errno.h>
 #include <limits.h>
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "vi.h"
 #include "vcmd.h"
+#include "term.h"
 #include "extern.h"
 
-MARK *
-v_replace(m, cnt, key)
-	MARK	*m;	/* first char to be replaced */
-	long	cnt;	/* number of chars to replace */
-	int	key;	/* what to replace them with */
+int
+v_replace(vp, fm, tm, rp)
+	VICMDARG *vp;
+	MARK *fm, *tm, *rp;
 {
-	static MARK rval;
-	register char	*text;
-	register int		i;
-	size_t len, ilen;
-	char lbuf[1024];
+	recno_t lno;
+	size_t cno, len;
+	u_long cnt;
+	u_char *np, *p, emptybuf[1];
 
-	SETDEFCNT(1);
-
-	/* map ^M to '\n' */
-	if (key == '\r')
-	{
-		key = '\n';
+	if ((p = file_gline(curf, fm->lno, &len)) == NULL) {
+		if (file_lline(curf) != 0) {
+			GETLINE_ERR(fm->lno);
+			return (1);
+		}
+		p = emptybuf;
+		len = 1;
+	} else if (len == 0) {
+		p = emptybuf;
+		len = 1;
 	}
 
-	/* build a string of the desired character with the desired length */
-	for (text = lbuf, i = cnt, ilen = 0; i > 0; i--)
-	{
-		*text++ = key;
-		++ilen;
-	}
-	*text = '\0';
+	cnt = vp->flags & VC_C1SET ? vp->count : 1;
 
-	/* make sure cnt doesn't extend past EOL */
-	(void)file_gline(curf, m->lno, &len);
-	key = m->cno;
-	if (key + cnt > len)
-	{
-		cnt = len - key;
+	rp->cno = fm->cno + cnt - 1;
+	if (rp->cno > len - 1) {
+		v_eol(fm);
+		return (1);
 	}
 
-	/* do the replacement */
-	rval = *m;
-	rval.cno += cnt;
-	change(m, &rval, lbuf, ilen);
+	/*
+	 * The r command in historic vi was, for lack of a better word, wrong.
+	 * "r<erase>" and "r<word erase>" beeped the terminal and deleted a
+	 * single character.  "Nr<carriage return>" where N was greater than 1
+	 * inserted a single carriage return.
+	 */
+	switch(special[vp->character]) {
+	case K_ESCAPE:
+		*rp = *fm;
+		break;
+	case K_CR:
+	case K_NL:
+		lno = fm->lno;
+		cno = fm->cno;
 
-	if (*lbuf == '\n')
-	{
-		++m->lno;
-		m->cno = 0;
+		rp->lno = lno + cnt;
+		rp->cno = 0;
+
+		if (p != emptybuf) {
+			if ((np = malloc(len)) == NULL) {
+				msg("Error: %s", strerror(errno));
+				return (1);
+			}
+			bcopy(p, np, len);
+			p = np;
+		}
+		for (; cnt--; ++lno, cno = 0) {
+			if (file_sline(curf, lno, p, cno))
+				goto err;
+			p += cno + 1;
+			len -= cno + 1;
+			if (file_aline(curf, lno, p, len)) {
+err:				if (p != emptybuf)
+					free(np);
+				return (1);
+			}
+		}
+		break;
+	default:
+		memset(p + fm->cno, vp->character, cnt);
+		if (file_sline(curf, fm->lno, p, len))
+			return (1);
+		/* If a count, move to the end, otherwise don't move. */
+		rp->lno = fm->lno;
+		if (cnt == 1)
+			rp->cno = fm->cno;
+		else
+			rp->cno = fm->cno + cnt - 1;
+		break;
 	}
-	else
-	{
-		m->cno += cnt - 1;
-	}
+	return (0);
 }
