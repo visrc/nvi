@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_refresh.c,v 10.27 1996/04/17 09:48:24 bostic Exp $ (Berkeley) $Date: 1996/04/17 09:48:24 $";
+static const char sccsid[] = "$Id: vs_refresh.c,v 10.28 1996/04/17 09:52:08 bostic Exp $ (Berkeley) $Date: 1996/04/17 09:52:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -175,7 +175,7 @@ vs_paint(sp, flags)
 			if (vs_sm_fill(sp, LNO, P_MIDDLE))
 				return (1);
 		} else
-			if (vs_sm_fill(sp, HMAP->lno, P_TOP))
+			if (vs_sm_fill(sp, OOBLNO, P_TOP))
 				return (1);
 		if (O_ISSET(sp, O_LEFTRIGHT) &&
 		    (cnt = vs_opt_screens(sp, LNO, &CNO)) != 1)

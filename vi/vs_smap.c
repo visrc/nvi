@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_smap.c,v 10.18 1996/03/18 09:25:35 bostic Exp $ (Berkeley) $Date: 1996/03/18 09:25:35 $";
+static const char sccsid[] = "$Id: vs_smap.c,v 10.19 1996/04/17 09:52:08 bostic Exp $ (Berkeley) $Date: 1996/04/17 09:52:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -278,11 +278,12 @@ err:	HMAP->lno = 1;
  * For the routines vs_sm_reset, vs_sm_delete and vs_sm_insert: if the
  * screen contains only a single line (whether because the screen is small
  * or the line large), it gets fairly exciting.  Skip the fun, set a flag
- * so the screen is repainted, and return.
+ * so the screen map is refilled and the screen redrawn, and return.  This
+ * is amazingly slow, but it's not clear that anyone will care.
  */
 #define	HANDLE_WEIRDNESS(cnt) {						\
 	if (cnt >= sp->t_rows) {					\
-		F_SET(sp, S_SCR_REDRAW);				\
+		F_SET(sp, S_SCR_REFORMAT);				\
 		return (0);						\
 	}								\
 }
