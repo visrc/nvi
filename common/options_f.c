@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 8.17 1993/10/05 18:00:00 bostic Exp $ (Berkeley) $Date: 1993/10/05 18:00:00 $";
+static char sccsid[] = "$Id: options_f.c,v 8.18 1993/10/05 18:08:04 bostic Exp $ (Berkeley) $Date: 1993/10/05 18:08:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -433,9 +433,6 @@ DECL(f_term)
 	if (opt_putenv(buf))
 		return (1);
 
-	if (sp->s_optchange != NULL && sp->s_optchange(sp, O_TERM))
-		return (1);
-
 	if (set_window_size(sp, 0, 0))
 		return (1);
 	return (0);
@@ -503,9 +500,6 @@ DECL(f_window)
 		val = O_VAL(sp, O_LINES) - 1;
 	O_VAL(sp, O_WINDOW) = val;
 	O_VAL(sp, O_SCROLL) = val / 2;
-
-	if (sp->s_optchange != NULL && sp->s_optchange(sp, O_WINDOW))
-		return (1);
 
 	return (0);
 }
