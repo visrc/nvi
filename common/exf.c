@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: exf.c,v 10.42 1996/06/19 20:22:41 bostic Exp $ (Berkeley) $Date: 1996/06/19 20:22:41 $";
+static const char sccsid[] = "$Id: exf.c,v 10.43 1996/07/09 20:21:46 bostic Exp $ (Berkeley) $Date: 1996/07/09 20:21:46 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -200,6 +200,8 @@ file_init(sp, frp, rcv_name, flags)
 		psize = 1024;
 		if (!LF_ISSET(FS_OPENERR))
 			F_SET(frp, FR_NEWFILE);
+
+		time(&ep->mtime);
 	} else {
 		/*
 		 * XXX
@@ -214,8 +216,10 @@ file_init(sp, frp, rcv_name, flags)
 			psize = 1;
 		psize *= 1024;
 
+		F_SET(ep, F_DEVSET);
 		ep->mdev = sb.st_dev;
 		ep->minode = sb.st_ino;
+
 		ep->mtime = sb.st_mtime;
 
 		if (!S_ISREG(sb.st_mode))
@@ -671,11 +675,13 @@ file_write(sp, fm, tm, name, flags)
 	char *p, *s, *t, buf[MAXPATHLEN + 64];
 	const char *msgstr;
 
+	ep = sp->ep;
+	frp = sp->frp;
+
 	/*
 	 * Writing '%', or naming the current file explicitly, has the
 	 * same semantics as writing without a name.
 	 */
-	frp = sp->frp;
 	if (name == NULL || !strcmp(name, frp->name)) {
 		noname = 1;
 		name = frp->name;
@@ -728,20 +734,17 @@ file_write(sp, fm, tm, name, flags)
 	if (stat(name, &sb))
 		mtype = NEWFILE;
 	else {
-		mtype = OLDFILE;
-		if (!LF_ISSET(FS_FORCE | FS_APPEND)) {
-			ep = sp->ep;
-			if (noname && ep->mtime != 0 &&
-			    (sb.st_dev != sp->ep->mdev ||
-			    sb.st_ino != ep->minode ||
-			    sb.st_mtime != ep->mtime)) {
-				msgq_str(sp, M_ERR, name,
-				    LF_ISSET(FS_POSSIBLE) ?
+		if (noname && !LF_ISSET(FS_FORCE | FS_APPEND) &&
+		    (F_ISSET(ep, F_DEVSET) &&
+		    (sb.st_dev != ep->mdev || sb.st_ino != ep->minode) ||
+		    sb.st_mtime != ep->mtime)) {
+			msgq_str(sp, M_ERR, name, LF_ISSET(FS_POSSIBLE) ?
 "250|%s: file modified more recently than this copy; use ! to override" :
 "251|%s: file modified more recently than this copy");
-				return (1);
-			}
+			return (1);
 		}
+
+		mtype = OLDFILE;
 	}
 
 	/* Set flags to create, write, and either append or truncate. */
@@ -814,16 +817,16 @@ file_write(sp, fm, tm, name, flags)
 	 * we re-init the time.  That way the user can clean up the disk
 	 * and rewrite without having to force it.
 	 */
-	if (noname) {
-		ep = sp->ep;
+	if (noname)
 		if (stat(name, &sb))
-			ep->mtime = 0;
+			time(&ep->mtime);
 		else {
+			F_SET(ep, F_DEVSET);
 			ep->mdev = sb.st_dev;
 			ep->minode = sb.st_ino;
+
 			ep->mtime = sb.st_mtime;
 		}
-	}
 
 	/*
 	 * If the write failed, complain loudly.  ex_writefp() has already
@@ -851,7 +854,7 @@ file_write(sp, fm, tm, name, flags)
 	 * exiting.
 	 */
 	if (LF_ISSET(FS_ALL) && !LF_ISSET(FS_APPEND)) {
-		F_CLR(sp->ep, F_MODIFIED);
+		F_CLR(ep, F_MODIFIED);
 		if (F_ISSET(frp, FR_TMPFILE))
 			if (noname)
 				F_SET(frp, FR_TMPEXIT);
@@ -1134,8 +1137,12 @@ file_m1(sp, force, flags)
 	SCR *sp;
 	int force, flags;
 {
+	EXF *ep;
+
+	ep = sp->ep;
+
 	/* If no file loaded, return no modifications. */
-	if (sp->ep == NULL)
+	if (ep == NULL)
 		return (0);
 
 	/*
@@ -1144,11 +1151,11 @@ file_m1(sp, force, flags)
 	 * unless force is also set.  Otherwise, we fail unless forced or
 	 * there's another open screen on this file.
 	 */
-	if (F_ISSET(sp->ep, F_MODIFIED))
+	if (F_ISSET(ep, F_MODIFIED))
 		if (O_ISSET(sp, O_AUTOWRITE)) {
 			if (!force && file_aw(sp, flags))
 				return (1);
-		} else if (sp->ep->refcnt <= 1 && !force) {
+		} else if (ep->refcnt <= 1 && !force) {
 			msgq(sp, M_ERR, LF_ISSET(FS_POSSIBLE) ?
 "262|File modified since last complete write; write or use ! to override" :
 "263|File modified since last complete write; write or use :edit! to override");
@@ -1170,15 +1177,19 @@ file_m2(sp, force)
 	SCR *sp;
 	int force;
 {
+	EXF *ep;
+
+	ep = sp->ep;
+
 	/* If no file loaded, return no modifications. */
-	if (sp->ep == NULL)
+	if (ep == NULL)
 		return (0);
 
 	/*
 	 * If the file has been modified, we'll want to fail, unless forced
 	 * or there's another open screen on this file.
 	 */
-	if (F_ISSET(sp->ep, F_MODIFIED) && sp->ep->refcnt <= 1 && !force) {
+	if (F_ISSET(ep, F_MODIFIED) && ep->refcnt <= 1 && !force) {
 		msgq(sp, M_ERR,
 "264|File modified since last complete write; write or use ! to override");
 		return (1);
@@ -1198,8 +1209,12 @@ file_m3(sp, force)
 	SCR *sp;
 	int force;
 {
+	EXF *ep;
+
+	ep = sp->ep;
+
 	/* If no file loaded, return no modifications. */
-	if (sp->ep == NULL)
+	if (ep == NULL)
 		return (0);
 
 	/*
@@ -1209,7 +1224,7 @@ file_m3(sp, force)
 	 * We permit writing to temporary files, so that user maps using file
 	 * system names work with temporary files.
 	 */
-	if (F_ISSET(sp->frp, FR_TMPEXIT) && sp->ep->refcnt <= 1 && !force) {
+	if (F_ISSET(sp->frp, FR_TMPEXIT) && ep->refcnt <= 1 && !force) {
 		msgq(sp, M_ERR,
 		    "265|File is a temporary; exit will discard modifications");
 		return (1);

@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: exf.h,v 10.6 1996/03/06 19:50:18 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:50:18 $
+ *	$Id: exf.h,v 10.7 1996/07/09 20:21:47 bostic Exp $ (Berkeley) $Date: 1996/07/09 20:21:47 $
  */
 					/* Undo direction. */
 /*
@@ -52,13 +52,14 @@ struct _exf {
 	char	*rcv_mpath;		/* Recover mail file name. */
 	int	 rcv_fd;		/* Locked mail file descriptor. */
 
-#define	F_FIRSTMODIFY	0x001		/* File not yet modified. */
-#define	F_MODIFIED	0x002		/* File is currently dirty. */
-#define	F_MULTILOCK	0x004		/* Multiple processes running, lock. */
-#define	F_NOLOG		0x008		/* Logging turned off. */
-#define	F_RCV_NORM	0x010		/* Don't delete recovery files. */
-#define	F_RCV_ON	0x020		/* Recovery is possible. */
-#define	F_UNDO		0x040		/* No change since last undo. */
+#define	F_DEVSET	0x001		/* mdev/minode fields initialized. */
+#define	F_FIRSTMODIFY	0x002		/* File not yet modified. */
+#define	F_MODIFIED	0x004		/* File is currently dirty. */
+#define	F_MULTILOCK	0x008		/* Multiple processes running, lock. */
+#define	F_NOLOG		0x010		/* Logging turned off. */
+#define	F_RCV_NORM	0x020		/* Don't delete recovery files. */
+#define	F_RCV_ON	0x040		/* Recovery is possible. */
+#define	F_UNDO		0x080		/* No change since last undo. */
 	u_int8_t flags;
 };
 
