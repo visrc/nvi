@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.85 1996/12/11 13:01:54 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:01:54 $
+#	$Id: Makefile.in,v 8.86 1996/12/11 19:26:16 bostic Exp $ (Berkeley) $Date: 1996/12/11 19:26:16 $
 
 srcdir=	@srcdir@/..
 CC=	@CC@
@@ -52,7 +52,8 @@ nvi nex: $(VIALL)
 	ln $@ nex
 
 M_IPC=	ipc_mcde.o ipc_mcopypaste.o ipc_mfunc.o ipc_mmain.o ipc_mmenu.o \
-	ipc_moptions.o ipc_mprompt.o ipc_msearch.o ipc_mutil.o ipc_mvi.o \
+	ipc_moptions.o ipc_mprompt.o ipc_msearch.o ipc_mtags.o ipc_mutil.o \
+	ipc_mvi.o xtabbed.o \
 	ip_run.o ip_send.o ip_trans.o \
 	trace.o @LIBOBJS@
 nvi_motif: $(M_IPC)
@@ -265,9 +266,13 @@ ipc_mprompt.o: $(srcdir)/ipc_motif/ipc_mprompt.c
 	$(CC) $(CFLAGS) @XINCS@ $?
 ipc_msearch.o: $(srcdir)/ipc_motif/ipc_msearch.c
 	$(CC) $(CFLAGS) @XINCS@ $?
+ipc_mtags.o: $(srcdir)/ipc_motif/ipc_mtags.c
+	$(CC) $(CFLAGS) @XINCS@ $?
 ipc_mutil.o: $(srcdir)/ipc_motif/ipc_mutil.c
 	$(CC) $(CFLAGS) @XINCS@ $?
 ipc_mvi.o: $(srcdir)/ipc_motif/ipc_mvi.c
+	$(CC) $(CFLAGS) @XINCS@ $?
+xtabbed.o: $(srcdir)/ipc_motif/xtabbed.c
 	$(CC) $(CFLAGS) @XINCS@ $?
 
 # Vi Tcl/Perl interpreter sources.
