@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 8.32 1994/04/10 14:32:45 bostic Exp $ (Berkeley) $Date: 1994/04/10 14:32:45 $";
+static char sccsid[] = "$Id: v_itxt.c,v 8.33 1994/04/13 11:19:18 bostic Exp $ (Berkeley) $Date: 1994/04/13 11:19:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -85,7 +85,7 @@ v_iA(sp, ep, vp)
 	int first;
 	char *p;
 
-	set_txt_std(sp, vp, TXT_APPENDEOL);
+	flags = set_txt_std(sp, vp, TXT_APPENDEOL);
 	for (first = 1, lno = vp->m_start.lno,
 	    cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
 		/* Move the cursor to the end of the line + 1. */
