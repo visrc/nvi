@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.83 1994/03/03 17:02:28 bostic Exp $ (Berkeley) $Date: 1994/03/03 17:02:28 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.84 1994/03/03 17:24:29 bostic Exp $ (Berkeley) $Date: 1994/03/03 17:24:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1718,21 +1718,15 @@ txt_Rcleanup(sp, tiqh, tp, lp, len)
 	memmove(tp->lb + sp->cno, lp + sp->cno, tmp);
 
 	/*
-	 * If there's more to overwrite, what happened was that the user
-	 * extended the line and then erased it.  What we have to do is
-	 * delete whatever the user inserted and then erased.  There
-	 * shouldn't be any insert characters, but we handle them just in
-	 * case.  If there's no overwrite characters left, increase the
+	 * There can be more overwrite characters if the user extended the
+	 * line and then erased it.  What we have to do is delete whatever
+	 * the user inserted and then erased.  Regardless, we increase the
 	 * insert character count to make the TEXT structure look right.
+	 * (There shouldn't be any insert characters as 'R' replaces the
+	 * entire line; if there are, this code isn't going to work).
 	 */
-	if (tp->owrite > tmp) {
-		tp->owrite -= tmp;
-		if (tp->insert != 0)
-			memmove(tp->lb + sp->cno + tmp,
-			    tp->lb + sp->cno + tmp + tp->owrite, tp->insert);
-		tp->insert += tmp;
-		tp->len -= tp->owrite;
-	} else
-		tp->insert += tmp;
+	if (tp->owrite > tmp)
+		tp->len -= tp->owrite - tmp;
 	tp->owrite = 0;
+	tp->insert = tmp;
 }
