@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_section.c,v 8.7 1994/07/15 19:18:31 bostic Exp $ (Berkeley) $Date: 1994/07/15 19:18:31 $";
+static char sccsid[] = "$Id: v_section.c,v 8.8 1994/07/16 15:04:37 bostic Exp $ (Berkeley) $Date: 1994/07/16 15:04:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -50,8 +50,6 @@ static char sccsid[] = "$Id: v_section.c,v 8.7 1994/07/15 19:18:31 bostic Exp $ 
  * I can't get the 4BSD vi to do this, it just beeps at me.  For now, a
  * count to the section commands simply repeats the command.
  */
-
-static int section __P((SCR *, EXF *, VICMDARG *, int, enum direction));
 
 /*
  * v_sectionf -- [count]]]
