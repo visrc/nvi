@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.4 1993/06/21 15:10:57 bostic Exp $ (Berkeley) $Date: 1993/06/21 15:10:57 $
+ *	$Id: screen.h,v 8.5 1993/08/05 21:08:03 bostic Exp $ (Berkeley) $Date: 1993/08/05 21:08:03 $
  */
 
 /*
@@ -62,28 +62,61 @@ typedef struct _smap {
 } SMAP;
 
 /*
- * scr --
- *	The screen structure.  Most of the traditional ex/vi options and
- *	values follow the screen, and therefore are kept here.  For those
- *	of you that didn't follow that sentence, read "dumping ground".
- *	For example, things like tags and mapped character sequences are
- *	stored here.  Each new screen that is added to the editor will
- *	almost certainly have to keep its own stuff in here as well.
+ * Structure for holding file references.  This structure contains the
+ * "name" of a file, including the state of the name and if it's backed
+ * by a temporary file.  Each SCR structure contains a linked list of
+ * these (the user's argument list) as well as pointers for the current,
+ * previous and next files.
+ *
+ * Note that the read-only bit follows the file name, not the file itself.
  */
-struct _exf;
+typedef struct _fref {
+	struct _fref	*next, *prev;	/* Linked list of file references. */
+	char	*fname;			/* File name. */
+	size_t	 nlen;			/* File name length. */
+	char	*tname;			/* Temporary file name. */
+	recno_t	 lno;			/* 1-N: file cursor line. */
+	size_t	 cno;			/* 0-N: file cursor column. */
+
+#define	FR_CURSORSET	0x001		/* If lno/cno valid. */
+#define	FR_EDITED	0x002		/* If the file was ever edited. */
+#define	FR_IGNORE	0x004		/* File isn't part of argument list. */
+#define	FR_NAMECHANGED	0x008		/* File name was changed. */
+#define	FR_NONAME	0x010		/* File has no name. */
+#define	FR_RDONLY	0x020		/* File is read-only. */
+	u_char	 flags;
+} FREF;
+
+/*
+ * scr --
+ *	The screen structure.
+ *
+ * Most of the traditional ex/vi options and values follow the screen, and
+ * are therefore kept here.  For those of you that didn't follow that sentence,
+ * read "dumping ground".  For example, things like tags and mapped character
+ * sequences are stored here.  Each new screen that is added to the editor will
+ * almost certainly have to keep its own stuff in here as well.
+ */
 typedef struct _scr {
 /* INITIALIZED AT SCREEN CREATE. */
 	struct _scr	*next, *prev;	/* Linked list of screens. */
 
-					/* Underlying file information. */
-	struct _exf	*ep;		/* Screen's current file. */
-	struct _exf	*enext;		/* Next file to edit. */
-	struct _exf	*eprev;		/* Last file edited. */
+	struct _scr	*child;		/* split screen: child screen. */
+	struct _scr	*parent;	/* split screen: parent screen. */
+	struct _scr	*snext;		/* split screen: next display screen. */
 
-					/* Split screen information. */
-	struct _scr	*child;		/* Child screen. */
-	struct _scr	*parent;	/* Parent screen. */
-	struct _scr	*snext;		/* Next screen to display. */
+	struct _exf	*ep;		/* Screen's current file. */
+
+	/*
+	 * "File name" state.  Two switch files within a screen, one of the
+	 * S_FSWITCH flags is set, and n_ep and n_frp are set to reference
+	 * the new values for the screen's file.
+	 */
+	HDR	 frefhdr;		/* Linked list of FREF structures. */
+	FREF	*frp;			/* Current FREF. */
+	FREF	*p_frp;			/* Previous FREF. */
+	FREF	*n_frp;			/* Next FREF. */
+	struct _exf	*n_ep;		/* Next EXF. */
 
 					/* Physical screen information. */
 	struct _smap	*h_smap;	/* First entry in screen/row map. */
@@ -102,7 +135,10 @@ typedef struct _scr {
 	size_t	 w_rows;		/* 1-N:      rows per window. */
 	size_t	 s_off;			/* 0-N: row offset in window. */
 
-	struct _msg	*msgp;		/* User message list. */
+	size_t	 rcm;			/* Vi: 0-N: Column suck. */
+#define	RCM_FNB		0x01		/* Column suck: first non-blank. */
+#define	RCM_LAST	0x02		/* Column suck: last. */
+	u_int	 rcmflags;
 
 #define	L_ADDED		 0		/* Added lines. */
 #define	L_CHANGED	 1		/* Changed lines. */
@@ -112,19 +148,16 @@ typedef struct _scr {
 #define	L_MOVED		 5		/* Moved lines. */
 #define	L_PUT		 6		/* Put lines. */
 #define	L_READ		 7		/* Read lines. */
-#define	L_LSHIFT	 8		/* Read lines. */
-#define	L_RSHIFT	 9		/* Read lines. */
+#define	L_LSHIFT	 8		/* Left shift lines. */
+#define	L_RSHIFT	 9		/* Right shift lines. */
 #define	L_YANKED	10		/* Yanked lines. */
 	recno_t	 rptlines[L_YANKED + 1];/* Ex/vi: lines changed by last op. */
 
-	size_t	 rcm;			/* Vi: 0-N: Column suck. */
-#define	RCM_FNB		0x01		/* Column suck: first non-blank. */
-#define	RCM_LAST	0x02		/* Column suck: last. */
-	u_int	 rcmflags;
+	struct _msg	*msgp;		/* User message list. */
 
 	struct _args	*args;		/* Ex/vi: argument buffers. */
-	int	 argscnt;		/* Argument count. */
 	char   **argv;			/* Arguments. */
+	int	 argscnt;		/* Argument count. */
 	
 					/* Ex/vi: interface between ex/vi. */
 	FILE	*stdfp;			/* Ex output file pointer. */
@@ -142,8 +175,8 @@ typedef struct _scr {
 
 	fd_set	 rdfd;			/* Ex/vi: read fd select mask. */
 
-	struct _hdr	 bhdr;		/* Ex/vi: line input. */
-	struct _hdr	 txthdr;	/* Vi: text input TEXT header. */
+	HDR	 bhdr;			/* Ex/vi: line input. */
+	HDR	 txthdr;		/* Vi: text input TEXT header. */
 
 	char	*ibp;			/* Ex: line input buffer. */
 	size_t	 ibp_len;		/* Line input buffer length. */
@@ -156,22 +189,25 @@ typedef struct _scr {
 	char	*rep;			/* Vi: input replay buffer. */
 	size_t	 rep_len;		/* Vi: input replay buffer length. */
 
-	char	*VB;			/* Visual bell termcap string. */
+	char	*VB;			/* Vi: visual bell termcap string. */
 
 	char	*lastbcomm;		/* Ex/vi: last bang command. */
 
-	char	*altfname;		/* Ex/vi: alternate file name. */
+	char	*alt_fname;		/* Ex/vi: alternate file name. */
 
 	u_char	 inc_lastch;		/* Vi: Last increment character. */
-	long	 inc_lastval;		/* Vi: Last increment value. */
+	long	 inc_lastval;		/*     Last increment value. */
 
 	struct _cb cuts[UCHAR_MAX + 2];	/* Ex/vi: cut buffers. */
 
-	char	*paragraph;		/* Vi: Paragraph search list. */
+	void	*sdot;			/* Vi: saved dot, motion command. */
+	void	*sdotmotion;
 
-	struct _hdr	taghdr;		/* Ex/vi: tag stack. */
-	struct _tagf   **tfhead;	/* List of tag files. */
-	char	*tlast;			/* Saved last tag. */
+	char	*paragraph;		/* Vi: paragraph search list. */
+
+	HDR	 taghdr;		/* Ex/vi: tag stack. */
+	struct _tagf   **tfhead;	/* Ex/vi: list of tag files. */
+	char	*tlast;			/* Ex/vi: saved last tag. */
 
 					/* Ex/vi: search/substitute info. */
 	enum direction	searchdir;	/* File search direction. */
@@ -190,8 +226,8 @@ typedef struct _scr {
 	u_char	 special[UCHAR_MAX];	/* Special character array. */
 
 					/* Ex/vi: mapped chars, abbrevs. */
-	struct _hdr	 seqhdr;	/* Linked list of all sequences. */
-	struct _hdr	 seq[UCHAR_MAX];/* Linked character sequences. */
+	HDR	 seqhdr;		/* Linked list of all sequences. */
+	HDR	 seq[UCHAR_MAX];	/* Linked character sequences. */
 
 					/* Ex/vi: executed buffers. */
 	char	*atkey_buf;		/* At key buffer. */
@@ -228,13 +264,13 @@ typedef struct _scr {
 	int	 (*s_ex_write) __P((void *, const char *, int));
 	int	 (*s_fill) __P((struct _scr *,
 		     struct _exf *, recno_t, enum position));
-	int	 (*s_get) __P((struct _scr *, struct _exf *, struct _hdr *,
+	int	 (*s_get) __P((struct _scr *, struct _exf *, HDR *,
 		     int, u_int));
 	int	 (*s_position) __P((struct _scr *,
 		     struct _exf *, recno_t *, u_long, enum position));
 	int	 (*s_refresh) __P((struct _scr *, struct _exf *));
 	size_t	 (*s_relative) __P((struct _scr *, struct _exf *, recno_t));
-	int	 (*s_split) __P((struct _scr *, struct _exf *));
+	int	 (*s_split) __P((struct _scr *, char *[]));
 	int	 (*s_suspend) __P((struct _scr *));
 	int	 (*s_up) __P((struct _scr *,
 		     struct _exf *, struct _mark *, recno_t, int));
@@ -260,8 +296,8 @@ typedef struct _scr {
 #define	S_DIVIDER	0x0001000	/* Ex screen divider is displayed. */
 #define	S_GLOBAL	0x0002000	/* Doing a global command. */
 #define	S_INPUT		0x0004000	/* Doing text input. */
-#define	S_INTERRUPTED	0x0008000	/* If can be interrupted. */
-#define	S_INTERRUPTIBLE	0x0010000	/* If have been interrupted. */
+#define	S_INTERRUPTED	0x0008000	/* If have been interrupted. */
+#define	S_INTERRUPTIBLE	0x0010000	/* If can be interrupted. */
 #define	S_ISFROMTTY	0x0020000	/* Reading from a tty. */
 #define	S_MSGREENTER	0x0040000	/* If msg routine reentered. */
 #define	S_REDRAW	0x0080000	/* Redraw the screen. */

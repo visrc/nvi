@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.1 1993/06/09 22:21:56 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:21:56 $";
+static char sccsid[] = "$Id: screen.c,v 8.2 1993/08/05 21:07:49 bostic Exp $ (Berkeley) $Date: 1993/08/05 21:07:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -54,8 +54,7 @@ scr_init(orig, sp)
 		(void)sigprocmask(SIG_SETMASK, &omask, NULL);
 	}
 
-	sp->olno = OOBLNO;
-	sp->lno = 1;
+	sp->lno = sp->olno = OOBLNO;
 	sp->cno = sp->ocno = 0;
 
 #ifdef FWOPEN_NOT_AVAILABLE
@@ -88,8 +87,10 @@ scr_init(orig, sp)
 		    (sp->lastbcomm = strdup(orig->lastbcomm)) == NULL)
 			goto mem;
 
-		if (orig->altfname != NULL &&
-		    (sp->altfname = strdup(orig->altfname)) == NULL)
+		HDR_INIT(sp->frefhdr, next, prev);
+
+		if (orig->alt_fname != NULL &&
+		    (sp->alt_fname = strdup(orig->alt_fname)) == NULL)
 			goto mem;
 
 		sp->inc_lastch = orig->inc_lastch;
@@ -157,10 +158,12 @@ mem:			msgq(orig, M_ERR,
 		}
 
 		sp->flags = orig->flags & S_SCREEN_RETAIN;
-		sp->flags |= S_REDRAW | S_REFORMAT;
+		F_SET(sp, S_REFORMAT);
 	} else {
 		if (isatty(STDIN_FILENO))
 			F_SET(sp, S_ISFROMTTY);
+
+		HDR_INIT(sp->frefhdr, next, prev);
 
 		sp->inc_lastch = '+';
 		sp->inc_lastval = 1;
@@ -172,7 +175,7 @@ mem:			msgq(orig, M_ERR,
 
 		sp->cname = asciiname;			/* XXX */
 
-		sp->flags |= S_REDRAW | S_REFORMAT;
+		F_SET(sp, S_REFORMAT);
 	}
 
 	return (0);
@@ -221,8 +224,14 @@ scr_end(sp)
 	if (sp->lastbcomm != NULL)
 		FREE(sp->lastbcomm, strlen(sp->lastbcomm) + 1);
 
-	if (sp->altfname != NULL)
-		FREE(sp->altfname, strlen(sp->altfname) + 1);
+	/* Free remembered file names. */
+	{ FREF *fp;
+		while ((fp = sp->frefhdr.next) != (FREF *)&sp->frefhdr) {
+			HDR_DELETE(fp, next, prev, FREF);
+			FREE(fp->fname, strlen(fp->fname));
+			FREE(fp, sizeof(FREF));
+		}
+	}
 
 	/* Free cut buffers. */
 	{ CB *cb; int cnt;
