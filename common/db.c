@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 8.26 1994/05/21 09:42:29 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:42:29 $";
+static char sccsid[] = "$Id: db.c,v 8.27 1994/05/21 11:41:45 bostic Exp $ (Berkeley) $Date: 1994/05/21 11:41:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -198,6 +198,7 @@ file_aline(sp, ep, update, lno, p, len)
 	TRACE(sp, "append to %lu: len %u {%.*s}\n", lno, len, MIN(len, 20), p);
 #endif
 	/*
+	 * XXX
 	 * Very nasty special case.  The historic vi code displays a single
 	 * space (or a '$' if the list option is set) for the first line in
 	 * an "empty" file.  If we "insert" a line, that line gets scrolled
@@ -205,7 +206,9 @@ file_aline(sp, ep, update, lno, p, len)
 	 * screen.  This is really hard to find and fix in the vi code -- the
 	 * text input functions detect it explicitly and don't insert a new
 	 * line.  The hack here is to repaint the screen if we're appending
-	 * to an empty file.
+	 * to an empty file.  The reason that the test is in file_aline, and
+	 * not in file_iline or file_sline, is that all of the ex commands
+	 * that work in empty files end up here.
 	 */
 	if (lno == 0) {
 		if (file_lline(sp, ep, &lline))
@@ -246,9 +249,16 @@ file_aline(sp, ep, update, lno, p, len)
 	 * XXX
 	 * Marks and global commands have to know when lines are
 	 * inserted or deleted.
+	 *
+	 * XXX
+	 * See comment above about empty files.  If the file was empty,
+	 * then we're adding the first line, which is a replacement, not
+	 * an append.  So, we shouldn't whack the marks.
 	 */
-	mark_insdel(sp, ep, LINE_INSERT, lno + 1);
-	global_insdel(sp, ep, LINE_INSERT, lno + 1);
+	if (lno != 0) {
+		mark_insdel(sp, ep, LINE_INSERT, lno + 1);
+		global_insdel(sp, ep, LINE_INSERT, lno + 1);
+	}
 
 	/*
 	 * Update screen.
