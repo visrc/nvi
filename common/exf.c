@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: exf.c,v 10.26 1996/03/14 21:25:16 bostic Exp $ (Berkeley) $Date: 1996/03/14 21:25:16 $";
+static const char sccsid[] = "$Id: exf.c,v 10.27 1996/03/20 19:54:42 bostic Exp $ (Berkeley) $Date: 1996/03/20 19:54:42 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -541,9 +541,13 @@ file_end(sp, ep, force)
 	 * !!!
 	 * ep MAY NOT BE THE SAME AS sp->ep, DON'T USE THE LATTER.
 	 * (If argument ep is NULL, use sp->ep.)
+	 *
+	 * If multiply referenced, just decrement the count and return.
 	 */
 	if (ep == NULL)
 		ep = sp->ep;
+	if (--ep->refcnt != 0)
+		return (0);
 
 	/*
 	 *
@@ -585,12 +589,8 @@ file_end(sp, ep, force)
 	/*
 	 * Clean up the EXF structure.
 	 *
-	 * If multiply referenced, just decrement the count and return.
+	 * Close the db structure.
 	 */
-	if (--ep->refcnt != 0)
-		return (0);
-
-	/* Close the db structure. */
 	if (ep->db->close != NULL && ep->db->close(ep->db) && !force) {
 		msgq_str(sp, M_SYSERR, frp->name, "241|%s: close");
 		++ep->refcnt;
