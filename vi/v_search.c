@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 8.10 1993/09/30 11:28:35 bostic Exp $ (Berkeley) $Date: 1993/09/30 11:28:35 $";
+static char sccsid[] = "$Id: v_search.c,v 8.11 1993/10/26 17:46:43 bostic Exp $ (Berkeley) $Date: 1993/10/26 17:46:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -148,10 +148,14 @@ v_searchb(sp, ep, vp, fm, tm, rp)
 	int flags;
 	char *ptrn;
 
-	if (getptrn(sp, ep, '?', &ptrn))
-		return (1);
-	if (ptrn == NULL)
-		return (0);
+	if (F_ISSET(vp, VC_ISDOT))
+		ptrn = NULL;
+	else {
+		if (getptrn(sp, ep, '?', &ptrn))
+			return (1);
+		if (ptrn == NULL)
+			return (0);
+	}
 
 	flags = SEARCH_MSG | SEARCH_PARSE | SEARCH_SET | SEARCH_TERM;
 	if (F_ISSET(vp, VC_C | VC_D | VC_Y))
@@ -178,10 +182,14 @@ v_searchf(sp, ep, vp, fm, tm, rp)
 	int flags;
 	char *ptrn;
 
-	if (getptrn(sp, ep, '/', &ptrn))
-		return (1);
-	if (ptrn == NULL)
-		return (0);
+	if (F_ISSET(vp, VC_ISDOT))
+		ptrn = NULL;
+	else {
+		if (getptrn(sp, ep, '/', &ptrn))
+			return (1);
+		if (ptrn == NULL)
+			return (0);
+	}
 
 	flags = SEARCH_MSG | SEARCH_PARSE | SEARCH_SET | SEARCH_TERM;
 	if (F_ISSET(vp, VC_C | VC_D | VC_Y))
