@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 10.1 1995/04/13 17:18:11 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:18:11 $";
+static char sccsid[] = "$Id: exf.c,v 10.2 1995/05/05 18:40:57 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:40:57 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -57,6 +57,8 @@ static void	file_comment __P((SCR *));
  * did not do this.  The change is a logical extension of the change where
  * vi now remembers the last location in any file that it has ever edited,
  * not just the previously edited file.
+ *
+ * PUBLIC: FREF *file_add __P((SCR *, CHAR_T *));
  */
 FREF *
 file_add(sp, name)
@@ -106,6 +108,8 @@ file_add(sp, name)
  *	Start editing a file, based on the FREF structure.  If successsful,
  *	let go of any previous file.  Don't release the previous file until
  *	absolutely sure we have the new one.
+ *
+ * PUBLIC: int file_init __P((SCR *, FREF *, char *, int));
  */
 int
 file_init(sp, frp, rcv_name, flags)
@@ -420,6 +424,8 @@ oerr:	if (F_ISSET(ep, F_RCV_ON))
 /*
  * file_cinit --
  *	Set up the initial cursor position.
+ *
+ * PUBLIC: void file_cinit __P((SCR *));
  */
 void
 file_cinit(sp)
@@ -524,6 +530,8 @@ file_cinit(sp)
 /*
  * file_end --
  *	Stop editing a file.
+ *
+ * PUBLIC: int file_end __P((SCR *, EXF *, int));
  */
 int
 file_end(sp, ep, force)
@@ -650,6 +658,8 @@ file_end(sp, ep, force)
  *	Write the file to disk.  Historic vi had fairly convoluted
  *	semantics for whether or not writes would happen.  That's
  *	why all the flags.
+ *
+ * PUBLIC: int file_write __P((SCR *, MARK *, MARK *, char *, int));
  */
 int
 file_write(sp, fm, tm, name, flags)
@@ -1113,6 +1123,8 @@ file_comment(sp)
  * file_m1 --
  * 	First modification check routine.  The :next, :prev, :rewind, :tag,
  *	:tagpush, :tagpop, ^^ modifications check.
+ *
+ * PUBLIC: int file_m1 __P((SCR *, int, int));
  */
 int
 file_m1(sp, force, flags)
@@ -1147,6 +1159,8 @@ file_m1(sp, force, flags)
  * file_m2 --
  * 	Second modification check routine.  The :edit, :quit, :recover
  *	modifications check.
+ *
+ * PUBLIC: int file_m2 __P((SCR *, int));
  */
 int
 file_m2(sp, force)
@@ -1173,6 +1187,8 @@ file_m2(sp, force)
 /*
  * file_m3 --
  * 	Third modification check routine.
+ *
+ * PUBLIC: int file_m3 __P((SCR *, int));
  */
 int
 file_m3(sp, force)
@@ -1203,6 +1219,8 @@ file_m3(sp, force)
  *	Autowrite routine.  If modified, autowrite is set and the readonly bit
  *	is not set, write the file.  A routine so there's a place to put the
  *	comment.
+ *
+ * PUBLIC: int file_aw __P((SCR *, int));
  */
 int
 file_aw(sp, flags)
@@ -1262,6 +1280,8 @@ file_aw(sp, flags)
  *
  * If the user edits a temporary file, there may be times when there is no
  * alternative file name.  A name argument of NULL turns it off.
+ *
+ * PUBLIC: void set_alt_name __P((SCR *, char *));
  */
 void
 set_alt_name(sp, name)
@@ -1296,12 +1316,14 @@ set_alt_name(sp, name)
  * files can't be opened for writing because the semantics of DB are that
  * files opened for writing are flushed back to disk when the DB session
  * is ended. So, in that case we have to acquire an extra file descriptor.
+ *
+ * PUBLIC: lock_t file_lock __P((SCR *, char *, int *, int, int));
  */
 lock_t
 file_lock(sp, name, fdp, fd, iswrite)
 	SCR *sp;
 	char *name;
-	int fd, *fdp, iswrite;
+	int *fdp, fd, iswrite;
 {
 	if (!O_ISSET(sp, O_LOCK))
 		return (LOCK_SUCCESS);

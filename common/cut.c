@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 9.6 1995/03/02 07:43:53 bostic Exp $ (Berkeley) $Date: 1995/03/02 07:43:53 $";
+static char sccsid[] = "$Id: cut.c,v 9.7 1995/05/05 18:40:31 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:40:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -65,13 +65,15 @@ static int	cb_rotate __P((SCR *));
  * and, in the latter case, the text was appended to the buffer instead of
  * replacing the contents.  Hopefully it's not worth getting right, and here
  * we just treat the numeric buffers like any other named buffer.
+ *
+ * PUBLIC: int cut __P((SCR *, CHAR_T *, MARK *, MARK *, int));
  */
 int
 cut(sp, namep, fm, tm, flags)
 	SCR *sp;
 	CHAR_T *namep;
-	int flags;
 	MARK *fm, *tm;
+	int flags;
 {
 	CB *cbp;
 	CHAR_T name;
@@ -239,6 +241,8 @@ cb_rotate(sp)
 /*
  * cut_line --
  *	Cut a portion of a single line.
+ *
+ * PUBLIC: int cut_line __P((SCR *, recno_t, size_t, size_t, CB *));
  */
 int
 cut_line(sp, lno, fcno, clen, cbp)
@@ -282,6 +286,8 @@ cut_line(sp, lno, fcno, clen, cbp)
 /*
  * cut_close --
  *	Discard all cut buffers.
+ *
+ * PUBLIC: void cut_close __P((GS *));
  */
 void
 cut_close(gp)
@@ -306,6 +312,8 @@ cut_close(gp)
 /*
  * text_init --
  *	Allocate a new TEXT structure.
+ *
+ * PUBLIC: TEXT *text_init __P((SCR *, const char *, size_t, size_t));
  */
 TEXT *
 text_init(sp, p, len, total_len)
@@ -335,6 +343,8 @@ text_init(sp, p, len, total_len)
 /*
  * text_lfree --
  *	Free a chain of text structures.
+ *
+ * PUBLIC: void text_lfree __P((TEXTH *));
  */
 void
 text_lfree(headp)
@@ -351,6 +361,8 @@ text_lfree(headp)
 /*
  * text_free --
  *	Free a text structure.
+ *
+ * PUBLIC: void text_free __P((TEXT *));
  */
 void
 text_free(tp)

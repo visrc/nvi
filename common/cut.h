@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: cut.h,v 9.5 1995/02/15 16:12:41 bostic Exp $ (Berkeley) $Date: 1995/02/15 16:12:41 $
+ *	$Id: cut.h,v 9.6 1995/05/05 18:40:42 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:40:42 $
  */
 
 typedef struct _texth TEXTH;		/* TEXT list head structure. */
@@ -66,16 +66,7 @@ struct _text {				/* Text: a linked list of lines. */
 			break;						\
 }
 
+/* Flags to the cut() routine. */
 #define	CUT_LINEMODE	0x01		/* Cut in line mode. */
 #define	CUT_NUMOPT	0x02		/* Numeric buffer: optional. */
 #define	CUT_NUMREQ	0x04		/* Numeric buffer: required. */
-int	 cut __P((SCR *, CHAR_T *, MARK *, MARK *, int));
-
-void	 cut_close __P((GS *));
-int	 cut_line __P((SCR *, recno_t, size_t, size_t, CB *));
-int	 delete __P((SCR *, MARK *, MARK *, int));
-int	 put __P((SCR *, CB *, CHAR_T *, MARK *, MARK *, int));
-
-void	 text_free __P((TEXT *));
-TEXT	*text_init __P((SCR *, const char *, size_t, size_t));
-void	 text_lfree __P((TEXTH *));
