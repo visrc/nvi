@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.75 1993/12/27 17:09:26 bostic Exp $ (Berkeley) $Date: 1993/12/27 17:09:26 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.76 1993/12/29 16:42:02 bostic Exp $ (Berkeley) $Date: 1993/12/29 16:42:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1217,16 +1217,13 @@ txt_backup(sp, ep, tiqh, tp, flags)
 	u_int flags;
 {
 	TEXT *ntp;
+	recno_t lno;
 	size_t col;
 
 	if (tp->q.cqe_prev == (void *)tiqh) {
 		msgq(sp, M_BERR, "Already at the beginning of the insert");
 		return (tp);
 	}
-
-	/* Update the old line on the screen. */
-	if (sp->s_change(sp, ep, tp->lno, LINE_DELETE))
-		return (NULL);
 
 	/* Get a handle on the previous TEXT structure. */
 	ntp = tp->q.cqe_prev;
@@ -1236,26 +1233,25 @@ txt_backup(sp, ep, tiqh, tp, flags)
 	    binc(sp, &ntp->lb, &ntp->lb_len, ntp->len + 1))
 		return (NULL);
 
-	/*
-	 * Release current TEXT; now committed to the swap, nothing
-	 * better fail.
-	 */
+	/* Release the current TEXT. */
+	lno = tp->lno;
 	CIRCLEQ_REMOVE(tiqh, tp, q);
 	text_free(tp);
 
-	/* Swap TEXT's. */
-	tp = ntp;
+	/* Update the old line on the screen. */
+	if (sp->s_change(sp, ep, lno, LINE_DELETE))
+		return (NULL);
 
 	/* Set bookkeeping information. */
-	col = tp->len;
+	col = ntp->len;
 	if (LF_ISSET(TXT_APPENDEOL)) {
-		tp->lb[col] = CURSOR_CH;
-		++tp->insert;
-		++tp->len;
+		ntp->lb[col] = CURSOR_CH;
+		++ntp->insert;
+		++ntp->len;
 	}
-	sp->lno = tp->lno;
+	sp->lno = ntp->lno;
 	sp->cno = col;
-	return (tp);
+	return (ntp);
 }
 
 /*
