@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 5.7 1992/06/07 13:57:32 bostic Exp $ (Berkeley) $Date: 1992/06/07 13:57:32 $
+ *	$Id: exf.h,v 5.8 1992/10/01 17:30:05 bostic Exp $ (Berkeley) $Date: 1992/10/01 17:30:05 $
  */
 
 #ifndef _EXF_H_
@@ -20,8 +20,8 @@ typedef struct exf {
 	recno_t top;				/* Current first window line. */
 	size_t cno;				/* Cursor column number. */
 	size_t lcno;				/* Left column number. */
-	u_short scrollup;			/* Lines to scroll up. */
-	u_short scrolldown;			/* Lines to scroll down. */
+	u_short uwindow;			/* Lines to move window up. */
+	u_short dwindow;			/* Lines to move window down. */
 
 	char *name;				/* File name. */
 	size_t nlen;				/* File name length. */
@@ -43,25 +43,25 @@ typedef struct {
 } EXFLIST;
 
 /* Remove from the file chain. */
-#define	rmexf(p) { \
-        (p)->prev->next = (p)->next; \
-        (p)->next->prev = (p)->prev; \
+#define	rmexf(p) {							\
+        (p)->prev->next = (p)->next;					\
+        (p)->next->prev = (p)->prev;					\
 }
 
 /* Insert into the file chain after p. */
-#define insexf(p, hp) { \
-        (p)->next = (hp)->next; \
-        (p)->prev = (EXF *)(hp); \
-        (hp)->next->prev = (p); \
-        (hp)->next = (p); \
+#define insexf(p, hp) {							\
+        (p)->next = (hp)->next;						\
+        (p)->prev = (EXF *)(hp);					\
+        (hp)->next->prev = (p);						\
+        (hp)->next = (p);						\
 }
 
 /* Insert into the file chain before p. */
-#define instailexf(p, hp) { \
-	(hp)->prev->next = (p); \
-	(p)->prev = (hp)->prev; \
-	(hp)->prev = (p); \
-	(p)->next = (EXF *)(hp); \
+#define instailexf(p, hp) {						\
+	(hp)->prev->next = (p);						\
+	(p)->prev = (hp)->prev;						\
+	(hp)->prev = (p);						\
+	(p)->next = (EXF *)(hp);					\
 }
 
 /* Get current line. */
