@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_init.c,v 10.8 1995/11/22 20:32:10 bostic Exp $ (Berkeley) $Date: 1995/11/22 20:32:10 $";
+static char sccsid[] = "$Id: ex_init.c,v 10.9 1996/02/06 11:00:11 bostic Exp $ (Berkeley) $Date: 1996/02/06 11:00:11 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -113,18 +113,20 @@ ex_screen_end(sp)
  * ex_optchange --
  *	Handle change of options for ex.
  *
- * PUBLIC: int ex_optchange __P((SCR *, int));
+ * PUBLIC: int ex_optchange __P((SCR *, int, char *, u_long *));
  */
 int
-ex_optchange(sp, opt)
+ex_optchange(sp, offset, str, valp)
 	SCR *sp;
-	int opt;
+	int offset;
+	char *str;
+	u_long *valp;
 {
-	switch (opt) {
+	switch (offset) {
 	case O_CDPATH:
-		return (ex_cdalloc(sp, O_STR(sp, O_CDPATH)));
+		return (ex_cdalloc(sp, str));
 	case O_TAGS:
-		return (ex_tagalloc(sp, O_STR(sp, O_TAGS)));
+		return (ex_tagalloc(sp, str));
 	}
 	return (0);
 }

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 10.5 1995/09/21 12:08:23 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:08:23 $";
+static char sccsid[] = "$Id: v_init.c,v 10.6 1996/02/06 11:00:22 bostic Exp $ (Berkeley) $Date: 1996/02/06 11:00:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -103,19 +103,22 @@ v_screen_end(sp)
  * v_optchange --
  *	Handle change of options for vi.
  *
- * PUBLIC: int v_optchange __P((SCR *, int));
+ * PUBLIC: int v_optchange __P((SCR *, int, char *, u_long *));
  */
 int
-v_optchange(sp, opt)
+v_optchange(sp, offset, str, valp)
 	SCR *sp;
-	int opt;
+	int offset;
+	char *str;
+	u_long *valp;
 {
-	switch (opt) {
+	switch (offset) {
 	case O_PARAGRAPHS:
+		return (v_buildps(sp, str, O_STR(sp, O_SECTIONS)));
 	case O_SECTIONS:
-		return (v_buildps(sp));
+		return (v_buildps(sp, O_STR(sp, O_PARAGRAPHS), str));
 	case O_WINDOW:
-		return (vs_crel(sp, O_VAL(sp, O_WINDOW)));
+		return (vs_crel(sp, *valp));
 	}
 	return (0);
 }

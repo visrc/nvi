@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_paragraph.c,v 10.5 1995/10/16 15:33:54 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:33:54 $";
+static char sccsid[] = "$Id: v_paragraph.c,v 10.6 1996/02/06 11:00:36 bostic Exp $ (Berkeley) $Date: 1996/02/06 11:00:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -306,22 +306,23 @@ found:	vp->m_stop.lno = lno;
  * v_buildps --
  *	Build the paragraph command search pattern.
  *
- * PUBLIC: int v_buildps __P((SCR *));
+ * PUBLIC: int v_buildps __P((SCR *, char *, char *));
  */
 int
-v_buildps(sp)
+v_buildps(sp, p_p, s_p)
 	SCR *sp;
+	char *p_p, *s_p;
 {
 	VI_PRIVATE *vip;
 	size_t p_len, s_len;
-	char *p, *p_p, *s_p;
+	char *p;
 
 	/*
 	 * The vi paragraph command searches for either a paragraph or
 	 * section option macro.
 	 */
-	p_len = (p_p = O_STR(sp, O_PARAGRAPHS)) == NULL ? 0 : strlen(p_p);
-	s_len = (s_p = O_STR(sp, O_SECTIONS)) == NULL ? 0 : strlen(s_p);
+	p_len = p_p == NULL ? 0 : strlen(p_p);
+	s_len = s_p == NULL ? 0 : strlen(s_p);
 
 	if (p_len == 0 && s_len == 0)
 		return (0);
