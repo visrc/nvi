@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 5.5 1993/04/13 16:30:14 bostic Exp $ (Berkeley) $Date: 1993/04/13 16:30:14 $";
+static char sccsid[] = "$Id: vs_line.c,v 5.6 1993/04/17 12:10:29 bostic Exp $ (Berkeley) $Date: 1993/04/17 12:10:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,7 +40,7 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 	CHNAME *cname;
 	size_t chlen, cols_per_screen, cno_cnt, count_cols;
 	size_t offset_in_char, skip_cols;
-	int ch;
+	int ch, reverse_video;
 	char nbuf[10];
 
 	/* Move to the line. */
@@ -82,6 +82,18 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 		clrtoeol();
 		return (0);
 	}
+
+	/*
+	 * If we're painting the line between two screens, it's always in
+	 * reverse video.  The only time this code paints the mode line is
+	 * when the user is entering text for a ":" command, so we can put
+	 * the code here instead of dealing with the empty line logic above.
+	 */
+	if (sp->child != NULL && smp - HMAP == INFOLINE(sp)) {
+		reverse_video = 1;
+		standout();
+	} else
+		reverse_video = 0;
 
 	/*
 	 * Set the number of column positions to skip until a character
@@ -176,5 +188,65 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 	/* If didn't paint the whole line, clear the rest of it. */
 	if (count_cols < cols_per_screen)
 		clrtoeol();
+
+	if (reverse_video)
+		standend();
 	return (0);
+}
+
+/*
+ * svi_screens --
+ *	Return the number of screens required by the line, or,
+ *	if a column is specified, by the column within the line.
+ */
+size_t
+svi_screens(sp, ep, lno, cnop)
+	SCR *sp;
+	EXF *ep;
+	recno_t lno;
+	size_t *cnop;
+{
+	CHNAME *cname;
+	size_t cno_cnt, cols, lcnt, len, scno;
+	int ch;
+	char *p;
+
+	/* Get a copy of the line. */
+	if ((p = file_gline(sp, ep, lno, &len)) == NULL || len == 0)
+		return (1);
+
+	/* If a line number is being displayed, there's fewer columns. */
+	cols = sp->cols;
+	if (O_ISSET(sp, O_NUMBER))
+		cols -= O_NUMBER_LENGTH;
+
+	/*
+	 * If a column specified, note it, and set the counter to the
+	 * column plus one, so we can use 0 as a flag value.
+	 */
+	cno_cnt = cnop == NULL ? 0 : *cnop + 1;
+
+	/* Calculate the lines needed. */
+	cname = sp->cname;
+	for (lcnt = 1, scno = 0; len;) {
+		if ((ch = *(u_char *)p++) == '\t' && !O_ISSET(sp, O_LIST))
+			scno += TAB_OFF(sp, scno);
+		else
+			scno += cname[ch].len;
+
+		if (--len && scno > cols) {
+			scno -= cols;
+			++lcnt;
+		}
+		if (cno_cnt && --cno_cnt == 0)
+			break;
+	}
+
+	/* Trailing '$' on listed lines. */
+	if (len == 0 && O_ISSET(sp, O_LIST)) {
+		scno += cname['$'].len;
+		if (scno > cols)
+			++lcnt;
+	}
+	return (lcnt);
 }
