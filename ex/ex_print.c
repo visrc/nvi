@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 5.14 1992/10/10 13:57:56 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:57:56 $";
+static char sccsid[] = "$Id: ex_print.c,v 5.15 1992/10/17 15:20:31 bostic Exp $ (Berkeley) $Date: 1992/10/17 15:20:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -127,8 +127,9 @@ print(cmdp, flags)
 				if (ch != '\t' && isprint(ch)) {
 					WCHECK(ch);
 				} else if (ch & 0x80) {
-					len = snprintf(buf,
+					(void)snprintf(buf,
 					    sizeof(buf), "\\%03o", ch);
+					len = strlen(buf);
 					for (cnt = 0; cnt < len; ++cnt)
 						WCHECK(buf[cnt]);
 				} else {

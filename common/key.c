@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.26 1992/10/10 13:58:10 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:58:10 $";
+static char sccsid[] = "$Id: key.c,v 5.28 1992/10/17 15:22:01 bostic Exp $ (Berkeley) $Date: 1992/10/17 15:22:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -23,7 +23,6 @@ static char sccsid[] = "$Id: key.c,v 5.26 1992/10/10 13:58:10 bostic Exp $ (Berk
 
 #include "vi.h"
 #include "exf.h"
-#include "mark.h"
 #include "options.h"
 #include "seq.h"
 #include "term.h"
@@ -237,8 +236,8 @@ insch:			if (quoted) {
 				wb[len] = 1;
 				++col;
 			} else if (ch & 0x80) {
-				wb[len] =
-				    snprintf(oct, sizeof(oct), "\\%03o", ch);
+				(void)snprintf(oct, sizeof(oct), "\\%03o", ch);
+				wb[len] = strlen(oct);
 				for (cnt = 0; cnt < wb[len]; ++cnt, ++col)
 					WCHECK(oct[cnt]);
 			} else if (ch > 0 && ch < ' ') {

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.21 1992/10/10 13:58:05 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:58:05 $";
+static char sccsid[] = "$Id: options.c,v 5.22 1992/10/17 15:21:18 bostic Exp $ (Berkeley) $Date: 1992/10/17 15:21:18 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -468,8 +468,8 @@ opts_dump(all)
 		case OPT_1BOOL:
 			break;
 		case OPT_NUM:
-			curlen +=
-			    snprintf(nbuf, sizeof(nbuf), "%ld", LVAL(cnt));
+			(void)snprintf(nbuf, sizeof(nbuf), "%ld", LVAL(cnt));
+			curlen += strlen(nbuf);
 			break;
 		case OPT_STR:
 			curlen += strlen((char *)PVAL(cnt)) + 3;
