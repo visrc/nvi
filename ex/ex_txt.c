@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_txt.c,v 10.2 1995/06/09 13:43:19 bostic Exp $ (Berkeley) $Date: 1995/06/09 13:43:19 $";
+static char sccsid[] = "$Id: ex_txt.c,v 10.3 1995/06/20 19:36:16 bostic Exp $ (Berkeley) $Date: 1995/06/20 19:36:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -311,7 +311,7 @@ notlast:		CIRCLEQ_REMOVE(&exp->im_tiq, tp, q);
 				return (0);
 
 			exp->im_carat = C_NOTSET;
-leftmargin:		sp->gp->scr_exadjust(sp, EX_TERM_CE);
+leftmargin:		sp->gp->scr_ex_adjust(sp, EX_TERM_CE);
 			tp->ai = tp->len = 0;
 			break;
 		case C_NOTSET:			/* ^D */
@@ -326,7 +326,7 @@ leftmargin:		sp->gp->scr_exadjust(sp, EX_TERM_CE);
 		}
 
 		/* Clear and redisplay the line. */
-		sp->gp->scr_exadjust(sp, EX_TERM_CE);
+		sp->gp->scr_ex_adjust(sp, EX_TERM_CE);
 		txt_prompt(sp, tp);
 		break;
 	default:
