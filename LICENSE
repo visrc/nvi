@@ -1,10 +1,10 @@
-#	$Id: LICENSE,v 8.2 1995/05/18 15:29:55 bostic Exp $ (Berkeley) $Date: 1995/05/18 15:29:55 $
+#	$Id: LICENSE,v 8.3 1995/06/01 11:54:38 bostic Exp $ (Berkeley) $Date: 1995/06/01 11:54:38 $
 
 This software is copyrighted by The Regents of the University of California
-and Keith Bostic.  It may be freely redistributed (or sold, or used to line
-your birdcage) under the following conditions, until eighteen months after
-the release of a subsequent version of nvi, at which point it may no longer
-be redistributed without written permission from Keith Bostic.
+and Keith Bostic.  It may be freely redistributed (or sold, or used to train
+your puppy) under the following conditions, until eighteen months after the
+release of a subsequent version of nvi, at which point it may no longer be
+redistributed without written permission from Keith Bostic.
 
 /*-
  * Copyright (c) 1991, 1992, 1993, 1994
