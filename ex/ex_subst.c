@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 5.42 1993/05/15 10:10:55 bostic Exp $ (Berkeley) $Date: 1993/05/15 10:10:55 $";
+static char sccsid[] = "$Id: ex_subst.c,v 5.43 1993/05/16 14:42:50 bostic Exp $ (Berkeley) $Date: 1993/05/16 14:42:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,7 +22,8 @@ static char sccsid[] = "$Id: ex_subst.c,v 5.42 1993/05/15 10:10:55 bostic Exp $ 
 enum which {AGAIN, MUSTSETR, FIRST};
 
 static int		checkmatchsize __P((SCR *, regex_t *));
-static inline int	regsub __P((SCR *, char *, char *, size_t *, size_t *));
+static inline int	regsub __P((SCR *,
+			    char *, char **, size_t *, size_t *));
 static int		substitute __P((SCR *, EXF *,
 			    EXCMDARG *, char *, regex_t *, enum which));
 
@@ -304,7 +305,7 @@ skipmatch:	eval = regexec(re,
 		BUILD(sp, s, sp->match[0].rm_so);
 
 		/* Copy matching bytes. */
-		if (regsub(sp, s, lb, &lbclen, &lblen))
+		if (regsub(sp, s, &lb, &lbclen, &lblen))
 			return (1);
 
 skip:		s += sp->match[0].rm_eo;
@@ -431,10 +432,10 @@ nomatch:	if (len)
  * 	Do the substitution for a regular expression.
  */
 static inline int
-regsub(sp, ip, lb, lbclenp, lblenp)
+regsub(sp, ip, lbp, lbclenp, lblenp)
 	SCR *sp;
 	char *ip;			/* Input line. */
-	char *lb;
+	char **lbp;
 	size_t *lbclenp, *lblenp;
 {
 	size_t lbclen, lblen;		/* Local copies. */
@@ -443,13 +444,16 @@ regsub(sp, ip, lb, lbclenp, lblenp)
 	char *rp;			/* Replacement pointer. */
 	int ch;
 	int no;				/* Match replacement offset. */
-	char *lbp;			/* Build buffer pointer. */
+	char *p;			/* Build buffer pointer. */
+	char *lb;			/* Local copies. */
+
+	lb = *lbp;			/* Get local copies. */
+	lbclen = *lbclenp;
+	lblen = *lblenp;
 
 	rp = sp->repl;			/* Set up replacment info. */
 	rpl = sp->repl_len;
-	lbclen = *lbclenp;
-	lblen = *lblenp;
-	for (lbp = lb + lbclen; rpl--;) {
+	for (p = lb + lbclen; rpl--;) {
 		ch = *rp++;
 		if (ch == '&') {	/* Entire pattern. */
 			no = 0;
@@ -462,9 +466,9 @@ sub:			if (sp->match[no].rm_so != -1 &&
 			    sp->match[no].rm_eo != -1) {
 				mlen =
 				    sp->match[no].rm_eo - sp->match[no].rm_so;
-				NEEDSP(sp, mlen, lbp);
-				memmove(lbp, ip + sp->match[no].rm_so, mlen);
-				lbp += mlen;
+				NEEDSP(sp, mlen, p);
+				memmove(p, ip + sp->match[no].rm_so, mlen);
+				p += mlen;
 				lbclen += mlen;
 			}
 		} else {		/* Newline, ordinary characters. */
@@ -474,11 +478,13 @@ sub:			if (sp->match[no].rm_so != -1 &&
 				sp->newl[sp->newl_cnt++] = lbclen;
 			} else if (ch == '\\' && (*rp == '\\' || *rp == '&'))
  				ch = *rp++;
-			NEEDSP(sp, 1, lbp);
- 			*lbp++ = ch;
+			NEEDSP(sp, 1, p);
+ 			*p++ = ch;
 			++lbclen;
 		}
 	}
+
+	*lbp = lb;			/* Update caller's information. */
 	*lbclenp = lbclen;
 	*lblenp = lblen;
 	return (0);
