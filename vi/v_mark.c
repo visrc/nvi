@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_mark.c,v 8.7 1994/04/26 13:07:01 bostic Exp $ (Berkeley) $Date: 1994/04/26 13:07:01 $";
+static char sccsid[] = "$Id: v_mark.c,v 8.8 1994/07/27 11:07:01 bostic Exp $ (Berkeley) $Date: 1994/07/27 11:07:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -138,10 +138,11 @@ mark(sp, ep, vp, cmd)
 	 * BACKWARD:
 	 *	VC_D commands move to the end of the range.  VC_Y stays at
 	 *	the start unless the end of the range is on a different line,
-	 *	when it moves to the end of the range.  Ignore VC_C and VC_S.
+	 *	when it moves to the end of the range.  Ignore VC_C and
+	 *	VC_DEF.
 	 *
 	 * FORWARD:
-	 *	VC_D and VC_Y commands don't move.  Ignore VC_C and VC_S.
+	 *	VC_D and VC_Y commands don't move.  Ignore VC_C and VC_DEF.
 	 */
 	if (dir == BACKWARD)
 		if (F_ISSET(vp, VC_D) ||

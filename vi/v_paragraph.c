@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_paragraph.c,v 8.13 1994/07/23 15:02:17 bostic Exp $ (Berkeley) $Date: 1994/07/23 15:02:17 $";
+static char sccsid[] = "$Id: v_paragraph.c,v 8.14 1994/07/27 11:07:03 bostic Exp $ (Berkeley) $Date: 1994/07/27 11:07:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -138,10 +138,10 @@ v_paragraphf(sp, ep, vp)
 			 * !!!
 			 * Non-motion commands move to the end of the range,
 			 * VC_D and VC_Y stay at the start.  Ignore VC_C and
-			 * VC_S.  Adjust end of the range for motion commands;
-			 * historically, a motion component was to the end of
-			 * the previous line, whereas the movement command was
-			 * to the start of the new "paragraph".
+			 * VC_DEF.  Adjust the end of the range for motion
+			 * commands; historically, a motion component was to
+			 * the end of the previous line, whereas the movement
+			 * command was to the start of the new "paragraph".
 			 */
 found:			if (ISMOTION(vp)) {
 				vp->m_stop.lno = lastlno;
@@ -184,8 +184,8 @@ eof:	if (vp->m_start.lno == lno || vp->m_start.lno == lno - 1) {
 	}
 	/*
 	 * !!!
-	 * Non-motion commands move to the end of the range, VC_D and VC_Y
-	 * stay at the start.  Ignore VC_C and VC_S.
+	 * Non-motion commands move to the end of the range, VC_D
+	 * and VC_Y stay at the start.  Ignore VC_C and VC_DEF.
 	 *
 	 * If deleting the line (which happens if deleting to EOF), then
 	 * cursor movement is to the first nonblank.

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_right.c,v 8.7 1994/04/25 20:26:17 bostic Exp $ (Berkeley) $Date: 1994/04/25 20:26:17 $";
+static char sccsid[] = "$Id: v_right.c,v 8.8 1994/07/27 11:07:04 bostic Exp $ (Berkeley) $Date: 1994/07/27 11:07:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -57,7 +57,7 @@ v_right(sp, ep, vp)
 
 	/*
 	 * Non-motion commands move to the end of the range.  VC_D and
-	 * VC_Y stay at the start.  Ignore VC_C and VC_S.  Adjust the
+	 * VC_Y stay at the start.  Ignore VC_C and VC_DEF.  Adjust the
 	 * end of the range for motion commands.
 	 *
 	 * !!!
@@ -127,8 +127,8 @@ v_dollar(sp, ep, vp)
 	}
 
 	/*
-	 * Non-motion commands move to the end of the range.
-	 * VC_D and VC_Y stay at the start.  Ignore VC_C and VC_S.
+	 * Non-motion commands move to the end of the range.  VC_D
+	 * and VC_Y stay at the start.  Ignore VC_C and VC_DEF.
 	 */
 	vp->m_stop.cno = len ? len - 1 : 0;
 	vp->m_final = ISMOTION(vp) ? vp->m_start : vp->m_stop;

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 8.36 1994/07/23 11:01:36 bostic Exp $ (Berkeley) $Date: 1994/07/23 11:01:36 $";
+static char sccsid[] = "$Id: v_cmd.c,v 8.37 1994/07/27 11:07:12 bostic Exp $ (Berkeley) $Date: 1994/07/27 11:07:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -148,7 +148,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    "[count]' '",
 	    "   <space> move right by columns"},
 /* 041   ! */
-	{v_filter,	V_CNT|V_DOT|V_MOTION|VM_RCM_SET,
+	{v_filter,	V_CNT|V_DOT|V_MOTION|VC_DEF|VM_RCM_SET,
 	    "[count]![count]motion command(s)",
 	    " ! filter through command(s) to motion"},
 /* 042   " */
@@ -234,13 +234,13 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    "[count];",
 	    " ; repeat last F, f, T or t search"},
 /* 074   < */
-	{v_shiftl,	V_CNT|V_DOT|V_MOTION|VC_S|VM_RCM_SET,
+	{v_shiftl,	V_CNT|V_DOT|V_MOTION|VC_DEF|VM_RCM_SET,
 	    "[count]<[count]motion",
 	    " < shift lines left to motion"},
 /* 075   = */
 	{NULL},
 /* 076   > */
-	{v_shiftr,	V_CNT|V_DOT|V_MOTION|VC_S|VM_RCM_SET,
+	{v_shiftr,	V_CNT|V_DOT|V_MOTION|VC_DEF|VM_RCM_SET,
 	    "[count]>[count]motion",
 	    " > shift lines right to motion"},
 /* 077   ? */

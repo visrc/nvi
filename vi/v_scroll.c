@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 8.19 1994/05/16 18:26:48 bostic Exp $ (Berkeley) $Date: 1994/05/16 18:26:48 $";
+static char sccsid[] = "$Id: v_scroll.c,v 8.20 1994/07/27 11:07:05 bostic Exp $ (Berkeley) $Date: 1994/07/27 11:07:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -185,7 +185,7 @@ goto_adjust(vp)
 	 * If moving backward in the file, VC_D and VC_Y move to the end
 	 * of the range, unless the line didn't change, in which case VC_Y
 	 * doesn't move.  If moving forward in the file, VC_D and VC_Y stay
-	 * at the start of the range.  Ignore VC_C and VC_S.
+	 * at the start of the range.  Ignore VC_C and VC_DEF.
 	 */
 	if (vp->m_stop.lno < vp->m_start.lno ||
 	    vp->m_stop.lno == vp->m_start.lno &&

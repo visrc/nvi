@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ch.c,v 8.12 1994/05/21 09:50:43 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:50:43 $";
+static char sccsid[] = "$Id: v_ch.c,v 8.13 1994/07/27 11:06:59 bostic Exp $ (Berkeley) $Date: 1994/07/27 11:06:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -187,8 +187,8 @@ v_chf(sp, ep, vp)
 	vp->m_stop.cno = p - startp;
 
 	/*
-	 * Non-motion commands move to the end of the range.  VC_D and
-	 * VC_Y stay at the start.  Ignore VC_C and VC_S.
+	 * Non-motion commands move to the end of the range.  VC_D
+	 * and VC_Y stay at the start.  Ignore VC_C and VC_DEF.
 	 */
 	vp->m_final = ISMOTION(vp) ? vp->m_start : vp->m_stop;
 	return (0);
@@ -288,7 +288,7 @@ v_chF(sp, ep, vp)
 
 	/*
 	 * VC_D and non-motion commands move to the end of the range,
-	 * VC_Y stays at the start.  Ignore VC_C and VC_S.  Motion
+	 * VC_Y stays at the start.  Ignore VC_C and VC_DEF.  Motion
 	 * commands adjust the starting point to the character before
 	 * the current one.
 	 */

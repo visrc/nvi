@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_match.c,v 8.13 1994/05/21 09:50:46 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:50:46 $";
+static char sccsid[] = "$Id: v_match.c,v 8.14 1994/07/27 11:07:02 bostic Exp $ (Berkeley) $Date: 1994/07/27 11:07:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -127,7 +127,7 @@ nomatch:		msgq(sp, M_BERR, "No match character on this line");
 	 * If moving right, non-motion commands move to the end of the range.
 	 * VC_D and VC_Y stay at the start.  If moving left, non-motion and
 	 * VC_D commands move to the end of the range.  VC_Y remains at the
-	 * start.  Ignore VC_C and VC_S.
+	 * start.  Ignore VC_C and VC_DEF.
 	 *
 	 * !!!
 	 * Don't correct for leftward movement -- historic vi deleted the

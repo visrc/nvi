@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 8.35 1994/07/26 10:18:09 bostic Exp $ (Berkeley) $Date: 1994/07/26 10:18:09 $
+ *	$Id: vi.h,v 8.36 1994/07/27 11:07:15 bostic Exp $ (Berkeley) $Date: 1994/07/27 11:07:15 $
  */
 
 typedef struct _vikeys VIKEYS;
@@ -43,7 +43,7 @@ typedef struct _vicmdarg {
 	 */
 #define	VC_C		0x00000001	/* The 'c' command. */
 #define	VC_D		0x00000002	/* The 'd' command. */
-#define	VC_S		0x00000004	/* The '>' command. */
+#define	VC_DEF		0x00000004	/* The '<', '>' and '!' commands. */
 #define	VC_Y		0x00000008	/* The 'y' command. */
 #define	VC_COMMASK	0x0000000f	/* Mask for special flags. */
 #define	ISMOTION(vp)	F_ISSET(vp, VC_COMMASK)
@@ -94,8 +94,8 @@ typedef struct _vicmdarg {
 	 *
 	 * The reason for all of this is that the historic vi semantics were
 	 * defined command-by-command.  Every function has to roll its own
-	 * starting and stopping positions, and adjust if it's being used as a
-	 * motion component.  The general rules are as follows:
+	 * starting and stopping positions, and adjust them if it's being used
+	 * as a motion component.  The general rules are as follows:
 	 *	1: If not a motion component, the final cursor is at the end
 	 *	   of the range.
 	 *	2: If moving backward in the file:
@@ -113,8 +113,16 @@ typedef struct _vicmdarg {
 	 * m_stop inclusively, i.e. the last character in the range is cut or
 	 * deleted.  This makes cutting to the EOF/EOL reasonable.
 	 *
-	 * We ignore VC_C and VC_S everywhere, because the text input routines
-	 * always set the cursor to the last character inserted.
+	 * The 'c', '<', '>', and '!' commands are special cases.  We ignore
+	 * the final cursor position for all of them: for 'c', the text input
+	 * routines set the cursor to the last character inserted; for '<',
+	 * '>' and '!', the underlying ex commands that do the operation will
+	 * set the cursor for us.   We still need a VC_C flag because there are
+	 * special motion semantics that are associated with the 'c' command. 
+	 * We don't need VC_ flags for the others, because, as far as I know,
+	 * there are no special semantics associated with their motions.  So,
+	 * we group them under a single VC_ flag so that the standard motion
+	 * adjustments get done.
 	 */
 	MARK	 m_start;		/* mark: initial cursor, range start. */
 	MARK	 m_stop;		/* mark: range end. */

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_left.c,v 8.8 1994/03/10 13:30:48 bostic Exp $ (Berkeley) $Date: 1994/03/10 13:30:48 $";
+static char sccsid[] = "$Id: v_left.c,v 8.9 1994/07/27 11:07:01 bostic Exp $ (Berkeley) $Date: 1994/07/27 11:07:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -56,7 +56,7 @@ v_left(sp, ep, vp)
 
 	/*
 	 * VC_D and non-motion commands move to the end of the range,
-	 * VC_Y stays at the start.  Ignore VC_C and VC_S.  Motion
+	 * VC_Y stays at the start.  Ignore VC_C and VC_DEF.  Motion
 	 * commands adjust the starting point to the character before
 	 * the current one.
 	 */
@@ -111,7 +111,7 @@ v_cfirst(sp, ep, vp)
 
 	/*
 	 * VC_D and non-motion commands move to the end of the range,
-	 * VC_Y stays at the start.  Ignore VC_C and VC_S.
+	 * VC_Y stays at the start.  Ignore VC_C and VC_DEF.
 	 */
 	vp->m_final = F_ISSET(vp, VC_Y) ? vp->m_start : vp->m_stop;
 	return (0);
@@ -157,7 +157,7 @@ v_first(sp, ep, vp)
 
 	/*
 	 * VC_D and non-motion commands move to the end of the range,
-	 * VC_Y stays at the start.  Ignore VC_C and VC_S.  Motion
+	 * VC_Y stays at the start.  Ignore VC_C and VC_DEF.  Motion
 	 * commands adjust the starting point to the character before
 	 * the current one.
 	 */
@@ -211,7 +211,7 @@ v_ncol(sp, ep, vp)
 	 * If moving right, non-motion commands move to the end of the range.
 	 * VC_D and VC_Y stay at the start.  If moving left, non-motion and
 	 * VC_D commands move to the end of the range.  VC_Y remains at the
-	 * start.  Ignore VC_C and VC_S.  Motion left commands adjust the
+	 * start.  Ignore VC_C and VC_DEF.  Motion left commands adjust the
 	 * starting point to the character before the current one.
 	 */
 	if (vp->m_start.cno < vp->m_stop.cno)
@@ -249,7 +249,7 @@ v_zero(sp, ep, vp)
 
 	/*
 	 * VC_D and non-motion commands move to the end of the range,
-	 * VC_Y stays at the start.  Ignore VC_C and VC_S.  Motion
+	 * VC_Y stays at the start.  Ignore VC_C and VC_DEF.  Motion
 	 * commands adjust the starting point to the character before
 	 * the current one.
 	 */
