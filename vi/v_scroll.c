@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 5.31 1993/05/02 19:34:14 bostic Exp $ (Berkeley) $Date: 1993/05/02 19:34:14 $";
+static char sccsid[] = "$Id: v_scroll.c,v 5.32 1993/05/07 14:51:42 bostic Exp $ (Berkeley) $Date: 1993/05/07 14:51:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -144,9 +144,10 @@ v_down(sp, ep, vp, fm, tm, rp)
  * than they do logical lines.  The arguments, however, don't apply to
  * scrolling commands like ^D and ^F -- if the window is fairly small, using
  * physical lines can result in a half-page scroll repainting the entire
- * screen, which is not what the user wanted.  This implementation does the
- * scrolling (^B, ^D, ^F, ^U), ^Y and ^E commands using logical lines, not
- * physical.
+ * screen, which is not what the user wanted.  In addition, if the line is
+ * large and the screen is small, using physical lines can make it impossible
+ * to display parts of the line.  This implementation does the scrolling
+ * (^B, ^D, ^F, ^U), ^Y and ^E commands using logical lines, not physical.
  */
 
 /*
