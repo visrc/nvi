@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_funcs.c,v 10.10 1995/07/06 12:55:11 bostic Exp $ (Berkeley) $Date: 1995/07/06 12:55:11 $";
+static char sccsid[] = "$Id: cl_funcs.c,v 10.11 1995/07/08 09:50:44 bostic Exp $ (Berkeley) $Date: 1995/07/08 09:50:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -731,11 +731,12 @@ cl_refresh(sp, repaint)
  * cl_discard --
  *	Discard a screen.
  *
- * PUBLIC: int cl_discard __P((SCR *, SCR **));
+ * PUBLIC: int cl_discard __P((SCR *, SCR **, dir_t *));
  */
 int
-cl_discard(sp, addp)
+cl_discard(sp, addp, dp)
 	SCR *sp, **addp;
+	dir_t *dp;
 {
 	SCR *nsp;
 
@@ -754,21 +755,27 @@ cl_discard(sp, addp)
 	 * code.  Once we have some idea what other screens will want, it
 	 * should be reworked to provide a lot more information hiding.
 	 *
-	 * Discard screen sp, and return the screen that got its real-estate.
-	 * Try to add into a previous screen and then into a subsequent screen,
-	 * as they're the closest to the current screen in curses.  If that
-	 * doesn't work, there was no screen to join.
+	 * Discard screen sp.  If another screen got its real-estate, return
+	 * return that screen and set if it was a screen immediately above or
+	 * below it the discarded screen.  Otherwise, return NULL.
+	 *
+	 * In the curses screen, add into a previous screen and then into a
+	 * subsequent screen, as they're the closest to the current screen.
+	 * If that doesn't work, there was no screen to join.
 	 */
 	if ((nsp = sp->q.cqe_prev) != (void *)&sp->gp->dq) {
 		nsp->rows += sp->rows;
 		*addp = nsp;
-		return (0);
+		*dp = FORWARD;
 	} else if ((nsp = sp->q.cqe_next) != (void *)&sp->gp->dq) {
 		nsp->woff = sp->woff;
 		nsp->rows += sp->rows;
 		*addp = nsp;
-	} else
+		*dp = BACKWARD;
+	} else {
 		*addp = NULL;
+		*dp = NOTSET;
+	}
 	return (0);
 }
 
