@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_at.c,v 5.24 1993/04/13 16:22:39 bostic Exp $ (Berkeley) $Date: 1993/04/13 16:22:39 $";
+static char sccsid[] = "$Id: ex_at.c,v 5.25 1993/04/17 11:56:12 bostic Exp $ (Berkeley) $Date: 1993/04/17 11:56:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -59,7 +59,7 @@ ex_at(sp, ep, cmdp)
 	for (tp = cb->txthdr.next; tp != (TEXT *)&cb->txthdr; tp = tp->next) {
 		if (rval = ex_cstring(sp, ep, tp->lb, tp->len))
 			break;
-		if (F_ISSET(sp, S_FILE_CHANGED))
+		if (F_ISSET(sp, S_MAJOR_CHANGE))
 			break;
 	}
 		
