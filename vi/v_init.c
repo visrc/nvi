@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 8.10 1993/09/29 16:20:01 bostic Exp $ (Berkeley) $Date: 1993/09/29 16:20:01 $";
+static char sccsid[] = "$Id: v_init.c,v 8.11 1993/10/11 20:07:30 bostic Exp $ (Berkeley) $Date: 1993/10/11 20:07:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -66,6 +66,10 @@ v_init(sp, ep)
 		if (O_ISSET(sp, O_COMMENT) && v_comment(sp, ep))
 			return (1);
 	}
+
+	/* Reset strange attraction. */
+	sp->rcm = 0;
+	sp->rcmflags = 0;
 
 	/* Display the status line. */
 	return (status(sp, ep, sp->lno, 0));
