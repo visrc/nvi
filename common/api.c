@@ -12,7 +12,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: api.c,v 8.16 1996/04/10 19:44:27 bostic Exp $ (Berkeley) $Date: 1996/04/10 19:44:27 $";
+static const char sccsid[] = "$Id: api.c,v 8.17 1996/04/10 20:14:33 bostic Exp $ (Berkeley) $Date: 1996/04/10 20:14:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -437,4 +437,18 @@ api_opts_set(sp, name)
 	ex_cinit(&cmd, C_SET, 0, OOBLNO, OOBLNO, 0, ap);
 	ex_cadd(&cmd, &a, name, strlen(name));
 	return (cmd.cmd->fn(sp, &cmd));
+}
+
+/*
+ * api_run_str --
+ *      Execute a string as an ex command.
+ *
+ * PUBLIC: int api_run_str __P((SCR *, char *));
+ */
+int     
+api_run_str(sp, cmd)
+	SCR *sp;
+	char *cmd;
+{
+	return (ex_run_str(sp, NULL, cmd, strlen(cmd), 0, 0));
 }
