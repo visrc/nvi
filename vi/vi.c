@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.46 1994/02/26 17:20:19 bostic Exp $ (Berkeley) $Date: 1994/02/26 17:20:19 $";
+static char sccsid[] = "$Id: vi.c,v 8.47 1994/03/01 11:04:17 bostic Exp $ (Berkeley) $Date: 1994/03/01 11:04:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -61,7 +61,7 @@ vi(sp, ep)
 	/* Command initialization. */
 	memset(&cmd, 0, sizeof(VICMDARG));
 
-	for (eval = 0, vp = &cmd;;) {
+	for (eval = 0, flags = 0, vp = &cmd;;) {
 		if (!MAPPED_KEYS_WAITING(sp) && log_cursor(sp, ep))
 			goto err;
 
