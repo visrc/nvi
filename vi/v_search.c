@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_search.c,v 10.18 1996/09/19 19:42:43 bostic Exp $ (Berkeley) $Date: 1996/09/19 19:42:43 $";
+static const char sccsid[] = "$Id: v_search.c,v 10.19 1996/12/11 13:07:08 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:07:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,6 +27,7 @@ static const char sccsid[] = "$Id: v_search.c,v 10.18 1996/09/19 19:42:43 bostic
 
 #include "../common/common.h"
 #include "vi.h"
+#include "../ip_vi/ip.h"
 
 static int v_exaddr __P((SCR *, VICMD *, dir_t));
 static int v_search __P((SCR *, VICMD *, char *, size_t, u_int, dir_t));
@@ -341,6 +342,36 @@ v_searchw(sp, vp)
 
 	FREE_SPACE(sp, bp, blen);
 	return (rval);
+}
+
+/*
+ * v_esearch -- <dialog box>
+ *	Search command from the screen.
+ *
+ * PUBLIC: int v_esearch __P((SCR *, VICMD *));
+ */
+int
+v_esearch(sp, vp)
+	SCR *sp;
+	VICMD *vp;
+{
+	MARK m;
+	int flags;
+
+	m.lno = sp->lno;
+	m.cno = sp->cno;
+
+	LF_INIT(SEARCH_NOOPT);
+	if (FL_ISSET(vp->ev.e_flags, VI_SEARCH_IC))
+		LF_SET(SEARCH_IC);
+	if (FL_ISSET(vp->ev.e_flags, VI_SEARCH_INCR))
+		LF_SET(SEARCH_INCR);
+	if (FL_ISSET(vp->ev.e_flags, VI_SEARCH_LIT))
+		LF_SET(SEARCH_LITERAL);
+	if (FL_ISSET(vp->ev.e_flags, VI_SEARCH_WR))
+		LF_SET(SEARCH_WRAP);
+	return (v_search(sp, vp, vp->ev.e_csp, vp->ev.e_len, flags,
+	    FL_ISSET(vp->ev.e_flags, VI_SEARCH_REV) ? BACKWARD : FORWARD));
 }
 
 /*

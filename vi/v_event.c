@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_event.c,v 8.8 1996/12/10 20:43:04 bostic Exp $ (Berkeley) $Date: 1996/12/10 20:43:04 $";
+static const char sccsid[] = "$Id: v_event.c,v 8.9 1996/12/11 13:06:48 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:06:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -222,31 +222,31 @@ v_event(sp, vp)
 {
 	/* This array maps events to vi command functions. */
 	static VIKEYS const vievents[] = {
+#define	V_EEDIT		 0
 		{v_eedit,	0},			/* VI_EDIT */
+#define	V_EEDITSPLIT	 1
 		{v_eeditsplit,	0},			/* VI_EDITSPLIT */
+#define	V_EMARK		 2
 		{v_emark,	V_ABS_L|V_MOVE},	/* VI_MOUSE_MOVE */
+#define	V_EQUIT		 3
 		{v_equit,	0},			/* VI_QUIT */
+#define	V_ESEARCH	 4
+		{v_esearch,	V_ABS_L|V_MOVE},	/* VI_SEARCH */
+#define	V_ETAG		 5
 		{v_etag,	0},			/* VI_TAG */
+#define	V_ETAGAS	 6
 		{v_etagas,	0},			/* VI_TAGAS */
+#define	V_ETAGSPLIT	 7
 		{v_etagsplit,	0},			/* VI_TAGSPLIT */
+#define	V_EWQ		 8
 		{v_ewq,		0},			/* VI_WQ */
+#define	V_EWRITE	 9
 		{v_ewrite,	0},			/* VI_WRITE */
+#define	V_EWRITEAS	10
 		{v_ewriteas,	0},			/* VI_WRITEAS */
 	};
 
 	switch (vp->ev.e_ipcom) {
-	case VI_EDIT:
-		vp->kp = &vievents[0];
-		break;
-	case VI_EDITSPLIT:
-		vp->kp = &vievents[1];
-		break;
-	case VI_MOUSE_MOVE:
-		vp->kp = &vievents[2];
-		break;
-	case VI_QUIT:
-		vp->kp = &vievents[3];
-		break;
 	case VI_C_BOL:
 		vp->kp = &vikeys['0'];
 		break;
@@ -283,6 +283,9 @@ v_event(sp, vp)
 	case VI_C_RIGHT:
 		vp->kp = &vikeys['\040'];
 		break;
+	case VI_C_SEARCH:
+		vp->kp = &vievents[V_ESEARCH];
+		break;
 	case VI_C_TOP:
 		F_SET(vp, VC_C1SET);
 		vp->count = 1;
@@ -293,26 +296,38 @@ v_event(sp, vp)
 		vp->count = vp->ev.e_lno;
 		vp->kp = &vikeys['\020'];
 		break;
+	case VI_EDIT:
+		vp->kp = &vievents[V_EEDIT];
+		break;
+	case VI_EDITSPLIT:
+		vp->kp = &vievents[V_EEDITSPLIT];
+		break;
+	case VI_MOUSE_MOVE:
+		vp->kp = &vievents[V_EMARK];
+		break;
+	case VI_QUIT:
+		vp->kp = &vievents[V_EQUIT];
+		break;
 	case VI_TAG:
-		vp->kp = &vievents[4];
+		vp->kp = &vievents[V_ETAG];
 		break;
 	case VI_TAGAS:
-		vp->kp = &vievents[5];
+		vp->kp = &vievents[V_ETAGAS];
 		break;
 	case VI_TAGSPLIT:
-		vp->kp = &vievents[6];
+		vp->kp = &vievents[V_ETAGSPLIT];
 		break;
 	case VI_UNDO:
 		vp->kp = &vikeys['u'];
 		break;
 	case VI_WQ:
-		vp->kp = &vievents[7];
+		vp->kp = &vievents[V_EWQ];
 		break;
 	case VI_WRITE:
-		vp->kp = &vievents[8];
+		vp->kp = &vievents[V_EWRITE];
 		break;
 	case VI_WRITEAS:
-		vp->kp = &vievents[9];
+		vp->kp = &vievents[V_EWRITEAS];
 		break;
 	default:
 		return (1);
