@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_ex.c,v 10.39 1996/06/08 14:35:52 bostic Exp $ (Berkeley) $Date: 1996/06/08 14:35:52 $";
+static const char sccsid[] = "$Id: v_ex.c,v 10.40 1996/06/17 10:42:02 bostic Exp $ (Berkeley) $Date: 1996/06/17 10:42:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -64,12 +64,17 @@ v_exmode(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
+	GS *gp;
+
+	gp = sp->gp;
+
 	/* Try and switch screens -- the screen may not permit it. */
-	if (sp->gp->scr_screen(sp, SC_EX)) {
+	if (gp->scr_screen(sp, SC_EX)) {
 		msgq(sp, M_ERR,
 		    "207|The Q command requires the ex terminal interface");
 		return (1);
 	}
+	(void)gp->scr_attr(sp, SA_ALTERNATE, 0);
 
 	/* Save the current cursor position. */
 	sp->frp->lno = sp->lno;

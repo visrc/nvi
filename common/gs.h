@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: gs.h,v 10.30 1996/06/09 10:37:54 bostic Exp $ (Berkeley) $Date: 1996/06/09 10:37:54 $
+ *	$Id: gs.h,v 10.31 1996/06/17 10:42:32 bostic Exp $ (Berkeley) $Date: 1996/06/17 10:42:32 $
  */
 
 #define	TEMPORARY_FILE_STRING	"/tmp"	/* Default temporary file name. */
@@ -38,15 +38,15 @@ struct _fref {
 	u_int16_t flags;
 };
 
-/* Action argument to scr_exadjust(). */
+/* Action arguments to scr_exadjust(). */
 typedef enum { EX_TERM_CE, EX_TERM_SCROLL } exadj_t;
 
-/* Screen attribute argument to scr_attr(). */
-typedef enum { SA_INVERSE } scr_attr_t;
+/* Screen attribute arguments to scr_attr(). */
+typedef enum { SA_ALTERNATE, SA_INVERSE } scr_attr_t;
 
-/* Key type argument to scr_keyval(). */
+/* Key type arguments to scr_keyval(). */
 typedef enum { KEY_VEOF, KEY_VERASE, KEY_VKILL, KEY_VWERASE } scr_keyval_t;
- 
+
 /*
  * GS:
  *
@@ -184,7 +184,7 @@ struct _gs {
 					/* Rename the file. */
 	int	(*scr_rename) __P((SCR *));
 					/* Set the screen type. */
-	int	(*scr_screen) __P((SCR *, u_int32_t));
+	int	(*scr_screen) __P((SCR *, int));
 					/* Suspend the editor. */
 	int	(*scr_suspend) __P((SCR *, int *));
 					/* Print usage message. */

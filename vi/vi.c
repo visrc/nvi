@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vi.c,v 10.48 1996/06/08 14:36:46 bostic Exp $ (Berkeley) $Date: 1996/06/08 14:36:46 $";
+static const char sccsid[] = "$Id: vi.c,v 10.49 1996/06/17 10:42:03 bostic Exp $ (Berkeley) $Date: 1996/06/17 10:42:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -917,13 +917,17 @@ static int
 v_init(sp)
 	SCR *sp;
 {
+	GS *gp;
 	VI_PRIVATE *vip;
 
+	gp = sp->gp;
 	vip = VIP(sp);
 
 	/* Switch into vi. */
-	if (sp->gp->scr_screen(sp, SC_VI))
+	if (gp->scr_screen(sp, SC_VI))
 		return (1);
+	(void)gp->scr_attr(sp, SA_ALTERNATE, 1);
+
 	F_CLR(sp, SC_EX | SC_SCR_EX);
 	F_SET(sp, SC_VI);
 

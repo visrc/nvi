@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_msg.c,v 10.70 1996/06/09 11:04:18 bostic Exp $ (Berkeley) $Date: 1996/06/09 11:04:18 $";
+static const char sccsid[] = "$Id: vs_msg.c,v 10.71 1996/06/17 10:42:03 bostic Exp $ (Berkeley) $Date: 1996/06/17 10:42:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -603,6 +603,9 @@ vs_ex_resolve(sp, continuep)
 	/* If ex changed the underlying file, the map itself is wrong. */
 	if (F_ISSET(vip, VIP_N_EX_REDRAW))
 		F_SET(sp, SC_SCR_REFORMAT);
+
+	/* Ex may have switched out of the alternate screen, return. */
+	(void)gp->scr_attr(sp, SA_ALTERNATE, 1);
 
 	/*
 	 * Whew.  We're finally back home, after what feels like years.
