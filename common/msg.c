@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: msg.c,v 10.60 2002/03/27 10:06:56 skimo Exp $ (Berkeley) $Date: 2002/03/27 10:06:56 $";
+static const char sccsid[] = "$Id: msg.c,v 10.61 2003/07/18 23:17:30 skimo Exp $ (Berkeley) $Date: 2003/07/18 23:17:30 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -349,7 +349,7 @@ nofmt:	mp += len;
 		goto retry;
 	*mp = '\n';
 
-	if (sp != NULL)
+	if (sp != NULL && sp->ep != NULL)
 		(void)ex_fflush(sp);
 	if (wp != NULL)
 		wp->scr_msg(sp, mt, bp, mlen);
