@@ -6,8 +6,14 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	"$Id: m_motif.h,v 8.3 1996/12/10 17:07:23 bostic Exp $ (Berkeley) $Date: 1996/12/10 17:07:23 $";
+ *	"$Id: m_motif.h,v 8.4 1996/12/10 21:07:34 bostic Exp $ (Berkeley) $Date: 1996/12/10 21:07:34 $";
  */
+
+#if XtSpecificationRelease == 4
+#define	ArgcType	Cardinal *
+#else
+#define	ArgcType	int *
+#endif
 
 /* Describes a single 'screen' implemented in X widgetry. */
 typedef	struct {
@@ -27,8 +33,6 @@ typedef	struct {
     char	*flags;
     Boolean	init;
 } xvi_screen;
-
-extern xvi_screen *_vi_screen;
 
 /*
  * Color support
@@ -69,11 +73,17 @@ extern xvi_screen *_vi_screen;
 #define	COLUMN( scr, x )	\
 	( (x) / scr->ch_width )
 
-extern GC	_vi_copy_gc;
-extern Widget	top_level;
+/*
+ * Globals, the list of names that we expose to the outside world.
+ *
+ * External use:
+ *
+ * Applications using the Motif nvi widget code will have to initialize these
+ * or the library code will fail.
+ */
+extern char	*vi_progname;			/* Program name. */
+extern int	 vi_ofd;			/* Output file descriptor. */
 
-
-/* public routines */
-extern	Boolean	vi_pipe_input_func();
-
-extern	char	*vi_progname;
+/* Internal use: */
+extern GC	   __vi_copy_gc;
+extern xvi_screen *__vi_screen;
