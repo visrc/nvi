@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 8.33 1994/07/27 11:02:32 bostic Exp $ (Berkeley) $Date: 1994/07/27 11:02:32 $";
+static char sccsid[] = "$Id: ex_read.c,v 8.34 1994/07/28 10:57:18 bostic Exp $ (Berkeley) $Date: 1994/07/28 10:57:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -51,7 +51,7 @@ ex_read(sp, ep, cmdp)
 	MARK rm;
 	recno_t nlines;
 	size_t arglen, blen, len;
-	int btear, filterargs, rval;
+	int btear, farg, rval;
 	char *bp, *name;
 
 	/*
@@ -60,7 +60,7 @@ ex_read(sp, ep, cmdp)
 	 *  2 args: check for "read ! arg".
 	 * >2 args: object, too many args.
 	 */
-	filterargs = 0;
+	farg = 0;
 	switch (cmdp->argc) {
 	case 0:
 		break;
@@ -70,14 +70,14 @@ ex_read(sp, ep, cmdp)
 		if (*arg == '!') {
 			++arg;
 			--arglen;
-			filterargs = 1;
+			farg = 1;
 		}
 		break;
 	case 2:
 		if (cmdp->argv[0]->len == 1 && cmdp->argv[0]->bp[0] == '!')  {
 			arg = cmdp->argv[1]->bp;
 			arglen = cmdp->argv[1]->len;
-			filterargs = 2;
+			farg = 2;
 			break;
 		}
 		/* FALLTHROUGH */
@@ -85,27 +85,28 @@ ex_read(sp, ep, cmdp)
 		goto badarg;
 	}
 
-	if (filterargs != 0) {
-		/* File name expand the user's argument. */
-		if (argv_exp1(sp, ep, cmdp, arg, arglen, 0))
+	if (farg != 0) {
+		/* File name and bang expand the user's argument. */
+		if (argv_exp1(sp, ep, cmdp, arg, arglen, 1))
 			return (1);
 
-		/* If argc still 1, there wasn't anything to expand. */
-		if (cmdp->argc == filterargs)
+		/* If argc unchanged, there wasn't anything to expand. */
+		if (cmdp->argc == farg)
 			goto usage;
 
 		/* Redisplay the user's argument if it's changed. */
 		if (F_ISSET(cmdp, E_MODIFY) && IN_VI_MODE(sp)) {
-			len = cmdp->argv[1]->len;
+			len = cmdp->argv[farg]->len;
 			GET_SPACE_RET(sp, bp, blen, len + 2);
 			bp[0] = '!';
-			memmove(bp + 1, cmdp->argv[1], cmdp->argv[1]->len + 1);
+			memmove(bp + 1,
+			    cmdp->argv[farg]->bp, cmdp->argv[farg]->len + 1);
 			(void)sp->s_busy(sp, bp);
 			FREE_SPACE(sp, bp, blen);
 		}
 
-		if (filtercmd(sp, ep,
-		    &cmdp->addr1, NULL, &rm, cmdp->argv[1]->bp, FILTER_READ))
+		if (filtercmd(sp, ep, &cmdp->addr1,
+		    NULL, &rm, cmdp->argv[farg]->bp, FILTER_READ))
 			return (1);
 
 		/* If in vi mode, move to the first nonblank. */
