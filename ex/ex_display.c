@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_display.c,v 8.15 1994/03/08 19:39:17 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:39:17 $";
+static char sccsid[] = "$Id: ex_display.c,v 8.16 1994/04/09 18:13:53 bostic Exp $ (Berkeley) $Date: 1994/04/09 18:13:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,7 +30,7 @@ static char sccsid[] = "$Id: ex_display.c,v 8.15 1994/03/08 19:39:17 bostic Exp 
 #include "excmd.h"
 
 static int	bdisplay __P((SCR *, EXF *));
-static void	db __P((SCR *, CB *, char *));
+static void	db __P((SCR *, CB *, CHAR_T *));
 
 /*
  * ex_display -- :display b[uffers] | s[creens] | t[ags]
@@ -109,19 +109,19 @@ static void
 db(sp, cbp, name)
 	SCR *sp;
 	CB *cbp;
-	char *name;
+	CHAR_T *name;
 {
+	CHAR_T *p;
 	TEXT *tp;
 	size_t len;
-	char *p;
 
 	(void)ex_printf(EXCOOKIE, "********** %s%s\n",
-	    name == NULL ? charname(sp, cbp->name) : name,
+	    name == NULL ? KEY_NAME(sp, cbp->name) : name,
 	    F_ISSET(cbp, CB_LMODE) ? " (line mode)" : "");
 	for (tp = cbp->textq.cqh_first;
 	    tp != (void *)&cbp->textq; tp = tp->q.cqe_next) {
-		for (len = tp->len, p = tp->lb; len--;) {
-			(void)ex_printf(EXCOOKIE, "%s", charname(sp, *p++));
+		for (len = tp->len, p = tp->lb; len--; ++p) {
+			(void)ex_printf(EXCOOKIE, "%s", KEY_NAME(sp, *p));
 			if (F_ISSET(sp, S_INTERRUPTED))
 				return;
 		}

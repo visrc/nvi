@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.54 1994/03/23 14:50:06 bostic Exp $ (Berkeley) $Date: 1994/03/23 14:50:06 $
+ *	$Id: ex.h,v 8.55 1994/04/09 18:14:01 bostic Exp $ (Berkeley) $Date: 1994/04/09 18:14:01 $
  */
 
 /* Ex command structure. */
@@ -146,7 +146,7 @@ typedef struct _ex_private {
  */
 #define	IS_ESCAPE(sp, ch)						\
 	(F_ISSET(sp, S_VLITONLY) ?					\
-	    (ch) == LITERAL_CH : term_key_val(sp, ch) == K_VLNEXT)
+	    (ch) == LITERAL_CH : KEY_VAL(sp, ch) == K_VLNEXT)
 
 /*
  * :next, :prev, :rewind, :tag, :tagpush, :tagpop modifications check.

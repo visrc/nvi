@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.40 1994/04/07 11:32:34 bostic Exp $ (Berkeley) $Date: 1994/04/07 11:32:34 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.41 1994/04/09 18:13:57 bostic Exp $ (Berkeley) $Date: 1994/04/09 18:13:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -852,7 +852,7 @@ regsub(sp, ip, lbp, lbclenp, lblenp)
 	 */
 #define	ADDCH(ch) {							\
 	CHAR_T __ch = (ch);						\
-	u_int __value = term_key_val(sp, __ch);				\
+	u_int __value = KEY_VAL(sp, __ch);				\
 	if (__value == K_CR || __value == K_NL) {			\
 		NEEDNEWLINE(sp);					\
 		sp->newl[sp->newl_cnt++] = lbclen;			\

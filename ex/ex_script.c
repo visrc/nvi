@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_script.c,v 8.12 1994/03/14 10:38:19 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:38:19 $";
+static char sccsid[] = "$Id: ex_script.c,v 8.13 1994/04/09 18:13:55 bostic Exp $ (Berkeley) $Date: 1994/04/09 18:13:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -243,7 +243,7 @@ more:	len = sizeof(buf) - (endp - buf);
 
 	/* If any complete lines, push them into the file. */
 	for (p = t = buf; p < endp; ++p) {
-		value = term_key_val(sp, *p);
+		value = KEY_VAL(sp, *p);
 		if (value == K_CR || value == K_NL) {
 			if (file_lline(sp, ep, &lline) ||
 			    file_aline(sp, ep, 0, lline, t, p - t))
@@ -408,7 +408,7 @@ more:	switch (nr = read(sc->sh_master, endp, MINREAD)) {
 
 	/* Append the lines into the file. */
 	for (p = t = bp; p < endp; ++p) {
-		value = term_key_val(sp, *p);
+		value = KEY_VAL(sp, *p);
 		if (value == K_CR || value == K_NL) {
 			len = p - t;
 			if (file_aline(sp, ep, 1, lno++, t, len))

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_usage.c,v 8.14 1994/03/14 10:40:15 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:40:15 $";
+static char sccsid[] = "$Id: ex_usage.c,v 8.15 1994/04/09 18:14:00 bostic Exp $ (Berkeley) $Date: 1994/04/09 18:14:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -137,7 +137,7 @@ ex_viusage(sp, ep, cmdp)
 		if (kp->func == NULL)
 nokey:			(void)ex_printf(EXCOOKIE,
 			    "The %s key has no current meaning",
-			    charname(sp, key));
+			    KEY_NAME(sp, key));
 		else
 			(void)ex_printf(EXCOOKIE,
 			    "  Key:%s%s\nUsage: %s\n",
