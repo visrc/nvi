@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 10.5 1995/06/15 19:39:53 bostic Exp $ (Berkeley) $Date: 1995/06/15 19:39:53 $";
+static char sccsid[] = "$Id: v_ex.c,v 10.6 1995/06/23 19:19:50 bostic Exp $ (Berkeley) $Date: 1995/06/23 19:19:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -542,7 +542,6 @@ v_ex_done(sp, vp)
 
 		if (sp->gp->scr_canon(sp, 0))
 			return (1);
-		F_SET(sp, S_SCR_REDRAW);
 	}
 	return (0);
 }
