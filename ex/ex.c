@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 9.37 1995/02/09 09:35:45 bostic Exp $ (Berkeley) $Date: 1995/02/09 09:35:45 $";
+static char sccsid[] = "$Id: ex.c,v 9.38 1995/02/09 09:55:30 bostic Exp $ (Berkeley) $Date: 1995/02/09 09:55:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -496,17 +496,13 @@ done:		if (bp != NULL)
 		 * Since the following characters all have to be flags, i.e.
 		 * alphabetics, we can let the s command routine return errors
 		 * if it was some illegal command string.  This code will break
-		 * if an "sg" or similar command is ever added.
+		 * if an "sg" or similar command is ever added.  The substitute
+		 * code doesn't care if it's a "cgr" flag or a "#lp" flag that
+		 * follows the 's', but we limit the choices here to "cgr" so
+		 * that we get unknown command messages for wrong combinations.
 		 */
 		if ((cp = ex_comm_search(p, namelen)) == NULL)
 			switch (p[0]) {
-			case 's':
-				cmd -= namelen - 1;
-				cmdlen += namelen - 1;
-				cmd_rep = cmds[C_SUBSTITUTE];
-				cmd_rep.fn = ex_subagain;
-				cp = &cmd_rep;
-				break;
 			case 'k':
 				if (p[1] && !p[2]) {
 					cmd -= namelen - 1;
@@ -514,8 +510,22 @@ done:		if (bp != NULL)
 					cp = &cmds[C_K];
 					break;
 				}
+				goto unknown;
+			case 's':
+				for (s = p + 1, cnt = namelen; --cnt; ++s)
+					if (s[0] != 'c' &&
+					    s[0] != 'g' && s[0] != 'r')
+						break;
+				if (cnt == 0) {
+					cmd -= namelen - 1;
+					cmdlen += namelen - 1;
+					cmd_rep = cmds[C_SUBSTITUTE];
+					cmd_rep.fn = ex_subagain;
+					cp = &cmd_rep;
+					break;
+				}
 				/* FALLTHROUGH */
-			default:
+				default:
 unknown:			if (F_ISSET(&exc, E_NEWSCREEN) || tmp)
 					p[0] = toupper(p[0]);
 				ex_unknown(sp, p, namelen);
