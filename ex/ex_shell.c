@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 5.25 1993/04/06 11:37:20 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:37:20 $";
+static char sccsid[] = "$Id: ex_shell.c,v 5.26 1993/05/12 17:46:17 bostic Exp $ (Berkeley) $Date: 1993/05/12 17:46:17 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -33,6 +33,10 @@ ex_shell(sp, ep, cmdp)
 
 	MODIFY_WARN(sp, ep);
 
+#ifdef SHELL_PROCESS
+	if (ex_run_shell(sp))
+		return (1);
+#else
 	/* Save ex/vi terminal settings, and restore the original ones. */
 	(void)tcgetattr(STDIN_FILENO, &t);
 	(void)tcsetattr(STDIN_FILENO, TCSADRAIN, &sp->gp->original_termios);
@@ -48,5 +52,6 @@ ex_shell(sp, ep, cmdp)
 
 	/* Repaint the screen. */
 	F_SET(sp, S_REFRESH);
+#endif
 	return (rval);
 }
