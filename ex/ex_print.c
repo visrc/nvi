@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 9.5 1995/01/11 16:15:43 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:15:43 $";
+static char sccsid[] = "$Id: ex_print.c,v 9.6 1995/01/29 15:30:29 bostic Exp $ (Berkeley) $Date: 1995/01/29 15:30:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,7 +30,7 @@ static char sccsid[] = "$Id: ex_print.c,v 9.5 1995/01/11 16:15:43 bostic Exp $ (
 #include "vi.h"
 #include "excmd.h"
 
-static int ex_prchars __P((SCR *, const char **lpp, size_t *, size_t, int));
+static int ex_prchars __P((SCR *, const char *, size_t *, size_t, u_int, int));
 
 /*
  * ex_list -- :[line [,line]] l[ist] [count] [flags]
@@ -97,7 +97,7 @@ int
 ex_print(sp, fp, tp, flags)
 	SCR *sp;
 	MARK *fp, *tp;
-	register int flags;
+	int flags;
 {
 	const char *p;
 	recno_t from, to;
@@ -118,7 +118,7 @@ ex_print(sp, fp, tp, flags)
 				p = buf;
 			} else
 				p = "TOOBIG  ";
-			if (ex_prchars(sp, &p, &col, 8, 0))
+			if (ex_prchars(sp, p, &col, 8, 0, 0))
 				return (1);
 		}
 
@@ -149,19 +149,17 @@ ex_print(sp, fp, tp, flags)
  *	Display a line without any preceding number.
  */
 int
-ex_ldisplay(sp, lp, len, col, flags)
+ex_ldisplay(sp, p, len, col, flags)
 	SCR *sp;
-	const char *lp;
+	const char *p;
 	size_t len, col;
 	u_int flags;
 {
-	const char *p;
-
-	if (len > 0 && ex_prchars(sp, &lp, &col, len, 0))
+	if (len > 0 && ex_prchars(sp, p, &col, len, LF_ISSET(E_F_LIST), 0))
 		return (1);
 	if (!INTERRUPTED(sp) && LF_ISSET(E_F_LIST)) {
 		p = "$";
-		if (ex_prchars(sp, &p, &col, 1, 0))
+		if (ex_prchars(sp, p, &col, 1, LF_ISSET(E_F_LIST), 0))
 			return (1);
 	}
 	if (!INTERRUPTED(sp))
@@ -184,7 +182,7 @@ ex_scprint(sp, fp, tp)
 	col = 0;
 	if (O_ISSET(sp, O_NUMBER)) {
 		p = "        ";
-		if (ex_prchars(sp, &p, &col, 8, 0))
+		if (ex_prchars(sp, p, &col, 8, 0, 0))
 			return (1);
 	}
 
@@ -193,14 +191,14 @@ ex_scprint(sp, fp, tp)
 		return (1);
 	}
 
-	if (ex_prchars(sp, &p, &col, fp->cno, ' '))
+	if (ex_prchars(sp, p, &col, fp->cno, 0, ' '))
 		return (1);
 	if (!INTERRUPTED(sp) &&
-	    ex_prchars(sp, &p, &col, tp->cno - fp->cno, '^'))
+	    ex_prchars(sp, p, &col, tp->cno - fp->cno, 0, '^'))
 		return (1);
 	if (!INTERRUPTED(sp)) {
 		p = "[ynq]";
-		if (ex_prchars(sp, &p, &col, 5, 0))
+		if (ex_prchars(sp, p, &col, 5, 0, 0))
 			return (1);
 	}
 	(void)fflush(sp->stdfp);
@@ -212,27 +210,29 @@ ex_scprint(sp, fp, tp)
  *	Local routine to dump characters to the screen.
  */
 static int
-ex_prchars(sp, lpp, colp, len, rep)
+ex_prchars(sp, p, colp, len, flags, repeatc)
 	SCR *sp;
-	const char **lpp;
-	size_t *colp, len;
-	int rep;
-{
 	const char *p;
+	size_t *colp, len;
+	u_int flags;
+	int repeatc;
+{
 	size_t col, tlen, ts;
 	CHAR_T ch, *kp;
 
+	if (O_ISSET(sp, O_LIST))
+		LF_SET(E_F_LIST);
 	ts = O_VAL(sp, O_TABSTOP);
-	for (p = *lpp, col = *colp; len--;) {
-		if ((ch = *p++) == '\t' && !O_ISSET(sp, O_LIST))
+	for (col = *colp; len--;) {
+		if ((ch = *p++) == '\t' && !LF_ISSET(E_F_LIST))
 			for (tlen = ts - col % ts;
 			    col < sp->cols && tlen--; ++col)
 				(void)ex_printf(EXCOOKIE,
-				    "%c", rep ? rep : ' ');
+				    "%c", repeatc ? repeatc : ' ');
 		else {
 			kp = KEY_NAME(sp, ch);
 			tlen = KEY_LEN(sp, ch);
-			if (!rep  && col + tlen < sp->cols) {
+			if (!repeatc  && col + tlen < sp->cols) {
 				(void)ex_printf(EXCOOKIE, "%s", kp);
 				col += tlen;
 			} else
@@ -242,14 +242,13 @@ ex_prchars(sp, lpp, colp, len, rep)
 						(void)ex_printf(EXCOOKIE, "\n");
 					}
 					(void)ex_printf(EXCOOKIE,
-					    "%c", rep ? rep : *kp);
+					    "%c", repeatc ? repeatc : *kp);
 				}
 		}
 		F_SET(sp, S_SCR_EXWROTE);
 		if (INTERRUPTED(sp))
 			break;
 	}
-	*lpp = p;
 	*colp = col;
 	return (0);
 }
