@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 8.23 1994/03/03 14:55:23 bostic Exp $ (Berkeley) $Date: 1994/03/03 14:55:23 $";
+static char sccsid[] = "$Id: cut.c,v 8.24 1994/03/04 15:26:05 bostic Exp $ (Berkeley) $Date: 1994/03/04 15:26:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,7 +31,7 @@ static int	cb_rotate __P((SCR *));
  * default buffer storage.  There is a pointer, too, which is the current
  * default buffer, i.e. it may point to the default buffer or a named buffer
  * depending on into what buffer the last text was cut.  In both delete and
- * yank operations, text is cut into either the buffer named by the user, or
+ * yank operations, text is cut into either the buffer named by the user or
  * the default buffer.  If it's a delete of information on more than a single
  * line, the contents of the numbered buffers are rotated up one, the contents
  * of the buffer named '9' are discarded, and the text is also cut into the
@@ -42,14 +42,15 @@ static int	cb_rotate __P((SCR *));
  * of replaced.
  *
  * !!!
- * The contents of the default buffer would disappear after most operations in
- * historic vi.  It's unclear that this is useful, so we don't bother.
+ * The contents of the default buffer would disappear after most operations
+ * in historic vi.  It's unclear that this is useful, so we don't bother.
  *
  * When users explicitly cut text into the numeric buffers, historic vi became
  * genuinely strange.  I've never been able to figure out what was supposed to
  * happen.  It behaved differently if you deleted text than if you yanked text,
  * and, in the latter case, the text was appended to the buffer instead of
- * replacing the contents.  Hopefully it's not worth getting right.
+ * replacing the contents.  Hopefully it's not worth getting right, and here
+ * we just treat the numeric buffers like any other named buffer.
  */
 int
 cut(sp, ep, cbp, namep, fm, tm, flags)
@@ -65,22 +66,22 @@ cut(sp, ep, cbp, namep, fm, tm, flags)
 	int append, namedbuffer, setdefcb;
 
 	if (cbp == NULL) {
-		if (LF_ISSET(CUT_DELETE) &&
-		    (LF_ISSET(CUT_LINEMODE) || fm->lno != tm->lno)) {
-			(void)cb_rotate(sp);
-			name = '1';
-			goto defcb;
-		}
 		if (namep == NULL) {
+			if (LF_ISSET(CUT_DELETE) &&
+			    (LF_ISSET(CUT_LINEMODE) || fm->lno != tm->lno)) {
+				(void)cb_rotate(sp);
+				name = '1';
+				goto defcb;
+			}
 			cbp = sp->gp->dcb_store;
 			append = namedbuffer = 0;
-			setdefcb = 1;
 		} else {
 			name = *namep;
 defcb:			CBNAME(sp, cbp, name);
 			append = isupper(name);
-			namedbuffer = setdefcb = 1;
+			namedbuffer = 1;
 		}
+		setdefcb = 1;
 	} else
 		append = namedbuffer = setdefcb = 0;
 
