@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.40 1994/03/08 19:38:20 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:38:20 $";
+static char sccsid[] = "$Id: util.c,v 8.41 1994/03/11 18:53:22 bostic Exp $ (Berkeley) $Date: 1994/03/11 18:53:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -69,7 +69,8 @@ msgq(sp, mt, fmt, va_alist)
 	 */
 	switch (mt) {
 	case M_BERR:
-		if (sp != NULL && !O_ISSET(sp, O_VERBOSE)) {
+		if (sp != NULL && !F_ISSET(sp, S_EXSILENT) &&
+		    F_ISSET(sp->gp, G_STDIN_TTY) && !O_ISSET(sp, O_VERBOSE)) {
 			F_SET(sp, S_BELLSCHED);
 			return;
 		}
