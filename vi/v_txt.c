@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.85 1996/09/20 11:51:05 bostic Exp $ (Berkeley) $Date: 1996/09/20 11:51:05 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.86 1996/09/20 11:57:43 bostic Exp $ (Berkeley) $Date: 1996/09/20 11:57:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1955,7 +1955,7 @@ txt_dent(sp, tp, isindent)
 	 * out the current screen column.
 	 */
 	for (; tp->cno > tp->offset &&
-	    tp->lb[tp->cno - 1] != ' ' && tp->lb[tp->cno - 1] != '\t';
+	    (tp->lb[tp->cno - 1] == ' ' || tp->lb[tp->cno - 1] == '\t');
 	    --tp->cno, ++tp->owrite);
 	for (current = cno = 0; cno < tp->cno; ++cno)
 		current += tp->lb[cno] == '\t' ?
