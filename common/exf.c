@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: exf.c,v 10.66 2001/08/29 12:25:13 skimo Exp $ (Berkeley) $Date: 2001/08/29 12:25:13 $";
+static const char sccsid[] = "$Id: exf.c,v 10.67 2001/11/01 10:28:24 skimo Exp $ (Berkeley) $Date: 2001/11/01 10:28:24 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -261,7 +261,7 @@ file_init(SCR *sp, FREF *frp, char *rcv_name, int flags)
 	}
 
 	/* Open a db structure. */
-	if ((sp->db_error = db_create(&ep->db, sp->gp->env, 0)) != 0) {
+	if ((sp->db_error = db_create(&ep->db, 0, 0)) != 0) {
 		/* XXXX */
 		fprintf(stderr, "db_create %d\n", sp->db_error);
 		goto err;

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: msg.c,v 10.58 2001/07/29 19:07:28 skimo Exp $ (Berkeley) $Date: 2001/07/29 19:07:28 $";
+static const char sccsid[] = "$Id: msg.c,v 10.59 2001/11/01 10:28:25 skimo Exp $ (Berkeley) $Date: 2001/11/01 10:28:25 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -494,7 +494,8 @@ mod_rpt(SCR *sp)
 				*p++ = ' ';
 				tlen += 2;
 			}
-			len = snprintf(p, MAXNUM, "%lu ", sp->rptlines[cnt]);
+			len = snprintf(p, MAXNUM, "%lu ", 
+				(unsigned long) sp->rptlines[cnt]);
 			p += len;
 			tlen += len;
 			t = msg_cat(sp,
@@ -719,7 +720,7 @@ msg_open(SCR *sp, char *file)
 		p = buf;
 	} else
 		p = file;
-	if ((sp->db_error = db_create(&db, sp->gp->env, 0)) != 0 ||
+	if ((sp->db_error = db_create(&db, 0, 0)) != 0 ||
 	    (sp->db_error = db->set_re_source(db, p)) != 0 ||
 	    (sp->db_error = db->open(db, NULL, NULL, DB_RECNO, 0, 0)) != 0) {
 		if (first) {

@@ -18,7 +18,7 @@ static const char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static const char sccsid[] = "$Id: main.c,v 10.61 2001/07/29 19:07:28 skimo Exp $ (Berkeley) $Date: 2001/07/29 19:07:28 $";
+static const char sccsid[] = "$Id: main.c,v 10.62 2001/11/01 10:28:25 skimo Exp $ (Berkeley) $Date: 2001/11/01 10:28:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -210,16 +210,6 @@ editor(WIN *wp, int argc, char **argv)
 		silent = 1;
 
 	/*
-	if (db_env_create(&gp->env, 0)) {
-		v_estr(gp->progname, 0, "Unable to create DB environment.");
-		goto err;
-	}
-	gp->env->set_errfile(gp->env, stderr);
-	gp->env->open(gp->env, NULL, DB_CREATE | DB_INIT_MPOOL, 0);
-	*/
-	gp->env = 0;
-
-	/*
 	 * Build and initialize the first/current screen.  This is a bit
 	 * tricky.  If an error is returned, we may or may not have a
 	 * screen structure.  If we have a screen structure, put it on a
@@ -400,8 +390,8 @@ editor(WIN *wp, int argc, char **argv)
 			if (v_event_get(sp, &ev, 0, 0))
 				goto err;
 			if (ev.e_event == E_INTERRUPT ||
-			    ev.e_event == E_CHARACTER &&
-			    (ev.e_value == K_CR || ev.e_value == K_NL))
+			    (ev.e_event == E_CHARACTER &&
+			     (ev.e_value == K_CR || ev.e_value == K_NL)))
 				break;
 			(void)gp->scr_bell(sp);
 		}
@@ -466,7 +456,7 @@ v_obsolete(char *name, char **argv)
 				argv[0][1] = 'c';
 				(void)strcpy(argv[0] + 2, p + 1);
 			}
-		} else if (argv[0][0] == '-')
+		} else if (argv[0][0] == '-') {
 			if (argv[0][1] == '\0') {
 				MALLOC_NOMSG(NULL, argv[0], char *, 3);
 				if (argv[0] == NULL) {
@@ -479,6 +469,7 @@ nomem:					v_estr(name, errno, NULL);
 				    argv[0][1] == 't' || argv[0][1] == 'w') &&
 				    argv[0][2] == '\0')
 					++argv;
+		}
 	return (0);
 }
 

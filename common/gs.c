@@ -19,6 +19,7 @@
 #include <unistd.h>
 
 #include "../common/common.h"
+#include "../perl_api/extern.h"
 
 static void	   perr __P((char *, char *));
 
@@ -172,12 +173,6 @@ gs_end(GS *gp)
 	/* Close message catalogs. */
 	msg_close(gp);
 #endif
-	if (gp->env) {
-		gp->env->remove(gp->env, NULL, 0);
-		/*
-		gp->env->close(gp->env, 0);
-		*/
-	}
 
 	/* Ring the bell if scheduled. */
 	if (F_ISSET(gp, G_BELLSCHED))
