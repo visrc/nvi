@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 9.5 1994/12/01 19:36:25 bostic Exp $ (Berkeley) $Date: 1994/12/01 19:36:25 $";
+static char sccsid[] = "$Id: ex_append.c,v 9.6 1994/12/02 10:29:32 bostic Exp $ (Berkeley) $Date: 1994/12/02 10:29:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -146,7 +146,8 @@ aci(sp, cmdp, cmd)
 	m = cmdp->addr1;
 	switch (cmd) {
 	case INSERT:
-		--m.lno;
+		if (m.lno != 0)
+			--m.lno;
 		/* FALLTHROUGH */
 	case APPEND:
 		if (sp->lno == 0)

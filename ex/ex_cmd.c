@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 9.2 1994/11/12 19:09:06 bostic Exp $ (Berkeley) $Date: 1994/11/12 19:09:06 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 9.3 1994/12/02 10:29:12 bostic Exp $ (Berkeley) $Date: 1994/12/02 10:29:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -194,7 +194,7 @@ EXCMDLIST const cmds[] = {
 	    "he[lp]",
 	    "display help statement"},
 /* C_INSERT */
-	{"insert",	ex_insert,	E_ADDR1,
+	{"insert",	ex_insert,	E_ADDR1|E_ZERO|E_ZERODEF,
 	    "!",
 	    "[line] i[nsert][!]",
 	    "insert input before a line"},
