@@ -16,7 +16,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 9.19 1995/02/08 14:17:39 bostic Exp $ (Berkeley) $Date: 1995/02/08 14:17:39 $";
+static char sccsid[] = "$Id: main.c,v 9.20 1995/02/09 15:22:38 bostic Exp $ (Berkeley) $Date: 1995/02/09 15:22:38 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -442,6 +442,7 @@ gs_init(name)
 	LIST_INIT(&gp->msgq);
 
 	/* Structures shared by screens so stored in the GS structure. */
+	CIRCLEQ_INIT(&gp->frefq);
 	CIRCLEQ_INIT(&gp->dcb_store.textq);
 	LIST_INIT(&gp->cutq);
 	LIST_INIT(&gp->seqq);
@@ -484,12 +485,23 @@ static void
 gs_end(gp)
 	GS *gp;
 {
+	FREF *frp;
 	MSG *mp;
 	SCR *sp;
 	char *tty;
 
 	/* Turn off signals. */
 	sig_end(gp);
+
+	/* Free FREF's. */
+	while ((frp = gp->frefq.cqh_first) != (FREF *)&gp->frefq) {
+		CIRCLEQ_REMOVE(&gp->frefq, frp, q);
+		if (frp->name != NULL)
+			free(frp->name);
+		if (frp->tname != NULL)
+			free(frp->tname);
+		free(frp);
+	}
 
 	/* Default buffer storage. */
 	(void)text_lfree(&gp->dcb_store.textq);

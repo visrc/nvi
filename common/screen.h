@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 9.20 1995/02/06 14:20:47 bostic Exp $ (Berkeley) $Date: 1995/02/06 14:20:47 $
+ *	$Id: screen.h,v 9.21 1995/02/09 15:22:31 bostic Exp $ (Berkeley) $Date: 1995/02/09 15:22:31 $
  */
 
 /*
@@ -28,38 +28,6 @@ typedef enum {				/* Line operations. */
     LINE_APPEND, LINE_DELETE, LINE_INSERT, LINE_RESET } lnop_t;
 
 /*
- * Structure for holding file references.  Each SCR structure contains a
- * linked list of these.  The structure contains the name of the file,
- * along with the information that follows the name.
- *
- * !!!
- * The read-only bit follows the file name, not the file itself.
- */
-struct _fref {
-	CIRCLEQ_ENTRY(_fref) q;		/* Linked list of file references. */
-	char	*name;			/* File name. */
-	char	*tname;			/* Backing temporary file name. */
-
-	recno_t	 lno;			/* 1-N: file cursor line. */
-	size_t	 cno;			/* 0-N: file cursor column. */
-
-#define	FR_CURSORSET	0x001		/* If lno/cno values valid. */
-#define	FR_DONTDELETE	0x002		/* Don't delete the temporary file. */
-#define	FR_EXNAMED	0x004		/* Read/write renamed the file. */
-#define	FR_FNONBLANK	0x008		/* Move to the first non-<blank>. */
-#define	FR_NAMECHANGE	0x010		/* If the name changed. */
-#define	FR_NEWFILE	0x020		/* File doesn't really exist yet. */
-#define	FR_RDONLY	0x040		/* File is read-only. */
-#define	FR_RECOVER	0x080		/* File is being recovered. */
-#define	FR_TMPEXIT	0x100		/* Modified temporary file, no exit. */
-#define	FR_TMPFILE	0x200		/* If file has no name. */
-#define	FR_UNLOCKED	0x400		/* File couldn't be locked. */
-	u_int16_t flags;
-};
-
-#define	TEMPORARY_FILE_STRING	"/tmp"	/* Default temporary file name. */
-
-/*
  * SCR --
  *	The screen structure.  To the extent possible, all screen information
  *	is stored in the various private areas.  The only information here
@@ -78,8 +46,7 @@ struct _scr {
 	EXF	*ep;			/* Screen's current EXF structure. */
 
 	MSGH	 msgq;			/* Message list. */
-					/* FREF list. */
-	CIRCLEQ_HEAD(_frefh, _fref) frefq;
+
 	FREF	*frp;			/* FREF being edited. */
 
 	char	**argv;			/* NULL terminated file name array. */

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 9.25 1995/02/08 14:17:13 bostic Exp $ (Berkeley) $Date: 1995/02/08 14:17:13 $";
+static char sccsid[] = "$Id: exf.c,v 9.26 1995/02/09 15:21:55 bostic Exp $ (Berkeley) $Date: 1995/02/09 15:21:55 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -65,6 +65,7 @@ file_add(sp, name)
 	SCR *sp;
 	CHAR_T *name;
 {
+	GS *gp;
 	FREF *frp;
 
 	/*
@@ -72,9 +73,10 @@ file_add(sp, name)
 	 * user's name, whatever that happens to be, including if it's a
 	 * temporary file.
 	 */
+	gp = sp->gp;
 	if (name != NULL)
-		for (frp = sp->frefq.cqh_first;
-		    frp != (FREF *)&sp->frefq; frp = frp->q.cqe_next)
+		for (frp = gp->frefq.cqh_first;
+		    frp != (FREF *)&gp->frefq; frp = frp->q.cqe_next)
 			if (!strcmp(frp->name, name))
 				return (frp);
 
@@ -96,7 +98,7 @@ file_add(sp, name)
 	}
 
 	/* Append into the chain of file names. */
-	CIRCLEQ_INSERT_TAIL(&sp->frefq, frp, q);
+	CIRCLEQ_INSERT_TAIL(&gp->frefq, frp, q);
 
 	return (frp);
 }
@@ -139,7 +141,7 @@ file_init(sp, frp, rcv_name, flags)
 	 * Required FRP initialization; the only flag we keep is the
 	 * cursor information.
 	 */
-	F_CLR(frp, ~(FR_CURSORSET | FR_FNONBLANK));
+	F_CLR(frp, ~FR_CURSORSET);
 
 	/*
 	 * Required EXF initialization:
@@ -476,10 +478,7 @@ file_cinit(sp)
 	} else {
 		if (F_ISSET(sp->frp, FR_CURSORSET)) {
 			sp->lno = sp->frp->lno;
-			if (F_ISSET(sp->frp, FR_FNONBLANK))
-				nb = 1;
-			else
-				sp->cno = sp->frp->cno;
+			sp->cno = sp->frp->cno;
 
 			/* If returning to a file in vi, center the line. */
 			 F_SET(sp, S_SCR_CENTER);
@@ -580,7 +579,7 @@ file_end(sp, ep, force)
 		free(frp->tname);
 		frp->tname = NULL;
 		if (F_ISSET(frp, FR_TMPFILE)) {
-			CIRCLEQ_REMOVE(&sp->frefq, frp, q);
+			CIRCLEQ_REMOVE(&sp->gp->frefq, frp, q);
 			free(frp->name);
 			free(frp);
 		}

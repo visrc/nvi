@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 9.7 1995/02/09 12:12:59 bostic Exp $ (Berkeley) $Date: 1995/02/09 12:12:59 $";
+static char sccsid[] = "$Id: ex_args.c,v 9.8 1995/02/09 15:22:50 bostic Exp $ (Berkeley) $Date: 1995/02/09 15:22:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -207,6 +207,13 @@ ex_prev(sp, cmdp)
 /*
  * ex_rew -- :rew
  *	Re-edit the list of files.
+ *
+ * !!!
+ * Historic practice was that all files would start editing at the beginning
+ * of the file.  We don't get this right because we may have multiple screens
+ * and we can't clear the FR_CURSORSET bit for a single screen.  I don't see
+ * anyone noticing, but if they do, we'll have to put information into the SCR
+ * structure so we can keep track of it.
  */
 int
 ex_rew(sp, cmdp)
@@ -226,15 +233,6 @@ ex_rew(sp, cmdp)
 
 	if (file_m1(sp, F_ISSET(cmdp, E_FORCE), FS_ALL | FS_POSSIBLE))
 		return (1);
-
-	/*
-	 * !!!
-	 * Historic practice, all files start at the beginning of the
-	 * file.
-	 */
-	for (frp = sp->frefq.cqh_first;
-	    frp != (FREF *)&sp->frefq; frp = frp->q.cqe_next)
-		F_CLR(frp, FR_CURSORSET | FR_FNONBLANK);
 
 	/* Switch to the first one. */
 	sp->cargv = sp->argv;

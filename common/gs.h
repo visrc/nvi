@@ -6,12 +6,45 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 9.7 1995/02/06 14:21:09 bostic Exp $ (Berkeley) $Date: 1995/02/06 14:21:09 $
+ *	$Id: gs.h,v 9.8 1995/02/09 15:22:15 bostic Exp $ (Berkeley) $Date: 1995/02/09 15:22:15 $
  */
+
+/*
+ * Structure for holding file references.  The structure contains the name
+ * of the file, along with the information that follows the name.
+ *
+ * !!!
+ * The read-only bit follows the file name, not the file itself.
+ */
+struct _fref {
+	CIRCLEQ_ENTRY(_fref) q;		/* Linked list of file references. */
+	char	*name;			/* File name. */
+	char	*tname;			/* Backing temporary file name. */
+
+	recno_t	 lno;			/* 1-N: file cursor line. */
+	size_t	 cno;			/* 0-N: file cursor column. */
+
+#define	FR_CURSORSET	0x001		/* If lno/cno values valid. */
+#define	FR_DONTDELETE	0x002		/* Don't delete the temporary file. */
+#define	FR_EXNAMED	0x004		/* Read/write renamed the file. */
+#define	FR_NAMECHANGE	0x008		/* If the name changed. */
+#define	FR_NEWFILE	0x010		/* File doesn't really exist yet. */
+#define	FR_RDONLY	0x020		/* File is read-only. */
+#define	FR_RECOVER	0x040		/* File is being recovered. */
+#define	FR_TMPEXIT	0x080		/* Modified temporary file, no exit. */
+#define	FR_TMPFILE	0x100		/* If file has no name. */
+#define	FR_UNLOCKED	0x200		/* File couldn't be locked. */
+	u_int16_t flags;
+};
+
+#define	TEMPORARY_FILE_STRING	"/tmp"	/* Default temporary file name. */
 
 struct _gs {
 	CIRCLEQ_HEAD(_dqh, _scr) dq;	/* Displayed screens. */
 	CIRCLEQ_HEAD(_hqh, _scr) hq;	/* Hidden screens. */
+
+					/* File references. */
+	CIRCLEQ_HEAD(_frefh, _fref) frefq;
 
 	char	*progname;		/* Programe name. */
 

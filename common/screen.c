@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 9.9 1995/02/02 16:50:43 bostic Exp $ (Berkeley) $Date: 1995/02/02 16:50:43 $";
+static char sccsid[] = "$Id: screen.c,v 9.10 1995/02/09 15:22:21 bostic Exp $ (Berkeley) $Date: 1995/02/09 15:22:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -59,7 +59,6 @@ screen_init(orig, spp)
 	sp->gp = __global_list;			/* All ref the GS structure. */
 
 	LIST_INIT(&sp->msgq);
-	CIRCLEQ_INIT(&sp->frefq);
 
 	sp->ccnt = 2;				/* Anything > 1 */
 
@@ -187,18 +186,6 @@ screen_end(sp)
 		rval = 1;
 	if (ex_screen_end(sp))			/* End ex. */
 		rval = 1;
-
-	/* Free FREF's. */
-	{ FREF *frp;
-		while ((frp = sp->frefq.cqh_first) != (FREF *)&sp->frefq) {
-			CIRCLEQ_REMOVE(&sp->frefq, frp, q);
-			if (frp->name != NULL)
-				free(frp->name);
-			if (frp->tname != NULL)
-				free(frp->tname);
-			FREE(frp, sizeof(FREF));
-		}
-	}
 
 	/* Free file names. */
 	{ char **ap;
