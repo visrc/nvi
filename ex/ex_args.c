@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 5.11 1992/04/28 11:56:17 bostic Exp $ (Berkeley) $Date: 1992/04/28 11:56:17 $";
+static char sccsid[] = "$Id: ex_args.c,v 5.12 1992/04/28 13:28:05 bostic Exp $ (Berkeley) $Date: 1992/04/28 13:28:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -104,7 +104,7 @@ ex_args(cmdp)
 		return (1);
 	}
 
-	EX_PRSTART;
+	EX_PRSTART(1);
 	col = len = sep = 0;
 	for (p = s_flist, cnt = 1; *p; ++p, ++cnt) {
 		col += len = strlen(*p) + sep + (cnt == current ? 2 : 0);
