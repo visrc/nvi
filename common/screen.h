@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.18 1993/09/10 14:47:29 bostic Exp $ (Berkeley) $Date: 1993/09/10 14:47:29 $
+ *	$Id: screen.h,v 8.19 1993/09/10 18:29:44 bostic Exp $ (Berkeley) $Date: 1993/09/10 18:29:44 $
  */
 
 /*
@@ -88,7 +88,7 @@ typedef struct _scr {
 	FREF	*n_frp;			/* Next FREF. */
 	struct _exf	*n_ep;		/* Next EXF. */
 
-	void	*svi_private;		/* Vi screen information. */
+	void	*svi_private;		/* Vi curses screen information. */
 
 	recno_t	 lno;			/* 1-N:     cursor file line. */
 	recno_t	 olno;			/* 1-N: old cursor file line. */
@@ -142,6 +142,7 @@ typedef struct _scr {
 					/* Ex/vi: input information. */
 	IBUF	 key;			/* Key input buffer. */
 	IBUF	 tty;			/* Tty input buffer. */
+
 	char	 at_lbuf;		/* Last at buffer executed. */
 
 	fd_set	 rdfd;			/* Ex/vi: read fd select mask. */
@@ -163,8 +164,6 @@ typedef struct _scr {
 
 	char	*rep;			/* Vi: input replay buffer. */
 	size_t	 rep_len;		/* Vi: input replay buffer length. */
-
-	char	*VB;			/* Vi: visual bell termcap string. */
 
 	char	*lastbcomm;		/* Ex/vi: last bang command. */
 
@@ -234,6 +233,7 @@ typedef struct _scr {
 		     struct _exf *, recno_t, enum position));
 	int	 (*s_get) __P((struct _scr *, struct _exf *, HDR *,
 		     int, u_int));
+	int	 (*s_key_read) __P((struct _scr *, int *, int));
 	int	 (*s_position) __P((struct _scr *,
 		     struct _exf *, MARK *, u_long, enum position));
 	int	 (*s_refresh) __P((struct _scr *, struct _exf *));
@@ -243,7 +243,7 @@ typedef struct _scr {
 	int	 (*s_up) __P((struct _scr *,
 		     struct _exf *, struct _mark *, recno_t, int));
 
-/* Editor screens (implies edit mode, as well). */
+/* Editor modes. */
 #define	S_MODE_EX	0x0000001	/* Ex mode. */
 #define	S_MODE_VI	0x0000002	/* Vi mode. */
 
@@ -260,22 +260,20 @@ typedef struct _scr {
 #define	S_ABBREV	0x0000100	/* If have abbreviations. */
 #define	S_AUTOPRINT	0x0000200	/* Autoprint flag. */
 #define	S_BELLSCHED	0x0000400	/* Bell scheduled. */
-#define	S_CUR_INVALID	0x0000800	/* Cursor position is incalculable. */
-#define	S_DIVIDER	0x0001000	/* Ex screen divider is displayed. */
-#define	S_GLOBAL	0x0002000	/* Doing a global command. */
-#define	S_INPUT		0x0004000	/* Doing text input. */
-#define	S_INTERRUPTED	0x0008000	/* If have been interrupted. */
-#define	S_INTERRUPTIBLE	0x0010000	/* If can be interrupted. */
-#define	S_ISFROMTTY	0x0020000	/* Reading from a tty. */
-#define	S_MSGREENTER	0x0040000	/* If msg routine reentered. */
-#define	S_REDRAW	0x0080000	/* Redraw the screen. */
-#define	S_REFORMAT	0x0100000	/* Reformat the screen. */
-#define	S_REFRESH	0x0200000	/* Refresh the screen. */
-#define	S_RESIZE	0x0400000	/* Resize the screen. */
-#define	S_RE_SET	0x0800000	/* The file's RE has been set. */
-#define	S_TIMER_SET	0x1000000	/* If a busy timer is running. */
-#define	S_TERMSIGNAL	0x2000000	/* Termination signal received. */
-#define	S_UPDATE_MODE	0x4000000	/* Don't repaint modeline. */
+#define	S_GLOBAL	0x0000800	/* Doing a global command. */
+#define	S_INPUT		0x0001000	/* Doing text input. */
+#define	S_INTERRUPTED	0x0002000	/* If have been interrupted. */
+#define	S_INTERRUPTIBLE	0x0004000	/* If can be interrupted. */
+#define	S_ISFROMTTY	0x0008000	/* Reading from a tty. */
+#define	S_MSGREENTER	0x0010000	/* If msg routine reentered. */
+#define	S_REDRAW	0x0020000	/* Redraw the screen. */
+#define	S_REFORMAT	0x0040000	/* Reformat the screen. */
+#define	S_REFRESH	0x0080000	/* Refresh the screen. */
+#define	S_RESIZE	0x0100000	/* Resize the screen. */
+#define	S_RE_SET	0x0200000	/* The file's RE has been set. */
+#define	S_TIMER_SET	0x0400000	/* If a busy timer is running. */
+#define	S_TERMSIGNAL	0x0800000	/* Termination signal received. */
+#define	S_UPDATE_MODE	0x1000000	/* Don't repaint modeline. */
 
 #define	S_SCREEN_RETAIN			/* Retain at screen create. */	\
 	(S_MODE_EX | S_MODE_VI | S_ISFROMTTY | S_RE_SET)
@@ -288,3 +286,4 @@ int	scr_end __P((struct _scr *));
 int	scr_init __P((struct _scr *, struct _scr *));
 int	sex __P((struct _scr *, struct _exf *, struct _scr **));
 int	svi __P((struct _scr *, struct _exf *, struct _scr **));
+int	xaw __P((struct _scr *, struct _exf *, struct _scr **));
