@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 5.35 1993/04/13 16:25:01 bostic Exp $ (Berkeley) $Date: 1993/04/13 16:25:01 $";
+static char sccsid[] = "$Id: v_search.c,v 5.36 1993/05/02 11:01:48 bostic Exp $ (Berkeley) $Date: 1993/05/02 11:01:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -98,10 +98,8 @@ v_searchw(sp, ep, vp, fm, tm, rp)
 	int rval;
 	char *bp;
 
-#define	WORDFORMAT	"[^[:alnum:]]%s[^[:alnum:]]"
-
 	gp = sp->gp;
-	blen = vp->kbuflen + sizeof(WORDFORMAT);
+	blen = vp->kbuflen + sizeof(RE_NOTINWORD) * 2;
 	if (F_ISSET(gp, G_TMP_INUSE)) {
 		if ((bp = malloc(blen)) == NULL) {
 			msgq(sp, M_ERR, "Error: %s.", strerror(errno));
@@ -112,7 +110,8 @@ v_searchw(sp, ep, vp, fm, tm, rp)
 		bp = gp->tmp_bp;
 		F_SET(gp, G_TMP_INUSE);
 	}
-	(void)snprintf(bp, blen, WORDFORMAT, vp->keyword);
+	(void)snprintf(bp, blen,
+	    "%s%s%s", RE_NOTINWORD, vp->keyword, RE_NOTINWORD);
 		
 	rval = f_search(sp, ep, fm, rp, bp, NULL, SEARCH_MSG | SEARCH_TERM);
 
