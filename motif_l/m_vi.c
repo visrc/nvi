@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_vi.c,v 8.35 1997/08/02 16:50:11 bostic Exp $ (Berkeley) $Date: 1997/08/02 16:50:11 $";
+static const char sccsid[] = "$Id: m_vi.c,v 8.36 1997/08/03 15:02:51 bostic Exp $ (Berkeley) $Date: 1997/08/03 15:02:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -731,9 +731,6 @@ static	void				scrollbar_moved( widget, ptr, cbs )
      * (see comments near __vi_set_scroll_block())
      */
     if ( scroll_block ) {
-#ifdef TRACE
-	vtrace( "punting scroll request with %d in buffer\n", len );
-#endif
 	return;
     }
     __vi_set_scroll_block();
