@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.38 1993/01/11 20:46:17 bostic Exp $ (Berkeley) $Date: 1993/01/11 20:46:17 $";
+static char sccsid[] = "$Id: main.c,v 5.39 1993/01/23 16:36:56 bostic Exp $ (Berkeley) $Date: 1993/01/23 16:36:56 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -24,6 +24,8 @@ static char sccsid[] = "$Id: main.c,v 5.38 1993/01/11 20:46:17 bostic Exp $ (Ber
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <termios.h>
+#include <unistd.h>
 
 #include "vi.h"
 #include "excmd.h"
@@ -38,6 +40,8 @@ FILE *tracefp;
 #endif
 
 enum editmode mode;				/* See vi.h. */
+
+struct termios original_termios;		/* See ex_shell.c */
 
 static void obsolete __P((char *[]));
 static void usage __P((void));
@@ -69,6 +73,13 @@ main(argc, argv)
 	} else
 		mode = MODE_VI;
 
+	/* Get original terminal information. */
+	if (tcgetattr(STDIN_FILENO, &original_termios)) {
+		(void)fprintf(stderr,
+		    "%s: tcgetttr: %s\n", p, strerror(errno));
+		exit(1);
+	}
+		
 	obsolete(argv);
 	excmdarg = err = tag = NULL;
 	while ((ch = getopt(argc, argv, "c:emRrT:t:v")) != EOF)
