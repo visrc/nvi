@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.95 1994/03/03 13:27:59 bostic Exp $ (Berkeley) $Date: 1994/03/03 13:27:59 $";
+static char sccsid[] = "$Id: ex.c,v 8.96 1994/03/07 18:01:22 bostic Exp $ (Berkeley) $Date: 1994/03/07 18:01:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -60,10 +60,9 @@ ex(sp, ep)
 		case INP_OK:
 			break;
 		case INP_EOF:
+		case INP_ERR:
 			F_SET(sp, S_EXIT_FORCE);
 			goto ret;
-		case INP_ERR:
-			continue;
 		}
 
 		saved_mode = F_ISSET(sp, S_SCREENS | S_MAJOR_CHANGE);
