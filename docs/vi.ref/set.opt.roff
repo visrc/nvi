@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: set.opt.roff,v 8.7 1994/04/07 13:06:06 bostic Exp $ (Berkeley) $Date: 1994/04/07 13:06:06 $
+.\"     $Id: set.opt.roff,v 8.8 1994/04/09 17:44:07 bostic Exp $ (Berkeley) $Date: 1994/04/09 17:44:07 $
 .\"
 There are a large number of options that may be set (or unset) to
 change the editor's behavior.
@@ -547,6 +547,9 @@ and should not be used under any circumstances.
 .Em "This option will never be implemented."
 .It Li "number, nu [off]"
 Precede each line displayed with its current line number.
+.It Li "octal [off]"
+Display unknown characters as octal numbers, instead of the default
+hexadecimal.
 .It Li "open [on]"
 .Nm \&Ex
 only.
