@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.88 1993/12/29 09:50:44 bostic Exp $ (Berkeley) $Date: 1993/12/29 09:50:44 $";
+static char sccsid[] = "$Id: ex.c,v 8.89 1994/01/08 13:16:01 bostic Exp $ (Berkeley) $Date: 1994/01/08 13:16:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -446,6 +446,7 @@ loop:	if (nl) {
 	 * special cases we move past their special argument.  Then, we do
 	 * normal command processing on whatever is left.  Barf-O-Rama.
 	 */
+	arg1_len = 0;
 	save_cmd = cmd;
 	(void)term_key_ch(sp, K_VLNEXT, &vlit);
 	if (cp == &cmds[C_EDIT] ||
