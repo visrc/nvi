@@ -6,14 +6,12 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: cl.h,v 10.1 1995/06/08 19:00:31 bostic Exp $ (Berkeley) $Date: 1995/06/08 19:00:31 $
+ *	$Id: cl.h,v 10.2 1995/06/26 11:05:32 bostic Exp $ (Berkeley) $Date: 1995/06/26 11:05:32 $
  */
 
 typedef struct _cl_private {
 	CHAR_T	 ibuf[256];	/* Input keys. */
 	int	 icnt;		/* Input key count. */
-
-	char	*VB;		/* Visual bell termcap string. */
 
 	int	 eof_count;	/* EOF count. */
 
@@ -30,10 +28,10 @@ typedef struct _cl_private {
 	size_t	 lline_blen;	/* Length of last line buffer. */
 
 	struct termios exterm;	/* Terminal values ex restores. */
-	char	*CE;		/* Clear to EOL termcap string. */
-	char	*CM;		/* Cursor movement termcap string. */
-	char	*UP;		/* Cursor up termcap string. */
-	char	*SE, *SO;	/* Inverse video termcap strings. */
+	char	*el;		/* Clear to EOL terminal string. */
+	char	*cup;		/* Cursor movement terminal string. */
+	char	*cuu1;		/* Cursor up terminal string. */
+	char	*rmso, *smso;	/* Inverse video terminal strings. */
 
 #define	INDX_CONT	0	/* Signal array offsets. */
 #define	INDX_HUP	1
@@ -43,8 +41,8 @@ typedef struct _cl_private {
 #define	INDX_MAX	5	/* Original signal information. */
 	struct sigaction oact[INDX_MAX];
 
-#define	CL_INIT_EX	0x0001	/* Ex curses/termcap initialized. */
-#define	CL_INIT_VI	0x0002	/* Vi curses/termcap initialized. */
+#define	CL_INIT_EX	0x0001	/* Ex curses/terminal initialized. */
+#define	CL_INIT_VI	0x0002	/* Vi curses/terminal initialized. */
 #define	CL_LLINE	0x0004	/* If cursor on the screen's last line. */
 #define	CL_LLINE_IV	0x0008	/* If the last line is inverse video. */
 #define	CL_SIGCONT	0x0020	/* SIGCONT arrived. */
@@ -58,7 +56,6 @@ typedef struct _cl_private {
 extern GS *__global_list;	/* GLOBAL: List of screens. */
 
 #define	CLP(sp)		((CL_PRIVATE *)((sp)->gp->cl_private))
-#define	G_CLP		((CL_PRIVATE *)__global_list->cl_private)
 
 typedef enum { INP_OK=0, INP_EOF, INP_ERR, INP_INTR, INP_TIMEOUT } input_t;
 
