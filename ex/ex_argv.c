@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_argv.c,v 10.33 2000/07/21 17:33:58 skimo Exp $ (Berkeley) $Date: 2000/07/21 17:33:58 $";
+static const char sccsid[] = "$Id: ex_argv.c,v 10.34 2000/08/01 19:37:42 skimo Exp $ (Berkeley) $Date: 2000/08/01 19:37:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -645,6 +645,8 @@ argv_sexp(sp, bpp, blenp, lenp)
 	int ch, std_output[2];
 	CHAR_T *bp, *p;
 	char *sh, *sh_path;
+	char *np;
+	size_t nlen;
 
 	/* Secure means no shell access. */
 	if (O_ISSET(sp, O_SECURE)) {
@@ -712,7 +714,8 @@ err:		if (ifp != NULL)
 		 * XXX
 		 * Assume that all shells have -c.
 		 */
-		execl(sh_path, sh, "-c", bp, NULL);
+		INT2CHAR(sp, bp, v_strlen(bp)+1, np, nlen);
+		execl(sh_path, sh, "-c", np, NULL);
 		msgq_str(sp, M_SYSERR, sh_path, "118|Error: execl: %s");
 		_exit(127);
 	default:			/* Parent. */
