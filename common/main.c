@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.65 1994/01/23 19:36:36 bostic Exp $ (Berkeley) $Date: 1994/01/23 19:36:36 $";
+static char sccsid[] = "$Id: main.c,v 8.66 1994/02/25 15:28:17 bostic Exp $ (Berkeley) $Date: 1994/02/25 15:28:17 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -281,17 +281,17 @@ main(argc, argv)
 		 * May 1992, page 106), System V release 3.2 and later, has an
 		 * option "[no]exrc", causing vi to not "read .exrc files in
 		 * the current directory unless you first set the exrc option
-		 * in your home directory's .exrc file".  Yeah, right.  Did
-		 * someone actually believe that users would change their home
-		 * .exrc file based on whether or not they wanted to source the
-		 * current local .exrc?  Or that users would want ALL the local
-		 * .exrc files on some systems, and none of them on others?
-		 * I think not.
-		 *
-		 * Apply the same tests to local .exrc files that are applied
-		 * to any other .exrc file.
+		 * in your home directory's .exrc file".  The problem that this
+		 * (hopefully) solves is that on System V you can "give away"
+		 * files, so there's no possible test we can make to determine
+		 * if the file is safe.  The exrc variable is initialized to
+		 * off.  However, if it was explicitly turned off by the user,
+		 * then we never read the local .exrc file.  If the user didn't
+		 * initialize it or initialized it to on, we make all of the
+		 * standard checks of the file before reading it.
 		 */
-		if (exrc_isok(sp, _PATH_EXRC, 0))
+		if ((!F_ISSET(&sp->opts[O_EXRC], OPT_SET) ||
+		     O_ISSET(sp, O_EXRC)) && exrc_isok(sp, _PATH_EXRC, 0))
 			(void)ex_cfile(sp, NULL, _PATH_EXRC);
 	}
 
