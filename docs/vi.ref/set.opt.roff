@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: set.opt.roff,v 8.52 1996/04/02 21:29:54 bostic Exp $ (Berkeley) $Date: 1996/04/02 21:29:54 $
+.\"     $Id: set.opt.roff,v 8.53 1996/04/15 12:33:48 bostic Exp $ (Berkeley) $Date: 1996/04/15 12:33:48 $
 .\"
 .SH 1 "Set Options"
 .pp
@@ -596,6 +596,12 @@ This option only permits you to disallow messages for the edit session.
 See the
 .XR mesg 1
 utility for more information.
+.KY mic
+.IP "mic [off]"
+The
+.OP mic
+edit option makes all Regular Expression searches case-insensitive,
+as long as an upper-case letter does not appear in the search string.
 .KY msgcat
 .IP "msgcat [./]"
 This option selects a message catalog to be used to display error and
@@ -846,12 +852,6 @@ Historically, the
 command, when specified without a count, used two times the size of the
 scroll value; the POSIX 1003.2 standard specified the window size, which
 is a better choice.
-.KY searchci
-.IP "searchci [off]"
-The
-.OP searchci
-edit option makes all Regular Expression searches case-insensitive,
-as long as an upper-case letter does not appear in the search string.
 .KY searchincr
 .IP "searchincr [off]"
 The

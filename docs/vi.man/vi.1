@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.1,v 8.30 1996/04/02 21:30:28 bostic Exp $ (Berkeley) $Date: 1996/04/02 21:30:28 $
+.\"     $Id: vi.1,v 8.31 1996/04/15 12:34:19 bostic Exp $ (Berkeley) $Date: 1996/04/15 12:34:19 $
 .\"
 .Dd "%Q%"
 .Dt EX/VI 1
@@ -928,6 +928,9 @@ pauses on the matching character when the
 option is set.
 .It Sy "mesg [on]"
 Permit messages from other users.
+.It Sy "mic [off]"
+Makes all Regular Expression searches case-insensitive,
+as long as an upper-case letter does not appear in the search string.
 .It Sy "modelines, modeline [off]"
 Read the first and last few lines of each file for
 .Nm ex
@@ -1002,9 +1005,6 @@ only.
 Display a row/column ruler on the colon command line.
 .It Sy "scroll, scr [window / 2]"
 Set the number of lines scrolled.
-.It Sy "searchci [off]"
-Makes all Regular Expression searches case-insensitive,
-as long as an upper-case letter does not appear in the search string.
 .It Sy "searchincr [off]"
 Makes the
 .Sy \&/
