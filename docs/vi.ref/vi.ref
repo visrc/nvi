@@ -8,7 +8,7 @@
 .\"
 .\" See the LICENSE file for redistribution information.
 .\"
-.\"     $Id: vi.ref,v 8.83 1996/08/20 19:54:03 bostic Exp $ (Berkeley) $Date: 1996/08/20 19:54:03 $
+.\"     $Id: vi.ref,v 8.84 1996/10/10 19:11:54 bostic Exp $ (Berkeley) $Date: 1996/10/10 19:11:54 $
 .\"
 .\"
 .so ref.so
@@ -112,8 +112,8 @@ The financial support of UUNET Communications Services is gratefully
 acknowledged.
 .)q
 .sy echo -n >index
-.oh 'Nvi/Nex Reference''USD:13-%'
-.eh 'USD:13-%''Nvi/Nex Reference'
+.oh 'Vi/Ex Reference''USD:13-%'
+.eh 'USD:13-%''Vi/Ex Reference'
 .bp 4
 .SH 1 Description
 .pp
@@ -1662,11 +1662,11 @@ This character is almost always treated identically to a
 .LI <control-M>
 character, but differs in that it cannot be escaped into the file text or
 into a command.
-.oh 'Nvi/Nex Reference (Vi Commands)''USD:13-%'
-.eh 'USD:13-%''Nvi/Nex Reference (Vi Commands)'
+.oh 'Vi/Ex Reference (Vi Commands)''USD:13-%'
+.eh 'USD:13-%''Vi/Ex Reference (Vi Commands)'
 .so vi.cmd.roff
-.oh 'Nvi/Nex Reference''USD:13-%'
-.eh 'USD:13-%''Nvi/Nex Reference'
+.oh 'Vi/Ex Reference''USD:13-%'
+.eh 'USD:13-%''Vi/Ex Reference'
 .SH 1 "Ex Addressing"
 .pp
 Addressing in
@@ -1833,14 +1833,14 @@ The first address must be less than or equal to the second address.
 The first address must be greater than or equal to the first line of the
 file, and the last address must be less than or equal to the last line
 of the file.
-.oh 'Nvi/Nex Reference (Ex Commands)''USD:13-%'
-.eh 'USD:13-%''Nvi/Nex Reference (Ex Commands)'
+.oh 'Vi/Ex Reference (Ex Commands)''USD:13-%'
+.eh 'USD:13-%''Vi/Ex Reference (Ex Commands)'
 .so ex.cmd.roff
-.oh 'Nvi/Nex Reference (Options)''USD:13-%'
-.eh 'USD:13-%''Nvi/Nex Reference (Options)'
+.oh 'Vi/Ex Reference (Options)''USD:13-%'
+.eh 'USD:13-%''Vi/Ex Reference (Options)'
 .so set.opt.roff
-.oh 'Nvi/Nex Reference''USD:13-%'
-.eh 'USD:13-%''Nvi/Nex Reference'
+.oh 'Vi/Ex Reference''USD:13-%'
+.eh 'USD:13-%''Vi/Ex Reference'
 .bp
 .SH 1 Index
 .lp
