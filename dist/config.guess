@@ -410,8 +410,8 @@ EOF
     TSUNAMI:LynxOS:2.*:*)
 	echo sparc-unknown-lynxos${UNAME_RELEASE}
 	exit 0 ;;
-    rs6000:LynxOS:2.*:* | PowerPC:LynxOS:2.*:*)
-	echo rs6000-unknown-lynxos${UNAME_RELEASE}
+    PowerPC:LynxOS:2.*:*)
+	echo powerpc-unknown-lynxos${UNAME_RELEASE}
 	exit 0 ;;
     RM*:SINIX-*:*:*)
 	echo mips-sni-sysv4
