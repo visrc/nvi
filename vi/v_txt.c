@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.132 1994/10/09 09:55:55 bostic Exp $ (Berkeley) $Date: 1994/10/09 09:55:55 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.133 1994/10/13 19:16:57 bostic Exp $ (Berkeley) $Date: 1994/10/13 19:16:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -568,7 +568,8 @@ k_cr:			if (LF_ISSET(TXT_CR)) {
 				if (wmt.len != 0 ||
 				     wmt.insert != 0 || wmt.owrite != 0) {
 					BINC_GOTO(sp, ntp->lb, ntp->lb_len,
-					    ntp->len + wmt.len + 32);
+					    ntp->len + wmt.len + wmt.insert +
+					    wmt.owrite + 32);
 					memmove(ntp->lb + sp->cno, wmt.lb,
 					    wmt.len + wmt.insert + wmt.owrite);
 					ntp->len +=
@@ -1891,6 +1892,12 @@ txt_margin(sp, tp, chp, wmtp, flags, didbreak)
 	/*
 	 * Store saved information about the rest of the line in the
 	 * wrapmargin TEXT structure.
+	 *
+	 * !!!
+	 * The len field holds the length of the current characters that
+	 * the user entered, but which are getting split to the new line
+	 * -- it's going to be used to set the cursor value when we move
+	 * to the new line.
 	 */
 	wmtp->lb = p + 1;
 	wmtp->len = len;
