@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: vi.cmd.roff,v 8.22 1994/05/27 00:54:17 bostic Exp $ (Berkeley) $Date: 1994/05/27 00:54:17 $
+.\"	$Id: vi.cmd.roff,v 8.23 1994/06/25 12:14:35 bostic Exp $ (Berkeley) $Date: 1994/06/25 12:14:35 $
 .\"
 #ifdef REFERENCE
 .SH 1 "Vi Description"
@@ -164,16 +164,16 @@ commands.
 .KY "previous context"
 .IP "previous context"
 The position of the cursor before the command which caused the
-last non-relative movement was executed.
+last absolute movement was executed.
 Each 
 .CO vi
-command described in the next section
-that is considered a non-relative movement is so noted.
+command described in the next section that is considered an
+absolute movement is so noted.
 In addition, specifying
 .i any
 address to an
 .CO ex
-command is considered a non-relative movement.
+command is considered an absolute movement.
 .KY "motion"
 .IP "motion"
 A second
@@ -362,11 +362,15 @@ Search forward
 times for the current word.
 #ifdef REFERENCE
 The current word begins at the current cursor position,
-and extends up to the next non-word character on the current line.
+and extends up to the next non-word character or the end of the line.
+The search is literal, i.e. no characters in the word have any special
+meaning in terms of Regular Expressions.
+It is an error if no matching pattern is found between the starting position
+and the end of the file.
 .sp
 The
 .CO <control-A>
-command is a non-relative movement.
+command is an absolute movement.
 The
 .CO <control-A>
 command may be used as the motion component of other
@@ -403,11 +407,11 @@ is the value of the
 option.
 (In the case of split screens, this size is corrected to the
 current screen size.)
-It is an error if the cursor is on the first line in the file.
+This is an error if the movement is past the beginning of the file.
 .sp
 The
 .CO <control-B>
-command is a non-relative movement.
+command is an absolute movement.
 .SS
 .SP Line:
 Set to the last line of text displayed on the screen.
@@ -442,7 +446,7 @@ This is an error if the movement is past the end of the file.
 .sp
 The
 .CO <control-D>
-command is a non-relative movement.
+command is an absolute movement.
 .SS
 .SP Line:
 Set to the current line plus the number of lines scrolled.
@@ -456,17 +460,16 @@ None.
 .IP "[count] <control-E>"
 Scroll forward
 .LI count
-lines, leaving the current line and column as is, if possible.
+lines, leaving the cursor on the current line and column, if possible.
 #ifdef REFERENCE
-This is an error if the last line in the file is already displayed
-on the screen.
+This is an error if the movement is past the end of the file.
 .SS
 .SP Line:
 Unchanged unless the current line scrolls off the screen,
 in which case it is set to the first line on the screen.
 .SP Column:
 Unchanged unless the current line scrolls off the screen,
-in which case it is the most attractive cursor position.
+in which case it is set to the most attractive cursor position.
 .SP Options:
 None.
 .SE
@@ -487,11 +490,11 @@ is the value of the
 option.
 (In the case of split screens, this size is corrected to the
 current screen size.)
-It is an error if the cursor is on the last line in the file.
+This is an error if the movement is past the end of the file.
 .sp
 The
 .CO <control-F>
-command is a non-relative movement.
+command is an absolute movement.
 .SS
 .SP Line:
 Set to the first line on the screen.
@@ -526,8 +529,7 @@ Move the cursor back
 .LI count
 characters in the current line.
 #ifdef REFERENCE
-This is an error if the cursor is on the first character
-in the line.
+This is an error if the cursor is on the first character in the line.
 .sp
 The
 .CO <control-H>
@@ -535,17 +537,18 @@ and
 .CO h
 commands may be used as the motion component of other
 .CO vi
-commands, in which case any text copied into a buffer is
-character oriented.
+commands,
+in which case any text copied into a buffer is character oriented.
 .SS
 .SP Line:
 Unchanged.
 .SP Column:
-Set to the previous character, or, the first character of the
-line if
+Set to the
+.LI "current - count"
+character, or, the first character in the line if
 .LI count
-is greater than or equal to the number of characters before the
-cursor in the line.
+is greater than or equal to the number of characters in the line
+before the cursor.
 .SP Options:
 None.
 .SE
@@ -619,7 +622,7 @@ line oriented.
 Set to the current line plus
 .LI count .
 .SP Column:
-Set to the first nonblank character of the line.
+Set to the first nonblank character in the line.
 .SP Options:
 None.
 .SE
@@ -690,12 +693,12 @@ This is an error if the movement is past the beginning of the file.
 .sp
 The
 .CO <control-U>
-command is a non-relative movement.
+command is an absolute movement.
 .SS
 .SP Line:
 Set to the current line minus the amount scrolled.
 .SP Column:
-Set to the first nonblank character of the line.
+Set to the first nonblank character in the line.
 .SP Options:
 None.
 .SE
@@ -720,8 +723,7 @@ Scroll backward
 .LI count
 lines, leaving the current line and column as is, if possible.
 #ifdef REFERENCE
-This is an error if the first line in the file is already displayed
-on the screen.
+This is an error if the movement is past the beginning of the file.
 .SS
 .SP Line:
 Unchanged unless the current line scrolls off the screen,
@@ -1000,7 +1002,7 @@ lines.
 .sp
 It is not an error to use the
 .CO $
-command when the cursor is on the last character of the line or
+command when the cursor is on the last character in the line or
 when the line is empty.
 .sp
 The
@@ -1013,7 +1015,7 @@ nonblank character in the line, in which case it is line oriented.
 It is not an error to use the
 .CO $
 command as a motion component when the cursor is on the last character
-of the line, although it is an error when the line is empty.
+in the line, although it is an error when the line is empty.
 .SS
 .SP Line:
 Set to the current line plus
@@ -1044,7 +1046,7 @@ command was ignored.
 .sp
 The
 .CO %
-command is a non-relative movement.
+command is an absolute movement.
 The
 .CO %
 command may be used as the motion component of other
@@ -1077,8 +1079,8 @@ command was ignored.
 .SP Line:
 Unchanged.
 .SP Column:
-Unchanged if the cursor was on the last character of the line,
-otherwise, set to the first nonblank character of the line.
+Unchanged if the cursor was on the last character in the line,
+otherwise, set to the first nonblank character in the line.
 .SP Options:
 Affected by the
 .OP edcompatible ,
@@ -1126,7 +1128,7 @@ The
 .CO \'
 and
 .CO `
-commands are both non-relative movements.
+commands are both absolute movements.
 They may be used as a motion component for other
 .CO vi
 commands.
@@ -1136,7 +1138,7 @@ command, any text copied into a buffer is line oriented.
 For the
 .CO `
 command, any text copied into a buffer is character oriented, unless
-it both starts and stops at the first character of the line, in which
+it both starts and stops at the first character in the line, in which
 case it is line oriented.
 In addition, when using the
 .CO `
@@ -1167,14 +1169,14 @@ sentences.
 .sp
 The
 .CO (
-command is a non-relative movement.
+command is an absolute movement.
 The
 .CO (
 command may be used as the motion component of other
 .CO vi
 commands, in which case any text copied into a buffer is
 character oriented, unless the starting and stopping points of the
-region are the first column of the line, in which case it is
+region are the first character in the line, in which case it is
 line oriented.
 In the latter case, the stopping point of the region is adjusted
 to be the end of the line immediately before it, and not the original
@@ -1197,14 +1199,14 @@ sentences.
 .sp
 The
 .CO )
-command is a non-relative movement.
+command is an absolute movement.
 The
 .CO )
 command may be used as the motion component of other
 .CO vi
 commands, in which case any text copied into a buffer is
 character oriented, unless the starting point of the region is the
-first column of the line, in which case it is line oriented.
+first character in the line, in which case it is line oriented.
 In the latter case, if the stopping point of the region is also
 the first character in the line, it is adjusted to be the end of the
 line immediately before it.
@@ -1255,7 +1257,7 @@ Move to first nonblank of the previous line,
 times.
 #ifdef REFERENCE
 .sp
-This is an error if the movement is past the start of the file.
+This is an error if the movement is past the beginning of the file.
 .sp
 The
 .CO -
@@ -1268,7 +1270,7 @@ line oriented.
 Set to the current line minus
 .LI count .
 .SP Column:
-Set to the first nonblank character of the line.
+Set to the first nonblank character in the line.
 .SP Options:
 None.
 .SE
@@ -1337,15 +1339,15 @@ The
 .CO /
 and
 .CO ?
-commands are non-relative movements.
+commands are absolute movements.
 They may be used as the motion components of other
 .CO vi
 commands, in which case any text copied into a buffer is
 character oriented, unless the search started and ended on
 the first column of a line, in which case it is line oriented.
-In addition, forward searches ending at the first column of a line,
-and backward searches beginning at the first column of the line,
-are corrected to begin or end at the last column of the previous line.
+In addition, forward searches ending at the first character of a line,
+and backward searches beginning at the first character in the line,
+are corrected to begin or end at the last character of the previous line.
 (Note, forward and backward searches can occur for both
 .CO /
 and
@@ -1404,14 +1406,14 @@ Move to the first character in the current line.
 #ifdef REFERENCE
 It is not an error to use the
 .CO 0
-command when the cursor is on the first character of the line,
+command when the cursor is on the first character in the line,
 .sp
 The
 .CO 0
 command may be used as the motion component of other
 .CO vi
 commands, in which case it is an error if the cursor is on the
-first character of the line.
+first character in the line.
 .SS
 .SP Line:
 Unchanged.
@@ -1533,7 +1535,7 @@ command) by the number of columns specified by the
 .OP shiftwidth
 option.
 Only whitespace characters are deleted when shifting left;
-once the first column of the line contains a nonblank character,
+once the first character in the line contains a nonblank character,
 the
 .CO shift
 will succeed, but the line will not be modified.
@@ -1541,7 +1543,7 @@ will succeed, but the line will not be modified.
 .SP Line:
 Unchanged.
 .SP Column:
-Set to the first nonblank character of the line.
+Set to the first nonblank character in the line.
 .SP Options:
 Affected by the
 .OP shiftwidth
@@ -1759,7 +1761,7 @@ not specified.
 .sp
 The
 .CO G
-command is a non-relative movement.
+command is an absolute movement.
 The
 .CO \&G
 command may be used as the motion component of other
@@ -1772,7 +1774,7 @@ Set to
 .LI count ,
 if specified, otherwise, the last line.
 .SP Column:
-Set to the first nonblank character of the line.
+Set to the first nonblank character in the line.
 .SP Options:
 None.
 .SE
@@ -1786,7 +1788,7 @@ lines below the top of the screen.
 .sp
 The
 .CO H
-command is a non-relative movement.
+command is an absolute movement.
 The
 .CO H
 command may be used as the motion component of other
@@ -1871,7 +1873,7 @@ lines above the bottom of the screen.
 .sp
 The
 .CO L
-command is a non-relative movement.
+command is an absolute movement.
 The
 .CO L
 command may be used as the motion component of other
@@ -1898,7 +1900,7 @@ Move to the screen line in the middle of the screen.
 .sp
 The
 .CO M
-command is a non-relative movement.
+command is an absolute movement.
 The
 .CO M
 command may be used as the motion component of other
@@ -2191,7 +2193,7 @@ section boundaries.
 .sp
 The
 .CO [[
-command is a non-relative movement.
+command is an absolute movement.
 The
 .CO [[
 command may be used as the motion component of other
@@ -2200,7 +2202,7 @@ commands, in which case any text copied into a buffer is
 character oriented, unless the starting position is column 0,
 in which case it is line oriented.
 .sp
-This is an error if the cursor is on the first line of the file.
+This is an error if the movement is past the beginning of the file.
 .SS
 .SP Line:
 Set to the previous line that is
@@ -2209,7 +2211,7 @@ section boundaries back,
 or the first line of the file if no more section boundaries exist
 preceding the current line.
 .SP Column:
-Set to the first nonblank character of the line.
+Set to the first nonblank character in the line.
 .SP Options:
 Affected by the
 .OP sections
@@ -2225,7 +2227,7 @@ section boundaries.
 .sp
 The
 .CO ]]
-command is a non-relative movement.
+command is an absolute movement.
 The
 .CO ]]
 command may be used as the motion component of other
@@ -2234,7 +2236,7 @@ commands, in which case any text copied into a buffer is
 character oriented, unless the starting position is column 0,
 in which case it is line oriented.
 .sp
-This is an error if the cursor is on the first line of the file.
+This is an error if the movement is past the end of the file.
 .SS
 .SP Line:
 Set to the line that is
@@ -2243,7 +2245,7 @@ section boundaries forward,
 or to the last line of the file if no more section
 boundaries exist following the current line.
 .SP Column:
-Set to the first nonblank character of the line.
+Set to the first nonblank character in the line.
 .SP Options:
 Affected by the
 .OP sections
@@ -2291,7 +2293,7 @@ command when the cursor is on the first character in the line.
 The current line plus
 .LI "count - 1" .
 .SP Column:
-The first nonblank character of the line.
+The first nonblank character in the line.
 .SP Options:
 None.
 .SE
@@ -2783,7 +2785,7 @@ Set to
 .LI count1 ,
 if specified, otherwise unchanged.
 .SP Column:
-Set to the first nonblank character of the line.
+Set to the first nonblank character in the line.
 .SP Options:
 None.
 .SE
@@ -2797,7 +2799,7 @@ paragraphs.
 .sp
 The
 .CO {
-command is a non-relative movement.
+command is an absolute movement.
 The
 .CO {
 command may be used as the motion component of other
@@ -2809,7 +2811,7 @@ character on its line, in which case it is line oriented.
 .SP Line:
 Set to the line containing the beginning of the previous paragraph.
 .SP Column:
-Set to the first nonblank character of the line.
+Set to the first nonblank character in the line.
 .SP Options:
 Affected by the
 .OP paragraph
@@ -2855,7 +2857,7 @@ paragraphs.
 .sp
 The
 .CO }
-command is a non-relative movement.
+command is an absolute movement.
 The
 .CO }
 command may be used as the motion component of other
@@ -2868,7 +2870,7 @@ in which case it is line oriented.
 .SP Line:
 Set to the line containing the beginning of the next paragraph.
 .SP Column:
-Set to the first nonblank character of the line.
+Set to the first nonblank character in the line.
 .SP Options:
 Affected by the
 .OP paragraph
