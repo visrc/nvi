@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.49 1993/05/05 16:48:33 bostic Exp $ (Berkeley) $Date: 1993/05/05 16:48:33 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.50 1993/05/05 16:53:40 bostic Exp $ (Berkeley) $Date: 1993/05/05 16:53:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -186,23 +186,26 @@ middle:		(void)svi_sm_fill(sp, ep, LNO, P_MIDDLE);
 	goto paint;
 
 	/*
-	 * At this point we know that part of the line is on the screen.
-	 * Because scrolling is done using logical lines, not physical,
-	 * all of the line may not be on the screen.  While that's not
-	 * necessarily bad, if the part the cursor is on isn't there,
-	 * we're going to lose.
+	 * At this point we know part of the line is on the screen.  Since
+	 * scrolling is done using logical lines, not physical, all of the
+	 * line may not be on the screen.  While that's not necessarily bad,
+	 * if the part the cursor is on isn't there, we're going to lose.
+	 * This isn't a problem for left-right scrolling, the cursor movement
+	 * code will handle the problem.
 	 */
-adjust:	if (LNO == HMAP->lno) {
-		cnt = svi_screens(sp, ep, LNO, &CNO);
-		while (cnt < HMAP->off)
-			if (svi_sm_1down(sp, ep))
-				return (1);
-	} else if (LNO == TMAP->lno) {
-		cnt = svi_screens(sp, ep, LNO, &CNO);
-		while (cnt > TMAP->off)
-			if (svi_sm_1up(sp, ep))
-				return (1);
-	}
+adjust:	if (!O_ISSET(sp, O_LEFTRIGHT))
+		if (LNO == HMAP->lno) {
+			cnt = svi_screens(sp, ep, LNO, &CNO);
+			while (cnt < HMAP->off)
+				if (svi_sm_1down(sp, ep))
+					return (1);
+		} else if (LNO == TMAP->lno) {
+			cnt = svi_screens(sp, ep, LNO, &CNO);
+			while (cnt > TMAP->off)
+				if (svi_sm_1up(sp, ep))
+					return (1);
+		}
+
 	if (F_ISSET(sp, S_REDRAW))
 		goto paint;
 
