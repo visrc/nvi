@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.19 1993/01/31 10:30:14 bostic Exp $ (Berkeley) $Date: 1993/01/31 10:30:14 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.20 1993/02/11 15:16:42 bostic Exp $ (Berkeley) $Date: 1993/02/11 15:16:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -587,11 +587,15 @@ update:	MOVE(y, ep->scno);
 
 	/*
 	 * Update the screen information.
-	 * NOTE: the top assignment is right, don't swap them!
+	 *
+	 * XXX
+	 * The whole usage of otop and top is probably wrong.  It would
+	 * probably be simpler to encode screen routines that do the
+	 * movement and return the physical cursor position.
 	 */
 	ep->ocno = ep->cno;
 	ep->olno = ep->lno;
-	ep->top = ep->otop;
+	ep->top = ep->otop = HMAP->lno;
 
 	return (0);
 }
