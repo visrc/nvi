@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.82 1996/09/15 13:43:50 bostic Exp $ (Berkeley) $Date: 1996/09/15 13:43:50 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.83 1996/09/15 16:03:22 bostic Exp $ (Berkeley) $Date: 1996/09/15 16:03:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -726,7 +726,7 @@ k_cr:		if (LF_ISSET(TXT_CR)) {
 
 		/*
 		 * Save the current line information for restoration in
-		 * txt_backup().  Set the new line length.
+		 * txt_backup(), and set the line final length.
 		 */
 		tp->sv_len = tp->len;
 		tp->sv_cno = tp->cno;
@@ -762,10 +762,18 @@ k_cr:		if (LF_ISSET(TXT_CR)) {
 			owrite = 0;
 		}
 
-		/* Set up bookkeeping for the new line. */
+		/*
+		 * !!!
+		 * Create a new line and insert the new TEXT into the queue.
+		 * DON'T insert until the old line has been updated, or the
+		 * inserted line count in line.c:db_get() will be wrong.
+		 */
 		if ((ntp = text_init(sp, p,
 		    insert + owrite, insert + owrite + 32)) == NULL)
 			goto err;
+		CIRCLEQ_INSERT_TAIL(&sp->tiq, ntp, q);
+
+		/* Set up bookkeeping for the new line. */
 		ntp->insert = insert;
 		ntp->owrite = owrite;
 		ntp->lno = tp->lno + 1;
@@ -820,18 +828,8 @@ k_cr:		if (LF_ISSET(TXT_CR)) {
 			++ntp->len;
 		}
 
-		/*
-		 * Swap old and new TEXT's, and insert the new TEXT into the
-		 * queue.
-		 *
-		 * !!!
-		 * DON'T insert until the old line has been updated, or the
-		 * inserted line count in line.c:db_get() will be wrong.
-		 */
+		/* Swap old and new TEXT's, and update the new line. */
 		tp = ntp;
-		CIRCLEQ_INSERT_TAIL(&sp->tiq, tp, q);
-
-		/* Update the new line. */
 		if (vs_change(sp, tp->lno, LINE_INSERT))
 			goto err;
 
