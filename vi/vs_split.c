@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 8.21 1993/12/02 12:15:00 bostic Exp $ (Berkeley) $Date: 1993/12/02 12:15:00 $";
+static char sccsid[] = "$Id: vs_split.c,v 8.22 1993/12/02 12:47:26 bostic Exp $ (Berkeley) $Date: 1993/12/02 12:47:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -81,8 +81,6 @@ svi_split(sp, argv)
 		sp->rows = half;
 		sp->t_maxrows = sp->rows - 1;
 
-		/* Link in after the parent. */
-		CIRCLEQ_INSERT_AFTER(&sp->gp->dq, sp, tsp, q);
 		splitup = 0;
 	} else {				/* Parent is bottom half. */
 		/* Child. */
@@ -99,8 +97,6 @@ svi_split(sp, argv)
 		memmove(_HMAP(sp),
 		    _HMAP(sp) + tsp->rows, sp->t_maxrows * sizeof(SMAP));
 
-		/* Link in before the parent. */
-		CIRCLEQ_INSERT_BEFORE(&sp->gp->dq, sp, tsp, q);
 		splitup = 1;
 	}
 
@@ -214,6 +210,15 @@ svi_split(sp, argv)
 		(void)svi_sm_fill(tsp, tsp->ep, 1, P_TOP);
 	}
 
+	/* Everything's initialized, put the screen on the displayed queue.*/
+	if (splitup) {
+		/* Link in before the parent. */
+		CIRCLEQ_INSERT_BEFORE(&sp->gp->dq, sp, tsp, q);
+	} else {
+		/* Link in after the parent. */
+		CIRCLEQ_INSERT_AFTER(&sp->gp->dq, sp, tsp, q);
+	}
+
 	/* Clear the current information lines in both screens. */
 	MOVE(sp, INFOLINE(sp), 0);
 	clrtoeol();
@@ -261,6 +266,10 @@ svi_bg(csp)
 		    "You may not background your only displayed screen.");
 		return (1);
 	}
+
+	/* Move the old screen to the hidden queue. */
+	CIRCLEQ_REMOVE(&csp->gp->dq, csp, q);
+	CIRCLEQ_INSERT_TAIL(&csp->gp->hq, csp, q);
 
 	/* Switch screens. */
 	csp->nextdisp = sp;
@@ -317,10 +326,6 @@ svi_join(csp, nsp)
 	if (!F_ISSET(&sp->opts[O_SCROLL], OPT_SET))
 		O_VAL(sp, O_SCROLL) = sp->t_maxrows / 2;
 
-	/* Screen is no longer displayed. */
-	CIRCLEQ_REMOVE(&csp->gp->dq, csp, q);
-	CIRCLEQ_INSERT_TAIL(&csp->gp->hq, csp, q);
-
 	*nsp = sp;
 	return (0);
 }
@@ -347,6 +352,11 @@ svi_fg(csp, name)
 			    name);
 		return (1);
 	}
+
+	/* Move the old screen to the hidden queue. */
+	CIRCLEQ_REMOVE(&csp->gp->dq, csp, q);
+	CIRCLEQ_INSERT_TAIL(&csp->gp->hq, csp, q);
+
 	return (0);
 }
 
@@ -436,11 +446,14 @@ svi_swap(csp, nsp, name)
 	if (svi_sm_fill(sp, sp->ep, sp->lno, P_FILL))
 		return (1);
 
-	/* The new screen replaces the old screen in the parent/child list. */
+	/*
+	 * The new screen replaces the old screen in the parent/child list.
+	 * We insert the new screen after the old one.  If we're exiting,
+	 * the exit will delete the old one, if we're foregrounding, the fg
+	 * code will move the old one to the hidden queue.
+	 */
 	CIRCLEQ_REMOVE(&sp->gp->hq, sp, q);
 	CIRCLEQ_INSERT_AFTER(&csp->gp->dq, csp, sp, q);
-	CIRCLEQ_REMOVE(&csp->gp->dq, csp, q);
-	CIRCLEQ_INSERT_TAIL(&csp->gp->hq, csp, q);
 
 	F_SET(sp, S_REDRAW);
 	return (0);
