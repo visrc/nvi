@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: nothread.c,v 1.3 2000/07/14 14:29:16 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:16 $";
+static const char sccsid[] = "$Id: nothread.c,v 1.4 2000/07/22 14:52:37 skimo Exp $ (Berkeley) $Date: 2000/07/22 14:52:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -24,7 +24,8 @@ static const char sccsid[] = "$Id: nothread.c,v 1.3 2000/07/14 14:29:16 skimo Ex
 
 #include "../common/common.h"
 
-static void vi_nothread_run __P((WIN *wp, void *(*fun)(void*), void *data));
+static int vi_nothread_run __P((WIN *wp, void *(*fun)(void*), void *data));
+static int vi_nothread_lock __P((WIN *, void **));
 
 /*
  * thread_init
@@ -35,10 +36,21 @@ void
 thread_init(GS *gp)
 {
 	gp->run = vi_nothread_run;
+	gp->lock_init = vi_nothread_lock;
+	gp->lock_end = vi_nothread_lock;
+	gp->lock_try = vi_nothread_lock;
+	gp->lock_unlock = vi_nothread_lock;
 }
 
-static void
+static int
 vi_nothread_run(WIN *wp, void *(*fun)(void*), void *data)
 {
 	fun(data);
+	return 0;
+}
+
+static int 
+vi_nothread_lock (WIN * wp, void **lp)
+{
+	return 0;
 }

@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: exf.h,v 10.13 2000/07/22 10:20:31 skimo Exp $ (Berkeley) $Date: 2000/07/22 10:20:31 $
+ *	$Id: exf.h,v 10.14 2000/07/22 14:52:36 skimo Exp $ (Berkeley) $Date: 2000/07/22 14:52:36 $
  */
 					/* Undo direction. */
 /*
@@ -33,6 +33,7 @@ struct _exf {
 	db_recno_t	 l_cur;		/* Log current record number. */
 	MARK	 l_cursor;		/* Log cursor position. */
 	dir_t	 lundo;			/* Last undo direction. */
+	WIN	*l_win;			/* Window owning transaction. */
 
 	LIST_HEAD(_markh, _lmark) marks;/* Linked list of file MARK's. */
 
@@ -55,6 +56,8 @@ struct _exf {
 	char	*rcv_path;		/* Recover file name. */
 	char	*rcv_mpath;		/* Recover mail file name. */
 	int	 rcv_fd;		/* Locked mail file descriptor. */
+
+	void	*lock;			/* Lock for log. */
 
 #define	F_DEVSET	0x001		/* mdev/minode fields initialized. */
 #define	F_FIRSTMODIFY	0x002		/* File not yet modified. */

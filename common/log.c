@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: log.c,v 10.17 2000/07/22 10:32:59 skimo Exp $ (Berkeley) $Date: 2000/07/22 10:32:59 $";
+static const char sccsid[] = "$Id: log.c,v 10.18 2000/07/22 14:52:36 skimo Exp $ (Berkeley) $Date: 2000/07/22 14:52:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -108,6 +108,8 @@ log_init(sp, ep)
 		return (1);
 	}
 
+	//LOCK_INIT(sp->wp, ep);
+
 	return (0);
 }
 
@@ -126,6 +128,7 @@ log_end(sp, ep)
 	 * !!!
 	 * ep MAY NOT BE THE SAME AS sp->ep, DON'T USE THE LATTER.
 	 */
+	//LOCK_END(sp->wp, ep);
 	if (ep->log != NULL) {
 		(void)(ep->log->close)(ep->log,DB_NOSYNC);
 		ep->log = NULL;
@@ -162,8 +165,12 @@ log_cursor(sp)
 	 * put out the ending cursor record.
 	 */
 	if (ep->l_cursor.lno == OOBLNO) {
+		printf("own: %p, this: %p\n", ep->l_win, sp->wp);
+		if (ep->l_win != sp->wp)
+			return 0;
 		ep->l_cursor.lno = sp->lno;
 		ep->l_cursor.cno = sp->cno;
+		puts("end");
 		return (log_cursor1(sp, LOG_CURSOR_END));
 	}
 	ep->l_cursor.lno = sp->lno;
@@ -184,6 +191,13 @@ log_cursor1(sp, type)
 	EXF *ep;
 
 	ep = sp->ep;
+
+	/*
+	if (type == LOG_CURSOR_INIT &&
+	    LOCK_TRY(sp->wp, ep))
+		return 1;
+	*/
+
 	BINC_RET(sp, sp->wp->l_lp, sp->wp->l_len, sizeof(u_char) + sizeof(MARK));
 	sp->wp->l_lp[0] = type;
 	memmove(sp->wp->l_lp + sizeof(u_char), &ep->l_cursor, sizeof(MARK));
@@ -197,6 +211,7 @@ log_cursor1(sp, type)
 	if (ep->log->put(ep->log, NULL, &key, &data, 0) == -1)
 		LOG_ERR;
 
+	puts(type == LOG_CURSOR_INIT ? "log_cursor_init" : "log_cursor_end");
 #if defined(DEBUG) && 0
 	vtrace(sp, "%lu: %s: %u/%u\n", ep->l_cur,
 	    type == LOG_CURSOR_INIT ? "log_cursor_init" : "log_cursor_end",
@@ -205,6 +220,10 @@ log_cursor1(sp, type)
 	/* Reset high water mark. */
 	ep->l_high = ++ep->l_cur;
 
+	/*
+	if (type == LOG_CURSOR_END)
+		LOCK_UNLOCK(sp->wp, ep);
+	*/
 	return (0);
 }
 
@@ -240,9 +259,14 @@ log_line(sp, lno, action)
 
 	/* Put out one initial cursor record per set of changes. */
 	if (ep->l_cursor.lno != OOBLNO) {
+		puts("begin");
 		if (log_cursor1(sp, LOG_CURSOR_INIT))
 			return (1);
 		ep->l_cursor.lno = OOBLNO;
+		ep->l_win = sp->wp;
+	} else if (ep->l_win != sp->wp) {
+		printf("log_line own: %p, this: %p\n", ep->l_win, sp->wp);
+		return 1;
 	}
 
 	/*
@@ -335,9 +359,11 @@ log_mark(sp, lmp)
 
 	/* Put out one initial cursor record per set of changes. */
 	if (ep->l_cursor.lno != OOBLNO) {
+		puts("begin");
 		if (log_cursor1(sp, LOG_CURSOR_INIT))
 			return (1);
 		ep->l_cursor.lno = OOBLNO;
+		ep->l_win = sp->wp;
 	}
 
 	BINC_RET(sp, sp->wp->l_lp,

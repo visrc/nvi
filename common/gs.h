@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: gs.h,v 10.48 2000/07/17 21:17:52 skimo Exp $ (Berkeley) $Date: 2000/07/17 21:17:52 $
+ *	$Id: gs.h,v 10.49 2000/07/22 14:52:36 skimo Exp $ (Berkeley) $Date: 2000/07/22 14:52:36 $
  */
 
 #define	TEMPORARY_FILE_STRING	"/tmp"	/* Default temporary file name. */
@@ -192,7 +192,20 @@ struct _gs {
 	/* Threading stuff */
 	void	*th_private;
 
-	void	(*run) __P((WIN *, void *(*)(void*), void *));
+	int	(*run) __P((WIN *, void *(*)(void*), void *));
+
+	int	(*lock_init) __P((WIN *, void **));
+#define LOCK_INIT(wp,s)							    \
+	wp->gp->lock_init(wp, &s->lock)
+	int	(*lock_try) __P((WIN *, void **));
+#define LOCK_TRY(wp,s)							    \
+	wp->gp->lock_try(wp, &s->lock)
+	int	(*lock_unlock) __P((WIN *, void **));
+#define LOCK_UNLOCK(wp,s)						    \
+	wp->gp->lock_unlock(wp, &s->lock)
+	int	(*lock_end) __P((WIN *, void **));
+#define LOCK_END(wp,s)							    \
+	wp->gp->lock_end(wp, &s->lock)
 };
 
 /*
