@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.8 1993/08/30 14:14:11 bostic Exp $ (Berkeley) $Date: 1993/08/30 14:14:11 $";
+static char sccsid[] = "$Id: screen.c,v 8.9 1993/09/10 18:29:58 bostic Exp $ (Berkeley) $Date: 1993/09/10 18:29:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -90,9 +90,6 @@ scr_init(orig, sp)
 				sp->rep_len = orig->rep_len;
 			}
 
-		if (orig->VB != NULL && (sp->VB = strdup(orig->VB)) == NULL)
-			goto mem;
-		
 		if (orig->lastbcomm != NULL &&
 		    (sp->lastbcomm = strdup(orig->lastbcomm)) == NULL)
 			goto mem;
@@ -224,10 +221,6 @@ scr_end(sp)
 	/* Free vi text input memory. */
 	if (sp->rep != NULL)
 		FREE(sp->rep, sp->rep_len);
-
-	/* Free visual bell termcap string. */
-	if (sp->VB != NULL)
-		FREE(sp->VB, strlen(sp->VB) + 1);
 
 	/* Free last bang command. */
 	if (sp->lastbcomm != NULL)
