@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 10.11 1995/10/17 11:43:11 bostic Exp $ (Berkeley) $Date: 1995/10/17 11:43:11 $";
+static char sccsid[] = "$Id: ex_argv.c,v 10.12 1995/11/23 15:48:54 bostic Exp $ (Berkeley) $Date: 1995/11/23 15:48:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -398,7 +398,7 @@ argv_alloc(sp, len)
 			(void)argv_free(sp);
 			goto mem;
 		}
-		memset(&exp->args[off], 0, INCREMENT * sizeof(ARGS *));
+		memset(&exp->args[exp->argscnt], 0, INCREMENT * sizeof(ARGS *));
 		exp->argscnt = cnt;
 	}
 
