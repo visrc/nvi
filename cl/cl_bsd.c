@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_bsd.c,v 8.9 1995/11/06 10:14:27 bostic Exp $ (Berkeley) $Date: 1995/11/06 10:14:27 $";
+static char sccsid[] = "$Id: cl_bsd.c,v 8.10 1995/11/10 17:52:18 bostic Exp $ (Berkeley) $Date: 1995/11/10 17:52:18 $";
 #endif /* not lint */
 
 #ifdef BSD_CURSES_INTERFACE
@@ -17,6 +17,7 @@ static char sccsid[] = "$Id: cl_bsd.c,v 8.9 1995/11/06 10:14:27 bostic Exp $ (Be
 #include <bitstring.h>
 #include <ctype.h>
 #include <curses.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
