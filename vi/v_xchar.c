@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_xchar.c,v 8.11 1994/08/31 17:15:22 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:15:22 $";
+static char sccsid[] = "$Id: v_xchar.c,v 8.12 1994/09/23 15:54:57 bostic Exp $ (Berkeley) $Date: 1994/09/23 15:54:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,7 +27,7 @@ static char sccsid[] = "$Id: v_xchar.c,v 8.11 1994/08/31 17:15:22 bostic Exp $ (
 #include "vcmd.h"
 
 /*
- * v_xchar -- [count]x
+ * v_xchar -- [buffer] [count]x
  *	Deletes the character(s) on which the cursor sits.
  */
 int
@@ -77,7 +77,7 @@ nodel:		msgq(sp, M_BERR, "200|No characters to delete");
 }
 
 /*
- * v_Xchar -- [count]X
+ * v_Xchar -- [buffer] [count]X
  *	Deletes the character(s) immediately before the current cursor
  *	position.
  */
