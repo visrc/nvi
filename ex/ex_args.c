@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 5.10 1992/04/27 16:38:48 bostic Exp $ (Berkeley) $Date: 1992/04/27 16:38:48 $";
+static char sccsid[] = "$Id: ex_args.c,v 5.11 1992/04/28 11:56:17 bostic Exp $ (Berkeley) $Date: 1992/04/28 11:56:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -104,14 +104,14 @@ ex_args(cmdp)
 		return (1);
 	}
 
-	EX_VISTART;
+	EX_PRSTART;
 	col = len = sep = 0;
 	for (p = s_flist, cnt = 1; *p; ++p, ++cnt) {
 		col += len = strlen(*p) + sep + (cnt == current ? 2 : 0);
 		if (col >= COLS - 1) {
 			col = len;
 			sep = 0;
-			(void)putchar('\n');
+			EX_PRNEWLINE;
 		} else if (cnt != 1) {
 			sep = 1;
 			(void)putchar(' ');
@@ -121,7 +121,7 @@ ex_args(cmdp)
 		else
 			(void)printf("%s", *p);
 	}
-	(void)putchar('\n');
+	EX_PRTRAIL;
 	return (0);
 }
 
