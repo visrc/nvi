@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_screen.c,v 8.6 1993/11/20 10:05:41 bostic Exp $ (Berkeley) $Date: 1993/11/20 10:05:41 $";
+static char sccsid[] = "$Id: ex_screen.c,v 8.7 1993/11/21 15:25:17 bostic Exp $ (Berkeley) $Date: 1993/11/21 15:25:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -72,21 +72,24 @@ ex_resize(sp, ep, cmdp)
 }
 
 /*
- * ex_sargs -- :sargs
+ * ex_sdisplay --
  *	Display the list of screens.
  */
 int
-ex_sargs(sp, ep, cmdp)
+ex_sdisplay(sp, ep)
 	SCR *sp;
 	EXF *ep;
-	EXCMDARG *cmdp;
 {
 	SCR *tsp;
 	int cnt, col, len, sep;
 
+	if ((tsp = sp->gp->hq.cqh_first) == (void *)&sp->gp->hq) {
+		(void)ex_printf(EXCOOKIE, "No screens to display.\n");
+		return (0);
+	}
+
 	col = len = sep = 0;
-	for (cnt = 1, tsp = sp->gp->hq.cqh_first;
-	    tsp != (void *)&sp->gp->hq; tsp = tsp->q.cqe_next) {
+	for (cnt = 1; tsp != (void *)&sp->gp->hq; tsp = tsp->q.cqe_next) {
 		col += len = tsp->frp->nlen + sep;
 		if (col >= sp->cols - 1) {
 			col = len;
