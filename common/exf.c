@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.5 1992/05/07 12:45:27 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:45:27 $";
+static char sccsid[] = "$Id: exf.c,v 5.6 1992/05/15 10:57:56 bostic Exp $ (Berkeley) $Date: 1992/05/15 10:57:56 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -76,7 +76,8 @@ file_ins(before, name)
 err:		msg("Error: %s", strerror(errno));
 		return (1);
 	}
-	ep->lno = ep->cno = 1;
+	ep->lno = 1;
+	ep->cno = 0;
 	ep->nlen = strlen(ep->name);
 	ep->flags = ISSET(O_READONLY) ? F_RDONLY : 0;
 	insexf(ep, before);
@@ -112,7 +113,8 @@ file_set(argc, argv)
 err:			msg("Error: %s", strerror(errno));
 			return (1);
 		}
-		ep->lno = ep->cno = 1;
+		ep->lno = 1;
+		ep->cno = 0;
 		ep->nlen = strlen(ep->name);
 		ep->flags = ISSET(O_READONLY) ? F_RDONLY : 0;
 		instailexf(ep, &exfhdr);
@@ -185,17 +187,17 @@ fetchline(lno, lenp)
 	long lno;
 	size_t *lenp;
 {
-	return (file_line(curf, lno, lenp));
+	return (file_gline(curf, lno, lenp));
 }
 
 /*
- * file_line --
+ * file_gline --
  *	Retrieve a line from the file.
  */
 char *
-file_line(ep, lno, lenp)
+file_gline(ep, lno, lenp)
 	EXF *ep;
-	u_long lno;				/* Line number. */
+	recno_t lno;				/* Line number. */
 	size_t *lenp;				/* Length store. */
 {
 	DBT data, key;
@@ -214,6 +216,32 @@ file_line(ep, lno, lenp)
 	if (lenp)
 		*lenp = data.size;
 	return (data.data);
+}
+
+/*
+ * file_sline --
+ *	Store a line in the file.
+ */
+int
+file_sline(ep, lno, p, len)
+	EXF *ep;
+	recno_t lno;
+	char *p;
+	size_t len;
+{
+	DBT data, key;
+
+	key.data = &lno;
+	key.size = sizeof(lno);
+	data.data = p;
+	data.size = len;
+
+	if ((ep->db->put)(ep->db, &key, &data, 0) == -1) {
+		msg("%s: line %lu: %s", ep->name, lno, strerror(errno));
+		return (1);
+	}
+	scr_lchange(lno);
+	return (0);
 }
 
 /*
@@ -291,10 +319,9 @@ file_stop(ep, force)
 	int force;
 {
 	/* Close the db structure. */
-	if ((ep->db->close)(ep->db)) {
+	if ((ep->db->close)(ep->db) && !force) {
 		msg("%s: close: %s", ep->name, strerror(errno));
-		if (!force)
-			return (1);
+		return (1);
 	}
 	return (0);
 }
@@ -349,7 +376,7 @@ err:			msg("%s: %s", ep->name, strerror(errno));
 			return (1);
 		}
 
-		if (ex_writefp(ep->name, fp, 1, OOBLC, 1))
+		if (ex_writefp(ep->name, fp, 1, 0, 1))
 			return (1);
 	} else if ((ep->db->sync)(ep->db)) {
 		msg("%s: sync: %s", ep->name, strerror(errno));
