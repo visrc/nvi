@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.57 1994/05/19 08:58:16 bostic Exp $ (Berkeley) $Date: 1994/05/19 08:58:16 $";
+static char sccsid[] = "$Id: recover.c,v 8.58 1994/05/19 09:04:47 bostic Exp $ (Berkeley) $Date: 1994/05/19 09:04:47 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -413,8 +413,16 @@ rcv_list(sp)
 
 		/* If it's locked, it's live. */
 		if (flock(fileno(fp), LOCK_EX | LOCK_NB)) {
-			(void)fclose(fp);
-			continue;
+			/* If it's locked, it's live. */
+			if (errno == EAGAIN || errno == EWOULDBLOCK) {
+				(void)fclose(fp);
+				continue;
+			}
+			/*
+			 * XXX
+			 * Assume that a lock can't be acquired,
+			 * but that we should permit recovery anyway.
+			 */
 		}
 
 		/* Check the header, get the file name. */
