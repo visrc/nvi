@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.59 1993/05/02 15:55:39 bostic Exp $ (Berkeley) $Date: 1993/05/02 15:55:39 $";
+static char sccsid[] = "$Id: key.c,v 5.60 1993/05/05 22:00:14 bostic Exp $ (Berkeley) $Date: 1993/05/05 22:00:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -214,13 +214,6 @@ retry:		qp = seq_find(sp, &sp->keybuf[sp->nextkey], sp->nkeybuf,
 
 nomap:	--sp->nkeybuf;
 	ch = sp->keybuf[sp->nextkey++];
-
-	/*
-	 * XXX
-	 * No NULL's for now.
-	 */
-	if (ch == '\0')
-		ch = 'A' & 0x1f;
 
 	/*
 	 * O_BEAUTIFY eliminates all control characters except tab,
