@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.91 1994/03/14 10:43:19 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:43:19 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.92 1994/03/14 18:08:57 bostic Exp $ (Berkeley) $Date: 1994/03/14 18:08:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -307,7 +307,9 @@ nullreplay:
 		}
 
 		/* Get the next character. */
-next_ch:	if (term_key(sp, &ikey, iflags) != INP_OK)
+next_ch:	if (term_key(sp, &ikey, quoted == Q_THISCHAR ?
+		    iflags & ~(TXT_MAPCOMMAND | TXT_MAPINPUT) :
+		    iflags) != INP_OK)
 			goto err;
 		ch = ikey.ch;
 
