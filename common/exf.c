@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 9.26 1995/02/09 15:21:55 bostic Exp $ (Berkeley) $Date: 1995/02/09 15:21:55 $";
+static char sccsid[] = "$Id: exf.c,v 9.27 1995/02/15 12:02:28 bostic Exp $ (Berkeley) $Date: 1995/02/15 12:02:28 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -434,6 +434,7 @@ file_cinit(sp)
 	MARK m;
 	size_t len;
 	int nb;
+	char *ic;
 
 	/*
 	 * Historically, initial commands (the -c option) weren't executed
@@ -464,8 +465,10 @@ file_cinit(sp)
 			sp->cno = 0;
 		}
 
-		(void)sex_screen_icmd(sp, sp->gp->icommand);
+		/* We can be reentered, turn off the global pointer first. */
+		ic = sp->gp->icommand;
 		sp->gp->icommand = NULL;
+		(void)sex_screen_icmd(sp, ic);
 	} else if (F_ISSET(sp, S_EX)) {
 		/* XXX:  If this fails, we're toast. */
 		(void)file_lline(sp, &sp->lno);
