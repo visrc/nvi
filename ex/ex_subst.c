@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.1 1993/06/09 22:25:50 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:25:50 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.2 1993/06/21 10:57:20 bostic Exp $ (Berkeley) $Date: 1993/06/21 10:57:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -454,8 +454,9 @@ skip:		s += sp->match[0].rm_eo;
 		}
 
 		/*
-		 * If it's a global change, and there's something left in
-		 * the line, check it.
+		 * If it's a global change, and there's something left in the
+		 * line, check it.  Note, we don't worry about REG_NOTEOL; if
+		 * we match to '$', len with be 0.
 		 */
 		if (len && gflag) {
 			eflags |= REG_NOTBOL;
