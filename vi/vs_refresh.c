@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.59 1993/05/09 12:25:50 bostic Exp $ (Berkeley) $Date: 1993/05/09 12:25:50 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.60 1993/05/10 11:38:55 bostic Exp $ (Berkeley) $Date: 1993/05/10 11:38:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -240,17 +240,12 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 	 */
 
 	/*
-	 * If a character is deleted from the line, we don't know how
-	 * wide it was, so reparse.
+	 * If the line we're working with has changed, reparse.
 	 */
-	if (F_ISSET(sp, S_CUR_INVALID)) {
+	if (F_ISSET(sp, S_CUR_INVALID) || LNO != OLNO) {
 		F_CLR(sp, S_CUR_INVALID);
 		goto slow;
 	}
-
-	/* If the line we're working with has changed, reparse. */
-	if (LNO != OLNO)
-		goto slow;
 
 	/*
 	 * Otherwise, if nothing's changed, go fast.  The one exception is
@@ -502,7 +497,7 @@ lcont:		/* Move to the message line and clear it. */
 		    mp->next != NULL && !F_ISSET(mp->next, M_EMPTY)) {
 			ADDNSTR(MCONTMSG, sizeof(MCONTMSG) - 1);
 			refresh();
-			while (sp->special[ch = getkey(sp, 0)] != K_CR &&
+			while (sp->special[ch = term_key(sp, 0)] != K_CR &&
 			    !isspace(ch))
 				svi_bell(sp);
 		}
