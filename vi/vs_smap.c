@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 9.8 1995/01/30 10:24:47 bostic Exp $ (Berkeley) $Date: 1995/01/30 10:24:47 $";
+static char sccsid[] = "$Id: vs_smap.c,v 9.9 1995/01/30 11:12:21 bostic Exp $ (Berkeley) $Date: 1995/01/30 11:12:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -712,8 +712,8 @@ svi_sm_1up(sp)
 	SCR *sp;
 {
 	/*
-	 * Delete the top line of the screen.  Shift the screen map up.
-	 * Display a new line at the bottom of the screen.
+	 * Delete the top line of the screen.  Shift the screen map
+	 * up and display a new line at the bottom of the screen.
 	 */
 	(void)SVP(sp)->scr_move(sp, RLNO(sp, 0), 0);
 	if (svi_deleteln(sp, 1))
@@ -729,9 +729,7 @@ svi_sm_1up(sp)
 			return (1);
 	}
 	/* svi_sm_next() flushed the cache. */
-	if (svi_line(sp, TMAP, NULL, NULL))
-		return (1);
-	return (0);
+	return (svi_line(sp, TMAP, NULL, NULL));
 }
 
 /*
@@ -938,17 +936,11 @@ int
 svi_sm_1down(sp)
 	SCR *sp;
 {
-	SVI_PRIVATE *svp;
-
 	/*
-	 * Clear the bottom line of the screen, insert a line at the top
-	 * of the screen.  Shift the screen map down, display a new line
-	 * at the top of the screen.
+	 * Insert a line at the top of the screen.  Shift the screen map
+	 * down and display a new line at the top of the screen.
 	 */
-	svp = SVP(sp);
-	(void)svp->scr_move(sp, RLNO(sp, sp->t_rows - 1), 0);
-	(void)svp->scr_clrtoeol(sp);
-	(void)svp->scr_move(sp, RLNO(sp, 0), 0);
+	(void)SVP(sp)->scr_move(sp, RLNO(sp, 0), 0);
 	if (svi_insertln(sp, 1))
 		return (1);
 
@@ -962,9 +954,7 @@ svi_sm_1down(sp)
 			return (1);
 	}
 	/* svi_sm_prev() flushed the cache. */
-	if (svi_line(sp, HMAP, NULL, NULL))
-		return (1);
-	return (0);
+	return (svi_line(sp, HMAP, NULL, NULL));
 }
 
 /*
