@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.65 1993/11/30 10:30:09 bostic Exp $ (Berkeley) $Date: 1993/11/30 10:30:09 $";
+static char sccsid[] = "$Id: ex.c,v 8.66 1993/11/30 14:18:52 bostic Exp $ (Berkeley) $Date: 1993/11/30 14:18:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -147,7 +147,7 @@ err:		rval = 1;
 
 	/*
 	 * !!!
-	 * THE UNDERLYING EXF MAY HAVE CHANGED (but we don't care).
+	 * THE UNDERLYING EXF MAY HAVE CHANGED.
 	 */
 	if (bp != NULL)
 		FREE(bp, sb.st_size);
