@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 5.49 1993/05/16 10:31:46 bostic Exp $ (Berkeley) $Date: 1993/05/16 10:31:46 $";
+static char sccsid[] = "$Id: util.c,v 5.50 1993/05/16 12:25:50 bostic Exp $ (Berkeley) $Date: 1993/05/16 12:25:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -15,6 +15,7 @@ static char sccsid[] = "$Id: util.c,v 5.49 1993/05/16 10:31:46 bostic Exp $ (Ber
 #include <ctype.h>
 #include <curses.h>
 #include <errno.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -51,19 +52,10 @@ msgq(sp, mt, fmt, va_alist)
 #else
         va_start(ap);
 #endif
-	/*
-	 * It's possible to reenter msg when it allocates space.  We're
-	 * probably dead anyway, but no reason to drop core.
-	 */
-	if (F_ISSET(sp, S_MSGREENTER))
-		return;
-	F_SET(sp, S_MSGREENTER);
-
 	switch (mt) {
 	case M_BERR:
 		if (!O_ISSET(sp, O_VERBOSE)) {
 			F_SET(sp, S_BELLSCHED);
-			F_CLR(sp, S_MSGREENTER);
 			return;
 		}
 		mt = M_ERR;
@@ -73,10 +65,8 @@ msgq(sp, mt, fmt, va_alist)
 	case M_INFO:
 		break;
 	case M_VINFO:
-		if (!O_ISSET(sp, O_VERBOSE)) {
-			F_CLR(sp, S_MSGREENTER);
+		if (!O_ISSET(sp, O_VERBOSE))
 			return;
-		}
 		mt = M_INFO;
 		break;
 	default:
@@ -89,14 +79,14 @@ msgq(sp, mt, fmt, va_alist)
 		len = sizeof(msgbuf);
 
 	msg_app(NULL, sp, mt == M_ERR ? 1 : 0, msgbuf, len);
-
-	F_CLR(sp, S_MSGREENTER);
 }
 
 /*
  * msg_app --
- *	Append a message into the queue.  This can fail, but there's
- *	absolutely nothing we can do if it does.
+ *	Append a message into the queue.  This can fail, but there's nothing
+ *	we can do if it does.  Note that it's possible to reenter msg when it
+ *	allocates space.  We're probably dead anyway, but no reason to drop
+ *	core.
  */
 void
 msg_app(gp, sp, inv_video, p, len)
@@ -109,6 +99,10 @@ msg_app(gp, sp, inv_video, p, len)
 	MSG *mp;
 	int new;
 
+	if (F_ISSET(sp, S_MSGREENTER))
+		goto ret;
+	F_SET(sp, S_MSGREENTER);
+
 	/*
 	 * Find an empty structure, or allocate a new one.  Use the
 	 * screen structure if possible, otherwise the global one.
@@ -117,7 +111,7 @@ msg_app(gp, sp, inv_video, p, len)
 	if (sp != NULL)
 		if (sp->msgp == NULL) {
 			if ((sp->msgp = malloc(sizeof(MSG))) == NULL)
-				return;
+				goto ret;
 			new = 1;
 			mp = sp->msgp;
 		} else {
@@ -126,7 +120,7 @@ msg_app(gp, sp, inv_video, p, len)
 		}
 	else if (gp->msgp == NULL) {
 		if ((gp->msgp = malloc(sizeof(MSG))) == NULL)
-			return;
+			goto ret;
 		mp = gp->msgp;
 		new = 1;
 	} else {
@@ -135,7 +129,7 @@ loop:		for (;
 		    !F_ISSET(mp, M_EMPTY) && mp->next != NULL; mp = mp->next);
 		if (!F_ISSET(mp, M_EMPTY)) {
 			if ((mp->next = malloc(sizeof(MSG))) == NULL)
-				return;
+				goto ret;
 			mp = mp->next;
 			new = 1;
 		}
@@ -147,11 +141,13 @@ loop:		for (;
 
 	/* Store the message. */
 	if (len > mp->blen && binc(sp, &mp->mbuf, &mp->blen, len))
-		return;
+		goto ret;
 
 	memmove(mp->mbuf, p, len);
 	mp->len = len;
 	mp->flags = inv_video ? M_INV_VIDEO : 0;
+
+ret:	F_CLR(sp, S_MSGREENTER);
 }
 
 /*
@@ -290,23 +286,6 @@ tail(path)
 	if ((p = strrchr(path, '/')) == NULL)
 		return (path);
 	return (p + 1);
-}
-
-/*
- * onhup --
- *	Handle SIGHUP, restoring sanity to the terminal, preserving the file.
- */
-/* ARGSUSED */
-void
-onhup(signo)
-	int signo;
-{
-	/* Exit with the proper exit status. */
-	(void)signal(SIGHUP, SIG_DFL);
-	(void)kill(0, SIGHUP);
-
-	/* NOTREACHED */
-	exit (1);
 }
 
 /*
