@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 10.20 1995/11/29 20:47:04 bostic Exp $ (Berkeley) $Date: 1995/11/29 20:47:04 $";
+static char sccsid[] = "$Id: exf.c,v 10.21 1996/02/20 21:04:49 bostic Exp $ (Berkeley) $Date: 1996/02/20 21:04:49 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -35,7 +35,6 @@ static char sccsid[] = "$Id: exf.c,v 10.20 1995/11/29 20:47:04 bostic Exp $ (Ber
 #include <unistd.h>
 
 #include "common.h"
-#include "pathnames.h"
 
 static int	file_backup __P((SCR *, char *, char *));
 static void	file_cinit __P((SCR *));
@@ -239,7 +238,9 @@ file_init(sp, frp, rcv_name, flags)
 
 	/* Open a db structure. */
 	if ((ep->db = dbopen(rcv_name == NULL ? oname : NULL,
-	    O_NONBLOCK | O_RDONLY, DEFFILEMODE, DB_RECNO, &oinfo)) == NULL) {
+	    O_NONBLOCK | O_RDONLY,
+	    S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH,
+	    DB_RECNO, &oinfo)) == NULL) {
 		msgq_str(sp,
 		    M_SYSERR, rcv_name == NULL ? oname : rcv_name, "%s");
 		/*
@@ -741,7 +742,8 @@ file_write(sp, fm, tm, name, flags)
 
 	/* Open the file. */
 	SIGBLOCK;
-	if ((fd = open(name, oflags, DEFFILEMODE)) < 0) {
+	if ((fd = open(name, oflags,
+	    S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)) < 0) {
 		msgq_str(sp, M_SYSERR, name, "%s");
 		SIGUNBLOCK;
 		return (1);
@@ -752,6 +754,21 @@ file_write(sp, fm, tm, name, flags)
 	if (!noname && file_lock(sp, NULL, NULL, fd, 0) == LOCK_UNAVAIL)
 		msgq_str(sp, M_ERR, name,
 		    "252|%s: write lock was unavailable");
+
+#if __linux__
+	/*
+	 * XXX
+	 * In libc 4.5.x, fdopen(fd, "w") clears the O_APPEND flag (if set).
+	 * This bug is fixed in libc 4.6.x.
+	 *
+	 * This code works around this problem for libc 4.5.x users.
+	 * Note that this code is harmless if you're using libc 4.6.x.
+	 */
+	if (LF_ISSET(FS_APPEND) && lseek(fd, (off_t)0, SEEK_END) < 0) {
+		msgq(sp, M_SYSERR, name);
+		return (1);
+	}
+#endif
 
 	/* Use stdio for buffering. */
 	if ((fp = fdopen(fd, "w")) == NULL) {
@@ -1259,8 +1276,7 @@ file_lock(sp, name, fdp, fd, iswrite)
 	if (!O_ISSET(sp, O_LOCK))
 		return (LOCK_SUCCESS);
 	
-#if !defined(USE_FCNTL) && defined(LOCK_EX)
-					/* Hurrah!  We've got flock(2). */
+#ifdef HAVE_FLOCK			/* Hurrah!  We've got flock(2). */
 	/*
 	 * !!!
 	 * We need to distinguish a lock not being available for the file
@@ -1272,8 +1288,8 @@ file_lock(sp, name, fdp, fd, iswrite)
 	return (flock(fd, LOCK_EX | LOCK_NB) ?
 	    errno == EAGAIN || errno == EWOULDBLOCK ?
 	        LOCK_UNAVAIL : LOCK_FAILED : LOCK_SUCCESS);
-
-#else					/* Gag me.  We've got fcntl(2). */
+#endif
+#ifdef HAVE_FCNTL			/* Gag me.  We've got fcntl(2). */
 {
 	struct flock arg;
 	int didopen, sverrno;
@@ -1317,5 +1333,8 @@ file_lock(sp, name, fdp, fd, iswrite)
 	return (errno == EACCES || errno == EAGAIN || errno == EWOULDBLOCK ?
 	    LOCK_UNAVAIL : LOCK_FAILED);
 }
+#endif
+#if !defined(HAVE_FLOCK) && !defined(HAVE_FCNTL)
+	return (LOCK_SUCCESS);
 #endif
 }
