@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 5.5 1992/10/17 16:08:48 bostic Exp $ (Berkeley) $Date: 1992/10/17 16:08:48 $
+ *	$Id: screen.h,v 5.6 1992/10/20 18:24:28 bostic Exp $ (Berkeley) $Date: 1992/10/20 18:24:28 $
  */
 
 #define	BOTLINE		(curf->top + LINES - 2)
@@ -34,7 +34,7 @@
 void	scr_cchange __P((EXF *));
 void	scr_end __P((void));
 int	scr_init __P((void));
-void	scr_modeline __P((EXF *));
+void	scr_modeline __P((EXF *, int));
 void	scr_ref __P((void));
 size_t	scr_relative __P((EXF *, recno_t));
 
