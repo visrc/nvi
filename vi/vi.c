@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 10.29 1995/11/10 10:24:29 bostic Exp $ (Berkeley) $Date: 1995/11/10 10:24:29 $";
+static char sccsid[] = "$Id: vi.c,v 10.30 1995/11/17 11:16:46 bostic Exp $ (Berkeley) $Date: 1995/11/17 11:16:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -153,6 +153,12 @@ vi(spp)
 			goto intr;
 		case GC_OK:
 			break;
+		}
+
+		/* Check for security setting. */
+		if (F_ISSET(vp->kp, V_SECURE) && O_ISSET(sp, O_SECURE)) {
+			ex_emsg(sp, KEY_NAME(sp, vp->key), EXM_SECURE);
+			goto err;
 		}
 
 		/*

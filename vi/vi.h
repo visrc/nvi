@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 10.13 1995/11/11 12:34:00 bostic Exp $ (Berkeley) $Date: 1995/11/11 12:34:00 $
+ *	$Id: vi.h,v 10.14 1995/11/17 11:16:50 bostic Exp $ (Berkeley) $Date: 1995/11/17 11:16:50 $
  */
 
 /* Definition of a vi "word". */
@@ -138,6 +138,7 @@ struct _vikeys {			/* Underlying function. */
 #define	V_MOVE		0x00400000	/* Command defines movement. */
 #define	V_OBUF		0x00800000	/* Buffer (optional, leading). */
 #define	V_RBUF		0x01000000	/* Buffer (required, trailing). */
+#define	V_SECURE	0x02000000	/* Permission denied if O_SECURE set. */
 	u_int32_t flags;
 	char	*usage;			/* Usage line. */
 	char	*help;			/* Help line. */
