@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: cl.h,v 10.21 1996/12/18 10:28:15 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:28:15 $
+ *	$Id: cl.h,v 10.22 1996/12/18 15:57:37 bostic Exp $ (Berkeley) $Date: 1996/12/18 15:57:37 $
  */
 
 typedef struct _cl_private {
@@ -23,6 +23,8 @@ typedef struct _cl_private {
 	char	*cuu1;		/* Cursor up terminal string. */
 	char	*rmso, *smso;	/* Inverse video terminal strings. */
 	char	*smcup, *rmcup;	/* Terminal start/stop strings. */
+
+	char	*oname;		/* Original screen window name. */
 
 	int	 killersig;	/* Killer signal. */
 #define	INDX_HUP	0
@@ -61,9 +63,6 @@ typedef enum { INP_OK=0, INP_EOF, INP_ERR, INP_INTR, INP_TIMEOUT } input_t;
 /* The screen position relative to a specific window. */
 #define	RCNO(sp, cno)	(sp)->coff + (cno)
 #define	RLNO(sp, lno)	(sp)->roff + (lno)
-
-/* X11 xterm escape sequence to rename the icon/window. */
-#define	XTERM_RENAME	"\033]0;%s\007"
 
 /*
  * XXX

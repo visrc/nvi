@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_main.c,v 10.43 1996/12/18 10:28:15 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:28:15 $";
+static const char sccsid[] = "$Id: cl_main.c,v 10.44 1996/12/18 15:57:38 bostic Exp $ (Berkeley) $Date: 1996/12/18 15:57:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -158,10 +158,8 @@ main(argc, argv)
 	 * XXX
 	 * Reset the X11 xterm icon/window name.
 	 */
-	if (F_ISSET(clp, CL_RENAME)) {
-		(void)printf(XTERM_RENAME, ttype);
-		(void)fflush(stdout);
-	}
+	if (F_ISSET(clp, CL_RENAME))
+		cl_setname(gp, clp->oname);
 
 	/* If a killer signal arrived, pretend we just got it. */
 	if (clp->killersig) {
