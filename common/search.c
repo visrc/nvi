@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.50 1994/09/15 08:53:15 bostic Exp $ (Berkeley) $Date: 1994/09/15 08:53:15 $";
+static char sccsid[] = "$Id: search.c,v 8.51 1994/09/25 09:32:03 bostic Exp $ (Berkeley) $Date: 1994/09/25 09:32:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -535,12 +535,18 @@ err:	if (btear)
  * the global, search, and substitute patterns) work with POSIX RE's.
  *
  * 1: If O_MAGIC is not set, strip backslashes from the magic character
- *    set (.[]*~) that have them, and add them to the ones that don't.
+ *    set (.[*~) that have them, and add them to the ones that don't.
  * 2: If O_MAGIC is not set, the string "\~" is replaced with the text
  *    from the last substitute command's replacement string.  If O_MAGIC
  *    is set, it's the string "~".
  * 3: The pattern \<ptrn\> does "word" searches, convert it to use the
  *    new RE escapes.
+ *
+ * !!!/XXX
+ * This doesn't exactly match the historic behavior of vi because we do
+ * the ~ substitution before calling the RE engine, so magic characters
+ * in the replacement string will be expanded by the RE engine, and they
+ * weren't historically.  It's a bug.
  */
 int
 re_conv(sp, ptrnp, replacedp)
@@ -578,7 +584,6 @@ re_conv(sp, ptrnp, replacedp)
 				break;
 			case '.':
 			case '[':
-			case ']':
 			case '*':
 				if (!O_ISSET(sp, O_MAGIC)) {
 					magic = 1;
@@ -597,7 +602,6 @@ re_conv(sp, ptrnp, replacedp)
 			break;
 		case '.':
 		case '[':
-		case ']':
 		case '*':
 			if (!O_ISSET(sp, O_MAGIC)) {
 				magic = 1;
@@ -644,7 +648,6 @@ re_conv(sp, ptrnp, replacedp)
 				break;
 			case '.':
 			case '[':
-			case ']':
 			case '*':
 				if (O_ISSET(sp, O_MAGIC))
 					*t++ = '\\';
@@ -664,7 +667,6 @@ re_conv(sp, ptrnp, replacedp)
 			break;
 		case '.':
 		case '[':
-		case ']':
 		case '*':
 			if (!O_ISSET(sp, O_MAGIC))
 				*t++ = '\\';
