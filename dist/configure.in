@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.190 2002/03/02 23:47:03 skimo Exp $
+dnl	$Id: configure.in,v 8.191 2003/02/17 20:06:36 skimo Exp $
 dnl Process this file with autoconf to produce a configure script.
 
 AC_INIT(../common/main.c)
@@ -398,7 +398,6 @@ AC_SUBST(shrpenv)
 AC_SUBST(perlldflags)
 AC_SUBST(perllibs)
 AC_SUBST(vi_cv_perllib)
-AC_SUBST(LTLIBOBJS)
 AC_MSG_CHECKING(if --enable-perlinterp option specified)
 AC_ARG_ENABLE(perlinterp,
 	[  --enable-perlinterp     Include a Perl interpreter in vi.],
@@ -429,7 +428,7 @@ if test "$vi_cv_perlinterp" = "yes"; then
         	-e 'ldopts'`
 	perlldflags=`cd $srcdir;$vi_cv_path_perl -MExtUtils::Embed \
         	-e 'ccdlflags'`
-	LTLIBOBJS="perl.lo perlxsi.lo perlsfio.lo $LTLIBOBJS"
+	LIBOBJS="perl.o perlxsi.o perlsfio.o $LIBOBJS"
 	AC_DEFINE(HAVE_PERL_INTERP)
 	AC_CACHE_CHECK([whether we need to use perl's setenv], 
 		vi_cv_perl_setenv, [
@@ -466,7 +465,7 @@ if test "$vi_cv_tclinterp" = "yes"; then
 		AC_MSG_ERROR([No Tcl library found;])
 	fi
 	. $vi_cv_tclconfig
-	LTLIBOBJS="tcl.lo $LTLIBOBJS"
+	LIBOBJS="tcl.o $LIBOBJS"
 	LIBS="$TCL_LIB_SPEC $TCL_LIBS $LIBS"
 	AC_DEFINE(HAVE_TCL_INTERP)
 fi
@@ -612,9 +611,6 @@ dnl If we need strsep, add it and define it so we get a prototype.
 if test "$need_strsep" = yes; then
 	LIBOBJS="strsep.o $LIBOBJS"
 fi
-
-dnl XXX not sure whether this is a good idea
-LTLIBOBJS="`echo $LIBOBJS | sed 's/\.o/.lo/g'` $LTLIBOBJS"
 
 dnl Check for fcntl/flock
 dnl Use flock preferentially, since it has cleaner semantics and won't
@@ -1004,7 +1000,7 @@ if test "$vi_cv_dl" = yes; then
 	PATH="$OLDPATH"
 
 	AC_DEFINE(USE_DYNAMIC_LOADING)
-	LTLIBOBJS="dldb.lo $LTLIBOBJS"
+	LIBOBJS="dldb.o $LIBOBJS"
 	dl_src=../common/dldb.c
 	LIBS="-ldl $LIBS"
 else
@@ -1045,9 +1041,9 @@ if test "$vi_cv_db4" = "yes"; then
 	CPPFLAGS="-I$vi_cv_dbsrc/include_auto $CPPFLAGS"
 	CPPFLAGS="-I$with_db_build $CPPFLAGS"
 	AC_DEFINE(USE_DB4_LOGGING)
-	LTLIBOBJS="log4.lo vi_auto.lo vi_rec.lo $LTLIBOBJS"
+	LIBOBJS="log4.o vi_auto.o vi_rec.o $LIBOBJS"
 else
-	LTLIBOBJS="log.lo $LTLIBOBJS"
+	LIBOBJS="log.o $LIBOBJS"
 fi
 
 dnl We compile in nvi's RE routines unless the user specifies otherwise.
@@ -1059,7 +1055,7 @@ AC_MSG_RESULT($vi_cv_re_lib)
 case "$vi_cv_re_lib" in
 "bundled RE")
 	CPPFLAGS="-I\$(visrcdir)/regex $CPPFLAGS"
-	LTLIBOBJS="\$(REOBJS) $LTLIBOBJS";;
+	LIBOBJS="regcomp.o regerror.o regexec.o regfree.o $LIBOBJS";;
 "other RE")
 	;;
 esac
