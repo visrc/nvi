@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_relative.c,v 10.6 1996/03/06 19:55:08 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:55:08 $";
+static const char sccsid[] = "$Id: vs_relative.c,v 10.7 1996/03/18 09:09:44 bostic Exp $ (Berkeley) $Date: 1996/03/18 09:09:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -24,8 +24,6 @@ static const char sccsid[] = "$Id: vs_relative.c,v 10.6 1996/03/06 19:55:08 bost
 
 #include "../common/common.h"
 #include "vi.h"
-
-static size_t vs_screens __P((SCR *, char *, size_t, recno_t, size_t *));
 
 /*
  * vs_column --
@@ -72,15 +70,7 @@ vs_opt_screens(sp, lno, cnop)
 		return (1);
 
 	/* Figure out how many columns the line/column needs. */
-	cols = vs_screens(sp, NULL, 0, lno, cnop);
-
-	/* Leading number if O_NUMBER option set. */
-	if (O_ISSET(sp, O_NUMBER))
-		cols += O_NUMBER_LENGTH;
-
-	/* Trailing '$' if O_LIST option set. */
-	if (O_ISSET(sp, O_LIST) && cnop == NULL)
-		cols += KEY_LEN(sp, '$');
+	cols = vs_screens(sp, NULL, lno, cnop, NULL);
 
 	screens = (cols / sp->cols + (cols % sp->cols ? 1 : 0));
 	if (screens == 0)
@@ -98,28 +88,39 @@ vs_opt_screens(sp, lno, cnop)
  * vs_screens --
  *	Return the screen columns necessary to display the line, or,
  *	if specified, the physical character column within the line.
+ *
+ * PUBLIC: size_t vs_screens __P((SCR *, char *, recno_t, size_t *, size_t *));
  */
-static size_t
-vs_screens(sp, lp, llen, lno, cnop)
+size_t
+vs_screens(sp, lp, lno, cnop, diffp)
 	SCR *sp;
 	char *lp;
-	size_t llen;
 	recno_t lno;
-	size_t *cnop;
+	size_t *cnop, *diffp;
 {
-	size_t chlen, cno, len, scno, tab_off;
+	size_t chlen, cno, last, len, scno, tab_off;
 	int ch, listset;
 	char *p;
 
 	/* Need the line to go any further. */
 	if (lp == NULL)
-		(void)db_get(sp, lno, 0, &lp, &llen);
+		(void)db_get(sp, lno, 0, &lp, &len);
 
 	/* Missing or empty lines are easy. */
-	if (lp == NULL || llen == 0)
+	if (lp == NULL || len == 0) {
+		if (diffp != NULL)		/* XXX */
+			*diffp = 0;
 		return (0);
+	}
 
 	listset = O_ISSET(sp, O_LIST);
+
+	p = lp;
+	scno = tab_off = 0;
+
+	/* Leading number if O_NUMBER option set. */
+	if (O_ISSET(sp, O_NUMBER))
+		scno += O_NUMBER_LENGTH;
 
 #define	CHLEN(val) (ch = *(u_char *)p++) == '\t' &&			\
 	    !listset ? TAB_OFF(val) : KEY_LEN(sp, ch);
@@ -136,23 +137,33 @@ vs_screens(sp, lp, llen, lno, cnop)
 		} else							\
 			tab_off -= sp->cols;				\
 }
-	p = lp;
-	len = llen;
-	scno = tab_off = 0;
 	if (cnop == NULL)
 		while (len--) {
 			chlen = CHLEN(tab_off);
+			last = scno;
 			scno += chlen;
 			TAB_RESET;
 		}
 	else
-		for (cno = *cnop; len--; --cno) {
+		for (cno = *cnop;; --cno) {
 			chlen = CHLEN(tab_off);
+			last = scno;
 			scno += chlen;
 			TAB_RESET;
 			if (cno == 0)
 				break;
 		}
+
+	/* Trailing '$' if O_LIST option set. */
+	if (O_ISSET(sp, O_LIST) && cnop == NULL)
+		scno += KEY_LEN(sp, '$');
+
+	/*
+	 * The input screen code needs to know how much additional room
+	 * tabs required.
+	 */
+	if (diffp != NULL)
+		*diffp = scno - last;
 	return (scno);
 }
 
