@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.15 1993/09/27 17:20:07 bostic Exp $ (Berkeley) $Date: 1993/09/27 17:20:07 $
+ *	$Id: ex.h,v 8.16 1993/09/28 10:53:16 bostic Exp $ (Berkeley) $Date: 1993/09/28 10:53:16 $
  */
 
 struct _excmdarg;
@@ -84,7 +84,8 @@ typedef struct _excmdarg {
 	if (F_ISSET((ep), F_MODIFIED))					\
 		if (O_ISSET((sp), O_AUTOWRITE)) {			\
 			if (file_write((sp), (ep), NULL, NULL, NULL,	\
-			    FS_ALL | force?FS_FORCE:0 | FS_POSSIBLE))	\
+			    FS_ALL | FS_POSSIBLE |			\
+			    (force ? FS_FORCE : 0)))			\
 				return (1);				\
 		} else if (ep->refcnt <= 1 && !(force)) {		\
 			msgq(sp, M_ERR,					\
