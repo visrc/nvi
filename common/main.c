@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.82 1994/04/26 11:59:25 bostic Exp $ (Berkeley) $Date: 1994/04/26 11:59:25 $";
+static char sccsid[] = "$Id: main.c,v 8.83 1994/04/26 14:35:45 bostic Exp $ (Berkeley) $Date: 1994/04/26 14:35:45 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -567,9 +567,6 @@ gs_end(gp)
 	for (mp = gp->msgq.lh_first;
 	    mp != NULL && !(F_ISSET(mp, M_EMPTY)); mp = mp->q.le_next)
 		(void)fprintf(stderr, "%.*s\n", (int)mp->len, mp->mbuf);
-
-	if (gp->special_key != NULL)
-		FREE(gp->special_key, MAX_FAST_KEY);
 
 	/*
 	 * DON'T FREE THE GLOBAL STRUCTURE -- WE DIDN'T TURN
