@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: ex.cmd.roff,v 8.1 1994/04/23 11:04:28 bostic Exp $ (Berkeley) $Date: 1994/04/23 11:04:28 $
+.\"	$Id: ex.cmd.roff,v 8.2 1994/04/23 11:38:39 bostic Exp $ (Berkeley) $Date: 1994/04/23 11:38:39 $
 .\"
 #ifdef REFERENCE
 .Sh EX DESCRIPTION
@@ -391,6 +391,17 @@ Unchanged.
 None.
 .El
 #endif
+.It Li "bg"
+Visual mode only.
+Background the current screen.
+#ifdef REFERENCE
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+The current line is the current line when the screen was last edited.
+.It "Options:"
+None.
+.El
+#endif
 .It Li "[range] c[hange][!] [count]"
 Replace the lines with input text.
 #ifdef REFERENCE
@@ -480,9 +491,31 @@ or to the last line if the deleted lines were at the end.
 None.
 .El
 #endif
+.It Li "di[splay] b[uffers] | s[creens] | t[ags]"
+Display buffers, screens or tags.
+#ifdef REFERENCE 
+The
+.Sy display
+command takes one of three additional arguments, which are as follows:
+.Bl -tag -width "XXb[uffers]" -compact
+.It Dq Li b[uffers]
+Display all buffers (including named, unnamed, and numeric)
+that current contain copied text.
+.It Dq Li s[creens]
+Display the file names of all background screens.
+.It Dq Li t[ags]
+Display the tags stack.
+.El
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+Unchanged.
+.It "Options:"
+None.
+.El
+#endif
 .It Li "e[dit][!] [+cmd] [file]"
 .It Li "ex[!] [+cmd] [file]"
-Start editing a different file.
+Edit a different file.
 #ifdef REFERENCE
 If the current buffer has been modified since the last complete write,
 the command will fail.
@@ -514,6 +547,24 @@ and
 .Sy writeany .
 .El
 #endif
+.It Li "exu[sage] [command]"
+Display usage for an
+.Nm \&ex
+command.
+#ifdef REFERENCE
+If
+.Li command
+is specified, a usage statement for that command is displayed.
+Otherwise, usage statements for all
+.Nm \&ex
+commands are displayed.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+Unchanged.
+.It "Options:"
+None.
+.El
+#endif
 .It Li "f[ile] [file]"
 Display and optionally change the file name.
 #ifdef REFERENCE
@@ -524,6 +575,19 @@ in the file are displayed.
 .Bl -tag -width "XXCurrent line:" -compact
 .It "Current line:"
 Unchanged.
+.It "Options:"
+None.
+.El
+#endif
+.It Li "fg [name]"
+Visual mode only.
+Foreground the screen.
+#ifdef REFERENCE
+Swap the current screen with the specified backgrounded screen.
+If no screen is specified, the first background screen is foregrounded.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+The current line is the current line when the screen was last edited.
 .It "Options:"
 None.
 .El
@@ -593,6 +657,16 @@ commands.
 .Bl -tag -width "XXCurrent line:" -compact
 .It "Current line:"
 The last line modified.
+.It "Options:"
+None.
+.El
+#endif
+.It Li "he[lp]"
+Display a help message.
+#ifdef REFERENCE
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+Unchanged.
 .It "Options:"
 None.
 .El
@@ -725,6 +799,30 @@ The current line is changed to the first of the moved lines.
 None.
 .El
 #endif
+.It Li "mk[exrc][!] file"
+Write the abbreviations, editor options and maps to the specified
+file.
+#ifdef REFERENCE
+Information is written in a form which can later be read back in
+using the
+.Nm \&ex
+.Sy source
+command.
+If
+.Li file
+already exists, the
+.Sy mkexrc
+command will fail.
+This check can be overridden by appending a
+.Dq Li !
+character to the command.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+Unchanged.
+.It "Options:"
+None.
+.El
+#endif
 .It Li "n[ext][!] [file ...]"
 Edit the next file from the argument list.
 #ifdef REFERENCE
@@ -797,6 +895,29 @@ When the file is preserved, an email message is sent to the user.
 .It "Current line:"
 Unchanged.
 .It "Options:"
+None.
+.El
+#endif
+.It Li "prev[ious][!]"
+Edit the previous file from the argument list.
+#ifdef REFERENCE
+The
+.Sy previous
+command will fail if the file has been modified since the last complete
+write.
+This check can be overridden by appending the
+.Dq Li !
+character to the command name.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+The current line is changed as described for the
+.Sy edit
+command.
+.It "Options:"
+Affected by the options
+.Sy autowrite
+and
+.Sy writeany .
 None.
 .El
 #endif
@@ -894,6 +1015,27 @@ command.
 None.
 .El
 #endif
+.It Li "res[ize] [+|-]size"
+Visual mode only.
+Grow or shrink the current screen.
+#ifdef REFERENCE
+If 
+.Li size
+is a positive, signed number, the current screen is grown by that many lines.
+If
+.Li size
+is a negative, signed number, the current screen is shrunk by that many lines.
+If
+.Li size
+is not signed, the current screen is set to the specified
+.Li size .
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+Unchanged.
+.It "Options:"
+None.
+.El
+#endif
 .It Li "rew[ind][!]"
 Rewind the argument list.
 #ifdef REFERENCE
@@ -984,6 +1126,32 @@ commands may be nested.
 .Bl -tag -width "XXCurrent line:" -compact
 .It "Current line:"
 Unchanged.
+.It "Options:"
+None.
+.El
+#endif
+.It Li "sp[lit] [file ...]"
+Visual mode only.
+Split the screen.
+#ifdef REFERENCE
+The current screen is split into two screens, of approximately equal size.
+If
+.Li file
+is specified, the new screen is editing that file, otherwise, both
+screens are editing the same file, and changes in the new screen will
+be reflected in the original screen.
+The argument list for the new screen consists of the list of files
+specified as arguments to this command, or, the current pathname if
+no files are specified.
+In the former case, editing starts with the first file on the list.
+See the section on Multiple Screens for more information.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+If
+.Li file
+is specified, set as for the
+.Sy edit
+command, otherwise unchanged.
 .It "Options:"
 None.
 .El
@@ -1095,6 +1263,67 @@ and
 options.
 .El
 #endif
+.It Li "tagp[op][!] [file | number]"
+Pop to the specified tag in the tags stack.
+#ifdef REFERENCE
+If neither
+.Li file
+or
+.Li number
+is specified, the
+.Sy tagpop
+command pops to the most recent entry on the tags stack.
+If
+.Li file
+or
+.Li number
+is specified, the
+.Sy tagpop
+command pops to the most recent entry in the tags stack for that file,
+or numbered entry in the tags stack, respectively.
+(See the
+.Sy display
+command for information on displaying the tags stack.)
+.Pp
+If the file has been modified since the last complete write, the
+.Sy tagpop
+command will fail.
+This check may be overridden by appending a
+.Dq Li !
+character to the command name.
+#ifdef REFERENCE
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+The current line changes to the line indicated by the tag.
+.It "Options:"
+Affected by the
+.Sy autowrite ,
+and
+.Sy writeany 
+options.
+.El
+#endif
+.It Li "tagt[op][!]"
+Pop to the least recent tag on the tags stack, clearing the tags stack.
+.Pp
+If the file has been modified since the last complete write, the
+.Sy tagpop
+command will fail.
+This check may be overridden by appending a
+.Dq Li !
+character to the command name.
+#ifdef REFERENCE
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+The current line changes to the line indicated by the tag.
+.It "Options:"
+Affected by the
+.Sy autowrite ,
+and
+.Sy writeany 
+options.
+.El
+#endif
 .It Li "una[bbrev] word"
 Delete an abbreviation.
 #ifdef REFERENCE
@@ -1141,7 +1370,13 @@ Unchanged.
 None.
 .El
 #endif
+.It Li "ve[rsion]"
+Display the version of the
+.Nm \&ex/vi
+editor.
 .It Li "[line] vi[sual] [type] [count] [flags]"
+.Nm \&Ex
+mode only.
 Enter visual mode.
 #ifdef REFERENCE
 The
@@ -1167,6 +1402,32 @@ specifies the number of lines that will initially be displayed.
 Unchanged unless
 .Li line
 is specified, in which case the current line changes to that line.
+.It "Options:"
+None.
+.El
+#endif
+.It Li "vi[sual][!] [+cmd] [file]"
+.Nm \&Visual
+mode only.
+Edit a new file.
+#ifdef REFERENCE
+Identical to the
+.Dq Li "edit[!] [+cmd] [file]"
+command.
+.It Li "viu[sage] [command]"
+Display usage for a
+.Nm \&vi
+command.
+#ifdef REFERENCE
+If
+.Li command
+is specified, a usage statement for that command is displayed.
+Otherwise, usage statements for all
+.Nm \&vi
+commands are displayed.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+Unchanged.
 .It "Options:"
 None.
 .El
