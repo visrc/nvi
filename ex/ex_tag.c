@@ -1,6 +1,6 @@
 /*-
- * Copyright (c) 1992 The Regents of the University of California.
- * All rights reserved.
+ * Copyright (c) 1992, 1993
+ *	The Regents of the University of California.  All rights reserved.
  *
  * This code is derived from software contributed to Berkeley by
  * David Hitz of Auspex Systems, Inc.
@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 5.40 1993/06/01 23:18:26 bostic Exp $ (Berkeley) $Date: 1993/06/01 23:18:26 $";
+static char sccsid[] = "$Id: ex_tag.c,v 8.1 1993/06/09 22:26:00 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:26:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>

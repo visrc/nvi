@@ -1,18 +1,18 @@
 /*-
- * Copyright (c) 1992 The Regents of the University of California.
- * All rights reserved.
+ * Copyright (c) 1992, 1993
+ *	The Regents of the University of California.  All rights reserved.
  *
  * %sccs.include.redist.c%
  */
 
 #ifndef lint
-char copyright[] =
-"%Z% Copyright (c) 1992 The Regents of the University of California.\n\
- All rights reserved.\n";
+static char copyright[] =
+"%Z% Copyright (c) 1992, 1993\n\
+	The Regents of the University of California.  All rights reserved.\n";
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.74 1993/06/01 23:18:01 bostic Exp $ (Berkeley) $Date: 1993/06/01 23:18:01 $";
+static char sccsid[] = "$Id: main.c,v 8.1 1993/06/09 22:21:23 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:21:23 $";
 #endif /* not lint */
 
 #include <sys/param.h>

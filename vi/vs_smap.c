@@ -1,12 +1,12 @@
 /*-
- * Copyright (c) 1993 The Regents of the University of California.
- * All rights reserved.
+ * Copyright (c) 1993
+ *	The Regents of the University of California.  All rights reserved.
  *
  * %sccs.include.redist.c%
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 5.32 1993/05/30 18:00:48 bostic Exp $ (Berkeley) $Date: 1993/05/30 18:00:48 $";
+static char sccsid[] = "$Id: vs_smap.c,v 8.1 1993/06/09 22:25:47 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:25:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>

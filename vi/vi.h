@@ -1,10 +1,10 @@
 /*-
- * Copyright (c) 1992 The Regents of the University of California.
- * All rights reserved.
+ * Copyright (c) 1992, 1993
+ *	The Regents of the University of California.  All rights reserved.
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 5.42 1993/05/13 14:07:00 bostic Exp $ (Berkeley) $Date: 1993/05/13 14:07:00 $
+ *	$Id: vi.h,v 8.1 1993/06/09 22:29:01 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:29:01 $
  */
 
 /* Structure passed around to functions implementing vi commands. */
