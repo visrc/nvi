@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.51 1993/11/13 18:02:14 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:02:14 $";
+static char sccsid[] = "$Id: ex.c,v 8.52 1993/11/17 10:21:22 bostic Exp $ (Berkeley) $Date: 1993/11/17 10:21:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -671,8 +671,10 @@ end2:			break;
 			F_SET(&cmd, E_BUFFER);
 			break;
 		case 'C':				/* count */
+		case 'n':
 		case 'c':				/* count (address) */
-			if (!isdigit(*exc))
+			if (!isdigit(*exc) &&
+			    (*p != 'n' || (*exc != '+' && *exc != '-')))
 				break;
 			lcount = strtol(exc, &endp, 10);
 			if (lcount == 0) {
@@ -690,7 +692,7 @@ end2:			break;
 			 * join) do different things with counts than with
 			 * line addresses.
 			 */
-			if (*p == 'C')
+			if (*p == 'C' || *p == 'n')
 				cmd.count = lcount;
 			else {
 				cmd.addr1 = cmd.addr2;
