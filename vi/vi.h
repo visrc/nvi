@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 10.7 1995/09/25 08:03:00 bostic Exp $ (Berkeley) $Date: 1995/09/25 08:03:00 $
+ *	$Id: vi.h,v 10.8 1995/09/25 10:41:17 bostic Exp $ (Berkeley) $Date: 1995/09/25 10:41:17 $
  */
 
 /* Definition of a vi "word". */
@@ -354,7 +354,8 @@ typedef enum {
 
 /* Vi common error messages. */
 typedef enum {
-    VIM_COMBUF, VIM_EOF, VIM_EOL, VIM_NOCOM, VIM_NOCOM_B, VIM_USAGE
+	VIM_COMBUF, VIM_EMPTY, VIM_EOF, VIM_EOL, VIM_NOCOM, VIM_NOCOM_B,
+	VIM_USAGE
 } vim_t;
 
 #include "vi_extern.h"
