@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.131 1994/09/16 14:17:54 bostic Exp $ (Berkeley) $Date: 1994/09/16 14:17:54 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.132 1994/10/09 09:55:55 bostic Exp $ (Berkeley) $Date: 1994/10/09 09:55:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1682,7 +1682,8 @@ txt_outdent(sp, tp)
 			++scno;
 
 	/* Get the previous shiftwidth column. */
-	for (cno = scno; --scno % sw != 0;);
+	cno = scno;
+	scno -= --scno % sw;
 
 	/*
 	 * Since we don't know what comes before the character(s) being
