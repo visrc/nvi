@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: gs.h,v 10.45 2000/07/11 15:10:59 skimo Exp $ (Berkeley) $Date: 2000/07/11 15:10:59 $
+ *	$Id: gs.h,v 10.46 2000/07/11 22:05:09 skimo Exp $ (Berkeley) $Date: 2000/07/11 22:05:09 $
  */
 
 #define	TEMPORARY_FILE_STRING	"/tmp"	/* Default temporary file name. */
@@ -85,9 +85,6 @@ struct _gs {
 #define	DEFAULT_NOPRINT	'\1'		/* Emergency non-printable character. */
 	CHAR_T	 noprint;		/* Cached, unprintable character. */
 
-	CHAR_T	*tmp_bp;		/* Temporary buffer. */
-	size_t	 tmp_blen;		/* Temporary buffer size. */
-
 	char	*c_option;		/* Ex initial, command-line command. */
 
 #ifdef DEBUG
@@ -136,7 +133,6 @@ struct _gs {
 #define	G_SCRWIN	0x0020		/* Scripting windows running. */
 #define	G_SNAPSHOT	0x0040		/* Always snapshot files. */
 #define	G_SRESTART	0x0080		/* Screen restarted. */
-#define	G_TMP_INUSE	0x0100		/* Temporary buffer in use. */
 	u_int32_t flags;
 
 	/* Screen interface functions. */

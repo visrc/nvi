@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vi.c,v 10.67 2000/06/27 17:19:08 skimo Exp $ (Berkeley) $Date: 2000/06/27 17:19:08 $";
+static const char sccsid[] = "$Id: vi.c,v 10.68 2000/07/11 22:05:11 skimo Exp $ (Berkeley) $Date: 2000/07/11 22:05:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -234,8 +234,8 @@ ex_continue:	if (vp->kp->func(sp, vp))
 			goto err;
 #ifdef DEBUG
 		/* Make sure no function left the temporary space locked. */
-		if (F_ISSET(gp, G_TMP_INUSE)) {
-			F_CLR(gp, G_TMP_INUSE);
+		if (F_ISSET(wp, W_TMP_INUSE)) {
+			F_CLR(wp, W_TMP_INUSE);
 			msgq(sp, M_ERR,
 			    "232|vi: temporary buffer not released");
 		}

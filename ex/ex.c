@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex.c,v 10.64 2000/07/01 09:44:40 skimo Exp $ (Berkeley) $Date: 2000/07/01 09:44:40 $";
+static const char sccsid[] = "$Id: ex.c,v 10.65 2000/07/11 22:05:10 skimo Exp $ (Berkeley) $Date: 2000/07/11 22:05:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1382,8 +1382,8 @@ addr_verify:
 
 #ifdef DEBUG
 	/* Make sure no function left global temporary space locked. */
-	if (F_ISSET(gp, G_TMP_INUSE)) {
-		F_CLR(gp, G_TMP_INUSE);
+	if (F_ISSET(gp, W_TMP_INUSE)) {
+		F_CLR(gp, W_TMP_INUSE);
 		msgq(sp, M_ERR, "087|%s: temporary buffer not released",
 		    ecp->cmd->name);
 	}

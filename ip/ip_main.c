@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_main.c,v 8.20 2000/07/11 19:07:19 skimo Exp $ (Berkeley) $Date: 2000/07/11 19:07:19 $";
+static const char sccsid[] = "$Id: ip_main.c,v 8.21 2000/07/11 22:05:11 skimo Exp $ (Berkeley) $Date: 2000/07/11 22:05:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -163,6 +163,9 @@ run_editor(void * vp)
 
 	/* Give the screen a couple of seconds to deal with it. */
 	sleep(2);
+
+	/* Remove window; correct place ? */
+	win_end(wp);
 
 #if defined(DEBUG) || defined(PURIFY) || defined(LIBRARY)
 	free(ipp);

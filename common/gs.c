@@ -82,6 +82,31 @@ gs_new_win(GS *gp)
 }
 
 /*
+ * win_end --
+ *	Remove window.
+ *
+ * PUBLIC: int win_end __P((WIN *wp));
+ */
+int
+win_end(WIN *wp)
+{
+	SCR *sp;
+
+	CIRCLEQ_REMOVE(&wp->gp->dq, wp, q);
+
+	while ((sp = wp->scrq.cqh_first) != (void *)&wp->scrq)
+		(void)screen_end(sp);
+
+#if defined(DEBUG) || defined(PURIFY) || defined(LIBRARY)
+	/* Free any temporary space. */
+	if (wp->tmp_bp != NULL)
+		free(wp->tmp_bp);
+#endif
+
+	return 0;
+}
+
+/*
  * gs_end --
  *	End the program, discarding screens and most of the global area.
  *
@@ -100,10 +125,8 @@ gs_end(gp)
 		(void)file_end(gp->ccl_sp, NULL, 1);
 		(void)screen_end(gp->ccl_sp);
 	}
-	for (wp = gp->dq.cqh_first; wp != (void *)&gp->dq; 
-	    wp = wp->q.cqe_next)
-		while ((sp = wp->scrq.cqh_first) != (void *)&wp->scrq)
-		(void)screen_end(sp);
+	while ((wp = gp->dq.cqh_first) != (void *)&gp->dq)
+		(void)win_end(wp);
 	while ((sp = gp->hq.cqh_first) != (void *)&gp->hq)
 		(void)screen_end(sp);
 
@@ -161,15 +184,9 @@ gs_end(gp)
 #endif
 	}
 
-#if defined(DEBUG) || defined(PURIFY) || defined(LIBRARY)
-	/* Free any temporary space. */
-	if (gp->tmp_bp != NULL)
-		free(gp->tmp_bp);
-
 #if defined(TRACE)
 	/* Close tracing file descriptor. */
 	vtrace_end();
-#endif
 #endif
 }
 
