@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_split.c,v 10.27 1996/06/28 16:53:58 bostic Exp $ (Berkeley) $Date: 1996/06/28 16:53:58 $";
+static const char sccsid[] = "$Id: vs_split.c,v 10.28 1996/06/30 17:47:03 bostic Exp $ (Berkeley) $Date: 1996/06/30 17:47:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -414,8 +414,8 @@ vs_swap(sp, nspp, name)
 	nsp->defscroll = nsp->t_maxrows / 2;
 
 	/* Allocate a new screen map. */
-	CALLOC_RET(nsp, HMAP, SMAP *, SIZE_HMAP(nsp), sizeof(SMAP));
-	TMAP = HMAP + (nsp->t_rows - 1);
+	CALLOC_RET(nsp, _HMAP(nsp), SMAP *, SIZE_HMAP(nsp), sizeof(SMAP));
+	_TMAP(nsp) = _HMAP(nsp) + (nsp->t_rows - 1);
 
 	/* Fill the map. */
 	if (vs_sm_fill(nsp, nsp->lno, P_FILL))
