@@ -14,7 +14,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: perl.xs,v 8.27 1996/10/16 14:16:34 bostic Exp $ (Berkeley) $Date: 1996/10/16 14:16:34 $";
+static const char sccsid[] = "$Id: perl.xs,v 8.28 1997/08/03 15:46:33 bostic Exp $ (Berkeley) $Date: 1997/08/03 15:46:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -583,7 +583,7 @@ GetLine(screen, linenumber)
 	ENDMESSAGE;
 
 	EXTEND(sp,1);
-        PUSHs(sv_2mortal(newSVpv(p, len)));
+        PUSHs(sv_2mortal(newSVpv(len ? p : "", len)));
 
 # XS_VI_sline --
 #	Set lineNumber to the text supplied.
