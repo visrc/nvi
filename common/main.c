@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.3 1993/08/05 17:59:06 bostic Exp $ (Berkeley) $Date: 1993/08/05 17:59:06 $";
+static char sccsid[] = "$Id: main.c,v 8.4 1993/08/16 13:02:01 bostic Exp $ (Berkeley) $Date: 1993/08/16 13:02:01 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -53,12 +53,13 @@ main(argc, argv)
 	extern int optind;
 	extern char *optarg;
 	static int reenter;		/* STATIC: Re-entrancy check. */
+	struct stat sb;
 	EXCMDARG cmd;
 	GS *gp;
 	FREF *frp;
 	SCR *sp;
 	int ch, flagchk, eval;
-	char *excmdarg, *errf, *myname, *p, *rfname, *tfname;
+	char *excmdarg, *errf, *myname, *p, *rfname, *tfname, path[MAXPATHLEN];
 
 	/* Stop if indirecting through a NULL pointer. */
 	if (reenter++)
@@ -181,7 +182,8 @@ main(argc, argv)
 	 * Source the system, environment, ~user and local .exrc values.
 	 * If the environment exists, vi historically doesn't check ~user.
 	 */
-	(void)ex_cfile(sp, NULL, _PATH_SYSEXRC, 0);
+	if (!stat(_PATH_SYSEXRC, &sb))
+		(void)ex_cfile(sp, NULL, _PATH_SYSEXRC);
 
 	/* Source the EXINIT environment variable. */
 	if ((p = getenv("EXINIT")) != NULL)
@@ -193,13 +195,14 @@ main(argc, argv)
 			free(p);
 		}
 	else if ((p = getenv("HOME")) != NULL && *p) {
-		char path[MAXPATHLEN];
-
-		(void)snprintf(path, sizeof(path), "%s/.exrc", p);
-		(void)ex_cfile(sp, NULL, path, 0);
+		(void)snprintf(path, sizeof(path), "%s/%s", p, _PATH_NEXRC);
+		if (stat(path, &sb))
+			(void)snprintf(path,
+			    sizeof(path), "%s/%s", p, _PATH_EXRC);
+		(void)ex_cfile(sp, NULL, path);
 	}
-	if (O_ISSET(sp, O_EXRC))
-		(void)ex_cfile(sp, NULL, _PATH_EXRC, 0);
+	if (O_ISSET(sp, O_EXRC) && !stat(_PATH_EXRC, &sb))
+		(void)ex_cfile(sp, NULL, _PATH_EXRC);
 
 	/* Use an error list file, tag file or recovery file if specified. */
 #ifndef NO_ERRLIST
