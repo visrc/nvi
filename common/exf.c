@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.6 1992/05/15 10:57:56 bostic Exp $ (Berkeley) $Date: 1992/05/15 10:57:56 $";
+static char sccsid[] = "$Id: exf.c,v 5.7 1992/05/21 13:03:28 bostic Exp $ (Berkeley) $Date: 1992/05/21 13:03:28 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -22,6 +22,7 @@ static char sccsid[] = "$Id: exf.c,v 5.6 1992/05/15 10:57:56 bostic Exp $ (Berke
 
 #include "vi.h"
 #include "exf.h"
+#include "mark.h"
 #include "options.h"
 #include "pathnames.h"
 #include "extern.h"
@@ -79,7 +80,7 @@ err:		msg("Error: %s", strerror(errno));
 	ep->lno = 1;
 	ep->cno = 0;
 	ep->nlen = strlen(ep->name);
-	ep->flags = ISSET(O_READONLY) ? F_RDONLY : 0;
+	ep->flags = 0;
 	insexf(ep, before);
 	return (0);
 }
@@ -116,7 +117,7 @@ err:			msg("Error: %s", strerror(errno));
 		ep->lno = 1;
 		ep->cno = 0;
 		ep->nlen = strlen(ep->name);
-		ep->flags = ISSET(O_READONLY) ? F_RDONLY : 0;
+		ep->flags = 0;
 		instailexf(ep, &exfhdr);
 	}
 	return (0);
@@ -177,20 +178,6 @@ file_prev(ep)
 }
 
 /*
- * fetchline --
- *	Find a line and return a pointer to a copy of its text.
- * XXX
- * Delete, old interface.
- */
-char *
-fetchline(lno, lenp)
-	long lno;
-	size_t *lenp;
-{
-	return (file_gline(curf, lno, lenp));
-}
-
-/*
  * file_gline --
  *	Retrieve a line from the file.
  */
@@ -219,11 +206,34 @@ file_gline(ep, lno, lenp)
 }
 
 /*
- * file_sline --
- *	Store a line in the file.
+ * file_dline --
+ *	Delete a line from the file.
  */
 int
-file_sline(ep, lno, p, len)
+file_dline(ep, lno)
+	EXF *ep;
+	recno_t lno;
+{
+	DBT key;
+
+#if DEBUG && 1
+	TRACE("delete line %lu\n", lno);
+#endif
+	key.data = &lno;
+	key.size = sizeof(lno);
+	if ((ep->db->del)(ep->db, &key, 0) == 1) {
+		msg("%s: line %lu: not found", ep->name, lno);
+		return (1);
+	}
+	return (0);
+}
+
+/*
+ * file_aline --
+ *	Append a line into the file.
+ */
+int
+file_aline(ep, lno, p, len)
 	EXF *ep;
 	recno_t lno;
 	char *p;
@@ -236,11 +246,69 @@ file_sline(ep, lno, p, len)
 	data.data = p;
 	data.size = len;
 
+#if DEBUG && 1
+	TRACE("append to line %lu {%.*s}\n", lno, MIN(len, 20), p);
+#endif
+	if ((ep->db->put)(ep->db, &key, &data, R_IAFTER) == -1) {
+		msg("%s: line %lu: %s", ep->name, lno, strerror(errno));
+		return (1);
+	}
+	return (0);
+}
+
+/*
+ * file_iline --
+ *	Insert a line into the file.
+ */
+int
+file_iline(ep, lno, p, len)
+	EXF *ep;
+	recno_t lno;
+	char *p;
+	size_t len;
+{
+	DBT data, key;
+
+#if DEBUG && 1
+	TRACE("insert before line %lu {%.*s}\n", lno, MIN(len, 20), p);
+#endif
+	key.data = &lno;
+	key.size = sizeof(lno);
+	data.data = p;
+	data.size = len;
+
+	if ((ep->db->put)(ep->db, &key, &data, R_IBEFORE) == -1) {
+		msg("%s: line %lu: %s", ep->name, lno, strerror(errno));
+		return (1);
+	}
+	return (0);
+}
+
+/*
+ * file_sline --
+ *	Store a line in the file.
+ */
+int
+file_sline(ep, lno, p, len)
+	EXF *ep;
+	recno_t lno;
+	char *p;
+	size_t len;
+{
+	DBT data, key;
+
+#if DEBUG && 1
+	TRACE("replace line %lu {%.*s}\n", lno, MIN(len, 20), p);
+#endif
+	key.data = &lno;
+	key.size = sizeof(lno);
+	data.data = p;
+	data.size = len;
+
 	if ((ep->db->put)(ep->db, &key, &data, 0) == -1) {
 		msg("%s: line %lu: %s", ep->name, lno, strerror(errno));
 		return (1);
 	}
-	scr_lchange(lno);
 	return (0);
 }
 
@@ -253,13 +321,12 @@ file_lline(ep)
 	EXF *ep;
 {
 	DBT data, key;
-	u_long lno;
+	recno_t lno;
 
-	lno = 0;
 	key.data = &lno;
 	key.size = sizeof(lno);
 
-	switch((ep->db->get)(ep->db, &key, &data, 0)) {
+	switch((ep->db->seq)(ep->db, &key, &data, R_LAST)) {
         case -1:
 		msg("%s: line %lu: %s", ep->name, lno, strerror(errno));
 		/* FALLTHROUGH */
@@ -289,11 +356,6 @@ file_start(ep)
 		return (1);
 	}
 
-	/*
-	 * XXX
-	 * Db doesn't return enough info to set the read-only flag.
-	 */
-
 	/* Change the global state. */
 	curf = ep;
 	cursor.lno = ep->lno;
@@ -303,8 +365,7 @@ file_start(ep)
 	 * XXX
 	 * Major kludge, for now, so that nlines is right.
 	 */
-	for (nlines = 1; fetchline(nlines, NULL); ++nlines);
-	--nlines;
+	nlines = file_lline(curf);
 
 	return (0);
 }
@@ -344,7 +405,7 @@ file_sync(ep, force)
 		return (0);
 
 	/* Can't write if read-only. */
-	if (ep->flags & F_RDONLY && !force) {
+	if ((ISSET(O_READONLY) || ep->flags & F_RDONLY) && !force) {
 		msg("Read-only file, not written; use ! to override.");
 		return (1);
 	}
