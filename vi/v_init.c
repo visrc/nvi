@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 5.32 1993/05/15 21:24:47 bostic Exp $ (Berkeley) $Date: 1993/05/15 21:24:47 $";
+static char sccsid[] = "$Id: v_init.c,v 5.33 1993/06/01 23:18:50 bostic Exp $ (Berkeley) $Date: 1993/06/01 23:18:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -97,8 +97,6 @@ v_init(sp, ep)
 			return (1);
 		F_CLR(ep, F_NOSETPOS);
 	} else {
-		sp->lno = ep->lno;
-		sp->cno = ep->cno;
 		if (file_gline(sp, ep, sp->lno, &len) == NULL) {
 			if (sp->lno != 1 || sp->cno != 0) {
 				if (file_lline(sp, ep, &sp->lno))
@@ -121,10 +119,6 @@ v_init(sp, ep)
 		(void)ex_cstring(sp, ep, ep->icommand, strlen(ep->icommand));
 		free(ep->icommand);
 		F_CLR(ep, F_ICOMMAND);
-		if (sp->lno != ep->lno || sp->cno != ep->cno) {
-			ep->lno = sp->lno;
-			ep->cno = sp->cno;
-		}
 	}
 
 	/*
@@ -147,10 +141,6 @@ int
 v_end(sp)
 	SCR *sp;
 {
-	/* Save the cursor location. */
-	sp->ep->lno = sp->lno;
-	sp->ep->cno = sp->cno;
-
 #ifdef FWOPEN_NOT_AVAILABLE
 	sp->trapped_fd = -1;
 #endif

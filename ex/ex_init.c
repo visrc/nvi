@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_init.c,v 5.17 1993/05/15 21:23:16 bostic Exp $ (Berkeley) $Date: 1993/05/15 21:23:16 $";
+static char sccsid[] = "$Id: ex_init.c,v 5.18 1993/06/01 23:18:25 bostic Exp $ (Berkeley) $Date: 1993/06/01 23:18:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,8 +40,6 @@ ex_init(sp, ep)
 		sp->cno = 0;
 		F_CLR(sp, F_NOSETPOS);
 	} else {
-		sp->lno = ep->lno;
-		sp->cno = ep->cno;
 		if (file_gline(sp, ep, sp->lno, &len) == NULL) {
 			if (file_lline(sp, ep, &sp->lno))
 				return (1);
@@ -76,9 +74,5 @@ int
 ex_end(sp)
 	SCR *sp;
 {
-	/* Save the cursor location. */
-	sp->ep->lno = sp->lno;
-	sp->ep->cno = sp->cno;
-
 	return (0);
 }
