@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.12 1993/09/15 14:39:50 bostic Exp $ (Berkeley) $Date: 1993/09/15 14:39:50 $";
+static char sccsid[] = "$Id: util.c,v 8.13 1993/09/27 11:42:06 bostic Exp $ (Berkeley) $Date: 1993/09/27 11:42:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -175,10 +175,14 @@ msg_rpt(sp, fp)
 		"put", "left shifted", "right shifted", "yanked", NULL,
 	};
 	recno_t total;
+	u_long rval;
 	int first, cnt;
 	size_t blen, len;
 	const char *const *ap;
 	char *bp, *p, number[40];
+
+	if ((rval = O_VAL(sp, O_REPORT)) == 0)
+		goto clear;
 
 	GET_SPACE(sp, bp, blen, 512);
 	p = bp;
@@ -198,9 +202,11 @@ msg_rpt(sp, fp)
 
 	/*
 	 * If nothing to report, return.  Note that the number of lines
-	 * must be > than the user'ss value, not >=; historic practice.
+	 * must be > than the user's value, not >=.  This is historic
+	 * practice and means that user's cannot report on single line
+	 * changes.
 	 */
-	if (total > O_VAL(sp, O_REPORT)) {
+	if (total > rval) {
 		*p = '\0';
 
 		if (fp != NULL)
@@ -212,7 +218,7 @@ msg_rpt(sp, fp)
 	FREE_SPACE(sp, bp, blen);
 
 	/* Clear after each report. */
-	memset(sp->rptlines, 0, sizeof(sp->rptlines));
+clear:	memset(sp->rptlines, 0, sizeof(sp->rptlines));
 	return (0);
 }
 
