@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.64 1993/11/20 10:05:23 bostic Exp $ (Berkeley) $Date: 1993/11/20 10:05:23 $
+ *	$Id: screen.h,v 8.65 1993/11/22 17:27:55 bostic Exp $ (Berkeley) $Date: 1993/11/22 17:27:55 $
  */
 
 /*
@@ -106,10 +106,7 @@ struct _scr {
 
 					/* Cursor's: */
 	recno_t	 lno;			/* 1-N: file line. */
-	recno_t	 olno;			/* 1-N: old cursor file line. */
 	size_t	 cno;			/* 0-N: file character in line. */
-	size_t	 ocno;			/* 0-N: old file cursor column. */
-	size_t	 sc_col;		/* 0-N: LOGICAL screen column. */
 
 	size_t	 rcm;			/* Vi: 0-N: Column suck. */
 #define	RCM_FNB		0x01		/* Column suck: first non-blank. */
@@ -190,6 +187,8 @@ struct _scr {
 	size_t	 (*s_chposition) __P((SCR *, EXF *, recno_t, size_t));
 					/* Clear the screen. */
 	int	 (*s_clear) __P((SCR *));
+					/* Return the logical cursor column. */
+	int	 (*s_column) __P((SCR *, EXF *, size_t *));
 	enum confirm			/* Confirm an action with the user. */
 		 (*s_confirm) __P((SCR *, EXF *, MARK *, MARK *));
 					/* Copy to a new screen. */
@@ -263,12 +262,13 @@ struct _scr {
 #define	S_REDRAW	0x0008000	/* Redraw the screen. */
 #define	S_REFORMAT	0x0010000	/* Reformat the screen. */
 #define	S_REFRESH	0x0020000	/* Refresh the screen. */
-#define	S_RESIZE	0x0040000	/* Resize the screen. */
-#define	S_SCRIPT	0x0080000	/* Window is a shell script. */
-#define	S_SRE_SET	0x0100000	/* The search RE has been set. */
-#define	S_SUBRE_SET	0x0200000	/* The substitute RE has been set. */
-#define	S_TIMER_SET	0x0400000	/* If a busy timer is running. */
-#define	S_UPDATE_MODE	0x0800000	/* Don't repaint modeline. */
+#define	S_RENUMBER	0x0040000	/* Renumber the screen. */
+#define	S_RESIZE	0x0080000	/* Resize the screen. */
+#define	S_SCRIPT	0x0100000	/* Window is a shell script. */
+#define	S_SRE_SET	0x0200000	/* The search RE has been set. */
+#define	S_SUBRE_SET	0x0400000	/* The substitute RE has been set. */
+#define	S_TIMER_SET	0x0800000	/* If a busy timer is running. */
+#define	S_UPDATE_MODE	0x1000000	/* Don't repaint modeline. */
 	u_int flags;
 };
 
