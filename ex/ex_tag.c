@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 8.2 1993/06/21 10:11:24 bostic Exp $ (Berkeley) $Date: 1993/06/21 10:11:24 $";
+static char sccsid[] = "$Id: ex_tag.c,v 8.3 1993/07/21 12:21:28 bostic Exp $ (Berkeley) $Date: 1993/07/21 12:21:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -85,8 +85,8 @@ ex_tagfirst(sp, tagarg)
 	}
 
 	/* Set up the screen/file. */
-	sp->lno = m.lno;
-	sp->cno = m.cno;
+	tep->lno = m.lno;
+	tep->cno = m.cno;
 	sp->ep = tep;
 	F_SET(tep, F_EADDR_LOAD);
 	F_CLR(tep, F_EADDR_NONE);
@@ -286,8 +286,8 @@ tag_change(sp, ep, tag, fname, search, force)
 		}
 	} else switch (which) {
 		case TC_CHANGE:
-			sp->lno = m.lno;
-			sp->cno = m.cno;
+			tep->lno = m.lno;
+			tep->cno = m.cno;
 			F_SET(tep, F_EADDR_LOAD);
 			F_CLR(tep, F_EADDR_NONE);
 			sp->enext = tep;
