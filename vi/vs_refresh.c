@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 10.4 1995/06/15 14:49:29 bostic Exp $ (Berkeley) $Date: 1995/06/15 14:49:29 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 10.5 1995/06/15 19:40:31 bostic Exp $ (Berkeley) $Date: 1995/06/15 19:40:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -114,7 +114,7 @@ vs_paint(sp, flags)
 	VI_PRIVATE *vip;
 	recno_t lastline, lcnt;
 	size_t cwtotal, cnt, len, x, y;
-	int ch, didclear, didpaint, inuse, leftright_warp;
+	int ch, didpaint, inuse, leftright_warp, needrefresh;
 	char *p;
 
 #define	 LNO	sp->lno
@@ -125,7 +125,7 @@ vs_paint(sp, flags)
 
 	gp = sp->gp;
 	vip = VIP(sp);
-	didclear = didpaint = leftright_warp = 0;
+	didpaint = leftright_warp = 0;
 
 	/*
 	 * 4: Reformat the lines.
@@ -584,22 +584,8 @@ slow:	for (smp = HMAP; smp->lno != LNO; ++smp);
 	 * S_SCR_REDRAW gets set when the screen isn't worth fixing, and
 	 * it's simpler to repaint.  So, don't trust anything that we
 	 * think we know about it.
-	 *
-	 * The clear() call causes the screen itself to be cleared when the
-	 * next refresh() is done.  If painting the entire window, we might
-	 * as well clear the screen, it will gives the user a cleaner visual
-	 * image.  In addition, there are times where both the screen has
-	 * been trashed and the current screen map doesn't match the file.
-	 * We have to repaint, but we also have to clear the screen.  Since
-	 * the clear() causes the screen to be cleared and repainted at
-	 * refresh() time, we don't have to do the operations separately,
-	 * avoiding a screen flash.
 	 */
-paint:	if (LF_ISSET(PAINT_FLUSH) && !IS_SPLIT(sp)) {
-		(void)gp->scr_clear(sp);
-		didclear = 1;
-	}
-	for (smp = HMAP; smp <= TMAP; ++smp)
+paint:	for (smp = HMAP; smp <= TMAP; ++smp)
 		SMAP_FLUSH(smp);
 	for (y = -1,
 	    vip->sc_smap = NULL, smp = HMAP; smp <= TMAP; ++smp) {
@@ -633,28 +619,20 @@ number:	if (O_ISSET(sp, O_NUMBER) &&
 			return (1);
 
 	/*
-	 * 9: Refresh the screen.
-	 *
-	 * If the screen was corrupted, clear/refresh it, unless we painted
-	 * it from scratch, which will do it for us.
-	 */
-	if (LF_ISSET(PAINT_FLUSH) && F_ISSET(sp, S_SCR_REFRESH) && !didclear)
-		(void)gp->scr_repaint(sp);
-
-	/*
-	 * 10: Clear the flags that are handled by this routine.
+	 * 9: Clear the flags that are handled by this routine.
 	 *
 	 * Done before displaying the modeline, because that code decides
 	 * whether or not to repaint lines it uses based on if the entire
 	 * screen is being repainted.  Since we just did that, clear the
 	 * lines.
 	 */
+	needrefresh = F_ISSET(sp, S_SCR_REFRESH);
 	F_CLR(sp, S_SCR_CENTER |
 	    S_SCR_REDRAW | S_SCR_REFORMAT | S_SCR_REFRESH | S_SCR_TOP);
 	F_CLR(vip, VIP_CUR_INVALID | VIP_SCR_NUMBER);
 
 	/*
-	 * 11: Display the modeline.
+	 * 10: Display the modeline.
 	 *
 	 * If the bottom line isn't in use by the colon command:
 	 *
@@ -693,7 +671,7 @@ number:	if (O_ISSET(sp, O_NUMBER) &&
 
 	/* Place the cursor and flush it out. */
 	(void)gp->scr_move(sp, y, SCNO);
-	(void)gp->scr_refresh(sp);
+	(void)gp->scr_refresh(sp, needrefresh);
 
 	/*
 	 * XXX
