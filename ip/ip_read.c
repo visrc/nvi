@@ -8,11 +8,12 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_read.c,v 8.3 1996/09/24 20:52:44 bostic Exp $ (Berkeley) $Date: 1996/09/24 20:52:44 $";
+static const char sccsid[] = "$Id: ip_read.c,v 8.4 1996/10/29 17:29:46 bostic Exp $ (Berkeley) $Date: 1996/10/29 17:29:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 #include <sys/queue.h>
+#include <sys/time.h>
 
 #include <bitstring.h>
 #include <stdio.h>
