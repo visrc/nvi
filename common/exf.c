@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 10.18 1995/11/22 20:32:25 bostic Exp $ (Berkeley) $Date: 1995/11/22 20:32:25 $";
+static char sccsid[] = "$Id: exf.c,v 10.19 1995/11/25 11:04:59 bostic Exp $ (Berkeley) $Date: 1995/11/25 11:04:59 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -62,19 +62,33 @@ file_add(sp, name)
 	CHAR_T *name;
 {
 	GS *gp;
-	FREF *frp;
+	FREF *frp, *tfrp;
 
 	/*
 	 * Return it if it already exists.  Note that we test against the
 	 * user's name, whatever that happens to be, including if it's a
 	 * temporary file.
+	 *
+	 * If the user added a file but was unable to initialize it, there
+	 * can be file list entries where the name field is NULL.  Discard
+	 * them the next time we see them.
 	 */
 	gp = sp->gp;
 	if (name != NULL)
 		for (frp = gp->frefq.cqh_first;
-		    frp != (FREF *)&gp->frefq; frp = frp->q.cqe_next)
+		    frp != (FREF *)&gp->frefq; frp = frp->q.cqe_next) {
+			if (frp->name == NULL) {
+				tfrp = frp->q.cqe_next;
+				CIRCLEQ_REMOVE(&gp->frefq, frp, q);
+				if (frp->name != NULL)
+					free(frp->name);
+				free(frp);
+				frp = tfrp;
+				continue;
+			}
 			if (!strcmp(frp->name, name))
 				return (frp);
+		}
 
 	/* Allocate and initialize the FREF structure. */
 	CALLOC(sp, frp, FREF *, 1, sizeof(FREF));
@@ -557,7 +571,8 @@ file_end(sp, ep, force)
 		frp->tname = NULL;
 		if (F_ISSET(frp, FR_TMPFILE)) {
 			CIRCLEQ_REMOVE(&sp->gp->frefq, frp, q);
-			free(frp->name);
+			if (frp->name != NULL)
+				free(frp->name);
 			free(frp);
 		}
 		sp->frp = NULL;
