@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: options.h,v 5.6 1992/12/23 11:25:54 bostic Exp $ (Berkeley) $Date: 1992/12/23 11:25:54 $
+ *	$Id: options.h,v 5.7 1993/01/11 20:35:43 bostic Exp $ (Berkeley) $Date: 1993/01/11 20:35:43 $
  */
 
 /* Offset macros. */
@@ -57,6 +57,7 @@ typedef struct _option {
 extern OPTIONS opts[];
 
 void	opts_dump __P((int));
+void	opts_end __P((void));
 int	opts_init __P((void));
 void	opts_save __P((FILE *));
 int	opts_set __P((char **));
