@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.86 1996/03/29 19:30:56 bostic Exp $ (Berkeley) $Date: 1996/03/29 19:30:56 $
+dnl	$Id: configure.in,v 8.87 1996/03/30 10:36:37 bostic Exp $ (Berkeley) $Date: 1996/03/30 10:36:37 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(../common/main.c)
@@ -56,6 +56,7 @@ nextstep3) CFLAGS=${CFLAGS-"-O9"}
 	   LDFLAGS="-posix $LDFLAGS";;
 osf*)	   CPPFLAGS="-Olimit 1000 $CPPFLAGS";;
 ptx*)	   LIBS="$LIBS -lseq -linet -lsocket";;
+sco3.2*)   LIBS="$LIBS -lsocket";;
 sinix*)	   LIBS="$LIBS -lelf -lc";;
 solaris*)  no_op_CFLAGS=${no_op_CFLAGS-""}
 	   LIBS="$LIBS -lsocket -lnsl -ldl"
