@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.10 1993/08/23 09:57:04 bostic Exp $ (Berkeley) $Date: 1993/08/23 09:57:04 $";
+static char sccsid[] = "$Id: recover.c,v 8.11 1993/08/24 10:47:53 bostic Exp $ (Berkeley) $Date: 1993/08/24 10:47:53 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -133,9 +133,8 @@ rcv_init(sp, ep)
 	if (!F_ISSET(sp->gp, G_RECOVER_SET)) {
 		/* Start the recovery timer. */
 		(void)signal(SIGALRM, rcv_alrm);
-		value.it_interval.tv_sec = value.it_interval.tv_usec = 0;
-		value.it_value.tv_sec = RCV_PERIOD;
-		value.it_value.tv_usec = 0;
+		value.it_interval.tv_sec = value.it_value.tv_sec = RCV_PERIOD;
+		value.it_interval.tv_usec = value.it_value.tv_usec = 0;
 		if (setitimer(ITIMER_REAL, &value, NULL)) {
 			msgq(sp, M_ERR,
 			    "Error: setitimer: %s", strerror(errno));
@@ -250,9 +249,14 @@ rcv_sync(sp, ep)
 	SCR *sp;
 	EXF *ep;
 {
+	struct itimerval value;
+
 	if (ep->db->sync(ep->db, R_RECNOSYNC)) {
-		msgq(sp, M_ERR, "Preservation failed: %s: %s",
+		msgq(sp, M_ERR, "Automatic file backup failed: %s: %s",
 		    ep->rcv_path, strerror(errno));
+		value.it_interval.tv_sec = value.it_interval.tv_usec = 0;
+		value.it_value.tv_sec = value.it_value.tv_usec = 0;
+		(void)setitimer(ITIMER_REAL, &value, NULL);
 		F_CLR(ep, F_RCV_ON);
 		return (1);
 	}
