@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 9.9 1994/12/16 11:20:09 bostic Exp $ (Berkeley) $Date: 1994/12/16 11:20:09 $";
+static char sccsid[] = "$Id: ex_tag.c,v 9.10 1994/12/16 11:30:23 bostic Exp $ (Berkeley) $Date: 1994/12/16 11:30:23 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -86,12 +86,13 @@ ex_tagfirst(sp, tagarg)
 	 */
 	if (isdigit(search[0])) {
 		m.lno = atoi(search);
-		if (file_gline(sp, m.lno, NULL) == NULL) {
-			m.lno = 1;
+		if (file_gline(sp, m.lno, NULL) == NULL)
 			tag_msg(sp, TAG_BADLNO, tag);
+		else {
+			sp->lno = m.lno;
+			sp->cno = 0;
+			(void)nonblank(sp, sp->lno, &sp->cno);
 		}
-		m.cno = 0;
-		(void)nonblank(sp, m.lno, &m.cno);
 	} else {
 		/*
 		 * Search for the tag; cheap fallback for C functions if
@@ -107,11 +108,11 @@ ex_tagfirst(sp, tagarg)
 		}
 		if (sval)
 			tag_msg(sp, TAG_SEARCH, tag);
+		else {
+			sp->lno = m.lno;
+			sp->cno = m.cno;
+		}
 	}
-
-	/* Set up the screen. */
-	sp->lno = m.lno;
-	sp->cno = m.cno;
 	(void)msg_status(sp, sp->lno, 0);
 
 	/* Might as well make this the default tag. */
@@ -250,12 +251,13 @@ err:		free(tag);
 	 */
 	if (isdigit(search[0])) {
 		m.lno = atoi(search);
-		if (file_gline(sp, m.lno, NULL) == NULL) {
-			m.lno = 1;
+		if (file_gline(sp, m.lno, NULL) == NULL)
 			tag_msg(sp, TAG_BADLNO, tag);
+		else {
+			sp->lno = m.lno;
+			sp->cno = 0;
+			(void)nonblank(sp, sp->lno, &sp->cno);
 		}
-		m.cno = 0;
-		(void)nonblank(sp, m.lno, &m.cno);
 		sval = 0;
 	} else {
 		/*
@@ -273,6 +275,10 @@ err:		free(tag);
 		}
 		if (sval)
 			tag_msg(sp, TAG_SEARCH, tag);
+		else {
+			sp->lno = m.lno;
+			sp->cno = m.cno;
+		}
 	}
 	free(tag);
 
@@ -280,12 +286,9 @@ err:		free(tag);
 	case TC_CURRENT:
 		if (sval)
 			return (1);
-		/* FALLTHROUGH */
+		break;
 	case TC_CHANGE:
-		sp->lno = m.lno;
-		sp->cno = m.cno;
-		if (which == TC_CHANGE)
-			(void)msg_status(sp, sp->lno, 0);
+		(void)msg_status(sp, sp->lno, 0);
 		break;
 	}
 	F_SET(sp, S_SCR_CENTER);
