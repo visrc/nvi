@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 9.34 1995/02/08 14:35:13 bostic Exp $ (Berkeley) $Date: 1995/02/08 14:35:13 $";
+static char sccsid[] = "$Id: ex.c,v 9.35 1995/02/08 15:30:20 bostic Exp $ (Berkeley) $Date: 1995/02/08 15:30:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -602,9 +602,10 @@ skip:		if (F_ISSET(cp, E_NOPERM)) {
 		optnum = 0;
 
 	/* Check for newscreen legality. */
-	if (newscreen && (F_ISSET(sp, S_EX) || !F_ISSET(cp, E_NEWSCREEN))) {
+	if (newscreen &&
+	    (F_ISSET(sp, S_EX | S_GLOBAL) || !F_ISSET(cp, E_NEWSCREEN))) {
 		msgq(sp, M_ERR,
-	    "270|New screens not available in ex mode or with the %s command",
+    "270|New screens not available in globals, ex mode or with the %s command",
 		    cp->name);
 		goto err;
 	}
