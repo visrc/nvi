@@ -17,6 +17,7 @@ HUnhsh
 IPLPPPQPP
 Kirkendall
 Korn
+LC
 LIpplpipbp
 LaA
 Li
@@ -116,6 +117,7 @@ exusage
 fi
 filesystem
 filesystems
+foo
 ftp.cs.berkeley.edu
 ftp.uu.net
 gdb
@@ -155,6 +157,7 @@ mkexrc
 modeful
 modeline
 modelines
+msgcat
 ndo
 nex
 nexrc
