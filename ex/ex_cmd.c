@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_cmd.c,v 10.16 1996/04/10 11:31:29 bostic Exp $ (Berkeley) $Date: 1996/04/10 11:31:29 $";
+static const char sccsid[] = "$Id: ex_cmd.c,v 10.17 1996/04/10 11:45:52 bostic Exp $ (Berkeley) $Date: 1996/04/10 11:45:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -365,7 +365,7 @@ EXCMDLIST const cmds[] = {
 /* C_TAGPREV */
 	{"tagprev",	ex_tag_prev,	0,
 	    "!",
-	    "tagp[rev][!]",
+	    "tagpr[ev][!]",
 	    "move to the previous tag"},
 /* C_TAGTOP */
 	{"tagtop",	ex_tag_top,	0,
