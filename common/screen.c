@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 5.12 1993/05/13 12:24:03 bostic Exp $ (Berkeley) $Date: 1993/05/13 12:24:03 $";
+static char sccsid[] = "$Id: screen.c,v 5.13 1993/05/15 10:08:28 bostic Exp $ (Berkeley) $Date: 1993/05/15 10:08:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -293,7 +293,7 @@ scr_end(sp)
 
 		for (mp = sp->msgp;
 		    mp != NULL && !F_ISSET(mp, M_EMPTY); mp = mp->next)
-			msga(sp->gp, c_sp,
+			msg_app(sp->gp, c_sp,
 			    mp->flags & M_INV_VIDEO, mp->mbuf, mp->len);
 
 		for (mp = sp->msgp; mp != NULL; mp = next) {
