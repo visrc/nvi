@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 5.9 1992/05/21 13:01:32 bostic Exp $ (Berkeley) $Date: 1992/05/21 13:01:32 $
+ *	$Id: vi.h,v 5.10 1992/05/21 13:59:54 bostic Exp $ (Berkeley) $Date: 1992/05/21 13:59:54 $
  */
 
 #include "exf.h"
@@ -27,7 +27,8 @@ typedef struct {
 #define	VC_C1SET	0x001	/* Count 1 set. */
 #define	VC_C2SET	0x002	/* Count 2 set. */
 #define	VC_LMODE	0x004	/* Motion is line oriented. */
-#define	VC_ISMOTION	0x008	/* Decoding a motion. */
+#define	VC_ISDOT	0x008	/* Command was the dot command. */
+#define	VC_ISMOTION	0x010	/* Decoding a motion. */
 	u_int flags;
 } VICMDARG;
 

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.8 1992/05/21 13:01:23 bostic Exp $ (Berkeley) $Date: 1992/05/21 13:01:23 $";
+static char sccsid[] = "$Id: vi.c,v 5.9 1992/05/21 13:59:55 bostic Exp $ (Berkeley) $Date: 1992/05/21 13:59:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,10 +28,11 @@ static int getcmd __P((VICMDARG *, VICMDARG *));
 static int getcount __P((int, u_long *, int *));
 static int getkeyword __P((VICMDARG *, u_int));
 
+static VICMDARG dot, dotmotion;
+
 void
 vi()
 {
-	static VICMDARG dot, dotmotion;
 	register VICMDARG *mp, *vp;
 	register int key;
 	VICMDARG cmd, motion;
@@ -75,23 +76,11 @@ err:		if (msgcnt) {
 		 * command setting the cursor to the resulting mark.
 		 */
 		vp = &cmd;
+		mp = NULL;
 		if (getcmd(vp, NULL))
 			goto err;
 
-		/* If dot, set the cmd and motion structures. */
-		if (vp->key == '.') {
-			if (dot.key == '\0') {
-				bell();
-				msg("No commands executed.");
-				goto err;
-			}
-			vp = &dot;
-			mp = &dotmotion;
-			flags = dot.flags & ~V_MOTION;
-		} else {
-			mp = NULL;
-			flags = vp->kp->flags;
-		}
+		flags = vp->kp->flags;
 
 		/* V/v commands require movement commands. */
 		if (V_from && !(flags & V_MOVE)) {
@@ -178,6 +167,7 @@ err:		if (msgcnt) {
 		/* Set the dot variables, if necessary . */
 		if (flags & V_DOT) {
 			dot = cmd;
+			dot.flags |= VC_ISDOT;
 			dotmotion = motion;
 		}
 	}
@@ -234,6 +224,12 @@ getcmd(vp, ismotion)
 
 	bzero(vp, sizeof(*vp));
 
+	/* If '.' command, return the dot motion. */
+	if (ismotion && ismotion->flags & VC_ISDOT) {
+		*vp = dotmotion;
+		return (0);
+	}
+
 	/* 'C' and 'D' imply motion to the end-of-line. */
 	if (ismotion != NULL && (ismotion->key == 'C' || ismotion->key == 'D'))
 		key = '$';
@@ -262,8 +258,15 @@ getcmd(vp, ismotion)
 	/* Find the command. */
 	kp = vp->kp = &vikeys[vp->key = key];
 	if (kp->func == NULL) {
+		if (key == '.') {
+			if (dot.flags & VC_ISDOT) {
+				*vp = dot;
+				return (0);
+			}
+			msg("No commands which set dot executed yet.");
+		} else
+			msg("%s isn't a command.", charname(key));
 		bell();
-		msg("%s isn't a command.", charname(key));
 		return (1);
 	}
 
