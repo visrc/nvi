@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 8.12 1993/10/11 22:02:25 bostic Exp $ (Berkeley) $Date: 1993/10/11 22:02:25 $
+ *	$Id: key.h,v 8.13 1993/10/26 18:37:29 bostic Exp $ (Berkeley) $Date: 1993/10/26 18:37:29 $
  */
 
 /* Structure for a key input buffer. */
@@ -86,10 +86,11 @@ enum input	{ INP_OK=0, INP_EOF, INP_ERR };
 #define	K_ZERO		18
 
 /* Various special characters. */
+#define	HEX_CH		'x'			/* Leading hex number. */
 #define	END_CH		'$'			/* End of a range. */
-#define	YES_CH		'y'			/* Yes. */
-#define	QUIT_CH		'q'			/* Quit. */
 #define	NO_CH		'n'			/* No. */
+#define	QUIT_CH		'q'			/* Quit. */
+#define	YES_CH		'y'			/* Yes. */
 #define	CONFSTRING	"confirm? [ynq]"
 #define	CONTMSG		"Enter return to continue: "
 #define	CONTMSG_I	"Enter return to continue [q to quit]: "
