@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.18 1993/10/05 18:07:48 bostic Exp $ (Berkeley) $Date: 1993/10/05 18:07:48 $";
+static char sccsid[] = "$Id: options.c,v 8.19 1993/10/10 10:24:21 bostic Exp $ (Berkeley) $Date: 1993/10/10 10:24:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,8 +40,6 @@ static OPTLIST const optlist[] = {
 	{"autowrite",	NULL,		OPT_0BOOL,	0},
 /* O_BEAUTIFY */
 	{"beautify",	NULL,		OPT_0BOOL,	0},
-/* O_CC */
-	{"cc",		NULL,		OPT_STR,	0},
 /* O_COLUMNS */
 	{"columns",	f_columns,	OPT_NUM,	OPT_NOSAVE},
 /* O_COMMENT */
@@ -74,8 +72,6 @@ static OPTLIST const optlist[] = {
 	{"list",	f_list,		OPT_0BOOL,	0},
 /* O_MAGIC */
 	{"magic",	NULL,		OPT_1BOOL,	0},
-/* O_MAKE */
-	{"make",	NULL,		OPT_STR,	0},
 /* O_MATCHTIME */
 	{"matchtime",	f_matchtime,	OPT_NUM,	0},
 /* O_MESG */
@@ -163,7 +159,6 @@ static OABBREV const abbrev[] = {
 	{"ap",		O_AUTOPRINT},
 	{"aw",		O_AUTOWRITE},
 	{"bf",		O_BEAUTIFY},
-	{"cc",		O_CC},
 	{"co",		O_COLUMNS},
 	{"dig",		O_DIGRAPH},
 	{"dir",		O_DIRECTORY},
@@ -176,7 +171,6 @@ static OABBREV const abbrev[] = {
 	{"ls",		O_LINES},
 	{"ma",		O_MAGIC},
 	{"me",		O_MESG},
-	{"mk",		O_MAKE},
 	{"modeline",	O_MODELINES},
 	{"nu",		O_NUMBER},
 	{"opt",		O_OPTIMIZE},
@@ -236,12 +230,10 @@ opts_init(sp)
 		else if (op->type == OPT_1BOOL)
 			O_SET(sp, cnt);
 			
-	SET_DEF(O_CC, "cc=cc -c");
 	(void)snprintf(b1, sizeof(b1), "directory=%s",
 	    (s = getenv("TMPDIR")) == NULL ? _PATH_PRESERVE : s);
 	SET_DEF(O_DIRECTORY, b1);
 	SET_DEF(O_KEYTIME, "keytime=6");
-	SET_DEF(O_MAKE, "make=make");
 	SET_DEF(O_MATCHTIME, "matchtime=7");
 	SET_DEF(O_REPORT, "report=5");
 	SET_DEF(O_PARAGRAPHS, "paragraphs=IPLPPPQPP LIpplpipbp");
