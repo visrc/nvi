@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_util.c,v 10.24 1996/12/05 12:27:11 bostic Exp $ (Berkeley) $Date: 1996/12/05 12:27:11 $";
+static const char sccsid[] = "$Id: ex_util.c,v 10.25 1996/12/05 14:20:28 bostic Exp $ (Berkeley) $Date: 1996/12/05 14:20:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -48,7 +48,7 @@ ex_cinit(sp, cmdp, cmd_id, naddr, lno1, lno2, force)
 	cmdp->addr1.cno = cmdp->addr2.cno = 1;
 	if (force)
 		cmdp->iflags |= E_C_FORCE;
-	return (argv_init(sp, cmdp));
+	(void)argv_init(sp, cmdp);
 }
 
 /*
