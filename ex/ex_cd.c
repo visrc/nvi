@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cd.c,v 8.14 1994/08/07 17:20:09 bostic Exp $ (Berkeley) $Date: 1994/08/07 17:20:09 $";
+static char sccsid[] = "$Id: ex_cd.c,v 8.15 1994/08/08 09:00:30 bostic Exp $ (Berkeley) $Date: 1994/08/08 09:00:30 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -44,6 +44,19 @@ ex_cd(sp, ep, cmdp)
 	CDPATH *cdp;
 	char *dir;		/* XXX END OF THE STACK, DON'T TRUST GETCWD. */
 	char buf[MAXPATHLEN * 2];
+
+	/*
+	 * !!!
+	 * Historic practice is that the cd isn't attempted if the file has
+	 * been modified, unless its name begins with a leading '/' or the
+	 * force flag is set.
+	 */
+	if (F_ISSET(ep, F_MODIFIED) &&
+	    !F_ISSET(cmdp, E_FORCE) && sp->frp->name[0] != '/') {
+		msgq(sp, M_ERR,
+    "File modified since last complete write; write or use ! to override");
+		return (1);
+	}
 
 	switch (cmdp->argc) {
 	case 0:
