@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.4 1993/08/05 18:08:34 bostic Exp $ (Berkeley) $Date: 1993/08/05 18:08:34 $";
+static char sccsid[] = "$Id: ex.c,v 8.5 1993/08/06 12:17:42 bostic Exp $ (Berkeley) $Date: 1993/08/06 12:17:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -52,9 +52,11 @@ ex(sp, ep)
 	F_SET(sp->frp, FR_EDITED);
 
 	for (eval = 0;;) {
+		/* Get the next command. */
 		if (sp->s_get(sp, ep,
 		    &sp->bhdr, ':', TXT_CR | TXT_PROMPT))
 			continue;
+
 		tp = sp->bhdr.next;
 		if (tp->len == 0) {
 			(void)fputc('\r', sp->stdfp);
@@ -652,6 +654,10 @@ addr2:	switch (cmd.addrcnt) {
 
 	/* Save the current mode. */
 	saved_mode = F_ISSET(sp, S_MODE_EX | S_MODE_VI | S_MAJOR_CHANGE);
+
+	/* Increment the command count if not called from vi. */
+	if (!F_ISSET(sp, S_MODE_VI))
+		++sp->ccnt;
 
 	/* Do the command. */
 	if ((cp->fn)(sp, ep, &cmd))

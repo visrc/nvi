@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.8 1993/08/06 11:48:02 bostic Exp $ (Berkeley) $Date: 1993/08/06 11:48:02 $";
+static char sccsid[] = "$Id: vi.c,v 8.9 1993/08/06 12:17:09 bostic Exp $ (Berkeley) $Date: 1993/08/06 12:17:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -135,6 +135,9 @@ vi(sp, ep)
 				}
 			}
 		}
+
+		/* Increment the command count. */
+		++sp->ccnt;
 
 		/*
 		 * Call the function.  Set the return cursor first for
