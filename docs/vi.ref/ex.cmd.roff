@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: ex.cmd.roff,v 8.9 1994/04/30 10:36:25 bostic Exp $ (Berkeley) $Date: 1994/04/30 10:36:25 $
+.\"	$Id: ex.cmd.roff,v 8.10 1994/05/02 20:02:27 bostic Exp $ (Berkeley) $Date: 1994/05/02 20:02:27 $
 .\"
 #ifdef REFERENCE
 .de SP
@@ -875,6 +875,18 @@ If a
 .Dq Li \&!
 character is appended to to the command, the text input mode maps are
 displayed.
+.Pp
+If the
+.Dq Li lhs
+string is matched by the leading characters of the
+.Dq Li rhs
+string, those characters are not further remapped, regardless of
+the setting of the
+.Sy remap
+option.
+.Pp
+It's possible to enter maps that are infinite loops.
+To exit such a map, use the terminal <interrupt> character.
 .Pp
 .Bl -tag -width "XOptions:" -compact
 .It "Line:"
