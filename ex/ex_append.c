@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 8.18 1994/07/20 19:34:15 bostic Exp $ (Berkeley) $Date: 1994/07/20 19:34:15 $";
+static char sccsid[] = "$Id: ex_append.c,v 8.19 1994/08/02 10:12:46 bostic Exp $ (Berkeley) $Date: 1994/08/02 10:12:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -128,6 +128,9 @@ aci(sp, ep, cmdp, cmd)
 
 	}
 
+	/* Set the line number, so that autoindent works correctly. */
+	sp->lno = cmdp->addr1.lno;
+
 	if (sex_get(sp, ep, sp->tiqp, 0, flags) != INP_OK)
 		goto err;
 	
@@ -142,8 +145,23 @@ aci(sp, ep, cmdp, cmd)
 		--m.lno;
 		cmd = APPEND;
 	}
-	if (cmd == CHANGE && m.lno == 0)
-		cmd = APPEND;
+
+	/*
+	 * !!!
+	 * Adjust the current line number for the commands to match historic
+	 * practice if the user doesn't enter anything.  This is safe because
+	 * an address of 0 is illegal for change and insert.
+	 */
+	switch (cmd) {
+	case APPEND:
+		if (sp->lno == 0)
+			sp->lno = 1;
+		break;
+	case CHANGE:
+	case INSERT:
+		--sp->lno;
+		break;
+	}
 
 	tp = sp->tiqp->cqh_first;
 	if (cmd == CHANGE)
