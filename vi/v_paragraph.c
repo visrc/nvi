@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_paragraph.c,v 5.17 1993/06/07 23:08:59 bostic Exp $ (Berkeley) $Date: 1993/06/07 23:08:59 $";
+static char sccsid[] = "$Id: v_paragraph.c,v 5.18 1993/06/07 23:14:03 bostic Exp $ (Berkeley) $Date: 1993/06/07 23:14:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -90,7 +90,7 @@ v_paragraphf(sp, ep, vp, fm, tm, rp)
 			 */
 found:			if (F_ISSET(vp, VC_C | VC_D | VC_Y)) {
 				rp->lno = lastlno;
-				rp->cno = lastlen + 1;
+				rp->cno = lastlen ? lastlen + 1 : 0;
 			} else {
 				rp->lno = lno;
 				rp->cno = 0;
