@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.42 1993/12/16 12:14:30 bostic Exp $ (Berkeley) $Date: 1993/12/16 12:14:30 $";
+static char sccsid[] = "$Id: vi.c,v 8.43 1994/01/08 13:56:09 bostic Exp $ (Berkeley) $Date: 1994/01/08 13:56:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -355,6 +355,19 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 		if (!F_ISSET(dp, VC_ISDOT)) {
 			msgq(sp, M_ERR, "No command to repeat.");
 			return (1);
+		}
+
+		/*
+		 * !!!
+		 * If a '.' is immediately entered after an undo command, we
+		 * replay the log instead of redoing the last command.  This
+		 * is necessary because 'u' can't set the dot command -- see
+		 * vi/v_undo.c:v_undo for details.
+		 */
+		if (VIP(sp)->u_ccnt == sp->ccnt) {
+			vp->kp = &vikeys['u'];
+			F_SET(vp, VC_ISDOT);
+			return (0);
 		}
 
 		/* Set new count/buffer, if any, and return. */

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_undo.c,v 8.5 1993/12/29 11:22:40 bostic Exp $ (Berkeley) $Date: 1993/12/29 11:22:40 $";
+static char sccsid[] = "$Id: v_undo.c,v 8.6 1994/01/08 13:56:10 bostic Exp $ (Berkeley) $Date: 1994/01/08 13:56:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -66,15 +66,31 @@ v_undo(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
+	/* Set the command count. */
+	VIP(sp)->u_ccnt = sp->ccnt;
+
 	/*
 	 * !!!
 	 * In historic vi, 'u' toggled between "undo" and "redo", i.e. 'u'
-	 * undid the last undo.  To make this work when the user can undo
-	 * multiple operations, we leave the old semantic unchanged, but
-	 * make '.' do another operation (undo or redo) in the same direction
-	 * as the last 'u' command, unless there was a change since the last
-	 * undo, in which case we always undo the last operation.  Since
-	 * 'u' didn't set '.' in historic vi, the breakage should be limited.
+	 * undid the last undo.  However, if there has been a change since
+	 * the last undo/redo, we always do an undo.  To make this work when
+	 * the user can undo multiple operations, we leave the old semantic
+	 * unchanged, but make '.' after a 'u' do another undo/redo operation.
+	 * This has two problems.
+	 *
+	 * The first is that 'u' didn't set '.' in historic vi.  So, if a
+	 * user made a change, realized it was in the wrong place, does a
+	 * 'u' to undo it, moves to the right place and then does '.', the
+	 * change was reapplied.  To make this work, we only apply the '.'
+	 * to the undo command if it's the command immediately following an
+	 * undo command.  See vi/vi.c:getcmd() for the details.
+	 *
+	 * The second is that the traditional way to view the numbered cut
+	 * buffers in vi was to enter the commands "1pu.u.u.u. which will
+	 * no longer work because the '.' immediately follows the 'u' command.
+	 * Since we provide a much better method of viewing buffers, and
+	 * nobody can think of a better way of adding in multiple undo, this
+	 * remains broken.
 	 */
 	if (!F_ISSET(ep, F_UNDO)) {
 		F_SET(ep, F_UNDO);
