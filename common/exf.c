@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.62 1993/12/21 11:58:31 bostic Exp $ (Berkeley) $Date: 1993/12/21 11:58:31 $";
+static char sccsid[] = "$Id: exf.c,v 8.63 1993/12/23 19:29:38 bostic Exp $ (Berkeley) $Date: 1993/12/23 19:29:38 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -423,6 +423,7 @@ file_end(sp, ep, force)
 	if (ep->db->close != NULL && ep->db->close(ep->db) && !force) {
 		msgq(sp, M_ERR,
 		    "%s: close: %s", FILENAME(frp), strerror(errno));
+		++ep->refcnt;
 		return (1);
 	}
 
