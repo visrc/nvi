@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 8.9 1993/11/01 13:19:26 bostic Exp $ (Berkeley) $Date: 1993/11/01 13:19:26 $";
+static char sccsid[] = "$Id: seq.c,v 8.10 1993/11/01 13:24:14 bostic Exp $ (Berkeley) $Date: 1993/11/01 13:24:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -90,13 +90,7 @@ mem1:		msgq(sp, M_ERR, "Error: %s", strerror(errno));
 		list_insert_after(&lastqp->q, qp, SEQ *, q);
 	}
 
-	/*
-	 * Set the fast lookup bit.
-	 *
-	 * XXX
-	 * These bits are never turned off -- people don't usually unmap
-	 * things, though, so it's not a big deal.
-	 */
+	/* Set the fast lookup bit. */
 	bit_set(sp->seqb, qp->input[0]);
 
 	return (0);
