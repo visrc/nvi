@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_msg.c,v 10.54 1996/03/29 20:46:56 bostic Exp $ (Berkeley) $Date: 1996/03/29 20:46:56 $";
+static const char sccsid[] = "$Id: vs_msg.c,v 10.55 1996/04/10 11:29:04 bostic Exp $ (Berkeley) $Date: 1996/04/10 11:29:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -469,6 +469,15 @@ vs_output(sp, mtype, line, llen)
 		ecbp = (cbp = cbuf) + sizeof(cbuf) - 1;
 		for (t = line, tlen = len; tlen--; ++t) {
 			ch = *t;
+			/*
+			 * Replace tabs with spaces, there are places in
+			 * ex that do column calculations without looking
+			 * at <tabs> -- and all routines that care about
+			 * <tabs> do their own expansions.  This catches
+			 * <tabs> in things like tag search strings.
+			 */
+			if (ch == '\t')
+				ch = ' ';
 			chlen = KEY_LEN(sp, ch);
 			if (cbp + chlen >= ecbp)
 				FLUSH;
