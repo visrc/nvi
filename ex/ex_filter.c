@@ -6,10 +6,10 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 5.30 1993/04/06 11:36:19 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:36:19 $";
+static char sccsid[] = "$Id: ex_filter.c,v 5.31 1993/04/12 14:11:55 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:11:55 $";
 #endif /* not lint */
 
-#include <sys/param.h>
+#include <sys/types.h>
 #include <sys/wait.h>
 
 #include <errno.h>
@@ -56,27 +56,27 @@ filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
 	 */
 	if (ftype == NOINPUT) {
 		if ((input[0] = open(_PATH_DEVNULL, O_RDONLY, 0)) < 0) {
-			msgq(sp, M_ERROR,
+			msgq(sp, M_ERR,
 			    "filter: %s: %s", _PATH_DEVNULL, strerror(errno));
 			goto err;
 		}
 	} else
 		if (pipe(input) < 0 ||
 		    (ifp = fdopen(input[1], "w")) == NULL) {
-			msgq(sp, M_ERROR, "filter: %s", strerror(errno));
+			msgq(sp, M_ERR, "filter: %s", strerror(errno));
 			goto err;
 		}
 
 	if (ftype == NOOUTPUT) {
 		if ((output[1] = open(_PATH_DEVNULL, O_WRONLY, 0)) < 0) {
-			msgq(sp, M_ERROR,
+			msgq(sp, M_ERR,
 			    "filter: %s: %s", _PATH_DEVNULL, strerror(errno));
 			goto err;
 		}
 	} else
 		if (pipe(output) < 0 ||
 		    (ofp = fdopen(output[0], "r")) == NULL) {
-			msgq(sp, M_ERROR, "filter: %s", strerror(errno));
+			msgq(sp, M_ERR, "filter: %s", strerror(errno));
 			goto err;
 		}
 
@@ -87,7 +87,7 @@ filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
 	switch (pid = vfork()) {
 	case -1:			/* Error. */
 		(void)sigprocmask(SIG_SETMASK, &omask, NULL);
-		msgq(sp, M_ERROR, "filter: %s", strerror(errno));
+		msgq(sp, M_ERR, "filter: %s", strerror(errno));
 err:		if (input[0] != -1)
 			(void)close(input[0]);
 		if (input[0] != -1)
@@ -123,7 +123,7 @@ err:		if (input[0] != -1)
 		else
 			++name;
 		execl(O_STR(sp, O_SHELL), name, "-c", cmd, NULL);
-		msgq(sp, M_ERROR,
+		msgq(sp, M_ERR,
 		    "exec: %s: %s", O_STR(sp, O_SHELL), strerror(errno));
 		_exit (1);
 		/* NOTREACHED */
@@ -193,14 +193,14 @@ err:		if (input[0] != -1)
 	(void)signal(SIGQUIT, quitsave);
 
 	if (WIFSIGNALED(pstat)) {
-		msgq(sp, M_DISPLAY,
-		    "filter: exited with signal %d%s.", WTERMSIG(pstat),
-		    WCOREDUMP(pstat) ? "; core dumped" : "");
+		msgq(sp, M_ERR,
+		    "%s: exited with signal %d%s.", tail(name),
+		    WTERMSIG(pstat), WCOREDUMP(pstat) ? "; core dumped" : "");
 		return (1);
 	}
 	else if (WIFEXITED(pstat) && WEXITSTATUS(pstat)) {
-		msgq(sp, M_DISPLAY,
-		    "filter: exited with status %d.", WEXITSTATUS(pstat));
+		msgq(sp, M_ERR, "%s: exited with status %d",
+		    tail(name), WEXITSTATUS(pstat));
 		return (1);
 	}
 	return (0);
