@@ -170,8 +170,8 @@ REOBJS=	regcomp.lo regerror.lo regexec.lo regfree.lo
 libvi_la_DEPENDENCIES = @LTLIBOBJS@
 libvi_la_LIBADD = @LTLIBOBJS@
 
-bin_PROGRAMS = vi @vi_ipc@ @vi_motif@ @vi_gtk@
-EXTRA_PROGRAMS = vi-ipc vi-motif vi-gtk
+bin_PROGRAMS = @vi_curses@ @vi_ipc@ @vi_motif@ @vi_gtk@
+EXTRA_PROGRAMS = vi vi-ipc vi-motif vi-gtk
 
 vi_SOURCES = \
 	$(visrcdir)/cl/cl_bsd.c \

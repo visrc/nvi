@@ -1,4 +1,4 @@
-/* $Id: acconfig.h,v 8.26 2001/04/10 12:10:59 skimo Exp $ (Berkeley) $Date: 2001/04/10 12:10:59 $ */
+/* $Id: acconfig.h,v 8.27 2001/04/21 06:35:36 skimo Exp $ (Berkeley) $Date: 2001/04/21 06:35:36 $ */
 
 /* Define to `int' if <sys/types.h> doesn't define.  */
 #undef ssize_t
@@ -17,6 +17,9 @@
 
 /* Define if you have wide ncurses(3). */
 #undef HAVE_NCURSESW
+
+/* Define if you have the curses(3) waddnwstr function. */
+#undef HAVE_CURSES_ADDNWSTR
 
 /* Define if you have the curses(3) waddnstr function. */
 #undef HAVE_CURSES_WADDNSTR
@@ -98,6 +101,9 @@
 
 /* Define when using wide characters */
 #undef USE_WIDECHAR
+
+/* Define if you have <ncurses.h> */
+#undef HAVE_NCURSES_H
 
 /* Define when fprintf prototype not in an obvious place */
 #undef NEED_FPRINTF_PROTO

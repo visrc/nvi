@@ -409,6 +409,7 @@ fi
 AC_SUBST(cobjs)
 
 dnl check for curses
+AC_SUBST(vi_curses)
 AC_SUBST(CURSLIBS)
 AC_SUBST(HAVE_NCURSESW)
 
@@ -441,6 +442,7 @@ dnl 	[
 	AC_MSG_RESULT($vi_cv_include_ncurses)
 	if test "$vi_cv_include_ncurses" = yes; then
 	    CURSHEADER=ncurses.h 
+	    AC_DEFINE(HAVE_NCURSES_H)
 	    AC_MSG_CHECKING(for wide ncurses)
 	    AC_TRY_RUN([#include <ncurses.h> 
 			main(){exit(!(A_CHARTEXT>0xff));}],
@@ -460,6 +462,12 @@ dnl 	[
 		[vi_cv_cursesfatal="yes"])
 	if test "$vi_cv_cursesfatal" = "yes"; then
 		AC_MSG_ERROR([Need curses.])
+	fi
+	vi_curses=vi
+	if test "$vi_cv_widechar" = "yes"; then
+	    AC_CHECK_LIB($CURSLIB, addnwstr,
+		    [AC_DEFINE(HAVE_CURSES_ADDNWSTR)],
+		    [if test "$CURSLIB" != "ncursesw"; then vi_curses=""; fi])
 	fi
         CURSLIBS="-l$CURSLIB"
 	LIBS="$SAVELIBS"

@@ -55,6 +55,9 @@
 /* Define if you have wide ncurses(3). */
 #undef HAVE_NCURSESW
 
+/* Define if you have the curses(3) waddnwstr function. */
+#undef HAVE_CURSES_ADDNWSTR
+
 /* Define if you have the curses(3) waddnstr function. */
 #undef HAVE_CURSES_WADDNSTR
 
@@ -126,6 +129,9 @@
 
 /* Define when using wide characters */
 #undef USE_WIDECHAR
+
+/* Define if you have <ncurses.h> */
+#undef HAVE_NCURSES_H
 
 /* Define when fprintf prototype not in an obvious place */
 #undef NEED_FPRINTF_PROTO
