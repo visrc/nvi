@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.4 1992/01/16 10:53:45 bostic Exp $ (Berkeley) $Date: 1992/01/16 10:53:45 $";
+static char sccsid[] = "$Id: main.c,v 5.5 1992/01/16 13:26:35 bostic Exp $ (Berkeley) $Date: 1992/01/16 13:26:35 $";
 #endif /* not lint */
 
 #include <signal.h>
@@ -110,26 +110,12 @@ main(argc, argv)
 	argc -= optind;
 	argv += optind;
 
-	/*
-	 * The remaining args are file names, or, if none supplied, set the
-	 * list to empty.
-	 *
-	 * XXX
-	 * This is truly stupid.  Put a reasonable data structure here.
-	 */
-	args[0] = '\0';
-	if (*argv) {
-		for (; *argv; ++argv)
-			if (strlen(args) + 1 + strlen(*argv) < sizeof(args)) {
-				(void)strcat(args, *argv);
-				if (argv[1])
-					(void)strcat(args, " ");
-			}
-		(void)strcpy(tmpblk.c, args);
-		cmd_args(MARK_UNSET, MARK_UNSET, CMD_ARGS, TRUE, tmpblk.c);
-	} else {
-		nargs = 1;
-		argno = -1;
+	/* The remaining arguments are file names. */
+	if (argc)
+		set_file(argc, argv);
+	else {
+		static char def[] = "", *defav[] = { def, NULL };
+		set_file(1, defav);
 	}
 
 	/* Temporarily ignore interrupts. */
@@ -209,10 +195,9 @@ main(argc, argv)
 		cmd_errlist(MARK_FIRST, MARK_FIRST, CMD_ERRLIST, 0, err);
 #endif
 
-	/* if no tag/err, or tag failed, then start with first arg */
+	/* If no tag/err, or tag failed, start with first file. */
 	if (tmpfd < 0) {
-		/* start with first arg */
-		cmd_next(MARK_UNSET, MARK_UNSET, CMD_NEXT, FALSE, "");
+		next_file(MARK_UNSET, MARK_UNSET, 0, FALSE, NULL);
 
 		/* pretend to do something, just to force a recoverable
 		 * version of the file out to disk
