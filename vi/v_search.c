@@ -6,18 +6,20 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 5.17 1992/10/30 23:12:48 bostic Exp $ (Berkeley) $Date: 1992/10/30 23:12:48 $";
+static char sccsid[] = "$Id: v_search.c,v 5.18 1992/11/01 23:09:53 bostic Exp $ (Berkeley) $Date: 1992/11/01 23:09:53 $";
 #endif /* not lint */
 
-#include <sys/types.h>
+#include <sys/param.h>
 
 #include <curses.h>
 #include <limits.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "vi.h"
-#include "term.h"
 #include "vcmd.h"
+#include "search.h"
+#include "term.h"
 #include "extern.h"
 
 static int getptrn __P((int, u_char **));
@@ -35,20 +37,19 @@ v_searchn(vp, fm, tm, rp)
 
 	switch(searchdir) {
 	case BACKWARD:
-		if ((m = b_search(fm, NULL, NULL, 0)) == NULL)
+		if ((m = b_search(curf, fm, NULL, NULL, SEARCH_PARSE)) == NULL)
 			return (1);
-		*rp = *m;
 		break;
 	case FORWARD:
-		if ((m = f_search(fm, NULL, NULL, 0)) == NULL)
+		if ((m = f_search(curf, fm, NULL, NULL, SEARCH_PARSE)) == NULL)
 			return (1);
-		*rp = *m;
 		break;
+	default:
 	case NOTSET:
 		msg("No previous search pattern.");
-		*rp = *fm;
-		break;
+		return (1);
 	}
+	*rp = *m;
 	return (0);
 }
 
@@ -65,26 +66,25 @@ v_searchN(vp, fm, tm, rp)
 
 	switch(searchdir) {
 	case BACKWARD:
-		if ((m = f_search(fm, NULL, NULL, 0)) == NULL)
+		if ((m = f_search(curf, fm, NULL, NULL, SEARCH_PARSE)) == NULL)
 			return (1);
-		*rp = *m;
 		break;
 	case FORWARD:
-		if ((m = b_search(fm, NULL, NULL, 0)) == NULL)
+		if ((m = b_search(curf, fm, NULL, NULL, SEARCH_PARSE)) == NULL)
 			return (1);
-		*rp = *m;
 		break;
+	default:
 	case NOTSET:
 		msg("No previous search pattern.");
-		*rp = *fm;
-		break;
+		return (1);
 	}
+	*rp = *m;
 	return (0);
 }
 
 /*
  * v_searchw -- [count]^A
- *	Search for the cursor word.
+ *	Search for the word under the cursor.
  */
 int
 v_searchw(vp, fm, tm, rp)
@@ -92,22 +92,26 @@ v_searchw(vp, fm, tm, rp)
 	MARK *fm, *tm, *rp;
 {
 	MARK *mp;
-	char buf[1024];
+	static char *wbuf;
+	static size_t wbuflen;
 
-	/* Build a "word" pattern. */
-	if (snprintf(buf, sizeof(buf), "\\<%s\\>", vp->keyword) >=
-	    sizeof(buf)) {
-		msg("Word too long to search for.");
-		return (1);
+#define	WORDFORMAT	"[^[:alnum:]]%s[^[:alnum:]]"
+
+	if (vp->kbuflen > wbuflen + sizeof(WORDFORMAT)) {
+		wbuflen = MAX(vp->kbuflen + sizeof(WORDFORMAT), 256);
+		if ((wbuf = realloc(wbuf, wbuflen)) == NULL) {
+			wbuf = NULL;
+			wbuflen = 0;
+			msg("Word too long to search for.");
+			return (1);
+		}
 	}
-
-	/* Show the searched-for word on the bottom line. */
-	msg("%s", vp->keyword);
-	msg_vflush(curf);
-
-	if ((mp = f_search(fm, (u_char *)buf, NULL, 1)) == NULL)
+	(void)snprintf(wbuf, wbuflen, WORDFORMAT, vp->keyword);
+		
+	if ((mp = f_search(curf, fm, (u_char *)wbuf, NULL, 0)) == NULL)
 		return (1);
-	*rp = *mp;
+	rp->lno = mp->lno;
+	rp->cno = mp->cno + 1;		/* Offset by one. */
 	return (0);
 }
 
@@ -115,6 +119,7 @@ v_searchw(vp, fm, tm, rp)
  * v_searchb -- [count]?RE
  *	Search backward.
  */
+int
 v_searchb(vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
@@ -126,7 +131,8 @@ v_searchb(vp, fm, tm, rp)
 		return (1);
 	if (ptrn == NULL)
 		return (0);
-	if ((m = b_search(fm, ptrn, NULL, 1)) == NULL)
+	if ((m = b_search(curf,
+	    fm, ptrn, NULL, SEARCH_PARSE | SEARCH_SET)) == NULL)
 		return (1);
 	*rp = *m;
 	return (0);
@@ -136,6 +142,7 @@ v_searchb(vp, fm, tm, rp)
  * v_searchf -- [count]/RE
  *	Search forward.
  */
+int
 v_searchf(vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
@@ -147,7 +154,8 @@ v_searchf(vp, fm, tm, rp)
 		return (1);
 	if (ptrn == NULL)
 		return (0);
-	if ((m = f_search(fm, ptrn, NULL, 1)) == NULL)
+	if ((m = f_search(curf,
+	    fm, ptrn, NULL, SEARCH_PARSE | SEARCH_SET)) == NULL)
 		return (1);
 	*rp = *m;
 	return (0);
@@ -163,8 +171,10 @@ getptrn(prompt, storep)
 	u_char **storep;
 {
 	v_startex();
-	if (gb(prompt, storep, NULL, GB_BS|GB_ESC))
+	if (v_gb(prompt, storep, NULL, GB_BS|GB_ESC|GB_OFF))
 		return (1);
 	v_leaveex();
+
+	**storep = prompt;
 	return (0);
 }
