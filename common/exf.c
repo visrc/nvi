@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.37 1993/02/11 20:13:46 bostic Exp $ (Berkeley) $Date: 1993/02/11 20:13:46 $";
+static char sccsid[] = "$Id: exf.c,v 5.38 1993/02/12 11:08:33 bostic Exp $ (Berkeley) $Date: 1993/02/12 11:08:33 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -222,6 +222,19 @@ file_start(ep)
 				PANIC;
 			FF_SET(ep, F_NONAME);
 		}
+
+		/*
+		 * The temporary name should appear in the file system, given
+		 * that we display it to the user (if they haven't named the
+		 * file somehow).  Save off the temporary name so we can later
+		 * unlink the file, even if the user has changed the name.  If
+		 * that doesn't work, unlink the file now, and the user just
+		 * won't be able to access the file outside of vi.
+		 */
+		if ((ep->tname = strdup(tname)) == NULL)
+			(void)unlink(tname);
+		else
+			FF_SET(ep, F_TMPFILE);
 		openname = tname;
 	} else
 		openname = ep->name;
@@ -288,8 +301,12 @@ file_stop(ep, force)
 	/* Stop logging. */
 	log_end(ep);
 
-	/* Only retain the ignore bit. */
-	ep->flags &= F_IGNORE;
+	/* Unlink any temporary file, ignore any error. */
+	if (FF_ISSET(ep, F_TMPFILE) && unlink(ep->tname))
+		msg("%s: remove: %s", ep->name, strerror(errno));
+
+	/* Only a few bits are retained between edit instances. */
+	ep->flags &= F_RETAINMASK;
 	return (0);
 }
 
@@ -310,12 +327,6 @@ file_sync(ep, force)
 	/* Can't write if read-only. */
 	if ((ISSET(O_READONLY) || FF_ISSET(ep, F_RDONLY)) && !force) {
 		msg("Read-only file, not written; use ! to override.");
-		return (1);
-	}
-
-	/* Can't write if no name ever specified. */
-	if (FF_ISSET(ep, F_NONAME)) {
-		msg("Temporary file; not written.");
 		return (1);
 	}
 
