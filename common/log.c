@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: log.c,v 10.13 2000/07/14 14:29:16 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:16 $";
+static const char sccsid[] = "$Id: log.c,v 10.14 2000/07/15 21:05:27 skimo Exp $ (Berkeley) $Date: 2000/07/15 21:05:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -263,17 +263,19 @@ log_line(sp, lno, action)
 		if (db_get(sp, lno, DBG_FATAL, &lp, &len))
 			return (1);
 	BINC_RET(sp,
-	    ep->l_lp, ep->l_len, len + sizeof(u_char) + sizeof(db_recno_t));
+	    ep->l_lp, ep->l_len, 
+	    len * sizeof(CHAR_T) + sizeof(u_char) + sizeof(db_recno_t));
 	ep->l_lp[0] = action;
 	memmove(ep->l_lp + sizeof(u_char), &lno, sizeof(db_recno_t));
-	memmove(ep->l_lp + sizeof(u_char) + sizeof(db_recno_t), lp, len);
+	MEMMOVEW(ep->l_lp + sizeof(u_char) + sizeof(db_recno_t), lp, len);
 
 	memset(&key, 0, sizeof(key));
 	key.data = &ep->l_cur;
 	key.size = sizeof(db_recno_t);
 	memset(&data, 0, sizeof(data));
 	data.data = ep->l_lp;
-	data.size = len + sizeof(u_char) + sizeof(db_recno_t);
+	data.size = len * sizeof(CHAR_T) + 
+		    sizeof(u_char) + sizeof(db_recno_t);
 	if (ep->log->put(ep->log, NULL, &key, &data, 0) == -1)
 		LOG_ERR;
 
@@ -425,8 +427,9 @@ log_backward(sp, rp)
 			memmove(&lno, p + sizeof(u_char), sizeof(db_recno_t));
 			if (db_insert(sp, lno, 
 			    (CHAR_T *)(p + sizeof(u_char) +
-			    sizeof(db_recno_t)), data.size - sizeof(u_char) -
-			    sizeof(db_recno_t)))
+			    sizeof(db_recno_t)), 
+			    (data.size - sizeof(u_char) - sizeof(db_recno_t))
+			    / sizeof(CHAR_T)))
 				goto err;
 			++sp->rptlines[L_ADDED];
 			break;
@@ -437,8 +440,9 @@ log_backward(sp, rp)
 			memmove(&lno, p + sizeof(u_char), sizeof(db_recno_t));
 			if (db_set(sp, lno, 
 			    (CHAR_T *)(p + sizeof(u_char) +
-			    sizeof(db_recno_t)), data.size - sizeof(u_char) -
-			    sizeof(db_recno_t)))
+			    sizeof(db_recno_t)), 
+			    (data.size - sizeof(u_char) - sizeof(db_recno_t))
+			    / sizeof(CHAR_T)))
 				goto err;
 			if (sp->rptlchange != lno) {
 				sp->rptlchange = lno;
@@ -622,8 +626,9 @@ log_forward(sp, rp)
 			--lno;
 			if (db_append(sp, 1, lno, 
 			    (CHAR_T *)(p + sizeof(u_char) +
-			    sizeof(db_recno_t)), data.size - sizeof(u_char) -
-			    sizeof(db_recno_t)))
+			    sizeof(db_recno_t)), 
+			    (data.size - sizeof(u_char) - sizeof(db_recno_t))
+			    / sizeof(CHAR_T)))
 				goto err;
 			++sp->rptlines[L_ADDED];
 			break;
@@ -632,8 +637,9 @@ log_forward(sp, rp)
 			memmove(&lno, p + sizeof(u_char), sizeof(db_recno_t));
 			if (db_insert(sp, lno, 
 			    (CHAR_T *)(p + sizeof(u_char) +
-			    sizeof(db_recno_t)), data.size - sizeof(u_char) -
-			    sizeof(db_recno_t)))
+			    sizeof(db_recno_t)), 
+			    (data.size - sizeof(u_char) - sizeof(db_recno_t))
+			    / sizeof(CHAR_T)))
 				goto err;
 			++sp->rptlines[L_ADDED];
 			break;
@@ -651,8 +657,9 @@ log_forward(sp, rp)
 			memmove(&lno, p + sizeof(u_char), sizeof(db_recno_t));
 			if (db_set(sp, lno, 
 			    (CHAR_T *)(p + sizeof(u_char) +
-			    sizeof(db_recno_t)), data.size - sizeof(u_char) -
-			    sizeof(db_recno_t)))
+			    sizeof(db_recno_t)), 
+			    (data.size - sizeof(u_char) - sizeof(db_recno_t))
+			    / sizeof(CHAR_T)))
 				goto err;
 			if (sp->rptlchange != lno) {
 				sp->rptlchange = lno;
