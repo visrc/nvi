@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 5.14 1992/10/26 09:09:10 bostic Exp $ (Berkeley) $Date: 1992/10/26 09:09:10 $";
+static char sccsid[] = "$Id: v_itxt.c,v 5.15 1992/10/26 17:47:16 bostic Exp $ (Berkeley) $Date: 1992/10/26 17:47:16 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -40,7 +40,7 @@ static void	ib_err __P((void));
 static int	newtext
 		    __P((VICMDARG *, MARK *, u_char *, size_t, MARK *, u_int));
 
-IB ib;
+IB ib = { NULL, { OOBLNO, 0 }, { OOBLNO, 0 }, NULL, 0, 0, NULL, 0 };
 
 /*
  * v_iA -- [count]A
@@ -291,7 +291,7 @@ v_Change(vp, fm, tm, rp)
 			return (1);
 		++fm->lno;
 		++tm->lno;
-		if (delete(fm, tm, 1))
+		if (delete(curf, fm, tm, 1))
 			return (1);
 		if ((p = file_gline(curf, --fm->lno, &len)) == NULL) {
 			GETLINE_ERR(fm->lno);
@@ -340,7 +340,7 @@ v_change(vp, fm, tm, rp)
 			return (1);
 		++fm->lno;
 		++tm->lno;
-		if (delete(fm, tm, lmode))
+		if (delete(curf, fm, tm, lmode))
 			return (1);
 		if ((p = file_gline(curf, --fm->lno, &len)) == NULL) {
 			GETLINE_ERR(fm->lno);
