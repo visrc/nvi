@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.68 1993/11/27 13:55:14 bostic Exp $ (Berkeley) $Date: 1993/11/27 13:55:14 $
+ *	$Id: screen.h,v 8.69 1993/11/28 16:59:19 bostic Exp $ (Berkeley) $Date: 1993/11/28 16:59:19 $
  */
 
 /*
@@ -216,7 +216,7 @@ struct _scr {
 	enum input			/* Get a line from the user. */
 		 (*s_get) __P((SCR *, EXF *, TEXTH *, int, u_int));
 	enum input			/* Get a key from the user. */
-		 (*s_key_read) __P((SCR *, int *, int));
+		 (*s_key_read) __P((SCR *, int *, struct timeval *));
 					/* Tell the screen an option changed. */
 	int	 (*s_optchange) __P((SCR *, int));
 					/* Return column at screen position. */
