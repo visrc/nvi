@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.47 1994/03/11 10:53:53 bostic Exp $ (Berkeley) $Date: 1994/03/11 10:53:53 $";
+static char sccsid[] = "$Id: key.c,v 8.48 1994/03/11 12:07:32 bostic Exp $ (Berkeley) $Date: 1994/03/11 12:07:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -532,17 +532,7 @@ not_digit_ch:	chp->ch = NOT_DIGIT_CH;
 
 	/* Delete the character from the queue. */
 	QREM_HEAD(tty, 1);
-
-	/*
-	 * TXT_BEAUTIFY eliminates all control characters except
-	 * escape, form-feed, newline and tab.
-	 */
-	if (isprint(ch) || !LF_ISSET(TXT_BEAUTIFY) ||
-	    chp->value == K_ESCAPE || chp->value == K_FORMFEED ||
-	    chp->value == K_NL || chp->value == K_TAB)
-		return (INP_OK);
-
-	goto loop;
+	return (INP_OK);
 }
 
 /*
