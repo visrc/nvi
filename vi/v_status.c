@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_status.c,v 5.14 1993/02/16 20:08:54 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:08:54 $";
+static char sccsid[] = "$Id: v_status.c,v 5.15 1993/02/18 11:43:11 bostic Exp $ (Berkeley) $Date: 1993/02/18 11:43:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -42,10 +42,12 @@ status(ep, lno)
 
 	ro = FF_ISSET(ep, F_RDONLY) || ISSET(O_READONLY) ? ", readonly" : "";
 	if ((last = file_lline(ep)) >= 1)
-		msg(ep, 0, "%s: %s%s: line %lu of %lu [%ld%%]", ep->name,
+		msg(ep, M_DISPLAY,
+		    "%s: %s%s: line %lu of %lu [%ld%%]", ep->name,
 		    FF_ISSET(ep, F_MODIFIED) ? "modified" : "unmodified", ro,
 		    lno, last, (lno * 100) / last);
 	else
-		msg(ep, 0, "%s: %s%s: empty file", ep->name,
+		msg(ep, M_DISPLAY,
+		    "%s: %s%s: empty file", ep->name,
 		    FF_ISSET(ep, F_MODIFIED) ? "modified" : "unmodified", ro);
 }
