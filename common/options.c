@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.5 1992/02/28 12:34:32 bostic Exp $ (Berkeley) $Date: 1992/02/28 12:34:32 $";
+static char sccsid[] = "$Id: options.c,v 5.6 1992/04/03 08:33:25 bostic Exp $ (Berkeley) $Date: 1992/04/03 08:33:25 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -15,10 +15,10 @@ static char sccsid[] = "$Id: options.c,v 5.5 1992/02/28 12:34:32 bostic Exp $ (B
 #include <strings.h>
 #include <paths.h>
 
-#include "config.h"
 #include "options.h"
 #include "vi.h"
 #include "curses.h"
+#include "extern.h"
 
 static int opts_abbcmp __P((const void *, const void *));
 static int opts_cmp __P((const void *, const void *));
@@ -82,77 +82,77 @@ OPTIONS opts[] = {
 	"hideformat",	NULL,		OPT_0BOOL|OPT_REDRAW,
 #define	O_IGNORECASE	17
 	"ignorecase",	NULL,		OPT_0BOOL,
-#define	O_KEYTIME	20
+#define	O_KEYTIME	18
 	"keytime",	&keytime,	OPT_NUM,
-#define	O_KEYWORDPRG	21
+#define	O_KEYWORDPRG	19
 	"keywordprg",	"ref",		OPT_STR,
-#define	O_LINES		22
+#define	O_LINES		20
 	"lines",	&lines,		OPT_NOSAVE|OPT_NUM|OPT_REDRAW,
-#define	O_LIST		23
+#define	O_LIST		21
 	"list",		NULL,		OPT_0BOOL|OPT_REDRAW,
-#define	O_MAGIC		24
+#define	O_MAGIC		22
 	"magic",	NULL,		OPT_1BOOL,
-#define	O_MAKE		25
+#define	O_MAKE		23
 	"make",		"make",		OPT_STR,
-#define	O_MESG		26
+#define	O_MESG		24
 	"mesg",		NULL,		OPT_1BOOL,
-#define	O_MODELINE	27
+#define	O_MODELINE	25
 	"modeline",	NULL,		OPT_0BOOL,
-#define	O_MORE		28
+#define	O_MORE		26
 	"more",		NULL,		OPT_1BOOL,
-#define	O_NUMBER	29
+#define	O_NUMBER	27
 	"number",	NULL,		OPT_0BOOL|OPT_REDRAW,
-#define	O_PARAGRAPHS	30
+#define	O_PARAGRAPHS	28
 	"paragraphs",	"PPppIPLPQP",	OPT_STR,
-#define	O_PROMPT	31
+#define	O_PROMPT	29
 	"prompt",	NULL,		OPT_1BOOL,
-#define	O_READONLY	32
+#define	O_READONLY	30
 	"readonly",	NULL,		OPT_0BOOL,
-#define	O_REPORT	33
+#define	O_REPORT	31
 	"report",	&report,	OPT_NUM,
-#define	O_RULER		34
+#define	O_RULER		32
 	"ruler",	NULL,		OPT_0BOOL,
-#define	O_SCROLL	35
+#define	O_SCROLL	33
 	"scroll",	&scroll,	OPT_NUM,
-#define	O_SECTIONS	36
+#define	O_SECTIONS	34
 	"sections",	"NHSHSSSEse",	OPT_STR,
-#define	O_SHELL		37
+#define	O_SHELL		35
 	"shell",	_PATH_BSHELL,	OPT_STR,
-#define	O_SHIFTWIDTH	38
+#define	O_SHIFTWIDTH	36
 	"shiftwidth",	&shiftwidth,	OPT_NUM,
-#define	O_SHOWMATCH	39
+#define	O_SHOWMATCH	37
 	"showmatch",	NULL,		OPT_0BOOL,
-#define	O_SHOWMODE	40
+#define	O_SHOWMODE	38
 	"showmode",	NULL,		OPT_0BOOL,
-#define	O_SIDESCROLL	41
+#define	O_SIDESCROLL	39
 	"sidescroll",	&sidescroll,	OPT_NUM,
-#define	O_SYNC		42
+#define	O_SYNC		40
 	"sync",		NULL,		OPT_0BOOL,
-#define	O_TABSTOP	43
+#define	O_TABSTOP	41
 	"tabstop",	&tabstop,	OPT_NUM|OPT_REDRAW,
-#define	O_TAGLENGTH	44
+#define	O_TAGLENGTH	42
 	"taglength",	&taglength,	OPT_NUM,
-#define	O_TERM		45
+#define	O_TERM		43
 	"term",		"unknown",	OPT_NOSAVE|OPT_STR,
-#define	O_TERSE		46
+#define	O_TERSE		44
 	"terse",	NULL,		OPT_0BOOL,
-#define	O_TIMEOUT	47
+#define	O_TIMEOUT	45
 	"timeout",	NULL,		OPT_0BOOL,
-#define	O_VBELL		48
+#define	O_VBELL		46
 	"vbell",	NULL,		OPT_0BOOL,
-#define	O_WARN		49
+#define	O_WARN		47
 	"warn",		NULL,		OPT_1BOOL,
-#define	O_WINDOW	50
+#define	O_WINDOW	48
 	"window",	&window,	OPT_NUM|OPT_REDRAW,
-#define	O_WRAPMARGIN	51
+#define	O_WRAPMARGIN	49
 	"wrapmargin",	&wrapmargin,	OPT_NUM,
-#define	O_WRAPSCAN	52
+#define	O_WRAPSCAN	50
 	"wrapscan",	NULL,		OPT_1BOOL,
-#define	O_WRITEANY	53
+#define	O_WRITEANY	51
 	"writeany",	NULL,		OPT_0BOOL,
 	NULL,
 };
-#define	O_OPTIONCOUNT	54
+#define	O_OPTIONCOUNT	52
 /* END_OPTION_DEF */
 
 typedef struct abbrev {
@@ -252,13 +252,14 @@ opts_init()
  *	Change the values of one or more options.
  */
 void
-opts_set(arg)
-	char *arg;
+opts_set(argv)
+	char **argv;
 {
+	register char *p;
 	ABBREV atmp, *ap;
 	OPTIONS otmp, *op;
 	long value;
-	int ch, needredraw, off;
+	int all, ch, needredraw, off;
 	char *ep, *equals, *name;
 	
 	/*
@@ -267,25 +268,27 @@ opts_set(arg)
 	 */
 	LVAL(O_WINDOW) = LINES - 1;
 
-	for (needredraw = 0;;) {
-		/* Skip leading white space. */
-		while ((ch = *arg) && isspace(ch))
-			++arg;
-		if (*arg == '\0')
-			break;
-		name = arg;
-
+	for (all = needredraw = 0; *argv; ++argv) {
+		/*
+		 * The historic vi dumped the options for each occurrence of
+		 * "all" in the set list.  Stupid.
+		 */
+		if (!strcmp(*argv, "all")) {
+			all = 1;
+			continue;
+		}
+			
 		/* Find equals sign or end of set, skipping backquoted chars. */
-		for (equals = NULL; (ch = *arg) && !isspace(ch); ++arg)
+		for (p = name = *argv, equals = NULL; ch = *p; ++p)
 			switch(ch) {
 			case '=':
-				equals = arg;
+				equals = p;
 				break;
 			case '\\':
 				/* Historic vi just used the backslash. */
-				if (arg[1] == '\0')
+				if (p[1] == '\0')
 					break;
-				++arg;
+				++p;
 				break;
 			}
 
@@ -409,8 +412,18 @@ found:		if (op == NULL || off && !ISFSETP(op, OPT_0BOOL|OPT_1BOOL)) {
 	LINES = LVAL(O_LINES);
 	COLS = LVAL(O_COLUMNS);
 
+	if (all)
+		opts_dump(1);
+
 	if (needredraw)
 		redraw(MARK_UNSET, FALSE);
+
+	/*
+	 * That option may have affected the appearance of text.
+	 * XXX
+	 * Why isn't this set per variable, like redraw?
+	 */
+	++changes;
 }
 
 /*
@@ -488,7 +501,12 @@ opts_dump(all)
 			}
 			endcol += colwidth;
 		}
-		if (numrows > 1 || b_num)
+		/*
+		 * Need a newline if in ex mode.
+		 * XXX
+		 * This should be handled elsewhere.
+		 */
+		if (numrows > 1 || b_num || mode == MODE_EX)
 			addch('\n');
 	}
 
