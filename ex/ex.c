@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.19 1993/08/26 18:43:26 bostic Exp $ (Berkeley) $Date: 1993/08/26 18:43:26 $";
+static char sccsid[] = "$Id: ex.c,v 8.20 1993/08/27 18:14:05 bostic Exp $ (Berkeley) $Date: 1993/08/27 18:14:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -91,8 +91,8 @@ ex_cfile(sp, ep, filename)
 	char *filename;
 {
 	struct stat sb;
-	int fd, len, rval, tlen;
-	char *bp, *p, *t;
+	int fd, len, rval;
+	char *bp;
 
 	if ((fd = open(filename, O_RDONLY, 0)) < 0)
 		goto e1;
@@ -118,18 +118,6 @@ ex_cfile(sp, ep, filename)
 		goto e3;
 	}
 	bp[sb.st_size] = '\0';
-
-	/*
-	 * Historically, vi did really strange things with ^V's that preceded
-	 * <newline>'s in the file.  They don't really make much sense, given
-	 * that the .exrc is a text file, so strip them out here.
-	 */
-	for (p = t = bp, tlen = len; tlen; --tlen, *t++ = *p++)
-		if (sp->special[p[0]] == K_VLNEXT &&
-		    tlen > 1 && sp->special[p[1]] == K_NL) {
-			++p;
-			--len;
-		}
 
 	rval = ex_cstring(sp, ep, bp, len);
 	/*
@@ -193,10 +181,12 @@ ex_cstring(sp, ep, cmd, len)
 	for (p = t = cmd;;) {
 		if (p == cmd) {
 			/* Skip leading whitespace. */
-			for (; len > 0 && isblank(*t); ++t, --len);
+			for (; len > 0 && (isblank(t[0]) || t[0] == '|' ||
+			    sp->special[t[0]] == K_VLNEXT); ++t, --len);
 
 			/* Special case ex/edit, RE commands. */
-			if (strchr("egvs", t[0] == ':' ? t[1] : t[0]))
+			if (len > 0 &&
+			    strchr("egvs", t[0] == ':' ? t[1] : t[0]))
 				if (t[0] == ':' && t[1] == 'e' || t[0] == 'e')
 					ep_comm(sp,
 					    &p, &t, &len, &arg1, &arg1_len);
@@ -208,8 +198,15 @@ ex_cstring(sp, ep, cmd, len)
 
 		ch = *t++;
 		--len;			/* Characters remaining. */
+
+		/*
+		 * Historically, vi permitted ^V's to escape <newline>'s in
+		 * the .exrc file.  It was almost certainly a bug, but that's
+		 * what bug-for-bug compatibility means, Grasshopper.
+		 */
 		if (sp->special[ch] == K_VLNEXT && len > 0 &&
 		   (t[0] == '|' || sp->special[t[0]] == K_NL)) {
+			--len;
 			*p++ = *t++;
 			continue;
 		}
