@@ -8,7 +8,7 @@
 .\"
 .\" See the LICENSE file for redistribution information.
 .\"
-.\"     $Id: vi.ref,v 8.87 1996/10/10 21:43:17 bostic Exp $ (Berkeley) $Date: 1996/10/10 21:43:17 $
+.\"     $Id: vi.ref,v 8.88 1996/10/19 11:23:36 bostic Exp $ (Berkeley) $Date: 1996/10/19 11:23:36 $
 .\"
 .\"
 .so ref.so
@@ -96,7 +96,7 @@ Scrolling and reworking for
 was done by Elan Amir.
 .pp
 George Neville-Neil added the Tcl interpreter,
-and Sven Verdoolaege added the Perl5 interpreter.
+and Sven Verdoolaege added the Perl interpreter.
 .pp
 Rob Mayoff added Cscope support.
 .pp
@@ -272,7 +272,7 @@ The
 .CO ":perld[o] cmd"
 and
 .CO ":tc[l] cmd"
-commands execute Perl5 and Tcl/Tk commands, respectively,
+commands execute Perl and Tcl/Tk commands, respectively,
 on lines from the edit buffer.
 See the
 .QB "Scripting Languages"
@@ -1190,9 +1190,9 @@ will be discarded.)
 .pp
 The
 .CO nvi
-editor currently supports two scripting languages, Tcl/Tk and Perl5.
-(Note that Perl4 isn't sufficient, and that the Perl5 must be version
-5.002 or later.
+editor currently supports two scripting languages, Tcl/Tk and Perl.
+(Note that Perl4 isn't sufficient, and that the Perl5 used must be
+version 5.002 or later.
 See the
 .QB "Building Nvi"
 section for more information.
