@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.8 1992/04/04 16:25:06 bostic Exp $ (Berkeley) $Date: 1992/04/04 16:25:06 $";
+static char sccsid[] = "$Id: main.c,v 5.9 1992/04/05 09:34:07 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:34:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -86,11 +86,9 @@ main(argc, argv)
 			SET(O_READONLY);
 			break;
 		case 'r':		/* Recover. */
-			msg("use the `elvrec` program to recover lost files");
-			endmsg();
-			refresh();
-			endwin();
-			exit(0);
+			(void)fprintf(stderr,
+			    "%s: recover option not currently implemented.\n");
+			exit(1);
 #ifdef DEBUG
 		case 'T':		/* Trace. */
 			if ((tracefp = fopen(optarg, "w")) == NULL) {
@@ -149,18 +147,23 @@ main(argc, argv)
 	 * Check the correct order for these.
 	 */
 	reading_exrc = 1;
-	exfile(_PATH_SYSEXRC, 0);
+	(void)exfile(_PATH_SYSEXRC, 0);
 	if ((p = getenv("HOME")) != NULL && *p) {
 		(void)snprintf(path, sizeof(path), "%s/.exrc", p);
-		exfile(path, 0);
+		(void)exfile(path, 0);
 	}
 	if (ISSET(O_EXRC))
-		exfile(_NAME_EXRC, 0);
+		(void)exfile(_NAME_EXRC, 0);
 	reading_exrc = 0;
 
 	/* Source the EXINIT environment variable. */
 	if ((p = getenv("EXINIT")) != NULL)
-		exstring(p, strlen(p), 1);
+		if ((p = strdup(p)) == NULL)
+			msg("Error: %s", strerror(errno));
+		else {
+			(void)exstring(p, strlen(p));
+			free(p);
+		}
 
 	/* Search for a tag (or an error) now, if desired. */
 	blkinit();
@@ -195,7 +198,7 @@ main(argc, argv)
 
 	/* Now we do the immediate ex command that we noticed before. */
 	if (excmdarg)
-		excmd(excmdarg);
+		(void)excmd(excmdarg);
 
 	/*
 	 * Repeatedly call ex() or vi() (depending on the mode) until the
