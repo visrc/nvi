@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: vi.cmd.roff,v 8.45 1995/02/08 20:18:09 bostic Exp $ (Berkeley) $Date: 1995/02/08 20:18:09 $
+.\"	$Id: vi.cmd.roff,v 8.46 1995/02/17 16:42:58 bostic Exp $ (Berkeley) $Date: 1995/02/17 16:42:58 $
 .\"
 .SH 1 "Vi Description"
 .pp
@@ -931,10 +931,12 @@ Affected by the
 option.
 .SE
 .KY #
-.IP "[count] # +|-"
+.IP "[count] # #|+|-"
 Increment or decrement the number referenced by the cursor.
 If the trailing character is a
-.LI \&+ ,
+.LI \&+
+or
+.LI \&# ,
 the number is incremented by
 .LI count .
 If the trailing character is a
