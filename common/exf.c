@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.23 1993/09/27 17:01:25 bostic Exp $ (Berkeley) $Date: 1993/09/27 17:01:25 $";
+static char sccsid[] = "$Id: exf.c,v 8.24 1993/09/27 17:32:11 bostic Exp $ (Berkeley) $Date: 1993/09/27 17:32:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -436,7 +436,8 @@ file_write(sp, ep, fm, tm, fname, flags)
 	struct stat sb;
 	FILE *fp;
 	MARK from, to;
-	int fd, oflags;
+	u_long nlno, nch;
+	int fd, newfile, oflags;
 
 	/*
 	 * Don't permit writing to temporary files.  The problem is that
@@ -505,12 +506,22 @@ file_write(sp, ep, fm, tm, fname, flags)
 	 */
 	F_CLR(sp->frp, FR_NAMECHANGED);
 
-	/* Open the file, either appending or truncating. */
+	/* Set flags to either append or truncate. */
 	oflags = O_CREAT | O_WRONLY;
 	if (LF_ISSET(FS_APPEND))
 		oflags |= O_APPEND;
 	else
 		oflags |= O_TRUNC;
+
+	/*
+	 * Figure out if the file already exists.  We redo the stat 'cause
+	 * it's easier than hacking the various tests above.  The information
+	 * is only used for the user message, so we can ignore the obvious
+	 * race condition.
+	 */
+	newfile = stat(fname, &sb);
+
+	/* Open the file. */
 	if ((fd = open(fname, oflags, DEFFILEMODE)) < 0) {
 		msgq(sp, M_ERR, "%s: %s", fname, strerror(errno));
 		return (1);
@@ -535,11 +546,14 @@ file_write(sp, ep, fm, tm, fname, flags)
 	}
 
 	/* Write the file. */
-	if (ex_writefp(sp, ep, fname, fp, fm, tm, 1)) {
+	if (ex_writefp(sp, ep, fname, fp, fm, tm, &nlno, &nch)) {
 		if (!LF_ISSET(FS_APPEND))
 			msgq(sp, M_ERR, "%s: WARNING: file truncated!", fname);
 		return (1);
 	}
+
+	msgq(sp, M_INFO, "%s%s: %lu line%s, %lu characters.", fname,
+	    newfile ? " [New file]" : "", nlno, nlno == 1 ? "" : "s", nch);
 
 	/* If wrote the entire file, clear the modified bit. */
 	if (LF_ISSET(FS_ALL))
