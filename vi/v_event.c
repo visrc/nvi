@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_event.c,v 8.13 1996/12/17 19:49:19 bostic Exp $ (Berkeley) $Date: 1996/12/17 19:49:19 $";
+static const char sccsid[] = "$Id: v_event.c,v 8.14 1997/04/12 17:19:22 bostic Exp $ (Berkeley) $Date: 1997/04/12 17:19:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,15 +25,15 @@ static const char sccsid[] = "$Id: v_event.c,v 8.13 1996/12/17 19:49:19 bostic E
 #include <unistd.h>
 
 #include "../common/common.h"
-#include "../ip/ip.h"
+#include "../ipc/ip.h"
 #include "vi.h"
 
 /*
- * v_ec_settop --
+ * v_c_settop --
  *	Scrollbar position.
  */
 static int
-v_ec_settop(sp, vp)
+v_c_settop(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
@@ -65,11 +65,11 @@ v_ec_settop(sp, vp)
 }
 
 /*
- * v_eedit --
+ * v_edit --
  *	Edit command.
  */
 static int
-v_eedit(sp, vp)
+v_edit(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
@@ -81,11 +81,11 @@ v_eedit(sp, vp)
 }
 
 /*
- * v_eeditopt --
+ * v_editopt --
  *	Set an option value.
  */
 static int
-v_eeditopt(sp, vp)
+v_editopt(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
@@ -95,11 +95,11 @@ v_eeditopt(sp, vp)
 }
 
 /*
- * v_eeditsplit --
+ * v_editsplit --
  *	Edit in a split screen.
  */
 static int
-v_eeditsplit(sp, vp)
+v_editsplit(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
@@ -112,11 +112,11 @@ v_eeditsplit(sp, vp)
 }
 
 /*
- * v_etag --
+ * v_tag --
  *	Tag command.
  */
 static int
-v_etag(sp, vp)
+v_tag(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
@@ -131,11 +131,11 @@ v_etag(sp, vp)
 }
 
 /*
- * v_etagas --
+ * v_tagas --
  *	Tag on the supplied string.
  */
 static int
-v_etagas(sp, vp)
+v_tagas(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
@@ -147,11 +147,11 @@ v_etagas(sp, vp)
 }
 
 /*
- * v_etagsplit --
+ * v_tagsplit --
  *	Tag in a split screen.
  */
 static int
-v_etagsplit(sp, vp)
+v_tagsplit(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
@@ -167,11 +167,11 @@ v_etagsplit(sp, vp)
 }
 
 /*
- * v_equit --
+ * v_quit --
  *	Quit command.
  */
 static int
-v_equit(sp, vp)
+v_quit(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
@@ -204,11 +204,61 @@ v_erepaint(sp, evp)
 }
 
 /*
- * v_ewq --
+ * v_sel_end --
+ *	End selection.
+ */
+int
+v_sel_end(sp, evp)
+	SCR *sp;
+	EVENT *evp;
+{
+	SMAP *smp;
+	VI_PRIVATE *vip;
+
+	smp = HMAP + evp->e_lno;
+	if (smp > TMAP) {
+		/* XXX */
+		return (1);
+	}
+
+	vip = VIP(sp);
+	vip->sel.lno = smp->lno;
+	vip->sel.cno =
+	    vs_colpos(sp, smp->lno, evp->e_cno + (smp->soff - 1) * sp->cols);
+	return (0);
+}
+
+/*
+ * v_sel_start --
+ *	Start selection.
+ */
+int
+v_sel_start(sp, evp)
+	SCR *sp;
+	EVENT *evp;
+{
+	SMAP *smp;
+	VI_PRIVATE *vip;
+
+	smp = HMAP + evp->e_lno;
+	if (smp > TMAP) {
+		/* XXX */
+		return (1);
+	}
+
+	vip = VIP(sp);
+	vip->sel.lno = smp->lno;
+	vip->sel.cno =
+	    vs_colpos(sp, smp->lno, evp->e_cno + (smp->soff - 1) * sp->cols);
+	return (0);
+}
+
+/*
+ * v_wq --
  *	Write and quit command.
  */
 static int
-v_ewq(sp, vp)
+v_wq(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
@@ -223,11 +273,11 @@ v_ewq(sp, vp)
 }
 
 /*
- * v_ewrite --
+ * v_write --
  *	Write command.
  */
 static int
-v_ewrite(sp, vp)
+v_write(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
@@ -242,11 +292,11 @@ v_ewrite(sp, vp)
 }
 
 /*
- * v_ewriteas --
+ * v_writeas --
  *	Write command.
  */
 static int
-v_ewriteas(sp, vp)
+v_writeas(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
@@ -264,6 +314,8 @@ v_ewriteas(sp, vp)
 /*
  * v_event --
  *	Find the event associated with a fucntion.
+ *
+ * PUBLIC: int v_event __P((SCR *, VICMD *));
  */
 int
 v_event(sp, vp)
@@ -273,31 +325,31 @@ v_event(sp, vp)
 	/* This array maps events to vi command functions. */
 	static VIKEYS const vievents[] = {
 #define	V_C_SETTOP	 0				/* VI_C_SETTOP */
-		{v_ec_settop,	0},
-#define	V_EEDIT		 1				/* VI_EDIT */
-		{v_eedit,	0},
-#define	V_EEDITOPT	 2				/* VI_EDITOPT */
-		{v_eeditopt,	0},
-#define	V_EEDITSPLIT	 3				/* VI_EDITSPLIT */
-		{v_eeditsplit,	0},
+		{v_c_settop,	0},
+#define	V_EDIT		 1				/* VI_EDIT */
+		{v_edit,	0},
+#define	V_EDITOPT	 2				/* VI_EDITOPT */
+		{v_editopt,	0},
+#define	V_EDITSPLIT	 3				/* VI_EDITSPLIT */
+		{v_editsplit,	0},
 #define	V_EMARK		 4				/* VI_MOUSE_MOVE */
 		{v_emark,	V_ABS_L|V_MOVE},
-#define	V_EQUIT		 5				/* VI_QUIT */
-		{v_equit,	0},
-#define	V_ESEARCH	 6				/* VI_SEARCH */
+#define	V_QUIT		 5				/* VI_QUIT */
+		{v_quit,	0},
+#define	V_SEARCH	 6				/* VI_SEARCH */
 		{v_esearch,	V_ABS_L|V_MOVE},
-#define	V_ETAG		 7				/* VI_TAG */
-		{v_etag,	0},
-#define	V_ETAGAS	 8				/* VI_TAGAS */
-		{v_etagas,	0},
-#define	V_ETAGSPLIT	 9				/* VI_TAGSPLIT */
-		{v_etagsplit,	0},
-#define	V_EWQ		10				/* VI_WQ */
-		{v_ewq,		0},
-#define	V_EWRITE	11				/* VI_WRITE */
-		{v_ewrite,	0},
-#define	V_EWRITEAS	12				/* VI_WRITEAS */
-		{v_ewriteas,	0},
+#define	V_TAG		 7				/* VI_TAG */
+		{v_tag,	0},
+#define	V_TAGAS	 8					/* VI_TAGAS */
+		{v_tagas,	0},
+#define	V_TAGSPLIT	 9				/* VI_TAGSPLIT */
+		{v_tagsplit,	0},
+#define	V_WQ		10				/* VI_WQ */
+		{v_wq,		0},
+#define	V_WRITE	11					/* VI_WRITE */
+		{v_write,	0},
+#define	V_WRITEAS	12				/* VI_WRITEAS */
+		{v_writeas,	0},
 	};
 
 	switch (vp->ev.e_ipcom) {
@@ -338,7 +390,7 @@ v_event(sp, vp)
 		vp->kp = &vikeys['\040'];
 		break;
 	case VI_C_SEARCH:
-		vp->kp = &vievents[V_ESEARCH];
+		vp->kp = &vievents[V_SEARCH];
 		break;
 	case VI_C_SETTOP:
 		vp->kp = &vievents[V_C_SETTOP];
@@ -354,40 +406,48 @@ v_event(sp, vp)
 		vp->kp = &vikeys['\020'];
 		break;
 	case VI_EDIT:
-		vp->kp = &vievents[V_EEDIT];
+		vp->kp = &vievents[V_EDIT];
 		break;
 	case VI_EDITOPT:
-		vp->kp = &vievents[V_EEDITOPT];
+		vp->kp = &vievents[V_EDITOPT];
 		break;
 	case VI_EDITSPLIT:
-		vp->kp = &vievents[V_EEDITSPLIT];
+		vp->kp = &vievents[V_EDITSPLIT];
 		break;
 	case VI_MOUSE_MOVE:
 		vp->kp = &vievents[V_EMARK];
 		break;
+	case VI_SEL_END:
+		v_sel_end(sp, &vp->ev);
+		/* XXX RETURN IGNORE */
+		break;
+	case VI_SEL_START:
+		v_sel_start(sp, &vp->ev);
+		/* XXX RETURN IGNORE */
+		break;
 	case VI_QUIT:
-		vp->kp = &vievents[V_EQUIT];
+		vp->kp = &vievents[V_QUIT];
 		break;
 	case VI_TAG:
-		vp->kp = &vievents[V_ETAG];
+		vp->kp = &vievents[V_TAG];
 		break;
 	case VI_TAGAS:
-		vp->kp = &vievents[V_ETAGAS];
+		vp->kp = &vievents[V_TAGAS];
 		break;
 	case VI_TAGSPLIT:
-		vp->kp = &vievents[V_ETAGSPLIT];
+		vp->kp = &vievents[V_TAGSPLIT];
 		break;
 	case VI_UNDO:
 		vp->kp = &vikeys['u'];
 		break;
 	case VI_WQ:
-		vp->kp = &vievents[V_EWQ];
+		vp->kp = &vievents[V_WQ];
 		break;
 	case VI_WRITE:
-		vp->kp = &vievents[V_EWRITE];
+		vp->kp = &vievents[V_WRITE];
 		break;
 	case VI_WRITEAS:
-		vp->kp = &vievents[V_EWRITEAS];
+		vp->kp = &vievents[V_WRITEAS];
 		break;
 	default:
 		return (1);
