@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 8.23 1993/12/02 15:14:42 bostic Exp $ (Berkeley) $Date: 1993/12/02 15:14:42 $";
+static char sccsid[] = "$Id: vs_split.c,v 8.24 1993/12/03 15:54:42 bostic Exp $ (Berkeley) $Date: 1993/12/03 15:54:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,7 +31,7 @@ svi_split(sp, argv)
 	SCR *tsp;
 	SMAP *smp;
 	size_t cnt, half;
-	int issmallscreen, nochange, splitup;
+	int issmallscreen, splitup;
 
 	/* Check to see if it's possible. */
 	half = sp->rows / 2;
@@ -57,9 +57,6 @@ svi_split(sp, argv)
 	 * Set a flag so we know to fix the screen up later.
 	 */
 	issmallscreen = ISSMALLSCREEN(sp);
-
-	/* Flag if we're changing screens. */
-	nochange = argv == NULL;
 
 	/*
 	 * Split the screen, and link the screens together.  If the cursor
@@ -175,13 +172,13 @@ svi_split(sp, argv)
 	 * If files specified, build the file list, else, link to the
 	 * current file.
 	 */
-	if (argv != NULL) {
-		for (; *argv != NULL; ++argv)
-			if (file_add(tsp, NULL, (*argv)->bp, 0) == NULL)
-				goto mem3;
-	} else
+	if (argv == NULL) {
 		if (file_add(tsp, NULL, FILENAME(sp->frp), 0) == NULL)
 			goto mem3;
+	} else
+		for (; (*argv)->len != 0; ++argv)
+			if (file_add(tsp, NULL, (*argv)->bp, 0) == NULL)
+				goto mem3;
 
 	if ((tsp->frp = file_first(tsp, 0)) == NULL) {
 		msgq(sp, M_ERR, "No files in the file list.");
@@ -193,7 +190,7 @@ svi_split(sp, argv)
 	 * screen map.  If the file is unchanged, keep the screen and
 	 * cursor the same.
 	 */
-	if (nochange) {
+	if (argv == NULL) {
 		tsp->ep = sp->ep;
 		++sp->ep->refcnt;
 
