@@ -4,14 +4,15 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 8.17 1993/10/26 19:14:16 bostic Exp $ (Berkeley) $Date: 1993/10/26 19:14:16 $
+ *	$Id: common.h,v 8.18 1993/10/28 10:39:21 bostic Exp $ (Berkeley) $Date: 1993/10/28 10:39:21 $
  */
 
 /* System includes. */
-#include <sys/time.h>		/* Required by screen.h. */
 #include <sys/queue.h>		/* Required by screen.h. */
+#include <sys/time.h>		/* Required by screen.h. */
 
 #include <limits.h>		/* Required by screen.h. */
+#include <signal.h>		/* Required by screen.h. */
 #include <stdio.h>		/* Required by screen.h. */
 #include <termios.h>		/* Required by gs.h. */
 
@@ -41,14 +42,6 @@ struct _seq;
 struct _tag;
 struct _tagf;
 struct _text;
-
-/*
- * XXX
- * Nobody's signal return value is the same as anyone else's.
- * Don't even try.
- */
-				/* Required by screen.h. */
-typedef void (*sig_ret_t) __P((int));
 
 /*
  * Integral type that can hold a single character, the type of that
