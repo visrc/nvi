@@ -1,4 +1,4 @@
-#	$Id: mailprocs.tcl,v 8.2 1995/11/18 12:59:08 bostic Exp $ (Berkeley) $Date: 1995/11/18 12:59:08 $
+#	$Id: mailprocs.tcl,v 8.3 1996/04/29 12:31:35 bostic Exp $ (Berkeley) $Date: 1996/04/29 12:31:35 $
 #
 proc validLine {} {
 	global viScreenId
@@ -80,8 +80,8 @@ proc isAliased {target} {
 
 proc appendAlias {target address} {
 	if {![aliased $target]} {
-	    set aliasFile [open "~/Mail/aliases" a]
-	    puts $aliasFile "$target: $address"
+		set aliasFile [open "~/Mail/aliases" a]
+		puts $aliasFile "$target: $address"
 	}
 	close $aliasFile
 }
@@ -97,6 +97,17 @@ proc expand {} {
 		incr $column
 	}
 	set found [isValid $target]
+}
+
+proc cite {} {
+	global viScreenId
+	global viStartLine
+	global viStopLine
+	for {set i $viStartLine} {$i <= $viStopLine} {incr i} {
+		set newLine "> "
+		append newLine [viGetLine $viScreenId $i]
+		viSetLine $viScreenId $i $newLine
+	}
 }
 
 global viScreenId
