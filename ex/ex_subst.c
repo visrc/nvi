@@ -6,15 +6,15 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 5.7 1992/04/19 08:54:03 bostic Exp $ (Berkeley) $Date: 1992/04/19 08:54:03 $";
+static char sccsid[] = "$Id: ex_subst.c,v 5.8 1992/04/28 13:43:25 bostic Exp $ (Berkeley) $Date: 1992/04/28 13:43:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
+#include <curses.h>
 #include <regexp.h>
 #include <stdio.h>
 
 #include "vi.h"
-#include "curses.h"
 #include "excmd.h"
 #include "options.h"
 #include "pathnames.h"
@@ -78,7 +78,7 @@ substitute(cmdp, cmd)
 		/* if visual "&", then turn off the "p" and "c" options */
 		if (cmdp->flags & E_FORCE)
 		{
-			optp = optc = FALSE;
+			optp = optc = 0;
 		}
 	} else {
 		/* make sure we got a search pattern */
@@ -116,7 +116,7 @@ substitute(cmdp, cmd)
 		/* analyse the option string */
 		if (!ISSET(O_EDCOMPATIBLE))
 		{
-			optp = optg = optc = FALSE;
+			optp = optg = optc = 0;
 		}
 		while (*opt)
 		{
@@ -138,7 +138,7 @@ substitute(cmdp, cmd)
 	if ((optc || optp) && mode == MODE_VI)
 	{
 		addch('\n');
-		ex_refresh();
+		refresh();
 	}
 
 	ChangeText
@@ -153,7 +153,7 @@ substitute(cmdp, cmd)
 			line = fetchline(l, NULL);
 
 			/* if it contains the search pattern... */
-			if (regexec(re, line, TRUE))
+			if (regexec(re, line, 1))
 			{
 				/* increment the line change counter */
 				chline++;
@@ -178,7 +178,7 @@ substitute(cmdp, cmd)
 						for (; *conf; conf++)
 							addch(*conf);
 						addch('\n');
-						ex_refresh();
+						refresh();
 						if (getkey(0) != 'y')
 						{
 							/* copy accross the original chars */
@@ -218,7 +218,7 @@ Continue:
 						*d++ = *s++;
 					}
 
-				} while (optg && regexec(re, s, FALSE));
+				} while (optg && regexec(re, s, 0));
 
 				/* copy stuff from after the match */
 				while (*d++ = *s++)	/* yes, ASSIGNMENT! */
@@ -248,7 +248,7 @@ Continue:
 				if (optp)
 				{
 					addstr(tmpblk.c);
-					ex_refresh();
+					refresh();
 				}
 
 				/* move the cursor to that line */
