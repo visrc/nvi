@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.37 1993/10/28 11:22:22 bostic Exp $ (Berkeley) $Date: 1993/10/28 11:22:22 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.38 1993/11/01 17:38:56 bostic Exp $ (Berkeley) $Date: 1993/11/01 17:38:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -95,6 +95,7 @@ v_ntext(sp, ep, hp, tm, p, len, rp, prompt, ai_line, flags)
 				/* State of quotation. */
 	enum { Q_NOTSET, Q_NEXTCHAR, Q_THISCHAR } quoted;
 	CHAR_T ch;		/* Input character. */
+	GS *gp;			/* Global pointer. */
 	TEXT *tp, *ntp;		/* Input text structures. */
 	TEXT ait;		/* Autoindent text structure. */
 	size_t rcol;		/* 0-N: insert offset in the replay buffer. */
@@ -102,7 +103,6 @@ v_ntext(sp, ep, hp, tm, p, len, rp, prompt, ai_line, flags)
 	int eval;		/* Routine return value. */
 	int replay;		/* If replaying a set of input. */
 	int showmatch;		/* Showmatch set on this character. */
-	int tty_cwait;		/* Characters waiting. */
 	int max, tmp;
 
 	/*
@@ -238,28 +238,22 @@ newtp:		if ((tp = text_init(sp, p, len, len + 32)) == NULL)
 	abb = F_ISSET(sp, S_ABBREV) &&
 	    LF_ISSET(TXT_MAPINPUT) ? A_NOTSPACE : A_NOCHECK;
 
-	for (carat_st = C_NOTSET, hex = H_NOTSET,
-	    showmatch = 0, quoted = Q_NOTSET, tty_cwait = 0;;) {
-
+	gp = sp->gp;
+	for (carat_st = C_NOTSET,
+	    hex = H_NOTSET, showmatch = 0, quoted = Q_NOTSET;;) {
 		/*
-		 * Reset the line and update the screen.  The txt_showmatch()
-		 * code refreshes the screen for us.  Three chosen by random
-		 * selection.
+		 * Reset the line and update the screen.  (The txt_showmatch()
+		 * code refreshes the screen for us.)  Don't refresh unless
+		 * we're about to wait on a character.
 		 */
-		if (sp->s_change(sp, ep, tp->lno, NULL, LINE_RESET))
-			ERR;
-
-#define	CHARS_TO_WAIT	4
-		if (showmatch ||
-		    tty_cwait++ > CHARS_TO_WAIT || !sp->s_key_wait(sp)) {
-			tty_cwait = 0;
-			if (sp->s_refresh(sp, ep))
+		if (showmatch || gp->key->cnt == 0 && gp->tty->cnt == 0) {
+			if (sp->s_change(sp, ep, tp->lno, NULL, LINE_RESET))
 				ERR;
-		}
-
-		if (showmatch) {
-			txt_showmatch(sp, ep);
-			showmatch = 0;
+			if (showmatch) {
+				showmatch = 0;
+				txt_showmatch(sp, ep);
+			} else if (sp->s_refresh(sp, ep))
+				ERR;
 		}
 
 		/*
@@ -343,8 +337,7 @@ next_ch:	if (replay)
 			/* CR returns from the vi command line. */
 			if (LF_ISSET(TXT_CR)) {
 				if (F_ISSET(sp, S_SCRIPT))
-					(void)term_push(sp,
-					    sp->gp->key, "\r", 1);
+					(void)term_push(sp, gp->key, "\r", 1);
 				goto k_escape;
 			}
 
@@ -428,10 +421,13 @@ next_ch:	if (replay)
 			sp->lno = tp->lno;
 
 			/* Update the new line. */
-			if (sp->s_change(sp, ep, tp->lno, NULL, LINE_INSERT) ||
-			    sp->s_refresh(sp, ep))
+			if (sp->s_change(sp, ep, tp->lno, NULL, LINE_INSERT))
 				ERR;
 
+			/* Refresh if nothing waiting. */
+			if (gp->key->cnt == 0 &&
+			    gp->tty->cnt == 0 && sp->s_refresh(sp, ep))
+				ERR;
 			goto next_ch;
 		case K_ESCAPE:				/* Escape. */
 			if (!LF_ISSET(TXT_ESCAPE))
@@ -809,7 +805,7 @@ ebuf_chk:		if (sp->cno >= tp->len) {
 #endif
 	}
 
-	/* Clear input, text buffer in-use flag. */
+	/* Clear input flag. */
 ret:	F_CLR(sp, S_INPUT);
 
 	return (eval);
