@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 5.12 1992/05/27 10:39:37 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:39:37 $
+ *	$Id: vi.h,v 5.13 1992/05/28 13:48:21 bostic Exp $ (Berkeley) $Date: 1992/05/28 13:48:21 $
  */
 
 #include "exf.h"
@@ -27,6 +27,24 @@ typedef struct {
 #define	VC_LMODE	0x008	/* Motion is line oriented. */
 #define	VC_ISDOT	0x010	/* Command was the dot command. */
 #define	VC_ISMOTION	0x020	/* Decoding a motion. */
+
+/*
+ * Historic vi allowed "dl" when the cursor was on the last column, deleting
+ * the last character, and similarly allowed "dw" when the cursor was on the
+ * last column of the file.  It didn't allow "dh" when the cursor was on
+ * column 1, although these cases are not strictly analogous.  The point is
+ * that some movements would succeed if they were associated with a motion
+ * command, and fail otherwise.  This is part of the off-by-1 schizophrenia
+ * that plagued vi.  Other examples are that "dfb" deleted everything up to
+ * and including the next 'b' character, but "d/b" only deleted everything
+ * up to the next 'b' character.  While this implementation regularizes the
+ * interface to the extent possible, there are many special cases that can't
+ * be fixed.  This is implemented by setting special flags per command so that
+ * the motion routines know what's really going on.
+ */
+#define	VC_C		0x040	/* The 'c' command. */
+#define	VC_D		0x080	/* The 'd' command. */
+#define	VC_COMMASK	0x0c0	/* Mask for special flags. */
 	u_int flags;
 				/* DO NOT ZERO OUT. */
 	char *keyword;		/* Keyword. */
@@ -60,7 +78,11 @@ typedef struct _vikeys {	/* Underlying function. */
 #define	MAXVIKEY	126	/* List of vi commands. */
 extern VIKEYS vikeys[MAXVIKEY + 1];
 
-/* This macro is used to set the default count value for an operation */
+/*
+ * This macro is used to set the default count value for an operation.
+ * XXX
+ * DELETE
+ */
 #define SETDEFCNT(val) {						\
 	if (cnt < 1)							\
 		cnt = (val);						\
@@ -72,7 +94,9 @@ int	v_bottom __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_bsearch __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_bsentence __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_bword __P((VICMDARG *, MARK *, MARK *, MARK *));
+int	v_Change __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_change __P((VICMDARG *, MARK *, MARK *, MARK *));
+int	v_Delete __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_delete __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_down __P((VICMDARG *, MARK *, MARK *, MARK *));
 void	v_eof __P((MARK *));
@@ -144,6 +168,7 @@ int	v_Xchar __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_xchar __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_yank __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_zero __P((VICMDARG *, MARK *, MARK *, MARK *));
+int	v_Replace __P((VICMDARG *, MARK *, MARK *, MARK *));
 
 #ifndef VIROUTINE
 MARK	*adjmove __P((MARK *, MARK *, int));
@@ -151,7 +176,6 @@ MARK	*m_paragraph __P((MARK *, long, int));
 MARK	*m_tch __P((MARK *, long, int));
 MARK	*m_z __P((MARK *, long, int));
 MARK	*v_join __P((MARK *, long));
-MARK	*v_overtype __P((MARK *));
 MARK	*v_replace __P((MARK *, long, int));
 MARK	*v_selcut __P((MARK *, long, int));
 MARK	*v_start __P((MARK *, long, int));
@@ -165,7 +189,6 @@ int m_paragraph();
 int m_tch();
 int m_z();
 int v_join();
-int v_overtype();
 int v_replace();
 int v_selcut();
 int v_start();
