@@ -1,9 +1,10 @@
-#	$Id: Makefile.in,v 8.14 1996/02/25 18:22:53 bostic Exp $ (Berkeley) $Date: 1996/02/25 18:22:53 $
+#	$Id: Makefile.in,v 8.15 1996/02/26 14:54:05 bostic Exp $ (Berkeley) $Date: 1996/02/26 14:54:05 $
 
 #GCCF=	-Wall
 #DEBUG=	-g -DDEBUG
 CC=	@CC@
 CFLAGS=	-c $(GCCF) $(DEBUG) -I. -I../include @CFLAGS@
+LDFLAGS=@LDFLAGS@
 
 # Header files.
 HDRS=	cl_extern.h common_extern.h ex_define.h ex_extern.h \
@@ -46,11 +47,11 @@ all: $(HDRS) nvi @tknvi@
 
 NVIALL=	$(CLOBJS) $(VIOBJS) @cobjs@ @dbobjs@ @reobjs@ @LIBOBJS@
 nvi: $(NVIALL)
-	$(CC) -o $@ $(NVIALL) @LIBS@
+	$(CC) $(LDFLAGS) -o $@ $(NVIALL) @LIBS@
 
 TKALL=	$(TKOBJS) $(VIOBJS) @dbobjs@ @reobjs@ @LIBOBJS@
 tknvi: $(TKALL)
-	$(CC) -o $@ $(TKALL) @LIBS@
+	$(CC) $(LDFLAGS) -o $@ $(TKALL) @LIBS@
 
 clean:
 	rm -f nex nvi tknvi @LIBOBJS@ \

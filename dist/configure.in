@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.30 1996/02/26 14:40:44 bostic Exp $ (Berkeley) $Date: 1996/02/26 14:40:44 $
+dnl	$Id: configure.in,v 8.31 1996/02/26 14:54:07 bostic Exp $ (Berkeley) $Date: 1996/02/26 14:54:07 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(configure)
@@ -12,18 +12,24 @@ AC_CANONICAL_HOST
 
 dnl Compilers, compiler flags and libraries per architecture.
 dnl XXX
-dnl A/UX has broken getopt(3), strpbrk(3).
+dnl A/UX	has broken getopt(3), strpbrk(3).
+dnl		-ZP disables _BSD_SOURCE et al, but enables POSIX at link time.
 AC_SUBST(CFLAGS)
 case "$host_os" in
 aix4\.1)  CFLAGS="$CFLAGS -O3 -qstrict";;
 aix*)	  LIBS="$LIBS -lbsd";;
-aux*)	  CFLAGS="$CFLAGS -O2 -ZP" LIBOBJS="$LIBOBJS getopt.o strpbrk.o";;
-bsd4\.4)  CFLAGS="$CFLAGS -O2" LIBS="$LIBS -lutil";;
-bsdi2\.1) CC=shlicc CFLAGS="$CFLAGS -O2" LIBS="$LIBS -lipc";;
+aux*)	  CFLAGS="$CFLAGS -O -ZP -D_BSD_SOURCE -D_SYSV_SOURCE -D_AUX_SOURCE"
+	  LDFLAGS="-ZP"
+	  LIBOBJS="$LIBOBJS getopt.o strpbrk.o";;
+bsd4\.4)  CFLAGS="$CFLAGS -O2"
+	  LIBS="$LIBS -lutil";;
+bsdi2\.1) CC=shlicc CFLAGS="$CFLAGS -O2"
+	  LIBS="$LIBS -lipc";;
 bsdi*)	  CFLAGS="$CFLAGS -O2";;
 dgux*)	  LIBS="$LIBS -ldgc";;
 hpux*)	  CFLAGS="$CFLAGS -O1";;
-irix*)	  CFLAGS="$CFLAGS -cckr -O2" LIBS="$LIBS -lc_s -lbsd";;
+irix*)	  CFLAGS="$CFLAGS -cckr -O2"
+	  LIBS="$LIBS -lc_s -lbsd";;
 isc*)	  LIBS="$LIBS -lcposix -linet";;
 netbsd*)  LIBS="$LIBS -lutil";;
 ptx*)	  LIBS="$LIBS -lseq -linet -lsocket";;
