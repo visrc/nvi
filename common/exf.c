@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.84 1994/07/15 20:11:16 bostic Exp $ (Berkeley) $Date: 1994/07/15 20:11:16 $";
+static char sccsid[] = "$Id: exf.c,v 8.85 1994/07/16 19:13:50 bostic Exp $ (Berkeley) $Date: 1994/07/16 19:13:50 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -394,6 +394,7 @@ file_end(sp, ep, force)
 		if (unlink(frp->tname))
 			msgq(sp, M_SYSERR, "%s: remove", frp->tname);
 		free(frp->tname);
+		frp->tname = NULL;
 		if (F_ISSET(frp, FR_TMPFILE)) {
 			CIRCLEQ_REMOVE(&sp->frefq, frp, q);
 			free(frp->name);
