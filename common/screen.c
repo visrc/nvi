@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.4 1993/08/06 15:43:59 bostic Exp $ (Berkeley) $Date: 1993/08/06 15:43:59 $";
+static char sccsid[] = "$Id: screen.c,v 8.5 1993/08/19 15:12:18 bostic Exp $ (Berkeley) $Date: 1993/08/19 15:12:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -216,6 +216,10 @@ scr_end(sp)
 	/* Free line input buffer. */
 	if (sp->ibp != NULL)
 		FREE(sp->ibp, sp->ibp_len);
+
+	/* Free saved/initial command buffer. */
+	if (sp->comm != NULL)
+		free(sp->comm);
 
 	/* Free text input, command chains. */
 	hdr_text_free(&sp->txthdr);
