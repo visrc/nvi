@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vi.c,v 10.53 1996/08/11 12:42:35 bostic Exp $ (Berkeley) $Date: 1996/08/11 12:42:35 $";
+static const char sccsid[] = "$Id: vi.c,v 10.54 1996/08/17 10:09:41 bostic Exp $ (Berkeley) $Date: 1996/08/17 10:09:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -379,9 +379,10 @@ intr:			CLR_INTERRUPT(sp);
 
 			/*
 			 * If the current screen is still displayed, it will
-			 * want a new status line.
+			 * need a new status line.
 			 */
-			if (F_ISSET(sp, SC_STATUS) && vs_resolve(sp, 0))
+			F_SET(sp, SC_STATUS);
+			if (vs_resolve(sp, 0))
 				goto ret;
 
 			/* Switch screens, change focus. */
