@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shift.c,v 5.23 1993/05/04 16:36:20 bostic Exp $ (Berkeley) $Date: 1993/05/04 16:36:20 $";
+static char sccsid[] = "$Id: ex_shift.c,v 5.24 1993/05/09 09:21:22 bostic Exp $ (Berkeley) $Date: 1993/05/09 09:21:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,7 +46,7 @@ shift(sp, ep, cmdp, rl)
 	enum which rl;
 {
 	recno_t from, to;
-	size_t blen, len, newcol, oldcol, oldidx;
+	size_t blen, len, newcol, newidx, oldcol, oldidx;
 	char *p, *buf, *bp;
 
 	if (O_VAL(sp, O_SHIFTWIDTH) == 0) {
@@ -57,10 +57,8 @@ shift(sp, ep, cmdp, rl)
 	blen = 0;
 	buf = NULL;
 	for (from = cmdp->addr1.lno, to = cmdp->addr2.lno; from <= to; ++from) {
-		/* Get the line. */
 		if ((p = file_gline(sp, ep, from, &len)) == NULL)
 			goto err;
-
 		if (!len)
 			continue;
 
@@ -92,12 +90,12 @@ shift(sp, ep, cmdp, rl)
 			goto err;
 
 		/* Build a new indent string. */
-		bp = buf;
-		while (newcol >= O_VAL(sp, O_TABSTOP)) {
+		for (bp = buf, newidx = 0;
+		    newcol >= O_VAL(sp, O_TABSTOP); ++newidx) {
 			*bp++ = '\t';
 			newcol -= O_VAL(sp, O_TABSTOP);
 		}
-		for (; newcol > 0; --newcol)
+		for (; newcol > 0; --newcol, ++newidx)
 			*bp++ = ' ';
 
 		/* Add the original line. */
@@ -110,6 +108,13 @@ err:			if (buf != NULL)
 				free(buf);
 			return (1);
 		}
+
+		/* Adjust the cursor, if necessary. */
+		if (sp->lno == from)
+			if (newidx > oldidx)
+				sp->cno += newidx - oldidx;
+			else
+				sp->cno -= oldidx - newidx;
 	}
 	if (buf != NULL)
 		free(buf);
