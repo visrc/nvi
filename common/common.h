@@ -4,18 +4,15 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 5.29 1992/10/26 17:45:11 bostic Exp $ (Berkeley) $Date: 1992/10/26 17:45:11 $
+ *	$Id: common.h,v 5.30 1992/11/06 20:07:02 bostic Exp $ (Berkeley) $Date: 1992/11/06 20:07:02 $
  */
 
 #include <db.h>				/* XXX for rptlines, below */
 
-#define	CHEND		'$'		/* End-of-change character. */
-#define	ESCAPE		'\033'		/* Escape character. */
-#define	SPACE		' '		/* Space character. */
-
-#define	TAB	8			/* XXX -- Settable? */
-
-enum direction { FORWARD, BACKWARD };	/* Direction type. */
+/* Confirmation stuff. */
+#define	CONFIRMCHAR	'y'		/* Make change character. */
+#define	QUITCHAR	'q'		/* Quit character. */
+enum confirmation { YES, NO, QUIT };
 
 /*
  * Most of the arrays, names, etc. in ex/vi are u_char's, since we want
@@ -34,6 +31,7 @@ enum direction { FORWARD, BACKWARD };	/* Direction type. */
 #define	USTRCMP(a, b)		strcmp((char *)(a), (char *)(b))
 #define	USTRDUP(a)		(u_char *)strdup((char *)(a))
 #define	USTRLEN(a)		strlen((char *)(a))
+#define	USTRSEP(a, b)		(u_char *)strsep((char **)(a), b)
 #define	USTRNCMP(a, b, n)	strncmp((char *)(a), (char *)(b), n)
 #define	USTRPBRK(a, b)		(u_char *)strpbrk((char *)(a), (char *)(b))
 #define	USTRTOL(a, b, c)	strtol((char *)(a), (char **)(b), c)
