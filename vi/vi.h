@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 8.34 1994/07/23 11:01:38 bostic Exp $ (Berkeley) $Date: 1994/07/23 11:01:38 $
+ *	$Id: vi.h,v 8.35 1994/07/26 10:18:09 bostic Exp $ (Berkeley) $Date: 1994/07/26 10:18:09 $
  */
 
 typedef struct _vikeys VIKEYS;
@@ -154,9 +154,9 @@ extern VIKEYS const tmotion;		/* XXX Hacked ~ command. */
 typedef struct _vcs {
 	recno_t	 cs_lno;		/* Line. */
 	size_t	 cs_cno;		/* Column. */
-	char	*cs_bp;			/* Buffer. */
+	CHAR_T	*cs_bp;			/* Buffer. */
 	size_t	 cs_len;		/* Length. */
-	int	 cs_ch;			/* Character. */
+	CHAR_T	 cs_ch;			/* Character. */
 #define	CS_EMP	1			/* Empty line. */
 #define	CS_EOF	2			/* End-of-file. */
 #define	CS_EOL	3			/* End-of-line. */
