@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 10.26 1996/02/25 19:23:07 bostic Exp $ (Berkeley) $Date: 1996/02/25 19:23:07 $";
+static char sccsid[] = "$Id: msg.c,v 10.27 1996/02/29 19:32:20 bostic Exp $ (Berkeley) $Date: 1996/02/29 19:32:20 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -48,7 +48,7 @@ msgq(SCR *sp, mtype_t mt, const char *fmt, ...)
 msgq(sp, mt, fmt, va_alist)
 	SCR *sp;
 	mtype_t mt;
-        char *fmt;
+        const char *fmt;
         va_dcl
 #endif
 {
