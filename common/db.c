@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 10.16 1995/11/22 10:36:14 bostic Exp $ (Berkeley) $Date: 1995/11/22 10:36:14 $";
+static char sccsid[] = "$Id: db.c,v 10.17 1996/02/28 16:31:06 bostic Exp $ (Berkeley) $Date: 1996/02/28 16:31:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -453,12 +453,18 @@ db_exist(sp, lno)
 		ex_emsg(sp, NULL, EXM_NOFILEYET);
 		return (1);
 	}
+
+	if (lno == OOBLNO)
+		return (0);
 		
-	/* Check the last-line number cache. */
+	/*
+	 * Check the last-line number cache.  Adjust the cached line
+	 * number for the lines used by the text input buffers.
+	 */
 	if (ep->c_nlines != OOBLNO)
-		return (lno > OOBLNO && (lno <= (F_ISSET(sp, S_INPUT) &&
-		    ((TEXT *)sp->tiq.cqh_last)->lno > ep->c_nlines ?
-		    ((TEXT *)sp->tiq.cqh_last)->lno : ep->c_nlines)));
+		return (lno <= (F_ISSET(sp, S_INPUT) ?
+		    ep->c_nlines + (((TEXT *)sp->tiq.cqh_last)->lno -
+		    ((TEXT *)sp->tiq.cqh_first)->lno) : ep->c_nlines));
 
 	/* Go get the line. */
 	return (!db_get(sp, lno, 0, NULL, NULL));
@@ -485,11 +491,15 @@ db_last(sp, lnop)
 		return (1);
 	}
 		
-	/* Check the last-line number cache. */
+	/*
+	 * Check the last-line number cache.  Adjust the cached line
+	 * number for the lines used by the text input buffers.
+	 */
 	if (ep->c_nlines != OOBLNO) {
-		*lnop = (F_ISSET(sp, S_INPUT) &&
-		    ((TEXT *)sp->tiq.cqh_last)->lno > ep->c_nlines ?
-		    ((TEXT *)sp->tiq.cqh_last)->lno : ep->c_nlines);
+		*lnop = ep->c_nlines;
+		if (F_ISSET(sp, S_INPUT))
+			*lnop += ((TEXT *)sp->tiq.cqh_last)->lno -
+			    ((TEXT *)sp->tiq.cqh_first)->lno;
 		return (0);
 	}
 
