@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: api.c,v 8.8 1995/11/22 20:35:14 bostic Exp $ (Berkeley) $Date: 1995/11/22 20:35:14 $";
+static char sccsid[] = "$Id: api.c,v 8.9 1995/11/22 20:38:55 bostic Exp $ (Berkeley) $Date: 1995/11/22 20:38:55 $";
 #endif /* not lint */
 
 #ifdef TCL_INTERP
@@ -318,7 +318,7 @@ api_map(sp, name, map, len)
 
 	ex_cinit(&cmd, C_MAP, 0, OOBLNO, OOBLNO, 0, ap);
 	ex_cadd(&cmd, &a, name, strlen(name));
-	ex_cadd(&cmd, &b, map, strlen(len));
+	ex_cadd(&cmd, &b, map, len);
 	return (cmd.cmd->fn(sp, &cmd));
 }
 
