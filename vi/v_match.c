@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_match.c,v 8.1 1993/06/09 22:27:27 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:27:27 $";
+static char sccsid[] = "$Id: v_match.c,v 8.2 1993/06/28 13:19:22 bostic Exp $ (Berkeley) $Date: 1993/06/28 13:19:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,10 +30,10 @@ v_match(sp, ep, vp, fm, tm, rp)
 	MARK *fm, *tm, *rp;
 {
 	register int cnt, matchc, startc;
-	enum direction dir;
+	VCS cs;
 	recno_t lno;
 	size_t len;
-	int ch;
+	int (*gc)__P((SCR *, EXF *, VCS *));
 	char *p;
 
 	if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
@@ -51,32 +51,32 @@ v_match(sp, ep, vp, fm, tm, rp)
 	switch (startc = p[fm->cno]) {
 	case '(':
 		matchc = ')';
-		dir = FORWARD;
+		gc = cs_next;
 		break;
 	case ')':
 		matchc = '(';
-		dir = BACKWARD;
+		gc = cs_prev;
 		break;
 	case '[':
 		matchc = ']';
-		dir = FORWARD;
+		gc = cs_next;
 		break;
 	case ']':
 		matchc = '[';
-		dir = BACKWARD;
+		gc = cs_prev;
 		break;
 	case '{':
 		matchc = '}';
-		dir = FORWARD;
+		gc = cs_next;
 		break;
 	case '}':
 		matchc = '{';
-		dir = BACKWARD;
+		gc = cs_prev;
 		break;
 	default:
 		if (F_ISSET(vp, VC_C | VC_D | VC_Y)) {
 			msgq(sp, M_BERR,
-			"Proximity match doesn't work for motion commands.");
+			    "No proximity match for motion commands.");
 			return (1);
 		}
 		if (findmatchc(fm, p, len, rp)) {
@@ -86,18 +86,30 @@ nomatch:		msgq(sp, M_BERR, "No match character on this line.");
 		return (0);
 	}
 
-	if (getc_init(sp, ep, fm, &ch))
+	cs.cs_lno = fm->lno;
+	cs.cs_cno = fm->cno;
+	if (cs_init(sp, ep, &cs))
 		return (1);
-	for (cnt = 1; getc_next(sp, ep, dir, &ch);)
-		if (ch == startc)
+	for (cnt = 1;;) {
+		if (gc(sp, ep, &cs))
+			return (1);
+		if (cs.cs_flags != 0) {
+			if (cs.cs_flags == CS_EOF || cs.cs_flags == CS_SOF)
+				break;
+			if (cs.cs_flags != 0)
+				continue;
+		}
+		if (cs.cs_ch == startc)
 			++cnt;
-		else if (ch == matchc && --cnt == 0)
+		else if (cs.cs_ch == matchc && --cnt == 0)
 			break;
+	}
 	if (cnt) {
 		msgq(sp, M_BERR, "Matching character not found.");
 		return (1);
 	}
-	getc_set(sp, ep, rp);
+	rp->lno = cs.cs_lno;
+	rp->cno = cs.cs_cno;
 
 	/* Movement commands go one space further. */
 	if (F_ISSET(vp, VC_C | VC_D | VC_Y)) {
@@ -117,7 +129,8 @@ nomatch:		msgq(sp, M_BERR, "No match character on this line.");
  *	closest character from the set "{}[]()".  The historic vi would also
  *	look for a character to match against, but in an inexplicable and
  *	apparently random fashion.  We search forward, then backward, and go
- *	to the closest one.  Ties go left for no reason.
+ *	to the closest one.  Ties go left because differently handed people
+ *	have been traditionally discriminated against by our society.
  */
 static int
 findmatchc(fm, p, len, rp)
