@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.83 1994/08/10 11:44:07 bostic Exp $ (Berkeley) $Date: 1994/08/10 11:44:07 $";
+static char sccsid[] = "$Id: vi.c,v 8.84 1994/08/12 09:56:17 bostic Exp $ (Berkeley) $Date: 1994/08/12 09:56:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -494,7 +494,8 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 		/*
 		 * Historically, half entered [[, ]] or Z commands weren't
 		 * cancelled by <escape>, the terminal was beeped instead.
-		 * I think it's more consistent to cancel them.
+		 * POSIX.2-1992 probably didn't notice, and requires that
+		 * they be cancelled instead of beeping.  Seems fine to me.
 		 */
 		KEY(key, TXT_MAPCOMMAND);
 
