@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vi.c,v 10.58 1996/10/29 12:13:50 bostic Exp $ (Berkeley) $Date: 1996/10/29 12:13:50 $";
+static const char sccsid[] = "$Id: vi.c,v 10.59 1996/12/04 10:15:13 bostic Exp $ (Berkeley) $Date: 1996/12/04 10:15:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,11 +36,11 @@ typedef enum {
 static VIKEYS const
 	       *v_alias __P((SCR *, VICMD *, VIKEYS const *));
 static gcret_t	v_cmd __P((SCR *, VICMD *, VICMD *, VICMD *, int *, int *));
-static int	v_count __P((SCR *, ARG_CHAR_T, u_long *));
+static int	v_count __P((SCR *, VICMD *, ARG_CHAR_T, u_long *));
 static void	v_dtoh __P((SCR *));
 static int	v_init __P((SCR *));
-static gcret_t	v_key __P((SCR *, int, EVENT *, u_int32_t));
-static int	v_keyword __P((SCR *));
+static gcret_t	v_key __P((SCR *, VICMD *, int, u_int32_t));
+static int	v_curword __P((SCR *));
 static int	v_motion __P((SCR *, VICMD *, VICMD *, int *));
 
 #if defined(DEBUG) && defined(COMLOG)
@@ -157,14 +157,11 @@ vi(spp)
 			goto err;
 		case GC_ERR_NOFLUSH:
 			goto gc_err_noflush;
-		case GC_EVENT:
-			if (v_event_exec(sp, vp))
-				goto err;
-			goto gc_event;
 		case GC_FATAL:
 			goto ret;
 		case GC_INTERRUPT:
 			goto intr;
+		case GC_EVENT:
 		case GC_OK:
 			break;
 		}
@@ -414,13 +411,13 @@ ret:		rval = 1;
 }
 
 #define	KEY(key, ec_flags) {						\
-	if ((gcret = v_key(sp, 0, &ev, ec_flags)) != GC_OK)		\
+	if ((gcret = v_key(sp, vp, 0, ec_flags)) != GC_OK)		\
 		return (gcret);						\
-	if (ev.e_value == K_ESCAPE)					\
+	if (vp->ev.e_value == K_ESCAPE)					\
 		goto esc;						\
-	if (F_ISSET(&ev.e_ch, CH_MAPPED))				\
+	if (F_ISSET(&vp->ev.e_ch, CH_MAPPED))				\
 		*mappedp = 1;						\
-	key = ev.e_c;							\
+	key = vp->ev.e_c;						\
 }
 
 /*
@@ -440,16 +437,7 @@ VIKEYS const tmotion = {
 
 /*
  * v_cmd --
- *
- * The command structure for vi is less complex than ex (and don't think
- * I'm not grateful!)  The command syntax is:
- *
- *	[count] [buffer] [count] key [[motion] | [buffer] [character]]
- *
- * and there are several special cases.  The motion value is itself a vi
- * command, with the syntax:
- *
- *	[count] key [character]
+ *	Get a vi command.
  */
 static gcret_t
 v_cmd(sp, dp, vp, ismotion, comcountp, mappedp)
@@ -459,15 +447,38 @@ v_cmd(sp, dp, vp, ismotion, comcountp, mappedp)
 	int *comcountp, *mappedp;
 {
 	enum { COMMANDMODE, ISPARTIAL, NOTPARTIAL } cpart;
-	EVENT ev;
+	CHAR_T key;
 	VIKEYS const *kp;
 	gcret_t gcret;
 	u_int flags;
-	CHAR_T key;
 	char *s;
 
 	/*
-	 * Get a key.
+	 * Get an event command or a key.  Event commands are simple, and
+	 * don't have any additional information.
+	 */
+	cpart = ismotion == NULL ? COMMANDMODE : ISPARTIAL;
+	gcret = v_key(sp, vp, 1, EC_MAPCOMMAND);
+	if (gcret != GC_OK) {
+		if (gcret != GC_EVENT)
+			return (gcret);
+		if (v_event(sp, vp))
+			return (GC_ERR);
+		if (ismotion != NULL && !F_ISSET(vp->kp, V_MOVE))
+			v_event_err(sp, &vp->ev);
+		return (GC_EVENT);
+	}
+
+	/*
+	 * Keys are not simple.  (Although vi's command structure less complex
+	 * than ex (and don't think I'm not grateful!)  The command syntax is:
+	 *
+	 *	[count] [buffer] [count] key [[motion] | [buffer] [character]]
+	 *
+	 * and there are, of course, several special cases.  The motion value
+	 * is itself a vi command, with the syntax:
+	 *
+	 *	[count] key [character]
 	 *
 	 * <escape> cancels partial commands, i.e. a command where at least
 	 * one non-numeric character has been entered.  Otherwise, it beeps
@@ -478,23 +489,21 @@ v_cmd(sp, dp, vp, ismotion, comcountp, mappedp)
 	 * all that's been entered is a number, requiring that the terminal
 	 * be alerted.
 	 */
-	cpart = ismotion == NULL ? COMMANDMODE : ISPARTIAL;
-	if ((gcret =
-	    v_key(sp, ismotion == NULL, &ev, EC_MAPCOMMAND)) != GC_OK) {
-		if (gcret == GC_EVENT)
-			vp->ev = ev;
-		return (gcret);
-	}
-	if (ev.e_value == K_ESCAPE)
+	if (vp->ev.e_value == K_ESCAPE)
 		goto esc;
-	if (F_ISSET(&ev.e_ch, CH_MAPPED))
+
+	/*
+	 * Commands that are mapped are treated differently (e.g., they
+	 * don't set the dot command.  Pass that information back.
+	 */
+	if (F_ISSET(&vp->ev.e_ch, CH_MAPPED))
 		*mappedp = 1;
-	key = ev.e_c;
+	key = vp->ev.e_c;
 
 	if (ismotion == NULL)
 		cpart = NOTPARTIAL;
 
-	/* Pick up optional buffer. */
+	/* Pick up an optional buffer. */
 	if (key == '"') {
 		cpart = ISPARTIAL;
 		if (ismotion != NULL) {
@@ -508,12 +517,14 @@ v_cmd(sp, dp, vp, ismotion, comcountp, mappedp)
 	}
 
 	/*
-	 * Pick up optional count, where a leading 0 is not a count,
-	 * it's a command.
+	 * Pick up an optional count, where a leading 0 isn't a count, it's
+	 * a command.  When a count is specified, the dot command behaves
+	 * differently, pass the information back.
 	 */
 	if (isdigit(key) && key != '0') {
-		if (v_count(sp, key, &vp->count))
+		if (v_count(sp, vp, key, &vp->count))
 			return (GC_ERR);
+
 		F_SET(vp, VC_C1SET);
 		*comcountp = 1;
 
@@ -556,7 +567,11 @@ v_cmd(sp, dp, vp, ismotion, comcountp, mappedp)
 		F_CLR(vp, VC_C1SET);
 	}
 
-	/* Check for command aliases. */
+	/*
+	 * There are several commands that we implement as aliases, both
+	 * to match historic practice and to ensure consistency.  Check
+	 * for command aliases.
+	 */
 	if (kp->func == NULL && (kp = v_alias(sp, vp, kp)) == NULL)
 		return (GC_ERR);
 
@@ -576,7 +591,8 @@ v_cmd(sp, dp, vp, ismotion, comcountp, mappedp)
 	if (kp->func == NULL) {
 		if (key != '.') {
 			v_emsg(sp, KEY_NAME(sp, key),
-			    ev.e_value == K_ESCAPE ? VIM_NOCOM_B : VIM_NOCOM);
+			    vp->ev.e_value == K_ESCAPE ?
+			    VIM_NOCOM_B : VIM_NOCOM);
 			return (GC_ERR);
 		}
 
@@ -650,7 +666,7 @@ v_cmd(sp, dp, vp, ismotion, comcountp, mappedp)
 		 * Don't set the EC_MAPCOMMAND flag, apparently ] is a popular
 		 * vi meta-character, and we don't want the user to wait while
 		 * we time out a possible mapping.  This *appears* to match
-		 * historic vi practice, but with mapping characters, you Just
+		 * historic vi practice, but with mapping characters, You Just
 		 * Never Know.
 		 */
 		KEY(key, 0);
@@ -670,7 +686,7 @@ usage:			if (ismotion == NULL)
 	if (vp->key == 'z') {
 		KEY(vp->character, 0);
 		if (isdigit(vp->character)) {
-			if (v_count(sp, vp->character, &vp->count2))
+			if (v_count(sp, vp, vp->character, &vp->count2))
 				return (GC_ERR);
 			F_SET(vp, VC_C2SET);
 			KEY(vp->character, 0);
@@ -678,8 +694,8 @@ usage:			if (ismotion == NULL)
 	}
 
 	/*
-	 * Commands that have motion components can be doubled to
-	 * imply the current line.
+	 * Commands that have motion components can be doubled to imply the
+	 * current line.
 	 */
 	if (ismotion != NULL && ismotion->key != key && !LF_ISSET(V_MOVE)) {
 		msgq(sp, M_ERR, "210|%s may not be used as a motion command",
@@ -687,12 +703,12 @@ usage:			if (ismotion == NULL)
 		return (GC_ERR);
 	}
 
-	/* Required character. */
+	/* Pick up required trailing character. */
 	if (LF_ISSET(V_CHAR))
 		KEY(vp->character, 0);
 
 	/* Get any associated cursor word. */
-	if (F_ISSET(kp, V_KEYW) && v_keyword(sp))
+	if (F_ISSET(kp, V_KEYW) && v_curword(sp))
 		return (GC_ERR);
 
 	return (GC_OK);
@@ -722,6 +738,7 @@ v_motion(sp, dm, vp, mappedp)
 	int *mappedp;
 {
 	VICMD motion;
+	gcret_t gcret;
 	size_t len;
 	u_long cnt;
 	u_int flags;
@@ -736,9 +753,11 @@ v_motion(sp, dm, vp, mappedp)
 		motion = *dm;
 		F_SET(&motion, VC_ISDOT);
 		F_CLR(&motion, VM_COMMASK);
+		gcret = GC_OK;
 	} else {
 		memset(&motion, 0, sizeof(VICMD));
-		if (v_cmd(sp, NULL, &motion, vp, &notused, mappedp) != GC_OK)
+		gcret = v_cmd(sp, NULL, &motion, vp, &notused, mappedp);
+		if (gcret != GC_OK && gcret != GC_EVENT)
 			return (1);
 	}
 
@@ -768,7 +787,7 @@ v_motion(sp, dm, vp, mappedp)
 	 * appropriately.  If not a doubled command, run the function to get
 	 * the resulting mark.
  	 */
-	if (vp->key == motion.key) {
+	if (gcret != GC_EVENT && vp->key == motion.key) {
 		F_SET(vp, VM_LDOUBLE | VM_LMODE);
 
 		/* Set the origin of the command. */
@@ -1022,23 +1041,18 @@ v_dtoh(sp)
 	CIRCLEQ_REMOVE(&gp->hq, sp, q);
 	CIRCLEQ_INSERT_TAIL(&gp->dq, sp, q);
 
-	/*
-	 * XXX
-	 * Don't bother internationalizing this message, it's going to
-	 * go away as soon as we have one-line screens.  --TK
-	 */
 	if (hidden > 1)
 		msgq(sp, M_INFO,
-		    "%d screens backgrounded; use :display to list them",
+		    "319|%d screens backgrounded; use :display to list them",
 		    hidden - 1);
 }
 
 /*
- * v_keyword --
+ * v_curword --
  *	Get the word (or non-word) the cursor is on.
  */
 static int
-v_keyword(sp)
+v_curword(sp)
 	SCR *sp;
 {
 	VI_PRIVATE *vip;
@@ -1128,37 +1142,37 @@ v_alias(sp, vp, kp)
  *	Return the next count.
  */
 static int
-v_count(sp, fkey, countp)
+v_count(sp, vp, fkey, countp)
 	SCR *sp;
+	VICMD *vp;
 	ARG_CHAR_T fkey;
 	u_long *countp;
 {
-	EVENT ev;
 	u_long count, tc;
 
-	ev.e_c = fkey;
+	vp->ev.e_c = fkey;
 	count = tc = 0;
 	do {
 		/*
 		 * XXX
 		 * Assume that overflow results in a smaller number.
 		 */
-		tc = count * 10 + ev.e_c - '0';
+		tc = count * 10 + vp->ev.e_c - '0';
 		if (count > tc) {
 			/* Toss to the next non-digit. */
 			do {
-				if (v_key(sp, 0, &ev,
+				if (v_key(sp, vp, 0,
 				    EC_MAPCOMMAND | EC_MAPNODIGIT) != GC_OK)
 					return (1);
-			} while (isdigit(ev.e_c));
+			} while (isdigit(vp->ev.e_c));
 			msgq(sp, M_ERR,
 			    "235|Number larger than %lu", ULONG_MAX);
 			return (1);
 		}
 		count = tc;
-		if (v_key(sp, 0, &ev, EC_MAPCOMMAND | EC_MAPNODIGIT) != GC_OK)
+		if (v_key(sp, vp, 0, EC_MAPCOMMAND | EC_MAPNODIGIT) != GC_OK)
 			return (1);
-	} while (isdigit(ev.e_c));
+	} while (isdigit(vp->ev.e_c));
 	*countp = count;
 	return (0);
 }
@@ -1168,15 +1182,16 @@ v_count(sp, fkey, countp)
  *	Return the next event.
  */
 static gcret_t
-v_key(sp, command_events, evp, ec_flags)
+v_key(sp, vp, events_ok, ec_flags)
 	SCR *sp;
-	int command_events;
-	EVENT *evp;
+	VICMD *vp;
+	int events_ok;
 	u_int32_t ec_flags;
 {
+	EVENT *evp;
 	u_int32_t quote;
 
-	for (quote = 0;;) {
+	for (evp = &vp->ev, quote = 0;;) {
 		if (v_event_get(sp, evp, 0, ec_flags | quote))
 			return (GC_FATAL);
 		quote = 0;
@@ -1214,14 +1229,9 @@ v_key(sp, command_events, evp, ec_flags)
 			if (vs_repaint(sp, evp))
 				return (GC_FATAL);
 			break;
-		case E_WRESIZE:
-			return (GC_ERR);
-		case E_QUIT:
-		case E_WRITE:
-			if (command_events)
-				return (GC_EVENT);
-			/* FALLTHROUGH */
 		default:
+			if (events_ok)
+				return (GC_EVENT);
 			v_event_err(sp, evp);
 			return (GC_ERR);
 		}
