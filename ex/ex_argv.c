@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 8.34 1994/07/22 19:22:49 bostic Exp $ (Berkeley) $Date: 1994/07/22 19:22:49 $";
+static char sccsid[] = "$Id: ex_argv.c,v 8.35 1994/07/23 18:49:00 bostic Exp $ (Berkeley) $Date: 1994/07/23 18:49:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -514,8 +514,11 @@ argv_sexp(sp, bpp, blenp, lenp)
 	 * Do the minimal amount of work possible, the shell is going
 	 * to run briefly and then exit.  Hopefully.
 	 */
+	SIGBLOCK(sp->gp);
 	switch (pid = vfork()) {
 	case -1:			/* Error. */
+		SIGUNBLOCK(sp->gp);
+
 		msgq(sp, M_SYSERR, "vfork");
 err:		(void)close(output[0]);
 		(void)close(output[1]);
@@ -537,7 +540,9 @@ err:		(void)close(output[0]);
 		msgq(sp, M_ERR,
 		    "Error: execl: %s: %s", sh_path, strerror(errno));
 		_exit(127);
-	default:
+	default:			/* Parent. */
+		SIGUNBLOCK(sp->gp);
+
 		/* Close the pipe end the parent won't use. */
 		(void)close(output[1]);
 		break;

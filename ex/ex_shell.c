@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 8.22 1994/05/01 15:19:08 bostic Exp $ (Berkeley) $Date: 1994/05/01 15:19:08 $";
+static char sccsid[] = "$Id: ex_shell.c,v 8.23 1994/07/23 18:49:04 bostic Exp $ (Berkeley) $Date: 1994/07/23 18:49:04 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -73,12 +73,14 @@ ex_exec_proc(sp, cmd, p1, p2)
 	if (p2 != NULL)
 		(void)write(STDOUT_FILENO, p2, strlen(p2));
 
-
+	SIGBLOCK(sp->gp);
 	switch (pid = vfork()) {
 	case -1:			/* Error. */
+		SIGUNBLOCK(sp->gp);
+
 		msgq(sp, M_SYSERR, "vfork");
 		rval = 1;
-		goto err;
+		break;
 	case 0:				/* Utility. */
 		/* The utility has default signal behavior. */
 		sig_end();
@@ -92,12 +94,15 @@ ex_exec_proc(sp, cmd, p1, p2)
 		    O_STR(sp, O_SHELL), strerror(errno));
 		_exit(127);
 		/* NOTREACHED */
+	default:			/* Parent. */
+		SIGUNBLOCK(sp->gp);
+
+		rval = proc_wait(sp, (long)pid, cmd, 0);
+		break;
 	}
 
-	rval = proc_wait(sp, (long)pid, cmd, 0);
-
 	/* Restore ex/vi terminal settings. */
-err:	if (teardown)
+	if (teardown)
 		ex_rleave(sp);
 
 	/*

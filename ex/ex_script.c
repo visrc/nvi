@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_script.c,v 8.16 1994/05/21 09:38:20 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:38:20 $";
+static char sccsid[] = "$Id: ex_script.c,v 8.17 1994/07/23 18:49:02 bostic Exp $ (Berkeley) $Date: 1994/07/23 18:49:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -123,11 +123,14 @@ sscr_init(sp, ep)
 	}
 
 	/*
-	 * Don't use vfork() here, because the signal semantics
-	 * differ from implementation to implementation.
+	 * Don't use vfork() here, because the signal semantics differ from
+	 * implementation to implementation.
 	 */
+	SIGBLOCK(sp->gp);
 	switch (sc->sh_pid = fork()) {
 	case -1:			/* Error. */
+		SIGUNBLOCK(sp->gp);
+
 		msgq(sp, M_SYSERR, "fork");
 err:		if (sc->sh_master != -1)
 			(void)close(sc->sh_master);
@@ -172,7 +175,8 @@ err:		if (sc->sh_master != -1)
 		msgq(sp, M_ERR,
 		    "Error: execl: %s: %s", sh_path, strerror(errno));
 		_exit(127);
-	default:
+	default:			/* Parent. */
+		SIGUNBLOCK(sp->gp);
 		break;
 	}
 
