@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 5.8 1993/05/04 15:58:28 bostic Exp $ (Berkeley) $Date: 1993/05/04 15:58:28 $";
+static char sccsid[] = "$Id: screen.c,v 5.9 1993/05/08 16:08:13 bostic Exp $ (Berkeley) $Date: 1993/05/08 16:08:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -79,6 +79,10 @@ scr_init(orig, sp)
 		sp->inc_lastch = orig->inc_lastch;
 		sp->inc_lastval = orig->inc_lastval;
 
+		if (orig->paragraph != NULL &&
+		    (sp->paragraph = strdup(orig->paragraph)) == NULL)
+			goto mem;
+	
 		if (cut_copy(orig, sp))
 			goto mem;
 
@@ -206,6 +210,10 @@ scr_end(sp)
 			if (cb->txthdr.next != NULL)
 				hdr_text_free(&cb->txthdr);
 	}
+
+	/* Free paragraph search list. *
+	if (sp->paragraph != NULL)
+		FREE(sp->paragraph, strlen(sp->paragraph) + 1);
 
 	/* Free up tag information. */
 	{ int cnt;
