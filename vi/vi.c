@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vi.c,v 10.38 1996/03/28 15:12:22 bostic Exp $ (Berkeley) $Date: 1996/03/28 15:12:22 $";
+static const char sccsid[] = "$Id: vi.c,v 10.39 1996/03/30 10:11:35 bostic Exp $ (Berkeley) $Date: 1996/03/30 10:11:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -544,6 +544,16 @@ v_cmd(sp, dp, vp, ismotion, comcountp, mappedp)
 	}
 	kp = &vikeys[vp->key = key];
 
+	/*
+	 * !!!
+	 * Historically, D accepted and then ignored a count.  Match it.
+	 */
+	if (vp->key == 'D' && F_ISSET(vp, VC_C1SET)) {
+		*comcountp = 0;
+		vp->count = 0;
+		F_CLR(vp, VC_C1SET);
+	}
+
 	/* Check for command aliases. */
 	if (kp->func == NULL && (kp = v_alias(sp, vp, kp)) == NULL)
 		return (GC_ERR);
@@ -1071,9 +1081,8 @@ v_alias(sp, vp, kp)
 	default:
 		return (kp);
 	}
-	if (v_event_push(sp, NULL, &push, 1, CH_NOMAP | CH_QUOTED))
-		return (NULL);
-	return (&vikeys[vp->key]);
+	return (v_event_push(sp,
+	    NULL, &push, 1, CH_NOMAP | CH_QUOTED) ? NULL : &vikeys[vp->key]);
 }
 
 /*
