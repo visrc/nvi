@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 8.1 1993/06/09 22:26:29 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:26:29 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 8.2 1993/07/06 07:26:29 bostic Exp $ (Berkeley) $Date: 1993/07/06 07:26:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -215,7 +215,7 @@ EXCMDLIST cmds[] = {
 	{"unmap",	ex_unmap,	E_NOGLOBAL,
 	    "!w1r", 	"unm[ap][!] key"},
 /* C_VGLOBAL */
-	{"vglobal",	ex_global,	E_ADDR2_ALL|E_NOGLOBAL|E_NORC,
+	{"vglobal",	ex_vglobal,	E_ADDR2_ALL|E_NOGLOBAL|E_NORC,
 	    "s", 	"[line [,line]] v[global] [;/]pattern[;/] [commands]"},
 /* C_VERSION */
 	{"version",	ex_version,	E_NOGLOBAL|E_NORC,
