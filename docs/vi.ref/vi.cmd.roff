@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: vi.cmd.roff,v 8.24 1994/06/27 12:41:15 bostic Exp $ (Berkeley) $Date: 1994/06/27 12:41:15 $
+.\"	$Id: vi.cmd.roff,v 8.25 1994/07/01 10:17:45 bostic Exp $ (Berkeley) $Date: 1994/07/01 10:17:45 $
 .\"
 #ifdef REFERENCE
 .SH 1 "Vi Description"
@@ -361,7 +361,8 @@ Search forward
 .LI count
 times for the current word.
 #ifdef REFERENCE
-The current word begins at the current cursor position,
+The current word begins at the first non-whitespace character on or
+after the current cursor position,
 and extends up to the next non-word character or the end of the line.
 The search is literal, i.e. no characters in the word have any special
 meaning in terms of Regular Expressions.
@@ -802,8 +803,10 @@ Push a tag reference onto the tag stack.
 The tags files (see the
 .OP tags
 option for more information) are searched for a tag matching the
-text from the current cursor position to the next non-word character
-on the current line.
+current word.
+The current word begins at the first non-whitespace character on or
+after the current cursor position,
+and extends up to the next non-word character or the end of the line.
 If a matching tag is found, the current file is discarded and the
 file containing the tag reference is edited.
 .sp
@@ -964,8 +967,12 @@ option.
 #endif
 .KY #
 .IP "[count] # +|-|#"
-Increment or decrement the cursor number.
+Increment or decrement the current number.
 #ifdef REFERENCE
+The current number begins at the first non-number character on or
+before the current cursor position, or the beginning of the line,
+and extends up to the first non-number character on or after the
+current cursor position or the end of the line.
 If the trailing character is a
 .LI \&+ ,
 the number is incremented by
