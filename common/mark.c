@@ -6,12 +6,14 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: mark.c,v 5.6 1992/10/17 16:08:21 bostic Exp $ (Berkeley) $Date: 1992/10/17 16:08:21 $";
+static char sccsid[] = "$Id: mark.c,v 5.7 1992/11/02 22:14:21 bostic Exp $ (Berkeley) $Date: 1992/11/02 22:14:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
+
 #include <limits.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "vi.h"
 #include "exf.h"
@@ -115,7 +117,7 @@ mark_delete(fm, tm, lmode)
 			if (mp->lno != lno || mp->cno < fm->cno)
 				continue;
 			if (lmode || mp->cno < tm->cno)
-				mp->lno == OOBLNO;
+				mp->lno = OOBLNO;
 			else
 				mp->cno -= cno;
 		}
@@ -127,7 +129,7 @@ mark_delete(fm, tm, lmode)
 				continue;
 			if (mp->lno == fm->lno)
 				if (lmode || mp->cno >= fm->cno)
-					mp->lno == OOBLNO;
+					mp->lno = OOBLNO;
 				else
 					mp->cno -= cno;
 			else

@@ -12,25 +12,26 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.30 1992/11/01 22:41:13 bostic Exp $ (Berkeley) $Date: 1992/11/01 22:41:13 $";
+static char sccsid[] = "$Id: main.c,v 5.31 1992/11/02 22:13:23 bostic Exp $ (Berkeley) $Date: 1992/11/02 22:13:23 $";
 #endif /* not lint */
 
 #include <sys/param.h>
-#include <signal.h>
-#include <setjmp.h>
-#include <limits.h>
+
 #include <errno.h>
-#include <stdlib.h>
+#include <limits.h>
+#include <setjmp.h>
+#include <signal.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "vi.h"
-#include "exf.h"
 #include "excmd.h"
 #include "options.h"
 #include "pathnames.h"
 #include "seq.h"
 #include "tag.h"
+#include "term.h"
 #include "extern.h"
 
 #ifdef DEBUG
@@ -49,7 +50,7 @@ main(argc, argv)
 	char *argv[];
 {
 	EXCMDARG cmd;
-	int ch, i;
+	int ch;
 	char *excmdarg, *err, *p, *tag, path[MAXPATHLEN];
 
 	/* Set mode based on the program name. */
@@ -197,7 +198,6 @@ main(argc, argv)
 			break;
 		case MODE_EX:
 			(void)ex();
-			break;
 		}
 	}
 
