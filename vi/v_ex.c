@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 5.11 1992/10/13 17:22:28 bostic Exp $ (Berkeley) $Date: 1992/10/13 17:22:28 $";
+static char sccsid[] = "$Id: v_ex.c,v 5.12 1992/10/24 14:23:17 bostic Exp $ (Berkeley) $Date: 1992/10/24 14:23:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -83,8 +83,10 @@ v_ex(vp, fm, tm, rp)
 	v_leaveex();
 
 	/* The file may have changed. */
-	if (scurf != curf)
+	if (scurf != curf) {
 		scr_ref();
+		refresh();
+	}
 
 	/* The only cursor modifications will have been real. */
 	rp->lno = curf->lno;
