@@ -1,4 +1,4 @@
-/* $Id: port.h.in,v 8.5 1996/02/26 14:42:25 bostic Exp $ (Berkeley) $Date: 1996/02/26 14:42:25 $ */
+/* $Id: port.h.in,v 8.6 1996/02/27 16:39:27 bostic Exp $ (Berkeley) $Date: 1996/02/27 16:39:27 $ */
 
 /* Declare the basic types, if they aren't already declared. */
 @u_int8_decl@
@@ -46,17 +46,14 @@
 /* 
  * XXX
  * If we don't have mmap, we fake it with read and write, but we'll
- * still need the flags.
+ * still need the header information.
  */
-#ifndef PROT_READ
+#ifndef HAVE_SYS_MMAN_H
+#define	MAP_SHARED	1		/* share changes */
+#define	MAP_PRIVATE	2		/* changes are private */
 #define	PROT_READ	0x1		/* pages can be read */
 #define	PROT_WRITE	0x2		/* pages can be written */
 #define	PROT_EXEC	0x4		/* pages can be executed */
-#endif
-
-#ifndef MAP_SHARED
-#define	MAP_SHARED	1		/* share changes */
-#define	MAP_PRIVATE	2		/* changes are private */
 #endif
 
 /*
