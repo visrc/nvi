@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 5.11 1992/10/18 13:10:05 bostic Exp $ (Berkeley) $Date: 1992/10/18 13:10:05 $";
+static char sccsid[] = "$Id: v_itxt.c,v 5.12 1992/10/24 14:24:01 bostic Exp $ (Berkeley) $Date: 1992/10/24 14:24:01 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -19,6 +19,7 @@ static char sccsid[] = "$Id: v_itxt.c,v 5.11 1992/10/18 13:10:05 bostic Exp $ (B
 
 #include "vi.h"
 #include "vcmd.h"
+#include "options.h"
 #include "screen.h"
 #include "term.h"
 #include "extern.h"
@@ -26,6 +27,13 @@ static char sccsid[] = "$Id: v_itxt.c,v 5.11 1992/10/18 13:10:05 bostic Exp $ (B
 #define	N_EMARK		0x01		/* End of replacement mark. */
 #define	N_OVERWRITE	0x02		/* Overwrite characters. */
 #define	N_REPLACE	0x04		/* Replace characters without limit. */
+
+#define	SCREEN_UPDATE {							\
+	scr_cchange(curf);						\
+	if (ISSET(O_RULER))						\
+		scr_modeline(curf, 1);					\
+	refresh();							\
+}
 
 static void	ib_err __P((void));
 static int	newtext
@@ -59,7 +67,7 @@ v_iA(vp, fm, tm, rp)
 			len = 0;
 		} else if (len) {
 			curf->cno = len;
-			scr_cchange(curf);
+			SCREEN_UPDATE;
 		}
 
 		if (newtext(vp, NULL, p, len, rp, 0))
@@ -98,7 +106,7 @@ v_ia(vp, fm, tm, rp)
 			len = 0;
 		} else if (len) {
 			++curf->cno;
-			scr_cchange(curf);
+			SCREEN_UPDATE;
 		}
 		if (newtext(vp, NULL, p, len, rp, 0))
 			return (1);
@@ -136,7 +144,7 @@ v_iI(vp, fm, tm, rp)
 			len = 0;
 		} else if (curf->cno != 0) {
 			curf->cno = 0;
-			scr_cchange(curf);
+			SCREEN_UPDATE;
 		}
 		if (newtext(vp, NULL, p, len, rp, 0))
 			return (1);
@@ -203,7 +211,7 @@ v_iO(vp, fm, tm, rp)
 				return (1);
 			}
 			curf->cno = 0;
-			scr_cchange(curf);
+			SCREEN_UPDATE;
 		}
 		if (newtext(vp, NULL, p, len, rp, 0))
 			return (1);
@@ -239,7 +247,7 @@ v_io(vp, fm, tm, rp)
 				return (1);
 			}
 			curf->cno = 0;
-			scr_cchange(curf);
+			SCREEN_UPDATE;
 		}
 		if (newtext(vp, NULL, p, len, rp, 0))
 			return (1);
@@ -290,7 +298,7 @@ v_Change(vp, fm, tm, rp)
 		}
 		curf->lno = fm->lno;
 		curf->cno = 0;
-		scr_cchange(curf);
+		SCREEN_UPDATE;
 		return (newtext(vp, NULL, p, len, rp, 0));
 	}
 
@@ -339,8 +347,7 @@ v_change(vp, fm, tm, rp)
 		}
 		curf->lno = fm->lno;
 		curf->cno = 0;
-		scr_ref();
-		scr_cchange(curf);
+		SCREEN_UPDATE;
 		return (newtext(vp, NULL, p, len, rp, 0));
 	}
 
@@ -391,8 +398,7 @@ v_Replace(vp, fm, tm, rp)
 			++rp->cno;
 			curf->lno = rp->lno;
 			curf->cno = rp->cno;
-			scr_ref();
-			scr_cchange(curf);
+			SCREEN_UPDATE;
 			vp->flags |= VC_ISDOT;
 		}
 		tm->lno = rp->lno;
@@ -533,7 +539,7 @@ newtext(vp, tm, p, len, rp, flags)
 				}
 				repp = ib.rep + rcol;
 			}
-			*repp++ = ch = getkey(0);
+			*repp++ = ch = getkey(GB_MAPINPUT);
 			++rcol;
 		}
 		if (quoted) {
@@ -648,7 +654,7 @@ insch:			*p++ = ch;
 		scr_update(curf, ib.stop.lno, ib.ilb, ib.len,
 		    special[ch] == K_NL || special[ch] == K_CR ?
 		    LINE_INSERT | LINE_LOGICAL : LINE_RESET);
-		scr_cchange(curf);
+		SCREEN_UPDATE;
 	}
 
 	/*
@@ -663,12 +669,13 @@ done:	if (rval == 1)
 		rp->cno = ib.stop.cno;
 	}
 
-	/* Free up text buffers. */
+	/* Free up text buffer, turn off look-aside check. */
 	if (ib.head != NULL) {
 		freetext(ib.head);
 		ib.head = NULL;
-		ib.stop.lno = OOBLNO;
 	}
+	ib.stop.lno = OOBLNO;
+
 	return (rval);
 }
 
