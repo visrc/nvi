@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_left.c,v 8.1 1993/06/09 22:27:19 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:27:19 $";
+static char sccsid[] = "$Id: v_left.c,v 8.2 1993/08/19 16:10:45 bostic Exp $ (Berkeley) $Date: 1993/08/19 16:10:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,7 +25,7 @@ v_left(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	u_long cnt;
+	recno_t cnt;
 
 	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
 
@@ -43,7 +43,32 @@ v_left(sp, ep, vp, fm, tm, rp)
 }
 
 /*
- * v_first -- ^, _
+ * v_cfirst -- [count]_
+ *
+ *	Move to the first non-blank column on a line.
+ */
+int
+v_cfirst(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
+	EXF *ep;
+	VICMDARG *vp;
+	MARK *fm, *tm, *rp;
+{
+	recno_t cnt;
+
+	/* A count moves down count - 1 rows, so, "3_" is the same as "2j_". */
+	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
+	if (cnt != 1) {
+		--vp->count;
+		if (v_down(sp, ep, vp, fm, tm, rp))
+			return (1);
+	} else
+		rp->lno = fm->lno;
+	return (0);
+}
+
+/*
+ * v_first -- ^
  *	Move to the first non-blank column on this line.
  */
 int
@@ -53,6 +78,11 @@ v_first(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
+	/*
+	 * Yielding to none in our quest for compatibility with every
+	 * historical blemish of vi, no matter how strange it might be,
+	 * we permit the user to enter a count and then ignore it.
+	 */
 	rp->lno = fm->lno;
 	return (0);
 }
