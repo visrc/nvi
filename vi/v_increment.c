@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_increment.c,v 8.1 1993/06/09 22:27:10 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:27:10 $";
+static char sccsid[] = "$Id: v_increment.c,v 8.2 1993/08/19 16:23:37 bostic Exp $ (Berkeley) $Date: 1993/08/19 16:23:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -44,9 +44,9 @@ v_increment(sp, ep, vp, fm, tm, rp)
 {
 	u_long ulval;
 	long lval;
-	size_t len, nlen;
+	size_t blen, len, nlen;
 	int rval;
-	char *ntype, *np, *p, nbuf[60];
+	char *bp, *ntype, *p, nbuf[100];
 
 	/* Do repeat operations. */
 	if (vp->character == '#')
@@ -112,24 +112,19 @@ underflow:			msgq(sp, M_ERR,
 		return (1);
 	}
 
-	if ((np = malloc(len + nlen)) == NULL) {
-		msgq(sp, M_ERR, "Error: %s", strerror(errno));
-		return (1);
-	}
-	memmove(np, p, fm->cno);
-	memmove(np + fm->cno, nbuf, nlen);
-	memmove(np + fm->cno + nlen,
+	GET_SPACE(sp, bp, blen, len + nlen);
+	memmove(bp, p, fm->cno);
+	memmove(bp + fm->cno, nbuf, nlen);
+	memmove(bp + fm->cno + nlen,
 	    p + fm->cno + vp->klen, len - fm->cno - vp->klen);
-	p = np;
 	len = len - vp->klen + nlen;
 
-	if (file_sline(sp, ep, fm->lno, p, len))
+	if (file_sline(sp, ep, fm->lno, bp, len))
 		rval = 1;
 	else {
 		*rp = *fm;
 		rval = 0;
 	}
-	if (np)
-		free(np);
+	FREE_SPACE(sp, bp, blen);
 	return (rval);
 }
