@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: key.h,v 10.16 1996/06/11 19:46:01 bostic Exp $ (Berkeley) $Date: 1996/06/11 19:46:01 $
+ *	$Id: key.h,v 10.17 1996/06/19 20:55:40 bostic Exp $ (Berkeley) $Date: 1996/06/19 20:55:40 $
  */
 
 /*
@@ -184,7 +184,7 @@ extern KEYLIST keylist[];
 #define	EC_MAPINPUT	0x004		/* Apply the input map. */
 #define	EC_MAPNODIGIT	0x008		/* Return to a digit. */
 #define	EC_QUOTED	0x010		/* Try to quote next character */
-#define	EC_RAW		0x020		/* Any next character. */
+#define	EC_RAW		0x020		/* Any next character. XXX: not used. */
 #define	EC_TIMEOUT	0x040		/* Timeout to next character. */
 
 /* Flags describing text input special cases. */
