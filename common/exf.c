@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.59 1993/05/05 10:40:58 bostic Exp $ (Berkeley) $Date: 1993/05/05 10:40:58 $";
+static char sccsid[] = "$Id: exf.c,v 5.60 1993/05/07 11:26:34 bostic Exp $ (Berkeley) $Date: 1993/05/07 11:26:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -307,7 +307,7 @@ file_write(sp, ep, fm, tm, fname, flags)
 	 * unlinking the temporary file.  Not what the user had in mind
 	 * at all.  This test cannot be forced.
 	 */
-	if (F_ISSET(ep, F_NONAME)) {
+	if (fname == NULL && F_ISSET(ep, F_NONAME)) {
 		msgq(sp, M_ERR, "No filename to which to write.");
 		return (1);
 	}
