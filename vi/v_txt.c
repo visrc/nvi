@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.95 1994/03/24 18:41:22 bostic Exp $ (Berkeley) $Date: 1994/03/24 18:41:22 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.96 1994/04/05 15:03:06 bostic Exp $ (Berkeley) $Date: 1994/04/05 15:03:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,16 +35,16 @@ static char sccsid[] = "$Id: v_txt.c,v 8.95 1994/03/24 18:41:22 bostic Exp $ (Be
 
 static int	 txt_abbrev __P((SCR *, TEXT *, CHAR_T *, int, int *, int *));
 static void	 txt_ai_resolve __P((SCR *, TEXT *));
-static TEXT	*txt_backup __P((SCR *, EXF *, TEXTH *, TEXT *, u_int));
+static TEXT	*txt_backup __P((SCR *, EXF *, TEXTH *, TEXT *, u_int *));
 static void	 txt_err __P((SCR *, EXF *, TEXTH *));
 static int	 txt_hex __P((SCR *, TEXT *, int *, CHAR_T *));
 static int	 txt_indent __P((SCR *, TEXT *));
 static int	 txt_margin __P((SCR *, TEXT *, int *, CHAR_T *));
 static int	 txt_outdent __P((SCR *, TEXT *));
-static void	 txt_showmatch __P((SCR *, EXF *));
 static void	 txt_Rcleanup __P((SCR *,
 		    TEXTH *, TEXT *, const char *, const size_t));
-static int	 txt_resolve __P((SCR *, EXF *, TEXTH *));
+static int	 txt_resolve __P((SCR *, EXF *, TEXTH *, u_int));
+static void	 txt_showmatch __P((SCR *, EXF *));
 static void	 txt_unmap __P((SCR *, TEXT *, u_int *));
 
 /* Cursor character (space is hard to track on the screen). */
@@ -98,6 +98,7 @@ v_ntext(sp, ep, tiqh, tm, lp, len, rp, prompt, ai_line, flags)
 	CH ikey;		/* Input character structure. */
 	CHAR_T ch;		/* Input character. */
 	TEXT *tp, *ntp, ait;	/* Input and autoindent text structures. */
+	size_t owrite, insert;	/* Temporary copies of TEXT fields. */
 	size_t rcol;		/* 0-N: insert offset in the replay buffer. */
 	size_t col;		/* Current column. */
 	u_long margin;		/* Wrapmargin value. */
@@ -402,9 +403,6 @@ next_ch:	if (term_key(sp, &ikey, quoted == Q_THISCHAR ?
 					goto next_ch;			\
 				}					\
 			}						\
-			/* Clean up for the 'R' command. */		\
-			if (LF_ISSET(TXT_REPLACE))			\
-				txt_Rcleanup(sp, tiqh, tp, lp, len);	\
 			/* Delete any appended cursor. */		\
 			if (LF_ISSET(TXT_APPENDEOL)) {			\
 				--tp->len;				\
@@ -427,37 +425,53 @@ next_ch:	if (term_key(sp, &ikey, quoted == Q_THISCHAR ?
 			}
 
 			/*
-			 * Historic practice was to delete any <blank>
-			 * characters following the inserted newline.
-			 * This affects the 'R', 'c', and 's' commands.
+			 * Save the current line information for restoration
+			 * in txt_backup().  Set the new line length.
 			 */
-			for (p = tp->lb + sp->cno + tp->owrite;
-			    tp->insert && isblank(*p);
-			    ++p, ++tp->owrite, --tp->insert);
+			tp->sv_len = tp->len;
+			tp->sv_cno = sp->cno;
+			tp->len = sp->cno;
 
-			/*
-			 * Move any remaining insert characters into
-			 * a new TEXT structure.
-			 */
-			if ((ntp = text_init(sp,
-			    tp->lb + sp->cno + tp->owrite,
-			    tp->insert, tp->insert + 32)) == NULL)
+			/* Update the old line. */
+			if (sp->s_change(sp, ep, tp->lno, LINE_RESET))
 				goto err;
 
-			/* Set bookkeeping for the new line. */
-			ntp->lno = tp->lno + 1;
-			ntp->insert = tp->insert;
-
-			/*
-			 * Note if the user inserted any characters on this
-			 * line.  Done before calling txt_ai_resolve() because
-			 * it changes the value of sp->cno without making the
-			 * corresponding changes to tp->ai.
+			/* 
+			 * Historic practice was to delete <blank> characters
+			 * following the inserted newline.  This affected the
+			 * 'R', 'c', and 's' commands; 'c' and 's' retained
+			 * the insert characters only, 'R' moved overwrite and
+			 * insert characters into the next TEXT structure.
+			 * All other commands simply deleted the overwrite
+			 * characters.  We have to keep track of the number of
+			 * characters erased for the 'R' command so that we
+			 * can get the final resolution of the line correct.
 			 */
-			tmp = sp->cno <= tp->ai;
+			tp->R_erase = 0;
+			owrite = tp->owrite;
+			insert = tp->insert;
+			if (LF_ISSET(TXT_REPLACE) && owrite != 0) {
+				for (p = tp->lb + sp->cno;
+				    owrite > 0 && isblank(*p);
+				    ++p, --owrite, ++tp->R_erase);
+				if (owrite == 0)
+					for (; insert > 0 && isblank(*p);
+					    ++p, ++tp->R_erase, --insert);
+			} else {
+				for (p = tp->lb + sp->cno + owrite;
+				    insert > 0 && isblank(*p); ++p, --insert);
+				owrite = 0;
+			}
+
+			/* Set up bookkeeping for the new line. */
+			if ((ntp = text_init(sp, p,
+			    insert + owrite, insert + owrite + 32)) == NULL)
+				goto err;
+			ntp->insert = insert;
+			ntp->owrite = owrite;
+			ntp->lno = tp->lno + 1;
 
 			/*
-			 * Resolve autoindented characters for the old line.
 			 * Reset the autoindent line value.  0^D keeps the ai
 			 * line from changing, ^D changes the level, even if
 			 * there are no characters in the old line.  Note,
@@ -466,8 +480,6 @@ next_ch:	if (term_key(sp, &ikey, quoted == Q_THISCHAR ?
 			 * characters.
 			 */
 			if (LF_ISSET(TXT_AUTOINDENT)) {
-				txt_ai_resolve(sp, tp);
-
 				if (carat_st == C_NOCHANGE) {
 					if (txt_auto(sp, ep,
 					    OOBLNO, &ait, ait.ai, ntp))
@@ -480,49 +492,30 @@ next_ch:	if (term_key(sp, &ikey, quoted == Q_THISCHAR ?
 				carat_st = C_NOTSET;
 			}
 
-			/*
-			 * If the user hasn't entered any characters, delete
-			 * any autoindent characters.
-			 *
-			 * !!!
-			 * Historic vi didn't get the insert test right, if
-			 * there were characters after the cursor, entering
-			 * a <cr> left the autoindent characters on the line.
-			 */
-			if (tmp)
-				sp->cno = 0;
-
-			/* Reset bookkeeping for the old line. */
-			tp->len = sp->cno;
-			tp->ai = tp->insert = tp->owrite = 0;
-
-			/* New cursor position. */
-			sp->cno = ntp->ai;
-
-			/* New lines are TXT_APPENDEOL if nothing to insert. */
-			if (ntp->insert == 0) {
+			/* New lines are TXT_APPENDEOL. */
+			if (ntp->owrite == 0 && ntp->insert == 0) {
 				TBINC(sp, ntp->lb, ntp->lb_len, ntp->len + 1);
 				LF_SET(TXT_APPENDEOL);
-				ntp->lb[sp->cno] = CURSOR_CH;
+				ntp->lb[ntp->ai] = CURSOR_CH;
 				++ntp->insert;
 				++ntp->len;
 			}
 
-			/* Update the old line. */
-			if (sp->s_change(sp, ep, tp->lno, LINE_RESET))
-				goto err;
-
 			/*
 			 * Swap old and new TEXT's, and insert the new TEXT
-			 * into the queue.  (DON'T insert until the old line
-			 * has been updated, or the inserted line count in
-			 * line.c:file_gline() will be wrong.)
+			 * into the queue.
+			 *
+			 * !!!
+			 * DON'T insert until the old line has been updated,
+			 * or the inserted line count in line.c:file_gline()
+			 * will be wrong.
 			 */
 			tp = ntp;
 			CIRCLEQ_INSERT_TAIL(tiqh, tp, q);
 
 			/* Reset the cursor. */
 			sp->lno = tp->lno;
+			sp->cno = tp->ai;
 
 			/* Update the new line. */
 			if (sp->s_change(sp, ep, tp->lno, LINE_INSERT))
@@ -532,9 +525,9 @@ next_ch:	if (term_key(sp, &ikey, quoted == Q_THISCHAR ?
 			F_SET(sp, S_RENUMBER);
 
 			/* Refresh if nothing waiting. */
-			if ((margin || !KEYS_WAITING(sp)) &&
-			    sp->s_refresh(sp, ep))
-				goto err;
+			if (margin || !KEYS_WAITING(sp))
+				if (sp->s_refresh(sp, ep))
+					goto err;
 			goto next_ch;
 		case K_ESCAPE:				/* Escape. */
 			if (!LF_ISSET(TXT_ESCAPE))
@@ -543,46 +536,36 @@ next_ch:	if (term_key(sp, &ikey, quoted == Q_THISCHAR ?
 			LINE_RESOLVE;
 
 			/*
-			 * If there aren't any trailing characters in the line
-			 * and the user hasn't entered any characters, delete
-			 * the autoindent characters.
+			 * Clean up for the 'R' command, restoring overwrite
+			 * characters, and making them into insert characters.
 			 */
-			if (!tp->insert && sp->cno <= tp->ai) {
-				tp->len = tp->owrite = 0;
-				sp->cno = 0;
-			} else if (LF_ISSET(TXT_AUTOINDENT))
-				txt_ai_resolve(sp, tp);
-
-			/* If there are insert characters, copy them down. */
-k_escape:		if (tp->insert && tp->owrite)
-				memmove(tp->lb + sp->cno,
-				    tp->lb + sp->cno + tp->owrite, tp->insert);
-			tp->len -= tp->owrite;
+			if (LF_ISSET(TXT_REPLACE))
+				txt_Rcleanup(sp, tiqh, tp, lp, len);
 
 			/*
-			 * Delete any lines that were inserted into the text
-			 * structure and then erased.
+			 * If there are any overwrite characters, copy down
+			 * any insert characters, and decrement the length.
 			 */
-			while (tp->q.cqe_next != (void *)tiqh) {
-				ntp = tp->q.cqe_next;
-				CIRCLEQ_REMOVE(tiqh, ntp, q);
-				text_free(ntp);
+k_escape:		if (tp->owrite) {
+				if (tp->insert)
+					memmove(tp->lb + sp->cno,
+					    tp->lb + sp->cno + tp->owrite,
+					    tp->insert);
+				tp->len -= tp->owrite;
 			}
 
 			/*
-			 * If not resolving the lines into the file, end
-			 * it with a nul.
+			 * Optionally resolve the lines into the file.  Clear
+			 * the input flag, the look-aside buffer is no longer
+			 * valid.  If not resolving the lines into the file,
+			 * end it with a nul.
 			 *
 			 * XXX
 			 * This is wrong, should pass back a length.
 			 */
 			if (LF_ISSET(TXT_RESOLVE)) {
-				if (txt_resolve(sp, ep, tiqh))
+				if (txt_resolve(sp, ep, tiqh, flags))
 					goto err;
-				/*
-				 * Clear input flag -- input buffer no longer
-				 * valid.
-				 */
 				F_CLR(sp, S_INPUT);
 			} else {
 				TBINC(sp, tp->lb, tp->lb_len, tp->len + 1);
@@ -624,7 +607,6 @@ k_escape:		if (tp->insert && tp->owrite)
 			case C_CARATSET:	/* ^^D */
 				if (sp->cno > tp->ai + tp->offset + 1)
 					goto ins_ch;
-
 				/* Save the ai string for later. */
 				ait.lb = NULL;
 				ait.lb_len = 0;
@@ -668,7 +650,7 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 			 */
 			if (sp->cno == 0) {
 				if ((ntp = txt_backup(sp,
-				    ep, tiqh, tp, flags)) == NULL)
+				    ep, tiqh, tp, &flags)) == NULL)
 					goto err;
 				tp = ntp;
 				break;
@@ -715,7 +697,7 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 			 */
 			if (sp->cno == 0) {
 				if ((ntp = txt_backup(sp,
-				    ep, tiqh, tp, flags)) == NULL)
+				    ep, tiqh, tp, &flags)) == NULL)
 					goto err;
 				tp = ntp;
 			}
@@ -802,7 +784,7 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 			 */
 			if (sp->cno == 0) {
 				if ((ntp = txt_backup(sp,
-				    ep, tiqh, tp, flags)) == NULL)
+				    ep, tiqh, tp, &flags)) == NULL)
 					goto err;
 				tp = ntp;
 			}
@@ -1043,8 +1025,8 @@ txt_abbrev(sp, tp, pushcp, isinfoline, didsubp, turnoffp)
 	 * string which is <blank> terminated and which starts at the beginning
 	 * of the line, we check to see it is the abbreviate or unabbreviate
 	 * commands.  If it is, turn abbreviations off and return as if no
-	 * abbreviation was found.  Note also, minor trickiness, so that if the
-	 * user erases the line and starts another command, we go ahead an turn
+	 * abbreviation was found.  Note also, minor trickiness, so that if
+	 * the user erases the line and starts another command, we turn the
 	 * abbreviations back on.
 	 *
 	 * This makes the layering look like a Nachos Supreme.
@@ -1089,10 +1071,7 @@ txt_abbrev(sp, tp, pushcp, isinfoline, didsubp, turnoffp)
 	if (term_push(sp, qp->output, qp->olen, 0, CH_ABBREVIATED))
 		return (1);
 
-	/*
-	 * Move the cursor to the start of the abbreviation,
-	 * adjust the length.
-	 */
+	/* Move to the start of the abbreviation, adjust the length. */
 	sp->cno -= len;
 	tp->len -= len;
 
@@ -1182,6 +1161,15 @@ txt_ai_resolve(sp, tp)
 		return;
 
 	/*
+	 * If the length is less than or equal to the autoindent
+	 * characters, delete them.
+	 */
+	if (tp->len <= tp->ai) {
+		tp->len = tp->ai = 0;
+		return;
+	}
+
+	/*
 	 * The autoindent characters plus any leading <blank> characters
 	 * in the line are resolved into the minimum number of characters.
 	 * Historic practice.
@@ -1224,8 +1212,11 @@ txt_ai_resolve(sp, tp)
 	/* Shift the rest of the characters down, adjust the counts. */
 	del = old - new;
 	memmove(p - del, p, tp->len - old);
-	sp->cno -= del;
 	tp->len -= del;
+
+	/* If the cursor was on this line, adjust it as well. */
+	if (sp->lno == tp->lno)
+		sp->cno -= del;
 
 	/* Fill in space/tab characters. */
 	for (p = tp->lb; tabs--;)
@@ -1286,16 +1277,15 @@ txt_auto(sp, ep, lno, aitp, len, tp)
  *	Back up to the previously edited line.
  */
 static TEXT *
-txt_backup(sp, ep, tiqh, tp, flags)
+txt_backup(sp, ep, tiqh, tp, flagsp)
 	SCR *sp;
 	EXF *ep;
 	TEXTH *tiqh;
 	TEXT *tp;
-	u_int flags;
+	u_int *flagsp;
 {
 	TEXT *ntp;
-	recno_t lno;
-	size_t total;
+	u_int flags;
 
 	/* Get a handle on the previous TEXT structure. */
 	if ((ntp = tp->q.cqe_prev) == (void *)tiqh) {
@@ -1303,44 +1293,31 @@ txt_backup(sp, ep, tiqh, tp, flags)
 		return (tp);
 	}
 
-	/* Make sure that we have enough space. */
-	total = ntp->len + tp->insert;
-	if (LF_ISSET(TXT_APPENDEOL))
-		++total;
-	if (total > ntp->lb_len &&
-	    binc(sp, &ntp->lb, &ntp->lb_len, total))
-		return (NULL);
-
-	/*
-	 * Append a cursor or copy inserted bytes to the end of the old line.
-	 * Test for appending a cursor first, because the TEXT insert field
-	 * will be 1 if we're appending a cursor.  I don't think there's a
-	 * third case, so abort() if there is.
-	 */
-	if (LF_ISSET(TXT_APPENDEOL)) {
-		ntp->lb[ntp->len] = CURSOR_CH;
-		ntp->insert = 1;
-	} else if (tp->insert) {
-		memmove(ntp->lb + ntp->len, tp->lb + tp->owrite, tp->insert);
-		ntp->insert = tp->insert;
-	} else
-		abort();
-
-	/* Set bookkeeping information. */
+	/* Reset the cursor, bookkeeping. */
 	sp->lno = ntp->lno;
-	sp->cno = ntp->len;
-	ntp->len += ntp->insert;
+	sp->cno = ntp->sv_cno;
+	ntp->len = ntp->sv_len;
+
+	/* Handle appending to the line. */
+	flags = *flagsp;
+	if (ntp->owrite == 0 && ntp->insert == 0) {
+		ntp->lb[ntp->len] = CURSOR_CH;
+		++ntp->insert;
+		++ntp->len;
+		LF_SET(TXT_APPENDEOL);
+	} else
+		LF_CLR(TXT_APPENDEOL);
+	*flagsp = flags;
 
 	/* Release the current TEXT. */
-	lno = tp->lno;
 	CIRCLEQ_REMOVE(tiqh, tp, q);
 	text_free(tp);
 
 	/* Update the old line on the screen. */
-	if (sp->s_change(sp, ep, lno, LINE_DELETE))
+	if (sp->s_change(sp, ep, ntp->lno + 1, LINE_DELETE))
 		return (NULL);
 
-	/* Return the old line. */
+	/* Return the new/current TEXT. */
 	return (ntp);
 }
 
@@ -1597,23 +1574,32 @@ txt_outdent(sp, tp)
  *	Resolve the input text chain into the file.
  */
 static int
-txt_resolve(sp, ep, tiqh)
+txt_resolve(sp, ep, tiqh, flags)
 	SCR *sp;
 	EXF *ep;
 	TEXTH *tiqh;
+	u_int flags;
 {
 	TEXT *tp;
 	recno_t lno;
 
-	/* The first line replaces a current line. */
+	/*
+	 * The first line replaces a current line, and all subsequent lines
+	 * are appended into the file.  Resolve autoindented characters for
+	 * each line before committing it.
+	 */
 	tp = tiqh->cqh_first;
+	if (LF_ISSET(TXT_AUTOINDENT))
+		txt_ai_resolve(sp, tp);
 	if (file_sline(sp, ep, tp->lno, tp->lb, tp->len))
 		return (1);
 
-	/* All subsequent lines are appended into the file. */
-	for (lno = tp->lno; (tp = tp->q.cqe_next) != (void *)&sp->tiq; ++lno)
+	for (lno = tp->lno; (tp = tp->q.cqe_next) != (void *)&sp->tiq; ++lno) {
+		if (LF_ISSET(TXT_AUTOINDENT))
+			txt_ai_resolve(sp, tp);
 		if (file_aline(sp, ep, 0, lno, tp->lb, tp->len))
 			return (1);
+	}
 	return (0);
 }
 
@@ -1765,38 +1751,43 @@ txt_margin(sp, tp, didbreak, pushcp)
  *	Resolve the input line for the 'R' command.
  */
 static void
-txt_Rcleanup(sp, tiqh, tp, lp, len)
+txt_Rcleanup(sp, tiqh, tp, lp, olen)
 	SCR *sp;
 	TEXTH *tiqh;
 	TEXT *tp;
 	const char *lp;
-	const size_t len;
+	const size_t olen;
 {
-	size_t tmp;
+	TEXT *ttp;
+	size_t ilen, tmp;
 
 	/*
-	 * The 'R' command restores any overwritable characters in the
-	 * first line to the original characters.  Check to make sure
-	 * that the cursor hasn't moved beyond the end of the original
-	 * line.
+	 * Check to make sure that the cursor hasn't moved beyond
+	 * the end of the line.
 	 */
-	if (tp != tiqh->cqh_first || tp->owrite == 0 || sp->cno >= len)
+	if (tp->owrite == 0)
 		return;
 
-	/* Restore whatever we can restore from the original line. */
-	tmp = MIN(tp->owrite, len - sp->cno);
-	memmove(tp->lb + sp->cno, lp + sp->cno, tmp);
+	/*
+	 * Calculate how many characters the user has entered,
+	 * plus the blanks erased by <carriage-return>/<newline>s.
+	 */
+	for (ttp = tiqh->cqh_first, ilen = 0;;) {
+		ilen += ttp == tp ? sp->cno : ttp->len + ttp->R_erase;
+		if ((ttp = ttp->q.cqe_next) == (void *)&sp->tiq)
+			break;
+	}
 
 	/*
-	 * There can be more overwrite characters if the user extended the
-	 * line and then erased it.  What we have to do is delete whatever
-	 * the user inserted and then erased.  Regardless, we increase the
-	 * insert character count to make the TEXT structure look right.
-	 * (There shouldn't be any insert characters as 'R' replaces the
-	 * entire line; if there are, this code isn't going to work).
+	 * If the user has entered less characters than the original line
+	 * was long, restore any overwriteable characters to the original
+	 * characters, and make them insert characters.  We don't copy them
+	 * anywhere, because the 'R' command doesn't have insert characters.
 	 */
-	if (tp->owrite > tmp)
-		tp->len -= tp->owrite - tmp;
-	tp->owrite = 0;
-	tp->insert = tmp;
+	if (ilen < olen) {
+		tmp = MIN(tp->owrite, olen - ilen);
+		memmove(tp->lb + sp->cno, lp + ilen, tmp);
+		tp->owrite -= tmp;
+		tp->insert += tmp;
+	}
 }

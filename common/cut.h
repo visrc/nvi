@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: cut.h,v 8.13 1994/03/16 08:05:47 bostic Exp $ (Berkeley) $Date: 1994/03/16 08:05:47 $
+ *	$Id: cut.h,v 8.14 1994/04/05 15:02:53 bostic Exp $ (Berkeley) $Date: 1994/04/05 15:02:53 $
  */
 
 typedef struct _texth TEXTH;		/* TEXT list head structure. */
@@ -32,8 +32,11 @@ struct _text {				/* Text: a linked list of lines. */
 	recno_t	 lno;			/* 1-N: line number. */
 	size_t	 ai;			/* 0-N: autoindent bytes. */
 	size_t	 insert;		/* 0-N: bytes to insert (push). */
-	size_t	 offset;		/* 0-N: initial, unerasable bytes. */
-	size_t	 owrite;		/* 0-N: bytes to overwrite. */
+	size_t	 offset;		/* 0-N: initial, unerasable chars. */
+	size_t	 owrite;		/* 0-N: chars to overwrite. */
+	size_t	 R_erase;		/* 0-N: 'R' erase count. */
+	size_t	 sv_cno;		/* 0-N: Saved line cursor. */
+	size_t	 sv_len;		/* 0-N: Saved line lenght. */
 
 	/* These fields are used by the ex text input routine. */
 	u_char	*wd;			/* Width buffer. */
