@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 8.4 1993/09/08 17:49:31 bostic Exp $ (Berkeley) $Date: 1993/09/08 17:49:31 $";
+static char sccsid[] = "$Id: ex_print.c,v 8.5 1993/09/09 14:01:44 bostic Exp $ (Berkeley) $Date: 1993/09/09 14:01:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,8 +19,8 @@ static char sccsid[] = "$Id: ex_print.c,v 8.4 1993/09/08 17:49:31 bostic Exp $ (
 
 /*
  * ex_list -- :[line [,line]] l[ist] [count] [flags]
+ *
  *	Display the addressed lines such that the output is unambiguous.
- *	The only valid flag is '#'.
  */
 int
 ex_list(sp, ep, cmdp)
@@ -28,16 +28,8 @@ ex_list(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	int flags;
-
-	flags = F_ISSET(cmdp, E_F_MASK);
-	if (LF_ISSET(~E_F_HASH)) {
-		msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
-		return (1);
-	}
-	LF_SET(E_F_LIST);
-		
-	if (ex_print(sp, ep, &cmdp->addr1, &cmdp->addr2, flags))
+	if (ex_print(sp, ep,
+	    &cmdp->addr1, &cmdp->addr2, cmdp->flags | E_F_LIST))
 		return (1);
 	sp->lno = cmdp->addr2.lno;
 	sp->cno = cmdp->addr2.cno;
@@ -46,8 +38,8 @@ ex_list(sp, ep, cmdp)
 
 /*
  * ex_number -- :[line [,line]] nu[mber] [count] [flags]
+ *
  *	Display the addressed lines with a leading line number.
- *	The only valid flag is 'l'.
  */
 int
 ex_number(sp, ep, cmdp)
@@ -55,16 +47,8 @@ ex_number(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	int flags;
-
-	flags = F_ISSET(cmdp, E_F_MASK);
-	if (LF_ISSET(~E_F_LIST)) {
-		msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
-		return (1);
-	}
-	LF_SET(E_F_HASH);
-
-	if (ex_print(sp, ep, &cmdp->addr1, &cmdp->addr2, flags))
+	if (ex_print(sp, ep,
+	    &cmdp->addr1, &cmdp->addr2, cmdp->flags | E_F_HASH))
 		return (1);
 	sp->lno = cmdp->addr2.lno;
 	sp->cno = cmdp->addr2.cno;
@@ -73,8 +57,8 @@ ex_number(sp, ep, cmdp)
 
 /*
  * ex_pr -- :[line [,line]] p[rint] [count] [flags]
+ *
  *	Display the addressed lines.
- *	The only valid flags are '#' and 'l'.
  */
 int
 ex_pr(sp, ep, cmdp)
@@ -82,14 +66,7 @@ ex_pr(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	int flags;
-
-	flags = F_ISSET(cmdp, E_F_MASK);
-	if (LF_ISSET(~(E_F_HASH | E_F_LIST))) {
-		msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
-		return (1);
-	}
-	if (ex_print(sp, ep, &cmdp->addr1, &cmdp->addr2, flags))
+	if (ex_print(sp, ep, &cmdp->addr1, &cmdp->addr2, cmdp->flags))
 		return (1);
 	sp->lno = cmdp->addr2.lno;
 	sp->cno = cmdp->addr2.cno;
