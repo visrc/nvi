@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 5.22 1993/02/20 16:42:30 bostic Exp $ (Berkeley) $Date: 1993/02/20 16:42:30 $";
+static char sccsid[] = "$Id: v_scroll.c,v 5.23 1993/02/23 10:40:12 bostic Exp $ (Berkeley) $Date: 1993/02/23 10:40:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -257,8 +257,8 @@ v_lineup(ep, vp, fm, tm, rp)
 }
 
 /*
- * v_lineup -- [count]^E
- *	Page up by lines.
+ * v_linedown -- [count]^E
+ *	Page down by lines.
  */
 int
 v_linedown(ep, vp, fm, tm, rp)
