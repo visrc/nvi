@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 10.13 1995/09/29 18:30:58 bostic Exp $ (Berkeley) $Date: 1995/09/29 18:30:58 $";
+static char sccsid[] = "$Id: ex_shell.c,v 10.14 1995/09/30 10:39:38 bostic Exp $ (Berkeley) $Date: 1995/09/30 10:39:38 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -40,20 +40,20 @@ ex_shell(sp, cmdp)
 	char buf[MAXPATHLEN];
 
 	(void)snprintf(buf, sizeof(buf), "%s -i", O_STR(sp, O_SHELL));
-	return (ex_exec_proc(sp, cmdp, buf, NULL, NULL));
+	return (ex_exec_proc(sp, cmdp, buf, NULL));
 }
 
 /*
  * ex_exec_proc --
  *	Run a separate process.
  *
- * PUBLIC: int ex_exec_proc __P((SCR *, EXCMD *, char *, char *, char *));
+ * PUBLIC: int ex_exec_proc __P((SCR *, EXCMD *, char *, char *));
  */
 int
-ex_exec_proc(sp, cmdp, cmd, p1, p2)
+ex_exec_proc(sp, cmdp, cmd, msg)
 	SCR *sp;
 	EXCMD *cmdp;
-	char *cmd, *p1, *p2;
+	char *cmd, *msg;
 {
 	const char *name;
 	pid_t pid;
@@ -69,13 +69,9 @@ ex_exec_proc(sp, cmdp, cmd, p1, p2)
 		F_SET(sp, S_SCREEN_READY);
 	}
 
-	/* Put out special messages. */
-	if (p1 != NULL || p2 != NULL) {
-		if (p1 != NULL)
-			(void)ex_puts(sp, p1);
-		if (p2 != NULL)
-			(void)ex_puts(sp, p2);
-	}
+	/* Put out additional message. */
+	if (msg != NULL)
+		(void)ex_puts(sp, msg);
 	(void)ex_fflush(sp);
 
 	switch (pid = vfork()) {
