@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: ex.h,v 10.15 1996/03/27 18:49:39 bostic Exp $ (Berkeley) $Date: 1996/03/27 18:49:39 $
+ *	$Id: ex.h,v 10.16 1996/03/28 20:57:43 bostic Exp $ (Berkeley) $Date: 1996/03/28 20:57:43 $
  */
 
 #define	PROMPTCHAR	':'		/* Prompt using a colon. */
@@ -178,6 +178,17 @@ typedef struct _ex_private {
 
 	char	*ibp;			/* File line input buffer. */
 	size_t	 ibp_len;		/* File line input buffer length. */
+
+	/*
+	 * Buffers for the ex output.  The screen/vi support doesn't do any
+	 * character buffering of any kind.  We do it here so that we're not
+	 * calling the screen output routines on every character.
+	 *
+	 * XXX
+	 * Change to grow dynamically.
+	 */
+	char	 obp[1024];		/* Ex output buffer. */
+	size_t	 obp_len;		/* Ex output buffer length. */
 } EX_PRIVATE;
 #define	EXP(sp)	((EX_PRIVATE *)((sp)->ex_private))
 
