@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_search.c,v 10.11 1996/03/06 19:54:35 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:54:35 $";
+static const char sccsid[] = "$Id: v_search.c,v 10.12 1996/03/14 09:35:11 bostic Exp $ (Berkeley) $Date: 1996/03/14 09:35:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -122,9 +122,9 @@ v_exaddr(sp, vp, dir)
 	 * Aslo, we do some argument checking on the z command, to be sure
 	 * that it's not some other random command.) For multiple search
 	 * strings, leading <blank>'s at the second and subsequent strings
-	 * were eaten as well.  This has some unintended side-effects: the
-	 * command /ptrn/;3 is legal and results in moving to line 3.  It
-	 * should have been illegal, but it's too late now.
+	 * were eaten as well.  This has some (unintended?) side-effects:
+	 * the command /ptrn/;3 is legal and results in moving to line 3.
+	 * I suppose you could use it to optionally move to line 3...
 	 *
 	 * !!!
 	 * Historically, if any part of the search command failed, the cursor
