@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: screen.h,v 10.18 1996/04/27 11:41:12 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:41:12 $
+ *	$Id: screen.h,v 10.19 1996/05/15 19:56:53 bostic Exp $ (Berkeley) $Date: 1996/05/15 19:56:53 $
  */
 
 /*
@@ -99,8 +99,9 @@ struct _scr {
 					/* Ex/vi: re_compile flags. */
 #define	RE_C_CSCOPE	0x0001		/* Compile cscope pattern. */
 #define	RE_C_SEARCH	0x0002		/* Compile search replacement. */
-#define	RE_C_SUBST	0x0004		/* Compile substitute replacement. */
-#define	RE_C_TAG	0x0008		/* Compile ctag pattern. */
+#define	RE_C_SILENT	0x0004		/* No error messages. */
+#define	RE_C_SUBST	0x0008		/* Compile substitute replacement. */
+#define	RE_C_TAG	0x0010		/* Compile ctag pattern. */
 
 #define	RE_WSTART	"[[:<:]]"	/* Ex/vi: not-in-word search pattern. */
 #define	RE_WSTOP	"[[:>:]]"
