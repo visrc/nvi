@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 5.15 1993/05/09 12:19:55 bostic Exp $ (Berkeley) $Date: 1993/05/09 12:19:55 $";
+static char sccsid[] = "$Id: vs_line.c,v 5.16 1993/05/10 20:01:49 bostic Exp $ (Berkeley) $Date: 1993/05/10 20:01:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -17,11 +17,19 @@ static char sccsid[] = "$Id: vs_line.c,v 5.15 1993/05/09 12:19:55 bostic Exp $ (
 #include "vi.h"
 #include "svi_screen.h"
 
+#if DEBUG && 0
+#define	TABCH	'-'
+#define	TABSTR	"--------------------"
+#else
+#define	TABSTR	"                    "
+#define	TABCH	' '
+#endif
+
 /*
  * svi_line --
  *	Update one line on the screen.  One nasty little side effect is
  *	that it returns the screen position for the current character.
- *	Not clean, but this is the only routine that really knows what's
+ *	Not pretty, but this is the only routine that really knows what's
  *	out there.
  * XXX
  * 	Should cache offset into last line for last screen -- this should
@@ -38,9 +46,9 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 	size_t len, *xp, *yp;
 {
 	CHNAME *cname;
-	size_t chlen, cols_per_screen, cno_cnt, count_cols;
+	size_t chlen, cols_per_screen, cno_cnt, count_cols, last_count_cols;
 	size_t offset_in_char, skip_screens;
-	int ch, listset, reverse_video;
+	int ch, listset, partial, reverse_video;
 	char nbuf[10];
 
 	/* Move to the line. */
@@ -123,13 +131,14 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 	 */
 	cno_cnt = yp == NULL || smp->lno != sp->lno ? 0 : sp->cno + 1;
 
-	/* This is the loop that actually displays lines. */
-	for (count_cols = 0; len; --len) {
+	/* This is the loop that actually displays characters. */
+	for (count_cols = last_count_cols = 0, partial = 0; len; --len) {
 		/* Get the next character and figure out its length. */
 		if ((ch = *(u_char *)p++) == '\t' && !listset)
 			chlen = TAB_OFF(sp, count_cols);
 		else
 			chlen = cname[ch].len;
+		last_count_cols = count_cols;
 		count_cols += chlen;
 
 		/*
@@ -143,26 +152,44 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 					--cno_cnt;
 				continue;
 			}
-			offset_in_char = chlen - (count_cols - cols_per_screen);
-			chlen = count_cols -= cols_per_screen;
-			if (--skip_screens || !chlen) {
+			count_cols -= cols_per_screen;
+			if (--skip_screens || !count_cols) {
 				if (cno_cnt)
 					--cno_cnt;
 				continue;
 			}
+			offset_in_char = chlen - count_cols;
+			chlen = count_cols;
 		} else
 			offset_in_char = 0;
 
 		/*
-		 * Only display up to the right-hand column.  If reach it,
-		 * we're done.  Only set the cursor value if the entire
-		 * character is displayed.
+		 * Only display up to the right-hand column, once we there
+		 * we're done.  Set a flag if the entire character wasn't
+		 * displayed for use in setting the cursor.
 		 */
 		if (count_cols >= cols_per_screen) {
 			chlen -= count_cols - cols_per_screen;
 			if (count_cols > cols_per_screen)
-				cno_cnt = 0;
+				partial = 1;
 			len = 1;		/* XXX 1, not 0, for loop. */
+		}
+
+		/*
+		 * If the caller wants the cursor value, and this was the
+		 * cursor character, set the value.  There are two ways to
+		 * put the cursor on a tab -- if it's normal display mode,
+		 * it goes on the last "space" of the tab.  If it's input
+		 * mode, it goes on the first.  All other characters only
+		 * set the cursor if the entire character was displayed,
+		 * as the cursor goes on the last "space" of the character.
+		 */
+		if (cno_cnt && --cno_cnt == 0) {
+			*yp = smp - HMAP;
+			if (F_ISSET(sp, S_INPUT))
+				*xp = last_count_cols;
+			else if (!partial)
+				*xp = count_cols - 1;
 		}
 
 		/*
@@ -170,37 +197,19 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 		 * ridiculous length, do it fast.  (We do tab expansion here
 		 * because curses doesn't have a way to set the tab length.)
 		 */
-#if DEBUG && 0
-#define	BLANKS	"--------------------"
-#else
-#define	BLANKS	"                    "
-#endif
 		if (ch == '\t' && !listset) {
 			chlen -= offset_in_char;
-			if (chlen <= sizeof(BLANKS) - 1) {
-				ADDNSTR(BLANKS, chlen);
+			if (chlen <= sizeof(TABSTR) - 1) {
+				ADDNSTR(TABSTR, chlen);
 			} else
 				while (chlen--)
-#if DEBUG && 0
-					ADDCH('-');
-#else
-					ADDCH(' ');
-#endif
+					ADDCH(TABCH);
 		} else
 			ADDNSTR(cname[ch].name + offset_in_char, chlen);
-
-		/*
-		 * If the caller wants the cursor value, and this was the
-		 * cursor character, set the value.
-		 */
-		if (cno_cnt && --cno_cnt == 0) {
-			*xp = count_cols - 1;
-			*yp = smp - HMAP;
-		}
 	}
 
 	/*
-	 * If not the info/mode line, and O_LIST set, at the end of
+	 * If not the info/mode line, and O_LIST set, and at the end of
 	 * the line, and the line ended on this screen, add a trailing $.
 	 */
 	if (listset && len == 0 &&
