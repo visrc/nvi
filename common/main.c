@@ -18,7 +18,7 @@ static const char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static const char sccsid[] = "$Id: main.c,v 10.44 1996/07/13 14:19:16 bostic Exp $ (Berkeley) $Date: 1996/07/13 14:19:16 $";
+static const char sccsid[] = "$Id: main.c,v 10.45 1996/09/23 20:34:25 bostic Exp $ (Berkeley) $Date: 1996/09/23 20:34:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -62,7 +62,7 @@ editor(gp, argc, argv)
 	SCR *sp;
 	size_t len;
 	u_int flags;
-	int ch, fd, flagchk, lflag, startup, readonly, rval, silent;
+	int ch, fd, flagchk, lflag, secure, startup, readonly, rval, silent;
 	char *tag_f, *wsizearg;
 	char path[256];
 
@@ -107,16 +107,16 @@ editor(gp, argc, argv)
 	/* Parse the arguments. */
 	flagchk = '\0';
 	tag_f = wsizearg = NULL;
-	lflag = silent = 0;
+	lflag = secure = silent = 0;
 	startup = 1;
 
 	/* Set the file snapshot flag. */
 	F_SET(gp, G_SNAPSHOT);
 
 #ifdef DEBUG
-	while ((ch = getopt(argc, argv, "c:D:eFlRrsT:t:vw:")) != EOF)
+	while ((ch = getopt(argc, argv, "c:D:eFlRrSsT:t:vw:")) != EOF)
 #else
-	while ((ch = getopt(argc, argv, "c:eFlRrst:vw:")) != EOF)
+	while ((ch = getopt(argc, argv, "c:eFlRrSst:vw:")) != EOF)
 #endif
 		switch (ch) {
 		case 'c':		/* Run the command. */
@@ -180,6 +180,9 @@ editor(gp, argc, argv)
 				return (1);
 			}
 			flagchk = 'r';
+			break;
+		case 'S':
+			secure = 1;
 			break;
 		case 's':
 			silent = 1;
@@ -255,13 +258,15 @@ editor(gp, argc, argv)
 	if (v_key_init(sp))		/* Special key initialization. */
 		goto err;
 
-	{ int oargs[4], *oargp = oargs;
-	if (readonly)			/* Command-line options. */
-		*oargp++ = O_READONLY;
-	if (lflag) {
+	{ int oargs[5], *oargp = oargs;
+	if (lflag) {			/* Command-line options. */
 		*oargp++ = O_LISP;
 		*oargp++ = O_SHOWMATCH;
 	}
+	if (readonly)
+		*oargp++ = O_READONLY;
+	if (secure)
+		*oargp++ = O_SECURE;
 	*oargp = -1;			/* Options initialization. */
 	if (opts_init(sp, oargs))
 		goto err;

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_funcs.c,v 10.48 1996/08/11 14:43:53 bostic Exp $ (Berkeley) $Date: 1996/08/11 14:43:53 $";
+static const char sccsid[] = "$Id: cl_funcs.c,v 10.49 1996/09/23 20:34:12 bostic Exp $ (Berkeley) $Date: 1996/09/23 20:34:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -684,8 +684,8 @@ void
 cl_usage()
 {
 #define	USAGE "\
-usage: ex [-eFRrsv] [-c command] [-t tag] [-w size] [file ...]\n\
-usage: vi [-eFlRrv] [-c command] [-t tag] [-w size] [file ...]\n"
+usage: ex [-eFRrSsv] [-c command] [-t tag] [-w size] [file ...]\n\
+usage: vi [-eFlRrSv] [-c command] [-t tag] [-w size] [file ...]\n"
 	(void)fprintf(stderr, "%s", USAGE);
 #undef	USAGE
 }
