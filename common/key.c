@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.29 1992/10/24 14:20:03 bostic Exp $ (Berkeley) $Date: 1992/10/24 14:20:03 $";
+static char sccsid[] = "$Id: key.c,v 5.30 1992/10/26 09:08:46 bostic Exp $ (Berkeley) $Date: 1992/10/26 09:08:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,6 +25,7 @@ static char sccsid[] = "$Id: key.c,v 5.29 1992/10/24 14:20:03 bostic Exp $ (Berk
 #include "exf.h"
 #include "options.h"
 #include "seq.h"
+#include "screen.h"
 #include "term.h"
 #include "extern.h"
 
@@ -303,7 +304,7 @@ getkey(flags)
 		 * This should return to somewhere else.
 		 */
 		if (nkeybuf == 0) {
-			file_stop(curf, 0);
+			(void)file_stop(curf, 0);
 			if (move(LINES - 1, 0) != ERR) {
 				clrtoeol();
 				refresh();
