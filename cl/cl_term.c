@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_term.c,v 10.11 1995/11/13 08:21:48 bostic Exp $ (Berkeley) $Date: 1995/11/13 08:21:48 $";
+static char sccsid[] = "$Id: cl_term.c,v 10.12 1996/02/04 18:59:37 bostic Exp $ (Berkeley) $Date: 1996/02/04 18:59:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -213,50 +213,40 @@ cl_optchange(sp, opt)
 	SCR *sp;
 	int opt;
 {
-	CL_PRIVATE *clp;
-	char buf[1024];
+	char buf[64];
 
-	clp = CLP(sp);
+	/*
+	 * XXX
+	 * Changing the row/column and terminal values is done by putting them
+	 * into the environment, which is then read by curses.  What this loses
+	 * in ugliness, it makes up for in stupidity.  We can't simply put the
+	 * values into the environment ourselves, because in the presence of a
+	 * kernel mechanism for returning the window size, entering values into
+	 * the environment will screw up future screen resizing events, e.g. if
+	 * the user enters a :shell command and then resizes their window.  As
+	 * there's no portable interface for deleting environmental variables,
+	 * once they're there, they stay.  This is probably reasonable, since
+	 * the user should only have to set one of these if there's no correct
+	 * outside mechanism.
+	 */
 	switch (opt) {
 	case O_COLUMNS:
-		/*
-		 * XXX
-		 * The actual changing of the row/column and terminal value is
-		 * done by putting them into the environment, which is used by
-		 * curses.  Ugly, but stupid.
-		 *
-		 * Set the columns value in the environment for curses.
-		 */
-		(void)snprintf(buf,
-		    sizeof(buf), "COLUMNS=%lu", O_VAL(sp, O_COLUMNS));
-		goto restart;
+		(void)snprintf(buf, sizeof(buf),
+		    "COLUMNS=%lu", O_VAL(sp, O_COLUMNS));
+		goto env;
 	case O_LINES:
-		/*
-		 * XXX
-		 * See comment for O_COLUMNS.
-		 *
-		 * Set the rows value in the environment for curses.
-		 */
-		(void)snprintf(buf,
-		    sizeof(buf), "LINES=%lu", O_VAL(sp, O_LINES));
-		goto restart;
+		(void)snprintf(buf, sizeof(buf),
+		    "LINES=%lu", O_VAL(sp, O_LINES));
+		goto env;
 	case O_TERM:
-		/*
-		 * XXX
-		 * See comment for O_COLUMNS.
-		 *
-		 * Set the terminal value in the environment for curses.
-		 */
 		(void)snprintf(buf, sizeof(buf), "TERM=%s", O_VAL(sp, O_TERM));
-restart:	if (cl_putenv(buf))
+
+		/* Insert the new value into the environment. */
+env:		if (cl_putenv(buf))
 			return (1);
-		
-		/*
-		 * Exit the screen; the editor is expected to restart a screen
-		 * on a resize event.  
-		 */
-		if (cl_quit(sp->gp))
-			return (1);
+
+		/* Restart the screen. */
+		F_SET(sp->gp, G_SRESTART);
 		F_CLR(sp, S_SCR_EX | S_SCR_VI);
 		break;
 	}
@@ -389,6 +379,19 @@ noterm:	if (row == 0)
 }
 
 /*
+ * cl_putchar --
+ *	Function version of putchar, for tputs.
+ *
+ * PUBLIC: int cl_putchar __P((int));
+ */
+int
+cl_putchar(ch)
+	int ch;
+{
+	return (putchar(ch));
+}
+
+/*
  * cl_putenv --
  *	Put a value into the environment.  We use putenv(3) because it's
  *	more portable.  The following hack is because some moron decided
@@ -402,17 +405,4 @@ cl_putenv(s)
 {
 	/* XXX: Unfixable memory leak. */
 	return ((s = strdup(s)) == NULL ? 1 : putenv(s));
-}
-
-/*
- * cl_putchar --
- *	Function version of putchar, for tputs.
- *
- * PUBLIC: int cl_putchar __P((int));
- */
-int
-cl_putchar(ch)
-	int ch;
-{
-	return (putchar(ch));
 }
