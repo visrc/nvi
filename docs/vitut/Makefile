@@ -1,4 +1,4 @@
-#	$Id: Makefile,v 6.6 1993/08/10 11:49:53 elan Exp $ (Berkeley) $Date: 1993/08/10 11:49:53 $
+#	$Id: Makefile,v 8.1 1993/08/14 10:54:03 mckusick Exp $ (Berkeley) $Date: 1993/08/14 10:54:03 $
 
 DIR=	usd/12.vi
 SRCS=	vi.in vi.chars
