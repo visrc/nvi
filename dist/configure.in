@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.32 1996/02/26 15:21:00 bostic Exp $ (Berkeley) $Date: 1996/02/26 15:21:00 $
+dnl	$Id: configure.in,v 8.33 1996/02/26 16:15:23 bostic Exp $ (Berkeley) $Date: 1996/02/26 16:15:23 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(configure)
@@ -82,7 +82,13 @@ dnl Checks for libraries.
 dnl Find the X libraries and includes.
 AC_PATH_X
 if test "$no_x" != yes; then
-	XLIBS="-L$x_libraries -lX11"
+	XLIBS="-lX11"
+	if test "X$x_libraries" != "X"; then
+		XLIBS="-L$x_libraries $XLIBS"
+	fi
+	if test "X$x_includes" != "X"; then
+		XINCS="-I$x_includes"
+	fi
 fi
 
 dnl Check to see if we can load a Tcl interpreter and Tk vi front-end.
@@ -92,7 +98,7 @@ dnl don't care about tknvi.
 AC_SUBST(tknvi)
 AC_SUBST(TKLIBS)
 SAVED_CFLAGS="$CFLAGS"
-CFLAGS="-I/usr/local/include $CFLAGS"
+CFLAGS="-I/usr/local/include $XINCS $CFLAGS"
 SAVED_LIBS="$LIBS"
 LIBS="-L/usr/local/lib -ltk -ltcl -lm $XLIBS $LIBS"
 
