@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 9.11 1994/12/01 19:17:49 bostic Exp $ (Berkeley) $Date: 1994/12/01 19:17:49 $";
+static char sccsid[] = "$Id: exf.c,v 9.12 1994/12/02 10:45:15 bostic Exp $ (Berkeley) $Date: 1994/12/02 10:45:15 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -464,6 +464,7 @@ file_cinit(sp)
 		sp->cno = 0;
 		(void)nonblank(sp, sp->lno, &sp->cno);
 	}
+
 	/*
 	 * !!!
 	 * Historically, vi initialized the absolute mark, but ex did not.
@@ -471,7 +472,9 @@ file_cinit(sp)
 	 * or if an ex command was executed first (e.g. vi +10 file) vi was
 	 * entered without the mark being initialized.  For consistency, if
 	 * the file isn't empty, we initialize it for everyone, believing
-	 * that it can't hurt, and is generally useful.
+	 * that it can't hurt, and is generally useful.  Not initializing it
+	 * if the file is empty is historic practice, although it has always
+	 * been possible to set (and use) marks in empty vi files.
 	 */
 	m.lno = sp->lno;
 	m.cno = sp->cno;
