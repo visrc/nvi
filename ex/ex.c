@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 9.4 1994/11/13 11:44:10 bostic Exp $ (Berkeley) $Date: 1994/11/13 11:44:10 $";
+static char sccsid[] = "$Id: ex.c,v 9.5 1994/11/16 16:56:49 bostic Exp $ (Berkeley) $Date: 1994/11/16 16:56:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,6 +34,7 @@ static char sccsid[] = "$Id: ex.c,v 9.4 1994/11/13 11:44:10 bostic Exp $ (Berkel
 #include "excmd.h"
 
 static void	badlno __P((SCR *, recno_t));
+static void	ex_comlog __P((SCR *, EXCMDARG *));
 static __inline EXCMDLIST const *
 		ex_comm_search __P((char *, size_t));
 static int	ep_line __P((SCR *, MARK *, char **, size_t *, int *));
@@ -1251,26 +1252,8 @@ addr2:	switch (exc.addrcnt) {
 	/* Final setup for the command. */
 	exc.cmd = cp;
 
-#if defined(DEBUG) && 0
-	TRACE(sp, "ex_cmd: %s", exc.cmd->name);
-	if (exc.addrcnt > 0) {
-		TRACE(sp, "\taddr1 %d", exc.addr1.lno);
-		if (exc.addrcnt > 1)
-			TRACE(sp, " addr2: %d", exc.addr2.lno);
-		TRACE(sp, "\n");
-	}
-	if (exc.lineno)
-		TRACE(sp, "\tlineno %d", exc.lineno);
-	if (exc.flags)
-		TRACE(sp, "\tflags %0x", exc.flags);
-	if (F_ISSET(&exc, E_BUFFER))
-		TRACE(sp, "\tbuffer %c", exc.buffer);
-	TRACE(sp, "\n");
-	if (exc.argc) {
-		for (cnt = 0; cnt < exc.argc; ++cnt)
-			TRACE(sp, "\targ %d: {%s}", cnt, exc.argv[cnt]);
-		TRACE(sp, "\n");
-	}
+#if defined(DEBUG) && defined(COMLOG)
+	ex_comlog(sp, &exc);
 #endif
 	/* Clear autoprint flag. */
 	F_CLR(exp, EX_AUTOPRINT);
@@ -1995,3 +1978,28 @@ badlno(sp, lno)
 		msgq(sp, M_ERR,
 		    "119|Illegal address: only %lu lines in the file", lno);
 }
+
+#if defined(DEBUG) && defined(COMLOG)
+static void
+ex_comlog(sp, exp)
+	SCR *sp;
+	EXCMDARG *exp;
+{
+	TRACE(sp, "ecmd: %s", exp->cmd->name);
+	if (exp->addrcnt > 0) {
+		TRACE(sp, " a1 %d", exp->addr1.lno);
+		if (exp->addrcnt > 1)
+			TRACE(sp, " a2: %d", exp->addr2.lno);
+	}
+	if (exp->lineno)
+		TRACE(sp, " line %d", exp->lineno);
+	if (exp->flags)
+		TRACE(sp, " flags 0x%x", exp->flags);
+	if (F_ISSET(&exc, E_BUFFER))
+		TRACE(sp, " buffer %c", exp->buffer);
+	if (exp->argc)
+		for (cnt = 0; cnt < exp->argc; ++cnt)
+			TRACE(sp, " arg %d: {%s}", cnt, exp->argv[cnt]->bp);
+	TRACE(sp, "\n");
+}
+#endif
