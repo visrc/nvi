@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 10.4 1995/09/21 10:56:01 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:56:01 $
+ *	$Id: key.h,v 10.5 1995/09/24 12:01:26 bostic Exp $ (Berkeley) $Date: 1995/09/24 12:01:26 $
  */
 
 /*
@@ -42,12 +42,15 @@ typedef enum {
 	E_EOF,				/* End of input (NOT ^D). */
 	E_ERR,				/* Input error. */
 	E_INTERRUPT,			/* Interrupt. */
+	E_QUIT,				/* Quit. */
 	E_REPAINT,			/* Repaint: e_flno, e_tlno set. */
 	E_RESIZE,			/* SIGWINCH: e_lno, e_cno set. */
 	E_SIGHUP,			/* SIGHUP. */
 	E_SIGTERM,			/* SIGTERM. */
 	E_STRING,			/* Input string: e_csp, e_len set. */
 	E_TIMEOUT,			/* Timeout. */
+	E_WRITE,			/* Write. */
+	E_WRITEQUIT,			/* Write and quit. */
 } e_event_t;
 
 /*
@@ -110,9 +113,11 @@ struct _event {
 #define	e_tcno	_u_event._e_mark.cno2
 
 		struct {		/* Input string. */
+			CHAR_T	*asp;	/* Allocated string. */
 			CHAR_T	*csp;	/* String. */
 			size_t	 len;	/* String length. */
 		} _e_str;
+#define	e_asp	_u_event._e_str.asp
 #define	e_csp	_u_event._e_str.csp
 #define	e_len	_u_event._e_str.len
 	} _u_event;
@@ -170,7 +175,7 @@ extern KEYLIST keylist[];
 #define	INTERRUPT_CHECK	100
 #define	INTERRUPTED(sp)							\
 	(F_ISSET((sp)->gp, G_INTERRUPTED) ||				\
-	!v_get_event(sp, NULL, EC_INTERRUPT) &&				\
+	!v_event_get(sp, NULL, EC_INTERRUPT) &&				\
 	F_ISSET((sp)->gp, G_INTERRUPTED))
 #define	CLR_INTERRUPT(sp)						\
 	F_CLR((sp)->gp, G_INTERRUPTED)
