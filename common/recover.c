@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.33 1993/11/08 14:00:05 bostic Exp $ (Berkeley) $Date: 1993/11/08 14:00:05 $";
+static char sccsid[] = "$Id: recover.c,v 8.34 1993/11/08 14:11:59 bostic Exp $ (Berkeley) $Date: 1993/11/08 14:11:59 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -225,10 +225,10 @@ rcv_mailfile(sp, ep)
 	(void)snprintf(path, sizeof(path),
 	    "%s/recover.XXXXXX", O_STR(sp, O_DIRECTORY));
 	if ((fd = mkstemp(path)) == -1 || (fp = fdopen(fd, "w")) == NULL) {
-		if (fd != -1)
-			(void)close(fd);
 		msgq(sp, M_ERR,
 		    "Error: %s: %s", O_STR(sp, O_DIRECTORY), strerror(errno));
+		if (fd != -1)
+			(void)close(fd);
 		return (1);
 	}
 
@@ -242,8 +242,8 @@ rcv_mailfile(sp, ep)
 		(void)flock(ep->rcv_fd, LOCK_EX | LOCK_NB);
 
 	if ((ep->rcv_mpath = strdup(path)) == NULL) {
-		(void)fclose(fp);
 		msgq(sp, M_ERR, "Error: %s", strerror(errno));
+		(void)fclose(fp);
 		return (1);
 	}
 	
@@ -278,7 +278,7 @@ rcv_mailfile(sp, ep)
 		sverrno = errno;
 		(void)fclose(fp);
 		errno = sverrno;
-err:		msgq(sp, M_ERR, "Error: %s", strerror(errno));
+		msgq(sp, M_ERR, "Error: %s", strerror(errno));
 		return (1);
 	}
 	return (0);
