@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.64 1996/07/02 19:37:38 bostic Exp $ (Berkeley) $Date: 1996/07/02 19:37:38 $
+#	$Id: Makefile.in,v 8.65 1996/07/13 13:36:08 bostic Exp $ (Berkeley) $Date: 1996/07/13 13:36:08 $
 
 srcdir=	@srcdir@/..
 CC=	@CC@
@@ -86,7 +86,7 @@ transform=@program_transform_name@
 install: all install_common
 	@echo "Installing vi, ex, view: $(bindir) ..."
 	[ -d $(bindir) ] || \
-	    $(mkdir) $(bindir) && $(chmod) $(dmode) $(bindir)
+	    ($(mkdir) $(bindir) && $(chmod) $(dmode) $(bindir))
 	cd $(bindir) && $(rm) -f `echo vi | sed '$(transform)'`
 	$(cp) nvi $(bindir)/`echo vi | sed '$(transform)'`
 	cd $(bindir) && [ -f $(strip) ] && \
@@ -99,9 +99,9 @@ install: all install_common
 	cd $(bindir) && $(ln) \
 		`echo vi | sed '$(transform)'` `echo view | sed '$(transform)'`
 	[ -d $(mandir) ] || \
-	    $(mkdir) $(mandir) && $(chmod) $(dmode) $(mandir)
+	    ($(mkdir) $(mandir) && $(chmod) $(dmode) $(mandir))
 	[ -d $(mandir)/cat1 ] || \
-	    $(mkdir) $(mandir)/cat1 && $(chmod) $(dmode) $(mandir)/cat1
+	    ($(mkdir) $(mandir)/cat1 && $(chmod) $(dmode) $(mandir)/cat1)
 	@echo "Installing man pages: $(mandir) ..."
 	cd $(mandir)/cat1 && $(rm) -f `echo vi.0 | sed '$(transform)'`
 	$(cp) $(srcdir)/docs/USD.doc/vi.man/vi.0 \
@@ -114,7 +114,7 @@ install: all install_common
 	cd $(mandir)/cat1 && $(ln) \
 	    `echo vi.0 | sed '$(transform)'` `echo view.0 | sed '$(transform)'`
 	[ -d $(mandir)/man1 ] || \
-	    $(mkdir) $(mandir)/man1 && $(chmod) $(dmode) $(mandir)/man1
+	    ($(mkdir) $(mandir)/man1 && $(chmod) $(dmode) $(mandir)/man1)
 	cd $(mandir)/man1 && $(rm) -f `echo vi.1 | sed '$(transform)'`
 	$(cp) $(srcdir)/docs/USD.doc/vi.man/vi.1 \
 	    $(mandir)/man1/`echo vi.1 | sed '$(transform)'`
@@ -134,11 +134,11 @@ install_common:
 	[ -f $(mkdir) ]
 	[ -f $(rm) ]
 	[ -d $(prefix) ] || \
-	    $(mkdir) $(prefix) && $(chmod) $(dmode) $(prefix)
+	    ($(mkdir) $(prefix) && $(chmod) $(dmode) $(prefix))
 	[ -d $(exec_prefix) ] || \
-	    $(mkdir) $(exec_prefix) && $(chmod) $(dmode) $(exec_prefix)
+	    ($(mkdir) $(exec_prefix) && $(chmod) $(dmode) $(exec_prefix))
 	[ -d $(datadir) ] || \
-	    $(mkdir) $(datadir) && $(chmod) $(dmode) $(datadir)
+	    ($(mkdir) $(datadir) && $(chmod) $(dmode) $(datadir))
 	$(rm) -rf $(datadir)/vi
 	$(mkdir) $(datadir)/vi && $(chmod) $(dmode) $(datadir)/vi
 	@echo "Installing message catalogs: $(datadir)/vi/catalog ..."
