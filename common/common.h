@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 5.32 1993/01/11 18:50:21 bostic Exp $ (Berkeley) $Date: 1993/01/11 18:50:21 $
+ *	$Id: common.h,v 5.33 1993/02/11 12:34:37 bostic Exp $ (Berkeley) $Date: 1993/02/11 12:34:37 $
  */
 
 #include <db.h>
@@ -22,19 +22,25 @@
  *	typedef unsigned char	CINPUT	(input, command character)
  */
 #define	UATOI(a)		atoi((char *)(a))
-#define	URINDEX(a, b)		(u_char *)rindex((char *)(a), b)
 #define	USTRCMP(a, b)		strcmp((char *)(a), (char *)(b))
 #define	USTRDUP(a)		(u_char *)strdup((char *)(a))
 #define	USTRLEN(a)		strlen((char *)(a))
-#define	USTRSEP(a, b)		(u_char *)strsep((char **)(a), b)
 #define	USTRNCMP(a, b, n)	strncmp((char *)(a), (char *)(b), n)
 #define	USTRPBRK(a, b)		(u_char *)strpbrk((char *)(a), (char *)(b))
+#define	USTRRCHR(a, b)		(u_char *)strrchr((char *)(a), b)
+#define	USTRSEP(a, b)		(u_char *)strsep((char **)(a), b)
 #define	USTRTOL(a, b, c)	strtol((char *)(a), (char **)(b), c)
 
 /* Confirmation stuff. */
 #define	CONFIRMCHAR	'y'		/* Make change character. */
 #define	QUITCHAR	'q'		/* Quit character. */
 enum confirmation { YES, NO, QUIT };
+
+#ifndef DEFFILEMODE			/* Default file permissions. */
+#define	DEFFILEMODE	(S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)
+#endif
+
+typedef void (*sig_ret_t) __P((int));	/* Type of signal function. */
 
 /* Buffer allocation. */
 #define	BINC(lp, llen, nlen) {						\
