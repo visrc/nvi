@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: log.c,v 8.12 1994/03/08 19:38:02 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:38:02 $";
+static char sccsid[] = "$Id: log.c,v 8.13 1994/03/11 08:25:26 bostic Exp $ (Berkeley) $Date: 1994/03/11 08:25:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -169,11 +169,9 @@ log_cursor1(sp, ep, type)
 	int type;
 {
 	DBT data, key;
-	MARK lm;
 
 	BINC_RET(sp, ep->l_lp, ep->l_len, sizeof(u_char) + sizeof(MARK));
 	ep->l_lp[0] = type;
-	lm.lno = 
 	memmove(ep->l_lp + sizeof(u_char), &ep->l_cursor, sizeof(MARK));
 
 	key.data = &ep->l_cur;
