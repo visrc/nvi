@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 5.27 1993/02/24 12:55:06 bostic Exp $ (Berkeley) $Date: 1993/02/24 12:55:06 $";
+static char sccsid[] = "$Id: ex_edit.c,v 5.28 1993/02/25 17:46:32 bostic Exp $ (Berkeley) $Date: 1993/02/25 17:46:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -50,7 +50,8 @@ ex_visual(ep, cmdp)
 	if (edit(ep, cmdp, VISUAL))
 		return (1);
 
-	mode = MODE_VI;
+	FF_CLR(ep, F_MODE_EX);
+	FF_SET(ep, F_MODE_VI);
 	return (0);
 }
 
@@ -83,12 +84,11 @@ edit(ep, cmdp, cmd)
 		abort();
 	}
 
-	/* Switch files. */
 	MODIFY_CHECK(ep, cmdp->flags & E_FORCE);
-	if (file_stop(ep, cmdp->flags & E_FORCE))
-		return (1);
-	if (file_start(new_ep))
-		PANIC;
+
+	/* Switch files. */
+	FF_SET(ep, cmdp->flags & E_FORCE ? F_SWITCH_FORCE : F_SWITCH);
+	ep->enext = new_ep;
 
 	/*
 	 * Historic practice is that ex always starts at the end of the file
@@ -96,7 +96,7 @@ edit(ep, cmdp, cmd)
 	 * we're going to a file we've edited before.
 	 */
 	if (!reset)
-		if (cmdp->plus || cmd == VISUAL || mode == MODE_VI)
+		if (cmdp->plus || cmd == VISUAL || FF_ISSET(ep, F_MODE_VI))
 			SCRLNO(new_ep) = 1;
 		else {
 			SCRLNO(new_ep) = file_lline(new_ep);
@@ -105,9 +105,5 @@ edit(ep, cmdp, cmd)
 		}
 	if (cmdp->plus)
 		(void)ex_cstring(ep, cmdp->plus, USTRLEN(cmdp->plus), 1);
-		/*
-		 * XXX
-		 * THE UNDERLYING EXF MAY HAVE CHANGED (but we don't care).
-		 */
 	return (0);
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_quit.c,v 5.12 1993/02/21 18:49:01 bostic Exp $ (Berkeley) $Date: 1993/02/21 18:49:01 $";
+static char sccsid[] = "$Id: ex_quit.c,v 5.13 1993/02/25 17:46:54 bostic Exp $ (Berkeley) $Date: 1993/02/25 17:46:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,9 +38,7 @@ ex_quit(ep, cmdp)
 		return (1);
 	}
 
-	if (file_stop(ep, force))
-		return (1);
-	mode = MODE_QUIT;
+	FF_SET(ep, force ? F_EXIT_FORCE : F_EXIT);
 	return (0);
 }
 
@@ -62,9 +60,7 @@ ex_wq(ep, cmdp)
 		return (1);
 	}
 
-	if (file_stop(ep, force))
-		return (1);
-	mode = MODE_QUIT;
+	FF_SET(ep, force ? F_EXIT_FORCE : F_EXIT);
 	return (0);
 }
 
@@ -79,8 +75,6 @@ ex_xit(ep, cmdp)
 
 	MODIFY_CHECK(ep, force);
 
-	if (file_stop(ep, force))
-		return (1);
-	mode = MODE_QUIT;
+	FF_SET(ep, force ? F_EXIT_FORCE : F_EXIT);
 	return (0);
 }
