@@ -1,8 +1,8 @@
 #! /bin/sh
-# $Id: distrib,v 8.3 1996/05/16 08:09:17 bostic Exp $ (Berkeley) $Date: 1996/05/16 08:09:17 $
+# $Id: distrib,v 8.4 1996/05/19 12:20:10 bostic Exp $ (Berkeley) $Date: 1996/05/19 12:20:10 $
 
 # Clean
-make -f Makefile.in distclean
+make -f Makefile.in clean
 rm -f configure config.h.in
 
 # Build autoconf structure.
