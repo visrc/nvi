@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_vi.c,v 8.39 2001/06/25 15:19:28 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:28 $";
+static const char sccsid[] = "$Id: m_vi.c,v 8.40 2001/06/28 17:53:39 skimo Exp $ (Berkeley) $Date: 2001/06/28 17:53:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -183,7 +183,7 @@ void	select_extend();
 void	select_paste();
 void	key_press();
 void	insert_string();
-void	beep(void);
+void	beep __P((Widget w));
 void	find();
 void	command();
 
