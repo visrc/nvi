@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.53 1993/04/12 14:23:41 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:23:41 $";
+static char sccsid[] = "$Id: exf.c,v 5.54 1993/04/17 11:44:18 bostic Exp $ (Berkeley) $Date: 1993/04/17 11:44:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -70,7 +70,7 @@ file_get(sp, ep, name, append)
 			HDR_INSERT(tep, ep, next, prev, EXF);
 		}
 
-		/* Ignore all files added after the argument list. */
+		/* Ignore all files, by default. */
 		F_SET(tep, F_IGNORE);
 	}
 
@@ -121,9 +121,14 @@ file_set(sp, argc, argv)
 	int argc;
 	char *argv[];
 {
-	for (; *argv; ++argv)
-		if (file_get(sp, (EXF *)&sp->gp->exfhdr, *argv, 1))
+	EXF *ep;
+
+	for (; *argv; ++argv) {
+		if ((ep =
+		    file_get(sp, (EXF *)&sp->gp->exfhdr, *argv, 1)) == NULL)
 			return (1);
+		F_CLR(ep, F_IGNORE);
+	}
 	return (0);
 }
 
@@ -214,8 +219,6 @@ file_start(sp, ep)
 	}
 
 	if (ep->refcnt == 0) {
-		F_SET(ep, F_NEWSESSION);
-
 		/* Flush the line caches. */
 		ep->c_lno = ep->c_nlines = OOBLNO;
 
@@ -350,8 +353,7 @@ file_def(ep)
 {
 	memset(ep, 0, sizeof(EXF));
 
-	ep->start_lno = 1;
-	ep->start_cno = 0;
 	ep->c_lno = OOBLNO;
 	ep->l_ltype = LOG_NOTYPE;
+	F_SET(ep, F_NOSETPOS);
 }
