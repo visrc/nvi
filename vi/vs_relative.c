@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_relative.c,v 8.1 1993/06/09 22:25:28 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:25:28 $";
+static char sccsid[] = "$Id: vs_relative.c,v 8.2 1993/09/01 12:23:45 bostic Exp $ (Berkeley) $Date: 1993/09/01 12:23:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,6 +35,7 @@ svi_relative(sp, ep, lno)
 
 	/* First non-blank character. */
 	if (sp->rcmflags == RCM_FNB) {
+		cno = 0;
 		(void)nonblank(sp, ep, lno, &cno);
 		return (cno);
 	}
