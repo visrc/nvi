@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_paragraph.c,v 5.15 1993/05/08 12:37:54 bostic Exp $ (Berkeley) $Date: 1993/05/08 12:37:54 $";
+static char sccsid[] = "$Id: v_paragraph.c,v 5.16 1993/05/08 16:10:50 bostic Exp $ (Berkeley) $Date: 1993/05/08 16:10:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,7 +22,6 @@ static char sccsid[] = "$Id: v_paragraph.c,v 5.15 1993/05/08 12:37:54 bostic Exp
  * Paragraphs are empty lines after text or values from the paragraph or
  * section options.
  */
-static char *makelist __P((SCR *));
 
 /*
  * v_paragraphf -- [count]}
@@ -38,11 +37,7 @@ v_paragraphf(sp, ep, vp, fm, tm, rp)
 	enum { P_INTEXT, P_INBLANK } pstate;
 	size_t len;
 	recno_t cnt, lno;
-	char *p, *list, *lp;
-
-	/* Get macro list. */
-	if ((list = makelist(sp)) == NULL)
-		return (1);
+	char *p, *lp;
 
 	/* Figure out what state we're currently in. */
 	lno = fm->lno;
@@ -68,7 +63,7 @@ v_paragraphf(sp, ep, vp, fm, tm, rp)
 		switch (pstate) {
 		case P_INTEXT:
 			if (p[0] == '.' && len >= 2)
-				for (lp = list; *lp; lp += 2)
+				for (lp = sp->paragraph; *lp; lp += 2)
 					if (lp[0] == p[1] &&
 					    (lp[1] == ' ' || lp[1] == p[2]) &&
 					    !--cnt)
@@ -84,7 +79,6 @@ v_paragraphf(sp, ep, vp, fm, tm, rp)
 				if (!--cnt) {
 found:					rp->lno = lno;
 					rp->cno = 0;
-					free(list);
 					return (0);
 				}
 				pstate = P_INTEXT;
@@ -94,13 +88,12 @@ found:					rp->lno = lno;
 			abort();
 		}
 	}
-eof:	free(list);
 
 	/*
 	 * EOF is a movement sink, however, the } command historically
 	 * moved to the end of the last line if repeatedly invoked.
 	 */
-	if (fm->lno != lno - 1) {
+eof:	if (fm->lno != lno - 1) {
 		rp->lno = lno - 1;
 		rp->cno = len ? len - 1 : 0;
 		return (0);
@@ -130,11 +123,7 @@ v_paragraphb(sp, ep, vp, fm, tm, rp)
 	enum { P_INTEXT, P_INBLANK } pstate;
 	size_t len;
 	recno_t cnt, lno;
-	char *p, *list, *lp;
-
-	/* Get macro list. */
-	if ((list = makelist(sp)) == NULL)
-		return (1);
+	char *p, *lp;
 
 	/*
 	 * The { command historically moved to the beginning of the first
@@ -176,7 +165,7 @@ v_paragraphb(sp, ep, vp, fm, tm, rp)
 		switch (pstate) {
 		case P_INTEXT:
 			if (p[0] == '.' && len >= 2)
-				for (lp = list; *lp; lp += 2)
+				for (lp = sp->paragraph; *lp; lp += 2)
 					if (lp[0] == p[1] &&
 					    (lp[1] == ' ' || lp[1] == p[2]) &&
 					    !--cnt)
@@ -192,7 +181,6 @@ v_paragraphb(sp, ep, vp, fm, tm, rp)
 				if (!--cnt) {
 found:					rp->lno = lno;
 					rp->cno = 0;
-					free(list);
 					return (0);
 				}
 				pstate = P_INTEXT;
@@ -202,39 +190,9 @@ found:					rp->lno = lno;
 			abort();
 		}
 	}
-sof:	free(list);
 
 	/* SOF is a movement sink. */
-	rp->lno = 1;
+sof:	rp->lno = 1;
 	rp->cno = 0;
 	return (0);
-}
-
-static char *
-makelist(sp)
-	SCR *sp;
-{
-	size_t s1, s2;
-	char *list;
-
-	/* Search for either a paragraph or section option macro. */
-	s1 = strlen(O_STR(sp, O_PARAGRAPHS));
-	if (s1 & 1) {
-		msgq(sp, M_ERR,
-		    "Paragraph options must be in groups of two characters.");
-		return (NULL);
-	}
-	s2 = strlen(O_STR(sp, O_SECTIONS));
-	if (s2 & 1) {
-		msgq(sp, M_ERR,
-		    "Section options must be in groups of two characters.");
-		return (NULL);
-	}
-	if ((list = malloc(s1 + s2 + 1)) == NULL) {
-		msgq(sp, M_ERR, "%s", strerror(errno));
-		return (NULL);
-	}
-	memmove(list, O_STR(sp, O_PARAGRAPHS), s1);
-	memmove(list + s1, O_STR(sp, O_SECTIONS), s2 + 1);
-	return (list);
 }
