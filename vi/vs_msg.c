@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_msg.c,v 10.64 1996/05/02 09:42:56 bostic Exp $ (Berkeley) $Date: 1996/05/02 09:42:56 $";
+static const char sccsid[] = "$Id: vs_msg.c,v 10.65 1996/05/15 18:32:09 bostic Exp $ (Berkeley) $Date: 1996/05/15 18:32:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -553,6 +553,10 @@ vs_ex_resolve(sp, continuep)
 	F_SET(vip, VIP_CUR_INVALID);
 
 	/*
+	 * If we switched out of the vi screen into ex, switch back while we
+	 * figure out what to do with the screen and potentially get another
+	 * command to execute.
+	 *
 	 * If we didn't switch into ex and only 0 or 1 lines of output, we may
 	 * be able to continue w/o making the user wait.  First, if no lines of
 	 * output, we can simply return, leaving the line modifications report
@@ -566,20 +570,22 @@ vs_ex_resolve(sp, continuep)
 	 * commands will have cumulative line modification reports.  That seems
 	 * right (well, at least not wrong) to me.
 	 */
-	if (!F_ISSET(sp, SC_SCR_EXWROTE) && vip->totalcount < 2) {
-		if (vip->totalcount == 0)
-			return (0);
-		msgq_rpt(sp);
-		if (vip->totalcount < 2)
-			return (0);
+	if (F_ISSET(sp, SC_SCR_EXWROTE)) {
+		if (sp->gp->scr_screen(sp, SC_VI))
+			return (1);
+	} else {
+		if (vip->totalcount < 2) {
+			if (vip->totalcount == 0) {
+				F_CLR(sp, SC_EX_DONTWAIT);
+				return (0);
+			}
+			msgq_rpt(sp);
+			if (vip->totalcount < 2) {
+				F_CLR(sp, SC_EX_DONTWAIT);
+				return (0);
+			}
+		}
 	}
-
-	/*
-	 * If we switched out of the vi screen, switch back while figuring what
-	 * to do with the screen and potentially get another command to execute.
-	 */
-	if (F_ISSET(sp, SC_SCR_EXWROTE) && sp->gp->scr_screen(sp, SC_VI))
-		return (1);
 
 	/*
 	 * Wait, unless explicitly told not to wait or the user interrupted
