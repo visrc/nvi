@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.28 1996/03/06 20:57:44 bostic Exp $ (Berkeley) $Date: 1996/03/06 20:57:44 $
+#	$Id: Makefile.in,v 8.29 1996/03/11 09:24:25 bostic Exp $ (Berkeley) $Date: 1996/03/11 09:24:25 $
 
 CC=	@CC@
 CFLAGS=	-c @CFLAGS@ -I. -I../include @CPPFLAGS@
@@ -53,14 +53,14 @@ tknvi: $(TKALL)
 	$(CC) $(LDFLAGS) -o $@ $(TKALL) @TKLIBS@
 
 clean:
-	rm -f nex nvi tknvi @LIBOBJS@
+	rm -f nex nvi tknvi perl.o tcl.o @LIBOBJS@
 	rm -f $(COBJS) $(CLOBJS) $(DBOBJS) $(REOBJS)
 	rm -f $(TKOBJS) $(VIOBJS)
 
 hdrs: $(HDRS)
 
 distclean: clean
-	rm -f Makefile port.h
+	rm -f Makefile pathnames.h port.h
 	rm -f curses_include_path curses_library_path
 	rm -f config.cache config.h config.log config.status
 
