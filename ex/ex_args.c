@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 9.9 1995/02/09 18:21:01 bostic Exp $ (Berkeley) $Date: 1995/02/09 18:21:01 $";
+static char sccsid[] = "$Id: ex_args.c,v 9.10 1995/02/15 17:38:27 bostic Exp $ (Berkeley) $Date: 1995/02/15 17:38:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -186,13 +186,20 @@ ex_prev(sp, cmdp)
 {
 	FREF *frp;
 
-	if (file_m1(sp, F_ISSET(cmdp, E_FORCE), FS_ALL | FS_POSSIBLE))
-		return (1);
-
 	if (sp->cargv == sp->argv) {
 		msgq(sp, M_ERR, "121|No previous files to edit");
 		return (1);
 	}
+
+	if (F_ISSET(cmdp, E_NEWSCREEN)) {
+		if (argv_exp0(sp, cmdp, sp->cargv[-1], strlen(sp->cargv[-1])))
+			return (1);
+		return (ex_edit(sp, cmdp));
+	}
+
+	if (file_m1(sp, F_ISSET(cmdp, E_FORCE), FS_ALL | FS_POSSIBLE))
+		return (1);
+
 	if ((frp = file_add(sp, sp->cargv[-1])) == NULL)
 		return (1);
 

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 9.39 1995/02/14 14:38:14 bostic Exp $ (Berkeley) $Date: 1995/02/14 14:38:14 $";
+static char sccsid[] = "$Id: ex.c,v 9.40 1995/02/15 17:38:44 bostic Exp $ (Berkeley) $Date: 1995/02/15 17:38:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -447,17 +447,10 @@ done:		if (bp != NULL)
 		 * up to a l, p, +, - or # character can break this code.
 		 *
 		 * !!!
-		 * Historic vi permitted a capital 'P' at the beginning of
-		 * any command that started with 'p'.  Probably wanted the
-		 * P command for backward compatibility, and the code just
-		 * made Preserve and Put work by accident.
-		 *
-		 * !!!
-		 * Capital letters beginning the command names ex, edit, tag
-		 * and visual (in vi mode) indicate the command should happen
-		 * in a new screen.
+		 * Capital letters beginning the command names ex, edit,
+		 * next, previous, tag and visual (in vi mode) indicate the
+		 * command should happen in a new screen.
 		 */
-		tmp = 0;
 		switch (p[0]) {
 		case 'd':
 			for (s = p,
@@ -473,13 +466,9 @@ done:		if (bp != NULL)
 				goto skip_srch;
 			}
 			break;
-		case 'E': case 'N': case 'T': case 'V':
+		case 'E': case 'N': case 'P': case 'T': case 'V':
 			F_SET(&exc, E_NEWSCREEN);
 			p[0] = tolower(p[0]);
-			break;
-		case 'P':
-			tmp = 1;
-			p[0] = 'p';
 			break;
 		}
 
@@ -526,7 +515,7 @@ done:		if (bp != NULL)
 				}
 				/* FALLTHROUGH */
 				default:
-unknown:			if (F_ISSET(&exc, E_NEWSCREEN) || tmp)
+unknown:			if (F_ISSET(&exc, E_NEWSCREEN))
 					p[0] = toupper(p[0]);
 				ex_unknown(sp, p, namelen);
 				goto err;
@@ -540,6 +529,18 @@ unknown:			if (F_ISSET(&exc, E_NEWSCREEN) || tmp)
 		 */
 skip_srch:	if (cp == &cmds[C_VISUAL_EX] && F_ISSET(sp, S_VI))
 			cp = &cmds[C_VISUAL_VI];
+
+		/*
+		 * !!!
+		 * Historic vi permitted a capital 'P' at the beginning of
+		 * any command that started with 'p'.  Probably wanted the
+		 * P command for backward compatibility, and the code just
+		 * made Preserve and Put work by accident.  We want Previous
+		 * to mean previous-in-a-new-screen, so be careful.
+		 */
+		if (F_ISSET(&exc, E_NEWSCREEN) && !F_ISSET(cp, E_NEWSCREEN) &&
+		    (cp == &cmds[C_PRINT] || cp == &cmds[C_PRESERVE]))
+			F_CLR(&exc, E_NEWSCREEN);
 
 		/* Test for a newscreen associated with this command. */
 		if (F_ISSET(&exc, E_NEWSCREEN) && !F_ISSET(cp, E_NEWSCREEN))

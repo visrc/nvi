@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 9.9 1995/02/14 14:38:21 bostic Exp $ (Berkeley) $Date: 1995/02/14 14:38:21 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 9.10 1995/02/15 17:37:39 bostic Exp $ (Berkeley) $Date: 1995/02/15 17:37:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -261,7 +261,7 @@ EXCMDLIST const cmds[] = {
 	    "pre[serve]",
 	    "preserve an edit session for recovery"},
 /* C_PREVIOUS */
-	{"previous",	ex_prev,	0,
+	{"previous",	ex_prev,	E_NEWSCREEN,
 	    "!",
 	    "prev[ious][!]",
 	    "edit the previous file in the file argument list"},
