@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 10.3 1995/06/08 18:53:25 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:53:25 $
+ *	$Id: ex.h,v 10.4 1995/06/23 19:24:42 bostic Exp $ (Berkeley) $Date: 1995/06/23 19:24:42 $
  */
 
 #define	PROMPTCHAR	':'		/* Prompt character. */
@@ -56,8 +56,31 @@ extern EXCMDLIST const cmds[];		/* Table of ex commands. */
  */
 #define	NEEDFILE(sp, cmdp) {						\
 	if ((sp)->ep == NULL) {						\
-		ex_message(sp, (cmdp)->name, EXM_NORC);			\
+		ex_message(sp, (cmdp)->cmd->name, EXM_NOFILEYET);	\
 		return (1);						\
+	}								\
+}
+
+/*
+ * There are two cases where we test to see if we need to be in ex canonical
+ * mode.  The first is when leaving ex/vi, e.g. the :shell command.  In this
+ * case the force flag is set, since it doesn't matter if we're in ex or vi
+ * when the command fires.  The second is when we're in ex and we're going to
+ * print something to the screen.  In this case, the force flag won't be set.
+ * Flush any waiting messages and enter ex canonical mode.  This will fail if
+ * we're running as a text widget.  Must be checked for each command -- any
+ * ex command may be entered at any time.
+ */
+#define	ENTERCANONICAL(sp, cmdp, force) {				\
+	if (!F_ISSET(sp, S_EX_CANON) && (F_ISSET(sp, S_EX) || force)) {	\
+		GS *__gp = (sp)->gp;					\
+		(void)ex_fflush(sp);					\
+		if (F_ISSET(sp, S_VI))					\
+			(void)vs_msgflush(sp, 1, NULL, NULL);		\
+		if (__gp->scr_canon(sp, 1)) {				\
+			ex_message(sp, (cmdp)->cmd->name, EXM_NOCANON);	\
+			return (1);					\
+		}							\
 	}								\
 }
 
@@ -219,9 +242,10 @@ enum filtertype { FILTER, FILTER_READ, FILTER_WRITE };
 typedef enum {
 	EXM_EMPTYBUF,			/* Empty buffer. */
 	EXM_INTERRUPT,			/* Interrupted. */
+	EXM_NOCANON,			/* No standard output. */
+	EXM_NOFILEYET,			/* Illegal until a file read in. */
 	EXM_NOPREVBUF,			/* No previous buffer specified. */
 	EXM_NOPREVRE,			/* No previous RE specified. */
-	EXM_NORC,			/* Illegal until a file read in. */
 	EXM_USAGE,			/* Standard usage message. */
 } exm_t;
 

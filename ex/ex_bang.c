@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 10.3 1995/06/08 18:53:34 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:53:34 $";
+static char sccsid[] = "$Id: ex_bang.c,v 10.4 1995/06/23 19:25:24 bostic Exp $ (Berkeley) $Date: 1995/06/23 19:25:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -63,7 +63,7 @@ ex_bang(sp, cmdp)
 	int rval;
 	char *bp, *msg;
 
-	NEEDFILE(sp, cmdp->cmd);
+	NEEDFILE(sp, cmdp);
 
 	ap = cmdp->argv[0];
 	if (ap->len == 0) {
@@ -89,6 +89,7 @@ ex_bang(sp, cmdp)
 	bp = NULL;
 	if (F_ISSET(cmdp, E_MODIFY) && !F_ISSET(sp, S_EX_SILENT)) {
 		if (F_ISSET(sp, S_EX)) {
+			ENTERCANONICAL(sp, cmdp, 0);
 			(void)ex_printf(sp, "!%s\n", ap->bp);
 			(void)ex_fflush(sp);
 		}
@@ -132,7 +133,8 @@ ex_bang(sp, cmdp)
 		 */
 		if (bp != NULL) {
 			bp[ap->len + 1] = '\0';
-			(void)sp->gp->scr_busy(sp, bp, 1);
+			if (sp->gp->scr_busy != NULL)
+				(void)sp->gp->scr_busy(sp, bp, 1);
 		}
 
 		/*
@@ -153,7 +155,7 @@ ex_bang(sp, cmdp)
 				ftype = FILTER_READ;
 			}
 		}
-		rval = filtercmd(sp,
+		rval = filtercmd(sp, cmdp,
 		    &cmdp->addr1, &cmdp->addr2, &rm, ap->bp, ftype);
 
 		/*
@@ -193,7 +195,7 @@ ex_bang(sp, cmdp)
 			msg = "File modified since last write.\n";
 
 	/* Run the command. */
-	rval = ex_exec_proc(sp, ap->bp, bp, msg);
+	rval = ex_exec_proc(sp, cmdp, ap->bp, bp, msg);
 
 	/* Vi requires user permission to continue. */
 	if (F_ISSET(sp, S_VI))

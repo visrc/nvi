@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 10.4 1995/06/09 12:51:37 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:51:37 $";
+static char sccsid[] = "$Id: ex_global.c,v 10.5 1995/06/23 19:25:17 bostic Exp $ (Berkeley) $Date: 1995/06/23 19:25:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -86,7 +86,7 @@ ex_g_setup(sp, cmdp, cmd)
 	int cnt, delim, eval, reflags, replaced;
 	char *ptrn, *p, *t;
 
-	NEEDFILE(sp, cmdp->cmd);
+	NEEDFILE(sp, cmdp);
 
 	if (F_ISSET(sp, S_EX_GLOBAL)) {
 		msgq(sp, M_ERR,
