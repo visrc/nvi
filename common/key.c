@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: key.c,v 10.37 1996/12/05 12:29:18 bostic Exp $ (Berkeley) $Date: 1996/12/05 12:29:18 $";
+static const char sccsid[] = "$Id: key.c,v 10.38 1996/12/05 22:01:15 bostic Exp $ (Berkeley) $Date: 1996/12/05 22:01:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -782,7 +782,7 @@ v_event_err(sp, evp)
 		msgq(sp, M_ERR, "279|Unexpected interrupt event");
 		break;
 	case E_IPCOMMAND:
-		msgq(sp, M_ERR, "318|Unexpected screen command");
+		msgq(sp, M_ERR, "318|Unexpected command or input");
 		break;
 	case E_REPAINT:
 		msgq(sp, M_ERR, "281|Unexpected repaint event");
