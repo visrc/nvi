@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_screen.c,v 10.46 1996/06/17 10:34:46 bostic Exp $ (Berkeley) $Date: 1996/06/17 10:34:46 $";
+static const char sccsid[] = "$Id: cl_screen.c,v 10.47 1996/07/30 08:17:40 bostic Exp $ (Berkeley) $Date: 1996/07/30 08:17:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -234,9 +234,10 @@ cl_vi_init(sp)
 	 * never have more than one SCREEN at a time.
 	 *
 	 * XXX
-	 * The SunOS initscr() isn't reentrant.  Don't even think about using
-	 * it.  It fails in subtle ways (e.g. select(2) on fileno(stdin) stops
-	 * working).
+	 * The SunOS initscr() can't be called twice.  Don't even think about
+	 * using it.  It fails in subtle ways (e.g. select(2) on fileno(stdin)
+	 * stops working).  (The SVID notes that applications should only call
+	 * initscr() once.)
 	 *
 	 * XXX
 	 * The HP/UX newterm doesn't support the NULL first argument, so we
