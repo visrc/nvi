@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 10.6 1995/09/21 10:59:11 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:59:11 $";
+static char sccsid[] = "$Id: v_search.c,v 10.7 1995/09/21 12:08:38 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:08:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -23,11 +23,7 @@ static char sccsid[] = "$Id: v_search.c,v 10.6 1995/09/21 10:59:11 bostic Exp $ 
 #include <stdlib.h>
 #include <string.h>
 
-#include "compat.h"
-#include <db.h>
-#include <regex.h>
-
-#include "common.h"
+#include "../common/common.h"
 #include "vi.h"
 
 static int v_exaddr __P((SCR *, VICMD *, dir_t));

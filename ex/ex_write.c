@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 10.5 1995/09/21 10:58:11 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:58:11 $";
+static char sccsid[] = "$Id: ex_write.c,v 10.6 1995/09/21 12:07:46 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:07:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,11 +26,7 @@ static char sccsid[] = "$Id: ex_write.c,v 10.5 1995/09/21 10:58:11 bostic Exp $ 
 #include <string.h>
 #include <unistd.h>
 
-#include "compat.h"
-#include <db.h>
-#include <regex.h>
-
-#include "common.h"
+#include "../common/common.h"
 
 enum which {WN, WQ, WRITE, XIT};
 static int exwr __P((SCR *, EXCMD *, enum which));

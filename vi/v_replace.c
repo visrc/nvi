@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_replace.c,v 10.5 1995/09/21 10:59:07 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:59:07 $";
+static char sccsid[] = "$Id: v_replace.c,v 10.6 1995/09/21 12:08:32 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:08:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -23,11 +23,7 @@ static char sccsid[] = "$Id: v_replace.c,v 10.5 1995/09/21 10:59:07 bostic Exp $
 #include <stdlib.h>
 #include <string.h>
 
-#include "compat.h"
-#include <db.h>
-#include <regex.h>
-
-#include "common.h"
+#include "../common/common.h"
 #include "vi.h"
 
 /*

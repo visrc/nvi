@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 10.7 1995/09/21 10:59:30 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:59:30 $";
+static char sccsid[] = "$Id: vi.c,v 10.8 1995/09/21 12:08:56 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:08:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -24,11 +24,7 @@ static char sccsid[] = "$Id: vi.c,v 10.7 1995/09/21 10:59:30 bostic Exp $ (Berke
 #include <string.h>
 #include <unistd.h>
 
-#include "compat.h"
-#include <db.h>
-#include <regex.h>
-
-#include "common.h"
+#include "../common/common.h"
 #include "vi.h"
 
 static VIKEYS const
@@ -72,7 +68,7 @@ vi(spp)
 	VICMD cmd, *vp;
 	VI_PRIVATE *vip;
 	u_int flags;
-	int comcount, mapped;
+	int comcount, mapped, rval;
 
 	/* Get the first screen. */
 	sp = *spp;
@@ -711,7 +707,7 @@ v_motion(sp, dm, vp, mappedp)
 	VICMD motion;
 	size_t len;
 	u_long cnt;
-	int tilde_reset, notused, rval;
+	int tilde_reset, notused;
 
 	/*
 	 * If '.' command, use the dot motion, else get the motion command.

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 10.12 1995/09/21 10:57:22 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:57:22 $";
+static char sccsid[] = "$Id: ex_append.c,v 10.13 1995/09/21 12:06:55 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:06:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,11 +21,7 @@ static char sccsid[] = "$Id: ex_append.c,v 10.12 1995/09/21 10:57:22 bostic Exp 
 #include <string.h>
 #include <unistd.h>
 
-#include "compat.h"
-#include <db.h>
-#include <regex.h>
-
-#include "common.h"
+#include "../common/common.h"
 
 enum which {APPEND, CHANGE, INSERT};
 

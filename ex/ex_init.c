@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_init.c,v 10.5 1995/09/21 10:57:41 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:57:41 $";
+static char sccsid[] = "$Id: ex_init.c,v 10.6 1995/09/21 12:07:15 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:07:15 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -24,13 +24,9 @@ static char sccsid[] = "$Id: ex_init.c,v 10.5 1995/09/21 10:57:41 bostic Exp $ (
 #include <string.h>
 #include <unistd.h>
 
-#include "compat.h"
-#include <db.h>
-#include <regex.h>
-
-#include "common.h"
+#include "../common/common.h"
+#include "../common/pathnames.h"
 #include "tag.h"
-#include "pathnames.h"
 
 enum rc { NOEXIST, NOPERM, RCOK };
 static enum rc	exrc_isok __P((SCR *, struct stat *, char *, int, int));

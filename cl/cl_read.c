@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_read.c,v 10.2 1995/09/21 10:54:40 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:54:40 $";
+static char sccsid[] = "$Id: cl_read.c,v 10.3 1995/09/21 12:05:32 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:05:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,14 +26,10 @@ static char sccsid[] = "$Id: cl_read.c,v 10.2 1995/09/21 10:54:40 bostic Exp $ (
 #include <termios.h>
 #include <unistd.h>
 
-#include "compat.h"
-#include <db.h>
-#include <regex.h>
-#include <pathnames.h>
-
-#include "common.h"
-#include "cl.h"
+#include "../common/common.h"
+#include "../common/pathnames.h"
 #include "../ex/script.h"
+#include "cl.h"
 
 static input_t cl_read __P((SCR *,
     int, CHAR_T *, size_t, int *, struct timeval *));

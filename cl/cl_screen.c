@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_screen.c,v 10.12 1995/09/21 10:54:37 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:54:37 $";
+static char sccsid[] = "$Id: cl_screen.c,v 10.13 1995/09/21 12:05:29 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:05:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,11 +26,7 @@ static char sccsid[] = "$Id: cl_screen.c,v 10.12 1995/09/21 10:54:37 bostic Exp 
 #include <termios.h>
 #include <unistd.h>
 
-#include "compat.h"
-#include <db.h>
-#include <regex.h>
-
-#include "common.h"
+#include "../common/common.h"
 #include "cl.h"
 
 static int cl_ex_end __P((GS *));
@@ -50,10 +46,10 @@ cl_screen(sp, flags)
 	u_int32_t flags;
 {
 	CL_PRIVATE *clp;
-	int newline;
+	int nl;
 
 	clp = CLP(sp);
-	newline = 0;
+	nl = 0;
 
 	/* See if we're already in the right mode. */
 	if (LF_ISSET(S_EX) && F_ISSET(clp, CL_SCR_EX) ||
@@ -88,7 +84,7 @@ cl_screen(sp, flags)
 	if (F_ISSET(clp, CL_SCR_VI)) {
 		(void)move(O_VAL(sp, O_LINES) - 1, 0);
 		(void)refresh();
-		newline = 1;
+		nl = 1;
 
 		F_CLR(sp, S_VI);
 		F_CLR(clp, CL_SCR_VI);
@@ -101,7 +97,7 @@ cl_screen(sp, flags)
 			return (1);
 		F_SET(sp, S_EX);
 
-		if (newline)
+		if (nl)
 			(void)write(STDOUT_FILENO, "\n", 1);
 	} else {
 		if (cl_vi_init(sp))

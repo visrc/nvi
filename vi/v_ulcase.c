@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ulcase.c,v 10.3 1995/09/21 10:59:21 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:59:21 $";
+static char sccsid[] = "$Id: v_ulcase.c,v 10.4 1995/09/21 12:08:48 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:08:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -23,11 +23,7 @@ static char sccsid[] = "$Id: v_ulcase.c,v 10.3 1995/09/21 10:59:21 bostic Exp $ 
 #include <stdlib.h>
 #include <string.h>
 
-#include "compat.h"
-#include <db.h>
-#include <regex.h>
-
-#include "common.h"
+#include "../common/common.h"
 #include "vi.h"
 
 static int ulcase __P((SCR *, recno_t, CHAR_T *, size_t, size_t, size_t));

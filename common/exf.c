@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 10.7 1995/09/21 10:55:53 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:55:53 $";
+static char sccsid[] = "$Id: exf.c,v 10.8 1995/09/21 12:05:50 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:05:50 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -34,12 +34,8 @@ static char sccsid[] = "$Id: exf.c,v 10.7 1995/09/21 10:55:53 bostic Exp $ (Berk
 #include <string.h>
 #include <unistd.h>
 
-#include "compat.h"
-#include <db.h>
-#include <regex.h>
-#include <pathnames.h>
-
 #include "common.h"
+#include "pathnames.h"
 
 static int	file_backup __P((SCR *, char *, char *));
 static void	file_cinit __P((SCR *));

@@ -6,8 +6,17 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 10.5 1995/09/21 11:02:43 bostic Exp $ (Berkeley) $Date: 1995/09/21 11:02:43 $
+ *	$Id: common.h,v 10.6 1995/09/21 12:05:45 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:05:45 $
  */
+
+/*
+ * Pseudo-local includes.  These are files that are unlikely to exist
+ * on most machines to which we're porting vi, and we want to include
+ * them in a very specific order, regardless.
+ */
+#include "compat.h"
+#include <db.h>
+#include <regex.h>
 
 /*
  * Forward structure declarations.  Not pretty, but the include files

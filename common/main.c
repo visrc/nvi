@@ -16,7 +16,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 10.10 1995/09/21 10:56:06 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:56:06 $";
+static char sccsid[] = "$Id: main.c,v 10.11 1995/09/21 12:06:01 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:06:01 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -33,14 +33,10 @@ static char sccsid[] = "$Id: main.c,v 10.10 1995/09/21 10:56:06 bostic Exp $ (Be
 #include <string.h>
 #include <unistd.h>
 
-#include "compat.h"
-#include <db.h>
-#include <regex.h>
-
 #include "common.h"
+#include "pathnames.h"
 #include "../ex/tag.h"
 #include "../vi/vi.h"
-#include "pathnames.h"
 
 static void	 v_estr __P((char *, int, char *));
 static int	 v_obsolete __P((char *, char *[]));

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_relative.c,v 10.3 1995/09/21 10:59:41 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:59:41 $";
+static char sccsid[] = "$Id: vs_relative.c,v 10.4 1995/09/21 12:09:05 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:09:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -20,11 +20,7 @@ static char sccsid[] = "$Id: vs_relative.c,v 10.3 1995/09/21 10:59:41 bostic Exp
 #include <stdio.h>
 #include <string.h>
 
-#include "compat.h"
-#include <db.h>
-#include <regex.h>
-
-#include "common.h"
+#include "../common/common.h"
 #include "vi.h"
 
 static size_t vs_screens __P((SCR *, char *, size_t, recno_t, size_t *));

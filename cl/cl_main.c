@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_main.c,v 10.10 1995/09/21 10:54:39 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:54:39 $";
+static char sccsid[] = "$Id: cl_main.c,v 10.11 1995/09/21 12:05:31 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:05:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,12 +26,8 @@ static char sccsid[] = "$Id: cl_main.c,v 10.10 1995/09/21 10:54:39 bostic Exp $ 
 #include <termios.h>
 #include <unistd.h>
 
-#include "compat.h"
-#include <db.h>
-#include <regex.h>
-#include <pathnames.h>
-
-#include "common.h"
+#include "../common/common.h"
+#include "../common/pathnames.h"
 #include "cl.h"
 
 GS *__global_list;				/* GLOBAL: List of screens. */

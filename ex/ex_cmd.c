@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 10.4 1995/09/21 10:57:30 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:57:30 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 10.5 1995/09/21 12:07:04 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:07:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,11 +19,7 @@ static char sccsid[] = "$Id: ex_cmd.c,v 10.4 1995/09/21 10:57:30 bostic Exp $ (B
 #include <limits.h>
 #include <stdio.h>
 
-#include "compat.h"
-#include <db.h>
-#include <regex.h>
-
-#include "common.h"
+#include "../common/common.h"
 
 /*
  * This array maps ex command names to command functions.

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 10.5 1995/09/21 10:56:18 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:56:18 $";
+static char sccsid[] = "$Id: recover.c,v 10.6 1995/09/21 12:06:15 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:06:15 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -37,12 +37,8 @@ static char sccsid[] = "$Id: recover.c,v 10.5 1995/09/21 10:56:18 bostic Exp $ (
 #include <string.h>
 #include <unistd.h>
 
-#include "compat.h"
-#include <db.h>
-#include <regex.h>
-#include <pathnames.h>
-
 #include "common.h"
+#include "pathnames.h"
 
 /*
  * Recovery code.

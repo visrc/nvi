@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 10.7 1995/09/21 10:57:40 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:57:40 $";
+static char sccsid[] = "$Id: ex_global.c,v 10.8 1995/09/21 12:07:13 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:07:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -24,11 +24,7 @@ static char sccsid[] = "$Id: ex_global.c,v 10.7 1995/09/21 10:57:40 bostic Exp $
 #include <string.h>
 #include <unistd.h>
 
-#include "compat.h"
-#include <db.h>
-#include <regex.h>
-
-#include "common.h"
+#include "../common/common.h"
 
 enum which {GLOBAL, V};
 
