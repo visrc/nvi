@@ -18,7 +18,7 @@ static const char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static const char sccsid[] = "$Id: main.c,v 10.29 1996/03/06 19:50:32 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:50:32 $";
+static const char sccsid[] = "$Id: main.c,v 10.30 1996/03/18 09:27:39 bostic Exp $ (Berkeley) $Date: 1996/03/18 09:27:39 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -428,6 +428,8 @@ v_end(gp)
 	char *tty;
 
 	/* If there are any remaining screens, kill them off. */
+	if (gp->ccl_sp != NULL)
+		(void)screen_end(gp->ccl_sp);
 	while ((sp = gp->dq.cqh_first) != (void *)&gp->dq)
 		(void)screen_end(sp);
 	while ((sp = gp->hq.cqh_first) != (void *)&gp->hq)
