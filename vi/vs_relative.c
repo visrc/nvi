@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_relative.c,v 10.16 2000/07/19 17:05:20 skimo Exp $ (Berkeley) $Date: 2000/07/19 17:05:20 $";
+static const char sccsid[] = "$Id: vs_relative.c,v 10.17 2001/06/25 15:19:38 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,9 +32,7 @@ static const char sccsid[] = "$Id: vs_relative.c,v 10.16 2000/07/19 17:05:20 ski
  * PUBLIC: int vs_column __P((SCR *, size_t *));
  */
 int
-vs_column(sp, colp)
-	SCR *sp;
-	size_t *colp;
+vs_column(SCR *sp, size_t *colp)
 {
 	VI_PRIVATE *vip;
 
@@ -55,10 +53,7 @@ vs_column(sp, colp)
  * PUBLIC: size_t vs_screens __P((SCR *, db_recno_t, size_t *));
  */
 size_t
-vs_screens(sp, lno, cnop)
-	SCR *sp;
-	db_recno_t lno;
-	size_t *cnop;
+vs_screens(SCR *sp, db_recno_t lno, size_t *cnop)
 {
 	size_t cols, screens;
 
@@ -101,11 +96,7 @@ vs_screens(sp, lno, cnop)
  * PUBLIC: size_t vs_columns __P((SCR *, CHAR_T *, db_recno_t, size_t *, size_t *));
  */
 size_t
-vs_columns(sp, lp, lno, cnop, diffp)
-	SCR *sp;
-	CHAR_T *lp;
-	db_recno_t lno;
-	size_t *cnop, *diffp;
+vs_columns(SCR *sp, CHAR_T *lp, db_recno_t lno, size_t *cnop, size_t *diffp)
 {
 	size_t chlen, cno, curoff, last, len, scno;
 	int ch, leftright, listset;
@@ -200,10 +191,7 @@ done:		if (diffp != NULL)		/* XXX */
  * PUBLIC: size_t vs_rcm __P((SCR *, db_recno_t, int));
  */
 size_t
-vs_rcm(sp, lno, islast)
-	SCR *sp;
-	db_recno_t lno;
-	int islast;
+vs_rcm(SCR *sp, db_recno_t lno, int islast)
 {
 	size_t len;
 
@@ -229,10 +217,7 @@ vs_rcm(sp, lno, islast)
  * PUBLIC: size_t vs_colpos __P((SCR *, db_recno_t, size_t));
  */
 size_t
-vs_colpos(sp, lno, cno)
-	SCR *sp;
-	db_recno_t lno;
-	size_t cno;
+vs_colpos(SCR *sp, db_recno_t lno, size_t cno)
 {
 	size_t chlen, curoff, len, llen, off, scno;
 	int ch, leftright, listset;

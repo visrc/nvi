@@ -14,7 +14,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_perl.c,v 8.10 1996/09/15 16:00:05 bostic Exp $ (Berkeley) $Date: 1996/09/15 16:00:05 $";
+static const char sccsid[] = "$Id: ex_perl.c,v 8.11 2001/06/25 15:19:18 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -41,9 +41,7 @@ static const char sccsid[] = "$Id: ex_perl.c,v 8.10 1996/09/15 16:00:05 bostic E
  * PUBLIC: int ex_perl __P((SCR*, EXCMD *));
  */
 int 
-ex_perl(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_perl(SCR *sp, EXCMD *cmdp)
 {
 #ifdef HAVE_PERL_INTERP
 	CHAR_T *p;

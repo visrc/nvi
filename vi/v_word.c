@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_word.c,v 10.5 1996/03/06 19:54:48 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:54:48 $";
+static const char sccsid[] = "$Id: v_word.c,v 10.6 2001/06/25 15:19:36 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -77,9 +77,7 @@ static int fword __P((SCR *, VICMD *, enum which));
  * PUBLIC: int v_wordW __P((SCR *, VICMD *));
  */
 int
-v_wordW(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_wordW(SCR *sp, VICMD *vp)
 {
 	return (fword(sp, vp, BIGWORD));
 }
@@ -91,9 +89,7 @@ v_wordW(sp, vp)
  * PUBLIC: int v_wordw __P((SCR *, VICMD *));
  */
 int
-v_wordw(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_wordw(SCR *sp, VICMD *vp)
 {
 	return (fword(sp, vp, LITTLEWORD));
 }
@@ -103,10 +99,7 @@ v_wordw(sp, vp)
  *	Move forward by words.
  */
 static int
-fword(sp, vp, type)
-	SCR *sp;
-	VICMD *vp;
-	enum which type;
+fword(SCR *sp, VICMD *vp, enum which type)
 {
 	enum { INWORD, NOTWORD } state;
 	VCS cs;
@@ -244,9 +237,7 @@ ret:	if (!ISMOTION(vp) &&
  * PUBLIC: int v_wordE __P((SCR *, VICMD *));
  */
 int
-v_wordE(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_wordE(SCR *sp, VICMD *vp)
 {
 	return (eword(sp, vp, BIGWORD));
 }
@@ -258,9 +249,7 @@ v_wordE(sp, vp)
  * PUBLIC: int v_worde __P((SCR *, VICMD *));
  */
 int
-v_worde(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_worde(SCR *sp, VICMD *vp)
 {
 	return (eword(sp, vp, LITTLEWORD));
 }
@@ -270,10 +259,7 @@ v_worde(sp, vp)
  *	Move forward to the end of the word.
  */
 static int
-eword(sp, vp, type)
-	SCR *sp;
-	VICMD *vp;
-	enum which type;
+eword(SCR *sp, VICMD *vp, enum which type)
 {
 	enum { INWORD, NOTWORD } state;
 	VCS cs;
@@ -397,9 +383,7 @@ ret:	if (!ISMOTION(vp) &&
  * PUBLIC: int v_wordB __P((SCR *, VICMD *));
  */
 int
-v_wordB(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_wordB(SCR *sp, VICMD *vp)
 {
 	return (bword(sp, vp, BIGWORD));
 }
@@ -411,9 +395,7 @@ v_wordB(sp, vp)
  * PUBLIC: int v_wordb __P((SCR *, VICMD *));
  */
 int
-v_wordb(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_wordb(SCR *sp, VICMD *vp)
 {
 	return (bword(sp, vp, LITTLEWORD));
 }
@@ -423,10 +405,7 @@ v_wordb(sp, vp)
  *	Move backward by words.
  */
 static int
-bword(sp, vp, type)
-	SCR *sp;
-	VICMD *vp;
-	enum which type;
+bword(SCR *sp, VICMD *vp, enum which type)
 {
 	enum { INWORD, NOTWORD } state;
 	VCS cs;

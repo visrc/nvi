@@ -46,9 +46,7 @@ static GtkItemFactoryEntry menu_items[] = {
 static int n_toplevel = 0;
 
 int
-main(argc, argv)
-	int argc;
-	char *argv[];
+main(int argc, char **argv)
 {
 	GtkVi	*vi;
 
@@ -117,9 +115,7 @@ void create_toplevel(GtkVi *vi)
 }
 
 static void
-vi_quit(vi, write)
-	GtkViWindow	*vi;
-	gint	write;
+vi_quit(GtkViWindow *vi, gint write)
 {
 	gtk_vi_quit(vi, write);
 }
@@ -133,9 +129,7 @@ vi_destroyed(GtkWidget *vi, GtkWidget *window)
 }
 
 static void
-vi_rename(vi, name, window)
-	GtkWidget *vi, *window;
-	gchar*	name;
+vi_rename(GtkWidget *vi, gchar *name, GtkWidget *window)
 {
 	gtk_window_set_title(GTK_WINDOW(window), name);
 }

@@ -52,10 +52,7 @@ vi_fork(ipvi)
  * PUBLIC: int gtk_vi_init __P((GtkVi **, int, char*[]));
  */
 int
-gtk_vi_init(vip, argc, argv)
-	GtkVi **vip;
-	int argc;
-	char *argv[];
+gtk_vi_init(GtkVi **vip, int argc, char **argv)
 {
 	GtkVi	*vi;
 	GtkWidget *term;

@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_funcs.c,v 8.22 2000/07/19 18:31:55 skimo Exp $ (Berkeley) $Date: 2000/07/19 18:31:55 $";
+static const char sccsid[] = "$Id: ip_funcs.c,v 8.23 2001/06/25 15:19:23 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,10 +32,7 @@ static const char sccsid[] = "$Id: ip_funcs.c,v 8.22 2000/07/19 18:31:55 skimo E
  * PUBLIC: int ip_waddstr __P((SCR *, const CHAR_T *, size_t));
  */
 int
-ip_waddstr(sp, str, len)
-	SCR *sp;
-	const CHAR_T *str;
-	size_t len;
+ip_waddstr(SCR *sp, const CHAR_T *str, size_t len)
 {
 	IP_BUF ipb;
 	IP_PRIVATE *ipp;
@@ -60,10 +57,7 @@ ip_waddstr(sp, str, len)
  * PUBLIC: int ip_addstr __P((SCR *, const char *, size_t));
  */
 int
-ip_addstr(sp, str, len)
-	SCR *sp;
-	const char *str;
-	size_t len;
+ip_addstr(SCR *sp, const char *str, size_t len)
 {
 	IP_BUF ipb;
 	IP_PRIVATE *ipp;
@@ -100,10 +94,7 @@ ip_addstr(sp, str, len)
  * PUBLIC: int ip_attr __P((SCR *, scr_attr_t, int));
  */
 int
-ip_attr(sp, attribute, on)
-	SCR *sp;
-	scr_attr_t attribute;
-	int on;
+ip_attr(SCR *sp, scr_attr_t attribute, int on)
 {
 	IP_BUF ipb;
 	IP_PRIVATE *ipp = IPP(sp);
@@ -127,9 +118,7 @@ ip_attr(sp, attribute, on)
  * PUBLIC: int ip_baud __P((SCR *, u_long *));
  */
 int
-ip_baud(sp, ratep)
-	SCR *sp;
-	u_long *ratep;
+ip_baud(SCR *sp, u_long *ratep)
 {
 	*ratep = 9600;		/* XXX: Translation: fast. */
 	return (0);
@@ -142,8 +131,7 @@ ip_baud(sp, ratep)
  * PUBLIC: int ip_bell __P((SCR *));
  */
 int
-ip_bell(sp)
-	SCR *sp;
+ip_bell(SCR *sp)
 {
 	IP_BUF ipb;
 	IP_PRIVATE *ipp = IPP(sp);
@@ -160,10 +148,7 @@ ip_bell(sp)
  * PUBLIC: void ip_busy __P((SCR *, const char *, busy_t));
  */
 void
-ip_busy(sp, str, bval)
-	SCR *sp;
-	const char *str;
-	busy_t bval;
+ip_busy(SCR *sp, const char *str, busy_t bval)
 {
 	IP_BUF ipb;
 	IP_PRIVATE *ipp = IPP(sp);
@@ -192,8 +177,7 @@ ip_busy(sp, str, bval)
  * PUBLIC: int ip_child __P((SCR *));
  */
 int
-ip_child(sp)
-	SCR *sp;
+ip_child(SCR *sp)
 {
 	IP_PRIVATE *ipp = IPP(sp);
 
@@ -213,8 +197,7 @@ ip_child(sp)
  * PUBLIC: int ip_clrtoeol __P((SCR *));
  */
 int
-ip_clrtoeol(sp)
-	SCR *sp;
+ip_clrtoeol(SCR *sp)
 {
 	IP_BUF ipb;
  	IP_PRIVATE *ipp = IPP(sp);
@@ -252,9 +235,7 @@ ip_clrtoeol(sp)
  * PUBLIC: int ip_cursor __P((SCR *, size_t *, size_t *));
  */
 int
-ip_cursor(sp, yp, xp)
-	SCR *sp;
-	size_t *yp, *xp;
+ip_cursor(SCR *sp, size_t *yp, size_t *xp)
 {
 	IP_PRIVATE *ipp;
 
@@ -271,8 +252,7 @@ ip_cursor(sp, yp, xp)
  * PUBLIC: int ip_deleteln __P((SCR *));
  */
 int
-ip_deleteln(sp)
-	SCR *sp;
+ip_deleteln(SCR *sp)
 {
 	IP_BUF ipb;
 	IP_PRIVATE *ipp = IPP(sp);
@@ -307,8 +287,7 @@ ip_deleteln(sp)
  * PUBLIC: int ip_discard __P((SCR *, SCR **));
  */
 int
-ip_discard(discardp, acquirep)
- 	SCR *discardp, **acquirep;
+ip_discard(SCR *discardp, SCR **acquirep)
 {
 	return (0);
 }
@@ -320,9 +299,7 @@ ip_discard(discardp, acquirep)
  * PUBLIC: int ip_ex_adjust __P((SCR *, exadj_t));
  */
 int
-ip_ex_adjust(sp, action)
-	SCR *sp;
-	exadj_t action;
+ip_ex_adjust(SCR *sp, exadj_t action)
 {
 	abort();
 	/* NOTREACHED */
@@ -335,8 +312,7 @@ ip_ex_adjust(sp, action)
  * PUBLIC: int ip_insertln __P((SCR *));
  */
 int
-ip_insertln(sp)
-	SCR *sp;
+ip_insertln(SCR *sp)
 {
 	IP_BUF ipb;
 	IP_PRIVATE *ipp = IPP(sp);
@@ -353,11 +329,7 @@ ip_insertln(sp)
  * PUBLIC: int ip_keyval __P((SCR *, scr_keyval_t, CHAR_T *, int *));
  */
 int
-ip_keyval(sp, val, chp, dnep)
-	SCR *sp;
-	scr_keyval_t val;
-	CHAR_T *chp;
-	int *dnep;
+ip_keyval(SCR *sp, scr_keyval_t val, CHAR_T *chp, int *dnep)
 {
 	/*
 	 * VEOF, VERASE and VKILL are required by POSIX 1003.1-1990,
@@ -392,9 +364,7 @@ ip_keyval(sp, val, chp, dnep)
  * PUBLIC: int ip_move __P((SCR *, size_t, size_t));
  */
 int
-ip_move(sp, lno, cno)
-	SCR *sp;
-	size_t lno, cno;
+ip_move(SCR *sp, size_t lno, size_t cno)
 {
 	IP_PRIVATE *ipp;
 	IP_BUF ipb;
@@ -413,11 +383,7 @@ ip_move(sp, lno, cno)
  * PUBLIC: void ip_msg __P((SCR *, mtype_t, char *, size_t));
  */
 void
-ip_msg(sp, mtype, line, len)
-	SCR *sp;
-	mtype_t mtype;
-	char *line;
-	size_t len;
+ip_msg(SCR *sp, mtype_t mtype, char *line, size_t len)
 {
 	IP_PRIVATE *ipp = IPP(sp);
 
@@ -436,9 +402,7 @@ ip_msg(sp, mtype, line, len)
  * PUBLIC: int ip_refresh __P((SCR *, int));
  */
 int
-ip_refresh(sp, repaint)
-	SCR *sp;
-	int repaint;
+ip_refresh(SCR *sp, int repaint)
 {
 	IP_BUF ipb;
 	IP_PRIVATE *ipp;
@@ -485,10 +449,7 @@ ip_refresh(sp, repaint)
  * PUBLIC: int ip_rename __P((SCR *, char *, int));
  */
 int
-ip_rename(sp, name, on)
-	SCR *sp;
-	char *name;
-	int on;
+ip_rename(SCR *sp, char *name, int on)
 {
 	IP_BUF ipb;
 	IP_PRIVATE *ipp = IPP(sp);
@@ -506,10 +467,7 @@ ip_rename(sp, name, on)
  * PUBLIC: int ip_reply __P((SCR *, int, char *));
  */
 int
-ip_reply(sp, status, msg)
-	SCR *sp;
-	int status;
-	char *msg;
+ip_reply(SCR *sp, int status, char *msg)
 {
 	IP_BUF ipb;
 	IP_PRIVATE *ipp = IPP(sp);
@@ -528,8 +486,7 @@ ip_reply(sp, status, msg)
  * PUBLIC: int ip_split __P((SCR *, SCR *));
  */
 int
-ip_split(origp, newp)
-	SCR *origp, *newp;
+ip_split(SCR *origp, SCR *newp)
 {
 	return (0);
 }
@@ -541,9 +498,7 @@ ip_split(origp, newp)
  * PUBLIC: int ip_suspend __P((SCR *, int *));
  */
 int
-ip_suspend(sp, allowedp)
-	SCR *sp;
-	int *allowedp;
+ip_suspend(SCR *sp, int *allowedp)
 {
 	*allowedp = 0;
 	return (0);
@@ -556,7 +511,7 @@ ip_suspend(sp, allowedp)
  * PUBLIC: void ip_usage __P((void));
  */
 void    
-ip_usage()
+ip_usage(void)
 {       
 #define USAGE "\
 usage: vi [-eFlRrSv] [-c command] [-I ifd.ofd] [-t tag] [-w size] [file ...]\n"

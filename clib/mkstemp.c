@@ -44,15 +44,14 @@ static const char sccsid[] = "@(#)mktemp.c	8.1 (Berkeley) 6/4/93";
 #include <stdio.h>
 #include <ctype.h>
 
-static int _gettemp();
+static int _gettemp(char *path, register int *doopen);
 
 /*
  * PUBLIC: #ifndef HAVE_MKSTEMP
  * PUBLIC: int mkstemp __P((char *));
  * PUBLIC: #endif
  */
-mkstemp(path)
-	char *path;
+mkstemp(char *path)
 {
 	int fd;
 
@@ -60,16 +59,13 @@ mkstemp(path)
 }
 
 char *
-mktemp(path)
-	char *path;
+mktemp(char *path)
 {
 	return(_gettemp(path, (int *)NULL) ? path : (char *)NULL);
 }
 
 static
-_gettemp(path, doopen)
-	char *path;
-	register int *doopen;
+_gettemp(char *path, register int *doopen)
 {
 	extern int errno;
 	register char *start, *trv;

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_read.c,v 10.43 2001/06/10 10:23:44 skimo Exp $ (Berkeley) $Date: 2001/06/10 10:23:44 $";
+static const char sccsid[] = "$Id: ex_read.c,v 10.44 2001/06/25 15:19:19 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,9 +40,7 @@ static const char sccsid[] = "$Id: ex_read.c,v 10.43 2001/06/10 10:23:44 skimo E
  * PUBLIC: int ex_read __P((SCR *, EXCMD *));
  */
 int
-ex_read(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_read(SCR *sp, EXCMD *cmdp)
 {
 	enum { R_ARG, R_EXPANDARG, R_FILTER } which;
 	struct stat sb;
@@ -298,13 +296,7 @@ ex_read(sp, cmdp)
  * PUBLIC: int ex_readfp __P((SCR *, char *, FILE *, MARK *, db_recno_t *, int));
  */
 int
-ex_readfp(sp, name, fp, fm, nlinesp, silent)
-	SCR *sp;
-	char *name;
-	FILE *fp;
-	MARK *fm;
-	db_recno_t *nlinesp;
-	int silent;
+ex_readfp(SCR *sp, char *name, FILE *fp, MARK *fm, db_recno_t *nlinesp, int silent)
 {
 	EX_PRIVATE *exp;
 	GS *gp;

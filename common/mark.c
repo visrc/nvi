@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: mark.c,v 10.14 2000/04/21 19:00:33 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:33 $";
+static const char sccsid[] = "$Id: mark.c,v 10.15 2001/06/25 15:19:11 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -65,9 +65,7 @@ static LMARK *mark_find __P((SCR *, ARG_CHAR_T));
  * PUBLIC: int mark_init __P((SCR *, EXF *));
  */
 int
-mark_init(sp, ep)
-	SCR *sp;
-	EXF *ep;
+mark_init(SCR *sp, EXF *ep)
 {
 	/*
 	 * !!!
@@ -86,9 +84,7 @@ mark_init(sp, ep)
  * PUBLIC: int mark_end __P((SCR *, EXF *));
  */
 int
-mark_end(sp, ep)
-	SCR *sp;
-	EXF *ep;
+mark_end(SCR *sp, EXF *ep)
 {
 	LMARK *lmp;
 
@@ -110,11 +106,7 @@ mark_end(sp, ep)
  * PUBLIC: int mark_get __P((SCR *, ARG_CHAR_T, MARK *, mtype_t));
  */
 int
-mark_get(sp, key, mp, mtype)
-	SCR *sp;
-	ARG_CHAR_T key;
-	MARK *mp;
-	mtype_t mtype;
+mark_get(SCR *sp, ARG_CHAR_T key, MARK *mp, mtype_t mtype)
 {
 	LMARK *lmp;
 
@@ -155,11 +147,7 @@ mark_get(sp, key, mp, mtype)
  * PUBLIC: int mark_set __P((SCR *, ARG_CHAR_T, MARK *, int));
  */
 int
-mark_set(sp, key, value, userset)
-	SCR *sp;
-	ARG_CHAR_T key;
-	MARK *value;
-	int userset;
+mark_set(SCR *sp, ARG_CHAR_T key, MARK *value, int userset)
 {
 	LMARK *lmp, *lmt;
 
@@ -197,9 +185,7 @@ mark_set(sp, key, value, userset)
  *	where it would go.
  */
 static LMARK *
-mark_find(sp, key)
-	SCR *sp;
-	ARG_CHAR_T key;
+mark_find(SCR *sp, ARG_CHAR_T key)
 {
 	LMARK *lmp, *lastlmp;
 
@@ -221,10 +207,7 @@ mark_find(sp, key)
  * PUBLIC: int mark_insdel __P((SCR *, lnop_t, db_recno_t));
  */
 int
-mark_insdel(sp, op, lno)
-	SCR *sp;
-	lnop_t op;
-	db_recno_t lno;
+mark_insdel(SCR *sp, lnop_t op, db_recno_t lno)
 {
 	LMARK *lmp;
 	db_recno_t lline;

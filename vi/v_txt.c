@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.102 2001/06/09 18:26:32 skimo Exp $ (Berkeley) $Date: 2001/06/09 18:26:32 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.103 2001/06/25 15:19:35 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -63,11 +63,7 @@ static void	 txt_unmap __P((SCR *, TEXT *, u_int32_t *));
  * PUBLIC: int v_tcmd __P((SCR *, VICMD *, ARG_CHAR_T, u_int));
  */
 int
-v_tcmd(sp, vp, prompt, flags)
-	SCR *sp;
-	VICMD *vp;
-	ARG_CHAR_T prompt;
-	u_int flags;
+v_tcmd(SCR *sp, VICMD *vp, ARG_CHAR_T prompt, u_int flags)
 {
 	/* Normally, we end up where we started. */
 	vp->m_final.lno = sp->lno;
@@ -118,8 +114,7 @@ v_tcmd(sp, vp, prompt, flags)
  *	Initialize the screen map for colon command-line input.
  */
 static int
-txt_map_init(sp)
-	SCR *sp;
+txt_map_init(SCR *sp)
 {
 	SMAP *esmp;
 	VI_PRIVATE *vip;
@@ -171,8 +166,7 @@ txt_map_init(sp)
  *	Reset the screen map for colon command-line input.
  */
 static int
-txt_map_end(sp)
-	SCR *sp;
+txt_map_end(SCR *sp)
 {
 	VI_PRIVATE *vip;
 	size_t cnt;
@@ -245,16 +239,16 @@ txt_map_end(sp)
  * PUBLIC:    const CHAR_T *, size_t, ARG_CHAR_T, db_recno_t, u_long, u_int32_t));
  */
 int
-v_txt(sp, vp, tm, lp, len, prompt, ai_line, rcount, flags)
-	SCR *sp;
-	VICMD *vp;
-	MARK *tm;		/* To MARK. */
-	const CHAR_T *lp;	/* Input line. */
-	size_t len;		/* Input line length. */
-	ARG_CHAR_T prompt;	/* Prompt to display. */
-	db_recno_t ai_line;	/* Line number to use for autoindent count. */
-	u_long rcount;		/* Replay count. */
-	u_int32_t flags;	/* TXT_* flags. */
+v_txt(SCR *sp, VICMD *vp, MARK *tm, const CHAR_T *lp, size_t len, ARG_CHAR_T prompt, db_recno_t ai_line, u_long rcount, u_int32_t flags)
+	        
+	          
+	         		/* To MARK. */
+	                 	/* Input line. */
+	           		/* Input line length. */
+	                  	/* Prompt to display. */
+	                   	/* Line number to use for autoindent count. */
+	              		/* Replay count. */
+	                	/* TXT_* flags. */
 {
 	EVENT ev, *evp;		/* Current event. */
 	EVENT fc;		/* File name completion event. */
@@ -1470,11 +1464,7 @@ alloc_err:
  *	Handle abbreviations.
  */
 static int
-txt_abbrev(sp, tp, pushcp, isinfoline, didsubp, turnoffp)
-	SCR *sp;
-	TEXT *tp;
-	CHAR_T *pushcp;
-	int isinfoline, *didsubp, *turnoffp;
+txt_abbrev(SCR *sp, TEXT *tp, CHAR_T *pushcp, int isinfoline, int *didsubp, int *turnoffp)
 {
 	VI_PRIVATE *vip;
 	CHAR_T ch, *p;
@@ -1640,10 +1630,7 @@ search:	if (isinfoline)
  *	Handle the unmap command.
  */
 static void
-txt_unmap(sp, tp, ec_flagsp)
-	SCR *sp;
-	TEXT *tp;
-	u_int32_t *ec_flagsp;
+txt_unmap(SCR *sp, TEXT *tp, u_int32_t *ec_flagsp)
 {
 	size_t len, off;
 	CHAR_T *p;
@@ -1683,10 +1670,7 @@ txt_unmap(sp, tp, ec_flagsp)
  *	When a line is resolved by <esc>, review autoindent characters.
  */
 static void
-txt_ai_resolve(sp, tp, changedp)
-	SCR *sp;
-	TEXT *tp;
-	int *changedp;
+txt_ai_resolve(SCR *sp, TEXT *tp, int *changedp)
 {
 	u_long ts;
 	int del;
@@ -1773,11 +1757,7 @@ txt_ai_resolve(sp, tp, changedp)
  * PUBLIC: int v_txt_auto __P((SCR *, db_recno_t, TEXT *, size_t, TEXT *));
  */
 int
-v_txt_auto(sp, lno, aitp, len, tp)
-	SCR *sp;
-	db_recno_t lno;
-	TEXT *aitp, *tp;
-	size_t len;
+v_txt_auto(SCR *sp, db_recno_t lno, TEXT *aitp, size_t len, TEXT *tp)
 {
 	size_t nlen;
 	CHAR_T *p, *t;
@@ -1827,11 +1807,7 @@ v_txt_auto(sp, lno, aitp, len, tp)
  *	Back up to the previously edited line.
  */
 static TEXT *
-txt_backup(sp, tiqh, tp, flagsp)
-	SCR *sp;
-	TEXTH *tiqh;
-	TEXT *tp;
-	u_int32_t *flagsp;
+txt_backup(SCR *sp, TEXTH *tiqh, TEXT *tp, u_int32_t *flagsp)
 {
 	VI_PRIVATE *vip;
 	TEXT *ntp;
@@ -1906,10 +1882,7 @@ txt_backup(sp, tiqh, tp, flagsp)
  * changes.
  */
 static int
-txt_dent(sp, tp, isindent)
-	SCR *sp;
-	TEXT *tp;
-	int isindent;
+txt_dent(SCR *sp, TEXT *tp, int isindent)
 {
 	CHAR_T ch;
 	u_long sw, ts;
@@ -2008,10 +1981,7 @@ txt_dent(sp, tp, isindent)
  *	File name completion.
  */
 static int
-txt_fc(sp, tp, redrawp)
-	SCR *sp;
-	TEXT *tp;
-	int *redrawp;
+txt_fc(SCR *sp, TEXT *tp, int *redrawp)
 {
 	struct stat sb;
 	ARGS **argv;
@@ -2167,10 +2137,7 @@ isdir:		if (tp->owrite == 0) {
  *	Display file names for file name completion.
  */
 static int
-txt_fc_col(sp, argc, argv)
-	SCR *sp;
-	int argc;
-	ARGS **argv;
+txt_fc_col(SCR *sp, int argc, ARGS **argv)
 {
 	ARGS **av;
 	CHAR_T *p;
@@ -2287,10 +2254,7 @@ intr:		F_CLR(gp, G_INTERRUPTED);
  *	Set the end mark on the line.
  */
 static int
-txt_emark(sp, tp, cno)
-	SCR *sp;
-	TEXT *tp;
-	size_t cno;
+txt_emark(SCR *sp, TEXT *tp, size_t cno)
 {
 	CHAR_T ch;
 	char *kp;
@@ -2341,9 +2305,7 @@ txt_emark(sp, tp, cno)
  *	Handle an error during input processing.
  */
 static void
-txt_err(sp, tiqh)
-	SCR *sp;
-	TEXTH *tiqh;
+txt_err(SCR *sp, TEXTH *tiqh)
 {
 	db_recno_t lno;
 
@@ -2376,9 +2338,7 @@ txt_err(sp, tiqh)
  * may not be able to enter.
  */
 static int
-txt_hex(sp, tp)
-	SCR *sp;
-	TEXT *tp;
+txt_hex(SCR *sp, TEXT *tp)
 {
 	CHAR_T savec;
 	size_t len, off;
@@ -2458,11 +2418,7 @@ nothex:		tp->lb[tp->cno] = savec;
  * of the screen space they require, but that it not overwrite other characters.
  */
 static int
-txt_insch(sp, tp, chp, flags)
-	SCR *sp;
-	TEXT *tp;
-	CHAR_T *chp;
-	u_int flags;
+txt_insch(SCR *sp, TEXT *tp, CHAR_T *chp, u_int flags)
 {
 	char *kp;
 	CHAR_T savech;
@@ -2576,11 +2532,7 @@ txt_insch(sp, tp, chp, flags)
  *	Do an incremental search.
  */
 static int
-txt_isrch(sp, vp, tp, is_flagsp)
-	SCR *sp;
-	VICMD *vp;
-	TEXT *tp;
-	u_int8_t *is_flagsp;
+txt_isrch(SCR *sp, VICMD *vp, TEXT *tp, u_int8_t *is_flagsp)
 {
 	MARK start;
 	db_recno_t lno;
@@ -2700,10 +2652,7 @@ txt_isrch(sp, vp, tp, is_flagsp)
  *	Resolve the input text chain into the file.
  */
 static int
-txt_resolve(sp, tiqh, flags)
-	SCR *sp;
-	TEXTH *tiqh;
-	u_int32_t flags;
+txt_resolve(SCR *sp, TEXTH *tiqh, u_int32_t flags)
 {
 	VI_PRIVATE *vip;
 	TEXT *tp;
@@ -2757,9 +2706,7 @@ txt_resolve(sp, tiqh, flags)
  * I think not.
  */
 static int
-txt_showmatch(sp, tp)
-	SCR *sp;
-	TEXT *tp;
+txt_showmatch(SCR *sp, TEXT *tp)
 {
 	GS *gp;
 	VCS cs;
@@ -2826,11 +2773,7 @@ txt_showmatch(sp, tp)
  *	Handle margin wrap.
  */
 static int
-txt_margin(sp, tp, wmtp, didbreak, flags)
-	SCR *sp;
-	TEXT *tp, *wmtp;
-	int *didbreak;
-	u_int32_t flags;
+txt_margin(SCR *sp, TEXT *tp, TEXT *wmtp, int *didbreak, u_int32_t flags)
 {
 	VI_PRIVATE *vip;
 	size_t len, off;
@@ -2906,11 +2849,7 @@ txt_margin(sp, tp, wmtp, didbreak, flags)
  *	Resolve the input line for the 'R' command.
  */
 static void
-txt_Rresolve(sp, tiqh, tp, orig_len)
-	SCR *sp;
-	TEXTH *tiqh;
-	TEXT *tp;
-	const size_t orig_len;
+txt_Rresolve(SCR *sp, TEXTH *tiqh, TEXT *tp, const const size_t orig_len)
 {
 	TEXT *ttp;
 	size_t input_len, retain;
@@ -2964,8 +2903,7 @@ txt_Rresolve(sp, tiqh, tp, orig_len)
  *	No more characters message.
  */
 static void
-txt_nomorech(sp)
-	SCR *sp;
+txt_nomorech(SCR *sp)
 {
 	msgq(sp, M_BERR, "194|No more characters to erase");
 }

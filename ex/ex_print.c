@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_print.c,v 10.22 2001/06/17 14:16:51 skimo Exp $ (Berkeley) $Date: 2001/06/17 14:16:51 $";
+static const char sccsid[] = "$Id: ex_print.c,v 10.23 2001/06/25 15:19:18 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -41,9 +41,7 @@ static int ex_prchars __P((SCR *, const CHAR_T *, size_t *, size_t,
  * PUBLIC: int ex_list __P((SCR *, EXCMD *));
  */
 int
-ex_list(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_list(SCR *sp, EXCMD *cmdp)
 {
 	if (ex_print(sp, cmdp,
 	    &cmdp->addr1, &cmdp->addr2, cmdp->iflags | E_C_LIST))
@@ -61,9 +59,7 @@ ex_list(sp, cmdp)
  * PUBLIC: int ex_number __P((SCR *, EXCMD *));
  */
 int
-ex_number(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_number(SCR *sp, EXCMD *cmdp)
 {
 	if (ex_print(sp, cmdp,
 	    &cmdp->addr1, &cmdp->addr2, cmdp->iflags | E_C_HASH))
@@ -81,9 +77,7 @@ ex_number(sp, cmdp)
  * PUBLIC: int ex_pr __P((SCR *, EXCMD *));
  */
 int
-ex_pr(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_pr(SCR *sp, EXCMD *cmdp)
 {
 	if (ex_print(sp, cmdp, &cmdp->addr1, &cmdp->addr2, cmdp->iflags))
 		return (1);
@@ -99,11 +93,7 @@ ex_pr(sp, cmdp)
  * PUBLIC: int ex_print __P((SCR *, EXCMD *, MARK *, MARK *, u_int32_t));
  */
 int
-ex_print(sp, cmdp, fp, tp, flags)
-	SCR *sp;
-	EXCMD *cmdp;
-	MARK *fp, *tp;
-	u_int32_t flags;
+ex_print(SCR *sp, EXCMD *cmdp, MARK *fp, MARK *tp, u_int32_t flags)
 {
 	GS *gp;
 	db_recno_t from, to;
@@ -181,9 +171,7 @@ ex_ldisplay(SCR *sp, const CHAR_T *p, size_t len, size_t col, u_int flags)
  * PUBLIC: int ex_scprint __P((SCR *, MARK *, MARK *));
  */
 int
-ex_scprint(sp, fp, tp)
-	SCR *sp;
-	MARK *fp, *tp;
+ex_scprint(SCR *sp, MARK *fp, MARK *tp)
 {
 	CHAR_T *p;
 	size_t col, len;
@@ -314,9 +302,7 @@ ex_printf(sp, fmt, va_alist)
  * PUBLIC: int ex_puts __P((SCR *, const char *));
  */
 int
-ex_puts(sp, str)
-	SCR *sp;
-	const char *str;
+ex_puts(SCR *sp, const char *str)
 {
 	EX_PRIVATE *exp;
 	int doflush, n;
@@ -342,8 +328,7 @@ ex_puts(sp, str)
  * PUBLIC: int ex_fflush __P((SCR *sp));
  */
 int
-ex_fflush(sp)
-	SCR *sp;
+ex_fflush(SCR *sp)
 {
 	EX_PRIVATE *exp;
 

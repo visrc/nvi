@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_move.c,v 10.14 2000/07/15 20:26:35 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:35 $";
+static const char sccsid[] = "$Id: ex_move.c,v 10.15 2001/06/25 15:19:17 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,9 +31,7 @@ static const char sccsid[] = "$Id: ex_move.c,v 10.14 2000/07/15 20:26:35 skimo E
  * PUBLIC: int ex_copy __P((SCR *, EXCMD *));
  */
 int
-ex_copy(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_copy(SCR *sp, EXCMD *cmdp)
 {
 	CB cb;
 	MARK fm1, fm2, m, tm;
@@ -86,9 +84,7 @@ err:	text_lfree(&cb.textq);
  * PUBLIC: int ex_move __P((SCR *, EXCMD *));
  */
 int
-ex_move(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_move(SCR *sp, EXCMD *cmdp)
 {
 	LMARK *lmp;
 	MARK fm1, fm2;

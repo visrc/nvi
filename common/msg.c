@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: msg.c,v 10.56 2001/06/09 18:26:28 skimo Exp $ (Berkeley) $Date: 2001/06/09 18:26:28 $";
+static const char sccsid[] = "$Id: msg.c,v 10.57 2001/06/25 15:19:11 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:11 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -369,11 +369,7 @@ alloc_err:
  * PUBLIC: void msgq_wstr __P((SCR *, mtype_t, CHAR_T *, char *));
  */
 void
-msgq_wstr(sp, mtype, str, fmt)
-	SCR *sp;
-	mtype_t mtype;
-	CHAR_T *str;
-	char *fmt;
+msgq_wstr(SCR *sp, mtype_t mtype, CHAR_T *str, char *fmt)
 {
 	size_t nlen;
 	char *nstr;
@@ -389,10 +385,7 @@ msgq_wstr(sp, mtype, str, fmt)
  * PUBLIC: void msgq_str __P((SCR *, mtype_t, char *, char *));
  */
 void
-msgq_str(sp, mtype, str, fmt)
-	SCR *sp;
-	mtype_t mtype;
-	char *str, *fmt;
+msgq_str(SCR *sp, mtype_t mtype, char *str, char *fmt)
 {
 	int nf, sv_errno;
 	char *p;
@@ -431,8 +424,7 @@ msgq_str(sp, mtype, str, fmt)
  * PUBLIC: void mod_rpt __P((SCR *));
  */
 void
-mod_rpt(sp)
-	SCR *sp;
+mod_rpt(SCR *sp)
 {
 	static char * const action[] = {
 		"293|added",
@@ -541,10 +533,7 @@ alloc_err:
  * PUBLIC: void msgq_status __P((SCR *, db_recno_t, u_int));
  */
 void
-msgq_status(sp, lno, flags)
-	SCR *sp;
-	db_recno_t lno;
-	u_int flags;
+msgq_status(SCR *sp, db_recno_t lno, u_int flags)
 {
 	db_recno_t last;
 	size_t blen, len;
@@ -706,9 +695,7 @@ alloc_err:
  * PUBLIC: int msg_open __P((SCR *, char *));
  */
 int
-msg_open(sp, file)
-	SCR *sp;
-	char *file;
+msg_open(SCR *sp, char *file)
 {
 	/*
 	 * !!!
@@ -780,8 +767,7 @@ msg_open(sp, file)
  * PUBLIC: void msg_close __P((GS *));
  */
 void
-msg_close(gp)
-	GS *gp;
+msg_close(GS *gp)
 {
 	if (gp->msg != NULL) {
 		(void)gp->msg->close(gp->msg, 0);
@@ -796,10 +782,7 @@ msg_close(gp)
  * PUBLIC: const char *msg_cmsg __P((SCR *, cmsg_t, size_t *));
  */
 const char *
-msg_cmsg(sp, which, lenp)
-	SCR *sp;
-	cmsg_t which;
-	size_t *lenp;
+msg_cmsg(SCR *sp, cmsg_t which, size_t *lenp)
 {
 	switch (which) {
 	case CMSG_CONF:
@@ -834,10 +817,7 @@ msg_cmsg(sp, which, lenp)
  * PUBLIC: const char *msg_cat __P((SCR *, const char *, size_t *));
  */
 const char *
-msg_cat(sp, str, lenp)
-	SCR *sp;
-	const char *str;
-	size_t *lenp;
+msg_cat(SCR *sp, const char *str, size_t *lenp)
 {
 	GS *gp;
 	DBT data, key;
@@ -886,10 +866,7 @@ msg_cat(sp, str, lenp)
  * PUBLIC: char *msg_print __P((SCR *, const char *, int *));
  */
 char *
-msg_print(sp, s, needfree)
-	SCR *sp;
-	const char *s;
-	int *needfree;
+msg_print(SCR *sp, const char *s, int *needfree)
 {
 	size_t blen, nlen;
 	const char *cp;

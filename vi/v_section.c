@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_section.c,v 10.9 2000/06/27 17:19:08 skimo Exp $ (Berkeley) $Date: 2000/06/27 17:19:08 $";
+static const char sccsid[] = "$Id: v_section.c,v 10.10 2001/06/25 15:19:35 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -62,9 +62,7 @@ static const char sccsid[] = "$Id: v_section.c,v 10.9 2000/06/27 17:19:08 skimo 
  * PUBLIC: int v_sectionf __P((SCR *, VICMD *));
  */
 int
-v_sectionf(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_sectionf(SCR *sp, VICMD *vp)
 {
 	db_recno_t cnt, lno;
 	size_t len;
@@ -171,9 +169,7 @@ ret2:	if (ISMOTION(vp)) {
  * PUBLIC: int v_sectionb __P((SCR *, VICMD *));
  */
 int
-v_sectionb(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_sectionb(SCR *sp, VICMD *vp)
 {
 	size_t len;
 	db_recno_t cnt, lno;

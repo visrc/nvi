@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_prompt.c,v 8.6 1996/12/18 10:26:59 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:26:59 $";
+static const char sccsid[] = "$Id: m_prompt.c,v 8.7 2001/06/25 15:19:27 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,9 +30,7 @@ static const char sccsid[] = "$Id: m_prompt.c,v 8.6 1996/12/18 10:26:59 bostic E
 #include "m_motif.h"
 
 
-void	vi_fatal_message( parent, str )
-Widget	parent;
-String	str;
+void	vi_fatal_message(Widget parent, String str)
 {
     Widget	db = XmCreateErrorDialog( parent, "Fatal", NULL, 0 );
     XmString	msg = XmStringCreateSimple( str );
@@ -56,9 +54,7 @@ String	str;
 }
 
 
-void	vi_info_message( parent, str )
-Widget	parent;
-String	str;
+void	vi_info_message(Widget parent, String str)
 {
     static	Widget	db = NULL;
     XmString	msg = XmStringCreateSimple( str );

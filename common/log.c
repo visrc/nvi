@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: log.c,v 10.23 2001/05/13 09:25:45 skimo Exp $ (Berkeley) $Date: 2001/05/13 09:25:45 $";
+static const char sccsid[] = "$Id: log.c,v 10.24 2001/06/25 15:19:10 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -91,9 +91,7 @@ typedef struct {
  * PUBLIC: int log_init __P((SCR *, EXF *));
  */
 int
-log_init(sp, ep)
-	SCR *sp;
-	EXF *ep;
+log_init(SCR *sp, EXF *ep)
 {
 	/*
 	 * !!!
@@ -130,9 +128,7 @@ log_init(sp, ep)
  * PUBLIC: int log_end __P((SCR *, EXF *));
  */
 int
-log_end(sp, ep)
-	SCR *sp;
-	EXF *ep;
+log_end(SCR *sp, EXF *ep)
 {
 	/*
 	 * !!!
@@ -161,8 +157,7 @@ log_end(sp, ep)
  * PUBLIC: int log_cursor __P((SCR *));
  */
 int
-log_cursor(sp)
-	SCR *sp;
+log_cursor(SCR *sp)
 {
 	EXF *ep;
 
@@ -192,9 +187,7 @@ log_cursor(sp)
  *	Actually push a cursor record out.
  */
 static int
-log_cursor1(sp, type)
-	SCR *sp;
-	int type;
+log_cursor1(SCR *sp, int type)
 {
 	DBT data, key;
 	EXF *ep;
@@ -242,10 +235,7 @@ log_cursor1(sp, type)
  * PUBLIC: int log_line __P((SCR *, db_recno_t, u_int));
  */
 int
-log_line(sp, lno, action)
-	SCR *sp;
-	db_recno_t lno;
-	u_int action;
+log_line(SCR *sp, db_recno_t lno, u_int action)
 {
 	DBT data, key;
 	EXF *ep;
@@ -352,9 +342,7 @@ log_line(sp, lno, action)
  * PUBLIC: int log_mark __P((SCR *, LMARK *));
  */
 int
-log_mark(sp, lmp)
-	SCR *sp;
-	LMARK *lmp;
+log_mark(SCR *sp, LMARK *lmp)
 {
 	DBT data, key;
 	EXF *ep;
@@ -437,9 +425,7 @@ retry:
  * PUBLIC: int log_backward __P((SCR *, MARK *));
  */
 int
-log_backward(sp, rp)
-	SCR *sp;
-	MARK *rp;
+log_backward(SCR *sp, MARK *rp)
 {
 	EXF *ep;
 	LMARK lm;
@@ -550,8 +536,7 @@ err:	F_CLR(ep, F_NOLOG);
  * PUBLIC: int log_setline __P((SCR *));
  */
 int
-log_setline(sp)
-	SCR *sp;
+log_setline(SCR *sp)
 {
 	EXF *ep;
 	LMARK lm;
@@ -642,9 +627,7 @@ err:	F_CLR(ep, F_NOLOG);
  * PUBLIC: int log_forward __P((SCR *, MARK *));
  */
 int
-log_forward(sp, rp)
-	SCR *sp;
-	MARK *rp;
+log_forward(SCR *sp, MARK *rp)
 {
 	EXF *ep;
 	LMARK lm;
@@ -760,10 +743,7 @@ err:	F_CLR(ep, F_NOLOG);
  *	Try and restart the log on failure, i.e. if we run out of memory.
  */
 static void
-log_err(sp, file, line)
-	SCR *sp;
-	char *file;
-	int line;
+log_err(SCR *sp, char *file, int line)
 {
 	EXF *ep;
 

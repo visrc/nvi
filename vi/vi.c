@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vi.c,v 10.71 2001/04/22 19:55:52 skimo Exp $ (Berkeley) $Date: 2001/04/22 19:55:52 $";
+static const char sccsid[] = "$Id: vi.c,v 10.72 2001/06/25 15:19:37 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -61,8 +61,7 @@ static void	v_comlog __P((SCR *, VICMD *));
  * PUBLIC: int vi __P((SCR **));
  */
 int
-vi(spp)
-	SCR **spp;
+vi(SCR **spp)
 {
 	GS *gp;
 	WIN *wp;
@@ -441,11 +440,11 @@ VIKEYS const tmotion = {
  *	Get a vi command.
  */
 static gcret_t
-v_cmd(sp, dp, vp, ismotion, comcountp, mappedp)
-	SCR *sp;
-	VICMD *dp, *vp;
-	VICMD *ismotion;	/* Previous key if getting motion component. */
-	int *comcountp, *mappedp;
+v_cmd(SCR *sp, VICMD *dp, VICMD *vp, VICMD *ismotion, int *comcountp, int *mappedp)
+	        
+	               
+	                	/* Previous key if getting motion component. */
+	                         
 {
 	enum { COMMANDMODE, ISPARTIAL, NOTPARTIAL } cpart;
 	CHAR_T key;
@@ -733,10 +732,7 @@ esc:	switch (cpart) {
  * Get resulting motion mark.
  */
 static int
-v_motion(sp, dm, vp, mappedp)
-	SCR *sp;
-	VICMD *dm, *vp;
-	int *mappedp;
+v_motion(SCR *sp, VICMD *dm, VICMD *vp, int *mappedp)
 {
 	VICMD motion;
 	gcret_t gcret;
@@ -949,8 +945,7 @@ v_motion(sp, dm, vp, mappedp)
  *	Initialize the vi screen.
  */
 static int
-v_init(sp)
-	SCR *sp;
+v_init(SCR *sp)
 {
 	GS *gp;
 	VI_PRIVATE *vip;
@@ -1020,8 +1015,7 @@ v_init(sp)
  *	Move all but the current screen to the hidden queue.
  */
 static void
-v_dtoh(sp)
-	SCR *sp;
+v_dtoh(SCR *sp)
 {
 	GS *gp;
 	SCR *tsp;
@@ -1060,8 +1054,7 @@ v_dtoh(sp)
  * PUBLIC: int v_curword __P((SCR *));
  */
 int
-v_curword(sp)
-	SCR *sp;
+v_curword(SCR *sp)
 {
 	VI_PRIVATE *vip;
 	size_t beg, end, len;
@@ -1114,10 +1107,7 @@ v_curword(sp)
  *	Check for a command alias.
  */
 static VIKEYS const *
-v_alias(sp, vp, kp)
-	SCR *sp;
-	VICMD *vp;
-	VIKEYS const *kp;
+v_alias(SCR *sp, VICMD *vp, const VIKEYS *kp)
 {
 	CHAR_T push;
 
@@ -1150,11 +1140,7 @@ v_alias(sp, vp, kp)
  *	Return the next count.
  */
 static int
-v_count(sp, vp, fkey, countp)
-	SCR *sp;
-	VICMD *vp;
-	ARG_CHAR_T fkey;
-	u_long *countp;
+v_count(SCR *sp, VICMD *vp, ARG_CHAR_T fkey, u_long *countp)
 {
 	u_long count, tc;
 
@@ -1190,11 +1176,7 @@ v_count(sp, vp, fkey, countp)
  *	Return the next event.
  */
 static gcret_t
-v_key(sp, vp, events_ok, ec_flags)
-	SCR *sp;
-	VICMD *vp;
-	int events_ok;
-	u_int32_t ec_flags;
+v_key(SCR *sp, VICMD *vp, int events_ok, u_int32_t ec_flags)
 {
 	EVENT *evp;
 	u_int32_t quote;

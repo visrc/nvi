@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_mark.c,v 10.11 1996/12/18 10:24:46 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:24:46 $";
+static const char sccsid[] = "$Id: v_mark.c,v 10.12 2001/06/25 15:19:32 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,9 +35,7 @@ static int mark __P((SCR *, VICMD *, int, enum which));
  * PUBLIC: int v_mark __P((SCR *, VICMD *));
  */
 int
-v_mark(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_mark(SCR *sp, VICMD *vp)
 {
 	return (mark_set(sp, vp->character, &vp->m_start, 1));
 }
@@ -58,9 +56,7 @@ v_mark(sp, vp)
  * PUBLIC: int v_bmark __P((SCR *, VICMD *));
  */
 int
-v_bmark(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_bmark(SCR *sp, VICMD *vp)
 {
 	return (mark(sp, vp, 1, BQMARK));
 }
@@ -74,9 +70,7 @@ v_bmark(sp, vp)
  * PUBLIC: int v_fmark __P((SCR *, VICMD *));
  */
 int
-v_fmark(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_fmark(SCR *sp, VICMD *vp)
 {
 	return (mark(sp, vp, 1, FQMARK));
 }
@@ -88,9 +82,7 @@ v_fmark(sp, vp)
  * PUBLIC: int v_emark __P((SCR *, VICMD *));
  */
 int
-v_emark(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_emark(SCR *sp, VICMD *vp)
 {
 	SMAP *smp;
 
@@ -110,11 +102,7 @@ v_emark(sp, vp)
  *	Mark commands.
  */
 static int
-mark(sp, vp, getmark, cmd)
-	SCR *sp;
-	VICMD *vp;
-	int getmark;
-	enum which cmd;
+mark(SCR *sp, VICMD *vp, int getmark, enum which cmd)
 {
 	dir_t dir;
 	MARK m;

@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_trans.c,v 8.17 2000/07/05 11:33:17 skimo Exp $ (Berkeley) $Date: 2000/07/05 11:33:17 $";
+static const char sccsid[] = "$Id: ip_trans.c,v 8.18 2001/06/25 15:19:25 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -45,9 +45,7 @@ extern IPFUNLIST const ipfuns[];
  * PUBLIC: int vi_input __P((IPVIWIN *, int));
  */
 int
-vi_input(ipviwin, fd)
-	IPVIWIN *ipviwin;
-	int fd;
+vi_input(IPVIWIN *ipviwin, int fd)
 {
 	ssize_t nr;
 
@@ -75,10 +73,7 @@ vi_input(ipviwin, fd)
  * PUBLIC: int vi_wsend __P((IPVIWIN*, char *, IP_BUF *));
  */
 int
-vi_wsend(ipviwin, fmt, ipbp)
-	IPVIWIN *ipviwin;
-	char *fmt;
-	IP_BUF *ipbp;
+vi_wsend(IPVIWIN *ipviwin, char *fmt, IP_BUF *ipbp)
 {
 	fd_set rdfd;
 	ssize_t nr;
@@ -122,11 +117,7 @@ vi_wsend(ipviwin, fmt, ipbp)
  * PUBLIC: int vi_translate __P((IPVIWIN *, char *, size_t *, IP_BUF *));
  */
 int
-vi_translate(ipviwin, bp, lenp, ipbp)
-	IPVIWIN *ipviwin;
-	char *bp;
-	size_t *lenp;
-	IP_BUF *ipbp;
+vi_translate(IPVIWIN *ipviwin, char *bp, size_t *lenp, IP_BUF *ipbp)
 {
 	IP_BUF ipb;
 	size_t len, needlen;

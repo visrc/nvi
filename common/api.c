@@ -12,7 +12,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: api.c,v 8.38 2001/06/09 21:53:51 skimo Exp $ (Berkeley) $Date: 2001/06/09 21:53:51 $";
+static const char sccsid[] = "$Id: api.c,v 8.39 2001/06/25 15:19:08 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,9 +40,7 @@ extern GS *__global_list;			/* XXX */
  * PUBLIC: SCR *api_fscreen __P((int, char *));
  */
 SCR *
-api_fscreen(id, name)
-	int id;
-	char *name;
+api_fscreen(int id, char *name)
 {
 	GS *gp;
 	SCR *tsp;
@@ -79,11 +77,7 @@ api_fscreen(id, name)
  * PUBLIC: int api_aline __P((SCR *, db_recno_t, char *, size_t));
  */
 int
-api_aline(sp, lno, line, len)
-	SCR *sp;
-	db_recno_t lno;
-	char *line;
-	size_t len;
+api_aline(SCR *sp, db_recno_t lno, char *line, size_t len)
 {
 	size_t wblen;
 	CHAR_T *wbp;
@@ -100,9 +94,7 @@ api_aline(sp, lno, line, len)
  * PUBLIC: int api_extend __P((SCR *, db_recno_t));
  */
 int 
-api_extend(sp, lno)
-	SCR *sp;
-	db_recno_t lno;
+api_extend(SCR *sp, db_recno_t lno)
 {
 	db_recno_t lastlno;
 	if (db_last(sp, &lastlno))
@@ -120,9 +112,7 @@ api_extend(sp, lno)
  * PUBLIC: int api_dline __P((SCR *, db_recno_t));
  */
 int
-api_dline(sp, lno)
-	SCR *sp;
-	db_recno_t lno;
+api_dline(SCR *sp, db_recno_t lno)
 {
 	if (db_delete(sp, lno))
 		return 1;
@@ -141,11 +131,7 @@ api_dline(sp, lno)
  * PUBLIC: int api_gline __P((SCR *, db_recno_t, CHAR_T **, size_t *));
  */
 int
-api_gline(sp, lno, linepp, lenp)
-	SCR *sp;
-	db_recno_t lno;
-	CHAR_T **linepp;
-	size_t *lenp;
+api_gline(SCR *sp, db_recno_t lno, CHAR_T **linepp, size_t *lenp)
 {
 	int isempty;
 
@@ -164,11 +150,7 @@ api_gline(sp, lno, linepp, lenp)
  * PUBLIC: int api_iline __P((SCR *, db_recno_t, CHAR_T *, size_t));
  */
 int
-api_iline(sp, lno, line, len)
-	SCR *sp;
-	db_recno_t lno;
-	CHAR_T *line;
-	size_t len;
+api_iline(SCR *sp, db_recno_t lno, CHAR_T *line, size_t len)
 {
 	return (db_insert(sp, lno, line, len));
 }
@@ -180,9 +162,7 @@ api_iline(sp, lno, line, len)
  * PUBLIC: int api_lline __P((SCR *, db_recno_t *));
  */
 int
-api_lline(sp, lnop)
-	SCR *sp;
-	db_recno_t *lnop;
+api_lline(SCR *sp, db_recno_t *lnop)
 {
 	return (db_last(sp, lnop));
 }
@@ -194,11 +174,7 @@ api_lline(sp, lnop)
  * PUBLIC: int api_sline __P((SCR *, db_recno_t, CHAR_T *, size_t));
  */
 int
-api_sline(sp, lno, line, len)
-	SCR *sp;
-	db_recno_t lno;
-	CHAR_T *line;
-	size_t len;
+api_sline(SCR *sp, db_recno_t lno, CHAR_T *line, size_t len)
 {
 	return (db_set(sp, lno, line, len));
 }
@@ -210,10 +186,7 @@ api_sline(sp, lno, line, len)
  * PUBLIC: int api_getmark __P((SCR *, int, MARK *));
  */
 int
-api_getmark(sp, markname, mp)
-	SCR *sp;
-	int markname;
-	MARK *mp;
+api_getmark(SCR *sp, int markname, MARK *mp)
 {
 	return (mark_get(sp, (ARG_CHAR_T)markname, mp, M_ERR));
 }
@@ -225,10 +198,7 @@ api_getmark(sp, markname, mp)
  * PUBLIC: int api_setmark __P((SCR *, int, MARK *));
  */
 int
-api_setmark(sp, markname, mp)
-	SCR *sp;
-	int markname;
-	MARK *mp;
+api_setmark(SCR *sp, int markname, MARK *mp)
 {
 	return (mark_set(sp, (ARG_CHAR_T)markname, mp, 1));
 }
@@ -241,10 +211,7 @@ api_setmark(sp, markname, mp)
  * PUBLIC: int api_nextmark __P((SCR *, int, char *));
  */
 int
-api_nextmark(sp, next, namep)
-	SCR *sp;
-	int next;
-	char *namep;
+api_nextmark(SCR *sp, int next, char *namep)
 {
 	LMARK *mp;
 
@@ -268,9 +235,7 @@ api_nextmark(sp, next, namep)
  * PUBLIC: int api_getcursor __P((SCR *, MARK *));
  */
 int
-api_getcursor(sp, mp)
-	SCR *sp;
-	MARK *mp;
+api_getcursor(SCR *sp, MARK *mp)
 {
 	mp->lno = sp->lno;
 	mp->cno = sp->cno;
@@ -284,9 +249,7 @@ api_getcursor(sp, mp)
  * PUBLIC: int api_setcursor __P((SCR *, MARK *));
  */
 int
-api_setcursor(sp, mp)
-	SCR *sp;
-	MARK *mp;
+api_setcursor(SCR *sp, MARK *mp)
 {
 	size_t len;
 
@@ -310,9 +273,7 @@ api_setcursor(sp, mp)
  * PUBLIC: void api_emessage __P((SCR *, char *));
  */
 void
-api_emessage(sp, text)
-	SCR *sp;
-	char *text;
+api_emessage(SCR *sp, char *text)
 {
 	msgq(sp, M_ERR, "%s", text);
 }
@@ -324,9 +285,7 @@ api_emessage(sp, text)
  * PUBLIC: void api_imessage __P((SCR *, char *));
  */
 void
-api_imessage(sp, text)
-	SCR *sp;
-	char *text;
+api_imessage(SCR *sp, char *text)
 {
 	msgq(sp, M_INFO, "%s", text);
 }
@@ -339,11 +298,7 @@ api_imessage(sp, text)
  * PUBLIC: int api_edit __P((SCR *, char *, SCR **, int));
  */
 int
-api_edit(sp, file, spp, newscreen)
-	SCR *sp;
-	char *file;
-	SCR **spp;
-	int newscreen;
+api_edit(SCR *sp, char *file, SCR **spp, int newscreen)
 {
 	EXCMD cmd;
 	size_t wlen;
@@ -370,8 +325,7 @@ api_edit(sp, file, spp, newscreen)
  * PUBLIC: int api_escreen __P((SCR *));
  */
 int
-api_escreen(sp)
-	SCR *sp;
+api_escreen(SCR *sp)
 {
 	EXCMD cmd;
 
@@ -391,8 +345,7 @@ api_escreen(sp)
  * PUBLIC: int api_swscreen __P((SCR *, SCR *));
  */
 int
-api_swscreen(sp, new)
-      SCR *sp, *new;
+api_swscreen(SCR *sp, SCR *new)
 {
 	/*
 	 * XXX
@@ -412,10 +365,7 @@ api_swscreen(sp, new)
  * PUBLIC: int api_map __P((SCR *, char *, char *, size_t));
  */
 int
-api_map(sp, name, map, len)
-	SCR *sp;
-	char *name, *map;
-	size_t len;
+api_map(SCR *sp, char *name, char *map, size_t len)
 {
 	EXCMD cmd;
 	size_t wlen;
@@ -436,9 +386,7 @@ api_map(sp, name, map, len)
  * PUBLIC: int api_unmap __P((SCR *, char *));
  */
 int 
-api_unmap(sp, name)
-	SCR *sp;
-	char *name;
+api_unmap(SCR *sp, char *name)
 {
 	EXCMD cmd;
 	size_t wlen;
@@ -555,9 +503,7 @@ api_opts_set(SCR *sp, CHAR_T *name,
  * PUBLIC: int api_run_str __P((SCR *, char *));
  */
 int     
-api_run_str(sp, cmd)
-	SCR *sp;
-	char *cmd;
+api_run_str(SCR *sp, char *cmd)
 {
 	size_t wlen;
 	CHAR_T *wp;
@@ -570,9 +516,7 @@ api_run_str(sp, cmd)
  * PUBLIC: TAGQ * api_tagq_new __P((SCR*, char*));
  */
 TAGQ *
-api_tagq_new(sp, tag)
-	SCR *sp;
-	char *tag;
+api_tagq_new(SCR *sp, char *tag)
 {
 	TAGQ *tqp;
 	size_t len;
@@ -594,10 +538,7 @@ alloc_err:
  * PUBLIC: void api_tagq_add __P((SCR*, TAGQ*, char*, char *, char *));
  */
 void
-api_tagq_add(sp, tqp, filename, search, msg)
-	SCR *sp;
-	TAGQ *tqp;
-	char *filename, *search, *msg;
+api_tagq_add(SCR *sp, TAGQ *tqp, char *filename, char *search, char *msg)
 {
 	TAG *tp;
 	CHAR_T *wp;
@@ -630,9 +571,7 @@ alloc_err:
  * PUBLIC: int api_tagq_push __P((SCR*, TAGQ**));
  */
 int
-api_tagq_push(sp, tqpp)
-	SCR *sp;
-	TAGQ **tqpp;
+api_tagq_push(SCR *sp, TAGQ **tqpp)
 {
 	FREF *frp;
 	db_recno_t lno;
@@ -662,9 +601,7 @@ api_tagq_push(sp, tqpp)
  * PUBLIC: void api_tagq_free __P((SCR*, TAGQ*));
  */
 void
-api_tagq_free(sp, tqp)
-	SCR *sp;
-	TAGQ *tqp;
+api_tagq_free(SCR *sp, TAGQ *tqp)
 {
 	if (tqp)
 		tagq_free(sp, tqp);

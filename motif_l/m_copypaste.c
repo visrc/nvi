@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_copypaste.c,v 8.8 1996/12/18 10:25:23 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:25:23 $";
+static const char sccsid[] = "$Id: m_copypaste.c,v 8.9 2001/06/25 15:19:26 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:26 $";
 #endif /* not lint */
 
 /* ICCCM Cut and paste Utilities: */
@@ -43,8 +43,7 @@ static	PFI	icccm_paste,
  * PUBLIC:    __P((int (*)(), int (*)(), int (*)(), int (*)())); 
  */
 void
-__vi_InitCopyPaste(f_copy, f_paste, f_clear, f_error)
-	PFI f_copy, f_paste, f_clear, f_error;
+__vi_InitCopyPaste(PFI f_copy, PFI f_paste, PFI f_clear, PFI f_error)
 {
     icccm_paste	= f_paste;
     icccm_clear	= f_clear;
@@ -173,8 +172,7 @@ int	*format;
  * PUBLIC: void	__vi_AcquirePrimary __P((Widget));
  */
 void 
-__vi_AcquirePrimary(widget)
-	Widget widget;
+__vi_AcquirePrimary(Widget widget)
 {
     /* assert we own the primary selection */
     XtOwnSelection( widget,
@@ -233,8 +231,7 @@ static	void	gotProc( widget, data, selection, type, value, length, format )
  * PUBLIC: void	__vi_PasteFromClipboard __P((Widget));
  */
 void
-__vi_PasteFromClipboard(widget)
-	Widget widget;
+__vi_PasteFromClipboard(Widget widget)
 {
     XtGetSelectionValue( widget,
 			 XA_PRIMARY,

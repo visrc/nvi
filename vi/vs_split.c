@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_split.c,v 10.41 2001/06/09 18:26:33 skimo Exp $ (Berkeley) $Date: 2001/06/09 18:26:33 $";
+static const char sccsid[] = "$Id: vs_split.c,v 10.42 2001/06/25 15:19:38 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,9 +40,9 @@ static int	 vs_join __P((SCR *, SCR **, jdir_t *));
  * PUBLIC: int vs_split __P((SCR *, SCR *, int));
  */
 int
-vs_split(sp, new, ccl)
-	SCR *sp, *new;
-	int ccl;		/* Colon-command line split. */
+vs_split(SCR *sp, SCR *new, int ccl)
+	              
+	        		/* Colon-command line split. */
 {
 	GS *gp;
 	SMAP *smp;
@@ -204,8 +204,7 @@ vs_split(sp, new, ccl)
  * PUBLIC: int vs_vsplit __P((SCR *, SCR *));
  */
 int
-vs_vsplit(sp, new)
-	SCR *sp, *new;
+vs_vsplit(SCR *sp, SCR *new)
 {
 	GS *gp;
 	size_t cols;
@@ -338,8 +337,7 @@ vs_insert(SCR *sp, WIN *wp)
  * PUBLIC: int vs_discard __P((SCR *, SCR **));
  */
 int
-vs_discard(sp, spp)
-	SCR *sp, **spp;
+vs_discard(SCR *sp, SCR **spp)
 {
 	GS *gp;
 	SCR *tsp, **lp, *list[100];
@@ -456,9 +454,7 @@ vs_discard(sp, spp)
  *	Find a set of screens that covers a screen's border.
  */
 static int
-vs_join(sp, listp, jdirp)
-	SCR *sp, **listp;
-	jdir_t *jdirp;
+vs_join(SCR *sp, SCR **listp, jdir_t *jdirp)
 {
 	GS *gp;
 	WIN *wp;
@@ -620,10 +616,7 @@ vs_join(sp, listp, jdirp)
  * PUBLIC: int vs_fg __P((SCR *, SCR **, CHAR_T *, int));
  */
 int
-vs_fg(sp, nspp, name, newscreen)
-	SCR *sp, **nspp;
-	CHAR_T *name;
-	int newscreen;
+vs_fg(SCR *sp, SCR **nspp, CHAR_T *name, int newscreen)
 {
 	GS *gp;
 	WIN *wp;
@@ -678,8 +671,7 @@ vs_fg(sp, nspp, name, newscreen)
  * PUBLIC: int vs_bg __P((SCR *));
  */
 int
-vs_bg(sp)
-	SCR *sp;
+vs_bg(SCR *sp)
 {
 	GS *gp;
 	WIN *wp;
@@ -719,9 +711,7 @@ vs_bg(sp)
  * PUBLIC: int vs_swap __P((SCR *, SCR **, char *));
  */
 int
-vs_swap(sp, nspp, name)
-	SCR *sp, **nspp;
-	char *name;
+vs_swap(SCR *sp, SCR **nspp, char *name)
 {
 	GS *gp;
 	WIN *wp;
@@ -818,10 +808,7 @@ vs_swap(sp, nspp, name)
  * PUBLIC: int vs_resize __P((SCR *, long, adj_t));
  */
 int
-vs_resize(sp, count, adj)
-	SCR *sp;
-	long count;
-	adj_t adj;
+vs_resize(SCR *sp, long int count, adj_t adj)
 {
 	GS *gp;
 	WIN *wp;
@@ -942,9 +929,7 @@ toosmall:			msgq(sp, M_BERR,
  *	background screen.
  */
 static SCR *
-vs_getbg(sp, name)
-	SCR *sp;
-	char *name;
+vs_getbg(SCR *sp, char *name)
 {
 	GS *gp;
 	SCR *nsp;

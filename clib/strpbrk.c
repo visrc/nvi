@@ -47,8 +47,7 @@ static const char sccsid[] = "@(#)strpbrk.c	8.1 (Berkeley) 6/4/93";
  * PUBLIC: #endif
  */
 char *
-strpbrk(s1, s2)
-	register const char *s1, *s2;
+strpbrk(register const char *s1, register const char *s2)
 {
 	register const char *scanp;
 	register int c, sc;

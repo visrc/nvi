@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_util.c,v 10.13 2000/07/14 14:29:25 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:25 $";
+static const char sccsid[] = "$Id: v_util.c,v 10.14 2001/06/25 15:19:36 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,9 +35,7 @@ static const char sccsid[] = "$Id: v_util.c,v 10.13 2000/07/14 14:29:25 skimo Ex
  * PUBLIC: void v_eof __P((SCR *, MARK *));
  */
 void
-v_eof(sp, mp)
-	SCR *sp;
-	MARK *mp;
+v_eof(SCR *sp, MARK *mp)
 {
 	db_recno_t lno;
 
@@ -60,9 +58,7 @@ v_eof(sp, mp)
  * PUBLIC: void v_eol __P((SCR *, MARK *));
  */
 void
-v_eol(sp, mp)
-	SCR *sp;
-	MARK *mp;
+v_eol(SCR *sp, MARK *mp)
 {
 	size_t len;
 
@@ -85,8 +81,7 @@ v_eol(sp, mp)
  * PUBLIC: void v_nomove __P((SCR *));
  */
 void
-v_nomove(sp)
-	SCR *sp;
+v_nomove(SCR *sp)
 {
 	msgq(sp, M_BERR, "197|No cursor movement made");
 }
@@ -98,9 +93,7 @@ v_nomove(sp)
  * PUBLIC: void v_sof __P((SCR *, MARK *));
  */
 void
-v_sof(sp, mp)
-	SCR *sp;
-	MARK *mp;
+v_sof(SCR *sp, MARK *mp)
 {
 	if (mp == NULL || mp->lno == 1)
 		msgq(sp, M_BERR, "198|Already at the beginning of the file");
@@ -115,8 +108,7 @@ v_sof(sp, mp)
  * PUBLIC: void v_sol __P((SCR *));
  */
 void
-v_sol(sp)
-	SCR *sp;
+v_sol(SCR *sp)
 {
 	msgq(sp, M_BERR, "200|Already in the first column");
 }
@@ -128,9 +120,7 @@ v_sol(sp)
  * PUBLIC: int v_isempty __P((CHAR_T *, size_t));
  */
 int
-v_isempty(p, len)
-	CHAR_T *p;
-	size_t len;
+v_isempty(CHAR_T *p, size_t len)
 {
 	for (; len--; ++p)
 		if (!isblank(*p))
@@ -145,10 +135,7 @@ v_isempty(p, len)
  * PUBLIC: void v_emsg __P((SCR *, char *, vim_t));
  */
 void
-v_emsg(sp, p, which)
-	SCR *sp;
-	char *p;
-	vim_t which;
+v_emsg(SCR *sp, char *p, vim_t which)
 {
 	switch (which) {
 	case VIM_COMBUF:

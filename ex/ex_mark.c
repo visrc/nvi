@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_mark.c,v 10.8 1996/03/06 19:52:25 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:52:25 $";
+static const char sccsid[] = "$Id: ex_mark.c,v 10.9 2001/06/25 15:19:17 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,9 +31,7 @@ static const char sccsid[] = "$Id: ex_mark.c,v 10.8 1996/03/06 19:52:25 bostic E
  * PUBLIC: int ex_mark __P((SCR *, EXCMD *));
  */
 int
-ex_mark(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_mark(SCR *sp, EXCMD *cmdp)
 {
 	NEEDFILE(sp, cmdp);
 

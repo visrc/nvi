@@ -18,11 +18,7 @@
  * PUBLIC: #endif
  */
 char *
-mmap(addr, len, prot, flags, fd, off)
-	char *addr;
-	size_t len;
-	int prot, flags, fd;
-	off_t off;
+mmap(char *addr, size_t len, int prot, int flags, int fd, off_t off)
 {
 	char *ptr;
 
@@ -41,9 +37,7 @@ mmap(addr, len, prot, flags, fd, off)
  * PUBLIC: #endif
  */
 int
-munmap(addr, len)
-	char *addr;
-	size_t len;
+munmap(char *addr, size_t len)
 {
 	free(addr);
 	return (0);

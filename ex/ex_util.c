@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_util.c,v 10.31 2001/06/10 10:23:45 skimo Exp $ (Berkeley) $Date: 2001/06/10 10:23:45 $";
+static const char sccsid[] = "$Id: ex_util.c,v 10.32 2001/06/25 15:19:21 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,11 +34,7 @@ static const char sccsid[] = "$Id: ex_util.c,v 10.31 2001/06/10 10:23:45 skimo E
  * PUBLIC: void ex_cinit __P((SCR *, EXCMD *, int, int, db_recno_t, db_recno_t, int));
  */
 void
-ex_cinit(sp, cmdp, cmd_id, naddr, lno1, lno2, force)
-	SCR *sp;
-	EXCMD *cmdp;
-	int cmd_id, force, naddr;
-	db_recno_t lno1, lno2;
+ex_cinit(SCR *sp, EXCMD *cmdp, int cmd_id, int naddr, db_recno_t lno1, db_recno_t lno2, int force)
 {
 	memset(cmdp, 0, sizeof(EXCMD));
 	cmdp->cmd = &cmds[cmd_id];
@@ -58,10 +54,7 @@ ex_cinit(sp, cmdp, cmd_id, naddr, lno1, lno2, force)
  * PUBLIC: int ex_getline __P((SCR *, FILE *, size_t *));
  */
 int
-ex_getline(sp, fp, lenp)
-	SCR *sp;
-	FILE *fp;
-	size_t *lenp;
+ex_getline(SCR *sp, FILE *fp, size_t *lenp)
 {
 	EX_PRIVATE *exp;
 	size_t off;
@@ -101,9 +94,7 @@ ex_getline(sp, fp, lenp)
  * PUBLIC: int ex_ncheck __P((SCR *, int));
  */
 int
-ex_ncheck(sp, force)
-	SCR *sp;
-	int force;
+ex_ncheck(SCR *sp, int force)
 {
 	char **ap;
 
@@ -132,8 +123,7 @@ ex_ncheck(sp, force)
  * PUBLIC: int ex_init __P((SCR *));
  */
 int
-ex_init(sp)
-	SCR *sp;
+ex_init(SCR *sp)
 {
 	GS *gp;
 
@@ -175,10 +165,7 @@ ex_wemsg(SCR* sp, CHAR_T *p, exm_t which)
  * PUBLIC: void ex_emsg __P((SCR *, char *, exm_t));
  */
 void
-ex_emsg(sp, p, which)
-	SCR *sp;
-	char *p;
-	exm_t which;
+ex_emsg(SCR *sp, char *p, exm_t which)
 {
 	switch (which) {
 	case EXM_EMPTYBUF:

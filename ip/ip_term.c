@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_term.c,v 8.8 2001/06/13 20:01:30 skimo Exp $ (Berkeley) $Date: 2001/06/13 20:01:30 $";
+static const char sccsid[] = "$Id: ip_term.c,v 8.9 2001/06/25 15:19:24 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,8 +29,7 @@ static const char sccsid[] = "$Id: ip_term.c,v 8.8 2001/06/13 20:01:30 skimo Exp
  * PUBLIC: int ip_term_init __P((SCR *));
  */
 int
-ip_term_init(sp)
-	SCR *sp;
+ip_term_init(SCR *sp)
 {
 	SEQ *qp;
 
@@ -52,8 +51,7 @@ ip_term_init(sp)
  * PUBLIC: int ip_term_end __P((GS *));
  */
 int
-ip_term_end(gp)
-	GS *gp;
+ip_term_end(GS *gp)
 {
 	SEQ *qp, *nqp;
 
@@ -73,11 +71,7 @@ ip_term_end(gp)
  * PUBLIC: int ip_fmap __P((SCR *, seq_t, CHAR_T *, size_t, CHAR_T *, size_t));
  */
 int
-ip_fmap(sp, stype, from, flen, to, tlen)
-	SCR *sp;
-	seq_t stype;
-	CHAR_T *from, *to;
-	size_t flen, tlen;
+ip_fmap(SCR *sp, seq_t stype, CHAR_T *from, size_t flen, CHAR_T *to, size_t tlen)
 {
 	/* Bind a function key to a string sequence. */
 	return (1);
@@ -90,11 +84,7 @@ ip_fmap(sp, stype, from, flen, to, tlen)
  * PUBLIC: int ip_optchange __P((SCR *, int, char *, u_long *));
  */
 int
-ip_optchange(sp, offset, str, valp)
-	SCR *sp;
-	int offset;
-	char *str;
-	u_long *valp;
+ip_optchange(SCR *sp, int offset, char *str, u_long *valp)
 {
 	IP_BUF ipb;
 	OPTLIST const *opt;

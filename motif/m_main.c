@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_main.c,v 8.38 2000/07/11 15:11:00 skimo Exp $ (Berkeley) $Date: 2000/07/11 15:11:00 $";
+static const char sccsid[] = "$Id: m_main.c,v 8.39 2001/06/25 15:19:26 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -253,9 +253,7 @@ static	void	create_top_level_shell( argc, argv )
 
 
 int
-main(argc, argv)
-	int argc;
-	char *argv[];
+main(int argc, char **argv)
 {
 	IPVI* ipvi;
 	/*
@@ -289,10 +287,7 @@ main(argc, argv)
 }
 
 static void
-XutSetIcon(wid, height, width, p)
-	Widget wid;
-	int height, width;
-	Pixmap p;
+XutSetIcon(Widget wid, int height, int width, Pixmap p)
 {
     Display	*display = XtDisplay(wid);
     Window	win;
@@ -345,9 +340,7 @@ static XutResource	colormap_resources[] = {
 };
 
 static void
-XutInstallColormap(name, wid)
-	String name;
-	Widget wid;
+XutInstallColormap(String name, Widget wid)
 {
     static Colormap cmap = 0;
     static Display  *cmap_display = 0;
@@ -390,8 +383,7 @@ XutInstallColormap(name, wid)
  *	Handle SIGCHLD.
  */
 static void
-onchld(signo)
-	int signo;
+onchld(int signo)
 {
 	/* If the vi process goes away, we exit as well. */
 	if (kill(pid, 0))
@@ -403,7 +395,7 @@ onchld(signo)
  *	Function called when the editor "quits".
  */
 static void
-onexit()
+onexit(void)
 {
 	exit (0);
 }

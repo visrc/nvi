@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_read.c,v 10.26 2001/06/25 10:39:55 skimo Exp $ (Berkeley) $Date: 2001/06/25 10:39:55 $";
+static const char sccsid[] = "$Id: cl_read.c,v 10.27 2001/06/25 15:19:06 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -49,11 +49,7 @@ static int	cl_resize __P((SCR *, size_t, size_t));
  * PUBLIC: int cl_event __P((SCR *, EVENT *, u_int32_t, int));
  */
 int
-cl_event(sp, evp, flags, ms)
-	SCR *sp;
-	EVENT *evp;
-	u_int32_t flags;
-	int ms;
+cl_event(SCR *sp, EVENT *evp, u_int32_t flags, int ms)
 {
 	struct timeval t, *tp;
 	CL_PRIVATE *clp;
@@ -151,13 +147,7 @@ read:
  *	Read characters from the input.
  */
 static input_t
-cl_read(sp, flags, bp, blen, nrp, tp)
-	SCR *sp;
-	u_int32_t flags;
-	char *bp;
-	size_t blen;
-	int *nrp;
-	struct timeval *tp;
+cl_read(SCR *sp, u_int32_t flags, char *bp, size_t blen, int *nrp, struct timeval *tp)
 {
 	struct termios term1, term2;
 	struct timeval poll;
@@ -311,9 +301,7 @@ err:		if (errno == EINTR)
  *	Reset the options for a resize event.
  */
 static int
-cl_resize(sp, lines, columns)
-	SCR *sp;
-	size_t lines, columns;
+cl_resize(SCR *sp, size_t lines, size_t columns)
 {
 	int rval;
 

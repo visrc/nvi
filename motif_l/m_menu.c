@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_menu.c,v 8.24 2000/06/28 20:20:39 skimo Exp $ (Berkeley) $Date: 2000/06/28 20:20:39 $";
+static const char sccsid[] = "$Id: m_menu.c,v 8.25 2001/06/25 15:19:27 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:27 $";
 #endif /* not lint */
 
 #include <sys/queue.h>
@@ -77,8 +77,7 @@ static	Widget	main_widget = NULL;
  * PUBLIC: void __vi_send_command_string __P((String));
  */
 void
-__vi_send_command_string(str)
-String	str;
+__vi_send_command_string(String str)
 {
     IP_BUF	ipb;
     char	buffer[BufferSize];
@@ -124,9 +123,7 @@ static	void	send_beep( w )
  */
 static	Bool	have_answer;
 void
-__vi_cancel_cb(w, client_data, call_data)
-	Widget w;
-	XtPointer client_data, call_data;
+__vi_cancel_cb(Widget w, XtPointer client_data, XtPointer call_data)
 {
 	have_answer = True;
 }
@@ -135,8 +132,7 @@ __vi_cancel_cb(w, client_data, call_data)
  * PUBLIC: void __vi_modal_dialog __P((Widget));
  */
 void
-__vi_modal_dialog( db )
-Widget	db;
+__vi_modal_dialog(Widget db)
 {
     XtAppContext	ctx;
 
@@ -222,10 +218,7 @@ static	String	get_file( w, prompt )
  *	Get a file name and send it with the command to the core.
  */
 static void
-file_command(w, code, prompt)
-	Widget	w;
-	int code;
-	String prompt;
+file_command(Widget w, int code, String prompt)
 {
 	IP_BUF ipb;
 	char *file;
@@ -245,25 +238,19 @@ file_command(w, code, prompt)
  * These are in the order in which they appear in the menu structure.
  */
 static void
-ma_edit_file(w, call_data, client_data)
-	Widget w;
-	XtPointer call_data, client_data;
+ma_edit_file(Widget w, XtPointer call_data, XtPointer client_data)
 {
 	file_command(w, VI_EDIT, "Edit");
 }
 
 static void
-ma_split(w, call_data, client_data)
-	Widget w;
-	XtPointer call_data, client_data;
+ma_split(Widget w, XtPointer call_data, XtPointer client_data)
 {
 	file_command(w, VI_EDITSPLIT, "Edit");
 }
 
 static void
-ma_save(w, call_data, client_data)
-	Widget w;
-	XtPointer call_data, client_data;
+ma_save(Widget w, XtPointer call_data, XtPointer client_data)
 {
 	IP_BUF ipb;
 
@@ -272,17 +259,13 @@ ma_save(w, call_data, client_data)
 }
 
 static void
-ma_save_as(w, call_data, client_data)
-	Widget w;
-	XtPointer call_data, client_data;
+ma_save_as(Widget w, XtPointer call_data, XtPointer client_data)
 {
 	file_command(w, VI_WRITEAS, "Save As");
 }
 
 static void
-ma_wq(w, call_data, client_data)
-	Widget w;
-	XtPointer call_data, client_data;
+ma_wq(Widget w, XtPointer call_data, XtPointer client_data)
 {
 	IP_BUF ipb;
 
@@ -291,9 +274,7 @@ ma_wq(w, call_data, client_data)
 }
 
 static void
-ma_quit(w, call_data, client_data)
-	Widget w;
-	XtPointer call_data, client_data;
+ma_quit(Widget w, XtPointer call_data, XtPointer client_data)
 {
 	IP_BUF ipb;
 
@@ -302,9 +283,7 @@ ma_quit(w, call_data, client_data)
 }
 
 static void
-ma_undo(w, call_data, client_data)
-	Widget w;
-	XtPointer call_data, client_data;
+ma_undo(Widget w, XtPointer call_data, XtPointer client_data)
 {
 	IP_BUF ipb;
 
@@ -363,41 +342,31 @@ static	void		ma_paste( w, call_data, client_data )
 }
 
 static void
-ma_find(w, call_data, client_data)
-	Widget w;
-	XtPointer call_data, client_data;
+ma_find(Widget w, XtPointer call_data, XtPointer client_data)
 {
 	__vi_show_search_dialog( main_widget, "Find" );
 }
 
 static void
-ma_find_next(w, call_data, client_data)
-	Widget w;
-	XtPointer call_data, client_data;
+ma_find_next(Widget w, XtPointer call_data, XtPointer client_data)
 {
 	__vi_search( w );
 }
 
 static void
-ma_tags(w, call_data, client_data)
-	Widget w;
-	XtPointer call_data, client_data;
+ma_tags(Widget w, XtPointer call_data, XtPointer client_data)
 {
 	__vi_show_tags_dialog( main_widget, "Tag Stack" );
 }
 
 static void
-ma_tagpop(w, call_data, client_data)
-	Widget w;
-	XtPointer call_data, client_data;
+ma_tagpop(Widget w, XtPointer call_data, XtPointer client_data)
 {
 	__vi_send_command_string( "\024" );
 }
 
 static void
-ma_tagtop(w, call_data, client_data)
-	Widget w;
-	XtPointer call_data, client_data;
+ma_tagtop(Widget w, XtPointer call_data, XtPointer client_data)
 {
 	__vi_send_command_string( ":tagtop" );
 }
@@ -536,8 +505,7 @@ static	void		add_entries( parent, actions )
  * PUBLIC: Widget vi_create_menubar __P((Widget));
  */
 Widget
-vi_create_menubar(parent)
-	Widget parent;
+vi_create_menubar(Widget parent)
 {
     Widget	menu, pull, button;
     menu_bar	*ptr;

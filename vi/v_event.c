@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_event.c,v 8.20 2001/06/13 20:01:31 skimo Exp $ (Berkeley) $Date: 2001/06/13 20:01:31 $";
+static const char sccsid[] = "$Id: v_event.c,v 8.21 2001/06/25 15:19:31 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,9 +33,7 @@ static const char sccsid[] = "$Id: v_event.c,v 8.20 2001/06/13 20:01:31 skimo Ex
  *	Scrollbar position.
  */
 static int
-v_c_settop(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_c_settop(SCR *sp, VICMD *vp)
 {
 	SMAP *smp;
 	size_t x = 0, y = LASTLINE(sp); /* Future: change to -1 to not
@@ -78,9 +76,7 @@ v_c_settop(sp, vp)
  *	Edit command.
  */
 static int
-v_edit(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_edit(SCR *sp, VICMD *vp)
 {
 	EXCMD cmd;
 
@@ -94,9 +90,7 @@ v_edit(sp, vp)
  *	Set an option value.
  */
 static int
-v_editopt(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_editopt(SCR *sp, VICMD *vp)
 {
 	int rval;
 	char *np;
@@ -118,9 +112,7 @@ v_editopt(sp, vp)
  *	Edit in a split screen.
  */
 static int
-v_editsplit(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_editsplit(SCR *sp, VICMD *vp)
 {
 	EXCMD cmd;
 
@@ -135,9 +127,7 @@ v_editsplit(sp, vp)
  *	Tag command.
  */
 static int
-v_tag(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_tag(SCR *sp, VICMD *vp)
 {
 	EXCMD cmd;
 
@@ -154,9 +144,7 @@ v_tag(sp, vp)
  *	Tag on the supplied string.
  */
 static int
-v_tagas(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_tagas(SCR *sp, VICMD *vp)
 {
 	EXCMD cmd;
 
@@ -170,9 +158,7 @@ v_tagas(sp, vp)
  *	Tag in a split screen.
  */
 static int
-v_tagsplit(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_tagsplit(SCR *sp, VICMD *vp)
 {
 	EXCMD cmd;
 
@@ -190,9 +176,7 @@ v_tagsplit(sp, vp)
  *	Quit command.
  */
 static int
-v_quit(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_quit(SCR *sp, VICMD *vp)
 {
 	EXCMD cmd;
 
@@ -207,9 +191,7 @@ v_quit(sp, vp)
  * PUBLIC: int v_erepaint __P((SCR *, EVENT *));
  */
 int
-v_erepaint(sp, evp)
-	SCR *sp;
-	EVENT *evp;
+v_erepaint(SCR *sp, EVENT *evp)
 {
 	SMAP *smp;
 
@@ -227,9 +209,7 @@ v_erepaint(sp, evp)
  *	End selection.
  */
 int
-v_sel_end(sp, evp)
-	SCR *sp;
-	EVENT *evp;
+v_sel_end(SCR *sp, EVENT *evp)
 {
 	SMAP *smp;
 	VI_PRIVATE *vip;
@@ -252,9 +232,7 @@ v_sel_end(sp, evp)
  *	Start selection.
  */
 int
-v_sel_start(sp, evp)
-	SCR *sp;
-	EVENT *evp;
+v_sel_start(SCR *sp, EVENT *evp)
 {
 	SMAP *smp;
 	VI_PRIVATE *vip;
@@ -277,9 +255,7 @@ v_sel_start(sp, evp)
  *	Write and quit command.
  */
 static int
-v_wq(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_wq(SCR *sp, VICMD *vp)
 {
 	EXCMD cmd;
 
@@ -296,9 +272,7 @@ v_wq(sp, vp)
  *	Write command.
  */
 static int
-v_write(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_write(SCR *sp, VICMD *vp)
 {
 	EXCMD cmd;
 
@@ -315,9 +289,7 @@ v_write(sp, vp)
  *	Write command.
  */
 static int
-v_writeas(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_writeas(SCR *sp, VICMD *vp)
 {
 	EXCMD cmd;
 
@@ -337,9 +309,7 @@ v_writeas(sp, vp)
  * PUBLIC: int v_event __P((SCR *, VICMD *));
  */
 int
-v_event(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_event(SCR *sp, VICMD *vp)
 {
 	/* This array maps events to vi command functions. */
 	static VIKEYS const vievents[] = {

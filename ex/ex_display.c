@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_display.c,v 10.14 2000/07/22 17:31:21 skimo Exp $ (Berkeley) $Date: 2000/07/22 17:31:21 $";
+static const char sccsid[] = "$Id: ex_display.c,v 10.15 2001/06/25 15:19:15 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,9 +36,7 @@ static void	db __P((SCR *, CB *, u_char *));
  * PUBLIC: int ex_display __P((SCR *, EXCMD *));
  */
 int
-ex_display(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_display(SCR *sp, EXCMD *cmdp)
 {
 	switch (cmdp->argv[0]->bp[0]) {
 	case 'b':
@@ -80,8 +78,7 @@ ex_display(sp, cmdp)
  *	Display buffers.
  */
 static int
-bdisplay(sp)
-	SCR *sp;
+bdisplay(SCR *sp)
 {
 	CB *cbp;
 
@@ -119,10 +116,7 @@ bdisplay(sp)
  *	Display a buffer.
  */
 static void
-db(sp, cbp, name)
-	SCR *sp;
-	CB *cbp;
-	u_char *name;
+db(SCR *sp, CB *cbp, u_char *name)
 {
 	CHAR_T *p;
 	GS *gp;

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_util.c,v 8.10 1996/12/18 10:25:38 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:25:38 $";
+static const char sccsid[] = "$Id: m_util.c,v 8.11 2001/06/25 15:19:28 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -90,11 +90,7 @@ int	indent;
  *
  * PUBLIC: void __XutConvertResources __P((Widget, String, XutResource *, int));
  */
-void __XutConvertResources(wid, root, resources, count)
-	Widget wid;
-	String root;
-	XutResource *resources;
-	int count;
+void __XutConvertResources(Widget wid, String root, XutResource *resources, int count)
 {
     int		i;
     XrmValue	from, to;

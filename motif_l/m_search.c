@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_search.c,v 8.12 2000/06/28 20:20:40 skimo Exp $ (Berkeley) $Date: 2000/06/28 20:20:40 $";
+static const char sccsid[] = "$Id: m_search.c,v 8.13 2001/06/25 15:19:28 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:28 $";
 #endif /* not lint */
 
 #include <sys/queue.h>
@@ -137,8 +137,7 @@ static	void	get_state( w )
  *	Action for next button.
  */
 static void
-next_func(w)
-	Widget w;
+next_func(Widget w)
 {
 	search(w, 0);
 }
@@ -148,8 +147,7 @@ next_func(w)
  *	Action for previous button.
  */
 static void
-prev_func(w)
-	Widget w;
+prev_func(Widget w)
 {
 	search(w, VI_SEARCH_REV);
 }
@@ -159,9 +157,7 @@ prev_func(w)
  *	Perform the search.
  */
 static void
-search(w, flags)
-	Widget w;
-	int flags;
+search(Widget w, int flags)
 {
 	IP_BUF ipb;
 	optData *opt;
@@ -516,8 +512,7 @@ String	title;
  * PUBLIC: void __vi_search __P((Widget));
  */
 void
-__vi_search( w )
-Widget	w;
+__vi_search(Widget w)
 {
     next_func( w );
 }

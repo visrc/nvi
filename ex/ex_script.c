@@ -13,7 +13,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_script.c,v 10.37 2000/07/16 20:49:32 skimo Exp $ (Berkeley) $Date: 2000/07/16 20:49:32 $";
+static const char sccsid[] = "$Id: ex_script.c,v 10.38 2001/06/25 15:19:19 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -60,9 +60,7 @@ static int	sscr_setprompt __P((SCR *, CHAR_T *, size_t));
  * PUBLIC: int ex_script __P((SCR *, EXCMD *));
  */
 int
-ex_script(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_script(SCR *sp, EXCMD *cmdp)
 {
 	/* Vi only command. */
 	if (!F_ISSET(sp, SC_VI)) {
@@ -87,8 +85,7 @@ ex_script(sp, cmdp)
  *	Create a pty setup for a shell.
  */
 static int
-sscr_init(sp)
-	SCR *sp;
+sscr_init(SCR *sp)
 {
 	SCRIPT *sc;
 	char *sh, *sh_path;
@@ -203,8 +200,7 @@ err:		if (sc->sh_master != -1)
  *	carriage return comes; set the prompt from that line.
  */
 static int
-sscr_getprompt(sp)
-	SCR *sp;
+sscr_getprompt(SCR *sp)
 {
 	struct timeval tv;
 	CHAR_T *endp, *p, *t, buf[1024];
@@ -299,9 +295,7 @@ prompterr:	sscr_end(sp);
  * PUBLIC: int sscr_exec __P((SCR *, db_recno_t));
  */
 int
-sscr_exec(sp, lno)
-	SCR *sp;
-	db_recno_t lno;
+sscr_exec(SCR *sp, db_recno_t lno)
 {
 	SCRIPT *sc;
 	db_recno_t last_lno;
@@ -416,8 +410,7 @@ loop:	memcpy(&rdfd, fdset, sizeof(fd_set));
  * PUBLIC: int sscr_input __P((SCR *));
  */
 int
-sscr_input(sp)
-	SCR *sp;
+sscr_input(SCR *sp)
 {
 	GS *gp;
 	WIN *wp;
@@ -468,8 +461,7 @@ loop:	maxfd = 0;
  *	Take a line from the shell and insert it into the file.
  */
 static int
-sscr_insert(sp)
-	SCR *sp;
+sscr_insert(SCR *sp)
 {
 	struct timeval tv;
 	CHAR_T *endp, *p, *t;
@@ -558,10 +550,7 @@ ret:	FREE_SPACEW(sp, bp, blen);
  *
  */
 static int
-sscr_setprompt(sp, buf, len)
-	SCR *sp;
-	CHAR_T *buf;
-	size_t len;
+sscr_setprompt(SCR *sp, CHAR_T *buf, size_t len)
 {
 	SCRIPT *sc;
 	char *np;
@@ -588,10 +577,7 @@ sscr_setprompt(sp, buf, len)
  *	parts that can change, in both content and size.
  */
 static int
-sscr_matchprompt(sp, lp, line_len, lenp)
-	SCR *sp;
-	CHAR_T *lp;
-	size_t line_len, *lenp;
+sscr_matchprompt(SCR *sp, CHAR_T *lp, size_t line_len, size_t *lenp)
 {
 	SCRIPT *sc;
 	size_t prompt_len;
@@ -629,8 +615,7 @@ sscr_matchprompt(sp, lp, line_len, lenp)
  * PUBLIC: int sscr_end __P((SCR *));
  */
 int
-sscr_end(sp)
-	SCR *sp;
+sscr_end(SCR *sp)
 {
 	SCRIPT *sc;
 
@@ -663,8 +648,7 @@ sscr_end(sp)
  *	Set/clear the global scripting bit.
  */
 static void
-sscr_check(sp)
-	SCR *sp;
+sscr_check(SCR *sp)
 {
 	GS *gp;
 	WIN *wp;
@@ -685,11 +669,7 @@ static int ptys_open __P((int, char *));
 static int ptym_open __P((char *));
 
 static int
-sscr_pty(amaster, aslave, name, termp, winp)
-	int *amaster, *aslave;
-	char *name;
-	struct termios *termp;
-	void *winp;
+sscr_pty(int *amaster, int *aslave, char *name, struct termios *termp, void *winp)
 {
 	int master, slave, ttygid;
 
@@ -723,8 +703,7 @@ sscr_pty(amaster, aslave, name, termp, winp)
  *	to it.  pts_name is also returned which is the name of the slave.
  */
 static int
-ptym_open(pts_name)
-	char *pts_name;
+ptym_open(char *pts_name)
 {
 	int fdm;
 	char *ptr, *ptsname();
@@ -762,9 +741,7 @@ ptym_open(pts_name)
  *	This function opens the slave pty.
  */
 static int
-ptys_open(fdm, pts_name)
-	int fdm;
-	char *pts_name;
+ptys_open(int fdm, char *pts_name)
 {
 	int fds;
 

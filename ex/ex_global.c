@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_global.c,v 10.29 2001/06/17 14:16:50 skimo Exp $ (Berkeley) $Date: 2001/06/17 14:16:50 $";
+static const char sccsid[] = "$Id: ex_global.c,v 10.30 2001/06/25 15:19:16 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,9 +38,7 @@ static int ex_g_setup __P((SCR *, EXCMD *, enum which));
  * PUBLIC: int ex_global __P((SCR *, EXCMD *));
  */
 int
-ex_global(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_global(SCR *sp, EXCMD *cmdp)
 {
 	return (ex_g_setup(sp,
 	    cmdp, FL_ISSET(cmdp->iflags, E_C_FORCE) ? V : GLOBAL));
@@ -53,9 +51,7 @@ ex_global(sp, cmdp)
  * PUBLIC: int ex_v __P((SCR *, EXCMD *));
  */
 int
-ex_v(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_v(SCR *sp, EXCMD *cmdp)
 {
 	return (ex_g_setup(sp, cmdp, V));
 }
@@ -65,10 +61,7 @@ ex_v(sp, cmdp)
  *	Ex global and v commands.
  */
 static int
-ex_g_setup(sp, cmdp, cmd)
-	SCR *sp;
-	EXCMD *cmdp;
-	enum which cmd;
+ex_g_setup(SCR *sp, EXCMD *cmdp, enum which cmd)
 {
 	CHAR_T *ptrn, *p, *t;
 	EXCMD *ecp;
@@ -258,10 +251,7 @@ usage:		ex_emsg(sp, cmdp->cmd->usage, EXM_USAGE);
  * PUBLIC: int ex_g_insdel __P((SCR *, lnop_t, db_recno_t));
  */
 int
-ex_g_insdel(sp, op, lno)
-	SCR *sp;
-	lnop_t op;
-	db_recno_t lno;
+ex_g_insdel(SCR *sp, lnop_t op, db_recno_t lno)
 {
 	EXCMD *ecp;
 	RANGE *nrp, *rp;

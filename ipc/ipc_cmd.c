@@ -68,64 +68,43 @@ IPFUNLIST const ipfuns[] = {
 };
 
 static int
-ipc_unmarshall_a(ipvi, ipb, func)
-    IPVIWIN *ipvi;
-    IP_BUF *ipb;
-    IPFunc func;
+ipc_unmarshall_a(IPVIWIN *ipvi, IP_BUF *ipb, IPFunc func)
 {
     return ((IPFunc_a)func)(ipvi, ipb->str1, ipb->len1);
 }
 
 static int
-ipc_unmarshall_12(ipvi, ipb, func)
-    IPVIWIN *ipvi;
-    IP_BUF *ipb;
-    IPFunc func;
+ipc_unmarshall_12(IPVIWIN *ipvi, IP_BUF *ipb, IPFunc func)
 {
     return ((IPFunc_12)func)(ipvi, ipb->val1, ipb->val2);
 }
 
 static int
-ipc_unmarshall(ipvi, ipb, func)
-    IPVIWIN *ipvi;
-    IP_BUF *ipb;
-    IPFunc func;
+ipc_unmarshall(IPVIWIN *ipvi, IP_BUF *ipb, IPFunc func)
 {
     return func(ipvi);
 }
 
 static int
-ipc_unmarshall_ab1(ipvi, ipb, func)
-    IPVIWIN *ipvi;
-    IP_BUF *ipb;
-    IPFunc func;
+ipc_unmarshall_ab1(IPVIWIN *ipvi, IP_BUF *ipb, IPFunc func)
 {
     return ((IPFunc_ab1)func)(ipvi, ipb->str1, ipb->len1, ipb->str2, ipb->len2, ipb->val1);
 }
 
 static int
-ipc_unmarshall_1a(ipvi, ipb, func)
-    IPVIWIN *ipvi;
-    IP_BUF *ipb;
-    IPFunc func;
+ipc_unmarshall_1a(IPVIWIN *ipvi, IP_BUF *ipb, IPFunc func)
 {
     return ((IPFunc_1a)func)(ipvi, ipb->val1, ipb->str1, ipb->len1);
 }
 
 static int
-ipc_unmarshall_1(ipvi, ipb, func)
-    IPVIWIN *ipvi;
-    IP_BUF *ipb;
-    IPFunc func;
+ipc_unmarshall_1(IPVIWIN *ipvi, IP_BUF *ipb, IPFunc func)
 {
     return ((IPFunc_1)func)(ipvi, ipb->val1);
 }
 
 static int
-ipc_unmarshall_123(ipvi, ipb, func)
-    IPVIWIN *ipvi;
-    IP_BUF *ipb;
-    IPFunc func;
+ipc_unmarshall_123(IPVIWIN *ipvi, IP_BUF *ipb, IPFunc func)
 {
     return ((IPFunc_123)func)(ipvi, ipb->val1, ipb->val2, ipb->val3);
 }

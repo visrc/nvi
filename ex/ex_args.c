@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_args.c,v 10.17 2000/07/14 14:29:19 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:19 $";
+static const char sccsid[] = "$Id: ex_args.c,v 10.18 2001/06/25 15:19:14 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -42,9 +42,7 @@ static int ex_N_next __P((SCR *, EXCMD *));
  * PUBLIC: int ex_next __P((SCR *, EXCMD *));
  */
 int
-ex_next(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_next(SCR *sp, EXCMD *cmdp)
 {
 	ARGS **argv;
 	FREF *frp;
@@ -131,9 +129,7 @@ ex_next(sp, cmdp)
  *	New screen version of ex_next.
  */
 static int
-ex_N_next(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_N_next(SCR *sp, EXCMD *cmdp)
 {
 	SCR *new;
 	FREF *frp;
@@ -178,9 +174,7 @@ ex_N_next(sp, cmdp)
  * PUBLIC: int ex_prev __P((SCR *, EXCMD *));
  */
 int
-ex_prev(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_prev(SCR *sp, EXCMD *cmdp)
 {
 	FREF *frp;
 	size_t wlen;
@@ -229,9 +223,7 @@ ex_prev(sp, cmdp)
  * PUBLIC: int ex_rew __P((SCR *, EXCMD *));
  */
 int
-ex_rew(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_rew(SCR *sp, EXCMD *cmdp)
 {
 	FREF *frp;
 
@@ -269,9 +261,7 @@ ex_rew(sp, cmdp)
  * PUBLIC: int ex_args __P((SCR *, EXCMD *));
  */
 int
-ex_args(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_args(SCR *sp, EXCMD *cmdp)
 {
 	GS *gp;
 	int cnt, col, len, sep;
@@ -312,10 +302,7 @@ ex_args(sp, cmdp)
  * PUBLIC: char **ex_buildargv __P((SCR *, EXCMD *, char *));
  */
 char **
-ex_buildargv(sp, cmdp, name)
-	SCR *sp;
-	EXCMD *cmdp;
-	char *name;
+ex_buildargv(SCR *sp, EXCMD *cmdp, char *name)
 {
 	ARGS **argv;
 	int argc;

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_main.c,v 10.52 2000/07/23 11:14:44 skimo Exp $ (Berkeley) $Date: 2000/07/23 11:14:44 $";
+static const char sccsid[] = "$Id: cl_main.c,v 10.53 2001/06/25 15:19:06 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -47,9 +47,7 @@ static void	   term_init __P((char *, char *));
  *	This is the main loop for the standalone curses editor.
  */
 int
-main(argc, argv)
-	int argc;
-	char *argv[];
+main(int argc, char **argv)
 {
 	static int reenter;
 	CL_PRIVATE *clp;
@@ -166,8 +164,7 @@ main(argc, argv)
  *	Create and partially initialize the CL structure.
  */
 static CL_PRIVATE *
-cl_init(gp)
-	GS *gp;
+cl_init(GS *gp)
 {
 	CL_PRIVATE *clp;
 	int fd;
@@ -215,8 +212,7 @@ tcfail:			perr(gp->progname, "tcgetattr");
  *	Discard the CL structure.
  */
 static void
-cl_end(clp)
-	CL_PRIVATE *clp;
+cl_end(CL_PRIVATE *clp)
 {
 	if (clp->oname != NULL)
 		free(clp->oname);
@@ -228,8 +224,7 @@ cl_end(clp)
  *	Initialize terminal information.
  */
 static void
-term_init(name, ttype)
-	char *name, *ttype;
+term_init(char *name, char *ttype)
 {
 	int err;
 
@@ -250,8 +245,7 @@ term_init(name, ttype)
 #define	GLOBAL_CLP \
 	CL_PRIVATE *clp = GCLP(__global_list);
 static void
-h_hup(signo)
-	int signo;
+h_hup(int signo)
 {
 	GLOBAL_CLP;
 
@@ -260,8 +254,7 @@ h_hup(signo)
 }
 
 static void
-h_int(signo)
-	int signo;
+h_int(int signo)
 {
 	GLOBAL_CLP;
 
@@ -269,8 +262,7 @@ h_int(signo)
 }
 
 static void
-h_term(signo)
-	int signo;
+h_term(int signo)
 {
 	GLOBAL_CLP;
 
@@ -279,8 +271,7 @@ h_term(signo)
 }
 
 static void
-h_winch(signo)
-	int signo;
+h_winch(int signo)
 {
 	GLOBAL_CLP;
 
@@ -295,9 +286,7 @@ h_winch(signo)
  * PUBLIC: int sig_init __P((GS *, SCR *));
  */
 int
-sig_init(gp, sp)
-	GS *gp;
-	SCR *sp;
+sig_init(GS *gp, SCR *sp)
 {
 	CL_PRIVATE *clp;
 
@@ -339,10 +328,7 @@ sig_init(gp, sp)
  *	Set a signal handler.
  */
 static int
-setsig(signo, oactp, handler)
-	int signo;
-	struct sigaction *oactp;
-	void (*handler) __P((int));
+setsig(int signo, struct sigaction *oactp, void (*handler) (int))
 {
 	struct sigaction act;
 
@@ -373,8 +359,7 @@ setsig(signo, oactp, handler)
  *	End signal setup.
  */
 static void
-sig_end(gp)
-	GS *gp;
+sig_end(GS *gp)
 {
 	CL_PRIVATE *clp;
 
@@ -392,8 +377,7 @@ sig_end(gp)
  *	Initialize the standard curses functions.
  */
 static void
-cl_func_std(gp)
-	GS *gp;
+cl_func_std(GS *gp)
 {
 	gp->scr_addstr = cl_addstr;
 	gp->scr_waddstr = cl_waddstr;
@@ -428,8 +412,7 @@ cl_func_std(gp)
  *	Print system error.
  */
 static void
-perr(name, msg)
-	char *name, *msg;
+perr(char *name, char *msg)
 {
 	(void)fprintf(stderr, "%s:", name);
 	if (msg != NULL)

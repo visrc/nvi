@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_search.c,v 10.28 2001/06/13 20:01:31 skimo Exp $ (Berkeley) $Date: 2001/06/13 20:01:31 $";
+static const char sccsid[] = "$Id: v_search.c,v 10.29 2001/06/25 15:19:35 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -39,9 +39,7 @@ static int v_search __P((SCR *, VICMD *, CHAR_T *, size_t, u_int, dir_t));
  * PUBLIC: int v_searchb __P((SCR *, VICMD *));
  */
 int
-v_searchb(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_searchb(SCR *sp, VICMD *vp)
 {
 	return (v_exaddr(sp, vp, BACKWARD));
 }
@@ -53,9 +51,7 @@ v_searchb(sp, vp)
  * PUBLIC: int v_searchf __P((SCR *, VICMD *));
  */
 int
-v_searchf(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_searchf(SCR *sp, VICMD *vp)
 {
 	return (v_exaddr(sp, vp, FORWARD));
 }
@@ -65,10 +61,7 @@ v_searchf(sp, vp)
  *	Do a vi search (which is really an ex address).
  */
 static int
-v_exaddr(sp, vp, dir)
-	SCR *sp;
-	VICMD *vp;
-	dir_t dir;
+v_exaddr(SCR *sp, VICMD *vp, dir_t dir)
 {
 	static EXCMDLIST fake = { L("search") };
 	EXCMD *cmdp;
@@ -289,9 +282,7 @@ err2:	vp->m_final.lno = s_lno;
  * PUBLIC: int v_searchN __P((SCR *, VICMD *));
  */
 int
-v_searchN(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_searchN(SCR *sp, VICMD *vp)
 {
 	dir_t dir;
 
@@ -316,9 +307,7 @@ v_searchN(sp, vp)
  * PUBLIC: int v_searchn __P((SCR *, VICMD *));
  */
 int
-v_searchn(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_searchn(SCR *sp, VICMD *vp)
 {
 	return (v_search(sp, vp, NULL, 0, SEARCH_PARSE, sp->searchdir));
 }
@@ -330,9 +319,7 @@ v_searchn(sp, vp)
  * PUBLIC: int v_searchw __P((SCR *, VICMD *));
  */
 int
-v_searchw(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_searchw(SCR *sp, VICMD *vp)
 {
 	size_t blen, len;
 	int rval;
@@ -359,9 +346,7 @@ v_searchw(sp, vp)
  * PUBLIC: int v_esearch __P((SCR *, VICMD *));
  */
 int
-v_esearch(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_esearch(SCR *sp, VICMD *vp)
 {
 	MARK m;
 	int flags;
@@ -391,13 +376,7 @@ v_esearch(sp, vp)
  *	The search commands.
  */
 static int
-v_search(sp, vp, ptrn, plen, flags, dir)
-	SCR *sp;
-	VICMD *vp;
-	u_int flags;
-	CHAR_T *ptrn;
-	size_t plen;
-	dir_t dir;
+v_search(SCR *sp, VICMD *vp, CHAR_T *ptrn, size_t plen, u_int flags, dir_t dir)
 {
 	/* Display messages. */
 	LF_SET(SEARCH_MSG);
@@ -460,10 +439,7 @@ v_search(sp, vp, ptrn, plen, flags, dir)
  * PUBLIC: int v_correct __P((SCR *, VICMD *, int));
  */
 int
-v_correct(sp, vp, isdelta)
-	SCR *sp;
-	VICMD *vp;
-	int isdelta;
+v_correct(SCR *sp, VICMD *vp, int isdelta)
 {
 	dir_t dir;
 	MARK m;

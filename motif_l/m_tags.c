@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_tags.c,v 8.7 2000/06/28 20:20:40 skimo Exp $ (Berkeley) $Date: 2000/06/28 20:20:40 $";
+static const char sccsid[] = "$Id: m_tags.c,v 8.8 2001/06/25 15:19:28 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:28 $";
 #endif /* not lint */
 
 /*
@@ -83,9 +83,9 @@ typedef struct	{
     void	(*cb)();
 } ButtonData;
 
-static	void go_to_tag();
-static	void split_to_tag();
-static	void pop_tag();
+static	void go_to_tag(Widget w);
+static	void split_to_tag(Widget w);
+static	void pop_tag(Widget w);
 
 static	ButtonData button_data[] = {
     { "Go To Tag",	True,	go_to_tag	},
@@ -96,7 +96,7 @@ static	ButtonData button_data[] = {
 
 /* manage the tags stack list */
 
-void	__vi_pop_tag()
+void	__vi_pop_tag(void)
 {
     if ( ! active ) return;
 
@@ -104,7 +104,7 @@ void	__vi_pop_tag()
 }
 
 
-void	__vi_clear_tag()
+void	__vi_clear_tag(void)
 {
     if ( ! active ) return;
 
@@ -112,8 +112,7 @@ void	__vi_clear_tag()
 }
 
 
-void	__vi_push_tag( text )
-String	text;
+void	__vi_push_tag(String text)
 {
     XmString	str;
 
@@ -185,7 +184,7 @@ static	Widget	create_push_buttons( parent, data, count )
 /* callbacks */
 
 static void
-cancel_cb()
+cancel_cb(void)
 {
 #if defined(SelfTest)
     puts( "cancelled" );
@@ -194,10 +193,7 @@ cancel_cb()
 }
 
 
-static	void 		set_text_field( w, ptr, cbs )
-Widget			w;
-XtPointer		ptr;
-XmListCallbackStruct	*cbs;
+static	void 		set_text_field(Widget w, XtPointer ptr, XmListCallbackStruct *cbs)
 {
     String str;
 
@@ -207,14 +203,13 @@ XmListCallbackStruct	*cbs;
 }
 
 
-void	__vi_set_tag_text( text )
-String	text;
+void	__vi_set_tag_text(String text)
 {
     if ( active ) XmTextFieldSetString( db_text, text );
 }
 
 
-static	void destroyed()
+static	void destroyed(void)
 {
 #if defined(SelfTest)
     puts( "destroyed" );

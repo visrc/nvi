@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_zexit.c,v 10.6 1996/04/27 11:40:38 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:38 $";
+static const char sccsid[] = "$Id: v_zexit.c,v 10.7 2001/06/25 15:19:37 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,9 +32,7 @@ static const char sccsid[] = "$Id: v_zexit.c,v 10.6 1996/04/27 11:40:38 bostic E
  * PUBLIC: int v_zexit __P((SCR *, VICMD *));
  */
 int
-v_zexit(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_zexit(SCR *sp, VICMD *vp)
 {
 	/* Write back any modifications. */
 	if (F_ISSET(sp->ep, F_MODIFIED) &&

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_line.c,v 10.33 2001/05/10 19:25:49 skimo Exp $ (Berkeley) $Date: 2001/05/10 19:25:49 $";
+static const char sccsid[] = "$Id: vs_line.c,v 10.34 2001/06/25 15:19:37 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,10 +38,7 @@ static const char sccsid[] = "$Id: vs_line.c,v 10.33 2001/05/10 19:25:49 skimo E
  * PUBLIC: int vs_line __P((SCR *, SMAP *, size_t *, size_t *));
  */
 int
-vs_line(sp, smp, yp, xp)
-	SCR *sp;
-	SMAP *smp;
-	size_t *xp, *yp;
+vs_line(SCR *sp, SMAP *smp, size_t *yp, size_t *xp)
 {
 	char *kp;
 	GS *gp;
@@ -477,8 +474,7 @@ ret1:	(void)gp->scr_move(sp, oldy, oldx);
  * PUBLIC: int vs_number __P((SCR *));
  */
 int
-vs_number(sp)
-	SCR *sp;
+vs_number(SCR *sp)
 {
 	GS *gp;
 	SMAP *smp;

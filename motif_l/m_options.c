@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_options.c,v 8.20 2000/07/05 11:33:19 skimo Exp $ (Berkeley) $Date: 2000/07/05 11:33:19 $";
+static const char sccsid[] = "$Id: m_options.c,v 8.21 2001/06/25 15:19:27 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -200,7 +200,7 @@ void __vi_cancel_cb()
 #endif
 
 
-static	void destroyed()
+static	void destroyed(void)
 {
     int i;
 
@@ -214,11 +214,7 @@ static	void destroyed()
 }
 
 
-static	void	window_unmapped( w, ptr, ev, cont )
-Widget		w;
-XtPointer	ptr;
-XEvent		*ev;
-Boolean		*cont;
+static	void	window_unmapped(Widget w, XtPointer ptr, XEvent *ev, Boolean *cont)
 {
     if ( ev->type == UnmapNotify ) {
 #if defined(SelfTest)
@@ -235,13 +231,7 @@ Boolean		*cont;
  * PUBLIC: int __vi_editopt __P((IPVI *, const char *, u_int32_t, const char *, u_int32_t, u_int32_t));
  */
 int
-__vi_editopt(ipvi, str1, len1, str2, len2, val1)
-	IPVI *ipvi;
-	const char *str1;
-	u_int32_t len1;
-	const char *str2;
-	u_int32_t len2;
-	u_int32_t val1;
+__vi_editopt(IPVI *ipvi, const char *str1, u_int32_t len1, const char *str2, u_int32_t len2, u_int32_t val1)
 {
 	optData *opt;
 
@@ -297,9 +287,7 @@ found:	switch (opt->kind) {
  *	Send a set-edit-option message to core.
  */
 static void
-set_opt(w, closure, call_data)
-	Widget w;
-	XtPointer closure, call_data;
+set_opt(Widget w, XtPointer closure, XtPointer call_data)
 {
 	optData *opt;
 	Boolean set;
@@ -379,9 +367,7 @@ static	void	add_toggle( parent, option )
 }
 
 
-static	Widget	create_toggles( outer, toggles )
-	Widget	outer;
-	optData	*toggles;
+static	Widget	create_toggles(Widget outer, optData *toggles)
 {
     Widget	inner;
     int		i;
@@ -547,9 +533,7 @@ static	Widget		create_sheet( parent, sheet )
 
 /* change preferences to another sheet */
 
-static	void	change_sheet( parent, current )
-	Widget	parent;
-	int	current;
+static	void	change_sheet(Widget parent, int current)
 {
     static int		current_sheet = -1;
 
@@ -652,9 +636,7 @@ static	Widget	create_options_dialog( parent, title )
  * PUBLIC: void __vi_show_options_dialog __P((Widget, String));
  */
 void
-__vi_show_options_dialog(parent, title)
-	Widget parent;
-	String title;
+__vi_show_options_dialog(Widget parent, String title)
 {
     Widget 	db = create_options_dialog( parent, title );
 #if defined(SelfTest)
@@ -683,8 +665,7 @@ __vi_show_options_dialog(parent, title)
  * PUBLIC: int __vi_toggle __P((char *));
  */
 int
-__vi_toggle(name)
-	char *name;
+__vi_toggle(char *name)
 {
 	optData *opt;
 
@@ -711,9 +692,7 @@ __vi_toggle(name)
  * PUBLIC: Widget __vi_create_search_toggles __P((Widget, optData[]));
  */
 Widget
-__vi_create_search_toggles(parent, list)
-	Widget parent;
-	optData list[];
+__vi_create_search_toggles(Widget parent, optData *list)
 {
 	optData *opt;
 

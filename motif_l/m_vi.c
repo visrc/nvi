@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_vi.c,v 8.38 2000/07/05 11:33:19 skimo Exp $ (Berkeley) $Date: 2000/07/05 11:33:19 $";
+static const char sccsid[] = "$Id: m_vi.c,v 8.39 2001/06/25 15:19:28 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -43,9 +43,9 @@ static const char sccsid[] = "$Id: m_vi.c,v 8.38 2000/07/05 11:33:19 skimo Exp $
 
 extern int vi_ofd;
 
-static	void	f_copy();
-static	void	f_paste();
-static	void	f_clear();
+static	void	f_copy(String *buffer, int *len);
+static	void	f_paste(int widget, int buffer, int length);
+static	void	f_clear(Widget widget);
 
 
 /*
@@ -84,7 +84,7 @@ static Boolean scroll_block = False;
  * PUBLIC: void __vi_set_scroll_block __P((void));
  */
 void
-__vi_set_scroll_block()
+__vi_set_scroll_block(void)
 {
 	scroll_block = True;
 }
@@ -93,7 +93,7 @@ __vi_set_scroll_block()
  * PUBLIC: void __vi_clear_scroll_block __P((void));
  */
 void
-__vi_clear_scroll_block()
+__vi_clear_scroll_block(void)
 {
 	scroll_block = False;
 }
@@ -183,7 +183,7 @@ void	select_extend();
 void	select_paste();
 void	key_press();
 void	insert_string();
-void	beep();
+void	beep(void);
 void	find();
 void	command();
 
@@ -243,10 +243,7 @@ static  XutResource resource[] = {
  * PUBLIC: void vi_input_func __P((XtPointer, int *, XtInputId *));
  */
 void
-vi_input_func(client_data, source, id)
-	XtPointer client_data;
-	int *source;
-	XtInputId *id;
+vi_input_func(XtPointer client_data, int *source, XtInputId *id)
 {
 	/* Parse and dispatch on commands in the queue. */
 	(void)ipvi_motif->input(ipvi_motif, *source);
@@ -338,9 +335,7 @@ XtPointer	call_data;
  * PUBLIC: void	__vi_draw_text __P((xvi_screen *, int, int, int));
  */
 void
-__vi_draw_text(this_screen, row, start_col, len)
-	xvi_screen *this_screen;
-	int row, start_col, len;
+__vi_draw_text(xvi_screen *this_screen, int row, int start_col, int len)
 {
     int		col, color, xpos;
     char	*start, *end;
@@ -434,9 +429,7 @@ static	void	add_to_clip( cur_screen, x, y, width, height )
  * PUBLIC: void	__vi_expose_func __P((Widget, XtPointer, XtPointer));
  */
 void
-__vi_expose_func(wid, client_data, call_data)
-	Widget wid;
-	XtPointer client_data, call_data;
+__vi_expose_func(Widget wid, XtPointer client_data, XtPointer call_data)
 {
     xvi_screen			*this_screen;
     XmDrawingAreaCallbackStruct	*cbs;
@@ -606,11 +599,7 @@ Widget	w;
  *	Translate simple keyboard input into vi protocol commands.
  */
 static	void
-command(widget, event, str, cardinal)
-	Widget widget;
-	XKeyEvent *event; 
-	String *str;  
-	Cardinal *cardinal;
+command(Widget widget, XKeyEvent *event, String *str, Cardinal *cardinal)
 {
 	static struct {
 		String	name;
@@ -880,7 +869,7 @@ static	xvi_screen	*create_screen( parent, rows, cols )
 }
 
 
-static	xvi_screen	*split_screen()
+static	xvi_screen	*split_screen(void)
 {
     Cardinal	num;
     WidgetList	c;
@@ -966,10 +955,7 @@ static	Cardinal	insert_here( wid )
  * PUBLIC: Widget vi_create_editor __P((String, Widget, void (*)(void)));
  */
 Widget
-vi_create_editor(name, parent, exitp)
-	String name;
-	Widget parent;
-	void (*exitp) __P((void));
+vi_create_editor(String name, Widget parent, void (*exitp) (void))
 {
     Widget	pane_w;
     Display	*display = XtDisplay( parent );
@@ -1328,8 +1314,7 @@ static	void	f_copy( buffer, len )
 
 
 
-static	void	f_paste( widget, buffer, length )
-	int widget, buffer, length;
+static	void	f_paste(int widget, int buffer, int length)
 {
     /* NOTE:  when multiple panes are implemented, we need to find
      * the correct screen.  For now, there is only one.
@@ -1365,9 +1350,7 @@ Widget	widget;
  * PUBLIC: void __vi_set_cursor __P((xvi_screen *, int));
  */
 void
-__vi_set_cursor(cur_screen, is_busy)
-	xvi_screen *cur_screen;
-	int is_busy;
+__vi_set_cursor(xvi_screen *cur_screen, int is_busy)
 {
     XDefineCursor( XtDisplay(cur_screen->area),
 		   XtWindow(cur_screen->area),
@@ -1385,8 +1368,7 @@ static	String	cur_word = NULL;
  * PUBLIC: void __vi_set_word_at_caret __P((xvi_screen *));
  */
 void
-__vi_set_word_at_caret( this_screen )
-	xvi_screen *this_screen;
+__vi_set_word_at_caret(xvi_screen *this_screen)
 {
     char	*start, *end, save;
     int		newx, newy;
@@ -1412,8 +1394,7 @@ __vi_set_word_at_caret( this_screen )
 }
 
 
-String	__vi_get_word_at_caret( this_screen )
-	xvi_screen *this_screen;
+String	__vi_get_word_at_caret(xvi_screen *this_screen)
 {
     return (cur_word) ? cur_word : "";
 }
@@ -1425,8 +1406,7 @@ String	__vi_get_word_at_caret( this_screen )
  * PUBLIC: void draw_caret __P((xvi_screen *));
  */
 static void
-draw_caret(this_screen)
-	xvi_screen *this_screen;
+draw_caret(xvi_screen *this_screen)
 {
     /* draw the caret by drawing the text in highlight color */
     *FlagAt( this_screen, this_screen->cury, this_screen->curx ) |= COLOR_CARET;
@@ -1437,8 +1417,7 @@ draw_caret(this_screen)
  * PUBLIC: void __vi_erase_caret __P((xvi_screen *));
  */
 void
-__vi_erase_caret(this_screen)
-	xvi_screen *this_screen;
+__vi_erase_caret(xvi_screen *this_screen)
 {
     /* erase the caret by drawing the text in normal video */
     *FlagAt( this_screen, this_screen->cury, this_screen->curx ) &= ~COLOR_CARET;
@@ -1449,9 +1428,7 @@ __vi_erase_caret(this_screen)
  * PUBLIC: void	__vi_move_caret __P((xvi_screen *, int, int));
  */
 void
-__vi_move_caret(this_screen, newy, newx)
-	xvi_screen *this_screen;
-	int newy, newx;
+__vi_move_caret(xvi_screen *this_screen, int newy, int newx)
 {
     /* remove the old caret */
     __vi_erase_caret( this_screen );

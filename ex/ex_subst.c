@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_subst.c,v 10.47 2000/09/22 09:37:33 skimo Exp $ (Berkeley) $Date: 2000/09/22 09:37:33 $";
+static const char sccsid[] = "$Id: ex_subst.c,v 10.48 2001/06/25 15:19:20 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -48,9 +48,7 @@ static int s __P((SCR *, EXCMD *, CHAR_T *, regex_t *, u_int));
  * PUBLIC: int ex_s __P((SCR *, EXCMD *));
  */
 int
-ex_s(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_s(SCR *sp, EXCMD *cmdp)
 {
 	regex_t *re;
 	size_t blen, len;
@@ -255,9 +253,7 @@ tilde:				++p;
  * PUBLIC: int ex_subagain __P((SCR *, EXCMD *));
  */
 int
-ex_subagain(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_subagain(SCR *sp, EXCMD *cmdp)
 {
 	if (sp->subre == NULL) {
 		ex_emsg(sp, NULL, EXM_NOPREVRE);
@@ -280,9 +276,7 @@ ex_subagain(sp, cmdp)
  * PUBLIC: int ex_subtilde __P((SCR *, EXCMD *));
  */
 int
-ex_subtilde(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_subtilde(SCR *sp, EXCMD *cmdp)
 {
 	if (sp->re == NULL) {
 		ex_emsg(sp, NULL, EXM_NOPREVRE);
@@ -346,12 +340,7 @@ ex_subtilde(sp, cmdp)
 }
 
 static int
-s(sp, cmdp, s, re, flags)
-	SCR *sp;
-	EXCMD *cmdp;
-	CHAR_T *s;
-	regex_t *re;
-	u_int flags;
+s(SCR *sp, EXCMD *cmdp, CHAR_T *s, regex_t *re, u_int flags)
 {
 	EVENT ev;
 	MARK from, to;
@@ -896,12 +885,7 @@ err:		rval = 1;
  * PUBLIC:     CHAR_T *, size_t, CHAR_T **, size_t *, regex_t *, u_int));
  */
 int
-re_compile(sp, ptrn, plen, ptrnp, lenp, rep, flags)
-	SCR *sp;
-	CHAR_T *ptrn, **ptrnp;
-	size_t plen, *lenp;
-	regex_t *rep;
-	u_int flags;
+re_compile(SCR *sp, CHAR_T *ptrn, size_t plen, CHAR_T **ptrnp, size_t *lenp, regex_t *rep, u_int flags)
 {
 	size_t len;
 	int reflags, replaced, rval;
@@ -1038,11 +1022,7 @@ iclower:	for (p = ptrn, len = plen; len > 0; ++p, --len)
  * weren't historically.  It's a bug.
  */
 static int
-re_conv(sp, ptrnp, plenp, replacedp)
-	SCR *sp;
-	CHAR_T **ptrnp;
-	size_t *plenp;
-	int *replacedp;
+re_conv(SCR *sp, CHAR_T **ptrnp, size_t *plenp, int *replacedp)
 {
 	size_t blen, len, needlen;
 	int magic;
@@ -1186,11 +1166,7 @@ re_conv(sp, ptrnp, plenp, replacedp)
  *	1003.2 RE functions can handle.
  */
 static int
-re_tag_conv(sp, ptrnp, plenp, replacedp)
-	SCR *sp;
-	CHAR_T **ptrnp;
-	size_t *plenp;
-	int *replacedp;
+re_tag_conv(SCR *sp, CHAR_T **ptrnp, size_t *plenp, int *replacedp)
 {
 	size_t blen, len;
 	int lastdollar;
@@ -1255,11 +1231,7 @@ re_tag_conv(sp, ptrnp, plenp, replacedp)
  *      1003.2 RE functions can handle.
  */
 static int
-re_cscope_conv(sp, ptrnp, plenp, replacedp)
-	SCR *sp;
-	CHAR_T **ptrnp;
-	size_t *plenp;
-	int *replacedp;
+re_cscope_conv(SCR *sp, CHAR_T **ptrnp, size_t *plenp, int *replacedp)
 {
 	size_t blen, len, nspaces;
 	CHAR_T *bp, *t;
@@ -1321,10 +1293,7 @@ re_cscope_conv(sp, ptrnp, plenp, replacedp)
  * PUBLIC: void re_error __P((SCR *, int, regex_t *));
  */
 void
-re_error(sp, errcode, preg)
-	SCR *sp;
-	int errcode;
-	regex_t *preg;
+re_error(SCR *sp, int errcode, regex_t *preg)
 {
 	size_t s;
 	char *oe;
@@ -1344,12 +1313,12 @@ re_error(sp, errcode, preg)
  * 	Do the substitution for a regular expression.
  */
 static int
-re_sub(sp, ip, lbp, lbclenp, lblenp, match)
-	SCR *sp;
-	CHAR_T *ip;			/* Input line. */
-	CHAR_T **lbp;
-	size_t *lbclenp, *lblenp;
-	regmatch_t match[10];
+re_sub(SCR *sp, CHAR_T *ip, CHAR_T **lbp, size_t *lbclenp, size_t *lblenp, regmatch_t *match)
+	        
+	           			/* Input line. */
+	             
+	                         
+	                     
 {
 	enum { C_NOTSET, C_LOWER, C_ONELOWER, C_ONEUPPER, C_UPPER } conv;
 	size_t lbclen, lblen;		/* Local copies. */

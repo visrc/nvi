@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_txt.c,v 10.22 2000/07/16 20:49:32 skimo Exp $ (Berkeley) $Date: 2000/07/16 20:49:32 $";
+static const char sccsid[] = "$Id: ex_txt.c,v 10.23 2001/06/25 15:19:21 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -54,11 +54,7 @@ static void	txt_prompt __P((SCR *, TEXT *, ARG_CHAR_T, u_int32_t));
  * PUBLIC: int ex_txt __P((SCR *, TEXTH *, ARG_CHAR_T, u_int32_t));
  */
 int
-ex_txt(sp, tiqh, prompt, flags)
-	SCR *sp;
-	TEXTH *tiqh;
-	ARG_CHAR_T prompt;
-	u_int32_t flags;
+ex_txt(SCR *sp, TEXTH *tiqh, ARG_CHAR_T prompt, u_int32_t flags)
 {
 	EVENT ev;
 	GS *gp;
@@ -354,11 +350,7 @@ alloc_err:
  *	not ours.
  */
 static void
-txt_prompt(sp, tp, prompt, flags)
-	SCR *sp;
-	TEXT *tp;
-	ARG_CHAR_T prompt;
-	u_int32_t flags;
+txt_prompt(SCR *sp, TEXT *tp, ARG_CHAR_T prompt, u_int32_t flags)
 {
 	/* Display the prompt. */
 	if (LF_ISSET(TXT_PROMPT))
@@ -382,9 +374,7 @@ txt_prompt(sp, tp, prompt, flags)
  * ranting and raving.  This is a fair bit simpler as ^T isn't special.
  */
 static int
-txt_dent(sp, tp)
-	SCR *sp;
-	TEXT *tp;
+txt_dent(SCR *sp, TEXT *tp)
 {
 	u_long sw, ts;
 	size_t cno, off, scno, spaces, tabs;

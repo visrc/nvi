@@ -53,10 +53,7 @@ static const char sccsid[] = "@(#)strtoul.c	8.1 (Berkeley) 6/4/93";
  * PUBLIC: #endif
  */
 unsigned long
-strtoul(nptr, endptr, base)
-	const char *nptr;
-	char **endptr;
-	register int base;
+strtoul(const char *nptr, char **endptr, register int base)
 {
 	register const char *s = nptr;
 	register unsigned long acc;

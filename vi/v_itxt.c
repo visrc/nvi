@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_itxt.c,v 10.20 2000/07/15 20:26:36 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:36 $";
+static const char sccsid[] = "$Id: v_itxt.c,v 10.21 2001/06/25 15:19:32 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -66,9 +66,7 @@ static u_int32_t set_txt_std __P((SCR *, VICMD *, u_int32_t));
  * PUBLIC: int v_iA __P((SCR *, VICMD *));
  */
 int
-v_iA(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_iA(SCR *sp, VICMD *vp)
 {
 	size_t len;
 
@@ -88,9 +86,7 @@ v_iA(sp, vp)
  * PUBLIC: int v_ia __P((SCR *, VICMD *));
  */
 int
-v_ia(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_ia(SCR *sp, VICMD *vp)
 {
 	size_t len;
 	u_int32_t flags;
@@ -127,9 +123,7 @@ v_ia(sp, vp)
  * PUBLIC: int v_iI __P((SCR *, VICMD *));
  */
 int
-v_iI(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_iI(SCR *sp, VICMD *vp)
 {
 	sp->cno = 0;
 	if (nonblank(sp, vp->m_start.lno, &sp->cno))
@@ -148,9 +142,7 @@ v_iI(sp, vp)
  * PUBLIC: int v_ii __P((SCR *, VICMD *));
  */
 int
-v_ii(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_ii(SCR *sp, VICMD *vp)
 {
 	size_t len;
 	u_int32_t flags;
@@ -183,9 +175,7 @@ static int io __P((SCR *, VICMD *, enum which));
  * PUBLIC: int v_iO __P((SCR *, VICMD *));
  */
 int
-v_iO(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_iO(SCR *sp, VICMD *vp)
 {
 	return (io(sp, vp, O_cmd));
 }
@@ -197,18 +187,13 @@ v_iO(sp, vp)
  * PUBLIC: int v_io __P((SCR *, VICMD *));
  */
 int
-v_io(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_io(SCR *sp, VICMD *vp)
 {
 	return (io(sp, vp, o_cmd));
 }
 
 static int
-io(sp, vp, cmd)
-	SCR *sp;
-	VICMD *vp;
-	enum which cmd;
+io(SCR *sp, VICMD *vp, enum which cmd)
 {
 	db_recno_t ai_line, lno;
 	size_t len;
@@ -259,9 +244,7 @@ insert:		p = &nul;
  * PUBLIC: int v_change __P((SCR *, VICMD *));
  */
 int
-v_change(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_change(SCR *sp, VICMD *vp)
 {
 	size_t blen, len;
 	u_int32_t flags;
@@ -401,9 +384,7 @@ v_change(sp, vp)
  * PUBLIC: int v_Replace __P((SCR *, VICMD *));
  */
 int
-v_Replace(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_Replace(SCR *sp, VICMD *vp)
 {
 	size_t len;
 	u_int32_t flags;
@@ -437,9 +418,7 @@ v_Replace(sp, vp)
  * PUBLIC: int v_subst __P((SCR *, VICMD *));
  */
 int
-v_subst(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_subst(SCR *sp, VICMD *vp)
 {
 	size_t len;
 	u_int32_t flags;
@@ -479,10 +458,7 @@ v_subst(sp, vp)
  *	Initialize text processing flags.
  */
 static u_int32_t
-set_txt_std(sp, vp, flags)
-	SCR *sp;
-	VICMD *vp;
-	u_int32_t flags;
+set_txt_std(SCR *sp, VICMD *vp, u_int32_t flags)
 {
 	LF_SET(TXT_CNTRLT |
 	    TXT_ESCAPE | TXT_MAPINPUT | TXT_RECORD | TXT_RESOLVE);

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_filter.c,v 10.42 2001/06/17 14:16:50 skimo Exp $ (Berkeley) $Date: 2001/06/17 14:16:50 $";
+static const char sccsid[] = "$Id: ex_filter.c,v 10.43 2001/06/25 15:19:16 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -39,12 +39,7 @@ static int filter_ldisplay __P((SCR *, FILE *));
  * PUBLIC:    EXCMD *, MARK *, MARK *, MARK *, CHAR_T *, enum filtertype));
  */
 int
-ex_filter(sp, cmdp, fm, tm, rp, cmd, ftype)
-	SCR *sp;
-	EXCMD *cmdp;
-	MARK *fm, *tm, *rp;
-	CHAR_T *cmd;
-	enum filtertype ftype;
+ex_filter(SCR *sp, EXCMD *cmdp, MARK *fm, MARK *tm, MARK *rp, CHAR_T *cmd, enum filtertype ftype)
 {
 	FILE *ifp, *ofp;
 	pid_t parent_writer_pid, utility_pid;
@@ -302,9 +297,7 @@ uwait:	INT2CHAR(sp, cmd, STRLEN(cmd) + 1, np, nlen);
  * We use the ex print routines to make sure they're printable.
  */
 static int
-filter_ldisplay(sp, fp)
-	SCR *sp;
-	FILE *fp;
+filter_ldisplay(SCR *sp, FILE *fp)
 {
 	size_t len;
 

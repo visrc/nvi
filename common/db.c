@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: db.c,v 10.37 2001/05/10 19:32:47 skimo Exp $ (Berkeley) $Date: 2001/05/10 19:32:47 $";
+static const char sccsid[] = "$Id: db.c,v 10.38 2001/06/25 15:19:09 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,12 +36,12 @@ static int append __P((SCR*, db_recno_t, CHAR_T*, size_t));
  * PUBLIC: int db_eget __P((SCR *, db_recno_t, CHAR_T **, size_t *, int *));
  */
 int
-db_eget(sp, lno, pp, lenp, isemptyp)
-	SCR *sp;
-	db_recno_t lno;				/* Line number. */
-	CHAR_T **pp;				/* Pointer store. */
-	size_t *lenp;				/* Length store. */
-	int *isemptyp;
+db_eget(SCR *sp, db_recno_t lno, CHAR_T **pp, size_t *lenp, int *isemptyp)
+	        
+	               				/* Line number. */
+	            				/* Pointer store. */
+	             				/* Length store. */
+	              
 {
 	db_recno_t l1;
 
@@ -80,12 +80,12 @@ db_eget(sp, lno, pp, lenp, isemptyp)
  * PUBLIC: int db_get __P((SCR *, db_recno_t, u_int32_t, CHAR_T **, size_t *));
  */
 int
-db_get(sp, lno, flags, pp, lenp)
-	SCR *sp;
-	db_recno_t lno;				/* Line number. */
-	u_int32_t flags;
-	CHAR_T **pp;				/* Pointer store. */
-	size_t *lenp;				/* Length store. */
+db_get(SCR *sp, db_recno_t lno, u_int32_t flags, CHAR_T **pp, size_t *lenp)
+	        
+	               				/* Line number. */
+	                
+	            				/* Pointer store. */
+	             				/* Length store. */
 {
 	DBT data, key;
 	EXF *ep;
@@ -226,9 +226,7 @@ err3:		if (lenp != NULL)
  * PUBLIC: int db_delete __P((SCR *, db_recno_t));
  */
 int
-db_delete(sp, lno)
-	SCR *sp;
-	db_recno_t lno;
+db_delete(SCR *sp, db_recno_t lno)
 {
 	DBT key;
 	EXF *ep;
@@ -290,11 +288,7 @@ db_delete(sp, lno)
  *				line
  */
 static int
-append(sp, lno, p, len)
-	SCR *sp;
-	db_recno_t lno;
-	CHAR_T *p;
-	size_t len;
+append(SCR *sp, db_recno_t lno, CHAR_T *p, size_t len)
 {
 	DBT data, key;
 	DBC *dbcp_put;
@@ -358,12 +352,7 @@ err2:
  * PUBLIC: int db_append __P((SCR *, int, db_recno_t, CHAR_T *, size_t));
  */
 int
-db_append(sp, update, lno, p, len)
-	SCR *sp;
-	int update;
-	db_recno_t lno;
-	CHAR_T *p;
-	size_t len;
+db_append(SCR *sp, int update, db_recno_t lno, CHAR_T *p, size_t len)
 {
 	EXF *ep;
 	int rval;
@@ -429,11 +418,7 @@ db_append(sp, update, lno, p, len)
  * PUBLIC: int db_insert __P((SCR *, db_recno_t, CHAR_T *, size_t));
  */
 int
-db_insert(sp, lno, p, len)
-	SCR *sp;
-	db_recno_t lno;
-	CHAR_T *p;
-	size_t len;
+db_insert(SCR *sp, db_recno_t lno, CHAR_T *p, size_t len)
 {
 	DBT data, key;
 	DBC *dbcp_put;
@@ -493,11 +478,7 @@ db_insert(sp, lno, p, len)
  * PUBLIC: int db_set __P((SCR *, db_recno_t, CHAR_T *, size_t));
  */
 int
-db_set(sp, lno, p, len)
-	SCR *sp;
-	db_recno_t lno;
-	CHAR_T *p;
-	size_t len;
+db_set(SCR *sp, db_recno_t lno, CHAR_T *p, size_t len)
 {
 	DBT data, key;
 	EXF *ep;
@@ -558,9 +539,7 @@ db_set(sp, lno, p, len)
  * PUBLIC: int db_exist __P((SCR *, db_recno_t));
  */
 int
-db_exist(sp, lno)
-	SCR *sp;
-	db_recno_t lno;
+db_exist(SCR *sp, db_recno_t lno)
 {
 	EXF *ep;
 
@@ -593,9 +572,7 @@ db_exist(sp, lno)
  * PUBLIC: int db_last __P((SCR *, db_recno_t *));
  */
 int
-db_last(sp, lnop)
-	SCR *sp;
-	db_recno_t *lnop;
+db_last(SCR *sp, db_recno_t *lnop)
 {
 	DBT data, key;
 	DBC *dbcp;
@@ -675,9 +652,7 @@ err1:
  * PUBLIC: void db_err __P((SCR *, db_recno_t));
  */
 void
-db_err(sp, lno)
-	SCR *sp;
-	db_recno_t lno;
+db_err(SCR *sp, db_recno_t lno)
 {
 	msgq(sp, M_ERR,
 	    "008|Error: unable to retrieve line %lu", (u_long)lno);
@@ -689,11 +664,7 @@ db_err(sp, lno)
  *	just changed.
  */
 static int
-scr_update(sp, lno, op, current)
-	SCR *sp;
-	db_recno_t lno;
-	lnop_t op;
-	int current;
+scr_update(SCR *sp, db_recno_t lno, lnop_t op, int current)
 {
 	EXF *ep;
 	SCR *tsp;

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_ex.c,v 10.53 2001/06/09 18:26:32 skimo Exp $ (Berkeley) $Date: 2001/06/09 18:26:32 $";
+static const char sccsid[] = "$Id: v_ex.c,v 10.54 2001/06/25 15:19:31 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -39,9 +39,7 @@ static int v_ex_done __P((SCR *, VICMD *));
  * PUBLIC: int v_again __P((SCR *, VICMD *));
  */
 int
-v_again(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_again(SCR *sp, VICMD *vp)
 {
 	EXCMD cmd;
 	static CHAR_T nul[] = { 0 };
@@ -58,9 +56,7 @@ v_again(sp, vp)
  * PUBLIC: int v_exmode __P((SCR *, VICMD *));
  */
 int
-v_exmode(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_exmode(SCR *sp, VICMD *vp)
 {
 	GS *gp;
 
@@ -96,9 +92,7 @@ v_exmode(sp, vp)
  * PUBLIC: int v_join __P((SCR *, VICMD *));
  */
 int
-v_join(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_join(SCR *sp, VICMD *vp)
 {
 	EXCMD cmd;
 	int lno;
@@ -127,9 +121,7 @@ v_join(sp, vp)
  * PUBLIC: int v_shiftl __P((SCR *, VICMD *));
  */
 int
-v_shiftl(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_shiftl(SCR *sp, VICMD *vp)
 {
 	EXCMD cmd;
 	static CHAR_T lt[] = {'<', 0};
@@ -146,9 +138,7 @@ v_shiftl(sp, vp)
  * PUBLIC: int v_shiftr __P((SCR *, VICMD *));
  */
 int
-v_shiftr(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_shiftr(SCR *sp, VICMD *vp)
 {
 	EXCMD cmd;
 	static CHAR_T gt[] = {'>', 0};
@@ -165,9 +155,7 @@ v_shiftr(sp, vp)
  * PUBLIC: int v_suspend __P((SCR *, VICMD *));
  */
 int
-v_suspend(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_suspend(SCR *sp, VICMD *vp)
 {
 	EXCMD cmd;
 	static CHAR_T suspend[] = {'s', 'u', 's', 'p', 'e', 'n', 'd', 0};
@@ -184,9 +172,7 @@ v_suspend(sp, vp)
  * PUBLIC: int v_switch __P((SCR *, VICMD *));
  */
 int
-v_switch(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_switch(SCR *sp, VICMD *vp)
 {
 	EXCMD cmd;
 	char *name;
@@ -219,9 +205,7 @@ v_switch(sp, vp)
  * PUBLIC: int v_tagpush __P((SCR *, VICMD *));
  */
 int
-v_tagpush(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_tagpush(SCR *sp, VICMD *vp)
 {
 	EXCMD cmd;
 
@@ -237,9 +221,7 @@ v_tagpush(sp, vp)
  * PUBLIC: int v_tagpop __P((SCR *, VICMD *));
  */
 int
-v_tagpop(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_tagpop(SCR *sp, VICMD *vp)
 {
 	EXCMD cmd;
 
@@ -254,9 +236,7 @@ v_tagpop(sp, vp)
  * PUBLIC: int v_filter __P((SCR *, VICMD *));
  */
 int
-v_filter(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_filter(SCR *sp, VICMD *vp)
 {
 	EXCMD cmd;
 	TEXT *tp;
@@ -333,10 +313,7 @@ v_filter(sp, vp)
  * PUBLIC: int v_exec_ex __P((SCR *, VICMD *, EXCMD *));
  */
 int
-v_exec_ex(sp, vp, exp)
-	SCR *sp;
-	VICMD *vp;
-	EXCMD *exp;
+v_exec_ex(SCR *sp, VICMD *vp, EXCMD *exp)
 {
 	int rval;
 
@@ -351,9 +328,7 @@ v_exec_ex(sp, vp, exp)
  * PUBLIC: int v_ex __P((SCR *, VICMD *));
  */
 int
-v_ex(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_ex(SCR *sp, VICMD *vp)
 {
 	WIN *wp;
 	TEXT *tp;
@@ -477,9 +452,7 @@ v_ex(sp, vp)
  *	Cleanup from an ex command.
  */
 static int
-v_ex_done(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_ex_done(SCR *sp, VICMD *vp)
 {
 	size_t len;
 
@@ -521,8 +494,7 @@ v_ex_done(sp, vp)
  *	Start an edit window on the colon command-line commands.
  */
 static int
-v_ecl(sp)
-	SCR *sp;
+v_ecl(SCR *sp)
 {
 	GS *gp;
 	SCR *new;
@@ -574,8 +546,7 @@ v_ecl(sp)
  * PUBLIC: int v_ecl_exec __P((SCR *));
  */
 int
-v_ecl_exec(sp)
-	SCR *sp;
+v_ecl_exec(SCR *sp)
 {
 	size_t len;
 	CHAR_T *p;
@@ -604,9 +575,7 @@ v_ecl_exec(sp)
  *	Log a command into the colon command-line log file.
  */
 static int
-v_ecl_log(sp, tp)
-	SCR *sp;
-	TEXT *tp;
+v_ecl_log(SCR *sp, TEXT *tp)
 {
 	EXF *save_ep;
 	char *save_enc;
@@ -668,8 +637,7 @@ v_ecl_log(sp, tp)
  *	Initialize the colon command-line log file.
  */
 static int
-v_ecl_init(sp)
-	SCR *sp;
+v_ecl_init(SCR *sp)
 {
 	FREF *frp;
 	GS *gp;

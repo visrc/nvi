@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: util.c,v 10.21 2001/06/09 21:53:51 skimo Exp $ (Berkeley) $Date: 2001/06/09 21:53:51 $";
+static const char sccsid[] = "$Id: util.c,v 10.22 2001/06/25 15:19:12 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,10 +33,10 @@ static const char sccsid[] = "$Id: util.c,v 10.21 2001/06/09 21:53:51 skimo Exp 
  * PUBLIC: void *binc __P((SCR *, void *, size_t *, size_t));
  */
 void *
-binc(sp, bp, bsizep, min)
-	SCR *sp;			/* sp MAY BE NULL!!! */
-	void *bp;
-	size_t *bsizep, min;
+binc(SCR *sp, void *bp, size_t *bsizep, size_t min)
+	        			/* sp MAY BE NULL!!! */
+	         
+	                    
 {
 	size_t csize;
 
@@ -73,10 +73,7 @@ binc(sp, bp, bsizep, min)
  * PUBLIC: int nonblank __P((SCR *, db_recno_t, size_t *));
  */
 int
-nonblank(sp, lno, cnop)
-	SCR *sp;
-	db_recno_t lno;
-	size_t *cnop;
+nonblank(SCR *sp, db_recno_t lno, size_t *cnop)
 {
 	CHAR_T *p;
 	size_t cnt, len, off;
@@ -109,8 +106,7 @@ nonblank(sp, lno, cnop)
  * PUBLIC: char *tail __P((char *));
  */
 char *
-tail(path)
-	char *path;
+tail(char *path)
 {
 	char *p;
 
@@ -126,10 +122,7 @@ tail(path)
  * PUBLIC: char *v_strdup __P((SCR *, const char *, size_t));
  */
 char *
-v_strdup(sp, str, len)
-	SCR *sp;
-	const char *str;
-	size_t len;
+v_strdup(SCR *sp, const char *str, size_t len)
 {
 	char *copy;
 
@@ -148,10 +141,7 @@ v_strdup(sp, str, len)
  * PUBLIC: CHAR_T *v_wstrdup __P((SCR *, const CHAR_T *, size_t));
  */
 CHAR_T *
-v_wstrdup(sp, str, len)
-	SCR *sp;
-	const CHAR_T *str;
-	size_t len;
+v_wstrdup(SCR *sp, const CHAR_T *str, size_t len)
 {
 	CHAR_T *copy;
 
@@ -170,12 +160,7 @@ v_wstrdup(sp, str, len)
  * PUBLIC: enum nresult nget_uslong __P((SCR *, u_long *, const CHAR_T *, CHAR_T **, int));
  */
 enum nresult
-nget_uslong(sp, valp, p, endp, base)
-	SCR *sp;
-	u_long *valp;
-	const CHAR_T *p;
-	CHAR_T **endp;
-	int base;
+nget_uslong(SCR *sp, u_long *valp, const CHAR_T *p, CHAR_T **endp, int base)
 {
 	errno = 0;
 	*valp = STRTOUL(p, endp, base);
@@ -193,12 +178,7 @@ nget_uslong(sp, valp, p, endp, base)
  * PUBLIC: enum nresult nget_slong __P((SCR *, long *, const CHAR_T *, CHAR_T **, int));
  */
 enum nresult
-nget_slong(sp, valp, p, endp, base)
-	SCR *sp;
-	long *valp;
-	const CHAR_T *p;
-	CHAR_T **endp;
-	int base;
+nget_slong(SCR *sp, long int *valp, const CHAR_T *p, CHAR_T **endp, int base)
 {
 	errno = 0;
 	*valp = STRTOL(p, endp, base);

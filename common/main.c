@@ -18,7 +18,7 @@ static const char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static const char sccsid[] = "$Id: main.c,v 10.59 2000/07/21 22:09:28 skimo Exp $ (Berkeley) $Date: 2000/07/21 22:09:28 $";
+static const char sccsid[] = "$Id: main.c,v 10.60 2001/06/25 15:19:10 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -50,10 +50,7 @@ static int	 v_obsolete __P((char *, char *[]));
  * PUBLIC: int editor __P((WIN *, int, char *[]));
  */
 int
-editor(wp, argc, argv)
-	WIN *wp;
-	int argc;
-	char *argv[];
+editor(WIN *wp, int argc, char **argv)
 {
 	extern int optind;
 	extern char *optarg;
@@ -434,8 +431,7 @@ err:		rval = 1;
  *	Convert historic arguments into something getopt(3) will like.
  */
 static int
-v_obsolete(name, argv)
-	char *name, *argv[];
+v_obsolete(char *name, char **argv)
 {
 	size_t len;
 	char *p;
@@ -488,8 +484,7 @@ nomem:					v_estr(name, errno, NULL);
 
 #ifdef DEBUG
 static void
-attach(gp)
-	GS *gp;
+attach(GS *gp)
 {
 	int fd;
 	char ch;
@@ -514,9 +509,7 @@ attach(gp)
 #endif
 
 static void
-v_estr(name, eno, msg)
-	char *name, *msg;
-	int eno;
+v_estr(char *name, int eno, char *msg)
 {
 	(void)fprintf(stderr, "%s", name);
 	if (msg != NULL)

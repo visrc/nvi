@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_match.c,v 10.9 2000/06/27 17:19:07 skimo Exp $ (Berkeley) $Date: 2000/06/27 17:19:07 $";
+static const char sccsid[] = "$Id: v_match.c,v 10.10 2001/06/25 15:19:32 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,9 +32,7 @@ static const char sccsid[] = "$Id: v_match.c,v 10.9 2000/06/27 17:19:07 skimo Ex
  * PUBLIC: int v_match __P((SCR *, VICMD *));
  */
 int
-v_match(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_match(SCR *sp, VICMD *vp)
 {
 	VCS cs;
 	MARK *mp;

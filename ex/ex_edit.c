@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_edit.c,v 10.12 2000/07/14 14:29:20 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:20 $";
+static const char sccsid[] = "$Id: ex_edit.c,v 10.13 2001/06/25 15:19:15 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,9 +46,7 @@ static int ex_N_edit __P((SCR *, EXCMD *, FREF *, int));
  * PUBLIC: int ex_edit __P((SCR *, EXCMD *));
  */
 int
-ex_edit(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_edit(SCR *sp, EXCMD *cmdp)
 {
 	FREF *frp;
 	int attach, setalt;
@@ -112,11 +110,7 @@ ex_edit(sp, cmdp)
  *	New screen version of ex_edit.
  */
 static int
-ex_N_edit(sp, cmdp, frp, attach)
-	SCR *sp;
-	EXCMD *cmdp;
-	FREF *frp;
-	int attach;
+ex_N_edit(SCR *sp, EXCMD *cmdp, FREF *frp, int attach)
 {
 	SCR *new;
 

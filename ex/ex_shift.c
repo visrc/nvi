@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_shift.c,v 10.16 2000/07/16 20:49:32 skimo Exp $ (Berkeley) $Date: 2000/07/16 20:49:32 $";
+static const char sccsid[] = "$Id: ex_shift.c,v 10.17 2001/06/25 15:19:20 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,9 +34,7 @@ static int shift __P((SCR *, EXCMD *, enum which));
  * PUBLIC: int ex_shiftl __P((SCR *, EXCMD *));
  */
 int
-ex_shiftl(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_shiftl(SCR *sp, EXCMD *cmdp)
 {
 	return (shift(sp, cmdp, LEFT));
 }
@@ -47,9 +45,7 @@ ex_shiftl(sp, cmdp)
  * PUBLIC: int ex_shiftr __P((SCR *, EXCMD *));
  */
 int
-ex_shiftr(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_shiftr(SCR *sp, EXCMD *cmdp)
 {
 	return (shift(sp, cmdp, RIGHT));
 }
@@ -59,10 +55,7 @@ ex_shiftr(sp, cmdp)
  *	Ex shift support.
  */
 static int
-shift(sp, cmdp, rl)
-	SCR *sp;
-	EXCMD *cmdp;
-	enum which rl;
+shift(SCR *sp, EXCMD *cmdp, enum which rl)
 {
 	db_recno_t from, to;
 	size_t blen, len, newcol, newidx, oldcol, oldidx, sw;

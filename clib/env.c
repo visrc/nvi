@@ -51,9 +51,7 @@ static const char sccsid[] = "@(#)setenv.c	8.1 (Berkeley) 6/4/93";
  *	This routine *should* be a static; don't use it.
  */
 static char *
-__findenv(name, offset)
-	register char *name;
-	int *offset;
+__findenv(register char *name, int *offset)
 {
 	extern char **environ;
 	register int len;

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_map.c,v 10.10 2000/07/14 14:29:20 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:20 $";
+static const char sccsid[] = "$Id: ex_map.c,v 10.11 2001/06/25 15:19:17 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -42,9 +42,7 @@ static const char sccsid[] = "$Id: ex_map.c,v 10.10 2000/07/14 14:29:20 skimo Ex
  * PUBLIC: int ex_map __P((SCR *, EXCMD *));
  */
 int
-ex_map(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_map(SCR *sp, EXCMD *cmdp)
 {
 	seq_t stype;
 	CHAR_T *input, *p;
@@ -107,9 +105,7 @@ nofunc:	if (stype == SEQ_COMMAND && input[1] == '\0')
  * PUBLIC: int ex_unmap __P((SCR *, EXCMD *));
  */
 int
-ex_unmap(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_unmap(SCR *sp, EXCMD *cmdp)
 {
 	if (seq_delete(sp, cmdp->argv[0]->bp, cmdp->argv[0]->len,
 	    FL_ISSET(cmdp->iflags, E_C_FORCE) ? SEQ_INPUT : SEQ_COMMAND)) {

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_shell.c,v 10.40 2001/06/10 10:23:44 skimo Exp $ (Berkeley) $Date: 2001/06/10 10:23:44 $";
+static const char sccsid[] = "$Id: ex_shell.c,v 10.41 2001/06/25 15:19:19 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:19 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -38,9 +38,7 @@ static const char *sigmsg __P((int));
  * PUBLIC: int ex_shell __P((SCR *, EXCMD *));
  */
 int
-ex_shell(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_shell(SCR *sp, EXCMD *cmdp)
 {
 	int rval;
 	char buf[MAXPATHLEN];
@@ -81,12 +79,7 @@ ex_shell(sp, cmdp)
  * PUBLIC: int ex_exec_proc __P((SCR *, EXCMD *, char *, const char *, int));
  */
 int
-ex_exec_proc(sp, cmdp, cmd, msg, need_newline)
-	SCR *sp;
-	EXCMD *cmdp;
-	char *cmd;
-	const char *msg;
-	int need_newline;
+ex_exec_proc(SCR *sp, EXCMD *cmdp, char *cmd, const char *msg, int need_newline)
 {
 	GS *gp;
 	const char *name;
@@ -151,11 +144,7 @@ ex_exec_proc(sp, cmdp, cmd, msg, need_newline)
  * PUBLIC: int proc_wait __P((SCR *, long, const char *, int, int));
  */
 int
-proc_wait(sp, pid, cmd, silent, okpipe)
-	SCR *sp;
-	long pid;
-	const char *cmd;
-	int silent, okpipe;
+proc_wait(SCR *sp, long int pid, const char *cmd, int silent, int okpipe)
 {
 	size_t len;
 	int nf, pstat;
@@ -364,8 +353,7 @@ SIGS const sigs[] = {
  * 	Return a pointer to a message describing a signal.
  */
 static const char *
-sigmsg(signo)
-	int signo;
+sigmsg(int signo)
 {
 	static char buf[40];
 	const SIGS *sigp;

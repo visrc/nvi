@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: search.c,v 10.30 2000/07/14 14:29:17 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:17 $";
+static const char sccsid[] = "$Id: search.c,v 10.31 2001/06/25 15:19:12 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -37,12 +37,7 @@ static int	search_init __P((SCR *, dir_t, CHAR_T *, size_t, CHAR_T **, u_int));
  *	Set up a search.
  */
 static int
-search_init(sp, dir, ptrn, plen, epp, flags)
-	SCR *sp;
-	dir_t dir;
-	CHAR_T *ptrn, **epp;
-	size_t plen;
-	u_int flags;
+search_init(SCR *sp, dir_t dir, CHAR_T *ptrn, size_t plen, CHAR_T **epp, u_int flags)
 {
 	db_recno_t lno;
 	int delim;
@@ -141,12 +136,7 @@ prev:			if (sp->re == NULL) {
  * PUBLIC:    MARK *, MARK *, CHAR_T *, size_t, CHAR_T **, u_int));
  */
 int
-f_search(sp, fm, rm, ptrn, plen, eptrn, flags)
-	SCR *sp;
-	MARK *fm, *rm;
-	CHAR_T *ptrn, **eptrn;
-	size_t plen;
-	u_int flags;
+f_search(SCR *sp, MARK *fm, MARK *rm, CHAR_T *ptrn, size_t plen, CHAR_T **eptrn, u_int flags)
 {
 	busy_t btype;
 	db_recno_t lno;
@@ -289,12 +279,7 @@ f_search(sp, fm, rm, ptrn, plen, eptrn, flags)
  * PUBLIC:    MARK *, MARK *, CHAR_T *, size_t, CHAR_T **, u_int));
  */
 int
-b_search(sp, fm, rm, ptrn, plen, eptrn, flags)
-	SCR *sp;
-	MARK *fm, *rm;
-	CHAR_T *ptrn, **eptrn;
-	size_t plen;
-	u_int flags;
+b_search(SCR *sp, MARK *fm, MARK *rm, CHAR_T *ptrn, size_t plen, CHAR_T **eptrn, u_int flags)
 {
 	busy_t btype;
 	db_recno_t lno;
@@ -453,9 +438,7 @@ err:	if (LF_ISSET(SEARCH_MSG))
  *	Display one of the search messages.
  */
 static void
-search_msg(sp, msg)
-	SCR *sp;
-	smsg_t msg;
+search_msg(SCR *sp, smsg_t msg)
 {
 	switch (msg) {
 	case S_EMPTY:
@@ -490,9 +473,7 @@ search_msg(sp, msg)
  * PUBLIC: void search_busy __P((SCR *, busy_t));
  */
 void
-search_busy(sp, btype)
-	SCR *sp;
-	busy_t btype;
+search_busy(SCR *sp, busy_t btype)
 {
 	sp->gp->scr_busy(sp, "078|Searching...", btype);
 }

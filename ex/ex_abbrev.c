@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_abbrev.c,v 10.8 2000/07/14 14:29:19 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:19 $";
+static const char sccsid[] = "$Id: ex_abbrev.c,v 10.9 2001/06/25 15:19:13 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,9 +34,7 @@ static const char sccsid[] = "$Id: ex_abbrev.c,v 10.8 2000/07/14 14:29:19 skimo 
  * PUBLIC: int ex_abbr __P((SCR *, EXCMD *));
  */
 int
-ex_abbr(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_abbr(SCR *sp, EXCMD *cmdp)
 {
 	CHAR_T *p;
 	size_t len;
@@ -100,9 +98,7 @@ ex_abbr(sp, cmdp)
  * PUBLIC: int ex_unabbr __P((SCR *, EXCMD *));
  */
 int
-ex_unabbr(sp, cmdp)
-	SCR *sp;
-        EXCMD *cmdp;
+ex_unabbr(SCR *sp, EXCMD *cmdp)
 {
 	ARGS *ap;
 

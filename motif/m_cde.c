@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_cde.c,v 8.9 1996/12/16 17:24:16 bostic Exp $ (Berkeley) $Date: 1996/12/16 17:24:16 $";
+static const char sccsid[] = "$Id: m_cde.c,v 8.10 2001/06/25 15:19:26 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -56,8 +56,7 @@ static struct {
  * PUBLIC: int is_cde __P((Display *));
  */
 int
-is_cde(d)
-	Display *d;
+is_cde(Display *d)
 {
     int			i, r, format;
     unsigned long	nitems, remaining;

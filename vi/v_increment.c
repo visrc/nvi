@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_increment.c,v 10.15 2000/07/15 20:26:36 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:36 $";
+static const char sccsid[] = "$Id: v_increment.c,v 10.16 2001/06/25 15:19:31 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -50,9 +50,7 @@ static void inc_err __P((SCR *, enum nresult));
  * PUBLIC: int v_increment __P((SCR *, VICMD *));
  */
 int
-v_increment(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_increment(SCR *sp, VICMD *vp)
 {
 	enum nresult nret;
 	u_long ulval;
@@ -248,9 +246,7 @@ err:		rval = 1;
 }
 
 static void
-inc_err(sp, nret)
-	SCR *sp;
-	enum nresult nret;
+inc_err(SCR *sp, enum nresult nret)
 {
 	switch (nret) {
 	case NUM_ERR:

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_init.c,v 10.30 2001/06/09 18:26:29 skimo Exp $ (Berkeley) $Date: 2001/06/09 18:26:29 $";
+static const char sccsid[] = "$Id: ex_init.c,v 10.31 2001/06/25 15:19:16 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:16 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -42,8 +42,7 @@ static int ex_run_file __P((SCR *, char *));
  * PUBLIC: int ex_screen_copy __P((SCR *, SCR *));
  */
 int
-ex_screen_copy(orig, sp)
-	SCR *orig, *sp;
+ex_screen_copy(SCR *orig, SCR *sp)
 {
 	EX_PRIVATE *oexp, *nexp;
 
@@ -79,8 +78,7 @@ ex_screen_copy(orig, sp)
  * PUBLIC: int ex_screen_end __P((SCR *));
  */
 int
-ex_screen_end(sp)
-	SCR *sp;
+ex_screen_end(SCR *sp)
 {
 	EX_PRIVATE *exp;
 	int rval;
@@ -120,11 +118,7 @@ ex_screen_end(sp)
  * PUBLIC: int ex_optchange __P((SCR *, int, char *, u_long *));
  */
 int
-ex_optchange(sp, offset, str, valp)
-	SCR *sp;
-	int offset;
-	char *str;
-	u_long *valp;
+ex_optchange(SCR *sp, int offset, char *str, u_long *valp)
 {
 	switch (offset) {
 	case O_TAGS:
@@ -141,8 +135,7 @@ ex_optchange(sp, offset, str, valp)
  * PUBLIC: int ex_exrc __P((SCR *));
  */
 int
-ex_exrc(sp)
-	SCR *sp;
+ex_exrc(SCR *sp)
 {
 	struct stat hsb, lsb;
 	char *p, path[MAXPATHLEN];
@@ -256,9 +249,7 @@ ex_exrc(sp)
  *	Set up a file of ex commands to run.
  */
 static int
-ex_run_file(sp, name)
-	SCR *sp;
-	char *name;
+ex_run_file(SCR *sp, char *name)
 {
 	EXCMD cmd;
 	CHAR_T *wp;
@@ -277,12 +268,7 @@ ex_run_file(sp, name)
  * PUBLIC: int ex_run_str __P((SCR *, char *, CHAR_T *, size_t, int, int));
  */
 int
-ex_run_str(sp, name, str, len, ex_flags, nocopy)
-	SCR *sp;
-	char *name;
-	CHAR_T *str;
-	size_t len;
-	int ex_flags, nocopy;
+ex_run_str(SCR *sp, char *name, CHAR_T *str, size_t len, int ex_flags, int nocopy)
 {
 	WIN *wp;
 	EXCMD *ecp;
@@ -353,11 +339,7 @@ ex_run_str(sp, name, str, len, ex_flags, nocopy)
  * files.
  */
 static enum rc
-exrc_isok(sp, sbp, path, rootown, rootid)
-	SCR *sp;
-	struct stat *sbp;
-	char *path;
-	int rootown, rootid;
+exrc_isok(SCR *sp, struct stat *sbp, char *path, int rootown, int rootid)
 {
 	enum { ROOTOWN, OWN, WRITER } etype;
 	uid_t euid;

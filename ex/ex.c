@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex.c,v 10.71 2001/06/10 10:23:43 skimo Exp $ (Berkeley) $Date: 2001/06/10 10:23:43 $";
+static const char sccsid[] = "$Id: ex.c,v 10.72 2001/06/25 15:19:13 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -48,8 +48,7 @@ static void	ex_unknown __P((SCR *, CHAR_T *, size_t));
  * PUBLIC: int ex __P((SCR **));
  */
 int
-ex(spp)
-	SCR **spp;
+ex(SCR **spp)
 {
 	EX_PRIVATE *exp;
 	GS *gp;
@@ -195,8 +194,7 @@ ex(spp)
  * PUBLIC: int ex_cmd __P((SCR *));
  */
 int
-ex_cmd(sp)
-	SCR *sp;
+ex_cmd(SCR *sp)
 {
 	enum nresult nret;
 	EX_PRIVATE *exp;
@@ -1618,10 +1616,7 @@ rsuccess:	tmp = 0;
  * PUBLIC: int ex_range __P((SCR *, EXCMD *, int *));
  */
 int
-ex_range(sp, ecp, errp)
-	SCR *sp;
-	EXCMD *ecp;
-	int *errp;
+ex_range(SCR *sp, EXCMD *ecp, int *errp)
 {
 	enum { ADDR_FOUND, ADDR_NEED, ADDR_NONE } addr;
 	GS *gp;
@@ -1820,11 +1815,7 @@ ret:	if (F_ISSET(ecp, E_VISEARCH))
  * it's fairly close.
  */
 static int
-ex_line(sp, ecp, mp, isaddrp, errp)
-	SCR *sp;
-	EXCMD *ecp;
-	MARK *mp;
-	int *isaddrp, *errp;
+ex_line(SCR *sp, EXCMD *ecp, MARK *mp, int *isaddrp, int *errp)
 {
 	enum nresult nret;
 	EX_PRIVATE *exp;
@@ -2071,8 +2062,7 @@ search:		mp->lno = sp->lno;
  *	Load up the next command, which may be an @ buffer or global command.
  */
 static int
-ex_load(sp)
-	SCR *sp;
+ex_load(SCR *sp)
 {
 	WIN *wp;
 	EXCMD *ecp;
@@ -2165,8 +2155,7 @@ ex_load(sp)
  *	Discard any pending ex commands.
  */
 static int
-ex_discard(sp)
-	SCR *sp;
+ex_discard(SCR *sp)
 {
 	WIN *wp;
 	EXCMD *ecp;
@@ -2196,10 +2185,7 @@ ex_discard(sp)
  *	Display an unknown command name.
  */
 static void
-ex_unknown(sp, cmd, len)
-	SCR *sp;
-	CHAR_T *cmd;
-	size_t len;
+ex_unknown(SCR *sp, CHAR_T *cmd, size_t len)
 {
 	size_t blen;
 	CHAR_T *bp;
@@ -2283,11 +2269,7 @@ ex_comm_search(SCR *sp, CHAR_T *name, size_t len)
  * PUBLIC:    __P((SCR *, EXCMDLIST const *, enum badaddr, enum nresult));
  */
 void
-ex_badaddr(sp, cp, ba, nret)
-	SCR *sp;
-	EXCMDLIST const *cp;
-	enum badaddr ba;
-	enum nresult nret;
+ex_badaddr(SCR *sp, const EXCMDLIST *cp, enum badaddr ba, enum nresult nret)
 {
 	db_recno_t lno;
 

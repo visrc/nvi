@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_scroll.c,v 10.11 2000/04/21 19:00:40 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:40 $";
+static const char sccsid[] = "$Id: v_scroll.c,v 10.12 2001/06/25 15:19:34 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -67,9 +67,7 @@ static void goto_adjust __P((VICMD *));
  * PUBLIC: int v_lgoto __P((SCR *, VICMD *));
  */
 int
-v_lgoto(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_lgoto(SCR *sp, VICMD *vp)
 {
 	db_recno_t nlines;
 
@@ -106,9 +104,7 @@ v_lgoto(sp, vp)
  * PUBLIC: int v_home __P((SCR *, VICMD *));
  */
 int
-v_home(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_home(SCR *sp, VICMD *vp)
 {
 	if (vs_sm_position(sp, &vp->m_stop,
 	    F_ISSET(vp, VC_C1SET) ? vp->count - 1 : 0, P_TOP))
@@ -125,9 +121,7 @@ v_home(sp, vp)
  * PUBLIC: int v_middle __P((SCR *, VICMD *));
  */
 int
-v_middle(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_middle(SCR *sp, VICMD *vp)
 {
 	/*
 	 * Yielding to none in our quest for compatibility with every
@@ -148,9 +142,7 @@ v_middle(sp, vp)
  * PUBLIC: int v_bottom __P((SCR *, VICMD *));
  */
 int
-v_bottom(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_bottom(SCR *sp, VICMD *vp)
 {
 	if (vs_sm_position(sp, &vp->m_stop,
 	    F_ISSET(vp, VC_C1SET) ? vp->count - 1 : 0, P_BOTTOM))
@@ -160,8 +152,7 @@ v_bottom(sp, vp)
 }
 
 static void
-goto_adjust(vp)
-	VICMD *vp;
+goto_adjust(VICMD *vp)
 {
 	/* Guess that it's the end of the range. */
 	vp->m_final = vp->m_stop;
@@ -214,9 +205,7 @@ goto_adjust(vp)
  * PUBLIC: int v_up __P((SCR *, VICMD *));
  */
 int
-v_up(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_up(SCR *sp, VICMD *vp)
 {
 	db_recno_t lno;
 
@@ -238,9 +227,7 @@ v_up(sp, vp)
  * PUBLIC: int v_cr __P((SCR *, VICMD *));
  */
 int
-v_cr(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_cr(SCR *sp, VICMD *vp)
 {
 	/* If it's a colon command-line edit window, it's an ex command. */
 	if (F_ISSET(sp, SC_COMEDIT))
@@ -261,9 +248,7 @@ v_cr(sp, vp)
  * PUBLIC: int v_down __P((SCR *, VICMD *));
  */
 int
-v_down(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_down(SCR *sp, VICMD *vp)
 {
 	db_recno_t lno;
 
@@ -284,9 +269,7 @@ v_down(sp, vp)
  * PUBLIC: int v_hpageup __P((SCR *, VICMD *));
  */
 int
-v_hpageup(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_hpageup(SCR *sp, VICMD *vp)
 {
 	/*
 	 * Half screens always succeed unless already at SOF.
@@ -310,9 +293,7 @@ v_hpageup(sp, vp)
  * PUBLIC: int v_hpagedown __P((SCR *, VICMD *));
  */
 int
-v_hpagedown(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_hpagedown(SCR *sp, VICMD *vp)
 {
 	/*
 	 * Half screens always succeed unless already at EOF.
@@ -340,9 +321,7 @@ v_hpagedown(sp, vp)
  * PUBLIC: int v_pagedown __P((SCR *, VICMD *));
  */
 int
-v_pagedown(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_pagedown(SCR *sp, VICMD *vp)
 {
 	db_recno_t offset;
 
@@ -388,9 +367,7 @@ v_pagedown(sp, vp)
  * PUBLIC: int v_pageup __P((SCR *, VICMD *));
  */
 int
-v_pageup(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_pageup(SCR *sp, VICMD *vp)
 {
 	db_recno_t offset;
 
@@ -436,9 +413,7 @@ v_pageup(sp, vp)
  * PUBLIC: int v_lineup __P((SCR *, VICMD *));
  */
 int
-v_lineup(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_lineup(SCR *sp, VICMD *vp)
 {
 	/*
 	 * The cursor moves down, staying with its original line, unless it
@@ -458,9 +433,7 @@ v_lineup(sp, vp)
  * PUBLIC: int v_linedown __P((SCR *, VICMD *));
  */
 int
-v_linedown(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_linedown(SCR *sp, VICMD *vp)
 {
 	/*
 	 * The cursor moves up, staying with its original line, unless it

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_screen.c,v 10.11 2000/06/25 17:34:41 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:41 $";
+static const char sccsid[] = "$Id: v_screen.c,v 10.12 2001/06/25 15:19:34 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,9 +31,7 @@ static const char sccsid[] = "$Id: v_screen.c,v 10.11 2000/06/25 17:34:41 skimo 
  * PUBLIC: int v_screen __P((SCR *, VICMD *));
  */
 int
-v_screen(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_screen(SCR *sp, VICMD *vp)
 {
 	/*
 	 * You can't leave a colon command-line edit window -- it's not that

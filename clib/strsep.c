@@ -56,9 +56,7 @@ static const char sccsid[] = "@(#)strsep.c	8.1 (Berkeley) 6/4/93";
  * PUBLIC: #endif
  */
 char *
-strsep(stringp, delim)
-	register char **stringp;
-	register const char *delim;
+strsep(register char **stringp, register const char *delim)
 {
 	register char *s;
 	register const char *spanp;

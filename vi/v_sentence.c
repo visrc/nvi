@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_sentence.c,v 10.8 2000/04/21 19:00:41 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:41 $";
+static const char sccsid[] = "$Id: v_sentence.c,v 10.9 2001/06/25 15:19:35 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -52,9 +52,7 @@ static const char sccsid[] = "$Id: v_sentence.c,v 10.8 2000/04/21 19:00:41 skimo
  * PUBLIC: int v_sentencef __P((SCR *, VICMD *));
  */
 int
-v_sentencef(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_sentencef(SCR *sp, VICMD *vp)
 {
 	enum { BLANK, NONE, PERIOD } state;
 	VCS cs;
@@ -193,9 +191,7 @@ okret:	vp->m_stop.lno = cs.cs_lno;
  * PUBLIC: int v_sentenceb __P((SCR *, VICMD *));
  */
 int
-v_sentenceb(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_sentenceb(SCR *sp, VICMD *vp)
 {
 	VCS cs;
 	db_recno_t slno;

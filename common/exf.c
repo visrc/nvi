@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: exf.c,v 10.63 2001/06/09 18:26:27 skimo Exp $ (Berkeley) $Date: 2001/06/09 18:26:27 $";
+static const char sccsid[] = "$Id: exf.c,v 10.64 2001/06/25 15:19:09 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:09 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -59,9 +59,7 @@ static int	file_spath __P((SCR *, FREF *, struct stat *, int *));
  * PUBLIC: FREF *file_add __P((SCR *, char *));
  */
 FREF *
-file_add(sp, name)
-	SCR *sp;
-	char *name;
+file_add(SCR *sp, char *name)
 {
 	GS *gp;
 	FREF *frp, *tfrp;
@@ -124,11 +122,7 @@ file_add(sp, name)
  * PUBLIC: int file_init __P((SCR *, FREF *, char *, int));
  */
 int
-file_init(sp, frp, rcv_name, flags)
-	SCR *sp;
-	FREF *frp;
-	char *rcv_name;
-	int flags;
+file_init(SCR *sp, FREF *frp, char *rcv_name, int flags)
 {
 	EXF *ep;
 	struct stat sb;
@@ -496,11 +490,7 @@ oerr:	if (F_ISSET(ep, F_RCV_ON))
  *	try and open.
  */
 static int
-file_spath(sp, frp, sbp, existsp)
-	SCR *sp;
-	FREF *frp;
-	struct stat *sbp;
-	int *existsp;
+file_spath(SCR *sp, FREF *frp, struct stat *sbp, int *existsp)
 {
 	CHAR_T savech;
 	size_t len;
@@ -563,8 +553,7 @@ file_spath(sp, frp, sbp, existsp)
  *	Set up the initial cursor position.
  */
 static void
-file_cinit(sp)
-	SCR *sp;
+file_cinit(SCR *sp)
 {
 	GS *gp;
 	MARK m;
@@ -675,10 +664,7 @@ file_cinit(sp)
  * PUBLIC: int file_end __P((SCR *, EXF *, int));
  */
 int
-file_end(sp, ep, force)
-	SCR *sp;
-	EXF *ep;
-	int force;
+file_end(SCR *sp, EXF *ep, int force)
 {
 	FREF *frp;
 
@@ -794,11 +780,7 @@ file_end(sp, ep, force)
  * PUBLIC: int file_write __P((SCR *, MARK *, MARK *, char *, int));
  */
 int
-file_write(sp, fm, tm, name, flags)
-	SCR *sp;
-	MARK *fm, *tm;
-	char *name;
-	int flags;
+file_write(SCR *sp, MARK *fm, MARK *tm, char *name, int flags)
 {
 	enum { NEWFILE, OLDFILE } mtype;
 	struct stat sb;
@@ -1056,9 +1038,7 @@ file_write(sp, fm, tm, name, flags)
  * recreate the file.  So, let's not risk it.
  */
 static int
-file_backup(sp, name, bname)
-	SCR *sp;
-	char *name, *bname;
+file_backup(SCR *sp, char *name, char *bname)
 {
 	struct dirent *dp;
 	struct stat sb;
@@ -1247,8 +1227,7 @@ err:	if (rfd != -1)
  *	Skip the first comment.
  */
 static void
-file_comment(sp)
-	SCR *sp;
+file_comment(SCR *sp)
 {
 	db_recno_t lno;
 	size_t len;
@@ -1291,9 +1270,7 @@ file_comment(sp)
  * PUBLIC: int file_m1 __P((SCR *, int, int));
  */
 int
-file_m1(sp, force, flags)
-	SCR *sp;
-	int force, flags;
+file_m1(SCR *sp, int force, int flags)
 {
 	EXF *ep;
 
@@ -1332,9 +1309,7 @@ file_m1(sp, force, flags)
  * PUBLIC: int file_m2 __P((SCR *, int));
  */
 int
-file_m2(sp, force)
-	SCR *sp;
-	int force;
+file_m2(SCR *sp, int force)
 {
 	EXF *ep;
 
@@ -1364,9 +1339,7 @@ file_m2(sp, force)
  * PUBLIC: int file_m3 __P((SCR *, int));
  */
 int
-file_m3(sp, force)
-	SCR *sp;
-	int force;
+file_m3(SCR *sp, int force)
 {
 	EXF *ep;
 
@@ -1400,9 +1373,7 @@ file_m3(sp, force)
  * PUBLIC: int file_aw __P((SCR *, int));
  */
 int
-file_aw(sp, flags)
-	SCR *sp;
-	int flags;
+file_aw(SCR *sp, int flags)
 {
 	if (!F_ISSET(sp->ep, F_MODIFIED))
 		return (0);
@@ -1461,9 +1432,7 @@ file_aw(sp, flags)
  * PUBLIC: void set_alt_name __P((SCR *, char *));
  */
 void
-set_alt_name(sp, name)
-	SCR *sp;
-	char *name;
+set_alt_name(SCR *sp, char *name)
 {
 	if (sp->alt_name != NULL)
 		free(sp->alt_name);
@@ -1497,10 +1466,7 @@ set_alt_name(sp, name)
  * PUBLIC: lockr_t file_lock __P((SCR *, char *, int *, int, int));
  */
 lockr_t
-file_lock(sp, name, fdp, fd, iswrite)
-	SCR *sp;
-	char *name;
-	int *fdp, fd, iswrite;
+file_lock(SCR *sp, char *name, int *fdp, int fd, int iswrite)
 {
 	if (!O_ISSET(sp, O_LOCKFILES))
 		return (LOCK_SUCCESS);

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_append.c,v 10.33 2001/06/10 10:23:44 skimo Exp $ (Berkeley) $Date: 2001/06/10 10:23:44 $";
+static const char sccsid[] = "$Id: ex_append.c,v 10.34 2001/06/25 15:19:14 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,9 +36,7 @@ static int ex_aci __P((SCR *, EXCMD *, enum which));
  * PUBLIC: int ex_append __P((SCR *, EXCMD *));
  */
 int
-ex_append(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_append(SCR *sp, EXCMD *cmdp)
 {
 	return (ex_aci(sp, cmdp, APPEND));
 }
@@ -50,9 +48,7 @@ ex_append(sp, cmdp)
  * PUBLIC: int ex_change __P((SCR *, EXCMD *));
  */
 int
-ex_change(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_change(SCR *sp, EXCMD *cmdp)
 {
 	return (ex_aci(sp, cmdp, CHANGE));
 }
@@ -65,9 +61,7 @@ ex_change(sp, cmdp)
  * PUBLIC: int ex_insert __P((SCR *, EXCMD *));
  */
 int
-ex_insert(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_insert(SCR *sp, EXCMD *cmdp)
 {
 	return (ex_aci(sp, cmdp, INSERT));
 }
@@ -77,10 +71,7 @@ ex_insert(sp, cmdp)
  *	Append, change, insert in ex.
  */
 static int
-ex_aci(sp, cmdp, cmd)
-	SCR *sp;
-	EXCMD *cmdp;
-	enum which cmd;
+ex_aci(SCR *sp, EXCMD *cmdp, enum which cmd)
 {
 	CHAR_T *p, *t;
 	GS *gp;

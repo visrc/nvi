@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_smap.c,v 10.28 2000/04/30 16:36:14 skimo Exp $ (Berkeley) $Date: 2000/04/30 16:36:14 $";
+static const char sccsid[] = "$Id: vs_smap.c,v 10.29 2001/06/25 15:19:38 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -42,10 +42,7 @@ static int	vs_sm_up __P((SCR *, MARK *, db_recno_t, scroll_t, SMAP *));
  * PUBLIC: int vs_change __P((SCR *, db_recno_t, lnop_t));
  */
 int
-vs_change(sp, lno, op)
-	SCR *sp;
-	db_recno_t lno;
-	lnop_t op;
+vs_change(SCR *sp, db_recno_t lno, lnop_t op)
 {
 	VI_PRIVATE *vip;
 	SMAP *p;
@@ -177,10 +174,7 @@ vs_change(sp, lno, op)
  * PUBLIC: int vs_sm_fill __P((SCR *, db_recno_t, pos_t));
  */
 int
-vs_sm_fill(sp, lno, pos)
-	SCR *sp;
-	db_recno_t lno;
-	pos_t pos;
+vs_sm_fill(SCR *sp, db_recno_t lno, pos_t pos)
 {
 	SMAP *p, tmp;
 	size_t cnt;
@@ -304,9 +298,7 @@ err:	HMAP->lno = 1;
  *	Delete a line out of the SMAP.
  */
 static int
-vs_sm_delete(sp, lno)
-	SCR *sp;
-	db_recno_t lno;
+vs_sm_delete(SCR *sp, db_recno_t lno)
 {
 	SMAP *p, *t;
 	size_t cnt_orig;
@@ -354,9 +346,7 @@ vs_sm_delete(sp, lno)
  *	Insert a line into the SMAP.
  */
 static int
-vs_sm_insert(sp, lno)
-	SCR *sp;
-	db_recno_t lno;
+vs_sm_insert(SCR *sp, db_recno_t lno)
 {
 	SMAP *p, *t;
 	size_t cnt_orig, cnt, coff;
@@ -410,9 +400,7 @@ vs_sm_insert(sp, lno)
  *	Reset a line in the SMAP.
  */
 static int
-vs_sm_reset(sp, lno)
-	SCR *sp;
-	db_recno_t lno;
+vs_sm_reset(SCR *sp, db_recno_t lno)
 {
 	SMAP *p, *t;
 	size_t cnt_orig, cnt_new, cnt, diff;
@@ -517,11 +505,7 @@ vs_sm_reset(sp, lno)
  * PUBLIC: int vs_sm_scroll __P((SCR *, MARK *, db_recno_t, scroll_t));
  */
 int
-vs_sm_scroll(sp, rp, count, scmd)
-	SCR *sp;
-	MARK *rp;
-	db_recno_t count;
-	scroll_t scmd;
+vs_sm_scroll(SCR *sp, MARK *rp, db_recno_t count, scroll_t scmd)
 {
 	SMAP *smp;
 
@@ -578,12 +562,7 @@ vs_sm_scroll(sp, rp, count, scmd)
  *	Scroll the SMAP up count logical lines.
  */
 static int
-vs_sm_up(sp, rp, count, scmd, smp)
-	SCR *sp;
-	MARK *rp;
-	scroll_t scmd;
-	db_recno_t count;
-	SMAP *smp;
+vs_sm_up(SCR *sp, MARK *rp, db_recno_t count, scroll_t scmd, SMAP *smp)
 {
 	int cursor_set, echanged, zset;
 	SMAP *ssmp, s1, s2;
@@ -759,8 +738,7 @@ vs_sm_up(sp, rp, count, scmd, smp)
  * PUBLIC: int vs_sm_1up __P((SCR *));
  */
 int
-vs_sm_1up(sp)
-	SCR *sp;
+vs_sm_1up(SCR *sp)
 {
 	/*
 	 * Delete the top line of the screen.  Shift the screen map
@@ -789,9 +767,7 @@ vs_sm_1up(sp)
  *	line and other screens back.
  */
 static int
-vs_deleteln(sp, cnt)
-	SCR *sp;
-	int cnt;
+vs_deleteln(SCR *sp, int cnt)
 {
 	GS *gp;
 	size_t oldy, oldx;
@@ -823,12 +799,7 @@ vs_deleteln(sp, cnt)
  *	Scroll the SMAP down count logical lines.
  */
 static int
-vs_sm_down(sp, rp, count, scmd, smp)
-	SCR *sp;
-	MARK *rp;
-	db_recno_t count;
-	SMAP *smp;
-	scroll_t scmd;
+vs_sm_down(SCR *sp, MARK *rp, db_recno_t count, scroll_t scmd, SMAP *smp)
 {
 	SMAP *ssmp, s1, s2;
 	int cursor_set, ychanged, zset;
@@ -979,8 +950,7 @@ vs_sm_down(sp, rp, count, scmd, smp)
  *	Erase the small screen area for the scrolling functions.
  */
 static int
-vs_sm_erase(sp)
-	SCR *sp;
+vs_sm_erase(SCR *sp)
 {
 	GS *gp;
 
@@ -1001,8 +971,7 @@ vs_sm_erase(sp)
  * PUBLIC: int vs_sm_1down __P((SCR *));
  */
 int
-vs_sm_1down(sp)
-	SCR *sp;
+vs_sm_1down(SCR *sp)
 {
 	/*
 	 * Insert a line at the top of the screen.  Shift the screen map
@@ -1031,9 +1000,7 @@ vs_sm_1down(sp)
  *	line and other screens back.
  */
 static int
-vs_insertln(sp, cnt)
-	SCR *sp;
-	int cnt;
+vs_insertln(SCR *sp, int cnt)
 {
 	GS *gp;
 	size_t oldy, oldx;
@@ -1068,9 +1035,7 @@ vs_insertln(sp, cnt)
  * PUBLIC: int vs_sm_next __P((SCR *, SMAP *, SMAP *));
  */
 int
-vs_sm_next(sp, p, t)
-	SCR *sp;
-	SMAP *p, *t;
+vs_sm_next(SCR *sp, SMAP *p, SMAP *t)
 {
 	size_t lcnt;
 
@@ -1098,9 +1063,7 @@ vs_sm_next(sp, p, t)
  * PUBLIC: int vs_sm_prev __P((SCR *, SMAP *, SMAP *));
  */
 int
-vs_sm_prev(sp, p, t)
-	SCR *sp;
-	SMAP *p, *t;
+vs_sm_prev(SCR *sp, SMAP *p, SMAP *t)
 {
 	SMAP_FLUSH(t);
 	if (O_ISSET(sp, O_LEFTRIGHT)) {
@@ -1125,9 +1088,7 @@ vs_sm_prev(sp, p, t)
  * PUBLIC: int vs_sm_cursor __P((SCR *, SMAP **));
  */
 int
-vs_sm_cursor(sp, smpp)
-	SCR *sp;
-	SMAP **smpp;
+vs_sm_cursor(SCR *sp, SMAP **smpp)
 {
 	SMAP *p;
 
@@ -1166,11 +1127,7 @@ vs_sm_cursor(sp, smpp)
  * PUBLIC: int vs_sm_position __P((SCR *, MARK *, u_long, pos_t));
  */
 int
-vs_sm_position(sp, rp, cnt, pos)
-	SCR *sp;
-	MARK *rp;
-	u_long cnt;
-	pos_t pos;
+vs_sm_position(SCR *sp, MARK *rp, u_long cnt, pos_t pos)
 {
 	SMAP *smp;
 	db_recno_t last;
@@ -1250,11 +1207,7 @@ eof:				msgq(sp, M_BERR,
  * PUBLIC: db_recno_t vs_sm_nlines __P((SCR *, SMAP *, db_recno_t, size_t));
  */
 db_recno_t
-vs_sm_nlines(sp, from_sp, to_lno, max)
-	SCR *sp;
-	SMAP *from_sp;
-	db_recno_t to_lno;
-	size_t max;
+vs_sm_nlines(SCR *sp, SMAP *from_sp, db_recno_t to_lno, size_t max)
 {
 	db_recno_t lno, lcnt;
 

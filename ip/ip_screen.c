@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_screen.c,v 8.7 2000/07/11 19:07:19 skimo Exp $ (Berkeley) $Date: 2000/07/11 19:07:19 $";
+static const char sccsid[] = "$Id: ip_screen.c,v 8.8 2001/06/25 15:19:24 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,9 +28,7 @@ static const char sccsid[] = "$Id: ip_screen.c,v 8.7 2000/07/11 19:07:19 skimo E
  * PUBLIC: int ip_screen __P((SCR *, u_int32_t));
  */
 int
-ip_screen(sp, flags)
-	SCR *sp;
-	u_int32_t flags;
+ip_screen(SCR *sp, u_int32_t flags)
 {
 	GS *gp;
 	IP_PRIVATE *ipp;

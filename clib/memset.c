@@ -68,10 +68,10 @@ bzero(dst0, length)
 #define	WIDEVAL	c
 
 void *
-memset(dst0, c0, length)
-	void *dst0;
-	register int c0;
-	register size_t length;
+memset(void *dst0, register int c0, register size_t length)
+	           
+	                
+	                       
 #endif
 {
 	register size_t t;

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_write.c,v 10.37 2001/06/10 10:23:45 skimo Exp $ (Berkeley) $Date: 2001/06/10 10:23:45 $";
+static const char sccsid[] = "$Id: ex_write.c,v 10.38 2001/06/25 15:19:22 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -39,9 +39,7 @@ static int exwr __P((SCR *, EXCMD *, enum which));
  * PUBLIC: int ex_wn __P((SCR *, EXCMD *));
  */
 int
-ex_wn(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_wn(SCR *sp, EXCMD *cmdp)
 {
 	if (exwr(sp, cmdp, WN))
 		return (1);
@@ -61,9 +59,7 @@ ex_wn(sp, cmdp)
  * PUBLIC: int ex_wq __P((SCR *, EXCMD *));
  */
 int
-ex_wq(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_wq(SCR *sp, EXCMD *cmdp)
 {
 	int force;
 
@@ -89,9 +85,7 @@ ex_wq(sp, cmdp)
  * PUBLIC: int ex_write __P((SCR *, EXCMD *));
  */
 int
-ex_write(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_write(SCR *sp, EXCMD *cmdp)
 {
 	return (exwr(sp, cmdp, WRITE));
 }
@@ -104,9 +98,7 @@ ex_write(sp, cmdp)
  * PUBLIC: int ex_xit __P((SCR *, EXCMD *));
  */
 int
-ex_xit(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_xit(SCR *sp, EXCMD *cmdp)
 {
 	int force;
 
@@ -131,10 +123,7 @@ ex_xit(sp, cmdp)
  *	The guts of the ex write commands.
  */
 static int
-exwr(sp, cmdp, cmd)
-	SCR *sp;
-	EXCMD *cmdp;
-	enum which cmd;
+exwr(SCR *sp, EXCMD *cmdp, enum which cmd)
 {
 	MARK rm;
 	int flags;
@@ -286,13 +275,7 @@ exwr(sp, cmdp, cmd)
  * PUBLIC:    char *, FILE *, MARK *, MARK *, u_long *, u_long *, int));
  */
 int
-ex_writefp(sp, name, fp, fm, tm, nlno, nch, silent)
-	SCR *sp;
-	char *name;
-	FILE *fp;
-	MARK *fm, *tm;
-	u_long *nlno, *nch;
-	int silent;
+ex_writefp(SCR *sp, char *name, FILE *fp, MARK *fm, MARK *tm, u_long *nlno, u_long *nch, int silent)
 {
 	struct stat sb;
 	GS *gp;

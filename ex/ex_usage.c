@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_usage.c,v 10.14 2001/06/10 10:23:44 skimo Exp $ (Berkeley) $Date: 2001/06/10 10:23:44 $";
+static const char sccsid[] = "$Id: ex_usage.c,v 10.15 2001/06/25 15:19:21 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,9 +34,7 @@ static const char sccsid[] = "$Id: ex_usage.c,v 10.14 2001/06/10 10:23:44 skimo 
  * PUBLIC: int ex_help __P((SCR *, EXCMD *));
  */
 int
-ex_help(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_help(SCR *sp, EXCMD *cmdp)
 {
 	(void)ex_puts(sp,
 	    "To see the list of vi commands, enter \":viusage<CR>\"\n");
@@ -57,9 +55,7 @@ ex_help(sp, cmdp)
  * PUBLIC: int ex_usage __P((SCR *, EXCMD *));
  */
 int
-ex_usage(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_usage(SCR *sp, EXCMD *cmdp)
 {
 	ARGS *ap;
 	EXCMDLIST const *cp;
@@ -140,9 +136,7 @@ ex_usage(sp, cmdp)
  * PUBLIC: int ex_viusage __P((SCR *, EXCMD *));
  */
 int
-ex_viusage(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_viusage(SCR *sp, EXCMD *cmdp)
 {
 	GS *gp;
 	VIKEYS const *kp;

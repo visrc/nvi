@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_refresh.c,v 10.49 2000/07/19 17:05:20 skimo Exp $ (Berkeley) $Date: 2000/07/19 17:05:20 $";
+static const char sccsid[] = "$Id: vs_refresh.c,v 10.50 2001/06/25 15:19:37 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,9 +40,7 @@ static int	vs_paint __P((SCR *, u_int));
  * PUBLIC: int vs_refresh __P((SCR *, int));
  */
 int
-vs_refresh(sp, forcepaint)
-	SCR *sp;
-	int forcepaint;
+vs_refresh(SCR *sp, int forcepaint)
 {
 	GS *gp;
 	SCR *tsp;
@@ -140,9 +138,7 @@ vs_refresh(sp, forcepaint)
  *	what you're doing.  It's subtle and quick to anger.
  */
 static int
-vs_paint(sp, flags)
-	SCR *sp;
-	u_int flags;
+vs_paint(SCR *sp, u_int flags)
 {
 	GS *gp;
 	SMAP *smp, tmp;
@@ -744,8 +740,7 @@ number:	if (O_ISSET(sp, O_NUMBER) &&
  *	Update the mode line.
  */
 static void
-vs_modeline(sp)
-	SCR *sp;
+vs_modeline(SCR *sp)
 {
 	static char * const modes[] = {
 		"215|Append",			/* SM_APPEND */

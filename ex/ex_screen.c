@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_screen.c,v 10.11 1996/06/29 12:27:15 bostic Exp $ (Berkeley) $Date: 1996/06/29 12:27:15 $";
+static const char sccsid[] = "$Id: ex_screen.c,v 10.12 2001/06/25 15:19:19 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,9 +33,7 @@ static const char sccsid[] = "$Id: ex_screen.c,v 10.11 1996/06/29 12:27:15 bosti
  * PUBLIC: int ex_bg __P((SCR *, EXCMD *));
  */
 int
-ex_bg(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_bg(SCR *sp, EXCMD *cmdp)
 {
 	return (vs_bg(sp));
 }
@@ -47,9 +45,7 @@ ex_bg(sp, cmdp)
  * PUBLIC: int ex_fg __P((SCR *, EXCMD *));
  */
 int
-ex_fg(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_fg(SCR *sp, EXCMD *cmdp)
 {
 	SCR *nsp;
 	int newscreen;
@@ -73,9 +69,7 @@ ex_fg(sp, cmdp)
  * PUBLIC: int ex_resize __P((SCR *, EXCMD *));
  */
 int
-ex_resize(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_resize(SCR *sp, EXCMD *cmdp)
 {
 	adj_t adj;
 
@@ -104,8 +98,7 @@ ex_resize(sp, cmdp)
  * PUBLIC: int ex_sdisplay __P((SCR *));
  */
 int
-ex_sdisplay(sp)
-	SCR *sp;
+ex_sdisplay(SCR *sp)
 {
 	GS *gp;
 	SCR *tsp;

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_argv.c,v 10.37 2001/06/09 21:53:52 skimo Exp $ (Berkeley) $Date: 2001/06/09 21:53:52 $";
+static const char sccsid[] = "$Id: ex_argv.c,v 10.38 2001/06/25 15:19:14 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -42,9 +42,7 @@ static int argv_sexp __P((SCR *, CHAR_T **, size_t *, size_t *));
  * PUBLIC: int argv_init __P((SCR *, EXCMD *));
  */
 int
-argv_init(sp, excp)
-	SCR *sp;
-	EXCMD *excp;
+argv_init(SCR *sp, EXCMD *excp)
 {
 	EX_PRIVATE *exp;
 
@@ -64,11 +62,7 @@ argv_init(sp, excp)
  * PUBLIC: int argv_exp0 __P((SCR *, EXCMD *, CHAR_T *, size_t));
  */
 int
-argv_exp0(sp, excp, cmd, cmdlen)
-	SCR *sp;
-	EXCMD *excp;
-	CHAR_T *cmd;
-	size_t cmdlen;
+argv_exp0(SCR *sp, EXCMD *excp, CHAR_T *cmd, size_t cmdlen)
 {
 	EX_PRIVATE *exp;
 
@@ -91,12 +85,7 @@ argv_exp0(sp, excp, cmd, cmdlen)
  * PUBLIC: int argv_exp1 __P((SCR *, EXCMD *, CHAR_T *, size_t, int));
  */
 int
-argv_exp1(sp, excp, cmd, cmdlen, is_bang)
-	SCR *sp;
-	EXCMD *excp;
-	CHAR_T *cmd;
-	size_t cmdlen;
-	int is_bang;
+argv_exp1(SCR *sp, EXCMD *excp, CHAR_T *cmd, size_t cmdlen, int is_bang)
 {
 	EX_PRIVATE *exp;
 	size_t blen, len;
@@ -137,11 +126,7 @@ ret:	FREE_SPACEW(sp, bp, blen);
  * PUBLIC: int argv_exp2 __P((SCR *, EXCMD *, CHAR_T *, size_t));
  */
 int
-argv_exp2(sp, excp, cmd, cmdlen)
-	SCR *sp;
-	EXCMD *excp;
-	CHAR_T *cmd;
-	size_t cmdlen;
+argv_exp2(SCR *sp, EXCMD *excp, CHAR_T *cmd, size_t cmdlen)
 {
 	size_t blen, len, n;
 	int rval;
@@ -261,11 +246,7 @@ err:	FREE_SPACEW(sp, bp, blen);
  * PUBLIC: int argv_exp3 __P((SCR *, EXCMD *, CHAR_T *, size_t));
  */
 int
-argv_exp3(sp, excp, cmd, cmdlen)
-	SCR *sp;
-	EXCMD *excp;
-	CHAR_T *cmd;
-	size_t cmdlen;
+argv_exp3(SCR *sp, EXCMD *excp, CHAR_T *cmd, size_t cmdlen)
 {
 	EX_PRIVATE *exp;
 	size_t len;
@@ -330,12 +311,7 @@ argv_exp3(sp, excp, cmd, cmdlen)
  *	Do file name and bang command expansion.
  */
 static int
-argv_fexp(sp, excp, cmd, cmdlen, p, lenp, bpp, blenp, is_bang)
-	SCR *sp;
-	EXCMD *excp;
-	CHAR_T *cmd, *p, **bpp;
-	size_t cmdlen, *lenp, *blenp;
-	int is_bang;
+argv_fexp(SCR *sp, EXCMD *excp, CHAR_T *cmd, size_t cmdlen, CHAR_T *p, size_t *lenp, CHAR_T **bpp, size_t *blenp, int is_bang)
 {
 	EX_PRIVATE *exp;
 	char *t;
@@ -435,9 +411,7 @@ ins_ch:			++len;
  *	Make more space for arguments.
  */
 static int
-argv_alloc(sp, len)
-	SCR *sp;
-	size_t len;
+argv_alloc(SCR *sp, size_t len)
 {
 	ARGS *ap;
 	EX_PRIVATE *exp;
@@ -502,8 +476,7 @@ mem:			msgq(sp, M_SYSERR, NULL);
  * PUBLIC: int argv_free __P((SCR *));
  */
 int
-argv_free(sp)
-	SCR *sp;
+argv_free(SCR *sp)
 {
 	EX_PRIVATE *exp;
 	int off;
@@ -621,8 +594,7 @@ argv_lexp(SCR *sp, EXCMD *excp, char *path)
  *	Alphabetic comparison.
  */
 static int
-argv_comp(a, b)
-	const void *a, *b;
+argv_comp(const void *a, const void *b)
 {
 	return (STRCMP((*(ARGS **)a)->bp, (*(ARGS **)b)->bp));
 }
@@ -633,10 +605,7 @@ argv_comp(a, b)
  *	a buffer.
  */
 static int
-argv_sexp(sp, bpp, blenp, lenp)
-	SCR *sp;
-	CHAR_T **bpp;
-	size_t *blenp, *lenp;
+argv_sexp(SCR *sp, CHAR_T **bpp, size_t *blenp, size_t *lenp)
 {
 	enum { SEXP_ERR, SEXP_EXPANSION_ERR, SEXP_OK } rval;
 	FILE *ifp;

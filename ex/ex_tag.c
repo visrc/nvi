@@ -13,7 +13,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_tag.c,v 10.47 2001/06/09 18:26:30 skimo Exp $ (Berkeley) $Date: 2001/06/09 18:26:30 $";
+static const char sccsid[] = "$Id: ex_tag.c,v 10.48 2001/06/25 15:19:20 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:20 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -62,9 +62,7 @@ static int	 tagq_copy __P((SCR *, TAGQ *, TAGQ **));
  * PUBLIC: int ex_tag_first __P((SCR *, CHAR_T *));
  */
 int
-ex_tag_first(sp, tagarg)
-	SCR *sp;
-	CHAR_T *tagarg;
+ex_tag_first(SCR *sp, CHAR_T *tagarg)
 {
 	EXCMD cmd;
 
@@ -97,9 +95,7 @@ ex_tag_first(sp, tagarg)
  * PUBLIC: int ex_tag_push __P((SCR *, EXCMD *));
  */
 int
-ex_tag_push(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_tag_push(SCR *sp, EXCMD *cmdp)
 {
 	EX_PRIVATE *exp;
 	TAGQ *tqp;
@@ -150,9 +146,7 @@ ex_tag_push(sp, cmdp)
  * PUBLIC: int ex_tag_next __P((SCR *, EXCMD *));
  */
 int
-ex_tag_next(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_tag_next(SCR *sp, EXCMD *cmdp)
 {
 	EX_PRIVATE *exp;
 	TAG *tp;
@@ -192,9 +186,7 @@ ex_tag_next(sp, cmdp)
  * PUBLIC: int ex_tag_prev __P((SCR *, EXCMD *));
  */
 int
-ex_tag_prev(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_tag_prev(SCR *sp, EXCMD *cmdp)
 {
 	EX_PRIVATE *exp;
 	TAG *tp;
@@ -234,10 +226,7 @@ ex_tag_prev(sp, cmdp)
  * PUBLIC: int ex_tag_nswitch __P((SCR *, TAG *, int));
  */
 int
-ex_tag_nswitch(sp, tp, force)
-	SCR *sp;
-	TAG *tp;
-	int force;
+ex_tag_nswitch(SCR *sp, TAG *tp, int force)
 {
 	/* Get a file structure. */
 	if (tp->frp == NULL && (tp->frp = file_add(sp, tp->fname)) == NULL)
@@ -271,10 +260,7 @@ ex_tag_nswitch(sp, tp, force)
  * PUBLIC: int ex_tag_Nswitch __P((SCR *, TAG *, int));
  */
 int
-ex_tag_Nswitch(sp, tp, force)
-	SCR *sp;
-	TAG *tp;
-	int force;
+ex_tag_Nswitch(SCR *sp, TAG *tp, int force)
 {
 	SCR *new;
 
@@ -328,9 +314,7 @@ ex_tag_Nswitch(sp, tp, force)
  * PUBLIC: int ex_tag_pop __P((SCR *, EXCMD *));
  */
 int
-ex_tag_pop(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_tag_pop(SCR *sp, EXCMD *cmdp)
 {
 	EX_PRIVATE *exp;
 	TAGQ *tqp, *dtqp;
@@ -411,9 +395,7 @@ filearg:	arglen = strlen(arg);
  * PUBLIC: int ex_tag_top __P((SCR *, EXCMD *));
  */
 int
-ex_tag_top(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_tag_top(SCR *sp, EXCMD *cmdp)
 {
 	EX_PRIVATE *exp;
 
@@ -435,10 +417,7 @@ ex_tag_top(sp, cmdp)
  *	Pop up to and including the specified TAGQ context.
  */
 static int
-tag_pop(sp, dtqp, force)
-	SCR *sp;
-	TAGQ *dtqp;
-	int force;
+tag_pop(SCR *sp, TAGQ *dtqp, int force)
 {
 	EX_PRIVATE *exp;
 	TAG *tp;
@@ -491,8 +470,7 @@ tag_pop(sp, dtqp, force)
  * PUBLIC: int ex_tag_display __P((SCR *));
  */
 int
-ex_tag_display(sp)
-	SCR *sp;
+ex_tag_display(SCR *sp)
 {
 	EX_PRIVATE *exp;
 	TAG *tp;
@@ -570,8 +548,7 @@ ex_tag_display(sp)
  * PUBLIC: int ex_tag_copy __P((SCR *, SCR *));
  */
 int
-ex_tag_copy(orig, sp)
-	SCR *orig, *sp;
+ex_tag_copy(SCR *orig, SCR *sp)
 {
 	EX_PRIVATE *oexp, *nexp;
 	TAGQ *aqp, *tqp;
@@ -621,9 +598,7 @@ ex_tag_copy(orig, sp)
  *	Copy a TAGF structure and return it in new memory.
  */
 static int
-tagf_copy(sp, otfp, tfpp)
-	SCR *sp;
-	TAGF *otfp, **tfpp;
+tagf_copy(SCR *sp, TAGF *otfp, TAGF **tfpp)
 {
 	TAGF *tfp;
 
@@ -643,9 +618,7 @@ tagf_copy(sp, otfp, tfpp)
  *	Copy a TAGQ structure and return it in new memory.
  */
 static int
-tagq_copy(sp, otqp, tqpp)
-	SCR *sp;
-	TAGQ *otqp, **tqpp;
+tagq_copy(SCR *sp, TAGQ *otqp, TAGQ **tqpp)
 {
 	TAGQ *tqp;
 	size_t len;
@@ -670,9 +643,7 @@ tagq_copy(sp, otqp, tqpp)
  *	Copy a TAG structure and return it in new memory.
  */
 static int
-tag_copy(sp, otp, tpp)
-	SCR *sp;
-	TAG *otp, **tpp;
+tag_copy(SCR *sp, TAG *otp, TAG **tpp)
 {
 	TAG *tp;
 	size_t len;
@@ -703,9 +674,7 @@ tag_copy(sp, otp, tpp)
  *	Free a TAGF structure.
  */
 static int
-tagf_free(sp, tfp)
-	SCR *sp;
-	TAGF *tfp;
+tagf_free(SCR *sp, TAGF *tfp)
 {
 	EX_PRIVATE *exp;
 
@@ -723,9 +692,7 @@ tagf_free(sp, tfp)
  * PUBLIC: int tagq_free __P((SCR *, TAGQ *));
  */
 int
-tagq_free(sp, tqp)
-	SCR *sp;
-	TAGQ *tqp;
+tagq_free(SCR *sp, TAGQ *tqp)
 {
 	EX_PRIVATE *exp;
 	TAG *tp;
@@ -750,10 +717,7 @@ tagq_free(sp, tqp)
  * PUBLIC: int tagq_push __P((SCR*, TAGQ*, int, int ));
  */
 int
-tagq_push(sp, tqp, new_screen, force)
-	SCR *sp;
-	TAGQ *tqp;
-	int new_screen, force;
+tagq_push(SCR *sp, TAGQ *tqp, int new_screen, int force)
 {
 	EX_PRIVATE *exp;
 	FREF *frp;
@@ -865,10 +829,7 @@ alloc_err:
  * PUBLIC: void tag_msg __P((SCR *, tagmsg_t, char *));
  */
 void
-tag_msg(sp, msg, tag)
-	SCR *sp;
-	tagmsg_t msg;
-	char *tag;
+tag_msg(SCR *sp, tagmsg_t msg, char *tag)
 {
 	switch (msg) {
 	case TAG_BADLNO:
@@ -893,9 +854,7 @@ tag_msg(sp, msg, tag)
  * PUBLIC: int ex_tagf_alloc __P((SCR *, char *));
  */
 int
-ex_tagf_alloc(sp, str)
-	SCR *sp;
-	char *str;
+ex_tagf_alloc(SCR *sp, char *str)
 {
 	EX_PRIVATE *exp;
 	TAGF *tfp;
@@ -937,8 +896,7 @@ ex_tagf_alloc(sp, str)
  * PUBLIC: int ex_tag_free __P((SCR *));
  */
 int
-ex_tag_free(sp)
-	SCR *sp;
+ex_tag_free(SCR *sp)
 {
 	EX_PRIVATE *exp;
 	TAGF *tfp;
@@ -960,11 +918,7 @@ ex_tag_free(sp)
  *	Search a file for a tag.
  */
 static int
-ctag_search(sp, search, slen, tag)
-	SCR *sp;
-	CHAR_T *search;
-	char *tag;
-	size_t slen;
+ctag_search(SCR *sp, CHAR_T *search, size_t slen, char *tag)
 {
 	MARK m;
 	char *p;
@@ -1029,9 +983,7 @@ notfound:			tag_msg(sp, TAG_SEARCH, tag);
  *	Search the list of tags files for a tag, and return tag queue.
  */
 static TAGQ *
-ctag_slist(sp, tag)
-	SCR *sp;
-	CHAR_T *tag;
+ctag_slist(SCR *sp, CHAR_T *tag)
 {
 	EX_PRIVATE *exp;
 	TAGF *tfp;
@@ -1091,11 +1043,7 @@ alloc_err:
  *	Search a tags file for a tag, adding any found to the tag queue.
  */
 static int
-ctag_sfile(sp, tfp, tqp, tname)
-	SCR *sp;
-	TAGF *tfp;
-	TAGQ *tqp;
-	char *tname;
+ctag_sfile(SCR *sp, TAGF *tfp, TAGQ *tqp, char *tname)
 {
 	struct stat sb;
 	TAG *tp;
@@ -1236,11 +1184,7 @@ done:	if (munmap(map, (size_t)sb.st_size))
  *	Search for the right path to this file.
  */
 static void
-ctag_file(sp, tfp, name, dirp, dlenp)
-	SCR *sp;
-	TAGF *tfp;
-	char *name, **dirp;
-	size_t *dlenp;
+ctag_file(SCR *sp, TAGF *tfp, char *name, char **dirp, size_t *dlenp)
 {
 	struct stat sb;
 	size_t len;
@@ -1312,8 +1256,7 @@ ctag_file(sp, tfp, name, dirp, dlenp)
 #define	SKIP_PAST_NEWLINE(p, back)	while (p < back && *p++ != '\n');
 
 static char *
-binary_search(string, front, back)
-	register char *string, *front, *back;
+binary_search(register char *string, register char *front, register char *back)
 {
 	register char *p;
 
@@ -1343,8 +1286,7 @@ binary_search(string, front, back)
  *	o front is before or at the first line to be printed.
  */
 static char *
-linear_search(string, front, back)
-	char *string, *front, *back;
+linear_search(char *string, char *front, char *back)
 {
 	while (front < back) {
 		switch (compare(string, front, back)) {
@@ -1375,8 +1317,7 @@ linear_search(string, front, back)
  * However, historic programs did use spaces, and, I got complaints.
  */
 static int
-compare(s1, s2, back)
-	register char *s1, *s2, *back;
+compare(register char *s1, register char *s2, register char *back)
 {
 	for (; *s1 && s2 < back && (*s2 != '\t' && *s2 != ' '); ++s1, ++s2)
 		if (*s1 != *s2)

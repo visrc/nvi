@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_func.c,v 8.25 2001/06/18 20:16:42 skimo Exp $ (Berkeley) $Date: 2001/06/18 20:16:42 $";
+static const char sccsid[] = "$Id: m_func.c,v 8.26 2001/06/25 15:19:27 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,9 +30,7 @@ static const char sccsid[] = "$Id: m_func.c,v 8.25 2001/06/18 20:16:42 skimo Exp
 
 
 static int
-vi_addstr(ipvi, str1, len1)
-   	char *str1;
-	u_int32_t len1;
+vi_addstr(int ipvi, char *str1, u_int32_t len1)
 {
 #ifdef TRACE
 	vtrace("addstr() {%.*s}\n", ipbp->len1, ipbp->str1);
@@ -54,9 +52,7 @@ vi_addstr(ipvi, str1, len1)
 }
 
 static int
-vi_attribute(ipvi, val1, val2)
-	u_int32_t val1;
-	u_int32_t val2;
+vi_attribute(int ipvi, u_int32_t val1, u_int32_t val2)
 {
 	switch (val1) {
 	case SA_ALTERNATE:
@@ -70,7 +66,7 @@ vi_attribute(ipvi, val1, val2)
 }
 
 static int
-vi_bell(ipvi)
+vi_bell(int ipvi)
 {
 	/*
 	 * XXX
@@ -81,23 +77,21 @@ vi_bell(ipvi)
 }
 
 static int
-vi_busyon(ipvi, str1, len1)
-	char *str1;
-	u_int32_t len1;
+vi_busyon(int ipvi, char *str1, u_int32_t len1)
 {
 	__vi_set_cursor(__vi_screen, 1);
 	return (0);
 }
 
 static int
-vi_busyoff(ipvi)
+vi_busyoff(int ipvi)
 {
 	__vi_set_cursor(__vi_screen, 0);
 	return (0);
 }
 
 static int
-vi_clrtoeol(ipvi)
+vi_clrtoeol(int ipvi)
 {
 	int len;
 	char *ptr;
@@ -117,7 +111,7 @@ vi_clrtoeol(ipvi)
 }
 
 static int
-vi_deleteln(ipvi)
+vi_deleteln(int ipvi)
 {
 	int y, rows, len, height, width;
 
@@ -150,14 +144,14 @@ vi_deleteln(ipvi)
 }
 
 static int
-vi_discard(ipvi)
+vi_discard(int ipvi)
 {
 	/* XXX: Nothing. */
 	return (0);
 }
 
 static int
-vi_insertln(ipvi)
+vi_insertln(int ipvi)
 {
 	int y, rows, height, width;
 	char *from, *to;
@@ -208,23 +202,21 @@ vi_insertln(ipvi)
 }
 
 static int
-vi_move(ipvi, val1, val2)
-	u_int32_t val1;
-	u_int32_t val2;
+vi_move(int ipvi, u_int32_t val1, u_int32_t val2)
 {
 	__vi_move_caret(__vi_screen, val1, val2);
 	return (0);
 }
 
 static int
-vi_redraw(ipvi)
+vi_redraw(int ipvi)
 {
 	__vi_expose_func(0, __vi_screen, 0);
 	return (0);
 }
 
 static int
-vi_refresh(ipvi)
+vi_refresh(int ipvi)
 {
 	/* probably ok to scroll again */
 	__vi_clear_scroll_block();
@@ -242,7 +234,7 @@ vi_refresh(ipvi)
 }
 
 static int
-vi_quit(ipvi)
+vi_quit(int ipvi)
 {
 	if (__vi_exitp != NULL)
 		__vi_exitp();
@@ -251,9 +243,7 @@ vi_quit(ipvi)
 }
 
 static int
-vi_rename(ipvi, str1, len1)
-	char *str1;
-	u_int32_t len1;
+vi_rename(int ipvi, char *str1, u_int32_t len1)
 {
 	Widget shell;
 	size_t len;
@@ -279,8 +269,7 @@ vi_rename(ipvi, str1, len1)
 }
 
 static int
-vi_rewrite(ipvi, val1)
-	u_int32_t val1;
+vi_rewrite(int ipvi, u_int32_t val1)
 {
 	/* XXX: Nothing. */
 	return (0);
@@ -288,10 +277,7 @@ vi_rewrite(ipvi, val1)
 
 
 static int
-vi_scrollbar(ipvi, val1, val2, val3)
-	u_int32_t val1;
-	u_int32_t val2;
-	u_int32_t val3;
+vi_scrollbar(int ipvi, u_int32_t val1, u_int32_t val2, u_int32_t val3)
 {
 	int top, size, maximum, old_max;
 
@@ -355,16 +341,14 @@ vi_scrollbar(ipvi, val1, val2, val3)
 }
 
 static int
-vi_select(ipvi, str1, len1)
-	char *str1;
-	u_int32_t len1;
+vi_select(int ipvi, char *str1, u_int32_t len1)
 {
 	/* XXX: Nothing. */
 	return (0);
 }
 
 static int
-vi_split(ipvi)
+vi_split(int ipvi)
 {
 	/* XXX: Nothing. */
 	return (0);

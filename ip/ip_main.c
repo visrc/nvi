@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_main.c,v 8.22 2000/07/14 14:29:22 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:22 $";
+static const char sccsid[] = "$Id: ip_main.c,v 8.23 2001/06/25 15:19:24 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -43,9 +43,7 @@ static void *run_editor __P((void * vp));
  *      This is the main loop for the vi-as-library editor.
  */
 int
-main(argc, argv)
-	int argc;
-	char *argv[];
+main(int argc, char **argv)
 {
 	IP_PRIVATE *ipp;
 	int rval;
@@ -274,8 +272,7 @@ get_connection(WIN *wp, int main_ifd, int main_ofd,
  *	Initialize the standard ip functions.
  */
 static void
-ip_func_std(gp)
-	GS *gp;
+ip_func_std(GS *gp)
 {
 	gp->scr_addstr = ip_addstr;
 	gp->scr_waddstr = ip_waddstr;
@@ -310,8 +307,7 @@ ip_func_std(gp)
  *	Print system error.
  */
 static void
-perr(name, msg)
-	char *name, *msg;
+perr(char *name, char *msg)
 {
 	(void)fprintf(stderr, "%s:", name);
 	if (msg != NULL)

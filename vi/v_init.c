@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_init.c,v 10.8 1996/03/30 13:47:10 bostic Exp $ (Berkeley) $Date: 1996/03/30 13:47:10 $";
+static const char sccsid[] = "$Id: v_init.c,v 10.9 2001/06/25 15:19:31 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,8 +34,7 @@ static const char sccsid[] = "$Id: v_init.c,v 10.8 1996/03/30 13:47:10 bostic Ex
  * PUBLIC: int v_screen_copy __P((SCR *, SCR *));
  */
 int
-v_screen_copy(orig, sp)
-	SCR *orig, *sp;
+v_screen_copy(SCR *orig, SCR *sp)
 {
 	VI_PRIVATE *ovip, *nvip;
 
@@ -78,8 +77,7 @@ v_screen_copy(orig, sp)
  * PUBLIC: int v_screen_end __P((SCR *));
  */
 int
-v_screen_end(sp)
-	SCR *sp;
+v_screen_end(SCR *sp)
 {
 	VI_PRIVATE *vip;
 
@@ -108,11 +106,7 @@ v_screen_end(sp)
  * PUBLIC: int v_optchange __P((SCR *, int, char *, u_long *));
  */
 int
-v_optchange(sp, offset, str, valp)
-	SCR *sp;
-	int offset;
-	char *str;
-	u_long *valp;
+v_optchange(SCR *sp, int offset, char *str, u_long *valp)
 {
 	switch (offset) {
 	case O_PARAGRAPHS:

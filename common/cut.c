@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cut.c,v 10.17 2000/07/22 17:31:18 skimo Exp $ (Berkeley) $Date: 2000/07/22 17:31:18 $";
+static const char sccsid[] = "$Id: cut.c,v 10.18 2001/06/25 15:19:09 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -64,11 +64,7 @@ static void	cb_rotate __P((SCR *));
  * PUBLIC: int cut __P((SCR *, CHAR_T *, MARK *, MARK *, int));
  */
 int
-cut(sp, namep, fm, tm, flags)
-	SCR *sp;
-	CHAR_T *namep;
-	MARK *fm, *tm;
-	int flags;
+cut(SCR *sp, CHAR_T *namep, MARK *fm, MARK *tm, int flags)
 {
 	CB *cbp;
 	CHAR_T name;
@@ -191,8 +187,7 @@ cut_line_err:
  *	Rotate the numbered buffers up one.
  */
 static void
-cb_rotate(sp)
-	SCR *sp;
+cb_rotate(SCR *sp)
 {
 	CB *cbp, *del_cbp;
 
@@ -241,11 +236,7 @@ cb_rotate(sp)
  * PUBLIC: int cut_line __P((SCR *, db_recno_t, size_t, size_t, CB *));
  */
 int
-cut_line(sp, lno, fcno, clen, cbp)
-	SCR *sp;
-	db_recno_t lno;
-	size_t fcno, clen;
-	CB *cbp;
+cut_line(SCR *sp, db_recno_t lno, size_t fcno, size_t clen, CB *cbp)
 {
 	TEXT *tp;
 	size_t len;
@@ -284,8 +275,7 @@ cut_line(sp, lno, fcno, clen, cbp)
  * PUBLIC: void cut_close __P((WIN *));
  */
 void
-cut_close(wp)
-	WIN *wp;
+cut_close(WIN *wp)
 {
 	CB *cbp;
 
@@ -310,10 +300,7 @@ cut_close(wp)
  * PUBLIC: TEXT *text_init __P((SCR *, const CHAR_T *, size_t, size_t));
  */
 TEXT *
-text_init(sp, p, len, total_len)
-	SCR *sp;
-	const CHAR_T *p;
-	size_t len, total_len;
+text_init(SCR *sp, const CHAR_T *p, size_t len, size_t total_len)
 {
 	TEXT *tp;
 
@@ -341,8 +328,7 @@ text_init(sp, p, len, total_len)
  * PUBLIC: void text_lfree __P((TEXTH *));
  */
 void
-text_lfree(headp)
-	TEXTH *headp;
+text_lfree(TEXTH *headp)
 {
 	TEXT *tp;
 
@@ -359,8 +345,7 @@ text_lfree(headp)
  * PUBLIC: void text_free __P((TEXT *));
  */
 void
-text_free(tp)
-	TEXT *tp;
+text_free(TEXT *tp)
 {
 	if (tp->lb != NULL)
 		free(tp->lb);

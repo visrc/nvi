@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: screen.c,v 10.21 2001/05/10 19:28:43 skimo Exp $ (Berkeley) $Date: 2001/05/10 19:28:43 $";
+static const char sccsid[] = "$Id: screen.c,v 10.22 2001/06/25 15:19:12 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,9 +35,7 @@ static const char sccsid[] = "$Id: screen.c,v 10.21 2001/05/10 19:28:43 skimo Ex
  * PUBLIC: int screen_init __P((GS *, SCR *, SCR **));
  */
 int
-screen_init(gp, orig, spp)
-	GS *gp;
-	SCR *orig, **spp;
+screen_init(GS *gp, SCR *orig, SCR **spp)
 {
 	SCR *sp;
 	size_t len;
@@ -133,8 +131,7 @@ err:	screen_end(sp);
  * PUBLIC: int screen_end __P((SCR *));
  */
 int
-screen_end(sp)
-	SCR *sp;
+screen_end(SCR *sp)
 {
 	int rval;
 
@@ -211,8 +208,7 @@ screen_end(sp)
  * PUBLIC: SCR *screen_next __P((SCR *));
  */
 SCR *
-screen_next(sp)
-	SCR *sp;
+screen_next(SCR *sp)
 {
 	GS *gp;
 	WIN *wp;

@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_send.c,v 8.9 2000/06/28 20:20:38 skimo Exp $ (Berkeley) $Date: 2000/06/28 20:20:38 $";
+static const char sccsid[] = "$Id: ip_send.c,v 8.10 2001/06/25 15:19:25 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,10 +30,7 @@ static const char sccsid[] = "$Id: ip_send.c,v 8.9 2000/06/28 20:20:38 skimo Exp
  * PUBLIC: int vi_send __P((int, char *, IP_BUF *));
  */
 int
-vi_send(ofd, fmt, ipbp)
-	int ofd;
-	char *fmt;
-	IP_BUF *ipbp;
+vi_send(int ofd, char *fmt, IP_BUF *ipbp)
 {
 	static char *bp;
 	static size_t blen;

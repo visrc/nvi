@@ -50,9 +50,7 @@ static int vi_new_window __P((IPVI *, IPVIWIN **, int));
  * PUBLIC: int vi_create __P((IPVI **, u_int32_t));
  */
 int
-vi_create(ipvip, flags)
-	IPVI	    **ipvip;
-	u_int32_t     flags;
+vi_create(IPVI **ipvip, u_int32_t flags)
 {
 	IPVI	*ipvi;
 
@@ -156,24 +154,20 @@ alloc_err:
 }
 
 static int 
-vi_set_ops(ipvi, ops)
-	IPVIWIN *ipvi;
-	IPSIOPS *ops;
+vi_set_ops(IPVIWIN *ipvi, IPSIOPS *ops)
 {
 	ipvi->si_ops = ops;
 	return 0;
 }
 
-static int  vi_close(ipvi)
-	IPVI *ipvi;
+static int  vi_close(IPVI *ipvi)
 {
 	memset(ipvi, 6, sizeof(IPVI));
 	free(ipvi);
 	return 0;
 }
 
-static int  vi_win_close(ipviwin)
-	IPVIWIN *ipviwin;
+static int  vi_win_close(IPVIWIN *ipviwin)
 {
 	memset(ipviwin, 6, sizeof(IPVIWIN));
 	free(ipviwin);
@@ -182,9 +176,7 @@ static int  vi_win_close(ipviwin)
 
 
 static int
-vi_send_(ipvi, code)
-	IPVIWIN    *ipvi;
-	int	code;
+vi_send_(IPVIWIN *ipvi, int code)
 {
 	IP_BUF	ipb;
 	ipb.code = code;
@@ -192,10 +184,7 @@ vi_send_(ipvi, code)
 }
 
 static int
-vi_send_1(ipvi, code, val)
-	IPVIWIN    *ipvi;
-	int	code;
-	u_int32_t   val;
+vi_send_1(IPVIWIN *ipvi, int code, u_int32_t val)
 {
 	IP_BUF	ipb;
 	ipb.code = code;

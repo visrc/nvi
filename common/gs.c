@@ -28,8 +28,7 @@ static void	   perr __P((char *, char *));
  * PUBLIC: GS * gs_init __P((char*));
  */
 GS *
-gs_init(name)
-	char *name;
+gs_init(char *name)
 {
 	GS *gp;
 	char *p;
@@ -134,8 +133,7 @@ win_end(WIN *wp)
  * PUBLIC: void gs_end __P((GS *));
  */
 void
-gs_end(gp)
-	GS *gp;
+gs_end(GS *gp)
 {
 	MSGS *mp;
 	SCR *sp;
@@ -213,8 +211,7 @@ gs_end(gp)
  *	Print system error.
  */
 static void
-perr(name, msg)
-	char *name, *msg;
+perr(char *name, char *msg)
 {
 	(void)fprintf(stderr, "%s:", name);
 	if (msg != NULL)

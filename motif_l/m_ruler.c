@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_ruler.c,v 8.4 1996/12/18 10:26:44 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:26:44 $";
+static const char sccsid[] = "$Id: m_ruler.c,v 8.5 2001/06/25 15:19:27 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:27 $";
 #endif /* not lint */
 
 /* This module implements a dialog for the text ruler
@@ -72,8 +72,7 @@ static  XutResource resource[] = {
 /* change the displayed position */
 
 static void
-set_ruler_text( row, col, h, w, asc )
-	int row, col, *h, *w, *asc;
+set_ruler_text(int row, int col, int *h, int *w, int *asc)
 {
     int		dir, des;
     XCharStruct	over;
@@ -91,7 +90,7 @@ set_ruler_text( row, col, h, w, asc )
 
 
 static void
-redraw_text()
+redraw_text(void)
 {
     XClearArea( XtDisplay(db_ruler), XtWindow(db_ruler), 0, 0, 0, 0, False );
     XDrawString( XtDisplay(db_ruler),
@@ -108,8 +107,7 @@ redraw_text()
  * PUBLIC: void __vi_set_text_ruler __P((int, int));
  */
 void
-__vi_set_text_ruler( row, col )
-	int row, col;
+__vi_set_text_ruler(int row, int col)
 {
     int h, w;
 
@@ -124,7 +122,7 @@ __vi_set_text_ruler( row, col )
 /* callbacks */
 
 static void
-cancel_cb()
+cancel_cb(void)
 {
 #if defined(SelfTest)
     puts( "cancelled" );
@@ -133,7 +131,7 @@ cancel_cb()
 }
 
 
-static	void destroyed()
+static	void destroyed(void)
 {
 #if defined(SelfTest)
     puts( "destroyed" );
@@ -272,7 +270,7 @@ String	title;
 #if defined(__STDC__)
 void	__vi_clear_text_ruler_dialog()
 #else
-void	__vi_clear_text_ruler_dialog()
+void	__vi_clear_text_ruler_dialog(void)
 #endif
 {
     if ( active )

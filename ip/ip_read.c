@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_read.c,v 8.22 2001/06/10 10:23:45 skimo Exp $ (Berkeley) $Date: 2001/06/10 10:23:45 $";
+static const char sccsid[] = "$Id: ip_read.c,v 8.23 2001/06/25 15:19:24 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -120,11 +120,7 @@ static int	ip_trans __P((SCR *, IP_PRIVATE *, EVENT *));
  * PUBLIC: int ip_event __P((SCR *, EVENT *, u_int32_t, int));
  */
 int
-ip_event(sp, evp, flags, ms)
-	SCR *sp;
-	EVENT *evp;
-	u_int32_t flags;
-	int ms;
+ip_event(SCR *sp, EVENT *evp, u_int32_t flags, int ms)
 {
 	return ip_wevent(sp->wp, sp, evp, flags, ms);
 }
@@ -139,12 +135,7 @@ ip_event(sp, evp, flags, ms)
  * PUBLIC: int ip_wevent __P((WIN *, SCR *, EVENT *, u_int32_t, int));
  */
 int
-ip_wevent(wp, sp, evp, flags, ms)
-	WIN *wp;
-	SCR *sp;
-	EVENT *evp;
-	u_int32_t flags;
-	int ms;
+ip_wevent(WIN *wp, SCR *sp, EVENT *evp, u_int32_t flags, int ms)
 {
 	IP_PRIVATE *ipp;
 	struct timeval t, *tp;
@@ -214,12 +205,7 @@ ip_wevent(wp, sp, evp, flags, ms)
  *	Read characters from the input.
  */
 static input_t
-ip_read(sp, ipp, tp, termread, nr)
-	SCR *sp;
-	IP_PRIVATE *ipp;
-	struct timeval *tp;
-	int termread;
-	int *nr;
+ip_read(SCR *sp, IP_PRIVATE *ipp, struct timeval *tp, int termread, int *nr)
 {
 	struct timeval poll;
 	GS *gp;
@@ -302,10 +288,7 @@ err:	        rval = INP_ERR;
  *	Translate messages into events.
  */
 static int
-ip_trans(sp, ipp, evp)
-	SCR *sp;
-	IP_PRIVATE *ipp;
-	EVENT *evp;
+ip_trans(SCR *sp, IP_PRIVATE *ipp, EVENT *evp)
 {
 	u_int32_t skip, val;
 	char *fmt;
@@ -377,9 +360,7 @@ ip_trans(sp, ipp, evp)
  *	Reset the options for a resize event.
  */
 static int
-ip_resize(sp, lines, columns)
-	SCR *sp;
-	u_int32_t lines, columns;
+ip_resize(SCR *sp, u_int32_t lines, u_int32_t columns)
 {
 	GS *gp;
 	int rval;

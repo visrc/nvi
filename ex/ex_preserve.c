@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_preserve.c,v 10.14 2000/07/14 14:29:20 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:20 $";
+static const char sccsid[] = "$Id: ex_preserve.c,v 10.15 2001/06/25 15:19:18 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,9 +31,7 @@ static const char sccsid[] = "$Id: ex_preserve.c,v 10.14 2000/07/14 14:29:20 ski
  * PUBLIC: int ex_preserve __P((SCR *, EXCMD *));
  */
 int
-ex_preserve(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_preserve(SCR *sp, EXCMD *cmdp)
 {
 	db_recno_t lno;
 
@@ -67,9 +65,7 @@ ex_preserve(sp, cmdp)
  * PUBLIC: int ex_recover __P((SCR *, EXCMD *));
  */
 int
-ex_recover(sp, cmdp)
-	SCR *sp;
-	EXCMD *cmdp;
+ex_recover(SCR *sp, EXCMD *cmdp)
 {
 	ARGS *ap;
 	FREF *frp;

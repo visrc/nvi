@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_ulcase.c,v 10.10 2000/07/15 20:26:36 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:36 $";
+static const char sccsid[] = "$Id: v_ulcase.c,v 10.11 2001/06/25 15:19:36 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -47,9 +47,7 @@ static int ulcase __P((SCR *, db_recno_t, CHAR_T *, size_t, size_t, size_t));
  * PUBLIC: int v_ulcase __P((SCR *, VICMD *));
  */
 int
-v_ulcase(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_ulcase(SCR *sp, VICMD *vp)
 {
 	db_recno_t lno;
 	size_t cno, lcnt, len;
@@ -107,9 +105,7 @@ v_ulcase(sp, vp)
  * PUBLIC: int v_mulcase __P((SCR *, VICMD *));
  */
 int
-v_mulcase(sp, vp)
-	SCR *sp;
-	VICMD *vp;
+v_mulcase(SCR *sp, VICMD *vp)
 {
 	CHAR_T *p;
 	size_t len;
@@ -145,11 +141,7 @@ v_mulcase(sp, vp)
  *	Change part of a line's case.
  */
 static int
-ulcase(sp, lno, lp, len, scno, ecno)
-	SCR *sp;
-	db_recno_t lno;
-	CHAR_T *lp;
-	size_t len, scno, ecno;
+ulcase(SCR *sp, db_recno_t lno, CHAR_T *lp, size_t len, size_t scno, size_t ecno)
 {
 	size_t blen;
 	int change, rval;
