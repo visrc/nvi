@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 10.12 1995/10/19 18:52:42 bostic Exp $ (Berkeley) $Date: 1995/10/19 18:52:42 $";
+static char sccsid[] = "$Id: ex_tag.c,v 10.13 1995/11/30 21:05:29 bostic Exp $ (Berkeley) $Date: 1995/11/30 21:05:29 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -512,19 +512,18 @@ tag_search(sp, search, tag)
 		m.cno = 0;
 		if (f_search(sp, &m, &m,
 		    search, NULL, SEARCH_FILE | SEARCH_TAG))
-			goto notfound;
-		if ((p = strrchr(search, '(')) != NULL) {
-			p[1] = '\0';
-			if (f_search(sp, &m, &m,
-			    search, NULL, SEARCH_FILE | SEARCH_TAG)) {
+			if ((p = strrchr(search, '(')) != NULL) {
+				p[1] = '\0';
+				if (f_search(sp, &m, &m,
+				    search, NULL, SEARCH_FILE | SEARCH_TAG)) {
+					p[1] = '(';
+					goto notfound;
+				}
 				p[1] = '(';
-				goto notfound;
+			} else {
+notfound:			tag_msg(sp, TAG_SEARCH, tag);
+				return (1);
 			}
-			p[1] = '(';
-		} else {
-notfound:		tag_msg(sp, TAG_SEARCH, tag);
-			return (1);
-		}
 	}
 
 	/*
