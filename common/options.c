@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.49 1994/03/22 18:59:43 bostic Exp $ (Berkeley) $Date: 1994/03/22 18:59:43 $";
+static char sccsid[] = "$Id: options.c,v 8.50 1994/03/22 19:53:24 bostic Exp $ (Berkeley) $Date: 1994/03/22 19:53:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,10 +28,10 @@ static char sccsid[] = "$Id: options.c,v 8.49 1994/03/22 18:59:43 bostic Exp $ (
 #include "compat.h"
 #include <db.h>
 #include <regex.h>
+#include <pathnames.h>
 
 #include "vi.h"
 #include "excmd.h"
-#include "pathnames.h"
 
 static int	 	 opts_abbcmp __P((const void *, const void *));
 static int	 	 opts_cmp __P((const void *, const void *));
