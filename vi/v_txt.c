@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 10.20 1995/10/19 13:15:24 bostic Exp $ (Berkeley) $Date: 1995/10/19 13:15:24 $";
+static char sccsid[] = "$Id: v_txt.c,v 10.21 1995/11/05 14:41:50 bostic Exp $ (Berkeley) $Date: 1995/11/05 14:41:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -743,7 +743,7 @@ k_cr:		if (LF_ISSET(TXT_CR)) {
 			goto ins_ch;
 
 		/* If we have a count, start replaying the input. */
-		if (F_ISSET(vp, VC_C1SET) && ++rcount != vp->count) {
+		if (F_ISSET(vp, VC_C1SET) && ++rcount < vp->count) {
 			rcol = 0;
 			abb = AB_NOTSET;
 			LF_CLR(TXT_RECORD);
