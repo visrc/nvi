@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_file.c,v 5.9 1992/10/18 13:07:45 bostic Exp $ (Berkeley) $Date: 1992/10/18 13:07:45 $";
+static char sccsid[] = "$Id: ex_file.c,v 5.10 1992/10/26 17:46:12 bostic Exp $ (Berkeley) $Date: 1992/10/26 17:46:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -44,12 +44,6 @@ ex_file(cmdp)
 		msg("Usage: file [newname].");
 		return (1);
 	}
-
-	lline = file_lline(curf);
-	msg("\"%s\" %s%s %ld lines,  line %ld [%ld%%]",
-	    curf->name,
-	    curf->flags & F_MODIFIED ? "[MODIFIED]" : "[UNMODIFIED]",
-	    curf->flags & F_RDONLY ? "[READONLY]" : "", lline,
-	    cmdp->addr1.lno, cmdp->addr1.lno * 100 / lline);
+	status(curf, cmdp->addr1.lno);
 	return (0);
 }
