@@ -13,7 +13,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_script.c,v 10.21 1996/03/30 13:45:09 bostic Exp $ (Berkeley) $Date: 1996/03/30 13:45:09 $";
+static const char sccsid[] = "$Id: ex_script.c,v 10.22 1996/04/22 19:37:01 bostic Exp $ (Berkeley) $Date: 1996/04/22 19:37:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -679,8 +679,8 @@ ptym_open(pts_name)
 	int fdm;
 	char *ptr, *ptsname();
 
-	strcpy(pts_name,"/dev/ptmx");
-	if ( (fdm = open(pts_name,O_RDWR)) < 0 )
+	strcpy(pts_name, _PATH_SYSV_PTY);
+	if ((fdm = open(pts_name, O_RDWR)) < 0 )
 		return (-1);
 
 	if (grantpt(fdm) < 0) {
@@ -699,11 +699,11 @@ ptym_open(pts_name)
 	}
 
 	/* get slave's name */
-	if ( (ptr = ptsname(fdm)) == NULL) {
+	if ((ptr = ptsname(fdm)) == NULL) {
 		close(fdm);
 		return (-3);
 	}
-	strcpy(pts_name,ptr);
+	strcpy(pts_name, ptr);
 	return (fdm);
 }
 
