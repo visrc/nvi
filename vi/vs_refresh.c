@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.42 1993/12/22 15:01:14 bostic Exp $ (Berkeley) $Date: 1993/12/22 15:01:14 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.43 1993/12/23 10:22:03 bostic Exp $ (Berkeley) $Date: 1993/12/23 10:22:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -75,7 +75,8 @@ svi_refresh(sp, ep)
 	 *
 	 * If related screens share a view into a file, they may have been
 	 * modified as well.  Refresh any screens with paint or dirty bits
-	 * set, or where messages are waiting.
+	 * set, or where messages are waiting.  Finally, if we refresh any
+	 * screens other than the current one, the cursor will be trashed.
 	 */
 	paintbits = S_REDRAW | S_REFORMAT | S_REFRESH;
 	if (O_ISSET(sp, O_NUMBER))
@@ -89,6 +90,7 @@ svi_refresh(sp, ep)
 		    !F_ISSET(tsp->msgq.lh_first, M_EMPTY))) {
 			(void)svi_paint(tsp, tsp->ep);
 			F_CLR(SVP(tsp), SVI_SCREENDIRTY);
+			F_SET(SVP(sp), SVI_CUR_INVALID);
 		}
 
 	/*
