@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: seq.c,v 10.8 1996/03/06 19:51:01 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:51:01 $";
+static const char sccsid[] = "$Id: seq.c,v 10.9 1996/03/27 20:25:00 bostic Exp $ (Berkeley) $Date: 1996/03/27 20:25:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,8 +25,6 @@ static const char sccsid[] = "$Id: seq.c,v 10.8 1996/03/06 19:51:01 bostic Exp $
 #include <string.h>
 
 #include "common.h"
-
-static int e_memcmp __P((CHAR_T *, EVENT *, size_t));
 
 /*
  * seq_set --
@@ -377,8 +375,10 @@ seq_save(sp, fp, prefix, stype)
 /*
  * e_memcmp --
  *	Compare a string of EVENT's to a string of CHAR_T's.
+ *
+ * PUBLIC: int e_memcmp __P((CHAR_T *, EVENT *, size_t));
  */
-static int
+int
 e_memcmp(p1, ep, n)
 	CHAR_T *p1;
 	EVENT *ep;
