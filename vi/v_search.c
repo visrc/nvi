@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 8.38 1994/10/13 13:59:32 bostic Exp $ (Berkeley) $Date: 1994/10/13 13:59:32 $";
+static char sccsid[] = "$Id: v_search.c,v 8.39 1994/11/02 10:39:53 bostic Exp $ (Berkeley) $Date: 1994/11/02 10:39:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -301,14 +301,6 @@ correct(sp, ep, vp, flags)
 
 	/*
 	 * !!!
-	 * Searches become line mode operations if there was a delta specified
-	 * to the search pattern.
-	 */
-	if (LF_ISSET(SEARCH_DELTA))
-		F_SET(vp, VM_LMODE);
-
-	/*
-	 * !!!
 	 * We may have wrapped if wrapscan was set, and we may have returned
 	 * to the position where the cursor started.  Historic vi didn't cope
 	 * with this well.  Yank wouldn't beep, but the first put after the
@@ -325,6 +317,14 @@ correct(sp, ep, vp, flags)
 		msgq(sp, M_BERR, "189|Search wrapped to original position");
 		return (1);
 	}
+
+	/*
+	 * !!!
+	 * Searches become line mode operations if there was a delta specified
+	 * to the search pattern.
+	 */
+	if (LF_ISSET(SEARCH_DELTA))
+		F_SET(vp, VM_LMODE);
 
 	/*
 	 * If the motion is in the reverse direction, switch the start and
@@ -353,6 +353,13 @@ correct(sp, ep, vp, flags)
 	 *	Delete and yank commands don't move.  Ignore others.
 	 */
 	vp->m_final = vp->m_start;
+
+	/*
+	 * !!!
+	 * Delta'd searches don't correct based on column positions.
+	 */
+	if (LF_ISSET(SEARCH_DELTA))
+		return (0);
 
 	/*
 	 * !!!
