@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.2 1993/06/28 14:20:32 bostic Exp $ (Berkeley) $Date: 1993/06/28 14:20:32 $";
+static char sccsid[] = "$Id: key.c,v 8.3 1993/08/07 10:02:41 bostic Exp $ (Berkeley) $Date: 1993/08/07 10:02:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -163,7 +163,7 @@ term_waiting(sp)
 int
 term_key(sp, flags)
 	SCR *sp;
-	u_int flags;			/* TXT_MAPCOMMAND */
+	u_int flags;
 {
 	int ch;
 	SEQ *qp;
@@ -214,29 +214,13 @@ term_key(sp, flags)
 	 * to read more keys to complete the map.  Max map is sizeof(keybuf)
 	 * and probably not worth fixing.
 	 */
-	if (LF_ISSET(TXT_MAPCOMMAND)) {
+	if (LF_ISSET(TXT_MAPCOMMAND | TXT_MAPINPUT)) {
 retry:		qp = seq_find(sp, &sp->keybuf[sp->nextkey], sp->nkeybuf,
 		    LF_ISSET(TXT_MAPCOMMAND) ? SEQ_COMMAND : SEQ_INPUT,
 		    &ispartial);
-		if (qp == NULL)
-			goto nomap;
-		if (ispartial) {
-			if (sizeof(sp->keybuf) == sp->nkeybuf) {
-				msgq(sp, M_ERR,
-				    "Partial map is too long; keys corrupted.");
+		if (!ispartial) {
+			if (qp == NULL)
 				goto nomap;
-			} else {
-				memmove(&sp->keybuf[sp->nextkey],
-				    sp->keybuf, sp->nkeybuf);
-				sp->nextkey = 0;
-				nr = term_read(sp, sp->keybuf + sp->nkeybuf,
-				    sizeof(sp->keybuf) - sp->nkeybuf, 1);
-				if (nr) {
-					sp->nkeybuf += nr;
-					goto retry;
-				}
-			}
-		} else {
 			sp->nkeybuf -= qp->ilen;
 			sp->nextkey += qp->ilen;
 			if (qp->output[1] == '\0')
@@ -246,6 +230,21 @@ retry:		qp = seq_find(sp, &sp->keybuf[sp->nextkey], sp->nkeybuf,
 				ch = *sp->mappedkey++;
 			}
 			goto ret;
+		}
+		if (sizeof(sp->keybuf) == sp->nkeybuf) {
+			msgq(sp, M_ERR,
+			    "Partial map is too long; keys corrupted.");
+			goto nomap;
+		} else {
+			memmove(&sp->keybuf[sp->nextkey],
+			    sp->keybuf, sp->nkeybuf);
+			sp->nextkey = 0;
+			nr = term_read(sp, sp->keybuf + sp->nkeybuf,
+			    sizeof(sp->keybuf) - sp->nkeybuf, 1);
+			if (nr) {
+				sp->nkeybuf += nr;
+				goto retry;
+			}
 		}
 	}
 
