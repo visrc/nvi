@@ -6,13 +6,13 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 5.29 1992/10/26 17:49:16 bostic Exp $ (Berkeley) $Date: 1992/10/26 17:49:16 $";
+static char sccsid[] = "$Id: v_cmd.c,v 5.30 1992/10/29 14:44:09 bostic Exp $ (Berkeley) $Date: 1992/10/29 14:44:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
 #include <limits.h>
-#include <stddef.h>
+#include <stdio.h>
 
 #define	VIROUTINE		/* XXX */
 
@@ -215,7 +215,7 @@ VIKEYS vikeys[MAXVIKEY + 1] = {
 	v_lgoto,	V_ABS|V_CNT|V_LMODE|V_MOVE|V_RCM_SETFNB,
 	    "move to line: [count]G",
 /* 110   H */
-	v_home,		V_CNT|V_LMODE|V_RCM_SETFNB,
+	v_home,		V_CNT|V_LMODE|V_MOVE|V_RCM_SETFNB,
 	    "move to count lines from screen top: [count]H",
 /* 111   I */
 	v_iI,		V_CNT|V_DOT|V_INPUT|V_RCM_SET,
@@ -226,10 +226,10 @@ VIKEYS vikeys[MAXVIKEY + 1] = {
 /* 113   K */
 	{},
 /* 114   L */
-	v_bottom,	V_CNT|V_LMODE|V_RCM_SETFNB,
+	v_bottom,	V_CNT|V_LMODE|V_MOVE|V_RCM_SETFNB,
 	    "move to screen bottom: [count]L",
 /* 115   M */
-	v_middle,	V_LMODE|V_RCM_SETFNB,
+	v_middle,	V_LMODE|V_MOVE|V_RCM_SETFNB,
 	    "move to screen middle: M",
 /* 116   N */
 	v_searchN,	V_MOVE|V_RCM_SET,
