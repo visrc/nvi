@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_init.c,v 5.6 1993/02/20 15:17:02 bostic Exp $ (Berkeley) $Date: 1993/02/20 15:17:02 $";
+static char sccsid[] = "$Id: ex_init.c,v 5.7 1993/02/24 12:56:07 bostic Exp $ (Berkeley) $Date: 1993/02/24 12:56:07 $";
 #endif /* not lint */
 
 #include <limits.h>
@@ -17,6 +17,7 @@ static char sccsid[] = "$Id: ex_init.c,v 5.6 1993/02/20 15:17:02 bostic Exp $ (B
 #include "vi.h"
 #include "excmd.h"
 #include "options.h"
+#include "screen.h"
 
 /*
  * ex_init --
@@ -44,16 +45,16 @@ ex_init(ep)
 	ep->stdfp = stdout;
 
 	/* Initialize the terminal size. */
-	ep->lines = LVAL(O_LINES);
-	ep->cols = LVAL(O_COLUMNS);
+	SCRP(ep)->lines = LVAL(O_LINES);
+	SCRP(ep)->cols = LVAL(O_COLUMNS);
 
 	/*
 	 * Ex always starts editing at the end of the file;
 	 * going to ex from vi retains the current line.
 	 */
 	if (FF_ISSET(ep, F_NEWSESSION))
-		ep->lno = file_lline(ep);
-	ep->cno = 0;
+		SCRLNO(ep) = file_lline(ep);
+	SCRCNO(ep) = 0;
 	return (0);
 }
 

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 5.26 1993/02/20 13:43:54 bostic Exp $ (Berkeley) $Date: 1993/02/20 13:43:54 $";
+static char sccsid[] = "$Id: ex_read.c,v 5.27 1993/02/24 12:56:14 bostic Exp $ (Berkeley) $Date: 1993/02/24 12:56:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,6 +21,7 @@ static char sccsid[] = "$Id: ex_read.c,v 5.26 1993/02/20 13:43:54 bostic Exp $ (
 
 #include "vi.h"
 #include "excmd.h"
+#include "screen.h"
 
 /*
  * ex_read --	:read[!] [file]
@@ -35,6 +36,7 @@ ex_read(ep, cmdp)
 	register u_char *p;
 	struct stat sb;
 	FILE *fp;
+	MARK rm;
 	int force;
 	char *fname;
 
@@ -66,7 +68,10 @@ ex_read(ep, cmdp)
 			msg(ep, M_ERROR, "Usage: %s.", cmdp->cmd->usage);
 			return (1);
 		}
-		return (filtercmd(ep, &cmdp->addr1, NULL, ++p, NOINPUT));
+		if (filtercmd(ep, &cmdp->addr1, NULL, &rm, ++p, NOINPUT))
+			return (1);
+		SCRLNO(ep) = rm.lno;
+		return (0);
 	}
 
 	/* Build an argv. */
@@ -102,8 +107,8 @@ noargs:	if ((fp = fopen(fname, "r")) == NULL || fstat(fileno(fp), &sb)) {
 		return (1);
 
 	/* Set the cursor. */
-	ep->lno = cmdp->addr1.lno + 1;
-	ep->cno = 0;
+	SCRLNO(ep) = cmdp->addr1.lno + 1;
+	SCRCNO(ep) = 0;
 	
 	/* Set autoprint. */
 	FF_SET(ep, F_AUTOPRINT);
@@ -141,7 +146,7 @@ ex_readfp(ep, fname, fp, fm, cntp)
 	 * an empty file.
 	 */
 	if (file_lline(ep) == 0)
-		FF_SET(ep, F_REDRAW);
+		SF_SET(ep, S_REDRAW);
 
 	/*
 	 * Add in the lines from the output.  Insertion starts at the line

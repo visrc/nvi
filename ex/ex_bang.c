@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 5.27 1993/02/21 18:30:15 bostic Exp $ (Berkeley) $Date: 1993/02/21 18:30:15 $";
+static char sccsid[] = "$Id: ex_bang.c,v 5.28 1993/02/24 12:54:12 bostic Exp $ (Berkeley) $Date: 1993/02/24 12:54:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,6 +22,7 @@ static char sccsid[] = "$Id: ex_bang.c,v 5.27 1993/02/21 18:30:15 bostic Exp $ (
 #include "vi.h"
 #include "excmd.h"
 #include "options.h"
+#include "screen.h"
 #include "term.h"
 
 /*
@@ -39,6 +40,7 @@ ex_bang(ep, cmdp)
 	static u_char *lastcom;
 	register int ch, len, modified;
 	register u_char *p, *t;
+	MARK rm;
 	int rval;
 	u_char *com;
 
@@ -138,8 +140,10 @@ ex_bang(ep, cmdp)
 	 * pipe lines from the file through the command.
 	 */
 	if (cmdp->addrcnt != 0) {
-		if (filtercmd(ep, &cmdp->addr1, &cmdp->addr2, com, STANDARD))
+		if (filtercmd(ep,
+		    &cmdp->addr1, &cmdp->addr2, &rm, com, STANDARD))
 			return (1);
+		SCRLNO(ep) = rm.lno;
 		FF_SET(ep, F_AUTOPRINT);
 		return (0);
 	}
@@ -169,12 +173,11 @@ ex_bang(ep, cmdp)
 	/* Restore ex/vi terminal settings. */
 	(void)tcsetattr(STDIN_FILENO, TCSAFLUSH, &savet);
 
-	if (mode == MODE_VI) {
+	if (mode == MODE_VI)
 		(void)getkey(ep, 0);
 
-		/* Repaint the screen. */
-		FF_SET(ep, F_REFRESH);
-	}
+	/* Repaint the screen. */
+	SF_SET(ep, S_REFRESH);
 
 	return (rval);
 }

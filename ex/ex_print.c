@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 5.21 1993/02/16 20:10:20 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:20 $";
+static char sccsid[] = "$Id: ex_print.c,v 5.22 1993/02/24 12:55:56 bostic Exp $ (Berkeley) $Date: 1993/02/24 12:55:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,6 +19,7 @@ static char sccsid[] = "$Id: ex_print.c,v 5.21 1993/02/16 20:10:20 bostic Exp $ 
 #include "vi.h"
 #include "excmd.h"
 #include "options.h"
+#include "screen.h"
 #include "term.h"
 
 /*
@@ -40,8 +41,8 @@ ex_list(ep, cmdp)
 	}
 	if (ex_print(ep, &cmdp->addr1, &cmdp->addr2, E_F_LIST | flags))
 		return (1);
-	ep->lno = cmdp->addr2.lno;
-	ep->cno = cmdp->addr2.cno;
+	SCRLNO(ep) = cmdp->addr2.lno;
+	SCRCNO(ep) = cmdp->addr2.cno;
 	return (0);
 }
 
@@ -64,8 +65,8 @@ ex_number(ep, cmdp)
 	}
 	if (ex_print(ep, &cmdp->addr1, &cmdp->addr2, E_F_HASH | flags))
 		return (1);
-	ep->lno = cmdp->addr2.lno;
-	ep->cno = cmdp->addr2.cno;
+	SCRLNO(ep) = cmdp->addr2.lno;
+	SCRCNO(ep) = cmdp->addr2.cno;
 	return (0);
 }
 
@@ -88,8 +89,8 @@ ex_pr(ep, cmdp)
 	}
 	if (ex_print(ep, &cmdp->addr1, &cmdp->addr2, E_F_PRINT | flags))
 		return (1);
-	ep->lno = cmdp->addr2.lno;
-	ep->cno = cmdp->addr2.cno;
+	SCRLNO(ep) = cmdp->addr2.lno;
+	SCRCNO(ep) = cmdp->addr2.cno;
 	return (0);
 }
 
@@ -128,7 +129,7 @@ ex_print(ep, fp, tp, flags)
 		}
 
 #define	WCHECK(ch) {							\
-	if (col == ep->cols) {						\
+	if (col == SCRCOL(ep)) {					\
 		(void)putc('\n', ep->stdfp);				\
 		col = 0;						\
 	}								\
@@ -153,10 +154,10 @@ ex_print(ep, fp, tp, flags)
 			else {
 				ch &= 0x7f;
 				if (ch == '\t') {
-					while (col < ep->cols &&
+					while (col < SCRCOL(ep) &&
 					    ++col % LVAL(O_TABSTOP))
 						(void)putc(' ', ep->stdfp);
-					if (col == ep->cols) {
+					if (col == SCRCOL(ep)) {
 						col = 0;
 						(void)putc('\n', ep->stdfp);
 					}

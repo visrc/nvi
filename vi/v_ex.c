@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 5.42 1993/02/22 16:20:05 bostic Exp $ (Berkeley) $Date: 1993/02/22 16:20:05 $";
+static char sccsid[] = "$Id: v_ex.c,v 5.43 1993/02/24 12:57:40 bostic Exp $ (Berkeley) $Date: 1993/02/24 12:57:40 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -94,10 +94,10 @@ v_ex(ep, vp, fm, tm, rp)
 		 *
 		 * ep->olno = OOBLNO;
 		 */
-		rp->lno = ep->lno;
-		if (file_gline(ep, ep->lno, &len) == NULL &&
+		rp->lno = SCRLNO(ep);
+		if (file_gline(ep, SCRLNO(ep), &len) == NULL &&
 		    file_lline(ep) != 0) {
-			GETLINE_ERR(ep, ep->lno);
+			GETLINE_ERR(ep, SCRLNO(ep));
 			return (1);
 		}
 	}
@@ -130,7 +130,7 @@ v_leaveex(ep)
 
 	/* Repaint if at least half the screen trashed. */
 	if (extotalcount >= SCREENSIZE(ep) / 2) { 
-		FF_SET(ep, F_REDRAW);
+		SF_SET(ep, S_REDRAW);
 		return (0);
 	}
 
@@ -168,11 +168,11 @@ v_exwrite(cookie, line, llen)
 			len = p - line;
 
 		/*
-		 * The max is ep->cols characters, and we may have already
-		 * written part of the line.
+		 * The max is SCRCOL(ep) characters, and we may
+		 * have already written part of the line.
 		 */
-		if (len + lcont > ep->cols)
-			len = ep->cols - lcont;
+		if (len + lcont > SCRCOL(ep))
+			len = SCRCOL(ep) - lcont;
 
 		/*
 		 * If not a continuation line, and not the first line output,
@@ -193,7 +193,7 @@ v_exwrite(cookie, line, llen)
 			addnstr(line, len);
 
 		/* Clear to EOL. */
-		if (len + lcont < ep->cols)
+		if (len + lcont < SCRCOL(ep))
 			clrtoeol();
 
 		/* Set up lcont. */

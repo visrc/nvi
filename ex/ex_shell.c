@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 5.19 1993/02/16 20:10:23 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:23 $";
+static char sccsid[] = "$Id: ex_shell.c,v 5.20 1993/02/24 12:56:26 bostic Exp $ (Berkeley) $Date: 1993/02/24 12:56:26 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -19,12 +19,13 @@ static char sccsid[] = "$Id: ex_shell.c,v 5.19 1993/02/16 20:10:23 bostic Exp $ 
 #include "vi.h"
 #include "excmd.h"
 #include "options.h"
+#include "screen.h"
 #include "term.h"
 
 /*
  * ex_shell -- :sh[ell]
- *	Invoke the program named in the SHELL environment variable with
- *	the argument -i.
+ *	Invoke the program named in the SHELL environment variable
+ *	with the argument -i.
  */
 int
 ex_shell(ep, cmdp)
@@ -52,6 +53,6 @@ ex_shell(ep, cmdp)
 	(void)tcsetattr(STDIN_FILENO, TCSAFLUSH, &t);
 
 	/* Repaint the screen. */
-	FF_SET(ep, F_REFRESH);
+	SF_SET(ep, S_REFRESH);
 	return (rval);
 }

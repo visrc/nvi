@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 5.34 1993/02/21 19:07:52 bostic Exp $ (Berkeley) $Date: 1993/02/21 19:07:52 $
+ *	$Id: exf.h,v 5.35 1993/02/24 12:53:07 bostic Exp $ (Berkeley) $Date: 1993/02/24 12:53:07 $
  */
 
 #ifndef _EXF_H_
@@ -13,30 +13,12 @@
 typedef struct exf {
 	struct exf *next, *prev;	/* Linked list of files. */
 
-					/* Screen state. */
-	recno_t top;			/* 1-N:     Physical screen top line. */
-	recno_t otop;			/* 1-N: Old physical screen top line. */
-	recno_t lno;			/* 1-N:     Physical cursor line. */
-	recno_t olno;			/* 0-N: Old physical cursor line. */
-	size_t cno;			/* 0-N:     Physical cursor col. */
-	size_t ocno;			/* 0-N: Old physical cursor col. */
-	size_t scno;			/* 0-N: Logical screen cursor col. */
-	size_t shift;			/* 0-N: Shift offset in cols. */
-	size_t lines;			/* Physical number of lines. */
-	size_t cols;			/* Physical number of cols. */
-	void *h_smap;			/* Map of lno's to the screen (head). */
-	void *t_smap;			/* Map of lno's to the screen (tail). */
-
-	size_t rcm;			/* 0-N: Column suck. */
-#define	RCM_FNB		0x01		/* Column suck: first non-blank. */
-#define	RCM_LAST	0x02		/* Column suck: last. */
-	u_char rcmflags;
-
+	void *scrp;			/* Screen. */
 	MSG *msgp;			/* Linked list of messages. */
 
 	/*
 	 * s_confirm:	confirm an action, yes or no.
-	 * s_end:	end the session.
+	 * s_end:	end the file session.
 	 */
 	enum confirmation
 		(*s_confirm)	__P((struct exf *, MARK *, MARK *));
@@ -66,23 +48,19 @@ typedef struct exf {
 
 #define	F_AUTOPRINT	0x00001		/* Autoprint flag. */
 #define	F_BELLSCHED	0x00002		/* Bell scheduled. */
-#define	F_CHARDELETED	0x00004		/* Character deleted. */
-#define	F_DUMMY		0x00008		/* Character deleted. */
-#define	F_IGNORE	0x00010		/* File not on the command line. */
-#define	F_IN_GLOBAL	0x00020		/* Doing a global command. */
-#define	F_MODIFIED	0x00040		/* File has been modified. */
-#define	F_MSGWAIT	0x00080		/* Hold messages for awhile. */
-#define	F_NAMECHANGED	0x00100		/* File name was changed. */
-#define	F_NEEDMERASE	0x00200		/* Erase modeline after keystroke. */
-#define	F_NEWSESSION	0x00400		/* File has just been edited. */
-#define	F_NONAME	0x00800		/* File has no name. */
-#define	F_RDONLY	0x01000		/* File is read-only. */
-#define	F_READING	0x02000		/* Waiting on a read. */
-#define	F_REDRAW	0x04000		/* Repaint the screen. */
-#define	F_REFRESH	0x08000		/* Refresh the screen. */
-#define	F_RESIZE	0x10000		/* Resize the screen. */
-#define	F_RE_SET	0x20000		/* The file's RE has been set. */
-#define	F_UNDO		0x40000		/* No change since last undo. */
+#define	F_DUMMY		0x00004		/* Character deleted. */
+#define	F_IGNORE	0x00008		/* File not on the command line. */
+#define	F_IN_GLOBAL	0x00010		/* Doing a global command. */
+#define	F_MODIFIED	0x00020		/* File has been modified. */
+#define	F_MSGWAIT	0x00040		/* Hold messages for awhile. */
+#define	F_NAMECHANGED	0x00080		/* File name was changed. */
+#define	F_NEEDMERASE	0x00100		/* Erase modeline after keystroke. */
+#define	F_NEWSESSION	0x00200		/* File has just been edited. */
+#define	F_NONAME	0x00400		/* File has no name. */
+#define	F_RDONLY	0x00800		/* File is read-only. */
+#define	F_READING	0x01000		/* Waiting on a read. */
+#define	F_RE_SET	0x02000		/* The file's RE has been set. */
+#define	F_UNDO		0x04000		/* No change since last undo. */
 
 #define	F_RETAINMASK	(F_IGNORE)	/* Flags to retain. */
 

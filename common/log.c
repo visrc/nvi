@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: log.c,v 5.7 1993/02/16 20:16:19 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:16:19 $";
+static char sccsid[] = "$Id: log.c,v 5.8 1993/02/24 12:53:42 bostic Exp $ (Berkeley) $Date: 1993/02/24 12:53:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -117,8 +117,8 @@ log_cursor(ep)
 		
 	ep->l_lp[0] = LOG_CURSOR;
 
-	m.lno = ep->lno;
-	m.cno = ep->cno;
+	m.lno = SCRLNO(ep);
+	m.cno = SCRCNO(ep);
 	memmove(ep->l_lp + sizeof(u_char), &m, sizeof(MARK));
 
 	data.data = ep->l_lp;

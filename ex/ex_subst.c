@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 5.28 1993/02/20 15:56:16 bostic Exp $ (Berkeley) $Date: 1993/02/20 15:56:16 $";
+static char sccsid[] = "$Id: ex_subst.c,v 5.29 1993/02/24 12:56:42 bostic Exp $ (Berkeley) $Date: 1993/02/24 12:56:42 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -22,6 +22,7 @@ static char sccsid[] = "$Id: ex_subst.c,v 5.28 1993/02/20 15:56:16 bostic Exp $ 
 #include "vi.h"
 #include "excmd.h"
 #include "options.h"
+#include "screen.h"
 #include "search.h"
 #include "term.h"
 #include "pathnames.h"
@@ -421,7 +422,7 @@ nomatch:	if (len)
 
 	/* Cursor moves to last line changed. */
 	if (lastline != OOBLNO)
-		ep->lno = lastline;
+		SCRLNO(ep) = lastline;
 
 	/*
 	 * Note if nothing found.  Else, if nothing displayed to the

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 5.19 1993/02/16 20:10:32 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:32 $";
+static char sccsid[] = "$Id: ex_write.c,v 5.20 1993/02/24 12:56:50 bostic Exp $ (Berkeley) $Date: 1993/02/24 12:56:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,6 +22,7 @@ static char sccsid[] = "$Id: ex_write.c,v 5.19 1993/02/16 20:10:32 bostic Exp $ 
 
 #include "vi.h"
 #include "excmd.h"
+#include "screen.h"
 
 /*
  * ex_write --	:write[!] [>>] [file]
@@ -36,6 +37,7 @@ ex_write(ep, cmdp)
 	register u_char *p;
 	struct stat sb;
 	FILE *fp;
+	MARK rm;
 	int fd, flags, force;
 	char *fname;
 
@@ -71,8 +73,11 @@ ex_write(ep, cmdp)
 			msg(ep, M_ERROR, "Usage: %s.", cmdp->cmd->usage);
 			return (1);
 		}
-		return (filtercmd(ep,
-		    &cmdp->addr1, &cmdp->addr2, ++p, NOOUTPUT));
+		if (filtercmd(ep,
+		    &cmdp->addr1, &cmdp->addr2, &rm, ++p, NOOUTPUT))
+			return (1);
+		SCRLNO(ep) = rm.lno;
+		return (0);
 	}
 
 	/* If "write >>" it's an append to a file. */

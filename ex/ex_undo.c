@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_undo.c,v 5.11 1993/02/16 20:10:29 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:29 $";
+static char sccsid[] = "$Id: ex_undo.c,v 5.12 1993/02/24 12:56:36 bostic Exp $ (Berkeley) $Date: 1993/02/24 12:56:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -17,6 +17,7 @@ static char sccsid[] = "$Id: ex_undo.c,v 5.11 1993/02/16 20:10:29 bostic Exp $ (
 #include "vi.h"
 #include "excmd.h"
 #include "log.h"
+#include "screen.h"
 
 int
 ex_undo(ep, cmdp)
@@ -40,7 +41,7 @@ ex_undo(ep, cmdp)
 			return (1);
 		break;
 	}
-	ep->lno = rp.lno;
-	ep->cno = rp.cno;
+	SCRLNO(ep) = rp.lno;
+	SCRCNO(ep) = rp.cno;
 	return (0);
 }

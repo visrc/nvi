@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 5.26 1993/02/16 20:10:09 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:09 $";
+static char sccsid[] = "$Id: ex_edit.c,v 5.27 1993/02/24 12:55:06 bostic Exp $ (Berkeley) $Date: 1993/02/24 12:55:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -20,6 +20,7 @@ static char sccsid[] = "$Id: ex_edit.c,v 5.26 1993/02/16 20:10:09 bostic Exp $ (
 #include "vi.h"
 #include "excmd.h"
 #include "options.h"
+#include "screen.h"
 
 enum which {EDIT, VISUAL};
 
@@ -96,11 +97,11 @@ edit(ep, cmdp, cmd)
 	 */
 	if (!reset)
 		if (cmdp->plus || cmd == VISUAL || mode == MODE_VI)
-			new_ep->lno = 1;
+			SCRLNO(new_ep) = 1;
 		else {
-			new_ep->lno = file_lline(new_ep);
-			if (new_ep->lno == 0)
-				new_ep->lno = 1;
+			SCRLNO(new_ep) = file_lline(new_ep);
+			if (SCRLNO(new_ep) == 0)
+				SCRLNO(new_ep) = 1;
 		}
 	if (cmdp->plus)
 		(void)ex_cstring(ep, cmdp->plus, USTRLEN(cmdp->plus), 1);

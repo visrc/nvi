@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 5.31 1993/02/21 18:45:35 bostic Exp $ (Berkeley) $Date: 1993/02/21 18:45:35 $";
+static char sccsid[] = "$Id: ex_args.c,v 5.32 1993/02/24 12:53:50 bostic Exp $ (Berkeley) $Date: 1993/02/24 12:53:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -20,6 +20,7 @@ static char sccsid[] = "$Id: ex_args.c,v 5.31 1993/02/21 18:45:35 bostic Exp $ (
 #include "vi.h"
 #include "excmd.h"
 #include "options.h"
+#include "screen.h"
 #include "term.h"
 
 /*
@@ -138,7 +139,7 @@ ex_args(ep, cmdp)
 			continue;
 		col += len =
 		    strlen(list_ep->name) + sep + (ep == list_ep ? 2 : 0);
-		if (col >= ep->cols - 1) {
+		if (col >= SCRCNO(ep) - 1) {
 			col = len;
 			sep = 0;
 			(void)fprintf(ep->stdfp, "\n");

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 5.18 1993/02/16 20:10:14 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:14 $";
+static char sccsid[] = "$Id: ex_global.c,v 5.19 1993/02/24 12:55:33 bostic Exp $ (Berkeley) $Date: 1993/02/24 12:55:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,6 +19,7 @@ static char sccsid[] = "$Id: ex_global.c,v 5.18 1993/02/16 20:10:14 bostic Exp $
 #include "vi.h"
 #include "excmd.h"
 #include "options.h"
+#include "screen.h"
 #include "search.h"
 
 enum which {GLOBAL, VGLOBAL};
@@ -152,7 +153,7 @@ global(ep, cmdp, cmd)
 		ep->rptlines = 0;
 		last1 = file_lline(ep);
 
-		ep->lno = lno;
+		SCRLNO(ep) = lno;
 		(void)snprintf((char *)cbuf, sizeof(cbuf), "%s", endp);
 		if (ex_cmd(ep, cbuf)) {
 			rval = 1;
@@ -171,14 +172,14 @@ global(ep, cmdp, cmd)
 		}
 
 		/* Cursor moves to last line sent to command. */
-		ep->lno = lno;
+		SCRLNO(ep) = lno;
 
 		/* Cumulative line change count. */
 		nchanged += ep->rptlines;
 		ep->rptlines = 0;
 	}
 	/* Cursor is on column 0, regardless. */
-	ep->cno = 0;
+	SCRCOL(ep) = 0;
 
 	/* Report statistics. */
 err:	ep->rptlines += nchanged;

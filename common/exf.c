@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.43 1993/02/22 13:17:38 bostic Exp $ (Berkeley) $Date: 1993/02/22 13:17:38 $";
+static char sccsid[] = "$Id: exf.c,v 5.44 1993/02/24 12:52:36 bostic Exp $ (Berkeley) $Date: 1993/02/24 12:52:36 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -23,6 +23,7 @@ static char sccsid[] = "$Id: exf.c,v 5.43 1993/02/22 13:17:38 bostic Exp $ (Berk
 #include "excmd.h"
 #include "log.h"
 #include "options.h"
+#include "screen.h"
 #include "pathnames.h"
 
 EXF *curf;					/* Current file. */
@@ -53,14 +54,15 @@ file_ins(ep, name, append)
 	EXF *nep;
 
 	if ((nep = malloc(sizeof(EXF))) == NULL)
-		goto err;
-	file_def(nep);
+		goto mem1;
+	exf_def(nep);
 
-	if ((nep->name = strdup(name)) == NULL) {
-		free(nep);
-err:		msg(ep, M_ERROR, "Error: %s", strerror(errno));
-		return (1);
-	}
+	if ((SCRP(nep) = malloc(sizeof(SCR))) == NULL)
+		goto mem2;
+	scr_def(SCRP(nep));
+
+	if ((nep->name = strdup(name)) == NULL)
+		goto mem3;
 	nep->nlen = strlen(nep->name);
 	
 	if (append) {
@@ -69,6 +71,11 @@ err:		msg(ep, M_ERROR, "Error: %s", strerror(errno));
 		instailexf(nep, ep);
 	}
 	return (0);
+
+mem3:	free(SCRP(nep));
+mem2:	free(nep);
+mem1:	msg(ep, M_ERROR, "Error: %s", strerror(errno));
+	return (1);
 }
 
 /*
@@ -94,17 +101,22 @@ file_set(argc, argv)
 	/* Insert new entries at the tail of the list. */
 	for (; *argv; ++argv) {
 		if ((ep = malloc(sizeof(EXF))) == NULL)
-			goto err;
-		file_def(ep);
-		if ((ep->name = strdup(*argv)) == NULL) {
-			free(ep);
-err:			msg(ep, M_ERROR, "Error: %s", strerror(errno));
-			return (1);
-		}
+			goto mem1;
+		exf_def(ep);
+		if ((SCRP(ep) = malloc(sizeof(SCR))) == NULL)
+			goto mem2;
+		scr_def(SCRP(ep));
+		if ((ep->name = strdup(*argv)) == NULL)
+			goto mem3;
 		ep->nlen = strlen(ep->name);
 		instailexf(ep, &exfhdr);
 	}
 	return (0);
+
+mem3:	free(SCRP(ep));
+mem2:	free(ep);
+mem1:	msg(ep, M_ERROR, "Error: %s", strerror(errno));
+	return (1);
 }
 
 /*
@@ -373,16 +385,15 @@ err:		msg(ep, M_ERROR, "%s: %s", ep->name, strerror(errno));
 }
 
 /*
- * file_def --
+ * exf_def --
  *	Fill in a default EXF structure.  It's a function because I
  *	just got tired of getting burned 'cause the structure changed.
  */
 void
-file_def(ep)
+exf_def(ep)
 	EXF *ep;
 {
 	memset(ep, 0, sizeof(EXF));
-	ep->top = ep->otop = ep->lno = ep->olno = 1;
 	ep->c_lno = OOBLNO;
 	ep->stdfp = stdout;
 }

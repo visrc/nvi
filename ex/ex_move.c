@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_move.c,v 5.19 1993/02/16 20:10:19 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:19 $";
+static char sccsid[] = "$Id: ex_move.c,v 5.20 1993/02/24 12:55:40 bostic Exp $ (Berkeley) $Date: 1993/02/24 12:55:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -16,6 +16,7 @@ static char sccsid[] = "$Id: ex_move.c,v 5.19 1993/02/16 20:10:19 bostic Exp $ (
 
 #include "vi.h"
 #include "excmd.h"
+#include "screen.h"
 
 enum which {COPY, MOVE};
 static int cm __P((EXF *, EXCMDARG *, enum which));
@@ -75,16 +76,16 @@ cm(ep, cmdp, cmd)
 	}
 
 	/* Add the new text. */
-	m.lno = ep->lno;
-	m.cno = ep->cno;
+	m.lno = SCRLNO(ep);
+	m.cno = SCRCNO(ep);
 	(void)put(ep, DEFCB, &tm, &m, 1);
 
-	if (ep->lno < 1)
-		ep->lno = 1;
+	if (SCRLNO(ep) < 1)
+		SCRLNO(ep) = 1;
 	else {
 		lline = file_lline(ep);
-		if (ep->lno > lline)
-			ep->lno = lline;
+		if (SCRLNO(ep) > lline)
+			SCRLNO(ep) = lline;
 	}
 
 	/* Reporting. */
