@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.80 1993/12/20 15:25:53 bostic Exp $ (Berkeley) $Date: 1993/12/20 15:25:53 $";
+static char sccsid[] = "$Id: ex.c,v 8.81 1993/12/22 17:00:35 bostic Exp $ (Berkeley) $Date: 1993/12/22 17:00:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,8 +22,10 @@ static char sccsid[] = "$Id: ex.c,v 8.80 1993/12/20 15:25:53 bostic Exp $ (Berke
 #include "vi.h"
 #include "excmd.h"
 
-static int	 ep_line __P((SCR *, EXF *, MARK *, char **, size_t *, int *));
-static int	 ep_range __P((SCR *, EXF *, EXCMDARG *, char **, size_t *));
+static inline EXCMDLIST const *
+		ex_comm_search __P((char *, size_t));
+static int	ep_line __P((SCR *, EXF *, MARK *, char **, size_t *, int *));
+static int	ep_range __P((SCR *, EXF *, EXCMDARG *, char **, size_t *));
 
 #define	DEFCOM	".+1"
 
@@ -292,9 +294,9 @@ loop:	if (nl) {
 				goto err;
 			}
 		}
+
 		/* Search the table for the command. */
-		for (cp = cmds;
-		    cp->name && memcmp(p, cp->name, namelen); ++cp);
+		cp = ex_comm_search(p, namelen);
 
 		/*
 		 * !!!
@@ -303,7 +305,7 @@ loop:	if (nl) {
 		 *
 		 * Use of msgq below is safe, command names are all alphabetics.
 		 */
-		if (cp->name == NULL)
+		if (cp == NULL)
 			if (p[0] == 'k' && p[1] && !p[2]) {
 				cmd -= namelen - 1;
 				cmdlen += namelen - 1;
@@ -1421,4 +1423,39 @@ backward:	*addr_found = 1;
 	*cmdp = cmd;
 	*cmdlenp = cmdlen;
 	return (0);
+}
+
+/*
+ * ex_is_abbrev -
+ *	The vi text input routine needs to know if ex thinks this is
+ *	an [un]abbreviate command, so it can turn off abbreviations.
+ *	Usual ranting in the vi/v_ntext:txt_abbrev() routine.
+ */
+int
+ex_is_abbrev(name, len)
+	char *name;
+	size_t len;
+{
+	EXCMDLIST const *cp;
+
+	return ((cp = ex_comm_search(name, len)) != NULL &&
+	    (cp == &cmds[C_ABBR] || cp == &cmds[C_UNABBREVIATE]));
+}
+
+static inline EXCMDLIST const *
+ex_comm_search(name, len)
+	char *name;
+	size_t len;
+{
+	EXCMDLIST const *cp;
+
+	for (cp = &cmds[C_APPEND]; cp->name != NULL; ++cp) {
+		if (cp->name[0] > name[0])
+			return (NULL);
+		if (cp->name[0] != name[0])
+			continue;
+		if (!memcmp(name, cp->name, len))
+			return (cp);
+	}
+	return (NULL);
 }
