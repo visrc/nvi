@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 10.14 1995/11/08 08:33:44 bostic Exp $ (Berkeley) $Date: 1995/11/08 08:33:44 $";
+static char sccsid[] = "$Id: vs_smap.c,v 10.15 1995/11/10 10:25:42 bostic Exp $ (Berkeley) $Date: 1995/11/10 10:25:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -124,7 +124,7 @@ vs_change(sp, lno, op)
 	 * get scrolling wrong, at best.
 	 */
 	if (!F_ISSET(sp, S_INPUT_INFO) &&
-	    (F_ISSET(sp, S_EX_CANON) || VIP(sp)->totalcount > 1)) {
+	    (F_ISSET(sp, S_SCR_EXWROTE) || VIP(sp)->totalcount > 1)) {
 		F_SET(vip, VIP_N_REDRAW);
 		return (0);
 	}

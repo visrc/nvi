@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 10.22 1995/11/07 20:28:40 bostic Exp $ (Berkeley) $Date: 1995/11/07 20:28:40 $";
+static char sccsid[] = "$Id: v_ex.c,v 10.23 1995/11/10 10:26:02 bostic Exp $ (Berkeley) $Date: 1995/11/10 10:26:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -71,11 +71,12 @@ v_exmode(sp, vp)
 	F_SET(sp->frp, FR_CURSORSET);
 
 	/* Switch to ex mode. */
-	F_CLR(sp, S_EX_CANON | S_SCREEN_READY | S_VI);
+	F_CLR(sp, S_VI | S_SCR_VI);
 	F_SET(sp, S_EX);
 
 	/* Move out of the vi screen. */
-	(void)write(STDOUT_FILENO, "\n", 1);
+	(void)ex_puts(sp, "\n");
+
 	return (0);
 }
 
@@ -371,7 +372,7 @@ v_ex(sp, vp)
 {
 	GS *gp;
 	TEXT *tp;
-	int colon;
+	int ifcontinue;
 
 	/*
 	 * !!!
@@ -419,12 +420,15 @@ v_ex(sp, vp)
 		/* Call the ex parser. */
 		(void)ex_cmd(sp);
 
-		/* Resolve messages. */
-		if (vs_ex_resolve(sp, &colon))
+		/* Flush ex messages. */
+		(void)ex_fflush(sp);
+
+		/* Resolve any messages. */
+		if (vs_ex_resolve(sp, &ifcontinue))
 			return (1);
 
 		/* Continue or return. */
-		if (!colon)
+		if (!ifcontinue)
 			break;
 	}
 	return (v_ex_done(sp, vp));

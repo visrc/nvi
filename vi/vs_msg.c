@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_msg.c,v 10.33 1995/11/07 20:28:06 bostic Exp $ (Berkeley) $Date: 1995/11/07 20:28:06 $";
+static char sccsid[] = "$Id: vs_msg.c,v 10.34 1995/11/10 10:26:18 bostic Exp $ (Berkeley) $Date: 1995/11/10 10:26:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,14 +25,21 @@ static char sccsid[] = "$Id: vs_msg.c,v 10.33 1995/11/07 20:28:06 bostic Exp $ (
 #include "../common/common.h"
 #include "vi.h"
 
-#define	SCROLL_EXWAIT	0x01		/* User must enter cont. char or :. */
-#define	SCROLL_QUIT	0x02		/* User can enter 'q' to interrupt. */
-#define	SCROLL_WAIT	0x04		/* User must enter cont. char. */
+typedef enum {
+	SCROLL_W,			/* User wait. */
+	SCROLL_W_EX,			/* User wait, or enter : to continue. */
+	SCROLL_W_QUIT			/* User wait, or enter q to quit. */
+					/*
+					 * SCROLL_W_QUIT has another semantic
+					 * -- only wait if the screen is full
+					 */
+} sw_t;
 
 static void	vs_divider __P((SCR *));
 static void	vs_output __P((SCR *, mtype_t, const char *, int));
 static void	vs_msgsave __P((SCR *, mtype_t, char *, size_t));
-static void	vs_scroll __P((SCR *, CHAR_T *, u_int));
+static void	vs_scroll __P((SCR *, int *, sw_t));
+static void	vs_wait __P((SCR *, int *, sw_t));
 
 /*
  * vs_busy --
@@ -60,7 +67,7 @@ vs_busy(sp, msg, btype)
 	const char *p;
 
 	/* Ex doesn't display busy messages. */
-	if (F_ISSET(sp, S_EX | S_EX_CANON))
+	if (F_ISSET(sp, S_EX | S_SCR_EXWROTE))
 		return;
 
 	gp = sp->gp;
@@ -143,18 +150,15 @@ vs_update(sp, m1, m2)
 	GS *gp;
 	size_t len, mlen, oldy, oldx;
 
-	if (!F_ISSET(sp, S_SCREEN_READY))
-		return;
-
 	/*
 	 * This routine displays a message on the bottom line of the screen,
-	 * without updating any of the command structues that would keep it
+	 * without updating any of the command structures that would keep it
 	 * there for any period of time, i.e. it is overwritten immediately.
 	 *
 	 * It's used by the ex read and ! commands when the user's command is
 	 * expanded, and by the ex substitution confirmation prompt.
 	 */
-	if (F_ISSET(sp, S_EX | S_EX_CANON)) {
+	if (F_ISSET(sp, S_SCR_EXWROTE)) {
 		(void)ex_printf(sp,
 		    "%s\n", m1 == NULL? "" : m1, m2 == NULL ? "" : m2);
 		(void)ex_fflush(sp);
@@ -210,47 +214,62 @@ vs_msg(sp, mtype, line, len)
 	size_t cols, oldx, oldy, padding;
 	const char *e, *s, *t;
 
-	/* If no text is supplied, flush any buffered output. */
-	if (line == NULL) {
-		if (F_ISSET(sp, S_EX | S_EX_CANON))
-			(void)fflush(stdout);
-		return;
-	}
-
-	/* If the screen isn't ready to display messages, save it. */
-	if (!F_ISSET(sp, S_SCREEN_READY)) {
-		(void)vs_msgsave(sp, mtype, line, len);
-		return;
-	}
-
-	/* Ring the bell if it's scheduled. */
 	gp = sp->gp;
+	vip = VIP(sp);
+
+	/*
+	 * Ring the bell if it's scheduled.
+	 *
+	 * XXX
+	 * Shouldn't we save this, too?
+	 */
 	if (F_ISSET(gp, G_BELLSCHED)) {
 		F_CLR(gp, G_BELLSCHED);
 		(void)gp->scr_bell(sp);
 	}
 
 	/*
-	 * Display ex output or error messages for the screen.  If the tty
-	 * has not yet entered into ex canonical mode, do so.  Set a flag so
-	 * that we know it happened for when we enter (or reenter) vi mode.
+	 * Ex or ex controlled screen output.
 	 *
-	 * XXX
-	 * THIS IS WAY WRONG -- WE HAVE NO WAY TO RETURN THE ERROR!!!
+	 * If output happens during startup, e.g., a .exrc file, we may be
+	 * in ex mode but haven't initialized the screen.  Initialize here,
+	 * and in this case, stay in ex mode.
+	 *
+	 * If the S_SCR_EXWROTE bit is set, then we're switching back and
+	 * forth between ex and vi, but the screen is trashed and we have
+	 * to respect that.  Switch to ex mode long enough to put out the
+	 * message.
+	 *
+	 * If the S_EX_DONTWAIT bit is set, turn it off -- we're writing,
+	 * so previous opinions should be ignored.
 	 */
-	if (F_ISSET(sp, S_EX | S_EX_CANON)) {
-		if (!F_ISSET(sp, S_SCREEN_READY)) {
-			if (gp->scr_screen(sp, S_EX))
+	if (F_ISSET(sp, S_EX | S_SCR_EXWROTE)) {
+		if (!F_ISSET(sp, S_SCR_EX)) {
+			if (sp->gp->scr_screen(sp, S_EX))
 				return;
-			F_SET(sp, S_SCREEN_READY);
+			if (!F_ISSET(sp, S_SCR_EXWROTE)) {
+				ex_e_resize(sp);
+				F_SET(sp, S_EX | S_SCR_EX);
+			}
 		}
-		F_SET(sp, S_EX_WROTE);
+
 		if (mtype == M_ERR)
 			(void)gp->scr_attr(sp, SA_INVERSE, 1);
 		(void)printf("%.*s", (int)len, line);
 		if (mtype == M_ERR)
 			(void)gp->scr_attr(sp, SA_INVERSE, 0);
 		(void)fflush(stdout);
+
+		F_CLR(sp, S_EX_DONTWAIT);
+
+		if (!F_ISSET(sp, S_SCR_EX))
+			(void)sp->gp->scr_screen(sp, S_VI);
+		return;
+	}
+
+	/* If the vi screen isn't ready, save the message. */
+	if (!F_ISSET(sp, S_SCR_VI)) {
+		(void)vs_msgsave(sp, mtype, line, len);
 		return;
 	}
 
@@ -261,7 +280,6 @@ vs_msg(sp, mtype, line, len)
 	 * If the message type is changing, terminate any previous message
 	 * and move to a new line.
 	 */
-	vip = VIP(sp);
 	if (mtype != vip->mtype) {
 		if (vip->lcontinue != 0) {
 			if (vip->mtype == M_NONE)
@@ -403,7 +421,7 @@ vs_output(sp, mtype, line, llen)
 				}
 			}
 			if (vip->totalcount != 0)
-				vs_scroll(sp, NULL, SCROLL_QUIT);
+				vs_scroll(sp, NULL, SCROLL_W_QUIT);
 
 			(void)gp->scr_move(sp, LASTLINE(sp), 0);
 			++vip->totalcount;
@@ -444,65 +462,6 @@ vs_output(sp, mtype, line, llen)
 }
 
 /*
- * vs_ex_to_vi --
- *	Switch from ex into vi.
- *
- * PUBLIC: int vs_ex_to_vi __P((SCR *, int *));
- */
-int
-vs_ex_to_vi(sp, continuep)
-	SCR *sp;
-	int *continuep;
-{
-	const char *p;
-	EVENT ev;
-	size_t len;
-
-	/*
-	 * Ex sets S_EX_WROTE depending on whether or not the ex command
-	 * should be waited for.
-	 *
-	 * XXX
-	 * We're ignoring most errors and unexpected events.
-	 */
-	if (F_ISSET(sp, S_EX_WROTE)) {
-		p = msg_cmsg(sp,
-		    continuep == NULL ? CMSG_CONT : CMSG_CONT_EX, &len);
-		(void)write(STDOUT_FILENO, p, len);
-		do {
-			if (v_event_get(sp, &ev, 0, EC_RAW))
-				return (1);
-		} while (ev.e_event != E_CHARACTER);
-
-		/*
-		 * The user may choose to continue.
-		 *
-		 * XXX
-		 * To recap, we've switched into ex mode because the user
-		 * entered something like :!ls.  However, not content with
-		 * that, the user wants to keep entering ex commands.  We
-		 * can't switch back and forth between ex and vi, because
-		 * vi is going to want to repaint the screen.  The historic
-		 * vi supported this, so we make it work.  We hope.  Do it
-		 * all behind curses back, and pray the text input routines
-		 * don't decide to start repainting things.
-		 */
-		if (continuep != NULL && ev.e_c == ':') {
-			(void)write(STDOUT_FILENO, "\n:", 2);
-			*continuep = 1;
-			return (0);
-		}
-	}
-
-	/* (Re)start the vi screen. */
-	if (sp->gp->scr_screen(sp, S_VI))
-		return (1);
-	F_CLR(sp, S_EX | S_EX_CANON | S_EX_WROTE | S_SCREEN_READY);
-	F_SET(sp, S_VI);
-	return (0);
-}
-
-/*
  * vs_ex_resolve --
  *	Deal with ex message output.
  *
@@ -520,71 +479,69 @@ vs_ex_resolve(sp, continuep)
 	EVENT ev;
 	GS *gp;
 	VI_PRIVATE *vip;
+	sw_t wtype;
 	int cancontinue;
 
 	gp = sp->gp;
 	vip = VIP(sp);
-
-	/* Flush ex messages. */
-	(void)ex_fflush(sp);
-
-	/*
-	 * If the user interrupted the command or is leaving (or trying to
-	 * leave) the screen, don't bother asking if they want to continue.
-	 */
-	cancontinue = !(INTERRUPTED(sp) ||
-	    F_ISSET(sp, S_EXIT | S_EXIT_FORCE | S_FSWITCH | S_SSWITCH));
 	*continuep = 0;
 
-	/* If we switched into ex mode, return into vi mode. */
-	if (F_ISSET(sp, S_EX_CANON)) {
-		/*
-		 * If we know that the user can't continue, clear the ex wrote
-		 * flag, which is what vs_ex_to_vi uses to decide if the user
-		 * gets a message.
-		 */
-		if (!cancontinue)
-			F_CLR(sp, S_EX_WROTE);
-		if (vs_ex_to_vi(sp, continuep))
-			return (1);
-		if (*continuep == 1)
+	/*
+	 * If we didn't switch into ex and only 0 or 1 lines of output, we may
+	 * be able to continue w/o making the user wait.  First, if no lines of
+	 * output, we can simply return, leaving the line modifications report
+	 * to the next call to vs_resolve from the main vi loop.  Else, output
+	 * that report and see if that pushes us over the edge.  If it does, we
+	 * wait, else we can return, again leaving the line modification report
+	 * until later.
+	 *
+	 * Note, all other code paths require waiting, so those cases leave the
+	 * report of modified lines until later.  As a result, groups of ex
+	 * commands will have cumulative line modification reports.  That seems
+	 * right (well, at least not wrong) to me.
+	 */
+	if (!F_ISSET(sp, S_SCR_EXWROTE) && vip->totalcount < 2) {
+		if (vip->totalcount == 0)
 			return (0);
-
-		F_SET(sp, S_SCR_REDRAW);
-	} else {
-		/*
-		 * If 0 or 1 lines of output, we may be able to continue w/o
-		 * making the user wait.  First, if no lines of output, we
-		 * can simply return, leaving the line modifications report
-		 * to the next call to vs_resolve from the main vi loop.  Else,
-		 * output that report and see if that pushes us over the edge.
-		 * If it does, we wait, else we can return, again leaving the
-		 * line modification report until later.
-		 *
-		 * Note, all other code paths require waiting, so those cases
-		 * simply leave the report of modified lines until later.  As
-		 * a result sets of ex commands will have cumulative line
-		 * modification reports.  That seems right to me.
-		 */
-		if (vip->totalcount < 2) {
-			if (vip->totalcount == 0)
-				return (0);
-			msgq_rpt(sp);
-			if (vip->totalcount < 2)
-				return (0);
-		}
-
-		/* Put up the message and wait. */
-		vs_scroll(sp, &ch, cancontinue ? SCROLL_EXWAIT : SCROLL_WAIT);
-		if (cancontinue && ch == ':') {
-			*continuep = 1;
+		msgq_rpt(sp);
+		if (vip->totalcount < 2)
 			return (0);
-		}
-
-		/* If ex changed the underlying screen, redraw from scratch. */
-		if (F_ISSET(vip, VIP_N_REDRAW))
-			F_SET(sp, S_SCR_REDRAW);
 	}
+
+	/*
+	 * If we switched out of the vi screen, switch back while figuring what
+	 * to do with the screen and potentially get another command to execute.
+	 */
+	if (F_ISSET(sp, S_SCR_EXWROTE) && sp->gp->scr_screen(sp, S_VI))
+		return (1);
+
+	/* Wait, unless there's a reason not to. */
+	if (!F_ISSET(sp, S_EX_DONTWAIT)) {
+		/*
+		 * If the user interrupted the command or is leaving (or trying
+		 * to leave) the screen, don't ask if they want to continue.
+		 */
+		*continuep = !(INTERRUPTED(sp) ||
+		    F_ISSET(sp, S_EXIT | S_EXIT_FORCE | S_FSWITCH | S_SSWITCH));
+		wtype = *continuep ? SCROLL_W_EX : SCROLL_W;
+
+		if (F_ISSET(sp, S_SCR_EXWROTE))
+			vs_wait(sp, continuep, wtype);
+		else
+			vs_scroll(sp, continuep, wtype);
+		if (*continuep)
+			return (0);
+	}
+
+	/* If ex changed the underlying screen, redraw from scratch. */
+	if (F_ISSET(sp, S_SCR_EXWROTE) || F_ISSET(vip, VIP_N_REDRAW))
+		F_SET(sp, S_SCR_REDRAW);
+
+	/*
+	 * Whew.  We're finally back home, after what feels like years.
+	 * Kiss the ground.
+	 */
+	F_CLR(sp, S_SCR_EXWROTE | S_EX_DONTWAIT);
 
 	/*
 	 * We may need to repaint some of the screen, e.g.:
@@ -595,7 +552,7 @@ vs_ex_resolve(sp, continuep)
 	 * gives us a combination of some lines that are "wrong", and a
 	 * need for a full refresh.
 	 */
-	if (vip->totalcount != 0) {
+	if (vip->totalcount > 1) {
 		/* Set up the redraw of the overwritten lines. */
 		ev.e_event = E_REPAINT;
 		ev.e_flno = vip->totalcount >=
@@ -607,7 +564,10 @@ vs_ex_resolve(sp, continuep)
 
 		/* Redraw. */
 		(void)vs_repaint(sp, &ev);
-	}
+	} else
+		/* Reset the count of overwriting lines. */
+		vip->linecount = vip->lcontinue = vip->totalcount = 0;
+
 	return (0);
 }
 
@@ -659,7 +619,7 @@ vs_resolve(sp)
 	 * extra refresh screwed the pooch.
 	 */
 	if (gp->msgq.lh_first != NULL) {
-		if (!F_ISSET(sp, S_SCREEN_READY) && vs_refresh(sp))
+		if (!F_ISSET(sp, S_SCR_VI) && vs_refresh(sp))
 			return (1);
 		while ((mp = gp->msgq.lh_first) != NULL) {
 			gp->scr_msg(sp, mp->mtype, mp->buf, mp->len);
@@ -685,7 +645,7 @@ vs_resolve(sp)
 		 * If >1 message line in use, prompt the user to continue and
 		 * repaint overwritten lines.
 		 */
-		vs_scroll(sp, NULL, SCROLL_WAIT);
+		vs_scroll(sp, NULL, SCROLL_W);
 
 		ev.e_event = E_REPAINT;
 		ev.e_flno = vip->totalcount >=
@@ -713,16 +673,13 @@ vs_resolve(sp)
  *	Scroll the screen for output.
  */
 static void
-vs_scroll(sp, chp, flags)
+vs_scroll(sp, continuep, wtype)
 	SCR *sp;
-	CHAR_T *chp;
-	u_int flags;
+	int *continuep;
+	sw_t wtype;
 {
-	EVENT ev;
 	GS *gp;
 	VI_PRIVATE *vip;
-	size_t len;
-	const char *p;
 
 	gp = sp->gp;
 	vip = VIP(sp);
@@ -742,43 +699,74 @@ vs_scroll(sp, chp, flags)
 			(void)gp->scr_insertln(sp);
 		}
 	}
+	if (wtype == SCROLL_W_QUIT && vip->linecount < sp->t_maxrows)
+		return;
+	vs_wait(sp, continuep, wtype);
+}
 
-	/* If just displayed a full screen, wait. */
-	if (vip->linecount == sp->t_maxrows ||
-	    LF_ISSET(SCROLL_EXWAIT | SCROLL_WAIT)) {
-		if (IS_ONELINE(sp))
-			p = msg_cmsg(sp, CMSG_CONT_S, &len);
-		else {
-			(void)gp->scr_move(sp, LASTLINE(sp), 0);
-			p = msg_cmsg(sp,
-			    LF_ISSET(SCROLL_QUIT) ? CMSG_CONT_Q :
-			    LF_ISSET(SCROLL_EXWAIT) ? CMSG_CONT_EX : CMSG_CONT,
-			    &len);
+/*
+ * vs_wait --
+ *	Prompt the user to continue.
+ */
+static void
+vs_wait(sp, continuep, wtype)
+	SCR *sp;
+	int *continuep;
+	sw_t wtype;
+{
+	EVENT ev;
+	VI_PRIVATE *vip;
+	const char *p;
+	GS *gp;
+	size_t len;
+
+	gp = sp->gp;
+	vip = VIP(sp);
+
+	(void)gp->scr_move(sp, LASTLINE(sp), 0);
+	if (IS_ONELINE(sp))
+		p = msg_cmsg(sp, CMSG_CONT_S, &len);
+	else
+		switch (wtype) {
+		case SCROLL_W_QUIT:
+			p = msg_cmsg(sp, CMSG_CONT_Q, &len);
+			break;
+		case SCROLL_W_EX:
+			p = msg_cmsg(sp, CMSG_CONT_EX, &len);
+			break;
+		case SCROLL_W:
+			p = msg_cmsg(sp, CMSG_CONT, &len);
+			break;
 		}
-		(void)gp->scr_addstr(sp, p, len);
+	(void)gp->scr_addstr(sp, p, len);
 
-		++vip->totalcount;
-		vip->linecount = 0;
+	++vip->totalcount;
+	vip->linecount = 0;
 
-		(void)gp->scr_clrtoeol(sp);
-		(void)gp->scr_refresh(sp, 0);
+	(void)gp->scr_clrtoeol(sp);
+	(void)gp->scr_refresh(sp, 0);
 
-		/*
-		 * Get a single character from the terminal.
-		 *
-		 * XXX
-		 * We're ignoring any errors or illegal events.
-		 */
-		if (v_event_get(sp, &ev, 0, 0) || ev.e_event != E_CHARACTER) {
-			if (chp != NULL)
-				*chp = CH_QUIT;
+	/*
+	 * Get a single character from the terminal.
+	 *
+	 * XXX
+	 * We're ignoring any errors or illegal events.
+	 */
+	if (continuep != NULL)
+		*continuep = 0;
+	do {
+		if (v_event_get(sp, &ev, 0, 0))
+			return;
+	} while (ev.e_event != E_CHARACTER);
+	switch (wtype) {
+	case SCROLL_W_QUIT:
+		if (ev.e_c == CH_QUIT)
 			F_SET(gp, G_INTERRUPTED);
-		} else {
-			if (chp != NULL)
-				*chp = ev.e_c;
-			if (LF_ISSET(SCROLL_QUIT) && ev.e_c == CH_QUIT)
-				F_SET(gp, G_INTERRUPTED);
-		}
+		break;
+	case SCROLL_W_EX:
+		if (ev.e_c == ':' && continuep != NULL)
+			*continuep = 1;
+		break;
 	}
 }
 
