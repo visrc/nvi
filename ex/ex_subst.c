@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_subst.c,v 10.35 1996/08/11 10:50:21 bostic Exp $ (Berkeley) $Date: 1996/08/11 10:50:21 $";
+static const char sccsid[] = "$Id: ex_subst.c,v 10.36 1996/08/20 19:42:30 bostic Exp $ (Berkeley) $Date: 1996/08/20 19:42:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1219,10 +1219,10 @@ re_tag_conv(sp, ptrnp, plenp, replacedp)
 	 * characters.
 	 */
 	for (; len > 0; --len) {
-		/* Ctags escapes the search delimiter characters. */
-		if (p[0] == '\\' && (p[1] == '/' || p[1] == '?'))
+		if (p[0] == '\\' && (p[1] == '/' || p[1] == '?')) {
 			++p;
-		else if (strchr("^.[]$*", p[0]))
+			--len;
+		} else if (strchr("^.[]$*", p[0]))
 			*t++ = '\\';
 		*t++ = *p++;
 	}
