@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.7 1993/08/19 15:06:29 bostic Exp $ (Berkeley) $Date: 1993/08/19 15:06:29 $
+ *	$Id: ex.h,v 8.8 1993/08/26 10:30:22 bostic Exp $ (Berkeley) $Date: 1993/08/26 10:30:22 $
  */
 
 struct _excmdarg;
@@ -41,11 +41,11 @@ typedef struct _excmdlist {
 	char	*syntax;		/* Syntax script. */
 	char	*usage;			/* Usage line. */
 } EXCMDLIST;
-extern EXCMDLIST cmds[];		/* List of ex commands. */
+extern EXCMDLIST const cmds[];		/* List of ex commands. */
 
 /* Structure passed around to functions implementing ex commands. */
 typedef struct _excmdarg {
-	EXCMDLIST *cmd;		/* Command entry in command table. */
+	EXCMDLIST const *cmd;	/* Command entry in command table. */
 	int addrcnt;		/* Number of addresses (0, 1 or 2). */
 	MARK addr1;		/* 1st address. */
 	MARK addr2;		/* 2nd address. */
