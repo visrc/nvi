@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cd.c,v 8.19 1994/08/31 17:17:05 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:17:05 $";
+static char sccsid[] = "$Id: ex_cd.c,v 8.20 1994/09/15 10:28:16 bostic Exp $ (Berkeley) $Date: 1994/09/15 10:28:16 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -81,9 +81,13 @@ ex_cd(sp, ep, cmdp)
 		abort();
 	}
 
-	/* Try the current directory first. */
+	/*
+	 * Try the current directory first.  If this succeeds, don't
+	 * display a message, vi didn't historically, and it's real
+	 * obvious to the user where they are.
+	 */
 	if (!chdir(dir))
-		goto ret;
+		return (0);
 
 	/*
 	 * If moving to the user's home directory, or, the path begins with
@@ -100,7 +104,7 @@ ex_cd(sp, ep, cmdp)
 	for (cdp = EXP(sp)->cdq.tqh_first; cdp != NULL; cdp = cdp->q.tqe_next) {
 		(void)snprintf(buf, sizeof(buf), "%s/%s", cdp->path, dir);
 		if (!chdir(buf)) {
-ret:			if (getcwd(buf, sizeof(buf)) != NULL)
+			if (getcwd(buf, sizeof(buf)) != NULL)
 				p = msg_print(sp, buf, &nf);
 				msgq(sp, M_INFO,
 				    "133|New current directory: %s", p);
