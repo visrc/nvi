@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.81 1994/08/01 16:14:54 bostic Exp $ (Berkeley) $Date: 1994/08/01 16:14:54 $";
+static char sccsid[] = "$Id: vi.c,v 8.82 1994/08/10 11:38:21 bostic Exp $ (Berkeley) $Date: 1994/08/10 11:38:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -323,6 +323,7 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 	u_int flags;
 	CH ikey;
 	CHAR_T key;
+	int cpartial;
 	char *s;
 
 	/* Refresh the command structure. */
@@ -333,25 +334,43 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 	if (getkey(sp, &ikey, TXT_MAPCOMMAND))
 		return (1);
 
-	/* An escape bells the user if in command mode. */
-	if (ikey.value == K_ESCAPE && ismotion == NULL) {
-		msgq(sp, M_BERR, "Already in command mode");
+	/*
+	 * <escape> cancels partial commands, i.e. a command where at least
+	 * one non-numeric character has been entered.  Otherwise, it beeps
+	 * the terminal.  So, the following code is littered with tests for
+	 * <escape> characters.
+	 *
+	 * !!!
+	 * Why can't we cancel commands where all that's been entered is a
+	 * number?  (POSIX 1003.2-1992 explicitly disallows this.)
+	 */
+	cpartial = 0;
+	if (ikey.value == K_ESCAPE) {
+		/* If already in command mode, it's an error. */
+		if (ismotion == NULL) {
+			msgq(sp, M_BERR, "Already in command mode");
+			return (1);
+		}
 		return (1);
 	}
 
-	/* Get the next key. */
-	key = ikey.ch;
-
 	/* Pick up optional buffer. */
+	key = ikey.ch;
 	if (key == '"') {
+		cpartial = 1;
 		if (ismotion != NULL) {
 			msgq(sp, M_BERR,
-			    "Buffers are specified before the command");
+			    "Buffers should be specified before the command");
 			return (1);
 		}
 		KEY(vp->buffer, 0);
 		F_SET(vp, VC_BUFFER);
+		if (ikey.value == K_ESCAPE)
+			goto esc;
+
 		KEY(key, TXT_MAPCOMMAND);
+		if (ikey.value == K_ESCAPE)
+			goto esc;
 	}
 
 	/*
@@ -363,27 +382,37 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 			return (1);
 		F_SET(vp, VC_C1SET);
 		*comcountp = 1;
+
 		KEY(key, TXT_MAPCOMMAND);
+		if (ikey.value == K_ESCAPE)
+			goto esc;
 	} else
 		*comcountp = 0;
 
 	/* Pick up optional buffer. */
 	if (key == '"') {
+		cpartial = 1;
 		if (F_ISSET(vp, VC_BUFFER)) {
 			msgq(sp, M_ERR, "Only one buffer can be specified");
 			return (1);
 		}
 		if (ismotion != NULL) {
 			msgq(sp, M_BERR,
-			    "Buffers are specified before the command");
+			    "Buffers should be specified before the command");
 			return (1);
 		}
 		KEY(vp->buffer, 0);
 		F_SET(vp, VC_BUFFER);
+		if (ikey.value == K_ESCAPE)
+			goto esc;
+
 		KEY(key, TXT_MAPCOMMAND);
+		if (ikey.value == K_ESCAPE)
+			goto esc;
 	}
 
 	/* Check for an OOB command key. */
+	cpartial = 1;
 	if (key > MAXVIKEY) {
 		msgq(sp, M_BERR, "%s isn't a vi command", KEY_NAME(sp, key));
 		return (1);
@@ -398,12 +427,15 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 
 	/*
 	 * Find the command.  The only legal command with no underlying
-	 * function is dot.
+	 * function is dot.  It's historic practice that <escape> doesn't
+	 * just erase the preceding number, it beeps the terminal as well.
+	 * It's a common problem, so just beep the terminal unless verbose
+	 * was set.
 	 */
 	if (kp->func == NULL) {
 		if (key != '.') {
-			msgq(sp, M_ERR,
-			    "%s isn't a command", KEY_NAME(sp, key));
+			msgq(sp, ikey.value == K_ESCAPE ? M_BERR : M_ERR,
+			    "%s isn't a vi command", KEY_NAME(sp, key));
 			return (1);
 		}
 
@@ -441,6 +473,7 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 		return (0);
 	}
 
+	/* Set the flags based on the command flags. */
 	flags = kp->flags;
 
 	/* Check for illegal count. */
@@ -457,6 +490,8 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 		if (LF_ISSET(V_RBUF)) {
 			KEY(vp->buffer, 0);
 			F_SET(vp, VC_BUFFER);
+			if (ikey.value == K_ESCAPE)
+				goto esc;
 		}
 	}
 
@@ -467,6 +502,14 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 	 */
 	if (vp->key == '[' || vp->key == ']' || vp->key == 'Z') {
 		KEY(key, TXT_MAPCOMMAND);
+		/*
+		 * Historically, half entered [[, ]] or Z commands weren't
+		 * cancelled by <escape>, the terminal was beeped instead.
+		 * I think it's more consistent to cancel them.
+		 */
+		if (ikey.value == K_ESCAPE)
+			goto esc;
+
 		if (vp->key != key) {
 usage:			if (ismotion == NULL)
 				s = kp->usage;
@@ -481,11 +524,16 @@ usage:			if (ismotion == NULL)
 	/* Special case: 'z' command. */
 	if (vp->key == 'z') {
 		KEY(vp->character, 0);
+		if (ikey.value == K_ESCAPE)
+			goto esc;
+
 		if (isdigit(vp->character)) {
 			if (getcount(sp, vp->character, &vp->count2))
 				return (1);
 			F_SET(vp, VC_C2SET);
 			KEY(vp->character, 0);
+			if (ikey.value == K_ESCAPE)
+				goto esc;
 		}
 	}
 
@@ -500,10 +548,17 @@ usage:			if (ismotion == NULL)
 	}
 
 	/* Required character. */
-	if (LF_ISSET(V_CHAR))
+	if (LF_ISSET(V_CHAR)) {
 		KEY(vp->character, 0);
+		if (ikey.value == K_ESCAPE)
+			goto esc;
+	}
 
 	return (0);
+
+esc:	if (!cpartial)
+		(void)sp->s_bell(sp);
+	return (1);
 }
 
 /*
