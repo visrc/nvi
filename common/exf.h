@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 5.5 1992/05/21 13:03:49 bostic Exp $ (Berkeley) $Date: 1992/05/21 13:03:49 $
+ *	$Id: exf.h,v 5.6 1992/05/27 10:33:24 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:33:24 $
  */
 
 #ifndef _EXF_H_
@@ -86,7 +86,7 @@ typedef struct {
 	p = file_gline(curf, __lno, &(len));				\
 	if (p == NULL) {						\
 		bell();							\
-		msg("Unable to retrieve line %lu.", lno);		\
+		msg("Unable to retrieve line %lu.", __lno);		\
 		return (1);						\
 	}								\
 }
