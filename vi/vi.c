@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.15 1993/09/10 18:38:06 bostic Exp $ (Berkeley) $Date: 1993/09/10 18:38:06 $";
+static char sccsid[] = "$Id: vi.c,v 8.16 1993/09/27 16:24:57 bostic Exp $ (Berkeley) $Date: 1993/09/27 16:24:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -104,11 +104,11 @@ vi(sp, ep)
 		    getkeyword(sp, ep, vp, flags))
 			goto err;
 
-		/* If a non-relative movement, set the '' mark. */
+		/* If a non-relative movement, set the default mark. */
 		if (LF_ISSET(V_ABS)) {
 			m.lno = sp->lno;
 			m.cno = sp->cno;
-			if (mark_set(sp, ep, ABSMARK1, &m))
+			if (mark_set(sp, ep, ABSMARK1, &m, 1))
 				goto err;
 		}
 

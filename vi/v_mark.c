@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_mark.c,v 8.1 1993/06/09 22:27:24 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:27:24 $";
+static char sccsid[] = "$Id: v_mark.c,v 8.2 1993/09/27 16:24:47 bostic Exp $ (Berkeley) $Date: 1993/09/27 16:24:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,7 +27,7 @@ v_mark(sp, ep, vp, fm, tm, rp)
 {
 	rp->lno = fm->lno;
 	rp->cno = fm->cno;
-	return (mark_set(sp, ep, vp->character, fm));
+	return (mark_set(sp, ep, vp->character, fm, 1));
 }
 
 /*
@@ -54,12 +54,15 @@ v_gomark(sp, ep, vp, fm, tm, rp)
 {
 	MARK *mp;
 
-	/* If a single or back quote, go to the last absolute mark. */
-	if (vp->character == '\'' || vp->character == '`') {
+	/*
+	 * If a single or back quote, go to the last absolute mark.  There has
+	 * to be a separate location outside of the normal marks because the
+	 * "absolute mark" is set before the underlying function is called.
+	 */
+	if (vp->character == ABSMARK1 || vp->character == ABSMARK2) {
 		*rp = ep->absmark;
 		return (0);
 	}
-		
 	if ((mp = mark_get(sp, ep, vp->character)) == NULL)
 		return (1);
 	*rp = *mp;

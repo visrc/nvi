@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.34 1993/09/14 08:55:17 bostic Exp $ (Berkeley) $Date: 1993/09/14 08:55:17 $";
+static char sccsid[] = "$Id: ex.c,v 8.35 1993/09/27 16:24:37 bostic Exp $ (Berkeley) $Date: 1993/09/27 16:24:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1261,7 +1261,7 @@ ep_line(sp, ep, cmd, cur)
 			if (F_ISSET(sp, S_MODE_VI)) {
 				m.lno = sp->lno;
 				m.cno = sp->cno;
-				if (mark_set(sp, ep, ABSMARK1, &m))
+				if (mark_set(sp, ep, ABSMARK1, &m, 1))
 					return (NULL);
 			}
 			cur->lno = strtol(cmd, &endp, 10);
