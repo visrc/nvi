@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_funcs.c,v 10.11 1995/07/08 09:50:44 bostic Exp $ (Berkeley) $Date: 1995/07/08 09:50:44 $";
+static char sccsid[] = "$Id: cl_funcs.c,v 10.12 1995/07/08 12:45:27 bostic Exp $ (Berkeley) $Date: 1995/07/08 12:45:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -202,7 +202,7 @@ cl_busy(sp, msg, on)
 	 * with the S_EX_CANON flag set, and the additional flag tests should
 	 * not cause harm.
 	 */
-	if (F_ISSET(sp, S_EX | S_EX_CANON | S_EX_SILENT))
+	if (F_ISSET(sp, S_EX | S_EX_CANON))
 		return (0);
 
 	/*
