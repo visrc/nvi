@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 5.19 1992/11/07 12:49:01 bostic Exp $ (Berkeley) $Date: 1992/11/07 12:49:01 $";
+static char sccsid[] = "$Id: ex_subst.c,v 5.20 1992/11/07 18:45:21 bostic Exp $ (Berkeley) $Date: 1992/11/07 18:45:21 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -15,7 +15,6 @@ static char sccsid[] = "$Id: ex_subst.c,v 5.19 1992/11/07 12:49:01 bostic Exp $ 
 #include <curses.h>
 #include <errno.h>
 #include <limits.h>
-#include <regex.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,11 +29,10 @@ static char sccsid[] = "$Id: ex_subst.c,v 5.19 1992/11/07 12:49:01 bostic Exp $ 
 
 enum which {AGAIN, MUSTSETR, FIRST};
 
+static int	checkmatchsize __P((regex_t *));
 static int	regsub __P((u_char *));
 static int	substitute __P((EXCMDARG *, u_char *, regex_t *, enum which));
 
-static regex_t sre;			/* Saved re. */
-static int sre_set;			/* If saved re set. */
 static regmatch_t *match;		/* Match array. */
 static size_t matchsize;		/* Match array size. */
 static u_char *repl;			/* Replacement string. */
@@ -56,13 +54,6 @@ ex_substitute(cmdp)
 	 * wouldn't work.
 	 */
 	if (*cmdp->string == '/' || *cmdp->string == ';') {
-		/* Set RE flags. */
-		reflags = 0;
-		if (ISSET(O_EXTENDED))
-			reflags |= REG_EXTENDED;
-		if (ISSET(O_IGNORECASE))
-			reflags |= REG_ICASE;
-
 		/* Delimiter is the first character. */
 		delim[0] = cmdp->string[0];
 		delim[1] = '\0';
@@ -84,12 +75,21 @@ ex_substitute(cmdp)
 
 		/* If the substitute string is empty, use the last one. */
 		if (*sub == NULL) {
-			if (!sre_set) {
+			if (!FF_ISSET(curf, F_RE_SET)) {
 				msg("No previous regular expression.");
 				return (1);
 			}
-			return (substitute(cmdp, ep, &sre, AGAIN));
+			if (checkmatchsize(&curf->sre))
+				return (1);
+			return (substitute(cmdp, ep, &curf->sre, AGAIN));
 		}
+
+		/* Set RE flags. */
+		reflags = 0;
+		if (ISSET(O_EXTENDED))
+			reflags |= REG_EXTENDED;
+		if (ISSET(O_IGNORECASE))
+			reflags |= REG_ICASE;
 
 		/* Compile the RE. */
 		re = &lre;
@@ -99,33 +99,25 @@ ex_substitute(cmdp)
 		}
 
 		/* Set saved RE. */
-		sre_set = 1;
-		sre = lre;
+		curf->sre = lre;
+		FF_SET(curf, F_RE_SET);
 
-		/* Build nsub array as necessary. */
-		if (matchsize < re->re_nsub + 1) {
-			matchsize = re->re_nsub + 1;
-			if ((match = realloc(match,
-			    matchsize * sizeof(regmatch_t))) == NULL) {
-				msg("Error: %s", strerror(errno));
-				matchsize = 0;
-				return (1);
-			}
-		}
+		if (checkmatchsize(&curf->sre))
+			return (1);
 		return (substitute(cmdp, ep, re, FIRST));
 	}
-	return (substitute(cmdp, cmdp->string, &sre, MUSTSETR));
+	return (substitute(cmdp, cmdp->string, &curf->sre, MUSTSETR));
 }
 
 int
 ex_subagain(cmdp)
 	EXCMDARG *cmdp;
 {
-	if (!sre_set) {
+	if (FF_ISSET(curf, F_RE_SET)) {
 		msg("No previous regular expression.");
 		return (1);
 	}
-	return (substitute(cmdp, cmdp->string, &sre, AGAIN));
+	return (substitute(cmdp, cmdp->string, &curf->sre, AGAIN));
 }
 
 static u_char *lb;			/* Build buffer. */
@@ -239,7 +231,7 @@ substitute(cmdp, s, re, cmd)
 		msg("Regular expression specified; r flag meaningless.");
 				return (1);
 			}
-			if (!sre_set) {
+			if (!FF_ISSET(curf, F_RE_SET)) {
 				msg("No previous regular expression.");
 				return (1);
 			}
@@ -418,7 +410,7 @@ nomatch:	if (len)
 	 * Note if nothing found.  Else, if nothing displayed to the
 	 * screen, put something up.
 	 */
-	if (curf->rptlines == 0)
+	if (curf->rptlines == 0 && !FF_ISSET(curf, F_IN_GLOBAL))
 		msg("No match found.");
 	else if (!lflag && !nflag && !pflag)
 		autoprint = 1;
@@ -467,6 +459,23 @@ sub:			if (match[no].rm_so != -1 && match[no].rm_eo != -1) {
 			NEEDSP(1, lbp);
  			*lbp++ = ch;
 			++lbclen;
+		}
+	}
+	return (0);
+}
+
+static int
+checkmatchsize(re)
+	regex_t *re;
+{
+	/* Build nsub array as necessary. */
+	if (matchsize < re->re_nsub + 1) {
+		matchsize = re->re_nsub + 1;
+		if ((match =
+		    realloc(match, matchsize * sizeof(regmatch_t))) == NULL) {
+			msg("Error: %s", strerror(errno));
+			matchsize = 0;
+			return (1);
 		}
 	}
 	return (0);
