@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.13 1993/08/27 18:42:40 bostic Exp $ (Berkeley) $Date: 1993/08/27 18:42:40 $";
+static char sccsid[] = "$Id: recover.c,v 8.14 1993/08/31 17:56:06 bostic Exp $ (Berkeley) $Date: 1993/08/31 17:56:06 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -84,16 +84,24 @@ rcv_tmp(sp, ep, fname)
 
 	(void)snprintf(path, sizeof(path),
 	    "%s/vi.XXXXXX", O_STR(sp, O_DIRECTORY));
+
+	/*
+	 * !!!
+	 * We depend on mkstemp(3) setting the permissions correctly.
+	 */
 	if ((fd = mkstemp(path)) == -1) {
-		msgq(sp, M_ERR,
-		    "Error: %s: %s", O_STR(sp, O_DIRECTORY), strerror(errno));
+		msgq(sp, M_ERR, "Error: %s: %s",
+		    O_STR(sp, O_DIRECTORY), strerror(errno));
 		return (1);
 	}
+	(void)close(fd);
+
 	if ((ep->rcv_path = strdup(path)) == NULL) {
-		(void)close(fd);
 		msgq(sp, M_ERR, "Error: %s", strerror(errno));
+		(void)unlink(path);
 		return (1);
 	}
+
 	F_SET(ep, F_RCV_ON);
 	return (0);
 }
