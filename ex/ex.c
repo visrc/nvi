@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.49 1993/11/11 11:03:31 bostic Exp $ (Berkeley) $Date: 1993/11/11 11:03:31 $";
+static char sccsid[] = "$Id: ex.c,v 8.50 1993/11/12 08:50:20 bostic Exp $ (Berkeley) $Date: 1993/11/12 08:50:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -191,9 +191,17 @@ ex_cstring(sp, ep, cmd, len)
 	saved_mode = F_ISSET(sp, S_MODE_EX | S_MODE_VI | S_MAJOR_CHANGE);
 	for (p = t = cmd;;) {
 		if (p == cmd) {
-			/* Skip leading whitespace. */
-			for (; len > 0 && (isblank(t[0]) || t[0] == '|' ||
-			    sp->special[t[0]] == K_VLNEXT); ++t, --len);
+			/* Skip leading whitespace, literals, newlines. */
+			for (; len > 0; ++t, --len) {
+				ch = *t;
+				if (isblank(ch) || ch == '|')
+					continue;
+				if (sp->special[ch] == K_CR ||
+				    sp->special[ch] == K_NL || 
+				    sp->special[ch] == K_VLNEXT)
+					continue;
+				break;
+			}
 
 			/*
 			 * Skip leading address.  The command starts with
