@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_version.c,v 10.26 1996/06/08 15:40:36 bostic Exp $ (Berkeley) $Date: 1996/06/08 15:40:36 $";
+static const char sccsid[] = "$Id: ex_version.c,v 10.27 1996/06/09 10:15:23 bostic Exp $ (Berkeley) $Date: 1996/06/09 10:15:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,9 +35,8 @@ recognized for the strength of BSDI-powered systems in demanding \
 business and technical computing environments, the worldwide customer \
 acceptance of BSD-based technology, the know-how of BSDI's leading \
 computer scientists, and BSDI's focus on delivering and supporting \
-industrial-strength software for computing platforms."
-#define	BSDI_CONTACT \
-"\nBSDI may be contacted at info@bsdi.com or 1-800-800-4273."
+industrial-strength software for computing platforms.  BSDI may be \
+contacted at info@bsdi.com or 1-800-800-4273."
 
 /*
  * ex_version -- :version
@@ -52,6 +51,5 @@ ex_version(sp, cmdp)
 {
 	msgq(sp, M_INFO, VI_VERSION);
 	msgq(sp, M_INFO, BSDI_ADVERT);
-	msgq(sp, M_INFO, BSDI_ADCONTACT);
 	return (0);
 }
