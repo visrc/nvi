@@ -16,7 +16,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 10.25 1996/02/22 11:49:05 bostic Exp $ (Berkeley) $Date: 1996/02/22 11:49:05 $";
+static char sccsid[] = "$Id: main.c,v 10.26 1996/02/28 19:59:28 bostic Exp $ (Berkeley) $Date: 1996/02/28 19:59:28 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -72,7 +72,7 @@ editor(gp, argc, argv)
 		gp->scr_msg = vs_msg;
 
 	/* Initialize the interpreter, if any. */
-#ifdef TCL_INTERP
+#ifdef HAVE_TCL_INTERP
 	if (tcl_init(gp))
 		return (1);
 #endif
