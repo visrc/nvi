@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: key.c,v 10.38 1996/12/05 22:01:15 bostic Exp $ (Berkeley) $Date: 1996/12/05 22:01:15 $";
+static const char sccsid[] = "$Id: key.c,v 10.39 1996/12/11 13:02:32 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:02:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -391,7 +391,7 @@ copy:	gp->i_cnt += nitems;
 			evp->e_event = E_CHARACTER;
 			evp->e_c = *p_s++;
 			evp->e_value = KEY_VAL(sp, evp->e_c);
-			F_INIT(&evp->e_ch, flags);
+			FL_INIT(evp->e_flags, flags);
 		}
 	}
 	return (0);
@@ -631,7 +631,7 @@ newmap:	evp = &gp->i_event[gp->i_next];
 	 *
 	 * return it forthwith.
 	 */
-	if (istimeout || F_ISSET(&evp->e_ch, CH_NOMAP) ||
+	if (istimeout || FL_ISSET(evp->e_flags, CH_NOMAP) ||
 	    !LF_ISSET(EC_MAPCOMMAND | EC_MAPINPUT) ||
 	    evp->e_c < MAX_BIT_SEQ && !bit_test(gp->seqb, evp->e_c))
 		goto nomap;
@@ -683,7 +683,7 @@ nomap:		if (!isdigit(evp->e_c) && LF_ISSET(EC_MAPNODIGIT))
 not_digit:	argp->e_c = CH_NOT_DIGIT;
 		argp->e_value = K_NOTUSED;
 		argp->e_event = E_CHARACTER;
-		F_INIT(&argp->e_ch, 0);
+		FL_INIT(argp->e_flags, 0);
 		return (0);
 	}
 
@@ -824,7 +824,7 @@ v_event_flush(sp, flags)
 	int rval;
 
 	for (rval = 0, gp = sp->gp; gp->i_cnt != 0 &&
-	    F_ISSET(&gp->i_event[gp->i_next].e_ch, flags); rval = 1)
+	    FL_ISSET(gp->i_event[gp->i_next].e_flags, flags); rval = 1)
 		QREM(1);
 	return (rval);
 }

@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: key.h,v 10.20 1996/12/05 12:29:19 bostic Exp $ (Berkeley) $Date: 1996/12/05 12:29:19 $
+ *	$Id: key.h,v 10.21 1996/12/11 13:02:38 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:02:38 $
  */
 
 /*
@@ -91,12 +91,10 @@ struct _event {
 #define	CH_MAPPED	0x02		/* Character is from a map. */
 #define	CH_NOMAP	0x04		/* Do not map the character. */
 #define	CH_QUOTED	0x08		/* Character is already quoted. */
-			u_int8_t flags;
 		} _e_ch;
 #define	e_ch	_u_event._e_ch		/* !!! The structure, not the char. */
 #define	e_c	_u_event._e_ch.c
 #define	e_value	_u_event._e_ch.value
-#define	e_flags	_u_event._e_ch.flags
 
 		struct {		/* Screen position, size. */
 			size_t lno1;	/* Line number. */
@@ -118,6 +116,8 @@ struct _event {
 #define	e_csp	_u_event._e_str.csp
 #define	e_len	_u_event._e_str.len
 	} _u_event;
+
+	u_int32_t e_flags;		/* Flags of various kinds... */
 };
 
 typedef struct _keylist {
@@ -130,7 +130,7 @@ extern KEYLIST keylist[];
 #define	KEYS_WAITING(sp)	((sp)->gp->i_cnt != 0)
 #define	MAPPED_KEYS_WAITING(sp)						\
 	(KEYS_WAITING(sp) &&						\
-	    F_ISSET(&sp->gp->i_event[sp->gp->i_next].e_ch, CH_MAPPED))
+	    FL_ISSET((sp)->gp->i_event[(sp)->gp->i_next].e_flags, CH_MAPPED))
 
 /*
  * Ex/vi commands are generally separated by whitespace characters.  We
