@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.31 1992/11/11 18:27:04 bostic Exp $ (Berkeley) $Date: 1992/11/11 18:27:04 $";
+static char sccsid[] = "$Id: vi.c,v 5.32 1992/12/04 19:52:56 bostic Exp $ (Berkeley) $Date: 1992/12/04 19:52:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -588,15 +588,7 @@ noword:		bell();
 	 */
 	len = (end - beg) + 2;				/* XXX */
 	kp->klen = (end - beg) + 1;
-	if (kp->kbuflen <= len) {
-		kp->kbuflen += len + 50;
-		if ((kp->keyword =
-		    realloc(kp->keyword, kp->kbuflen)) == NULL) {
-			bell();
-			msg("Keyword too large: %s", strerror(errno));
-			return (1);
-		}
-	}
+	BINC(kp->keyword, kp->kbuflen, len);
 	bcopy(p + beg, kp->keyword, kp->klen);
 	kp->keyword[kp->klen] = '\0';			/* XXX */
 	return (0);
