@@ -4,13 +4,15 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 5.18 1992/04/22 08:11:13 bostic Exp $ (Berkeley) $Date: 1992/04/22 08:11:13 $
+ *	$Id: common.h,v 5.19 1992/04/28 13:47:48 bostic Exp $ (Berkeley) $Date: 1992/04/28 13:47:48 $
  */
 
+#ifndef TRUE
 #define TRUE	1
+#endif
+#ifndef FALSE
 #define FALSE	0
-
-#define	ESCAPE	'\033'
+#endif
 
 #define	TAB	8				/* XXX */
 #define	BLKSIZE	2048
@@ -86,7 +88,6 @@ extern long	prevline;	/* line number from preceding file */
 void blkflush();
 void blkdirty();
 MARK paste();
-char *parseptrn();
 char *fetchline();
 /*------------------------------------------------------------------------*/
 /* misc housekeeping variables & functions				  */
@@ -125,13 +126,6 @@ extern char	digraph();
  * line that was most recently pfetch'ed.
  */
 #define buildmark(text)	(MARK)(BLKSIZE * pline + (int)((text) - ptext))
-
-/* Describe the current mode. */
-#define MODE_EX		1	/* executing ex commands */
-#define	MODE_VI		2	/* executing vi commands */
-#define	MODE_COLON	3	/* executing an ex command from vi mode */
-#define	MODE_QUIT	4
-extern int	mode;
 
 /* Describe the current state. */
 #define WHEN_VICMD	0x0001	/* getkey: reading a VI command */
