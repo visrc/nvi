@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 5.4 1992/10/26 17:44:39 bostic Exp $ (Berkeley) $Date: 1992/10/26 17:44:39 $";
+static char sccsid[] = "$Id: db.c,v 5.5 1992/10/29 14:37:07 bostic Exp $ (Berkeley) $Date: 1992/10/29 14:37:07 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -14,7 +14,7 @@ static char sccsid[] = "$Id: db.c,v 5.4 1992/10/26 17:44:39 bostic Exp $ (Berkel
 #include <db.h>
 #include <errno.h>
 #include <limits.h>
-#include <stddef.h>
+#include <stdio.h>
 
 #include "exf.h"
 #include "screen.h"
@@ -116,15 +116,14 @@ file_dline(ep, lno)
 		return (1);
 	}
 
-	/* Update screen. */
-	scr_update(ep, lno, NULL, 0, LINE_DELETE);
-
-	/* Flush the cache. */
+	/* Flush the cache, update line count, before screen update. */
 	if (lno <= ep->c_lno)
 		ep->c_lno = OOBLNO;
+	if (ep->c_nlines != OOBLNO)
+		--ep->c_nlines;
 
-	/* Update line count. */
-	--ep->c_nlines;
+	/* Update screen. */
+	scr_update(ep, lno, NULL, 0, LINE_DELETE);
 
 	/* File now dirty. */
 	ep->flags |= F_MODIFIED;
@@ -160,15 +159,14 @@ file_aline(ep, lno, p, len)
 		return (1);
 	}
 
-	/* Update screen. */
-	scr_update(ep, lno, p, len, LINE_APPEND);
-
-	/* Flush the cache. */
+	/* Flush the cache, update line count, before screen update. */
 	if (lno >= ep->c_lno)
 		ep->c_lno = OOBLNO;
+	if (ep->c_nlines != OOBLNO)
+		++ep->c_nlines;
 
-	/* Update line count. */
-	++ep->c_nlines;
+	/* Update screen. */
+	scr_update(ep, lno, p, len, LINE_APPEND);
 
 	/* File now dirty. */
 	ep->flags |= F_MODIFIED;
@@ -203,15 +201,14 @@ file_iline(ep, lno, p, len)
 		return (1);
 	}
 
-	/* Update screen. */
-	scr_update(ep, lno, p, len, LINE_INSERT);
-
-	/* Flush the cache. */
+	/* Flush the cache, update line count, before screen update. */
 	if (lno >= ep->c_lno)
 		ep->c_lno = OOBLNO;
+	if (ep->c_nlines != OOBLNO)
+		++ep->c_nlines;
 
-	/* Update line count. */
-	++ep->c_nlines;
+	/* Update screen. */
+	scr_update(ep, lno, p, len, LINE_INSERT);
 
 	/* File now dirty. */
 	ep->flags |= F_MODIFIED;
@@ -246,13 +243,13 @@ file_sline(ep, lno, p, len)
 		return (1);
 	}
 
-	/* Update screen. */
-	scr_update(ep, lno, p, len, LINE_RESET);
-	
-	/* Flush the cache. */
+	/* Flush the cache, before screen update. */
 	if (lno == ep->c_lno)
 		ep->c_lno = OOBLNO;
 
+	/* Update screen. */
+	scr_update(ep, lno, p, len, LINE_RESET);
+	
 	/* File now dirty. */
 	ep->flags |= F_MODIFIED;
 	return (0);
@@ -297,10 +294,8 @@ file_ibresolv(ep, ibp)
 		}
 	}
 
-	/* Flush the cache. */
+	/* Flush the cache, update line count. */
 	ep->c_lno = OOBLNO;
-
-	/* Update line count. */
 	ep->c_nlines = OOBLNO;
 
 	/* File now dirty. */
