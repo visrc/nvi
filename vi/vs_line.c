@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_line.c,v 10.27 2000/08/27 09:49:42 skimo Exp $ (Berkeley) $Date: 2000/08/27 09:49:42 $";
+static const char sccsid[] = "$Id: vs_line.c,v 10.28 2000/09/01 11:31:15 skimo Exp $ (Berkeley) $Date: 2000/09/01 11:31:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -420,7 +420,7 @@ display:
 		else {
 			if (cbp + chlen >= ecbp)
 				FLUSH;
-			if (CHAR_WIDTH(sp, ch) > 1)
+			if (INTISWIDE(ch))
 				*cbp++ = ch;
 			else
 				for (kp = KEY_NAME(sp, ch) + offset_in_char; 

@@ -683,7 +683,8 @@ draw_lines(GtkViScreen *vi, gint ymin, gint xmin, gint ymax, gint xmax)
 			     y < ymax; ++y, line += vi->cols) {
 	for (x = 0, xpos = 0; xpos <= xmin; ++x)
 	    xpos += CHAR_WIDTH(NULL, *(line+x));
-	xpos -= CHAR_WIDTH(NULL, *(line+--x));
+	--x;
+	xpos -= CHAR_WIDTH(NULL, *(line+x));
 	for (; xpos < xmax; x+=len, xpos+= blen) {
 	    gchar inverse;
 	    inverse = Inverse(vi,y,x); 

@@ -214,6 +214,7 @@ AC_ARG_ENABLE(widechar,
 	[vi_cv_widechar="yes"], [vi_cv_widechar="no"])
 if test "$vi_cv_widechar" = "yes"; then
 	AC_DEFINE(USE_WIDECHAR)
+	LIBOBJS="wcwidth.o $LIBOBJS"
 fi
 AC_MSG_RESULT($vi_cv_widechar)
 
