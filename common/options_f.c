@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: options_f.c,v 10.26 1996/12/16 09:39:23 bostic Exp $ (Berkeley) $Date: 1996/12/16 09:39:23 $";
+static const char sccsid[] = "$Id: options_f.c,v 10.27 2000/07/06 18:47:57 skimo Exp $ (Berkeley) $Date: 2000/07/06 18:47:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -190,6 +190,10 @@ f_print(sp, op, str, valp)
 	char *str;
 	u_long *valp;
 {
+	/* Preset the value, needed for reinitialization of lookup table. */
+	if (o_set(sp, op-sp->opts, OS_STRDUP, str, 0))
+		return(1);
+
 	/* Reinitialize the key fast lookup table. */
 	v_key_ilookup(sp);
 
