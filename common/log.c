@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: log.c,v 10.25 2001/11/01 10:28:25 skimo Exp $ (Berkeley) $Date: 2001/11/01 10:28:25 $";
+static const char sccsid[] = "$Id: log.c,v 10.26 2002/03/02 23:12:13 skimo Exp $ (Berkeley) $Date: 2002/03/02 23:12:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,9 +33,10 @@ static const char sccsid[] = "$Id: log.c,v 10.25 2001/11/01 10:28:25 skimo Exp $
  *
  *	LOG_CURSOR_INIT		MARK
  *	LOG_CURSOR_END		MARK
- *	LOG_LINE_APPEND 	db_recno_t		char *
- *	LOG_LINE_DELETE		db_recno_t		char *
- *	LOG_LINE_INSERT		db_recno_t		char *
+ *	LOG_LINE_APPEND_F 	db_recno_t		char *
+ *	LOG_LINE_APPEND_B 	db_recno_t		char *
+ *	LOG_LINE_DELETE_F	db_recno_t		char *
+ *	LOG_LINE_DELETE_B	db_recno_t		char *
  *	LOG_LINE_RESET_F	db_recno_t		char *
  *	LOG_LINE_RESET_B	db_recno_t		char *
  *	LOG_MARK		LMARK
@@ -266,6 +267,13 @@ log_line(SCR *sp, db_recno_t lno, u_int action)
 		return 1;
 	}*/
 
+	switch (action) {
+	/* newly added for DB4 logging */
+	case LOG_LINE_APPEND_B:
+	case LOG_LINE_DELETE_F:
+		return 0;
+	}
+
 	/*
 	 * Put out the changes.  If it's a LOG_LINE_RESET_B call, it's a
 	 * special case, avoid the caches.  Also, if it fails and it's
@@ -304,16 +312,20 @@ log_line(SCR *sp, db_recno_t lno, u_int action)
 
 #if defined(DEBUG) && 0
 	switch (action) {
-	case LOG_LINE_APPEND:
-		vtrace(sp, "%u: log_line: append: %lu {%u}\n",
+	case LOG_LINE_APPEND_F:
+		vtrace(sp, "%u: log_line: append_f: %lu {%u}\n",
 		    ep->l_cur, lno, len);
 		break;
-	case LOG_LINE_DELETE:
-		vtrace(sp, "%lu: log_line: delete: %lu {%u}\n",
+	case LOG_LINE_APPEND_B:
+		vtrace(sp, "%u: log_line: append_b: %lu {%u}\n",
 		    ep->l_cur, lno, len);
 		break;
-	case LOG_LINE_INSERT:
-		vtrace(sp, "%lu: log_line: insert: %lu {%u}\n",
+	case LOG_LINE_DELETE_F:
+		vtrace(sp, "%lu: log_line: delete_f: %lu {%u}\n",
+		    ep->l_cur, lno, len);
+		break;
+	case LOG_LINE_DELETE_B:
+		vtrace(sp, "%lu: log_line: delete_b: %lu {%u}\n",
 		    ep->l_cur, lno, len);
 		break;
 	case LOG_LINE_RESET_F:
@@ -474,15 +486,14 @@ log_backward(SCR *sp, MARK *rp)
 			break;
 		case LOG_CURSOR_END:
 			break;
-		case LOG_LINE_APPEND:
-		case LOG_LINE_INSERT:
+		case LOG_LINE_APPEND_F:
 			didop = 1;
 			memmove(&lno, p + sizeof(u_char), sizeof(db_recno_t));
 			if (db_delete(sp, lno))
 				goto err;
 			++sp->rptlines[L_DELETED];
 			break;
-		case LOG_LINE_DELETE:
+		case LOG_LINE_DELETE_B:
 			didop = 1;
 			memmove(&lno, p + sizeof(u_char), sizeof(db_recno_t));
 			if (db_insert(sp, lno, 
@@ -588,9 +599,8 @@ log_setline(SCR *sp)
 				return (0);
 			}
 			break;
-		case LOG_LINE_APPEND:
-		case LOG_LINE_INSERT:
-		case LOG_LINE_DELETE:
+		case LOG_LINE_APPEND_F:
+		case LOG_LINE_DELETE_B:
 		case LOG_LINE_RESET_F:
 			break;
 		case LOG_LINE_RESET_B:
@@ -676,21 +686,7 @@ log_forward(SCR *sp, MARK *rp)
 			break;
 		case LOG_CURSOR_INIT:
 			break;
-		/* XXXX LOG_LINE_APPEND and LOG_LINE_INSERT split
-		   for now, because db_insert won't work for adding
-		   last line
-		 */
-		case LOG_LINE_APPEND:
-			didop = 1;
-			memmove(&lno, p + sizeof(u_char), sizeof(db_recno_t));
-			--lno;
-			if (db_append(sp, 1, lno, 
-			    (CHAR_T *)(p + CHAR_T_OFFSET),
-			    (size - CHAR_T_OFFSET) / sizeof(CHAR_T)))
-				goto err;
-			++sp->rptlines[L_ADDED];
-			break;
-		case LOG_LINE_INSERT:
+		case LOG_LINE_APPEND_F:
 			didop = 1;
 			memmove(&lno, p + sizeof(u_char), sizeof(db_recno_t));
 			if (db_insert(sp, lno, 
@@ -699,7 +695,7 @@ log_forward(SCR *sp, MARK *rp)
 				goto err;
 			++sp->rptlines[L_ADDED];
 			break;
-		case LOG_LINE_DELETE:
+		case LOG_LINE_DELETE_B:
 			didop = 1;
 			memmove(&lno, p + sizeof(u_char), sizeof(db_recno_t));
 			if (db_delete(sp, lno))
@@ -775,17 +771,21 @@ log_trace(sp, msg, rno, p)
 		memmove(&m, p + sizeof(u_char), sizeof(MARK));
 		vtrace(sp, "%lu: %s:   C_END: %u/%u\n", rno, msg, m.lno, m.cno);
 		break;
-	case LOG_LINE_APPEND:
+	case LOG_LINE_APPEND_F:
 		memmove(&lno, p + sizeof(u_char), sizeof(db_recno_t));
-		vtrace(sp, "%lu: %s:  APPEND: %lu\n", rno, msg, lno);
+		vtrace(sp, "%lu: %s:  APPEND_F: %lu\n", rno, msg, lno);
 		break;
-	case LOG_LINE_INSERT:
+	case LOG_LINE_APPEND_B:
 		memmove(&lno, p + sizeof(u_char), sizeof(db_recno_t));
-		vtrace(sp, "%lu: %s:  INSERT: %lu\n", rno, msg, lno);
+		vtrace(sp, "%lu: %s:  APPEND_B: %lu\n", rno, msg, lno);
 		break;
-	case LOG_LINE_DELETE:
+	case LOG_LINE_DELETE_F:
 		memmove(&lno, p + sizeof(u_char), sizeof(db_recno_t));
-		vtrace(sp, "%lu: %s:  DELETE: %lu\n", rno, msg, lno);
+		vtrace(sp, "%lu: %s:  DELETE_F: %lu\n", rno, msg, lno);
+		break;
+	case LOG_LINE_DELETE_B:
+		memmove(&lno, p + sizeof(u_char), sizeof(db_recno_t));
+		vtrace(sp, "%lu: %s:  DELETE_B: %lu\n", rno, msg, lno);
 		break;
 	case LOG_LINE_RESET_F:
 		memmove(&lno, p + sizeof(u_char), sizeof(db_recno_t));

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: db.c,v 10.43 2002/02/09 22:10:06 skimo Exp $ (Berkeley) $Date: 2002/02/09 22:10:06 $";
+static const char sccsid[] = "$Id: db.c,v 10.44 2002/03/02 23:12:14 skimo Exp $ (Berkeley) $Date: 2002/03/02 23:12:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,7 +26,6 @@ static const char sccsid[] = "$Id: db.c,v 10.43 2002/02/09 22:10:06 skimo Exp $ 
 #include "common.h"
 #include "../vi/vi.h"
 
-static int scr_update __P((SCR *, db_recno_t, lnop_t, int));
 static int append __P((SCR*, db_recno_t, CHAR_T*, size_t, lnop_t, int));
 
 /*
@@ -226,7 +225,7 @@ db_delete(SCR *sp, db_recno_t lno)
 {
 	DBT key;
 	EXF *ep;
-	SCR* scrp;
+	int rval;
 
 #if defined(DEBUG) && 0
 	vtrace(sp, "delete line %lu\n", (u_long)lno);
@@ -241,14 +240,8 @@ db_delete(SCR *sp, db_recno_t lno)
 		return 1;
 	}
 		
-	/* Update marks, @ and global commands. */
-	if (mark_insdel(sp, LINE_DELETE, lno))
-		return (1);
-	if (ex_g_insdel(sp, LINE_DELETE, lno))
-		return (1);
-
-	/* Log change. */
-	log_line(sp, lno, LOG_LINE_DELETE);
+	/* Log before change. */
+	log_line(sp, lno, LOG_LINE_DELETE_B);
 
 	/* Update file. */
 	memset(&key, 0, sizeof(key));
@@ -260,21 +253,19 @@ db_delete(SCR *sp, db_recno_t lno)
 		return (1);
 	}
 
-	/* Flush the cache, update line count, before screen update. */
-	for (scrp = ep->scrq.cqh_first; scrp != (void *)&ep->scrq; 
-	    scrp = scrp->eq.cqe_next)
-		if (lno <= scrp->c_lno)
-			scrp->c_lno = OOBLNO;
-	if (ep->c_nlines != OOBLNO)
-		--ep->c_nlines;
-
 	/* File now modified. */
 	if (F_ISSET(ep, F_FIRSTMODIFY))
 		(void)rcv_init(sp);
 	F_SET(ep, F_MODIFIED);
 
+	/* Update cache, marks, @ and global commands. */
+	rval = line_insdel(sp, LINE_DELETE, lno);
+
+	/* Log after change. */
+	log_line(sp, lno, LOG_LINE_DELETE_F);
+
 	/* Update screen. */
-	return (scr_update(sp, lno, LINE_DELETE, 1));
+	return (scr_update(sp, lno, LINE_DELETE, 1) || rval);
 }
 
 /* maybe this could be simpler
@@ -294,7 +285,6 @@ append(SCR *sp, db_recno_t lno, CHAR_T *p, size_t len, lnop_t op, int update)
 	EXF *ep;
 	char *fp;
 	size_t flen;
-	SCR* scrp;
 	int rval;
 
 	/* Check for no underlying file. */
@@ -306,6 +296,9 @@ append(SCR *sp, db_recno_t lno, CHAR_T *p, size_t len, lnop_t op, int update)
 		ex_emsg(sp, NULL, EXM_LOCKED);
 		return 1;
 	}
+
+	/* Log before change. */
+	log_line(sp, lno + 1, LOG_LINE_APPEND_B);
 
 	/* Update file. */
 	memset(&key, 0, sizeof(key));
@@ -357,32 +350,16 @@ err2:
 
 	(void)dbcp_put->c_close(dbcp_put);
 
-	/* Flush the cache, update line count, before screen update. */
-	/* The flushing is probably not needed, since it was incorrect
-	 * for db_insert.  It might be better to adjust it, like
-	 * marks, @ and global
-	 */
-	for (scrp = ep->scrq.cqh_first; scrp != (void *)&ep->scrq; 
-	    scrp = scrp->eq.cqe_next)
-		if (lno < scrp->c_lno)
-			scrp->c_lno = OOBLNO;
-	if (ep->c_nlines != OOBLNO)
-		++ep->c_nlines;
-
 	/* File now dirty. */
 	if (F_ISSET(ep, F_FIRSTMODIFY))
 		(void)rcv_init(sp);
 	F_SET(ep, F_MODIFIED);
 
-	/* Log change. */
-	log_line(sp, lno + 1, LOG_LINE_APPEND);
+	/* Update cache, marks, @ and global commands. */
+	rval = line_insdel(sp, LINE_INSERT, lno + 1);
 
-	/* Update marks, @ and global commands. */
-	rval = 0;
-	if (mark_insdel(sp, LINE_INSERT, lno + 1))
-		rval = 1;
-	if (ex_g_insdel(sp, LINE_INSERT, lno + 1))
-		rval = 1;
+	/* Log after change. */
+	log_line(sp, lno + 1, LOG_LINE_APPEND_F);
 
 	/*
 	 * Update screen.
@@ -395,7 +372,7 @@ err2:
 	 * is called to copy the new lines from the cut buffer into the file,
 	 * it has to know not to update the screen again.
 	 */
-	return (scr_update(sp, lno, LINE_APPEND, update) || rval);
+	return (scr_update(sp, lno + 1, LINE_INSERT, update) || rval);
 }
 
 /*
@@ -444,7 +421,7 @@ db_set(SCR *sp, db_recno_t lno, CHAR_T *p, size_t len)
 	EXF *ep;
 	char *fp;
 	size_t flen;
-	SCR* scrp;
+	int rval;
 
 #if defined(DEBUG) && 0
 	vtrace(sp, "replace line %lu: len %lu {%.*s}\n",
@@ -477,22 +454,19 @@ db_set(SCR *sp, db_recno_t lno, CHAR_T *p, size_t len)
 		return (1);
 	}
 
-	/* Flush the cache, before logging or screen update. */
-	for (scrp = ep->scrq.cqh_first; scrp != (void *)&ep->scrq; 
-	    scrp = scrp->eq.cqe_next)
-		if (lno == scrp->c_lno)
-			scrp->c_lno = OOBLNO;
-
 	/* File now dirty. */
 	if (F_ISSET(ep, F_FIRSTMODIFY))
 		(void)rcv_init(sp);
 	F_SET(ep, F_MODIFIED);
 
+	/* Update cache, marks, @ and global commands. */
+	rval = line_insdel(sp, LINE_RESET, lno);
+
 	/* Log after change. */
 	log_line(sp, lno, LOG_LINE_RESET_F);
 
 	/* Update screen. */
-	return (scr_update(sp, lno, LINE_RESET, 1));
+	return (scr_update(sp, lno, LINE_RESET, 1) || rval);
 }
 
 /*
@@ -623,8 +597,11 @@ db_err(SCR *sp, db_recno_t lno)
  * scr_update --
  *	Update all of the screens that are backed by the file that
  *	just changed.
+ *
+ * PUBLIC: int scr_update __P((SCR *sp, db_recno_t lno, 
+ * PUBLIC: 			lnop_t op, int current));
  */
-static int
+int
 scr_update(SCR *sp, db_recno_t lno, lnop_t op, int current)
 {
 	EXF *ep;
@@ -645,4 +622,55 @@ scr_update(SCR *sp, db_recno_t lno, lnop_t op, int current)
 				if (vs_change(tsp, lno, op))
 					return (1);
 	return (current ? vs_change(sp, lno, op) : 0);
+}
+
+/*
+ * PUBLIC: int line_insdel __P((SCR *sp, lnop_t op, db_recno_t lno));
+ */
+int
+line_insdel(SCR *sp, lnop_t op, db_recno_t lno)
+{
+	int rval;
+	SCR* scrp;
+	EXF *ep;
+
+	ep = sp->ep;
+
+	/* Flush the cache, update line count, before screen update. */
+	/* The flushing is probably not needed, since it was incorrect
+	 * for db_insert.  It might be better to adjust it, like
+	 * marks, @ and global
+	 */
+	for (scrp = ep->scrq.cqh_first; scrp != (void *)&ep->scrq; 
+	    scrp = scrp->eq.cqe_next)
+		switch (op) {
+		case LINE_INSERT:
+		case LINE_DELETE:
+			if (lno <= scrp->c_lno)
+				scrp->c_lno = OOBLNO;
+			break;
+		case LINE_RESET:
+			if (lno == scrp->c_lno)
+				scrp->c_lno = OOBLNO;
+			break;
+		}
+
+	if (ep->c_nlines != OOBLNO)
+		switch (op) {
+		case LINE_INSERT:
+			++ep->c_nlines;
+			break;
+		case LINE_DELETE:
+			--ep->c_nlines;
+			break;
+		}
+
+	/* Update marks, @ and global commands. */
+	rval = 0;
+	if (mark_insdel(sp, op, lno))
+		rval = 1;
+	if (ex_g_insdel(sp, op, lno))
+		rval = 1;
+
+	return rval;
 }

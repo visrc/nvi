@@ -6,15 +6,21 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: log.h,v 10.2 1996/03/06 19:50:31 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:50:31 $
+ *	$Id: log.h,v 10.3 2002/03/02 23:12:13 skimo Exp $ (Berkeley) $Date: 2002/03/02 23:12:13 $
  */
 
 #define	LOG_NOTYPE		0
-#define	LOG_CURSOR_INIT		1
-#define	LOG_CURSOR_END		2
-#define	LOG_LINE_APPEND		3
-#define	LOG_LINE_DELETE		4
-#define	LOG_LINE_INSERT		5
-#define	LOG_LINE_RESET_F	6
-#define	LOG_LINE_RESET_B	7
-#define	LOG_MARK		8
+#define	LOG_CURSOR_INIT		2
+#define	LOG_CURSOR_END		3
+#define	LOG_LINE_APPEND_B	4
+#define	LOG_LINE_APPEND_F	5
+#define	LOG_LINE_DELETE_B	6
+#define	LOG_LINE_DELETE_F	7
+#define	LOG_LINE_RESET_B	8
+#define	LOG_LINE_RESET_F	9
+#define	LOG_MARK		10	
+
+struct _log_state {
+	int	didop;
+	MARK	pos;
+};
