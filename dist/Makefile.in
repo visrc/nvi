@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.26 1996/03/03 16:39:31 bostic Exp $ (Berkeley) $Date: 1996/03/03 16:39:31 $
+#	$Id: Makefile.in,v 8.27 1996/03/06 20:56:48 bostic Exp $ (Berkeley) $Date: 1996/03/06 20:56:48 $
 
 CC=	@CC@
 CFLAGS=	-c @CFLAGS@ -I. -I../include @CPPFLAGS@
@@ -80,7 +80,7 @@ install:
 tags:
 	-(cd ../common && rm -f tags && \
 	    ctags ../cl/*.[ch] ../common/*.[ch] ../ex/*.[ch] \
-	    ../tclapi/*.[ch] ../tk/*.[ch] ../vi/*.[ch])
+	    ../perl_api/*.[ch] ../tcl_api/*.[ch] ../tk/*.[ch] ../vi/*.[ch])
 
 # Header sources.
 cl_extern.h:
