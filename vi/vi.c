@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vi.c,v 10.62 1996/12/05 14:28:27 bostic Exp $ (Berkeley) $Date: 1996/12/05 14:28:27 $";
+static const char sccsid[] = "$Id: vi.c,v 10.63 1996/12/11 13:06:25 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:06:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -414,7 +414,7 @@ ret:		rval = 1;
 		return (gcret);						\
 	if (vp->ev.e_value == K_ESCAPE)					\
 		goto esc;						\
-	if (F_ISSET(&vp->ev.e_ch, CH_MAPPED))				\
+	if (FL_ISSET(vp->ev.e_flags, CH_MAPPED))			\
 		*mappedp = 1;						\
 	key = vp->ev.e_c;						\
 }
@@ -495,7 +495,7 @@ v_cmd(sp, dp, vp, ismotion, comcountp, mappedp)
 	 * Commands that are mapped are treated differently (e.g., they
 	 * don't set the dot command.  Pass that information back.
 	 */
-	if (F_ISSET(&vp->ev.e_ch, CH_MAPPED))
+	if (FL_ISSET(vp->ev.e_flags, CH_MAPPED))
 		*mappedp = 1;
 	key = vp->ev.e_c;
 
@@ -1261,13 +1261,13 @@ v_comlog(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	TRACE(sp, "vcmd: %c", vp->key);
+	trace(sp, "vcmd: %c", vp->key);
 	if (F_ISSET(vp, VC_BUFFER))
-		TRACE(sp, " buffer: %c", vp->buffer);
+		trace(sp, " buffer: %c", vp->buffer);
 	if (F_ISSET(vp, VC_C1SET))
-		TRACE(sp, " c1: %lu", vp->count);
+		trace(sp, " c1: %lu", vp->count);
 	if (F_ISSET(vp, VC_C2SET))
-		TRACE(sp, " c2: %lu", vp->count2);
-	TRACE(sp, " flags: 0x%x\n", vp->flags);
+		trace(sp, " c2: %lu", vp->count2);
+	trace(sp, " flags: 0x%x\n", vp->flags);
 }
 #endif
