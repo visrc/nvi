@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.13 1993/08/26 17:51:57 bostic Exp $ (Berkeley) $Date: 1993/08/26 17:51:57 $
+ *	$Id: screen.h,v 8.14 1993/08/29 14:23:30 bostic Exp $ (Berkeley) $Date: 1993/08/29 14:23:30 $
  */
 
 /*
@@ -29,35 +29,7 @@ enum operation { LINE_APPEND, LINE_DELETE, LINE_INSERT, LINE_RESET };
 #define	CONTMSG		"Enter return to continue: "
 #define	CONTMSG_I	"Enter return to continue [q to quit]: "
 
-/* Structure for building argc/argv vector of ex arguments. */
-typedef struct _args {
-	char	*bp;			/* Buffer. */
-	size_t	 len;			/* Buffer length. */
-
-#define	A_ALLOCATED	0x01		/* If allocated space. */
-	u_char	 flags;
-} ARGS;
-
-/*
- * Structure for mapping lines to the screen.  An SMAP is an array of
- * structures, one per screen line, holding a physical line and screen
- * offset into the line.  For example, the pair 2:1 would be the first
- * screen of line 2, and 2:2 would be the second.  If doing left-right
- * scrolling, all of the offsets will be the same, i.e. for the second
- * screen, 1:2, 2:2, 3:2, etc.  If doing the standard, but unbelievably
- * stupid, vi scrolling, it will be staggered, i.e. 1:1, 1:2, 1:3, 2:1,
- * 3:1, etc.
- *
- * The SMAP is always as large as the physical screen, so that when split
- * screens close, there is room to add in the newly available lines.
- */
-					/* Map positions. */
 enum position { P_BOTTOM, P_FILL, P_MIDDLE, P_TOP };
-
-typedef struct _smap {
-	recno_t lno;			/* 1-N: Physical file line number. */
-	size_t off;			/* 1-N: Screen offset in the line. */
-} SMAP;
 
 /*
  * Structure for holding file references.  This structure contains the
@@ -116,9 +88,7 @@ typedef struct _scr {
 	FREF	*n_frp;			/* Next FREF. */
 	struct _exf	*n_ep;		/* Next EXF. */
 
-					/* Physical screen information. */
-	struct _smap	*h_smap;	/* First entry in screen/row map. */
-	struct _smap	*t_smap;	/*  Last entry in screen/row map. */
+	void	*svi_private;		/* Vi screen information. */
 
 	recno_t	 lno;			/* 1-N:     cursor file line. */
 	recno_t	 olno;			/* 1-N: old cursor file line. */
@@ -155,7 +125,7 @@ typedef struct _scr {
 	u_long	ccnt;			/* Command count. */
 	u_long	q_ccnt;			/* Quit command count. */
 
-	struct _args	*args;		/* Ex/vi: argument buffers. */
+	void	*args;			/* Ex argument buffers. */
 	char   **argv;			/* Arguments. */
 	char	*ex_argv[2];		/* Special purpose 2 slots. */
 	int	 argscnt;		/* Argument count. */

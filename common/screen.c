@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.6 1993/08/25 16:41:17 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:41:17 $";
+static char sccsid[] = "$Id: screen.c,v 8.7 1993/08/29 14:23:51 bostic Exp $ (Berkeley) $Date: 1993/08/29 14:23:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -204,18 +204,8 @@ scr_end(sp)
 {
 	sigset_t bmask, omask;
 
-	/* Free the memory map. */
-	if (sp->h_smap != NULL)
-		FREE(sp->h_smap, sp->w_rows * sizeof(SMAP));
-
 	/* Free the argument list. */
-	{ int cnt;
-		for (cnt = 0; cnt < sp->argscnt; ++cnt)
-			if (F_ISSET(&sp->args[cnt], A_ALLOCATED))
-				FREE(sp->args[cnt].bp, sp->args[cnt].len);
-		FREE(sp->args, sp->argscnt * sizeof(ARGS *));
-		FREE(sp->argv, sp->argscnt * sizeof(char *));
-	}
+	(void)free_argv(sp);
 
 	/* Free input buffers. */
 	if (sp->key.buf != NULL)
