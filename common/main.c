@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.3 1991/12/18 11:50:34 bostic Exp $ (Berkeley) $Date: 1991/12/18 11:50:34 $";
+static char sccsid[] = "$Id: main.c,v 5.4 1992/01/16 10:53:45 bostic Exp $ (Berkeley) $Date: 1992/01/16 10:53:45 $";
 #endif /* not lint */
 
 #include <signal.h>
@@ -94,6 +94,7 @@ main(argc, argv)
 				msg("%s: %s", optarg, strerror(errno));
 				endmsgs();
 			}
+			(void)fprintf(tracefp, "trace: open %s\n", optarg);
 			break;
 #endif
 		case 't':		/* Tag. */
