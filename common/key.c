@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 9.15 1995/01/31 12:19:26 bostic Exp $ (Berkeley) $Date: 1995/01/31 12:19:26 $";
+static char sccsid[] = "$Id: key.c,v 9.16 1995/02/22 16:01:28 bostic Exp $ (Berkeley) $Date: 1995/02/22 16:01:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -647,77 +647,6 @@ term_flush(sp, flags)
 	} while (gp->i_cnt && gp->i_chf[gp->i_next] & flags);
 	return (1);
 }
-
-#ifdef MAKE_THE_USER_ENTER_A_KEY
-Earlier versions of nvi required that a user enter a key when waiting
-for something to happen, e.g. when getting a key to acknowledge that
-the user has seen one or more error messages.   Historic vi just used
-the next character regardless, and users complained.  This routine is
-left in place in case we ever need it again.
-
-static input_t term_key_queue __P((SCR *));
-static input_t term_user_key __P((SCR *, CH *));
-
-/*
- * term_user_key --
- *	Get the next key, but require the user enter one.
- */
-input_t
-term_user_key(sp, chp)
-	SCR *sp;
-	CH *chp;
-{
-	GS *gp;
-	input_t rval;
-	int nr;
-
-	/*
-	 * Read any keys the user has waiting.  Make the race
-	 * condition as short as possible.
-	 */
-	if ((rval = term_key_queue(sp)) != INP_OK)
-		return (rval);
-
-	/* Wait and read another key. */
-	if ((rval = sex_key_read(sp, &nr, NULL)) != INP_OK)
-		return (rval);
-
-	/* Fill in the return information. */
-	gp = sp->gp;
-	chp->ch = gp->i_ch[gp->i_next + (gp->i_cnt - 1)];
-	chp->flags = 0;
-	chp->value = KEY_VAL(sp, chp->ch);
-
-	QREM_TAIL(1);
-	return (INP_OK);
-}
-
-/*
- * term_key_queue --
- *	Read the keys off of the terminal queue until it's empty.
- */
-static input_t
-term_key_queue(sp)
-	SCR *sp;
-{
-	GS *gp;
-	input_t rval;
-	struct timeval t;
-	int nr;
-
-	t.tv_sec = 0;
-	t.tv_usec = 0;
-	for (gp = sp->gp;;) {
-		if (term_read_grow(sp))
-			return (INP_ERR);
-		if ((rval = sex_key_read(sp, &nr, &t)) != INP_OK)
-			return (rval);
-		if (nr == 0)
-			break;
-	}
-	return (INP_OK);
-}
-#endif
 
 /*
  * __key_val --
