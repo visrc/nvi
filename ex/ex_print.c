@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_print.c,v 10.15 1996/03/28 20:58:05 bostic Exp $ (Berkeley) $Date: 1996/03/28 20:58:05 $";
+static const char sccsid[] = "$Id: ex_print.c,v 10.16 1996/03/29 13:53:50 bostic Exp $ (Berkeley) $Date: 1996/03/29 13:53:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -265,17 +265,6 @@ intr:	*colp = col;
 }
 
 /*
- * Buffers for the ex data.  The screen support doesn't do any character
- * buffering of any kind.  We do it here so that we're not calling the
- * screen output routines on every character.
- *
- * XXX
- * Move into screen specific ex private area, change to grow dynamically.
- */
-static size_t off;
-static char buf[1024];
-
-/*
  * ex_printf --
  *	Ex's version of printf.
  *
@@ -302,7 +291,7 @@ ex_printf(sp, fmt, va_alist)
 #else
 	va_start(ap);
 #endif
-	exp->obp_len += n = vsnprintf(buf + exp->obp_len,
+	exp->obp_len += n = vsnprintf(exp->obp + exp->obp_len,
 	    sizeof(exp->obp) - exp->obp_len, fmt, ap);
 	va_end(ap);
 
