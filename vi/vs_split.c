@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 8.19 1993/11/28 18:32:06 bostic Exp $ (Berkeley) $Date: 1993/11/28 18:32:06 $";
+static char sccsid[] = "$Id: vs_split.c,v 8.20 1993/12/02 10:44:25 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:44:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,7 +26,7 @@ static char sccsid[] = "$Id: vs_split.c,v 8.19 1993/11/28 18:32:06 bostic Exp $ 
 int
 svi_split(sp, argv)
 	SCR *sp;
-	char *argv[];
+	ARGS *argv[];
 {
 	SCR *tsp;
 	SMAP *smp;
@@ -179,14 +179,13 @@ svi_split(sp, argv)
 	 * If files specified, build the file list, else, link to the
 	 * current file.
 	 */
-	if (argv != NULL && *argv != NULL) {
+	if (argv != NULL) {
 		for (; *argv != NULL; ++argv)
-			if (file_add(tsp, NULL, *argv, 0) == NULL)
+			if (file_add(tsp, NULL, (*argv)->bp, 0) == NULL)
 				goto mem3;
-	} else {
+	} else
 		if (file_add(tsp, NULL, FILENAME(sp->frp), 0) == NULL)
 			goto mem3;
-	}
 
 	if ((tsp->frp = file_first(tsp, 0)) == NULL) {
 		msgq(sp, M_ERR, "No files in the file list.");
