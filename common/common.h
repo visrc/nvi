@@ -4,8 +4,10 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 5.24 1992/06/07 13:59:40 bostic Exp $ (Berkeley) $Date: 1992/06/07 13:59:40 $
+ *	$Id: common.h,v 5.25 1992/06/07 16:47:02 bostic Exp $ (Berkeley) $Date: 1992/06/07 16:47:02 $
  */
+
+#include <db.h>				/* XXX for rptlines, below */
 
 #define	ESCAPE	'\033'			/* Escape character. */
 #define	TAB	8			/* XXX -- Settable? */
@@ -15,7 +17,7 @@
 extern long	nlines;		/* number of lines in the file */
 extern long	changes;	/* counts changes, to prohibit short-cuts */
 extern int	doingglobal;	/* boolean: are doing a ":g" command? */
-extern long	rptlines;	/* number of lines affected by a command */
+extern recno_t	rptlines;	/* number of lines affected by a command */
 extern char	*rptlabel;	/* description of how lines were affected */
 
 /* Describe the current state. */
