@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 9.10 1994/11/20 12:49:22 bostic Exp $ (Berkeley) $Date: 1994/11/20 12:49:22 $";
+static char sccsid[] = "$Id: vi.c,v 9.11 1994/11/25 12:02:33 bostic Exp $ (Berkeley) $Date: 1994/11/25 12:02:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -75,7 +75,11 @@ vi(sp)
 	/* Initialize the command structure. */
 	memset(&cmd, 0, sizeof(VICMDARG));
 
-	for (eval = 0, vp = &cmd;;) {
+	/* Cause reset of strange attraction. */
+	vp = &cmd;
+	F_SET(vp, VM_RCM_SET);
+
+	for (eval = 0;;) {
 		/* Refresh the screen. */
 		sp->showmode = "Command";
 		if (F_ISSET(VIP(sp), VIP_SKIPREFRESH))
