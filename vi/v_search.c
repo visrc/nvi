@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 5.18 1992/11/01 23:09:53 bostic Exp $ (Berkeley) $Date: 1992/11/01 23:09:53 $";
+static char sccsid[] = "$Id: v_search.c,v 5.19 1992/11/06 18:06:38 bostic Exp $ (Berkeley) $Date: 1992/11/06 18:06:38 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -37,11 +37,13 @@ v_searchn(vp, fm, tm, rp)
 
 	switch(searchdir) {
 	case BACKWARD:
-		if ((m = b_search(curf, fm, NULL, NULL, SEARCH_PARSE)) == NULL)
+		if ((m = b_search(curf,
+		    fm, NULL, NULL, SEARCH_MSG | SEARCH_PARSE)) == NULL)
 			return (1);
 		break;
 	case FORWARD:
-		if ((m = f_search(curf, fm, NULL, NULL, SEARCH_PARSE)) == NULL)
+		if ((m = f_search(curf,
+		    fm, NULL, NULL, SEARCH_MSG | SEARCH_PARSE)) == NULL)
 			return (1);
 		break;
 	default:
@@ -66,11 +68,13 @@ v_searchN(vp, fm, tm, rp)
 
 	switch(searchdir) {
 	case BACKWARD:
-		if ((m = f_search(curf, fm, NULL, NULL, SEARCH_PARSE)) == NULL)
+		if ((m = f_search(curf,
+		    fm, NULL, NULL, SEARCH_MSG | SEARCH_PARSE)) == NULL)
 			return (1);
 		break;
 	case FORWARD:
-		if ((m = b_search(curf, fm, NULL, NULL, SEARCH_PARSE)) == NULL)
+		if ((m = b_search(curf,
+		    fm, NULL, NULL, SEARCH_MSG | SEARCH_PARSE)) == NULL)
 			return (1);
 		break;
 	default:
@@ -108,7 +112,7 @@ v_searchw(vp, fm, tm, rp)
 	}
 	(void)snprintf(wbuf, wbuflen, WORDFORMAT, vp->keyword);
 		
-	if ((mp = f_search(curf, fm, (u_char *)wbuf, NULL, 0)) == NULL)
+	if ((mp = f_search(curf, fm, (u_char *)wbuf, NULL, SEARCH_MSG)) == NULL)
 		return (1);
 	rp->lno = mp->lno;
 	rp->cno = mp->cno + 1;		/* Offset by one. */
@@ -129,10 +133,12 @@ v_searchb(vp, fm, tm, rp)
 
 	if (getptrn('?', &ptrn))
 		return (1);
-	if (ptrn == NULL)
+	if (ptrn == NULL) {
+		*rp = *fm;
 		return (0);
+	}
 	if ((m = b_search(curf,
-	    fm, ptrn, NULL, SEARCH_PARSE | SEARCH_SET)) == NULL)
+	    fm, ptrn, NULL, SEARCH_MSG | SEARCH_PARSE | SEARCH_SET)) == NULL)
 		return (1);
 	*rp = *m;
 	return (0);
@@ -152,10 +158,12 @@ v_searchf(vp, fm, tm, rp)
 
 	if (getptrn('/', &ptrn))
 		return (1);
-	if (ptrn == NULL)
+	if (ptrn == NULL) {
+		*rp = *fm;
 		return (0);
+	}
 	if ((m = f_search(curf,
-	    fm, ptrn, NULL, SEARCH_PARSE | SEARCH_SET)) == NULL)
+	    fm, ptrn, NULL, SEARCH_MSG | SEARCH_PARSE | SEARCH_SET)) == NULL)
 		return (1);
 	*rp = *m;
 	return (0);
@@ -175,6 +183,7 @@ getptrn(prompt, storep)
 		return (1);
 	v_leaveex();
 
-	**storep = prompt;
+	if (*storep != NULL)
+		**storep = prompt;
 	return (0);
 }
