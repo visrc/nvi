@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_status.c,v 5.22 1993/04/12 14:55:28 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:55:28 $";
+static char sccsid[] = "$Id: v_status.c,v 5.23 1993/05/09 11:28:20 bostic Exp $ (Berkeley) $Date: 1993/05/09 11:28:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -17,7 +17,7 @@ static char sccsid[] = "$Id: v_status.c,v 5.22 1993/04/12 14:55:28 bostic Exp $ 
 #include "vcmd.h"
 
 /*
- * v_status --
+ * v_status -- ^G
  *	Show the file status.
  */
 int
@@ -27,8 +27,15 @@ v_status(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	(void)status(sp, ep, fm->lno);
-	return (1);
+	status(sp, ep, fm->lno);
+
+	/*
+	 * For some unknown reason, ^G in historic vi reset the cursor
+	 * column to the first non-blank character in the line.  This
+	 * doesn't seem particular useful, so I don't bother.
+	 */
+	*rp = *fm;
+	return (0);
 }
 
 void
