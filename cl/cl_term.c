@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_term.c,v 9.5 1995/01/30 09:23:35 bostic Exp $ (Berkeley) $Date: 1995/01/30 09:23:35 $";
+static char sccsid[] = "$Id: cl_term.c,v 9.6 1995/02/12 18:38:19 bostic Exp $ (Berkeley) $Date: 1995/02/12 18:38:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -186,12 +186,10 @@ cl_term_init(sp)
 	 * Rework any function key mappings that were set before the
 	 * screen was initialized.
 	 */
-	for (qp = sp->gp->seqq.lh_first; qp != NULL; qp = qp->q.le_next) {
-		if (!F_ISSET(qp, SEQ_FUNCMAP))
-			continue;
-		(void)cl_fmap(sp, qp->stype,
-		    qp->input, qp->ilen, qp->output, qp->olen);
-	}
+	for (qp = sp->gp->seqq.lh_first; qp != NULL; qp = qp->q.le_next)
+		if (F_ISSET(qp, SEQ_FUNCMAP))
+			(void)cl_fmap(sp, qp->stype,
+			    qp->input, qp->ilen, qp->output, qp->olen);
 
 	/* Set up the visual bell information. */
 	t = sbuf;
@@ -222,9 +220,8 @@ cl_term_end(sp)
 	/* Delete screen specific mappings. */
 	for (qp = sp->gp->seqq.lh_first; qp != NULL; qp = nqp) {
 		nqp = qp->q.le_next;
-		if (!F_ISSET(qp, SEQ_SCREEN))
-			continue;
-		(void)seq_mdel(qp);
+		if (F_ISSET(qp, SEQ_SCREEN))
+			(void)seq_mdel(qp);
 	}
 	return (0);
 }
@@ -295,8 +292,8 @@ cl_fmap(sp, stype, from, flen, to, tlen)
 
 	nlen = snprintf(keyname,
 	    sizeof(keyname), "function key %d", atoi(from + 1));
-	return (seq_set(sp, keyname, nlen, t, strlen(t),
-	    to, tlen, stype, SEQ_NOOVERWRITE | SEQ_SCREEN | SEQ_USERDEF));
+	return (seq_set(sp, keyname, nlen,
+	    t, strlen(t), to, tlen, stype, SEQ_NOOVERWRITE | SEQ_SCREEN));
 }
 
 /*
