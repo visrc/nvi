@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_menu.c,v 8.8 1996/11/27 12:21:18 bostic Exp $ (Berkeley) $Date: 1996/11/27 12:21:18 $";
+static const char sccsid[] = "$Id: m_menu.c,v 8.9 1996/12/03 10:12:47 bostic Exp $ (Berkeley) $Date: 1996/12/03 10:12:47 $";
 #endif /* not lint */
 
 #include "X11/Intrinsic.h"
@@ -350,7 +350,7 @@ XtPointer	call_data;
 XtPointer	client_data;
 #endif
 {
-#if 0
+#if 1
     send_command_string( ":E" );
 #else
     split_screen();
@@ -597,7 +597,7 @@ XtPointer	call_data;
 XtPointer	client_data;
 #endif
 {
-    string_command( w, "/", "Find" );
+    xip_show_search_dialog( w, "Find" );
 }
 
 
@@ -613,7 +613,7 @@ XtPointer	call_data;
 XtPointer	client_data;
 #endif
 {
-    send_command_string( "n" );
+    xip_next_search();
 }
 
 

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_util.c,v 8.5 1996/11/27 12:21:39 bostic Exp $ (Berkeley) $Date: 1996/11/27 12:21:39 $";
+static const char sccsid[] = "$Id: m_util.c,v 8.6 1996/12/03 10:12:47 bostic Exp $ (Berkeley) $Date: 1996/12/03 10:12:47 $";
 #endif /* not lint */
 
 #include <X11/Intrinsic.h>
@@ -24,6 +24,7 @@ static const char sccsid[] = "$Id: m_util.c,v 8.5 1996/11/27 12:21:39 bostic Exp
 #include "ipc_mutil.h"
 
 static Colormap	cmap = 0;
+static Display  *cmap_display = 0;
 
 
 /* ***********************************************************************
@@ -301,4 +302,98 @@ Pixmap	p;
 	/* do it the old fashioned way */
 	XtVaSetValues( wid, XtNiconPixmap, p, 0 );
     }
+}
+
+
+/* Support for multiple colormaps
+ *
+ * XutInstallColormap( String name, Widget wid )
+ *	The first time called, this routine checks to see if the
+ *	resource "name*installColormap" is "True".  If so, the
+ *	widget is assigned a newly allocated colormap.
+ *
+ *	Subsequent calls ignore the "name" parameter and use the
+ *	same colormap.
+ *
+ *	Future versions of this routine may handle multiple colormaps
+ *	by name.
+ */
+
+static	enum { cmap_look, cmap_use, cmap_ignore } cmap_state = cmap_look;
+
+static	Boolean	use_colormap = False;
+
+XutResource	colormap_resources[] = {
+    { "installColormap",	XutRKboolean,	&use_colormap	}
+};
+
+#if defined(__STDC__)
+void	XutInstallColormap( String name, Widget wid )
+#else
+void	XutInstallColormap( name, wid )
+String	name;
+Widget	wid;
+#endif
+{
+    Display	*display = XtDisplay(wid);
+
+    /* what is the current finite state? */
+    if ( cmap_state == cmap_look ) {
+
+	/* what does the resource say? */
+	XutConvertResources( wid,
+			     name,
+			     colormap_resources,
+			     XtNumber(colormap_resources)
+			     );
+
+	/* was the result "True"? */
+	if ( ! use_colormap ) {
+	    cmap_state = cmap_ignore;
+	    return;
+	}
+
+	/* yes it was */
+	cmap_state = cmap_use;
+	cmap_display = display;
+	cmap = XCopyColormapAndFree( display,
+				     DefaultColormap( display,
+						      DefaultScreen( display )
+						      )
+				     );
+    }
+
+    /* use the private colormap? */
+    if ( cmap_state == cmap_use ) {
+	XtVaSetValues( wid, XtNcolormap, cmap, 0 );
+    }
+}
+
+
+#if defined(__STDC__)
+void	XutFreeColormap( String name )
+#else
+void	XutFreeColormap( name )
+String	name;
+#endif
+{
+    if ( cmap_state == cmap_use ) {
+	XFreeColormap( cmap_display, cmap );
+	cmap = 0;
+	cmap_state = cmap_look;
+    }
+}
+
+
+#if defined(__STDC__)
+Colormap	XutGetColormap( Widget wid, String name )
+#else
+Colormap	XutGetColormap( wid, name )
+Widget		wid;
+String		name;
+#endif
+{
+    Display *display = XtDisplay( wid );
+
+    return get_current_colormap();
 }

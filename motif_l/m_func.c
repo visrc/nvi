@@ -8,13 +8,16 @@
  */
 
 #ifndef lint
-static const char XXsccsid[] = "$Id: m_func.c,v 8.2 1996/11/27 09:28:38 bostic Exp $ (Berkeley) $Date: 1996/11/27 09:28:38 $";
+static const char XXsccsid[] = "$Id: m_func.c,v 8.3 1996/12/03 10:12:46 bostic Exp $ (Berkeley) $Date: 1996/12/03 10:12:46 $";
 #endif /* not lint */
 
 int
 ipo_addstr(ipbp)
 	IP_BUF *ipbp;
 {
+#ifdef TR
+	trace("ipo_addstr() {%.*s}\n", ipbp->len, ipbp->str);
+#endif
 	/* Add to backing store. */
 	memcpy(CharAt(cur_screen, cur_screen->cury, cur_screen->curx),
 	    ipbp->str, ipbp->len);
@@ -26,7 +29,7 @@ ipo_addstr(ipbp)
 
 	/* Advance the caret. */
 	move_caret(cur_screen, cur_screen->cury, cur_screen->curx + ipbp->len);
-	return (0);
+	return (1);
 }
 
 int
@@ -41,7 +44,7 @@ ipo_attribute(ipbp)
 		cur_screen->color = ipbp->val2;
 		break;
 	}
-	return (0);
+	return (1);
 }
 
 int
@@ -53,7 +56,7 @@ ipo_bell(ipbp)
 	 * Future... implement visible bell.
 	 */
 	XBell(XtDisplay(cur_screen->area), 0);
-	return (0);
+	return (1);
 }
 
 int
@@ -68,7 +71,7 @@ ipo_busy(ipbp)
 	 */
 	set_cursor(cur_screen, ipbp->len != 0);
 #endif
-	return (0);
+	return (1);
 }
 
 int
@@ -89,7 +92,7 @@ ipo_clrtoeol(ipbp)
 	/* Draw from backing store. */
 	draw_text(cur_screen, cur_screen->cury, cur_screen->curx, len);
 
-	return (0);
+	return (1);
 }
 
 int
@@ -99,7 +102,7 @@ ipo_deleteln(ipbp)
 	int y, rows, len, height, width;
 
 	y = cur_screen->cury;
-	rows = cur_screen->rows - y;
+	rows = cur_screen->rows - (y+1);
 	len = cur_screen->cols * rows;
 
 	/* Don't want to copy the caret! */
@@ -131,7 +134,7 @@ ipo_discard(ipbp)
 	IP_BUF *ipbp;
 {
 	/* XXX: Nothing. */
-	return (0);
+	return (1);
 }
 
 int
@@ -172,6 +175,14 @@ ipo_insertln(ipbp)
 		  0, YTOP(cur_screen, y+1)		/* dstx, dsty */
 		  );
 
+	/* clear out the new space */
+	XClearArea(XtDisplay(cur_screen->area),		/* display */
+		   XtWindow(cur_screen->area),		/* window */
+		   0, YTOP(cur_screen, y),		/* srcx, srcy */
+		   0, cur_screen->ch_height,		/* w=full, height */
+		   True					/* no exposures */
+		   );
+
 	/* Need to let X take over. */
 	XmUpdateDisplay(cur_screen->area);
 
@@ -183,7 +194,7 @@ ipo_move(ipbp)
 	IP_BUF *ipbp;
 {
 	move_caret(cur_screen, ipbp->val1, ipbp->val2);
-	return (0);
+	return (1);
 }
 
 int
@@ -191,7 +202,7 @@ ipo_redraw(ipbp)
 	IP_BUF *ipbp;
 {
 	expose_func(0, cur_screen, 0);
-	return (0);
+	return (1);
 }
 
 int
@@ -202,21 +213,32 @@ ipo_refresh(ipbp)
 	/* Force synchronous update of the widget. */
 	XmUpdateDisplay(cur_screen->area);
 #endif
-	return (0);
+	return (1);
 }
 
 int
 ipo_rename(ipbp)
 	IP_BUF *ipbp;
 {
+	char *tail;
+
+	/* for the icon, use the tail */
+	if (( tail = strrchr( ipbp->str, '/' )) == NULL || *(tail+1) == '\0' )
+	    tail = ipbp->str;
+	else
+	    tail++;
+
 	/*
 	 * XXX
 	 * Future:  Attach a title to each screen.  For now, we change
 	 * the title of the shell.
 	 */
-	XtVaSetValues(top_level, XmNtitle, ipbp->str, 0);
+	XtVaSetValues(top_level,
+		      XmNiconName,	tail,
+		      XmNtitle,		ipbp->str,
+		      0);
 
-	return (0);
+	return (1);
 }
 
 int
@@ -224,7 +246,7 @@ ipo_rewrite(ipbp)
 	IP_BUF *ipbp;
 {
 	/* XXX: Nothing. */
-	return (0);
+	return (1);
 }
 
 int
@@ -232,7 +254,7 @@ ipo_split(ipbp)
 	IP_BUF *ipbp;
 {
 	/* XXX: Nothing. */
-	return (0);
+	return (1);
 }
 
 int (*iplist[IPO_EVENT_MAX]) __P((IP_BUF *)) = {

@@ -10,10 +10,8 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_vi.c,v 8.10 1996/11/27 12:19:50 bostic Exp $ (Berkeley) $Date: 1996/11/27 12:19:50 $";
+static const char sccsid[] = "$Id: m_vi.c,v 8.11 1996/12/03 10:12:47 bostic Exp $ (Berkeley) $Date: 1996/12/03 10:12:47 $";
 #endif /* not lint */
-
-#include "config.h"
 
 #include <sys/types.h>
 #include <sys/queue.h>
@@ -62,6 +60,54 @@ void	onintr __P((int));
 static	void	f_copy();
 static	void	f_paste();
 static	void	f_clear();
+
+
+/*
+ * debug trace routines
+ */
+
+#ifdef TR
+
+static	FILE	*trace_fp;
+
+#ifdef __STDC__
+#include <stdarg.h>
+#else
+#include <varargs.h>
+#endif
+
+void
+#ifdef __STDC__
+trace(const char *fmt, ...)
+#else
+trace(fmt, va_alist)
+	char *fmt;
+	va_dcl
+#endif
+{
+	static FILE *tfp;
+	va_list ap;
+
+	if (tfp == NULL && (tfp = fopen(TR, "w")) == NULL)
+	tfp = stderr;
+
+#ifdef __STDC__
+	va_start(ap, fmt);
+#else
+	va_start(ap);
+#endif
+	(void)vfprintf(tfp, fmt, ap);
+	va_end(ap);
+
+	(void)fflush(tfp);
+}
+
+
+void	trace_init()
+{
+	trace_fp = fopen( TR, "w" );
+}
+#endif
 
 
 /*
@@ -130,6 +176,9 @@ Cursor		std_cursor;
 Cursor		busy_cursor;
 XtTranslations	area_trans;
 int		multi_click_length;
+
+char	bp[ BufferSize ];		/* input buffer from pipe */
+int	len = 0, blen = BufferSize;
 
 
 /*
@@ -347,6 +396,41 @@ static	String	*get_fallback_rsrcs( name )
 }
 
 
+#if defined(__STDC__)
+Boolean		process_pipe_input( XtPointer pread )
+#else
+Boolean		process_pipe_input( pread )
+XtPointer	pread;
+#endif
+{
+    int	nr, skip;
+
+    /* might have read more since the last call */
+    nr = (pread) ? *((int *)pread) : 0;
+    len += nr;
+    skip = 0;
+
+    /* Parse to data end or partial message. */
+    while ( len > skip )
+	if ( ! ip_trans(bp + skip, len - skip, &skip) )
+	    break;
+
+    /* Copy any partial messages down in the buffer. */
+    len -= skip;
+    if (len > 0) {
+	    memmove(bp, bp + skip, len);
+#ifdef TR
+	    trace("pipe_input_func: abort with %d in the buffer\n", len);
+#endif
+	    /* call me again later */
+	    return False;
+    }
+
+    /* do NOT call me again later */
+    return True;
+}
+
+
 /* We've received input on the pipe from vi... */
 #if defined(__STDC__)
 void		pipe_input_func( XtPointer client_data,
@@ -360,15 +444,13 @@ int		*source;
 XtInputId	id;
 #endif
 {
-    static	char	bp[ BufferSize ];
-    static	int	len = 0, blen = BufferSize;
-		int	nr, skip;
+    int	nr;
 
     /* Read waiting vi messags and translate to X calls. */
     switch (nr = read( *source, bp + len, blen - len)) {
     case 0:
 #ifdef TR
-	    trace("empty input from vi\n");
+	    trace("pipe_input_func:  empty input from vi\n");
 #endif
 	    return;
     case -1:
@@ -381,16 +463,11 @@ XtInputId	id;
 	    break;
     }
 
-    /* Parse to data end or partial message. */
-    for ( len += nr, skip = 0;
-	  len > skip && ip_trans(bp + skip, len - skip, &skip) == 1;
-	  )
-	/* nothing */;
-
-    /* Copy any partial messages down in the buffer. */
-    len -= skip;
-    if (len > 0)
-	memmove(bp, bp + skip, len);
+    /* parse and dispatch on commands in the queue */
+    if ( ! process_pipe_input( &nr ) ) {
+	    /* check the pipe for unused events when not busy */
+	    XtAppAddWorkProc( ctx, process_pipe_input, NULL );
+    }
 }
 
 
@@ -749,8 +826,12 @@ Cardinal        *cardinal;
     if ( ipb.len != 0 ) {
 	ipb.code = IPO_STRING;
 	ipb.str = bp;
+#ifdef TR
+	trace("key_press {%.*s}\n", ipb.len, bp );
+#endif
 	ip_send("s", &ipb);
     }
+
 }
 
 
@@ -971,6 +1052,9 @@ char	**argv;
 				   NULL
 				   );
     display = XtDisplay(top_level);
+
+    /* might need to go technicolor... */
+    XutInstallColormap( argv[0], top_level );
 
     /* add our own special actions */
     XtAppAddActions( ctx, area_actions, XtNumber(area_actions) );
@@ -1454,6 +1538,12 @@ main(argc, argv)
 	int argc;
 	char *argv[];
 {
+#ifdef TR
+	/*
+	 * init debug print
+	 */
+	trace_init();
+#endif
 	/*
 	 * Initialize the X widgetry.  We must do this before picking off
 	 * arguments as well-behaved X programs have common argument lists
