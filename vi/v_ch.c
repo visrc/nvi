@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ch.c,v 5.9 1992/05/17 14:25:50 bostic Exp $ (Berkeley) $Date: 1992/05/17 14:25:50 $";
+static char sccsid[] = "$Id: v_ch.c,v 5.10 1992/05/20 10:45:46 bostic Exp $ (Berkeley) $Date: 1992/05/20 10:45:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -136,15 +136,16 @@ v_fch(vp, cp, rp)
 	if (len == 0)
 		NOTFOUND;
 
+	sp = p;
 	ep = p + len;
-	sp = p += cp->cno;
+	p += cp->cno;
 	for (cnt = vp->flags & VC_C1SET ? vp->count : 1; cnt--;) {
 		while (++p < ep && *p != key);
 		if (p == ep)
 			NOTFOUND;
 	}
 	rp->lno = cp->lno;
-	rp->cno += p - sp;
+	rp->cno = p - sp;
 	return (0);
 }
 
