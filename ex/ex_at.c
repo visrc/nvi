@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_at.c,v 10.5 1995/09/21 12:07:00 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:07:00 $";
+static char sccsid[] = "$Id: ex_at.c,v 10.6 1995/10/04 12:31:32 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:31:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -53,7 +53,7 @@ ex_at(sp, cmdp)
 	name = FL_ISSET(cmdp->iflags, E_C_BUFFER) ? cmdp->buffer : '@';
 	if (name == '@' || name == '*') {
 		if (!F_ISSET(sp, S_AT_SET)) {
-			ex_message(sp, NULL, EXM_NOPREVBUF);
+			ex_emsg(sp, NULL, EXM_NOPREVBUF);
 			return (1);
 		}
 		name = sp->at_lbuf;
@@ -63,7 +63,7 @@ ex_at(sp, cmdp)
 
 	CBNAME(sp, cbp, name);
 	if (cbp == NULL) {
-		ex_message(sp, KEY_NAME(sp, name), EXM_EMPTYBUF);
+		ex_emsg(sp, KEY_NAME(sp, name), EXM_EMPTYBUF);
 		return (1);
 	}
 

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 10.13 1995/10/03 13:18:11 bostic Exp $ (Berkeley) $Date: 1995/10/03 13:18:11 $";
+static char sccsid[] = "$Id: ex_bang.c,v 10.14 1995/10/04 12:31:41 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:31:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -58,7 +58,7 @@ ex_bang(sp, cmdp)
 
 	ap = cmdp->argv[0];
 	if (ap->len == 0) {
-		ex_message(sp, cmdp->cmd->usage, EXM_USAGE);
+		ex_emsg(sp, cmdp->cmd->usage, EXM_USAGE);
 		return (1);
 	}
 
