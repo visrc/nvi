@@ -4,14 +4,14 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 5.48 1993/04/19 15:28:16 bostic Exp $ (Berkeley) $Date: 1993/04/19 15:28:16 $
+ *	$Id: common.h,v 5.49 1993/05/06 00:31:09 bostic Exp $ (Berkeley) $Date: 1993/05/06 00:31:09 $
  */
 
-#include <db.h>				/* Ordered before local includes. */
-#include <glob.h>
+#include <glob.h>			/* Ordered before local includes. */
 #include <limits.h>
 #include <regex.h>
 #include <stdio.h>
+#include <db.h>				/* Last, for compat.h. */
 
 /*
  * Forward structure declarations.  Not pretty, but the include files
