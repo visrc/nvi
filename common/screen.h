@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.85 1994/03/10 11:03:48 bostic Exp $ (Berkeley) $Date: 1994/03/10 11:03:48 $
+ *	$Id: screen.h,v 8.86 1994/03/14 09:52:47 bostic Exp $ (Berkeley) $Date: 1994/03/14 09:52:47 $
  */
 
 /*
@@ -263,6 +263,7 @@ struct _scr {
 #define	S_SUBRE_SET	0x0200000	/* The substitute RE has been set. */
 #define	S_TIMER_SET	0x0400000	/* If a busy timer is running. */
 #define	S_UPDATE_MODE	0x0800000	/* Don't repaint modeline. */
+#define	S_VLITONLY	0x1000000	/* ^V literal next only. */
 	u_int flags;
 };
 
