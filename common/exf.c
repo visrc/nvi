@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.15 1992/09/01 15:34:36 bostic Exp $ (Berkeley) $Date: 1992/09/01 15:34:36 $";
+static char sccsid[] = "$Id: exf.c,v 5.16 1992/10/01 17:29:46 bostic Exp $ (Berkeley) $Date: 1992/10/01 17:29:46 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -48,7 +48,7 @@ file_init()
 #define	EPSET(ep) {							\
 	ep->lno = ep->top = 1;						\
 	ep->cno = ep->lcno = 0;						\
-	ep->scrollup = ep->scrolldown = 0;				\
+	ep->uwindow = ep->dwindow = 0;					\
 	ep->nlen = strlen(ep->name);					\
 	ep->flags = 0;							\
 }
@@ -438,6 +438,12 @@ file_stop(ep, force)
 	int force;
 {
 	struct stat sb;
+
+	/* If modified, must force. */
+	if (ep->flags & F_MODIFIED && !force) {
+		msg("Modified since last write; use ! to override.");
+		return (1);
+	}
 
 	/* Close the db structure. */
 	if ((ep->db->close)(ep->db) && !force) {
