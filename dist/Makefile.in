@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.34 1996/03/21 21:25:51 bostic Exp $ (Berkeley) $Date: 1996/03/21 21:25:51 $
+#	$Id: Makefile.in,v 8.35 1996/03/22 10:30:43 bostic Exp $ (Berkeley) $Date: 1996/03/22 10:30:43 $
 
 srcdir=	@srcdir@/..
 CC=	@CC@
@@ -101,17 +101,17 @@ distrib: distclean
 	
 # Vi curses sources.
 cl_bsd.o: $(srcdir)/cl/cl_bsd.c
-	$(CC) $(CFLAGS) $(FRCDEF) $?
+	$(CC) $(CFLAGS) $?
 cl_funcs.o: $(srcdir)/cl/cl_funcs.c
-	$(CC) $(CFLAGS) $(FRCDEF) $?
+	$(CC) $(CFLAGS) $?
 cl_main.o: $(srcdir)/cl/cl_main.c
-	$(CC) $(CFLAGS) $(FRCDEF) $?
+	$(CC) $(CFLAGS) $?
 cl_read.o: $(srcdir)/cl/cl_read.c
-	$(CC) $(CFLAGS) $(FRCDEF) $?
+	 $(CC) -c @no_op_CFLAGS@ -I. -I$(srcdir)/include @CPPFLAGS@ $?
 cl_screen.o: $(srcdir)/cl/cl_screen.c
-	$(CC) $(CFLAGS) $(FRCDEF) $?
+	$(CC) $(CFLAGS) $?
 cl_term.o: $(srcdir)/cl/cl_term.c
-	$(CC) $(CFLAGS) $(FRCDEF) $?
+	$(CC) $(CFLAGS) $?
 
 # Vi Tk sources.
 XINC=	-I/usr/X11/include
@@ -316,7 +316,7 @@ v_sentence.o: $(srcdir)/vi/v_sentence.c
 v_status.o: $(srcdir)/vi/v_status.c
 	 $(CC) $(CFLAGS) $?
 v_txt.o: $(srcdir)/vi/v_txt.c
-	 $(CC) -c @v_txt_CFLAGS@ -I. -I$(srcdir)/include @CPPFLAGS@ $?
+	 $(CC) -c @no_op_CFLAGS@ -I. -I$(srcdir)/include @CPPFLAGS@ $?
 v_ulcase.o: $(srcdir)/vi/v_ulcase.c
 	 $(CC) $(CFLAGS) $?
 v_undo.o: $(srcdir)/vi/v_undo.c
@@ -342,7 +342,7 @@ vs_msg.o: $(srcdir)/vi/vs_msg.c
 vs_refresh.o: $(srcdir)/vi/vs_refresh.c
 	 $(CC) $(CFLAGS) $?
 vs_relative.o: $(srcdir)/vi/vs_relative.c
-	 $(CC) $(CFLAGS) $?
+	 $(CC) -c @no_op_CFLAGS@ -I. -I$(srcdir)/include @CPPFLAGS@ $?
 vs_smap.o: $(srcdir)/vi/vs_smap.c
 	 $(CC) $(CFLAGS) $?
 vs_split.o: $(srcdir)/vi/vs_split.c

@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.74 1996/03/21 21:25:51 bostic Exp $ (Berkeley) $Date: 1996/03/21 21:25:51 $
+dnl	$Id: configure.in,v 8.75 1996/03/22 10:30:43 bostic Exp $ (Berkeley) $Date: 1996/03/22 10:30:43 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(../common/main.c)
@@ -20,7 +20,7 @@ AC_ARG_ENABLE(debug,
 if test "$vi_cv_debug" = yes; then
 	AC_DEFINE(DEBUG)
 	CFLAGS=${CFLAGS-"-g"}
-	v_txt_CFLAGS=${CFLAGS-"-g"}
+	no_op_CFLAGS=${CFLAGS-"-g"}
 fi
 AC_MSG_RESULT($vi_cv_debug)
 
@@ -58,10 +58,10 @@ nextstep3) CFLAGS=${CFLAGS-"-O9"}
 osf*)	   CPPFLAGS="-Olimit 1000 $CPPFLAGS";;
 ptx*)	   LIBS="$LIBS -lseq -linet -lsocket";;
 sinix*)	   LIBS="$LIBS -lelf -lc";;
-solaris*)  v_txt_CFLAGS=${v_txt_CFLAGS-""}
+solaris*)  no_op_CFLAGS=${no_op_CFLAGS-""}
 	   LIBS="$LIBS -lsocket -lnsl -ldl"
 	   RLIBS=yes;;
-sunos*)	   v_txt_CFLAGS=${v_txt_CFLAGS-""};;
+sunos*)	   no_op_CFLAGS=${no_op_CFLAGS-""};;
 ultrix*)   AC_DEFINE(HAVE_BROKEN_VDISABLE);;
 wgs*)	   LIBS="$LIBS -lnsl";;
 esac
@@ -73,9 +73,13 @@ CC=${CC-cc}
 dnl The default CFLAGS is -O
 CFLAGS=${CFLAGS-"-O"}
 
-dnl The SunOS/Solaris compiler can't optimize vi/v_txt.c.
-AC_SUBST(v_txt_CFLAGS)
-v_txt_CFLAGS=${v_txt_CFLAGS-"$CFLAGS"}
+dnl The SunOS/Solaris compiler can't optimize vi/v_txt.c; the symptom is
+dnl that the command 35i==<esc> turns into an infinite loop.  The SunOS
+dnl compiler can't optimize vi/vs_relative.c, and the Solaris compiler can't
+dnl optimize cl/cl_read.c.  The symptom for both of these is that the ^D 
+dnl command to discard autoindent characters fails.
+AC_SUBST(no_op_CFLAGS)
+no_op_CFLAGS=${no_op_CFLAGS-"$CFLAGS"}
 
 dnl Checks for programs.
 PATH="$PATH:/usr/bin:/usr/sbin:/sbin:/etc:/usr/etc:/usr/lib:/usr/ucblib:"
