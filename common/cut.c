@@ -1,691 +1,358 @@
-/* This file contains function which manipulate the cut buffers. */
+/*-
+ * Copyright (c) 1992 The Regents of the University of California.
+ * All rights reserved.
+ *
+ * %sccs.include.redist.c%
+ */
 
-#include <sys/types.h>
+#ifndef lint
+static char sccsid[] = "$Id: cut.c,v 5.11 1992/05/21 13:02:12 bostic Exp $ (Berkeley) $Date: 1992/05/21 13:02:12 $";
+#endif /* not lint */
+
+#include <sys/param.h>
 #include <stdlib.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <limits.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "vi.h"
 #include "exf.h"
+#include "mark.h"
+#include "cut.h"
 #include "options.h"
 #include "pathnames.h"
 #include "extern.h"
 
-#ifdef NOTDEF
-# define NANONS	9	/* number of anonymous buffers */
+static int	cutline __P((recno_t, size_t, size_t, CBLINE **));
+static void	freecbline __P((CBLINE *));
 
-static struct cutbuf {
-	short	*phys;	/* pointer to an array of #s of BLKs containing text */
-	int	nblks;	/* number of blocks in phys[] array */
-	int	start;	/* offset into first block of start of cut */
-	int	end;	/* offset into last block of end of cut */
-	int	tmpnum;	/* ID number of the temp file */
-	char	lnmode;	/* boolean: line-mode cut? (as opposed to char-mode) */
-}
-	named[27],	/* cut buffers "a through "z and ". */
-	anon[NANONS];	/* anonymous cut buffers */
+CB cuts[UCHAR_MAX + 1];		/* Set of cut buffers. */
 
-static char	cbname;	/* name chosen for next cut/paste operation */
-static char	dotcb;	/* cut buffer to use if "doingdot" is set */
-
-
-#ifndef NO_RECYCLE
-/* This function builds a list of all blocks needed in the current tmp file
- * for the contents of cut buffers.
- * !!! WARNING: if you have more than ~450000 bytes of text in all of the
- * cut buffers, then this will fail disastrously, because buffer overflow
- * is *not* allowed for.
+/* 
+ * cut --
+ *	Put a range of lines/columns into a malloced buffer for use
+ *	later.
+ * XXX
+ * If the range is over some set amount (LINES lines?) should fall
+ * back and use ex_write to dump the cut into a temporary file.
  */
-int cutneeds(need)
-	BLK		*need;	/* this is where we deposit the list */
+int
+cut(buffer, fm, tm, lmode)
+	int buffer, lmode;
+	MARK *fm, *tm;
 {
-	struct cutbuf	*cb;	/* used to count through cut buffers */
-	int		i;	/* used to count through blocks of a cut buffer */
-	int		n;	/* total number of blocks in list */
+	CB *cb;
+	CBLINE *cbl, *cblp;
+	MARK m;
+	size_t len;
+	recno_t lno;
+	int append;
 
-	n = 0;
+	CBNAME(buffer, cb);
 
-	/* first the named buffers... */
-	for (cb = named; cb < &named[27]; cb++)
-	{
-		if (cb->tmpnum != tmpnum)
-			continue;
+	/*
+	 * Upper-case buffer names map into lower-case buffers, but with
+	 * append mode set so the buffer is appended to, not overwritten.
+	 * Also note if the buffer has changed modes.
+	 */
+	if (append = isupper(buffer))
+		if (!lmode && cb->flags & CB_LMODE)
+			msg("Buffer %s changed to line mode.",
+			    charname(buffer));
 
-		for (i = cb->nblks; i-- > 0; )
-		{
-			need->n[n++] = cb->phys[i];
-		}
+	/* Free old buffer. */
+	if (cb->head != NULL && !append) {
+		freecbline(cb->head);
+		cb->head = NULL;
+		cb->len = 0;
+		cb->flags = 0;
 	}
 
-	/* then the anonymous buffers */
-	for (cb = anon; cb < &anon[NANONS]; cb++)
-	{
-		if (cb->tmpnum != tmpnum)
-			continue;
-
-		for (i = cb->nblks; i-- > 0; )
-		{
-			need->n[n++] = cb->phys[i];
-		}
-	}
-
-	/* return the length of the list */
-	return n;
-}
+	/* Make cut from fm and to tm, swapping pointers if necessary. */
+	if (fm->lno > tm->lno || fm->lno == tm->lno && fm->cno > tm->cno) {
+		m = *fm;
+		*fm = *tm;
+		*tm = m;
+		append = 0;
+	} else
+		append = 1;
+		
+#if DEBUG && 1
+	TRACE("cut: from {%lu, %d}, to {%lu, %d}\n",
+	    fm->lno, fm->cno, tm->lno, tm->cno);
 #endif
 
-static void maybezap(num)
-	int	num;	/* the tmpnum of the temporary file to [maybe] delete */
-{
-	char	cutfname[80];
-	int	i;
-
-	/* if this is the current tmp file, then we'd better keep it! */
-	if (tmpfd >= 0 && num == tmpnum)
-	{
-		return;
-	}
-
-	/* see if anybody else needs this tmp file */
-	for (i = 27; --i >= 0; )
-	{
-		if (named[i].nblks > 0 && named[i].tmpnum == num)
-		{
-			break;
-		}
-	}
-	if (i < 0)
-	{
-		for (i = NANONS; --i >= 0 ; )
-		{
-			if (anon[i].nblks > 0 && anon[i].tmpnum == num)
-			{
-				break;
-			}
-		}
-	}
-
-	/* if nobody else needs it, then discard the tmp file */
-	if (i < 0)
-	{
-		sprintf(cutfname, _PATH_TMPNAME, PVAL(O_DIRECTORY), getpid(), num);
-		unlink(cutfname);
-	}
+/* Append a new CBLINE structure into the CB chain. */
+#define	CAPPEND {							\
+	if ((cblp = cb->head) == NULL)					\
+		cb->head = cbl;						\
+	else {								\
+		for (; cblp->next; cblp = cblp->next);			\
+		cblp->next = cbl;					\
+	}								\
+	cb->len += cbl->len;						\
 }
 
-/* This function frees a cut buffer.  If it was the last cut buffer that
- * refered to an old temp file, then it will delete the temp file. */
-static void cutfree(buf)
-	struct cutbuf	*buf;
-{
-	int	num;
-
-	/* return immediately if the buffer is already empty */
-	if (buf->nblks <= 0)
-	{
-		return;
-	}
-
-	/* else free up stuff */
-	num = buf->tmpnum;
-	buf->nblks = 0;
-#ifdef DEBUG
-	if (!buf->phys)
-		msg("cutfree() tried to free a NULL buf->phys pointer.");
-	else
-#endif
-	free((char *)buf->phys);
-
-	/* maybe delete the temp file */
-	maybezap(num);
-}
-
-/* This function is called when we are about to abort a tmp file.
- *
- * To minimize the number of extra files lying around, only named cut buffers
- * are preserved in a file switch; the anonymous buffers just go away.
- */
-void cutswitch()
-{
-	int	i;
-
-	/* mark the current temp file as being "obsolete", and close it.  */
-	storename((char *)0);
-	close(tmpfd);
-	tmpfd = -1;
-
-	/* discard all anonymous cut buffers */
-	for (i = 0; i < NANONS; i++)
-	{
-		cutfree(&anon[i]);
-	}
-
-	/* delete the temp file, if we don't really need it */
-	maybezap(tmpnum);
-}
-
-/* This function should be called just before termination of vi */
-void cutend()
-{
-	int	i, num;
-
-	/* free the anonymous buffers, if they aren't already free */
-	cutswitch();
-
-	/* free all named cut buffers, since they might be forcing an older
-	 * tmp file to be retained.
-	 */
-	for (i = 0; i < 27; i++)
-	{
-		cutfree(&named[i]);
-	}
-
-	/* delete the temp file */
-	maybezap(tmpnum);
-}
-
-
-/* This function is used to select the cut buffer to be used next */
-void cutname(name)
-	int	name;	/* a single character */
-{
-	cbname = name;
-}
-
-
-
-
-/* This function copies a selected segment of text to a cut buffer */
-void cut(from, to)
-	MARK	from;		/* start of text to cut */
-	MARK	to;		/* end of text to cut */
-{
-	int		first;	/* logical number of first block in cut */
-	int		last;	/* logical number of last block used in cut */
-	long		line;	/* a line number */
-	int		lnmode;	/* boolean: will this be a line-mode cut? */
-	MARK		delthru;/* end of text temporarily inserted for apnd */
-	REG struct cutbuf *cb;
-	REG long	l;
-	REG int		i;
-	REG char	*scan;
-	char		*blkc;
-
-	/* detect whether this must be a line-mode cut or char-mode cut */
-	if (markidx(from) == 0 && markidx(to) == 0)
-		lnmode = TRUE;
-	else
-		lnmode = FALSE;
-
-	/* by default, we don't "delthru" anything */
-	delthru = MARK_UNSET;
-
-	/* handle the "doingdot" quirks */
-	if (doingdot)
-	{
-		if (!cbname)
-		{
-			cbname = dotcb;
+	if (lmode) {
+		for (lno = fm->lno; lno <= tm->lno; ++lno) {
+			if (cutline(lno, 0, 0, &cbl))
+				goto mem;
+			CAPPEND;
 		}
+		cb->flags |= CB_LMODE;
+		return (0);
 	}
-	else if (cbname != '.')
-	{
-		dotcb = cbname;
+		
+	/* Get the first line. */
+	len = fm->lno < tm->lno ? 0 : tm->cno - fm->cno;
+	if (cutline(fm->lno, fm->cno, len, &cbl))
+		goto mem;
+
+	CAPPEND;
+
+	for (lno = fm->lno; ++lno < tm->lno;) {
+		if (cutline(lno, 0, 0, &cbl))
+			goto mem;
+		CAPPEND;
 	}
 
-	/* decide which cut buffer to use */
-	if (!cbname)
-	{
-		/* free up the last anonymous cut buffer */
-		cutfree(&anon[NANONS - 1]);
-
-		/* shift the anonymous cut buffers */
-		for (i = NANONS - 1; i > 0; i--)
-		{
-			anon[i] = anon[i - 1];
+	if (tm->lno > fm->lno && tm->cno > 0) {
+		if (cutline(lno, 0, tm->cno, &cbl)) {
+mem:			if (append)
+				msg("Contents of buffer %s lost.",
+				    charname(buffer));
+			freecbline(cb->head);
+			cb->head = NULL;
+			return (1);
 		}
-
-		/* use the first anonymous cut buffer */
-		cb = anon;
-		cb->nblks = 0;
+		CAPPEND;
 	}
-	else if (cbname >= 'a' && cbname <= 'z')
-	{
-		cb = &named[cbname - 'a'];
-		cutfree(cb);
-	}
-#ifndef CRUNCH
-	else if (cbname >= 'A' && cbname <= 'Z')
-	{
-		cb = &named[cbname - 'A'];
-		if (cb->nblks > 0)
-		{
-			/* resolve linemode/charmode differences */
-			if (!lnmode && cb->lnmode)
-			{
-				from &= ~(BLKSIZE - 1);
-				if (markidx(to) != 0 || to == from)
-				{
-					to = to + BLKSIZE - markidx(to);
-				}
-				lnmode = TRUE;
-			}
-
-			/* insert the old cut-buffer before the new text */
-			mark[28] = to;
-			delthru = paste(from, FALSE, TRUE);
-			if (delthru == MARK_UNSET)
-			{
-				return;
-			}
-			delthru++;
-			to = mark[28];
-		}
-		cutfree(cb);
-	}
-#endif /* not CRUNCH */
-	else if (cbname == '.')
-	{
-		cb = &named[26];
-		cutfree(cb);
-	}
-	else
-	{
-		msg("Invalid cut buffer name: \"%c", cbname);
-		dotcb = cbname = '\0';
-		return;
-	}
-	cbname = '\0';
-	cb->tmpnum = tmpnum;
-
-	/* detect whether we're doing a line mode cut */
-	cb->lnmode = lnmode;
-
-	/* ---------- */
-
-	/* Reporting... */	
-	if (markidx(from) == 0 && markidx(to) == 0)
-	{
-		rptlines = markline(to) - markline(from);
-		rptlabel = "yanked";
-	}
-
-	/* ---------- */
-
-	/* make sure each block has a physical disk address */
-	blksync();
-
-	/* find the first block in the cut */
-	line = markline(from);
-	for (first = 1; line > lnum[first]; first++)
-	{
-	}
-
-	/* fetch text of the block containing that line */
-	blkc = scan = blkget(first)->c;
-
-	/* find the mark in the block */
-	for (l = lnum[first - 1]; ++l < line; )
-	{
-		while (*scan++ != '\n')
-		{
-		}
-	}
-	scan += markidx(from);
-
-	/* remember the offset of the start */
-	cb->start = scan - blkc;
-
-	/* ---------- */
-
-	/* find the last block in the cut */
-	line = markline(to);
-	for (last = first; line > lnum[last]; last++)
-	{
-	}
-
-	/* fetch text of the block containing that line */
-	if (last != first)
-	{
-		blkc = scan = blkget(last)->c;
-	}
-	else
-	{
-		scan = blkc;
-	}
-
-	/* find the mark in the block */
-	for (l = lnum[last - 1]; ++l < line; )
-	{
-		while (*scan++ != '\n')
-		{
-		}
-	}
-	if (markline(to) <= nlines)
-	{
-		scan += markidx(to);
-	}
-
-	/* remember the offset of the end */
-	cb->end = scan - blkc;
-
-	/* ------- */
-
-	/* remember the physical block numbers of all included blocks */
-	cb->nblks = last - first;
-	if (cb->end > 0)
-	{
-		cb->nblks++;
-	}
-#ifdef lint
-	cb->phys = (short *)0;
-#else
-	cb->phys = (short *)malloc((unsigned)(cb->nblks * sizeof(short)));
-#endif
-	for (i = 0; i < cb->nblks; i++)
-	{
-		cb->phys[i] = hdr.n[first++];
-	}
-
-#ifndef CRUNCH
-	/* if we temporarily inserted text for appending, then delete that
-	 * text now -- before the user sees it.
-	 */
-	if (delthru)
-	{
-		line = rptlines;
-		delete(from, delthru);
-		rptlines = line;
-		rptlabel = "yanked";
-	}
-#endif /* not CRUNCH */
-}
-
-
-static void readcutblk(cb, blkno)
-	struct cutbuf	*cb;
-	int		blkno;
-{
-	char		cutfname[50];/* name of an old temp file */
-	int		fd;	/* either tmpfd or the result of open() */
-
-	/* decide which fd to use */
-	if (cb->tmpnum == tmpnum)
-	{
-		fd = tmpfd;
-	}
-	else
-	{
-		sprintf(cutfname, _PATH_TMPNAME, PVAL(O_DIRECTORY), getpid(), cb->tmpnum);
-		fd = open(cutfname, O_RDONLY);
-	}
-
-	/* get the block */
-	lseek(fd, (long)cb->phys[blkno] * (long)BLKSIZE, 0);
-	if (read(fd, tmpblk.c, (unsigned)BLKSIZE) != BLKSIZE)
-	{
-		msg("Error reading back from tmp file for pasting!");
-	}
-
-	/* close the fd, if it isn't tmpfd */
-	if (fd != tmpfd)
-	{
-		close(fd);
-	}
-}
-
-
-/* This function inserts text from a cut buffer, and returns the MARK where
- * insertion ended.  Return MARK_UNSET on errors.
- */
-MARK paste(at, after, retend)
-	MARK	at;	/* where to insert the text */
-	int	after;	/* boolean: insert after mark? (rather than before) */
-	int	retend;	/* boolean: return end of text? (rather than start) */
-{
-	REG struct cutbuf	*cb;
-	REG int			i;
-
-	/* handle the "doingdot" quirks */
-	if (doingdot)
-	{
-		if (!cbname)
-		{
-			if (dotcb >= '1' && dotcb < '1' + NANONS - 1)
-			{
-				dotcb++;
-			}
-			cbname = dotcb;
-		}
-	}
-	else if (cbname != '.')
-	{
-		dotcb = cbname;
-	}
-
-	/* decide which cut buffer to use */
-	if (cbname >= 'A' && cbname <= 'Z')
-	{
-		cb = &named[cbname - 'A'];
-	}
-	else if (cbname >= 'a' && cbname <= 'z')
-	{
-		cb = &named[cbname - 'a'];
-	}
-	else if (cbname >= '1' && cbname <= '9')
-	{
-		cb = &anon[cbname - '1'];
-	}
-	else if (cbname == '.')
-	{
-		cb = &named[26];
-	}
-	else if (!cbname)
-	{
-		cb = anon;
-	}
-	else
-	{
-		msg("Invalid cut buffer name: \"%c", cbname);
-		cbname = '\0';
-		return MARK_UNSET;
-	}
-
-	/* make sure it isn't empty */
-	if (cb->nblks == 0)
-	{
-		if (cbname)
-			msg("Cut buffer \"%c is empty", cbname);
-		else
-			msg("Cut buffer is empty");
-		cbname = '\0';
-		return MARK_UNSET;
-	}
-	cbname = '\0';
-
-	/* adjust the insertion MARK for "after" and line-mode cuts */
-	if (cb->lnmode)
-	{
-		at &= ~(BLKSIZE - 1);
-		if (after)
-		{
-			at += BLKSIZE;
-		}
-	}
-	else if (after)
-	{
-		/* careful! if markidx(at) == 0 we might be pasting into an
-		 * empty line -- so we can't blindly increment "at".
-		 */
-		if (markidx(at) == 0)
-		{
-			pfetch(markline(at));
-			if (plen != 0)
-			{
-				at++;
-			}
-		}
-		else
-		{
-			at++;
-		}
-	}
-
-	/* put a copy of the "at" mark in the mark[] array, so it stays in
-	 * sync with changes made via add().
-	 */
-	mark[27] = at;
-
-	/* simple one-block paste? */
-	if (cb->nblks == 1)
-	{
-		/* get the block */
-		readcutblk(cb, 0);
-
-		/* isolate the text we need within it */
-		if (cb->end)
-		{
-			tmpblk.c[cb->end] = '\0';
-		}
-
-		/* insert it */
-		ChangeText
-		{
-			add(at, &tmpblk.c[cb->start]);
-		}
-	}
-	else
-	{
-		/* multi-block paste */
-
-		ChangeText
-		{
-			i = cb->nblks - 1;
-
-			/* add text from the last block first */
-			if (cb->end > 0)
-			{
-				readcutblk(cb, i);
-				tmpblk.c[cb->end] = '\0';
-				add(at, tmpblk.c);
-				i--;
-			}
-
-			/* add intervening blocks */
-			while (i > 0)
-			{
-				readcutblk(cb, i);
-				add(at, tmpblk.c);
-				i--;
-			}
-
-			/* add text from the first cut block */
-			readcutblk(cb, 0);
-			add(at, &tmpblk.c[cb->start]);
-		}
-	}
-
-	/* Reporting... */
-	rptlines = markline(mark[27]) - markline(at);
-	rptlabel = "pasted";
-
-	/* return the mark at the beginning/end of inserted text */
-	if (retend)
-	{
-		return mark[27] - 1L;
-	}
-	return at;
+	return (0);
 }
 
 /*
- * cb2str --
- *	Copy a cut buffer into an allocated buffer, and return a pointer
- *	to the buffer and the length.
+ * cutline --
+ *	Cut a portion of a single line.  A length of zero means to cut
+ * 	from the MARK to the end of the line.
  */
-u_char *
-cb2str(name, lenp)
-	int name;
-	size_t *lenp;
+static int
+cutline(lno, fcno, len, newp)
+	recno_t lno;
+	size_t fcno, len;
+	CBLINE **newp;
 {
-	register struct cutbuf *cb;
-	register u_char *p;
-	size_t len;
+	CBLINE *cp;
+	size_t llen;
+	char *lp, *p;
 
-	if (!islower(name)) {
-		msg("Illegal buffer name; only a-z are supported.");
-		return (NULL);
-	}
-	cb = &named[name - 'a'];
-
-	/* Fail if the buffer is empty. */
-	if (cb->nblks == 0) {
-		msg("Buffer %c is empty.", name);
-		return (NULL);
-	}
-
-	/* Fail if not a single-block cut. */
-	if (cb->nblks != 1)
-		return (NULL);
-
-	/* Allocate space to hold the copy. */
-	len = cb->end - cb->start + 1;
-	if ((p = malloc(len)) == NULL) {
-		msg("Error: %s", strerror(errno));
-		return (NULL);
-	}
-
-	/* Get the containing block into memory. */
-	readcutblk(cb, 0);
-
-	/* Copy into the buffer. */
-	bcopy(tmpblk.c + cb->start, p, len);
-
-	if (lenp)
-		*lenp = len;
-	return (p);
-}
-#else
-int
-cutneeds(need)
-	void *need;
-{
-	return (0);
-}
-void
-cutswitch()
-{
-	return;
-}
-void
-cutend()
-{
-	return;
-}
-void
-cutname(name)
-	int name;
-{
-	return;
-}
-int
-cut(fm, tm)
-	MARK *fm, *tm;
-{
-	return (0);
-}
-MARK *
-paste(m, after, retend)
-	MARK *m;
-	int after, retend;
-{
-	return (NULL);
-}
-u_char *
-cb2str(name, lenp)
-	int name;
-	size_t *lenp;
-{
-	return (NULL);
-}
+	EGETLINE(p, lno, llen);
+	if ((cp = malloc(sizeof(CBLINE))) == NULL)
+		goto mem;
+	if (llen == 0) {
+		cp->lp = NULL;
+		cp->len = 0;
+#if DEBUG && 1
+		TRACE("{}\n");
 #endif
+	} else {
+		if (len == 0)
+			len = llen - fcno;
+		if ((lp = malloc(len)) == NULL) {
+			free(cp);
+mem:			bell();
+			msg("Error: %s", strerror(errno));
+			return (1);
+		}
+		bcopy(p + fcno, lp, len);
+		cp->lp = lp;
+		cp->len = len;
+#if DEBUG && 1
+		TRACE("\t{%.*s}\n", MIN(len, 20), p + fcno);
+#endif
+	}
+	cp->next = NULL;
+	*newp = cp;
+	return (0);
+}
+
+/* Increase the buffer space as necessary. */
+#define	BFCHECK {							\
+	if (blen < len + cblp->len) {					\
+		blen += MAX(256, len + cblp->len);			\
+		if ((bp = realloc(bp, blen)) == NULL) {			\
+			msg("Error: %s", strerror(errno));		\
+			blen = 0;					\
+			return (1);					\
+		}							\
+	}								\
+}
+
+/*
+ * put --
+ *	Put cut buffer contents back into the text.
+ */	
+int
+put(buffer, cp, rp, append)
+	int buffer, append;
+	MARK *cp, *rp;
+{
+	static char *bp;
+	static size_t blen;
+	CB *cb;
+	CBLINE *cblp;
+	recno_t lno;
+	size_t clen, len;
+	int intermediate;
+	char *p, *t;
+
+	CBNAME(buffer, cb);
+	CBEMPTY(buffer, cb);
+
+	/*
+	 * If buffer was cut in line mode, append each new line into the
+	 * file.  Otherwise, insert the first line into place, append
+	 * each new line into the file, and insert the last line into
+	 * place.
+	 *
+	 * XXX
+	 * We have to do some fairly interesting stuff to make this work
+	 * for inserting above the first line.  This might be better done
+	 * in db(3) by allowing record 0.
+	 */
+	if (cb->flags & CB_LMODE) {
+		if (append) {
+			for (lno = cp->lno, cblp = cb->head; cblp;
+			    ++lno, cblp = cblp->next)
+				if (file_aline(curf, lno, cblp->lp, cblp->len))
+					return (1);
+			rp->lno = cp->lno + 1;
+		} else if ((lno = cp->lno) != 1) {
+			for (cblp = cb->head, --lno;
+			    cblp; cblp = cblp->next, ++lno)
+				if (file_aline(curf, lno, cblp->lp, cblp->len))
+					return (1);
+			rp->lno = cp->lno;
+		} else {
+			cblp = cb->head;
+			if (file_iline(curf, (recno_t)1, cblp->lp, cblp->len))
+				return (1);
+			for (lno = 1; cblp = cblp->next; ++lno)
+				if (file_aline(curf, lno, cblp->lp, cblp->len))
+					return (1);
+			rp->lno = 1;
+		}
+		rp->cno = 0;
+	}
+	/*
+	 * If buffer was cut in character mode, replace the current line with
+	 * one built from the portion of the first line to the left of the
+	 * split plus the first line in the CB.  Append each intermediate line
+	 * in the CB.  Append a line built from the portion of the first line
+	 * to the right of the split plus the last line in the CB.
+	 */
+	else {
+		cblp = cb->head;
+
+		/* Get the first line. */
+		lno = cp->lno;
+		EGETLINE(p, lno, len);
+
+		/* Check for space. */
+		BFCHECK;
+
+		/* Original line, left of the split. */
+		t = bp;
+		if (len > 0 && (clen = cp->cno + (append ? 1 : 0)) > 0) {
+			bcopy(p, bp, clen);
+			p += clen;
+			t += clen;
+		}
+
+		/* First line from the CB. */
+		bcopy(cblp->lp, t, cblp->len);
+		t += cblp->len;
+
+		/* Calculate length left in original line. */
+		clen = len ? len - cp->cno - (append ? 1 : 0) : 0;
+
+		/*
+		 * If no more lines in the CB, append the rest of the original
+		 * line and quit.
+		 */
+		if (cblp->next == NULL) {
+			rp->lno = lno;
+			rp->cno = t - bp;
+
+			if (clen > 0) {
+				bcopy(p, t, clen);
+				t += clen;
+			}
+			if (file_sline(curf, lno, bp, t - bp))
+				return (1);
+
+		} else {
+			/* Output the line replacing the original line. */
+			if (file_sline(curf, lno, bp, t - bp))
+				return (1);
+
+			/* Output any intermediate lines in the CB alone. */
+			for (;;) {
+				cblp = cblp->next;
+				if (cblp->next == NULL)
+					break;
+				if (file_aline(curf, lno, cblp->lp, cblp->len))
+					return (1);
+				++lno;
+			}
+
+			/* Last part of original line. */
+
+			/* Check for space. */
+			BFCHECK;
+
+			t = bp;
+			bcopy(cblp->lp, t, cblp->len);
+			t += cblp->len;
+
+			rp->lno = lno;
+			rp->cno = t - bp;
+
+			if (clen) {
+				bcopy(p, t, clen);
+				t += clen;
+			}
+			if (file_aline(curf, lno, bp, t - bp))
+				return (1);
+		}
+	}
+
+	/* Ping the screen. */
+	scr_ref();
+
+	/* Shift any marks in the range. */
+	mark_insert(cp, rp);
+
+	/* Reporting... */
+	rptlabel = "put";
+	rptlines = lno - cp->lno;
+
+	return (0);
+}
+
+/*
+ * freecbline --
+ *	Free a chain of cbline structures.
+ */
+static void
+freecbline(cp)
+	CBLINE *cp;
+{
+	CBLINE *np;
+
+	do {
+		np = cp->next;
+		free(cp);
+	} while (cp = np);
+}
