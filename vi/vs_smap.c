@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 8.38 1994/03/25 11:39:25 bostic Exp $ (Berkeley) $Date: 1994/03/25 11:39:25 $";
+static char sccsid[] = "$Id: vs_smap.c,v 8.39 1994/04/13 13:46:29 bostic Exp $ (Berkeley) $Date: 1994/04/13 13:46:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -165,11 +165,13 @@ svi_sm_fill(sp, ep, lno, pos)
 		/* See if less than half a screen from the bottom. */
 		if (file_lline(sp, ep, &tmp.lno))
 			return (1);
-		tmp.off = svi_opt_screens(sp, ep, tmp.lno, NULL);
+		if (!O_ISSET(sp, O_LEFTRIGHT))
+			tmp.off = svi_opt_screens(sp, ep, tmp.lno, NULL);
 		if (svi_sm_nlines(sp, ep,
 		    &tmp, lno, HALFTEXT(sp)) <= HALFTEXT(sp)) {
 			TMAP->lno = tmp.lno;
-			TMAP->off = tmp.off;
+			if (!O_ISSET(sp, O_LEFTRIGHT))
+				TMAP->off = tmp.off;
 			goto bottom;
 		}
 		goto middle;
@@ -201,7 +203,8 @@ middle:		p = HMAP + (TMAP - HMAP) / 2;
 	case P_BOTTOM:
 		if (lno != OOBLNO) {
 			TMAP->lno = lno;
-			TMAP->off = svi_opt_screens(sp, ep, lno, NULL);
+			if (!O_ISSET(sp, O_LEFTRIGHT))
+				TMAP->off = svi_opt_screens(sp, ep, lno, NULL);
 		}
 		/* If we fail, guess that the file is too small. */
 bottom:		for (p = TMAP; p > HMAP; --p)
@@ -511,6 +514,7 @@ svi_sm_up(sp, ep, rp, count, cursor_move)
 		return (1);
 	if (tmp.lno > TMAP->lno &&
 	    !file_gline(sp, ep, tmp.lno, NULL) ||
+	    !O_ISSET(sp, O_LEFTRIGHT) &&
 	    tmp.off > svi_opt_screens(sp, ep, tmp.lno, NULL)) {
 		if (!cursor_move || ignore_cursor || p == TMAP) {
 			v_eof(sp, ep, NULL);
@@ -519,6 +523,7 @@ svi_sm_up(sp, ep, rp, count, cursor_move)
 		if (svi_sm_next(sp, ep, p, &tmp))
 			return (1);
 		if (!file_gline(sp, ep, tmp.lno, NULL) ||
+		    !O_ISSET(sp, O_LEFTRIGHT) &&
 		    tmp.off > svi_opt_screens(sp, ep, tmp.lno, NULL)) {
 			v_eof(sp, ep, NULL);
 			return (1);
