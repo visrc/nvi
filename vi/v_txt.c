@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.104 1994/04/14 12:09:08 bostic Exp $ (Berkeley) $Date: 1994/04/14 12:09:08 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.105 1994/04/27 09:58:47 bostic Exp $ (Berkeley) $Date: 1994/04/27 09:58:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1136,6 +1136,8 @@ txt_ai_resolve(sp, tp)
 	 */
 	if (tp->len <= tp->ai) {
 		tp->len = tp->ai = 0;
+		if (tp->lno == sp->lno)
+			sp->cno = 0;
 		return;
 	}
 
