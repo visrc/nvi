@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 5.28 1993/04/12 14:37:35 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:37:35 $";
+static char sccsid[] = "$Id: ex_print.c,v 5.29 1993/04/18 09:32:24 bostic Exp $ (Berkeley) $Date: 1993/04/18 09:32:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -127,7 +127,7 @@ ex_print(sp, ep, fp, tp, flags)
 		}
 
 #define	WCHECK(ch) {							\
-	if (col == sp->cno) {						\
+	if (col == sp->cols) {						\
 		(void)putc('\n', sp->stdfp);				\
 		col = 0;						\
 	}								\
@@ -152,10 +152,10 @@ ex_print(sp, ep, fp, tp, flags)
 			else {
 				ch &= 0x7f;
 				if (ch == '\t') {
-					while (col < sp->cno &&
+					while (col < sp->cols &&
 					    ++col % O_VAL(sp, O_TABSTOP))
 						(void)putc(' ', sp->stdfp);
-					if (col == sp->cno) {
+					if (col == sp->cols) {
 						col = 0;
 						(void)putc('\n', sp->stdfp);
 					}
