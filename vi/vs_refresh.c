@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.27 1993/02/16 20:08:45 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:08:45 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.28 1993/02/16 20:19:20 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:19:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -100,6 +100,7 @@ scr_begin(ep)
 	nonl();
 	raw();
 	scrollok(stdscr, 1);
+	idlok(stdscr, 1);
 
 	ep->lines = LINES;		/* XXX: Way ugly. */
 	ep->cols = COLS;
