@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.103 1994/08/14 14:24:37 bostic Exp $ (Berkeley) $Date: 1994/08/14 14:24:37 $";
+static char sccsid[] = "$Id: main.c,v 8.104 1994/08/15 18:48:39 bostic Exp $ (Berkeley) $Date: 1994/08/15 18:48:39 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -193,6 +193,9 @@ main(argc, argv)
 	 * tricky.  If an error is returned, we may or may not have a
 	 * screen structure.  If we have a screen structure, put it on a
 	 * display queue so that the error messages get displayed.
+	 *
+	 * !!!
+	 * Signals not on, no need to block them for queue manipulation.
 	 */
 	if (screen_init(NULL, &sp, flags)) {
 		if (sp != NULL)
@@ -413,8 +416,10 @@ main(argc, argv)
 		    (void *)&__global_list->dq)
 			if ((sp = __global_list->hq.cqh_first) !=
 			    (void *)&__global_list->hq) {
+				SIGBLOCK(__global_list);
 				CIRCLEQ_REMOVE(&sp->gp->hq, sp, q);
 				CIRCLEQ_INSERT_TAIL(&sp->gp->dq, sp, q);
+				SIGUNBLOCK(__global_list);
 			} else
 				break;
 
@@ -467,6 +472,10 @@ gs_init()
 	if (gp == NULL)
 		err(1, NULL);
 
+	/*
+	 * !!!
+	 * Signals not on, no need to block them for queue manipulation.
+	 */
 	CIRCLEQ_INIT(&gp->dq);
 	CIRCLEQ_INIT(&gp->hq);
 	LIST_INIT(&gp->msgq);
