@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_term.c,v 8.1 1994/07/15 16:18:47 bostic Exp $ (Berkeley) $Date: 1994/07/15 16:18:47 $";
+static char sccsid[] = "$Id: cl_term.c,v 8.2 1994/07/16 15:05:41 bostic Exp $ (Berkeley) $Date: 1994/07/16 15:05:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -107,12 +107,10 @@ int
 svi_term_init(sp)
 	SCR *sp;
 {
-	GS *gp;
 	KEYLIST *kp;
 	SEQ *qp;
 	TKLIST const *tkp;
 	size_t len;
-	int cnt;
 	char *sbp, *s, *t, sbuf[1024];
 
 	/* Regardless of the results, it's initialized. */
