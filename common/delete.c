@@ -6,13 +6,14 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: delete.c,v 5.7 1992/06/07 16:47:58 bostic Exp $ (Berkeley) $Date: 1992/06/07 16:47:58 $";
+static char sccsid[] = "$Id: delete.c,v 5.8 1992/10/10 13:36:50 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:36:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 #include <errno.h>
-#include <stdlib.h>
+#include <limits.h>
 #include <stddef.h>
+#include <stdlib.h>
 
 #include "vi.h"
 #include "exf.h"
@@ -31,7 +32,7 @@ delete(fm, tm, lmode)
 	MARK m;
 	recno_t lno;
 	size_t len, tlen;
-	char *bp, *p;
+	u_char *bp, *p;
 
 #if DEBUG && 1
 	TRACE("delete: from {%lu, %d}, to {%lu, %d}\n",

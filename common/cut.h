@@ -4,12 +4,12 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: cut.h,v 5.3 1992/05/28 13:52:55 bostic Exp $ (Berkeley) $Date: 1992/05/28 13:52:55 $
+ *	$Id: cut.h,v 5.4 1992/10/10 13:36:39 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:36:39 $
  */
 
 typedef struct text {			/* Text: a linked list of lines. */
 	struct text *next;		/* Next buffer. */
-	char *lp;			/* Line buffer. */
+	u_char *lp;			/* Line buffer. */
 	size_t len;			/* Line length. */
 } TEXT;
 
@@ -28,10 +28,10 @@ typedef struct {			/* Input buffer. */
 	MARK stop;			/* Ending cursor position. */
 	u_long len;			/* Total length (unused, for macro). */
 	size_t insert;			/* Characters to push. */
-	char *ilb;			/* Input line buffer. */
+	u_char *ilb;			/* Input line buffer. */
 	size_t ilblen;			/* Input buffer length. */
-	char *rep;			/* Replay buffer length. */
-	size_t replen;			/* Replay buffer. */
+	u_char *rep;			/* Replay buffer. */
+	size_t replen;			/* Replay buffer length. */
 } IB;
 extern IB ib;				/* Input buffer. */
 

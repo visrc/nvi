@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 5.4 1992/05/21 13:05:20 bostic Exp $ (Berkeley) $Date: 1992/05/21 13:05:20 $";
+static char sccsid[] = "$Id: search.c,v 5.5 1992/10/10 13:36:19 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:36:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -53,7 +53,7 @@ enum direction searchdir;		/* Search direction. */
 MARK *
 f_search(fm, ptrn, eptrn, set)
 	MARK *fm;
-	char *ptrn, **eptrn;
+	u_char *ptrn, **eptrn;
 	int set;
 {
 	static MARK rval;
@@ -62,7 +62,7 @@ f_search(fm, ptrn, eptrn, set)
 	u_long coff, lno;
 	long delta;
 	int sol, wrapped;
-	char *ep, *l;
+	u_char *ep, *l;
 
 	START(FORWARD);
 
@@ -98,7 +98,7 @@ f_search(fm, ptrn, eptrn, set)
 				rval.cno = 0;
 			} else {
 				rval.lno = lno;
-				rval.cno = re->startp[0] - l;
+				rval.cno = (u_char *)re->startp[0] - l;
 			}
 			rvp = &rval;
 			break;
@@ -111,7 +111,7 @@ f_search(fm, ptrn, eptrn, set)
 MARK *
 b_search(fm, ptrn, eptrn, set)
 	MARK *fm;
-	char *ptrn, **eptrn;
+	u_char *ptrn, **eptrn;
 	int set;
 {
 	static MARK rval;
@@ -120,7 +120,7 @@ b_search(fm, ptrn, eptrn, set)
 	u_long coff, lno;
 	long delta;
 	int last, try, wrapped;
-	char *ep, *l;
+	u_char *ep, *l;
 
 	START(BACKWARD);
 
@@ -156,7 +156,8 @@ b_search(fm, ptrn, eptrn, set)
 			break;
 		}
 
-		if (regexec(re, l, 1) && (int)(re->startp[0] - l) < coff) {
+		if (regexec(re, l, 1) &&
+		    (int)((u_char *)re->startp[0] - l) < coff) {
 			if (wrapped && ISSET(O_WARN))
 				msg("Search wrapped.");
 			if (delta) {
@@ -176,11 +177,13 @@ b_search(fm, ptrn, eptrn, set)
 			} else {
 				/* Find the last acceptable one in this line. */
 				for (;;) {
-					last = (int)(re->startp[0] - l);
-					try = (int)(re->endp[0] - l);
+					last =
+					    (int)((u_char *)re->startp[0] - l);
+					try = (int)((u_char *)re->endp[0] - l);
 					if (try < 0 ||
 					    !regexec(re, &l[try], 0) ||
-					    (int)(re->startp[0] - l) < coff)
+					    (int)((u_char *)re->startp[0] - l)
+					    < coff)
 						break;
 				}
 				rval.lno = lno;
