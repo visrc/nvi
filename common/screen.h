@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.93 1994/04/06 11:37:09 bostic Exp $ (Berkeley) $Date: 1994/04/06 11:37:09 $
+ *	$Id: screen.h,v 8.94 1994/04/07 10:16:49 bostic Exp $ (Berkeley) $Date: 1994/04/07 10:16:49 $
  */
 
 /*
@@ -161,6 +161,8 @@ struct _scr {
 	size_t	*newl;			/* Newline offset array. */
 	size_t	 newl_len;		/* Newline array size. */
 	size_t	 newl_cnt;		/* Newlines in replacement. */
+	u_char	 c_suffix;		/* Edcompatible 'c' suffix value. */
+	u_char	 g_suffix;		/* Edcompatible 'g' suffix value. */
 
 	u_int	 saved_vi_mode;		/* Saved vi display type. */
 
