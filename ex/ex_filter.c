@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 8.39 1994/07/23 18:49:05 bostic Exp $ (Berkeley) $Date: 1994/07/23 18:49:05 $";
+static char sccsid[] = "$Id: ex_filter.c,v 8.40 1994/07/27 11:05:08 bostic Exp $ (Berkeley) $Date: 1994/07/27 11:05:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -50,7 +50,7 @@ filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
 {
 	FILE *ifp, *ofp;
 	pid_t parent_writer_pid, utility_pid;
-	recno_t lno, nread;
+	recno_t nread;
 	int input[2], output[2], rval, teardown;
 	char *name;
 
@@ -267,11 +267,11 @@ err:		if (input[0] != -1)
 
 		/* Delete any lines written to the utility. */
 		if (ftype == FILTER && rval == 0) {
-			for (lno = tm->lno; lno >= fm->lno; --lno)
-				if (file_dline(sp, ep, lno)) {
-					rval = 1;
-					break;
-				}
+			if (cut(sp, ep, NULL, fm, tm, CUT_LINEMODE) ||
+			    delete(sp, ep, fm, tm, 1)) {
+				rval = 1;
+				break;
+			}
 			if (rval == 0)
 				sp->rptlines[L_DELETED] +=
 				    (tm->lno - fm->lno) + 1;
