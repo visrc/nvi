@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_join.c,v 8.1 1993/06/09 22:24:33 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:24:33 $";
+static char sccsid[] = "$Id: ex_join.c,v 8.2 1993/08/21 19:22:57 bostic Exp $ (Berkeley) $Date: 1993/08/21 19:22:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,7 +46,7 @@ ex_join(sp, ep, cmdp)
 
 	clen = tlen = 0;
         for (first = 1, from = cmdp->addr1.lno,
-	    to = cmdp->addr2.lno + 1; from <= to; ++from) {
+	    to = cmdp->addr2.lno; from <= to; ++from) {
 		/*
 		 * Get next line.  Historic versions of vi allowed "10J" while
 		 * less than 10 lines from the end-of-file, so we do too.
@@ -122,7 +122,7 @@ ex_join(sp, ep, cmdp)
 	sp->lno = cmdp->addr1.lno;
 
 	/* Delete the joined lines. */
-        for (from = cmdp->addr1.lno, to = cmdp->addr2.lno + 1; to > from; --to)
+        for (from = cmdp->addr1.lno, to = cmdp->addr2.lno; to > from; --to)
 		if (file_dline(sp, ep, to))
 			goto err;
 		
