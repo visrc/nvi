@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.2 1993/06/21 11:47:30 bostic Exp $ (Berkeley) $Date: 1993/06/21 11:47:30 $
+ *	$Id: screen.h,v 8.3 1993/06/21 13:12:16 bostic Exp $ (Berkeley) $Date: 1993/06/21 13:12:16 $
  */
 
 /*
@@ -257,17 +257,18 @@ typedef struct _scr {
 #define	S_AUTOPRINT	0x0000200	/* Autoprint flag. */
 #define	S_BELLSCHED	0x0000400	/* Bell scheduled. */
 #define	S_CUR_INVALID	0x0000800	/* Cursor position is incalculable. */
-#define	S_GLOBAL	0x0001000	/* Doing a global command. */
-#define	S_GLOBAL_QUIT	0x0002000	/* Quitting a global command. */
-#define	S_INPUT		0x0004000	/* Doing text input. */
-#define	S_ISFROMTTY	0x0008000	/* Reading from a tty. */
-#define	S_MSGREENTER	0x0010000	/* If msg routine reentered. */
-#define	S_RE_SET	0x0020000	/* The file's RE has been set. */
-#define	S_REDRAW	0x0040000	/* Redraw the screen. */
-#define	S_REFORMAT	0x0080000	/* Reformat the screen. */
-#define	S_REFRESH	0x0100000	/* Refresh the screen. */
-#define	S_RESIZE	0x0200000	/* Resize the screen. */
-#define	S_UPDATE_MODE	0x0400000	/* Don't repaint modeline. */
+#define	S_DIVIDER	0x0001000	/* Ex screen divider is displayed. */
+#define	S_GLOBAL	0x0002000	/* Doing a global command. */
+#define	S_GLOBAL_QUIT	0x0004000	/* Quitting a global command. */
+#define	S_INPUT		0x0008000	/* Doing text input. */
+#define	S_ISFROMTTY	0x0010000	/* Reading from a tty. */
+#define	S_MSGREENTER	0x0020000	/* If msg routine reentered. */
+#define	S_RE_SET	0x0040000	/* The file's RE has been set. */
+#define	S_REDRAW	0x0080000	/* Redraw the screen. */
+#define	S_REFORMAT	0x0100000	/* Reformat the screen. */
+#define	S_REFRESH	0x0200000	/* Refresh the screen. */
+#define	S_RESIZE	0x0400000	/* Resize the screen. */
+#define	S_UPDATE_MODE	0x0800000	/* Don't repaint modeline. */
 
 #define	S_SCREEN_RETAIN			/* Retain at screen create. */	\
 	(S_MODE_EX | S_MODE_VI | S_ISFROMTTY)
