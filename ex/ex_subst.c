@@ -6,273 +6,379 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 5.15 1992/10/29 14:40:21 bostic Exp $ (Berkeley) $Date: 1992/10/29 14:40:21 $";
+static char sccsid[] = "$Id: ex_subst.c,v 5.16 1992/11/01 15:03:48 bostic Exp $ (Berkeley) $Date: 1992/11/01 15:03:48 $";
 #endif /* not lint */
 
-#include <sys/types.h>
+#include <sys/param.h>
 
+#include <ctype.h>
 #include <curses.h>
+#include <errno.h>
 #include <limits.h>
-#include <regexp.h>
+#include <regex.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "vi.h"
 #include "excmd.h"
 #include "options.h"
+#include "search.h"
 #include "pathnames.h"
 #include "extern.h"
 
-enum which {AGAIN, FIRST};
-static void substitute __P((EXCMDARG *, enum which));
+enum which {AGAIN, MUSTSETR, FIRST};
 
-int
-ex_subagain(cmdp)
-	EXCMDARG *cmdp;
-{
-	substitute(cmdp, AGAIN);
-	return (0);
-}
+static int	regsub __P((u_char *, u_char *));
+static int	substitute __P((EXCMDARG *, u_char *, regex_t *, enum which));
+
+static regex_t sre;			/* Saved re. */
+static int sre_set;			/* If saved re set. */
+static regmatch_t *match;		/* Match table. */
+static size_t matchnsub;		/* Match table size. */
+static u_char *repl;			/* Replacement string. */
 
 int
 ex_substitute(cmdp)
 	EXCMDARG *cmdp;
 {
-	substitute(cmdp, FIRST);
+	regex_t *re, lre;
+	int eval, reflags;
+	u_char *ep, *l;
+	char delim[2];
+
+	/*
+	 * Historic vi only permitted '/' to begin the substitution command.
+	 * We permit ';' as well, since users often want to operate on UNIX
+	 * pathnames.  We don't allow anything else because the 'r' flag
+	 * character won't work.
+	 */
+	if (*cmdp->string == '/' || *cmdp->string == ';') {
+		/* Set RE flags. */
+		reflags = 0;
+		if (ISSET(O_EXTENDED))
+			reflags |= REG_EXTENDED;
+		if (ISSET(O_IGNORECASE))
+			reflags |= REG_ICASE;
+
+		/* Delimiter is the first character. */
+		delim[0] = cmdp->string[0];
+		delim[1] = '\0';
+
+		/* Get the substitute string. */
+		ep = cmdp->string + 1;
+		l = USTRSEP(&ep, delim);
+
+		/* Get the replacement string, save it off. */
+		if (*ep == NULL) {
+			msg("No replacement string specified.");
+			return (1);
+		}
+		if (repl != NULL)
+			free(repl);
+		repl = USTRSEP(&ep, delim);
+		repl = USTRDUP(repl);
+
+		/* If the substitute string is empty, use the last one. */
+		if (*l == NULL) {
+			if (!sre_set) {
+				msg("No previous regular expression.");
+				return (1);
+			}
+			return (substitute(cmdp, ep, &sre, AGAIN));
+		}
+
+		/* Compile the RE. */
+		re = &lre;
+		if (eval = regcomp(re, (char *)l, reflags)) {
+			re_error(eval, re);
+			return (1);
+		}
+
+		/* Set saved RE. */
+		sre_set = 1;
+		sre = lre;
+
+		/* Build nsub structure as necessary. */
+		if (matchnsub < re->re_nsub + 1) {
+			matchnsub = re->re_nsub + 1;
+			if ((match = realloc(match,
+			    matchnsub * sizeof(regmatch_t))) == NULL) {
+				msg("Error: %s", strerror(errno));
+				match = NULL;
+				matchnsub = 0;
+				return (1);
+			}
+		}
+		return (substitute(cmdp, ep, re, FIRST));
+	}
+	return (substitute(cmdp, cmdp->string, &sre, MUSTSETR));
+}
+
+int
+ex_subagain(cmdp)
+	EXCMDARG *cmdp;
+{
+	if (!sre_set) {
+		msg("No previous regular expression.");
+		return (1);
+	}
+	substitute(cmdp, cmdp->string, &sre, AGAIN);
 	return (0);
 }
 
-static void
-substitute(cmdp, cmd)
+static u_char *lb;				/* Build buffer. */
+static size_t lbclen, lblen;			/* Current and total length. */
+
+#define	NEEDSP(len, pnt) {						\
+	if (lbclen + (len) > lblen) {					\
+		lblen += MIN(lbclen + (len), 256);			\
+		if ((lb = realloc(lb, lblen)) == NULL) {		\
+			msg("Error: %s", strerror(errno));		\
+			lbclen = 0;					\
+			return (1);					\
+		}							\
+		pnt = lb + lbclen;					\
+	}								\
+}
+
+#define	BUILD(l, len) {							\
+	if (lbclen + (len) > lblen) {					\
+		lblen += MIN(lbclen + (len), 256);			\
+		if ((lb = realloc(lb, lblen)) == NULL) {		\
+			msg("Error: %s", strerror(errno));		\
+			lbclen = 0;					\
+			return (1);					\
+		}							\
+	}								\
+	memmove(lb + lbclen, l, len);					\
+	lbclen += len;							\
+}
+
+static int
+substitute(cmdp, s, re, cmd)
 	EXCMDARG *cmdp;
+	u_char *s;
+	regex_t *re;
 	enum which cmd;
 {
-	u_char	*line;	/* a line from the file */
-	regexp	*re;	/* the compiled search expression */
-	u_char	*subst;	/* the substitution string */
-	u_char	*opt;	/* substitution options */
-	long	l;	/* a line number */
-	u_char	*s, *d;	/* used during subtitutions */
-	u_char	*conf;	/* used during confirmation */
-	long	chline;	/* # of lines changed */
-	long	chsub;	/* # of substitutions made */
-	static	optp;	/* boolean option: print when done? */
-	static	optg;	/* boolean option: substitute globally in line? */
-	static	optc;	/* boolean option: confirm before subst? */
-	long	oldnlines;
-	u_char lbuf[2048];
-	u_char *extra;
+	MARK from, to;
+	recno_t elno, lno;
+	size_t len, re_off;
+	int eval, cflag, gflag, lflag, nflag, pflag, rflag;
 
-	extra = cmdp->argv[0];
-
-	/* for now, assume this will fail */
-	curf->rptlines = -1L;
-
-	if (cmd == AGAIN) {
-		if (ISSET(O_MAGIC))
-			subst = (u_char *)"~";
-		else
-			subst = (u_char *)"\\~";
-		re = regcomp("");
-
-		/* if visual "&", then turn off the "p" and "c" options */
-		if (cmdp->flags & E_FORCE)
-		{
-			optp = optc = 0;
-		}
-	} else {
-		/* make sure we got a search pattern */
-		if (*extra != '/' && *extra != '?')
-		{
-			msg("Usage: s/regular expression/new text/");
-			return;
-		}
-
-		/* parse & compile the search pattern */
-		subst = parseptrn(extra);
-		re = regcomp(extra + 1);
-	}
-
-	/* abort if RE error -- error message already given by regcomp() */
-	if (!re)
-	{
-		return;
-	}
-
-	if (cmd == FIRST) {
-		/* parse the substitution string & find the option string */
-		for (opt = subst; *opt && *opt != *extra; opt++)
-		{
-			if (*opt == '\\' && opt[1])
-			{
-				opt++;
+	/*
+	 * Historic vi permitted the '#', 'l' and 'p' options in vi mode,
+	 * but it only displayed the last change and they really don't
+	 * make any sense.  In the current model the problem is combining
+	 * them with the 'c' flag -- the screen would have to flip back
+	 * and forth between the confirm screen and the ex print screen,
+	 * which would be pretty awful.
+	 */
+	cflag = gflag = lflag = nflag = pflag = rflag = 0;
+	for (; *s; ++s)
+		switch(*s) {
+		case ' ':
+		case '\t':
+			break;
+		case '#':
+			if (mode == MODE_VI) {
+				msg("'#' flag not supported in vi mode.");
+				return (1);
 			}
-		}
-		if (*opt)
-		{
-			*opt++ = '\0';
-		}
-
-		/* analyse the option string */
-		if (!ISSET(O_EDCOMPATIBLE))
-		{
-			optp = optg = optc = 0;
-		}
-		while (*opt)
-		{
-			switch (*opt++)
-			{
-			  case 'p':	optp = !optp;	break;
-			  case 'g':	optg = !optg;	break;
-			  case 'c':	optc = !optc;	break;
-			  case ' ':
-			  case '\t':			break;
-			  default:
-				msg("Subst options are p, c, and g -- not %c", opt[-1]);
-				return;
+			nflag = 1;
+			break;
+		case 'c':
+			cflag = 1;
+			break;
+		case 'g':
+			gflag = 1;
+			break;
+		case 'l':
+			if (mode == MODE_VI) {
+				msg("'l' flag not supported in vi mode.");
+				return (1);
 			}
+			lflag = 1;
+			break;
+		case 'p':
+			if (mode == MODE_VI) {
+				msg("'p' flag not supported in vi mode.");
+				return (1);
+			}
+			pflag = 1;
+			break;
+		case 'r':
+			if (cmd == FIRST) {
+		msg("Regular expression specified; r flag meaningless.");
+				return (1);
+			}
+			if (!sre_set) {
+				msg("No previous regular expression.");
+				return (1);
+			}
+			rflag = 1;
+			break;
+		default:
+			goto usage;
 		}
+
+	if (rflag == 0 && cmd == MUSTSETR) {
+usage:		msg("Usage: %s", cmdp->cmd->usage);
+		return (1);
 	}
 
-	/* if "c" or "p" flag was given, and we're in visual mode, then NEWLINE */
-	if ((optc || optp) && mode == MODE_VI)
-	{
-		addch('\n');
-		refresh();
-	}
+	/* For each line... */
+	curf->rptlines = 0;
+	curf->rptlabel = "changed";
+	for (lno = cmdp->addr1.lno, elno = cmdp->addr2.lno;
+	    lno <= elno; ++lno) {
 
-	/* reset the change counters */
-	chline = chsub = 0L;
+		/* Get the line. */
+		if ((s = file_gline(curf, lno, &len)) == NULL) {
+			GETLINE_ERR(lno);
+			return (1);
+		}
 
-	/* for each selected line */
-	for (l = cmdp->addr1.lno; l <= cmdp->addr2.lno; l++)
-	{
-		/* fetch the line */
-		line = file_gline(curf, l, NULL);
+		/* Search the entire line. */
+		match[0].rm_so = 0;
+		match[0].rm_eo = len;
+		eval = regexec(re,
+		    (char *)s, re->re_nsub + 1, match, REG_STARTEND);
+		if (eval == REG_NOMATCH)
+			continue;
+		if (eval != 0) {
+			re_error(eval, re);
+			return (1);
+		}
 
-		/* if it contains the search pattern... */
-		if (regexec(re, line, 1))
-		{
-			/* increment the line change counter */
-			chline++;
+		/* Reset new line buffer. */
+		lbclen = 0;
 
-			/* initialize the pointers */
-			s = line;
-			d = lbuf;
-
-			/* do once or globally ... */
-			do
-			{
-				/* confirm, if necessary */
-				if (optc)
-				{
-					for (conf = line;
-					    conf < (u_char *)re->startp[0];
-					    conf++)
-						addch(*conf);
-					standout();
-					for (; conf < (u_char *)re->endp[0];
-					    conf++)
-						addch(*conf);
-					standend();
-					for (; *conf; conf++)
-						addch(*conf);
-					addch('\n');
-					refresh();
-					if (getkey(0) != 'y')
-					{
-						/* copy accross the original chars */
-						while (s <
-						    (u_char *)re->endp[0])
-							*d++ = *s++;
-
-						/* skip to next match on this line, if any */
-						goto Continue;
-					}
+		/* Do replacement. */
+		if (gflag) {
+			do {
+				if (cflag) {
+					from.lno = to.lno = lno;
+					from.cno = match[0].rm_so;
+					to.cno = match[0].rm_eo;
+					if (!curf->s_confirm(curf, &from, &to))
+						continue;
 				}
 
-				/* increment the substitution change counter */
-				chsub++;
+				/* Locate start of replaced string. */
+				re_off = match[0].rm_so;
 
-				/* copy stuff from before the match */
-				while (s < (u_char *)re->startp[0])
-					*d++ = *s++;
+				/* Copy leading retained string. */
+				BUILD(s, re_off);
 
-				/* substitute for the matched part */
-				regsub(re, subst, d);
-				s = (u_char *)re->endp[0];
-				d += strlen(d);
+				/* Add in regular expression. */
+				if (regsub(s, repl))
+					return (1);
 
-Continue:
-				/* if this regexp could conceivably match
-				 * a zero-length string, then require at
-				 * least 1 unmatched character between
-				 * matches.
-				 */
-				if (re->minlen == 0)
-				{
-					if (!*s)
-						break;
-					*d++ = *s++;
-				}
+				/* Move past this match. */
+				s += match[0].rm_eo;
+				len -= match[0].rm_eo;
+				match[0].rm_so = 0;
+				match[0].rm_eo = len;
+			} while (len &&
+			    (eval = regexec(re, (char *)s, re->re_nsub + 1,
+			    match, REG_NOTBOL | REG_STARTEND)) == 0);
 
-			} while (optg && regexec(re, s, 0));
-
-			/* copy stuff from after the match */
-			while (*d++ = *s++)	/* yes, ASSIGNMENT! */
-			{
+			/* Check for an error. */
+			if (len && eval != REG_NOMATCH) {
+				re_error(eval, re);
+				return (1);
 			}
 
-			/* NOTE: since the substitution text is allowed to have ^Ms which are
-			 * translated into newlines, it is possible that the number of lines
-			 * in the file will increase after each line has been substituted.
-			 * we need to adjust for this.
-			 */
-			oldnlines = file_lline(curf);
-
-			/* replace the old version of the line with the new */
-			d[-1] = '\n';
-			d[0] = '\0';
-			
-#ifdef TURN_THIS_OFF
-			change(MARK_AT_LINE(l), MARK_AT_LINE(l + 1), lbuf);
-#endif
-
-			l += file_lline(curf) - oldnlines;
-			cmdp->addr2.lno += file_lline(curf) - oldnlines;
-
-			/* if supposed to print it, do so */
-			if (optp)
-			{
-				addstr(lbuf);
-				refresh();
+			/* Copy trailing retained string. */
+			if (len)
+				BUILD(s, len)
+		} else {
+			if (cflag) {
+				from.lno = to.lno = lno;
+				from.cno = match[0].rm_so;
+				to.cno = match[0].rm_eo;
+				if (!curf->s_confirm(curf, &from, &to))
+					continue;
 			}
 
-			/* move the cursor to that line */
-			curf->lno = 1;
+			/* Locate start of replaced string. */
+			re_off = match[0].rm_so;
+
+			/* Copy leading retained string. */
+			BUILD(s, re_off);
+
+			/* Add in regular expression. */
+			if (regsub(s, repl))
+				return (1);
+
+			/* Copy trailing retained string. */
+			s += match[0].rm_eo;
+			len -= match[0].rm_eo;
+			if (len)
+				BUILD(s, len);
 		}
+
+		if (lbclen == 0)
+			continue;
+
+		++curf->rptlines;
+
+		/* Reset the line. */
+		if (file_sline(curf, lno, lb, lbclen))
+			return (1);
+
+		/* Display as necessary. */
+		if (!lflag && !nflag && !pflag)
+			continue;
+		if (lflag)
+			ex_print(curf, &from, &to, E_F_LIST);
+		if (nflag)
+			ex_print(curf, &from, &to, E_F_HASH);
+		if (pflag)
+			ex_print(curf, &from, &to, E_F_PRINT);
 	}
 
-	/* free the regexp */
-	free(re);
+	/*
+	 * Note if nothing found.  Otherwise, if nothing displayed to the
+	 * screen, put something up.
+	 */
+	if (curf->rptlines == 0)
+		msg("No match found.");
+	else if (!lflag && !nflag && !pflag)
+		autoprint = 1;
 
-	/* if done from within a ":g" command, then finish silently */
-	if (doingglobal)
-	{
-		curf->rptlines = chline;
-		curf->rptlabel = "changed";
-		return;
-	}
+	return (0);
+}
 
-	/* Reporting */
-	if (chsub == 0)
-	{
-		msg("Substitution failed");
-	}
-	else if (chline >= LVAL(O_REPORT))
-	{
-		msg("%ld substitutions on %ld lines", chsub, chline);
-	}
-	curf->rptlines = 0L;
+static int
+regsub(string, src)
+	u_char *string, *src;
+{
+	size_t len;
+	int ch, no;
+	u_char *dst;
 
-	autoprint = 1;
+	for (dst = lb + lbclen; ch = *src++;)
+		if (ch == '&') {
+			no = 0;
+			goto sub;
+		} else if (ch == '\\' && isdigit(*src)) {
+			no = *src++ - '0';
+sub:			if (match[no].rm_so != -1 && match[no].rm_eo != -1) {
+				len = match[no].rm_eo - match[no].rm_so;
+				NEEDSP(len, dst);
+				memmove(dst, string + match[no].rm_so, len);
+				dst += len;
+				lbclen += len;
+			}
+		} else {			/* Ordinary character. */
+ 			if (ch == '\\' && (*src == '\\' || *src == '&'))
+ 				ch = *src++;
+			NEEDSP(1, dst);
+ 			*dst++ = ch;
+			++lbclen;
+		}
+	return (0);
 }
