@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_z.c,v 8.1 1993/06/09 22:28:53 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:28:53 $";
+static char sccsid[] = "$Id: v_z.c,v 8.2 1993/08/27 11:44:35 bostic Exp $ (Berkeley) $Date: 1993/08/27 11:44:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -41,7 +41,7 @@ v_z(sp, ep, vp, fm, tm, rp)
 		lno = fm->lno;
 
 	/* The second count is the window size. */
-	if (F_ISSET(vp, VC_C2SET) && set_window_size(sp, vp->count2))
+	if (F_ISSET(vp, VC_C2SET) && set_window_size(sp, vp->count2, 0))
 		return (1);
 
 	switch(vp->character) {
