@@ -10,11 +10,9 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_options.c,v 8.1 1996/12/05 10:04:23 bostic Exp $ (Berkeley) $Date: 1996/12/05 10:04:23 $";
+static const char sccsid[] = "$Id: m_options.c,v 8.2 1996/12/10 17:07:22 bostic Exp $ (Berkeley) $Date: 1996/12/10 17:07:22 $";
 #endif /* not lint */
 
-
-/* context */
 #include <X11/X.h>
 #include <X11/Intrinsic.h>
 #include <Xm/DialogS.h>
@@ -25,11 +23,9 @@ static const char sccsid[] = "$Id: m_options.c,v 8.1 1996/12/05 10:04:23 bostic 
 #include <Xm/ToggleBG.h>
 #include <Xm/RowColumn.h>
 
-
 /*
  * Types
  */
-
 typedef enum {
 	optToggle,
 	optInteger,
@@ -66,7 +62,7 @@ typedef struct {
  * global data
  */
 
-optData	toggles[] = {
+static	optData	toggles[] = {
 	{ optToggle,	"altwerase",	(void *) False	},
 	{ optToggle,	"extended",	(void *) False	},
 	{ optToggle,	"mesg",		(void *) True	},
@@ -113,7 +109,7 @@ optData	toggles[] = {
 	{ optToggle,	"terse",	(void *) False	},
 };
 
-optData	ints[] = {
+static	optData	ints[] = {
 	{ optInteger,	"scroll",	(void *) "11"	},
 	{ optInteger,	"hardtabs",	(void *) "0"	},
 	{ optInteger,	"shiftwidth",	(void *) "4"	},
@@ -131,7 +127,7 @@ optData	ints[] = {
 	{ optInteger,	"report",	(void *) "5"	},
 };
 
-optData	others[] = {
+static	optData	others[] = {
 	{ optString,	"filec",	(void *) "^["	},
 	{ optString,	"msgcat",	(void *) "./"	},
 	{ optString,	"noprint",	(void *) ""	},
@@ -171,7 +167,7 @@ static	void	change_toggle( w, option )
 #if defined(SelfTest)
     printf( "sending command <<%s>>\n", buffer );
 #else
-    send_command_string( buffer );
+    _vi_send_command_string( buffer );
 #endif
 }
 
@@ -193,7 +189,7 @@ static	void	change_string( w, option )
 #if defined(SelfTest)
     printf( "sending command <<%s>>\n", buffer );
 #else
-    send_command_string( buffer );
+    _vi_send_command_string( buffer );
 #endif
 }
 
@@ -284,15 +280,16 @@ static	void	add_string_options( parent, options, count, width )
 /* Draw and display a dialog the describes nvi options */
 
 #if defined(__STDC__)
-Widget	create_options_dialog( Widget parent, String title )
+static	Widget	create_options_dialog( Widget parent, String title )
 #else
-Widget	create_options_dialog( parent, title )
-Widget	parent;
-String	title;
+static	Widget	create_options_dialog( parent, title )
+	Widget	parent;
+	String	title;
 #endif
 {
     Widget	box, form, form2;
     int		i;
+    extern	void _vi_cancel_cb();
 
     box = XtVaCreatePopupShell( title,
 				xmDialogShellWidgetClass,
@@ -301,6 +298,7 @@ String	title;
 				XmNallowShellResize,	False,
 				0
 				);
+    XtAddCallback( box, XmNpopdownCallback, _vi_cancel_cb, 0 );
 
     form = XtVaCreateWidget( "form", 
 			     xmRowColumnWidgetClass,
@@ -347,35 +345,40 @@ String	title;
     add_string_options( form2, others, XtNumber(others), otherWidth );
     XtManageChild( form2 );
 
-    XtManageChild( form );
-    return box;
+    return form;
 }
 
 
 
 /* module entry point
- *	xip_show_options_dialog( parent, title )
+ *	_vi_show_options_dialog( parent, title )
  */
 
 #if defined(__STDC__)
-void	xip_show_options_dialog( Widget parent, String title )
+void	_vi_show_options_dialog( Widget parent, String title )
 #else
-void	xip_show_options_dialog( parent, title )
+void	_vi_show_options_dialog( parent, title )
 Widget	parent;
 String	title;
 #endif
 {
-    Widget 	db = create_options_dialog( parent, title );
+    Widget 	db = create_options_dialog( parent, title ),
+		shell = XtParent(db);
     Dimension	height, width;
 
     /* this one does not resize */
-    XtVaGetValues( db, XmNheight, &height, XmNwidth, &width, 0 );
-    XtVaSetValues( db,	XmNminHeight, height, XmNminWidth, width,
-			XmNmaxHeight, height, XmNmaxWidth, width,
-			0 );
+    XtVaGetValues( shell, XmNheight, &height, XmNwidth, &width, 0 );
+    XtVaSetValues( shell, XmNminHeight, height, XmNminWidth, width,
+			  XmNmaxHeight, height, XmNmaxWidth, width,
+			  0 );
 
-    /* post the dialog */
-    XtPopup( db, XtGrabNone );
+#if defined(SelfTest)
+    /* wait until it goes away */
+    XtPopup( shell, XtGrabNone );
+#else
+    /* wait until it goes away */
+    _vi_modal_dialog( db );
+#endif
 }
 
 
@@ -397,7 +400,7 @@ XtPointer	data;
 XtPointer	cbs;
 #endif
 {
-    xip_show_options_dialog( data, "Preferences" );
+    _vi_show_options_dialog( data, "Preferences" );
 }
 
 main( int argc, char *argv[] )

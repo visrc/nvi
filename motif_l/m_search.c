@@ -10,10 +10,9 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_search.c,v 8.1 1996/12/03 10:31:09 bostic Exp $ (Berkeley) $Date: 1996/12/03 10:31:09 $";
+static const char sccsid[] = "$Id: m_search.c,v 8.2 1996/12/10 17:07:23 bostic Exp $ (Berkeley) $Date: 1996/12/10 17:07:23 $";
 #endif /* not lint */
 
-
 /* context */
 #include <X11/X.h>
 #include <X11/Intrinsic.h>
@@ -74,7 +73,7 @@ static	ToggleData	toggle_data[] = {
     { "Incremental", 		&incremental_search	}
 };
 
-void		next_func(),
+static	void	next_func(),
 		prev_func(),
 		done_func();
 
@@ -92,11 +91,11 @@ String		pattern = NULL;
 /* Xt utilities */
 
 #if defined(__STDC__)
-Widget	get_child_widget( Widget parent, String name )
+static	Widget	get_child_widget( Widget parent, String name )
 #else
-Widget	get_child_widget( parent, name )
-Widget	parent;
-String	name;
+static	Widget	get_child_widget( parent, name )
+	Widget	parent;
+	String	name;
 #endif
 {
     char buffer[1024];
@@ -108,11 +107,11 @@ String	name;
 
 
 #if defined(__STDC__)
-String	get_widget_string( Widget w, String resource )
+static	String	get_widget_string( Widget w, String resource )
 #else
-String	get_widget_string( w, resource )
-Widget	w;
-String	resource;
+static	String	get_widget_string( w, resource )
+	Widget	w;
+	String	resource;
 #endif
 {
     XmString	xmstr;
@@ -195,7 +194,7 @@ static	void	send_command( w )
 
     strcpy( buffer, "/" );
     strcat( buffer, pattern );
-    send_command_string( buffer );
+    _vi_send_command_string( buffer );
     }
 #endif
 }
@@ -399,11 +398,11 @@ static	void	value_changed( w, ptr, ptr2 )
 /* Draw and display a dialog the describes nvi search capability */
 
 #if defined(__STDC__)
-Widget	create_search_dialog( Widget parent, String title )
+static	Widget	create_search_dialog( Widget parent, String title )
 #else
-Widget	create_search_dialog( parent, title )
-Widget	parent;
-String	title;
+static	Widget	create_search_dialog( parent, title )
+	Widget	parent;
+	String	title;
 #endif
 {
     Widget	box, form, label, text, checks, options, buttons, form2;
@@ -524,9 +523,9 @@ String	title;
  */
 
 #if defined(__STDC__)
-void 	xip_show_search_dialog( Widget parent, String title )
+void 	_vi_show_search_dialog( Widget parent, String title )
 #else
-void	xip_show_search_dialog( parent, data, cbs )
+void	_vi_show_search_dialog( parent, data, cbs )
 Widget	parent;
 String	title;
 #endif
@@ -548,7 +547,7 @@ String	title;
 }
 
 
-void	xip_next_search()
+void	_vi_next_search()
 {
     next_func( NULL );
 }
@@ -571,7 +570,7 @@ XtPointer	data;
 XtPointer	cbs;
 #endif
 {
-    xip_show_search_dialog( data, "Search" );
+    _vi_show_search_dialog( data, "Search" );
 }
 
 main( int argc, char *argv[] )

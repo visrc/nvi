@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_vi.c,v 8.20 1996/12/05 22:03:38 bostic Exp $ (Berkeley) $Date: 1996/12/05 22:03:38 $";
+static const char sccsid[] = "$Id: m_vi.c,v 8.21 1996/12/10 17:07:23 bostic Exp $ (Berkeley) $Date: 1996/12/10 17:07:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -24,7 +24,6 @@ static const char sccsid[] = "$Id: m_vi.c,v 8.20 1996/12/05 22:03:38 bostic Exp 
 #include <Xm/Form.h>
 #include <Xm/Frame.h>
 #include <Xm/ScrollBar.h>
-#include <Xm/MainW.h>
 
 #include <bitstring.h>
 #include <ctype.h>
@@ -44,24 +43,10 @@ static const char sccsid[] = "$Id: m_vi.c,v 8.20 1996/12/05 22:03:38 bostic Exp 
 #include "ipc_mextern.h"
 #include "pathnames.h"
 
-#if XtSpecificationRelease == 4
-#define	ArgcType	Cardinal *
-#else
-#define	ArgcType	int *
-#endif
-
-#include "nvi.xbm"
-
-char *progname = "vi_curses";			/* Program name. */
-
-int	i_fd, o_fd;				/* Input/output fd's. */
-
-void	ip_siginit __P((void));
-void	onchld __P((int));
-void	onintr __P((int));
 static	void	f_copy();
 static	void	f_paste();
 static	void	f_clear();
+	void	 _vi_set_cursor();
 
 
 /*
@@ -70,28 +55,25 @@ static	void	f_clear();
 
 #define	BufferSize	1024
 
-XFontStruct	*font;
-GC		gc;
-GC		copy_gc;
-Pixmap		icon_pm;
-Pixel		icon_fg, icon_bg;
+static	XFontStruct	*font;
+static	GC		gc;
+	GC		_vi_copy_gc;
+static	XtAppContext	ctx;
 
-xvi_screen	*cur_screen = NULL;
-Widget		top_level;
-XtAppContext	ctx;
-Cursor		std_cursor;
-Cursor		busy_cursor;
-XtTranslations	area_trans;
-int		multi_click_length;
+	xvi_screen	*_vi_screen = NULL;
+static	Cursor		std_cursor;
+static	Cursor		busy_cursor;
+static	XtTranslations	area_trans;
+static	int		multi_click_length;
 
-char	bp[ BufferSize ];		/* input buffer from pipe */
-size_t	len, blen = sizeof(bp);
+static	char	bp[ BufferSize ];		/* input buffer from pipe */
+static	size_t	len, blen = sizeof(bp);
 
 
 #if defined(__STDC__)
-void		set_gc_colors( xvi_screen *this_screen, int val )
+static	void	set_gc_colors( xvi_screen *this_screen, int val )
 #else
-void		set_gc_colors( this_screen, val )
+static	void	set_gc_colors( this_screen, val )
 xvi_screen	*this_screen;
 int		val;
 #endif
@@ -151,13 +133,6 @@ int		val;
  * Memory utilities
  */
 
-void
-nomem()
-{
-	perror("ip_cl");
-	exit (1);
-}
-
 #ifdef REALLOC
 #undef REALLOC
 #endif
@@ -196,12 +171,12 @@ static XtActionsRec	area_actions[] = {
 
 char	areaTrans[] =
     "<Btn1Down>:	select_start()		\n\
-     <Btn3Down>:	select_extend()		\n\
      <Btn1Motion>:	select_extend()		\n\
-     <Btn3Motion>:	select_extend()		\n\
      <Btn2Down>:	select_paste()		\n\
-     Ctrl<Key>C:	command(IPO_INTERRUPT)	\n\
+     <Btn3Down>:	select_extend()		\n\
+     <Btn3Motion>:	select_extend()		\n\
      <Key>End:		command(IPO_C_BOTTOM)	\n\
+     <Key>Escape:	command(EINSERT)	\n\
      <Key>Find:		find()			\n\
      <Key>Home:		command(IPO_C_TOP)	\n\
      <Key>Next:		command(IPO_C_PGDOWN)	\n\
@@ -221,89 +196,23 @@ char	areaTrans[] =
      <Key>osfRight:	command(IPO_C_RIGHT)	\n\
      <Key>osfUndo:	command(IPO_UNDO)	\n\
      <Key>osfUp:	command(IPO_C_UP)	\n\
+     Ctrl<Key>C:	command(IPO_INTERRUPT)	\n\
      <Key>:		key_press()";
 
-String	fallback_rsrcs[] = {
-
-    "*font:			-*-*-*-r-*--14-*-*-*-m-*-*-*",
-    "*pointerShape:		xterm",
-    "*busyShape:		watch",
-    "*iconName:			vi",
-
-    /* coloring for the icons.  we may need to change this */
-    "*iconForeground:	XtDefaultForeground",
-    "*iconBackground:	XtDefaultBackground",
-
-    /* layout for the temporary preferences page */
-    "*toggleOptions.numColumns: 6",
-    "*intOptions.numColumns:    4",
-    "*otherOptions.numColumns:  3",
-    "*intOptions*columns:       10",
-    "*otherOptions*columns:     18",
-
-    /* --------------------------------------------------------------------- *
-     * anything below this point is only defined when we are not running CDE *
-     * --------------------------------------------------------------------- */
-
-    /* Do not define default colors when running under CDE
-     * (e.g. VUE on HPUX). The result is that you don't look
-     * like a normal desktop application
-     */
-    "?highlightColor:		red",
-    "?background:		gray75",
-    "?screen.background:	wheat",
-    "?highlightColor:		red"
-};
 
 static  XutResource resource[] = {
     { "font",		XutRKfont,	&font		},
     { "pointerShape",	XutRKcursor,	&std_cursor	},
     { "busyShape",	XutRKcursor,	&busy_cursor	},
-    { "iconForeground",	XutRKpixel,	&icon_fg	},
-    { "iconBackground",	XutRKpixel,	&icon_bg	},
 };
 
+
+
 #if defined(__STDC__)
-static	String	*get_fallback_rsrcs( String name )
+static	Boolean		process_pipe_input( XtPointer pread )
 #else
-static	String	*get_fallback_rsrcs( name )
-	String	name;
-#endif
-{
-    String	*copy = (String *) malloc( (1+XtNumber(fallback_rsrcs))*sizeof(String) );
-    int		i, running_cde;
-    Display	*d;
-
-    /* connect to server and see if the CDE atoms are present */
-    d = XOpenDisplay(0);
-    running_cde = is_cde( d );
-    XCloseDisplay(d);
-
-    for ( i=0; i<XtNumber(fallback_rsrcs); i++ ) {
-
-	/* stop here if running CDE */
-	if ( fallback_rsrcs[i][0] == '?' ) {
-	    if ( running_cde ) break;
-	    if ((fallback_rsrcs[i] = strdup(fallback_rsrcs[i])) == NULL)
-		nomem();
-	    fallback_rsrcs[i][0] = '*';
-	}
-
-	copy[i] = malloc( strlen(name) + strlen(fallback_rsrcs[i]) + 1 );
-	strcpy( copy[i], name );
-	strcat( copy[i], fallback_rsrcs[i] );
-    }
-
-    copy[i] = NULL;
-    return copy;
-}
-
-
-#if defined(__STDC__)
-Boolean		process_pipe_input( XtPointer pread )
-#else
-Boolean		process_pipe_input( pread )
-XtPointer	pread;
+static	Boolean		process_pipe_input( pread )
+	XtPointer	pread;
 #endif
 {
     /* might have read more since the last call */
@@ -327,12 +236,12 @@ XtPointer	pread;
 
 /* We've received input on the pipe from vi... */
 #if defined(__STDC__)
-void		pipe_input_func( XtPointer client_data,
-				 int *source,
-				 XtInputId id
-				 )
+Boolean		vi_pipe_input_func( XtPointer client_data,
+				    int *source,
+				    XtInputId id
+				    )
 #else
-void		pipe_input_func( client_data, source, id )
+Boolean		vi_pipe_input_func( client_data, source, id )
 XtPointer	client_data;
 int		*source;
 XtInputId	id;
@@ -346,7 +255,7 @@ XtInputId	id;
 #ifdef TR
 	    trace("pipe_input_func:  empty input from vi\n");
 #endif
-	    return;
+	    return True;
     case -1:
 	    perror("ip_cl: read");
 	    exit (1);
@@ -362,14 +271,17 @@ XtInputId	id;
 	    /* check the pipe for unused events when not busy */
 	    XtAppAddWorkProc( ctx, process_pipe_input, NULL );
     }
+
+    return True;
 }
 
 
+
 /* Send the window size. */
 #if defined(__STDC__)
-void		send_resize( xvi_screen *this_screen )
+static	void	send_resize( xvi_screen *this_screen )
 #else
-void		send_resize( this_screen )
+static	void	send_resize( this_screen )
 xvi_screen	*this_screen;
 #endif
 {
@@ -387,11 +299,11 @@ xvi_screen	*this_screen;
     ip_send("12", &ipb);
 }
 
-
+
 #if defined(__STDC__)
-void		resize_backing_store( xvi_screen *this_screen )
+static	void	resize_backing_store( xvi_screen *this_screen )
 #else
-void		resize_backing_store( this_screen )
+static	void	resize_backing_store( this_screen )
 xvi_screen	*this_screen;
 #endif
 {
@@ -409,11 +321,19 @@ xvi_screen	*this_screen;
 }
 
 
+
 /* X will call this when we are resized */
-void		resize_func( wid, client_data, call_data )
+#if defined(__STDC__)
+static	void	resize_func( Widget wid,
+			     XtPointer client_data,
+			     XtPointer call_data
+			     )
+#else
+static	void	resize_func( wid, client_data, call_data )
 Widget		wid;
 XtPointer	client_data;
 XtPointer	call_data;
+#endif
 {
     xvi_screen			*this_screen = (xvi_screen *) client_data;
     Dimension			height, width;
@@ -430,22 +350,22 @@ XtPointer	call_data;
 
 
 /*
- * draw_text --
+ * _vi_draw_text --
  *	Draw from backing store.
  *
- * PUBLIC: void	draw_text __P((xvi_screen *, int, int, int));
+ * PUBLIC: void	_vi_draw_text __P((xvi_screen *, int, int, int));
  */
 void
-draw_text(this_screen, row, start_col, len)
+_vi_draw_text(this_screen, row, start_col, len)
 	xvi_screen *this_screen;
 	int row, start_col, len;
 {
     int		col, color, xpos;
     char	*start, *end;
 
-    start = CharAt( cur_screen, row, start_col );
-    color = *FlagAt( cur_screen, row, start_col );
-    xpos  = XPOS( cur_screen, start_col );
+    start = CharAt( _vi_screen, row, start_col );
+    color = *FlagAt( _vi_screen, row, start_col );
+    xpos  = XPOS( _vi_screen, start_col );
 
     /* one column at a time */
     for ( col=start_col;
@@ -453,52 +373,52 @@ draw_text(this_screen, row, start_col, len)
 	  col++ ) {
 
 	/* has the color changed? */
-	if ( *FlagAt( cur_screen, row, col ) == color )
+	if ( *FlagAt( _vi_screen, row, col ) == color )
 	    continue;
 
 	/* is there anything to write? */
-	end  = CharAt( cur_screen, row, col );
+	end  = CharAt( _vi_screen, row, col );
 	if ( end == start )
 	    continue;
 
 	/* yes. write in the previous color */
-	set_gc_colors( cur_screen, color );
+	set_gc_colors( _vi_screen, color );
 
 	/* add to display */
-	XDrawImageString( XtDisplay(cur_screen->area),
-			  XtWindow(cur_screen->area),
+	XDrawImageString( XtDisplay(_vi_screen->area),
+			  XtWindow(_vi_screen->area),
 			  gc,
 			  xpos,
-			  YPOS( cur_screen, row ),
+			  YPOS( _vi_screen, row ),
 			  start,
 			  end - start
 			  );
 
 	/* this is the new context */
-	color = *FlagAt( cur_screen, row, col );
-	xpos  = XPOS( cur_screen, col );
+	color = *FlagAt( _vi_screen, row, col );
+	xpos  = XPOS( _vi_screen, col );
 	start = end;
     }
 
     /* is there anything to write? */
-    end = CharAt( cur_screen, row, col );
+    end = CharAt( _vi_screen, row, col );
     if ( end != start ) {
 	/* yes. write in the previous color */
-	set_gc_colors( cur_screen, color );
+	set_gc_colors( _vi_screen, color );
 
 	/* add to display */
-	XDrawImageString( XtDisplay(cur_screen->area),
-			  XtWindow(cur_screen->area),
+	XDrawImageString( XtDisplay(_vi_screen->area),
+			  XtWindow(_vi_screen->area),
 			  gc,
 			  xpos,
-			  YPOS( cur_screen, row ),
+			  YPOS( _vi_screen, row ),
 			  start,
 			  end - start
 			  );
     }
 }
 
-
+
 /* set clipping rectangles accordingly */
 #if defined(__STDC__)
 static	void	add_to_clip( xvi_screen *cur_screen, int x, int y, int width, int height )
@@ -521,18 +441,18 @@ static	void	add_to_clip( cur_screen, x, y, width, height )
     XUnionRectWithRegion( &rect, cur_screen->clip, cur_screen->clip );
 }
 
-
+
 /*
- * expose_func --
+ * _vi_expose_func --
  *	Redraw the window's contents.
  *
  * NOTE: When vi wants to force a redraw, we are called with NULL widget
  *	 and call_data.
  *
- * PUBLIC: void	expose_func __P((Widget, XtPointer, XtPointer));
+ * PUBLIC: void	_vi_expose_func __P((Widget, XtPointer, XtPointer));
  */
 void
-expose_func(wid, client_data, call_data)
+_vi_expose_func(wid, client_data, call_data)
 	Widget wid;
 	XtPointer client_data, call_data;
 {
@@ -545,6 +465,20 @@ expose_func(wid, client_data, call_data)
     /* convert pointers */
     this_screen = (xvi_screen *) client_data;
     cbs		= (XmDrawingAreaCallbackStruct *) call_data;
+
+    /* first exposure? tell vi we are ready... */
+    if ( this_screen->init == False ) {
+
+	/* what does the user want to see? */
+	_vi_set_cursor( _vi_screen, False );
+
+	/* vi wants a resize as the first event */
+	send_resize( _vi_screen );
+
+	/* fine for now.  we'll be back */
+	this_screen->init = True;
+	return;
+    }
 
     if ( call_data == NULL ) {
 
@@ -618,7 +552,7 @@ expose_func(wid, client_data, call_data)
     for (row=0; row<this_screen->rows; row++) {
 
 	/* draw from the backing store */
-	draw_text( this_screen, row, 0, this_screen->cols );
+	_vi_draw_text( this_screen, row, 0, this_screen->cols );
     }
 
     /* clear clipping region */
@@ -630,15 +564,15 @@ expose_func(wid, client_data, call_data)
 
 }
 
-
+
 #if defined(__STDC__)
-void		xexpose	( Widget w,
+static void	xexpose	( Widget w,
 			  XtPointer client_data,
 			  XEvent *ev,
 			  Boolean *cont
 			  )
 #else
-void		xexpose	( w, client_data, ev, cont )
+static void	xexpose	( w, client_data, ev, cont )
 Widget		w;
 XtPointer	client_data;
 XEvent		*ev;
@@ -652,7 +586,7 @@ Boolean		*cont;
 	    cbs.event	= ev;
 	    cbs.window	= XtWindow(w);
 	    cbs.reason	= XmCR_EXPOSE;
-	    expose_func( w, client_data, (XtPointer) &cbs );
+	    _vi_expose_func( w, client_data, (XtPointer) &cbs );
 	    *cont	= False;	/* we took care of it */
 	    break;
 	default:
@@ -664,9 +598,9 @@ Boolean		*cont;
 
 /* unimplemented keystroke or command */
 #if defined(__STDC__)
-void	beep( Widget w )
+static void	beep( Widget w )
 #else
-void	beep( w )
+static void	beep( w )
 Widget	w;
 #endif
 {
@@ -676,15 +610,14 @@ Widget	w;
 
 /* give me a search dialog */
 #if defined(__STDC__)
-void	find( Widget w )
+static void	find( Widget w )
 #else
-void	find( w )
+static void	find( w )
 Widget	w;
 #endif
 {
-    xip_show_search_dialog( w, "Find" );
+    _vi_show_search_dialog( w, "Find" );
 }
-
 
 /*
  * command --
@@ -739,13 +672,13 @@ command(widget, event, str, cardinal)
 
 /* mouse or keyboard input. */
 #if defined(__STDC__)
-void		insert_string( Widget widget, 
+static	void	insert_string( Widget widget, 
 			       XKeyEvent *event, 
 			       String *str, 
 			       Cardinal *cardinal
 			       )
 #else
-void		insert_string( widget, event, str, cardinal )
+static	void	insert_string( widget, event, str, cardinal )
 Widget          widget; 
 XKeyEvent       *event; 
 String          *str;    
@@ -769,13 +702,13 @@ Cardinal        *cardinal;
 
 /* mouse or keyboard input. */
 #if defined(__STDC__)
-void		key_press( Widget widget, 
+static	void	key_press( Widget widget, 
 			   XKeyEvent *event, 
 			   String str, 
 			   Cardinal *cardinal
 			   )
 #else
-void		key_press( widget, event, str, cardinal )
+static	void	key_press( widget, event, str, cardinal )
 Widget          widget; 
 XKeyEvent       *event; 
 String          str;    
@@ -799,11 +732,11 @@ Cardinal        *cardinal;
 
 
 #if defined(__STDC__)
-xvi_screen	*create_screen( Widget parent, int rows, int cols )
+static	xvi_screen	*create_screen( Widget parent, int rows, int cols )
 #else
-xvi_screen	*create_screen( parent, rows, cols )
-Widget		parent;
-int		rows, cols;
+static	xvi_screen	*create_screen( parent, rows, cols )
+	Widget		parent;
+	int		rows, cols;
 #endif
 {
     xvi_screen	*new_screen = (xvi_screen *) calloc( 1, sizeof(xvi_screen) );
@@ -891,7 +824,7 @@ int		rows, cols;
     /* this callback is for when the drawing area is exposed */
     XtAddCallback( new_screen->area,
 		   XmNexposeCallback,
-		   expose_func,
+		   _vi_expose_func,
 		   new_screen
 		   );
 
@@ -909,23 +842,23 @@ int		rows, cols;
 }
 
 
-xvi_screen	*split_screen()
+static	xvi_screen	*split_screen()
 {
     Cardinal	num;
     WidgetList	c;
-    int		rows = cur_screen->rows / 2;
+    int		rows = _vi_screen->rows / 2;
     xvi_screen	*new_screen;
 
     /* Note that (global) cur_screen needs to be correctly set so that
      * insert_here knows which screen to put the new one after
      */
-    new_screen = create_screen( cur_screen->parent,
+    new_screen = create_screen( _vi_screen->parent,
 				rows,
-				cur_screen->cols
+				_vi_screen->cols
 				);
 
     /* what are the screens? */
-    XtVaGetValues( cur_screen->parent,
+    XtVaGetValues( _vi_screen->parent,
 		   XmNnumChildren,	&num,
 		   XmNchildren,		&c,
 		   NULL
@@ -939,24 +872,25 @@ xvi_screen	*split_screen()
 		   XmNheight,	new_screen->ch_height * rows,
 		   NULL
 		   );
-    XtVaSetValues( cur_screen->form,
-		   XmNheight,	cur_screen->ch_height * rows,
+    XtVaSetValues( _vi_screen->form,
+		   XmNheight,	_vi_screen->ch_height * rows,
 		   NULL
 		   );
 
     /* re-manage */
     XtManageChildren( c, num );
 
-    /* RAZ: IS THERE A RETURN VALUE? */
+    /* done */
+    return new_screen;
 }
 
-
+
 /* Tell me where to insert the next subpane */
 #if defined(__STDC__)
-Cardinal	insert_here( Widget wid )
+static	Cardinal	insert_here( Widget wid )
 #else
-Cardinal	insert_here( wid )
-Widget		wid;
+static	Cardinal	insert_here( wid )
+	Widget		wid;
 #endif
 {
     Cardinal	i, num;
@@ -978,7 +912,7 @@ Widget		wid;
 
     /* We will put the widget after the one with the current screen */
     for (i=0; i<num && XmIsForm(c[i]); i++) {
-	if ( cur_screen == NULL || cur_screen->form == c[i] )
+	if ( _vi_screen == NULL || _vi_screen->form == c[i] )
 	    return i+1;	/* after the i-th */
     }
 
@@ -989,91 +923,50 @@ Widget		wid;
 
 /* create the necessary widgetry */
 #if defined(__STDC__)
-void	ip_x_init( int *argc, char **argv )
+Widget	vi_create_editor( String name, Widget parent )
 #else
-void	ip_x_init( argc, argv )
-int	*argc;
-char	**argv;
+Widget	vi_create_editor( name, parent )
+String	name;
+Widget	parent;
 #endif
 {
-    char	*ptr;
-    Widget	main_w, menu_b, pane_w;
-    Display	*display;
+    Widget	pane_w;
+    Display	*display = XtDisplay( parent );
 
-#if XtSpecificationRelease == 4
-#define	ArgcType	Cardinal *
-#else
-#define	ArgcType	int *
-#endif
+    /* first time through? */
+    if ( ctx == NULL ) {
 
-    /* X gets quite upset if the program name is not simple */
-    if (( ptr = strrchr( argv[0], '/' )) != NULL ) argv[0] = ++ptr;
+	/* save this for later */
+	ctx = XtWidgetToApplicationContext( parent );
 
-    /* create a top-level shell for the window manager */
-    top_level = XtVaAppInitialize( &ctx,
-				   argv[0],
-				   NULL, 0,	/* options */
-				   (ArgcType) argc,
-				   argv,	/* might get modified */
-				   get_fallback_rsrcs( argv[0] ),
-				   NULL
-				   );
-    display = XtDisplay(top_level);
+	/* add our own special actions */
+	XtAppAddActions( ctx, area_actions, XtNumber(area_actions) );
 
-    /* might need to go technicolor... */
-    XutInstallColormap( argv[0], top_level );
+	/* how long is double-click? */
+	multi_click_length = XtGetMultiClickTime( display );
 
-    /* add our own special actions */
-    XtAppAddActions( ctx, area_actions, XtNumber(area_actions) );
+	/* check the resource database for interesting resources */
+	XutConvertResources( parent,
+			     vi_progname,
+			     resource,
+			     XtNumber(resource)
+			     );
 
-    /* how long is double-click? */
-    multi_click_length = XtGetMultiClickTime( display );
+	/* we need a context for moving bits around in the windows */
+	_vi_copy_gc = XCreateGC( display,
+				 DefaultRootWindow(display),
+				 0,
+				 0
+				 );
 
-    /* check the resource database for interesting resources */
-    XutConvertResources( top_level,
-			 argv[0],
-			 resource,
-			 XtNumber(resource)
-			 );
-
-    /* we need a context for moving bits around in the windows */
-    copy_gc = XCreateGC( display,
-			 DefaultRootWindow(display),
-			 0,
-			 0
-			 );
-
-    /* create our icon
-     * do this *before* realizing the shell widget in case the -iconic
-     * option was specified.
-     */
-    icon_pm = XCreatePixmapFromBitmapData(
-			display,
-		        DefaultRootWindow(display),
-			(char *) nvi_bits,
-			nvi_width,
-			nvi_height,
-			icon_fg,
-			icon_bg,
-			DefaultDepth( display, DefaultScreen(display) )
-			);
-    XutSetIcon( top_level, nvi_height, nvi_width, icon_pm );
-
-    /* in the shell, we will stack a menubar and paned window */
-    main_w = XtVaCreateManagedWidget( "main",
-				      xmMainWindowWidgetClass,
-				      top_level,
-				      NULL
-				      );
-
-    /* create the menubar */
-    menu_b = (Widget) create_menubar( main_w );
-    XtManageChild( menu_b );
+	/* routines for inter client communications conventions */
+	_vi_InitCopyPaste( f_copy, f_paste, f_clear, fprintf );
+    }
 
     /* create the paned window */
     pane_w = XtVaCreateManagedWidget( "pane",
 				      xmPanedWindowWidgetClass,
-				      main_w,
+				      parent,
 				      XmNinsertPosition,	insert_here,
 				      NULL
 				      );
@@ -1081,30 +974,27 @@ char	**argv;
     /* allocate our data structure.  in the future we will have several
      * screens running around at the same time
      */
-    cur_screen = create_screen( pane_w, 24, 80 );
+    _vi_screen = create_screen( pane_w, 24, 80 );
 
     /* force creation of our color text context */
-    set_gc_colors( cur_screen, COLOR_STANDARD );
+    set_gc_colors( _vi_screen, COLOR_STANDARD );
 
-    /* routines for inter client communications conventions */
-    InitCopyPaste( f_copy, f_paste, f_clear, fprintf );
-
-    /* put it up */
-    XtRealizeWidget( top_level );
+    /* done */
+    return pane_w;
 }
 
 
 /* These routines deal with the selection buffer */
 
-int	selection_start, selection_end, selection_anchor;
-enum	select_enum {
+static	int	selection_start, selection_end, selection_anchor;
+static	enum	select_enum {
 	    select_char, select_word, select_line
-	} select_type = select_char;
-int	last_click;
+	}	select_type = select_char;
+static	int	last_click;
 
-char	*clipboard = NULL;
-int	clipboard_size = 0,
-	clipboard_length;
+static	char	*clipboard = NULL;
+static	int	clipboard_size = 0,
+		clipboard_length;
 
 
 #if defined(__STDC__)
@@ -1132,9 +1022,9 @@ xvi_screen	*cur_screen;
 
 
 #if defined(__STDC__)
-void		mark_selection( xvi_screen *cur_screen, int start, int end )
+static	void	mark_selection( xvi_screen *cur_screen, int start, int end )
 #else
-void		mark_selection( cur_screen, start, end )
+static	void	mark_selection( cur_screen, start, end )
 xvi_screen	*cur_screen;
 int		start;
 int		end;
@@ -1146,16 +1036,16 @@ int		end;
 	if ( !( cur_screen->flags[i] & COLOR_SELECT ) ) {
 	    cur_screen->flags[i] |= COLOR_SELECT;
 	    ToRowCol( cur_screen, i, row, col );
-	    draw_text( cur_screen, row, col, 1 );
+	    _vi_draw_text( cur_screen, row, col, 1 );
 	}
     }
 }
 
 
 #if defined(__STDC__)
-void		erase_selection( xvi_screen *cur_screen, int start, int end )
+static	void	erase_selection( xvi_screen *cur_screen, int start, int end )
 #else
-void		erase_selection( cur_screen, start, end )
+static	void	erase_selection( cur_screen, start, end )
 xvi_screen	*cur_screen;
 int		start;
 int		end;
@@ -1167,16 +1057,16 @@ int		end;
 	if ( cur_screen->flags[i] & COLOR_SELECT ) {
 	    cur_screen->flags[i] &= ~COLOR_SELECT;
 	    ToRowCol( cur_screen, i, row, col );
-	    draw_text( cur_screen, row, col, 1 );
+	    _vi_draw_text( cur_screen, row, col, 1 );
 	}
     }
 }
 
 
 #if defined(__STDC__)
-void		left_expand_selection( xvi_screen *cur_screen, int *start )
+static	void	left_expand_selection( xvi_screen *cur_screen, int *start )
 #else
-void		left_expand_selection( cur_screen, start )
+static	void	left_expand_selection( cur_screen, start )
 xvi_screen	*cur_screen;
 int		*start;
 #endif
@@ -1203,9 +1093,9 @@ int		*start;
 
 
 #if defined(__STDC__)
-void		right_expand_selection( xvi_screen *cur_screen, int *end )
+static	void	right_expand_selection( xvi_screen *cur_screen, int *end )
 #else
-void		right_expand_selection( cur_screen, end )
+static	void	right_expand_selection( cur_screen, end )
 xvi_screen	*cur_screen;
 int		*end;
 #endif
@@ -1255,11 +1145,11 @@ Cardinal        *cardinal;
      * NOTE: when multiple panes are implemented, we need to find the correct
      * screen.  For now, there is only one.
      */
-    xpos = COLUMN( cur_screen, ev->x );
-    ypos = ROW( cur_screen, ev->y );
+    xpos = COLUMN( _vi_screen, ev->x );
+    ypos = ROW( _vi_screen, ev->y );
 
     /* Remove the old one. */
-    erase_selection( cur_screen, selection_start, selection_end );
+    erase_selection( _vi_screen, selection_start, selection_end );
 
     /* Send the new cursor position. */
     ipb.code = IPO_MOUSE_MOVE;
@@ -1275,21 +1165,21 @@ Cardinal        *cardinal;
     last_click = ev->time;
 
     /* put the selection here */
-    selection_anchor	= Linear( cur_screen, ypos, xpos );
+    selection_anchor	= Linear( _vi_screen, ypos, xpos );
     selection_start	= selection_anchor;
     selection_end	= selection_anchor;
 
     /* expand to include words, line, etc */
-    left_expand_selection( cur_screen, &selection_start );
-    right_expand_selection( cur_screen, &selection_end );
+    left_expand_selection( _vi_screen, &selection_start );
+    right_expand_selection( _vi_screen, &selection_end );
 
     /* draw the new one */
-    mark_selection( cur_screen, selection_start, selection_end );
+    mark_selection( _vi_screen, selection_start, selection_end );
 
     /* and tell the window manager we own the selection */
     if ( select_type != select_char ) {
-	AcquirePrimary( widget );
-	copy_to_clipboard( cur_screen );
+	_vi_AcquirePrimary( widget );
+	copy_to_clipboard( _vi_screen );
     }
 }
 
@@ -1314,43 +1204,43 @@ Cardinal        *cardinal;
     /* NOTE:  when multiple panes are implemented, we need to find
      * the correct screen.  For now, there is only one.
      */
-    xpos = COLUMN( cur_screen, ev->x );
-    ypos = ROW( cur_screen, ev->y );
+    xpos = COLUMN( _vi_screen, ev->x );
+    ypos = ROW( _vi_screen, ev->y );
 
     /* deal with words, lines, etc */
-    pos = Linear( cur_screen, ypos, xpos );
+    pos = Linear( _vi_screen, ypos, xpos );
     if ( pos < selection_anchor )
-	left_expand_selection( cur_screen, &pos );
+	left_expand_selection( _vi_screen, &pos );
     else
-	right_expand_selection( cur_screen, &pos );
+	right_expand_selection( _vi_screen, &pos );
 
     /* extend from before the start? */
     if ( pos < selection_start ) {
-	mark_selection( cur_screen, pos, selection_start-1 );
+	mark_selection( _vi_screen, pos, selection_start-1 );
 	selection_start = pos;
     }
 
     /* extend past the end? */
     else if ( pos > selection_end ) {
-	mark_selection( cur_screen, selection_end+1, pos );
+	mark_selection( _vi_screen, selection_end+1, pos );
 	selection_end = pos;
     }
 
     /* between the anchor and the start? */
     else if ( pos < selection_anchor ) {
-	erase_selection( cur_screen, selection_start, pos-1 );
+	erase_selection( _vi_screen, selection_start, pos-1 );
 	selection_start = pos;
     }
 
     /* between the anchor and the end? */
     else {
-	erase_selection( cur_screen, pos+1, selection_end );
+	erase_selection( _vi_screen, pos+1, selection_end );
 	selection_end = pos;
     }
 
     /* and tell the window manager we own the selection */
-    AcquirePrimary( widget );
-    copy_to_clipboard( cur_screen );
+    _vi_AcquirePrimary( widget );
+    copy_to_clipboard( _vi_screen );
 }
 
 
@@ -1368,7 +1258,7 @@ String		str;
 Cardinal        *cardinal;
 #endif
 {
-    PasteFromClipboard( widget );
+    _vi_PasteFromClipboard( widget );
 }
 
 
@@ -1430,10 +1320,10 @@ Widget	widget;
 /*
  * These routines deal with the cursor.
  *
- * PUBLIC: void set_cursor __P((xvi_screen *, int));
+ * PUBLIC: void _vi_set_cursor __P((xvi_screen *, int));
  */
 void
-set_cursor(cur_screen, is_busy)
+_vi_set_cursor(cur_screen, is_busy)
 	xvi_screen *cur_screen;
 	int is_busy;
 {
@@ -1450,42 +1340,43 @@ set_cursor(cur_screen, is_busy)
  *
  * PUBLIC: void draw_caret __P((xvi_screen *));
  */
-void
+static void
 draw_caret(this_screen)
 	xvi_screen *this_screen;
 {
     /* draw the caret by drawing the text in highlight color */
-    *FlagAt( cur_screen, this_screen->cury, this_screen->curx ) |= COLOR_CARET;
-    draw_text( this_screen, this_screen->cury, this_screen->curx, 1 );
+    *FlagAt( this_screen, this_screen->cury, this_screen->curx ) |= COLOR_CARET;
+    _vi_draw_text( this_screen, this_screen->cury, this_screen->curx, 1 );
 }
 
 /*
- * PUBLIC: void erase_caret __P((xvi_screen *));
+ * PUBLIC: void _vi_erase_caret __P((xvi_screen *));
  */
 void
-erase_caret(this_screen)
+_vi_erase_caret(this_screen)
 	xvi_screen *this_screen;
 {
     /* erase the caret by drawing the text in normal video */
-    *FlagAt( cur_screen, this_screen->cury, this_screen->curx ) &= ~COLOR_CARET;
-    draw_text( cur_screen, this_screen->cury, this_screen->curx, 1 );
+    *FlagAt( this_screen, this_screen->cury, this_screen->curx ) &= ~COLOR_CARET;
+    _vi_draw_text( this_screen, this_screen->cury, this_screen->curx, 1 );
 }
 
 /*
- * PUBLIC: void	move_caret __P((xvi_screen *, int, int));
+ * PUBLIC: void	_vi_move_caret __P((xvi_screen *, int, int));
  */
 void
-move_caret(this_screen, newy, newx)
+_vi_move_caret(this_screen, newy, newx)
 	xvi_screen *this_screen;
 	int newy, newx;
 {
     /* caret is now here */
-    erase_caret( this_screen );
+    _vi_erase_caret( this_screen );
     this_screen->curx = newx;
     this_screen->cury = newy;
     draw_caret( this_screen );
 }
 
+#if 0
 
 int
 main(argc, argv)
@@ -1509,7 +1400,7 @@ main(argc, argv)
 	XtAppAddInput( ctx, i_fd, XtInputReadMask, pipe_input_func, NULL );
 
 	/* what does the user want to see? */
-	set_cursor( cur_screen, False );
+	_vi_set_cursor( cur_screen, False );
 
 	/* vi wants a resize as the first event */
 	send_resize( cur_screen );
@@ -1520,55 +1411,4 @@ main(argc, argv)
 	/* NOTREACHED */
 	abort();
 }
-
-/*
- * ip_siginit --
- *	Initialize the signals.
- */
-void
-ip_siginit()
-{
-	/* We need to know if vi dies horribly. */
-	(void)signal(SIGCHLD, onchld);
-
-	/* We want to allow interruption at least for now. */
-	(void)signal(SIGINT, onintr);
-}
-
-/*
- * onchld --
- *	Handle SIGCHLD.
- */
-void
-onchld(signo)
-	int signo;
-{
-    /* not sure at the moment, but it's likely the case that
-     * if the vi process goes away, we should too
-     */
-    exit(0);
-}
-
-/*
- * onintr --
- *	Handle SIGINT.
- */
-void
-onintr(signo)
-	int signo;
-{
-	(void)signal(SIGINT, SIG_DFL);
-	kill(getpid(), SIGINT);
-}
-
-/*
- * usage --
- *	Usage message.
- */
-void
-usage()
-{
-	(void)fprintf(stderr,
-	    "usage: vi_curses [-D] [-P vi_program] [vi arguments]\n");
-	exit(1);
-}
+#endif

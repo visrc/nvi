@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	"$Id: m_motif.h,v 8.2 1996/12/03 18:39:06 bostic Exp $ (Berkeley) $Date: 1996/12/03 18:39:06 $";
+ *	"$Id: m_motif.h,v 8.3 1996/12/10 17:07:23 bostic Exp $ (Berkeley) $Date: 1996/12/10 17:07:23 $";
  */
 
 /* Describes a single 'screen' implemented in X widgetry. */
@@ -25,9 +25,10 @@ typedef	struct {
     int		curx, cury;
     char	*characters;
     char	*flags;
+    Boolean	init;
 } xvi_screen;
 
-extern xvi_screen *cur_screen;
+extern xvi_screen *_vi_screen;
 
 /*
  * Color support
@@ -68,5 +69,11 @@ extern xvi_screen *cur_screen;
 #define	COLUMN( scr, x )	\
 	( (x) / scr->ch_width )
 
-extern GC	copy_gc;
+extern GC	_vi_copy_gc;
 extern Widget	top_level;
+
+
+/* public routines */
+extern	Boolean	vi_pipe_input_func();
+
+extern	char	*vi_progname;

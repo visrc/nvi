@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_menu.c,v 8.14 1996/12/05 21:04:53 bostic Exp $ (Berkeley) $Date: 1996/12/05 21:04:53 $";
+static const char sccsid[] = "$Id: m_menu.c,v 8.15 1996/12/10 17:07:22 bostic Exp $ (Berkeley) $Date: 1996/12/10 17:07:22 $";
 #endif /* not lint */
 
 #include <sys/queue.h>
@@ -69,9 +69,9 @@ static const char sccsid[] = "$Id: m_menu.c,v 8.14 1996/12/05 21:04:53 bostic Ex
  */
 
 #if defined(__STDC__)
-void	send_command_string( String str )
+void	_vi_send_command_string( String str )
 #else
-void	send_command_string( str )
+void	_vi_send_command_string( str )
 String	str;
 #endif
 {
@@ -96,13 +96,15 @@ String	str;
     ipb.len = strlen(buffer);
     ip_send("s", &ipb);
 }
+
+
 /* Utility:  beep for unimplemented command */
 
 #if defined(__STDC__)
-void	send_beep( Widget w )
+static	void	send_beep( Widget w )
 #else
-void	send_beep( w )
-Widget	w;
+static	void	send_beep( w )
+	Widget	w;
 #endif
 {
     XBell( XtDisplay(w), 0 );
@@ -111,15 +113,15 @@ Widget	w;
 
 /* Utility:  make a dialog box go Modal */
 
-Bool	have_answer;
+static	Bool	have_answer;
 
 #if defined(__STDC__)
-void		cancel_cb( Widget w,
-			   XtPointer client_data,
-			   XtPointer call_data
-			   )
+void		_vi_cancel_cb( Widget w,
+			       XtPointer client_data,
+			       XtPointer call_data
+			       )
 #else
-void		cancel_cb( w, client_data, call_data )
+void		_vi_cancel_cb( w, client_data, call_data )
 Widget		w;
 XtPointer	client_data;
 XtPointer	call_data;
@@ -128,7 +130,7 @@ XtPointer	call_data;
     have_answer = True;
 }
 
-void	modal_dialog( db )
+void	_vi_modal_dialog( db )
 Widget	db;
 {
     XtAppContext	ctx;
@@ -151,19 +153,19 @@ Widget	db;
 
 /* Utility:  Get a file (using standard File Selection Dialog Box) */
 
-String	file_name;
+static	String	file_name;
 
 
 #if defined(__STDC__)
-void		ok_file_name( Widget w,
-			      XtPointer client_data,
-			      XtPointer call_data
-			      )
+static	void		ok_file_name( Widget w,
+				      XtPointer client_data,
+				      XtPointer call_data
+				      )
 #else
-void		ok_file_name( w, client_data, call_data )
-Widget		w;
-XtPointer	client_data;
-XtPointer	call_data;
+static	void		ok_file_name( w, client_data, call_data )
+	Widget		w;
+	XtPointer	client_data;
+	XtPointer	call_data;
 #endif
 {
     XmFileSelectionBoxCallbackStruct	*cbs;
@@ -176,11 +178,11 @@ XtPointer	call_data;
 
 
 #if defined(__STDC__)
-String	get_file( Widget w, String prompt )
+static	String	get_file( Widget w, String prompt )
 #else
-String	get_file( w, prompt )
-Widget	w;
-String	prompt;
+static	String	get_file( w, prompt )
+	Widget	w;
+	String	prompt;
 #endif
 {
     /* make it static so we can reuse it */
@@ -196,14 +198,14 @@ String	prompt;
     if ( db == NULL ){ 
 	db = XmCreateFileSelectionDialog( w, "file", NULL, 0 );
 	XtAddCallback( db, XmNokCallback, ok_file_name, NULL );
-	XtAddCallback( db, XmNcancelCallback, cancel_cb, NULL );
+	XtAddCallback( db, XmNcancelCallback, _vi_cancel_cb, NULL );
     }
 
     /* use the title as a prompt */
     XtVaSetValues( XtParent(db), XmNtitle, prompt, 0 );
 
     /* wait for a response */
-    modal_dialog( db );
+    _vi_modal_dialog( db );
 
     /* done */
     return file_name;
@@ -212,19 +214,19 @@ String	prompt;
 
 /* Utility:  Get a string (using standard File Selection Dialog Box) */
 
-String	string_name;
+static	String	string_name;
 
 
 #if defined(__STDC__)
-void		ok_string( Widget w,
+static	void	ok_string( Widget w,
 			   XtPointer client_data,
 			   XtPointer call_data
 			   )
 #else
-void		ok_string( w, client_data, call_data )
-Widget		w;
-XtPointer	client_data;
-XtPointer	call_data;
+static	void		ok_string( w, client_data, call_data )
+	Widget		w;
+	XtPointer	client_data;
+	XtPointer	call_data;
 #endif
 {
     XmSelectionBoxCallbackStruct	*cbs;
@@ -237,11 +239,12 @@ XtPointer	call_data;
 
 
 #if defined(__STDC__)
-String	get_string( Widget w, String prompt )
+static	String	get_string( Widget w, String prompt, String title )
 #else
-String	get_string( w, prompt )
-Widget	w;
-String	prompt;
+static	String	get_string( w, prompt, title )
+	Widget	w;
+	String	prompt;
+	String	title;
 #endif
 {
     /* make it static so we can reuse it */
@@ -258,7 +261,7 @@ String	prompt;
     if ( db == NULL ){ 
 	db = XmCreatePromptDialog( w, "string", NULL, 0 );
 	XtAddCallback( db, XmNokCallback, ok_string, NULL );
-	XtAddCallback( db, XmNcancelCallback, cancel_cb, NULL );
+	XtAddCallback( db, XmNcancelCallback, _vi_cancel_cb, NULL );
     }
 
     /* this one has space for a prompt... */
@@ -266,8 +269,11 @@ String	prompt;
     XtVaSetValues( db, XmNselectionLabelString, xmstr, 0 );
     XmStringFree( xmstr );
 
+    /* set the title as well */
+    XtVaSetValues( XtParent(db), XmNtitle, title, 0 );
+
     /* wait for a response */
-    modal_dialog( db );
+    _vi_modal_dialog( db );
 
     /* done */
     return string_name;
@@ -279,15 +285,16 @@ String	prompt;
  *	Get a string and send it with the command to the core.
  */
 static void
-string_command(w, code, prompt)
+string_command(w, code, prompt, title)
 	Widget w;
 	int code;
 	String prompt;
+	String title;
 {
 	IP_BUF ipb;
 	char *str;
 
-	if ((str = get_string(w, prompt)) != NULL ) {
+	if ((str = get_string(w, prompt, title)) != NULL ) {
 		ipb.code = code;
 		ipb.str = str;
 		/*
@@ -330,7 +337,7 @@ file_command(w, code, prompt)
  *
  * These are in the order in which they appear in the menu structure.
  */
-void
+static void
 ma_edit_file(w, call_data, client_data)
 	Widget w;
 	XtPointer call_data, client_data;
@@ -338,7 +345,7 @@ ma_edit_file(w, call_data, client_data)
 	file_command(w, IPO_EDIT, "Edit");
 }
 
-void
+static void
 ma_split(w, call_data, client_data)
 	Widget w;
 	XtPointer call_data, client_data;
@@ -346,7 +353,7 @@ ma_split(w, call_data, client_data)
 	file_command(w, IPO_SPLIT, "Edit");
 }
 
-void
+static void
 ma_save(w, call_data, client_data)
 	Widget w;
 	XtPointer call_data, client_data;
@@ -357,7 +364,7 @@ ma_save(w, call_data, client_data)
 	(void)ip_send(NULL, &ipb);
 }
 
-void
+static void
 ma_save_as(w, call_data, client_data)
 	Widget w;
 	XtPointer call_data, client_data;
@@ -365,7 +372,7 @@ ma_save_as(w, call_data, client_data)
 	file_command(w, IPO_WRITEAS, "Save As");
 }
 
-void
+static void
 ma_wq(w, call_data, client_data)
 	Widget w;
 	XtPointer call_data, client_data;
@@ -376,7 +383,7 @@ ma_wq(w, call_data, client_data)
 	(void)ip_send(NULL, &ipb);
 }
 
-void
+static void
 ma_quit(w, call_data, client_data)
 	Widget w;
 	XtPointer call_data, client_data;
@@ -387,7 +394,7 @@ ma_quit(w, call_data, client_data)
 	(void)ip_send(NULL, &ipb);
 }
 
-void
+static void
 ma_undo(w, call_data, client_data)
 	Widget w;
 	XtPointer call_data, client_data;
@@ -399,15 +406,15 @@ ma_undo(w, call_data, client_data)
 }
 
 #if defined(__STDC__)
-void		ma_cut(	Widget w,
+static void	ma_cut(	Widget w,
 			XtPointer call_data,
 			XtPointer client_data
 			)
 #else
-void		ma_cut( w, call_data, client_data )
-Widget		w;
-XtPointer	call_data;
-XtPointer	client_data;
+static	void		ma_cut( w, call_data, client_data )
+	Widget		w;
+	XtPointer	call_data;
+	XtPointer	client_data;
 #endif
 {
     /* future */
@@ -416,15 +423,15 @@ XtPointer	client_data;
 
 
 #if defined(__STDC__)
-void		ma_copy(	Widget w,
+static	void	ma_copy(	Widget w,
 				XtPointer call_data,
 				XtPointer client_data
 				)
 #else
-void		ma_copy( w, call_data, client_data )
-Widget		w;
-XtPointer	call_data;
-XtPointer	client_data;
+static	void		ma_copy( w, call_data, client_data )
+	Widget		w;
+	XtPointer	call_data;
+	XtPointer	client_data;
 #endif
 {
     /* future */
@@ -433,38 +440,38 @@ XtPointer	client_data;
 
 
 #if defined(__STDC__)
-void		ma_paste(	Widget w,
+static	void	ma_paste(	Widget w,
 				XtPointer call_data,
 				XtPointer client_data
 				)
 #else
-void		ma_paste( w, call_data, client_data )
-Widget		w;
-XtPointer	call_data;
-XtPointer	client_data;
+static	void		ma_paste( w, call_data, client_data )
+	Widget		w;
+	XtPointer	call_data;
+	XtPointer	client_data;
 #endif
 {
     /* future */
     send_beep( w );
 }
 
-void
+static void
 ma_find(w, call_data, client_data)
 	Widget w;
 	XtPointer call_data, client_data;
 {
-	xip_show_search_dialog( w, "Find" );
+	_vi_show_search_dialog( w, "Find" );
 }
 
-void
+static void
 ma_find_next(w, call_data, client_data)
 	Widget w;
 	XtPointer call_data, client_data;
 {
-	xip_next_search();
+	_vi_next_search();
 }
 
-void
+static void
 ma_tag(w, call_data, client_data)
 	Widget w;
 	XtPointer call_data, client_data;
@@ -475,7 +482,7 @@ ma_tag(w, call_data, client_data)
 	(void)ip_send(NULL, &ipb);
 }
 
-void
+static void
 ma_tagsplit(w, call_data, client_data)
 	Widget w;
 	XtPointer call_data, client_data;
@@ -486,27 +493,35 @@ ma_tagsplit(w, call_data, client_data)
 	(void)ip_send(NULL, &ipb);
 }
 
-void
+static void
+ma_tagpop(w, call_data, client_data)
+	Widget w;
+	XtPointer call_data, client_data;
+{
+	_vi_send_command_string( "\024" );
+}
+
+static void
 ma_tagas(w, call_data, client_data)
 	Widget w;
 	XtPointer call_data, client_data;
 {
-	string_command(w, IPO_TAGAS, "Tag");
+	string_command(w, IPO_TAGAS, "Enter Tag Name:", "Tag");
 }
 
 #if defined(__STDC__)
-void		ma_preferences(	Widget w,
+static void	ma_preferences(	Widget w,
 				XtPointer call_data,
 				XtPointer client_data
 				)
 #else
-void		ma_preferences( w, call_data, client_data )
-Widget		w;
-XtPointer	call_data;
-XtPointer	client_data;
+static	void		ma_preferences( w, call_data, client_data )
+	Widget		w;
+	XtPointer	call_data;
+	XtPointer	client_data;
 #endif
 {
-    xip_show_options_dialog( w, "Preferences" );
+    _vi_show_options_dialog( w, "Preferences" );
 }
 
 
@@ -523,7 +538,7 @@ typedef	struct {
     pull_down	*actions;
 } menu_bar;
 
-pull_down	file_menu[] = {
+static	pull_down	file_menu[] = {
     { "Edit File...",		ma_edit_file },
     { "",			NULL },
     { "Split Window...",	ma_split },
@@ -536,7 +551,7 @@ pull_down	file_menu[] = {
     { NULL,			NULL },
 };
 
-pull_down	edit_menu[] = {
+static	pull_down	edit_menu[] = {
     { "Undo",			ma_undo },
     { "",			NULL },
     { "Cut",			ma_cut },
@@ -548,25 +563,27 @@ pull_down	edit_menu[] = {
     { NULL,			NULL },
 };
 
-pull_down	options_menu[] = {
+static	pull_down	options_menu[] = {
     { "Preferences",		ma_preferences },
     { "Command Mode Maps",	NULL },
     { "Insert Mode Maps",	NULL },
     { NULL,			NULL },
 };
 
-pull_down	tag_menu[] = {
+static	pull_down	tag_menu[] = {
     { "Go To Tag",		ma_tag },
     { "Split To Tag",		ma_tagsplit },
     { "Tag As...",		ma_tagas },
+    { "",			NULL },
+    { "Pop",			ma_tagpop },
     { NULL,			NULL },
 };
 
-pull_down	help_menu[] = {
+static	pull_down	help_menu[] = {
     { NULL,			NULL },
 };
 
-menu_bar	main_menu[] = {
+static	menu_bar	main_menu[] = {
     { 'F',	"File",		file_menu	},
     { 'E',	"Edit", 	edit_menu	},
     { 'O',	"Options",	options_menu	},
@@ -577,11 +594,11 @@ menu_bar	main_menu[] = {
 
 
 #if defined(__STDC__)
-void		add_entries( Widget parent, pull_down *actions )
+static	void	add_entries( Widget parent, pull_down *actions )
 #else
-void		add_entries( parent, actions )
-Widget		parent;
-pull_down	*actions;
+static	void		add_entries( parent, actions )
+	Widget		parent;
+	pull_down	*actions;
 #endif
 {
     Widget	w;
@@ -608,12 +625,12 @@ pull_down	*actions;
 }
 
 /*
- * create_menubar --
+ * vi_create_menubar --
  *
- * PUBLIC: Widget create_menubar __P((Widget));
+ * PUBLIC: Widget _vi_create_menubar __P((Widget));
  */
 Widget
-create_menubar(parent)
+vi_create_menubar(parent)
 	Widget parent;
 {
     Widget	menu, pull, button;
