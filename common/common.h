@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 5.37 1993/02/19 13:39:05 bostic Exp $ (Berkeley) $Date: 1993/02/19 13:39:05 $
+ *	$Id: common.h,v 5.38 1993/02/24 12:52:58 bostic Exp $ (Berkeley) $Date: 1993/02/24 12:52:58 $
  */
 
 #include <limits.h>		/* XXX */
@@ -59,7 +59,8 @@ int	binc __P((EXF *, void *, size_t *, size_t));
 
 /* Filter type. */
 enum filtertype { STANDARD, NOINPUT, NOOUTPUT };
-int	filtercmd __P((EXF *, MARK *, MARK *, u_char *, enum filtertype));
+int	filtercmd
+	    __P((EXF *, MARK *, MARK *, MARK *, u_char *, enum filtertype));
 
 /* Visual bell. */
 extern char *VB;
