@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.3 1993/06/21 09:47:11 bostic Exp $ (Berkeley) $Date: 1993/06/21 09:47:11 $";
+static char sccsid[] = "$Id: exf.c,v 8.4 1993/06/21 11:16:10 bostic Exp $ (Berkeley) $Date: 1993/06/21 11:16:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -457,8 +457,11 @@ file_write(sp, ep, fm, tm, fname, flags)
 	}
 
 	/* Write the file. */
-	if (ex_writefp(sp, ep, fname, fp, fm, tm, 1))
+	if (ex_writefp(sp, ep, fname, fp, fm, tm, 1)) {
+		if (!LF_ISSET(FS_APPEND))
+			msgq(sp, M_ERR, "%s: WARNING: file truncated!", fname);
 		return (1);
+	}
 
 	/* If wrote the entire file, clear the modified bit. */
 	if (LF_ISSET(FS_ALL))
