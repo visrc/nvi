@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_increment.c,v 10.10 1996/03/06 19:54:17 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:54:17 $";
+static const char sccsid[] = "$Id: v_increment.c,v 10.11 1996/03/19 15:30:31 bostic Exp $ (Berkeley) $Date: 1996/03/19 15:30:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,9 +34,9 @@ static char * const fmt[] = {
 #define	SDEC	1
 	"%+ld",
 #define	HEXC	2
-	"%#0*lX",
+	"0X%0*lX",
 #define	HEXL	3
-	"%#0*lx",
+	"0x%0*lx",
 #define	OCTAL	4
 	"%#0*lo",
 };
@@ -220,16 +220,12 @@ nonum:			msgq(sp, M_ERR, "181|Cursor not in a number");
 			}
 			ulval -= change;
 		}
+
+		/* Correct for literal "0[Xx]" in format. */
+		if (base == 16)
+			wlen -= 2;
+
 		nlen = snprintf(nbuf, sizeof(nbuf), ntype, wlen, ulval);
-		/*
-		 * !!!
-		 * UNIX sprintf(3) functions lose the leading 0[Xx] if
-		 * the number is a 0.  Not cool.
-		 */
-		if (base == 16 && ulval == 0) {
-			nbuf[0] = '0';
-			nbuf[1] = ntype == fmt[HEXC] ? 'X' : 'x';
-		}
 	}
 
 	/* Build the new line. */
