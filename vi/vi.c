@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.34 1993/11/19 09:34:09 bostic Exp $ (Berkeley) $Date: 1993/11/19 09:34:09 $";
+static char sccsid[] = "$Id: vi.c,v 8.35 1993/11/19 14:28:42 bostic Exp $ (Berkeley) $Date: 1993/11/19 14:28:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -61,9 +61,6 @@ vi(sp, ep)
 
 	/* Command initialization. */
 	memset(&cmd, 0, sizeof(VICMDARG));
-
-	/* Edited as it can be. */
-	F_SET(sp->frp, FR_EDITED);
 
 	for (eval = 0, vp = &cmd;;) {
 		if (!TERM_MORE(sp->gp->key) && log_cursor(sp, ep))
