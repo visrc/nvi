@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.51 1994/03/15 12:35:47 bostic Exp $ (Berkeley) $Date: 1994/03/15 12:35:47 $";
+static char sccsid[] = "$Id: key.c,v 8.52 1994/03/15 14:16:11 bostic Exp $ (Berkeley) $Date: 1994/03/15 14:16:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -294,7 +294,6 @@ term_push(sp, s, nchars, cmap, flags)
 	u_int flags;			/* CH_* flags. */
 {
 	IBUF *tty;
-	size_t olen;
 	u_short *p, *t;
 
 	/* If we have room, stuff the keys into the buffer. */
