@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 8.9 1993/08/25 16:49:45 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:49:45 $";
+static char sccsid[] = "$Id: v_itxt.c,v 8.10 1993/08/31 18:38:24 bostic Exp $ (Berkeley) $Date: 1993/08/31 18:38:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -121,8 +121,8 @@ v_ia(sp, ep, vp, fm, tm, rp)
 			LF_SET(TXT_APPENDEOL);
 		} else if (len) {
 			if (len == sp->cno + 1) {
-				LF_SET(TXT_APPENDEOL);
 				sp->cno = len;
+				LF_SET(TXT_APPENDEOL);
 			} else
 				++sp->cno;
 		} else
@@ -433,12 +433,14 @@ v_Change(sp, ep, vp, fm, tm, rp)
 				GETLINE_ERR(sp, tm->lno);
 				return (1);
 			}
-			LF_SET(TXT_APPENDEOL);
 			len = 0;
+			LF_SET(TXT_APPENDEOL);
 		} else {
 			if (cut(sp, ep, VICB(vp), fm, tm, 1))
 				return (1);
 			tm->cno = len;
+			if (len == 0)
+				LF_SET(TXT_APPENDEOL);
 			LF_SET(TXT_EMARK | TXT_OVERWRITE);
 		}
 	}
@@ -487,8 +489,7 @@ v_change(sp, ep, vp, fm, tm, rp)
 	 * copy it and overwrite it.
 	 */
 	if (fm->lno == tm->lno) {
-		if ((p =
-		    file_gline(sp, ep, fm->lno, &len)) == NULL || len == 0) {
+		if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
 			if (p == NULL) {
 				if (file_lline(sp, ep, &lno))
 					return (1);
@@ -497,11 +498,13 @@ v_change(sp, ep, vp, fm, tm, rp)
 					return (1);
 				}
 			}
-			LF_SET(TXT_APPENDEOL);
 			len = 0;
+			LF_SET(TXT_APPENDEOL);
 		} else {
 			if (cut(sp, ep, VICB(vp), fm, tm, lmode))
 				return (1);
+			if (len == 0)
+				LF_SET(TXT_APPENDEOL);
 			LF_SET(TXT_EMARK | TXT_OVERWRITE);
 		}
 		return (v_ntext(sp, ep,
@@ -599,10 +602,13 @@ v_Replace(sp, ep, vp, fm, tm, rp)
 			GETLINE_ERR(sp, rp->lno);
 			return (1);
 		}
-		LF_SET(TXT_APPENDEOL);
 		len = 0;
-	} else
+		LF_SET(TXT_APPENDEOL);
+	} else {
+		if (len == 0)
+			LF_SET(TXT_APPENDEOL);
 		LF_SET(TXT_OVERWRITE | TXT_REPLACE);
+	}
 	tm->lno = rp->lno;
 	tm->cno = len ? len : 0;
 	if (v_ntext(sp, ep, &sp->txthdr, tm, p, len, rp, 0, OOBLNO, flags))
@@ -671,8 +677,11 @@ v_subst(sp, ep, vp, fm, tm, rp)
 		}
 		len = 0;
 		LF_SET(TXT_APPENDEOL);
-	} else
+	} else {
+		if (len == 0)
+			LF_SET(TXT_APPENDEOL);
 		LF_SET(TXT_EMARK | TXT_OVERWRITE);
+	}
 
 	tm->lno = fm->lno;
 	tm->cno = fm->cno + (F_ISSET(vp, VC_C1SET) ? vp->count : 1);
