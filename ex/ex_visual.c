@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_visual.c,v 8.1 1993/09/09 11:08:27 bostic Exp $ (Berkeley) $Date: 1993/09/09 11:08:27 $";
+static char sccsid[] = "$Id: ex_visual.c,v 8.2 1993/09/09 14:28:24 bostic Exp $ (Berkeley) $Date: 1993/09/09 14:28:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -58,7 +58,7 @@ ex_visual(sp, ep, cmdp)
 
 	if (F_ISSET(cmdp, E_COUNT))
 		len = snprintf(buf, sizeof(buf),
-		     "%luz%lu%c", sp->lno, pos, cmdp->count);
+		     "%luz%c%lu", sp->lno, pos, cmdp->count);
 	else
 		len = snprintf(buf, sizeof(buf), "%luz%c", sp->lno, pos);
 	(void)term_push(sp, &sp->tty, buf, len);
