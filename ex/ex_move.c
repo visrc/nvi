@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_move.c,v 5.26 1993/05/15 10:10:21 bostic Exp $ (Berkeley) $Date: 1993/05/15 10:10:21 $";
+static char sccsid[] = "$Id: ex_move.c,v 5.27 1993/05/15 21:22:23 bostic Exp $ (Berkeley) $Date: 1993/05/15 21:22:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -86,7 +86,8 @@ cm(sp, ep, cmdp, cmd)
 	if (sp->lno < 1)
 		sp->lno = 1;
 	else {
-		lline = file_lline(sp, ep);
+		if (file_lline(sp, ep, &lline))
+			return (1);
 		if (sp->lno > lline)
 			sp->lno = lline;
 	}

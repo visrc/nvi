@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 5.29 1993/05/15 10:10:09 bostic Exp $ (Berkeley) $Date: 1993/05/15 10:10:09 $";
+static char sccsid[] = "$Id: ex_global.c,v 5.30 1993/05/15 21:22:16 bostic Exp $ (Berkeley) $Date: 1993/05/15 21:22:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -151,7 +151,8 @@ global(sp, ep, cmdp, cmd)
 		 * Execute the command, keeping track of the lines that
 		 * change, and adjusting for inserted/deleted lines.
 		 */
-		last1 = file_lline(sp, ep);
+		if (file_lline(sp, ep, &last1))
+			goto err;
 
 		sp->lno = lno;
 		(void)snprintf((char *)cbuf, sizeof(cbuf), "%s", endp);
@@ -160,7 +161,8 @@ global(sp, ep, cmdp, cmd)
 			goto err;
 		}
 
-		last2 = file_lline(sp, ep);
+		if (file_lline(sp, ep, &last2))
+			goto err;
 		if (last2 > last1) {
 			last2 -= last1;
 			lno += last2;

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_equal.c,v 5.11 1993/03/26 13:38:51 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:38:51 $";
+static char sccsid[] = "$Id: ex_equal.c,v 5.12 1993/05/15 21:22:10 bostic Exp $ (Berkeley) $Date: 1993/05/15 21:22:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,7 +25,14 @@ ex_equal(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	(void)fprintf(sp->stdfp,
-	    "%ld", cmdp->addrcnt ? cmdp->addr1.lno : file_lline(sp, ep));
+	recno_t lno;
+
+	if (cmdp->addrcnt)
+		(void)fprintf(sp->stdfp, "%ld", cmdp->addr1.lno);
+	else {
+		if (file_lline(sp, ep, &lno))
+			return (1);
+		(void)fprintf(sp->stdfp, "%ld", lno);
+	}
 	return (0);
 }

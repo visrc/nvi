@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: delete.c,v 5.28 1993/05/15 10:09:26 bostic Exp $ (Berkeley) $Date: 1993/05/15 10:09:26 $";
+static char sccsid[] = "$Id: delete.c,v 5.29 1993/05/15 21:21:32 bostic Exp $ (Berkeley) $Date: 1993/05/15 21:21:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -51,7 +51,8 @@ delete(sp, ep, fm, tm, lmode)
 	 * Case 2 -- delete to EOF.  This is a special case because it's
 	 * easier to pick it off than try and find it in the other cases.
  	 */
-	lno = file_lline(sp, ep);
+	if (file_lline(sp, ep, &lno))
+		return (1);
 	if (tm->lno >= lno) {
 		if (tm->lno == lno) {
 			if ((p = file_gline(sp, ep, lno, &len)) == NULL) {

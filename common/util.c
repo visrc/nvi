@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 5.47 1993/05/15 11:12:03 bostic Exp $ (Berkeley) $Date: 1993/05/15 11:12:03 $";
+static char sccsid[] = "$Id: util.c,v 5.48 1993/05/15 21:20:32 bostic Exp $ (Berkeley) $Date: 1993/05/15 21:20:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -204,6 +204,7 @@ msg_rpt(sp, fp)
 
 	/* Clear after each report. */
 	memset(sp->rptlines, 0, sizeof(sp->rptlines));
+	return (0);
 }
 
 /*
@@ -259,7 +260,9 @@ nonblank(sp, ep, lno, cnop)
 	size_t cnt, len;
 
 	if ((p = file_gline(sp, ep, lno, &len)) == NULL) {
-		if (file_lline(sp, ep) == 0) {
+		if (file_lline(sp, ep, &lno))
+			return (1);
+		if (lno == 0) {
 			*cnop = 0;
 			return (0);
 		}

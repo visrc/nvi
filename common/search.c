@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 5.38 1993/05/13 18:59:04 bostic Exp $ (Berkeley) $Date: 1993/05/13 18:59:04 $";
+static char sccsid[] = "$Id: search.c,v 5.39 1993/05/15 21:20:41 bostic Exp $ (Berkeley) $Date: 1993/05/15 21:20:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -163,7 +163,9 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 	int eval, wordoffset, wrapped;
 	char *l;
 
-	if ((lno = file_lline(sp, ep)) == 0) {
+	if (file_lline(sp, ep, &lno))
+		return (1);
+	if (lno == 0) {
 		if (LF_ISSET(SEARCH_MSG))
 			msgq(sp, M_INFO, EMPTYMSG);
 		return (1);
@@ -293,7 +295,9 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 	int eval, wordoffset, wrapped;
 	char *l;
 
-	if ((lno = file_lline(sp, ep)) == 0) {
+	if (file_lline(sp, ep, &lno))
+		return (1);
+	if (lno == 0) {
 		if (LF_ISSET(SEARCH_MSG))
 			msgq(sp, M_INFO, EMPTYMSG);
 		return (1);
@@ -324,7 +328,9 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 					msgq(sp, M_INFO, SOFMSG);
 				break;
 			}
-			if ((lno = file_lline(sp, ep)) == 0) {
+			if (file_lline(sp, ep, &lno))
+				return (1);
+			if (lno == 0) {
 				if (LF_ISSET(SEARCH_MSG))
 					msgq(sp, M_INFO, EMPTYMSG);
 				break;
@@ -459,7 +465,6 @@ ctag_conv(sp, ptrnp, replacedp)
 	char **ptrnp;
 	int *replacedp;
 {
-	GS *gp;
 	size_t blen, len;
 	int lastdollar;
 	char *bp, *p, *t;

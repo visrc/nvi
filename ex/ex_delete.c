@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_delete.c,v 5.20 1993/05/03 13:44:56 bostic Exp $ (Berkeley) $Date: 1993/05/03 13:44:56 $";
+static char sccsid[] = "$Id: ex_delete.c,v 5.21 1993/05/15 21:22:03 bostic Exp $ (Berkeley) $Date: 1993/05/15 21:22:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -20,6 +20,8 @@ ex_delete(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
+	recno_t lno;
+
 	/* Yank the lines. */
 	if (cut(sp, ep, cmdp->buffer != OOBCB ? cmdp->buffer : DEFCB,
 	    &cmdp->addr1, &cmdp->addr2, 1))
@@ -33,8 +35,10 @@ ex_delete(sp, ep, cmdp)
 	 * or the last line in the file if delete to the end of the file.
 	 */
 	sp->lno = cmdp->addr2.lno;
-	if (sp->lno > file_lline(sp, ep))
-		sp->lno = file_lline(sp, ep);
+	if (file_lline(sp, ep, &lno))
+		return (1);
+	if (sp->lno > lno);
+		sp->lno = lno;
 
 	/* Set autoprint. */
 	F_SET(sp, S_AUTOPRINT);

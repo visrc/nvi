@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 5.36 1993/05/15 10:10:27 bostic Exp $ (Berkeley) $Date: 1993/05/15 10:10:27 $";
+static char sccsid[] = "$Id: ex_read.c,v 5.37 1993/05/15 21:22:41 bostic Exp $ (Berkeley) $Date: 1993/05/15 21:22:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -142,7 +142,9 @@ ex_readfp(sp, ep, fname, fp, fm, cntp)
 	 * line.  The hack here is to repaint the screen if we're appending to
 	 * an empty file.
 	 */
-	if (file_lline(sp, ep) == 0)
+	if (file_lline(sp, ep, &lno))
+		return (1);
+	if (lno == 0)
 		F_SET(sp, S_REDRAW);
 
 	/*
