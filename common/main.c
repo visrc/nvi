@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.36 1992/12/25 17:22:24 bostic Exp $ (Berkeley) $Date: 1992/12/25 17:22:24 $";
+static char sccsid[] = "$Id: main.c,v 5.37 1993/01/11 18:49:48 bostic Exp $ (Berkeley) $Date: 1993/01/11 18:49:48 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -37,10 +37,7 @@ static char sccsid[] = "$Id: main.c,v 5.36 1992/12/25 17:22:24 bostic Exp $ (Ber
 FILE *tracefp;
 #endif
 
-int autoprint;					/* See vi.h. */
 enum editmode mode;				/* See vi.h. */
-
-static jmp_buf jmpenv;
 
 static void obsolete __P((char *[]));
 static void usage __P((void));
@@ -50,9 +47,14 @@ main(argc, argv)
 	int argc;
 	char *argv[];
 {
+	static int reenter;
 	EXCMDARG cmd;
 	int ch;
 	char *excmdarg, *err, *p, *tag, path[MAXPATHLEN];
+
+	/* Stop if indirect through NULL. */
+	if (reenter++)
+		abort();
 
 	/* Set mode based on the program name. */
 	if ((p = rindex(*argv, '/')) == NULL)
@@ -186,42 +188,25 @@ main(argc, argv)
 	(void)signal(SIGWINCH, onwinch);
 
 	/* Repeatedly call ex() or vi() until the mode is set to MODE_QUIT. */
-	while (mode != MODE_QUIT) {
-#ifdef NOT_RIGHT_NOW
-		/* Maybe we just aborted a change? */
-		if (setjmp(jmpenv))
-			abortdo();
-#endif
-
-		(void)signal(SIGINT, trapint);
+	while (mode != MODE_QUIT)
 		switch (mode) {
 		case MODE_VI:
-			(void)vi();
+			if (vi())
+				mode = MODE_QUIT;
 			break;
 		case MODE_EX:
-			(void)ex();
+			if (ex())
+				mode = MODE_QUIT;
 			break;
 		default:
 			abort();
 		}
-	}
 
 	/* Flush any left-over error message. */
 	msg_eflush();
 
 	exit(0);
 	/* NOTREACHED */
-}
-
-/* ARGSUSED */
-void
-trapint(signo)
-	int signo;
-{
-#ifdef NOT_RIGHT_NOW
-	abortdo();
-#endif
-	longjmp(jmpenv, 1);
 }
 
 static void
