@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 8.25 1994/03/23 14:47:00 bostic Exp $ (Berkeley) $Date: 1994/03/23 14:47:00 $";
+static char sccsid[] = "$Id: ex_write.c,v 8.26 1994/03/23 15:04:55 bostic Exp $ (Berkeley) $Date: 1994/03/23 15:04:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -241,8 +241,6 @@ ex_writefp(sp, ep, name, fp, fm, tm, nlno, nch)
 	ccnt = 0;
 	lcnt = 0;
 	if (tline != 0) {
-		timerp = F_ISSET(sp, S_EXSILENT) ?
-		    NULL : start_timer(sp, 8, sp->s_busy, "Writing...", 0);
 		teardown = !intr_init(sp);
 		for (; fline <= tline; ++fline, ++lcnt) {
 			if (F_ISSET(sp, S_INTERRUPTED)) {
@@ -252,8 +250,6 @@ ex_writefp(sp, ep, name, fp, fm, tm, nlno, nch)
 			if ((p = file_gline(sp, ep, fline, &len)) == NULL)
 				break;
 			if (fwrite(p, 1, len, fp) != len) {
-				if (timerp != NULL)
-					stop_timer(sp, timerp);
 				if (teardown)
 					intr_end(sp);
 				msgq(sp, M_SYSERR, name);
@@ -265,8 +261,6 @@ ex_writefp(sp, ep, name, fp, fm, tm, nlno, nch)
 				break;
 			++ccnt;
 		}
-		if (timerp != NULL)
-			stop_timer(sp, timerp);
 		if (teardown)
 			intr_end(sp);
 	}
