@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_func.c,v 8.10 1996/12/10 17:44:31 bostic Exp $ (Berkeley) $Date: 1996/12/10 17:44:31 $";
+static const char sccsid[] = "$Id: m_func.c,v 8.11 1996/12/10 21:07:01 bostic Exp $ (Berkeley) $Date: 1996/12/10 21:07:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -37,18 +37,18 @@ vi_addstr(ipbp)
 	trace("addstr() {%.*s}\n", ipbp->len, ipbp->str);
 #endif
 	/* Add to backing store. */
-	memcpy(CharAt(_vi_screen, _vi_screen->cury, _vi_screen->curx),
+	memcpy(CharAt(__vi_screen, __vi_screen->cury, __vi_screen->curx),
 	    ipbp->str, ipbp->len);
-	memset(FlagAt(_vi_screen, _vi_screen->cury, _vi_screen->curx),
-	    _vi_screen->color, ipbp->len);
+	memset(FlagAt(__vi_screen, __vi_screen->cury, __vi_screen->curx),
+	    __vi_screen->color, ipbp->len);
 
 	/* Draw from backing store. */
-	_vi_draw_text(_vi_screen,
-	    _vi_screen->cury, _vi_screen->curx, ipbp->len);
+	__vi_draw_text(__vi_screen,
+	    __vi_screen->cury, __vi_screen->curx, ipbp->len);
 
 	/* Advance the caret. */
-	_vi_move_caret(_vi_screen,
-	    _vi_screen->cury, _vi_screen->curx + ipbp->len);
+	__vi_move_caret(__vi_screen,
+	    __vi_screen->cury, __vi_screen->curx + ipbp->len);
 	return (0);
 }
 
@@ -61,7 +61,7 @@ vi_attribute(ipbp)
 		/* XXX: Nothing. */
 		break;
 	case SA_INVERSE:
-		_vi_screen->color = ipbp->val2;
+		__vi_screen->color = ipbp->val2;
 		break;
 	}
 	return (0);
@@ -75,7 +75,7 @@ vi_bell(ipbp)
 	 * XXX
 	 * Future... implement visible bell.
 	 */
-	XBell(XtDisplay(_vi_screen->area), 0);
+	XBell(XtDisplay(__vi_screen->area), 0);
 	return (0);
 }
 
@@ -83,7 +83,7 @@ static int
 vi_busyon(ipbp)
 	IP_BUF *ipbp;
 {
-	_vi_set_cursor(_vi_screen, 1);
+	__vi_set_cursor(__vi_screen, 1);
 	return (0);
 }
 
@@ -91,7 +91,7 @@ static int
 vi_busyoff(ipbp)
 	IP_BUF *ipbp;
 {
-	_vi_set_cursor(_vi_screen, 0);
+	__vi_set_cursor(__vi_screen, 0);
 	return (0);
 }
 
@@ -102,16 +102,16 @@ vi_clrtoeol(ipbp)
 	int len;
 	char *ptr;
 
-	len = _vi_screen->cols - _vi_screen->curx;
-	ptr = CharAt(_vi_screen, _vi_screen->cury, _vi_screen->curx);
+	len = __vi_screen->cols - __vi_screen->curx;
+	ptr = CharAt(__vi_screen, __vi_screen->cury, __vi_screen->curx);
 	
 	/* Clear backing store. */
 	memset(ptr, ' ', len);
-	memset(FlagAt(_vi_screen, _vi_screen->cury, _vi_screen->curx),
+	memset(FlagAt(__vi_screen, __vi_screen->cury, __vi_screen->curx),
 	    COLOR_STANDARD, len);
 
 	/* Draw from backing store. */
-	_vi_draw_text(_vi_screen, _vi_screen->cury, _vi_screen->curx, len);
+	__vi_draw_text(__vi_screen, __vi_screen->cury, __vi_screen->curx, len);
 
 	return (0);
 }
@@ -122,30 +122,30 @@ vi_deleteln(ipbp)
 {
 	int y, rows, len, height, width;
 
-	y = _vi_screen->cury;
-	rows = _vi_screen->rows - (y+1);
-	len = _vi_screen->cols * rows;
+	y = __vi_screen->cury;
+	rows = __vi_screen->rows - (y+1);
+	len = __vi_screen->cols * rows;
 
 	/* Don't want to copy the caret! */
-	_vi_erase_caret(_vi_screen);
+	__vi_erase_caret(__vi_screen);
 
 	/* Adjust backing store and the flags. */
-	memmove(CharAt(_vi_screen, y, 0), CharAt(_vi_screen, y+1, 0), len);
-	memmove(FlagAt(_vi_screen, y, 0), FlagAt(_vi_screen, y+1, 0), len);
+	memmove(CharAt(__vi_screen, y, 0), CharAt(__vi_screen, y+1, 0), len);
+	memmove(FlagAt(__vi_screen, y, 0), FlagAt(__vi_screen, y+1, 0), len);
 
 	/* Move the bits on the screen. */
-	width = _vi_screen->ch_width * _vi_screen->cols;
-	height = _vi_screen->ch_height * rows;
-	XCopyArea(XtDisplay(_vi_screen->area),		/* display */
-		  XtWindow(_vi_screen->area),		/* src */
-		  XtWindow(_vi_screen->area),		/* dest */
-		  _vi_copy_gc,				/* context */
-		  0, YTOP(_vi_screen, y+1),		/* srcx, srcy */
+	width = __vi_screen->ch_width * __vi_screen->cols;
+	height = __vi_screen->ch_height * rows;
+	XCopyArea(XtDisplay(__vi_screen->area),		/* display */
+		  XtWindow(__vi_screen->area),		/* src */
+		  XtWindow(__vi_screen->area),		/* dest */
+		  __vi_copy_gc,				/* context */
+		  0, YTOP(__vi_screen, y+1),		/* srcx, srcy */
 		  width, height,
-		  0, YTOP(_vi_screen, y)		/* dstx, dsty */
+		  0, YTOP(__vi_screen, y)		/* dstx, dsty */
 		  );
 	/* Need to let X take over. */
-	XmUpdateDisplay(_vi_screen->area);
+	XmUpdateDisplay(__vi_screen->area);
 
 	return (1);
 }
@@ -165,47 +165,47 @@ vi_insertln(ipbp)
 	int y, rows, height, width;
 	char *from, *to;
 
-	y = _vi_screen->cury;
-	rows = _vi_screen->rows - (1+y);
-	from = CharAt(_vi_screen, y, 0),
-	to = CharAt(_vi_screen, y+1, 0);
+	y = __vi_screen->cury;
+	rows = __vi_screen->rows - (1+y);
+	from = CharAt(__vi_screen, y, 0),
+	to = CharAt(__vi_screen, y+1, 0);
 
 	/* Don't want to copy the caret! */
-	_vi_erase_caret(_vi_screen);
+	__vi_erase_caret(__vi_screen);
 
 	/* Adjust backing store. */
-	memmove(to, from, _vi_screen->cols * rows);
-	memset(from, ' ', _vi_screen->cols);
+	memmove(to, from, __vi_screen->cols * rows);
+	memset(from, ' ', __vi_screen->cols);
 
 	/* And the backing store. */
-	from = FlagAt(_vi_screen, y, 0),
-	to = FlagAt(_vi_screen, y+1, 0);
-	memmove(to, from, _vi_screen->cols * rows);
-	memset(from, COLOR_STANDARD, _vi_screen->cols);
+	from = FlagAt(__vi_screen, y, 0),
+	to = FlagAt(__vi_screen, y+1, 0);
+	memmove(to, from, __vi_screen->cols * rows);
+	memset(from, COLOR_STANDARD, __vi_screen->cols);
 
 	/* Move the bits on the screen. */
-	width = _vi_screen->ch_width * _vi_screen->cols;
-	height = _vi_screen->ch_height * rows;
+	width = __vi_screen->ch_width * __vi_screen->cols;
+	height = __vi_screen->ch_height * rows;
 
-	XCopyArea(XtDisplay(_vi_screen->area),		/* display */
-		  XtWindow(_vi_screen->area),		/* src */
-		  XtWindow(_vi_screen->area),		/* dest */
-		  _vi_copy_gc,				/* context */
-		  0, YTOP(_vi_screen, y),		/* srcx, srcy */
+	XCopyArea(XtDisplay(__vi_screen->area),		/* display */
+		  XtWindow(__vi_screen->area),		/* src */
+		  XtWindow(__vi_screen->area),		/* dest */
+		  __vi_copy_gc,				/* context */
+		  0, YTOP(__vi_screen, y),		/* srcx, srcy */
 		  width, height,
-		  0, YTOP(_vi_screen, y+1)		/* dstx, dsty */
+		  0, YTOP(__vi_screen, y+1)		/* dstx, dsty */
 		  );
 
 	/* clear out the new space */
-	XClearArea(XtDisplay(_vi_screen->area),		/* display */
-		   XtWindow(_vi_screen->area),		/* window */
-		   0, YTOP(_vi_screen, y),		/* srcx, srcy */
-		   0, _vi_screen->ch_height,		/* w=full, height */
+	XClearArea(XtDisplay(__vi_screen->area),	/* display */
+		   XtWindow(__vi_screen->area),		/* window */
+		   0, YTOP(__vi_screen, y),		/* srcx, srcy */
+		   0, __vi_screen->ch_height,		/* w=full, height */
 		   True					/* no exposures */
 		   );
 
 	/* Need to let X take over. */
-	XmUpdateDisplay(_vi_screen->area);
+	XmUpdateDisplay(__vi_screen->area);
 
 	return (1);
 }
@@ -214,7 +214,7 @@ static int
 vi_move(ipbp)
 	IP_BUF *ipbp;
 {
-	_vi_move_caret(_vi_screen, ipbp->val1, ipbp->val2);
+	__vi_move_caret(__vi_screen, ipbp->val1, ipbp->val2);
 	return (0);
 }
 
@@ -222,7 +222,7 @@ static int
 vi_redraw(ipbp)
 	IP_BUF *ipbp;
 {
-	_vi_expose_func(0, _vi_screen, 0);
+	__vi_expose_func(0, __vi_screen, 0);
 	return (0);
 }
 
@@ -232,8 +232,16 @@ vi_refresh(ipbp)
 {
 #if 0
 	/* Force synchronous update of the widget. */
-	XmUpdateDisplay(_vi_screen->area);
+	XmUpdateDisplay(__vi_screen->area);
 #endif
+	return (0);
+}
+
+static int
+vi_quit(ipbp)
+	IP_BUF *ipbp;
+{
+	/* XXX: Nothing. */
 	return (0);
 }
 
@@ -255,7 +263,7 @@ vi_rename(ipbp)
 	 * Future:  Attach a title to each screen.  For now, we change
 	 * the title of the shell.
 	 */
-	shell = _vi_screen->area;
+	shell = __vi_screen->area;
 	while ( ! XtIsShell(shell) ) shell = XtParent(shell);
 	XtVaSetValues(shell,
 		      XmNiconName,	tail,
@@ -288,7 +296,7 @@ vi_split(ipbp)
 	return (0);
 }
 
-int (*_vi_iplist[IPO_EVENT_MAX]) __P((IP_BUF *)) = {
+int (*__vi_iplist[SI_EVENT_MAX]) __P((IP_BUF *)) = {
 	vi_addstr,
 	vi_attribute,
 	vi_bell,
@@ -299,6 +307,7 @@ int (*_vi_iplist[IPO_EVENT_MAX]) __P((IP_BUF *)) = {
 	vi_discard,
 	vi_insertln,
 	vi_move,
+	vi_quit,
 	vi_redraw,
 	vi_refresh,
 	vi_rename,
