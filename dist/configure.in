@@ -416,6 +416,23 @@ if test "$vi_cv_perlinterp" = "yes"; then
         	-e 'ccdlflags'`
 	LTLIBOBJS="perl.lo perlxsi.lo perlsfio.lo $LTLIBOBJS"
 	AC_DEFINE(HAVE_PERL_INTERP)
+	AC_CACHE_CHECK([whether we need to use perl's setenv], 
+		vi_cv_perl_setenv, [
+		AC_TRY_RUN([
+#include <EXTERN.h>
+#include <perl.h>
+#include <XSUB.h>
+int main(){
+#if defined(USE_ENVIRON_ARRAY) && !defined(PERL_USE_SAFE_PUTENV)
+exit(0);
+#else
+exit(1);
+#endif
+}
+		], [vi_cv_perl_setenv=yes], [vi_cv_perl_setenv=no])])
+	if test "$vi_cv_perl_setenv" = yes; then
+		AC_DEFINE(USE_PERL_SETENV)
+	fi
 fi
 
 dnl If the user wants a Tk/Tcl interpreter in nvi, load it.  Make sure that

@@ -1,4 +1,4 @@
-/* $Id: acconfig.h,v 8.30 2001/06/30 20:00:54 skimo Exp $ (Berkeley) $Date: 2001/06/30 20:00:54 $ */
+/* $Id: acconfig.h,v 8.31 2001/08/28 11:33:41 skimo Exp $ (Berkeley) $Date: 2001/08/28 11:33:41 $ */
 
 /* Define to `int' if <sys/types.h> doesn't define.  */
 #undef ssize_t
@@ -98,6 +98,9 @@
 
 /* Define when iconv can be used */
 #undef USE_ICONV
+
+/* Define when perl's setenv should be used */
+#undef USE_PERL_SETENV
 
 /* Define when using S-Lang */
 #undef USE_SLANG_CURSES

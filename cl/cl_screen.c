@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_screen.c,v 10.54 2001/06/25 15:19:06 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:06 $";
+static const char sccsid[] = "$Id: cl_screen.c,v 10.55 2001/08/28 11:33:40 skimo Exp $ (Berkeley) $Date: 2001/08/28 11:33:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,7 +33,7 @@ static int	cl_ex_init __P((SCR *));
 static void	cl_freecap __P((CL_PRIVATE *));
 static int	cl_vi_end __P((GS *));
 static int	cl_vi_init __P((SCR *));
-static int	cl_putenv __P((char *, char *, u_long));
+static int	cl_putenv __P((SCR *sp, char *, char *, u_long));
 
 /*
  * cl_screen --
@@ -64,8 +64,8 @@ cl_screen(SCR *sp, u_int32_t flags)
 	}
 	
 	/* See if we're already in the right mode. */
-	if (LF_ISSET(SC_EX) && F_ISSET(sp, SC_SCR_EX) ||
-	    LF_ISSET(SC_VI) && F_ISSET(sp, SC_SCR_VI))
+	if ((LF_ISSET(SC_EX) && F_ISSET(sp, SC_SCR_EX)) ||
+	    (LF_ISSET(SC_VI) && F_ISSET(sp, SC_SCR_VI)))
 		return (0);
 
 	/*
@@ -223,11 +223,11 @@ cl_vi_init(SCR *sp)
 	 * the underlying function.
 	 */
 	o_term = getenv("TERM");
-	cl_putenv("TERM", ttype, 0);
+	cl_putenv(sp, "TERM", ttype, 0);
 	o_lines = getenv("LINES");
-	cl_putenv("LINES", NULL, (u_long)O_VAL(sp, O_LINES));
+	cl_putenv(sp, "LINES", NULL, (u_long)O_VAL(sp, O_LINES));
 	o_cols = getenv("COLUMNS");
-	cl_putenv("COLUMNS", NULL, (u_long)O_VAL(sp, O_COLUMNS));
+	cl_putenv(sp, "COLUMNS", NULL, (u_long)O_VAL(sp, O_COLUMNS));
 
 	/*
 	 * We don't care about the SCREEN reference returned by newterm, we
@@ -253,11 +253,11 @@ cl_vi_init(SCR *sp)
 	}
 
 	if (o_term == NULL)
-		unsetenv("TERM");
+		cl_unsetenv(sp, "TERM");
 	if (o_lines == NULL)
-		unsetenv("LINES");
+		cl_unsetenv(sp, "LINES");
 	if (o_cols == NULL)
-		unsetenv("COLUMNS");
+		cl_unsetenv(sp, "COLUMNS");
 
 	/*
 	 * XXX
@@ -561,13 +561,13 @@ cl_freecap(CL_PRIVATE *clp)
  *	Put a value into the environment.
  */
 static int
-cl_putenv(char *name, char *str, u_long value)
+cl_putenv(SCR *sp, char *name, char *str, u_long value)
 {
 	char buf[40];
 
 	if (str == NULL) {
 		(void)snprintf(buf, sizeof(buf), "%lu", value);
-		return (setenv(name, buf, 1));
+		return (cl_setenv(sp, name, buf));
 	} else
-		return (setenv(name, str, 1));
+		return (cl_setenv(sp, name, str));
 }

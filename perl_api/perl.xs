@@ -14,7 +14,7 @@
 #undef VI
 
 #ifndef lint
-static const char sccsid[] = "$Id: perl.xs,v 8.45 2001/07/29 19:51:21 skimo Exp $ (Berkeley) $Date: 2001/07/29 19:51:21 $";
+static const char sccsid[] = "$Id: perl.xs,v 8.46 2001/08/28 11:33:42 skimo Exp $ (Berkeley) $Date: 2001/08/28 11:33:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -266,6 +266,26 @@ newVIrv(rv, screen)
 	SvRV(rv) = screen->perl_private;
 	SvROK_on(rv);
 	return sv_bless(rv, gv_stashpv("VI", TRUE));
+}
+
+/*
+ * perl_setenv
+ *	Use perl's setenv if perl interpreter has been started.
+ *	Perl uses its own setenv and gets confused if we change
+ *	the environment after it has started.
+ *
+ * PUBLIC: int perl_setenv __P((SCR* sp, const char *name, const char *value));
+ */
+int
+perl_setenv(SCR* scrp, const char *name, const char *value)
+{
+	if (scrp->wp->perl_private == NULL) {
+	    if (value == NULL)
+		unsetenv(name);
+	    else
+		setenv(name, value, 1);
+	} else
+	    my_setenv(name, value);
 }
 
 
