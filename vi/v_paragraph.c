@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_paragraph.c,v 5.3 1992/11/02 22:38:32 bostic Exp $ (Berkeley) $Date: 1992/11/02 22:38:32 $";
+static char sccsid[] = "$Id: v_paragraph.c,v 5.4 1992/12/05 09:43:56 bostic Exp $ (Berkeley) $Date: 1992/12/05 09:43:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -82,10 +82,20 @@ found:				rp->lno = lno;
 				return (0);
 			}
 	}
-	free(list);
+eof:	free(list);
 
-	/* EOF is a movement sink. */
-eof:	if (fm->lno != lno - 1) {
+	/*
+	 * EOF is a movement sink, however, the } command historically
+	 * moved to the end of the last line if repeatedly invoked.
+	 */
+	if (fm->lno != lno - 1) {
+		rp->lno = lno - 1;
+		rp->cno = len ? len - 1 : 0;
+		return (0);
+	}
+	if ((p = file_gline(curf, fm->lno, &len)) == NULL)
+		GETLINE_ERR(fm->lno);
+	if (fm->cno != (len ? len - 1 : 0)) {
 		rp->lno = lno - 1;
 		rp->cno = len ? len - 1 : 0;
 		return (0);
@@ -111,13 +121,20 @@ v_paragraphb(vp, fm, tm, rp)
 	if ((list = makelist()) == NULL)
 		return (1);
 
+	/*
+	 * The { command historically moved to the beginning of the first
+	 * line if invoked on the first line.
+	 */
+	rp->cno = 0;
+
 	/* Check for SOF. */
 	if (fm->lno <= 1) {
-		v_sof(NULL);
-		return (1);
+		if (fm->cno == 0) {
+			v_sof(NULL);
+			return (1);
+		}
+		return (0);
 	}
-
-	rp->cno = 0;
 
 	/* If at an empty line, skip to text. */
 	for (lno = fm->lno - 1;; --lno) {
@@ -151,10 +168,10 @@ found:				rp->lno = lno;
 				return (0);
 			}
 	}
-	free(list);
+sof:	free(list);
 
 	/* SOF is a movement sink. */
-sof:	rp->lno = 1;
+	rp->lno = 1;
 	return (0);
 }
 
