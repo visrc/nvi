@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_source.c,v 5.1 1992/04/02 11:21:14 bostic Exp $ (Berkeley) $Date: 1992/04/02 11:21:14 $";
+static char sccsid[] = "$Id: ex_source.c,v 5.2 1992/04/03 09:16:30 bostic Exp $ (Berkeley) $Date: 1992/04/03 09:16:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -15,17 +15,13 @@ static char sccsid[] = "$Id: ex_source.c,v 5.1 1992/04/02 11:21:14 bostic Exp $ 
 #include "excmd.h"
 #include "extern.h"
 
-/* execute EX commands from a file */
+/*
+ * ex_source -- (:source file)
+ *	Execute ex commands from a file.
+ */
 void
 ex_source(cmdp)
 	CMDARG *cmdp;
 {
-	/* must have a filename */
-	if (!*cmdp->argv[0])
-	{
-		msg("\"source\" requires a filename");
-		return;
-	}
-
 	exfile(cmdp->argv[0], 1);
 }
