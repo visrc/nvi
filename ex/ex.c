@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 10.27 1995/10/27 20:05:59 bostic Exp $ (Berkeley) $Date: 1995/10/27 20:05:59 $";
+static char sccsid[] = "$Id: ex.c,v 10.28 1995/11/05 14:36:47 bostic Exp $ (Berkeley) $Date: 1995/11/05 14:36:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -2091,7 +2091,7 @@ ex_load(sp)
 					if (sp->lno == 0)
 						sp->lno = 1;
 				}
-			free(ecp->cp);
+			free(ecp->o_cp);
 		} else
 			if (ecp->clen != 0)
 				return (0);
