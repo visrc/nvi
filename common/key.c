@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.8 1992/04/05 16:59:06 bostic Exp $ (Berkeley) $Date: 1992/04/05 16:59:06 $";
+static char sccsid[] = "$Id: key.c,v 5.9 1992/04/15 09:08:13 bostic Exp $ (Berkeley) $Date: 1992/04/15 09:08:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -88,11 +88,11 @@ ttyread(buf, len, time)
 }
 
 /*
- * exrefresh --
+ * ex_refresh --
  *	This function calls refresh() if the option exrefresh is set.
  */
 void
-exrefresh()
+ex_refresh()
 {
 	register char *p;
 
