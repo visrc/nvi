@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 8.27 1993/12/16 15:41:39 bostic Exp $ (Berkeley) $Date: 1993/12/16 15:41:39 $";
+static char sccsid[] = "$Id: vs_split.c,v 8.28 1993/12/19 18:00:59 bostic Exp $ (Berkeley) $Date: 1993/12/19 18:00:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,7 +28,9 @@ svi_split(sp, argv)
 	SCR *sp;
 	ARGS *argv[];
 {
-	SCR *tsp;
+	MSG *mp, *next;
+	SCR *tsp, saved_sp;
+	SVI_PRIVATE saved_svp;
 	SMAP *smp;
 	size_t cnt, half;
 	int issmallscreen, splitup;
@@ -43,10 +45,17 @@ svi_split(sp, argv)
 
 	/* Get a new screen. */
 	if (screen_init(sp, &tsp, 0))
-		goto mem1;
+		return (1);
 	MALLOC(sp, _HMAP(tsp), SMAP *, SIZE_HMAP(sp) * sizeof(SMAP));
 	if (_HMAP(tsp) == NULL)
-		goto mem2;
+		return (1);
+
+	/*
+	 * We're about to modify the current screen.  Save the contents
+	 * in case something goes horribly, senselessly wrong.
+	 */
+	saved_sp = *sp;
+	saved_svp = *SVP(sp);
 
 /* INITIALIZED AT SCREEN CREATE. */
 
@@ -173,17 +182,18 @@ svi_split(sp, argv)
 	 */
 	if (argv == NULL) {
 		if (file_add(tsp, NULL, FILENAME(sp->frp), 0) == NULL)
-			goto mem3;
+			goto err;
 	} else
 		for (; (*argv)->len != 0; ++argv)
 			if (file_add(tsp, NULL, (*argv)->bp, 0) == NULL)
-				goto mem3;
+				goto err;
 
 	/* Set up the argument and current FREF pointers. */
 	if ((tsp->frp = file_first(tsp)) == NULL) {
 		msgq(sp, M_ERR, "No files in the file list.");
-		goto mem3;
+		goto err;
 	}
+
 	tsp->a_frp = tsp->frp;
 
 	/*
@@ -204,7 +214,7 @@ svi_split(sp, argv)
 		memmove(_HMAP(tsp), _HMAP(sp), tsp->t_rows * sizeof(SMAP));
 	} else {
 		if (file_init(tsp, tsp->frp, NULL, 0))
-			goto mem3;
+			goto err;
 		(void)svi_sm_fill(tsp, tsp->ep, 1, P_TOP);
 	}
 
@@ -239,10 +249,25 @@ svi_split(sp, argv)
 	F_SET(sp, S_SSWITCH);
 	return (0);
 
-mem3:	FREE(_HMAP(tsp), SIZE_HMAP(sp) * sizeof(SMAP));
-	FREE(SVP(sp), sizeof(SVI_PRIVATE));
-mem2:	(void)screen_end(tsp);
-mem1:	FREE(tsp, sizeof(SCR));
+	/* Recover the original screen. */
+err:	*sp = saved_sp;
+	*SVP(sp) = saved_svp;
+
+	/* Copy any (probably error) messages in the new screen. */
+	for (mp = tsp->msgq.lh_first; mp != NULL; mp = next) {
+		if (!F_ISSET(mp, M_EMPTY))
+			msg_app(sp->gp, sp,
+			    mp->flags & M_INV_VIDEO, mp->mbuf, mp->len);
+		next = mp->q.le_next;
+		if (mp->mbuf != NULL)
+			free(mp->mbuf);
+		free(mp);
+	}
+
+	/* Free the new screen. */
+	free(_HMAP(tsp));
+	free(SVP(tsp));
+	FREE(tsp, sizeof(SCR));
 	return (1);
 }
 
