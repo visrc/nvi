@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.28 1993/09/30 12:01:47 bostic Exp $ (Berkeley) $Date: 1993/09/30 12:01:47 $
+ *	$Id: screen.h,v 8.29 1993/09/30 12:40:46 bostic Exp $ (Berkeley) $Date: 1993/09/30 12:40:46 $
  */
 
 /*
@@ -34,14 +34,18 @@ enum position { P_BOTTOM, P_FILL, P_MIDDLE, P_TOP };
  * previous and next files.
  *
  * Note that the read-only bit follows the file name, not the file itself.
+ *
+ * XXX
+ * The mtime field should be a struct timespec, but time_t is more portable.
  */
 typedef struct _fref {
 	struct _fref	*next, *prev;	/* Linked list of file references. */
+	char	*tname;			/* Temporary file name. */
 	char	*fname;			/* File name. */
 	size_t	 nlen;			/* File name length. */
-	char	*tname;			/* Temporary file name. */
 	recno_t	 lno;			/* 1-N: file cursor line. */
 	size_t	 cno;			/* 0-N: file cursor column. */
+	time_t	 mtime;			/* Last modification time. */
 
 #define	FR_CURSORSET	0x001		/* If lno/cno valid. */
 #define	FR_EDITED	0x002		/* If the file was ever edited. */

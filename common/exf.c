@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.28 1993/09/29 16:21:48 bostic Exp $ (Berkeley) $Date: 1993/09/29 16:21:48 $";
+static char sccsid[] = "$Id: exf.c,v 8.29 1993/09/30 12:40:24 bostic Exp $ (Berkeley) $Date: 1993/09/30 12:40:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -207,6 +207,8 @@ file_init(sp, frp, rcv_fname, force)
 			psize = 32 * 1024;
 		else
 			psize = 64 * 1024;
+
+		frp->mtime = sb.st_mtime;
 	}
 	
 	/* Set up recovery. */
@@ -517,20 +519,36 @@ file_write(sp, ep, fm, tm, fname, flags)
 	 * Figure out if the file already exists -- if it doesn't, we display
 	 * the "new file" message.  The stat might not be necessary, but we
 	 * just repeat it because it's easier than hacking the previous tests.
-	 * The information is only used for the user message, so we can ignore
-	 * the obvious race condition.  If overwriting a file other than the
-	 * original file, and O_WRITEANY was what got us here (neither force
-	 * nor append was set), display the "existing file" messsage.  Note,
-	 * since we turn FR_NAMECHANGED off on a successful write, the latter
-	 * message only appears once.  This is historic practice.
+	 * The information is only used for the user message and modification
+	 * time test, so we can ignore the obvious race condition.
+	 *
+	 * If the user is overwriting a file other than the original file, and
+	 * O_WRITEANY was what got us here (neither force nor append was set),
+	 * display the "existing file" messsage.  Since the FR_NAMECHANGED flag
+	 * is turned off on a successful write, the latter only appears once.
+	 * This is historic practice.
+	 *
+	 * One final test.  If we're not forcing or appending, and we have a
+	 * saved modification time, stop the user if it's been written since
+	 * we last edited or wrote it, and make them force it.
 	 */
 	if (stat(fname == NULL ? sp->frp->fname : fname, &sb))
 		msg = ": new file";
-	else if (!LF_ISSET(FS_FORCE | FS_APPEND) &&
-	    (fname != NULL || F_ISSET(sp->frp, FR_NAMECHANGED)))
-		msg = ": existing file";
-	else
+	else {
 		msg = "";
+		if (!LF_ISSET(FS_FORCE | FS_APPEND)) {
+			if (sp->frp->mtime && sb.st_mtime > sp->frp->mtime) {
+				msgq(sp, M_ERR,
+			"%s: file modified more recently than this copy%s.",
+				    fname == NULL ? sp->frp->fname : fname,
+				    LF_ISSET(FS_POSSIBLE) ?
+				    "; use ! to override" : "");
+				return (1);
+			}
+			if ((fname != NULL || F_ISSET(sp->frp, FR_NAMECHANGED)))
+				msg = ": existing file";
+		}
+	}
 
 	/* We no longer care where the name came from. */
 	if (fname == NULL)
@@ -584,6 +602,9 @@ file_write(sp, ep, fm, tm, fname, flags)
 	msgq(sp, M_INFO, "%s%s: %lu line%s, %lu characters.",
 	    fname, msg, nlno, nlno == 1 ? "" : "s", nch);
 
+	/* Save the new last modification time. */
+	sp->frp->mtime = stat(fname, &sb) ? 0 : sb.st_mtime;
+	
 	/* If wrote the entire file, clear the modified bit. */
 	if (LF_ISSET(FS_ALL))
 		F_CLR(ep, F_MODIFIED);
