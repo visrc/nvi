@@ -406,20 +406,6 @@ if test "$vi_cv_tclinterp" = "yes"; then
 	fi
 fi
 
-dnl Check for the termcap/termlib library.  Compile in nvi's curses routines
-dnl unless the user specifies otherwise.  These two checks must occur in the
-dnl current order, and -lcurses must be loaded before -ltermcap/-ltermlib.
-AC_CHECK_LIB(termlib, tgetent,
-	[vi_cv_termlib=-ltermlib], [vi_cv_termlib=no])
-if test "$vi_cv_termlib" = no; then
-	AC_CHECK_LIB(termcap, tgetent,
-		[vi_cv_termlib=-ltermcap], [vi_cv_termlib=no])
-fi
-if test "$vi_cv_termlib" != no; then
-	LIBS="$vi_cv_termlib $LIBS"
-fi
-AC_SUBST(cobjs)
-
 dnl check for curses
 AC_SUBST(vi_curses)
 AC_SUBST(CURSLIBS)
@@ -484,6 +470,24 @@ dnl 	[
         CURSLIBS="-l$CURSLIB"
 	LIBS="$SAVELIBS"
 dnl 	])
+
+dnl Check for the termcap/termlib library.  These two checks must occur in the
+dnl current order, and -lcurses must be loaded before -ltermcap/-ltermlib.
+dnl On Solaris curses==termlib, but different versions of curses
+dnl can be used. Avoid loading termlib is curses has tgetent.
+AC_CHECK_LIB($CURSLIB, tgetent,
+	[vi_cv_curses_tgetent=yes], [vi_cv_curses_tgetent=no])
+if test "$vi_cv_curses_tgetent" = no; then
+	AC_CHECK_LIB(termlib, tgetent,
+		[vi_cv_termlib=-ltermlib], [vi_cv_termlib=no])
+	if test "$vi_cv_termlib" = no; then
+		AC_CHECK_LIB(termcap, tgetent,
+			[vi_cv_termlib=-ltermcap], [vi_cv_termlib=no])
+	fi
+fi
+if test "$vi_cv_termlib" != no; then
+	CURSLIBS="$CURSLIBS $vi_cv_termlib"
+fi
 
 dnl Checks for header files.
 AC_MSG_CHECKING(for sys/mman.h)
