@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: mark.c,v 5.4 1992/05/27 10:30:34 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:30:34 $";
+static char sccsid[] = "$Id: mark.c,v 5.5 1992/06/15 09:47:00 bostic Exp $ (Berkeley) $Date: 1992/06/15 09:47:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,6 +26,25 @@ static char sccsid[] = "$Id: mark.c,v 5.4 1992/05/27 10:30:34 bostic Exp $ (Berk
  */
 static MARK marks[UCHAR_MAX + 1];
 
+/*
+ * mark_reset --
+ *	Reset the marks for file changes.
+ */
+void
+mark_reset()
+{
+	MARK m;
+
+	bzero(marks, sizeof(marks));
+	m.lno = 1;
+	m.cno = 0;
+	SETABSMARK(&m);
+}
+
+/*
+ * mark_set --
+ *	Set the location referenced by a mark.
+ */
 int
 mark_set(key, mp)
 	int key;
@@ -40,6 +59,10 @@ mark_set(key, mp)
 	return (0);
 }
 
+/*
+ * mark_get --
+ *	Get the location referenced by a mark.
+ */
 MARK *
 mark_get(key)
 	int key;
