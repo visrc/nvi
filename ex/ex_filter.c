@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 5.20 1992/12/20 15:05:56 bostic Exp $ (Berkeley) $Date: 1992/12/20 15:05:56 $";
+static char sccsid[] = "$Id: ex_filter.c,v 5.21 1993/02/11 12:07:53 bostic Exp $ (Berkeley) $Date: 1993/02/11 12:07:53 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -36,13 +36,12 @@ filter(fm, tm, cmd, ftype)
 	u_char *cmd;
 	enum filtertype ftype;
 {
-	union wait pstat;
 	FILE *ifp, *ofp;			/* Can't be uninitialized. */
 	pid_t pid;
 	sig_t intsave, quitsave;
-	sigset_t omask;
+	sigset_t bmask, omask;
 	recno_t dlines, ilines, lno;
-	int input[2], output[2], rval;
+	int input[2], output[2], pstat, rval;
 	char *name;
 
 	/* Input and output are named from the child's point of view. */
@@ -77,10 +76,13 @@ filter(fm, tm, cmd, ftype)
 			goto err;
 		}
 
-	omask = sigblock(sigmask(SIGCHLD));
+	sigemptyset(&bmask);
+	sigaddset(&bmask, SIGCHLD);
+	(void)sigprocmask(SIG_BLOCK, &bmask, &omask);
+
 	switch (pid = vfork()) {
 	case -1:			/* Error. */
-		(void)sigsetmask(omask);
+		(void)sigprocmask(SIG_SETMASK, &omask, NULL);
 		msg("filter: %s", strerror(errno));
 err:		if (input[0] != -1)
 			(void)close(input[0]);
@@ -93,7 +95,7 @@ err:		if (input[0] != -1)
 		return (1);
 		/* NOTREACHED */
 	case 0:				/* Child. */
-		(void)sigsetmask(omask);
+		(void)sigprocmask(SIG_SETMASK, &omask, NULL);
 
 		/*
 		 * Redirect stdin from the read end of the input pipe,
@@ -112,7 +114,7 @@ err:		if (input[0] != -1)
 			(void)close(output[0]);
 		(void)close(output[1]);
 
-		if ((name = rindex((char *)PVAL(O_SHELL), '/')) == NULL)
+		if ((name = strrchr((char *)PVAL(O_SHELL), '/')) == NULL)
 			name = (char *)PVAL(O_SHELL);
 		else
 			++name;
@@ -180,8 +182,8 @@ err:		if (input[0] != -1)
 	/* Wait for the child to finish. */
 	intsave = signal(SIGINT, SIG_IGN);
 	quitsave = signal(SIGQUIT, SIG_IGN);
-	(void)waitpid(pid, (int *)&pstat, 0);
-	(void)sigsetmask(omask);
+	(void)waitpid(pid, &pstat, 0);
+	(void)sigprocmask(SIG_SETMASK, &omask, NULL);
 	(void)signal(SIGINT, intsave);
 	(void)signal(SIGQUIT, quitsave);
 
