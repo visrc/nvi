@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.107 1994/05/01 12:35:11 bostic Exp $ (Berkeley) $Date: 1994/05/01 12:35:11 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.108 1994/05/01 23:23:03 bostic Exp $ (Berkeley) $Date: 1994/05/01 23:23:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1705,8 +1705,7 @@ txt_margin(sp, tp, chp, wmtp, flags, didbreak)
 	int *didbreak;
 	u_int flags;
 {
-	CHAR_T ch;
-	size_t len, off, tlen;
+	size_t len, off;
 	char *p, *wp;
 
 	/* Find the nearest previous blank. */
