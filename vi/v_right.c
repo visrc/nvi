@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_right.c,v 5.6 1992/10/18 13:09:51 bostic Exp $ (Berkeley) $Date: 1992/10/18 13:09:51 $";
+static char sccsid[] = "$Id: v_right.c,v 5.7 1992/10/24 14:27:30 bostic Exp $ (Berkeley) $Date: 1992/10/24 14:27:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,13 +18,6 @@ static char sccsid[] = "$Id: v_right.c,v 5.6 1992/10/18 13:09:51 bostic Exp $ (B
 #include "options.h"
 #include "vcmd.h"
 #include "extern.h"
-
-#define	EOLERR {							\
-	bell();								\
-	if (ISSET(O_VERBOSE))						\
-		msg("Already at the end of the line.");			\
-	return (1);							\
-}
 
 /*
  * v_right -- [count]' ', [count]l
@@ -43,7 +36,7 @@ v_right(vp, fm, tm, rp)
 
 	if ((p = file_gline(curf, fm->lno, &len)) == NULL) {
 		if (file_lline(curf) == 0)
-			v_eol();
+			v_eol(NULL);
 		else
 			GETLINE_ERR(fm->lno);
 		return (1);
@@ -55,7 +48,8 @@ v_right(vp, fm, tm, rp)
 			rp->cno = len;
 			return (0);
 		}
-		EOLERR;
+		v_eol(NULL);
+		return (1);
 	}
 
 	cnt = vp->flags & VC_C1SET ? vp->count : 1;
@@ -85,14 +79,16 @@ v_dollar(vp, fm, tm, rp)
 
 	if ((p = file_gline(curf, fm->lno, &len)) == NULL) {
 		if (file_lline(curf) == 0)
-			v_eol();
+			v_eol(NULL);
 		else
 			GETLINE_ERR(fm->lno);
 		return (1);
 	}
 		
-	if (len == 0)
-		EOLERR;
+	if (len == 0) {
+		v_eol(NULL);
+		return (1);
+	}
 
 	rp->lno = fm->lno;
 	rp->cno = vp->flags & VC_ISMOTION ? len : len - 1;
