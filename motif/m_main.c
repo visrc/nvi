@@ -10,21 +10,21 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_main.c,v 8.18 1996/12/04 22:48:59 bostic Exp $ (Berkeley) $Date: 1996/12/04 22:48:59 $";
+static const char sccsid[] = "$Id: m_main.c,v 8.19 1996/12/05 12:56:11 bostic Exp $ (Berkeley) $Date: 1996/12/05 12:56:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 #include <sys/queue.h>
 
-#include "X11/Intrinsic.h"
-#include "X11/StringDefs.h"
-#include "X11/cursorfont.h"
-#include "Xm/PanedW.h"
-#include "Xm/DrawingA.h"
-#include "Xm/Form.h"
-#include "Xm/Frame.h"
-#include "Xm/ScrollBar.h"
-#include "Xm/MainW.h"
+#include <X11/Intrinsic.h>
+#include <X11/StringDefs.h>
+#include <X11/cursorfont.h>
+#include <Xm/PanedW.h>
+#include <Xm/DrawingA.h>
+#include <Xm/Form.h>
+#include <Xm/Frame.h>
+#include <Xm/ScrollBar.h>
+#include <Xm/MainW.h>
 
 #include <bitstring.h>
 #include <ctype.h>
@@ -86,6 +86,18 @@ int		multi_click_length;
 
 char	bp[ BufferSize ];		/* input buffer from pipe */
 size_t	len, blen = sizeof(bp);
+
+
+/* these commands are legal to send to vi core without any parameters.
+ * they will typically be bound to keys on the keyboard through the
+ * translation table
+ */
+static	struct	{
+	String	name;
+	int	command;
+} command_table[] = {
+    { "INTERRUPT",	IPO_INTERRUPT	},
+};
 
 
 #if defined(__STDC__)
@@ -181,6 +193,7 @@ void	key_press();
 void	insert_string();
 void	beep();
 void	find();
+void	command();
 
 static XtActionsRec	area_actions[] = {
     { "select_start",	select_start	},
@@ -190,6 +203,7 @@ static XtActionsRec	area_actions[] = {
     { "insert_string",	insert_string	},
     { "beep",		beep		},
     { "find",		find		},
+    { "command",	command		},
 };
 
 char	areaTrans[] =
@@ -198,6 +212,7 @@ char	areaTrans[] =
      <Btn1Motion>:	select_extend()		\n\
      <Btn3Motion>:	select_extend()		\n\
      <Btn2Down>:	select_paste()		\n\
+     Ctrl<Key>C:	command(INTERRUPT)	\n\
      <Key>End:		insert_string(G)	\n\
      <Key>Find:		find()			\n\
      <Key>Home:		insert_string(H)	\n\
@@ -230,6 +245,13 @@ String	fallback_rsrcs[] = {
     /* coloring for the icons.  we may need to change this */
     "*iconForeground:	XtDefaultForeground",
     "*iconBackground:	XtDefaultBackground",
+
+    /* layout for the temporary preferences page */
+    "*toggleOptions.numColumns: 6",
+    "*intOptions.numColumns:    4",
+    "*otherOptions.numColumns:  3",
+    "*intOptions*columns:       10",
+    "*otherOptions*columns:     18",
 
     /* --------------------------------------------------------------------- *
      * anything below this point is only defined when we are not running CDE *
@@ -673,6 +695,37 @@ Widget	w;
 #endif
 {
     xip_show_search_dialog( w, "Find" );
+}
+
+
+/* special input to translate into vi protocol commands */
+#if defined(__STDC__)
+void		command( Widget widget, 
+			 XKeyEvent *event, 
+			 String *str, 
+			 Cardinal *cardinal
+			 )
+#else
+void		command( widget, event, str, cardinal )
+Widget          widget; 
+XKeyEvent       *event; 
+String          *str;    
+Cardinal        *cardinal;
+#endif
+{
+    IP_BUF	ipb;
+    int 	i;
+
+    for (i=0; i<XtNumber(command_table); i++) {
+	if ( strcmp( command_table[i].name, *str ) == 0 ) {
+	    ipb.code = command_table[i].command;
+	    ip_send("", &ipb);
+	    return;
+	}
+    }
+
+    /* oops */
+    beep( widget );
 }
 
 
