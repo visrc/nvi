@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.51 1994/01/11 22:36:23 bostic Exp $ (Berkeley) $Date: 1994/01/11 22:36:23 $";
+static char sccsid[] = "$Id: screen.c,v 8.52 1994/02/25 18:59:51 bostic Exp $ (Berkeley) $Date: 1994/02/25 18:59:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -52,7 +52,6 @@ screen_init(orig, spp, flags)
 /* PARTIALLY OR COMPLETELY COPIED FROM PREVIOUS SCREEN. */
 	if (orig == NULL) {
 		sp->searchdir = NOTSET;
-		sp->csearchdir = CNOTSET;
 
 		switch (flags & S_SCREENS) {
 		case S_EX:
@@ -87,8 +86,6 @@ screen_init(orig, spp, flags)
 			sp->subre = orig->subre;
 		}
 		sp->searchdir = orig->searchdir == NOTSET ? NOTSET : FORWARD;
-		sp->csearchdir = CNOTSET;
-		sp->lastckey = orig->lastckey;
 
 		if (orig->matchsize) {
 			len = orig->matchsize * sizeof(regmatch_t);
