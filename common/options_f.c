@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 9.3 1994/11/17 17:09:31 bostic Exp $ (Berkeley) $Date: 1994/11/17 17:09:31 $";
+static char sccsid[] = "$Id: options_f.c,v 9.4 1994/11/21 10:30:57 bostic Exp $ (Berkeley) $Date: 1994/11/21 10:30:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -142,7 +142,7 @@ DECL(f_lines)
 	}
 
 	/* Set the rows value in the environment for curses. */
-	(void)snprintf(buf, sizeof(buf), "ROWS=%lu", val);
+	(void)snprintf(buf, sizeof(buf), "LINES=%lu", val);
 	if (opt_putenv(buf))
 		return (1);
 
