@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_init.c,v 5.13 1993/04/17 11:59:41 bostic Exp $ (Berkeley) $Date: 1993/04/17 11:59:41 $";
+static char sccsid[] = "$Id: ex_init.c,v 5.14 1993/04/19 15:29:49 bostic Exp $ (Berkeley) $Date: 1993/04/19 15:29:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,7 +26,6 @@ ex_init(sp, ep)
 	SCR *sp;
 	EXF *ep;
 {
-	recno_t last;
 	size_t len;
 
 	/*
@@ -34,27 +33,16 @@ ex_init(sp, ep)
 	 * Otherwise, check to make sure that the location exists.
 	 */
 	if (F_ISSET(ep, F_NOSETPOS)) {
-		sp->lno = file_lline(sp, ep);
+		if ((sp->lno = file_lline(sp, ep)) == 0)
+			sp->lno = 1;
 		sp->cno = 0;
+		F_CLR(sp, F_NOSETPOS);
 	} else if (file_gline(sp, ep, ep->lno, &len) == NULL) {
-		last = file_lline(sp, ep);
-		if (last == 0)
-			last = 1;
-		if (sp->lno != last || sp->cno != 0) {
-			sp->lno = last;
-			sp->cno = 0;
-			msgq(sp, M_INFO,
-			    "Cursor position changed since last edit");
-		}
-	} else {
-		sp->lno = ep->lno;
-		if (ep->cno >= len) {
-			sp->cno = 0;
-			msgq(sp, M_INFO,
-			    "Cursor position changed since last edit");
-		} else
-			sp->cno = ep->cno;
-	}
+		if ((sp->lno = file_lline(sp, ep)) == 0)
+			sp->lno = 1;
+		sp->cno = 0;
+	} else if (sp->cno >= len)
+		sp->cno = 0;
 
 	/*
 	 * After location established, run any initial command.  Failure
