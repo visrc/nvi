@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: set.opt.roff,v 8.25 1994/07/15 15:31:41 bostic Exp $ (Berkeley) $Date: 1994/07/15 15:31:41 $
+.\"     $Id: set.opt.roff,v 8.26 1994/08/11 12:48:43 bostic Exp $ (Berkeley) $Date: 1994/08/11 12:48:43 $
 .\"
 .SH 1 "Set Options"
 .pp
@@ -259,7 +259,7 @@ Setting this option causes
 to set (or reset) the environmental variable
 .LI COLUMNS .
 See the section entitled
-.QB "Screen Sizing"
+.QB "Sizing the Screen"
 more information.
 .KY comment
 .IP "comment [off]"
@@ -366,7 +366,7 @@ Setting this option causes
 to set (or reset) the environmental variable
 .LI LINES .
 See the section entitled
-.QB "Screen Sizing"
+.QB "Sizing the Screen"
 for more information.
 .KY lisp
 .IP "lisp [off]"
@@ -543,6 +543,34 @@ command line option, or editing a file which lacks write permission.
 .KY recdir
 .IP "recdir [/var/tmp/vi.recover]"
 The directory where recovery files are stored.
+.sp
+If you change the value of
+.CO recdir ,
+be careful to choose a directory whose contents are not regularly
+deleted.
+Bad choices include directories in memory based filesystems,
+or
+.LI /tmp ,
+on most systems,
+as their contents are removed when the machine is rebooted.
+.sp
+Public directories like
+.LI /usr/tmp
+and
+.LI /var/tmp
+are usually safe, although some sites periodically prune old files
+from them.
+There is no requirement that you use a public directory,
+e.g. a sub-directory of your home directory will work fine.
+.sp
+Finally, if you change the value of
+.CO recdir ,
+you must modify the recovery script to operate in your chosen recovery
+area.
+.sp
+See the section entitled
+.QB "Recovery"
+for further information.
 .KY redraw
 .IP "redraw, re [off]"
 .CO Vi
@@ -821,7 +849,7 @@ and
 The value of window can be unrelated to the real screen size,
 although it starts out as the number of lines on the screen (see
 the section entitled
-.QB "Screen Sizing"
+.QB "Sizing the Screen"
 for more information).
 Setting the value of the
 .OP window
