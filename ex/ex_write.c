@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 8.1 1993/06/09 22:26:18 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:26:18 $";
+static char sccsid[] = "$Id: ex_write.c,v 8.2 1993/07/06 16:12:40 bostic Exp $ (Berkeley) $Date: 1993/07/06 16:12:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -208,8 +208,12 @@ ex_writefp(sp, ep, fname, fp, fm, tm, success_msg)
 		for (; fline <= tline; ++fline) {
 			if ((p = file_gline(sp, ep, fline, &len)) == NULL)
 				break;
-			if (fwrite(p, 1, len, fp) != len)
-				break;
+			if (fwrite(p, 1, len, fp) != len) {
+				msgq(sp, M_ERR,
+				    "%s: %s", fname, strerror(errno));
+				(void)fclose(fp);
+				return (1);
+			}
 			ccnt += len;
 			if (putc('\n', fp) != '\n')
 				break;
