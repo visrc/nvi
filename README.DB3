@@ -1,17 +1,16 @@
 This version of vi requires DB3.1 or better, which can be found
 on http://www.sleepycat.com/ .
 
-If your system library (such as glibc) uses a previous version
-of db (e.g. DB2) internally, you must configure with
---enable-dynamic-loading to avoid symbols in the internally
-used db from being resolved against the newer db.
+If your system library (such as glibc prior to version 2.2) uses a
+previous version of db (e.g. DB2) internally, you must configure with
+--enable-dynamic-loading to avoid symbols in the internally used db from
+being resolved against the newer db.
 
-If, on top of that, the vi binary is explicitly linked
-against that previous version of db (such as might happen
-if you enable the perl embedding), you should compile
-the 3.1 version with all symbols internally resolved.
-This can be accomplished by passing the -Bsymbolic
-option to the linker.
+If, on top of that, the vi binary is explicitly linked against that
+previous version of db (such as might happen if you enable the perl
+embedding), you should compile the 3.1 version with all symbols internally
+resolved.  This can be accomplished by passing the -Bsymbolic option to
+the linker.
 A patch that does this is included.
 To apply do:
 
