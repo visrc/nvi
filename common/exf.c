@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.15 1993/09/09 19:45:49 bostic Exp $ (Berkeley) $Date: 1993/09/09 19:45:49 $";
+static char sccsid[] = "$Id: exf.c,v 8.16 1993/09/10 10:03:45 bostic Exp $ (Berkeley) $Date: 1993/09/10 10:03:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -148,7 +148,7 @@ file_init(sp, ep, frp, rcv_fname)
 	RECNOINFO oinfo;
 	struct stat sb;
 	size_t psize;
-	int e_ep, e_tname, e_rcv_path, fd, sverrno;
+	int e_ep, e_tname, e_rcv_path, fd, newfile, sverrno;
 	char *oname, tname[sizeof(_PATH_TMPNAME) + 1];
 
 	/* If already in play, up the count and return. */
@@ -201,6 +201,7 @@ file_init(sp, ep, frp, rcv_fname)
 		}
 		oname = frp->tname;
 		psize = 4 * 1024;
+		newfile = 1;
 	} else {
 		oname = frp->fname;
 
@@ -211,6 +212,7 @@ file_init(sp, ep, frp, rcv_fname)
 			psize = 32 * 1024;
 		else
 			psize = 64 * 1024;
+		newfile = 0;
 	}
 	
 	/* Set up recovery. */
@@ -273,12 +275,40 @@ file_init(sp, ep, frp, rcv_fname)
 	}
 
 	/*
-	 * The -R flag, or doing a "set readonly" during a session causes all
-	 * files edited during the session (using an edit command, or even
-	 * using tags) to be marked read-only.  Note that changing the file
-	 * name (see ex/ex_file.c) however, clears this flag.
+	 * The -R flag, or doing a "set readonly" during a session causes
+	 * all files edited during the session (using an edit command, or
+	 * even using tags) to be marked read-only.  Note that changing
+	 * the file name (see ex/ex_file.c), clears this flag.
+	 *
+	 * Otherwise, try and figure out if a file is readonly.  This is
+	 * a dangerous thing to do.  The kernel is the only arbiter of
+	 * whether or not a file is writeable, and the best that a user
+	 * program can do is guess.  Obvious loopholes are files that are
+	 * on a file system mounted readonly (access catches this one some
+	 * systems), or other protection mechanisms, ACL's for example,
+	 * that we can't portably check.
+	 *
+	 * !!!
+	 * Historic vi displayed the readonly message if none of the file
+	 * write bits were set, or if an an access(2) call on the path
+	 * failed.  This seems reasonable.  If the file is mode 444, root
+	 * users may want to know that the owner of the file did not expect
+	 * it to be written.
+	 *
+	 * Historic vi set the readonly bit if no write bits were set for
+	 * a file, even if the access call would have succeeded.  This makes
+	 * the superuser force the write even when vi expects that it will
+	 * succeed.  I'm less supportive of this semantic, but it's historic
+	 * practice and the conservative approach to vi'ing files as root.
+	 *
+	 * XXX
+	 * Access(2) doesn't consider the effective uid/gid values.  This
+	 * probably isn't a problem for vi when it's running standalone.
 	 */
-	if (O_ISSET(sp, O_READONLY))
+	F_CLR(frp, FR_RDONLY);
+	if (O_ISSET(sp, O_READONLY) ||
+	    !newfile && (!(sb.st_mode & (S_IWUSR | S_IWGRP | S_IWOTH)) ||
+	    access(frp->fname, W_OK)))
 		F_SET(frp, FR_RDONLY);
 
 	/* Flush the line caches. */
