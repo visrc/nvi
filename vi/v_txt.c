@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.19 1993/10/03 15:46:51 bostic Exp $ (Berkeley) $Date: 1993/10/03 15:46:51 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.20 1993/10/03 16:42:57 bostic Exp $ (Berkeley) $Date: 1993/10/03 16:42:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,10 +22,11 @@ static char sccsid[] = "$Id: v_txt.c,v 8.19 1993/10/03 15:46:51 bostic Exp $ (Be
 #include "vi.h"
 #include "vcmd.h"
 
-static int	 txt_abbrev __P((SCR *, TEXT *, int *, int));
+static int	 txt_abbrev __P((SCR *, TEXT *, int *, ARG_CHAR_T));
 static TEXT	*txt_backup __P((SCR *, EXF *, HDR *, TEXT *, u_int));
 static void	 txt_err __P((SCR *, EXF *, HDR *));
 static int	 txt_indent __P((SCR *, TEXT *));
+static int	 txt_margin __P((SCR *, TEXT *, int *, ARG_CHAR_T));
 static int	 txt_outdent __P((SCR *, TEXT *));
 static void	 txt_showmatch __P((SCR *, EXF *));
 static int	 txt_resolve __P((SCR *, EXF *, HDR *));
@@ -90,10 +91,11 @@ v_ntext(sp, ep, hp, tm, p, len, rp, prompt, ai_line, flags)
 	enum { Q_NOTSET, Q_NEXTCHAR, Q_THISCHAR } quoted;
 				/* State of abbreviation checks. */
 	enum { L_NOCHECK, L_SPACE, L_NOTSPACE } lch;
+	CHAR_T ch;		/* Input character. */
 	TEXT *tp, *ntp;		/* Input text structures. */
 	TEXT *aitp;		/* Autoindent text structure. */
 	size_t rcol;		/* 0-N: insert offset in the replay buffer. */
-	CHAR_T ch;		/* Input character. */
+	u_long margin;		/* Wrapmargin value. */
 	int eval;		/* Routine return value. */
 	int replay;		/* If replaying a set of input. */
 	int showmatch;		/* Showmatch set on this character. */
@@ -205,6 +207,14 @@ newtp:		if ((tp = text_init(sp, p, len, len + 32)) == NULL)
 		++tp->len;
 		++tp->insert;
 	}
+
+	/*
+	 * Historic practice is that the wrapmargin value was a distance
+	 * from the RIGHT-HAND column, not the left.  It's more useful to
+	 * us as a distance from the left-hand column.
+	 */
+	if ((margin = O_VAL(sp, O_WRAPMARGIN)) != 0)
+		margin = sp->cols - margin;
 
 	/*
 	 * Set up the dot command.  Dot commands are done by saving the
@@ -639,11 +649,18 @@ k_escape:		if (tp->insert && tp->overwrite)
 			/* FALLTHROUGH */
 		default:			/* Insert the character. */
 			/*
-			 * If entering a space character after a word, check
-			 * for abbreviations.
+			 * If entering a space character after a word,
+			 * check for abbreviations.
 			 */
 ins_ch:			if (isblank(ch) && lch == L_NOTSPACE && !replay) {
 				if (txt_abbrev(sp, tp, &tmp, ch))
+					ERR;
+				if (tmp)
+					goto next_ch;
+			}
+			/* Check to see if we've crossed the margin. */
+			if (margin && sp->sc_col >= margin) {
+				if (txt_margin(sp, tp, &tmp, ch))
 					ERR;
 				if (tmp)
 					goto next_ch;
@@ -706,7 +723,8 @@ static int
 txt_abbrev(sp, tp, didsubp, pushc)
 	SCR *sp;
 	TEXT *tp;
-	int *didsubp, pushc;
+	int *didsubp;
+	ARG_CHAR_T pushc;
 {
 	SEQ *qp;
 	size_t len, off;
@@ -736,10 +754,9 @@ txt_abbrev(sp, tp, didsubp, pushc)
 	 * characters will be re-tested for abbreviations.  It's difficult to
 	 * know what historic practice in this case was, since abbreviations
 	 * were applied to :colon command lines, so entering abbreviations that
-	 * looped was tricky, if not impossible.  In addition, the obvious
-	 * abbreviation loops didn't work as expected.  For example, the command
-	 * ':ab a b|ab b c|ab c a' would silently only implement the last of
-	 * the abbreviations.
+	 * looped was tricky, if not impossible.  In addition, obvious loops
+	 * don't work as expected.  (The command ':ab a b|ab b c|ab c a' will
+	 * silently only implement the last of * the abbreviations.)
 	 *
 	 * XXX
 	 * There is almost certainly an infinite loop here, if a abbreviates
@@ -1145,4 +1162,64 @@ txt_showmatch(sp, ep)
 	sp->lno = m.lno;
 	sp->cno = m.cno;
 	(void)sp->s_refresh(sp, ep);
+}
+
+/*
+ * txt_margin --
+ *	Handle margin wrap.
+ *
+ * !!!
+ * Historic vi belled the user each time a character was entered after
+ * crossing the margin until a space was entered which could be used to
+ * break the line.  I don't, it tends to wake the cats.
+ */
+static int
+txt_margin(sp, tp, didbreak, pushc)
+	SCR *sp;
+	TEXT *tp;
+	int *didbreak;
+	ARG_CHAR_T pushc;
+{
+	size_t len, off, tlen;
+	char *p, *wp, ch;
+
+	/* Find the closest previous blank. */
+	for (off = sp->cno - 1, p = tp->lb + off, len = 0;; --p, --off) {
+		if (isblank(*p)) {
+			wp = p + 1;
+			break;
+		}
+		++len;
+		/* If it's the beginning of the line, there's nothing to do. */
+		if (off == tp->ai || off == tp->offset) {
+			*didbreak = 0;
+			return (0);
+		}
+	}
+
+	/*
+	 * Historic practice is to delete any trailing whitespace
+	 * from the previous line.
+	 */
+	for (tlen = len;; --p, --off) {
+		if (!isblank(*p))
+			break;
+		++tlen;
+		if (off == tp->ai || off == tp->offset)
+			break;
+	}
+
+	ch = pushc;
+	if (term_push(sp, sp->gp->tty, &ch, 1))
+		return (1);
+	if (len > 1 && term_push(sp, sp->gp->tty, wp, len))
+		return (1);
+	ch = '\n';
+	if (term_push(sp, sp->gp->tty, &ch, 1))
+		return (1);
+
+	sp->cno -= tlen;
+	tp->len -= tlen;
+	*didbreak = 1;
+	return (0);
 }
