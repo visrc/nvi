@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.51 1994/04/09 18:22:12 bostic Exp $ (Berkeley) $Date: 1994/04/09 18:22:12 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.52 1994/04/13 13:45:02 bostic Exp $ (Berkeley) $Date: 1994/04/13 13:45:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -383,9 +383,21 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 						return (1);
 	}
 
-	/* If the screen needs to be repainted, skip cursor optimization. */
-	if (F_ISSET(sp, S_REDRAW))
+	/*
+	 * If the screen needs to be repainted, skip cursor optimization.
+	 * However, in the code above we skipped leftright scrolling on
+	 * the grounds that the cursor code would handle it.  Make sure
+	 * the right screen is up.
+	 */
+	if (F_ISSET(sp, S_REDRAW)) {
+		if (O_ISSET(sp, O_LEFTRIGHT)) {
+			cnt = svi_opt_screens(sp, ep, LNO, &CNO);
+			if (HMAP->off != cnt)
+				for (smp = HMAP; smp <= TMAP; ++smp)
+					smp->off = cnt;
+		}
 		goto paint;
+	}
 
 	/*
 	 * 4: Cursor movements.
