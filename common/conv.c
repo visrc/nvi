@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: conv.c,v 1.25 2001/06/30 20:00:54 skimo Exp $ (Berkeley) $Date: 2001/06/30 20:00:54 $";
+static const char sccsid[] = "$Id: conv.c,v 1.26 2001/07/01 08:25:32 skimo Exp $ (Berkeley) $Date: 2001/07/01 08:25:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -394,9 +394,11 @@ err:
     case O_FILEENCODING:
 	msgq(sp, M_ERR,
 	    "321|File encoding conversion not supported");
+	break;
     case O_INPUTENCODING:
 	msgq(sp, M_ERR,
 	    "322|Input encoding conversion not supported");
+	break;
     }
 #endif
     return 1;
