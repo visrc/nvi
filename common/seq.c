@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 5.6 1992/04/17 09:39:18 bostic Exp $ (Berkeley) $Date: 1992/04/17 09:39:18 $";
+static char sccsid[] = "$Id: seq.c,v 5.7 1992/04/18 15:40:34 bostic Exp $ (Berkeley) $Date: 1992/04/18 15:40:34 $";
 #endif /* not lint */
 
 #include <errno.h>
@@ -14,6 +14,7 @@ static char sccsid[] = "$Id: seq.c,v 5.6 1992/04/17 09:39:18 bostic Exp $ (Berke
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "vi.h"
 #include "curses.h"
@@ -213,12 +214,14 @@ seq_dump(stype, isname)
 	int isname;
 {
 	register SEQ *sp;
-	register int ch, len;
+	register int ch, cnt, len;
 	register char *p;
 
+	cnt = 0;
 	for (sp = seqhead.lnext; sp != (SEQ *)&seqhead; sp = sp->lnext) {
 		if (stype != sp->stype)
 			continue;
+		++cnt;
 		for (p = sp->input, len = 0; (ch = *p); ++p, ++len)
 			if (iscntrl(ch)) {
 				qaddch('^');
@@ -249,7 +252,7 @@ seq_dump(stype, isname)
 		addch('\n');
 		ex_refresh();
 	}
-	return (0);
+	return (cnt);
 }
 
 /*
