@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 9.1 1994/11/09 18:40:34 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:40:34 $";
+static char sccsid[] = "$Id: ex_bang.c,v 9.2 1994/11/12 17:28:46 bostic Exp $ (Berkeley) $Date: 1994/11/12 17:28:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -159,12 +159,11 @@ ex_bang(sp, cmdp)
 		 * the nonblank for either.  Going to the nonblank generally
 		 * seems more useful, so we do it.
 		 */
-		if (rval == 0) {
-			sp->lno = rm.lno;
-			if (IN_VI_MODE(sp)) {
-				sp->cno = 0;
-				(void)nonblank(sp, sp->lno, &sp->cno);
-			}
+		sp->lno = rm.lno;
+		sp->cno = rm.cno;
+		if (rval == 0 && IN_VI_MODE(sp)) {
+			sp->cno = 0;
+			(void)nonblank(sp, sp->lno, &sp->cno);
 		}
 		goto ret2;
 	}
