@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_at.c,v 8.2 1993/07/21 10:01:26 bostic Exp $ (Berkeley) $Date: 1993/07/21 10:01:26 $";
+static char sccsid[] = "$Id: ex_at.c,v 8.3 1993/08/25 16:44:29 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:44:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,7 +19,9 @@ static char sccsid[] = "$Id: ex_at.c,v 8.2 1993/07/21 10:01:26 bostic Exp $ (Ber
 #include "excmd.h"
 
 /*
- * ex_at -- :@[buffer]
+ * ex_at -- :@[@ | buffer]
+ *	    :*[* | buffer]
+ *
  *	Execute the contents of the buffer.
  */
 int
@@ -30,39 +32,32 @@ ex_at(sp, ep, cmdp)
 {
 	CB *cb;
 	TEXT *tp;
-	int buffer, rval;
+	int buffer, lmode;
 
-	if (cmdp->buffer == OOBCB) {
-		if (sp->exat_lbuf == OOBCB) {
+	buffer = cmdp->buffer;
+	if (buffer == cmdp->cmd->name[0]) {
+		if (sp->at_lbuf == OOBCB) {
 			msgq(sp, M_ERR, "No previous buffer to execute.");
 			return (1);
 		}
-		buffer = sp->exat_lbuf;
-	} else
-		buffer = cmdp->buffer;
+		buffer = sp->at_lbuf;
+	}
 
 	CBNAME(sp, buffer, cb);
 	CBEMPTY(sp, buffer, cb);
-		
-	if (sp->exat_recurse == 0)
-		memset(sp->exat_stack, 0, sizeof(sp->exat_stack));
-	else if (sp->exat_stack[buffer]) {
-		msgq(sp, M_ERR,
-		    "Buffer %s already occurs in this command.",
-		    charname(sp, buffer));
-		return (1);
-	}
 
-	sp->exat_stack[buffer] = 1;
-	++sp->exat_recurse;
-
-	for (tp = cb->txthdr.next; tp != (TEXT *)&cb->txthdr; tp = tp->next) {
-		if ((rval = ex_cstring(sp, ep, tp->lb, tp->len)) != 0)
-			break;
-		if (F_ISSET(sp, S_MAJOR_CHANGE))
-			break;
-	}
+	sp->at_lbuf = buffer;
 		
-	--sp->exat_recurse;
+	/*
+	 * Historic vi had a special semantic.  If a buffer was cut in
+	 * line mode, executing it had the same effect as if it had a
+	 * trailing <newline> character.
+	 */
+	lmode = F_ISSET(cb, CB_LMODE);
+	for (tp = cb->txthdr.next; tp != (TEXT *)&cb->txthdr; tp = tp->next)
+		if ((lmode || tp->next != (TEXT *)&cb->txthdr) &&
+		    term_push(sp, &sp->key, "\n", 1) ||
+		    term_push(sp, &sp->key, tp->lb, tp->len))
+			return (1);
 	return (0);
 }
