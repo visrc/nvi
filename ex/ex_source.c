@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_source.c,v 10.11 1996/06/30 16:13:58 bostic Exp $ (Berkeley) $Date: 1996/06/30 16:13:58 $";
+static const char sccsid[] = "$Id: ex_source.c,v 10.12 1996/08/10 19:52:02 bostic Exp $ (Berkeley) $Date: 1996/08/10 19:52:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -62,7 +62,7 @@ ex_source(sp, cmdp)
 		goto err;
 	}
 
-	MALLOC(sp, bp, char *, (size_t)sb.st_size);
+	MALLOC(sp, bp, char *, (size_t)sb.st_size + 1);
 	if (bp == NULL) {
 		(void)close(fd);
 		return (1);
