@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: cut.h,v 8.7 1993/11/18 10:08:33 bostic Exp $ (Berkeley) $Date: 1993/11/18 10:08:33 $
+ *	$Id: cut.h,v 8.8 1993/11/19 11:55:04 bostic Exp $ (Berkeley) $Date: 1993/11/19 11:55:04 $
  */
 
 typedef struct _texth TEXTH;		/* TEXT list head structure. */
@@ -72,5 +72,5 @@ int	 cut __P((SCR *, EXF *, ARG_CHAR_T, MARK *, MARK *, int));
 int	 delete __P((SCR *, EXF *, MARK *, MARK *, int));
 int	 put __P((SCR *, EXF *, ARG_CHAR_T, MARK *, MARK *, int));
 void	 text_free __P((TEXT *));
-TEXT	*text_init __P((SCR *, char *, size_t, size_t));
+TEXT	*text_init __P((SCR *, const char *, size_t, size_t));
 void	 text_lfree __P((TEXTH *));

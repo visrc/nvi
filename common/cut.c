@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 8.13 1993/11/18 10:08:30 bostic Exp $ (Berkeley) $Date: 1993/11/18 10:08:30 $";
+static char sccsid[] = "$Id: cut.c,v 8.14 1993/11/19 11:54:55 bostic Exp $ (Berkeley) $Date: 1993/11/19 11:54:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -223,7 +223,7 @@ cb_line(sp, ep, lno, fcno, clen, newp)
 TEXT *
 text_init(sp, p, len, total_len)
 	SCR *sp;
-	char *p;
+	const char *p;
 	size_t len, total_len;
 {
 	TEXT *tp;
