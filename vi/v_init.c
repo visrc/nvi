@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 8.3 1993/07/07 11:26:27 bostic Exp $ (Berkeley) $Date: 1993/07/07 11:26:27 $";
+static char sccsid[] = "$Id: v_init.c,v 8.4 1993/08/05 18:03:31 bostic Exp $ (Berkeley) $Date: 1993/08/05 18:03:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -82,31 +82,14 @@ v_init(sp, ep)
 	(void)setvbuf(sp->stdfp, NULL, _IOLBF, 0);
 
 	/*
-	 * This has been a problem area.  There are six ways to enter
-	 * a file.
-	 *					F_EADDR_LOAD	F_EADDR_NONE
-	 *	+ new file, no starting addr	SET		SET
-	 *	+ new file, starting addr	SET		NS
-	 *	+ screen switch			NS		NS
-	 *	+ old file, no starting addr	SET		NS
-	 *	+ old file, starting addr	SET		NS
-	 *	+ old file, already in use	SET		SET
-	 *
-	 * The default address is line 1, column 0.  If the address is
-	 * loaded, ensure that it exists.
+	 * The default address is line 1, column 0.  If the address set
+	 * bit is on for this file, load the address, ensuring that it
+	 * exists.
 	 */
-	if (F_ISSET(ep, F_EADDR_LOAD)) {
-		if (F_ISSET(ep, F_EADDR_NONE)) {
-			sp->lno = 1;
-			sp->cno = 0;
-			if (O_ISSET(sp, O_COMMENT) && v_comment(sp, ep))
-				return (1);
-			F_CLR(ep, F_EADDR_LOAD | F_EADDR_NONE);
-		} else {
-			sp->lno = ep->lno;
-			sp->cno = ep->cno;
-			F_CLR(ep, F_EADDR_LOAD);
-		}
+	if (F_ISSET(sp->frp, FR_CURSORSET)) {
+		sp->lno = sp->frp->lno;
+		sp->cno = sp->frp->cno;
+
 		if (file_gline(sp, ep, sp->lno, &len) == NULL) {
 			if (sp->lno != 1 || sp->cno != 0) {
 				if (file_lline(sp, ep, &sp->lno))
@@ -117,24 +100,36 @@ v_init(sp, ep)
 			}
 		} else if (sp->cno >= len)
 			sp->cno = 0;
-		/*
-		 * After address set, run any initial command; failure doesn't
-		 * halt the session.  Hopefully changing the cursor position
-		 * won't affect the success of the command.
-		 */
-		if (F_ISSET(ep, F_ICOMMAND)) {
-			(void)ex_cstring(sp, ep,
-			    ep->icommand, strlen(ep->icommand));
-			free(ep->icommand);
-			F_CLR(ep, F_ICOMMAND);
-		}
 
-		/*
-		 * Now have the real address the user wants.
-		 * Fill the screen map.
-		 */
+	} else {
+		sp->lno = 1;
+		sp->cno = 0;
+
+		if (O_ISSET(sp, O_COMMENT) && v_comment(sp, ep))
+			return (1);
+	}
+
+	/*
+	 * After address set, run any initial command; failure doesn't
+	 * halt the session.  Hopefully changing the cursor position
+	 * didn't affect the success of the command, but it's possible
+	 * and undetectible.
+	 */
+	if (F_ISSET(ep, F_ICOMMAND)) {
+		(void)ex_cstring(sp, ep, ep->icommand, strlen(ep->icommand));
+		free(ep->icommand);
+		F_CLR(ep, F_ICOMMAND);
+		F_SET(ep, S_REDRAW);
+	}
+
+	/*
+	 * Now have the real address the user wants.
+	 * Fill the screen map.
+	 */
+	if (F_ISSET(sp, S_REFORMAT)) {
 		if (sp->s_fill(sp, ep, sp->lno, P_FILL))
 			return (1);
+		F_CLR(sp, S_REFORMAT);
 		F_SET(sp, S_REDRAW);
 	}
 
@@ -151,8 +146,9 @@ v_end(sp)
 	SCR *sp;
 {
 	/* Save the cursor location. */
-	sp->ep->lno = sp->lno;
-	sp->ep->cno = sp->cno;
+	sp->frp->lno = sp->lno;
+	sp->frp->cno = sp->cno;
+	F_SET(sp->frp, FR_CURSORSET);
 
 #ifdef FWOPEN_NOT_AVAILABLE
 	sp->trapped_fd = -1;

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_init.c,v 8.3 1993/07/06 09:03:51 bostic Exp $ (Berkeley) $Date: 1993/07/06 09:03:51 $";
+static char sccsid[] = "$Id: ex_init.c,v 8.4 1993/08/05 18:03:57 bostic Exp $ (Berkeley) $Date: 1993/08/05 18:03:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,24 +29,14 @@ ex_init(sp, ep)
 	size_t len;
 
 	/*
-	 * See comment in vi/v_init.c for how this code works.
-	 *
-	 * The default address is the last line of the file.
-	 * If the address is loaded, ensure that it exists.
+	 * The default address is the last line of the file.  If the address
+	 * set bit is on for this file, load the address, ensuring that it
+	 * exists.
 	 */
-	if (F_ISSET(ep, F_EADDR_LOAD)) {
-		if (F_ISSET(ep, F_EADDR_NONE)) {
-			if (file_lline(sp, ep, &sp->lno))
-				return (1);
-			if (sp->lno == 0)
-				sp->lno = 1;
-			sp->cno = 0;
-			F_CLR(ep, F_EADDR_LOAD | F_EADDR_NONE);
-		} else {
-			sp->lno = ep->lno;
-			sp->cno = ep->cno;
-			F_CLR(ep, F_EADDR_LOAD);
-		}
+	if (F_ISSET(sp->frp, FR_CURSORSET)) {
+		sp->lno = sp->frp->lno;
+		sp->cno = sp->frp->cno;
+
 		if (file_gline(sp, ep, sp->lno, &len) == NULL) {
 			if (file_lline(sp, ep, &sp->lno))
 				return (1);
@@ -55,17 +45,25 @@ ex_init(sp, ep)
 			sp->cno = 0;
 		} else if (sp->cno >= len)
 			sp->cno = 0;
-		/*
-		 * After address set, run any initial command; failure doesn't
-		 * halt the session.  Hopefully changing the cursor position
-		 * won't affect the success of the command.
-		 */
-		if (F_ISSET(ep, F_ICOMMAND)) {
-			(void)ex_cstring(sp, ep,
-			    ep->icommand, strlen(ep->icommand));
-			free(ep->icommand);
-			F_CLR(ep, F_ICOMMAND);
-		}
+	} else {
+		if (file_lline(sp, ep, &sp->lno))
+			return (1);
+		if (sp->lno == 0)
+			sp->lno = 1;
+		sp->cno = 0;
+	}
+
+	/*
+	 * After address set, run any initial command; failure doesn't
+	 * halt the session.  Hopefully changing the cursor position
+	 * won't affect the success of the command, but it's possible
+	 * and undetectible.
+	 */
+	if (F_ISSET(ep, F_ICOMMAND)) {
+		(void)ex_cstring(sp, ep,
+		    ep->icommand, strlen(ep->icommand));
+		free(ep->icommand);
+		F_CLR(ep, F_ICOMMAND);
 	}
 
 	/* Display the status line. */
@@ -81,8 +79,9 @@ ex_end(sp)
 	SCR *sp;
 {
 	/* Save the cursor location. */
-	sp->ep->lno = sp->lno;
-	sp->ep->cno = sp->cno;
+	sp->frp->lno = sp->lno;
+	sp->frp->cno = sp->cno;
+	F_SET(sp->frp, FR_CURSORSET);
 
 	return (0);
 }
