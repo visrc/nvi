@@ -1,7 +1,8 @@
-#	$Id: Makefile,v 8.15 1994/12/16 10:38:58 bostic Exp $ (Berkeley) $Date: 1994/12/16 10:38:58 $
+#	$Id: Makefile,v 8.16 1995/01/25 10:06:21 bostic Exp $ (Berkeley) $Date: 1995/01/25 10:06:21 $
 
 CAT=	vi_dutch vi_english vi_german vi_ru_SU.KOI8-R vi_swedish
-FILES=	../common/*.c ../ex/*.c ../sex/*.c ../vi/*.c ../svi/*.c ../xaw/*.c
+FILES=	../common/*.c ../ex/*.c ../sex/*.c ../vi/*.c ../svi/*.c \
+	../cl/*.c ../xaw/*.c
 
 all: dump ${CAT}
 
@@ -34,6 +35,9 @@ check: ${CAT}
 		awk '{print $$1}' < $$i > __ck1;			\
 		awk '{print $$1}' < vi_english.base > __ck2;		\
 		join -v 2 __ck1 __ck2;					\
+		echo =========================;				\
+		echo "EXTRA ERROR MESSAGES (delete them):";		\
+		join -v 1 __ck1 __ck2;					\
 		rm -f __ck1 __ck2;					\
 		echo =========================;				\
 		echo "DUPLICATE MESSAGE NUMBERS (this is NOT okay):";	\
