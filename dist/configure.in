@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.10 1996/02/21 17:22:26 bostic Exp $ (Berkeley) $Date: 1996/02/21 17:22:26 $
+dnl	$Id: configure.in,v 8.11 1996/02/22 09:33:50 bostic Exp $ (Berkeley) $Date: 1996/02/22 09:33:50 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(configure)
@@ -292,6 +292,7 @@ if test "$vi_cv_curses" = "system curses"; then
 	AC_MSG_RESULT($vi_cv_have_curses_newterm)
 
 else
+	AC_DEFINE(HAVE_CURSES_ADDNSTR)
 	AC_DEFINE(HAVE_CURSES_IDLOK)
 fi
 
