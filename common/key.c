@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.24 1992/05/27 10:28:23 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:28:23 $";
+static char sccsid[] = "$Id: key.c,v 5.25 1992/06/07 13:52:30 bostic Exp $ (Berkeley) $Date: 1992/06/07 13:52:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -405,31 +405,16 @@ ttyread(buf, len, time)
 	} else
 		tp = NULL;
 
-	/*
-	 * Select until characters become available, and then read them.  Try
-	 * to handle SIGWINCH -- if a signal arrives during the select call,
-	 * adjust the O_COLUMNS and O_LINES variables, and fake a control-L.
-	 */
+	/* Select until characters become available, and then read them. */
 	FD_SET(STDIN_FILENO, &rd);
 	for (;;)
 		switch (select(1, &rd, NULL, NULL, tp)) {
 		case -1:
-			/*
-			 * Assume we got an EINTR because of SIGWINCH, and
-			 * pretend the user hit ^L.
-			 *
-			 * XXX
-			 * Should check EINTR, not just make the assumption.
-			 */
-			if (LVAL(O_LINES) != LINES || LVAL(O_COLUMNS) != COLS) {
-				LVAL(O_LINES) = LINES;
-				LVAL(O_COLUMNS) = COLS;
-				if (mode != MODE_EX) {
-					*buf = ctrl('L');
-					return (1);
-				}
-			}
-			break;
+			/* It's okay to be interrupted. */
+			if (errno == EINTR)
+				break;
+			msg("Terminal read error: %s", strerror(errno));
+			return (0);
 		case 0:
 			/* Timeout. */
 			return (0);
