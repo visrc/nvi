@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 5.32 1993/02/14 13:19:13 bostic Exp $ (Berkeley) $Date: 1993/02/14 13:19:13 $";
+static char sccsid[] = "$Id: v_ex.c,v 5.33 1993/02/14 18:57:10 bostic Exp $ (Berkeley) $Date: 1993/02/14 18:57:10 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -179,7 +179,7 @@ v_exwrite(cookie, line, llen)
 		default:
 			abort();
 		}
-		addbytes(line, len);
+		addnstr(line, len);
 
 		/* GCC: tlen cannot be uninitialized here, see switch above. */
 		if (tlen < ep->cols)
@@ -211,7 +211,7 @@ moveup(ep, mustwait, colon_ok, chp)
 	/* If just displayed a full screen, wait. */
 	if (mustwait || exlinecount == SCREENSIZE(ep)) {
 		MOVE(SCREENSIZE(ep), 0);
-		addbytes(CONTMSG, sizeof(CONTMSG) - 1);
+		addnstr(CONTMSG, sizeof(CONTMSG) - 1);
 		clrtoeol();
 		refresh();
 		while (special[ch = getkey(0)] != K_CR &&

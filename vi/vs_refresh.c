@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.23 1993/02/13 15:36:12 bostic Exp $ (Berkeley) $Date: 1993/02/13 15:36:12 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.24 1993/02/14 18:57:13 bostic Exp $ (Berkeley) $Date: 1993/02/14 18:57:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -770,12 +770,12 @@ scr_line(ep, sp, p, len, yp, xp)
 		if (ch == '\t' && !ISSET(O_LIST)) {
 			chlen -= offset_in_char;
 			if (chlen <= sizeof(BLANKS) - 1)
-				addbytes(BLANKS, chlen);
+				addnstr(BLANKS, chlen);
 			else
 				while (chlen--)
 					addch(' ');
 		} else
-			addbytes(asciiname[ch] + offset_in_char, chlen);
+			addnstr(asciiname[ch] + offset_in_char, chlen);
 
 		/*
 		 * If the caller wants the cursor value, and this was the
