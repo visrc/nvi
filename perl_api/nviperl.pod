@@ -1,0 +1,21 @@
+=head1 NAME
+
+nviperl - nvi with embedded perl
+
+=head1 SYNOPSIS
+
+	:perl require 'wc.pl'
+	:perl wc
+
+=head1 DESCRIPTION
+
+nvi with embedded perl allows you to run perl commands from within
+nvi. To find out how to maniplulate the nvi screens, see L<VI>.
+
+=head1 SEE ALSO
+
+L<VI>
+
+=head1 AUTHOR
+
+Sven Verdoolaege <skimo@dns.ufsia.ac.be>
