@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 8.20 1993/12/28 16:39:54 bostic Exp $ (Berkeley) $Date: 1993/12/28 16:39:54 $
+ *	$Id: exf.h,v 8.21 1994/02/25 18:56:14 bostic Exp $ (Berkeley) $Date: 1994/02/25 18:56:14 $
  */
 					/* Undo direction. */
 /*
@@ -29,7 +29,7 @@ struct _exf {
 	MARK	 l_cursor;		/* Log cursor position. */
 	enum direction lundo;		/* Last undo direction. */
 
-	LIST_HEAD(_markh, _mark) marks;	/* Linked list of file MARK's. */
+	LIST_HEAD(_markh, _lmark) marks;/* Linked list of file MARK's. */
 
 	/*
 	 * Paths for the recovery mail file and the vi recovery file and

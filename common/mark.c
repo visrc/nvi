@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: mark.c,v 8.12 1993/12/27 16:50:48 bostic Exp $ (Berkeley) $Date: 1993/12/27 16:50:48 $";
+static char sccsid[] = "$Id: mark.c,v 8.13 1994/02/25 18:56:33 bostic Exp $ (Berkeley) $Date: 1994/02/25 18:56:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -17,7 +17,7 @@ static char sccsid[] = "$Id: mark.c,v 8.12 1993/12/27 16:50:48 bostic Exp $ (Ber
 
 #include "vi.h"
 
-static MARK *mark_find __P((SCR *, EXF *, ARG_CHAR_T));
+static LMARK *mark_find __P((SCR *, EXF *, ARG_CHAR_T));
 
 /*
  * Marks are maintained in a key sorted doubly linked list.  We can't
@@ -59,18 +59,18 @@ mark_init(sp, ep)
 	SCR *sp;
 	EXF *ep;
 {
-	MARK *mp;
+	LMARK *lmp;
 
 	/*
 	 * Make sure the marks have been set up.  If they
 	 * haven't, do so, and create the absolute mark.
 	 */
-	MALLOC_RET(sp, mp, MARK *, sizeof(MARK));
-	mp->lno = 1;
-	mp->cno = 0;
-	mp->name = ABSMARK1;
-	mp->flags = 0;
-	LIST_INSERT_HEAD(&ep->marks, mp, q);
+	MALLOC_RET(sp, lmp, LMARK *, sizeof(LMARK));
+	lmp->lno = 1;
+	lmp->cno = 0;
+	lmp->name = ABSMARK1;
+	lmp->flags = 0;
+	LIST_INSERT_HEAD(&ep->marks, lmp, q);
 	return (0);
 }
 
@@ -83,11 +83,11 @@ mark_end(sp, ep)
 	SCR *sp;
 	EXF *ep;
 {
-	MARK *mp;
+	LMARK *lmp;
 
-	while ((mp = ep->marks.lh_first) != NULL) {
-		LIST_REMOVE(mp, q);
-		FREE(mp, sizeof(MARK));
+	while ((lmp = ep->marks.lh_first) != NULL) {
+		LIST_REMOVE(lmp, q);
+		FREE(lmp, sizeof(LMARK));
 	}
 	return (0);
 }
@@ -96,36 +96,40 @@ mark_end(sp, ep)
  * mark_get --
  *	Get the location referenced by a mark.
  */
-MARK *
-mark_get(sp, ep, key)
+int
+mark_get(sp, ep, key, mp)
 	SCR *sp;
 	EXF *ep;
 	ARG_CHAR_T key;
-{
 	MARK *mp;
+{
+	LMARK *lmp;
+	MARK m;
 	size_t len;
 	char *p;
 
 	if (key == ABSMARK2)
 		key = ABSMARK1;
 
-	mp = mark_find(sp, ep, key);
-	if (mp == NULL || mp->name != key) {
+	lmp = mark_find(sp, ep, key);
+	if (lmp == NULL || lmp->name != key) {
 		msgq(sp, M_BERR, "Mark %s: not set.", charname(sp, key));
-                return (NULL);
+                return (1);
 	}
-	if (F_ISSET(mp, MARK_DELETED)) {
+	if (F_ISSET(lmp, MARK_DELETED)) {
 		msgq(sp, M_BERR,
 		    "Mark %s: the line was deleted.", charname(sp, key));
-                return (NULL);
+                return (1);
 	}
-	if ((p = file_gline(sp, ep, mp->lno, &len)) == NULL ||
-	    mp->cno > len || mp->cno == len && len != 0) {
+	if ((p = file_gline(sp, ep, lmp->lno, &len)) == NULL ||
+	    lmp->cno > len || lmp->cno == len && len != 0) {
 		msgq(sp, M_BERR, "Mark %s: cursor position no longer exists.",
 		    charname(sp, key));
-		return (NULL);
+		return (1);
 	}
-	return (mp);
+	mp->lno = lmp->lno;
+	mp->cno = lmp->cno;
+	return (0);
 }
 
 /*
@@ -140,7 +144,7 @@ mark_set(sp, ep, key, value, userset)
 	MARK *value;
 	int userset;
 {
-	MARK *mp, *mt;
+	LMARK *lmp, *lmt;
 
 	if (key == ABSMARK2)
 		key = ABSMARK1;
@@ -151,22 +155,22 @@ mark_set(sp, ep, key, value, userset)
 	 * an undo, and we set it if it's not already set or if it was set
 	 * by a previous undo.
 	 */
-	mp = mark_find(sp, ep, key);
-	if (mp == NULL || mp->name != key) {
-		MALLOC_RET(sp, mt, MARK *, sizeof(MARK));
-		if (mp == NULL) {
-			LIST_INSERT_HEAD(&ep->marks, mt, q);
+	lmp = mark_find(sp, ep, key);
+	if (lmp == NULL || lmp->name != key) {
+		MALLOC_RET(sp, lmt, LMARK *, sizeof(LMARK));
+		if (lmp == NULL) {
+			LIST_INSERT_HEAD(&ep->marks, lmt, q);
 		} else
-			LIST_INSERT_AFTER(mp, mt, q);
-		mp = mt;
+			LIST_INSERT_AFTER(lmp, lmt, q);
+		lmp = lmt;
 	} else if (!userset &&
-	    !F_ISSET(mp, MARK_DELETED) && F_ISSET(mp, MARK_USERSET))
+	    !F_ISSET(lmp, MARK_DELETED) && F_ISSET(lmp, MARK_USERSET))
 		return (0);
 
-	mp->lno = value->lno;
-	mp->cno = value->cno;
-	mp->name = key;
-	mp->flags = userset ? MARK_USERSET : 0;
+	lmp->lno = value->lno;
+	lmp->cno = value->cno;
+	lmp->name = key;
+	lmp->flags = userset ? MARK_USERSET : 0;
 	return (0);
 }
 
@@ -175,23 +179,23 @@ mark_set(sp, ep, key, value, userset)
  *	Find the requested mark, or, the slot immediately before
  *	where it would go.
  */
-static MARK *
+static LMARK *
 mark_find(sp, ep, key)
 	SCR *sp;
 	EXF *ep;
 	ARG_CHAR_T key;
 {
-	MARK *mp, *lastmp;
+	LMARK *lmp, *lastlmp;
 
 	/*
 	 * Return the requested mark or the slot immediately before
 	 * where it should go.
 	 */
-	for (lastmp = NULL, mp = ep->marks.lh_first;
-	    mp != NULL; lastmp = mp, mp = mp->q.le_next)
-		if (mp->name >= key)
-			return (mp->name == key ? mp : lastmp);
-	return (lastmp);
+	for (lastlmp = NULL, lmp = ep->marks.lh_first;
+	    lmp != NULL; lastlmp = lmp, lmp = lmp->q.le_next)
+		if (lmp->name >= key)
+			return (lmp->name == key ? lmp : lastlmp);
+	return (lastlmp);
 }
 
 /*
@@ -205,24 +209,26 @@ mark_insdel(sp, ep, op, lno)
 	enum operation op;
 	recno_t lno;
 {
-	MARK *mp;
+	LMARK *lmp;
 
 	switch (op) {
 	case LINE_APPEND:
 		return;
 	case LINE_DELETE:
-		for (mp = ep->marks.lh_first; mp != NULL; mp = mp->q.le_next)
-			if (mp->lno >= lno)
-				if (mp->lno == lno) {
-					F_SET(mp, MARK_DELETED);
-					(void)log_mark(sp, ep, mp);
+		for (lmp = ep->marks.lh_first;
+		    lmp != NULL; lmp = lmp->q.le_next)
+			if (lmp->lno >= lno)
+				if (lmp->lno == lno) {
+					F_SET(lmp, MARK_DELETED);
+					(void)log_mark(sp, ep, lmp);
 				} else
-					--mp->lno;
+					--lmp->lno;
 		return;
 	case LINE_INSERT:
-		for (mp = ep->marks.lh_first; mp != NULL; mp = mp->q.le_next)
-			if (mp->lno >= lno)
-				++mp->lno;
+		for (lmp = ep->marks.lh_first;
+		    lmp != NULL; lmp = lmp->q.le_next)
+			if (lmp->lno >= lno)
+				++lmp->lno;
 		return;
 	case LINE_RESET:
 		return;
