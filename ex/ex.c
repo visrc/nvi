@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 9.26 1995/01/30 18:09:09 bostic Exp $ (Berkeley) $Date: 1995/01/30 18:09:09 $";
+static char sccsid[] = "$Id: ex.c,v 9.27 1995/01/31 09:42:25 bostic Exp $ (Berkeley) $Date: 1995/01/31 09:42:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -221,9 +221,12 @@ ex_icmd(sp, cmd, len, flags)
 	 */
 	CLR_INTERRUPT(sp);
 	rval = ex_cmd(sp, cmd, len, flags);
-	if (INTERRUPTED(sp) && term_flush(sp, CH_MAPPED))
-		msgq(sp, M_ERR, "072|Interrupted: mapped keys discarded");
-
+	if (INTERRUPTED(sp))
+		if (term_flush(sp, CH_MAPPED))
+			msgq(sp, M_ERR,
+			    "072|Interrupted: mapped keys discarded");
+		else
+			msgq(sp, M_ERR, "134|Interrupted");
 #ifdef DEBUG
 	/* Make sure no function left the temporary space locked. */
 	if (F_ISSET(sp->gp, G_TMP_INUSE)) {

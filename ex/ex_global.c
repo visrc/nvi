@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 9.6 1995/01/30 12:00:29 bostic Exp $ (Berkeley) $Date: 1995/01/30 12:00:29 $";
+static char sccsid[] = "$Id: ex_global.c,v 9.7 1995/01/31 09:42:08 bostic Exp $ (Berkeley) $Date: 1995/01/31 09:42:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -204,7 +204,7 @@ usage:		ex_message(sp, cmdp->cmd, EXM_USAGE);
 	    elno = cmdp->addr2.lno; lno <= elno; ++lno) {
 		/* Someone's unhappy, time to stop. */
 		if (INTERRUPTED(sp))
-			goto interrupted;
+			break;
 
 		/* Get the line and search for a match. */
 		if ((t = file_gline(sp, lno, &len)) == NULL) {
@@ -268,10 +268,8 @@ usage:		ex_message(sp, cmdp->cmd, EXM_USAGE);
 			goto err;
 
 		/* Someone's unhappy, time to stop. */
-		if (INTERRUPTED(sp)) {
-interrupted:		ex_message(sp, NULL, EXM_INTERRUPTED);
+		if (INTERRUPTED(sp))
 			break;
-		}
 	}
 
 	/* Set the cursor to the new value, making sure it exists. */
