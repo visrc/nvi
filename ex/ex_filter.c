@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 5.10 1992/04/22 08:11:52 bostic Exp $ (Berkeley) $Date: 1992/04/22 08:11:52 $";
+static char sccsid[] = "$Id: ex_filter.c,v 5.11 1992/04/28 13:47:20 bostic Exp $ (Berkeley) $Date: 1992/04/28 13:47:20 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -181,11 +181,14 @@ err:		if (input[0] != -1)
 	(void)signal(SIGINT, intsave);
 	(void)signal(SIGQUIT, quitsave);
 
-	if (WIFSIGNALED(pstat))
+	if (WIFSIGNALED(pstat)) {
 		msg("filter: exited with signal %d%s.", WTERMSIG(pstat),
 		    WCOREDUMP(pstat) ? "; core dumped" : "");
-	else if (WIFEXITED(pstat) && WEXITSTATUS(pstat))
+		return (1);
+	}
+	else if (WIFEXITED(pstat) && WEXITSTATUS(pstat)) {
 		msg("filter: exited with status %d.", WEXITSTATUS(pstat));
-
+		return (1);
+	}
 	return (0);
 }
