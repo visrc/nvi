@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_undo.c,v 5.14 1993/03/26 13:39:16 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:39:16 $";
+static char sccsid[] = "$Id: ex_undo.c,v 5.15 1993/04/05 07:11:52 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:11:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -39,8 +39,8 @@ ex_undo(sp, ep, cmdp)
 			return (1);
 		break;
 	}
-	ep->lno = rp.lno;
-	ep->cno = rp.cno;
+	sp->lno = rp.lno;
+	sp->cno = rp.cno;
 
 	F_SET(sp, S_AUTOPRINT);
 

@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 5.1 1993/03/26 13:41:26 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:41:26 $
+ *	$Id: gs.h,v 5.2 1993/04/05 07:12:31 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:12:31 $
  */
 
 #include <termios.h>
@@ -13,9 +13,6 @@ struct _scr;
 typedef struct _gs {
 	struct _hdr	 exfhdr;	/* Linked list of EXF structures. */
 	struct _hdr	 scrhdr;	/* Linked list of SCR structures. */
-
-	struct _scr	*snext;		/* Next screen to display. */
-	struct _scr	*sprev;		/* Last screen displayed. */
 
 	mode_t	 origmode;		/* Original terminal mode. */
 	struct termios

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 5.32 1993/03/28 19:04:47 bostic Exp $ (Berkeley) $Date: 1993/03/28 19:04:47 $";
+static char sccsid[] = "$Id: util.c,v 5.33 1993/04/05 07:12:48 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:12:48 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -157,9 +157,8 @@ nonblank(sp, ep, lno, cnop)
 	recno_t lno;
 	size_t *cnop;
 {
-	register int cnt;
-	register u_char *p;
-	size_t len;
+	char *p;
+	size_t cnt, len;
 
 	if ((p = file_gline(sp, ep, lno, &len)) == NULL) {
 		if (file_lline(sp, ep) == 0) {
@@ -169,8 +168,12 @@ nonblank(sp, ep, lno, cnop)
 		GETLINE_ERR(sp, lno);
 		return (1);
 	}
-	for (cnt = 0; len-- && isspace(*p); ++cnt, ++p);
-	*cnop = cnt;
+	if (len == 0) {
+		*cnop = 0;
+		return (0);
+	}
+	for (cnt = 0; len && isspace(*p); ++cnt, ++p, --len);
+	*cnop = len ? cnt : cnt - 1;
 	return (0);
 }
 

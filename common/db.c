@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 5.24 1993/03/28 19:04:41 bostic Exp $ (Berkeley) $Date: 1993/03/28 19:04:41 $";
+static char sccsid[] = "$Id: db.c,v 5.25 1993/04/05 07:12:32 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:12:32 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -16,11 +16,25 @@ static char sccsid[] = "$Id: db.c,v 5.24 1993/03/28 19:04:41 bostic Exp $ (Berke
 
 #include "vi.h"
 
+#define	UPDATE_SCREENS(op) {						\
+	if (ep->refcnt == 1) {						\
+		if (sp->change != NULL)					\
+			sp->change(sp, ep, lno, op);			\
+	} else {							\
+		SCR *__tsp;						\
+		for (__tsp = sp->gp->scrhdr.next;			\
+		    __tsp != (SCR *)&sp->gp->scrhdr;			\
+		    __tsp = __tsp->next)				\
+			if (__tsp->ep == ep && __tsp->change != NULL)	\
+				sp->change(__tsp, ep, lno, op);		\
+	}								\
+}
+
 /*
  * file_gline --
  *	Retrieve a line from the file.
  */
-u_char *
+char *
 file_gline(sp, ep, lno, lenp)
 	SCR *sp;
 	EXF *ep;
@@ -43,13 +57,14 @@ file_gline(sp, ep, lno, lenp)
 	 * Look-aside into the input buffer and see if the line we want is
 	 * there.
 	 */
-	if (ib.stop.lno >= lno && ib.start.lno <= lno) {
-		if (ib.stop.lno == lno) {
+	if (sp->ib.stop.lno >= lno && sp->ib.start.lno <= lno) {
+		if (sp->ib.stop.lno == lno) {
 			if (lenp)
-				*lenp = ib.len;
-			return (ib.ilb);
+				*lenp = sp->ib.len;
+			return (sp->ib.ilb);
 		}
-		for (cnt = ib.start.lno, tp = ib.head; cnt < lno; ++cnt)
+		for (cnt = sp->ib.start.lno,
+		    tp = sp->ib.head; cnt < lno; ++cnt)
 			tp = tp->next;
 		if (lenp)
 			*lenp = tp->len;
@@ -127,8 +142,7 @@ file_dline(sp, ep, lno)
 	F_SET(ep, F_MODIFIED);
 
 	/* Update screen. */
-	if (sp->change != NULL)
-		sp->change(sp, ep, lno, LINE_DELETE);
+	UPDATE_SCREENS(LINE_DELETE);
 	return (0);
 }
 
@@ -141,7 +155,7 @@ file_aline(sp, ep, lno, p, len)
 	SCR *sp;
 	EXF *ep;
 	recno_t lno;
-	u_char *p;
+	char *p;
 	size_t len;
 {
 	DBT data, key;
@@ -174,8 +188,7 @@ file_aline(sp, ep, lno, p, len)
 	log_line(sp, ep, lno + 1, LINE_APPEND);
 
 	/* Update screen. */
-	if (sp->change != NULL)
-		sp->change(sp, ep, lno, LINE_APPEND);
+	UPDATE_SCREENS(LINE_APPEND);
 	return (0);
 }
 
@@ -188,7 +201,7 @@ file_iline(sp, ep, lno, p, len)
 	SCR *sp;
 	EXF *ep;
 	recno_t lno;
-	u_char *p;
+	char *p;
 	size_t len;
 {
 	DBT data, key;
@@ -222,8 +235,7 @@ file_iline(sp, ep, lno, p, len)
 	log_line(sp, ep, lno, LINE_INSERT);
 
 	/* Update screen. */
-	if (sp->change != NULL)
-		sp->change(sp, ep, lno, LINE_INSERT);
+	UPDATE_SCREENS(LINE_INSERT);
 	return (0);
 }
 
@@ -236,7 +248,7 @@ file_sline(sp, ep, lno, p, len)
 	SCR *sp;
 	EXF *ep;
 	recno_t lno;
-	u_char *p;
+	char *p;
 	size_t len;
 {
 	DBT data, key;
@@ -271,8 +283,7 @@ file_sline(sp, ep, lno, p, len)
 	log_line(sp, ep, lno, LINE_RESET);
 	
 	/* Update screen. */
-	if (sp->change != NULL)
-		sp->change(sp, ep, lno, LINE_RESET);
+	UPDATE_SCREENS(LINE_RESET);
 	return (0);
 }
 
@@ -290,7 +301,7 @@ file_ibresolv(sp, ep, lno)
 	TEXT *tp;
 
 	/* Setup. */
-	tp = ib.head;
+	tp = sp->ib.head;
 	key.size = sizeof(lno);
 
 	/* Replace the original line. */
@@ -340,8 +351,8 @@ file_lline(sp, ep)
 
 	/* Check the cache. */
 	if (ep->c_nlines != OOBLNO)
-		return (ib.stop.lno > ep->c_nlines ?
-		    ib.stop.lno : ep->c_nlines);
+		return (sp->ib.stop.lno > ep->c_nlines ?
+		    sp->ib.stop.lno : ep->c_nlines);
 
 	key.data = &lno;
 	key.size = sizeof(lno);
@@ -365,5 +376,5 @@ file_lline(sp, ep)
 	ep->c_len = data.size;
 	ep->c_lp = data.data;
 
-	return (ib.stop.lno > lno ? ib.stop.lno : lno);
+	return (sp->ib.stop.lno > lno ? sp->ib.stop.lno : lno);
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 5.22 1993/03/26 13:37:55 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:37:55 $";
+static char sccsid[] = "$Id: search.c,v 5.23 1993/04/05 07:12:40 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:12:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,19 +19,19 @@ static char sccsid[] = "$Id: search.c,v 5.22 1993/03/26 13:37:55 bostic Exp $ (B
 
 static int	checkdelta __P((SCR *, EXF *, recno_t, recno_t));
 static int	resetup __P((SCR *, regex_t **, enum direction,
-		    u_char *, u_char **, recno_t *, u_int));
+		    char *, char **, recno_t *, u_int));
 
 static int
 resetup(sp, rep, dir, ptrn, epp, deltap, flags)
 	SCR *sp;
 	regex_t **rep;
 	enum direction dir;
-	u_char *ptrn, **epp;
+	char *ptrn, **epp;
 	recno_t *deltap;
 	u_int flags;
 {
 	int eval, reflags;
-	u_char *endp;
+	char *endp;
 	char delim[2];
 
 	if (ptrn == NULL && !F_ISSET(sp, S_RE_SET)) {
@@ -66,7 +66,7 @@ noprev:		msgq(sp, M_DISPLAY, "No previous search pattern.");
 
 		/* Find terminating delimiter. */
 		endp = ptrn;
-		ptrn = USTRSEP(&endp, delim);
+		ptrn = strsep(&endp, delim);
 
 		/*
 		 * If characters after the terminating delimiter, it may
@@ -82,11 +82,11 @@ noprev:		msgq(sp, M_DISPLAY, "No previous search pattern.");
 				return (1);
 			}
 			if (deltap != NULL)
-				*deltap = USTRTOL(endp, &endp, 10);
+				*deltap = strtol(endp, &endp, 10);
 			if (epp != NULL)
 				*epp = endp;
 		} else {
-			static u_char ebuf[1];
+			static char ebuf[1];
 			if (epp != NULL)
 				*epp = ebuf;
 		}
@@ -123,7 +123,7 @@ f_search(sp, ep, fm, ptrn, eptrn, flags)
 	SCR *sp;
 	EXF *ep;
 	MARK *fm;
-	u_char *ptrn, **eptrn;
+	char *ptrn, **eptrn;
 	u_int flags;
 {
 	static MARK rval;
@@ -132,7 +132,7 @@ f_search(sp, ep, fm, ptrn, eptrn, flags)
 	recno_t delta, lno;
 	size_t coff, len;
 	int eval, wrapped;
-	u_char *l;
+	char *l;
 
 	if ((lno = file_lline(sp, ep)) == 0) {
 		if (flags & SEARCH_MSG)
@@ -234,7 +234,7 @@ b_search(sp, ep, fm, ptrn, eptrn, flags)
 	SCR *sp;
 	EXF *ep;
 	MARK *fm;
-	u_char *ptrn, **eptrn;
+	char *ptrn, **eptrn;
 	u_int flags;
 {
 	static MARK rval;
@@ -243,7 +243,7 @@ b_search(sp, ep, fm, ptrn, eptrn, flags)
 	size_t coff, len, last;
 	recno_t delta, lno;
 	int eval, wrapped;
-	u_char *l;
+	char *l;
 
 	if ((lno = file_lline(sp, ep)) == 0) {
 		if (flags & SEARCH_MSG)

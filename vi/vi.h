@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 5.35 1993/03/26 13:41:05 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:41:05 $
+ *	$Id: vi.h,v 5.36 1993/04/05 07:10:41 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:10:41 $
  */
 
 /* Structure passed around to functions implementing vi commands. */
@@ -178,6 +178,7 @@ int	v_ulcase __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
 int	v_Undo __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
 int	v_undo __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
 int	v_up __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
+int	v_window __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
 int	v_wordB __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
 int	v_wordb __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
 int	v_wordE __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));

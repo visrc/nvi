@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 5.1 1993/03/28 19:07:08 bostic Exp $ (Berkeley) $Date: 1993/03/28 19:07:08 $";
+static char sccsid[] = "$Id: vs_line.c,v 5.2 1993/04/05 07:13:12 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:13:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,14 +34,14 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 	SCR *sp;
 	EXF *ep;
 	SMAP *smp;
-	register u_char *p;
+	register char *p;
 	size_t len, *xp, *yp;
 {
+	CHNAME *cname;
 	size_t chlen, cols_per_screen, cno_cnt, count_cols;
 	size_t offset_in_char, skip_cols;
 	int ch;
-	u_char *clenp;
-	char **cnamep, nbuf[10];
+	char nbuf[10];
 
 	/* Move to the line. */
 	MOVE(sp, smp - HMAP, 0);
@@ -66,7 +66,7 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 	if (p == NULL)
 		p = file_gline(sp, ep, smp->lno, &len);
 	if (p == NULL || len == 0) {
-		if (yp != NULL && smp->lno == ep->lno) {
+		if (yp != NULL && smp->lno == sp->lno) {
 			*xp = 0;
 			*yp = smp - HMAP;
 		}
@@ -93,17 +93,16 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 	 * called repeatedly with a valid pointer to a cursor position.
 	 * Don't fill it in unless it's the right line.
 	 */
-	cno_cnt = yp == NULL || smp->lno != ep->lno ? 0 : ep->cno + 1;
+	cno_cnt = yp == NULL || smp->lno != sp->lno ? 0 : sp->cno + 1;
 
 	/* This is the loop that actually displays lines. */
-	clenp = sp->clen;
-	cnamep = sp->cname;
+	cname = sp->cname;
 	for (; len; --len) {
 		/* Get the next character and figure out its length. */
 		if ((ch = *p++) == '\t' && !ISSET(O_LIST))
 			chlen = LVAL(O_TABSTOP) - count_cols % LVAL(O_TABSTOP);
 		else
-			chlen = clenp[ch];
+			chlen = cname[ch].len;
 		count_cols += chlen;
 
 		/*
@@ -153,7 +152,7 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 				while (chlen--)
 					addch(' ');
 		} else
-			addnstr(cnamep[ch] + offset_in_char, chlen);
+			addnstr(cname[ch].name + offset_in_char, chlen);
 
 		/*
 		 * If the caller wants the cursor value, and this was the

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 5.33 1993/03/26 13:38:44 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:38:44 $";
+static char sccsid[] = "$Id: ex_bang.c,v 5.34 1993/04/05 07:11:26 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:11:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,10 +32,10 @@ ex_bang(sp, ep, cmdp)
 {
 	struct termios savet;
 	register int ch, len, modified;
-	register u_char *p, *t;
+	register char *p, *t;
 	MARK rm;
 	int rval;
-	u_char *com;
+	char *com;
 
 	/* Make sure we got something. */
 	if (cmdp->string == NULL) {
@@ -45,8 +45,8 @@ ex_bang(sp, ep, cmdp)
 
 	/* Figure out how much space we could possibly need. */
 	modified = 0;
-	len = USTRLEN(cmdp->string) + 1;
-	for (p = cmdp->string; p = USTRPBRK(p, "!%#\\"); ++p)
+	len = strlen(cmdp->string) + 1;
+	for (p = cmdp->string; p = strpbrk(p, "!%#\\"); ++p)
 		switch (*p) {
 		case '!':
 			if (sp->lastbcomm == NULL) {
@@ -54,7 +54,7 @@ ex_bang(sp, ep, cmdp)
 				    "No previous command to replace \"!\".");
 				return (1);
 			}
-			len += USTRLEN(sp->lastbcomm);
+			len += strlen(sp->lastbcomm);
 			modified = 1;
 			break;
 		case '%':
@@ -92,7 +92,7 @@ ex_bang(sp, ep, cmdp)
 		for (p = cmdp->string, t = com; ch = *p; ++p)
 			switch (ch) {
 			case '!':
-				len = USTRLEN(sp->lastbcomm);
+				len = strlen(sp->lastbcomm);
 				memmove(t, sp->lastbcomm, len);
 				t += len;
 				break;
@@ -136,7 +136,7 @@ ex_bang(sp, ep, cmdp)
 		if (filtercmd(sp, ep,
 		    &cmdp->addr1, &cmdp->addr2, &rm, com, STANDARD))
 			return (1);
-		ep->lno = rm.lno;
+		sp->lno = rm.lno;
 		F_SET(sp, S_AUTOPRINT);
 		return (0);
 	}

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_paragraph.c,v 5.11 1993/03/26 13:40:36 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:40:36 $";
+static char sccsid[] = "$Id: v_paragraph.c,v 5.12 1993/04/05 07:10:15 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:10:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,7 +25,7 @@ static char sccsid[] = "$Id: v_paragraph.c,v 5.11 1993/03/26 13:40:36 bostic Exp
  * duplicates its behavior.
  */
 
-static u_char *makelist __P((SCR *));
+static char *makelist __P((SCR *));
 
 /*
  * v_paragraphf -- [count]}
@@ -40,7 +40,7 @@ v_paragraphf(sp, ep, vp, fm, tm, rp)
 {
 	size_t len;
 	recno_t cnt, lno;
-	u_char *p, *list, *lp;
+	char *p, *list, *lp;
 
 	/* Get macro list. */
 	if ((list = makelist(sp)) == NULL)
@@ -116,7 +116,7 @@ v_paragraphb(sp, ep, vp, fm, tm, rp)
 {
 	size_t len;
 	recno_t cnt, lno;
-	u_char *p, *list, *lp;
+	char *p, *list, *lp;
 
 	/* Get macro list. */
 	if ((list = makelist(sp)) == NULL)
@@ -177,21 +177,21 @@ sof:	free(list);
 	return (0);
 }
 
-static u_char *
+static char *
 makelist(sp)
 	SCR *sp;
 {
 	size_t s1, s2;
-	u_char *list;
+	char *list;
 
 	/* Search for either a paragraph or section option macro. */
-	s1 = USTRLEN(PVAL(O_PARAGRAPHS));
+	s1 = strlen(PVAL(O_PARAGRAPHS));
 	if (s1 & 1) {
 		msgq(sp, M_ERROR,
 		    "Paragraph options must be in groups of two characters.");
 		return (NULL);
 	}
-	s2 = USTRLEN(PVAL(O_SECTIONS));
+	s2 = strlen(PVAL(O_SECTIONS));
 	if (s2 & 1) {
 		msgq(sp, M_ERROR,
 		    "Section options must be in groups of two characters.");

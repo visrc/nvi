@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ulcase.c,v 5.19 1993/03/26 13:40:55 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:40:55 $";
+static char sccsid[] = "$Id: v_ulcase.c,v 5.20 1993/04/05 07:10:32 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:10:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,12 +31,12 @@ v_ulcase(sp, ep, vp, fm, tm, rp)
 	MARK *fm, *tm, *rp;
 {
 	register int ch;
-	register u_char *p;
+	register char *p;
 	size_t cno, len, nplen;
 	recno_t lno;
 	u_long cnt;
 	int change;
-	u_char *np;
+	char *np;
 
 	lno = fm->lno;
 	cno = fm->cno;

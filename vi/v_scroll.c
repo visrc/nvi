@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 5.27 1993/03/28 19:05:43 bostic Exp $ (Berkeley) $Date: 1993/03/28 19:05:43 $";
+static char sccsid[] = "$Id: v_scroll.c,v 5.28 1993/04/05 07:10:18 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:10:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -212,7 +212,7 @@ v_pageup(sp, ep, vp, fm, tm, rp)
 
 	/* Calculation from POSIX 1003.2/D8. */
 	count =
-	    (vp->flags & VC_C1SET ? vp->count : 1) * (sp->textlines(sp) - 1);
+	    (vp->flags & VC_C1SET ? vp->count : 1) * (sp->t_rows - 1);
 	return (sp->down(sp, ep, rp, count, 1));
 }
 
@@ -231,7 +231,7 @@ v_pagedown(sp, ep, vp, fm, tm, rp)
 
 	/* Calculation from POSIX 1003.2/D8. */
 	count =
-	    (vp->flags & VC_C1SET ? vp->count : 1) * (sp->textlines(sp) - 1);
+	    (vp->flags & VC_C1SET ? vp->count : 1) * (sp->t_rows - 1);
 	return (sp->up(sp, ep, rp, count, 1));
 }
 

@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 5.37 1993/03/28 19:05:23 bostic Exp $ (Berkeley) $Date: 1993/03/28 19:05:23 $
+ *	$Id: ex.h,v 5.38 1993/04/05 07:11:59 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:11:59 $
  */
 
 struct _excmdarg;
@@ -52,14 +52,14 @@ typedef struct _excmdarg {
 	recno_t lineno;		/* Line number. */
 	u_int flags;		/* Selected flags from EXCMDLIST. */
 	int argc;		/* Count of file/word arguments. */
-	u_char **argv;		/* List of file/word arguments. */
-	u_char *command;	/* Command line, if parse locally. */
-	u_char *plus;		/* '+' command word. */
-	u_char *string;		/* String. */
+	char **argv;		/* List of file/word arguments. */
+	char *command;		/* Command line, if parse locally. */
+	char *plus;		/* '+' command word. */
+	char *string;		/* String. */
 	int buffer;		/* Named buffer. */
 } EXCMDARG;
 
-extern u_char *defcmdarg[2];	/* Default array. */
+extern char *defcmdarg[2];	/* Default array. */
 
 /* Macro to set up the structure. */
 #define	SETCMDARG(s, _cmd, _addrcnt, _lno1, _lno2, _force, _arg) {	\
@@ -73,15 +73,15 @@ extern u_char *defcmdarg[2];	/* Default array. */
 		s.flags |= E_FORCE;					\
 	s.argc = _arg ? 1 : 0;						\
 	s.argv = defcmdarg;						\
-	s.string = (u_char *)"";					\
-	defcmdarg[0] = (u_char *)_arg;					\
+	s.string = "";					\
+	defcmdarg[0] = _arg;					\
 }
 
 /* Control character. */
 #define	ctrl(ch)	((ch) & 0x1f)
 
-int	 buildargv __P((SCR *, EXF *, u_char *, int, EXCMDARG *));
-int	 esystem __P((SCR *, const u_char *, const u_char *));
+int	 buildargv __P((SCR *, EXF *, char *, int, int *, char ***));
+int	 esystem __P((SCR *, const char *, const char *));
 
 int	 ex_abbr __P((SCR *, EXF *, EXCMDARG *));
 int	 ex_append __P((SCR *, EXF *, EXCMDARG *));
@@ -93,10 +93,10 @@ int	 ex_cc __P((SCR *, EXF *, EXCMDARG *));
 int	 ex_cd __P((SCR *, EXF *, EXCMDARG *));
 int	 ex_cfile __P((SCR *, EXF *, char *, int));
 int	 ex_change __P((SCR *, EXF *, EXCMDARG *));
-int	 ex_cmd __P((SCR *, EXF *, u_char *));
+int	 ex_cmd __P((SCR *, EXF *, char *));
 int	 ex_color __P((SCR *, EXF *, EXCMDARG *));
 int	 ex_copy __P((SCR *, EXF *, EXCMDARG *));
-int	 ex_cstring __P((SCR *, EXF *, u_char *, int, int));
+int	 ex_cstring __P((SCR *, EXF *, char *, int, int));
 int	 ex_debug __P((SCR *, EXF *, EXCMDARG *));
 int	 ex_delete __P((SCR *, EXF *, EXCMDARG *));
 int	 ex_digraph __P((SCR *, EXF *, EXCMDARG *));
@@ -105,7 +105,7 @@ int	 ex_end __P((SCR *));
 int	 ex_equal __P((SCR *, EXF *, EXCMDARG *));
 int	 ex_errlist __P((SCR *, EXF *, EXCMDARG *));
 int	 ex_file __P((SCR *, EXF *, EXCMDARG *));
-u_char	*ex_getline __P((SCR *, FILE *, size_t *));
+char	*ex_getline __P((SCR *, FILE *, size_t *));
 int	 ex_global __P((SCR *, EXF *, EXCMDARG *));
 int	 ex_init __P((SCR *, EXF *));
 int	 ex_join __P((SCR *, EXF *, EXCMDARG *));
@@ -131,6 +131,7 @@ int	 ex_shell __P((SCR *, EXF *, EXCMDARG *));
 int	 ex_shiftl __P((SCR *, EXF *, EXCMDARG *));
 int	 ex_shiftr __P((SCR *, EXF *, EXCMDARG *));
 int	 ex_source __P((SCR *, EXF *, EXCMDARG *));
+int	 ex_split __P((SCR *, EXF *, EXCMDARG *));
 int	 ex_stop __P((SCR *, EXF *, EXCMDARG *));
 int	 ex_subagain __P((SCR *, EXF *, EXCMDARG *));
 int	 ex_substitute __P((SCR *, EXF *, EXCMDARG *));

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 5.30 1993/03/26 13:38:50 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:38:50 $";
+static char sccsid[] = "$Id: ex_edit.c,v 5.31 1993/04/05 07:11:31 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:11:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -59,7 +59,7 @@ edit(sp, ep, cmdp, cmd)
 	EXCMDARG *cmdp;
 	enum which cmd;
 {
-	EXF *new_ep;
+	EXF *tep;
 	int reset;
 
 	reset = 0;
@@ -67,16 +67,12 @@ edit(sp, ep, cmdp, cmd)
 	case 0:
 		if (cmd == VISUAL)
 			return (0);
-		new_ep = ep;
+		tep = ep;
 		break;
 	case 1:
-		if ((new_ep =
-		    file_locate(sp, (char *)cmdp->argv[0])) == NULL) {
-			if (file_ins(sp, ep, (char *)cmdp->argv[0], 1) ||
-			    (new_ep = file_next(sp, ep, 0)) == NULL)
-				return (1);
-			F_SET(new_ep, F_IGNORE);
-		} else
+		if ((tep = file_get(sp, ep, (char *)cmdp->argv[0], 1)) == NULL)
+			return (1);
+		if (F_ISSET(tep, F_NEWSESSION))
 			reset = 1;
 		break;
 	default:
@@ -86,8 +82,8 @@ edit(sp, ep, cmdp, cmd)
 	MODIFY_CHECK(sp, ep, cmdp->flags & E_FORCE);
 
 	/* Switch files. */
-	F_SET(sp, cmdp->flags & E_FORCE ? S_SWITCH_FORCE : S_SWITCH);
-	sp->enext = new_ep;
+	F_SET(sp, cmdp->flags & E_FORCE ? S_FSWITCH_FORCE : S_FSWITCH);
+	sp->enext = tep;
 
 	/*
 	 * Historic practice is that ex always starts at the end of the file
@@ -96,13 +92,13 @@ edit(sp, ep, cmdp, cmd)
 	 */
 	if (!reset)
 		if (cmdp->plus || cmd == VISUAL || F_ISSET(sp, S_MODE_VI))
-			ep->lno = 1;
+			sp->lno = 1;
 		else {
-			ep->lno = file_lline(sp, ep);
-			if (ep->lno == 0)
-				ep->lno = 1;
+			sp->lno = file_lline(sp, ep);
+			if (sp->lno == 0)
+				sp->lno = 1;
 		}
 	if (cmdp->plus)
-		(void)ex_cstring(sp, ep, cmdp->plus, USTRLEN(cmdp->plus), 1);
+		(void)ex_cstring(sp, ep, cmdp->plus, strlen(cmdp->plus), 1);
 	return (0);
 }

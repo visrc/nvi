@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 5.33 1993/03/26 13:39:13 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:39:13 $";
+static char sccsid[] = "$Id: ex_subst.c,v 5.34 1993/04/05 07:11:49 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:11:49 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -24,13 +24,13 @@ enum which {AGAIN, MUSTSETR, FIRST};
 
 static int	checkmatchsize __P((SCR *, regex_t *));
 static inline int
-		regsub __P((SCR *, u_char *));
+		regsub __P((SCR *, char *));
 static int	substitute __P((SCR *, EXF *,
-		    EXCMDARG *, u_char *, regex_t *, enum which));
+		    EXCMDARG *, char *, regex_t *, enum which));
 
 static regmatch_t *match;		/* Match array. */
 static size_t matchsize;		/* Match array size. */
-static u_char *repl;			/* Replacement string. */
+static char *repl;			/* Replacement string. */
 static size_t lrepl;			/* Replacement string length. */
 
 int
@@ -41,7 +41,7 @@ ex_substitute(sp, ep, cmdp)
 {
 	regex_t *re, lre;
 	int eval, reflags;
-	u_char *endp, *sub;
+	char *endp, *sub;
 	char delim[2];
 
 	/*
@@ -57,7 +57,7 @@ ex_substitute(sp, ep, cmdp)
 
 		/* Get the substitute string. */
 		endp = cmdp->string + 1;
-		sub = USTRSEP(&endp, delim);
+		sub = strsep(&endp, delim);
 
 		/* Get the replacement string, save it off. */
 		if (*endp == NULL) {
@@ -67,9 +67,9 @@ ex_substitute(sp, ep, cmdp)
 		}
 		if (repl != NULL)
 			free(repl);
-		repl = USTRSEP(&endp, delim);	/* XXX Not 8-bit clean. */
-		repl = USTRDUP(repl);
-		lrepl = USTRLEN(repl);
+		repl = strsep(&endp, delim);	/* XXX Not 8-bit clean. */
+		repl = strdup(repl);
+		lrepl = strlen(repl);
 
 		/* If the substitute string is empty, use the last one. */
 		if (*sub == NULL) {
@@ -126,7 +126,7 @@ ex_subagain(sp, ep, cmdp)
 	return (substitute(sp, ep, cmdp, cmdp->string, &sp->sre, AGAIN));
 }
 
-static u_char *lb;			/* Build buffer. */
+static char *lb;			/* Build buffer. */
 static size_t lbclen, lblen;		/* Current and total length. */
 
 /* 
@@ -186,7 +186,7 @@ substitute(sp, ep, cmdp, s, re, cmd)
 	SCR *sp;
 	EXF *ep;
 	EXCMDARG *cmdp;
-	u_char *s;
+	char *s;
 	regex_t *re;
 	enum which cmd;
 {
@@ -424,7 +424,7 @@ nomatch:	if (len)
 
 	/* Cursor moves to last line changed. */
 	if (lastline != OOBLNO)
-		ep->lno = lastline;
+		sp->lno = lastline;
 
 	/*
 	 * Note if nothing found.  Else, if nothing displayed to the
@@ -445,14 +445,14 @@ nomatch:	if (len)
 static inline int
 regsub(sp, ip)
 	SCR *sp;
-	u_char *ip;			/* Input line. */
+	char *ip;			/* Input line. */
 {
 	size_t mlen;			/* Match length. */
 	size_t rpl;			/* Remaining replacement length. */
-	u_char *rp;			/* Replacement pointer. */
+	char *rp;			/* Replacement pointer. */
 	int ch;
 	int no;				/* Match replacement offset. */
-	u_char *lbp;			/* Build buffer pointer. */
+	char *lbp;			/* Build buffer pointer. */
 
 	rp = repl;			/* Set up replacment info. */
 	rpl = lrepl;

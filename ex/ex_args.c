@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 5.36 1993/03/26 13:38:42 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:38:42 $";
+static char sccsid[] = "$Id: ex_args.c,v 5.37 1993/04/05 07:11:23 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:11:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -53,7 +53,7 @@ ex_next(sp, ep, cmdp)
 	}
 
 	sp->enext = tep;
-	F_SET(sp, cmdp->flags & E_FORCE ? S_SWITCH_FORCE : S_SWITCH);
+	F_SET(sp, cmdp->flags & E_FORCE ? S_FSWITCH_FORCE : S_FSWITCH);
 	return (0);
 }
 
@@ -76,7 +76,7 @@ ex_prev(sp, ep, cmdp)
 		return (1);
 	}
 
-	F_SET(sp, cmdp->flags & E_FORCE ? S_SWITCH_FORCE : S_SWITCH);
+	F_SET(sp, cmdp->flags & E_FORCE ? S_FSWITCH_FORCE : S_FSWITCH);
 	sp->enext = tep;
 	return (0);
 }
@@ -103,7 +103,7 @@ ex_rew(sp, ep, cmdp)
 	if (!(cmdp->flags & E_FORCE))
 		MODIFY_CHECK(sp, ep, 0);
 
-	F_SET(sp, cmdp->flags & E_FORCE ? S_SWITCH_FORCE : S_SWITCH);
+	F_SET(sp, cmdp->flags & E_FORCE ? S_FSWITCH_FORCE : S_FSWITCH);
 	sp->enext = tep;
 	return (0);
 }

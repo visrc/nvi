@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 5.19 1993/03/28 19:05:41 bostic Exp $ (Berkeley) $Date: 1993/03/28 19:05:41 $";
+static char sccsid[] = "$Id: v_init.c,v 5.20 1993/04/05 07:10:12 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:10:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -70,7 +70,7 @@ v_init(sp, ep)
 	if (F_ISSET(ep, F_NEWSESSION) &&
 	    ISSET(O_COMMENT) && v_comment(sp, ep))
 		return (1);
-	ep->cno = 0;
+	sp->cno = 0;
 	return (0);
 }
 

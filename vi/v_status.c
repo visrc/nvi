@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_status.c,v 5.19 1993/03/26 13:40:49 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:40:49 $";
+static char sccsid[] = "$Id: v_status.c,v 5.20 1993/04/05 07:10:25 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:10:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,16 +36,24 @@ status(sp, ep, lno)
 	recno_t lno;
 {
 	recno_t last;
-	char *ro;
+	char *ro, *pid;
+#ifdef DEBUG
+	char pbuf[30];
 
+	(void)snprintf(pbuf, sizeof(pbuf), " (%u)", getpid());
+	pid = pbuf;
+#else
+	pid = "";
+#endif
 	ro = F_ISSET(sp, F_RDONLY) || ISSET(O_READONLY) ? ", readonly" : "";
 	if ((last = file_lline(sp, ep)) >= 1)
 		msgq(sp, M_DISPLAY,
-		    "%s: %s%s: line %lu of %lu [%ld%%]", ep->name,
-		    F_ISSET(ep, F_MODIFIED) ? "modified" : "unmodified", ro,
-		    lno, last, (lno * 100) / last);
+		    "%s: %s%s: line %lu of %lu [%ld%%]%s", ep->name,
+		    F_ISSET(ep, F_MODIFIED) ? "modified" : "unmodified",
+		    ro, lno, last, (lno * 100) / last, pid);
 	else
 		msgq(sp, M_DISPLAY,
-		    "%s: %s%s: empty file", ep->name,
-		    F_ISSET(ep, F_MODIFIED) ? "modified" : "unmodified", ro);
+		    "%s: %s%s: empty file%s", ep->name,
+		    F_ISSET(ep, F_MODIFIED) ? "modified" : "unmodified",
+		    ro, pid);
 }

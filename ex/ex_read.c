@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 5.30 1993/03/26 13:39:07 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:39:07 $";
+static char sccsid[] = "$Id: ex_read.c,v 5.31 1993/04/05 07:11:44 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:11:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,7 +31,7 @@ ex_read(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	register u_char *p;
+	register char *p;
 	struct stat sb;
 	FILE *fp;
 	MARK rm;
@@ -68,12 +68,12 @@ ex_read(sp, ep, cmdp)
 		}
 		if (filtercmd(sp, ep, &cmdp->addr1, NULL, &rm, ++p, NOINPUT))
 			return (1);
-		ep->lno = rm.lno;
+		sp->lno = rm.lno;
 		return (0);
 	}
 
 	/* Build an argv. */
-	if (buildargv(sp, ep, p, 1, cmdp))
+	if (buildargv(sp, ep, p, 1, &cmdp->argc, &cmdp->argv))
 		return (1);
 
 	switch(cmdp->argc) {
@@ -105,8 +105,8 @@ noargs:	if ((fp = fopen(fname, "r")) == NULL || fstat(fileno(fp), &sb)) {
 		return (1);
 
 	/* Set the cursor. */
-	ep->lno = cmdp->addr1.lno + 1;
-	ep->cno = 0;
+	sp->lno = cmdp->addr1.lno + 1;
+	sp->cno = 0;
 	
 	/* Set autoprint. */
 	F_SET(sp, S_AUTOPRINT);
@@ -132,7 +132,7 @@ ex_readfp(sp, ep, fname, fp, fm, cntp)
 	size_t len;
 	recno_t lno;
 	int rval;
-	u_char *p;
+	char *p;
 
 	/*
 	 * There is one very nasty special case.  The historic vi code displays

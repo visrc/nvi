@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_map.c,v 5.20 1993/03/26 13:38:59 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:38:59 $";
+static char sccsid[] = "$Id: ex_map.c,v 5.21 1993/04/05 07:11:39 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:11:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,11 +29,10 @@ ex_map(sp, ep, cmdp)
 	EXCMDARG *cmdp;
 {
 	register int ch;
-	register u_char *input, *output;
+	register char *input, *output;
 	enum seqtype stype;
 	int key;
-	u_char *name;
-	char *s, buf[10];
+	char *name, *s, buf[10];
 
 	stype = cmdp->flags & E_FORCE ? SEQ_INPUT : SEQ_COMMAND;
 
@@ -62,12 +61,12 @@ ex_map(sp, ep, cmdp)
 	 * key.
 	 */
 	if (input[0] == '#' && isdigit(input[1]) && !input[2]) {
-		key = UATOI(input + 1);
+		key = atoi(input + 1);
 		(void)snprintf(buf, sizeof(buf), "f%d", key);
 #ifdef notdef
 		if (FKEY[key]) {		/* CCC */
 			input = FKEY[key];
-			name = (u_char *)buf;
+			name = buf;
 		} else {
 			msgq(sp, M_ERROR, "This terminal has no %s key.", buf);
 			return (1);
@@ -110,7 +109,7 @@ ex_unmap(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	u_char *input;
+	char *input;
 
 	input = cmdp->argv[0];
 	if (seq_delete(sp,
@@ -130,7 +129,7 @@ map_save(sp, fp)
 	SCR *sp;
 	FILE *fp;
 {
-	if (seq_save(sp, fp, (u_char *)"map ", SEQ_COMMAND))
+	if (seq_save(sp, fp, "map ", SEQ_COMMAND))
 		return (1);
-	return (seq_save(sp, fp, (u_char *)"map! ", SEQ_INPUT));
+	return (seq_save(sp, fp, "map! ", SEQ_INPUT));
 }

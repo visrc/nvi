@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_usage.c,v 5.7 1993/03/26 13:39:17 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:39:17 $";
+static char sccsid[] = "$Id: ex_usage.c,v 5.8 1993/04/05 07:11:53 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:11:53 $";
 #endif /* not lint */
 
 #include <string.h>
@@ -27,9 +27,9 @@ ex_usage(sp, ep, cmdp)
 {
 	EXCMDLIST *cp;
 	size_t len;
-	u_char *p;
+	char *p;
 	
-	for (cp = cmds, p = cmdp->argv[0], len = USTRLEN(p);
+	for (cp = cmds, p = cmdp->argv[0], len = strlen(p);
 	    cp->name && memcmp(p, cp->name, len); ++cp);
 	if (cp->name == NULL) {
 		msgq(sp, M_ERROR, "The %.*s command is unknown.", len, p);
@@ -50,10 +50,9 @@ ex_viusage(sp, ep, cmdp)
 	EXCMDARG *cmdp;
 {
 	VIKEYS *kp;
+	int key;
 
-	u_char key;
-
-	key = *(u_char *)cmdp->argv[0];
+	key = *cmdp->argv[0];
 	if (key > MAXVIKEY)
 		goto nokey;
 

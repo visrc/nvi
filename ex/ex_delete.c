@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_delete.c,v 5.18 1993/03/26 13:38:48 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:38:48 $";
+static char sccsid[] = "$Id: ex_delete.c,v 5.19 1993/04/05 07:11:29 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:11:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,10 +32,10 @@ ex_delete(sp, ep, cmdp)
 	 * Deletion sets the cursor to the line after the last line deleted,
 	 * or the last line in the file if delete to the end of the file.
 	 */
-	ep->lno = cmdp->addr2.lno;
-	if (ep->lno > file_lline(sp, ep))
-		ep->lno = file_lline(sp, ep);
-	ep->cno = 0;
+	sp->lno = cmdp->addr2.lno;
+	if (sp->lno > file_lline(sp, ep))
+		sp->lno = file_lline(sp, ep);
+	sp->cno = 0;
 
 	/* Set autoprint. */
 	F_SET(sp, S_AUTOPRINT);

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_xchar.c,v 5.18 1993/03/26 13:40:59 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:40:59 $";
+static char sccsid[] = "$Id: v_xchar.c,v 5.19 1993/04/05 07:10:37 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:10:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -50,8 +50,8 @@ v_xchar(sp, ep, vp, fm, tm, rp)
 	/*
 	 * Deleting from the cursor toward the end of line, w/o moving the
 	 * cursor.  Note, "2x" at EOL isn't the same as "xx" because the
-	 * left movement of the cursor as part of the 'x' command is't taken
-	 * into account.  Historically correct.
+	 * left movement of the cursor as part of the 'x' command isn't
+	 * taken into account.  Historically correct.
 	 */
 	tm->lno = fm->lno;
 	if (cnt < len - fm->cno) {

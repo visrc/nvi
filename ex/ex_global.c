@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 5.23 1993/03/26 13:38:56 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:38:56 $";
+static char sccsid[] = "$Id: ex_global.c,v 5.24 1993/04/05 07:11:35 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:11:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -58,7 +58,7 @@ global(sp, ep, cmdp, cmd)
 	regex_t *re, lre;
 	size_t len;
 	int eval, reflags, rval;
-	u_char *endp, *ptrn, *s, cbuf[512];
+	char *endp, *ptrn, *s, cbuf[512];
 	char delim[2];
 
 	/* Skip whitespace. */
@@ -76,7 +76,7 @@ global(sp, ep, cmdp, cmd)
 
 	/* Get the pattern string. */
 	endp = s + 1;
-	ptrn = USTRSEP(&endp, delim);
+	ptrn = strsep(&endp, delim);
 
 	/* Get the command string. */
 	if (*endp == NULL) {
@@ -155,7 +155,7 @@ global(sp, ep, cmdp, cmd)
 		sp->rptlines = 0;
 		last1 = file_lline(sp, ep);
 
-		ep->lno = lno;
+		sp->lno = lno;
 		(void)snprintf((char *)cbuf, sizeof(cbuf), "%s", endp);
 		if (ex_cmd(sp, ep, cbuf)) {
 			rval = 1;
@@ -174,14 +174,14 @@ global(sp, ep, cmdp, cmd)
 		}
 
 		/* Cursor moves to last line sent to command. */
-		ep->lno = lno;
+		sp->lno = lno;
 
 		/* Cumulative line change count. */
 		nchanged += sp->rptlines;
 		sp->rptlines = 0;
 	}
 	/* Cursor is on column 0, regardless. */
-	ep->cno = 0;
+	sp->cno = 0;
 
 	/* Report statistics. */
 err:	sp->rptlines += nchanged;

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_increment.c,v 5.20 1993/03/26 13:40:28 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:40:28 $";
+static char sccsid[] = "$Id: v_increment.c,v 5.21 1993/04/05 07:10:11 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:10:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,8 +46,7 @@ v_increment(sp, ep, vp, fm, tm, rp)
 	long lval;
 	size_t len, nlen;
 	int rval;
-	char *ntype, nbuf[60];
-	u_char *p, *np;
+	char *ntype, *np, *p, nbuf[60];
 
 	/* Do repeat operations. */
 	if (vp->character == '#')
@@ -64,7 +63,7 @@ v_increment(sp, ep, vp, fm, tm, rp)
 	sp->inc_lastch = vp->character;
 
 	/* Figure out the resulting type and number. */
-	p = (u_char *)vp->keyword;
+	p = vp->keyword;
 	len = vp->klen;
 	if (len > 1 && p[0] == '0') {
 		if (vp->character == '+') {

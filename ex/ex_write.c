@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 5.23 1993/03/26 13:39:19 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:39:19 $";
+static char sccsid[] = "$Id: ex_write.c,v 5.24 1993/04/05 07:11:56 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:11:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,7 +32,7 @@ ex_write(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	register u_char *p;
+	register char *p;
 	struct stat sb;
 	FILE *fp;
 	MARK rm;
@@ -74,7 +74,7 @@ ex_write(sp, ep, cmdp)
 		if (filtercmd(sp, ep,
 		    &cmdp->addr1, &cmdp->addr2, &rm, ++p, NOOUTPUT))
 			return (1);
-		ep->lno = rm.lno;
+		sp->lno = rm.lno;
 		return (0);
 	}
 
@@ -88,7 +88,7 @@ ex_write(sp, ep, cmdp)
 		flags = O_TRUNC;
 
 	/* Build an argv. */
-	if (buildargv(sp, ep, p, 1, cmdp))
+	if (buildargv(sp, ep, p, 1, &cmdp->argc, &cmdp->argv))
 		return (1);
 
 	switch(cmdp->argc) {
@@ -142,7 +142,7 @@ ex_writefp(sp, ep, fname, fp, fm, tm, success_msg)
 {
 	register u_long ccnt, fline, tline;
 	size_t len;
-	u_char *p;
+	char *p;
 
 	fline = fm->lno;
 	tline = tm->lno;

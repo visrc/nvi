@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: log.c,v 5.11 1993/03/26 13:37:47 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:37:47 $";
+static char sccsid[] = "$Id: log.c,v 5.12 1993/04/05 07:12:34 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:12:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -112,8 +112,8 @@ log_cursor(sp, ep)
 		
 	ep->l_lp[0] = LOG_CURSOR;
 
-	m.lno = ep->lno;
-	m.cno = ep->cno;
+	m.lno = sp->lno;
+	m.cno = sp->cno;
 	memmove(ep->l_lp + sizeof(u_char), &m, sizeof(MARK));
 
 	data.data = ep->l_lp;
@@ -146,7 +146,7 @@ log_line(sp, ep, lno, action)
 {
 	DBT data, key;
 	size_t len;
-	u_char *lp;
+	char *lp;
 
 	if (F_ISSET(ep, F_NOLOG))
 		return (0);
@@ -274,7 +274,7 @@ log_backward(sp, ep, rp, undolno)
 			memmove(&lno, (u_char *)data.data +
 			    sizeof(u_char), sizeof(recno_t));
 			if (file_iline(sp, ep,
-			    lno, (u_char *)data.data + sizeof(u_char) +
+			    lno, (char *)data.data + sizeof(u_char) +
 			    sizeof(recno_t), data.size - sizeof(u_char) -
 			    sizeof(recno_t)))
 				goto err;
@@ -286,7 +286,7 @@ log_backward(sp, ep, rp, undolno)
 			memmove(&lno, (u_char *)data.data +
 			    sizeof(u_char), sizeof(recno_t));
 			if (file_sline(sp, ep,
-			    lno, (u_char *)data.data + sizeof(u_char) +
+			    lno, (char *)data.data + sizeof(u_char) +
 			    sizeof(recno_t), data.size - sizeof(u_char) -
 			    sizeof(recno_t)))
 				goto err;
@@ -359,7 +359,7 @@ log_forward(sp, ep, rp)
 			memmove(&lno, (u_char *)data.data +
 			    sizeof(u_char), sizeof(recno_t));
 			if (file_iline(sp, ep,
-			    lno, (u_char *)data.data + sizeof(u_char) +
+			    lno, (char *)data.data + sizeof(u_char) +
 			    sizeof(recno_t), data.size - sizeof(u_char) -
 			    sizeof(recno_t))) {
 				F_CLR(ep, F_NOLOG);
@@ -382,7 +382,7 @@ log_forward(sp, ep, rp)
 			memmove(&lno, (u_char *)data.data +
 			    sizeof(u_char), sizeof(recno_t));
 			if (file_sline(sp, ep,
-			    lno, (u_char *)data.data + sizeof(u_char) +
+			    lno, (char *)data.data + sizeof(u_char) +
 			    sizeof(recno_t), data.size - sizeof(u_char) -
 			    sizeof(recno_t)))
 				return (1);

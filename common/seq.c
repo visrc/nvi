@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 5.24 1993/03/26 13:37:57 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:37:57 $";
+static char sccsid[] = "$Id: seq.c,v 5.25 1993/04/05 07:12:43 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:12:43 $";
 #endif /* not lint */
 
 #include <ctype.h>
@@ -18,24 +18,13 @@ static char sccsid[] = "$Id: seq.c,v 5.24 1993/03/26 13:37:57 bostic Exp $ (Berk
 #include "excmd.h"
 
 /*
- * seq_init --
- *	Initialize the sequence lists.
- */
-void
-seq_init(sp)
-	SCR *sp;
-{
-	sp->seqhdr.next = sp->seqhdr.prev = (SEQ *)&sp->seqhdr;
-}
-
-/*
  * seq_set --
  *	Internal version to enter a sequence.
  */
 int
 seq_set(sp, name, input, output, stype, userdef)
 	SCR *sp;
-	u_char *name, *input, *output;
+	char *name, *input, *output;
 	enum seqtype stype;
 	int userdef;
 {
@@ -52,13 +41,13 @@ seq_set(sp, name, input, output, stype, userdef)
 	 * it's needed.
 	 */
 	ip = NULL;
-	ilen = USTRLEN(input);
+	ilen = strlen(input);
 	for (qp = sp->seq[*input]; qp; qp = qp->snext) {
 		if (stype != qp->stype)
 			continue;
-		if (!USTRCMP(qp->input, input)) {
+		if (!strcmp(qp->input, input)) {
 			free(qp->output);
-			if ((qp->output = USTRDUP(output)) == NULL)
+			if ((qp->output = strdup(output)) == NULL)
 				goto mem1;
 			return (0);
 		}
@@ -73,11 +62,11 @@ seq_set(sp, name, input, output, stype, userdef)
 	if (name == NULL)
 		qp->name = NULL;
 	else 
-		if ((qp->name = USTRDUP(name)) == NULL)
+		if ((qp->name = strdup(name)) == NULL)
 			goto mem2;
-	if ((qp->input = USTRDUP(input)) == NULL)
+	if ((qp->input = strdup(input)) == NULL)
 		goto mem3;
-	if ((qp->output = USTRDUP(output)) == NULL)
+	if ((qp->output = strdup(output)) == NULL)
 		goto mem4;
 
 	qp->stype = stype;
@@ -125,12 +114,12 @@ mem1:	msgq(sp, M_ERROR, "Error: %s", strerror(errno));
 int
 seq_delete(sp, input, stype)
 	SCR *sp;
-	u_char *input;
+	char *input;
 	enum seqtype stype;
 {
 	register SEQ *qp;
 
-	if ((qp = seq_find(sp, input, USTRLEN(input), stype, NULL)) == NULL)
+	if ((qp = seq_find(sp, input, strlen(input), stype, NULL)) == NULL)
 		return (1);
 
 	/* Unlink out of the character array. */
@@ -166,7 +155,7 @@ seq_delete(sp, input, stype)
 SEQ *
 seq_find(sp, input, ilen, stype, ispartialp)
 	SCR *sp;
-	u_char *input;
+	char *input;
 	size_t ilen;
 	enum seqtype stype;
 	int *ispartialp;
@@ -184,10 +173,10 @@ seq_find(sp, input, ilen, stype, ispartialp)
 			 * shorter than the sequence, can only find a partial.
 			 */
 			if (qp->ilen <= ilen) {
-				if (!USTRNCMP(qp->input, input, qp->ilen))
+				if (!strncmp(qp->input, input, qp->ilen))
 					return (qp);
 			} else {
-				if (!USTRNCMP(qp->input, input, ilen))
+				if (!strncmp(qp->input, input, ilen))
 					*ispartialp = 1;
 			}
 		}
@@ -195,7 +184,7 @@ seq_find(sp, input, ilen, stype, ispartialp)
 		for (qp = sp->seq[*input]; qp; qp = qp->snext) {
 			if (stype != qp->stype)
 				continue;
-			if (!USTRNCMP(qp->input, input, ilen))
+			if (!strncmp(qp->input, input, ilen))
 				return (qp);
 		}
 	return (NULL);
@@ -213,7 +202,7 @@ seq_dump(sp, stype, isname)
 {
 	register SEQ *qp;
 	register int ch, cnt, len, tablen;
-	register u_char *p;
+	register char *p;
 
 	if (sp->seqhdr.next == (SEQ *)&sp->seqhdr)
 		return (0);
@@ -263,12 +252,12 @@ int
 seq_save(sp, fp, prefix, stype)
 	SCR *sp;
 	FILE *fp;
-	u_char *prefix;
+	char *prefix;
 	enum seqtype stype;
 {
 	register SEQ *qp;
 	register int ch;
-	register u_char *p;
+	register char *p;
 
 	/* Write a sequence command for all keys the user defined. */
 	for (qp = sp->seqhdr.next; qp != (SEQ *)&sp->seqhdr; qp = qp->next) {

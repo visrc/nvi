@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 5.26 1993/03/26 13:39:15 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:39:15 $";
+static char sccsid[] = "$Id: ex_tag.c,v 5.27 1993/04/05 07:11:51 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:11:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -132,33 +132,24 @@ tagchange(sp, ep, tag, force)
 			return (1);
 		if ((tep = file_first(sp, 0)) == NULL)
 			return (1);
-		if ((tep = file_start(sp, tep)) == NULL)
-			return (1);
 	} else if (strcmp(ep->name, tag->fname)) {
 		MODIFY_CHECK(sp, ep, force);
-		if ((tep = file_locate(sp, tag->fname)) == NULL) {
-			if (file_ins(sp, ep, tag->fname, 1))
-				return (1);
-			if ((tep = file_next(sp, ep, 0)) == NULL)
-				return (1);
-			if ((tep = file_start(sp, tep)) == NULL)
-				return (1);
-			F_SET(tep, F_IGNORE);
-		}
+		if ((tep = file_get(sp, ep, tag->fname, 1)) == NULL)
+			return (1);
 	} else
 		tep = ep;
 
 	m.lno = 1;
 	m.cno = 0;
 	if ((mp = f_search(sp, tep, &m,
-	    (u_char *)tag->line, NULL, SEARCH_PARSE | SEARCH_TERM)) == NULL) {
+	    tag->line, NULL, SEARCH_PARSE | SEARCH_TERM)) == NULL) {
 		msgq(sp, M_ERROR, "%s: search pattern not found.", tag->tag);
 		return (1);
 	}
-	tep->lno = mp->lno;
-	tep->cno = mp->cno;
+	tep->start_lno = mp->lno;
+	tep->start_cno = mp->cno;
 
-	F_SET(sp, S_SWITCH);
 	sp->enext = tep;
+	F_SET(sp, S_FSWITCH);
 	return (0);
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_init.c,v 5.11 1993/03/28 19:05:21 bostic Exp $ (Berkeley) $Date: 1993/03/28 19:05:21 $";
+static char sccsid[] = "$Id: ex_init.c,v 5.12 1993/04/05 07:11:37 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:11:37 $";
 #endif /* not lint */
 
 #include <unistd.h>
@@ -38,8 +38,8 @@ ex_init(sp, ep)
 	 * going to ex from vi retains the current line.
 	 */
 	if (F_ISSET(ep, F_NEWSESSION))
-		ep->lno = file_lline(sp, ep);
-	ep->cno = 0;
+		sp->lno = file_lline(sp, ep);
+	sp->cno = 0;
 	return (0);
 }
 

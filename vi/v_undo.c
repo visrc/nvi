@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_undo.c,v 5.19 1993/03/26 13:40:56 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:40:56 $";
+static char sccsid[] = "$Id: v_undo.c,v 5.20 1993/04/05 07:10:33 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:10:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,7 +30,7 @@ v_Undo(sp, ep, vp, fm, tm, rp)
 	MARK *fm, *tm, *rp;
 {
 	return (ISSET(O_NUNDO) ?
-	    log_forward(sp, ep, rp) : log_backward(sp, ep, rp, ep->lno));
+	    log_forward(sp, ep, rp) : log_backward(sp, ep, rp, sp->lno));
 }
 	
 /*

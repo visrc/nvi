@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_move.c,v 5.23 1993/03/26 13:39:01 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:39:01 $";
+static char sccsid[] = "$Id: ex_move.c,v 5.24 1993/04/05 07:11:41 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:11:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -78,17 +78,17 @@ cm(sp, ep, cmdp, cmd)
 	}
 
 	/* Add the new text. */
-	m.lno = ep->lno;
-	m.cno = ep->cno;
+	m.lno = sp->lno;
+	m.cno = sp->cno;
 	if (put(sp, ep, DEFCB, &tm, &m, 1))
 		return (1);
 
-	if (ep->lno < 1)
-		ep->lno = 1;
+	if (sp->lno < 1)
+		sp->lno = 1;
 	else {
 		lline = file_lline(sp, ep);
-		if (ep->lno > lline)
-			ep->lno = lline;
+		if (sp->lno > lline)
+			sp->lno = lline;
 	}
 
 	/* Reporting. */

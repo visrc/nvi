@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.50 1993/03/26 13:37:39 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:37:39 $";
+static char sccsid[] = "$Id: exf.c,v 5.51 1993/04/05 07:12:23 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:12:23 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -25,42 +25,95 @@ static char sccsid[] = "$Id: exf.c,v 5.50 1993/03/26 13:37:39 bostic Exp $ (Berk
 static void file_def __P((EXF *));
 
 /*
- * file_ins --
- *	Insert a new file into the list of files before or after the
- *	specified file.
+ * file_get --
+ *	Return the appropriate structure if we've seen this file before,
+ *	otherwise insert a new file into the list of files before or after
+ *	the specified file.  If the file name is NULL, create a temporary
+ *	file for editing.
  */
-int
-file_ins(sp, ep, name, append)
+EXF *
+file_get(sp, ep, name, append)
 	SCR *sp;
 	EXF *ep;
 	char *name;
 	int append;
 {
 	EXF *tep;
+	struct stat sb;
+	int fd;
+	char tname[sizeof(_PATH_TMPNAME) + 1];
 
-	if ((tep = malloc(sizeof(EXF))) == NULL)
-		goto mem1;
-	file_def(tep);
+	/*
+	 * Check for the file.  Ignore files without names, but check
+	 * F_IGNORE files, in case of re-editing.  If the file is in
+	 * play, up the reference count and return.
+	 */
+	if (name != NULL)
+		for (tep = sp->gp->exfhdr.next;
+		    tep != (EXF *)&sp->gp->exfhdr; tep = tep->next)
+			if (!memcmp(tep->name, name, tep->nlen)) {
+				if (tep->refcnt != 0)
+					return (tep);
+				break;
+			}
 
-	if ((tep->name = strdup(name)) == NULL)
-		goto mem2;
+	/* If not found, build an entry for it. */
+	if (name == NULL || tep == (EXF *)&sp->gp->exfhdr) {
+		if ((tep = malloc(sizeof(EXF))) == NULL)
+			goto e1;
+		file_def(tep);
+
+		/* Insert into the chain of files. */
+		if (append) {
+			HDR_APPEND(tep, ep, next, prev, EXF);
+		} else {
+			HDR_INSERT(tep, ep, next, prev, EXF);
+		}
+
+		/* Ignore all files added after the argument list. */
+		F_SET(tep, F_IGNORE);
+	}
+
+	/*
+	 * If no backing file, create a backing temporary file.
+	 * Save the temp name so can later unlink it.
+	 */
+	if (name == NULL || stat(name, &sb)) {
+		(void)strcpy(tname, _PATH_TMPNAME);
+		if ((fd = mkstemp(tname)) == -1) {
+			msgq(sp, M_ERROR,
+			    "Temporary file: %s", strerror(errno));
+			goto e2;
+		}
+		(void)close(fd);
+		if ((tep->tname = strdup(tname)) == NULL) {
+			(void)unlink(tname);
+			goto e2;
+		}
+	}
+
+	/*
+	 * If no name, point the name at the temporary name (we display
+	 * it to the user until they rename it.
+	 */
+	if (name == NULL) {
+		F_SET(tep, F_NONAME);
+		tep->name = tep->tname;
+	} else if ((tep->name = strdup(name)) == NULL)
+		goto e2;
 	tep->nlen = strlen(tep->name);
 	
-	if (append) {
-		HDR_APPEND(tep, ep, next, prev, EXF);
-	} else {
-		HDR_INSERT(tep, ep, next, prev, EXF);
-	}
-	return (0);
+	return (tep);
 
-mem2:	free(tep);
-mem1:	msgq(sp, M_ERROR, "Error: %s", strerror(errno));
-	return (1);
+e2:	HDR_DELETE(tep, next, prev);
+	free(tep);
+e1:	msgq(sp, M_ERROR, "Error: %s", strerror(errno));
+	return (NULL);
 }
 
 /*
  * file_set --
- *	Add an argc/argv set of files into the file list.
+ *	Append an argc/argv set of files to the file list.
  */
 int
 file_set(sp, argc, argv)
@@ -68,23 +121,10 @@ file_set(sp, argc, argv)
 	int argc;
 	char *argv[];
 {
-	EXF *tep;
-
-	/* Insert new entries at the tail of the list. */
-	for (; *argv; ++argv) {
-		if ((tep = malloc(sizeof(EXF))) == NULL)
-			goto mem1;
-		file_def(tep);
-		if ((tep->name = strdup(*argv)) == NULL)
-			goto mem2;
-		tep->nlen = strlen(tep->name);
-		HDR_APPEND(tep, (EXF *)&sp->gp->exfhdr, next, prev, EXF);
-	}
+	for (; *argv; ++argv)
+		if (file_get(sp, (EXF *)&sp->gp->exfhdr, *argv, 1))
+			return (1);
 	return (0);
-
-mem2:	free(tep);
-mem1:	msgq(sp, M_ERROR, "Error: %s", strerror(errno));
-	return (1);
 }
 
 /*
@@ -118,15 +158,10 @@ file_next(sp, ep, all)
 	EXF *ep;
 	int all;
 {
-	for (;;) {
-		ep = ep->next;
-		if (ep == (EXF *)&sp->gp->exfhdr)
-			return (NULL);
-		if (!all && F_ISSET(ep, F_IGNORE))
-			continue;
-		return (ep);
-	}
-	/* NOTREACHED */
+	while ((ep = ep->next) != (EXF *)&sp->gp->exfhdr)
+		if (all || !F_ISSET(ep, F_IGNORE))
+			return (ep);
+	return (NULL);
 }
 
 /*
@@ -139,32 +174,9 @@ file_prev(sp, ep, all)
 	EXF *ep;
 	int all;
 {
-	for (;;) {
-		ep = ep->prev;
-		if (ep == (EXF *)&sp->gp->exfhdr)
-			return (NULL);
-		if (!all && F_ISSET(ep, F_IGNORE))
-			continue;
-		return (ep);
-	}
-	/* NOTREACHED */
-}
-
-/*
- * file_locate --
- *	Return the appropriate structure if we've seen this file before.
- */
-EXF *
-file_locate(sp, name)
-	SCR *sp;
-	char *name;
-{
-	EXF *tep;
-
-	for (tep = sp->gp->exfhdr.next;
-	    tep != (EXF *)&sp->gp->exfhdr; tep = tep->next)
-		if (!memcmp(tep->name, name, tep->nlen))
-			return (tep);
+	while ((ep = ep->prev) != (EXF *)&sp->gp->exfhdr)
+		if (all || !F_ISSET(ep, F_IGNORE))
+			return (ep);
 	return (NULL);
 }
 
@@ -177,80 +189,48 @@ file_start(sp, ep)
 	SCR *sp;
 	EXF *ep;
 {
-	struct stat sb;
-	u_int addflags;
-	int fd;
-	char *openname, tname[sizeof(_PATH_TMPNAME) + 1];
+	char *oname;
 
-	fd = -1;
-	addflags = 0;
-	if (ep == NULL || stat(ep->name, &sb)) { 
-		(void)strcpy(tname, _PATH_TMPNAME);
-		if ((fd = mkstemp(tname)) == -1) {
-			msgq(sp, M_ERROR,
-			    "Temporary file: %s", strerror(errno));
-			return (NULL);
-		}
+	if (ep == NULL &&
+	    (ep = file_get(sp, (EXF *)&sp->gp->exfhdr, NULL, 1)) == NULL)
+		return (NULL);
 
-		if (ep == NULL) {
-			if (file_ins(sp, (EXF *)&sp->gp->exfhdr, tname, 1))
-				return (NULL);
-			if ((ep = file_first(sp, 1)) == NULL)
-				return (NULL);
-			addflags |= F_NONAME;
-		}
-
-		/*
-		 * The temporary name should appear in the file system, given
-		 * that we display it to the user (if they haven't named the
-		 * file somehow).  Save off the temporary name so we can later
-		 * unlink the file, even if the user has changed the name.  If
-		 * that doesn't work, unlink the file now, and the user just
-		 * won't be able to access the file outside of vi.
-		 */
-		if ((ep->tname = strdup(tname)) == NULL)
-			(void)unlink(tname);
-		openname = tname;
-	} else
-		openname = ep->name;
+	oname = ep->tname == NULL ? ep->name : ep->tname;
 
 	/* Open a db structure. */
-	ep->db = dbopen(openname, O_CREAT | O_EXLOCK | O_NONBLOCK| O_RDONLY,
+	ep->db = dbopen(oname, O_EXLOCK | O_NONBLOCK| O_RDONLY,
 	    DEFFILEMODE, DB_RECNO, NULL);
 	if (ep->db == NULL && errno == EAGAIN) {
-		addflags |= F_RDONLY;
-		ep->db = dbopen(openname, O_CREAT | O_NONBLOCK | O_RDONLY,
+		F_SET(ep, F_RDONLY);
+		ep->db = dbopen(oname, O_NONBLOCK | O_RDONLY,
 		    DEFFILEMODE, DB_RECNO, NULL);
 		if (ep->db != NULL)
 			msgq(sp, M_ERROR,
-			    "%s already locked, session is read-only",
-			    ep->name);
+			    "%s already locked, session is read-only", oname);
 	}
 	if (ep->db == NULL) {
-		msgq(sp, M_ERROR, "%s: %s", ep->name, strerror(errno));
+		msgq(sp, M_ERROR, "%s: %s", oname, strerror(errno));
 		return (NULL);
 	}
-	if (fd != -1)
-		(void)close(fd);
 
-	/* Only a few bits are retained between edit instances. */
-	ep->flags &= F_RETAINMASK;
-	F_SET(ep, addflags);
+	if (ep->refcnt == 0) {
+		F_SET(ep, F_NEWSESSION);
 
-	/* Flush the line caches. */
-	ep->c_lno = ep->c_nlines = OOBLNO;
+		/* Flush the line caches. */
+		ep->c_lno = ep->c_nlines = OOBLNO;
 
-	/* Start logging. */
-	log_init(sp, ep);
+		/* Start logging. */
+		log_init(sp, ep);
 
-	/*
-	 * Reset any marks.
-	 *
-	 * XXX
-	 * This shouldn't be here, but don't know where else to put it.
-	 */
-	mark_reset(sp, ep);
-
+		/*
+		 * Reset any marks.
+		 *
+		 * XXX
+		 * This shouldn't be here.
+		 */
+		mark_reset(sp, ep);
+	}
+	++ep->refcnt;
 	return (ep);
 }
 
@@ -264,6 +244,9 @@ file_stop(sp, ep, force)
 	EXF *ep;
 	int force;
 {
+	if (--ep->refcnt != 0)
+		return (0);
+
 	/* Close the db structure. */
 	if ((ep->db->close)(ep->db) && !force) {
 		msgq(sp, M_ERROR, "%s: close: %s", ep->name, strerror(errno));
@@ -278,8 +261,10 @@ file_stop(sp, ep, force)
 	(void)log_end(sp, ep);
 
 	/* Unlink any temporary file. */
-	if (ep->tname != NULL && unlink(ep->tname)) {
-		msgq(sp, M_ERROR, "%s: remove: %s", ep->tname, strerror(errno));
+	if (ep->tname != NULL) {
+		if (unlink(ep->tname))
+			msgq(sp, M_ERROR,
+			    "%s: remove: %s", ep->tname, strerror(errno));
 		free(ep->tname);
 	}
 
@@ -369,11 +354,8 @@ file_def(ep)
 {
 	memset(ep, 0, sizeof(EXF));
 
+	ep->start_lno = 1;
+	ep->start_cno = 0;
 	ep->c_lno = OOBLNO;
-	ep->olno = OOBLNO;
-	ep->lno = 1;
-	ep->cno = ep->ocno = 0;
 	ep->l_ltype = LOG_NOTYPE;
-
-	F_SET(ep, F_NEWSESSION);
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_replace.c,v 5.17 1993/03/26 13:40:39 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:40:39 $";
+static char sccsid[] = "$Id: v_replace.c,v 5.18 1993/04/05 07:10:16 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:10:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,7 +28,7 @@ v_replace(sp, ep, vp, fm, tm, rp)
 	recno_t lno;
 	size_t cno, len;
 	u_long cnt;
-	u_char *np, *p, emptybuf[1];
+	char *np, *p, emptybuf[1];
 
 	if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
 		if (file_lline(sp, ep) != 0) {

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.51 1993/03/28 19:04:45 bostic Exp $ (Berkeley) $Date: 1993/03/28 19:04:45 $";
+static char sccsid[] = "$Id: key.c,v 5.52 1993/04/05 07:12:46 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:12:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -23,21 +23,18 @@ static char sccsid[] = "$Id: key.c,v 5.51 1993/03/28 19:04:45 bostic Exp $ (Berk
 #include "vi.h"
 
 static void	check_sigwinch __P((SCR *));
-static int	ttyread __P((SCR *, u_char *, int, int));
+static int	ttyread __P((SCR *, char *, int, int));
 
 /*
- * gb_init --
+ * key_special --
  *	Initialize the special array and input buffers.  The special array
  *	has a value for each special character that we can use in a switch
  *	statement.
  */
 int
-gb_init(sp)
+key_special(sp)
 	SCR *sp;
 {
-	/* Zero out the special characters array. */
-	memset(sp->special, 0, sizeof(sp->special));
-
 	/* Keys that are treated specially. */
 	sp->special['^'] = K_CARAT;
 	sp->special['\004'] = K_CNTRLD;
@@ -89,8 +86,8 @@ gb_inc(sp)
 
 /*
  * getkey --
- *	This function reads in a keystroke, as well as handling mapped keys
- *	and executed cut buffers.
+ *	This function reads in a keystroke, as well as handling
+ *	mapped keys and executed cut buffers.
  */
 int
 getkey(sp, flags)
@@ -110,11 +107,11 @@ getkey(sp, flags)
 	}
 
 	/* If returning a mapped key, return the next char. */
-	if (sp->mapoutput) {
-		ch = *sp->mapoutput;
-		if (*++sp->mapoutput == '\0') {
+	if (sp->mappedkey) {
+		ch = *sp->mappedkey;
+		if (*++sp->mappedkey == '\0') {
 			F_CLR(sp, S_SCREENWAIT);
-			sp->mapoutput = NULL;
+			sp->mappedkey = NULL;
 		}
 		goto ret;
 	}
@@ -165,9 +162,9 @@ retry:		qp = seq_find(sp, &sp->keybuf[sp->nextkey], sp->nkeybuf,
 		} else if (qp != NULL) {
 			sp->nkeybuf -= qp->ilen;
 			sp->nextkey += qp->ilen;
-			sp->mapoutput = qp->output;
+			sp->mappedkey = qp->output;
 			F_SET(sp, S_SCREENWAIT);
-			ch = *sp->mapoutput++;
+			ch = *sp->mappedkey++;
 			goto ret;
 		}
 	}
@@ -204,7 +201,7 @@ static void onwinch __P((int));
 static int
 ttyread(sp, buf, len, time)
 	SCR *sp;
-	u_char *buf;		/* where to store the characters */
+	char *buf;		/* where to store the characters */
 	int len;		/* max characters to read */
 	int time;		/* max tenth seconds to read */
 {

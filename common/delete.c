@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: delete.c,v 5.21 1993/03/26 13:37:39 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:37:39 $";
+static char sccsid[] = "$Id: delete.c,v 5.22 1993/04/05 07:12:22 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:12:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,7 +30,7 @@ delete(sp, ep, fm, tm, lmode)
 {
 	recno_t lno;
 	size_t len, tlen;
-	u_char *bp, *p;
+	char *bp, *p;
 	int eof;
 
 #if DEBUG && 0

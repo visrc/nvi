@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 5.25 1993/03/26 13:39:04 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:39:04 $";
+static char sccsid[] = "$Id: ex_print.c,v 5.26 1993/04/05 07:11:42 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:11:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -37,8 +37,8 @@ ex_list(sp, ep, cmdp)
 	}
 	if (ex_print(sp, ep, &cmdp->addr1, &cmdp->addr2, E_F_LIST | flags))
 		return (1);
-	ep->lno = cmdp->addr2.lno;
-	ep->cno = cmdp->addr2.cno;
+	sp->lno = cmdp->addr2.lno;
+	sp->cno = cmdp->addr2.cno;
 	return (0);
 }
 
@@ -62,8 +62,8 @@ ex_number(sp, ep, cmdp)
 	}
 	if (ex_print(sp, ep, &cmdp->addr1, &cmdp->addr2, E_F_HASH | flags))
 		return (1);
-	ep->lno = cmdp->addr2.lno;
-	ep->cno = cmdp->addr2.cno;
+	sp->lno = cmdp->addr2.lno;
+	sp->cno = cmdp->addr2.cno;
 	return (0);
 }
 
@@ -87,8 +87,8 @@ ex_pr(sp, ep, cmdp)
 	}
 	if (ex_print(sp, ep, &cmdp->addr1, &cmdp->addr2, E_F_PRINT | flags))
 		return (1);
-	ep->lno = cmdp->addr2.lno;
-	ep->cno = cmdp->addr2.cno;
+	sp->lno = cmdp->addr2.lno;
+	sp->cno = cmdp->addr2.cno;
 	return (0);
 }
 
@@ -107,8 +107,7 @@ ex_print(sp, ep, fp, tp, flags)
 	recno_t from, to;
 	size_t len;
 	int cnt;
-	u_char *p;
-	char buf[10];
+	char *p, buf[10];
 
 	for (from = fp->lno, to = tp->lno; from <= to; ++from) {
 		/* Display the line number. */
@@ -128,7 +127,7 @@ ex_print(sp, ep, fp, tp, flags)
 		}
 
 #define	WCHECK(ch) {							\
-	if (col == ep->cno) {						\
+	if (col == sp->cno) {						\
 		(void)putc('\n', sp->stdfp);				\
 		col = 0;						\
 	}								\
@@ -153,10 +152,10 @@ ex_print(sp, ep, fp, tp, flags)
 			else {
 				ch &= 0x7f;
 				if (ch == '\t') {
-					while (col < ep->cno &&
+					while (col < sp->cno &&
 					    ++col % LVAL(O_TABSTOP))
 						(void)putc(' ', sp->stdfp);
-					if (col == ep->cno) {
+					if (col == sp->cno) {
 						col = 0;
 						(void)putc('\n', sp->stdfp);
 					}

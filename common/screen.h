@@ -4,12 +4,12 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 5.24 1993/03/28 19:04:44 bostic Exp $ (Berkeley) $Date: 1993/03/28 19:04:44 $
+ *	$Id: screen.h,v 5.25 1993/04/05 07:12:38 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:12:38 $
  */
 
 /*
  * There are minimum values that vi has to have to display a screen.  These
- * are about the MINIMUM that you can have.  Changing these is not a good
+ * are about the MINIMUM that are possible, and changing them is not a good
  * idea.  In particular, while I intend to get the minimum rows down to 2
  * for the curses screen version of the vi screen, (1 for the line, 1 for
  * the error messages) changing the minimum columns is a lot trickier.  For
@@ -27,7 +27,18 @@ enum operation { LINE_APPEND, LINE_DELETE, LINE_INSERT, LINE_RESET };
 #define	CONTMSG	"Enter return to continue: "
 
 /*
- * Structure for mapping lines to the screen.  SMAP is an array of
+ * Structure for building argc/argv vector of ex arguments.
+ */
+typedef struct _args {
+	char	*bp;			/* Buffer. */
+	size_t	 len;			/* Buffer length. */
+
+#define	A_ALLOCATED	0x01		/* If allocated space. */
+	u_char	 flags;
+} ARGS;
+
+/*
+ * Structure for mapping lines to the screen.  An SMAP is an array of
  * structures, one per screen line, holding a physical line and screen
  * offset into the line.  For example, the pair 2:1 would be the first
  * screen of line 2, and 2:2 would be the second.  If doing left-right
@@ -36,16 +47,11 @@ enum operation { LINE_APPEND, LINE_DELETE, LINE_INSERT, LINE_RESET };
  * stupid, vi scrolling, it will be staggered, i.e. 1:1, 1:2, 1:3, 2:1,
  * 3:1, etc.
  *
- * It might be better to make SMAP a linked list of structures, instead
- * of an array.  This wins if scrolling the top or bottom of the screen,
- * because you can move the head and tail pointers instead of copying the
- * array.  This loses when you're deleting three lines out of the middle of
- * the map, though, because you have to increment through the structures
- * instead of doing a memmove.
+ * The SMAP is always as large as the physical screen, so that when split
+ * screens close, there is room to add in the newly available lines.
  */
-
-/* Map positions. */
-enum position { P_TOP, P_FILL, P_MIDDLE, P_BOTTOM };
+					/* Map positions. */
+enum position { P_BOTTOM, P_FILL, P_MIDDLE, P_TOP };
 
 typedef struct _smap {
 	recno_t lno;			/* 1-N: Physical file line number. */
@@ -63,69 +69,97 @@ typedef struct _smap {
  */
 struct _exf;
 typedef struct _scr {
+/* INITIALIZED AT SCREEN CREATE. */
 	struct _scr	*next, *prev;	/* Linked list of screens. */
 
-	struct _gs	*gp;		/* Pointer to global area. */
-
-	/* Underlying file information. */
+					/* Underlying file information. */
+	struct _exf	*ep;		/* Screen's current file. */
 	struct _exf	*enext;		/* Next file to edit. */
 	struct _exf	*eprev;		/* Last file edited. */
 
-	/* Vi curses screen information. */
-	struct _smap	*h_smap;	/* Head of screen/line map. */
-	struct _smap	*t_smap;	/* Tail screen/line map. */
-	size_t	 scno;			/* 0-N: Logical screen cursor column. */
-	size_t	 lines;			/* Physical number of screen lines. */
-	size_t	 cols;			/* Physical number of screen cols. */
+					/* Split screen information. */
+	struct _scr	*child;		/* Child screen. */
+	struct _scr	*parent;	/* Parent screen. */
+	struct _scr	*snext;		/* Next screen to display. */
 
-	/* Characters displayed. */
-	u_char	*clen;			/* Character lengths. */
-	char   **cname;			/* Character names. */
+					/* Physical screen information. */
+	struct _smap	*h_smap;	/* Head of screen/row map. */
+	struct _smap	*t_smap;	/* Tail of screen/row map. */
+	recno_t	 lno;			/* 1-N:     cursor file line. */
+	recno_t	 olno;			/* 1-N: old cursor file line. */
+	size_t	 cno;			/* 0-N:     file cursor column. */
+	size_t	 ocno;			/* 0-N: old file cursor column. */
+	size_t	 rows;			/* 1-N: number of rows per screen. */
+	size_t	 cols;			/* 1-N: number of columns per screen. */
+	size_t	 t_rows;		/* 1-N: text rows per screen. */
+	size_t	 w_rows;		/* 1-N: number of rows per window. */
+	size_t	 s_off;			/* 0-N: offset into window. */
+	size_t	 sc_row;		/* 0-N: logical screen cursor row. */
+	size_t	 sc_col;		/* 0-N: logical screen cursor column. */
 
-	/* Messages. */
-	struct _msg	*msgp;		/* Linked list of messages. */
-	char	*VB;			/* Visual bell termcap string. */
+	struct _msg	*msgp;		/* User message list. */
 
-	/* Ex/vi: report of lines changed. */
-	recno_t	 rptlines;		/* Count of lines modified. */
-	char	*rptlabel;		/* How lines modified. */
+	recno_t	 rptlines;		/* Ex/vi: lines changed by last op. */
+	char	*rptlabel;		/* How modified. */
 
-	/* Vi: column suck. */
-	size_t	 rcm;			/* 0-N: Column suck. */
+	size_t	 rcm;			/* Vi: 0-N: Column suck. */
 #define	RCM_FNB		0x01		/* Column suck: first non-blank. */
 #define	RCM_LAST	0x02		/* Column suck: last. */
 	u_int	 rcmflags;
 
-	/*
-	 * Ex/vi: Input character handling.
-	 *
-	 * The routines that fill a buffer from the terminal share these
-	 * three data structures.  They are a buffer to hold the return
-	 * value, a quote buffer so we know which characters are quoted, and
-	 * a widths buffer.  The last is used internally to hold the widths
-	 * of each character.  Any new routines will need to support these
-	 * too.
-	 */
+	struct _args	*args;		/* Ex/vi: argument buffers. */
+	int	 argscnt;		/* Argument count. */
+	char   **argv;			/* Arguments. */
+	glob_t	 g;			/* Glob array. */
+	
+					/* Ex/vi: interface between ex/vi. */
+	FILE	*stdfp;			/* Ex output file pointer. */
+	size_t	 exlinecount;		/* Ex/vi overwrite count. */
+	size_t	 extotalcount;		/* Ex/vi overwrite count. */
+	size_t	 exlcontinue;		/* Ex/vi line continue value. */
+
+					/* Ex/vi: terminal input. */
 	char	*gb_cb;			/* Input character buffer. */
 	char	*gb_qb;			/* Input character quote buffer. */
 	u_char	*gb_wb;			/* Input character widths buffer. */
-	size_t	 gb_len;		/* Input character buffer lengths. */
-	int	 nkeybuf;		/* # of keys in the input buffer. */
-	int	 nextkey;		/* Index of next key in keybuf. */
-	u_char	*mapoutput;		/* Mapped key return. */
-	u_char	 special[UCHAR_MAX];	/* Special characters. */
-	u_char	 keybuf[256];		/* Key buffer. */
+	size_t	 gb_len;		/* Input character buffer length. */
+	u_int	 nkeybuf;		/* # of keys in the input buffer. */
+	char	*mappedkey;		/* Mapped key return. */
+	u_int	 nextkey;		/* Index of next key in keybuf. */
+	char	 keybuf[256];		/* Key buffer. */
 
-	/* Ex/vi: tags. */
-	struct _tag	*thead;		/* Tag stack. */
+/* PARTIALLY OR COMPLETELY COPIED FROM PREVIOUS SCREEN. */
+	struct _gs	*gp;		/* Pointer to global area. */
+
+	struct _ib ib;			/* Vi: text input buffer. */
+
+	char	*VB;			/* Visual bell termcap string. */
+
+	char	*lastbcomm;		/* Ex/vi: last bang command. */
+
+	u_char	 inc_lastch;		/* Vi: Last increment character. */
+	long	 inc_lastval;		/* Vi: Last increment value. */
+
+	struct _cb cuts[UCHAR_MAX + 2];	/* Ex/vi: cut buffers. */
+
+	struct _tag	*thead;		/* Ex/vi: tag stack. */
 	struct _tagf   **tfhead;	/* List of tag files. */
 	char	*tlast;			/* Last tag. */
 
-	/* Ex/vi: mapped characters, abbreviations. */
+					/* Ex/vi: search information. */
+	enum direction searchdir;	/* File search direction. */
+	enum cdirection csearchdir;	/* Character search direction. */
+	regex_t	 sre;			/* Last search RE. */
+	u_char	 lastckey;		/* Last search character. */
+
+	struct _chname *cname;		/* Display names of characters. */
+	u_char	 special[UCHAR_MAX];	/* Special character array. */
+
+					/* Ex/vi: mapped chars, abbrevs. */
 	struct _hdr	 seqhdr;	/* Linked list of all sequences. */
 	struct _seq	*seq[UCHAR_MAX];/* Linked character sequences. */
 
-	/* Ex/vi: executed buffers. */
+					/* Ex/vi: executed buffers. */
 	char	*atkey_buf;		/* At key buffer. */
 	char	*atkey_cur;		/* At key current pointer. */
 	int	 atkey_len;		/* Remaining keys in at buffer. */
@@ -136,31 +170,11 @@ typedef struct _scr {
 					/* Ex at key stack. */
 	u_char	 exat_stack[UCHAR_MAX + 1];
 
-	/* Vi: increment command. */
-	u_char	 inc_lastch;		/* Last increment character. */
-	long	 inc_lastval;		/* Last increment value. */
-
-	/* Ex/vi: bang command. */
-	u_char	*lastbcomm;		/* Last bang command. */
-
-	/* Ex/vi: search information. */
-	enum direction searchdir;	/* File search direction. */
-	enum cdirection csearchdir;	/* Character search direction. */
-	regex_t	 sre;			/* Last search RE. */
-	u_char	 lastckey;		/* Last search character. */
-
-	/* Ex: output file pointer. */
-	FILE	*stdfp;			/* Ex output file pointer. */
-
-	/* Ex/vi: interface between ex/vi. */
-	size_t	 exlinecount;		/* Ex/vi overwrite count. */
-	size_t	 extotalcount;		/* Ex/vi overwrite count. */
-	size_t	 exlcontinue;		/* Ex/vi line continue value. */
-
-	/*
-	 * Screen support routines.  This is the set of routines that
-	 * have to be replaced to add a new screen to the editor.
-	 */
+/*
+ * SCREEN SUPPORT ROUTINES.
+ * This is the set of routines that have to be replaced to add a new
+ * screen to the editor.
+ */
 	void	 (*bell) __P((struct _scr *));
 	int	 (*change) __P((struct _scr *,
 		     struct _exf *, recno_t, enum operation));
@@ -173,25 +187,32 @@ typedef struct _scr {
 	int	 (*exwrite) __P((void *, const char *, int));
 	int	 (*fill) __P((struct _scr *,
 		     struct _exf *, recno_t, enum position));
-	int	 (*gb) __P((struct _scr *, int, u_char **, size_t *, u_int));
+	int	 (*gb) __P((struct _scr *, int, char **, size_t *, u_int));
 	int	 (*position) __P((struct _scr *,
 		     struct _exf *, recno_t *, u_long, enum position));
 	int	 (*refresh) __P((struct _scr *, struct _exf *));
 	size_t	 (*relative) __P((struct _scr *, struct _exf *, recno_t));
-	recno_t	 (*textlines) __P((struct _scr *));
+	int	 (*split) __P((struct _scr *, struct _exf *));
 	int	 (*up) __P((struct _scr *,
 		     struct _exf *, struct _mark *, recno_t, int));
 	int	 (*vex) __P((struct _scr *, struct _exf *,
 		     struct _mark *, struct _mark *, struct _mark *));
 
+/* FLAGS. */
 #define	S_EXIT		0x0000001	/* Exiting (forced). */
 #define	S_EXIT_FORCE	0x0000002	/* Exiting (not forced). */
 #define	S_MODE_EX	0x0000004	/* In ex mode. */
 #define	S_MODE_VI	0x0000008	/* In vi mode. */
-#define	S_SWITCH	0x0000010	/* Switch files (forced). */
-#define	S_SWITCH_FORCE	0x0000020	/* Switch files (not forced). */
+#define	S_FSWITCH	0x0000010	/* Switch files (not forced). */
+#define	S_FSWITCH_FORCE	0x0000020	/* Switch files (forced). */
+#define	S_SSWITCH	0x0000040	/* Switch screens. */
+#define	__UNUSED	0x0000080	/* Unused. */
 					/* File change mask. */
-#define	S_FILE_CHANGED	(S_EXIT | S_EXIT_FORCE | S_SWITCH | S_SWITCH_FORCE)
+#define	S_FILE_CHANGED \
+	(S_EXIT | S_EXIT_FORCE | S_FSWITCH | S_FSWITCH_FORCE | S_SSWITCH)
+					/* Retain over screen create. */
+#define	S_SCREEN_RETAIN \
+	(S_MODE_EX | S_MODE_VI)
 
 #define	S_ABBREV	0x0000100	/* If have abbreviations. */
 #define	S_AUTOPRINT	0x0000200	/* Autoprint flag. */

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 5.28 1993/03/26 13:37:44 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:37:44 $";
+static char sccsid[] = "$Id: ex_filter.c,v 5.29 1993/04/05 07:12:29 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:12:29 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -32,7 +32,7 @@ filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
 	SCR *sp;
 	EXF *ep;
 	MARK *fm, *tm, *rp;
-	u_char *cmd;
+	char *cmd;
 	enum filtertype ftype;
 {
 	FILE *ifp, *ofp;			/* Can't be uninitialized. */

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 5.10 1993/03/28 19:06:23 bostic Exp $ (Berkeley) $Date: 1993/03/28 19:06:23 $";
+static char sccsid[] = "$Id: vs_smap.c,v 5.11 1993/04/05 07:13:18 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:13:18 $";
 #endif /* not lint */
 
 #include <curses.h>
@@ -94,7 +94,8 @@ svi_sm_delete(sp, ep, lno)
 	/* Delete that number of lines from the screen. */
 	MOVE(sp, p - HMAP, 0);
 	for (cnt2 = cnt1; cnt2--;)
-		deleteln();
+		if (svi_deleteln(sp))
+			return (1);
 
 	/* Shift the screen map up. */
 	memmove(p, p + cnt1, (((TMAP - p) - cnt1) + 1) * sizeof(SMAP));
@@ -143,13 +144,14 @@ svi_sm_insert(sp, ep, lno)
 	/* Push down that many lines. */
 	MOVE(sp, p - HMAP, 0);
 	for (cnt2 = cnt1; cnt2--;)
-		insertln();
+		if (svi_insertln(sp))
+			return (1);
 
 	/*
 	 * Clear the last line on the screen, it's going to have been
 	 * corrupted.
 	 */
-	MOVE(sp, SCREENSIZE(sp), 0);
+	MOVE(sp, INFOLINE(sp), 0);
 	clrtoeol();
 
 	/* Shift the screen map down. */
@@ -189,8 +191,8 @@ svi_sm_up(sp, ep, rp, count, cursor_move)
 	int scrolled;
 
 	/* Set the default return position. */
-	rp->lno = ep->lno;
-	rp->cno = ep->cno;
+	rp->lno = sp->lno;
+	rp->cno = sp->cno;
 
 	/*
 	 * There are two forms of this command, one where the cursor follows
@@ -204,10 +206,10 @@ svi_sm_up(sp, ep, rp, count, cursor_move)
 	for (p = HMAP;; ++p) {
 		if (p > TMAP) {
 			msgq(sp, M_ERROR,
-			    "Line %lu not on the screen.", ep->lno);
+			    "Line %lu not on the screen.", sp->lno);
 			return (1);
 		}
-		if (p->lno == ep->lno)
+		if (p->lno == sp->lno)
 			break;
 	}
 
@@ -240,7 +242,7 @@ svi_sm_up(sp, ep, rp, count, cursor_move)
 		 * roughly where it was before.
 		 */
 		if (!scrolled || count) {
-			if (ep->lno == TMAP->lno) {
+			if (sp->lno == TMAP->lno) {
 				v_eof(sp, ep, NULL);
 				return (1);
 			}
@@ -254,7 +256,7 @@ svi_sm_up(sp, ep, rp, count, cursor_move)
 		}
 
 		/* If the cursor moved off the screen, move it to the top. */
-		if (ep->lno < HMAP->lno)
+		if (sp->lno < HMAP->lno)
 			p = HMAP;
 	}
 	/*
@@ -281,10 +283,11 @@ svi_sm_1up(sp, ep)
 {
 	/* Delete the top line of the screen. */
 	MOVE(sp, 0, 0);
-	deleteln();
+	if (svi_deleteln(sp))
+		return (1);
 
 	/* Shift the screen map up. */
-	memmove(HMAP, HMAP + 1, SCREENSIZE(sp) * sizeof(SMAP));
+	memmove(HMAP, HMAP + 1, sp->rows * sizeof(SMAP));
 
 	/* Decide what to display at the bottom of the screen. */
 	if (svi_sm_next(sp, ep, TMAP - 1, TMAP))
@@ -294,6 +297,25 @@ svi_sm_1up(sp, ep)
 	if (svi_line(sp, ep, TMAP, NULL, 0, NULL, NULL))
 		return (1);
 
+	return (0);
+}
+
+/*
+ * svi_deleteln --
+ *	Delete a line a la curses.
+ */
+int
+svi_deleteln(sp)
+	SCR *sp;
+{
+	/* Delete the top line, scrolling everything else. */
+	deleteln();
+
+	/* If we're not the bottom screen, put everything else back. */
+	if (sp->child != NULL) {
+		MOVE(sp, INFOLINE(sp), 0);
+		insertln();
+	}
 	return (0);
 }
 
@@ -313,8 +335,8 @@ svi_sm_down(sp, ep, rp, count, cursor_move)
 	int scrolled;
 
 	/* Set the default return position. */
-	rp->lno = ep->lno;
-	rp->cno = ep->cno;
+	rp->lno = sp->lno;
+	rp->cno = sp->cno;
 
 	/*
 	 * There are two forms of this command, one where the cursor follows
@@ -328,10 +350,10 @@ svi_sm_down(sp, ep, rp, count, cursor_move)
 	for (p = HMAP;; ++p) {
 		if (p > TMAP) {
 			msgq(sp, M_ERROR,
-			    "Line %lu not on the screen", ep->lno);
+			    "Line %lu not on the screen", sp->lno);
 			return (1);
 		}
-		if (p->lno == ep->lno)
+		if (p->lno == sp->lno)
 			break;
 	}
 
@@ -359,7 +381,7 @@ svi_sm_down(sp, ep, rp, count, cursor_move)
 		 * roughly where it was before.
 		 */
 		if (!scrolled || count) {
-			if (ep->lno == HMAP->lno) {
+			if (sp->lno == HMAP->lno) {
 				v_sof(sp, NULL);
 				return (1);
 			}
@@ -373,7 +395,7 @@ svi_sm_down(sp, ep, rp, count, cursor_move)
 		}
 
 		/* If the cursor moved off the screen, move it to the bottom. */
-		if (ep->lno > TMAP->lno)
+		if (sp->lno > TMAP->lno)
 			p = TMAP;
 	}
 
@@ -400,15 +422,16 @@ svi_sm_1down(sp, ep)
 	EXF *ep;
 {
 	/* Clear the bottom line of the screen. */
-	MOVE(sp, TEXTSIZE(sp), 0);
+	MOVE(sp, sp->t_rows, 0);
 	clrtoeol();
 
 	/* Insert a line at the top of the screen. */
 	MOVE(sp, 0, 0);
-	insertln();
+	if (svi_insertln(sp))
+		return (1);
 
 	/* Shift the screen map down. */
-	memmove(HMAP + 1, HMAP, SCREENSIZE(sp) * sizeof(SMAP));
+	memmove(HMAP + 1, HMAP, sp->rows * sizeof(SMAP));
 
 	/* Decide what to display at the top of the screen. */
 	if (svi_sm_prev(sp, ep, HMAP + 1, HMAP))
@@ -418,6 +441,25 @@ svi_sm_1down(sp, ep)
 	if (svi_line(sp, ep, HMAP, NULL, 0, NULL, NULL))
 		return (1);
 
+	return (0);
+}
+
+/*
+ * svi_insertln --
+ *	insertln a line a la curses.
+ */
+int
+svi_insertln(sp)
+	SCR *sp;
+{
+	/* Insert at the current line, scrolling everything else. */
+	insertln();
+
+	/* If we're not the bottom screen, put everything else back. */
+	if (sp->child != NULL) {
+		MOVE(sp, INFOLINE(sp), 0);
+		deleteln();
+	}
 	return (0);
 }
 
@@ -602,27 +644,3 @@ svi_sm_nlines(sp, ep, from_sp, to_lno, max)
 	}
 	return (lcnt);
 }
-
-#ifdef DEBUG
-void
-svi_gdbmap(sp)
-	SCR *sp;
-{
-	svi_sm_dmap(sp, "gdb");
-}
-
-void
-svi_sm_dmap(sp, msg)
-	SCR *sp;
-	char *msg;
-{
-	size_t cnt;
-	SMAP *p;
-
-	TRACE(sp, "==>  %s\n", msg);
-	for (p = HMAP, cnt = 1; p <= TMAP; ++p, ++cnt)
-		TRACE(sp, "%s<%02lu:%u> ",
-		    cnt % 10 == 0 ? "\n" : "", p->lno, p->off);
-	TRACE(sp, "\n");
-}
-#endif

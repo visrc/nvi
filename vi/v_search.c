@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 5.31 1993/03/28 19:05:45 bostic Exp $ (Berkeley) $Date: 1993/03/28 19:05:45 $";
+static char sccsid[] = "$Id: v_search.c,v 5.32 1993/04/05 07:10:20 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:10:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,7 +18,7 @@ static char sccsid[] = "$Id: v_search.c,v 5.31 1993/03/28 19:05:45 bostic Exp $ 
 #include "vi.h"
 #include "vcmd.h"
 
-static int getptrn __P((SCR *, int, u_char **));
+static int getptrn __P((SCR *, int, char **));
 
 /*
  * v_searchn -- n
@@ -120,8 +120,7 @@ v_searchw(sp, ep, vp, fm, tm, rp)
 	}
 	(void)snprintf(bp, blen, WORDFORMAT, vp->keyword);
 		
-	mp = f_search(sp, ep, fm, (u_char *)bp, NULL,
-	    SEARCH_MSG | SEARCH_TERM);
+	mp = f_search(sp, ep, fm, bp, NULL, SEARCH_MSG | SEARCH_TERM);
 
 	if (bp == gp->tmp_bp)
 		F_CLR(gp, G_TMP_INUSE);
@@ -148,7 +147,7 @@ v_searchb(sp, ep, vp, fm, tm, rp)
 	MARK *fm, *tm, *rp;
 {
 	MARK *m;
-	u_char *ptrn;
+	char *ptrn;
 
 	if (getptrn(sp, '?', &ptrn))
 		return (1);
@@ -175,7 +174,7 @@ v_searchf(sp, ep, vp, fm, tm, rp)
 	MARK *fm, *tm, *rp;
 {
 	MARK *m;
-	u_char *ptrn;
+	char *ptrn;
 
 	if (getptrn(sp, '/', &ptrn))
 		return (1);
@@ -198,7 +197,7 @@ static int
 getptrn(sp, prompt, storep)
 	SCR *sp;
 	int prompt;
-	u_char **storep;
+	char **storep;
 {
 	if (sp->gb(sp, prompt, storep, NULL, GB_BS|GB_ESC|GB_OFF))
 		return (1);

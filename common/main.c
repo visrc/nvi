@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.57 1993/03/28 19:04:42 bostic Exp $ (Berkeley) $Date: 1993/03/28 19:04:42 $";
+static char sccsid[] = "$Id: main.c,v 5.58 1993/04/05 07:12:36 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:12:36 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -51,9 +51,8 @@ main(argc, argv)
 	extern char *optarg;
 	static int reenter;
 	EXCMDARG cmd;
-	EXF *ep;
 	GS *gp;
-	SCR *sp;
+	SCR *nextsp, *sp;
 	int ch, eval, mode;
 	char *excmdarg, *errf, *myname, *p, *tag;
 
@@ -76,19 +75,18 @@ main(argc, argv)
 	HDR_INIT(gp->scrhdr, next, prev, SCR);
 	HDR_INIT(gp->exfhdr, next, prev, EXF);
 	if (tcgetattr(STDIN_FILENO, &gp->original_termios))
-		err("%s: tcgetttr: %s", myname, strerror(errno));
+		err("%s: tcgetattr: %s", myname, strerror(errno));
 		
 	/* Build and initialize the current screen. */
 	if ((sp = malloc(sizeof(SCR))) == NULL)
 		err("%s", strerror(errno));
 	if (scr_def(NULL, sp))
 		goto err1;
+	sp->gp = gp;		/* All screens point to the GS structure. */
 	HDR_INIT(sp->seqhdr, next, prev, SEQ);
 	HDR_APPEND(sp, (SCR *)&gp->scrhdr, next, prev, SCR);
 
-	sp->gp = gp;		/* All screens point to the GS structure. */
-
-	if (gb_init(sp))	/* Key input initialization. */
+	if (key_special(sp))	/* Keymaps. */
 		goto err1;
 #ifndef NO_DIGRAPH
 	if (digraph_init(sp))	/* Digraph initialization. */
@@ -174,7 +172,7 @@ main(argc, argv)
 		if ((p = strdup(p)) == NULL)
 			msgq(sp, M_ERROR, "Error: %s", strerror(errno));
 		else {
-			(void)ex_cstring(sp, NULL, (u_char *)p, strlen(p), 1);
+			(void)ex_cstring(sp, NULL, p, strlen(p), 1);
 			free(p);
 		}
 
@@ -199,13 +197,12 @@ main(argc, argv)
 		sp->enext = file_first(sp, 1);
 
 	/* Get a real EXF structure. */
-	if ((ep = file_start(sp, sp->enext)) == NULL)
+	if ((sp->ep = file_start(sp, sp->enext)) == NULL)
 		goto err1;
 
 	/* Do commands from the command line. */
 	if (excmdarg != NULL)
-		(void)ex_cstring(sp, ep,
-		    (u_char *)excmdarg, strlen(excmdarg), 0);
+		(void)ex_cstring(sp, sp->ep, excmdarg, strlen(excmdarg), 0);
 
 	/*
 	 * XXX
@@ -218,11 +215,11 @@ main(argc, argv)
 		/* Initialize the screen. */
 		switch(sp->flags & (S_MODE_EX | S_MODE_VI)) {
 		case S_MODE_EX:
-			if (sex_init(sp, ep))
+			if (sex_init(sp, sp->ep))
 				goto err1;
 			break;
 		case S_MODE_VI:
-			if (svi_init(sp, ep))
+			if (svi_init(sp, sp->ep))
 				goto err1;
 			break;
 		default:
@@ -234,11 +231,11 @@ main(argc, argv)
 		do {
 			switch(sp->flags & (S_MODE_EX | S_MODE_VI)) {
 			case S_MODE_EX:
-				if (ex(sp, ep))
+				if (ex(sp, sp->ep))
 					F_SET(sp, S_EXIT_FORCE);
 				break;
 			case S_MODE_VI:
-				if (vi(sp, ep))
+				if (vi(sp, sp->ep))
 					F_SET(sp, S_EXIT_FORCE);
 				break;
 			default:
@@ -247,42 +244,62 @@ main(argc, argv)
 
 			switch (sp->flags & S_FILE_CHANGED) {
 			case S_EXIT:
-				if (file_stop(sp, ep, 0))
+				if (file_stop(sp, sp->ep, 0))
 					F_CLR(sp, S_EXIT);
 				break;
 			case S_EXIT_FORCE:
-				if (file_stop(sp, ep, 1))
+				if (file_stop(sp, sp->ep, 1))
 					F_CLR(sp, S_EXIT_FORCE);
 				break;
-			case S_SWITCH_FORCE:
-				F_CLR(sp, S_SWITCH_FORCE);
+			case S_FSWITCH_FORCE:
+				F_CLR(sp, S_FSWITCH_FORCE);
 				if (file_start(sp, sp->enext) != NULL)
-					if (file_stop(sp, ep, 1))
+					if (file_stop(sp, sp->ep, 1))
 						(void)file_stop(sp,
 						    sp->enext, 1);
 					else {
-						sp->eprev = ep;
-						ep = sp->enext;
+						sp->eprev = sp->ep;
+						sp->ep = sp->enext;
 					}
 				break;
-			case S_SWITCH:
-				F_CLR(sp, S_SWITCH);
+			case S_FSWITCH:
+				F_CLR(sp, S_FSWITCH);
 				if (file_start(sp, sp->enext) != NULL)
-					if (file_stop(sp, ep, 0))
+					if (file_stop(sp, sp->ep, 0))
 						(void)file_stop(sp,
 						    sp->enext, 1);
 					else {
-						sp->eprev = ep;
-						ep = sp->enext;
+						sp->eprev = sp->ep;
+						sp->ep = sp->enext;
 					}
+				break;
+			case S_SSWITCH:
+				F_CLR(sp, S_SSWITCH);
+				sp = sp->snext;
 				break;
 			}
+			/*
+			 * If not just changing the mode, see if there are
+			 * any related screens to edit.
+			 */
+			nextsp = NULL;
+			if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE))
+				if (sp->parent != NULL)
+					nextsp = sp->parent;
+				else if (sp->child != NULL)
+					nextsp = sp->child;
+			if (nextsp != NULL) {
+				(void)sp->end(sp);
+				sp = nextsp;
+				F_CLR(sp, S_EXIT | S_EXIT_FORCE);
+			}
 		} while (!F_ISSET(sp, S_EXIT | S_EXIT_FORCE) &&
-		    mode == sp->flags & (S_MODE_EX | S_MODE_VI));
+		    mode == (sp->flags & (S_MODE_EX | S_MODE_VI)));
 
 		/* End the screen. */
 		if (sp->end(sp))
 			goto err1;
+
 	} while (!F_ISSET(sp, S_EXIT | S_EXIT_FORCE));
 
 	/* Yeah, I don't like it either. */

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.42 1993/03/28 19:06:20 bostic Exp $ (Berkeley) $Date: 1993/03/28 19:06:20 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.43 1993/04/05 07:13:13 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:13:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,17 +35,18 @@ svi_refresh(sp, ep)
 	SCR *sp;
 	EXF *ep;
 {
+	CHNAME *cname;
 	SMAP *smp, tmp;
 	recno_t lastline, lcnt;
 	size_t cwtotal, cnt, len, x, y;
 	int ch;
-	u_char *clenp, *p;
+	char *p;
 
-#define	 LNO	ep->lno
-#define	OLNO	ep->olno
-#define	 CNO	ep->cno
-#define	OCNO	ep->ocno
-#define	SCNO	sp->scno
+#define	 LNO	sp->lno
+#define	OLNO	sp->olno
+#define	 CNO	sp->cno
+#define	OCNO	sp->ocno
+#define	SCNO	sp->sc_col
 
 	/*
 	 * 1: Resize the window.
@@ -116,8 +117,8 @@ svi_refresh(sp, ep)
 		lastline = file_lline(sp, ep);
 		tmp.lno = LNO;
 		tmp.off = 1;
-		lcnt = svi_sm_nlines(sp, ep, &tmp, lastline, TEXTSIZE(sp));
-		if (lcnt < TEXTSIZE(sp)) {
+		lcnt = svi_sm_nlines(sp, ep, &tmp, lastline, sp->t_rows);
+		if (lcnt < sp->t_rows) {
 			if (svi_sm_fill(sp, ep, lastline, P_BOTTOM))
 				return (1);
 			goto paint;
@@ -217,9 +218,17 @@ adjust:	if (LNO == HMAP->lno) {
 	if (LNO != OLNO)
 		goto slow;
 
-	/* If no cursor movement, don't trust it. */
-	if (CNO != OCNO)
-		goto slow;
+	/*
+	 * Otherwise, if nothing's changed, go fast.  The one exception is
+	 * that a single character or no characters are both column 0, and,
+	 * if the single character required multiple screen columns, there
+	 * may have still been movement.
+	 */
+	if (CNO == OCNO) {
+		if (CNO == 0)
+			goto slow;
+		goto fast;
+	}
 
 	/*
 	 * Get the current line.  If this fails, we either have an empty
@@ -239,7 +248,7 @@ adjust:	if (LNO == HMAP->lno) {
 	 * the old and new positions and decide how big they are on the
 	 * screen, and therefore, how many screen positions to move.
 	 */
-	clenp = sp->clen;
+	cname = sp->cname;
 	if (CNO < OCNO) {
 		/*
 		 * 4a: Cursor moved left.
@@ -258,7 +267,7 @@ adjust:	if (LNO == HMAP->lno) {
 		 * Count up the widths of the characters.  If it's a tab
 		 * character, just do it the the slow way.
 		 */
-		for (cwtotal = 0; cnt--; cwtotal += clenp[ch])
+		for (cwtotal = 0; cnt--; cwtotal += cname[ch].len)
 			if ((ch = *p--) == '\t')
 				goto slow;
 
@@ -272,8 +281,8 @@ adjust:	if (LNO == HMAP->lno) {
 		 * If we're moving left, and there's a wide character in the
 		 * current position, go to the end of the character.
 		 */
-		if (clenp[ch] > 1)
-			cwtotal -= clenp[ch] - 1;
+		if (cname[ch].len > 1)
+			cwtotal -= cname[ch].len - 1;
 
 		/*
 		 * If the new column moved us out of the current screen,
@@ -305,13 +314,13 @@ adjust:	if (LNO == HMAP->lno) {
 		}
 #endif
 		/* Save the width of the original character. */
-		len = clenp[*p];
+		len = cname[*p].len;
 
 		/*
 		 * Count up the widths of the characters.  If it's a tab
 		 * character, just do it the the slow way.
 		 */
-		for (cwtotal = 0; cnt--; cwtotal += clenp[ch])
+		for (cwtotal = 0; cnt--; cwtotal += cname[ch].len)
 			if ((ch = *p++) == '\t')
 				goto slow;
 
@@ -336,8 +345,8 @@ adjust:	if (LNO == HMAP->lno) {
 		}
 	}
 
-	/* It was easy, just move the cursor. */
-	getyx(stdscr, y, x);
+fast:	getyx(stdscr, y, x);		/* Just move the cursor. */
+	y -= sp->s_off;			/* Correct for split screen. */
 	goto update;
 
 slow:	/* Find the current line in the map. */
@@ -386,6 +395,7 @@ update:	/* Ring the bell if scheduled. */
 	/* Update saved information. */
 	OCNO = CNO;
 	OLNO = LNO;
+	sp->sc_row = y;
 
 	/* Refresh the screen. */
 	if (F_ISSET(sp, S_REFRESH)) {
@@ -418,11 +428,14 @@ svi_msgflush(sp)
 		p = mp->mbuf;
 
 lcont:		/* Move to the message line and clear it. */
-		MOVE(sp, SCREENSIZE(sp), 0);
+		MOVE(sp, INFOLINE(sp), 0);
 		clrtoeol();
 
-		/* Turn on standout mode if requested. */
-		if (mp->flags & (M_BELL | M_ERROR))
+		/*
+		 * Turn on standout mode if requested, or, if we've split
+		 * the screen and need a divider.
+		 */
+		if (mp->flags & (M_BELL | M_ERROR) || sp->child != NULL)
 			standout();
 
 		/*
@@ -438,10 +451,6 @@ lcont:		/* Move to the message line and clear it. */
 		p += len;
 		mp->len -= len;
 
-		/* Turn off standout mode. */
-		if (mp->flags & (M_BELL | M_ERROR))
-			standend();
-
 		/* If more, print continue message. */
 		if (mp->len ||
 		    mp->next != NULL && !(mp->next->flags & M_EMPTY)) {
@@ -451,6 +460,11 @@ lcont:		/* Move to the message line and clear it. */
 			    !isspace(ch))
 				svi_bell(sp);
 		}
+
+		/* Turn off standout mode. */
+		if (mp->flags & (M_BELL | M_ERROR) || sp->child != NULL)
+			standend();
+
 		if (mp->len)
 			goto lcont;
 
@@ -473,26 +487,34 @@ svi_modeline(sp, ep)
 #define	MODESIZE	(RULERSIZE + 15)
 	char buf[RULERSIZE];
 
-	MOVE(sp, SCREENSIZE(sp), 0);
+	MOVE(sp, INFOLINE(sp), 0);
 	clrtoeol();
+
+	if (sp->child != NULL)
+		svi_divider(sp);
 
 	if (!ISSET(O_RULER) && !ISSET(O_SHOWMODE) || sp->cols <= RULERSIZE)
 		return (0);
 
 	/* Display the ruler and mode. */
 	if (ISSET(O_RULER) && sp->cols > RULERSIZE) {
-		MOVE(sp, SCREENSIZE(sp), sp->cols / 2 - RULERSIZE / 2);
+		MOVE(sp, INFOLINE(sp), sp->cols / 2 - RULERSIZE / 2);
 		memset(buf, ' ', sizeof(buf) - 1);
 		(void)snprintf(buf,
-		    sizeof(buf) - 1, "%lu,%lu", ep->lno, ep->cno + 1);
+		    sizeof(buf) - 1, "%lu,%lu", sp->lno, sp->cno + 1);
 		buf[strlen(buf)] = ' ';
 		addstr(buf);
 	}
 
+	/* If at the top of a split screen, display in reverse video. */
+	if (sp->child != NULL)
+		standout();
+
 	/* Show the mode. */
 	if (ISSET(O_SHOWMODE) && sp->cols > MODESIZE) {
-		MOVE(sp, SCREENSIZE(sp), sp->cols - 7);
+		MOVE(sp, INFOLINE(sp), sp->cols - 7);
 		addstr(F_ISSET(sp, S_INPUT) ? "Input" : "Command");
 	}
+	standend();
 	return (0);
 }

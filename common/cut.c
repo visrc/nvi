@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 5.30 1993/03/28 19:04:40 bostic Exp $ (Berkeley) $Date: 1993/03/28 19:04:40 $";
+static char sccsid[] = "$Id: cut.c,v 5.31 1993/04/05 07:12:18 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:12:18 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -58,7 +58,7 @@ cut(sp, ep, buffer, fm, tm, lmode)
 
 	/* Free old buffer. */
 	if (cb->head != NULL && !append) {
-		freetext(cb->head);
+		text_free(cb->head);
 		cb->head = NULL;
 		cb->len = 0;
 		cb->flags = 0;
@@ -100,7 +100,7 @@ mem:			if (append)
 				msgq(sp,
 				    M_DISPLAY, "Contents of %s buffer lost.",
 				    charname(sp, buffer));
-			freetext(cb->head);
+			text_free(cb->head);
 			cb->head = NULL;
 			return (1);
 		}
@@ -125,7 +125,7 @@ cutline(sp, ep, lno, fcno, len, newp)
 {
 	TEXT *tp;
 	size_t llen;
-	u_char *lp, *p;
+	char *lp, *p;
 
 	if ((p = file_gline(sp, ep, lno, &llen)) == NULL) {
 		GETLINE_ERR(sp, lno);
@@ -184,14 +184,14 @@ put(sp, ep, buffer, cp, rp, append)
 	int buffer, append;
 	MARK *cp, *rp;
 {
-	static u_char *bp;
+	static char *bp;
 	static size_t blen;
 	CB *cb;
 	TEXT *tp;
 	recno_t lno;
 	size_t clen, len;
 	int lmode;
-	u_char *p, *t;
+	char *p, *t;
 
 	CBNAME(sp, buffer, cb);
 	CBEMPTY(sp, buffer, cb);
@@ -325,11 +325,42 @@ put(sp, ep, buffer, cp, rp, append)
 }
 
 /*
- * freetext --
+ * text_copy --
+ *	Copy a chain of text structures.
+ */
+TEXT *
+text_copy(sp, tp)
+	SCR *sp;
+	TEXT *tp;
+{
+	TEXT **cp, *cp_start;
+
+	for (cp_start = NULL, cp = &cp_start; tp != NULL; tp = tp->next) {
+		if ((*cp = malloc(sizeof(TEXT))) == NULL)
+			goto nomem;
+		if (((*cp)->lp = malloc(tp->len)) == NULL) {
+			free(*cp);
+			*cp = NULL;
+nomem:			msgq(sp, M_ERROR,
+			    "Error: text copy: %s", strerror(errno));
+			if (cp_start != NULL)
+				text_free(cp_start);
+			return (NULL);
+		}
+		memmove((*cp)->lp, tp->lp, tp->len);
+		(*cp)->len = tp->len;
+		(*cp)->next = NULL;
+		cp = &(*cp)->next;
+	}
+	return (cp_start);
+}
+
+/*
+ * text_free --
  *	Free a chain of text structures.
  */
 void
-freetext(cp)
+text_free(cp)
 	TEXT *cp;
 {
 	TEXT *np;

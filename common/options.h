@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: options.h,v 5.12 1993/03/26 13:39:26 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:39:26 $
+ *	$Id: options.h,v 5.13 1993/04/05 07:12:01 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:12:01 $
  */
 
 /* Offset macros. */
@@ -31,7 +31,7 @@
 
 #define	LVAL(option) 		(*(long *)opts[(option)].value)
 #define	LVALP(op)		(*(long *)(op)->value)
-#define	PVAL(option)		((u_char *)opts[(option)].value)
+#define	PVAL(option)		(opts[(option)].value)
 
 typedef struct _option {
 	char	*name;			/* Name. */

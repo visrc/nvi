@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_section.c,v 5.12 1993/03/26 13:40:45 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:40:45 $";
+static char sccsid[] = "$Id: v_section.c,v 5.13 1993/04/05 07:10:22 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:10:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,12 +40,12 @@ v_sectionf(sp, ep, vp, fm, tm, rp)
 {
 	size_t len;
 	recno_t cnt, lno;
-	u_char *p, *list, *lp;
+	char *p, *list, *lp;
 
 	/* Get macro list. */
 	if ((list = PVAL(O_SECTIONS)) == NULL)
 		return (1);
-	if (USTRLEN(list) & 1) {
+	if (strlen(list) & 1) {
 		msgq(sp, M_ERROR,
 		    "Section options must be in groups of two characters.");
 		return (1);
@@ -99,7 +99,7 @@ v_sectionb(sp, ep, vp, fm, tm, rp)
 {
 	size_t len;
 	recno_t cnt, lno;
-	u_char *p, *list, *lp;
+	char *p, *list, *lp;
 
 	/* Check for SOF. */
 	if (fm->lno <= 1) {
@@ -109,7 +109,7 @@ v_sectionb(sp, ep, vp, fm, tm, rp)
 
 	if ((list = PVAL(O_SECTIONS)) == NULL)
 		return (1);
-	if (USTRLEN(list) & 1) {
+	if (strlen(list) & 1) {
 		msgq(sp, M_ERROR,
 		    "Section options must be in groups of two characters.");
 		return (1);

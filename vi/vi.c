@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.54 1993/03/28 19:05:54 bostic Exp $ (Berkeley) $Date: 1993/03/28 19:05:54 $";
+static char sccsid[] = "$Id: vi.c,v 5.55 1993/04/05 07:10:44 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:10:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -41,7 +41,9 @@ vi(sp, ep)
 
 	if (v_init(sp, ep))
 		return (1);
-	status(sp, ep, ep->lno);
+
+	F_SET(sp, S_REDRAW);
+	status(sp, ep, sp->lno);
 
 	for (eval = 0;;) {
 err:		if (!F_ISSET(sp, S_SCREENWAIT) && sp->refresh(sp, ep)) {
@@ -67,8 +69,8 @@ err:		if (!F_ISSET(sp, S_SCREENWAIT) && sp->refresh(sp, ep)) {
 
 		/* If a non-relative movement, set the '' mark. */
 		if (flags & V_ABS) {
-			m.lno = ep->lno;
-			m.cno = ep->cno;
+			m.lno = sp->lno;
+			m.cno = sp->cno;
 			SETABSMARK(sp, ep, &m);
 		}
 
@@ -82,11 +84,11 @@ err:		if (!F_ISSET(sp, S_SCREENWAIT) && sp->refresh(sp, ep)) {
 			if (getmotion(sp, ep, vp, &fm, &tm))
 				goto err;
 		} else {
-			fm.lno = ep->lno;
-			fm.cno = ep->cno;
+			fm.lno = sp->lno;
+			fm.cno = sp->cno;
 			if (vp->kp->flags & V_LMODE && vp->flags & VC_C1SET) {
-				tm.lno = ep->lno + vp->count - 1;
-				tm.cno = ep->cno;
+				tm.lno = sp->lno + vp->count - 1;
+				tm.cno = sp->cno;
 			} else
 				tm = fm;
 		}
@@ -141,8 +143,8 @@ err:		if (!F_ISSET(sp, S_SCREENWAIT) && sp->refresh(sp, ep)) {
 			sp->rcmflags = RCM_LAST;
 			
 		/* Update the cursor. */
-		ep->lno = m.lno;
-		ep->cno = m.cno;
+		sp->lno = m.lno;
+		sp->cno = m.cno;
 
 		/* Report on the changes from the command. */
 		if (sp->rptlines) {
@@ -157,7 +159,7 @@ err:		if (!F_ISSET(sp, S_SCREENWAIT) && sp->refresh(sp, ep)) {
 		/* Set the new favorite position. */
 		if (flags & V_RCM_SET) {
 			sp->rcmflags = 0;
-			sp->rcm = sp->scno;
+			sp->rcm = sp->sc_col;
 		}
 	}
 	return (v_end(sp) || eval);
@@ -400,7 +402,7 @@ getmotion(sp, ep, vp, fm, tm)
 		vp->flags |= VC_LMODE;
 
 		/* Set the end of the command. */
-		tm->lno = ep->lno + motion.count - 1;
+		tm->lno = sp->lno + motion.count - 1;
 		tm->cno = 1;
 
 		/*
@@ -409,14 +411,14 @@ getmotion(sp, ep, vp, fm, tm)
 		 */
 		if (!(vp->kp->flags & VC_C) &&
 		    file_gline(sp, ep, tm->lno, NULL) == NULL) {
-			m.lno = ep->lno;
-			m.cno = ep->cno;
+			m.lno = sp->lno;
+			m.cno = sp->cno;
 			v_eof(sp, ep, &m);
 			return (1);
 		}
 
 		/* Set the origin of the command. */
-		fm->lno = ep->lno;
+		fm->lno = sp->lno;
 		fm->cno = 0;
 	} else {
 		/*
@@ -426,8 +428,8 @@ getmotion(sp, ep, vp, fm, tm)
 		 */
 		motion.flags |= vp->kp->flags & VC_COMMASK;
 
-		m.lno = ep->lno;
-		m.cno = ep->cno;
+		m.lno = sp->lno;
+		m.cno = sp->cno;
 		if ((motion.kp->func)(sp, ep, &motion, &m, NULL, tm))
 			return (1);
 
@@ -442,14 +444,14 @@ getmotion(sp, ep, vp, fm, tm)
 		 * If the motion is in a backward direction, switch the current
 		 * location so that we're always moving in the same direction.
 		 */
-		if (tm->lno < ep->lno ||
-		    tm->lno == ep->lno && tm->cno < ep->cno) {
+		if (tm->lno < sp->lno ||
+		    tm->lno == sp->lno && tm->cno < sp->cno) {
 			*fm = *tm;
-			tm->lno = ep->lno;
-			tm->cno = ep->cno;
+			tm->lno = sp->lno;
+			tm->cno = sp->cno;
 		} else {
-			fm->lno = ep->lno;
-			fm->cno = ep->cno;
+			fm->lno = sp->lno;
+			fm->cno = sp->cno;
 		}
 	}
 
@@ -475,10 +477,10 @@ getkeyword(sp, ep, kp, flags)
 {
 	register size_t beg, end;
 	size_t len;
-	u_char *p;
+	char *p;
 
-	p = file_gline(sp, ep, ep->lno, &len);
-	beg = ep->cno;
+	p = file_gline(sp, ep, sp->lno, &len);
+	beg = sp->cno;
 
 	/* May not be a keyword at all. */
 	if (!len ||
@@ -523,10 +525,10 @@ noword:		msgq(sp, M_BELL, "Cursor not in a %s.",
 		}
 
 	if (flags & V_KEYW) {
-		for (end = ep->cno; ++end < len && inword(p[end]););
+		for (end = sp->cno; ++end < len && inword(p[end]););
 		--end;
 	} else {
-		for (end = ep->cno; ++end < len;) {
+		for (end = sp->cno; ++end < len;) {
 			if (p[end] == 'X' || p[end] == 'x') {
 				if (end != beg + 1 || p[beg] != '0')
 					break;
@@ -546,8 +548,8 @@ noword:		msgq(sp, M_BELL, "Cursor not in a %s.",
 	 * Getting a keyword implies moving the cursor to its beginning.
 	 * Refresh now.
 	 */
-	if (beg != ep->cno) {
-		ep->cno = beg;
+	if (beg != sp->cno) {
+		sp->cno = beg;
 		sp->refresh(sp, ep);
 	}
 

@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 5.20 1993/03/26 13:39:32 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:39:32 $
+ *	$Id: key.h,v 5.21 1993/04/05 07:12:48 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:12:48 $
  */
 
 #define	K_CARAT		1
@@ -41,8 +41,8 @@
 #define	QSET(off)	sp->gb_qb[(off)] = 1
 
 /* Keyboard routines. */
-int	ex_gb __P((struct _scr *, int, u_char **, size_t *, u_int));
-int	gb_inc __P((struct _scr *));
+int	ex_gb __P((struct _scr *, int, char **, size_t *, u_int));
 int	gb_init __P((struct _scr *));
 int	getkey __P((struct _scr *, u_int));
-int	v_gb __P((struct _scr *, int, u_char **, size_t *, u_int));
+int	key_special __P((struct _scr *));
+int	v_gb __P((struct _scr *, int, char **, size_t *, u_int));
