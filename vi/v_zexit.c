@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_zexit.c,v 8.4 1993/11/26 15:23:09 bostic Exp $ (Berkeley) $Date: 1993/11/26 15:23:09 $";
+static char sccsid[] = "$Id: v_zexit.c,v 8.5 1993/12/10 12:22:17 bostic Exp $ (Berkeley) $Date: 1993/12/10 12:22:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -41,7 +41,7 @@ v_exit(sp, ep, vp, fm, tm, rp)
 	 * user will get the message on the last screen.
 	 */
 	if (sp->ccnt != sp->q_ccnt + 1 &&
-	    ep->refcnt <= 1 && file_next(sp, 0) != NULL) {
+	    ep->refcnt <= 1 && file_unedited(sp) != NULL) {
 		sp->q_ccnt = sp->ccnt;
 		msgq(sp, M_ERR,
 		    "More files to edit; use \":n\" to go to the next file");

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 8.25 1993/12/09 19:43:32 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:43:32 $";
+static char sccsid[] = "$Id: vs_split.c,v 8.26 1993/12/10 12:22:10 bostic Exp $ (Berkeley) $Date: 1993/12/10 12:22:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -179,10 +179,12 @@ svi_split(sp, argv)
 			if (file_add(tsp, NULL, (*argv)->bp, 0) == NULL)
 				goto mem3;
 
-	if ((tsp->frp = file_first(tsp, 0)) == NULL) {
+	/* Set up the argument and current FREF pointers. */
+	if ((tsp->frp = file_first(tsp)) == NULL) {
 		msgq(sp, M_ERR, "No files in the file list.");
 		goto mem3;
 	}
+	tsp->a_frp = tsp->frp;
 
 	/*
 	 * Copy the file state flags, start the file.  Fill the child's
