@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vi.c,v 10.35 1996/03/06 19:54:54 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:54:54 $";
+static const char sccsid[] = "$Id: vi.c,v 10.36 1996/03/15 20:17:27 bostic Exp $ (Berkeley) $Date: 1996/03/15 20:17:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -124,8 +124,10 @@ vi(spp)
 		 * only because we exited a screen or file.  In this case,
 		 * we simply go back into the ex parser.
 		 */
-		if (EXCMD_RUNNING(gp))
+		if (EXCMD_RUNNING(gp)) {
+			vp->kp = &vikeys[':'];
 			goto ex_continue;
+		}
 
 		/* Refresh the command structure. */
 		memset(vp, 0, sizeof(VICMD));
@@ -231,7 +233,7 @@ vi(spp)
 		v_comlog(sp, vp);
 #endif
 		/* Call the function. */
-ex_continue:	if ((vp->kp->func)(sp, vp))
+ex_continue:	if (vp->kp->func(sp, vp))
 			goto err;
 gc_event:
 #ifdef DEBUG

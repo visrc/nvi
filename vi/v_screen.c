@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_screen.c,v 10.7 1996/03/06 19:54:33 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:54:33 $";
+static const char sccsid[] = "$Id: v_screen.c,v 10.8 1996/03/15 20:17:14 bostic Exp $ (Berkeley) $Date: 1996/03/15 20:17:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,6 +35,18 @@ v_screen(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
+	/*
+	 * You can't leave a colon command-line edit window -- it's not that
+	 * it won't work, but it gets real weird, real fast when you execute
+	 * a colon command out of a window that was forked from a window that's
+	 * now backgrounded...  You get the idea.
+	 */
+	if (F_ISSET(sp, S_COMEDIT)) {
+		msgq(sp, M_ERR,
+		    "306|Enter <CR> to execute a command, :q to exit");
+		return (1);
+	}
+		
 	/*
 	 * Try for the next lower screen, or, go back to the first
 	 * screen on the stack.

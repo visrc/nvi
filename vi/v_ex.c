@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_ex.c,v 10.25 1996/03/06 19:54:16 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:54:16 $";
+static const char sccsid[] = "$Id: v_ex.c,v 10.26 1996/03/15 20:17:03 bostic Exp $ (Berkeley) $Date: 1996/03/15 20:17:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,8 +27,11 @@ static const char sccsid[] = "$Id: v_ex.c,v 10.25 1996/03/06 19:54:16 bostic Exp
 #include "../common/common.h"
 #include "vi.h"
 
-static int v_exec_ex __P((SCR *, VICMD *, EXCMD *));
+static int v_ecl __P((SCR *));
+static int v_ecl_init __P((SCR *));
+static int v_ecl_log __P((SCR *, TEXT *));
 static int v_ex_done __P((SCR *, VICMD *));
+static int v_exec_ex __P((SCR *, VICMD *, EXCMD *));
 
 /*
  * v_again -- &
@@ -395,27 +398,32 @@ v_ex(sp, vp)
 			if (v_tcmd(sp,
 			    vp, ':', TXT_BS | TXT_FILEC | TXT_PROMPT))
 				return (1);
+			tp = sp->tiq.cqh_first;
+
+			/*
+			 * If the user entered a single <esc>, they want to
+			 * edit their colon command history.
+			 */
+			if (tp->term == TERM_ESC) {
+				vp->m_final.lno = sp->lno;
+				vp->m_final.cno = sp->cno;
+				return (v_ecl(sp));
+			}
 
 			/* If the user didn't enter anything, we're done. */
-			tp = sp->tiq.cqh_first;
 			if (tp->term == TERM_BS) {
 				vp->m_final.lno = sp->lno;
 				vp->m_final.cno = sp->cno;
 				return (0);
 			}
 
-			/*
-			 * Push a command on the command stack.  The ex parser
-			 * removes and discards the structure when the command
-			 * finishes.
-			 *
-			 * Don't specify any of the E_* flags, we get correct
-			 * behavior because we're in vi mode.
-			 */
-			gp = sp->gp;
-			gp->excmd.cp = tp->lb;
-			gp->excmd.clen = tp->len;
-			F_INIT(&gp->excmd, 0);
+			/* Log the command. */
+			if (v_ecl_log(sp, tp))
+				return (1);
+
+			/* Push a command on the command stack. */
+			if (ex_run_str(sp, NULL, tp->lb, tp->len, 0, 1))
+				return (1);
 		}
 
 		/* Call the ex parser. */
@@ -468,5 +476,164 @@ v_ex_done(sp, vp)
 
 	vp->m_final.lno = sp->lno;
 	vp->m_final.cno = sp->cno;
+	return (0);
+}
+
+/*
+ * v_ecl --
+ *	Start an edit window on the colon command-line commands.
+ */
+static int
+v_ecl(sp)
+	SCR *sp;
+{
+	SCR *new;
+
+	/* Initialize the screen, if necessary. */
+	if (sp->gp->ed_ep == NULL && v_ecl_init(sp))
+		return (1);
+
+	/* Get a new screen. */
+	if (screen_init(sp->gp, sp, &new))
+		return (1);
+	if (vs_split(sp, new)) {
+		(void)screen_end(new);
+		return (1);
+	}
+
+	/* Attach to the screen. */
+	new->ep = sp->gp->ed_ep;
+	++new->ep->refcnt;
+
+	new->frp = sp->gp->ed_frp;
+	new->frp->flags = sp->frp->flags;
+
+	/* Move the cursor to the end. */
+	(void)db_last(new, &new->lno);
+	if (new->lno == 0)
+		new->lno = 1;
+
+	/* Remember the originating window. */
+	sp->gp->ed_parent = sp;
+
+	/* It's a special window. */
+	F_SET(new, S_COMEDIT);
+
+	/* Set up the switch. */
+	sp->nextdisp = new;
+	F_SET(sp, S_SSWITCH);
+	return (0);
+}
+
+/*
+ * v_ecl_exec --
+ *	Execute a command from a colon command-line window.
+ *
+ * PUBLIC: int v_ecl_exec __P((SCR *));
+ */
+int
+v_ecl_exec(sp)
+	SCR *sp;
+{
+	size_t len;
+	char *p;
+
+	if (db_get(sp, sp->lno, DBG_FATAL, &p, &len))
+		return (1);
+	if (len == 0) {
+		msgq(sp, M_BERR, "305|No ex command to execute");
+		return (1);
+	}
+	
+	/* Push the command on the command stack. */
+	if (ex_run_str(sp, NULL, p, len, 0, 0))
+		return (1);
+
+	/* Set up the switch. */
+	sp->nextdisp = sp->gp->ed_parent;
+	F_SET(sp, S_EXIT);
+	return (0);
+}
+
+/*
+ * v_ecl_log --
+ *	Log a command into the colon command-line log file.
+ */
+static int
+v_ecl_log(sp, tp)
+	SCR *sp;
+	TEXT *tp;
+{
+	EXF *ep, *save_ep;
+	recno_t lno;
+	int rval;
+
+	/* Initialize the screen, if necessary. */
+	ep = sp->gp->ed_ep;
+	if (ep == NULL) {
+		if (v_ecl_init(sp))
+			return (1);
+		ep = sp->gp->ed_ep;
+	}
+
+	/*
+	 * Don't log colon command window commands into the colon command
+	 * window...
+	 */
+	if (sp->ep == ep)
+		return (0);
+
+	/*
+	 * XXX
+	 * Swap the current EXF with the colon command file EXF.  This
+	 * isn't pretty, but too many routines "know" that sp->ep points
+	 * to the current EXF.
+	 */
+	save_ep = sp->ep;
+	sp->ep = ep;
+	if (db_last(sp, &lno)) {
+		sp->ep = save_ep;
+		return (1);
+	}
+	rval = db_append(sp, 0, lno, tp->lb, tp->len);
+	sp->ep = save_ep;
+	return (rval);
+}
+
+/*
+ * v_ecl_init --
+ *	Initialize the colon command-line log file.
+ */
+static int
+v_ecl_init(sp)
+	SCR *sp;
+{
+	SCR *new;
+
+	/* Get a temporary file. */
+	if (sp->gp->ed_frp == NULL &&
+	    (sp->gp->ed_frp = file_add(sp, NULL)) == NULL)
+		return (1);
+
+	/*
+	 * XXX
+	 * Create a screen -- the file initialization code wants one.
+	 */
+	if (screen_init(sp->gp, sp, &new))
+		return (1);
+	if (file_init(new, sp->gp->ed_frp, NULL, 0)) {
+		(void)screen_end(new);
+		return (1);
+	}
+	/* This file isn't recoverable. */
+	F_SET(new->ep, F_RCV_ON);
+
+	/* Grab a handle on the underlying file. */
+	sp->gp->ed_ep = new->ep;
+
+	/* Discard the screen. */
+	if (screen_end(new))
+		return (1);
+
 	return (0);
 }

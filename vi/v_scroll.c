@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_scroll.c,v 10.7 1996/03/06 19:54:33 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:54:33 $";
+static const char sccsid[] = "$Id: v_scroll.c,v 10.8 1996/03/15 20:17:20 bostic Exp $ (Berkeley) $Date: 1996/03/15 20:17:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -242,12 +242,16 @@ v_cr(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	/*
-	 * If it's a script window, exec the line,
-	 * otherwise it's the same as v_down().
-	 */
-	return (F_ISSET(sp, S_SCRIPT) ?
-	    sscr_exec(sp, vp->m_start.lno) : v_down(sp, vp));
+	/* If it's a colon command-line edit window, it's an ex command. */
+	if (F_ISSET(sp, S_COMEDIT))
+		return (v_ecl_exec(sp));
+
+	/* If it's a script window, exec the line. */
+	if (F_ISSET(sp, S_SCRIPT))
+		return (sscr_exec(sp, vp->m_start.lno));
+
+	/* Otherwise, it's the same as v_down(). */
+	return (v_down(sp, vp));
 }
 
 /*
