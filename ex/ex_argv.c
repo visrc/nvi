@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_argv.c,v 10.34 2000/08/01 19:37:42 skimo Exp $ (Berkeley) $Date: 2000/08/01 19:37:42 $";
+static const char sccsid[] = "$Id: ex_argv.c,v 10.35 2000/11/26 20:10:41 skimo Exp $ (Berkeley) $Date: 2000/11/26 20:10:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -733,7 +733,7 @@ err:		if (ifp != NULL)
 	 * shell that does that is broken.
 	 */
 	for (p = bp, len = 0, ch = EOF;
-	    (ch = getc(ifp)) != EOF; *p++ = ch, --blen, ++len)
+	    (ch = getc(ifp)) != EOF; *p++ = ch, blen-=sizeof(CHAR_T), ++len)
 		if (blen < 5) {
 			ADD_SPACE_GOTOW(sp, bp, *blenp, *blenp * 2);
 			p = bp + len;
