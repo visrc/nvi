@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 9.4 1994/11/18 17:09:31 bostic Exp $ (Berkeley) $Date: 1994/11/18 17:09:31 $";
+static char sccsid[] = "$Id: key.c,v 9.5 1994/11/18 17:27:11 bostic Exp $ (Berkeley) $Date: 1994/11/18 17:27:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -203,14 +203,14 @@ void
 key_init(sp)
 	SCR *sp;
 {
+	CHAR_T ch, *p, *t;
 	GS *gp;
-	CHAR_T ch;
+	size_t len;
 
-	for (gp = sp->gp, ch = 0; ch <= MAX_FAST_KEY; ++ch) {
-		(void)__key_name(sp, ch);
-		(void)memmove(gp->cname[ch].name, sp->cname, sp->clen);
-		gp->cname[ch].len = sp->clen;
-	}
+	for (gp = sp->gp, ch = 0; ch <= MAX_FAST_KEY; ++ch)
+		for (p = gp->cname[ch].name, t = __key_name(sp, ch),
+		    len = gp->cname[ch].len = sp->clen; len--;)
+			*p++ = *t++;
 }
 
 /*
