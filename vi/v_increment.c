@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_increment.c,v 9.7 1995/01/11 16:22:08 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:22:08 $";
+static char sccsid[] = "$Id: v_increment.c,v 9.8 1995/01/23 17:33:14 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:33:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -98,7 +98,7 @@ v_increment(sp, vp)
 		goto nonum;
 	if (beg != vp->m_start.cno) {
 		sp->cno = beg;
-		(void)sp->s_refresh(sp);
+		(void)sp->e_refresh(sp);
 	}
 
 #undef	ishex

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 9.14 1995/01/12 19:54:26 bostic Exp $ (Berkeley) $Date: 1995/01/12 19:54:26 $";
+static char sccsid[] = "$Id: vi.c,v 9.15 1995/01/23 17:33:39 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:33:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -86,7 +86,7 @@ vi(sp)
 		sp->showmode = "Command";
 		if (F_ISSET(VIP(sp), VIP_SKIPREFRESH))
 			F_CLR(VIP(sp), VIP_SKIPREFRESH);
-		else if (sp->s_refresh(sp)) {
+		else if (sp->e_refresh(sp)) {
 			eval = 1;
 			break;
 		}
@@ -94,7 +94,7 @@ vi(sp)
 		/* Set the new favorite position. */
 		if (F_ISSET(vp, VM_RCM_SET | VM_RCM_SETFNB | VM_RCM_SETNNB)) {
 			F_CLR(vp, VIP_RCM_LAST);
-			(void)sp->s_column(sp, &sp->rcm);
+			(void)svi_column(sp, &sp->rcm);
 		}
 
 		/*
@@ -269,7 +269,7 @@ vi(sp)
 		case VM_RCM_SET:
 			break;
 		case VM_RCM:
-			vp->m_final.cno = sp->s_rcm(sp,
+			vp->m_final.cno = svi_rcm(sp,
 			    vp->m_final.lno, F_ISSET(vp, VIP_RCM_LAST));
 			break;
 		case VM_RCM_SETLAST:
@@ -588,7 +588,7 @@ esc:	switch (cpart) {
 	case ISPARTIAL:
 		break;
 	case NOTPARTIAL:
-		(void)sp->s_bell(sp);
+		(void)sp->e_bell(sp);
 		break;
 	}
 	return (GC_ERR);
@@ -858,7 +858,7 @@ err:		msgq(sp, M_BERR, "212|Cursor not in a word");
 	}
 	if (moved) {
 		sp->cno = beg;
-		(void)sp->s_refresh(sp);
+		(void)sp->e_refresh(sp);
 	}
 
 	/* Find the end of the word. */
@@ -935,7 +935,7 @@ v_key(sp, ikeyp, map)
 		 * on the command line, and two interrupts were generated
 		 * in a row.  (Just figured you might want to know that.)
 		 */
-		(void)sp->s_bell(sp);
+		(void)sp->e_bell(sp);
 		return (1);
 	case INP_OK:
 		return (0);

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 9.10 1995/01/11 21:33:00 bostic Exp $ (Berkeley) $Date: 1995/01/11 21:33:00 $";
+static char sccsid[] = "$Id: v_init.c,v 9.11 1995/01/23 17:33:15 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:33:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,6 +31,7 @@ static char sccsid[] = "$Id: v_init.c,v 9.10 1995/01/11 21:33:00 bostic Exp $ (B
 #include "vi.h"
 #include "vcmd.h"
 #include "excmd.h"
+#include "../svi/svi_screen.h"
 
 /*
  * v_screen_copy --
@@ -106,7 +107,7 @@ v_init(sp)
 	SCR *sp;
 {
 	/* Make ex display to a vi scrolling function. */
-	if ((sp->stdfp = fwopen(sp, sp->s_ex_write)) == NULL) {
+	if ((sp->stdfp = fwopen(sp, svi_ex_write)) == NULL) {
 		msgq(sp, M_SYSERR, "ex output");
 		return (1);
 	}

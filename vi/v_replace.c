@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_replace.c,v 9.3 1995/01/11 16:22:19 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:22:19 $";
+static char sccsid[] = "$Id: v_replace.c,v 9.4 1995/01/23 17:33:20 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:33:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -103,7 +103,7 @@ nochar:		msgq(sp, M_BERR, "185|No characters to replace");
 		ikey.value = KEY_VAL(sp, ikey.ch);
 	} else {
 		sp->showmode = "Replace char";
-		(void)sp->s_refresh(sp);
+		(void)sp->e_refresh(sp);
 
 		if (term_key(sp, &ikey, 0) != INP_OK)
 			return (1);

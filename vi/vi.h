@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 9.8 1995/01/12 19:58:11 bostic Exp $ (Berkeley) $Date: 1995/01/12 19:58:11 $
+ *	$Id: vi.h,v 9.9 1995/01/23 17:33:33 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:33:33 $
  */
 
 typedef struct _vikeys VIKEYS;
@@ -198,6 +198,11 @@ typedef struct _vi_private {
 } VI_PRIVATE;
 
 #define	VIP(sp)	((VI_PRIVATE *)((sp)->vi_private))
+
+/* Generic interfaces to vi. */
+int	v_optchange __P((SCR *, int));
+int	v_screen_copy __P((SCR *, SCR *));
+int	v_screen_end __P((SCR *));
 
 /* Vi function prototypes. */
 int	txt_auto __P((SCR *, recno_t, TEXT *, size_t, TEXT *));

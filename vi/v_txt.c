@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 9.12 1995/01/12 19:58:35 bostic Exp $ (Berkeley) $Date: 1995/01/12 19:58:35 $";
+static char sccsid[] = "$Id: v_txt.c,v 9.13 1995/01/23 17:33:17 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:33:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -90,12 +90,12 @@ v_ntext(sp, tiqh, tm, lp, len, rp, prompt, ai_line, flags)
 	enum { H_NOTSET, H_NEXTCHAR, H_INHEX } hex;
 				/* State of quotation. */
 	enum { Q_NOTSET, Q_BNEXT, Q_BTHIS, Q_VNEXT, Q_VTHIS } quoted;
-	enum input tval;
 	struct termios t;	/* Terminal characteristics. */
 	CH ikey, *ikeyp;	/* Input character structure. */
 	CHAR_T ch;		/* Input character. */
 	TEXT *tp, *ntp, ait;	/* Input and autoindent text structures. */
 	TEXT wmt;		/* Wrapmargin text structure. */
+	input_t tval;
 	size_t owrite, insert;	/* Temporary copies of TEXT fields. */
 	size_t rcol;		/* 0-N: insert offset in the replay buffer. */
 	size_t col;		/* Current column. */
@@ -307,12 +307,12 @@ nullreplay:
 		 * the cursor really is.
 		 */
 		if (showmatch || margin || !KEYS_WAITING(sp)) {
-			if (sp->s_change(sp, tp->lno, LINE_RESET))
+			if (sp->e_change(sp, tp->lno, LINE_RESET))
 				goto err;
 			if (showmatch) {
 				showmatch = 0;
 				txt_showmatch(sp);
-			} else if (sp->s_refresh(sp))
+			} else if (sp->e_refresh(sp))
 				goto err;
 		}
 
@@ -448,7 +448,7 @@ k_cr:			if (LF_ISSET(TXT_CR)) {
 				 * push a <cr> so it gets executed.
 				 */
 				if (LF_ISSET(TXT_INFOLINE)) {
-					if (sp->s_change(sp,
+					if (sp->e_change(sp,
 					    tp->lno, LINE_RESET))
 						goto err;
 				} else if (F_ISSET(sp, S_SCRIPT))
@@ -494,7 +494,7 @@ k_cr:			if (LF_ISSET(TXT_CR)) {
 			tp->len = sp->cno;
 
 			/* Update the old line. */
-			if (sp->s_change(sp, tp->lno, LINE_RESET))
+			if (sp->e_change(sp, tp->lno, LINE_RESET))
 				goto err;
 
 			/*
@@ -601,12 +601,12 @@ k_cr:			if (LF_ISSET(TXT_CR)) {
 			CIRCLEQ_INSERT_TAIL(tiqh, tp, q);
 
 			/* Update the new line. */
-			if (sp->s_change(sp, tp->lno, LINE_INSERT))
+			if (sp->e_change(sp, tp->lno, LINE_INSERT))
 				goto err;
 
 			/* Refresh if nothing waiting. */
 			if (margin || !KEYS_WAITING(sp))
-				if (sp->s_refresh(sp))
+				if (sp->e_refresh(sp))
 					goto err;
 			goto next_ch;
 		case K_ESCAPE:				/* Escape. */
@@ -658,7 +658,7 @@ k_escape:		LINE_RESOLVE;
 			if (rp != NULL) {
 				rp->lno = tp->lno;
 				rp->cno = sp->cno ? sp->cno - 1 : 0;
-				if (sp->s_change(sp, rp->lno, LINE_RESET))
+				if (sp->e_change(sp, rp->lno, LINE_RESET))
 					goto err;
 			}
 			goto ret;
@@ -889,7 +889,7 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 			 * Note, historically suspend triggered an autowrite.
 			 * That needs to be done to make this work correctly.
 			 */
-			(void)sp->s_suspend(sp);
+			(void)sp->e_suspend(sp);
 			break;
 #endif
 #ifdef	HISTORIC_PRACTICE_IS_TO_INSERT_NOT_REPAINT
@@ -1022,10 +1022,10 @@ insl_ch:		if (tp->owrite)		/* Overwrite a character. */
 			 * <tab> characters were counted as two characters if
 			 * the list edit option is set, but as the tabstop edit
 			 * option number of characters otherwise.  That's what
-			 * the s_column() function gives us, so we use it.
+			 * the svi_column() function gives us, so we use it.
 			 */
 			if (margin) {
-				if (sp->s_column(sp, &col))
+				if (svi_column(sp, &col))
 					goto err;
 				if (col >= margin) {
 					if (txt_margin(sp,
@@ -1472,7 +1472,7 @@ txt_backup(sp, tiqh, tp, flagsp)
 	text_free(tp);
 
 	/* Update the old line on the screen. */
-	if (sp->s_change(sp, ntp->lno + 1, LINE_DELETE))
+	if (sp->e_change(sp, ntp->lno + 1, LINE_DELETE))
 		return (NULL);
 
 	/* Return the new/current TEXT. */
@@ -1642,7 +1642,7 @@ txt_dent(sp, tp, isindent)
 	 * Figure out the current and target screen columns.  In the historic
 	 * vi, the autoindent column was NOT determined using display widths
 	 * of characters as was the wrapmargin column.  For that reason, we
-	 * can't use the s_column() function, but have to calculate it here.
+	 * can't use the svi_column() function, but have to calculate it here.
 	 * This is slow, but it's normally only on the first few characters of
 	 * a line.
 	 */
@@ -1792,13 +1792,13 @@ txt_showmatch(sp)
 	 * one in awhile, so the user can see what we're complaining
 	 * about.
 	 */
-	if (sp->s_refresh(sp))
+	if (sp->e_refresh(sp))
 		return;
 	/*
 	 * We don't display the match if it's not on the screen.  Find
 	 * out what the first character on the screen is.
 	 */
-	if (sp->s_position(sp, &m, 0, P_TOP))
+	if (svi_sm_position(sp, &m, 0, P_TOP))
 		return;
 
 	/* Initialize the getc() interface. */
@@ -1816,7 +1816,7 @@ txt_showmatch(sp)
 			if (cs.cs_flags == CS_EOF || cs.cs_flags == CS_SOF) {
 				msgq(sp, M_BERR,
 				    "Unmatched %s", KEY_NAME(sp, endc));
-				(void)sp->s_refresh(sp);
+				(void)sp->e_refresh(sp);
 				return;
 			}
 			continue;
@@ -1835,7 +1835,7 @@ txt_showmatch(sp)
 	m.cno = sp->cno;
 	sp->lno = cs.cs_lno;
 	sp->cno = cs.cs_cno;
-	(void)sp->s_refresh(sp);
+	(void)sp->e_refresh(sp);
 
 	/*
 	 * Sleep(3) is eight system calls.  Do it fast -- besides,
@@ -1849,7 +1849,7 @@ txt_showmatch(sp)
 	/* Return to the current location. */
 	sp->lno = m.lno;
 	sp->cno = m.cno;
-	(void)sp->s_refresh(sp);
+	(void)sp->e_refresh(sp);
 }
 
 /*

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_left.c,v 9.4 1995/01/11 16:22:10 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:22:10 $";
+static char sccsid[] = "$Id: v_left.c,v 9.5 1995/01/23 17:33:16 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:33:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,6 +27,7 @@ static char sccsid[] = "$Id: v_left.c,v 9.4 1995/01/11 16:22:10 bostic Exp $ (Be
 
 #include "vi.h"
 #include "vcmd.h"
+#include "../svi/svi_screen.h"
 
 /*
  * v_left -- [count]^H, [count]h
@@ -195,7 +196,7 @@ v_ncol(sp, vp)
 	if (F_ISSET(vp, VC_C1SET) && vp->count > 1) {
 		--vp->count;
 		vp->m_stop.cno =
-		    sp->s_colpos(sp, vp->m_start.lno, (size_t)vp->count);
+		    svi_colpos(sp, vp->m_start.lno, (size_t)vp->count);
 		/*
 		 * !!!
 		 * The | command succeeded if used as a command and the cursor

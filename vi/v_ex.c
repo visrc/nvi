@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 9.2 1995/01/11 16:22:07 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:22:07 $";
+static char sccsid[] = "$Id: v_ex.c,v 9.3 1995/01/23 17:33:13 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:33:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,6 +29,7 @@ static char sccsid[] = "$Id: v_ex.c,v 9.2 1995/01/11 16:22:07 bostic Exp $ (Berk
 #include "vi.h"
 #include "excmd.h"
 #include "vcmd.h"
+#include "../svi/svi_screen.h"
 
 /*
  * v_again -- &
@@ -44,7 +45,7 @@ v_again(sp, vp)
 
 	ex_cbuild(&cmd, C_SUBAGAIN,
 	    2, vp->m_start.lno, vp->m_start.lno, 1, ap, &a, "");
-	return (sp->s_ex_cmd(sp, &cmd, &vp->m_final));
+	return (svi_ex_cmd(sp, &cmd, &vp->m_final));
 }
 
 /*
@@ -64,7 +65,7 @@ v_at(sp, vp)
 		F_SET(&cmd, E_BUFFER);
 		cmd.buffer = vp->buffer;
 	}
-        return (sp->s_ex_cmd(sp, &cmd, &vp->m_final));
+        return (svi_ex_cmd(sp, &cmd, &vp->m_final));
 }
 
 /*
@@ -76,7 +77,7 @@ v_ex(sp, vp)
 	SCR *sp;
 	VICMDARG *vp;
 {
-	return (sp->s_ex_run(sp, &vp->m_final));
+	return (svi_ex_run(sp, &vp->m_final));
 }
 
 /*
@@ -94,7 +95,7 @@ v_exmode(sp, vp)
 	F_SET(sp->frp, FR_CURSORSET);
 
 	/* Switch to ex mode. */
-	sp->saved_vi_mode = F_ISSET(sp, S_VI_CURSES | S_VI_XAW);
+	sp->saved_vi_mode = F_ISSET(sp, S_VI);
 	F_CLR(sp, S_SCREENS);
 	F_SET(sp, S_EX);
 	return (0);
@@ -141,7 +142,7 @@ v_filter(sp, vp)
 			return (1);
 	} else {
 		/* Get the command from the user. */
-		if (sp->s_get(sp, sp->tiqp,
+		if (svi_get(sp, sp->tiqp,
 		    '!', TXT_BS | TXT_CR | TXT_ESCAPE | TXT_PROMPT) != INP_OK)
 			return (1);
 		/*
@@ -157,7 +158,7 @@ v_filter(sp, vp)
 	}
 	cmd.argc = EXP(sp)->argsoff;		/* XXX */
 	cmd.argv = EXP(sp)->args;		/* XXX */
-	return (sp->s_ex_cmd(sp, &cmd, &vp->m_final));
+	return (svi_ex_cmd(sp, &cmd, &vp->m_final));
 }
 
 /*
@@ -187,7 +188,7 @@ v_join(sp, vp)
 		lno = vp->m_start.lno + (vp->count - 1);
 
 	ex_cbuild(&cmd, C_JOIN, 2, vp->m_start.lno, lno, 0, ap, &a, NULL);
-	return (sp->s_ex_cmd(sp, &cmd, &vp->m_final));
+	return (svi_ex_cmd(sp, &cmd, &vp->m_final));
 }
 
 /*
@@ -204,7 +205,7 @@ v_shiftl(sp, vp)
 
 	ex_cbuild(&cmd, C_SHIFTL,
 	    2, vp->m_start.lno, vp->m_stop.lno, 0, ap, &a, "<");
-	return (sp->s_ex_cmd(sp, &cmd, &vp->m_final));
+	return (svi_ex_cmd(sp, &cmd, &vp->m_final));
 }
 
 /*
@@ -221,7 +222,7 @@ v_shiftr(sp, vp)
 
 	ex_cbuild(&cmd, C_SHIFTR,
 	    2, vp->m_start.lno, vp->m_stop.lno, 0, ap, &a, ">");
-	return (sp->s_ex_cmd(sp, &cmd, &vp->m_final));
+	return (svi_ex_cmd(sp, &cmd, &vp->m_final));
 }
 
 /*
@@ -251,7 +252,7 @@ v_switch(sp, vp)
 		return (1);
 
 	ex_cbuild(&cmd, C_EDIT, 0, OOBLNO, OOBLNO, 0, ap, &a, name);
-	return (sp->s_ex_cmd(sp, &cmd, &vp->m_final));
+	return (svi_ex_cmd(sp, &cmd, &vp->m_final));
 }
 
 /*
@@ -267,7 +268,7 @@ v_tagpush(sp, vp)
 	EXCMDARG cmd;
 
 	ex_cbuild(&cmd, C_TAG, 0, OOBLNO, 0, 0, ap, &a, vp->keyword);
-	return (sp->s_ex_cmd(sp, &cmd, &vp->m_final));
+	return (svi_ex_cmd(sp, &cmd, &vp->m_final));
 }
 
 /*
@@ -283,5 +284,5 @@ v_tagpop(sp, vp)
 	EXCMDARG cmd;
 
 	ex_cbuild(&cmd, C_TAGPOP, 0, OOBLNO, 0, 0, ap, &a, NULL);
-	return (sp->s_ex_cmd(sp, &cmd, &vp->m_final));
+	return (svi_ex_cmd(sp, &cmd, &vp->m_final));
 }
