@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 5.14 1993/02/13 12:49:15 bostic Exp $ (Berkeley) $Date: 1993/02/13 12:49:15 $";
+static char sccsid[] = "$Id: search.c,v 5.15 1993/02/14 12:31:26 bostic Exp $ (Berkeley) $Date: 1993/02/14 12:31:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -48,11 +48,9 @@ noprev:		msg("No previous search pattern.");
 		return (1);
 	}
 
-	/* Set return values to defaults. */
+	/* Set delta to default. */
 	if (deltap != NULL)
 		*deltap = 0;
-	if (epp != NULL)
-		*epp = NULL;
 
 	/*
 	 * Use saved pattern if no pattern supplied, or if only the delimiter
@@ -69,18 +67,39 @@ noprev:		msg("No previous search pattern.");
 		reflags |= REG_EXTENDED;
 	if (ISSET(O_IGNORECASE))
 		reflags |= REG_ICASE;
-						/* Parse the string. */
-	if (flags & SEARCH_PARSE) {
+
+	if (flags & SEARCH_PARSE) {		/* Parse the string. */
+		/* Set delimiter. */
 		delim[0] = *ptrn++;
 		delim[1] = '\0';
+
+		/* Find terminating delimiter. */
 		ep = ptrn;
 		ptrn = USTRSEP(&ep, delim);
-		if (deltap != NULL && ep != NULL)
-			*deltap = USTRTOL(ep, &ep, 10);
-		if (epp == NULL && ep != NULL && *ep) {
-			msg("Characters after search string.");
-			return (1);
+
+		/*
+		 * If characters after the terminating delimiter, it may
+		 * be an error, or may be an offset.  In either case, we
+		 * return the end of the string, whatever it may be, or
+		 * change the end pointer to reference a NULL.  Don't just
+		 * whack the string, in case it's text space.
+		 */
+		if (ep != NULL) {
+			if (flags & SEARCH_TERM) {
+				msg("Characters after search string.");
+				return (1);
+			}
+			if (deltap != NULL)
+				*deltap = USTRTOL(ep, &ep, 10);
+			if (epp != NULL)
+				*epp = ep;
+		} else {
+			static u_char ebuf[1];
+			if (epp != NULL)
+				*epp = ebuf;
 		}
+
+		/* If the pattern was empty, use the previous pattern. */
 		if (*ptrn == '\0') {
 			if (searchdir == NOTSET)
 				goto noprev;
