@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_msg.c,v 10.65 1996/05/15 18:32:09 bostic Exp $ (Berkeley) $Date: 1996/05/15 18:32:09 $";
+static const char sccsid[] = "$Id: vs_msg.c,v 10.66 1996/05/21 15:04:36 bostic Exp $ (Berkeley) $Date: 1996/05/21 15:04:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -310,21 +310,6 @@ vs_msg(sp, mtype, line, len)
 	/* Save the cursor position. */
 	(void)gp->scr_cursor(sp, &oldy, &oldx);
 
-	/*
-	 * If the message type is changing, terminate any previous message
-	 * and move to a new line.
-	 */
-	if (mtype != vip->mtype) {
-		if (vip->lcontinue != 0) {
-			if (vip->mtype == M_NONE)
-				vs_output(sp, vip->mtype, "\n", 1);
-			else
-				vs_output(sp, vip->mtype, ".\n", 2);
-			vip->lcontinue = 0;
-		}
-		vip->mtype = mtype;
-	}
-
 	/* If it's an ex output message, just write it out. */
 	if (mtype == M_NONE) {
 		vs_output(sp, mtype, line, len);
@@ -363,11 +348,12 @@ vs_msg(sp, mtype, line, len)
 
 	if (vip->lcontinue != 0)
 		if (len + vip->lcontinue + padding >= sp->cols)
-			vs_output(sp, mtype, ".\n", 2);
+			vs_output(sp, vip->mtype, ".\n", 2);
 		else  {
-			vs_output(sp, mtype, ";", 1);
+			vs_output(sp, vip->mtype, ";", 1);
 			vs_output(sp, M_NONE, " ", 1);
 		}
+	vip->mtype = mtype;
 	for (s = line; len > 0; s = t) {
 		for (; isblank(*s) && --len != 0; ++s);
 		if (len == 0)
@@ -552,18 +538,24 @@ vs_ex_resolve(sp, continuep)
 	/* If we ran an ex command, we don't trust the cursor. */
 	F_SET(vip, VIP_CUR_INVALID);
 
+	/* Output the line modifications report. */
+	mod_rpt(sp);
+
+	/* Terminate any partially written message. */
+	if (vip->lcontinue != 0) {
+		vs_output(sp, vip->mtype, ".", 1);
+		vip->lcontinue = 0;
+
+		vip->mtype = M_NONE;
+	}
+
 	/*
 	 * If we switched out of the vi screen into ex, switch back while we
 	 * figure out what to do with the screen and potentially get another
 	 * command to execute.
 	 *
-	 * If we didn't switch into ex and only 0 or 1 lines of output, we may
-	 * be able to continue w/o making the user wait.  First, if no lines of
-	 * output, we can simply return, leaving the line modifications report
-	 * to the next call to vs_resolve from the main vi loop.  Else, output
-	 * that report and see if that pushes us over the edge.  If it does, we
-	 * wait, else we can return, again leaving the line modification report
-	 * until later.
+	 * If we didn't switch into ex and only 0 or 1 lines of output, we can
+	 * continue without making the user wait.
 	 *
 	 * Note, all other code paths require waiting, so those cases leave the
 	 * report of modified lines until later.  As a result, groups of ex
@@ -573,19 +565,11 @@ vs_ex_resolve(sp, continuep)
 	if (F_ISSET(sp, SC_SCR_EXWROTE)) {
 		if (sp->gp->scr_screen(sp, SC_VI))
 			return (1);
-	} else {
+	} else
 		if (vip->totalcount < 2) {
-			if (vip->totalcount == 0) {
-				F_CLR(sp, SC_EX_DONTWAIT);
-				return (0);
-			}
-			msgq_rpt(sp);
-			if (vip->totalcount < 2) {
-				F_CLR(sp, SC_EX_DONTWAIT);
-				return (0);
-			}
+			F_CLR(sp, SC_EX_DONTWAIT);
+			return (0);
 		}
-	}
 
 	/*
 	 * Wait, unless explicitly told not to wait or the user interrupted
@@ -691,7 +675,7 @@ vs_resolve(sp)
 	}
 
 	/* Report on line modifications. */
-	msgq_rpt(sp);
+	mod_rpt(sp);
 
 	/*
 	 * Flush any saved messages.  If the screen isn't ready, refresh
