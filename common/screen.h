@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.127 1994/08/08 10:10:18 bostic Exp $ (Berkeley) $Date: 1994/08/08 10:10:18 $
+ *	$Id: screen.h,v 8.128 1994/09/12 11:34:03 bostic Exp $ (Berkeley) $Date: 1994/09/12 11:34:03 $
  */
 
 /*
@@ -38,9 +38,6 @@ enum sctype {				/* Scroll operations. */
  *
  * !!!
  * The read-only bit follows the file name, not the file itself.
- *
- * XXX
- * The mtime field should be a struct timespec, but time_t is more portable.
  */
 struct _fref {
 	CIRCLEQ_ENTRY(_fref) q;		/* Linked list of file references. */
