@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 10.10 1995/09/25 09:46:34 bostic Exp $ (Berkeley) $Date: 1995/09/25 09:46:34 $";
+static char sccsid[] = "$Id: v_txt.c,v 10.11 1995/09/25 10:08:16 bostic Exp $ (Berkeley) $Date: 1995/09/25 10:08:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -282,8 +282,10 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 		} else
 			tp->insert = len - sp->cno;
 
-		if (LF_ISSET(TXT_EMARK))
+		if (LF_ISSET(TXT_EMARK)) {
 			tp->lb[tm->cno] = CH_ENDMARK;
+			(void)vs_change(sp, tp->lno, LINE_RESET);
+		}
 	}
 
 	/*
