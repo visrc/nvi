@@ -6,18 +6,18 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.32 1992/12/05 11:05:08 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:05:08 $";
+static char sccsid[] = "$Id: exf.c,v 5.33 1992/12/05 11:23:09 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:23:09 $";
 #endif /* not lint */
 
 #include <sys/param.h>
 #include <sys/stat.h>
-#include <fcntl.h>
-#include <db.h>
+
 #include <errno.h>
-#include <unistd.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "vi.h"
 #include "excmd.h"
@@ -40,7 +40,7 @@ static EXF defexf = {
 	NULL, 0, OOBLNO, OOBLNO,		/* c_{lp,len,lno,nlines} */
 	NULL, NULL, 0,				/* log, l_lp, l_len */
 	stdout, 				/* stdfp */
-	NULL,					/* sre */
+	{ 0 },					/* sre */
 	0, NULL,				/* rptlines, rptlabel */
 	F_FORGET,				/* remember */
 	NULL, 0, 0,				/* name, nlen, flags */
