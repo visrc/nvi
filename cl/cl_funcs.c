@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_funcs.c,v 10.28 1995/11/10 10:12:36 bostic Exp $ (Berkeley) $Date: 1995/11/10 10:12:36 $";
+static char sccsid[] = "$Id: cl_funcs.c,v 10.29 1995/11/11 11:54:21 bostic Exp $ (Berkeley) $Date: 1995/11/11 11:54:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -467,35 +467,90 @@ cl_suspend(sp, allowedp)
 	size_t oldy, oldx;
 	int changed;
 
+	gp = sp->gp;
+	clp = CLP(sp);
 	*allowedp = 1;
 
 	/*
-	 * XXX
-	 * All of this is done completely behind curses back.  You can't
-	 * portably stop and restart curses screens, and even hope to get
-	 * it right.  End of story.
+	 * The ex implementation of this function isn't needed by screens not
+	 * supporting ex commands that require full terminal canonical mode
+	 * (e.g. :suspend).
 	 *
-	 * Save the terminal settings, and restore the original ones.
+	 * The vi implementation of this function isn't needed by screens not
+	 * supporting vi process suspension, i.e. any screen that isn't backed
+	 * by a UNIX shell.
+	 *
+	 * Setting allowedp to 0 will cause the editor to reject the command.
 	 */
-	gp = sp->gp;
-	if (F_ISSET(gp, G_STDIN_TTY)) {
-		if (tcgetattr(STDIN_FILENO, &t)) {
-			msgq(sp, M_SYSERR, "suspend: tcgetattr");
+	if (F_ISSET(sp, S_EX)) { 
+		/* Save the terminal settings, and restore the original ones. */
+		if (F_ISSET(gp, G_STDIN_TTY)) {
+			if (tcgetattr(STDIN_FILENO, &t)) {
+				msgq(sp, M_SYSERR, "suspend: tcgetattr");
+				return (1);
+			}
+			if (tcsetattr(STDIN_FILENO,
+			    TCSASOFT | TCSADRAIN, &clp->orig)) {
+				msgq(sp, M_SYSERR,
+				    "suspend: tcsetattr original");
+				return (1);
+			}
+		}
+
+		/* Stop the process group. */
+		if (kill(0, SIGTSTP)) {
+			msgq(sp, M_SYSERR, "suspend: kill");
 			return (1);
 		}
-		clp = CLP(sp);
-		if (tcsetattr(STDIN_FILENO, TCSASOFT | TCSADRAIN, &clp->orig)) {
-			msgq(sp, M_SYSERR, "suspend: tcsetattr original");
+
+		/* Time passes ... */
+
+		/* Restore terminal settings. */
+		if (F_ISSET(gp, G_STDIN_TTY) &&
+		    tcsetattr(STDIN_FILENO, TCSASOFT | TCSADRAIN, &t)) {
+			msgq(sp, M_SYSERR, "suspend: tcsetattr current");
 			return (1);
 		}
+		return (0);
 	}
 
-	/* Move to the lower left-hand corner of the screen. */
-	if (F_ISSET(sp, S_VI)) {
-		getyx(stdscr, oldy, oldx);
-		(void)move(LINES - 1, 0);
-		(void)refresh();
+	/*
+	 * Move to the lower left-hand corner of the screen.
+	 *
+	 * XXX
+	 * Not sure this is necessary in System V implementations, but it
+	 * shouldn't hurt.
+	 */
+	getyx(stdscr, oldy, oldx);
+	(void)move(LINES - 1, 0);
+	(void)refresh();
+
+	/*
+	 * Temporarily end the screen.  System V introduced a semantic where
+	 * endwin() could be restarted.  We use it because restarting curses
+	 * from scratch often fails in System V.  4BSD curses didn't support
+	 * restarting after endwin(), so we have to do what clean up we can
+	 * without calling it.
+	 */
+#ifdef BSD_CURSES_INTERFACE
+	/* Save the terminal settings. */
+	if (F_ISSET(gp, G_STDIN_TTY) && tcgetattr(STDIN_FILENO, &t)) {
+		msgq(sp, M_SYSERR, "suspend: tcgetattr");
+		return (1);
 	}
+
+	/* Restore the cursor keys to normal mode. */
+	(void)keypad(stdscr, FALSE);
+
+	/* Restore the original terminal settings. */
+	if (F_ISSET(gp, G_STDIN_TTY) &&
+	    tcsetattr(STDIN_FILENO, TCSASOFT | TCSADRAIN, &clp->orig)) {
+		msgq(sp, M_SYSERR, "suspend: tcsetattr original");
+		return (1);
+	}
+#else
+	(void)endwin();
+#endif
 
 	/* Stop the process group. */
 	if (kill(0, SIGTSTP)) {
@@ -505,23 +560,27 @@ cl_suspend(sp, allowedp)
 
 	/* Time passes ... */
 
+#ifdef BSD_CURSES_INTERFACE
+	/* Put the cursor keys into application mode. */
+	(void)keypad(stdscr, TRUE);
+
 	/* Restore terminal settings. */
 	if (F_ISSET(gp, G_STDIN_TTY) &&
 	    tcsetattr(STDIN_FILENO, TCSASOFT | TCSADRAIN, &t)) {
 		msgq(sp, M_SYSERR, "suspend: tcsetattr current");
 		return (1);
 	}
+#endif
+	/* Refresh and repaint the screen. */
+	(void)move(oldy, oldx);
+	(void)cl_refresh(sp, 1);
 
-	/* Refresh the screen; if it changed size, set the SIGWINCH bit. */
-	if (F_ISSET(sp, S_VI)) {
-		(void)move(oldy, oldx);
-		(void)cl_refresh(sp, 1);
+	/* If the screen changed size, set the SIGWINCH bit. */
+	if (cl_ssize(sp, 1, NULL, NULL, &changed))
+		return (1);
+	if (changed)
+		F_SET(CLP(sp), CL_SIGWINCH);
 
-		if (cl_ssize(sp, 1, NULL, NULL, &changed))
-			return (1);
-		if (changed)
-			F_SET(CLP(sp), CL_SIGWINCH);
-	}
 	return (0);
 }
 
