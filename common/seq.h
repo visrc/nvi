@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: seq.h,v 8.1 1993/06/09 22:22:14 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:22:14 $
+ *	$Id: seq.h,v 8.2 1993/10/03 10:41:16 bostic Exp $ (Berkeley) $Date: 1993/10/03 10:41:16 $
  */
 
 /*
@@ -32,7 +32,7 @@ enum seqtype { SEQ_ABBREV, SEQ_COMMAND, SEQ_INPUT };
 
 typedef struct _seq {
 	struct _seq *next, *prev;	/* Linked list of all sequences. */
-	struct _seq *snext, *sprev;	/* Linked list of ch sequences. */
+	struct _seq *forw, *back;	/* Linked list of ch sequences. */
 	enum seqtype stype;		/* Sequence type. */
 	char	*name;			/* Name of the sequence, if any. */
 	char	*input;			/* Input key sequence. */

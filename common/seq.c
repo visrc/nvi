@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 8.5 1993/08/27 18:10:39 bostic Exp $ (Berkeley) $Date: 1993/08/27 18:10:39 $";
+static char sccsid[] = "$Id: seq.c,v 8.6 1993/10/03 10:41:06 bostic Exp $ (Berkeley) $Date: 1993/10/03 10:41:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -44,10 +44,10 @@ seq_set(sp, name, input, output, stype, userdef)
 
 	ip = NULL;
 	hp = &sp->seq[*input];
-	if (hp->snext == NULL) {
-		HDR_INIT(sp->seq[*input], snext, sprev);
-	} else for (qp = hp->snext;
-	    qp != (SEQ *)hp && qp->ilen <= ilen; ip = qp, qp = qp->snext)
+	if (hp->forw == NULL) {
+		HDR_INIT(sp->seq[*input], forw, back);
+	} else for (qp = hp->forw;
+	    qp != (SEQ *)hp && qp->ilen <= ilen; ip = qp, qp = qp->forw)
 		if (qp->ilen == ilen && stype == qp->stype &&
 		    !strcmp(qp->input, input)) {
 			if ((p = strdup(output)) == NULL)
@@ -84,9 +84,9 @@ mem1:		msgq(sp, M_ERR, "Error: %s", strerror(errno));
 	/* Link into the chains. */
 	HDR_INSERT(qp, &sp->seqhdr, next, prev, SEQ);
 	if (ip == NULL) {
-		HDR_APPEND(qp, hp, snext, sprev, SEQ);
+		HDR_APPEND(qp, hp, forw, back, SEQ);
 	} else
-		HDR_INSERT(qp, ip, snext, sprev, SEQ);
+		HDR_INSERT(qp, ip, forw, back, SEQ);
 	return (0);
 }
 
@@ -106,7 +106,7 @@ seq_delete(sp, input, stype)
 		return (1);
 
 	HDR_DELETE(qp, next, prev, SEQ);
-	HDR_DELETE(qp, snext, sprev, SEQ);
+	HDR_DELETE(qp, forw, back, SEQ);
 
 	/* Free up the space. */
 	if (qp->name)
@@ -137,11 +137,11 @@ seq_find(sp, input, ilen, stype, ispartialp)
 		*ispartialp = 0;
 
 	hp = &sp->seq[*input];
-	if (hp->snext == NULL)
+	if (hp->forw == NULL)
 		return (NULL);
 
 	if (ispartialp) {
-		for (qp = hp->snext; qp != (SEQ *)hp; qp = qp->snext) {
+		for (qp = hp->forw; qp != (SEQ *)hp; qp = qp->forw) {
 			if (stype != qp->stype)
 				continue;
 			/*
@@ -158,7 +158,7 @@ seq_find(sp, input, ilen, stype, ispartialp)
 			}
 		}
 	} else
-		for (qp = hp->snext; qp != (SEQ *)hp; qp = qp->snext)
+		for (qp = hp->forw; qp != (SEQ *)hp; qp = qp->forw)
 			if (stype == qp->stype && qp->ilen == ilen &&
 			    !strncmp(qp->input, input, ilen))
 				return (qp);
