@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 8.30 1993/12/09 19:42:19 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:42:19 $
+ *	$Id: common.h,v 8.31 1993/12/19 18:54:02 bostic Exp $ (Berkeley) $Date: 1993/12/19 18:54:02 $
  */
 
 /* System includes. */
@@ -40,6 +40,7 @@ typedef struct _msg		MSG;
 typedef struct _option		OPTION;
 typedef struct _optlist		OPTLIST;
 typedef struct _scr		SCR;
+typedef struct _script		SCRIPT;
 typedef struct _seq		SEQ;
 typedef struct _tag		TAG;
 typedef struct _tagf		TAGF;

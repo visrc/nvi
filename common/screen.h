@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.76 1993/12/17 14:23:25 bostic Exp $ (Berkeley) $Date: 1993/12/17 14:23:25 $
+ *	$Id: screen.h,v 8.77 1993/12/19 18:54:09 bostic Exp $ (Berkeley) $Date: 1993/12/19 18:54:09 $
  */
 
 /*
@@ -133,11 +133,7 @@ struct _scr {
 
 	TEXTH	 tiq;			/* Ex/vi: text input queue. */
 
-	int	 sh_in[2];		/* Script: pipe. */
-	int	 sh_out[2];		/* Script: pipe. */
-	pid_t	 sh_pid;		/* Script: shell pid. */
-	char	*sh_prompt;		/* Script: prompt. */
-	size_t	 sh_prompt_len;		/* Script: prompt length. */
+	SCRIPT	*script;		/* Vi: script mode information .*/
 
 	char const *time_msg;		/* ITIMER_REAL message. */
 	struct itimerval time_value;	/* ITIMER_REAL saved value. */
