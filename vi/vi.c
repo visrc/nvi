@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 10.11 1995/09/25 10:49:02 bostic Exp $ (Berkeley) $Date: 1995/09/25 10:49:02 $";
+static char sccsid[] = "$Id: vi.c,v 10.12 1995/09/27 12:05:30 bostic Exp $ (Berkeley) $Date: 1995/09/27 12:05:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -99,8 +99,8 @@ vi(spp)
 
 		/* Refresh the screen. */
 		sp->showmode = SM_COMMAND;
-		if (F_ISSET(vip, VIP_SKIPREFRESH))
-			F_CLR(vip, VIP_SKIPREFRESH);
+		if (F_ISSET(vip, VIP_S_REFRESH))
+			F_CLR(vip, VIP_S_REFRESH);
 		else if (vs_refresh(sp))
 			goto ret;
 

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 10.10 1995/09/25 08:33:03 bostic Exp $ (Berkeley) $Date: 1995/09/25 08:33:03 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 10.11 1995/09/27 12:06:11 bostic Exp $ (Berkeley) $Date: 1995/09/27 12:06:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -87,16 +87,16 @@ vs_refresh(sp)
 	 * other than the current one, the cursor will be trashed.
 	 */
 	pub_paint = S_SCR_REFORMAT | S_SCR_REDRAW;
-	priv_paint = VIP_SCR_DIRTY;
+	priv_paint = VIP_N_REFRESH;
 	if (O_ISSET(sp, O_NUMBER))
-		priv_paint |= VIP_SCR_NUMBER;
+		priv_paint |= VIP_N_RENUMBER;
 	for (tsp = sp->gp->dq.cqh_first;
 	    tsp != (void *)&sp->gp->dq; tsp = tsp->q.cqe_next)
 		if (tsp != sp && !F_ISSET(tsp, S_EXIT | S_EXIT_FORCE) &&
 		    (F_ISSET(tsp, pub_paint) ||
 		    F_ISSET(VIP(tsp), priv_paint))) {
 			(void)vs_paint(tsp, 0);
-			F_CLR(VIP(tsp), VIP_SCR_DIRTY);
+			F_CLR(VIP(tsp), VIP_N_REFRESH);
 			F_SET(VIP(sp), VIP_CUR_INVALID);
 		}
 
@@ -107,7 +107,7 @@ vs_refresh(sp)
 	 * Also, always do it last -- that way, S_SCR_REDRAW can be set
 	 * in the current screen only, and the screen won't flash.
 	 */
-	F_CLR(VIP(sp), VIP_SCR_DIRTY);
+	F_CLR(VIP(sp), VIP_N_REFRESH);
 	if (vs_paint(sp, PAINT_CURSOR | PAINT_FLUSH))
 		return (1);
 
@@ -635,19 +635,19 @@ paint:	for (smp = HMAP; smp <= TMAP; ++smp)
 	/*
 	 * 8: Repaint the line numbers.
 	 *
-	 * If O_NUMBER is set and the VIP_SCR_NUMBER bit is set, and we
+	 * If O_NUMBER is set and the VIP_N_RENUMBER bit is set, and we
 	 * didn't repaint the screen, repaint all of the line numbers,
 	 * they've changed.
 	 */
 number:	if (O_ISSET(sp, O_NUMBER) &&
-	    F_ISSET(vip, VIP_SCR_NUMBER) && !didpaint && vs_number(sp))
-			return (1);
+	    F_ISSET(vip, VIP_N_RENUMBER) && !didpaint && vs_number(sp))
+		return (1);
 
 	/*
 	 * 9: Repaint the mode line.
 	 */
 	if (!F_ISSET(sp, S_INPUT_INFO) &&
-	    !F_ISSET(vip, VIP_SKIPMODE) && !IS_ONELINE(sp))
+	    !F_ISSET(vip, VIP_S_MODELINE) && !IS_ONELINE(sp))
 		vs_modeline(sp);
 
 	/*
@@ -672,7 +672,7 @@ number:	if (O_ISSET(sp, O_NUMBER) &&
 
 	/* 11: Clear the flags that are handled by this routine. */
 	F_CLR(sp, S_SCR_CENTER | S_SCR_REDRAW | S_SCR_REFORMAT | S_SCR_TOP);
-	F_CLR(vip, VIP_CUR_INVALID | VIP_SCR_NUMBER | VIP_SKIPMODE);
+	F_CLR(vip, VIP_CUR_INVALID | VIP_N_RENUMBER | VIP_S_MODELINE);
 
 	return (0);
 
