@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 10.21 1995/10/17 08:13:32 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:13:32 $";
+static char sccsid[] = "$Id: vi.c,v 10.22 1995/10/18 11:58:17 bostic Exp $ (Berkeley) $Date: 1995/10/18 11:58:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1111,46 +1111,62 @@ v_key(sp, command_events, evp, ec_flags)
 	EVENT *evp;
 	u_int32_t ec_flags;
 {
-next:	if (v_event_get(sp, evp, ec_flags))
-		return (GC_ERR);
+	u_int32_t quote;
 
-	/* Deal with all non-character events. */
-	switch (evp->e_event) {
-	case E_CHARACTER:
-		return (GC_OK);
-	case E_ERR:
-	case E_EOF:
-		F_SET(sp, S_EXIT_FORCE);
-		return (GC_ERR);
-	case E_INTERRUPT:
-		/*
-		 * !!!
-		 * Historically, vi beeped on command level interrupts.
-		 *
-		 * Historically, vi exited to ex mode if no file was named
-		 * on the command line, and two interrupts were generated
-		 * in a row.  (Just figured you might want to know that.)
-		 */
-		(void)sp->gp->scr_bell(sp);
-		return (GC_INTERRUPT);
-	case E_REPAINT:
-		if (vs_repaint(sp, evp))
+	for (quote = 0;;) {
+		if (v_event_get(sp, evp, ec_flags | quote))
 			return (GC_ERR);
-		goto next;
-	case E_RESIZE:
-		v_dtoh(sp);
-		if (v_init(sp) || vs_refresh(sp))
+		quote = 0;
+
+		switch (evp->e_event) {
+		case E_CHARACTER:
+			/*
+			 * !!!
+			 * Historically, ^V was ignored in the command stream,
+			 * although it had a useful side-effect of interrupting
+			 * mappings.  Adding a quoting bit to the call probably
+			 * extends historic practice, but it feels right.
+			 */
+			if (evp->e_value == K_VLNEXT) {
+				quote = EC_QUOTED;
+				break;
+			}
+			return (GC_OK);
+		case E_ERR:
+		case E_EOF:
+			F_SET(sp, S_EXIT_FORCE);
 			return (GC_ERR);
-		goto next;
-	case E_QUIT:
-	case E_WRITE:
-	case E_WRITEQUIT:
-		if (command_events)
-			return (GC_EVENT);
-		/* FALLTHROUGH */
-	default:
-		v_event_err(sp, evp);
-		return (GC_ERR);
+		case E_INTERRUPT:
+			/*
+			 * !!!
+			 * Historically, vi beeped on command level interrupts.
+			 *
+			 * Historically, vi exited to ex mode if no file was
+			 * named on the command line, and two interrupts were
+			 * generated in a row.  (Just figured you might want
+			 * to know that.)
+			 */
+			(void)sp->gp->scr_bell(sp);
+			return (GC_INTERRUPT);
+		case E_REPAINT:
+			if (vs_repaint(sp, evp))
+				return (GC_ERR);
+			break;
+		case E_RESIZE:
+			v_dtoh(sp);
+			if (v_init(sp) || vs_refresh(sp))
+				return (GC_ERR);
+			break;
+		case E_QUIT:
+		case E_WRITE:
+		case E_WRITEQUIT:
+			if (command_events)
+				return (GC_EVENT);
+			/* FALLTHROUGH */
+		default:
+			v_event_err(sp, evp);
+			return (GC_ERR);
+		}
 	}
 	/* NOTREACHED */
 }
