@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.37 1993/02/28 14:01:54 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:01:54 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.38 1993/02/28 16:30:09 bostic Exp $ (Berkeley) $Date: 1993/02/28 16:30:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -929,3 +929,16 @@ scr_lrelative(ep, lno, off)
 	}
 	return (llen - 1);
 }
+
+/*
+ * gdbrefresh --
+ *	Stub routine so can step through screen changes.
+ */
+#ifdef DEBUG
+int
+gdbrefresh()
+{
+	refresh();
+	return (0);
+}
+#endif
