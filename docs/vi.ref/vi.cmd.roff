@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: vi.cmd.roff,v 8.15 1994/05/25 19:27:52 bostic Exp $ (Berkeley) $Date: 1994/05/25 19:27:52 $
+.\"	$Id: vi.cmd.roff,v 8.16 1994/05/25 22:32:45 bostic Exp $ (Berkeley) $Date: 1994/05/25 22:32:45 $
 .\"
 #ifdef REFERENCE
 .SH 1 "Vi Description"
@@ -16,9 +16,10 @@ The bottom line of the screen is used to enter
 commands, and for
 .CO vi
 error and informational messages.
-If no other information is being displayed, the current cursor
-row and column, if the file has been modified, and the current
-mode of the editor can be displayed.
+If no other information is being displayed,
+the default display can show the current cursor row and cursor column,
+an indication of whether the file has been modified,
+and the current mode of the editor.
 See the
 .OP ruler ,
 .OP showdirty
@@ -78,7 +79,7 @@ If the screen is scrolled, it is moved a minimal amount, and the cursor
 line will usually appear at the top or bottom of the screen.
 In the screen is repainted, the cursor line will appear in the center of
 the screen, unless the cursor is sufficiently close to the beginning or
-end of the file that this isn't possible.
+end of the file that this is not possible.
 If the
 .OP leftright
 option is set, the screen may be scrolled or repainted in a horizontal
@@ -113,7 +114,7 @@ would edit the file that contained them.
 In
 .CO nvi ,
 these commands act on logical, i.e. screen lines.
-You are unlikely to notice any difference unless you're editing files
+You are unlikely to notice any difference unless you are editing files
 with lines significantly longer than a screen width.
 .pp
 .CO Vi
@@ -164,8 +165,10 @@ commands.
 .IP "previous context"
 The position of the cursor before the command which caused the
 last non-relative movement was executed.
-Each command below which is considered a non-relative movement
-is so noted.
+Each 
+.CO vi
+command described in the next section
+that is considered a non-relative movement is so noted.
 In addition, specifying
 .i any
 address to an
@@ -388,7 +391,7 @@ options.
 #endif
 .KY <control-B>
 .IP "[count] <control-B>"
-Page backwards
+Page backward
 .LI count
 screens.
 #ifdef REFERENCE
@@ -462,10 +465,10 @@ on the screen.
 .SS
 .SP Line:
 Unchanged unless the current line scrolls off the screen,
-in which case it's set to the first line on the screen.
+in which case it is set to the first line on the screen.
 .SP Column:
 Unchanged unless the current line scrolls off the screen,
-in which case it's the most attractive cursor position.
+in which case it is the most attractive cursor position.
 .SP Options:
 None.
 .SE
@@ -665,13 +668,13 @@ None.
 #endif
 .KY <control-U>
 .IP "<control-U>"
-Scroll backwards
+Scroll backward
 .LI count
 lines.
 #ifdef REFERENCE
 If
 .LI count
-is not specified, scroll backwards the number of lines specified by the
+is not specified, scroll backward the number of lines specified by the
 last
 .CO <control-D>
 or
@@ -715,7 +718,7 @@ None.
 #endif
 .KY <control-Y>
 .IP "<control-Y>"
-Scroll backwards
+Scroll backward
 .LI count
 lines, leaving the current line and column as is, if possible.
 #ifdef REFERENCE
@@ -728,7 +731,7 @@ in which case it is set to the last line of text displayed
 on the screen.
 .SP Column:
 Unchanged unless the current line scrolls off the screen,
-in which case it's the most attractive cursor position.
+in which case it is the most attractive cursor position.
 .SP Options:
 None.
 .SE
@@ -965,10 +968,12 @@ Increment or decrement the cursor number.
 #ifdef REFERENCE
 If the trailing character is a
 .LI \&+ ,
-the number is incremented by count.
+the number is incremented by
+.LI count .
 If the trailing character is a
 .LI \&- ,
-the number is decremented by count.
+the number is decremented by
+.LI count .
 If the trailing character is a
 .LI \&# ,
 the previous increment or decrement is repeated.
@@ -1107,7 +1112,7 @@ return to the context marked by that character (see the
 .CO m
 command for more information).
 If the command is the
-.CO '
+.CO \'
 command, only the line value is restored,
 and the cursor is placed on the first nonblank character of that line.
 If the command is the
@@ -1120,7 +1125,7 @@ line deletion.
 and then restored.)
 .sp
 The
-.CO '
+.CO \'
 and
 .CO `
 commands are both non-relative movements.
@@ -1128,13 +1133,13 @@ They may be used as a motion component for other
 .CO vi
 commands.
 For the
-.CO '
+.CO \'
 command, any text copied into a buffer is line oriented.
 For the
 .CO `
 command, any text copied into a buffer is character oriented, unless
 it both starts and stops at the first character of the line, in which
-case it's line oriented.
+case it is line oriented.
 In addition, when using the
 .CO `
 command as a motion component,
@@ -1147,7 +1152,7 @@ respectively.
 Set to the line from the context.
 .SP Column:
 Set to the first nonblank character in the line, for the
-.CO '
+.CO \'
 command, and set to the context's column for the
 .CO `
 command.
@@ -1289,7 +1294,7 @@ is not specified, the counts originally specified to the command being
 repeated are used again.
 .sp
 As a special case, if the
-.CO .
+.CO \.
 command is executed immediately after the
 .CO u
 command, the change log is rolled forward or backward, depending on
@@ -1339,7 +1344,7 @@ They may be used as the motion components of other
 .CO vi
 commands, in which case any text copied into a buffer is
 character oriented, unless the search started and ended on
-the first column of a line, in which case it's line oriented.
+the first column of a line, in which case it is line oriented.
 In addition, forward searches ending at the first column of a line,
 and backward searches beginning at the first column of the line,
 are corrected to begin or end at the last column of the previous line.
@@ -1618,11 +1623,11 @@ options.
 #endif
 .KY B
 .IP "[count] B"
-Move backwards
+Move backward
 .LI count
 bigwords.
 #ifdef REFERENCE
-Move the cursor backwards to the beginning of a bigword by repeating the
+Move the cursor backward to the beginning of a bigword by repeating the
 following algorithm: if the current position is at the beginning of a
 bigword or the character at the current position cannot be part of a bigword,
 move to the first character of the preceding bigword.
@@ -1848,7 +1853,7 @@ insert two spaces.
 Otherwise, insert a single space.
 .sp
 It is not an error to join lines past the end of the file,
-i.e. lines that don't exist.
+i.e. lines that do not exist.
 .SS
 .SP Line:
 Unchanged.
@@ -2041,7 +2046,7 @@ options.
 #endif
 .KY T
 .IP "[count] T <character>"
-Search backwards,
+Search backward,
 .LI count
 times,
 through the current line for the character
@@ -2247,8 +2252,8 @@ Affected by the
 option.
 .SE
 #endif
-.\" XXX this doesn't work
-.KY ^
+.\" XXX this does not work
+.KY CARAT
 .IP "\&^"
 Move to first nonblank character on the current line.
 #ifdef REFERENCE
@@ -2322,7 +2327,7 @@ options.
 #endif
 .KY b
 .IP "[count] b"
-Move backwards
+Move backward
 .LI count
 words.
 #ifdef REFERENCE
@@ -2802,7 +2807,7 @@ command may be used as the motion component of other
 .CO vi
 commands, in which case any text copied into a buffer is
 character oriented, unless the starting character is the first
-character on its line, in which case it's line oriented.
+character on its line, in which case it is line oriented.
 .SS
 .SP Line:
 Set to the line containing the beginning of the previous paragraph.
@@ -2827,9 +2832,9 @@ command may be used as the motion component of other
 .CO vi
 commands, in which case any text copied into a buffer is
 character oriented.
-It's an error to use the
+It is an error to use the
 .CO |
-command as a motion component and for the cursor to not move.
+command as a motion component and for the cursor not to move.
 .SS
 .SP Line:
 Unchanged.
@@ -2861,7 +2866,7 @@ command may be used as the motion component of other
 commands, in which case any text copied into a buffer is
 character oriented, unless the starting character is at or
 before any nonblank characters in its line,
-in which case it's line oriented.
+in which case it is line oriented.
 .SS
 .SP Line:
 Set to the line containing the beginning of the next paragraph.

@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.37 1994/05/25 20:00:26 bostic Exp $ (Berkeley) $Date: 1994/05/25 20:00:26 $
+.\"     $Id: vi.ref,v 8.38 1994/05/25 22:33:38 bostic Exp $ (Berkeley) $Date: 1994/05/25 22:33:38 $
 .\"
 .\"
 .so ref.so
@@ -123,12 +123,12 @@ This reference is intended for users already familiar with
 .EV ex vi .
 Anyone else should almost certainly read a good tutorial on the
 editor first.
-If you're in an unfamiliar environment,
+If you are in an unfamiliar environment,
 and you absolutely have to get work done immediately,
 see the section entitled
-.QB "Fast Startup"
+.QB "FAST STARTUP"
 in the manual page.
-It's probably enough to get you started.
+It is probably enough to get you started.
 .pp
 There are a few features in
 .EV nex nvi
@@ -140,7 +140,7 @@ in the section entitled
 near the end of this document.
 For the rest of this document,
 .EV nex nvi
-is used only when it's necessary to distinguish it from the historic
+is used only when it is necessary to distinguish it from the historic
 implementations of
 .EV ex vi .
 .pp
@@ -199,7 +199,7 @@ The environmental variable
 .LI EXINIT ,
 if
 .LI NEXINIT
-isn't set) is interpreted.
+is not set) is interpreted.
 .np
 If neither
 .LI NEXINIT
@@ -213,7 +213,7 @@ environmental variable is set, the file
 .LI $HOME/.exrc ,
 if
 .LI $HOME/.nexrc
-doesn't exist) is read,
+does not exist) is read,
 as long as the effective user ID of the user is root or is the same as
 the owner of the file.
 .np
@@ -226,13 +226,13 @@ sources, the file
 .LI \&.exrc ,
 if
 .LI \&.nexrc
-doesn't exist) is read, as long as the effective user ID of the user
+does not exist) is read, as long as the effective user ID of the user
 is the same as the owner of the file.
 .pp
 No startup file is read if it is writable by anyone other than its owner.
 .pp
 It is not an error for any of the startup environmental variables or files
-to not exist.
+not to exist.
 .pp
 Once all environmental variables are interpreted,
 and all startup files are read,
@@ -336,7 +336,7 @@ command,
 .EV ex vi
 will automatically email the recovery information to the user.
 .pp
-If your system doesn't have the
+If your system does not have the
 .CO sendmail
 utility (or a mailer program which supports its interface)
 the source file
@@ -576,7 +576,7 @@ if the
 option is
 .i not
 set) in the replacement string stands for the text matched by the RE
-that's being replaced.
+that is being replaced.
 The character
 .QT ~
 (or
@@ -761,7 +761,7 @@ When the percent character
 .PQ %
 appears in a file name entered as part of an
 .CO ex
-command argument, it's replaced by the current pathname.
+command argument, it is replaced by the current pathname.
 (The
 .QT %
 character can be escaped by preceding it with a backslash.)
@@ -775,7 +775,7 @@ When the hash mark character
 .PQ #
 appears in a file name entered as part of an
 .CO ex
-command argument, it's replaced by the alternate pathname.
+command argument, it is replaced by the alternate pathname.
 (The
 .QT #
 character can be escaped by preceding it with a backslash.)
@@ -786,7 +786,7 @@ Commands that change or delete text can save the changed or deleted
 text into a specific buffer, for later use.
 Buffers are named with a single character, preceded by a double quote,
 e.g.
-.LI "<character> .
+.LI """<character>" .
 Historic implementations of
 .EV ex vi
 limited
@@ -930,7 +930,7 @@ commands for more information on how to mark lines.)
 A regular expression (RE) enclosed by slashes
 .PQ /
 is an address,
-and it refers to the first line found by searching forwards from the line
+and it refers to the first line found by searching forward from the line
 .i after
 the current line toward the end of the file, and stopping at the
 first line containing a string matching the RE.
@@ -957,7 +957,7 @@ and is identical to
 .np
 An RE enclosed in question marks
 .PQ ?
-addresses the first line found by searching backwards from the line
+addresses the first line found by searching backward from the line
 .i preceding
 the current line, toward the beginning of the file and stopping at the
 first line containing a string matching the RE.
@@ -1043,8 +1043,8 @@ or a semicolon
 In the latter case, the current line
 .PQ \&.
 is set to the first address, and only then is the second address calculated.
-This feature can be used to determine the starting line for forwards and
-backwards searches (see rules (5) and (6) above).
+This feature can be used to determine the starting line for forward and
+backward searches (see rules (5) and (6) above).
 The second address of any two-address sequence corresponds to a line that
 follows, in the file, the line corresponding to the first address.
 The first address must be less than or equal to the second address.
@@ -1063,7 +1063,7 @@ There are a few features in
 that are not found in historic versions of
 .EV ex vi .
 Some of the more interesting of those features are as follows:
-.ip "8-bit clean data, large lines, files"
+.IP "8-bit clean data, large lines, files"
 .EV Nex nvi
 will edit any format file.
 Line lengths are limited by available memory,
