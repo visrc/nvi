@@ -14,7 +14,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_perl.c,v 8.3 1996/03/06 20:11:06 bostic Exp $ (Berkeley) $Date: 1996/03/06 20:11:06 $";
+static const char sccsid[] = "$Id: ex_perl.c,v 8.4 1996/03/10 10:14:59 bostic Exp $ (Berkeley) $Date: 1996/03/10 10:14:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -48,10 +48,10 @@ static int perl_eval(string)
 #else
 
 static void
-noperl(sp)
-	SCR *sp;
+noperl(scrp)
+	SCR *scrp;
 {
-	msgq(sp, M_ERR, "305|Vi was not loaded with a Perl interpreter");
+	msgq(scrp, M_ERR, "305|Vi was not loaded with a Perl interpreter");
 }
 #endif
 
@@ -62,8 +62,8 @@ noperl(sp)
  * PUBLIC: int ex_perl __P((SCR*, EXCMD *));
  */
 int 
-ex_perl(sp, cmdp)
-	SCR *sp;
+ex_perl(scrp, cmdp)
+	SCR *scrp;
 	EXCMD *cmdp;
 {
 #ifdef HAVE_PERL_INTERP
@@ -74,7 +74,7 @@ ex_perl(sp, cmdp)
 	char *err, buf[64];
 
 	/* Initialize the interpreter. */
-	gp = sp->gp;
+	gp = scrp->gp;
 	if (gp->perl_interp == NULL && perl_init(gp))
 		return (1);
 
@@ -85,13 +85,13 @@ ex_perl(sp, cmdp)
 			if (!isblank(*p))
 				break;
 	if (cmdp->argc == 0 || len == 0) {
-		ex_emsg(sp, cmdp->cmd->usage, EXM_USAGE);
+		ex_emsg(scrp, cmdp->cmd->usage, EXM_USAGE);
 		return (1);
 	}
 
 	(void)snprintf(buf, sizeof(buf),
 	    "$VI::ScreenId=%d;$VI::StartLine=%lu;$VI::StopLine=%lu",
-	    sp->id, cmdp->addr1.lno, cmdp->addr2.lno);
+	    scrp->id, cmdp->addr1.lno, cmdp->addr2.lno);
 	perl_eval(buf);
 	perl_eval(cmdp->argv[0]->bp);
 	err = SvPV(GvSV(errgv),length);
@@ -99,10 +99,10 @@ ex_perl(sp, cmdp)
 		return (0);
 
 	err[length - 1] = '\0';
-	msgq(sp, M_ERR, "perl: %s", err);
+	msgq(scrp, M_ERR, "perl: %s", err);
 	return (1);
 #else
-	noperl(sp);
+	noperl(scrp);
 	return (1);
 #endif /* HAVE_PERL_INTERP */
 }
@@ -114,8 +114,8 @@ ex_perl(sp, cmdp)
  * PUBLIC: int ex_perldo __P((SCR*, EXCMD *));
  */
 int 
-ex_perldo(sp, cmdp)
-	SCR *sp;
+ex_perldo(scrp, cmdp)
+	SCR *scrp;
 	EXCMD *cmdp;
 {
 #ifdef HAVE_PERL_INTERP
@@ -128,7 +128,7 @@ ex_perldo(sp, cmdp)
 	dSP;
 
 	/* Initialize the interpreter. */
-	gp = sp->gp;
+	gp = scrp->gp;
 	if (gp->perl_interp == NULL && perl_init(gp))
 		return (1);
 
@@ -139,7 +139,7 @@ ex_perldo(sp, cmdp)
 			if (!isblank(*p))
 				break;
 	if (cmdp->argc == 0 || len == 0) {
-		ex_emsg(sp, cmdp->cmd->usage, EXM_USAGE);
+		ex_emsg(scrp, cmdp->cmd->usage, EXM_USAGE);
 		return (1);
 	}
 
@@ -149,8 +149,8 @@ ex_perldo(sp, cmdp)
 	ENTER;
 	SAVETMPS;
 	for (i = cmdp->addr1.lno; i <= cmdp->addr2.lno; i++) {
-		/*api_gline(sp, i, argv+1, &len);*/
-		api_gline(sp, i, &str, &len);
+		/*api_gline(scrp, i, argv+1, &len);*/
+		api_gline(scrp, i, &str, &len);
 		sv_setpvn(perl_get_sv("_", FALSE),str,len);
 		perl_call_argv("_eval_", G_SCALAR | G_EVAL | G_KEEPERR, argv);
 		str = SvPV(GvSV(errgv),length);
@@ -158,7 +158,7 @@ ex_perldo(sp, cmdp)
 		SPAGAIN;
 		if(SvTRUEx(POPs)) {
 			str = SvPV(perl_get_sv("_", FALSE),len);
-			api_sline(sp, i, str, len);
+			api_sline(scrp, i, str, len);
 		}
 		PUTBACK;
 	}
@@ -168,10 +168,10 @@ ex_perldo(sp, cmdp)
 		return (0);
 
 	str[length - 1] = '\0';
-	msgq(sp, M_ERR, "perl: %s", str);
+	msgq(scrp, M_ERR, "perl: %s", str);
 	return (1);
 #else
-	noperl(sp);
+	noperl(scrp);
 	return (1);
 #endif /* HAVE_PERL_INTERP */
 }
