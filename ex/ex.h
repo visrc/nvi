@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.32 1993/11/18 10:08:56 bostic Exp $ (Berkeley) $Date: 1993/11/18 10:08:56 $
+ *	$Id: ex.h,v 8.33 1993/11/21 15:26:25 bostic Exp $ (Berkeley) $Date: 1993/11/21 15:26:25 $
  */
 
 /* Ex command structure. */
@@ -162,7 +162,9 @@ int	ex_readfp __P((SCR *, EXF *, char *, FILE *, MARK *, recno_t *, int));
 void	ex_refresh __P((SCR *, EXF *));
 int	ex_screen_copy __P((SCR *, SCR *));
 int	ex_screen_end __P((SCR *));
+int	ex_sdisplay __P((SCR *, EXF *));
 int	ex_suspend __P((SCR *));
+int	ex_tdisplay __P((SCR *, EXF *));
 int	ex_writefp __P((SCR *, EXF *,
 	    char *, FILE *, MARK *, MARK *, u_long *, u_long *));
 int	proc_wait __P((SCR *, long, const char *, int));
@@ -178,7 +180,6 @@ EXPROTO(int, ex_append);
 EXPROTO(int, ex_args);
 EXPROTO(int, ex_at);
 EXPROTO(int, ex_bang);
-EXPROTO(int, ex_bdisplay);
 EXPROTO(int, ex_bg);
 EXPROTO(int, ex_cd);
 EXPROTO(int, ex_change);
@@ -187,6 +188,7 @@ EXPROTO(int, ex_copy);
 EXPROTO(int, ex_debug);
 EXPROTO(int, ex_delete);
 EXPROTO(int, ex_digraph);
+EXPROTO(int, ex_display);
 EXPROTO(int, ex_edit);
 EXPROTO(int, ex_equal);
 EXPROTO(int, ex_fg);
@@ -210,7 +212,6 @@ EXPROTO(int, ex_quit);
 EXPROTO(int, ex_read);
 EXPROTO(int, ex_resize);
 EXPROTO(int, ex_rew);
-EXPROTO(int, ex_sargs);
 EXPROTO(int, ex_script);
 EXPROTO(int, ex_set);
 EXPROTO(int, ex_shell);

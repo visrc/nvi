@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 8.25 1993/11/17 10:22:38 bostic Exp $ (Berkeley) $Date: 1993/11/17 10:22:38 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 8.26 1993/11/21 15:26:06 bostic Exp $ (Berkeley) $Date: 1993/11/21 15:26:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -104,11 +104,6 @@ EXCMDLIST const cmds[] = {
 	    "",	
 	    "ar[gs]",
 	    "display file argument list"},
-/* C_BDISPLAY */
-	{"bdisplay",	ex_bdisplay,	E_NOGLOBAL|E_NORC,
-	    "",	
-	    "[b]display",
-	    "display cut buffers"},
 /* C_BG */
 	{"bg",		ex_bg,		E_NOGLOBAL|E_NORC,
 	    "",
@@ -139,6 +134,11 @@ EXCMDLIST const cmds[] = {
 	    "bc1",
 	    "[line [,line]] d[elete] [buffer] [count] [flags]",
 	    "delete lines from the file"},
+/* C_DISPLAY */
+	{"display",	ex_display,	E_NOGLOBAL|E_NORC,
+	    "w1r",	
+	    "display b[uffers] | s[creens] | t[ags]",
+	    "display buffers, screens or tags"},
 /* C_DIGRAPH */
 	{"digraph",	ex_digraph,	E_NOGLOBAL|E_NOPERM|E_NORC,
 	    "",	
@@ -279,11 +279,6 @@ EXCMDLIST const cmds[] = {
 	    "s",
 "[line [,line]] s[ubstitute] [[/;]pat[/;]/repl[/;] [cgr] [count] [#lp]]",
 	    "substitute on lines matching a pattern"},
-/* C_SARGS */
-	{"sargs",	ex_sargs,	E_NOGLOBAL|E_NORC,
-	    "",	
-	    "sar[gs]",
-	    "display screen list"},
 /* C_SCRIPT */
 	{"script",	ex_script,	E_NOGLOBAL|E_NORC,
 	    "!f1o",
@@ -331,9 +326,9 @@ EXCMDLIST const cmds[] = {
 	    "edit the file containing the tag"},
 /* C_TAGPOP */
 	{"tagpop",	ex_tagpop,	E_NOGLOBAL|E_NORC,
-	    "!", 
-	    "tagp[op][!]",
-	    "return to the previous tag"},
+	    "!w1o", 
+	    "tagp[op][!] [number | file]",
+	    "return to a previous tag"},
 /* C_TAGTOP */
 	{"tagtop",	ex_tagtop,	E_NOGLOBAL|E_NORC,
 	    "!", 
