@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.56 1993/05/02 12:20:56 bostic Exp $ (Berkeley) $Date: 1993/05/02 12:20:56 $";
+static char sccsid[] = "$Id: exf.c,v 5.57 1993/05/02 15:56:39 bostic Exp $ (Berkeley) $Date: 1993/05/02 15:56:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,8 +28,7 @@ static void file_def __P((EXF *));
  * file_get --
  *	Return the appropriate structure if we've seen this file before,
  *	otherwise insert a new file into the list of files before or after
- *	the specified file.  If the file name is NULL, create a temporary
- *	file for editing.
+ *	the specified file.
  */
 EXF *
 file_get(sp, ep, name, append)
@@ -39,14 +38,11 @@ file_get(sp, ep, name, append)
 	int append;
 {
 	EXF *tep;
-	struct stat sb;
-	int fd;
-	char tname[sizeof(_PATH_TMPNAME) + 1];
 
 	/*
 	 * Check for the file.  Ignore files without names, but check
 	 * F_IGNORE files, in case of re-editing.  If the file is in
-	 * play, up the reference count and return.
+	 * play, just return.
 	 */
 	if (name != NULL)
 		for (tep = sp->gp->exfhdr.next;
@@ -61,6 +57,7 @@ file_get(sp, ep, name, append)
 	if (name == NULL || tep == (EXF *)&sp->gp->exfhdr) {
 		if ((tep = malloc(sizeof(EXF))) == NULL)
 			goto e1;
+
 		file_def(tep);
 
 		/* Insert into the chain of files. */
@@ -74,35 +71,13 @@ file_get(sp, ep, name, append)
 		F_SET(tep, F_IGNORE);
 	}
 
-	/*
-	 * If no backing file, create a backing temporary file.
-	 * Save the temp name so can later unlink it.
-	 */
-	if (name == NULL || stat(name, &sb)) {
-		(void)strcpy(tname, _PATH_TMPNAME);
-		if ((fd = mkstemp(tname)) == -1) {
-			msgq(sp, M_ERR,
-			    "Temporary file: %s", strerror(errno));
+	if (name == NULL)
+		tep->name = NULL;
+	else {
+		if ((tep->name = strdup(name)) == NULL)
 			goto e2;
-		}
-		(void)close(fd);
-		if ((tep->tname = strdup(tname)) == NULL) {
-			(void)unlink(tname);
-			goto e2;
-		}
+		tep->nlen = strlen(tep->name);
 	}
-
-	/*
-	 * If no name, point the name at the temporary name (we display
-	 * it to the user until they rename it.
-	 */
-	if (name == NULL) {
-		F_SET(tep, F_NONAME);
-		tep->name = tep->tname;
-	} else if ((tep->name = strdup(name)) == NULL)
-		goto e2;
-	tep->nlen = strlen(tep->name);
-	
 	return (tep);
 
 e2:	HDR_DELETE(tep, next, prev, EXF);
@@ -194,19 +169,48 @@ file_start(sp, ep)
 	SCR *sp;
 	EXF *ep;
 {
-	char *oname;
+	struct stat sb;
+	int fd;
+	char *oname, tname[sizeof(_PATH_TMPNAME) + 1];
 
+	/* If not a specific file, create one. */
 	if (ep == NULL &&
 	    (ep = file_get(sp, (EXF *)&sp->gp->exfhdr, NULL, 1)) == NULL)
 		return (NULL);
 
+	/* If already in play, up the count and return. */
 	if (ep->refcnt > 0) {
 		++ep->refcnt;
 		return (ep);
 	}
 
-	oname = ep->tname == NULL ? ep->name : ep->tname;
-		
+	/*
+	 * If no name or backing file, create a backing temporary file, saving
+	 * the temp file name so can later unlink it.  Point the name at the
+	 * temporary name (we display it to the user until they rename it).
+	 */
+	if (ep->name == NULL || stat(ep->name, &sb)) {
+		(void)strcpy(tname, _PATH_TMPNAME);
+		if ((fd = mkstemp(tname)) == -1) {
+			msgq(sp, M_ERR,
+			    "Temporary file: %s", strerror(errno));
+			return (NULL);
+		}
+		(void)close(fd);
+		if ((ep->tname = strdup(tname)) == NULL) {
+			(void)unlink(tname);
+			return (NULL);
+		}
+
+		if (ep->name == NULL) {
+			F_SET(ep, F_NONAME);
+			ep->name = ep->tname;
+			ep->nlen = strlen(ep->name);
+		}
+		oname = ep->tname;
+	} else
+		oname = ep->name;
+	
 	/* Open a db structure. */
 	ep->db = dbopen(oname, O_EXLOCK | O_NONBLOCK| O_RDONLY,
 	    DEFFILEMODE, DB_RECNO, NULL);
@@ -273,6 +277,7 @@ file_stop(sp, ep, force)
 			msgq(sp, M_ERR,
 			    "%s: remove: %s", ep->tname, strerror(errno));
 		free(ep->tname);
+		ep->tname = NULL;
 	}
 
 	/* Clean up the flags. */
