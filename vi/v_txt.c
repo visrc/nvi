@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 5.5 1993/04/17 12:02:39 bostic Exp $ (Berkeley) $Date: 1993/04/17 12:02:39 $";
+static char sccsid[] = "$Id: v_txt.c,v 5.6 1993/04/18 09:33:57 bostic Exp $ (Berkeley) $Date: 1993/04/18 09:33:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -54,6 +54,14 @@ static int	 txt_resolve __P((SCR *, EXF *, HDR *));
 /*
  * newtext --
  *	Read in text from the user.
+ *
+ * 	Re: S_CUR_INVALID.  Note the use of S_CUR_INVALID in several places.
+ *	The svi code tries to do fast calculation of new cursor positions by
+ *	reviewing the characters between the old and new cursor positions.
+ *	This is impossible if a character has been deleted, or a character
+ *	has been inserted at other than the current cursor position.  The
+ *	flag is set to force the fast cursor code to be skipped and the line
+ *	to be reevaluated as a whole.
  */
 int
 v_ntext(sp, ep, hp, tm, p, len, rp, prompt, ai_line, flags)
@@ -89,18 +97,28 @@ v_ntext(sp, ep, hp, tm, p, len, rp, prompt, ai_line, flags)
 	/* Set return value. */
 	eval = 0;
 
-	/* Initialize the text header structure. */
-	if (hp->next != hp)
-		text_free(hp);
-
 	/*
-	 * Get a TEXT structure with some initial buffer space.  (All
-	 * TEXT bookkeeping fields default to 0, and text_init() handles
-	 * of this.  If changing a line, copy it into the TEXT buffer.
+	 * Get one TEXT structure with some initial buffer space, reusing
+	 * the last one if it's big enough.  (All TEXT bookkeeping fields
+	 * default to 0 -- text_init() handles this.)  If changing a line,
+	 * copy it into the TEXT buffer.
 	 */
-	if ((tp = text_init(sp, p, len, len + 32)) == NULL)
-		return (1);
-	HDR_INSERT(tp, hp, next, prev, TEXT);
+	if (hp->next != hp) {
+		tp = hp->next;
+		if (tp->next != (TEXT *)hp || tp->lb_len < len + 32) {
+			text_free(hp);
+			goto newtp;
+		}
+		tp->ai = tp->insert = tp->offset = tp->overwrite = 0;
+		if (p != NULL) {
+			tp->len = len;
+			memmove(tp->lb, p, len);
+		}
+	} else {
+newtp:		if ((tp = text_init(sp, p, len, len + 32)) == NULL)
+			return (1);
+		HDR_INSERT(tp, hp, next, prev, TEXT);
+	}
 
 	/* Set the starting line number. */
 	tp->lno = sp->lno;
@@ -241,11 +259,11 @@ next_ch:	if (replay)
 				tp->insert = tp->len =			\
 				    tp->overwrite = 0;			\
 				sp->cno = 0;				\
-				F_SET(sp, S_CHARDELETED);		\
+				F_SET(sp, S_CUR_INVALID);		\
 			} else if (LF_ISSET(TXT_APPENDEOL)) {		\
 				--tp->len;				\
 				--tp->insert;				\
-				F_SET(sp, S_CHARDELETED);		\
+				F_SET(sp, S_CUR_INVALID);		\
 			}						\
 }
 			if (LF_ISSET(TXT_CR))
@@ -377,7 +395,7 @@ k_escape:		LINE_RESOLVE;
 				sp->cno = 0;
 				break;
 			case C_NOTSET:		/* ^D */
-				F_SET(sp, S_CHARDELETED);
+				F_SET(sp, S_CUR_INVALID);
 				(void)txt_outdent(sp, tp);
 				break;
 			default:
@@ -510,13 +528,24 @@ k_escape:		LINE_RESOLVE;
 		default:			/* Insert the character. */
 ins_ch:			if (tp->overwrite) {	/* Overwrite a character. */
 				--tp->overwrite;
-				F_SET(sp, S_CHARDELETED);
+				F_SET(sp, S_CUR_INVALID);
 			} else {		/* Insert a character. */
 				if (tp->insert == 1) {
+					/*
+					 * Kludge.  The fast cursor code in the
+					 * svi refresh routines would normally
+					 * have to be skipped since the insert
+					 * isn't at the current cursor position.
+					 * Cheat...
+					 */
+					--sp->ocno;
+					--sp->sc_col;
 					tp->lb[sp->cno + 1] = tp->lb[sp->cno];
-				} else if (tp->insert)
+				} else if (tp->insert) {
+					F_SET(sp, S_CUR_INVALID);
 					memmove(tp->lb + sp->cno + 1,
 					    tp->lb + sp->cno, tp->insert);
+				}
 				++tp->len;
 			}
 			tp->lb[sp->cno++] = ch;
