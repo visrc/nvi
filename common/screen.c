@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.58 1994/04/24 14:18:12 bostic Exp $ (Berkeley) $Date: 1994/04/24 14:18:12 $";
+static char sccsid[] = "$Id: screen.c,v 8.59 1994/04/25 16:22:24 bostic Exp $ (Berkeley) $Date: 1994/04/25 16:22:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -147,7 +147,6 @@ mem:			msgq(orig, M_SYSERR, "new screen attributes");
 		sp->s_column		= orig->s_column;
 		sp->s_confirm		= orig->s_confirm;
 		sp->s_crel		= orig->s_crel;
-		sp->s_down		= orig->s_down;
 		sp->s_edit		= orig->s_edit;
 		sp->s_end		= orig->s_end;
 		sp->s_ex_cmd		= orig->s_ex_cmd;
@@ -162,9 +161,9 @@ mem:			msgq(orig, M_SYSERR, "new screen attributes");
 		sp->s_rabs		= orig->s_rabs;
 		sp->s_rcm		= orig->s_rcm;
 		sp->s_refresh		= orig->s_refresh;
+		sp->s_scroll		= orig->s_scroll;
 		sp->s_split		= orig->s_split;
 		sp->s_suspend		= orig->s_suspend;
-		sp->s_up		= orig->s_up;
 
 		F_SET(sp, F_ISSET(orig, S_SCREENS));
 	}

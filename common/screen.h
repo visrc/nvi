@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.100 1994/04/24 17:40:21 bostic Exp $ (Berkeley) $Date: 1994/04/24 17:40:21 $
+ *	$Id: screen.h,v 8.101 1994/04/25 16:22:21 bostic Exp $ (Berkeley) $Date: 1994/04/25 16:22:21 $
  */
 
 /*
@@ -200,8 +200,6 @@ struct _scr {
 		(*s_confirm) __P((SCR *, EXF *, MARK *, MARK *));
 					/* Change the relative screen size. */
 	int	(*s_crel) __P((SCR *, long));
-					/* Move down the screen. */
-	int	(*s_down) __P((SCR *, EXF *, MARK *, recno_t, int));
 					/* Edit a file. */
 	int	(*s_edit) __P((SCR *, EXF *));
 					/* End a screen. */
@@ -231,12 +229,14 @@ struct _scr {
 	size_t	(*s_rcm) __P((SCR *, EXF *, recno_t));
 					/* Refresh the screen. */
 	int	(*s_refresh) __P((SCR *, EXF *));
+					/* Move down the screen. */
+enum sctype { 
+	CNTRL_B, CNTRL_D, CNTRL_E, CNTRL_F, CNTRL_U, CNTRL_Y, Z_CARAT, Z_PLUS };
+	int	(*s_scroll) __P((SCR *, EXF *, MARK *, recno_t, enum sctype));
 					/* Split the screen. */
 	int	(*s_split) __P((SCR *, ARGS *[]));
 					/* Suspend the screen. */
 	int	(*s_suspend) __P((SCR *));
-					/* Move up the screen. */
-	int	(*s_up) __P((SCR *, EXF *, MARK *, recno_t, int));
 
 /* Editor screens. */
 #define	S_EX		0x0000001	/* Ex screen. */
