@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_join.c,v 10.16 2001/06/25 15:19:16 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:16 $";
+static const char sccsid[] = "$Id: ex_join.c,v 10.17 2004/03/16 14:14:04 skimo Exp $ (Berkeley) $Date: 2004/03/16 14:14:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -57,14 +57,7 @@ ex_join(SCR *sp, EXCMD *cmdp)
 	 * The count for the join command was off-by-one,
 	 * historically, to other counts for other commands.
 	 */
-	if (FL_ISSET(cmdp->iflags, E_C_COUNT))
-		++cmdp->addr2.lno;
-
-	/*
-	 * If only a single address specified, or, the same address
-	 * specified twice, the from/two addresses will be the same.
-	 */
-	if (cmdp->addr1.lno == cmdp->addr2.lno)
+	if (F_ISSET(cmdp, E_ADDR_DEF) || cmdp->addrcnt == 1)
 		++cmdp->addr2.lno;
 
 	clen = tlen = 0;
