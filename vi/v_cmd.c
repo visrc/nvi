@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 8.8 1993/08/22 09:37:02 bostic Exp $ (Berkeley) $Date: 1993/08/22 09:37:02 $";
+static char sccsid[] = "$Id: v_cmd.c,v 8.9 1993/09/01 12:18:37 bostic Exp $ (Berkeley) $Date: 1993/09/01 12:18:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -24,19 +24,19 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	{v_searchw,	V_ABS|V_CNT|V_KEYW|V_RCM_SET,
 	    "search forward for cursor word: [count]^A"},
 /* 002  ^B */
-	{v_pageup,	V_ABS|V_CNT,
+	{v_pageup,	V_ABS|V_CNT|V_RCM_SETLFNB,
 	    "page up by screens: [count]^B"},
 /* 003  ^C */
 	{NULL,		0,
 	    "interrupt a search: ^C"},
 /* 004  ^D */
-	{v_hpagedown,	V_ABS|V_CNT,
+	{v_hpagedown,	V_ABS|V_CNT|V_RCM_SETLFNB,
 	    "page down by half screens (set count): [count]^D"},
 /* 005  ^E */
 	{v_linedown,	V_CNT,
 	    "page down by lines: [count]^E"},
 /* 006  ^F */
-	{v_pagedown,	V_ABS|V_CNT,
+	{v_pagedown,	V_ABS|V_CNT|V_RCM_SETLFNB,
 	    "page down by screens: [count]^F"},
 /* 007  ^G */
 	{v_status,	0,
@@ -76,7 +76,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	{v_tagpop,	V_RCM_SET,
 	    "tag pop: ^T"},
 /* 025  ^U */
-	{v_hpageup,	V_ABS|V_CNT,
+	{v_hpageup,	V_ABS|V_CNT|V_RCM_SETLFNB,
 	    "half page up (set count): [count]^U"},
 /* 026  ^V */
 	{NULL,		0,
@@ -215,7 +215,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	{v_lgoto,	V_ABS|V_CNT|V_LMODE|V_MOVE|V_RCM_SETFNB,
 	    "move to line: [count]G"},
 /* 110   H */
-	{v_home,	V_CNT|V_LMODE|V_MOVE|V_RCM_SETFNB,
+	{v_home,	V_CNT|V_LMODE|V_MOVE|V_RCM_SETNNB,
 	    "move to count lines from screen top: [count]H"},
 /* 111   I */
 	{v_iI,		V_CNT|V_DOT|V_RCM_SET,
@@ -226,10 +226,10 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 /* 113   K */
 	{NULL},
 /* 114   L */
-	{v_bottom,	V_CNT|V_LMODE|V_MOVE|V_RCM_SETFNB,
+	{v_bottom,	V_CNT|V_LMODE|V_MOVE|V_RCM_SETNNB,
 	    "move to screen bottom: [count]L"},
 /* 115   M */
-	{v_middle,	V_CNT|V_LMODE|V_MOVE|V_RCM_SETFNB,
+	{v_middle,	V_CNT|V_LMODE|V_MOVE|V_RCM_SETNNB,
 	    "move to screen middle: M"},
 /* 116   N */
 	{v_searchN,	V_ABS|V_MOVE|V_RCM_SET,
