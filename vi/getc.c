@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: getc.c,v 10.8 1995/10/17 08:09:52 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:09:52 $";
+static char sccsid[] = "$Id: getc.c,v 10.9 1995/11/11 16:58:29 bostic Exp $ (Berkeley) $Date: 1995/11/11 16:58:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -73,19 +73,24 @@ cs_next(sp, csp)
 	SCR *sp;
 	VCS *csp;
 {
+	char *p;
+
 	switch (csp->cs_flags) {
 	case CS_EMP:				/* EMP; get next line. */
 	case CS_EOL:				/* EOL; get next line. */
-		if (db_get(sp, ++csp->cs_lno, 0, &csp->cs_bp, &csp->cs_len)) {
+		if (db_get(sp, ++csp->cs_lno, 0, &p, &csp->cs_len)) {
 			--csp->cs_lno;
 			csp->cs_flags = CS_EOF;
-		} else if (csp->cs_len == 0 ||
-		    v_isempty(csp->cs_bp, csp->cs_len)) {
-			csp->cs_cno = 0;
-			csp->cs_flags = CS_EMP;
 		} else {
-			csp->cs_flags = 0;
-			csp->cs_ch = csp->cs_bp[csp->cs_cno = 0];
+			csp->cs_bp = p;
+			if (csp->cs_len == 0 ||
+			    v_isempty(csp->cs_bp, csp->cs_len)) {
+				csp->cs_cno = 0;
+				csp->cs_flags = CS_EMP;
+			} else {
+				csp->cs_flags = 0;
+				csp->cs_ch = csp->cs_bp[csp->cs_cno = 0];
+			}
 		}
 		break;
 	case 0:
