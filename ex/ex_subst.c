@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 5.17 1992/11/01 21:53:55 bostic Exp $ (Berkeley) $Date: 1992/11/01 21:53:55 $";
+static char sccsid[] = "$Id: ex_subst.c,v 5.18 1992/11/01 22:41:59 bostic Exp $ (Berkeley) $Date: 1992/11/01 22:41:59 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -165,7 +165,7 @@ substitute(cmdp, s, re, cmd)
 {
 	MARK from, to;
 	recno_t elno, lno, lastline;
-	size_t len, re_off;
+	size_t len, offset;
 	int eflags, eval, cflag, gflag, lflag, nflag, pflag, rflag;
 
 	/*
@@ -242,16 +242,14 @@ usage:		msg("Usage: %s", cmdp->cmd->usage);
 			return (1);
 		}
 
-		/* Reset new line buffer. */
 		lbclen = 0;
-
 		eflags = REG_STARTEND;
 
 		/* Search for a match. */
-next:		match[0].rm_so = 0;
+nextmatch:	match[0].rm_so = 0;
 		match[0].rm_eo = len;
 
-		eval = regexec(re, (char *)s, re->re_nsub + 1, match, eflags);
+skipmatch:	eval = regexec(re, (char *)s, re->re_nsub + 1, match, eflags);
 		if (eval == REG_NOMATCH) {
 			if (lbclen != 0)
 				goto nomatch;
@@ -262,6 +260,21 @@ next:		match[0].rm_so = 0;
 			return (1);
 		}
 
+		/* Confirm change. */
+		if (cflag) {
+			from.lno = lno;
+			from.cno = match[0].rm_so;
+			to.lno = lno;
+			to.cno = match[0].rm_eo;
+
+			/* If not confirmed, update information and continue. */
+			if (!curf->s_confirm(curf, &from, &to)) {
+				/* Copy prefix, matching bytes. */
+				BUILD(s, match[0].rm_eo);
+				goto skip;
+			}
+		}
+
 		/* Copy prefix. */
 		BUILD(s, match[0].rm_so);
 
@@ -269,13 +282,51 @@ next:		match[0].rm_so = 0;
 		if (regsub(s, repl))
 			return (1);
 
-		s += match[0].rm_eo;
+skip:		s += match[0].rm_eo;
 		len -= match[0].rm_eo;
 
-		/* If global, continue. */
-		if (gflag) {
+		/*
+		 * We have to update the screen.  The basic idea is to store
+		 * the line so the screen update routines can find it, but
+		 * start at the old offset.
+		 */
+		if (len && lbclen && gflag && cflag) {
+			/* Save offset. */
+			offset = lbclen;
+			
+			/* Copy suffix. */
+			if (len)
+				BUILD(s, len)
+
+			/* Store the line. */
+			if (file_sline(curf, lno, lb, lbclen))
+				return (1);
+
+			/* Get a new copy of the line. */
+			if ((s = file_gline(curf, lno, &len)) == NULL) {
+				GETLINE_ERR(lno);
+				return (1);
+			}
+
+			/* Restart the buffer. */
+			lbclen = 0;
+
+			/* Update counters. */
+			if (lastline != lno) {
+				++curf->rptlines;
+				lastline = lno;
+			}
+
+			/* Start in the middle of the line. */
+			match[0].rm_so = offset;
+			match[0].rm_eo = len;
+			goto skipmatch;
+		}
+
+		/* Get the next match. */
+		if (len && gflag) {
 			eflags |= REG_NOTBOL;
-			goto next;
+			goto nextmatch;
 		}
 
 		/* Copy suffix. */
