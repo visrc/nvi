@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_relative.c,v 8.15 1994/04/26 14:48:42 bostic Exp $ (Berkeley) $Date: 1994/04/26 14:48:42 $";
+static char sccsid[] = "$Id: vs_relative.c,v 8.16 1994/05/21 12:09:07 bostic Exp $ (Berkeley) $Date: 1994/05/21 12:09:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,6 +26,9 @@ static char sccsid[] = "$Id: vs_relative.c,v 8.15 1994/04/26 14:48:42 bostic Exp
 
 #include "vi.h"
 #include "svi_screen.h"
+
+static size_t svi_screens
+    __P((SCR *, EXF *, char *, size_t, recno_t, size_t *));
 
 /*
  * svi_column --
@@ -101,7 +104,7 @@ svi_opt_screens(sp, ep, lno, cnop)
  *	Return the screen columns necessary to display the line, or,
  *	if specified, the physical character column within the line.
  */
-size_t
+static size_t
 svi_screens(sp, ep, lp, llen, lno, cnop)
 	SCR *sp;
 	EXF *ep;
