@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 5.11 1992/05/21 13:02:12 bostic Exp $ (Berkeley) $Date: 1992/05/21 13:02:12 $";
+static char sccsid[] = "$Id: cut.c,v 5.12 1992/05/22 10:04:29 bostic Exp $ (Berkeley) $Date: 1992/05/22 10:04:29 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -28,7 +28,7 @@ static char sccsid[] = "$Id: cut.c,v 5.11 1992/05/21 13:02:12 bostic Exp $ (Berk
 static int	cutline __P((recno_t, size_t, size_t, CBLINE **));
 static void	freecbline __P((CBLINE *));
 
-CB cuts[UCHAR_MAX + 1];		/* Set of cut buffers. */
+CB cuts[UCHAR_MAX + 2];		/* Set of cut buffers. */
 
 /* 
  * cut --
