@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.11 1993/10/03 14:22:03 bostic Exp $ (Berkeley) $Date: 1993/10/03 14:22:03 $";
+static char sccsid[] = "$Id: options.c,v 8.12 1993/10/03 15:22:15 bostic Exp $ (Berkeley) $Date: 1993/10/03 15:22:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -68,14 +68,20 @@ static OPTLIST const optlist[] = {
 	{"leftright",	f_leftright,	OPT_0BOOL,	0},
 /* O_LINES */
 	{"lines",	f_lines,	OPT_NUM,	OPT_NOSAVE},
+/* O_LISP */
+	{"lisp",	f_lisp,		OPT_0BOOL,	0},
 /* O_LIST */
 	{"list",	f_list,		OPT_0BOOL,	0},
 /* O_MAGIC */
 	{"magic",	NULL,		OPT_1BOOL,	0},
 /* O_MAKE */
 	{"make",	NULL,		OPT_STR,	0},
+/* O_MATCHTIME */
+	{"matchtime",	f_matchtime,	OPT_NUM,	0},
 /* O_MESG */
 	{"mesg",	f_mesg,		OPT_1BOOL,	0},
+/* O_MODELINE */
+	{"modeline",	f_modelines,	OPT_0BOOL,	0},
 /* O_MODELINES */
 	{"modelines",	f_modelines,	OPT_0BOOL,	0},
 /* O_NUMBER */
@@ -85,7 +91,7 @@ static OPTLIST const optlist[] = {
 /* O_OPEN */
 	{"open",	NULL,		OPT_1BOOL,	0},
 /* O_OPTIMIZE */
-	{"optimize",	NULL,		OPT_1BOOL,	0},
+	{"optimize",	f_optimize,	OPT_1BOOL,	0},
 /* O_PARAGRAPHS */
 	{"paragraphs",	f_paragraph,	OPT_STR,	0},
 /* O_PROMPT */
@@ -186,7 +192,6 @@ static OABBREV const abbrev[] = {
 	{"ss",		O_SIDESCROLL},
 	{"sw",		O_SHIFTWIDTH},
 	{"te",		O_TERM},
-	{"to",		O_KEYTIME},
 	{"tr",		O_TERSE},
 	{"ts",		O_TABSTOP},
 	{"ve",		O_VERBOSE},
@@ -238,6 +243,7 @@ opts_init(sp)
 	SET_DEF(O_DIRECTORY, b1);
 	SET_DEF(O_KEYTIME, "keytime=6");
 	SET_DEF(O_MAKE, "make=make");
+	SET_DEF(O_MATCHTIME, "matchtime=7");
 	SET_DEF(O_REPORT, "report=5");
 	SET_DEF(O_PARAGRAPHS, "paragraphs=IPLPPPQPP LIpplpipbp");
 	(void)snprintf(b1, sizeof(b1), "scroll=%ld", O_VAL(sp, O_LINES) / 2);
