@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_right.c,v 8.6 1994/03/14 10:44:10 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:44:10 $";
+static char sccsid[] = "$Id: v_right.c,v 8.7 1994/04/25 20:26:17 bostic Exp $ (Berkeley) $Date: 1994/04/25 20:26:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -66,16 +66,14 @@ v_right(sp, ep, vp)
 	 */
 	vp->m_stop.cno = vp->m_start.cno +
 	    (F_ISSET(vp, VC_C1SET) ? vp->count : 1);
-	if (vp->m_start.cno == len - 1) {
-		if (!ISMOTION(vp)) {
-			v_eol(sp, ep, NULL);
-			return (1);
-		}
-		vp->m_stop.cno = vp->m_start.cno;
-	} else if (vp->m_stop.cno > len - 1)
+	if (vp->m_start.cno == len - 1 && !ISMOTION(vp)) {
+		v_eol(sp, ep, NULL);
+		return (1);
+	}
+	if (vp->m_stop.cno >= len) {
 		vp->m_stop.cno = len - 1;
-
-	if (ISMOTION(vp)) {
+		vp->m_final = ISMOTION(vp) ? vp->m_start : vp->m_stop;
+	} else if (ISMOTION(vp)) {
 		--vp->m_stop.cno;
 		vp->m_final = vp->m_start;
 	} else
