@@ -1,5 +1,5 @@
 #! /bin/sh
-# $Id: distrib,v 8.23 2000/07/11 15:10:59 skimo Exp $ (Berkeley) $Date: 2000/07/11 15:10:59 $
+# $Id: distrib,v 8.24 2001/06/25 11:20:24 skimo Exp $ (Berkeley) $Date: 2001/06/25 11:20:24 $
 
 echo "Building aclocal.m4"
 rm -f aclocal.m4
@@ -14,7 +14,7 @@ echo "Running autoconf"
 autoconf 2>&1 | sed '/warning: AC_TRY_RUN called without default/d'
 chmod 555 configure config.guess config.sub install-sh
 echo "Running automake"
-./automake --foreign $@
+automake --foreign $@
 
 msg="/* Do not edit: automatically built by build/distrib. */"
 # Build automatically generated header files.
