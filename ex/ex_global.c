@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 9.5 1995/01/11 18:47:39 bostic Exp $ (Berkeley) $Date: 1995/01/11 18:47:39 $";
+static char sccsid[] = "$Id: ex_global.c,v 9.6 1995/01/30 12:00:29 bostic Exp $ (Berkeley) $Date: 1995/01/30 12:00:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -307,7 +307,7 @@ err:		rval = 1;
 void
 global_insdel(sp, op, lno)
 	SCR *sp;
-	enum operation op;
+	lnop_t op;
 	recno_t lno;
 {
 	EX_PRIVATE *exp;

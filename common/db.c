@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 9.9 1995/01/30 09:39:13 bostic Exp $ (Berkeley) $Date: 1995/01/30 09:39:13 $";
+static char sccsid[] = "$Id: db.c,v 9.10 1995/01/30 11:59:18 bostic Exp $ (Berkeley) $Date: 1995/01/30 11:59:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,7 +30,7 @@ static char sccsid[] = "$Id: db.c,v 9.9 1995/01/30 09:39:13 bostic Exp $ (Berkel
 #include "vi.h"
 #include "excmd.h"
 
-static __inline int scr_update __P((SCR *, recno_t, enum operation, int));
+static __inline int scr_update __P((SCR *, recno_t, lnop_t, int));
 
 /*
  * file_gline --
@@ -503,7 +503,7 @@ static __inline int
 scr_update(sp, lno, op, current)
 	SCR *sp;
 	recno_t lno;
-	enum operation op;
+	lnop_t op;
 	int current;
 {
 	EXF *ep;

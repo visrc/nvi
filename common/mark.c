@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: mark.c,v 9.10 1995/01/30 09:59:03 bostic Exp $ (Berkeley) $Date: 1995/01/30 09:59:03 $";
+static char sccsid[] = "$Id: mark.c,v 9.11 1995/01/30 11:59:30 bostic Exp $ (Berkeley) $Date: 1995/01/30 11:59:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -218,7 +218,7 @@ mark_find(sp, key)
 void
 mark_insdel(sp, op, lno)
 	SCR *sp;
-	enum operation op;
+	lnop_t op;
 	recno_t lno;
 {
 	LMARK *lmp;

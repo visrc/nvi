@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: mark.h,v 9.3 1995/01/11 15:58:13 bostic Exp $ (Berkeley) $Date: 1995/01/11 15:58:13 $
+ *	$Id: mark.h,v 9.4 1995/01/30 11:59:40 bostic Exp $ (Berkeley) $Date: 1995/01/30 11:59:40 $
  */
 
 /*
@@ -45,5 +45,5 @@ struct _lmark {
 int	mark_end __P((SCR *, EXF *));
 int	mark_get __P((SCR *, ARG_CHAR_T, MARK *, enum msgtype));
 int	mark_init __P((SCR *, EXF *));
-void	mark_insdel __P((SCR *, enum operation, recno_t));
+void	mark_insdel __P((SCR *, lnop_t, recno_t));
 int	mark_set __P((SCR *, ARG_CHAR_T, MARK *, int));
