@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 10.19 1995/11/08 20:00:42 bostic Exp $ (Berkeley) $Date: 1995/11/08 20:00:42 $";
+static char sccsid[] = "$Id: ex_read.c,v 10.20 1995/11/10 10:21:56 bostic Exp $ (Berkeley) $Date: 1995/11/10 10:21:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -52,7 +52,7 @@ ex_read(sp, cmdp)
 	MARK rm;
 	recno_t nlines;
 	size_t arglen;
-	int argc, in_vi, rval;
+	int argc, rval;
 	char *p;
 
 	gp = sp->gp;
@@ -121,7 +121,13 @@ ex_read(sp, cmdp)
 				(void)ex_fflush(sp);
 			}
 
-		in_vi = F_ISSET(sp, S_VI) ? 1 : 0;
+		/*
+		 * Historically, filter reads didn't wait for the user. If
+		 * S_SCR_EXWROTE not already set, set the don't-wait flag.
+		 */
+		if (!F_ISSET(sp, S_SCR_EXWROTE))
+			F_SET(sp, S_EX_DONTWAIT);
+
 		if (ex_filter(sp, cmdp, &cmdp->addr1,
 		    NULL, &rm, cmdp->argv[argc]->bp, FILTER_READ))
 			return (1);
@@ -134,7 +140,7 @@ ex_read(sp, cmdp)
 		 * switched into ex mode, so saved the original S_VI value.
 		 */
 		sp->lno = rm.lno;
-		if (in_vi) {
+		if (F_ISSET(sp, S_VI)) {
 			sp->cno = 0;
 			(void)nonblank(sp, sp->lno, &sp->cno);
 		}

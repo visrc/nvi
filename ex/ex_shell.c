@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 10.19 1995/11/08 08:53:16 bostic Exp $ (Berkeley) $Date: 1995/11/08 08:53:16 $";
+static char sccsid[] = "$Id: ex_shell.c,v 10.20 1995/11/10 10:21:34 bostic Exp $ (Berkeley) $Date: 1995/11/10 10:21:34 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -48,7 +48,7 @@ ex_shell(sp, cmdp)
 	 * Historically, vi didn't require a continue message after
 	 * the return of the shell.  Match it.
 	 */
-	F_CLR(sp, S_EX_WROTE);
+	F_SET(sp, S_EX_DONTWAIT);
 
 	return (rval);
 }
@@ -81,7 +81,7 @@ ex_exec_proc(sp, cmdp, cmd, msg, need_newline)
 			ex_emsg(sp, cmdp->cmd->name, EXM_NOCANON);
 			return (1);
 		}
-		F_SET(sp, S_EX_CANON | S_SCREEN_READY);
+		F_SET(sp, S_SCR_EX | S_SCR_EXWROTE);
 	}
 
 	/* Put out additional newline, message. */

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_visual.c,v 10.8 1995/11/07 20:26:41 bostic Exp $ (Berkeley) $Date: 1995/11/07 20:26:41 $";
+static char sccsid[] = "$Id: ex_visual.c,v 10.9 1995/11/10 10:21:28 bostic Exp $ (Berkeley) $Date: 1995/11/10 10:21:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -113,9 +113,11 @@ nopush:	/*
 	 * We don't get this right; I'm waiting for the new logging code to
 	 * be available.
 	 *
-	 * It's explicit, don't have to wait.
+	 * It's explicit, don't have to wait for the user, unless there's
+	 * already a reason to wait.
 	 */
-	F_CLR(sp, S_EX_WROTE);
+	if (!F_ISSET(sp, S_SCR_EXWROTE))
+		F_SET(sp, S_EX_DONTWAIT);
 
 	if (F_ISSET(sp, S_EX_GLOBAL)) {
 		/*
@@ -146,13 +148,14 @@ nopush:	/*
 		 */
 		if (sp->gp->scr_screen(sp, S_EX))
 			return (1);
-		F_CLR(sp, S_VI | S_EX_CANON);
-		F_SET(sp, S_EX | S_SCREEN_READY);
+		ex_e_resize(sp);
+		F_CLR(sp, S_VI);
+		F_SET(sp, S_EX | S_SCR_EX);
 
 		/* Move out of the vi screen. */
-		(void)write(STDOUT_FILENO, "\n", 1);
+		(void)ex_puts(sp, "\n");
 	} else {
-		F_CLR(sp, S_EX | S_EX_CANON | S_SCREEN_READY);
+		F_CLR(sp, S_EX | S_SCR_EX);
 		F_SET(sp, S_VI);
 	}
 	return (0);

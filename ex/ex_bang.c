@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 10.22 1995/11/08 20:01:50 bostic Exp $ (Berkeley) $Date: 1995/11/08 20:01:50 $";
+static char sccsid[] = "$Id: ex_bang.c,v 10.23 1995/11/10 10:21:10 bostic Exp $ (Berkeley) $Date: 1995/11/10 10:21:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -111,7 +111,6 @@ ex_bang(sp, cmdp)
 				    NULL);
 
 		(void)ex_exec_proc(sp, cmdp, ap->bp, msg, in_vi);
-		F_SET(sp, S_EX_WROTE);
 	}
 
 	/*
@@ -177,14 +176,14 @@ ex_bang(sp, cmdp)
 	 * the original S_VI flags value.
 	 */
 	if (!in_vi) {
+		if (!F_ISSET(sp, S_EX_SILENT))
+			(void)ex_puts(sp, "!\n");
+
 		/*
 		 * Make sure all ex messages are flushed out so they aren't
 		 * confused with any autoprint output.
 		 */
 		(void)ex_fflush(sp);
-
-		if (!F_ISSET(sp, S_EX_SILENT))
-			(void)write(STDOUT_FILENO, "!\n", 2);
 	}
 
 	/*
