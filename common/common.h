@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 10.7 1995/10/02 16:34:19 bostic Exp $ (Berkeley) $Date: 1995/10/02 16:34:19 $
+ *	$Id: common.h,v 10.8 1996/02/20 21:04:06 bostic Exp $ (Berkeley) $Date: 1996/02/20 21:04:06 $
  */
 
 /*
@@ -14,7 +14,7 @@
  * on most machines to which we're porting vi, and we want to include
  * them in a very specific order, regardless.
  */
-#include "compat.h"
+#include "config.h"
 #include <db.h>
 #include <regex.h>
 
