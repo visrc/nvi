@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: recover.c,v 10.27 2001/08/21 11:52:04 skimo Exp $ (Berkeley) $Date: 2001/08/21 11:52:04 $";
+static const char sccsid[] = "$Id: recover.c,v 10.28 2001/11/01 09:56:58 skimo Exp $ (Berkeley) $Date: 2001/11/01 09:56:58 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -151,12 +151,11 @@ rcv_tmp(SCR *sp, EXF *ep, char *name)
 	}
 
 	/* Newlines delimit the mail messages. */
-	for (p = name; *p; ++p)
-		if (*p == '\n') {
-			msgq(sp, M_ERR,
+	if (strchr(p, '\n') {
+		msgq(sp, M_ERR,
 		    "055|Files with newlines in the name are unrecoverable");
-			goto err;
-		}
+		goto err;
+	}
 
 	(void)snprintf(path, sizeof(path), "%s/vi.XXXXXX", dp);
 	if ((fd = rcv_mktemp(sp, path, dp, S_IRWXU)) == -1)
