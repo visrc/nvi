@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: seq.h,v 8.7 1993/12/02 10:30:24 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:30:24 $
+ *	$Id: seq.h,v 8.8 1994/03/07 16:53:54 bostic Exp $ (Berkeley) $Date: 1994/03/07 16:53:54 $
  */
 
 /*
@@ -16,6 +16,9 @@
  * Additionally, there is a bitmap which has bits set if there are entries
  * starting with the corresponding character.  This keeps us from walking
  * the list unless it's necessary.
+ *
+ * The name and the output fields of a SEQ can be empty, i.e. NULL.
+ * Only the input field is required.
  *
  * XXX
  * The fast-lookup bits are never turned off -- users don't usually unmap
