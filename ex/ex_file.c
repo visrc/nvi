@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_file.c,v 10.3 1995/06/08 18:53:39 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:53:39 $";
+static char sccsid[] = "$Id: ex_file.c,v 10.4 1995/06/20 19:37:41 bostic Exp $ (Berkeley) $Date: 1995/06/20 19:37:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -44,7 +44,7 @@ ex_file(sp, cmdp)
 	CHAR_T *p;
 	FREF *frp;
 
-	NEEDFILE(sp, cmdp->cmd);
+	NEEDFILE(sp, cmdp);
 
 	switch (cmdp->argc) {
 	case 0:
