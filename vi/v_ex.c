@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_ex.c,v 10.28 1996/03/18 09:08:42 bostic Exp $ (Berkeley) $Date: 1996/03/18 09:08:42 $";
+static const char sccsid[] = "$Id: v_ex.c,v 10.29 1996/03/18 09:35:33 bostic Exp $ (Berkeley) $Date: 1996/03/18 09:35:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -543,7 +543,7 @@ v_ecl_exec(sp)
 	if (db_get(sp, sp->lno, DBG_FATAL, &p, &len))
 		return (1);
 	if (len == 0) {
-		msgq(sp, M_BERR, "305|No ex command to execute");
+		msgq(sp, M_BERR, "307|No ex command to execute");
 		return (1);
 	}
 	

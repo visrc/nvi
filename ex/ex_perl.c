@@ -14,7 +14,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_perl.c,v 8.5 1996/03/12 08:58:08 bostic Exp $ (Berkeley) $Date: 1996/03/12 08:58:08 $";
+static const char sccsid[] = "$Id: ex_perl.c,v 8.6 1996/03/18 09:35:22 bostic Exp $ (Berkeley) $Date: 1996/03/18 09:35:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -52,7 +52,7 @@ static void
 noperl(scrp)
 	SCR *scrp;
 {
-	msgq(scrp, M_ERR, "305|Vi was not loaded with a Perl interpreter");
+	msgq(scrp, M_ERR, "306|Vi was not loaded with a Perl interpreter");
 }
 #endif
 
