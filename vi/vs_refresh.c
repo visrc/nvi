@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.13 1993/09/13 19:41:49 bostic Exp $ (Berkeley) $Date: 1993/09/13 19:41:49 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.14 1993/09/30 11:29:49 bostic Exp $ (Berkeley) $Date: 1993/09/30 11:29:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -510,10 +510,10 @@ static int
 svi_msgflush(sp)
 	SCR *sp;
 {
+	CHAR_T ch;
 	CHNAME *cname;
 	MSG *mp;
 	size_t chlen, len;
-	int ch;
 	char *p;
 
 #define	MCONTMSG	" [More ...]"
@@ -556,14 +556,21 @@ lcont:		/* Move to the message line and clear it. */
 			ADDNSTR(cname[ch].name, chlen);
 		}
 
-		/* If more, print continue message. */
+		/*
+		 * If more, print continue message.  If user key fails,
+		 * keep showing the messages anyway.
+		 */
 		if (mp->len ||
 		    (mp->next != NULL && !F_ISSET(mp->next, M_EMPTY))) {
 			ADDNSTR(MCONTMSG, sizeof(MCONTMSG) - 1);
 			refresh();
-			while (sp->special[ch = term_key(sp, 0)] != K_CR &&
-			    !isblank(ch))
+			for (;;) {
+				if (term_key(sp, &ch, 0) != INP_OK)
+					break;
+				if (sp->special[ch] == K_CR || isblank(ch))
+					break;
 				svi_bell(sp);
+			}
 		}
 
 		/* Turn off standout mode. */
@@ -610,12 +617,14 @@ svi_modeline(sp, ep)
 	}
 
 	/*
-	 * Show the mode.  Leave the last character blank, just in case
-	 * it's a really dumb terminal with hardware scroll.
+	 * Show the mode.  Leave the last character blank, in case it's a
+	 * really dumb terminal with hardware scroll.  Second, don't try
+	 * to *paint* the last character, SunOS 4.1.1 and Ultrix 4.2 curses
+	 * won't let you paint the last character in the screen.
 	 */
 	if (O_ISSET(sp, O_SHOWMODE) && sp->cols > MODESIZE) {
 		MOVE(sp, INFOLINE(sp), sp->cols - 8);
-		s = F_ISSET(sp, S_INPUT) ? "  Input " : "Command ";
+		s = F_ISSET(sp, S_INPUT) ? "  Input" : "Command";
 		ADDSTR(s);
 	}
 
