@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 5.7 1992/06/05 11:05:30 bostic Exp $ (Berkeley) $Date: 1992/06/05 11:05:30 $";
+static char sccsid[] = "$Id: v_itxt.c,v 5.8 1992/09/01 15:36:31 bostic Exp $ (Berkeley) $Date: 1992/09/01 15:36:31 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -48,13 +48,18 @@ v_iA(vp, fm, tm, rp)
 
 	for (cnt = vp->flags & VC_C1SET ? vp->count : 1;;) {
 		/*
-		 * Move the cursor to one column past the end of
-		 * the line and repaint the screen.
+		 * Move the cursor to one column past the end of the line and
+		 * repaint the screen.  If there's no line, that's okay, it's
+		 * an empty file.
 		 */
-		EGETLINE(p, fm->lno, len);
-		curf->cno = len;
-		scr_cchange();
-		refresh();
+		GETLINE(p, fm->lno, len);
+		if (p == NULL)
+			len = 0;
+		else {
+			curf->cno = len;
+			scr_cchange();
+			refresh();
+		}
 
 		if (newtext(vp, NULL, p, len, rp, 0))
 			return (1);
@@ -420,7 +425,7 @@ newtext(vp, tm, p, len, rp, flags)
 
 	/* Save the cursor position. */
 	ib.start.lno = ib.stop.lno = curf->lno;
-	ib.start.lno = ib.stop.lno = curf->cno;
+	ib.start.cno = ib.stop.cno = curf->cno;
 
 	/* Copy the current line for editing. */
 	if (len) {
