@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.52 1994/03/24 12:07:03 bostic Exp $ (Berkeley) $Date: 1994/03/24 12:07:03 $";
+static char sccsid[] = "$Id: options.c,v 8.53 1994/04/07 10:15:26 bostic Exp $ (Berkeley) $Date: 1994/04/07 10:15:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -196,7 +196,7 @@ static OABBREV const abbrev[] = {
 	{"co",		O_COLUMNS},		/*   4.4BSD */
 	{"dir",		O_DIRECTORY},		/*     4BSD */
 	{"eb",		O_ERRORBELLS},		/*     4BSD */
-	{"ed",		O_EDCOMPATIBLE},	/*     4BSD (undocumented) */
+	{"ed",		O_EDCOMPATIBLE},	/*     4BSD */
 	{"ex",		O_EXRC},		/* System V (undocumented) */
 	{"ht",		O_HARDTABS},		/*     4BSD */
 	{"ic",		O_IGNORECASE},		/*     4BSD */
