@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.75 1993/05/28 00:07:06 bostic Exp $ (Berkeley) $Date: 1993/05/28 00:07:06 $";
+static char sccsid[] = "$Id: exf.c,v 5.76 1993/05/28 00:22:48 bostic Exp $ (Berkeley) $Date: 1993/05/28 00:22:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -372,7 +372,7 @@ file_write(sp, ep, fm, tm, fname, flags)
 	}
 
 	/* Can't write read-only files, unless forced. */
-	if (!LF_ISSET(FS_FORCE) && F_ISSET(ep, F_RDONLY)) {
+	if (fname == NULL && !LF_ISSET(FS_FORCE) && F_ISSET(ep, F_RDONLY)) {
 		if (LF_ISSET(FS_POSSIBLE))
 			msgq(sp, M_ERR,
 			    "Read-only file, not written; use ! to override.");
