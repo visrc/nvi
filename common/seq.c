@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 5.20 1993/02/16 20:10:39 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:39 $";
+static char sccsid[] = "$Id: seq.c,v 5.21 1993/02/19 16:30:45 bostic Exp $ (Berkeley) $Date: 1993/02/19 16:30:45 $";
 #endif /* not lint */
 
 #include <ctype.h>
@@ -89,7 +89,7 @@ seq_set(ep, name, input, output, stype, userdef)
 
 	sp->stype = stype;
 	sp->ilen = ilen;
-	sp->flags |= userdef ? S_USERDEF : 0;
+	sp->flags = userdef ? S_USERDEF : 0;
 
 	/*
 	 * Link into the character array.  If ip is NULL, sp becomes
