@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_replace.c,v 5.28 1993/05/16 15:19:16 bostic Exp $ (Berkeley) $Date: 1993/05/16 15:19:16 $";
+static char sccsid[] = "$Id: v_replace.c,v 5.29 1993/05/19 13:30:27 bostic Exp $ (Berkeley) $Date: 1993/05/19 13:30:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -73,6 +73,11 @@ nochar:		msgq(sp, M_BERR, "No characters to replace");
 		return (1);
 	}
 
+	/* Copy the line. */
+	GET_SPACE(sp, bp, blen, len);
+	memmove(bp, p, len);
+	p = bp;
+
 	if (sp->special[vp->character] == K_CR ||
 	    sp->special[vp->character] == K_NL) {
 		/* Set return line. */
@@ -107,9 +112,6 @@ nochar:		msgq(sp, M_BERR, "No characters to replace");
 		return (0);
 	}
 
-	GET_SPACE(sp, bp, blen, len);
-
-	memmove(bp, p, len);
 	memset(bp + fm->cno, vp->character, cnt);
 	rval = file_sline(sp, ep, fm->lno, bp, len);
 
