@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cd.c,v 8.13 1994/08/05 06:43:28 bostic Exp $ (Berkeley) $Date: 1994/08/05 06:43:28 $";
+static char sccsid[] = "$Id: ex_cd.c,v 8.14 1994/08/07 17:20:09 bostic Exp $ (Berkeley) $Date: 1994/08/07 17:20:09 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -40,63 +40,52 @@ ex_cd(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
+	ARGS *ap;
 	CDPATH *cdp;
-	EX_PRIVATE *exp;
-	size_t len;
-	char *dir;		/* XXX End of the stack, don't trust getcwd. */
+	char *dir;		/* XXX END OF THE STACK, DON'T TRUST GETCWD. */
 	char buf[MAXPATHLEN * 2];
 
 	switch (cmdp->argc) {
 	case 0:
+		/* If no argument, change to the user's home directory. */
 		if ((dir = getenv("HOME")) == NULL) {
 			msgq(sp, M_ERR, "Environment variable HOME not set");
 			return (1);
 		}
-		len = strlen(dir);
 		break;
 	case 1:
 		dir = cmdp->argv[0]->bp;
-		len = cmdp->argv[0]->len;
 		break;
 	default:
 		abort();
 	}
 
+	/* Try the current directory first. */
+	if (!chdir(dir))
+		goto ret;
+
 	/*
-	 * If the user has a CDPATH variable, we use it, otherwise
-	 * we use the current directory.
-	 *
-	 * !!!
-	 * This violates historic practice.  Historic vi didn't consider
-	 * CDPATH, and therefore always used the current directory. This
-	 * is probably correct; if users have set CDPATH to not include
-	 * the current directory, they probably had a reason.
+	 * If moving to the user's home directory, or, the path begins with
+	 * "/", "./" or "../", it's the only place we try.
 	 */
-	if (dir[0] == '/' || len >= 2 && dir[0] == '.' &&
-	    dir[1] == '.' && (dir[2] == '/' || dir[2] == '\0')) {
-		if (argv_exp2(sp, ep, cmdp, dir, len, 0))
-			return (1);
-		if (chdir(cmdp->argv[cmdp->argc - 1]->bp) < 0)
-			goto err;
-	} else {
-		exp = EXP(sp);
-		for (cdp = exp->cdq.tqh_first;
-		    cdp != NULL; cdp = cdp->q.tqe_next) {
-			len = snprintf(buf,
-			    sizeof(buf), "%s/%s", cdp->path, dir);
-			if (argv_exp2(sp, ep, cmdp, buf, len, 0))
-				return (1);
-			if (!chdir(cmdp->argv[cmdp->argc - 1]->bp))
-				break;
-		}
-		if (cdp == NULL) {
-err:			msgq(sp, M_SYSERR, dir);
-			return (1);
+	if (cmdp->argc == 0 ||
+	    (ap = cmdp->argv[0])->bp[0] == '/' ||
+	    ap->len == 1 && ap->bp[0] == '.' ||
+	    ap->len >= 2 && ap->bp[0] == '.' && ap->bp[1] == '.' &&
+	    (ap->bp[2] == '/' || ap->bp[2] == '\0'))
+		goto err;
+
+	/* If the user has a CDPATH variable, try its elements. */
+	for (cdp = EXP(sp)->cdq.tqh_first; cdp != NULL; cdp = cdp->q.tqe_next) {
+		(void)snprintf(buf, sizeof(buf), "%s/%s", cdp->path, dir);
+		if (!chdir(buf)) {
+ret:			if (getcwd(buf, sizeof(buf)) != NULL)
+				msgq(sp, M_INFO, "New directory: %s", buf);
+			return (0);
 		}
 	}
-	if (getcwd(buf, sizeof(buf)) != NULL)
-		msgq(sp, M_INFO, "New directory: %s", buf);
-	return (0);
+err:	msgq(sp, M_SYSERR, "%s", dir);
+	return (1);
 }
 
 #define	FREE_CDPATH(cdp) {						\
