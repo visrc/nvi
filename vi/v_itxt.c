@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 8.16 1993/10/27 17:05:20 bostic Exp $ (Berkeley) $Date: 1993/10/27 17:05:20 $";
+static char sccsid[] = "$Id: v_itxt.c,v 8.17 1993/10/27 17:37:39 bostic Exp $ (Berkeley) $Date: 1993/10/27 17:37:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,6 +18,16 @@ static char sccsid[] = "$Id: v_itxt.c,v 8.16 1993/10/27 17:05:20 bostic Exp $ (B
 
 #include "vi.h"
 #include "vcmd.h"
+
+/*
+ * Repeated input in the historic vi is mostly wrong and this isn't very
+ * backward compatible.  For example, if the user entered "3Aab\ncd" in
+ * the historic vi, the "ab" was repeated 3 times, and the "\ncd" was then
+ * appended to the result.  There was also a hack which I don't remember
+ * right now, where "3o" would open 3 lines and then let the user fill them
+ * in, to make screen movements on 300 baud modems more tolerable.  I don't
+ * think it's going to be missed.
+ */
 
 #define	SET_TXT_STD(sp, f) {						\
 	LF_INIT((f) | TXT_BEAUTIFY | TXT_CNTRLT | TXT_ESCAPE |		\
@@ -36,12 +46,7 @@ static char sccsid[] = "$Id: v_itxt.c,v 8.16 1993/10/27 17:05:20 bostic Exp $ (B
 		LF_SET(TXT_TTYWERASE);					\
 }
 
-/*
- * Repeated input in the historic vi is mostly wrong and this isn't very
- * backward compatible.  For example, if the user entered "3Aab\ncd" in
- * the historic vi, the "ab" was repeated 3 times, and the "\ncd" was then
- * appended to the result.
- */
+static int v_CS __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *, u_int));
 
 /*
  * v_iA -- [count]A
@@ -356,25 +361,6 @@ insert:			p = "";
 }
 
 /*
- * v_Subst -- [buffer][count]S
- *	Line substitute command.
- */
-int
-v_Subst(sp, ep, vp, fm, tm, rp)
-	SCR *sp;
-	EXF *ep;
-	VICMDARG *vp;
-	MARK *fm, *tm, *rp;
-{
-	/*
-	 * The S command is the same as a 'C' command from the beginning
-	 * of the line.  This is hard to do in the parser, so do it here.
-	 */
-	fm->cno = sp->cno = 0;
-	return (v_Change(sp, ep, vp, fm, tm, rp));
-}
-
-/*
  * v_Change -- [buffer][count]C
  *	Change line command.
  */
@@ -385,12 +371,61 @@ v_Change(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
+	return (v_CS(sp, ep, vp, fm, tm, rp, 0));
+}
+
+/*
+ * v_Subst -- [buffer][count]S
+ *	Line substitute command.
+ */
+int
+v_Subst(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
+	EXF *ep;
+	VICMDARG *vp;
+	MARK *fm, *tm, *rp;
+{
+	u_int flags;
+
+	/*
+	 * The S command is the same as a 'C' command from the beginning
+	 * of the line.  This is hard to do in the parser, so do it here.
+	 *
+	 * If autoindent is on, the change is from the first *non-blank*
+	 * character of the line, not the first character.  And, to make
+	 * it just a bit more exciting, the initial space is handled as
+	 * auto-indent characters.
+	 */
+	LF_INIT(0);
+	if (O_ISSET(sp, O_AUTOINDENT)) {
+		fm->cno = 0;
+		if (nonblank(sp, ep, fm->lno, &fm->cno))
+			return (1);
+		LF_SET(TXT_AICHARS);
+	} else
+		fm->cno = 0;
+	sp->cno = fm->cno;
+	return (v_CS(sp, ep, vp, fm, tm, rp, flags));
+}
+
+/*
+ * v_CS --
+ *	C and S commands.
+ */
+static int
+v_CS(sp, ep, vp, fm, tm, rp, iflags)
+	SCR *sp;
+	EXF *ep;
+	VICMDARG *vp;
+	MARK *fm, *tm, *rp;
+	u_int iflags;
+{
 	recno_t lno;
 	size_t len;
-	u_int flags;
 	char *p;
+	u_int flags;
 
-	SET_TXT_STD(sp, 0);
+	SET_TXT_STD(sp, iflags);
 	if (F_ISSET(vp,  VC_ISDOT))
 		LF_SET(TXT_REPLAY);
 
