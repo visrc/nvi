@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_mkexrc.c,v 5.9 1992/04/22 08:08:02 bostic Exp $ (Berkeley) $Date: 1992/04/22 08:08:02 $";
+static char sccsid[] = "$Id: ex_mkexrc.c,v 5.10 1992/05/02 09:11:59 bostic Exp $ (Berkeley) $Date: 1992/05/02 09:11:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,7 +34,7 @@ ex_mkexrc(cmdp)
 
 	switch (cmdp->argc) {
 	case 0:
-		name = _NAME_EXRC;
+		name = _PATH_EXRC;
 		break;
 	case 1:
 		name = cmdp->argv[0];
