@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.89 1994/05/03 13:48:51 bostic Exp $ (Berkeley) $Date: 1994/05/03 13:48:51 $";
+static char sccsid[] = "$Id: main.c,v 8.90 1994/05/17 18:32:19 bostic Exp $ (Berkeley) $Date: 1994/05/17 18:32:19 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -395,8 +395,8 @@ main(argc, argv)
 		goto err;
 
 	for (;;) {
-		if (sp->s_edit(sp, sp->ep))
-			goto err;
+		/* Ignore errors -- other screens may succeed. */
+		(void)sp->s_edit(sp, sp->ep);
 
 		/*
 		 * Edit the next screen on the display queue, or, move
