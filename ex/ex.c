@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.46 1992/11/11 18:29:42 bostic Exp $ (Berkeley) $Date: 1992/11/11 18:29:42 $";
+static char sccsid[] = "$Id: ex.c,v 5.47 1992/12/04 20:34:57 bostic Exp $ (Berkeley) $Date: 1992/12/04 20:34:57 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -438,17 +438,8 @@ end2:			break;
 			}
 			break;
 		case 'l':				/* line */
-			/*
-			 * XXX
-			 * Check for illegal line numbers.
-			 * Line 0 okay for copy, move??
-			 */
 			if (isdigit(*exc)) {
 				cmd.lineno = USTRTOL(exc, &ep, 10);
-				if (cmd.lineno == 0) {
-					msg("Line number may not be zero.");
-					return (1);
-				}
 				exc = ep;
 			}
 			break;
