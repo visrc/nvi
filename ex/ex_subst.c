@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 9.3 1994/11/12 13:10:10 bostic Exp $ (Berkeley) $Date: 1994/11/12 13:10:10 $";
+static char sccsid[] = "$Id: ex_subst.c,v 9.4 1994/11/13 12:24:38 bostic Exp $ (Berkeley) $Date: 1994/11/13 12:24:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -613,7 +613,7 @@ nextmatch:	match[0].rm_so = 0;
 			 */
 			from.lno = to.lno = lno;
 			from.cno = match[0].rm_so + offset;
-			to.cno = match[0].rm_eo;
+			to.cno = match[0].rm_eo + offset;
 			if (llen == 0)
 				from.cno = to.cno = 0;
 			else {
