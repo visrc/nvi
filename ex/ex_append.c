@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 8.20 1994/08/03 10:54:09 bostic Exp $ (Berkeley) $Date: 1994/08/03 10:54:09 $";
+static char sccsid[] = "$Id: ex_append.c,v 8.21 1994/08/05 07:56:38 bostic Exp $ (Berkeley) $Date: 1994/08/05 07:56:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -139,20 +139,18 @@ aci(sp, ep, cmdp, cmd)
 	 * append more lines or delete remaining lines.  Changes to an empty
 	 * file are just appends, and inserts are the same as appends to the
 	 * previous line.
-	 */
-	m = cmdp->addr1;
-	if (cmd == INSERT) {
-		--m.lno;
-		cmd = APPEND;
-	}
-
-	/*
+	 *
 	 * !!!
 	 * Adjust the current line number for the commands to match historic
 	 * practice if the user doesn't enter anything.  This is safe because
 	 * an address of 0 is illegal for change and insert.
 	 */
+	m = cmdp->addr1;
 	switch (cmd) {
+	case INSERT:
+		--m.lno;
+		cmd = APPEND;
+		/* FALLTHROUGH */
 	case APPEND:
 		if (sp->lno == 0)
 			sp->lno = 1;
