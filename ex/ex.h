@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 5.20 1992/10/17 16:10:02 bostic Exp $ (Berkeley) $Date: 1992/10/17 16:10:02 $
+ *	$Id: ex.h,v 5.21 1992/11/01 22:58:34 bostic Exp $ (Berkeley) $Date: 1992/11/01 22:58:34 $
  */
 
 #include "exf.h"
@@ -63,18 +63,19 @@ typedef struct excmdarg {
 extern u_char *defcmdarg[2];	/* Default array. */
 
 /* Macro to set up the structure. */
-#define	SETCMDARG(s, _cmd, _addrcnt, _lno1, _lno2, _force, _arg) { \
-	bzero(&s, sizeof(EXCMDARG)); \
-	s.cmd = &cmds[_cmd]; \
-	s.addrcnt = (_addrcnt); \
-	s.addr1.lno = (_lno1); \
-	s.addr2.lno = (_lno2); \
-	s.addr1.cno = s.addr2.cno = 1; \
-	if (_force) \
-		s.flags |= E_FORCE; \
-	s.argc = _arg ? 1 : 0; \
-	s.argv = defcmdarg; \
-	defcmdarg[0] = (u_char *)_arg; \
+#define	SETCMDARG(s, _cmd, _addrcnt, _lno1, _lno2, _force, _arg) {	\
+	bzero(&s, sizeof(EXCMDARG));					\
+	s.cmd = &cmds[_cmd];						\
+	s.addrcnt = (_addrcnt);						\
+	s.addr1.lno = (_lno1);						\
+	s.addr2.lno = (_lno2);						\
+	s.addr1.cno = s.addr2.cno = 1;					\
+	if (_force)							\
+		s.flags |= E_FORCE;					\
+	s.argc = _arg ? 1 : 0;						\
+	s.argv = defcmdarg;						\
+	s.string = (u_char *)"";					\
+	defcmdarg[0] = (u_char *)_arg;					\
 }
 
 /*
@@ -83,20 +84,20 @@ extern u_char *defcmdarg[2];	/* Default array. */
  * If autowrite set, write the file; otherwise warn the user if the file has
  * been modified but not written.
  */
-#define	DEFMODSYNC { \
-	if (ISSET(O_AUTOWRITE)) { \
-		if (file_sync(curf, 0)) \
-			return (1); \
-	} else if (ISSET(O_WARN) && curf->flags & F_MODIFIED) { \
-		msg("%s has been modified but not written.", curf->name); \
-		return (1); \
-	} \
+#define	DEFMODSYNC {							\
+	if (ISSET(O_AUTOWRITE)) {					\
+		if (file_sync(curf, 0))					\
+			return (1);					\
+	} else if (ISSET(O_WARN) && curf->flags & F_MODIFIED) {		\
+		msg("%s has been modified but not written.",		\
+		    curf->name);					\
+		return (1);						\
+	}								\
 }
 
 /* Control character. */
 #define	ctrl(ch)	((ch) & 0x1f)
 
-void	 ex __P((void));
 u_char	*linespec __P((u_char *, EXCMDARG *));
 int	 buildargv __P((u_char *, int, EXCMDARG *));
 
@@ -111,6 +112,7 @@ int	ex_cfile __P((char *, int));
 int	ex_change __P((EXCMDARG *));
 int	ex_cmd __P((u_char *));
 int	ex_color __P((EXCMDARG *));
+int	ex_confirm __P((EXF *, MARK *, MARK *));
 int	ex_copy __P((EXCMDARG *));
 int	ex_cstring __P((u_char *, int, int));
 int	ex_debug __P((EXCMDARG *));
@@ -131,7 +133,8 @@ int	ex_move __P((EXCMDARG *));
 int	ex_next __P((EXCMDARG *));
 int	ex_number __P((EXCMDARG *));
 int	ex_prev __P((EXCMDARG *));
-int	ex_print __P((EXCMDARG *));
+int	ex_pr __P((EXCMDARG *));
+int	ex_print __P((EXF *, MARK *, MARK *, int));
 int	ex_put __P((EXCMDARG *));
 int	ex_quit __P((EXCMDARG *));
 int	ex_read __P((EXCMDARG *));
