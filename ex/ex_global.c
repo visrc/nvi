@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 8.2 1993/06/21 15:08:39 bostic Exp $ (Berkeley) $Date: 1993/06/21 15:08:39 $";
+static char sccsid[] = "$Id: ex_global.c,v 8.3 1993/07/06 08:29:43 bostic Exp $ (Berkeley) $Date: 1993/07/06 08:29:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -57,35 +57,45 @@ global(sp, ep, cmdp, cmd)
 	regmatch_t match[1];
 	regex_t *re, lre;
 	size_t len;
-	int eval, reflags, rval;
-	char *endp, *ptrn, *s, cbuf[512];
-	char delim[2];
+	int delim, eval, reflags, rval;
+	char *ptrn, *p, *t, cbuf[1024];
 
 	/* Skip whitespace. */
-	for (s = cmdp->string; *s && isspace(*s); ++s);
+	for (p = cmdp->string; *p && isspace(*p); ++p);
 
-	/* Get delimiter. */
-	if (*s != '/' && *s != ';') {
+	/* Delimiter is the first character. */
+	delim = *p;
+	if (delim != '/' && delim != ';') {
 		msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
 		return (1);
 	}
 
-	/* Delimiter is the first character. */
-	delim[0] = s[0];
-	delim[1] = '\0';
-
-	/* Get the pattern string. */
-	endp = s + 1;
-	ptrn = strsep(&endp, delim);
+	/*
+	 * Get the pattern string, toss escaped characters.
+	 *
+	 * ESCAPE CHARACTER NOTE:
+	 * Only toss an escaped character if it escapes a delimiter.
+	 */
+	for (ptrn = t = ++p;;) {
+		if (p[0] == '\0' || p[0] == delim) {
+			if (p[0] == delim)
+				++p;
+			*t = '\0';
+			break;
+		}
+		if (p[0] == '\\' && p[1] == delim)
+			++p;
+		*t++ = *p++;
+	}
 
 	/* Get the command string. */
-	if (endp == NULL || *endp == NULL) {
+	if (*p == '\0') {
 		msgq(sp, M_ERR, "No command string specified.");
 		return (1);
 	}
 
 	/* If the substitute string is empty, use the last one. */
-	if (*ptrn == NULL) {
+	if (*ptrn == '\0') {
 		if (!F_ISSET(sp, S_RE_SET)) {
 			msgq(sp, M_ERR, "No previous regular expression.");
 			return (1);
@@ -101,7 +111,7 @@ global(sp, ep, cmdp, cmd)
 
 		/* Compile the RE. */
 		re = &lre;
-		if (eval = regcomp(re, (char *)ptrn, reflags)) {
+		if (eval = regcomp(re, ptrn, reflags)) {
 			re_error(sp, eval, re);
 			return (1);
 		}
@@ -124,7 +134,7 @@ global(sp, ep, cmdp, cmd)
 	    elno = cmdp->addr2.lno; lno <= elno; ++lno) {
 
 		/* Get the line. */
-		if ((s = file_gline(sp, ep, lno, &len)) == NULL) {
+		if ((t = file_gline(sp, ep, lno, &len)) == NULL) {
 			GETLINE_ERR(sp, lno);
 			rval = 1;
 			goto quit;
@@ -133,7 +143,7 @@ global(sp, ep, cmdp, cmd)
 		/* Search for a match. */
 		match[0].rm_so = 0;
 		match[0].rm_eo = len;
-		switch(eval = regexec(re, (char *)s, 1, match, REG_STARTEND)) {
+		switch(eval = regexec(re, t, 1, match, REG_STARTEND)) {
 		case 0:
 			if (cmd == VGLOBAL)
 				continue;
@@ -156,7 +166,7 @@ global(sp, ep, cmdp, cmd)
 			goto quit;
 
 		sp->lno = lno;
-		(void)snprintf((char *)cbuf, sizeof(cbuf), "%s", endp);
+		(void)snprintf(cbuf, sizeof(cbuf), "%s", p);
 		if (ex_cmd(sp, ep, cbuf)) {
 			rval = 1;
 			goto quit;
