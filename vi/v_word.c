@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_word.c,v 8.7 1993/08/25 16:53:31 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:53:31 $";
+static char sccsid[] = "$Id: v_word.c,v 8.8 1993/09/17 09:39:21 bostic Exp $ (Berkeley) $Date: 1993/09/17 09:39:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -117,12 +117,20 @@ fword(sp, ep, vp, fm, rp, type)
 	 * If in white-space:
 	 *	If the count is 1, and it's a change command, we're done.
 	 *	Else, move to the first non-white-space character, which
-	 *	    counts as a single word move.
+	 *	counts as a single word move.  If it's a motion command,
+	 *	don't move off the end of the line.
 	 */
 	if (cs.cs_flags == CS_EMP || cs.cs_flags == 0 && isblank(cs.cs_ch)) {
-		if (cs.cs_flags != CS_EMP && cnt == 1 && F_ISSET(vp, VC_C)) {
-			++cs.cs_cno;
-			goto ret2;
+		if (cs.cs_flags != CS_EMP && cnt == 1) {
+			if (F_ISSET(vp, VC_C)) {
+				++cs.cs_cno;
+				goto ret3;
+			}
+			if (F_ISSET(vp, VC_D | VC_Y)) {
+				if (cs_fspace(sp, ep, &cs))
+					return (1);
+				goto ret1;
+			}
 		}
 		if (cs_fblank(sp, ep, &cs))
 			return (1);
@@ -141,30 +149,26 @@ fword(sp, ep, vp, fm, rp, type)
 				if (cs_next(sp, ep, &cs))
 					return (1);
 				if (cs.cs_flags == CS_EOF)
-					goto ret1;
+					goto ret2;
 				if (cs.cs_flags != 0 || isblank(cs.cs_ch))
 					break;
 			}
 			/*
-			 * If a "c" or "y" motion command and we're at the
-			 * end of the last word, don't eat trailing white
-			 * space.  If any motion command, and we're at the
-			 * end of the last word and at the end of a line,
-			 * don't move off the line.
+			 * If a motion command and we're at the end of the
+			 * last word, only eat trailing blanks, and don't
+			 * move off the end of the line.
 			 */
-			if (cnt == 0) {
-				if (F_ISSET(vp, VC_C))
-					break;
-				if (cs.cs_flags == CS_EOL &&
-				    F_ISSET(vp, VC_D | VC_Y))
-					break;
+			if (cnt == 0 && F_ISSET(vp, VC_C | VC_D | VC_Y)) {
+				if (cs_fspace(sp, ep, &cs))
+					return (1);
+				break;
 			}
 
-			/* Eat any space characters. */
+			/* Eat whitespace characters. */
 			if (cs_fblank(sp, ep, &cs))
 				return (1);
 			if (cs.cs_flags == CS_EOF)
-				goto ret1;
+				goto ret2;
 		}
 	else
 		while (cnt--) {
@@ -174,7 +178,7 @@ fword(sp, ep, vp, fm, rp, type)
 				if (cs_next(sp, ep, &cs))
 					return (1);
 				if (cs.cs_flags == CS_EOF)
-					goto ret1;
+					goto ret2;
 				if (cs.cs_flags != 0 || isblank(cs.cs_ch))
 					break;
 				if (state == INWORD) {
@@ -185,20 +189,18 @@ fword(sp, ep, vp, fm, rp, type)
 						break;
 			}
 			/* See comment above. */
-			if (cnt == 0) {
-				if (F_ISSET(vp, VC_C))
-					break;
-				if (cs.cs_flags == CS_EOL &&
-				    F_ISSET(vp, VC_D | VC_Y))
-					break;
+			if (cnt == 0 && F_ISSET(vp, VC_C | VC_D | VC_Y)) {
+				if (cs_fspace(sp, ep, &cs))
+					return (1);
+				break;
 			}
 
-			/* Eat any space characters. */
+			/* Eat whitespace characters. */
 			if (cs.cs_flags != 0 || isblank(cs.cs_ch))
 				if (cs_fblank(sp, ep, &cs))
 					return (1);
 			if (cs.cs_flags == CS_EOF)
-				goto ret1;
+				goto ret2;
 		}
 
 	/*
@@ -206,11 +208,11 @@ fword(sp, ep, vp, fm, rp, type)
 	 * move us off this line, don't do it.  Move the return cursor
 	 * to one past the EOL instead.
 	 */
-	if (F_ISSET(vp, VC_C | VC_D | VC_Y) && cs.cs_flags == CS_EOL)
+ret1:	if (F_ISSET(vp, VC_C | VC_D | VC_Y) && cs.cs_flags == CS_EOL)
 		++cs.cs_cno;
 
 	/* If we didn't move, we must be at EOF. */
-ret1:	if (cs.cs_lno == fm->lno && cs.cs_cno == fm->cno) {
+ret2:	if (cs.cs_lno == fm->lno && cs.cs_cno == fm->cno) {
 		v_eof(sp, ep, fm);
 		return (1);
 	}
@@ -220,7 +222,7 @@ ret1:	if (cs.cs_lno == fm->lno && cs.cs_cno == fm->cno) {
 	 */
 	if (F_ISSET(vp, VC_C | VC_D | VC_Y) && cs.cs_flags == CS_EOF)
 		++cs.cs_cno;
-ret2:	rp->lno = cs.cs_lno;
+ret3:	rp->lno = cs.cs_lno;
 	rp->cno = cs.cs_cno;
 	return (0);
 }
