@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tcl.c,v 8.3 1995/11/18 13:04:54 bostic Exp $ (Berkeley) $Date: 1995/11/18 13:04:54 $";
+static char sccsid[] = "$Id: ex_tcl.c,v 8.4 1996/02/20 21:14:51 bostic Exp $ (Berkeley) $Date: 1996/02/20 21:14:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,13 +22,14 @@ static char sccsid[] = "$Id: ex_tcl.c,v 8.3 1995/11/18 13:04:54 bostic Exp $ (Be
 #include <signal.h>
 #include <stdio.h>
 #include <string.h>
-#ifdef TCL_INTERP
-#include <tcl.h>
-#endif
 #include <termios.h>
 #include <unistd.h>
 
 #include "../common/common.h"
+
+#ifdef HAVE_TCL_INTERP
+#include <tcl.h>
+#endif
 
 /* 
  * ex_tcl -- :[line [,line]] tcl [command]
@@ -41,10 +42,7 @@ ex_tcl(sp, cmdp)
 	SCR *sp;
 	EXCMD *cmdp;
 {
-#ifndef TCL_INTERP
-	msgq(sp, M_ERR, "302|Vi was not loaded with a Tcl interpreter");
-	return (1);
-#else
+#ifdef HAVE_TCL_INTERP
 	CHAR_T *p;
 	GS *gp;
 	size_t len;
@@ -71,5 +69,8 @@ ex_tcl(sp, cmdp)
 
 	msgq(sp, M_ERR, "Tcl: %s", ((Tcl_Interp *)gp->interp)->result);
 	return (1);
-#endif /* TCL_INTERP */
+#else
+	msgq(sp, M_ERR, "302|Vi was not loaded with a Tcl interpreter");
+	return (1);
+#endif /* HAVE_TCL_INTERP */
 }
