@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 10.12 1995/09/29 16:53:54 bostic Exp $ (Berkeley) $Date: 1995/09/29 16:53:54 $";
+static char sccsid[] = "$Id: vs_split.c,v 10.13 1995/10/04 12:39:06 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:39:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -264,22 +264,14 @@ vs_fg(csp, name)
 {
 	GS *gp;
 	SCR *sp;
-	int nf;
-	char *p;
 
 	if (vs_swap(csp, &sp, name))
 		return (1);
 	if (sp == NULL) {
-		if (name == NULL)
-			msgq(csp, M_ERR, "223|There are no background screens");
-		else {
-			p = msg_print(sp, name, &nf);
-			msgq(csp, M_ERR,
-		    "224|There's no background screen editing a file named %s",
-			    p);
-			if (nf)
-				FREE_SPACE(sp, p, 0);
-		}
+		msgq_str(csp, M_ERR, name,
+		    name == NULL ?
+		    "223|There are no background screens" :
+		    "224|There's no background screen editing a file named %s");
 		return (1);
 	}
 
