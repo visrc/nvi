@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 5.12 1992/11/02 22:35:38 bostic Exp $ (Berkeley) $Date: 1992/11/02 22:35:38 $";
+static char sccsid[] = "$Id: v_scroll.c,v 5.13 1992/11/06 20:05:56 bostic Exp $ (Berkeley) $Date: 1992/11/06 20:05:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -239,7 +239,7 @@ v_pagedown(vp, fm, tm, rp)
 	 * screen).
 	 * Calculation from POSIX 1003.2/D8.
 	 */
-	cnt = (vp->flags & VC_C1SET ? vp->count : 1) * SCREENSIZE(curf);
+	cnt = (vp->flags & VC_C1SET ? vp->count : 1) * (curf->lines - 3);
 	top = curf->top + cnt;
 	if (last < BOTLINE(curf, top)) {
 		if (last > SCREENSIZE(curf)) {
