@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_funcs.c,v 10.46 1996/07/12 18:23:13 bostic Exp $ (Berkeley) $Date: 1996/07/12 18:23:13 $";
+static const char sccsid[] = "$Id: cl_funcs.c,v 10.47 1996/08/11 12:53:16 bostic Exp $ (Berkeley) $Date: 1996/08/11 12:53:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -604,6 +604,9 @@ cl_suspend(sp, allowedp)
 	/* Restore the cursor keys to normal mode. */
 	(void)keypad(stdscr, FALSE);
 
+	/* Restore the window name. */
+	(void)cl_rename(sp, NULL, 0);
+
 #ifdef HAVE_BSD_CURSES
 	(void)cl_attr(sp, SA_ALTERNATE, 0);
 #else
@@ -630,6 +633,10 @@ cl_suspend(sp, allowedp)
 
 	(void)cl_attr(sp, SA_ALTERNATE, 1);
 #endif
+
+	/* Set the window name. */
+	(void)cl_rename(sp, sp->frp->name, 1);
+
 	/* Put the cursor keys into application mode. */
 	(void)keypad(stdscr, TRUE);
 
