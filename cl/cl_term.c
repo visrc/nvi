@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_term.c,v 8.3 1994/07/20 19:18:17 bostic Exp $ (Berkeley) $Date: 1994/07/20 19:18:17 $";
+static char sccsid[] = "$Id: cl_term.c,v 8.4 1994/08/14 11:40:34 bostic Exp $ (Berkeley) $Date: 1994/08/14 11:40:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -243,18 +243,42 @@ svi_fmap(sp, stype, from, flen, to, tlen)
 	if ((t = tigetstr(keyname)) == NULL || t == (char *)-1)
 		t = NULL;
 #else
-	{ char *sbp, sbuf[1024];
-		(void)snprintf(keyname, sizeof(keyname), "k%d", atoi(from + 1));
+	/*
+	 * !!!
+	 * Historically, the 4BSD termcap code didn't support functions keys
+	 * greater than 9.  This was silently enforced -- asking for key k12
+	 * returned the value for k1.  We try and get around this by using
+	 * the tables specified in the terminfo(TI_ENV) man page from the 3rd
+	 * Edition SVID.  This assumes that the implementors of any System V
+	 * compatibility code or an extended termcap used those codes.
+	 */
+	{ int n; char *sbp, sbuf[1024];
+	  static const char codes[] = {
+/*  0-10 */	'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ';', 
+/* 11-19 */	'1', '2', '3', '4', '5', '6', '7', '8', '9',
+/* 20-63 */	'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+		'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+		'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+		'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+	  };
+		if ((n = atoi(from + 1)) > 63) {
+			msgq(sp, M_ERR,
+			     "Termcap has no code for the %s function key",
+			     from);
+			return (1);
+		}
+		(void)snprintf(keyname, sizeof(keyname),
+		    "%c%c", n <= 10 ? 'k' : 'F', codes[n]);
 		sbp = sbuf;
 		t = tgetstr(keyname, &sbp);
 	}
 #endif
-	if (t != NULL) {
-		nlen = snprintf(keyname,
-		    sizeof(keyname), "function key %d", atoi(from + 1));
-		return (seq_set(sp, keyname, nlen, t, strlen(t),
-		    to, tlen, stype, SEQ_SCREEN | SEQ_USERDEF));
+	if (t == NULL) {
+		msgq(sp, M_ERR, "This terminal has no %s key", from);
+		return (1);
 	}
-	msgq(sp, M_ERR, "This terminal has no %s key", from);
-	return (1);
+	nlen = snprintf(keyname,
+	    sizeof(keyname), "function key %d", atoi(from + 1));
+	return (seq_set(sp, keyname, nlen, t, strlen(t),
+	    to, tlen, stype, SEQ_SCREEN | SEQ_USERDEF));
 }
