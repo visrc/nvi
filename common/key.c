@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.46 1993/02/28 11:53:02 bostic Exp $ (Berkeley) $Date: 1993/02/28 11:53:02 $";
+static char sccsid[] = "$Id: key.c,v 5.47 1993/02/28 14:00:54 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:00:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -90,7 +90,7 @@ gb_inc(ep)
 	if ((gb_cb = realloc(gb_cb, gb_blen)) == NULL ||
 	    (gb_qb = realloc(gb_qb, gb_blen)) == NULL ||
 	    (gb_wb = realloc(gb_wb, gb_blen)) == NULL) {
-			msg(ep, M_ERROR,
+			ep->msg(ep, M_ERROR,
 			    "Input too long: %s.", strerror(errno));
 			if (gb_cb)
 				free(gb_cb);
@@ -170,7 +170,8 @@ retry:		sp = seq_find(&keybuf[nextkey], nkeybuf,
 		    flags & GB_MAPCOMMAND ? COMMAND : INPUT, &ispartial);
 		if (ispartial) {
 			if (sizeof(keybuf) == nkeybuf)
-				msg(ep, M_ERROR, "Partial map is too long.");
+				ep->msg(ep, M_ERROR,
+				    "Partial map is too long.");
 			else {
 				memmove(&keybuf[nextkey], keybuf, nkeybuf);
 				nextkey = 0;
@@ -278,7 +279,7 @@ ttyread(ep, buf, len, time)
 				check_sigwinch(ep);
 				break;
 			}
-			msg(ep, M_ERROR,
+			ep->msg(ep, M_ERROR,
 			    "Terminal read error: %s", strerror(errno));
 			return (0);
 		case 0:				/* Timeout. */

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 5.21 1993/02/19 16:30:45 bostic Exp $ (Berkeley) $Date: 1993/02/19 16:30:45 $";
+static char sccsid[] = "$Id: seq.c,v 5.22 1993/02/28 14:00:52 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:00:52 $";
 #endif /* not lint */
 
 #include <ctype.h>
@@ -121,7 +121,7 @@ mem4:	free(sp->input);
 mem3:	if (sp->name)
 		free(sp->name);
 mem2:	free(sp);
-mem1:	msg(ep, M_ERROR, "Error: %s", strerror(errno));
+mem1:	ep->msg(ep, M_ERROR, "Error: %s", strerror(errno));
 	return (1);
 }
 

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.48 1993/02/24 12:57:16 bostic Exp $ (Berkeley) $Date: 1993/02/24 12:57:16 $";
+static char sccsid[] = "$Id: options.c,v 5.49 1993/02/28 14:00:50 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:00:50 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -268,9 +268,9 @@ opts_end(ep)
 
 	if (set_orig_mode) {			/* O_MESG */
 		if ((tty = ttyname(STDERR_FILENO)) == NULL)
-			msg(ep, M_ERROR, "ttyname: %s", strerror(errno));
+			ep->msg(ep, M_ERROR, "ttyname: %s", strerror(errno));
 		else if (chmod(tty, orig_mode) < 0)
-			msg(ep, M_ERROR, "%s: %s", strerror(errno));
+			ep->msg(ep, M_ERROR, "%s: %s", strerror(errno));
 	}
 }
 
@@ -362,7 +362,7 @@ opts_set(ep, argv)
 prefix:		op = opts_prefix(name);
 
 found:		if (op == NULL || off && !ISFSETP(op, OPT_0BOOL|OPT_1BOOL)) {
-			msg(ep, M_ERROR,
+			ep->msg(ep, M_ERROR,
 			    "no option %s: 'set all' gives all option values",
 			    name);
 			continue;
@@ -370,7 +370,7 @@ found:		if (op == NULL || off && !ISFSETP(op, OPT_0BOOL|OPT_1BOOL)) {
 
 		/* Set name, value. */
 		if (ISFSETP(op, OPT_NOSET)) {
-			msg(ep, M_ERROR, "%s: may not be set", name);
+			ep->msg(ep, M_ERROR, "%s: may not be set", name);
 			continue;
 		}
 
@@ -378,7 +378,7 @@ found:		if (op == NULL || off && !ISFSETP(op, OPT_0BOOL|OPT_1BOOL)) {
 		case OPT_0BOOL:
 		case OPT_1BOOL:
 			if (equals) {
-				msg(ep, M_ERROR,
+				ep->msg(ep, M_ERROR,
 				    "set: option [no]%s is a boolean", name);
 				break;
 			}
@@ -391,14 +391,14 @@ found:		if (op == NULL || off && !ISFSETP(op, OPT_0BOOL|OPT_1BOOL)) {
 			goto draw;
 		case OPT_NUM:
 			if (!equals) {
-				msg(ep, M_ERROR,
+				ep->msg(ep, M_ERROR,
 				    "set: option [no]%s requires a value",
 				    name);
 				break;
 			}
 			value = strtol(equals, &endp, 10);
 			if (*endp && !isspace(*endp)) {
-				msg(ep, M_ERROR,
+				ep->msg(ep, M_ERROR,
 				    "set %s: illegal number %s", name, equals);
 				break;
 			}
@@ -411,7 +411,7 @@ found:		if (op == NULL || off && !ISFSETP(op, OPT_0BOOL|OPT_1BOOL)) {
 			goto draw;
 		case OPT_STR:
 			if (!equals) {
-				msg(ep, M_ERROR,
+				ep->msg(ep, M_ERROR,
 				    "set: option [no]%s requires a value",
 				    name);
 				break;
@@ -447,32 +447,32 @@ f_columns(ep, valp)
 	val = *(u_long *)valp;
 
 	if (val < MINIMUM_SCREEN_COLS) {
-		msg(ep, M_ERROR, "Screen columns too small, less than %d.",
+		ep->msg(ep, M_ERROR, "Screen columns too small, less than %d.",
 		    MINIMUM_SCREEN_COLS);
 		return (1);
 	}
 	if (val < LVAL(O_SHIFTWIDTH)) {
-		msg(ep, M_ERROR,
+		ep->msg(ep, M_ERROR,
 		    "Screen columns too small, less than shiftwidth.");
 		return (1);
 	}
 	if (val < LVAL(O_SIDESCROLL)) {
-		msg(ep, M_ERROR,
+		ep->msg(ep, M_ERROR,
 		    "Screen columns too small, less than sidescroll.");
 		return (1);
 	}
 	if (val < LVAL(O_TABSTOP)) {
-		msg(ep, M_ERROR,
+		ep->msg(ep, M_ERROR,
 		    "Screen columns too small, less than tabstop.");
 		return (1);
 	}
 	if (val < LVAL(O_WRAPMARGIN)) {
-		msg(ep, M_ERROR,
+		ep->msg(ep, M_ERROR,
 		    "Screen columns too small, less than wrapmargin.");
 		return (1);
 	}
 	if (val < O_NUMBER_LENGTH) {
-		msg(ep, M_ERROR,
+		ep->msg(ep, M_ERROR,
 		    "Screen columns too small, less than number option.");
 		return (1);
 	}
@@ -486,9 +486,9 @@ f_columns(ep, valp)
 }
 
 static int
-f_flash(NO_ep, NO_valp)
-	EXF *NO_ep;
-	void *NO_valp;
+f_flash(ep, valp)
+	EXF *ep;
+	void *valp;
 {
 	size_t len;
 	char *s, b1[1024], b2[1024];
@@ -499,14 +499,14 @@ f_flash(NO_ep, NO_valp)
 	 */
 
 	if ((s = getenv("TERM")) == NULL) {
-		msg(NO_ep, M_ERROR,
+		ep->msg(ep, M_ERROR,
 		    "No \"TERM\" value set in the environment.");
 		return (1);
 	}
 
 	/* Get the termcap information. */
 	if (tgetent(b1, s) != 1) {
-		msg(NO_ep, M_ERROR, "No termcap entry for %s.", s);
+		ep->msg(ep, M_ERROR, "No termcap entry for %s.", s);
 		return (1);
 	}
 
@@ -522,7 +522,7 @@ f_flash(NO_ep, NO_valp)
 
 	len = s - b2;
 	if ((VB = malloc(len)) == NULL) {
-		msg(NO_ep, M_ERROR, "Error: %s", strerror(errno));
+		ep->msg(ep, M_ERROR, "Error: %s", strerror(errno));
 		return (1);
 	}
 
@@ -544,11 +544,11 @@ f_mesg(ep, valp)
 	char *tty;
 
 	if ((tty = ttyname(STDERR_FILENO)) == NULL) {
-		msg(ep, M_ERROR, "ttyname: %s", strerror(errno));
+		ep->msg(ep, M_ERROR, "ttyname: %s", strerror(errno));
 		return (1);
 	}
 	if (stat(tty, &sb) < 0) {
-		msg(ep, M_ERROR, "%s: %s", strerror(errno));
+		ep->msg(ep, M_ERROR, "%s: %s", strerror(errno));
 		return (1);
 	}
 
@@ -557,12 +557,12 @@ f_mesg(ep, valp)
 
 	if (ISSET(O_MESG)) {
 		if (chmod(tty, sb.st_mode | S_IWGRP) < 0) {
-			msg(ep, M_ERROR, "%s: %s", strerror(errno));
+			ep->msg(ep, M_ERROR, "%s: %s", strerror(errno));
 			return (1);
 		}
 	} else
 		if (chmod(tty, sb.st_mode & ~S_IWGRP) < 0) {
-			msg(ep, M_ERROR, "%s: %s", strerror(errno));
+			ep->msg(ep, M_ERROR, "%s: %s", strerror(errno));
 			return (1);
 		}
 	return (0);
@@ -579,7 +579,7 @@ f_keytime(ep, valp)
 
 #define	MAXKEYTIME	20
 	if (val > MAXKEYTIME) {
-		msg(ep, M_ERROR,
+		ep->msg(ep, M_ERROR,
 		    "Keytime too large, more than %d.", MAXKEYTIME);
 		return (1);
 	}
@@ -605,7 +605,7 @@ f_lines(ep, valp)
 	val = *(u_long *)valp;
 
 	if (val < MINIMUM_SCREEN_ROWS) {
-		msg(ep, M_ERROR, "Screen lines too small, less than %d.",
+		ep->msg(ep, M_ERROR, "Screen lines too small, less than %d.",
 		    MINIMUM_SCREEN_ROWS);
 		return (1);
 	}
@@ -633,7 +633,7 @@ f_modelines(ep, valp)
 	void *valp;
 {
 	if (ISSET(O_MODELINES)) {
-		msg(ep, M_ERROR, "The modelines option may not be set.");
+		ep->msg(ep, M_ERROR, "The modelines option may not be set.");
 		UNSET(O_MODELINES);
 	}
 	return (0);
@@ -659,7 +659,7 @@ f_shiftwidth(ep, valp)
 	val = *(u_long *)valp;
 
 	if (val > LVAL(O_COLUMNS)) {
-		msg(ep, M_ERROR,
+		ep->msg(ep, M_ERROR,
 		    "Shiftwidth can't be larger than screen size.");
 		return (1);
 	}
@@ -676,7 +676,7 @@ f_sidescroll(ep, valp)
 	val = *(u_long *)valp;
 
 	if (val > LVAL(O_COLUMNS)) {
-		msg(ep, M_ERROR,
+		ep->msg(ep, M_ERROR,
 		    "Sidescroll can't be larger than screen size.");
 		return (1);
 	}
@@ -693,17 +693,17 @@ f_tabstop(ep, valp)
 	val = *(u_long *)valp;
 
 	if (val == 0) {
-		msg(ep, M_ERROR, "Tab stops can't be set to 0.");
+		ep->msg(ep, M_ERROR, "Tab stops can't be set to 0.");
 		return (1);
 	}
 #define	MAXTABSTOP	20
 	if (val > MAXTABSTOP) {
-		msg(ep, M_ERROR,
+		ep->msg(ep, M_ERROR,
 		    "Tab stops can't be larger than %d.", MAXTABSTOP);
 		return (1);
 	}
 	if (val > LVAL(O_COLUMNS)) {
-		msg(ep, M_ERROR,
+		ep->msg(ep, M_ERROR,
 		    "Tab stops can't be larger than screen size.",
 		    MAXTABSTOP);
 		return (1);
@@ -729,7 +729,7 @@ f_wrapmargin(ep, valp)
 	val = *(u_long *)valp;
 
 	if (val > LVAL(O_COLUMNS)) {
-		msg(ep, M_ERROR,
+		ep->msg(ep, M_ERROR,
 		    "Wrapmargin value can't be larger than screen size.");
 		return (1);
 	}

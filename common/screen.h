@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 5.19 1993/02/25 21:09:04 bostic Exp $ (Berkeley) $Date: 1993/02/25 21:09:04 $
+ *	$Id: screen.h,v 5.20 1993/02/28 14:01:42 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:01:42 $
  */
 
 /*
@@ -96,7 +96,7 @@ typedef struct scr {
 /* Move, and fail if it doesn't work. */
 #define	MOVE(ep, lno, cno) {						\
 	if (move(lno, cno) == ERR) {					\
-		msg(ep, M_ERROR, "Error: %s/%d: move(%u, %u).",		\
+		ep->msg(ep, M_ERROR, "Error: %s/%d: move(%u, %u).",	\
 		    tail(__FILE__), __LINE__, lno, cno);		\
 		return (1);						\
 	}								\
