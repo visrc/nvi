@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 10.19 1995/11/06 09:56:46 bostic Exp $ (Berkeley) $Date: 1995/11/06 09:56:46 $";
+static char sccsid[] = "$Id: ex_filter.c,v 10.20 1995/11/07 20:27:00 bostic Exp $ (Berkeley) $Date: 1995/11/07 20:27:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -100,6 +100,10 @@ ex_filter(sp, cmdp, fm, tm, rp, cmd, ftype)
 	 * If doing a filter read, switch into ex canonical mode.  The reason
 	 * to restore the original terminal modes for read filters is so that
 	 * users can do things like ":r! cat /dev/tty".
+	 *
+	 * !!!
+	 * We do not output an extra <newline>, so that we don't touch the
+	 * screen on a normal read.
 	 */
 	if (ftype == FILTER_READ && F_ISSET(sp, S_VI)) {
 		if (sp->gp->scr_screen(sp, S_EX)) {
@@ -282,7 +286,13 @@ err:		if (input[0] != -1)
 	}
 	F_CLR(sp->ep, F_MULTILOCK);
 
-uwait:	return (proc_wait(sp, (long)utility_pid, cmd, 0, 0) || rval);
+	/*
+	 * !!!
+	 * Ignore errors on vi file reads, to make reads prettier.  It's
+	 * completely inconsistent, and historic practice.
+	 */
+uwait:	return (proc_wait(sp, (long)utility_pid, cmd,
+	    ftype == FILTER_READ && F_ISSET(sp, S_VI) ? 1 : 0, 0) || rval);
 }
 
 /*
@@ -343,6 +353,9 @@ proc_wait(sp, pid, cmd, silent, okpipe)
 		 * Remain silent for "normal" errors when doing shell file
 		 * name expansions, they almost certainly indicate nothing
 		 * more than a failure to match.
+		 *
+		 * Remain silent for vi read filter errors.  It's historic
+		 * practice.
 		 */
 		if (!silent) {
 			for (; isblank(*cmd); ++cmd);
