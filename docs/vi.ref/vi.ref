@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.11 1994/03/02 13:00:21 bostic Exp $ (Berkeley) $Date: 1994/03/02 13:00:21 $
+.\"     $Id: vi.ref,v 8.12 1994/03/03 12:59:40 bostic Exp $ (Berkeley) $Date: 1994/03/03 12:59:40 $
 .\"
 .Dd "%Q%"
 .Dt EX/VI 1
@@ -47,7 +47,7 @@ is the same as using the
 .Nm \&Ex
 and
 .Nm \&vi
-are really different interfaces to the same program,
+are different interfaces to the same program,
 and it is possible to switch back and forth during the same edit session.
 .Pp
 This manual page is the one provided with the
@@ -157,15 +157,14 @@ The key
 switches between the foreground screens,
 and the
 .Dq ":resize count"
-command can be used to grow or shrink any
-particular screen.
+command can be used to grow or shrink a particular screen.
 .It "Background and foreground screens"
 The command
 .Dq ":bg"
 backgrounds the current screen,
 and the command
 .Dq ":fg [file]"
-foregrounds the backgrounded screeen
+foregrounds the backgrounded screen
 that is editing the specified file, or, by default, the first background
 screen on the queue.
 The command
@@ -242,7 +241,9 @@ line wrapping.
 .Sh RECOVERY
 There is no recovery program for
 .Nm nvi ,
-nor does it run setuid.
+nor does
+.Nm nvi
+run setuid.
 Users may recover any file which they may read, and the superuser
 may recover any edit session.
 .Pp
