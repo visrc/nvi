@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_cscope.c,v 10.10 1996/08/10 14:21:48 bostic Exp $ (Berkeley) $Date: 1996/08/10 14:21:48 $";
+static const char sccsid[] = "$Id: ex_cscope.c,v 10.11 1996/08/10 17:16:15 bostic Exp $ (Berkeley) $Date: 1996/08/10 17:16:15 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -78,7 +78,7 @@ typedef struct _cc {
 
 static CC const cscope_cmds[] = {
 	{ "add",   cscope_add,
-	   "Add a new cscope database", "add db-name" },
+	  "Add a new cscope database", "add file | directory" },
 	{ "find",  cscope_find,
 	  "Query the databases for a pattern", FINDHELP },
 	{ "help",  cscope_help,
