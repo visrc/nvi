@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.22 1994/04/13 15:25:35 bostic Exp $ (Berkeley) $Date: 1994/04/13 15:25:35 $
+.\"     $Id: vi.ref,v 8.23 1994/04/18 09:56:26 bostic Exp $ (Berkeley) $Date: 1994/04/18 09:56:26 $
 .\"
 .Dd "%Q%"
 .Dt "EX/VI REFERENCE MANUAL" 1
@@ -166,32 +166,6 @@ makes
 do left-right screen scrolling, instead of the traditional
 .Nm \&vi
 line wrapping.
-.Sh CHARACTER DISPLAY
-Printable characters are displayed using the local character set.
-Non-printable characters, for which
-.Xr iscntrl (3)
-returns true, and which are less than octal \e076, are displayed
-as the string
-.Dq ^<character> ,
-where <character> is the character that is the character's value
-offset from the
-.Dq \&@
-character.
-For example, the octal character \e001 is by default displayed as 
-.Dq \&^A .
-If
-.Xr iscntrl (3)
-returns true for the octal character \e177, it is displayed as the
-string
-.Dq ^? .
-All other characters are displayed as either hexadecimal values,
-in the form
-.Dq "0x<high-halfbyte> ... 0x<low-halfbyte>" ,
-or as octal values, in the form
-.Dq "\<high-one-or-two-bits> ... \<low-three-bits> . 
-The display of unknown characters is based on the value of the
-.Sy octal
-option.
 .Sh STARTUP INFORMATION
 .Nm Ex/vi
 interprets one of two possible environmental variables and reads up
@@ -291,6 +265,41 @@ Finally, if the
 option)
 is specified, or if standard input is redirected from a file,
 all environmental variables and startup files will be ignored.
+.Sh CHARACTER DISPLAY
+Printable characters are displayed using the local character set.
+Non-printable characters, for which
+.Xr iscntrl (3)
+returns true, and which are less than octal \e076, are displayed
+as the string
+.Dq ^<character> ,
+where <character> is the character that is the character's value
+offset from the
+.Dq \&@
+character.
+For example, the octal character \e001 is by default displayed as 
+.Dq \&^A .
+If
+.Xr iscntrl (3)
+returns true for the octal character \e177, it is displayed as the
+string
+.Dq ^? .
+All other characters are displayed as either hexadecimal values,
+in the form
+.Dq "0x<high-halfbyte> ... 0x<low-halfbyte>" ,
+or as octal values, in the form
+.Dq "\<high-one-or-two-bits> ... \<low-three-bits> . 
+The display of unknown characters is based on the value of the
+.Sy octal
+option.
+.Pp
+In
+.Nm \&vi
+command mode, the cursor is always position on the last column of
+characters which take up more than one column on the screen.
+In
+.Nm \&vi
+text insert mode, the cursor is positioned on the first column of
+characters which take up more than one column on the screen.
 .Sh SIZING THE SCREEN
 The size of the screen can be set in a number of ways.
 .Nm Ex/vi
