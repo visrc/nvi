@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.5 1993/08/27 11:43:41 bostic Exp $ (Berkeley) $Date: 1993/08/27 11:43:41 $";
+static char sccsid[] = "$Id: key.c,v 8.6 1993/09/10 18:31:42 bostic Exp $ (Berkeley) $Date: 1993/09/10 18:31:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,9 +32,6 @@ static char sccsid[] = "$Id: key.c,v 8.5 1993/08/27 11:43:41 bostic Exp $ (Berke
  * we only want to flush the latter buffer if a command fails, i.e. if the user
  * enters "@a1G", we don't want to flush the "1G" keys because "@a" failed.
  */ 
-
-static void	change_window_size __P((void));
-static int	term_read __P((SCR *, int *, int));
 
 typedef struct _klist {
 	char *ts;				/* Key's termcap string. */
@@ -212,11 +209,23 @@ kloop:	if (sp->key.cnt) {
 
 	/*
 	 * Read in more keys if none in the queue.  Since no timeout
-	 * is requested, term_read will either return 1 or will read
+	 * is requested, s_key_read will either return 1 or will read
 	 * some number of characters.
 	 */
-	if (sp->tty.cnt == 0 && term_read(sp, &nr, 0))
-		return (1);
+	if (sp->tty.cnt == 0) {
+		if (sp->s_key_read(sp, &nr, 0))
+			return (1);
+		/*
+		 * If there's something on the mode line that we wanted
+		 * the user to see, they just entered a character so we
+		 * can presume they saw it.  Clear the bit before doing
+		 * the refresh, the refresh routine is probably checking.
+		 */
+		if (F_ISSET(sp, S_UPDATE_MODE)) {
+			F_CLR(sp, S_UPDATE_MODE);
+			sp->s_refresh(sp, sp->ep);
+		}
+	}
 
 	/*
 	 * Check for mapped keys. If get a partial match, copy the current
@@ -251,7 +260,7 @@ err:					msgq(sp, M_ERR,
 				}
 			goto kloop;
 		}
-		if (term_read(sp, &nr, 1))
+		if (sp->s_key_read(sp, &nr, 1))
 			return (1);
 		if (nr)
 			goto mloop;
@@ -275,134 +284,4 @@ beauty:	if (LF_ISSET(TXT_BEAUTIFY) && O_ISSET(sp, O_BEAUTIFY)) {
 		goto kloop;
 	}
 	return (ch);
-}
-
-/*
- * term_read --
- *	Read characters from the input.
- *
- * XXX
- * If we ever fail to read any characters, we set the forced exit flag
- * and leave.  This is almost certainly wrong.
- */
-static int
-term_read(sp, nrp, timeout)
-	SCR *sp;
-	int *nrp, timeout;
-{
-	struct timeval t, *tp;
-	int nr;
-
-	/*
-	 * If we're reading less than 20 characters, up the size of the
-	 * tty buffer.  This shouldn't ever happen, other than the first
-	 * time through, but it's possible if a map were large enough.
-	 */
-	if (sp->tty.len - sp->tty.cnt < 20)
-		BINC(sp, sp->tty.buf, sp->tty.len, sp->tty.len + 64);
-
-	*nrp = 0;
-
-	/*
-	 * We're about to block; check for events we should have 
-	 * handled.
-	 */
-	if (F_ISSET(__global_list, G_SIGWINCH))
-		change_window_size();
-
-	/*
-	 * If reading from a file or pipe, never timeout.
-	 * This affects the way that EOF is detected.
-	 */
-	if (!F_ISSET(sp, S_ISFROMTTY)) {
-		if ((nr = read(STDIN_FILENO, sp->tty.buf + sp->tty.cnt,
-		    sp->tty.len - sp->tty.cnt)) > 0) {
-			sp->tty.cnt += *nrp = nr;
-			return (0);
-		}
-		F_SET(sp, S_EXIT_FORCE);
-		return (1);
-	}
-
-	/* If there's a time limit on the read, compute the timeout value. */
-	if (timeout) {
-		t.tv_sec = O_VAL(sp, O_KEYTIME) / 10;
-		t.tv_usec = (O_VAL(sp, O_KEYTIME) % 10) * 100000L;
-		tp = &t;
-
-		FD_SET(STDIN_FILENO, &sp->rdfd);
-	}
-
-	/*
-	 * Select until characters become available, and then read them.
-	 * If interrupted, it was SIGALRM or SIGWINCH.  SIGALRM only
-	 * happens every RCV_PERIOD seconds, so it shouldn't be a problem.
-	 * We check signals here because it's the only place we block.
-	 */
-	for (;;) {
-		if (timeout)
-			switch (select(32, &sp->rdfd, NULL, NULL, tp)) {
-			case -1:		/* Error or interrupt. */
-				if (errno == EINTR) {
-					change_window_size();
-					continue;
-				}
-				goto err;
-			case 0:			/* Timeout. */
-				return (0);
-			}
-		switch (nr = read(STDIN_FILENO,
-		    sp->tty.buf + sp->tty.cnt, sp->tty.len - sp->tty.cnt)) {
-		case 0:				/* EOF. */
-			goto eof;
-		case -1:			/* Error or interrupt. */
-			if (errno == EINTR) {
-				change_window_size();
-				continue;
-			}
-err:			msgq(sp, M_ERR,
-			    "Terminal read error: %s", strerror(errno));
-eof:			F_SET(sp, S_EXIT_FORCE);
-			return (1);
-		default:
-			sp->tty.cnt += *nrp = nr;
-			return (0);
-		}
-	}
-	/* NOTREACHED */
-}
-
-/*
- * change_window_size --
- *	Handle window size change event.
- */
-static void
-change_window_size()
-{
-	SCR *sp;
-	sigset_t bmask, omask;
-
-	while (F_ISSET(__global_list, G_SIGWINCH)) {
-		sigemptyset(&bmask);
-		sigaddset(&bmask, SIGWINCH);
-		(void)sigprocmask(SIG_BLOCK, &bmask, &omask);
-
-		/*
-		 * XXX
-		 * This doesn't handle split screens!  If the screen grows,
-		 * can simply add the extra space to the bottom screen.  If
-		 * it shrinks, though, may not even be able to display all
-		 * of the screens.
-		 */
-		sp = __global_list->scrhdr.next;
-		F_SET(sp, S_RESIZE);
-		set_window_size(sp, 0, 1);
-		(void)sp->s_refresh(sp, sp->ep);
-
-		for (; sp != (SCR *)&__global_list->scrhdr; sp = sp->next)
-			F_SET(sp, S_REFORMAT);
-
-		F_CLR(__global_list, G_SIGWINCH);
-		(void)sigprocmask(SIG_SETMASK, &omask, NULL);
-	}
 }
