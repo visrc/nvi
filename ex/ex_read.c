@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 10.15 1995/10/17 08:08:40 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:08:40 $";
+static char sccsid[] = "$Id: ex_read.c,v 10.16 1995/10/17 08:25:51 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:25:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -212,9 +212,9 @@ usage:			ex_emsg(sp, cmdp->cmd->usage, EXM_USAGE);
 		msgq(sp, M_ERR, "146|%s: read lock was unavailable", name);
 
 	/* Turn on busy message. */
-	(void)gp->scr_busy(sp, "147|Reading...", BUSY_ON);
+	gp->scr_busy(sp, "147|Reading...", BUSY_ON);
 	rval = ex_readfp(sp, name, fp, &cmdp->addr1, &nlines, 1);
-	(void)gp->scr_busy(sp, NULL, BUSY_OFF);
+	gp->scr_busy(sp, NULL, BUSY_OFF);
 
 	/*
 	 * Set the cursor to the first line read in, if anything read
@@ -263,7 +263,7 @@ ex_readfp(sp, name, fp, fm, nlinesp, success_msg)
 		if ((lcnt % INTERRUPT_CHECK) == 0) {
 			if (INTERRUPTED(sp))
 				break;
-			(void)sp->gp->scr_busy(sp, NULL, BUSY_UPDATE);
+			sp->gp->scr_busy(sp, NULL, BUSY_UPDATE);
 		}
 		if (db_append(sp, 1, lno, exp->ibp, len))
 			goto err;
