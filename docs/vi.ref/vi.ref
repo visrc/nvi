@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.15 1994/03/13 12:24:32 bostic Exp $ (Berkeley) $Date: 1994/03/13 12:24:32 $
+.\"     $Id: vi.ref,v 8.16 1994/03/14 09:06:29 bostic Exp $ (Berkeley) $Date: 1994/03/14 09:06:29 $
 .\"
 .Dd "%Q%"
 .Dt EX/VI 1
@@ -674,9 +674,9 @@ the option.
 Most of the options are boolean, i.e. they are either on or off, and
 cannot have an assigned value.
 All options apply to both
-.Nm ex
+.Nm \&ex
 and
-.Nm vi
+.Nm \&vi
 modes, unless otherwise specified.
 .Pp
 For information on modifying the options or to display the options and
@@ -685,7 +685,7 @@ their current values, see the
 command in the Ex Commands section.
 .Bl -tag -width "XXXX"
 .It Ev "altwerase [off]"
-.Nm Vi
+.Nm \&Vi
 only.
 This option changes how
 .Nm \&vi
@@ -771,7 +771,7 @@ and
 commands change from the first non-blank of the line to the end of the
 line, instead of from the beginning of the line to the end of the line.
 .It Ev "autoprint, ap [off]"
-.Nm Ex
+.Nm \&Ex
 only.
 Cause the current line to be automatically displayed after the
 .Nm \&ex
@@ -869,7 +869,7 @@ to set (or reset) the environmental variable
 .Ev COLUMNS .
 See the Screen Sizing section for more information.
 .It Ev "comment [off]"
-.Nm Vi
+.Nm \&Vi
 only.
 If the first non-empty line of the file begins with the string
 .Dq \&/* ,
@@ -899,7 +899,7 @@ command, instead of like the
 command.
 .Em "This option is not currently implemented."
 .It Ev "errorbells, eb [off]"
-.Nm Ex
+.Nm \&Ex
 only.
 Causes
 .Nm \&ex
@@ -936,14 +936,14 @@ The amount of time that
 waits for a subsequent key to complete a key mapping,
 measured in 10th's of a second.
 .It Ev "leftright [off]"
-.Nm Vi
+.Nm \&Vi
 only.
 Causes the screen to be scrolled left-right to view lines longer than
 the screen, as opposed to the traditional
 .Nm \&vi
 screen interface which folds long lines.
 .It Ev "lines, li [24]"
-.Nm Vi
+.Nm \&Vi
 only.
 The number of lines in the screen.
 Setting this option causes
@@ -952,7 +952,7 @@ to set (or reset) the environmental variable
 .Ev LINES .
 See the Screen Sizing section for more information.
 .It Ev "lisp [off]"
-.Nm Vi
+.Nm \&Vi
 only.
 The
 .Nm \&vi
@@ -993,7 +993,7 @@ precede them with an
 See the Regular Expressions and Replacement Strings section for
 more information.
 .It Ev "matchtime [7]"
-.Nm Vi
+.Nm \&Vi
 only.
 The amount of time that
 .Nm \&vi
@@ -1042,7 +1042,7 @@ under any circumstances.
 .It Ev "number, nu [off]"
 Precede each line displayed from the file with its current line number.
 .It Ev "open [on]"
-.Nm Ex
+.Nm \&Ex
 only.
 If the
 .Sy open
@@ -1054,7 +1054,7 @@ and
 .Sy visual
 are disallowed.
 .It Ev "optimize, opt [on]"
-.Nm Vi
+.Nm \&Vi
 only.
 Throughput of text is expedited by setting the terminal to no do automatic
 carriage returns when printing more than one (logical) line of output,
@@ -1062,7 +1062,7 @@ greatly speeding output on terminals without addressable cursors when text
 with leading white space is printed.
 .Em "This option is not currently implemented."
 .It Ev "paragraphs, para [IPLPPPQPP LIpplpipbp]"
-.Nm Vi
+.Nm \&Vi
 only.
 The
 .Sy paragraph
@@ -1088,7 +1088,7 @@ recognized:
 <newline>.##
 .Ed
 .It Ev "prompt [on]"
-.Nm Ex
+.Nm \&Ex
 only.
 If the
 .Sy prompt
@@ -1108,7 +1108,7 @@ command line option, or editing a file which lacks write permission.
 .It Ev "recdir [/var/tmp/vi.recover]"
 The directory where recovery files are stored.
 .It Ev "redraw, re [off]"
-.Nm Vi
+.Nm \&Vi
 only.
 The editor simulates (using great amounts of output), an intelligent
 terminal on a dumb terminal (e.g. during insertions in visual mode
@@ -1141,7 +1141,7 @@ before a message will be displayed to the user.
 The value is the largest value about which the editor is silent,
 i.e. by default, 6 lines must change before the user is notified.
 .It Ev "ruler [off]"
-.Nm Vi
+.Nm \&Vi
 only.
 Causes
 .Nm \&vi
@@ -1154,7 +1154,7 @@ commands
 and
 .Sy \&^U .
 .It Ev "sections, sect [NHSHH HUnhsh]"
-.Nm Vi
+.Nm \&Vi
 only.
 The
 .Sy sections
@@ -1196,14 +1196,14 @@ and
 .Sy shift
 commands.
 .It Ev "showdirty [off]"
-.Nm Vi
+.Nm \&Vi
 only.
 Causes
 .Nm \&vi
 to display an asterisk on the colon command line if the file has been
 modified.
 .It Ev "showmatch, sm [off]"
-.Nm Vi
+.Nm \&Vi
 only.
 Causes
 .Nm \&vi ,
@@ -1219,7 +1219,7 @@ See the
 .Sy matchtime
 option for more information.
 .It Ev "showmode [off]"
-.Nm Vi
+.Nm \&Vi
 only.
 Causes
 .Nm \&vi
@@ -1229,7 +1229,7 @@ or
 .Dq Input
 on the colon command line, based on the current mode of the editor.
 .It Ev "sidescroll [16]"
-.Nm Vi
+.Nm \&Vi
 only.
 Sets the number of columns that are shifted to the left or right,
 when
@@ -1240,7 +1240,7 @@ See the
 .Sy leftright
 option for more information.
 .It Ev "slowopen, slow [off]"
-.Nm Vi
+.Nm \&Vi
 only.
 Affects the display algorithm used by
 .Nm \&vi ,
@@ -1292,7 +1292,7 @@ option).
 If the option is not set, the editor waits until enough keys are
 entered to resolve the ambiguity, regardless of how long it takes.
 .It Ev "ttywerase [off]"
-.Nm Vi
+.Nm \&Vi
 only.
 This option changes how
 .Nm \&vi
@@ -1306,7 +1306,7 @@ historically bells the terminal for most obvious mistakes, e.g.
 trying to move past the left-hand margin, or past the end of the file.
 If this option is set, an error message is displayed for all errors.
 .It Ev "w300 [no default]"
-.Nm Vi
+.Nm \&Vi
 only.
 Set the window size to the specified value if the baud rate is less
 than 1200 baud.
@@ -1314,7 +1314,7 @@ See the
 .Sy window
 option for more information.
 .It Ev "w1200 [no default]"
-.Nm Vi
+.Nm \&Vi
 only.
 Set the window size to the specified value if the baud rate is equal
 to 1200 baud.
@@ -1322,7 +1322,7 @@ See the
 .Sy window
 option for more information.
 .It Ev "w9600 [no default]"
-.Nm Vi
+.Nm \&Vi
 only.
 Set the window size to the specified value if the baud rate is greater
 than 1200 baud.
@@ -1337,7 +1337,7 @@ modified, since it was last written, before a
 .Sy \&!
 command escape.
 .It Ev "window, w, wi [environment variable LINES]"
-.Nm Vi
+.Nm \&Vi
 only.
 The
 .Sy window
@@ -1376,7 +1376,7 @@ filled.)
 This provide a performance improvement when viewing many different
 places in one or more files over a slow link.
 .It Ev "wrapmargin, wm [0]"
-.Nm Vi
+.Nm \&Vi
 only.
 If the value of wrapmargin is non-zero,
 .Nm \&vi
