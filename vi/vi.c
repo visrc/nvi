@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.59 1994/04/06 11:38:42 bostic Exp $ (Berkeley) $Date: 1994/04/06 11:38:42 $";
+static char sccsid[] = "$Id: vi.c,v 8.60 1994/04/09 18:21:08 bostic Exp $ (Berkeley) $Date: 1994/04/09 18:21:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -348,7 +348,7 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 
 	/* Check for an OOB command key. */
 	if (key > MAXVIKEY) {
-		msgq(sp, M_BERR, "%s isn't a vi command", charname(sp, key));
+		msgq(sp, M_BERR, "%s isn't a vi command", KEY_NAME(sp, key));
 		return (1);
 	}
 
@@ -360,7 +360,7 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 	if (kp->func == NULL) {
 		if (key != '.') {
 			msgq(sp, M_ERR,
-			    "%s isn't a command", charname(sp, key));
+			    "%s isn't a command", KEY_NAME(sp, key));
 			return (1);
 		}
 
@@ -445,7 +445,7 @@ usage:			msgq(sp, M_ERR, "Usage: %s", ismotion != NULL ?
 	 */
 	if (ismotion != NULL && ismotion->key != key && !LF_ISSET(V_MOVE)) {
 		msgq(sp, M_ERR, "%s may not be used as a motion command.",
-		    charname(sp, key));
+		    KEY_NAME(sp, key));
 		return (1);
 	}
 

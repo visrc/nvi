@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_z.c,v 8.11 1994/03/08 19:41:45 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:41:45 $";
+static char sccsid[] = "$Id: v_z.c,v 8.12 1994/04/09 18:21:07 bostic Exp $ (Berkeley) $Date: 1994/04/09 18:21:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -79,7 +79,7 @@ v_z(sp, ep, vp)
 			return (1);
 		break;
 	default:		/* Put the line at the top for <cr>. */
-		value = term_key_val(sp, vp->character);
+		value = KEY_VAL(sp, vp->character);
 		if (value != K_CR && value != K_NL) {
 			msgq(sp, M_ERR, "usage: %s.", vp->kp->usage);
 			return (1);

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_replace.c,v 8.15 1994/03/14 10:43:55 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:43:55 $";
+static char sccsid[] = "$Id: v_replace.c,v 8.16 1994/04/09 18:21:06 bostic Exp $ (Berkeley) $Date: 1994/04/09 18:21:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -99,7 +99,7 @@ nochar:		msgq(sp, M_BERR, "No characters to replace.");
 	 */
 	if (F_ISSET(vp, VC_ISDOT)) {
 		ikey.ch = VIP(sp)->rlast;
-		ikey.value = term_key_val(sp, ikey.ch);
+		ikey.value = KEY_VAL(sp, ikey.ch);
 	} else {
 		if (term_key(sp, &ikey, 0) != INP_OK)
 			return (1);

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ch.c,v 8.7 1994/03/14 10:42:37 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:42:37 $";
+static char sccsid[] = "$Id: v_ch.c,v 8.8 1994/04/09 18:21:05 bostic Exp $ (Berkeley) $Date: 1994/04/09 18:21:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -292,5 +292,5 @@ notfound(sp, ch)
 	SCR *sp;
 	ARG_CHAR_T ch;
 {
-	msgq(sp, M_BERR, "%s not found.", charname(sp, ch));
+	msgq(sp, M_BERR, "%s not found.", KEY_NAME(sp, ch));
 }
