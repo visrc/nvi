@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 9.40 1995/02/15 17:38:44 bostic Exp $ (Berkeley) $Date: 1995/02/15 17:38:44 $";
+static char sccsid[] = "$Id: ex.c,v 9.41 1995/02/17 11:42:50 bostic Exp $ (Berkeley) $Date: 1995/02/17 11:42:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -592,7 +592,7 @@ skip_srch:	if (cp == &cmds[C_VISUAL_EX] && F_ISSET(sp, S_VI))
 		 * we up the address by one.  (I have no idea why globals are
 		 * exempted, but it's (ahem) historic practice.)
 		 */
-		if (exc.addrcnt == 0 && !F_ISSET(sp, S_GLOBAL)) {
+		if (exc.addrcnt == 0 && !F_ISSET(sp, S_EX_GLOBAL)) {
 			exc.addrcnt = 1;
 			exc.addr1.lno = sp->lno + 1;
 			exc.addr1.cno = sp->cno;
@@ -1366,7 +1366,7 @@ addr2:	switch (exc.addrcnt) {
 	 * If file state available, and not doing a global command,
 	 * log the start of an action.
 	 */
-	if (sp->ep != NULL && !F_ISSET(sp, S_GLOBAL))
+	if (sp->ep != NULL && !F_ISSET(sp, S_EX_GLOBAL))
 		(void)log_cursor(sp);
 
 	/*
@@ -1488,7 +1488,7 @@ addr2:	switch (exc.addrcnt) {
 	 * want to display a line.  (Make sure there's a line to display.)
 	 */
 	if (F_ISSET(sp, S_EX) &&
-	    sp->ep != NULL && !F_ISSET(sp, S_GLOBAL) && sp->lno != 0) {
+	    sp->ep != NULL && !F_ISSET(sp, S_EX_GLOBAL) && sp->lno != 0) {
 		/*
 		 * The print commands have already handled the `print' flags.
 		 * If so, clear them.
@@ -2100,7 +2100,7 @@ ex_badaddr(sp, cp, ba, nret)
 	 * underlying file, that's the real problem.
 	 */
 	if (sp->ep == NULL) {
-		ex_message(sp, cp, EXM_NORC);
+		ex_message(sp, cp->name, EXM_NORC);
 		return;
 	}
 
