@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_event.c,v 8.15 1997/08/02 16:48:39 bostic Exp $ (Berkeley) $Date: 1997/08/02 16:48:39 $";
+static const char sccsid[] = "$Id: v_event.c,v 8.16 2000/06/30 20:29:04 skimo Exp $ (Berkeley) $Date: 2000/06/30 20:29:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,6 +38,10 @@ v_c_settop(sp, vp)
 	VICMD *vp;
 {
 	SMAP *smp;
+	size_t x = 0, y = LASTLINE(sp); /* Future: change to -1 to not
+					 * display the cursor
+					 */
+	size_t tx, ty = -1;
 
 	/*
 	 * We want to scroll the screen, without changing the cursor position.
@@ -55,9 +59,14 @@ v_c_settop(sp, vp)
 		return (1);
 	for (smp = HMAP; smp <= TMAP; ++smp) {
                 SMAP_FLUSH(smp);
-		if (vs_line(sp, smp, NULL, NULL))
+		if (vs_line(sp, smp, &ty, &tx))
 			return (1);
+		if (ty != -1) {
+			y = ty;
+			x = tx;
+		}
         }
+	(void)sp->gp->scr_move(sp, y, x);
 
 	F_SET(VIP(sp), VIP_S_REFRESH);
 
