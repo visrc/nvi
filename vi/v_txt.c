@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.94 1994/03/18 11:50:59 bostic Exp $ (Berkeley) $Date: 1994/03/18 11:50:59 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.95 1994/03/24 18:41:22 bostic Exp $ (Berkeley) $Date: 1994/03/24 18:41:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -501,7 +501,7 @@ next_ch:	if (term_key(sp, &ikey, quoted == Q_THISCHAR ?
 
 			/* New lines are TXT_APPENDEOL if nothing to insert. */
 			if (ntp->insert == 0) {
-				TBINC(sp, tp->lb, tp->lb_len, tp->len + 1);
+				TBINC(sp, ntp->lb, ntp->lb_len, ntp->len + 1);
 				LF_SET(TXT_APPENDEOL);
 				ntp->lb[sp->cno] = CURSOR_CH;
 				++ntp->insert;
@@ -1251,36 +1251,32 @@ txt_auto(sp, ep, lno, aitp, len, tp)
 	char *p, *t;
 
 	if (aitp == NULL) {
-		if ((p = t = file_gline(sp, ep, lno, &len)) == NULL)
+		if ((t = file_gline(sp, ep, lno, &len)) == NULL)
 			return (0);
 	} else
-		p = t = aitp->lb;
-	for (nlen = 0; len; ++p) {
+		t = aitp->lb;
+
+	/* Count whitespace characters. */
+	for (p = t; len > 0; ++p, --len)
 		if (!isblank(*p))
 			break;
-		/* If last character is a space, it counts. */
-		if (--len == 0) {
-			++p;
-			break;
-		}
-	}
 
-	/* No indentation. */
-	if (p == t)
+	/* Set count, check for no indentation. */
+	if ((nlen = (p - t)) == 0)
 		return (0);
-
-	/* Set count. */
-	nlen = p - t;
 
 	/* Make sure the buffer's big enough. */
 	BINC_RET(sp, tp->lb, tp->lb_len, tp->len + nlen);
 
-	/* Copy the indentation into the new buffer. */
-	memmove(tp->lb + nlen, tp->lb, tp->len);
-	memmove(tp->lb, t, nlen);
+	/* Copy the buffer's current contents up. */
+	if (tp->len != 0)
+		memmove(tp->lb + nlen, tp->lb, tp->len);
 	tp->len += nlen;
 
-	/* Return the additional length. */
+	/* Copy the indentation into the new buffer. */
+	memmove(tp->lb, t, nlen);
+
+	/* Set the autoindent count. */
 	tp->ai = nlen;
 	return (0);
 }
