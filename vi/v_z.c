@@ -9,10 +9,12 @@
 #include "vcmd.h"
 #include "extern.h"
 
+static MARK rval;
+
 /* This moves the cursor to a particular row on the screen */
 /*ARGSUSED*/
-MARK m_row(m, cnt, key)
-	MARK	m;	/* the cursor position */
+MARK *m_row(m, cnt, key)
+	MARK	*m;	/* the cursor position */
 	long	cnt;	/* the row we'll move to */
 	int	key;	/* the keystroke of this move - H/L/M */
 {
@@ -36,14 +38,16 @@ MARK m_row(m, cnt, key)
 	}
 
 	/* return the mark of the destination line */
-	return MARK_AT_LINE(cnt);
+	m->lno = cnt;
+	rval = *m;
+	return (&rval);
 }
 
 
 /* This function repositions the current line to show on a given row */
 /*ARGSUSED*/
-MARK m_z(m, cnt, key)
-	MARK	m;	/* the cursor */
+MARK *m_z(m, cnt, key)
+	MARK	*m;	/* the cursor */
 	long	cnt;	/* the line number we're repositioning */
 	int	key;	/* key struck after the z */
 {
@@ -53,16 +57,16 @@ MARK m_z(m, cnt, key)
 	/* Which line are we talking about? */
 	if (cnt < 0 || cnt > nlines)
 	{
-		return MARK_UNSET;
+		return NULL;
 	}
 	if (cnt)
 	{
-		m = MARK_AT_LINE(cnt);
+		m->lno = cnt;
 		newtop = cnt;
 	}
 	else
 	{
-		newtop = markline(m);
+		newtop = m->lno;
 	}
 
 	/* allow a "window size" number to be entered */
@@ -70,22 +74,16 @@ MARK m_z(m, cnt, key)
 	{
 		i = i * 10 + key - '0';
 	}
-#ifndef CRUNCH
 	if (i > 0 && i <= LINES - 1)
 	{
 		LVAL(O_WINDOW) = i;
 	}
-#endif
 
 	/* figure out which line will have to be at the top of the screen */
 	switch (key)
 	{
 	  case '\n':
-#if OSK
-	  case '\l':
-#else
 	  case '\r':
-#endif
 	  case '+':
 		break;
 
@@ -99,7 +97,7 @@ MARK m_z(m, cnt, key)
 		break;
 
 	  default:
-		return MARK_UNSET;
+		return NULL;
 	}
 
 	/* make the new topline take effect */
@@ -113,7 +111,8 @@ MARK m_z(m, cnt, key)
 	}
 
 	/* The cursor doesn't move */
-	return m;
+	rval = *m;
+	return (&rval);
 }
 
 
@@ -122,8 +121,8 @@ MARK m_z(m, cnt, key)
  * so that the cursor is on the new screen.
  */
 /*ARGSUSED*/
-MARK m_scroll(m, cnt, key)
-	MARK	m;	/* the cursor position */
+MARK *m_scroll(m, cnt, key)
+	MARK	*m;	/* the cursor position */
 	long	cnt;	/* for some keys: the number of lines to scroll */
 	int	key;	/* keystroke that causes this movement */
 {
@@ -170,13 +169,14 @@ MARK m_scroll(m, cnt, key)
 		if (cnt < 1L)
 		{
 			cnt = 1L;
-			m = MARK_FIRST;
+			m->lno = 1;
 		}
-		tmp = MARK_AT_LINE(cnt) + markidx(m);
+		tmp.lno = cnt;
+		tmp.cno = m->cno;
 		scr_ref();
-		if (markline(m) > BOTLINE)
+		if (m->lno > BOTLINE)
 		{
-			m = MARK_AT_LINE(BOTLINE);
+			m->lno = BOTLINE;
 		}
 		break;
 
@@ -187,13 +187,14 @@ MARK m_scroll(m, cnt, key)
 		if (cnt > nlines)
 		{
 			cnt = nlines;
-			m = MARK_LAST;
+			m->lno = nlines;
 		}
-		tmp = MARK_AT_LINE(cnt) + markidx(m);
+		tmp.lno = cnt;
+		tmp.cno = m->cno;
 		scr_ref();
-		if (markline(m) < topline)
+		if (m->lno < topline)
 		{
-			m = MARK_AT_LINE(topline);
+			m->lno = topline;
 		}
 		break;
 	}
@@ -210,5 +211,6 @@ MARK m_scroll(m, cnt, key)
 		msg("");
 	}
 
-	return m;
+	rval = *m;
+	return (&rval);
 }

@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 5.6 1992/04/28 13:53:01 bostic Exp $ (Berkeley) $Date: 1992/04/28 13:53:01 $
+ *	$Id: vi.h,v 5.7 1992/05/07 12:49:57 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:49:57 $
  */
 
 #define	C_C_K_REP1	(CURSOR_CNT_KEY | 0x10)
@@ -15,7 +15,7 @@
 
 /* Vi command structure. */
 typedef struct {
-	MARK (*func)();		/* Underlying function. */
+	MARK *(*func)();	/* Underlying function. */
 
 #define CURSOR		1
 #define CURSOR_CNT_KEY	2
@@ -47,61 +47,63 @@ extern VIKEYS vikeys[];		/* List of vi commands. */
 		cnt = (val); \
 }
 
-MARK	adjmove();		/* a helper fn, used by move fns */
-MARK	m_Fch();		/* F */
-MARK	v_Nsearch();		/* N */
-MARK	m_Tch();		/* T */
-MARK	m__ch();		/* ; , */
-MARK	m_bsentence();		/* ( */
-MARK	m_bword();		/* b */
-MARK	m_eword();		/* e */
-MARK	m_fch();		/* f */
-MARK	m_front();		/* ^ */
-MARK	m_fsentence();		/* ) */
-MARK	m_fword();		/* w */
-MARK	m_left();		/* l */
-MARK	m_match();		/* % */
-MARK	v_nsearch();		/* n */
-MARK	m_paragraph();		/* { } [[ ]] */
-MARK	m_rear();		/* $ */
-MARK	m_right();		/* h */
-MARK	m_row();		/* H L M */
-MARK	m_scroll();		/* ^B ^F ^E ^Y ^U ^D */
-MARK	m_tch();		/* t */
-MARK	m_tocol();		/* | */
-MARK	m_tomark();		/* 'm */
-MARK	m_updnto();		/* k j G */
-MARK	v_wsearch();		/* ^A */
-MARK	m_z();			/* z */
-MARK	v_again __P((MARK, MARK));
-MARK	v_at __P((MARK, long, int));
-MARK	v_change __P((MARK, MARK));
-MARK	v_delete __P((MARK, MARK));
-MARK	v_errlist __P((MARK));
-MARK	v_ex __P((void));
-MARK	v_filter __P((MARK, MARK));
-MARK	v_increment __P((char *, MARK, long));
-MARK	v_insert __P((MARK, long, int));
-MARK	v_join __P((MARK, long));
-void	v_leaveex __P((void));
-MARK	v_mark __P((MARK, long, int));
-MARK	v_overtype __P((MARK));
-MARK	v_paste __P((MARK, long, int));
-MARK	v_quit __P((void));
-MARK	v_redraw __P((void));
-MARK	v_replace __P((MARK, long, int));
-MARK	v_selcut __P((MARK, long, int));
-MARK	v_shiftl __P((MARK, MARK));
-MARK	v_shiftr __P((MARK, MARK));
-MARK	v_start __P((MARK, long, int));
-void	v_startex __P((void));
-MARK	v_status __P((void));
-MARK	v_subst __P((MARK, long));
-MARK	v_switch __P((void));
-MARK	v_tag __P((char *, MARK, long));
-MARK	v_ulcase __P((MARK, long));
-MARK	v_undo __P((MARK));
-MARK	v_undoline __P((MARK));
-MARK	v_xchar __P((MARK, long, int));
-MARK	v_xit __P((MARK, long, int));
-MARK	v_yank __P((MARK, MARK));
+MARK	*adjmove __P((MARK *, MARK *, int));
+MARK	*input __P((MARK *, MARK *, int, int));
+MARK	*m_Fch __P((MARK *, long, int));
+MARK	*m_Tch __P((MARK *, long, int));
+MARK	*m__ch __P((MARK *, long, int));
+MARK	*m_bsentence __P((MARK *, long));
+MARK	*m_bword __P((MARK *, long, int));
+MARK	*m_eword __P((MARK *, long, int));
+MARK	*m_fch __P((MARK *, long, int));
+MARK	*m_front __P((MARK *, long));
+MARK	*m_fsentence __P((MARK *, long));
+MARK	*m_fword __P((MARK *, long, int, int));
+MARK	*m_left __P((MARK *, long));
+MARK	*m_match __P((MARK *, long));
+MARK	*m_paragraph __P((MARK *, long, int));
+MARK	*m_rear __P((MARK *, long));
+MARK	*m_right __P((MARK *, long));
+MARK	*m_row __P((MARK *, long, int));
+MARK	*m_scroll __P((MARK *, long, int));
+MARK	*m_tch __P((MARK *, long, int));
+MARK	*m_tocol __P((MARK *, long, int));
+MARK	*m_tomark __P((MARK *, long, int));
+MARK	*m_updnto __P((MARK *, long, int));
+MARK	*m_z __P((MARK *, long, int));
+MARK	*v_Nsearch __P((MARK *));
+MARK	*v_again __P((MARK *, MARK *));
+MARK	*v_at __P((MARK *, long, int));
+MARK	*v_change __P((MARK *, MARK *));
+MARK	*v_delete __P((MARK *, MARK *));
+MARK	*v_errlist __P((MARK *));
+MARK	*v_ex __P((void));
+MARK	*v_filter __P((MARK *, MARK *));
+MARK	*v_increment __P((char *, MARK *, long));
+MARK	*v_insert __P((MARK *, long, int));
+MARK	*v_join __P((MARK *, long));
+void	 v_leaveex __P((void));
+MARK	*v_mark __P((MARK *, long, int));
+MARK	*v_nsearch __P((MARK *));
+MARK	*v_overtype __P((MARK *));
+MARK	*v_paste __P((MARK *, long, int));
+MARK	*v_quit __P((void));
+MARK	*v_redraw __P((void));
+MARK	*v_replace __P((MARK *, long, int));
+MARK	*v_selcut __P((MARK *, long, int));
+MARK	*v_shiftl __P((MARK *, MARK *));
+MARK	*v_shiftr __P((MARK *, MARK *));
+MARK	*v_start __P((MARK *, long, int));
+void	 v_startex __P((void));
+MARK	*v_status __P((void));
+MARK	*v_subst __P((MARK *, long));
+MARK	*v_switch __P((void));
+MARK	*v_tag __P((char *, MARK *, long));
+MARK	*v_ulcase __P((MARK *, long));
+MARK	*v_undo __P((MARK *));
+MARK	*v_undoline __P((MARK *));
+void	 v_undosave __P((MARK *));
+MARK	*v_wsearch __P((char *, MARK *, int));
+MARK	*v_xchar __P((MARK *, long, int));
+MARK	*v_xit __P((MARK *, long, int));
+MARK	*v_yank __P((MARK *, MARK *));

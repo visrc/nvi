@@ -6,13 +6,15 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ulcase.c,v 5.4 1992/05/04 11:53:13 bostic Exp $ (Berkeley) $Date: 1992/05/04 11:53:13 $";
+static char sccsid[] = "$Id: v_ulcase.c,v 5.5 1992/05/07 12:49:38 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:49:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
+#include <stddef.h>
 #include <ctype.h>
 
 #include "vi.h"
+#include "exf.h"
 #include "vcmd.h"
 #include "extern.h"
 
@@ -20,11 +22,12 @@ static char sccsid[] = "$Id: v_ulcase.c,v 5.4 1992/05/04 11:53:13 bostic Exp $ (
  * v_ulcase -- ~
  *	This function toggles upper & lower case letters.
  */
-MARK
+MARK *
 v_ulcase(m, cnt)
-	MARK m;			/* Where to make the change. */
+	MARK *m;			/* Where to make the change. */
 	register long cnt;	/* Number of chars to flip. */
 {
+	MARK rval;
 	register char ch, *from, *to;
 	long scnt;
 	int madechange;
@@ -33,11 +36,11 @@ v_ulcase(m, cnt)
 	SETDEFCNT(1);
 
 	/* Fetch the current version of the line. */
-	pfetch(markline(m));
+	from = file_line(curf, m->lno, NULL);
 
 	scnt = cnt;
 	madechange = 0;
-	for (from = &ptext[markidx(m)], to = lbuf; cnt--; to)  {
+	for (from += m->cno, to = lbuf; cnt--; to)  {
 		if ((ch = *from++) == '\0')
 			break;
 		if (isupper(ch)) {
@@ -50,10 +53,11 @@ v_ulcase(m, cnt)
 			*to++ = ch;
 	}
 
-	if (madechange)
-		ChangeText {
-			lbuf[scnt] = '\0';
-			change(m, m + scnt, lbuf);
-		}
-	return (m + scnt);
+	rval.lno = m->lno;
+	rval.cno = m->cno + scnt;
+	if (madechange) {
+		lbuf[scnt] = '\0';
+		change(m, &rval, lbuf, scnt);
+	}
+	return (&rval);
 }

@@ -6,12 +6,14 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_xchar.c,v 5.2 1992/04/22 08:10:38 bostic Exp $ (Berkeley) $Date: 1992/04/22 08:10:38 $";
+static char sccsid[] = "$Id: v_xchar.c,v 5.3 1992/05/07 12:49:46 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:49:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
+#include <stddef.h>
 
 #include "vi.h"
+#include "exf.h"
 #include "vcmd.h"
 #include "extern.h"
 
@@ -19,38 +21,40 @@ static char sccsid[] = "$Id: v_xchar.c,v 5.2 1992/04/22 08:10:38 bostic Exp $ (B
  * v_xchar --
  *	Deletes the character(s) that the cursor is on.
  */
-MARK
+MARK *
 v_xchar(m, cnt, cmd)
-	MARK	m;	/* where to start deletions */
+	MARK	*m;	/* where to start deletions */
 	long	cnt;	/* number of chars to delete */
 	int	cmd;	/* either 'x' or 'X' */
 {
+	MARK t;
+	size_t len;
+
 	SETDEFCNT(1);
 
 	/* for 'X', adjust so chars are deleted *BEFORE* cursor */
 	if (cmd == 'X')
 	{
-		if (markidx(m) < cnt)
-			return MARK_UNSET;
-		m -= cnt;
+		if (m->cno < cnt)
+			return NULL;
+		m->cno -= cnt;
 	}
 
 	/* make sure we don't try to delete more thars than there are */
-	pfetch(markline(m));
-	if (markidx(m + cnt) > plen)
+	(void)file_line(curf, m->lno, &len);
+	if (m->cno + cnt > len)
 	{
-		cnt = plen - markidx(m);
+		cnt = len - m->cno;
 	}
-	if (cnt == 0L)
+	if (cnt == 1)
 	{
-		return MARK_UNSET;
+		return NULL;
 	}
 
 	/* do it */
-	ChangeText
-	{
-		cut(m, m + cnt);
-		delete(m, m + cnt);
-	}
+	t.lno = m->lno;
+	t.cno = m->cno + cnt;
+	cut(m, &t);
+	delete(m, &t);
 	return m;
 }

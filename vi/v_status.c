@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_status.c,v 5.3 1992/04/22 08:10:32 bostic Exp $ (Berkeley) $Date: 1992/04/22 08:10:32 $";
+static char sccsid[] = "$Id: v_status.c,v 5.4 1992/05/07 12:49:28 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:49:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,12 +21,12 @@ static char sccsid[] = "$Id: v_status.c,v 5.3 1992/04/22 08:10:32 bostic Exp $ (
  * v_status --
  *	Run the ex "file" command to show the file's status.
  */
-MARK
+MARK *
 v_status()
 {
 	EXCMDARG cmd;
 
-	SETCMDARG(cmd, C_FILE, 2, cursor, cursor, 0, "");
+	SETCMDARG(cmd, C_FILE, 2, cursor.lno, cursor.lno, 0, "");
 	ex_file(&cmd);
-	return cursor;
+	return &cursor;
 }

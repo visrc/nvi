@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.5 1992/05/02 09:33:14 bostic Exp $ (Berkeley) $Date: 1992/05/02 09:33:14 $";
+static char sccsid[] = "$Id: vi.c,v 5.6 1992/05/07 12:50:00 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:50:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -16,8 +16,9 @@ static char sccsid[] = "$Id: vi.c,v 5.5 1992/05/02 09:33:14 bostic Exp $ (Berkel
 #include <ctype.h>
 
 #include "vi.h"
+#include "exf.h"
 #include "options.h"
-#include "tty.h"
+#include "term.h"
 #include "vcmd.h"
 #include "extern.h"
 
@@ -29,9 +30,9 @@ vi()
 	REG int			key;	/* keystroke from user */
 	long			count;	/* numeric argument to some functions */
 	REG VIKEYS	*keyptr;/* pointer to vikeys[] element */
-	MARK			tcurs;	/* temporary cursor */
+	MARK			*tcurs;	/* temporary cursor */
 	int			prevkey;/* previous key, if d/c/y/</>/! */
-	MARK			range;	/* start of range for d/c/y/</>/! */
+	MARK			*range;	/* start of range for d/c/y/</>/! */
 	char			text[132];
 	int			dotkey;	/* last "key" of a change */
 	int			dotpkey;/* last "prevkey" of a change */
@@ -39,6 +40,9 @@ vi()
 	int			dotcnt;	/* last "count" of a change */
 	REG int			i;
 	char *p;
+char *ptext;
+size_t plen;
+	size_t len;
 
 #ifdef lint
 	/* lint says that "range" might be used before it is set.  This
@@ -46,7 +50,7 @@ vi()
 	 * but lint doesn't know that.  This line is here ONLY to keep lint
 	 * happy.
 	 */
-	range = 0L;
+	range = NULL;
 #endif
 
 	scr_ref();
@@ -86,7 +90,7 @@ vi()
 		if (!prevkey && keyptr->args == CURSOR_MOVED
 			&& (key == '&' || isupper(key)))
 		{
-			range = cursor;
+			range = &cursor;
 			prevkey = key;
 			key = '_';
 			keyptr = &vikeys[key];
@@ -125,7 +129,7 @@ vi()
 			dotkey2 = '\0';
 			dotcnt = count;
 
-			v_undosave(cursor);
+			v_undosave(&cursor);
 		}
 
 		/* if this is "." then set other vars from the "dot" vars */
@@ -136,7 +140,7 @@ vi()
 			prevkey = dotpkey;
 			if (prevkey)
 			{
-				range = cursor;
+				range = &cursor;
 			}
 			if (count == 0)
 			{
@@ -144,7 +148,7 @@ vi()
 			}
 			doingdot = TRUE;
 
-			v_undosave(cursor);
+			v_undosave(&cursor);
 		}
 		else
 		{
@@ -152,13 +156,13 @@ vi()
 		}
 
 		/* process the key as a command */
-		tcurs = cursor;
+		tcurs = &cursor;
 		switch (keyptr->args & ARGSMASK)
 		{
 		  case ZERO:
 			if (count == 0)
 			{
-				tcurs = cursor & ~(BLKSIZE - 1);
+				cursor.lno = 1;
 				break;
 			}
 			/* else fall through & treat like other digits... */
@@ -169,11 +173,11 @@ vi()
 
 		  case KEYWORD:
 			/* if not on a keyword, fail */
-			pfetch(markline(cursor));
-			key = markidx(cursor);
+			ptext = file_line(curf, cursor.lno, NULL);
+			key = cursor.cno;
 			if (!isalnum(ptext[key]))
 			{
-				tcurs = MARK_UNSET;
+				tcurs = NULL;
 				break;
 			}
 
@@ -181,8 +185,8 @@ vi()
 			while (key > 0 && isalnum(ptext[key - 1]))
 			{
 				key--;
+				--cursor.cno;
 			}
-			tcurs = (cursor & ~(BLKSIZE - 1)) + key;
 
 			/* copy it into a buffer, and NUL-terminate it */
 			i = 0;
@@ -211,14 +215,14 @@ vi()
 	
 		  case CURSOR:
 
-			tcurs = (*keyptr->func)(cursor, count, key, prevkey);
+			tcurs = (*keyptr->func)(&cursor, count, key, prevkey);
 			count = 0L;
 			break;
 
 		  case CURSOR_CNT_KEY:
 			if (doingdot)
 			{
-				tcurs = (*keyptr->func)(cursor, count, dotkey2);
+				tcurs = (*keyptr->func)(&cursor, count, dotkey2);
 			}
 			else
 			{
@@ -227,7 +231,7 @@ vi()
 				if (i == '\033') /* ESC */
 				{
 					count = 0;
-					tcurs = MARK_UNSET;
+					tcurs = NULL;
 					break; /* exit from "case CURSOR_CNT_KEY" */
 				}
 				else if (i == ('V' & 0x1f))
@@ -243,7 +247,7 @@ vi()
 				}
 
 				/* do it */
-				tcurs = (*keyptr->func)(cursor, count, i);
+				tcurs = (*keyptr->func)(&cursor, count, i);
 			}
 			count = 0L;
 			break;
@@ -251,7 +255,7 @@ vi()
 		  case CURSOR_MOVED:
 			if (V_from)
 			{
-				range = cursor;
+				range = &cursor;
 				tcurs = V_from;
 				count = 0L;
 				prevkey = key;
@@ -261,7 +265,7 @@ vi()
 			else
 			{
 				prevkey = key;
-				range = cursor;
+				range = &cursor;
 #ifndef CRUNCH
 				force_lnmd = FALSE;
 #endif
@@ -271,18 +275,18 @@ vi()
 		  case CURSOR_EOL:
 			prevkey = key;
 			/* a zero-length line needs special treatment */
-			pfetch(markline(cursor));
+			ptext = file_line(curf, cursor.lno, &plen);
 			if (plen == 0)
 			{
 				/* act on a zero-length section of text */
-				range = tcurs = cursor;
+				range = tcurs = &cursor;
 				key = ' ';
 			}
 			else
 			{
 				/* act like CURSOR_MOVED with '$' movement */
-				range = cursor;
-				tcurs = m_rear(cursor, 1L);
+				range = &cursor;
+				tcurs = m_rear(&cursor, 1L);
 				key = '$';
 			}
 			count = 0L;
@@ -301,7 +305,7 @@ vi()
 
 					/* call the function with the text */
 					p[0] = key;
-					tcurs = (*keyptr->func)(cursor, p);
+					tcurs = (*keyptr->func)(&cursor, p);
 				}
 				else
 				{
@@ -328,11 +332,11 @@ vi()
 			/* the < and > keys have FRNT,
 			 * but it shouldn't be applied yet
 			 */
-			tcurs = adjmove(cursor, tcurs, 0);
+			tcurs = adjmove(&cursor, tcurs, 0);
 		}
 		else
 		{
-			tcurs = adjmove(cursor, tcurs, (int)keyptr->flags);
+			tcurs = adjmove(&cursor, tcurs, (int)keyptr->flags);
 		}
 
 		/* was that the end of a d/c/y/</>/! command? */
@@ -344,7 +348,7 @@ vi()
 			V_from = 0L;
 
 			/* if the movement command failed, cancel operation */
-			if (tcurs == MARK_UNSET)
+			if (tcurs == NULL)
 			{
 				prevkey = 0;
 				count = 0;
@@ -354,11 +358,11 @@ vi()
 			/* make sure range=front and tcurs=rear.  Either way,
 			 * leave cursor=range since that's where we started.
 			 */
-			cursor = range;
-			if (tcurs < range)
+			cursor = *range;
+			if (tcurs->lno < range->lno)
 			{
 				range = tcurs;
-				tcurs = cursor;
+				tcurs = &cursor;
 			}
 
 			/* The 'w' and 'W' destinations should never take us
@@ -366,12 +370,11 @@ vi()
 			 * us only to the end of the preceding line.
 			 */
 			if ((keyptr->flags & (MVMT|NREL|LNMD|FRNT|INCL)) == MVMT
-			  && markline(range) < markline(tcurs)
-			  && (markline(tcurs) > nlines || tcurs == m_front(tcurs, 0L)))
+			  && range->lno < tcurs->lno
+			  && (tcurs->lno > nlines || tcurs == m_front(tcurs, 0L)))
 			{
-				tcurs = (tcurs & ~(BLKSIZE - 1)) - BLKSIZE;
-				pfetch(markline(tcurs));
-				tcurs += plen;
+				(void)file_line(curf, --tcurs->lno, &len);
+				tcurs->cno = len;
 			}
 
 			/* adjust for line mode & inclusion of last char/line */
@@ -385,16 +388,15 @@ vi()
 			switch (i & (INCL|LNMD))
 			{
 			  case INCL:
-				tcurs++;
+				tcurs->cno++;
 				break;
 
 			  case INCL|LNMD:
-				tcurs += BLKSIZE;
+				tcurs->lno++;
 				/* fall through... */
 
 			  case LNMD:
-				range &= ~(BLKSIZE - 1);
-				tcurs &= ~(BLKSIZE - 1);
+				tcurs->cno = range->cno = 1;
 				break;
 			}
 
@@ -402,8 +404,8 @@ vi()
 			tcurs = (*vikeys[prevkey].func)(range, tcurs);
 			if (mode == MODE_VI)
 			{
-				(void)adjmove(cursor, cursor, 0);
-				cursor = adjmove(cursor, tcurs, (int)vikeys[prevkey].flags);
+				(void)adjmove(&cursor, &cursor, 0);
+				cursor = *adjmove(&cursor, tcurs, (int)vikeys[prevkey].flags);
 				scr_cchange();
 			}
 
@@ -412,7 +414,7 @@ vi()
 		}
 		else if (!prevkey)
 		{
-			cursor = tcurs;
+			cursor = *tcurs;
 			scr_cchange();
 		}
 	}
@@ -422,19 +424,20 @@ vi()
  * it isn't past the end of the line, and that the column hasn't been
  * *accidentally* changed.
  */
-MARK
+MARK *
 adjmove(old, new, flags)
-	MARK		old;	/* the cursor position before the command */
-	REG MARK	new;	/* the cursor position after the command */
+	MARK		*old;	/* the cursor position before the command */
+	REG MARK	*new;	/* the cursor position after the command */
 	int		flags;	/* various flags regarding cursor mvmt */
 {
 	int needclear;
 	static int	colno;	/* the column number that we want */
-	REG char	*text;	/* used to scan through the line's text */
+	REG char	*stext, *text;	/* used to scan through the line's text */
+	size_t len;
 	REG int		i;
 
 	/* if the command failed, bag it! */
-	if (new == MARK_UNSET)
+	if (new == NULL)
 	{
 		bell();
 		return old;
@@ -443,21 +446,21 @@ adjmove(old, new, flags)
 	/* if this is a non-relative movement, set the '' mark */
 	if (flags & NREL)
 	{
-		mark[26] = old;
+		mark[26] = *old;
 	}
 
 	/* make sure it isn't past the end of the file */
-	if (markline(new) < 1)
+	if (new->lno < 1)
 	{
-		new = MARK_FIRST;
+		new->lno = 1;
 	}
-	else if (markline(new) > nlines)
+	else if (new->lno > nlines)
 	{
-		new = MARK_LAST;
+		new->lno = nlines;
 	}
 
 	/* fetch the new line */
-	pfetch(markline(new));
+	stext = text = file_line(curf, new->lno, &len);
 
 	/* move to the front, if we're supposed to */
 	if (flags & FRNT)
@@ -469,40 +472,31 @@ adjmove(old, new, flags)
 	if (!(flags & NCOL))
 	{
 		/* change the column# */
-		i = markidx(new);
-		if (i == BLKSIZE - 1)
+		i = new->cno;
+		if (len > 0)
 		{
-			new &= ~(BLKSIZE - 1);
-			if (plen > 0)
+			if (i >= len)
 			{
-				new += plen - 1;
+				new->cno = len;
 			}
-			colno = BLKSIZE * 8; /* one heck of a big colno */
-		}
-		else if (plen > 0)
-		{
-			if (i >= plen)
-			{
-				new = (new & ~(BLKSIZE - 1)) + plen - 1;
-			}
-			colno = idx2col(new, ptext, FALSE);
+			colno = new->cno;
 		}
 		else
 		{
-			new &= ~(BLKSIZE - 1);
+			new->cno = 1;
 			colno = 0;
 		}
 	}
 	else
 	{
 		/* adjust the mark to get as close as possible to column# */
-		for (i = 0, text = ptext; i <= colno && *text; text++)
+		for (i = 0, text = stext; i <= colno && *text; text++)
 		{
 			if (*text == '\t' && !ISSET(O_LIST))
 			{
 				i += LVAL(O_TABSTOP) - (i % LVAL(O_TABSTOP));
 			}
-			else if (UCHAR(*text) < ' ' || *text == 127)
+			else if ((u_char)(*text) < ' ' || *text == 127)
 			{
 				i += 2;
 			}
@@ -511,11 +505,11 @@ adjmove(old, new, flags)
 				i++;
 			}
 		}
-		if (text > ptext)
+		if (text > stext)
 		{
 			text--;
 		}
-		new = (new & ~(BLKSIZE - 1)) + (int)(text - ptext);
+		new->cno = text - stext;
 	}
 	return (new);
 }

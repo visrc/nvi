@@ -6,23 +6,26 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_replace.c,v 5.3 1992/05/04 11:53:06 bostic Exp $ (Berkeley) $Date: 1992/05/04 11:53:06 $";
+static char sccsid[] = "$Id: v_replace.c,v 5.4 1992/05/07 12:49:13 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:49:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
 #include "vi.h"
+#include "exf.h"
 #include "vcmd.h"
 #include "extern.h"
 
-MARK
+MARK *
 v_replace(m, cnt, key)
-	MARK	m;	/* first char to be replaced */
+	MARK	*m;	/* first char to be replaced */
 	long	cnt;	/* number of chars to replace */
 	int	key;	/* what to replace them with */
 {
+	static MARK rval;
 	REG char	*text;
 	REG int		i;
+	size_t len, ilen;
 	char lbuf[1024];
 
 	SETDEFCNT(1);
@@ -33,39 +36,34 @@ v_replace(m, cnt, key)
 		key = '\n';
 	}
 
-	/* make sure the resulting line isn't too long */
-	if (cnt > BLKSIZE - 2 - markidx(m))
-	{
-		cnt = BLKSIZE - 2 - markidx(m);
-	}
-
 	/* build a string of the desired character with the desired length */
-	for (text = lbuf, i = cnt; i > 0; i--)
+	for (text = lbuf, i = cnt, ilen = 0; i > 0; i--)
 	{
 		*text++ = key;
+		++ilen;
 	}
 	*text = '\0';
 
 	/* make sure cnt doesn't extend past EOL */
-	pfetch(markline(m));
-	key = markidx(m);
-	if (key + cnt > plen)
+	(void)file_line(curf, m->lno, &len);
+	key = m->cno;
+	if (key + cnt > len)
 	{
-		cnt = plen - key;
+		cnt = len - key;
 	}
 
 	/* do the replacement */
-	ChangeText
-	{
-		change(m, m + cnt, lbuf);
-	}
+	rval = *m;
+	rval.cno += cnt;
+	change(m, &rval, lbuf, ilen);
 
 	if (*lbuf == '\n')
 	{
-		return (m & ~(BLKSIZE - 1)) + cnt * BLKSIZE;
+		++m->lno;
+		m->cno = 1;
 	}
 	else
 	{
-		return m + cnt - 1;
+		m->cno += cnt - 1;
 	}
 }

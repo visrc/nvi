@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_at.c,v 5.2 1992/04/22 08:10:18 bostic Exp $ (Berkeley) $Date: 1992/04/22 08:10:18 $";
+static char sccsid[] = "$Id: v_at.c,v 5.3 1992/05/07 12:48:38 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:48:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -23,9 +23,9 @@ u_char	*atkeybuf, *atkeyp;			/* Shared at buffer. */
 u_long	 atkeybuflen;				/* Length of shared buffer. */
 
 /* ARGSUSED */
-MARK
+MARK *
 v_at(m, cnt, key)
-	MARK m;
+	MARK *m;
 	long cnt;
 	int key;
 {
@@ -38,18 +38,18 @@ v_at(m, cnt, key)
 		bzero(rstack, sizeof(rstack));
 	else if (rstack[key]) {
 		msg("Buffer %c already occurs in this command.", key);
-		return (MARK_UNSET);
+		return (NULL);
 	}
 
 	if ((buf = cb2str(key, &len)) == NULL)
-		return (MARK_UNSET);
+		return (NULL);
 
 	if (atkeybuflen == 0) {
 		/* Allocate a buffer that will hold both. */
 		remain = atkeybuflen - (atkeyp - atkeybuf);
 		if ((p = malloc(len + remain)) == NULL) {
 			msg("Error: %s", strerror(errno));
-			return (MARK_UNSET);
+			return (NULL);
 		}
 
 		/* Copy into the new buffer. */
@@ -69,5 +69,5 @@ v_at(m, cnt, key)
 	}
 
 	rstack[key] = 1;
-	return (cursor);
+	return (&cursor);
 }

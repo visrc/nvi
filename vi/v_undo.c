@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_undo.c,v 5.4 1992/05/04 11:53:15 bostic Exp $ (Berkeley) $Date: 1992/05/04 11:53:15 $";
+static char sccsid[] = "$Id: v_undo.c,v 5.5 1992/05/07 12:49:41 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:49:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -20,13 +20,13 @@ static char sccsid[] = "$Id: v_undo.c,v 5.4 1992/05/04 11:53:15 bostic Exp $ (Be
  *	Undoes the last change.
  */
 /* ARGSUSED */
-MARK
+MARK *
 v_undo(m)
-	MARK m;
+	MARK *m;
 {
 #ifdef NOT_RIGHT_NOW
 	if (undo())
 		scr_ref();
 #endif
-	return (cursor);
+	return (&cursor);
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_zexit.c,v 5.4 1992/04/28 13:52:42 bostic Exp $ (Berkeley) $Date: 1992/04/28 13:52:42 $";
+static char sccsid[] = "$Id: v_zexit.c,v 5.5 1992/05/07 12:49:48 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:49:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -23,9 +23,9 @@ static char sccsid[] = "$Id: v_zexit.c,v 5.4 1992/04/28 13:52:42 bostic Exp $ (B
  *	Same as the ex command "xit".
  */
 /* ARGSUSED */
-MARK
+MARK *
 v_xit(m, cnt, key)
-	MARK	m;	/* ignored */
+	MARK	*m;	/* ignored */
 	long	cnt;	/* ignored */
 	int	key;	/* must be a second 'Z' */
 {
@@ -33,7 +33,7 @@ v_xit(m, cnt, key)
 	/* if second char wasn't 'Z', fail */
 	if (key != 'Z')
 	{
-		return MARK_UNSET;
+		return NULL;
 	}
 
 	/* move the cursor to the bottom of the screen */
@@ -41,7 +41,7 @@ v_xit(m, cnt, key)
 	clrtoeol();
 
 	/* do the xit command */
-	SETCMDARG(cmd, C_XIT, 2, m, m, FALSE, "");
+	SETCMDARG(cmd, C_XIT, 2, m->lno, m->lno, 0, "");
 	ex_xit(&cmd);
 
 	/* return the cursor */

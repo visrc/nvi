@@ -6,24 +6,26 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_increment.c,v 5.2 1992/04/22 08:10:22 bostic Exp $ (Berkeley) $Date: 1992/04/22 08:10:22 $";
+static char sccsid[] = "$Id: v_increment.c,v 5.3 1992/05/07 12:48:53 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:48:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
+#include <stddef.h>
 
 #include "vi.h"
 #include "vcmd.h"
 #include "extern.h"
 
-#ifndef NO_EXTENSIONS
-MARK
+MARK *
 v_increment(keyword, m, cnt)
 	char	*keyword;
-	MARK	m;
+	MARK	*m;
 	long	cnt;
 {
-	static	sign;
+	static MARK rval;
+	static	int sign;
 	char	newval[12];
+	size_t len;
 	long	atol();
 
 	SETDEFCNT(1);
@@ -50,15 +52,13 @@ v_increment(keyword, m, cnt)
 		break;
 
 	  default:
-		return MARK_UNSET;
+		return NULL;
 	}
-	sprintf(newval, "%ld", cnt);
+	len = snprintf(newval, "%ld", cnt);
 
-	ChangeText
-	{
-		change(m, m + strlen(keyword), newval);
-	}
-
-	return m;
+	rval = *m;
+	rval.cno += strlen(keyword);
+	change(m, &rval, newval, len);
+	rval = *m;
+	return (&rval);
 }
-#endif

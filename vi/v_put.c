@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_put.c,v 5.2 1992/04/22 08:10:26 bostic Exp $ (Berkeley) $Date: 1992/04/22 08:10:26 $";
+static char sccsid[] = "$Id: v_put.c,v 5.3 1992/05/07 12:49:06 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:49:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -20,15 +20,12 @@ static char sccsid[] = "$Id: v_put.c,v 5.2 1992/04/22 08:10:26 bostic Exp $ (Ber
  *	Paste text from a cut buffer.
  */
 /* ARGSUSED */
-MARK
+MARK *
 v_paste(m, cnt, cmd)
-	MARK	m;	/* where to paste the text */
+	MARK	*m;	/* where to paste the text */
 	long	cnt;	/* (ignored) */
 	int	cmd;	/* either 'p' or 'P' */
 {
-	ChangeText
-	{
-		m = paste(m, cmd == 'p', FALSE);
-	}
+	m = paste(m, cmd == 'p', 0);
 	return m;
 }

@@ -6,10 +6,11 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_delete.c,v 5.2 1992/04/22 08:10:20 bostic Exp $ (Berkeley) $Date: 1992/04/22 08:10:20 $";
+static char sccsid[] = "$Id: v_delete.c,v 5.3 1992/05/07 12:48:43 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:48:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
+#include <stddef.h>
 
 #include "vi.h"
 #include "vcmd.h"
@@ -19,21 +20,20 @@ static char sccsid[] = "$Id: v_delete.c,v 5.2 1992/04/22 08:10:20 bostic Exp $ (
  * v_delete --
  *	Deletes a range of text.
  */
-MARK
+MARK *
 v_delete(m, n)
-	MARK	m, n;	/* range of text to delete */
+	MARK	*m, *n;	/* range of text to delete */
 {
+	static MARK rval;
 	/* illegal to try and delete nothing */
-	if (n <= m)
+	if (n->lno <= m->lno)
 	{
-		return MARK_UNSET;
+		return NULL;
 	}
 
 	/* Do it */
-	ChangeText
-	{
-		cut(m, n);
-		delete(m, n);
-	}
-	return m;
+	cut(m, n);
+	delete(m, n);
+	rval = *m;
+	return (&rval);
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_mark.c,v 5.2 1992/04/22 08:10:25 bostic Exp $ (Berkeley) $Date: 1992/04/22 08:10:25 $";
+static char sccsid[] = "$Id: v_mark.c,v 5.3 1992/05/07 12:49:00 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:49:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -20,9 +20,9 @@ static char sccsid[] = "$Id: v_mark.c,v 5.2 1992/04/22 08:10:25 bostic Exp $ (Be
  *	Define a mark.
  */
 /* ARGSUSED */
-MARK
+MARK *
 v_mark(m, count, key)
-	MARK	m;	/* where the mark will be */
+	MARK	*m;	/* where the mark will be */
 	long	count;	/* (ignored) */
 	int	key;	/* the ASCII label of the mark */
 {
@@ -32,7 +32,7 @@ v_mark(m, count, key)
 	}
 	else
 	{
-		mark[key - 'a'] = m;
+		mark[key - 'a'] = *m;
 	}
 	return m;
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 5.9 1992/04/28 13:52:22 bostic Exp $ (Berkeley) $Date: 1992/04/28 13:52:22 $";
+static char sccsid[] = "$Id: v_search.c,v 5.10 1992/05/07 12:49:15 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:49:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,10 +18,10 @@ static char sccsid[] = "$Id: v_search.c,v 5.9 1992/04/28 13:52:22 bostic Exp $ (
 #include "extern.h"
 
 /* ARGSUSED */
-MARK
+MARK *
 v_wsearch(word, m, cnt)
 	char	*word;	/* the word to search for */
-	MARK	m;	/* the starting point */
+	MARK	*m;	/* the starting point */
 	int	cnt;	/* ignored */
 {
 	char buf[1024];
@@ -35,34 +35,34 @@ v_wsearch(word, m, cnt)
 	clrtoeol();
 	refresh();
 
-	return (f_search(m, buf));
+	return (f_search(m, buf, NULL, 1));
 }
 
-MARK
+MARK *
 v_nsearch(m)
-	MARK m;
+	MARK *m;
 {
 	switch(searchdir) {
 	case BACKWARD:
-		return (b_search(m, NULL));
+		return (b_search(m, NULL, NULL, 1));
 		/* NOTREACHED */
 	case FORWARD:
-		return (f_search(m, NULL));
+		return (f_search(m, NULL, NULL, 1));
 		/* NOTREACHED */
 	}
 }
 
-MARK
+MARK *
 v_Nsearch(m)
-	MARK m;
+	MARK *m;
 {
 	switch(searchdir) {
 	case BACKWARD:
-		m = f_search(m, NULL);
+		m = f_search(m, NULL, NULL, 1);
 		searchdir = BACKWARD;
 		break;
 	case FORWARD:
-		m = b_search(m, NULL);
+		m = b_search(m, NULL, NULL, 1);
 		searchdir = FORWARD;
 		break;
 	}
