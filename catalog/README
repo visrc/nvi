@@ -1,4 +1,4 @@
-#	$Id: README,v 8.3 1994/09/02 10:33:07 bostic Exp $ (Berkeley) $Date: 1994/09/02 10:33:07 $
+#	$Id: README,v 8.4 1994/11/22 09:52:04 bostic Exp $ (Berkeley) $Date: 1994/11/22 09:52:04 $
 
 Generally, all non-system error and informational messages in nvi are
 catalog messages, i.e. they can be tailored to a specific langauge.
@@ -9,7 +9,7 @@ text strings in nvi, but it's unclear that it's the right thing to do.
 First, there's no portable way to do message catalogs.  The System V
 scheme is a reasonable choice, but none of the 4BSD derived systems
 support it.  So, catalogs are completely implemented within nvi, and
-doesn't require any library support.
+don't require any library support.
 
 Message catalogs in nvi are fairly simple.  Every catalog message
 consists of two parts -- an initial number followed by a pipe (`|')
@@ -74,25 +74,41 @@ message itself.  All base files are named using the convention
 "vi_<language>.base", e.g. the English one is "vi_english.base".  For
 example:
 
-	001 "line length overflow"
 	002 "Unable to create temporary file"
 	003 "Warning: %s is not a regular file"
 	004 "%s already locked, session is read-only"
 	005 "%s: remove"
+	006 "%s: close"
+	007 "%s: remove"
+	008 "%s: remove"
+	009 "Read-only file, not written; use ! to override"
+	010 "Read-only file, not written"
 
-are the first few lines of the current vi_english.base file.
+are the first few lines of the current vi_english.base file.  Note that
+message #1 is missing -- the first message of each catalog is a special
+one, so that nvi can recognize message catalog files.  It's added by the
+Makefile script that creates the second version of the message catalog.
 
-The second file is the file actually used by nvi to access messages,
-and is simply a list of the messages, one per line:
+The second file is the file used by nvi to access messages, and is a list
+of the messages, one per line:
 
-	line length overflow
-	Unable to create temporary file
-	Warning: %s is not a regular file
-	%s already locked, session is read-only
-	%s: remove
+	VI_MESSAGE_CATALOG
+	Unable to create temporary fileX
+	Warning: %s is not a regular fileX
+	%s already locked, session is read-onlyX
+	%s: removeX
+	%s: closeX
+	%s: removeX
+	%s: removeX
+	Read-only file, not written; use ! to overrideX
+	Read-only file, not writtenX
+
+Note that all messages have had a trailing 'X' character appended.  This
+is to provide nvi a place to store a trailing nul for the message so that
+C library routines that expect one won't be disappointed.
 
 These files are named for their language, e.g. "vi_english".  The second
-files are automatically created from the first files, obviously.
+files are automatically created from the first files.
 
 To create a new catalog for nvi:
 
@@ -113,12 +129,10 @@ have new sources for which you want to create a new base catalog, you
 can create it by running the command "make english" in the catalog
 directory.
 
-Once you've translated all of the strings, then run the command
-"make catalog".  This will create the second, corresponding, file
-for each file named <language>.base.
-
-Note, don't change message 1!  It's a special string nvi uses to
-keep users from accidentally specifying incorrect message files.
+Once you've translated all of the strings, then add your catalog to the
+"CAT=" line of the Makefile, and run the command "make catalog".  This
+will create the second (and corresponding) file for each file named
+<language>.base.
 
 Don't worry about missing line numbers, i.e. base files that look like:
 
@@ -126,7 +140,7 @@ Don't worry about missing line numbers, i.e. base files that look like:
 	007	Message number 7.
 
 This simply means that a message was deleted during the course of nvi's
-development, and it will be taken care of automatically when you create
+development.  It will be taken care of automatically when you create
 the second form of the file.
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
@@ -136,7 +150,8 @@ message numbers, duplicate message numbers, and duplicate messages.
 Unused message numbers are only useful if you are condensing messages.
 Duplicate message numbers are a serious problem and have to be fixed.
 Duplicate messages are only interesting if a message appears often enough
-that it's worth creating a routine to display it.
+that it's worth creating a routine so that the string is only need in
+a single place.
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 To select a catalog when running nvi, set the "msgcat" option.  If the
