@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_msg.c,v 10.31 1995/11/06 20:30:25 bostic Exp $ (Berkeley) $Date: 1995/11/06 20:30:25 $";
+static char sccsid[] = "$Id: vs_msg.c,v 10.32 1995/11/07 08:41:01 bostic Exp $ (Berkeley) $Date: 1995/11/07 08:41:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -607,7 +607,6 @@ vs_resolve(sp)
 {
 	EVENT ev;
 	GS *gp;
-	MSG *mp;
 	VI_PRIVATE *vip;
 	size_t oldy, oldx;
 	int redraw;
@@ -621,15 +620,6 @@ vs_resolve(sp)
 		F_CLR(gp, G_BELLSCHED);
 		(void)gp->scr_bell(sp);
 	}
-
-	/* Flush any saved messages. */
-	if (gp->msgq.lh_first != NULL && F_ISSET(sp, S_SCREEN_READY))
-		while ((mp = gp->msgq.lh_first) != NULL) {
-			gp->scr_msg(sp, mp->mtype, mp->buf, mp->len);
-			LIST_REMOVE(mp, q);
-			free(mp->buf);
-			free(mp);
-		}
 
 	/* Display new file status line. */
 	if (F_ISSET(sp, S_STATUS)) {
