@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.6 1993/08/16 12:49:38 bostic Exp $ (Berkeley) $Date: 1993/08/16 12:49:38 $
+ *	$Id: ex.h,v 8.7 1993/08/19 15:06:29 bostic Exp $ (Berkeley) $Date: 1993/08/19 15:06:29 $
  */
 
 struct _excmdarg;
@@ -50,16 +50,11 @@ typedef struct _excmdarg {
 	MARK addr1;		/* 1st address. */
 	MARK addr2;		/* 2nd address. */
 	recno_t lineno;		/* Line number. */
-	u_int flags;		/* Selected flags from EXCMDLIST. */
+	int buffer;		/* Named buffer. */
 	int argc;		/* Count of file/word arguments. */
 	char **argv;		/* List of file/word arguments. */
-	char *command;		/* Command line, if parse locally. */
-	char *plus;		/* '+' command word. */
-	char *string;		/* String. */
-	int buffer;		/* Named buffer. */
+	u_int flags;		/* Selected flags from EXCMDLIST. */
 } EXCMDARG;
-
-extern char *defcmdarg[2];	/* Default array. */
 
 /* Macro to set up the structure. */
 #define	SETCMDARG(s, _cmd, _addrcnt, _lno1, _lno2, _force, _arg) {	\
@@ -71,14 +66,10 @@ extern char *defcmdarg[2];	/* Default array. */
 	s.addr1.cno = s.addr2.cno = 1;					\
 	if (_force)							\
 		s.flags |= E_FORCE;					\
+	sp->ex_argv[0] = _arg;						\
 	s.argc = _arg ? 1 : 0;						\
-	s.argv = defcmdarg;						\
-	s.string = "";							\
-	defcmdarg[0] = _arg;						\
+	s.argv = sp->ex_argv;						\
 }
-
-/* Control character. */
-#define	ctrl(ch)	((ch) & 0x1f)
 
 #define	AUTOWRITE(sp, ep) {						\
 	if (F_ISSET((ep), F_MODIFIED) && O_ISSET((sp), O_AUTOWRITE) &&	\
@@ -106,13 +97,14 @@ extern char *defcmdarg[2];	/* Default array. */
 }
 
 /* Ex function prototypes. */
-int	buildargv __P((SCR *, EXF *, char *, int, int *, char ***));
+int	file_argv __P((SCR *, EXF *, char *, int *, char ***));
+int	word_argv __P((SCR *, EXF *, char *, int *, char ***));
 int	esystem __P((SCR *, const u_char *, const u_char *));
 int	ex_run_process __P((SCR *, char *, size_t *, char *, size_t));
 
 int	ex __P((SCR *, EXF *));
 int	ex_cfile __P((SCR *, EXF *, char *));
-int	ex_cmd __P((SCR *, EXF *, char *));
+int	ex_cmd __P((SCR *, EXF *, char *, int));
 int	ex_cstring __P((SCR *, EXF *, char *, int));
 int	ex_end __P((SCR *));
 int	ex_gb __P((SCR *, EXF *, HDR *, int, u_int));
