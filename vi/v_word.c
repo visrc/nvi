@@ -6,12 +6,14 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_word.c,v 5.4 1992/05/27 10:39:05 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:39:05 $";
+static char sccsid[] = "$Id: v_word.c,v 5.5 1992/10/10 14:04:58 bostic Exp $ (Berkeley) $Date: 1992/10/10 14:04:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
-#include <stdio.h>
+
 #include <ctype.h>
+#include <limits.h>
+#include <stdio.h>
 
 #include "vi.h"
 #include "options.h"
@@ -76,11 +78,11 @@ fword(vp, fm, rp, spaceonly)
 	MARK *fm, *rp;
 	int spaceonly;
 {
-	register char *p;
+	register u_char *p;
 	size_t len;
 	u_long cno, cnt, lno;
 	int empty;
-	char *startp;
+	u_char *startp;
 
 	lno = fm->lno;
 	cno = fm->cno;
@@ -170,10 +172,10 @@ bword(vp, fm, rp, spaceonly)
 	MARK *fm, *rp;
 	int spaceonly;
 {
-	register char *p;
+	register u_char *p;
 	size_t len;
 	u_long cno, cnt, lno;
-	char *startp;
+	u_char *startp;
 
 	lno = fm->lno;
 	cno = fm->cno;
@@ -308,11 +310,11 @@ eword(vp, fm, rp, spaceonly)
 	MARK *fm, *rp;
 	int spaceonly;
 {
-	register char *p;
+	register u_char *p;
 	size_t len;
 	u_long cno, cnt, lno;
 	int empty;
-	char *startp;
+	u_char *startp;
 
 	lno = fm->lno;
 	cno = fm->cno;
