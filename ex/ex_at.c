@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_at.c,v 9.2 1995/01/11 16:15:20 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:15:20 $";
+static char sccsid[] = "$Id: ex_at.c,v 9.3 1995/02/17 11:43:17 bostic Exp $ (Berkeley) $Date: 1995/02/17 11:43:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -43,51 +43,93 @@ ex_at(sp, cmdp)
 	EXCMDARG *cmdp;
 {
 	CB *cbp;
-	EX_PRIVATE *exp;
+	CHAR_T name;
 	TEXT *tp;
-	int name;
-
-	exp = EXP(sp);
+	recno_t elno, lno;
+	int rval;
+	char *bp, *p;
+	size_t len;
 
 	/*
 	 * !!!
 	 * Historically, [@*]<carriage-return> and [@*][@*] executed the most
-	 * recently executed buffer in ex mode.  In vi mode, only @@ repeated
-	 * the last buffer.  We change historic practice and make @* work from
-	 * vi mode as well, it's simpler and more consistent.
+	 * recently executed buffer in ex mode.
 	 */
 	name = F_ISSET(cmdp, E_BUFFER) ? cmdp->buffer : '@';
 	if (name == '@' || name == '*') {
-		if (!exp->at_lbuf_set) {
-			msgq(sp, M_ERR, "128|No previous buffer to execute");
+		if (!F_ISSET(sp, S_AT_SET)) {
+			ex_message(sp, NULL, EXM_NOPREVBUF);
 			return (1);
 		}
-		name = exp->at_lbuf;
+		name = sp->at_lbuf;
 	}
 
 	CBNAME(sp, cbp, name);
 	if (cbp == NULL) {
-		msgq(sp, M_ERR, "129|Buffer %s is empty", KEY_NAME(sp, name));
+		ex_message(sp, KEY_NAME(sp, name), EXM_EMPTYBUF);
 		return (1);
 	}
 
 	/* Save for reuse. */
-	exp->at_lbuf = name;
-	exp->at_lbuf_set = 1;
+	sp->at_lbuf = name;
+
+	/*
+	 * Buffers executed in ex mode or from the colon command line in vi
+	 * were ex commands.  We can't push it on the terminal queue, since
+	 * we may be executing a command from the vi colon command line.
+	 * Build two copies of the command.  We need two copies because the
+	 * ex parser may step on the command string when it's parsing it.
+	 */
+	for (len = 0, tp = cbp->textq.cqh_last;
+	    tp != (void *)&cbp->textq; tp = tp->q.cqe_prev)
+		len += tp->len + 1;
+	MALLOC_RET(sp, bp, char *, len * 2);
+	for (p = bp, tp = cbp->textq.cqh_last;
+	    tp != (void *)&cbp->textq; tp = tp->q.cqe_prev) {
+		memmove(p, tp->lb, tp->len);
+		p += tp->len;
+		*p++ = '\n';
+	}
 
 	/*
 	 * !!!
-	 * Historic practice is that if the buffer was cut in line mode,
-	 * <newlines> were appended to each line as it was pushed onto
-	 * the stack.  If the buffer was cut in character mode, <newlines>
-	 * were appended to all lines but the last one.
+	 * Historically the @ command took a range of lines, and the @ buffer
+	 * was executed once per line.  The historic vi could be trashed by
+	 * this, since it didn't notice if the underlying file changed, or,
+	 * for that matter, if there were no more lines on which to operate.
+	 * As an example, take a 10 line file, load "%delete" into a buffer,
+	 * and enter :8,10@<buffer>.  We take the same approach as for global
+	 * commands, i.e. if we exit or switch to a new file/screen, the rest
+	 * of the command is discarded.
 	 */
-	for (tp = cbp->textq.cqh_last;
-	    tp != (void *)&cbp->textq; tp = tp->q.cqe_prev)
-		if ((F_ISSET(cbp, CB_LMODE) ||
-		    tp->q.cqe_next != (void *)&cbp->textq) &&
-		    term_push(sp, "\n", 1, 0) ||
-		    term_push(sp, tp->lb, tp->len, 0))
-			return (1);
-	return (0);
+	rval = 0;
+	for (lno = cmdp->addr1.lno,
+	    elno = cmdp->addr2.lno; lno <= elno; ++lno) {
+		/*
+		 * Make a new copy and execute the command, setting the cursor
+		 * to the line so that relative addressing works.  This means
+		 * that the cursor moves to the last line sent to the command,
+		 * by default, even if the command fails.
+		 */
+		sp->lno = lno;
+		memmove(bp + len, bp, len);
+		if (ex_cmd(sp, bp + len, len, 0))
+			goto err;
+
+		/* Someone's unhappy, time to stop. */
+		if (INTERRUPTED(sp))
+			break;
+
+		/*
+		 * If we've exited or switched to a new file/screen, the rest
+		 * of the command is discarded.
+		 */
+		if (F_ISSET(sp,
+		    S_EXIT | S_EXIT_FORCE | S_EX_CMDABORT | S_SSWITCH))
+			break;
+	}
+	if (0)
+err:		rval = 1;
+	free(bp);
+	return (rval);
 }
