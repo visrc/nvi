@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.107 2001/10/08 19:21:45 skimo Exp $ (Berkeley) $Date: 2001/10/08 19:21:45 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.108 2003/07/18 21:27:42 skimo Exp $ (Berkeley) $Date: 2003/07/18 21:27:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1456,6 +1456,7 @@ done:	/* Leave input mode. */
 
 err:
 alloc_err:
+	F_CLR(sp, SC_TINPUT);
 	txt_err(sp, &sp->tiq);
 	return (1);
 }
