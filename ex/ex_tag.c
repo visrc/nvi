@@ -13,7 +13,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_tag.c,v 10.41 2000/04/21 19:00:38 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:38 $";
+static const char sccsid[] = "$Id: ex_tag.c,v 10.42 2000/04/30 16:55:39 skimo Exp $ (Berkeley) $Date: 2000/04/30 16:55:39 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -102,13 +102,8 @@ ex_tag_push(sp, cmdp)
 	EXCMD *cmdp;
 {
 	EX_PRIVATE *exp;
-	FREF *frp;
-	TAG *rtp;
-	TAGQ *rtqp, *tqp;
-	db_recno_t lno;
-	size_t cno;
+	TAGQ *tqp;
 	long tl;
-	int force, istmp;
 
 	exp = EXP(sp);
 	switch (cmdp->argc) {
@@ -140,91 +135,11 @@ ex_tag_push(sp, cmdp)
 	if ((tqp = ctag_slist(sp, exp->tag_last)) == NULL)
 		return (1);
 
-	/*
-	 * Allocate all necessary memory before swapping screens.  Initialize
-	 * flags so we know what to free.
-	 */
-	rtp = NULL;
-	rtqp = NULL;
-	if (exp->tq.cqh_first == (void *)&exp->tq) {
-		/* Initialize the `local context' tag queue structure. */
-		CALLOC_GOTO(sp, rtqp, TAGQ *, 1, sizeof(TAGQ));
-		CIRCLEQ_INIT(&rtqp->tagq);
+	if (tagq_push(sp, tqp, F_ISSET(cmdp, E_NEWSCREEN), 
+			       FL_ISSET(cmdp->iflags, E_C_FORCE)))
+		return 1;
 
-		/* Initialize and link in its tag structure. */
-		CALLOC_GOTO(sp, rtp, TAG *, 1, sizeof(TAG));
-		CIRCLEQ_INSERT_HEAD(&rtqp->tagq, rtp, q);
-		rtqp->current = rtp;
-	}
-
-	/*
-	 * Stick the current context information in a convenient place, we're
-	 * about to lose it.  Note, if we're called on editor startup, there
-	 * will be no FREF structure.
-	 */
-	frp = sp->frp;
-	lno = sp->lno;
-	cno = sp->cno;
-	istmp = frp == NULL ||
-	    F_ISSET(frp, FR_TMPFILE) && !F_ISSET(cmdp, E_NEWSCREEN);
-
-	/* Try to switch to the tag. */
-	force = FL_ISSET(cmdp->iflags, E_C_FORCE);
-	if (F_ISSET(cmdp, E_NEWSCREEN)) {
-		if (ex_tag_Nswitch(sp, tqp->tagq.cqh_first, force))
-			goto err;
-
-		/* Everything else gets done in the new screen. */
-		sp = sp->nextdisp;
-		exp = EXP(sp);
-	} else
-		if (ex_tag_nswitch(sp, tqp->tagq.cqh_first, force))
-			goto err;
-
-	/*
-	 * If this is the first tag, put a `current location' queue entry
-	 * in place, so we can pop all the way back to the current mark.
-	 * Note, it doesn't point to much of anything, it's a placeholder.
-	 */
-	if (exp->tq.cqh_first == (void *)&exp->tq) {
-		CIRCLEQ_INSERT_HEAD(&exp->tq, rtqp, q);
-	} else
-		rtqp = exp->tq.cqh_first;
-
-	/* Link the new TAGQ structure into place. */
-	CIRCLEQ_INSERT_HEAD(&exp->tq, tqp, q);
-
-	(void)ctag_search(sp,
-	    tqp->current->search, tqp->current->slen, tqp->tag);
-
-	/*
-	 * Move the current context from the temporary save area into the
-	 * right structure.
-	 *
-	 * If we were in a temporary file, we don't have a context to which
-	 * we can return, so just make it be the same as what we're moving
-	 * to.  It will be a little odd that ^T doesn't change anything, but
-	 * I don't think it's a big deal.
-	 */
-	if (istmp) {
-		rtqp->current->frp = sp->frp;
-		rtqp->current->lno = sp->lno;
-		rtqp->current->cno = sp->cno;
-	} else {
-		rtqp->current->frp = frp;
-		rtqp->current->lno = lno;
-		rtqp->current->cno = cno;
-	}
-	return (0);
-
-err:
-alloc_err:
-	if (rtqp != NULL)
-		free(rtqp);
-	if (rtp != NULL)
-		free(rtp);
-	tagq_free(sp, tqp);
-	return (1);
+	return 0;
 }
 
 /* 
@@ -807,6 +722,111 @@ tagq_free(sp, tqp)
 		CIRCLEQ_REMOVE(&exp->tq, tqp, q);
 	free(tqp);
 	return (0);
+}
+
+/*
+ * PUBLIC: int tagq_push __P((SCR*, TAGQ*, int, int ));
+ */
+int
+tagq_push(sp, tqp, new_screen, force)
+	SCR *sp;
+	TAGQ *tqp;
+	int new_screen, force;
+{
+	EX_PRIVATE *exp;
+	FREF *frp;
+	TAG *rtp;
+	TAGQ *rtqp;
+	db_recno_t lno;
+	size_t cno;
+	int istmp;
+
+	exp = EXP(sp);
+
+	/*
+	 * Allocate all necessary memory before swapping screens.  Initialize
+	 * flags so we know what to free.
+	 */
+	rtp = NULL;
+	rtqp = NULL;
+	if (exp->tq.cqh_first == (void *)&exp->tq) {
+		/* Initialize the `local context' tag queue structure. */
+		CALLOC_GOTO(sp, rtqp, TAGQ *, 1, sizeof(TAGQ));
+		CIRCLEQ_INIT(&rtqp->tagq);
+
+		/* Initialize and link in its tag structure. */
+		CALLOC_GOTO(sp, rtp, TAG *, 1, sizeof(TAG));
+		CIRCLEQ_INSERT_HEAD(&rtqp->tagq, rtp, q);
+		rtqp->current = rtp;
+	}
+
+	/*
+	 * Stick the current context information in a convenient place, we're
+	 * about to lose it.  Note, if we're called on editor startup, there
+	 * will be no FREF structure.
+	 */
+	frp = sp->frp;
+	lno = sp->lno;
+	cno = sp->cno;
+	istmp = frp == NULL ||
+	    F_ISSET(frp, FR_TMPFILE) && !new_screen;
+
+	/* Try to switch to the tag. */
+	if (new_screen) {
+		if (ex_tag_Nswitch(sp, tqp->tagq.cqh_first, force))
+			goto err;
+
+		/* Everything else gets done in the new screen. */
+		sp = sp->nextdisp;
+		exp = EXP(sp);
+	} else
+		if (ex_tag_nswitch(sp, tqp->tagq.cqh_first, force))
+			goto err;
+
+	/*
+	 * If this is the first tag, put a `current location' queue entry
+	 * in place, so we can pop all the way back to the current mark.
+	 * Note, it doesn't point to much of anything, it's a placeholder.
+	 */
+	if (exp->tq.cqh_first == (void *)&exp->tq) {
+		CIRCLEQ_INSERT_HEAD(&exp->tq, rtqp, q);
+	} else
+		rtqp = exp->tq.cqh_first;
+
+	/* Link the new TAGQ structure into place. */
+	CIRCLEQ_INSERT_HEAD(&exp->tq, tqp, q);
+
+	(void)ctag_search(sp,
+	    tqp->current->search, tqp->current->slen, tqp->tag);
+
+	/*
+	 * Move the current context from the temporary save area into the
+	 * right structure.
+	 *
+	 * If we were in a temporary file, we don't have a context to which
+	 * we can return, so just make it be the same as what we're moving
+	 * to.  It will be a little odd that ^T doesn't change anything, but
+	 * I don't think it's a big deal.
+	 */
+	if (istmp) {
+		rtqp->current->frp = sp->frp;
+		rtqp->current->lno = sp->lno;
+		rtqp->current->cno = sp->cno;
+	} else {
+		rtqp->current->frp = frp;
+		rtqp->current->lno = lno;
+		rtqp->current->cno = cno;
+	}
+	return (0);
+
+err:
+alloc_err:
+	if (rtqp != NULL)
+		free(rtqp);
+	if (rtp != NULL)
+		free(rtp);
+	tagq_free(sp, tqp);
+	return (1);
 }
 
 /*

@@ -12,7 +12,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: api.c,v 8.28 2000/04/21 19:00:32 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:32 $";
+static const char sccsid[] = "$Id: api.c,v 8.29 2000/04/30 16:55:39 skimo Exp $ (Berkeley) $Date: 2000/04/30 16:55:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,6 +28,7 @@ static const char sccsid[] = "$Id: api.c,v 8.28 2000/04/21 19:00:32 skimo Exp $ 
 #include <unistd.h>
 
 #include "../common/common.h"
+#include "../ex/tag.h"
 
 extern GS *__global_list;			/* XXX */
 
@@ -85,6 +86,26 @@ api_aline(sp, lno, line, len)
 }
 
 /*
+ * api_extend --
+ *	Extend file.
+ *
+ * PUBLIC: int api_extend __P((SCR *, db_recno_t));
+ */
+int 
+api_extend(sp, lno)
+	SCR *sp;
+	db_recno_t lno;
+{
+	db_recno_t lastlno;
+	if (db_last(sp, &lastlno))
+	    return 1;
+	while(lastlno < lno)
+	    if (db_append(sp, 1, lastlno++, "", 0))
+		return 1;
+	return 0;
+}
+
+/*
  * api_dline --
  *	Delete a line.
  *
@@ -95,20 +116,27 @@ api_dline(sp, lno)
 	SCR *sp;
 	db_recno_t lno;
 {
-	return (db_delete(sp, lno));
+	if (db_delete(sp, lno))
+		return 1;
+	/* change current line if deleted line is that one
+	 * or one berfore that
+	 */
+	if (sp->lno >= lno && sp->lno > 1)
+		sp->lno--;
+	return 0;
 }
 
 /*
  * api_gline --
  *	Get a line.
  *
- * PUBLIC: int api_gline __P((SCR *, db_recno_t, char **, size_t *));
+ * PUBLIC: int api_gline __P((SCR *, db_recno_t, CHAR_T **, size_t *));
  */
 int
 api_gline(sp, lno, linepp, lenp)
 	SCR *sp;
 	db_recno_t lno;
-	char **linepp;
+	CHAR_T **linepp;
 	size_t *lenp;
 {
 	int isempty;
@@ -519,4 +547,98 @@ api_run_str(sp, cmd)
 	char *cmd;
 {
 	return (ex_run_str(sp, NULL, cmd, strlen(cmd), 0, 0));
+}
+
+/*
+ * PUBLIC: TAGQ * api_tagq_new __P((SCR*, char*));
+ */
+TAGQ *
+api_tagq_new(sp, tag)
+	SCR *sp;
+	char *tag;
+{
+	TAGQ *tqp;
+	size_t len;
+
+	/* Allocate and initialize the tag queue structure. */
+	len = strlen(tag);
+	CALLOC_GOTO(sp, tqp, TAGQ *, 1, sizeof(TAGQ) + len + 1);
+	CIRCLEQ_INIT(&tqp->tagq);
+	tqp->tag = tqp->buf;
+	memcpy(tqp->tag, tag, (tqp->tlen = len) + 1);
+
+	return tqp;
+
+alloc_err:
+	return (NULL);
+}
+
+/*
+ * PUBLIC: void api_tagq_add __P((SCR*, TAGQ*, char*, char *, char *));
+ */
+void
+api_tagq_add(sp, tqp, filename, search, msg)
+	SCR *sp;
+	TAGQ *tqp;
+	char *filename, *search, *msg;
+{
+	TAG *tp;
+	size_t flen = strlen(filename);
+	size_t slen = strlen(search);
+
+	CALLOC_GOTO(sp, tp, TAG *, 1, sizeof(TAG) - 1 + flen + 1 + slen + 1);
+	tp->fname = tp->buf;
+	memcpy(tp->fname, filename, flen + 1);
+	tp->fnlen = flen;
+	tp->search = tp->fname + flen + 1;
+	memcpy(tp->search, search, slen + 1);
+	tp->slen = slen;
+	CIRCLEQ_INSERT_TAIL(&tqp->tagq, tp, q);
+
+alloc_err:
+	return;
+}
+
+/*
+ * PUBLIC: int api_tagq_push __P((SCR*, TAGQ**));
+ */
+int
+api_tagq_push(sp, tqpp)
+	SCR *sp;
+	TAGQ **tqpp;
+{
+	FREF *frp;
+	db_recno_t lno;
+	size_t cno;
+	int istmp;
+	TAGQ *tqp;
+
+	tqp = *tqpp;
+
+	*tqpp = 0;
+
+	/* Check to see if we found anything. */
+	if (tqp->tagq.cqh_first == (void *)&tqp->tagq) {
+		free(tqp);
+		return 0;
+	}
+
+	tqp->current = tqp->tagq.cqh_first;
+
+	if (tagq_push(sp, tqp, 0, 0))
+		return 1;
+
+	return (0);
+}
+
+/*
+ * PUBLIC: void api_tagq_free __P((SCR*, TAGQ*));
+ */
+void
+api_tagq_free(sp, tqp)
+	SCR *sp;
+	TAGQ *tqp;
+{
+	if (tqp)
+		tagq_free(sp, tqp);
 }
