@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: delete.c,v 8.9 1994/03/08 19:37:57 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:37:57 $";
+static char sccsid[] = "$Id: delete.c,v 8.10 1994/04/26 13:09:32 bostic Exp $ (Berkeley) $Date: 1994/04/26 13:09:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,7 +40,7 @@ delete(sp, ep, fm, tm, lmode)
 	int lmode;
 {
 	recno_t lno;
-	size_t blen, len, tlen;
+	size_t blen, len, nlen, tlen;
 	char *bp, *p;
 	int eof;
 
@@ -106,47 +106,42 @@ delete(sp, ep, fm, tm, lmode)
 	/*
 	 * Case 4 -- delete over multiple lines.
 	 *
-	 * Figure out how big a buffer we need.
+	 * Copy the start partial line into place.
 	 */
-	if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
-		GETLINE_ERR(sp, fm->lno);
-		return (1);
+	if ((tlen = fm->cno) != 0) {
+		if ((p = file_gline(sp, ep, fm->lno, NULL)) == NULL) {
+			GETLINE_ERR(sp, fm->lno);
+			return (1);
+		}
+		GET_SPACE_RET(sp, bp, blen, tlen + 256);
+		memmove(bp, p, tlen);
 	}
-	tlen = len;
-	if ((p = file_gline(sp, ep, tm->lno, &len)) == NULL) {
-		GETLINE_ERR(sp, tm->lno);
-		return (1);
-	}
-
-	/*
-	 * XXX
-	 * We can overflow memory here, if (len + tlen) > SIZE_T_MAX.  The
-	 * only portable way I've found to test is to depend on the overflow
-	 * being less than the value.
-	 */
-	tlen += len;
-	if (len > tlen) {
-		msgq(sp, M_ERR, "Error: line length overflow");
-		return (1);
-	}
-
-	GET_SPACE_RET(sp, bp, blen, tlen);
-
-	/* Copy the start partial line into place. */
-	if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
-		GETLINE_ERR(sp, fm->lno);
-		goto err;
-	}
-	memmove(bp, p, fm->cno);
-	tlen = fm->cno;
 
 	/* Copy the end partial line into place. */
 	if ((p = file_gline(sp, ep, tm->lno, &len)) == NULL) {
 		GETLINE_ERR(sp, tm->lno);
 		goto err;
 	}
-	memmove(bp + tlen, p + (tm->cno + 1), len - (tm->cno + 1));
-	tlen += len - (tm->cno + 1);
+	if (len != 0 && tm->cno != len - 1) {
+		/*
+		 * XXX
+		 * We can overflow memory here, if the total length is greater
+		 * than SIZE_T_MAX.  The only portable way I've found to test
+		 * is depending on the overflow being less than the value.
+		 */
+		nlen = (len - (tm->cno + 1)) + tlen;
+		if (tlen > nlen) {
+			msgq(sp, M_ERR, "Error: line length overflow");
+			goto err;
+		}
+		if (tlen == 0) {
+			GET_SPACE_RET(sp, bp, blen, nlen);
+		} else
+			ADD_SPACE_RET(sp, bp, blen, nlen);
+
+		memmove(bp + tlen, p + (tm->cno + 1), len - (tm->cno + 1));
+		tlen += len - (tm->cno + 1);
+	}
 
 	/* Set the current line. */
 	if (file_sline(sp, ep, fm->lno, bp, tlen))
@@ -155,7 +150,7 @@ delete(sp, ep, fm, tm, lmode)
 	/* Delete the last and intermediate lines. */
 	for (lno = tm->lno; lno > fm->lno; --lno)
 		if (file_dline(sp, ep, lno))
-			return (1);
+			goto err;
 
 	/* Reporting. */
 vdone:	sp->rptlines[L_DELETED] += tm->lno - fm->lno + 1;
@@ -166,7 +161,7 @@ done:	if (bp != NULL)
 	return (0);
 
 	/* Free memory. */
-err:	FREE_SPACE(sp, bp, blen);
-
+err:	if (bp != NULL)
+		FREE_SPACE(sp, bp, blen);
 	return (1);
 }
