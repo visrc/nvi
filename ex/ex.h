@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 5.16 1992/05/21 12:56:13 bostic Exp $ (Berkeley) $Date: 1992/05/21 12:56:13 $
+ *	$Id: ex.h,v 5.17 1992/06/07 13:47:23 bostic Exp $ (Berkeley) $Date: 1992/06/07 13:47:23 $
  */
 
 #include "exf.h"
@@ -93,6 +93,9 @@ extern char *defcmdarg[2];	/* Default array. */
 		return (1); \
 	} \
 }
+
+/* Control character. */
+#define	ctrl(ch)	((ch) & 0x1f)
 
 void	 ex __P((void));
 char	*linespec __P((char *, EXCMDARG *));
