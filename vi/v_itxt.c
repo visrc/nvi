@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 8.3 1993/06/28 18:38:35 bostic Exp $ (Berkeley) $Date: 1993/06/28 18:38:35 $";
+static char sccsid[] = "$Id: v_itxt.c,v 8.4 1993/07/06 08:55:56 bostic Exp $ (Berkeley) $Date: 1993/07/06 08:55:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -261,7 +261,7 @@ v_iO(sp, ep, vp, fm, tm, rp)
 	if (F_ISSET(vp, VC_ISDOT))
 		LF_SET(TXT_REPLAY);
 	for (cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
-		if (fm->lno == 1) {
+		if (sp->lno == 1) {
 			if (file_lline(sp, ep, &lno))
 				return (1);
 			if (lno != 0)
@@ -271,8 +271,7 @@ v_iO(sp, ep, vp, fm, tm, rp)
 			ai_line = OOBLNO;
 		} else {
 insert:			p = "";
-			len = 0;
-			if (file_iline(sp, ep, sp->lno, p, len))
+			if (file_iline(sp, ep, sp->lno, p, 0))
 				return (1);
 			if ((p = file_gline(sp, ep, sp->lno, &len)) == NULL) {
 				GETLINE_ERR(sp, sp->lno);
