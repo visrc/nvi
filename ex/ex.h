@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.14 1993/09/09 14:27:40 bostic Exp $ (Berkeley) $Date: 1993/09/09 14:27:40 $
+ *	$Id: ex.h,v 8.15 1993/09/27 17:20:07 bostic Exp $ (Berkeley) $Date: 1993/09/27 17:20:07 $
  */
 
 struct _excmdarg;
@@ -128,7 +128,8 @@ int	ex_init __P((SCR *, EXF *));
 int	ex_print __P((SCR *, EXF *, MARK *, MARK *, int));
 int	ex_readfp __P((SCR *, EXF *, char *, FILE *, MARK *, recno_t *, int));
 int	ex_suspend __P((SCR *));
-int	ex_writefp __P((SCR *, EXF *, char *, FILE *, MARK *, MARK *, int));
+int	ex_writefp __P((SCR *, EXF *,					\
+	    char *, FILE *, MARK *, MARK *, u_long *, u_long *));
 void	ex_refresh __P((SCR *, EXF *));
 
 #define	EXPROTO(type, name)						\
