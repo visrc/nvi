@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: seq.h,v 9.2 1995/01/11 15:58:34 bostic Exp $ (Berkeley) $Date: 1995/01/11 15:58:34 $
+ *	$Id: seq.h,v 9.3 1995/02/15 16:12:22 bostic Exp $ (Berkeley) $Date: 1995/02/15 16:12:22 $
  */
 
 /*
@@ -46,6 +46,7 @@ struct _seq {
 	u_int8_t flags;
 };
 
+void	 seq_close __P((GS *));
 int	 seq_delete __P((SCR *, CHAR_T *, size_t, enum seqtype));
 int	 seq_dump __P((SCR *, enum seqtype, int));
 SEQ	*seq_find __P((SCR *, SEQ **, CHAR_T *, size_t, enum seqtype, int *));

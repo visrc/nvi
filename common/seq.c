@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 9.3 1995/02/12 18:36:30 bostic Exp $ (Berkeley) $Date: 1995/02/12 18:36:30 $";
+static char sccsid[] = "$Id: seq.c,v 9.4 1995/02/15 16:12:06 bostic Exp $ (Berkeley) $Date: 1995/02/15 16:12:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -235,6 +235,28 @@ seq_find(sp, lastqp, input, ilen, stype, ispartialp)
 	if (lastqp != NULL)
 		*lastqp = lqp;
 	return (NULL);
+}
+
+/*
+ * seq_close --
+ *	Discard all sequences.
+ */
+void
+seq_close(gp)
+	GS *gp;
+{
+	SEQ *qp;
+
+	while ((qp = gp->seqq.lh_first) != NULL) {
+		if (qp->name != NULL)
+			free(qp->name);
+		if (qp->input != NULL)
+			free(qp->input);
+		if (qp->output != NULL)
+			free(qp->output);
+		LIST_REMOVE(qp, q);
+		free(qp);
+	}
 }
 
 /*
