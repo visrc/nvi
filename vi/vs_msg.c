@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_msg.c,v 10.74 1996/08/16 18:56:39 bostic Exp $ (Berkeley) $Date: 1996/08/16 18:56:39 $";
+static const char sccsid[] = "$Id: vs_msg.c,v 10.75 1996/08/17 11:53:46 bostic Exp $ (Berkeley) $Date: 1996/08/17 11:53:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,7 +40,6 @@ typedef enum {
 static void	vs_divider __P((SCR *));
 static void	vs_msgsave __P((SCR *, mtype_t, char *, size_t));
 static void	vs_output __P((SCR *, mtype_t, const char *, int));
-static int	vs_scr_resolve __P((SCR *, int));
 static void	vs_scroll __P((SCR *, int *, sw_t));
 static void	vs_wait __P((SCR *, int *, sw_t));
 
@@ -645,36 +644,13 @@ vs_ex_resolve(sp, continuep)
 
 /*
  * vs_resolve --
- *	Cycle through each screen, dealing with message output.
- *
- * This routine is called from the main vi loop to periodically ensure that
- * the user has seen any messages that have been displayed.
- *
- * PUBLIC: int vs_resolve __P((SCR *, int));
- */
-int
-vs_resolve(sp, forcewait)
-	SCR *sp;
-	int forcewait;
-{
-	SCR *tsp;
-
-	for (tsp = sp->gp->dq.cqh_first;
-	    tsp != (void *)&sp->gp->dq; tsp = tsp->q.cqe_next)
-		if (vs_scr_resolve(tsp, forcewait))
-			return (1);
-	return (0);
-}
-
-/*
- * vs_scr_resolve --
  *	Deal with message output.
  *
  * This routine is called from the main vi loop to periodically ensure that
  * the user has seen any messages that have been displayed.
  */
-static int
-vs_scr_resolve(sp, forcewait)
+int
+vs_resolve(sp, forcewait)
 	SCR *sp;
 	int forcewait;
 {
