@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_status.c,v 5.1 1992/04/18 19:39:46 bostic Exp $ (Berkeley) $Date: 1992/04/18 19:39:46 $";
+static char sccsid[] = "$Id: v_status.c,v 5.2 1992/04/19 10:54:08 bostic Exp $ (Berkeley) $Date: 1992/04/19 10:54:08 $";
 #endif /* not lint */
 
 #include <stdio.h>
@@ -23,7 +23,7 @@ static char sccsid[] = "$Id: v_status.c,v 5.1 1992/04/18 19:39:46 bostic Exp $ (
 MARK
 v_status()
 {
-	CMDARG cmd;
+	EXCMDARG cmd;
 
 	SETCMDARG(cmd, C_FILE, 2, cursor, cursor, 0, "");
 	ex_file(&cmd);

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_zexit.c,v 5.1 1992/04/18 19:39:55 bostic Exp $ (Berkeley) $Date: 1992/04/18 19:39:55 $";
+static char sccsid[] = "$Id: v_zexit.c,v 5.2 1992/04/19 10:54:10 bostic Exp $ (Berkeley) $Date: 1992/04/19 10:54:10 $";
 #endif /* not lint */
 
 #include <stdio.h>
@@ -28,7 +28,7 @@ v_xit(m, cnt, key)
 	long	cnt;	/* ignored */
 	int	key;	/* must be a second 'Z' */
 {
-	CMDARG cmd;
+	EXCMDARG cmd;
 	/* if second char wasn't 'Z', fail */
 	if (key != 'Z')
 	{
