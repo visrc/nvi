@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 5.12 1992/10/18 13:07:46 bostic Exp $ (Berkeley) $Date: 1992/10/18 13:07:46 $";
+static char sccsid[] = "$Id: ex_global.c,v 5.13 1992/10/29 14:39:15 bostic Exp $ (Berkeley) $Date: 1992/10/29 14:39:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -63,7 +63,7 @@ global(cmdp, cmd)
 	if (doingglobal)
 	{
 		msg("Can't nest global commands.");
-		rptlines = -1L;
+		curf->rptlines = -1L;
 		return;
 	}
 
@@ -123,9 +123,9 @@ global(cmdp, cmd)
 				 * the original copy of the command line)
 				 */
 				strcpy(cmdln, cmdptr);
-				rptlines = 0L;
+				curf->rptlines = 0L;
 				ex_cmd(cmdln);
-				nchanged += rptlines;
+				nchanged += curf->rptlines;
 			}
 		}
 	}
@@ -136,5 +136,5 @@ global(cmdp, cmd)
 	free(re);
 
 	/* Reporting...*/
-	rptlines = nchanged;
+	curf->rptlines = nchanged;
 }
