@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.8 1996/02/21 15:43:10 bostic Exp $ (Berkeley) $Date: 1996/02/21 15:43:10 $
+#	$Id: Makefile.in,v 8.9 1996/02/21 18:59:31 bostic Exp $ (Berkeley) $Date: 1996/02/21 18:59:31 $
 
 #GCCF=	-Wall
 #DEBUG=	-DDEBUG
@@ -510,7 +510,7 @@ memmove.o: ../clib/memmove.c
 	${CC} ${CFLAGS} -DMEMMOVE $?
 memset.o: ../clib/memset.c
 	${CC} ${CFLAGS} $?
-mktemp.o: ../clib/mktemp.c
+mkstemp.o: ../clib/mkstemp.c
 	${CC} ${CFLAGS} $?
 mmap.o: ../clib/mmap.c
 	${CC} ${CFLAGS} $?
