@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.17 1993/09/08 09:27:12 bostic Exp $ (Berkeley) $Date: 1993/09/08 09:27:12 $
+ *	$Id: screen.h,v 8.18 1993/09/10 14:47:29 bostic Exp $ (Berkeley) $Date: 1993/09/10 14:47:29 $
  */
 
 /*
@@ -204,6 +204,10 @@ typedef struct _scr {
 	HDR	 seqhdr;		/* Linked list of all sequences. */
 	HDR	 seq[UCHAR_MAX];	/* Linked character sequences. */
 
+	char const *time_msg;		/* ITIMER_REAL message. */
+	struct itimerval time_value;	/* ITIMER_REAL saved value. */
+	sig_ret_t time_handler;		/* ITIMER_REAL saved handler. */
+
 	OPTION	 opts[O_OPTIONCOUNT];	/* Ex/vi: options. */
 
 /*
@@ -211,7 +215,7 @@ typedef struct _scr {
  * This is the set of routines that have to be written to add a screen.
  */
 	void	 (*s_bell) __P((struct _scr *));
-	int	 (*s_busy_cursor) __P((struct _scr *, char *));
+	int	 (*s_busy) __P((struct _scr *, char const *));
 	int	 (*s_change) __P((struct _scr *,
 		     struct _exf *, recno_t, enum operation));
 	size_t	 (*s_chposition) __P((struct _scr *,
@@ -269,8 +273,9 @@ typedef struct _scr {
 #define	S_REFRESH	0x0200000	/* Refresh the screen. */
 #define	S_RESIZE	0x0400000	/* Resize the screen. */
 #define	S_RE_SET	0x0800000	/* The file's RE has been set. */
-#define	S_TERMSIGNAL	0x1000000	/* Termination signal received. */
-#define	S_UPDATE_MODE	0x2000000	/* Don't repaint modeline. */
+#define	S_TIMER_SET	0x1000000	/* If a busy timer is running. */
+#define	S_TERMSIGNAL	0x2000000	/* Termination signal received. */
+#define	S_UPDATE_MODE	0x4000000	/* Don't repaint modeline. */
 
 #define	S_SCREEN_RETAIN			/* Retain at screen create. */	\
 	(S_MODE_EX | S_MODE_VI | S_ISFROMTTY | S_RE_SET)
