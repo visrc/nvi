@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 8.62 1994/09/27 14:22:59 bostic Exp $ (Berkeley) $Date: 1994/09/27 14:22:59 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 8.63 1994/10/13 17:01:07 bostic Exp $ (Berkeley) $Date: 1994/10/13 17:01:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -264,7 +264,8 @@ EXCMDLIST const cmds[] = {
 	    "prev[ious][!]",
 	    "edit the previous file in the file argument list"},
 /* C_PUT */
-	{"put",		ex_put,		E_ADDR1|E_AUTOPRINT|E_NORC|E_ZERO,
+	{"put",		ex_put,	
+	    E_ADDR1|E_AUTOPRINT|E_NORC|E_ZERO|E_ZERODEF,
 	    "b",
 	    "[line] pu[t] [buffer]",
 	    "append a cut buffer to the line"},
