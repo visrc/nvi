@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 5.54 1993/05/15 10:06:58 bostic Exp $ (Berkeley) $Date: 1993/05/15 10:06:58 $
+ *	$Id: exf.h,v 5.55 1993/05/16 12:24:46 bostic Exp $ (Berkeley) $Date: 1993/05/16 12:24:46 $
  */
 
 					/* Undo direction. */
@@ -50,18 +50,25 @@ typedef struct _exf {
 
 	char	*icommand;		/* Initial command. */
 
+	char	*rcv_path;		/* Recover file name. */
+
 #define	F_ICOMMAND	0x0001		/* Initial command set. */
 #define	F_IGNORE	0x0002		/* File to be ignored. */
-#define	F_MODIFIED	0x0004		/* File has been modified. */
-#define	F_NAMECHANGED	0x0008		/* File name was changed. */
-#define	F_NOLOG		0x0010		/* Logging turned off. */
-#define	F_NONAME	0x0020		/* File has no name. */
-#define	F_NOSETPOS	0x0040		/* No line position. */
-#define	F_RDONLY	0x0080		/* File is read-only. */
-#define	F_UNDO		0x0100		/* No change since last undo. */
+#define	F_FIRSTMODIFY	0x0004		/* File not yet modified. */
+#define	F_MODIFIED	0x0008		/* File is currently dirty. */
+#define	F_NAMECHANGED	0x0010		/* File name was changed. */
+#define	F_NOLOG		0x0020		/* Logging turned off. */
+#define	F_NONAME	0x0040		/* File has no name. */
+#define	F_NOSETPOS	0x0080		/* No line position. */
+#define	F_RDONLY	0x0100		/* File is read-only. */
+#define	F_RCV_ALRM	0x0200		/* File should be synced. */
+#define	F_RCV_NORM	0x0400		/* Don't remove the recovery file. */
+#define	F_RCV_ON	0x0800		/* File is recoverable. */
+#define	F_UNDO		0x1000		/* No change since last undo. */
 
 #define	F_CLOSECLR			/* Flags to clear on close. */	\
-	(F_MODIFIED | F_NAMECHANGED | F_NOLOG | F_RDONLY | F_UNDO)
+	(F_MODIFIED | F_NAMECHANGED | F_NOLOG | F_RDONLY | F_RCV_NORM |	\
+	    F_RCV_ON | F_UNDO)
 	u_int	 flags;
 } EXF;
 
@@ -78,22 +85,19 @@ typedef struct _exf {
 }
 
 /* File routines. */
-int	 file_aline __P((struct _scr *,
-	    struct _exf *, recno_t, char *, size_t));
-int	 file_dline __P((struct _scr *, struct _exf *, recno_t));
+int	 file_aline __P((struct _scr *, EXF *, recno_t, char *, size_t));
+int	 file_dline __P((struct _scr *, EXF *, recno_t));
 EXF	*file_first __P((struct _scr *, int));
-EXF	*file_get __P((struct _scr *, struct _exf *, char *, int));
-char	*file_gline __P((struct _scr *, struct _exf *, recno_t, size_t *));
-int	 file_iline __P((struct _scr *,
-	    struct _exf *, recno_t, char *, size_t));
-recno_t	 file_lline __P((struct _scr *, struct _exf *));
-EXF	*file_next __P((struct _scr *, struct _exf *, int));
-EXF	*file_prev __P((struct _scr *, struct _exf *, int));
-char	*file_rline __P((struct _scr *, struct _exf *, recno_t, size_t *));
+EXF	*file_get __P((struct _scr *, EXF *, char *, int));
+char	*file_gline __P((struct _scr *, EXF *, recno_t, size_t *));
+int	 file_iline __P((struct _scr *, EXF *, recno_t, char *, size_t));
+int	 file_lline __P((struct _scr *, EXF *, recno_t *));
+EXF	*file_next __P((struct _scr *, EXF *, int));
+EXF	*file_prev __P((struct _scr *, EXF *, int));
+char	*file_rline __P((struct _scr *, EXF *, recno_t, size_t *));
 int	 file_set __P((struct _scr *, int, char *[]));
-int	 file_sline __P((struct _scr *,
-	    struct _exf *, recno_t, char *, size_t));
-EXF	*file_start __P((struct _scr *, struct _exf *));
-int	 file_stop __P((struct _scr *, struct _exf *, int));
-int	 file_write __P((struct _scr *, struct _exf *,
+int	 file_sline __P((struct _scr *, EXF *, recno_t, char *, size_t));
+EXF	*file_start __P((struct _scr *, EXF *, char *));
+int	 file_stop __P((struct _scr *, EXF *, int));
+int	 file_write __P((struct _scr *, EXF *,
 	    struct _mark *, struct _mark *, char *, int));
