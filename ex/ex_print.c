@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 5.16 1992/10/29 14:39:36 bostic Exp $ (Berkeley) $Date: 1992/10/29 14:39:36 $";
+static char sccsid[] = "$Id: ex_print.c,v 5.17 1992/11/01 22:51:43 bostic Exp $ (Berkeley) $Date: 1992/11/01 22:51:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -15,14 +15,13 @@ static char sccsid[] = "$Id: ex_print.c,v 5.16 1992/10/29 14:39:36 bostic Exp $ 
 #include <curses.h>
 #include <limits.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "vi.h"
 #include "excmd.h"
 #include "options.h"
 #include "term.h"
 #include "extern.h"
-
-static int print __P((EXCMDARG *, int));
 
 /*
  * ex_list -- :[line [,line]] l[ist] [count] [flags]
@@ -40,7 +39,11 @@ ex_list(cmdp)
 		msg("Usage: %s.", cmdp->cmd->usage);
 		return (1);
 	}
-	return (print(cmdp, E_F_LIST | flags));
+	if (ex_print(curf, &cmdp->addr1, &cmdp->addr2, E_F_LIST | flags))
+		return (1);
+	curf->lno = cmdp->addr2.lno;
+	curf->cno = cmdp->addr2.cno;
+	return (0);
 }
 
 /*
@@ -59,16 +62,20 @@ ex_number(cmdp)
 		msg("Usage: %s.", cmdp->cmd->usage);
 		return (1);
 	}
-	return (print(cmdp, E_F_HASH | flags));
+	if (ex_print(curf, &cmdp->addr1, &cmdp->addr2, E_F_HASH | flags))
+		return (1);
+	curf->lno = cmdp->addr2.lno;
+	curf->cno = cmdp->addr2.cno;
+	return (0);
 }
 
 /*
- * ex_print -- :[line [,line]] p[rint] [count] [flags]
+ * ex_pr -- :[line [,line]] p[rint] [count] [flags]
  *	Display the addressed lines.
  *	The only valid flags are '#' and 'l'.
  */
 int
-ex_print(cmdp)
+ex_pr(cmdp)
 	EXCMDARG *cmdp;
 {
 	int flags;
@@ -78,48 +85,55 @@ ex_print(cmdp)
 		msg("Usage: %s.", cmdp->cmd->usage);
 		return (1);
 	}
-	return (print(cmdp, E_F_PRINT | flags));
+	if (ex_print(curf, &cmdp->addr1, &cmdp->addr2, E_F_PRINT | flags))
+		return (1);
+	curf->lno = cmdp->addr2.lno;
+	curf->cno = cmdp->addr2.cno;
+	return (0);
 }
 
 /*
- * print --
+ * ex_print --
  *	Print the selected lines.
  */
-static int
-print(cmdp, flags)
-	EXCMDARG *cmdp;
+int
+ex_print(ep, fp, tp, flags)
+	EXF *ep;
+	MARK *fp, *tp;
 	register int flags;
 {
-	register recno_t cur, end;
 	register int ch, col, rlen;
+	recno_t from, to;
 	size_t len;
 	int cnt;
 	u_char *p;
 	char buf[10];
 
-	for (cur = cmdp->addr1.lno, end = cmdp->addr2.lno; cur <= end; ++cur) {
-
+#define	WCHECK(ch) {							\
+	if (col == ep->cols) {						\
+		(void)fprintf(ep->stdfp, "\n");				\
+		col = 0;						\
+	}								\
+	(void)putc(ch, ep->stdfp);					\
+	++col;								\
+}
+	for (from = fp->lno, to = tp->lno; from <= to; ++from) {
 		/* Display the line number. */
 		if (flags & E_F_HASH) {
-			(void)fprintf(curf->stdfp, "%7ld ", cur);
+			(void)fprintf(ep->stdfp, "%7ld ", from);
 			col = 8;
 		} else
 			col = 0;
 	
-#define	WCHECK(ch) {							\
-	if (col == curf->cols) {					\
-		(void)fprintf(curf->stdfp, "\n");			\
-		col = 0;						\
-	}								\
-	(void)putc(ch, curf->stdfp);					\
-	++col;								\
-}
 		/*
 		 * Display the line.  The format for E_F_PRINT isn't very good,
 		 * especially in handling end-of-line tabs, but they're almost
 		 * backward compatible.
 		 */
-		p = file_gline(curf, cur, &len);
+		if ((p = file_gline(ep, from, &len)) == NULL) {
+			GETLINE_ERR(from);
+			return (1);
+		}
 		for (rlen = len; rlen--;) {
 			ch = *p++;
 			if (flags & E_F_LIST)
@@ -138,18 +152,18 @@ print(cmdp, flags)
 			else {
 				ch &= 0x7f;
 				if (ch == '\t') {
-					while (col < curf->cols &&
+					while (col < ep->cols &&
 					    ++col % LVAL(O_TABSTOP))
-						(void)putc(' ', curf->stdfp);
-					if (col == curf->cols) {
+						(void)putc(' ', ep->stdfp);
+					if (col == ep->cols) {
 						col = 0;
-						(void)putc('\n', curf->stdfp);
+						(void)putc('\n', ep->stdfp);
 					}
 				} else if (isprint(ch)) {
 					WCHECK(ch);
 				} else if (ch == '\n') {
 					col = 0;
-					(void)putc('\n', curf->stdfp);
+					(void)putc('\n', ep->stdfp);
 				} else {
 					WCHECK('^');
 					WCHECK(ch + 0x40);
@@ -159,11 +173,7 @@ print(cmdp, flags)
 		if (flags & E_F_LIST)
 			WCHECK('$');
 
-		/* The print commands require a keystroke to continue. */
-		(void)putc('\n', curf->stdfp);
+		(void)putc('\n', ep->stdfp);
 	}
-	curf->lno = cmdp->addr2.lno;
-	curf->cno = cmdp->addr2.cno;
-	
 	return (0);
 }
