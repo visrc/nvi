@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 5.20 1992/11/07 19:01:00 bostic Exp $ (Berkeley) $Date: 1992/11/07 19:01:00 $";
+static char sccsid[] = "$Id: v_search.c,v 5.21 1992/11/11 18:28:37 bostic Exp $ (Berkeley) $Date: 1992/11/11 18:28:37 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -46,10 +46,11 @@ v_searchn(vp, fm, tm, rp)
 		    fm, NULL, NULL, SEARCH_MSG | SEARCH_PARSE)) == NULL)
 			return (1);
 		break;
-	default:
 	case NOTSET:
 		msg("No previous search pattern.");
 		return (1);
+	default:
+		abort();
 	}
 	*rp = *m;
 	return (0);
@@ -77,10 +78,11 @@ v_searchN(vp, fm, tm, rp)
 		    fm, NULL, NULL, SEARCH_MSG | SEARCH_PARSE)) == NULL)
 			return (1);
 		break;
-	default:
 	case NOTSET:
 		msg("No previous search pattern.");
 		return (1);
+	default:
+		abort();
 	}
 	*rp = *m;
 	return (0);
