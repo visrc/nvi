@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_right.c,v 8.5 1994/03/08 19:41:26 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:41:26 $";
+static char sccsid[] = "$Id: v_right.c,v 8.6 1994/03/14 10:44:10 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:44:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -54,7 +54,7 @@ v_right(sp, ep, vp)
 		v_eol(sp, ep, NULL);
 		return (1);
 	}
-		
+
 	/*
 	 * Non-motion commands move to the end of the range.  VC_D and
 	 * VC_Y stay at the start.  Ignore VC_C and VC_S.  Adjust the

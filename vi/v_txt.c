@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.90 1994/03/13 12:26:47 bostic Exp $ (Berkeley) $Date: 1994/03/13 12:26:47 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.91 1994/03/14 10:43:19 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:43:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -43,7 +43,7 @@ static int	 txt_margin __P((SCR *, TEXT *, int *, ARG_CHAR_T));
 static int	 txt_outdent __P((SCR *, TEXT *));
 static void	 txt_showmatch __P((SCR *, EXF *));
 static void	 txt_Rcleanup __P((SCR *,
-		    TEXTH *, TEXT *, const char *, const size_t));	
+		    TEXTH *, TEXT *, const char *, const size_t));
 static int	 txt_resolve __P((SCR *, EXF *, TEXTH *));
 static void	 txt_unmap __P((SCR *, TEXT *, u_int *));
 
@@ -322,7 +322,7 @@ next_ch:	if (term_key(sp, &ikey, iflags) != INP_OK)
 			}
 		} else
 			ab_cnt = 0;
-			
+
 		/*
 		 * !!!
 		 * Historic feature.  If the first character of the input is
@@ -769,7 +769,7 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 			 * tty interface and the historic tty driver behavior,
 			 * respectively, and the default is the same as the
 			 * historic vi behavior.
-			 */ 
+			 */
 			if (LF_ISSET(TXT_TTYWERASE))
 				while (sp->cno > max) {
 					--sp->cno;
@@ -1249,7 +1249,7 @@ txt_auto(sp, ep, lno, aitp, len, tp)
 {
 	size_t nlen;
 	char *p, *t;
-	
+
 	if (aitp == NULL) {
 		if ((p = t = file_gline(sp, ep, lno, &len)) == NULL)
 			return (0);
@@ -1432,7 +1432,7 @@ nothex:		tp->lb[sp->cno] = savec;
 		*was_hex = 0;
 		return (0);
 	}
-		
+
 	ch = pushc;
 	if (term_push(sp, &ch, 1, 0, CH_NOMAP | CH_QUOTED))
 		return (1);

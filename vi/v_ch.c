@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ch.c,v 8.6 1994/03/14 08:59:26 bostic Exp $ (Berkeley) $Date: 1994/03/14 08:59:26 $";
+static char sccsid[] = "$Id: v_ch.c,v 8.7 1994/03/14 10:42:37 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:42:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -113,7 +113,7 @@ v_cht(sp, ep, vp)
 	if (v_chf(sp, ep, vp))
 		return (1);
 
-	/* 
+	/*
 	 * v_chf places the cursor on the character, and the 't' command
 	 * wants it to its left.  We know this is safe since we had to
 	 * have moved right for v_chf() to have succeeded.
@@ -123,7 +123,7 @@ v_cht(sp, ep, vp)
 	VIP(sp)->csearchdir = tSEARCH;
 	return (0);
 }
-	
+
 /*
  * v_chf -- [count]fc
  *	Search forward in the line for the next occurrence of the character.
@@ -200,7 +200,7 @@ v_chT(sp, ep, vp)
 	if (v_chF(sp, ep, vp))
 		return (1);
 
-	/* 
+	/*
 	 * v_chF places the cursor on the character, and the 'T' command
 	 * wants it to its right.  We know this is safe since we had to
 	 * have moved left for v_chF() to have succeeded.

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_undo.c,v 8.8 1994/03/08 19:41:41 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:41:41 $";
+static char sccsid[] = "$Id: v_undo.c,v 8.9 1994/03/14 10:45:38 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:45:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -63,7 +63,7 @@ v_Undo(sp, ep, vp)
 
 	return (log_setline(sp, ep));
 }
-	
+
 /*
  * v_undo -- u
  *	Undo the last change.

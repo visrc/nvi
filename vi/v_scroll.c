@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 8.13 1994/03/10 12:09:50 bostic Exp $ (Berkeley) $Date: 1994/03/10 12:09:50 $";
+static char sccsid[] = "$Id: v_scroll.c,v 8.14 1994/03/14 10:44:29 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:44:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -90,7 +90,7 @@ v_lgoto(sp, ep, vp)
 	return (0);
 }
 
-/* 
+/*
  * v_home -- [count]H
  *	Move to the first non-blank character of the logical line
  *	count - 1 from the top of the screen, 0 by default.
@@ -255,7 +255,7 @@ v_hpageup(sp, ep, vp)
 	EXF *ep;
 	VICMDARG *vp;
 {
-	/* 
+	/*
 	 * Half screens always succeed unless already at SOF.
 	 *
 	 * !!!
@@ -283,7 +283,7 @@ v_hpagedown(sp, ep, vp)
 	EXF *ep;
 	VICMDARG *vp;
 {
-	/* 
+	/*
 	 * Half screens always succeed unless already at EOF.
 	 *
 	 * !!!

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_util.c,v 8.7 1994/03/08 19:41:41 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:41:41 $";
+static char sccsid[] = "$Id: v_util.c,v 8.8 1994/03/14 10:45:52 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:45:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -63,7 +63,7 @@ void
 v_eol(sp, ep, mp)
 	SCR *sp;
 	EXF *ep;
-	MARK *mp;	
+	MARK *mp;
 {
 	size_t len;
 
@@ -122,7 +122,7 @@ v_sol(sp)
  * v_isempty --
  *	Return if the line contains nothing but white-space characters.
  */
-int 
+int
 v_isempty(p, len)
 	char *p;
 	size_t len;

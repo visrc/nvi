@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_word.c,v 8.16 1994/03/09 09:38:23 bostic Exp $ (Berkeley) $Date: 1994/03/09 09:38:23 $";
+static char sccsid[] = "$Id: v_word.c,v 8.17 1994/03/14 10:46:06 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:46:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -116,7 +116,7 @@ fword(sp, ep, vp, type)
 	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
 	cs.cs_lno = vp->m_start.lno;
 	cs.cs_cno = vp->m_start.cno;
-	if (cs_init(sp, ep, &cs)) 
+	if (cs_init(sp, ep, &cs))
 		return (1);
 
 	/*
@@ -280,7 +280,7 @@ eword(sp, ep, vp, type)
 	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
 	cs.cs_lno = vp->m_start.lno;
 	cs.cs_cno = vp->m_start.cno;
-	if (cs_init(sp, ep, &cs)) 
+	if (cs_init(sp, ep, &cs))
 		return (1);
 
 	/*
@@ -289,7 +289,7 @@ eword(sp, ep, vp, type)
 	 * it.  (This doesn't count as a word move.)  Stay at the character
 	 * past the current one, it sets word "state" for the 'e' command.
 	 */
-	if (cs.cs_flags == 0 && !isblank(cs.cs_ch)) { 
+	if (cs.cs_flags == 0 && !isblank(cs.cs_ch)) {
 		if (cs_next(sp, ep, &cs))
 			return (1);
 		if (cs.cs_flags == 0 && !isblank(cs.cs_ch))
@@ -432,7 +432,7 @@ bword(sp, ep, vp, type)
 	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
 	cs.cs_lno = vp->m_start.lno;
 	cs.cs_cno = vp->m_start.cno;
-	if (cs_init(sp, ep, &cs)) 
+	if (cs_init(sp, ep, &cs))
 		return (1);
 
 	/*
@@ -442,7 +442,7 @@ bword(sp, ep, vp, type)
 	 * character before the current one, it sets word "state" for the
 	 * 'b' command.
 	 */
-	if (cs.cs_flags == 0 && !isblank(cs.cs_ch)) { 
+	if (cs.cs_flags == 0 && !isblank(cs.cs_ch)) {
 		if (cs_prev(sp, ep, &cs))
 			return (1);
 		if (cs.cs_flags == 0 && !isblank(cs.cs_ch))

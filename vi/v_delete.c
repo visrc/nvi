@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_delete.c,v 8.9 1994/03/08 19:41:12 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:41:12 $";
+static char sccsid[] = "$Id: v_delete.c,v 8.10 1994/03/14 10:42:50 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:42:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -79,7 +79,7 @@ v_delete(sp, ep, vp)
 	recno_t nlines;
 	size_t len;
 	int lmode;
-	
+
 	/* Yank the lines. */
 	lmode = F_ISSET(vp, VM_LMODE) ? CUT_LINEMODE : 0;
 	if (cut(sp, ep, NULL, F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.54 1994/03/10 11:04:43 bostic Exp $ (Berkeley) $Date: 1994/03/10 11:04:43 $";
+static char sccsid[] = "$Id: vi.c,v 8.55 1994/03/14 10:46:30 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:46:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -166,7 +166,7 @@ vi(sp, ep)
 		 */
 		 if (saved_mode != F_ISSET(sp, S_SCREENS | S_MAJOR_CHANGE))
 			break;
-		
+
 		/* Set the absolute mark. */
 		if (F_ISSET(vp, V_ABS) && mark_set(sp, ep, ABSMARK1, &abs, 1))
 			goto err;
@@ -238,7 +238,7 @@ vi(sp, ep)
 		default:
 			abort();
 		}
-			
+
 		/* Update the cursor. */
 		sp->lno = vp->m_final.lno;
 		sp->cno = vp->m_final.cno;
@@ -478,7 +478,7 @@ getmotion(sp, ep, dm, vp)
 	 * A count may be provided both to the command and to the motion, in
 	 * which case the count is multiplicative.  For example, "3y4y" is the
 	 * same as "12yy".  This count is provided to the motion command and
-	 * not to the regular function. 
+	 * not to the regular function.
 	 */
 	cnt = motion.count = F_ISSET(&motion, VC_C1SET) ? motion.count : 1;
 	if (F_ISSET(vp, VC_C1SET)) {

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_paragraph.c,v 8.8 1994/03/08 19:41:22 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:41:22 $";
+static char sccsid[] = "$Id: v_paragraph.c,v 8.9 1994/03/14 10:43:37 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:43:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -166,7 +166,7 @@ eof:	if (vp->m_start.lno == lno - 1) {
 	 * VC_Y stay at the start.  Ignore VC_C and VC_S.
 	 *
 	 * If deleting the line (which happens if deleting to EOF),
-	 * then cursor movement is to the first nonblank. 
+	 * then cursor movement is to the first nonblank.
 	 */
 	if (F_ISSET(vp, VC_D)) {
 		F_CLR(vp, VM_RCM_MASK);

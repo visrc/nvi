@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_sentence.c,v 8.10 1994/03/08 19:41:31 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:41:31 $";
+static char sccsid[] = "$Id: v_sentence.c,v 8.11 1994/03/14 10:45:03 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:45:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -64,7 +64,7 @@ v_sentencef(sp, ep, vp)
 
 	cs.cs_lno = vp->m_start.lno;
 	cs.cs_cno = vp->m_start.cno;
-	if (cs_init(sp, ep, &cs)) 
+	if (cs_init(sp, ep, &cs))
 		return (1);
 
 	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
