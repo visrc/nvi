@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_init.c,v 10.20 1996/04/27 11:40:22 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:22 $";
+static const char sccsid[] = "$Id: ex_init.c,v 10.21 1996/05/10 18:09:15 bostic Exp $ (Berkeley) $Date: 1996/05/10 18:09:15 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -88,6 +88,11 @@ ex_screen_end(sp)
 		return (0);
 
 	rval = 0;
+
+	/* Close down script connections. */
+	if (F_ISSET(sp, SC_SCRIPT) && sscr_end(sp))
+		rval = 1;
+
 	if (argv_free(sp))
 		rval = 1;
 

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: screen.c,v 10.12 1996/05/03 09:03:33 bostic Exp $ (Berkeley) $Date: 1996/05/03 09:03:33 $";
+static const char sccsid[] = "$Id: screen.c,v 10.13 1996/05/10 18:09:34 bostic Exp $ (Berkeley) $Date: 1996/05/10 18:09:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -168,10 +168,6 @@ screen_end(sp)
 	/* Free any text input. */
 	if (sp->tiq.cqh_first != NULL)
 		text_lfree(&sp->tiq);
-
-	/* Free any script information. */
-	if (F_ISSET(sp, SC_SCRIPT))
-		sscr_end(sp);
 
 	/* Free alternate file name. */
 	if (sp->alt_name != NULL)

@@ -13,7 +13,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_script.c,v 10.27 1996/05/03 08:57:58 bostic Exp $ (Berkeley) $Date: 1996/05/03 08:57:58 $";
+static const char sccsid[] = "$Id: ex_script.c,v 10.28 1996/05/10 18:09:15 bostic Exp $ (Berkeley) $Date: 1996/05/10 18:09:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -581,7 +581,6 @@ sscr_end(sp)
 	SCR *sp;
 {
 	SCRIPT *sc;
-	int rval;
 
 	if ((sc = sp->script) == NULL)
 		return (0);
@@ -597,14 +596,14 @@ sscr_end(sp)
 	    (void)close(sc->sh_slave);
 
 	/* This should have killed the child. */
-	rval = proc_wait(sp, (long)sc->sh_pid, "script-shell", 0, 0);
+	(void)proc_wait(sp, (long)sc->sh_pid, "script-shell", 0, 0);
 
 	/* Free memory. */
 	free(sc->sh_prompt);
 	free(sc);
 	sp->script = NULL;
 
-	return (rval);
+	return (0);
 }
 
 /*
