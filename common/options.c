@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: options.c,v 10.38 1996/04/29 11:22:58 bostic Exp $ (Berkeley) $Date: 1996/04/29 11:22:58 $";
+static const char sccsid[] = "$Id: options.c,v 10.39 1996/04/29 16:12:27 bostic Exp $ (Berkeley) $Date: 1996/04/29 16:12:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -83,7 +83,7 @@ OPTLIST const optlist[] = {
 /* O_HARDTABS	    4BSD */
 	{"hardtabs",	NULL,		OPT_NUM,	0},
 /* O_ICLOWER	  4.4BSD */
-	{"icloser",	NULL,		OPT_0BOOL,	0},
+	{"iclower",	NULL,		OPT_0BOOL,	0},
 /* O_IGNORECASE	    4BSD */
 	{"ignorecase",	f_recompile,	OPT_0BOOL,	0},
 /* O_KEYTIME	  4.4BSD */
