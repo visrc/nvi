@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.24 1993/11/01 18:54:11 bostic Exp $ (Berkeley) $Date: 1993/11/01 18:54:11 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.25 1993/11/01 19:11:11 bostic Exp $ (Berkeley) $Date: 1993/11/01 19:11:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -570,7 +570,6 @@ paint:	for (smp = HMAP; smp <= TMAP; ++smp)
 	/* Update saved information. */
 update:	OCNO = CNO;
 	OLNO = LNO;
-	sp->sc_row = y;
 
 	/* Refresh the screen. */
 	if (F_ISSET(sp, S_REFRESH)) {

@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.48 1993/11/01 18:37:28 bostic Exp $ (Berkeley) $Date: 1993/11/01 18:37:28 $
+ *	$Id: screen.h,v 8.49 1993/11/01 19:10:53 bostic Exp $ (Berkeley) $Date: 1993/11/01 19:10:53 $
  */
 
 /*
@@ -92,7 +92,6 @@ typedef struct _scr {
 	recno_t	 olno;			/* 1-N: old cursor file line. */
 	size_t	 cno;			/* 0-N:     file cursor column. */
 	size_t	 ocno;			/* 0-N: old file cursor column. */
-	size_t	 sc_row;		/* 0-N: logical screen cursor row. */
 	size_t	 sc_col;		/* 0-N: logical screen cursor column. */
 
 	size_t	 rows;			/* 1-N:      rows per screen. */
