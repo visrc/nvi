@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 5.20 1992/10/29 14:45:45 bostic Exp $ (Berkeley) $Date: 1992/10/29 14:45:45 $
+ *	$Id: vi.h,v 5.21 1992/10/29 14:47:34 bostic Exp $ (Berkeley) $Date: 1992/10/29 14:47:34 $
  */
 
 #include "exf.h"
@@ -80,8 +80,6 @@ typedef struct _vikeys {	/* Underlying function. */
 
 #define	MAXVIKEY	126	/* List of vi commands. */
 extern VIKEYS vikeys[MAXVIKEY + 1];
-
-extern size_t exlinecount;	/* Count of output lines while in ex. */
 
 /*
  * This macro is used to set the default count value for an operation.
