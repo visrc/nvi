@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.33 1993/09/13 18:24:39 bostic Exp $ (Berkeley) $Date: 1993/09/13 18:24:39 $";
+static char sccsid[] = "$Id: ex.c,v 8.34 1993/09/14 08:55:17 bostic Exp $ (Berkeley) $Date: 1993/09/14 08:55:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -317,6 +317,10 @@ ex_cmd(sp, ep, exc, arg1_len)
 
 	/* Initialize the argument structure. */
 	memset(&cmd, 0, sizeof(EXCMDARG));
+	sp->ex_argv[0] = "";
+	sp->ex_argv[1] = NULL;
+	cmd.argc = 0;
+	cmd.argv = sp->ex_argv;
 	cmd.buffer = OOBCB;
 
 	/*
