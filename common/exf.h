@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 8.26 1994/05/17 11:46:00 bostic Exp $ (Berkeley) $Date: 1994/05/17 11:46:00 $
+ *	$Id: exf.h,v 8.27 1994/05/18 18:51:44 bostic Exp $ (Berkeley) $Date: 1994/05/18 18:51:44 $
  */
 					/* Undo direction. */
 /*
@@ -89,7 +89,11 @@ int	 rcv_init __P((SCR *, EXF *));
 int	 rcv_list __P((SCR *));
 int	 rcv_on __P((SCR *, EXF *));
 int	 rcv_read __P((SCR *, FREF *));
-int	 rcv_sync __P((SCR *, EXF *, int, int, int));
+#define	RCV_EMAIL	0x01		/* Send the user email. */
+#define	RCV_ENDSESSION	0x02		/* End the file session. */
+#define	RCV_PRESERVE	0x04		/* Preserve the backup file. */
+#define	RCV_SNAPSHOT	0x08		/* Snapshot the recovery. */
+int	 rcv_sync __P((SCR *, EXF *, u_int));
 int	 rcv_tmp __P((SCR *, EXF *, char *));
 
 /* DB interface routines */
