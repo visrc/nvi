@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.37 1993/11/28 17:49:07 bostic Exp $ (Berkeley) $Date: 1993/11/28 17:49:07 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.38 1993/11/28 18:31:48 bostic Exp $ (Berkeley) $Date: 1993/11/28 18:31:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -63,22 +63,19 @@ svi_refresh(sp, ep)
 	 * 2: Refresh related screens.
 	 *
 	 * If related screens share a view into a file, they may have been
-	 * modified as well.  Refresh them if any paint or dirty bits are
-	 * set.
+	 * modified as well.  Refresh any screens with paint or dirty bits
+	 * set, or where messages are waiting.
 	 */
 	paintbits = S_REDRAW | S_REFORMAT | S_REFRESH;
 	if (O_ISSET(sp, O_NUMBER))
 		paintbits |= S_RENUMBER;
 	for (tsp = sp->gp->dq.cqh_first;
 	    tsp != (void *)&sp->gp->dq; tsp = tsp->q.cqe_next)
-		if (sp != tsp &&
+		if (tsp != sp &&
 		    (F_ISSET(tsp, paintbits) ||
-		    ep == tsp->ep && F_ISSET(SVP(tsp), SVI_SCREENDIRTY))) {
-			/* If no messages, display the file status line. */
-			if (tsp->q.cqe_next != (void *)&tsp->gp->dq &&
-			    (tsp->msgq.lh_first == NULL ||
-			    F_ISSET(tsp->msgq.lh_first, M_EMPTY)))
-				status(tsp, tsp->ep, tsp->lno, 0);
+		    F_ISSET(SVP(tsp), SVI_SCREENDIRTY) ||
+		    tsp->msgq.lh_first != NULL &&
+		    !F_ISSET(tsp->msgq.lh_first, M_EMPTY))) {
 			(void)svi_paint(tsp, tsp->ep);
 			F_CLR(SVP(tsp), SVI_SCREENDIRTY);
 		}
