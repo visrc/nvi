@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_at.c,v 8.3 1993/08/25 16:44:29 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:44:29 $";
+static char sccsid[] = "$Id: ex_at.c,v 8.4 1993/08/25 17:38:00 bostic Exp $ (Berkeley) $Date: 1993/08/25 17:38:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -54,8 +54,8 @@ ex_at(sp, ep, cmdp)
 	 * trailing <newline> character.
 	 */
 	lmode = F_ISSET(cb, CB_LMODE);
-	for (tp = cb->txthdr.next; tp != (TEXT *)&cb->txthdr; tp = tp->next)
-		if ((lmode || tp->next != (TEXT *)&cb->txthdr) &&
+	for (tp = cb->txthdr.prev; tp != (TEXT *)&cb->txthdr; tp = tp->prev)
+		if ((lmode || tp->prev != (TEXT *)&cb->txthdr) &&
 		    term_push(sp, &sp->key, "\n", 1) ||
 		    term_push(sp, &sp->key, tp->lb, tp->len))
 			return (1);
