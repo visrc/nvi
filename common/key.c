@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.34 1992/12/22 16:13:06 bostic Exp $ (Berkeley) $Date: 1992/12/22 16:13:06 $";
+static char sccsid[] = "$Id: key.c,v 5.35 1993/01/11 18:09:49 bostic Exp $ (Berkeley) $Date: 1993/01/11 18:09:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -235,8 +235,8 @@ ttyread(buf, len, time)
 		 * before selecting.
 		 */
 		FF_SET(curf, F_READING);
-		if (mode == MODE_VI && FF_ISSET(curf, F_RESIZE)) {
-			scr_cchange(curf);
+		if (FF_ISSET(curf, F_RESIZE) && curf->scr_update != NULL) {
+			(void)curf->scr_update(curf);
 			refresh();
 		}
 		sval = select(1, &rd, NULL, NULL, tp);
