@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 8.29 1994/07/15 15:59:27 bostic Exp $ (Berkeley) $Date: 1994/07/15 15:59:27 $";
+static char sccsid[] = "$Id: seq.c,v 8.30 1994/07/15 20:37:18 bostic Exp $ (Berkeley) $Date: 1994/07/15 20:37:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -194,7 +194,8 @@ seq_find(sp, lastqp, input, ilen, stype, ispartialp)
 		/* Fast checks on the first character and type. */
 		if (qp->input[0] > input[0])
 			break;
-		if (qp->input[0] < input[0] || qp->stype != stype)
+		if (qp->input[0] < input[0] ||
+		    qp->stype != stype || F_ISSET(qp, SEQ_FUNCMAP))
 			continue;
 
 		/* Check on the real comparison. */
@@ -247,7 +248,7 @@ seq_dump(sp, stype, isname)
 
 	cnt = 0;
 	for (qp = sp->gp->seqq.lh_first; qp != NULL; qp = qp->q.le_next) {
-		if (stype != qp->stype)
+		if (stype != qp->stype || F_ISSET(qp, SEQ_FUNCMAP))
 			continue;
 		++cnt;
 		for (p = qp->input,
@@ -295,7 +296,8 @@ seq_save(sp, fp, prefix, stype)
 
 	/* Write a sequence command for all keys the user defined. */
 	for (qp = sp->gp->seqq.lh_first; qp != NULL; qp = qp->q.le_next) {
-		if (!F_ISSET(qp, SEQ_USERDEF) || stype != qp->stype)
+		if (stype != qp->stype ||
+		    F_ISSET(qp, SEQ_FUNCMAP) || !F_ISSET(qp, SEQ_USERDEF))
 			continue;
 		if (prefix)
 			(void)fprintf(fp, "%s", prefix);
