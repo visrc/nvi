@@ -6,12 +6,27 @@
 #include "vcmd.h"
 #include "extern.h"
 
-static enum { NOTSET, CBACK, CFORW } csearchdir = NOTSET;
+enum csearchdir { NOTSET, FSEARCH, fSEARCH, TSEARCH, tSEARCH };
+static enum csearchdir lastdir;
 static int lastkey;
+
+#define	NOPREV {							\
+	bell();								\
+	if (ISSET(O_VERBOSE))						\
+		msg("No previous F, f, T or t search.");		\
+	return (1);							\
+}
+
+#define	NOTFOUND {							\
+	bell();								\
+	if (ISSET(O_VERBOSE))						\
+		msg("Character not found.");				\
+	return (1);							\
+}
 
 /*
  * v_repeatch -- [count];
- *	Repeate the last F, f, T or t search.
+ *	Repeat the last F, f, T or t search.
  */
 int
 v_repeatch(vp, cp, rp)
@@ -20,16 +35,17 @@ v_repeatch(vp, cp, rp)
 {
 	vp->character = lastkey;
 
-	switch(csearchdir) {
+	switch(lastdir) {
 	case NOTSET:
-		bell();
-		if (ISSET(O_VERBOSE))
-			msg("No previous F, f, T or t search.");
-		return (1);
-	case CBACK:
-		return (v_rch(vp, cp, rp));
-	case CFORW:
+		NOPREV;
+	case FSEARCH:
+		return (v_Fch(vp, cp, rp));
+	case fSEARCH:
 		return (v_fch(vp, cp, rp));
+	case TSEARCH:
+		return (v_Tch(vp, cp, rp));
+	case tSEARCH:
+		return (v_tch(vp, cp, rp));
 	}
 	/* NOTREACHED */
 }
@@ -44,131 +60,130 @@ v_rrepeatch(vp, cp, rp)
 	MARK *cp, *rp;
 {
 	int rval;
+	enum csearchdir savedir;
 
 	vp->character = lastkey;
+	savedir = lastdir;
 
-	switch(csearchdir) {
+	switch(lastdir) {
 	case NOTSET:
-		bell();
-		if (ISSET(O_VERBOSE))
-			msg("No previous F, f, T or t search.");
-		return (1);
-	case CBACK:
+		NOPREV;
+	case FSEARCH:
 		rval = v_fch(vp, cp, rp);
-		csearchdir = CBACK;
 		break;
-	case CFORW:
-		rval = v_rch(vp, cp, rp);
-		csearchdir = CFORW;
+	case fSEARCH:
+		rval = v_Fch(vp, cp, rp);
+		break;
+	case TSEARCH:
+		rval = v_tch(vp, cp, rp);
+		break;
+	case tSEARCH:
+		rval = v_Tch(vp, cp, rp);
 		break;
 	}
+	lastdir = savedir;
+	return (rval);
+}
+
+/*
+ * v_tch -- [count]tc
+ *	Search forward in the line for the next occurrence of the character.
+ *	Place the cursor to its left.
+ */
+int
+v_tch(vp, cp, rp)
+	VICMDARG *vp;
+	MARK *cp, *rp;
+{
+	int rval;
+
+	if (!(rval = v_fch(vp, cp, rp)))
+		--rp->cno;
+	lastdir = tSEARCH;
 	return (rval);
 }
 	
 /*
- * v_tfch -- [count]tc
- *	Search this line for a character after the cursor and position to
- *	its left.
- */
-int
-v_tfch(vp, cp, rp)
-	VICMDARG *vp;
-	MARK *cp, *rp;
-{
-	if (v_fch(vp, cp, rp))
-		return (1);
-	--rp->cno;
-	return (0);
-}
-
-/*
  * v_fch -- [count]fc
- *	Search this line for a character after the cursor.
+ *	Search forward in the line for the next occurrence of the character.
  */
 int
 v_fch(vp, cp, rp)
 	VICMDARG *vp;
 	MARK *cp, *rp;
 {
+	register int key;
+	register char *ep, *p;
 	size_t len;
 	u_long cnt;
-	int key;
-	char *ep, *p, *sp;
+	char *sp;
+
+	lastdir = fSEARCH;
+	lastkey = key = vp->character;
 
 	EGETLINE(p, cp->lno, len);
+	if (len == 0)
+		NOTFOUND;
 
-	lastkey = key = vp->character;
-	csearchdir = CFORW;
-
-	p += cp->cno - 1;
-	sp = p;
 	ep = p + len;
+	sp = p += cp->cno;
 	for (cnt = vp->flags & VC_C1SET ? vp->count : 1; cnt--;) {
-		while (++p < ep)
-			if (*p == key)
-				break;
-		if (p == ep) {
-			bell();
-			if (ISSET(O_VERBOSE))
-				msg("Character not found.");
-			return (1);
-		}
+		while (++p < ep && *p != key);
+		if (p == ep)
+			NOTFOUND;
 	}
 	rp->lno = cp->lno;
-	rp->cno = p - sp;
-	return (0);
-}
-	
-/*
- * v_trch -- [count]Tc
- *	Search this line for a character before the cursor and position to
- *	its left.
- */
-int
-v_trch(vp, cp, rp)
-	VICMDARG *vp;
-	MARK *cp, *rp;
-{
-	if (v_rch(vp, cp, rp))
-		return (1);
-	if (rp->cno > 0)
-		--rp->cno;
+	rp->cno += p - sp;
 	return (0);
 }
 
 /*
- * v_rch -- [count]fc
- *	Search this line for a character before the cursor.
+ * v_Tch -- [count]Tc
+ *	Search backward in the line for the next occurrence of the character.
+ *	Place the cursor to its right.
  */
 int
-v_rch(vp, cp, rp)
+v_Tch(vp, cp, rp)
 	VICMDARG *vp;
 	MARK *cp, *rp;
 {
+	int rval;
+
+	if (!(rval = v_Fch(vp, cp, rp)))
+		++rp->cno;
+	lastdir = TSEARCH;
+	return (0);
+}
+
+/*
+ * v_Fch -- [count]Fc
+ *	Search backward in the line for the next occurrence of the character.
+ */
+int
+v_Fch(vp, cp, rp)
+	VICMDARG *vp;
+	MARK *cp, *rp;
+{
+	register int key;
+	register char *p, *ep;
 	size_t len;
 	u_long cnt;
-	int key;
-	char *ep, *p, *sp;
 
-	GETLINE(p, cp->lno, len);
-
+	lastdir = FSEARCH;
 	lastkey = key = vp->character;
-	csearchdir = CBACK;
 
-	sp = p;
+	EGETLINE(p, cp->lno, len);
+	if (len == 0)
+		NOTFOUND;
+
+	ep = p - 1;
 	p += cp->cno;
 	for (cnt = vp->flags & VC_C1SET ? vp->count : 1; cnt--;) {
-		while (--p < ep)
-			if (*p == key)
-				break;
-		if (p == sp) {
-			bell();
-			if (ISSET(O_VERBOSE))
-				msg("Character not found.");
-			return (1);
-		}
+		while (--p > ep && *p != key);
+		if (p == ep)
+			NOTFOUND;
 	}
 	rp->lno = cp->lno;
-	rp->cno = p - sp;
+	rp->cno = (p - ep) - 1;
 	return (0);
 }
