@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.51 1996/05/09 09:50:25 bostic Exp $ (Berkeley) $Date: 1996/05/09 09:50:25 $
+#	$Id: Makefile.in,v 8.52 1996/05/09 16:45:25 bostic Exp $ (Berkeley) $Date: 1996/05/09 16:45:25 $
 
 srcdir=	@srcdir@/..
 CC=	@CC@
@@ -90,9 +90,12 @@ install: all install_common
 	    $(rm) -f $$fe $$fn && $(ln) $$fv $$fe && $(ln) $$fv $$fn'
 	@echo "Installing man pages: $(mandir)/cat1 ..."
 	@sh -c 'cd $(srcdir)/docs/USD.doc/vi.man && \
-	    $(cp) vi.0 $(mandir)/cat1/vi.0 && cd $(mandir)/cat1 && \
-	    $(chmod) $(fmode) vi.0 && $(rm) -f ex.0 view.0 && \
-	    $(ln) vi.0 ex.0 && $(ln) vi.0 view.0'
+	    fv=`echo vi.0 | sed '$(transform)'`; \
+	    fe=`echo ex.0 | sed '$(transform)'`; \
+	    fn=`echo view.0 | sed '$(transform)'`; \
+	    $(cp) vi.0 $(mandir)/cat1/$$fv && cd $(mandir)/cat1 && \
+	    $(chmod) $(fmode) $$fv && $(rm) -f $$fe $$fn && \
+	    $(ln) $$fv $$fe && $(ln) $$fv $$fn'
 
 install_asnvi: all install_common
 	@echo "Installing nvi, nex, nview: $(bindir) ..."
@@ -103,9 +106,12 @@ install_asnvi: all install_common
 	    $(rm) -f $$fe $$fn && $(ln) $$fv $$fe && $(ln) $$fv $$fn'
 	@echo "Installing man pages: $(mandir)/cat1 ..."
 	@sh -c 'cd $(srcdir)/docs/USD.doc/vi.man && \
-	    $(cp) vi.0 $(mandir)/cat1/nvi.0 && cd $(mandir)/cat1 && \
-	    $(chmod) $(fmode) nvi.0 && $(rm) -f nex.0 nview.0 && \
-	    $(ln) nvi.0 nex.0 && $(ln) nvi.0 nview.0'
+	    fv=`echo nvi.0 | sed '$(transform)'`; \
+	    fe=`echo nex.0 | sed '$(transform)'`; \
+	    fn=`echo nview.0 | sed '$(transform)'`; \
+	    $(cp) vi.0 $(mandir)/cat1/$$fv && cd $(mandir)/cat1 && \
+	    $(chmod) $(fmode) $$fv && $(rm) -f $$fe $$fn && \
+	    $(ln) $$fv $$fe && $(ln) $$fv $$fn'
 
 cat=	dutch english german ru_SU.KOI8-R swedish
 install_common:
