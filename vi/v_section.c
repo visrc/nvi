@@ -6,13 +6,14 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_section.c,v 5.3 1992/10/10 14:02:44 bostic Exp $ (Berkeley) $Date: 1992/10/10 14:02:44 $";
+static char sccsid[] = "$Id: v_section.c,v 5.4 1992/11/02 22:41:01 bostic Exp $ (Berkeley) $Date: 1992/11/02 22:41:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
 #include <limits.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "vi.h"
 #include "vcmd.h"
@@ -57,13 +58,13 @@ v_sectionf(vp, fm, tm, rp)
 		for (lp = list; *lp; lp += 2)
 			if (lp[0] == p[1] &&
 			    (lp[1] == ' ' || lp[1] == p[2]) && !--cnt) {
-found:				rp->lno = lno;
+				rp->lno = lno;
 				return (0);
 			}
 	}
 
 	/* EOF is a movement sink. */
-eof:	if (fm->lno != lno - 1) {
+	if (fm->lno != lno - 1) {
 		rp->lno = lno - 1;
 		rp->cno = len ? len - 1 : 0;
 		return (0);
@@ -107,12 +108,12 @@ v_sectionb(vp, fm, tm, rp)
 		for (lp = list; *lp; lp += 2)
 			if (lp[0] == p[1] &&
 			    (lp[1] == ' ' || lp[1] == p[2]) && !--cnt) {
-found:				rp->lno = lno;
+				rp->lno = lno;
 				return (0);
 			}
 	}
 
 	/* SOF is a movement sink. */
-sof:	rp->lno = 1;
+	rp->lno = 1;
 	return (0);
 }
