@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 5.33 1993/04/06 11:43:52 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:43:52 $";
+static char sccsid[] = "$Id: v_search.c,v 5.34 1993/04/12 14:54:45 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:54:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -43,7 +43,7 @@ v_searchn(sp, ep, vp, fm, tm, rp)
 			return (1);
 		break;
 	case NOTSET:
-		msgq(sp, M_ERROR, "No previous search pattern.");
+		msgq(sp, M_ERR, "No previous search pattern.");
 		return (1);
 	default:
 		abort();
@@ -74,7 +74,7 @@ v_searchN(sp, ep, vp, fm, tm, rp)
 			return (1);
 		break;
 	case NOTSET:
-		msgq(sp, M_ERROR, "No previous search pattern.");
+		msgq(sp, M_ERR, "No previous search pattern.");
 		return (1);
 	default:
 		abort();
@@ -104,7 +104,7 @@ v_searchw(sp, ep, vp, fm, tm, rp)
 	blen = vp->kbuflen + sizeof(WORDFORMAT);
 	if (F_ISSET(gp, G_TMP_INUSE)) {
 		if ((bp = malloc(blen)) == NULL) {
-			msgq(sp, M_ERROR, "Error: %s.", strerror(errno));
+			msgq(sp, M_ERR, "Error: %s.", strerror(errno));
 			return (1);
 		}
 	} else {
