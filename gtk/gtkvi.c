@@ -23,8 +23,10 @@
 #include "../ipc/ip.h"
 
 #include <gtk/gtk.h>
+#if 0
 #include <zvt/zvtterm.h>
 #include <zvt/vt.h>
+#endif
 #include "gtkvi.h"
 #include "gtkviscreen.h"
 #include "gtkviwindow.h"
@@ -34,6 +36,7 @@ static int vi_key_press_event __P((GtkWidget*, GdkEventKey*, GtkVi*));
 
 
 
+#if 0
 static int
 vi_fork(ipvi)
 	IPVI	*ipvi;
@@ -42,6 +45,7 @@ vi_fork(ipvi)
 
 	return zvt_term_forkpty(ZVT_TERM(vi->term), 0);
 }
+#endif
 
 /* 
  * PUBLIC: int gtk_vi_init __P((GtkVi **, int, char*[]));
@@ -58,10 +62,12 @@ gtk_vi_init(vip, argc, argv)
 	MALLOC_GOTO(NULL, vi, GtkVi*, sizeof(GtkVi));
 	memset(vi, 0, sizeof(GtkVi));
 
+#if 0
 	term = zvt_term_new();
 	gtk_widget_show(term);
 	vi->term = term;
 	vt_parse_vt(&ZVT_TERM(term)->vx->vt, "test\n", 5);
+#endif
 	/* doesn't work now; need to know when other process is running
 	gtk_signal_connect(GTK_OBJECT(term), "key_press_event",
 	    (GtkSignalFunc) vi_key_press_event, vi);

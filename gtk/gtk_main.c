@@ -38,8 +38,10 @@ static GtkItemFactoryEntry menu_items[] = {
     { "/File/_Quit",	NULL,	    vi_quit,	    0,  NULL },
     { "/_Window",   	NULL,	    NULL,	    0,	"<Branch>" },
     { "/Window/New Window",	NULL,	 win_toplevel,	0, NULL },
+#if 0 /*wrong argument anyway*/
     { "/Window/Show Terminal",	NULL,    gtk_vi_show_term,    1,  NULL },
     { "/Window/Show Vi",	NULL,    gtk_vi_show_term,    0,  NULL },
+#endif
 };
 
 int
