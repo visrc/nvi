@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: key.h,v 10.13 1996/04/03 14:32:06 bostic Exp $ (Berkeley) $Date: 1996/04/03 14:32:06 $
+ *	$Id: key.h,v 10.14 1996/04/10 11:27:56 bostic Exp $ (Berkeley) $Date: 1996/04/10 11:27:56 $
  */
 
 /*
@@ -174,8 +174,8 @@ extern KEYLIST keylist[];
 #define	INTERRUPT_CHECK	100
 #define	INTERRUPTED(sp)							\
 	(F_ISSET((sp)->gp, G_INTERRUPTED) ||				\
-	!v_event_get(sp, NULL, 0, EC_INTERRUPT) &&			\
-	F_ISSET((sp)->gp, G_INTERRUPTED))
+	(!v_event_get(sp, NULL, 0, EC_INTERRUPT) &&			\
+	F_ISSET((sp)->gp, G_INTERRUPTED)))
 #define	CLR_INTERRUPT(sp)						\
 	F_CLR((sp)->gp, G_INTERRUPTED)
 
