@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: conv.c,v 1.20 2001/06/17 11:08:37 skimo Exp $ (Berkeley) $Date: 2001/06/17 11:08:37 $";
+static const char sccsid[] = "$Id: conv.c,v 1.21 2001/06/17 14:16:30 skimo Exp $ (Berkeley) $Date: 2001/06/17 14:16:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -148,6 +148,13 @@ ie_char2int(SCR *sp, const char * str, ssize_t len, CONVWIN *cw,
 }
 
 int 
+cs_char2int(SCR *sp, const char * str, ssize_t len, CONVWIN *cw, 
+	    size_t *tolen, CHAR_T **dst)
+{
+    default_char2int(sp, str, len, cw, tolen, dst, nl_langinfo(CODESET));
+}
+
+int 
 CHAR_T_int2char(SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw, 
 	size_t *tolen, char **dst)
 {
@@ -188,7 +195,7 @@ int2raw(SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw, size_t *tolen,
 
 int 
 default_int2char(SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw, 
-		size_t *tolen, char **pdst)
+		size_t *tolen, char **pdst, char *enc)
 {
     int i, j, offset = 0;
     char **tostr = (char **)&cw->bp1;
@@ -200,7 +207,6 @@ default_int2char(SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw,
     size_t buflen;
     char	buffer[CONV_BUFFER_SIZE];
     iconv_t	id = (iconv_t)-1;
-    char *enc = O_STR(sp, O_FILEENCODING);
 
 /* convert first len bytes of buffer and append it to cw->bp
  * len is adjusted => 0
@@ -272,6 +278,20 @@ err:
     return 1;
 }
 
+int 
+fe_int2char(SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw, 
+	    size_t *tolen, char **dst)
+{
+    default_int2char(sp, str, len, cw, tolen, dst, O_STR(sp, O_FILEENCODING));
+}
+
+int 
+cs_int2char(SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw, 
+	    size_t *tolen, char **dst)
+{
+    default_int2char(sp, str, len, cw, tolen, dst, nl_langinfo(CODESET));
+}
+
 #ifdef USE_WIDECHAR
 int 
 default_int2disp (SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw, 
@@ -317,10 +337,10 @@ conv_init (SCR *orig, SCR *sp)
 	MEMCPY(&sp->conv, &orig->conv, 1);
     else {
 	setlocale(LC_ALL, "");
-	sp->conv.sys2int = raw2int;
-	sp->conv.int2sys = int2raw;
+	sp->conv.sys2int = cs_char2int;
+	sp->conv.int2sys = cs_int2char;
 	sp->conv.file2int = fe_char2int;
-	sp->conv.int2file = default_int2char;
+	sp->conv.int2file = fe_int2char;
 	sp->conv.input2int = ie_char2int;
 	sp->conv.int2disp = default_int2disp;
 	o_set(sp, O_FILEENCODING, OS_STRDUP, nl_langinfo(CODESET), 0);
@@ -370,7 +390,7 @@ conv_enc (SCR *sp, int option, char *enc)
     switch (option) {
     case O_FILEENCODING:
 	*c2w = fe_char2int;
-	*w2c = default_int2char;
+	*w2c = fe_int2char;
 	break;
     case O_INPUTENCODING:
 	*c2w = ie_char2int;
