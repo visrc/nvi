@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.95 1994/09/15 20:13:18 bostic Exp $ (Berkeley) $Date: 1994/09/15 20:13:18 $";
+static char sccsid[] = "$Id: vi.c,v 8.96 1994/09/16 13:02:13 bostic Exp $ (Berkeley) $Date: 1994/09/16 13:02:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -192,8 +192,9 @@ vi(sp, ep)
 		 * Set the dot command structure.
 		 *
 		 * !!!
-		 * Historically, no command which used any mapped keys became
-		 * the dot command.
+		 * Historically, commands which used mapped keys did not
+		 * set the dot command, with the exception of the text
+		 * input commands.
 		 */
 		if (F_ISSET(vp, V_DOT) && !mapped) {
 			*DOT = cmd;
