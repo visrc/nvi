@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.14 1992/05/07 12:47:24 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:47:24 $";
+static char sccsid[] = "$Id: options.c,v 5.15 1992/05/15 11:06:32 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:06:32 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -19,7 +19,6 @@ static char sccsid[] = "$Id: options.c,v 5.14 1992/05/07 12:47:24 bostic Exp $ (
 
 #include "vi.h"
 #include "excmd.h"
-#include "exf.h"
 #include "options.h"
 #include "term.h"
 #include "extern.h"
@@ -134,19 +133,21 @@ OPTIONS opts[] = {
 	"timeout",	NULL,		OPT_0BOOL,
 #define	O_VBELL		41
 	"vbell",	NULL,		OPT_0BOOL,
-#define	O_WARN		42
+#define	O_VERBOSE	42
+	"verbose",	NULL,		OPT_0BOOL,
+#define	O_WARN		43
 	"warn",		NULL,		OPT_1BOOL,
-#define	O_WINDOW	43
+#define	O_WINDOW	44
 	"window",	&o_window,	OPT_NUM|OPT_REDRAW,
-#define	O_WRAPMARGIN	44
+#define	O_WRAPMARGIN	45
 	"wrapmargin",	&o_wrapmargin,	OPT_NUM,
-#define	O_WRAPSCAN	45
+#define	O_WRAPSCAN	46
 	"wrapscan",	NULL,		OPT_1BOOL,
-#define	O_WRITEANY	46
+#define	O_WRITEANY	47
 	"writeany",	NULL,		OPT_0BOOL,
 	NULL,
 };
-#define	O_OPTIONCOUNT	47
+#define	O_OPTIONCOUNT	48
 /* END_SED_INCLUDE */
 
 typedef struct abbrev {
@@ -195,6 +196,7 @@ static ABBREV abbrev[] = {
 	"tr",	O_TERSE,
 	"ts",	O_TABSTOP,
 	"vb",	O_VBELL,
+	"ve",	O_VERBOSE,
 	"wa",	O_WARN,
 	"wi",	O_WINDOW,
 	"wm",	O_WRAPMARGIN,
