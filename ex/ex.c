@@ -6,11 +6,12 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.19 1992/04/18 10:09:09 bostic Exp $ (Berkeley) $Date: 1992/04/18 10:09:09 $";
+static char sccsid[] = "$Id: ex.c,v 5.20 1992/04/18 15:37:39 bostic Exp $ (Berkeley) $Date: 1992/04/18 15:37:39 $";
 #endif /* not lint */
 
 #include <sys/param.h>
 #include <sys/stat.h>
+#include <termios.h>
 #include <glob.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -21,6 +22,7 @@ static char sccsid[] = "$Id: ex.c,v 5.19 1992/04/18 10:09:09 bostic Exp $ (Berke
 #include "curses.h"
 #include "excmd.h"
 #include "options.h"
+#include "tty.h"
 #include "pathnames.h"
 #include "extern.h"
 
@@ -36,16 +38,11 @@ static int fileexpand __P((glob_t *, char *, int));
 void
 ex()
 {
-	register int cmdlen;
-	char cmdbuf[1024];
+	char *p;
 
-	while (mode == MODE_EX) {
-		cmdlen =
-		    vgets(ISSET(O_PROMPT) ? ':' : '\0', cmdbuf, sizeof(cmdbuf));
-		if (cmdlen < 0)
-			return;
-
-		if (cmdlen == 0) {
+	while (mode == MODE_EX &&
+	    (p = gb(ISSET(O_PROMPT) ? ':' : 0, 0)) != NULL)
+		if (*p == '\0') {
 			qaddch('\r');
 			clrtoeol();
 			refresh();
@@ -54,9 +51,8 @@ ex()
 			qaddch('\n');
 			qaddch('\r');
 			refresh();
-			(void)ex_cmd(cmdbuf);
+			(void)ex_cmd(p);
 		}
-	}
 }
 
 /*
@@ -79,7 +75,7 @@ ex_cfile(filename, noexisterr)
 	}
 	if (fstat(fd, &sb))
 		goto e2;
-	/* Add in +1 so can have a trailing EOS. */
+	/* Add in +1 so can guarantee a trailing EOS. */
 	if ((bp = malloc(sb.st_size + 1)) == NULL)
 		goto e2;
 
@@ -91,7 +87,7 @@ ex_cfile(filename, noexisterr)
 	}
 	bp[sb.st_size] = '\0';
 
-	rval = ex_cstring(bp, len);
+	rval = ex_cstring(bp, len + 1, 1);
 	free(bp);
 	(void)close(fd);
 	return (rval);
@@ -109,50 +105,50 @@ e1:	msg("%s: %s.", filename, strerror(errno));
  *	expected to be EOS terminated.
  */
 int
-ex_cstring(cmd, len)
-	register char *cmd;
-	register int len;
+ex_cstring(cmd, len, doquoting)
+	char *cmd;
+	register int len, doquoting;
 {
+	register int cnt;
 	register char *p, *t;
 	char *start;
 
-	/* Maybe an empty string. */
-	if (len == 0)
-		return (0);
-
 	/*
-	 * Walk the command, checking for ^V quotes.  The string "^V\n" is
-	 * treated as a single ^V.  Len is artificially incremented by one
-	 * so that we find the trailing EOS and do the last command,
+	 * Walk the command, checking for ^V quotes.  The string "^V\n"
+	 * is treated as a single ^V.
 	 */
-	QSTART(cmd);
-	for (p = t = cmd, ++len; len--;)
-		switch(*p) {
-		case '|':
-		case '\n':
-			*p = '\0';
-			/* FALLTHROUGH */
-		case '\0':
-			if (p > cmd) {
-				QEND();
-				if (ex_cmd(cmd))
-					return (1);
-			}
-			cmd = t = ++p;
-			QSTART(cmd);
-			break;
-		case 'V' & 0x1f:
-			if (len > 1 && p[1] != '\n') {
-				QSET(t);
+	for (p = t = cmd; len; ++p) {
+		if (doquoting)
+			QINIT;
+		for (cnt = 0; len--; ++cnt) {
+			if (doquoting && cnt == cblen)
+				gb_inc();
+			switch(*p) {
+			case '|':
+			case '\n':
+				*p = '\0';
+				/* FALLTHROUGH */
+			case '\0':
+				if (p > cmd) {
+					if (ex_cmd(cmd))
+						return (1);
+				}
 				++p;
-				--len;
+				goto cont;
+			case ctrl('V'):
+				if (doquoting && len > 1 && p[1] != '\n') {
+					QSET(cnt);
+					++p;
+					--len;
+				}
+				/* FALLTHROUGH */
+			default:
+				*p++ = *t++;
+				break;
 			}
-			/* FALLTHROUGH */
-		default:
-			*p++ = *t++;
-			break;
 		}
-
+cont:		continue;
+	}
 	return (0);
 }
 
@@ -176,6 +172,9 @@ ex_cmd(exc)
 	int flags;
 	char *ep;
 
+#ifdef DEBUG
+	TRACE("ex: {%s}\n", exc);
+#endif
 	/*
 	 * Ex commands can't be undone via the shift-U command.
 	 * XXX Why not?
@@ -496,7 +495,7 @@ addr2:	switch(cmd.addrcnt) {
 		lastcmd = cp;
 
 	cmd.cmd = cp;
-#if defined(DEBUG) && 1
+#if defined(DEBUG)
 {
 	int __cnt;
 
@@ -516,7 +515,8 @@ addr2:	switch(cmd.addrcnt) {
 	if (cmd.plus)
 		TRACE("\tplus %s", cmd.plus);
 	if (cmd.buffer)
-		TRACE("\tbuffer %c\n", cmd.buffer);
+		TRACE("\tbuffer %c", cmd.buffer);
+	TRACE("\n");
 	if (cmd.argc) {
 		for (__cnt = 0; __cnt < cmd.argc; ++__cnt)
 			TRACE("\targ %d: {%s}", __cnt, cmd.argv[__cnt]);
