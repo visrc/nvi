@@ -6,10 +6,10 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cd.c,v 5.7 1992/04/27 16:39:41 bostic Exp $ (Berkeley) $Date: 1992/04/27 16:39:41 $";
+static char sccsid[] = "$Id: ex_cd.c,v 5.8 1992/05/02 09:11:34 bostic Exp $ (Berkeley) $Date: 1992/05/02 09:11:34 $";
 #endif /* not lint */
 
-#include <sys/types.h>
+#include <sys/param.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -27,7 +27,7 @@ int
 ex_cd(cmdp)
 	EXCMDARG *cmdp;
 {
-	char *dir;
+	char *dir, buf[MAXPATHLEN];
 
 	/*
 	 * If the file has been modified, write a warning and fail, unless
@@ -54,5 +54,7 @@ ex_cd(cmdp)
 		msg("%s: %s", dir, strerror(errno));
 		return (1);
 	}
+	if (getcwd(buf, sizeof(buf)) != NULL)
+		msg("New directory: %s", buf);
 	return (0);
 }
