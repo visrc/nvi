@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.63 1993/05/08 13:26:27 bostic Exp $ (Berkeley) $Date: 1993/05/08 13:26:27 $";
+static char sccsid[] = "$Id: exf.c,v 5.64 1993/05/08 16:03:42 bostic Exp $ (Berkeley) $Date: 1993/05/08 16:03:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,7 +22,7 @@ static char sccsid[] = "$Id: exf.c,v 5.63 1993/05/08 13:26:27 bostic Exp $ (Berk
 #include "vi.h"
 #include "excmd.h"
 
-static void file_def __P((EXF *));
+static int file_def __P((SCR *, EXF *));
 
 /*
  * file_get --
@@ -53,12 +53,17 @@ file_get(sp, ep, name, append)
 				break;
 			}
 
-	/* If not found, build an entry for it. */
 	if (name == NULL || tep == (EXF *)&sp->gp->exfhdr) {
+		/*
+		 * If not found, build an entry for it.
+		 * Allocate and initialize the file structure.
+		 */
 		if ((tep = malloc(sizeof(EXF))) == NULL)
 			goto e1;
-
-		file_def(tep);
+		if (file_def(sp, tep)) {
+			FREE(tep, sizeof(EXF));
+			goto e1;
+		}
 
 		/* Insert into the chain of files. */
 		if (append) {
@@ -242,14 +247,6 @@ file_start(sp, ep)
 	/* Start logging. */
 	log_init(sp, ep);
 
-	/*
-	 * Reset any marks.
-	 *
-	 * XXX
-	 * This shouldn't be here.
-	 */
-	mark_reset(sp, ep);
-
 	++ep->refcnt;
 	return (ep);
 }
@@ -408,8 +405,9 @@ file_write(sp, ep, fm, tm, fname, flags)
  * file_def --
  *	Fill in a default EXF structure.
  */
-static void
-file_def(ep)
+static int
+file_def(sp, ep)
+	SCR *sp;
 	EXF *ep;
 {
 	memset(ep, 0, sizeof(EXF));
@@ -417,4 +415,6 @@ file_def(ep)
 	ep->c_lno = OOBLNO;
 	ep->l_ltype = LOG_NOTYPE;
 	F_SET(ep, F_NOSETPOS);
+
+	return (mark_init(sp, ep));
 }
