@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: set.opt.roff,v 8.61 1996/06/10 21:00:22 bostic Exp $ (Berkeley) $Date: 1996/06/10 21:00:22 $
+.\"     $Id: set.opt.roff,v 8.62 1996/06/17 11:22:51 bostic Exp $ (Berkeley) $Date: 1996/06/17 11:22:51 $
 .\"
 .SH 1 "Set Options"
 .pp
@@ -1195,6 +1195,21 @@ scrolled by the
 and
 .CO <control-U>
 commands.
+.KY windowname
+.IP "windowname [off]"
+.CO Vi
+changes the name of the editor's icon/window to the current file name
+when it's possible and not destructive, i.e.,
+when the editor can restore it to its original value on exit or when
+the icon/window will be discarded as the editor exits.
+If the
+.OP windowname
+edit option is set,
+.CO vi
+will change the icon/window name even when it's destructive and the
+icon/window name will remain after the editor exits.
+(This is the case for
+.XR xterm 1 ).
 .KY wraplen
 .IP "wraplen, wl [0]"
 This option is identical to the
