@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.71 1996/03/21 18:44:01 bostic Exp $ (Berkeley) $Date: 1996/03/21 18:44:01 $
+dnl	$Id: configure.in,v 8.72 1996/03/21 18:49:22 bostic Exp $ (Berkeley) $Date: 1996/03/21 18:49:22 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(configure)
@@ -465,9 +465,10 @@ dnl Some moron decided to drop off an argument from the gettimeofday call,
 dnl without changing the name.
 AC_MSG_CHECKING(for broken gettimeofday system call)
 AC_CACHE_VAL(vi_cv_gettimeofday, [dnl
-AC_TRY_LINK(, [gettimeofday(0, 0);],
-	[vi_cv_gettimeofday=double], [vi_cv_gettimeofday=no])])
-if test "$vi_cv_gettimeofday" = single; then
+AC_TRY_LINK([#include <sys/types.h>
+	#include <sys/time.h>], [gettimeofday(0, 0);],
+	[vi_cv_gettimeofday=okay], [vi_cv_gettimeofday=broken])])
+if test "$vi_cv_gettimeofday" = broken; then
 	AC_DEFINE(HAVE_BROKEN_GETTIMEOFDAY)
 fi
 AC_MSG_RESULT($vi_cv_gettimeofday)
