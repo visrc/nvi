@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.102 1996/05/13 11:08:32 bostic Exp $ (Berkeley) $Date: 1996/05/13 11:08:32 $
+dnl	$Id: configure.in,v 8.103 1996/05/13 17:58:58 bostic Exp $ (Berkeley) $Date: 1996/05/13 17:58:58 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(../common/main.c)
@@ -56,7 +56,7 @@ netbsd1*)  LIBS=${LIBS-"-lcrypt"};;
 nextstep3) OPTFLAG=${OPTFLAG-"-O9"}
 	   CPPFLAGS=${CPPFLAGS-"-w -pipe -posix"}
 	   LDFLAGS=${LDFLAGS-"-posix"};;
-osf*)	   CPPFLAGS=${CPPFLAGS-"-Olimit 1000"};;
+osf*)	   CFLAGS=${CFLAGS-"-Olimit 1000"};;
 ptx*)	   LIBS=${LIBS-"-lseq -linet -lsocket"};;
 sco3.2*)   LIBS=${LIBS-"-lsocket"};;
 sinix*)	   LIBS=${LIBS-"-lelf -lc"};;
