@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.83 1996/03/28 08:47:57 bostic Exp $ (Berkeley) $Date: 1996/03/28 08:47:57 $
+dnl	$Id: configure.in,v 8.84 1996/03/28 12:01:26 bostic Exp $ (Berkeley) $Date: 1996/03/28 12:01:26 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(../common/main.c)
@@ -40,7 +40,7 @@ aux*)	   CFLAGS=${CFLAGS-"-O"}
 	   LDFLAGS="-ZP $LDFLAGS"
 	   LIBOBJS="getopt.o strpbrk.o $LIBOBJS";;
 bsd4.4)    CFLAGS=${CFLAGS-"-O2"}
-	   LIBS="$LIBS -lutil";;
+	   LIBS="$LIBS";;
 bsdi2.1)   CC=${CC-"shlicc"}
 	   CFLAGS=${CFLAGS-"-O2"};;
 bsdi*)	   CFLAGS=${CFLAGS-"-O2"};;
@@ -50,7 +50,7 @@ irix6*)	   CFLAGS=${CFLAGS-"-O2"}
 irix*)	   CFLAGS=${CFLAGS-"-O2"}
 	   LIBS="$LIBS -lc_s -lbsd";;
 isc*)	   LIBS="$LIBS -lcposix -linet";;
-netbsd*)   LIBS="$LIBS -lutil";;
+netbsd1*)  LIBS="$LIBS -lcrypt";;
 nextstep3) CFLAGS=${CFLAGS-"-O9"}
 	   CPPFLAGS="-w -pipe -posix $CPPFLAGS"
 	   LDFLAGS="-posix $LDFLAGS";;
