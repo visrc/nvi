@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_menu.c,v 8.15 1996/12/10 17:07:22 bostic Exp $ (Berkeley) $Date: 1996/12/10 17:07:22 $";
+static const char sccsid[] = "$Id: m_menu.c,v 8.16 1996/12/10 21:05:36 bostic Exp $ (Berkeley) $Date: 1996/12/10 21:05:36 $";
 #endif /* not lint */
 
 #include <sys/queue.h>
@@ -33,16 +33,16 @@ static const char sccsid[] = "$Id: m_menu.c,v 8.15 1996/12/10 17:07:22 bostic Ex
 
 /* This module defines the menu structure for vi.  Each menu
  * item has an action routine associated with it.  For the most
- * part, those actions will simply call ip_send with vi commands.
+ * part, those actions will simply call __vi_send with vi commands.
  * others will pop up file selection dialogs and use them for
  * vi commands, and other will have to have special actions.
  *
  * Future:
  *	vi core will have to let us know when to be sensitive
- *	change IPO_STRING to IPO_COMMAND so that menu actions cannot
+ *	change VI_STRING to VI_COMMAND so that menu actions cannot
  *		be confusing when in insert mode
- *	need IPO_CUT, IPO_COPY, and IPO_PASTE to perform the appropriate
- *		operations on the visible text of yank buffer.  IPO_COPY
+ *	need VI_CUT, VI_COPY, and VI_PASTE to perform the appropriate
+ *		operations on the visible text of yank buffer.  VI_COPY
  *		is likely a NOP, but it will make users happy
  *	add mnemonics
  *	add accelerators
@@ -57,28 +57,28 @@ static const char sccsid[] = "$Id: m_menu.c,v 8.15 1996/12/10 17:07:22 bostic Ex
 
 #define	BufferSize	1024
 
-/* Utility:  Send a menu command to vi
+/*
+ * __vi_send_command_string --
+ *	Utility:  Send a menu command to vi
  *
- *	Future:
- *	change IPO_STRING to IPO_COMMAND so that menu actions cannot
- *		be confusing when in insert mode
+ * Future:
+ * Change VI_STRING to VI_COMMAND so that menu actions cannot be confusing
+ * when in insert mode.
  *
  * XXX
  * THIS SHOULD GO AWAY -- WE SHOULDN'T SEND UNINTERPRETED STRINGS TO THE
  * CORE.
+ *
+ * PUBLIC: void __vi_send_command_string __P((String));
  */
-
-#if defined(__STDC__)
-void	_vi_send_command_string( String str )
-#else
-void	_vi_send_command_string( str )
+void
+__vi_send_command_string(str)
 String	str;
-#endif
 {
     IP_BUF	ipb;
     char	buffer[BufferSize];
 
-    /* Future:  Need IPO_COMMAND so vi knows this is not text to insert
+    /* Future:  Need VI_COMMAND so vi knows this is not text to insert
      * At that point, appending a cr/lf will not be necessary.  For now,
      * append iff we are a colon or slash command.  Of course, if we are in
      * insert mode, all bets are off.
@@ -91,10 +91,10 @@ String	str;
 	    break;
     }
 
-    ipb.code = IPO_STRING;
+    ipb.code = VI_STRING;
     ipb.str = buffer;
     ipb.len = strlen(buffer);
-    ip_send("s", &ipb);
+    __vi_send("s", &ipb);
 }
 
 
@@ -111,26 +111,22 @@ static	void	send_beep( w )
 }
 
 
-/* Utility:  make a dialog box go Modal */
-
+/*
+ * __vi_cancel_cb --
+ *	Utility:  make a dialog box go Modal
+ *
+ * PUBLIC: void __vi_cancel_cb __P((Widget, XtPointer, XtPointer));
+ */
 static	Bool	have_answer;
-
-#if defined(__STDC__)
-void		_vi_cancel_cb( Widget w,
-			       XtPointer client_data,
-			       XtPointer call_data
-			       )
-#else
-void		_vi_cancel_cb( w, client_data, call_data )
-Widget		w;
-XtPointer	client_data;
-XtPointer	call_data;
-#endif
+void
+__vi_cancel_cb(w, client_data, call_data)
+	Widget w;
+	XtPointer client_data, call_data;
 {
-    have_answer = True;
+	have_answer = True;
 }
 
-void	_vi_modal_dialog( db )
+void	__vi_modal_dialog( db )
 Widget	db;
 {
     XtAppContext	ctx;
@@ -198,14 +194,14 @@ static	String	get_file( w, prompt )
     if ( db == NULL ){ 
 	db = XmCreateFileSelectionDialog( w, "file", NULL, 0 );
 	XtAddCallback( db, XmNokCallback, ok_file_name, NULL );
-	XtAddCallback( db, XmNcancelCallback, _vi_cancel_cb, NULL );
+	XtAddCallback( db, XmNcancelCallback, __vi_cancel_cb, NULL );
     }
 
     /* use the title as a prompt */
     XtVaSetValues( XtParent(db), XmNtitle, prompt, 0 );
 
     /* wait for a response */
-    _vi_modal_dialog( db );
+    __vi_modal_dialog( db );
 
     /* done */
     return file_name;
@@ -261,7 +257,7 @@ static	String	get_string( w, prompt, title )
     if ( db == NULL ){ 
 	db = XmCreatePromptDialog( w, "string", NULL, 0 );
 	XtAddCallback( db, XmNokCallback, ok_string, NULL );
-	XtAddCallback( db, XmNcancelCallback, _vi_cancel_cb, NULL );
+	XtAddCallback( db, XmNcancelCallback, __vi_cancel_cb, NULL );
     }
 
     /* this one has space for a prompt... */
@@ -273,7 +269,7 @@ static	String	get_string( w, prompt, title )
     XtVaSetValues( XtParent(db), XmNtitle, title, 0 );
 
     /* wait for a response */
-    _vi_modal_dialog( db );
+    __vi_modal_dialog( db );
 
     /* done */
     return string_name;
@@ -305,7 +301,7 @@ string_command(w, code, prompt, title)
 		 * as part of making the editor fully 8-bit clean.
 		 */
 		ipb.len = strlen(str) + 1;
-		ip_send("s", &ipb);
+		__vi_send("s", &ipb);
 	}
 }
 
@@ -327,7 +323,7 @@ file_command(w, code, prompt)
 		ipb.code = code;
 		ipb.str = file;
 		ipb.len = strlen(file);
-		ip_send("s", &ipb);
+		__vi_send("s", &ipb);
 	}
 }
 
@@ -342,7 +338,7 @@ ma_edit_file(w, call_data, client_data)
 	Widget w;
 	XtPointer call_data, client_data;
 {
-	file_command(w, IPO_EDIT, "Edit");
+	file_command(w, VI_EDIT, "Edit");
 }
 
 static void
@@ -350,7 +346,7 @@ ma_split(w, call_data, client_data)
 	Widget w;
 	XtPointer call_data, client_data;
 {
-	file_command(w, IPO_SPLIT, "Edit");
+	file_command(w, VI_EDITSPLIT, "Edit");
 }
 
 static void
@@ -360,8 +356,8 @@ ma_save(w, call_data, client_data)
 {
 	IP_BUF ipb;
 
-	ipb.code = IPO_WRITE;
-	(void)ip_send(NULL, &ipb);
+	ipb.code = VI_WRITE;
+	(void)__vi_send(NULL, &ipb);
 }
 
 static void
@@ -369,7 +365,7 @@ ma_save_as(w, call_data, client_data)
 	Widget w;
 	XtPointer call_data, client_data;
 {
-	file_command(w, IPO_WRITEAS, "Save As");
+	file_command(w, VI_WRITEAS, "Save As");
 }
 
 static void
@@ -379,8 +375,8 @@ ma_wq(w, call_data, client_data)
 {
 	IP_BUF ipb;
 
-	ipb.code = IPO_WQ;
-	(void)ip_send(NULL, &ipb);
+	ipb.code = VI_WQ;
+	(void)__vi_send(NULL, &ipb);
 }
 
 static void
@@ -390,8 +386,8 @@ ma_quit(w, call_data, client_data)
 {
 	IP_BUF ipb;
 
-	ipb.code = IPO_QUIT;
-	(void)ip_send(NULL, &ipb);
+	ipb.code = VI_QUIT;
+	(void)__vi_send(NULL, &ipb);
 }
 
 static void
@@ -401,8 +397,8 @@ ma_undo(w, call_data, client_data)
 {
 	IP_BUF ipb;
 
-	ipb.code = IPO_UNDO;
-	(void)ip_send(NULL, &ipb);
+	ipb.code = VI_UNDO;
+	(void)__vi_send(NULL, &ipb);
 }
 
 #if defined(__STDC__)
@@ -460,7 +456,7 @@ ma_find(w, call_data, client_data)
 	Widget w;
 	XtPointer call_data, client_data;
 {
-	_vi_show_search_dialog( w, "Find" );
+	__vi_show_search_dialog( w, "Find" );
 }
 
 static void
@@ -468,7 +464,7 @@ ma_find_next(w, call_data, client_data)
 	Widget w;
 	XtPointer call_data, client_data;
 {
-	_vi_next_search();
+	__vi_next_search();
 }
 
 static void
@@ -478,8 +474,8 @@ ma_tag(w, call_data, client_data)
 {
 	IP_BUF ipb;
 
-	ipb.code = IPO_TAG;
-	(void)ip_send(NULL, &ipb);
+	ipb.code = VI_TAG;
+	(void)__vi_send(NULL, &ipb);
 }
 
 static void
@@ -489,8 +485,8 @@ ma_tagsplit(w, call_data, client_data)
 {
 	IP_BUF ipb;
 
-	ipb.code = IPO_TAGSPLIT;
-	(void)ip_send(NULL, &ipb);
+	ipb.code = VI_TAGSPLIT;
+	(void)__vi_send(NULL, &ipb);
 }
 
 static void
@@ -498,7 +494,7 @@ ma_tagpop(w, call_data, client_data)
 	Widget w;
 	XtPointer call_data, client_data;
 {
-	_vi_send_command_string( "\024" );
+	__vi_send_command_string( "\024" );
 }
 
 static void
@@ -506,7 +502,7 @@ ma_tagas(w, call_data, client_data)
 	Widget w;
 	XtPointer call_data, client_data;
 {
-	string_command(w, IPO_TAGAS, "Enter Tag Name:", "Tag");
+	string_command(w, VI_TAGAS, "Enter Tag Name:", "Tag");
 }
 
 #if defined(__STDC__)
@@ -521,7 +517,7 @@ static	void		ma_preferences( w, call_data, client_data )
 	XtPointer	client_data;
 #endif
 {
-    _vi_show_options_dialog( w, "Preferences" );
+    __vi_show_options_dialog( w, "Preferences" );
 }
 
 
@@ -627,7 +623,7 @@ static	void		add_entries( parent, actions )
 /*
  * vi_create_menubar --
  *
- * PUBLIC: Widget _vi_create_menubar __P((Widget));
+ * PUBLIC: Widget __vi_create_menubar __P((Widget));
  */
 Widget
 vi_create_menubar(parent)
