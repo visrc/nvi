@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_usage.c,v 5.2 1992/12/05 11:09:00 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:09:00 $";
+static char sccsid[] = "$Id: ex_usage.c,v 5.3 1993/02/12 14:25:46 bostic Exp $ (Berkeley) $Date: 1993/02/12 14:25:46 $";
 #endif /* not lint */
 
 #include <limits.h>
@@ -31,7 +31,7 @@ ex_usage(cmdp)
 
 	
 	for (cp = cmds, p = cmdp->argv[0], len = USTRLEN(p);
-	    cp->name && bcmp(p, cp->name, len); ++cp);
+	    cp->name && memcmp(p, cp->name, len); ++cp);
 	if (cp->name == NULL) {
 		msg("The %.*s command is unknown.", len, p);
 		return (1);

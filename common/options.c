@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.40 1993/02/12 11:06:38 bostic Exp $ (Berkeley) $Date: 1993/02/12 11:06:38 $";
+static char sccsid[] = "$Id: options.c,v 5.41 1993/02/12 14:25:47 bostic Exp $ (Berkeley) $Date: 1993/02/12 14:25:47 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -905,7 +905,7 @@ opts_prefix(name)
 	save_op = NULL;
 	len = strlen(name);
 	for (op = opts; op->name != NULL; ++op)
-		if (!bcmp(op->name, name, len)) {
+		if (!memcmp(op->name, name, len)) {
 			if (save_op != NULL)
 				return (NULL);
 			save_op = op;

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.57 1993/02/12 10:03:19 bostic Exp $ (Berkeley) $Date: 1993/02/12 10:03:19 $";
+static char sccsid[] = "$Id: ex.c,v 5.58 1993/02/12 14:25:44 bostic Exp $ (Berkeley) $Date: 1993/02/12 14:25:44 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -240,7 +240,7 @@ ex_cmd(exc)
 			for (p = exc; isalpha(*exc); ++exc);
 			cmdlen = exc - p;
 		}
-		for (cp = cmds; cp->name && bcmp(p, cp->name, cmdlen); ++cp);
+		for (cp = cmds; cp->name && memcmp(p, cp->name, cmdlen); ++cp);
 		if (cp->name == NULL) {
 			msg("The %.*s command is unknown.", cmdlen, p);
 			return (1);
