@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 8.18 1994/09/12 10:17:43 bostic Exp $ (Berkeley) $Date: 1994/09/12 10:17:43 $";
+static char sccsid[] = "$Id: msg.c,v 8.19 1994/09/15 10:34:07 bostic Exp $ (Berkeley) $Date: 1994/09/15 10:34:07 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -145,8 +145,9 @@ binc_err:	return;
 		mlen += len;
 	}
 
-	/* File name, line number prefix. */
-	if (sp != NULL && sp->if_name != NULL) {
+	/* File name, line number prefix for errors. */
+	if ((mt == M_ERR || mt == M_SYSERR) &&
+	    sp != NULL && sp->if_name != NULL) {
 		for (p = sp->if_name; *p != '\0'; ++p) {
 			len = snprintf(mp, REM, "%s", KEY_NAME(sp, *p));
 			mp += len;
