@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.110 1994/05/02 14:30:06 bostic Exp $ (Berkeley) $Date: 1994/05/02 14:30:06 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.111 1994/05/04 18:22:06 bostic Exp $ (Berkeley) $Date: 1994/05/04 18:22:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -406,16 +406,22 @@ next_ch:	tval = term_key(sp, &ikey, quoted == Q_THISCHAR ?
 		}
 
 		switch (ikey.value) {
-		case K_CR:
+		case K_CR:				/* Carriage return. */
 		case K_NL:				/* New line. */
-			/* CR returns from the vi command line. */
+			/* Return in script windows and the command line. */
 k_cr:			if (LF_ISSET(TXT_CR)) {
 				/*
-				 * If a script window and not the colon
-				 * line, push a <cr> so it gets executed.
+				 * If this was a map, we may have not displayed
+				 * the line.  Display it, just in case.
+				 *
+				 * If a script window and not the colon line,
+				 * push a <cr> so it gets executed.
 				 */
-				if (F_ISSET(sp, S_SCRIPT) &&
-				    !LF_ISSET(TXT_INFOLINE))
+				if (LF_ISSET(TXT_INFOLINE)) {
+					if (sp->s_change(sp,
+					    ep, tp->lno, LINE_RESET))
+						goto err;
+				} else if (F_ISSET(sp, S_SCRIPT))
 					(void)term_push(sp, "\r", 1, CH_NOMAP);
 				goto k_escape;
 			}
