@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.21 1993/10/04 08:47:45 bostic Exp $ (Berkeley) $Date: 1993/10/04 08:47:45 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.22 1993/10/04 19:46:35 bostic Exp $ (Berkeley) $Date: 1993/10/04 19:46:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -213,7 +213,9 @@ newtp:		if ((tp = text_init(sp, p, len, len + 32)) == NULL)
 	 * from the RIGHT-HAND column, not the left.  It's more useful to
 	 * us as a distance from the left-hand column.
 	 */
-	if ((margin = O_VAL(sp, O_WRAPMARGIN)) != 0)
+	if (!LF_ISSET(TXT_WRAPMARGIN))
+		margin = 0;
+	else if ((margin = O_VAL(sp, O_WRAPMARGIN)) != 0)
 		margin = sp->cols - margin;
 
 	/*
