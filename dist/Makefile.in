@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.57 1996/05/18 17:04:45 bostic Exp $ (Berkeley) $Date: 1996/05/18 17:04:45 $
+#	$Id: Makefile.in,v 8.58 1996/06/09 11:34:56 bostic Exp $ (Berkeley) $Date: 1996/06/09 11:34:56 $
 
 srcdir=	@srcdir@/..
 CC=	@CC@
@@ -576,4 +576,6 @@ strsep.o: $(srcdir)/clib/strsep.c
 strtol.o: $(srcdir)/clib/strtol.c
 	$(CC) $(CFLAGS) $?
 strtoul.o: $(srcdir)/clib/strtoul.c
+	$(CC) $(CFLAGS) $?
+vsnprintf.o: $(srcdir)/clib/vsnprintf.c
 	$(CC) $(CFLAGS) $?
