@@ -1,20 +1,11 @@
-#	$Id: README,v 5.4 1993/02/14 14:35:51 bostic Exp $ (Berkeley) $Date: 1993/02/14 14:35:51 $
+#	$Id: README,v 5.5 1993/02/15 12:50:38 bostic Exp $ (Berkeley) $Date: 1993/02/15 12:50:38 $
 
 An ALPHA version of the new ex/vi, which will be distributed as nvi in
 4.4BSD, can be retrieved by anonymous ftp from vangogh.cs.berkeley.edu,
 from hidden/nvi.tar.Z.
 
-You're getting this email because we, at some point, talked over the
-possibility of you testing, or your company distributing, this version
-of vi.  If you are no longer interested in hearing about this, let me
-know and I'll drop your address from my list.
-
-Note, this is ALPHA software, i.e. buggy as hell.  I would have liked to
-wait longer to make it available, but various are interested in using it
-to develop other software and I didn't want to hold them up any longer
-than I already had.  Speaking of which, I apologize for taking so long to
-make it available.  The USL lawsuit is taking up an tremendous amount of
-our group's resources, and programming time has been very hard to come by.
+Please note that this is ALPHA software, and is nowhere near ready for
+prime time.
 
 This software is derived from software contributed to UC Berkeley by
 Steve Kirkendall, the author of the vi clone elvis.  Without his work,
@@ -45,54 +36,12 @@ Wide character support will be integrated at the same time that NULL
 support is included.
 
 The ex/vi recovery on system crash has not yet been implemented.  (This
-isn't difficult, it only requires some extensions to the current logging
+isn't difficult, only requiring some extensions to the current logging
 interface.)
 
-+ Other code you'll probably need:
++ Porting information:
 
-Included in the directory nvi/db is a copy of the 4.4BSD version of the
-dbopen(3) routines.  This is a complete database access methods package,
-that is used as the underlying file interface by ex/vi.  You will have to
-make this work on your system.  It shouldn't be too hard; the db/port
-subdirectory has files that should make it work.  Change the db.h header
-file in db/port to include compat.h and you're mostly done.  The header
-file "cdefs.h", from db/port, will also be necessary to make nvi compile.
-
-+ Other code you may need:
-
-Included in the directory nvi/curses is a copy of the 4.4BSD version of
-the curses(3) routines.  This is an updated implementation of the
-traditional BSD curses package.  You should not have to make this work,
-as your System V or 4BSD curses package should work okay.  The reason to
-compile and load this with the new version of ex/vi is if your curses
-package doesn't implement scrolling as a screen optimization.  (Older
-versions of BSD curses didn't, and this makes ex/vi intolerably slow,
-since it ends up repainting the entire screen on every update.  Some
-System V versions of curses don't do this right, either.)
-
-+ Porting status:
-
-The curses and nvi code have NOT been ported to other systems, yet.  The
-dbopen code is running on lots of systems and is pretty portable.  Please
-send me back whatever fixes you have to make to nvi and curses to make
-them run, and I'll integrate them into the package so that you don't have
-to do it twice!
-
-One interesting bit of functionality that nvi needs is the ability to
-replace the underlying read/write routines in a stdio stream with its own.
-The way this works is that when vi wants to use an ex routine, it sets it
-up so that the output of ex goes to an nvi function which knows how to
-display the stuff on the screen.  This way vi never has to leave curses
-(resulting in much nicer screen displays) and ex can simply use printf
-and friends without regard for what's really going on.  4.4BSD has a stdio
-function (fwopen(3)) which provides this functionality.  If you don't have
-fwopen or similar functionality, read the comment in vi/v_init.c and
-#define FWOPEN_NOT_AVAILABLE.  Note, you have to select one of two ways
-to do the write(2) system calls in the vi/v_init.c:v_init() function.
-
-I will be porting this software to SunOS in about two weeks, which will
-limit the amount of software that is included in the package as well as
-providing complete Makefiles, so you may want to wait for that to happen.  
+See the README in the directory PORT.
 
 + A quick tour:
 
@@ -102,11 +51,13 @@ translating line numbers into requests to the dbopen(3) database code.
 It also has the code for adding, deleting, and changing "records" in
 the underlying database.
 
+The nvi/vi directory is the vi source code.
+
 The nvi/ex directory is the ex source code.  Lots of this code is used by
 vi, however.  Generally, if the functionality is shared by both ex and
 vi, it's in nvi/ex, if it's vi only, it's in nvi/vi.  Files are generally
-named by the command(s) they support, but occasionally by the
-functionality they support.
+named by the command(s) they support, but occasionally with a name that
+describes their functionality.
 
 + Data structures:
 
@@ -141,4 +92,3 @@ VICMDARG
 	functions that implement the vi commands.  (The main vi command
 	loop (see nvi/vi/vi.c) builds this up and then passes it to the
 	vi functions.)
-
