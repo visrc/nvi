@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.59 1994/05/07 12:15:45 bostic Exp $ (Berkeley) $Date: 1994/05/07 12:15:45 $";
+static char sccsid[] = "$Id: util.c,v 8.60 1994/05/07 21:51:35 bostic Exp $ (Berkeley) $Date: 1994/05/07 21:51:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -126,7 +126,8 @@ nullsp2:	len += vsnprintf(msgbuf + len, sizeof(msgbuf) - len, fmt, ap);
 		len = sizeof(msgbuf) - 1;
 
 #ifdef DEBUG
-	TRACE(sp == NULL ? __global_list : sp, "%.*s\n", len, msgbuf);
+	if (sp != NULL)
+		TRACE(sp, "%.*s\n", len, msgbuf);
 #endif
 	msg_app(__global_list, sp, mt == M_ERR ? 1 : 0, msgbuf, len);
 }
