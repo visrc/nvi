@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: cut.h,v 5.19 1993/04/20 18:39:20 bostic Exp $ (Berkeley) $Date: 1993/04/20 18:39:20 $
+ *	$Id: cut.h,v 5.20 1993/05/15 21:21:26 bostic Exp $ (Berkeley) $Date: 1993/05/15 21:21:26 $
  */
 
 typedef struct _cb {			/* Cut buffer. */
@@ -74,6 +74,6 @@ int	 delete __P((struct _scr *,
 	    struct _exf *, struct _mark *, struct _mark *, int));
 int	 put __P((struct _scr *,
 	    struct _exf *, int, struct _mark *, struct _mark *, int));
-void	 text_free __P((struct _text *));
+void	 text_free __P((TEXT *));
 void	 hdr_text_free __P((struct _hdr *));
 TEXT	*text_init __P((struct _scr *, char *, size_t, size_t));

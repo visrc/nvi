@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: seq.h,v 5.12 1993/05/02 15:55:05 bostic Exp $ (Berkeley) $Date: 1993/05/02 15:55:05 $
+ *	$Id: seq.h,v 5.13 1993/05/15 21:21:17 bostic Exp $ (Berkeley) $Date: 1993/05/15 21:21:17 $
  */
 
 /*
@@ -46,11 +46,9 @@ typedef struct _seq {
 
 int	 abbr_save __P((struct _scr *, FILE *));
 int	 map_save __P((struct _scr *, FILE *));
-
 int	 seq_delete __P((struct _scr *, char *, enum seqtype));
 int	 seq_dump __P((struct _scr *, enum seqtype, int));
-struct _seq *
-	 seq_find __P((struct _scr *, char *, size_t, enum seqtype, int *));
+SEQ	*seq_find __P((struct _scr *, char *, size_t, enum seqtype, int *));
 void	 seq_init __P((struct _scr *));
 int	 seq_save __P((struct _scr *, FILE *, char *, enum seqtype));
 int	 seq_set __P((struct _scr *,
