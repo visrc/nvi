@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.20 1994/04/10 10:57:31 bostic Exp $ (Berkeley) $Date: 1994/04/10 10:57:31 $
+.\"     $Id: vi.ref,v 8.21 1994/04/11 19:22:28 bostic Exp $ (Berkeley) $Date: 1994/04/11 19:22:28 $
 .\"
 .Dd "%Q%"
 .Dt "EX/VI REFERENCE MANUAL" 1
@@ -283,7 +283,15 @@ of
 .Nm \&ex ,
 .Nm nex/nvi
 can use the startup files created for the historical implementations,
-but the converse is often not true.
+but the converse may not be true.
+.Pp
+Finally, if the
+.Fl -s
+(the historic
+.Fl
+option)
+is specified, or if standard input is redirected from a file,
+all environmental variables and startup files will be ignored.
 .Sh SIZING THE SCREEN
 The size of the screen can be set in a number of ways.
 .Nm Ex/vi
