@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 5.6 1992/12/25 16:24:28 bostic Exp $ (Berkeley) $Date: 1992/12/25 16:24:28 $";
+static char sccsid[] = "$Id: v_init.c,v 5.7 1993/01/17 16:59:57 bostic Exp $ (Berkeley) $Date: 1993/01/17 16:59:57 $";
 #endif /* not lint */
 
 #include <curses.h>
@@ -32,15 +32,16 @@ v_init(ep)
 
 	ep->stdfp = fwopen(ep, v_exwrite);
 
-	if (ISSET(O_COMMENT))
-		v_comment(ep);
+	if (ISSET(O_COMMENT) && v_comment(ep))
+		return (1);
 
 	FF_SET(ep, F_REDRAW);
 
 	ep->lines = LINES;		/* XXX: Way ugly. */
 	ep->cols = COLS;
 
-	MOVE(0, 0);
+	scr_init(ep);
+
 	return (0);
 }
 
@@ -54,6 +55,8 @@ v_end(ep)
 {
 	(void)fclose(ep->stdfp);
 	ep->stdfp = stdout;
+
+	scr_end(ep);
 
 	return (0);
 }
