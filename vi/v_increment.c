@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_increment.c,v 8.2 1993/08/19 16:23:37 bostic Exp $ (Berkeley) $Date: 1993/08/19 16:23:37 $";
+static char sccsid[] = "$Id: v_increment.c,v 8.3 1993/08/22 11:32:21 bostic Exp $ (Berkeley) $Date: 1993/08/22 11:32:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -20,9 +20,9 @@ static char sccsid[] = "$Id: v_increment.c,v 8.2 1993/08/19 16:23:37 bostic Exp 
 
 static char * const fmt[] = {
 #define	DEC	0
-	"%.*ld",
+	"%ld",
 #define	SDEC	1
-	"%+.*ld",
+	"%+ld",
 #define	HEXC	2
 	"%#0.*lX",
 #define	HEXL	3
@@ -87,24 +87,23 @@ v_increment(sp, ep, vp, fm, tm, rp)
 	} else {
 		if (vp->character == '+') {
 			lval = strtol(vp->keyword, NULL, 0);
-			if (LONG_MAX - lval < sp->inc_lastval) {
-overflow:			msgq(sp, M_ERR,
-				    "Resulting number too large.");
+			if (lval > 0 && LONG_MAX - lval < sp->inc_lastval) {
+overflow:			msgq(sp, M_ERR, "Resulting number too large.");
 				return (1);
 			}
 			lval += sp->inc_lastval;
 		} else {
 			lval = strtol(vp->keyword, NULL, 0);
-			if (lval < 0 && -(LONG_MIN - lval) > sp->inc_lastval) {
-underflow:			msgq(sp, M_ERR,
-				    "Resulting number too small.");
+			if (lval < 0 && -(LONG_MIN - lval) < sp->inc_lastval) {
+underflow:			msgq(sp, M_ERR, "Resulting number too small.");
 				return (1);
 			}
 			lval -= sp->inc_lastval;
 		}
-		ntype = *vp->keyword == '+' || *vp->keyword == '-' ?
+		ntype = lval != 0 &&
+		    (*vp->keyword == '+' || *vp->keyword == '-') ?
 		    fmt[SDEC] : fmt[DEC];
-		nlen = snprintf(nbuf, sizeof(nbuf), ntype, len, lval);
+		nlen = snprintf(nbuf, sizeof(nbuf), ntype, lval);
 	}
 
 	if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
