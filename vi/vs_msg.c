@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_msg.c,v 10.68 1996/06/09 10:16:44 bostic Exp $ (Berkeley) $Date: 1996/06/09 10:16:44 $";
+static const char sccsid[] = "$Id: vs_msg.c,v 10.69 1996/06/09 10:37:05 bostic Exp $ (Berkeley) $Date: 1996/06/09 10:37:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -356,8 +356,8 @@ vs_msg(sp, mtype, line, len)
 			vs_output(sp, M_NONE, " ", 1);
 		}
 	vip->mtype = mtype;
-	for (s = line; len > 0; s = t) {
-		for (; isblank(*s) && --len != 0; ++s);
+	for (s = line;; s = t) {
+		for (; len > 0 && isblank(*s); --len, ++s);
 		if (len == 0)
 			break;
 		if (len + vip->lcontinue > maxcols) {
@@ -367,21 +367,21 @@ vs_msg(sp, mtype, line, len)
 				 e = t = s + (maxcols - vip->lcontinue);
 			else
 				for (t = e; isblank(e[-1]); --e);
-		} else {
-			e = s + len;
-			/*
-			 * XXX:
-			 * If t isn't initialized for "s = t", len will be
-			 * equal to 0.  Shut the freakin' compiler up.
-			 */
-			t = s;
-		}
-		len -= e - s;
-		if ((e - s) > 1 && s[(e - s) - 1] == '.')
+		} else
+			e = t = s + len;
+
+		/*
+		 * If the message ends in a period, discard it, we want to
+		 * gang messages where possible.
+		 */
+		if (len == 0 && (e - s) > 1 && s[(e - s) - 1] == '.')
 			--e;
 		vs_output(sp, mtype, s, e - s);
+
+		len -= t - s;
 		if (len != 0)
 			vs_output(sp, M_NONE, "\n", 1);
+
 		if (INTERRUPTED(sp))
 			break;
 	}
