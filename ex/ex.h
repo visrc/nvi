@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.41 1993/12/22 16:59:03 bostic Exp $ (Berkeley) $Date: 1993/12/22 16:59:03 $
+ *	$Id: ex.h,v 8.42 1993/12/27 16:48:32 bostic Exp $ (Berkeley) $Date: 1993/12/27 16:48:32 $
  */
 
 /* Ex command structure. */
@@ -61,6 +61,13 @@ struct _excmdarg {
 	u_int	flags;		/* Selected flags from EXCMDLIST. */
 };
 
+/* Global ranges. */
+typedef struct _range	RANGE;
+struct _range {
+	CIRCLEQ_ENTRY(_range) q;	/* Linked list of ranges. */
+	recno_t start, stop;		/* Start/stop of the range. */
+};
+
 /* Ex private, per-screen memory. */
 typedef struct _ex_private {
 	ARGS   **args;			/* Arguments. */
@@ -80,6 +87,10 @@ typedef struct _ex_private {
 	TAILQ_HEAD(_tagh, _tag) tagq;	/* Tag stack. */
 	TAILQ_HEAD(_tagfh, _tagf) tagfq;/* Tag stack. */
 	char	*tlast;			/* Saved last tag. */
+
+					/* Linked list of ranges. */
+	CIRCLEQ_HEAD(_rangeh, _range) rangeq;
+	recno_t range_lno;		/* Range set line number. */
 } EX_PRIVATE;
 #define	EXP(sp)	((EX_PRIVATE *)((sp)->ex_private))
 	
@@ -221,6 +232,7 @@ int	ex_suspend __P((SCR *));
 int	ex_tdisplay __P((SCR *, EXF *));
 int	ex_writefp __P((SCR *, EXF *,
 	    char *, FILE *, MARK *, MARK *, u_long *, u_long *));
+void	global_insdel __P((SCR *, EXF *, enum operation, recno_t));
 int	proc_wait __P((SCR *, long, const char *, int));
 int	sscr_end __P((SCR *));
 int	sscr_exec __P((SCR *, EXF *, recno_t));

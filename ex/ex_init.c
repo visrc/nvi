@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_init.c,v 8.9 1993/12/09 19:42:41 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:42:41 $";
+static char sccsid[] = "$Id: ex_init.c,v 8.10 1993/12/27 16:48:48 bostic Exp $ (Berkeley) $Date: 1993/12/27 16:48:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,6 +36,7 @@ ex_screen_copy(orig, sp)
 	/* Initialize queues. */
 	TAILQ_INIT(&nexp->tagq);
 	TAILQ_INIT(&nexp->tagfq);
+	CIRCLEQ_INIT(&nexp->rangeq);
 
 	if (orig == NULL) {
 		nexp->at_lbuf_set = 0;
