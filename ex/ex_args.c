@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 5.18 1992/10/26 09:07:56 bostic Exp $ (Berkeley) $Date: 1992/10/26 09:07:56 $";
+static char sccsid[] = "$Id: ex_args.c,v 5.19 1992/10/26 17:45:39 bostic Exp $ (Berkeley) $Date: 1992/10/26 17:45:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -108,15 +108,18 @@ ex_args(cmdp)
 	register int cnt, col, sep;
 	int len;
 
-	ep = file_first();
-	if (ep->name == NULL) {
+	for (ep = file_first();
+	    ep != NULL && !(ep->flags & F_IGNORE); ep = file_next(ep));
+	if (ep == NULL) {
 		msg("No file names.");
 		return (1);
 	}
 
 	EX_PRSTART(1);
 	col = len = sep = 0;
-	for (cnt = 1; ep; ++cnt) {
+	for (cnt = 1; ep; ++cnt, ep = file_next(ep)) {
+		if (ep->flags & F_IGNORE)
+			continue;
 		col += len = strlen(ep->name) + sep + (curf == ep ? 2 : 0);
 		if (col >= COLS - 1) {
 			col = len;
@@ -130,7 +133,6 @@ ex_args(cmdp)
 			(void)printf("[%s]", ep->name);
 		else
 			(void)printf("%s", ep->name);
-		ep = file_next(ep);
 	}
 	EX_PRTRAIL;
 	return (0);
