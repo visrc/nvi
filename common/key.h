@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 9.6 1995/01/30 09:11:56 bostic Exp $ (Berkeley) $Date: 1995/01/30 09:11:56 $
+ *	$Id: key.h,v 9.7 1995/01/30 17:37:11 bostic Exp $ (Berkeley) $Date: 1995/01/30 17:37:11 $
  */
 
 /*
@@ -167,7 +167,7 @@ size_t	 __key_len __P((SCR *, ARG_CHAR_T));
 CHAR_T	*__key_name __P((SCR *, ARG_CHAR_T));
 int	 __key_val __P((SCR *, ARG_CHAR_T));
 void	 key_init __P((SCR *));
-void	 term_flush __P((SCR *, char *, u_int));
+int	 term_flush __P((SCR *, u_int));
 input_t	 term_key __P((SCR *, CH *, u_int));
 int	 term_init __P((SCR *));
 int	 term_push __P((SCR *, CHAR_T *, size_t, u_int));

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 9.13 1995/01/23 18:31:42 bostic Exp $ (Berkeley) $Date: 1995/01/23 18:31:42 $";
+static char sccsid[] = "$Id: key.c,v 9.14 1995/01/30 17:37:17 bostic Exp $ (Berkeley) $Date: 1995/01/30 17:37:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -635,21 +635,20 @@ not_digit_ch:	chp->ch = CH_NOT_DIGIT;
  * term_flush --
  *	Flush any flagged keys.
  */
-void
-term_flush(sp, msg, flags)
+int
+term_flush(sp, flags)
 	SCR *sp;
-	char *msg;
 	u_int flags;
 {
 	GS *gp;
 
 	gp = sp->gp;
 	if (!gp->i_cnt || !(gp->i_chf[gp->i_next] & flags))
-		return;
+		return (0);
 	do {
 		QREM_HEAD(1);
 	} while (gp->i_cnt && gp->i_chf[gp->i_next] & flags);
-	msgq(sp, M_ERR, "091|%s: keys flushed", msg);
+	return (1);
 }
 
 #ifdef MAKE_THE_USER_ENTER_A_KEY
