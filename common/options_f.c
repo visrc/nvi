@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 9.9 1995/01/11 18:45:54 bostic Exp $ (Berkeley) $Date: 1995/01/11 18:45:54 $";
+static char sccsid[] = "$Id: options_f.c,v 9.10 1995/01/13 10:10:38 bostic Exp $ (Berkeley) $Date: 1995/01/13 10:10:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -334,7 +334,10 @@ prset(sp, str, set_index, unset_index)
 	if (O_STR(sp, set_index) != NULL)
 		len += strlen(O_STR(sp, set_index));
 	MALLOC_RET(sp, p, CHAR_T *, (len + 1) * sizeof(CHAR_T));
-	MEMMOVE(p, O_STR(sp, set_index), len + 1);
+	if (O_STR(sp, set_index) != NULL)
+		MEMMOVE(p, O_STR(sp, set_index), len + 1);
+	else
+		p[0] = '\0';
 	for (s = str; *s != NULL; ++s) {
 		for (t = p; *t != '\0'; ++t)
 			if (*t == *s)

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 9.10 1995/01/11 18:45:28 bostic Exp $ (Berkeley) $Date: 1995/01/11 18:45:28 $";
+static char sccsid[] = "$Id: options.c,v 9.11 1995/01/13 10:10:31 bostic Exp $ (Berkeley) $Date: 1995/01/13 10:10:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -731,8 +731,9 @@ opts_dump(sp, type)
 			curlen += strlen(nbuf);
 			break;
 		case OPT_STR:
-			/* O_STR(sp, cnt) can't be NULL. */
-			curlen += strlen(O_STR(sp, cnt)) + 3;
+			if (O_STR(sp, cnt) != NULL)
+				curlen += strlen(O_STR(sp, cnt));
+			curlen += 3;
 			break;
 		}
 		/* Offset by two so there's a gap. */
@@ -947,11 +948,11 @@ opts_copy(orig, sp)
 		if (optlist[cnt].type != OPT_STR)
 			continue;
 		/*
-		 * If already failed, just NULL out the entries -- have to
-		 * continue, otherwise would have two screens referencing
-		 * the same memory.
+		 * If never set, or already failed, NULL out the entries --
+		 * have to continue after failure, otherwise would have two
+		 * screens referencing the same memory.
 		 */
-		if (rval) {
+		if (rval || O_STR(sp, cnt) == NULL) {
 			O_STR(sp, cnt) = O_D_STR(sp, cnt) = NULL;
 			continue;
 		}
