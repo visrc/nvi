@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 9.19 1995/02/08 12:35:39 bostic Exp $ (Berkeley) $Date: 1995/02/08 12:35:39 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 9.20 1995/02/08 14:20:05 bostic Exp $ (Berkeley) $Date: 1995/02/08 14:20:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -654,9 +654,7 @@ slow:	for (smp = HMAP; smp->lno != LNO; ++smp);
 	 * refresh() time, we don't have to do the operations separately,
 	 * avoiding a screen flash.
 	 */
-paint:	if (LF_ISSET(PAINT_FLUSH) &&
-	    sp->q.cqe_prev == (void *)&sp->gp->dq &&
-	    sp->q.cqe_next == (void *)&sp->gp->dq) {
+paint:	if (LF_ISSET(PAINT_FLUSH) && !IS_SPLIT(sp)) {
 		(void)svp->scr_clear(sp);
 		didclear = 1;
 	}
@@ -792,7 +790,7 @@ svi_modeline(sp)
 	cols = sp->cols - 1;
 
 	curlen = 0;
-	if (sp->q.cqe_next != (void *)&sp->gp->dq) {
+	if (IS_SPLIT(sp)) {
 		for (p = sp->frp->name; *p != '\0'; ++p);
 		while (--p > sp->frp->name) {
 			if (*p == '/') {
