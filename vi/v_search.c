@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 5.34 1993/04/12 14:54:45 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:54:45 $";
+static char sccsid[] = "$Id: v_search.c,v 5.35 1993/04/13 16:25:01 bostic Exp $ (Berkeley) $Date: 1993/04/13 16:25:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,7 +18,7 @@ static char sccsid[] = "$Id: v_search.c,v 5.34 1993/04/12 14:54:45 bostic Exp $ 
 #include "vi.h"
 #include "vcmd.h"
 
-static int getptrn __P((SCR *, int, char **));
+static int getptrn __P((SCR *, EXF *, int, char **));
 
 /*
  * v_searchn -- n
@@ -138,7 +138,7 @@ v_searchb(sp, ep, vp, fm, tm, rp)
 {
 	char *ptrn;
 
-	if (getptrn(sp, '?', &ptrn))
+	if (getptrn(sp, ep, '?', &ptrn))
 		return (1);
 	if (ptrn == NULL) {
 		*rp = *fm;
@@ -163,7 +163,7 @@ v_searchf(sp, ep, vp, fm, tm, rp)
 {
 	char *ptrn;
 
-	if (getptrn(sp, '/', &ptrn))
+	if (getptrn(sp, ep, '/', &ptrn))
 		return (1);
 	if (ptrn == NULL) {
 		*rp = *fm;
@@ -180,15 +180,22 @@ v_searchf(sp, ep, vp, fm, tm, rp)
  *	Get the search pattern.
  */
 static int
-getptrn(sp, prompt, storep)
+getptrn(sp, ep, prompt, storep)
 	SCR *sp;
+	EXF *ep;
 	int prompt;
 	char **storep;
 {
-	if (sp->gb(sp, prompt, storep, NULL, GB_BS|GB_ESC|GB_OFF))
+	TEXT *tp;
+
+	if (sp->gb(sp, ep, &sp->bhdr, prompt,
+	    TXT_BS | TXT_CR | TXT_ESCAPE | TXT_PROMPT))
 		return (1);
 
-	if (*storep != NULL)
-		**storep = prompt;
+	tp = sp->bhdr.next;
+	if (tp->len == 1)
+		*storep = NULL;
+	else
+		*storep = tp->lb;
 	return (0);
 }
