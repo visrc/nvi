@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_read.c,v 10.5 1995/10/18 11:34:16 bostic Exp $ (Berkeley) $Date: 1995/10/18 11:34:16 $";
+static char sccsid[] = "$Id: cl_read.c,v 10.6 1995/10/28 10:36:08 bostic Exp $ (Berkeley) $Date: 1995/10/28 10:36:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -41,11 +41,11 @@ static input_t cl_read __P((SCR *,
  * PUBLIC: int cl_event __P((SCR *, EVENT *, u_int32_t, int));
  */
 int
-cl_event(sp, evp, flags, timeout)
+cl_event(sp, evp, flags, ms)
 	SCR *sp;
 	EVENT *evp;
 	u_int32_t flags;
-	int timeout;
+	int ms;
 {
 	struct timeval t, *tp;
 	CL_PRIVATE *clp;
@@ -85,12 +85,12 @@ retest:	if (LF_ISSET(EC_INTERRUPT) || F_ISSET(clp, CL_SIGINT)) {
 		}
 	}
 
-	/* Set timer; timeout is in milliseconds. */
-	if (timeout == 0)
+	/* Set timer. */
+	if (ms == 0)
 		tp = NULL;
 	else {
-		t.tv_sec = timeout / 1000;
-		t.tv_usec = (timeout % 1000) * 1000;
+		t.tv_sec = ms / 1000;
+		t.tv_usec = (ms % 1000) * 1000;
 		tp = &t;
 	}
 
@@ -124,13 +124,13 @@ retest:	if (LF_ISSET(EC_INTERRUPT) || F_ISSET(clp, CL_SIGINT)) {
  *	Read characters from the input.
  */
 static input_t
-cl_read(sp, quoted, bp, blen, nrp, timeout)
+cl_read(sp, quoted, bp, blen, nrp, tp)
 	SCR *sp;
 	int quoted;
 	CHAR_T *bp;
 	size_t blen;
 	int *nrp;
-	struct timeval *timeout;
+	struct timeval *tp;
 {
 	struct termios term1, term2;
 	struct timeval poll;
@@ -170,10 +170,10 @@ cl_read(sp, quoted, bp, blen, nrp, timeout)
 	FD_ZERO(&rdfd);
 	poll.tv_sec = 0;
 	poll.tv_usec = 0;
-	if (timeout != NULL) {
+	if (tp != NULL) {
 		FD_SET(STDIN_FILENO, &rdfd);
 		switch (select(STDIN_FILENO + 1,
-		    &rdfd, NULL, NULL, timeout == NULL ? &poll : timeout)) {
+		    &rdfd, NULL, NULL, tp == NULL ? &poll : tp)) {
 		case 0:
 			return (INP_TIMEOUT);
 		case -1:
