@@ -1,14 +1,11 @@
-#	$Id: Makefile,v 8.4 1994/09/19 12:55:31 bostic Exp $ (Berkeley) $Date: 1994/09/19 12:55:31 $
+#	$Id: Makefile,v 8.5 1994/09/19 13:00:56 bostic Exp $ (Berkeley) $Date: 1994/09/19 13:00:56 $
 
+CAT=	vi_english vi_german
 FILES=	../common/*.c ../ex/*.c ../sex/*.c ../vi/*.c ../svi/*.c ../xaw/*.c
-english: dump ${FILES}
-	./dump ${FILES} |\
-	sed -e '/|/!d' \
-	    -e 's/|/ "/' \
-	    -e 's/^"//' |\
-	sort -n > vi_$@.base
 
-catalog:
+all: ${CAT}
+
+${CAT}: vi_english.base
 	@for i in *.base; do						\
 		echo "... $$i";						\
 		awk '{							\
@@ -24,7 +21,7 @@ catalog:
 		    -e '/"/s/"$$//' > `basename $$i .base`;		\
 	done
 
-check:
+check: catalog
 	@for i in *.base; do						\
 		echo "... $$i";						\
 		f=`basename $$i .base`;					\
@@ -32,10 +29,10 @@ check:
 		awk '{while (++nline < $$1) print nline}' < $$i;	\
 		echo =========================;				\
 		echo "MISSING ERROR MESSAGES (this is NOT okay):";	\
-		awk '{print $$1}' < $$i > __check1;			\
-		awk '{print $$1}' < vi_english.base > __check2;		\
-		join -v 2 __check1 __check2;				\
-		rm -f __check1 __check2;				\
+		awk '{print $$1}' < $$i > __ck1;			\
+		awk '{print $$1}' < vi_english.base > __ck2;		\
+		join -v 2 __ck1 __ck2;					\
+		rm -f __ck1 __ck2;					\
 		echo =========================;				\
 		echo "DUPLICATE MESSAGE NUMBERS (this is NOT okay):";	\
 		for j in						\
@@ -50,10 +47,15 @@ check:
 		echo =========================) > $$f.check;		\
 	done
 
+vi_english.base: dump ${FILES}
+	./dump ${FILES} |\
+	sed -e '/|/!d' \
+	    -e 's/|/ "/' \
+	    -e 's/^"//' |\
+	sort -n > $@
+
 dump: dump.c
 	${CC} -O -o dump dump.c
 
 clean:
-	rm -f dump dump.o 
-	rm -f vi_english vi_english.base
-	rm -f *.check __check1 __check2
+	rm -f dump dump.o ${CAT} vi_english.base *.check __ck1 __ck2
