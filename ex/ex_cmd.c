@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 8.5 1993/08/06 10:26:44 bostic Exp $ (Berkeley) $Date: 1993/08/06 10:26:44 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 8.6 1993/08/07 10:03:01 bostic Exp $ (Berkeley) $Date: 1993/08/07 10:03:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -139,7 +139,7 @@ EXCMDLIST cmds[] = {
 	    "s",	"make [argument ...]"},
 /* C_MAP */
 	{"map",		ex_map,		0,
-	    "s",	"map[!] [key replace]"},
+	    "!s",	"map[!] [key replace]"},
 /* C_MKEXRC */
 	{"mkexrc",	ex_mkexrc,	E_NOGLOBAL|E_NORC,
 	    "!f1r",	"mkexrc[!] file"},
