@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.65 1994/09/02 12:41:47 bostic Exp $ (Berkeley) $Date: 1994/09/02 12:41:47 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.66 1994/09/29 22:47:19 bostic Exp $ (Berkeley) $Date: 1994/09/29 22:47:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -792,21 +792,22 @@ svi_modeline(sp, ep)
 	 * Assume that mode name characters, asterisks, and spaces only take
 	 * up a single column on the screen.
 	 */
-	endpoint = cols;
-	if (O_ISSET(sp, O_SHOWDIRTY) && F_ISSET(ep, F_MODIFIED))
-		--endpoint;
-
 #define	MODESIZE	9
-	if (O_ISSET(sp, O_SHOWMODE))
+	endpoint = cols;
+	if (O_ISSET(sp, O_SHOWMODE)) {
+		if (F_ISSET(ep, F_MODIFIED))
+			--endpoint;
 		endpoint -= MAX_MODE_NAME;
+	}
 
 	if (endpoint < curlen + 2)
 		return (0);
 
 	MOVE(sp, INFOLINE(sp), endpoint);
-	if (O_ISSET(sp, O_SHOWDIRTY) && F_ISSET(ep, F_MODIFIED))
-		ADDSTR("*");
-	if (O_ISSET(sp, O_SHOWMODE))
+	if (O_ISSET(sp, O_SHOWMODE)) {
+		if (F_ISSET(ep, F_MODIFIED))
+			ADDSTR("*");
 		ADDSTR(sp->showmode);
+	}
 	return (0);
 }
