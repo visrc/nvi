@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.101 1994/03/11 12:06:44 bostic Exp $ (Berkeley) $Date: 1994/03/11 12:06:44 $";
+static char sccsid[] = "$Id: ex.c,v 8.102 1994/03/11 13:56:59 bostic Exp $ (Berkeley) $Date: 1994/03/11 13:56:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -95,14 +95,17 @@ ex(sp, ep)
 				(void)fflush(stdout);
 			}
 			memmove(defcom, DEFCOM, sizeof(DEFCOM));
-			(void)ex_icmd(sp, ep, defcom, sizeof(DEFCOM) - 1);
+			if (ex_icmd(sp, ep, defcom, sizeof(DEFCOM) - 1) &&
+			    !F_ISSET(sp->gp, G_STDIN_TTY))
+				F_SET(sp, S_EXIT_FORCE);
 		} else {
 			if (F_ISSET(sp->gp, G_STDIN_TTY))
 				(void)fputc('\n', stdout);
-			(void)ex_icmd(sp, ep, tp->lb, tp->len);
+			if (ex_icmd(sp, ep, tp->lb, tp->len) &&
+			    !F_ISSET(sp->gp, G_STDIN_TTY))
+				F_SET(sp, S_EXIT_FORCE);
 		}
 		(void)msg_rpt(sp, 0);
-
 		if (saved_mode != F_ISSET(sp, S_SCREENS | S_MAJOR_CHANGE))
 			break;
 
