@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.110 1994/04/07 12:57:32 bostic Exp $ (Berkeley) $Date: 1994/04/07 12:57:32 $";
+static char sccsid[] = "$Id: ex.c,v 8.111 1994/04/10 11:47:45 bostic Exp $ (Berkeley) $Date: 1994/04/10 11:47:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -49,6 +49,7 @@ ex(sp, ep)
 	SCR *sp;
 	EXF *ep;
 {
+	enum input irval;
 	TEXT *tp;
 	u_int flags, saved_mode;
 	int eval;
@@ -77,8 +78,21 @@ ex(sp, ep)
 		LF_SET(TXT_BEAUTIFY);
 
 	for (eval = 0;; ++sp->if_lno) {
-		/* Get the next command. */
-		switch (sp->s_get(sp, ep, &sp->tiq, ':', flags)) {
+		/*
+		 * Get the next command.  Setting the S_INTERRUPTIBLE flag
+		 * here is safe, because it's cleared in ex_icmd().
+		 */
+		F_CLR(sp, S_INTERRUPTED);
+		F_SET(sp, S_INTERRUPTIBLE);
+		irval = sp->s_get(sp, ep, &sp->tiq, ':', flags);
+		if (F_ISSET(sp, S_INTERRUPTED)) {
+			F_CLR(sp, S_INTERRUPTED);
+			(void)fputc('\n', stdout);
+			(void)fflush(stdout);
+			msgq(sp, M_ERR, "Interrupted.");
+			goto refresh;
+		}
+		switch (irval) {
 		case INP_OK:
 			break;
 		case INP_EOF:
@@ -115,7 +129,7 @@ ex(sp, ep)
 		if (saved_mode != F_ISSET(sp, S_SCREENS | S_MAJOR_CHANGE))
 			break;
 
-		if (sp->s_refresh(sp, ep)) {
+refresh:	if (sp->s_refresh(sp, ep)) {
 			eval = 1;
 			break;
 		}
