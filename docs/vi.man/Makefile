@@ -1,14 +1,13 @@
-#	$Id: Makefile,v 8.5 1994/07/16 17:56:42 bostic Exp $ (Berkeley) $Date: 1994/07/16 17:56:42 $
+# $Id: Makefile,v 8.6 1996/06/27 19:35:39 bostic Exp $ (Berkeley) $Date: 1996/06/27 19:35:39 $
 
-SRCS=	vi.1
-DOCS=	vi.0 vi.0.ps
+ROFF=	groff
 
-all: ${DOCS}
+all: vi.0 vi.0.ps
 
 vi.0: vi.1
-	groff -man -Tascii < vi.1 > $@
+	${ROFF} -man -Tascii < vi.1 > $@
 vi.0.ps: vi.1
-	groff -man < vi.1 > $@
+	${ROFF} -man < vi.1 > $@
 
 clean:
-	rm -f ${DOCS}
+	rm -f vi.0 vi.0.ps
