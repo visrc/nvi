@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.23 1992/10/24 14:24:37 bostic Exp $ (Berkeley) $Date: 1992/10/24 14:24:37 $";
+static char sccsid[] = "$Id: vi.c,v 5.24 1992/10/29 14:45:26 bostic Exp $ (Berkeley) $Date: 1992/10/29 14:45:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,15 +46,18 @@ vi()
 	u_int flags;
 	int erase;
 
+	curf->stdfp = fwopen(curf, v_exwrite);
 	scr_ref(curf);
 	for (;;) {
 		/* Report any changes from the previous command. */
-		if (rptlines) {
-			if (LVAL(O_REPORT) && rptlines >= LVAL(O_REPORT)) {
-				msg("%ld line%s %s", rptlines,
-				    (rptlines == 1 ? "" : "s"), rptlabel);
+		if (curf->rptlines) {
+			if (LVAL(O_REPORT) &&
+			    curf->rptlines >= LVAL(O_REPORT)) {
+				msg("%ld line%s %s", curf->rptlines,
+				    curf->rptlines == 1 ? "" : "s",
+				    curf->rptlabel);
 			}
-			rptlines = 0;
+			curf->rptlines = 0;
 		}
 
 		/*
@@ -84,13 +87,6 @@ err:		if (msgcnt) {
 			goto err;
 
 		flags = vp->kp->flags;
-
-		/* V/v commands require movement commands. */
-		if (V_from && !(flags & V_MOVE)) {
-			bell();
-			msg("%s: not a movement command", vp->key);
-			goto err;
-		}
 
 		/* Get any associated keyword. */
 		if (flags & (V_KEYNUM|V_KEYW) && getkeyword(vp, flags))
@@ -171,6 +167,8 @@ err:		if (msgcnt) {
 				dot.flags |= VC_C1SET;
 		}
 	}
+	(void)fclose(curf->stdfp);
+	curf->stdfp = stdout;
 	(void)scr_end(curf);
 }
 
