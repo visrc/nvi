@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 8.36 1994/08/08 10:14:55 bostic Exp $ (Berkeley) $Date: 1994/08/08 10:14:55 $";
+static char sccsid[] = "$Id: ex_read.c,v 8.37 1994/08/08 10:20:02 bostic Exp $ (Berkeley) $Date: 1994/08/08 10:20:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -156,7 +156,7 @@ ex_read(sp, ep, cmdp)
 				free(sp->frp->name);
 				sp->frp->name = name;
 			}
-			F_SET(sp->frp, FR_READNAMED);
+			F_SET(sp->frp, FR_NAMECHANGE | FR_READNAMED);
 		} else
 			set_alt_name(sp, name);
 		name = cmdp->argv[1]->bp;
