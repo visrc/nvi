@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: ex.cmd.roff,v 8.26 1994/09/02 20:40:28 bostic Exp $ (Berkeley) $Date: 1994/09/02 20:40:28 $
+.\"	$Id: ex.cmd.roff,v 8.27 1994/09/03 11:22:41 bostic Exp $ (Berkeley) $Date: 1994/09/03 11:22:41 $
 .\"
 .SH 1 "Ex Description"
 .pp
@@ -412,7 +412,7 @@ For example, the abbreviations:
 .ne 3v
 .ft C
 .TS
-r r r.
+r l l.
 :abbreviate	abc	ABC
 :abbreviate	#i	#include
 :abbreviate	/*#i	/*#include
@@ -423,12 +423,12 @@ will all work, while the abbreviations:
 .ne 2v
 .ft C
 .TS
-r r r.
+r l l.
 :abbreviate	a#i	A#include
 :abbreviate	/*	/********************
 .TE
 .ft R
-will not work, and are not be permitted by
+will not work, and are not permitted by
 .CO nvi .
 .sp
 To keep the abbreviation expansion from happening,
