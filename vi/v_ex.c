@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 10.4 1995/06/15 14:48:45 bostic Exp $ (Berkeley) $Date: 1995/06/15 14:48:45 $";
+static char sccsid[] = "$Id: v_ex.c,v 10.5 1995/06/15 19:39:53 bostic Exp $ (Berkeley) $Date: 1995/06/15 19:39:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -514,8 +514,8 @@ v_ex_done(sp, vp)
 	 * If ex entered canonical mode for some reason, wait to ensure that
 	 * the user saw any output and reset the terminal.  The entire screen
 	 * will need to be redrawn (there may have been vi messages at the
-	 * bottom of the screen when we entered canonical mode) and repainted
-	 * (ex may have trashed the screen).
+	 * bottom of the screen when we entered canonical mode) and may need
+	 * to be repainted (ex may have trashed the screen).
 	 */
 	if (F_ISSET(sp, S_EX_CANON)) {
 		if (F_ISSET(sp, S_EX_WROTE)) {
@@ -531,13 +531,18 @@ v_ex_done(sp, vp)
 			 */
 			vip = VIP(sp);
 			vip->lcontinue = vip->linecount = vip->totalcount = 0;
+
+			/*
+			 * XXX
+			 * If ex wrote anything, we have to repaint the
+			 * entire screen.
+			 */
+			F_SET(sp, S_SCR_REFRESH);
 		}
 
 		if (sp->gp->scr_canon(sp, 0))
 			return (1);
-
-		F_SET(sp, S_SCR_REDRAW | S_SCR_REFRESH);
-		(void)vs_refresh(sp);
+		F_SET(sp, S_SCR_REDRAW);
 	}
 	return (0);
 }
