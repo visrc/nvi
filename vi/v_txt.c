@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.67 1993/12/20 19:08:38 bostic Exp $ (Berkeley) $Date: 1993/12/20 19:08:38 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.68 1993/12/20 19:13:26 bostic Exp $ (Berkeley) $Date: 1993/12/20 19:13:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -606,18 +606,15 @@ k_escape:		if (tp->insert && tp->owrite)
 		case K_VEOF:			/* Delete autoindent char. */
 			/*
 			 * If in the first column or no characters to erase,
-			 * it's an error.  If not doing autoindent or already
-			 * inserted non-ai characters, it's a literal.  The
-			 * latter test is done in the switch, as the CARAT
-			 * forms are N + 1, not N.
+			 * ignore the ^D (this matches historic practice).  If
+			 * not doing autoindent or already inserted non-ai
+			 * characters, it's a literal.  The latter test is done
+			 * in the switch, as the CARAT forms are N + 1, not N.
 			 */
 			if (!LF_ISSET(TXT_AUTOINDENT))
 				goto ins_ch;
-			if (sp->cno == 0 || tp->ai == 0) {
-				msgq(sp, M_BERR,
-				    "No auto-indent characters to erase.");
+			if (sp->cno == 0 || tp->ai == 0)
 				break;
-			}
 			switch (carat_st) {
 			case C_CARATSET:	/* ^^D */
 				if (sp->cno > tp->ai + tp->offset + 1)
