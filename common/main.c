@@ -16,7 +16,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 10.1 1995/04/13 17:18:18 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:18:18 $";
+static char sccsid[] = "$Id: main.c,v 10.2 1995/06/08 18:57:39 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:57:39 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -41,13 +41,20 @@ static char sccsid[] = "$Id: main.c,v 10.1 1995/04/13 17:18:18 bostic Exp $ (Ber
 #include <pathnames.h>
 
 #include "common.h"
-#include "../vi/vi.h"
 #include "../ex/tag.h"
 
 static void	 v_estr __P((char *, int, char *));
 static GS	*v_gs_init __P((char *));
 static int	 v_obsolete __P((char *, char *[]));
 
+static char *myname;			/* Program name. */
+
+/*
+ * v_init --
+ *	Main editor initialization routine.
+ *
+ * PUBLIC: init_t v_init __P((int, char *[], recno_t, size_t, GS **));
+ */
 init_t
 v_init(argc, argv, rows, cols, gpp)
 	int argc;
@@ -64,7 +71,7 @@ v_init(argc, argv, rows, cols, gpp)
 	init_t rval;
 	u_int flags;
 	int ch, flagchk, lflag, readonly, silent, snapshot;
-	char *excmdarg, *myname, *tag_f, *trace_f, *wsizearg;
+	char *excmdarg, *tag_f, *trace_f, *wsizearg;
 	char path[MAXPATHLEN];
 
 	/* Set screen type and mode based on the program name. */
@@ -76,9 +83,12 @@ v_init(argc, argv, rows, cols, gpp)
 	if (!strcmp(myname, "ex") || !strcmp(myname, "nex"))
 		LF_INIT(S_EX);
 	else {
-		/* View is readonly. */
-		if (!strcmp(myname, "nview") || !strcmp(myname, "view"))
+		/* Nview, view, xview are readonly. */
+		if (!strcmp(myname, "nview") ||
+		    !strcmp(myname, "view") || !strcmp(myname, "xview"))
 			readonly = 1;
+		
+		/* Vi is the default. */
 		LF_INIT(S_VI);
 	}
 
@@ -331,7 +341,7 @@ v_init(argc, argv, rows, cols, gpp)
 			goto err;
 		if (F_ISSET(sp, S_ARGRECOVER))
 			F_SET(frp, FR_RECOVER);
-		if (file_init(sp, frp, NULL, FS_WELCOME))
+		if (file_init(sp, frp, NULL, 0))
 			goto err;
 	}
 
@@ -372,6 +382,8 @@ v_gs_init(name)
 	 */
 	CIRCLEQ_INIT(&gp->dq);
 	CIRCLEQ_INIT(&gp->hq);
+	LIST_INIT(&gp->ecq);
+	LIST_INSERT_HEAD(&gp->ecq, &gp->excmd, q);
 	LIST_INIT(&gp->msgq);
 	gp->noprint = DEFAULT_NOPRINT;
 
@@ -413,6 +425,8 @@ tcfail:			v_estr(name, errno, "tcgetattr");
 /*
  * v_end --
  *	End the program, discarding screens and the global area.
+ *
+ * PUBLIC: void v_end __P((GS *));
  */
 void
 v_end(gp)
@@ -432,7 +446,7 @@ v_end(gp)
 		(void)screen_end(sp);
 	}
 
-#if defined(DEBUG) || defined(PURIFY)
+#if defined(DEBUG) || defined(PURIFY) || !defined(STANDALONE)
 	{ FREF *frp;
 		/* Free FREF's. */
 		while ((frp = gp->frefq.cqh_first) != (FREF *)&gp->frefq) {
@@ -466,15 +480,17 @@ v_end(gp)
 	if (F_ISSET(gp, G_BELLSCHED))
 		(void)fprintf(stderr, "\07");		/* \a */
 
-	/* Flush any remaining messages. */
+	/*
+	 * Flush any remaining messages.  If a message is here, it's
+	 * almost certainly the message about the event that killed us.
+	 * Prepend a program name.
+	 */
 	while ((mp = gp->msgq.lh_first) != NULL) {
-		if (!F_ISSET(mp, M_EMPTY))
-			(void)fprintf(stderr,
-			    "%.*s.\n", (int)mp->len, mp->mbuf);
+		(void)fprintf(stderr,
+		    "%s: %.*s.\n", myname, (int)mp->len, mp->buf);
 		LIST_REMOVE(mp, q);
-#if defined(DEBUG) || defined(PURIFY)
-		if (mp->mbuf != NULL)
-			free(mp->mbuf);
+#if defined(DEBUG) || defined(PURIFY) || !defined(STANDALONE)
+		free(mp->buf);
 		free(mp);
 #endif
 	}
@@ -486,13 +502,13 @@ v_end(gp)
 		else if (chmod(tty, gp->origmode) < 0)
 			v_estr(gp->progname, errno, tty);
 
-#if defined(DEBUG) || defined(PURIFY)
+#if defined(DEBUG) || defined(PURIFY) || !defined(STANDALONE)
 	/* Free any temporary space. */
 	if (gp->tmp_bp != NULL)
 		free(gp->tmp_bp);
 
 #ifdef DEBUG
-	/* Free debugging file descriptor. */
+	/* Close debugging file descriptor. */
 	if (gp->tracefp != NULL)
 		(void)fclose(gp->tracefp);
 #endif
@@ -518,8 +534,8 @@ v_obsolete(name, argv)
 	 *	Change "+" into "-c$".
 	 *	Change "+<anything else>" into "-c<anything else>".
 	 *	Change "-" into "-s"
-	 *	The c, T, t, w and X options take arguments, don't allow
-	 *	    them to be special arguments.
+	 *	The c, T, t and w options take arguments so they can't be
+	 *	    special arguments.
 	 */
 	while (*++argv)
 		if (argv[0][0] == '+') {
@@ -546,11 +562,11 @@ nomem:					v_estr(name, errno, NULL);
 					return (1);
 				}
 				(void)strcpy(argv[0], "-s");
-			} else if ((argv[0][1] == 'c' ||
-			    argv[0][1] == 'T' || argv[0][1] == 't' ||
-			    argv[0][1] == 'w' || argv[0][1] == 'X') &&
-			    argv[0][2] == '\0')
-				++argv;
+			} else
+				if ((argv[0][1] == 'c' || argv[0][1] == 'T' ||
+				    argv[0][1] == 't' || argv[0][1] == 'w') &&
+				    argv[0][2] == '\0')
+					++argv;
 	return (0);
 }
 

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 10.1 1995/04/13 17:18:20 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:18:20 $";
+static char sccsid[] = "$Id: msg.c,v 10.2 1995/06/08 18:57:43 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:57:43 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -39,18 +39,23 @@ static char sccsid[] = "$Id: msg.c,v 10.1 1995/04/13 17:18:20 bostic Exp $ (Berk
 #include <regex.h>
 
 #include "common.h"
+#include "vi.h"
+
+static void msg_save __P((SCR *, mtype_t, const char *, size_t));
 
 /*
  * msgq --
  *	Display a message.
+ *
+ * PUBLIC: void msgq __P((SCR *, mtype_t, const char *, ...));
  */
 void
 #ifdef __STDC__
-msgq(SCR *sp, enum msgtype mt, const char *fmt, ...)
+msgq(SCR *sp, mtype_t mt, const char *fmt, ...)
 #else
 msgq(sp, mt, fmt, va_alist)
 	SCR *sp;
-	enum msgtype mt;
+	mtype_t mt;
         char *fmt;
         va_dcl
 #endif
@@ -68,7 +73,6 @@ msgq(sp, mt, fmt, va_alist)
 	static int reenter;		/* STATIC: Re-entrancy check. */
 	CHAR_T ch;
 	GS *gp;
-	MSG *mp_c, *mp_n;
 	size_t blen, cnt1, cnt2, len, mlen, nlen, soff;
 	const char *p, *t, *u;
 	char *bp, *mp, *rbp, *s_rbp;
@@ -98,7 +102,7 @@ msgq(sp, mt, fmt, va_alist)
 			if (!F_ISSET(sp, S_EX) && !F_ISSET(sp, S_EX_SILENT) &&
 			    F_ISSET(gp, G_STDIN_TTY) &&
 			    !O_ISSET(sp, O_VERBOSE)) {
-				F_SET(sp, S_BELLSCHED);
+				F_SET(gp, G_BELLSCHED);
 				return;
 			}
 			mt = M_ERR;
@@ -115,6 +119,8 @@ msgq(sp, mt, fmt, va_alist)
 		case M_ERR:
 		case M_SYSERR:
 			break;
+		default:
+			abort();
 		}
 	}
 
@@ -339,53 +345,28 @@ nofmt:	mp += len;
 		mp += len;
 		if ((mlen += len) > blen)
 			goto retry;
+		mt = M_ERR;
 	}
 
 	/*
-	 * Find an empty structure, or allocate a new one.  Use the screen
-	 * structure if it exists, otherwise the global one.  If neither
-	 * exists, we're screwed, dump it to stderr.
+	 * XXX
+	 * We find out about screen support based on one of the function
+	 * pointers being initialized.  That's just not right.  I'd like
+	 * to get rid of this whole concept, somehow...  Otherwise, write
+	 * through the output routine.
+	 *
+	 * XXX
+	 * Vi has to flush any pending ex output before writing the characters.
+	 * This violates the layering somewhat.
 	 */
-	if (gp == NULL) {
-		(void)fprintf(stderr, "%s\n", bp);
-		goto ret;
+	if (gp->scr_attr == NULL)
+		msg_save(sp, mt, bp, mlen);
+	else if (F_ISSET(sp, S_EX | S_EX_CANON))
+		ex_msgwrite(sp, mt, bp, mlen);
+	else {
+		(void)ex_fflush(sp);
+		vs_msgwrite(sp, mt, bp, mlen);
 	}
-	if (sp == NULL) {
-		if ((mp_c = gp->msgq.lh_first) == NULL) {
-			CALLOC(NULL, mp_c, MSG *, 1, sizeof(MSG));
-			if (mp_c == NULL)
-				goto ret;
-			LIST_INSERT_HEAD(&gp->msgq, mp_c, q);
-			goto store;
-		}
-	} else
-		if ((mp_c = sp->msgq.lh_first) == NULL) {
-			CALLOC(sp, mp_c, MSG *, 1, sizeof(MSG));
-			if (mp_c == NULL)
-				goto ret;
-			LIST_INSERT_HEAD(&sp->msgq, mp_c, q);
-			goto store;
-		}
-
-	while (!F_ISSET(mp_c, M_EMPTY) && mp_c->q.le_next != NULL)
-		mp_c = mp_c->q.le_next;
-	if (!F_ISSET(mp_c, M_EMPTY)) {
-		CALLOC(sp, mp_n, MSG *, 1, sizeof(MSG));
-		if (mp_n == NULL)
-			goto ret;
-		LIST_INSERT_AFTER(mp_c, mp_n, q);
-		mp_c = mp_n;
-	}
-
-	/* Get enough memory for the message. */
-store:	if (mlen > mp_c->blen &&
-	    (mp_c->mbuf = binc(sp, mp_c->mbuf, &mp_c->blen, mlen)) == NULL)
-		goto ret;
-
-	/* Store the message. */
-	memmove(mp_c->mbuf, bp, mlen);
-	mp_c->len = mlen;
-	mp_c->flags = mt == M_ERR || mt == M_SYSERR ? M_INV_VIDEO : 0;
 
 	/* Cleanup. */
 ret:	FREE_SPACE(sp, bp, blen);
@@ -410,11 +391,12 @@ binc_err:
  *	def
  * the command 2d}, from the 'b' would report that two lines were deleted,
  * not one.
+ *
+ * PUBLIC: int msg_rpt __P((SCR *));
  */
 int
-msg_rpt(sp, is_message)
+msg_rpt(sp)
 	SCR *sp;
-	int is_message;
 {
 	static char * const action[] = {
 		"added",
@@ -474,12 +456,15 @@ msg_rpt(sp, is_message)
 			sp->rptlines[cnt] = 0;
 		}
 
-	if (is_message)
-		msgq(sp, M_INFO, "%s", bp);
+	if (sp->gp->scr_attr == NULL)
+		msg_save(sp, M_INFO, bp, len);
+	else if (F_ISSET(sp, S_EX | S_EX_CANON))
+		ex_msgwrite(sp, M_INFO, bp, len);
 	else {
-		F_SET(sp, S_EX_WROTE);
-		(void)ex_printf(EXCOOKIE, "%s\n", bp);
+		(void)ex_fflush(sp);
+		vs_msgwrite(sp, M_INFO, bp, len);
 	}
+
 	FREE_SPACE(sp, bp, blen);
 	return (0);
 #undef ARSIZE
@@ -489,12 +474,14 @@ msg_rpt(sp, is_message)
 /*
  * msg_status --
  *	Report on the file's status.
+ *
+ * PUBLIC: int msg_status __P((SCR *, recno_t, int));
  */
 int
-msg_status(sp, lno, showlast, is_message)
+msg_status(sp, lno, showlast)
 	SCR *sp;
 	recno_t lno;
-	int showlast, is_message;
+	int showlast;
 {
 	recno_t last;
 	const char *t;
@@ -584,15 +571,17 @@ msg_status(sp, lno, showlast, is_message)
 		p += sprintf(p, t, lno);
 	}
 #ifdef DEBUG
-	(void)sprintf(p, " (pid %u)", getpid());
+	p += sprintf(p, " (pid %u)", getpid());
 #endif
-
-	if (is_message)
-		msgq(sp, M_INFO, "%s", bp);
+	if (sp->gp->scr_attr == NULL)
+		msg_save(sp, M_INFO, bp, p - bp);
+	else if (F_ISSET(sp, S_EX | S_EX_CANON))
+		ex_msgwrite(sp, M_INFO, bp, p - bp);
 	else {
-		F_SET(sp, S_EX_WROTE);
-		ex_printf(EXCOOKIE, "%s\n", bp);
+		(void)ex_fflush(sp);
+		vs_msgwrite(sp, M_INFO, bp, p - bp);
 	}
+
 	FREE_SPACE(sp, bp, blen);
 	return (0);
 }
@@ -600,6 +589,8 @@ msg_status(sp, lno, showlast, is_message)
 /*
  * msg_open --
  *	Open the message catalogs.
+ *
+ * PUBLIC: int msg_open __P((SCR *, char *));
  */
 int
 msg_open(sp, file)
@@ -669,6 +660,8 @@ msg_open(sp, file)
 /*
  * msg_close --
  *	Close the message catalogs.
+ *
+ * PUBLIC: void msg_close __P((GS *));
  */
 void
 msg_close(gp)
@@ -685,6 +678,8 @@ msg_close(gp)
  * !!!
  * Only a single catalog message can be accessed at a time, if multiple
  * ones are needed, they must be copied into local memory.
+ *
+ * PUBLIC: const char *msg_cat __P((SCR *, const char *, size_t *));
  */
 const char *
 msg_cat(sp, str, lenp)
@@ -733,6 +728,8 @@ msg_cat(sp, str, lenp)
 /*
  * msg_print --
  *	Return a printable version of a string, in allocated memory.
+ *
+ * PUBLIC: char *msg_print __P((SCR *, const char *, int *));
  */
 char *
 msg_print(sp, s, needfree)
@@ -777,4 +774,48 @@ binc_err:	return ("");
 		goto retry;
 	*p = '\0';
 	return (bp);
+}
+
+/*
+ * msg_save --
+ *	Save a message for later display.
+ */
+static void
+msg_save(sp, mt, p, len)
+	SCR *sp;
+	mtype_t mt;
+	const char *p;
+	size_t len;
+{
+	GS *gp;
+	MSG *mp_c, *mp_n;
+
+	/*
+	 * We have to handle messages before we have any place to put them.
+	 * If there's no screen support yet, allocate a msg structure, copy
+	 * in the message, and queue it on the global structure.  If we can't
+	 * allocate memory here, we're genuinely screwed, dump the message
+	 * to stderr in the (probably) vain hope that someone will see it.
+	 */
+	CALLOC_NOMSG(sp, mp_n, MSG *, 1, sizeof(MSG));
+	if (mp_n == NULL)
+		goto nomem;
+	MALLOC_NOMSG(sp, mp_n->buf, char *, len);
+	if (mp_n->buf == NULL) {
+		free(mp_n);
+nomem:		(void)fprintf(stderr, "%.*s\n", (int)len, p);
+		return;
+	}
+
+	memmove(mp_n->buf, p, len);
+	mp_n->len = len;
+	mp_n->mtype = mt == M_ERR ? M_ERR : M_INFO;
+
+	gp = sp->gp;
+	if ((mp_c = gp->msgq.lh_first) == NULL) {
+		LIST_INSERT_HEAD(&gp->msgq, mp_n, q);
+	} else {
+		for (; mp_c->q.le_next != NULL; mp_c = mp_c->q.le_next);
+		LIST_INSERT_AFTER(mp_c, mp_n, q);
+	}
 }

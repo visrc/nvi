@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 10.2 1995/05/05 18:46:01 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:46:01 $";
+static char sccsid[] = "$Id: key.c,v 10.3 1995/06/08 18:57:58 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:57:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,12 +34,12 @@ static char sccsid[] = "$Id: key.c,v 10.2 1995/05/05 18:46:01 bostic Exp $ (Berk
 #include <regex.h>
 
 #include "common.h"
+#include "vi.h"
 
 static int	v_event_append __P((SCR *, CHAR_T *, size_t, u_int));
 static int	v_event_grow __P((SCR *, int));
 static int	v_key_cmp __P((const void *, const void *));
 static void	v_key_termios __P((GS *, int, int));
-static void	v_sig_sync __P((SCR *, int));
 static void	v_sync __P((SCR *, int));
 
 /*
@@ -65,7 +65,7 @@ static void	v_sync __P((SCR *, int));
  * described above for vi.
  *
  * !!!
- * This requires that all screens share a special key set.
+ * This means that all screens share a special key set.
  */
 KEYLIST keylist[] = {
 	{K_BACKSLASH,	  '\\'},	/*  \ */
@@ -336,14 +336,13 @@ __v_key_val(sp, ch)
 
 /*
  * v_event_push --
- *	Push keys onto the front of the buffer.
+ *	Push events (keys) onto the front of the buffer.
  *
- * There is a single input buffer in ex/vi.  Characters are read into the
+ * There is a single input buffer in ex/vi.  Characters are put onto the
  * end of the buffer by the terminal input routines, and pushed onto the
  * front of the buffer by various other functions in ex/vi.  Each key has
  * an associated flag value, which indicates if it has already been quoted,
- * if it is the result of a mapping or an abbreviation, as well as a count
- * of the number of times it has been mapped.
+ * and if it is the result of a mapping or an abbreviation.
  *
  * PUBLIC: int v_event_push __P((SCR *, CHAR_T *, size_t, u_int));
  */
@@ -423,7 +422,7 @@ v_event_append(sp, s, nchars, flags)
 	return (0);
 }
 
-/* Remove characters from the queue. */
+/* Remove events from the queue. */
 #define	QREM(len) {							\
 	if ((gp->i_cnt -= len) == 0)					\
 		gp->i_next = 0;						\
@@ -431,34 +430,59 @@ v_event_append(sp, s, nchars, flags)
 		gp->i_next += len;					\
 }
 
-/* Remove characters from the queue. */
-#define	QREM(len) {							\
-	if ((gp->i_cnt -= len) == 0)					\
-		gp->i_next = 0;						\
-	else								\
-		gp->i_next += len;					\
-}
-
-/* 
- * v_event_pull --
- *	Return the next character event, if it exists.
+/*
+ * v_getkey --
+ *	Get a keyboard event from the user.
  *
- * PUBLIC: int v_event_pull __P((SCR *, EVENT **));
+ * !!!
+ * We're calling back into the main screen code, i.e. a callback into the
+ * main event loop.  This is probably the least event-driven part of nvi.
+ * The problem scenario is as follows: we've been humming along writing stuff
+ * on the screen, and now some error message or other output is about to
+ * scroll off the screen.  We have to wait to make sure the user has seen
+ * it, and we can pretty much get here from anywhere in the program.  To fix
+ * this we'd have to be able to restart any routine that calls the vi output
+ * message routines, at any point, or, to be blunt, it won't be fixed until
+ * some thread package is portable.
+ *
+ * PUBLIC: int v_getkey __P((SCR *, CHAR_T *));
  */
 int
-v_event_pull(sp, evpp)
+v_getkey(sp, chp)
 	SCR *sp;
-	EVENT **evpp;
+	CHAR_T *chp;
 {
+	CHAR_T ch;
 	GS *gp;
-	size_t cnt;
 
+	/*
+	 * !!!
+	 * Historic practice is that any key can be used to continue.  Nvi used
+	 * to require that the user enter a <carriage-return> or <newline>, but
+	 * this broke historic users.  For this reason we have to make sure that
+	 * the user doesn't already have a key queued up before we go read one.
+	 */
 	gp = sp->gp;
-	if (gp->i_cnt == 0)
+	if (gp->i_cnt != 0) {
+		*chp = gp->i_event[gp->i_next].e_c;
+		QREM(1);
 		return (0);
-	*evpp = &gp->i_event[gp->i_next];
-	QREM(1);
-	return (1);
+	}
+
+	/* If we get a key, return it. */
+	if (!gp->scr_getkey(sp, chp))
+		return (0);
+
+	/*
+	 * Otherwise, act as if it was an interrupt.
+	 *
+	 * XXX
+	 * This is ugly, but either an interrupt or an error occurred, and this
+	 * seems to work reasonably well.
+	 */
+	F_SET(sp, S_INTERRUPTED);
+	*chp = CH_QUIT;
+	return (0);
 }
 
 /*
@@ -542,10 +566,15 @@ v_event_handler(sp, evp, tp)
 	EVENT *evp;
 	u_int32_t *tp;
 {
+	static int dead;
 	EVENT re;
 	GS *gp;
 	SEQ *qp;
-	int init_nomap, ispartial, istimeout;
+	int ichk, init_nomap, ispartial, istimeout;
+
+	/* Just in case we get events after we're officially dead. */
+	if (dead)
+		return(0);
 
 	gp = sp->gp;
 
@@ -556,7 +585,7 @@ v_event_handler(sp, evp, tp)
 	 * handlers.
 	 *
 	 * !!!
-	 * DO NOT push other types of events on the queue, other parts of
+	 * DO NOT PUSH OTHER TYPES OF EVENTS ON THE QUEUE, other parts of
 	 * the editor won't like it.
 	 */
 	istimeout = 0;
@@ -569,54 +598,48 @@ v_event_handler(sp, evp, tp)
 		if (v_event_append(sp, evp->e_csp, evp->e_len, 0))
 			goto err;
 		break;
-	case E_EOF:
-	case E_ERR:
-		(void)(F_ISSET(sp, S_EX) ? ex(sp, evp) : vi(sp, evp));
-		goto err;
 	case E_SIGHUP:
 	case E_SIGTERM:
-		v_sig_sync(sp, evp->e_event == E_SIGHUP ? SIGHUP : SIGTERM);
-		/* NOTREACHED */
+		v_sync(sp, RCV_ENDSESSION |
+		    RCV_PRESERVE | (evp->e_event == E_SIGHUP ? RCV_EMAIL : 0));
+		dead = 1;
+		return (0);
 	case E_TIMEOUT:
 		istimeout = 1;
 		break;
-	case E_RESIZE:
-		/*
-		 * The actual changing of the row/column values is done by the
-		 * options code, which puts them into the environment, which is
-		 * used by curses.  Stupid, but ugly.
-		 */
-		if (opts_init(sp, NULL, evp->e_lno, evp->e_cno))
-			goto err;
+	case E_EOF:
+	case E_ERR:
+		dead = 1;
 		/* FALLTHROUGH */
 	case E_INTERRUPT:
-	case E_REPAINT:
+	case E_RESIZE:
 	case E_SIGCONT:
 	case E_START:
 	case E_STOP:
 		re = *evp;
 		if (F_ISSET(sp, S_EX) ? ex(sp, &re) : vi(sp, &re))
 			goto err;
-		goto ret;
+		return (0);
 	default:
 		abort();
 	}
 
 	/*
-	 * If EC_INTERRUPT flag set, something was just checking for
-	 * interrupts.  Return a timeout event.
+	 * As long as there are events on the queue, handle them.  It's
+	 * possible to get into long-running map loops, so check for an
+	 * interrupt.
 	 */
-	if (FL_ISSET(gp->ec_flags, EC_INTERRUPT)) {
-		re.e_event = E_TIMEOUT;
-		if (F_ISSET(sp, S_EX) ? ex(sp, &re) : vi(sp, &re))
-			goto err;
-		if (FL_ISSET(gp->ec_flags, EC_INTERRUPT))
-			goto ret;
-	}
+#define	LOOP_CHK	20
+	for (ichk = LOOP_CHK; gp->i_cnt != 0;) {
+newmap:		if (--ichk == 0) {
+			if (gp->scr_interrupt(sp)) {
+				ex_message(sp, NULL, EXM_INTERRUPT);
+				break;
+			}
+			ichk = LOOP_CHK;
+		}
 
-	/* As long as there are events on the queue, handle them. */
-	while (gp->i_cnt != 0) {
-newmap:		evp = &gp->i_event[gp->i_next];
+		evp = &gp->i_event[gp->i_next];
 
 		/*
 		 * If the key isn't mappable because
@@ -668,14 +691,13 @@ not_digit:			re.e_c = CH_NOT_DIGIT;
 				re.e_value = K_NOTUSED;
 				F_INIT(&re.e_ch, 0);
 				if (F_ISSET(sp, S_EX) ?
-				    ex(sp, evp) : vi(sp, &re))
+				    ex(sp, &re) : vi(sp, &re))
 					goto err;
 			}
 			re = *evp;
 			QREM(1);
 
-			if (F_ISSET(sp, S_EX) ?
-			    ex(sp, &re) : vi(sp, &re))
+			if (F_ISSET(sp, S_EX) ? ex(sp, &re) : vi(sp, &re))
 				goto err;
 			continue;
 		}
@@ -722,12 +744,10 @@ not_digit:			re.e_c = CH_NOT_DIGIT;
 		    qp->output, qp->olen, CH_MAPPED | CH_NOMAP))
 			goto err;
 	}
-
-ret:	if (FL_ISSET(gp->ec_flags, EC_INTERRUPT))
-		*tp = 1;
 	return (0);
 
 err:	v_sync(sp, RCV_EMAIL | RCV_ENDSESSION | RCV_PRESERVE);
+	dead = 1;
 	return (1);
 }
 
@@ -780,29 +800,6 @@ v_key_cmp(ap, bp)
 	const void *ap, *bp;
 {
 	return (((KEYLIST *)ap)->ch - ((KEYLIST *)bp)->ch);
-}
-
-/*
- * v_sig_sync --
- *	Sync the files after a signal.
- */
-static void
-v_sig_sync(sp, signo)
-	SCR *sp;
-	int signo;
-{
-	v_sync(sp,
-	    RCV_ENDSESSION | RCV_PRESERVE | (signo == SIGHUP ? RCV_EMAIL : 0));
-
-	/*
-	 * Die with the proper exit status.  Don't bother using sigaction(2)
-	 * 'cause we want the default behavior.
-	 */
-	(void)signal(signo, SIG_DFL);
-	(void)kill(getpid(), signo);
-
-	/* NOTREACHED */
-	exit(1);
 }
 
 /*

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 10.1 1995/04/13 17:18:22 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:18:22 $";
+static char sccsid[] = "$Id: options.c,v 10.2 1995/06/08 18:57:46 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:57:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,8 +33,8 @@ static char sccsid[] = "$Id: options.c,v 10.1 1995/04/13 17:18:22 bostic Exp $ (
 #include <pathnames.h>
 
 #include "common.h"
-#include "../cl/cl.h"
-#include "../vi/vi.h"
+#include "cl.h"
+#include "vi.h"
 
 static int	 	 opts_abbcmp __P((const void *, const void *));
 static int	 	 opts_cmp __P((const void *, const void *));
@@ -258,6 +258,8 @@ static OABBREV const abbrev[] = {
 /*
  * opts_init --
  *	Initialize some of the options.
+ *
+ * PUBLIC: int opts_init __P((SCR *, int *, recno_t, size_t));
  */
 int
 opts_init(sp, oargs, rows, cols)
@@ -402,6 +404,8 @@ err:	msgq(sp, M_ERR,
 /*
  * opts_set --
  *	Change the values of one or more options.
+ *
+ * PUBLIC: int opts_set __P((SCR *, ARGS *[], int, char *));
  */
 int
 opts_set(sp, argv, setdef, usage)
@@ -669,6 +673,8 @@ change:			(void)cl_optchange(sp, offset);
 /*
  * opts_dump --
  *	List the current values of selected options.
+ *
+ * PUBLIC: void opts_dump __P((SCR *, enum optdisp));
  */
 void
 opts_dump(sp, type)
@@ -785,21 +791,21 @@ opts_dump(sp, type)
 				cnt = opts_print(sp, &optlist[s_op[base]]);
 				if ((base += numrows) >= s_num)
 					break;
-				(void)ex_printf(EXCOOKIE,
+				(void)ex_printf(sp,
 				    "%*s", (int)(colwidth - cnt), "");
 			}
 			if (++row < numrows || b_num)
-				(void)ex_printf(EXCOOKIE, "\n");
+				(void)ex_puts(sp, "\n");
 		}
 	}
 
 	for (row = 0; row < b_num;) {
 		(void)opts_print(sp, &optlist[b_op[row]]);
 		if (++row < b_num)
-			(void)ex_printf(EXCOOKIE, "\n");
+			(void)ex_puts(sp, "\n");
 	}
 	F_SET(sp, S_EX_WROTE);
-	(void)ex_printf(EXCOOKIE, "\n");
+	(void)ex_puts(sp, "\n");
 }
 
 /*
@@ -818,15 +824,15 @@ opts_print(sp, op)
 	switch (op->type) {
 	case OPT_0BOOL:
 	case OPT_1BOOL:
-		curlen += ex_printf(EXCOOKIE,
+		curlen += ex_printf(sp,
 		    "%s%s", O_ISSET(sp, offset) ? "" : "no", op->name);
 		break;
 	case OPT_NUM:
-		curlen += ex_printf(EXCOOKIE,
+		curlen += ex_printf(sp,
 		     "%s=%ld", op->name, O_VAL(sp, offset));
 		break;
 	case OPT_STR:
-		curlen += ex_printf(EXCOOKIE, "%s=\"%s\"", op->name,
+		curlen += ex_printf(sp, "%s=\"%s\"", op->name,
 		    O_STR(sp, offset) == NULL ? "" : O_STR(sp, offset));
 		break;
 	}
@@ -836,6 +842,8 @@ opts_print(sp, op)
 /*
  * opts_save --
  *	Write the current configuration to a file.
+ *
+ * PUBLIC: int opts_save __P((SCR *, FILE *));
  */
 int
 opts_save(sp, fp)
@@ -933,6 +941,8 @@ opts_cmp(a, b)
 /*
  * opts_free --
  *	Free all option strings
+ *
+ * PUBLIC: void opts_free __P((SCR *));
  */
 void
 opts_free(sp)
@@ -959,6 +969,8 @@ opts_free(sp)
 /*
  * opts_copy --
  *	Copy a screen's OPTION array.
+ *
+ * PUBLIC: int opts_copy __P((SCR *, SCR *));
  */
 int
 opts_copy(orig, sp)

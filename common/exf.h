@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 10.2 1995/05/05 18:41:48 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:41:48 $
+ *	$Id: exf.h,v 10.3 1995/06/08 18:57:35 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:57:35 $
  */
 					/* Undo direction. */
 /*
@@ -70,7 +70,6 @@ struct _exf {
 #define	FS_OPENERR	0x008	/* Open failed, try it again. */
 #define	FS_POSSIBLE	0x010	/* Force could have been set. */
 #define	FS_SETALT	0x020	/* Set alternate file name. */
-#define	FS_WELCOME	0x040	/* Display welcoming message. */
 
 /* Flags to rcv_sync(). */
 #define	RCV_EMAIL	0x01	/* Send the user email, IFF file modified. */

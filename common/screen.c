@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 10.1 1995/04/13 17:18:30 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:18:30 $";
+static char sccsid[] = "$Id: screen.c,v 10.2 1995/06/08 18:57:51 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:57:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,12 +30,14 @@ static char sccsid[] = "$Id: screen.c,v 10.1 1995/04/13 17:18:30 bostic Exp $ (B
 #include <regex.h>
 
 #include "common.h"
-#include "../vi/vi.h"
+#include "vi.h"
 #include "../ex/tag.h"
 
 /*
  * screen_init --
  *	Do the default initialization of an SCR structure.
+ *
+ * PUBLIC: int screen_init __P((GS *, SCR *, SCR **));
  */
 int
 screen_init(gp, orig, spp)
@@ -53,8 +55,6 @@ screen_init(gp, orig, spp)
 	sp->refcnt = 1;
 
 	sp->gp = gp;				/* All ref the GS structure. */
-
-	LIST_INIT(&sp->msgq);
 
 	sp->ccnt = 2;				/* Anything > 1 */
 
@@ -133,6 +133,8 @@ err:	screen_end(sp);
  * screen_end --
  *	Release a screen, no matter what had (and had not) been
  *	initialized.
+ *
+ * PUBLIC: int screen_end __P((SCR *));
  */
 int
 screen_end(sp)
@@ -195,28 +197,6 @@ screen_end(sp)
 
 	/* Free all the options */
 	opts_free(sp);
-
-	/*
-	 * Clean up the message chain last, so previous failures have a
-	 * place to put messages.  Don't free space containing messages,
-	 * just move the structures onto the global list.
-	 */
-	{ MSG *mp, *next;
-		if (F_ISSET(sp, S_BELLSCHED))
-			F_SET(sp->gp, G_BELLSCHED);
-
-		for (mp = sp->msgq.lh_first; mp != NULL; mp = next) {
-			next = mp->q.le_next;
-			if (!F_ISSET(mp, M_EMPTY)) {
-				LIST_REMOVE(mp, q);
-				LIST_INSERT_HEAD(&sp->gp->msgq, mp, q);
-			} else {
-				if (mp->mbuf != NULL)
-					free(mp->mbuf);
-				free(mp);
-			}
-		}
-	}
 
 	/* Free the screen itself. */
 	FREE(sp, sizeof(SCR));

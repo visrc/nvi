@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 10.1 1995/04/13 17:18:15 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:18:15 $
+ *	$Id: gs.h,v 10.2 1995/06/08 18:57:37 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:57:37 $
  */
 
 #define	TEMPORARY_FILE_STRING	"/tmp"	/* Default temporary file name. */
@@ -39,20 +39,12 @@ struct _fref {
 	u_int16_t flags;
 };
 
-/*
- * Check for interrupts after processing every INTERRUPT_CHECK lines.
- * This value wasn't chosen for any terribly good reason, but it seems
- * to work okay.  The idea is to find a balance between getting work
- * done and shutting out the event handler.  The same value is used to
- * decide how often to check for ex global and @ buffer commands as
- * well, on the grounds that most such commands only operate on single
- * lines.
- */
-#define	INTERRUPT_CHECK	100
-
-/* Action argument to ex adjust routine. */
+/* Action argument to scr_exadjust(). */
 typedef enum { EX_TERM_CE, EX_TERM_SCROLL } exadj_t;
 
+/* Screen attribute argument to scr_attr(). */
+typedef enum { SA_INVERSE } attr_t;
+ 
 /*
  * GS:
  *
@@ -74,7 +66,7 @@ struct _gs {
 	void	*cl_private;		/* Curses support private area. */
 	void	*xaw_private;		/* XAW support private area. */
 
-	DB	*msg;			/* Messages DB. */
+	DB	*msg;			/* Message catalog DB. */
 	MSGH	 msgq;			/* User message list. */
 #define	DEFAULT_NOPRINT	'\1'		/* Emergency non-printable character. */
 	CHAR_T	 noprint;		/* Cached, unprintable character. */
@@ -83,23 +75,27 @@ struct _gs {
 	size_t	 tmp_blen;		/* Temporary buffer size. */
 
 	/*
-	 * Ex command structure (EXCMD) and ex state.
+	 * Ex command structures (EXCMD) and ex state.
 	 *
-	 * Defined here because ex commands and command state exists outside
-	 * of any particular screen or file.  Also, there are vi commands that
-	 * use this to execute ex commands directly.  See the files ex/ex.c
-	 * and vi/v_ex.c for details.
+	 * Defined here because ex commands and command state exist outside
+	 * of any particular screen or file.  Also, vi commands use this to
+	 * execute ex commands directly.  See the files ex/ex.c and vi/v_ex.c
+	 * for details.
 	 */
-	EXCMD	 excmd;			/* Ex command structure. */
+	LIST_HEAD(_excmdh, _excmd) ecq;	/* Ex command linked list. */
+	EXCMD	 excmd;			/* Default ex command structure. */
 	s_ex_t	 cm_state;		/* Ex current state. */
 	s_ex_t	 cm_next;		/* Ex next state. */
+	/*
+	 * __TK__ load this into an excmd structure?
+	 */
 	char	*icommand;		/* Ex initial, command-line command. */
 
 /*
  * XXX
- * Block signals if we're getting asynchronous events.  Used to keep the
- * underlying DB system calls from being interrupted and not restarted,
- * as it could cause consistency problems.  This should be handled by DB.
+ * Block signals if there are asynchronous events.  Used to keep DB system calls
+ * from being interrupted and not restarted, as that will result in consistency
+ * problems.  This should be handled by DB.
  */
 #define	SIGBLOCK(gp)							\
 	if (F_ISSET(gp, G_SIGBLOCK))					\
@@ -118,11 +114,10 @@ struct _gs {
 	size_t	 i_cnt;			/* Count of events. */
 	size_t	 i_next;		/* Offset of next event. */
 
-#define	EC_INTERRUPT	0x01		/* Check for interrupts. */
-#define	EC_MAPCOMMAND	0x02		/* Apply the command map. */
-#define	EC_MAPINPUT	0x04		/* Apply the input map. */
-#define	EC_MAPNODIGIT	0x08		/* Return to a digit. */
-#define	EC_QUOTED	0x10		/* Try to quote next character */
+#define	EC_MAPCOMMAND	0x01		/* Apply the command map. */
+#define	EC_MAPINPUT	0x02		/* Apply the input map. */
+#define	EC_MAPNODIGIT	0x04		/* Return to a digit. */
+#define	EC_QUOTED	0x08		/* Try to quote next character */
 	u_int8_t ec_flags;		/* Current event character mappings. */
 
 	CB	*dcbp;			/* Default cut buffer pointer. */
@@ -155,14 +150,13 @@ struct _gs {
 /* Flags. */
 #define	G_ABBREV	0x001		/* If have abbreviations. */
 #define	G_BELLSCHED	0x002		/* Bell scheduled. */
-#define	G_INTERRUPTED	0x004		/* Interrupt arrived. */
-#define	G_RECOVER_SET	0x008		/* Recover system initialized. */
-#define	G_SETMODE	0x010		/* Tty mode changed. */
-#define	G_SIGBLOCK	0x020		/* Need to block signals. */
-#define	G_SNAPSHOT	0x040		/* Always snapshot files. */
-#define	G_STDIN_TTY	0x080		/* Standard input is a tty. */
-#define	G_TERMIOS_SET	0x100		/* Termios structure is valid. */
-#define	G_TMP_INUSE	0x200		/* Temporary buffer in use. */
+#define	G_RECOVER_SET	0x004		/* Recover system initialized. */
+#define	G_SETMODE	0x008		/* Tty mode changed. */
+#define	G_SIGBLOCK	0x010		/* Need to block signals. */
+#define	G_SNAPSHOT	0x020		/* Always snapshot files. */
+#define	G_STDIN_TTY	0x040		/* Standard input is a tty. */
+#define	G_TERMIOS_SET	0x080		/* Termios structure is valid. */
+#define	G_TMP_INUSE	0x100		/* Temporary buffer in use. */
 	u_int16_t flags;
 
 	/* Screen interface functions. */
@@ -170,6 +164,8 @@ struct _gs {
 	int	(*scr_addnstr) __P((SCR *, const char *, size_t));
 					/* Add a string to the screen. */
 	int	(*scr_addstr) __P((SCR *, const char *));
+					/* Toggle a screen attribute. */
+	int	(*scr_attr) __P((SCR *, attr_t, int));
 					/* Beep/bell/flash the terminal. */
 	int	(*scr_bell) __P((SCR *));
 					/* Display a busy message. */
@@ -182,36 +178,37 @@ struct _gs {
 	int	(*scr_clrtoeol) __P((SCR *));
 					/* Clear to the end of the screen. */
 	int	(*scr_clrtoeos) __P((SCR *));
-					/* Confirm an action with the user. */
-	conf_t	(*scr_confirm) __P((SCR *));
-					/* Ex continue response. */
-	int	(*scr_continue) __P((SCR *));
 					/* Return the cursor location. */
 	int	(*scr_cursor) __P((SCR *, size_t *, size_t *));
 					/* Delete a line. */
 	int	(*scr_deleteln) __P((SCR *));
+					/* Discard a screen. */
+	int	(*scr_discard) __P((SCR *, SCR **));
 					/* Ex screen adjustment routine. */
 	int	(*scr_exadjust) __P((SCR *, exadj_t));
 					/* Ex start screen routine. */
 	int	(*scr_exinit) __P((SCR *));
 	int	(*scr_fmap)		/* Set a function key. */
 	    __P((SCR *, seq_t, CHAR_T *, size_t, CHAR_T *, size_t));
+					/* Get a keyboard event. */
+	int	(*scr_getkey) __P((SCR *, CHAR_T *));
 					/* Insert a line. */
 	int	(*scr_insertln) __P((SCR *));
-					/* Set an attribute. */
-	int	(*scr_inverse) __P((SCR *, int));
+					/* Return if interrupted. */
+	int	(*scr_interrupt) __P((SCR *));
 					/* Move the cursor. */
 	int	(*scr_move) __P((SCR *, size_t, size_t));
-					/* Message flush. */
-	int	(*scr_msgflush) __P((SCR *, int *));
 					/* Refresh the screen. */
 	int	(*scr_refresh) __P((SCR *));
 					/* Restore the screen. */
 	int	(*scr_repaint) __P((SCR *));
+					/* Resize two screens. */
+	int	(*scr_resize) __P((SCR *, long, long, SCR *, long, long));
+					/* Split the screen. */
+	int	(*scr_split) __P((SCR *, SCR *, int));
 					/* Suspend the editor. */
 	int	(*scr_suspend) __P((SCR *));
 };
 
+/* Init argument to v_init(). */
 typedef enum { INIT_OK, INIT_DONE, INIT_ERR, INIT_USAGE } init_t;
-init_t	 v_init __P((int, char *[], recno_t, size_t, GS **));
-void	 v_end __P((GS *));

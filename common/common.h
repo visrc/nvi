@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 10.1 1995/04/13 17:18:10 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:18:10 $
+ *	$Id: common.h,v 10.2 1995/06/08 18:57:30 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:57:30 $
  */
 
 /*
@@ -61,31 +61,17 @@ typedef enum { SEQ_ABBREV, SEQ_COMMAND, SEQ_INPUT } seq_t;
 #include "term.h"		/* Required by args.h. */
 #include "args.h"		/* Required by options.h. */
 #include "options.h"		/* Required by screen.h. */
-#include "search.h"		/* Required by screen.h. */
 
 #include "msg.h"		/* Required by gs.h. */
 #include "cut.h"		/* Required by gs.h. */
 #include "seq.h"		/* Required by screen.h. */
-#include "util.h"		/* Required by excmd.h. */
+#include "util.h"		/* Required by ex.h. */
 #include "mark.h"		/* Required by gs.h. */
-#include "excmd.h"		/* Required by gs.h. */
+#include "ex.h"			/* Required by gs.h. */
 #include "gs.h"			/* Required by screen.h. */
 #include "screen.h"		/* Required by exf.h. */
 #include "exf.h"
 #include "log.h"
 #include "mem.h"
 
-/*
- * !!!
- * Fake the 4.4BSD fwopen(3) routines.  See PORT/clib/fwopen.c.
- */
-#if FWOPEN_NOT_AVAILABLE
-#define	EXCOOKIE	sp
-int	 ex_fflush __P((SCR *));
-int	 ex_printf __P((SCR *, const char *, ...));
-FILE	*fwopen __P((SCR *, void *));
-#else
-#define	EXCOOKIE	sp->stdfp
-#define	ex_fflush	fflush
-#define	ex_printf	fprintf
-#endif
+#include "common_extern.h"

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 10.3 1995/05/27 09:22:09 bostic Exp $ (Berkeley) $Date: 1995/05/27 09:22:09 $";
+static char sccsid[] = "$Id: db.c,v 10.4 1995/06/08 18:57:38 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:57:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -157,7 +157,7 @@ file_dline(sp, lno)
 	 * inserted or deleted.
 	 */
 	mark_insdel(sp, LINE_DELETE, lno);
-	global_insdel(sp, LINE_DELETE, lno);
+	ex_g_insdel(sp, LINE_DELETE, lno);
 
 	/* Log change. */
 	log_line(sp, lno, LOG_LINE_DELETE);
@@ -280,7 +280,7 @@ file_aline(sp, update, lno, p, len)
 	 */
 	if (!isempty)
 		mark_insdel(sp, LINE_INSERT, lno + 1);
-	global_insdel(sp, LINE_INSERT, lno + 1);
+	ex_g_insdel(sp, LINE_INSERT, lno + 1);
 
 	/*
 	 * Update screen.
@@ -359,7 +359,7 @@ file_iline(sp, lno, p, len)
 	 * inserted or deleted.
 	 */
 	mark_insdel(sp, LINE_INSERT, lno);
-	global_insdel(sp, LINE_INSERT, lno);
+	ex_g_insdel(sp, LINE_INSERT, lno);
 
 	/* Update screen. */
 	return (scr_update(sp, lno, LINE_INSERT, 1));
@@ -434,9 +434,9 @@ file_eline(sp, lno)
 	/* Check the cache. */
 	ep = sp->ep;
 	if (ep->c_nlines != OOBLNO)
-		return (lno <= (F_ISSET(sp, S_INPUT) &&
+		return (lno > OOBLNO && (lno <= (F_ISSET(sp, S_INPUT) &&
 		    ((TEXT *)sp->tiq.cqh_last)->lno > ep->c_nlines ?
-		    ((TEXT *)sp->tiq.cqh_last)->lno : ep->c_nlines));
+		    ((TEXT *)sp->tiq.cqh_last)->lno : ep->c_nlines)));
 
 	/* Go get the line. */
 	return (file_gline(sp, lno, NULL) != NULL);

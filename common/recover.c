@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 10.2 1995/05/05 18:43:36 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:43:36 $";
+static char sccsid[] = "$Id: recover.c,v 10.3 1995/06/08 18:57:49 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:57:49 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -119,7 +119,6 @@ static void	 rcv_email __P((SCR *, char *));
 static char	*rcv_gets __P((char *, size_t, int));
 static int	 rcv_mailfile __P((SCR *, int, char *));
 static int	 rcv_mktemp __P((SCR *, char *, char *, int));
-static void	 rcv_busy __P((SCR *, int));
 
 /*
  * rcv_tmp --
@@ -221,16 +220,16 @@ rcv_init(sp)
 			goto err;
 
 		/* Turn on a busy message, and sync it to backing store. */
-		rcv_busy(sp, 1);
+		sp->gp->scr_busy(sp, "287|Copying file for recovery...", 1);
 		if (ep->db->sync(ep->db, R_RECNOSYNC)) {
 			p = msg_print(sp, ep->rcv_path, &nf);
 			msgq(sp, M_SYSERR, "077|Preservation failed: %s", p);
 			if (nf)
 				FREE_SPACE(sp, p, nf);
-			rcv_busy(sp, 0);
+			sp->gp->scr_busy(sp, NULL, 0);
 			goto err;
 		}
-		rcv_busy(sp, 0);
+		sp->gp->scr_busy(sp, NULL, 0);
 	}
 
 	/* Turn off the owner execute bit. */
@@ -305,7 +304,7 @@ rcv_sync(sp, flags)
 	 */
 	rval = 0;
 	if (LF_ISSET(RCV_SNAPSHOT)) {
-		rcv_busy(sp, 1);
+		sp->gp->scr_busy(sp, "287|Copying file for recovery...", 1);
 		dp = O_STR(sp, O_RECDIR);
 		(void)snprintf(buf, sizeof(buf), "%s/vi.XXXXXX", dp);
 		if ((fd = rcv_mktemp(sp, buf, dp, S_IRUSR | S_IWUSR)) == -1)
@@ -318,7 +317,7 @@ e1:			if (fd != -1)
 				(void)close(fd);
 			rval = 1;
 		}
-		rcv_busy(sp, 0);
+		sp->gp->scr_busy(sp, NULL, 1);
 	}
 
 	/* REQUEST: end the file session. */
@@ -750,7 +749,7 @@ next:			(void)close(fd);
 	 * XXX
 	 * file_init() is going to set ep->rcv_path.
 	 */
-	if (file_init(sp, frp, pathp + sizeof(VI_PHEADER) - 1, FS_WELCOME)) {
+	if (file_init(sp, frp, pathp + sizeof(VI_PHEADER) - 1, 0)) {
 		free(recp);
 		free(pathp);
 		(void)close(sv_fd);
@@ -886,20 +885,4 @@ rcv_email(sp, fname)
 		    "%s -t < %s", _PATH_SENDMAIL, fname);
 		(void)system(buf);
 	}
-}
-
-/*
- * rcv_busy --
- *	Display recovery busy message.
- */
-static void
-rcv_busy(sp, on)
-	SCR *sp;
-	int on;
-{
-	if (on)
-		sp->gp->scr_busy(sp, msg_cat(sp,
-		    "287|Copying file for recovery... ...", NULL), 1);
-	else
-		sp->gp->scr_busy(sp, NULL, 0);
 }

@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: util.h,v 10.2 1995/05/05 18:46:22 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:46:22 $
+ *	$Id: util.h,v 10.3 1995/06/08 18:58:05 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:58:05 $
  */
 
 /* Macros to init/set/clear/test flags. */
@@ -39,6 +39,9 @@
 
 /* Offset to next column of stop size, e.g. tab offsets. */
 #define	COL_OFF(c, stop)	((stop) - ((c) % (stop)))
+
+/* Busy message types. */
+typedef enum { B_NONE, B_OFF, B_READ, B_RECOVER, B_SEARCH, B_WRITE } bmsg_t;
 
 /*
  * Number handling defines and protoypes.
