@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.45 1993/02/16 20:10:36 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:36 $";
+static char sccsid[] = "$Id: options.c,v 5.46 1993/02/19 18:46:19 bostic Exp $ (Berkeley) $Date: 1993/02/19 18:46:19 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -35,6 +35,7 @@ static int	f_flash __P((EXF *, void *));
 static int	f_keytime __P((EXF *, void *));
 static int	f_leftright __P((EXF *, void *));
 static int	f_lines __P((EXF *, void *));
+static int	f_list __P((EXF *, void *));
 static int	f_mesg __P((EXF *, void *));
 static int	f_modelines __P((EXF *, void *));
 static int	f_ruler __P((EXF *, void *));
@@ -108,7 +109,7 @@ OPTIONS opts[] = {
 	"lines",	&s_lines,	f_lines,
 	    OPT_NOSAVE|OPT_NUM|OPT_REDRAW,
 /* O_LIST */
-	"list",		NULL,		NULL,		OPT_0BOOL|OPT_REDRAW,
+	"list",		NULL,		f_list,		OPT_0BOOL|OPT_REDRAW,
 /* O_MAGIC */
 	"magic",	NULL,		NULL,		OPT_1BOOL,
 /* O_MAKE */
@@ -641,6 +642,17 @@ f_lines(ep, valp)
 	if (ep != NULL)
 		FF_SET(ep, F_RESIZE);
 	return (0);
+}
+
+static int
+f_list(ep, valp)
+	EXF *ep; 
+	void *valp;
+{
+	if (mode != MODE_VI)
+		return (0);
+
+	return (scr_sm_fill(ep, ep->top, P_TOP));
 }
 
 static int
