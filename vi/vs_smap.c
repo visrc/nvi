@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 8.2 1993/07/20 10:25:16 bostic Exp $ (Berkeley) $Date: 1993/07/20 10:25:16 $";
+static char sccsid[] = "$Id: vs_smap.c,v 8.3 1993/07/20 11:51:42 bostic Exp $ (Berkeley) $Date: 1993/07/20 11:51:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -516,7 +516,7 @@ svi_sm_1up(sp, ep)
 		if (svi_sm_next(sp, ep, TMAP, TMAP))
 			return (1);
 	} else {
-		memmove(HMAP, HMAP + 1, sp->rows * sizeof(SMAP));
+		memmove(HMAP, HMAP + 1, (sp->rows - 1) * sizeof(SMAP));
 		if (svi_sm_next(sp, ep, TMAP - 1, TMAP))
 			return (1);
 	}
@@ -665,7 +665,7 @@ svi_sm_1down(sp, ep)
 	MOVE(sp, 0, 0);
 	if (svi_insertln(sp, 1))
 		return (1);
-	memmove(HMAP + 1, HMAP, sp->rows * sizeof(SMAP));
+	memmove(HMAP + 1, HMAP, (sp->rows - 1) * sizeof(SMAP));
 	if (svi_sm_prev(sp, ep, HMAP + 1, HMAP))
 		return (1);
 	if (svi_line(sp, ep, HMAP, NULL, 0, NULL, NULL))
