@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.144 1994/08/07 12:41:02 bostic Exp $ (Berkeley) $Date: 1994/08/07 12:41:02 $";
+static char sccsid[] = "$Id: ex.c,v 8.145 1994/08/07 13:05:02 bostic Exp $ (Berkeley) $Date: 1994/08/07 13:05:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1386,7 +1386,7 @@ addr2:	switch (exc.addrcnt) {
 		 */
 		if (flagoff) {
 			if (flagoff < 0) {
-				if (sp->lno < -flagoff) {
+				if (sp->lno <= -flagoff) {
 					msgq(sp, M_ERR,
 					    "Flag offset before line 1");
 					goto err;
