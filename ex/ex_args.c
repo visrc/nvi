@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 8.8 1993/11/20 10:05:34 bostic Exp $ (Berkeley) $Date: 1993/11/20 10:05:34 $";
+static char sccsid[] = "$Id: ex_args.c,v 8.9 1993/11/22 08:50:01 bostic Exp $ (Berkeley) $Date: 1993/11/22 08:50:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -108,12 +108,13 @@ ex_rew(sp, ep, cmdp)
 
 	/*
 	 * !!!
-	 * Historic practice, turn off the edited bit
-	 * and discard any name changes.
+	 * Historic practice, turn off the edited bit and discard
+	 * any name changes.  Start at the beginning of the file,
+	 * too.
 	 */
 	for (tfrp = sp->frefq.tqh_first;
 	    tfrp != NULL; tfrp = tfrp->q.tqe_next) {
-		F_CLR(tfrp, FR_EDITED);
+		F_CLR(tfrp, FR_CHANGEWRITE | FR_CURSORSET | FR_EDITED);
 		if (tfrp->cname != NULL) {
 			FREE(tfrp->cname, tfrp->clen);
 			tfrp->cname = NULL;
