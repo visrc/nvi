@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 5.12 1992/10/24 14:24:01 bostic Exp $ (Berkeley) $Date: 1992/10/24 14:24:01 $";
+static char sccsid[] = "$Id: v_itxt.c,v 5.13 1992/10/25 14:39:04 bostic Exp $ (Berkeley) $Date: 1992/10/25 14:39:04 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -24,9 +24,10 @@ static char sccsid[] = "$Id: v_itxt.c,v 5.12 1992/10/24 14:24:01 bostic Exp $ (B
 #include "term.h"
 #include "extern.h"
 
-#define	N_EMARK		0x01		/* End of replacement mark. */
-#define	N_OVERWRITE	0x02		/* Overwrite characters. */
-#define	N_REPLACE	0x04		/* Replace characters without limit. */
+#define	N_APPEND	0x01		/* Appending, so offset cursor. */
+#define	N_EMARK		0x02		/* End of replacement mark. */
+#define	N_OVERWRITE	0x04		/* Overwrite characters. */
+#define	N_REPLACE	0x08		/* Replace characters without limit. */
 
 #define	SCREEN_UPDATE {							\
 	scr_cchange(curf);						\
@@ -70,7 +71,7 @@ v_iA(vp, fm, tm, rp)
 			SCREEN_UPDATE;
 		}
 
-		if (newtext(vp, NULL, p, len, rp, 0))
+		if (newtext(vp, NULL, p, len, rp, N_APPEND))
 			return (1);
 
 		if (--cnt == 0)
@@ -108,7 +109,7 @@ v_ia(vp, fm, tm, rp)
 			++curf->cno;
 			SCREEN_UPDATE;
 		}
-		if (newtext(vp, NULL, p, len, rp, 0))
+		if (newtext(vp, NULL, p, len, rp, N_APPEND))
 			return (1);
 
 		if (--cnt == 0)
@@ -476,9 +477,15 @@ newtext(vp, tm, p, len, rp, flags)
 		ib.head = NULL;
 	}
 
-	/* Save the cursor position. */
+	/*
+	 * Save the cursor position.  Note, if we're appending and the line
+	 * already has text on it, we have to offset the cursor by one.
+	 */
 	ib.start.lno = ib.stop.lno = curf->lno;
-	ib.start.cno = ib.stop.cno = curf->cno;
+	if (flags & N_APPEND && curf->cno > 0)
+		ib.start.cno = ib.stop.cno = curf->cno - 1;
+	else
+		ib.start.cno = ib.stop.cno = curf->cno;
 
 	/* Copy the current line for editing. */
 	if (len) {
