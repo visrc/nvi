@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 10.7 1995/09/28 10:39:35 bostic Exp $ (Berkeley) $Date: 1995/09/28 10:39:35 $";
+static char sccsid[] = "$Id: ex_argv.c,v 10.8 1995/09/29 09:21:47 bostic Exp $ (Berkeley) $Date: 1995/09/29 09:21:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -480,8 +480,8 @@ argv_sexp(sp, bpp, blenp, lenp)
 	FILE *ifp;
 	pid_t pid;
 	size_t blen, len;
-	int ch, nf1, nf2, rval, err_output[2], std_output[2];
-	char *bp, *p, *t, *sh, *sh_path;
+	int ch, nf, rval, std_output[2];
+	char *bp, *p, *sh, *sh_path;
 
 	bp = *bpp;
 	blen = *blenp;
@@ -542,9 +542,9 @@ err:		if (ifp != NULL)
 		 * Assume that all shells have -c.
 		 */
 		execl(sh_path, sh, "-c", bp, NULL);
-		p = msg_print(sp, sh_path, &nf1);
+		p = msg_print(sp, sh_path, &nf);
 		msgq(sp, M_SYSERR, "118|Error: execl: %s", p);
-		if (nf1)
+		if (nf)
 			FREE_SPACE(sp, p, 0);
 		_exit(127);
 	default:			/* Parent. */
@@ -581,9 +581,9 @@ err:		if (ifp != NULL)
 	if (ferror(ifp))
 		goto ioerr;
 	if (fclose(ifp)) {
-ioerr:		p = msg_print(sp, sh, &nf1);
+ioerr:		p = msg_print(sp, sh, &nf);
 		msgq(sp, M_ERR, "119|I/O error: %s", p);
-		if (nf1)
+		if (nf)
 			FREE_SPACE(sp, p, 0);
 binc_err:	rval = 1;
 	} else

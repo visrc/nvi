@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 10.12 1995/09/27 12:05:30 bostic Exp $ (Berkeley) $Date: 1995/09/27 12:05:30 $";
+static char sccsid[] = "$Id: vi.c,v 10.13 1995/09/29 09:22:39 bostic Exp $ (Berkeley) $Date: 1995/09/29 09:22:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -683,7 +683,6 @@ v_motion(sp, dm, vp, mappedp)
 	VICMD *dm, *vp;
 	int *mappedp;
 {
-	MARK m;
 	VICMD motion;
 	size_t len;
 	u_long cnt;
@@ -1129,6 +1128,7 @@ v_count(sp, fkey, countp)
 static gcret_t
 v_key(sp, command_events, evp, ec_flags)
 	SCR *sp;
+	int command_events;
 	EVENT *evp;
 	u_int32_t ec_flags;
 {
