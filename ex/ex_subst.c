@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.27 1993/12/23 10:11:49 bostic Exp $ (Berkeley) $Date: 1993/12/23 10:11:49 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.28 1993/12/23 11:30:34 bostic Exp $ (Berkeley) $Date: 1993/12/23 11:30:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -360,6 +360,8 @@ substitute(sp, ep, cmdp, s, re, flags)
 				goto usage;
 			errno = 0;
 			lno = strtoul(s, &s, 10);
+			if (*s == '\0')		/* Loop increment correction. */
+				--s;
 			if (errno == ERANGE) {
 				if (lno == LONG_MAX)
 					msgq(sp, M_ERR, "Count overflow.");
