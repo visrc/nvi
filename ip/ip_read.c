@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_read.c,v 8.1 1996/09/20 19:36:00 bostic Exp $ (Berkeley) $Date: 1996/09/20 19:36:00 $";
+static const char sccsid[] = "$Id: ip_read.c,v 8.2 1996/09/20 20:32:14 bostic Exp $ (Berkeley) $Date: 1996/09/20 20:32:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,6 +22,8 @@ static const char sccsid[] = "$Id: ip_read.c,v 8.1 1996/09/20 19:36:00 bostic Ex
 #include "../common/common.h"
 #include "../ex/script.h"
 #include "ip.h"
+
+extern GS *__global_list;
 
 typedef enum { INP_OK=0, INP_EOF, INP_ERR, INP_TIMEOUT } input_t;
 
@@ -42,7 +44,6 @@ ip_event(sp, evp, flags, ms)
 	u_int32_t flags;
 	int ms;
 {
-	extern GS *__global_list;
 	IP_PRIVATE *ipp;
 	struct timeval t, *tp;
 
@@ -107,6 +108,7 @@ ip_read(sp, ipp, tp)
 	int maxfd, nr;
 	char *bp;
 
+	gp = sp == NULL ? __global_list : sp->gp;
 	bp = ipp->ibuf + ipp->iblen;
 	blen = sizeof(ipp->ibuf) - ipp->iblen;
 
@@ -214,7 +216,7 @@ ip_trans(sp, ipp, evp)
 	case IPO_RESIZE:
 		if (ipp->iblen < IPO_CODE_LEN + IPO_INT_LEN * 2)
 			return (0);
-		evp->e_event = E_INTERRUPT;
+		evp->e_event = E_WRESIZE;
 		memcpy(&val1, ipp->ibuf + IPO_CODE_LEN, IPO_INT_LEN);
 		memcpy(&val2,
 		    ipp->ibuf + IPO_CODE_LEN + IPO_INT_LEN, IPO_INT_LEN);
@@ -262,8 +264,22 @@ ip_resize(sp, lines, columns)
 	SCR *sp;
 	size_t lines, columns;
 {
+	GS *gp;
 	ARGS *argv[2], a, b;
 	char b1[1024];
+
+	/*
+	 * XXX
+	 * The IP screen has to know the lines and columns before anything
+	 * else happens.  So, we may not have a valid SCR pointer, and we
+	 * have to deal with that.
+	 */
+	if (sp == NULL) {
+		gp = __global_list;
+		OG_VAL(gp, GO_LINES) = OG_D_VAL(gp, GO_LINES) = lines;
+		OG_VAL(gp, GO_COLUMNS) = OG_D_VAL(gp, GO_COLUMNS) = columns;
+		return (0);
+	}
 
 	a.bp = b1;
 	b.bp = NULL;
