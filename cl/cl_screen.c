@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_screen.c,v 10.42 1996/04/29 19:12:05 bostic Exp $ (Berkeley) $Date: 1996/04/29 19:12:05 $";
+static const char sccsid[] = "$Id: cl_screen.c,v 10.43 1996/05/01 09:41:06 bostic Exp $ (Berkeley) $Date: 1996/05/01 09:41:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -169,13 +169,6 @@ cl_quit(gp)
 	 * from the tty queue.
 	 */
 	(void)tcsetattr(STDIN_FILENO, TCSADRAIN | TCSASOFT, &clp->orig);
-
-	/*
-	 * If we were running vi when we quit, force the screen to scroll
-	 * so we get a fresh line.
-	 */
-	if (!clp->in_ex)
-		(void)write(STDOUT_FILENO, "\n", 1);
 
 	F_CLR(clp, CL_SCR_EX_INIT | CL_SCR_VI_INIT);
 	return (rval);
@@ -390,10 +383,15 @@ cl_vi_end(gp)
 	(void)keypad(stdscr, FALSE);
 
 	/*
-	 * If we were running vi when we quit, move to the bottom of the
-	 * window (some endwin implementations don't do this for you).
+	 * If we were running vi when we quit, scroll the screen up a single
+	 * line so we don't lose any information.
+	 *
+	 * Move to the bottom of the window (some endwin implementations don't
+	 * do this for you).
 	 */
 	if (!clp->in_ex) {
+		(void)move(0, 0);
+		(void)deleteln();
 		(void)move(LINES - 1, 0);
 		(void)refresh();
 	}
