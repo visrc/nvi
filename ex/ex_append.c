@@ -6,16 +6,18 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 5.6 1992/04/18 09:54:05 bostic Exp $ (Berkeley) $Date: 1992/04/18 09:54:05 $";
+static char sccsid[] = "$Id: ex_append.c,v 5.7 1992/04/18 15:36:25 bostic Exp $ (Berkeley) $Date: 1992/04/18 15:36:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
+#include <termios.h>
 #include <stdio.h>
 
 #include "vi.h"
 #include "curses.h"
 #include "excmd.h"
 #include "options.h"
+#include "tty.h"
 #include "extern.h"
 
 enum which {APPEND, CHANGE};
@@ -51,6 +53,7 @@ ca(cmdp, cmd)
 	MARK m;
 	long l;
 	int set;
+	char *p;
 
 	/* The ! flag turns off autoindent for the command. */
 	if (cmdp->flags & E_FORCE) {
@@ -75,18 +78,17 @@ ca(cmdp, cmd)
  			++l;
 
 		/* Insert lines until no more lines, or "." line. */
-		for (; vgets('\0', tmpblk.c, BLKSIZE) >= 0; ++l) {
+		for (; (p = gb(0, GB_NL)) != NULL; ++l) {
 			addch('\n');
-			if (!strcmp(tmpblk.c, "."))
+			if (!strcmp(p, "."))
 				break;
-
-			(void)strcat(tmpblk.c, "\n");
-			add(MARK_AT_LINE(l), tmpblk.c);
+			add(MARK_AT_LINE(l), p);
 		}
 	}
 
 	/* This can be called from vi mode. */
-	redraw(MARK_UNSET, FALSE);
+	if (mode == MODE_VI)
+		redraw(MARK_UNSET, FALSE);
 
 	/* Turn on autoprint. */
 	autoprint = 1;
