@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 8.28 1994/07/28 12:51:41 bostic Exp $ (Berkeley) $Date: 1994/07/28 12:51:41 $";
+static char sccsid[] = "$Id: ex_bang.c,v 8.29 1994/08/05 07:19:52 bostic Exp $ (Berkeley) $Date: 1994/08/05 07:19:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -100,9 +100,11 @@ ex_bang(sp, ep, cmdp)
 		 * cleaned up.
 		 */
 		if (IN_VI_MODE(sp)) {
-			GET_SPACE_RET(sp, bp, blen, ap->len + 2);
+			GET_SPACE_RET(sp, bp, blen, ap->len + 3);
 			bp[0] = '!';
-			memmove(bp + 1, ap->bp, ap->len + 1);
+			memmove(bp + 1, ap->bp, ap->len);
+			bp[ap->len + 1] = '\n';
+			bp[ap->len + 2] = '\0';
 		}
 	}
 
@@ -164,7 +166,7 @@ ex_bang(sp, ep, cmdp)
 	 * If the file has been modified, autowrite is not set and the
 	 * warn option is set, tell the user about the file.
 	 */
-	msg = "\n";
+	msg = NULL;
 	if (F_ISSET(ep, F_MODIFIED))
 		if (O_ISSET(sp, O_AUTOWRITE)) {
 			if (file_write(sp, ep, NULL, NULL, NULL, FS_ALL)) {
@@ -172,10 +174,7 @@ ex_bang(sp, ep, cmdp)
 				goto ret;
 			}
 		} else if (O_ISSET(sp, O_WARN))
-			if (IN_VI_MODE(sp) && F_ISSET(cmdp, E_MODIFY))
-				msg = "\nFile modified since last write.\n";
-			else
-				msg = "File modified since last write.\n";
+			msg = "File modified since last write.\n";
 
 	/* Run the command. */
 	rval = ex_exec_proc(sp, ap->bp, bp, msg);
