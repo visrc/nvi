@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: log.c,v 8.1 1993/06/09 22:21:14 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:21:14 $";
+static char sccsid[] = "$Id: log.c,v 8.2 1993/08/16 17:17:11 bostic Exp $ (Berkeley) $Date: 1993/08/16 17:17:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -82,7 +82,7 @@ log_init(sp, ep)
 	EXF *ep;
 {
 	/*
-	 * Initialize the buffer.  The logging subsystem has it's own
+	 * Initialize the buffer.  The logging subsystem has its own
 	 * buffers because the global ones are almost by definition
 	 * going to be in use when the log runs.
 	 */
@@ -349,9 +349,9 @@ log_backward(sp, ep, rp)
 		return (1);
 	}
 
-	F_SET(ep, F_NOLOG);			/* Turn off logging. */
+	F_SET(ep, F_NOLOG);		/* Turn off logging. */
 
-	key.data = &ep->l_cur;
+	key.data = &ep->l_cur;		/* Initialize db request. */
 	key.size = sizeof(recno_t);
 	for (didop = 0;;) {
 		--ep->l_cur;
@@ -417,6 +417,12 @@ err:	F_CLR(ep, F_NOLOG);
 /*
  * Log_setline --
  *	Reset the line to its original appearance.
+ *
+ * XXX
+ * There's a bug in this code due to our not logging cursor movements
+ * unless a change was made.  If you do a change, move off the line,
+ * then move back on and do a 'U', the line will be restored to the way
+ * it was before the original change.
  */
 int
 log_setline(sp, ep, rp)
@@ -440,8 +446,18 @@ log_setline(sp, ep, rp)
 
 	F_SET(ep, F_NOLOG);		/* Turn off logging. */
 
-	key.data = &ep->l_cur;
+	key.data = &ep->l_cur;		/* Initialize db request. */
 	key.size = sizeof(recno_t);
+
+	/*
+	 * Historically, U always reset the cursor to the first column in
+	 * the line.  This seems a bit non-intuitive, but, considering that
+	 * we may have undone multiple changes, anything else is going to
+	 * look like random positioning.
+	 */
+	rp->lno = sp->lno;
+	rp->cno = 0;
+
 	for (;;) {
 		--ep->l_cur;
 		if (ep->log->get(ep->log, &key, &data, 0))
@@ -451,15 +467,15 @@ log_setline(sp, ep, rp)
 #endif
 		switch (*(p = (u_char *)data.data)) {
 		case LOG_CURSOR_INIT:
-			memmove(rp, p + sizeof(u_char), sizeof(MARK));
-			if (rp->lno != sp->lno || ep->l_cur == 1) {
+			memmove(&m, p + sizeof(u_char), sizeof(MARK));
+			if (m.lno != sp->lno || ep->l_cur == 1) {
 				F_CLR(ep, F_NOLOG);
 				return (0);
 			}
 			break;
 		case LOG_CURSOR_END:
-			memmove(rp, p + sizeof(u_char), sizeof(MARK));
-			if (rp->lno != sp->lno) {
+			memmove(&m, p + sizeof(u_char), sizeof(MARK));
+			if (m.lno != sp->lno) {
 				++ep->l_cur;
 				F_CLR(ep, F_NOLOG);
 				return (0);
@@ -522,7 +538,7 @@ log_forward(sp, ep, rp)
 
 	F_SET(ep, F_NOLOG);		/* Turn off logging. */
 
-	key.data = &ep->l_cur;
+	key.data = &ep->l_cur;		/* Initialize db request. */
 	key.size = sizeof(recno_t);
 	for (didop = 0;;) {
 		++ep->l_cur;
