@@ -12,7 +12,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: tcl.c,v 8.15 1996/09/18 09:22:18 bostic Exp $ (Berkeley) $Date: 1996/09/18 09:22:18 $";
+static const char sccsid[] = "$Id: tcl.c,v 8.16 1996/10/16 14:16:53 bostic Exp $ (Berkeley) $Date: 1996/10/16 14:16:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -678,6 +678,7 @@ tcl_opts_set(clientData, interp, argc, argv)
 	SCR *sp;
 	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
 	int rval;
+	char *setting;
 
 	if (argc != 3) {
 		Tcl_SetResult(interp,
@@ -688,7 +689,12 @@ tcl_opts_set(clientData, interp, argc, argv)
 	if (getscreenid(interp, &sp, argv[1], NULL))
 		return (TCL_ERROR);
 	INITMESSAGE;
-	rval = api_opts_set(sp, argv[2]);
+	/*rval = api_opts_set(sp, argv[2]);*/
+	MALLOC(sp, setting, char *, strlen(argv[2])+6);
+	strcpy(setting, ":set ");
+	strcpy(setting+5, argv[2]);
+	rval=api_run_str(sp, setting);
+	free(setting);
 	ENDMESSAGE;
 
 	return (rval ? TCL_ERROR : TCL_OK);

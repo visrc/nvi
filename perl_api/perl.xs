@@ -14,7 +14,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: perl.xs,v 8.26 1996/10/10 19:00:31 bostic Exp $ (Berkeley) $Date: 1996/10/10 19:00:31 $";
+static const char sccsid[] = "$Id: perl.xs,v 8.27 1996/10/16 14:16:34 bostic Exp $ (Berkeley) $Date: 1996/10/16 14:16:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -82,6 +82,11 @@ perl_end(gp)
 	}
 }
 
+/*
+ * perl_eval
+ *	Evaluate a string
+ * 	We don't use mortal SVs because no one will clean up after us
+ */
 static void 
 perl_eval(string)
 	char *string;
@@ -114,7 +119,7 @@ perl_init(scrp)
 	GS *gp;
 	char *bootargs[] = { "VI", NULL };
 #ifndef USE_SFIO
-	SV *svcurscr = 0;
+	SV *svcurscr;
 #endif
 
 #ifndef HAVE_PERL_5_003_01
@@ -821,20 +826,23 @@ UnmapKey(screen, key)
 #	Set an option.
 #
 # Perl Command: VI::SetOpt
-# Usage: VI::SetOpt screenId command
+# Usage: VI::SetOpt screenId setting
 
 void
-SetOpt(screen, command)
+SetOpt(screen, setting)
 	VI screen
-	char *command
+	char *setting
 
 	PREINIT:
 	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
 	int rval;
+	SV *svc;
 
 	CODE:
 	INITMESSAGE;
-	rval = api_opts_set(screen, command);
+	svc = sv_2mortal(newSVpv(":set ", 5));
+	sv_catpv(svc, setting);
+	rval = api_run_str(screen, SvPV(svc, na));
 	ENDMESSAGE;
 
 # XS_VI_opts_get --
@@ -981,7 +989,8 @@ STORE(screen, key, value)
 
 	CODE:
 	INITMESSAGE;
-	rval = api_opts_set2(screen, key, SvPV(value, na), SvIV(value));
+	rval = api_opts_set(screen, key, SvPV(value, na), SvIV(value), 
+                                         SvTRUEx(value));
 	ENDMESSAGE;
 
 MODULE = VI	PACKAGE = VI::MAP
