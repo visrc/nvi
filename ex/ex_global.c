@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 8.11 1993/09/13 13:56:02 bostic Exp $ (Berkeley) $Date: 1993/09/13 13:56:02 $";
+static char sccsid[] = "$Id: ex_global.c,v 8.12 1993/09/30 11:26:56 bostic Exp $ (Berkeley) $Date: 1993/09/30 11:26:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -144,7 +144,8 @@ global(sp, ep, cmdp, cmd)
 	 * because nvi never wants to catch it.  A handler for VSUSP should
 	 * have been installed by the screen code.
 	 */
-	if ((saveintr = signal(SIGINT, global_intr)) != (sig_ret_t)-1) {
+	if (F_ISSET(sp->gp, G_ISFROMTTY) &&
+	    (saveintr = signal(SIGINT, global_intr)) != (sig_ret_t)-1) {
 		F_CLR(sp, S_INTERRUPTED);
 		F_SET(sp, S_INTERRUPTIBLE);
 		if (tcgetattr(STDIN_FILENO, &term)) {
@@ -223,7 +224,7 @@ err:			rval = 1;
 	}
 	F_CLR(sp, S_GLOBAL);
 
-	if (saveintr != (sig_ret_t)-1) {
+	if (F_ISSET(sp->gp, G_ISFROMTTY) && saveintr != (sig_ret_t)-1) {
 		if (signal(SIGINT, saveintr) == (sig_ret_t)-1)
 			msgq(sp, M_ERR, "signal: %s", strerror(errno));
 		if (tcsetattr(STDIN_FILENO, TCSANOW | TCSASOFT, &term))

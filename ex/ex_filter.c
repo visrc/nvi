@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 8.16 1993/09/27 17:32:34 bostic Exp $ (Berkeley) $Date: 1993/09/27 17:32:34 $";
+static char sccsid[] = "$Id: ex_filter.c,v 8.17 1993/09/30 11:27:03 bostic Exp $ (Berkeley) $Date: 1993/09/30 11:27:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -93,7 +93,8 @@ filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
 	 * because nvi never wants to catch it.  A handler for VSUSP should
 	 * have been installed by the screen code.
 	 */
-	if ((saveintr = signal(SIGINT, SIG_IGN)) != (sig_ret_t)-1) {
+	if (F_ISSET(sp->gp, G_ISFROMTTY) &&
+	    (saveintr = signal(SIGINT, SIG_IGN)) != (sig_ret_t)-1) {
 		if (tcgetattr(STDIN_FILENO, &term)) {
 			msgq(sp, M_ERR,
 			    "tcgetattr: %s", strerror(errno));
@@ -268,7 +269,7 @@ err:		if (input[0] != -1)
 
 uwait:	rval |= filter_wait(sp, (long)utility_pid, cmd, 0);
 
-	if (saveintr != (sig_ret_t)-1) {
+	if (F_ISSET(sp->gp, G_ISFROMTTY) && saveintr != (sig_ret_t)-1) {
 		if (signal(SIGINT, saveintr) == (sig_ret_t)-1)
 			msgq(sp, M_ERR, "signal: %s", strerror(errno));
 		if (tcsetattr(STDIN_FILENO, TCSANOW | TCSASOFT, &term))
