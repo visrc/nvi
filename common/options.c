@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.6 1992/04/03 08:33:25 bostic Exp $ (Berkeley) $Date: 1992/04/03 08:33:25 $";
+static char sccsid[] = "$Id: options.c,v 5.7 1992/04/04 16:23:28 bostic Exp $ (Berkeley) $Date: 1992/04/04 16:23:28 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -14,6 +14,7 @@ static char sccsid[] = "$Id: options.c,v 5.6 1992/04/03 08:33:25 bostic Exp $ (B
 #include <stdlib.h>
 #include <strings.h>
 #include <paths.h>
+#include <stdio.h>
 
 #include "options.h"
 #include "vi.h"
@@ -98,61 +99,59 @@ OPTIONS opts[] = {
 	"mesg",		NULL,		OPT_1BOOL,
 #define	O_MODELINE	25
 	"modeline",	NULL,		OPT_0BOOL,
-#define	O_MORE		26
-	"more",		NULL,		OPT_1BOOL,
-#define	O_NUMBER	27
+#define	O_NUMBER	26
 	"number",	NULL,		OPT_0BOOL|OPT_REDRAW,
-#define	O_PARAGRAPHS	28
+#define	O_PARAGRAPHS	27
 	"paragraphs",	"PPppIPLPQP",	OPT_STR,
-#define	O_PROMPT	29
+#define	O_PROMPT	28
 	"prompt",	NULL,		OPT_1BOOL,
-#define	O_READONLY	30
+#define	O_READONLY	29
 	"readonly",	NULL,		OPT_0BOOL,
-#define	O_REPORT	31
+#define	O_REPORT	30
 	"report",	&report,	OPT_NUM,
-#define	O_RULER		32
+#define	O_RULER		31
 	"ruler",	NULL,		OPT_0BOOL,
-#define	O_SCROLL	33
+#define	O_SCROLL	32
 	"scroll",	&scroll,	OPT_NUM,
-#define	O_SECTIONS	34
+#define	O_SECTIONS	33
 	"sections",	"NHSHSSSEse",	OPT_STR,
-#define	O_SHELL		35
+#define	O_SHELL		34
 	"shell",	_PATH_BSHELL,	OPT_STR,
-#define	O_SHIFTWIDTH	36
+#define	O_SHIFTWIDTH	35
 	"shiftwidth",	&shiftwidth,	OPT_NUM,
-#define	O_SHOWMATCH	37
+#define	O_SHOWMATCH	36
 	"showmatch",	NULL,		OPT_0BOOL,
-#define	O_SHOWMODE	38
+#define	O_SHOWMODE	37
 	"showmode",	NULL,		OPT_0BOOL,
-#define	O_SIDESCROLL	39
+#define	O_SIDESCROLL	38
 	"sidescroll",	&sidescroll,	OPT_NUM,
-#define	O_SYNC		40
+#define	O_SYNC		39
 	"sync",		NULL,		OPT_0BOOL,
-#define	O_TABSTOP	41
+#define	O_TABSTOP	40
 	"tabstop",	&tabstop,	OPT_NUM|OPT_REDRAW,
-#define	O_TAGLENGTH	42
+#define	O_TAGLENGTH	41
 	"taglength",	&taglength,	OPT_NUM,
-#define	O_TERM		43
+#define	O_TERM		42
 	"term",		"unknown",	OPT_NOSAVE|OPT_STR,
-#define	O_TERSE		44
+#define	O_TERSE		43
 	"terse",	NULL,		OPT_0BOOL,
-#define	O_TIMEOUT	45
+#define	O_TIMEOUT	44
 	"timeout",	NULL,		OPT_0BOOL,
-#define	O_VBELL		46
+#define	O_VBELL		45
 	"vbell",	NULL,		OPT_0BOOL,
-#define	O_WARN		47
+#define	O_WARN		46
 	"warn",		NULL,		OPT_1BOOL,
-#define	O_WINDOW	48
+#define	O_WINDOW	47
 	"window",	&window,	OPT_NUM|OPT_REDRAW,
-#define	O_WRAPMARGIN	49
+#define	O_WRAPMARGIN	48
 	"wrapmargin",	&wrapmargin,	OPT_NUM,
-#define	O_WRAPSCAN	50
+#define	O_WRAPSCAN	49
 	"wrapscan",	NULL,		OPT_1BOOL,
-#define	O_WRITEANY	51
+#define	O_WRITEANY	50
 	"writeany",	NULL,		OPT_0BOOL,
 	NULL,
 };
-#define	O_OPTIONCOUNT	52
+#define	O_OPTIONCOUNT	51
 /* END_OPTION_DEF */
 
 typedef struct abbrev {
@@ -187,7 +186,6 @@ static ABBREV abbrev[] = {
 	"mk",	O_MAKE,
 	"ml",	O_MODELINE,
 	"ml",	O_MODELINE,
-	"mo",	O_MORE,
 	"nu",	O_NUMBER,
 	"pa",	O_PARAGRAPHS,
 	"pr",	O_PROMPT,
@@ -449,7 +447,6 @@ opts_dump(all)
 	 * Termwidth is the tab stop before half of the line in the first loop,
 	 * and the full line length later on.
 	 */
-#define	TAB	8		/* XXX */
 	colwidth = -1;
 	termwidth = (COLS - 1) / 2 & ~(TAB - 1);
 	for (b_num = s_num = 0, op = opts; op->name; ++op) {
@@ -522,39 +519,29 @@ opts_dump(all)
  *	Write the current configuration to a file.
  */
 void
-opts_save(fd)
-	int fd;
+opts_save(fp)
+	FILE *fp;
 {
 	OPTIONS *op;
-	int len;
-	char *p, buf[1024];
 
-	(void)strcpy(buf, "set ");
 	for (op = opts; op->name; ++op) {
 		if (ISFSETP(op, OPT_NOSAVE))
 			continue;
-		p = buf + (len = 4);
 		switch (op->flags & OPT_TYPE) {
 		case OPT_0BOOL:
-			*p++ = 'n';
-			*p++ = 'o';
-			len += 2;
-			/* FALLTHROUGH */
+			(void)fprintf(fp, "set no%s\n", op->name);
+			break;
 		case OPT_1BOOL:
-			len += snprintf(p, sizeof(buf) - 10, "%s\n", op->name);
+			(void)fprintf(fp, "set %s\n", op->name);
 			break;
 		case OPT_NUM:
-			len += snprintf(p,
-			    sizeof(buf) - 10, "%s=%-3d\n", op->name, LVALP(op));
+			(void)fprintf(fp,
+			    "set %s=%-3d\n", op->name, LVALP(op));
 			break;
 		case OPT_STR:
-			len += snprintf(p, sizeof(buf) - 4,
-			    "%s=\"%s\"\n", op->name, PVALP(op));
+			(void)fprintf(fp,
+			    "set %s=\"%s\"\n", op->name, PVALP(op));
 			break;
-		}
-		if (write(fd, buf, len) != len) {
-			msg("mkexrc: incomplete: %s", strerror(errno));
-			return;
 		}
 	}
 }
