@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.12 1993/08/20 17:56:14 bostic Exp $ (Berkeley) $Date: 1993/08/20 17:56:14 $";
+static char sccsid[] = "$Id: ex.c,v 8.13 1993/08/21 14:34:23 bostic Exp $ (Berkeley) $Date: 1993/08/21 14:34:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -152,6 +152,14 @@ ex_cstring(sp, ep, cmd, len)
 	u_int saved_mode;
 	int ch, arg1_len;
 	char *p, *t, *arg1;
+
+	/*
+	 * Ex goes through here for each vi :colon command and for each ex
+	 * command, however, globally executed commands don't go through
+	 * here, instead, they call ex_cmd directly.  So, reset all of the
+	 * interruptible flags now.
+	 */
+	F_CLR(sp, S_INTERRUPTED | S_INTERRUPTIBLE);
 
 	/* This is probably not necessary, but it's worth being safe. */
 	if (len == 0) {
