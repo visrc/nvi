@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: key.h,v 10.21 1996/12/11 13:02:38 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:02:38 $
+ *	$Id: key.h,v 10.22 1996/12/14 13:58:30 bostic Exp $ (Berkeley) $Date: 1996/12/14 13:58:30 $
  */
 
 /*
@@ -82,42 +82,32 @@ struct _event {
 	TAILQ_ENTRY(_event) q;		/* Linked list of events. */
 	e_event_t e_event;		/* Event type. */
 	int	  e_ipcom;		/* IP command. */
-	union {
-		struct {		/* Input character. */
-			CHAR_T c;	/* Character. */
-			e_key_t value;	/* Key type. */
 
 #define	CH_ABBREVIATED	0x01		/* Character is from an abbreviation. */
 #define	CH_MAPPED	0x02		/* Character is from a map. */
 #define	CH_NOMAP	0x04		/* Do not map the character. */
 #define	CH_QUOTED	0x08		/* Character is already quoted. */
-		} _e_ch;
-#define	e_ch	_u_event._e_ch		/* !!! The structure, not the char. */
-#define	e_c	_u_event._e_ch.c
-#define	e_value	_u_event._e_ch.value
+	CHAR_T	  e_c;			/* Character. */
+	e_key_t	  e_value;		/* Key type. */
 
-		struct {		/* Screen position, size. */
-			size_t lno1;	/* Line number. */
-			size_t cno1;	/* Column number. */
-			size_t lno2;	/* Line number. */
-			size_t cno2;	/* Column number. */
-		} _e_mark;
-#define	e_lno	_u_event._e_mark.lno1	/* Single location. */
-#define	e_cno	_u_event._e_mark.cno1
-#define	e_flno	_u_event._e_mark.lno1	/* Text region. */
-#define	e_fcno	_u_event._e_mark.cno1
-#define	e_tlno	_u_event._e_mark.lno2
-#define	e_tcno	_u_event._e_mark.cno2
+#define	e_flags	e_val1			/* Flags. */
+#define	e_lno	e_val1			/* Single location. */
+#define	e_cno	e_val2
+#define	e_flno	e_val1			/* Text region. */
+#define	e_fcno	e_val2
+#define	e_tlno	e_val3
+#define	e_tcno	e_val4
+	size_t	  e_val1;		/* Value #1. */
+	size_t	  e_val2;		/* Value #2. */
+	size_t	  e_val3;		/* Value #3. */
+	size_t	  e_val4;		/* Value #4. */
 
-		struct {		/* Input string. */
-			CHAR_T	*csp;	/* String. */
-			size_t	 len;	/* String length. */
-		} _e_str;
-#define	e_csp	_u_event._e_str.csp
-#define	e_len	_u_event._e_str.len
-	} _u_event;
-
-	u_int32_t e_flags;		/* Flags of various kinds... */
+#define	e_csp	e_str1
+#define	e_len	e_len1
+	CHAR_T	 *e_str1;		/* String #1. */
+	size_t	  e_len1;		/* String #1 length. */
+	CHAR_T	 *e_str2;		/* String #2. */
+	size_t	  e_len2;		/* String #2 length. */
 };
 
 typedef struct _keylist {
