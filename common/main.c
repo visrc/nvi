@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 9.4 1994/11/12 13:44:14 bostic Exp $ (Berkeley) $Date: 1994/11/12 13:44:14 $";
+static char sccsid[] = "$Id: main.c,v 9.5 1994/11/14 09:52:18 bostic Exp $ (Berkeley) $Date: 1994/11/14 09:52:18 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -193,7 +193,7 @@ main(argc, argv)
 	} else if (!F_ISSET(gp, G_STDIN_TTY) || !isatty(STDOUT_FILENO)) {
 		msgq(NULL, M_ERR,
 		    "040|Vi's standard input and output must be a terminal");
-		goto err;
+		goto errexit;
 	}
 
 	if (trace_f != NULL) {		/* Trace file initialization. */
@@ -222,16 +222,16 @@ main(argc, argv)
 	if (screen_init(NULL, &sp)) {
 		if (sp != NULL)
 			CIRCLEQ_INSERT_HEAD(&__global_list->dq, sp, q);
-		goto err;
+		goto errexit;
 	}
 	F_SET(sp, S_EX);
 	sp->saved_vi_mode = saved_vi_mode;
 	CIRCLEQ_INSERT_HEAD(&__global_list->dq, sp, q);
 
 	if (term_init(sp))		/* Terminal initialization. */
-		goto err;
+		goto errexit;
 	if (term_window(sp, 0))		/* Screen size initialization. */
-		goto err;
+		goto errexit;
 
 	{ int oargs[4], *oargp = oargs;
 	if (readonly)			/* Command-line options. */
@@ -242,7 +242,7 @@ main(argc, argv)
 	}
 	*oargp = -1;
 	if (opts_init(sp, oargs))	/* Options initialization. */
-		goto err;
+		goto errexit;
 	}
 
 	if (silent) {			/* Ex batch mode. */
@@ -271,15 +271,15 @@ main(argc, argv)
 
 #ifdef DIGRAPHS
 	if (digraph_init(sp))		/* Digraph initialization. */
-		goto err;
+		goto errexit;
 #endif
 
 	if (sig_init(sp))		/* Signal initialization. */
-		goto err;
+		goto errexit;
 
 	if (!silent) {			/* Read EXINIT, exrc files. */
 		if (sex_screen_exrc(sp))
-			goto err;
+			goto errexit;
 		if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE))
 			goto done;
 	}
@@ -298,7 +298,7 @@ main(argc, argv)
 	/* Use a tag file if specified. */
 	if (tag_f != NULL) {
 		if (ex_tagfirst(sp, tag_f))
-			goto err;
+			goto errexit;
 		need_lreset = 0;
 	} else
 		need_lreset = 1;
@@ -330,11 +330,11 @@ main(argc, argv)
 	if (sp->frp == NULL && tag_f == NULL) {
 		if ((frp = file_add(sp,
 		    sp->argv == NULL ? NULL : (CHAR_T *)(sp->argv[0]))) == NULL)
-			goto err;
+			goto errexit;
 		if (F_ISSET(sp, S_ARGRECOVER))
 			F_SET(frp, FR_RECOVER);
 		if (file_init(sp, frp, NULL, 0))
-			goto err;
+			goto errexit;
 		need_lreset = 1;
 	}
 
@@ -351,7 +351,7 @@ main(argc, argv)
 			need_lreset = 0;
 		}
 		if (sex_screen_icmd(sp, excmdarg))
-			goto err;
+			goto errexit;
 		if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE))
 			goto done;
 	}
@@ -404,7 +404,7 @@ main(argc, argv)
 
 done:	eval = 0;
 	if (0)
-err:		eval = 1;
+errexit:	eval = 1;
 
 	/*
 	 * NOTE: sp may be GONE when the screen returns, so only
