@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 5.2 1993/04/06 11:44:50 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:44:50 $";
+static char sccsid[] = "$Id: vs_split.c,v 5.3 1993/04/12 14:47:42 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:47:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,13 +36,13 @@ svi_split(sp, ep)
 	/* Check to see if it's possible. */
 	half = sp->rows / 2;
 	if (half < MINIMUM_SCREEN_ROWS) {
-		msgq(sp, M_ERROR, "Screen not large enough to split");
+		msgq(sp, M_ERR, "Screen not large enough to split");
 		return (1);
 	}
 
 	/* Get a new screen, initialize. */
 	if ((tsp = malloc(sizeof(SCR))) == NULL) {
-		msgq(sp, M_ERROR, "Error: %s", strerror(errno));
+		msgq(sp, M_ERR, "Error: %s", strerror(errno));
 		return (1);
 	}
 	if (scr_init(sp, tsp)) {
@@ -85,12 +85,6 @@ svi_split(sp, ep)
 			sp->child->parent = tsp;
 		sp->child = tsp;
 		tsp->parent = sp;
-
-		/* Clear the old information line. */
-		MOVE(sp, INFOLINE(sp), 0);
-		clrtoeol();
-
-		svi_divider(sp);
 	} else {				/* Parent is bottom half. */
 		tsp->rows = sp->rows - half;	/* Child. */
 		tsp->cols = sp->cols;
@@ -131,11 +125,16 @@ svi_split(sp, ep)
 	/* Fill the child's screen map. */
 	(void)svi_sm_fill(tsp, tsp->ep, sp->lno, P_FILL);
 
-	/* Clear the new information line. */
+	/* Clear the information lines. */
+	MOVE(sp, INFOLINE(sp), 0);
+	clrtoeol();
 	MOVE(tsp, INFOLINE(sp), 0);
 	clrtoeol();
 
-	/* Repaint the child screen. */
+	/* Refresh the parent screens */
+	(void)svi_refresh(sp, sp->ep);
+
+	/* Completely redraw the child screen. */
 	F_SET(tsp, S_REDRAW);
 
 	/* Switch screens. */
