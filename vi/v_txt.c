@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.85 1994/03/08 19:41:20 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:41:20 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.86 1994/03/09 14:16:32 bostic Exp $ (Berkeley) $Date: 1994/03/09 14:16:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -45,6 +45,7 @@ static void	 txt_showmatch __P((SCR *, EXF *));
 static void	 txt_Rcleanup __P((SCR *,
 		    TEXTH *, TEXT *, const char *, const size_t));	
 static int	 txt_resolve __P((SCR *, EXF *, TEXTH *));
+static void	 txt_unmap __P((SCR *, TEXT *, u_int *));
 
 /* Cursor character (space is hard to track on the screen). */
 #if defined(DEBUG) && 0
@@ -125,6 +126,7 @@ v_ntext(sp, ep, tiqh, tm, lp, len, rp, prompt, ai_line, flags)
 	int showmatch;		/* Showmatch set on this character. */
 	int testnr;		/* Test first character for nul replay. */
 	int max, tmp;
+	int unmap_tst;		/* Input map needs testing. */
 	char *p;
 
 	/*
@@ -301,6 +303,7 @@ nullreplay:
 	} else
 		testnr = 1;
 
+	unmap_tst = LF_ISSET(TXT_MAPINPUT) && LF_ISSET(TXT_INFOLINE);
 	iflags = LF_ISSET(TXT_MAPCOMMAND | TXT_MAPINPUT);
 	for (gp, showmatch = 0,
 	    carat_st = C_NOTSET, hex = H_NOTSET, quoted = Q_NOTSET;;) {
@@ -403,6 +406,8 @@ next_ch:	if (term_key(sp, &ikey, iflags) != INP_OK)
 					goto next_ch;			\
 				}					\
 			}						\
+			if (unmap_tst)					\
+				txt_unmap(sp, tp, &iflags);		\
 			if (abb != A_NOTSET)				\
 				abb = A_SPACE;				\
 			/* Handle hex numbers. */			\
@@ -878,17 +883,23 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 ins_ch:			/*
 			 * If entering a space character after a word, check
 			 * for abbreviations.  If there was one, discard the
-			 * replay characters.
+			 * replay characters.  Check for unmap commands, as
+			 * well.
 			 */
-			if (isblank(ch) && abb == A_NOTSPACE && !replay) {
-				if (txt_abbrev(sp, tp, ch,
-				    LF_ISSET(TXT_INFOLINE), &tmp, &ab_turnoff))
-					goto err;
-				if (tmp) {
-					if (LF_ISSET(TXT_RECORD))
-						rcol -= tmp;
-					goto next_ch;
+			if (isblank(ch)) {
+				if (abb == A_NOTSPACE && !replay) {
+					if (txt_abbrev(sp, tp, ch,
+					    LF_ISSET(TXT_INFOLINE),
+					    &tmp, &ab_turnoff))
+						goto err;
+					if (tmp) {
+						if (LF_ISSET(TXT_RECORD))
+							rcol -= tmp;
+						goto next_ch;
+					}
 				}
+				if (unmap_tst)
+					txt_unmap(sp, tp, &iflags);
 			}
 			/* If in hex mode, see if we've entered a hex value. */
 			if (hex == H_INHEX && !isxdigit(ch)) {
@@ -1095,6 +1106,50 @@ txt_abbrev(sp, tp, pushc, isinfoline, didsubp, turnoffp)
 	*didsubp = len;
 	return (0);
 }
+
+/*
+ * txt_unmap --
+ *	Handle the unmap command.
+ */
+static void
+txt_unmap(sp, tp, iflagsp)
+	SCR *sp;
+	TEXT *tp;
+	u_int *iflagsp;
+{
+	size_t len, off;
+	char *p;
+
+	/* Find the beginning of this "word". */
+	for (off = sp->cno - 1, p = tp->lb + off, len = 0;; --p, --off) {
+		if (isblank(*p)) {
+			++p;
+			break;
+		}
+		++len;
+		if (off == tp->ai || off == tp->offset)
+			break;
+	}
+
+	/*
+	 * !!!
+	 * Historic vi exploded input mappings on the command line.  See the
+	 * txt_abbrev() routine for an explanation of the problems inherent
+	 * in this.
+	 *
+	 * We make this work as follows.  If we get a string which is <blank>
+	 * terminated and which starts at the beginning of the line, we check
+	 * to see it is the unmap command.  If it is, we return that the input
+	 * mapping should be turned off.  Note also, minor trickiness, so that
+	 * if the user erases the line and starts another command, we go ahead
+	 * an turn mapping back on.
+	 */
+	if ((off == tp->ai || off == tp->offset) && ex_is_unmap(p, len))
+		*iflagsp &= ~TXT_MAPINPUT;
+	else
+		*iflagsp |= TXT_MAPINPUT;
+}
+
 
 /* Offset to next column of stop size. */
 #define	STOP_OFF(c, stop)	(stop - (c) % stop)
@@ -1704,6 +1759,10 @@ txt_margin(sp, tp, didbreak, pushc)
 	return (0);
 }
 
+/*
+ * txt_Rcleanup --
+ *	Resolve the input line for the 'R' command.
+ */
 static void
 txt_Rcleanup(sp, tiqh, tp, lp, len)
 	SCR *sp;

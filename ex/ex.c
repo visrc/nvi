@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.97 1994/03/08 19:39:01 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:39:01 $";
+static char sccsid[] = "$Id: ex.c,v 8.98 1994/03/09 14:16:53 bostic Exp $ (Berkeley) $Date: 1994/03/09 14:16:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1495,6 +1495,30 @@ ex_is_abbrev(name, len)
 
 	return ((cp = ex_comm_search(name, len)) != NULL &&
 	    (cp == &cmds[C_ABBR] || cp == &cmds[C_UNABBREVIATE]));
+}
+
+/*
+ * ex_is_unmap -
+ *	The vi text input routine needs to know if ex thinks this is
+ *	an unmap command, so it can turn off input mapping.  Usual
+ *	ranting in the vi/v_ntext:txt_unmap() routine.
+ */
+int
+ex_is_unmap(name, len)
+	char *name;
+	size_t len;
+{
+	EXCMDLIST const *cp;
+
+	/*
+	 * The command the vi input routines are really interested in
+	 * is "unmap!", not just unmap.
+	 */
+	if (name[len - 1] != '!')
+		return (0);
+	--len;
+	return ((cp = ex_comm_search(name, len)) != NULL &&
+	    cp == &cmds[C_UNMAP]);
 }
 
 static inline EXCMDLIST const *
