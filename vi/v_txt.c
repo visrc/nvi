@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 9.18 1995/02/08 20:19:42 bostic Exp $ (Berkeley) $Date: 1995/02/08 20:19:42 $";
+static char sccsid[] = "$Id: v_txt.c,v 9.19 1995/02/08 20:21:44 bostic Exp $ (Berkeley) $Date: 1995/02/08 20:21:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -428,10 +428,9 @@ next_ch:	if (replay) {
 
 		/*
 		 * !!!
-		 * Extension.  If the user enters "<CH_HEX>[isxdigit()]+" try
-		 * to use the value as a character.  The set of characters is
-		 * limited by anything that isn't a hex character or getting
-		 * the maximum number of bytes.
+		 * Translate "<CH_HEX>[isxdigit()]*" to a character with a hex
+		 * value: this test delimits the value by any non-hex character.
+		 * Offset by one, we use 0 to mean that we've found <CH_HEX>.
 		 */
 		if (hex > 1 && !isxdigit(ch)) {
 			hex = 0;
@@ -1025,9 +1024,9 @@ insl_ch:		if (tp->owrite)		/* Overwrite a character. */
 			/*
 			 * !!!
 			 * Translate "<CH_HEX>[isxdigit()]*" to a character with
-			 * a hex value, delimited by a non-hex character or the
-			 * max number of hex bytes.  Offset by one, we use 0 to
-			 * mean that we've found <CH_HEX>.
+			 * a hex value: this test delimits the value by the max
+			 * number of hex bytes.  Offset by one, we use 0 to mean
+			 * that we've found <CH_HEX>.
 			 */
 			if (hex != 0 && hex++ == sizeof(CHAR_T) * 2 + 1) {
 				hex = 0;
