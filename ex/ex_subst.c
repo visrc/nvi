@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 10.1 1995/04/13 17:22:31 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:31 $";
+static char sccsid[] = "$Id: ex_subst.c,v 10.2 1995/05/05 18:52:30 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:52:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,7 +31,6 @@ static char sccsid[] = "$Id: ex_subst.c,v 10.1 1995/04/13 17:22:31 bostic Exp $ 
 #include <regex.h>
 
 #include "common.h"
-#include "../vi/vi.h"
 
 #define	SUB_FIRST	0x01		/* The 'r' flag isn't reasonable. */
 #define	SUB_MUSTSETR	0x02		/* The 'r' flag is required. */
@@ -46,6 +45,8 @@ static int	s __P((SCR *, EXCMD *, char *, regex_t *, u_int));
  *	[line [,line]] s[ubstitute] [[/;]pat[/;]/repl[/;] [cgr] [count] [#lp]]
  *
  *	Substitute on lines matching a pattern.
+ *
+ * PUBLIC: int ex_s __P((SCR *, EXCMD *));
  */
 int
 ex_s(sp, cmdp)
@@ -267,6 +268,8 @@ tilde:				++p;
  *	[line [,line]] & [cgr] [count] [#lp]]
  *
  *	Substitute using the last substitute RE and replacement pattern.
+ *
+ * PUBLIC: int ex_subagain __P((SCR *, EXCMD *));
  */
 int
 ex_subagain(sp, cmdp)
@@ -286,6 +289,8 @@ ex_subagain(sp, cmdp)
  *	[line [,line]] ~ [cgr] [count] [#lp]]
  *
  *	Substitute using the last RE and last substitute replacement pattern.
+ *
+ * PUBLIC: int ex_subtilde __P((SCR *, EXCMD *));
  */
 int
 ex_subtilde(sp, cmdp)
@@ -899,7 +904,7 @@ regsub(sp, ip, lbp, lbclenp, lblenp, match)
 	 * Otherwise, since this is the lowest level of replacement, discard
 	 * all escape characters.  This (hopefully) follows historic practice.
 	 */
-#define	ADDCH(ch) {							\
+#define	OUTCH(ch) {							\
 	CHAR_T __ch = (ch);						\
 	u_int __value = KEY_VAL(sp, __ch);				\
 	if (__value == K_CR || __value == K_NL) {			\
@@ -958,7 +963,7 @@ subzero:			if (match[no].rm_so == -1 ||
 					break;
 				mlen = match[no].rm_eo - match[no].rm_so;
 				for (t = ip + match[no].rm_so; mlen--; ++t)
-					ADDCH(*t);
+					OUTCH(*t);
 				continue;
 			case 'e':
 			case 'E':
@@ -986,7 +991,7 @@ subzero:			if (match[no].rm_so == -1 ||
 				break;
 			}
 		}
-		ADDCH(ch);
+		OUTCH(ch);
 	}
 
 	*lbp = lb;			/* Update caller's information. */
