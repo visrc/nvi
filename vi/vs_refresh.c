@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_refresh.c,v 10.34 1996/05/07 20:37:05 bostic Exp $ (Berkeley) $Date: 1996/05/07 20:37:05 $";
+static const char sccsid[] = "$Id: vs_refresh.c,v 10.35 1996/05/07 21:30:13 bostic Exp $ (Berkeley) $Date: 1996/05/07 21:30:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -668,9 +668,11 @@ number:	if (O_ISSET(sp, O_NUMBER) &&
 	 *
 	 * If we warped the screen, we have to refresh everything.
 	 */
-	if ((LF_ISSET(UPDATE_SCREEN) || leftright_warp) &&
-	    !F_ISSET(sp, SC_TINPUT_INFO) &&
-	    !F_ISSET(vip, VIP_S_MODELINE) && !IS_ONELINE(sp))
+	if (leftright_warp)
+		LF_SET(UPDATE_CURSOR | UPDATE_SCREEN);
+
+	if (LF_ISSET(UPDATE_SCREEN) && !IS_ONELINE(sp) &&
+	    !F_ISSET(vip, VIP_S_MODELINE) && !F_ISSET(sp, SC_TINPUT_INFO))
 		vs_modeline(sp);
 
 	if (LF_ISSET(UPDATE_CURSOR)) {
@@ -688,7 +690,7 @@ number:	if (O_ISSET(sp, O_NUMBER) &&
 			(void)vs_column(sp, &sp->rcm);
 	}
 
-	if (LF_ISSET(UPDATE_SCREEN) || leftright_warp)
+	if (LF_ISSET(UPDATE_SCREEN))
 		(void)gp->scr_refresh(sp, F_ISSET(vip, VIP_N_EX_PAINT));
 
 	/* 11: Clear the flags that are handled by this routine. */
