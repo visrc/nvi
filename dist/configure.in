@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.11 1996/02/22 09:33:50 bostic Exp $ (Berkeley) $Date: 1996/02/22 09:33:50 $
+dnl	$Id: configure.in,v 8.12 1996/02/23 10:58:42 bostic Exp $ (Berkeley) $Date: 1996/02/23 10:58:42 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(configure)
@@ -27,7 +27,7 @@ if test "$vi_cv_path_sendmail" = no; then
 fi
 dnl Check for the /var/tmp path.
 AC_SUBST(vi_cv_path_preserve)
-AC_MSG_CHECKING(preserve directory)
+AC_MSG_CHECKING(for preserve directory)
 AC_CACHE_VAL(vi_cv_path_preserve, [dnl
 	if test -d /var/tmp; then
 		vi_cv_path_preserve=/var/tmp
@@ -49,7 +49,7 @@ dnl Checks for libraries.
 dnl Check to see what curses library the user wants.
 AC_SUBST(cinc)
 AC_SUBST(cobjs)
-AC_MSG_CHECKING(curses library)
+AC_MSG_CHECKING(for curses library)
 AC_CACHE_VAL(vi_cv_curses, [dnl
 AC_ARG_WITH(curses,
 	[  --with-curses=ask|system|vi
@@ -99,7 +99,7 @@ dnl Check to see if we can load a Tcl interpreter and Tk vi front-end.
 AC_SUBST(tknvi)
 SAVED_LIBS=$LIBS
 LIBS="$LIBS -ltk -ltcl -lm"
-AC_MSG_CHECKING(Tcl interpreter)
+AC_MSG_CHECKING(for Tcl interpreter)
 AC_CACHE_VAL(vi_cv_tcltk, [dnl
 AC_TRY_LINK([#include <tcl.h>], [Tcl_Eval(0, 0);],
 	[vi_cv_tcltk=yes], [vi_cv_tcltk=no])])
@@ -123,7 +123,7 @@ if test "$vi_cv_termlib" != no; then
 fi
 
 dnl Checks for header files.
-AC_MSG_CHECKING(sys/select.h)
+AC_MSG_CHECKING(for sys/select.h)
 AC_CACHE_VAL(vi_cv_include_sys_select, [dnl
 AC_TRY_CPP([#include <sys/select.h>], 
 	[vi_cv_include_sys_select=yes], [vi_cv_include_sys_select=no])])
@@ -185,7 +185,7 @@ AC_FUNC_VFORK
 AC_FUNC_VPRINTF
 
 dnl Check for fcntl/flock
-AC_MSG_CHECKING(flock/fcntl)
+AC_MSG_CHECKING(for flock/fcntl)
 AC_CACHE_VAL(vi_cv_lock, [dnl
 AC_TRY_LINK([#include <fcntl.h>], [flock(0, 0);],
 	[vi_cv_lock=flock],
@@ -200,7 +200,7 @@ fi
 AC_MSG_RESULT($vi_cv_lock)
 
 dnl Check for ftruncate/chsize
-AC_MSG_CHECKING(ftruncate/chsize)
+AC_MSG_CHECKING(for ftruncate/chsize)
 AC_CACHE_VAL(vi_cv_ftruncate, [dnl
 AC_TRY_LINK([#include <unistd.h>], [ftruncate(0, 0);],
 	[vi_cv_ftruncate=ftruncate],
@@ -219,7 +219,7 @@ fi
 AC_MSG_RESULT($vi_cv_ftruncate)
 
 dnl Check for the tigetstr/tigetnum functions.
-AC_MSG_CHECKING(tigetstr/tigetnum)
+AC_MSG_CHECKING(for tigetstr/tigetnum)
 AC_CACHE_VAL(vi_cv_have_curses_tigetstr, [dnl
 AC_TRY_LINK([#include <curses.h>], [tigetstr(0);],
 	[vi_cv_have_curses_tigetstr=yes],
@@ -232,7 +232,7 @@ AC_MSG_RESULT($vi_cv_have_curses_tigetstr)
 dnl Check for potentially missing curses functions.
 if test "$vi_cv_curses" = "system curses"; then
 	dnl Check for the addnstr function.
-	AC_MSG_CHECKING(addnstr)
+	AC_MSG_CHECKING(for addnstr)
 	AC_TRY_LINK([#include <curses.h>], [addnstr(0, 0);],
 		[vi_cv_have_curses_addnstr=yes],
 		[vi_cv_have_curses_addnstr=no])
@@ -242,7 +242,7 @@ if test "$vi_cv_curses" = "system curses"; then
 	AC_MSG_RESULT($vi_cv_have_curses_addnstr)
 
 	dnl Check for the beep function.
-	AC_MSG_CHECKING(beep)
+	AC_MSG_CHECKING(for beep)
 	AC_TRY_LINK([#include <curses.h>], [beep();],
 		[vi_cv_have_curses_beep=yes],
 		[vi_cv_have_curses_beep=no])
@@ -252,7 +252,7 @@ if test "$vi_cv_curses" = "system curses"; then
 	AC_MSG_RESULT($vi_cv_have_curses_beep)
 
 	dnl Check for the flash function.
-	AC_MSG_CHECKING(flash)
+	AC_MSG_CHECKING(for flash)
 	AC_TRY_LINK([#include <curses.h>], [flash();],
 		[vi_cv_have_curses_flash=yes],
 		[vi_cv_have_curses_flash=no])
@@ -262,7 +262,7 @@ if test "$vi_cv_curses" = "system curses"; then
 	AC_MSG_RESULT($vi_cv_have_curses_flash)
 
 	dnl Check for the idlok function.
-	AC_MSG_CHECKING(idlok)
+	AC_MSG_CHECKING(for idlok)
 	AC_TRY_LINK([#include <curses.h>], [idlok(0, 0);],
 		[vi_cv_have_curses_idlok=yes],
 		[vi_cv_have_curses_idlok=no])
@@ -272,7 +272,7 @@ if test "$vi_cv_curses" = "system curses"; then
 	AC_MSG_RESULT($vi_cv_have_curses_idlok)
 
 	dnl Check for the keypad function.
-	AC_MSG_CHECKING(keypad)
+	AC_MSG_CHECKING(for keypad)
 	AC_TRY_LINK([#include <curses.h>], [keypad(0, 0);],
 		[vi_cv_have_curses_keypad=yes],
 		[vi_cv_have_curses_keypad=no])
@@ -282,7 +282,7 @@ if test "$vi_cv_curses" = "system curses"; then
 	AC_MSG_RESULT($vi_cv_have_curses_keypad)
 
 	dnl Check for the newterm function.
-	AC_MSG_CHECKING(newterm)
+	AC_MSG_CHECKING(for newterm)
 	AC_TRY_LINK([#include <curses.h>], [newterm(0, 0, 0);],
 		[vi_cv_have_curses_newterm=yes],
 		[vi_cv_have_curses_newterm=no])
@@ -299,7 +299,7 @@ fi
 dnl Check for the setupterm function.  We make this check regardless of
 dnl using the system library, because it may be part of the underlying
 dnl termcap/termlib support, and we want to use the local one.
-AC_MSG_CHECKING(setupterm)
+AC_MSG_CHECKING(for setupterm)
 AC_TRY_LINK([#include <curses.h>], [setupterm(0, 0, 0);],
 	[vi_cv_have_curses_setupterm=yes],
 	[vi_cv_have_curses_setupterm=no])
@@ -309,7 +309,7 @@ fi
 AC_MSG_RESULT($vi_cv_have_curses_setupterm)
 
 dnl Check for which version of openpty to use, System V or Berkeley.
-AC_MSG_CHECKING(use System V pty calls)
+AC_MSG_CHECKING(for System V pty calls)
 AC_CACHE_VAL(vi_cv_sys5_pty, [dnl
 AC_TRY_LINK(, [ptym_open("a");],
 	[vi_cv_sys5_pty=yes], [vi_cv_sys5_pty=no])])
@@ -319,7 +319,7 @@ fi
 AC_MSG_RESULT($vi_cv_sys5_pty)
 
 dnl Check for the revoke system call.
-AC_MSG_CHECKING(revoke system call)
+AC_MSG_CHECKING(for revoke system call)
 AC_CACHE_VAL(vi_cv_revoke, [dnl
 AC_TRY_LINK(, [revoke("a");],
 	[vi_cv_revoke=yes], [vi_cv_revoke=no])])
@@ -330,7 +330,7 @@ AC_MSG_RESULT($vi_cv_revoke)
 
 dnl Some versions of sprintf return a pointer to the first argument
 dnl instead of a character count.
-AC_MSG_CHECKING(sprintf returns a character count)
+AC_MSG_CHECKING(for sprintf return value)
 AC_CACHE_VAL(vi_cv_sprintf_count, [dnl
 AC_TRY_RUN([main(){char buf[20]; exit(sprintf(buf, "XXX") != 3);}],
 	[vi_cv_sprintf_count=yes], [vi_cv_sprintf_count=no])])
@@ -342,7 +342,7 @@ AC_MSG_RESULT($vi_cv_sprintf_count)
 dnl Check for local DB.
 AC_SUBST(dbinc)
 AC_SUBST(dbobjs)
-AC_MSG_CHECKING(C library copy of Berkeley DB package)
+AC_MSG_CHECKING(for Berkeley DB package)
 AC_CACHE_VAL(vi_cv_db_lib, [dnl
 AC_TRY_LINK([#include <db.h>], [dbopen("a", 0, 0, 0, 0);],
 	[vi_cv_db_lib=yes], [vi_cv_db_lib=no])])
@@ -358,7 +358,7 @@ dnl Need to make sure that they have Henry's word-search extensions.
 dnl So, for now, always compile it in.
 AC_SUBST(reinc)
 AC_SUBST(reobjs)
-AC_MSG_CHECKING(C library copy of POSIX.2 RE routines)
+AC_MSG_CHECKING(for POSIX 1003.2 RE routines)
 AC_CACHE_VAL(vi_cv_re_lib, [dnl
 AC_TRY_LINK([#include <regex.h>], [regerror(0, 0, 0, 0);],
 	[vi_cv_re_lib=yes], [vi_cv_re_lib=no])])
@@ -370,7 +370,7 @@ AC_MSG_RESULT($vi_cv_re_lib)
 
 dnl DB uses specific integer sizes.
 AC_SUBST(u_int8_decl)
-AC_MSG_CHECKING(u_int8_t)
+AC_MSG_CHECKING(for u_int8_t)
 AC_CACHE_VAL(vi_cv_uint8, [dnl
 AC_TRY_COMPILE([#include <sys/types.h>], u_int8_t foo;,
 	[vi_cv_uint8=yes],
@@ -386,7 +386,7 @@ if test "$vi_cv_uint8" != yes; then
 fi
 
 AC_SUBST(u_int16_decl)
-AC_MSG_CHECKING(u_int16_t)
+AC_MSG_CHECKING(for u_int16_t)
 AC_CACHE_VAL(vi_cv_uint16, [dnl
 AC_TRY_COMPILE([#include <sys/types.h>], u_int16_t foo;,
 	[vi_cv_uint16=yes],
@@ -404,7 +404,7 @@ if test "$vi_cv_uint16" != yes; then
 fi
 
 AC_SUBST(int16_decl)
-AC_MSG_CHECKING(int16_t)
+AC_MSG_CHECKING(for int16_t)
 AC_CACHE_VAL(vi_cv_int16, [dnl
 AC_TRY_COMPILE([#include <sys/types.h>], int16_t foo;,
 	[vi_cv_int16=yes],
@@ -422,7 +422,7 @@ if test "$vi_cv_int16" != yes; then
 fi
 
 AC_SUBST(u_int32_decl)
-AC_MSG_CHECKING(u_int32_t)
+AC_MSG_CHECKING(for u_int32_t)
 AC_CACHE_VAL(vi_cv_uint32, [dnl
 AC_TRY_COMPILE([#include <sys/types.h>], u_int32_t foo;,
 	[vi_cv_uint32=yes],
@@ -440,7 +440,7 @@ if test "$vi_cv_uint32" != yes; then
 fi
 
 AC_SUBST(int32_decl)
-AC_MSG_CHECKING(int32_t)
+AC_MSG_CHECKING(for int32_t)
 AC_CACHE_VAL(vi_cv_int32, [dnl
 AC_TRY_COMPILE([#include <sys/types.h>], int32_t foo;,
 	[vi_cv_int32=yes],
