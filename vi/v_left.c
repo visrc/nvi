@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_left.c,v 8.2 1993/08/19 16:10:45 bostic Exp $ (Berkeley) $Date: 1993/08/19 16:10:45 $";
+static char sccsid[] = "$Id: v_left.c,v 8.3 1993/12/16 12:03:25 bostic Exp $ (Berkeley) $Date: 1993/12/16 12:03:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -56,14 +56,25 @@ v_cfirst(sp, ep, vp, fm, tm, rp)
 {
 	recno_t cnt;
 
-	/* A count moves down count - 1 rows, so, "3_" is the same as "2j_". */
+	/*
+	 * A count moves down count - 1 rows, so, "3_" is the same as "2j_".
+	 *
+	 * !!!
+	 * Historically, if the _ is a motion, it is always a line motion,
+	 * and the line motion flag is set.
+	 */
 	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
 	if (cnt != 1) {
 		--vp->count;
 		if (v_down(sp, ep, vp, fm, tm, rp))
 			return (1);
+		if (F_ISSET(vp, VC_C | VC_D | VC_Y))
+			F_SET(vp, VC_LMODE);
 	} else
 		rp->lno = fm->lno;
+	rp->cno = 0;
+	if (nonblank(sp, ep, rp->lno, &rp->cno))
+		return (1);
 	return (0);
 }
 
@@ -83,6 +94,9 @@ v_first(sp, ep, vp, fm, tm, rp)
 	 * historical blemish of vi, no matter how strange it might be,
 	 * we permit the user to enter a count and then ignore it.
 	 */
+	rp->cno = 0;
+	if (nonblank(sp, ep, fm->lno, &rp->cno))
+		return (1);
 	rp->lno = fm->lno;
 	return (0);
 }
