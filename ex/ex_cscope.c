@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_cscope.c,v 8.9 1996/04/23 09:27:10 bostic Exp $ (Berkeley) $Date: 1996/04/23 09:27:10 $";
+static const char sccsid[] = "$Id: ex_cscope.c,v 10.1 1996/05/08 18:08:27 bostic Exp $ (Berkeley) $Date: 1996/05/08 18:08:27 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -201,8 +201,35 @@ cscope_add(sp, cmdp, dname)
 
 	exp = EXP(sp);
 
+	if (argv_exp2(sp, cmdp, dname, strlen(dname)))
+		return (1);
+	/*
+	 *  0 args: impossible.
+	 *  1 args: usage.
+	 *  2 args: matched a directory.
+	 * >2 args: object, too many args.
+	 *
+	 * The 1 args case depends on the argv_sexp() function refusing
+	 * to return success without at least one non-blank character.
+	 */
+	switch (cmdp->argc) {
+	case 0:
+		abort();
+		/* NOTREACHED */
+	case 1:
+		(void)csc_help(sp, "add");
+		return (1);
+	case 2:
+		dname = cmdp->argv[1]->bp;
+		break;
+	default:
+		ex_emsg(sp, dname, EXM_FILECOUNT);
+		return (1);
+	}
+
 	/* If the database file doesn't exist, we're done. */
-	(void)snprintf(path, sizeof(path), "%s/%s", dname, CSCOPE_DBFILE);
+	(void)snprintf(path, sizeof(path),
+	    "%s/%s", cmdp->argv[1]->bp, CSCOPE_DBFILE);
 	if (stat(path, &sb)) {
 		msgq(sp, M_SYSERR, path);
 		return (1);
