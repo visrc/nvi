@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 5.28 1993/05/02 11:59:04 bostic Exp $ (Berkeley) $Date: 1993/05/02 11:59:04 $";
+static char sccsid[] = "$Id: search.c,v 5.29 1993/05/03 11:00:11 bostic Exp $ (Berkeley) $Date: 1993/05/03 11:00:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,9 +40,9 @@ resetup(sp, rep, dir, ptrn, epp, deltap, wordoffsetp, flags)
 	int eval, re_flags, replaced;
 	char *endp, delim[2];
 
-	/* Set delta to default. */
-	if (deltap != NULL)
-		*deltap = 0;
+	/* Set return information the default. */
+	*deltap = 0;
+	*wordoffsetp = 0;
 
 	/*
 	 * Use saved pattern if no pattern supplied, or if only a delimiter
@@ -64,7 +64,6 @@ noprev:			msgq(sp, M_INFO, "No previous search pattern.");
 	if (O_ISSET(sp, O_IGNORECASE))
 		re_flags |= REG_ICASE;
 
-	*wordoffsetp = 0;
 	if (LF_ISSET(SEARCH_PARSE)) {		/* Parse the string. */
 		/* Set delimiter. */
 		delim[0] = *ptrn++;
@@ -87,7 +86,7 @@ noprev:			msgq(sp, M_INFO, "No previous search pattern.");
 				    "Characters after search string.");
 				return (1);
 			}
-			if (deltap != NULL && get_delta(sp, &endp, deltap))
+			if (get_delta(sp, &endp, deltap))
 				return (1);
 			if (epp != NULL)
 				*epp = endp;
@@ -197,7 +196,7 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 					msgq(sp, M_INFO, EOFMSG);
 				break;
 			}
-			lno = 1;
+			lno = 0;
 			wrapped = 1;
 			continue;
 		}
@@ -308,6 +307,7 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 					msgq(sp, M_INFO, EMPTYMSG);
 				break;
 			}
+			++lno;
 			wrapped = 1;
 			continue;
 		} else if (lno == fm->lno && wrapped) {
