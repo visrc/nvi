@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 9.14 1995/01/30 17:37:17 bostic Exp $ (Berkeley) $Date: 1995/01/30 17:37:17 $";
+static char sccsid[] = "$Id: key.c,v 9.15 1995/01/31 12:19:26 bostic Exp $ (Berkeley) $Date: 1995/01/31 12:19:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -248,10 +248,7 @@ __key_name(sp, ach)
 
 	ch = ach;
 
-	/*
-	 * See if the user has explicitly declared the character printable
-	 * or not.
-	 */
+	/* See if the character was explicitly declared printable or not. */
 	if ((chp = O_STR(sp, O_PRINT)) != NULL)
 		for (; *chp != '\0'; ++chp)
 			if (*chp == ch)
@@ -302,7 +299,7 @@ nopr:	if (ch <= '\076' && iscntrl(ch)) {
 		    cnt = BITS / 3; cnt-- > 0; mask >>= 3, shift -= 3)
 			sp->cname[len++] = octdigit[(ch & mask) >> shift];
 	} else {
-		sp->cname[0] = '0';
+		sp->cname[0] = '\\';
 		sp->cname[1] = 'x';
 		for (len = 2, chp = (u_int8_t *)&ch,
 		    cnt = sizeof(CHAR_T); cnt-- > 0; ++chp) {
