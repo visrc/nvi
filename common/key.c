@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 9.2 1994/11/10 16:50:27 bostic Exp $ (Berkeley) $Date: 1994/11/10 16:50:27 $";
+static char sccsid[] = "$Id: key.c,v 9.3 1994/11/16 16:52:01 bostic Exp $ (Berkeley) $Date: 1994/11/16 16:52:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -476,6 +476,9 @@ loop:	if (gp->i_cnt == 0) {
 			return (INP_ERR);
 		if ((rval = sp->s_key_read(sp, &nr, NULL)) != INP_OK)
 			return (rval);
+#if defined(DEBUG) && 0
+		TRACE(sp, "read: {%.*s}\n", gp->i_cnt, &gp->i_ch[gp->i_next]);
+#endif
 		/*
 		 * If there's something on the mode line that we wanted
 		 * the user to see, presume they've seen it as they just
@@ -594,6 +597,9 @@ not_digit_ch:	chp->ch = CH_NOT_DIGIT;
 	}
 
 	/* Fill in the return information. */
+#if defined(DEBUG) && 0
+	TRACE(sp, "rtrn: {%s}\n", KEY_NAME(sp, ch));
+#endif
 	chp->ch = ch;
 	chp->flags = gp->i_chf[gp->i_next];
 	chp->value = KEY_VAL(sp, ch);
