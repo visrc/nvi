@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.1 1993/06/09 22:21:59 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:21:59 $
+ *	$Id: screen.h,v 8.2 1993/06/21 11:47:30 bostic Exp $ (Berkeley) $Date: 1993/06/21 11:47:30 $
  */
 
 /*
@@ -26,7 +26,8 @@ enum confirmation { YES, NO, QUIT };	/* Confirmation routine interface. */
 					/* Line operations. */
 enum operation { LINE_APPEND, LINE_DELETE, LINE_INSERT, LINE_RESET };
 					/* Standard continue message. */
-#define	CONTMSG	"Enter return to continue: "
+#define	CONTMSG		"Enter return to continue: "
+#define	CONTMSG_G	"Enter return to continue [q to quit]: "
 
 /*
  * Structure for building argc/argv vector of ex arguments.
