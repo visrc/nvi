@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 5.12 1992/10/26 09:08:37 bostic Exp $ (Berkeley) $Date: 1992/10/26 09:08:37 $";
+static char sccsid[] = "$Id: ex_tag.c,v 5.13 1992/11/01 22:53:29 bostic Exp $ (Berkeley) $Date: 1992/11/01 22:53:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,6 +19,7 @@ static char sccsid[] = "$Id: ex_tag.c,v 5.12 1992/10/26 09:08:37 bostic Exp $ (B
 #include "vi.h"
 #include "excmd.h"
 #include "options.h"
+#include "search.h"
 #include "tag.h"
 #include "extern.h"
 
@@ -31,7 +32,6 @@ ex_tag(cmdp)
 	EXCMDARG *cmdp;
 {
 	static char *lasttag;
-	EXF *ep;
 	MARK m, *mp;
 	TAG *tag;
 	
@@ -68,7 +68,7 @@ ex_tag(cmdp)
 
 	m.lno = 1;
 	m.cno = 0;
-	if ((mp = f_search(&m, (u_char *)tag->line, NULL, 0)) == NULL) {
+	if ((mp = f_search(curf, &m, (u_char *)tag->line, NULL, 0)) == NULL) {
 		msg("Tag search pattern not found.");
 		return (1);
 	}
