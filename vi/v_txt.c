@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.103 1994/04/13 15:22:37 bostic Exp $ (Berkeley) $Date: 1994/04/13 15:22:37 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.104 1994/04/14 12:09:08 bostic Exp $ (Berkeley) $Date: 1994/04/14 12:09:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1337,7 +1337,7 @@ txt_hex(sp, tp)
 	SCR *sp;
 	TEXT *tp;
 {
-	CHAR_T ch, savec;
+	CHAR_T savec;
 	size_t len, off;
 	u_long value;
 	char *p, *wp;
