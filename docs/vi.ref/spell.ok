@@ -2,6 +2,7 @@ Amir
 Autoprint
 BRE's
 Bostic
+DOUBLEQUOTE
 Dq
 Ds
 ERE's
@@ -18,6 +19,7 @@ LIpplpipbp
 LaA
 Li
 Lowercase
+MINUSSIGN
 Makefiles
 NEX
 NEXINIT
@@ -54,6 +56,7 @@ XXXX
 XXb
 ZZ
 ab
+abbrev
 ags
 ai
 al
@@ -218,6 +221,7 @@ ucb
 uffers
 uit
 una
+unabbrev
 unm
 uppercase
 urce
