@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 10.11 1995/10/01 11:43:49 bostic Exp $ (Berkeley) $Date: 1995/10/01 11:43:49 $";
+static char sccsid[] = "$Id: ex_read.c,v 10.12 1995/10/03 09:16:51 bostic Exp $ (Berkeley) $Date: 1995/10/03 09:16:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -113,7 +113,7 @@ ex_read(sp, cmdp)
 		/* Redisplay the user's argument if it's changed. */
 		if (F_ISSET(cmdp, E_MODIFY))
 			if (F_ISSET(sp, S_VI))
-				(void)vs_update(sp, cmdp->argv[argc]->bp);
+				(void)vs_update(sp, "!", cmdp->argv[argc]->bp);
 			else {
 				(void)ex_printf(sp,
 				    "!%s\n", cmdp->argv[argc]->bp);

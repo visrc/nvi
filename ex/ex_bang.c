@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 10.11 1995/10/01 11:43:48 bostic Exp $ (Berkeley) $Date: 1995/10/01 11:43:48 $";
+static char sccsid[] = "$Id: ex_bang.c,v 10.12 1995/10/03 09:16:46 bostic Exp $ (Berkeley) $Date: 1995/10/03 09:16:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -83,7 +83,7 @@ ex_bang(sp, cmdp)
 		 * overwritten by any error or line change reporting.
 		 */
 		if (F_ISSET(sp, S_VI))
-			vs_update(sp, ap->bp);
+			vs_update(sp, "!", ap->bp);
 		else {
 			(void)ex_printf(sp, "!%s\n", ap->bp);
 			(void)ex_fflush(sp);

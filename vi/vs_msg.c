@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_msg.c,v 10.17 1995/10/02 18:27:51 bostic Exp $ (Berkeley) $Date: 1995/10/02 18:27:51 $";
+static char sccsid[] = "$Id: vs_msg.c,v 10.18 1995/10/03 09:16:26 bostic Exp $ (Berkeley) $Date: 1995/10/03 09:16:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -126,42 +126,56 @@ vs_busy(sp, msg, btype)
  * vs_update --
  *	Update a command.
  *
- * PUBLIC: void vs_update __P((SCR *, char *));
+ * PUBLIC: void vs_update __P((SCR *, char *, char *));
  */
 void
-vs_update(sp, cmd)
+vs_update(sp, m1, m2)
 	SCR *sp;
-	char *cmd;
+	char *m1, *m2;
 {
 	GS *gp;
-	size_t len;
+	size_t len, mlen, oldy, oldx;
 
 	if (!F_ISSET(sp, S_SCREEN_READY))
 		return;
 
 	/*
-	 * When the ex read and ! commands are changed during expansion, they
-	 * are supposed to be redisplayed.  This is the special purpose hook
-	 * to make it happen.
+	 * This routine displays a message on the bottom line of the screen,
+	 * without updating any of the command structues that would keep it
+	 * there for any period of time, i.e. it is overwritten immediately.
+	 *
+	 * It's used by the ex read and ! commands when the user's command is
+	 * expanded, and by the ex substitution confirmation prompt.
 	 */
 	if (F_ISSET(sp, S_EX)) {
-		(void)ex_printf(sp, "%s\n", cmd);
+		(void)ex_printf(sp,
+		    "%s\n", m1 == NULL? "" : m1, m2 == NULL ? "" : m2);
 		(void)ex_fflush(sp);
 	}
+
 	gp = sp->gp;
+	(void)gp->scr_cursor(sp, &oldy, &oldx);
 	(void)gp->scr_move(sp, LASTLINE(sp), 0);
+	(void)gp->scr_clrtoeol(sp);
 
 	/*
 	 * XXX
 	 * Don't let long file names screw up the screen.
 	 */
-	len = strlen(cmd);
-	if (len > sp->cols - 2)
-		len = sp->cols - 2;
-	(void)gp->scr_addstr(sp, "!", 1);
-	(void)gp->scr_addstr(sp, cmd, len);
+	if (m1 != NULL) {
+		mlen = len = strlen(m1);
+		if (len > sp->cols - 2)
+			mlen = len = sp->cols - 2;
+		(void)gp->scr_addstr(sp, m1, mlen);
+	}
+	if (m2 != NULL) {
+		mlen = strlen(m2);
+		if (len + mlen > sp->cols - 2)
+			mlen = (sp->cols - 2) - len;
+		(void)gp->scr_addstr(sp, m2, mlen);
+	}
 
-	(void)gp->scr_clrtoeol(sp);
+	(void)gp->scr_move(sp, oldy, oldx);
 	(void)sp->gp->scr_refresh(sp, 0);
 }
 
