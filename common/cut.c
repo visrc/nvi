@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 10.4 1995/10/15 17:30:47 bostic Exp $ (Berkeley) $Date: 1995/10/15 17:30:47 $";
+static char sccsid[] = "$Id: cut.c,v 10.5 1995/10/15 17:32:18 bostic Exp $ (Berkeley) $Date: 1995/10/15 17:32:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -158,12 +158,8 @@ copyloop:
 
 		/* Get the last line. */
 		if (tm->lno != fm->lno &&
-		    cut_line(sp, lno, 0, tm->cno + 1, cbp)) {
-cut_line_err:		text_lfree(&cbp->textq);
-			cbp->len = 0;
-			cbp->flags = 0;
-			return (1);
-		}
+		    cut_line(sp, lno, 0, tm->cno + 1, cbp))
+			goto cut_line_err;
 	}
 
 	append = 0;		/* Only append to the named buffer. */
@@ -181,6 +177,12 @@ cut_line_err:		text_lfree(&cbp->textq);
 		goto copyloop;
 	}
 	return (0);
+
+cut_line_err:	
+	text_lfree(&cbp->textq);
+	cbp->len = 0;
+	cbp->flags = 0;
+	return (1);
 }
 
 /*
