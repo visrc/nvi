@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ch.c,v 9.3 1995/01/11 16:22:05 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:22:05 $";
+static char sccsid[] = "$Id: v_ch.c,v 10.1 1995/03/16 20:29:34 bostic Exp $ (Berkeley) $Date: 1995/03/16 20:29:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,8 +26,8 @@ static char sccsid[] = "$Id: v_ch.c,v 9.3 1995/01/11 16:22:05 bostic Exp $ (Berk
 #include <db.h>
 #include <regex.h>
 
+#include "common.h"
 #include "vi.h"
-#include "vcmd.h"
 
 static void notfound __P((SCR *, ARG_CHAR_T));
 static void noprev __P((SCR *));
@@ -39,7 +39,7 @@ static void noprev __P((SCR *));
 int
 v_chrepeat(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	vp->character = VIP(sp)->lastckey;
 
@@ -68,9 +68,9 @@ v_chrepeat(sp, vp)
 int
 v_chrrepeat(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
-	enum cdirection savedir;
+	cdir_t savedir;
 	int rval;
 
 	vp->character = VIP(sp)->lastckey;
@@ -107,7 +107,7 @@ v_chrrepeat(sp, vp)
 int
 v_cht(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	if (v_chf(sp, vp))
 		return (1);
@@ -138,7 +138,7 @@ v_cht(sp, vp)
 int
 v_chf(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	size_t len;
 	recno_t lno;
@@ -200,7 +200,7 @@ v_chf(sp, vp)
 int
 v_chT(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	if (v_chF(sp, vp))
 		return (1);
@@ -225,7 +225,7 @@ v_chT(sp, vp)
 int
 v_chF(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	recno_t lno;
 	size_t len;

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_at.c,v 8.6 1995/02/17 11:44:49 bostic Exp $ (Berkeley) $Date: 1995/02/17 11:44:49 $";
+static char sccsid[] = "$Id: v_at.c,v 10.1 1995/03/16 20:28:44 bostic Exp $ (Berkeley) $Date: 1995/03/16 20:28:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,9 +26,8 @@ static char sccsid[] = "$Id: v_at.c,v 8.6 1995/02/17 11:44:49 bostic Exp $ (Berk
 #include <db.h>
 #include <regex.h>
 
+#include "common.h"
 #include "vi.h"
-#include "vcmd.h"
-#include "excmd.h"
 
 /*
  * v_at -- @
@@ -37,11 +36,11 @@ static char sccsid[] = "$Id: v_at.c,v 8.6 1995/02/17 11:44:49 bostic Exp $ (Berk
 int
 v_at(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	CB *cbp;
-	TEXT *tp;
 	CHAR_T name;
+	TEXT *tp;
 	size_t len;
 	char nbuf[20];
 
@@ -51,6 +50,9 @@ v_at(sp, vp)
 	 * recently executed buffer in ex mode.  In vi mode, only @@ repeated
 	 * the last buffer.  We change historic practice and make @* work from
 	 * vi mode as well, it's simpler and more consistent.
+	 *
+	 * My intent is that *[buffer] will, in the future, pass the buffer to
+	 * whatever interpreter is loaded.
 	 */
 	name = F_ISSET(vp, VC_BUFFER) ? vp->buffer : '@';
 	if (name == '@' || name == '*') {
@@ -72,7 +74,7 @@ v_at(sp, vp)
 
 	/*
 	 * The buffer is executed in vi mode, while in vi mode, so simply
-	 * push it onto the stack and continue.
+	 * push it onto the terminal queue and continue.
 	 *
 	 * !!!
 	 * Historic practice is that if the buffer was cut in line mode,
@@ -83,15 +85,15 @@ v_at(sp, vp)
 	 * XXX
 	 * Historic practice is that execution of an @ buffer could be
 	 * undone by a single 'u' command, i.e. the changes were grouped
-	 * together.  We don't get this right; I'm waiting for the new
+	 * together.  We don't get this right; I'm waiting for the new DB
 	 * logging code to be available.
 	 */
 	for (tp = cbp->textq.cqh_last;
 	    tp != (void *)&cbp->textq; tp = tp->q.cqe_prev)
 		if ((F_ISSET(cbp, CB_LMODE) ||
 		    tp->q.cqe_next != (void *)&cbp->textq) &&
-		    term_push(sp, "\n", 1, 0) ||
-		    term_push(sp, tp->lb, tp->len, 0))
+		    v_event_push(sp, "\n", 1, 0) ||
+		    v_event_push(sp, tp->lb, tp->len, 0))
 			return (1);
 
 	/*
@@ -101,7 +103,7 @@ v_at(sp, vp)
 	 */
 	if (F_ISSET(vp, VC_C1SET)) {
 		len = snprintf(nbuf, sizeof(nbuf), "%lu", vp->count);
-		if (term_push(sp, nbuf, len, 0))
+		if (v_event_push(sp, nbuf, len, 0))
 			return (1);
 	}
 	return (0);

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 9.8 1995/02/17 16:42:02 bostic Exp $ (Berkeley) $Date: 1995/02/17 16:42:02 $";
+static char sccsid[] = "$Id: v_cmd.c,v 10.1 1995/03/16 20:29:52 bostic Exp $ (Berkeley) $Date: 1995/03/16 20:29:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,8 +25,8 @@ static char sccsid[] = "$Id: v_cmd.c,v 9.8 1995/02/17 16:42:02 bostic Exp $ (Ber
 #include <db.h>
 #include <regex.h>
 
+#include "common.h"
 #include "vi.h"
-#include "vcmd.h"
 
 /*
  * This array maps keystrokes to vi command functions.  It is known
@@ -130,7 +130,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 /* 033  ^[ */
 	{NULL,		0,
 	    "^[ <escape>",
-	    "^[ <escape> leave input mode, return to command mode"},
+	    "^[ <escape> exit input mode, cancel partial commands"},
 /* 034  ^\ */
 	{v_exmode,	0,
 	    "^\\",

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_increment.c,v 9.10 1995/02/22 09:35:59 bostic Exp $ (Berkeley) $Date: 1995/02/22 09:35:59 $";
+static char sccsid[] = "$Id: v_increment.c,v 10.1 1995/03/16 20:30:41 bostic Exp $ (Berkeley) $Date: 1995/03/16 20:30:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,8 +29,8 @@ static char sccsid[] = "$Id: v_increment.c,v 9.10 1995/02/22 09:35:59 bostic Exp
 #include <db.h>
 #include <regex.h>
 
+#include "common.h"
 #include "vi.h"
-#include "vcmd.h"
 
 static char * const fmt[] = {
 #define	DEC	0
@@ -54,7 +54,7 @@ static void inc_err __P((SCR *, enum nresult));
 int
 v_increment(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	enum nresult nret;
 	recno_t lno;
@@ -100,7 +100,7 @@ v_increment(sp, vp)
 		goto nonum;
 	if (beg != vp->m_start.cno) {
 		sp->cno = beg;
-		(void)sp->e_refresh(sp);
+		(void)vs_refresh(sp);
 	}
 
 #undef	ishex
@@ -192,7 +192,7 @@ nonum:			msgq(sp, M_ERR, "213|Cursor not in a number");
 	 * in signed longs.
 	 */
 	if (base == 10) {
-		if ((nret = nget_slong(sp, &lval, t, NULL, 10)) != NUM_OK)
+		if ((nret = nget_slong(&lval, t, NULL, 10)) != NUM_OK)
 			goto err;
 		ltmp = vp->character == '-' ? -change : change;
 		if (lval > 0 && ltmp > 0 && !NPFITS(LONG_MAX, lval, ltmp)) {
@@ -209,7 +209,7 @@ nonum:			msgq(sp, M_ERR, "213|Cursor not in a number");
 			ntype = fmt[DEC];
 		nlen = snprintf(nbuf, sizeof(nbuf), ntype, lval);
 	} else {
-		if ((nret = nget_uslong(sp, &ulval, t, NULL, base)) != NUM_OK)
+		if ((nret = nget_uslong(&ulval, t, NULL, base)) != NUM_OK)
 			goto err;
 		if (vp->character == '+') {
 			if (!NPFITS(ULONG_MAX, ulval, change)) {
