@@ -6,16 +6,18 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_match.c,v 5.6 1992/10/18 13:09:12 bostic Exp $ (Berkeley) $Date: 1992/10/18 13:09:12 $";
+static char sccsid[] = "$Id: v_match.c,v 5.7 1992/11/01 23:02:27 bostic Exp $ (Berkeley) $Date: 1992/11/01 23:02:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
 #include <limits.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "vi.h"
 #include "vcmd.h"
+#include "search.h"
 #include "getc.h"
 #include "options.h"
 #include "extern.h"
@@ -115,7 +117,7 @@ findmatchc(fm, p, len, rp)
 	size_t len;
 {
 	register size_t off;
-	size_t left, right;
+	size_t left, right;			/* Can't be uninitialized. */
 	int leftfound, rightfound;
 	u_char *t;
 
