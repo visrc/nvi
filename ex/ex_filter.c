@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 8.42 1994/08/01 17:02:06 bostic Exp $ (Berkeley) $Date: 1994/08/01 17:02:06 $";
+static char sccsid[] = "$Id: ex_filter.c,v 8.43 1994/08/07 15:13:54 bostic Exp $ (Berkeley) $Date: 1994/08/07 15:13:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -130,9 +130,14 @@ err:		if (input[0] != -1)
 		sig_end();
 
 		/*
-		 * Redirect stdin from the read end of the input pipe,
-		 * and redirect stdout/stderr to the write end of the
-		 * output pipe.
+		 * Redirect stdin from the read end of the input pipe, and
+		 * redirect stdout/stderr to the write end of the output pipe.
+		 *
+		 * !!!
+		 * Historically, ex only directed stdout into the input pipe,
+		 * letting stderr come out on the terminal as usual.  Vi did
+		 * not, directing both stdout and stderr into the input pipe.
+		 * We match that practice for both ex and vi for consistency.
 		 */
 		(void)dup2(input[0], STDIN_FILENO);
 		(void)dup2(output[1], STDOUT_FILENO);
