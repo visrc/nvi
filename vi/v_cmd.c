@@ -6,14 +6,13 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 5.24 1992/06/15 10:52:28 bostic Exp $ (Berkeley) $Date: 1992/06/15 10:52:28 $";
+static char sccsid[] = "$Id: v_cmd.c,v 5.25 1992/09/01 15:35:37 bostic Exp $ (Berkeley) $Date: 1992/09/01 15:35:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 #include <stddef.h>
 
 #define	VIROUTINE		/* XXX */
-int m_bword();			/* XXX */
 
 #include "vi.h"
 #include "vcmd.h"
@@ -92,7 +91,7 @@ VIKEYS vikeys[MAXVIKEY + 1] = {
 	    "page up by lines: [count]^Y",
 /* 032  ^Z */
 	v_stop, 0,
-	    "pause the program: ^Z",
+	    "suspend: ^Z",
 /* 033  ^[ */
 	{},
 /* 034  ^\ */
@@ -266,15 +265,15 @@ VIKEYS vikeys[MAXVIKEY + 1] = {
 	v_yank,		V_CNT|V_LMODE|V_OBUF,
 	    "copy line: [buffer][count]Y",
 /* 132   Z */
-	v_xit,		0,
+	v_exit,		0,
 	    "save file and exit: ZZ",
 /* 133   [ */
-	v_paragraphb,	V_ABS|V_MOVE,
+	v_sectionb,	V_ABS|V_MOVE,
 	    "move back section: ]]",
 /* 134   \ */
 	{},
 /* 135   ] */
-	v_paragraphf,	V_ABS|V_MOVE,
+	v_sectionf,	V_ABS|V_MOVE,
 	    "move forward section: [[",
 /* 136   ^ */
 	v_first,	V_MOVE,
