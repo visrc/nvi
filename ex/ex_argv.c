@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 5.5 1993/04/25 18:45:29 bostic Exp $ (Berkeley) $Date: 1993/04/25 18:45:29 $";
+static char sccsid[] = "$Id: ex_argv.c,v 5.6 1993/05/01 23:25:17 bostic Exp $ (Berkeley) $Date: 1993/05/01 23:25:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,14 +34,6 @@ buildargv(sp, ep, s, expand, argcp, argvp)
 {
 	int ch, cnt, done, globoff, len, needslots, off;
 	char *ap;
-
-	/* Discard any previous information. */
-	if (sp->g.gl_pathc) {
-		globfree(&sp->g);
-		sp->g.gl_pathc = 0;
-		sp->g.gl_offs = 0;
-		sp->g.gl_pathv = NULL;
-	}
 
 	/* Break into argv vector. */
 	for (done = globoff = off = 0;; ) {
@@ -147,19 +139,16 @@ fileexpand(sp, ep, globp, word, wordlen)
 	char *word;
 	int wordlen;
 {
-	EXF *prev_ep;
 	GS *gp;
 	int len;
 	char *p, *tpath;
 
-	/*
-	 * Check for escaped %, # characters.
-	 * XXX
-	 */
+	/* Discard any previous information. */
+	if (sp->g.gl_pathc)
+		globfree(&sp->g);
+
 	/* Figure out how much space we need for this argument. */
-	prev_ep = NULL;
-	len = wordlen;
-	for (p = word; p = strpbrk(p, "%#\\"); ++p)
+	for (p = word, len = 0; *p; ++p)
 		switch (*p) {
 		case '%':
 			if (F_ISSET(ep, F_NONAME)) {
@@ -170,51 +159,50 @@ fileexpand(sp, ep, globp, word, wordlen)
 			len += ep->nlen;
 			break;
 		case '#':
-			if (prev_ep == NULL) {
-				if (sp->eprev == NULL ||
-				    F_ISSET(sp->eprev, F_NONAME)) {
-					msgq(sp, M_ERR,
-					    "No filename to substitute for #.");
-					return (1);
-				}
-				prev_ep = sp->eprev;
+			if (sp->eprev == NULL ||
+			    F_ISSET(sp->eprev, F_NONAME)) {
+				msgq(sp, M_ERR,
+				    "No filename to substitute for #.");
+				return (1);
 			}
-			len += prev_ep->nlen;
+			len += sp->eprev->nlen;
 			break;
 		case '\\':
 			if (p[1] != '\0')
 				++p;
-			break;
+			/* FALLTHROUGH */
+		default:
+			++len;
 		}
 
 	gp = sp->gp;
-	tpath = NULL;
 	if (len != wordlen) {
 		/*
 		 * Copy argument into temporary space, replacing file
 		 * names.  Allocate temporary space if necessary.
 		 */
 		if (F_ISSET(gp, G_TMP_INUSE)) {
-			if ((tpath = malloc(len)) == NULL) {
+			if ((tpath = malloc(len + 1)) == NULL) {
 				msgq(sp, M_ERR,
 				    "Error: %s.", strerror(errno));
 				return (1);
 			}
 		} else {
-			BINC(sp, gp->tmp_bp, gp->tmp_blen, len);
+			BINC(sp, gp->tmp_bp, gp->tmp_blen, len + 1);
 			tpath = gp->tmp_bp;
 			F_SET(gp, G_TMP_INUSE);
 		}
 
 		for (p = tpath; *word; ++word)
-			switch(*word) {
+			switch (*word) {
 			case '%':
 				memmove(p, ep->name, ep->nlen);
 				p += ep->nlen;
 				break;
 			case '#':
-				memmove(p, prev_ep->name, prev_ep->nlen);
-				p += prev_ep->nlen;
+				memmove(p,
+				    sp->eprev->name, sp->eprev->nlen);
+				p += sp->eprev->nlen;
 				break;
 			case '\\':
 				if (p[1] != '\0')
@@ -223,13 +211,19 @@ fileexpand(sp, ep, globp, word, wordlen)
 			default:
 				*p++ = *word;
 			}
+		*p = '\0';
 		p = tpath;
-	} else
+	} else {
+		tpath = NULL;
 		p = word;
+	}
 
+	/*
+	 * XXX: GLOB_NOMAGIC:
+	 * Then error if no pattern matches and magic char included.
+	 */
 	glob(p,
-	    GLOB_APPEND | GLOB_NOSORT | GLOB_NOCHECK | GLOB_QUOTE | GLOB_TILDE,
-	    NULL, globp);
+	    GLOB_NOCHECK | GLOB_NOSORT | GLOB_QUOTE | GLOB_TILDE, NULL, globp);
 
 	if (tpath != NULL)
 		if (tpath == gp->tmp_bp)
