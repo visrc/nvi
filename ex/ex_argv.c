@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 5.13 1993/05/13 11:12:09 bostic Exp $ (Berkeley) $Date: 1993/05/13 11:12:09 $";
+static char sccsid[] = "$Id: ex_argv.c,v 5.14 1993/05/13 12:20:57 bostic Exp $ (Berkeley) $Date: 1993/05/13 12:20:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,7 +19,8 @@ static char sccsid[] = "$Id: ex_argv.c,v 5.13 1993/05/13 11:12:09 bostic Exp $ (
 #include "vi.h"
 #include "excmd.h"
 
-static int fileexpand __P((SCR *, EXF *, glob_t *, char *, int));
+#define	SHELLECHO	"echo "
+#define	SHELLOFFSET	(sizeof(SHELLECHO) - 1)
 
 /*
  * buildargv --
@@ -32,147 +33,28 @@ buildargv(sp, ep, s, expand, argcp, argvp)
 	char *s, ***argvp;
 	int expand, *argcp;
 {
-	int cnt, done, globoff, len, needslots, off;
-	char *ap, *p;
-
-	/* Discard any previous information. */
-	if (sp->g.gl_pathc)
-		globfree(&sp->g);
-
-	/* Break into argv vector. */
-	for (done = globoff = off = 0;; ) {
-		/*
-		 * New argument; NULL terminate, skipping anything that's
-		 * preceded by a quoting character.
-		 */
-		for (ap = s; s[0]; ++s) {
-			if (s[0] == '\\' && s[1])
-				s += 2;
-			if (isspace(s[0]))
-				break;
-		}
-		if (*s)
-			*s = '\0';
-		else
-			done = 1;
-
-		/*
-		 * Expand and count up the necessary slots.  Add +1 to
-		 * include the trailing NULL.
-		 */
-		len = s - ap +1;
-
-		if (expand) {
-			if (fileexpand(sp, ep, &sp->g, ap, len))
-				return (1);
-			needslots = sp->g.gl_pathc - globoff + 1;
-		} else
-			needslots = 2;
-
-		/*
-		 * Allocate more pointer space if necessary; leave a space
-		 * for a trailing NULL.
-		 */
-#define	INCREMENT	20
-		if (off + needslots >= sp->argscnt - 1) {
-			sp->argscnt += cnt = MAX(INCREMENT, needslots);
-			if ((sp->args = realloc(sp->args,
-			    sp->argscnt * sizeof(ARGS))) == NULL) {
-				free(sp->argv);
-				goto mem1;
-			}
-			if ((sp->argv = realloc(sp->argv,
-			    sp->argscnt * sizeof(char *))) == NULL) {
-				free(sp->args);
-mem1:				sp->argscnt = 0;
-				sp->args = NULL;
-				sp->argv = NULL;
-				msgq(sp, M_ERR,
-				    "Error: %s.", strerror(errno));
-				return (1);
-			}
-			memset(&sp->args[off], 0, cnt * sizeof(ARGS));
-		}
-
-		/*
-		 * Copy the argument(s) into place, allocating space if
-		 * necessary.
-		 */
-		if (expand) {
-			for (cnt = globoff;
-			    cnt < sp->g.gl_pathc; ++cnt, ++off) {
-				if (sp->args[off].flags & A_ALLOCATED) {
-					free(sp->args[off].bp);
-					sp->args[off].flags &= ~A_ALLOCATED;
-				}
-				sp->argv[off] =
-				    sp->args[off].bp = sp->g.gl_pathv[cnt];
-			}
-			globoff = sp->g.gl_pathc;
-		} else {
-			if (sp->args[off].len < len && (sp->args[off].bp =
-			    realloc(sp->args[off].bp, len)) == NULL) {
-				sp->args[off].bp = NULL;
-				sp->args[off].len = 0;
-				msgq(sp, M_ERR,
-				    "Error: %s.", strerror(errno));
-				return (1);
-			}
-			sp->argv[off] = sp->args[off].bp;
-			sp->args[off].flags |= A_ALLOCATED;
-			/* Copy the argument into place, losing quote chars. */
-			for (p = sp->args[off].bp; len; *p++ = *ap++, --len)
-				if (*ap == '\\' && len) {
-					++ap;
-					--len;
-				}
-			++off;
-		}
-
-		if (done)
-			break;
-
-		/* Skip whitespace. */
-		while (isspace(*++s));
-		if (!*s)
-			break;
-	}
-	sp->argv[off] = NULL;
-	*argvp = sp->argv;
-	*argcp = off;
-#if DEBUG && 0
-	for (cnt = 0; cnt < off; ++cnt)
-		TRACE(sp, "arg %d: {%s}\n", cnt, sp->argv[cnt]);
-#endif
-	return (0);
-}
-
-/*
- * fileexpand --
- *	Expand file names.
- */
-static int
-fileexpand(sp, ep, globp, word, wordlen)
-	SCR *sp;
-	EXF *ep;
-	glob_t *globp;
-	char *word;
-	int wordlen;
-{
-	size_t blen, len, tlen;
-	char *bp, *p, *t;
+	size_t blen, tlen;
+	int cnt, done, len, off;
+	char *ap, *bp, *p, *t;
 
 	GET_SPACE(sp, bp, blen, 512);
 
-	/* It's going to become a shell command. */
 	p = bp;
-	memmove(p, "echo ", sizeof("echo ") - 1);
-	p += sizeof("echo ") - 1;
-	len = sizeof("echo ") - 1;
+	len = 0;
+	if (expand) {
+		/* It's going to become a shell command. */
+		memmove(p, SHELLECHO, SHELLOFFSET);
+		p += SHELLOFFSET;
+		len += SHELLOFFSET;
+	}
+
+#if DEBUG && 0
+	TRACE(sp, "argv: {%s}\n", s);
+#endif
 
 	/* Replace file name characters. */
-	for (; *word; ++word)
-		switch (*word) {
+	for (; *s; ++s)
+		switch (*s) {
 		case '%':
 			if (F_ISSET(ep, F_NONAME)) {
 				msgq(sp, M_ERR,
@@ -203,11 +85,11 @@ fileexpand(sp, ep, globp, word, wordlen)
 			break;
 		case '\\':
 			if (p[1] != '\0')
-				++p;
+				++s;
 			/* FALLTHROUGH */
 		default:
 			ADD_SPACE(sp, bp, blen, len + 1);
-			*p++ = *word;
+			*p++ = *s;
 			++len;
 		}
 
@@ -216,35 +98,112 @@ fileexpand(sp, ep, globp, word, wordlen)
 	*p = '\0';
 
 #if DEBUG && 0
-	TRACE(sp, "file char replacement: {%.*s}\n", len, bp);
+	TRACE(sp, "pre-shell: {%s}\n", bp);
 #endif
 	/*
 	 * Do shell word expansion -- it's very, very hard to figure out
 	 * what magic characters the user's shell expects.  If it's not
-	 * vanilla, don't even try.
+	 * pure vanilla, don't even try.
 	 */
-	for (p = bp; *p; ++p)
-		if (!isalnum(*p) && !isspace(*p) && *p != '/')
-			break;
-	if (*p) {
-		if (ex_run_process(sp, bp, &len, bp, blen))
-			return (1);
-#if DEBUG && 0
-		TRACE(sp, "shell word expansion: {%.*s}\n", len, bp);
-#endif
-		p = bp;
+	if (expand) {
+		for (p = bp; *p; ++p)
+			if (!isalnum(*p) && !isspace(*p) && *p != '/')
+				break;
+		if (*p) {
+			if (ex_run_process(sp, bp, &len, bp, blen))
+				return (1);
+			p = bp;
+		} else
+			p = bp + SHELLOFFSET;
 	} else
-		p = bp + (sizeof("echo ") - 1);
+		p = bp;
 
-	/*
-	 * Do shell globbing.
-	 * XXX: GLOB_NOMAGIC:
-	 * Then error if no pattern matches and magic char included.
-	 */
-	glob(p,
-	    GLOB_APPEND | GLOB_NOCHECK | GLOB_NOSORT | GLOB_QUOTE | GLOB_TILDE,
-	    NULL, globp);
+#if DEBUG && 0
+	TRACE(sp, "post-shell: {%s}\n", bp);
+#endif
+
+	/* Break into argv vector. */
+	for (done = off = 0;; ) {
+		/*
+		 * New argument; NULL terminate, skipping anything that's
+		 * preceded by a quoting character.
+		 */
+		for (ap = p; p[0]; ++p) {
+			if (p[0] == '\\' && p[1])
+				p += 2;
+			if (isspace(p[0]))
+				break;
+		}
+		if (*p)
+			*p = '\0';
+		else
+			done = 1;
+
+		/*
+		 * Allocate more pointer space if necessary; leave a space
+		 * for a trailing NULL.
+		 */
+		len = (p - ap) + 1;
+#define	INCREMENT	20
+		if (off + 2 >= sp->argscnt - 1) {
+			sp->argscnt += cnt = MAX(INCREMENT, 2);
+			if ((sp->args = realloc(sp->args,
+			    sp->argscnt * sizeof(ARGS))) == NULL) {
+				free(sp->argv);
+				goto mem1;
+			}
+			if ((sp->argv = realloc(sp->argv,
+			    sp->argscnt * sizeof(char *))) == NULL) {
+				free(sp->args);
+mem1:				sp->argscnt = 0;
+				sp->args = NULL;
+				sp->argv = NULL;
+				msgq(sp, M_ERR,
+				    "Error: %s.", strerror(errno));
+				return (1);
+			}
+			memset(&sp->args[off], 0, cnt * sizeof(ARGS));
+		}
+
+		/*
+		 * Copy the argument(s) into place, allocating space if
+		 * necessary.
+		 */
+		if (sp->args[off].len < len && (sp->args[off].bp =
+		    realloc(sp->args[off].bp, len)) == NULL) {
+			sp->args[off].bp = NULL;
+			sp->args[off].len = 0;
+			msgq(sp, M_ERR, "Error: %s.", strerror(errno));
+			FREE_SPACE(sp, bp, blen);
+			return (1);
+		}
+		sp->argv[off] = sp->args[off].bp;
+		sp->args[off].flags |= A_ALLOCATED;
+		/* Copy the argument into place, losing quote chars. */
+		for (t = sp->args[off].bp; len; *t++ = *ap++, --len)
+			if (*ap == '\\' && len) {
+				++ap;
+				--len;
+			}
+		++off;
+
+		if (done)
+			break;
+
+		/* Skip whitespace. */
+		while (isspace(*++p));
+		if (!*p)
+			break;
+	}
+	sp->argv[off] = NULL;
+	*argvp = sp->argv;
+	*argcp = off;
 
 	FREE_SPACE(sp, bp, blen);
+
+#if DEBUG && 0
+	for (cnt = 0; cnt < off; ++cnt)
+		TRACE(sp, "arg %d: {%s}\n", cnt, sp->argv[cnt]);
+#endif
 	return (0);
 }
