@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_msg.c,v 10.59 1996/04/27 11:40:40 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:40 $";
+static const char sccsid[] = "$Id: vs_msg.c,v 10.60 1996/04/28 12:41:02 bostic Exp $ (Berkeley) $Date: 1996/04/28 12:41:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -583,11 +583,9 @@ vs_ex_resolve(sp, continuep)
 	 */
 	if (!F_ISSET(sp, SC_EX_DONTWAIT) && !INTERRUPTED(sp) &&
 	    !F_ISSET(sp, SC_EXIT | SC_EXIT_FORCE | SC_FSWITCH | SC_SSWITCH)) {
-		if (F_ISSET(sp, SC_SCR_EXWROTE)) {
+		if (F_ISSET(sp, SC_SCR_EXWROTE))
 			vs_wait(sp, continuep, SCROLL_W_EX);
-			if (*continuep)
-				ex_puts(sp, "\n");
-		} else
+		else
 			vs_scroll(sp, continuep, SCROLL_W_EX);
 		if (*continuep)
 			return (0);

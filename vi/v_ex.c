@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_ex.c,v 10.37 1996/04/28 12:02:25 bostic Exp $ (Berkeley) $Date: 1996/04/28 12:02:25 $";
+static const char sccsid[] = "$Id: v_ex.c,v 10.38 1996/04/28 12:41:01 bostic Exp $ (Berkeley) $Date: 1996/04/28 12:41:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -432,6 +432,23 @@ v_ex(sp, vp)
 
 		/* Home the cursor. */
 		vs_home(sp);
+
+		/*
+		 * !!!
+		 * If the editor wrote the screen behind curses back, put out
+		 * a <newline> so that we don't overwrite the user's command
+		 * with its output or the next want-to-continue? message.  This
+		 * doesn't belong here, but I can't find another place to put
+		 * it.  See, we resolved the output from the last ex command,
+		 * and the user entered another one.  This is the only place
+		 * where we have control before the ex command writes output.
+		 * We could get control in vs_msg(), but we have no way to know
+		 * if command didn't put out any output when we try and resolve
+		 * this command.  This fixes a bug where combinations of ex
+		 * commands, e.g. ":set<CR>:!date<CR>:set" didn't look right.
+		 */
+		if (F_ISSET(sp, SC_SCR_EXWROTE))
+			(void)putchar('\n');
 
 		/* Call the ex parser. */
 		(void)ex_cmd(sp);
