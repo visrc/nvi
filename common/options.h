@@ -4,19 +4,20 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: options.h,v 8.11 1993/11/18 08:17:11 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:17:11 $
+ *	$Id: options.h,v 8.12 1993/12/02 10:32:54 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:32:54 $
  */
 
 struct _option {
 	union {
-		u_long	 val;		/* Value, boolean. */
+		u_long	 val;		/* Value or boolean. */
 		char	*str;		/* String. */
 	} o_u;
+	size_t	len;			/* String length. */
 
 #define	OPT_ALLOCATED	0x01		/* Allocated space. */
 #define	OPT_SELECTED	0x02		/* Selected for display. */
 #define	OPT_SET		0x04		/* Set (display for the user). */
-	u_int	flags;
+	u_char	flags;
 };
 
 struct _optlist {
@@ -38,8 +39,9 @@ struct _optlist {
 #define	O_ISSET(sp, o)		((sp)->opts[(o)].o_u.val)
 
 /* Get option values. */
-#define	O_VAL(sp, o)		(sp)->opts[(o)].o_u.val
+#define	O_LEN(sp, o)		(sp)->opts[(o)].len
 #define	O_STR(sp, o)		(sp)->opts[(o)].o_u.str
+#define	O_VAL(sp, o)		(sp)->opts[(o)].o_u.val
 
 /* Option routines. */
 enum optdisp { NO_DISPLAY, ALL_DISPLAY, CHANGED_DISPLAY, SELECT_DISPLAY };
@@ -49,7 +51,7 @@ void	opts_dump __P((SCR *, enum optdisp));
 void	opts_free __P((SCR *));
 int	opts_init __P((SCR *));
 int	opts_save __P((SCR *, FILE *));
-int	opts_set __P((SCR *, char **));
+int	opts_set __P((SCR *, ARGS *[]));
 
 /* Per-option change routines. */
 int	f_altwerase __P((SCR *, OPTION *, char *, u_long));
