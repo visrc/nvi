@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.79 1993/12/20 11:13:11 bostic Exp $ (Berkeley) $Date: 1993/12/20 11:13:11 $";
+static char sccsid[] = "$Id: ex.c,v 8.80 1993/12/20 15:25:53 bostic Exp $ (Berkeley) $Date: 1993/12/20 15:25:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1331,11 +1331,12 @@ ep_line(sp, ep, cur, cmdp, cmdlenp, addr_found)
 		cmd += 2;
 		cmdlen -= 2;
 		break;
-	case '\\':				/* Search. */
+	case '\\':				/* Search: forward/backward. */
 		/*
-		 * XXX
-		 * I can't find any difference between // and \/,
-		 * or between ?? and \?.
+		 * !!!
+		 * I can't find any difference between // and \/ or
+		 * between ?? and \?.  Mark Horton doesn't remember
+		 * there being any difference.  C'est la vie.
 		 */
 		if (cmdlen < 2 || cmd[1] != '/' && cmd[1] != '?') {
 			msgq(sp, M_ERR, "\\ not followed by / or ?.");
