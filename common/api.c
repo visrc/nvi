@@ -12,7 +12,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: api.c,v 8.34 2001/03/14 21:48:14 skimo Exp $ (Berkeley) $Date: 2001/03/14 21:48:14 $";
+static const char sccsid[] = "$Id: api.c,v 8.35 2001/04/25 21:27:32 skimo Exp $ (Berkeley) $Date: 2001/04/25 21:27:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -620,7 +620,8 @@ api_tagq_add(sp, tqp, filename, search, msg)
 	size_t mlen = strlen(msg);
 
 	CALLOC_GOTO(sp, tp, TAG *, 1, 
-		    sizeof(TAG) - 1 + flen + 1 + slen + 1 + mlen + 1);
+		    sizeof(TAG) - 1 + flen + 1 + 
+		    (slen + 1 + mlen + 1) * sizeof(CHAR_T));
 	tp->fname = (char *)tp->buf;
 	memcpy(tp->fname, filename, flen + 1);
 	tp->fnlen = flen;
