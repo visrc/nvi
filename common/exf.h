@@ -4,9 +4,8 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 8.12 1993/10/04 19:20:43 bostic Exp $ (Berkeley) $Date: 1993/10/04 19:20:43 $
+ *	$Id: exf.h,v 8.13 1993/10/31 14:19:46 bostic Exp $ (Berkeley) $Date: 1993/10/31 14:19:46 $
  */
-
 					/* Undo direction. */
 enum udirection { UBACKWARD, UFORWARD };
 
@@ -34,14 +33,14 @@ typedef struct _exf {
 	MARK	 l_cursor;		/* Log cursor position. */
 	enum udirection lundo;		/* Last undo direction. */
 
-	MARK	 absmark;		/* Saved absolute mark. */
 	struct list_entry marks;	/* Linked list of file MARK's. */
 
-/*
- * If F_RCV_NORM is not set, rcv_path and rcv_mpath are unlinked on
- * file exit.  If rcv_path or rcv_mpath are not NULL, they are free'd
- * as well.  (This means that, on error, F_RCV_NORM is normally set.
- */
+	/*
+	 * If F_RCV_NORM is not set, rcv_path and rcv_mpath are unlinked
+	 * on file exit.  If rcv_path or rcv_mpath are not NULL, they are
+	 * free'd as well.  (This means that, on error, F_RCV_NORM will
+	 * normally be set.)
+	 */
 	char	*rcv_path;		/* Recover file name. */
 	char	*rcv_mpath;		/* Recover mail file name. */
 

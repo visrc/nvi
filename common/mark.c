@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: mark.c,v 8.4 1993/10/30 11:49:06 bostic Exp $ (Berkeley) $Date: 1993/10/30 11:49:06 $";
+static char sccsid[] = "$Id: mark.c,v 8.5 1993/10/31 14:19:51 bostic Exp $ (Berkeley) $Date: 1993/10/31 14:19:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -69,8 +69,8 @@ mark_init(sp, ep)
 		msgq(sp, M_ERR, "Error: %s", strerror(errno));
 		return (1);
 	}
-	ep->absmark.lno = mp->lno = 1;
-	ep->absmark.cno = mp->cno = 0;
+	mp->lno = 1;
+	mp->cno = 0;
 	mp->name = ABSMARK1;
 	mp->flags = 0;
 	list_enter_head(&ep->marks, mp, MARK *, q);
@@ -154,8 +154,7 @@ mark_set(sp, ep, key, value, userset)
 	 * The rules are simple.  If the user is setting a mark (if it's a
 	 * new mark this is always true), it always happens.  If not, it's
 	 * an undo, and we set it if it's not already set or if it was set
-	 * by a previous undo.  If we're setting the default mark, rotate
-	 * the old default mark out.
+	 * by a previous undo.
 	 */
 	if (mp->name != key) {
 		if ((mt = malloc(sizeof(MARK))) == NULL) {
@@ -164,15 +163,9 @@ mark_set(sp, ep, key, value, userset)
 		}
 		list_insert_after(&mp->q, mt, MARK *, q);
 		mp = mt;
-	} else {
-		if (!userset &&
-		    !F_ISSET(mp, MARK_DELETED) && F_ISSET(mp, MARK_USERSET))
-			return (0);
-		if (key == ABSMARK1) {
-			ep->absmark.lno = mp->lno;
-			ep->absmark.cno = mp->cno;
-		}
-	}
+	} else if (!userset &&
+	    !F_ISSET(mp, MARK_DELETED) && F_ISSET(mp, MARK_USERSET))
+		return (0);
 
 	mp->lno = value->lno;
 	mp->cno = value->cno;
