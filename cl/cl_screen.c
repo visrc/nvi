@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_screen.c,v 10.43 1996/05/01 09:41:06 bostic Exp $ (Berkeley) $Date: 1996/05/01 09:41:06 $";
+static const char sccsid[] = "$Id: cl_screen.c,v 10.44 1996/05/16 10:46:55 bostic Exp $ (Berkeley) $Date: 1996/05/16 10:46:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -284,6 +284,9 @@ cl_vi_init(sp)
 	/* Put the cursor keys into application mode. */
 	(void)keypad(stdscr, TRUE);
 
+	/* The screen TI sequence just got sent. */
+	clp->ti_te = TI_SENT;
+
 	/*
 	 * XXX
 	 * Historic implementations of curses handled SIGTSTP signals
@@ -359,10 +362,21 @@ cl_vi_init(sp)
 	if (cl_term_init(sp))
 		goto err;
 
-fast:	if (tcsetattr(STDIN_FILENO, TCSASOFT | TCSADRAIN, &clp->vi_enter)) {
+fast:	/* Set the terminal modes. */
+	if (tcsetattr(STDIN_FILENO, TCSASOFT | TCSADRAIN, &clp->vi_enter)) {
 		msgq(sp, M_SYSERR, "tcsetattr");
 err:		(void)cl_vi_end(sp->gp);
 		return (1);
+	}
+
+	/* If not already done, send the terminal initialization sequence. */
+	if (clp->ti_te == TE_SENT) {
+		clp->ti_te = TI_SENT;
+		if (clp->smcup == NULL)
+			(void)cl_getcap(sp, "smcup", &clp->smcup);
+		if (clp->smcup != NULL)
+			(void)tputs(clp->smcup, 1, cl_putchar);
+		(void)fflush(stdout);
 	}
 	return (0);
 }
@@ -400,6 +414,9 @@ cl_vi_end(gp)
 
 	/* End curses window. */
 	(void)endwin();
+
+	/* The screen TE sequence just got sent. */
+	clp->ti_te = TE_SENT;
 
 	return (0);
 }
@@ -473,6 +490,16 @@ cl_ex_init(sp)
 fast:	if (tcsetattr(STDIN_FILENO, TCSADRAIN | TCSASOFT, &clp->ex_enter)) {
 		msgq(sp, M_SYSERR, "tcsetattr");
 		return (1);
+	}
+
+	/* If not already done, send the terminal end sequence. */
+	if (clp->ti_te == TI_SENT) {
+		clp->ti_te = TE_SENT;
+		if (clp->rmcup == NULL)
+			(void)cl_getcap(sp, "rmcup", &clp->rmcup);
+		if (clp->rmcup != NULL)
+			(void)tputs(clp->rmcup, 1, cl_putchar);
+		(void)fflush(stdout);
 	}
 	return (0);
 }

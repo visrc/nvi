@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: cl.h,v 10.14 1996/04/27 17:17:13 bostic Exp $ (Berkeley) $Date: 1996/04/27 17:17:13 $
+ *	$Id: cl.h,v 10.15 1996/05/16 10:46:55 bostic Exp $ (Berkeley) $Date: 1996/05/16 10:46:55 $
  */
 
 typedef struct _cl_private {
@@ -35,7 +35,10 @@ typedef struct _cl_private {
 	struct sigaction oact[INDX_MAX];
 
 	enum {			/* Tty group write mode. */
-	    TGW_UNKNOWN, TGW_SET, TGW_UNSET } tgw;
+	    TGW_UNKNOWN=0, TGW_SET, TGW_UNSET } tgw;
+
+	enum {			/* Terminal initialization strings. */
+	    TE_SENT=0, TI_SENT } ti_te;
 
 #define	CL_SCR_EX_INIT	0x001	/* Ex screen initialized. */
 #define	CL_SCR_VI_INIT	0x002	/* Vi screen initialized. */
