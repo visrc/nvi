@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: set.opt.roff,v 8.20 1994/05/25 17:40:29 bostic Exp $ (Berkeley) $Date: 1994/05/25 17:40:29 $
+.\"     $Id: set.opt.roff,v 8.21 1994/05/25 22:31:05 bostic Exp $ (Berkeley) $Date: 1994/05/25 22:31:05 $
 .\"
 #ifdef REFERENCE
 .SH 1 "Set Options"
@@ -318,7 +318,7 @@ If the first non-empty line of the file begins with the string
 .QT /\&* ,
 this option causes
 .CO vi
-to skip to the end of that C comment (probably a terribly boring
+to skip to the end of that C-language comment (probably a terribly boring
 legal notice) before displaying the file.
 #endif
 .KY directory
@@ -620,7 +620,7 @@ only.
 Optimize text throughput to dumb terminals.
 #endif
 #ifdef REFERENCE
-Throughput of text is expedited by setting the terminal to no do automatic
+Throughput of text is expedited by setting the terminal not to do automatic
 carriage returns when printing more than one (logical) line of output,
 greatly speeding output on terminals without addressable cursors when text
 with leading white space is printed.
@@ -669,7 +669,7 @@ This option causes
 .CO ex
 to prompt for command input with a
 .QT :
-character; when it's not set, no prompt is displayed.
+character; when it is not set, no prompt is displayed.
 #endif
 .KY readonly
 .IP "readonly, ro [off]"
@@ -709,7 +709,7 @@ Remap keys until resolved.
 #endif
 #ifdef REFERENCE
 If this option is set,
-it's possible to define macros in terms of other macros.
+it is possible to define macros in terms of other macros.
 Otherwise, each key is only remapped up to one time.
 For example, if
 .QT A
@@ -995,7 +995,7 @@ Changing from one class to another marks the end of a word.
 #endif
 .KY verbose
 .IP "verbose [off]"
-.NM \&Vi
+.CO Vi
 only.
 #ifdef MANUAL
 Display an error message for every error.
@@ -1106,7 +1106,7 @@ before the right-hand margin of the screen.
 is
 .i not
 a text length.
-In a screen that's 80 columns wide, the command
+In a screen that is 80 columns wide, the command
 .QT ":set wrapmargin=8"
 attempts to keep the lines less than or equal to 72 columns wide.)
 .sp

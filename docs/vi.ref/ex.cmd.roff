@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: ex.cmd.roff,v 8.16 1994/05/25 17:40:37 bostic Exp $ (Berkeley) $Date: 1994/05/25 17:40:37 $
+.\"	$Id: ex.cmd.roff,v 8.17 1994/05/25 22:29:14 bostic Exp $ (Berkeley) $Date: 1994/05/25 22:29:14 $
 .\"
 #ifdef REFERENCE
 .SH 1 "Ex Description"
@@ -166,6 +166,15 @@ command described below notes the new current line after it
 is executed, as well as any options that affect the command.
 #endif
 .sp
+.KY DOUBLEQUOTE
+.IP """"
+A comment.
+#ifdef REFERENCE
+Command lines beginning with the double-quote character
+.PQ \XXXXX
+are ignored.
+This permits comments in editor scripts and startup files.
+#endif
 .KY "<end-of-file>"
 .IP "<end-of-file>"
 Scroll the screen.
@@ -178,7 +187,7 @@ different on different terminals.
 Traditionally, it is the
 .LI <control-D>
 key.
-.pp
+.sp
 Historically, the
 .CO eof
 command ignored any preceding count, and the
@@ -284,15 +293,6 @@ and
 .OP writeany
 options.
 .SE
-#endif
-.KY DOUBLEQUOTE
-.IP \"
-A comment.
-#ifdef REFERENCE
-Command lines beginning with the double-quote character
-.PQ \XXXXX
-are ignored.
-This permits comments in editor scripts and startup files.
 #endif
 .KY "number"
 .IP "[range] nu[mber] [count] [flags]"
@@ -1389,7 +1389,7 @@ A quit response (in English, a
 character) causes the
 .CO substitute
 command to be terminated.
-Any other response causes the replacement to not be made, and the
+Any other response causes the replacement not to be made, and the
 .CO substitute
 command continues.
 If

@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: ref.so,v 8.2 1994/05/25 17:40:08 bostic Exp $ (Berkeley) $Date: 1994/05/25 17:40:08 $
+.\"     $Id: ref.so,v 8.3 1994/05/25 22:30:10 bostic Exp $ (Berkeley) $Date: 1994/05/25 22:30:10 $
 .\"
 .\"
 .\" indented paragraph, with spaces between the items, bold font
@@ -14,6 +14,7 @@
 .nr ps 0
 .ip "\fB\\$1\fP" \\$2
 .nr ps \\n(PS
+.br
 ..
 .\" indented paragraph, no spaces between the items, bold font
 .de Ip
@@ -23,6 +24,7 @@
 .ns
 .ip "\fB\\$1\fP" \\$2
 .nr ps \\n(PS
+.br
 ..
 .\" start nested .IP
 .de SS
@@ -41,18 +43,19 @@
 .ns
 .ip "\\$1" 9n
 .nr ps \\n(PS
+.br
 ..
 .\" typewriter font
 .de LI
-\fC\\$1\fP\\$2
+\&\fC\\$1\fP\\$2
 ..
 .\" ex/vi names in command font
 .de EV
-\fB\\$1\fP/\fB\\$2\fP\\$3
+\&\fB\\$1\fP/\fB\\$2\fP\\$3
 ..
 .\" command names
 .de CO
-\fB\\$1\fP\\$2
+\&\fB\\$1\fP\\$2
 ..
 .\" key words for index
 .de KY
@@ -60,7 +63,7 @@
 ..
 .\" option names
 .de OP
-\fB\\$1\fP\\$2
+\&\fB\\$1\fP\\$2
 ..
 .\" paren quoted (typewriter font)
 .de PQ
@@ -95,5 +98,5 @@
 ..
 .\" manual section
 .de XR
-\fI\\$1\fP(\\$2)\\$3
+\&\fI\\$1\fP(\\$2)\\$3
 ..
