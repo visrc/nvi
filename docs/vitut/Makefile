@@ -1,7 +1,7 @@
-#	$Id: Makefile,v 8.1 1993/08/14 10:54:03 mckusick Exp $ (Berkeley) $Date: 1993/08/14 10:54:03 $
+#	$Id: Makefile,v 8.2 1994/04/22 08:51:41 bostic Exp $ (Berkeley) $Date: 1994/04/22 08:51:41 $
 
-DIR=	usd/12.vi
-SRCS=	vi.in vi.chars
+DIR=	usd/11.vitut
+SRCS=	vi.in vi.chars vi.summary vi.apwh.ms
 MACROS=	-msU
 CLEANFILES+=summary.* viapwh.*
 
