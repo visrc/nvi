@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.8 1993/08/16 12:49:56 bostic Exp $ (Berkeley) $Date: 1993/08/16 12:49:56 $";
+static char sccsid[] = "$Id: ex.c,v 8.9 1993/08/19 15:10:54 bostic Exp $ (Berkeley) $Date: 1993/08/19 15:10:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,8 +22,7 @@ static char sccsid[] = "$Id: ex.c,v 8.8 1993/08/16 12:49:56 bostic Exp $ (Berkel
 #include "vi.h"
 #include "excmd.h"
 
-char *defcmdarg[2];
-
+static void	 e_comm __P((SCR *, char **, char **, int *, char **, int *));
 static char	*getline __P((SCR *, EXF *, char *, MARK *));
 static char	*getrange __P((SCR *, EXF *, char *, EXCMDARG *));
 
@@ -44,6 +43,10 @@ ex(sp, ep)
 
 	if (ex_init(sp, ep))
 		return (1);
+
+	/* Believe it or not, we may have just switched modes or files. */
+	if (!F_ISSET(sp, S_MODE_EX) || F_ISSET(sp, S_MAJOR_CHANGE))
+		return (ex_end(sp));
 
 	if (sp->s_refresh(sp, ep))
 		return (ex_end(sp));
@@ -136,10 +139,7 @@ e1:	msgq(sp, M_ERR, "%s: %s.", filename, strerror(errno));
 
 /*
  * ex_cstring --
- *	Execute EX commands from a string.  The commands may be separated
- *	by newlines or by | characters, and may be quoted.  Quotes are
- *	either the user's literal next character or a backslash.  Literal
- *	next characters are translated into backslashes.
+ *	Execute EX commands from a string.
  */
 int
 ex_cstring(sp, ep, cmd, len)
@@ -149,49 +149,106 @@ ex_cstring(sp, ep, cmd, len)
 	int len;
 {
 	u_int saved_mode;
-	int ch, cnt, rval;
-	char *p, *t;
+	int ch, plus_len;
+	char *p, *t, *plus;
 
-	rval = 0;
+	/* Just for the sheer paranoia of it. */
+	if (len == 0) {
+		sp->comm_len = 0;
+		return (0);
+	}
+
+	/*
+	 * QUOTING NOTE:
+	 *
+	 * Commands may be separated by newline or '|' characters, and may
+	 * be escaped by literal next characters.  The quote characters are
+	 * stripped here since they are no longer useful.
+	 */
+	plus = NULL;
+	plus_len = 0;
 	saved_mode = F_ISSET(sp, S_MODE_EX | S_MODE_VI | S_MAJOR_CHANGE);
-	for (p = t = cmd, cnt = 0;; ++cnt, --len) {
-		if (len == 0)
-			goto cend;
-		switch (ch = *t++) {
-		case '|':
-		case '\n':
-cend:			if (p > cmd) {
+	for (p = t = cmd;;) {
+		if (p == cmd) {
+			/* Skip leading whitespace. */
+			for (; len > 0 && isspace(*t); ++t, --len);
+
+			/* Special case ex/edit commands. */
+			if (t[0] == ':' && t[1] == 'e' || t[0] == 'e')
+				e_comm(sp, &p, &t, &len, &plus, &plus_len);
+		}
+
+		ch = *t++;
+		--len;			/* Characters remaining. */
+		if (sp->special[ch] == K_VLNEXT && len > 0 &&
+		    (t[0] == '|' || sp->special[t[0]] == K_NL)) {
+			*p++ = *t++;
+			continue;
+		}
+		if (len == 0 || ch == '|' || sp->special[ch] == K_NL) {
+			if (len == 0 && ch != '|' && sp->special[ch] != K_NL)
+				*p++ = ch;
+			if (p > cmd) {
 				*p = '\0';	/* XXX: 8BIT */
-				/*
-				 * Errors are ignored, although error
-				 * messages will be displayed later.
-				 */
-				if (ex_cmd(sp, ep, cmd))
-					rval = 1;
+				if (ex_cmd(sp, ep, cmd, plus_len)) {
+					if (len)
+						msgq(sp, M_ERR,
+		    "Ex command failed, remaining command input discarded.");
+					sp->comm_len = 0;
+					return (1);
+				}
 				p = cmd;
 			}
-			if (len == 0)
-				return (rval);
-			if (saved_mode != F_ISSET(sp,
-			    S_MODE_EX | S_MODE_VI | S_MAJOR_CHANGE)) {
-				msgq(sp, M_ERR,
-		    "File or status changed, remaining input discarded.");
-				return (1);
+			if (saved_mode !=
+			    F_ISSET(sp, S_MODE_EX | S_MODE_VI | S_MAJOR_CHANGE))
+				break;
+			if (len == 0) {
+				sp->comm_len = 0;
+				return (0);
 			}
-			break;
-		default:
-			if (ch == '\\' || sp->special[ch] == K_VLNEXT) {
-				*p++ = '\\';
-				if (len == 1)
-					break;
-				--len;
-				ch = *t++;
-			}
+		} else
 			*p++ = ch;
-			break;
-		}
 	}
-	/* NOTREACHED */
+	/*
+	 * Only here if the mode of the underlying file changed, the user
+	 * switched files or is exiting.  There are two things that we may
+	 * have to save.  First, any "+cmd" field that e_comm() set up will
+	 * have to be saved for later.  Also, there may be part of the
+	 * current ex command which we haven't executed,
+	 *
+	 *	:edit +25 file.c|s/abc/ABC/|1
+	 *
+	 * for example.
+	 *
+	 * The historic vi just hung, of course; we handle it by building a
+	 * new comm field for the SCR structure.  If you really want to see
+	 * if a vi clone got the ex argument parsing right, try:
+	 *
+	 *	date > file1; date > file2
+	 *	vi
+	 *	:edit +1|s/./XXX/|w file1| e file2|1 | s/./XXX/|wq
+	 */
+	if (len == 0 && plus_len == 0) {
+		sp->comm_len = 0;
+		return (0);
+	}
+	if ((p = malloc(len + plus_len + 5)) == NULL) {
+		msgq(sp, M_ERR, "Error: remaining command input discarded: %s",
+		    strerror(errno));
+		sp->comm_len = 0;
+	} else {
+		if (sp->comm != NULL)
+			free(sp->comm);
+		sp->comm = p;
+		sp->comm_len = plus_len + len + 1;
+
+		if (plus != NULL)
+			memmove(p, plus, plus_len);
+		p += plus_len;
+		*p++ = '|';		/* XXX: doesn't handle trailing ^V. */
+		memmove(p, t, len);
+	}
+	return (0);
 }
 
 /*
@@ -199,10 +256,11 @@ cend:			if (p > cmd) {
  *	Parse and execute an ex command.  
  */
 int
-ex_cmd(sp, ep, exc)
+ex_cmd(sp, ep, exc, plus_len)
 	SCR *sp;
 	EXF *ep;
 	char *exc;
+	int plus_len;
 {
 	EXCMDARG cmd;
 	EXCMDLIST *cp;
@@ -210,8 +268,8 @@ ex_cmd(sp, ep, exc)
 	recno_t lcount, lno, num;
 	long flagoff;
 	u_int saved_mode;
-	int ch, cmdlen, flags, uselastcmd;
-	char *p, *endp;
+	int ch, cmdlen, esc, flags, uselastcmd;
+	char *p, *t, *endp;
 
 #if DEBUG && 0
 	TRACE(sp, "ex: {%s}\n", exc);
@@ -285,12 +343,14 @@ ex_cmd(sp, ep, exc)
 
 		/*
 		 * Multiple < and > characters; another "special" feature.
-		 * NOTE: cmd.string may not be nul terminated in this case.
+		 * NOTE: The string may not be nul terminated in this case.
 		 */
 		if ((cp == &cmds[C_SHIFTL] && *p == '<') ||
 		    (cp == &cmds[C_SHIFTR] && *p == '>')) {
-			ch = *p;
-			for (cmd.string = exc = p; *++exc == ch;);
+			sp->ex_argv[0] = p;
+			cmd.argc = 1;
+			cmd.argv = sp->ex_argv;
+			for (ch = *p, exc = p; *++exc == ch;);
 		}
 	} else {
 		cp = sp->lastcmd;
@@ -399,6 +459,20 @@ two:		switch (cmd.addrcnt) {
 		if (cmd.addrcnt)		/* Error. */
 			goto usage;
 	}
+
+	/*
+	 * YASC.  The "set tags" command historically used a backslash, not
+	 * the user's literal next character, to escape whitespace.  Handle
+	 * it here instead of complicating the word_argv() code.  Note, this
+	 * isn't a particularly complex trap, and if backslashes were legal
+	 * in set commands, this would have to be much more complicated.
+	 */
+	if (cp == &cmds[C_SET]) {
+		esc = sp->gp->original_termios.c_cc[VLNEXT];
+		for (p = exc; (ch = *p) != '\0'; ++p)
+			if (ch == '\\')
+				*p = esc;
+	}
 		
 	/*
 	 * If the entire string is parsed by the command itself, we don't
@@ -407,7 +481,9 @@ two:		switch (cmd.addrcnt) {
 	 */
 	if (cp->syntax[0] == 's') {
 		for (p = exc; *p && isspace(*p); ++p);
-		cmd.string = *p ? exc : NULL;
+		sp->ex_argv[0] = *p ? exc : NULL;
+		cmd.argc = 1;
+		cmd.argv = sp->ex_argv;
 		goto addr2;
 	}
 	for (lcount = 0, p = cp->syntax; *p; ++p) {
@@ -425,7 +501,7 @@ two:		switch (cmd.addrcnt) {
 		case '+':				/* +cmd */
 			if (*exc != '+')
 				break;
-			for (cmd.plus = ++exc; !isspace(*exc); ++exc);
+			exc += plus_len + 1;
 			if (*exc)
 				*exc++ = '\0';
 			break;
@@ -514,15 +590,47 @@ end2:			break;
 			}
 			break;
 		case 'f':				/* file */
-			if (buildargv(sp, ep, exc, 1, &cmd.argc, &cmd.argv))
+			if (file_argv(sp, ep, exc, &cmd.argc, &cmd.argv))
 				return (1);
 			goto countchk;
 		case 's':				/* string */
-			for (p = exc; *p && isspace(*p); ++p);
-			cmd.string = *p ? exc : NULL;
+			sp->ex_argv[0] = *p ? exc : NULL;
+			cmd.argc = 1;
+			cmd.argv = sp->ex_argv;
+			goto addr2;
+		case 'W':				/* word string */
+			/*
+			 * QUOTING NOTE:
+			 *
+			 * Literal next characters escape the following
+			 * character.  The quote characters are stripped
+			 * here since they are no longer useful.
+			 *
+			 * Word.
+			 */
+			for (p = t = exc; (ch = *p) != '\0'; *t++ = ch, ++p)
+				if (sp->special[ch] == K_VLNEXT && p[1] != '\0')
+					ch = *++p;
+				else if (isspace(ch))
+					break;
+			if (*p == '\0')
+				goto usage;
+			sp->ex_argv[0] = exc;
+
+			/* Delete leading whitespace. */
+			for (*t++ = '\0'; (ch = *++p) != '\0' && isspace(ch););
+
+			/* String. */
+			sp->ex_argv[1] = p;
+			for (t = p; (ch = *p++) != '\0'; *t++ = ch)
+				if (sp->special[ch] == K_VLNEXT && p[0] != '\0')
+					ch = *p++;
+			*t = '\0';
+			cmd.argc = 2;
+			cmd.argv = sp->ex_argv;
 			goto addr2;
 		case 'w':				/* word */
-			if (buildargv(sp, ep, exc, 0, &cmd.argc, &cmd.argv))
+			if (word_argv(sp, ep, exc, &cmd.argc, &cmd.argv))
 				return (1);
 countchk:		if (*++p != 'N') {		/* N */
 				/*
@@ -621,8 +729,6 @@ addr2:	switch (cmd.addrcnt) {
 		TRACE(sp, "\tlineno %d", cmd.lineno);
 	if (cmd.flags)
 		TRACE(sp, "\tflags %0x", cmd.flags);
-	if (cmd.command)
-		TRACE(sp, "\tcommand %s", cmd.command);
 	if (cmd.plus)
 		TRACE(sp, "\tplus %s", cmd.plus);
 	if (cmd.buffer != OOBCB)
@@ -725,11 +831,95 @@ addr2:	switch (cmd.addrcnt) {
 }
 
 /*
+ * e_comm --
+ *
+ * YASC.  Historically, '|' characters in the +cmd field of the ex and
+ * edit commands did not separate commands, for example, the command:
+ *
+ *	:edit +25|s/abc/ABC/ file.c
+ *
+ * would switch files, move to line 25 and execute the substitution on
+ * that line.  The e_comm routine makes this work.  We get passed the
+ * current state of the ex_cstring routine, and, if it's this special
+ * case, we make everything look right.  Since we don't want to have to
+ * parse the line twice, we save off the length of the +cmd string and
+ * pass it on into ex_cmd().  Barf-O-Rama.
+ *
+ * QUOTING NOTE:
+ *
+ * This historic implementation of this "feature" ignored any escape
+ * characters so there was no way to put a space or newline into the
+ * +cmd field.  We do a simplistic job of handling it by moving to the
+ * first space that isn't escaped by a literal next character.  The
+ * literal next quote characters are stripped here since they are no
+ * longer useful.
+ */
+static void
+e_comm(sp, pp, tp, lenp, plusp, plus_lenp)
+	SCR *sp;
+	char **pp, **tp, **plusp;
+	int *lenp, *plus_lenp;
+{
+	char *cp, *p, *t;
+	int ch, clen, len;
+
+	/* Copy the state to local variables. */
+	p = *pp;
+	t = *tp;
+	len = *lenp;
+
+	/*
+	 * Move to the next whitespace character.  We can do this fairly
+	 * brutally because we know there aren't any in the command names
+	 * and there has to be one to separate the name from its arguments.
+	 * If there isn't one, we're done.
+	 */
+	for (; len && !isspace(*p = *t); ++p, ++t, --len);
+	if (len == 0)
+		return;
+
+	/* Make sure it's the ex or edit commands. */
+	cp = *pp;
+	if (*cp == ':')
+		++cp;
+	clen = (p - cp) - 1;
+	if (strncmp(cp, "ex", clen) && strncmp(cp, "edit", clen))
+		return;
+
+	/* Move to the '+'.  If it's not there, we're done. */
+	while (len--) {
+		ch = *++p = *++t;
+		if (!isspace(ch))
+			break;
+	}
+	if (len == 0 || *p != '+')
+		return;
+
+	/* Move to the first non-escaped space. */
+	for (cp = p; len;) {
+		ch = *++p = *++t;
+		--len;
+		if (sp->special[ch] == K_VLNEXT && len > 0) {
+			*p = *++t;
+			if (--len == 0)
+				break;
+		} else if (isspace(ch))
+			break;
+	}
+
+	/* Return information about the +cmd string. */
+	*plusp = cp + 1;
+	*plus_lenp = (p - cp) - 1;
+
+	/* Restore the state. */
+	*pp = p;
+	*tp = t;
+	*lenp = len;
+}
+
+/*
  * getrange --
  *	Get a line range for ex commands.
- *
- * XXX
- *	Currently ignores any character quoting.  Not sure that's right.
  */
 static char *
 getrange(sp, ep, cmd, cp)
