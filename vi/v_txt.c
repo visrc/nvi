@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.65 1996/05/15 19:58:24 bostic Exp $ (Berkeley) $Date: 1996/05/15 19:58:24 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.66 1996/05/18 12:18:59 bostic Exp $ (Berkeley) $Date: 1996/05/18 12:18:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -2467,7 +2467,7 @@ txt_insch(sp, tp, chp, flags)
 		 */
 		if (copydown != 0 && (tp->len -= copydown) != 0)
 			memmove(tp->lb + cno, tp->lb + cno + copydown,
-			    tp->owrite + tp->insert + (copydown - 1));
+			    tp->owrite + tp->insert + copydown);
 
 		/* If we had enough overwrite characters, we're done. */
 		if (nlen == 0) {
