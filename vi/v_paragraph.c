@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_paragraph.c,v 8.15 1994/07/28 12:38:04 bostic Exp $ (Berkeley) $Date: 1994/07/28 12:38:04 $";
+static char sccsid[] = "$Id: v_paragraph.c,v 8.16 1994/07/28 20:57:34 bostic Exp $ (Berkeley) $Date: 1994/07/28 20:57:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -49,7 +49,7 @@ static char sccsid[] = "$Id: v_paragraph.c,v 8.15 1994/07/28 12:38:04 bostic Exp
 	}								\
 	if (p[0] != '.' || len < 2)					\
 		continue;						\
-	for (lp = VIP(sp)->paragraph; *lp != '\0'; lp += 2)		\
+	for (lp = VIP(sp)->ps; *lp != '\0'; lp += 2)			\
 		if (lp[0] == p[1] &&					\
 		    (lp[1] == ' ' && len == 2 || lp[1] == p[2]) &&	\
 		    !--cnt)						\
@@ -305,11 +305,11 @@ found:	vp->m_stop.lno = lno;
 }
 
 /*
- * v_buildparagraph --
+ * v_buildps --
  *	Build the paragraph command search pattern.
  */
 int
-v_buildparagraph(sp)
+v_buildps(sp)
 	SCR *sp;
 {
 	VI_PRIVATE *vip;
@@ -329,14 +329,14 @@ v_buildparagraph(sp)
 	MALLOC_RET(sp, p, char *, p_len + s_len + 1);
 
 	vip = VIP(sp);
-	if (vip->paragraph != NULL)
-		free(vip->paragraph);
+	if (vip->ps != NULL)
+		free(vip->ps);
 
 	if (p_p != NULL)
 		memmove(p, p_p, p_len + 1);
 	if (s_p != NULL)
 		memmove(p + p_len, s_p, s_len + 1);
-	vip->paragraph = p;
-	vip->paragraph_len = p_len + s_len + 1;
+	vip->ps = p;
+	vip->ps_len = p_len + s_len + 1;
 	return (0);
 }
