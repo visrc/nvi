@@ -456,7 +456,6 @@ dnl 	[
 	fi;
 	LDFLAGS="$CURSLDFLAGS $LDFLAGS"
 	CPPFLAGS="$CURSCPPFLAGS $CPPFLAGS"
-	CPPFLAGS="-I$with_curses/include $CPPFLAGS"
 
 	if test "$vi_cv_widechar" = "yes"; then
 	    for vi_cv_curses in ncurses ncursesw curses; do
@@ -488,11 +487,6 @@ dnl 	[
 	    fi
 	fi
 
-	LIBS="$SAVELIBS"
-	LDFLAGS="$SAVELDFLAGS"
-	CPPFLAGS="$SAVECPPFLAGS"
-dnl 	])
-
 dnl Check for the termcap/termlib library.  These two checks must occur in the
 dnl current order, and -lcurses must be loaded before -ltermcap/-ltermlib.
 dnl On Solaris curses==termlib, but different versions of curses
@@ -510,6 +504,11 @@ fi
 if test "$vi_cv_termlib" != no; then
 	CURSLIBS="$CURSLIBS $vi_cv_termlib"
 fi
+
+	LIBS="$SAVELIBS"
+	LDFLAGS="$SAVELDFLAGS"
+	CPPFLAGS="$SAVECPPFLAGS"
+dnl 	])
 
 dnl Checks for header files.
 AC_MSG_CHECKING(for sys/mman.h)
@@ -618,7 +617,11 @@ fi
 AC_MSG_RESULT($vi_cv_ftruncate)
 
 CSAVELIBS="$LIBS"
+CSAVELDFLAGS="$LDFLAGS"
+CSAVECPPFLAGS="$CPPFLAGS"
 LIBS="$CURSLIBS $LIBS"
+LDFLAGS="$CURSLDFLAGS $LDFLAGS"
+CPPFLAGS="$CURSCPPFLAGS $CPPFLAGS"
 dnl Check for the tigetstr/tigetnum functions.
 AC_MSG_CHECKING(for tigetstr/tigetnum)
 AC_CACHE_VAL(vi_cv_have_curses_tigetstr, [dnl
@@ -723,6 +726,8 @@ if test "$vi_cv_have_curses_setupterm" = yes; then
 fi
 AC_MSG_RESULT($vi_cv_have_curses_setupterm)
 LIBS="$CSAVELIBS"
+LDFLAGS="$CSAVELDFLAGS"
+CPPFLAGS="$CSAVECPPFLAGS"
 
 dnl Some moron decided to drop off an argument from the gettimeofday call,
 dnl without changing the name.
