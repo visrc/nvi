@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_main.c,v 10.2 1995/06/09 13:45:37 bostic Exp $ (Berkeley) $Date: 1995/06/09 13:45:37 $";
+static char sccsid[] = "$Id: cl_main.c,v 10.3 1995/06/09 13:46:24 bostic Exp $ (Berkeley) $Date: 1995/06/09 13:46:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -488,8 +488,10 @@ killsig(sp)
 	clp = CLP(sp);
 	if (F_ISSET(clp, CL_SIGHUP))
 		signo = SIGHUP;
-	if (F_ISSET(clp, CL_SIGTERM))
+	else if (F_ISSET(clp, CL_SIGTERM))
 		signo = SIGTERM;
+	else
+		abort();
 
 	(void)signal(signo, SIG_DFL);
 	(void)kill(getpid(), signo);
