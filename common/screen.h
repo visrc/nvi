@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 9.22 1995/02/16 11:11:31 bostic Exp $ (Berkeley) $Date: 1995/02/16 11:11:31 $
+ *	$Id: screen.h,v 9.23 1995/02/17 11:34:29 bostic Exp $ (Berkeley) $Date: 1995/02/17 11:34:29 $
  */
 
 /*
@@ -125,6 +125,8 @@ struct _scr {
 	u_int8_t c_suffix;		/* Edcompatible 'c' suffix value. */
 	u_int8_t g_suffix;		/* Edcompatible 'g' suffix value. */
 
+	CHAR_T	 at_lbuf;		/* Ex/vi: Last executed at buffer. */
+
 	u_int32_t
 		 saved_vi_mode;		/* Saved S_VI_* flags. */
 
@@ -218,17 +220,18 @@ struct _scr {
 
 #define	S_ARGNOFREE	0x0004000	/* Argument list wasn't allocated. */
 #define	S_ARGRECOVER	0x0008000	/* Argument list is recovery files. */
-#define	S_BELLSCHED	0x0010000	/* Bell scheduled. */
-#define	S_CONTINUE	0x0020000	/* Need to ask the user to continue. */
-#define	S_EXSILENT	0x0040000	/* Ex batch script. */
-#define	S_GLOBAL	0x0080000	/* Ex global: in the command. */
-#define	S_GLOBAL_ABORT	0x0100000	/* Ex global: file/screen changed. */
-#define	S_INPUT		0x0200000	/* Doing text input. */
-#define	S_INTERRUPTED	0x0400000	/* If have been interrupted. */
-#define	S_RE_RECOMPILE	0x0800000	/* The search RE needs recompiling. */
-#define	S_RE_SEARCH	0x1000000	/* The search RE has been set. */
-#define	S_RE_SUBST	0x2000000	/* The substitute RE has been set. */
-#define	S_SCRIPT	0x4000000	/* Window is a shell script. */
+#define	S_AT_SET	0x0010000	/* Last at buffer set. */
+#define	S_BELLSCHED	0x0020000	/* Bell scheduled. */
+#define	S_CONTINUE	0x0040000	/* Need to ask the user to continue. */
+#define	S_EX_CMDABORT	0x0080000	/* Ex global/@: file/screen changed. */
+#define	S_EX_GLOBAL	0x0100000	/* Ex global: in the command. */
+#define	S_EX_SILENT	0x0200000	/* Ex batch script. */
+#define	S_INPUT		0x0400000	/* Doing text input. */
+#define	S_INTERRUPTED	0x0800000	/* If have been interrupted. */
+#define	S_RE_RECOMPILE	0x1000000	/* The search RE needs recompiling. */
+#define	S_RE_SEARCH	0x2000000	/* The search RE has been set. */
+#define	S_RE_SUBST	0x4000000	/* The substitute RE has been set. */
+#define	S_SCRIPT	0x8000000	/* Window is a shell script. */
 	u_int32_t flags;
 };
 
