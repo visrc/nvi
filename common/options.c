@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 10.21 1995/11/18 13:01:16 bostic Exp $ (Berkeley) $Date: 1995/11/18 13:01:16 $";
+static char sccsid[] = "$Id: options.c,v 10.22 1996/02/04 19:01:43 bostic Exp $ (Berkeley) $Date: 1996/02/04 19:01:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -255,15 +255,12 @@ static OABBREV const abbrev[] = {
  * opts_init --
  *	Initialize some of the options.
  *
- * PUBLIC: int opts_init __P((SCR *, int *, char *, recno_t, size_t));
+ * PUBLIC: int opts_init __P((SCR *, int *));
  */
 int
-opts_init(sp, oargs, ttype, rows, cols)
+opts_init(sp, oargs)
 	SCR *sp;
 	int *oargs;
-	char *ttype;
-	recno_t rows;
-	size_t cols;
 {
 	ARGS *argv[2], a, b;
 	OPTLIST const *op;
@@ -287,18 +284,18 @@ opts_init(sp, oargs, ttype, rows, cols)
 		goto err;						\
 	}								\
 }
-
-	/* Set terminal, rows, cols first, used by other options. */
-	(void)snprintf(b1, sizeof(b1), "lines=%u", rows);
-	OI(O_LINES, b1, 1);
-	(void)snprintf(b1, sizeof(b1), "columns=%u", cols);
-	OI(O_COLUMNS, b1, 1);
-	(void)snprintf(b1, sizeof(b1), "term=%s", ttype);
-	OI(O_TERM, b1, 1);
-
-	/* If oargs NULL, then it's a window resize, return. */
-	if (oargs == NULL)
-		return (0);
+	/*
+	 * Indirect global options to global space.  Specifically, set up
+	 * terminal, rows and columns first, they're used by other options.
+	 */
+	O_VAL(sp, O_COLUMNS) = GO_COLUMNS;
+	F_SET(&sp->opts[O_COLUMNS], OPT_GLOBAL);
+	O_VAL(sp, O_LINES) = GO_LINES;
+	F_SET(&sp->opts[O_LINES], OPT_GLOBAL);
+	O_VAL(sp, O_SECURE) = GO_SECURE;
+	F_SET(&sp->opts[O_SECURE], OPT_GLOBAL);
+	O_VAL(sp, O_TERM) = GO_TERM;
+	F_SET(&sp->opts[O_TERM], OPT_GLOBAL);
 
 	/* Set boolean default values. */
 	for (op = optlist, cnt = 0; op->name != NULL; ++op, ++cnt)
@@ -931,7 +928,8 @@ opts_free(sp)
 	int cnt;
 
 	for (cnt = 0; cnt < O_OPTIONCOUNT; ++cnt) {
-		if (optlist[cnt].type != OPT_STR)
+		if (optlist[cnt].type != OPT_STR ||
+		    F_ISSET(&optlist[cnt], OPT_GLOBAL))
 			continue;
 		/*
 		 * The default and current strings may reference the same
@@ -963,7 +961,8 @@ opts_copy(orig, sp)
 
 	/* Copy the string edit options. */
 	for (cnt = rval = 0; cnt < O_OPTIONCOUNT; ++cnt) {
-		if (optlist[cnt].type != OPT_STR)
+		if (optlist[cnt].type != OPT_STR ||
+		    F_ISSET(&optlist[cnt], OPT_GLOBAL))
 			continue;
 		/*
 		 * If never set, or already failed, NULL out the entries --

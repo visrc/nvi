@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 10.19 1995/11/18 13:02:16 bostic Exp $ (Berkeley) $Date: 1995/11/18 13:02:16 $
+ *	$Id: gs.h,v 10.20 1996/02/04 19:01:59 bostic Exp $ (Berkeley) $Date: 1996/02/04 19:01:59 $
  */
 
 #define	TEMPORARY_FILE_STRING	"/tmp"	/* Default temporary file name. */
@@ -60,14 +60,24 @@ struct _gs {
 	CIRCLEQ_HEAD(_dqh, _scr) dq;	/* Displayed screens. */
 	CIRCLEQ_HEAD(_hqh, _scr) hq;	/* Hidden screens. */
 
-					/* File references. */
-	CIRCLEQ_HEAD(_frefh, _fref) frefq;
-
-	mode_t	 origmode;		/* Original terminal mode. */
+#ifdef TCL_INTERP
+	void	*interp;		/* Tcl_Interp *: Tcl interpreter. */
+#endif
 
 	void	*cl_private;		/* Curses support private area. */
 	void	*tk_private;		/* Tk/Tcl support private area. */
 	void	*xaw_private;		/* XAW support private area. */
+
+					/* File references. */
+	CIRCLEQ_HEAD(_frefh, _fref) frefq;
+
+#define	GO_COLUMNS	0		/* Global options: columns. */
+#define	GO_LINES	1		/* Global options: lines. */
+#define	GO_SECURE	2		/* Global options: secure. */
+#define	GO_TERM		3		/* Global options: terminal type. */
+	OPTION	 opts[GO_TERM + 1];
+
+	mode_t	 origmode;		/* Original terminal mode. */
 
 	DB	*msg;			/* Message catalog DB. */
 	MSGH	 msgq;			/* User message list. */
@@ -97,10 +107,6 @@ struct _gs {
 	size_t	 i_nelem;		/* Number of array elements. */
 	size_t	 i_cnt;			/* Count of events. */
 	size_t	 i_next;		/* Offset of next event. */
-
-#ifdef TCL_INTERP
-	void	*interp;		/* Tcl_Interp *: Tcl interpreter. */
-#endif
 
 	CB	*dcbp;			/* Default cut buffer pointer. */
 	CB	 dcb_store;		/* Default cut buffer storage. */
@@ -137,9 +143,10 @@ struct _gs {
 #define	G_SCRIPT	0x0010		/* Scripting windows running. */
 #define	G_SETMODE	0x0020		/* Tty mode changed. */
 #define	G_SNAPSHOT	0x0040		/* Always snapshot files. */
-#define	G_STDIN_TTY	0x0080		/* Standard input is a tty. */
-#define	G_TMP_INUSE	0x0100		/* Temporary buffer in use. */
-	u_int16_t flags;
+#define	G_SRESTART	0x0080		/* Screen restarted. */
+#define	G_STDIN_TTY	0x0100		/* Standard input is a tty. */
+#define	G_TMP_INUSE	0x0200		/* Temporary buffer in use. */
+	u_int32_t flags;
 
 	/* Screen interface functions. */
 					/* Add a string to the screen. */
