@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 8.17 1993/11/18 08:17:02 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:17:02 $
+ *	$Id: exf.h,v 8.18 1993/12/02 10:28:35 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:28:35 $
  */
 					/* Undo direction. */
 enum udirection { UBACKWARD, UFORWARD };
@@ -75,7 +75,7 @@ struct _exf {
 }
 
 /* FREF routines. */
-FREF	*file_add __P((SCR *, FREF *, char *, int));
+FREF	*file_add __P((SCR *, FREF *, CHAR_T *, int));
 FREF	*file_first __P((SCR *, int));
 FREF	*file_next __P((SCR *, int));
 
