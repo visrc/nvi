@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_refresh.c,v 10.33 1996/05/04 18:50:52 bostic Exp $ (Berkeley) $Date: 1996/05/04 18:50:52 $";
+static const char sccsid[] = "$Id: vs_refresh.c,v 10.34 1996/05/07 20:37:05 bostic Exp $ (Berkeley) $Date: 1996/05/07 20:37:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -139,9 +139,6 @@ vs_paint(sp, flags)
 	SCR *sp;
 	u_int flags;
 {
-char buf[100];
-#define	RETURN(v) {len = snprintf(buf, sizeof(buf), "%d\n", __LINE__); write(2, buf, len); sleep (5);return (1);}
-
 	GS *gp;
 	SMAP *smp, tmp;
 	VI_PRIVATE *vip;
@@ -174,14 +171,14 @@ char buf[100];
 		/* Toss vs_line() cached information. */
 		if (F_ISSET(sp, SC_SCR_TOP)) {
 			if (vs_sm_fill(sp, LNO, P_TOP))
-				RETURN (1);
+				return (1);
 		}
 		else if (F_ISSET(sp, SC_SCR_CENTER)) {
 			if (vs_sm_fill(sp, LNO, P_MIDDLE))
-				RETURN (1);
+				return (1);
 		} else
 			if (vs_sm_fill(sp, OOBLNO, P_TOP))
-				RETURN (1);
+				return (1);
 		F_SET(sp, SC_SCR_REDRAW);
 	}
 
@@ -231,7 +228,7 @@ char buf[100];
 				     --lcnt, ++sp->t_rows) {
 					++TMAP;
 					if (vs_sm_1down(sp))
-						RETURN (1);
+						return (1);
 				}
 			else
 				goto small_fill;
@@ -241,10 +238,10 @@ char buf[100];
 				for (; lcnt && sp->t_rows != sp->t_maxrows;
 				     --lcnt, ++sp->t_rows) {
 					if (vs_sm_next(sp, TMAP, TMAP + 1))
-						RETURN (1);
+						return (1);
 					++TMAP;
 					if (vs_line(sp, TMAP, NULL, NULL))
-						RETURN (1);
+						return (1);
 				}
 			else {
 small_fill:			(void)gp->scr_move(sp, LASTLINE(sp), 0);
@@ -255,7 +252,7 @@ small_fill:			(void)gp->scr_move(sp, LASTLINE(sp), 0);
 					(void)gp->scr_clrtoeol(sp);
 				}
 				if (vs_sm_fill(sp, LNO, P_FILL))
-					RETURN (1);
+					return (1);
 				F_SET(sp, SC_SCR_REDRAW);
 				goto adjust;
 			}
@@ -281,7 +278,7 @@ small_fill:			(void)gp->scr_move(sp, LASTLINE(sp), 0);
 		if (lcnt < HALFTEXT(sp)) {
 			while (lcnt--)
 				if (vs_sm_1up(sp))
-					RETURN (1);
+					return (1);
 			goto adjust;
 		}
 		goto bottom;
@@ -308,7 +305,7 @@ small_fill:			(void)gp->scr_move(sp, LASTLINE(sp), 0);
 		if (db_exist(sp, HMAP->lno)) {
 			while (lcnt--)
 				if (vs_sm_1down(sp))
-					RETURN (1);
+					return (1);
 			goto adjust;
 		}
 
@@ -317,14 +314,14 @@ small_fill:			(void)gp->scr_move(sp, LASTLINE(sp), 0);
 		 * put the last line of the file on the bottom of the screen.
 		 */
 bottom:		if (db_last(sp, &lastline))
-			RETURN (1);
+			return (1);
 		tmp.lno = LNO;
 		tmp.coff = HMAP->coff;
 		tmp.soff = 1;
 		lcnt = vs_sm_nlines(sp, &tmp, lastline, sp->t_rows);
 		if (lcnt < HALFTEXT(sp)) {
 			if (vs_sm_fill(sp, lastline, P_BOTTOM))
-				RETURN (1);
+				return (1);
 			F_SET(sp, SC_SCR_REDRAW);
 			goto adjust;
 		}
@@ -343,13 +340,13 @@ bottom:		if (db_last(sp, &lastline))
 	lcnt = vs_sm_nlines(sp, &tmp, LNO, HALFTEXT(sp));
 	if (lcnt < HALFTEXT(sp)) {
 		if (vs_sm_fill(sp, 1, P_TOP))
-			RETURN (1);
+			return (1);
 	} else
 middle:		if (vs_sm_fill(sp, LNO, P_MIDDLE))
-			RETURN (1);
+			return (1);
 	if (0) {
 top:		if (vs_sm_fill(sp, LNO, P_TOP))
-			RETURN (1);
+			return (1);
 	}
 	F_SET(sp, SC_SCR_REDRAW);
 
@@ -379,7 +376,7 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 			} else
 				while (cnt < HMAP->soff)
 					if (vs_sm_1down(sp))
-						RETURN (1);
+						return (1);
 		if (LNO == TMAP->lno && cnt > TMAP->soff)
 			if ((cnt - TMAP->soff) > HALFTEXT(sp)) {
 				TMAP->soff = cnt;
@@ -388,7 +385,7 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 			} else
 				while (cnt > TMAP->soff)
 					if (vs_sm_1up(sp))
-						RETURN (1);
+						return (1);
 	}
 
 	/*
@@ -440,7 +437,7 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 	if (db_eget(sp, LNO, &p, &len, &isempty)) {
 		if (isempty)
 			goto slow;
-		RETURN (1);
+		return (1);
 	}
 
 #ifdef DEBUG
@@ -448,7 +445,7 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 	if (CNO >= len && len != 0) {
 		msgq(sp, M_ERR, "Error: %s/%d: cno (%u) >= len (%u)",
 		     tail(__FILE__), __LINE__, CNO, len);
-		RETURN (1);
+		return (1);
 	}
 #endif
 	/*
@@ -603,7 +600,7 @@ slow:	for (smp = HMAP; smp->lno != LNO; ++smp);
 	for (y = -1,
 	    vip->sc_smap = NULL; smp <= TMAP && smp->lno == LNO; ++smp) {
 		if (vs_line(sp, smp, &y, &SCNO))
-			RETURN (1);
+			return (1);
 		if (y != -1) {
 			vip->sc_smap = smp;
 			break;
@@ -623,7 +620,7 @@ paint:	for (smp = HMAP; smp <= TMAP; ++smp)
 		SMAP_FLUSH(smp);
 	for (y = -1, vip->sc_smap = NULL, smp = HMAP; smp <= TMAP; ++smp) {
 		if (vs_line(sp, smp, &y, &SCNO))
-			RETURN (1);
+			return (1);
 		if (y != -1 && vip->sc_smap == NULL)
 			vip->sc_smap = smp;
 	}
@@ -664,7 +661,7 @@ done_cursor:
 	 */
 number:	if (O_ISSET(sp, O_NUMBER) &&
 	    F_ISSET(vip, VIP_N_RENUMBER) && !didpaint && vs_number(sp))
-		RETURN (1);
+		return (1);
 
 	/*
 	 * 10: Update the mode line, position the cursor, and flush changes.
