@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 5.14 1992/10/29 14:43:51 bostic Exp $ (Berkeley) $Date: 1992/10/29 14:43:51 $";
+static char sccsid[] = "$Id: v_ex.c,v 5.15 1992/11/01 14:19:33 bostic Exp $ (Berkeley) $Date: 1992/11/01 14:19:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -48,7 +48,7 @@ v_ex(vp, fm, tm, rp)
 		 * the first.  We may have to overwrite the command later;
 		 * get the length for later.
 		 */
-		if (gb(ISSET(O_PROMPT) ? ':' : 0, &p, &len, flags) ||
+		if (v_gb(ISSET(O_PROMPT) ? ':' : 0, &p, &len, flags) ||
 		    p == NULL)
 			break;
 
@@ -145,7 +145,6 @@ v_exwrite(cookie, line, llen)
 		
 		/* First line is a special case. */
 		if (extotalcount != 0) {
-TRACE("extotalcount %d\n", extotalcount);
 			/*
 			 * Scroll the screen.  Instead of scrolling the entire
 			 * screen, delete the line above the first line output
@@ -154,7 +153,7 @@ TRACE("extotalcount %d\n", extotalcount);
 			if (extotalcount >= SCREENSIZE(ep)) {
 				MOVE(0, 0);
 			} else
-				MOVE(SCREENSIZE(ep) - (extotalcount - 1), 0);
+				MOVE(SCREENSIZE(ep) - extotalcount, 0);
 			deleteln();
 
 			/* If just displayed a full screen, wait. */
