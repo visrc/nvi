@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 5.10 1993/05/06 01:03:55 bostic Exp $ (Berkeley) $Date: 1993/05/06 01:03:55 $";
+static char sccsid[] = "$Id: v_txt.c,v 5.11 1993/05/07 12:48:55 bostic Exp $ (Berkeley) $Date: 1993/05/07 12:48:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -303,8 +303,10 @@ next_ch:	if (replay)
 			tp->ai = tp->insert = tp->overwrite = 0;
 
 			/* New lines are always TXT_AUTOINDENT. */
-			if (!LF_ISSET(TXT_AUTOINDENT))
+			if (!LF_ISSET(TXT_AUTOINDENT)) {
 				ai_line = tp->lno;
+				LF_SET(TXT_AUTOINDENT);
+			}
 
 			/* 0^D stops the ai line from changing. */
 			if (carat_st == C_NOCHANGE)
