@@ -1,4 +1,4 @@
-/* $Id: acconfig.h,v 8.6 1996/02/25 18:23:18 bostic Exp $ (Berkeley) $Date: 1996/02/25 18:23:18 $ */
+/* $Id: acconfig.h,v 8.7 1996/02/28 19:19:38 bostic Exp $ (Berkeley) $Date: 1996/02/28 19:19:38 $ */
 
 /* Define to `int' if <sys/types.h> doesn't define.  */
 #undef ssize_t
@@ -48,14 +48,8 @@
 /* Define if you have the Berkeley style revoke(2) system call. */
 #undef HAVE_REVOKE
 
-/* Define if you have a <sys/select.h> include file. */
-#undef HAVE_SYS_SELECT_H
-
 /* Define if you have the System V style pty calls. */
 #undef HAVE_SYS5_PTY
-
-/* Define if you have the libraries to support a Tcl interpreter. */
-#undef HAVE_TCL_INTERP
 
 /* Define if your sprintf returns a pointer, not a length. */
 #undef SPRINTF_RET_CHARPNT
