@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 9.9 1995/02/02 15:09:23 bostic Exp $ (Berkeley) $Date: 1995/02/02 15:09:23 $";
+static char sccsid[] = "$Id: ex_global.c,v 9.10 1995/02/02 15:14:10 bostic Exp $ (Berkeley) $Date: 1995/02/02 15:14:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -78,6 +78,13 @@ global(sp, cmdp, cmd)
 	char *cb, *ptrn, *p, *t;
 
 	NEEDFILE(sp, cmdp->cmd);
+
+	if (F_ISSET(sp, S_GLOBAL)) {
+		msgq(sp, M_ERR,
+	"102|The %s command can't be used as part of a global command",
+		    cmdp->cmd->name);
+		return (1);
+	}
 
 	/*
 	 * Skip leading white space.  Historic vi allowed any non-
