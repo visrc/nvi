@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_file.c,v 10.9 1996/03/06 19:52:18 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:52:18 $";
+static const char sccsid[] = "$Id: ex_file.c,v 10.10 1996/04/15 20:31:35 bostic Exp $ (Berkeley) $Date: 1996/04/15 20:31:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -62,10 +62,9 @@ ex_file(sp, cmdp)
 
 		/*
 		 * The file has a real name, it's no longer a temporary,
-		 * clear the temporary file flags.  The read-only flag
-		 * follows the file name, clear it as well.
+		 * clear the temporary file flags.
 		 */
-		F_CLR(frp, FR_RDONLY | FR_TMPEXIT | FR_TMPFILE);
+		F_CLR(frp, FR_TMPEXIT | FR_TMPFILE);
 
 		/* Have to force a write if the file exists, next time. */
 		F_SET(frp, FR_NAMECHANGE);

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_write.c,v 10.20 1996/03/29 09:47:27 bostic Exp $ (Berkeley) $Date: 1996/03/29 09:47:27 $";
+static const char sccsid[] = "$Id: ex_write.c,v 10.21 1996/04/15 20:31:36 bostic Exp $ (Berkeley) $Date: 1996/04/15 20:31:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -233,15 +233,13 @@ writeit:	if (F_ISSET(sp->frp, FR_TMPFILE) &&
 			/*
 			 * The file has a real name, it's no longer a
 			 * temporary, clear the temporary file flags.
-			 * The read-only flag follows the file name,
-			 * clear it as well.
 			 *
 			 * !!!
 			 * If we're writing the whole file, FR_NAMECHANGE
 			 * will be cleared by the write routine -- this is
 			 * historic practice.
 			 */
-			F_CLR(sp->frp, FR_RDONLY | FR_TMPEXIT | FR_TMPFILE);
+			F_CLR(sp->frp, FR_TMPEXIT | FR_TMPFILE);
 			F_SET(sp->frp, FR_NAMECHANGE | FR_EXNAMED);
 
 			/* Notify the screen. */
