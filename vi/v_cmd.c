@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 5.37 1992/12/20 21:11:37 bostic Exp $ (Berkeley) $Date: 1992/12/20 21:11:37 $";
+static char sccsid[] = "$Id: v_cmd.c,v 5.38 1993/02/11 15:11:57 bostic Exp $ (Berkeley) $Date: 1993/02/11 15:11:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -57,7 +57,7 @@ VIKEYS vikeys[MAXVIKEY + 1] = {
 	v_redraw,	0,
 	    "redraw screen: ^L",
 /* 015  ^M */
-	v_nbdown,	V_CNT|V_LMODE|V_MOVE|V_RCM,
+	v_down,		V_CNT|V_LMODE|V_MOVE|V_RCM_SETFNB,
 	    "move down by lines (first non-blank): [count]^M",
 /* 016  ^N */
 	v_down,		V_CNT|V_LMODE|V_MOVE|V_RCM,
@@ -137,7 +137,7 @@ VIKEYS vikeys[MAXVIKEY + 1] = {
 	v_errlist,	0,
 	    "step through compile errors: *",
 /* 053   + */
-	v_nbdown,	V_CNT|V_LMODE|V_MOVE|V_RCM_SETFNB,
+	v_down,		V_CNT|V_LMODE|V_MOVE|V_RCM_SETFNB,
 	    "move down by lines (first non-blank): [count]+",
 /* 054   , */
 	v_chrrepeat,	V_CNT|V_MOVE|V_RCM_SET,
