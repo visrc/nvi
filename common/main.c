@@ -16,7 +16,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 10.4 1995/06/09 13:39:28 bostic Exp $ (Berkeley) $Date: 1995/06/09 13:39:28 $";
+static char sccsid[] = "$Id: main.c,v 10.5 1995/06/09 17:33:35 bostic Exp $ (Berkeley) $Date: 1995/06/09 17:33:35 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -332,15 +332,19 @@ v_init(argc, argv, rows, cols, gpp)
 
 	/*
 	 * If the ex startup commands and or/the tag option haven't already
-	 * created a file, create one.  If no files as arguments, use a
-	 * temporary file.
+	 * created a file, create one.  If no command-line files were given,
+	 * use a temporary file.
 	 */
 	if (sp->frp == NULL) {
-		if ((frp = file_add(sp,
-		    sp->argv == NULL ? NULL : (CHAR_T *)(sp->argv[0]))) == NULL)
-			goto err;
-		if (F_ISSET(sp, S_ARGRECOVER))
-			F_SET(frp, FR_RECOVER);
+		if (sp->argv == NULL)
+			if ((frp = file_add(sp, NULL)) == NULL)
+				goto err;
+		else  {
+			if ((frp = file_add(sp, (CHAR_T *)sp->argv[0])) == NULL)
+				goto err;
+			if (F_ISSET(sp, S_ARGRECOVER))
+				F_SET(frp, FR_RECOVER);
+		}
 		if (file_init(sp, frp, NULL, 0))
 			goto err;
 	}
