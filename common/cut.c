@@ -597,11 +597,6 @@ MARK paste(at, after, retend)
 	return at;
 }
 
-
-
-
-#ifndef NO_AT
-
 /* This function copies characters from a cut buffer into a string.
  * It returns the number of characters in the cut buffer.  If the cut
  * buffer is too large to fit in the string (i.e. if cb2str() returns
@@ -671,4 +666,3 @@ int cb2str(name, buf, size)
 	/* return the length */
 	return cb->end - cb->start;
 }
-#endif
