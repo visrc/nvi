@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_main.c,v 8.14 1996/12/03 12:08:48 bostic Exp $ (Berkeley) $Date: 1996/12/03 12:08:48 $";
+static const char sccsid[] = "$Id: m_main.c,v 8.15 1996/12/03 13:17:37 bostic Exp $ (Berkeley) $Date: 1996/12/03 13:17:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -179,6 +179,8 @@ void	select_extend();
 void	select_paste();
 void	key_press();
 void	insert_string();
+void	beep();
+void	find();
 
 static XtActionsRec	area_actions[] = {
     { "select_start",	select_start	},
@@ -186,6 +188,8 @@ static XtActionsRec	area_actions[] = {
     { "select_paste",	select_paste	},
     { "key_press",	key_press	},
     { "insert_string",	insert_string	},
+    { "beep",		beep		},
+    { "find",		find		},
 };
 
 char	areaTrans[] =
@@ -194,12 +198,26 @@ char	areaTrans[] =
      <Btn1Motion>:	select_extend()		\n\
      <Btn3Motion>:	select_extend()		\n\
      <Btn2Down>:	select_paste()		\n\
-     <Key>Up:		insert_string(\033[A)	\n\
-     <Key>Down:		insert_string(\033[B)	\n\
-     <Key>Right:	insert_string(\033[C)	\n\
-     <Key>Left:		insert_string(\033[D)	\n\
-     <Key>Prior:	insert_string(\002)	\n\
+     <Key>End:		insert_string(G)	\n\
+     <Key>Find:		find()			\n\
+     <Key>Home:		insert_string(H)	\n\
      <Key>Next:		insert_string(\006)	\n\
+     <Key>Prior:	insert_string(\002)	\n\
+     <Key>osfBackSpace:	insert_string(\010)	\n\
+     <Key>osfBeginLine:	insert_string(0)	\n\
+     <Key>osfCopy:	beep()			\n\
+     <Key>osfCut:	beep()			\n\
+     <Key>osfDelete:	insert_string(x)	\n\
+     <Key>osfDown:	insert_string(\033[B)	\n\
+     <Key>osfEndLine:	insert_string($)	\n\
+     <Key>osfInsert:	insert_string(i)	\n\
+     <Key>osfLeft:	insert_string(\033[D)	\n\
+     <Key>osfPageDown:	insert_string(\006)	\n\
+     <Key>osfPageUp:	insert_string(\002)	\n\
+     <Key>osfPaste:	insert_string(p)	\n\
+     <Key>osfRight:	insert_string(\033[C)	\n\
+     <Key>osfUndo:	insert_string(u)	\n\
+     <Key>osfUp:	insert_string(\033[A)	\n\
      <Key>:		key_press()";
 
 String	fallback_rsrcs[] = {
@@ -208,21 +226,6 @@ String	fallback_rsrcs[] = {
     "*pointerShape:		xterm",
     "*busyShape:		watch",
     "*iconName:			vi",
-
-    /* When *NOT* running MWM, Motif needs to be told how the
-     * virtual keys map to the physical keys.  There *ought* to
-     * system defaults, but...
-     *
-     * In any event, it shouldn't be bad to define these...
-     */
-
-    "*defaultVirtualBindings:	\
-    	osfPageUp	<Key>Prior	\n\
-    	osfPageDown	<Key>Next	\n\
-    	osfUp		<Key>Up		\n\
-    	osfLeft		<Key>Left	\n\
-    	osfRight	<Key>Right	\n\
-    	osfDown		<Key>Down",
 
     /* coloring for the icons.  we may need to change this */
     "*iconForeground:	XtDefaultForeground",
@@ -649,6 +652,30 @@ Boolean		*cont;
 }
 
 
+/* unimplemented keystroke or command */
+#if defined(__STDC__)
+void	beep( Widget w )
+#else
+void	beep( w )
+Widget	w;
+#endif
+{
+    XBell(XtDisplay(w),0);
+}
+
+
+/* give me a search dialog */
+#if defined(__STDC__)
+void	find( Widget w )
+#else
+void	find( w )
+Widget	w;
+#endif
+{
+    xip_show_search_dialog( w, "Find" );
+}
+
+
 /* mouse or keyboard input. */
 #if defined(__STDC__)
 void		insert_string( Widget widget, 
@@ -788,6 +815,8 @@ int		rows, cols;
 	    XmNwidth,		new_screen->ch_width * new_screen->cols,
 	    XmNtranslations,	area_trans,
 	    XmNuserData,	new_screen,
+	    XmNnavigationType,	XmNONE,
+	    XmNtraversalOn,	False,
 	    NULL
 	    );
 
