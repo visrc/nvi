@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_ruler.c,v 8.1 1996/12/14 09:04:17 bostic Exp $ (Berkeley) $Date: 1996/12/14 09:04:17 $";
+static const char sccsid[] = "$Id: m_ruler.c,v 8.2 1996/12/16 17:24:03 bostic Exp $ (Berkeley) $Date: 1996/12/16 17:24:03 $";
 #endif /* not lint */
 
 /* This module implements a dialog for the text ruler
@@ -26,8 +26,10 @@ static const char sccsid[] = "$Id: m_ruler.c,v 8.1 1996/12/14 09:04:17 bostic Ex
  * void	__vi_set_text_ruler( int row, int col )
  *	Changes the displayed position
  */
-
-/* context */
+
+#include <sys/types.h>
+#include <sys/queue.h>
+
 #include <X11/X.h>
 #include <X11/Intrinsic.h>
 #include <X11/Shell.h>
@@ -35,12 +37,13 @@ static const char sccsid[] = "$Id: m_ruler.c,v 8.1 1996/12/14 09:04:17 bostic Ex
 #include <Xm/RowColumn.h>
 #include <Xm/PushBG.h>
 
-#if ! defined(SelfTest)
+#include <bitstring.h>
 #include <stdio.h>
+
+#include "../common/common.h"
 #include "m_util.h"
 #include "m_motif.h"
 #include "vi_mextern.h"
-#endif
 
 
 /* globals */

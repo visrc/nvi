@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_main.c,v 8.28 1996/12/14 09:04:30 bostic Exp $ (Berkeley) $Date: 1996/12/14 09:04:30 $";
+static const char sccsid[] = "$Id: m_main.c,v 8.29 1996/12/16 17:24:17 bostic Exp $ (Berkeley) $Date: 1996/12/16 17:24:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -20,10 +20,13 @@ static const char sccsid[] = "$Id: m_main.c,v 8.28 1996/12/14 09:04:30 bostic Ex
 #include <X11/StringDefs.h>
 #include <Xm/MainW.h>
 
+#include <bitstring.h>
 #include <signal.h>
-#include <string.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
+#include "../common/common.h"
 #include "../motif_l/vi_mextern.h"
 #include "extern.h"
 
