@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 9.8 1995/01/30 11:47:16 bostic Exp $ (Berkeley) $Date: 1995/01/30 11:47:16 $";
+static char sccsid[] = "$Id: vs_split.c,v 9.9 1995/01/30 13:20:29 bostic Exp $ (Berkeley) $Date: 1995/01/30 13:20:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -95,23 +95,23 @@ svi_split(sp, argv, argc)
 		/* Child. */
 		tsp->rows = sp->rows - half;
 		tsp->woff = sp->woff + half;
-		tsp->t_maxrows = tsp->rows - 1;
+		tsp->t_maxrows = IS_ONELINE(tsp) ? 1 : tsp->rows - 1;
 
 		/* Parent. */
 		sp->rows = half;
-		sp->t_maxrows = sp->rows - 1;
+		sp->t_maxrows = IS_ONELINE(sp) ? 1 : sp->rows - 1;
 
 		splitup = 0;
 	} else {				/* Parent is bottom half. */
 		/* Child. */
 		tsp->rows = sp->rows - half;
 		tsp->woff = sp->woff;
-		tsp->t_maxrows = tsp->rows - 1;
+		tsp->t_maxrows = IS_ONELINE(tsp) ? 1 : tsp->rows - 1;
 
 		/* Parent. */
 		sp->rows = half;
 		sp->woff += tsp->rows;
-		sp->t_maxrows = sp->rows - 1;
+		sp->t_maxrows = IS_ONELINE(sp) ? 1 : sp->rows - 1;
 
 		/* Shift the parent's map down. */
 		memmove(_HMAP(sp),
@@ -159,7 +159,7 @@ svi_split(sp, argv, argc)
 				(void)SVP(tsp)->scr_clrtoeol(tsp);
 			}
 	} else {
-		sp->t_minrows = sp->t_rows = sp->rows - 1;
+		sp->t_minrows = sp->t_rows = IS_ONELINE(sp) ? 1 : sp->rows - 1;
 
 		/*
 		 * The new screen may be a small screen, even though the
@@ -170,7 +170,8 @@ svi_split(sp, argv, argc)
 		 */
 		tsp->t_minrows = tsp->t_rows = O_VAL(sp, O_WINDOW);
 		if (tsp->t_rows > tsp->rows - 1)
-			tsp->t_minrows = tsp->t_rows = tsp->rows - 1;
+			tsp->t_minrows = tsp->t_rows =
+			    IS_ONELINE(tsp) ? 1 : tsp->rows - 1;
 		else
 			for (cnt = tsp->t_rows; ++cnt <= tsp->t_maxrows;) {
 				(void)SVP(tsp)->scr_move(tsp,
@@ -180,12 +181,16 @@ svi_split(sp, argv, argc)
 	}
 
 	/* Adjust the ends of both maps. */
-	_TMAP(sp) = _HMAP(sp) + (sp->t_rows - 1);
-	_TMAP(tsp) = _HMAP(tsp) + (tsp->t_rows - 1);
+	_TMAP(sp) = IS_ONELINE(sp) ?
+	    _HMAP(sp) : _HMAP(sp) + (sp->t_rows - 1);
+	_TMAP(tsp) = IS_ONELINE(tsp) ?
+	    _HMAP(tsp) : _HMAP(tsp) + (tsp->t_rows - 1);
 
 	/* Reset the length of the default scroll. */
-	sp->defscroll = sp->t_maxrows / 2;
-	tsp->defscroll = tsp->t_maxrows / 2;
+	if ((sp->defscroll = sp->t_maxrows / 2) == 0)
+		sp->defscroll = 1;
+	if ((tsp->defscroll = tsp->t_maxrows / 2) == 0)
+		tsp->defscroll = 1;
 
 	/*
 	 * If files specified, build the file list, else, link to the
@@ -362,8 +367,10 @@ svi_join(csp, nsp)
 		}
 		TMAP = HMAP + (sp->t_rows - 1);
 	} else {
-		sp->t_maxrows += csp->rows;
-		sp->t_rows = sp->t_minrows = sp->t_maxrows;
+		if (!IS_ONELINE(csp)) {
+			sp->t_maxrows += csp->rows;
+			sp->t_rows = sp->t_minrows = sp->t_maxrows;
+		}
 		TMAP = HMAP + (sp->t_rows - 1);
 		if (svi_sm_fill(sp, sp->lno, P_FILL))
 			return (1);
