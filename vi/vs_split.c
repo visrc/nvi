@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 8.42 1994/07/02 14:52:08 bostic Exp $ (Berkeley) $Date: 1994/07/02 14:52:08 $";
+static char sccsid[] = "$Id: vs_split.c,v 8.43 1994/07/19 12:55:40 bostic Exp $ (Berkeley) $Date: 1994/07/19 12:55:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -418,10 +418,18 @@ svi_swap(csp, nsp, name)
 	}
 	*nsp = sp;
 
-	/* Save the old screen's cursor information. */
-	csp->frp->lno = csp->lno;
-	csp->frp->cno = csp->cno;
-	F_SET(csp->frp, FR_CURSORSET);
+	/*
+	 * Save the old screen's cursor information.
+	 *
+	 * XXX
+	 * If called after file_end(), if the underlying file was a tmp
+	 * file it may have gone away.
+	 */
+	if (csp->frp != NULL) {
+		csp->frp->lno = csp->lno;
+		csp->frp->cno = csp->cno;
+		F_SET(csp->frp, FR_CURSORSET);
+	}
 
 	/* Switch screens. */
 	csp->nextdisp = sp;
