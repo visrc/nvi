@@ -13,7 +13,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_tag.c,v 10.31 1996/05/15 17:41:13 bostic Exp $ (Berkeley) $Date: 1996/05/15 17:41:13 $";
+static const char sccsid[] = "$Id: ex_tag.c,v 10.32 1996/05/16 18:40:20 bostic Exp $ (Berkeley) $Date: 1996/05/16 18:40:20 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -44,11 +44,11 @@ static const char sccsid[] = "$Id: ex_tag.c,v 10.31 1996/05/15 17:41:13 bostic E
 
 static char	*binary_search __P((char *, char *, char *));
 static int	 compare __P((char *, char *, char *));
-static int	 ctag_get __P((SCR *, char *,
-		    char **, size_t *, char **, size_t *, char **, size_t *));
+static void	 ctag_file __P((SCR *, TAGF *, char *, char **, size_t *));
 static int	 ctag_search __P((SCR *, char *, char *));
+static int	 ctag_sfile __P((SCR *, TAGF *, TAGQ *, char *));
+static TAGQ	*ctag_slist __P((SCR *, char *));
 static char	*linear_search __P((char *, char *, char *));
-static int	 search __P((SCR *, TAGF *, char *, char **));
 static int	 tag_copy __P((SCR *, TAG *, TAG **));
 static int	 tag_pop __P((SCR *, TAGQ *, int));
 static int	 tagf_copy __P((SCR *, TAGF *, TAGF **));
@@ -66,38 +66,21 @@ ex_tag_first(sp, tagarg)
 	SCR *sp;
 	char *tagarg;
 {
-	EX_PRIVATE *exp;
-	FREF *frp;
-	long tl;
-	size_t notused;
-	char *tag, *name, *search;
+	ARGS *ap[2], a;
+	EXCMD cmd;
 
-	exp = EXP(sp);
+	/* Build an argument for the ex :tag command. */
+	ex_cinit(&cmd, C_TAG, 0, OOBLNO, OOBLNO, 0, ap);
+	ex_cadd(&cmd, &a, tagarg, strlen(tagarg));
 
-	/* Taglength may limit the number of characters. */
-	if ((tl = O_VAL(sp, O_TAGLENGTH)) != 0 && strlen(tagarg) > tl)
-		tagarg[tl] = '\0';
-
-	/* Get the tag information. */
-	if (ctag_get(sp,
-	    tagarg, &tag, &notused, &name, &notused, &search, &notused))
+	/*
+	 * XXX
+	 * Historic vi went ahead and created a temporary file when it failed
+	 * to find the tag.  We match historic practice, but don't distinguish
+	 * between real error and failure to find the tag.
+	 */
+	if (ex_tag_push(sp, &cmd))
 		return (0);
-
-	/* Create the file entry. */
-	if ((frp = file_add(sp, name)) == NULL)
-		return (1);
-	if (file_init(sp, frp, NULL, 0))
-		return (1);
-
-	/* Search the file for the tag. */
-	(void)ctag_search(sp, search, tag);
-	free(tag);
-
-	/* Might as well make this the default tag. */
-	if ((exp->tag_last = strdup(tagarg)) == NULL) {
-		msgq(sp, M_SYSERR, NULL);
-		return (1);
-	}
 
 	/* Display tags in the center of the screen. */
 	F_CLR(sp, SC_SCR_TOP);
@@ -121,23 +104,28 @@ ex_tag_push(sp, cmdp)
 {
 	EX_PRIVATE *exp;
 	FREF *frp;
-	TAG *rtp, *tp;
+	TAG *rtp;
 	TAGQ *rtqp, *tqp;
 	recno_t lno;
-	size_t cno, nlen, slen, tlen;
+	size_t cno;
 	long tl;
 	int force, istmp;
-	char *name, *search, *tag;
 
 	exp = EXP(sp);
 	switch (cmdp->argc) {
 	case 1:
 		if (exp->tag_last != NULL)
 			free(exp->tag_last);
+
 		if ((exp->tag_last = strdup(cmdp->argv[0]->bp)) == NULL) {
 			msgq(sp, M_SYSERR, NULL);
 			return (1);
 		}
+
+		/* Taglength may limit the number of characters. */
+		if ((tl =
+		    O_VAL(sp, O_TAGLENGTH)) != 0 && strlen(exp->tag_last) > tl)
+			exp->tag_last[tl] = '\0';
 		break;
 	case 0:
 		if (exp->tag_last == NULL) {
@@ -149,20 +137,16 @@ ex_tag_push(sp, cmdp)
 		abort();
 	}
 
-	/* Taglength may limit the number of characters. */
-	if ((tl = O_VAL(sp, O_TAGLENGTH)) != 0 && strlen(exp->tag_last) > tl)
-		exp->tag_last[tl] = '\0';
-
 	/* Get the tag information. */
-	if (ctag_get(sp, exp->tag_last,
-	    &tag, &tlen, &name, &nlen, &search, &slen))
+	if ((tqp = ctag_slist(sp, exp->tag_last)) == NULL)
 		return (1);
 
-	/* Flags so we know what to free. */
-	rtp = tp = NULL;
-	rtqp = tqp = NULL;
-
-	/* Allocate all necessary memory before swapping screens. */
+	/*
+	 * Allocate all necessary memory before swapping screens.  Initialize
+	 * flags so we know what to free.
+	 */
+	rtp = NULL;
+	rtqp = NULL;
 	if (exp->tq.cqh_first == (void *)&exp->tq) {
 		/* Initialize the `local context' tag queue structure. */
 		CALLOC_GOTO(sp, rtqp, TAGQ *, 1, sizeof(TAGQ));
@@ -174,42 +158,28 @@ ex_tag_push(sp, cmdp)
 		rtqp->current = rtp;
 	}
 
-	/* Initialize the tag queue structure. */
-	CALLOC_GOTO(sp, tqp, TAGQ *, 1, sizeof(TAGQ) + tlen + 1);
-	CIRCLEQ_INIT(&tqp->tagq);
-	tqp->tag = tqp->buf;
-	memcpy(tqp->tag, tag, (tqp->tlen = tlen) + 1);
-
-	/* Initialize and link in the tag structure. */
-	CALLOC_GOTO(sp, tp, TAG *, 1, sizeof(TAG) + nlen + 1 + slen + 1);
-	CIRCLEQ_INSERT_HEAD(&tqp->tagq, tp, q);
-	tp->fname = tp->buf;
-	memcpy(tp->fname, name, (tp->fnlen = nlen) + 1);
-	tp->search = tp->fname + nlen + 1;
-	memcpy(tp->search, search, (tp->slen = slen) + 1);
-
 	/*
 	 * Stick the current context information in a convenient place, we're
-	 * about to lose it.
+	 * about to lose it.  Note, if we're called on editor startup, there
+	 * will be no FREF structure.
 	 */
 	frp = sp->frp;
 	lno = sp->lno;
 	cno = sp->cno;
-	istmp = F_ISSET(sp->frp, FR_TMPFILE) && !F_ISSET(cmdp, E_NEWSCREEN);
-
-	tqp->current = tp;
+	istmp = frp == NULL ||
+	    F_ISSET(frp, FR_TMPFILE) && !F_ISSET(cmdp, E_NEWSCREEN);
 
 	/* Try to switch to the tag. */
 	force = FL_ISSET(cmdp->iflags, E_C_FORCE);
 	if (F_ISSET(cmdp, E_NEWSCREEN)) {
-		if (ex_tag_Nswitch(sp, tp, force))
+		if (ex_tag_Nswitch(sp, tqp->tagq.cqh_first, force))
 			goto err;
 
 		/* Everything else gets done in the new screen. */
 		sp = sp->nextdisp;
 		exp = EXP(sp);
 	} else
-		if (ex_tag_nswitch(sp, tp, force))
+		if (ex_tag_nswitch(sp, tqp->tagq.cqh_first, force))
 			goto err;
 
 	/*
@@ -225,7 +195,7 @@ ex_tag_push(sp, cmdp)
 	/* Link the new TAGQ structure into place. */
 	CIRCLEQ_INSERT_HEAD(&exp->tq, tqp, q);
 
-	(void)ctag_search(sp, search, tag);
+	(void)ctag_search(sp, tqp->current->search, tqp->tag);
 
 	/*
 	 * Move the current context from the temporary save area into the
@@ -245,20 +215,15 @@ ex_tag_push(sp, cmdp)
 		rtqp->current->lno = lno;
 		rtqp->current->cno = cno;
 	}
-
-	free(tag);
 	return (0);
 
 err:
 alloc_err:
-	if (tag != NULL)
-		free(tag);
 	if (rtqp != NULL)
 		free(rtqp);
-	if (tqp != NULL)
-		free(tqp);
-	if (tp != NULL)
-		free(tp);
+	if (rtp != NULL)
+		free(rtp);
+	tagq_free(sp, tqp);
 	return (1);
 }
 
@@ -602,7 +567,7 @@ ex_tag_display(sp)
 	TAGQ *tqp;
 	int cnt;
 	size_t len;
-	char *p;
+	char *p, *sep;
 
 	exp = EXP(sp);
 	if ((tqp = exp->tq.cqh_first) == (void *)&exp->tq) {
@@ -650,15 +615,16 @@ ex_tag_display(sp)
 				(void)ex_printf(sp,
 				    "   %*.*s", L_NAME, L_NAME, p);
 			if (tqp->current == tp)
-				ex_printf(sp, "*");
+				(void)ex_printf(sp, "*");
 
 			if (tp == tqp->tagq.cqh_first && tqp->tag != NULL &&
 			    (sp->cols - L_NAME) >= L_TAG + L_SPACE) {
 				len = strlen(tqp->tag);
 				if (len > sp->cols - (L_NAME + L_SPACE))
 					len = sp->cols - (L_NAME + L_SPACE);
-				(void)ex_printf(sp,
-				    "     %.*s", (int)len, tqp->tag);
+				(void)ex_printf(sp, "%s%.*s",
+				    tqp->current == tp ? "    " : "     ",
+				    (int)len, tqp->tag);
 			}
 			(void)ex_printf(sp, "\n");
 		}
@@ -998,40 +964,43 @@ notfound:			tag_msg(sp, TAG_SEARCH, tag);
 }
 
 /*
- * ctag_get --
- *	Get a tag from the tags files.
+ * ctag_slist --
+ *	Search the list of tags files for a tag, and return tag queue.
  */
-static int
-ctag_get(sp, tag, tagp, taglenp, filep, filelenp, searchp, searchlenp)
+static TAGQ *
+ctag_slist(sp, tag)
 	SCR *sp;
-	char *tag, **tagp, **filep, **searchp;
-	size_t *taglenp, *filelenp, *searchlenp;
+	char *tag;
 {
-	struct stat sb;
 	EX_PRIVATE *exp;
 	TAGF *tfp;
+	TAGQ *tqp;
 	size_t len;
-	int echk, nf1, nf2;
-	char *p, *t, pbuf[MAXPATHLEN];
+	int echk;
+
+	exp = EXP(sp);
+
+	/* Allocate and initialize the tag queue structure. */
+	len = strlen(tag);
+	CALLOC_GOTO(sp, tqp, TAGQ *, 1, sizeof(TAGQ) + len + 1);
+	CIRCLEQ_INIT(&tqp->tagq);
+	tqp->tag = tqp->buf;
+	memcpy(tqp->tag, tag, (tqp->tlen = len) + 1);
 
 	/*
 	 * Find the tag, only display missing file messages once, and
 	 * then only if we didn't find the tag.
 	 */
-	echk = 0;
-	exp = EXP(sp);
-	for (p = NULL, tfp = exp->tagfq.tqh_first;
-	    tfp != NULL && p == NULL; tfp = tfp->q.tqe_next)
-		if (search(sp, tfp, tag, &p)) {
-			F_SET(tfp, TAGF_ERR);
+	for (echk = 0,
+	    tfp = exp->tagfq.tqh_first; tfp != NULL; tfp = tfp->q.tqe_next)
+		if (ctag_sfile(sp, tfp, tqp, tag)) {
 			echk = 1;
-		} else {
+			F_SET(tfp, TAGF_ERR);
+		} else
 			F_CLR(tfp, TAGF_ERR | TAGF_ERR_WARN);
-			if (p != NULL)
-				break;
-		}
 
-	if (p == NULL) {
+	/* Check to see if we found anything. */
+	if (tqp->tagq.cqh_first == (void *)&tqp->tagq) {
 		msgq_str(sp, M_ERR, tag, "162|%s: tag not found");
 		if (echk)
 			for (tfp = exp->tagfq.tqh_first;
@@ -1042,89 +1011,33 @@ ctag_get(sp, tag, tagp, taglenp, filep, filelenp, searchp, searchlenp)
 					msgq_str(sp, M_SYSERR, tfp->name, "%s");
 					F_SET(tfp, TAGF_ERR_WARN);
 				}
-		return (1);
+		free(tqp);
+		return (NULL);
 	}
 
-	/*
-	 * Set the return pointers; tagp points to the tag, and, incidentally
-	 * the allocated string, filep points to the file name, and searchp
-	 * points to the search string.  All three are nul-terminated.
-	 */
-	for (*tagp = p; *p && !isblank(*p); ++p);
-	if (*p == '\0')
-		goto malformed;
-	*taglenp = p - *tagp;
-	for (*p++ = '\0'; isblank(*p); ++p);
-	for (*filep = p; *p && !isblank(*p); ++p);
-	if (*p == '\0')
-		goto malformed;
-	*filelenp = p - *filep;
-	for (*p++ = '\0'; isblank(*p); ++p);
-	*searchp = p;
-	if (*p == '\0') {
-malformed:	free(*tagp);
-		p = msg_print(sp, tag, &nf1);
-		t = msg_print(sp, tfp->name, &nf2);
-		msgq(sp, M_ERR, "163|%s: corrupted tag in %s", p, t);
-		if (nf1)
-			FREE_SPACE(sp, p, 0);
-		if (nf2)
-			FREE_SPACE(sp, t, 0);
-		return (1);
-	}
-	*searchlenp = strlen(p);
+	tqp->current = tqp->tagq.cqh_first;
+	return (tqp);
 
-	/*
-	 * !!!
-	 * If the tag file path is a relative path, see if it exists.  If it
-	 * doesn't, look relative to the tags file path.  It's okay for a tag
-	 * file to not exist, and, historically, vi simply displayed a "new"
-	 * file.  However, if the path exists relative to the tag file, it's
-	 * pretty clear what's happening, so we may as well do it right.
-	 */
-	if ((*filep)[0] != '/'
-	    && stat(*filep, &sb) && (p = strrchr(tfp->name, '/')) != NULL) {
-		*p = '\0';
-		len = snprintf(pbuf, sizeof(pbuf), "%s/%s", tfp->name, *filep);
-		*p = '/';
-		if (stat(pbuf, &sb) == 0) {
-			MALLOC(sp, p,
-			    char *, len + *searchlenp + *taglenp + 5);
-			if (p != NULL) {
-				memmove(p, *tagp, *taglenp);
-				free(*tagp);
-				*tagp = p;
-				*(p += *taglenp) = '\0';
-				memmove(++p, pbuf, len);
-				*filep = p;
-				*filelenp = len;
-				*(p += len) = '\0';
-				memmove(++p, *searchp, *searchlenp);
-				*searchp = p;
-				*(p += *searchlenp) = '\0';
-			}
-		}
-	}
-	return (0);
+alloc_err:
+	return (NULL);
 }
 
-#define	EQUAL		0
-#define	GREATER		1
-#define	LESS		(-1)
-
 /*
- * search --
- *	Search a file for a tag.
+ * ctag_sfile --
+ *	Search a tags file for a tag, adding any found to the tag queue.
  */
 static int
-search(sp, tfp, tname, tag)
+ctag_sfile(sp, tfp, tqp, tname)
 	SCR *sp;
 	TAGF *tfp;
-	char *tname, **tag;
+	TAGQ *tqp;
+	char *tname;
 {
 	struct stat sb;
-	int fd, len;
-	char *endp, *back, *front, *map, *p;
+	TAG *tp;
+	size_t dlen, nlen, slen;
+	int fd, i, nf1, nf2;
+	char *back, *cname, *dname, *front, *map, *name, *p, *search, *t;
 
 	if ((fd = open(tfp->name, O_RDONLY, 0)) < 0) {
 		tfp->errnum = errno;
@@ -1145,41 +1058,145 @@ search(sp, tfp, tname, tag)
 	 * know what size or type off_t's or size_t's are, what the largest
 	 * unsigned integral type is, or what random insanity the local C
 	 * compiler will perpetrate, doing the comparison in a portable way
-	 * is flatly impossible.  Hope that malloc fails if the file is too
-	 * large.
+	 * is flatly impossible.  Hope mmap fails if the file is too large.
 	 */
-	if (fstat(fd, &sb) || (map = mmap(NULL, (size_t)sb.st_size,
-	    PROT_READ, MAP_FILE | MAP_PRIVATE, fd, (off_t)0)) == (caddr_t)-1) {
+	if (fstat(fd, &sb) != 0 ||
+	    (map = mmap(NULL, (size_t)sb.st_size, PROT_READ | PROT_WRITE,
+	    MAP_FILE | MAP_PRIVATE, fd, (off_t)0)) == (caddr_t)-1) {
 		tfp->errnum = errno;
 		(void)close(fd);
 		return (1);
 	}
+
 	front = map;
 	back = front + sb.st_size;
-
 	front = binary_search(tname, front, back);
 	front = linear_search(tname, front, back);
-
-	if (front == NULL || (endp = strchr(front, '\n')) == NULL) {
-		*tag = NULL;
+	if (front == NULL)
 		goto done;
+
+	/*
+	 * Initialize and link in the tag structure(s).  The historic ctags
+	 * file format only permitted a single tag location per tag.  The
+	 * obvious extension to permit multiple tags locations per tag is to
+	 * output multiple records in the standard format.  Unfortunately,
+	 * this won't work correctly with historic ex/vi implementations,
+	 * because their binary search assumes that there's only one record
+	 * per tag, and so will use a random tag entry if there si more than
+	 * one.  This code handles either format.
+	 *
+	 * The tags file is in the following format:
+	 *
+	 *	<tag> <filename> <line number> | <pattern>
+	 *
+	 * Figure out how long everything is so we can allocate in one swell
+	 * foop, but discard anything that looks wrong.
+	 */
+	for (;;) {
+		/* Nul-terminate the end of the line. */
+		for (p = front; p < back && *p != '\n'; ++p);
+		if (p == back || *p != '\n')
+			break;
+		*p = '\0';
+
+		/* Update the pointers for the next time. */
+		t = p + 1;
+		p = front;
+		front = t;
+
+		/* Break the line into tokens. */
+		for (i = 0; i < 2 && (t = strsep(&p, "\t ")) != NULL; ++i)
+			switch (i) {
+			case 0:			/* Tag. */
+				cname = t;
+				break;
+			case 1:			/* Filename. */
+				name = t;
+				nlen = strlen(name);
+				break;
+			}
+
+		/* Check for corruption. */
+		if (i != 2 || p == NULL || t == NULL)
+			goto corrupt;
+
+		/* The rest of the string is the search pattern. */
+		search = p;
+		if ((slen = strlen(p)) == 0) {
+corrupt:		p = msg_print(sp, tname, &nf1);
+			t = msg_print(sp, tfp->name, &nf2);
+			msgq(sp, M_ERR, "163|%s: corrupted tag in %s", p, t);
+			if (nf1)
+				FREE_SPACE(sp, p, 0);
+			if (nf2)
+				FREE_SPACE(sp, t, 0);
+			continue;
+		}
+
+		/* Check for passing the last entry. */
+		if (strcmp(tname, cname))
+			break;
+
+		/* Resolve the file name. */
+		ctag_file(sp, tfp, name, &dname, &dlen);
+
+		CALLOC_GOTO(sp, tp,
+		    TAG *, 1, sizeof(TAG) + dlen + 2 + nlen + 1 + slen + 1);
+		tp->fname = tp->buf;
+		if (dlen != 0) {
+			memcpy(tp->fname, dname, dlen);
+			tp->fname[dlen] = '/';
+			++dlen;
+		}
+		memcpy(tp->fname + dlen, name, nlen + 1);
+		tp->fnlen = dlen + nlen;
+		tp->search = tp->fname + tp->fnlen + 1;
+		memcpy(tp->search, search, (tp->slen = slen) + 1);
+		CIRCLEQ_INSERT_TAIL(&tqp->tagq, tp, q);
 	}
 
-	len = endp - front;
-	MALLOC(sp, p, char *, len + 1);
-	if (p == NULL) {
-		*tag = NULL;
-		goto done;
-	}
-	memmove(p, front, len);
-	p[len] = '\0';
-	*tag = p;
-
+alloc_err:
 done:	if (munmap(map, (size_t)sb.st_size))
 		msgq(sp, M_SYSERR, "munmap");
 	if (close(fd))
 		msgq(sp, M_SYSERR, "close");
 	return (0);
+}
+
+/*
+ * ctag_file --
+ *	Search for the right path to this file.
+ */
+static void
+ctag_file(sp, tfp, name, dirp, dlenp)
+	SCR *sp;
+	TAGF *tfp;
+	char *name, **dirp;
+	size_t *dlenp;
+{
+	struct stat sb;
+	size_t len;
+	char *p, buf[MAXPATHLEN];
+
+	/*
+	 * !!!
+	 * If the tag file path is a relative path, see if it exists.  If it
+	 * doesn't, look relative to the tags file path.  It's okay for a tag
+	 * file to not exist, and historically, vi simply displayed a "new"
+	 * file.  However, if the path exists relative to the tag file, it's
+	 * pretty clear what's happening, so we may as well get it right.
+	 */
+	*dlenp = 0;
+	if (name[0] != '/' &&
+	    stat(name, &sb) && (p = strrchr(tfp->name, '/')) != NULL) {
+		*p = '\0';
+		len = snprintf(buf, sizeof(buf), "%s/%s", tfp->name, name);
+		*p = '/';
+		if (stat(buf, &sb) == 0) {
+			*dirp = tfp->name;
+			*dlenp = strlen(*dirp);
+		}
+	}
 }
 
 /*
@@ -1220,6 +1237,10 @@ done:	if (munmap(map, (size_t)sb.st_size))
  * 	Trying to continue with binary search at this point would be
  *	more trouble than it's worth.
  */
+#define	EQUAL		0
+#define	GREATER		1
+#define	LESS		(-1)
+
 #define	SKIP_PAST_NEWLINE(p, back)	while (p < back && *p++ != '\n');
 
 static char *
