@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.66 1993/05/11 16:09:53 bostic Exp $ (Berkeley) $Date: 1993/05/11 16:09:53 $";
+static char sccsid[] = "$Id: key.c,v 5.67 1993/05/12 16:41:22 bostic Exp $ (Berkeley) $Date: 1993/05/12 16:41:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -151,7 +151,7 @@ term_waiting(sp)
 
 	t.tv_sec = t.tv_usec = 0;
 	FD_SET(STDIN_FILENO, &sp->rdfd);
-	return (select(1, &sp->rdfd, NULL, NULL, &t));
+	return (select(32, &sp->rdfd, NULL, NULL, &t));
 }
 
 /*
@@ -301,7 +301,7 @@ term_read(sp, buf, len, timeout)
 	/* Select until characters become available, and then read them. */
 	for (;;) {
 		if (timeout)
-			switch (select(1, &sp->rdfd, NULL, NULL, tp)) {
+			switch (select(32, &sp->rdfd, NULL, NULL, tp)) {
 			case -1:		/* Error or interrupt. */
 				if (errno == EINTR) {
 					check_sigwinch(sp);
