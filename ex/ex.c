@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.139 1994/08/05 06:26:51 bostic Exp $ (Berkeley) $Date: 1994/08/05 06:26:51 $";
+static char sccsid[] = "$Id: ex.c,v 8.140 1994/08/05 08:16:29 bostic Exp $ (Berkeley) $Date: 1994/08/05 08:16:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1279,7 +1279,12 @@ addr2:	switch (exc.addrcnt) {
 		return (0);
 	}
 
-	if (IN_EX_MODE(sp) && ep != NULL) {
+	/*
+	 * If the command was successful and we're in ex command mode,
+	 * we may want to display a line.  Make sure that there is a
+	 * line to display...
+	 */
+	if (ep != NULL && IN_EX_MODE(sp) && sp->lno != 0) {
 		/*
 		 * The print commands have already handled the `print' flags.
 		 * If so, clear them.  Don't return, autoprint may still have
@@ -1289,9 +1294,9 @@ addr2:	switch (exc.addrcnt) {
 			F_CLR(&exc, E_F_HASH | E_F_LIST | E_F_PRINT);
 
 		/*
-		 * If the command was successful, and there was an explicit
-		 * flag to display the new cursor line, or we're in ex mode,
-		 * autoprint is set, and a change was made, display the line.
+		 * If there was an explicit flag to display the new cursor
+		 * line, or we're in ex mode, autoprint is set, and a change
+		 * was made, display the line.
 		 */
 		if (flagoff) {
 			if (flagoff < 0) {
