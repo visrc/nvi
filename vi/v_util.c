@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_util.c,v 5.14 1993/02/16 20:09:08 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:09:08 $";
+static char sccsid[] = "$Id: v_util.c,v 5.15 1993/02/17 11:30:05 bostic Exp $ (Berkeley) $Date: 1993/02/17 11:30:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -101,6 +101,9 @@ v_msgflush(ep)
 {
 	size_t oldy, oldx;
 	register int ch, cnt;
+
+	if (FF_ISSET(ep, F_BELLSCHED))
+		bell(ep);
 
 	if (msgcnt == 0)
 		return (0);
