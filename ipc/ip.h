@@ -4,7 +4,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: ip.h,v 8.5 1996/12/03 18:38:26 bostic Exp $ (Berkeley) $Date: 1996/12/03 18:38:26 $
+ *	$Id: ip.h,v 8.6 1996/12/04 09:46:02 bostic Exp $ (Berkeley) $Date: 1996/12/04 09:46:02 $
  */
 
 typedef struct _ip_private {
@@ -66,12 +66,15 @@ typedef struct _ip_buf {
 #define	IPO_EOF		 1	/* End of input (NOT ^D). */
 #define	IPO_ERR		 2	/* Input error. */
 #define	IPO_INTERRUPT	 3	/* Interrupt. */
-#define	IPO_QUIT	 4	/* Quit. */
-#define	IPO_RESIZE	 5	/* Screen resize: IPO_INT, IPO_INT. */
-#define	IPO_SIGHUP	 6	/* SIGHUP. */
-#define	IPO_SIGTERM	 7	/* SIGTERM. */
-#define	IPO_STRING	 8	/* Input string: IPO_STR. */
-#define	IPO_WRITE	 9	/* Write. */
+#define	IPO_MOUSE_MOVE	 4	/* Mouse click move: IPO_INT, IPO_INT. */
+#define	IPO_QUIT	 5	/* Quit. */
+#define	IPO_RESIZE	 6	/* Screen resize: IPO_INT, IPO_INT. */
+#define	IPO_SIGHUP	 7	/* SIGHUP. */
+#define	IPO_SIGTERM	 8	/* SIGTERM. */
+#define	IPO_STRING	 9	/* Input string: IPO_STR. */
+#define	IPO_WQ		10	/* Write and quit. */
+#define	IPO_WRITE	11	/* Write. */
+#define	IPO_WRITEAS	12	/* Write as another file: IPO_STR. */
 
 /*
  * IP events sent from vi to the screen.
