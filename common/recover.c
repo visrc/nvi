@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.14 1993/08/31 17:56:06 bostic Exp $ (Berkeley) $Date: 1993/08/31 17:56:06 $";
+static char sccsid[] = "$Id: recover.c,v 8.15 1993/09/02 10:43:21 bostic Exp $ (Berkeley) $Date: 1993/09/02 10:43:21 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -71,9 +71,26 @@ rcv_tmp(sp, ep, fname)
 	EXF *ep;
 	char *fname;
 {
+	struct stat sb;
 	int fd;
-	char *p, path[MAXPATHLEN];
+	char *dp, *p, path[MAXPATHLEN];
 
+	/*
+	 * If the recovery directory doesn't exist, try and create it.  As
+	 * the recovery files are themselves protected from reading/writing
+	 * by other than the owner, the worst that can happen is that a user
+	 * would have permission to remove other user's recovery files.  If
+	 * the sticky bit has the BSD semantics, that too will be impossible.
+	 */
+	dp = O_STR(sp, O_DIRECTORY);
+	if (stat(dp, &sb)) {
+		if (errno != ENOENT || mkdir(dp, 0)) {
+			msgq(sp, M_ERR, "Error: %s: %s", dp, strerror(errno));
+			return (1);
+		}
+		(void)chmod(dp, S_IRWXU | S_IRWXG | S_IRWXO | S_ISVTX);
+	}
+		
 	/* Newlines delimit the mail messages. */
 	for (p = fname; *p; ++p)
 		if (*p == '\n') {
@@ -82,16 +99,14 @@ rcv_tmp(sp, ep, fname)
 			return (1);
 		}
 
-	(void)snprintf(path, sizeof(path),
-	    "%s/vi.XXXXXX", O_STR(sp, O_DIRECTORY));
+	(void)snprintf(path, sizeof(path), "%s/vi.XXXXXX", dp);
 
 	/*
 	 * !!!
 	 * We depend on mkstemp(3) setting the permissions correctly.
 	 */
 	if ((fd = mkstemp(path)) == -1) {
-		msgq(sp, M_ERR, "Error: %s: %s",
-		    O_STR(sp, O_DIRECTORY), strerror(errno));
+		msgq(sp, M_ERR, "Error: %s: %s", dp, strerror(errno));
 		return (1);
 	}
 	(void)close(fd);
