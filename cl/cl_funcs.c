@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_funcs.c,v 10.32 1996/02/20 20:51:17 bostic Exp $ (Berkeley) $Date: 1996/02/20 20:51:17 $";
+static char sccsid[] = "$Id: cl_funcs.c,v 10.33 1996/02/25 11:37:34 bostic Exp $ (Berkeley) $Date: 1996/02/25 11:37:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -519,7 +519,7 @@ cl_suspend(sp, allowedp)
 	 * restarting after endwin(), so we have to do what clean up we can
 	 * without calling it.
 	 */
-#ifdef BSD_CURSES_INTERFACE
+#ifdef HAVE_BSD_CURSES
 	/* Save the terminal settings. */
 	(void)tcgetattr(STDIN_FILENO, &t);
 
@@ -530,10 +530,10 @@ cl_suspend(sp, allowedp)
 #endif
 	/*
 	 * XXX
-	 * Restore the original terminal settings.  This isn't right --
-	 * this reset can cause use to lose characters from the tty
-	 * queue.  Unfortunately, too many versions of curses don't
-	 * get it right.
+	 * Restore the original terminal settings.  This is bad -- the
+	 * reset can cause character loss from the tty queue.  However,
+	 * we can't call endwin() in BSD curses implementations, and too
+	 * many System V curses implementations don't get it right.
 	 */
 	(void)tcsetattr(STDIN_FILENO, TCSADRAIN | TCSASOFT, &clp->orig);
 
@@ -542,7 +542,7 @@ cl_suspend(sp, allowedp)
 
 	/* Time passes ... */
 
-#ifdef BSD_CURSES_INTERFACE
+#ifdef HAVE_BSD_CURSES
 	/* Put the cursor keys into application mode. */
 	(void)keypad(stdscr, TRUE);
 
