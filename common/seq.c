@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 8.17 1993/11/29 14:14:52 bostic Exp $ (Berkeley) $Date: 1993/11/29 14:14:52 $";
+static char sccsid[] = "$Id: seq.c,v 8.18 1993/11/30 10:29:21 bostic Exp $ (Berkeley) $Date: 1993/11/30 10:29:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -238,7 +238,7 @@ seq_save(sp, fp, prefix, stype)
 	int ch, esc;
 	char *p;
 
-	esc = sp->gp->original_termios.c_cc[VLNEXT];
+	(void)term_key_ch(sp, K_VLNEXT, &esc);
 
 	/* Write a sequence command for all keys the user defined. */
 	for (qp = sp->gp->seqq.lh_first; qp != NULL; qp = qp->q.le_next) {

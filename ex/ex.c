@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.64 1993/11/29 20:01:50 bostic Exp $ (Berkeley) $Date: 1993/11/29 20:01:50 $";
+static char sccsid[] = "$Id: ex.c,v 8.65 1993/11/30 10:30:09 bostic Exp $ (Berkeley) $Date: 1993/11/30 10:30:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -377,6 +377,7 @@ ex_cmd(sp, ep, exc, arg1_len)
 	char *exc;
 	int arg1_len;
 {
+	CHAR_T esc;
 	EX_PRIVATE *exp;
 	EXCMDARG cmd;
 	EXCMDLIST const *cp;
@@ -384,7 +385,7 @@ ex_cmd(sp, ep, exc, arg1_len)
 	recno_t lcount, lno, num;
 	long flagoff;
 	u_int saved_mode;
-	int ch, cmdlen, esc, flags, uselastcmd;
+	int ch, cmdlen, flags, uselastcmd;
 	char *p, *t, *endp;
 
 #if defined(DEBUG) && 0
@@ -621,7 +622,7 @@ two:		switch (cmd.addrcnt) {
 	 * in set commands, this would have to be much more complicated.
 	 */
 	if (cp == &cmds[C_SET]) {
-		esc = sp->gp->original_termios.c_cc[VLNEXT];
+		(void)term_key_ch(sp, K_VLNEXT, &esc);
 		for (p = exc; (ch = *p) != '\0'; ++p)
 			if (ch == '\\')
 				*p = esc;
