@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.22 1996/02/28 19:18:20 bostic Exp $ (Berkeley) $Date: 1996/02/28 19:18:20 $
+#	$Id: Makefile.in,v 8.23 1996/02/28 19:30:28 bostic Exp $ (Berkeley) $Date: 1996/02/28 19:30:28 $
 
 CC=	@CC@
 CFLAGS=	-c @CFLAGS@ -I. -I../include @CPPFLAGS@
@@ -21,6 +21,7 @@ DBOBJS=	db.o mpool.o \
 	rec_close.o rec_delete.o rec_get.o rec_open.o rec_put.o \
 	rec_search.o rec_seq.o rec_utils.o
 REOBJS=	regcomp.o regerror.o regexec.o regfree.o
+TCLOBJS=tcl_api.o tcl_tcl.o
 TKOBJS=	tk_funcs.o tk_main.o tk_read.o tk_screen.o tk_term.o tk_util.o
 VIOBJS=	cut.o delete.o ex.o ex_abbrev.o ex_append.o ex_args.o ex_argv.o \
 	ex_at.o ex_bang.o ex_cd.o ex_cmd.o ex_delete.o ex_display.o \
@@ -32,14 +33,13 @@ VIOBJS=	cut.o delete.o ex.o ex_abbrev.o ex_append.o ex_args.o ex_argv.o \
 	ex_undo.o ex_usage.o ex_util.o ex_version.o ex_visual.o \
 	ex_write.o ex_yank.o ex_z.o exf.o getc.o key.o line.o log.o \
 	main.o mark.o msg.o options.o options_f.o put.o recover.o \
-	screen.o search.o seq.o tcl_api.o tcl_tcl.o util.o v_at.o \
-	v_ch.o v_cmd.o v_delete.o v_ex.o v_increment.o v_init.o v_itxt.o\
-	v_left.o v_mark.o v_match.o v_paragraph.o v_put.o v_redraw.o \
-	v_replace.o v_right.o v_screen.o v_scroll.o v_search.o \
-	v_section.o v_sentence.o v_status.o v_txt.o v_ulcase.o v_undo.o \
-	v_util.o v_word.o v_xchar.o v_yank.o v_z.o v_zexit.o vi.o \
-	vs_line.o vs_msg.o vs_refresh.o vs_relative.o vs_smap.o \
-	vs_split.o
+	screen.o search.o seq.o util.o v_at.o v_ch.o v_cmd.o v_delete.o \
+	v_ex.o v_increment.o v_init.o v_itxt.o v_left.o v_mark.o v_match.o \
+	v_paragraph.o v_put.o v_redraw.o v_replace.o v_right.o v_screen.o \
+	v_scroll.o v_search.o v_section.o v_sentence.o v_status.o v_txt.o \
+	v_ulcase.o v_undo.o v_util.o v_word.o v_xchar.o v_yank.o v_z.o \
+	v_zexit.o vi.o vs_line.o vs_msg.o vs_refresh.o vs_relative.o \
+	vs_smap.o vs_split.o
 
 all: $(HDRS) nvi @tknvi@
 
