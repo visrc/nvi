@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_cscope.c,v 10.9 1996/07/15 17:43:01 bostic Exp $ (Berkeley) $Date: 1996/07/15 17:43:01 $";
+static const char sccsid[] = "$Id: ex_cscope.c,v 10.10 1996/08/10 14:21:48 bostic Exp $ (Berkeley) $Date: 1996/08/10 14:21:48 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -34,6 +34,7 @@ static const char sccsid[] = "$Id: ex_cscope.c,v 10.9 1996/07/15 17:43:01 bostic
 #include <unistd.h>
 
 #include "../common/common.h"
+#include "pathnames.h"
 #include "tag.h"
 
 #define	CSCOPE_DBFILE		"cscope.out"
@@ -97,7 +98,7 @@ static int	 get_paths __P((SCR *, CSC *));
 static CC const	*lookup_ccmd __P((char *));
 static int	 parse __P((SCR *, CSC *, TAGQ *, int *));
 static int	 read_prompt __P((SCR *, CSC *));
-static int	 run_cscope __P((SCR *, CSC *));
+static int	 run_cscope __P((SCR *, CSC *, char *));
 static int	 start_cscopes __P((SCR *, EXCMD *));
 static int	 terminate __P((SCR *, CSC *, int));
 
@@ -198,7 +199,7 @@ cscope_add(sp, cmdp, dname)
 	EX_PRIVATE *exp;
 	CSC *csc;
 	size_t len;
-	char path[MAXPATHLEN];
+	char *dbname, path[MAXPATHLEN];
 
 	exp = EXP(sp);
 
@@ -207,7 +208,7 @@ cscope_add(sp, cmdp, dname)
 	/*
 	 *  0 args: impossible.
 	 *  1 args: usage.
-	 *  2 args: matched a directory.
+	 *  2 args: matched a file.
 	 * >2 args: object, too many args.
 	 *
 	 * The 1 args case depends on the argv_sexp() function refusing
@@ -228,13 +229,27 @@ cscope_add(sp, cmdp, dname)
 		return (1);
 	}
 
-	/* If the database file doesn't exist, we're done. */
-	(void)snprintf(path, sizeof(path),
-	    "%s/%s", cmdp->argv[1]->bp, CSCOPE_DBFILE);
-	if (stat(path, &sb)) {
-		msgq(sp, M_SYSERR, path);
+	/*
+	 * The user can specify a specific file (so they can have multiple
+	 * Cscope databases in a single directory) or a directory.  If the
+	 * file doesn't exist, we're done.  If it's a directory, append the
+	 * standard database file name and try again.  Store the directory
+	 * name regardless so that we can use it as a base for searches.
+	 */
+	if (stat(dname, &sb)) {
+		msgq(sp, M_SYSERR, dname);
 		return (1);
 	}
+	if (S_ISDIR(sb.st_mode)) {
+		(void)snprintf(path, sizeof(path),
+		    "%s/%s", dname, CSCOPE_DBFILE);
+		if (stat(path, &sb)) {
+			msgq(sp, M_SYSERR, path);
+			return (1);
+		}
+		dbname = CSCOPE_DBFILE;
+	} else if ((dbname = strrchr(dname, '/')) != NULL)
+		*dbname++ = '\0';
 
 	/* Allocate a cscope connection structure and initialize its fields. */
 	len = strlen(dname);
@@ -249,7 +264,7 @@ cscope_add(sp, cmdp, dname)
 		goto err;
 
 	/* Start the cscope process. */
-	if (run_cscope(sp, csc))
+	if (run_cscope(sp, csc, dbname))
 		goto err;
 
 	/*
@@ -352,9 +367,10 @@ alloc_err:
  *	Fork off the cscope process.
  */
 static int
-run_cscope(sp, csc)
+run_cscope(sp, csc, dbname)
 	SCR *sp;
 	CSC *csc;
+	char *dbname;
 {
 	int to_cs[2], from_cs[2];
 	char cmd[MAXPATHLEN * 2];
@@ -390,9 +406,10 @@ err:		if (to_cs[0] != -1)
 		(void)close(from_cs[0]);
 
 		/* Run the cscope command. */
-#define	CSCOPE_CMD_FMT		"cd '%s' && exec cscope -dl"
-		(void)snprintf(cmd, sizeof(cmd), CSCOPE_CMD_FMT, csc->dname);
-		(void)execl("/bin/sh", "sh", "-c", cmd, NULL);
+#define	CSCOPE_CMD_FMT		"cd '%s' && exec cscope -dl -f %s"
+		(void)snprintf(cmd, sizeof(cmd),
+		    CSCOPE_CMD_FMT, csc->dname, dbname);
+		(void)execl(_PATH_BSHELL, "sh", "-c", cmd, NULL);
 		msgq_str(sp, M_SYSERR, cmd, "execl: %s");
 		_exit (127);
 		/* NOTREACHED */
