@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: exf.h,v 10.17 2001/11/01 10:28:24 skimo Exp $ (Berkeley) $Date: 2001/11/01 10:28:24 $
+ *	$Id: exf.h,v 10.18 2001/11/01 13:15:21 skimo Exp $ (Berkeley) $Date: 2001/11/01 13:15:21 $
  */
 					/* Undo direction. */
 /*
@@ -20,6 +20,7 @@ struct _exf {
 	CIRCLEQ_HEAD(_escrh, _scr)   scrq;   /* Attached screens */
 					/* Underlying database state. */
 	DB_ENV	*env;			/* The DB environment. */
+	char	*env_path;		/* DB environment directory. */
 	DB	*db;			/* File db structure. */
 	db_recno_t	 c_nlines;	/* Cached lines in the file. */
 

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: exf.c,v 10.67 2001/11/01 10:28:24 skimo Exp $ (Berkeley) $Date: 2001/11/01 10:28:24 $";
+static const char sccsid[] = "$Id: exf.c,v 10.68 2001/11/01 13:15:21 skimo Exp $ (Berkeley) $Date: 2001/11/01 13:15:21 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -42,6 +42,7 @@ static int	file_backup __P((SCR *, char *, char *));
 static void	file_cinit __P((SCR *));
 static void	file_comment __P((SCR *));
 static int	file_spath __P((SCR *, FREF *, struct stat *, int *));
+static int * 	db_setup __P((SCR *sp, EXF *ep));
 
 /*
  * file_add --
@@ -260,8 +261,11 @@ file_init(SCR *sp, FREF *frp, char *rcv_name, int flags)
 		F_SET(ep, F_MODIFIED);
 	}
 
+	if (db_setup(sp, ep))
+		goto err;
+
 	/* Open a db structure. */
-	if ((sp->db_error = db_create(&ep->db, 0, 0)) != 0) {
+	if ((sp->db_error = db_create(&ep->db, ep->env, 0)) != 0) {
 		/* XXXX */
 		fprintf(stderr, "db_create %d\n", sp->db_error);
 		goto err;
@@ -744,6 +748,19 @@ file_end(SCR *sp, EXF *ep, int force)
 	/* Free up any marks. */
 	(void)mark_end(sp, ep);
 
+	if (ep->env) {
+		DB_ENV *env;
+
+		ep->env->close(ep->env, 0);
+		ep->env = 0;
+		if ((sp->db_error = db_env_create(&env, 0)))
+			msgq(sp, M_DBERR, "env_create");
+		if ((sp->db_error = env->remove(env, ep->env_path, 0)))
+			msgq(sp, M_DBERR, "env->remove");
+		if (ep->env_path != NULL && rmdir(ep->env_path))
+			msgq_str(sp, M_SYSERR, ep->env_path, "242|%s: remove");
+	}
+
 	/*
 	 * Delete recovery files, close the open descriptor, free recovery
 	 * memory.  See recover.c for a description of the protocol.
@@ -766,6 +783,8 @@ file_end(SCR *sp, EXF *ep, int force)
 		(void)close(ep->fcntl_fd);
 	if (ep->rcv_fd != -1)
 		(void)close(ep->rcv_fd);
+	if (ep->env_path != NULL)
+		free(ep->env_path);
 	if (ep->rcv_path != NULL)
 		free(ep->rcv_path);
 	if (ep->rcv_mpath != NULL)
@@ -1541,4 +1560,43 @@ file_lock(SCR *sp, char *name, int *fdp, int fd, int iswrite)
 #if !defined(HAVE_LOCK_FLOCK) && !defined(HAVE_LOCK_FCNTL)
 	return (LOCK_SUCCESS);
 #endif
+}
+
+static int *
+db_setup(SCR *sp, EXF *ep)
+{
+	char path[MAXPATHLEN];
+	int fd;
+	DB_ENV	*env;
+
+	(void)snprintf(path, sizeof(path), "%s/vi.XXXXXX", O_STR(sp, O_RECDIR));
+	if ((fd = mkstemp(path)) == -1) {
+		msgq(sp, M_SYSERR, "%s", path);
+		goto err;
+	}
+	(void)close(fd);
+	(void)unlink(path);
+	if (mkdir(path, S_IRWXU)) {
+		msgq(sp, M_SYSERR, "%s", path);
+		goto err;
+	}
+	if (db_env_create(&env, 0)) {
+		msgq(sp, M_ERR, "env_create");
+		goto err;
+	}
+	if ((sp->db_error = env->open(env, path, 
+	    DB_PRIVATE | DB_CREATE | DB_INIT_MPOOL | VI_DB_THREAD, 0)) != 0) {
+		msgq(sp, M_DBERR, "env->open");
+		goto err;
+	}
+
+	if ((ep->env_path = strdup(path)) == NULL) {
+		msgq(sp, M_SYSERR, NULL);
+		(void)rmdir(path);
+		goto err;
+	}
+	ep->env = env;
+	return 0;
+err:
+	return 1;
 }
