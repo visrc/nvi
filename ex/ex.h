@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 5.6 1992/04/16 13:46:33 bostic Exp $ (Berkeley) $Date: 1992/04/16 13:46:33 $
+ *	$Id: ex.h,v 5.7 1992/04/18 10:00:37 bostic Exp $ (Berkeley) $Date: 1992/04/18 10:00:37 $
  */
 
 struct _cmdarg;
@@ -16,22 +16,26 @@ typedef struct _cmdlist {
 					/* Underlying function. */
 	int (*fn) __P((struct _cmdarg *));
 
-#define	E_ADDR1		0x0001		/* One address. */
-#define	E_ADDR2		0x0002		/* Two address. */
-#define	E_ADDR2_OR_0	0x0004		/* Either 0 or two addresses. */
-#define	E_EXRCOK	0x0008		/* OK in a .exrc file. */
-#define	E_FORCE		0x0010		/*  ! flag. */
-#define	E_F_APPEND	0x0020		/* >> flag. */
-#define	E_F_CARAT	0x0040		/*  ^ flag. */
-#define	E_F_DASH	0x0080		/*  - flag. */
-#define	E_F_DOT		0x0100		/*  . flag. */
-#define	E_F_HASH	0x0200		/*  # flag. */
-#define	E_F_LIST	0x0400		/*  l flag. */
-#define	E_F_PLUS	0x0800		/*  + flag. */
-#define	E_F_PRINT	0x1000		/*  p flag. */
-#define	E_NL		0x2000		/* Newline first if not MODE_EX mode.*/
-#define	E_NOPERM	0x4000		/* Permission denied for now. */
-#define	E_ZERO		0x8000		/* 0 is a legal (first) address.*/
+#define	E_ADDR1		0x00001		/* One address. */
+#define	E_ADDR2		0x00002		/* Two address. */
+#define	E_ADDR2_OR_0	0x00004		/* Either 0 or two addresses. */
+#define	E_APPEND	0x00008		/* >> */
+#define	E_EXRCOK	0x00010		/* OK in a .exrc file. */
+#define	E_FORCE		0x00020		/*  ! */
+
+#define	E_F_CARAT	0x00040		/*  ^ flag. */
+#define	E_F_DASH	0x00080		/*  - flag. */
+#define	E_F_DOT		0x00100		/*  . flag. */
+#define	E_F_HASH	0x00200		/*  # flag. */
+#define	E_F_LIST	0x00400		/*  l flag. */
+#define	E_F_PLUS	0x00800		/*  + flag. */
+#define	E_F_PRINT	0x01000		/*  p flag. */
+#define	E_F_MASK	0x01fc0		/* Flag mask. */
+
+#define	E_NL		0x02000		/* Newline first if not MODE_EX mode.*/
+#define	E_NOPERM	0x04000		/* Permission denied for now. */
+#define	E_SETLAST	0x08000		/* Reset last command. */
+#define	E_ZERO		0x10000		/* 0 is a legal (first) address.*/
 	u_int flags;
 	char *syntax;			/* Syntax script. */
 	char *usage;			/* Usage line. */
@@ -48,6 +52,7 @@ typedef struct _cmdarg {
 	MARK addr2;		/* 2nd address. */
 	MARK lineno;		/* Line number. */
 	u_int flags;		/* E_F_* flags from CMDLIST. */
+	u_int flagoff;		/* Offset for #, l and p commands. */
 	int argc;		/* Count of file/word arguments. */
 	char **argv;		/* List of file/word arguments. */
 	char *command;		/* Command line, if parse locally. */
