@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 5.7 1992/04/18 10:00:37 bostic Exp $ (Berkeley) $Date: 1992/04/18 10:00:37 $
+ *	$Id: ex.h,v 5.8 1992/04/18 15:35:13 bostic Exp $ (Berkeley) $Date: 1992/04/18 15:35:13 $
  */
 
 struct _cmdarg;
@@ -92,7 +92,7 @@ int	ex_change __P((CMDARG *));
 int	ex_cmd __P((char *));
 int	ex_color __P((CMDARG *));
 int	ex_copy __P((CMDARG *));
-int	ex_cstring __P((char *, int));
+int	ex_cstring __P((char *, int, int));
 int	ex_debug __P((CMDARG *));
 int	ex_delete __P((CMDARG *));
 int	ex_digraph __P((CMDARG *));
