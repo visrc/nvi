@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 5.42 1993/05/10 11:34:14 bostic Exp $ (Berkeley) $Date: 1993/05/10 11:34:14 $
+ *	$Id: ex.h,v 5.43 1993/05/11 16:53:57 bostic Exp $ (Berkeley) $Date: 1993/05/11 16:53:57 $
  */
 
 struct _excmdarg;
@@ -94,6 +94,7 @@ int	ex_getline __P((SCR *, FILE *, size_t *));
 int	ex_init __P((SCR *, EXF *));
 int	ex_print __P((SCR *, EXF *, MARK *, MARK *, int));
 int	ex_readfp __P((SCR *, EXF *, char *, FILE *, MARK *, recno_t *));
+int	ex_set_altfname __P((SCR *, char *));
 int	ex_suspend __P((SCR *));
 int	ex_writefp __P((SCR *, EXF *, char *, FILE *, MARK *, MARK *, int));
 void	ex_refresh __P((SCR *, EXF *));
