@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 9.6 1995/01/07 12:57:58 bostic Exp $ (Berkeley) $Date: 1995/01/07 12:57:58 $
+ *	$Id: screen.h,v 9.7 1995/01/11 13:47:58 bostic Exp $ (Berkeley) $Date: 1995/01/11 13:47:58 $
  */
 
 /*
@@ -201,13 +201,13 @@ struct _scr {
 	int	(*s_fg) __P((SCR *, CHAR_T *));
 					/* Fill the screen's map. */
 	int	(*s_fill) __P((SCR *, recno_t, enum position));
+					/* Map a function key. */
+	int	(*s_fmap) __P((SCR *,
+		    enum seqtype, CHAR_T *, size_t, CHAR_T *, size_t));
 	enum input			/* Get a line from the user. */
 		(*s_get) __P((SCR *, TEXTH *, ARG_CHAR_T, u_int));
 	enum input			/* Get a key from the user. */
 		(*s_key_read) __P((SCR *, int *, u_int, struct timeval *));
-					/* Map a function key. */
-	int	(*s_fmap) __P((SCR *,
-		    enum seqtype, CHAR_T *, size_t, CHAR_T *, size_t));
 					/* Return column at screen position. */
 	int	(*s_position) __P((SCR *, MARK *, u_long, enum position));
 					/* Change the absolute screen size. */
