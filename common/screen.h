@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.113 1994/05/22 10:24:53 bostic Exp $ (Berkeley) $Date: 1994/05/22 10:24:53 $
+ *	$Id: screen.h,v 8.114 1994/06/25 19:44:52 bostic Exp $ (Berkeley) $Date: 1994/06/25 19:44:52 $
  */
 
 /*
@@ -283,8 +283,8 @@ struct _scr {
  * Signals/timers have no structure, so it's all here.
  *
  * Block all signals that are being handled.  The reason is that we don't
- * underlying system calls in the DB package interrupted and not restarted,
- * it could theoretically cause consistency problems.
+ * want any underlying system calls in the DB package interrupted and not
+ * restarted, it could theoretically cause consistency problems.
  */
 #define	SIGBLOCK(gp) \
 	(void)sigprocmask(SIG_BLOCK, &(gp)->blockset, NULL);
