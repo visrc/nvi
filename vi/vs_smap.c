@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 5.28 1993/05/20 12:09:04 bostic Exp $ (Berkeley) $Date: 1993/05/20 12:09:04 $";
+static char sccsid[] = "$Id: vs_smap.c,v 5.29 1993/05/20 20:56:49 bostic Exp $ (Berkeley) $Date: 1993/05/20 20:56:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -433,6 +433,10 @@ svi_sm_up(sp, ep, rp, count, cursor_move)
 
 	if (file_lline(sp, ep, &last))
 		return (1);
+	if (last == 0) {
+		v_eof(sp, ep, NULL);
+		return (1);
+	}
 	for (svmap = *p, scrolled = 0;; scrolled = 1) {
 		if (count == 0)
 			break;
