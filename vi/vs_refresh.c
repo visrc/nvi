@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.54 1993/05/05 23:47:24 bostic Exp $ (Berkeley) $Date: 1993/05/05 23:47:24 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.55 1993/05/06 01:19:13 bostic Exp $ (Berkeley) $Date: 1993/05/06 01:19:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -521,7 +521,7 @@ lcont:		/* Move to the message line and clear it. */
  * svi_modeline --
  *	Update the mode line.
  */
-int
+static int
 svi_modeline(sp, ep)
 	SCR *sp;
 	EXF *ep;
