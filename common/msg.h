@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: msg.h,v 8.6 1993/11/18 08:17:10 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:17:10 $
+ *	$Id: msg.h,v 8.7 1993/11/18 10:55:04 bostic Exp $ (Berkeley) $Date: 1993/11/18 10:55:04 $
  */
 
 /*
@@ -22,8 +22,11 @@
  */
 enum msgtype { M_BERR, M_ERR, M_INFO, M_SYSERR, M_VINFO };
 
+typedef struct _msgh MSGH;	/* MESG list head structure. */
+LIST_HEAD(_msgh, _msg);
+
 struct _msg {
-	MSG *next;		/* Linked list of messages. */
+	LIST_ENTRY(_msg) q;	/* Linked list of messages. */
 	char *mbuf;		/* Message. */
 	size_t blen;		/* Message buffer length. */
 	size_t len;		/* Message length. */

@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 8.24 1993/11/18 10:08:41 bostic Exp $ (Berkeley) $Date: 1993/11/18 10:08:41 $
+ *	$Id: common.h,v 8.25 1993/11/18 10:55:10 bostic Exp $ (Berkeley) $Date: 1993/11/18 10:55:10 $
  */
 
 /* System includes. */
@@ -71,13 +71,13 @@ typedef	u_int		ARG_CHAR_T;
 #include "options.h"		/* Required by screen.h. */
 #include "term.h"		/* Required by screen.h. */
 
+#include "msg.h"		/* Required by gs.h. */
 #include "gs.h"			/* Required by screen.h. */
 #include "cut.h"		/* Required by screen.h. */
 #include "screen.h"		/* Required by exf.h. */
 
 #include "exf.h"		
 #include "log.h"
-#include "msg.h"
 #include "seq.h"
 
 #if FWOPEN_NOT_AVAILABLE	/* See PORT/clib/fwopen.c. */

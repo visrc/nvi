@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.30 1993/11/17 10:23:15 bostic Exp $ (Berkeley) $Date: 1993/11/17 10:23:15 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.31 1993/11/18 10:55:17 bostic Exp $ (Berkeley) $Date: 1993/11/18 10:55:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -613,7 +613,8 @@ update:	OCNO = CNO;
 		 *	standard status line.
 		 */
 		if (!F_ISSET(SVP(sp), SVI_INFOLINE))
-			if (sp->msgp != NULL && !F_ISSET(sp->msgp, M_EMPTY))
+			if (sp->msgq.lh_first != NULL &&
+			    !F_ISSET(sp->msgq.lh_first, M_EMPTY))
 				svi_msgflush(sp);
 			else if (!F_ISSET(sp, S_UPDATE_MODE))
 				svi_modeline(sp, ep);
@@ -646,8 +647,8 @@ svi_msgflush(sp)
 
 	/* Display the messages. */
 	cname = sp->cname;
-	for (mp = sp->msgp, p = NULL;
-	    mp != NULL && !F_ISSET(mp, M_EMPTY); mp = mp->next) {
+	for (mp = sp->msgq.lh_first, p = NULL;
+	    mp != NULL && !F_ISSET(mp, M_EMPTY); mp = mp->q.le_next) {
 
 		p = mp->mbuf;
 
@@ -686,8 +687,8 @@ lcont:		/* Move to the message line and clear it. */
 		 * If more, print continue message.  If user key fails,
 		 * keep showing the messages anyway.
 		 */
-		if (mp->len ||
-		    (mp->next != NULL && !F_ISSET(mp->next, M_EMPTY))) {
+		if (mp->len || (mp->q.le_next != NULL &&
+		    !F_ISSET(mp->q.le_next, M_EMPTY))) {
 			ADDNSTR(MCONTMSG, sizeof(MCONTMSG) - 1);
 			refresh();
 			for (;;) {

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.21 1993/11/13 18:00:53 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:00:53 $";
+static char sccsid[] = "$Id: util.c,v 8.22 1993/11/18 10:55:08 bostic Exp $ (Berkeley) $Date: 1993/11/18 10:55:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -92,8 +92,8 @@ msgq(sp, mt, fmt, va_alist)
 
 /*
  * msg_app --
- *	Append a message into the queue.  This can fail, but there's nothing
- *	we can do if it does.
+ *	Append a message into the queue.  This can fail, but there's
+ *	nothing we can do if it does.
  */
 void
 msg_app(gp, sp, inv_video, p, len)
@@ -104,8 +104,7 @@ msg_app(gp, sp, inv_video, p, len)
 	size_t len;
 {
 	static int reenter;		/* STATIC: Re-entrancy check. */
-	MSG *mp;
-	int new;
+	MSG *mp, *nmp;
 
 	/*
 	 * It's possible to reenter msg when it allocates space.
@@ -119,42 +118,36 @@ msg_app(gp, sp, inv_video, p, len)
 	 * Find an empty structure, or allocate a new one.  Use the
 	 * screen structure if possible, otherwise the global one.
 	 */
-	new = 0;
-	if (sp != NULL)
-		if (sp->msgp == NULL) {
-			if ((sp->msgp = malloc(sizeof(MSG))) == NULL)
+	if (sp != NULL) {
+		if ((mp = sp->msgq.lh_first) == NULL) {
+			if ((mp = malloc(sizeof(MSG))) == NULL)
 				goto ret;
-			new = 1;
-			mp = sp->msgp;
-		} else {
-			mp = sp->msgp;
-			goto loop;
+			memset(mp, 0, sizeof(MSG));
+			LIST_INSERT_HEAD(&sp->msgq, mp, q);
+			goto store;
 		}
-	else if (gp->msgp == NULL) {
-		if ((gp->msgp = malloc(sizeof(MSG))) == NULL)
+	} else if ((mp = gp->msgq.lh_first) == NULL) {
+		if ((mp = malloc(sizeof(MSG))) == NULL)
 			goto ret;
-		mp = gp->msgp;
-		new = 1;
-	} else {
-		mp = gp->msgp;
-loop:		for (;
-		    !F_ISSET(mp, M_EMPTY) && mp->next != NULL; mp = mp->next);
-		if (!F_ISSET(mp, M_EMPTY)) {
-			if ((mp->next = malloc(sizeof(MSG))) == NULL)
-				goto ret;
-			mp = mp->next;
-			new = 1;
-		}
+		memset(mp, 0, sizeof(MSG));
+		LIST_INSERT_HEAD(&gp->msgq, mp, q);
+		goto store;
+	}
+	while (!F_ISSET(mp, M_EMPTY) && mp->q.le_next != NULL)
+		mp = mp->q.le_next;
+	if (!F_ISSET(mp, M_EMPTY)) {
+		if ((nmp = malloc(sizeof(MSG))) == NULL)
+			goto ret;
+		memset(nmp, 0, sizeof(MSG));
+		LIST_INSERT_AFTER(mp, nmp, q);
+		mp = nmp;
 	}
 
-	/* Initialize new structures. */
-	if (new)
-		memset(mp, 0, sizeof(MSG));
-
-	/* Store the message. */
-	if (len > mp->blen && binc(sp, &mp->mbuf, &mp->blen, len))
+	/* Get enough memory for the message. */
+store:	if (len > mp->blen && binc(sp, &mp->mbuf, &mp->blen, len))
 		goto ret;
 
+	/* Store the message. */
 	memmove(mp->mbuf, p, len);
 	mp->len = len;
 	mp->flags = inv_video ? M_INV_VIDEO : 0;

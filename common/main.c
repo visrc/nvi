@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.43 1993/11/18 08:24:13 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:24:13 $";
+static char sccsid[] = "$Id: main.c,v 8.44 1993/11/18 10:55:01 bostic Exp $ (Berkeley) $Date: 1993/11/18 10:55:01 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -364,7 +364,7 @@ main(argc, argv)
 	 */
 	eval = 0;
 	if (0) {
-err1:		gp->msgp = sp->msgp;
+err1:		gp->msgq.lh_first = sp->msgq.lh_first;
 err2:		eval = 1;
 	}
 
@@ -401,6 +401,7 @@ gs_init()
 	memset(gp, 0, sizeof(GS));
 
 	LIST_INIT(&gp->scrq);
+	LIST_INIT(&gp->msgq);
 
 	/* Structures shared by screens so stored in the GS structure. */
 	if ((gp->key = malloc(sizeof(IBUF))) == NULL)
@@ -470,8 +471,8 @@ msgflush(gp)
 		(void)fprintf(stderr, "\07");		/* \a */
 
 	/* Display the messages. */
-	for (mp = gp->msgp;
-	    mp != NULL && !(F_ISSET(mp, M_EMPTY)); mp = mp->next) 
+	for (mp = gp->msgq.lh_first;
+	    mp != NULL && !(F_ISSET(mp, M_EMPTY)); mp = mp->q.le_next) 
 		(void)fprintf(stderr, "%.*s\n", (int)mp->len, mp->mbuf);
 }
 

@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 8.18 1993/11/18 08:17:04 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:17:04 $
+ *	$Id: gs.h,v 8.19 1993/11/18 10:55:00 bostic Exp $ (Berkeley) $Date: 1993/11/18 10:55:00 $
  */
 
 struct _gs {
@@ -16,7 +16,7 @@ struct _gs {
 	struct termios
 		 s5_curses_botch;	/* System V curses workaround. */
 
-	MSG	*msgp;			/* User message list. */
+	MSGH	 msgq;			/* User message list. */
 
 	char	*tmp_bp;		/* Temporary buffer. */
 	size_t	 tmp_blen;		/* Size of temporary buffer. */

@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.60 1993/11/18 10:08:38 bostic Exp $ (Berkeley) $Date: 1993/11/18 10:08:38 $
+ *	$Id: screen.h,v 8.61 1993/11/18 10:55:06 bostic Exp $ (Berkeley) $Date: 1993/11/18 10:55:06 $
  */
 
 /*
@@ -77,9 +77,9 @@ struct _scr {
 
 	EXF	*ep;			/* Screen's current EXF structure. */
 
-	MSG	*msgp;			/* Message list. */
+	MSGH	 msgq;			/* Message list. */
 
-	TAILQ_HEAD(_frefh, _fref) frefq;/* Linked list of FREF structures. */
+	TAILQ_HEAD(_frefh, _fref) frefq;/* FREF list. */
 	FREF	*frp;			/* Current FREF. */
 	FREF	*p_frp;			/* Previous FREF. */
 

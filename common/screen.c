@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.36 1993/11/18 10:08:36 bostic Exp $ (Berkeley) $Date: 1993/11/18 10:08:36 $";
+static char sccsid[] = "$Id: screen.c,v 8.37 1993/11/18 10:55:04 bostic Exp $ (Berkeley) $Date: 1993/11/18 10:55:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -43,6 +43,7 @@ screen_init(orig, spp, flags)
 /* INITIALIZED AT SCREEN CREATE. */
 	sp->gp = __global_list;			/* All ref the GS structure. */
 
+	LIST_INIT(&sp->msgq);
 	TAILQ_INIT(&sp->frefq);
 
 	sp->ccnt = 2;				/* Anything > 1 */
@@ -214,36 +215,30 @@ screen_end(sp)
 	 * to put messages.  Copy messages to (in order) a related screen,
 	 * any screen, the global area. 
 	 */
-	{ SCR *c_sp; MSG *c_mp, *mp, *next;
+	{ SCR *c_sp; MSG *mp, *next;
 		if (sp->parent != NULL) {
 			c_sp = sp->parent;
-			c_mp = c_sp->msgp;
 			if (F_ISSET(sp, S_BELLSCHED))
 				F_SET(c_sp, S_BELLSCHED);
 		} else if (sp->child != NULL) {
 			c_sp = sp->child;
-			c_mp = c_sp->msgp;
 			if (F_ISSET(sp, S_BELLSCHED))
 				F_SET(c_sp, S_BELLSCHED);
 		} else if (sp->q.le_next != NULL) {
 			c_sp = sp->q.le_next;
-			c_mp = c_sp->msgp;
 			if (F_ISSET(sp, S_BELLSCHED))
 				F_SET(c_sp, S_BELLSCHED);
 		} else {
 			c_sp = NULL;
-			c_mp = sp->gp->msgp;
 			if (F_ISSET(sp, S_BELLSCHED))
 				F_SET(sp->gp, G_BELLSCHED);
 		}
 
-		for (mp = sp->msgp;
-		    mp != NULL && !F_ISSET(mp, M_EMPTY); mp = mp->next)
-			msg_app(sp->gp, c_sp,
-			    mp->flags & M_INV_VIDEO, mp->mbuf, mp->len);
-
-		for (mp = sp->msgp; mp != NULL; mp = next) {
-			next = mp->next;
+		for (mp = sp->msgq.lh_first; mp != NULL; mp = next) {
+			if (!F_ISSET(mp, M_EMPTY))
+				msg_app(sp->gp, c_sp,
+				    mp->flags & M_INV_VIDEO, mp->mbuf, mp->len);
+			next = mp->q.le_next;
 			if (mp->mbuf != NULL)
 				FREE(mp->mbuf, mp->blen);
 			FREE(mp, sizeof(MSG));
