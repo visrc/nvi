@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 8.38 1994/07/28 12:37:34 bostic Exp $ (Berkeley) $Date: 1994/07/28 12:37:34 $";
+static char sccsid[] = "$Id: v_itxt.c,v 8.39 1994/08/14 11:52:52 bostic Exp $ (Berkeley) $Date: 1994/08/14 11:52:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -588,11 +588,11 @@ v_change(sp, ep, vp)
 	LOG_CORRECT;
 
 	/*
-	 * If changing within a single line, the line either currently has
-	 * text or it doesn't.  If it doesn't, just insert text.  Otherwise,
-	 * copy it and overwrite it.
+	 * If not in line mode and changing within a single line, the line
+	 * either currently has text or it doesn't.  If it doesn't, insert
+	 * some.  Otherwise, copy it and overwrite it.
 	 */
-	if (vp->m_start.lno == vp->m_stop.lno) {
+	if (!lmode && vp->m_start.lno == vp->m_stop.lno) {
 		if ((p = file_gline(sp, ep, vp->m_start.lno, &len)) == NULL) {
 			if (p == NULL) {
 				if (file_lline(sp, ep, &lno))
