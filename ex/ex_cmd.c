@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 8.55 1994/08/05 09:44:39 bostic Exp $ (Berkeley) $Date: 1994/08/05 09:44:39 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 8.56 1994/08/07 10:33:03 bostic Exp $ (Berkeley) $Date: 1994/08/07 10:33:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -138,6 +138,11 @@ EXCMDLIST const cmds[] = {
 	    "l1",
 	    "[line [,line]] co[py] line [flags]",
 	    "copy lines elsewhere in the file"},
+/*
+ * !!!
+ * Adding new commands starting with 'd' may break the delete command code
+ * in ex_cmd() (the ex parser).  Read through the comments there, first.
+ */
 /* C_DELETE */
 	{"delete",	ex_delete,	E_ADDR2|E_AUTOPRINT|E_NORC,
 	    "bca1",
