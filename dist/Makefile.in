@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.90 1996/12/16 17:29:57 bostic Exp $ (Berkeley) $Date: 1996/12/16 17:29:57 $
+#	$Id: Makefile.in,v 8.91 1997/01/14 11:18:56 bostic Exp $ (Berkeley) $Date: 1997/01/14 11:18:56 $
 
 srcdir=	@srcdir@/..
 CC=	@CC@
@@ -9,7 +9,7 @@ PERL=	@vi_cv_path_perl@
 PERLLIB=@vi_cv_perllib@
 SHRPENV=@shrpenv@
 
-ar=	@vi_cv_path_ar@
+ar=	@vi_cv_path_ar@ cq
 chmod=	@vi_cv_path_chmod@
 cp=	@vi_cv_path_cp@
 ln=	@vi_cv_path_ln@
@@ -69,7 +69,7 @@ MLIB=	ip_run.o ip_send.o ip_trans.o m_copypaste.o m_func.o m_menu.o \
 	m_vi.o xtabbed.o
 libmvi.a: $(MLIB)
 	$(rm) -f $@
-	$(ar) cq $@ $(MLIB)
+	$(ar) $@ $(MLIB)
 	[ ! -f $(ranlib) ] || $(ranlib) $@
 
 prefix=	@prefix@
