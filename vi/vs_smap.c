@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 5.13 1993/04/12 14:47:13 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:47:13 $";
+static char sccsid[] = "$Id: vs_smap.c,v 5.14 1993/04/17 12:32:49 bostic Exp $ (Berkeley) $Date: 1993/04/17 12:32:49 $";
 #endif /* not lint */
 
 #include <curses.h>
@@ -16,6 +16,62 @@ static char sccsid[] = "$Id: vs_smap.c,v 5.13 1993/04/12 14:47:13 bostic Exp $ (
 #include "vi.h"
 #include "vcmd.h"
 #include "svi_screen.h"
+
+/*
+ * svi_change --
+ *	Make a change to the screen.
+ * XXX
+ *	I'm not sure that the lines which `invalidate the cursor position'
+ *	are right.  It seems like they could be changed to figure out what
+ *	the new cursor position has to be.
+ */
+int
+svi_change(sp, ep, lno, op)
+	SCR *sp;
+	EXF *ep;
+	recno_t lno;
+	enum operation op;
+{
+	size_t oldy, oldx;
+
+	/* Appending is the same as inserting, if the line is incremented. */
+	if (op == LINE_APPEND)
+		++lno;
+
+	/* Ignore the change if the line is not on the screen. */
+	if (lno < HMAP->lno || lno > TMAP->lno)
+		return (0);
+
+	getyx(stdscr, oldy, oldx);
+
+	switch (op) {
+	case LINE_DELETE:
+		if (svi_sm_delete(sp, ep, lno))
+			return (1);
+
+		/* Invalidate the cursor. */
+		F_SET(sp, S_CUR_INVALID);
+		break;
+	case LINE_APPEND:
+	case LINE_INSERT:
+		if (svi_sm_insert(sp, ep, lno))
+			return (1);
+
+		/* Invalidate the cursor. */
+		F_SET(sp, S_CUR_INVALID);
+		break;
+	case LINE_RESET:
+		if (svi_sm_reset(sp, ep, lno))
+			return (1);
+		break;
+	default:
+		abort();
+	}
+
+	MOVEA(sp, oldy, oldx);
+
+	return (0);
+}
 
 /*
  * svi_sm_fill --
@@ -35,18 +91,29 @@ svi_sm_fill(sp, ep, lno, pos)
 	case P_FILL:
 		tmp.lno = 1;
 		tmp.off = 1;
+		/* See if less than half a screen from the top. */
 		if (svi_sm_nlines(sp, ep,
-		    &tmp, lno, HALFSCREEN(sp)) >= HALFSCREEN(sp))
-			goto middle;
-		lno = 1;
-		/* FALLTHROUGH */
+		    &tmp, lno, HALFSCREEN(sp)) <= HALFSCREEN(sp)) {
+			lno = 1;
+			goto ftop;
+		}
+		/* See if less than half a screen from the bottom. */
+		tmp.lno = file_lline(sp, ep);
+		tmp.off = svi_screens(sp, ep, tmp.lno, NULL);
+		if (svi_sm_nlines(sp, ep,
+		    &tmp, lno, HALFSCREEN(sp)) <= HALFSCREEN(sp)) {
+			TMAP->lno = tmp.lno;
+			TMAP->off = tmp.off;
+			goto fbot;
+		}
+		goto fmid;
 	case P_TOP:
-		for (p = HMAP, p->lno = lno, p->off = 1; p < TMAP; ++p)
+ftop:		for (p = HMAP, p->lno = lno, p->off = 1; p < TMAP; ++p)
 			if (svi_sm_next(sp, ep, p, p + 1))
 				goto err;
 		break;
 	case P_MIDDLE:
-middle:		p = HMAP + (TMAP - HMAP) / 2;
+fmid:		p = HMAP + (TMAP - HMAP) / 2;
 		for (p->lno = lno, p->off = 1; p < TMAP; ++p)
 			if (svi_sm_next(sp, ep, p, p + 1))
 				goto err;
@@ -56,7 +123,9 @@ middle:		p = HMAP + (TMAP - HMAP) / 2;
 				goto err;
 		break;
 	case P_BOTTOM:
-		for (p = TMAP, p->lno = lno, p->off = 1; p > HMAP; --p)
+		TMAP->lno = lno;
+		TMAP->off = svi_screens(sp, ep, lno, NULL);
+fbot:		for (p = TMAP; p > HMAP; --p)
 			if (svi_sm_prev(sp, ep, p, p - 1))
 				goto err;
 		break;
@@ -96,7 +165,13 @@ svi_sm_delete(sp, ep, lno)
 	for (cnt2 = cnt1; cnt2--;)
 		if (svi_deleteln(sp))
 			return (1);
-
+	/*
+	 * If the screen only contains one line, this gets
+	 * fairly exciting.  Skip the fun.
+	 */
+	if (cnt1 == sp->t_rows)
+		return (svi_sm_fill(sp, ep, lno, P_TOP));
+		
 	/* Shift the screen map up. */
 	memmove(p, p + cnt1, (((TMAP - p) - cnt1) + 1) * sizeof(SMAP));
 
@@ -315,22 +390,18 @@ svi_sm_1up(sp, ep)
 	SCR *sp;
 	EXF *ep;
 {
-	/* Delete the top line of the screen. */
+	/*
+	 * Delete the top line of the screen.  Shift the screen map up.
+	 * Display a new line at the bottom of the screen.
+	 */
 	MOVE(sp, 0, 0);
 	if (svi_deleteln(sp))
 		return (1);
-
-	/* Shift the screen map up. */
 	memmove(HMAP, HMAP + 1, sp->rows * sizeof(SMAP));
-
-	/* Decide what to display at the bottom of the screen. */
 	if (svi_sm_next(sp, ep, TMAP - 1, TMAP))
 		return (1);
-
-	/* Display it. */
 	if (svi_line(sp, ep, TMAP, NULL, 0, NULL, NULL))
 		return (1);
-
 	return (0);
 }
 
@@ -342,10 +413,11 @@ int
 svi_deleteln(sp)
 	SCR *sp;
 {
-	/* Delete the top line, scrolling everything else. */
+	/*
+	 * Delete the top line, scrolling everything else.  If
+	 * we're not the bottom screen, put everything else back.
+	 */
 	deleteln();
-
-	/* If we're not the bottom screen, put everything else back. */
 	if (sp->child != NULL) {
 		MOVE(sp, INFOLINE(sp), 0);
 		insertln();
@@ -455,26 +527,21 @@ svi_sm_1down(sp, ep)
 	SCR *sp;
 	EXF *ep;
 {
-	/* Clear the bottom line of the screen. */
+	/*
+	 * Clear the bottom line of the screen, insert a line at the top
+	 * of the screen.  Shift the screen map down, display a new line
+	 * at the top of the screen.
+	 */
 	MOVE(sp, sp->t_rows, 0);
 	clrtoeol();
-
-	/* Insert a line at the top of the screen. */
 	MOVE(sp, 0, 0);
 	if (svi_insertln(sp))
 		return (1);
-
-	/* Shift the screen map down. */
 	memmove(HMAP + 1, HMAP, sp->rows * sizeof(SMAP));
-
-	/* Decide what to display at the top of the screen. */
 	if (svi_sm_prev(sp, ep, HMAP + 1, HMAP))
 		return (1);
-
-	/* Display it. */
 	if (svi_line(sp, ep, HMAP, NULL, 0, NULL, NULL))
 		return (1);
-
 	return (0);
 }
 
@@ -486,10 +553,11 @@ int
 svi_insertln(sp)
 	SCR *sp;
 {
-	/* Insert at the current line, scrolling everything else. */
+	/*
+	 * Insert at the current line, scrolling everything else.
+	 * If we're not the bottom screen, put everything else back.
+	 */
 	insertln();
-
-	/* If we're not the bottom screen, put everything else back. */
 	if (sp->child != NULL) {
 		MOVE(sp, INFOLINE(sp), 0);
 		deleteln();
