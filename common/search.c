@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.49 1994/09/15 08:15:08 bostic Exp $ (Berkeley) $Date: 1994/09/15 08:15:08 $";
+static char sccsid[] = "$Id: search.c,v 8.50 1994/09/15 08:53:15 bostic Exp $ (Berkeley) $Date: 1994/09/15 08:53:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -76,7 +76,7 @@ resetup(sp, rep, dir, ptrn, epp, deltap, flagp)
 		if (epp != NULL)
 			*epp = ptrn + 2;
 prev:		if (!F_ISSET(sp, S_SRE_SET)) {
-			msgq(sp, M_ERR, "No previous search pattern");
+			msgq(sp, M_ERR, "243|No previous search pattern");
 			return (1);
 		}
 		*rep = &sp->sre;
@@ -124,7 +124,7 @@ prev:		if (!F_ISSET(sp, S_SRE_SET)) {
 				return (1);
 			if (*p && LF_ISSET(SEARCH_TERM)) {
 				msgq(sp, M_ERR,
-			"Characters after search string and/or delta");
+		"244|Characters after search string and/or line offset");
 				return (1);
 			}
 		}
@@ -290,7 +290,7 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 
 	for (rval = 1, wrapped = 0;; ++lno, coff = 0) {
 		if (INTERRUPTED(sp)) {
-			msgq(sp, M_INFO, "Interrupted.");
+			msgq(sp, M_INFO, "245|Interrupted.");
 			break;
 		}
 		if (wrapped && lno > fm->lno ||
@@ -420,7 +420,7 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 
 	for (rval = 1, wrapped = 0, coff = fm->cno;; --lno, coff = 0) {
 		if (INTERRUPTED(sp)) {
-			msgq(sp, M_INFO, "Interrupted.");
+			msgq(sp, M_INFO, "246|Interrupted.");
 			break;
 		}
 		if (wrapped && lno < fm->lno || lno == 0) {
@@ -730,9 +730,9 @@ get_delta(sp, dp, valp, flagp)
 		val = strtol(p, &p, 10);
 		if (errno == ERANGE) {
 			if (val == LONG_MAX)
-overflow:			msgq(sp, M_ERR, "Delta value overflow");
+overflow:			msgq(sp, M_ERR, "247|Delta value overflow");
 			else if (val == LONG_MIN)
-underflow:			msgq(sp, M_ERR, "Delta value underflow");
+underflow:			msgq(sp, M_ERR, "248|Delta value underflow");
 			else
 				msgq(sp, M_SYSERR, NULL);
 			return (1);
@@ -764,16 +764,16 @@ check_delta(sp, ep, delta, lno)
 	/* A delta can overflow a record number. */
 	if (delta < 0) {
 		if (lno < LONG_MAX && delta >= (long)lno) {
-			msgq(sp, M_ERR, "Search offset before line 1");
+			msgq(sp, M_ERR, "249|Search offset before line 1");
 			return (1);
 		}
 	} else {
 		if (ULONG_MAX - lno < delta) {
-			msgq(sp, M_ERR, "Delta value overflow");
+			msgq(sp, M_ERR, "250|Delta value overflow");
 			return (1);
 		}
 		if (file_gline(sp, ep, lno + delta, NULL) == NULL) {
-			msgq(sp, M_ERR, "Search offset past end-of-file");
+			msgq(sp, M_ERR, "251|Search offset past end-of-file");
 			return (1);
 		}
 	}
