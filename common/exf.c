@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.19 1992/10/18 13:02:37 bostic Exp $ (Berkeley) $Date: 1992/10/18 13:02:37 $";
+static char sccsid[] = "$Id: exf.c,v 5.20 1992/10/24 14:20:46 bostic Exp $ (Berkeley) $Date: 1992/10/24 14:20:46 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -32,6 +32,8 @@ EXF *curf;					/* Current file. */
 void file_show __P((char *));
 #endif
 
+static void file_copyright __P((EXF *));
+
 /*
  * file_init --
  *	Initialize the file list.
@@ -43,10 +45,10 @@ file_init()
 }
 
 #define	EPSET(ep) {							\
-	ep->lno = ep->olno = ep->top = 1;				\
+	ep->lno = ep->olno = ep->top = ep->otop = 1;			\
 	ep->cno = ep->ocno = ep->scno = ep->shift = 0;			\
+	ep->cwidth = 0;							\
 	ep->rcm = ep->rcmflags = 0;					\
-	ep->uwindow = ep->dwindow = 0;					\
 	ep->nlen = strlen(ep->name);					\
 	ep->flags = 0;							\
 }
@@ -225,8 +227,13 @@ file_start(ep)
 		return (1);
 	}
 
-	/* Set the global state. */
-	curf = ep;
+	if (ISSET(O_COPYRIGHT))			/* Skip leading comment. */
+		file_copyright(ep);
+
+	if (mode == MODE_VI) {			/* Vi special things. */
+		scr_init(ep);			/* Screen state. */
+		status(ep, ep->lno);		/* Intro message. */
+	}
 
 	/*
 	 * Reset any marks.
@@ -235,6 +242,10 @@ file_start(ep)
 	 * it, either.
 	 */
 	mark_reset();
+
+	/* Set the global state. */
+	curf = ep;
+
 	return (0);
 }
 
@@ -338,4 +349,26 @@ err:		msg("%s: %s", ep->name, strerror(errno));
 	ep->flags |= F_WRITTEN;
 	ep->flags &= ~F_MODIFIED;
 	return (0);
+}
+
+static void
+file_copyright(ep)
+	EXF *ep;
+{
+	recno_t lno;
+	size_t len;
+	u_char *p;
+
+	for (lno = 1;
+	    (p = file_gline(ep, lno, &len)) != NULL && len == 0; ++lno);
+	if (p == NULL || len <= 1 || bcmp(p, "/*", 2))
+		return;
+	do {
+		for (; len; --len, ++p)
+			if (p[0] == '*' && len > 1 && p[1] == '/') {
+				ep->top = ep->lno = lno;
+				return;
+			}
+	} while ((p = file_gline(ep, ++lno, &len)) != NULL);
+	return;
 }
