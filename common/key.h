@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 8.9 1993/10/03 14:19:17 bostic Exp $ (Berkeley) $Date: 1993/10/03 14:19:17 $
+ *	$Id: key.h,v 8.10 1993/10/03 15:30:51 bostic Exp $ (Berkeley) $Date: 1993/10/03 15:30:51 $
  */
 
 /* Structure for a key input buffer. */
@@ -67,18 +67,18 @@ enum input	{ INP_OK=0, INP_EOF, INP_ERR };
 
 /* Special character lookup values. */
 #define	K_CARAT		 1
-#define	K_CNTRLD	 2
-#define	K_CNTRLR	 3
-#define	K_CNTRLT	 4
-#define	K_CNTRLZ	 5
-#define	K_COLON	 	 6
-#define	K_CR		 7
-#define	K_ESCAPE	 8
-#define	K_FORMFEED	 9
-#define	K_NL		10
-#define	K_RIGHTBRACE	11
-#define	K_RIGHTPAREN	12
-#define	K_TAB		13
+#define	K_CNTRLR	 2
+#define	K_CNTRLT	 3
+#define	K_CNTRLZ	 4
+#define	K_COLON	 	 5
+#define	K_CR		 6
+#define	K_ESCAPE	 7
+#define	K_FORMFEED	 8
+#define	K_NL		 9
+#define	K_RIGHTBRACE	10
+#define	K_RIGHTPAREN	11
+#define	K_TAB		12
+#define	K_VEOF	 	13
 #define	K_VERASE	14
 #define	K_VKILL		15
 #define	K_VLNEXT	16

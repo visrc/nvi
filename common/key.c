@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.10 1993/09/30 12:02:14 bostic Exp $ (Berkeley) $Date: 1993/09/30 12:02:14 $";
+static char sccsid[] = "$Id: key.c,v 8.11 1993/10/03 15:31:14 bostic Exp $ (Berkeley) $Date: 1993/10/03 15:31:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -74,7 +74,6 @@ term_init(sp)
 
 	/* Keys that are treated specially. */
 	sp->special['^'] = K_CARAT;
-	sp->special['\004'] = K_CNTRLD;
 	sp->special['\022'] = K_CNTRLR;
 	sp->special['\024'] = K_CNTRLT;
 	sp->special['\032'] = K_CNTRLZ;
@@ -86,6 +85,7 @@ term_init(sp)
 	sp->special[')'] = K_RIGHTPAREN;
 	sp->special['}'] = K_RIGHTBRACE;
 	sp->special['\t'] = K_TAB;
+	sp->special[sp->gp->original_termios.c_cc[VEOF]] = K_VEOF;
 	sp->special[sp->gp->original_termios.c_cc[VERASE]] = K_VERASE;
 	sp->special[sp->gp->original_termios.c_cc[VKILL]] = K_VKILL;
 	sp->special[sp->gp->original_termios.c_cc[VLNEXT]] = K_VLNEXT;
