@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_msg.c,v 10.37 1995/11/11 10:03:31 bostic Exp $ (Berkeley) $Date: 1995/11/11 10:03:31 $";
+static char sccsid[] = "$Id: vs_msg.c,v 10.38 1995/11/11 10:12:34 bostic Exp $ (Berkeley) $Date: 1995/11/11 10:12:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -475,11 +475,9 @@ vs_ex_resolve(sp, continuep)
 	SCR *sp;
 	int *continuep;
 {
-	CHAR_T ch;
 	EVENT ev;
 	GS *gp;
 	VI_PRIVATE *vip;
-	int cancontinue;
 
 	gp = sp->gp;
 	vip = VIP(sp);
@@ -772,6 +770,8 @@ vs_wait(sp, continuep, wtype)
 		if (ev.e_c == ':' && continuep != NULL)
 			*continuep = 1;
 		break;
+	case SCROLL_W:
+		abort();
 	}
 }
 
