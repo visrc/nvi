@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex.c,v 10.44 1996/05/02 10:21:37 bostic Exp $ (Berkeley) $Date: 1996/05/02 10:21:37 $";
+static const char sccsid[] = "$Id: ex.c,v 10.45 1996/05/10 17:38:29 bostic Exp $ (Berkeley) $Date: 1996/05/10 17:38:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -2151,7 +2151,7 @@ ex_discard(sp)
 
 	/*
 	 * We know the first command can't be an AGV command, so we don't
-	 * discard it.
+	 * process it specially.  We do, however, nail the command itself.
 	 */
 	for (gp = sp->gp; (ecp = gp->ecq.lh_first) != &gp->excmd;) {
 		if (FL_ISSET(ecp->agv_flags, AGV_ALL)) {
@@ -2164,6 +2164,7 @@ ex_discard(sp)
 		LIST_REMOVE(ecp, q);
 		free(ecp);
 	}
+	gp->ecq.lh_first->clen = 0;
 	return (0);
 }
 
