@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_util.c,v 5.22 1993/02/20 12:55:48 bostic Exp $ (Berkeley) $Date: 1993/02/20 12:55:48 $";
+static char sccsid[] = "$Id: v_util.c,v 5.23 1993/02/24 13:02:09 bostic Exp $ (Berkeley) $Date: 1993/02/24 13:02:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,10 +22,10 @@ static char sccsid[] = "$Id: v_util.c,v 5.22 1993/02/20 12:55:48 bostic Exp $ (B
 #include <unistd.h>
 
 #include "vi.h"
-#include "vcmd.h"
 #include "options.h"
 #include "screen.h"
 #include "term.h"
+#include "vcmd.h"
 
 /*
  * v_eof --
@@ -134,7 +134,7 @@ lcont:		/* Move to the message line and clear it. */
 		 * Figure out how much to print, and print it.
 		 * Adjust for the next line.
 		 */
-		len = ep->cols - sizeof(MCONTMSG) - 1;
+		len = SCRCOL(ep) - sizeof(MCONTMSG) - 1;
 		if (mp->len < len)
 			len = mp->len;
 		addnstr(p, len);
@@ -196,39 +196,4 @@ onwinch(signo)
 		scr_update(curf);
 		refresh();
 	}
-}
-
-/*
- * set_window_size --
- *	Set the window size, the row may be provided as an argument.
- */
-int
-set_window_size(ep, row)
-	EXF *ep;
-	u_int row;
-{
-	struct winsize win;
-	char *argv[2], sbuf[100];
-
-	/*
-	 * Try TIOCGWINSZ.  If it fails, ignore the signal.  Otherwise,
-	 * set the row/column options.  No error messages, because it's
-	 * not worth making msg reentrant.
-	 */
-	if (ioctl(STDERR_FILENO, TIOCGWINSZ, &win) == -1)
-		return (1);
-
-	argv[0] = sbuf;
-	argv[1] = NULL;
-
-	(void)snprintf(sbuf, sizeof(sbuf), "ls=%u", row ? row : win.ws_row);
-	if (opts_set(ep, argv))
-		return (1);
-	(void)snprintf(sbuf, sizeof(sbuf), "co=%u", win.ws_col);
-	if (opts_set(ep, argv))
-		return (1);
-
-	/* Schedule resize. */
-	FF_SET(curf, F_RESIZE);
-	return (0);
 }
