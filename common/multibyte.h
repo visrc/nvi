@@ -5,7 +5,7 @@
 #include <wctype.h>
 
 #ifdef USE_WIDECHAR
-typedef	int		RCHAR_T;
+typedef	wchar_t		RCHAR_T;
 #define RCHAR_T_MAX	((1 << 24)-1)
 typedef	wchar_t		CHAR_T;
 #define	MAX_CHAR_T	0xffffff    /* XXXX */
@@ -18,6 +18,8 @@ typedef	u_int		UCHAR_T;
 #define STRCMP		wcscmp
 #define STRPBRK		wcspbrk
 #define TOUPPER		towupper
+
+#define L(ch)		L ## ch
 
 #else
 typedef	char		RCHAR_T;
@@ -33,6 +35,8 @@ typedef	u_char		UCHAR_T;
 #define STRCMP		strcmp
 #define STRPBRK		strpbrk
 #define TOUPPER		toupper
+
+#define L(ch)		ch
 
 #endif
 
