@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 9.9 1995/01/23 17:33:33 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:33:33 $
+ *	$Id: vi.h,v 9.10 1995/02/02 15:25:54 bostic Exp $ (Berkeley) $Date: 1995/02/02 15:25:54 $
  */
 
 typedef struct _vikeys VIKEYS;
@@ -207,11 +207,9 @@ int	v_screen_end __P((SCR *));
 /* Vi function prototypes. */
 int	txt_auto __P((SCR *, recno_t, TEXT *, size_t, TEXT *));
 int	v_buildps __P((SCR *));
-int	v_end __P((SCR *));
 void	v_eof __P((SCR *, MARK *));
 void	v_eol __P((SCR *, MARK *));
 int	v_exwrite __P((void *, const char *, int));
-int	v_init __P((SCR *));
 int	v_isempty __P((char *, size_t));
 int	v_msgflush __P((SCR *));
 void	v_nomove __P((SCR *));
