@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 10.18 1995/11/05 16:01:37 bostic Exp $ (Berkeley) $Date: 1995/11/05 16:01:37 $";
+static char sccsid[] = "$Id: ex_filter.c,v 10.19 1995/11/06 09:56:46 bostic Exp $ (Berkeley) $Date: 1995/11/06 09:56:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -106,7 +106,7 @@ ex_filter(sp, cmdp, fm, tm, rp, cmd, ftype)
 			ex_emsg(sp, cmdp->cmd->name, EXM_NOCANON_F);
 			return (1);
 		}
-		F_SET(sp, S_SCREEN_READY);
+		F_SET(sp, S_EX_CANON | S_SCREEN_READY);
 	}
 
 	/* Fork off the utility process. */

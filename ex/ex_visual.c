@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_visual.c,v 10.6 1995/10/18 19:56:38 bostic Exp $ (Berkeley) $Date: 1995/10/18 19:56:38 $";
+static char sccsid[] = "$Id: ex_visual.c,v 10.7 1995/11/06 09:56:40 bostic Exp $ (Berkeley) $Date: 1995/11/06 09:56:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -145,9 +145,10 @@ nopush:	/*
 		 */
 		if (sp->gp->scr_screen(sp, S_EX))
 			return (1);
-		F_SET(sp, S_SCREEN_READY);
+		F_CLR(sp, S_VI | S_EX_CANON);
+		F_SET(sp, S_EX | S_SCREEN_READY);
 	} else {
-		F_CLR(sp, S_EX);
+		F_CLR(sp, S_EX | S_EX_CANON | S_SCREEN_READY);
 		F_SET(sp, S_VI);
 	}
 	return (0);
