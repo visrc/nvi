@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 10.10 1995/09/25 10:16:13 bostic Exp $ (Berkeley) $Date: 1995/09/25 10:16:13 $";
+static char sccsid[] = "$Id: ex.c,v 10.11 1995/09/25 12:09:03 bostic Exp $ (Berkeley) $Date: 1995/09/25 12:09:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -339,10 +339,13 @@ loop:	ecp = gp->ecq.lh_first;
 	if (tmp)
 		goto err;
 
-	/* Skip whitespace. */
+	/*
+	 * Skip <blank>s and any more colons (the command :3,5:print
+	 * worked, historically).
+	 */
 	for (; ecp->clen > 0; ++ecp->cp, --ecp->clen) {
 		ch = *ecp->cp;
-		if (!isblank(ch))
+		if (!isblank(ch) && ch != ':')
 			break;
 	}
 
