@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.43 1993/02/13 13:45:28 bostic Exp $ (Berkeley) $Date: 1993/02/13 13:45:28 $";
+static char sccsid[] = "$Id: main.c,v 5.44 1993/02/14 18:03:54 bostic Exp $ (Berkeley) $Date: 1993/02/14 18:03:54 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -53,6 +53,8 @@ main(argc, argv)
 	int argc;
 	char *argv[];
 {
+	extern int optind;
+	extern char *optarg;
 	static int reenter;
 	EXCMDARG cmd;
 	int ch;
