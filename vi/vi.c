@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 10.20 1995/10/16 15:34:18 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:34:18 $";
+static char sccsid[] = "$Id: vi.c,v 10.21 1995/10/17 08:13:32 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:13:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -870,8 +870,6 @@ v_init(sp)
 	SCR *sp;
 {
 	VI_PRIVATE *vip;
-	size_t len;
-	const char *p;
 
 	vip = VIP(sp);
 
