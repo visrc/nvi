@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_match.c,v 8.9 1994/03/08 19:41:19 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:41:19 $";
+static char sccsid[] = "$Id: v_match.c,v 8.10 1994/03/10 13:35:17 bostic Exp $ (Berkeley) $Date: 1994/03/10 13:35:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,8 +38,9 @@ v_match(sp, ep, vp)
 	VICMDARG *vp;
 {
 	VCS cs;
+	MARK *mp;
 	recno_t lno;
-	size_t len, off;
+	size_t cno, len, off;
 	int cnt, matchc, startc, (*gc)__P((SCR *, EXF *, VCS *));
 	char *p;
 
@@ -54,7 +55,8 @@ v_match(sp, ep, vp)
 
 	/*
 	 * !!!
-	 * Historical practice was to search in the forward direction only.
+	 * Historical practice was to search for the initial character
+	 * in the forward direction only.
 	 */
 	for (off = vp->m_start.cno;; ++off) {
 		if (off >= len) {
@@ -127,13 +129,33 @@ nomatch:		msgq(sp, M_BERR, "No match character on this line.");
 	 * Don't correct for leftward movement -- historic vi deleted the
 	 * starting cursor position when deleting to a match.
 	 */
-	if (vp->m_start.cno > vp->m_stop.cno) {
-		vp->m_final = vp->m_stop;
-		if (ISMOTION(vp)) {
-			if (F_ISSET(vp, VC_Y))
-				vp->m_final = vp->m_start;
-		}
-	} else
+	if (vp->m_start.lno < vp->m_stop.lno ||
+	    vp->m_start.lno == vp->m_stop.lno &&
+	    vp->m_start.cno < vp->m_stop.cno)
 		vp->m_final = ISMOTION(vp) ? vp->m_start : vp->m_stop;
+	else
+		vp->m_final = ISMOTION(vp) &&
+		    F_ISSET(vp, VC_Y) ? vp->m_start : vp->m_stop;
+
+	/*
+	 * !!!
+	 * If the motion is across lines, and the earliest cursor position
+	 * is at or before any non-blank characters in its line, i.e. the
+	 * movement is cutting all of the line's text, the buffer is in line
+	 * mode.
+	 */
+	if (ISMOTION(vp) && vp->m_start.lno != vp->m_stop.lno) {
+		mp = vp->m_start.lno < vp->m_stop.lno ?
+		    &vp->m_start : &vp->m_stop;
+		if (mp->cno == 0) {
+			F_SET(vp, VM_LMODE);
+			return (0);
+		}
+		cno = 0;
+		if (nonblank(sp, ep, mp->lno, &cno))
+			return (1);
+		if (cno >= mp->cno)
+			F_SET(vp, VM_LMODE);
+	}
 	return (0);
 }
