@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.5 1996/02/20 20:17:32 bostic Exp $ (Berkeley) $Date: 1996/02/20 20:17:32 $
+#	$Id: Makefile.in,v 8.6 1996/02/21 10:35:41 bostic Exp $ (Berkeley) $Date: 1996/02/21 10:35:41 $
 
 #GCCF=	-Wall
 #DEBUG=	-DDEBUG
@@ -79,7 +79,9 @@ distrib: maintainer-clean
 install:
 
 tags:
-	ctags ../*/*.h ../*/*.[cys]
+	-(cd ../common && rm -f tags && \
+	    ctags ../cl/*.[ch] ../common/*.[ch] ../ex/*.[ch] \
+	    ../tclapi/*.[ch] ../tk/*.[ch] ../vi/*.[ch])
 
 # Header sources.
 cl_extern.h:
