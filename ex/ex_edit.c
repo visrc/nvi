@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_edit.c,v 10.10 1996/04/27 11:40:20 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:20 $";
+static const char sccsid[] = "$Id: ex_edit.c,v 10.11 1996/10/31 09:28:56 bostic Exp $ (Berkeley) $Date: 1996/10/31 09:28:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -82,7 +82,7 @@ ex_edit(sp, cmdp)
 		abort();
 	}
 
-	if (F_ISSET(cmdp, E_NEWSCREEN))
+	if (F_ISSET(cmdp, E_NEWSCREEN) || cmdp->cmd == &cmds[C_VSPLIT])
 		return (ex_N_edit(sp, cmdp, frp, attach));
 
 	/*
@@ -119,7 +119,8 @@ ex_N_edit(sp, cmdp, frp, attach)
 	/* Get a new screen. */
 	if (screen_init(sp->gp, sp, &new))
 		return (1);
-	if (vs_split(sp, new, 0)) {
+	if (cmdp->cmd == &cmds[C_VSPLIT] && vs_vsplit(sp, new) ||
+	    cmdp->cmd != &cmds[C_VSPLIT] && vs_split(sp, new, 0)) {
 		(void)screen_end(new);
 		return (1);
 	}
