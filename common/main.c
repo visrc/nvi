@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.47 1993/02/20 12:57:23 bostic Exp $ (Berkeley) $Date: 1993/02/20 12:57:23 $";
+static char sccsid[] = "$Id: main.c,v 5.48 1993/02/23 09:25:07 bostic Exp $ (Berkeley) $Date: 1993/02/23 09:25:07 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -141,7 +141,7 @@ main(argc, argv)
 	 * It's going to be difficult to verify that all of the necessary
 	 * fields are filled in (or that F_DUMMY is checked appropriately).
 	 */
-	ep = &fake_exf;
+	curf = ep = &fake_exf;
 	file_def(ep);
 	ep->cols = 80;
 	ep->flags = F_DUMMY | F_IGNORE;
