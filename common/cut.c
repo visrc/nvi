@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 5.37 1993/04/20 18:38:55 bostic Exp $ (Berkeley) $Date: 1993/04/20 18:38:55 $";
+static char sccsid[] = "$Id: cut.c,v 5.38 1993/05/08 10:51:55 bostic Exp $ (Berkeley) $Date: 1993/05/08 10:51:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -194,7 +194,7 @@ put(sp, ep, buffer, cp, rp, append)
 {
 	CB *cb;
 	GS *gp;
-	TEXT *tp;
+	TEXT *ltp, *tp;
 	recno_t lno;
 	size_t blen, clen, len;
 	int lmode;
@@ -279,7 +279,9 @@ put(sp, ep, buffer, cp, rp, append)
 
 		/*
 		 * If no more lines in the CB, append the rest of the original
-		 * line and quit.
+		 * line and quit.  Otherwise, build the last line before doing
+		 * the intermediate lines, because the line changes will lose
+		 * the cached line.
 		 */
 		if (tp->next == (TEXT *)&cb->txthdr) {
 			/* Set cursor to end of inserted text. */
@@ -293,46 +295,57 @@ put(sp, ep, buffer, cp, rp, append)
 			if (file_sline(sp, ep, lno, bp, t - bp))
 				goto mem;
 		} else {
-			/* Output the line replacing the original line. */
-			if (file_sline(sp, ep, lno, bp, t - bp))
-				goto mem;
-
-			/* Output any intermediate lines in the CB alone. */
-			for (;;) {
-				if ((tp = tp->next) == (TEXT *)&cb->txthdr)
-					break;
-				if (file_aline(sp, ep, lno, tp->lb, tp->len))
-					goto mem;
-				++lno;
-			}
-
-			/* Last part of original line; check for space. */
+			/*
+			 * Have to build both the first and last lines of the
+			 * put before doing any sets or we'll lose the cached
+			 * line.  Build both the first and last lines in the
+			 * same buffer, so we don't have to have another buffer
+			 * floating around.
+			 *
+			 * Last part of original line; check for space.
+			 */
+			ltp = cb->txthdr.prev;
 			if (bp == gp->tmp_bp) {
 				F_CLR(gp, G_TMP_INUSE);
-				BINC(sp, gp->tmp_bp, gp->tmp_blen, tp->len);
+				BINC(sp,
+				    gp->tmp_bp, gp->tmp_blen, ltp->len + clen);
 				bp = gp->tmp_bp;
 				F_SET(gp, G_TMP_INUSE);
 			} else
-				BINC(sp, bp, blen, tp->len);
+				BINC(sp, bp, blen, ltp->len + clen);
 
-			t = bp;
-			if (tp->len) {
-				memmove(t, tp->lb, tp->len);
-				t += tp->len;
-			}
+			/* Add in last part of the CB. */
+			memmove(t, ltp->lb, ltp->len);
+			if (clen)
+				memmove(t + ltp->len, p, clen);
+			clen += ltp->len;
+
+			/*
+			 * Now: bp points to the first character of the first
+			 * line, t points to the last character of the last
+			 * line, t - bp is the length of the first line, and
+			 * clen is the length of the last.  Just figured you'd
+			 * want to know.
+			 *
+			 * Output the line replacing the original line.
+			 */
+			if (file_sline(sp, ep, lno, bp, t - bp))
+				goto mem;
+
+			/* Output any intermediate lines in the CB. */
+			for (tp = tp->next; tp->next != (TEXT *)&cb->txthdr;
+			    ++lno, tp = tp->next)
+				if (file_aline(sp, ep, lno, tp->lb, tp->len))
+					goto mem;
 
 			/*
 			 * This is the end of the added text; set cursor to
 			 * the last character inserted.
 			 */
 			rp->lno = lno + 1;
-			rp->cno = (t - bp) - 1;
+			rp->cno = clen - 1;
 
-			if (clen) {
-				memmove(t, p, clen);
-				t += clen;
-			}
-			if (file_aline(sp, ep, lno, bp, t - bp)) {
+			if (file_aline(sp, ep, lno, t, clen)) {
 mem:				if (bp == gp->tmp_bp)
 					F_CLR(gp, G_TMP_INUSE);
 				else
