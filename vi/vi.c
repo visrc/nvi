@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.13 1993/08/31 18:07:23 bostic Exp $ (Berkeley) $Date: 1993/08/31 18:07:23 $";
+static char sccsid[] = "$Id: vi.c,v 8.14 1993/09/01 12:19:55 bostic Exp $ (Berkeley) $Date: 1993/09/01 12:19:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -194,15 +194,34 @@ vi(sp, ep)
 		 * You betcha.  As they say, if you think you understand it,
 		 * you don't.
 		 */
-		if (LF_ISSET(V_RCM))
+		switch (LF_ISSET(V_RCM | V_RCM_SETFNB |
+		    V_RCM_SETLAST | V_RCM_SETLFNB | V_RCM_SETNNB)) {
+		case 0:
+			break;
+		case V_RCM:
 			m.cno = sp->s_relative(sp, ep, m.lno);
-		else if (LF_ISSET(V_RCM_SETFNB)) {
+			break;
+		case V_RCM_SETLAST:
+			sp->rcmflags = RCM_LAST;
+			break;
+		case V_RCM_SETLFNB:
+			if (fm.lno != m.lno) {
+				if (nonblank(sp, ep, m.lno, &m.cno))
+					goto err;
+				sp->rcmflags = RCM_FNB;
+			}
+			break;
+		case V_RCM_SETFNB:
+			m.cno = 0;
+			/* FALLTHROUGH */
+		case V_RCM_SETNNB:
 			if (nonblank(sp, ep, m.lno, &m.cno))
 				goto err;
 			sp->rcmflags = RCM_FNB;
+			break;
+		default:
+			abort();
 		}
-		else if (LF_ISSET(V_RCM_SETLAST))
-			sp->rcmflags = RCM_LAST;
 			
 		/* Update the cursor. */
 		sp->lno = m.lno;
