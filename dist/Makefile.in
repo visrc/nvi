@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.83 1996/12/05 12:32:52 bostic Exp $ (Berkeley) $Date: 1996/12/05 12:32:52 $
+#	$Id: Makefile.in,v 8.84 1996/12/10 20:58:23 bostic Exp $ (Berkeley) $Date: 1996/12/10 20:58:23 $
 
 srcdir=	@srcdir@/..
 CC=	@CC@
@@ -23,7 +23,7 @@ DBOBJS=	db.o mpool.o \
 	bt_split.o bt_utils.o \
 	rec_close.o rec_delete.o rec_get.o rec_open.o rec_put.o \
 	rec_search.o rec_seq.o rec_utils.o
-IPOBJS=	ip_funcs.o ip_main.o ip_read.o ip_screen.o ip_term.o
+IPOBJS=	ip_funcs.o ip_main.o ip_read.o ip_screen.o ip_send.o ip_term.o
 REOBJS=	regcomp.o regerror.o regexec.o regfree.o
 VIOBJS=	api.o cut.o delete.o ex.o ex_abbrev.o ex_append.o ex_args.o \
 	ex_argv.o ex_at.o ex_bang.o ex_cd.o ex_cmd.o ex_cscope.o \
@@ -43,7 +43,7 @@ VIOBJS=	api.o cut.o delete.o ex.o ex_abbrev.o ex_append.o ex_args.o \
 	v_yank.o v_z.o v_zexit.o vi.o vs_line.o vs_msg.o vs_refresh.o \
 	vs_relative.o vs_smap.o vs_split.o
 
-all: nvi @nvi_curses@ @nvi_motif@
+all: nvi @nvi_motif@
 
 VIALL=	$(CLOBJS) $(IPOBJS) $(VIOBJS) @cobjs@ @LIBOBJS@
 nvi nex: $(VIALL)
@@ -51,14 +51,9 @@ nvi nex: $(VIALL)
 	-rm -f nex
 	ln $@ nex
 
-C_IPC=	ipc_cfunc.o ipc_cmain.o \
-	ipc_run.o ipc_send.o ipc_trans.o @LIBOBJS@
-nvi_curses: $(C_IPC)
-	$(SHRPENV) $(CC) $(LDFLAGS) -o $@ @cobjs@ $(C_IPC) @LIBS@
-
 M_IPC=	ipc_mcde.o ipc_mcopypaste.o ipc_mfunc.o ipc_mmain.o ipc_mmenu.o \
-	ipc_moptions.o ipc_msearch.o ipc_mutil.o \
-	ipc_run.o ipc_send.o ipc_trans.o @LIBOBJS@
+	ipc_moptions.o ipc_mprompt.o ipc_msearch.o ipc_mutil.o ipc_mvi.o \
+	ip_run.o ip_send.o ip_trans.o @LIBOBJS@
 nvi_motif: $(M_IPC)
 	$(SHRPENV) $(CC) $(LDFLAGS) -o $@ $(M_IPC) @MOTIFLIBS@
 
@@ -97,19 +92,7 @@ install: all install_common
 		`echo vi | sed '$(transform)'` `echo ex | sed '$(transform)'`
 	cd $(bindir) && $(ln) \
 		`echo vi | sed '$(transform)'` `echo view | sed '$(transform)'`
-	@echo "Installing vi_curses, vi_motif: $(bindir) ..."
-	[ ! -f nvi_curses ] || \
-		cd $(bindir) && \
-		    $(rm) -f `echo vi_curses | sed '$(transform)'`
-	[ ! -f nvi_curses ] || \
-	        $(cp) nvi_curses \
-		    $(bindir)/`echo vi_curses | sed '$(transform)'`
-	[ ! -f nvi_curses ] || \
-	        cd $(bindir) && [ -f $(strip) ] && \
-	            $(strip) `echo vi_curses | sed '$(transform)'`
-	[ ! -f nvi_curses ] || \
-	        cd $(bindir) && \
-		    $(chmod) $(emode) `echo vi_curses | sed '$(transform)'`
+	@echo "Installing vi_motif: $(bindir) ..."
 	[ ! -f nvi_motif ] || \
 		cd $(bindir) && \
 		    $(rm) -f `echo vi_motif | sed '$(transform)'`
@@ -211,7 +194,7 @@ docs:
 
 clean:
 	-rm -f *.core *.o memcpy.c perl.c
-	-rm -f nex nvi nvi_curses nvi_motif core
+	-rm -f nex nvi nvi_motif core
 	-rm -f $(COBJS) $(CLOBJS) $(DBOBJS) $(REOBJS)
 	-rm -f $(TKOBJS) $(VIOBJS)
 
@@ -260,18 +243,12 @@ VI=-DVI=\"$(bindir)/`echo vi | sed '$(transform)'`\"
 #TR=-DTR=\"/dev/ttyp8\"
 
 # Shared IP client sources.
-$(srcdir)/ipc/ipc_run.c: Makefile
-ipc_run.o: $(srcdir)/ipc/ipc_run.c
+$(srcdir)/ipc/ip_run.c: Makefile
+ip_run.o: $(srcdir)/ipc/ip_run.c
 	$(CC) $(TR) $(VI) $(CFLAGS) $?
-ipc_send.o: $(srcdir)/ipc/ipc_send.c
+ip_send.o: $(srcdir)/ipc/ip_send.c
 	$(CC) $(TR) $(CFLAGS) $?
-ipc_trans.o: $(srcdir)/ipc/ipc_trans.c
-	$(CC) $(TR) $(CFLAGS) $?
-
-# Curses IP client sources.
-ipc_cmain.o: $(srcdir)/ipc_curses/ipc_cmain.c
-	$(CC) $(TR) $(CFLAGS) $?
-ipc_cfunc.o: $(srcdir)/ipc_curses/ipc_cfunc.c
+ip_trans.o: $(srcdir)/ipc/ip_trans.c
 	$(CC) $(TR) $(CFLAGS) $?
 
 # Motif IP client sources.
@@ -287,9 +264,13 @@ ipc_moptions.o: $(srcdir)/ipc_motif/ipc_moptions.c
 	$(CC) $(TR) $(CFLAGS) @XINCS@ $?
 ipc_mmenu.o: $(srcdir)/ipc_motif/ipc_mmenu.c
 	$(CC) $(TR) $(CFLAGS) @XINCS@ $?
+ipc_mprompt.o: $(srcdir)/ipc_motif/ipc_mprompt.c
+	$(CC) $(TR) $(CFLAGS) @XINCS@ $?
 ipc_msearch.o: $(srcdir)/ipc_motif/ipc_msearch.c
 	$(CC) $(TR) $(CFLAGS) @XINCS@ $?
 ipc_mutil.o: $(srcdir)/ipc_motif/ipc_mutil.c
+	$(CC) $(TR) $(CFLAGS) @XINCS@ $?
+ipc_mvi.o: $(srcdir)/ipc_motif/ipc_mvi.c
 	$(CC) $(TR) $(CFLAGS) @XINCS@ $?
 
 # Vi Tcl/Perl interpreter sources.
