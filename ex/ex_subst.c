@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.41 1994/04/09 18:13:57 bostic Exp $ (Berkeley) $Date: 1994/04/09 18:13:57 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.42 1994/04/12 09:27:54 bostic Exp $ (Berkeley) $Date: 1994/04/12 09:27:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -634,20 +634,6 @@ nextmatch:	sp->match[0].rm_so = 0;
 		/* Copy the bytes before the match into the build buffer. */
 		BUILD(sp, s + offset, sp->match[0].rm_so);
 
-		/*
-		 * Cursor moves to last line changed, unless doing confirm,
-		 * in which case don't move it.
-		 *
-		 * !!!
-		 * Historic vi just put the cursor on the first non-blank
-		 * of the last line changed.  We move to the beginning of
-		 * the next substitution.
-		 */
-		if (!sp->c_suffix) {
-			sp->lno = lno;
-			sp->cno = lbclen;
-		}
-
 		/* Substitute the matching bytes. */
 		didsub = 1;
 		if (regsub(sp, s + offset, &lb, &lbclen, &lblen))
@@ -772,7 +758,12 @@ endmatch:	if (!linechanged)
 		/* Update changed line counter. */
 		++sp->rptlines[L_CHANGED];
 
-		/* Display as necessary. */
+		/*
+		 * !!!
+		 * Display as necessary.  Historic practice is to only
+		 * display the last line of a line split into multiple
+		 * lines.
+		 */
 		if (lflag || nflag || pflag) {
 			from.lno = to.lno = lno;
 			from.cno = to.cno = 0;
@@ -783,6 +774,26 @@ endmatch:	if (!linechanged)
 			if (pflag)
 				ex_print(sp, ep, &from, &to, E_F_PRINT);
 		}
+
+		if (!sp->c_suffix)
+			sp->lno = lno;
+
+		/*
+		 * !!!
+		 * Move the cursor to the last line changed.
+		 */
+		if (!sp->c_suffix)
+			sp->lno = lno;
+	}
+
+	/*
+	 * !!!
+	 * Move the cursor to the first non-blank of the last line
+	 * change.
+	 */
+	if (!sp->c_suffix) {
+		sp->cno = 0;
+		(void)nonblank(sp, ep, sp->lno, &sp->cno);
 	}
 
 	/*
