@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 8.17 1993/12/27 17:56:51 bostic Exp $ (Berkeley) $Date: 1993/12/27 17:56:51 $";
+static char sccsid[] = "$Id: v_init.c,v 8.18 1994/01/09 16:47:16 bostic Exp $ (Berkeley) $Date: 1994/01/09 16:47:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -80,7 +80,10 @@ v_screen_end(sp)
 	if (vip->paragraph != NULL)
 		FREE(vip->paragraph, vip->paragraph_len);
 
+	/* Free private memory. */
 	FREE(vip, sizeof(VI_PRIVATE));
+	sp->vi_private = NULL;
+
 	return (0);
 }
 
