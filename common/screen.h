@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.94 1994/04/07 10:16:49 bostic Exp $ (Berkeley) $Date: 1994/04/07 10:16:49 $
+ *	$Id: screen.h,v 8.95 1994/04/07 11:55:06 bostic Exp $ (Berkeley) $Date: 1994/04/07 11:55:06 $
  */
 
 /*
@@ -142,8 +142,9 @@ struct _scr {
 	struct termios	 intr_term;	/* Interrupt saved terminal state. */
 	int	 intr_level;		/* 0-N: Interrupt level. */
 
-	void	*vi_private;		/* Vi private area. */
 	void	*ex_private;		/* Ex private area. */
+	void	*sex_private;		/* Ex screen private area. */
+	void	*vi_private;		/* Vi private area. */
 	void	*svi_private;		/* Vi curses screen private area. */
 	void	*xaw_private;		/* Vi XAW screen private area. */
 
