@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_ex.c,v 10.56 2001/08/28 21:05:47 skimo Exp $ (Berkeley) $Date: 2001/08/28 21:05:47 $";
+static const char sccsid[] = "$Id: v_ex.c,v 10.57 2001/08/29 11:02:16 skimo Exp $ (Berkeley) $Date: 2001/08/29 11:02:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -580,8 +580,6 @@ v_ecl_exec(SCR *sp)
 static int
 v_ecl_log(SCR *sp, TEXT *tp)
 {
-	EXF *save_ep;
-	char *save_enc;
 	db_recno_t lno;
 	int rval;
 	CHAR_T *p;
@@ -601,39 +599,21 @@ v_ecl_log(SCR *sp, TEXT *tp)
 	if (sp->ep == ccl_sp->ep)
 		return (0);
 
-	/*
-	 * XXX
-	 * Swap the current EXF with the colon command file EXF.  This
-	 * isn't pretty, but too many routines "know" that sp->ep points
-	 * to the current EXF.
-	 *
-	 * XXXX
-	 * Temporarily change fileencoding as well.
-	 */
-	save_ep = sp->ep;
-	sp->ep = ccl_sp->ep;
-
-	save_enc = O_STR(sp, O_FILEENCODING);
-	o_set(sp, O_FILEENCODING, OS_STR | OS_NOFREE, "WCHAR_T", 0);
-
-	if (db_last(sp, &lno)) {
-		sp->ep = save_ep;
+	if (db_last(ccl_sp, &lno)) {
 		return (1);
 	}
 	/* Don't log line that is identical to previous one */
 	if (lno > 0 &&
-	    !db_get(sp, lno, 0, &p, &len) &&
+	    !db_get(ccl_sp, lno, 0, &p, &len) &&
 	    len == tp->len &&
 	    !MEMCMP(tp->lb, p, len))
 		rval = 0;
 	else {
-		rval = db_append(sp, 0, lno, tp->lb, tp->len);
+		rval = db_append(ccl_sp, 0, lno, tp->lb, tp->len);
 		/* XXXX end "transaction" on ccl */
-		log_cursor(sp);
+		/* Is this still necessary now that we no longer hijack sp ? */
+		log_cursor(ccl_sp);
 	}
-	sp->ep = save_ep;
-
-	o_set(sp, O_FILEENCODING, OS_STR | OS_NOFREE, save_enc, 0);
 
 	return (rval);
 }
