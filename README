@@ -1,4 +1,4 @@
-#	$Id: README,v 8.5 1993/08/16 10:01:42 bostic Exp $ (Berkeley) $Date: 1993/08/16 10:01:42 $
+#	$Id: README,v 8.6 1993/08/16 14:54:30 bostic Exp $ (Berkeley) $Date: 1993/08/16 14:54:30 $
 
 This is the README for version 0.6 of nex/nvi, a (soon to be) freely
 redistributable replacement for the vi/ex text editors.
@@ -9,13 +9,6 @@ will be redistributable as you choose.  It and future versions this
 software will be available by anonymous ftp from ftp.cs.berkeley.edu,
 in the file ucb/4bsd/nvi.tar.Z, or from ftp.uu.net.
 
-This software is derived from software contributed to the University
-of California, Berkeley by Steve Kirkendall, the author of the vi clone
-elvis.  Without his work, this work would have been far more difficult.
-
-POSIX 1003.2 style regular expression support is courtesy of Henry Spencer,
-for which I am *very* grateful.
-
 If you have any questions, please send them by email to me at one
 of the following email addresses:
 
@@ -23,9 +16,22 @@ of the following email addresses:
 	bostic@cs.berkeley.edu
 
 Keith Bostic
-
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
+o Credit where it's due:
+
+	This software was originally derived from software contributed
+	to the University of California, Berkeley by Steve Kirkendall,
+	the author of the vi clone elvis.  Without his work, this work
+	would have been far more difficult.
+
+	POSIX 1003.2 style regular expression support is courtesy of
+	Henry Spencer, for which I am *very* grateful.
+
+	The reworked curses implementation was done by Elan Amir
+	while at the University of California, Berkeley.
+
+=-=-=-=-=-=-=-=-=-=-=
 o Comments:
 
 This software is alpha software, although it's getting fairly stable.  I
