@@ -6,10 +6,11 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.32 1992/12/23 11:25:34 bostic Exp $ (Berkeley) $Date: 1992/12/23 11:25:34 $";
+static char sccsid[] = "$Id: options.c,v 5.33 1993/01/11 20:37:22 bostic Exp $ (Berkeley) $Date: 1993/01/11 20:37:22 $";
 #endif /* not lint */
 
 #include <sys/param.h>
+#include <sys/stat.h>
 #include <sys/ioctl.h>
 
 #include <ctype.h>
@@ -29,13 +30,23 @@ static char sccsid[] = "$Id: options.c,v 5.32 1992/12/23 11:25:34 bostic Exp $ (
 #include "term.h"
 
 static int	f_columns __P((EXF *, void *));
+static int	f_flash __P((EXF *, void *));
 static int	f_keytime __P((EXF *, void *));
+static int	f_leftright __P((EXF *, void *));
 static int	f_lines __P((EXF *, void *));
+static int	f_mesg __P((EXF *, void *));
+static int	f_modelines __P((EXF *, void *));
 static int	f_ruler __P((EXF *, void *));
 static int	f_shiftwidth __P((EXF *, void *));
 static int	f_sidescroll __P((EXF *, void *));
 static int	f_tabstop __P((EXF *, void *));
+static int	f_term __P((EXF *, void *));
 static int	f_wrapmargin __P((EXF *, void *));
+
+static int	opts_abbcmp __P((const void *, const void *));
+static int	opts_cmp __P((const void *, const void *));
+static int	opts_print __P((struct _option *));
+static int	opts_print __P((struct _option *));
 
 static long	s_columns	= 80;
 static long	s_keytime	=  2;
@@ -47,11 +58,9 @@ static long	s_sidescroll	= 16;
 static long	s_tabstop	=  8;
 static long	s_wrapmargin	=  0;
 
-static int opts_abbcmp __P((const void *, const void *));
-static int opts_cmp __P((const void *, const void *));
-static int opts_print __P((struct _option *));
-static int opts_print __P((struct _option *));
-
+static mode_t	orig_mode;
+static int	set_orig_mode;
+	
 OPTIONS opts[] = {
 /* O_AUTOINDENT */
 	"autoindent",	NULL,		NULL,		OPT_0BOOL,
@@ -79,7 +88,7 @@ OPTIONS opts[] = {
 /* O_EQUALPRG */
 	"equalprg",	"fmt",		NULL,		OPT_STR,
 /* O_ERRORBELLS */
-	"errorbells",	NULL,		NULL,		OPT_1BOOL,
+	"errorbells",	NULL,		NULL,		OPT_0BOOL,
 /* O_EXRC */
 	"exrc",		NULL,		NULL,		OPT_0BOOL,
 /* O_EXREFRESH */
@@ -87,11 +96,13 @@ OPTIONS opts[] = {
 /* O_EXTENDED */
 	"extended",	NULL,		NULL,		OPT_0BOOL,
 /* O_FLASH */
-	"flash",	NULL,		NULL,		OPT_1BOOL,
+	"flash",	NULL,		f_flash,	OPT_1BOOL,
 /* O_IGNORECASE */
 	"ignorecase",	NULL,		NULL,		OPT_0BOOL,
 /* O_KEYTIME */
 	"keytime",	&s_keytime,	f_keytime,	OPT_NUM,
+/* O_LEFTRIGHT */
+	"leftright",	NULL,		f_leftright,	OPT_0BOOL,
 /* O_LINES */
 	"lines",	&s_lines,	f_lines,
 	    OPT_NOSAVE|OPT_NUM|OPT_REDRAW,
@@ -102,7 +113,9 @@ OPTIONS opts[] = {
 /* O_MAKE */
 	"make",		"make",		NULL,		OPT_STR,
 /* O_MESG */
-	"mesg",		NULL,		NULL,		OPT_1BOOL,
+	"mesg",		NULL,		f_mesg,		OPT_1BOOL,
+/* O_MODELINES */
+	"modelines",	NULL,		f_modelines,	OPT_0BOOL,
 /* O_NUMBER */
 	"number",	NULL,		NULL,		OPT_0BOOL|OPT_REDRAW,
 /* O_NUNDO */
@@ -137,13 +150,11 @@ OPTIONS opts[] = {
 /* O_TABSTOP */
 	"tabstop",	&s_tabstop,	f_tabstop,	OPT_NUM|OPT_REDRAW,
 /* O_TERM */
-	"term",		"unknown",	NULL,		OPT_NOSAVE|OPT_STR,
+	"term",		"unknown",	f_term,		OPT_NOSAVE|OPT_STR,
 /* O_TERSE */
 	"terse",	NULL,		NULL,		OPT_0BOOL,
 /* O_TIMEOUT */
 	"timeout",	NULL,		NULL,		OPT_0BOOL,
-/* O_VBELL */
-	"vbell",	NULL,		NULL,		OPT_0BOOL,
 /* O_VERBOSE */
 	"verbose",	NULL,		NULL,		OPT_0BOOL,
 /* O_WARN */
@@ -163,66 +174,66 @@ typedef struct abbrev {
 } ABBREV;
 
 static ABBREV abbrev[] = {
-	"ai",	O_AUTOINDENT,
-	"ap",	O_AUTOPRINT,
-	"at",	O_AUTOTAB,
-	"aw",	O_AUTOWRITE,
-	"bf",	O_BEAUTIFY,
-	"cc",	O_CC,
-	"co",	O_COLUMNS,
-	"dig",	O_DIGRAPH,
-	"dir",	O_DIRECTORY,
-	"eb",	O_ERRORBELLS,
-	"ed",	O_EDCOMPATIBLE,
-	"ep",	O_EQUALPRG,
-	"er",	O_EXREFRESH,
-	"fl",	O_VBELL,
-	"ic",	O_IGNORECASE,
-	"kt",	O_KEYTIME,
-	"li",	O_LIST,
-	"ls",	O_LINES,
-	"ma",	O_MAGIC,
-	"me",	O_MESG,
-	"mk",	O_MAKE,
-	"nu",	O_NUMBER,
-	"pa",	O_PARAGRAPHS,
-	"pr",	O_PROMPT,
-	"re",	O_REPORT,
-	"ro",	O_READONLY,
-	"ru",	O_RULER,
-	"sc",	O_SCROLL,
-	"se",	O_SECTIONS,
-	"sh",	O_SHELL,
-	"sm",	O_SHOWMATCH,
-	"ss",	O_SIDESCROLL,
-	"sw",	O_SHIFTWIDTH,
-	"sy",	O_SYNC,
-	"te",	O_TERM,
-	"to",	O_KEYTIME,
-	"tr",	O_TERSE,
-	"ts",	O_TABSTOP,
-	"vb",	O_VBELL,
-	"ve",	O_VERBOSE,
-	"wa",	O_WARN,
-	"wm",	O_WRAPMARGIN,
-	"wr",	O_WRITEANY,
-	"ws",	O_WRAPSCAN,
+	"ai",		O_AUTOINDENT,
+	"ap",		O_AUTOPRINT,
+	"at",		O_AUTOTAB,
+	"aw",		O_AUTOWRITE,
+	"bf",		O_BEAUTIFY,
+	"cc",		O_CC,
+	"co",		O_COLUMNS,
+	"dig",		O_DIGRAPH,
+	"dir",		O_DIRECTORY,
+	"eb",		O_ERRORBELLS,
+	"ed",		O_EDCOMPATIBLE,
+	"ep",		O_EQUALPRG,
+	"er",		O_EXREFRESH,
+	"fl",		O_FLASH,
+	"ic",		O_IGNORECASE,
+	"kt",		O_KEYTIME,
+	"li",		O_LIST,
+	"ls",		O_LINES,
+	"ma",		O_MAGIC,
+	"me",		O_MESG,
+	"mk",		O_MAKE,
+	"modeline",	O_MODELINES,
+	"nu",		O_NUMBER,
+	"pa",		O_PARAGRAPHS,
+	"pr",		O_PROMPT,
+	"re",		O_REPORT,
+	"ro",		O_READONLY,
+	"ru",		O_RULER,
+	"sc",		O_SCROLL,
+	"se",		O_SECTIONS,
+	"sh",		O_SHELL,
+	"sm",		O_SHOWMATCH,
+	"ss",		O_SIDESCROLL,
+	"sw",		O_SHIFTWIDTH,
+	"sy",		O_SYNC,
+	"te",		O_TERM,
+	"to",		O_KEYTIME,
+	"tr",		O_TERSE,
+	"ts",		O_TABSTOP,
+	"ve",		O_VERBOSE,
+	"wa",		O_WARN,
+	"wm",		O_WRAPMARGIN,
+	"wr",		O_WRITEANY,
+	"ws",		O_WRAPSCAN,
 	NULL,
 };
 
 /*
  * opts_init --
- *	Initialize some of the options.  Since the user isn't really "setting"
- *	these variables, we don't set their OPT_SET bits.
+ *	Initialize some of the options.  Since the user isn't really
+ *	"setting" these variables, we don't set their OPT_SET bits.
  */
 int
 opts_init()
 {
 	struct winsize win;
 	size_t row, col;
-	char *s, *argv[2], obuf[100];
+	char *s, *argv[2], b1[1024];
 
-	argv[0] = obuf;
+	argv[0] = b1;
 	argv[1] = NULL;
 
 	row = 80;
@@ -249,28 +260,38 @@ opts_init()
 	if ((s = getenv("COLUMNS")) != NULL)
 		col = strtol(s, NULL, 10);
 
-	(void)snprintf(obuf, sizeof(obuf), "ls=%u", row);
-	if (opts_set(argv))
-		return (1);
-	(void)snprintf(obuf, sizeof(obuf), "co=%u", col);
-	if (opts_set(argv))
-		return (1);
-	(void)snprintf(obuf, sizeof(obuf), "sc=%u", row / 2 - 1);
-	if (opts_set(argv))
-		return (1);
+	(void)snprintf(b1, sizeof(b1), "ls=%u", row);	/* O_LINES */
+	(void)opts_set(argv);
+	(void)snprintf(b1, sizeof(b1), "co=%u", col);	/* O_COLUMNS */
+	(void)opts_set(argv);				/* O_SCROLL */
+	(void)snprintf(b1, sizeof(b1), "sc=%u", row / 2 - 1);
+	(void)opts_set(argv);
 
-	if (s = getenv("SHELL")) {
-		(void)snprintf(obuf, sizeof(obuf), "shell=%s", s);
-		if (opts_set(argv))
-			return (1);
+	if (s = getenv("SHELL")) {			/* O_SHELL */
+		(void)snprintf(b1, sizeof(b1), "shell=%s", s);
+		(void)opts_set(argv);
 	}
 
-	/* Disable the vbell option if we don't know how to do a vbell. */
-	if (!VB) {
-		FSET(O_FLASH, OPT_NOSET);
-		FSET(O_VBELL, OPT_NOSET);
-	}
+	(void)f_flash(NULL, NULL);			/* O_FLASH */
 	return (0);
+
+}
+
+/*
+ * opts_end --
+ *	Reset anything that the options changed.
+ */
+void
+opts_end()
+{
+	char *tty;
+
+	if (set_orig_mode) {			/* O_MESG */
+		if ((tty = ttyname(STDERR_FILENO)) == NULL)
+			msg("ttyname: %s", strerror(errno));
+		else if (chmod(tty, orig_mode) < 0)
+			msg("%s: %s", strerror(errno));
+	}
 }
 
 /*
@@ -376,7 +397,7 @@ found:		if (op == NULL || off && !ISFSETP(op, OPT_0BOOL|OPT_1BOOL)) {
 			}
 			FUNSETP(op, OPT_0BOOL | OPT_1BOOL);
 			FSETP(op, (off ? OPT_0BOOL : OPT_1BOOL) | OPT_SET);
-			if (op->func && op->func(curf, &value)) {
+			if (op->func && op->func(curf, &off)) {
 				rval = 1;
 				break;
 			}
@@ -440,27 +461,113 @@ f_columns(ep, valp)
 
 #define	MINCOLUMNS	10
 	if (val < MINCOLUMNS) {
-		msg("Screen columns too small, less than %d.\n", MINCOLUMNS);
+		msg("Screen columns too small, less than %d.", MINCOLUMNS);
 		return (1);
 	}
 	if (val < LVAL(O_SHIFTWIDTH)) {
-		msg("Screen columns too small, less than shiftwidth.\n");
+		msg("Screen columns too small, less than shiftwidth.");
 		return (1);
 	}
 	if (val < LVAL(O_SIDESCROLL)) {
-		msg("Screen columns too small, less than sidescroll.\n");
+		msg("Screen columns too small, less than sidescroll.");
 		return (1);
 	}
 	if (val < LVAL(O_TABSTOP)) {
-		msg("Screen columns too small, less than tabstop.\n");
+		msg("Screen columns too small, less than tabstop.");
 		return (1);
 	}
 	if (val < LVAL(O_WRAPMARGIN)) {
-		msg("Screen columns too small, less than wrapmargin.\n");
+		msg("Screen columns too small, less than wrapmargin.");
+		return (1);
+	}
+	if (val < O_NUMBER_LENGTH) {
+		msg("Screen columns too small, less than number option.");
 		return (1);
 	}
 	(void)snprintf(buf, sizeof(buf), "%lu", val);
 	(void)setenv("COLUMNS", buf, 1);
+	return (0);
+}
+
+static int
+f_flash(NO_ep, NO_valp)
+	EXF *NO_ep;
+	void *NO_valp;
+{
+	size_t len;
+	char *s, b1[1024], b2[1024];
+	
+	/*
+	 * DO NOT USE EITHER OF THE ARGUMENTS TO THIS ROUTINE -- THEY MAY
+	 * NOT BE INITIALIZED.
+	 */
+
+	if ((s = getenv("TERM")) == NULL) {
+		msg("No \"TERM\" value set in the environment.");
+		return (1);
+	}
+
+	/* Get the termcap information. */
+	if (tgetent(b1, s) != 1) {
+		msg("No termcap entry for %s.", s);
+		return (1);
+	}
+
+	/*
+	 * Get the visual bell string.  If one doesn't exist, then
+	 * set O_ERRORBELLS.
+	 */
+	if (tgetstr("vb", &s) == NULL) {
+		SET(O_ERRORBELLS);
+		UNSET(O_FLASH);
+		return (1);
+	}
+
+	len = s - b2;
+	if ((VB = malloc(len)) == NULL) {
+		msg("Error: %s", strerror(errno));
+		return (1);
+	}
+
+	bcopy(b2, s, len);
+
+	if (VB != NULL)
+		free(VB);
+	VB = s;
+
+	return (0);
+}
+
+static int
+f_mesg(ep, valp)
+	EXF *ep;
+	void *valp;
+{
+	struct stat sb;
+	char *tty;
+
+	if ((tty = ttyname(STDERR_FILENO)) == NULL) {
+		msg("ttyname: %s", strerror(errno));
+		return (1);
+	}
+	if (stat(tty, &sb) < 0) {
+		msg("%s: %s", strerror(errno));
+		return (1);
+	}
+
+	set_orig_mode = 1;
+	orig_mode = sb.st_mode;
+
+	if (ISSET(O_MESG)) {
+		if (chmod(tty, sb.st_mode | S_IWGRP) < 0) {
+			msg("%s: %s", strerror(errno));
+			return (1);
+		}
+	} else
+		if (chmod(tty, sb.st_mode & ~S_IWGRP) < 0) {
+			msg("%s: %s", strerror(errno));
+			return (1);
+		}
 	return (0);
 }
 
@@ -475,10 +582,18 @@ f_keytime(ep, valp)
 
 #define	MAXKEYTIME	20
 	if (val > MAXKEYTIME) {
-		msg("Keytime too large, more than %d.\n", MAXKEYTIME);
+		msg("Keytime too large, more than %d.", MAXKEYTIME);
 		return (1);
 	}
 	return (0);
+}
+
+static int
+f_leftright(ep, valp)
+	EXF *ep;
+	void *valp;
+{
+	return (scr_end(ep) || scr_init(ep));
 }
 
 static int
@@ -493,11 +608,23 @@ f_lines(ep, valp)
 
 #define	MINLINES	4
 	if (val < MINLINES) {
-		msg("Screen lines too small, less than %d.\n", MINLINES);
+		msg("Screen lines too small, less than %d.", MINLINES);
 		return (1);
 	}
 	(void)snprintf(buf, sizeof(buf), "%lu", val);
 	(void)setenv("ROWS", buf, 1);
+	return (0);
+}
+
+static int
+f_modelines(ep, valp)
+	EXF *ep;
+	void *valp;
+{
+	if (ISSET(O_MODELINES)) {
+		msg("The modelines option may not be set.");
+		UNSET(O_MODELINES);
+	}
 	return (0);
 }
 
@@ -521,7 +648,7 @@ f_shiftwidth(ep, valp)
 	val = *(u_long *)valp;
 
 	if (val > LVAL(O_COLUMNS)) {
-		msg("Shiftwidth can't be larger than screen size.\n");
+		msg("Shiftwidth can't be larger than screen size.");
 		return (1);
 	}
 	return (0);
@@ -537,7 +664,7 @@ f_sidescroll(ep, valp)
 	val = *(u_long *)valp;
 
 	if (val > LVAL(O_COLUMNS)) {
-		msg("Sidescroll can't be larger than screen size.\n");
+		msg("Sidescroll can't be larger than screen size.");
 		return (1);
 	}
 	return (0);
@@ -553,20 +680,28 @@ f_tabstop(ep, valp)
 	val = *(u_long *)valp;
 
 	if (val == 0) {
-		msg("Tab stops can't be set to 0.\n");
+		msg("Tab stops can't be set to 0.");
 		return (1);
 	}
 #define	MAXTABSTOP	20
 	if (val > MAXTABSTOP) {
-		msg("Tab stops can't be larger than %d.\n", MAXTABSTOP);
+		msg("Tab stops can't be larger than %d.", MAXTABSTOP);
 		return (1);
 	}
 	if (val > LVAL(O_COLUMNS)) {
-		msg("Tab stops can't be larger than screen size.\n",
+		msg("Tab stops can't be larger than screen size.",
 		    MAXTABSTOP);
 		return (1);
 	}
 	return (0);
+}
+
+static int
+f_term(ep, valp)
+	EXF *ep;
+	void *valp;
+{
+	return (f_flash(ep, NULL));
 }
 
 static int
@@ -579,7 +714,7 @@ f_wrapmargin(ep, valp)
 	val = *(u_long *)valp;
 
 	if (val > LVAL(O_COLUMNS)) {
-		msg("Wrapmargin value can't be larger than screen size.\n");
+		msg("Wrapmargin value can't be larger than screen size.");
 		return (1);
 	}
 	return (0);
