@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 8.33 1994/03/10 12:08:51 bostic Exp $ (Berkeley) $Date: 1994/03/10 12:08:51 $";
+static char sccsid[] = "$Id: vs_smap.c,v 8.34 1994/03/10 13:06:33 bostic Exp $ (Berkeley) $Date: 1994/03/10 13:06:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -372,9 +372,10 @@ svi_sm_reset(sp, ep, lno)
 	 * If so, repaint, otherwise do it the hard way.
 	 */
 	for (p = HMAP; p->lno != lno; ++p);
-	if (O_ISSET(sp, O_LEFTRIGHT))
+	if (O_ISSET(sp, O_LEFTRIGHT)) {
+		t = p;
 		cnt_orig = cnt_new = 1;
-	else {
+	} else {
 		for (cnt_orig = 0,
 		    t = p; t <= TMAP && t->lno == lno; ++cnt_orig, ++t);
 		cnt_new = svi_opt_screens(sp, ep, lno, NULL);
