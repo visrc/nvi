@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.57 1993/11/22 18:33:24 bostic Exp $ (Berkeley) $Date: 1993/11/22 18:33:24 $";
+static char sccsid[] = "$Id: ex.c,v 8.58 1993/11/26 17:57:09 bostic Exp $ (Berkeley) $Date: 1993/11/26 17:57:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -50,7 +50,13 @@ ex(sp, ep)
 	if (sp->s_refresh(sp, ep))
 		return (ex_end(sp));
 
-	for (eval = 0;;) {
+	/* If reading from a file, messages should have line info. */
+	if (!F_ISSET(sp->gp, G_ISFROMTTY)) {
+		F_SET(sp, S_FILEINPUT);
+		sp->if_lno = 1;
+		sp->if_name = "input";
+	}
+	for (eval = 0;; ++sp->if_lno) {
 		/* Get the next command. */
 		switch (sp->s_get(sp, ep, &sp->tiq, ':', TXT_CR | TXT_PROMPT)) {
 		case INP_OK:
@@ -86,7 +92,8 @@ ex(sp, ep)
 			break;
 		}
 	}
-ret:	return (ex_end(sp) || eval);
+ret:	F_CLR(sp, S_FILEINPUT);
+	return (ex_end(sp) || eval);
 }
 
 /*
@@ -102,6 +109,11 @@ ex_cfile(sp, ep, filename)
 	struct stat sb;
 	int fd, len, rval;
 	char *bp;
+
+	/* Messages should include file/line information. */
+	F_SET(sp, S_FILEINPUT);
+	sp->if_lno = 0;
+	sp->if_name = filename;
 
 	if ((fd = open(filename, O_RDONLY, 0)) < 0)
 		goto e1;
@@ -135,11 +147,13 @@ ex_cfile(sp, ep, filename)
 	 */
 	free(bp);
 	(void)close(fd);
+	F_CLR(sp, S_FILEINPUT);
 	return (rval);
 
 e3:	free(bp);
 e2:	(void)close(fd);
 e1:	msgq(sp, M_SYSERR, filename);
+	F_CLR(sp, S_FILEINPUT);
 	return (1);
 }
 
@@ -182,38 +196,43 @@ ex_cstring(sp, ep, cmd, len)
 	 * shell pipes) ex and edit take ex commands as arguments, and global,
 	 * vglobal and substitute take RE's as arguments and want their first
 	 * argument be specially delimited, not necessarily by '|' characters.
-	 * See ep_comm(), ep_re() and ep_rw() below for details.
+	 * See ep_comm(), ep_re() and ep_rw() below for the horrifying details.
 	 */
 	arg1 = NULL;
 	arg1_len = 0;
-	saved_mode = F_ISSET(sp, S_SCREENS | S_MAJOR_CHANGE);
 	for (p = t = cmd;;) {
+		/* The beginning of a line. */
 		if (p == cmd) {
-			/* Skip leading whitespace, literals, newlines. */
+			/* Skip leading "\t |\n". */
 			for (; len > 0; ++t, --len) {
 				ch = *t;
 				if (isblank(ch) || ch == '|')
 					continue;
-				if (sp->special[ch] == K_CR ||
-				    sp->special[ch] == K_NL || 
-				    sp->special[ch] == K_VLNEXT)
+				if (sp->special[ch] == K_NL) {
+					++sp->if_lno;
 					continue;
+				}
 				break;
 			}
 
 			/*
-			 * Skip leading address.  The command starts with
-			 * the first alphabetic character.
+			 * Special case read/write, ex/edit, RE commands.  We
+			 * have to identify the command, so skip the leading
+			 * address.  Addresses are complex, so skip forward
+			 * until reach the start of the command, i.e. the first
+			 * alphabetic character.  Copy the command up to then,
+			 * just in case it's not an address at all.
 			 */
 			for (; len > 0; ++p, ++t, --len) {
 				ch = *p = *t;
-				if (isalpha(ch) ||
-				    sp->special[ch] == K_CR ||
-				    sp->special[ch] == K_NL)
+				if (isalpha(ch))	/* Command. */
 					break;
+							/* Something else. */
+				if (sp->special[ch] == K_NL) {
+					++sp->if_lno;
+					break;
+				}
 			}
-
-			/* Special case read/write, ex/edit, RE commands. */
 			if (len > 0 &&
 			    strchr("egrvws", t[0] == ':' ? t[1] : t[0]))
 				switch (t[0] == ':' ? t[1] : t[0]) {
@@ -235,25 +254,49 @@ ex_cstring(sp, ep, cmd, len)
 				goto cend;
 		}
 
-		ch = *t++;
+		ch = *t++;		/* Get the next character. */
 		--len;			/* Characters remaining. */
 
 		/*
 		 * Historically, vi permitted ^V's to escape <newline>'s in
 		 * the .exrc file.  It was almost certainly a bug, but that's
-		 * what bug-for-bug compatibility means, Grasshopper.
+		 * what bug-for-bug compatibility means, Grasshopper.  Also,
+		 * escape command separators.
 		 */
 		if (sp->special[ch] == K_VLNEXT && len > 0 &&
 		   (t[0] == '|' || sp->special[t[0]] == K_NL)) {
 			--len;
 			*p++ = *t++;
+			if (sp->special[t[0]] == K_NL)
+				++sp->if_lno;
 			continue;
 		}
+
+		/* Increment line counter. */
+		if (sp->special[ch] == K_NL)
+			++sp->if_lno;
+
+		/*
+		 * If the end of the string, or a command separator, run
+		 * the command.
+		 */
 		if (len == 0 || ch == '|' || sp->special[ch] == K_NL) {
+			/*
+			 * If we got here because we ran out of line, not
+			 * because we ran into a separator, put the last
+			 * character into the command buffer.
+			 */
 			if (len == 0 && ch != '|' && sp->special[ch] != K_NL)
 				*p++ = ch;
+			
+			/*
+			 * If we actually got a command, run it.  If it
+			 * errors or the modes change, we're outta here.
+			 */
 cend:			if (p > cmd) {
-				*p = '\0';	/* XXX: 8BIT */
+				saved_mode =
+				    F_ISSET(sp, S_SCREENS | S_MAJOR_CHANGE);
+				*p = '\0';
 				if (ex_cmd(sp, ep, cmd, arg1_len)) {
 					if (len || TERM_MORE(sp->gp->key)) {
 						TERM_FLUSH(sp->gp->key);
@@ -263,10 +306,10 @@ cend:			if (p > cmd) {
 					return (1);
 				}
 				p = cmd;
+				if (saved_mode !=
+				    F_ISSET(sp, S_SCREENS | S_MAJOR_CHANGE))
+					break;
 			}
-			if (saved_mode !=
-			    F_ISSET(sp, S_SCREENS | S_MAJOR_CHANGE))
-				break;
 			if (len == 0)
 				return (0);
 		} else
