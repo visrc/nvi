@@ -156,7 +156,7 @@ MARK	m_fsrch(m, ptrn)
 		}
 
 		/* get this line */
-		line = fetchline(l);
+		line = fetchline(l, NULL);
 
 		/* check this line */
 		if (regexec(re, &line[pos], (pos == 0)))
@@ -253,7 +253,7 @@ MARK	m_bsrch(m, ptrn)
 		}
 
 		/* get this line */
-		line = fetchline(l);
+		line = fetchline(l, NULL);
 
 		/* check this line */
 		if (regexec(re, line, 1) && (int)(re->startp[0] - line) < pos)
