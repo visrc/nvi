@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.22 1993/11/13 18:00:51 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:00:51 $";
+static char sccsid[] = "$Id: key.c,v 8.23 1993/11/14 16:58:28 bostic Exp $ (Berkeley) $Date: 1993/11/14 16:58:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -101,10 +101,7 @@ term_init(sp)
 	sp->special[ch] = K_VWERASE;
 	sp->special['0'] = K_ZERO;
 
-	/*
-	 * Special terminal keys.
-	 * Get the termcap entry.
-	 */
+	/* Special terminal keys, from the termcap entry. */
 	switch (tgetent(buf, O_STR(sp, O_TERM))) {
 	case -1:
 		msgq(sp, M_ERR, "%s tgetent: %s.",
