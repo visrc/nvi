@@ -4,7 +4,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: ip.h,v 8.14 1996/12/14 14:01:50 bostic Exp $ (Berkeley) $Date: 1996/12/14 14:01:50 $
+ *	$Id: ip.h,v 8.15 1996/12/16 09:40:26 bostic Exp $ (Berkeley) $Date: 1996/12/16 09:40:26 $
  */
 
 extern int vi_ofd;		/* Output file descriptor. */
@@ -105,11 +105,13 @@ typedef struct _ip_buf {
 #define	VI_WRITE	32	/* Write. */
 #define	VI_WRITEAS	33	/* Write as another file: IPO_STR. */
 
-#define	VI_SEARCH_IC	0x001	/* VI_C_SEARCH: ignore case. */
-#define	VI_SEARCH_INCR	0x002	/* VI_C_SEARCH: incremental search. */
-#define	VI_SEARCH_LIT	0x004	/* VI_C_SEARCH: literal string. */
-#define	VI_SEARCH_REV	0x008	/* VI_C_SEARCH: reverse direction. */
-#define	VI_SEARCH_WR	0x010	/* VI_C_SEARCH: wrap at sof/eof. */
+#define	VI_SEARCH_EXT	0x001	/* VI_C_SEARCH: ignore case. */
+#define	VI_SEARCH_IC	0x002	/* VI_C_SEARCH: ignore case. */
+#define	VI_SEARCH_ICL	0x004	/* VI_C_SEARCH: ignore case if lower-case. */
+#define	VI_SEARCH_INCR	0x008	/* VI_C_SEARCH: incremental search. */
+#define	VI_SEARCH_LIT	0x010	/* VI_C_SEARCH: literal string. */
+#define	VI_SEARCH_REV	0x020	/* VI_C_SEARCH: reverse direction. */
+#define	VI_SEARCH_WR	0x040	/* VI_C_SEARCH: wrap at sof/eof. */
 
 /*
  * IP events sent from vi to the screen.

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_subst.c,v 10.38 1996/12/11 13:04:43 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:04:43 $";
+static const char sccsid[] = "$Id: ex_subst.c,v 10.39 1996/12/16 09:40:10 bostic Exp $ (Berkeley) $Date: 1996/12/16 09:40:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -916,13 +916,15 @@ re_compile(sp, ptrn, plen, ptrnp, lenp, rep, flags)
 			reflags |= REG_EXTENDED;
 		if (O_ISSET(sp, O_IGNORECASE))
 			reflags |= REG_ICASE;
-		if (O_ISSET(sp, O_ICLOWER)) {
-			for (p = ptrn, len = plen; len > 0; ++p, --len)
-				if (isupper(*p))
-					break;
-			if (len == 0)
-				reflags |= REG_ICASE;
-		}
+		if (O_ISSET(sp, O_ICLOWER))
+			goto iclower;
+	}
+	if (LF_ISSET(SEARCH_ICL)) {
+iclower:	for (p = ptrn, len = plen; len > 0; ++p, --len)
+			if (isupper(*p))
+				break;
+		if (len == 0)
+			reflags |= REG_ICASE;
 	}
 
 	/* If we're replacing a saved value, clear the old one. */
