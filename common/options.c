@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 10.18 1995/10/31 11:04:20 bostic Exp $ (Berkeley) $Date: 1995/10/31 11:04:20 $";
+static char sccsid[] = "$Id: options.c,v 10.19 1995/11/05 13:29:49 bostic Exp $ (Berkeley) $Date: 1995/11/05 13:29:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,8 +31,8 @@ static char sccsid[] = "$Id: options.c,v 10.18 1995/10/31 11:04:20 bostic Exp $ 
 
 static int	 	 opts_abbcmp __P((const void *, const void *));
 static int	 	 opts_cmp __P((const void *, const void *));
-static OPTLIST const	*opts_prefix __P((char *));
 static int	 	 opts_print __P((SCR *, OPTLIST const *));
+static OPTLIST const	*opts_search __P((char *));
 
 /*
  * O'Reilly noted options and abbreviations are from "Learning the VI Editor",
@@ -400,6 +400,49 @@ err:	msgq(sp, M_ERR,
 	return (1);
 }
 
+/* 
+ * opts_get --
+ *	Given an option, return its value as a string.
+ *
+ * XXX
+ * Currently only used by the Tcl interpreter.
+ */
+int opts_get(sp, target, value)
+	SCR *sp;
+	CHAR_T *target, **value;
+{
+	int found = 0, offset;
+	OPTLIST const *op;
+
+	if ((op = opts_search(target)) == NULL)
+		return (1);
+
+	offset = op - optlist;
+	switch (op->type) {
+	case OPT_0BOOL:
+	case OPT_1BOOL:
+		MALLOC_RET(sp, *value, CHAR_T *, strlen(op->name) + 2);
+		(void)sprintf(*value,
+		    "%s%s", O_ISSET(sp, offset) ? "" : "no", op->name);
+		break;
+	case OPT_NUM:
+		MALLOC_RET(sp, *value, CHAR_T *, 20);
+		(void)sprintf(*value, "%ld", (u_long)O_VAL(sp, offset));
+		break;
+	case OPT_STR:
+		if (O_STR(sp, offset) == NULL) {
+			MALLOC_RET(sp, *value, CHAR_T *, 2);
+			value[0] = '\0';
+		} else {
+			MALLOC_RET(sp,
+			    *value, CHAR_T *, strlen(O_STR(sp, offset)));
+			(void)sprintf(*value, "%s", O_STR(sp, offset));
+		}
+		break;
+	}
+	return (0);
+}
+
 /*
  * opts_set --
  *	Change the values of one or more options.
@@ -415,9 +458,7 @@ opts_set(sp, argv, setdef, usage)
 {
 	enum optdisp disp;
 	enum nresult nret;
-	OABBREV atmp, *ap;
 	OPTLIST const *op;
-	OPTLIST otmp;
 	OPTION *spo;
 	u_long value, turnoff;
 	int ch, equals, nf, nf2, offset, qmark, rval;
@@ -457,45 +498,15 @@ opts_set(sp, argv, setdef, usage)
 		if (sep != NULL)
 			*sep++ = '\0';
 
-		/* Check list of abbreviations, then options. */
-		atmp.name = name;
-		if ((ap = bsearch(&atmp, abbrev,
-		    sizeof(abbrev) / sizeof(OABBREV) - 1,
-		    sizeof(OABBREV), opts_abbcmp)) != NULL) {
-			op = optlist + ap->offset;
-			goto found;
-		}
-		otmp.name = name;
-		if ((op = bsearch(&otmp, optlist,
-		    sizeof(optlist) / sizeof(OPTLIST) - 1,
-		    sizeof(OPTLIST), opts_cmp)) != NULL)
-			goto found;
-
-		/* Try the name without any leading "no". */
-		if (name[0] == 'n' && name[1] == 'o') {
+		/* Search for the name, then name without any leading "no". */
+		if ((op = opts_search(name)) == NULL &&
+		    name[0] == 'n' && name[1] == 'o') {
 			turnoff = 1;
 			name += 2;
-		} else
-			goto prefix;
-
-		/* Check list of abbreviations, then options. */
-		atmp.name = name;
-		if ((ap = bsearch(&atmp, abbrev,
-		    sizeof(abbrev) / sizeof(OABBREV) - 1,
-		    sizeof(OABBREV), opts_abbcmp)) != NULL) {
-			op = optlist + ap->offset;
-			goto found;
+			op = opts_search(name);
 		}
-		otmp.name = name;
-		if ((op = bsearch(&otmp, optlist,
-		    sizeof(optlist) / sizeof(OPTLIST) - 1,
-		    sizeof(OPTLIST), opts_cmp)) != NULL)
-			goto found;
 
-		/* Check for prefix match. */
-prefix:		op = opts_prefix(name);
-
-found:		if (op == NULL) {
+		if (op == NULL) {
 			msgq_str(sp, M_ERR, name,
 		    "033|set: no %s option: 'set all' gives all option values");
 			rval = 1;
@@ -891,32 +902,48 @@ opts_save(sp, fp)
 	return (0);
 }
 
-/*
- * opts_prefix --
- *	Check to see if the name is the prefix of one (and only one)
- *	option.  If so, return the option.
+/* 
+ * opts_search --
+ *	Search for an option.
  */
 static OPTLIST const *
-opts_prefix(name)
+opts_search(name)
 	char *name;
 {
-	OPTLIST const *op, *save_op;
+	OPTLIST const *op, *found;
+	OABBREV atmp, *ap;
+	OPTLIST otmp;
 	size_t len;
 
-	save_op = NULL;
+	/* Check list of abbreviations. */
+	atmp.name = name;
+	if ((ap = bsearch(&atmp, abbrev, sizeof(abbrev) / sizeof(OABBREV) - 1,
+	    sizeof(OABBREV), opts_abbcmp)) != NULL)
+		return (optlist + ap->offset);
+
+	/* Check list of options. */
+	otmp.name = name;
+	if ((op = bsearch(&otmp, optlist, sizeof(optlist) / sizeof(OPTLIST) - 1,
+	    sizeof(OPTLIST), opts_cmp)) != NULL)
+		return (op);
+		
+	/*
+	 * Check to see if the name is the prefix of one (and only one)
+	 * option.  If so, return the option.
+	 */
 	len = strlen(name);
-	for (op = optlist; op->name != NULL; ++op) {
+	for (found = NULL, op = optlist; op->name != NULL; ++op) {
 		if (op->name[0] < name[0])
 			continue;
 		if (op->name[0] > name[0])
 			break;
 		if (!memcmp(op->name, name, len)) {
-			if (save_op != NULL)
+			if (found != NULL)
 				return (NULL);
-			save_op = op;
+			found = op;
 		}
 	}
-	return (save_op);
+	return (found);
 }
 
 static int
