@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.74 1996/10/19 11:25:01 bostic Exp $ (Berkeley) $Date: 1996/10/19 11:25:01 $
+#	$Id: Makefile.in,v 8.75 1996/10/23 09:43:38 bostic Exp $ (Berkeley) $Date: 1996/10/23 09:43:38 $
 
 srcdir=	@srcdir@/..
 CC=	@CC@
@@ -117,7 +117,7 @@ install: all install_common
 	cd $(mandir)/man1 && $(ln) \
 	    `echo vi.1 | sed '$(transform)'` `echo view.1 | sed '$(transform)'`
 
-cat=	dutch english german ru_SU.KOI8-R swedish
+cat=	dutch english french german ru_SU.KOI8-R spanish swedish
 install_common:
 	[ -f $(chmod) ]
 	[ -f $(cp) ]
