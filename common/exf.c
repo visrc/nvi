@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.13 1993/08/17 18:44:35 bostic Exp $ (Berkeley) $Date: 1993/08/17 18:44:35 $";
+static char sccsid[] = "$Id: exf.c,v 8.14 1993/08/23 09:56:17 bostic Exp $ (Berkeley) $Date: 1993/08/23 09:56:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -212,14 +212,11 @@ file_init(sp, ep, frp, rcv_fname)
 	oinfo.psize = psize;
 	oinfo.flags = F_ISSET(sp->gp, G_SNAPSHOT) ? R_SNAPSHOT : 0;
 	if (rcv_fname == NULL) {
-		if (rcv_tmp(sp, ep, frp->fname)) {
-			oinfo.bfname = NULL;
+		if (rcv_tmp(sp, ep, frp->fname))
 			msgq(sp, M_ERR,
 		    "Modifications not recoverable if the system crashes.");
-		} else {
-			F_SET(ep, F_RCV_ON);
+		else
 			oinfo.bfname = ep->rcv_path;
-		}
 	} else if ((ep->rcv_path = strdup(rcv_fname)) == NULL) {
 		msgq(sp, M_ERR, "Error: %s", strerror(errno));
 		goto err;
@@ -238,11 +235,11 @@ file_init(sp, ep, frp, rcv_fname)
 	 * We assume that EAGAIN is the former.  There really isn't a
 	 * portable way to do this.
 	 */
-	ep->db = dbopen(oname,
+	ep->db = dbopen(rcv_fname == NULL ? oname : NULL,
 	    O_EXLOCK | O_NONBLOCK| O_RDONLY, DEFFILEMODE, DB_RECNO, &oinfo);
 	if (ep->db == NULL) {
 		sverrno = errno;
-		ep->db = dbopen(oname,
+		ep->db = dbopen(rcv_fname == NULL ? oname : NULL,
 		    O_NONBLOCK | O_RDONLY, DEFFILEMODE, DB_RECNO, &oinfo);
 		if (ep->db == NULL) {
 			msgq(sp, M_ERR, "%s: %s", oname, strerror(errno));
@@ -305,27 +302,43 @@ file_end(sp, ep, force)
 	EXF *ep;
 	int force;
 {
+	int termsignal;
+
 	/* If multiply referenced, decrement count and return. */
 	if (--ep->refcnt != 0)
 		return (0);
 
+	/*
+	 * The HUP and TERM signal handlers use this routine.  If the
+	 * S_TERMSIGNAL flag is set, we clean up and get out.  We very
+	 * specifically don't muck with linked lists or messages.
+	 * Check everything for a NULL value, this makes the "drop core"
+	 * window quite small.
+	 */
+	termsignal = F_ISSET(sp, S_TERMSIGNAL);
+
 	/* Close the db structure. */
-	if (ep->db->close(ep->db) && !force) {
-		msgq(sp, M_ERR,
-		    "%s: close: %s", sp->frp->fname, strerror(errno));
+	if (ep->db->close != NULL && ep->db->close(ep->db) && !force) {
+		if (!termsignal)
+		    msgq(sp, M_ERR,
+		        "%s: close: %s", sp->frp->fname, strerror(errno));
 		return (1);
 	}
 
 	/* Delete the recovery file. */
 	if (!F_ISSET(ep, F_RCV_NORM)) {
-		(void)unlink(ep->rcv_path);
-		(void)unlink(ep->rcv_mpath);
+		if (ep->rcv_path != NULL)
+			(void)unlink(ep->rcv_path);
+		if (ep->rcv_mpath != NULL)
+			(void)unlink(ep->rcv_mpath);
 	}
 	/* Free recovery memory. */
-	if (ep->rcv_path != NULL)
-		FREE(ep->rcv_path, strlen(ep->rcv_path));
-	if (ep->rcv_mpath != NULL)
-		FREE(ep->rcv_mpath, strlen(ep->rcv_mpath));
+	if (!termsignal) {
+		if (ep->rcv_path != NULL)
+			FREE(ep->rcv_path, strlen(ep->rcv_path));
+		if (ep->rcv_mpath != NULL)
+			FREE(ep->rcv_mpath, strlen(ep->rcv_mpath));
+	}
 
 	/*
 	 * Committed to the close.
@@ -340,20 +353,23 @@ file_end(sp, ep, force)
 	 * fname.  The screen end code will free it.
 	 */
 	if (sp->frp->tname != NULL) {
-		if (unlink(sp->frp->tname))
+		if (unlink(sp->frp->tname) && !termsignal)
 			msgq(sp, M_ERR,
 			    "%s: remove: %s", sp->frp->tname, strerror(errno));
-		if (!F_ISSET(sp->frp, FR_NONAME))
-			FREE(sp->frp->tname, strlen(sp->frp->tname));
-		sp->frp->tname = NULL;
+		if (!termsignal) {
+			if (!F_ISSET(sp->frp, FR_NONAME))
+				FREE(sp->frp->tname, strlen(sp->frp->tname));
+			sp->frp->tname = NULL;
+		}
 	}
 
-	/* Delete the EXF structure from the chain. */
-	HDR_DELETE(ep, next, prev, EXF);
+	if (!termsignal) {
+		/* Delete the EXF structure from the chain. */
+		HDR_DELETE(ep, next, prev, EXF);
 
-	/* Free the EXF structure. */
-	FREE(ep, sizeof(EXF));
-
+		/* Free the EXF structure. */
+		FREE(ep, sizeof(EXF));
+	}
 	return (0);
 }
 
