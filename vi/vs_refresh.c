@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.25 1993/02/15 12:46:07 bostic Exp $ (Berkeley) $Date: 1993/02/15 12:46:07 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.26 1993/02/15 13:07:20 bostic Exp $ (Berkeley) $Date: 1993/02/15 13:07:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1117,21 +1117,17 @@ scr_smmid(ep, lnop)
 	EXF *ep;
 	recno_t *lnop;
 {
-	recno_t last, mid;
+	recno_t last, down;
 
 	/* Check for less than a full screen of lines. */
 	last = file_lline(ep);
 	if (TMAP->lno < last)
 		last = TMAP->lno;
 
-	mid = (last - HMAP->lno + 1) / 2;
-	if (mid == 0)
-		if (HMAP->off == 1) {
-			*lnop = HMAP->lno;
-			return (0);
-		} else
-			return (1);
-	*lnop = mid;
+	down = (last - HMAP->lno + 1) / 2;
+	if (down == 0 && HMAP->off != 1)
+		return (1);
+	*lnop = HMAP->lno + down;
 	return (0);
 }
 
