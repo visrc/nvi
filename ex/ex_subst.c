@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 10.15 1995/10/19 20:19:40 bostic Exp $ (Berkeley) $Date: 1995/10/19 20:19:40 $";
+static char sccsid[] = "$Id: ex_subst.c,v 10.16 1995/10/28 10:03:04 bostic Exp $ (Berkeley) $Date: 1995/10/28 10:03:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -655,15 +655,15 @@ nextmatch:	match[0].rm_so = 0;
 				case E_EOF:
 				case E_ERR:
 				case E_INTERRUPT:
-					goto quit;
+					goto lquit;
 				default:
 					v_event_err(sp, &ev);
-					goto quit;
+					goto lquit;
 				}
 			} else {
 				if (ex_print(sp, cmdp, &from, &to, 0) ||
 				    ex_scprint(sp, &from, &to))
-					goto quit;
+					goto lquit;
 				if (ex_txt(sp, &tiq, 0, TXT_CR))
 					return (1);
 				ev.e_c = tiq.cqh_first->lb[0];
@@ -679,7 +679,7 @@ nextmatch:	match[0].rm_so = 0;
 				goto skip;
 			case CH_QUIT:
 				/* Set the quit/interrupted flags. */
-quit:				quit = 1;
+lquit:				quit = 1;
 				F_SET(sp->gp, G_INTERRUPTED);
 
 				/*
