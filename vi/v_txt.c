@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.31 1993/10/26 19:15:56 bostic Exp $ (Berkeley) $Date: 1993/10/26 19:15:56 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.32 1993/10/26 19:51:03 bostic Exp $ (Berkeley) $Date: 1993/10/26 19:51:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -590,8 +590,10 @@ k_escape:		if (tp->insert && tp->overwrite)
 			 */
 			if (tp->ai && sp->cno > tp->ai)
 				max = tp->ai;
-			else
+			else {
+				tp->ai = 0;
 				max = tp->offset;
+			}
 
 			/* Skip over trailing space characters. */
 			while (sp->cno > max && isblank(tp->lb[sp->cno - 1])) {
@@ -671,8 +673,10 @@ k_escape:		if (tp->insert && tp->overwrite)
 			 */
 			if (tp->ai && sp->cno > tp->ai)
 				max = tp->ai;
-			else
+			else {
+				tp->ai = 0;
 				max = tp->offset;
+			}
 			tp->overwrite += sp->cno - max;
 			sp->cno = max;
 			break;
