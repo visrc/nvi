@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_funcs.c,v 10.30 1995/11/11 11:59:59 bostic Exp $ (Berkeley) $Date: 1995/11/11 11:59:59 $";
+static char sccsid[] = "$Id: cl_funcs.c,v 10.31 1995/11/17 12:54:35 bostic Exp $ (Berkeley) $Date: 1995/11/17 12:54:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -45,21 +45,21 @@ cl_addstr(sp, str, len)
 	size_t oldy, oldx;
 	int iv;
 
+	clp = CLP(sp);
+
 	/*
-	 * If it's the last line of the screen and it's a split screen,
-	 * use inverse video.
+	 * If ex isn't in control, it's the last line of the screen and
+	 * it's a split screen, use inverse video.
 	 */
 	iv = 0;
 	getyx(stdscr, oldy, oldx);
-	if (oldy == RLNO(sp, LASTLINE(sp))) {
-		clp = CLP(sp);
-		if (IS_SPLIT(sp)) {
-			iv = 1;
-			(void)standout();
-			F_SET(clp, CL_LLINE_IV);
-		} else
-			F_CLR(clp, CL_LLINE_IV);
-	}
+	if (!F_ISSET(sp, S_SCR_EXWROTE) &&
+	    oldy == RLNO(sp, LASTLINE(sp)) && IS_SPLIT(sp)) {
+		iv = 1;
+		(void)standout();
+		F_SET(clp, CL_LLINE_IV);
+	} else
+		F_CLR(clp, CL_LLINE_IV);
 
 	if (addnstr(str, len) == ERR)
 		return (1);
