@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 5.3 1993/04/06 11:36:29 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:36:29 $";
+static char sccsid[] = "$Id: screen.c,v 5.4 1993/04/12 14:31:14 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:31:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -59,14 +59,12 @@ scr_init(orig, sp)
 		sp->gp = orig->gp;
 		
 		/* User can replay the last input, but nothing else. */
-		sp->ib.start.lno = sp->ib.stop.lno = OOBLNO;
-		if (orig->ib.replen != 0)
-			if ((sp->ib.rep = malloc(orig->ib.replen)) == NULL)
+		if (orig->rep_len != 0)
+			if ((sp->rep = malloc(orig->rep_len)) == NULL)
 				goto mem;
 			else {
-				memmove(sp->ib.rep,
-				    orig->ib.rep, orig->ib.replen);
-				sp->ib.replen = orig->ib.replen;
+				memmove(sp->rep, orig->rep, orig->rep_len);
+				sp->rep_len = orig->rep_len;
 			}
 
 		if (orig->VB != NULL && (sp->VB = strdup(orig->VB)) == NULL)
@@ -80,8 +78,10 @@ scr_init(orig, sp)
 		sp->inc_lastval = orig->inc_lastval;
 
 		if (cut_copy(orig, sp))
+			goto mem;
 
-		tag_copy(orig, sp);
+		if (tag_copy(orig, sp))
+			goto mem;
 			
 		/* Retain all searching/substitution information. */
 		if (orig->searchdir == NOTSET)
@@ -110,12 +110,9 @@ scr_init(orig, sp)
 				memmove(sp->repl, orig->repl, orig->repl_len);
 		}
 		if (sp->newl_len && (sp->newl =
-		    malloc(orig->newl_len * sizeof(size_t))) == NULL) {
-mem:			msgq(orig, M_ERROR,
-			    "new screen attributes: %s", strerror(errno));
-			scr_end(sp);
-			return (1);
-		} else {
+		    malloc(orig->newl_len * sizeof(size_t))) == NULL)
+			goto mem;
+		else {
 			sp->newl_len = orig->newl_len;
 			if (sp->newl_cnt = orig->newl_cnt)
 				memmove(sp->newl, orig->newl,
@@ -127,9 +124,15 @@ mem:			msgq(orig, M_ERROR,
 		sp->cname = orig->cname;
 		memmove(sp->special, orig->special, sizeof(sp->special));
 
-		seq_copy(orig, sp);
+		if (seq_copy(orig, sp))
+			goto mem;
 
-		opt_copy(orig, sp);
+		if (opt_copy(orig, sp)) {
+mem:			msgq(orig, M_ERR,
+			    "new screen attributes: %s", strerror(errno));
+			scr_end(sp);
+			return (1);
+		}
 
 		sp->flags = orig->flags & S_SCREEN_RETAIN;
 	} else {
@@ -184,6 +187,10 @@ scr_end(sp)
 	if (sp->ibp != NULL)
 		free(sp->ibp);
 
+	/* Free vi text input memory. */
+	if (sp->rep != NULL)
+		free(sp->rep);
+
 	/* Free visual bell termcap string. */
 	if (sp->VB != NULL)
 		free(sp->VB);
@@ -193,10 +200,10 @@ scr_end(sp)
 		free(sp->lastbcomm);
 
 	/* Free cut buffers. */
-	{ CB *p; int cnt;
-		for (p = sp->cuts, cnt = 0; cnt < UCHAR_MAX; ++p, ++cnt)
-			if (p->head != NULL)
-				text_free(p->head);
+	{ CB *cb; int cnt;
+		for (cb = sp->cuts, cnt = 0; cnt < UCHAR_MAX; ++cb, ++cnt)
+			if (cb->txthdr.next != NULL)
+				text_free(&cb->txthdr);
 	}
 
 	/* Free up tag information. */
@@ -231,7 +238,7 @@ scr_end(sp)
 		}
 	}
 
-	/* Free up executed buffer. *
+	/* Free up executed buffer. */
 	if (sp->atkey_buf)
 		free(sp->atkey_buf);
 
@@ -265,7 +272,8 @@ scr_end(sp)
 
 		for (mp = sp->msgp;
 		    mp != NULL && !F_ISSET(mp, M_EMPTY); mp = mp->next)
-			msga(sp->gp, c_sp, mp->flags, mp->mbuf, mp->len);
+			msga(sp->gp, c_sp,
+			    mp->flags & M_INV_VIDEO, mp->mbuf, mp->len);
 
 		for (mp = sp->msgp; mp != NULL; mp = next) {
 			next = mp->next;
@@ -276,7 +284,7 @@ scr_end(sp)
 	}
 
 	/* Remove the screen from the global chain of screens. */
-	HDR_DELETE(sp, next, prev);
+	HDR_DELETE(sp, next, prev, SCR);
 
 	/* Remove the screen from the chain of window screens. */
 	if (sp->parent != NULL) {
@@ -300,14 +308,30 @@ static int
 cut_copy(a, b)
 	SCR *a, *b;
 {
-	CB *cbp;
+	CB *acb, *bcb;
+	TEXT *atp, *tp;
 	int cnt;
 
-	memmove(b->cuts, a->cuts, sizeof(a->cuts));
-
-	for (cbp = b->cuts, cnt = 0; cnt < UCHAR_MAX; ++cbp, ++cnt)
-		if (cbp->head != NULL)
-			cbp->head = text_copy(a, cbp->head);
+	for (acb = a->cuts, bcb = b->cuts, cnt = 0;
+	    cnt < UCHAR_MAX; ++acb, ++bcb, ++cnt) {
+		if (acb->txthdr.next == NULL ||
+		    acb->txthdr.next == &acb->txthdr)
+			continue;
+		HDR_INIT(bcb->txthdr, next, prev, TEXT);
+		for (atp = acb->txthdr.next;
+		    atp != (TEXT *)&acb->txthdr; atp = atp->next) {
+			if ((tp = malloc(sizeof(TEXT))) == NULL)
+				return (1);
+			if ((tp->lb = malloc(atp->len)) == NULL) {
+				free(tp);
+				return (1);
+			}
+			memmove(atp->lb, tp->lb, tp->len = atp->len);
+			HDR_INSERT(tp, &bcb->txthdr, next, prev, TEXT);
+		}
+		bcb->len = acb->len;
+		bcb->flags = acb->flags;
+	}
 	return (0);
 }
 
@@ -333,7 +357,7 @@ opt_copy(a, b)
 	for (op = b->opts, cnt = 0; cnt < O_OPTIONCOUNT; ++cnt, ++op)
 		if (F_ISSET(&b->opts[cnt], OPT_ALLOCATED) &&
 		    (O_STR(b, cnt) = strdup(O_STR(b, cnt))) == NULL) {
-			msgq(a, M_ERROR,
+			msgq(a, M_ERR,
 			    "Error: option copy: %s", strerror(errno));
 			return (1);
 		}
@@ -418,6 +442,7 @@ tag_copy(a, b)
 			}
 			(*btfp)->flags = 0;
 		}
+		*btfp = NULL;
 	}
 		
 	/* Copy the last tag. */
@@ -425,6 +450,6 @@ tag_copy(a, b)
 		goto nomem;
 	return (0);
 
-nomem:	msgq(a, M_ERROR, "Error: tag copy: %s", strerror(errno));
+nomem:	msgq(a, M_ERR, "Error: tag copy: %s", strerror(errno));
 	return (1);
 }
