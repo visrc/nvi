@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.107 1996/05/19 11:03:45 bostic Exp $ (Berkeley) $Date: 1996/05/19 11:03:45 $
+dnl	$Id: configure.in,v 8.108 1996/05/19 11:06:18 bostic Exp $ (Berkeley) $Date: 1996/05/19 11:06:18 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(../common/main.c)
@@ -534,7 +534,7 @@ AC_MSG_RESULT($vi_cv_revoke)
 dnl Some versions of sprintf return a pointer to the first argument instead
 dnl of a character count.  We assume that the return value of snprintf and
 dnl vsprintf etc. will be the same as sprintf, and check the easy one.
-AC_MSG_CHECKING(for sprintf return value)
+AC_MSG_CHECKING(for int type sprintf return value)
 AC_CACHE_VAL(vi_cv_sprintf_count, [dnl
 AC_TRY_RUN([main(){char buf[20]; exit(sprintf(buf, "XXX") != 3);}],
 	[vi_cv_sprintf_count=yes], [vi_cv_sprintf_count=no])])
