@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.21 1993/10/06 16:58:39 bostic Exp $ (Berkeley) $Date: 1993/10/06 16:58:39 $
+ *	$Id: ex.h,v 8.22 1993/10/09 12:14:05 bostic Exp $ (Berkeley) $Date: 1993/10/09 12:14:05 $
  */
 
 struct _excmdarg;
@@ -92,13 +92,6 @@ typedef struct _excmdarg {
 		}							\
 }
 
-/* Ex function prototypes. */
-int	ex_exec_process __P((SCR *, const u_char *, const u_char *, int));
-int	file_argv __P((SCR *, EXF *, char *, int *, char ***));
-int	free_argv __P((SCR *));
-int	proc_wait __P((SCR *, long, const char *, int));
-int	word_argv __P((SCR *, EXF *, char *, int *, char ***));
-
 /*
  * Filter actions:
  *
@@ -110,20 +103,29 @@ enum filtertype { FILTER, FILTER_READ, FILTER_WRITE };
 int	filtercmd __P((SCR *, EXF *,
 	    MARK *, MARK *, MARK *, char *, enum filtertype));
 
+/* Ex function prototypes. */
 int	ex __P((SCR *, EXF *));
 int	ex_cfile __P((SCR *, EXF *, char *));
 int	ex_cmd __P((SCR *, EXF *, char *, int));
 int	ex_cstring __P((SCR *, EXF *, char *, int));
 int	ex_end __P((SCR *));
+int	ex_exec_process __P((SCR *, const u_char *, const u_char *, int));
 int	ex_gb __P((SCR *, EXF *, HDR *, int, u_int));
 int	ex_getline __P((SCR *, FILE *, size_t *));
 int	ex_init __P((SCR *, EXF *));
 int	ex_print __P((SCR *, EXF *, MARK *, MARK *, int));
 int	ex_readfp __P((SCR *, EXF *, char *, FILE *, MARK *, recno_t *, int));
+void	ex_refresh __P((SCR *, EXF *));
 int	ex_suspend __P((SCR *));
 int	ex_writefp __P((SCR *, EXF *,					\
 	    char *, FILE *, MARK *, MARK *, u_long *, u_long *));
-void	ex_refresh __P((SCR *, EXF *));
+int	file_argv __P((SCR *, EXF *, char *, int *, char ***));
+int	free_argv __P((SCR *));
+int	proc_wait __P((SCR *, long, const char *, int));
+int	sscr_exec __P((SCR *, EXF *, recno_t));
+int	sscr_end __P((SCR *));
+int	sscr_input __P((SCR *));
+int	word_argv __P((SCR *, EXF *, char *, int *, char ***));
 
 #define	EXPROTO(type, name)						\
 	type	name __P((SCR *, EXF *, EXCMDARG *))
@@ -164,6 +166,7 @@ EXPROTO(int, ex_put);
 EXPROTO(int, ex_quit);
 EXPROTO(int, ex_read);
 EXPROTO(int, ex_rew);
+EXPROTO(int, ex_script);
 EXPROTO(int, ex_set);
 EXPROTO(int, ex_shell);
 EXPROTO(int, ex_shiftl);

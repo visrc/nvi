@@ -6,12 +6,15 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 8.5 1993/09/13 19:40:18 bostic Exp $ (Berkeley) $Date: 1993/09/13 19:40:18 $";
+static char sccsid[] = "$Id: v_scroll.c,v 8.6 1993/10/09 12:15:27 bostic Exp $ (Berkeley) $Date: 1993/10/09 12:15:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
+#include <errno.h>
+
 #include "vi.h"
+#include "excmd.h"
 #include "vcmd.h"
 
 /*
@@ -146,6 +149,29 @@ v_up(sp, ep, vp, fm, tm, rp)
 	}
 	rp->lno = fm->lno - lno;
 	return (0);
+}
+
+/*
+ * v_cr -- [count]^M
+ *	In a script window, send the line to the shell.
+ *	In a regular window, move down by lines.
+ *
+ * !!!
+ * Ignore the count, just like everybody else.
+ */
+int
+v_cr(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
+	EXF *ep;
+	VICMDARG *vp;
+	MARK *fm, *tm, *rp;
+{
+	/*
+	 * If it's a script window, exec the line,
+	 * otherwise it's the same as v_down().
+	 */
+	return (F_ISSET(sp, S_SCRIPT) ?
+	    sscr_exec(sp, ep, fm->lno) : v_down(sp, ep, vp, fm, tm, rp));
 }
 
 /*

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.27 1993/10/07 15:25:07 bostic Exp $ (Berkeley) $Date: 1993/10/07 15:25:07 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.28 1993/10/09 12:15:35 bostic Exp $ (Berkeley) $Date: 1993/10/09 12:15:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -329,8 +329,12 @@ next_ch:	if (replay)
 }
 			LINE_RESOLVE;
 
-			if (LF_ISSET(TXT_CR))
+			if (LF_ISSET(TXT_CR)) {
+				if (F_ISSET(sp, S_SCRIPT))
+					(void)term_push(sp,
+					    sp->gp->key, "\r", 1);
 				goto k_escape;
+			}
 
 			/*
 			 * Historic practice was to lose any whitespace

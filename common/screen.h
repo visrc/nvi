@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.35 1993/10/05 17:31:27 bostic Exp $ (Berkeley) $Date: 1993/10/05 17:31:27 $
+ *	$Id: screen.h,v 8.36 1993/10/09 12:14:32 bostic Exp $ (Berkeley) $Date: 1993/10/09 12:14:32 $
  */
 
 /*
@@ -151,6 +151,12 @@ typedef struct _scr {
 					/* Ex: last command. */
 	struct _excmdlist const *lastcmd;
 
+	int	 sh_in[2];		/* Vi: script pipe. */
+	int	 sh_out[2];		/* Vi: script pipe. */
+	pid_t	 sh_pid;		/* Vi: shell pid. */
+	char	*sh_prompt;		/* Vi: script prompt. */
+	size_t	 sh_prompt_len;		/* Vi: script prompt length. */
+
 /* PARTIALLY OR COMPLETELY COPIED FROM PREVIOUS SCREEN. */
 	struct _gs	*gp;		/* Pointer to global area. */
 
@@ -264,9 +270,10 @@ typedef struct _scr {
 #define	S_REFRESH	0x0010000	/* Refresh the screen. */
 #define	S_RESIZE	0x0020000	/* Resize the screen. */
 #define	S_RE_SET	0x0040000	/* The file's RE has been set. */
-#define	S_TIMER_SET	0x0080000	/* If a busy timer is running. */
-#define	S_TERMSIGNAL	0x0100000	/* Termination signal received. */
-#define	S_UPDATE_MODE	0x0200000	/* Don't repaint modeline. */
+#define	S_SCRIPT	0x0080000	/* Window is a shell script. */
+#define	S_TIMER_SET	0x0100000	/* If a busy timer is running. */
+#define	S_TERMSIGNAL	0x0200000	/* Termination signal received. */
+#define	S_UPDATE_MODE	0x0400000	/* Don't repaint modeline. */
 
 #define	S_SCREEN_RETAIN			/* Retain at screen create. */	\
 	(S_MODE_EX | S_MODE_VI | S_RE_SET)
