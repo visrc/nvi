@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 8.21 1993/11/09 09:09:13 bostic Exp $ (Berkeley) $Date: 1993/11/09 09:09:13 $";
+static char sccsid[] = "$Id: options_f.c,v 8.22 1993/11/13 18:00:42 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:00:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,8 +34,6 @@ static int	opt_putenv __P((char *));
 	f(sp, op, str, val)
 
 #define	turnoff	val
-
-static int ps_list __P((SCR *));
 
 DECL(f_altwerase)
 {
@@ -273,11 +271,11 @@ DECL(f_paragraph)
 	if (F_ISSET(&sp->opts[O_PARAGRAPHS], OPT_ALLOCATED))
 		free(O_STR(sp, O_PARAGRAPHS));
 	if ((O_STR(sp, O_PARAGRAPHS) = strdup(str)) == NULL) {
-		msgq(sp, M_ERR, "Error: %s", strerror(errno));
+		msgq(sp, M_SYSERR, NULL);
 		return (1);
 	}
 	F_SET(&sp->opts[O_PARAGRAPHS], OPT_ALLOCATED | OPT_SET);
-	return (ps_list(sp));
+	return (0);
 }
 
 DECL(f_readonly)
@@ -314,11 +312,11 @@ DECL(f_section)
 	if (F_ISSET(&sp->opts[O_SECTIONS], OPT_ALLOCATED))
 		free(O_STR(sp, O_SECTIONS));
 	if ((O_STR(sp, O_SECTIONS) = strdup(str)) == NULL) {
-		msgq(sp, M_ERR, "Error: %s", strerror(errno));
+		msgq(sp, M_SYSERR, NULL);
 		return (1);
 	}
 	F_SET(&sp->opts[O_SECTIONS], OPT_ALLOCATED | OPT_SET);
-	return (ps_list(sp));
+	return (0);
 }
 
 DECL(f_shiftwidth)
@@ -371,55 +369,20 @@ DECL(f_tabstop)
 	return (0);
 }
 
-/*
- * f_tags --
- *	Build an queue of pathnames for the tags routines.
- */
 DECL(f_tags)
 {
-	TAGF *tp;
-	size_t len;
-	char *p, *t;
-						/* Copy for user display. */
-	if (F_ISSET(&sp->opts[O_TAGS], OPT_ALLOCATED)) {
-		p = O_STR(sp, O_TAGS);
-		FREE(p, strlen(p) + 1);
-	}
+	char *p;
+
+	/* Copy for user display. */
+	p = O_STR(sp, O_TAGS);
 	if ((O_STR(sp, O_TAGS) = strdup(str)) == NULL) {
-		msgq(sp, M_ERR, "Error: %s", strerror(errno));
+		O_STR(sp, O_TAGS) = p;
+		msgq(sp, M_SYSERR, NULL);
 		return (1);
 	}
-	F_SET(&sp->opts[O_TAGS], OPT_ALLOCATED);
-
-						/* Free previous queue. */
-	while ((tp = sp->tagfq.qe_next) != NULL) {
-		queue_remove(&sp->tagfq, tp, TAGF *, q);
-		FREE(tp->fname, strlen(tp->fname) + 1);
-		FREE(tp, sizeof(TAGF));
-	}
-
-	for (p = t = str;; ++p) {		/* Create new queue. */
-		if (*p == '\0' || isblank(*p)) {
-			if ((len = p - t) > 1) {
-				if ((tp = malloc(sizeof(TAGF))) == NULL ||
-				    (tp->fname = malloc(len + 1)) == NULL) {
-					if (tp != NULL)
-						FREE(tp, sizeof(TAGF));
-					msgq(sp, M_ERR,
-					    "Error: %s", strerror(errno));
-					return (1);
-				}
-				memmove(tp->fname, t, len);
-				tp->fname[len] = '\0';
-				tp->flags = 0;
-				queue_enter_tail(&sp->tagfq, tp, TAGF *, q);
-			}
-			t = p + 1;
-		}
-		if (*p == '\0')
-			 break;
-	}
-	F_SET(&sp->opts[O_TAGS], OPT_SET);
+	if (F_ISSET(&sp->opts[O_TAGS], OPT_ALLOCATED))
+		FREE(p, strlen(p) + 1);
+	F_SET(&sp->opts[O_TAGS], OPT_ALLOCATED | OPT_SET);
 	return (0);
 }
 
@@ -430,7 +393,7 @@ DECL(f_term)
 	if (F_ISSET(&sp->opts[O_TERM], OPT_ALLOCATED))
 		free(O_STR(sp, O_TERM));
 	if ((O_STR(sp, O_TERM) = strdup(str)) == NULL) {
-		msgq(sp, M_ERR, "Error: %s", strerror(errno));
+		msgq(sp, M_SYSERR, NULL);
 		return (1);
 	}
 	F_SET(&sp->opts[O_TERM], OPT_ALLOCATED | OPT_SET);
@@ -519,40 +482,6 @@ DECL(f_wrapmargin)
 		return (1);
 	}
 	O_VAL(sp, O_WRAPMARGIN) = val;
-	return (0);
-}
-
-static int
-ps_list(sp)
-	SCR *sp;
-{
-	size_t p_len, s_len;
-	char *p_p, *s_p;
-	char *p;
-
-	/*
-	 * The vi paragraph command searches for either a paragraph or
-	 * section option macro.
-	 */
-	p_len = (p_p = O_STR(sp, O_PARAGRAPHS)) == NULL ? 0 : strlen(p_p);
-	s_len = (s_p = O_STR(sp, O_SECTIONS)) == NULL ? 0 : strlen(s_p);
-
-	if (p_len == 0 && s_len == 0)
-		return (0);
-
-	if ((p = malloc(p_len + s_len + 1)) == NULL) {
-		msgq(sp, M_ERR, "Error: %s", strerror(errno));
-		return (1);
-	}
-
-	if (sp->paragraph != NULL)
-		FREE(sp->paragraph, strlen(sp->paragraph) + 1);
-
-	if (p_p != NULL)
-		memmove(p, p_p, p_len + 1);
-	if (s_p != NULL)
-		memmove(p + p_len, s_p, s_len + 1);
-	sp->paragraph = p;
 	return (0);
 }
 

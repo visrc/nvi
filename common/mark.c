@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: mark.c,v 8.6 1993/11/03 17:11:19 bostic Exp $ (Berkeley) $Date: 1993/11/03 17:11:19 $";
+static char sccsid[] = "$Id: mark.c,v 8.7 1993/11/13 18:00:35 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:00:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -66,7 +66,7 @@ mark_init(sp, ep)
 	 * haven't, do so, and create the absolute mark.
 	 */
 	if ((mp = malloc(sizeof(MARK))) == NULL) {
-		msgq(sp, M_ERR, "Error: %s", strerror(errno));
+		msgq(sp, M_SYSERR, NULL);
 		return (1);
 	}
 	mp->lno = 1;
@@ -159,7 +159,7 @@ mark_set(sp, ep, key, value, userset)
 	 */
 	if (mp->name != key) {
 		if ((mt = malloc(sizeof(MARK))) == NULL) {
-			msgq(sp, M_ERR, "Error: %s", strerror(errno));
+			msgq(sp, M_SYSERR, NULL);
 			return (1);
 		}
 		list_insert_after(&mp->q, mt, MARK *, q);

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.20 1993/11/08 15:01:17 bostic Exp $ (Berkeley) $Date: 1993/11/08 15:01:17 $";
+static char sccsid[] = "$Id: util.c,v 8.21 1993/11/13 18:00:53 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:00:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -64,21 +64,26 @@ msgq(sp, mt, fmt, va_alist)
 		}
 		mt = M_ERR;
 		break;
-	case M_ERR:
-		break;
-	case M_INFO:
-		break;
 	case M_VINFO:
 		if (sp != NULL && !O_ISSET(sp, O_VERBOSE))
 			return;
 		mt = M_INFO;
+		break;
+	case M_ERR:
+	case M_INFO:
+	case M_SYSERR:
 		break;
 	default:
 		abort();
 	}
 
 	/* Length is the min length of the message or the buffer. */
-	len = vsnprintf(msgbuf, sizeof(msgbuf), fmt, ap);
+	if (mt == M_SYSERR)
+		len = snprintf(msgbuf, sizeof(msgbuf), "Error: %s%s%s.",
+		    fmt == NULL ? "" : fmt, fmt == NULL ? "" : ": ",
+		    strerror(errno));
+	else
+		len = vsnprintf(msgbuf, sizeof(msgbuf), fmt, ap);
 	if (len > sizeof(msgbuf))
 		len = sizeof(msgbuf);
 
@@ -252,7 +257,7 @@ binc(sp, argp, bsizep, min)
 	else
 		bpp = realloc(bpp, csize);
 	if (bpp == NULL) {
-		msgq(sp, M_ERR, "Error: %s.", strerror(errno));
+		msgq(sp, M_SYSERR, NULL);
 		*bsizep = 0;
 		return (1);
 	}
@@ -423,7 +428,7 @@ set_alt_fname(sp, fname)
 	if (sp->alt_fname != NULL)
 		FREE(sp->alt_fname, strlen(sp->alt_fname));
 	if ((sp->alt_fname = strdup(fname)) == NULL)
-		msgq(sp, M_ERR, "Error: %s", strerror(errno));
+		msgq(sp, M_SYSERR, NULL);
 }
 
 /*

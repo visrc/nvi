@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.56 1993/11/12 17:12:31 bostic Exp $ (Berkeley) $Date: 1993/11/12 17:12:31 $
+ *	$Id: screen.h,v 8.57 1993/11/13 18:00:46 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:00:46 $
  */
 
 /*
@@ -60,32 +60,31 @@ typedef struct _fref {
 } FREF;
 
 /*
- * scr --
- *	The screen structure.
- *
- * Most of the traditional ex/vi options and values follow the screen, and
- * are kept here.  For those of you that didn't follow that sentence, read
- * "dumping ground".  Each new screen added to the editor will probably have
- * to keep its own stuff in here as well.
+ * SCR --
+ *	The screen structure.  To the extent possible, all screen information
+ *	is stored in the various private areas.  The only information here
+ *	is used by global routines or is shared by too many screens.
  */
 typedef struct _scr {
 /* INITIALIZED AT SCREEN CREATE. */
 	struct queue_entry screenq;	/* Linked list of screens. */
 
+	struct _gs	*gp;		/* Pointer to global area. */
+
 	struct _scr	*child;		/* split screen: child screen. */
 	struct _scr	*parent;	/* split screen: parent screen. */
 	struct _scr	*snext;		/* split screen: next display screen. */
 
-	struct _exf	*ep;		/* Screen's current file. */
+	struct _exf	*ep;		/* Screen's current EXF structure. */
+
+	struct _msg	*msgp;		/* Message list. */
 
 					/* File name oriented state. */
 	struct queue_entry frefq;	/* Linked list of FREF structures. */
 	FREF	*frp;			/* Current FREF. */
 	FREF	*p_frp;			/* Previous FREF. */
 
-	void	*vi_private;		/* Vi information. */
-	void	*svi_private;		/* Vi curses screen information. */
-	void	*xaw_private;		/* Vi XAW screen information. */
+	u_long	ccnt;			/* Command count. */
 
 	recno_t	 lno;			/* 1-N:     cursor file line. */
 	recno_t	 olno;			/* 1-N: old cursor file line. */
@@ -118,59 +117,29 @@ typedef struct _scr {
 #define	L_YANKED	9		/* Yanked lines. */
 	recno_t	 rptlines[L_YANKED + 1];/* Ex/vi: lines changed by last op. */
 
-	struct _msg	*msgp;		/* User message list. */
-
-	u_long	ccnt;			/* Command count. */
-	u_long	q_ccnt;			/* Quit command count. */
-
-	void	*args;			/* Ex argument buffers. */
-	char   **argv;			/* Arguments. */
-	char	*ex_argv[3];		/* Special purpose 2 slots. */
-	int	 argscnt;		/* Argument count. */
-	
 	FILE	*stdfp;			/* Ex output file pointer. */
-
-	CHAR_T	 at_lbuf;		/* Last executed at buffer's name. */
-	int	 at_lbuf_set;		/* If at_lbuf is set. */
 
 	fd_set	 rdfd;			/* Ex/vi: read fd select mask. */
 
 	HDR	 txthdr;		/* Vi: text input TEXT header. */
 
-	char	*ibp;			/* Ex: line input buffer. */
-	size_t	 ibp_len;		/* Line input buffer length. */
-
-					/* Ex: last command. */
-	struct _excmdlist const *lastcmd;
-
-	int	 sh_in[2];		/* Vi: script pipe. */
-	int	 sh_out[2];		/* Vi: script pipe. */
-	pid_t	 sh_pid;		/* Vi: shell pid. */
-	char	*sh_prompt;		/* Vi: script prompt. */
-	size_t	 sh_prompt_len;		/* Vi: script prompt length. */
+	int	 sh_in[2];		/* Script: pipe. */
+	int	 sh_out[2];		/* Script: pipe. */
+	pid_t	 sh_pid;		/* Script: shell pid. */
+	char	*sh_prompt;		/* Script: prompt. */
+	size_t	 sh_prompt_len;		/* Script: prompt length. */
 
 	char const *time_msg;		/* ITIMER_REAL message. */
 	struct itimerval time_value;	/* ITIMER_REAL saved value. */
 	struct sigaction time_handler;	/* ITIMER_REAL saved handler. */
 
+	void	*vi_private;		/* Vi information. */
+	void	*ex_private;		/* Ex information. */
+	void	*svi_private;		/* Vi curses screen information. */
+	void	*xaw_private;		/* Vi XAW screen information. */
+
 /* PARTIALLY OR COMPLETELY COPIED FROM PREVIOUS SCREEN. */
-	struct _gs	*gp;		/* Pointer to global area. */
-
-	char	*rep;			/* Vi: input replay buffer. */
-	size_t	 rep_len;		/* Vi: input replay buffer length. */
-
-	char	*lastbcomm;		/* Ex/vi: last bang command. */
-
 	char	*alt_fname;		/* Ex/vi: alternate file name. */
-
-	u_char	 inc_lastch;		/* Vi: Last increment character. */
-	long	 inc_lastval;		/*     Last increment value. */
-
-	char	*paragraph;		/* Vi: paragraph search list. */
-
-	struct queue_entry tagq;	/* Ex/vi: tag stack. */
-	struct queue_entry tagfq;	/* Ex/vi: tag file queue. */
-	char	*tlast;			/* Ex/vi: saved last tag. */
 
 					/* Ex/vi: search/substitute info. */
 	regex_t	 sre;			/* Last search RE. */
@@ -189,82 +158,115 @@ typedef struct _scr {
 	CHNAME	const *cname;		/* Display names of characters. */
 	u_char	 special[UCHAR_MAX];	/* Special character array. */
 
-	OPTION	 opts[O_OPTIONCOUNT];	/* Ex/vi: options. */
+	u_int	 saved_vi_mode;		/* Saved vi display. */
+
+	OPTION	 opts[O_OPTIONCOUNT];	/* Options. */
 
 /*
  * SCREEN SUPPORT ROUTINES.
- * This is the set of routines that have to be written to add a screen.
  */
+					/* Ring the screen bell. */
 	void	 (*s_bell) __P((struct _scr *));
+					/* Put up a busy message. */
 	int	 (*s_busy) __P((struct _scr *, char const *));
+					/* Change a screen line. */
 	int	 (*s_change) __P((struct _scr *,
 		     struct _exf *, recno_t, enum operation));
-	int	 (*s_clear) __P((struct _scr *));
+					/* Return column close to specified. */
 	size_t	 (*s_chposition) __P((struct _scr *,
 		     struct _exf *, recno_t, size_t));
-	enum confirm
+					/* Clear the screen. */
+	int	 (*s_clear) __P((struct _scr *));
+	enum confirm			/* Confirm an action with the user. */
 		 (*s_confirm) __P((struct _scr *,
 		     struct _exf *, struct _mark *, struct _mark *));
+					/* Copy to a new screen. */
+	int	 (*s_copy) __P((struct _scr *, struct _scr *));
+					/* Move down the screen. */
 	int	 (*s_down) __P((struct _scr *,
 		     struct _exf *, struct _mark *, recno_t, int));
+					/* Edit a file. */
+	int	 (*s_edit) __P((struct _scr *, struct _exf *, struct _scr **));
+					/* End a screen. */
+	int	 (*s_end) __P((struct _scr *));
+					/* Run a single ex command. */
 	int	 (*s_ex_cmd) __P((struct _scr *, struct _exf *,
 		     struct _excmdarg *, struct _mark *));
+					/* Run user's ex commands. */
 	int	 (*s_ex_run) __P((struct _scr *, struct _exf *,
 		     struct _mark *));
+					/* Screen's ex write function. */
 	int	 (*s_ex_write) __P((void *, const char *, int));
+					/* Fill the screen's map. */
 	int	 (*s_fill) __P((struct _scr *,
 		     struct _exf *, recno_t, enum position));
-	enum input
+	enum input			/* Get a line from the user. */
 		 (*s_get) __P((struct _scr *,
 		     struct _exf *, HDR *, int, u_int));
-	enum input
+	enum input			/* Get a key from the user. */
 		 (*s_key_read) __P((struct _scr *, int *, int));
-	int	 (*s_key_wait) __P((struct _scr *));
+					/* Tell the screen an option changed. */
 	int	 (*s_optchange) __P((struct _scr *, int));
+					/* Return column at screen position. */
 	int	 (*s_position) __P((struct _scr *,
 		     struct _exf *, MARK *, u_long, enum position));
+					/* Refresh the screen. */
 	int	 (*s_refresh) __P((struct _scr *, struct _exf *));
+					/* Return column close to last char. */
 	size_t	 (*s_relative) __P((struct _scr *, struct _exf *, recno_t));
+					/* Split the screen. */
 	int	 (*s_split) __P((struct _scr *, char *[]));
+					/* Suspend the screen. */
 	int	 (*s_suspend) __P((struct _scr *));
+					/* Move up the screen. */
 	int	 (*s_up) __P((struct _scr *,
 		     struct _exf *, struct _mark *, recno_t, int));
 
-/* Editor modes. */
-#define	S_MODE_EX	0x0000001	/* Ex mode. */
-#define	S_MODE_VI	0x0000002	/* Vi mode. */
+/* Editor screens. */
+#define	S_EX		0x0000001	/* Ex screen. */
+#define	S_VI_CURSES	0x0000002	/* Vi: curses screen. */
+#define	S_VI_XAW	0x0000004	/* Vi: Athena widgets screen. */
+
+#define	IN_EX_MODE(sp)			/* If in ex mode. */		\
+	(F_ISSET(sp, S_EX))
+#define	IN_VI_MODE(sp)			/* If in vi mode. */		\
+	(F_ISSET(sp, S_VI_CURSES | S_VI_XAW))
+#define	S_SCREENS			/* Screens. */			\
+	(S_EX | S_VI_CURSES | S_VI_XAW)
 
 /* Major screen/file changes. */
-#define	S_EXIT		0x0000004	/* Exiting (not forced). */
-#define	S_EXIT_FORCE	0x0000008	/* Exiting (forced). */
-#define	S_FSWITCH	0x0000010	/* Switch files. */
-#define	S_SSWITCH	0x0000020	/* Switch screens. */
+#define	S_EXIT		0x0000008	/* Exiting (not forced). */
+#define	S_EXIT_FORCE	0x0000010	/* Exiting (forced). */
+#define	S_FSWITCH	0x0000020	/* Switch files. */
+#define	S_SSWITCH	0x0000040	/* Switch screens. */
 #define	S_MAJOR_CHANGE			/* Screen or file changes. */	\
 	(S_EXIT | S_EXIT_FORCE | S_FSWITCH | S_SSWITCH)
 
-#define	S_ABBREV	0x0000040	/* If have abbreviations. */
-#define	S_AUTOPRINT	0x0000080	/* Autoprint flag. */
-#define	S_BELLSCHED	0x0000100	/* Bell scheduled. */
-#define	S_CONTINUE	0x0000200	/* Need to ask the user to continue. */
-#define	S_GLOBAL	0x0000400	/* Doing a global command. */
-#define	S_INPUT		0x0000800	/* Doing text input. */
-#define	S_INTERRUPTED	0x0001000	/* If have been interrupted. */
-#define	S_INTERRUPTIBLE	0x0002000	/* If can be interrupted. */
-#define	S_REDRAW	0x0004000	/* Redraw the screen. */
-#define	S_REFORMAT	0x0008000	/* Reformat the screen. */
-#define	S_REFRESH	0x0010000	/* Refresh the screen. */
-#define	S_RESIZE	0x0020000	/* Resize the screen. */
-#define	S_SCRIPT	0x0040000	/* Window is a shell script. */
-#define	S_SRE_SET	0x0080000	/* The search RE has been set. */
-#define	S_SUBRE_SET	0x0100000	/* The substitute RE has been set. */
-#define	S_TIMER_SET	0x0200000	/* If a busy timer is running. */
-#define	S_UPDATE_MODE	0x0400000	/* Don't repaint modeline. */
+#define	S_ABBREV	0x0000080	/* If have abbreviations. */
+#define	S_AUTOPRINT	0x0000100	/* Autoprint flag. */
+#define	S_BELLSCHED	0x0000200	/* Bell scheduled. */
+#define	S_CONTINUE	0x0000400	/* Need to ask the user to continue. */
+#define	S_GLOBAL	0x0000800	/* Doing a global command. */
+#define	S_INPUT		0x0001000	/* Doing text input. */
+#define	S_INTERRUPTED	0x0002000	/* If have been interrupted. */
+#define	S_INTERRUPTIBLE	0x0004000	/* If can be interrupted. */
+#define	S_REDRAW	0x0008000	/* Redraw the screen. */
+#define	S_REFORMAT	0x0010000	/* Reformat the screen. */
+#define	S_REFRESH	0x0020000	/* Refresh the screen. */
+#define	S_RESIZE	0x0040000	/* Resize the screen. */
+#define	S_SCRIPT	0x0080000	/* Window is a shell script. */
+#define	S_SRE_SET	0x0100000	/* The search RE has been set. */
+#define	S_SUBRE_SET	0x0200000	/* The substitute RE has been set. */
+#define	S_TIMER_SET	0x0400000	/* If a busy timer is running. */
+#define	S_UPDATE_MODE	0x0800000	/* Don't repaint modeline. */
 	u_int flags;
 } SCR;
 
-/* Public interfaces to the screens. */
-int	screen_end __P((struct _scr *));
-int	screen_init __P((struct _scr *, struct _scr *));
-int	sex __P((struct _scr *, struct _exf *, struct _scr **));
-int	svi __P((struct _scr *, struct _exf *, struct _scr **));
-int	xaw __P((struct _scr *, struct _exf *, struct _scr **));
+/* Generic routines to start/stop a screen. */
+int	screen_end __P((SCR *));
+int	screen_init __P((SCR *, SCR **, u_int));
+
+/* Public interfaces to the underlying screens. */
+int	sex_screen_init __P((SCR *));
+int	svi_screen_init __P((SCR *));
+int	xaw_screen_init __P((SCR *));

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.24 1993/11/01 11:59:03 bostic Exp $ (Berkeley) $Date: 1993/11/01 11:59:03 $";
+static char sccsid[] = "$Id: search.c,v 8.25 1993/11/13 18:00:48 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:00:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -224,16 +224,14 @@ ctag_conv(sp, ptrnp, replacedp)
 		F_CLR(sp, S_INTERRUPTED);				\
 		F_SET(sp, S_INTERRUPTIBLE);				\
 		if (tcgetattr(STDIN_FILENO, &term)) {			\
-			msgq(sp, M_ERR,					\
-			    "tcgetattr: %s", strerror(errno));		\
+			msgq(sp, M_SYSERR, "tcgetattr");		\
 			return (1);					\
 		}							\
 		nterm = term;						\
 		nterm.c_lflag |= ISIG;					\
 		if (tcsetattr(STDIN_FILENO,				\
 		    TCSANOW | TCSASOFT, &nterm)) {			\
-			msgq(sp, M_ERR,					\
-			    "tcsetattr: %s", strerror(errno));		\
+			msgq(sp, M_SYSERR, "tcsetattr");		\
 			return (1);					\
 		}							\
 	}								\
@@ -242,11 +240,9 @@ ctag_conv(sp, ptrnp, replacedp)
 #define	TEAR_DOWN_INTERRUPTS {						\
 	if (isig) {							\
 		if (sigaction(SIGINT, &oact, NULL))			\
-			msgq(sp, M_ERR,					\
-			    "signal: %s", strerror(errno));		\
+			msgq(sp, M_SYSERR, "signal");			\
 		if (tcsetattr(STDIN_FILENO, TCSANOW | TCSASOFT, &term))	\
-			msgq(sp, M_ERR,					\
-			    "tcsetattr: %s", strerror(errno));		\
+			msgq(sp, M_SYSERR, "tcsetattr");		\
 		F_CLR(sp, S_INTERRUPTED);				\
 		if (!istate)						\
 			F_CLR(sp, S_INTERRUPTIBLE);			\
@@ -810,7 +806,7 @@ overflow:			msgq(sp, M_ERR, "Delta value overflow.");
 			else if (val == LONG_MIN)
 underflow:			msgq(sp, M_ERR, "Delta value underflow.");
 			else
-				msgq(sp, M_ERR, "Error: %s.", strerror(errno));
+				msgq(sp, M_SYSERR, NULL);
 			return (1);
 		}
 		if (val >= 0) {
@@ -871,7 +867,7 @@ re_error(sp, errcode, preg)
 
 	s = regerror(errcode, preg, "", 0);
 	if ((oe = malloc(s)) == NULL)
-		msgq(sp, M_ERR, "Error: %s", strerror(errno));
+		msgq(sp, M_SYSERR, NULL);
 	else {
 		(void)regerror(errcode, preg, oe, s);
 		msgq(sp, M_ERR, "RE error: %s", oe);

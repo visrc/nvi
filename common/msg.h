@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: msg.h,v 8.4 1993/11/09 09:53:48 bostic Exp $ (Berkeley) $Date: 1993/11/09 09:53:48 $
+ *	$Id: msg.h,v 8.5 1993/11/13 18:00:36 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:00:36 $
  */
 
 /*
@@ -12,6 +12,7 @@
  *		   display in inverse video.
  * M_ERR	-- Error: display in inverse video.
  * M_INFO	-- Info: display in normal video.
+ * M_SYSERR	-- M_ERR, but use standard error message.
  * M_VINFO	-- Info: display only if O_VERBOSE set.
  *
  * In historical vi, O_VERBOSE didn't exist, and O_TERSE made the
@@ -19,7 +20,7 @@
  * and O_VERBOSE results in informational displays about common
  * errors.
  */
-enum msgtype { M_BERR, M_ERR, M_INFO, M_VINFO };
+enum msgtype { M_BERR, M_ERR, M_INFO, M_SYSERR, M_VINFO };
 
 typedef struct _msg {
 	struct _msg *next;	/* Linked list of messages. */

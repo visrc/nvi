@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.40 1993/11/08 11:10:23 bostic Exp $ (Berkeley) $Date: 1993/11/08 11:10:23 $";
+static char sccsid[] = "$Id: exf.c,v 8.41 1993/11/13 18:00:28 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:00:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -81,7 +81,7 @@ file_add(sp, frp_append, fname, ignore)
 		F_SET(frp, FR_NONAME);
 	else if ((frp->fname = strdup(fname)) == NULL) {
 		FREE(frp, sizeof(FREF));
-mem:		msgq(sp, M_ERR, "Error: %s", strerror(errno));
+mem:		msgq(sp, M_SYSERR, NULL);
 		return (NULL);
 	} else
 		frp->nlen = strlen(fname);
@@ -157,7 +157,7 @@ file_init(sp, frp, rcv_fname, force)
 
 	/* Create the EXF. */
 	if ((ep = malloc(sizeof(EXF))) == NULL) {
-		msgq(sp, M_ERR, "Error: %s", strerror(errno));
+		msgq(sp, M_SYSERR, NULL);
 		return (1);
 	}
 
@@ -183,7 +183,7 @@ file_init(sp, frp, rcv_fname, force)
 	if (frp->fname == NULL || stat(frp->fname, &sb)) {
 		(void)strcpy(tname, _PATH_TMPNAME);
 		if ((fd = mkstemp(tname)) == -1) {
-			msgq(sp, M_ERR, "Temporary file: %s", strerror(errno));
+			msgq(sp, M_SYSERR, "Temporary file");
 			goto err;
 		}
 		(void)close(fd);
@@ -191,7 +191,7 @@ file_init(sp, frp, rcv_fname, force)
 
 		if ((frp->tname = strdup(tname)) == NULL) {
 			(void)unlink(tname);
-			msgq(sp, M_ERR, "Error: %s", strerror(errno));
+			msgq(sp, M_SYSERR, NULL);
 			goto err;
 		}
 		if (frp->fname == NULL) {
@@ -230,7 +230,7 @@ file_init(sp, frp, rcv_fname, force)
 		else
 			oinfo.bfname = ep->rcv_path;
 	} else if ((ep->rcv_path = strdup(rcv_fname)) == NULL) {
-		msgq(sp, M_ERR, "Error: %s", strerror(errno));
+		msgq(sp, M_SYSERR, NULL);
 		goto err;
 	} else {
 		oinfo.bfname = ep->rcv_path;
@@ -240,13 +240,13 @@ file_init(sp, frp, rcv_fname, force)
 	/* Open a db structure. */
 	if ((ep->db = dbopen(rcv_fname == NULL ? oname : NULL,
 	    O_NONBLOCK | O_RDONLY, DEFFILEMODE, DB_RECNO, &oinfo)) == NULL) {
-		msgq(sp, M_ERR, "%s: %s", oname, strerror(errno));
+		msgq(sp, M_SYSERR, oname);
 		goto err;
 	}
 
 	/* Init file marks. */
 	if (mark_init(sp, ep)) {
-		msgq(sp, M_ERR, "Error: %s", strerror(errno));
+		msgq(sp, M_SYSERR, NULL);
 		goto err;
 	}
 
@@ -556,7 +556,7 @@ file_write(sp, ep, fm, tm, fname, flags)
 
 	/* Open the file. */
 	if ((fd = open(fname, oflags, DEFFILEMODE)) < 0) {
-		msgq(sp, M_ERR, "%s: %s", fname, strerror(errno));
+		msgq(sp, M_SYSERR, fname);
 		return (1);
 	}
 
@@ -570,7 +570,7 @@ file_write(sp, ep, fm, tm, fname, flags)
 	/* Use stdio for buffering. */
 	if ((fp = fdopen(fd, "w")) == NULL) {
 		(void)close(fd);
-		msgq(sp, M_ERR, "%s: %s", fname, strerror(errno));
+		msgq(sp, M_SYSERR, fname);
 		return (1);
 	}
 

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.21 1993/11/12 16:40:46 bostic Exp $ (Berkeley) $Date: 1993/11/12 16:40:46 $";
+static char sccsid[] = "$Id: key.c,v 8.22 1993/11/13 18:00:51 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:00:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -326,8 +326,7 @@ remap:		qp = seq_find(sp, &ttyp->buf[ttyp->next], ttyp->cnt,
 			goto newmap;
 		}
 		if (term_push(sp, keyp, qp->output, qp->olen)) {
-err:			msgq(sp, M_ERR,
-			    "Error: key deleted: %s.", strerror(errno));
+err:			msgq(sp, M_SYSERR, "Error: key deleted");
 			return (INP_ERR);
 		}
 		goto loop;

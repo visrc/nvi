@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.32 1993/11/12 16:53:32 bostic Exp $ (Berkeley) $Date: 1993/11/12 16:53:32 $";
+static char sccsid[] = "$Id: screen.c,v 8.33 1993/11/13 18:00:44 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:00:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,72 +21,73 @@ static char sccsid[] = "$Id: screen.c,v 8.32 1993/11/12 16:53:32 bostic Exp $ (B
 #include "excmd.h"
 #include "tag.h"
 
-static int	 opt_copy __P((SCR *, SCR *));
-static int	 tag_copy __P((SCR *, SCR *));
-
 /*
  * screen_init --
  *	Do the default initialization of an SCR structure.
  */
 int
-screen_init(orig, sp)
-	SCR *orig, *sp;
+screen_init(orig, spp, flags)
+	SCR *orig, **spp;
+	u_int flags;
 {
+	SCR *sp;
 	extern CHNAME const asciiname[];	/* XXX */
 	size_t len;
 
-/* INITIALIZED AT SCREEN CREATE. */
-	memset(sp, 0, sizeof(SCR));
-	if (orig == NULL) {
-		list_enter_head(&__global_list->screens, sp, SCR *, screenq);
-	} else {
-		list_insert_after(&orig->screenq, sp, SCR *, screenq);
+	if ((sp = malloc(sizeof(SCR))) == NULL) {
+		msgq(NULL, M_SYSERR, NULL);
+		return (1);
 	}
+	memset(sp, 0, sizeof(SCR));
+
+/* INITIALIZED AT SCREEN CREATE. */
+	queue_init(&sp->screenq);
+
+	sp->gp = __global_list;			/* All ref the GS structure. */
 
 	queue_init(&sp->frefq);
 
-	sp->lno = sp->olno = OOBLNO;
-	sp->cno = sp->ocno = 0;
-
 	sp->ccnt = 2;				/* Anything > 1 */
+
+	sp->lno = sp->olno = OOBLNO;
 
 	FD_ZERO(&sp->rdfd);
 
 	HDR_INIT(sp->txthdr, next, prev);
 
-	sp->lastcmd = &cmds[C_PRINT];
-
 /* PARTIALLY OR COMPLETELY COPIED FROM PREVIOUS SCREEN. */
-	if (orig != NULL) {
-		sp->gp = orig->gp;
-		
-		/* User can replay the last input, but nothing else. */
-		if (orig->rep_len != 0)
-			if ((sp->rep = malloc(orig->rep_len)) == NULL)
-				goto mem;
-			else {
-				memmove(sp->rep, orig->rep, orig->rep_len);
-				sp->rep_len = orig->rep_len;
-			}
+	if (orig == NULL) {
+		sp->searchdir = NOTSET;
+		sp->csearchdir = CNOTSET;
 
-		if (orig->lastbcomm != NULL &&
-		    (sp->lastbcomm = strdup(orig->lastbcomm)) == NULL)
-			goto mem;
+		sp->cname = asciiname;			/* XXX */
 
+		sp->saved_vi_mode = LF_ISSET(S_VI_CURSES | S_VI_XAW);
+
+		switch (flags & S_SCREENS) {
+		case S_EX:
+			if (sex_screen_init(sp))
+				return (1);
+			break;
+		case S_VI_CURSES:
+			if (svi_screen_init(sp))
+				return (1);
+			break;
+		case S_VI_XAW:
+			if (xaw_screen_init(sp))
+				return (1);
+			break;
+		default:
+			abort();
+		}
+
+		sp->flags = flags;
+		list_enter_head(&__global_list->screens, sp, SCR *, screenq);
+	} else {
 		if (orig->alt_fname != NULL &&
 		    (sp->alt_fname = strdup(orig->alt_fname)) == NULL)
 			goto mem;
 
-		sp->inc_lastch = orig->inc_lastch;
-		sp->inc_lastval = orig->inc_lastval;
-
-		if (orig->paragraph != NULL &&
-		    (sp->paragraph = strdup(orig->paragraph)) == NULL)
-			goto mem;
-	
-		if (tag_copy(orig, sp))
-			goto mem;
-			
 		/* Retain all searching/substitution information. */
 		if (F_ISSET(orig, S_SRE_SET)) {
 			F_SET(sp, S_SRE_SET);
@@ -125,34 +126,45 @@ screen_init(orig, sp)
 		sp->cname = orig->cname;
 		memmove(sp->special, orig->special, sizeof(sp->special));
 
-		sp->at_lbuf = orig->at_lbuf;
-		sp->at_lbuf_set = orig->at_lbuf_set;
-
-		if (opt_copy(orig, sp)) {
-mem:			msgq(orig, M_ERR,
-			    "new screen attributes: %s", strerror(errno));
+		if (opts_copy(orig, sp)) {
+mem:			msgq(orig, M_SYSERR, "new screen attributes");
 			(void)screen_end(sp);
 			return (1);
 		}
 
-		F_SET(sp, F_ISSET(orig, S_MODE_EX | S_MODE_VI));
-	} else {
-		sp->inc_lastch = '+';
-		sp->inc_lastval = 1;
+		sp->s_bell		= orig->s_bell;
+		sp->s_busy		= orig->s_busy;
+		sp->s_change		= orig->s_change;
+		sp->s_chposition	= orig->s_chposition;
+		sp->s_clear		= orig->s_clear;
+		sp->s_confirm		= orig->s_confirm;
+		sp->s_copy		= orig->s_copy;
+		sp->s_down		= orig->s_down;
+		sp->s_edit		= orig->s_edit;
+		sp->s_end		= orig->s_end;
+		sp->s_ex_cmd		= orig->s_ex_cmd;
+		sp->s_ex_run		= orig->s_ex_run;
+		sp->s_ex_write		= orig->s_ex_write;
+		sp->s_fill		= orig->s_fill;
+		sp->s_get		= orig->s_get;
+		sp->s_key_read		= orig->s_key_read;
+		sp->s_optchange		= orig->s_optchange;
+		sp->s_position		= orig->s_position;
+		sp->s_refresh		= orig->s_refresh;
+		sp->s_relative		= orig->s_relative;
+		sp->s_split		= orig->s_split;
+		sp->s_suspend		= orig->s_suspend;
+		sp->s_up		= orig->s_up;
 
-		queue_init(&sp->tagq);
-		queue_init(&sp->tagfq);
-
-		sp->searchdir = NOTSET;
-		sp->csearchdir = CNOTSET;
-
-		sp->cname = asciiname;			/* XXX */
-
-		sp->at_lbuf_set = 0;
-
-		sp->flags = 0;
+		F_SET(sp, F_ISSET(orig, S_SCREENS));
+		list_insert_after(&orig->screenq, sp, SCR *, screenq);
 	}
 
+	/* Copy screen private information. */
+	if (sp->s_copy(orig, sp))
+		return (1);
+
+	*spp = sp;
 	return (0);
 }
 
@@ -164,6 +176,9 @@ int
 screen_end(sp)
 	SCR *sp;
 {
+	/* Cleanup screen private information. */
+	(void)sp->s_end(sp);
+
 	/* Free remembered file names. */
 	{ FREF *frp;
 		while ((frp = sp->frefq.qe_next) != NULL) {
@@ -173,13 +188,6 @@ screen_end(sp)
 		}
 	}
 
-	/* Free the argument list. */
-	(void)argv_free(sp);
-
-	/* Free line input buffer. */
-	if (sp->ibp != NULL)
-		FREE(sp->ibp, sp->ibp_len);
-
 	/* Free text input chain. */
 	hdr_text_free(&sp->txthdr);
 
@@ -187,38 +195,9 @@ screen_end(sp)
 	if (F_ISSET(sp, S_SCRIPT))
 		sscr_end(sp);
 
-	/* Free vi text input memory. */
-	if (sp->rep != NULL)
-		FREE(sp->rep, sp->rep_len);
-
-	/* Free last bang command. */
-	if (sp->lastbcomm != NULL)
-		FREE(sp->lastbcomm, strlen(sp->lastbcomm) + 1);
-
 	/* Free alternate file name. */
 	if (sp->alt_fname != NULL)
 		FREE(sp->alt_fname, strlen(sp->alt_fname) + 1);
-
-	/* Free paragraph search list. */
-	if (sp->paragraph != NULL)
-		FREE(sp->paragraph, strlen(sp->paragraph) + 1);
-
-	/* Free up tag information. */
-	{ TAG *tp;
-		while ((tp = sp->tagq.qe_next) != NULL) {
-			queue_remove(&sp->tagq, tp, TAG *, q);
-			FREE(tp, sizeof(TAG));
-		}
-	}
-	{ TAGF *tp;
-		while ((tp = sp->tagfq.qe_next) != NULL) {
-			queue_remove(&sp->tagfq, tp, TAGF *, q);
-			FREE(tp->fname, strlen(tp->fname) + 1);
-			FREE(tp, sizeof(TAG));
-		}
-	}
-	if (sp->tlast != NULL)
-		FREE(sp->tlast, strlen(sp->tlast) + 1);
 
 	/* Free up search information. */
 	if (sp->match != NULL)
@@ -286,75 +265,5 @@ screen_end(sp)
 	/* Free the screen itself. */
 	FREE(sp, sizeof(SCR));
 
-	return (0);
-}
-
-/*
- * opt_copy --
- *	Copy a screen's OPTION array.
- */
-static int
-opt_copy(a, b)
-	SCR *a, *b;
-{
-	OPTION *op;
-	int cnt;
-
-	/* Copy most everything without change. */
-	memmove(b->opts, a->opts, sizeof(a->opts));
-
-	/*
-	 * Allocate copies of the strings -- keep trying to reallocate
-	 * after ENOMEM failure, otherwise end up with more than one
-	 * screen referencing the original memory.
-	 */
-	for (op = b->opts, cnt = 0; cnt < O_OPTIONCOUNT; ++cnt, ++op)
-		if (F_ISSET(&b->opts[cnt], OPT_ALLOCATED) &&
-		    (O_STR(b, cnt) = strdup(O_STR(b, cnt))) == NULL) {
-			msgq(a, M_ERR,
-			    "Error: option copy: %s", strerror(errno));
-			return (1);
-		}
-	return (0);
-}
-
-/*
- * tag_copy --
- *	Copy a screen's tag structures.
- */
-static int
-tag_copy(a, b)
-	SCR *a, *b;
-{
-	TAG *ap, *tp;
-	TAGF *atfp, *tfp;
-
-	/* Initialize queues. */
-	queue_init(&b->tagq);
-	queue_init(&b->tagfq);
-
-	/* Copy tag stack. */
-	for (ap = a->tagq.qe_next; ap != NULL; ap = ap->q.qe_next) {
-		if ((tp = malloc(sizeof(TAG))) == NULL)
-			goto nomem;
-		*tp = *ap;
-		queue_enter_tail(&b->tagq, tp, TAG *, q);
-	}
-
-	/* Copy list of tag files. */
-	for (atfp = a->tagfq.qe_next; atfp != NULL; atfp = atfp->q.qe_next) {
-		if ((tfp = malloc(sizeof(TAGF))) == NULL)
-			goto nomem;
-		*tfp = *atfp;
-		if ((tfp->fname = strdup(atfp->fname)) == NULL)
-			goto nomem;
-		queue_enter_tail(&b->tagfq, tfp, TAGF *, q);
-	}
-		
-	/* Copy the last tag. */
-	if (a->tlast != NULL && (b->tlast = strdup(a->tlast)) == NULL) {
-nomem:		msgq(a, M_ERR, "Error: tag copy: %s", strerror(errno));
-		return (1);
-	}
 	return (0);
 }

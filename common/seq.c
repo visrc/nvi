@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 8.12 1993/11/03 10:14:00 bostic Exp $ (Berkeley) $Date: 1993/11/03 10:14:00 $";
+static char sccsid[] = "$Id: seq.c,v 8.13 1993/11/13 18:00:50 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:00:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -74,7 +74,7 @@ seq_set(sp, name, input, output, stype, userdef)
 mem3:		if (qp->name != NULL)
 			FREE(qp->name, strlen(qp->name) + 1);
 mem2:		FREE(qp, sizeof(SEQ));
-mem1:		msgq(sp, M_ERR, "Error: %s", strerror(errno));
+mem1:		msgq(sp, M_SYSERR, NULL);
 		return (1);
 	}
 

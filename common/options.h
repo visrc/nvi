@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: options.h,v 8.9 1993/11/06 12:12:37 bostic Exp $ (Berkeley) $Date: 1993/11/06 12:12:37 $
+ *	$Id: options.h,v 8.10 1993/11/13 18:00:41 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:00:41 $
  */
 
 typedef struct _option {
@@ -44,6 +44,7 @@ typedef struct _optlist {
 /* Option routines. */
 enum optdisp { NO_DISPLAY, ALL_DISPLAY, CHANGED_DISPLAY, SELECT_DISPLAY };
 
+int	opts_copy __P((struct _scr *, struct _scr *));
 void	opts_dump __P((struct _scr *, enum optdisp));
 void	opts_free __P((struct _scr *));
 int	opts_init __P((struct _scr *));

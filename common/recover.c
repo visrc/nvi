@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.34 1993/11/08 14:11:59 bostic Exp $ (Berkeley) $Date: 1993/11/08 14:11:59 $";
+static char sccsid[] = "$Id: recover.c,v 8.35 1993/11/13 18:00:43 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:00:43 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -123,7 +123,7 @@ rcv_tmp(sp, ep, fname)
 	(void)close(fd);
 
 	if ((ep->rcv_path = strdup(path)) == NULL) {
-		msgq(sp, M_ERR, "Error: %s", strerror(errno));
+		msgq(sp, M_SYSERR, NULL);
 		(void)unlink(path);
 		return (1);
 	}
@@ -214,7 +214,7 @@ rcv_mailfile(sp, ep)
 	uid_t uid;
 	FILE *fp;
 	time_t now;
-	int fd, sverrno;
+	int fd;
 	char *p, host[MAXHOSTNAMELEN], path[MAXPATHLEN];
 
 	if ((pw = getpwuid(uid = getuid())) == NULL) {
@@ -242,7 +242,7 @@ rcv_mailfile(sp, ep)
 		(void)flock(ep->rcv_fd, LOCK_EX | LOCK_NB);
 
 	if ((ep->rcv_mpath = strdup(path)) == NULL) {
-		msgq(sp, M_ERR, "Error: %s", strerror(errno));
+		msgq(sp, M_SYSERR, NULL);
 		(void)fclose(fp);
 		return (1);
 	}
@@ -275,10 +275,8 @@ rcv_mailfile(sp, ep)
 	    "or nex(1).");
 
 	if (fflush(fp) || ferror(fp)) {
-		sverrno = errno;
+		msgq(sp, M_SYSERR, NULL);
 		(void)fclose(fp);
-		errno = sverrno;
-		msgq(sp, M_ERR, "Error: %s", strerror(errno));
 		return (1);
 	}
 	return (0);

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.23 1993/11/06 12:12:16 bostic Exp $ (Berkeley) $Date: 1993/11/06 12:12:16 $";
+static char sccsid[] = "$Id: options.c,v 8.24 1993/11/13 18:00:36 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:00:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -460,8 +460,7 @@ nostr:			if (op->func != NULL) {
 					free(O_STR(sp, offset));
 				if ((O_STR(sp, offset) =
 				    strdup(equals)) == NULL) {
-					msgq(sp, M_ERR,
-					    "Error: %s", strerror(errno));
+					msgq(sp, M_SYSERR, NULL);
 					rval = 1;
 					break;
 				} else
@@ -735,4 +734,32 @@ opts_free(sp)
 			p = O_STR(sp, cnt);
 			FREE(p, strlen(p) + 1);
 		}
+}
+
+/*
+ * opts_copy --
+ *	Copy a screen's OPTION array.
+ */
+int
+opts_copy(orig, sp)
+	SCR *orig, *sp;
+{
+	OPTION *op;
+	int cnt;
+
+	/* Copy most everything without change. */
+	memmove(sp->opts, orig->opts, sizeof(orig->opts));
+
+	/*
+	 * Allocate copies of the strings -- keep trying to reallocate
+	 * after ENOMEM failure, otherwise end up with more than one
+	 * screen referencing the original memory.
+	 */
+	for (op = sp->opts, cnt = 0; cnt < O_OPTIONCOUNT; ++cnt, ++op)
+		if (F_ISSET(&sp->opts[cnt], OPT_ALLOCATED) &&
+		    (O_STR(sp, cnt) = strdup(O_STR(sp, cnt))) == NULL) {
+			msgq(orig, M_SYSERR, NULL);
+			return (1);
+		}
+	return (0);
 }

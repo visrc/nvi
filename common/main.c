@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.38 1993/11/13 09:07:31 bostic Exp $ (Berkeley) $Date: 1993/11/13 09:07:31 $";
+static char sccsid[] = "$Id: main.c,v 8.39 1993/11/13 18:00:32 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:00:32 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -57,7 +57,6 @@ main(argc, argv)
 	extern int optind;
 	extern char *optarg;
 	static int reenter;		/* STATIC: Re-entrancy check. */
-	enum { EX_SCR, VI_CURSES_SCR, VI_XAW_SCR } scr_type;
 	struct sigaction act;
 	struct stat sb;
 	GS *gp;
@@ -78,15 +77,13 @@ main(argc, argv)
 		myname = *argv;
 	else
 		++myname;
-	if (!strcmp(myname, "ex") || !strcmp(myname, "nex")) {
-		LF_INIT(S_MODE_EX);
-		scr_type = EX_SCR;
-	} else {
+	if (!strcmp(myname, "ex") || !strcmp(myname, "nex"))
+		LF_INIT(S_EX);
+	else {
 		/* View is readonly. */
 		if (!strcmp(myname, "view"))
 			readonly = 1;
-		LF_INIT(S_MODE_VI);
-		scr_type = VI_CURSES_SCR;
+		LF_INIT(S_VI_CURSES);
 	}
 
 	/* Convert old-style arguments into new-style ones. */
@@ -102,8 +99,8 @@ main(argc, argv)
 			excmdarg = optarg;
 			break;
 		case 'e':		/* Ex mode. */
-			LF_CLR(S_MODE_VI);
-			LF_SET(S_MODE_EX);
+			LF_CLR(S_SCREENS);
+			LF_SET(S_EX);
 			break;
 		case 'l':
 			if (flagchk != '\0' && flagchk != 'l')
@@ -144,17 +141,16 @@ main(argc, argv)
 			tag_f = optarg;
 			break;
 		case 'v':		/* Vi mode. */
-			F_CLR(sp, S_MODE_EX);
-			F_SET(sp, S_MODE_VI);
-			if (scr_type == EX_SCR)
-				scr_type = VI_CURSES_SCR;
+			LF_CLR(S_SCREENS);
+			LF_SET(S_VI_CURSES);
 			break;
 		case 'w':
 			wsizearg = optarg;
 			break;
 		case 'x':
 			if (!strcmp(optarg, "aw")) {
-				scr_type = VI_XAW_SCR;
+				F_CLR(sp, S_SCREENS);
+				F_SET(sp, S_VI_XAW);
 				break;
 			}
 			/* FALLTHROUGH */
@@ -165,7 +161,6 @@ main(argc, argv)
 	argc -= optind;
 	argv += optind;
 
-
 	/* Build and initialize the GS structure. */
 	__global_list = gp = gs_init();
 		
@@ -173,13 +168,8 @@ main(argc, argv)
 		F_SET(gp, G_SNAPSHOT);
 
 	/* Build and initialize the first/current screen. */
-	if ((sp = malloc(sizeof(SCR))) == NULL)
-		err(1, NULL);
-	if (screen_init(NULL, sp))
-		err(1, NULL);
-	sp->flags = flags;
-
-	sp->gp = gp;			/* All ref the GS structure. */
+	if (screen_init(NULL, &sp, flags))
+		goto err1;
 
 	if (trace_f != NULL) {
 #ifdef DEBUG
@@ -230,7 +220,7 @@ main(argc, argv)
 	/* Source the EXINIT environment variable. */
 	if ((p = getenv("EXINIT")) != NULL)
 		if ((p = strdup(p)) == NULL) {
-			msgq(sp, M_ERR, "Error: %s", strerror(errno));
+			msgq(sp, M_SYSERR, NULL);
 			goto err1;
 		} else {
 			(void)ex_cstring(sp, NULL, p, strlen(p));
@@ -315,13 +305,11 @@ main(argc, argv)
 	 * or ex in ex mode.  So, make it look like an ex command to vi.
 	 */
 	if (excmdarg != NULL)
-		switch (F_ISSET(sp, S_MODE_EX | S_MODE_VI)) {
-		case S_MODE_EX:
+		if (IN_EX_MODE(sp)) {
 			if (term_push(sp, sp->gp->tty,
 			    excmdarg, strlen(excmdarg)))
 				goto err1;
-			break;
-		case S_MODE_VI:
+		} else if (IN_VI_MODE(sp)) {
 			if (term_push(sp, sp->gp->tty, "\n", 1))
 				goto err1;
 			if (term_push(sp, sp->gp->tty,
@@ -329,44 +317,17 @@ main(argc, argv)
 				goto err1;
 			if (term_push(sp, sp->gp->tty, ":", 1))
 				goto err1;
-			break;
-		default:
-			abort();
-			/* NOTREACHED */
 		}
 		
 	/* Vi reads from the terminal. */
-	if (!F_ISSET(gp, G_ISFROMTTY) && !F_ISSET(sp, S_MODE_EX)) {
+	if (!F_ISSET(gp, G_ISFROMTTY) && !F_ISSET(sp, S_EX)) {
 		msgq(sp, M_ERR, "Vi's standard input must be a terminal.");
 		goto err1;
 	}
 
-	/*
-	 * Call a screen.  There's two things that we look at.  In the
-	 * screen flags word there's a bit if it's a vi or ex screen.
-	 * Since there are multiple vi screens, we use scr_type to decide.
-	 */
 	for (; sp != NULL; sp = nsp)
-		if (F_ISSET(sp, S_MODE_EX)) {
-			if (sex(sp, sp->ep, &nsp))
-				goto err2;
-		} else
-			switch (scr_type) {
-			case EX_SCR:
-				abort();
-				/* NOTREACHED */
-			case VI_CURSES_SCR:
-				if (svi(sp, sp->ep, &nsp))
-					goto err2;
-				break;
-			case VI_XAW_SCR:
-				if (xaw(sp, sp->ep, &nsp))
-					goto err2;
-				break;
-			default:
-				abort();
-				/* NOTREACHED */
-			}
+		if (sp->s_edit(sp, sp->ep, &nsp))
+			goto err2;
 
 	/*
 	 * Two error paths.  The first means that something failed before

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 8.10 1993/11/09 10:00:36 bostic Exp $ (Berkeley) $Date: 1993/11/09 10:00:36 $";
+static char sccsid[] = "$Id: cut.c,v 8.11 1993/11/13 18:00:25 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:00:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -74,7 +74,7 @@ cut(sp, ep, name, fm, tm, lmode)
 	 */
 	if (cbp == NULL) {
 		if ((cbp = malloc(sizeof(CB))) == NULL) {
-			msgq(sp, M_ERR, "Error: %s", strerror(errno));
+			msgq(sp, M_SYSERR, NULL);
 			return (1);
 		}
 		memset(cbp, 0, sizeof(CB));
@@ -232,7 +232,7 @@ text_init(sp, p, len, total_len)
 		goto mem;
 	if ((tp->lb = malloc(tp->lb_len = total_len)) == NULL) {
 		free(tp);
-mem:		msgq(sp, M_ERR, "Error: %s", strerror(errno));
+mem:		msgq(sp, M_SYSERR, NULL);
 		return (NULL);
 	}
 #ifdef DEBUG
