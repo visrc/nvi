@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_map.c,v 8.9 1994/04/09 18:13:54 bostic Exp $ (Berkeley) $Date: 1994/04/09 18:13:54 $";
+static char sccsid[] = "$Id: ex_map.c,v 8.10 1994/04/17 17:19:57 bostic Exp $ (Berkeley) $Date: 1994/04/17 17:19:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -15,6 +15,7 @@ static char sccsid[] = "$Id: ex_map.c,v 8.9 1994/04/09 18:13:54 bostic Exp $ (Be
 
 #include <bitstring.h>
 #include <ctype.h>
+#include <curses.h>
 #include <limits.h>
 #include <signal.h>
 #include <stdio.h>
@@ -54,7 +55,7 @@ ex_map(sp, ep, cmdp)
 	CHAR_T *input;
 	size_t nlen;
 	int key;
-	char *name, buf[10];
+	char *name, *t, keyname[64];
 
 	stype = F_ISSET(cmdp, E_FORCE) ? SEQ_INPUT : SEQ_COMMAND;
 
@@ -72,24 +73,34 @@ ex_map(sp, ep, cmdp)
 	}
 
 	/*
-	 * If the mapped string is #[0-9] (and wasn't quoted in any
-	 * way, then map to a function key.
+	 * If the mapped string is #[0-9] (and wasn't quoted)
+	 * then map to a function key.
 	 */
 	nlen = 0;
 	if (input[0] == '#' && isdigit(input[1]) && !input[2]) {
-		key = atoi(input + 1);
-		nlen = snprintf(buf, sizeof(buf), "f%d", key);
-#ifdef notdef
-		if (FKEY[key]) {		/* CCC */
-			input = FKEY[key];
-			name = buf;
-		} else {
-			msgq(sp, M_ERR, "This terminal has no %s key.", buf);
-			return (1);
-		}
+		(void)snprintf(keyname,
+		    sizeof(keyname), "k%d", atoi(input + 1));
+#ifdef SYSV_CURSES
+		if ((t = tigetstr(keyname)) == (char *)-1)
+			t = NULL;
 #else
-		name = NULL;
+		{
+			char *sbp, sbuf[1024];
+			if (term_tgetent(sp, sbuf, O_STR(sp, O_TERM)))
+				return (1);
+			sbp = sbuf;
+			t = tgetstr(keyname, &sbp);
+		}
 #endif
+		if (t != NULL) {
+			nlen = snprintf(keyname, sizeof(keyname),
+			    "function key %d", atoi(input + 1));
+			return (seq_set(sp, keyname, nlen, t, strlen(t),
+			    cmdp->argv[1]->bp, cmdp->argv[1]->len,
+			    stype, S_USERDEF));
+		}
+		msgq(sp, M_ERR, "This terminal has no %s key.", input);
+		return (1);
 	} else {
 		name = NULL;
 
