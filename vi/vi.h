@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 5.17 1992/10/17 16:10:54 bostic Exp $ (Berkeley) $Date: 1992/10/17 16:10:54 $
+ *	$Id: vi.h,v 5.18 1992/10/24 14:23:34 bostic Exp $ (Berkeley) $Date: 1992/10/24 14:23:34 $
  */
 
 #include "exf.h"
@@ -58,23 +58,24 @@ typedef struct _vikeys {	/* Underlying function. */
 	int (*func) __P((VICMDARG *, MARK *, MARK *, MARK *));
 
 /* XXX Check to see if these are all needed. */
-#define	V_ABS		0x0001	/* Absolute movement, sets the '' mark. */
-#define	V_CHAR		0x0002	/* Character (required, trailing). */
-#define	V_CNT		0x0004	/* Count (optional, leading). */
-#define	V_DOT		0x0008	/* Successful command sets dot command. */
-#define	V_KEYNUM	0x0010	/* Cursor referenced number. */
-#define	V_KEYW		0x0020	/* Cursor referenced word. */
-#define	V_LMODE		0x0040	/* Motion is line oriented. */
-#define	V_MOTION	0x0080	/* Motion (required, trailing). */
-#define	V_MOVE		0x0100	/* Command defines movement. */
-#define	V_OBUF		0x0200	/* Buffer (optional, leading). */
-#define	V_RBUF		0x0400	/* Buffer (required, trailing). */
-#define	V_RCM		0x0800	/* Relative cursor movment (RCM). */
-#define	V_RCM_SET	0x1000	/* Set RCM absolutely. */
-#define	V_RCM_SETFNB	0x2000	/* Set RCM to first non-blank character. */
-#define	V_RCM_SETLAST	0x4000	/* Set RCM to last character. */
-#define	V_START		0x8000	/* Command implies SOL movement. */
-	u_int flags;
+#define	V_ABS		0x00001	/* Absolute movement, sets the '' mark. */
+#define	V_CHAR		0x00002	/* Character (required, trailing). */
+#define	V_CNT		0x00004	/* Count (optional, leading). */
+#define	V_DOT		0x00008	/* Successful command sets dot command. */
+#define	V_KEYNUM	0x00010	/* Cursor referenced number. */
+#define	V_KEYW		0x00020	/* Cursor referenced word. */
+#define	V_INPUT		0x00040	/* Input command. */
+#define	V_LMODE		0x00080	/* Motion is line oriented. */
+#define	V_MOTION	0x00100	/* Motion (required, trailing). */
+#define	V_MOVE		0x00200	/* Command defines movement. */
+#define	V_OBUF		0x00400	/* Buffer (optional, leading). */
+#define	V_RBUF		0x00800	/* Buffer (required, trailing). */
+#define	V_RCM		0x01000	/* Use relative cursor movment (RCM). */
+#define	V_RCM_SET	0x02000	/* Set RCM absolutely. */
+#define	V_RCM_SETFNB	0x04000	/* Set RCM to first non-blank character. */
+#define	V_RCM_SETLAST	0x08000	/* Set RCM to last character. */
+#define	V_START		0x10000	/* Command implies SOL movement. */
+	u_long flags;
 	char *usage;		/* Usage line. */
 } VIKEYS;
 
@@ -107,9 +108,10 @@ int	v_chT __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_cht __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_Delete __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_delete __P((VICMDARG *, MARK *, MARK *, MARK *));
+int	v_dollar __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_down __P((VICMDARG *, MARK *, MARK *, MARK *));
 void	v_eof __P((MARK *));
-int	v_eol __P((VICMDARG *, MARK *, MARK *, MARK *));
+void	v_eol __P((MARK *));
 int	v_errlist __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_ex __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_exit __P((VICMDARG *, MARK *, MARK *, MARK *));
@@ -126,7 +128,7 @@ int	v_increment __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_iO __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_io __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_join __P((VICMDARG *, MARK *, MARK *, MARK *));
-void	v_leaveex __P((void));
+int	v_leaveex __P((void));
 int	v_left __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_lgoto __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_linedown __P((VICMDARG *, MARK *, MARK *, MARK *));
@@ -148,6 +150,7 @@ int	v_put __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_quit __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_redraw __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_Replace __P((VICMDARG *, MARK *, MARK *, MARK *));
+int	v_replace __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_right __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_searchb __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_searchf __P((VICMDARG *, MARK *, MARK *, MARK *));
@@ -161,7 +164,7 @@ int	v_sentencef __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_shiftl __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_shiftr __P((VICMDARG *, MARK *, MARK *, MARK *));
 void	v_sof __P((MARK *));
-void	v_startex __P((void));
+int	v_startex __P((void));
 int	v_status __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_stop __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_subst __P((VICMDARG *, MARK *, MARK *, MARK *));
@@ -179,20 +182,13 @@ int	v_wordw __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_Xchar __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_xchar __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_yank __P((VICMDARG *, MARK *, MARK *, MARK *));
+int	v_z __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_zero __P((VICMDARG *, MARK *, MARK *, MARK *));
 
 #ifndef VIROUTINE
-MARK	*m_z __P((MARK *, long, int));
-MARK	*v_replace __P((MARK *, long, int));
-MARK	*v_selcut __P((MARK *, long, int));
-MARK	*v_start __P((MARK *, long, int));
 MARK	*v_undoline __P((MARK *));
 void	 v_undosave __P((MARK *));
 #else
-int m_z();
-int v_replace();
-int v_selcut();
-int v_start();
-int v_undoline();
+int	 v_undoline();
 void	 v_undosave();
 #endif
