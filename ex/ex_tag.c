@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 8.5 1993/08/06 13:13:04 bostic Exp $ (Berkeley) $Date: 1993/08/06 13:13:04 $";
+static char sccsid[] = "$Id: ex_tag.c,v 8.6 1993/08/16 11:36:50 bostic Exp $ (Berkeley) $Date: 1993/08/16 11:36:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -369,8 +369,18 @@ search(fname, tname, tag)
 
 	if ((fd = open(fname, O_RDONLY, 0)) < 0)
 		return (1);
-	if (fstat(fd, &sb) || (front = mmap(NULL,
-	    sb.st_size, PROT_READ, 0, fd, (off_t)0)) == (caddr_t)-1) {
+
+	/*
+	 * XXX
+	 * We'd like to test if the file is too big to mmap.  Since we don't
+	 * know what size or type off_t's or size_t's are, what the largest
+	 * unsigned integral type is, or what random insanity the local C
+	 * compiler will perpetrate, doing the comparison in a portable way
+	 * is flatly impossible.  Hope that malloc fails if the file is too
+	 * large.
+	 */
+	if (fstat(fd, &sb) || (front = mmap(NULL, (size_t)sb.st_size,
+	    PROT_READ, 0, fd, (off_t)0)) == (caddr_t)-1) {
 		(void)close(fd);
 		return (1);
 	}
