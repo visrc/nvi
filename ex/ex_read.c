@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 5.22 1993/02/11 19:42:31 bostic Exp $ (Berkeley) $Date: 1993/02/11 19:42:31 $";
+static char sccsid[] = "$Id: ex_read.c,v 5.23 1993/02/12 10:08:41 bostic Exp $ (Berkeley) $Date: 1993/02/12 10:08:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -125,7 +125,7 @@ ex_readfp(fname, fp, fm, cntp)
 	size_t len;
 	recno_t lno;
 	int rval;
-	char *p;
+	u_char *p;
 
 	/*
 	 * Add in the lines from the output.  Insertion starts at the line
@@ -133,7 +133,7 @@ ex_readfp(fname, fp, fm, cntp)
 	 */
 	rval = 0;
 	for (lno = fm->lno; p = ex_getline(fp, &len); ++lno)
-		if (file_aline(curf, lno, (u_char *)p, len)) {
+		if (file_aline(curf, lno, p, len)) {
 			rval = 1;
 			break;
 		}
