@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_match.c,v 8.11 1994/04/21 11:39:15 bostic Exp $ (Berkeley) $Date: 1994/04/21 11:39:15 $";
+static char sccsid[] = "$Id: v_match.c,v 8.12 1994/04/26 18:40:08 bostic Exp $ (Berkeley) $Date: 1994/04/26 18:40:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -144,22 +144,29 @@ nomatch:		msgq(sp, M_BERR, "No match character on this line.");
 	/*
 	 * !!!
 	 * If the motion is across lines, and the earliest cursor position
-	 * is at or before any non-blank characters in its line, i.e. the
-	 * movement is cutting all of the line's text, the buffer is in line
-	 * mode.
+	 * is at or before any non-blank characters in the line, i.e. the
+	 * movement is cutting all of the line's text, and the later cursor
+	 * position has nothing other than whitespace characters between it
+	 * and the end of its line, the buffer is in line mode.
 	 */
-	if (ISMOTION(vp) && vp->m_start.lno != vp->m_stop.lno) {
-		mp = vp->m_start.lno < vp->m_stop.lno ?
-		    &vp->m_start : &vp->m_stop;
-		if (mp->cno == 0) {
-			F_SET(vp, VM_LMODE);
-			return (0);
-		}
+	if (!ISMOTION(vp) || vp->m_start.lno == vp->m_stop.lno)
+		return (0);
+	mp = vp->m_start.lno < vp->m_stop.lno ? &vp->m_start : &vp->m_stop;
+	if (mp->cno != 0) {
 		cno = 0;
 		if (nonblank(sp, ep, mp->lno, &cno))
 			return (1);
-		if (cno >= mp->cno)
-			F_SET(vp, VM_LMODE);
+		if (cno < mp->cno)
+			return (0);
 	}
+	mp = vp->m_start.lno < vp->m_stop.lno ? &vp->m_stop : &vp->m_start;
+	if ((p = file_gline(sp, ep, mp->lno, &len)) == NULL) {
+		GETLINE_ERR(sp, mp->lno);
+		return (1);
+	}
+	for (p += mp->cno + 1, len -= mp->cno; --len; ++p)
+		if (!isblank(*p))
+			return (0);
+	F_SET(vp, VM_LMODE);
 	return (0);
 }
