@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 8.9 1994/04/10 16:32:03 bostic Exp $ (Berkeley) $Date: 1994/04/10 16:32:03 $";
+static char sccsid[] = "$Id: ex_print.c,v 8.10 1994/04/29 10:21:22 bostic Exp $ (Berkeley) $Date: 1994/04/29 10:21:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -104,9 +104,16 @@ ex_print(sp, ep, fp, tp, flags)
 	ts = O_VAL(sp, O_TABSTOP);
 	F_SET(sp, S_INTERRUPTIBLE);
 	for (from = fp->lno, to = tp->lno; from <= to; ++from) {
-		/* Display the line number. */
+		/*
+		 * Display the line number.  The %6 format is specified
+		 * by POSIX 1003.2, and is almost certainly large enough.
+		 * Check, though, just in case.
+		 */
 		if (LF_ISSET(E_F_HASH))
-			col = ex_printf(EXCOOKIE, "%7ld ", from);
+			if (from <= 999999)
+				col = ex_printf(EXCOOKIE, "%6ld  ", from);
+			else
+				col = ex_printf(EXCOOKIE, "TOOBIG  ", from);
 		else
 			col = 0;
 
