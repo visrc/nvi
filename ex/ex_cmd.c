@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 9.5 1995/01/23 17:03:20 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:03:20 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 9.6 1995/02/02 15:10:05 bostic Exp $ (Berkeley) $Date: 1995/02/02 15:10:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -106,17 +106,17 @@ EXCMDLIST const cmds[] = {
 	    "[line] a[ppend][!]",
 	    "append input to a line"},
 /* C_ABBR */
-	{"abbreviate", 	ex_abbr,	E_NOGLOBAL,
+	{"abbreviate", 	ex_abbr,	0,
 	    "W",
 	    "ab[brev] [word replace]",
 	    "specify an input abbreviation"},
 /* C_ARGS */
-	{"args",	ex_args,	E_NOGLOBAL,
+	{"args",	ex_args,	0,
 	    "",
 	    "ar[gs]",
 	    "display file argument list"},
 /* C_BG */
-	{"bg",		ex_bg,		E_NOGLOBAL|E_VIONLY,
+	{"bg",		ex_bg,		E_VIONLY,
 	    "",
 	    "bg",
 	    "background the current screen"},
@@ -126,12 +126,12 @@ EXCMDLIST const cmds[] = {
 	    "[line [,line]] c[hange][!] [count]",
 	    "change lines to input"},
 /* C_CD */
-	{"cd",		ex_cd,		E_NOGLOBAL,
+	{"cd",		ex_cd,		0,
 	    "!f1o",
 	    "cd[!] [directory]",
 	    "change the current directory"},
 /* C_CHDIR */
-	{"chdir",	ex_cd,		E_NOGLOBAL,
+	{"chdir",	ex_cd,		0,
 	    "!f1o",
 	    "chd[ir][!] [directory]",
 	    "change the current directory"},
@@ -151,47 +151,47 @@ EXCMDLIST const cmds[] = {
 	    "[line [,line]] d[elete][flags] [buffer] [count] [flags]",
 	    "delete lines from the file"},
 /* C_DISPLAY */
-	{"display",	ex_display,	E_NOGLOBAL,
+	{"display",	ex_display,	0,
 	    "w1r",
 	    "display b[uffers] | s[creens] | t[ags]",
 	    "display buffers, screens or tags"},
 /* C_DIGRAPH */
-	{"digraph",	ex_digraph,	E_NOGLOBAL|E_NOPERM,
+	{"digraph",	ex_digraph,	E_NOPERM,
 	    "",
 	    "digraph",
 	    "specify digraphs (not implemented)"},
 /* C_EDIT */
-	{"edit",	ex_edit,	E_NOGLOBAL,
+	{"edit",	ex_edit,	0,
 	    "f1o",
 	    "e[dit][!] [+cmd] [file]",
 	    "begin editing another file"},
 /* C_EX */
-	{"ex",		ex_edit,	E_NOGLOBAL,
+	{"ex",		ex_edit,	0,
 	    "f1o",
 	    "ex[!] [+cmd] [file]",
 	    "begin editing another file"},
 /* C_EXUSAGE */
-	{"exusage",	ex_usage,	E_NOGLOBAL,
+	{"exusage",	ex_usage,	0,
 	    "w1o",
 	    "[exu]sage [command]",
 	    "display ex command usage statement"},
 /* C_FILE */
-	{"file",	ex_file,	E_NOGLOBAL,
+	{"file",	ex_file,	0,
 	    "f1o",
 	    "f[ile] [name]",
 	    "display (and optionally set) file name"},
 /* C_FG */
-	{"fg",		ex_fg,		E_NOGLOBAL|E_VIONLY,
+	{"fg",		ex_fg,		E_VIONLY,
 	    "f1o",
 	    "fg [file]",
 	    "switch the current screen and a backgrounded screen"},
 /* C_GLOBAL */
-	{"global",	ex_global,	E_ADDR2_ALL|E_NOGLOBAL,
+	{"global",	ex_global,	E_ADDR2_ALL,
 	    "!s",
 	    "[line [,line]] g[lobal][!] [;/]RE[;/] [commands]",
 	    "execute a global command on lines matching an RE"},
 /* C_HELP */
-	{"help",	ex_help,	E_NOGLOBAL,
+	{"help",	ex_help,	0,
 	    "",
 	    "he[lp]",
 	    "display help statement"},
@@ -226,17 +226,17 @@ EXCMDLIST const cmds[] = {
 	    "[line] ma[rk] key",
 	    "mark a line position"},
 /* C_MAP */
-	{"map",		ex_map,		E_NOGLOBAL,
+	{"map",		ex_map,		0,
 	    "!W",
 	    "map[!] [keys replace]",
 	    "map input or commands to one or more keys"},
 /* C_MKEXRC */
-	{"mkexrc",	ex_mkexrc,	E_NOGLOBAL,
+	{"mkexrc",	ex_mkexrc,	0,
 	    "!f1r",
 	    "mkexrc[!] file",
 	    "write a .exrc file"},
 /* C_NEXT */
-	{"next",	ex_next,	E_NOGLOBAL,
+	{"next",	ex_next,	0,
 	    "!fN",
 	    "n[ext][!] [+cmd] [file ...]",
 	    "edit (and optionally specify) the next file"},
@@ -256,12 +256,12 @@ EXCMDLIST const cmds[] = {
 	    "[line [,line]] p[rint] [count] [#l]",
 	    "display lines"},
 /* C_PRESERVE */
-	{"preserve",	ex_preserve,	E_NOGLOBAL,
+	{"preserve",	ex_preserve,	0,
 	    "",
 	    "pre[serve]",
 	    "preserve an edit session for recovery"},
 /* C_PREVIOUS */
-	{"previous",	ex_prev,	E_NOGLOBAL,
+	{"previous",	ex_prev,	0,
 	    "!",
 	    "prev[ious][!]",
 	    "edit the previous file in the file argument list"},
@@ -272,7 +272,7 @@ EXCMDLIST const cmds[] = {
 	    "[line] pu[t] [buffer]",
 	    "append a cut buffer to the line"},
 /* C_QUIT */
-	{"quit",	ex_quit,	E_NOGLOBAL,
+	{"quit",	ex_quit,	0,
 	    "!",
 	    "q[uit][!]",
 	    "exit ex/vi"},
@@ -282,17 +282,17 @@ EXCMDLIST const cmds[] = {
 	    "[line] r[ead] [!cmd | [file]]",
 	    "append input from a command or file to the line"},
 /* C_RECOVER */
-	{"recover",	ex_recover,	E_NOGLOBAL,
+	{"recover",	ex_recover,	0,
 	    "!f1r",
 	    "recover[!] file",
 	    "recover a saved file"},
 /* C_RESIZE */
-	{"resize",	ex_resize,	E_NOGLOBAL|E_VIONLY,
+	{"resize",	ex_resize,	E_VIONLY,
 	    "c+",
 	    "resize [+-]rows",
 	    "grow or shrink the current screen"},
 /* C_REWIND */
-	{"rewind",	ex_rew,		E_NOGLOBAL,
+	{"rewind",	ex_rew,		0,
 	    "!",
 	    "rew[ind][!]",
 	    "re-edit all the files in the file argument list"},
@@ -307,37 +307,37 @@ EXCMDLIST const cmds[] = {
 	    "[line [,line]] s [[/;]RE[/;]repl[/;] [cgr] [count] [#lp]]",
 	    "substitute on lines matching an RE"},
 /* C_SCRIPT */
-	{"script",	ex_script,	E_NOGLOBAL,
+	{"script",	ex_script,	0,
 	    "!f1o",
 	    "sc[ript][!] [file]",
 	    "run a shell in a screen"},
 /* C_SET */
-	{"set",		ex_set,		E_NOGLOBAL,
+	{"set",		ex_set,		0,
 	    "wN",
 	    "se[t] [option[=[value]]...] [nooption ...] [option? ...] [all]",
 	    "set options (use \":set all\" to see all options)"},
 /* C_SHELL */
-	{"shell",	ex_shell,	E_NOGLOBAL,
+	{"shell",	ex_shell,	0,
 	    "",
 	    "sh[ell]",
 	    "suspend editing and run a shell"},
 /* C_SOURCE */
-	{"source",	ex_source,	E_NOGLOBAL,
+	{"source",	ex_source,	0,
 	    "f1r",
 	    "so[urce] file",
 	    "read a file of ex commands"},
 /* C_SPLIT */
-	{"split",	ex_split,	E_NOGLOBAL|E_VIONLY,
+	{"split",	ex_split,	E_VIONLY,
 	    "fNo",
 	    "sp[lit] [file ...]",
 	    "split the current screen into two screens"},
 /* C_STOP */
-	{"stop",	ex_stop,	E_NOGLOBAL,
+	{"stop",	ex_stop,	0,
 	    "!",
 	    "st[op][!]",
 	    "suspend the edit session"},
 /* C_SUSPEND */
-	{"suspend",	ex_stop,	E_NOGLOBAL,
+	{"suspend",	ex_stop,	0,
 	    "!",
 	    "su[spend][!]",
 	    "suspend the edit session"},
@@ -347,77 +347,77 @@ EXCMDLIST const cmds[] = {
 	    "[line [,line]] t line [flags]",
 	    "copy lines elsewhere in the file"},
 /* C_TAG */
-	{"tag",		ex_tagpush,	E_NOGLOBAL,
+	{"tag",		ex_tagpush,	0,
 	    "!w1o",
 	    "ta[g][!] [string]",
 	    "edit the file containing the tag"},
 /* C_TAGPOP */
-	{"tagpop",	ex_tagpop,	E_NOGLOBAL,
+	{"tagpop",	ex_tagpop,	0,
 	    "!w1o",
 	    "tagp[op][!] [number | file]",
 	    "return to a previous tag"},
 /* C_TAGTOP */
-	{"tagtop",	ex_tagtop,	E_NOGLOBAL,
+	{"tagtop",	ex_tagtop,	0,
 	    "!",
 	    "tagt[op][!]",
 	    "return to the first tag"},
 /* C_UNDO */
-	{"undo",	ex_undo,	E_AUTOPRINT|E_NOGLOBAL,
+	{"undo",	ex_undo,	E_AUTOPRINT,
 	    "",
 	    "u[ndo]",
 	    "undo the most recent change"},
 /* C_UNABBREVIATE */
-	{"unabbreviate",ex_unabbr,	E_NOGLOBAL,
+	{"unabbreviate",ex_unabbr,	0,
 	    "w1r",
 	    "una[bbrev] word",
 	    "delete an abbreviation"},
 /* C_UNMAP */
-	{"unmap",	ex_unmap,	E_NOGLOBAL,
+	{"unmap",	ex_unmap,	0,
 	    "!w1r",
 	    "unm[ap][!] word",
 	    "delete an input or command map"},
 /* C_V */
-	{"v",		ex_v,		E_ADDR2_ALL|E_NOGLOBAL,
+	{"v",		ex_v,		E_ADDR2_ALL,
 	    "s",
 	    "[line [,line]] v [;/]RE[;/] [commands]",
 	    "execute a global command on lines NOT matching an RE"},
 /* C_VERSION */
-	{"version",	ex_version,	E_NOGLOBAL,
+	{"version",	ex_version,	0,
 	    "",
 	    "version",
 	    "display the program version information"},
 /* C_VISUAL_EX */
-	{"visual",	ex_visual,	E_ADDR1|E_NOGLOBAL|E_ZERODEF,
+	{"visual",	ex_visual,	E_ADDR1|E_ZERODEF,
 	    "2c11",
 	    "[line] vi[sual] [-|.|+|^] [window_size] [flags]",
 	    "enter visual (vi) mode from ex mode"},
 /* C_VISUAL_VI */
-	{"visual",	ex_edit,	E_NOGLOBAL,
+	{"visual",	ex_edit,	0,
 	    "f1o",
 	    "vi[sual][!] [+cmd] [file]",
 	    "edit another file (from vi mode only)"},
 /* C_VIUSAGE */
-	{"viusage",	ex_viusage,	E_NOGLOBAL,
+	{"viusage",	ex_viusage,	0,
 	    "w1o",
 	    "[viu]sage [key]",
 	    "display vi key usage statement"},
 /* C_WRITE */
-	{"write",	ex_write,	E_ADDR2_ALL|E_NOGLOBAL|E_ZERODEF,
+	{"write",	ex_write,	E_ADDR2_ALL|E_ZERODEF,
 	    "!s",
 	    "[line [,line]] w[rite][!] [!cmd | [>>] [file]]",
 	    "write the file"},
 /* C_WN */
-	{"wn",		ex_wn,		E_ADDR2_ALL|E_NOGLOBAL|E_ZERODEF,
+	{"wn",		ex_wn,		E_ADDR2_ALL|E_ZERODEF,
 	    "!s",
 	    "[line [,line]] wn[!] [>>] [file]",
 	    "write the file and switch to the next file"},
 /* C_WQ */
-	{"wq",		ex_wq,		E_ADDR2_ALL|E_NOGLOBAL|E_ZERODEF,
+	{"wq",		ex_wq,		E_ADDR2_ALL|E_ZERODEF,
 	    "!s",
 	    "[line [,line]] wq[!] [>>] [file]",
 	    "write the file and exit"},
 /* C_XIT */
-	{"xit",		ex_xit,		E_ADDR2_ALL|E_NOGLOBAL|E_ZERODEF,
+	{"xit",		ex_xit,		E_ADDR2_ALL|E_ZERODEF,
 	    "!f1o",
 	    "[line [,line]] x[it][!] [file]",
 	    "exit"},
@@ -427,7 +427,7 @@ EXCMDLIST const cmds[] = {
 	    "[line [,line]] ya[nk] [buffer] [count]",
 	    "copy lines to a cut buffer"},
 /* C_Z */
-	{"z",		ex_z,		E_ADDR1|E_NOGLOBAL,
+	{"z",		ex_z,		E_ADDR1,
 	    "3c01",
 	    "[line] z [-|.|+|^|=] [count] [flags]",
 	    "display different screens of the file"},

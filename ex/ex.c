@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 9.31 1995/02/02 11:28:56 bostic Exp $ (Berkeley) $Date: 1995/02/02 11:28:56 $";
+static char sccsid[] = "$Id: ex.c,v 9.32 1995/02/02 15:11:01 bostic Exp $ (Berkeley) $Date: 1995/02/02 15:11:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -521,14 +521,6 @@ done:		if (bp != NULL)
 skip:		if (F_ISSET(cp, E_NOPERM)) {
 			msgq(sp, M_ERR,
 			    "101|The %s command is not currently supported",
-			    cp->name);
-			goto err;
-		}
-
-		/* Some commands aren't okay in globals. */
-		if (F_ISSET(sp, S_GLOBAL) && F_ISSET(cp, E_NOGLOBAL)) {
-			msgq(sp, M_ERR,
-		"102|The %s command can't be used as part of a global command",
 			    cp->name);
 			goto err;
 		}
