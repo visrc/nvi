@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.22 1992/04/22 08:07:54 bostic Exp $ (Berkeley) $Date: 1992/04/22 08:07:54 $";
+static char sccsid[] = "$Id: ex.c,v 5.23 1992/04/22 09:27:29 bostic Exp $ (Berkeley) $Date: 1992/04/22 09:27:29 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -614,7 +614,7 @@ linespec(cmd, cp)
 			pfetch(markline(cur));
 			if (plen > 0)
 				cur += plen - 1;
-			cur = m_fsrch(cur, cmd);
+			cur = f_search(cur, cmd);
 			cmd = ep;
 			break;
 		case '?':		/* Search backward. */
@@ -623,7 +623,7 @@ linespec(cmd, cp)
 
 			/* Search for the pattern. */
 			cur &= ~(BLKSIZE - 1);
-			cur = m_bsrch(cur, cmd);
+			cur = b_search(cur, cmd);
 			break;
 		default:
 			goto done;

@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 5.4 1992/04/22 08:10:04 bostic Exp $ (Berkeley) $Date: 1992/04/22 08:10:04 $
+ *	$Id: vi.h,v 5.5 1992/04/22 09:27:39 bostic Exp $ (Berkeley) $Date: 1992/04/22 09:27:39 $
  */
 
 #define	C_C_K_REP1	(CURSOR_CNT_KEY | 0x10)
@@ -49,21 +49,19 @@ extern VIKEYS vikeys[];		/* List of vi commands. */
 
 MARK	adjmove();		/* a helper fn, used by move fns */
 MARK	m_Fch();		/* F */
-MARK	m_Nsrch();		/* N */
+MARK	v_Nsearch();		/* N */
 MARK	m_Tch();		/* T */
 MARK	m__ch();		/* ; , */
 MARK	m_bsentence();		/* ( */
-MARK	m_bsrch();		/* ?regexp */
 MARK	m_bword();		/* b */
 MARK	m_eword();		/* e */
 MARK	m_fch();		/* f */
 MARK	m_front();		/* ^ */
 MARK	m_fsentence();		/* ) */
-MARK	m_fsrch();		/* /regexp */
 MARK	m_fword();		/* w */
 MARK	m_left();		/* l */
 MARK	m_match();		/* % */
-MARK	m_nsrch();		/* n */
+MARK	v_nsearch();		/* n */
 MARK	m_paragraph();		/* { } [[ ]] */
 MARK	m_rear();		/* $ */
 MARK	m_right();		/* h */
@@ -73,7 +71,7 @@ MARK	m_tch();		/* t */
 MARK	m_tocol();		/* | */
 MARK	m_tomark();		/* 'm */
 MARK	m_updnto();		/* k j G */
-MARK	m_wsrch();		/* ^A */
+MARK	v_wsearch();		/* ^A */
 MARK	m_z();			/* z */
 MARK	v_again __P((MARK, MARK));
 MARK	v_at __P((MARK, long, int));

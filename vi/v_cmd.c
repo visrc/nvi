@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 5.16 1992/04/22 08:09:14 bostic Exp $ (Berkeley) $Date: 1992/04/22 08:09:14 $";
+static char sccsid[] = "$Id: v_cmd.c,v 5.17 1992/04/22 09:27:38 bostic Exp $ (Berkeley) $Date: 1992/04/22 09:27:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -14,6 +14,7 @@ static char sccsid[] = "$Id: v_cmd.c,v 5.16 1992/04/22 08:09:14 bostic Exp $ (Be
 
 #include "vi.h"
 #include "vcmd.h"
+#include "extern.h"
 
 /*
  * This array maps keystrokes to vi command functions.
@@ -22,7 +23,7 @@ VIKEYS vikeys[] = {
 /* 000 NUL */
 	{},
 /* 001  ^A find cursor word */
-	{m_wsrch,	KEYWORD,	MVMT|NREL|VIZ},
+	{v_wsearch,	KEYWORD,	MVMT|NREL|VIZ},
 /* 002  ^B page backward 1 page */
 	{m_scroll,	CURSOR,		FRNT|VIZ},
 /* 003  ^C */
@@ -114,7 +115,7 @@ VIKEYS vikeys[] = {
 /* 056   . special. */
 	{},
 /* 057   / forward search */
-	{m_fsrch,	CURSOR_TEXT,	MVMT|NREL|VIZ},
+	{f_search,	CURSOR_TEXT,	MVMT|NREL|VIZ},
 /* 060   0 part of count? */
 	{NULL,	ZERO,		MVMT|PTMV|VIZ},
 /* 061   1 part of count */
@@ -146,7 +147,7 @@ VIKEYS vikeys[] = {
 /* 076   > shift text right */
 	{v_shiftr,	CURSOR_MOVED,	SDOT|FRNT|LNMD|INCL|VIZ},
 /* 077   ? backward search */
-	{m_bsrch,	CURSOR_TEXT,	MVMT|NREL|VIZ},
+	{b_search,	CURSOR_TEXT,	MVMT|NREL|VIZ},
 /* 100   @ execute a cut buffer */
 	{v_at,		C_C_K_CUT,	0},
 /* 101   A append at EOL */
@@ -176,7 +177,7 @@ VIKEYS vikeys[] = {
 /* 115   M move to middle row */
 	{m_row,		CURSOR,		MVMT|FRNT|VIZ},
 /* 116   N reverse previous search */
-	{m_Nsrch,	CURSOR,		MVMT|NREL|VIZ},
+	{v_Nsearch,	CURSOR,		MVMT|NREL|VIZ},
 /* 117   O insert above line */
 	{v_insert,	CURSOR,		SDOT},
 /* 120   P paste before */
@@ -240,7 +241,7 @@ VIKEYS vikeys[] = {
 /* 155   m define a mark */
 	{v_mark,	C_C_K_MARK,	0},
 /* 156   n repeat previous search */
-	{m_nsrch,	CURSOR, 	MVMT|NREL|VIZ},
+	{v_nsearch,	CURSOR, 	MVMT|NREL|VIZ},
 /* 157   o insert below line */
 	{v_insert,	CURSOR,		SDOT},
 /* 160   p paste after */
