@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.93 1994/08/04 14:12:28 bostic Exp $ (Berkeley) $Date: 1994/08/04 14:12:28 $";
+static char sccsid[] = "$Id: exf.c,v 8.94 1994/08/07 08:32:19 bostic Exp $ (Berkeley) $Date: 1994/08/07 08:32:19 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -666,7 +666,7 @@ file_m1(sp, ep, force, flags)
 				return (1);
 		} else if (ep->refcnt <= 1 && !force) {
 			msgq(sp, M_ERR,
-	"Modified since last write; write or use %s to override",
+	"File modified since last complete write; write or use %s to override",
 			    LF_ISSET(FS_POSSIBLE) ? "!" : ":edit!");
 			return (1);
 		}
@@ -691,7 +691,7 @@ file_m2(sp, ep, force)
 	 */
 	if (F_ISSET(ep, F_MODIFIED) && ep->refcnt <= 1 && !force) {
 		msgq(sp, M_ERR,
-		    "Modified since last write; write or use ! to override");
+    "File modified since last complete write; write or use ! to override");
 		return (1);
 	}
 
