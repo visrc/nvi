@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.71 1996/05/08 11:42:08 bostic Exp $ (Berkeley) $Date: 1996/05/08 11:42:08 $
+.\"     $Id: vi.ref,v 8.72 1996/05/08 18:10:58 bostic Exp $ (Berkeley) $Date: 1996/05/08 18:10:58 $
 .\"
 .\"
 .so ref.so
@@ -869,6 +869,7 @@ The
 command attaches to the
 .CO cscope
 database in the specified directory.
+The directory name is expanded using the standard filename expansions.
 After
 .CO nvi
 attaches to a new database,
