@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.104 2001/07/01 19:46:24 skimo Exp $ (Berkeley) $Date: 2001/07/01 19:46:24 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.105 2001/07/26 17:04:08 skimo Exp $ (Berkeley) $Date: 2001/07/26 17:04:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -2849,7 +2849,7 @@ txt_margin(SCR *sp, TEXT *tp, TEXT *wmtp, int *didbreak, u_int32_t flags)
  *	Resolve the input line for the 'R' command.
  */
 static void
-txt_Rresolve(SCR *sp, TEXTH *tiqh, TEXT *tp, const const size_t orig_len)
+txt_Rresolve(SCR *sp, TEXTH *tiqh, TEXT *tp, const size_t orig_len)
 {
 	TEXT *ttp;
 	size_t input_len, retain;
