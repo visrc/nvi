@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.48 1993/02/23 09:25:07 bostic Exp $ (Berkeley) $Date: 1993/02/23 09:25:07 $";
+static char sccsid[] = "$Id: main.c,v 5.49 1993/02/24 12:52:15 bostic Exp $ (Berkeley) $Date: 1993/02/24 12:52:15 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -37,6 +37,7 @@ static char sccsid[] = "$Id: main.c,v 5.48 1993/02/23 09:25:07 bostic Exp $ (Ber
 #include "excmd.h"
 #include "options.h"
 #include "pathnames.h"
+#include "screen.h"
 #include "seq.h"
 #include "tag.h"
 #include "term.h"
@@ -65,6 +66,7 @@ main(argc, argv)
 	static int reenter;
 	EXCMDARG cmd;
 	EXF *ep, fake_exf;
+	SCR fake_scr;
 	MSG *mp;
 	int ch;
 	char *excmdarg, *errf, *p, *tag, path[MAXPATHLEN];
@@ -133,7 +135,7 @@ main(argc, argv)
 	argv += optind;
 
 	/*
-	 * Fake up a file structure, so it's available for the ex/vi routines.
+	 * Fake up a file structure so it's available for the ex/vi routines.
 	 * Do basic initialization, so it's not really used, but there's a
 	 * place to hang error messages and such.
 	 *
@@ -142,9 +144,11 @@ main(argc, argv)
 	 * fields are filled in (or that F_DUMMY is checked appropriately).
 	 */
 	curf = ep = &fake_exf;
-	file_def(ep);
-	ep->cols = 80;
+	exf_def(ep);
 	ep->flags = F_DUMMY | F_IGNORE;
+	SCRP(ep) = &fake_scr;
+	scr_def(SCRP(ep));
+	set_window_size(ep, 0);
 
 	/* Initialize the key sequence list. */
 	seq_init();
