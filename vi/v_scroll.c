@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 5.1 1992/05/15 11:15:03 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:15:03 $";
+static char sccsid[] = "$Id: v_scroll.c,v 5.2 1992/05/17 14:58:57 bostic Exp $ (Berkeley) $Date: 1992/05/17 14:58:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -24,6 +24,75 @@ static char sccsid[] = "$Id: v_scroll.c,v 5.1 1992/05/15 11:15:03 bostic Exp $ (
 		return (1);						\
 	}								\
 	rp->lno = lno;							\
+}
+
+/* 
+ * v_home -- [count]H
+ *	Move to the first non-blank character of the line count from
+ *	the top of the screen.
+ */
+int
+v_home(vp, cp, rp)
+	VICMDARG *vp;
+	MARK *cp, *rp;
+{
+	u_long lno;
+
+	lno = topline + (vp->flags & VC_C1SET ? vp->count : 0);
+
+	DOWN(lno);
+	return (v_nonblank(rp));
+}
+
+/*
+ * v_middle -- M
+ *	Move to the first non-blank character of the line in the middle
+ *	of the screen.
+ */
+int
+v_middle(vp, cp, rp)
+	VICMDARG *vp;
+	MARK *cp, *rp;
+{
+	u_long lno;
+
+	if (file_gline(curf, BOTLINE, NULL) == NULL) {
+		lno = file_lline(curf) / 2;
+		if (lno == 0)
+			lno = 1;
+		rp->lno = lno;
+	} else
+		rp->lno = topline + LINES / 2;
+	return (v_nonblank(rp));
+}
+
+/*
+ * v_bottom -- [count]L
+ *	Move to the first non-blank character of the line count from
+ *	the bottom of the screen.
+ */
+int
+v_bottom(vp, cp, rp)
+	VICMDARG *vp;
+	MARK *cp, *rp;
+{
+	recno_t lno;
+	u_long cnt;
+
+	if (file_gline(curf, BOTLINE, NULL) == NULL) {
+		lno = file_lline(curf) / 2;
+		if (lno == 0)
+			lno = 1;
+	} else
+		lno = BOTLINE;
+
+	cnt = vp->flags & VC_C1SET ? vp->count : 0;
+	if (cnt >= lno) {
+		v_sof(cp);
+		return (1);
+	}
+	rp->lno = lno - cnt;
+	return (v_nonblank(rp));
 }
 
 /*
