@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.66 1994/07/17 00:41:20 bostic Exp $ (Berkeley) $Date: 1994/07/17 00:41:20 $";
+static char sccsid[] = "$Id: recover.c,v 8.67 1994/07/18 13:29:00 bostic Exp $ (Berkeley) $Date: 1994/07/18 13:29:00 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -239,7 +239,7 @@ err:		msgq(sp, M_ERR,
  *	Sync the file, optionally:
  *		flagging the backup file to be preserved
  *		snapshotting the backup file
- *		sending email to the user
+ *		sending email to the user (if file modified or snapshotted)
  *		ending the file session
  */
 int
@@ -248,7 +248,7 @@ rcv_sync(sp, ep, flags)
 	EXF *ep;
 	u_int flags;
 {
-	int btear, fd, rval;
+	int btear, fd, fsaved, rval;
 	char *dp, buf[1024];
 
 	/* Make sure that there's something to recover/sync. */
@@ -256,6 +256,7 @@ rcv_sync(sp, ep, flags)
 		return (0);
 
 	/* Sync the file if it's been modified. */
+	fsaved = 0;
 	if (F_ISSET(ep, F_MODIFIED)) {
 		if (ep->db->sync(ep->db, R_RECNOSYNC)) {
 			F_CLR(ep, F_RCV_ON | F_RCV_NORM);
@@ -266,11 +267,12 @@ rcv_sync(sp, ep, flags)
 		/* REQUEST: don't remove backing file on exit. */
 		if (LF_ISSET(RCV_PRESERVE))
 			F_SET(ep, F_RCV_NORM);
+		fsaved = 1;
 	}
 
-	/* REQUEST: snapshot the file or send email. */
+	/* REQUEST: snapshot the file. */
 	btear = 0;
-	if (LF_ISSET(RCV_SNAPSHOT | RCV_EMAIL))
+	if (LF_ISSET(RCV_SNAPSHOT))
 		btear = F_ISSET(sp, S_EXSILENT) ? 0 :
 		    !busy_on(sp, "Copying file for recovery...");
 
@@ -297,18 +299,22 @@ e2:			(void)unlink(buf);
 e1:			if (fd != -1)
 				(void)close(fd);
 			rval = 1;
-		}
+		} else
+			fsaved = 1;
 	}
 
 	/*
+	 * REQUEST: send email.
+	 *
+	 * Don't send email unless we've managed to save the file in some
+	 * form or another.
+	 *
 	 * !!!
 	 * If you need to port this to a system that doesn't have sendmail,
 	 * the -t flag causes sendmail to read the message for the recipients
 	 * instead of specifying them some other way.
-	 *
-	 * REQUEST: send email.
 	 */
-	if (LF_ISSET(RCV_EMAIL)) {
+	if (LF_ISSET(RCV_EMAIL) && fsaved) {
 		(void)snprintf(buf, sizeof(buf),
 		    "%s -t < %s", _PATH_SENDMAIL, ep->rcv_mpath);
 		(void)system(buf);
