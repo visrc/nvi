@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_funcs.c,v 8.12 1996/12/18 10:28:02 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:28:02 $";
+static const char sccsid[] = "$Id: ip_funcs.c,v 8.13 1997/08/02 16:48:59 bostic Exp $ (Berkeley) $Date: 1997/08/02 16:48:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -133,9 +133,9 @@ ip_busy(sp, str, bval)
 	switch (bval) {
 	case BUSY_ON:
 		ipb.code = SI_BUSY_ON;
-		ipb.len1 = strlen(str);
 		ipb.str1 = str;
-		(void)vi_send("a1", &ipb);
+		ipb.len1 = strlen(str);
+		(void)vi_send("a", &ipb);
 		break;
 	case BUSY_OFF:
 		ipb.code = SI_BUSY_OFF;
@@ -392,6 +392,27 @@ ip_rename(sp, name, on)
 	ipb.str1 = name;
 	ipb.len1 = strlen(name);
 	return (vi_send("a", &ipb));
+}
+
+/*
+ * ip_reply --
+ *	Reply to a message.
+ *
+ * PUBLIC: int ip_reply __P((SCR *, int, char *));
+ */
+int
+ip_reply(sp, status, msg)
+	SCR *sp;
+	int status;
+	char *msg;
+{
+	IP_BUF ipb;
+
+	ipb.code = SI_REPLY;
+	ipb.val1 = status;
+	ipb.str1 = msg == NULL ? "" : msg;
+	ipb.len1 = strlen(ipb.str1);
+	return (vi_send("1a", &ipb));
 }
 
 /*

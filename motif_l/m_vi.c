@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_vi.c,v 8.34 1997/04/13 10:28:26 bostic Exp $ (Berkeley) $Date: 1997/04/13 10:28:26 $";
+static const char sccsid[] = "$Id: m_vi.c,v 8.35 1997/08/02 16:50:11 bostic Exp $ (Berkeley) $Date: 1997/08/02 16:50:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -64,9 +64,6 @@ static	XtTranslations	area_trans;
 static	int		multi_click_length;
 
 void (*__vi_exitp)();				/* Exit function. */
-
-static	char	bp[ BufferSize ];		/* input buffer from pipe */
-static	size_t	len, blen = sizeof(bp);
 
 
 /* hack for drag scrolling...
@@ -237,33 +234,6 @@ static  XutResource resource[] = {
 };
 
 
-
-#if defined(__STDC__)
-static	Boolean		process_pipe_input( XtPointer pread )
-#else
-static	Boolean		process_pipe_input( pread )
-	XtPointer	pread;
-#endif
-{
-    /* might have read more since the last call */
-    len += (pread) ? *((int *)pread) : 0;
-
-    /* Parse to data end or partial message. */
-    (void)vi_translate(bp, &len);
-
-    if (len > 0) {
-#ifdef TRACE
-	    vtrace("vi_input_func: abort with %d in the buffer\n", len);
-#endif
-	    /* call me again later */
-	    return False;
-    }
-
-    /* do NOT call me again later */
-    return True;
-}
-
-
 /*
  * vi_input_func --
  *	We've received input on the pipe from vi.
@@ -276,30 +246,13 @@ vi_input_func(client_data, source, id)
 	int *source;
 	XtInputId *id;
 {
-    int	nr;
+	/* Parse and dispatch on commands in the queue. */
+	(void)vi_input(*source);
 
-    /* Read waiting vi messags and translate to X calls. */
-    switch (nr = read( *source, bp + len, blen - len)) {
-    case 0:
-#ifdef TRACE
-	    vtrace("vi_input_func: empty input from vi\n");
+#ifdef notdef
+	/* Check the pipe for unused events when not busy. */
+	XtAppAddWorkProc(ctx, process_pipe_input, NULL);
 #endif
-	    return;
-    case -1:
-	    perror("ip_cl: read");
-	    exit (1);
-    default:
-#ifdef TRACE
-	    vtrace("input from vi, %d bytes read\n", nr);
-#endif
-	    break;
-    }
-
-    /* parse and dispatch on commands in the queue */
-    if ( ! process_pipe_input( &nr ) ) {
-	    /* check the pipe for unused events when not busy */
-	    XtAppAddWorkProc( ctx, process_pipe_input, NULL );
-    }
 }
 
 

@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_event.c,v 8.14 1997/04/12 17:19:22 bostic Exp $ (Berkeley) $Date: 1997/04/12 17:19:22 $";
+static const char sccsid[] = "$Id: v_event.c,v 8.15 1997/08/02 16:48:39 bostic Exp $ (Berkeley) $Date: 1997/08/02 16:48:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -89,9 +89,13 @@ v_editopt(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
+	int rval;
 
-	return (api_opts_set(sp,
-	    vp->ev.e_str1, vp->ev.e_str2, vp->ev.e_val1, vp->ev.e_val1));
+	rval = api_opts_set(sp,
+	    vp->ev.e_str1, vp->ev.e_str2, vp->ev.e_val1, vp->ev.e_val1);
+	if (sp->gp->scr_reply != NULL)
+		(void)sp->gp->scr_reply(sp, rval, NULL);
+	return (rval);
 }
 
 /*

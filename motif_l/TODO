@@ -3,8 +3,23 @@ Top priority would be the mouse.  We need to get cut&paste working.
 the correct mouse events for that, but I haven't tested it.)
 
 =-=-=-=
+Find a tool to convert the reference doc to html, and just point a
+browser at it for the help screen.  Have "novice", "fast lookup"
+and an "everything" version.
+
+=-=-=-=
 Disassociate scrollbar actions from the cursor, i.e. when you
 scroll the screen moves but the cursor doesn't.
+
+>> However, it seems to me that the cursor should disappear from
+>> the screen as soon as it's no longer positioned on a line that's
+>> on the screen.  Does that make sense?  And, if so, how do we
+>> make that happen?
+>
+> I'd add a message:
+>       IPO_DISPLAY_CARET( boolean )
+> since the caret is also used for the current drawing position, we
+> really can't move it 'off the screen'.
 
 =-=-=-=
 >> BTW, this may be a bug, I can't seem to erase characters in the 

@@ -4,9 +4,10 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: ip.h,v 8.17 1996/12/18 10:27:47 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:27:47 $
+ *	$Id: ip.h,v 8.18 1997/08/02 16:49:32 bostic Exp $ (Berkeley) $Date: 1997/08/02 16:49:32 $
  */
 
+extern int vi_ifd;		/* Input file descriptor. */
 extern int vi_ofd;		/* Output file descriptor. */
 
 typedef struct _ip_private {
@@ -33,21 +34,8 @@ typedef struct _ip_private {
 /* The screen line relative to a specific window. */
 #define	RLNO(sp, lno)	(sp)->roff + (lno)
 
-/*
- * The IP protocol consists of frames, each containing:
- *
- *	<IPO_><object>
- *
- * XXX
- * We should have a marking byte, 0xaa to delimit frames.
- *
- */
-#define	IPO_CODE	1	/* An event specification. */
-#define	IPO_INT		2	/* 4-byte, network order integer. */
-#define	IPO_STR		3	/* IPO_INT: followed by N bytes. */
-
-#define	IPO_CODE_LEN	1
-#define	IPO_INT_LEN	4
+#define	IPO_CODE_LEN	1	/* Length of a code value. */
+#define	IPO_INT_LEN	4	/* Length of an integer. */
 
 /* A structure that can hold the information for any frame. */
 typedef struct _ip_buf {
@@ -65,12 +53,13 @@ typedef struct _ip_buf {
  * Screen/editor IP_CODE's.
  *
  * The program structure depends on the event loop being able to return
- * IPO_EOF/IPOE_ERR multiple times -- eventually enough things will end
+ * IPO_EOF/IPO_ERR multiple times -- eventually enough things will end
  * due to the events that vi will reach the command level for the screen,
  * at which point the exit flags will be set and vi will exit.
  *
  * IP events sent from the screen to vi.
  */
+#define	CODE_OOB	 0	/* Illegal code. */
 #define	VI_C_BOL	 1	/* Cursor to start of line. */
 #define	VI_C_BOTTOM	 2	/* Cursor to bottom. */
 #define	VI_C_DEL	 3	/* Cursor delete. */
@@ -133,10 +122,11 @@ typedef struct _ip_buf {
 #define	SI_REDRAW	13	/* Redraw the screen. */
 #define	SI_REFRESH	14	/* Refresh the screen. */
 #define	SI_RENAME	15	/* Rename the screen: IPO_STR. */
-#define	SI_REWRITE	16	/* Rewrite a line: IPO_INT. */
-#define	SI_SCROLLBAR	17	/* Reset the scrollbar: 3 * IPO_INT. */
-#define	SI_SELECT	18	/* Select area: IPO_STR. */
-#define	SI_SPLIT	19	/* Split the screen. */
-#define	SI_EVENT_MAX	19
+#define	SI_REPLY	16	/* Reply: IPO_INT (0/1), IPO_STR. */
+#define	SI_REWRITE	17	/* Rewrite a line: IPO_INT. */
+#define	SI_SCROLLBAR	18	/* Reset the scrollbar: 3 * IPO_INT. */
+#define	SI_SELECT	19	/* Select area: IPO_STR. */
+#define	SI_SPLIT	20	/* Split the screen. */
+#define	SI_EVENT_MAX	20
 
 #include "extern.h"

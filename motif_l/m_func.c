@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_func.c,v 8.22 1996/12/18 14:55:54 bostic Exp $ (Berkeley) $Date: 1996/12/18 14:55:54 $";
+static const char sccsid[] = "$Id: m_func.c,v 8.23 1997/08/02 16:50:10 bostic Exp $ (Berkeley) $Date: 1997/08/02 16:50:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -388,6 +388,7 @@ int (*__vi_iplist[SI_EVENT_MAX]) __P((IP_BUF *)) = {
 	vi_redraw,
 	vi_refresh,
 	vi_rename,
+	NULL,
 	vi_rewrite,
 	vi_scrollbar,
 	vi_select,

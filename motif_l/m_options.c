@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_options.c,v 8.17 1996/12/20 10:35:46 bostic Exp $ (Berkeley) $Date: 1996/12/20 10:35:46 $";
+static const char sccsid[] = "$Id: m_options.c,v 8.18 1997/08/02 16:50:10 bostic Exp $ (Berkeley) $Date: 1997/08/02 16:50:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -311,6 +311,19 @@ set_opt(w, closure, call_data)
 		ipb.val1 = set;
 		ipb.len2 = 0;
 
+		vi_wsend("ab1", &ipb);
+		if (ipb.val1) {
+			opt->value = (void *)!set;
+			/*
+			 * RAZ:
+			 * How do we turn off the button?  We don't want to
+			 * go recursive where we set it and it calls set_opt
+			 * to tell the core.  Is that possible?
+			 */
+			XtVaSetValues(w, XmNset, &set, 0);
+			break;
+		}
+
 		if (strcmp(opt->name, "ruler") == 0)
 			if (set)
 				__vi_show_text_ruler_dialog(
@@ -322,16 +335,17 @@ set_opt(w, closure, call_data)
 		str = XmTextFieldGetString(w);
 		ipb.val1 = atoi(str);
 		ipb.len2 = 0;
+		vi_send("ab1", &ipb);
 		break;
 	case optFile:
 	case optString:
 		ipb.str2 = XmTextFieldGetString(w);
 		ipb.len2 = strlen(ipb.str2);
+		vi_send("ab1", &ipb);
 		break;
 	case optTerminator:
 		abort();
 	}
-	vi_send("ab1", &ipb);
 }
 
 
