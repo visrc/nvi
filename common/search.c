@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.12 1993/09/13 18:03:01 bostic Exp $ (Berkeley) $Date: 1993/09/13 18:03:01 $";
+static char sccsid[] = "$Id: search.c,v 8.13 1993/09/13 18:10:14 bostic Exp $ (Berkeley) $Date: 1993/09/13 18:10:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -692,8 +692,7 @@ check_delta(sp, ep, delta, lno)
 	long delta;
 	recno_t lno;
 {
-	/*
-	 * Since a 
+	/* A delta can overflow a record number. */
 	if (delta < 0) {
 		if (lno < LONG_MAX && delta >= (long)lno) {
 			msgq(sp, M_ERR, "Search offset before line 1.");
