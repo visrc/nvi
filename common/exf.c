@@ -8,13 +8,12 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 10.22 1996/02/22 19:55:01 bostic Exp $ (Berkeley) $Date: 1996/02/22 19:55:01 $";
+static char sccsid[] = "$Id: exf.c,v 10.23 1996/02/26 14:24:13 bostic Exp $ (Berkeley) $Date: 1996/02/26 14:24:13 $";
 #endif /* not lint */
 
 #include <sys/param.h>
 #include <sys/queue.h>
 #include <sys/stat.h>
-#include <sys/time.h>
 
 /*
  * We include <sys/file.h>, because the flock(2) and open(2) #defines

@@ -8,13 +8,12 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 10.13 1996/02/22 19:55:06 bostic Exp $ (Berkeley) $Date: 1996/02/22 19:55:06 $";
+static char sccsid[] = "$Id: recover.c,v 10.14 1996/02/26 14:24:22 bostic Exp $ (Berkeley) $Date: 1996/02/26 14:24:22 $";
 #endif /* not lint */
 
 #include <sys/param.h>
 #include <sys/queue.h>
 #include <sys/stat.h>
-#include <sys/time.h>
 
 /*
  * We include <sys/file.h>, because the open #defines were found there
