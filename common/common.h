@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 8.12 1993/09/29 09:54:54 bostic Exp $ (Berkeley) $Date: 1993/09/29 09:54:54 $
+ *	$Id: common.h,v 8.13 1993/09/30 12:01:37 bostic Exp $ (Berkeley) $Date: 1993/09/30 12:01:37 $
  */
 
 /* System includes. */
@@ -31,7 +31,7 @@ struct _exf;
 struct _fref;
 struct _gs;
 struct _hdr;
-struct _ib;
+struct _ibuf;
 struct _mark;
 struct _msg;
 struct _option;
