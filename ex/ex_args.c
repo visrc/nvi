@@ -6,12 +6,12 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 5.9 1992/04/25 09:53:17 bostic Exp $ (Berkeley) $Date: 1992/04/25 09:53:17 $";
+static char sccsid[] = "$Id: ex_args.c,v 5.10 1992/04/27 16:38:48 bostic Exp $ (Berkeley) $Date: 1992/04/27 16:38:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
-#include <errno.h>
 #include <curses.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -95,111 +95,33 @@ int
 ex_args(cmdp)
 	EXCMDARG *cmdp;
 {
-	register char **p, *sep;
-	WINDOW *tw;
-	int cnt, col, len, newline;
+	register char **p;
+	register int cnt, col, sep;
+	int len;
 
 	if (current == 0) {
 		msg("No file names.");
 		return (1);
 	}
-	if (mode == MODE_EX) {
-		col = len = 0;
-		for (p = s_flist, sep = "", cnt = 1; *p; ++p, ++cnt) {
-			col += len = strlen(*p) +
-			    (*sep ? 1 : 0) + (cnt == current ? 2 : 0);
-			if (col >= COLS - 4) {
-				(void)putchar('\n');
-				sep = "";
-				col = len;
-			} else if (cnt != 1)
-				sep = " ";
-			(void)printf("%s", sep);
-			if (cnt == current)
-				(void)putchar('[');
+
+	EX_VISTART;
+	col = len = sep = 0;
+	for (p = s_flist, cnt = 1; *p; ++p, ++cnt) {
+		col += len = strlen(*p) + sep + (cnt == current ? 2 : 0);
+		if (col >= COLS - 1) {
+			col = len;
+			sep = 0;
+			(void)putchar('\n');
+		} else if (cnt != 1) {
+			sep = 1;
+			(void)putchar(' ');
+		}
+		if (cnt == current)
+			(void)printf("[%s]", *p);
+		else
 			(void)printf("%s", *p);
-			if (cnt == current)
-				(void)putchar(']');
-		}
-		(void)putchar('\n');
-		return (0);
 	}
-
-	/* Figure out how many lines the list of args will need. */
-	col = 0;
-	newline = 1;
-	for (p = s_flist, sep = "", cnt = 1; *p; ++p, ++cnt) {
-		col += len = strlen(*p) +
-		    (*sep ? 1 : 0) + (cnt == current ? 2 : 0);
-		if (col >= COLS - 4) {
-			sep = "";
-			col = len;
-			++newline;
-		}
-		else if (cnt != 1)
-			sep = " ";
-	}
-
-	/* Fits on a single line. */
-	if (newline == 1) {
-		move(LINES - 1, 0);
-		for (p = s_flist, sep = "", cnt = 1; *p; ++p, ++cnt) {
-			addstr(sep);
-			if (cnt == current)
-				addch('[');
-			addstr(*p);
-			if (cnt == current)
-				addch(']');
-			sep = " ";
-		}
-		clrtoeol();
-		move(physrow, physcol);
-		refresh();
-		return (0);
-	}
-
-	/*
-	 * XXX
-	 * This is hard to fix.
-	 */
-	if (newline > LINES - 1) {
-		msg("Too many files to display on a single screen.");
-		return (1);
-	}
-
-	/* Build a new window. */
-	tw = newwin(newline + 2, 0, LINES - newline - 2, 0);
-	cnt = wmove(tw, 0, 0);
-	waddch(tw, '\n');
-	cnt = wmove(tw, 1, 0);
-
-	col = len = 0;
-	for (p = s_flist, sep = "", cnt = 1; *p; ++p, ++cnt) {
-		col += len = strlen(*p) +
-		    (*sep ? 1 : 0) + (cnt == current ? 2 : 0);
-		if (col >= COLS - 4) {
-			sep = "";
-			col = len;
-			waddch(tw, '\n');
-		} else if (cnt != 1)
-			sep = " ";
-		if (*sep)
-		waddstr(tw, sep);
-		if (cnt == current)
-			waddch(tw, '[');
-		waddstr(tw, *p);
-		if (cnt == current)
-			waddch(tw, ']');
-	}
-	wstandout(tw);
-	waddstr(tw, "\nEnter a key to continue");
-	wstandend(tw);
-	wclrtoeol(tw);
-	wrefresh(tw);
-	(void)getkey(0);
-	touchoverlap(tw, stdscr);
-	delwin(tw);
-	refresh();
+	(void)putchar('\n');
 	return (0);
 }
 
