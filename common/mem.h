@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: mem.h,v 10.10 2000/08/20 09:05:36 skimo Exp $ (Berkeley) $Date: 2000/08/20 09:05:36 $
+ *	$Id: mem.h,v 10.11 2000/08/20 09:12:59 skimo Exp $ (Berkeley) $Date: 2000/08/20 09:12:59 $
  */
 
 /* Increase the size of a malloc'd buffer.  Two versions, one that
@@ -27,7 +27,7 @@
 }
 #define	BINC_GOTOW(sp, lp, llen, nlen) {					\
 	CHAR_T *L__bp = lp;						\
-	BINC_GOTO(sp, (char *)lp, llen, nlen * sizeof(CHAR_T))	    	\
+	BINC_GOTO(sp, (char *)lp, llen, (nlen) * sizeof(CHAR_T))    	\
 }
 #define	BINC_RET(sp, lp, llen, nlen) {					\
 	char *L__p = lp;						\
@@ -67,7 +67,7 @@
 }
 #define	GET_SPACE_GOTOW(sp, bp, blen, nlen) {				\
 	CHAR_T *L__bp = bp;						\
-	GET_SPACE_GOTO(sp, (char *)bp, blen, nlen * sizeof(CHAR_T))	\
+	GET_SPACE_GOTO(sp, (char *)bp, blen, (nlen) * sizeof(CHAR_T))	\
 }
 #define	GET_SPACE_RET(sp, bp, blen, nlen) {				\
 	WIN *L__wp = (sp) == NULL ? NULL : (sp)->wp;			\
@@ -84,7 +84,7 @@
 }
 #define	GET_SPACE_RETW(sp, bp, blen, nlen) {				\
 	CHAR_T *L__bp = bp;						\
-	GET_SPACE_RET(sp, (char *)bp, blen, nlen * sizeof(CHAR_T))	\
+	GET_SPACE_RET(sp, (char *)bp, blen, (nlen) * sizeof(CHAR_T))	\
 }
 
 /*
@@ -104,7 +104,7 @@
 }
 #define	ADD_SPACE_GOTOW(sp, bp, blen, nlen) {				\
 	CHAR_T *L__bp = bp;						\
-	ADD_SPACE_GOTO(sp, (char *)bp, blen, nlen * sizeof(CHAR_T))	\
+	ADD_SPACE_GOTO(sp, (char *)bp, blen, (nlen) * sizeof(CHAR_T))	\
 }
 #define	ADD_SPACE_RET(sp, bp, blen, nlen) {				\
 	WIN *L__wp = (sp) == NULL ? NULL : (sp)->wp;			\
@@ -119,7 +119,7 @@
 }
 #define	ADD_SPACE_RETW(sp, bp, blen, nlen) {				\
 	CHAR_T *L__bp = bp;						\
-	ADD_SPACE_RET(sp, (char *)bp, blen, nlen * sizeof(CHAR_T))	\
+	ADD_SPACE_RET(sp, (char *)bp, blen, (nlen) * sizeof(CHAR_T))	\
 }
 
 /* Free a GET_SPACE returned buffer. */
