@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 5.28 1993/02/24 12:54:12 bostic Exp $ (Berkeley) $Date: 1993/02/24 12:54:12 $";
+static char sccsid[] = "$Id: ex_bang.c,v 5.29 1993/02/25 17:46:16 bostic Exp $ (Berkeley) $Date: 1993/02/25 17:46:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -158,11 +158,11 @@ ex_bang(ep, cmdp)
 	rval = esystem(PVAL(O_SHELL), com) ? 1 : 0;
 
 	/* Ex terminates with a bang. */
-	switch(mode) {
-	case MODE_EX:
+	switch(ep->flags & (F_MODE_EX | F_MODE_VI)) {
+	case F_MODE_EX:
 		(void)write(STDOUT_FILENO, "!\n", 2);
 		break;
-	case MODE_VI:
+	case F_MODE_VI:
 #define	CSTRING	"Enter any key to continue:"
 		(void)write(STDOUT_FILENO, CSTRING, sizeof(CSTRING) - 1);
 		break;
@@ -173,7 +173,7 @@ ex_bang(ep, cmdp)
 	/* Restore ex/vi terminal settings. */
 	(void)tcsetattr(STDIN_FILENO, TCSAFLUSH, &savet);
 
-	if (mode == MODE_VI)
+	if (FF_ISSET(ep, F_MODE_VI))
 		(void)getkey(ep, 0);
 
 	/* Repaint the screen. */
