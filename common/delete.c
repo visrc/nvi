@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: delete.c,v 5.10 1992/10/18 13:02:30 bostic Exp $ (Berkeley) $Date: 1992/10/18 13:02:30 $";
+static char sccsid[] = "$Id: delete.c,v 5.11 1992/10/26 17:44:14 bostic Exp $ (Berkeley) $Date: 1992/10/26 17:44:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -24,108 +24,128 @@ static char sccsid[] = "$Id: delete.c,v 5.10 1992/10/18 13:02:30 bostic Exp $ (B
  *	Delete a range of text.
  */
 int
-delete(fm, tm, lmode)
+delete(ep, fm, tm, lmode)
+	EXF *ep;
 	MARK *fm, *tm;
 	int lmode;
 {
-	MARK m;
 	recno_t lno;
 	size_t len, tlen;
 	u_char *bp, *p;
+	int eof;
 
 #if DEBUG && 1
-	TRACE("delete: from {%lu, %d}, to {%lu, %d}\n",
+	TRACE("delete: from %lu/%d to %lu/%d\n",
 	    fm->lno, fm->cno, tm->lno, tm->cno);
 #endif
-
-	/*
-	 * Delete in reverse order.  There are three cases: line mode, a
-	 * delete inside a line, and a delete over multiple lines.
-	 */
+	/* Case 1 -- delete in line mode. */
 	if (lmode) {
 		for (lno = tm->lno; lno >= fm->lno; --lno)
-			if (file_dline(curf, lno))
+			if (file_dline(ep, lno))
 				return (1);
-	} else {
-		/*
-		 * If deleting to the start of a line, decrement the
-		 * line number and reset the count to max column + 1.
-		 */
-		if (tm->cno == 0) {
-			if ((p = file_gline(curf, --tm->lno, &len)) == NULL) {
-				GETLINE_ERR(tm->lno);
-				return (1);
-			}
-			tm->cno = len;
-		}
-		/* If deleting within a single line, it's easy. */
-		if (tm->lno == fm->lno) {
-			if ((p = file_gline(curf, fm->lno, &len)) == NULL) {
-				GETLINE_ERR(fm->lno);
+		goto done;
+	}
+
+	/*
+	 * Case 2 -- delete to EOF.  This is a special case because it's
+	 * easier to pick it off than try and find it in the other cases.
+ 	 */
+	lno = file_lline(ep);
+	if (tm->lno >= lno) {
+		if (tm->lno == lno) {
+			if ((p = file_gline(ep, lno, &len)) == NULL) {
+				GETLINE_ERR(lno);
 				return (1);
 			}
-			bcopy(p + tm->cno, p + fm->cno,
-			    len - fm->cno - (tm->cno - fm->cno));
-			len -= tm->cno - fm->cno;
-			if (file_sline(curf, fm->lno, p, len))
-				return (1);
-		} else {
-			/* Delete all the intermediate lines. */
-			for (lno = tm->lno - 1; lno > fm->lno; --lno)
-				if (file_dline(curf, lno))
+			eof = tm->cno > len ? 1 : 0;
+		} else
+			eof = 1;
+		if (eof) {
+			for (lno = tm->lno; lno > fm->lno; --lno)
+				if (file_dline(ep, lno))
 					return (1);
-
-			/* Figure out how big a buffer we need. */
-			if ((p = file_gline(curf, fm->lno, &len)) == NULL) {
+			if (fm->cno == 0) {
+				if (file_dline(ep, fm->lno))
+					return (1);
+				goto done;
+			}
+			if ((p = file_gline(ep, fm->lno, &len)) == NULL) {
 				GETLINE_ERR(fm->lno);
 				return (1);
 			}
-			tlen = len;
-			if ((p = file_gline(curf, tm->lno, &len)) == NULL) {
-				GETLINE_ERR(tm->lno);
+			if (file_sline(ep, fm->lno, p, fm->cno))
 				return (1);
-			}
-			tlen += len;		/* XXX Possible overflow! */
-			if ((bp = malloc(tlen)) == NULL) {
-				msg("Error: %s", strerror(errno));
-				return (1);
-			}
-
-			/* Copy the start partial line into place. */
-			if ((p = file_gline(curf, fm->lno, &len)) == NULL) {
-				GETLINE_ERR(fm->lno);
-				return (1);
-			}
-			bcopy(p, bp, fm->cno);
-			tlen = fm->cno;
-
-			/* Copy the end partial line into place. */
-			if ((p = file_gline(curf, tm->lno, &len)) == NULL) {
-				GETLINE_ERR(tm->lno);
-				return (1);
-			}
-			bcopy(p + tm->cno, bp + tlen, len - tm->cno);
-			tlen += len - tm->cno;
-
-			/* Set the current line. */
-			if (file_sline(curf, fm->lno, bp, tlen)) {
-				free(bp);
-				return (1);
-			}
-
-			/* Delete the new number of the old last line. */
-			if (file_dline(curf, fm->lno + 1)) {
-				free(bp);
-				return (1);
-			}
+			goto done;
 		}
 	}
 
-	/* Update the marks. */
-	mark_delete(fm, tm, lmode);
+	/* Case 3 -- delete within a single line. */
+	if (tm->lno == fm->lno) {
+		if ((p = file_gline(ep, fm->lno, &len)) == NULL) {
+			GETLINE_ERR(fm->lno);
+			return (1);
+		}
+		bcopy(p + tm->cno,
+		    p + fm->cno, len - fm->cno - (tm->cno - fm->cno));
+		len -= tm->cno - fm->cno;
+		if (file_sline(ep, fm->lno, p, len))
+			return (1);
+		goto done;
+	}
 
-	/* Mark the file as modified. */
-	curf->flags |= F_MODIFIED;
+	/* Case 4 -- delete over multiple lines. */
+
+	/* Delete all the intermediate lines. */
+	for (lno = tm->lno - 1; lno > fm->lno; --lno)
+		if (file_dline(ep, lno))
+			return (1);
+
+	/* Figure out how big a buffer we need. */
+	if ((p = file_gline(ep, fm->lno, &len)) == NULL) {
+		GETLINE_ERR(fm->lno);
+		return (1);
+	}
+	tlen = len;
+	if ((p = file_gline(ep, tm->lno, &len)) == NULL) {
+		GETLINE_ERR(tm->lno);
+		return (1);
+	}
+	tlen += len;		/* XXX Possible overflow! */
+	if ((bp = malloc(tlen)) == NULL) {
+		msg("Error: %s", strerror(errno));
+		return (1);
+	}
+
+	/* Copy the start partial line into place. */
+	if ((p = file_gline(ep, fm->lno, &len)) == NULL) {
+		GETLINE_ERR(fm->lno);
+		return (1);
+	}
+	bcopy(p, bp, fm->cno);
+	tlen = fm->cno;
+
+	/* Copy the end partial line into place. */
+	if ((p = file_gline(ep, tm->lno, &len)) == NULL) {
+		GETLINE_ERR(tm->lno);
+		return (1);
+	}
+	bcopy(p + tm->cno, bp + tlen, len - tm->cno);
+	tlen += len - tm->cno;
+
+	/* Set the current line. */
+	if (file_sline(ep, fm->lno, bp, tlen)) {
+		free(bp);
+		return (1);
+	}
+
+	/* Delete the new number of the old last line. */
+	if (file_dline(ep, fm->lno + 1)) {
+		free(bp);
+		return (1);
+	}
+
+	/* Update the marks. */
+done:	mark_delete(fm, tm, lmode);
 
 	/*
 	 * Reporting.
