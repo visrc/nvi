@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.76 1994/07/17 16:49:55 bostic Exp $ (Berkeley) $Date: 1994/07/17 16:49:55 $";
+static char sccsid[] = "$Id: key.c,v 8.77 1994/07/17 17:33:42 bostic Exp $ (Berkeley) $Date: 1994/07/17 17:33:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,15 +26,19 @@ static char sccsid[] = "$Id: key.c,v 8.76 1994/07/17 16:49:55 bostic Exp $ (Berk
 #include <unistd.h>
 
 #include "compat.h"
-#include <curses.h>
+/*
+ * XXX
+ * DON'T INCLUDE <curses.h> HERE, IT BREAKS OSF1 V2.0 WHERE IT
+ * CHANGES THE VALUES OF VERASE/VKILL/VWERASE TO INCORRECT ONES.
+ */
 #include <db.h>
 #include <regex.h>
 
 #include "vi.h"
 
-static int	 keycmp __P((const void *, const void *));
-static int	 term_key_queue __P((SCR *));
-static void	 term_key_set __P((GS *, int, int));
+static int	  keycmp __P((const void *, const void *));
+static enum input term_key_queue __P((SCR *));
+static void	  term_key_set __P((GS *, int, int));
 
 /*
  * If we're reading less than 20 characters, up the size of the tty buffer.
@@ -459,7 +463,7 @@ term_key(sp, chp, flags)
 loop:	if (tty->cnt == 0) {
 		if (term_read_grow(sp, tty))
 			return (INP_ERR);
-		if (rval = sp->s_key_read(sp, &nr, NULL))
+		if ((rval = sp->s_key_read(sp, &nr, NULL)) != INP_OK)
 			return (rval);
 		/*
 		 * If there's something on the mode line that we wanted
@@ -503,7 +507,7 @@ remap:		qp = seq_find(sp, NULL, &tty->ch[tty->next], tty->cnt,
 		if (ispartial) {
 			if (term_read_grow(sp, tty))
 				return (INP_ERR);
-			if (rval = sp->s_key_read(sp, &nr, tp))
+			if ((rval = sp->s_key_read(sp, &nr, tp)) != INP_OK)
 				return (rval);
 			if (nr)
 				goto remap;
@@ -611,11 +615,11 @@ term_user_key(sp, chp)
 	 * Read any keys the user has waiting.  Make the race
 	 * condition as short as possible.
 	 */
-	if (rval = term_key_queue(sp))
+	if ((rval = term_key_queue(sp)) != INP_OK)
 		return (rval);
 
 	/* Wait and read another key. */
-	if (rval = sp->s_key_read(sp, &nr, NULL))
+	if ((rval = sp->s_key_read(sp, &nr, NULL)) != INP_OK)
 		return (rval);
 
 	/* Fill in the return information. */
@@ -632,7 +636,7 @@ term_user_key(sp, chp)
  * term_key_queue --
  *	Read the keys off of the terminal queue until it's empty.
  */
-static int
+static enum input
 term_key_queue(sp)
 	SCR *sp;
 {
@@ -646,7 +650,7 @@ term_key_queue(sp)
 	for (tty = sp->gp->tty;;) {
 		if (term_read_grow(sp, tty))
 			return (INP_ERR);
-		if (rval = sp->s_key_read(sp, &nr, &t))
+		if ((rval = sp->s_key_read(sp, &nr, &t)) != INP_OK)
 			return (rval);
 		if (nr == 0)
 			break;
