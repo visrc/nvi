@@ -6,10 +6,10 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_delete.c,v 5.18 1993/03/26 13:40:22 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:40:22 $";
+static char sccsid[] = "$Id: v_delete.c,v 5.19 1993/04/12 14:50:12 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:50:12 $";
 #endif /* not lint */
 
-#include <sys/param.h>
+#include <sys/types.h>
 
 #include "vi.h"
 #include "vcmd.h"
@@ -63,7 +63,7 @@ v_delete(sp, ep, vp, fm, tm, rp)
 	size_t len;
 	int lmode;
 	
-	lmode = vp->flags & VC_LMODE;
+	lmode = F_ISSET(vp, VC_LMODE);
 	if (cut(sp, ep, VICB(vp), fm, tm, lmode) ||
 	    delete(sp, ep, fm, tm, lmode))
 		return (1);
