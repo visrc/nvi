@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.49 1993/11/30 12:19:17 bostic Exp $ (Berkeley) $Date: 1993/11/30 12:19:17 $";
+static char sccsid[] = "$Id: main.c,v 8.50 1993/12/02 10:26:24 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:26:24 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -64,7 +64,7 @@ main(argc, argv)
 	u_int flags;
 	int ch, eval, flagchk, readonly, silent, snapshot;
 	char *excmdarg, *myname, *p, *rec_f, *tag_f, *trace_f, *wsizearg;
-	char *av[2], path[MAXPATHLEN];
+	char path[MAXPATHLEN];
 
 	/* Stop if indirecting through a NULL pointer. */
 	if (reenter++)
@@ -195,13 +195,16 @@ main(argc, argv)
 	if (readonly)
 		O_SET(sp, O_READONLY);
 	if (silent) {
+		O_CLR(sp, O_AUTOPRINT);
 		O_CLR(sp, O_PROMPT);
-		O_CLR(sp, O_WARN);
 		O_CLR(sp, O_VERBOSE);
+		O_CLR(sp, O_WARN);
 		F_SET(sp, S_EXSILENT);
 	}
 	if (wsizearg != NULL) {
-		av[0] = path;
+		ARGS *av[2], a;
+		a.bp = path;
+		av[0] = &a;
 		av[1] = NULL;
 		if (strtol(optarg, &p, 10) < 0 || *p)
 			errx(1, "illegal window size -- %s", optarg);
@@ -236,7 +239,7 @@ main(argc, argv)
 				msgq(sp, M_SYSERR, NULL);
 				goto err1;
 			} else {
-				(void)ex_cstring(sp, NULL, p, strlen(p));
+				(void)ex_icmd(sp, NULL, p, strlen(p));
 				free(p);
 			}
 		else if ((p = getenv("HOME")) != NULL && *p) {
