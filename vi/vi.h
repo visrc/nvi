@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 5.5 1992/04/22 09:27:39 bostic Exp $ (Berkeley) $Date: 1992/04/22 09:27:39 $
+ *	$Id: vi.h,v 5.6 1992/04/28 13:53:01 bostic Exp $ (Berkeley) $Date: 1992/04/28 13:53:01 $
  */
 
 #define	C_C_K_REP1	(CURSOR_CNT_KEY | 0x10)
@@ -78,11 +78,12 @@ MARK	v_at __P((MARK, long, int));
 MARK	v_change __P((MARK, MARK));
 MARK	v_delete __P((MARK, MARK));
 MARK	v_errlist __P((MARK));
-MARK	v_ex __P((MARK, char *));
+MARK	v_ex __P((void));
 MARK	v_filter __P((MARK, MARK));
 MARK	v_increment __P((char *, MARK, long));
 MARK	v_insert __P((MARK, long, int));
 MARK	v_join __P((MARK, long));
+void	v_leaveex __P((void));
 MARK	v_mark __P((MARK, long, int));
 MARK	v_overtype __P((MARK));
 MARK	v_paste __P((MARK, long, int));
@@ -93,6 +94,7 @@ MARK	v_selcut __P((MARK, long, int));
 MARK	v_shiftl __P((MARK, MARK));
 MARK	v_shiftr __P((MARK, MARK));
 MARK	v_start __P((MARK, long, int));
+void	v_startex __P((void));
 MARK	v_status __P((void));
 MARK	v_subst __P((MARK, long));
 MARK	v_switch __P((void));
