@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 8.16 1993/10/04 17:51:46 bostic Exp $ (Berkeley) $Date: 1993/10/04 17:51:46 $
+ *	$Id: common.h,v 8.17 1993/10/26 19:14:16 bostic Exp $ (Berkeley) $Date: 1993/10/26 19:14:16 $
  */
 
 /* System includes. */
@@ -51,12 +51,15 @@ struct _text;
 typedef void (*sig_ret_t) __P((int));
 
 /*
- * Integral type that can hold a single character, and the type of that
- * type when passed as an argument using traditional promotion rules.
- * If no integral type can hold a character, forget it, you're done.
+ * Integral type that can hold a single character, the type of that
+ * type when passed as an argument using traditional promotion rules,
+ * and the maximum value that a character can have.
+ *
+ * If no integral type can hold a character, don't even try the port.
  */
-typedef	u_char	CHAR_T;
-typedef	u_int	ARG_CHAR_T;
+typedef	u_char		CHAR_T;
+typedef	u_int		ARG_CHAR_T;
+#define	MAX_CHAR_T	0xff
 
 /*
  * Local includes.
