@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_z.c,v 9.3 1994/11/17 20:39:13 bostic Exp $ (Berkeley) $Date: 1994/11/17 20:39:13 $";
+static char sccsid[] = "$Id: v_z.c,v 9.4 1994/11/18 13:13:44 bostic Exp $ (Berkeley) $Date: 1994/11/18 13:13:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -52,6 +52,7 @@ v_z(sp, vp)
 
 	/* Set default return cursor line. */
 	vp->m_final.lno = lno;
+	vp->m_final.cno = vp->m_start.cno;
 
 	/*
 	 * The second count is the displayed window size, i.e. the 'z'
@@ -122,8 +123,5 @@ v_z(sp, vp)
 			return (1);
 		break;
 	}
-
-	/* z command moved to the first nonblank. */
-	vp->m_final.cno = 0;
-	return (nonblank(sp, vp->m_final.lno, &vp->m_final.cno));
+	return (0);
 }
