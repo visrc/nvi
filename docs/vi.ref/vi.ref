@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.73 1996/05/15 17:58:29 bostic Exp $ (Berkeley) $Date: 1996/05/15 17:58:29 $
+.\"     $Id: vi.ref,v 8.74 1996/05/17 11:11:45 bostic Exp $ (Berkeley) $Date: 1996/05/17 11:11:45 $
 .\"
 .\"
 .so ref.so
@@ -791,9 +791,6 @@ a list of the places from which a function is called or a string
 definition is used.
 An example of this functionality is the System V source code tool,
 .CO cscope .
-(To obtain a copy of
-.CO cscope ,
-see http://www.att.com/ssg/products/toolchest.html.)
 .sp
 .CO Cscope
 creates a database of information on source code files,
@@ -845,6 +842,19 @@ tag.
 This is similar to the previous model of a simple tag stack,
 except that each entry in the tag stack may have more than one file context
 that is of interest.
+.pp
+Although there is no widely distributed version of
+.XR ctags 1
+that creates tags files with multiple locations per tag,
+.CO nvi
+has been written to understand the obvious extension to the historic
+tags file format, i.e., more than a single line in the tags file with
+the same initial tag name.
+If you wish to extend your
+.CO ctags 
+implementation or other tool with which you build tags files,
+this extension should be simple and will require no changes to
+.CO nvi .
 .pp
 The
 .CO nvi
@@ -982,6 +992,12 @@ command.
 Disconnect from all attached
 .CO cscope
 databases.
+.pp
+Cscope is not freely redistributable software,
+but is fairly inexpensive and easily available.
+To purchase a copy of
+.CO cscope ,
+see http://www.att.com/ssg/products/toolchest.html.
 .SH 1 "Regular Expressions and Replacement Strings"
 .pp
 Regular expressions are used in line addresses,
