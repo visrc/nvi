@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.88 1996/12/04 19:09:16 bostic Exp $ (Berkeley) $Date: 1996/12/04 19:09:16 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.89 1996/12/05 12:26:53 bostic Exp $ (Berkeley) $Date: 1996/12/05 12:26:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -2053,9 +2053,7 @@ retry:		for (len = 0,
 	p[len] = '*';
 
 	/* Build an ex command, and call the ex expansion routines. */
-	ex_cinit(&cmd, 0, 0, OOBLNO, OOBLNO, 0, NULL);
-	if (argv_init(sp, &cmd))
-		return (1);
+	ex_cinit(sp, &cmd, 0, 0, OOBLNO, OOBLNO, 0);
 	if (argv_exp2(sp, &cmd, p, len + 1)) {
 		p[len] = s_ch;
 		return (0);

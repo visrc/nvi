@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: exf.c,v 10.49 1996/10/10 21:33:55 bostic Exp $ (Berkeley) $Date: 1996/10/10 21:33:55 $";
+static const char sccsid[] = "$Id: exf.c,v 10.50 1996/12/05 12:27:24 bostic Exp $ (Berkeley) $Date: 1996/12/05 12:27:24 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -1030,8 +1030,7 @@ file_backup(sp, name, bname)
 	 *
 	 * Shell and file name expand the option's value.
 	 */
-	argv_init(sp, &cmd);
-	ex_cinit(&cmd, 0, 0, 0, 0, 0, NULL);
+	ex_cinit(sp, &cmd, 0, 0, 0, 0, 0);
 	if (bname[0] == 'N') {
 		version = 1;
 		++bname;

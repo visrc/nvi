@@ -13,7 +13,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_tag.c,v 10.36 1996/09/15 15:59:34 bostic Exp $ (Berkeley) $Date: 1996/09/15 15:59:34 $";
+static const char sccsid[] = "$Id: ex_tag.c,v 10.37 1996/12/05 12:27:06 bostic Exp $ (Berkeley) $Date: 1996/12/05 12:27:06 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -66,12 +66,11 @@ ex_tag_first(sp, tagarg)
 	SCR *sp;
 	char *tagarg;
 {
-	ARGS *ap[2], a;
 	EXCMD cmd;
 
 	/* Build an argument for the ex :tag command. */
-	ex_cinit(&cmd, C_TAG, 0, OOBLNO, OOBLNO, 0, ap);
-	ex_cadd(&cmd, &a, tagarg, strlen(tagarg));
+	ex_cinit(sp, &cmd, C_TAG, 0, OOBLNO, OOBLNO, 0);
+	argv_exp0(sp, &cmd, tagarg, strlen(tagarg));
 
 	/*
 	 * XXX

@@ -12,7 +12,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: api.c,v 8.26 1996/10/14 15:04:00 bostic Exp $ (Berkeley) $Date: 1996/10/14 15:04:00 $";
+static const char sccsid[] = "$Id: api.c,v 8.27 1996/12/05 12:27:30 bostic Exp $ (Berkeley) $Date: 1996/12/05 12:27:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -309,14 +309,13 @@ api_edit(sp, file, spp, newscreen)
 	SCR **spp;
 	int newscreen;
 {
-	ARGS *ap[2], a;
 	EXCMD cmd;
 
 	if (file) {
-		ex_cinit(&cmd, C_EDIT, 0, OOBLNO, OOBLNO, 0, ap);
-		ex_cadd(&cmd, &a, file, strlen(file));
+		ex_cinit(sp, &cmd, C_EDIT, 0, OOBLNO, OOBLNO, 0);
+		argv_exp0(sp, &cmd, file, strlen(file));
 	} else
-		ex_cinit(&cmd, C_EDIT, 0, OOBLNO, OOBLNO, 0, NULL);
+		ex_cinit(sp, &cmd, C_EDIT, 0, OOBLNO, OOBLNO, 0);
 	if (newscreen)
 		cmd.flags |= E_NEWSCREEN;		/* XXX */
 	if (cmd.cmd->fn(sp, &cmd))
@@ -342,7 +341,7 @@ api_escreen(sp)
 	 * If the interpreter exits anything other than the current
 	 * screen, vi isn't going to update everything correctly.
 	 */
-	ex_cinit(&cmd, C_QUIT, 0, OOBLNO, OOBLNO, 0, NULL);
+	ex_cinit(sp, &cmd, C_QUIT, 0, OOBLNO, OOBLNO, 0);
 	return (cmd.cmd->fn(sp, &cmd));
 }
 
@@ -379,12 +378,11 @@ api_map(sp, name, map, len)
 	char *name, *map;
 	size_t len;
 {
-	ARGS *ap[3], a, b;
 	EXCMD cmd;
 
-	ex_cinit(&cmd, C_MAP, 0, OOBLNO, OOBLNO, 0, ap);
-	ex_cadd(&cmd, &a, name, strlen(name));
-	ex_cadd(&cmd, &b, map, len);
+	ex_cinit(sp, &cmd, C_MAP, 0, OOBLNO, OOBLNO, 0);
+	argv_exp0(sp, &cmd, name, strlen(name));
+	argv_exp0(sp, &cmd, map, len);
 	return (cmd.cmd->fn(sp, &cmd));
 }
 
@@ -399,11 +397,10 @@ api_unmap(sp, name)
 	SCR *sp;
 	char *name;
 {
-	ARGS *ap[2], a;
 	EXCMD cmd;
 
-	ex_cinit(&cmd, C_UNMAP, 0, OOBLNO, OOBLNO, 0, ap);
-	ex_cadd(&cmd, &a, name, strlen(name));
+	ex_cinit(sp, &cmd, C_UNMAP, 0, OOBLNO, OOBLNO, 0);
+	argv_exp0(sp, &cmd, name, strlen(name));
 	return (cmd.cmd->fn(sp, &cmd));
 }
 

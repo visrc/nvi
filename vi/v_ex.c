@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_ex.c,v 10.43 1996/12/04 09:48:21 bostic Exp $ (Berkeley) $Date: 1996/12/04 09:48:21 $";
+static const char sccsid[] = "$Id: v_ex.c,v 10.44 1996/12/05 12:26:42 bostic Exp $ (Berkeley) $Date: 1996/12/05 12:26:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -43,12 +43,10 @@ v_again(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	ARGS *ap[2], a;
 	EXCMD cmd;
 
-	ex_cinit(&cmd, C_SUBAGAIN, 2, vp->m_start.lno, vp->m_start.lno, 1, ap);
-	ex_cadd(&cmd, &a, "", 1);
-
+	ex_cinit(sp, &cmd, C_SUBAGAIN, 2, vp->m_start.lno, vp->m_start.lno, 1);
+	argv_exp0(sp, &cmd, "", 1);
 	return (v_exec_ex(sp, vp, &cmd));
 }
 
@@ -117,7 +115,7 @@ v_join(sp, vp)
 	if (F_ISSET(vp, VC_C1SET) && vp->count > 2)
 		lno = vp->m_start.lno + (vp->count - 1);
 
-	ex_cinit(&cmd, C_JOIN, 2, vp->m_start.lno, lno, 0, NULL);
+	ex_cinit(sp, &cmd, C_JOIN, 2, vp->m_start.lno, lno, 0);
 	return (v_exec_ex(sp, vp, &cmd));
 }
 
@@ -132,11 +130,10 @@ v_shiftl(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	ARGS *ap[2], a;
 	EXCMD cmd;
 
-	ex_cinit(&cmd, C_SHIFTL, 2, vp->m_start.lno, vp->m_stop.lno, 0, ap);
-	ex_cadd(&cmd, &a, "<", 1);
+	ex_cinit(sp, &cmd, C_SHIFTL, 2, vp->m_start.lno, vp->m_stop.lno, 0);
+	argv_exp0(sp, &cmd, "<", 2);
 	return (v_exec_ex(sp, vp, &cmd));
 }
 
@@ -151,11 +148,10 @@ v_shiftr(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	ARGS *ap[2], a;
 	EXCMD cmd;
 
-	ex_cinit(&cmd, C_SHIFTR, 2, vp->m_start.lno, vp->m_stop.lno, 0, ap);
-	ex_cadd(&cmd, &a, ">", 1);
+	ex_cinit(sp, &cmd, C_SHIFTR, 2, vp->m_start.lno, vp->m_stop.lno, 0);
+	argv_exp0(sp, &cmd, ">", 2);
 	return (v_exec_ex(sp, vp, &cmd));
 }
 
@@ -170,11 +166,10 @@ v_suspend(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	ARGS *ap[2], a;
 	EXCMD cmd;
 
-	ex_cinit(&cmd, C_STOP, 0, OOBLNO, OOBLNO, 0, ap);
-	ex_cadd(&cmd, &a, "suspend", sizeof("suspend") - 1);
+	ex_cinit(sp, &cmd, C_STOP, 0, OOBLNO, OOBLNO, 0);
+	argv_exp0(sp, &cmd, "suspend", sizeof("suspend"));
 	return (v_exec_ex(sp, vp, &cmd));
 }
 
@@ -189,7 +184,6 @@ v_switch(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	ARGS *ap[2], a;
 	EXCMD cmd;
 	char *name;
 
@@ -206,8 +200,8 @@ v_switch(sp, vp)
 	if (file_m1(sp, 0, FS_ALL))
 		return (1);
 
-	ex_cinit(&cmd, C_EDIT, 0, OOBLNO, OOBLNO, 0, ap);
-	ex_cadd(&cmd, &a, name, strlen(name));
+	ex_cinit(sp, &cmd, C_EDIT, 0, OOBLNO, OOBLNO, 0);
+	argv_exp0(sp, &cmd, name, strlen(name) + 1);
 	return (v_exec_ex(sp, vp, &cmd));
 }
 
@@ -222,11 +216,10 @@ v_tagpush(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	ARGS *ap[2], a;
 	EXCMD cmd;
 
-	ex_cinit(&cmd, C_TAG, 0, OOBLNO, 0, 0, ap);
-	ex_cadd(&cmd, &a, VIP(sp)->keyw, strlen(VIP(sp)->keyw));
+	ex_cinit(sp, &cmd, C_TAG, 0, OOBLNO, 0, 0);
+	argv_exp0(sp, &cmd, VIP(sp)->keyw, strlen(VIP(sp)->keyw) + 1);
 	return (v_exec_ex(sp, vp, &cmd));
 }
 
@@ -243,7 +236,7 @@ v_tagpop(sp, vp)
 {
 	EXCMD cmd;
 
-	ex_cinit(&cmd, C_TAGPOP, 0, OOBLNO, 0, 0, NULL);
+	ex_cinit(sp, &cmd, C_TAGPOP, 0, OOBLNO, 0, 0);
 	return (v_exec_ex(sp, vp, &cmd));
 }
 
@@ -282,8 +275,8 @@ v_filter(sp, vp)
 	 */
 	if (F_ISSET(vp, VC_ISDOT) ||
 	    ISCMD(vp->rkp, 'N') || ISCMD(vp->rkp, 'n')) {
-		ex_cinit(&cmd, C_BANG,
-		    2, vp->m_start.lno, vp->m_stop.lno, 0, NULL);
+		ex_cinit(sp,
+		    &cmd, C_BANG, 2, vp->m_start.lno, vp->m_stop.lno, 0);
 		EXP(sp)->argsoff = 0;			/* XXX */
 
 		if (argv_exp1(sp, &cmd, "!", 1, 1))
@@ -315,7 +308,7 @@ v_filter(sp, vp)
 	/* Home the cursor. */
 	vs_home(sp);
 
-	ex_cinit(&cmd, C_BANG, 2, vp->m_start.lno, vp->m_stop.lno, 0, NULL);
+	ex_cinit(sp, &cmd, C_BANG, 2, vp->m_start.lno, vp->m_stop.lno, 0);
 	EXP(sp)->argsoff = 0;			/* XXX */
 
 	if (argv_exp1(sp, &cmd, tp->lb + 1, tp->len - 1, 1))

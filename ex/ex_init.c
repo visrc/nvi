@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_init.c,v 10.26 1996/08/12 20:23:59 bostic Exp $ (Berkeley) $Date: 1996/08/12 20:23:59 $";
+static const char sccsid[] = "$Id: ex_init.c,v 10.27 1996/12/05 12:27:16 bostic Exp $ (Berkeley) $Date: 1996/12/05 12:27:16 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -255,11 +255,10 @@ ex_run_file(sp, name)
 	SCR *sp;
 	char *name;
 {
-	ARGS *ap[2], a;
 	EXCMD cmd;
 
-	ex_cinit(&cmd, C_SOURCE, 0, OOBLNO, OOBLNO, 0, ap);
-	ex_cadd(&cmd, &a, name, strlen(name));
+	ex_cinit(sp, &cmd, C_SOURCE, 0, OOBLNO, OOBLNO, 0);
+	argv_exp0(sp, &cmd, name, strlen(name));
 	return (ex_source(sp, &cmd));
 }
 

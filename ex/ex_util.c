@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_util.c,v 10.23 1996/06/19 18:06:47 bostic Exp $ (Berkeley) $Date: 1996/06/19 18:06:47 $";
+static const char sccsid[] = "$Id: ex_util.c,v 10.24 1996/12/05 12:27:11 bostic Exp $ (Berkeley) $Date: 1996/12/05 12:27:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,15 +31,14 @@ static const char sccsid[] = "$Id: ex_util.c,v 10.23 1996/06/19 18:06:47 bostic 
  * ex_cinit --
  *	Create an EX command structure.
  *
- * PUBLIC: void ex_cinit __P((EXCMD *,
- * PUBLIC:    int, int, recno_t, recno_t, int, ARGS **));
+ * PUBLIC: void ex_cinit __P((SCR *, EXCMD *, int, int, recno_t, recno_t, int));
  */
 void
-ex_cinit(cmdp, cmd_id, naddr, lno1, lno2, force, ap)
+ex_cinit(sp, cmdp, cmd_id, naddr, lno1, lno2, force)
+	SCR *sp;
 	EXCMD *cmdp;
 	int cmd_id, force, naddr;
 	recno_t lno1, lno2;
-	ARGS **ap;
 {
 	memset(cmdp, 0, sizeof(EXCMD));
 	cmdp->cmd = &cmds[cmd_id];
@@ -49,28 +48,7 @@ ex_cinit(cmdp, cmd_id, naddr, lno1, lno2, force, ap)
 	cmdp->addr1.cno = cmdp->addr2.cno = 1;
 	if (force)
 		cmdp->iflags |= E_C_FORCE;
-	cmdp->argc = 0;
-	if ((cmdp->argv = ap) != NULL)
-		cmdp->argv[0] = NULL;
-}
-
-/*
- * ex_cadd --
- *	Add an argument to an EX command structure.
- *
- * PUBLIC: void ex_cadd __P((EXCMD *, ARGS *, char *, size_t));
- */
-void
-ex_cadd(cmdp, ap, arg, len)
-	EXCMD *cmdp;
-	ARGS *ap;
-	char *arg;
-	size_t len;
-{
-	cmdp->argv[cmdp->argc] = ap;
-	ap->bp = arg;
-	ap->len = len;
-	cmdp->argv[++cmdp->argc] = NULL;
+	return (argv_init(sp, cmdp));
 }
 
 /*
