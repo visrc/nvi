@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 9.4 1995/01/23 17:26:31 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:26:31 $
+ *	$Id: key.h,v 9.5 1995/01/23 18:28:32 bostic Exp $ (Berkeley) $Date: 1995/01/23 18:28:32 $
  */
 
 /*
@@ -162,12 +162,12 @@ typedef enum { CONF_NO, CONF_QUIT, CONF_YES } conf_t;
 #define	TXT_WRAPMARGIN	0x10000000	/* Option: wrapmargin. */
 
 /* Support keyboard routines. */
-size_t		 __key_len __P((SCR *, ARG_CHAR_T));
-CHAR_T		*__key_name __P((SCR *, ARG_CHAR_T));
-int		 __key_val __P((SCR *, ARG_CHAR_T));
-void		 key_init __P((SCR *));
-void		 term_flush __P((SCR *, char *, u_int));
-enum input	 term_key __P((SCR *, CH *, u_int));
-int		 term_init __P((SCR *));
-int		 term_push __P((SCR *, CHAR_T *, size_t, u_int));
-int		 term_window __P((SCR *, int));
+size_t	 __key_len __P((SCR *, ARG_CHAR_T));
+CHAR_T	*__key_name __P((SCR *, ARG_CHAR_T));
+int	 __key_val __P((SCR *, ARG_CHAR_T));
+void	 key_init __P((SCR *));
+void	 term_flush __P((SCR *, char *, u_int));
+input_t	 term_key __P((SCR *, CH *, u_int));
+int	 term_init __P((SCR *));
+int	 term_push __P((SCR *, CHAR_T *, size_t, u_int));
+int	 term_window __P((SCR *, int));
