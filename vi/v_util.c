@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_util.c,v 5.11 1992/12/20 15:54:27 bostic Exp $ (Berkeley) $Date: 1992/12/20 15:54:27 $";
+static char sccsid[] = "$Id: v_util.c,v 5.12 1992/12/20 21:12:45 bostic Exp $ (Berkeley) $Date: 1992/12/20 21:12:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -126,6 +126,7 @@ v_msgflush(ep)
 		MOVE(SCREENSIZE(ep), 0);
 	}
 	MOVE(oldy, oldx);
+	refresh();
 	msgcnt = 0;
 	return (0);
 }
