@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_util.c,v 8.11 1994/08/04 14:59:24 bostic Exp $ (Berkeley) $Date: 1994/08/04 14:59:24 $";
+static char sccsid[] = "$Id: ex_util.c,v 8.12 1994/08/04 15:09:05 bostic Exp $ (Berkeley) $Date: 1994/08/04 15:09:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -152,7 +152,7 @@ ex_ncheck(sp, force)
 	 * Historic practice: quit! or two quit's done in succession
 	 * (where ZZ counts as a quit) didn't check for other files.
 	 */
-	if (sp->ccnt != sp->q_ccnt + 1 &&
+	if (!force && sp->ccnt != sp->q_ccnt + 1 &&
 	    sp->cargv != NULL && sp->cargv[1] != NULL) {
 		sp->q_ccnt = sp->ccnt;
 		msgq(sp, M_ERR,
