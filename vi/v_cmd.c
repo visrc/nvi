@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 8.17 1993/12/16 12:19:34 bostic Exp $ (Berkeley) $Date: 1993/12/16 12:19:34 $";
+static char sccsid[] = "$Id: v_cmd.c,v 8.18 1993/12/28 16:40:18 bostic Exp $ (Berkeley) $Date: 1993/12/28 16:40:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -318,7 +318,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 /* 125   U */
 	{v_Undo,	V_RCM_SET,
 	    "U",
-	    " U undo current line"},
+	    " U Restore the current line"},
 /* 126   V */
 	{NULL},
 /* 127   W */
@@ -444,7 +444,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    "[count]t character",
 	    " t before character in line forward search"},
 /* 165   u */
-	{v_undo,	V_RCM_SET,
+	{v_undo,	V_DOT|V_RCM_SET,
 	    "u",
 	    " u undo last change"},
 /* 166   v */
