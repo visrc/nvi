@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_read.c,v 8.4 1996/10/29 17:29:46 bostic Exp $ (Berkeley) $Date: 1996/10/29 17:29:46 $";
+static const char sccsid[] = "$Id: ip_read.c,v 8.5 1996/12/04 09:58:46 bostic Exp $ (Berkeley) $Date: 1996/12/04 09:58:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -214,6 +214,17 @@ ip_trans(sp, ipp, evp)
 	case IPO_INTERRUPT:
 		evp->e_event = E_INTERRUPT;
 		ipp->iskip = IPO_CODE_LEN;
+		return (1);
+	case IPO_MOUSE_MOVE:
+		if (ipp->iblen < IPO_CODE_LEN + IPO_INT_LEN * 2)
+			return (0);
+		evp->e_event = E_MOVE;
+		memcpy(&val1, ipp->ibuf + IPO_CODE_LEN, IPO_INT_LEN);
+		evp->e_lno = ntohl(val1);
+		memcpy(&val2,
+		    ipp->ibuf + IPO_CODE_LEN + IPO_INT_LEN, IPO_INT_LEN);
+		evp->e_cno = ntohl(val2);
+		ipp->iskip = IPO_CODE_LEN + IPO_INT_LEN * 2;
 		return (1);
 	case IPO_QUIT:
 		evp->e_event = E_QUIT;
