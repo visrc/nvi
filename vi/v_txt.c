@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.55 1996/04/22 19:29:11 bostic Exp $ (Berkeley) $Date: 1996/04/22 19:29:11 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.56 1996/04/23 14:33:31 bostic Exp $ (Berkeley) $Date: 1996/04/23 14:33:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -81,7 +81,7 @@ v_tcmd(sp, vp, prompt, flags)
 	sp->cno = 0;
 
 	/* Don't update the modeline for now. */
-	F_SET(sp, S_INPUT_INFO);
+	F_SET(sp, S_TINPUT_INFO);
 
 	/* Set the input flags. */
 	LF_SET(TXT_APPENDEOL |
@@ -96,7 +96,7 @@ v_tcmd(sp, vp, prompt, flags)
 		return (1);
 
 	/* Reenable the modeline updates. */
-	F_CLR(sp, S_INPUT_INFO);
+	F_CLR(sp, S_TINPUT_INFO);
 
 	/* Clean up the map. */
 	if (txt_map_end(sp))
@@ -278,7 +278,7 @@ v_txt(sp, vp, tm, lp, len, prompt, ai_line, rcount, flags)
 	 * Set the input flag, so tabs get displayed correctly
 	 * and everyone knows that the text buffer is in use.
 	 */
-	F_SET(sp, S_INPUT);
+	F_SET(sp, S_TINPUT);
 
 	/*
 	 * Get one TEXT structure with some initial buffer space, reusing
@@ -1328,7 +1328,7 @@ ret:	/* If replaying text, keep going. */
 	 * line, and not doing file completion, resolve them.
 	 */
 	if ((vip->totalcount != 0 || F_ISSET(gp, G_BELLSCHED)) &&
-	    !F_ISSET(sp, S_INPUT_INFO) && !filec_redraw && vs_resolve(sp))
+	    !F_ISSET(sp, S_TINPUT_INFO) && !filec_redraw && vs_resolve(sp))
 		return (1);
 
 	/*
@@ -1353,7 +1353,7 @@ ret:	/* If replaying text, keep going. */
 	goto next;
 
 done:	/* Leave input mode. */
-	F_CLR(sp, S_INPUT);
+	F_CLR(sp, S_TINPUT);
 
 	/* If recording for playback, save it. */
 	if (LF_ISSET(TXT_RECORD))
@@ -1363,7 +1363,7 @@ done:	/* Leave input mode. */
 	 * If not working on the colon command line, set the final cursor
 	 * position.
 	 */
-	if (!F_ISSET(sp, S_INPUT_INFO)) {
+	if (!F_ISSET(sp, S_TINPUT_INFO)) {
 		vp->m_final.lno = tp->lno;
 		vp->m_final.cno = tp->cno;
 	}
@@ -2102,11 +2102,11 @@ txt_fc_col(sp, argc, argv)
 
 	/*
 	 * Writing to the bottom line of the screen is always turned off when
-	 * S_INPUT_INFO is set.  Turn it back on, we know what we're doing.
+	 * S_TINPUT_INFO is set.  Turn it back on, we know what we're doing.
 	 */
-	if (F_ISSET(sp, S_INPUT_INFO)) {
+	if (F_ISSET(sp, S_TINPUT_INFO)) {
 		reset = 1;
-		F_CLR(sp, S_INPUT_INFO);
+		F_CLR(sp, S_TINPUT_INFO);
 	} else
 		reset = 0;
 
@@ -2161,7 +2161,7 @@ txt_fc_col(sp, argc, argv)
 intr:		F_CLR(gp, G_INTERRUPTED);
 	}
 	if (reset)
-		F_SET(sp, S_INPUT_INFO);
+		F_SET(sp, S_TINPUT_INFO);
 
 	return (0);
 }
@@ -2505,7 +2505,7 @@ txt_isrch(sp, vp, tp, is_flagsp)
 
 	/* Remember the input line and discard the special input map. */
 	lno = tp->lno;
-	F_CLR(sp, S_INPUT);
+	F_CLR(sp, S_TINPUT);
 	if (txt_map_end(sp))
 		return (1);
 
@@ -2543,7 +2543,7 @@ txt_isrch(sp, vp, tp, is_flagsp)
 	/* Reinstantiate the special input map. */
 	if (txt_map_init(sp))
 		return (1);
-	F_SET(sp, S_INPUT);
+	F_SET(sp, S_TINPUT);
 
 	/* Reset the line number of the input line. */
 	tp->lno = TMAP[0].lno; 
@@ -2603,7 +2603,7 @@ txt_resolve(sp, tiqh, flags)
 	 * Has to be done as part of text resolution, or upon return we'll
 	 * be looking at incorrect data.
 	 */
-	F_CLR(sp, S_INPUT);
+	F_CLR(sp, S_TINPUT);
 
 	return (0);
 }

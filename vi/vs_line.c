@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_line.c,v 10.13 1996/03/06 19:55:02 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:55:02 $";
+static const char sccsid[] = "$Id: vs_line.c,v 10.14 1996/04/23 14:33:32 bostic Exp $ (Berkeley) $Date: 1996/04/23 14:33:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -60,7 +60,7 @@ vs_line(sp, smp, yp, xp)
 	 * If ex modifies the screen after ex output is already on the screen,
 	 * don't touch it -- we'll get scrolling wrong, at best.
 	 */
-	if (!F_ISSET(sp, S_INPUT_INFO) && VIP(sp)->totalcount > 1)
+	if (!F_ISSET(sp, S_TINPUT_INFO) && VIP(sp)->totalcount > 1)
 		return (0);
 	if (F_ISSET(sp, S_SCR_EXWROTE) && smp - HMAP != LASTLINE(sp))
 		return (0);
@@ -109,7 +109,7 @@ vs_line(sp, smp, yp, xp)
 	 */
 	cols_per_screen = sp->cols;
 	list_tab = O_ISSET(sp, O_LIST);
-	if (F_ISSET(sp, S_INPUT_INFO)) {
+	if (F_ISSET(sp, S_TINPUT_INFO)) {
 		list_dollar = 0;
 		if (O_ISSET(sp, O_LEFTRIGHT))
 			skip_screens = 0;
@@ -320,14 +320,14 @@ empty:					(void)gp->scr_addstr(sp,
 		 * set the cursor only if the entire character was displayed.
 		 */
 		if (cno_cnt &&
-		    --cno_cnt == 0 && (F_ISSET(sp, S_INPUT) || !is_partial)) {
+		    --cno_cnt == 0 && (F_ISSET(sp, S_TINPUT) || !is_partial)) {
 			*yp = smp - HMAP;
-			if (F_ISSET(sp, S_INPUT))
+			if (F_ISSET(sp, S_TINPUT))
 				*xp = scno - chlen;
 			else
 				*xp = scno - 1;
 			if (O_ISSET(sp, O_NUMBER) &&
-			    !F_ISSET(sp, S_INPUT_INFO) && smp->off == 1)
+			    !F_ISSET(sp, S_TINPUT_INFO) && smp->off == 1)
 				*xp += O_NUMBER_LENGTH;
 
 			/* If the line is on the screen, quit. */
@@ -415,7 +415,7 @@ vs_number(sp)
 	char nbuf[10];
 
 	/* No reason to do anything if we're in input mode on the info line. */
-	if (F_ISSET(sp, S_INPUT_INFO))
+	if (F_ISSET(sp, S_TINPUT_INFO))
 		return (0);
 
 	/*

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_refresh.c,v 10.28 1996/04/17 09:52:08 bostic Exp $ (Berkeley) $Date: 1996/04/17 09:52:08 $";
+static const char sccsid[] = "$Id: vs_refresh.c,v 10.29 1996/04/23 14:33:34 bostic Exp $ (Berkeley) $Date: 1996/04/23 14:33:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -581,7 +581,7 @@ slow:	for (smp = HMAP; smp->lno != LNO; ++smp);
 	if (O_ISSET(sp, O_LEFTRIGHT)) {
 		cnt = vs_opt_screens(sp, LNO, &CNO) % SCREEN_COLS(sp);
 		if (cnt != HMAP->off) {
-			if (F_ISSET(sp, S_INPUT_INFO))
+			if (F_ISSET(sp, S_TINPUT_INFO))
 				smp->off = cnt;
 			else {
 				for (smp = HMAP; smp <= TMAP; ++smp)
@@ -652,7 +652,7 @@ number:	if (O_ISSET(sp, O_NUMBER) &&
 	 * 10: Update the mode line, position the cursor, and flush changes.
 	 */
 	if (leftright_warp || LF_ISSET(UPDATE_SCREEN)) {
-		if (!F_ISSET(sp, S_INPUT_INFO) &&
+		if (!F_ISSET(sp, S_TINPUT_INFO) &&
 		    !F_ISSET(vip, VIP_S_MODELINE) && !IS_ONELINE(sp))
 			vs_modeline(sp);
 

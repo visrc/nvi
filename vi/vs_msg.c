@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_msg.c,v 10.56 1996/04/11 20:12:15 bostic Exp $ (Berkeley) $Date: 1996/04/11 20:12:15 $";
+static const char sccsid[] = "$Id: vs_msg.c,v 10.57 1996/04/23 14:33:33 bostic Exp $ (Berkeley) $Date: 1996/04/23 14:33:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -239,7 +239,7 @@ vs_msg(sp, mtype, line, len)
 	 * XXX
 	 * Shouldn't we save this, too?
 	 */
-	if (F_ISSET(sp, S_INPUT_INFO) || F_ISSET(gp, G_BELLSCHED))
+	if (F_ISSET(sp, S_TINPUT_INFO) || F_ISSET(gp, G_BELLSCHED))
 		if (F_ISSET(sp, S_SCR_VI)) {
 			F_CLR(gp, G_BELLSCHED);
 			(void)gp->scr_bell(sp);
@@ -251,7 +251,7 @@ vs_msg(sp, mtype, line, len)
 	 * real-estate for the error message.  Nothing to do without some
 	 * information as to how important the error message is.
 	 */
-	if (F_ISSET(sp, S_INPUT_INFO))
+	if (F_ISSET(sp, S_TINPUT_INFO))
 		return;
 
 	/*

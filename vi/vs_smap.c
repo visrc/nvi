@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_smap.c,v 10.19 1996/04/17 09:52:08 bostic Exp $ (Berkeley) $Date: 1996/04/17 09:52:08 $";
+static const char sccsid[] = "$Id: vs_smap.c,v 10.20 1996/04/23 14:33:35 bostic Exp $ (Berkeley) $Date: 1996/04/23 14:33:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -125,7 +125,7 @@ vs_change(sp, lno, op)
 	 * or if we've switched into ex canonical mode, don't touch it -- we'll
 	 * get scrolling wrong, at best.
 	 */
-	if (!F_ISSET(sp, S_INPUT_INFO) &&
+	if (!F_ISSET(sp, S_TINPUT_INFO) &&
 	    (F_ISSET(sp, S_SCR_EXWROTE) || VIP(sp)->totalcount > 1)) {
 		F_SET(vip, VIP_N_EX_REDRAW);
 		return (0);
