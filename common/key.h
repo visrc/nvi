@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 5.19 1993/03/25 15:00:35 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:00:35 $
+ *	$Id: key.h,v 5.20 1993/03/26 13:39:32 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:39:32 $
  */
 
 #define	K_CARAT		1
@@ -40,10 +40,9 @@
 #define	QINIT		memset(sp->gb_qb, 0, sp->gb_len);
 #define	QSET(off)	sp->gb_qb[(off)] = 1
 
-					/* Real routines. */
-int	ex_gb __P((SCR *, int, u_char **, size_t *, u_int));
-int	v_gb __P((SCR *, int, u_char **, size_t *, u_int));
-
-int	gb_inc __P((SCR *));		/* Support routines. */
-int	gb_init __P((SCR *));
-int	getkey __P((SCR *, u_int));
+/* Keyboard routines. */
+int	ex_gb __P((struct _scr *, int, u_char **, size_t *, u_int));
+int	gb_inc __P((struct _scr *));
+int	gb_init __P((struct _scr *));
+int	getkey __P((struct _scr *, u_int));
+int	v_gb __P((struct _scr *, int, u_char **, size_t *, u_int));

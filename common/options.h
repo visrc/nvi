@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: options.h,v 5.11 1993/03/25 15:00:24 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:00:24 $
+ *	$Id: options.h,v 5.12 1993/03/26 13:39:26 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:39:26 $
  */
 
 /* Offset macros. */

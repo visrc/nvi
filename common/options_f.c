@@ -6,20 +6,18 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 5.2 1993/03/25 15:00:25 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:00:25 $";
+static char sccsid[] = "$Id: options_f.c,v 5.3 1993/03/26 13:39:26 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:39:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 #include <sys/stat.h>
 
 #include <errno.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 
 #include "vi.h"
-#include "options.h"
-#include "screen.h"
+#include "tag.h"
 
 int
 f_columns(sp, valp, eqp)

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.49 1993/03/25 15:00:31 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:00:31 $";
+static char sccsid[] = "$Id: key.c,v 5.50 1993/03/26 13:39:30 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:39:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -16,17 +16,11 @@ static char sccsid[] = "$Id: key.c,v 5.49 1993/03/25 15:00:31 bostic Exp $ (Berk
 #include <curses.h>
 #include <errno.h>
 #include <signal.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
 #include "vi.h"
-#include "exf.h"
-#include "options.h"
-#include "seq.h"
-#include "screen.h"
-#include "term.h"
 
 static void	check_sigwinch __P((SCR *));
 static int	ttyread __P((SCR *, u_char *, int, int));
