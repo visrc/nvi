@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 5.7 1993/05/05 16:34:48 bostic Exp $ (Berkeley) $Date: 1993/05/05 16:34:48 $";
+static char sccsid[] = "$Id: options_f.c,v 5.8 1993/05/07 09:09:27 bostic Exp $ (Berkeley) $Date: 1993/05/07 09:09:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -380,6 +380,8 @@ DECL(f_term)
 	if (O_ISSET(sp, O_FLASH) && f_flash(sp, op, NULL, 0))
 		msgq(sp, M_ERR,
 		    "Term value %s; unable to set flash option.", str);
+
+	(void)set_window_size(sp, 0);
 	return (0);
 }
 

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 5.37 1993/05/02 09:34:55 bostic Exp $ (Berkeley) $Date: 1993/05/02 09:34:55 $";
+static char sccsid[] = "$Id: util.c,v 5.38 1993/05/07 09:09:25 bostic Exp $ (Berkeley) $Date: 1993/05/07 09:09:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -283,24 +283,33 @@ set_window_size(sp, set_row)
 	struct winsize win;
 	size_t col, row;
 	int isset;
-	char *argv[2], *s, sbuf[100];
+	char *argv[2], *s, buf[2048];
 
-	row = 80;
-	col = 24;
+	row = 24;
+	col = 80;
 
 	/*
-	 * Get the screen rows and columns.  The idea is to duplicate what
-	 * curses will do to figure out the rows and columns.  If the values
-	 * are wrong, it's not a big deal -- as soon as the user sets them
-	 * explicitly the environment will be set and curses will use the new
+	 * Get the screen rows and columns.  If the values are wrong, it's
+	 * not a big deal -- as soon as the user sets them explicitly the
+	 * environment will be set and the screen package will use the new
 	 * values.
 	 *
-	 * Try TIOCGWINSZ.
+	 * Try TIOCGWINSZ, followed by the termcap entry.
 	 */
 	if (ioctl(STDERR_FILENO, TIOCGWINSZ, &win) != -1 &&
 	    win.ws_row != 0 && win.ws_col != 0) {
 		row = win.ws_row;
 		col = win.ws_col;
+	} else {
+		s = NULL;
+		if (F_ISSET(&sp->opts[O_TERM], OPT_SET))
+			s = O_STR(sp, O_TERM);
+		else
+			s = getenv("TERM");
+		if (s != NULL && tgetent(buf, s) == 1) {
+			row = tgetnum("li");
+			col = tgetnum("co");
+		}
 	}
 
 	/* POSIX 1003.2 requires the environment to override. */
@@ -313,7 +322,7 @@ set_window_size(sp, set_row)
 	if (set_row)
 		row = set_row;
 
-	argv[0] = sbuf;
+	argv[0] = buf;
 	argv[1] = NULL;
 
 	/*
@@ -321,13 +330,13 @@ set_window_size(sp, set_row)
 	 * Since the user didn't do the set, clear the set bits.
 	 */
 	isset = F_ISSET(&sp->opts[O_LINES], OPT_SET);
-	(void)snprintf(sbuf, sizeof(sbuf), "ls=%u", row ? row : win.ws_row);
+	(void)snprintf(buf, sizeof(buf), "ls=%u", row ? row : win.ws_row);
 	if (opts_set(sp, argv))
 		return (1);
 	if (isset)
 		F_CLR(&sp->opts[O_LINES], OPT_SET);
 	isset = F_ISSET(&sp->opts[O_COLUMNS], OPT_SET);
-	(void)snprintf(sbuf, sizeof(sbuf), "co=%u", win.ws_col);
+	(void)snprintf(buf, sizeof(buf), "co=%u", win.ws_col);
 	if (opts_set(sp, argv))
 		return (1);
 	if (isset)
