@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.55 1994/03/14 10:46:30 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:46:30 $";
+static char sccsid[] = "$Id: vi.c,v 8.56 1994/03/17 15:03:56 bostic Exp $ (Berkeley) $Date: 1994/03/17 15:03:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -127,6 +127,8 @@ vi(sp, ep)
 			flags = F_ISSET(vp, VM_RCM_MASK);
 			F_CLR(vp, VM_RCM_MASK);
 			if (getmotion(sp, ep, DOTMOTION, vp))
+				goto err;
+			if (F_ISSET(vp, VM_NOMOTION))
 				goto err;
 			if (!F_ISSET(vp, VM_RCM_MASK))
 				F_SET(vp, flags);
@@ -558,7 +560,8 @@ getmotion(sp, ep, dm, vp)
 		 * movement as a line motion (see v_sentence) as well as set
 		 * the VM_RCM_* flags explicitly.
 		 */
-		F_SET(vp, F_ISSET(&motion, VM_LMODE | VM_RCM_MASK));
+		F_SET(vp,
+		    F_ISSET(&motion, VM_LMODE | VM_NOMOTION | VM_RCM_MASK));
 
 		/*
 		 * Motion commands can reset all of the cursor information.

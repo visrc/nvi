@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 8.26 1994/03/04 10:54:05 bostic Exp $ (Berkeley) $Date: 1994/03/04 10:54:05 $
+ *	$Id: vi.h,v 8.27 1994/03/17 15:03:54 bostic Exp $ (Berkeley) $Date: 1994/03/17 15:03:54 $
  */
 
 typedef struct _vikeys VIKEYS;
@@ -53,20 +53,21 @@ typedef struct _vicmdarg {
 	 * to clear the others.
 	 */
 #define	VM_LMODE	0x00000010	/* Motion is line oriented. */
-#define	VM_RCM		0x00000020	/* Use relative cursor movment (RCM). */
-#define	VM_RCM_SET	0x00000040	/* RCM: set to current position. */
-#define	VM_RCM_SETFNB	0x00000080	/* RCM: set to first non-blank (FNB). */
-#define	VM_RCM_SETLAST	0x00000100	/* RCM: set to last character. */
-#define	VM_RCM_SETLFNB	0x00000200	/* RCM: set to FNB if cursor moved. */
-#define	VM_RCM_SETNNB	0x00000400	/* RCM: set to next non-blank. */
-#define	VM_RCM_MASK	0x000007e0	/* Mask for RCM flags. */
+#define	VM_NOMOTION	0x00000020	/* Motion command not entered. */
+#define	VM_RCM		0x00000040	/* Use relative cursor movment (RCM). */
+#define	VM_RCM_SET	0x00000080	/* RCM: set to current position. */
+#define	VM_RCM_SETFNB	0x00000100	/* RCM: set to first non-blank (FNB). */
+#define	VM_RCM_SETLAST	0x00000200	/* RCM: set to last character. */
+#define	VM_RCM_SETLFNB	0x00000400	/* RCM: set to FNB if cursor moved. */
+#define	VM_RCM_SETNNB	0x00000800	/* RCM: set to next non-blank. */
+#define	VM_RCM_MASK	0x00000fc0	/* Mask for RCM flags. */
 
 	/* Flags for the underlying function. */
-#define	VC_BUFFER	0x00000800	/* The buffer was set. */
-#define	VC_C1RESET	0x00001000	/* Reset C1SET flag for dot commands. */
-#define	VC_C1SET	0x00002000	/* Count 1 was set. */
-#define	VC_C2SET	0x00004000	/* Count 2 was set. */
-#define	VC_ISDOT	0x00008000	/* Command was the dot command. */
+#define	VC_BUFFER	0x00001000	/* The buffer was set. */
+#define	VC_C1RESET	0x00002000	/* Reset C1SET flag for dot commands. */
+#define	VC_C1SET	0x00004000	/* Count 1 was set. */
+#define	VC_C2SET	0x00008000	/* Count 2 was set. */
+#define	VC_ISDOT	0x00010000	/* Command was the dot command. */
 	u_int32_t flags;
 
 #define	vp_endzero	keyword		/* END ZERO OUT. */
@@ -122,16 +123,16 @@ typedef struct _vicmdarg {
 /* Vi command structure. */
 struct _vikeys {			/* Underlying function. */
 	int	 (*func) __P((SCR *, EXF *, VICMDARG *));
-#define	V_ABS		0x00010000	/* Absolute movement, set '' mark. */
-#define	V_CHAR		0x00020000	/* Character (required, trailing). */
-#define	V_CNT		0x00040000	/* Count (optional, leading). */
-#define	V_DOT		0x00080000	/* On success, sets dot command. */
-#define	V_KEYNUM	0x00100000	/* Cursor referenced number. */
-#define	V_KEYW		0x00200000	/* Cursor referenced word. */
-#define	V_MOTION	0x00400000	/* Motion (required, trailing). */
-#define	V_MOVE		0x00800000	/* Command defines movement. */
-#define	V_OBUF		0x01000000	/* Buffer (optional, leading). */
-#define	V_RBUF		0x02000000	/* Buffer (required, trailing). */
+#define	V_ABS		0x00020000	/* Absolute movement, set '' mark. */
+#define	V_CHAR		0x00040000	/* Character (required, trailing). */
+#define	V_CNT		0x00080000	/* Count (optional, leading). */
+#define	V_DOT		0x00100000	/* On success, sets dot command. */
+#define	V_KEYNUM	0x00200000	/* Cursor referenced number. */
+#define	V_KEYW		0x00400000	/* Cursor referenced word. */
+#define	V_MOTION	0x00800000	/* Motion (required, trailing). */
+#define	V_MOVE		0x01000000	/* Command defines movement. */
+#define	V_OBUF		0x02000000	/* Buffer (optional, leading). */
+#define	V_RBUF		0x04000000	/* Buffer (required, trailing). */
 	u_int32_t flags;
 	char	*usage;			/* Usage line. */
 	char	*help;			/* Help line. */
