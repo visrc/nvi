@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: options.h,v 10.17 1996/07/02 19:24:05 bostic Exp $ (Berkeley) $Date: 1996/07/02 19:24:05 $
+ *	$Id: options.h,v 10.18 1996/10/01 21:30:02 bostic Exp $ (Berkeley) $Date: 1996/10/01 21:30:02 $
  */
 
 /*
@@ -41,7 +41,7 @@
 
 /* Flags to o_set(). */
 #define	OS_DEF		0x01		/* Set the default value. */
-#define	OS_FREE		0x02		/* Free old string if set. */
+#define	OS_NOFREE	0x02		/* Don't free the old string. */
 #define	OS_STR		0x04		/* Set to the str value. */
 #define	OS_STRDUP	0x08		/* Copy and set to the str value. */
 
