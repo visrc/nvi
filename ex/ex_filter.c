@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 5.16 1992/10/10 13:32:52 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:32:52 $";
+static char sccsid[] = "$Id: ex_filter.c,v 5.17 1992/10/29 14:35:26 bostic Exp $ (Berkeley) $Date: 1992/10/29 14:35:26 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -159,21 +159,21 @@ err:		if (input[0] != -1)
 		/* Reporting. */
 		if (ilines == dlines) {
 			if (ilines != 0) {
-				rptlines = ilines;
-				rptlabel = "modified";
+				curf->rptlines = ilines;
+				curf->rptlabel = "modified";
 			}
 		} else if (dlines == 0) {
-			rptlines = ilines;
-			rptlabel = "added";
+			curf->rptlines = ilines;
+			curf->rptlabel = "added";
 		} else if (ilines == 0) {
-			rptlines = dlines;
-			rptlabel = "deleted";
+			curf->rptlines = dlines;
+			curf->rptlabel = "deleted";
 		} else if (ilines > dlines) {
-			rptlines = ilines - dlines;
-			rptlabel = "added";
+			curf->rptlines = ilines - dlines;
+			curf->rptlabel = "added";
 		} else {
-			rptlines = dlines - ilines;
-			rptlabel = "deleted";
+			curf->rptlines = dlines - ilines;
+			curf->rptlabel = "deleted";
 		}
 	}
 			
