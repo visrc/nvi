@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.14 1993/10/28 14:16:20 bostic Exp $ (Berkeley) $Date: 1993/10/28 14:16:20 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.15 1993/10/28 16:49:24 bostic Exp $ (Berkeley) $Date: 1993/10/28 16:49:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,14 +19,20 @@ static char sccsid[] = "$Id: ex_subst.c,v 8.14 1993/10/28 14:16:20 bostic Exp $ 
 #include "vi.h"
 #include "excmd.h"
 
-enum which {AGAIN, MUSTSETR, FIRST};
+#define	SUB_FIRST	0x01		/* The 'r' flag isn't reasonable. */
+#define	SUB_MUSTSETR	0x02		/* The 'r' flag is required. */
 
 static int		checkmatchsize __P((SCR *, regex_t *));
 static inline int	regsub __P((SCR *,
 			    char *, char **, size_t *, size_t *));
 static int		substitute __P((SCR *, EXF *,
-			    EXCMDARG *, char *, regex_t *, enum which));
-
+			    EXCMDARG *, char *, regex_t *, u_int));
+/*
+ * ex_substitute --
+ *	[line [,line]] s[ubstitute] [[/;]pat[/;]/repl[/;] [cgr] [count] [#lp]]
+ *
+ *	Substitute on lines matching a pattern.
+ */
 int
 ex_substitute(sp, ep, cmdp)
 	SCR *sp;
@@ -46,7 +52,8 @@ ex_substitute(sp, ep, cmdp)
 	 * the substitution command delimiter.
 	 */
 	if (isalnum(*arg))
-		return (substitute(sp, ep, cmdp, arg, &sp->sre, MUSTSETR));
+		return (substitute(sp, ep,
+		    cmdp, arg, &sp->subre, SUB_MUSTSETR));
 
 	/* Delimiter is the first character. */
 	delim = *arg;
@@ -74,6 +81,11 @@ ex_substitute(sp, ep, cmdp)
 		if (p[0] == '\0' || p[0] == delim) {
 			if (p[0] == delim)
 				++p;
+			/*
+			 * !!!
+			 * Nul terminate the substitute string -- it's passed
+			 * to regcomp which doesn't understand anything else.
+			 */
 			*t = '\0';
 			break;
 		}
@@ -114,7 +126,6 @@ ex_substitute(sp, ep, cmdp)
 			if (p[0] == '\0' || p[0] == delim) {
 				if (p[0] == delim)
 					++p;
-				*t = '\0';
 				break;
 			}
 			if (p[0] == '\\') {
@@ -149,14 +160,14 @@ tilde:				++p;
 
 	/* If the substitute string is empty, use the last one. */
 	if (*sub == NULL) {
-		if (!F_ISSET(sp, S_RE_SET)) {
+		if (!F_ISSET(sp, S_SUBRE_SET)) {
 			msgq(sp, M_ERR,
 			    "No previous regular expression.");
 			return (1);
 		}
-		if (checkmatchsize(sp, &sp->sre))
+		if (checkmatchsize(sp, &sp->subre))
 			return (1);
-		return (substitute(sp, ep, cmdp, p, &sp->sre, AGAIN));
+		return (substitute(sp, ep, cmdp, p, &sp->subre, 0));
 	}
 
 	/* Set RE flags. */
@@ -187,26 +198,51 @@ tilde:				++p;
 	 * Set saved RE.  Historic practice is that substitutes set
 	 * direction as well as the RE.
 	 */
-	sp->sre = lre;
+	sp->subre = lre;
 	sp->searchdir = FORWARD;
-	F_SET(sp, S_RE_SET);
+	F_SET(sp, S_SUBRE_SET);
 
-	if (checkmatchsize(sp, &sp->sre))
+	if (checkmatchsize(sp, &sp->subre))
 		return (1);
-	return (substitute(sp, ep, cmdp, p, re, FIRST));
+	return (substitute(sp, ep, cmdp, p, re, SUB_FIRST));
 }
 
+/*
+ * ex_subagain --
+ *	[line [,line]] & [cgr] [count] [#lp]]
+ *
+ *	Substitute using the last substitute RE and replacement pattern.
+ */
 int
 ex_subagain(sp, ep, cmdp)
 	SCR *sp;
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	if (!F_ISSET(sp, S_RE_SET)) {
+	if (!F_ISSET(sp, S_SUBRE_SET)) {
 		msgq(sp, M_ERR, "No previous regular expression.");
 		return (1);
 	}
-	return (substitute(sp, ep, cmdp, cmdp->argv[0], &sp->sre, AGAIN));
+	return (substitute(sp, ep, cmdp, cmdp->argv[0], &sp->subre, 0));
+}
+
+/*
+ * ex_subtilde --
+ *	[line [,line]] ~ [cgr] [count] [#lp]]
+ *
+ *	Substitute using the last RE and last substitute replacement pattern.
+ */
+int
+ex_subtilde(sp, ep, cmdp)
+	SCR *sp;
+	EXF *ep;
+	EXCMDARG *cmdp;
+{
+	if (!F_ISSET(sp, S_SRE_SET)) {
+		msgq(sp, M_ERR, "No previous regular expression.");
+		return (1);
+	}
+	return (substitute(sp, ep, cmdp, cmdp->argv[0], &sp->sre, 0));
 }
 
 /* 
@@ -264,13 +300,13 @@ ex_subagain(sp, ep, cmdp)
  * 	unless you're pretty confident.
  */
 static int
-substitute(sp, ep, cmdp, s, re, cmd)
+substitute(sp, ep, cmdp, s, re, flags)
 	SCR *sp;
 	EXF *ep;
 	EXCMDARG *cmdp;
 	char *s;
 	regex_t *re;
-	enum which cmd;
+	u_int flags;
 {
 	MARK from, to;
 	recno_t elno, lno, lastline;
@@ -285,13 +321,44 @@ substitute(sp, ep, cmdp, s, re, cmd)
 	 * useful in combination with the [v]global commands.  In the current
 	 * model the problem is combining them with the 'c' flag -- the screen
 	 * would have to flip back and forth between the confirm screen and the
-	 * ex print screen, which would be pretty awful.
+	 * ex print screen, which would be pretty awful.  We do display all
+	 * changes, though, for what that's worth.
+	 *
+	 * !!!
+	 * Historic vi was fairly strict about the order of "options", the
+	 * count, and "flags".  I'm somewhat fuzzy on the difference between
+	 * options and flags, anyway, so this is a simpler approach, and we
+	 * just take it them in whatever order the user gives them.  (The ex
+	 * usage statement doesn't reflect this.)
 	 */
 	cflag = gflag = lflag = nflag = pflag = rflag = 0;
-	for (; *s; ++s)
+	for (lno = OOBLNO; *s != '\0'; ++s)
 		switch (*s) {
 		case ' ':
 		case '\t':
+			break;
+		case '0': case '1': case '2': case '3': case '4':
+		case '5': case '6': case '7': case '8': case '9':
+			if (lno != OOBLNO)
+				goto usage;
+			errno = 0;
+			lno = strtoul(s, &s, 10);
+			if (errno == ERANGE) {
+				if (lno == LONG_MAX)
+					msgq(sp, M_ERR, "Count overflow.");
+				else if (lno == LONG_MIN)
+					msgq(sp, M_ERR, "Count underflow.");
+				else
+					msgq(sp, M_ERR,
+					    "Error: %s.", strerror(errno));
+				return (1);
+			}
+			/*
+			 * In historic vi, the count was inclusive from the
+			 * second address.
+			 */
+			cmdp->addr1.lno = cmdp->addr2.lno;
+			cmdp->addr2.lno += lno - 1;
 			break;
 		case '#':
 			nflag = 1;
@@ -309,12 +376,12 @@ substitute(sp, ep, cmdp, s, re, cmd)
 			pflag = 1;
 			break;
 		case 'r':
-			if (cmd == FIRST) {
+			if (LF_ISSET(SUB_FIRST)) {
 				msgq(sp, M_ERR,
 		    "Regular expression specified; r flag meaningless.");
 				return (1);
 			}
-			if (!F_ISSET(sp, S_RE_SET)) {
+			if (!F_ISSET(sp, S_SUBRE_SET)) {
 				msgq(sp, M_ERR,
 				    "No previous regular expression.");
 				return (1);
@@ -325,7 +392,7 @@ substitute(sp, ep, cmdp, s, re, cmd)
 			goto usage;
 		}
 
-	if (rflag == 0 && cmd == MUSTSETR) {
+	if (*s != '\0' || !rflag && LF_ISSET(SUB_MUSTSETR)) {
 usage:		msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
 		return (1);
 	}
@@ -464,6 +531,16 @@ skipmatch:	eval = regexec(re,
 
 		/* Copy the bytes before the match into the build buffer. */
 		BUILD(sp, s, sp->match[0].rm_so);
+
+		/*
+		 * Update the cursor to the start of the change.
+		 *
+		 * !!!
+		 * Historic vi just put the cursor on the first non-blank
+		 * of the last line changed.  This might be better.
+		 */
+		if (!cflag)
+			sp->cno = sp->match[0].rm_so;
 
 		/* Substitute the matching bytes. */
 		if (regsub(sp, s, &lb, &lbclen, &lblen))
