@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.30 1992/11/11 13:22:28 bostic Exp $ (Berkeley) $Date: 1992/11/11 13:22:28 $";
+static char sccsid[] = "$Id: exf.c,v 5.31 1992/11/11 18:30:23 bostic Exp $ (Berkeley) $Date: 1992/11/11 18:30:23 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -45,8 +45,6 @@ static EXF defexf = {
 	0, NULL,				/* rptlines, rptlabel */
 	NULL, 0, 0,				/* name, nlen, flags */
 };
-
-static void file_copyright __P((EXF *));
 
 /*
  * file_init --
@@ -270,9 +268,6 @@ file_start(ep)
 	/* Start logging. */
 	log_init(ep);
 
-	if (ISSET(O_COPYRIGHT))			/* Skip leading comment. */
-		file_copyright(ep);
-
 	/*
 	 * Reset any marks.
 	 * XXX
@@ -369,26 +364,4 @@ err:		msg("%s: %s", ep->name, strerror(errno));
 
 	FF_CLR(ep, F_MODIFIED);
 	return (0);
-}
-
-static void
-file_copyright(ep)
-	EXF *ep;
-{
-	recno_t lno;
-	size_t len;
-	u_char *p;
-
-	for (lno = 1;
-	    (p = file_gline(ep, lno, &len)) != NULL && len == 0; ++lno);
-	if (p == NULL || len <= 1 || bcmp(p, "/*", 2))
-		return;
-	do {
-		for (; len; --len, ++p)
-			if (p[0] == '*' && len > 1 && p[1] == '/') {
-				ep->top = ep->lno = lno;
-				return;
-			}
-	} while ((p = file_gline(ep, ++lno, &len)) != NULL);
-	return;
 }
