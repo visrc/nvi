@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.14 1993/10/04 10:17:54 bostic Exp $ (Berkeley) $Date: 1993/10/04 10:17:54 $";
+static char sccsid[] = "$Id: util.c,v 8.15 1993/10/04 17:58:08 bostic Exp $ (Berkeley) $Date: 1993/10/04 17:58:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -425,4 +425,65 @@ set_alt_fname(sp, fname)
 		FREE(sp->alt_fname, strlen(sp->alt_fname));
 	if ((sp->alt_fname = strdup(fname)) == NULL)
 		msgq(sp, M_ERR, "Error: %s", strerror(errno));
+}
+
+/*
+ * baud_from_bval --
+ *	Return the baud rate using the standard defines.
+ */
+u_long
+baud_from_bval(sp)
+	SCR *sp;
+{
+	speed_t v;
+
+	switch (v = cfgetospeed(&sp->gp->original_termios)) {
+	case B50:
+		return (50);
+	case B75:
+		return (75);
+	case B110:
+		return (110);
+	case B134:
+		return (134);
+	case B150:
+		return (150);
+	case B200:
+		return (200);
+	case B300:
+		return (300);
+	case B600:
+		return (600);
+	case B1200:
+		return (1200);
+	case B1800:
+		return (1800);
+	case B2400:
+		return (2400);
+	case B4800:
+		return (4800);
+	case B0:				/* Hangup -- ignore. */
+	case B9600:
+		return (9600);
+	case B19200:
+		return (19200);
+	case B38400:
+		return (38400);
+	default:
+		/*
+		 * EXTA and EXTB aren't required by POSIX 1003.1, and
+		 * are almost certainly the same as some of the above
+		 * values, so they can't be part of the case statement.
+		 */
+#if EXTA
+		if (v == EXTA)
+			return (19200);
+#endif
+#if EXTB
+		if (v == EXTB)
+			return (38400);
+#endif
+		msgq(sp, M_ERR, "Unknown terminal baud rate %u.\n", v);
+		return (9600);
+	}
 }
