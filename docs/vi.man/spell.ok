@@ -5,8 +5,10 @@ COLUMNSXX
 Cscope
 Ds
 EXINIT
+Ee
 Ev
 Fa
+Ff
 Fl
 HUnhsh
 IPLPPPQPP
@@ -16,12 +18,15 @@ Lite
 NEXINIT
 NHSHH
 Nex
+Nn
 POSIX
+Pp
 QQ
 SIGWINCHXX
 Std
 Sy
 TMPDIR
+Tt
 USD
 Unmap
 VI
@@ -122,6 +127,7 @@ scr
 se
 searchincr
 sh
+shareware
 shellmeta
 shiftwidth
 showmatch
@@ -129,6 +135,7 @@ showmode
 sidescroll
 slowopen
 sm
+smd
 sourceany
 su
 sual
@@ -158,6 +165,7 @@ vi
 viu
 wa
 wi
+windowname
 wl
 wm
 wn
