@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.21 1993/08/29 11:27:56 bostic Exp $ (Berkeley) $Date: 1993/08/29 11:27:56 $";
+static char sccsid[] = "$Id: ex.c,v 8.22 1993/08/29 14:22:23 bostic Exp $ (Berkeley) $Date: 1993/08/29 14:22:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -270,11 +270,11 @@ cend:			if (p > cmd) {
 		if (term_push(sp, &sp->tty, arg1, arg1_len))
 			goto err;
 	}
-	if (F_ISSET(sp, S_MODE_VI) && term_push(sp, &sp->tty, ":", 1))
+	if (F_ISSET(sp, S_MODE_VI) && term_push(sp, &sp->tty, ":", 1)) {
 err:		TERM_KEY_FLUSH(sp);
 		msgq(sp, M_ERR, "Error: %s: remaining command input discarded",
 		    strerror(errno));
-
+	}
 	return (0);
 }
 
