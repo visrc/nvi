@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 8.25 1993/11/05 10:56:15 bostic Exp $ (Berkeley) $Date: 1993/11/05 10:56:15 $";
+static char sccsid[] = "$Id: vs_smap.c,v 8.26 1993/11/05 15:59:35 bostic Exp $ (Berkeley) $Date: 1993/11/05 15:59:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -536,9 +536,13 @@ svi_sm_up(sp, ep, rp, count, cursor_move)
 		return (0);
 
 	if (cursor_move) {
-		/* If we didn't move enough, head toward EOF. */
+		/*
+		 * If we didn't move enough, head toward EOF.  Check to make
+		 * sure the lines actually, if the file is smaller than the
+		 * screen they may not.
+		 */
 		for (; count; --count, ++p)
-			if (p == TMAP)
+			if (p == TMAP || !file_gline(sp, ep, p[1].lno, NULL))
 				break;
 	} else {
 		/*
