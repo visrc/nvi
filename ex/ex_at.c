@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_at.c,v 8.23 1994/05/21 09:38:03 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:38:03 $";
+static char sccsid[] = "$Id: ex_at.c,v 8.24 1994/07/01 20:53:28 bostic Exp $ (Berkeley) $Date: 1994/07/01 20:53:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -80,7 +80,7 @@ ex_at(sp, ep, cmdp)
 		if ((F_ISSET(cbp, CB_LMODE) ||
 		    tp->q.cqe_next != (void *)&cbp->textq) &&
 		    term_push(sp, "\n", 1, 0) ||
-		    term_push(sp, tp->lb, tp->len, CH_QUOTED))
+		    term_push(sp, tp->lb, tp->len, 0))
 			return (1);
 	return (0);
 }
