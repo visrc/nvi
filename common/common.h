@@ -1,19 +1,17 @@
-#include <errno.h>
-
 #include <sys/types.h>
+#include <errno.h>
 #include <fcntl.h>
 
-#ifndef O_BINARY
-#define O_BINARY	0
-#endif
-
 #include "curses.h"
+
+#define	BLKSIZE	2048
+#define	REG	register
+#define	UCHAR(c)	((u_char)(c))
 
 /*------------------------------------------------------------------------*/
 /* Miscellaneous constants.						  */
 
 #define INFINITY	2000000001L	/* a very large integer */
-#define LONGKEY		10		/* longest possible raw :map key */
 #ifndef MAXRCLEN
 # define MAXRCLEN	1000		/* longest possible .exrc file */
 #endif
@@ -69,10 +67,8 @@ extern struct _viflags
 extern char	U_text[BLKSIZE];
 extern long	U_line;
 
-/*------------------------------------------------------------------------*/
-/* These are used to refer to places in the text 			  */
+typedef long MARK;
 
-typedef long	MARK;
 #define markline(x)	(long)((x) / BLKSIZE)
 #define markidx(x)	(int)((x) & (BLKSIZE - 1))
 #define MARK_UNSET	((MARK)0)
@@ -237,123 +233,9 @@ extern char	digraph();
 
 
 /*------------------------------------------------------------------------*/
-/* These are used to handle EX commands.				  */
-
-#define  CMD_NULL	0	/* NOT A VALID COMMAND */
-#define  CMD_ABBR	1	/* "define an abbreviation" */
-#define  CMD_ARGS	2	/* "show me the args" */
-#define  CMD_APPEND	3	/* "insert lines after this line" */
-#define  CMD_AT		4	/* "execute a cut buffer's contents via EX" */
-#define  CMD_BANG	5	/* "run a single shell command" */
-#define  CMD_CC		6	/* "run `cc` and then do CMD_ERRLIST" */
-#define  CMD_CD		7	/* "change directories" */
-#define  CMD_CHANGE	8	/* "change some lines" */
-#define	 CMD_COLOR	9	/* "change the default colors" */
-#define  CMD_COPY	10	/* "copy the selected text to a given place" */
-#define  CMD_DELETE	11	/* "delete the selected text" */
-#define  CMD_DIGRAPH	12	/* "add a digraph, or display them all" */
-#define  CMD_EDIT	13	/* "switch to a different file" */
-#define  CMD_EQUAL	14	/* "display a line number" */
-#define  CMD_ERRLIST	15	/* "locate the next error in a list" */
-#define  CMD_FILE	16	/* "show the file's status" */
-#define  CMD_GLOBAL	17	/* "globally search & do a command" */
-#define  CMD_INSERT	18	/* "insert lines before the current line" */
-#define  CMD_JOIN	19	/* "join the selected line & the one after" */
-#define  CMD_LIST	20	/* "print lines, making control chars visible" */
-#define  CMD_MAKE	21	/* "run `make` and then do CMD_ERRLIST" */
-#define  CMD_MAP	22	/* "adjust the keyboard map" */
-#define  CMD_MARK	23	/* "mark this line" */
-#define  CMD_MKEXRC	24	/* "make a .exrc file" */
-#define  CMD_MOVE	25	/* "move the selected text to a given place" */
-#define  CMD_NEXT	26	/* "switch to next file in args" */
-#define  CMD_NUMBER	27	/* "print lines from the file w/ line numbers" */
-#define  CMD_PRESERVE	28	/* "act as though vi crashed" */
-#define  CMD_PREVIOUS	29	/* "switch to the previous file in args" */
-#define  CMD_PRINT	30	/* "print the selected text" */
-#define  CMD_PUT	31	/* "insert any cut lines before this line" */
-#define  CMD_QUIT	32	/* "quit without writing the file" */
-#define  CMD_READ	33	/* "append the given file after this line */
-#define  CMD_RECOVER	34	/* "recover file after vi crashes" - USE -r FLAG */
-#define  CMD_REWIND	35	/* "rewind to first file" */
-#define  CMD_SET	36	/* "set a variable's value" */
-#define  CMD_SHELL	37	/* "run some lines through a command" */
-#define  CMD_SHIFTL	38	/* "shift lines left" */
-#define  CMD_SHIFTR	39	/* "shift lines right" */
-#define  CMD_SOURCE	40	/* "interpret a file's contents as ex commands" */
-#define  CMD_STOP	41	/* same as CMD_SUSPEND */
-#define  CMD_SUBAGAIN	42	/* "repeat the previous substitution" */
-#define  CMD_SUBSTITUTE	43	/* "substitute text in this line" */
-#define  CMD_SUSPEND	44	/* "suspend the vi session" */
-#define  CMD_TR		45	/* "transliterate chars in the selected lines" */
-#define  CMD_TAG	46	/* "go to a particular tag" */
-#define  CMD_UNABBR	47	/* "remove an abbreviation definition" */
-#define  CMD_UNDO	48	/* "undo the previous command" */
-#define  CMD_UNMAP	49	/* "remove a key sequence map */
-#define  CMD_VERSION	50	/* "describe which version this is" */
-#define  CMD_VGLOBAL	51	/* "apply a cmd to lines NOT containing an RE" */
-#define  CMD_VISUAL	52	/* "go into visual mode" */
-#define  CMD_WQUIT	53	/* "write this file out (any case) & quit" */
-#define  CMD_WRITE	54	/* "write the selected(?) text to a given file" */
-#define  CMD_XIT	55	/* "write this file out (if modified) & quit" */
-#define  CMD_YANK	56	/* "copy the selected text into the cut buffer" */
-#ifdef DEBUG
-# define CMD_DEBUG	57	/* access to internal data structures */
-# define CMD_VALIDATE	58	/* check for internal consistency */
-#endif
-typedef int CMD;
 
 extern void	ex();
 extern void	vi();
-extern void	doexcmd();
-
-#ifndef NO_ABBR
-extern void	cmd_abbr();
-#endif
-extern void	cmd_append();
-#ifndef NO_AT
-extern void	cmd_at();
-#endif
-extern void	cmd_cd();
-#ifndef NO_COLOR
-extern void	cmd_color();
-#endif
-extern void	cmd_delete();
-#ifndef NO_DIGRAPH
-extern void	cmd_digraph();
-#endif
-extern void	cmd_edit();
-#ifndef NO_ERRLIST
-extern void	cmd_errlist();
-#endif
-extern void	cmd_file();
-extern void	cmd_global();
-extern void	cmd_join();
-extern void	cmd_mark();
-#ifndef NO_ERRLIST
-extern void	cmd_make();
-#endif
-extern void	cmd_map();
-#ifndef NO_MKEXRC
-extern void	cmd_mkexrc();
-#endif
-extern void	cmd_print();
-extern void	cmd_put();
-extern void	cmd_read();
-extern void	cmd_set();
-extern void	cmd_shell();
-extern void	cmd_shift();
-extern void	cmd_source();
-extern void	cmd_substitute();
-extern void	cmd_tag();
-extern void	cmd_undo();
-extern void	cmd_version();
-extern void	cmd_write();
-extern void	cmd_xit();
-extern void	cmd_move();
-#ifdef DEBUG
-extern void	cmd_debug();
-extern void	cmd_validate();
-#endif
 
 /*----------------------------------------------------------------------*/
 /* These are used to handle VI commands 				*/
@@ -427,12 +309,6 @@ extern int	V_linemd;
 extern MARK	v_start();
 #endif
 
-#ifdef DEBUG
-# define malloc dbmalloc
-# define free dbfree
-extern void *dbmalloc();
-#endif
-
 /*----------------------------------------------------------------------*/
 /* These are used to pass info about ^V quoting */
 #ifdef NO_QUOTE
@@ -445,7 +321,7 @@ extern void *dbmalloc();
   extern char	Qflags[132];
   extern char	*Qbase;
   extern int	Qlen;
-# define QSTART(base)	(Qbase = base, strncpy(Qflags, "", sizeof Qflags))
+# define QSTART(base)	(Qbase = base, bzero(Qflags, sizeof(Qflags)))
 # define QEND()		(Qlen = strlen(Qbase))
 # define QSET(addr)	(Qflags[(int)((addr) - Qbase)] = TRUE)
 # define QCLR(addr)	(Qflags[(int)((addr) - Qbase)] = FALSE)
@@ -455,4 +331,30 @@ extern void *dbmalloc();
 # define QTST(addr)	(((int)((addr) - Qbase) < Qlen && (int)((addr) - Qbase) > 0) ? QCHK(addr) : (abort(), 0))
 #else
 # define QTST(addr)	QCHK(addr)
+#endif
+
+#ifdef notdef
+/* Structure passed around to functions implementing ex commands. */
+typedef struct _cmdarg {
+	int addrcnt;		/* Address count. */
+	CMDLIST *cmd;		/* Command structure. */
+	MARK addr1;		/* 1st address. */
+	MARK addr2;		/* 2nd address. */
+	int force;		/* If command is forced. */
+	int argc;		/* Argument count. */
+	char **argv;		/* Arguments. */
+} CMDARG;
+
+extern char *defcmdarg[2];
+
+/* Macro to set up the structure. */
+#define	SETCMDARG(s, _addrcnt, _addr1, _addr2, _force, _arg) { \
+	s.addrcnt = (_addrcnt); \
+	s.addr1 = (_addr1); \
+	s.addr2 = (_addr2); \
+	s.force = (_force); \
+	s.argc = _arg ? 1 : 0; \
+	s.argv = defcmdarg; \
+	defcmdarg[0] = _arg; \
+}
 #endif
