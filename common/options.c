@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.45 1994/03/17 15:37:22 bostic Exp $ (Berkeley) $Date: 1994/03/17 15:37:22 $";
+static char sccsid[] = "$Id: options.c,v 8.46 1994/03/19 15:41:43 bostic Exp $ (Berkeley) $Date: 1994/03/19 15:41:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -260,10 +260,10 @@ opts_init(sp)
 		else if (op->type == OPT_1BOOL)
 			O_SET(sp, cnt);
 
-	if ((s = getenv("CDPATH")) != NULL) {
-		(void)snprintf(b1, sizeof(b1), "cdpath=%s", s);
-		SET_DEF(O_CDPATH, b1);
-	}
+	(void)snprintf(b1, sizeof(b1), "cdpath=%s",
+	    (s = getenv("CDPATH")) == NULL ? s : ".");
+	SET_DEF(O_CDPATH, b1);
+
 	/*
 	 * !!!
 	 * Vi historically stored temporary files in /var/tmp.  We store them
@@ -283,16 +283,16 @@ opts_init(sp)
 	(void)snprintf(b1, sizeof(b1), "scroll=%ld", O_VAL(sp, O_LINES) / 2);
 	SET_DEF(O_SCROLL, b1);
 	SET_DEF(O_SECTIONS, "sections=NHSHH HUnhsh");
-	(void)snprintf(b1, sizeof(b1),
-	    "shell=%s", (s = getenv("SHELL")) == NULL ? _PATH_BSHELL : s);
+	(void)snprintf(b1, sizeof(b1), "shell=%s",
+	    (s = getenv("SHELL")) == NULL ? _PATH_BSHELL : s);
 	SET_DEF(O_SHELL, b1);
 	SET_DEF(O_SHIFTWIDTH, "shiftwidth=8");
 	SET_DEF(O_SIDESCROLL, "sidescroll=16");
 	SET_DEF(O_TABSTOP, "tabstop=8");
 	(void)snprintf(b1, sizeof(b1), "tags=%s", _PATH_TAGS);
 	SET_DEF(O_TAGS, b1);
-	(void)snprintf(b1, sizeof(b1),
-	    "term=%s", (s = getenv("TERM")) == NULL ? "unknown" : s);
+	(void)snprintf(b1, sizeof(b1), "term=%s",
+	    (s = getenv("TERM")) == NULL ? "unknown" : s);
 	SET_DEF(O_TERM, b1);
 
 	/*
