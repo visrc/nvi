@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 10.24 1995/11/07 20:29:08 bostic Exp $ (Berkeley) $Date: 1995/11/07 20:29:08 $";
+static char sccsid[] = "$Id: v_txt.c,v 10.25 1995/11/08 10:03:50 bostic Exp $ (Berkeley) $Date: 1995/11/08 10:03:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -115,7 +115,8 @@ v_tcmd(sp, vp, prompt, flags)
 	/* Don't update the modeline for now. */
 	F_SET(sp, S_INPUT_INFO);
 
-	LF_SET(TXT_APPENDEOL | TXT_CR | TXT_ESCAPE | TXT_INFOLINE);
+	LF_SET(TXT_APPENDEOL |
+	    TXT_CR | TXT_ESCAPE | TXT_INFOLINE | TXT_MAPINPUT);
 	if (O_ISSET(sp, O_ALTWERASE))
 		LF_SET(TXT_ALTWERASE);
 	if (O_ISSET(sp, O_TTYWERASE))
