@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 8.10 1993/09/08 17:20:17 bostic Exp $ (Berkeley) $Date: 1993/09/08 17:20:17 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 8.11 1993/09/08 18:06:59 bostic Exp $ (Berkeley) $Date: 1993/09/08 18:06:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -223,7 +223,7 @@ EXCMDLIST const cmds[] = {
 	    "", 	"version"},
 /* C_VISUAL_EX */
 	{"visual",	ex_visual,	E_ADDR1|E_NOGLOBAL|E_NORC,
-	    "2c1", 	"[line] vi[sual] [-|^|.] [window_size] [flags]"},
+	    "2c1", 	"[line] vi[sual] [-|.|+|^] [window_size] [flags]"},
 /* C_VISUAL_VI */
 	{"visual",	ex_edit,	E_NOGLOBAL|E_NORC,
 	    "!+f1o",	"vi[sual][!] [+cmd] [file]"},
