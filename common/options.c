@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: options.c,v 10.44 1996/06/17 11:10:16 bostic Exp $ (Berkeley) $Date: 1996/06/17 11:10:16 $";
+static const char sccsid[] = "$Id: options.c,v 10.45 1996/06/26 10:54:24 bostic Exp $ (Berkeley) $Date: 1996/06/26 10:54:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -256,6 +256,7 @@ static OABBREV const abbrev[] = {
 	{"sh",		O_SHELL},		/*     4BSD */
 	{"slow",	O_SLOWOPEN},		/*     4BSD */
 	{"sm",		O_SHOWMATCH},		/*     4BSD */
+	{"smd",		O_SHOWMODE},		/*     4BSD */
 	{"sw",		O_SHIFTWIDTH},		/*     4BSD */
 	{"tag",		O_TAGS},		/*     4BSD (undocumented) */
 	{"tl",		O_TAGLENGTH},		/*     4BSD */
