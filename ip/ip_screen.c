@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_screen.c,v 8.1 1996/09/20 19:36:06 bostic Exp $ (Berkeley) $Date: 1996/09/20 19:36:06 $";
+static const char sccsid[] = "$Id: ip_screen.c,v 8.2 1996/10/13 15:41:20 bostic Exp $ (Berkeley) $Date: 1996/10/13 15:41:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,10 +31,19 @@ ip_screen(sp, flags)
 	SCR *sp;
 	u_int32_t flags;
 {
+	GS *gp;
 	IP_PRIVATE *ipp;
 
+	gp = sp->gp;
 	ipp = IPP(sp);
 
+	/* See if the current information is incorrect. */
+	if (F_ISSET(gp, G_SRESTART)) {
+		if (ip_quit(gp))
+			return (1);
+		F_CLR(gp, G_SRESTART);
+	}
+	
 	/* See if we're already in the right mode. */
 	if (LF_ISSET(SC_VI) && F_ISSET(ipp, IP_SCR_VI_INIT))
 		return (0);
