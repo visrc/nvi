@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: conv.c,v 1.17 2001/06/03 20:01:13 skimo Exp $ (Berkeley) $Date: 2001/06/03 20:01:13 $";
+static const char sccsid[] = "$Id: conv.c,v 1.18 2001/06/03 20:43:28 skimo Exp $ (Berkeley) $Date: 2001/06/03 20:43:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -259,7 +259,7 @@ int
 default_int2disp (SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw, 
 		size_t *tolen, char **dst)
 {
-    dst = str;
+    *dst = str;
     *tolen = len;
 
     return 0;
