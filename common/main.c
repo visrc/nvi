@@ -18,7 +18,7 @@ static const char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static const char sccsid[] = "$Id: main.c,v 10.31 1996/03/19 19:54:26 bostic Exp $ (Berkeley) $Date: 1996/03/19 19:54:26 $";
+static const char sccsid[] = "$Id: main.c,v 10.32 1996/03/28 21:04:52 bostic Exp $ (Berkeley) $Date: 1996/03/28 21:04:52 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -436,6 +436,20 @@ v_end(gp)
 		(void)screen_end(sp);
 	while ((sp = gp->hq.cqh_first) != (void *)&gp->hq)
 		(void)screen_end(sp);
+
+	/*
+	 * Call perl_run and perl_destuct to call END blocks and DESTROY
+	 * method.
+	 */
+#ifdef HAVE_PERL_INTERP
+	if (gp->perl_interp) {
+		perl_run(gp->perl_interp);
+		perl_destruct(gp->perl_interp);
+#if defined(DEBUG) || defined(PURIFY) || defined(LIBRARY)
+		perl_free(gp->perl_interp);
+#endif
+	}
+#endif /* HAVE_PERL_INTERP */
 
 #if defined(DEBUG) || defined(PURIFY) || defined(LIBRARY)
 	{ FREF *frp;
