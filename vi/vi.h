@@ -3,6 +3,8 @@
  * All rights reserved.
  *
  * %sccs.include.redist.c%
+ *
+ *	$Id: vi.h,v 5.2 1992/04/18 19:40:45 bostic Exp $ (Berkeley) $Date: 1992/04/18 19:40:45 $
  */
 
 MARK	v_again __P((MARK, MARK));
