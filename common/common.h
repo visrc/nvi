@@ -4,13 +4,15 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 5.25 1992/06/07 16:47:02 bostic Exp $ (Berkeley) $Date: 1992/06/07 16:47:02 $
+ *	$Id: common.h,v 5.26 1992/08/22 19:18:25 bostic Exp $ (Berkeley) $Date: 1992/08/22 19:18:25 $
  */
 
 #include <db.h>				/* XXX for rptlines, below */
 
 #define	ESCAPE	'\033'			/* Escape character. */
 #define	TAB	8			/* XXX -- Settable? */
+
+enum direction { FORWARD, BACKWARD };	/* Direction type. */
 
 /* misc housekeeping variables & functions				  */
 
