@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_msg.c,v 10.14 1995/09/29 18:28:21 bostic Exp $ (Berkeley) $Date: 1995/09/29 18:28:21 $";
+static char sccsid[] = "$Id: vs_msg.c,v 10.15 1995/09/30 10:40:57 bostic Exp $ (Berkeley) $Date: 1995/09/30 10:40:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,18 +40,18 @@ static void	vs_scroll __P((SCR *, CHAR_T *, u_int));
  *	Display, update or clear a busy message.
  *
  * This routine is the default editor interface for vi busy messages.  It
- * implements the curses strategy of stealing lines from the bottom of the vi
- * text screen.  Screens using an alternate method of displaying busy messages,
- * e.g. X11 clock icons, should set their scr_busy function to the correct
- * function before calling the editor.
+ * implements a standard strategy of stealing lines from the bottom of the
+ * vi text screen.  Screens using an alternate method of displaying busy
+ * messages, e.g. X11 clock icons, should set their scr_busy function to the
+ * correct function before calling the main editor routine.
  *
- * PUBLIC: int vs_busy __P((SCR *, const char *, int));
+ * PUBLIC: int vs_busy __P((SCR *, const char *, busy_t));
  */
 int
-vs_busy(sp, msg, on)
+vs_busy(sp, msg, btype)
 	SCR *sp;
 	const char *msg;
-	int on;
+	busy_t btype;
 {
 	GS *gp;
 	VI_PRIVATE *vip;
@@ -64,87 +64,103 @@ vs_busy(sp, msg, on)
 	if (F_ISSET(sp, S_EX))
 		return (0);
 
+	gp = sp->gp;
+	vip = VIP(sp);
+
 	/*
-	 * Most of this routine is to deal with the default screen sharing real
-	 * estate between the editor text and the busy messages.  Logically,
+	 * Most of this routine is to deal with the screen sharing real estate
+	 * between the normal edit messages and the busy messages.  Logically,
 	 * all that's needed is something that puts up a message, periodically
 	 * updates it, and then goes away.
 	 */
-	gp = sp->gp;
-	vip = VIP(sp);
-	if (on) {
-		/* If the message line is in use, do nothing. */
-		if (vip->totalcount != 0)
+	switch (btype) {
+	case BUSY_ON:
+		++vip->busy_ref;
+		if (vip->totalcount != 0 || vip->busy_ref != 1)
+			break;
+
+		/* Initialize state for updates. */
+		vip->busy_ch = 0;
+		(void)gettimeofday(&vip->busy_tv, NULL);
+
+		/* Display the busy message. */
+		p = msg_cat(sp, msg, &len);
+		(void)gp->scr_move(sp, LASTLINE(sp), 0);
+		(void)gp->scr_addstr(sp, p, len);
+		(void)gp->scr_cursor(sp, &notused, &vip->busy_fx);
+		(void)gp->scr_clrtoeol(sp);
+		(void)gp->scr_move(sp, LASTLINE(sp), vip->busy_fx);
+		break;
+	case BUSY_OFF:
+		--vip->busy_ref;
+		if (vip->totalcount != 0 || vip->busy_ref != 0)
+			break;
+
+		/* Clear the line and return to the original position. */
+		(void)gp->scr_move(sp, LASTLINE(sp), 0);
+		(void)gp->scr_clrtoeol(sp);
+		break;
+	case BUSY_UPDATE:
+		if (vip->totalcount != 0 || vip->busy_ref == 0)
+			break;
+
+		/* Update no more than every 1/4 of a second. */
+		(void)gettimeofday(&tv, NULL);
+		if (((tv.tv_sec - vip->busy_tv.tv_sec) * 1000000 +
+		    (tv.tv_usec - vip->busy_tv.tv_usec)) < 4000)
 			return (0);
 
-		switch (vip->busy_state) {
-		case BUSY_OFF:
-			/*
-			 * Save the current cursor position and move to the
-			 * info line.
-			 */
-			(void)gp->scr_cursor(sp, &vip->busy_y, &vip->busy_x);
-			(void)gp->scr_move(sp, LASTLINE(sp), 0);
-			(void)gp->scr_cursor(sp, &vip->busy_y, &vip->busy_fx);
-
-			/* If there's no message, just rest the cursor. */
-			if (msg == NULL) {
-				vip->busy_state = BUSY_SILENT;
-				(void)gp->scr_refresh(sp, 0);
-				break;
-			}
-
-			/* Display the busy message. */
-			p = msg_cat(sp, msg, &len);
-			(void)gp->scr_addstr(sp, p, len);
-			(void)gp->scr_cursor(sp, &notused, &vip->busy_fx);
-			(void)gp->scr_clrtoeol(sp);
-			(void)gp->scr_move(sp, LASTLINE(sp), vip->busy_fx);
-
-			/* Initialize state for updates. */
+		/* Display the update. */
+		if (vip->busy_ch == sizeof(flagc))
 			vip->busy_ch = 0;
-			(void)gettimeofday(&vip->busy_tv, NULL);
-
-			/* Update the state. */
-			vip->busy_state = BUSY_ON;
-			(void)gp->scr_refresh(sp, 0);
-			break;
-		case BUSY_ON:
-			/* Update no more than every 1/4 of a second. */
-			(void)gettimeofday(&tv, NULL);
-			if (((tv.tv_sec - vip->busy_tv.tv_sec) * 1000000 +
-			    (tv.tv_usec - vip->busy_tv.tv_usec)) < 4000)
-				return (0);
-
-			/* Display the update. */
-			if (vip->busy_ch == sizeof(flagc))
-				vip->busy_ch = 0;
-			(void)gp->scr_move(sp, LASTLINE(sp), vip->busy_fx);
-			(void)gp->scr_addstr(sp, flagc + vip->busy_ch++, 1);
-			(void)gp->scr_move(sp, LASTLINE(sp), vip->busy_fx);
-
-			(void)gp->scr_refresh(sp, 0);
-			break;
-		case BUSY_SILENT:
-			break;
-		}
-	} else
-		switch (vip->busy_state) {
-		case BUSY_OFF:
-			break;
-		case BUSY_ON:
-			/* If the message line not in use, clear the line. */
-			if (vip->totalcount == 0) {
-				(void)gp->scr_move(sp, LASTLINE(sp), 0);
-				(void)gp->scr_clrtoeol(sp);
-			}
-			/* FALLTHROUGH */
-		case BUSY_SILENT:
-			vip->busy_state = BUSY_OFF;
-			(void)gp->scr_move(sp, vip->busy_y, vip->busy_x);
-			(void)gp->scr_refresh(sp, 0);
-		}
+		(void)gp->scr_move(sp, LASTLINE(sp), vip->busy_fx);
+		(void)gp->scr_addstr(sp, flagc + vip->busy_ch++, 1);
+		(void)gp->scr_move(sp, LASTLINE(sp), vip->busy_fx);
+		break;
+	}
+	(void)gp->scr_refresh(sp, 0);
 	return (0);
+}
+
+/*
+ * vs_update --
+ *	Update a command.
+ *
+ * PUBLIC: int vs_update __P((SCR *, char *));
+ */
+void
+vs_update(sp, cmd, len)
+	SCR *sp;
+	char *cmd;
+	size_t len;
+{
+	GS *gp;
+
+	if (!F_ISSET(sp, S_SCREEN_READY))
+		return;
+
+	if (F_ISSET(sp, S_EX)) {
+		(void)ex_printf(sp, "%.*s\n", (int)len, cmd);
+		(void)ex_fflush(sp);
+	}
+	/*
+	 * When the ex read and ! commands are changed during expansion, they
+	 * are supposed to be redisplayed.  This is the special purpose hook
+	 * to make it happen.
+	 */
+	gp = sp->gp;
+	(void)gp->scr_move(sp, LASTLINE(sp), 0);
+
+	/*
+	 * XXX
+	 * Don't let long file names screw up the screen.
+	 */
+	if (len > sp->cols - 1)
+		len = sp->cols - 1;
+	(void)gp->scr_addstr(sp, cmd, len);
+
+	(void)gp->scr_clrtoeol(sp);
+	(void)sp->gp->scr_refresh(sp, 0);
 }
 
 /*
