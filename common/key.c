@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 10.23 1996/02/25 18:21:50 bostic Exp $ (Berkeley) $Date: 1996/02/25 18:21:50 $";
+static char sccsid[] = "$Id: key.c,v 10.24 1996/02/25 20:05:29 bostic Exp $ (Berkeley) $Date: 1996/02/25 20:05:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,7 +31,7 @@ static char sccsid[] = "$Id: key.c,v 10.23 1996/02/25 18:21:50 bostic Exp $ (Ber
 static int	v_event_append __P((SCR *, EVENT *));
 static int	v_event_grow __P((SCR *, int));
 static int	v_key_cmp __P((const void *, const void *));
-static void	v_keyval __P((SCR *, scr_keyval_t, int));
+static void	v_keyval __P((SCR *, int, scr_keyval_t));
 static void	v_sync __P((SCR *, int));
 
 /*
@@ -126,10 +126,10 @@ v_key_init(sp)
 #endif
 	v_key_ilookup(sp);
 
-	v_keyval(sp, KEY_VEOF, K_CNTRLD);
-	v_keyval(sp, KEY_VERASE, K_VERASE);
-	v_keyval(sp, KEY_VKILL, K_VKILL);
-	v_keyval(sp, KEY_VWERASE, K_VWERASE);
+	v_keyval(sp, K_CNTRLD, KEY_VEOF);
+	v_keyval(sp, K_VERASE, KEY_VERASE);
+	v_keyval(sp, K_VKILL, KEY_VKILL);
+	v_keyval(sp, K_VWERASE, KEY_VWERASE);
 
 	/* Sort the special key list. */
 	qsort(keylist, nkeylist, sizeof(keylist[0]), v_key_cmp);
@@ -164,10 +164,10 @@ v_key_init(sp)
  * in the table, so we check for that first.
  */
 static void
-v_keyval(sp, name, val)
+v_keyval(sp, val, name)
 	SCR *sp;
-	scr_keyval_t name;
 	int val;
+	scr_keyval_t name;
 {
 	KEYLIST *kp;
 	CHAR_T ch;
