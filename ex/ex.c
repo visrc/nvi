@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.40 1992/11/01 22:49:35 bostic Exp $ (Berkeley) $Date: 1992/11/01 22:49:35 $";
+static char sccsid[] = "$Id: ex.c,v 5.41 1992/11/06 18:05:35 bostic Exp $ (Berkeley) $Date: 1992/11/06 18:05:35 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -674,7 +674,7 @@ linespec(cmd, cp)
 			sm.lno = curf->lno;
 			sm.cno = curf->cno;
 			if ((mp = f_search(curf,
-			    &sm, cmd, &ep, SEARCH_PARSE)) == NULL)
+			    &sm, cmd, &ep, SEARCH_MSG | SEARCH_PARSE)) == NULL)
 				return (NULL);
 			curf->lno = mp->lno;
 			curf->cno = mp->cno;
@@ -684,7 +684,7 @@ linespec(cmd, cp)
 			sm.lno = curf->lno;
 			sm.cno = curf->cno;
 			if ((mp = b_search(curf,
-			    &sm, cmd, &ep, SEARCH_PARSE)) == NULL)
+			    &sm, cmd, &ep, SEARCH_MSG | SEARCH_PARSE)) == NULL)
 				return (NULL);
 			curf->lno = mp->lno;
 			curf->cno = mp->cno;
@@ -898,7 +898,7 @@ fileexpand(gp, word, wordlen)
 			len += curf->nlen;
 		} else {
 			if (ep == NULL)
-				ep = file_prev(curf);
+				ep = file_prev(curf, 0);
 			if (ep == NULL || ep->flags & F_NONAME) {
 				msg("No filename to substitute for #.");
 				return (1);
