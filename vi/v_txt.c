@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 10.13 1995/09/29 09:19:30 bostic Exp $ (Berkeley) $Date: 1995/09/29 09:19:30 $";
+static char sccsid[] = "$Id: v_txt.c,v 10.14 1995/09/29 10:29:11 bostic Exp $ (Berkeley) $Date: 1995/09/29 10:29:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1812,16 +1812,17 @@ txt_fc(sp, tp, redrawp)
 {
 	struct stat sb;
 	ARGS **argv, *ap[2], a;
-	CHAR_T s1, s2;
+	CHAR_T s_ch;
 	EXCMD cmd;
 	size_t indx, len, nlen, off;
 	int argc, trydir;
 	char *p, *t;
 
+	trydir = 0;
 	*redrawp = 0;
 
 	/* Find the beginning of this "word". */
-	for (off = sp->cno - 1, p = tp->lb + off, len = 0;; --p, --off) {
+retry:	for (off = sp->cno - 1, p = tp->lb + off, len = 0;; --p, --off) {
 		if (isblank(*p)) {
 			++p;
 			break;
@@ -1836,51 +1837,50 @@ txt_fc(sp, tp, redrawp)
 	}
 
 	/*
-	 * Get space for a slash and a wildcard character.
+	 * Get enough space for a wildcard character.
 	 *
 	 * XXX
 	 * This won't work for "foo\", since the \ will escape the expansion
 	 * character.  I'm not sure if that's a bug or not...
 	 */
-	BINC_RET(sp, tp->lb, tp->lb_len, tp->len + 2);
-	s1 = p[len];
-	s2 = p[len + 1];
+	off = p - tp->lb;
+	BINC_RET(sp, tp->lb, tp->lb_len, tp->len + 1);
+	p = tp->lb + off;
+
+	s_ch = p[len];
 	p[len] = '*';
-	trydir = 0;
 
 	/* Build an ex command, and call the ex expansion routines. */
-dir:	ex_cbuild(&cmd, 0, 0, OOBLNO, OOBLNO, 0, ap, &a, NULL);
+	ex_cbuild(&cmd, 0, 0, OOBLNO, OOBLNO, 0, ap, &a, NULL);
 	if (argv_init(sp, &cmd))
 		return (1);
-	(void)argv_exp2(sp, &cmd, p, len + (trydir ? 2 : 1));
+	(void)argv_exp2(sp, &cmd, p, len + 1);
 	argc = cmd.argc;
 	argv = cmd.argv;
 
-	p[len] = s1;
-	p[len + 1] = s2;
+	p[len] = s_ch;
 
 	switch (argc) {
 	case 0:				/* No matches. */
-		(void)sp->gp->scr_bell(sp);
+		if (!trydir)
+			(void)sp->gp->scr_bell(sp);
 		return (0);
 	case 1:				/* One match. */
+		/* If something changed, do the exchange. */
 		nlen = strlen(cmd.argv[0]->bp);
-
-		/*
-		 * If we just found what the user specified, ring the bell so
-		 * they know nothing is changing.  However, if they specified
-		 * a directory, put a slash on it and retry.
-		 */
-		if (trydir || len != nlen || memcmp(cmd.argv[0]->bp, p, len))
+		if (len != nlen || memcmp(cmd.argv[0]->bp, p, len))
 			break;
-		if (!stat(cmd.argv[0]->bp, &sb) && S_ISDIR(sb.st_mode)) {
-			p[len] = '/';
-			p[len + 1] = '*';
-			trydir = 1;
-			goto dir;
+
+		/* If haven't done a directory test, do it now. */
+		if (!trydir &&
+		    !stat(cmd.argv[0]->bp, &sb) && S_ISDIR(sb.st_mode)) {
+			p += len;
+			goto isdir;
 		}
-				
-		(void)sp->gp->scr_bell(sp);
+			
+		/* If nothing changed, period, ring the bell. */
+		if (!trydir)
+			(void)sp->gp->scr_bell(sp);
 		return (0);
 	default:			/* Multiple matches. */
 		*redrawp = 1;
@@ -1902,15 +1902,13 @@ dir:	ex_cbuild(&cmd, 0, 0, OOBLNO, OOBLNO, 0, ap, &a, NULL);
 	}
 
 	/* Overwrite the expanded text first. */
-	for (p = tp->lb + off + 1,
-	    t = cmd.argv[0]->bp; len &&  nlen; --len, --nlen)
+	for (t = cmd.argv[0]->bp; len &&  nlen; --len, --nlen)
 		*p++ = *t++;
 
 	/* If lost text, make the remaining old text overwrite characters. */
 	if (len) {
 		sp->cno -= len;
 		tp->owrite += len;
-		return (0);
 	}
 
 	/* Overwrite any overwrite characters next. */
@@ -1927,9 +1925,27 @@ dir:	ex_cbuild(&cmd, 0, 0, OOBLNO, OOBLNO, 0, ap, &a, NULL);
 		sp->cno += nlen;
 		tp->len += nlen;
 
-		(void)memmove(p + nlen, p, nlen);
+		if (tp->insert)
+			(void)memmove(p + nlen, p, tp->insert);
 		while (nlen--)
 			*p++ = *t++;
+	}
+
+	/* If a single match and it's a directory, retry it. */
+	if (argc == 1 && !stat(cmd.argv[0]->bp, &sb) && S_ISDIR(sb.st_mode)) {
+isdir:		off = p - tp->lb;
+		BINC_RET(sp, tp->lb, tp->lb_len, tp->len + 1);
+		p = tp->lb + off;
+
+		if (!tp->owrite && tp->insert)
+			(void)memmove(p + 1, p, tp->insert);
+
+		++sp->cno;
+		++tp->len;
+		*p++ = '/';
+
+		trydir = 1;
+		goto retry;
 	}
 	return (0);
 }
