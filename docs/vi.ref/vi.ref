@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.32 1994/05/23 14:33:10 bostic Exp $ (Berkeley) $Date: 1994/05/23 14:33:10 $
+.\"     $Id: vi.ref,v 8.33 1994/05/23 15:31:12 bostic Exp $ (Berkeley) $Date: 1994/05/23 15:31:12 $
 .\"
 .Dd "%Q%"
 .Dt "EX/VI REFERENCE MANUAL" 1
@@ -92,7 +92,7 @@ in a startup file or environmental variable.
 First, the file
 .Pa /etc/vi.exrc
 is read, as long as it is owned by root or the effective user ID
-of the user running vi.
+of the user.
 .Pp
 Second, the environmental variable
 .Ev NEXINIT
@@ -115,7 +115,7 @@ environmental variable is set, the file
 if
 .Pa $HOME/.nexrc
 doesn't exist) is read, as long as the effective user ID of the user
-running vi is root or is the same as the owner of the file.
+is root or is the same as the owner of the file.
 .Pp
 Fourth, if the
 .Sy exrc
@@ -127,7 +127,7 @@ sources, the file
 if
 .Pa .nexrc
 doesn't exist) is read, as long as the effective user ID of the user
-running vi is the same as the owner of the file.
+is the same as the owner of the file.
 .Pp
 No startup file is read if it is writable by anyone other than its owner.
 It is not an error for any of the startup environmental variables
@@ -232,7 +232,6 @@ option of
 A simple way to do this is to insert the following script into your
 .Pa /etc/rc.local
 (or other startup) file:
-.sp
 .ne 8v
 .Bd -literal -offset indent -compact
 # Recover nvi editor files.
@@ -971,33 +970,30 @@ Some of the more interesting of those features are as follows:
 will edit any format file.
 Line lengths are limited by available memory,
 and file sizes are limited by available disk space.
-The command
-.Dq Li "<control-X>[0-9A-Fa-f]* ,"
-in input mode, will insert any legal character value into the text.
-.It "Split screens"
-The command
-.Dq ":sp[lit] [file ...]"
-splits the screen in
+The
 .Nm \&vi
-mode.
+input mode command
+.Sy <control-X>
+can insert any possible character value into the text.
+.It "Split screens"
+The
+.Sy split
+command divides the screen into multiple editing regions.
 The key
-.Li <control-W>
-switches between the foreground screens,
-and the
-.Dq ":resize count"
+.Sy <control-W>
+command rotates between the foreground screens.
+The
+.Sy resize
 command can be used to grow or shrink a particular screen.
 .It "Background and foreground screens"
-The command
-.Dq ":bg"
-backgrounds the current screen,
-and the command
-.Dq ":fg [file]"
-foregrounds the backgrounded screen
-that is editing the specified file,
-or, by default, the first background screen on the queue.
-The command
-.Dq ":di[splay] s[creens]"
-lists the background screens.
+The
+.Sy bg
+command backgrounds the current screen, and the
+.Sy fg
+command foregrounds backgrounded screens.
+The
+.Sy display
+command can be used to list the background screens.
 .\".It "Shell screens"
 .\"The command
 .\".Dq ":sc[ript] [file ...]"
@@ -1008,27 +1004,27 @@ lists the background screens.
 .\"shell.
 .It "Tag stacks"
 Tags are now maintained in a stack.
-The command
-.Li <control-T>
-returns to the previous tag location.
-The command
-.Dq ":tagpop [number \| file]"
-returns to the most recent tag location by default,
-or, optionally to a specific tag number in the tag stack,
-or the most recent tag from the specified file.
-Use the command
-.Dq ":di[splay] t[ags]"
-to view the tags stack.
-The command
-.Dq ":tagtop"
-returns to the top of the tag stack.
+The
+.Sy <control-T>
+command returns to the previous tag location.
+The
+.Sy tagpop
+command returns to the most recent tag location by default, or,
+optionally to a specific tag number in the tag stack,
+or the most recent tag from a specified file.
+The
+.Sy display
+command can be used to list the tags stack.
+The
+.Sy tagtop
+command returns to the top of the tag stack.
 .It "New displays"
-The command
-.Dq ":di[splay] b[uffers] \| s[creens] \| t[ags]"
-can be used to display, respectively, the current cut buffers,
-the backgrounded screens, and the tags stack.
+The
+.Sy display
+command can be used to display the current buffers, the backgrounded
+screens, and the tags stack.
 .It "Infinite undo"
-The changes made during an edit session may be rolled backward and forward.
+Changes made during an edit session may be rolled backward and forward.
 A
 .Sy \&.
 command immediately after a
@@ -1038,9 +1034,9 @@ command continues either forward or backward depending on whether the
 command was an undo or a redo.
 .It "Usage information"
 The
-.Dq ":exu[sage] [cmd]"
+.Sy exusage
 and
-.Dq "viu[sage] [key]"
+.Sy viusage
 commands provide usage information for all of the
 .Nm \&ex
 and
@@ -1048,28 +1044,28 @@ and
 commands by default, or, optionally, for a specific command or key.
 .It "Extended Regular Expressions"
 The
-.Dq ":set extended"
-option causes regular expressions to be interpreted as as extended (i.e.
+.Sy extended
+option causes Regular Expressions to be interpreted as as Extended
+Regular Expressions, (i.e.
 .Xr egrep 1
-style) regular expressions.
+style expressions).
 .It "Word search"
-The command
-.Li <control-A>
-searches for the word referenced by the cursor.
+The
+.Sy <control-A>
+command searches for the word referenced by the cursor.
 .It "Number increment"
-The command
-.Dq "#"
-increments the number referenced by the cursor.
+The
+.Sy \&#
+command increments the number referenced by the cursor.
 .It "Previous file"
-The command
-.Dq ":prev[ious][!]"
-edits the previous file from the
-argument list.
-.It "Left-Right scrolling"
-The command
-.Dq ":set leftright"
-makes
+The
+.Sy previous
+command edits the previous file from the argument list.
+.It "Left-right scrolling"
+The
+.Sy leftright
+option causes
 .Nm nvi
-do left-right screen scrolling, instead of the traditional
+to do left-right screen scrolling, instead of the traditional
 .Nm \&vi
 line wrapping.
