@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_delete.c,v 8.3 1993/09/01 12:17:21 bostic Exp $ (Berkeley) $Date: 1993/09/01 12:17:21 $";
+static char sccsid[] = "$Id: v_delete.c,v 8.4 1993/09/01 16:28:22 bostic Exp $ (Berkeley) $Date: 1993/09/01 16:28:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -85,10 +85,11 @@ v_delete(sp, ep, vp, fm, tm, rp)
 	 * else, leave the cursor where it started.  Always correct for EOL.
 	 *
 	 * The historic vi would delete the line the cursor was on (even if
-	 * not in line mode) if the motion was past the end-of-file and the
-	 * cursor didn't originate on the last line of the file.  We never
-	 * delete the line the cursor is on -- we'd have to pass a flag down
-	 * to the delete() routine which would have to special case it.
+	 * not in line mode) if the motion from the cursor was past the EOF
+	 * and the cursor didn't originate on the last line of the file.  A
+	 * strange special case.  We never delete the line the cursor is on.
+	 * We'd have to pass a flag down to the delete() routine which would
+	 * have to special case it.
 	 */
 	if (lmode) {
 		rp->lno = MIN(fm->lno, tm->lno);
