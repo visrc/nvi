@@ -4,8 +4,10 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.69 1994/08/04 14:23:01 bostic Exp $ (Berkeley) $Date: 1994/08/04 14:23:01 $
+ *	$Id: ex.h,v 8.70 1994/08/07 12:30:39 bostic Exp $ (Berkeley) $Date: 1994/08/07 12:30:39 $
  */
+
+#define	PROMPTCHAR	':'		/* Prompt character. */
 
 /* Ex command structure. */
 typedef struct _excmdlist {
