@@ -4,19 +4,33 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: mem.h,v 8.6 1994/06/20 17:01:45 bostic Exp $ (Berkeley) $Date: 1994/06/20 17:01:45 $
+ *	$Id: mem.h,v 8.7 1994/08/15 19:45:34 bostic Exp $ (Berkeley) $Date: 1994/08/15 19:45:34 $
  */
 
 /* Increase the size of a malloc'd buffer.  Two versions, one that
  * returns, one that jumps to an error label.
  */
 #define	BINC_GOTO(sp, lp, llen, nlen) {					\
-	if ((nlen) > llen && binc(sp, &(lp), &(llen), nlen))		\
+	void *__bincp;							\
+	if ((nlen) > llen &&						\
+	    (__bincp = binc(sp, lp, &(llen), nlen)) == NULL)		\
 		goto binc_err;						\
+	/*								\
+	 * !!!								\
+	 * Possible conversion, e.g. Data General MV-series boxes.	\
+	 */								\
+	lp = __bincp;							\
 }
 #define	BINC_RET(sp, lp, llen, nlen) {					\
-	if ((nlen) > llen && binc(sp, &(lp), &(llen), nlen))		\
+	void *__bincp;							\
+	if ((nlen) > llen &&						\
+	    (__bincp = binc(sp, lp, &(llen), nlen)) == NULL)		\
 		return (1);						\
+	/*								\
+	 * !!!								\
+	 * Possible conversion, e.g. Data General MV-series boxes.	\
+	 */								\
+	lp = __bincp;							\
 }
 
 /*
@@ -149,4 +163,4 @@
 #define	MEMMOVE(p, t, len)	memmove(p, t, (len) * sizeof(*(p)))
 #define	MEMSET(p, value, len)	memset(p, value, (len) * sizeof(*(p)))
 
-int	binc __P((SCR *, void *, size_t *, size_t));
+void	*binc __P((SCR *, void *, size_t *, size_t));
