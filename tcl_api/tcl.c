@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: tcl.c,v 8.3 1995/11/22 10:17:20 bostic Exp $ (Berkeley) $Date: 1995/11/22 10:17:20 $";
+static char sccsid[] = "$Id: tcl.c,v 8.4 1995/11/26 19:38:13 bostic Exp $ (Berkeley) $Date: 1995/11/26 19:38:13 $";
 #endif /* not lint */
 
 #ifdef TCL_INTERP
@@ -294,6 +294,83 @@ tcl_sline(clientData, interp, argc, argv)
 	INITMESSAGE;
 	rval = api_sline(sp,
 	    (recno_t)strtoul(argv[2], NULL, 10), argv[3], strlen(argv[3]));
+	ENDMESSAGE;
+
+	return (rval ? TCL_ERROR : TCL_OK);
+}
+
+/*
+ * tcl_getmark --
+ *	Return the mark's cursor position as a list with two elements.
+ *	{line, column}.
+ *
+ * Tcl Command: viGetMark
+ * Usage: viGetMark screenId mark
+ */
+static int
+tcl_getmark(clientData, interp, argc, argv)
+	ClientData clientData;
+	Tcl_Interp *interp;
+	int argc;
+	char **argv;
+{
+	MARK cursor;
+	SCR *sp;
+	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
+	int rval;
+	char buf[20];
+
+	if (argc != 3) {
+		Tcl_SetResult(interp,
+		    "Usage: viGetMark screenId mark", TCL_STATIC);
+		return (TCL_ERROR);
+	}
+
+	GETSCREENID(sp, atoi(argv[1]), NULL);
+	INITMESSAGE;
+	rval = api_getmark(sp, (int)argv[2][0], &cursor);
+	ENDMESSAGE;
+
+	if (rval)
+		return (TCL_ERROR);
+
+	(void)snprintf(buf, sizeof(buf), "%d", cursor.lno);
+	Tcl_AppendElement(interp, buf);
+	(void)snprintf(buf, sizeof(buf), "%d", cursor.cno);
+	Tcl_AppendElement(interp, buf);
+	return (TCL_OK);
+}
+
+/*
+ * tcl_setmark --
+ *	Set the mark to the line and column numbers supplied.
+ *
+ * Tcl Command: viSetMark
+ * Usage: viSetMark screenId mark line column
+ */
+static int
+tcl_setmark(clientData, interp, argc, argv)
+	ClientData clientData;
+	Tcl_Interp *interp;
+	int argc;
+	char **argv;
+{
+	MARK cursor;
+	SCR *sp;
+	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
+	int rval;
+
+	if (argc != 5) {
+		Tcl_SetResult(interp,
+		    "Usage: viSetMark screenId mark line column", TCL_STATIC);
+		return (TCL_ERROR);
+	}
+
+	GETSCREENID(sp, atoi(argv[1]), NULL);
+	INITMESSAGE;
+	cursor.lno = atoi(argv[3]);
+	cursor.cno = atoi(argv[4]);
+	rval = api_setmark(sp, (int)argv[2][0], &cursor);
 	ENDMESSAGE;
 
 	return (rval ? TCL_ERROR : TCL_OK);
@@ -665,6 +742,7 @@ tcl_init(gp)
 	TCC("viFindScreen", tcl_fscreen);
 	TCC("viGetCursor", tcl_getcursor);
 	TCC("viGetLine", tcl_gline);
+	TCC("viGetMark", tcl_getmark);
 	TCC("viGetOpt", tcl_opts_get);
 	TCC("viInsertLine", tcl_iline);
 	TCC("viLastLine", tcl_lline);
@@ -673,6 +751,7 @@ tcl_init(gp)
 	TCC("viNewScreen", tcl_iscreen);
 	TCC("viSetCursor", tcl_setcursor);
 	TCC("viSetLine", tcl_sline);
+	TCC("viSetMark", tcl_setmark);
 	TCC("viSetOpt", tcl_opts_set);
 	TCC("viSwitchScreen", tcl_swscreen);
 	TCC("viUnmapKey", tcl_unmap);
