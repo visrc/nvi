@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.28 1993/12/23 11:30:34 bostic Exp $ (Berkeley) $Date: 1993/12/23 11:30:34 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.29 1993/12/23 16:10:22 bostic Exp $ (Berkeley) $Date: 1993/12/23 16:10:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,6 +27,7 @@ static inline int	regsub __P((SCR *,
 			    char *, char **, size_t *, size_t *));
 static int		substitute __P((SCR *, EXF *,
 			    EXCMDARG *, char *, regex_t *, u_int));
+
 /*
  * ex_substitute --
  *	[line [,line]] s[ubstitute] [[/;]pat[/;]/repl[/;] [cgr] [count] [#lp]]
@@ -269,7 +270,7 @@ ex_subtilde(sp, ep, cmdp)
  * The nasty part of the substitution is what happens when the replacement
  * string contains newlines.  It's a bit tricky -- consider the information
  * that has to be retained for "s/f\(o\)o/^M\1^M\1/".  The solution here is
- * to build a set of newline offets which we use to break the line up later,
+ * to build a set of newline offsets which we use to break the line up later,
  * when the replacement is done.  Don't change it unless you're pretty damned
  * confident.
  */
@@ -301,6 +302,7 @@ ex_subtilde(sp, ep, cmdp)
 #define	NEEDSP(sp, len, pnt) {						\
 	if (lbclen + (len) > lblen) {					\
 		lblen += MAX(lbclen + (len), 256);			\
+TRACE(sp, "lblen = %u\n", lblen); \
 		REALLOC(sp, lb, char *, lblen);				\
 		if (lb == NULL) {					\
 			lbclen = 0;					\
@@ -326,9 +328,10 @@ substitute(sp, ep, cmdp, s, re, flags)
 	u_int flags;
 {
 	MARK from, to;
-	recno_t elno, lno, lastline;
-	size_t blen, cnt, last, lbclen, lblen, len, offset;
-	int do_eol_match, eflags, empty_ok, eval, linechanged, quit;
+	recno_t elno, lno;
+	size_t blen, cnt, last, lbclen, lblen, len, llen, offset, saved_offset;
+	int didsub, do_eol_match;
+	int eflags, empty_ok, eval, linechanged, matched, quit;
 	int cflag, gflag, lflag, nflag, pflag, rflag;
 	char *bp, *lb;
 
@@ -421,44 +424,44 @@ usage:		msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
 		return (1);
 	}
 
-	/* Get some space. */
-	GET_SPACE_RET(sp, bp, blen, 512);
-
 	/*
+	 * bp:		if interactive, line cache
+	 * blen:	if interactive, line cache length
 	 * lb:		build buffer pointer.
 	 * lbclen:	current length of built buffer.
 	 * lblen;	length of build buffer.
 	 */
-	lb = NULL;
-	lbclen = lblen = 0;
-
-	/*
-	 * Since multiple changes can happen in a line, we only increment
-	 * the change count on the first change to a line.
-	 */
-	lastline = OOBLNO;
+	bp = lb = NULL;
+	blen = lbclen = lblen = 0;
 
 	/* For each line... */
-	for (quit = 0, lno = cmdp->addr1.lno,
+	for (matched = quit = 0, lno = cmdp->addr1.lno,
 	    elno = cmdp->addr2.lno; !quit && lno <= elno; ++lno) {
 
 		/* Get the line. */
-		if ((s = file_gline(sp, ep, lno, &len)) == NULL) {
+		if ((s = file_gline(sp, ep, lno, &llen)) == NULL) {
 			GETLINE_ERR(sp, lno);
 			return (1);
 		}
 
 		/*
 		 * Make a local copy if doing confirmation -- when calling
-		 * the confirm routine we're likely to lose our cached copy.
+		 * the confirm routine we're likely to lose the cached copy.
 		 */
 		if (cflag) {
-			ADD_SPACE_RET(sp, bp, blen, len)
-			memmove(bp, s, len);
+			if (bp == NULL) {
+				GET_SPACE_RET(sp, bp, blen, llen);
+			} else
+				ADD_SPACE_RET(sp, bp, blen, llen);
+			memmove(bp, s, llen);
 			s = bp;
 		}
 
-		/* Reset the buffer pointer. */
+		/* Start searching from the beginning. */
+		offset = 0;
+		len = llen;
+
+		/* Reset the build buffer offset. */
 		lbclen = 0;
 
 		/* Reset empty match flag. */
@@ -467,37 +470,46 @@ usage:		msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
 		/*
 		 * We don't want to have to do a setline if the line didn't
 		 * change -- keep track of whether or not this line changed.
+		 * If doing confirmations, don't want to keep setting the
+		 * line if change is refused -- keep track of substitutions.
 		 */
-		linechanged = 0;
+		didsub = linechanged = 0;
 
-		/* New line, do EOL match. */
+		/* New line, do an EOL match. */
 		do_eol_match = 1;
 
 		/* It's not nul terminated, but we pretend it is. */
 		eflags = REG_STARTEND;
 
-		/* The search area is from 's' to the end of the line. */
+		/*
+		 * The search area is from s + offset to the EOL.
+		 *
+		 * Generally, sp->match[0].rm_so is the offset of the start
+		 * of the match from the start of the search, and offset is
+		 * the offset of the start of the last search.
+		 */
 nextmatch:	sp->match[0].rm_so = 0;
 		sp->match[0].rm_eo = len;
 
 		/* Get the next match. */
-skipmatch:	eval = regexec(re,
-		    (char *)s, re->re_nsub + 1, sp->match, eflags);
+		eval = regexec(re,
+		    (char *)s + offset, re->re_nsub + 1, sp->match, eflags);
 
 		/*
-		 * There wasn't a match -- if there was an error, deal with
+		 * There wasn't a match or if there was an error, deal with
 		 * it.  If there was a previous match in this line, resolve
 		 * the changes into the database.  Otherwise, just move on.
 		 */
-		if (eval == REG_NOMATCH) {
-			if (linechanged)
-				goto endmatch;
-			continue;
-		}
+		if (eval == REG_NOMATCH)
+			goto endmatch;
 		if (eval != 0) {
 			re_error(sp, eval, re);
 			goto ret1;
 		}
+		matched = 1;
+
+		/* Only the first search can match an anchored expression. */
+		eflags |= REG_NOTBOL;
 
 		/*
 		 * !!!
@@ -519,33 +531,15 @@ skipmatch:	eval = regexec(re,
 		 * more characters in the string, we were attempting to match
 		 * after the last character, so quit.
 		 */
-		if (!empty_ok && sp->match[0].rm_so == sp->match[0].rm_eo) {
+		if (!empty_ok &&
+		    sp->match[0].rm_so == 0 && sp->match[0].rm_eo == 0) {
 			empty_ok = 1;
-
-			/*
-			 * Can't get here if !gflag or !linechanged, so just
-			 * test cflag.  Same logic also guarantees that offset
-			 * has been initialized.
-			 */
-			if (cflag) {
-				if (sp->match[0].rm_so == offset) {
-					if (len == offset)
-						goto endmatch;
-					BUILD(sp, s, 1)
-					++s;
-					--len;
-					sp->match[0].rm_eo = len;
-					goto skipmatch;
-				}
-			} else
-				if (sp->match[0].rm_so == 0) {
-					if (!len)
-						goto endmatch;
-					BUILD(sp, s, 1)
-					++s;
-					--len;
-					goto nextmatch;
-				}
+			if (len == 0)
+				goto endmatch;
+			BUILD(sp, s + offset, 1)
+			++offset;
+			--len;
+			goto nextmatch;
 		}
 
 		/* Confirm change. */
@@ -556,30 +550,27 @@ skipmatch:	eval = regexec(re,
 			 * the end of line.
 			 *
 			 * XXX
-			 * May want to "fix" this in the confirm routine;
-			 * the confirm routine may be able to display a
-			 * cursor past EOL.
+			 * We may want to "fix" this in the confirm routine,
+			 * if the confirm routine should be able to display
+			 * a cursor past EOL.
 			 */
-			from.lno = lno;
-			from.cno = sp->match[0].rm_so;
-			to.lno = lno;
+			from.lno = to.lno = lno;
+			from.cno = sp->match[0].rm_so + offset;
 			to.cno = sp->match[0].rm_eo;
-			if (len != 0) {
-				if (to.cno >= len)
-					to.cno = len - 1;
-				if (from.cno >= len)
-					from.cno = len - 1;
+			if (llen == 0)
+				from.cno = to.cno = 0;
+			else {
+				if (to.cno >= llen)
+					to.cno = llen - 1;
+				if (from.cno >= llen)
+					from.cno = llen - 1;
 			}
-
 			switch (sp->s_confirm(sp, ep, &from, &to)) {
 			case CONF_YES:
 				break;
 			case CONF_NO:
-				/*
-				 * Copy the bytes before the match and the
-				 * bytes in the match into the build buffer.
-				 */
-				BUILD(sp, s, sp->match[0].rm_eo);
+				didsub = 0;
+				BUILD(sp, s +offset, sp->match[0].rm_eo);
 				goto skip;
 			case CONF_QUIT:
 				/* Set the quit flag. */
@@ -593,61 +584,65 @@ skipmatch:	eval = regexec(re,
 				 * If any changes, resolve them, otherwise
 				 * return to the main loop.
 				 */
-				if (linechanged)
-					goto endmatch;
-				continue;
+				goto endmatch;
 			}
 		}
 
 		/* Copy the bytes before the match into the build buffer. */
-		BUILD(sp, s, sp->match[0].rm_so);
+		BUILD(sp, s + offset, sp->match[0].rm_so);
 
 		/*
-		 * Update the cursor to the start of the change.
+		 * Cursor moves to last line changed, unless doing confirm,
+		 * in which case don't move it.
 		 *
 		 * !!!
 		 * Historic vi just put the cursor on the first non-blank
 		 * of the last line changed.  This might be better.
 		 */
-		if (!cflag)
-			sp->cno = sp->match[0].rm_so;
+		if (!cflag) {
+			sp->lno = lno;
+			sp->cno = sp->match[0].rm_so + offset;
+		}
 
 		/* Substitute the matching bytes. */
-		if (regsub(sp, s, &lb, &lbclen, &lblen))
+		didsub = 1;
+		if (regsub(sp, s + offset, &lb, &lbclen, &lblen))
 			goto ret1;
 
 		/* Set the change flag so we know this line was modified. */
 		linechanged = 1;
 
-		/* Move the pointers past the matched bytes. */
-skip:		s += sp->match[0].rm_eo;
+		/* Move past the matched bytes. */
+skip:		offset += sp->match[0].rm_eo;
 		len -= sp->match[0].rm_eo;
 
-		/* Got a match, turn off empty patterns. */
+		/* A match cannot be followed by an empty pattern. */
 		empty_ok = 0;
-
-		/* Only the first search matches anchored expression. */
-		eflags |= REG_NOTBOL;
 
 		/*
 		 * If doing a global change with confirmation, we have to
 		 * update the screen.  The basic idea is to store the line
-		 * so the screen update routines can find it, but start at
-		 * the old offset.
+		 * so the screen update routines can find it, and restart.
 		 */
-		if (linechanged && cflag && gflag) {
-			/* Save offset. */
-			offset = lbclen;
-			
-			/* Copy the suffix. */
+		if (didsub && cflag && gflag) {
+			/*
+			 * The new search offset will be the end of the
+			 * modified line.
+			 */
+			saved_offset = lbclen;
+
+			/* Copy the rest of the line. */
 			if (len)
-				BUILD(sp, s, len)
+				BUILD(sp, s + offset, len)
+
+			/* Set the new offset. */
+			offset = saved_offset;
 
 			/* Store inserted lines, adjusting the build buffer. */
 			last = 0;
 			if (sp->newl_cnt) {
-				for (cnt = 0; cnt < sp->newl_cnt;
-				    ++cnt, ++lno, ++elno, ++lastline) {
+				for (cnt = 0;
+				    cnt < sp->newl_cnt; ++cnt, ++lno, ++elno) {
 					if (file_iline(sp, ep, lno,
 					    lb + last, sp->newl[cnt] - last))
 						goto ret1;
@@ -656,72 +651,66 @@ skip:		s += sp->match[0].rm_eo;
 				}
 				lbclen -= last;
 				offset -= last;
-
 				sp->newl_cnt = 0;
 			}
 
 			/* Store and retrieve the line. */
 			if (file_sline(sp, ep, lno, lb + last, lbclen))
 				goto ret1;
-			if ((s = file_gline(sp, ep, lno, &len)) == NULL) {
+			if ((s = file_gline(sp, ep, lno, &llen)) == NULL) {
 				GETLINE_ERR(sp, lno);
 				goto ret1;
 			}
-			ADD_SPACE_RET(sp, bp, blen, len)
-			memmove(bp, s, len);
+			ADD_SPACE_RET(sp, bp, blen, llen)
+			memmove(bp, s, llen);
 			s = bp;
+			len = llen - offset;
 
 			/* Restart the build. */
 			lbclen = 0;
-
-			/* Update changed line counter. */
-			if (lastline != lno) {
-				++sp->rptlines[L_CHANGED];
-				lastline = lno;
-			}
+			BUILD(sp, s, offset);
 
 			/*
-			 * Do a test for the after the string match.  Set
-			 * REG_NOTEOL so the '$' pattern only matches once.
+			 * If we haven't already done the after-the-string
+			 * match, do one.  Set REG_NOTEOL so the '$' pattern
+			 * only matches once.
 			 */
 			if (!do_eol_match)
 				goto endmatch;
-
 			if (offset == len) {
 				do_eol_match = 0;
 				eflags |= REG_NOTEOL;
 			}
-
-			/* Start in the middle of the line. */
-			sp->match[0].rm_so = offset;
-			sp->match[0].rm_eo = len;
-
-			goto skipmatch;
+			goto nextmatch;
 		}
 
 		/*
 		 * If it's a global:
-		 * Do a test for the after the string match.  Set
-		 * REG_NOTEOL so the '$' pattern only matches once.
+		 *
+		 * If at the end of the string, do a test for the after
+		 * the string match.  Set REG_NOTEOL so the '$' pattern
+		 * only matches once.
 		 */
 		if (gflag && do_eol_match) {
-			if (!len) {
+			if (len == 0) {
 				do_eol_match = 0;
 				eflags |= REG_NOTEOL;
 			}
 			goto nextmatch;
-			
 		}
 
+endmatch:	if (!linechanged)
+			continue;
+
 		/* Copy any remaining bytes into the build buffer. */
-endmatch:	if (len)
-			BUILD(sp, s, len)
+		if (len)
+			BUILD(sp, s + offset, len)
 
 		/* Store inserted lines, adjusting the build buffer. */
 		last = 0;
 		if (sp->newl_cnt) {
-			for (cnt = 0; cnt < sp->newl_cnt;
-			    ++cnt, ++lno, ++elno, ++lastline) {
+			for (cnt = 0;
+			    cnt < sp->newl_cnt; ++cnt, ++lno, ++elno) {
 				if (file_iline(sp, ep,
 				    lno, lb + last, sp->newl[cnt] - last))
 					goto ret1;
@@ -729,21 +718,15 @@ endmatch:	if (len)
 				++sp->rptlines[L_ADDED];
 			}
 			lbclen -= last;
-
 			sp->newl_cnt = 0;
-			linechanged = 1;
 		}
 
 		/* Store the changed line. */
-		if (linechanged)
-			if (file_sline(sp, ep, lno, lb + last, lbclen))
-				goto ret1;
+		if (file_sline(sp, ep, lno, lb + last, lbclen))
+			goto ret1;
 
 		/* Update changed line counter. */
-		if (lastline != lno) {
-			++sp->rptlines[L_CHANGED];
-			lastline = lno;
-		}
+		++sp->rptlines[L_CHANGED];
 
 		/* Display as necessary. */
 		if (lflag || nflag || pflag) {
@@ -759,25 +742,21 @@ endmatch:	if (len)
 	}
 
 	/*
-	 * Cursor moves to last line changed, unless doing confirm,
-	 * in which case don't move it.
+	 * If not in a global command, and nothing matched, say so.
+	 * Else, if none of the lines displayed, put something up.
 	 */
-	if (!cflag && lastline != OOBLNO)
-		sp->lno = lastline;
-
-	/*
-	 * Note if nothing found.  Else, if nothing displayed to the
-	 * screen, put something up.
-	 */
-	if (sp->rptlines[L_CHANGED] == 0 && !F_ISSET(sp, S_GLOBAL))
-		msgq(sp, M_INFO, "No match found.");
-	else if (!lflag && !nflag && !pflag)
+	if (!matched) {
+		if (!F_ISSET(sp, S_GLOBAL))
+			msgq(sp, M_INFO, "No match found.");
+	} else if (!lflag && !nflag && !pflag)
 		F_SET(sp, S_AUTOPRINT);
 
-	FREE_SPACE(sp, bp, blen);
+	if (bp != NULL)
+		FREE_SPACE(sp, bp, blen);
 	return (0);
 
-ret1:	FREE_SPACE(sp, bp, blen);
+	if (bp != NULL)
+ret1:		FREE_SPACE(sp, bp, blen);
 	return (1);
 }
 
