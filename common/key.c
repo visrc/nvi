@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 10.13 1995/10/03 21:54:33 bostic Exp $ (Berkeley) $Date: 1995/10/03 21:54:33 $";
+static char sccsid[] = "$Id: key.c,v 10.14 1995/10/05 10:48:16 bostic Exp $ (Berkeley) $Date: 1995/10/05 10:48:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -783,9 +783,6 @@ v_event_err(sp, evp)
 	case E_EOF:
 		msgq(sp, M_ERR, "277|Unexpected end-of-file event");
 		break;
-	case E_ERR:
-		msgq(sp, M_ERR, "278|Unexpected error event");
-		break;
 	case E_INTERRUPT:
 		msgq(sp, M_ERR, "279|Unexpected interrupt event");
 		break;
@@ -797,12 +794,6 @@ v_event_err(sp, evp)
 		break;
 	case E_RESIZE:
 		msgq(sp, M_ERR, "282|Unexpected resize event");
-		break;
-	case E_SIGHUP:
-		msgq(sp, M_ERR, "283|Unexpected sighup event");
-		break;
-	case E_SIGTERM:
-		msgq(sp, M_ERR, "284|Unexpected sigterm event");
 		break;
 	case E_STRING:
 		msgq(sp, M_ERR, "285|Unexpected string event");
@@ -816,6 +807,16 @@ v_event_err(sp, evp)
 	case E_WRITEQUIT:
 		msgq(sp, M_ERR, "288|Unexpected write-and-quit event");
 		break;
+
+	/*
+	 * Theoretically, none of these can occur, as they're handled at the
+	 * top editor level.
+	 */
+	case E_ERR:
+	case E_SIGHUP:
+	case E_SIGTERM:
+	default:
+		abort();
 	}
 
 	/* Free any allocated memory. */
