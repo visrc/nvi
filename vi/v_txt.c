@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.119 1994/08/02 10:11:11 bostic Exp $ (Berkeley) $Date: 1994/08/02 10:11:11 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.120 1994/08/15 14:20:49 bostic Exp $ (Berkeley) $Date: 1994/08/15 14:20:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -222,12 +222,15 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 	 * from the RIGHT-HAND column, not the left.  It's more useful to
 	 * us as a distance from the left-hand column.
 	 *
-	 * !!!
-	 * Replay commands are not affected by wrapmargin values.  What
-	 * I found surprising was that people actually depend on it, as
-	 * in this gem of a macro which centers lines:
+	 * !!!/XXX
+	 * Replay commands were not affected by the wrapmargin option in the
+	 * historic 4BSD vi.  What I found surprising was that people depend
+	 * on it, as in this gem of a macro which centers lines:
 	 *
 	 *	map #c $mq81a ^V^[81^V|D`qld0:s/  / /g^V^M$p
+	 *
+	 * Other historic versions of vi, notably Sun's, applied wrapmargin
+	 * to replay lines as well.
 	 *
 	 * XXX
 	 * Setting margin causes a significant performance hit.  Normally
