@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 5.47 1993/04/17 11:54:25 bostic Exp $ (Berkeley) $Date: 1993/04/17 11:54:25 $
+ *	$Id: common.h,v 5.48 1993/04/19 15:28:16 bostic Exp $ (Berkeley) $Date: 1993/04/19 15:28:16 $
  */
 
 #include <db.h>				/* Ordered before local includes. */
@@ -50,8 +50,6 @@ struct _text;
 #include "seq.h"
 #include "term.h"
 
-#include "extern.h"
-
 /* Macros to set/clear/test flags. */
 #define	F_SET(p, f)	(p)->flags |= (f)
 #define	F_CLR(p, f)	(p)->flags &= ~(f)
@@ -95,3 +93,20 @@ typedef void (*sig_ret_t) __P((int));	/* Type of signal function. */
 #define	MIN(a, b) (((a) < (b)) ? (a) : (b))
 #define	MAX(a, b) (((a) > (b)) ? (a) : (b))
 #endif
+
+/* Function prototypes that don't seem to belong anywhere else. */
+char	*charname __P((struct _scr *, int));
+int	 nonblank __P((struct _scr *, struct _exf *, recno_t, size_t *));
+void	 onhup __P((int));
+int	 set_window_size __P((struct _scr *, u_int));
+void	 status __P((struct _scr *, struct _exf *, recno_t));
+char	*tail __P((char *));
+
+#ifdef DEBUG
+void	TRACE __P((struct _scr *, const char *, ...));
+#endif
+
+/* Digraphs (not currently real). */
+int	digraph __P((struct _scr *, int, int));
+int	digraph_init __P((struct _scr *));
+void	digraph_save __P((struct _scr *, int));
