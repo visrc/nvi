@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 8.18 1993/11/03 17:13:03 bostic Exp $ (Berkeley) $Date: 1993/11/03 17:13:03 $";
+static char sccsid[] = "$Id: ex_global.c,v 8.19 1993/11/05 10:31:00 bostic Exp $ (Berkeley) $Date: 1993/11/05 10:31:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -148,6 +148,13 @@ global(sp, ep, cmdp, cmd)
 		sp->searchdir = FORWARD;
 		F_SET(sp, S_SRE_SET);
 	}
+
+	/*
+	 * The global commands sets the substitute RE as well as
+	 * the everything-else RE.
+	 */
+	sp->subre = sp->sre;
+	F_SET(sp, S_SUBRE_SET);
 
 	F_SET(sp, S_GLOBAL);
 
