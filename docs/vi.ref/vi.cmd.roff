@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: vi.cmd.roff,v 8.36 1994/09/29 17:09:54 bostic Exp $ (Berkeley) $Date: 1994/09/29 17:09:54 $
+.\"	$Id: vi.cmd.roff,v 8.37 1994/10/12 10:43:51 bostic Exp $ (Berkeley) $Date: 1994/10/12 10:43:51 $
 .\"
 .SH 1 "Vi Description"
 .pp
@@ -415,10 +415,6 @@ option.
 (In the case of split screens, this size is corrected to the
 current screen size.)
 It is an error if the movement is past the beginning of the file.
-.sp
-The
-.CO <control-B>
-command is an absolute movement.
 .SS
 .SP Line:
 Set to the last line of text displayed on the screen.
@@ -450,10 +446,6 @@ scroll forward half the number of lines in the screen.
 (In the case of split screens, the default scrolling distance is
 corrected to half the current screen size.)
 It is an error if the movement is past the end of the file.
-.sp
-The
-.CO <control-D>
-command is an absolute movement.
 .SS
 .SP Line:
 Set to the current line plus the number of lines scrolled.
@@ -494,10 +486,6 @@ option.
 (In the case of split screens, this size is corrected to the
 current screen size.)
 It is an error if the movement is past the end of the file.
-.sp
-The
-.CO <control-F>
-command is an absolute movement.
 .SS
 .SP Line:
 Set to the first line on the screen.
@@ -683,10 +671,6 @@ scroll backward half the number of lines in the screen.
 (In the case of split screens, the default scrolling distance is
 corrected to half the current screen size.)
 It is an error if the movement is past the beginning of the file.
-.sp
-The
-.CO <control-U>
-command is an absolute movement.
 .SS
 .SP Line:
 Set to the current line minus the amount scrolled.
