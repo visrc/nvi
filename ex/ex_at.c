@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_at.c,v 5.7 1992/04/18 15:36:04 bostic Exp $ (Berkeley) $Date: 1992/04/18 15:36:04 $";
+static char sccsid[] = "$Id: ex_at.c,v 5.8 1992/04/18 18:33:20 bostic Exp $ (Berkeley) $Date: 1992/04/18 18:33:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -24,39 +24,30 @@ ex_at(cmdp)
 {
 	static int lastbuf, recurse;
 	static char rstack[UCHAR_MAX];
-	int buf, csize, len, rval;
-	char *cp, copy[1024];
+	size_t len;
+	int name, rval;
+	u_char *buf;
 
-	if ((buf = cmdp->buffer) == '\0' && (buf = lastbuf) == '\0') {
+	if ((name = cmdp->buffer) == '\0' && (name = lastbuf) == '\0') {
 		msg("No previous buffer to execute.");
 		return (1);
 	}
 		
-	if (recurse++) {
-		if (rstack[buf]) {
-			msg("Buffer %c already occurs in this command.", buf);
-			return (1);
-		}
-		rstack[buf] = 1;
-	} else
-		bzero(rstack, UCHAR_MAX);
-			
-	for (cp = copy, csize = sizeof(copy);;) {
-		len = cb2str(buf, cp, csize);
-		if (len <= 0) {
-			msg("Buffer %c is empty.", buf);
-			return (1);
-		}
-		if (len <= csize)
-			break;
-		if ((cp == malloc(csize = len)) == NULL) {
-			msg("Buffer %c is too large to execute.", buf);
-			return (1);
-		}
+	if (recurse == 0)
+		bzero(rstack, sizeof(rstack));
+	else if (rstack[name]) {
+		msg("Buffer %c already occurs in this command.", name);
+		return (1);
 	}
-	if (cp != copy)
-		free(cp);
-	rval = ex_cstring(cp, len, 1);
-	--recurse;
+
+	if ((buf = cb2str(name, &len)) == NULL)
+		rval = 1;
+	else {
+		rstack[name] = 1;
+		++recurse;
+		rval = ex_cstring((char *)buf, len, 1);
+		--recurse;
+		free(buf);
+	} 
 	return (rval);
 }
