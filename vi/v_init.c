@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 9.3 1994/11/13 11:12:56 bostic Exp $ (Berkeley) $Date: 1994/11/13 11:12:56 $";
+static char sccsid[] = "$Id: v_init.c,v 9.4 1994/11/13 17:26:57 bostic Exp $ (Berkeley) $Date: 1994/11/13 17:26:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -110,9 +110,31 @@ int
 v_init(sp)
 	SCR *sp;
 {
-	if (!F_ISSET(sp->frp, FR_CURSORSET) &&
-	    O_ISSET(sp, O_COMMENT) && v_comment(sp))
-		return (1);
+	size_t len;
+
+	/*
+	 * If the first visit to a file, check to see if we're skipping
+	 * an initial comment.  Otherwise, make sure that the cursor
+	 * position is a legal one.
+	 */
+	if (F_ISSET(sp->frp, FR_CURSORSET)) {
+		if (file_lline(sp, &sp->lno))
+			return (1);
+		if (sp->lno == 0) {
+			sp->lno = 1;
+			sp->cno = 0;
+		} else {
+			if (file_gline(sp, sp->lno, &len) == NULL)
+				return (1);
+			if (sp->cno >= len) {
+				sp->cno = 0;
+				if (nonblank(sp, sp->lno, &sp->cno))
+					return (1);
+			}
+		}
+	} else
+		if (O_ISSET(sp, O_COMMENT) && v_comment(sp))
+			return (1);
 
 	/* Reset strange attraction. */
 	sp->rcm = 0;
