@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.66 1993/05/08 17:03:28 bostic Exp $ (Berkeley) $Date: 1993/05/08 17:03:28 $";
+static char sccsid[] = "$Id: vi.c,v 5.67 1993/05/10 11:36:44 bostic Exp $ (Berkeley) $Date: 1993/05/10 11:36:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -59,6 +59,9 @@ vi(sp, ep)
 	(void)signal(SIGINT, SIG_IGN);
 
 	for (eval = 0;;) {
+		if (!term_more_pseudo(sp) && log_cursor(sp, ep))
+			goto err;
+
 		/*
 		 * We get a command, which may or may not have an associated
 		 * motion.  If it does, we get it too, calling its underlying
@@ -103,9 +106,6 @@ vi(sp, ep)
 			} else
 				tm = fm;
 		}
-
-		/* Log the start of an action. */
-		(void)log_cursor(sp, ep);
 
 		/* Call the function, update the cursor. */
 		if ((vp->kp->func)(sp, ep, vp, &fm, &tm, &m))
@@ -157,7 +157,7 @@ vi(sp, ep)
 		sp->lno = m.lno;
 		sp->cno = m.cno;
 
-		if (!F_ISSET(sp, S_UPDATE_SCREEN)) {
+		if (!term_more_pseudo(sp)) {
 			/* Report on the changes from the command. */
 			if (sp->rptlines) {
 				if (O_VAL(sp, O_REPORT) &&
@@ -171,7 +171,7 @@ vi(sp, ep)
 			}
 
 			if (0)
-err:				flush_mappedkey(sp);
+err:				term_flush_pseudo(sp);
 
 			/* Refresh the screen. */
 			if (sp->srefresh(sp, ep)) {
@@ -185,19 +185,18 @@ err:				flush_mappedkey(sp);
 			sp->rcmflags = 0;
 			sp->rcm = sp->sc_col;
 		}
-
 	}
 	return (v_end(sp) || eval);
 }
 
 #define	KEY(sp, k) {							\
-	(k) = getkey(sp, TXT_MAPCOMMAND);				\
+	(k) = term_key(sp, TXT_MAPCOMMAND);				\
 	if (F_ISSET(sp, S_UPDATE_MODE)) {				\
 		F_CLR(sp, S_UPDATE_MODE);				\
 		sp->srefresh(sp, ep);					\
 	}								\
 	if (sp->special[(k)] == K_VLNEXT)				\
-		(k) = getkey(sp, TXT_MAPCOMMAND);			\
+		(k) = term_key(sp, TXT_MAPCOMMAND);			\
 	if (sp->special[(k)] == K_ESCAPE) {				\
 		if (esc_bell)						\
 		    msgq(sp, M_BERR, "Already in command mode");	\
