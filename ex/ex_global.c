@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 8.46 1994/09/27 14:23:26 bostic Exp $ (Berkeley) $Date: 1994/09/27 14:23:26 $";
+static char sccsid[] = "$Id: ex_global.c,v 8.47 1994/09/27 19:38:45 bostic Exp $ (Berkeley) $Date: 1994/09/27 19:38:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -211,7 +211,7 @@ global(sp, ep, cmdp, cmd)
 		}
 		match[0].rm_so = 0;
 		match[0].rm_eo = len;
-		switch(eval = regexec(re, t, 1, match, REG_STARTEND)) {
+		switch(eval = regexec(re, t, 0, match, REG_STARTEND)) {
 		case 0:
 			if (cmd == V)
 				continue;
