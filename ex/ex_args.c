@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 8.1 1993/06/09 22:23:27 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:23:27 $";
+static char sccsid[] = "$Id: ex_args.c,v 8.2 1993/08/05 18:10:38 bostic Exp $ (Berkeley) $Date: 1993/08/05 18:10:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -20,7 +20,7 @@ static char sccsid[] = "$Id: ex_args.c,v 8.1 1993/06/09 22:23:27 bostic Exp $ (B
 
 /*
  * ex_next -- :next [files]
- *	Edit the next file.
+ *	Edit the next file, optionally setting the list of files.
  */
 int
 ex_next(sp, ep, cmdp)
@@ -28,34 +28,33 @@ ex_next(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	EXF *tep;
+	FREF *frp;
+	char **argv;
 
 	MODIFY_CHECK(sp, ep, F_ISSET(cmdp, E_FORCE));
 
 	if (cmdp->argc) {
 		/* Mark all the current files as ignored. */
-		for (tep = ep; tep->prev; tep = tep->prev)
-			F_SET(tep, F_IGNORE);
-		for (tep = ep; tep->next; tep = tep->next)
-			F_SET(tep, F_IGNORE);
-		F_SET(ep, F_IGNORE);
+		for (frp = sp->frefhdr.next;
+		    frp != (FREF *)&sp->frefhdr; frp = frp->next)
+			F_SET(frp, FR_IGNORE);
 
 		/* Add the new files into the file list. */
-		if (file_set(sp, cmdp->argc, (char **)cmdp->argv))
-			return (1);
+		for (argv = cmdp->argv; *argv != NULL; ++argv)
+			if (file_add(sp, NULL, *argv, 0) == NULL)
+				return (1);
 		
-		/* Get the next file to edit. */
-		if ((tep = file_first(sp, 1)) == NULL)
+		if ((frp = file_first(sp, 0)) == NULL)
 			return (1);
-	} else if ((tep = file_next(sp, ep, 0)) == NULL) {
+	} else if ((frp = file_next(sp, 0)) == NULL) {
 		msgq(sp, M_ERR, "No more files to edit.");
 		return (1);
 	}
 
-	sp->enext = tep;
+	if ((sp->n_ep = file_init(sp, NULL, frp, NULL)) == NULL)
+		return (1);
+	sp->n_frp = frp;
 	F_SET(sp, F_ISSET(cmdp, E_FORCE) ? S_FSWITCH_FORCE : S_FSWITCH);
-
-	set_altfname(sp, ep->name);
 	return (0);
 }
 
@@ -69,19 +68,17 @@ ex_prev(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	EXF *tep;
-
 	MODIFY_CHECK(sp, ep, F_ISSET(cmdp, E_FORCE));
 
-	if ((tep = sp->eprev) == NULL) {
+	if (sp->p_frp == NULL) {
 		msgq(sp, M_ERR, "No previous files to edit.");
 		return (1);
 	}
 
-	sp->enext = tep;
+	if ((sp->n_ep = file_init(sp, NULL, sp->p_frp, NULL)) == NULL)
+		return (1);
+	sp->n_frp = sp->p_frp;
 	F_SET(sp, F_ISSET(cmdp, E_FORCE) ? S_FSWITCH_FORCE : S_FSWITCH);
-
-	set_altfname(sp, ep->name);
 	return (0);
 }
 
@@ -95,10 +92,10 @@ ex_rew(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	EXF *tep;
+	FREF *frp, *tfrp;
 
 	/* Historic practice -- you can rewind to the current file. */
-	if ((tep = file_first(sp, 0)) == NULL) {
+	if ((frp = file_first(sp, 0)) == NULL) {
 		msgq(sp, M_ERR, "No previous files to rewind.");
 		return (1);
 	}
@@ -107,10 +104,15 @@ ex_rew(sp, ep, cmdp)
 	if (!F_ISSET(cmdp, E_FORCE))
 		MODIFY_CHECK(sp, ep, 0);
 
-	sp->enext = tep;
-	F_SET(sp, F_ISSET(cmdp, E_FORCE) ? S_FSWITCH_FORCE : S_FSWITCH);
+	/* Turn off the edited bit. */
+	for (tfrp = sp->frefhdr.next;
+	    tfrp != (FREF *)&sp->frefhdr; tfrp = tfrp->next)
+		F_CLR(tfrp, FR_EDITED);
 
-	set_altfname(sp, ep->name);
+	if ((sp->n_ep = file_init(sp, NULL, frp, NULL)) == NULL)
+		return (1);
+	sp->n_frp = frp;
+	F_SET(sp, F_ISSET(cmdp, E_FORCE) ? S_FSWITCH_FORCE : S_FSWITCH);
 	return (0);
 }
 
@@ -124,12 +126,12 @@ ex_args(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	EXF *tep;
+	FREF *frp;
 	int cnt, col, len, sep;
 
 	col = len = sep = 0;
-	for (cnt = 1, tep = file_first(sp, 1);
-	    tep != NULL; tep = file_next(sp, tep, 1)) {
+	for (cnt = 1, frp = sp->frefhdr.next;
+	    frp != (FREF *)&sp->frefhdr; frp = frp->next) {
 		/*
 		 * Ignore files that aren't in the "argument" list unless
 		 * they are the one we're currently editing.  I'm not sure
@@ -137,9 +139,9 @@ ex_args(sp, ep, cmdp)
 		 * showing the current file if it was the result of a ":e"
 		 * command seems wrong.
 		 */
-		if (F_ISSET(tep, F_IGNORE) && ep != tep)
+		if (F_ISSET(frp, FR_IGNORE) && frp != sp->frp)
 			continue;
-		col += len = tep->nlen + sep + (ep == tep ? 2 : 0);
+		col += len = frp->nlen + sep + (frp == sp->frp ? 2 : 0);
 		if (col >= sp->cols - 1) {
 			col = len;
 			sep = 0;
@@ -148,10 +150,10 @@ ex_args(sp, ep, cmdp)
 			sep = 1;
 			(void)fprintf(sp->stdfp, " ");
 		}
-		if (ep == tep)
-			(void)fprintf(sp->stdfp, "[%s]", tep->name);
+		if (frp == sp->frp)
+			(void)fprintf(sp->stdfp, "[%s]", frp->fname);
 		else
-			(void)fprintf(sp->stdfp, "%s", tep->name);
+			(void)fprintf(sp->stdfp, "%s", frp->fname);
 		++cnt;
 	}
 	if (cnt == 1)
