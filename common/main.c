@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.84 1994/04/26 15:58:01 bostic Exp $ (Berkeley) $Date: 1994/04/26 15:58:01 $";
+static char sccsid[] = "$Id: main.c,v 8.85 1994/05/01 13:59:39 bostic Exp $ (Berkeley) $Date: 1994/05/01 13:59:39 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -373,6 +373,10 @@ main(argc, argv)
 	 * If there's an initial command, push it on the command stack.
 	 * Historically, it was always an ex command, not vi in vi mode
 	 * or ex in ex mode.  So, make it look like an ex command to vi.
+	 *
+	 * !!!
+	 * Historically, all such commands were executed with the last
+	 * line of the file as the current line, and not the first.
 	 */
 	if (excmdarg != NULL)
 		if (IN_EX_MODE(sp)) {
@@ -385,6 +389,9 @@ main(argc, argv)
 				goto err;
 			if (term_push(sp, ":", 1, 0, 0))
 				goto err;
+			if (file_lline(sp, sp->ep, &sp->frp->lno))
+				goto err;
+			F_SET(sp->frp, FR_CURSORSET);
 		}
 
 	/*
