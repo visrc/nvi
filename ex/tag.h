@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: tag.h,v 8.9 1993/11/20 10:05:45 bostic Exp $ (Berkeley) $Date: 1993/11/20 10:05:45 $
+ *	$Id: tag.h,v 8.10 1993/11/21 15:24:43 bostic Exp $ (Berkeley) $Date: 1993/11/21 15:24:43 $
  */
 
 struct _tagf {				/* Tag file. */
@@ -21,6 +21,8 @@ struct _tag {				/* Tag stack. */
 	FREF	*frp;			/* Saved file name. */
 	recno_t	 lno;			/* Saved line number. */
 	size_t	 cno;			/* Saved column number. */
+	char	*search;		/* Search string. */
+	size_t	 slen;			/* Search string length. */
 };
 
 int	ex_tagalloc __P((SCR *, char *));
