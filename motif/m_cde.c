@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_cde.c,v 8.6 1996/12/10 21:04:25 bostic Exp $ (Berkeley) $Date: 1996/12/10 21:04:25 $";
+static const char sccsid[] = "$Id: m_cde.c,v 8.7 1996/12/11 13:34:47 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:34:47 $";
 #endif /* not lint */
 
 #include <X11/X.h>
@@ -18,9 +18,9 @@ static const char sccsid[] = "$Id: m_cde.c,v 8.6 1996/12/10 21:04:25 bostic Exp 
 #include <X11/Xatom.h>
 
 #if SelfTest
-#define	TRACE( x )	printf x
+#define	_TRACE( x )	printf x
 #else
-#define	TRACE( x )
+#define	_TRACE( x )
 #endif
 
 #define	Required	10
@@ -57,14 +57,14 @@ __vi_is_cde(d)
     Atom		atom, type;
     int			retval = 0;
 
-    TRACE( ( "Root window is 0x%x\n", root ) );
+    _TRACE( ( "Root window is 0x%x\n", root ) );
 
     /* create our atoms */
     for (i=0; i< (sizeof(Atoms)/sizeof(Atoms[0])); i++ ) {
 
 	atom = XInternAtom( d, Atoms[i].name, True );
 	if ( atom == None ) {
-	    TRACE( ( "Atom \"%s\" does not exist\n", Atoms[i].name ) );
+	    _TRACE( ( "Atom \"%s\" does not exist\n", Atoms[i].name ) );
 	    continue;
 	}
 
@@ -83,7 +83,7 @@ __vi_is_cde(d)
 				&prop			/* the data itself */
 				);
 	if ( r != Success ) {
-	    TRACE( ( "Atom \"%s\" cannot be converted to string\n", Atoms[i].name ) );
+	    _TRACE( ( "Atom \"%s\" cannot be converted to string\n", Atoms[i].name ) );
 	    continue;
 	}
 
@@ -91,26 +91,26 @@ __vi_is_cde(d)
 
 
 #if SelfTest
-	TRACE( ( "Atom \"%s\"\n", Atoms[i].name ) );
+	_TRACE( ( "Atom \"%s\"\n", Atoms[i].name ) );
 
 	switch ( type ) {
 	    case 0:
-		TRACE( ( "\t does not exist on the root window\n", Atoms[i].name ) );
+		_TRACE( ( "\t does not exist on the root window\n", Atoms[i].name ) );
 
 	    case XA_ATOM:
 		for (j=0; j<nitems; j++) {
 		    name = XGetAtomName( d, ((Atom *) prop)[j] );
-		    TRACE( ( "\t[%d] = \"%s\"\n", j, name ) );
+		    _TRACE( ( "\t[%d] = \"%s\"\n", j, name ) );
 		    XFree( name );
 		}
 		break;
 
 	    case XA_STRING:
-		TRACE( ( "\t is a string\n", Atoms[i].name ) );
+		_TRACE( ( "\t is a string\n", Atoms[i].name ) );
 		break;
 
 	    default:
-		TRACE( ( "\tunknown type %s\n", XGetAtomName( d, type ) ) );
+		_TRACE( ( "\tunknown type %s\n", XGetAtomName( d, type ) ) );
 		break;
 	}
 #endif
@@ -120,7 +120,7 @@ __vi_is_cde(d)
 
     }
 
-    TRACE( ( "retval = %d\n", retval ) );
+    _TRACE( ( "retval = %d\n", retval ) );
     return retval >= Present;
 }
 
