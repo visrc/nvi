@@ -1,7 +1,5 @@
 ARGMAX
-ARGMAX
 LC
-NL
 NL
 XXXX
 arg1
@@ -9,6 +7,7 @@ arg2
 chys
 english
 english.base
+german.base
 langauge
 msg
 msg.c
