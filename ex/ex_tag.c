@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 9.20 1995/02/09 12:13:02 bostic Exp $ (Berkeley) $Date: 1995/02/09 12:13:02 $";
+static char sccsid[] = "$Id: ex_tag.c,v 9.21 1995/02/09 15:28:28 bostic Exp $ (Berkeley) $Date: 1995/02/09 15:28:28 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -44,9 +44,11 @@ static char sccsid[] = "$Id: ex_tag.c,v 9.20 1995/02/09 12:13:02 bostic Exp $ (B
 
 static char	*binary_search __P((char *, char *, char *));
 static int	 compare __P((char *, char *, char *));
+static int	 ex_N_tagpush __P((SCR *, EXCMDARG *, FREF *, char *, char *));
 static char	*linear_search __P((char *, char *, char *));
 static int	 search __P((SCR *, TAGF *, char *, char **));
 static int	 tag_get __P((SCR *, char *, char **, char **, char **));
+static int	 tag_search __P((SCR *, char *, char *));
 
 enum tagmsg {TAG_BADLNO, TAG_EMPTY, TAG_SEARCH};
 static void	 tag_msg __P((SCR *, enum tagmsg, char *));
@@ -61,10 +63,8 @@ ex_tagfirst(sp, tagarg)
 	char *tagarg;
 {
 	FREF *frp;
-	MARK m;
 	long tl;
-	int sval;
-	char *p, *tag, *name, *search;
+	char *tag, *name, *search;
 
 	/* Taglength may limit the number of characters. */
 	if ((tl = O_VAL(sp, O_TAGLENGTH)) != 0 && strlen(tagarg) > tl)
@@ -80,44 +80,11 @@ ex_tagfirst(sp, tagarg)
 	if (file_init(sp, frp, NULL, 0))
 		return (1);
 
-	/*
-	 * !!!
-	 * The historic tags file format (from a long, long time ago...)
-	 * used a line number, not a search string.  I got complaints, so
-	 * people are still using the format.
-	 */
-	if (isdigit(search[0])) {
-		m.lno = atoi(search);
-		if (!file_eline(sp, m.lno))
-			tag_msg(sp, TAG_BADLNO, tag);
-		else {
-			sp->lno = m.lno;
-			sp->cno = 0;
-			(void)nonblank(sp, sp->lno, &sp->cno);
-		}
-	} else {
-		/*
-		 * Search for the tag; cheap fallback for C functions if
-		 * the name is the same but the arguments have changed.
-		 */
-		m.lno = 1;
-		m.cno = 0;
-		sval = f_search(sp, &m, &m,
-		    search, NULL, SEARCH_FILE | SEARCH_TAG);
-		if (sval && (p = strrchr(search, '(')) != NULL) {
-			p[1] = '\0';
-			sval = f_search(sp, &m, &m,
-			    search, NULL, SEARCH_FILE | SEARCH_TAG);
-		}
-		if (sval)
-			tag_msg(sp, TAG_SEARCH, tag);
-		else {
-			sp->lno = m.lno;
-			sp->cno = 0;
-			(void)nonblank(sp, sp->lno, &sp->cno);
-		}
-	}
+	/* Search the file for the tag. */
+	(void)tag_search(sp, search, tag);
+	free(tag);
 
+	/* Put up the welcome message on the right line. */
 	(void)msg_status(sp, sp->lno, 0);
 
 	/* Might as well make this the default tag. */
@@ -143,49 +110,6 @@ ex_tagfirst(sp, tagarg)
 }
 
 /*
- * ex_N_tagpush --
- *	ex_tagpush for new screens.
- */
-int
-ex_N_tagpush(sp, cmdp)
-	SCR *sp;
-	EXCMDARG *cmdp;
-{
-	SCR *new, *top, *bot;
-
-	/* Get a new screen. */
-	if (svi_split(sp, &top, &bot))
-		return (1);
-	new = sp == top ? bot : top;
-
-	if (ex_tagpush(new, cmdp)) {
-		if (sp == top)
-			(void)svi_join(new, sp, NULL, NULL);
-		else
-			(void)svi_join(new, NULL, sp, NULL);
-		(void)screen_end(new);
-		return (1);
-	}
-
-	/* Add the new screen to the queue. */
-	SIGBLOCK(sp->gp);
-	if (sp == bot) {
-		/* Split up, link in before the parent. */
-		CIRCLEQ_INSERT_BEFORE(&sp->gp->dq, sp, new, q);
-	} else {
-		/* Split down, link in after the parent. */
-		CIRCLEQ_INSERT_AFTER(&sp->gp->dq, sp, new, q);
-	}
-	SIGUNBLOCK(sp->gp);
-
-	/* Set up the switch. */
-	sp->nextdisp = new;
-	F_SET(sp, S_SSWITCH);
-
-	return (0);
-}
-
-/*
  * ex_tagpush -- :tag [file]
  *	Move to a new tag.
  *
@@ -206,16 +130,10 @@ ex_tagpush(sp, cmdp)
 	enum {TC_CHANGE, TC_CURRENT} which;
 	EX_PRIVATE *exp;
 	FREF *frp;
-	MARK m;
 	TAG *tp;
 	int sval;
 	long tl;
-	char *name, *p, *search, *tag;
-
-	if (F_ISSET(cmdp, E_NEWSCREEN)) {
-		F_CLR(cmdp, E_NEWSCREEN);
-		return (ex_N_tagpush(sp, cmdp));
-	}
+	char *name, *search, *tag;
 
 	exp = EXP(sp);
 	switch (cmdp->argc) {
@@ -248,6 +166,10 @@ ex_tagpush(sp, cmdp)
 	/* Get the (possibly new) FREF structure. */
 	if ((frp = file_add(sp, name)) == NULL)
 		goto err;
+
+	/* New screen now follows a different path. */
+	if (F_ISSET(cmdp, E_NEWSCREEN))
+		return (ex_N_tagpush(sp, cmdp, frp, search, tag));
 
 	if (sp->frp == frp)
 		which = TC_CURRENT;
@@ -295,45 +217,7 @@ err:		free(tag);
 		return (1);
 	}
 
-	/*
-	 * !!!
-	 * The historic tags file format (from a long, long time ago...)
-	 * used a line number, not a search string.  I got complaints, so
-	 * people are still using the format.
-	 */
-	if (isdigit(search[0])) {
-		m.lno = atoi(search);
-		if (!file_eline(sp, m.lno))
-			tag_msg(sp, TAG_BADLNO, tag);
-		else {
-			sp->lno = m.lno;
-			sp->cno = 0;
-			(void)nonblank(sp, sp->lno, &sp->cno);
-		}
-		sval = 0;
-	} else {
-		/*
-		 * Search for the tag; cheap fallback for C functions
-		 * if the name is the same but the arguments have changed.
-		 */
-		m.lno = 1;
-		m.cno = 0;
-		sval = f_search(sp, &m, &m,
-		    search, NULL, SEARCH_FILE | SEARCH_TAG);
-		if (sval && (p = strrchr(search, '(')) != NULL) {
-			p[1] = '\0';
-			sval = f_search(sp, &m, &m,
-			    search, NULL, SEARCH_FILE | SEARCH_TAG);
-			p[1] = '(';
-		}
-		if (sval)
-			tag_msg(sp, TAG_SEARCH, tag);
-		else {
-			sp->lno = m.lno;
-			sp->cno = 0;
-			(void)nonblank(sp, sp->lno, &sp->cno);
-		}
-	}
+	sval = tag_search(sp, search, tag);
 	free(tag);
 
 	switch (which) {
@@ -346,6 +230,64 @@ err:		free(tag);
 		break;
 	}
 	F_SET(sp, S_SCR_CENTER);
+	return (0);
+}
+
+/*
+ * ex_N_tagpush --
+ *	ex_tagpush for new screens.
+ */
+static int
+ex_N_tagpush(sp, cmdp, frp, search, tag)
+	SCR *sp;
+	EXCMDARG *cmdp;
+	FREF *frp;
+	char *search, *tag;
+{
+	SCR *new, *top, *bot;
+
+	/* Get a new screen. */
+	if (svi_split(sp, &top, &bot))
+		return (1);
+	new = sp == top ? bot : top;
+
+	/* Switch files. */
+	if (frp == sp->frp) {
+		/* Copy file state. */
+		new->ep = sp->ep;
+		++new->ep->refcnt;
+
+		new->frp = frp;
+		new->frp->flags = sp->frp->flags;
+	} else if (file_init(new, frp, NULL,
+	    FS_WELCOME | (F_ISSET(cmdp, E_FORCE) ? FS_FORCE : 0))) {
+		if (sp == top)
+			(void)svi_join(new, sp, NULL, NULL);
+		else
+			(void)svi_join(new, NULL, sp, NULL);
+		(void)screen_end(new);
+		return (1);
+	}
+
+	/* Search for the tag. */
+	(void)tag_search(new, search, tag);
+	free(tag);
+
+	/* Add the new screen to the queue. */
+	SIGBLOCK(sp->gp);
+	if (sp == bot) {
+		/* Split up, link in before the parent. */
+		CIRCLEQ_INSERT_BEFORE(&sp->gp->dq, sp, new, q);
+	} else {
+		/* Split down, link in after the parent. */
+		CIRCLEQ_INSERT_AFTER(&sp->gp->dq, sp, new, q);
+	}
+	SIGUNBLOCK(sp->gp);
+
+	/* Set up the switch. */
+	sp->nextdisp = new;
+	F_SET(sp, S_SSWITCH);
+
 	return (0);
 }
 
@@ -544,6 +486,62 @@ ex_tagdisplay(sp)
 				    tp->search);
 		F_SET(sp, S_SCR_EXWROTE);
 	}
+	return (0);
+}
+
+/*
+ * tag_search --
+ *	Search a file for a tag.
+ */
+static int
+tag_search(sp, search, tag)
+	SCR *sp;
+	char *search, *tag;
+{
+	MARK m;
+	int sval;
+	char *p;
+
+	/*
+	 * !!!
+	 * The historic tags file format (from a long, long time ago...)
+	 * used a line number, not a search string.  I got complaints, so
+	 * people are still using the format.
+	 */
+	if (isdigit(search[0])) {
+		m.lno = atoi(search);
+		if (!file_eline(sp, m.lno)) {
+			tag_msg(sp, TAG_BADLNO, tag);
+			return (1);
+		}
+	} else {
+		/*
+		 * Search for the tag; cheap fallback for C functions
+		 * if the name is the same but the arguments have changed.
+		 */
+		m.lno = 1;
+		m.cno = 0;
+		sval = f_search(sp, &m, &m,
+		    search, NULL, SEARCH_FILE | SEARCH_TAG);
+		if (sval && (p = strrchr(search, '(')) != NULL) {
+			p[1] = '\0';
+			sval = f_search(sp, &m, &m,
+			    search, NULL, SEARCH_FILE | SEARCH_TAG);
+			p[1] = '(';
+		}
+		if (sval) {
+			tag_msg(sp, TAG_SEARCH, tag);
+			return (1);
+		}
+	}
+
+	/*
+	 * !!!
+	 * Tags move to the first non-blank, NOT the search pattern start.
+	 */
+	sp->lno = m.lno;
+	sp->cno = 0;
+	(void)nonblank(sp, sp->lno, &sp->cno);
 	return (0);
 }
 
