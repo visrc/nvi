@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_word.c,v 8.12 1994/02/26 17:18:23 bostic Exp $ (Berkeley) $Date: 1994/02/26 17:18:23 $";
+static char sccsid[] = "$Id: v_word.c,v 8.13 1994/03/04 11:08:36 bostic Exp $ (Berkeley) $Date: 1994/03/04 11:08:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -213,11 +213,9 @@ ret:	if (!ISMOTION(vp) &&
 
 	/* Adjust the end of the range for motion commands. */
 	vp->m_stop.lno = cs.cs_lno;
-	if (ISMOTION(vp)) {
-		if (cs.cs_flags == 0)
-			vp->m_stop.cno = cs.cs_cno - 1;
-	} else
-		vp->m_stop.cno = cs.cs_cno;
+	vp->m_stop.cno = cs.cs_cno;
+	if (ISMOTION(vp) && cs.cs_flags == 0)
+		--vp->m_stop.cno;
 
 	/*
 	 * Non-motion commands move to the end of the range.  VC_D and
