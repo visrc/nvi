@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.31 1993/11/02 11:03:37 bostic Exp $ (Berkeley) $Date: 1993/11/02 11:03:37 $";
+static char sccsid[] = "$Id: main.c,v 8.32 1993/11/02 14:41:51 bostic Exp $ (Berkeley) $Date: 1993/11/02 14:41:51 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -452,7 +452,7 @@ msgflush(gp)
 	MSG *mp;
 
 	/* Ring the bell. */
-	if (F_ISSET(gp, S_BELLSCHED))
+	if (F_ISSET(gp, G_BELLSCHED))
 		(void)fprintf(stderr, "\07");		/* \a */
 
 	/* Display the messages. */
