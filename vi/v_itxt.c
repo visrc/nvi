@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 8.5 1993/08/06 09:44:18 bostic Exp $ (Berkeley) $Date: 1993/08/06 09:44:18 $";
+static char sccsid[] = "$Id: v_itxt.c,v 8.6 1993/08/06 11:37:32 bostic Exp $ (Berkeley) $Date: 1993/08/06 11:37:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -449,10 +449,10 @@ v_change(sp, ep, vp, fm, tm, rp)
 	MARK *fm, *tm, *rp;
 {
 	recno_t lno;
-	size_t len;
+	size_t blen, len;
 	u_int flags;
-	int lmode;
-	char *p;
+	int lmode, rval;
+	char *bp, *p;
 
 	SET_TXT_STD(sp, 0);
 	if (F_ISSET(vp,  VC_ISDOT))
@@ -472,9 +472,14 @@ v_change(sp, ep, vp, fm, tm, rp)
 	sp->lno = fm->lno;
 	sp->cno = fm->cno;
 
-	if (fm->lno == tm->lno)
-		if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL ||
-		    len == 0) {
+	/*
+	 * If changing within a single line, the line either currently has
+	 * text or it doesn't.  If it doesn't, just insert text.  Otherwise,
+	 * copy it and overwrite it.
+	 */
+	if (fm->lno == tm->lno) {
+		if ((p =
+		    file_gline(sp, ep, fm->lno, &len)) == NULL || len == 0) {
 			if (p == NULL) {
 				if (file_lline(sp, ep, &lno))
 					return (1);
@@ -490,31 +495,70 @@ v_change(sp, ep, vp, fm, tm, rp)
 				return (1);
 			LF_SET(TXT_EMARK | TXT_OVERWRITE);
 		}
-	else {
-		if (cut(sp, ep, VICB(vp), fm, tm, lmode))
-			return (1);
-
-		if (delete(sp, ep, fm, tm, lmode))
-			return (1);
-
-		if (lmode && file_iline(sp, ep, fm->lno, "", 0))
-			return (1);
-
-		if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
-			if (file_lline(sp, ep, &lno))
-				return (1);
-			if (lno != 0) {
-				GETLINE_ERR(sp, fm->lno);
-				return (1);
-			}
-			len = 0;
-		}
-		if (len == 0)
-			LF_SET(TXT_APPENDEOL);
-		tm = NULL;
+		return (v_ntext(sp, ep,
+		    &sp->txthdr, tm, p, len, rp, 0, OOBLNO, flags));
 	}
-	return (v_ntext(sp, ep,
-	    &sp->txthdr, tm, p, len, rp, 0, OOBLNO, flags));
+
+	/*
+	 * It's trickier if changing over multiple lines.  If we're in
+	 * line mode we delete all of the lines and insert a replacement
+	 * line which the user edits.  If there was leading whitespace
+	 * in the first line being changed, we copy it and use it as the
+	 * replacement.  If we're not in line mode, we just delete the
+	 * text and start inserting.
+	 *
+	 * Copy the text.
+	 */
+	if (cut(sp, ep, VICB(vp), fm, tm, lmode))
+		return (1);
+
+	/* If replacing entire lines and there's leading whitespace. */
+	if (lmode && fm->cno) {
+		/* Get a copy of the first line changed. */
+		if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
+			GETLINE_ERR(sp, fm->lno);
+			return (1);
+		}
+		/* Copy the leading whitespace elsewhere. */
+		GET_SPACE(sp, bp, blen, fm->cno);
+		memmove(bp, p, fm->cno);
+	} else
+		bp = NULL;
+
+	/* Delete the text. */
+	if (delete(sp, ep, fm, tm, lmode))
+		return (1);
+
+	/* If replacing entire lines, insert a replacement line. */
+	if (lmode) {
+		if (file_iline(sp, ep, fm->lno, bp, fm->cno))
+			return (1);
+		len = sp->cno = fm->cno;
+	}
+
+	/* Get the line we're editing. */
+	if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
+		if (file_lline(sp, ep, &lno))
+			return (1);
+		if (lno != 0) {
+			GETLINE_ERR(sp, fm->lno);
+			return (1);
+		}
+		len = 0;
+	}
+
+	/* Check to see if we're appending to the line. */
+	if (fm->cno >= len)
+		LF_SET(TXT_APPENDEOL);
+
+	/* No to mark. */
+	tm = NULL;
+
+	rval = v_ntext(sp, ep, &sp->txthdr, tm, p, len, rp, 0, OOBLNO, flags);
+
+	if (bp != NULL)
+		FREE_SPACE(sp, bp, blen);
+	return (rval);
 }
 
 /*
