@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 9.16 1995/01/30 12:00:01 bostic Exp $ (Berkeley) $Date: 1995/01/30 12:00:01 $
+ *	$Id: screen.h,v 9.17 1995/01/30 12:04:40 bostic Exp $ (Berkeley) $Date: 1995/01/30 12:04:40 $
  */
 
 /*
@@ -23,6 +23,9 @@
  */
 #define	MINIMUM_SCREEN_ROWS	 1
 #define	MINIMUM_SCREEN_COLS	20
+
+typedef enum {				/* Line operations. */
+    LINE_APPEND, LINE_DELETE, LINE_INSERT, LINE_RESET } lnop_t;
 
 /*
  * Structure for holding file references.  Each SCR structure contains a
