@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.14 1993/08/29 14:23:30 bostic Exp $ (Berkeley) $Date: 1993/08/29 14:23:30 $
+ *	$Id: screen.h,v 8.15 1993/08/30 14:36:39 bostic Exp $ (Berkeley) $Date: 1993/08/30 14:36:39 $
  */
 
 /*
@@ -197,7 +197,7 @@ typedef struct _scr {
 	size_t	 newl_len;		/* Newline array size. */
 	size_t	 newl_cnt;		/* Newlines in replacement. */
 
-	struct _chname *cname;		/* Display names of characters. */
+	CHNAME	*cname;			/* Display names of characters. */
 	u_char	 special[UCHAR_MAX];	/* Special character array. */
 
 					/* Ex/vi: mapped chars, abbrevs. */
