@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.34 1993/11/23 11:00:13 bostic Exp $ (Berkeley) $Date: 1993/11/23 11:00:13 $
+ *	$Id: ex.h,v 8.35 1993/11/26 15:09:17 bostic Exp $ (Berkeley) $Date: 1993/11/26 15:09:17 $
  */
 
 /* Ex command structure. */
@@ -90,8 +90,6 @@ typedef struct _ex_private {
 	TAILQ_HEAD(_tagh, _tag) tagq;	/* Tag stack. */
 	TAILQ_HEAD(_tagfh, _tagf) tagfq;/* Tag stack. */
 	char	*tlast;			/* Saved last tag. */
-
-	u_long	q_ccnt;			/* Quit command count. */
 } EX_PRIVATE;
 #define	EXP(sp)	((EX_PRIVATE *)((sp)->ex_private))
 	
