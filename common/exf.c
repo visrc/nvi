@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.56 1993/12/10 12:20:37 bostic Exp $ (Berkeley) $Date: 1993/12/10 12:20:37 $";
+static char sccsid[] = "$Id: exf.c,v 8.57 1993/12/16 15:12:14 bostic Exp $ (Berkeley) $Date: 1993/12/16 15:12:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -244,7 +244,7 @@ file_init(sp, frp, rcv_name, force)
 		goto err;
 	} else {
 		oinfo.bfname = ep->rcv_path;
-		F_SET(ep, F_MODIFIED);
+		F_SET(ep, F_MODIFIED | F_RCV_ON);
 	}
 
 	/* Open a db structure. */
