@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.40 1993/11/22 17:28:23 bostic Exp $ (Berkeley) $Date: 1993/11/22 17:28:23 $";
+static char sccsid[] = "$Id: screen.c,v 8.41 1993/11/22 18:32:45 bostic Exp $ (Berkeley) $Date: 1993/11/22 18:32:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -226,7 +226,8 @@ screen_end(sp)
 		} else if ((c_sp = sp->q.cqe_next) != (void *)&sp->gp->dq) {
 			if (F_ISSET(sp, S_BELLSCHED))
 				F_SET(c_sp, S_BELLSCHED);
-		} else if ((c_sp = sp->q.cqe_next) != NULL) {
+		} else if ((c_sp =
+		    sp->gp->hq.cqh_first) != (void *)&sp->gp->hq) {
 			if (F_ISSET(sp, S_BELLSCHED))
 				F_SET(c_sp, S_BELLSCHED);
 		} else {
