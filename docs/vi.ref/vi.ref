@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.28 1994/04/30 10:59:11 bostic Exp $ (Berkeley) $Date: 1994/04/30 10:59:11 $
+.\"     $Id: vi.ref,v 8.29 1994/05/17 12:25:15 bostic Exp $ (Berkeley) $Date: 1994/05/17 12:25:15 $
 .\"
 .Dd "%Q%"
 .Dt "EX/VI REFERENCE MANUAL" 1
@@ -211,6 +211,8 @@ The use of the
 directory may be changed setting the
 .Sy recdir
 option in the user's or system startup information.
+(Note, however, that if a memory based file system is used as the backup
+directory, each system reboot will delete all of the recovery files!)
 .Pp
 The recovery directory should have the
 .Dq "sticky-bit"
