@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 5.18 1993/02/12 13:32:43 bostic Exp $ (Berkeley) $Date: 1993/02/12 13:32:43 $";
+static char sccsid[] = "$Id: v_scroll.c,v 5.19 1993/02/13 15:36:11 bostic Exp $ (Berkeley) $Date: 1993/02/13 15:36:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -54,6 +54,13 @@ v_lgoto(vp, fm, tm, rp)
 	return (0);
 }
 
+#define	NO_SUCH_LINE {							\
+	bell();								\
+	if (ISSET(O_VERBOSE))						\
+		msg("No such line on the screen.");			\
+	return (1);							\
+}
+
 /* 
  * v_home -- [count]H
  *	Move to the first non-blank character of the line count from
@@ -64,14 +71,8 @@ v_home(vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	recno_t lno;
-
-	lno = curf->otop + (vp->flags & VC_C1SET ? vp->count : 0);
-	if (lno > file_lline(curf)) {
-		v_eof(fm);
-		return (1);
-	}
-	rp->lno = lno;
+	if (scr_smtop(curf, &rp->lno, vp->flags & VC_C1SET ? vp->count : 1))
+		NO_SUCH_LINE;
 	return (0);
 }
 
@@ -85,15 +86,8 @@ v_middle(vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	recno_t lno;
-
-	if (file_gline(curf, BOTLINE(curf, curf->otop), NULL) == NULL) {
-		lno = file_lline(curf) / 2;
-		if (lno == 0)
-			lno = 1;
-		rp->lno = lno;
-	} else
-		rp->lno = curf->otop + curf->lines / 2;
+	if (scr_smmid(curf, &rp->lno))
+		NO_SUCH_LINE;
 	return (0);
 }
 
@@ -107,21 +101,8 @@ v_bottom(vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	recno_t cnt, lno;
-
-	if (file_gline(curf, BOTLINE(curf, curf->otop), NULL) == NULL) {
-		lno = file_lline(curf);
-		if (lno == 0)
-			lno = 1;
-	} else
-		lno = BOTLINE(curf, curf->otop);
-
-	cnt = vp->flags & VC_C1SET ? vp->count : 0;
-	if (cnt >= lno) {
-		v_sof(fm);
-		return (1);
-	}
-	rp->lno = lno - cnt;
+	if (scr_smbot(curf, &rp->lno, vp->flags & VC_C1SET ? vp->count : 1))
+		NO_SUCH_LINE;
 	return (0);
 }
 

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.22 1993/02/12 10:58:10 bostic Exp $ (Berkeley) $Date: 1993/02/12 10:58:10 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.23 1993/02/13 15:36:12 bostic Exp $ (Berkeley) $Date: 1993/02/13 15:36:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1068,6 +1068,110 @@ scr_smprev(ep, p)
 		t->lno = p->lno - 1;
 		t->off = scr_screens(ep, t->lno, NULL);
 	}
+	return (0);
+}
+
+/*
+ * scr_smbot --
+ *	Return the line number of the last line on the screen.  (The vi
+ *	L command.) Here because only the screen routines know what's
+ *	really out there.
+ */
+int
+scr_smbot(ep, lnop, cnt)
+	EXF *ep;
+	recno_t *lnop;
+	u_long cnt;
+{
+	SMAP *p;
+	recno_t last;
+	
+	/* Set p to point at the last legal entry in the map. */
+	last = file_lline(ep);
+	if (TMAP->lno <= last)
+		p = TMAP + 1;
+	else
+		for (p = HMAP; p->lno <= last; ++p);
+
+	/* Step past cnt start-of-lines, stopping at HMAP. */
+	for (; cnt; --cnt)
+		for (;;) {
+			if (--p < HMAP)
+				return (1);
+			if (p->off == 1)
+				break;
+		}
+	*lnop = p->lno;
+	return (0);
+}
+
+/*
+ * scr_mid --
+ *	Return the line number of the middle line on the screen.  (The
+ *	vi M command.  Note, the middle line number may not be anywhere
+ *	near the middle of the screen, because that's how the historic
+ *	vi behaved.)  Here because only the screen routines know what's
+ *	out there.
+ */
+int
+scr_smmid(ep, lnop)
+	EXF *ep;
+	recno_t *lnop;
+{
+	recno_t last, mid;
+
+	/* Check for less than a full screen of lines. */
+	last = file_lline(ep);
+	if (TMAP->lno < last)
+		last = TMAP->lno;
+
+	mid = (last - HMAP->lno + 1) / 2;
+	if (mid == 0)
+		if (HMAP->off == 1) {
+			*lnop = HMAP->lno;
+			return (0);
+		} else
+			return (1);
+	*lnop = mid;
+	return (0);
+}
+
+/*
+ * scr_smtop --
+ *	Return the line number of the first line on the screen.  (The vi
+ *	L command.  Note, the top line number may not be at the top of the
+ *	screen, because we search for a line that starts on the screen.
+ *	It works that way because that's how the historic vi behave.) Here
+ *	because only the screen routines know what's really out there.
+ */
+int
+scr_smtop(ep, lnop, cnt)
+	EXF *ep;
+	recno_t *lnop;
+	u_long cnt;
+{
+	SMAP *p, *t;
+	recno_t last;
+
+	/*
+	 * Set t to point at the map entry one past the last legal
+	 * entry in the map.
+	 */
+	last = file_lline(ep);
+	if (TMAP->lno <= last)
+		t = TMAP + 1;
+	else
+		for (t = HMAP; t->lno <= last; ++t);
+
+	/* Step past cnt start-of-lines, stopping at t. */
+	for (p = HMAP - 1; cnt; --cnt)
+		for (;;) {
+			if (++p == t)
+				return (1);
+			if (p->off == 1)
+				break;
+		}
+	*lnop = p->lno;
 	return (0);
 }
 

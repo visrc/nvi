@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 5.13 1993/02/12 10:58:08 bostic Exp $ (Berkeley) $Date: 1993/02/12 10:58:08 $
+ *	$Id: screen.h,v 5.14 1993/02/13 15:36:10 bostic Exp $ (Berkeley) $Date: 1993/02/13 15:36:10 $
  */
 
 /*
@@ -56,6 +56,9 @@
 #define	LINE_INSERT	0x040		/* Insert a line. */
 #define	LINE_RESET	0x080		/* Reset a line. */
 
-int	scr_end __P((EXF *));
 int	scr_begin __P((EXF *));
+int	scr_end __P((EXF *));
 int	scr_modeline __P((EXF *, int));
+int	scr_smbot __P((EXF *, recno_t *, u_long));
+int	scr_smmid __P((EXF *, recno_t *));
+int	scr_smtop __P((EXF *, recno_t *, u_long));
