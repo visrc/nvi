@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 8.1 1993/06/09 22:20:35 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:20:35 $";
+static char sccsid[] = "$Id: cut.c,v 8.2 1993/06/29 16:53:55 bostic Exp $ (Berkeley) $Date: 1993/06/29 16:53:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -206,146 +206,152 @@ put(sp, ep, buffer, cp, rp, append)
 	lmode = cb->flags & CB_LMODE;
 
 	/*
-	 * If buffer was created in line mode, append each new line into the
-	 * file.  Historical practice is that the cursor ends up on the first
+	 * It's possible to do a put into an empty file, meaning that the
+	 * cut buffer simply becomes the file.  It's a special case so
+	 * that we can ignore it in general.
+	 *
+	 * Historical practice is that the cursor ends up on the first
 	 * non-blank character of the first line inserted.
 	 */
-	if (lmode) {
-		if (append) {
-			for (lno = cp->lno;
-			    tp != (TEXT *)&cb->txthdr; ++lno, tp = tp->next)
-				if (file_aline(sp, ep, 1, lno, tp->lb, tp->len))
-					return (1);
-			rp->lno = cp->lno + 1;
-		} else if ((lno = cp->lno) != 1) {
-			for (--lno;
-			    tp != (TEXT *)&cb->txthdr; tp = tp->next, ++lno)
-				if (file_aline(sp, ep, 1, lno, tp->lb, tp->len))
-					return (1);
-			rp->lno = cp->lno;
-		} else {
-			if (file_iline(sp, ep, (recno_t)1, tp->lb, tp->len))
-				return (1);
-			for (lno = 1;
-			    (tp = tp->next) != (TEXT *)&cb->txthdr; ++lno)
+	if (cp->lno == 1) {
+		if (file_lline(sp, ep, &lno))
+			return (1);
+		if (lno == 0) {
+			for (; tp != (TEXT *)&cb->txthdr; ++lno, tp = tp->next)
 				if (file_aline(sp, ep, 1, lno, tp->lb, tp->len))
 					return (1);
 			rp->lno = 1;
+			if (nonblank(sp, ep, rp->lno, &rp->cno))
+				rp->cno = 0;
+			goto ret;
 		}
+	}
+			
+	/*
+	 * If buffer was created in line mode, append each new line into the
+	 * file.
+	 */
+	if (lmode) {
+		lno = append ? cp->lno : cp->lno - 1;
+		rp->lno = lno + 1;
+		for (; tp != (TEXT *)&cb->txthdr; ++lno, tp = tp->next)
+			if (file_aline(sp, ep, 1, lno, tp->lb, tp->len))
+				return (1);
 		if (nonblank(sp, ep, rp->lno, &rp->cno))
 			rp->cno = 0;
+		goto ret;
 	}
+
 	/*
 	 * If buffer was cut in character mode, replace the current line with
 	 * one built from the portion of the first line to the left of the
 	 * split plus the first line in the CB.  Append each intermediate line
 	 * in the CB.  Append a line built from the portion of the first line
 	 * to the right of the split plus the last line in the CB.
+	 *
+	 * Get the first line.
 	 */
-	else {
-		/* Get the first line. */
-		lno = cp->lno;
-		if ((p = file_gline(sp, ep, lno, &len)) == NULL) {
-			GETLINE_ERR(sp, lno);
-			return (1);
-		}
-
-		GET_SPACE(sp, bp, blen, tp->len + len + 1);
-		t = bp;
-
-		/* Original line, left of the split. */
-		if (len > 0 && (clen = cp->cno + (append ? 1 : 0)) > 0) {
-			memmove(bp, p, clen);
-			p += clen;
-			t += clen;
-		}
-
-		/* First line from the CB. */
-		memmove(t, tp->lb, tp->len);
-		t += tp->len;
-
-		/* Calculate length left in original line. */
-		clen = len ? len - cp->cno - (append ? 1 : 0) : 0;
-
-		/*
-		 * If no more lines in the CB, append the rest of the original
-		 * line and quit.  Otherwise, build the last line before doing
-		 * the intermediate lines, because the line changes will lose
-		 * the cached line.
-		 */
-		if (tp->next == (TEXT *)&cb->txthdr) {
-			/*
-			 * Historical practice is that if a non-line mode put
-			 * is inside a single line, the cursor ends up on the
-			 * last character inserted.
-			 */
-			rp->lno = lno;
-			rp->cno = (t - bp) - 1;
-
-			if (clen > 0) {
-				memmove(t, p, clen);
-				t += clen;
-			}
-			if (file_sline(sp, ep, lno, bp, t - bp))
-				goto mem;
-		} else {
-			/*
-			 * Have to build both the first and last lines of the
-			 * put before doing any sets or we'll lose the cached
-			 * line.  Build both the first and last lines in the
-			 * same buffer, so we don't have to have another buffer
-			 * floating around.
-			 *
-			 * Last part of original line; check for space, reset
-			 * the pointer into the buffer.
-			 */
-			ltp = cb->txthdr.prev;
-			len = t - bp;
-			ADD_SPACE(sp, bp, blen, ltp->len + clen);
-			t = bp + len;
-
-			/* Add in last part of the CB. */
-			memmove(t, ltp->lb, ltp->len);
-			if (clen)
-				memmove(t + ltp->len, p, clen);
-			clen += ltp->len;
-
-			/*
-			 * Now: bp points to the first character of the first
-			 * line, t points to the last character of the last
-			 * line, t - bp is the length of the first line, and
-			 * clen is the length of the last.  Just figured you'd
-			 * want to know.
-			 *
-			 * Output the line replacing the original line.
-			 */
-			if (file_sline(sp, ep, lno, bp, t - bp))
-				goto mem;
-
-			/*
-			 * Historical practice is that if a non-line mode put
-			 * covers multiple lines, the cursor ends up on the
-			 * first character inserted.  (Of course.)
-			 */
-			rp->lno = lno;
-			rp->cno = (t - bp) - 1;
-
-			/* Output any intermediate lines in the CB. */
-			for (tp = tp->next; tp->next != (TEXT *)&cb->txthdr;
-			    ++lno, tp = tp->next)
-				if (file_aline(sp, ep, 1, lno, tp->lb, tp->len))
-					goto mem;
-
-			if (file_aline(sp, ep, 1, lno, t, clen)) {
-mem:				FREE_SPACE(sp, bp, blen);
-				return (1);
-			}
-		}
-		FREE_SPACE(sp, bp, blen);
+	lno = cp->lno;
+	if ((p = file_gline(sp, ep, lno, &len)) == NULL) {
+		GETLINE_ERR(sp, lno);
+		return (1);
 	}
 
+	GET_SPACE(sp, bp, blen, tp->len + len + 1);
+	t = bp;
+
+	/* Original line, left of the split. */
+	if (len > 0 && (clen = cp->cno + (append ? 1 : 0)) > 0) {
+		memmove(bp, p, clen);
+		p += clen;
+		t += clen;
+	}
+
+	/* First line from the CB. */
+	memmove(t, tp->lb, tp->len);
+	t += tp->len;
+
+	/* Calculate length left in original line. */
+	clen = len ? len - cp->cno - (append ? 1 : 0) : 0;
+
+	/*
+	 * If no more lines in the CB, append the rest of the original
+	 * line and quit.  Otherwise, build the last line before doing
+	 * the intermediate lines, because the line changes will lose
+	 * the cached line.
+	 */
+	if (tp->next == (TEXT *)&cb->txthdr) {
+		/*
+		 * Historical practice is that if a non-line mode put
+		 * is inside a single line, the cursor ends up on the
+		 * last character inserted.
+		 */
+		rp->lno = lno;
+		rp->cno = (t - bp) - 1;
+
+		if (clen > 0) {
+			memmove(t, p, clen);
+			t += clen;
+		}
+		if (file_sline(sp, ep, lno, bp, t - bp))
+			goto mem;
+	} else {
+		/*
+		 * Have to build both the first and last lines of the
+		 * put before doing any sets or we'll lose the cached
+		 * line.  Build both the first and last lines in the
+		 * same buffer, so we don't have to have another buffer
+		 * floating around.
+		 *
+		 * Last part of original line; check for space, reset
+		 * the pointer into the buffer.
+		 */
+		ltp = cb->txthdr.prev;
+		len = t - bp;
+		ADD_SPACE(sp, bp, blen, ltp->len + clen);
+		t = bp + len;
+
+		/* Add in last part of the CB. */
+		memmove(t, ltp->lb, ltp->len);
+		if (clen)
+			memmove(t + ltp->len, p, clen);
+		clen += ltp->len;
+
+		/*
+		 * Now: bp points to the first character of the first
+		 * line, t points to the last character of the last
+		 * line, t - bp is the length of the first line, and
+		 * clen is the length of the last.  Just figured you'd
+		 * want to know.
+		 *
+		 * Output the line replacing the original line.
+		 */
+		if (file_sline(sp, ep, lno, bp, t - bp))
+			goto mem;
+
+		/*
+		 * Historical practice is that if a non-line mode put
+		 * covers multiple lines, the cursor ends up on the
+		 * first character inserted.  (Of course.)
+		 */
+		rp->lno = lno;
+		rp->cno = (t - bp) - 1;
+
+		/* Output any intermediate lines in the CB. */
+		for (tp = tp->next;
+		    tp->next != (TEXT *)&cb->txthdr; ++lno, tp = tp->next)
+			if (file_aline(sp, ep, 1, lno, tp->lb, tp->len))
+				goto mem;
+
+		if (file_aline(sp, ep, 1, lno, t, clen)) {
+mem:			FREE_SPACE(sp, bp, blen);
+			return (1);
+		}
+	}
+	FREE_SPACE(sp, bp, blen);
+
 	/* Shift any marks in the range. */
-	mark_insert(sp, ep, cp, rp);
+ret:	mark_insert(sp, ep, cp, rp);
 
 	/* Reporting... */
 	sp->rptlines[L_PUT] += lno - cp->lno;
