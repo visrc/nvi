@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.12 1993/09/08 09:12:45 bostic Exp $ (Berkeley) $Date: 1993/09/08 09:12:45 $
+ *	$Id: ex.h,v 8.13 1993/09/08 17:16:59 bostic Exp $ (Berkeley) $Date: 1993/09/08 17:16:59 $
  */
 
 struct _excmdarg;
@@ -47,14 +47,15 @@ extern EXCMDLIST const cmds[];		/* List of ex commands. */
 /* Structure passed around to functions implementing ex commands. */
 typedef struct _excmdarg {
 	EXCMDLIST const *cmd;	/* Command entry in command table. */
-	int addrcnt;		/* Number of addresses (0, 1 or 2). */
-	MARK addr1;		/* 1st address. */
-	MARK addr2;		/* 2nd address. */
-	recno_t lineno;		/* Line number. */
-	int buffer;		/* Named buffer. */
-	int argc;		/* Count of file/word arguments. */
-	char **argv;		/* List of file/word arguments. */
-	u_int flags;		/* Selected flags from EXCMDLIST. */
+	int	addrcnt;	/* Number of addresses (0, 1 or 2). */
+	MARK	addr1;		/* 1st address. */
+	MARK	addr2;		/* 2nd address. */
+	recno_t	lineno;		/* Line number. */
+	u_long	count;		/* Specified count. */
+	int	buffer;		/* Named buffer. */
+	int	argc;		/* Count of file/word arguments. */
+	char  **argv;		/* List of file/word arguments. */
+	u_int	flags;		/* Selected flags from EXCMDLIST. */
 } EXCMDARG;
 
 /* Macro to set up the structure. */
