@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: mark.c,v 10.6 1995/09/25 11:58:42 bostic Exp $ (Berkeley) $Date: 1995/09/25 11:58:42 $";
+static char sccsid[] = "$Id: mark.c,v 10.7 1995/09/25 12:05:27 bostic Exp $ (Berkeley) $Date: 1995/09/25 12:05:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -244,9 +244,9 @@ mark_insdel(sp, op, lno)
 	 */
 	if ((op == LINE_APPEND || op == LINE_INSERT) && !file_eline(sp, 2)) {
 		if (file_lline(sp, &lline))
-			return (1);
+			return;		/* XXX: JUST LOST AN ERROR. */
 		if (lline == 1)
-			return (0);
+			return;
 	}
 
 	switch (op) {
