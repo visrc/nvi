@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_paragraph.c,v 8.11 1994/07/15 17:54:00 bostic Exp $ (Berkeley) $Date: 1994/07/15 17:54:00 $";
+static char sccsid[] = "$Id: v_paragraph.c,v 8.12 1994/07/20 17:26:56 bostic Exp $ (Berkeley) $Date: 1994/07/20 17:26:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -100,10 +100,11 @@ v_paragraphf(sp, ep, vp)
 			goto eof;
 		switch (pstate) {
 		case P_INTEXT:
-			if (p[0] == '.' && len >= 2)
+			if (p[0] == '.' && len > 1)
 				for (lp = VIP(sp)->paragraph; *lp; lp += 2)
 					if (lp[0] == p[1] &&
-					    (lp[1] == ' ' || lp[1] == p[2]) &&
+					    (lp[1] == ' ' && len == 2 ||
+					    lp[1] == p[2]) &&
 					    !--cnt)
 						goto found;
 			if (len == 0 || v_isempty(p, len)) {
@@ -258,7 +259,8 @@ v_paragraphb(sp, ep, vp)
 			if (p[0] == '.' && len >= 2)
 				for (lp = VIP(sp)->paragraph; *lp; lp += 2)
 					if (lp[0] == p[1] &&
-					    (lp[1] == ' ' || lp[1] == p[2]) &&
+					    (lp[1] == ' ' && len == 2 ||
+					    lp[1] == p[2]) &&
 					    !--cnt)
 						goto ret;
 			if (len == 0 || v_isempty(p, len)) {
@@ -319,7 +321,7 @@ v_buildparagraph(sp)
 
 	vip = VIP(sp);
 	if (vip->paragraph != NULL)
-		FREE(vip->paragraph, vip->paragraph_len);
+		free(vip->paragraph);
 
 	if (p_p != NULL)
 		memmove(p, p_p, p_len + 1);
