@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_line.c,v 10.15 1996/04/27 11:40:40 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:40 $";
+static const char sccsid[] = "$Id: vs_line.c,v 10.16 1996/05/04 18:50:52 bostic Exp $ (Berkeley) $Date: 1996/05/04 18:50:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,8 +46,9 @@ vs_line(sp, smp, yp, xp)
 	CHAR_T *kp;
 	GS *gp;
 	SMAP *tsmp;
-	size_t chlen, cols_per_screen, cno_cnt, len, scno, skip_screens;
-	size_t offset_in_char, offset_in_line, nlen, oldy, oldx;
+	size_t chlen, cno_cnt, cols_per_screen, len, nlen;
+	size_t offset_in_char, offset_in_line, oldx, oldy;
+	size_t scno, skip_cols, skip_screens;
 	int ch, dne, is_cached, is_partial, is_tab;
 	int list_tab, list_dollar;
 	char *p, *cbp, *ecbp, cbuf[128];
@@ -94,50 +95,52 @@ vs_line(sp, smp, yp, xp)
 
 	/*
 	 * Special case if we're printing the info/mode line.  Skip printing
-	 * the leading number, as well as other minor setup.  If painting the
-	 * line between two screens, it's always in reverse video.  The only
-	 * time this code paints the mode line is when the user is entering
-	 * text for a ":" command, so we can put the code here instead of
-	 * dealing with the empty line logic below.  This is a kludge, but it's
-	 * pretty much confined to this module.
-	 *
-	 * Set the number of screens to skip until a character is displayed.
-	 * Left-right screens are special, because we don't bother building
-	 * a buffer to be skipped over.
+	 * the leading number, as well as other minor setup.  The only time
+	 * this code paints the mode line is when the user is entering text
+	 * for a ":" command, so we can put the code here instead of dealing
+	 * with the empty line logic below.  This is a kludge, but it's pretty
+	 * much confined to this module.
 	 *
 	 * Set the number of columns for this screen.
+	 * Set the number of chars or screens to skip until a character is to
+	 * be displayed.
 	 */
 	cols_per_screen = sp->cols;
-	list_tab = O_ISSET(sp, O_LIST);
-	if (F_ISSET(sp, SC_TINPUT_INFO)) {
-		list_dollar = 0;
-		if (O_ISSET(sp, O_LEFTRIGHT))
-			skip_screens = 0;
-		else
-			skip_screens = smp->off - 1;
+	if (O_ISSET(sp, O_LEFTRIGHT)) {
+		skip_screens = 0;
+		skip_cols = smp->coff;
 	} else {
+		skip_screens = smp->soff - 1;
+		skip_cols = skip_screens * cols_per_screen;
+	}
+
+	list_tab = O_ISSET(sp, O_LIST);
+	if (F_ISSET(sp, SC_TINPUT_INFO))
+		list_dollar = 0;
+	else {
 		list_dollar = list_tab;
-		skip_screens = smp->off - 1;
 
 		/*
-		 * If O_NUMBER is set and it's line number 1 or the line exists
-		 * and this is the first screen of a folding line or any left-
-		 * right line, display the line number.
+		 * If O_NUMBER is set, the line doesn't exist and it's line
+		 * number 1, i.e., an empty file, display the line number.
+		 *
+		 * If O_NUMBER is set, the line exists and the first character
+		 * on the screen is the first character in the line, display
+		 * the line number.
 		 */
-		if (O_ISSET(sp, O_NUMBER)) {
+		if (O_ISSET(sp, O_NUMBER) &&
+		    (!dne || smp->lno == 1) && skip_cols == 0) {
 			cols_per_screen -= O_NUMBER_LENGTH;
-			if ((smp->lno == 1 || !dne) && skip_screens == 0) {
-				nlen = snprintf(cbuf,
-				    sizeof(cbuf), O_NUMBER_FMT, smp->lno);
-				(void)gp->scr_addstr(sp, cbuf, nlen);
-			}
+			nlen = snprintf(cbuf,
+			    sizeof(cbuf), O_NUMBER_FMT, smp->lno);
+			(void)gp->scr_addstr(sp, cbuf, nlen);
 		}
 	}
 
 	/*
 	 * Special case non-existent lines and the first line of an empty
 	 * file.  In both cases, the cursor position is 0, but corrected
-	 * for the O_NUMBER field if it was displayed.
+	 * as necessary for the O_NUMBER field, if it was displayed.
 	 */
 	if (dne || len == 0) {
 		/* Fill in the cursor. */
@@ -150,12 +153,15 @@ vs_line(sp, smp, yp, xp)
 		if (is_cached)
 			goto ret1;
 
-		/* Set line cacheing information. */
+		/* Set line cache information. */
 		smp->c_sboff = smp->c_eboff = 0;
 		smp->c_scoff = smp->c_eclen = 0;
 
-		/* Lots of special cases for empty lines. */
-		if (skip_screens == 0)
+		/*
+		 * Lots of special cases for empty lines, but they only apply
+		 * if we're displaying the first screen of the line.
+		 */
+		if (skip_cols == 0)
 			if (dne) {
 				if (smp->lno == 1) {
 					if (list_dollar) {
@@ -179,13 +185,12 @@ empty:					(void)gp->scr_addstr(sp,
 	}
 
 	/*
-	 * If we wrote a line that's this or a previous one, we can do this
-	 * much more quickly -- we cached the starting and ending positions
-	 * of that line.  The way it works is we keep information about the
-	 * lines displayed in the SMAP.  If we're painting the screen in
-	 * the forward, this saves us from reformatting the physical line for
-	 * every line on the screen.  This wins big on binary files with 10K
-	 * lines.
+	 * If we just wrote this or a previous line, we cached the starting
+	 * and ending positions of that line.  The way it works is we keep
+	 * information about the lines displayed in the SMAP.  If we're
+	 * painting the screen in the forward direction, this saves us from
+	 * reformatting the physical line for every line on the screen.  This
+	 * wins big on binary files with 10K lines.
 	 *
 	 * Test for the first screen of the line, then the current screen line,
 	 * then the line behind us, then do the hard work.  Note, it doesn't
@@ -193,18 +198,28 @@ empty:					(void)gp->scr_addstr(sp,
 	 * hard to try and figure out tabs in the reverse direction, i.e. how
 	 * many spaces a tab takes up in the reverse direction depends on
 	 * what characters preceded it.
+	 *
+	 * Test for the first screen of the line.
 	 */
-	if (smp->off == 1) {
+	if (skip_cols == 0) {
 		smp->c_sboff = offset_in_line = 0;
 		smp->c_scoff = offset_in_char = 0;
 		p = &p[offset_in_line];
-	} else if (is_cached) {
+		goto display;
+	}
+
+	/* Test to see if we've seen this exact line before. */
+	if (is_cached) {
 		offset_in_line = smp->c_sboff;
 		offset_in_char = smp->c_scoff;
 		p = &p[offset_in_line];
-		if (skip_screens != 0)
+		if (skip_cols > cols_per_screen)
 			cols_per_screen = sp->cols;
-	} else if (smp != HMAP &&
+		goto display;
+	}
+
+	/* Test to see if we saw an earlier part of this line before. */
+	if (smp != HMAP &&
 	    SMAP_CACHE(tsmp = smp - 1) && tsmp->lno == smp->lno) {
 		if (tsmp->c_eclen != tsmp->c_ecsize) {
 			offset_in_line = tsmp->c_eboff;
@@ -218,21 +233,41 @@ empty:					(void)gp->scr_addstr(sp,
 		smp->c_sboff = offset_in_line;
 		smp->c_scoff = offset_in_char;
 		p = &p[offset_in_line];
-		if (skip_screens != 0)
+		if (skip_cols > cols_per_screen)
 			cols_per_screen = sp->cols;
-	} else {
-		offset_in_line = 0;
-		offset_in_char = 0;
+		goto display;
+	}
 
-		/* This is the loop that skips through screens. */
-		if (skip_screens == 0) {
-			smp->c_sboff = offset_in_line;
-			smp->c_scoff = offset_in_char;
-		} else for (scno = 0; offset_in_line < len; ++offset_in_line) {
-			scno += chlen =
-			    (ch = *(u_char *)p++) == '\t' && !list_tab ?
+	scno = 0;
+	offset_in_line = 0;
+	offset_in_char = 0;
+
+	/* Do it the hard way, for leftright scrolling screens. */
+	if (O_ISSET(sp, O_LEFTRIGHT)) {
+		for (; offset_in_line < len; ++offset_in_line) {
+			chlen = (ch = *(u_char *)p++) == '\t' && !list_tab ?
 			    TAB_OFF(scno) : KEY_LEN(sp, ch);
-			if (scno < cols_per_screen)
+			if ((scno += chlen) >= skip_cols)
+				break;
+		}
+
+		/* Put starting info for this line in the cache. */
+		if (scno != skip_cols) {
+			smp->c_sboff = offset_in_line;
+			smp->c_scoff = offset_in_char = scno - skip_cols;
+			--p;
+		} else {
+			smp->c_sboff = ++offset_in_line;
+			smp->c_scoff = 0;
+		}
+	}
+
+	/* Do it the hard way, for historic line-folding screens. */
+	else {
+		for (; offset_in_line < len; ++offset_in_line) {
+			chlen = (ch = *(u_char *)p++) == '\t' && !list_tab ?
+			    TAB_OFF(scno) : KEY_LEN(sp, ch);
+			if ((scno += chlen) < cols_per_screen)
 				continue;
 			scno -= cols_per_screen;
 
@@ -246,22 +281,22 @@ empty:					(void)gp->scr_addstr(sp,
 			 * If crossed the last skipped screen boundary, start
 			 * displaying the characters.
 			 */
-			if (--skip_screens)
-				continue;
+			if (--skip_screens == 0)
+				break;
+		}
 
-			/* Put starting info for this line in the cache. */
-			if (scno) {
-				smp->c_sboff = offset_in_line;
-				smp->c_scoff = offset_in_char = chlen - scno;
-				--p;
-			} else {
-				smp->c_sboff = ++offset_in_line;
-				smp->c_scoff = 0;
-			}
-			break;
+		/* Put starting info for this line in the cache. */
+		if (scno != 0) {
+			smp->c_sboff = offset_in_line;
+			smp->c_scoff = offset_in_char = chlen - scno;
+			--p;
+		} else {
+			smp->c_sboff = ++offset_in_line;
+			smp->c_scoff = 0;
 		}
 	}
 
+display:
 	/*
 	 * Set the number of characters to skip before reaching the cursor
 	 * character.  Offset by 1 and use 0 as a flag value.  Vs_line is
@@ -327,7 +362,7 @@ empty:					(void)gp->scr_addstr(sp,
 			else
 				*xp = scno - 1;
 			if (O_ISSET(sp, O_NUMBER) &&
-			    !F_ISSET(sp, SC_TINPUT_INFO) && smp->off == 1)
+			    !F_ISSET(sp, SC_TINPUT_INFO) && skip_cols == 0)
 				*xp += O_NUMBER_LENGTH;
 
 			/* If the line is on the screen, quit. */
@@ -414,6 +449,9 @@ vs_number(sp)
 	int exist;
 	char nbuf[10];
 
+	gp = sp->gp;
+	vip = VIP(sp);
+
 	/* No reason to do anything if we're in input mode on the info line. */
 	if (F_ISSET(sp, SC_TINPUT_INFO))
 		return (0);
@@ -423,25 +461,29 @@ vs_number(sp)
 	 * line after the last line in the screen -- if it exists, we know
 	 * we have to to number all the lines in the screen.  Get the one
 	 * after the last instead of the last, so that the info line doesn't
-	 * fool us.
-	 *
-	 * If that test fails, we have to check each line for existence.
-	 *
-	 * XXX
-	 * The problem is that file_lline will lie, and tell us that the
-	 * info line is the last line in the file.
+	 * fool us.  (The problem is that file_lline will lie, and tell us
+	 * that the info line is the last line in the file.) If that test
+	 * fails, we have to check each line for existence.
 	 */
 	exist = db_exist(sp, TMAP->lno + 1);
 
-	gp = sp->gp;
-	vip = VIP(sp);
 	(void)gp->scr_cursor(sp, &oldy, &oldx);
-
 	for (smp = HMAP; smp <= TMAP; ++smp) {
-		if (smp->off != 1)
-			continue;
+		/* Numbers are only displayed for the first screen line. */
+		if (O_ISSET(sp, O_LEFTRIGHT)) {
+			if (smp->coff != 0)
+				continue;
+		} else
+			if (smp->soff != 1)
+				continue;
+
+		/*
+		 * The first line of an empty file gets numbered, otherwise
+		 * number any existing line.
+		 */
 		if (smp->lno != 1 && !exist && !db_exist(sp, smp->lno))
 			break;
+
 		(void)gp->scr_move(sp, smp - HMAP, 0);
 		len = snprintf(nbuf, sizeof(nbuf), O_NUMBER_FMT, smp->lno);
 		(void)gp->scr_addstr(sp, nbuf, len);

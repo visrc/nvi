@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_smap.c,v 10.21 1996/04/27 11:40:42 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:42 $";
+static const char sccsid[] = "$Id: vs_smap.c,v 10.22 1996/05/04 18:50:54 bostic Exp $ (Berkeley) $Date: 1996/05/04 18:50:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -197,7 +197,8 @@ vs_sm_fill(sp, lno, pos)
 	switch (pos) {
 	case P_FILL:
 		tmp.lno = 1;
-		tmp.off = 1;
+		tmp.coff = 0;
+		tmp.soff = 1;
 
 		/* See if less than half a screen from the top. */
 		if (vs_sm_nlines(sp,
@@ -209,20 +210,21 @@ vs_sm_fill(sp, lno, pos)
 		/* See if less than half a screen from the bottom. */
 		if (db_last(sp, &tmp.lno))
 			return (1);
-		if (!O_ISSET(sp, O_LEFTRIGHT))
-			tmp.off = vs_opt_screens(sp, tmp.lno, NULL);
+		tmp.coff = 0;
+		tmp.soff = vs_screens(sp, tmp.lno, NULL);
 		if (vs_sm_nlines(sp,
 		    &tmp, lno, HALFTEXT(sp)) <= HALFTEXT(sp)) {
 			TMAP->lno = tmp.lno;
-			if (!O_ISSET(sp, O_LEFTRIGHT))
-				TMAP->off = tmp.off;
+			TMAP->coff = tmp.coff;
+			TMAP->soff = tmp.soff;
 			goto bottom;
 		}
 		goto middle;
 	case P_TOP:
 		if (lno != OOBLNO) {
 top:			HMAP->lno = lno;
-			HMAP->off = 1;
+			HMAP->coff = 0;
+			HMAP->soff = 1;
 		}
 		/* If we fail, just punt. */
 		for (p = HMAP, cnt = sp->t_rows; --cnt; ++p)
@@ -232,7 +234,10 @@ top:			HMAP->lno = lno;
 	case P_MIDDLE:
 		/* If we fail, guess that the file is too small. */
 middle:		p = HMAP + sp->t_rows / 2;
-		for (p->lno = lno, p->off = 1; p > HMAP; --p)
+		p->lno = lno;
+		p->coff = 0;
+		p->soff = 1;
+		for (; p > HMAP; --p)
 			if (vs_sm_prev(sp, p, p - 1)) {
 				lno = 1;
 				goto top;
@@ -247,8 +252,8 @@ middle:		p = HMAP + sp->t_rows / 2;
 	case P_BOTTOM:
 		if (lno != OOBLNO) {
 			TMAP->lno = lno;
-			if (!O_ISSET(sp, O_LEFTRIGHT))
-				TMAP->off = vs_opt_screens(sp, lno, NULL);
+			TMAP->coff = 0;
+			TMAP->soff = vs_screens(sp, lno, NULL);
 		}
 		/* If we fail, guess that the file is too small. */
 bottom:		for (p = TMAP; p > HMAP; --p)
@@ -263,11 +268,12 @@ bottom:		for (p = TMAP; p > HMAP; --p)
 	return (0);
 
 	/*
-	 * Try and put *something* on the screen.  If this fails,
-	 * we have a serious hard error.
+	 * Try and put *something* on the screen.  If this fails, we have a
+	 * serious hard error.
 	 */
 err:	HMAP->lno = 1;
-	HMAP->off = 1;
+	HMAP->coff = 0;
+	HMAP->soff = 1;
 	for (p = HMAP; p < TMAP; ++p)
 		if (vs_sm_next(sp, p, p + 1))
 			return (1);
@@ -358,7 +364,7 @@ vs_sm_insert(sp, lno)
 	if (O_ISSET(sp, O_LEFTRIGHT))
 		cnt_orig = 1;
 	else
-		cnt_orig = vs_opt_screens(sp, lno, NULL);
+		cnt_orig = vs_screens(sp, lno, NULL);
 
 	HANDLE_WEIRDNESS(cnt_orig);
 
@@ -385,7 +391,8 @@ vs_sm_insert(sp, lno)
 	/* Fill in the SMAP for the new lines, and display. */
 	for (cnt = 1, t = p; cnt <= cnt_orig; ++t, ++cnt) {
 		t->lno = lno;
-		t->off = cnt;
+		t->coff = 0;
+		t->soff = cnt;
 		SMAP_FLUSH(t);
 		if (vs_line(sp, t, NULL, NULL))
 			return (1);
@@ -417,7 +424,7 @@ vs_sm_reset(sp, lno)
 	} else {
 		for (cnt_orig = 0,
 		    t = p; t <= TMAP && t->lno == lno; ++cnt_orig, ++t);
-		cnt_new = vs_opt_screens(sp, lno, NULL);
+		cnt_new = vs_screens(sp, lno, NULL);
 	}
 
 	HANDLE_WEIRDNESS(cnt_orig);
@@ -457,7 +464,7 @@ vs_sm_reset(sp, lno)
 		/* Fill in the SMAP for the replaced line, and display. */
 		for (cnt = 1, t = p; cnt_new-- && t <= TMAP; ++t, ++cnt) {
 			t->lno = lno;
-			t->off = cnt;
+			t->soff = cnt;
 			SMAP_FLUSH(t);
 			if (vs_line(sp, t, NULL, NULL))
 				return (1);
@@ -477,7 +484,7 @@ vs_sm_reset(sp, lno)
 		/* Fill in the SMAP for the replaced line, and display. */
 		for (cnt = 1, t = p; cnt_new--; ++t, ++cnt) {
 			t->lno = lno;
-			t->off = cnt;
+			t->soff = cnt;
 			SMAP_FLUSH(t);
 			if (vs_line(sp, t, NULL, NULL))
 				return (1);
@@ -700,7 +707,9 @@ vs_sm_up(sp, rp, count, scmd, smp)
 		if (echanged) {
 			rp->lno = smp->lno;
 			rp->cno = vs_colpos(sp, smp->lno,
-			    (smp->off - 1) * sp->cols + sp->rcm % sp->cols);
+			    (O_ISSET(sp, O_LEFTRIGHT) ? 
+			    smp->coff : (smp->soff - 1) * sp->cols) +
+			    sp->rcm % sp->cols);
 		}
 		return (0);
 	case CNTRL_F:
@@ -813,7 +822,8 @@ vs_sm_down(sp, rp, count, scmd, smp)
 	int cursor_set, ychanged, zset;
 
 	/* Check to see if movement is possible. */
-	if (HMAP->lno == 1 && HMAP->off == 1 &&
+	if (HMAP->lno == 1 &&
+	    (O_ISSET(sp, O_LEFTRIGHT) || HMAP->soff == 1) &&
 	    (scmd == CNTRL_Y || scmd == Z_CARAT || smp == HMAP)) {
 		v_sof(sp, NULL);
 		return (1);
@@ -839,7 +849,8 @@ vs_sm_down(sp, rp, count, scmd, smp)
 			for (; count--; s1 = s2) {
 				if (vs_sm_prev(sp, &s1, &s2))
 					return (1);
-				if (s2.lno == 1 && s2.off == 1)
+				if (s2.lno == 1 &&
+				    (O_ISSET(sp, O_LEFTRIGHT) || s2.soff == 1))
 					break;
 			}
 			HMAP[0] = s2;
@@ -850,7 +861,8 @@ vs_sm_down(sp, rp, count, scmd, smp)
 		cursor_set = scmd == CNTRL_Y || vs_sm_cursor(sp, &ssmp);
 		for (; count &&
 		    sp->t_rows != sp->t_maxrows; --count, ++sp->t_rows) {
-			if (HMAP->lno == 1 && HMAP->off == 1)
+			if (HMAP->lno == 1 &&
+			    (O_ISSET(sp, O_LEFTRIGHT) || HMAP->soff == 1))
 				break;
 			++TMAP;
 			if (vs_sm_1down(sp))
@@ -866,7 +878,8 @@ vs_sm_down(sp, rp, count, scmd, smp)
 
 	for (ychanged = zset = 0; count; --count) {
 		/* If the line doesn't exist, we're done. */
-		if (HMAP->lno == 1 && HMAP->off == 1)
+		if (HMAP->lno == 1 &&
+		    (O_ISSET(sp, O_LEFTRIGHT) || HMAP->soff == 1))
 			break;
 
 		/* Scroll the screen and cursor down one logical line. */
@@ -930,7 +943,9 @@ vs_sm_down(sp, rp, count, scmd, smp)
 		if (ychanged) {
 			rp->lno = smp->lno;
 			rp->cno = vs_colpos(sp, smp->lno,
-			    (smp->off - 1) * sp->cols + sp->rcm % sp->cols);
+			    (O_ISSET(sp, O_LEFTRIGHT) ? 
+			    smp->coff : (smp->soff - 1) * sp->cols) +
+			    sp->rcm % sp->cols);
 		}
 		return (0);
 	case Z_CARAT:
@@ -1043,15 +1058,15 @@ vs_sm_next(sp, p, t)
 	SMAP_FLUSH(t);
 	if (O_ISSET(sp, O_LEFTRIGHT)) {
 		t->lno = p->lno + 1;
-		t->off = p->off;
+		t->coff = p->coff;
 	} else {
-		lcnt = vs_opt_screens(sp, p->lno, NULL);
-		if (lcnt == p->off) {
+		lcnt = vs_screens(sp, p->lno, NULL);
+		if (lcnt == p->soff) {
 			t->lno = p->lno + 1;
-			t->off = 1;
+			t->soff = 1;
 		} else {
 			t->lno = p->lno;
-			t->off = p->off + 1;
+			t->soff = p->soff + 1;
 		}
 	}
 	return (0);
@@ -1071,13 +1086,15 @@ vs_sm_prev(sp, p, t)
 	SMAP_FLUSH(t);
 	if (O_ISSET(sp, O_LEFTRIGHT)) {
 		t->lno = p->lno - 1;
-		t->off = p->off;
-	} else if (p->off != 1) {
-		t->lno = p->lno;
-		t->off = p->off - 1;
+		t->coff = p->coff;
 	} else {
-		t->lno = p->lno - 1;
-		t->off = vs_opt_screens(sp, t->lno, NULL);
+		if (p->soff != 1) {
+			t->lno = p->lno;
+			t->soff = p->soff - 1;
+		} else {
+			t->lno = p->lno - 1;
+			t->soff = vs_screens(sp, t->lno, NULL);
+		}
 	}
 	return (t->lno == 0);
 }
@@ -1227,17 +1244,17 @@ vs_sm_nlines(sp, from_sp, to_lno, max)
 		    from_sp->lno - to_lno : to_lno - from_sp->lno);
 
 	if (from_sp->lno == to_lno)
-		return (from_sp->off - 1);
+		return (from_sp->soff - 1);
 
 	if (from_sp->lno > to_lno) {
-		lcnt = from_sp->off - 1;	/* Correct for off-by-one. */
+		lcnt = from_sp->soff - 1;	/* Correct for off-by-one. */
 		for (lno = from_sp->lno; --lno >= to_lno && lcnt <= max;)
-			lcnt += vs_opt_screens(sp, lno, NULL);
+			lcnt += vs_screens(sp, lno, NULL);
 	} else {
 		lno = from_sp->lno;
-		lcnt = (vs_opt_screens(sp, lno, NULL) - from_sp->off) + 1;
+		lcnt = (vs_screens(sp, lno, NULL) - from_sp->soff) + 1;
 		for (; ++lno < to_lno && lcnt <= max;)
-			lcnt += vs_opt_screens(sp, lno, NULL);
+			lcnt += vs_screens(sp, lno, NULL);
 	}
 	return (lcnt);
 }

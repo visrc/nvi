@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vi.c,v 10.44 1996/05/02 10:21:29 bostic Exp $ (Berkeley) $Date: 1996/05/02 10:21:29 $";
+static const char sccsid[] = "$Id: vi.c,v 10.45 1996/05/04 18:50:51 bostic Exp $ (Berkeley) $Date: 1996/05/04 18:50:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -941,7 +941,8 @@ v_init(sp)
 	CALLOC_RET(sp, HMAP, SMAP *, SIZE_HMAP(sp), sizeof(SMAP));
 	TMAP = HMAP + (sp->t_rows - 1);
 	HMAP->lno = sp->lno;
-	HMAP->off = 1;
+	HMAP->coff = 0;
+	HMAP->soff = 1;
 
 	/*
 	 * Fill the screen map from scratch -- try and center the line.  That

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_refresh.c,v 10.32 1996/04/30 21:06:39 bostic Exp $ (Berkeley) $Date: 1996/04/30 21:06:39 $";
+static const char sccsid[] = "$Id: vs_refresh.c,v 10.33 1996/05/04 18:50:52 bostic Exp $ (Berkeley) $Date: 1996/05/04 18:50:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -100,7 +100,7 @@ vs_refresh(sp, forcepaint)
 		    (F_ISSET(tsp, pub_paint) ||
 		    F_ISSET(VIP(tsp), priv_paint))) {
 			(void)vs_paint(tsp,
-			    (F_ISSET(VIP(tsp), VIP_CUR_INVALID) ? 
+			    (F_ISSET(VIP(tsp), VIP_CUR_INVALID) ?
 			    UPDATE_CURSOR : 0) | UPDATE_SCREEN);
 			F_SET(VIP(sp), VIP_CUR_INVALID);
 		}
@@ -139,11 +139,14 @@ vs_paint(sp, flags)
 	SCR *sp;
 	u_int flags;
 {
+char buf[100];
+#define	RETURN(v) {len = snprintf(buf, sizeof(buf), "%d\n", __LINE__); write(2, buf, len); sleep (5);return (1);}
+
 	GS *gp;
 	SMAP *smp, tmp;
 	VI_PRIVATE *vip;
 	recno_t lastline, lcnt;
-	size_t cwtotal, cnt, len, notused, y;
+	size_t cwtotal, cnt, len, notused, off, y;
 	int ch, didpaint, isempty, leftright_warp;
 	char *p;
 
@@ -171,18 +174,14 @@ vs_paint(sp, flags)
 		/* Toss vs_line() cached information. */
 		if (F_ISSET(sp, SC_SCR_TOP)) {
 			if (vs_sm_fill(sp, LNO, P_TOP))
-				return (1);
+				RETURN (1);
 		}
 		else if (F_ISSET(sp, SC_SCR_CENTER)) {
 			if (vs_sm_fill(sp, LNO, P_MIDDLE))
-				return (1);
+				RETURN (1);
 		} else
 			if (vs_sm_fill(sp, OOBLNO, P_TOP))
-				return (1);
-		if (O_ISSET(sp, O_LEFTRIGHT) &&
-		    (cnt = vs_opt_screens(sp, LNO, &CNO)) != 1)
-			for (smp = HMAP; smp <= TMAP; ++smp)
-				smp->off = cnt;
+				RETURN (1);
 		F_SET(sp, SC_SCR_REDRAW);
 	}
 
@@ -232,7 +231,7 @@ vs_paint(sp, flags)
 				     --lcnt, ++sp->t_rows) {
 					++TMAP;
 					if (vs_sm_1down(sp))
-						return (1);
+						RETURN (1);
 				}
 			else
 				goto small_fill;
@@ -242,10 +241,10 @@ vs_paint(sp, flags)
 				for (; lcnt && sp->t_rows != sp->t_maxrows;
 				     --lcnt, ++sp->t_rows) {
 					if (vs_sm_next(sp, TMAP, TMAP + 1))
-						return (1);
+						RETURN (1);
 					++TMAP;
 					if (vs_line(sp, TMAP, NULL, NULL))
-						return (1);
+						RETURN (1);
 				}
 			else {
 small_fill:			(void)gp->scr_move(sp, LASTLINE(sp), 0);
@@ -256,7 +255,7 @@ small_fill:			(void)gp->scr_move(sp, LASTLINE(sp), 0);
 					(void)gp->scr_clrtoeol(sp);
 				}
 				if (vs_sm_fill(sp, LNO, P_FILL))
-					return (1);
+					RETURN (1);
 				F_SET(sp, SC_SCR_REDRAW);
 				goto adjust;
 			}
@@ -282,7 +281,7 @@ small_fill:			(void)gp->scr_move(sp, LASTLINE(sp), 0);
 		if (lcnt < HALFTEXT(sp)) {
 			while (lcnt--)
 				if (vs_sm_1up(sp))
-					return (1);
+					RETURN (1);
 			goto adjust;
 		}
 		goto bottom;
@@ -309,7 +308,7 @@ small_fill:			(void)gp->scr_move(sp, LASTLINE(sp), 0);
 		if (db_exist(sp, HMAP->lno)) {
 			while (lcnt--)
 				if (vs_sm_1down(sp))
-					return (1);
+					RETURN (1);
 			goto adjust;
 		}
 
@@ -318,13 +317,14 @@ small_fill:			(void)gp->scr_move(sp, LASTLINE(sp), 0);
 		 * put the last line of the file on the bottom of the screen.
 		 */
 bottom:		if (db_last(sp, &lastline))
-			return (1);
+			RETURN (1);
 		tmp.lno = LNO;
-		tmp.off = 1;
+		tmp.coff = HMAP->coff;
+		tmp.soff = 1;
 		lcnt = vs_sm_nlines(sp, &tmp, lastline, sp->t_rows);
 		if (lcnt < HALFTEXT(sp)) {
 			if (vs_sm_fill(sp, lastline, P_BOTTOM))
-				return (1);
+				RETURN (1);
 			F_SET(sp, SC_SCR_REDRAW);
 			goto adjust;
 		}
@@ -338,17 +338,18 @@ bottom:		if (db_last(sp, &lastline))
 	 * in the middle of the screen.
 	 */
 	tmp.lno = 1;
-	tmp.off = 1;
+	tmp.coff = HMAP->coff;
+	tmp.soff = 1;
 	lcnt = vs_sm_nlines(sp, &tmp, LNO, HALFTEXT(sp));
 	if (lcnt < HALFTEXT(sp)) {
 		if (vs_sm_fill(sp, 1, P_TOP))
-			return (1);
+			RETURN (1);
 	} else
 middle:		if (vs_sm_fill(sp, LNO, P_MIDDLE))
-			return (1);
+			RETURN (1);
 	if (0) {
 top:		if (vs_sm_fill(sp, LNO, P_TOP))
-			return (1);
+			RETURN (1);
 	}
 	F_SET(sp, SC_SCR_REDRAW);
 
@@ -369,25 +370,25 @@ top:		if (vs_sm_fill(sp, LNO, P_TOP))
 	 */
 adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 	    (LNO == HMAP->lno || LNO == TMAP->lno)) {
-		cnt = vs_opt_screens(sp, LNO, &CNO);
-		if (LNO == HMAP->lno && cnt < HMAP->off)
-			if ((HMAP->off - cnt) > HALFTEXT(sp)) {
-				HMAP->off = cnt;
+		cnt = vs_screens(sp, LNO, &CNO);
+		if (LNO == HMAP->lno && cnt < HMAP->soff)
+			if ((HMAP->soff - cnt) > HALFTEXT(sp)) {
+				HMAP->soff = cnt;
 				vs_sm_fill(sp, OOBLNO, P_TOP);
 				F_SET(sp, SC_SCR_REDRAW);
 			} else
-				while (cnt < HMAP->off)
+				while (cnt < HMAP->soff)
 					if (vs_sm_1down(sp))
-						return (1);
-		if (LNO == TMAP->lno && cnt > TMAP->off)
-			if ((cnt - TMAP->off) > HALFTEXT(sp)) {
-				TMAP->off = cnt;
+						RETURN (1);
+		if (LNO == TMAP->lno && cnt > TMAP->soff)
+			if ((cnt - TMAP->soff) > HALFTEXT(sp)) {
+				TMAP->soff = cnt;
 				vs_sm_fill(sp, OOBLNO, P_BOTTOM);
 				F_SET(sp, SC_SCR_REDRAW);
 			} else
-				while (cnt > TMAP->off)
+				while (cnt > TMAP->soff)
 					if (vs_sm_1up(sp))
-						return (1);
+						RETURN (1);
 	}
 
 	/*
@@ -397,12 +398,8 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 	 * the right screen is up.
 	 */
 	if (F_ISSET(sp, SC_SCR_REDRAW)) {
-		if (O_ISSET(sp, O_LEFTRIGHT)) {
-			cnt = vs_opt_screens(sp, LNO, &CNO);
-			if (HMAP->off != cnt)
-				for (smp = HMAP; smp <= TMAP; ++smp)
-					smp->off = cnt;
-		}
+		if (O_ISSET(sp, O_LEFTRIGHT))
+			goto slow;
 		goto paint;
 	}
 
@@ -443,15 +440,15 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 	if (db_eget(sp, LNO, &p, &len, &isempty)) {
 		if (isempty)
 			goto slow;
-		return (1);
+		RETURN (1);
 	}
 
 #ifdef DEBUG
-	/* This is just a test. */
+	/* Sanity checking. */
 	if (CNO >= len && len != 0) {
 		msgq(sp, M_ERR, "Error: %s/%d: cno (%u) >= len (%u)",
 		     tail(__FILE__), __LINE__, CNO, len);
-		return (1);
+		RETURN (1);
 	}
 #endif
 	/*
@@ -480,7 +477,7 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 		 * boundary no matter what, stop now.
 		 */
 		if (SCNO + 1 + MAX_CHARACTER_COLUMNS < cnt)
-			goto lscreen;
+			goto slow;
 
 		/*
 		 * Count up the widths of the characters.  If it's a tab
@@ -506,21 +503,10 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 		/*
 		 * If the new column moved us off of the current logical line,
 		 * calculate a new one.  If doing leftright scrolling, we've
-		 * moved off of the current screen, as well.  Since most files
-		 * don't have more than two screens, we optimize moving from
-		 * screen 2 to screen 1.
+		 * moved off of the current screen, as well.
 		 */
-		if (SCNO < cwtotal) {
-lscreen:		if (O_ISSET(sp, O_LEFTRIGHT)) {
-				cnt = HMAP->off == 2 ? 1 :
-				    vs_opt_screens(sp, LNO, &CNO);
-				for (smp = HMAP; smp <= TMAP; ++smp)
-					smp->off = cnt;
-				leftright_warp = 1;
-				goto paint;
-			}
+		if (SCNO < cwtotal)
 			goto slow;
-		}
 		SCNO -= cwtotal;
 	} else {
 		/*
@@ -549,17 +535,9 @@ lscreen:		if (O_ISSET(sp, O_LEFTRIGHT)) {
 		 */
 		SCNO = cwtotal;
 
-		/* See screen change comment in section 4a. */
-		if (SCNO >= SCREEN_COLS(sp)) {
-			if (O_ISSET(sp, O_LEFTRIGHT)) {
-				cnt = vs_opt_screens(sp, LNO, &CNO);
-				for (smp = HMAP; smp <= TMAP; ++smp)
-					smp->off = cnt;
-				leftright_warp = 1;
-				goto paint;
-			}
+		/* See screen change comment in section 6a. */
+		if (SCNO >= SCREEN_COLS(sp))
 			goto slow;
-		}
 	}
 
 	/*
@@ -573,29 +551,59 @@ fast:	(void)gp->scr_cursor(sp, &y, &notused);
 	/*
 	 * 6d: Slow cursor update.
 	 *
-	 * Walk through the map and find the current line.  If doing left-right
-	 * scrolling and the cursor movement has changed the screen displayed,
-	 * scroll the screen left or right, unless we're updating the info line
-	 * in which case we just scroll that one line.  Then update the screen
-	 * lines for this file line until we have a new screen cursor position.
+	 * Walk through the map and find the current line.
 	 */
 slow:	for (smp = HMAP; smp->lno != LNO; ++smp);
+
+	/*
+	 * 6e: Leftright scrolling adjustment.
+	 *
+	 * If doing left-right scrolling and the cursor movement has changed
+	 * the displayed screen, scroll the screen left or right, unless we're
+	 * updating the info line in which case we just scroll that one line.
+	 * We adjust the offset up or down until we have a window that covers
+	 * the current column, making sure that we adjust differently for the
+	 * first screen as compared to subsequent ones.
+	 */
 	if (O_ISSET(sp, O_LEFTRIGHT)) {
-		cnt = vs_opt_screens(sp, LNO, &CNO) % SCREEN_COLS(sp);
-		if (cnt != HMAP->off) {
-			if (F_ISSET(sp, SC_TINPUT_INFO))
-				smp->off = cnt;
+		/* Get the screen column for this character. */
+		cnt = vs_columns(sp, NULL, LNO, &CNO, NULL);
+
+		/* Adjust the window toward the beginning of the line. */
+		off = smp->coff;
+		while (off >= cnt)
+			if (off >= O_VAL(sp, O_SIDESCROLL))
+				off -= O_VAL(sp, O_SIDESCROLL);
 			else {
-				for (smp = HMAP; smp <= TMAP; ++smp)
-					smp->off = cnt;
-				leftright_warp = 1;
+				off = 0;
+				break;
 			}
-			goto paint;
+
+		/* Adjust the window toward the end of the line. */
+		if (off == 0 && off + SCREEN_COLS(sp) < cnt ||
+		    off != 0 && off + sp->cols < cnt)
+		while (off + sp->cols < cnt)
+			off += O_VAL(sp, O_SIDESCROLL);
+
+		/* Fill in screen map with the new offset. */
+		if (F_ISSET(sp, SC_TINPUT_INFO))
+			smp->coff = off;
+		else {
+			for (smp = HMAP; smp <= TMAP; ++smp)
+				smp->coff = off;
+			leftright_warp = 1;
 		}
+		goto paint;
 	}
-	for (y = -1; smp <= TMAP && smp->lno == LNO; ++smp) {
+
+	/*
+	 * Update the screen lines for this particular file line until we
+	 * have a new screen cursor position.
+	 */
+	for (y = -1,
+	    vip->sc_smap = NULL; smp <= TMAP && smp->lno == LNO; ++smp) {
 		if (vs_line(sp, smp, &y, &SCNO))
-			return (1);
+			RETURN (1);
 		if (y != -1) {
 			vip->sc_smap = smp;
 			break;
@@ -615,11 +623,10 @@ paint:	for (smp = HMAP; smp <= TMAP; ++smp)
 		SMAP_FLUSH(smp);
 	for (y = -1, vip->sc_smap = NULL, smp = HMAP; smp <= TMAP; ++smp) {
 		if (vs_line(sp, smp, &y, &SCNO))
-			return (1);
+			RETURN (1);
 		if (y != -1 && vip->sc_smap == NULL)
 			vip->sc_smap = smp;
 	}
-
 	/*
 	 * If it's a small screen and we're redrawing, clear the unused lines,
 	 * ex may have overwritten them.
@@ -633,6 +640,15 @@ paint:	for (smp = HMAP; smp <= TMAP; ++smp)
 	didpaint = 1;
 
 done_cursor:
+#ifdef DEBUG
+	/*
+	 * Sanity checking.  When the repainting code messes up, the usual
+	 * result is we don't repaint the cursor.  Die now.
+	 */
+	if (vip->sc_smap == NULL)
+		abort();
+#endif
+
 	/*
 	 * 8: Set the remembered cursor values.
 	 */
@@ -648,7 +664,7 @@ done_cursor:
 	 */
 number:	if (O_ISSET(sp, O_NUMBER) &&
 	    F_ISSET(vip, VIP_N_RENUMBER) && !didpaint && vs_number(sp))
-		return (1);
+		RETURN (1);
 
 	/*
 	 * 10: Update the mode line, position the cursor, and flush changes.
@@ -708,8 +724,7 @@ vs_modeline(sp)
 		"219|Replace",			/* SM_REPLACE */
 	};
 	GS *gp;
-	VI_PRIVATE *vip;
-	size_t cols, curlen, endpoint, len, midpoint;
+	size_t cols, curcol, curlen, endpoint, len, midpoint;
 	const char *t;
 	char *p, buf[20];
 
@@ -757,15 +772,17 @@ vs_modeline(sp)
 	 * Display the ruler.  If we're not at the midpoint yet, move there.
 	 * Otherwise, add in two extra spaces.
 	 *
+	 * Adjust the current column for the fact that the editor uses it as
+	 * a zero-based number.
+	 *
 	 * XXX
 	 * Assume that numbers, commas, and spaces only take up a single
 	 * column on the screen.
 	 */
 	if (O_ISSET(sp, O_RULER)) {
-		vip = VIP(sp);
-		len = snprintf(buf, sizeof(buf), "%lu,%lu", sp->lno,
-		    (vip->sc_smap->off - 1) * sp->cols + vip->sc_col -
-		    (O_ISSET(sp, O_NUMBER) ? O_NUMBER_LENGTH : 0) + 1);
+		vs_column(sp, &curcol);
+		len = snprintf(buf, sizeof(buf), "%lu,%lu", sp->lno, curcol + 1);
+
 		midpoint = (cols - ((len + 1) / 2)) / 2;
 		if (curlen < midpoint) {
 			(void)gp->scr_move(sp, LASTLINE(sp), midpoint);

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_relative.c,v 10.8 1996/03/29 09:17:38 bostic Exp $ (Berkeley) $Date: 1996/03/29 09:17:38 $";
+static const char sccsid[] = "$Id: vs_relative.c,v 10.9 1996/05/04 18:50:53 bostic Exp $ (Berkeley) $Date: 1996/05/04 18:50:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,26 +36,36 @@ vs_column(sp, colp)
 	SCR *sp;
 	size_t *colp;
 {
-	*colp = (VIP(sp)->sc_smap->off - 1) * sp->cols +
-	    VIP(sp)->sc_col - (O_ISSET(sp, O_NUMBER) ? O_NUMBER_LENGTH : 0);
+	VI_PRIVATE *vip;
+
+	vip = VIP(sp);
+
+	*colp = (O_ISSET(sp, O_LEFTRIGHT) ?
+	    vip->sc_smap->coff : (vip->sc_smap->soff - 1) * sp->cols) +
+	    vip->sc_col - (O_ISSET(sp, O_NUMBER) ? O_NUMBER_LENGTH : 0);
 	return (0);
 }
 
 /*
- * vs_opt_screens --
- *	Return the screen columns necessary to display the line, or
- *	if specified, the physical character column within the line,
- *	including space required for the O_NUMBER and O_LIST options.
+ * vs_screens --
+ *	Return the screens necessary to display the line, or if specified,
+ *	the physical character column within the line, including space
+ *	required for the O_NUMBER and O_LIST options.
  *
- * PUBLIC: size_t vs_opt_screens __P((SCR *, recno_t, size_t *));
+ * PUBLIC: size_t vs_screens __P((SCR *, recno_t, size_t *));
  */
 size_t
-vs_opt_screens(sp, lno, cnop)
+vs_screens(sp, lno, cnop)
 	SCR *sp;
 	recno_t lno;
 	size_t *cnop;
 {
 	size_t cols, screens;
+
+#ifdef	DEBUG
+	if (O_ISSET(sp, O_LEFTRIGHT))
+		abort();
+#endif
 
 	/*
 	 * Check for a cached value.  We maintain a cache because, if the
@@ -70,7 +80,7 @@ vs_opt_screens(sp, lno, cnop)
 		return (1);
 
 	/* Figure out how many columns the line/column needs. */
-	cols = vs_screens(sp, NULL, lno, cnop, NULL);
+	cols = vs_columns(sp, NULL, lno, cnop, NULL);
 
 	screens = (cols / sp->cols + (cols % sp->cols ? 1 : 0));
 	if (screens == 0)
@@ -85,14 +95,14 @@ vs_opt_screens(sp, lno, cnop)
 }
 
 /*
- * vs_screens --
+ * vs_columns --
  *	Return the screen columns necessary to display the line, or,
  *	if specified, the physical character column within the line.
  *
- * PUBLIC: size_t vs_screens __P((SCR *, char *, recno_t, size_t *, size_t *));
+ * PUBLIC: size_t vs_columns __P((SCR *, char *, recno_t, size_t *, size_t *));
  */
 size_t
-vs_screens(sp, lp, lno, cnop, diffp)
+vs_columns(sp, lp, lno, cnop, diffp)
 	SCR *sp;
 	char *lp;
 	recno_t lno;

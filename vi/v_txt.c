@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.61 1996/04/27 18:00:03 bostic Exp $ (Berkeley) $Date: 1996/04/27 18:00:03 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.62 1996/05/04 18:50:50 bostic Exp $ (Berkeley) $Date: 1996/05/04 18:50:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -136,10 +136,11 @@ txt_map_init(sp)
 		 * Save the current location.
 		 */
 		vip->sv_tm_lno = TMAP->lno;
-		vip->sv_tm_off = TMAP->off;
-		vip->sv_t_rows = sp->t_rows;
-		vip->sv_t_minrows = sp->t_minrows;
+		vip->sv_tm_soff = TMAP->soff;
+		vip->sv_tm_coff = TMAP->coff;
 		vip->sv_t_maxrows = sp->t_maxrows;
+		vip->sv_t_minrows = sp->t_minrows;
+		vip->sv_t_rows = sp->t_rows;
 
 		/*
 		 * If it's a small screen, TMAP may be small for the screen.
@@ -149,12 +150,14 @@ txt_map_init(sp)
 			for (esmp =
 			    HMAP + (sp->t_maxrows - 1); TMAP < esmp; ++TMAP) {
 				TMAP[1].lno = TMAP[0].lno + 1;
-				TMAP[1].off = 1;
+				TMAP[1].coff = HMAP->coff;
+				TMAP[1].soff = 1;
 			}
 
 		/* Build the fake entry. */
 		TMAP[1].lno = TMAP[0].lno + 1;
-		TMAP[1].off = 1;
+		TMAP[1].soff = 1;
+		TMAP[1].coff = 0;
 		SMAP_FLUSH(&TMAP[1]);
 		++TMAP;
 
@@ -200,10 +203,11 @@ txt_map_end(sp)
 		 * (logical) line.  Fix it.  If the user entered a whole
 		 * screen, this will be slow, but we probably don't care.
 		 */
-		while (vip->sv_tm_lno != TMAP->lno ||
-		    vip->sv_tm_off != TMAP->off)
-			if (vs_sm_1down(sp))
-				return (1);
+		if (!O_ISSET(sp, O_LEFTRIGHT))
+			while (vip->sv_tm_lno != TMAP->lno ||
+			    vip->sv_tm_soff != TMAP->soff)
+				if (vs_sm_1down(sp))
+					return (1);
 	}
 
 	/*
@@ -2220,7 +2224,7 @@ txt_emark(sp, tp, cno)
 	 */
 	nlen = KEY_LEN(sp, ch);
 	if (tp->lb[cno] == '\t')
-		(void)vs_screens(sp, tp->lb, tp->lno, &cno, &olen);
+		(void)vs_columns(sp, tp->lb, tp->lno, &cno, &olen);
 	else
 		olen = KEY_LEN(sp, tp->lb[cno]);
 
@@ -2402,7 +2406,7 @@ txt_insch(sp, tp, chp, flags)
 		if (*chp == '\t') {
 			savech = tp->lb[cno];
 			tp->lb[cno] = '\t';
-			(void)vs_screens(sp, tp->lb, tp->lno, &cno, &nlen);
+			(void)vs_columns(sp, tp->lb, tp->lno, &cno, &nlen);
 			tp->lb[cno] = savech;
 		} else
 			nlen = KEY_LEN(sp, *chp);
@@ -2417,7 +2421,7 @@ txt_insch(sp, tp, chp, flags)
 			--tp->owrite;
 
 			if (tp->lb[cno] == '\t')
-				(void)vs_screens(sp,
+				(void)vs_columns(sp,
 				    tp->lb, tp->lno, &cno, &olen);
 			else
 				olen = KEY_LEN(sp, tp->lb[cno]);

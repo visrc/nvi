@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: vi.h,v 10.17 1996/04/27 11:40:39 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:39 $
+ *	$Id: vi.h,v 10.18 1996/05/04 18:50:51 bostic Exp $ (Berkeley) $Date: 1996/05/04 18:50:51 $
  */
 
 /* Definition of a vi "word". */
@@ -184,20 +184,22 @@ int	cs_prev __P((SCR *, VCS *));
  * (lno and off) are all that are necessary to describe a line.  The rest of
  * the information is useful to keep information from being re-calculated.
  *
- * Lno is the line number.  Off is the screen offset into the line.  For
- * example, the pair 2:1 would be the first screen of line 2, and 2:2 would
- * be the second.  If doing left-right scrolling, all of the offsets will be
- * the same, i.e. for the second screen, 1:2, 2:2, 3:2, etc.  If doing the
- * standard vi scrolling, it will be staggered, i.e. 1:1, 1:2, 1:3, 2:1, 3:1,
- * etc.
+ * The SMAP always has an entry for each line of the physical screen, plus a
+ * slot for the colon command line, so there is room to add any screen into
+ * another one at screen exit.
  *
- * The SMAP is always as large as the physical screen, plus a slot for the
- * info line, so that there is room to add any screen into another one at
- * screen exit.
+ * Lno is the line number.  If doing the historic vi long line folding, off
+ * is the screen offset into the line.  For example, the pair 2:1 would be
+ * the first screen of line 2, and 2:2 would be the second.  In the case of
+ * long lines, the screen map will tend to be staggered, e.g., 1:1, 1:2, 1:3,
+ * 2:1, 3:1, etc.  If doing left-right scrolling, the off field is the screen
+ * column offset into the lines, and can take on any value, as it's adjusted
+ * by the user set value O_SIDESCROLL.
  */
 typedef struct _smap {
 	recno_t  lno;		/* 1-N: Physical file line number. */
-	size_t	 off;		/* 1-N: Screen offset in the line. */
+	size_t	 coff;		/* 0-N: Column offset in the line. */
+	size_t	 soff;		/* 1-N: Screen offset in the line. */
 
 				/* vs_line() cache information. */
 	size_t	 c_sboff;	/* 0-N: offset of first character byte. */
@@ -206,12 +208,11 @@ typedef struct _smap {
 	u_int8_t c_eclen;	/* 1-N: columns from the last character. */
 	u_int8_t c_ecsize;	/* 1-N: size of the last character. */
 } SMAP;
-
 				/* Macros to flush/test cached information. */
 #define	SMAP_CACHE(smp)		((smp)->c_ecsize != 0)
 #define	SMAP_FLUSH(smp)		((smp)->c_ecsize = 0)
 
-					/* Character search information. */
+				/* Character search information. */
 typedef enum { CNOTSET, FSEARCH, fSEARCH, TSEARCH, tSEARCH } cdir_t;
 
 typedef enum { AB_NOTSET, AB_NOTWORD, AB_INWORD } abb_t;
@@ -263,12 +264,14 @@ typedef struct _vi_private {
 
 	SMAP   *h_smap;		/* First slot of the line map. */
 	SMAP   *t_smap;		/* Last slot of the line map. */
+
 	/*
 	 * One extra slot is always allocated for the map so that we can use
 	 * it to do vi :colon command input; see v_tcmd().
 	 */
-	recno_t	sv_tm_lno;	/* tcmd: saved TMAP line number. */
-	size_t	sv_tm_off;	/* tcmd: saved TMAP offset. */
+	recno_t	sv_tm_lno;	/* tcmd: saved TMAP lno field. */
+	size_t	sv_tm_coff;	/* tcmd: saved TMAP coff field. */
+	size_t	sv_tm_soff;	/* tcmd: saved TMAP soff field. */
 	size_t	sv_t_maxrows;	/* tcmd: saved t_maxrows. */
 	size_t	sv_t_minrows;	/* tcmd: saved t_minrows. */
 	size_t	sv_t_rows;	/* tcmd: saved t_rows. */
