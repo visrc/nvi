@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cd.c,v 5.3 1992/04/05 09:23:30 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:23:30 $";
+static char sccsid[] = "$Id: ex_cd.c,v 5.4 1992/04/05 18:58:47 bostic Exp $ (Berkeley) $Date: 1992/04/05 18:58:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,6 +25,15 @@ ex_cd(cmdp)
 {
 	char *dir;
 
+	/*
+	 * If the file has been modified, write a warning and fail, unless
+	 * overridden by the '!' flag.
+	 */
+	if (!(cmdp->flags & E_FORCE) && tstflag(file, MODIFIED)) {
+		msg("The file has been modified but not written.");
+		return (1);
+	}
+
 	switch (cmdp->argc) {
 	case 0:
 		if ((dir = getenv("HOME")) == NULL) {
@@ -35,13 +44,10 @@ ex_cd(cmdp)
 	case 1:
 		dir = cmdp->argv[0];
 		break;
-	default:
-		msg("Usage: %s", cmdp->cmd->usage);
-		return (1);
 	}
 
 	if (chdir(dir) < 0) {
-		msg("Error: %s", strerror(errno));
+		msg("%s: %s", dir, strerror(errno));
 		return (1);
 	}
 	return (0);
