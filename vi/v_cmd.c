@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 5.46 1993/04/12 14:58:40 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:58:40 $";
+static char sccsid[] = "$Id: v_cmd.c,v 5.47 1993/04/13 16:27:14 bostic Exp $ (Berkeley) $Date: 1993/04/13 16:27:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -190,13 +190,13 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	{v_at,		V_RBUF|V_RCM_SET,
 	    "execute buffer: @buffer"},
 /* 101   A */
-	{v_iA,		V_CNT|V_DOT|V_INPUT|V_RCM_SET,
+	{v_iA,		V_CNT|V_DOT|V_RCM_SET,
 	    "append to line: [count]A"},
 /* 102   B */
 	{v_wordB,	V_CNT|V_MOVE|V_RCM_SET,
 	    "move back bigword: [count]B"},
 /* 103   C */
-	{v_Change,	V_CNT|V_DOT|V_INPUT|V_OBUF|V_RCM_SET,
+	{v_Change,	V_CNT|V_DOT|V_OBUF|V_RCM_SET,
 	    "change to end-of-line: [buffer][count]C"},
 /* 104   D */
 	{v_Delete,	V_CNT|V_DOT|V_OBUF|V_RCM_SET,
@@ -214,7 +214,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	{v_home,	V_CNT|V_LMODE|V_MOVE|V_RCM_SETFNB,
 	    "move to count lines from screen top: [count]H"},
 /* 111   I */
-	{v_iI,		V_CNT|V_DOT|V_INPUT|V_RCM_SET,
+	{v_iI,		V_CNT|V_DOT|V_RCM_SET,
 	    "insert at line beginning: [count]I"},
 /* 112   J */
 	{v_join,	V_CNT|V_DOT|V_RCM_SET,
@@ -231,7 +231,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	{v_searchN,	V_MOVE|V_RCM_SET,
 	    "reverse last search: n"},
 /* 117   O */
-	{v_iO,		V_CNT|V_DOT|V_INPUT|V_RCM_SET,
+	{v_iO,		V_CNT|V_DOT|V_RCM_SET,
 	    "insert above line: [count]O"},
 /* 120   P */
 	{v_Put,		V_CNT|V_DOT|V_OBUF|V_RCM_SET,
@@ -240,10 +240,10 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	{v_exmode,	0,
 	    "switch to ex mode: Q"},
 /* 122   R */
-	{v_Replace,	V_DOT|V_INPUT|V_RCM_SET,
+	{v_Replace,	V_DOT|V_RCM_SET,
 	    "replace characters: [count]R"},
 /* 123   S */
-	{v_change,	V_CNT|V_DOT|V_INPUT|V_OBUF|V_RCM_SET,
+	{v_change,	V_CNT|V_DOT|V_OBUF|V_RCM_SET,
 	    "substitute lines: [buffer][count]S"},
 /* 124   T */
 	{v_chT,		V_CHAR|V_CNT|V_MOVE|V_RCM_SET,
@@ -283,13 +283,13 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	{v_markbt,	V_CHAR|V_MOVE|V_RCM_SET,
 	    "move to mark: `[`a-z]"},
 /* 141   a */
-	{v_ia,		V_CNT|V_DOT|V_INPUT|V_RCM_SET,
+	{v_ia,		V_CNT|V_DOT|V_RCM_SET,
 	    "append after cursor: [count]a"},
 /* 142   b */
 	{v_wordb,	V_CNT|V_MOVE|V_RCM_SET,
 	    "move back word: [count]b"},
 /* 143   c */
-	{v_change,	V_CNT|V_DOT|V_INPUT|V_MOTION|V_OBUF|V_RCM_SET|VC_C,
+	{v_change,	V_CNT|V_DOT|V_MOTION|V_OBUF|V_RCM_SET|VC_C,
 	    "change: [buffer][count]c[count]motion"},
 /* 144   d */
 	{v_delete,	V_CNT|V_DOT|V_MOTION|V_OBUF|V_RCM_SET|VC_D,
@@ -306,7 +306,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	{v_left,	V_CNT|V_MOVE|V_RCM_SET,
 	    "move left by columns: [count]h"},
 /* 151   i */
-	{v_ii,		V_CNT|V_DOT|V_INPUT|V_RCM_SET,
+	{v_ii,		V_CNT|V_DOT|V_RCM_SET,
 	    "insert before cursor: [count]i"},
 /* 152   j */
 	{v_down,	V_CNT|V_LMODE|V_MOVE|V_RCM,
@@ -324,7 +324,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	{v_searchn,	V_MOVE|V_RCM_SET,
 	    "repeat last search: n"},
 /* 157   o */
-	{v_io,		V_CNT|V_DOT|V_INPUT|V_RCM_SET,
+	{v_io,		V_CNT|V_DOT|V_RCM_SET,
 	    "append after line: [count]o"},
 /* 160   p */
 	{v_put,		V_CNT|V_DOT|V_OBUF|V_RCM_SET,
@@ -332,10 +332,10 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 /* 161   q */
 	{NULL},
 /* 162   r */
-	{v_replace,	V_CHAR|V_CNT|V_DOT|V_INPUT|V_RCM_SET,
+	{v_replace,	V_CHAR|V_CNT|V_DOT|V_RCM_SET,
 	    "replace character: [count]r character"},
 /* 163   s */
-	{v_subst,	V_CNT|V_DOT|V_INPUT|V_OBUF|V_RCM_SET,
+	{v_subst,	V_CNT|V_DOT|V_OBUF|V_RCM_SET,
 	    "substitute character: [buffer][count]s"},
 /* 164   t */
 	{v_cht,		V_CHAR|V_CNT|V_MOVE|V_RCM_SET,
