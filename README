@@ -1,4 +1,4 @@
-#	$Id: README,v 8.50 1994/03/16 16:40:14 bostic Exp $ (Berkeley) $Date: 1994/03/16 16:40:14 $
+#	$Id: README,v 8.51 1994/03/18 19:24:04 bostic Exp $ (Berkeley) $Date: 1994/03/18 19:24:04 $
 
 This is the README for version 1.08 of nex/nvi, a freely redistributable
 replacement for the Berkeley ex and vi text editors.  The compressed tar
@@ -151,6 +151,9 @@ nvi/docs:
 	vi.0.ps		-- PostScript of vi.1.
 	vi.0.txt	-- Flat text of vi.1.
 	vi.1		-- Nvi man page (in roff source form).
+	vi.ref		-- Nvi reference (in roff source form).
+	vi.ref.ps	-- PostScript of vi.ref.
+	vi.ref.txt	-- Flat text of vi.ref.
 
 nvi/ex:
 	The nvi/ex directory is the ex source code.  Because vi has the
