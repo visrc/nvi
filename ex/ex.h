@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.36 1993/12/02 10:57:04 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:57:04 $
+ *	$Id: ex.h,v 8.37 1993/12/03 07:54:00 bostic Exp $ (Berkeley) $Date: 1993/12/03 07:54:00 $
  */
 
 /* Ex command structure. */
@@ -96,10 +96,10 @@ typedef struct _ex_private {
 		s.flags |= E_FORCE;					\
 	if ((__a.bp = arg) == NULL) {					\
 		s.argc = 0;						\
-		__a.len = strlen(arg);					\
+		__a.len = 0;						\
 	} else {							\
 		s.argc = 1;						\
-		__a.len = 0;						\
+		__a.len = strlen(arg);					\
 	}								\
 	__ap[0] = &__a;							\
 	__ap[1] = NULL;							\
