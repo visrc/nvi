@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.13 1993/09/08 17:16:59 bostic Exp $ (Berkeley) $Date: 1993/09/08 17:16:59 $
+ *	$Id: ex.h,v 8.14 1993/09/09 14:27:40 bostic Exp $ (Berkeley) $Date: 1993/09/09 14:27:40 $
  */
 
 struct _excmdarg;
@@ -15,29 +15,30 @@ typedef struct _excmdlist {
 					/* Underlying function. */
 	int (*fn) __P((SCR *, EXF *, struct _excmdarg *));
 
-#define	E_ADDR1		0x00001		/* One address. */
-#define	E_ADDR2		0x00002		/* Two address. */
-#define	E_ADDR2_ALL	0x00004		/* Zero/two addresses; zero == all. */
-#define	E_ADDR2_NONE	0x00008		/* Zero/two addresses; zero == none. */
-#define	E_COUNT		0x00010		/* Count supplied. */
-#define	E_FORCE		0x00020		/*  ! */
+#define	E_ADDR1		0x000001	/* One address. */
+#define	E_ADDR2		0x000002	/* Two address. */
+#define	E_ADDR2_ALL	0x000004	/* Zero/two addresses; zero == all. */
+#define	E_ADDR2_NONE	0x000008	/* Zero/two addresses; zero == none. */
+#define	E_ADDRDEF	0x000010	/* Default addresses used. */
+#define	E_COUNT		0x000020	/* Count supplied. */
+#define	E_FORCE		0x000040	/*  ! */
 
-#define	E_F_CARAT	0x00040		/*  ^ flag. */
-#define	E_F_DASH	0x00080		/*  - flag. */
-#define	E_F_DOT		0x00100		/*  . flag. */
-#define	E_F_HASH	0x00200		/*  # flag. */
-#define	E_F_LIST	0x00400		/*  l flag. */
-#define	E_F_PLUS	0x00800		/*  + flag. */
-#define	E_F_PRINT	0x01000		/*  p flag. */
-#define	E_F_MASK	0x01fc0		/* Flag mask. */
-#define	E_F_PRCLEAR	0x02000		/* Clear the print (#, l, p) flags. */
+#define	E_F_CARAT	0x000080	/*  ^ flag. */
+#define	E_F_DASH	0x000100	/*  - flag. */
+#define	E_F_DOT		0x000200	/*  . flag. */
+#define	E_F_EQUAL	0x000400	/*  = flag. */
+#define	E_F_HASH	0x000800	/*  # flag. */
+#define	E_F_LIST	0x001000	/*  l flag. */
+#define	E_F_PLUS	0x002000	/*  + flag. */
+#define	E_F_PRINT	0x004000	/*  p flag. */
 
-#define	E_NOGLOBAL	0x04000		/* Not in a global. */
-#define	E_NOPERM	0x08000		/* Permission denied for now. */
-#define	E_NORC		0x10000		/* Not from a .exrc or EXINIT. */
-#define	E_SETLAST	0x20000		/* Reset last command. */
-#define	E_ZERO		0x40000		/* 0 is a legal addr1. */
-#define	E_ZERODEF	0x80000		/* 0 is default addr1 of empty files. */
+#define	E_F_PRCLEAR	0x008000	/* Clear the print (#, l, p) flags. */
+#define	E_NOGLOBAL	0x010000	/* Not in a global. */
+#define	E_NOPERM	0x020000	/* Permission denied for now. */
+#define	E_NORC		0x040000	/* Not from a .exrc or EXINIT. */
+#define	E_SETLAST	0x080000	/* Reset last command. */
+#define	E_ZERO		0x100000	/* 0 is a legal addr1. */
+#define	E_ZERODEF	0x200000	/* 0 is default addr1 of empty files. */
 	u_int	 flags;
 	char	*syntax;		/* Syntax script. */
 	char	*usage;			/* Usage line. */
@@ -194,3 +195,4 @@ EXPROTO(int, ex_wq);
 EXPROTO(int, ex_write);
 EXPROTO(int, ex_xit);
 EXPROTO(int, ex_yank);
+EXPROTO(int, ex_z);
