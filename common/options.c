@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.55 1993/04/12 14:30:13 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:30:13 $";
+static char sccsid[] = "$Id: options.c,v 5.56 1993/04/18 09:37:02 bostic Exp $ (Berkeley) $Date: 1993/04/18 09:37:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -210,9 +210,11 @@ opts_init(sp)
 #define	SET_DEF(opt, str) {						\
 	if (str != b1)		/* GCC puts strings in text-space. */	\
 		(void)strcpy(b1, str);					\
-	if (opts_set(sp, argv))						\
+	if (opts_set(sp, argv))	{					\
 		msgq(sp, M_ERR,						\
 		    "Unable to set default %s option", optlist[opt]);	\
+		return (1);						\
+	}								\
 	F_CLR(&sp->opts[opt], OPT_SET);					\
 }
 	/* Set default values. */
