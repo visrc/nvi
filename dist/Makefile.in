@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.73 1996/10/13 11:54:08 bostic Exp $ (Berkeley) $Date: 1996/10/13 11:54:08 $
+#	$Id: Makefile.in,v 8.74 1996/10/19 11:25:01 bostic Exp $ (Berkeley) $Date: 1996/10/19 11:25:01 $
 
 srcdir=	@srcdir@/..
 CC=	@CC@
@@ -137,7 +137,7 @@ install_common:
 	    $(chmod) $(dmode) $(datadir)/vi/catalog
 	(cd $(srcdir)/catalog && $(cp) $(cat) $(datadir)/vi/catalog && \
 	    cd $(datadir)/vi/catalog && $(chmod) $(fmode) *)
-	@echo "Installing Perl5 scripts: $(datadir)/vi/perl ..."
+	@echo "Installing Perl scripts: $(datadir)/vi/perl ..."
 	$(mkdir) $(datadir)/vi/perl && $(chmod) $(dmode) $(datadir)/vi/perl
 	[ -f VI.pm ] && $(cp) VI.pm $(datadir)/vi/perl && \
 	    cd $(datadir)/vi/perl && $(chmod) $(fmode) VI.pm)

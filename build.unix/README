@@ -1,4 +1,4 @@
-#	$Id: README,v 8.25 1996/08/19 12:42:47 bostic Exp $ (Berkeley) $Date: 1996/08/19 12:42:47 $
+#	$Id: README,v 8.26 1996/10/19 11:25:58 bostic Exp $ (Berkeley) $Date: 1996/10/19 11:25:58 $
 
 Nvi uses the GNU autoconf program for configuration and compilation.  You
 should enter:
@@ -283,7 +283,7 @@ File(s):		Default location
 vi			$(bindir)/vi
 vi.1			$(mandir)/man1/vi.1
 vi.0			$(mandir)/cat1/vi.0
-Perl5 scripts		$(datadir)/vi/perl/
+Perl scripts		$(datadir)/vi/perl/
 Tcl scripts		$(datadir)/vi/tcl/
 Message Catalogs	$(datadir)/vi/catalog/
 
@@ -302,7 +302,7 @@ Notes:
 	To move the entire installation tree somewhere besides /usr/local,
 	change the value of both "exec_prefix" and "prefix".  To move the
 	binaries to a different place, change the value of "bindir".
-	Similarly, to put the datafiles (the message catalogs, Perl5 and
+	Similarly, to put the datafiles (the message catalogs, Perl and
 	Tcl scripts) or the man pages in a different place, change the
 	value of "datadir" or "mandir".  These values can be changed as
 	part of configuration:
