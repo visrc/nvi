@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.23 1993/09/27 17:45:51 bostic Exp $ (Berkeley) $Date: 1993/09/27 17:45:51 $
+ *	$Id: screen.h,v 8.24 1993/09/29 16:16:03 bostic Exp $ (Berkeley) $Date: 1993/09/29 16:16:03 $
  */
 
 /*
@@ -78,18 +78,13 @@ typedef struct _scr {
 
 	struct _exf	*ep;		/* Screen's current file. */
 
-	/*
-	 * "File name" state.  Two switch files within a screen, one of the
-	 * S_FSWITCH flags is set, and n_ep and n_frp are set to reference
-	 * the new values for the screen's file.
-	 */
+					/* File name oriented state. */
 	HDR	 frefhdr;		/* Linked list of FREF structures. */
 	FREF	*frp;			/* Current FREF. */
 	FREF	*p_frp;			/* Previous FREF. */
-	FREF	*n_frp;			/* Next FREF. */
-	struct _exf	*n_ep;		/* Next EXF. */
 
 	void	*svi_private;		/* Vi curses screen information. */
+	void	*xaw_private;		/* Vi XAW screen information. */
 
 	recno_t	 lno;			/* 1-N:     cursor file line. */
 	recno_t	 olno;			/* 1-N: old cursor file line. */
@@ -252,30 +247,28 @@ typedef struct _scr {
 /* Major screen/file changes. */
 #define	S_EXIT		0x0000004	/* Exiting (not forced). */
 #define	S_EXIT_FORCE	0x0000008	/* Exiting (forced). */
-#define	S_FSWITCH	0x0000010	/* Switch files (not forced). */
-#define	S_FSWITCH_FORCE	0x0000020	/* Switch files (forced). */
-#define	S_SSWITCH	0x0000040	/* Switch screens. */
-#define	__S_UNUSED	0x0000080	/* Unused. */
+#define	S_FSWITCH	0x0000010	/* Switch files. */
+#define	S_SSWITCH	0x0000020	/* Switch screens. */
 #define	S_MAJOR_CHANGE			/* Screen or file changes. */	\
-	(S_EXIT | S_EXIT_FORCE | S_FSWITCH | S_FSWITCH_FORCE | S_SSWITCH)
+	(S_EXIT | S_EXIT_FORCE | S_FSWITCH | S_SSWITCH)
 
-#define	S_ABBREV	0x0000100	/* If have abbreviations. */
-#define	S_AUTOPRINT	0x0000200	/* Autoprint flag. */
-#define	S_BELLSCHED	0x0000400	/* Bell scheduled. */
-#define	S_GLOBAL	0x0000800	/* Doing a global command. */
-#define	S_INPUT		0x0001000	/* Doing text input. */
-#define	S_INTERRUPTED	0x0002000	/* If have been interrupted. */
-#define	S_INTERRUPTIBLE	0x0004000	/* If can be interrupted. */
-#define	S_ISFROMTTY	0x0008000	/* Reading from a tty. */
-#define	S_MSGREENTER	0x0010000	/* If msg routine reentered. */
-#define	S_REDRAW	0x0020000	/* Redraw the screen. */
-#define	S_REFORMAT	0x0040000	/* Reformat the screen. */
-#define	S_REFRESH	0x0080000	/* Refresh the screen. */
-#define	S_RESIZE	0x0100000	/* Resize the screen. */
-#define	S_RE_SET	0x0200000	/* The file's RE has been set. */
-#define	S_TIMER_SET	0x0400000	/* If a busy timer is running. */
-#define	S_TERMSIGNAL	0x0800000	/* Termination signal received. */
-#define	S_UPDATE_MODE	0x1000000	/* Don't repaint modeline. */
+#define	S_ABBREV	0x0000040	/* If have abbreviations. */
+#define	S_AUTOPRINT	0x0000080	/* Autoprint flag. */
+#define	S_BELLSCHED	0x0000100	/* Bell scheduled. */
+#define	S_GLOBAL	0x0000200	/* Doing a global command. */
+#define	S_INPUT		0x0000400	/* Doing text input. */
+#define	S_INTERRUPTED	0x0000800	/* If have been interrupted. */
+#define	S_INTERRUPTIBLE	0x0001000	/* If can be interrupted. */
+#define	S_ISFROMTTY	0x0002000	/* Reading from a tty. */
+#define	S_MSGREENTER	0x0004000	/* If msg routine reentered. */
+#define	S_REDRAW	0x0008000	/* Redraw the screen. */
+#define	S_REFORMAT	0x0010000	/* Reformat the screen. */
+#define	S_REFRESH	0x0020000	/* Refresh the screen. */
+#define	S_RESIZE	0x0040000	/* Resize the screen. */
+#define	S_RE_SET	0x0080000	/* The file's RE has been set. */
+#define	S_TIMER_SET	0x0100000	/* If a busy timer is running. */
+#define	S_TERMSIGNAL	0x0200000	/* Termination signal received. */
+#define	S_UPDATE_MODE	0x0400000	/* Don't repaint modeline. */
 
 #define	S_SCREEN_RETAIN			/* Retain at screen create. */	\
 	(S_MODE_EX | S_MODE_VI | S_ISFROMTTY | S_RE_SET)
