@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.37 1993/09/30 12:02:33 bostic Exp $ (Berkeley) $Date: 1993/09/30 12:02:33 $";
+static char sccsid[] = "$Id: ex.c,v 8.38 1993/10/04 19:33:02 bostic Exp $ (Berkeley) $Date: 1993/10/04 19:33:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1228,7 +1228,8 @@ done:	if (savecursor_set) {
 		sp->cno = savecursor.cno;
 	}
 	if (cp->addrcnt == 2 &&
-	    (cp->addr2.lno < cp->addr1.lno || cp->addr2.cno < cp->addr1.cno)) {
+	    (cp->addr2.lno < cp->addr1.lno ||
+	    cp->addr2.lno == cp->addr1.lno && cp->addr2.cno < cp->addr1.cno)) {
 		msgq(sp, M_ERR,
 		    "The second address is smaller than the first.");
 		return (NULL);
