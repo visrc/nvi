@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 8.22 1994/02/28 17:11:54 bostic Exp $ (Berkeley) $Date: 1994/02/28 17:11:54 $";
+static char sccsid[] = "$Id: cut.c,v 8.23 1994/03/03 14:55:23 bostic Exp $ (Berkeley) $Date: 1994/03/03 14:55:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -243,11 +243,11 @@ text_init(sp, p, len, total_len)
 {
 	TEXT *tp;
 
-	MALLOC(sp, tp, TEXT *, sizeof(TEXT));
+	CALLOC(sp, tp, TEXT *, 1, sizeof(TEXT));
 	if (tp == NULL)
 		return (NULL);
 	/* ANSI C doesn't define a call to malloc(2) for 0 bytes. */
-	if (tp->lb_len = total_len) {
+	if ((tp->lb_len = total_len) != 0) {
 		MALLOC(sp, tp->lb, CHAR_T *, tp->lb_len);
 		if (tp->lb == NULL) {
 			free(tp);
@@ -255,12 +255,8 @@ text_init(sp, p, len, total_len)
 		}
 		if (p != NULL && len != 0)
 			memmove(tp->lb, p, len);
-	} else
-		tp->lb = NULL;
+	}
 	tp->len = len;
-	tp->ai = tp->insert = tp->offset = tp->owrite = 0;
-	tp->wd = NULL;
-	tp->wd_len = 0;
 	return (tp);
 }
 
