@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.34 1993/11/22 17:32:49 bostic Exp $ (Berkeley) $Date: 1993/11/22 17:32:49 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.35 1993/11/22 19:43:38 bostic Exp $ (Berkeley) $Date: 1993/11/22 19:43:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -674,7 +674,6 @@ svi_msgflush(sp)
 	cname = sp->cname;
 	for (mp = sp->msgq.lh_first, p = NULL;
 	    mp != NULL && !F_ISSET(mp, M_EMPTY); mp = mp->q.le_next) {
-
 		p = mp->mbuf;
 
 lcont:		/* Move to the message line and clear it. */
