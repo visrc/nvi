@@ -166,6 +166,9 @@
 /* Define if you have the vsnprintf function.  */
 #undef HAVE_VSNPRINTF
 
+/* Define if you have the <ncurses.h> header file.  */
+#undef HAVE_NCURSES_H
+
 /* Define if you have the <unistd.h> header file.  */
 #undef HAVE_UNISTD_H
 

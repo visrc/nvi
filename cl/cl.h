@@ -6,8 +6,13 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: cl.h,v 10.23 2000/05/07 19:49:39 skimo Exp $ (Berkeley) $Date: 2000/05/07 19:49:39 $
+ *	$Id: cl.h,v 10.24 2000/07/23 11:14:44 skimo Exp $ (Berkeley) $Date: 2000/07/23 11:14:44 $
  */
+#ifdef HAVE_NCURSES_H
+#include <ncurses.h>
+#else
+#include <curses.h>
+#endif
 
 typedef struct _cl_private {
 	CHAR_T	 ibuf[256];	/* Input keys. */
