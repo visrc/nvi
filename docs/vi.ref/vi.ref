@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.13 1994/03/03 13:15:03 bostic Exp $ (Berkeley) $Date: 1994/03/03 13:15:03 $
+.\"     $Id: vi.ref,v 8.14 1994/03/11 19:43:26 bostic Exp $ (Berkeley) $Date: 1994/03/11 19:43:26 $
 .\"
 .Dd "%Q%"
 .Dt EX/VI 1
@@ -34,11 +34,10 @@
 .Op Fl w Ar size
 .Op Fl x Ar \&aw
 .Sh DESCRIPTION
+.Nm \&Vi
+is a screen oriented text editor.
 .Nm \&Ex
 is a line-oriented text editor.
-.Nm \&Vi
-is a screen oriented text editor, based on
-.Nm \&ex .
 .Nm View
 is the same as using the
 .Fl R
@@ -64,6 +63,14 @@ Fourth Berkeley Software Distribution (4BSD)
 and
 .Nm \&vi
 programs.
+For the rest of this manual page,
+.Nm nex/nvi
+are used when it's necessary to distinguish between the historic
+implementations of
+.Nm ex/vi ,
+otherwise,
+.Nm ex/vi
+is used.
 .Pp
 The following options are available:
 .Bl -tag -width indent
@@ -71,34 +78,35 @@ The following options are available:
 Execute
 .Ar command
 immediately after starting the edit session.
-Useful for initial positioning in the file, but
+Particularly useful for initial positioning in the file, however
 .Ar command
 is not limited to positioning commands.
 This is the POSIX 1003.2 interface for the historic
 .Dq "+command"
 syntax.
-.Nm \&Nex/nvi
+.Nm Nex/nvi
 supports both the old and new syntax.
 .It Fl e
-Start editing in ex mode, as if the command name was
-.Nm ex .
+Start editing in ex mode, as if the command name were
+.Nm \&ex .
 .It Fl F
 Don't copy the entire file when first starting to edit.
-(The default is to make a copy in case someone else tries to edit
-the file too.)
+(The default is to make a copy in case someone else modifies
+the file during your edit session.)
 .It Fl l
 List the files that may be recovered using the
 .Fl r
 option of
 .Nm \&vi .
-This is the new interface for the historic
+This is the new interface for the historic syntax of the
 .Fl r
-without a file argument syntax.
-.Nm \&Nex/nvi
+option without a file argument.
+.Nm Nex/nvi
 supports both the old and new syntax.
 .It Fl R
 Start editing in read-only mode, as if the command name was
-.Nm view .
+.Nm view ,
+or the readonly option was set.
 .It Fl r
 Recover the specified file.
 .It Fl s
@@ -111,8 +119,8 @@ scripts.
 Prompts, informative messages and other user oriented things are
 turned off.
 This is the POSIX 1003.2 interface for the historic
-.Fl \-
-syntax.
+.Dq \&\-
+argument.
 .Nm \&Nex/nvi
 supports both the old and new syntax.
 .It Fl t
@@ -128,12 +136,14 @@ or
 .Nm view .
 .It Fl x
 Reserved for X11 interfaces.
-Not currently implemented.
-.Sh ADDITIONAL FEATURES
+.Em "No X11 support is currently implemented."
+.El
+.Pp
+.Nm Ex/vi
+exit 0 on success, and greater than 0 if an error occurs.
+.Sh Additional Features
 This manual page is the one distributed with the
-.Nm nvi
-and
-.Nm nex
+.Nm nex/nvi
 reimplementations of
 .Nm ex/vi .
 There are a few additional features in
@@ -238,7 +248,7 @@ makes
 do left-right screen scrolling, instead of the traditional
 .Nm \&vi
 line wrapping.
-.Sh RECOVERY
+.Sh Recovery
 There is no recovery program for
 .Nm nvi ,
 nor does
@@ -267,9 +277,9 @@ or the user enters the ex/vi
 command.
 The use of the
 .Pa /var/tmp
-directory may be changed setting the option
-.Dq "recdir"
-in the user's or system startup information.
+directory may be changed setting the
+.Sy recdir
+option in the user's or system startup information.
 .Pp
 The recovery directory should have the
 .Dq "sticky-bit"
@@ -291,8 +301,8 @@ using the
 .Fl t
 flag of sendmail (or a similar mechanism in other mailers).
 A simple way to do this is to insert the following script into your
-rc.local (or other startup) file:
-.sp
+.Pa /etc/rc.local
+(or other startup) file:
 .ne 7v
 .Bd -literal -offset indent -compact
 # Recover nvi editor files.
@@ -306,30 +316,30 @@ fi
 .Ed
 .Pp
 If
-.Nm nex/nvi
+.Nm ex/vi
 receives a hangup (SIGHUP) signal, it will email the recovery
 information to the user itself.
 .Pp
 If you don't have the sendmail program on your system, the source file
 .Pa nvi/recover.c
-will have to be modified to use your mail delivery programs.
-.Sh STARTUP INFORMATION
-.Nm Nvi/nex
-interprets one of two environmental variables and reads up to three of
-five possible files during startup.
+will have to be modified to use your local mail delivery programs.
+.Sh Startup Information
+.Nm Ex/vi
+interprets one of two possible environmental variables and reads up
+to three of five possible files during startup.
 The variables and files are expected to contain
-.Nm ex
+.Nm \&ex
 commands, not
-.Nm vi
+.Nm \&vi
 commands.
 In addition, they are interpreted
 .Em before
 the file to be edited is read, and therefore many
-.Nm ex
+.Nm \&ex
 commands may not be used.
 Generally, any command that requires output to the screen or that
-needs a file on which to operate, will cause an error if included
-in a startup file.
+needs a file upon which to operate, will cause an error if included
+in a startup file or environmental variable.
 .Pp
 First, the file
 .Pa /etc/vi.exrc
@@ -353,22 +363,21 @@ if
 .Pa $HOME/.nexrc
 doesn't exist) is read.
 Fourth, the file
-.Pa ./.nexrc
+.Pa .nexrc
 (or the file
-.Pa ./.exrc ,
+.Pa .exrc ,
 if
-.Pa ./.nexrc
+.Pa .nexrc
 doesn't exist) is read.
 .Pp
-Startup files will not be read if they are owned by anyone other than
-the user running
-.Nm nvi ,
-or by
+Startup files will not be read if they are owned by anyone other
+than the real user-id of the user running
+.Nm \&vi ,
+(or by
 .Dq root
 in the case of the file
-.Pa /etc/vi.exrc .
-Startup files will not be read if they are writable by anyone other
-than the owner.
+.Pa /etc/vi.exrc )
+or if they are writable by anyone other than the owner.
 Home directory startup files (i.e.
 .Pa $HOME/.nexrc
 and
@@ -377,11 +386,11 @@ will not be read if the
 .Dq HOME
 environmental variable is not set.
 Local startup files (i.e.
-.Pa ./.nexrc
+.Pa .nexrc
 and
-.Pa ./.exrc )
+.Pa .exrc )
 will not be read if the
-.Dq exrc
+.Sy exrc
 option is turned off in the
 .Pa /etc/vi.exrc ,
 .Pa $HOME/.nexrc ,
@@ -394,47 +403,950 @@ or
 environmental variables.
 It is not an error for any of the startup environmental variables
 or files not to exist.
+.Pp
+Because the
+.Nm \&ex
+command set supported by
+.Nm nex/nvi
+is a superset of the command set supported by most historical implementations
+of
+.Nm \&ex ,
+.Nm nex/nvi
+can use the startup files created for the historical implementations,
+but the converse is often not true.
+.Sh Screen Sizing
+The size of the screen can be set in a number of ways.
+.Nm Ex/vi
+takes the following steps until values are obtained for both the
+number of rows and number of columns in the screen.
+.sp
+.Bl -enum -compact
+.It
+If the environmental variable
+.Ev LINES
+exists, it is used to specify the number of rows in the screen.
+.It
+If the environmental variable
+.Ev COLUMNS
+exists, it is used to specify the number of columns in the screen.
+.It
+The TIOCGWINSZ
+.Xr ioctl 2
+is attempted on the standard error file descriptor.
+.It
+The termcap entry is checked for the
+.Dq \&li
+entry (rows) and the
+.Dq \&co
+entry (columns).
+.It
+The number of rows is set to 24, and the number of columns is set
+to 80.
+.El
+.Pp
+If a window change size signal (SIGWINCH) is received,
+the same steps are taken with the exception that the first two steps
+are skipped.
 .Sh ENVIRONMENTAL VARIABLES
-.Bl -tag -width COLUMNS
+.Bl -tag -width XXCOLUMNS
 .It Ev COLUMNS
 The number of columns on the screen.
 This value overrides any system or terminal specific values.
+If the COLUMNS environmental variable is not set when
+.Nm ex/vi
+runs, or the
+.Sy columns
+option is explicitly reset by the user,
+.Nm ex/vi
+enters the value into the environment.
 .It Ev EXINIT
 A list of
-.Nm ex
+.Nm \&ex
 startup commands, read if the variable
 .Ev NEXINIT
 is not set.
 .It Ev HOME
 The user's home directory, used as the initial directory path
 for the startup
-.Pa .nexrc
+.Pa $HOME/.nexrc
 and
-.Pa .exrc
+.Pa $HOME/.exrc
 files.
 This value is also used as the default directory for the
-.Nm vi
-.Dq cd
+.Nm \&vi
+.Dq \&cd
 command.
 .It Ev LINES
 The number of rows on the screen.
 This value overrides any system or terminal specific values.
+If the LINES environmental variable is not set when
+.Nm ex/vi
+runs, or the
+.Sy lines
+option is explicitly reset by the user,
+.Nm ex/vi
+enters the value into the environment.
 .It Ev NEXINIT
 A list of
-.Nm ex
+.Nm \&ex
 startup commands.
 .It Ev SHELL
 The user's shell of choice (see also the
-.Dq shell
+.Sy shell
 option).
 .It Ev TERM
 The user's terminal type.
 The default is the type
 .Dq unknown .
+If the TERM environmental variable is not set when
+.Nm ex/vi
+runs, or the
+.Sy term
+option is explicitly reset by the user,
+.Nm ex/vi
+enters the value into the environment.
 .It Ev TMPDIR
 The location used to stored temporary files (see also the
-.Dq directory
+.Sy directory
 option).
+.El
+.Sh Regular Expressions and Replacement Strings
+Regular expressions are used in line addresses,
+as the first part of
+.Sy substitute ,
+.Sy global ,
+and
+.Sy vglobal
+commands,
+and in search patterns.
+.Pp
+The regular expressions supported by
+.Nm \&ex
+and
+.Nm \&vi
+are, by default, the Basic Regular Expressions (BRE's) described in the
+IEEE POSIX Standard 1003.2.
+The
+.Sy extended
+option causes all regular expressions to be interpreted as the Extended
+Regular Expressions (ERE's) described by the same standard.
+(See
+.Xr re_format 7
+for more information.
+Generally speaking, BRE's are
+.Xr ed 1
+and
+.Xr grep 1
+style regular expressions, and ERE's are
+.Xr egrep 1
+style regular expressions.)
+.Pp
+There are some special strings and characters that can be used in
+RE's:
+.Bl -enum -compact
+.It
+An empty RE (e.g.
+.Dq \&// )
+is equivalent to the last RE used.
+.It
+The construct
+.Dq \e<
+matches the beginning of a word.
+.It
+The construct
+.Dq \e>
+matches the end of a word.
+.It
+The character
+.Dq \&~
+matches the replacement part of the last substitute command.
+.El
+.Pp
+When the
+.Sy magic
+option is
+.Em not
+set,
+the only characters with special meanings are
+.Dq \&^
+at the beginning of an RE,
+.Dq \&$
+at the end of an RE, and the escaping character
+.Dq \&\e .
+The characters
+.Dq \&. ,
+.Dq \&* ,
+.Dq \&[ ,
+and
+.Dq \&~
+are treated as ordinary characters unless preceded by a
+.Dq \&\e ;
+when preceded by a
+.Dq \&\e
+they regain their special meaning.
+.Pp
+Replacement strings are the second part of a substitute command.
+.Pp
+The character
+.Dq \&&
+(or
+.Dq \e&
+if the
+.Sy magic
+option is
+.Em not
+set) in the replacement string stands for the text matched by the RE
+that's being replaced.
+The character
+.Dq \&~
+(or
+.Dq \e~
+if the
+.Sy magic
+option is
+.Em not
+set) stands for the replacement part of the previous substitute command.
+.Pp
+The string
+.Dq \e# ,
+where
+.Dq \&#
+is an integer value from 1 to 9, stands for the text matched by
+the portion of the RE enclosed in the #'th set of escaped parentheses,
+e.g.
+.Dq \e(
+and
+.Dq \e) .
+For example, 
+.Dq "s/abc\e(.*\e)def/\e1/"
+deletes the strings
+.Dq abc
+and
+.Dq def
+from the matched pattern.
+.Pp
+The strings
+.Dq \el ,
+.Dq \eu ,
+.Dq \eL ,
+and
+.Dq \eU
+can be used to modify the case of elements in the replacement string.
+The string
+.Dq \el
+causes the next character to be converted to lowercase; the string
+.Dq \eu
+behaves similarly, but converts to uppercase.
+The strings
+.Dq \eL
+causes characters up to the end of the string or the next occurrence of
+the strings
+.Dq \ee
+or
+.Dq \eE
+to be converted to lowercase; the string
+.Dq \eU
+behaves similarly, but converts to uppercase.
+.Pp
+In
+.Nm \&vi ,
+inserting a <control-M> into the replacement string will cause the
+matched line to be split into two lines at that point.
+.Sh Set Options
+There are a large number of options that may be set (or unset) to
+change the editor's behavior.
+This section lists the options, their abbreviations and their default
+values.
+.Pp
+In each entry below, the first part of the tag line is the full name
+of the option, followed by any equivalent abbreviations.
+(Regardless of the abbreviations, it is only necessary to use the
+minimum number of characters necessary to distinguish an abbreviation
+from all other commands for it to be accepted, in
+.Nm nex/nvi .
+Historically, only the full name and the official abbreviations
+were accepted by
+.Nm ex/vi .
+Using full names in your startup files an environmental variables will
+probably make them more portable.)
+The part of the tag line in square brackets is the default value of
+the option.
+After the default value is a note if the option is applicable to
+.Nm \&ex ,
+.Nm \&vi ,
+or both.
+Most of the options are boolean, i.e. they are either on or off, and
+cannot have an assigned value.
+.Pp
+For information on modifying the options or to display the options and
+their current values, see the
+.Dq set
+command in the Ex Commands section.
+.Bl -tag -width "XXXX"
+.It Ev "altwerase [off] (vi only)"
+This option changes how
+.Nm \&vi
+does word erase during text input.
+If this option is set, text is broken up into three classes, 
+alphabetic, numeric and underscore characters, other non-blank
+characters, and blank characters.
+Changing from one class to another marks the end of a word.
+In addition, the class of the first character erased is ignored
+(which is exactly what you want when erasing pathname components).
+.It Ev "autoindent, ai [off] (ex and vi)"
+If this option is set, whenever you create a new line (using the
+.Nm \&vi
+.Sy \&A ,
+.Sy \&a ,
+.Sy \&C ,
+.Sy \&c ,
+.Sy \&I ,
+.Sy \&i ,
+.Sy \&O ,
+.Sy \&o ,
+.Sy \&R ,
+.Sy \&r ,
+.Sy \&S ,
+and
+.Sy \&s
+commands, or the
+.Nm \&ex
+.Sy append ,
+.Sy change ,
+and
+.Sy insert
+commands) it is automatically indented to align the cursor with
+the first non-blank character of the line from which you created it.
+Lines are indented using tab characters to the extent possible
+(based on the value of the
+.Sy tabstop
+option) and then using space characters as necessary.
+For commands inserting text into the middle of a line,
+any blank characters to the right of the cursor are discarded,
+and the first non-blank character to the right of the cursor is
+aligned as described above.
+.Pp
+The indent characters are themselves somewhat special.
+If you do not enter more characters on the new line before moving
+moving to another line, or entering <escape>, the indent character
+will be deleted and the line will be empty.
+For example, if you enter <carriage-return> twice in succession,
+the line created by the first <carriage-return> will not have any
+characters in it, regardless of the indentation of the previous
+or subsequent line.
+.Pp
+Indent characters also require that you enter additional erase
+characters to delete them.
+For example, if you have an indented line, containing only blanks,
+the first <word-erase> character you enter will erase up to end of
+the indent characters, and the second will erase back to the beginning
+of the line.
+(Historically, only the
+.Sy \&^D
+key would erase the indent characters.
+Both the
+.Sy \&^D
+key and the usual erase keys work in
+.Nm nvi .)
+In addition, if the cursor is positioned at the end of the indent
+characters, the string
+.Dq 0^D
+will erase all of the indent characters for the current line,
+resetting the indentation level to 0.
+Similarly, the string
+.Dq ^^D
+(i.e. a carat followed by a <control-D>) will erase all of the indent
+characters for the current line, leaving the indentation level for
+future created lines unaffected.
+.Pp
+Finally, if
+.Sy autoindent
+is set, the
+.Sy \&S
+and
+.Sy \&cc
+commands change from the first non-blank of the line to the end of the
+line, instead of from the beginning of the line to the end of the line.
+.It Ev "autoprint, ap [off] (ex only)"
+Cause the current line to be automatically displayed after the
+.Nm \&ex
+commands
+.Sy \&< ,
+.Sy \&> ,
+.Sy copy ,
+.Sy delete ,
+.Sy join ,
+.Sy move ,
+.Sy put ,
+.Sy \&t ,
+.Sy Undo ,
+and
+.Sy undo .
+This automatic display is suppressed during
+.Sy global
+and
+.Sy vglobal
+commands, and for any command where optional flags are used
+to explicitly write the line.
+.It Ev "autowrite, aw [off] (ex and vi)"
+If autowrite is set, the
+.Nm \&vi
+.Sy \&!
+.Sy \&^^
+.Sy \&^]
+and
+.Sy \&^Z
+commands, and the
+.Nm \&ex
+.Sy edit ,
+.Sy next ,
+.Sy rewind ,
+.Sy stop ,
+.Sy suspend ,
+.Sy tag ,
+.Sy tagpop ,
+and
+.Sy tagtop
+commands automatically write the current file back to the current
+file name if it has been modified since it was last written.
+If the write fails, the command fails and goes no further.
+.Pp
+Appending the optional force flag
+.Dq \&!
+to the
+.Nm \&ex
+commands
+.Sy next ,
+.Sy rewind ,
+.Sy stop ,
+.Sy suspend ,
+.Sy tag ,
+.Sy tagpop ,
+and
+.Sy tagtop
+stops the automatic write from being attempted.
+.Pp
+(Historically, the
+.Sy next
+command ignored the optional force flag.)
+Note, the
+.Nm \&ex
+commands
+.Sy edit ,
+.Sy quit ,
+.Sy shell ,
+and
+.Sy xit
+are
+.Em not
+affected by the
+.Sy autowrite
+option.
+.It Ev "beautify, bf [off] (ex and vi)"
+If beautify is set, all control characters that are not currently
+being specially interpreted, other than <tab>, <newline>, and
+<form-feed>, are discarded from commands read in by
+.Nm \&ex
+from command files and from input text entered to
+.Nm \&vi .
+Text files read by
+.Nm ex/vi
+are
+.Em not
+affected by the
+.Sy beautify
+option.
+.It Ev "columns, co [80] (ex and vi)"
+The number of columns in the screen.
+Setting this option causes
+.Nm ex/vi
+to set (or reset) the environmental variable
+.Ev COLUMNS .
+See the Screen Sizing section for more information.
+.It Ev "comment [off] (vi only)"
+If the first non-empty line of the file begins with the string
+.Dq \&/* ,
+.Nm \&vi
+skips to the end of that C comment (usually a terribly boring
+legal notice) before displaying the file.
+.It Ev "directory, dir [environment variable TMPDIR, or /tmp] (ex and vi)"
+The directory where temporary files are created.
+The environmental variable
+.Ev TMPDIR
+is used as the default value if it exists, otherwise
+.Pa /tmp
+is used.
+.It Ev "edcompatible, ed [off] (ex and vi)"
+Causes the presence or absence of
+.Sy \&g
+and
+.Sy \&c
+suffixes on substitute commands to be remembered,
+and to be toggled by repeating the suffices.
+The suffix
+.Sy \&r
+makes the substitution be as in the
+.Sy \&~
+command, instead of like the
+.Sy \&&
+command.
+.Em "This option is not currently implemented."
+.It Ev "errorbells, eb [off] (ex only)"
+Causes
+.Nm \&ex
+error messages to be preceded by a bell.
+.Em "This option is not currently implemented."
+.It Ev "exrc, ex [off] (ex and vi)"
+If this option is turned off in the system or $HOME startup files,
+the local startup files are never read.
+Turning it on has no effect.
+See the Startup Information section for more information.
+.It Ev "extended [off] (ex and vi)"
+Causes all regular expressions to be treated as POSIX 1003.2
+extended regular expressions (which are similar to
+.Xr egrep 1
+style expressions).
+.It Ev "flash [on] (ex and vi)"
+Causes the screen to flash instead of beeping the keyboard,
+if the terminal is capable of this.
+.It Ev "hardtabs, ht [8] (ex and vi)"
+This option defines the spacing between hardware tab settings, i.e.
+the tab expansion done by the operating system and/or the terminal
+itself.
+As this implementation of
+.Nm ex/vi
+never writes tabs to the terminal, this option does not affect it.
+.It Ev "ignorecase, ic [off] (ex and vi)"
+Causes regular expressions, both in
+.Nm \&ex
+commands and in searches,
+to be evaluated in a case-insensitive manner.
+.It Ev "keytime [6] (ex and vi)"
+The amount of time that
+.Nm ex/vi
+waits for a subsequent key to complete a key mapping,
+measured in 10th's of a second.
+.It Ev "leftright [off] (vi only)"
+Causes the screen to be scrolled left-right to view lines longer than
+the screen, as opposed to the traditional
+.Nm \&vi
+screen interface which folds long lines.
+.It Ev "lines, li [24] (vi only)"
+The number of lines in the screen.
+Setting this option causes
+.Nm ex/vi
+to set (or reset) the environmental variable
+.Ev LINES .
+See the Screen Sizing section for more information.
+.It Ev "lisp [off] (vi only)"
+The
+.Nm \&vi
+.Sy \&( ,
+.Sy \&) ,
+.Sy \&{ ,
+.Sy \&} ,
+.Sy \&[[
+and
+.Sy \&]]
+commands are modified to have special meanings for the Lisp
+language, and the
+.Sy autoindent
+option indentation is changed to be appropriate for
+Lisp code.
+.Em "This option is not currently implemented."
+.It Ev "list [off] (ex and vi)"
+Causes lines to be displayed in an unambiguous fashion.
+Tabs are displayed as control characters, i.e.
+.Dq \&^I ,
+and the ends of lines are marked with a
+.Dq \&$
+character.
+.It Ev "magic [on] (ex and vi)"
+This option is on by default.
+Turning
+.Sy magic
+off causes all RE characters except for
+.Dq \&^
+and
+.Dq \&$
+to be treated as ordinary characters.
+To re-enable characters individually when the
+.Sy magic
+option is off,
+precede them with an
+.Dq \&\e .
+See the Regular Expressions and Replacement Strings section for
+more information.
+.It Ev "matchtime [7] (vi only)"
+The amount of time that
+.Nm \&vi
+stays on the matching character when the
+.Sy showmatch
+option has been set.
+Measured in 10th's of a second.
+.It Ev "mesg [on] (ex and vi)"
+If this option is set, other users can use the
+.Xr talk 1
+and
+.Xr write 1
+utilities to contact you while you are editing.
+See the
+.Xr mesg 1
+utility for more information.
+.It Ev "modelines, modeline [off] (ex and vi)"
+If the
+.Sy modelines
+option is set,
+.Nm ex/vi
+has historically scanned the first and last five lines of each file as
+it is read for editing, looking for any
+.Nm \&ex
+commands that have been placed in those lines.
+After the startup information has been processed, and before the user
+starts editing the file, any commands embedded in the file are executed.
+Commands are recognized by the letters
+.Dq \&e
+or
+.Dq \&v
+followed by
+.Dq \&x
+or
+.Dq \&i ,
+at the beginning of a line or following a tab or space character,
+and followed by a
+.Dq \&: ,
+an
+.Nm \&ex
+command, and another
+.Dq \&: .
+This option is a tremendous security problem, and should not be used
+under any circumstances.
+.Em "This option will never be implemented."
+.It Ev "number, nu [off] (ex and vi)"
+Precede each line displayed from the file with its current line number.
+.It Ev "open [on] (ex only)"
+If the
+.Sy open
+option is turned off, the
+.Nm \&ex
+commands
+.Sy open
+and
+.Sy visual
+are disallowed.
+.It Ev "optimize, opt [on] (vi only)"
+Throughput of text is expedited by setting the terminal to no do automatic
+carriage returns when printing more than one (logical) line of output,
+greatly speeding output on terminals without addressable cursors when text
+with leading white space is printed.
+.Em "This option is not currently implemented."
+.It Ev "paragraphs, para [IPLPPPQPP LIpplpipbp] (vi only)"
+The
+.Sy paragraph
+option defines additional paragraph boundaries for the
+.Nm \&vi
+.Sy \&{
+and
+.Sy \&}
+commands.
+The value of this option should be a character string consisting
+of zero or more character pairs.
+.Pp
+In the text to be edited, the character string <newline>.<char-pair>,
+(where <char-pair> is one of the character pairs in the option's value)
+defines a paragraph boundary.
+For example, if the option were set to
+.Dq "LaA ##" ,
+then all of the following additional paragraph boundaries would be
+recognized:
+.Bd -literal -offset indent -compact
+<newline>.La
+<newline>.A<space>
+<newline>.##
+.Ed
+.It Ev "prompt [on] (ex only)"
+If the
+.Sy prompt
+option is set,
+.Nm \&ex
+prompts for command input with a
+.Dq \&:
+character; when it's not set, no prompt is displayed.
+.It Ev "readonly, ro [off] (ex and vi)"
+If readonly is set, a force flag must be provided to attempt to
+write the file back to the original file name.
+Setting the
+.Sy readonly
+option is equivalent to using the
+.Fl R
+command line option, or editing a file which lacks write permission.
+.It Ev "recdir [/var/tmp/vi.recover] (ex and vi)"
+The directory where recovery files are stored.
+.It Ev "redraw, re [off] (vi only)"
+The editor simulates (using great amounts of output), an intelligent
+terminal on a dumb terminal (e.g. during insertions in visual mode
+the characters to the right of the cursor are refreshed as each input
+character is typed).
+.Em "This option is not currently implemented."
+.It Ev "remap [on] (ex and vi)"
+If remap is set, it's possible to define macros in terms of other macros.
+Otherwise, only a single mapping is done.
+For example, if
+.Dq \&A
+is mapped to
+.Dq \&B ,
+and
+.Dq \&B
+is mapped to
+.Dq \&C ,
+The keystroke
+.Dq \&A
+will be mapped to
+.Dq \&C
+if
+.Sy remap
+is set, and to
+.Dq \&B
+if it is not set.
+.It Ev "report [5] (ex and vi)"
+The threshold of the number of lines that need to be changed
+before a message will be displayed to the user.
+The value is the largest value about which the editor is silent,
+i.e. by default, 6 lines must change before the user is notified.
+.It Ev "ruler [off] (vi only)"
+Causes
+.Nm \&vi
+to display a row/column ruler on the colon command line.
+.It Ev "scroll, scr [window / 2] (ex and vi)"
+Set the number of lines scrolled by the
+.Nm \&vi
+commands
+.Sy \&^D
+and
+.Sy \&^U .
+.It Ev "sections, sect [NHSHH HUnhsh] (vi only)"
+The
+.Sy sections
+option defines additional section boundaries for the
+.Nm \&vi
+commands
+.Sy \&[[
+and
+.Sy \&]] .
+The
+.Sy sections
+option should be set to a character string consisting of zero or
+more character pairs.
+In the text to be edited, the character string <newline>.<char-pair>,
+(where <char-pair> is one of the character pairs in the option's value),
+defines a section boundary in the same manner that paragraph boundaries
+are defined.
+.It Ev "shell, sh [environment variable SHELL, or /bin/sh] (ex and vi)"
+The value of the
+.Sy shell
+option is the pathname of the shell to be invoked
+for the
+.Nm \&vi
+.Sy \&!
+shell escape command and by the
+.Nm \&ex
+.Sy shell
+command.
+This program is also used to resolve any shell meta-characters in
+.Nm \&ex
+commands.
+.It Ev "shiftwidth, sw [8] (ex and vi)"
+Determines the width of the indentation level used by the
+.Sy autoindent
+option and by the
+.Sy \&< ,
+.Sy \&> ,
+and
+.Sy shift
+commands.
+.It Ev "showdirty [off] (vi only)"
+Causes
+.Nm \&vi
+to display an asterisk on the colon command line if the file has been
+modified.
+.It Ev "showmatch, sm [off] (vi only)"
+Causes
+.Nm \&vi ,
+when a
+.Dq \&}
+or
+.Dq \&)
+is entered, to briefly move the cursor the matching
+.Dq \&{
+or
+.Dq \&( .
+See the
+.Sy matchtime
+option for more information.
+.It Ev "showmode [off] (vi only)"
+Causes
+.Nm \&vi
+to display the strings
+.Dq Command
+or
+.Dq Input
+on the colon command line, based on the current mode of the editor.
+.It Ev "sidescroll [16] (vi only)"
+Sets the number of columns that are shifted to the left or right,
+when
+.Nm \&vi
+is doing left-right scrolling and the left or right margin is
+reached.
+See the
+.Sy leftright
+option for more information.
+.It Ev "slowopen, slow [off] (vi only)"
+Affects the display algorithm used by
+.Nm \&vi ,
+holding off display updating during input of new text to improve
+throughput when the terminal in use is both slow and unintelligent.
+.Em "This option is not currently implemented."
+.It Ev "sourceany [off] (ex and vi)"
+If this option is turned on,
+.Nm \&vi
+historically read
+.Pa $HOME/.exrc
+and local
+.Pa .exrc
+files that were owned by someone other than the user running the
+editor.
+See the Startup Information section for more information.
+This option is a tremendous security problem, and should not be used
+under any circumstances.
+.Em "This option will never be implemented."
+.It Ev "tabstop, ts [8] (ex and vi)"
+This option sets tab spacing for the editor display.
+.It Ev "taglength, tl [0] (ex and vi)"
+The
+.Sy taglength
+option sets the maximum number of characters that are
+considered significant from a tag name.
+Setting the value to 0 makes all of the characters in the
+tag name significant.
+.It Ev "tags, tag [tags /var/db/libc.tags /sys/kern/tags] (ex and vi)"
+The list of tags files, in search order, which are used when the
+editor searches for a tag.
+.It Ev "term, ttytype, tty [environment variable TERM] (ex and vi)"
+The terminal type.
+Setting this option causes
+.Nm ex/vi
+to set (or reset) the environmental variable
+.Ev TERM .
+.It Ev "terse [off] (ex and vi)"
+The
+.Sy terse
+option makes editor messages less verbose.
+.It Ev "timeout, to [on] (ex and vi)"
+If timeout is set,
+.Nm ex/vi
+waits for a specific period for a subsequent key to complete a key
+mapping (see the
+.Sy keytime
+option).
+If the option is not set, the editor waits until enough keys are
+entered to resolve the ambiguity, regardless of how long it takes.
+.It Ev "ttywerase [off] (vi only)"
+This option changes how
+.Nm \&vi
+does word erase during text input.
+If this option is set, text is broken up into two classes, 
+blank characters and non-blank characters.
+Changing from one class to another marks the end of a word.
+.It Ev "verbose [off] (ex and vi)"
+.Nm \&Vi
+historically bells the terminal for most obvious mistakes, e.g.
+trying to move past the left-hand margin, or past the end of the file.
+If this option is set, an error message is displayed for all errors.
+.It Ev "w300 [no default] (vi only)"
+Set the window size to the specified value if the baud rate is less
+than 1200 baud.
+See the
+.Sy window
+option for more information.
+.It Ev "w1200 [no default] (vi only)"
+Set the window size to the specified value if the baud rate is equal
+to 1200 baud.
+See the
+.Sy window
+option for more information.
+.It Ev "w9600 [no default] (vi only)"
+Set the window size to the specified value if the baud rate is greater
+than 1200 baud.
+See the
+.Sy window
+option for more information.
+.It Ev "warn [on] (ex and vi)"
+Causes
+.Nm \&ex
+to write a warning message to the terminal if the file has been
+modified, since it was last written, before a
+.Sy \&!
+command escape.
+.It Ev "window, w, wi [environment variable LINES] (vi only)"
+The
+.Sy window
+option determines the default number of lines in a screenful,
+as written by the
+.Sy \&z
+command.
+It also determines the number of lines scrolled by the
+.Nm \&vi
+commands
+.Sy \&^F
+and
+.Sy \&^B .
+The value of window can be unrelated to the real screen size,
+although it starts out as the number of lines on the screen (see
+the Screen Sizing section).
+Setting the value of the
+.Sy window
+option is the same as using the
+.Fl w
+command line option.
+.Pp
+If the value of
+.Sy window
+(as set by the
+.Sy window ,
+.Sy w300 ,
+.Sy w1200
+or
+.Sy w9600
+options) is smaller than the actual size of the screen, large screen
+movements will result in displaying only that number of lines on the
+screen.
+(Further movements in that same area will result in the screen being
+filled.)
+This provide a performance improvement when viewing many different
+places in one or more files over a slow link.
+.It Ev "wrapmargin, wm [0] (vi only)"
+If the value of wrapmargin is non-zero,
+.Nm \&vi
+will break lines, that are more than that number of characters long,
+into two lines at the blank character closest to the value.
+If wrapmargin is 0,
+or if there is no blank character upon which to break the line,
+the line will not be broken.
+.It Ev "wrapscan, ws [on] (ex and vi)"
+If wrapscan is set,
+searches wrap around the end or the beginning of the file,
+and back to the starting point.
+Otherwise, the end or beginning of the file terminates the search.
+.It Ev "writeany, wa [off] (ex and vi)"
+If writeany is set,
+file-overwriting checks that would usually be made before the
+.Sy write
+and
+.Sy xit
+commands, or before an automatic write (see the
+.Sy autowrite
+option), are not made.
+This allows a write to any file, provided the file permissions allow it.
 .El
 .Sh BUGS
 This man page is woefully incomplete.
@@ -457,9 +1369,9 @@ Recovery file directory.
 1st choice for user's home directory startup file.
 .It Pa $HOME/.exrc
 2nd choice for user's home directory startup file.
-.It Pa ./.nexrc
+.It Pa .nexrc
 1st choice for local directory startup file.
-.It Pa ./.exrc
+.It Pa .exrc
 2nd choice for local directory startup file.
 .El
 .Sh SEE ALSO
@@ -511,5 +1423,7 @@ replacements for
 first appeared in 4.4BSD.
 .Sh STANDARDS
 .Nm \&Nex/nvi
-is fairly close to IEEE Std1003.2 (``POSIX''), but it's
-not there yet.
+is fairly close to IEEE Std1003.2 (``POSIX'').
+That document differs from historical
+.Nm ex/vi
+practice in several places; there are changes to be made on both sides.
