@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 5.37 1993/05/05 10:57:39 bostic Exp $ (Berkeley) $Date: 1993/05/05 10:57:39 $";
+static char sccsid[] = "$Id: ex_bang.c,v 5.38 1993/05/09 15:58:41 bostic Exp $ (Berkeley) $Date: 1993/05/09 15:58:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -167,7 +167,7 @@ ex_bang(sp, ep, cmdp)
 	(void)tcsetattr(STDIN_FILENO, TCSAFLUSH, &savet);
 
 	if (F_ISSET(sp, S_MODE_VI))
-		(void)getkey(sp, 0);
+		(void)term_key(sp, 0);
 
 	/* Repaint the screen. */
 	F_SET(sp, S_REFRESH);
