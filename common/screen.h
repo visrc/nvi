@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 10.3 1995/07/04 12:43:30 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:43:30 $
+ *	$Id: screen.h,v 10.4 1995/07/06 11:51:01 bostic Exp $ (Berkeley) $Date: 1995/07/06 11:51:01 $
  */
 
 /*
@@ -178,8 +178,6 @@ struct _scr {
  *
  * S_SCR_CENTER
  *	If the current line isn't already on the screen, center it.
- * S_SCR_REFRESH
- *	The screen has unknown contents.
  * S_SCR_TOP
  *	If the current line isn't already on the screen, put it at the top.
  */
@@ -187,29 +185,28 @@ struct _scr {
 #define	S_SCR_REDRAW	0x00000008	/* Refresh. */
 
 #define	S_SCR_CENTER	0x00000010	/* Center the line if not visible. */
-#define	S_SCR_REFRESH	0x00000020	/* Repaint. */
-#define	S_SCR_TOP	0x00000040	/* Top the line if not visible. */
+#define	S_SCR_TOP	0x00000020	/* Top the line if not visible. */
 
 /* Screen/file changes. */
-#define	S_EXIT		0x00000080	/* Exiting (not forced). */
-#define	S_EXIT_FORCE	0x00000100	/* Exiting (forced). */
-#define	S_SSWITCH	0x00000200	/* Switch screens. */
+#define	S_EXIT		0x00000040	/* Exiting (not forced). */
+#define	S_EXIT_FORCE	0x00000080	/* Exiting (forced). */
+#define	S_SSWITCH	0x00000100	/* Switch screens. */
 
-#define	S_ARGNOFREE	0x00000400	/* Argument list wasn't allocated. */
-#define	S_ARGRECOVER	0x00000800	/* Argument list is recovery files. */
-#define	S_AT_SET	0x00001000	/* Last at buffer set. */
-#define	S_COMPLETE	0x00002000	/* Command completed. */
-#define	S_COMPLETE_EX	0x00004000	/* Vi: ex command completed. */
-#define	S_EX_CANON	0x00008000      /* Ex: tty is in canonical mode. */
-#define	S_EX_GLOBAL	0x00010000	/* Ex: in the global command. */
-#define	S_EX_SILENT	0x00020000	/* Ex: batch script. */
-#define	S_INPUT		0x00040000	/* Doing text input. */
-#define	S_INPUT_INFO	0x00080000	/* Doing text input on info line. */
-#define	S_INTERRUPTED	0x00100000	/* An interrupt occurred. */
-#define	S_RE_RECOMPILE	0x00200000	/* The search RE needs recompiling. */
-#define	S_RE_SEARCH	0x00400000	/* The search RE has been set. */
-#define	S_RE_SUBST	0x00800000	/* The substitute RE has been set. */
-#define	S_SCRIPT	0x01000000	/* Window is a shell script. */
-#define	S_STATUS	0x02000000	/* Schedule welcome message. */
+#define	S_ARGNOFREE	0x00000200	/* Argument list wasn't allocated. */
+#define	S_ARGRECOVER	0x00000400	/* Argument list is recovery files. */
+#define	S_AT_SET	0x00000800	/* Last at buffer set. */
+#define	S_COMPLETE	0x00001000	/* Command completed. */
+#define	S_COMPLETE_EX	0x00002000	/* Vi: ex command completed. */
+#define	S_EX_CANON	0x00004000      /* Ex: tty is in canonical mode. */
+#define	S_EX_GLOBAL	0x00008000	/* Ex: in the global command. */
+#define	S_EX_SILENT	0x00010000	/* Ex: batch script. */
+#define	S_INPUT		0x00020000	/* Doing text input. */
+#define	S_INPUT_INFO	0x00040000	/* Doing text input on info line. */
+#define	S_INTERRUPTED	0x00080000	/* An interrupt occurred. */
+#define	S_RE_RECOMPILE	0x00100000	/* The search RE needs recompiling. */
+#define	S_RE_SEARCH	0x00200000	/* The search RE has been set. */
+#define	S_RE_SUBST	0x00400000	/* The substitute RE has been set. */
+#define	S_SCRIPT	0x00800000	/* Window is a shell script. */
+#define	S_STATUS	0x01000000	/* Schedule welcome message. */
 	u_int32_t flags;
 };
