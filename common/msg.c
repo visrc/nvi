@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 10.20 1995/10/18 19:54:51 bostic Exp $ (Berkeley) $Date: 1995/10/18 19:54:51 $";
+static char sccsid[] = "$Id: msg.c,v 10.21 1995/10/19 11:42:51 bostic Exp $ (Berkeley) $Date: 1995/10/19 11:42:51 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -413,8 +413,9 @@ msgq_rpt(sp)
 	u_long rptval;
 	int first, cnt;
 	size_t blen, len, tlen;
+	const char *t;
 	char * const *ap;
-	char *bp, *p, *t;
+	char *bp, *p;
 
 	/* Change reports are turned off in batch mode. */
 	if (F_ISSET(sp, S_EX_SILENT))
@@ -633,8 +634,8 @@ msg_open(sp, file)
 	 * message will be repeated every time nvi is started up.
 	 */
 	if ((p = strrchr(file, '/')) != NULL && p[1] == '\0' &&
-	    ((t = getenv("LANG")) != NULL ||
-	    (t = getenv("LC_MESSAGES")) != NULL)) {
+	    ((t = getenv("LANG")) != NULL && t[0] != '\0' ||
+	    (t = getenv("LC_MESSAGES")) != NULL && t[0] != '\0')) {
 		(void)snprintf(buf, sizeof(buf), "%svi_%s", file, t);
 		p = buf;
 	} else
