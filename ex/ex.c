@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.64 1993/02/19 15:30:22 bostic Exp $ (Berkeley) $Date: 1993/02/19 15:30:22 $";
+static char sccsid[] = "$Id: ex.c,v 5.65 1993/02/19 18:31:37 bostic Exp $ (Berkeley) $Date: 1993/02/19 18:31:37 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -989,7 +989,7 @@ fileexpand(ep, gp, word, wordlen)
 	static int tpathlen;
 	static u_char *tpath;
 	EXF *prev_ep;
-	int len, olen, plen;
+	int len;
 	u_char ch, *p;
 
 	/*
@@ -999,7 +999,7 @@ fileexpand(ep, gp, word, wordlen)
 	/* Figure out how much space we need for this argument. */
 	prev_ep = NULL;
 	len = wordlen;
-	for (p = word, olen = plen = 0; p = USTRPBRK(p, "%#\\"); ++p)
+	for (p = word; p = USTRPBRK(p, "%#\\"); ++p)
 		switch (*p) {
 		case '%':
 			if (FF_ISSET(ep, F_NONAME)) {
