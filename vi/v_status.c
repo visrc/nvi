@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_status.c,v 8.5 1993/09/10 10:04:31 bostic Exp $ (Berkeley) $Date: 1993/09/10 10:04:31 $";
+static char sccsid[] = "$Id: v_status.c,v 8.6 1993/09/16 09:26:22 bostic Exp $ (Berkeley) $Date: 1993/09/16 09:26:22 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -54,6 +54,10 @@ status(sp, ep, lno, showlast)
 #else
 	pid = "";
 #endif
+	/*
+	 * See nvi/exf.c:file_init() for a description of how and when
+	 * the read-only bit is set.
+	 */
 	ro = F_ISSET(sp->frp, FR_RDONLY) ? ", readonly" : "";
 	mo = F_ISSET(ep, F_MODIFIED) ? "modified" : "unmodified";
 	if (showlast) {
