@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 5.25 1993/01/17 16:55:51 bostic Exp $ (Berkeley) $Date: 1993/01/17 16:55:51 $
+ *	$Id: exf.h,v 5.26 1993/01/30 17:26:09 bostic Exp $ (Berkeley) $Date: 1993/01/30 17:26:09 $
  */
 
 #ifndef _EXF_H_
@@ -28,7 +28,6 @@ typedef struct exf {
 	size_t shift;			/* 0-N: Shift offset in cols. */
 	size_t lines;			/* Physical number of lines. */
 	size_t cols;			/* Physical number of cols. */
-	u_char cwidth;			/* Width of current character. */
 	void *h_smap;			/* Map of lno's to the screen (head). */
 	void *t_smap;			/* Map of lno's to the screen (tail). */
 
@@ -75,19 +74,20 @@ typedef struct exf {
 	size_t nlen;			/* File name length. */
 
 #define	F_AUTOPRINT	0x0001		/* Autoprint flag. */
-#define	F_IGNORE	0x0002		/* File not on the command line. */
-#define	F_IN_GLOBAL	0x0004		/* Doing a global command. */
-#define	F_MODIFIED	0x0008		/* File has been modified. */
-#define	F_NAMECHANGED	0x0010		/* File name was changed. */
-#define	F_NEEDMERASE	0x0020		/* Erase modeline after keystroke. */
-#define	F_NEWSESSION	0x0040		/* File has just been edited. */
-#define	F_NONAME	0x0080		/* File has no name. */
-#define	F_RDONLY	0x0100		/* File is read-only. */
-#define	F_RE_SET	0x0200		/* The file's RE has been set. */
-#define	F_READING	0x0400		/* Waiting on a read. */
-#define	F_REDRAW	0x0800		/* Repaint the screen. */
-#define	F_RESIZE	0x1000		/* Resize the screen. */
-#define	F_UNDO		0x2000		/* No change since last undo. */
+#define	F_CHARDELETED	0x0002		/* Character deleted. */
+#define	F_IGNORE	0x0004		/* File not on the command line. */
+#define	F_IN_GLOBAL	0x0008		/* Doing a global command. */
+#define	F_MODIFIED	0x0010		/* File has been modified. */
+#define	F_NAMECHANGED	0x0020		/* File name was changed. */
+#define	F_NEEDMERASE	0x0040		/* Erase modeline after keystroke. */
+#define	F_NEWSESSION	0x0080		/* File has just been edited. */
+#define	F_NONAME	0x0100		/* File has no name. */
+#define	F_RDONLY	0x0200		/* File is read-only. */
+#define	F_RE_SET	0x0400		/* The file's RE has been set. */
+#define	F_READING	0x0800		/* Waiting on a read. */
+#define	F_REDRAW	0x1000		/* Repaint the screen. */
+#define	F_RESIZE	0x2000		/* Resize the screen. */
+#define	F_UNDO		0x4000		/* No change since last undo. */
 
 #define	FF_SET(ep, f)	(ep)->flags |= (f)
 #define	FF_CLR(ep, f)	(ep)->flags &= ~(f)
@@ -171,7 +171,7 @@ int	 file_sync __P((EXF *, int));
 int	 file_aline __P((EXF *, recno_t, u_char *, size_t));
 int	 file_dline __P((EXF *, recno_t));
 u_char	*file_gline __P((EXF *, recno_t, size_t *));
-int	 file_ibresolv __P((EXF *, IB *));
+int	 file_ibresolv __P((EXF *, recno_t));
 int	 file_iline __P((EXF *, recno_t, u_char *, size_t));
 recno_t	 file_lline __P((EXF *));
 int	 file_sline __P((EXF *, recno_t, u_char *, size_t));
