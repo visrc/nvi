@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 10.6 1995/06/20 17:58:23 bostic Exp $ (Berkeley) $Date: 1995/06/20 17:58:23 $";
+static char sccsid[] = "$Id: msg.c,v 10.7 1995/06/23 19:13:35 bostic Exp $ (Berkeley) $Date: 1995/06/23 19:13:35 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -710,7 +710,7 @@ msg_cat(sp, str, lenp)
 		 * a better way.  Once we can allocate multiple temporary
 		 * memory buffers, maybe we can use one of them instead.
 		 */
-		gp = sp->gp;
+		gp = sp == NULL ? NULL : sp->gp;
 		if (gp != NULL && gp->msg != NULL &&
 		    gp->msg->get(gp->msg, &key, &data, 0) == 0 &&
 		    data.size != 0) {
