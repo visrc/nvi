@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 9.11 1995/01/23 16:58:39 bostic Exp $ (Berkeley) $Date: 1995/01/23 16:58:39 $";
+static char sccsid[] = "$Id: options_f.c,v 9.12 1995/01/30 09:09:25 bostic Exp $ (Berkeley) $Date: 1995/01/30 09:09:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -509,13 +509,9 @@ DECL(f_w9600)
 
 DECL(f_window)
 {
-	if (val < MINIMUM_SCREEN_ROWS) {
-		msgq(sp, M_ERR,
-		    "072|Window too small, less than %d", MINIMUM_SCREEN_ROWS);
-		return (1);
-	}
-	if (val > O_VAL(sp, O_LINES) - 1)
-		val = O_VAL(sp, O_LINES) - 1;
+	if (val >= O_VAL(sp, O_LINES) - 1 &&
+	    (val = O_VAL(sp, O_LINES) - 1) == 0)
+		val = 1;
 	O_VAL(sp, O_WINDOW) = val;
 
 	return (0);
