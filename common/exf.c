@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.99 1994/09/01 08:16:12 bostic Exp $ (Berkeley) $Date: 1994/09/01 08:16:12 $";
+static char sccsid[] = "$Id: exf.c,v 8.100 1994/09/01 14:27:28 bostic Exp $ (Berkeley) $Date: 1994/09/01 14:27:28 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -239,7 +239,8 @@ file_init(sp, frp, rcv_name, force)
 	 * happen in historical vi as the result of the initial command, i.e.
 	 * if vi was executed without a file name.
 	 */
-	set_alt_name(sp, F_ISSET(sp->frp, FR_TMPFILE) ? NULL : sp->frp->name);
+	set_alt_name(sp, sp->frp == NULL ||
+	    F_ISSET(sp->frp, FR_TMPFILE) ? NULL : sp->frp->name);
 
 	/*
 	 * Close the previous file; if that fails, close the new one and run
