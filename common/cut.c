@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 8.18 1994/01/10 08:34:48 bostic Exp $ (Berkeley) $Date: 1994/01/10 08:34:48 $";
+static char sccsid[] = "$Id: cut.c,v 8.19 1994/01/11 22:17:59 bostic Exp $ (Berkeley) $Date: 1994/01/11 22:17:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,13 +30,12 @@ static int	cb_rotate __P((SCR *));
  * is the linked list of all the buffers the user has named, the second is the
  * default buffer storage.  There is a pointer, too, which is the current
  * default buffer, i.e. it may point to the default buffer or a named buffer
- * depending on into what buffer the last text was cut.  In delete operations,
- * text is cut into either the buffer named by the user, or the buffer named
- * '1'.  In a yank, the text is cut into either the buffer named by the user,
- * or the default buffer.  In both cases, as stated above, the default buffer
- * pointer is changed to reference the cut text, wherever that may be.  Also,
- * delete operations rotate the contents of the numbered buffers up one, and
- * the contents of buffer '9' are discarded.
+ * depending on into what buffer the last text was cut.  In both delete and
+ * yank operations, text is cut into either the buffer named by the user, or
+ * the default buffer.  If it's a delete of information on more than a single
+ * line, the contents of the numbered buffers are rotated up one, the contents
+ * of the buffer named '9' are discarded, and the text is also cut into the
+ * buffer named '1'.
  *
  * In all cases, upper-case buffer names are the same as lower-case names,
  * with the exception that they cause the buffer to be appended to instead
@@ -72,17 +71,19 @@ cut(sp, ep, cbp, namep, fm, tm, flags)
 	    fm->lno, fm->cno, tm->lno, tm->cno,
 	    LF_ISSET(CUT_LINEMODE) ? " LINE MODE" : "");
 #endif
-	if (LF_ISSET(CUT_ROTATE))
-		(void)cb_rotate(sp);
-
 	if (cbp == NULL) {
+		if (LF_ISSET(CUT_DELETE) && fm->lno != tm->lno) {
+			(void)cb_rotate(sp);
+			name = '1';
+			goto defcb;
+		}
 		if (namep == NULL) {
 			cbp = sp->gp->dcb_store;
 			append = namedbuffer = 0;
 			setdefcb = 1;
 		} else {
 			name = *namep;
-			CBNAME(sp, cbp, name);
+defcb:			CBNAME(sp, cbp, name);
 			append = isupper(name);
 			namedbuffer = setdefcb = 1;
 		}
