@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.42 1994/03/08 19:38:12 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:38:12 $";
+static char sccsid[] = "$Id: recover.c,v 8.43 1994/03/14 10:33:51 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:33:51 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -109,7 +109,7 @@ rcv_tmp(sp, ep, name)
 		}
 		(void)chmod(dp, S_IRWXU | S_IRWXG | S_IRWXO | S_ISVTX);
 	}
-		
+
 	/* Newlines delimit the mail messages. */
 	for (p = name; *p; ++p)
 		if (*p == '\n') {
@@ -257,7 +257,7 @@ rcv_mailfile(sp, ep)
 		(void)fclose(fp);
 		return (1);
 	}
-	
+
 	t = FILENAME(sp->frp);
 	if ((p = strrchr(t, '/')) == NULL)
 		p = t;
@@ -273,7 +273,7 @@ rcv_mailfile(sp, ep)
 	    "To: ", pw->pw_name,
 	    "Subject: Nvi saved the file ", p,
 	    "Precedence: bulk");			/* For vacation(1). */
-	(void)fprintf(fp, "%s%.24s%s%s\n%s%s", 
+	(void)fprintf(fp, "%s%.24s%s%s\n%s%s",
 	    "On ", ctime(&now),
 	    ", the user ", pw->pw_name,
 	    "was editing a file named ", p);
@@ -417,7 +417,7 @@ rcv_syncit(sp, email)
 /*
  *	people making love
  *	never exactly the same
- *	just like a snowflake 
+ *	just like a snowflake
  *
  * rcv_list --
  *	List the files that can be recovered by this user.
@@ -501,7 +501,7 @@ rcv_read(sp, name)
 	int found, requested;
 	char *p, *t, *recp, *pathp;
 	char recpath[MAXPATHLEN], file[MAXPATHLEN], path[MAXPATHLEN];
-		
+
 	if ((dirp = opendir(O_STR(sp, O_RECDIR))) == NULL) {
 		msgq(sp, M_ERR,
 		    "%s: %s", O_STR(sp, O_RECDIR), strerror(errno));

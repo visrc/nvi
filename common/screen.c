@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.55 1994/03/10 11:03:18 bostic Exp $ (Berkeley) $Date: 1994/03/10 11:03:18 $";
+static char sccsid[] = "$Id: screen.c,v 8.56 1994/03/14 10:34:04 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:34:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -238,7 +238,7 @@ screen_end(sp)
 	/*
 	 * Free the message chain last, so previous failures have a place
 	 * to put messages.  Copy messages to (in order) a related screen,
-	 * any screen, the global area. 
+	 * any screen, the global area.
 	 */
 	{ SCR *c_sp; MSG *mp, *next;
 		if ((c_sp = sp->q.cqe_prev) != (void *)&sp->gp->dq) {

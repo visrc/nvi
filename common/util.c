@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.42 1994/03/13 14:02:00 bostic Exp $ (Berkeley) $Date: 1994/03/13 14:02:00 $";
+static char sccsid[] = "$Id: util.c,v 8.43 1994/03/14 10:34:48 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:34:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -209,7 +209,7 @@ msg_rpt(sp, is_message)
 	int is_message;
 {
 	static const char *const action[] = {
-		"added", "changed", "copied", "deleted", "joined", "moved",	
+		"added", "changed", "copied", "deleted", "joined", "moved",
 		"put", "left shifted", "right shifted", "yanked", NULL,
 	};
 	recno_t total;

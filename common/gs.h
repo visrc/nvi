@@ -4,13 +4,13 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 8.27 1994/03/01 11:35:28 bostic Exp $ (Berkeley) $Date: 1994/03/01 11:35:28 $
+ *	$Id: gs.h,v 8.28 1994/03/14 10:31:09 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:31:09 $
  */
 
 struct _gs {
 	CIRCLEQ_HEAD(_dqh, _scr) dq;	/* Displayed screens. */
 	CIRCLEQ_HEAD(_hqh, _scr) hq;	/* Hidden screens. */
-	
+
 	mode_t	 origmode;		/* Original terminal mode. */
 	struct termios
 		 original_termios;	/* Original terminal values. */

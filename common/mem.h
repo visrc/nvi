@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: mem.h,v 8.3 1994/03/07 17:48:52 bostic Exp $ (Berkeley) $Date: 1994/03/07 17:48:52 $
+ *	$Id: mem.h,v 8.4 1994/03/14 10:32:48 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:32:48 $
  */
 
 /* Increase the size of a malloc'd buffer.  Two versions, one that
@@ -137,7 +137,7 @@
 		msgq(sp, M_SYSERR, NULL);				\
 }
 
-/* 
+/*
  * Versions of memmove(3) and memset(3) that use the size of the
  * initial pointer to figure out how much memory to manipulate.
  */

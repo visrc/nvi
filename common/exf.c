@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.66 1994/03/08 19:37:58 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:37:58 $";
+static char sccsid[] = "$Id: exf.c,v 8.67 1994/03/14 10:30:53 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:30:53 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -247,7 +247,7 @@ file_init(sp, frp, rcv_name, force)
 			msgq(sp, M_ERR,
 			    "Warning: %s is not a regular file.", oname);
 	}
-	
+
 	/* Set up recovery. */
 	memset(&oinfo, 0, sizeof(RECNOINFO));
 	oinfo.bval = '\n';			/* Always set. */
@@ -650,7 +650,7 @@ exists:			if (LF_ISSET(FS_POSSIBLE))
 	 */
 	if (nlno || nch)
 		frp->mtime = stat(name, &sb) ? 0 : sb.st_mtime;
-	
+
 	/* If the write failed, complain loudly. */
 	if (rval) {
 		if (!LF_ISSET(FS_APPEND))

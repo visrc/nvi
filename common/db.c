@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 8.21 1994/03/08 19:38:00 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:38:00 $";
+static char sccsid[] = "$Id: db.c,v 8.22 1994/03/14 10:31:26 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:31:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -255,7 +255,7 @@ file_aline(sp, ep, update, lno, p, len)
 	 * updated/scrolled as each line was entered.  So, when this routine
 	 * is called to copy the new lines from the cut buffer into the file,
 	 * it has to know not to update the screen again.
-	 */ 
+	 */
 	return (scr_update(sp, ep, lno, LINE_APPEND, update));
 }
 
@@ -370,7 +370,7 @@ file_sline(sp, ep, lno, p, len)
 
 	/* Log after change. */
 	log_line(sp, ep, lno, LOG_LINE_RESET_F);
-	
+
 	/* Update screen. */
 	return (scr_update(sp, ep, lno, LINE_RESET, 1));
 }
@@ -418,7 +418,7 @@ file_lline(sp, ep, lnop)
 	ep->c_nlines = ep->c_lno = lno;
 	ep->c_len = data.size;
 	ep->c_lp = data.data;
- 
+
 	*lnop = (F_ISSET(sp, S_INPUT) &&
 	    ((TEXT *)sp->tiq.cqh_last)->lno > lno ?
 	    ((TEXT *)sp->tiq.cqh_last)->lno : lno);

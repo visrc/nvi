@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: mark.h,v 8.6 1994/02/25 18:57:02 bostic Exp $ (Berkeley) $Date: 1994/02/25 18:57:02 $
+ *	$Id: mark.h,v 8.7 1994/03/14 10:32:31 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:32:31 $
  */
 
 /*
@@ -24,7 +24,7 @@ struct _mark {
 	recno_t	lno;			/* Line number. */
 	size_t	cno;			/* Column number. */
 };
-	
+
 struct _lmark {
 	LIST_ENTRY(_lmark) q;		/* Linked list of marks. */
 	recno_t	lno;			/* Line number. */

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 8.25 1994/03/08 19:37:56 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:37:56 $";
+static char sccsid[] = "$Id: cut.c,v 8.26 1994/03/14 10:30:07 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:30:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,7 +33,7 @@ static char sccsid[] = "$Id: cut.c,v 8.25 1994/03/08 19:37:56 bostic Exp $ (Berk
 static int	cb_line __P((SCR *, EXF *, recno_t, size_t, size_t, CB *));
 static int	cb_rotate __P((SCR *));
 
-/* 
+/*
  * cut --
  *	Put a range of lines/columns into a buffer.
  *

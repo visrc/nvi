@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.39 1994/03/08 19:38:07 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:38:07 $";
+static char sccsid[] = "$Id: options.c,v 8.40 1994/03/14 10:33:13 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:33:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -258,7 +258,7 @@ opts_init(sp)
 			O_CLR(sp, cnt);
 		else if (op->type == OPT_1BOOL)
 			O_SET(sp, cnt);
-			
+
 	/*
 	 * !!!
 	 * Vi historically stored temporary files in /var/tmp.  We store them
@@ -333,7 +333,7 @@ opts_set(sp, argv)
 	u_long value, turnoff;
 	int ch, offset, rval;
 	char *endp, *equals, *name, *p;
-	
+
 	disp = NO_DISPLAY;
 	for (rval = 0; (*argv)->len != 0; ++argv) {
 		/*
@@ -344,7 +344,7 @@ opts_set(sp, argv)
 			disp = ALL_DISPLAY;
 			continue;
 		}
-			
+
 		/* Find equals sign or end of set, skipping backquoted chars. */
 		for (p = name = argv[0]->bp, equals = NULL; ch = *p; ++p)
 			switch(ch) {
@@ -549,7 +549,7 @@ opts_dump(sp, type)
 		colwidth = 0;
 	}
 
-	/* 
+	/*
 	 * Get the set of options to list, entering them into
 	 * the column list or the overflow list.
 	 */

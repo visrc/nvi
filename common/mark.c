@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: mark.c,v 8.15 1994/03/08 19:38:06 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:38:06 $";
+static char sccsid[] = "$Id: mark.c,v 8.16 1994/03/14 10:32:19 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:32:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -54,7 +54,7 @@ static LMARK *mark_find __P((SCR *, EXF *, ARG_CHAR_T));
  * deleted, we delete (and log) any marks on that line.  An undo will create
  * the mark.  Any mark creations are noted as to whether the user created
  * it or if it was created by an undo.  The former cannot be reset by another
- * undo, but the latter may. 
+ * undo, but the latter may.
  *
  * All of these routines translate ABSMARK2 to ABSMARK1.  Setting either of
  * the absolute mark locations sets both, so that "m'" and "m`" work like

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: put.c,v 8.2 1994/03/08 19:38:11 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:38:11 $";
+static char sccsid[] = "$Id: put.c,v 8.3 1994/03/14 10:33:29 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:33:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,7 +38,7 @@ static char sccsid[] = "$Id: put.c,v 8.2 1994/03/08 19:38:11 bostic Exp $ (Berke
  * that historic vi couldn't deal with a file that had no lines in it.
  * This implementation treats that as a bug, and does not retain the blank
  * line.
- */	
+ */
 int
 put(sp, ep, cbp, namep, cp, rp, append)
 	SCR *sp;
@@ -94,7 +94,7 @@ put(sp, ep, cbp, namep, cp, rp, append)
 			goto ret;
 		}
 	}
-			
+
 	/* If a line mode buffer, append each new line into the file. */
 	if (F_ISSET(cbp, CB_LMODE)) {
 		lno = append ? cp->lno : cp->lno - 1;

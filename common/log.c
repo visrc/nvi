@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: log.c,v 8.13 1994/03/11 08:25:26 bostic Exp $ (Berkeley) $Date: 1994/03/11 08:25:26 $";
+static char sccsid[] = "$Id: log.c,v 8.14 1994/03/14 10:31:57 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:31:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -134,7 +134,7 @@ log_end(sp, ep)
 	ep->l_high = ep->l_cur = 1;
 	return (0);
 }
-		
+
 /*
  * log_cursor --
  *	Log the current cursor position, starting an event.
@@ -224,7 +224,7 @@ log_line(sp, ep, lno, action)
 			return (1);
 		ep->l_cursor.lno = OOBLNO;
 	}
-		
+
 	/*
 	 * Put out the changes.  If it's a LOG_LINE_RESET_B call, it's a
 	 * special case, avoid the caches.  Also, if it fails and it's

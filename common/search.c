@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.35 1994/03/10 13:58:16 bostic Exp $ (Berkeley) $Date: 1994/03/10 13:58:16 $";
+static char sccsid[] = "$Id: search.c,v 8.36 1994/03/14 10:34:25 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:34:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -198,7 +198,7 @@ ctag_conv(sp, ptrnp, replacedp)
 	/* The second character is a '^', and it's magic. */
 	if (p[0] == '^')
 		*t++ = *p++;
-		
+
 	/*
 	 * Escape every other magic character we can find, stripping the
 	 * backslashes ctags inserts to escape the search delimiter
@@ -359,7 +359,7 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 			re_error(sp, eval, re);
 			break;
 		}
-		
+
 		/* Warn if wrapped. */
 		if (wrapped && O_ISSET(sp, O_WARN) && LF_ISSET(SEARCH_MSG))
 			msgq(sp, M_INFO, WRAPMSG);
@@ -502,7 +502,7 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 		/* Warn if wrapped. */
 		if (wrapped && O_ISSET(sp, O_WARN) && LF_ISSET(SEARCH_MSG))
 			msgq(sp, M_INFO, WRAPMSG);
-		
+
 		if (delta) {
 			if (check_delta(sp, ep, delta, lno))
 				break;
@@ -565,7 +565,7 @@ err:	busy_off(sp);
  * the global, search, and substitute patterns) work with POSIX RE's.
  *
  * 1: If O_MAGIC is not set, strip backslashes from the magic character
- *    set (.[]*~) that have them, and add them to the ones that don't. 
+ *    set (.[]*~) that have them, and add them to the ones that don't.
  * 2: If O_MAGIC is not set, the string "\~" is replaced with the text
  *    from the last substitute command's replacement string.  If O_MAGIC
  *    is set, it's the string "~".
