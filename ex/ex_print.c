@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 5.15 1992/10/17 15:20:31 bostic Exp $ (Berkeley) $Date: 1992/10/17 15:20:31 $";
+static char sccsid[] = "$Id: ex_print.c,v 5.16 1992/10/29 14:39:36 bostic Exp $ (Berkeley) $Date: 1992/10/29 14:39:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -97,23 +97,22 @@ print(cmdp, flags)
 	u_char *p;
 	char buf[10];
 
-	EX_PRSTART(0);
 	for (cur = cmdp->addr1.lno, end = cmdp->addr2.lno; cur <= end; ++cur) {
 
 		/* Display the line number. */
 		if (flags & E_F_HASH) {
-			(void)printf("%7ld ", cur);
+			(void)fprintf(curf->stdfp, "%7ld ", cur);
 			col = 8;
 		} else
 			col = 0;
 	
-#define	WCHECK(ch) { \
-	if (col == COLS) { \
-		EX_PRNEWLINE; \
-		col = 0; \
-	} \
-	(void)putchar(ch); \
-	++col; \
+#define	WCHECK(ch) {							\
+	if (col == curf->cols) {					\
+		(void)fprintf(curf->stdfp, "\n");			\
+		col = 0;						\
+	}								\
+	(void)putc(ch, curf->stdfp);					\
+	++col;								\
 }
 		/*
 		 * Display the line.  The format for E_F_PRINT isn't very good,
@@ -139,18 +138,18 @@ print(cmdp, flags)
 			else {
 				ch &= 0x7f;
 				if (ch == '\t') {
-					while (col < COLS &&
+					while (col < curf->cols &&
 					    ++col % LVAL(O_TABSTOP))
-						(void)putchar(' ');
-					if (col == COLS) {
+						(void)putc(' ', curf->stdfp);
+					if (col == curf->cols) {
 						col = 0;
-						EX_PRNEWLINE;
+						(void)putc('\n', curf->stdfp);
 					}
 				} else if (isprint(ch)) {
 					WCHECK(ch);
 				} else if (ch == '\n') {
 					col = 0;
-					EX_PRNEWLINE;
+					(void)putc('\n', curf->stdfp);
 				} else {
 					WCHECK('^');
 					WCHECK(ch + 0x40);
@@ -161,7 +160,7 @@ print(cmdp, flags)
 			WCHECK('$');
 
 		/* The print commands require a keystroke to continue. */
-		EX_PRNEWLINE;
+		(void)putc('\n', curf->stdfp);
 	}
 	curf->lno = cmdp->addr2.lno;
 	curf->cno = cmdp->addr2.cno;
