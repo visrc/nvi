@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.106 1994/10/23 10:21:11 bostic Exp $ (Berkeley) $Date: 1994/10/23 10:21:11 $";
+static char sccsid[] = "$Id: exf.c,v 8.107 1994/10/23 18:09:30 bostic Exp $ (Berkeley) $Date: 1994/10/23 18:09:30 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -801,8 +801,13 @@ file_backup(sp, ep, name, bname)
 	/*
 	 * Open the current file for reading.  Do this first, so that
 	 * we don't exec a shell before the most likely failure point.
+	 * If it doesn't exist, it's okay, there's just nothing to back
+	 * up.
 	 */
+	errno = 0;
 	if ((rfd = open(name, O_RDONLY, 0)) < 0) {
+		if (errno == ENOENT)
+			return (0);
 		estr = name;
 		goto err;
 	}
@@ -837,7 +842,7 @@ file_backup(sp, ep, name, bname)
 		(void)close(rfd);
 		p = msg_print(sp, bname, &nf);
 		msgq(sp, M_ERR,
-		    "XXX|%s expanded into too many file names", p);
+		    "256|%s expanded into too many file names", p);
 		if (nf)
 			FREE_SPACE(sp, p, 0);
 		return (1);
@@ -895,15 +900,15 @@ file_backup(sp, ep, name, bname)
 	/* Open the backup file, avoiding lurkers. */
 	if (stat(wfname, &sb) == 0) {
 		if (!S_ISREG(sb.st_mode)) {
-			t = "XXX|%s: not a regular file";
+			t = "257|%s: not a regular file";
 			goto perm;
 		}
 		if (sb.st_uid != getuid()) {
-			t = "XXX|%s: not owned by you";
+			t = "258|%s: not owned by you";
 			goto perm;
 		}
 		if (sb.st_mode & (S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)) {
-			t = "XXX|%s: accessible by a user other than the owner";
+			t = "259|%s: accessible by a user other than the owner";
 perm:			p = msg_print(sp, bname, &nf);
 			msgq(sp, M_ERR, t, p);
 			if (nf)
