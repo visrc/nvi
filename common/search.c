@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.4 1993/07/09 09:00:33 bostic Exp $ (Berkeley) $Date: 1993/07/09 09:00:33 $";
+static char sccsid[] = "$Id: search.c,v 8.5 1993/08/23 12:30:41 bostic Exp $ (Berkeley) $Date: 1993/08/23 12:30:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -125,7 +125,7 @@ noprev:			msgq(sp, M_INFO, "No previous search pattern.");
 	}
 
 	/* Compile the RE. */
-	if (eval = regcomp(*rep, (char *)ptrn, re_flags))
+	if (eval = regcomp(*rep, ptrn, re_flags))
 		re_error(sp, eval, *rep);
 	else if (LF_ISSET(SEARCH_SET)) {
 		F_SET(sp, S_RE_SET);
@@ -248,12 +248,12 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 		match[0].rm_so = coff;
 		match[0].rm_eo = len;
 
-#if defined(DEBUG) && defined(SEARCHDEBUG)
+#if DEBUG && 0
 		TRACE(sp, "F search: %lu from %u to %u\n",
 		    lno, coff, len ? len - 1 : len);
 #endif
 		/* Search the line. */
-		eval = regexec(re, (char *)l, 1, match,
+		eval = regexec(re, l, 1, match,
 		    (match[0].rm_so == 0 ? 0 : REG_NOTBOL) | REG_STARTEND);
 		if (eval == REG_NOMATCH)
 			continue;
@@ -276,14 +276,20 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 			rm->lno = delta + lno;
 			rm->cno = 0;
 		} else {
-#if defined(DEBUG) && defined(SEARCHDEBUG)
+#if DEBUG && 0
 			TRACE(sp, "found: %qu to %qu\n",
 			    match[0].rm_so, match[0].rm_eo);
 #endif
 			rm->lno = lno;
 			rm->cno = match[0].rm_so;
 
-			if (rm->cno >= len)
+			/*
+			 * If a change command, it's possible to move beyond
+			 * the end of a line.  Historic vi generally got this
+			 * wrong (try "c?$<cr>").  Not all that sure this gets
+			 * it right, there are lots of strange cases.
+			 */
+			if (!LF_ISSET(SEARCH_EOL) && rm->cno >= len)
 				rm->cno = len ? len - 1 : 0;
 		}
 		return (0);
@@ -372,11 +378,11 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 		match[0].rm_so = 0;
 		match[0].rm_eo = coff ? coff : len;
 
-#if defined(DEBUG) && defined(SEARCHDEBUG)
+#if DEBUG && 0
 		TRACE(sp, "B search: %lu from 0 to %qu\n", lno, match[0].rm_eo);
 #endif
 		/* Search the line. */
-		eval = regexec(re, (char *)l, 1, match,
+		eval = regexec(re, l, 1, match,
 		    (match[0].rm_eo == len ? 0 : REG_NOTEOL) | REG_STARTEND);
 		if (eval == REG_NOMATCH)
 			continue;
@@ -395,7 +401,7 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 			rm->lno = delta + lno;
 			rm->cno = 0;
 		} else {
-#if defined(DEBUG) && defined(SEARCHDEBUG)
+#if DEBUG && 0
 			TRACE(sp, "found: %qu to %qu\n",
 			    match[0].rm_so, match[0].rm_eo);
 #endif
@@ -411,8 +417,9 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 				    coff && match[0].rm_so >= coff)
 					break;
 				match[0].rm_eo = coff ? coff : len;
-				eval = regexec(re,
-				    (char *)l, 1, match, REG_STARTEND);
+				eval = regexec(re, l, 1, match,
+				    (match[0].rm_so == 0 ? 0 : REG_NOTBOL) |
+				    REG_STARTEND);
 				if (eval == REG_NOMATCH)
 					break;
 				if (eval != 0) {
@@ -421,7 +428,12 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 				}
 			}
 			rm->lno = lno;
-			rm->cno = last;
+
+			/* See comment in f_search(). */
+			if (!LF_ISSET(SEARCH_EOL) && last >= len)
+				rm->cno = len ? len - 1 : 0;
+			else
+				rm->cno = last;
 		}
 		return (0);
 	}
