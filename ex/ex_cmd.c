@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 5.5 1992/04/14 09:04:37 bostic Exp $ (Berkeley) $Date: 1992/04/14 09:04:37 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 5.6 1992/04/14 09:29:42 bostic Exp $ (Berkeley) $Date: 1992/04/14 09:29:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -233,34 +233,25 @@ CMDLIST cmds[] = {
 #define	C_VGLOBAL	49
 	"vglobal",	ex_global,	E_ADDR2,
 	    "s", 	"[line [,line]] v[global] /pattern/ [commands]",
-#define	C_VALIDATE	50
-#undef	E_PERM
-#ifdef DEBUG
-#define	E_PERM		0
-#else
-#define	E_PERM		E_NOPERM
-#endif
-	"validate",	ex_validate,	E_NL|E_PERM,
-	    "", 	"validate XXX",
-#define	C_VERSION	51
+#define	C_VERSION	50
 	"version",	ex_version,	E_EXRCOK,
 	    "", 	"version",
-#define	C_VISUAL	52
+#define	C_VISUAL	51
 	"visual",	ex_visual,	E_ADDR2,
 	    "2c1", 	"[line] vi[sual] [type] [count] [flags]",
-#define	C_WRITE		53
+#define	C_WRITE		52
 	"write",	ex_write,	E_ADDR2,
 	    "!>f1o",	"[line [,line]] w[rite][!] [>>] [file]",
-#define	C_WQ		54
+#define	C_WQ		53
 	"wq",		ex_wq,		E_ADDR2|E_NL,
 	    "!>f1o",	"[line [,line]] wq[!] [>>] [file]",
-#define	C_XIT		55
+#define	C_XIT		54
 	"xit",		ex_xit,		E_ADDR2|E_NL,
 	    "!f1o",	"[line [,line]] x[it][!] [file]",
-#define	C_YANK		56
+#define	C_YANK		55
 	"yank",		ex_yank,	E_ADDR2,
 	    "bc",	"[line [,line]] ya[nk] [buffer] [count]",
 	{NULL},
 };
-#define	O_OPTIONCOUNT	57
+#define	O_OPTIONCOUNT	56
 /* END_OPTION_DEF */
