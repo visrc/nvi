@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 8.22 1993/11/18 13:50:42 bostic Exp $ (Berkeley) $Date: 1993/11/18 13:50:42 $";
+static char sccsid[] = "$Id: ex_global.c,v 8.23 1993/12/02 10:49:42 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:49:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,7 +35,8 @@ ex_global(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	return (global(sp, ep, cmdp, GLOBAL));
+	return (global(sp, ep,
+	    cmdp, F_ISSET(cmdp, E_FORCE) ? VGLOBAL : GLOBAL));
 }
 
 /*
@@ -63,16 +64,16 @@ global(sp, ep, cmdp, cmd)
 	recno_t elno, last1, last2, lno;
 	regmatch_t match[1];
 	regex_t *re, lre;
-	size_t len;
+	size_t clen, len;
 	u_int istate;
 	int delim, eval, isig, reflags, replaced, rval;
-	char *ptrn, *p, *t, cbuf[1024];
+	char *cb, *ptrn, *p, *t;
 
 	/*
 	 * Skip leading white space.  Historic vi allowed any non-
 	 * alphanumeric to serve as the global command delimiter.
 	 */
-	for (p = cmdp->argv[0]; isblank(*p); ++p);
+	for (p = cmdp->argv[0]->bp; isblank(*p); ++p);
 	delim = *p++;
 	if (isalnum(delim)) {
 		msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
@@ -103,10 +104,15 @@ global(sp, ep, cmdp, cmd)
 	}
 
 	/* Get the command string. */
-	if (*p == '\0') {
+	if ((clen = strlen(p)) == 0) {
 		msgq(sp, M_ERR, "No command string specified.");
 		return (1);
 	}
+	if ((cb = malloc(clen)) == NULL) {
+		msgq(sp, M_SYSERR, NULL);
+		return (1);
+	}
+	memmove(cb, p, clen);
 
 	/* If the pattern string is empty, use the last one. */
 	if (*ptrn == '\0') {
@@ -223,8 +229,7 @@ global(sp, ep, cmdp, cmd)
 			goto err;
 
 		sp->lno = lno;
-		(void)snprintf(cbuf, sizeof(cbuf), "%s", p);
-		if (ex_cmd(sp, ep, cbuf, 0))
+		if (ex_cmd(sp, ep, cb, clen))
 			goto err;
 
 		/* Someone's unhappy, time to stop. */
