@@ -4,8 +4,10 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 5.14 1992/05/07 12:47:21 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:47:21 $
+ *	$Id: ex.h,v 5.15 1992/05/15 11:06:46 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:06:46 $
  */
+
+#include "exf.h"
 
 struct excmdarg;
 
