@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 10.9 1995/10/16 15:34:27 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:34:27 $";
+static char sccsid[] = "$Id: vs_line.c,v 10.10 1995/10/19 11:10:50 bostic Exp $ (Berkeley) $Date: 1995/10/19 11:10:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -141,7 +141,7 @@ vs_line(sp, smp, yp, xp)
 
 		/* If the line is on the screen, quit. */
 		if (is_cached)
-			goto ret;
+			goto ret1;
 
 		/* Set line cacheing information. */
 		smp->c_sboff = smp->c_eboff = 0;
@@ -268,7 +268,7 @@ empty:					(void)gp->scr_addstr(sp,
 		cno_cnt = 0;
 		/* If the line is on the screen, quit. */
 		if (is_cached)
-			goto ret;
+			goto ret1;
 	} else
 		cno_cnt = (sp->cno - offset_in_line) + 1;
 
@@ -325,7 +325,7 @@ empty:					(void)gp->scr_addstr(sp,
 
 			/* If the line is on the screen, quit. */
 			if (is_cached)
-				goto ret;
+				goto ret2;
 		}
 
 		/* If the line is on the screen, don't display anything. */
@@ -383,10 +383,10 @@ empty:					(void)gp->scr_addstr(sp,
 			(void)gp->scr_clrtoeol(sp);
 	}
 
-ret:	if (cbp > cbuf)
+ret2:	if (cbp > cbuf)
 		FLUSH;
 
-	(void)gp->scr_move(sp, oldy, oldx);
+ret1:	(void)gp->scr_move(sp, oldy, oldx);
 	return (0);
 }
 
