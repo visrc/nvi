@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.35 1993/10/28 11:19:51 bostic Exp $ (Berkeley) $Date: 1993/10/28 11:19:51 $";
+static char sccsid[] = "$Id: exf.c,v 8.36 1993/11/01 11:33:32 bostic Exp $ (Berkeley) $Date: 1993/11/01 11:33:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -160,9 +160,6 @@ file_init(sp, frp, rcv_fname, force)
 		return (1);
 	}
 	memset(ep, 0, sizeof(EXF));
-
-	/* Insert into the chain of EXF structures. */
-	HDR_INSERT(ep, &sp->gp->exfhdr, next, prev, EXF);
 
 	/* Set initial EXF flag bits. */
 	F_SET(ep, F_FIRSTMODIFY);
@@ -428,13 +425,9 @@ file_end(sp, ep, force)
 	/* Free up any marks. */
 	mark_end(sp, ep);
 
-	if (!termsignal) {
-		/* Delete the EXF structure from the chain. */
-		HDR_DELETE(ep, next, prev, EXF);
-
-		/* Free the EXF structure. */
+	/* Free the EXF structure. */
+	if (!termsignal)
 		FREE(ep, sizeof(EXF));
-	}
 	return (0);
 }
 

@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.27 1993/10/31 17:17:21 bostic Exp $ (Berkeley) $Date: 1993/10/31 17:17:21 $";
+static char sccsid[] = "$Id: main.c,v 8.28 1993/11/01 11:33:08 bostic Exp $ (Berkeley) $Date: 1993/11/01 11:33:08 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -98,7 +98,6 @@ main(argc, argv)
 	memset(gp->cuts, 0, (UCHAR_MAX + 2) * sizeof(CB));
 
 	HDR_INIT(gp->scrhdr, next, prev);
-	HDR_INIT(gp->exfhdr, next, prev);
 
 	/* Set a flag if we're reading from the tty. */
 	if (isatty(STDIN_FILENO))

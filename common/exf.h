@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 8.13 1993/10/31 14:19:46 bostic Exp $ (Berkeley) $Date: 1993/10/31 14:19:46 $
+ *	$Id: exf.h,v 8.14 1993/11/01 11:33:39 bostic Exp $ (Berkeley) $Date: 1993/11/01 11:33:39 $
  */
 					/* Undo direction. */
 enum udirection { UBACKWARD, UFORWARD };
@@ -14,8 +14,6 @@ enum udirection { UBACKWARD, UFORWARD };
  *	The file structure.
  */
 typedef struct _exf {
-	struct _exf *next, *prev;	/* Linked list of files. */
-
 	int	 refcnt;		/* Reference count. */
 
 					/* Underlying database state. */
