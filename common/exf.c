@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.26 1993/09/28 10:26:50 bostic Exp $ (Berkeley) $Date: 1993/09/28 10:26:50 $";
+static char sccsid[] = "$Id: exf.c,v 8.27 1993/09/29 16:15:03 bostic Exp $ (Berkeley) $Date: 1993/09/29 16:15:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -135,46 +135,40 @@ file_next(sp, all)
 
 /*
  * file_init --
- *	Start editing a file.  We may be provided with an EXF structure,
- *	we are always provided with an FREF structure.
+ *	Start editing a file, based on the FREF structure.  If successsful,
+ *	let go of any previous file.  Don't release the previous file until
+ *	absolutely sure we have the new one.
  */
-EXF *
-file_init(sp, ep, frp, rcv_fname)
+int
+file_init(sp, frp, rcv_fname, force)
 	SCR *sp;
-	EXF *ep;
 	FREF *frp;
 	char *rcv_fname;
+	int force;
 {
+	EXF *ep;
 	RECNOINFO oinfo;
 	struct stat sb;
 	size_t psize;
 	int e_ep, e_tname, e_rcv_path, fd, sverrno;
 	char *oname, tname[sizeof(_PATH_TMPNAME) + 1];
 
-	/* If already in play, up the count and return. */
-	if (ep != NULL) {
-		++ep->refcnt;
-		return (ep);
+	/* Create the EXF. */
+	if ((ep = malloc(sizeof(EXF))) == NULL) {
+		msgq(sp, M_ERR, "Error: %s", strerror(errno));
+		return (1);
 	}
+	memset(ep, 0, sizeof(EXF));
 
-	/* Allocated up to three pieces of memory; free on error. */
-	e_ep = e_tname = e_rcv_path = 0;
+	/* Allocate up to three pieces of memory; free on error. */
+	e_ep = 1;
+	e_tname = e_rcv_path = 0;
 
-	/* If not an already existing EXF, create one. */
-	if (ep == NULL) {
-		if ((ep = malloc(sizeof(EXF))) == NULL) {
-			msgq(sp, M_ERR, "Error: %s", strerror(errno));
-			return (NULL);
-		}
-		e_ep = 1;
-		memset(ep, 0, sizeof(EXF));
+	/* Insert into the chain of EXF structures. */
+	HDR_INSERT(ep, &sp->gp->exfhdr, next, prev, EXF);
 
-		/* Set initial EXF flag bits. */
-		F_SET(ep, F_FIRSTMODIFY);
-
-		/* Insert into the chain of EXF structures. */
-		HDR_INSERT(ep, &sp->gp->exfhdr, next, prev, EXF);
-	}
+	/* Set initial EXF flag bits. */
+	F_SET(ep, F_FIRSTMODIFY);
 
 	/*
 	 * If no name or backing file, create a backing temporary file, saving
@@ -235,31 +229,11 @@ file_init(sp, ep, frp, rcv_fname)
 		F_SET(ep, F_MODIFIED);
 	}
 
-	/*
-	 * Open a db structure.
-	 *
-	 * XXX
-	 * We need to distinguish the case of a lock not being available
-	 * from the file or file system simply doesn't support locking.
-	 * We assume that EAGAIN is the former.  There really isn't a
-	 * portable way to do this.
-	 */
-	ep->db = dbopen(rcv_fname == NULL ? oname : NULL,
-	    O_EXLOCK | O_NONBLOCK| O_RDONLY, DEFFILEMODE, DB_RECNO, &oinfo);
-	if (ep->db == NULL) {
-		sverrno = errno;
-		ep->db = dbopen(rcv_fname == NULL ? oname : NULL,
-		    O_NONBLOCK | O_RDONLY, DEFFILEMODE, DB_RECNO, &oinfo);
-		if (ep->db == NULL) {
-			msgq(sp, M_ERR, "%s: %s", oname, strerror(errno));
-			goto err;
-		}
-		if (sverrno == EAGAIN) {
-			msgq(sp, M_INFO,
-			    "%s already locked, session is read-only", oname);
-			F_SET(frp, FR_RDONLY);
-		} else
-			msgq(sp, M_VINFO, "%s cannot be locked", oname);
+	/* Open a db structure. */
+	if ((ep->db = dbopen(rcv_fname == NULL ? oname : NULL,
+	    O_NONBLOCK | O_RDONLY, DEFFILEMODE, DB_RECNO, &oinfo)) == NULL) {
+		msgq(sp, M_ERR, "%s: %s", oname, strerror(errno));
+		goto err;
 	}
 
 	/* Init file marks. */
@@ -320,7 +294,37 @@ file_init(sp, ep, frp, rcv_fname)
 	log_init(sp, ep);
 
 	++ep->refcnt;
-	return (ep);
+
+	/* Close the previous file; if that fails, close the new one. */
+	if (sp->ep != NULL && file_end(sp, sp->ep, force)) {
+		(void)file_end(sp, ep, 1);
+		return (1);
+	}
+
+	/*
+	 * 4.4BSD supports locking in the open call, other systems don't.
+	 * Since the user can't interrupt us between the open and here,
+	 * it's a don't care.
+	 *
+	 * !!!
+	 * We need to distinguish a lock not being available for the file
+	 * from the file system not supporting locking.  Assume that EAGAIN
+	 * is the former.  There isn't a portable way to do this.
+	 */
+	if (flock(ep->db->fd(ep->db), LOCK_EX | LOCK_NB))
+		if (errno == EAGAIN) {
+			msgq(sp, M_INFO,
+			    "%s already locked, session is read-only", oname);
+			F_SET(frp, FR_RDONLY);
+		} else
+			msgq(sp, M_VINFO, "%s cannot be locked", oname);
+
+	/* Switch... */
+	sp->ep = ep;
+	if ((sp->p_frp = sp->frp) != NULL)
+		set_alt_fname(sp, sp->p_frp->fname);
+	sp->frp = frp;
+	return (0);
 
 err:	if (e_rcv_path)
 		FREE(ep->rcv_path, strlen(ep->rcv_path));
@@ -334,6 +338,9 @@ err:	if (e_rcv_path)
 /*
  * file_end --
  *	Stop editing a file.
+ *
+ *	NB: sp->ep MAY NOT BE THE SAME AS THE ARGUMENT ep, SO DON'T
+ *	    USE IT!
  */
 int
 file_end(sp, ep, force)
@@ -343,6 +350,17 @@ file_end(sp, ep, force)
 {
 	MARK *mp;
 	int termsignal;
+
+	/*
+	 * Save the cursor location.
+	 *
+	 * XXX
+	 * It would be cleaner to do this somewhere else, but by the time
+	 * ex or vi know that we're changing files it's already happened.
+	 */
+	sp->frp->lno = sp->lno;
+	sp->frp->cno = sp->cno;
+	F_SET(sp->frp, FR_CURSORSET);
 
 	/* If multiply referenced, decrement count and return. */
 	if (--ep->refcnt != 0)
@@ -365,6 +383,8 @@ file_end(sp, ep, force)
 		return (1);
 	}
 
+	/* Committed to the close.  There's no going back... */
+
 	/* Delete the recovery file. */
 	if (!F_ISSET(ep, F_RCV_NORM)) {
 		if (ep->rcv_path != NULL)
@@ -380,11 +400,7 @@ file_end(sp, ep, force)
 			FREE(ep->rcv_mpath, strlen(ep->rcv_mpath));
 	}
 
-	/*
-	 * Committed to the close.
-	 *
-	 * Stop logging.
-	 */
+	/* Stop logging. */
 	(void)log_end(sp, ep);
 
 	/*
