@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_write.c,v 10.25 1996/05/08 18:07:55 bostic Exp $ (Berkeley) $Date: 1996/05/08 18:07:55 $";
+static const char sccsid[] = "$Id: ex_write.c,v 10.26 1996/06/19 20:21:52 bostic Exp $ (Berkeley) $Date: 1996/06/19 20:21:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -184,6 +184,10 @@ exwr(sp, cmdp, cmd)
 		return (0);
 	}
 
+	/* Set the FS_ALL flag if we're writing the entire file. */
+	if (cmdp->addr1.lno == 1 && !db_exist(sp, cmdp->addr2.lno + 1))
+		LF_SET(FS_ALL);
+
 	/* If "write >>" it's an append to a file. */
 	if (cmdp->argc != 0 && cmd != XIT && p[0] == '>' && p[1] == '>') {
 		LF_SET(FS_APPEND);
@@ -192,13 +196,10 @@ exwr(sp, cmdp, cmd)
 		for (p += 2; *p && isblank(*p); ++p);
 	}
 
-	/* If no arguments, just write the file back. */
-	if (cmdp->argc == 0 || *p == '\0') {
-		if (F_ISSET(cmdp, E_ADDR2_ALL))
-			LF_SET(FS_ALL);
+	/* If no other arguments, just write the file back. */
+	if (cmdp->argc == 0 || *p == '\0')
 		return (file_write(sp,
 		    &cmdp->addr1, &cmdp->addr2, NULL, flags));
-	}
 
 	/* Build an argv so we get an argument count and file expansion. */
 	if (argv_exp2(sp, cmdp, p, strlen(p)))
@@ -256,8 +257,6 @@ exwr(sp, cmdp, cmd)
 		return (1);
 	}
 
-	if (F_ISSET(cmdp, E_ADDR2_ALL))
-		LF_SET(FS_ALL);
 	return (file_write(sp, &cmdp->addr1, &cmdp->addr2, name, flags));
 }
 
