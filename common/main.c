@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.6 1993/08/22 13:46:52 bostic Exp $ (Berkeley) $Date: 1993/08/22 13:46:52 $";
+static char sccsid[] = "$Id: main.c,v 8.7 1993/08/23 09:55:30 bostic Exp $ (Berkeley) $Date: 1993/08/23 09:55:30 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -230,6 +230,10 @@ main(argc, argv)
 	/* List recovery files if -l specified. */
 	if (flagchk == 'l')
 		exit(rcv_list(sp));
+
+	/* Initialize the about-to-die handlers. */
+	(void)signal(SIGHUP, rcv_hup);
+	(void)signal(SIGTERM, rcv_term);
 
 	/* Use an error list file, tag file or recovery file if specified. */
 #ifndef NO_ERRLIST
