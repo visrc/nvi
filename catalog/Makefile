@@ -1,4 +1,4 @@
-#	$Id: Makefile,v 8.18 1995/06/09 12:41:43 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:41:43 $
+#	$Id: Makefile,v 8.19 1995/09/24 16:12:39 bostic Exp $ (Berkeley) $Date: 1995/09/24 16:12:39 $
 
 CAT=	vi_dutch vi_english vi_german vi_ru_SU.KOI8-R vi_swedish
 FILES=	../common/*.c ../ex/*.c ../vi/*.c ../cl/*.c
@@ -8,8 +8,7 @@ all: dump ${CAT}
 ${CAT}: vi_english.base
 	@echo "... $@";							\
 	rm -f $@;							\
-	awk 'BEGIN {nline = 1}						\
-	{								\
+	awk '{								\
 		if (++nline > $$1) {					\
 			print "DUPLICATE MESSAGE NUMBERS";		\
 			exit;						\
