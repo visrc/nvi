@@ -1,4 +1,4 @@
-#	$Id: Makefile,v 8.21 2001/01/28 15:28:48 skimo Exp $ (Berkeley) $Date: 2001/01/28 15:28:48 $
+#	$Id: Makefile,v 8.22 2001/01/28 15:50:07 skimo Exp $ (Berkeley) $Date: 2001/01/28 15:50:07 $
 
 MACROS=	-me
 ROFF=	groff
@@ -17,9 +17,9 @@ vi.ref.ps: vi.ref index.so
 	chmod 444 $@
 
 ../html/vi.ref.html: vi.ref index.so
-	${TBL} $< | ${ROFF} -ms -Thtml | \
+	soelim $< | ${TBL} | ${ROFF} ${MACROS} -Thtml | \
 	    sed 's/<img src="$<.*png">//' > $@
-	rm "$<"*png
+	rm -f "$<"*png
 	chmod 444 $@
 
 index.so: vi.ref

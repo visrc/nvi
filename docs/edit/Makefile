@@ -1,4 +1,4 @@
-# $Id: Makefile,v 8.5 2001/01/28 15:28:47 skimo Exp $ (Berkeley) $Date: 2001/01/28 15:28:47 $
+# $Id: Makefile,v 8.6 2001/01/28 15:50:07 skimo Exp $ (Berkeley) $Date: 2001/01/28 15:50:07 $
 
 ROFF=	groff
 TBL=	tbl
@@ -8,7 +8,7 @@ all: edittut.ps ../html/edittut.html
 ../html/%.html: %.ms
 	${TBL} $< | ${ROFF} -ms -Thtml | \
 	    sed 's/<img src="$<.*png">//' > $@
-	rm "$<"*png
+	rm -f "$<"*png
 	chmod 444 $@
 
 %.ps: %.ms

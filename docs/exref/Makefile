@@ -1,4 +1,4 @@
-# $Id: Makefile,v 8.9 2001/01/28 15:28:47 skimo Exp $ (Berkeley) $Date: 2001/01/28 15:28:47 $
+# $Id: Makefile,v 8.10 2001/01/28 15:50:07 skimo Exp $ (Berkeley) $Date: 2001/01/28 15:50:07 $
 
 ROFF=	groff
 TBL=	tbl
@@ -10,13 +10,13 @@ all: $(ALL)
 ../html/exref.html: ex.rm
 	${TBL} $< | ${ROFF} -ms -Thtml | \
 	    sed 's/<img src="$<.*png">//' > $@
-	rm "$<"*png
+	rm -f "$<"*png
 	chmod 444 $@
 
 ../html/ex-summary.html: ex.summary
 	${TBL} $< | ${ROFF} -ms -Thtml | \
 	    sed 's/<img src="$<.*png">//' > $@
-	rm "$<"*png
+	rm -f "$<"*png
 	chmod 444 $@
 
 exref.ps: ex.rm

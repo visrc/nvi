@@ -1,4 +1,4 @@
-# $Id: Makefile,v 8.8 2001/01/28 15:28:48 skimo Exp $ (Berkeley) $Date: 2001/01/28 15:28:48 $
+# $Id: Makefile,v 8.9 2001/01/28 15:50:07 skimo Exp $ (Berkeley) $Date: 2001/01/28 15:50:07 $
 
 ROFF=	groff
 
@@ -13,9 +13,9 @@ vi.0.ps: vi.1
 	chmod 444 $@
 
 ../html/vi.0.html: vi.1
-	${TBL} $< | ${ROFF} -ms -Thtml | \
+	${ROFF} -man -Thtml < vi.1 | \
 	    sed 's/<img src="$<.*png">//' > $@
-	rm "$<"*png
+	rm -f "$<"*png
 	chmod 444 $@
 
 clean:
