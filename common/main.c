@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.4 1993/08/16 13:02:01 bostic Exp $ (Berkeley) $Date: 1993/08/16 13:02:01 $";
+static char sccsid[] = "$Id: main.c,v 8.5 1993/08/22 12:09:01 bostic Exp $ (Berkeley) $Date: 1993/08/22 12:09:01 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -122,12 +122,13 @@ main(argc, argv)
 	/* Convert old-style arguments into new-style ones. */
 	obsolete(argv);
 
+	F_SET(gp, G_SNAPSHOT);		/* Default to a snapshot. */
+
 	/* Parse the arguments. */
-	flagchk = 0;
-	F_SET(gp, G_SNAPSHOT);
+	flagchk = '\0';
 	excmdarg = errf = rfname = tfname = NULL;
 	while ((ch = getopt(argc, argv, "c:elmRr:sT:t:v")) != EOF)
-		switch(ch) {
+		switch (ch) {
 		case 'c':		/* Run the command. */
 			excmdarg = optarg;
 			break;
@@ -135,10 +136,22 @@ main(argc, argv)
 			F_SET(sp, S_MODE_EX);
 			break;
 		case 'l':
-			exit(rcv_list());
+			if (flagchk != '\0' && flagchk != 'l')
+				errx(1,
+				    "only one of -%c and -l may be specified.",
+				    flagchk);
+			flagchk = 'l';
+			break;
 #ifndef NO_ERRLIST
 		case 'm':		/* Error list. */
-			++flagchk;
+			if (flagchk == 'm')
+				errx(1,
+				  "only one error list file may be specified.");
+			if (flagchk != '\0')
+				errx(1,
+				    "only one of -%c and -m may be specified.",
+				    flagchk);
+			flagchk = 'm';
 			errf = optarg;
 			break;
 #endif
@@ -146,7 +159,14 @@ main(argc, argv)
 			O_SET(sp,O_READONLY);
 			break;
 		case 'r':		/* Recover. */
-			++flagchk;
+			if (flagchk == 'r')
+				errx(1,
+				    "only one recovery file may be specified.");
+			if (flagchk != '\0')
+				errx(1,
+				    "only one of -%c and -r may be specified.",
+				    flagchk);
+			flagchk = 'r';
 			rfname = optarg;
 			break;
 		case 's':		/* No snapshot. */
@@ -161,7 +181,14 @@ main(argc, argv)
 			break;
 #endif
 		case 't':		/* Tag. */
-			++flagchk;
+			if (flagchk == 't')
+				errx(1,
+				    "only one tag file may be specified.");
+			if (flagchk != '\0')
+				errx(1,
+				    "only one of -%c and -t may be specified.",
+				    flagchk);
+			flagchk = 't';
 			tfname = optarg;
 			break;
 		case 'v':		/* Vi mode. */
@@ -173,10 +200,6 @@ main(argc, argv)
 		}
 	argc -= optind;
 	argv += optind;
-
-	/* Only permit one file specification. */
-	if (flagchk > 1)
-		err(1, "only one of -r and -t is permitted.");
 
 	/*
 	 * Source the system, environment, ~user and local .exrc values.
@@ -203,6 +226,10 @@ main(argc, argv)
 	}
 	if (O_ISSET(sp, O_EXRC) && !stat(_PATH_EXRC, &sb))
 		(void)ex_cfile(sp, NULL, _PATH_EXRC);
+
+	/* List recovery files if -l specified. */
+	if (flagchk == 'l')
+		exit(rcv_list(sp));
 
 	/* Use an error list file, tag file or recovery file if specified. */
 #ifndef NO_ERRLIST
@@ -256,7 +283,7 @@ main(argc, argv)
 
 	/* Call a screen. */
 	while (sp != NULL)
-		switch(F_ISSET(sp, S_MODE_EX | S_MODE_VI)) {
+		switch (F_ISSET(sp, S_MODE_EX | S_MODE_VI)) {
 		case S_MODE_EX:
 			if (sex(sp, sp->ep, &sp))
 				goto err2;

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.8 1993/08/17 20:47:02 bostic Exp $ (Berkeley) $Date: 1993/08/17 20:47:02 $";
+static char sccsid[] = "$Id: recover.c,v 8.9 1993/08/22 12:09:05 bostic Exp $ (Berkeley) $Date: 1993/08/22 12:09:05 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -82,10 +82,11 @@ rcv_tmp(sp, ep, fname)
 			return (1);
 		}
 
-	(void)snprintf(path, sizeof(path), "%s/vi.XXXXXX", _PATH_PRESERVE);
+	(void)snprintf(path, sizeof(path),
+	    "%s/vi.XXXXXX", O_STR(sp, O_DIRECTORY));
 	if ((fd = mkstemp(path)) == -1) {
 		msgq(sp, M_ERR,
-		    "Error: %s: %s", _PATH_PRESERVE, strerror(errno));
+		    "Error: %s: %s", O_STR(sp, O_DIRECTORY), strerror(errno));
 		return (1);
 	}
 	if ((ep->rcv_path = strdup(path)) == NULL) {
@@ -176,12 +177,13 @@ rcv_mailfile(sp, ep)
 		return (1);
 	}
 
-	(void)snprintf(path, sizeof(path), "%s/recover.XXXXXX", _PATH_PRESERVE);
+	(void)snprintf(path, sizeof(path),
+	    "%s/recover.XXXXXX", O_STR(sp, O_DIRECTORY));
 	if ((fd = mkstemp(path)) == -1 || (fp = fdopen(fd, "w")) == NULL) {
 		if (fd != -1)
 			(void)close(fd);
 		msgq(sp, M_ERR,
-		    "Error: %s: %s", _PATH_PRESERVE, strerror(errno));
+		    "Error: %s: %s", O_STR(sp, O_DIRECTORY), strerror(errno));
 		return (1);
 	}
 	if ((ep->rcv_mpath = strdup(path)) == NULL) {
@@ -369,7 +371,8 @@ rcv_term(signo)
  *	List the files that can be recovered by this user.
  */
 int
-rcv_list()
+rcv_list(sp)
+	SCR *sp;
 {
 	struct dirent *dp;
 	struct stat sb;
@@ -378,9 +381,9 @@ rcv_list()
 	int found;
 	char *p, file[1024];
 
-	if (chdir(_PATH_PRESERVE) || (dirp = opendir(".")) == NULL) {
+	if (chdir(O_STR(sp, O_DIRECTORY)) || (dirp = opendir(".")) == NULL) {
 		(void)fprintf(stderr,
-		    "vi: %s: %s\n", _PATH_PRESERVE, strerror(errno));
+		    "vi: %s: %s\n", O_STR(sp, O_DIRECTORY), strerror(errno));
 		return (1);
 	}
 
@@ -440,8 +443,9 @@ rcv_read(sp, name)
 	char *p, *t;
 	char recpath[MAXPATHLEN], file[MAXPATHLEN], path[MAXPATHLEN];
 		
-	if ((dirp = opendir(_PATH_PRESERVE)) == NULL) {
-		msgq(sp, M_ERR, "%s: %s", _PATH_PRESERVE, strerror(errno));
+	if ((dirp = opendir(O_STR(sp, O_DIRECTORY))) == NULL) {
+		msgq(sp, M_ERR,
+		    "%s: %s", O_STR(sp, O_DIRECTORY), strerror(errno));
 		return (1);
 	}
 
@@ -451,7 +455,7 @@ rcv_read(sp, name)
 
 		/* If it's readable, it's recoverable. */
 		(void)snprintf(recpath, sizeof(recpath),
-		    "%s/%s", _PATH_PRESERVE, dp->d_name);
+		    "%s/%s", O_STR(sp, O_DIRECTORY), dp->d_name);
 		if ((fp = fopen(recpath, "r")) == NULL)
 			continue;
 
