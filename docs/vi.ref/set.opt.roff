@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: set.opt.roff,v 8.47 1996/03/16 17:49:20 bostic Exp $ (Berkeley) $Date: 1996/03/16 17:49:20 $
+.\"     $Id: set.opt.roff,v 8.48 1996/03/20 19:45:47 bostic Exp $ (Berkeley) $Date: 1996/03/20 19:45:47 $
 .\"
 .SH 1 "Set Options"
 .pp
@@ -397,6 +397,22 @@ If more than a single match results,
 any unique prefix shared by the matches replaces the expanded text,
 the matches are displayed,
 and text input resumed.
+.sp
+Because of
+.CO vi \&'s
+parsing rules, it can be difficult to set the path completion character
+to two command values,
+.LI <escape>
+and
+.LI <tab> .
+To set it to
+.LI <escape> ,
+use
+.QT "set filec=<literal-next><escape>" .
+To set it to
+.LI <tab> ,
+use
+.QT "set filec=\<tab>" .
 .KY flash
 .IP "flash [on]"
 This option causes the screen to flash instead of beeping the keyboard,
