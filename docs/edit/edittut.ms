@@ -1,8 +1,9 @@
-.\" Copyright (c) 1980 Regents of the University of California.
-.\" All rights reserved.  The Berkeley software License Agreement
-.\" specifies the terms and conditions for redistribution.
+.\" Copyright (c) 1980 The Regents of the University of California.
+.\" All rights reserved.
 .\"
-.\"	$Id: edittut.ms,v 6.1 1986/05/27 19:11:46 mckusick Exp $ (Berkeley) $Date: 1986/05/27 19:11:46 $
+.\" %sccs.include.redist.roff%
+.\"
+.\"	$Id: edittut.ms,v 6.2 1991/04/17 12:41:19 bostic Exp $ (Berkeley) $Date: 1991/04/17 12:41:19 $
 .\"
 .EH 'USD:14-%''Edit:  A Tutorial'
 .OH 'Edit:  A Tutorial''USD:14-%'
