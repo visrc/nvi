@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_usage.c,v 8.16 1994/04/27 20:05:24 bostic Exp $ (Berkeley) $Date: 1994/04/27 20:05:24 $";
+static char sccsid[] = "$Id: ex_usage.c,v 8.17 1994/05/09 10:20:14 bostic Exp $ (Berkeley) $Date: 1994/05/09 10:20:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -137,7 +137,12 @@ ex_viusage(sp, ep, cmdp)
 		if ((key == '[' || key == ']') && cmdp->argv[0]->bp[1] != key)
 			goto nokey;
 
-		kp = &vikeys[key];
+		/* Special case: ~ command. */
+		if (key == '~' && O_ISSET(sp, O_TILDEOP))
+			kp = &tmotion;
+		else
+			kp = &vikeys[key];
+
 		if (kp->func == NULL)
 nokey:			(void)ex_printf(EXCOOKIE,
 			    "The %s key has no current meaning",
@@ -150,7 +155,11 @@ nokey:			(void)ex_printf(EXCOOKIE,
 	case 0:
 		F_SET(sp, S_INTERRUPTIBLE);
 		for (key = 0; key <= MAXVIKEY; ++key) {
-			kp = &vikeys[key];
+			/* Special case: ~ command. */
+			if (key == '~' && O_ISSET(sp, O_TILDEOP))
+				kp = &tmotion;
+			else
+				kp = &vikeys[key];
 			if (kp->help != NULL)
 				(void)ex_printf(EXCOOKIE, "%s\n", kp->help);
 		}
