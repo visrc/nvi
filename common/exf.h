@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 5.10 1992/10/17 16:07:52 bostic Exp $ (Berkeley) $Date: 1992/10/17 16:07:52 $
+ *	$Id: exf.h,v 5.11 1992/10/18 13:02:59 bostic Exp $ (Berkeley) $Date: 1992/10/18 13:02:59 $
  */
 
 #ifndef _EXF_H_
@@ -16,7 +16,7 @@
 #include "cut.h"
 
 typedef struct exf {
-	struct exf *next, *prev;		/* Linked list of files. */
+	struct exf *next, *prev;	/* Linked list of files. */
 
 					/* Screen state. */
 	recno_t top;			/* 1-N: Physical screen top line. */
@@ -76,21 +76,10 @@ typedef struct {
 	(p)->next = (EXF *)(hp);					\
 }
 
-/* Get current line. */
-#define	GETLINE(p, lno, len) {						\
-	recno_t __lno = (lno);						\
-	p = file_gline(curf, __lno, &(len));				\
-}
-
-/* Get current line; an error if fail. */
-#define	EGETLINE(p, lno, len) {						\
-	recno_t __lno = (lno);						\
-	p = file_gline(curf, __lno, &(len));				\
-	if (p == NULL) {						\
-		bell();							\
-		msg("Unable to retrieve line %lu.", __lno);		\
-		return (1);						\
-	}								\
+#define	GETLINE_ERR(lno) {						\
+	bell();								\
+	msg("Error: %s/%d: unable to retrieve line %u.",		\
+	    tail(__FILE__), __LINE__, lno);				\
 }
 
 /* File routines. */
