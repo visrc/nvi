@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 5.31 1992/12/05 11:06:56 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:06:56 $
+ *	$Id: common.h,v 5.32 1993/01/11 18:50:21 bostic Exp $ (Berkeley) $Date: 1993/01/11 18:50:21 $
  */
 
 #include <db.h>
@@ -44,11 +44,12 @@ enum confirmation { YES, NO, QUIT };
 }
 int	binc __P((u_char **, size_t *, size_t));
 
+/* Visual bell. */
+extern char *VB;
+
 /* Editor mode. */
 enum editmode {MODE_EX, MODE_VI, MODE_QUIT};
 extern enum editmode mode;
-
-extern int autoprint;		/* Flag a change qualifying for autoprint. */
 
 /* Messages. */
 extern int msgcnt;		/* Current message count. */
