@@ -9,8 +9,7 @@ static char	*ke;				/* Keypad on. */
 static char	*ks;				/* Keypad off. */
 static char	*vb;				/* Visible bell string. */
 
-static int	bsd_putchar __P((int));
-static void	ti_init __P((void));
+static void	ti_init();
 
 /*
  * beep --
@@ -21,6 +20,17 @@ void
 beep()
 {
 	(void)write(1, "\007", 1);	/* '\a' */
+}
+
+/*
+ * bsd_putchar --
+ *	Function version of putchar, for tputs.
+ */
+static int
+bsd_putchar(ch)
+	int ch;
+{
+	return (putchar(ch));
 }
 
 /*
@@ -64,17 +74,6 @@ keypad(a, on)
 		(void)fflush(stdout);
 	}
 	return (0);
-}
-
-/*
- * bsd_putchar --
- *	Function version of putchar, for tputs.
- */
-static int
-bsd_putchar(ch)
-	int ch;
-{
-	return (putchar(ch));
 }
 
 /*
