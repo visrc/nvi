@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.9 1993/08/27 11:42:11 bostic Exp $ (Berkeley) $Date: 1993/08/27 11:42:11 $";
+static char sccsid[] = "$Id: main.c,v 8.10 1993/08/27 17:08:30 bostic Exp $ (Berkeley) $Date: 1993/08/27 17:08:30 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -21,6 +21,7 @@ static char sccsid[] = "$Id: main.c,v 8.9 1993/08/27 11:42:11 bostic Exp $ (Berk
 #include <ctype.h>
 #include <err.h>
 #include <errno.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <string.h>
 #include <termios.h>
@@ -238,7 +239,8 @@ main(argc, argv)
 	 * not signal(3) since don't want read system calls restarted.
 	 */
 	act.sa_handler = rcv_winch;
-	act.sa_mask = sigmask(SIGWINCH);
+	sigemptyset(&act.sa_mask);
+	sigaddset(&act.sa_mask, SIGWINCH);
 	act.sa_flags = 0;
 	(void)sigaction(SIGWINCH, &act, NULL);
 
