@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 9.19 1995/02/08 19:38:43 bostic Exp $ (Berkeley) $Date: 1995/02/08 19:38:43 $";
+static char sccsid[] = "$Id: ex_tag.c,v 9.20 1995/02/09 12:13:02 bostic Exp $ (Berkeley) $Date: 1995/02/09 12:13:02 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -164,13 +164,6 @@ ex_N_tagpush(sp, cmdp)
 		else
 			(void)svi_join(new, NULL, sp, NULL);
 		(void)screen_end(new);
-
-		/*
-		 * XXX
-		 * Nothing's changed, so don't flash the screen.  Note, this
-		 * doesn't belong here at all, and should be moved elsewhere.
-		 */
-		F_CLR(sp, S_SCR_REDRAW);
 		return (1);
 	}
 

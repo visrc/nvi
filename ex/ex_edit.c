@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 9.6 1995/02/09 10:16:28 bostic Exp $ (Berkeley) $Date: 1995/02/09 10:16:28 $";
+static char sccsid[] = "$Id: ex_edit.c,v 9.7 1995/02/09 12:13:01 bostic Exp $ (Berkeley) $Date: 1995/02/09 12:13:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -139,13 +139,6 @@ ex_N_edit(sp, cmdp, frp, attach)
 		else
 			(void)svi_join(new, NULL, sp, NULL);
 		(void)screen_end(new);
-
-		/*
-		 * XXX
-		 * Nothing's changed, so don't flash the screen.  Note, this
-		 * doesn't belong here at all, and should be moved elsewhere.
-		 */
-		F_CLR(sp, S_SCR_REDRAW);
 		return (1);
 	}
 
