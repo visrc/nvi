@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_yank.c,v 9.3 1995/01/11 16:22:37 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:22:37 $";
+static char sccsid[] = "$Id: v_yank.c,v 9.4 1995/01/30 10:14:59 bostic Exp $ (Berkeley) $Date: 1995/01/30 10:14:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -52,7 +52,7 @@ v_yank(sp, vp)
 
 	/* The line may not exist in line mode cuts, check to be sure. */
 	if (F_ISSET(vp, VM_LMODE)) {
-		if (file_gline(sp, vp->m_stop.lno, NULL) == NULL) {
+		if (!file_eline(sp, vp->m_stop.lno)) {
 			v_eof(sp, &vp->m_start);
 			return (1);
 		}

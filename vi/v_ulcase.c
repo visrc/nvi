@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ulcase.c,v 9.3 1995/01/11 16:22:32 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:22:32 $";
+static char sccsid[] = "$Id: v_ulcase.c,v 9.4 1995/01/30 10:14:15 bostic Exp $ (Berkeley) $Date: 1995/01/30 10:14:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -93,7 +93,7 @@ v_ulcase(sp, vp)
 	}
 
 	/* Check to see if we tried to move past EOF. */
-	if (file_gline(sp, vp->m_final.lno, &len) == NULL) {
+	if (!file_eline(sp, vp->m_final.lno)) {
 		(void)file_gline(sp, --vp->m_final.lno, &len);
 		vp->m_final.cno = len == 0 ? 0 : len - 1;
 	}
