@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.18 1993/09/13 19:33:03 bostic Exp $ (Berkeley) $Date: 1993/09/13 19:33:03 $";
+static char sccsid[] = "$Id: exf.c,v 8.19 1993/09/16 09:30:16 bostic Exp $ (Berkeley) $Date: 1993/09/16 09:30:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -300,6 +300,14 @@ file_init(sp, ep, frp, rcv_fname)
 	 * the superuser force the write even when vi expects that it will
 	 * succeed.  I'm less supportive of this semantic, but it's historic
 	 * practice and the conservative approach to vi'ing files as root.
+	 *
+	 * It would be nice if there was some way to update this when the user
+	 * does a "^Z; chmod ...".  The problem is that we'd first have to
+	 * distinguish between readonly bits set because of file permissions
+	 * and those set for other reasons.  That's not too hard, but deciding
+	 * when to reevaluate the permissions is trickier.  An alternative
+	 * might be to turn off the readonly bit if the user forces a write
+	 * and it succeeds.
 	 *
 	 * XXX
 	 * Access(2) doesn't consider the effective uid/gid values.  This
