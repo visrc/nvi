@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.13 1992/04/22 08:11:58 bostic Exp $ (Berkeley) $Date: 1992/04/22 08:11:58 $";
+static char sccsid[] = "$Id: key.c,v 5.14 1992/04/25 11:35:41 bostic Exp $ (Berkeley) $Date: 1992/04/25 11:35:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -14,13 +14,13 @@ static char sccsid[] = "$Id: key.c,v 5.13 1992/04/22 08:11:58 bostic Exp $ (Berk
 #include <termios.h>
 #include <limits.h>
 #include <errno.h>
+#include <curses.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
 
 #include "vi.h"
-#include "curses.h"
 #include "options.h"
 #include "seq.h"
 #include "tty.h"
@@ -51,16 +51,20 @@ static void	position __P((int));
  *	speeds up lookup and normal insertion tremendously.
  */
 void
-gb_init(t)
-	struct termios *t;
+gb_init()
 {
+	struct termios t;
+
 	bzero(special, sizeof(special));
 
+	if (tcgetattr(STDERR_FILENO, &t))
+		return;
+
 	/* User-defined keys. */
-	special[t->c_cc[VERASE]] = K_VERASE;
-	special[t->c_cc[VKILL]] = K_VKILL;
-	special[t->c_cc[VLNEXT]] = K_VLNEXT;
-	special[t->c_cc[VWERASE]] = K_VWERASE;
+	special[t.c_cc[VERASE]] = K_VERASE;
+	special[t.c_cc[VKILL]] = K_VKILL;
+	special[t.c_cc[VLNEXT]] = K_VLNEXT;
+	special[t.c_cc[VWERASE]] = K_VWERASE;
 
 	/* Standard keys. */
 	special['\n'] = K_NL;
@@ -97,11 +101,12 @@ gb_inc()
  * gb --
  *	Fill a buffer from the terminal.
  */
-char *
+u_char *
 gb(prompt, flags)
 	int prompt;
 	u_int flags;
 {
+	extern char AM;
 	register int ch, cnt, col, len, quoted;
 #ifndef NO_DIGRAPH
 	int erased;			/* 0, or first char of a digraph. */
@@ -114,7 +119,7 @@ gb(prompt, flags)
 
 	/* Display any prompt. */
 	if (prompt) {
-		qaddch(prompt);
+		addch(prompt);
 		++col;
 	}
 	clrtoeol();
@@ -152,6 +157,11 @@ gb(prompt, flags)
 				if (len >= cblen && gb_inc())
 					return (NULL);
 			}
+			if (flags & GB_NLECHO)
+				if (mode == MODE_EX)
+					(void)putchar('\n');
+				else
+					addch('\n');
 			clrtoeol();
 			goto done;
 		case K_VERASE:
@@ -166,7 +176,7 @@ gb(prompt, flags)
 			erased = *p;
 #endif
 			for (cnt = wb[len]; cnt > 0; --cnt, --col)
-				qaddch('\b');
+				addch('\b');
 			clrtoeol();
 			break;
 		case K_VKILL:
@@ -174,13 +184,13 @@ gb(prompt, flags)
 				break;
 			while (len)
 				for (cnt = wb[--len]; cnt > 0; --cnt, --col)
-					qaddch('\b');
+					addch('\b');
 			p = cb;
 			clrtoeol();
 			break;
 		case K_VLNEXT:
-			qaddch('^');
-			qaddch('\b');
+			addch('^');
+			addch('\b');
 			quoted = 1;
 			break;
 		case K_VWERASE:
@@ -188,10 +198,10 @@ gb(prompt, flags)
 				break;
 			while (len && isspace(*--p))
 				for (cnt = wb[--len]; cnt > 0; --cnt, --col)
-					qaddch('\b');
+					addch('\b');
 			for (; len && !isspace(*p); --p)
 				for (cnt = wb[--len]; cnt > 0; --cnt, --col)
-					qaddch('\b');
+					addch('\b');
 			if (len)
 				++p;
 			clrtoeol();
@@ -206,12 +216,12 @@ insch:			if (quoted) {
  * If cross boundary, should probably change repaint flags?
  */
 #define	WCHECK(ch) { \
-	if (!has_AM && col == COLS) { \
-		qaddch('\n'); \
-		qaddch('\r'); \
+	if (!AM && col == COLS) { \
+		addch('\n'); \
+		addch('\r'); \
 		col = 0; \
 	} \
-	qaddch(ch); \
+	addch(ch); \
 	++col; \
 }
 			/* Add & echo the char. */
@@ -238,11 +248,12 @@ insch:			if (quoted) {
 			++len;
 			break;
 		}
+		refresh();
 	}
 
 done:	refresh();
 	*p = '\0';
-	return ((char *)cb);
+	return (cb);
 }
 
 /*
@@ -272,13 +283,16 @@ getkey(when)
 	 * XXX
 	 * Why drop mapped key??
 	 */
-	if (msgwaiting && endmsg())
+#ifdef notdef
+	if (msgwaiting && endmsg() &&
+	    (when == WHEN_MSG || when == WHEN_VIINP || when == WHEN_VIREP)) {
 		if (when == WHEN_MSG) {
-			qaddstr("[More...]");
-			refresh();
+			addstr("[More...]");
 			mapoutput = NULL;
-		} else if (when == WHEN_VIINP || when == WHEN_VIREP)
-			redraw(cursor, TRUE);
+		}
+		refresh();
+	}
+#endif
 
 	/* If in the middle of an @ macro, return the next char. */
 	if (atkeybuflen) {
@@ -297,23 +311,6 @@ getkey(when)
 
 	/* Read in more keys if necessary. */
 	if (nkeybuf == 0) {
-		/* Display modeline. */
-		if (ISSET(O_SHOWMODE) && when & WHENMASK)
-			modeline(when);
-
-		/* Display ruler. */
-		if (ISSET(O_RULER) &&
-		    (when & (WHEN_VICMD|WHEN_VIINP|WHEN_VIREP)))
-			position(when);
-
-		/* Redraw, so the cursor is in the right place. */
-		if (when & WHENMASK)
-			redraw(cursor,
-			    !(when & WHENMASK - (WHEN_VIREP|WHEN_VIINP)));
-
-		/* Refresh the screen. */
-		refresh();
-
 		/* Read the keystrokes. */
 		nkeybuf = ttyread(keybuf, sizeof(keybuf), 0);
 		nextkey = 0;
@@ -368,7 +365,7 @@ retry:		sp = seq_find(&keybuf[nextkey], nkeybuf,
 	ch = keybuf[nextkey++];
 
 	/* Translate weird erase key to '\b'. */
-	if (ch == ERASEKEY && when != 0)
+	if (ch == erasechar() && when != 0)
 		return('\b');
 	else if (ch == '\0')
 		return ('A' & 0x1f);
@@ -441,77 +438,4 @@ ttyread(buf, len, time)
 			/* Read it. */
 			return (read(STDIN_FILENO, buf, len));
 		}
-}
-
-/*
- * modeline --
- *	Display the mode and ruler.
- */
-static void
-modeline(when)
-	int when;
-{
-	static int oldleftcol, oldnlines, oldtopline, oldwhen;
-	char *p;
-
-	/*
-	 * Redraw the screen before we check to see whether the mode line
-	 * needs to be redrawn.
-	 */
-	redraw(cursor, !(when & WHEN_VICMD));
-
-	/* Now the "topline" test should be valid. */
-	if (when != oldwhen || topline != oldtopline ||
-	    leftcol != oldleftcol || nlines != oldnlines) {
-		oldwhen = when;
-		oldtopline = topline;
-		oldleftcol = leftcol;
-		oldnlines = nlines;
-
-		switch(when & WHENMASK) {
-		case WHEN_VICMD:
-			p = "Command";
-			break;
-		case WHEN_VIINP:
-			p = "Input";
-			break;
-		case WHEN_VIREP:
-		case WHEN_REP1:
-			p = "Replace";
-			break;
-		case WHEN_CUT:
-			p = "Buffer";
-			break;
-		case WHEN_MARK:
-			p = "Mark";
-			break;
-#ifdef DEBUG
-		default:
-			p = "Unknown";
-			break;
-#endif
-		}
-		move(LINES - 1, COLS - 8);
-		standout();
-		qaddstr(p);
-		standend();
-	}
-}
-
-/*
- * position --
- *	Display current screen position.
- */
-static void
-position(when)
-	int when;
-{
-	char buf[50];
-
-	redraw(cursor, !(when & WHEN_VICMD));
-	pfetch(markline(cursor));
-	(void)snprintf(buf, sizeof(buf), "%ld|%d", markline(cursor),
-	    1 + idx2col(cursor, ptext, when & (WHEN_VIINP|WHEN_VIREP)));
-	move(LINES - 1, COLS - 22);
-	addstr(buf);
 }
