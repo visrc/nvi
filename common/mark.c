@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: mark.c,v 5.16 1993/05/08 16:06:27 bostic Exp $ (Berkeley) $Date: 1993/05/08 16:06:27 $";
+static char sccsid[] = "$Id: mark.c,v 5.17 1993/05/08 17:03:39 bostic Exp $ (Berkeley) $Date: 1993/05/08 17:03:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,14 +35,16 @@ mark_init(sp, ep)
 	MARK m;
 
 	/* Default absolute marks. */
-	ep->absmark.lno = ep->labsmark.lno = 1;
-	ep->absmark.cno = ep->labsmark.cno = 0;
-	return (0);
+	ep->absmark.lno = m.lno = 1;
+	ep->absmark.cno = m.cno = 0;
+	return (mark_set(sp, ep, ABSMARK1, &m));
 }
 
 /*
  * mark_set --
- *	Set the location referenced by a mark.
+ *	Set the location referenced by a mark.  Note, setting either of
+ *	the absolute mark locations sets both, so that "m'" and "m`" work
+ *	like they, ah, for lack of a better word, should.
  */
 int
 mark_set(sp, ep, key, mp)
@@ -55,7 +57,11 @@ mark_set(sp, ep, key, mp)
 		msgq(sp, M_BERR, "Invalid mark name.");
 		return (1);
 	}
-	ep->marks[key] = *mp;
+	if (key == ABSMARK1 || key == ABSMARK2) {
+		ep->absmark = ep->marks[ABSMARK1];
+		ep->marks[ABSMARK1] = ep->marks[ABSMARK2] = *mp;
+	} else
+		ep->marks[key] = *mp;
 	return (0);
 }
 

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_mark.c,v 5.12 1993/05/08 16:09:47 bostic Exp $ (Berkeley) $Date: 1993/05/08 16:09:47 $";
+static char sccsid[] = "$Id: v_mark.c,v 5.13 1993/05/08 17:03:28 bostic Exp $ (Berkeley) $Date: 1993/05/08 17:03:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -56,7 +56,7 @@ v_gomark(sp, ep, vp, fm, tm, rp)
 
 	/* If a single or back quote, go to the last absolute mark. */
 	if (vp->character == '\'' || vp->character == '`') {
-		*rp = ep->labsmark;
+		*rp = ep->absmark;
 		return (0);
 	}
 		

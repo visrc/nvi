@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: mark.h,v 5.8 1993/05/08 16:06:56 bostic Exp $ (Berkeley) $Date: 1993/05/08 16:06:56 $
+ *	$Id: mark.h,v 5.9 1993/05/08 17:03:40 bostic Exp $ (Berkeley) $Date: 1993/05/08 17:03:40 $
  */
 
 /*
@@ -20,6 +20,9 @@ typedef struct _mark {
 	recno_t lno;				/* Line number. */
 	size_t cno;				/* Column number. */
 } MARK;
+
+#define	ABSMARK1	'\''			/* Absolute mark name. */
+#define	ABSMARK2	'`'			/* Absolute mark name. */
 
 /* Mark routines. */
 void	mark_delete __P((struct _scr *,
