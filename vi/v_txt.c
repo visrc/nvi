@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 10.14 1995/09/29 10:29:11 bostic Exp $ (Berkeley) $Date: 1995/09/29 10:29:11 $";
+static char sccsid[] = "$Id: v_txt.c,v 10.15 1995/10/03 20:11:02 bostic Exp $ (Berkeley) $Date: 1995/10/03 20:11:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1219,7 +1219,7 @@ ret:	/* If replaying text, keep going. */
 	 * to wait on a character or we need to know where the cursor really
 	 * is.
 	 */
-	if (showmatch || margin != 0 || !KEYS_WAITING(sp)) {
+	if (margin != 0 || !KEYS_WAITING(sp)) {
 		if (vs_change(sp, tp->lno, LINE_RESET))
 			return (1);
 		if (showmatch) {
