@@ -6,10 +6,10 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.52 1993/04/06 11:36:15 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:36:15 $";
+static char sccsid[] = "$Id: exf.c,v 5.53 1993/04/12 14:23:41 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:23:41 $";
 #endif /* not lint */
 
-#include <sys/param.h>
+#include <sys/types.h>
 #include <sys/stat.h>
 
 #include <errno.h>
@@ -81,7 +81,7 @@ file_get(sp, ep, name, append)
 	if (name == NULL || stat(name, &sb)) {
 		(void)strcpy(tname, _PATH_TMPNAME);
 		if ((fd = mkstemp(tname)) == -1) {
-			msgq(sp, M_ERROR,
+			msgq(sp, M_ERR,
 			    "Temporary file: %s", strerror(errno));
 			goto e2;
 		}
@@ -105,9 +105,9 @@ file_get(sp, ep, name, append)
 	
 	return (tep);
 
-e2:	HDR_DELETE(tep, next, prev);
+e2:	HDR_DELETE(tep, next, prev, EXF);
 	free(tep);
-e1:	msgq(sp, M_ERROR, "Error: %s", strerror(errno));
+e1:	msgq(sp, M_ERR, "Error: %s", strerror(errno));
 	return (NULL);
 }
 
@@ -205,11 +205,11 @@ file_start(sp, ep)
 		ep->db = dbopen(oname, O_NONBLOCK | O_RDONLY,
 		    DEFFILEMODE, DB_RECNO, NULL);
 		if (ep->db != NULL)
-			msgq(sp, M_ERROR,
+			msgq(sp, M_INFO,
 			    "%s already locked, session is read-only", oname);
 	}
 	if (ep->db == NULL) {
-		msgq(sp, M_ERROR, "%s: %s", oname, strerror(errno));
+		msgq(sp, M_ERR, "%s: %s", oname, strerror(errno));
 		return (NULL);
 	}
 
@@ -249,7 +249,7 @@ file_stop(sp, ep, force)
 
 	/* Close the db structure. */
 	if ((ep->db->close)(ep->db) && !force) {
-		msgq(sp, M_ERROR, "%s: close: %s", ep->name, strerror(errno));
+		msgq(sp, M_ERR, "%s: close: %s", ep->name, strerror(errno));
 		return (1);
 	}
 
@@ -263,7 +263,7 @@ file_stop(sp, ep, force)
 	/* Unlink any temporary file. */
 	if (ep->tname != NULL) {
 		if (unlink(ep->tname))
-			msgq(sp, M_ERROR,
+			msgq(sp, M_ERR,
 			    "%s: remove: %s", ep->tname, strerror(errno));
 		free(ep->tname);
 	}
@@ -286,24 +286,20 @@ file_sync(sp, ep, force)
 	MARK from, to;
 	int fd;
 
-	/* If file not modified, we're done. */
-	if (!F_ISSET(ep, F_MODIFIED))
-		return (0);
-
 	/*
 	 * Don't permit writing to temporary files.  The problem is that
-	 * if it's a temp file and the user does ":wq", then we write and
-	 * quit, unlinking the temporary file.  Not what the user had in
-	 * mind at all.
+	 * if it's a temp file and the user does ":wq", we write and quit,
+	 * unlinking the temporary file.  Not what the user had in mind
+	 * at all.
 	 */
 	if (F_ISSET(ep, F_NONAME)) {
-		msgq(sp, M_ERROR, "No filename to which to write.");
+		msgq(sp, M_ERR, "No filename to which to write.");
 		return (1);
 	}
 
 	/* Can't write if read-only. */
 	if ((O_ISSET(sp, O_READONLY) || F_ISSET(ep, F_RDONLY)) && !force) {
-		msgq(sp, M_ERROR,
+		msgq(sp, M_ERR,
 		    "Read-only file, not written; use ! to override.");
 		return (1);
 	}
@@ -313,7 +309,7 @@ file_sync(sp, ep, force)
 	 * unless forced.
 	 */
 	if (F_ISSET(ep, F_NAMECHANGED) && !force && !stat(ep->name, &sb)) {
-		msgq(sp, M_ERROR,
+		msgq(sp, M_ERR,
 		    "%s exists, not written; use ! to override.", ep->name);
 		return (1);
 	}
@@ -326,7 +322,7 @@ file_sync(sp, ep, force)
 	/* Use stdio for buffering. */
 	if ((fp = fdopen(fd, "w")) == NULL) {
 		(void)close(fd);
-err:		msgq(sp, M_ERROR, "%s: %s", ep->name, strerror(errno));
+err:		msgq(sp, M_ERR, "%s: %s", ep->name, strerror(errno));
 		return (1);
 	}
 
