@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 10.12 1995/10/17 08:03:12 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:03:12 $";
+static char sccsid[] = "$Id: db.c,v 10.13 1995/11/05 15:36:18 bostic Exp $ (Berkeley) $Date: 1995/11/05 15:36:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -51,14 +51,15 @@ db_eget(sp, lno, pp, lenp, isemptyp)
 		return (0);
 
 	/*
-	 * If the user asked for line 1, i.e. the only possible line in an
-	 * empty file, find the last line of the file; db_last fails loudly.
+	 * If the user asked for line 0 or line 1, i.e. the only possible
+	 * line in an empty file, find the last line of the file; db_last
+	 * fails loudly.
 	 */
-	if (lno == 1 && db_last(sp, &l1))
+	if ((lno == 0 || lno == 1) && db_last(sp, &l1))
 		return (1);
 
 	/* If the file isn't empty, fail loudly. */
-	if (lno != 1 || l1 != 0) {
+	if (lno != 0 && lno != 1 || l1 != 0) {
 		db_err(sp, lno);
 		return (1);
 	}
