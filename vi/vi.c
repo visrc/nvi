@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.10 1993/08/07 10:47:43 bostic Exp $ (Berkeley) $Date: 1993/08/07 10:47:43 $";
+static char sccsid[] = "$Id: vi.c,v 8.11 1993/08/16 11:20:24 bostic Exp $ (Berkeley) $Date: 1993/08/16 11:20:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -325,26 +325,37 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 		KEY(sp, key);
 	}
 
-	/* Find the command. */
+	/*
+	 * Find the command.  The only legal command with no underlying
+	 * function is dot.
+	 */
 	kp = vp->kp = &vikeys[vp->key = key];
 	if (kp->func == NULL) {
-		/* If dot, set new count/buffer, if any, and return. */
-		if (key == '.') {
-			if (F_ISSET(dp, VC_ISDOT)) {
-				if (F_ISSET(vp, VC_C1SET)) {
-					F_SET(dp, VC_C1SET);
-					dp->count = vp->count;
-				}
-				if (vp->buffer != OOBCB)
-					dp->buffer = vp->buffer;
-				*vp = *dp;
-				return (0);
-			}
-			msgq(sp, M_ERR, "No command to repeat.");
-		} else
+		if (key != '.') {
 			msgq(sp, M_ERR,
 			    "%s isn't a command", charname(sp, key));
-		return (1);
+			return (1);
+		}
+
+		/* If called for a motion command, stop now. */
+		if (dp == NULL)
+			goto usage;
+
+		/* A repeatable command must have been executed. */
+		if (!F_ISSET(dp, VC_ISDOT)) {
+			msgq(sp, M_ERR, "No command to repeat.");
+			return (1);
+		}
+
+		/* Set new count/buffer, if any, and return. */
+		if (F_ISSET(vp, VC_C1SET)) {
+			F_SET(dp, VC_C1SET);
+			dp->count = vp->count;
+		}
+		if (vp->buffer != OOBCB)
+			dp->buffer = vp->buffer;
+		*vp = *dp;
+		return (0);
 	}
 
 	flags = kp->flags;
