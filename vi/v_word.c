@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_word.c,v 5.15 1993/04/19 15:34:02 bostic Exp $ (Berkeley) $Date: 1993/04/19 15:34:02 $";
+static char sccsid[] = "$Id: v_word.c,v 5.16 1993/05/02 18:02:13 bostic Exp $ (Berkeley) $Date: 1993/05/02 18:02:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -81,7 +81,7 @@ fword(sp, ep, vp, fm, rp, spaceonly)
 	int spaceonly;
 {
 	register char *p;
-	size_t len;
+	size_t len, llen;
 	u_long cno, cnt, lno;
 	int empty;
 	char *startp;
@@ -89,7 +89,7 @@ fword(sp, ep, vp, fm, rp, spaceonly)
 	lno = fm->lno;
 	cno = fm->cno;
 
-	if ((p = file_gline(sp, ep, lno, &len)) == NULL) {
+	if ((p = file_gline(sp, ep, lno, &llen)) == NULL) {
 		if (file_lline(sp, ep) == 0)
 			v_eof(sp, ep, NULL);
 		else
@@ -110,12 +110,13 @@ fword(sp, ep, vp, fm, rp, spaceonly)
 	 * "w" is from 'a' to 'd'.  "Bill, it's another ugly tale from
 	 * BSD's ugliest city."
 	 */
-	len -= cno;
+	len = llen - cno;
 	empty = len == 1;
 	for (startp = p += cno; cnt--; empty = 0) {
 		if (len != 0)
 			if (spaceonly) {
 				FW(!isspace(*p));
+				/* 'c' and 'y' don't skip more space. */
 				if (cnt == 0 && F_ISSET(vp, VC_C | VC_Y))
 					break;
 				FW(isspace(*p));
@@ -124,31 +125,43 @@ fword(sp, ep, vp, fm, rp, spaceonly)
 					FW(inword(*p));
 				else
 					FW(!isspace(*p) && !inword(*p));
+				/* 'c' and 'y' don't skip more space. */
 				if (cnt == 0 && F_ISSET(vp, VC_C | VC_Y))
 					break;
 				FW(isspace(*p));
 			}
-		if (cnt == 0 && F_ISSET(vp, VC_C | VC_Y))
-			break;
+		if (cnt == 0) {
+			/* 'c' and 'y' don't move into the next line. */
+			if (F_ISSET(vp, VC_C | VC_Y))
+				break;
+			/*
+			 * 'd' moves into the next line only if this line
+			 * was empty.
+			 */
+			if (F_ISSET(vp, VC_D) && llen != 0)
+				break;
+		}
 		if (len == 0) {
 			/* If we hit EOF, stay there (historic practice). */
-			if ((p = file_gline(sp, ep, ++lno, &len)) == NULL) {
-				/* If already at eof, complain. */
+			if ((p = file_gline(sp, ep, ++lno, &llen)) == NULL) {
+				/* If were already at eof, complain. */
 				if (empty && !F_ISSET(vp, VC_C | VC_D | VC_Y)) {
 					v_eof(sp, ep, NULL);
 					return (1);
 				}
 				if ((p =
-				    file_gline(sp, ep, --lno, &len)) == NULL) {
+				    file_gline(sp, ep, --lno, &llen)) == NULL) {
 					GETLINE_ERR(sp, lno);
 					return (1);
 				}
 				rp->lno = lno;
-				rp->cno = len ?
+				/* 'c', 'd', and 'y' go 1 past EOF. */
+				rp->cno = llen ?
 				    F_ISSET(vp, VC_C | VC_D | VC_Y) ? 
-				    len : len - 1 : 0;
+				    llen : llen - 1 : 0;
 				return (0);
 			}
+			len = llen;
 			cno = 0;
 			startp = p;
 
