@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 9.5 1994/11/16 16:56:49 bostic Exp $ (Berkeley) $Date: 1994/11/16 16:56:49 $";
+static char sccsid[] = "$Id: ex.c,v 9.6 1994/11/17 14:19:03 bostic Exp $ (Berkeley) $Date: 1994/11/17 14:19:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -37,8 +37,7 @@ static void	badlno __P((SCR *, recno_t));
 static void	ex_comlog __P((SCR *, EXCMDARG *));
 static __inline EXCMDLIST const *
 		ex_comm_search __P((char *, size_t));
-static int	ep_line __P((SCR *, MARK *, char **, size_t *, int *));
-static int	ep_range __P((SCR *, EXCMDARG *, char **, size_t *));
+static int	ex_range __P((SCR *, EXCMDARG *, char **, size_t *));
 static void	ex_unknown __P((SCR *, char *, size_t));
 
 /*
@@ -273,7 +272,7 @@ ex_cmd(sp, cmd, cmdlen, pflags)
 	recno_t lno, num;
 	size_t arg1_len, blen, len, save_cmdlen;
 	long flagoff;
-	int ch, cnt, delim, flags, namelen, nf, nl, notempty;
+	int ch, cnt, delim, flags, isaddr, namelen, nf, nl, notempty;
 	int optnum, uselastcmd, tmp, vi_address;
 	char *arg1, *bp, *p, *s, *save_cmd, *t;
 
@@ -387,7 +386,7 @@ done:		if (bp != NULL)
 		    NEEDSEP_NR : NEEDSEP_N;
 
 	/* Parse command addresses. */
-	if (ep_range(sp, &exc, &cmd, &cmdlen))
+	if (ex_range(sp, &exc, &cmd, &cmdlen))
 		goto err;
 
 	/* Skip whitespace. */
@@ -645,7 +644,7 @@ skip:		if (F_ISSET(cp, E_NOPERM)) {
 			/* Reset, don't reparse. */
 			save_cmd = cmd;
 		}
-		for (tmp = 0; cmdlen > 0; --cmdlen, ++cmd)
+		for (; cmdlen > 0; --cmdlen, ++cmd)
 			if (!isblank(*cmd))
 				break;
 		/*
@@ -1045,10 +1044,10 @@ end2:			break;
 				goto err;
 			goto countchk;
 		case 'l':				/* line */
-			if (ep_line(sp, &cur, &cmd, &cmdlen, &tmp))
+			if (ex_line(sp, &cur, &cmd, &cmdlen, &isaddr, &tmp))
 				goto err;
 			/* Line specifications are always required. */
-			if (!tmp) {
+			if (!isaddr) {
 				p = msg_print(sp, cmd, &nf);
 				msgq(sp, M_ERR,
 				     "105|%s: bad line specification", p);
@@ -1471,11 +1470,11 @@ err:	if (sep != NONE && sp->ep != NULL &&
 }
 
 /*
- * ep_range --
+ * ex_range --
  *	Get a line range for ex commands.
  */
 static int
-ep_range(sp, excp, cmdp, cmdlenp)
+ex_range(sp, excp, cmdp, cmdlenp)
 	SCR *sp;
 	EXCMDARG *excp;
 	char **cmdp;
@@ -1484,7 +1483,7 @@ ep_range(sp, excp, cmdp, cmdlenp)
 	enum { ADDR_FOUND, ADDR_NEED, ADDR_NONE } addr;
 	MARK cur;
 	size_t cmdlen;
-	int tmp;
+	int isaddr, tmp;
 	char *cmd;
 
 	/*
@@ -1582,9 +1581,9 @@ ep_range(sp, excp, cmdp, cmdlenp)
 			--cmdlen;
 			break;
 		default:
-			if (ep_line(sp, &cur, &cmd, &cmdlen, &tmp))
+			if (ex_line(sp, &cur, &cmd, &cmdlen, &isaddr, &tmp))
 				return (1);
-			if (!tmp)
+			if (!isaddr)
 				goto done;
 
 			if (addr == ADDR_FOUND) {
@@ -1637,7 +1636,8 @@ done:	if (addr == ADDR_NEED)
 }
 
 /*
- * Get a single line address specifier.
+ * ex_line --
+ *	Get a single line address specifier.
  *
  * The way the "previous context" mark worked was that any "non-relative"
  * motion set it.  While ex/vi wasn't totally consistent about this, ANY
@@ -1651,26 +1651,28 @@ done:	if (addr == ADDR_NEED)
  * This is probably still not exactly historic practice, although I think
  * it's fairly close.
  */
-static int
-ep_line(sp, cur, cmdp, cmdlenp, isaddrp)
+int
+ex_line(sp, cur, cmdp, cmdlenp, isaddrp, isdeltap)
 	SCR *sp;
 	MARK *cur;
 	char **cmdp;
 	size_t *cmdlenp;
-	int *isaddrp;
+	int *isaddrp, *isdeltap;
 {
+	enum nresult nret;
 	EX_PRIVATE *exp;
 	MARK m;
-	long total;
+	long total, val;
 	u_int flags;
 	size_t cmdlen;
+	int isneg;
 	int (*sf) __P((SCR *, MARK *, MARK *, char *, char **, u_int *));
 	char *cmd, *endp, *omsg, *umsg;
 
 	exp = EXP(sp);
-	*isaddrp = 0;
 	cmd = *cmdp;
 	cmdlen = *cmdlenp;
+	*isaddrp = *isdeltap = 0;
 
 	/* No addresses permitted until a file has been read in. */
 	if (sp->ep == NULL && strchr("$0123456789'\\/?.+-^", *cmd)) {
@@ -1772,14 +1774,16 @@ search:		F_SET(exp, EX_ABSMARK);
 		break;
 	}
 
+	/* Skip trailing <blank>s. */
+	for (; cmdlen > 0 && isblank(cmd[0]); ++cmd, --cmdlen);
+
 	/*
-	 * If there's an offset, evaluate it.  If no address yet found,
-	 * the offset is relative to ".".
+	 * Evaluate any offset.  If no address yet found, the offset
+	 * is relative to ".".
 	 */
 	total = 0;
 	omsg = "254|Address value overflow";
 	umsg = "255|Address value underflow";
-	for (; cmdlen > 0 && isblank(cmd[0]); ++cmd, --cmdlen);
 	if (cmdlen != 0 && (isdigit(cmd[0]) ||
 	    cmd[0] == '+' || cmd[0] == '-' || cmd[0] == '^')) {
 		if (!*isaddrp) {
@@ -1787,20 +1791,77 @@ search:		F_SET(exp, EX_ABSMARK);
 			cur->lno = sp->lno;
 			cur->cno = sp->cno;
 		}
-		if (ex_offset(sp, &cmd, &cmdlen, &total, omsg, umsg))
-			return (1);
+		/*
+		 * Evaluate an offset, defined as:
+		 *
+		 *		[+-^<blank>]*[<blank>]*[0-9]*
+		 *
+		 * The rough translation is any number of signs, optionally
+		 * followed by numbers, or a number by itself, all <blank>
+		 * separated.
+		 *
+		 * !!!
+		 * All address offsets were additive, e.g. "2 2 3p" was the
+		 * same as "7p", or, "/ZZZ/ 2" was the same as "/ZZZ/+2".
+		 * Note, however, "2 /ZZZ/" was an error.  It was also legal
+		 * to insert signs without numbers, so "3 - 2" was legal, and
+		 * equal to 4.
+		 *
+		 * !!!
+		 * Offsets were historically permitted for any line address,
+		 * e.g. the command "1,2 copy 2 2 2 2" copied lines 1,2 after
+		 * line 8.
+		 *
+		 * !!!
+		 * Offsets were historically permitted for search commands,
+		 * and handled as addresses: "/pattern/2 2 2" was legal, and
+		 * referenced the 6th line after pattern.
+		 */
+		*isdeltap = 1;
+		for (;;) {
+			for (; cmdlen > 0 && isblank(cmd[0]); ++cmd, --cmdlen);
+			if (cmdlen == 0 || !isdigit(cmd[0]) &&
+			    cmd[0] != '+' && cmd[0] != '-' && cmd[0] != '^')
+				break;
+			if (!isdigit(cmd[0]) && !isdigit(cmd[1])) {
+				total += cmd[0] == '+' ? 1 : -1;
+				--cmdlen;
+				++cmd;
+			} else {
+				if (cmd[0] == '-' || cmd[0] == '^') {
+					++cmd;
+					--cmdlen;
+					isneg = 1;
+				} else
+					isneg = 0;
+					
+				/* Get a signed long, add it to the total. */
+				if ((nret = nget_slong(sp,
+				    &val, cmd, &endp)) != NUM_OK ||
+				    (nret = NADD_SLONG(sp,
+				        total, val)) != NUM_OK)
+					switch (nret) {
+					case NUM_ERR:
+						msgq(sp, M_SYSERR, NULL);
+						return (1);
+					case NUM_OVER:
+						msgq(sp, M_ERR, omsg);
+						return (1);
+					case NUM_UNDER:
+						msgq(sp, M_ERR, umsg);
+						return (1);
+					}
+				total += isneg ? -val : val;
+				cmdlen -= (endp - cmd);
+				cmd = endp;
+			}
+		}
 	}
 
 	if (*isaddrp) {
 		/*
-		 * We don't check for underflow, a value less than 0 is
-		 * bad enough.
-		 *
-		 * XXX
-		 * This code incorrectly assumes that a recno_t will fit
-		 * into an unsigned long.  Since it's the largest integral
-		 * type we can depend on having, there aren't many other
-		 * choices.
+		 * Any value less than 0 is an error.  Make sure that the
+		 * new value will fit into a recno_t.
 		 */
 		if (total < 0) {
 			if (-total > cur->lno) {
@@ -1808,76 +1869,16 @@ search:		F_SET(exp, EX_ABSMARK);
 			    "117|Reference to a line number less than 0");
 				return (1);
 			}
-		} else if (add_uslong(sp,
-		    (u_long)cur->lno, (u_long)total, omsg))
-			return (1);
-
+		} else if (total > 0) {
+			if (MAX_REC_NUMBER - cur->lno < total) {
+				msgq(sp, M_ERR, omsg);
+				return (1);
+			}
+		}
 		cur->lno += total;
 		*cmdp = cmd;
 		*cmdlenp = cmdlen;
 	}
-	return (0);
-}
-
-
-/*
- * ex_offset --
- *	Evaluate an offset, defined as:
- *
- *		[+-^<blank>]*[<blank>]*[0-9]*
- *
- * The rough translation is any number of signs, optionally followed
- * by numbers, or a number by itself, all <blank> separated.
- *
- * !!!
- * All address offsets were additive, e.g. "2 2 3p" was the same as "7p",
- * or, "/ZZZ/ 2" was the same as "/ZZZ/+2".  Note, however, "2 /ZZZ/"
- * was an error.  It was also legal to insert signs without numbers, so
- * "3 - 2" was legal, and equal to 4.
- *
- * !!!
- * Offsets were historically permitted for any line address, e.g. the
- * command "1,2 copy 2 2 2 2" copied lines 1,2 after line 8.
- *
- * !!!
- * Offsets were historically permitted for search commands -- they were
- * handled as addresses, so the command "/pattern/2 2 2" was legal, and
- * referenced the 6th line after pattern.
- */
-int
-ex_offset(sp, off, offlen, rval, omsg, umsg)
-	SCR *sp;
-	char **off;
-	size_t *offlen;
-	long *rval;
-	char *omsg, *umsg;
-{
-	long total, val;
-	size_t len;
-	char *p, *endp;
-
-	for (total = 0, p = *off, len = *offlen;;) {
-		for (; len > 0 && isblank(p[0]); ++p, --len);
-		if (len == 0 ||
-		    !isdigit(p[0]) && p[0] != '+' && p[0] != '-' && p[0] != '^')
-			break;
-		if (!isdigit(p[0]) && !isdigit(p[1])) {
-			total += p[0] == '+' ? 1 : -1;
-			--len;
-			++p;
-		} else {
-			if (get_slong(sp, total, &val,
-			    p[0] == '-' || p[0] == '^',
-			    isdigit(p[0]) ? p : p + 1, &endp, omsg, umsg))
-				return (1);
-			total += val;
-			len -= (endp - p);
-			p = endp;
-		}
-	}
-	*off = p;
-	*offlen = len;
-	*rval = total;
 	return (0);
 }
 
