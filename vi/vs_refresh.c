@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.56 1994/05/21 12:09:35 bostic Exp $ (Berkeley) $Date: 1994/05/21 12:09:35 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.57 1994/07/02 14:01:17 bostic Exp $ (Berkeley) $Date: 1994/07/02 14:01:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -688,9 +688,6 @@ number:	if (O_ISSET(sp, O_NUMBER) && F_ISSET(sp, S_RENUMBER) && !didpaint) {
 	return (0);
 }
 
-#define	RULERSIZE	15
-#define	MODESIZE	(RULERSIZE + 15)
-
 /*
  * svi_modeline --
  *	Update the mode line.
@@ -700,60 +697,95 @@ svi_modeline(sp, ep)
 	SCR *sp;
 	EXF *ep;
 {
-	char buf[RULERSIZE];
+	size_t cols, curlen, endpoint, len, midpoint;
+	char *p, buf[20];
 
+	/* Clear the mode line. */
 	MOVE(sp, INFOLINE(sp), 0);
 	clrtoeol();
 
-	/* Display a dividing line if not the bottom screen. */
-	if (sp->q.cqe_next != (void *)&sp->gp->dq)
-		svi_divider(sp);
+	/*
+	 * We put down the file name, the ruler, the mode and the dirty flag.
+	 * If there's not enough room, there's not enough room, we don't play
+	 * any special games.  We try to put the ruler in the middle and the
+	 * mode and dirty flag at the end.  
+	 *
+	 * !!!
+	 * Leave the last character blank, in case it's a really dumb terminal
+	 * with hardware scroll.  Second, don't paint the last character in the
+	 * screen, SunOS 4.1.1 and Ultrix 4.2 curses won't let you.
+	 */
+	cols = sp->cols - 1;
 
-	/* Display the ruler. */
-	if (O_ISSET(sp, O_RULER) && sp->cols > RULERSIZE + 2) {
-		MOVE(sp, INFOLINE(sp), sp->cols / 2 - RULERSIZE / 2);
-		clrtoeol();
-		(void)snprintf(buf,
-		    sizeof(buf), "%lu,%lu", sp->lno, sp->cno + 1);
-		ADDSTR(buf);
+	curlen = 0;
+	if (sp->q.cqe_next != (void *)&sp->gp->dq) {
+		for (p = sp->frp->name; *p != '\0'; ++p);
+		while (--p > sp->frp->name) {
+			if (*p == '/') {
+				++p;
+				break;
+			}
+			if ((curlen += KEY_LEN(sp, *p)) > cols) {
+				curlen -= KEY_LEN(sp, *p);
+				++p;
+				break;
+			}
+		}
+
+		MOVE(sp, INFOLINE(sp), 0);
+		standout();
+		for (; *p != '\0'; ++p)
+			ADDCH(*p);
+		standend();
 	}
-
-	/* Show the modified bit. */
-	if (O_ISSET(sp, O_SHOWDIRTY) &&
-	    F_ISSET(ep, F_MODIFIED) && sp->cols > MODESIZE) {
-		MOVE(sp, INFOLINE(sp), sp->cols - 9);
-		ADDSTR("*");
+		
+	/*
+	 * Display the ruler.  If we're not at the midpoint yet, move there.
+	 * Otherwise, just add in two extra spaces.
+	 *
+	 * XXX
+	 * Assume that numbers, commas, and spaces only take up a single
+	 * column on the screen.
+	 */
+	if (O_ISSET(sp, O_RULER)) {
+		len = snprintf(buf,
+		    sizeof(buf), "%lu,%lu", sp->lno, sp->cno + 1);
+		midpoint = (cols - ((len + 1) / 2)) / 2;
+		if (curlen < midpoint) {
+			MOVE(sp, INFOLINE(sp), midpoint);
+			ADDSTR(buf);
+			curlen += len;
+		} else if (curlen + 2 + len < cols) {
+			ADDSTR("  ");
+			ADDSTR(buf);
+			curlen += 2 + len;
+		}
 	}
 
 	/*
-	 * Show the mode.  Leave the last character blank, in case it's a
-	 * really dumb terminal with hardware scroll.  Second, don't try
-	 * to *paint* the last character, SunOS 4.1.1 and Ultrix 4.2 curses
-	 * won't let you paint the last character in the screen.
+	 * Display the mode and the modified flag, as close to the end of the
+	 * line as possible, but guaranteeing at least two spaces between the
+	 * ruler and the modified flag.
+	 *
+	 * XXX
+	 * Assume that mode name characters, asterisks, and spaces only take
+	 * up a single column on the screen.
 	 */
-	if (O_ISSET(sp, O_SHOWMODE) && sp->cols > MODESIZE) {
-		MOVE(sp, INFOLINE(sp), sp->cols - (MAX_MODE_NAME + 1));
+	endpoint = cols;
+	if (O_ISSET(sp, O_SHOWDIRTY) && F_ISSET(ep, F_MODIFIED))
+		--endpoint;
+
+#define	MODESIZE	9
+	if (O_ISSET(sp, O_SHOWMODE))
+		endpoint -= MAX_MODE_NAME;
+
+	if (endpoint < curlen + 2)
+		return (0);
+
+	MOVE(sp, INFOLINE(sp), endpoint);
+	if (O_ISSET(sp, O_SHOWDIRTY) && F_ISSET(ep, F_MODIFIED))
+		ADDSTR("*");
+	if (O_ISSET(sp, O_SHOWMODE))
 		ADDSTR(sp->showmode);
-	}
-
-	return (0);
-}
-
-/*
- * svi_divider --
- *	Draw a dividing line between the screens.
- */
-int
-svi_divider(sp)
-	SCR *sp;
-{
-	size_t len;
-
-#define	DIVIDESTR	"+=+=+=+=+=+=+=+"
-	len = sizeof(DIVIDESTR) - 1 > sp->cols ?
-	    sp->cols : sizeof(DIVIDESTR) - 1;
-	standout();
-	ADDNSTR(DIVIDESTR, len);
-	standend();
 	return (0);
 }
