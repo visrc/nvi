@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.1,v 8.31 1996/04/15 12:34:19 bostic Exp $ (Berkeley) $Date: 1996/04/15 12:34:19 $
+.\"     $Id: vi.1,v 8.32 1996/04/15 20:43:37 bostic Exp $ (Berkeley) $Date: 1996/04/15 20:43:37 $
 .\"
 .Dd "%Q%"
 .Dt EX/VI 1
@@ -105,7 +105,9 @@ Start editing with the lisp and showmatch options set.
 .It Fl R
 Start editing in read-only mode, as if the command name was
 .Nm view ,
-or the readonly option was set.
+or the
+.Sy readonly
+option was set.
 .It Fl r
 Recover the specified files, or, if no files are specified,
 list the files that could be recovered.
@@ -985,7 +987,7 @@ Characters that are always handled as printable characters.
 only.
 Display a command prompt.
 .It Sy "readonly, ro [off]"
-Mark the file as read-only.
+Mark the file and session as read-only.
 .It Sy "recdir [/var/tmp/vi.recover]"
 The directory where recovery files are stored.
 .It Sy "redraw, re [off]"
