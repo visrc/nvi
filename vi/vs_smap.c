@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_smap.c,v 10.27 2000/04/21 19:00:42 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:42 $";
+static const char sccsid[] = "$Id: vs_smap.c,v 10.28 2000/04/30 16:36:14 skimo Exp $ (Berkeley) $Date: 2000/04/30 16:36:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -64,7 +64,8 @@ vs_change(sp, lno, op)
 	 *
 	 * Check for line #2 before going to the end of the file.
 	 */
-	if ((op == LINE_APPEND && lno == 0 || op == LINE_INSERT && lno == 1) &&
+	if (((op == LINE_APPEND && lno == 0) || 
+	    (op == LINE_INSERT && lno == 1)) &&
 	    !db_exist(sp, 2)) {
 		lno = 1;
 		op = LINE_RESET;
@@ -138,11 +139,15 @@ vs_change(sp, lno, op)
 	case LINE_DELETE:
 		if (vs_sm_delete(sp, lno))
 			return (1);
+		if (sp->lno > lno)
+			--sp->lno;
 		F_SET(vip, VIP_N_RENUMBER);
 		break;
 	case LINE_INSERT:
 		if (vs_sm_insert(sp, lno))
 			return (1);
+		if (sp->lno > lno)
+			++sp->lno;
 		F_SET(vip, VIP_N_RENUMBER);
 		break;
 	case LINE_RESET:
