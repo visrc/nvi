@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ch.c,v 8.3 1994/02/26 17:19:47 bostic Exp $ (Berkeley) $Date: 1994/02/26 17:19:47 $";
+static char sccsid[] = "$Id: v_ch.c,v 8.4 1994/03/06 15:21:02 bostic Exp $ (Berkeley) $Date: 1994/03/06 15:21:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -16,7 +16,7 @@ static char sccsid[] = "$Id: v_ch.c,v 8.3 1994/02/26 17:19:47 bostic Exp $ (Berk
 #include "vi.h"
 #include "vcmd.h"
 
-static void notfound __P((SCR *, CHAR_T));
+static void notfound __P((SCR *, ARG_CHAR_T));
 static void noprev __P((SCR *));
 
 /*
@@ -280,7 +280,7 @@ noprev(sp)
 static void
 notfound(sp, ch)
 	SCR *sp;
-	CHAR_T ch;
+	ARG_CHAR_T ch;
 {
 	msgq(sp, M_BERR, "%s not found.", charname(sp, ch));
 }
