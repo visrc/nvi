@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 9.11 1995/01/11 16:18:50 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:18:50 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 9.12 1995/01/11 21:32:04 bostic Exp $ (Berkeley) $Date: 1995/01/11 21:32:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -69,9 +69,11 @@ svi_refresh(sp)
 		 * cached information.
 		 */
 		if (svi_sm_fill(sp, sp->lno,
+		    F_ISSET(sp, S_SCR_TOP) ? P_TOP :
 		    F_ISSET(sp, S_SCR_CENTER) ? P_MIDDLE : P_FILL))
 			return (1);
-		F_CLR(sp, S_SCR_CENTER | S_SCR_RESIZE | S_SCR_REFORMAT);
+		F_CLR(sp, S_SCR_CENTER |
+		    S_SCR_RESIZE | S_SCR_REFORMAT | S_SCR_TOP);
 		F_SET(sp, S_SCR_REDRAW);
 	}
 
@@ -165,8 +167,11 @@ svi_paint(sp, flags)
 		SVI_SCR_CFLUSH(SVP(sp));
 
 		/* Toss svi_line() cached information. */
-		if (F_ISSET(sp, S_SCR_CENTER)) {
-			F_CLR(sp, S_SCR_CENTER);
+		if (F_ISSET(sp, S_SCR_TOP)) {
+			if (svi_sm_fill(sp, sp->lno, P_TOP))
+				return (1);
+		}
+		else if (F_ISSET(sp, S_SCR_CENTER)) {
 			if (svi_sm_fill(sp, sp->lno, P_MIDDLE))
 				return (1);
 		} else
@@ -176,7 +181,6 @@ svi_paint(sp, flags)
 		    (cnt = svi_opt_screens(sp, LNO, &CNO)) != 1)
 			for (smp = HMAP; smp <= TMAP; ++smp)
 				smp->off = cnt;
-		F_CLR(sp, S_SCR_REFORMAT);
 		F_SET(sp, S_SCR_REDRAW);
 	}
 
@@ -290,10 +294,10 @@ small_fill:			MOVE(sp, INFOLINE(sp), 0);
 		/* Current screen. */
 		if (LNO <= TMAP->lno)
 			goto adjust;
-		if (F_ISSET(sp, S_SCR_CENTER)) {
-			F_CLR(sp, S_SCR_CENTER);
+		if (F_ISSET(sp, S_SCR_TOP))
+			goto top;
+		if (F_ISSET(sp, S_SCR_CENTER))
 			goto middle;
-		}
 
 		/*
 		 * If less than half a screen above the line, scroll down
@@ -310,12 +314,12 @@ small_fill:			MOVE(sp, INFOLINE(sp), 0);
 	}
 
 	/*
-	 * 3b: If not on the current screen, may request center.
+	 * 3b: If not on the current screen, may request center or top.
 	 */
-	if (F_ISSET(sp, S_SCR_CENTER)) {
-		F_CLR(sp, S_SCR_CENTER);
+	if (F_ISSET(sp, S_SCR_TOP))
+		goto top;
+	if (F_ISSET(sp, S_SCR_CENTER))
 		goto middle;
-	}
 
 	/*
 	 * 3c: Line up.
@@ -367,6 +371,10 @@ bottom:		if (file_lline(sp, &lastline))
 	} else
 middle:		if (svi_sm_fill(sp, LNO, P_MIDDLE))
 			return (1);
+	if (0) {
+top:		if (svi_sm_fill(sp, LNO, P_TOP))
+			return (1);
+	}
 	F_SET(sp, S_SCR_REDRAW);
 
 	/*
@@ -444,10 +452,8 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 	 */
 
 	/* If the line we're working with has changed, reparse. */
-	if (F_ISSET(SVP(sp), SVI_CUR_INVALID) || LNO != OLNO) {
-		F_CLR(SVP(sp), SVI_CUR_INVALID);
+	if (F_ISSET(SVP(sp), SVI_CUR_INVALID) || LNO != OLNO)
 		goto slow;
-	}
 
 	/* Otherwise, if nothing's changed, go fast. */
 	if (CNO == OCNO)
@@ -659,14 +665,11 @@ paint:	if (LF_ISSET(PAINT_FLUSH) &&
 	 * If it's a small screen and we're redrawing, clear the unused lines,
 	 * ex may have overwritten them.
 	 */
-	if (F_ISSET(sp, S_SCR_REDRAW)) {
-		if (ISSMALLSCREEN(sp))
-			for (cnt = sp->t_rows; cnt <= sp->t_maxrows; ++cnt) {
-				MOVE(sp, cnt, 0);
-				clrtoeol();
-			}
-		F_CLR(sp, S_SCR_REDRAW);
-	}
+	if (F_ISSET(sp, S_SCR_REDRAW) && ISSMALLSCREEN(sp))
+		for (cnt = sp->t_rows; cnt <= sp->t_maxrows; ++cnt) {
+			MOVE(sp, cnt, 0);
+			clrtoeol();
+		}
 
 	didpaint = 1;
 
@@ -677,11 +680,9 @@ paint:	if (LF_ISSET(PAINT_FLUSH) &&
 	 * didn't repaint the screen, repaint all of the line numbers,
 	 * they've changed.
 	 */
-number:	if (O_ISSET(sp, O_NUMBER) && F_ISSET(svp, SVI_SCR_NUMBER)) {
-		if (!didpaint && svi_number(sp))
+number:	if (O_ISSET(sp, O_NUMBER) &&
+	    F_ISSET(svp, SVI_SCR_NUMBER) && !didpaint && svi_number(sp))
 			return (1);
-		F_CLR(svp, SVI_SCR_NUMBER);
-	}
 
 	/*
 	 * 7: Refresh the screen.
@@ -689,15 +690,12 @@ number:	if (O_ISSET(sp, O_NUMBER) && F_ISSET(svp, SVI_SCR_NUMBER)) {
 	 * If the screen was corrupted, clear/refresh it, unless we painted
 	 * it from scratch, which will do it for us.
 	 */
-	if (LF_ISSET(PAINT_FLUSH) && F_ISSET(sp, S_SCR_REFRESH)) {
-		if (!didclear)
+	if (LF_ISSET(PAINT_FLUSH) && F_ISSET(sp, S_SCR_REFRESH) && !didclear)
 			wrefresh(curscr);
-		F_CLR(sp, S_SCR_REFRESH);
-	}
 
-	if (F_ISSET(sp, S_BELLSCHED))
-		svi_bell(sp);
 	/*
+	 * 8: Display messages, beep the terminal.
+	 *
 	 * If the bottom line isn't in use by the colon command, and
 	 * we're not in the middle of a map:
 	 *
@@ -708,12 +706,19 @@ number:	if (O_ISSET(sp, O_NUMBER) && F_ISSET(svp, SVI_SCR_NUMBER)) {
 	 *	If the bottom line isn't in use by anyone, put out the
 	 *	standard status line.
 	 */
+	if (F_ISSET(sp, S_BELLSCHED))
+		svi_bell(sp);
 	if (!F_ISSET(SVP(sp), SVI_INFOLINE) && !KEYS_WAITING(sp))
 		if (sp->msgq.lh_first != NULL &&
 		    !F_ISSET(sp->msgq.lh_first, M_EMPTY))
 			svi_msgflush(sp);
 		else if (!F_ISSET(sp, S_SCR_UMODE))
 			svi_modeline(sp);
+
+	/* Clear the flags that are handled by this routine. */
+	F_CLR(sp, S_SCR_CENTER |
+	    S_SCR_REDRAW | S_SCR_REFORMAT | S_SCR_REFRESH | S_SCR_TOP);
+	F_CLR(svp, SVI_CUR_INVALID | SVI_SCR_NUMBER);
 
 	/* If not flushing to the screen, we're done. */
 	if (!LF_ISSET(PAINT_FLUSH))
