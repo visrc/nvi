@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 5.23 1992/12/23 11:24:11 bostic Exp $ (Berkeley) $Date: 1992/12/23 11:24:11 $
+ *	$Id: exf.h,v 5.24 1992/12/25 16:46:17 bostic Exp $ (Berkeley) $Date: 1992/12/25 16:46:17 $
  */
 
 #ifndef _EXF_H_
@@ -24,15 +24,18 @@ typedef struct exf {
 	recno_t olno;			/* 0-N: Old physical cursor line. */
 	size_t cno;			/* 0-N:     Physical cursor col. */
 	size_t ocno;			/* 0-N: Old physical cursor col. */
-	size_t scno;			/* 0-N: Logical cursor col. */
-	size_t shift;			/* 0-N: Shift count. */
-	size_t rcm;			/* 0-N: Column suck. */
-	size_t lines;			/* Physical lines. */
-	size_t cols;			/* Physical columns. */
+	size_t scno;			/* 0-N: Logical screen cursor col. */
+	size_t shift;			/* 0-N: Shift offset in cols. */
+	size_t lines;			/* Physical number of lines. */
+	size_t cols;			/* Physical number of cols. */
 	u_char cwidth;			/* Width of current character. */
+
+	size_t rcm;			/* 0-N: Column suck. */
 #define	RCM_FNB		0x01		/* Column suck: first non-blank. */
 #define	RCM_LAST	0x02		/* Column suck: last. */
 	u_char rcmflags;
+
+					/* Support functions. */
 	enum confirmation (*s_confirm) __P((struct exf *, MARK *, MARK *));
 	int (*s_end) __P((struct exf *));
 
@@ -51,7 +54,7 @@ typedef struct exf {
 
 	regex_t sre;			/* Current RE. */
 
-	recno_t	rptlines;		/* Lines modified by command. */
+	recno_t	rptlines;		/* Count of lines modified. */
 	char *rptlabel;			/* How lines modified. */
 
 	char *name;			/* File name. */
@@ -61,14 +64,15 @@ typedef struct exf {
 #define	F_IN_GLOBAL	0x0002		/* Doing a global command. */
 #define	F_MODIFIED	0x0004		/* File has been modified. */
 #define	F_NAMECHANGED	0x0008		/* File name was changed. */
-#define	F_NEWSESSION	0x0010		/* File has just been edited. */
-#define	F_NONAME	0x0020		/* File has no name. */
-#define	F_RDONLY	0x0040		/* File is read-only. */
-#define	F_RE_SET	0x0080		/* The file's RE has been set. */
-#define	F_READING	0x0100		/* Waiting on a read. */
-#define	F_REDRAW	0x0200		/* Repaint the screen. */
-#define	F_RESIZE	0x0400		/* Resize the screen. */
-#define	F_UNDO		0x0800		/* No change since last undo. */
+#define	F_NEEDMERASE	0x0010		/* Erase modeline after keystroke. */
+#define	F_NEWSESSION	0x0020		/* File has just been edited. */
+#define	F_NONAME	0x0040		/* File has no name. */
+#define	F_RDONLY	0x0080		/* File is read-only. */
+#define	F_RE_SET	0x0100		/* The file's RE has been set. */
+#define	F_READING	0x0200		/* Waiting on a read. */
+#define	F_REDRAW	0x0400		/* Repaint the screen. */
+#define	F_RESIZE	0x0800		/* Resize the screen. */
+#define	F_UNDO		0x1000		/* No change since last undo. */
 
 #define	FF_SET(ep, f)	(ep)->flags |= (f)
 #define	FF_CLR(ep, f)	(ep)->flags &= ~(f)
