@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_map.c,v 8.16 1994/07/16 09:22:32 bostic Exp $ (Berkeley) $Date: 1994/07/16 09:22:32 $";
+static char sccsid[] = "$Id: ex_map.c,v 8.17 1994/07/16 12:25:59 bostic Exp $ (Berkeley) $Date: 1994/07/16 12:25:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -91,7 +91,6 @@ ex_map(sp, ep, cmdp)
 nofunc:	if (stype == SEQ_COMMAND && input[1] == '\0')
 		switch (KEY_VAL(sp, input[0])) {
 		case K_COLON:
-		case K_CR:
 		case K_ESCAPE:
 		case K_NL:
 			msgq(sp, M_ERR, "The %s character may not be remapped",
