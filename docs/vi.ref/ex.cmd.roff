@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: ex.cmd.roff,v 8.2 1994/04/23 11:38:39 bostic Exp $ (Berkeley) $Date: 1994/04/23 11:38:39 $
+.\"	$Id: ex.cmd.roff,v 8.3 1994/04/23 11:45:34 bostic Exp $ (Berkeley) $Date: 1994/04/23 11:45:34 $
 .\"
 #ifdef REFERENCE
 .Sh EX DESCRIPTION
@@ -250,7 +250,7 @@ In addition, any number of
 or
 .Dq Li -
 characters can be specified before, after, or during the flags, in which
-case th eline written is not necessarily the one affected by the command,
+case the line written is not necessarily the one affected by the command,
 but rather the line addressed by the offset address specified.
 The default for
 .Li flags
@@ -259,7 +259,7 @@ is none.
 .GG
 .It Li "file"
 A pattern used to derive a pathname; the default is the current file.
-File names are subected to normal
+File names are subjected to normal
 .Xr sh 1
 word expansions.
 .It Li "<literal next>"
@@ -325,6 +325,217 @@ or
 #endif
 #ifdef MANUAL
 .Bl -tag -width "XXXX" -compact
+#endif
+.It Li "<eof>"
+Scroll the screen.
+#ifdef REFERENCE
+Write the next N lines, where N is the value of the
+.Sy scroll
+option.
+The command is the end-of-file terminal character, which may be
+different on different terminals.
+Traditionally, it is the
+.Dq Li <control-D>
+key.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+The current line indicator changes to the last line written.
+.It "Options:"
+None.
+.El
+#endif
+.It Li "! command"
+.It Li "[range]! command"
+Run a command through the shell.
+#ifdef REFERENCE
+The remainder of the line after the
+.Dq Li !
+character is passed to the program named by the
+.Ev SHELL
+environment variable for execution.
+You will be warned if the file has been modified since the last complete
+write. 
+A single
+.Dq Li !
+character is displayed when the command completes.
+.Pp
+Within the text of
+.Li command ,
+.Dq Li %
+and
+.Dq Li #
+are expanded as pathnames (the current and alternate pathnames,
+respectively), and
+.Dq Li !
+is replaced with the text of the previous
+.Dq Li !
+command.
+(Thus,
+.Dq Li !!
+repeats the previous
+.Dq Li !
+command.)
+If any such replacement is done, the line as passed to the shell
+is displayed.
+.Pp
+The special meanings of
+.Dq Li % ,
+.Dq Li #
+and
+.Dq Li !
+can be overridden by escaping them with a backslash
+.Pq Dq Li \e
+character.
+.Pp
+In the second form of the
+.Sy !
+command, the remainder of the line after the
+.Dq Li !
+is passed to the program named in the SHELL environment variable,
+as described above.
+The specified lines are passed to the program as standard input, and
+the standard and standard error output of the program replace the
+original lines.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+Unchanged.
+.It "Options:"
+Affected by the
+.Sy autowrite
+and
+.Sy writeany
+options.
+.El
+#endif
+.It Li "\""
+Command lines beginning with the double-quote character
+.Pq Dq Li "
+are ignored.
+This permits comments in editor scripts and startup files.
+.It Li "[range] nu[mber] [count] [flags]"
+.It Li "[range] # [count] [flags]"
+Display the selected lines, each preceded with its line number.
+#ifdef REFERENCE
+Nonprintable characters, except for tab's, are expanded as specified
+by the
+.Sy print
+command.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+The current line is changed to the last line displayed.
+.It "Options:"
+None.
+.El
+#endif
+.It Li "[range] & [options] [count] [flags]"
+.It Li "[range] s[ubstitute] [options] [count] [flags]"
+.It Li "[range] ~ [options] [count] [flags]"
+Repeat a substitution.
+#ifdef REFERENCE
+Repeat the previous substitute command, as if
+.Dq Li &
+were replaced by the previous
+.Dq Li s/pattern/replace/
+command.
+(The same effect can obtained by omitting the
+.Dq Li /pattern/replace/
+string in the
+.Sy substitute
+command.)
+The
+.Sy ~
+version of the command is the same as
+.Sy &
+and
+.Sy s ,
+but the pattern used is the last RE used in any command,
+not necessarily the one used in the last
+.Sy substitute
+command.
+For example, in the sequence
+.Bd -literal -offset indent -compact
+s/red/blue/
+/green
+~
+.Ed
+the
+.Dq Li ~
+is equivalent to
+.Dq Li s/green/blue/ .
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+Unchanged.
+.It "Options:"
+None.
+.El
+#endif
+.It Li "@ buffer"
+.It Li "* buffer"
+Execute a buffer.
+#ifdef REFERENCE
+Each line in the named buffer is executed as an
+.Nm \&ex
+command.
+If no buffer is specified, or if the specified buffer is
+.Dq Li @
+or
+.Dq Li * ,
+the last buffer executed is used.
+.It Li "[range] <[< ...] [count] [flags]"
+Shift left.
+#ifdef REFERENCE
+The specified lines are shifted to the left, by the number of columns
+specified by the
+.Sy shiftwidth
+option.
+Only leading whitespace characters are deleted, no other characters
+are affected.
+.Pp
+If the command character
+.Dq Li <
+is repeated more than once, the command is repeated once for each
+additional command character.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+The current line changes to the last line modified by the command.
+.It "Options:"
+Affected by the
+.Sy shiftwidth
+option.
+.El
+#endif
+.It Li "[line] = [flags]"
+Display the line number.
+#ifdef REFERENCE
+Display the line number of
+.Li line
+(which defaults to the last line in the file).
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+Unchanged.
+.It "Options:"
+None.
+.El
+#endif
+.It Li "[range] >[> ...] [count] [flags]"
+Shift right.
+#ifdef REFERENCE
+The specified lines are shifted to the right by the number of columns
+specified by the
+.Sy shiftwidth
+option, by inserting tab and space characters.
+Empty lines are not changed.
+.Pp
+If the command character
+.Dq Li >
+is repeated more than once, the command is repeated once for each
+additional command character.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+The current line changes to the last line modified by the command.
+.It "Options:"
+None.
+.El
 #endif
 .It Li "ab[brev] word rhs"
 Add the named abbreviation to the current abbreviation list.
@@ -849,21 +1060,6 @@ and
 None.
 .El
 #endif
-.It Li "[range] nu[mber] [count] [flags]"
-.It Li "[range] # [count] [flags]"
-Display the selected lines, each preceded with its line number.
-#ifdef REFERENCE
-Nonprintable characters, except for tab's, are expanded as specified
-by the
-.Sy print
-command.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
-The current line is changed to the last line displayed.
-.It "Options:"
-None.
-.El
-#endif
 .It Li "[line] o[pen] /pattern/ [flags]"
 Enter open mode.
 #ifdef REFERENCE
@@ -1043,7 +1239,7 @@ The current file is set to the first file in the argument list.
 If the current file has been modified since the last complete write, the
 .Sy rewind
 command will fail.
-This check may be overriden by appending the
+This check may be overridden by appending the
 .Dq Li !
 character to the command.
 .Bl -tag -width "XXCurrent line:" -compact
@@ -1576,200 +1772,4 @@ Affected by the
 option.
 .El
 #endif
-.It Li "! command"
-.It Li "[range]! command"
-Run a command through the shell.
-#ifdef REFERENCE
-The remainder of the line after the
-.Dq Li !
-character is passed to the program named by the
-.Ev SHELL
-environment variable for execution.
-You will be warned if the file has been modified since the last complete
-write. 
-A single
-.Dq Li !
-character is displayed when the command completes.
-.Pp
-Within the text of
-.Li command ,
-.Dq Li %
-and
-.Dq Li #
-are expanded as pathnames (the current and alternate pathnames,
-respectively), and
-.Dq Li !
-is replaced with the text of the previous
-.Dq Li !
-command.
-(Thus,
-.Dq Li !!
-repeats the previous
-.Dq Li !
-command.)
-If any such replacement is done, the line as passed to the shell
-is displayed.
-.Pp
-The special meanings of
-.Dq Li % ,
-.Dq Li #
-and
-.Dq Li !
-can be overridden by escaping them with a backslash
-.Pq Dq Li \e
-character.
-.Pp
-In the second form of the
-.Sy !
-command, the remainder of the line after the
-.Dq Li !
-is passed to the program named in the SHELL environment variable,
-as described above.
-The specified lines are passed to the program as standard input, and
-the standard and standard error output of the program replace the
-original lines.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
-Unchanged.
-.It "Options:"
-Affected by the
-.Sy autowrite
-and
-.Sy writeany
-options.
-.El
-#endif
-.It Li "[range] <[< ...] [count] [flags]"
-Shift left.
-#ifdef REFERENCE
-The specified lines are shifted to the left, by the number of columns
-specified by the
-.Sy shiftwidth
-option.
-Only leading whitespace characters are deleted, no other characters
-are affected.
-.Pp
-If the command character
-.Dq Li <
-is repeated more than once, the command is repeated once for each
-additional command character.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
-The current line changes to the last line modified by the command.
-.It "Options:"
-Affected by the
-.Sy shiftwidth
-option.
-.El
-#endif
-.It Li "[range] >[> ...] [count] [flags]"
-Shift right.
-#ifdef REFERENCE
-The specified lines are shifted to the right by the number of columns
-specified by the
-.Sy shiftwidth
-option, by inserting tab and space characters.
-Empty lines are not changed.
-.Pp
-If the command character
-.Dq Li >
-is repeated more than once, the command is repeated once for each
-additional command character.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
-The current line changes to the last line modified by the command.
-.It "Options:"
-None.
-.El
-#endif
-.It Li "[range] & [options] [count] [flags]"
-.It Li "[range] s[ubstitute] [options] [count] [flags]"
-.It Li "[range] ~ [options] [count] [flags]"
-Repeat a substitution.
-#ifdef REFERENCE
-Repeat the previous substitute command, as if
-.Dq Li &
-were replaced by the previous
-.Dq Li s/pattern/replace/
-command.
-(The same effect can obtained by omitting the
-.Dq Li /pattern/replace/
-string in the
-.Sy substitute
-command.)
-The
-.Sy ~
-version of the command is the same as
-.Sy &
-and
-.Sy s ,
-but the pattern used is the last RE used in any command,
-not necessarily the one used in the last
-.Sy substitute
-command.
-For example, in the sequence
-.Bd -literal -offset indent -compact
-s/red/blue/
-/green
-~
-.Ed
-the
-.Dq Li ~
-is equivalent to
-.Dq Li s/green/blue/ .
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
-Unchanged.
-.It "Options:"
-None.
-.El
-#endif
-.It Li "<eof>"
-Scroll the screen.
-#ifdef REFERENCE
-Write the next N lines, where N is the value of the
-.Sy scroll
-option.
-The command is the end-of-file terminal character, which may be
-different on different terminals.
-Traditionally, it is the
-.Dq Li <control-D>
-key.
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
-The current line indicator changes to the last line written.
-.It "Options:"
-None.
-.El
-#endif
-.It Li "[line] = [flags]"
-Display the line number.
-#ifdef REFERENCE
-Display the line number of
-.Li line
-(which defaults to the last line in the file).
-.Bl -tag -width "XXCurrent line:" -compact
-.It "Current line:"
-Unchanged.
-.It "Options:"
-None.
-.El
-#endif
-.It Li "@ buffer"
-.It Li "* buffer"
-Execute a buffer.
-#ifdef REFERENCE
-Each line in the named buffer is executed as an
-.Nm \&ex
-command.
-If no buffer is specified, or if the specified buffer is
-.Dq Li @
-or
-.Dq Li * ,
-the last buffer executed is used.
-.It Li "\""
-Command lines beginning with the double-quote character
-.Pq Dq Li "
-are ignored.
-This permits comments in editor scripts and startup files.
 .El
