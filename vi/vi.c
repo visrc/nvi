@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.26 1992/11/03 15:07:03 bostic Exp $ (Berkeley) $Date: 1992/11/03 15:07:03 $";
+static char sccsid[] = "$Id: vi.c,v 5.27 1992/11/03 19:16:25 bostic Exp $ (Berkeley) $Date: 1992/11/03 19:16:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -212,7 +212,7 @@ err:		if (msgcnt) {
  * The command structure for vi is less complex than ex (and don't think
  * I'm not grateful!)  The command syntax is:
  *
- *	[buffer] [count] key [[motion] | [buffer] [character]]
+ *	[count] [buffer] [count] key [[motion] | [buffer] [character]]
  *
  * and there are several special cases.  The motion value is itself a vi
  * command, with the syntax:
@@ -255,6 +255,17 @@ getcmd(vp, ismotion)
 	if (isdigit(key) && key != '0') {
 		GETCOUNT(vp->count);
 		vp->flags |= VC_C1SET;
+	}
+
+	/* Pick up optional buffer. */
+	if (key == '"') {
+		if (vp->buffer != OOBCB)
+			goto usage;
+		KEY(key, 0);
+		if (!isalnum(key))
+			goto ebuf;
+		vp->buffer = key;
+		KEY(key, 0);
 	}
 
 	/* Find the command. */
