@@ -3,10 +3,10 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: edittut.ms,v 6.2 1991/04/17 12:41:19 bostic Exp $ (Berkeley) $Date: 1991/04/17 12:41:19 $
+.\"	$Id: edittut.ms,v 6.3 1993/06/05 17:07:28 bostic Exp $ (Berkeley) $Date: 1993/06/05 17:07:28 $
 .\"
-.EH 'USD:14-%''Edit:  A Tutorial'
-.OH 'Edit:  A Tutorial''USD:14-%'
+.EH 'USD:11-%''Edit:  A Tutorial'
+.OH 'Edit:  A Tutorial''USD:11-%'
 .LP
 .ds u \s-2UNIX\s0
 .ll 5i

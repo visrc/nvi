@@ -3,10 +3,10 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: ex.rm,v 6.2 1991/04/17 12:42:52 bostic Exp $ (Berkeley) $Date: 1991/04/17 12:42:52 $
+.\"	$Id: ex.rm,v 6.3 1993/06/05 17:08:18 bostic Exp $ (Berkeley) $Date: 1993/06/05 17:08:18 $
 .\"
-.EH 'USD:16-%''Ex Reference Manual'
-.OH 'Ex Reference Manual''USD:16-%'
+.EH 'USD:13-%''Ex Reference Manual'
+.OH 'Ex Reference Manual''USD:13-%'
 .de ZP
 .nr pd \\n()P
 .nr )P 0
