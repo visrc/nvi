@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_screen.c,v 9.7 1995/01/30 15:11:01 bostic Exp $ (Berkeley) $Date: 1995/01/30 15:11:01 $";
+static char sccsid[] = "$Id: ex_screen.c,v 9.8 1995/02/08 14:35:56 bostic Exp $ (Berkeley) $Date: 1995/02/08 14:35:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,94 +30,6 @@ static char sccsid[] = "$Id: ex_screen.c,v 9.7 1995/01/30 15:11:01 bostic Exp $ 
 #include "vi.h"
 #include "excmd.h"
 #include "../svi/svi_screen.h"
-
-/*
- * ex_split --	:s[plit] [file ...]
- *	Split the screen, optionally setting the file list.
- */
-int
-ex_split(sp, cmdp)
-	SCR *sp;
-	EXCMDARG *cmdp;
-{
-	ARGS **argv;
-	SCR *top, *bot, *new;
-	int argc;
-	char **ap;
-	
-	if (svi_split(sp, &top, &bot))
-		return (1);
-	new = sp == top ? bot : top;
-
-	/*
-	 * If no files specified, link to the current file, keeping screen
-	 * and cursor the same, and copying the file state flags.  (The
-	 * split routine filled in the screen map.)   Otherwise, build a
-	 * new file list, and start on the first file.
-	 */
-	if (cmdp->argc == 0) {
-		if ((new->frp = file_add(new, sp->frp->name)) == NULL)
-			goto err;
-		new->ep = sp->ep;
-		++sp->ep->refcnt;
-
-		new->frp->flags = sp->frp->flags;
-		new->lno = sp->lno;
-		new->cno = sp->cno;
-	} else {
-		argc = cmdp->argc;
-		argv = cmdp->argv;
-		CALLOC(sp, new->argv, char **, argc + 1, sizeof(char *));
-		if (new->argv == NULL)
-			goto err;
-		for (ap = new->argv, argv; argv[0]->len != 0; ++ap, ++argv)
-			if ((*ap =
-			    v_strdup(sp, argv[0]->bp, argv[0]->len)) == NULL)
-				goto err;
-		*ap = NULL;
-
-		/* Switch to the first file in the list. */
-		new->cargv = new->argv;
-		if ((new->frp = file_add(new, *new->cargv)) == NULL)
-			goto err;
-		if (file_init(new, new->frp, NULL, 0)) {
-err:			if (sp == top)
-				(void)svi_join(new, sp, NULL, NULL);
-			else
-				(void)svi_join(new, NULL, sp, NULL);
-			(void)screen_end(new);
-			return (1);
-		}
-	}
-
-	/* Everything's initialized, put the screen on the displayed queue.*/
-	SIGBLOCK(sp->gp);
-	if (sp == bot) {
-		/* Split up, link in before the parent. */
-		CIRCLEQ_INSERT_BEFORE(&sp->gp->dq, sp, new, q);
-	} else {
-		/* Split down, link in after the parent. */
-		CIRCLEQ_INSERT_AFTER(&sp->gp->dq, sp, new, q);
-	}
-	SIGUNBLOCK(sp->gp);
-
-	/* Redraw the child from scratch. */
-	F_SET(new, S_SCR_REFORMAT);
-
-	/* Save the parent screen's cursor information. */
-	sp->frp->lno = sp->lno;
-	sp->frp->cno = sp->cno;
-	F_SET(sp->frp, FR_CURSORSET);
-
-	/* Draw the status line for both screens. */
-	(void)msg_status(sp, sp->lno, 0);
-	(void)msg_status(new, new->lno, 0);
-
-	/* Switch screens. */
-	sp->nextdisp = new;
-	F_SET(sp, S_SSWITCH);
-	return (0);
-}
 
 /*
  * ex_bg --	:bg

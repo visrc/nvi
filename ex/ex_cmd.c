@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 9.6 1995/02/02 15:10:05 bostic Exp $ (Berkeley) $Date: 1995/02/02 15:10:05 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 9.7 1995/02/08 14:35:40 bostic Exp $ (Berkeley) $Date: 1995/02/08 14:35:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -161,12 +161,12 @@ EXCMDLIST const cmds[] = {
 	    "digraph",
 	    "specify digraphs (not implemented)"},
 /* C_EDIT */
-	{"edit",	ex_edit,	0,
+	{"edit",	ex_edit,	E_NEWSCREEN,
 	    "f1o",
 	    "e[dit][!] [+cmd] [file]",
 	    "begin editing another file"},
 /* C_EX */
-	{"ex",		ex_edit,	0,
+	{"ex",		ex_edit,	E_NEWSCREEN,
 	    "f1o",
 	    "ex[!] [+cmd] [file]",
 	    "begin editing another file"},
@@ -236,7 +236,7 @@ EXCMDLIST const cmds[] = {
 	    "mkexrc[!] file",
 	    "write a .exrc file"},
 /* C_NEXT */
-	{"next",	ex_next,	0,
+	{"next",	ex_next,	E_NEWSCREEN,
 	    "!fN",
 	    "n[ext][!] [+cmd] [file ...]",
 	    "edit (and optionally specify) the next file"},
@@ -326,11 +326,6 @@ EXCMDLIST const cmds[] = {
 	    "f1r",
 	    "so[urce] file",
 	    "read a file of ex commands"},
-/* C_SPLIT */
-	{"split",	ex_split,	E_VIONLY,
-	    "fNo",
-	    "sp[lit] [file ...]",
-	    "split the current screen into two screens"},
 /* C_STOP */
 	{"stop",	ex_stop,	0,
 	    "!",
@@ -347,7 +342,7 @@ EXCMDLIST const cmds[] = {
 	    "[line [,line]] t line [flags]",
 	    "copy lines elsewhere in the file"},
 /* C_TAG */
-	{"tag",		ex_tagpush,	0,
+	{"tag",		ex_tagpush,	E_NEWSCREEN,
 	    "!w1o",
 	    "ta[g][!] [string]",
 	    "edit the file containing the tag"},
@@ -392,7 +387,7 @@ EXCMDLIST const cmds[] = {
 	    "[line] vi[sual] [-|.|+|^] [window_size] [flags]",
 	    "enter visual (vi) mode from ex mode"},
 /* C_VISUAL_VI */
-	{"visual",	ex_edit,	0,
+	{"visual",	ex_edit,	E_NEWSCREEN,
 	    "f1o",
 	    "vi[sual][!] [+cmd] [file]",
 	    "edit another file (from vi mode only)"},

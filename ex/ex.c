@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 9.33 1995/02/02 16:52:53 bostic Exp $ (Berkeley) $Date: 1995/02/02 16:52:53 $";
+static char sccsid[] = "$Id: ex.c,v 9.34 1995/02/08 14:35:13 bostic Exp $ (Berkeley) $Date: 1995/02/08 14:35:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,6 +35,7 @@ static char sccsid[] = "$Id: ex.c,v 9.33 1995/02/02 16:52:53 bostic Exp $ (Berke
 #include "vi.h"
 #include "excmd.h"
 #include "../sex/sex_screen.h"
+#include "../svi/svi_screen.h"
 
 #if defined(DEBUG) && defined(COMLOG)
 static void	ex_comlog __P((SCR *, EXCMDARG *));
@@ -133,6 +134,7 @@ ret:	if (sp->if_name != NULL) {
 		FREE(sp->if_name, strlen(sp->if_name) + 1);
 		sp->if_name = NULL;
 	}
+
 	return (eval);
 }
 
@@ -261,6 +263,7 @@ ex_cmd(sp, cmd, cmdlen, pflags)
 	size_t cmdlen;
 	u_int pflags;
 {
+	SCR *new, *top, *bot;
 	enum nresult nret;
 	enum { NOTSET, NEEDSEP_N, NEEDSEP_NR, NONE } sep;
 	EX_PRIVATE *exp;
@@ -271,15 +274,15 @@ ex_cmd(sp, cmd, cmdlen, pflags)
 	recno_t lno;
 	size_t arg1_len, blen, len, save_cmdlen;
 	long flagoff, ltmp;
-	int ch, cnt, delim, flags, isaddr, namelen, nf, nl, notempty;
-	int optnum, uselastcmd, tmp, vi_address;
+	int ch, cnt, delim, flags, isaddr, namelen, newscreen, nf;
+	int nl, notempty, optnum, uselastcmd, tmp, vi_address;
 	char *arg1, *bp, *p, *s, *save_cmd, *t;
 
 	/* Init. */
 	bp = NULL;
 	blen = 0;
-	nl = 0;
 	exp = EXP(sp);
+	nl = 0;
 
 	if (pflags & EXPAR_NEEDSEP)
 		sep = NOTSET;
@@ -290,7 +293,10 @@ ex_cmd(sp, cmd, cmdlen, pflags)
 	else
 		F_CLR(EXP(sp), EX_VLITONLY);
 
-loop:	if (nl) {
+loop:	new = NULL;
+	newscreen = 0;
+
+	if (nl) {
 		nl = 0;
 		++sp->if_lno;
 	}
@@ -431,6 +437,15 @@ done:		if (bp != NULL)
 				msgq(sp, M_ERR, "099|Unknown command name");
 				goto err;
 			}
+		}
+
+		/* 
+		 * Capital letters beginning commands indicate that the
+		 * command should be executed in a new window.
+		 */
+		if (isupper(p[0])) {
+			newscreen = 1;
+			p[0] = tolower(p[0]);
 		}
 
 		/*
@@ -585,6 +600,14 @@ skip:		if (F_ISSET(cp, E_NOPERM)) {
 		F_SET(&exc, E_F_HASH);
 	} else
 		optnum = 0;
+
+	/* Check for newscreen legality. */
+	if (newscreen && (F_ISSET(sp, S_EX) || !F_ISSET(cp, E_NEWSCREEN))) {
+		msgq(sp, M_ERR,
+	    "270|New screens not available in ex mode or with the %s command",
+		    cp->name);
+		goto err;
+	}
 
 	/* Check for ex mode legality. */
 	if (F_ISSET(sp, S_EX) && F_ISSET(cp, E_VIONLY)) {
@@ -1373,9 +1396,35 @@ addr2:	switch (exc.addrcnt) {
 		sep = NONE;
 	}
 
+	/* If creating a new screen for this function, do it now. */
+	if (newscreen) {
+		if (svi_split(sp, &top, &bot))
+			goto err;
+		new = sp == top ? bot : top;
+	}
+
 	/* Call the underlying function for the ex command. */
-	if (cp->fn(sp, &exc))
+	if (cp->fn(newscreen ? new : sp, &exc))
 		goto err;
+
+	/*
+	 * If created a new screen, add it to the displayed queue and
+	 * set up the switch.
+	 */
+	if (newscreen) {
+		SIGBLOCK(sp->gp);
+		if (sp == bot) {
+			/* Split up, link in before the parent. */
+			CIRCLEQ_INSERT_BEFORE(&sp->gp->dq, sp, new, q);
+		} else {
+			/* Split down, link in after the parent. */
+			CIRCLEQ_INSERT_AFTER(&sp->gp->dq, sp, new, q);
+		}
+		SIGUNBLOCK(sp->gp);
+
+		sp->nextdisp = new;
+		F_SET(sp, S_SSWITCH);
+	}
 
 	/*
 	 * If executing a global command that contains text input commands,
@@ -1386,19 +1435,6 @@ addr2:	switch (exc.addrcnt) {
 		save_cmdlen = exc.aci_len;
 		exc.aci_text = NULL;
 	}
-
-	/*
-	 * XXX
-	 * If we exited or switched screens, we're done.  Don't return if
-	 * we've just switched screen presentation, continue through the
-	 * rest of the ex commands instead.  This will lose any commands
-	 * that are queued from an EXINIT variable, exrc file, or +cmd.
-	 * It's hard to fix, because we have to return to the top level,
-	 * acquire a new screen, and come back down, so I'm leaving it alone
-	 * for now.  (I think that users are unlikely to run into this one.)
-	 */
-	if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE | S_SSWITCH))
-		return (0);
 
 	/*
 	 * If the command had an associated "+cmd", we have to execute that
@@ -1471,8 +1507,8 @@ addr2:	switch (exc.addrcnt) {
 	 * If the command was successful and we're in ex command mode, may
 	 * want to display a line.  (Make sure there's a line to display.)
 	 */
-	if (sp->ep != NULL &&
-	    F_ISSET(sp, S_EX) && !F_ISSET(sp, S_GLOBAL) && sp->lno != 0) {
+	if (F_ISSET(sp, S_EX) &&
+	    sp->ep != NULL && !F_ISSET(sp, S_GLOBAL) && sp->lno != 0) {
 		/*
 		 * The print commands have already handled the `print' flags.
 		 * If so, clear them.
@@ -1505,10 +1541,37 @@ addr2:	switch (exc.addrcnt) {
 		}
 	}
 
+	/*
+	 * If we've switched underlying files, it's no big deal, we continue
+	 * with the rest of the ex command(s).  However, if we switch screens
+	 * (either by exiting or by an explicit command), we have no way of
+	 * knowing where to put output *messages*.  So, save any remainder of
+	 * the command for later processing, and return.
+	 */
+	if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE | S_SSWITCH)) {
+		if (save_cmdlen != 0) {
+			MALLOC(sp, sp->gp->postcmd, char *, save_cmdlen);
+			if (sp->gp->postcmd != NULL) {
+				memmove(sp->gp->postcmd, save_cmd, save_cmdlen);
+				sp->gp->postcmd_len = save_cmdlen;
+			}
+		}
+		goto done;
+	}
+
 	cmd = save_cmd;
 	cmdlen = save_cmdlen;
 	goto loop;
 	/* NOTREACHED */
+
+	/* Discard any created screen. */
+err:	if (newscreen && new != NULL) {
+		if (sp == top)
+			(void)svi_join(new, sp, NULL, NULL);
+		else
+			(void)svi_join(new, NULL, sp, NULL);
+		(void)screen_end(new);
+	}
 
 	/*
 	 * On error, we discard any keys we have left, as well as any keys
@@ -1517,7 +1580,7 @@ addr2:	switch (exc.addrcnt) {
 	 * string was a single command or not.  Try and guess, it's useful
 	 * to know if part of the command was discarded.
 	 */
-err:	if (save_cmdlen == 0)
+	if (save_cmdlen == 0)
 		for (; cmdlen; --cmdlen) {
 			ch = *cmd++;
 			if (IS_ESCAPE(sp, ch) && cmdlen > 1) {
