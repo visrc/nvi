@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.54 1996/03/06 20:33:43 bostic Exp $ (Berkeley) $Date: 1996/03/06 20:33:43 $
+dnl	$Id: configure.in,v 8.55 1996/03/10 12:26:06 bostic Exp $ (Berkeley) $Date: 1996/03/10 12:26:06 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(configure)
@@ -36,7 +36,7 @@ aix4.1*)   CFLAGS=${CFLAGS-"-O3 -qstrict"};;
 aix3.2.5)  CFLAGS=${CFLAGS-"-O"};;
 aux*)	   CFLAGS=${CFLAGS-"-O"}
 	   CPPFLAGS="-ZP -D_BSD_SOURCE -D_SYSV_SOURCE -D_AUX_SOURCE $CPPFLAGS"
-	   LDFLAGS="-ZP"
+	   LDFLAGS="-ZP $LDFLAGS"
 	   LIBOBJS="getopt.o strpbrk.o $LIBOBJS";;
 bsd4.4)    CFLAGS=${CFLAGS-"-O2"}
 	   LIBS="-lutil $LIBS";;
@@ -52,7 +52,7 @@ isc*)	   LIBS="-lcposix -linet $LIBS";;
 netbsd*)   LIBS="-lutil $LIBS";;
 nextstep3) CFLAGS=${CFLAGS-"-O9"}
 	   CPPFLAGS="-w -pipe -posix $CPPFLAGS"
-	   LDFLAGS="-posix";;
+	   LDFLAGS="-posix $LDFLAGS";;
 osf*)	   CPPFLAGS="-Olimit 1000 $CPPFLAGS";;
 ptx*)	   LIBS="-lseq -linet -lsocket $LIBS";;
 sinix*)	   LIBS="-lelf -lc $LIBS";;
@@ -115,270 +115,44 @@ if test "$no_x" != yes; then
 	fi
 fi
 
-dnl Check to see what Tcl/Tk libraries the user wants to use.
-AC_SUBST(tknvi)
-AC_SUBST(TKLIBS)
-AC_MSG_CHECKING(for Tcl/Tk libraries)
-AC_CACHE_VAL(vi_cv_tcltk, [dnl
-AC_ARG_WITH(tcl,
-	[  --with-tcl=ask|system   ask:     Prompt for the tcl/tk library to use
-                          system:  Use the system tcl/tk library.],
-	[case "$withval" in
-	ask)	vi_cv_tcltk="user specified";;
-	system)	vi_cv_tcltk="system library";;
-	*)	echo
-		echo "Fatal error: with-tcl may only be \"ask\" or \"system\"."
-		exit 1;;
-	esac], [vi_cv_tcltk="system library"])])
-AC_MSG_RESULT($vi_cv_tcltk)
-
-dnl If the user wanted us to ask, do so.
-if test "$vi_cv_tcltk" = "user specified"; then
-AC_MSG_CHECKING(for user specified Tcl/Tk library path)
-AC_CACHE_VAL(vi_cv_tcltk_libpath, [dnl
-AC_TRY_RUN([#include <stdio.h>
-	main(){
-	FILE *fp; char *buf;
-	buf = malloc(1024);
-	printf("\nEnter the directory where the Tcl/Tk libraries are: ");
-	fflush(stdout);
-	fgets(buf, 1024, stdin);
-	fp = fopen("__tmptmp", "w");
-	fputs(buf, fp);
-	fclose(fp);
-	exit(0);}], [vi_cv_tcltk_libpath=`cat __tmptmp`; rm __tmptmp])])
-AC_MSG_RESULT($vi_cv_tcltk_libpath)
-
-AC_MSG_CHECKING(for user specified Tcl/Tk include path)
-AC_CACHE_VAL(vi_cv_tcltk_incpath, [dnl
-AC_TRY_RUN([#include <stdio.h>
-	main(){
-	FILE *fp; char *buf;
-	buf = malloc(1024);
-	printf("\nEnter the directory where the Tcl/Tk include files are: ");
-	fflush(stdout);
-	fgets(buf, 1024, stdin);
-	fp = fopen("__tmptmp", "w");
-	fputs(buf, fp);
-	fclose(fp);
-	exit(0);}], [vi_cv_tcltk_incpath=`cat __tmptmp`; rm __tmptmp])])
-AC_MSG_RESULT($vi_cv_tcltk_incpath)
-fi
-
-dnl If they're on the system, find them.  Try the standard places, then
-dnl try /usr/local/lib and /usr/contrib/lib.  We assume that the include
-dnl files follow the libraries in this case.
-if test "$vi_cv_tcltk" = "system library"; then
-AC_MSG_CHECKING(for system Tcl/Tk library path)
-AC_CACHE_VAL(vi_cv_tcltk_libpath, [dnl
-	SAVED_CPPFLAGS="$CPPFLAGS"
-	SAVED_LIBS="$LIBS"
-	CPPFLAGS="$XINCS $CPPFLAGS"
-	LIBS="-ltk -ltcl -lm $XLIBS $LIBS"
-	AC_TRY_LINK([#include <tcl.h>], [Tcl_Eval(0, 0);],
-		[vi_cv_tcltk_libpath=standard], [vi_cv_tcltk_libpath=none])
-	LIBS=$SAVED_LIBS
-	CPPFLAGS=$SAVED_CPPFLAGS
-	if test "$vi_cv_tcltk_libpath" = none; then
-		SAVED_CPPFLAGS="$CPPFLAGS"
-		SAVED_LIBS="$LIBS"
-		CPPFLAGS="-I/usr/contrib/include $XINCS $CPPFLAGS"
-		LIBS="-L/usr/contrib/lib -ltk -ltcl -lm $XLIBS $LIBS"
-		AC_TRY_LINK([#include <tcl.h>], [Tcl_Eval(0, 0);],
-			[vi_cv_tcltk_libpath=/usr/contrib/lib])
-		LIBS=$SAVED_LIBS
-		CPPFLAGS=$SAVED_CPPFLAGS
-	fi
-	if test "$vi_cv_tcltk_libpath" = none; then
-		SAVED_CPPFLAGS="$CPPFLAGS"
-		SAVED_LIBS="$LIBS"
-		CPPFLAGS="-I/usr/local/include $XINCS $CPPFLAGS"
-		LIBS="-L/usr/local/lib -ltk -ltcl -lm $XLIBS $LIBS"
-		AC_TRY_LINK([#include <tcl.h>], [Tcl_Eval(0, 0);],
-			[vi_cv_tcltk_libpath=/usr/local/lib])
-		LIBS=$SAVED_LIBS
-		CPPFLAGS=$SAVED_CPPFLAGS
-	fi])
-AC_MSG_RESULT($vi_cv_tcltk_libpath)
-
-AC_MSG_CHECKING(for system Tcl/Tk include path)
-AC_CACHE_VAL(vi_cv_tcltk_incpath, [dnl
-	if test "$vi_cv_tcltk_libpath" = none; then
-		vi_cv_tcltk_incpath=none
-	fi
-	if test "$vi_cv_tcltk_libpath" = standard; then
-		vi_cv_tcltk_incpath=standard
-	fi
-	if test "$vi_cv_tcltk_libpath" = /usr/contrib/lib; then
-		vi_cv_tcltk_incpath=/usr/contrib/include
-	fi
-	if test "$vi_cv_tcltk_libpath" = /usr/local/lib; then
-		vi_cv_tcltk_incpath=/usr/local/include
-	fi])
-AC_MSG_RESULT($vi_cv_tcltk_incpath)
-fi
-
-if test "$vi_cv_tcltk_libpath" != none; then
-	tknvi=tknvi
-	TKLIBS="-ltk -ltcl -lm $XLIBS $LIBS"
-	if test "$vi_cv_tcltk_libpath" != standard; then
-		TKLIBS="-L$vi_cv_tcltk_libpath $TKLIBS"
-	fi
-
-	if test "$vi_cv_tcltk_incpath" != none &&
-	    test "$vi_cv_tcltk_incpath" != standard; then
-		CPPFLAGS="-I$vi_cv_tcltk_incpath $XINCS $CPPFLAGS"
-	fi
-fi
-
-dnl If the user wants a Tcl/Tk interpreter in nvi, load it.
-AC_MSG_CHECKING(for Tcl/Tk interpreter)
-AC_CACHE_VAL(vi_cv_tclinterp, [dnl
-AC_ARG_ENABLE(tclinterp,
-	[  --enable-tclinterp      Compile a Tcl/Tk interpreter into vi.],
-	[vi_cv_tclinterp="yes"], [vi_cv_tclinterp="no"])])
-if test "$vi_cv_tclinterp" = yes; then
-	if test "$vi_cv_tcltk_libpath" != none; then
-		LIBS=$TKLIBS
-		AC_DEFINE(HAVE_TCL_INTERP)
-		LIBOBJS="tcl.o $LIBOBJS"
-	else
-		echo
-		echo "Fatal error: no Tcl/Tk libraries found."
-		exit 1
-	fi
-fi
-AC_MSG_RESULT($vi_cv_tclinterp)
-
 dnl If the user wants a Perl interpreter in nvi, load it.
-dnl First, we have to find the libraries...
 AC_MSG_CHECKING(for Perl interpreter)
 AC_CACHE_VAL(vi_cv_perlinterp, [dnl
 AC_ARG_ENABLE(perlinterp,
-	[  --enable-perlinterp     Compile a Perl interpreter into vi.],
+	[  --enable-perlinterp     Include a Perl interpreter in vi.],
 	[vi_cv_perlinterp="yes"], [vi_cv_perlinterp="no"])])
 AC_MSG_RESULT($vi_cv_perlinterp)
-if test "$vi_cv_perlinterp" = yes; then
-	AC_MSG_CHECKING(for Perl libraries)
-	AC_CACHE_VAL(vi_cv_perl, [dnl
-	AC_ARG_WITH(perl,
-                [  --with-perl=ask|system  ask:     Prompt for the Perl library to use.
-                          system:  Use the system Perl library.],
-		[case "$withval" in
-		ask)	vi_cv_perl="user specified";;
-		system)	vi_cv_perl="system library";;
-		*)	echo
-		echo "Fatal error: with-perl may only be \"ask\" or \"system\"."
-			exit 1;;
-		esac], [vi_cv_perl="system library"])])
-	AC_MSG_RESULT($vi_cv_perl)
+if test "$vi_cv_perlinterp" = "yes"; then
+	LIBOBJS="perl.o $LIBOBJS"
+	LIBS="-lperl $LIBS"
+	AC_DEFINE(HAVE_PERL_INTERP)
+fi
 
-	dnl If the user wanted us to ask, do so.
-	if test "$vi_cv_perl" = "user specified"; then
-	AC_MSG_CHECKING(for user specified Perl library path)
-	AC_CACHE_VAL(vi_cv_perl_libpath, [dnl
-	AC_TRY_RUN([#include <stdio.h>
-		main(){
-		FILE *fp; char *buf;
-		buf = malloc(1024);
-		printf("\nEnter the directory where the Perl libraries are: ");
-		fflush(stdout);
-		fgets(buf, 1024, stdin);
-		fp = fopen("__tmptmp", "w");
-		fputs(buf, fp);
-		fclose(fp);
-		exit(0);}], [vi_cv_perl_libpath=`cat __tmptmp`; rm __tmptmp])])
-	AC_MSG_RESULT($vi_cv_perl_libpath)
+dnl If the user wants a Tk/Tcl front-end for nvi, build it.
+AC_SUBST(tknvi)
+AC_SUBST(TKLIBS)
+AC_MSG_CHECKING(for Tk/Tcl front-end)
+AC_CACHE_VAL(vi_cv_tknvi, [dnl
+AC_ARG_ENABLE(tknvi,
+	[  --enable-tknvi          Build a Tk/Tcl front-end for vi.],
+	[vi_cv_tknvi="yes"], [vi_cv_tknvi="no"])])
+AC_MSG_RESULT($vi_cv_tknvi)
+if test "$vi_cv_tknvi" = "yes"; then
+	tknvi=tknvi
+	TKLIBS="-ltk -ltcl -lm $XLIBS $LIBS"
+fi
 
-	AC_MSG_CHECKING(for user specified Perl include path)
-	AC_CACHE_VAL(vi_cv_perl_incpath, [dnl
-	AC_TRY_RUN([#include <stdio.h>
-		main(){
-		FILE *fp; char *buf;
-		buf = malloc(1024);
-	printf("\nEnter the directory where the Perl include files are: ");
-		fflush(stdout);
-		fgets(buf, 1024, stdin);
-		fp = fopen("__tmptmp", "w");
-		fputs(buf, fp);
-		fclose(fp);
-		exit(0);}], [vi_cv_perl_incpath=`cat __tmptmp`; rm __tmptmp])])
-	AC_MSG_RESULT($vi_cv_perl_incpath)
-	fi
-
-	dnl If they're on the system, find them.  Try the standard places, then
-	dnl try /usr/local/lib and /usr/contrib/lib.  We assume that the include
-	dnl files follow the libraries in this case.
-	if test "$vi_cv_perl" = "system library"; then
-	AC_MSG_CHECKING(for system Perl library path)
-	AC_CACHE_VAL(vi_cv_perl_libpath, [dnl
-		SAVED_CPPFLAGS="$CPPFLAGS"
-		SAVED_LIBS="$LIBS"
-		CPPFLAGS="$XINCS $CPPFLAGS"
-		LIBS="-lperl $XLIBS $LIBS"
-			AC_TRY_LINK([#include <EXTERN.h>
-				#include <perl.h>
-				#include <XSUB.h>], [dXSARGS; croak("string");],
-			[vi_cv_perl_libpath=standard],
-			[vi_cv_perl_libpath=none])
-		LIBS=$SAVED_LIBS
-		CPPFLAGS=$SAVED_CPPFLAGS
-		if test "$vi_cv_perl_libpath" = none; then
-			SAVED_CPPFLAGS="$CPPFLAGS"
-			SAVED_LIBS="$LIBS"
-			CPPFLAGS="-I/usr/contrib/include $XINCS $CPPFLAGS"
-			LIBS="-L/usr/contrib/lib -ltk -ltcl -lm $XLIBS $LIBS"
-			AC_TRY_LINK([#include <EXTERN.h>
-				#include <perl.h>
-				#include <XSUB.h>], [dXSARGS; croak("string");],
-				[vi_cv_perl_libpath=/usr/contrib/lib])
-			LIBS=$SAVED_LIBS
-			CPPFLAGS=$SAVED_CPPFLAGS
-		fi
-		if test "$vi_cv_perl_libpath" = none; then
-			SAVED_CPPFLAGS="$CPPFLAGS"
-			SAVED_LIBS="$LIBS"
-			CPPFLAGS="-I/usr/local/include $XINCS $CPPFLAGS"
-			LIBS="-L/usr/local/lib -ltk -ltcl -lm $XLIBS $LIBS"
-			AC_TRY_LINK([#include <EXTERN.h>
-				#include <perl.h>
-				#include <XSUB.h>], [dXSARGS; croak("string");],
-				[vi_cv_perl_libpath=/usr/local/lib])
-			LIBS=$SAVED_LIBS
-			CPPFLAGS=$SAVED_CPPFLAGS
-		fi])
-	AC_MSG_RESULT($vi_cv_perl_libpath)
-
-	AC_MSG_CHECKING(for system Perl include path)
-	AC_CACHE_VAL(vi_cv_perl_incpath, [dnl
-		if test "$vi_cv_perl_libpath" = none; then
-			vi_cv_perl_incpath=none
-		fi
-		if test "$vi_cv_perl_libpath" = standard; then
-			vi_cv_perl_incpath=standard
-		fi
-		if test "$vi_cv_perl_libpath" = /usr/contrib/lib; then
-			vi_cv_perl_incpath=/usr/contrib/include
-		fi
-		if test "$vi_cv_perl_libpath" = /usr/local/lib; then
-			vi_cv_perl_incpath=/usr/local/include
-		fi])
-	AC_MSG_RESULT($vi_cv_perl_incpath)
-	fi
-
-	if test "$vi_cv_perl_libpath" = none; then
-		echo "Fatal error: no Perl libraries found."
-		exit 1
-	fi
-	if test "$vi_cv_perl_libpath" != standard &&
-	    test "$vi_cv_tcltk_libpath" != "$vi_cv_perl_libpath"; then
-		LIBS="-L$vi_cv_perl_libpath $LIBS"
-		TKLIBS="-L$vi_cv_perl_libpath $TKLIBS"
-	fi
-	if test "$vi_cv_perl_incpath" != standard &&
-	    test "$vi_cv_tcltk_incpath" != "$vi_cv_perl_incpath"; then
-		CPPFLAGS="-I$vi_cv_perl_incpath $CPPFLAGS"
-	fi
+dnl If the user wants a Tk/Tcl interpreter in nvi, load it.
+AC_MSG_CHECKING(for Tk/Tcl interpreter)
+AC_CACHE_VAL(vi_cv_tclinterp, [dnl
+AC_ARG_ENABLE(tclinterp,
+	[  --enable-tclinterp      Include a Tk/Tcl interpreter in vi.],
+	[vi_cv_tclinterp="yes"], [vi_cv_tclinterp="no"])])
+AC_MSG_RESULT($vi_cv_tclinterp)
+if test "$vi_cv_tclinterp" = "yes"; then
+	LIBOBJS="tcl.o $LIBOBJS"
+	LIBS="-ltk -ltcl -lm $XLIBS $LIBS"
+	AC_DEFINE(HAVE_TCL_INTERP)
 fi
 
 dnl Both Tcl/Tk and Perl interpreters need the vi api code.
@@ -386,7 +160,9 @@ if test "$vi_cv_tclinterp" = yes || test "$vi_cv_perlinterp" = yes; then
 	LIBOBJS="api.o $LIBOBJS"
 fi
 
-dnl Check for the termcap/termlib library.
+dnl Check for the termcap/termlib library.  Compile in nvi's curses routines
+dnl unless the user specifies otherwise.  These two checks must occur in the
+dnl current order.
 AC_CHECK_LIB(termlib, tgetent,
 	[vi_cv_termlib=-ltermlib], [vi_cv_termlib=no])
 if test "$vi_cv_termlib" = no; then
@@ -396,70 +172,19 @@ fi
 if test "$vi_cv_termlib" != no; then
 	LIBS="$vi_cv_termlib $LIBS"
 fi
-
-dnl Check to see what curses library the user wants.
 AC_SUBST(cobjs)
 AC_MSG_CHECKING(for curses library)
 AC_CACHE_VAL(vi_cv_curses, [dnl
-AC_ARG_WITH(curses,
-	[  --with-curses=ask|system|vi
-                          ask:     Prompt for the curses library to use.
-                          system:  Use the system curses library.
-                          vi:      Use the vi-provided curses library.],
-	[case "$withval" in
-	ask)	vi_cv_curses="user specified";;
-	system)	vi_cv_curses="system curses";;
-	vi)	vi_cv_curses="vi curses";;
-	*)	echo
-echo "Fatal error: with-curses may only be \"ask\", \"system\" or \"vi\"."
-		exit 1;;
-	esac], [vi_cv_curses="vi curses"])])
+AC_ARG_ENABLE(curses,
+	[  --disable-curses        DON'T use the nvi-provided curses routines.],
+	[vi_cv_curses="other curses"], [vi_cv_curses="bundled curses"])])
 AC_MSG_RESULT($vi_cv_curses)
-
-dnl If the user wanted us to ask, do so.
-if test "$vi_cv_curses" = "user specified"; then
-	AC_MSG_CHECKING(for user specified curses library path)
-	AC_CACHE_VAL(vi_cv_curses_libpath, [dnl
-	AC_TRY_RUN([#include <stdio.h>
-		main(){
-		FILE *fp; char *buf;
-		buf = malloc(1024);
-	printf("\nEnter the directory where the curses libraries are: ");
-		fflush(stdout);
-		fgets(buf, 1024, stdin);
-		fp = fopen("__tmptmp", "w");
-		fputs(buf, fp);
-		fclose(fp);
-		exit(0);}],
-		[vi_cv_curses_libpath=`cat __tmptmp`; rm __tmptmp])])
-	AC_MSG_RESULT($vi_cv_curses_libpath)
-
-	AC_MSG_CHECKING(for user specified curses include path)
-	AC_CACHE_VAL(vi_cv_curses_incpath, [dnl
-	AC_TRY_RUN([#include <stdio.h>
-		main(){
-		FILE *fp; char *buf;
-		buf = malloc(1024);
-	printf("\nEnter the directory where the curses include files are: ");
-		fflush(stdout);
-		fgets(buf, 1024, stdin);
-		fp = fopen("__tmptmp", "w");
-		fputs(buf, fp);
-		fclose(fp);
-		exit(0);}],
-		[vi_cv_curses_incpath=`cat __tmptmp`; rm __tmptmp])])
-	AC_MSG_RESULT($vi_cv_curses_incpath)
-fi
-
 case "$vi_cv_curses" in
-"system curses")
-	LIBS="-lcurses $LIBS";;
-"user specified")
-	CPPFLAGS="$CPPFLAGS -I$vi_cv_curses_incpath"
-	LIBS="$vi_cv_curses_libpath $LIBS";;
-"vi curses")
+"bundled curses")
 	CPPFLAGS="$CPPFLAGS -I../curses"
 	cobjs="\$(COBJS)";;
+"other curses")
+	LIBS="-lcurses $LIBS";;
 esac
 
 dnl Checks for header files.
@@ -583,12 +308,11 @@ if test "$vi_cv_have_curses_tigetstr" = yes; then
 fi
 AC_MSG_RESULT($vi_cv_have_curses_tigetstr)
 
-dnl Check for potentially missing curses functions in system or
-dnl user-specified libraries.  We also have to guess at whether
-dnl the specified library is a BSD or System V style curses.
-dnl Use the newterm function, all System V curses implementations
-dnl have it, none, as far as I know, of the BSD ones do.
-if test "$vi_cv_curses" = "vi curses"; then
+dnl Check for potentially missing curses functions in system or user-specified
+dnl libraries.  We also have to guess at whether the specified library is a
+dnl BSD or System V style curses.  Use the newterm function, all System V
+dnl curses implementations have it, none, as far as I know, of the BSD ones do.
+if test "$vi_cv_curses" = "bundled curses"; then
 	AC_DEFINE(HAVE_BSD_CURSES)
 	AC_DEFINE(HAVE_CURSES_ADDNSTR)
 	AC_DEFINE(HAVE_CURSES_IDLOK)
@@ -709,77 +433,49 @@ if test "$vi_cv_sprintf_count" = no; then
 fi
 AC_MSG_RESULT($vi_cv_sprintf_count)
 
-dnl Check for C library DB routines.
+dnl We compile in nvi's DB routines unless the user specifies otherwise.
 dnl XXX
-dnl Some older versions of DB can't handle vi, so, for now, always compile
-dnl it in, unless the user specifies on the command line that we're to use
-dnl a library one.
+dnl Try and compile in the C library's DB hash routines if they exist.
+dnl The problem is that vi doesn't use them, and they may be used
+dnl locally to support the password and termcap databases, and may have
+dnl diverged.
 AC_MSG_CHECKING(for Berkeley DB package)
 AC_CACHE_VAL(vi_cv_db_lib, [dnl
-AC_ARG_WITH(db,
-	[  --with-db=library|vi    library: The C library or -ldb has the DB routines.
-                          vi:      Use the vi-provided DB routines.],
-	[case "$withval" in
-	library)
-		vi_cv_db_lib="library DB routines";;
-	vi)	vi_cv_db_lib="vi DB routines";;
-	*)	echo
-		echo "Fatal error: with-db may only be \"library\" or \"vi\"."
-		exit 1;;
-	esac], [vi_cv_db_lib="vi DB routines"])])
-if test "$vi_cv_db_lib" = "vi DB routines"; then
+AC_ARG_ENABLE(db,
+	[  --disable-db            DON'T use the nvi-provided DB routines.],
+	[vi_cv_db_lib="other DB"], [vi_cv_db_lib="bundled DB"])])
+AC_MSG_RESULT($vi_cv_db_lib)
+case "$vi_cv_db_lib" in
+"bundled DB")
 	CPPFLAGS="$CPPFLAGS -I../db/include"
 	LIBOBJS="\$(DBOBJS) $LIBOBJS"
-fi
-AC_MSG_RESULT($vi_cv_db_lib)
 
-dnl Try and compile in the library's DB dnl hash routines if they exist,
-dnl since vi doesn't use them, and they may be used locally to support
-dnl the password and termcap databases, and may have diverged.  Linux puts
-dnl the DB routines in -ldb, so we have to look around.
-AC_MSG_CHECKING(for Berkeley DB hash routines)
-AC_CACHE_VAL(vi_cv_db_hash_open, [dnl
-AC_TRY_LINK(, [__hash_open(0, 0, 0, 0, 0);],
-	[vi_cv_db_hash_open="C library"], [dnl
-	SAVED_LIBS="$LIBS"
-	LIBS="-ldb $LIBS"
+	AC_MSG_CHECKING(for Berkeley DB hash routines)
+	AC_CACHE_VAL(vi_cv_db_hash_open, [dnl
 	AC_TRY_LINK(, [__hash_open(0, 0, 0, 0, 0);],
-		[vi_cv_db_hash_open="DB library"], [vi_cv_db_hash_open=none])
-	LIBS=$SAVED_LIBS])])
+		[vi_cv_db_hash_open=yes], [vi_cv_db_hash_open=no])])
+	AC_MSG_RESULT($vi_cv_db_hash_open)
+	if test "$vi_cv_db_hash_open" = "yes"; then
+		AC_DEFINE(HAVE_DB_HASH_OPEN)
+	fi;;
+"other DB")
+	;;
+esac
 
-if test "$vi_cv_db_hash_open" = "C library"; then
-	AC_DEFINE(HAVE_DB_HASH_OPEN)
-fi
-if test "$vi_cv_db_hash_open" = "DB library"; then
-	LIBS="-ldb $LIBS"
-	TKLIBS="-ldb $TKLIBS"
-	AC_DEFINE(HAVE_DB_HASH_OPEN)
-fi
-AC_MSG_RESULT($vi_cv_db_hash_open)
-
-dnl Check for C library RE routines.
-dnl XXX
-dnl Need to have Henry's word-search extensions, so for now, always compile
-dnl it in, unless the user specifies on the command line that we're to use
-dnl the C library one.
+dnl We compile in nvi's RE routines unless the user specifies otherwise.
 AC_MSG_CHECKING(for POSIX 1003.2 RE routines)
 AC_CACHE_VAL(vi_cv_re_lib, [dnl
-AC_ARG_WITH(re, 
-	[  --with-re=library|vi    library: Use the RE routines in the C library.
-                          vi:      Use the vi-provided RE routines.],
-	[case "$withval" in
-	library)
-		vi_cv_re_lib="C library RE routines";;
-	vi)	vi_cv_re_lib="vi RE routines";;
-	*)	echo
-		echo "Fatal error: with-re may only be \"library\" or \"vi\"."
-		exit 1;;
-	esac], [vi_cv_re_lib="vi RE routines"])])
-if test "$vi_cv_re_lib" = "vi RE routines"; then
-	CPPFLAGS="$CPPFLAGS -I../regex"
-	LIBOBJS="\$(REOBJS) $LIBOBJS"
-fi
+AC_ARG_ENABLE(re,
+	[  --disable-re            DON'T use the nvi-provided RE routines.],
+	[vi_cv_re_lib="other RE"], [vi_cv_re_lib="bundled RE"])])
 AC_MSG_RESULT($vi_cv_re_lib)
+case "$vi_cv_re_lib" in
+"bundled RE")
+	CPPFLAGS="$CPPFLAGS -I../regex"
+	LIBOBJS="\$(REOBJS) $LIBOBJS";;
+"other RE")
+	;;
+esac
 
 dnl DB/Vi uses specific integer sizes.
 AC_SUBST(u_int8_decl)
