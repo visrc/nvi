@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 5.26 1993/01/30 17:26:09 bostic Exp $ (Berkeley) $Date: 1993/01/30 17:26:09 $
+ *	$Id: exf.h,v 5.27 1993/01/31 10:25:12 bostic Exp $ (Berkeley) $Date: 1993/01/31 10:25:12 $
  */
 
 #ifndef _EXF_H_
@@ -86,8 +86,9 @@ typedef struct exf {
 #define	F_RE_SET	0x0400		/* The file's RE has been set. */
 #define	F_READING	0x0800		/* Waiting on a read. */
 #define	F_REDRAW	0x1000		/* Repaint the screen. */
-#define	F_RESIZE	0x2000		/* Resize the screen. */
-#define	F_UNDO		0x4000		/* No change since last undo. */
+#define	F_REFRESH	0x2000		/* Refresh the screen. */
+#define	F_RESIZE	0x4000		/* Resize the screen. */
+#define	F_UNDO		0x8000		/* No change since last undo. */
 
 #define	FF_SET(ep, f)	(ep)->flags |= (f)
 #define	FF_CLR(ep, f)	(ep)->flags &= ~(f)
