@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 5.51 1993/05/07 16:38:16 bostic Exp $ (Berkeley) $Date: 1993/05/07 16:38:16 $
+ *	$Id: common.h,v 5.52 1993/05/13 11:22:21 bostic Exp $ (Berkeley) $Date: 1993/05/13 11:22:21 $
  */
 
 #include <glob.h>			/* Ordered before local includes. */
@@ -60,12 +60,45 @@ struct _text;
 #define	LF_CLR(f)	flags &= ~(f)
 #define	LF_ISSET(f)	(flags & (f))
 
-/* Buffer allocation. */
+/* Memory allocation macros. */
 #define	BINC(sp, lp, llen, nlen) {					\
 	if ((nlen) > llen && binc(sp, &(lp), &(llen), nlen))		\
 		return (1);						\
 }
 int	binc __P((struct _scr *, void *, size_t *, size_t));
+
+#define	GET_SPACE(sp, bp, blen, nlen) {					\
+	GS *__gp = (sp)->gp;						\
+	if (F_ISSET(__gp, G_TMP_INUSE)) {				\
+		bp = NULL;						\
+		blen = 0;						\
+		BINC(sp, bp, blen, nlen); 				\
+	} else {							\
+		BINC(sp, __gp->tmp_bp, __gp->tmp_blen, nlen);		\
+		bp = __gp->tmp_bp;					\
+		blen = __gp->tmp_blen;					\
+		F_SET(__gp, G_TMP_INUSE);				\
+	}								\
+}
+
+#define	ADD_SPACE(sp, bp, blen, nlen) {					\
+	GS *__gp = (sp)->gp;						\
+	if (bp == __gp->tmp_bp) {					\
+		F_CLR(__gp, G_TMP_INUSE);				\
+		BINC(sp, __gp->tmp_bp, __gp->tmp_blen, nlen);		\
+		bp = __gp->tmp_bp;					\
+		blen = __gp->tmp_blen;					\
+		F_SET(__gp, G_TMP_INUSE);				\
+	} else								\
+		BINC(sp, bp, blen, nlen);				\
+}
+
+#define	FREE_SPACE(sp, bp, blen) {					\
+	if (bp == sp->gp->tmp_bp)					\
+		F_CLR(sp->gp, G_TMP_INUSE);				\
+	else								\
+		FREE(bp, blen);						\
+}
 
 /* Filter type. */
 enum filtertype { STANDARD, NOINPUT, NOOUTPUT };
