@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.83 1993/12/22 17:25:03 bostic Exp $ (Berkeley) $Date: 1993/12/22 17:25:03 $";
+static char sccsid[] = "$Id: ex.c,v 8.84 1993/12/22 18:38:14 bostic Exp $ (Berkeley) $Date: 1993/12/22 18:38:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -272,10 +272,10 @@ loop:	if (nl) {
 	 * If no command, ex does the last specified of p, l, or #, and vi
 	 * moves to the line.  Otherwise, determine the length of the command
 	 * name by looking for the first non-alphabetic character.  (There
-	 * a few non-alphabetic characters in command names, but they're all
-	 * single character commands.)  This isn't a great test, because it
-	 * means that, for the command ":e +cut.c file", we'll report that the
-	 * command "cut" wasn't known.  However, it makes ":e+35 file" work
+	 * are a few non-alphabetic characters in command names, but they're
+	 * all single character commands.)  This isn't a great test, because
+	 * it means that, for the command ":e +cut.c file", we'll report that
+	 * the command "cut" wasn't known.  However, it makes ":e+35 file" work
 	 * correctly.
 	 */
 #define	SINGLE_CHAR_COMMANDS	"!#&<=>@~"
@@ -1448,7 +1448,7 @@ ex_comm_search(name, len)
 {
 	EXCMDLIST const *cp;
 
-	for (cp = &cmds[C_APPEND]; cp->name != NULL; ++cp) {
+	for (cp = cmds; cp->name != NULL; ++cp) {
 		if (cp->name[0] > name[0])
 			return (NULL);
 		if (cp->name[0] != name[0])
