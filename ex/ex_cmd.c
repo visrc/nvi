@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 8.60 1994/08/17 14:31:32 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:31:32 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 8.61 1994/09/18 18:28:31 bostic Exp $ (Berkeley) $Date: 1994/09/18 18:28:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -224,7 +224,7 @@ EXCMDLIST const cmds[] = {
 	    "[line] ma[rk] key",
 	    "mark a line position"},
 /* C_MAP */
-	{"map",		ex_map,		0,
+	{"map",		ex_map,		E_NOGLOBAL,
 	    "!W",
 	    "map[!] [keys replace]",
 	    "map input or commands to one or more keys"},
@@ -244,7 +244,7 @@ EXCMDLIST const cmds[] = {
 	    "[line [,line]] nu[mber] [count] [l]",
 	    "change display to number lines"},
 /* C_OPEN */
-	{"open",	ex_open,	E_ADDR1,
+	{"open",	ex_open,	E_ADDR1|E_NORC,
 	    "s",
 	    "[line] o[pen] [/RE/] [flags]",
 	    "enter \"open\" mode (not implemented)"},
