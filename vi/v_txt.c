@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.53 1996/04/17 09:14:08 bostic Exp $ (Berkeley) $Date: 1996/04/17 09:14:08 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.54 1996/04/22 19:02:29 bostic Exp $ (Berkeley) $Date: 1996/04/22 19:02:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,7 +31,7 @@ static const char sccsid[] = "$Id: v_txt.c,v 10.53 1996/04/17 09:14:08 bostic Ex
 #include "vi.h"
 
 static int	 txt_abbrev __P((SCR *, TEXT *, CHAR_T *, int, int *, int *));
-static void	 txt_ai_resolve __P((SCR *, TEXT *, int));
+static void	 txt_ai_resolve __P((SCR *, TEXT *));
 static TEXT	*txt_backup __P((SCR *, TEXTH *, TEXT *, u_int32_t *));
 static int	 txt_dent __P((SCR *, TEXT *, int));
 static int	 txt_emark __P((SCR *, TEXT *, size_t));
@@ -1583,10 +1583,9 @@ txt_unmap(sp, tp, ec_flagsp)
  *	characters.
  */
 static void
-txt_ai_resolve(sp, tp, iscurrent)
+txt_ai_resolve(sp, tp)
 	SCR *sp;
 	TEXT *tp;
-	int iscurrent;
 {
 	u_long ts;
 	int del;
@@ -1605,9 +1604,7 @@ txt_ai_resolve(sp, tp, iscurrent)
 	 * characters, delete them.
 	 */
 	if (tp->len <= tp->ai) {
-		tp->len = tp->ai = 0;
-		if (iscurrent)
-			tp->cno = 0;
+		tp->ai = tp->cno = tp->len = 0;
 		return;
 	}
 
@@ -1655,10 +1652,7 @@ txt_ai_resolve(sp, tp, iscurrent)
 	del = old - new;
 	memmove(p - del, p, tp->len - old);
 	tp->len -= del;
-
-	/* If the cursor was on this line, adjust it as well. */
-	if (iscurrent)
-		tp->cno -= del;
+	tp->cno -= del;
 
 	/* Fill in space/tab characters. */
 	for (p = tp->lb; tabs--;)
@@ -2589,13 +2583,13 @@ txt_resolve(sp, tiqh, flags)
 	vip = VIP(sp);
 	tp = tiqh->cqh_first;
 	if (LF_ISSET(TXT_AUTOINDENT))
-		txt_ai_resolve(sp, tp, 1);
+		txt_ai_resolve(sp, tp);
 	if (db_set(sp, tp->lno, tp->lb, tp->len))
 		return (1);
 
 	for (lno = tp->lno; (tp = tp->q.cqe_next) != (void *)&sp->tiq; ++lno) {
 		if (LF_ISSET(TXT_AUTOINDENT))
-			txt_ai_resolve(sp, tp, 0);
+			txt_ai_resolve(sp, tp);
 		if (db_append(sp, 0, lno, tp->lb, tp->len))
 			return (1);
 	}
