@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.1,v 8.20 1994/12/17 17:16:02 bostic Exp $ (Berkeley) $Date: 1994/12/17 17:16:02 $
+.\"     $Id: vi.1,v 8.21 1995/01/11 15:54:30 bostic Exp $ (Berkeley) $Date: 1995/01/11 15:54:30 $
 .\"
 .Dd "%Q%"
 .Dt EX/VI 1
@@ -630,7 +630,9 @@ editor.
 .It Sy "<nul>"
 Replay the previous input.
 .It Sy "<control-D>"
-Erase the previous autoindent character.
+Erase to the previous
+.Sy shiftwidth
+column boundary.
 .It Sy "^<control-D>"
 Erase all of the autoindent characters, and reset the autoindent level.
 .It Sy "0<control-D>"
@@ -640,10 +642,9 @@ Insert sufficient
 .Li <tab>
 and
 .Li <space>
-characters to move the cursor forward to a column immediately
-after the next column which is an even multiple of the
+characters to move forward to the next
 .Sy shiftwidth
-option.
+column boundary.
 .It Sy "<erase>
 .It Sy "<control-H>"
 Erase the last character.
