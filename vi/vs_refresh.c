@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.66 1994/09/29 22:47:19 bostic Exp $ (Berkeley) $Date: 1994/09/29 22:47:19 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.67 1994/10/13 19:41:03 bostic Exp $ (Berkeley) $Date: 1994/10/13 19:41:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -310,7 +310,7 @@ small_fill:			MOVE(sp, INFOLINE(sp), 0);
 		}
 
 		/*
-		 * If less than a full screen from the bottom of the file,
+		 * If less than a half screen from the bottom of the file,
 		 * put the last line of the file on the bottom of the screen.
 		 */
 bottom:		if (file_lline(sp, ep, &lastline))
@@ -318,7 +318,7 @@ bottom:		if (file_lline(sp, ep, &lastline))
 		tmp.lno = LNO;
 		tmp.off = 1;
 		lcnt = svi_sm_nlines(sp, ep, &tmp, lastline, sp->t_rows);
-		if (lcnt < sp->t_rows) {
+		if (lcnt < HALFTEXT(sp)) {
 			if (svi_sm_fill(sp, ep, lastline, P_BOTTOM))
 				return (1);
 			F_SET(sp, S_REDRAW);
