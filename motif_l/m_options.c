@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_options.c,v 8.3 1996/12/10 21:07:55 bostic Exp $ (Berkeley) $Date: 1996/12/10 21:07:55 $";
+static const char sccsid[] = "$Id: m_options.c,v 8.4 1996/12/11 13:09:00 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:09:00 $";
 #endif /* not lint */
 
 #include <X11/X.h>
@@ -352,17 +352,18 @@ static	Widget	create_options_dialog( parent, title )
 
 
 
-/* module entry point
- *	__vi_show_options_dialog( parent, title )
+/*
+ * module entry point
+ *
+ * __vi_show_options_dialog --
+ *
+ *
+ * PUBLIC: void __vi_show_options_dialog __P((Widget, String));
  */
-
-#if defined(__STDC__)
-void	__vi_show_options_dialog( Widget parent, String title )
-#else
-void	__vi_show_options_dialog( parent, title )
-Widget	parent;
-String	title;
-#endif
+void
+__vi_show_options_dialog(parent, title)
+	Widget parent;
+	String title;
 {
     Widget 	db = create_options_dialog( parent, title ),
 		shell = XtParent(db);
