@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: put.c,v 10.10 1996/09/15 15:57:38 bostic Exp $ (Berkeley) $Date: 1996/09/15 15:57:38 $";
+static const char sccsid[] = "$Id: put.c,v 10.11 1996/09/23 19:34:18 bostic Exp $ (Berkeley) $Date: 1996/09/23 19:34:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -131,11 +131,13 @@ put(sp, cbp, namep, cp, rp, append)
 	}
 
 	/* First line from the CB. */
-	memcpy(t, tp->lb, tp->len);
-	t += tp->len;
+	if (tp->len != 0) {
+		memcpy(t, tp->lb, tp->len);
+		t += tp->len;
+	}
 
 	/* Calculate length left in the original line. */
-	clen = len != 0 ? len - cp->cno - (append ? 1 : 0) : 0;
+	clen = len == 0 ? 0 : len - (cp->cno + (append ? 1 : 0));
 
 	/*
 	 * !!!
@@ -151,7 +153,7 @@ put(sp, cbp, namep, cp, rp, append)
 	 * behavior, and expect POSIX.2 to do so as well.
 	 */
 	rp->lno = lno;
-	rp->cno = len == 0 ? 0 : sp->cno + (append ? 1 : 0);
+	rp->cno = len == 0 ? 0 : sp->cno + (append && tp->len ? 1 : 0);
 
 	/*
 	 * If no more lines in the CB, append the rest of the original
