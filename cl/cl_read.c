@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_read.c,v 10.4 1995/09/28 13:01:22 bostic Exp $ (Berkeley) $Date: 1995/09/28 13:01:22 $";
+static char sccsid[] = "$Id: cl_read.c,v 10.5 1995/10/18 11:34:16 bostic Exp $ (Berkeley) $Date: 1995/10/18 11:34:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -89,8 +89,8 @@ retest:	if (LF_ISSET(EC_INTERRUPT) || F_ISSET(clp, CL_SIGINT)) {
 	if (timeout == 0)
 		tp = NULL;
 	else {
-		t.tv_sec = 0;
-		t.tv_usec = timeout;
+		t.tv_sec = timeout / 1000;
+		t.tv_usec = (timeout % 1000) * 1000;
 		tp = &t;
 	}
 
