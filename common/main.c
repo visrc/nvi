@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.39 1993/11/13 18:00:32 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:00:32 $";
+static char sccsid[] = "$Id: main.c,v 8.40 1993/11/15 11:00:26 bostic Exp $ (Berkeley) $Date: 1993/11/15 11:00:26 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -325,9 +325,35 @@ main(argc, argv)
 		goto err1;
 	}
 
-	for (; sp != NULL; sp = nsp)
+	for (;;) {
 		if (sp->s_edit(sp, sp->ep, &nsp))
 			goto err2;
+
+		/* If we're done, nsp will be NULL. */
+		if ((sp = nsp) == NULL)
+			break;
+
+		/*
+		 * The screen type may have changed -- reinitialize the
+		 * functions in case it has.
+		 */
+		switch (F_ISSET(sp, S_SCREENS)) {
+		case S_EX:
+			if (sex_screen_init(sp))
+				return (1);
+			break;
+		case S_VI_CURSES:
+			if (svi_screen_init(sp))
+				return (1);
+			break;
+		case S_VI_XAW:
+			if (xaw_screen_init(sp))
+				return (1);
+			break;
+		default:
+			abort();
+		}
+	}
 
 	/*
 	 * Two error paths.  The first means that something failed before
