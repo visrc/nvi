@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.31 1993/12/09 19:42:18 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:42:18 $";
+static char sccsid[] = "$Id: util.c,v 8.32 1993/12/10 16:30:09 bostic Exp $ (Berkeley) $Date: 1993/12/10 16:30:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -414,13 +414,13 @@ set_window_size(sp, set_row, ign_env)
 	 * Since the user didn't do the set, clear the set bits.
 	 */
 	user_set = F_ISSET(&sp->opts[O_LINES], OPT_SET);
-	a.len = snprintf(buf, sizeof(buf), "ls=%u", row);
+	a.len = snprintf(buf, sizeof(buf), "lines=%u", row);
 	if (opts_set(sp, argv))
 		return (1);
 	if (user_set)
 		F_CLR(&sp->opts[O_LINES], OPT_SET);
 	user_set = F_ISSET(&sp->opts[O_COLUMNS], OPT_SET);
-	a.len = snprintf(buf, sizeof(buf), "co=%u", col);
+	a.len = snprintf(buf, sizeof(buf), "columns=%u", col);
 	if (opts_set(sp, argv))
 		return (1);
 	if (user_set)
