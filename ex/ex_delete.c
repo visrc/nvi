@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_delete.c,v 10.8 1996/03/06 19:52:14 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:52:14 $";
+static const char sccsid[] = "$Id: ex_delete.c,v 10.9 1996/10/23 09:31:30 bostic Exp $ (Berkeley) $Date: 1996/10/23 09:31:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -50,7 +50,7 @@ ex_delete(sp, cmdp)
 		return (1);
 
 	/* Delete the lines. */
-	if (delete(sp, &cmdp->addr1, &cmdp->addr2, 1))
+	if (del(sp, &cmdp->addr1, &cmdp->addr2, 1))
 		return (1);
 
 	/* Set the cursor to the line after the last line deleted. */

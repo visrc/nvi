@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: delete.c,v 10.11 1996/09/15 15:56:49 bostic Exp $ (Berkeley) $Date: 1996/09/15 15:56:49 $";
+static const char sccsid[] = "$Id: delete.c,v 10.12 1996/10/23 09:30:49 bostic Exp $ (Berkeley) $Date: 1996/10/23 09:30:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,13 +26,13 @@ static const char sccsid[] = "$Id: delete.c,v 10.11 1996/09/15 15:56:49 bostic E
 #include "common.h"
 
 /*
- * delete --
+ * del --
  *	Delete a range of text.
  *
- * PUBLIC: int delete __P((SCR *, MARK *, MARK *, int));
+ * PUBLIC: int del __P((SCR *, MARK *, MARK *, int));
  */
 int
-delete(sp, fm, tm, lmode)
+del(sp, fm, tm, lmode)
 	SCR *sp;
 	MARK *fm, *tm;
 	int lmode;

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_xchar.c,v 10.8 1996/03/06 19:54:50 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:54:50 $";
+static const char sccsid[] = "$Id: v_xchar.c,v 10.9 1996/10/23 09:31:52 bostic Exp $ (Berkeley) $Date: 1996/10/23 09:31:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -69,7 +69,7 @@ nodel:		msgq(sp, M_BERR, "206|No characters to delete");
 	    F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
 	    &vp->m_start, &vp->m_stop, 0))
 		return (1);
-	return (delete(sp, &vp->m_start, &vp->m_stop, 0));
+	return (del(sp, &vp->m_start, &vp->m_stop, 0));
 }
 
 /*
@@ -103,5 +103,5 @@ v_Xchar(sp, vp)
 	    F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
 	    &vp->m_start, &vp->m_stop, 0))
 		return (1);
-	return (delete(sp, &vp->m_start, &vp->m_stop, 0));
+	return (del(sp, &vp->m_start, &vp->m_stop, 0));
 }

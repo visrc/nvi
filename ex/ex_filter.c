@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_filter.c,v 10.33 1996/04/27 11:40:21 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:21 $";
+static const char sccsid[] = "$Id: ex_filter.c,v 10.34 1996/10/23 09:31:24 bostic Exp $ (Berkeley) $Date: 1996/10/23 09:31:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -264,7 +264,7 @@ err:		if (input[0] != -1)
 		/* Delete any lines written to the utility. */
 		if (rval == 0 && ftype == FILTER_BANG &&
 		    (cut(sp, NULL, fm, tm, CUT_LINEMODE) ||
-		    delete(sp, fm, tm, 1))) {
+		    del(sp, fm, tm, 1))) {
 			rval = 1;
 			break;
 		}

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_append.c,v 10.29 1996/06/28 15:29:54 bostic Exp $ (Berkeley) $Date: 1996/06/28 15:29:54 $";
+static const char sccsid[] = "$Id: ex_append.c,v 10.30 1996/10/23 09:30:52 bostic Exp $ (Berkeley) $Date: 1996/10/23 09:30:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -116,7 +116,7 @@ ex_aci(sp, cmdp, cmd)
 	 */
 	if (cmd == CHANGE && cmdp->addr1.lno != 0 &&
 	    (cut(sp, NULL, &cmdp->addr1, &cmdp->addr2, CUT_LINEMODE) ||
-	    delete(sp, &cmdp->addr1, &cmdp->addr2, 1)))
+	    del(sp, &cmdp->addr1, &cmdp->addr2, 1)))
 		return (1);
 
 	/*
