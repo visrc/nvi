@@ -16,7 +16,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 10.17 1995/10/31 11:04:17 bostic Exp $ (Berkeley) $Date: 1995/10/31 11:04:17 $";
+static char sccsid[] = "$Id: main.c,v 10.18 1995/11/05 13:07:26 bostic Exp $ (Berkeley) $Date: 1995/11/05 13:07:26 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -70,6 +70,12 @@ editor(gp, argc, argv, ttype, rows, cols)
 	/* Initialize the message routine, if not defined by the screen. */
 	if (gp->scr_msg == NULL)
 		gp->scr_msg = vs_msg;
+
+	/* Initialize the interpreter, if any. */
+#ifdef TCL_INTERP
+	if (tcl_init(gp))
+		return (1);
+#endif
 
 	/* Common global structure initialization. */
 	CIRCLEQ_INIT(&gp->dq);
