@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_main.c,v 8.26 1996/12/11 20:56:43 bostic Exp $ (Berkeley) $Date: 1996/12/11 20:56:43 $";
+static const char sccsid[] = "$Id: m_main.c,v 8.27 1996/12/13 11:38:42 bostic Exp $ (Berkeley) $Date: 1996/12/13 11:38:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,6 +21,7 @@ static const char sccsid[] = "$Id: m_main.c,v 8.26 1996/12/11 20:56:43 bostic Ex
 #include <Xm/MainW.h>
 
 #include <signal.h>
+#include <string.h>
 #include <stdlib.h>
 
 #include "../motif_l/vi_mextern.h"
@@ -130,7 +131,7 @@ static	void	create_top_level_shell( argc, argv )
 #endif
 {
     char	*ptr;
-    Widget	main_w, menu_b;
+    Widget	main_w, editor;
     Display	*display;
 
     /* X gets quite upset if the program name is not simple */
@@ -175,14 +176,21 @@ static	void	create_top_level_shell( argc, argv )
 				      );
 
     /* create the menubar */
-    menu_b = (Widget) vi_create_menubar( main_w );
-    XtManageChild( menu_b );
+    XtManageChild( (Widget) vi_create_menubar( main_w ) );
 
     /* add the VI widget from the library */
-    vi_create_editor( "editor", main_w, onexit );
+    editor = vi_create_editor( "editor", main_w, onexit );
 
     /* put it up */
     XtRealizeWidget( top_level );
+
+    /* We *may* want all keyboard events to go to the editing screen.
+     * If the editor is the only widget in the shell that accepts
+     * keyboard input, then the user will expect that he can type when
+     * the pointer is over the scrollbar (for example).  This call
+     * causes that to happen.
+     */
+    XtSetKeyboardFocus( top_level, XtNameToWidget( editor, "*screen" ) );
 }
 
 
