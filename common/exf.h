@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 5.27 1993/01/31 10:25:12 bostic Exp $ (Berkeley) $Date: 1993/01/31 10:25:12 $
+ *	$Id: exf.h,v 5.28 1993/02/12 11:14:19 bostic Exp $ (Berkeley) $Date: 1993/02/12 11:14:19 $
  */
 
 #ifndef _EXF_H_
@@ -71,6 +71,7 @@ typedef struct exf {
 	char *rptlabel;			/* How lines modified. */
 
 	char *name;			/* File name. */
+	char *tname;			/* Temporary file name. */
 	size_t nlen;			/* File name length. */
 
 #define	F_AUTOPRINT	0x0001		/* Autoprint flag. */
@@ -83,12 +84,14 @@ typedef struct exf {
 #define	F_NEWSESSION	0x0080		/* File has just been edited. */
 #define	F_NONAME	0x0100		/* File has no name. */
 #define	F_RDONLY	0x0200		/* File is read-only. */
-#define	F_RE_SET	0x0400		/* The file's RE has been set. */
-#define	F_READING	0x0800		/* Waiting on a read. */
-#define	F_REDRAW	0x1000		/* Repaint the screen. */
-#define	F_REFRESH	0x2000		/* Refresh the screen. */
-#define	F_RESIZE	0x4000		/* Resize the screen. */
+#define	F_READING	0x0400		/* Waiting on a read. */
+#define	F_REDRAW	0x0800		/* Repaint the screen. */
+#define	F_REFRESH	0x1000		/* Refresh the screen. */
+#define	F_RESIZE	0x2000		/* Resize the screen. */
+#define	F_RE_SET	0x4000		/* The file's RE has been set. */
 #define	F_UNDO		0x8000		/* No change since last undo. */
+
+#define	F_RETAINMASK	(F_IGNORE)	/* Flags to retain. */
 
 #define	FF_SET(ep, f)	(ep)->flags |= (f)
 #define	FF_CLR(ep, f)	(ep)->flags &= ~(f)
