@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 8.16 1993/11/07 13:43:50 bostic Exp $ (Berkeley) $Date: 1993/11/07 13:43:50 $
+ *	$Id: gs.h,v 8.17 1993/11/11 11:13:21 bostic Exp $ (Berkeley) $Date: 1993/11/11 11:13:21 $
  */
 
 typedef struct _gs {
@@ -34,6 +34,7 @@ typedef struct _gs {
 #define	MAX_BIT_SEQ	128		/* Max + 1 fast check character. */
 	struct list_entry seqq;		/* Linked list of maps, abbrevs. */
 	bitstr_t bit_decl(seqb, MAX_BIT_SEQ);
+	int	key_cnt;		/* Map expansion count. */
 
 #define	G_BELLSCHED	0x0001		/* Bell scheduled. */
 #define	G_ISFROMTTY	0x0002		/* Reading from a tty. */
