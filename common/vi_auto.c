@@ -186,15 +186,16 @@ __vi_marker_read(dbenv, recbuf, argpp)
 
 /*
  * PUBLIC: int __vi_cursor_log __P((DB_ENV *, DB_TXN *, DB_LSN *, u_int32_t,
- * PUBLIC:      db_recno_t, size_t));
+ * PUBLIC:      u_int32_t, db_recno_t, size_t));
  */
 int
 __vi_cursor_log(dbenv, txnid, ret_lsnp, flags,
-	lno, cno)
+	opcode, lno, cno)
 	DB_ENV *dbenv;
 	DB_TXN *txnid;
 	DB_LSN *ret_lsnp;
 	u_int32_t flags;
+	u_int32_t opcode;
 	db_recno_t lno;
 	size_t cno;
 {
@@ -218,6 +219,7 @@ __vi_cursor_log(dbenv, txnid, ret_lsnp, flags,
 		lsnp = &txnid->last_lsn;
 	logrec.size = sizeof(rectype) + sizeof(txn_num) + sizeof(DB_LSN)
 	    + sizeof(u_int32_t)
+	    + sizeof(u_int32_t)
 	    + sizeof(u_int32_t);
 	if ((ret = __os_malloc(dbenv, logrec.size, &logrec.data)) != 0)
 		return (ret);
@@ -232,6 +234,10 @@ __vi_cursor_log(dbenv, txnid, ret_lsnp, flags,
 
 	memcpy(bp, lsnp, sizeof(DB_LSN));
 	bp += sizeof(DB_LSN);
+
+	uinttmp = (u_int32_t)opcode;
+	memcpy(bp, &uinttmp, sizeof(uinttmp));
+	bp += sizeof(uinttmp);
 
 	uinttmp = (u_int32_t)lno;
 	memcpy(bp, &uinttmp, sizeof(uinttmp));
@@ -315,6 +321,7 @@ __vi_cursor_print(dbenv, dbtp, lsnp, notused2, notused3)
 	    (u_long)argp->txnid->txnid,
 	    (u_long)argp->prev_lsn.file,
 	    (u_long)argp->prev_lsn.offset);
+	(void)printf("\topcode: %lu\n", (u_long)argp->opcode);
 	(void)printf("\tlno: %lu\n", (u_long)argp->lno);
 	(void)printf("\tcno: %d\n", argp->cno);
 	(void)printf("\n");
@@ -351,6 +358,10 @@ __vi_cursor_read(dbenv, recbuf, argpp)
 
 	memcpy(&argp->prev_lsn, bp, sizeof(DB_LSN));
 	bp += sizeof(DB_LSN);
+
+	memcpy(&uinttmp, bp, sizeof(uinttmp));
+	argp->opcode = (u_int32_t)uinttmp;
+	bp += sizeof(uinttmp);
 
 	memcpy(&uinttmp, bp, sizeof(uinttmp));
 	argp->lno = (db_recno_t)uinttmp;
@@ -520,16 +531,17 @@ __vi_mark_read(dbenv, recbuf, argpp)
 
 /*
  * PUBLIC: int __vi_change_log __P((DB_ENV *, DB_TXN *, DB_LSN *, u_int32_t,
- * PUBLIC:      u_int32_t));
+ * PUBLIC:      u_int32_t, db_recno_t));
  */
 int
 __vi_change_log(dbenv, txnid, ret_lsnp, flags,
-	opcode)
+	opcode, lno)
 	DB_ENV *dbenv;
 	DB_TXN *txnid;
 	DB_LSN *ret_lsnp;
 	u_int32_t flags;
 	u_int32_t opcode;
+	db_recno_t lno;
 {
 	DBT logrec;
 	DB_LSN *lsnp, null_lsn;
@@ -550,6 +562,7 @@ __vi_change_log(dbenv, txnid, ret_lsnp, flags,
 	} else
 		lsnp = &txnid->last_lsn;
 	logrec.size = sizeof(rectype) + sizeof(txn_num) + sizeof(DB_LSN)
+	    + sizeof(u_int32_t)
 	    + sizeof(u_int32_t);
 	if ((ret = __os_malloc(dbenv, logrec.size, &logrec.data)) != 0)
 		return (ret);
@@ -566,6 +579,10 @@ __vi_change_log(dbenv, txnid, ret_lsnp, flags,
 	bp += sizeof(DB_LSN);
 
 	uinttmp = (u_int32_t)opcode;
+	memcpy(bp, &uinttmp, sizeof(uinttmp));
+	bp += sizeof(uinttmp);
+
+	uinttmp = (u_int32_t)lno;
 	memcpy(bp, &uinttmp, sizeof(uinttmp));
 	bp += sizeof(uinttmp);
 
@@ -644,6 +661,7 @@ __vi_change_print(dbenv, dbtp, lsnp, notused2, notused3)
 	    (u_long)argp->prev_lsn.file,
 	    (u_long)argp->prev_lsn.offset);
 	(void)printf("\topcode: %lu\n", (u_long)argp->opcode);
+	(void)printf("\tlno: %lu\n", (u_long)argp->lno);
 	(void)printf("\n");
 	__os_free(dbenv, argp, 0);
 	return (0);
@@ -681,6 +699,10 @@ __vi_change_read(dbenv, recbuf, argpp)
 
 	memcpy(&uinttmp, bp, sizeof(uinttmp));
 	argp->opcode = (u_int32_t)uinttmp;
+	bp += sizeof(uinttmp);
+
+	memcpy(&uinttmp, bp, sizeof(uinttmp));
+	argp->lno = (db_recno_t)uinttmp;
 	bp += sizeof(uinttmp);
 
 	*argpp = argp;

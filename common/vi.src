@@ -22,6 +22,7 @@ ARG	opcode		u_int32_t	lu
 END
 
 BEGIN	cursor		201
+ARG	opcode		u_int32_t	lu
 ARG	lno		db_recno_t	lu
 ARG	cno		size_t		d
 END
@@ -32,4 +33,5 @@ END
 
 BEGIN	change		203
 ARG	opcode		u_int32_t	lu
+ARG	lno		db_recno_t	lu
 END

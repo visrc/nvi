@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.189 2002/01/19 23:01:35 skimo Exp $
+dnl	$Id: configure.in,v 8.190 2002/03/02 23:47:03 skimo Exp $
 dnl Process this file with autoconf to produce a configure script.
 
 AC_INIT(../common/main.c)
@@ -1031,6 +1031,7 @@ if test "x$with_db_build" != "x"; then
 	esac
 fi;
 
+vi_cv_db4="no"
 if test "x$vi_cv_dbsrc" != "x"; then
 	AC_MSG_CHECKING(for DB 4)
 	AC_EGREP_CPP([^4],
@@ -1038,13 +1039,15 @@ if test "x$vi_cv_dbsrc" != "x"; then
 DB_VERSION_MAJOR],
 		[vi_cv_db4="yes"], [vi_cv_db4="no"])
 	AC_MSG_RESULT($vi_cv_db4)
-	if test "$vi_cv_db4" = "yes"; then
-		CPPFLAGS="-I$vi_cv_dbsrc/include $CPPFLAGS"
-		CPPFLAGS="-I$vi_cv_dbsrc/include_auto $CPPFLAGS"
-		CPPFLAGS="-I$with_db_build $CPPFLAGS"
-		AC_DEFINE(USE_DB4_LOGGING)
-		LTLIBOBJS="vi_auto.lo vi_rec.lo $LTLIBOBJS"
-	fi
+fi
+if test "$vi_cv_db4" = "yes"; then
+	CPPFLAGS="-I$vi_cv_dbsrc/include $CPPFLAGS"
+	CPPFLAGS="-I$vi_cv_dbsrc/include_auto $CPPFLAGS"
+	CPPFLAGS="-I$with_db_build $CPPFLAGS"
+	AC_DEFINE(USE_DB4_LOGGING)
+	LTLIBOBJS="log4.lo vi_auto.lo vi_rec.lo $LTLIBOBJS"
+else
+	LTLIBOBJS="log.lo $LTLIBOBJS"
 fi
 
 dnl We compile in nvi's RE routines unless the user specifies otherwise.

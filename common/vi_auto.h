@@ -15,6 +15,7 @@ typedef struct _vi_cursor_args {
 	u_int32_t type;
 	DB_TXN *txnid;
 	DB_LSN prev_lsn;
+	u_int32_t	opcode;
 	db_recno_t	lno;
 	size_t	cno;
 } __vi_cursor_args;
@@ -32,6 +33,7 @@ typedef struct _vi_change_args {
 	DB_TXN *txnid;
 	DB_LSN prev_lsn;
 	u_int32_t	opcode;
+	db_recno_t	lno;
 } __vi_change_args;
 
 #endif

@@ -84,7 +84,6 @@ libvi_la_SOURCES = \
 	$(visrcdir)/common/gs.c \
 	$(visrcdir)/common/key.c \
 	$(visrcdir)/common/db.c \
-	$(visrcdir)/common/log.c \
 	$(visrcdir)/common/main.c \
 	$(visrcdir)/common/mark.c \
 	$(visrcdir)/common/msg.c \
@@ -148,6 +147,8 @@ EXTRA_libvi_la_SOURCES = \
 	$(visrcdir)/regex/regex2.h \
 	$(visrcdir)/regex/utils.h \
 	$(visrcdir)/common/dldb.c \
+	$(visrcdir)/common/log.c \
+	$(visrcdir)/common/log4.c \
 	$(visrcdir)/clib/bsearch.c \
 	$(visrcdir)/clib/env.c \
 	$(visrcdir)/clib/gethostname.c \
