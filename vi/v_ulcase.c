@@ -6,12 +6,14 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ulcase.c,v 5.9 1992/06/05 11:03:25 bostic Exp $ (Berkeley) $Date: 1992/06/05 11:03:25 $";
+static char sccsid[] = "$Id: v_ulcase.c,v 5.10 1992/10/10 14:03:57 bostic Exp $ (Berkeley) $Date: 1992/10/10 14:03:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
-#include <stddef.h>
+
 #include <ctype.h>
+#include <limits.h>
+#include <stddef.h>
 
 #include "vi.h"
 #include "vcmd.h"
@@ -30,12 +32,12 @@ v_ulcase(vp, fm, tm, rp)
 	MARK *fm, *tm, *rp;
 {
 	register int ch;
-	register char *p;
+	register u_char *p;
 	size_t cno, len;
 	recno_t lno;
 	u_long cnt;
 	int change;
-	char *start;
+	u_char *start;
 
 	lno = fm->lno;
 	cno = fm->cno;
@@ -53,7 +55,6 @@ v_ulcase(vp, fm, tm, rp)
 					rp->cno = cno;
 					return (1);
 				}
-				scr_lchange(lno, start, len);
 			}
 			GETLINE(start, ++lno, len);
 			if (start == NULL) {
@@ -80,7 +81,6 @@ v_ulcase(vp, fm, tm, rp)
 	if (change) {
 		if (file_sline(curf, lno, start, len))
 			return (1);
-		scr_lchange(lno, start, len);
 	}
 	return (0);
 }
