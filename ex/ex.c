@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.73 1993/12/02 21:22:35 bostic Exp $ (Berkeley) $Date: 1993/12/02 21:22:35 $";
+static char sccsid[] = "$Id: ex.c,v 8.74 1993/12/03 15:40:41 bostic Exp $ (Berkeley) $Date: 1993/12/03 15:40:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -251,9 +251,8 @@ loop:	if (nl) {
 	/* Initialize the structure passed to underlying functions. */
 	memset(&exc, 0, sizeof(EXCMDARG));
 	exp = EXP(sp);
-
-	/* Initialize argv structure. */
-	exp->argsoff = 0;
+	if (argv_init(sp, ep, &exc))
+		goto err;
 
 	/* Parse command addresses. */
 	if (ep_range(sp, ep, &exc, &cmd, &cmdlen))
@@ -677,7 +676,7 @@ two:		switch (exc.addrcnt) {
 		 * so the correct test is for a length of 0, not for the
 		 * argc > 0.
 		 */
-		if (cmdlen == 0 && *p != 'S' && *p != 's')
+		if (cmdlen == 0 && *p != '!' && *p != 'S' && *p != 's')
 			break;
 
 		switch (*p) {
@@ -962,10 +961,6 @@ addr2:	switch (exc.addrcnt) {
 
 	/* Final setup for the command. */
 	exc.cmd = cp;
-	exc.argc = exp->argsoff;
-	exc.argv = exp->args;
-	if (exp->args != NULL)
-		exp->args[exp->argsoff] = NULL;
 
 #if defined(DEBUG) && 0
 	TRACE(sp, "ex_cmd: %s", exc.cmd->name);

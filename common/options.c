@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.28 1993/12/02 10:35:06 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:35:06 $";
+static char sccsid[] = "$Id: options.c,v 8.29 1993/12/03 15:40:26 bostic Exp $ (Berkeley) $Date: 1993/12/03 15:40:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -207,19 +207,23 @@ int
 opts_init(sp)
 	SCR *sp;
 {
-	ARGS *argv[2], a;
+	ARGS *argv[2], a, b;
 	OPTLIST const *op;
 	u_long v;
 	int cnt;
 	char *s, b1[1024];
 
 	a.bp = b1;
+	a.len = 0;
+	b.bp = NULL;
+	b.len = 0;
 	argv[0] = &a;
-	argv[1] = NULL;
+	argv[1] = &b;
 
 #define	SET_DEF(opt, str) {						\
 	if (str != b1)		/* GCC puts strings in text-space. */	\
 		(void)strcpy(b1, str);					\
+	a.len = strlen(b1);						\
 	if (opts_set(sp, argv)) {					\
 		msgq(sp, M_ERR,						\
 		    "Unable to set default %s option", optlist[opt]);	\
@@ -301,7 +305,7 @@ opts_set(sp, argv)
 	char *endp, *equals, *name, *p;
 	
 	disp = NO_DISPLAY;
-	for (rval = 0; *argv; ++argv) {
+	for (rval = 0; (*argv)->len != 0; ++argv) {
 		/*
 		 * The historic vi dumped the options for each occurrence of
 		 * "all" in the set list.  Puhleeze.

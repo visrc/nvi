@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 8.15 1993/12/02 10:51:11 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:51:11 $";
+static char sccsid[] = "$Id: ex_read.c,v 8.16 1993/12/03 15:40:50 bostic Exp $ (Berkeley) $Date: 1993/12/03 15:40:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -47,53 +47,53 @@ ex_read(sp, ep, cmdp)
 	 * reason.
 	 */
 	if (F_ISSET(cmdp, E_FORCE)) {
-		if (cmdp->argv[0]->len == '\0') {
-			msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
-			return (1);
-		}
+		/* Expand the user's argument. */
 		if (argv_exp1(sp, ep,
 		    cmdp, cmdp->argv[0]->bp, cmdp->argv[0]->len, 0))
 			return (1);
+
+		/* If argc still 1, there wasn't anything to expand. */
+		if (cmdp->argc == 1) {
+			msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
+			return (1);
+		}
 		if (F_ISSET(cmdp, E_MODIFY) && IN_VI_MODE(sp)) {
-			len = cmdp->argv[0]->len;
+			len = cmdp->argv[1]->len;
 			GET_SPACE(sp, bp, blen, len + 2);
 			bp[0] = '!';
-			memmove(bp + 1, cmdp->argv[0], cmdp->argv[0]->len + 1);
+			memmove(bp + 1, cmdp->argv[1], cmdp->argv[1]->len + 1);
 			(void)sp->s_busy(sp, bp);
 			FREE_SPACE(sp, bp, blen);
 		}
 		if (filtercmd(sp, ep,
-		    &cmdp->addr1, NULL, &rm, cmdp->argv[0]->bp, FILTER_READ))
+		    &cmdp->addr1, NULL, &rm, cmdp->argv[1]->bp, FILTER_READ))
 			return (1);
 		sp->lno = rm.lno;
 		return (0);
 	}
 
-	/* If no file arguments, read the alternate file. */
-	if (cmdp->argv[0]->len == 0) {
-		if (sp->alt_name == NULL) {
-			msgq(sp, M_ERR,
-			    "No default filename from which to read.");
-			return (1);
-		}
-		name = sp->alt_name;
-	} else {
-		if (argv_exp2(sp, ep,
-		    cmdp, cmdp->argv[0]->bp, cmdp->argv[0]->len, 0))
-			return (1);
+	/* Expand the user's argument. */
+	if (argv_exp2(sp, ep,
+	    cmdp, cmdp->argv[0]->bp, cmdp->argv[0]->len, 0))
+		return (1);
 
-		switch (cmdp->argc) {
-		case 0:
-			name = FILENAME(sp->frp);
-			break;
-		case 1:
-			name = cmdp->argv[0]->bp;
+	switch (cmdp->argc) {
+	case 1:
+		/* Nothing to expand, read the current file. */
+		name = FILENAME(sp->frp);
+		if (sp->alt_name == NULL)
 			set_alt_name(sp, name);
-			break;
-		default:
-			msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
-			return (1);
-		}
+		break;
+	case 2:
+		/* One new argument, read it. */
+		name = cmdp->argv[1]->bp;
+		break;
+	default:
+		/* If expanded to more than one argument, object. */
+		msgq(sp, M_ERR, "%s expanded into too many file names",
+		    cmdp->argv[0]->bp);
+		msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
+		return (1);
 	}
 
 	/*

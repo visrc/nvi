@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 8.21 1993/12/02 19:49:52 bostic Exp $ (Berkeley) $Date: 1993/12/02 19:49:52 $";
+static char sccsid[] = "$Id: ex_argv.c,v 8.22 1993/12/03 15:40:45 bostic Exp $ (Berkeley) $Date: 1993/12/03 15:40:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,39 +21,30 @@ static char sccsid[] = "$Id: ex_argv.c,v 8.21 1993/12/02 19:49:52 bostic Exp $ (
 #include "vi.h"
 #include "excmd.h"
 
-static int argv_allocate __P((SCR *, int));
+static int argv_alloc __P((SCR *, size_t));
 static int argv_fexp __P((SCR *, EXCMDARG *,
 	       char *, size_t, char *, size_t *, char **, size_t *, int));
 static int argv_sexp __P((SCR *, char *, size_t, size_t *));
 
 /*
- * Allocate room for another argument, always leaving enough
- * room for a NULL pointer.
+ * argv_init --
+ *	Build  a prototype arguments list.
  */
-#define	ARGALLOC(l) {							\
-	ARGS *__ap;							\
-	size_t __off = exp->argsoff;					\
-	if ((exp->argscnt == 0 ||					\
-	    __off + 2 >= exp->argscnt - 1) && argv_allocate(sp, __off))	\
-		return (1);						\
-	if (exp->args[__off] == NULL &&					\
-	    (exp->args[__off] = calloc(1, sizeof(ARGS))) == NULL) {	\
-		exp->args[__off] = NULL;				\
-		goto mem;						\
-	}								\
-	__ap = exp->args[__off];					\
-	if (__ap->blen < (l) + 1) {					\
-		__ap->blen = (l) + 1;					\
-		if ((__ap->bp = realloc(__ap->bp,			\
-		    __ap->blen * sizeof(CHAR_T))) == NULL) {		\
-			__ap->bp = NULL;				\
-			__ap->blen = 0;					\
-			F_CLR(__ap, A_ALLOCATED);			\
-mem:			msgq(sp, M_SYSERR, NULL);			\
-			return (1);					\
-		}							\
-		F_SET(__ap, A_ALLOCATED);				\
-	}								\
+int
+argv_init(sp, ep, excp)
+	SCR *sp;
+	EXF *ep;
+	EXCMDARG *excp;
+{
+	EX_PRIVATE *exp;
+
+	exp = EXP(sp);
+	exp->argsoff = 0;
+	argv_alloc(sp, 1);
+
+	excp->argv = exp->args;
+	excp->argc = exp->argsoff;
+	return (0);
 }
 
 /*
@@ -71,11 +62,13 @@ argv_exp0(sp, ep, excp, cmd, cmdlen)
 	EX_PRIVATE *exp;
 
 	exp = EXP(sp);
-	ARGALLOC(cmdlen);
+	argv_alloc(sp, cmdlen);
 	memmove(exp->args[exp->argsoff]->bp, cmd, cmdlen);
 	exp->args[exp->argsoff]->bp[cmdlen] = '\0';
 	exp->args[exp->argsoff]->len = cmdlen;
 	++exp->argsoff;
+	excp->argv = exp->args;
+	excp->argc = exp->argsoff;
 	return (0);
 }
 
@@ -100,17 +93,18 @@ argv_exp1(sp, ep, excp, cmd, cmdlen, is_bang)
 
 	len = 0;
 	exp = EXP(sp);
-	if (argv_fexp(sp, excp, cmd, cmdlen, bp, &len, &bp, &blen, is_bang) ||
-	    exp->argscnt < 2 && argv_allocate(sp, 0)) {
+	if (argv_fexp(sp, excp, cmd, cmdlen, bp, &len, &bp, &blen, is_bang)) {
 		FREE_SPACE(sp, bp, blen);
 		return (1);
 	}
 
-	ARGALLOC(len);
+	argv_alloc(sp, len);
 	memmove(exp->args[exp->argsoff]->bp, bp, len);
 	exp->args[exp->argsoff]->bp[len] = '\0';
 	exp->args[exp->argsoff]->len = len;
 	++exp->argsoff;
+	excp->argv = exp->args;
+	excp->argc = exp->argsoff;
 
 	FREE_SPACE(sp, bp, blen);
 	return (0);
@@ -235,7 +229,7 @@ argv_exp3(sp, ep, excp, cmd, cmdlen)
 		 *
 		 * Lose quote chars.
 		 */
-		ARGALLOC(len);
+		argv_alloc(sp, len);
 		off = exp->argsoff;
 		exp->args[off]->len = len;
 		for (p = exp->args[off]->bp; len > 0; --len, *p++ = *ap++)
@@ -246,6 +240,8 @@ argv_exp3(sp, ep, excp, cmd, cmdlen)
 			}
 		*p = '\0';
 	}
+	excp->argv = exp->args;
+	excp->argc = exp->argsoff;
 
 #if defined(DEBUG) && 0
 	for (cnt = 0; cnt < exp->argsoff; ++cnt)
@@ -351,28 +347,67 @@ ins_ch:			++len;
 }
 
 /*
- * argv_allocate --
+ * argv_alloc --
  *	Make more space for arguments.
  */
 static int
-argv_allocate(sp, off)
+argv_alloc(sp, len)
 	SCR *sp;
-	int off;
+	size_t len;
 {
+	ARGS *ap;					
 	EX_PRIVATE *exp;
-	int cnt;
+	int cnt, off;
 
+	/*
+	 * Allocate room for another argument, always leaving
+	 * enough room for an ARGS structure with a length of 0.
+	 */
 #define	INCREMENT	20
 	exp = EXP(sp);
-	cnt = exp->argscnt + INCREMENT;
-	if ((exp->args = realloc(exp->args, cnt * sizeof(ARGS *))) == NULL) {
-		(void)argv_free(sp);
-		msgq(sp, M_SYSERR, NULL);
-		return (1);
+	off = exp->argsoff;
+	if (exp->argscnt == 0 || off + 2 >= exp->argscnt - 1) {
+		cnt = exp->argscnt + INCREMENT;
+		if ((exp->args =
+		    realloc(exp->args, cnt * sizeof(ARGS *))) == NULL) {
+			(void)argv_free(sp);
+			goto mem;
+		}
+		memset(&exp->args[off], 0, INCREMENT * sizeof(ARGS *));
+		exp->argscnt = cnt;
 	}
-	memset(&exp->args[off], 0, INCREMENT * sizeof(ARGS *));
-	exp->argscnt = cnt;
-	return (0);
+
+	/* First argument. */
+	if (exp->args[off] == NULL &&			
+	    (exp->args[off] = calloc(1, sizeof(ARGS))) == NULL) {
+		exp->args[off] = NULL;		
+		goto mem;				
+	}						
+
+	/* First argument buffer. */
+	ap = exp->args[off];			
+	ap->len = 0;					
+	if (ap->blen < len + 1) {			
+		ap->blen = len + 1;			
+		if ((ap->bp = realloc(ap->bp,	
+		    ap->blen * sizeof(CHAR_T))) == NULL) {
+			ap->bp = NULL;		
+			ap->blen = 0;			
+			F_CLR(ap, A_ALLOCATED);	
+mem:			msgq(sp, M_SYSERR, NULL);	
+			return (1);			
+		}					
+		F_SET(ap, A_ALLOCATED);		
+	}						
+
+	/* Second argument. */
+	if (exp->args[++off] == NULL &&		
+	    (exp->args[off] = calloc(1, sizeof(ARGS))) == NULL) {
+		exp->args[off] = NULL;		
+		goto mem;				
+	}						
+	/* 0 length serves as end-of-argument marker. */
+	exp->args[off]->len = 0;			
 }
 
 /*

@@ -4,15 +4,18 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: args.h,v 8.1 1993/12/02 10:27:47 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:27:47 $
+ *	$Id: args.h,v 8.2 1993/12/03 15:40:22 bostic Exp $ (Berkeley) $Date: 1993/12/03 15:40:22 $
  */
 
 /*
  * Structure for building "argc/argv" vector of arguments.
  *
  * !!!
- * All arguments are nul terminated as well as having an
- * associated length.  The argument vector is NULL terminated.
+ * All arguments are nul terminated as well as having an associated length.
+ * The argument vector is NOT necessarily NULL terminated.  The proper way
+ * to check the number of arguments is to use the argc value in the EXCMDARG
+ * structure or to walk the array until an ARGS structure with a length of 0
+ * is found.
  */
 typedef struct _args {
 	CHAR_T	*bp;		/* Argument. */

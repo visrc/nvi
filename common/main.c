@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.51 1993/12/02 22:43:55 bostic Exp $ (Berkeley) $Date: 1993/12/02 22:43:55 $";
+static char sccsid[] = "$Id: main.c,v 8.52 1993/12/03 15:40:23 bostic Exp $ (Berkeley) $Date: 1993/12/03 15:40:23 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -205,13 +205,16 @@ main(argc, argv)
 		F_SET(sp, S_EXSILENT);
 	}
 	if (wsizearg != NULL) {
-		ARGS *av[2], a;
-		a.bp = path;
-		av[0] = &a;
-		av[1] = NULL;
+		ARGS *av[2], a, b;
 		if (strtol(optarg, &p, 10) < 0 || *p)
 			errx(1, "illegal window size -- %s", optarg);
 		(void)snprintf(path, sizeof(path), "window=%s", optarg);
+		a.bp = path;
+		a.len = strlen(path);
+		b.bp = NULL;
+		b.len = 0;
+		av[0] = &a;
+		av[1] = &b;
 		if (opts_set(sp, av))
 			 msgq(sp, M_ERR,
 			     "Unable to set command line window option");

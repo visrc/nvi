@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 8.16 1993/12/03 08:24:37 bostic Exp $ (Berkeley) $Date: 1993/12/03 08:24:37 $";
+static char sccsid[] = "$Id: ex_write.c,v 8.17 1993/12/03 15:40:53 bostic Exp $ (Berkeley) $Date: 1993/12/03 15:40:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -106,7 +106,7 @@ exwr(sp, ep, cmdp, cmd)
 {
 	EX_PRIVATE *exp;
 	MARK rm;
-	int flags, off;
+	int flags;
 	char *name, *p;
 
 	/* All write commands can have an associated '!'. */
@@ -114,9 +114,11 @@ exwr(sp, ep, cmdp, cmd)
 	if (F_ISSET(cmdp, E_FORCE))
 		LF_SET(FS_FORCE);
 
-	/* If no more arguments, just write the file back. */
+	/* Skip any leading whitespace. */
 	if (cmdp->argc != 0)
 		for (p = cmdp->argv[0]->bp; *p && isblank(*p); ++p);
+
+	/* If no arguments, just write the file back. */
 	if (cmdp->argc == 0 || *p == '\0') {
 		if (F_ISSET(cmdp, E_ADDR2_ALL))
 			LF_SET(FS_ALL);
@@ -132,10 +134,11 @@ exwr(sp, ep, cmdp, cmd)
 			msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
 			return (1);
 		}
+		/* Expand the argument. */
 		if (argv_exp1(sp, ep, cmdp, p, strlen(p), 0))
 			return (1);
 		if (filtercmd(sp, ep, &cmdp->addr1, &cmdp->addr2,
-		    &rm, cmdp->argv[exp->argsoff - 1]->bp, FILTER_WRITE))
+		    &rm, cmdp->argv[1]->bp, FILTER_WRITE))
 			return (1);
 		sp->lno = rm.lno;
 		return (0);
@@ -150,19 +153,27 @@ exwr(sp, ep, cmdp, cmd)
 	}
 
 	/* Build an argv so we get an argument count and file expansion. */
-	off = exp->argsoff;
 	if (argv_exp2(sp, ep, cmdp, p, strlen(p), 0))
 		return (1);
 
-	switch (exp->argsoff - off) {
-	case 0:
+	switch (cmdp->argc) {
+	case 1:
+		/*
+		 * Nothing to expand, write the current file. 
+		 * XXX
+		 * Should never happen, already checked this case.
+		 */
 		name = NULL;
 		break;
-	case 1:
+	case 2:
+		/* One new argument, write it. */
 		name = cmdp->argv[exp->argsoff - 1]->bp;
 		set_alt_name(sp, name);
 		break;
 	default:
+		/* If expanded to more than one argument, object. */
+		msgq(sp, M_ERR, "%s expanded into too many file names",
+		    cmdp->argv[0]->bp);
 		msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
 		return (1);
 	}

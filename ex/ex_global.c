@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 8.23 1993/12/02 10:49:42 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:49:42 $";
+static char sccsid[] = "$Id: ex_global.c,v 8.24 1993/12/03 15:40:49 bostic Exp $ (Berkeley) $Date: 1993/12/03 15:40:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -74,11 +74,11 @@ global(sp, ep, cmdp, cmd)
 	 * alphanumeric to serve as the global command delimiter.
 	 */
 	for (p = cmdp->argv[0]->bp; isblank(*p); ++p);
-	delim = *p++;
-	if (isalnum(delim)) {
+	if (*p == '\0' || isalnum(*p)) {
 		msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
 		return (1);
 	}
+	delim = *p++;
 
 	/*
 	 * Get the pattern string, toss escaped characters.

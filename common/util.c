@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.29 1993/12/02 10:37:51 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:37:51 $";
+static char sccsid[] = "$Id: util.c,v 8.30 1993/12/03 15:40:29 bostic Exp $ (Berkeley) $Date: 1993/12/03 15:40:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -350,7 +350,7 @@ set_window_size(sp, set_row, ign_env)
 	struct winsize win;
 	size_t col, row;
 	int user_set;
-	ARGS *argv[2], a;
+	ARGS *argv[2], a, b;
 	char *s, buf[2048];
 
 	/*
@@ -404,21 +404,23 @@ set_window_size(sp, set_row, ign_env)
 		row = set_row;
 
 	a.bp = buf;
+	b.bp = NULL;
+	b.len = 0;
 	argv[0] = &a;
-	argv[1] = NULL;
+	argv[1] = &b;;
 
 	/*
 	 * Tell the options code that the screen size has changed.
 	 * Since the user didn't do the set, clear the set bits.
 	 */
 	user_set = F_ISSET(&sp->opts[O_LINES], OPT_SET);
-	(void)snprintf(buf, sizeof(buf), "ls=%u", row);
+	a.len = snprintf(buf, sizeof(buf), "ls=%u", row);
 	if (opts_set(sp, argv))
 		return (1);
 	if (user_set)
 		F_CLR(&sp->opts[O_LINES], OPT_SET);
 	user_set = F_ISSET(&sp->opts[O_COLUMNS], OPT_SET);
-	(void)snprintf(buf, sizeof(buf), "co=%u", col);
+	a.len = snprintf(buf, sizeof(buf), "co=%u", col);
 	if (opts_set(sp, argv))
 		return (1);
 	if (user_set)
