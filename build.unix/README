@@ -1,4 +1,4 @@
-#	$Id: README,v 8.14 1996/03/20 20:30:09 bostic Exp $ (Berkeley) $Date: 1996/03/20 20:30:09 $
+#	$Id: README,v 8.15 1996/03/29 20:38:17 bostic Exp $ (Berkeley) $Date: 1996/03/29 20:38:17 $
 
 Nvi uses the GNU autoconf program for configuration and compilation.  You
 should enter:
@@ -11,8 +11,8 @@ and nvi will configure the system and build two binaries: nex and nvi.
 There are options that you can specify to the ./configure command.  See
 the next section  for a description of these options.
 
-If you want to rebuild nvi, for example, because you change your mind as
-to the curses library that you want to use, enter:
+If you want to rebuild or reconfigure nvi, for example, because you change
+your mind as to the curses library that you want to use, enter:
 
 	make distclean<carriage-return>
 
