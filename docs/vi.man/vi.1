@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.1,v 8.34 1996/04/27 13:44:33 bostic Exp $ (Berkeley) $Date: 1996/04/27 13:44:33 $
+.\"     $Id: vi.1,v 8.35 1996/05/08 16:28:24 bostic Exp $ (Berkeley) $Date: 1996/05/08 16:28:24 $
 .\"
 .Dd "%Q%"
 .Dt EX/VI 1
@@ -691,10 +691,16 @@ Display the selected lines, each preceded with its line number.
 .It Sy "@ buffer"
 .It Sy "* buffer"
 Execute a buffer.
+.It Sy "[line] a[ppend][!]"
+The input text is appended after the specified line.
+.It Sy "[range] c[hange][!] [count]"
+The input text replaces the specified range.
+.It Sy "cs[cope] add | find | help | kill | reset"
+Execute a Cscope command.
 .It Sy "[range] d[elete] [buffer] [count] [flags]"
 Delete the lines from the file.
-.It Sy "di[splay] b[uffers] | s[creens] | t[ags]"
-Display buffers, screens or tags.
+.It Sy "di[splay] b[uffers] | c[onnections] | s[creens] | t[ags]"
+Display buffers, Cscope connections, screens or tags.
 .It Sy "e[dit][!] [+cmd] [file]"
 .It Sy "ex[!] [+cmd] [file]"
 Edit a different file.
@@ -779,8 +785,12 @@ Make substitutions.
 Suspend the edit session.
 .It Sy "ta[g][!] tagstring"
 Edit the file containing the specified tag.
+.It Sy "tagn[ext][!]"
+Edit the file containing the next context for the current tag.
 .It Sy "tagp[op][!] [file | number]"
 Pop to the specified tag in the tags stack.
+.It Sy "tagp[rev][!]"
+Edit the file containing the previous context for the current tag.
 .It Sy "unm[ap][!] lhs"
 Unmap a mapped string.
 .It Sy "ve[rsion]"
