@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 8.45 1994/08/08 12:03:29 bostic Exp $ (Berkeley) $Date: 1994/08/08 12:03:29 $";
+static char sccsid[] = "$Id: vs_split.c,v 8.46 1994/08/08 22:03:23 bostic Exp $ (Berkeley) $Date: 1994/08/08 22:03:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -361,10 +361,18 @@ svi_join(csp, nsp)
 	/* Reset the length of the default scroll. */
 	sp->defscroll = sp->t_maxrows / 2;
 
-	/* Save old screen information. */
-	csp->frp->lno = csp->lno;
-	csp->frp->cno = csp->cno;
-	F_SET(csp->frp, FR_CURSORSET);
+	/*
+	 * Save the old screen's cursor information.
+	 *
+	 * XXX
+	 * If called after file_end(), if the underlying file was a tmp
+	 * file it may have gone away.
+	 */
+	if (csp->frp != NULL) {
+		csp->frp->lno = csp->lno;
+		csp->frp->cno = csp->cno;
+		F_SET(csp->frp, FR_CURSORSET);
+	}
 
 	*nsp = sp;
 	return (0);
