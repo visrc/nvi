@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_init.c,v 8.11 1994/01/09 16:45:46 bostic Exp $ (Berkeley) $Date: 1994/01/09 16:45:46 $";
+static char sccsid[] = "$Id: ex_init.c,v 8.12 1994/03/03 10:30:51 bostic Exp $ (Berkeley) $Date: 1994/03/03 10:30:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -138,11 +138,6 @@ int
 ex_end(sp)
 	SCR *sp;
 {
-	/* Save the cursor location. */
-	sp->frp->lno = sp->lno;
-	sp->frp->cno = sp->cno;
-	F_SET(sp->frp, FR_CURSORSET);
-
 	return (0);
 }
 
