@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_write.c,v 10.29 1996/07/09 20:29:36 bostic Exp $ (Berkeley) $Date: 1996/07/09 20:29:36 $";
+static const char sccsid[] = "$Id: ex_write.c,v 10.30 1996/07/12 20:55:27 bostic Exp $ (Berkeley) $Date: 1996/07/12 20:55:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -256,7 +256,7 @@ exwr(sp, cmdp, cmd)
 			F_SET(sp->frp, FR_NAMECHANGE | FR_EXNAMED);
 
 			/* Notify the screen. */
-			(void)sp->gp->scr_rename(sp);
+			(void)sp->gp->scr_rename(sp, sp->frp->name, 1);
 		} else
 			set_alt_name(sp, name);
 		break;
