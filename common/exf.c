@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.19 1993/09/16 09:30:16 bostic Exp $ (Berkeley) $Date: 1993/09/16 09:30:16 $";
+static char sccsid[] = "$Id: exf.c,v 8.20 1993/09/27 11:23:10 bostic Exp $ (Berkeley) $Date: 1993/09/27 11:23:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -460,16 +460,12 @@ file_write(sp, ep, fm, tm, fname, flags)
 		return (1);
 	}
 
-	/* If not forced and not appending ... */
-	if (!LF_ISSET(FS_FORCE | FS_APPEND)) {
-		/*
-		 * Don't overwrite anything but the original file or a
-		 * nonexistent file unless the "writeany" option is set.
-		 */
-		if (!O_ISSET(sp, O_WRITEANY) &&
-		    (fname != NULL && !stat(fname, &sb) ||
+	/* If not forced, not appending, and "writeany" not set ... */
+	if (!LF_ISSET(FS_FORCE | FS_APPEND) && !O_ISSET(sp, O_WRITEANY)) {
+		/* Don't overwrite anything but the original file. */
+		if (fname != NULL && !stat(fname, &sb) ||
 		    F_ISSET(sp->frp, FR_NAMECHANGED) &&
-		    !stat(sp->frp->fname, &sb))) {
+		    !stat(sp->frp->fname, &sb)) {
 			if (fname == NULL)
 				fname = sp->frp->fname;
 			if (LF_ISSET(FS_POSSIBLE))
@@ -481,7 +477,7 @@ file_write(sp, ep, fm, tm, fname, flags)
 			return (1);
 		}
 
-		/* Don't overwrite anything with a partial file. */
+		/* Don't write just part of any existing file. */
 		if (!LF_ISSET(FS_ALL) &&
 		    (fname != NULL && !stat(fname, &sb) ||
 		    !stat(sp->frp->fname, &sb))) {
