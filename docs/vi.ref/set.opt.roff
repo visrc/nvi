@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: set.opt.roff,v 8.16 1994/05/07 19:48:43 bostic Exp $ (Berkeley) $Date: 1994/05/07 19:48:43 $
+.\"     $Id: set.opt.roff,v 8.17 1994/05/21 11:01:38 bostic Exp $ (Berkeley) $Date: 1994/05/21 11:01:38 $
 .\"
 #ifdef REFERENCE
 .de SP
@@ -713,13 +713,18 @@ if it is not set.
 .SP
 .It Sy "report [5]"
 #ifdef MANUAL
-Set the number of lines about which the editor reports changes.
+Set the number of lines about which the editor reports changes
+or yanks.
 #endif
 #ifdef REFERENCE
-Set the threshold of the number of lines that need to be changed
-before a message will be displayed to the user.
-The value is the largest value about which the editor is silent,
-i.e. by default, 6 lines must change before the user is notified.
+Set the threshold of the number of lines that need to be changed or
+yanked before a message will be displayed to the user.
+For everything but the yank command, the value is the largest value
+about which the editor is silent, i.e. by default, 6 lines must be
+deleted before the user is notified.
+However, if the number of lines yanked is greater than
+.Em "or equal to"
+the set value, it is reported to the user.
 #endif
 .SP
 .It Sy "ruler [off]"
