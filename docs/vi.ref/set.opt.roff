@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: set.opt.roff,v 8.41 1995/01/31 12:30:32 bostic Exp $ (Berkeley) $Date: 1995/01/31 12:30:32 $
+.\"     $Id: set.opt.roff,v 8.42 1995/09/29 12:21:59 bostic Exp $ (Berkeley) $Date: 1995/09/29 12:21:59 $
 .\"
 .SH 1 "Set Options"
 .pp
@@ -355,6 +355,28 @@ This option causes all regular expressions to be treated as POSIX
 1003.2 Extended Regular Expressions (which are similar to historic
 .XR egrep 1
 style expressions).
+.KY filec
+.IP "filec [off]"
+This option adds the ability to do shell expansion when entering input
+on the colon command line.
+When this option is set,
+and
+.LI <escape>
+is entered on the colon command line,
+the <blank> delimited string immediately before the cursor is expanded
+as if it were followed by a
+.LI \&*
+character, and file name expansion for the
+.CO ex
+edit command was done.
+If no match is found, the screen is flashed and text input resumed.
+If a single match results, that match replaces the expanded text.
+In addition, if the single match is for a directory, a
+.LI \&/
+character is appended and file completion is repeated.
+If more than a single match results, any unique prefix shared by the
+matches replaces the expanded text, the matches are displayed, and
+text input resumed.
 .KY flash
 .IP "flash [on]"
 This option causes the screen to flash instead of beeping the keyboard,

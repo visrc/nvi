@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: vi.cmd.roff,v 8.46 1995/02/17 16:42:58 bostic Exp $ (Berkeley) $Date: 1995/02/17 16:42:58 $
+.\"	$Id: vi.cmd.roff,v 8.47 1995/09/29 12:22:02 bostic Exp $ (Berkeley) $Date: 1995/09/29 12:22:02 $
 .\"
 .SH 1 "Vi Description"
 .pp
@@ -3049,7 +3049,13 @@ character will be displayed immediately as a placeholder,
 but will be replaced by the next character.
 .KY <escape>
 .IP <escape>
-Resolve all text input into the file, and return to command mode.
+If on the colon command line, and the
+.OP filec
+edit option is set, behave as described for that option.
+Otherwise, if on the colon command line,
+execute the command.
+Otherwise, if not on the colon command line,
+resolve all text input into the file, and return to command mode.
 .KY "<line erase>"
 .IP "<line erase>"
 Erase the current line.
