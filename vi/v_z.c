@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_z.c,v 8.2 1993/08/27 11:44:35 bostic Exp $ (Berkeley) $Date: 1993/08/27 11:44:35 $";
+static char sccsid[] = "$Id: v_z.c,v 8.3 1993/09/09 10:28:08 bostic Exp $ (Berkeley) $Date: 1993/09/09 10:28:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -44,29 +44,54 @@ v_z(sp, ep, vp, fm, tm, rp)
 	if (F_ISSET(vp, VC_C2SET) && set_window_size(sp, vp->count2, 0))
 		return (1);
 
-	switch(vp->character) {
-	case '.':
-		if (sp->s_fill(sp, ep, lno, P_MIDDLE))
-			return (1);
-		break;
-	case '-':
+	/* Set default cursor values. */
+	rp->lno = lno;
+	rp->cno = fm->cno;
+
+	switch (vp->character) {
+	case '-':		/* Put the line at the bottom. */
 		if (sp->s_fill(sp, ep, lno, P_BOTTOM))
 			return (1);
 		break;
-	default:
-		if (sp->special[vp->character] == K_CR) {
-			if (sp->s_fill(sp, ep, lno, P_TOP))
-				return (1);
-			break;
+	case '.':		/* Put the line in the middle. */
+		if (sp->s_fill(sp, ep, lno, P_MIDDLE))
+			return (1);
+		break;
+	default:		/* Put the line at the top for <cr>. */
+		if (sp->special[vp->character] != K_CR &&
+		    sp->special[vp->character] != K_NL) {
+			msgq(sp, M_ERR, "usage: %s.", vp->kp->usage);
+			return (1);
 		}
-		msgq(sp, M_ERR, "usage: %s.", vp->kp->usage);
-		return (1);
+		/* FALLTHROUGH */
+	case '+':		/* Put the line at the top. */
+		if (sp->s_fill(sp, ep, lno, P_TOP))
+			return (1);
+		break;
+	case '^':		/* Print the screen before the z- screen. */
+		/*
+		 * !!!
+		 * Historic practice isn't real clear on this one.  It seems
+		 * that the command "70z^" is the same as ":70<cr>z-z^" with
+		 * an off-by-one difference.  So, until I find documentation
+		 * to the contrary, the z^ command in this implementation
+		 * displays the screen immediately before the current one.
+		 * Fill the screen with the selected line at the bottom, then,
+		 * scroll the screen down a page, and move to the middle line
+		 * of the screen.  Historic vi moved the cursor to some random
+		 * place in the screen, as far as I can tell.
+		 */
+		if (sp->s_fill(sp, ep, lno, P_BOTTOM))
+			return (1);
+		if (sp->s_down(sp, ep, rp, sp->t_rows - 1, 1))
+			return (1);
+		if (sp->s_position(sp, ep, rp, 0, P_MIDDLE))
+			return (1);
+		break;
 	}
 
 	/* If the map changes, have to redraw the entire screen. */
 	F_SET(sp, S_REDRAW);
 
-	rp->lno = lno;
-	rp->cno = fm->cno;
 	return (0);
 }
