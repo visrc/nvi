@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.20 1992/10/10 14:06:08 bostic Exp $ (Berkeley) $Date: 1992/10/10 14:06:08 $";
+static char sccsid[] = "$Id: vi.c,v 5.21 1992/10/10 16:05:27 bostic Exp $ (Berkeley) $Date: 1992/10/10 16:05:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -132,8 +132,11 @@ err:		if (msgcnt) {
 		 * Some vi row movements are "attracted" to the last set
 		 * position, i.e. the V_RCM commands are moths to the
 		 * V_RCM_SET commands' candle.  Does this totally violate
-		 * the screen and editor layering?  You betcha.
+		 * the screen and editor layering?  You betcha.  To make
+		 * it worse, note that the value of flags may have changed.
+		 * As they say, if you think you understand it, you don't.
 		 */
+		flags = vp->kp->flags;
 		if (flags & V_RCM)
 			m.cno = scr_relative(curf, m.lno);
 		else if (flags & V_RCM_SETFNB) {
