@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 5.44 1993/04/12 14:23:56 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:23:56 $
+ *	$Id: exf.h,v 5.45 1993/04/12 14:28:19 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:28:19 $
  */
 
 					/* Undo direction. */
@@ -93,7 +93,6 @@ int	 file_dline __P((struct _scr *, struct _exf *, recno_t));
 EXF	*file_first __P((struct _scr *, int));
 EXF	*file_get __P((struct _scr *, struct _exf *, char *, int));
 char	*file_gline __P((struct _scr *, struct _exf *, recno_t, size_t *));
-int	 file_ibresolv __P((struct _scr *, struct _exf *, recno_t));
 int	 file_iline __P((struct _scr *,
 	    struct _exf *, recno_t, char *, size_t));
 recno_t	 file_lline __P((struct _scr *, struct _exf *));
