@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 8.29 1994/03/16 08:05:49 bostic Exp $ (Berkeley) $Date: 1994/03/16 08:05:49 $
+ *	$Id: gs.h,v 8.30 1994/04/09 18:08:25 bostic Exp $ (Berkeley) $Date: 1994/04/09 18:08:25 $
  */
 
 struct _gs {
@@ -37,13 +37,21 @@ struct _gs {
 	LIST_HEAD(_seqh, _seq) seqq;	/* Linked list of maps, abbrevs. */
 	bitstr_t bit_decl(seqb, MAX_BIT_SEQ);
 
-#define	term_key_val(sp, ch)						\
+#define	MAX_FAST_KEY	254		/* Max fast check character.*/
+#define	KEY_LEN(sp, ch)							\
+	((ch) <= MAX_FAST_KEY ?						\
+	    sp->gp->cname[ch].len : __key_len(sp, ch))
+#define	KEY_NAME(sp, ch)						\
+	((ch) <= MAX_FAST_KEY ?						\
+	    sp->gp->cname[ch].name : __key_name(sp, ch))
+	CHNAME	cname[MAX_FAST_KEY + 1];/* Fast lookup table. */
+
+#define	KEY_VAL(sp, ch)							\
 	((ch) <= MAX_FAST_KEY ? sp->gp->special_key[ch] :		\
-	    (ch) > sp->gp->max_special ? 0 : __term_key_val(sp, ch))
-#define	MAX_FAST_KEY	255		/* Max + 1 fast check character.*/
+	    (ch) > sp->gp->max_special ? 0 : __key_val(sp, ch))
 	CHAR_T	 max_special;		/* Max special character. */
-	u_char	*special_key;		/* Fast lookup table. */
-	CHNAME	const *cname;		/* Display names of ASCII characters. */
+	u_char				/* Fast lookup table. */
+	    special_key[MAX_FAST_KEY + 1];
 
 #define	G_ABBREV	0x00001		/* If have abbreviations. */
 #define	G_BELLSCHED	0x00002		/* Bell scheduled. */

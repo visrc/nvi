@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: put.c,v 8.3 1994/03/14 10:33:29 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:33:29 $";
+static char sccsid[] = "$Id: put.c,v 8.4 1994/04/09 18:08:46 bostic Exp $ (Berkeley) $Date: 1994/04/09 18:08:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -66,7 +66,7 @@ put(sp, ep, cbp, namep, cp, rp, append)
 			CBNAME(sp, cbp, name);
 			if (cbp == NULL) {
 				msgq(sp, M_ERR,
-				    "Buffer %s is empty.", charname(sp, name));
+				    "Buffer %s is empty.", KEY_NAME(sp, name));
 				return (1);
 			}
 		}
