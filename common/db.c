@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 5.32 1993/05/13 10:31:12 bostic Exp $ (Berkeley) $Date: 1993/05/13 10:31:12 $";
+static char sccsid[] = "$Id: db.c,v 5.33 1993/05/16 12:33:29 bostic Exp $ (Berkeley) $Date: 1993/05/16 12:33:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -15,7 +15,13 @@ static char sccsid[] = "$Id: db.c,v 5.32 1993/05/13 10:31:12 bostic Exp $ (Berke
 #include <string.h>
 
 #include "vi.h"
+#include "recover.h"
 
+/*
+ * UPDATE_SCREENS --
+ *	Macro to walk the screens and update all of them that are backed
+ *	by the file that just changed.
+ */
 #define	UPDATE_SCREENS(op) {						\
 	if (ep->refcnt == 1) {						\
 		if (sp->s_change != NULL)				\
@@ -103,7 +109,7 @@ file_rline(sp, ep, lno, lenp)
 	/* Get the line from the underlying database. */
 	key.data = &lno;
 	key.size = sizeof(lno);
-	switch ((ep->db->get)(ep->db, &key, &data, 0)) {
+	switch (ep->db->get(ep->db, &key, &data, 0)) {
         case -1:
 		msgq(sp, M_ERR,
 		    "Error: %s/%d: unable to get line %u: %s.",
@@ -145,7 +151,7 @@ file_dline(sp, ep, lno)
 	/* Update file. */
 	key.data = &lno;
 	key.size = sizeof(lno);
-	if ((ep->db->del)(ep->db, &key, 0) == 1) {
+	if (ep->db->del(ep->db, &key, 0) == 1) {
 		msgq(sp, M_ERR,
 		    "Error: %s/%d: unable to delete line %u: %s.",
 		    tail(__FILE__), __LINE__, lno, strerror(errno));
@@ -159,6 +165,8 @@ file_dline(sp, ep, lno)
 		--ep->c_nlines;
 
 	/* File now dirty. */
+	if (F_ISSET(ep, F_FIRSTMODIFY))
+		(void)rcv_init(sp, ep);
 	F_SET(ep, F_MODIFIED);
 
 	/* Update screen. */
@@ -188,7 +196,7 @@ file_aline(sp, ep, lno, p, len)
 	key.size = sizeof(lno);
 	data.data = p;
 	data.size = len;
-	if ((ep->db->put)(ep->db, &key, &data, R_IAFTER) == -1) {
+	if (ep->db->put(ep->db, &key, &data, R_IAFTER) == -1) {
 		msgq(sp, M_ERR,
 		    "Error: %s/%d: unable to append to line %u: %s.",
 		    tail(__FILE__), __LINE__, lno, strerror(errno));
@@ -202,6 +210,8 @@ file_aline(sp, ep, lno, p, len)
 		++ep->c_nlines;
 
 	/* File now dirty. */
+	if (F_ISSET(ep, F_FIRSTMODIFY))
+		(void)rcv_init(sp, ep);
 	F_SET(ep, F_MODIFIED);
 
 	/* Log change. */
@@ -246,7 +256,7 @@ file_iline(sp, ep, lno, p, len)
 	key.size = sizeof(lno);
 	data.data = p;
 	data.size = len;
-	if ((ep->db->put)(ep->db, &key, &data, R_IBEFORE) == -1) {
+	if (ep->db->put(ep->db, &key, &data, R_IBEFORE) == -1) {
 		msgq(sp, M_ERR,
 		    "Error: %s/%d: unable to insert at line %u: %s.",
 		    tail(__FILE__), __LINE__, lno, strerror(errno));
@@ -260,6 +270,8 @@ file_iline(sp, ep, lno, p, len)
 		++ep->c_nlines;
 
 	/* File now dirty. */
+	if (F_ISSET(ep, F_FIRSTMODIFY))
+		(void)rcv_init(sp, ep);
 	F_SET(ep, F_MODIFIED);
 
 	/* Log change. */
@@ -296,7 +308,7 @@ file_sline(sp, ep, lno, p, len)
 	key.size = sizeof(lno);
 	data.data = p;
 	data.size = len;
-	if ((ep->db->put)(ep->db, &key, &data, 0) == -1) {
+	if (ep->db->put(ep->db, &key, &data, 0) == -1) {
 		msgq(sp, M_ERR,
 		    "Error: %s/%d: unable to store line %u: %s.",
 		    tail(__FILE__), __LINE__, lno, strerror(errno));
@@ -308,6 +320,8 @@ file_sline(sp, ep, lno, p, len)
 		ep->c_lno = OOBLNO;
 
 	/* File now dirty. */
+	if (F_ISSET(ep, F_FIRSTMODIFY))
+		(void)rcv_init(sp, ep);
 	F_SET(ep, F_MODIFIED);
 
 	/* Log after change. */
@@ -322,29 +336,33 @@ file_sline(sp, ep, lno, p, len)
  * file_lline --
  *	Return the number of lines in the file.
  */
-recno_t
-file_lline(sp, ep)
+int
+file_lline(sp, ep, lnop)
 	SCR *sp;
 	EXF *ep;
+	recno_t *lnop;
 {
 	DBT data, key;
 	recno_t lno;
 
 	/* Check the cache. */
-	if (ep->c_nlines != OOBLNO)
-		return (F_ISSET(sp, S_INPUT) &&
+	if (ep->c_nlines != OOBLNO) {
+		*lnop = (F_ISSET(sp, S_INPUT) &&
 		    ((TEXT *)sp->txthdr.prev)->lno > ep->c_nlines ?
 		    ((TEXT *)sp->txthdr.prev)->lno : ep->c_nlines);
+		return (0);
+	}
 
 	key.data = &lno;
 	key.size = sizeof(lno);
 
-	switch ((ep->db->seq)(ep->db, &key, &data, R_LAST)) {
+	switch (ep->db->seq(ep->db, &key, &data, R_LAST)) {
         case -1:
 		msgq(sp, M_ERR,
 		    "Error: %s/%d: unable to get last line: %s.",
 		    tail(__FILE__), __LINE__, strerror(errno));
-		/* FALLTHROUGH */
+		*lnop = 0;
+		return (1);
         case 1:
 		lno = 0;
 		break;
@@ -358,7 +376,8 @@ file_lline(sp, ep)
 	ep->c_len = data.size;
 	ep->c_lp = data.data;
  
-	return (F_ISSET(sp, S_INPUT) &&
+	*lnop = (F_ISSET(sp, S_INPUT) &&
 	    ((TEXT *)sp->txthdr.prev)->lno > lno ?
 	    ((TEXT *)sp->txthdr.prev)->lno : lno);
+	return (0);
 }
