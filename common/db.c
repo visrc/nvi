@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 8.11 1993/11/01 17:11:51 bostic Exp $ (Berkeley) $Date: 1993/11/01 17:11:51 $";
+static char sccsid[] = "$Id: db.c,v 8.12 1993/11/01 18:53:22 bostic Exp $ (Berkeley) $Date: 1993/11/01 18:53:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -422,23 +422,17 @@ scr_update(sp, ep, lno, op, current)
 	int current;
 {
 	SCR *tsp;
-	int changed;
 
 	if (ep->refcnt != 1) {
 		for (tsp = sp->parent; tsp != NULL; tsp = tsp->parent)
 			if (tsp->ep == ep && tsp->s_change != NULL) {
-				(void)sp->s_change(tsp, ep, lno, &changed, op);
-				if (changed)
-					(void)sp->s_refresh(tsp, ep);
+				(void)sp->s_change(tsp, ep, lno, op);
 			}
 		for (tsp = sp->child; tsp != NULL; tsp = tsp->child)
 			if (tsp->ep == ep && tsp->s_change != NULL) {
-				(void)sp->s_change(tsp, ep, lno, &changed, op);
-				if (changed)
-					(void)sp->s_refresh(tsp, ep);
+				(void)sp->s_change(tsp, ep, lno, op);
 			}
 	}
-	if (current && sp->s_change != NULL)
-		return (sp->s_change(sp, ep, lno, NULL, op));
-	return (0);
+	return (current &&
+	    sp->s_change != NULL ? sp->s_change(sp, ep, lno, op) : 0);
 }
