@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 9.2 1994/11/17 20:35:38 bostic Exp $ (Berkeley) $Date: 1994/11/17 20:35:38 $";
+static char sccsid[] = "$Id: util.c,v 9.3 1994/11/20 12:51:07 bostic Exp $ (Berkeley) $Date: 1994/11/20 12:51:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -203,13 +203,14 @@ vi_putchar(ch)
  *      Get an unsigned long, checking for overflow.
  */
 enum nresult
-nget_uslong(sp, valp, p, endp)
+nget_uslong(sp, valp, p, endp, base)
 	SCR *sp;
 	u_long *valp;
 	char *p, **endp;
+	int base;
 {
 	errno = 0;
-	*valp = strtoul(p, endp, 10);
+	*valp = strtoul(p, endp, base);
 	if (errno == 0)
 		return (NUM_OK);
 	if (errno == ERANGE && *valp == ULONG_MAX)
@@ -222,13 +223,14 @@ nget_uslong(sp, valp, p, endp)
  *      Convert a signed long, checking for overflow and underflow.
  */
 enum nresult
-nget_slong(sp, valp, p, endp)
+nget_slong(sp, valp, p, endp, base)
 	SCR *sp;
 	long *valp;
 	char *p, **endp;
+	int base;
 {
 	errno = 0;
-	*valp = strtol(p, endp, 10);
+	*valp = strtol(p, endp, base);
 	if (errno == 0)
 		return (NUM_OK);
 	if (errno == ERANGE) {

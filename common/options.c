@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 9.5 1994/11/17 20:42:30 bostic Exp $ (Berkeley) $Date: 1994/11/17 20:42:30 $";
+static char sccsid[] = "$Id: options.c,v 9.6 1994/11/20 12:50:59 bostic Exp $ (Berkeley) $Date: 1994/11/20 12:50:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -545,8 +545,8 @@ found:		if (op == NULL) {
 
 			if (!isdigit(sep[0]))
 				goto badnum;
-			if ((nret =
-			    nget_uslong(sp, &value, sep, &endp)) != NUM_OK) {
+			if ((nret = nget_uslong(sp,
+			    &value, sep, &endp, 10)) != NUM_OK) {
 				p = msg_print(sp, sep, &nf);
 				switch (nret) {
 				case NUM_ERR:

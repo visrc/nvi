@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 9.10 1994/11/19 16:55:04 bostic Exp $ (Berkeley) $Date: 1994/11/19 16:55:04 $";
+static char sccsid[] = "$Id: ex.c,v 9.11 1994/11/20 12:51:20 bostic Exp $ (Berkeley) $Date: 1994/11/20 12:51:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1018,7 +1018,8 @@ end2:			break;
 				F_SET(&exc, E_COUNT_NEG);
 			else if (*cmd == '+')
 				F_SET(&exc, E_COUNT_POS);
-			if ((nret = nget_slong(sp, &ltmp, cmd, &t)) != NUM_OK) {
+			if ((nret =
+			    nget_slong(sp, &ltmp, cmd, &t, 10)) != NUM_OK) {
 				badlno(sp, 0, nret);
 				goto err;
 			}
@@ -1686,7 +1687,7 @@ ex_line(sp, cur, cmdp, cmdlenp, isaddrp, isdeltap)
 	case '5': case '6': case '7': case '8': case '9':
 		*isaddrp = 1;
 		F_SET(exp, EX_ABSMARK);
-		if ((nret = nget_slong(sp, &val, cmd, &endp)) != NUM_OK) {
+		if ((nret = nget_slong(sp, &val, cmd, &endp, 10)) != NUM_OK) {
 			badlno(sp, 0, nret);
 			return (1);
 		}
@@ -1833,7 +1834,7 @@ search:		F_SET(exp, EX_ABSMARK);
 					
 				/* Get a signed long, add it to the total. */
 				if ((nret = nget_slong(sp,
-				    &val, cmd, &endp)) != NUM_OK ||
+				    &val, cmd, &endp, 10)) != NUM_OK ||
 				    (nret = NADD_SLONG(sp,
 				    total, val)) != NUM_OK) {
 					badlno(sp, 0, nret);
