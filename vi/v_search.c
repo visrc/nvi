@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 5.40 1993/05/15 11:07:13 bostic Exp $ (Berkeley) $Date: 1993/05/15 11:07:13 $";
+static char sccsid[] = "$Id: v_search.c,v 5.41 1993/05/16 11:49:38 bostic Exp $ (Berkeley) $Date: 1993/05/16 11:49:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,7 +31,7 @@ v_searchn(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	switch(sp->searchdir) {
+	switch (sp->searchdir) {
 	case BACKWARD:
 		if (b_search(sp, ep, fm, rp, NULL, NULL,
 		    SEARCH_MSG | SEARCH_PARSE | SEARCH_TERM))
@@ -62,7 +62,7 @@ v_searchN(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	switch(sp->searchdir) {
+	switch (sp->searchdir) {
 	case BACKWARD:
 		if (f_search(sp, ep, fm, rp, NULL, NULL,
 		    SEARCH_MSG | SEARCH_PARSE | SEARCH_TERM))
@@ -176,7 +176,6 @@ getptrn(sp, ep, prompt, storep)
 	if (sp->s_get(sp, ep, &sp->bhdr, prompt,
 	    TXT_BS | TXT_CR | TXT_ESCAPE | TXT_PROMPT))
 		return (1);
-	(void)sp->s_busy_cursor(sp, "Searching...");
 
 	tp = sp->bhdr.next;
 	if (tp->len == 1)
