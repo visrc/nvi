@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: options.c,v 10.48 1996/08/10 18:22:50 bostic Exp $ (Berkeley) $Date: 1996/08/10 18:22:50 $";
+static const char sccsid[] = "$Id: options.c,v 10.49 1996/09/15 15:57:34 bostic Exp $ (Berkeley) $Date: 1996/09/15 15:57:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1072,7 +1072,7 @@ opts_copy(orig, sp)
 	int cnt, rval;
 
 	/* Copy most everything without change. */
-	memmove(sp->opts, orig->opts, sizeof(orig->opts));
+	memcpy(sp->opts, orig->opts, sizeof(orig->opts));
 
 	/* Copy the string edit options. */
 	for (cnt = rval = 0; cnt < O_OPTIONCOUNT; ++cnt) {

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_at.c,v 10.11 1996/06/30 16:13:57 bostic Exp $ (Berkeley) $Date: 1996/06/30 16:13:57 $";
+static const char sccsid[] = "$Id: ex_at.c,v 10.12 1996/09/15 15:59:00 bostic Exp $ (Berkeley) $Date: 1996/09/15 15:59:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -116,7 +116,7 @@ ex_at(sp, cmdp)
 	/* Copy the buffer into the command space. */
 	for (p = ecp->cp + len, tp = cbp->textq.cqh_last;
 	    tp != (void *)&cbp->textq; tp = tp->q.cqe_prev) {
-		memmove(p, tp->lb, tp->len);
+		memcpy(p, tp->lb, tp->len);
 		p += tp->len;
 		*p++ = '\n';
 	}

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_subst.c,v 10.36 1996/08/20 19:42:30 bostic Exp $ (Berkeley) $Date: 1996/08/20 19:42:30 $";
+static const char sccsid[] = "$Id: ex_subst.c,v 10.37 1996/09/15 15:59:57 bostic Exp $ (Berkeley) $Date: 1996/09/15 15:59:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -222,7 +222,7 @@ subagain:	return (ex_subagain(sp, cmdp));
 				}
 			} else if (p[0] == '~' && O_ISSET(sp, O_MAGIC)) {
 tilde:				++p;
-				memmove(t, sp->repl, sp->repl_len);
+				memcpy(t, sp->repl, sp->repl_len);
 				t += sp->repl_len;
 				len += sp->repl_len;
 				continue;
@@ -238,7 +238,7 @@ tilde:				++p;
 				FREE_SPACE(sp, bp, blen);
 				return (1);
 			}
-			memmove(sp->repl, bp, len);
+			memcpy(sp->repl, bp, len);
 		}
 		FREE_SPACE(sp, bp, blen);
 	}
@@ -327,7 +327,7 @@ ex_subtilde(sp, cmdp)
 			return (1);					\
 		}							\
 	}								\
-	memmove(lb + lbclen, l, len);					\
+	memcpy(lb + lbclen, l, len);					\
 	lbclen += len;							\
 }
 
@@ -516,7 +516,7 @@ noargs:	if (F_ISSET(sp, SC_VI) && sp->c_suffix && (lflag || nflag || pflag)) {
 				GET_SPACE_RET(sp, bp, blen, llen);
 			} else
 				ADD_SPACE_RET(sp, bp, blen, llen);
-			memmove(bp, s, llen);
+			memcpy(bp, s, llen);
 			s = bp;
 		}
 
@@ -750,7 +750,7 @@ skip:		offset += match[0].rm_eo;
 			if (db_get(sp, lno, DBG_FATAL, &s, &llen))
 				goto err;
 			ADD_SPACE_RET(sp, bp, blen, llen)
-			memmove(bp, s, llen);
+			memcpy(bp, s, llen);
 			s = bp;
 			len = llen - offset;
 

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_move.c,v 10.9 1996/03/06 19:52:28 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:52:28 $";
+static const char sccsid[] = "$Id: ex_move.c,v 10.10 1996/09/15 15:59:19 bostic Exp $ (Berkeley) $Date: 1996/09/15 15:59:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -146,7 +146,7 @@ ex_move(sp, cmdp)
 			if (db_get(sp, fl, DBG_FATAL, &p, &len))
 				return (1);
 			BINC_RET(sp, bp, blen, len);
-			memmove(bp, p, len);
+			memcpy(bp, p, len);
 			if (db_append(sp, 1, tl, bp, len))
 				return (1);
 			if (mark_reset)
@@ -165,7 +165,7 @@ ex_move(sp, cmdp)
 			if (db_get(sp, fl, DBG_FATAL, &p, &len))
 				return (1);
 			BINC_RET(sp, bp, blen, len);
-			memmove(bp, p, len);
+			memcpy(bp, p, len);
 			if (db_append(sp, 1, tl++, bp, len))
 				return (1);
 			if (mark_reset)

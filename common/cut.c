@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cut.c,v 10.9 1996/03/30 13:46:52 bostic Exp $ (Berkeley) $Date: 1996/03/30 13:46:52 $";
+static const char sccsid[] = "$Id: cut.c,v 10.10 1996/09/15 15:56:41 bostic Exp $ (Berkeley) $Date: 1996/09/15 15:56:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -266,7 +266,7 @@ cut_line(sp, lno, fcno, clen, cbp)
 	if (len != 0) {
 		if (clen == 0)
 			clen = len - fcno;
-		memmove(tp->lb, p + fcno, clen);
+		memcpy(tp->lb, p + fcno, clen);
 		tp->len = clen;
 	}
 
@@ -328,7 +328,7 @@ text_init(sp, p, len, total_len)
 			return (NULL);
 		}
 		if (p != NULL && len != 0)
-			memmove(tp->lb, p, len);
+			memcpy(tp->lb, p, len);
 	}
 	tp->len = len;
 	return (tp);

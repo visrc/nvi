@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: msg.c,v 10.47 1996/09/15 14:00:16 bostic Exp $ (Berkeley) $Date: 1996/09/15 14:00:16 $";
+static const char sccsid[] = "$Id: msg.c,v 10.48 1996/09/15 15:57:28 bostic Exp $ (Berkeley) $Date: 1996/09/15 15:57:28 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -477,13 +477,13 @@ mod_rpt(sp)
 			tlen += len;
 			t = msg_cat(sp,
 			    lines[sp->rptlines[cnt] == 1 ? 0 : 1], &len);
-			memmove(p, t, len);
+			memcpy(p, t, len);
 			p += len;
 			tlen += len;
 			*p++ = ' ';
 			++tlen;
 			t = msg_cat(sp, *ap, &len);
-			memmove(p, t, len);
+			memcpy(p, t, len);
 			p += len;
 			tlen += len;
 			sp->rptlines[cnt] = 0;

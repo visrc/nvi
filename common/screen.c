@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: screen.c,v 10.14 1996/07/19 19:47:16 bostic Exp $ (Berkeley) $Date: 1996/07/19 19:47:16 $";
+static const char sccsid[] = "$Id: screen.c,v 10.15 1996/09/15 15:57:50 bostic Exp $ (Berkeley) $Date: 1996/09/15 15:57:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -100,7 +100,7 @@ mem:				msgq(orig, M_SYSERR, NULL);
 			}
 			sp->newl_len = orig->newl_len;
 			sp->newl_cnt = orig->newl_cnt;
-			memmove(sp->newl, orig->newl, len);
+			memcpy(sp->newl, orig->newl, len);
 		}
 
 		if (opts_copy(orig, sp))

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_join.c,v 10.9 1996/03/06 19:52:23 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:52:23 $";
+static const char sccsid[] = "$Id: ex_join.c,v 10.10 1996/09/15 15:59:11 bostic Exp $ (Berkeley) $Date: 1996/09/15 15:59:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -126,7 +126,7 @@ ex_join(sp, cmdp)
 		}
 
 		if (len != 0) {
-			memmove(tbp, p, len);
+			memcpy(tbp, p, len);
 			tbp += len;
 			clen += len;
 			echar = p[len - 1];
