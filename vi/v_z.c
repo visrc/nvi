@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_z.c,v 5.28 1993/03/28 19:05:53 bostic Exp $ (Berkeley) $Date: 1993/03/28 19:05:53 $";
+static char sccsid[] = "$Id: v_z.c,v 5.29 1993/04/12 14:58:27 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:58:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,7 +31,7 @@ v_z(sp, ep, vp, fm, tm, rp)
 	 * The first count is the line to use.  If the value doesn't
 	 * exist, use the last line.
 	 */
-	if (vp->flags & VC_C1SET) {
+	if (F_ISSET(vp, VC_C1SET)) {
 		lno = vp->count;
 		last = file_lline(sp, ep);
 		if (lno > last)
@@ -40,7 +40,7 @@ v_z(sp, ep, vp, fm, tm, rp)
 		lno = fm->lno;
 
 	/* The second count is the window size. */
-	if (vp->flags & VC_C2SET && set_window_size(sp, vp->count2))
+	if (F_ISSET(vp, VC_C2SET) && set_window_size(sp, vp->count2))
 		return (1);
 
 	switch(vp->character) {
@@ -58,7 +58,7 @@ v_z(sp, ep, vp, fm, tm, rp)
 				return (1);
 			break;
 		}
-		msgq(sp, M_ERROR, "usage: %s.", vp->kp->usage);
+		msgq(sp, M_ERR, "usage: %s.", vp->kp->usage);
 		return (1);
 	}
 
