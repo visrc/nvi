@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 8.8 1993/11/04 16:16:04 bostic Exp $ (Berkeley) $Date: 1993/11/04 16:16:04 $";
+static char sccsid[] = "$Id: cut.c,v 8.9 1993/11/08 14:02:26 bostic Exp $ (Berkeley) $Date: 1993/11/08 14:02:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -53,6 +53,7 @@ cut(sp, ep, name, fm, tm, lmode)
 	 * text cut into a numeric buffer other than '1' was always appended
 	 * to the buffer (after the rotation), it was not a replacement.
 	 */
+	append = 0;
 	if (isdigit(name)) {
 		(void)cb_rotate(sp);
 		if (name != '1')
