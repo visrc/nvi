@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 9.6 1995/01/30 15:09:52 bostic Exp $ (Berkeley) $Date: 1995/01/30 15:09:52 $";
+static char sccsid[] = "$Id: screen.c,v 9.7 1995/01/31 11:27:43 bostic Exp $ (Berkeley) $Date: 1995/01/31 11:27:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -160,6 +160,18 @@ screen_end(sp)
 {
 	int rval;
 
+	/*
+	 * Remove the screen from the displayed queue.
+	 *
+	 * If a created screen failed during initialization, it may not
+	 * be linked into the chain.
+	 */
+	if (sp->q.cqe_next != NULL) {
+		SIGBLOCK(sp->gp);
+		CIRCLEQ_REMOVE(&sp->gp->dq, sp, q);
+		SIGUNBLOCK(sp->gp);
+	}
+
 	rval = 0;
 	if (svi_screen_end(sp))			/* End S_VI screen. */
 		rval = 1;
@@ -228,18 +240,6 @@ screen_end(sp)
 				FREE(mp->mbuf, mp->blen);
 			FREE(mp, sizeof(MSG));
 		}
-	}
-
-	/*
-	 * Remove the screen from the displayed queue.
-	 *
-	 * If a created screen failed during initialization, it may not
-	 * be linked into the chain.
-	 */
-	if (sp->q.cqe_next != NULL) {
-		SIGBLOCK(sp->gp);
-		CIRCLEQ_REMOVE(&sp->gp->dq, sp, q);
-		SIGUNBLOCK(sp->gp);
 	}
 
 	/* Free the screen itself. */
