@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.68 1993/12/20 19:13:26 bostic Exp $ (Berkeley) $Date: 1993/12/20 19:13:26 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.69 1993/12/22 13:03:42 bostic Exp $ (Berkeley) $Date: 1993/12/22 13:03:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -579,6 +579,11 @@ k_escape:		if (tp->insert && tp->owrite)
 			if (LF_ISSET(TXT_RESOLVE)) {
 				if (txt_resolve(sp, ep, tiqh))
 					goto err;
+				/*
+				 * Clear input flag -- input buffer no longer
+				 * valid.
+				 */
+				F_CLR(sp, S_INPUT);
 			} else {
 				TBINC(sp, tp->lb, tp->lb_len, tp->len + 1);
 				tp->lb[tp->len] = '\0';
