@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_msg.c,v 10.18 1995/10/03 09:16:26 bostic Exp $ (Berkeley) $Date: 1995/10/03 09:16:26 $";
+static char sccsid[] = "$Id: vs_msg.c,v 10.19 1995/10/03 12:49:02 bostic Exp $ (Berkeley) $Date: 1995/10/03 12:49:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -83,6 +83,9 @@ vs_busy(sp, msg, btype)
 		vip->busy_ch = 0;
 		(void)gettimeofday(&vip->busy_tv, NULL);
 
+		/* Save the current cursor. */
+		(void)gp->scr_cursor(sp, &vip->busy_oldy, &vip->busy_oldx);
+
 		/* Display the busy message. */
 		p = msg_cat(sp, msg, &len);
 		(void)gp->scr_move(sp, LASTLINE(sp), 0);
@@ -93,12 +96,16 @@ vs_busy(sp, msg, btype)
 		break;
 	case BUSY_OFF:
 		--vip->busy_ref;
-		if (vip->totalcount != 0 || vip->busy_ref != 0)
-			break;
 
-		/* Clear the line and return to the original position. */
-		(void)gp->scr_move(sp, LASTLINE(sp), 0);
-		(void)gp->scr_clrtoeol(sp);
+		/*
+		 * If the line isn't in use for another purpose, clear it.
+		 * Always return to the original position.
+		 */
+		if (vip->totalcount == 0 && vip->busy_ref == 0) {
+			(void)gp->scr_move(sp, LASTLINE(sp), 0);
+			(void)gp->scr_clrtoeol(sp);
+		}
+		(void)gp->scr_move(sp, vip->busy_oldy, vip->busy_oldx);
 		break;
 	case BUSY_UPDATE:
 		if (vip->totalcount != 0 || vip->busy_ref == 0)
