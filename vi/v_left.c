@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_left.c,v 9.5 1995/01/23 17:33:16 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:33:16 $";
+static char sccsid[] = "$Id: v_left.c,v 10.1 1995/03/16 20:34:51 bostic Exp $ (Berkeley) $Date: 1995/03/16 20:34:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,9 +25,8 @@ static char sccsid[] = "$Id: v_left.c,v 9.5 1995/01/23 17:33:16 bostic Exp $ (Be
 #include <db.h>
 #include <regex.h>
 
+#include "common.h"
 #include "vi.h"
-#include "vcmd.h"
-#include "../svi/svi_screen.h"
 
 /*
  * v_left -- [count]^H, [count]h
@@ -36,7 +35,7 @@ static char sccsid[] = "$Id: v_left.c,v 9.5 1995/01/23 17:33:16 bostic Exp $ (Be
 int
 v_left(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	recno_t cnt;
 
@@ -74,7 +73,7 @@ v_left(sp, vp)
 int
 v_cfirst(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	recno_t cnt, lno;
 
@@ -141,7 +140,7 @@ v_cfirst(sp, vp)
 int
 v_first(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	/*
 	 * !!!
@@ -191,12 +190,12 @@ v_first(sp, vp)
 int
 v_ncol(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	if (F_ISSET(vp, VC_C1SET) && vp->count > 1) {
 		--vp->count;
 		vp->m_stop.cno =
-		    svi_colpos(sp, vp->m_start.lno, (size_t)vp->count);
+		    vs_colpos(sp, vp->m_start.lno, (size_t)vp->count);
 		/*
 		 * !!!
 		 * The | command succeeded if used as a command and the cursor
@@ -246,7 +245,7 @@ v_ncol(sp, vp)
 int
 v_zero(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	/*
 	 * !!!

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_paragraph.c,v 9.3 1995/01/11 16:22:16 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:22:16 $";
+static char sccsid[] = "$Id: v_paragraph.c,v 10.1 1995/03/16 20:35:16 bostic Exp $ (Berkeley) $Date: 1995/03/16 20:35:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,8 +28,8 @@ static char sccsid[] = "$Id: v_paragraph.c,v 9.3 1995/01/11 16:22:16 bostic Exp 
 #include <db.h>
 #include <regex.h>
 
+#include "common.h"
 #include "vi.h"
-#include "vcmd.h"
 
 #define	INTEXT_CHECK {							\
 	if (len == 0 || v_isempty(p, len)) {				\
@@ -68,7 +68,7 @@ static char sccsid[] = "$Id: v_paragraph.c,v 9.3 1995/01/11 16:22:16 bostic Exp 
 int
 v_paragraphf(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	enum { P_INTEXT, P_INBLANK } pstate;
 	size_t lastlen, len;
@@ -208,7 +208,7 @@ eof:	if (vp->m_start.lno == lno || vp->m_start.lno == lno - 1) {
 int
 v_paragraphb(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	enum { P_INTEXT, P_INBLANK } pstate;
 	size_t len;

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_put.c,v 9.3 1995/01/30 16:54:04 bostic Exp $ (Berkeley) $Date: 1995/01/30 16:54:04 $";
+static char sccsid[] = "$Id: v_put.c,v 10.1 1995/03/16 20:35:22 bostic Exp $ (Berkeley) $Date: 1995/03/16 20:35:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,10 +25,10 @@ static char sccsid[] = "$Id: v_put.c,v 9.3 1995/01/30 16:54:04 bostic Exp $ (Ber
 #include <db.h>
 #include <regex.h>
 
+#include "common.h"
 #include "vi.h"
-#include "vcmd.h"
 
-static void	inc_buf __P((SCR *, VICMDARG *));
+static void	inc_buf __P((SCR *, VICMD *));
 
 /*
  * v_Put -- [buffer]P
@@ -37,7 +37,7 @@ static void	inc_buf __P((SCR *, VICMDARG *));
 int
 v_Put(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	u_long cnt;
 
@@ -68,7 +68,7 @@ v_Put(sp, vp)
 int
 v_put(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	u_long cnt;
 
@@ -110,7 +110,7 @@ v_put(sp, vp)
 static void
 inc_buf(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	CHAR_T v;
 

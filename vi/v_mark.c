@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_mark.c,v 9.5 1995/01/11 16:22:11 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:22:11 $";
+static char sccsid[] = "$Id: v_mark.c,v 10.1 1995/03/16 20:35:03 bostic Exp $ (Berkeley) $Date: 1995/03/16 20:35:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,6 +18,7 @@ static char sccsid[] = "$Id: v_mark.c,v 9.5 1995/01/11 16:22:11 bostic Exp $ (Be
 #include <bitstring.h>
 #include <limits.h>
 #include <signal.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <termios.h>
 
@@ -25,8 +26,8 @@ static char sccsid[] = "$Id: v_mark.c,v 9.5 1995/01/11 16:22:11 bostic Exp $ (Be
 #include <db.h>
 #include <regex.h>
 
+#include "common.h"
 #include "vi.h"
-#include "vcmd.h"
 
 /*
  * v_mark -- m[a-z]
@@ -35,13 +36,13 @@ static char sccsid[] = "$Id: v_mark.c,v 9.5 1995/01/11 16:22:11 bostic Exp $ (Be
 int
 v_mark(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	return (mark_set(sp, vp->character, &vp->m_start, 1));
 }
 
 enum which {BQMARK, FQMARK};
-static int mark __P((SCR *, VICMDARG *, enum which));
+static int mark __P((SCR *, VICMD *, enum which));
 
 
 /*
@@ -60,7 +61,7 @@ static int mark __P((SCR *, VICMDARG *, enum which));
 int
 v_bmark(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	return (mark(sp, vp, BQMARK));
 }
@@ -74,7 +75,7 @@ v_bmark(sp, vp)
 int
 v_fmark(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	return (mark(sp, vp, FQMARK));
 }
@@ -82,10 +83,10 @@ v_fmark(sp, vp)
 static int
 mark(sp, vp, cmd)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 	enum which cmd;
 {
-	enum direction dir;
+	dir_t dir;
 	MARK m;
 	size_t len;
 
