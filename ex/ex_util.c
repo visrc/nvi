@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_util.c,v 8.9 1994/05/09 10:33:23 bostic Exp $ (Berkeley) $Date: 1994/05/09 10:33:23 $";
+static char sccsid[] = "$Id: ex_util.c,v 8.10 1994/07/23 18:10:50 bostic Exp $ (Berkeley) $Date: 1994/07/23 18:10:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -74,7 +74,7 @@ ex_getline(sp, fp, lenp)
 
 /*
  * ex_sleave --
- *	Save the terminal/signal state, not screen modification time.
+ *	Save the terminal/signal state, screen modification time.
  * 	Specific to ex/filter.c and ex/ex_shell.c.
  */
 int
@@ -91,12 +91,12 @@ ex_sleave(sp)
 	exp = EXP(sp);
 	if (tcgetattr(STDIN_FILENO, &exp->leave_term)) {
 		msgq(sp, M_SYSERR, "tcgetattr");
-		goto err;
+		return (1);
 	}
 	if (tcsetattr(STDIN_FILENO,
 	    TCSANOW | TCSASOFT, &sp->gp->original_termios)) {
 		msgq(sp, M_SYSERR, "tcsetattr");
-err:		return (1);
+		return (1);
 	}
 	/*
 	 * The process may write to the terminal.  Save the access time
