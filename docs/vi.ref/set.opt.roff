@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: set.opt.roff,v 8.3 1994/03/18 20:17:40 bostic Exp $ (Berkeley) $Date: 1994/03/18 20:17:40 $
+.\"     $Id: set.opt.roff,v 8.4 1994/03/19 15:45:19 bostic Exp $ (Berkeley) $Date: 1994/03/19 15:45:19 $
 .\"
 There are a large number of options that may be set (or unset) to
 change the editor's behavior.
@@ -559,11 +559,11 @@ Precede each line displayed with its current line number.
 .It Li "open [on]"
 .Nm \&Ex
 only.
-Disallow the
+If this option is not set, the
 .Sy open
 and
 .Sy visual
-commands.
+commands are disallowed.
 .It Li "optimize, opt [on]"
 .Nm \&Vi
 only.
