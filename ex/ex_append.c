@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 5.18 1992/12/05 11:08:24 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:08:24 $";
+static char sccsid[] = "$Id: ex_append.c,v 5.19 1993/01/11 15:50:45 bostic Exp $ (Berkeley) $Date: 1993/01/11 15:50:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -85,7 +85,7 @@ ca(cmdp, cmd)
 		add(curf, &m, p, len);
 	}
 
-	autoprint = 1;
+	FF_SET(curf, F_AUTOPRINT);
 
 	if (set)
 		SET(O_AUTOINDENT);

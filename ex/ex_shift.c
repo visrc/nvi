@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shift.c,v 5.14 1992/12/05 11:08:53 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:08:53 $";
+static char sccsid[] = "$Id: ex_shift.c,v 5.15 1993/01/11 15:51:29 bostic Exp $ (Berkeley) $Date: 1993/01/11 15:51:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -114,6 +114,6 @@ err:			if (buf != NULL)
 	curf->rptlines = cmdp->addr2.lno - cmdp->addr1.lno + 1;
 	curf->rptlabel = rl == RIGHT ? "shifted right" : "shifted left";
 
-	autoprint = 1;
+	FF_SET(curf, F_AUTOPRINT);
 	return (0);
 }

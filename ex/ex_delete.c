@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_delete.c,v 5.12 1992/12/05 11:08:30 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:08:30 $";
+static char sccsid[] = "$Id: ex_delete.c,v 5.13 1993/01/11 15:51:01 bostic Exp $ (Berkeley) $Date: 1993/01/11 15:51:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -37,6 +37,6 @@ ex_delete(cmdp)
 		curf->cno = cmdp->addr1.cno;
 	}
 
-	autoprint = 1;
+	FF_SET(curf, F_AUTOPRINT);
 	return (0);
 }

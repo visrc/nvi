@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 5.18 1992/12/05 11:08:47 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:08:47 $";
+static char sccsid[] = "$Id: ex_read.c,v 5.19 1993/01/11 15:51:28 bostic Exp $ (Berkeley) $Date: 1993/01/11 15:51:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -99,7 +99,7 @@ noargs:	if ((fp = fopen(fname, "r")) == NULL || fstat(fileno(fp), &sb)) {
 	if (ex_readfp(fname, fp, &cmdp->addr1, &curf->rptlines))
 		return (1);
 
-	autoprint = 1;
+	FF_SET(curf, F_AUTOPRINT);
 
 	curf->rptlabel = "read";
 	return (0);

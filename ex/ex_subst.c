@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 5.21 1992/12/05 11:08:55 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:08:55 $";
+static char sccsid[] = "$Id: ex_subst.c,v 5.22 1993/01/11 15:51:31 bostic Exp $ (Berkeley) $Date: 1993/01/11 15:51:31 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -412,7 +412,7 @@ nomatch:	if (len)
 	if (curf->rptlines == 0 && !FF_ISSET(curf, F_IN_GLOBAL))
 		msg("No match found.");
 	else if (!lflag && !nflag && !pflag)
-		autoprint = 1;
+		FF_SET(curf, F_AUTOPRINT);
 
 	return (0);
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.51 1992/12/25 16:50:44 bostic Exp $ (Berkeley) $Date: 1992/12/25 16:50:44 $";
+static char sccsid[] = "$Id: ex.c,v 5.52 1993/01/11 15:50:38 bostic Exp $ (Berkeley) $Date: 1993/01/11 15:50:38 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -32,7 +32,6 @@ static char sccsid[] = "$Id: ex.c,v 5.51 1992/12/25 16:50:44 bostic Exp $ (Berke
 #include "vcmd.h"
 #include "pathnames.h"
 
-int autoprint;
 u_char *defcmdarg[2];
 
 static int	 fileexpand __P((glob_t *, u_char *, int));
@@ -564,8 +563,9 @@ addr2:	switch(cmd.addrcnt) {
 	}
 }
 #endif
-	/* Do the command. */
-	autoprint = 0;
+	/* Clear autoprint. */
+	if (curf != NULL)
+		FF_CLR(curf, F_AUTOPRINT);
 
 	/*
 	 * If file state, set rptlines.  If file state and not doing a global
@@ -577,6 +577,7 @@ addr2:	switch(cmd.addrcnt) {
 			(void)log_cursor(curf);
 	}
 
+	/* Do the command. */
 	if ((cp->fn)(&cmd))
 		return (1);
 
@@ -602,7 +603,8 @@ addr2:	switch(cmd.addrcnt) {
 		curf->lno += flagoff;
 	}
 
-	if (mode == MODE_EX && autoprint && ISSET(O_AUTOPRINT))
+	if (mode == MODE_EX &&
+	    ISSET(O_AUTOPRINT) && FF_ISSET(curf, F_AUTOPRINT))
 		flags = E_F_PRINT;
 	else
 		flags = cmd.flags & (E_F_HASH | E_F_LIST | E_F_PRINT);

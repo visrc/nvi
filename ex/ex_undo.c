@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_undo.c,v 5.9 1992/12/05 11:08:59 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:08:59 $";
+static char sccsid[] = "$Id: ex_undo.c,v 5.10 1993/01/11 15:51:32 bostic Exp $ (Berkeley) $Date: 1993/01/11 15:51:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,7 +25,7 @@ ex_undo(cmdp)
 	static enum { BACKWARD, FORWARD } last = FORWARD;
 	MARK rp;
 
-	autoprint = 1;
+	FF_SET(curf, F_AUTOPRINT);
 
 	switch(last) {
 	case BACKWARD:

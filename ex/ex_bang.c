@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 5.21 1992/12/05 11:08:27 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:08:27 $";
+static char sccsid[] = "$Id: ex_bang.c,v 5.22 1993/01/11 15:51:00 bostic Exp $ (Berkeley) $Date: 1993/01/11 15:51:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -133,7 +133,7 @@ ex_bang(cmdp)
 	} else {
 		if (filter(&cmdp->addr1, &cmdp->addr2, com, STANDARD))
 			return (1);
-		autoprint = 1;
+		FF_SET(curf, F_AUTOPRINT);
 	}
 	return (0);
 }

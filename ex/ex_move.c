@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_move.c,v 5.17 1992/12/05 11:08:44 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:08:44 $";
+static char sccsid[] = "$Id: ex_move.c,v 5.18 1993/01/11 15:51:03 bostic Exp $ (Berkeley) $Date: 1993/01/11 15:51:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -89,6 +89,6 @@ cm(cmdp, cmd)
 		curf->rptlines = 1;
 	curf->rptlabel = (cmd == MOVE ? "moved" : "copied");
 
-	autoprint = 1;
+	FF_SET(curf, F_AUTOPRINT);
 	return (0);
 }
