@@ -170,6 +170,11 @@ Change the current focus to screen.
 
 Unmap a key.
 
+=item * Warn
+
+This is the default warning handler.
+It adds any warnings to the error string.
+
 =back
 
 =head1 EXAMPLES
