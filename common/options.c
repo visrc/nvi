@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.42 1994/03/15 09:24:40 bostic Exp $ (Berkeley) $Date: 1994/03/15 09:24:40 $";
+static char sccsid[] = "$Id: options.c,v 8.43 1994/03/15 09:25:28 bostic Exp $ (Berkeley) $Date: 1994/03/15 09:25:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -673,12 +673,11 @@ opts_save(sp, fp)
 	SCR *sp;
 	FILE *fp;
 {
-	OPTION *spo;
 	OPTLIST const *op;
 	int ch, cnt;
 	char *p;
 
-	for (spo = sp->opts, op = optlist; op->name; ++op) {
+	for (op = optlist; op->name; ++op) {
 		if (F_ISSET(op, OPT_NOSAVE))
 			continue;
 		cnt = op - optlist;
