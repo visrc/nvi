@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.15 1993/09/13 13:54:56 bostic Exp $ (Berkeley) $Date: 1993/09/13 13:54:56 $";
+static char sccsid[] = "$Id: main.c,v 8.16 1993/09/28 17:32:17 bostic Exp $ (Berkeley) $Date: 1993/09/28 17:32:17 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -330,24 +330,35 @@ main(argc, argv)
 			break;
 		default:
 			abort();
+			/* NOTREACHED */
 		}
 		
-	/* Call a screen. */
+	/*
+	 * Call a screen.  There's two things that we look at.  In the
+	 * screen flags word there's a bit if it's a vi or ex screen.
+	 * Since there are multiple vi screens, we use scr_type to decide.
+	 */
 	while (sp != NULL)
-		switch (scr_type) {
-		case EX_SCR:
+		if (F_ISSET(sp, S_MODE_EX)) {
 			if (sex(sp, sp->ep, &sp))
 				goto err2;
-			break;
-		case VI_CURSES_SCR:
-			if (svi(sp, sp->ep, &sp))
-				goto err2;
-			break;
-		case VI_XAW_SCR:
-			if (xaw(sp, sp->ep, &sp))
-				goto err2;
-			break;
-		}
+		} else
+			switch (scr_type) {
+			case EX_SCR:
+				abort();
+				/* NOTREACHED */
+			case VI_CURSES_SCR:
+				if (svi(sp, sp->ep, &sp))
+					goto err2;
+				break;
+			case VI_XAW_SCR:
+				if (xaw(sp, sp->ep, &sp))
+					goto err2;
+				break;
+			default:
+				abort();
+				/* NOTREACHED */
+			}
 
 	/*
 	 * Two error paths.  The first means that something failed before
