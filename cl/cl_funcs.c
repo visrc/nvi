@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_funcs.c,v 10.26 1995/11/06 19:30:54 bostic Exp $ (Berkeley) $Date: 1995/11/06 19:30:54 $";
+static char sccsid[] = "$Id: cl_funcs.c,v 10.27 1995/11/06 20:14:57 bostic Exp $ (Berkeley) $Date: 1995/11/06 20:14:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -246,16 +246,17 @@ cl_deleteln(sp)
 	 * character following.
 	 */
 	if (F_ISSET(clp, CL_LLINE_IV)) {
-		getyx(stdscr, oldy, oldx);
 #ifdef mvchgat
 		mvchgat(RLNO(sp, LASTLINE(sp)), 0, -1, A_NORMAL, 0, NULL);
 #else
+		getyx(stdscr, oldy, oldx);
 		for (lno = RLNO(sp, LASTLINE(sp)), col = spcnt = 0;;) {
 			(void)move(lno, col);
 			ch = winch(stdscr);
 			if (isblank(ch))
 				++spcnt;
 			else {
+				(void)move(lno, col - spcnt);
 				for (; spcnt > 0; --spcnt)
 					(void)addch(' ');
 				(void)addch(ch);
@@ -263,9 +264,9 @@ cl_deleteln(sp)
 			if (++col >= sp->cols)
 				break;
 		}
-		F_CLR(clp, CL_LLINE_IV);
-#endif
 		(void)move(oldy, oldx);
+#endif
+		F_CLR(clp, CL_LLINE_IV);
 	}
 
 	/*
