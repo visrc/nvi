@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.58 1993/12/16 19:00:32 bostic Exp $ (Berkeley) $Date: 1993/12/16 19:00:32 $";
+static char sccsid[] = "$Id: exf.c,v 8.59 1993/12/18 11:31:17 bostic Exp $ (Berkeley) $Date: 1993/12/18 11:31:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -486,7 +486,7 @@ file_write(sp, ep, fm, tm, name, flags)
 	FREF *frp;
 	MARK from, to;
 	u_long nlno, nch;
-	int fd, oflags;
+	int fd, oflags, rval;
 	char *msg;
 
 	/*
@@ -618,15 +618,23 @@ exists:			if (LF_ISSET(FS_POSSIBLE))
 	}
 
 	/* Write the file. */
-	if (ex_writefp(sp, ep, name, fp, fm, tm, &nlno, &nch)) {
+	rval = ex_writefp(sp, ep, name, fp, fm, tm, &nlno, &nch);
+
+	/*
+	 * Save the new last modification time -- even if the write fails
+	 * we re-init the time if we wrote anything.  That way the user can
+	 * clean up the disk and rewrite without having to force it.
+	 */
+	if (nlno || nch)
+		frp->mtime = stat(name, &sb) ? 0 : sb.st_mtime;
+	
+	/* If the write failed, complain loudly. */
+	if (rval) {
 		if (!LF_ISSET(FS_APPEND))
 			msgq(sp, M_ERR, "%s: WARNING: file truncated!", name);
 		return (1);
 	}
 
-	/* Save the new last modification time. */
-	frp->mtime = stat(name, &sb) ? 0 : sb.st_mtime;
-	
 	/*
 	 * Once we've actually written the file, it doesn't matter that the
 	 * file name was changed -- if it was, we've already whacked it.
