@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 5.22 1992/12/20 15:10:08 bostic Exp $ (Berkeley) $Date: 1992/12/20 15:10:08 $";
+static char sccsid[] = "$Id: v_ex.c,v 5.23 1992/12/20 21:11:16 bostic Exp $ (Berkeley) $Date: 1992/12/20 21:11:16 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -27,6 +27,8 @@ static char sccsid[] = "$Id: v_ex.c,v 5.22 1992/12/20 15:10:08 bostic Exp $ (Ber
 static size_t exlinecount, extotalcount;
 static enum { NOTSET, NEXTLINE, THISLINE } continueline;
 
+static int moveup __P((EXF *, int, int, int *));
+
 /*
  * v_ex --
  *	Execute strings of ex commands.
@@ -40,8 +42,9 @@ v_ex(vp, fm, tm, rp)
 	int flags, key;
 	u_char *p;
 
-	v_startex();
 	for (flags = GB_BS;; flags |= GB_NLECHO) {
+		v_startex();			/* Reset. */
+
 		/*
 		 * Get an ex command; echo the newline on any prompts after
 		 * the first.  We may have to overwrite the command later;
@@ -57,41 +60,30 @@ v_ex(vp, fm, tm, rp)
 			needexerase = 1;
 			break;
 		}
-			
-		(void)v_msgflush(curf);
-
-		standout();
-		(void)v_exwrite(curf, CONTMSG, sizeof(CONTMSG) - 1);
-		standend();
-		refresh();
 
 		/* The user may continue in ex mode by entering a ':'. */
-                if ((key = getkey(0)) != ':')
+		(void)moveup(curf, 1, 1, &key);
+		if (key != ':')
                         break;
-
-		/* Reset current count. */
-		exlinecount = 0;
 	}
 
 	/*
-	 * The file may have changed, if so, the main vi loop will take
-	 * care of it.  Otherwise, the only cursor modifications will be
-	 * real, however, the underlying line may have changed; don't
-	 * trust anything.  This section of code has been a remarkably
-	 * fertile place for bugs.  Don't trust ANYTHING.
+	 * The file may have changed, if so, the main vi loop will take care of
+	 * it.  Otherwise, the only cursor modifications will be real, however,
+	 * the underlying line may have changed; don't trust anything.  This
+	 * section of code has been a remarkably fertile place for bugs.  The
+	 * cursor is set to the first non-blank character by the main vi loop.
+	 * Don't trust ANYTHING.
 	 */
 	if (!FF_ISSET(curf, F_NEWSESSION)) {
 		v_leaveex();
 		curf->olno = OOBLNO;
 		rp->lno = curf->lno;
-		if (file_gline(curf, curf->lno, &len) == NULL) {
-			rp->cno = 0;
-			if (file_lline(curf) != 0) {
-				GETLINE_ERR(curf->lno);
-				return (1);
-			}
-		} else
-			rp->cno = MIN(curf->cno, len ? len - 1 : 0);
+		if (file_gline(curf, curf->lno, &len) == NULL &&
+		    file_lline(curf) != 0) {
+			GETLINE_ERR(curf->lno);
+			return (1);
+		}
 	}
 	return (0);
 }
@@ -137,7 +129,7 @@ v_exwrite(cookie, line, llen)
 {
 	static size_t lcont;
 	EXF *ep;
-	int ch, len, rlen;
+	int len, rlen;
 	char *p;
 
 	for (ep = cookie, rlen = llen; llen;) {
@@ -156,33 +148,10 @@ v_exwrite(cookie, line, llen)
 		}
 		llen -= len + (p == NULL ? 0 : 1);
 
-		if (continueline != THISLINE && extotalcount != 0) {
-			/*
-			 * First line is a special case.  Scroll the screen.
-			 * Instead of scrolling the entire screen, delete the
-			 * line above the first line output so that we preserve
-			 * the maximum amount of the screen.
-			 */
-			if (extotalcount >= SCREENSIZE(ep)) {
-				MOVE(0, 0);
-			} else
-				MOVE(SCREENSIZE(ep) - extotalcount, 0);
-			deleteln();
+		if (continueline != THISLINE && extotalcount != 0)
+			(void)moveup(ep, 0, 0, NULL);
 
-			/* If just displayed a full screen, wait. */
-			if (exlinecount == SCREENSIZE(ep)) {
-				MOVE(SCREENSIZE(ep), 0);
-				addbytes(CONTMSG, sizeof(CONTMSG) - 1);
-				clrtoeol();
-				refresh();
-				while (special[ch = getkey(0)] != K_CR &&
-				    !isspace(ch))
-					bell();
-				exlinecount = 0;
-			}
-		}
-
-		switch(continueline) {
+		switch (continueline) {
 		case NEXTLINE:
 			continueline = THISLINE;
 			/* FALLTHROUGH */
@@ -204,4 +173,37 @@ v_exwrite(cookie, line, llen)
 		line += len + (p == NULL ? 0 : 1);
 	}
 	return (rlen);
+}
+
+static int
+moveup(ep, mustwait, colon_ok, chp)
+	EXF *ep;
+	int mustwait, colon_ok, *chp;
+{
+	int ch;
+
+	/*
+	 * Scroll the screen.  Instead of scrolling the entire screen, delete
+	 * the line above the first line output so preserve the maximum amount
+	 * of the screen.
+	 */
+	if (extotalcount >= SCREENSIZE(ep)) {
+		MOVE(0, 0);
+	} else
+		MOVE(SCREENSIZE(ep) - extotalcount, 0);
+	deleteln();
+
+	/* If just displayed a full screen, wait. */
+	if (mustwait || exlinecount == SCREENSIZE(ep)) {
+		MOVE(SCREENSIZE(ep), 0);
+		addbytes(CONTMSG, sizeof(CONTMSG) - 1);
+		clrtoeol();
+		refresh();
+		while (special[ch = getkey(0)] != K_CR &&
+		    !isspace(ch) && (!colon_ok || ch != ':'))
+			bell();
+		if (chp != NULL)
+			*chp = ch;
+		exlinecount = 0;
+	}
 }
