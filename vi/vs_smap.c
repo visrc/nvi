@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 8.9 1993/09/01 12:23:19 bostic Exp $ (Berkeley) $Date: 1993/09/01 12:23:19 $";
+static char sccsid[] = "$Id: vs_smap.c,v 8.10 1993/09/09 10:27:04 bostic Exp $ (Berkeley) $Date: 1993/09/09 10:27:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -426,7 +426,7 @@ svi_sm_up(sp, ep, rp, count, cursor_move)
 {
 	SMAP *p, svmap, tmp;
 	recno_t last;
-	int scrolled;
+	int ignore_cursor, scrolled;
 
 	/* Set the default return position. */
 	rp->lno = sp->lno;
@@ -439,16 +439,19 @@ svi_sm_up(sp, ep, rp, count, cursor_move)
 	 * is small enough and the line length large enough, the cursor can
 	 * end up in very strange places.  Probably not worth fixing.
 	 *
-	 * Find the line in the SMAP.
+	 * Find the line in the SMAP.  If the line isn't there, then we
+	 * completely ignore the cursor.
 	 */
+	ignore_cursor = 0;
 	for (p = HMAP;; ++p) {
 		if (p > TMAP) {
-			msgq(sp, M_ERR,
-			    "Line %lu not on the screen.", sp->lno);
-			return (1);
-		}
-		if (p->lno == sp->lno)
+			ignore_cursor = 1;
 			break;
+		}
+		if (p->lno == sp->lno) {
+			svmap = *p;
+			break;
+		}
 	}
 
 	if (file_lline(sp, ep, &last))
@@ -457,7 +460,7 @@ svi_sm_up(sp, ep, rp, count, cursor_move)
 		v_eof(sp, ep, NULL);
 		return (1);
 	}
-	for (svmap = *p, scrolled = 0;; scrolled = 1) {
+	for (scrolled = 0;; scrolled = 1) {
 		if (count == 0)
 			break;
 		--count;
@@ -474,9 +477,13 @@ svi_sm_up(sp, ep, rp, count, cursor_move)
 		if (svi_sm_1up(sp, ep))
 			return (1);
 		
-		if (!cursor_move && p > HMAP)
+		if (!cursor_move && !ignore_cursor && p > HMAP)
 			--p;
 	}
+
+	/* If ignoring the cursor, we're done. */
+	if (ignore_cursor)
+		return (0);
 
 	if (cursor_move) {
 		/*
@@ -592,7 +599,7 @@ svi_sm_down(sp, ep, rp, count, cursor_move)
 	int cursor_move;
 {
 	SMAP *p, svmap;
-	int scrolled;
+	int ignore_cursor, scrolled;
 
 	/* Set the default return position. */
 	rp->lno = sp->lno;
@@ -605,19 +612,22 @@ svi_sm_down(sp, ep, rp, count, cursor_move)
 	 * is small enough and the line length large enough, the cursor can
 	 * end up in very strange places.  Probably not worth fixing.
 	 *
-	 * Find the line in the SMAP.
+	 * Find the line in the SMAP.  If the line isn't there, then we
+	 * completely ignore the cursor.
 	 */
+	ignore_cursor = 0;
 	for (p = HMAP;; ++p) {
 		if (p > TMAP) {
-			msgq(sp, M_ERR,
-			    "Line %lu not on the screen", sp->lno);
-			return (1);
-		}
-		if (p->lno == sp->lno)
+			ignore_cursor = 1;
 			break;
+		}
+		if (p->lno == sp->lno) {
+			svmap = *p;
+			break;
+		}
 	}
 
-	for (svmap = *p, scrolled = 0;; scrolled = 1) {
+	for (scrolled = 0;; scrolled = 1) {
 		if (count == 0)
 			break;
 		--count;
@@ -630,9 +640,13 @@ svi_sm_down(sp, ep, rp, count, cursor_move)
 		if (svi_sm_1down(sp, ep))
 			return (1);
 		
-		if (!cursor_move && p < TMAP)
+		if (!cursor_move && !ignore_cursor && p < TMAP)
 			++p;
 	}
+
+	/* If ignoring the cursor, we're done. */
+	if (ignore_cursor)
+		return (0);
 
 	if (cursor_move) {
 		/*
@@ -650,7 +664,7 @@ svi_sm_down(sp, ep, rp, count, cursor_move)
 	} else {
 		/*
 		 * If the line itself moved, invalidate the cursor, because
-		 * the comparison with the old line/new line won't be right
+		 * the comparison with the old line/new line won't be right.
 		 */
 		F_SET(sp, S_CUR_INVALID);
 
