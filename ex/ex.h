@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.68 1994/08/04 14:13:07 bostic Exp $ (Berkeley) $Date: 1994/08/04 14:13:07 $
+ *	$Id: ex.h,v 8.69 1994/08/04 14:23:01 bostic Exp $ (Berkeley) $Date: 1994/08/04 14:23:01 $
  */
 
 /* Ex command structure. */
@@ -162,6 +162,7 @@ int	ex_init __P((SCR *, EXF *));
 int	ex_is_abbrev __P((char *, size_t));
 int	ex_is_unmap __P((char *, size_t));
 int	ex_ldisplay __P((SCR *, CHAR_T *, size_t, size_t, u_int));
+int	ex_ncheck __P((SCR *, int));
 int	ex_optchange __P((SCR *, int));
 int	ex_print __P((SCR *, EXF *, MARK *, MARK *, int));
 int	ex_readfp __P((SCR *, EXF *, char *, FILE *, MARK *, recno_t *, int));
