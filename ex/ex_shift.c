@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shift.c,v 8.1 1993/06/09 22:25:29 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:25:29 $";
+static char sccsid[] = "$Id: ex_shift.c,v 8.2 1993/08/15 13:10:50 bostic Exp $ (Berkeley) $Date: 1993/08/15 13:10:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -60,14 +60,15 @@ shift(sp, ep, cmdp, rl)
 	 * of '>' or '<' characters together, resulting in an indent of the
 	 * appropriate levels.  There's a special hack in ex_cmd() so that
 	 * cmdp->string points to the string of '>' or '<' characters, but it
-	 * is NOT nul terminated.
+	 * may not be nul terminated.
 	 *
 	 * Q: What's the difference between the people adding features
 	 *    to vi and the Girl Scouts?
 	 * A: The Girl Scouts have mint cookies and adult supervision.
 	 */
-	for (p = cmdp->string, sw = 0;
-	    *p && (*p == '>' || *p == '<'); ++p, sw += O_VAL(sp, O_SHIFTWIDTH));
+	if ((p = cmdp->string) != NULL)
+		for (sw = 0; *p && (*p == '>' || *p == '<'); ++p)
+			sw += O_VAL(sp, O_SHIFTWIDTH);
 
 	GET_SPACE(sp, bp, blen, 256);
 
