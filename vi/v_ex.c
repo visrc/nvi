@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 5.25 1992/12/21 13:45:10 bostic Exp $ (Berkeley) $Date: 1992/12/21 13:45:10 $";
+static char sccsid[] = "$Id: v_ex.c,v 5.26 1992/12/23 13:12:36 bostic Exp $ (Berkeley) $Date: 1992/12/23 13:12:36 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -134,7 +134,7 @@ v_exwrite(cookie, line, llen)
 {
 	static size_t lcont;
 	EXF *ep;
-	int len, rlen;
+	int len, rlen, tlen;
 	char *p;
 
 	for (ep = cookie, rlen = llen; llen;) {
@@ -164,15 +164,17 @@ v_exwrite(cookie, line, llen)
 			MOVE(SCREENSIZE(ep), 0);
 			++extotalcount;
 			++exlinecount;
+			tlen = len;
 			break;
 		case THISLINE:
 			MOVE(SCREENSIZE(ep), lcont);
+			tlen = len + lcont;
 			continueline = NOTSET;
 			break;
 		}
 		addbytes(line, len);
 
-		if (len < ep->cols)
+		if (tlen < ep->cols)
 			clrtoeol();
 
 		line += len + (p == NULL ? 0 : 1);
