@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: options.h,v 10.9 1996/02/20 21:07:02 bostic Exp $ (Berkeley) $Date: 1996/02/20 21:07:02 $
+ *	$Id: options.h,v 10.10 1996/02/25 18:22:23 bostic Exp $ (Berkeley) $Date: 1996/02/25 18:22:23 $
  */
 
 /*
@@ -39,6 +39,12 @@
 #define	OG_D_STR(gp, o)		((gp)->opts[(o)].o_def.str)
 #define	OG_D_VAL(gp, o)		((gp)->opts[(o)].o_def.val)
 
+/* Flags to o_set(). */
+#define	OS_DEF		0x01		/* Set the default value. */
+#define	OS_FREE		0x02		/* Free old string if set. */
+#define	OS_STR		0x04		/* Set to the str value. */
+#define	OS_STRDUP	0x08		/* Copy and set to the str value. */
+
 struct _option {
 	union {
 		u_long	 val;		/* Value or boolean. */
@@ -54,8 +60,8 @@ struct _option {
 		u_long	 val;		/* Value or boolean. */
 		char	*str;		/* String. */
 	} o_def;
-#define	O_D_CLR(sp, o)		o_set(sp, o, 1, NULL, 0)
-#define	O_D_SET(sp, o)		o_set(sp, o, 1, NULL, 1)
+#define	O_D_CLR(sp, o)		o_set(sp, o, OS_DEF, NULL, 0)
+#define	O_D_SET(sp, o)		o_set(sp, o, OS_DEF, NULL, 1)
 #define	O_D_STR(sp, o)		O_V(sp, o, o_def.str)
 #define	O_D_VAL(sp, o)		O_V(sp, o, o_def.val)
 #define	O_D_ISSET(sp, o)	O_D_VAL(sp, o)
@@ -79,12 +85,6 @@ struct _optlist {
 #define	OPT_NOUNSET	0x08		/* Mkexrc command doesn't save. */
 	u_int8_t flags;
 };
-
-/* Flags to o_set(). */
-#define	OS_DEF		0x01		/* Set the default value. */
-#define	OS_FREE		0x02		/* Free old string if set. */
-#define	OS_STR		0x04		/* Set to the str value. */
-#define	OS_STRDUP	0x08		/* Copy and set to the str value. */
 
 /* Option argument to opts_dump(). */
 enum optdisp { NO_DISPLAY, ALL_DISPLAY, CHANGED_DISPLAY, SELECT_DISPLAY };
