@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.133 1994/07/25 17:35:25 bostic Exp $ (Berkeley) $Date: 1994/07/25 17:35:25 $";
+static char sccsid[] = "$Id: ex.c,v 8.134 1994/08/01 16:15:57 bostic Exp $ (Berkeley) $Date: 1994/08/01 16:15:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -352,7 +352,7 @@ loop:	if (nl) {
 	 * the command "cut" wasn't known.  However, it makes ":e+35 file" work
 	 * correctly.
 	 */
-#define	SINGLE_CHAR_COMMANDS	"\004!#&<=>@~"
+#define	SINGLE_CHAR_COMMANDS	"\004!#&*<=>@~"
 	if (cmdlen != 0 && cmd[0] != '|' && cmd[0] != '\n') {
 		if (strchr(SINGLE_CHAR_COMMANDS, *cmd)) {
 			p = cmd;
