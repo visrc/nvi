@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 5.3 1992/04/19 10:54:13 bostic Exp $ (Berkeley) $Date: 1992/04/19 10:54:13 $
+ *	$Id: vi.h,v 5.4 1992/04/22 08:10:04 bostic Exp $ (Berkeley) $Date: 1992/04/22 08:10:04 $
  */
 
 #define	C_C_K_REP1	(CURSOR_CNT_KEY | 0x10)
@@ -41,6 +41,40 @@ typedef struct {
 } VIKEYS;
 extern VIKEYS vikeys[];		/* List of vi commands. */
 
+/* This macro is used to set the default value of cnt for an operation */
+#define SETDEFCNT(val) { \
+	if (cnt < 1) \
+		cnt = (val); \
+}
+
+MARK	adjmove();		/* a helper fn, used by move fns */
+MARK	m_Fch();		/* F */
+MARK	m_Nsrch();		/* N */
+MARK	m_Tch();		/* T */
+MARK	m__ch();		/* ; , */
+MARK	m_bsentence();		/* ( */
+MARK	m_bsrch();		/* ?regexp */
+MARK	m_bword();		/* b */
+MARK	m_eword();		/* e */
+MARK	m_fch();		/* f */
+MARK	m_front();		/* ^ */
+MARK	m_fsentence();		/* ) */
+MARK	m_fsrch();		/* /regexp */
+MARK	m_fword();		/* w */
+MARK	m_left();		/* l */
+MARK	m_match();		/* % */
+MARK	m_nsrch();		/* n */
+MARK	m_paragraph();		/* { } [[ ]] */
+MARK	m_rear();		/* $ */
+MARK	m_right();		/* h */
+MARK	m_row();		/* H L M */
+MARK	m_scroll();		/* ^B ^F ^E ^Y ^U ^D */
+MARK	m_tch();		/* t */
+MARK	m_tocol();		/* | */
+MARK	m_tomark();		/* 'm */
+MARK	m_updnto();		/* k j G */
+MARK	m_wsrch();		/* ^A */
+MARK	m_z();			/* z */
 MARK	v_again __P((MARK, MARK));
 MARK	v_at __P((MARK, long, int));
 MARK	v_change __P((MARK, MARK));
@@ -67,7 +101,7 @@ MARK	v_switch __P((void));
 MARK	v_tag __P((char *, MARK, long));
 MARK	v_ulcase __P((MARK, long));
 MARK	v_undo __P((MARK));
-MARK	v_undoine __P((MARK));
+MARK	v_undoline __P((MARK));
 MARK	v_xchar __P((MARK, long, int));
 MARK	v_xit __P((MARK, long, int));
 MARK	v_yank __P((MARK, MARK));
