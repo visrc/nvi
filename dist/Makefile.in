@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.78 1996/12/03 10:20:54 bostic Exp $ (Berkeley) $Date: 1996/12/03 10:20:54 $
+#	$Id: Makefile.in,v 8.79 1996/12/03 12:14:43 bostic Exp $ (Berkeley) $Date: 1996/12/03 12:14:43 $
 
 srcdir=	@srcdir@/..
 CC=	@CC@
@@ -56,8 +56,8 @@ C_IPC=	ipc_cfunc.o ipc_cmain.o \
 nvi_curses: $(C_IPC)
 	$(SHRPENV) $(CC) $(LDFLAGS) -o $@ @cobjs@ $(C_IPC) @LIBS@
 
-M_IPC=	ipc_mcde.o ipc_mcopypaste.o ipc_mmain.o ipc_mmenu.o \
-	ipc_mutil.o \
+M_IPC=	ipc_mcde.o ipc_mcopypaste.o ipc_mfunc.o ipc_mmain.o ipc_mmenu.o \
+	ipc_msearch.o ipc_mutil.o \
 	ipc_run.o ipc_send.o ipc_trans.o @LIBOBJS@
 nvi_motif: $(M_IPC)
 	$(SHRPENV) $(CC) $(LDFLAGS) -o $@ $(M_IPC) @MOTIFLIBS@
@@ -256,8 +256,8 @@ ip_term.o: $(srcdir)/ip_vi/ip_term.c
 VI=-DVI=\"$(bindir)/`echo vi | sed '$(transform)'`\"
 
 # TR turns on IP tracing and defines the trace file.
-#TR=__log
-#TR=/dev/ttyp8
+#TR=-DTR=\"__log\"
+#TR=-DTR=\"/dev/ttyp8\"
 
 # Shared IP client sources.
 $(srcdir)/ipc/ipc_run.c: Makefile
@@ -279,9 +279,13 @@ ipc_mcde.o: $(srcdir)/ipc_motif/ipc_mcde.c
 	$(CC) $(TR) $(CFLAGS) @XINCS@ $<
 ipc_mcopypaste.o: $(srcdir)/ipc_motif/ipc_mcopypaste.c
 	$(CC) $(TR) $(CFLAGS) @XINCS@ $<
+ipc_mfunc.o: $(srcdir)/ipc_motif/ipc_mfunc.c
+	$(CC) $(TR) $(CFLAGS) @XINCS@ $<
 ipc_mmain.o: $(srcdir)/ipc_motif/ipc_mmain.c
 	$(CC) $(TR) $(CFLAGS) @XINCS@ $<
 ipc_mmenu.o: $(srcdir)/ipc_motif/ipc_mmenu.c
+	$(CC) $(TR) $(CFLAGS) @XINCS@ $<
+ipc_msearch.o: $(srcdir)/ipc_motif/ipc_msearch.c
 	$(CC) $(TR) $(CFLAGS) @XINCS@ $<
 ipc_mutil.o: $(srcdir)/ipc_motif/ipc_mutil.c
 	$(CC) $(TR) $(CFLAGS) @XINCS@ $<
