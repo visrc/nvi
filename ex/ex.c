@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.82 1993/04/12 14:34:35 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:34:35 $";
+static char sccsid[] = "$Id: ex.c,v 5.83 1993/04/13 16:21:32 bostic Exp $ (Berkeley) $Date: 1993/04/13 16:21:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -37,24 +37,24 @@ ex(sp, ep)
 	SCR *sp;
 	EXF *ep;
 {
-	size_t len;
-	char *p, defcom[sizeof(DEFCOM)];
+	TEXT *tp;
+	char defcom[sizeof(DEFCOM)];
 
 	if (ex_init(sp, ep))
 		return (1);
 	status(sp, ep, sp->lno);
 	do {
-		if (ex_gb(sp, 1, &p, &len, GB_MAPCOMMAND))
+		if (ex_gb(sp, ep, &sp->bhdr, ':', TXT_MAPCOMMAND | TXT_PROMPT))
 			continue;
-		if (*p) {
-			(void)fputc('\n', sp->stdfp);
-			(void)ex_cstring(sp, ep, p, len, 0);
-		} else {
+		tp = sp->bhdr.next;
+		if (tp->len == 0) {
 			(void)fputc('\r', sp->stdfp);
 			(void)fflush(sp->stdfp);
 			memmove(defcom, DEFCOM, sizeof(DEFCOM));
-			(void)ex_cstring(sp, ep,
-			    defcom, sizeof(DEFCOM) - 1, 0);
+			(void)ex_cstring(sp, ep, defcom, sizeof(DEFCOM) - 1);
+		} else {
+			(void)fputc('\n', sp->stdfp);
+			(void)ex_cstring(sp, ep, tp->lb, tp->len);
 		}
 	} while (F_ISSET(sp, S_MODE_EX) && !F_ISSET(sp, S_FILE_CHANGED));
 	return (ex_end(sp));
@@ -99,7 +99,7 @@ ex_cfile(sp, ep, filename, noexisterr)
 	}
 	bp[sb.st_size] = '\0';
 
-	rval = ex_cstring(sp, ep, bp, len, 1);
+	rval = ex_cstring(sp, ep, bp, len);
 	/*
 	 * XXX
 	 * THE UNDERLYING EXF MAY HAVE CHANGED (but we don't care).
@@ -117,21 +117,21 @@ e1:	msgq(sp, M_ERR, "%s: %s.", filename, strerror(errno));
 /*
  * ex_cstring --
  *	Execute EX commands from a string.  The commands may be separated
- *	by newlines or by | characters, and may be quoted.
+ *	by newlines or by | characters, and may be quoted.  This is the
+ *	last time we'll look at quoting, btw.  Everything below this layer
+ *	is the character that it is, without special intepretation.
  */
 int
-ex_cstring(sp, ep, cmd, len, doquoting)
+ex_cstring(sp, ep, cmd, len)
 	SCR *sp;
 	EXF *ep;
 	char *cmd;
-	int len, doquoting;
+	int len;
 {
 	u_int saved_mode;
 	int cnt, rval;
 	char *p, *t;
 
-	if (doquoting)
-		QINIT;
 	/*
 	 * Walk the string, checking for '\' or '^V' quotes and '|' or
 	 * '\n' separated commands.  The string "^V\n" is a single '^V'.
@@ -141,8 +141,6 @@ ex_cstring(sp, ep, cmd, len, doquoting)
 	for (p = t = cmd, cnt = 0;; ++cnt, ++t, --len) {
 		if (len == 0)
 			goto cend;
-		if (doquoting && cnt == sp->gb_len)
-			gb_inc(sp);
 		switch(*t) {
 		case '|':
 		case '\n':
@@ -164,13 +162,10 @@ cend:			if (p > cmd) {
 		    "File or status changed, remaining input discarded.");
 				return (1);
 			}
-			if (doquoting)
-				QINIT;
 			break;
 		case '\\':
 		case ctrl('V'):
-			if (doquoting && len > 1 && t[1] != '\n') {
-				QSET(cnt);
+			if (t[1] != '\n') {
 				++t;
 				--len;
 			}
