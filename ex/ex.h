@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 10.8 1995/09/28 12:00:03 bostic Exp $ (Berkeley) $Date: 1995/09/28 12:00:03 $
+ *	$Id: ex.h,v 10.9 1995/10/02 16:32:27 bostic Exp $ (Berkeley) $Date: 1995/10/02 16:32:27 $
  */
 
 #define	PROMPTCHAR	':'		/* Prompt using a colon. */
@@ -194,7 +194,6 @@ enum filtertype { FILTER_BANG, FILTER_RBANG, FILTER_READ, FILTER_WRITE };
 /* Ex common error messages. */
 typedef enum {
 	EXM_EMPTYBUF,			/* Empty buffer. */
-	EXM_INTERRUPT,			/* Interrupted. */
 	EXM_NOCANON,			/* No standard output. */
 	EXM_NOFILEYET,			/* Illegal until a file read in. */
 	EXM_NOPREVBUF,			/* No previous buffer specified. */
