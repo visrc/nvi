@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 9.17 1995/01/30 09:14:17 bostic Exp $ (Berkeley) $Date: 1995/01/30 09:14:17 $";
+static char sccsid[] = "$Id: vi.c,v 9.18 1995/01/30 18:10:33 bostic Exp $ (Berkeley) $Date: 1995/01/30 18:10:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,6 +30,7 @@ static char sccsid[] = "$Id: vi.c,v 9.17 1995/01/30 09:14:17 bostic Exp $ (Berke
 #include <regex.h>
 
 #include "vi.h"
+#include "excmd.h"
 #include "vcmd.h"
 #include "../svi/svi_screen.h"
 
@@ -129,7 +130,7 @@ vi(sp)
 		 * entering extra <escape> characters at the beginning of
 		 * a map wasn't considered an error -- in fact, users would
 		 * put leading <escape> characters in maps to clean up vi
-		 * state before the map was interpreted.
+		 * state before the map was interpreted.  Beauty!
 		 */
 		switch (v_cmd(sp, DOT, vp, NULL, &comcount, &mapped)) {
 		case GC_ERR:
@@ -311,7 +312,9 @@ vi(sp)
 
 		if (!MAPPED_KEYS_WAITING(sp)) {
 			if (0) {
-err:				term_flush(sp, "Vi error", CH_MAPPED);
+err:				if (term_flush(sp, CH_MAPPED))
+					msgq(sp, M_ERR,
+				"163|Vi command failed: mapped keys discarded");
 			}
 err_noflush:		(void)msg_rpt(sp, 1);
 		}
@@ -322,8 +325,12 @@ err_noflush:		(void)msg_rpt(sp, 1);
 		 */
 		if (INTERRUPTED(sp) || F_ISSET(sp, S_SCR_RESIZE)) {
 			if (INTERRUPTED(sp)) {
-intr:				CLR_INTERRUPT(sp);
-				term_flush(sp, "Interrupted", CH_MAPPED);
+intr:				if (term_flush(sp, CH_MAPPED))
+					msgq(sp, M_ERR,
+				"167|Interrupted: mapped keys discarded");
+				else
+					ex_message(sp, NULL, EXM_INTERRUPTED);
+				CLR_INTERRUPT(sp);
 			}
 			if (F_ISSET(sp, S_SCR_RESIZE))
 				break;
