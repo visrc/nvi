@@ -14,7 +14,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: perl.xs,v 8.28 1997/08/03 15:46:33 bostic Exp $ (Berkeley) $Date: 1997/08/03 15:46:33 $";
+static const char sccsid[] = "$Id: perl.xs,v 8.29 1997/08/07 19:02:17 bostic Exp $ (Berkeley) $Date: 1997/08/07 19:02:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -37,7 +37,7 @@ static const char sccsid[] = "$Id: perl.xs,v 8.28 1997/08/03 15:46:33 bostic Exp
 #include <perl.h>
 #include <XSUB.h>
 
-#include "perl_extern.h"
+#include "../perl_api/extern.h"
 
 static void msghandler __P((SCR *, mtype_t, char *, size_t));
 
@@ -417,10 +417,10 @@ extern void boot_VI _((CV* cv));
 static void
 xs_init()
 {
+	char *file = __FILE__;
 #ifdef HAVE_PERL_5_003_01
 	dXSUB_SYS;
 #endif
-	char *file = __FILE__;
 
 	newXS("DynaLoader::boot_DynaLoader", boot_DynaLoader, file);
 	newXS("VI::bootstrap", boot_VI, file);
