@@ -6,13 +6,14 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.9 1993/08/30 09:41:33 bostic Exp $ (Berkeley) $Date: 1993/08/30 09:41:33 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.10 1993/09/10 18:51:49 bostic Exp $ (Berkeley) $Date: 1993/09/10 18:51:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
 #include <ctype.h>
 #include <curses.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "vi.h"
@@ -39,7 +40,7 @@ svi_refresh(sp, ep)
 	CHNAME *cname;
 	SMAP *smp, tmp;
 	recno_t lastline, lcnt;
-	size_t cwtotal, cnt, len, x, y;
+	size_t cwtotal, cnt, adj, len, x, y;
 	int ch;
 	char *p;
 
@@ -67,17 +68,23 @@ svi_refresh(sp, ep)
 		 * gets called after the last SCR structure has been free'd, so
 		 * sp is almost certainly NULL.
 		 */
-		if (sp->svi_private != NULL) {
+		if (SVP(sp) != NULL) {
 			FREE(HMAP, sp->w_rows * sizeof(SMAP));
-			FREE(sp->svi_private, sizeof(SVI_PRIVATE));
+			FREE(SVP(sp), sizeof(SVI_PRIVATE));
 			if (screen_end(INFOLINE(sp)))
 				return (1);
 		}
+
 		if (screen_init(sp))
 			return (1);
+
+		/* Toss svi_screens() cached information. */
+		SVP(sp)->ss_lno = OOBLNO;
+
+		/* Toss svi_line() cached information. */
 		if (sp->s_fill(sp, ep, sp->lno, P_FILL))
 			return (1);
-		F_CLR(sp, S_RESIZE);
+		F_CLR(sp, S_RESIZE | S_REFORMAT);
 		F_SET(sp, S_REDRAW);
 	}
 
@@ -89,6 +96,10 @@ svi_refresh(sp, ep)
 	 * displayed if the leftright flag is set.
 	 */
 	if (F_ISSET(sp, S_REFORMAT)) {
+		/* Toss svi_screens() cached information. */
+		SVP(sp)->ss_lno = OOBLNO;
+
+		/* Toss svi_line() cached information. */
 		if (svi_sm_fill(sp, ep, HMAP->lno, P_TOP))
 			return (1);
 		if (O_ISSET(sp, O_LEFTRIGHT) &&
@@ -211,26 +222,36 @@ middle:		if (svi_sm_fill(sp, ep, LNO, P_MIDDLE))
 	 * line may not be on the screen.  While that's not necessarily bad,
 	 * if the part the cursor is on isn't there, we're going to lose.
 	 * This can be tricky; if the line covers the entire screen, lno
-	 * may be the same as both ends of the map, that's why we test both
+	 * may be the same as both ends of the map, that's why we test BOTH
 	 * the top and the bottom of the map.  This isn't a problem for
 	 * left-right scrolling, the cursor movement code handles the problem.
 	 *
-	 * XXX
-	 * There's a real performance issue here if editing *really* long
-	 * lines.  This gets to the right spot by scrolling, and, in a
-	 * binary, by scrolling hundreds of lines.
+	 * There's a performance issue here if editing *really* long lines.
+	 * This gets to the right spot by scrolling, and, in a binary, by
+	 * scrolling hundreds of lines.  If the adjustment looks like it's
+	 * going to be a serious problem, refill the screen and repaint.
 	 */
 adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 	    (LNO == HMAP->lno || LNO == TMAP->lno)) {
 		cnt = svi_screens(sp, ep, LNO, &CNO);
-		if (LNO == HMAP->lno)
-			while (cnt < HMAP->off)
-				if (svi_sm_1down(sp, ep))
-					return (1);
-		if (LNO == TMAP->lno)
-			while (cnt > TMAP->off)
-				if (svi_sm_1up(sp, ep))
-					return (1);
+		if (LNO == HMAP->lno && cnt < HMAP->off)
+			if ((HMAP->off - cnt) > HALFSCREEN(sp)) {
+				HMAP->off = cnt;
+				svi_sm_fill(sp, ep, OOBLNO, P_TOP);
+				F_SET(sp, S_REDRAW);
+			} else
+				while (cnt < HMAP->off)
+					if (svi_sm_1down(sp, ep))
+						return (1);
+		if (LNO == TMAP->lno && cnt > TMAP->off)
+			if ((cnt - TMAP->off) > HALFSCREEN(sp)) {
+				TMAP->off = cnt;
+				svi_sm_fill(sp, ep, OOBLNO, P_BOTTOM);
+				F_SET(sp, S_REDRAW);
+			} else
+				while (cnt > TMAP->off)
+					if (svi_sm_1up(sp, ep))
+						return (1);
 	}
 
 	/* If the screen needs to be repainted, skip cursor optimization. */
@@ -257,25 +278,15 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 	 * a tab, without reparsing the whole line.
 	 */
 
-	/*
-	 * If the line we're working with has changed, reparse.
-	 */
-	if (F_ISSET(sp, S_CUR_INVALID) || LNO != OLNO) {
-		F_CLR(sp, S_CUR_INVALID);
+	/* If the line we're working with has changed, reparse. */
+	if (F_ISSET(SVP(sp), SVI_CUR_INVALID) || LNO != OLNO) {
+		F_CLR(SVP(sp), SVI_CUR_INVALID);
 		goto slow;
 	}
 
-	/*
-	 * Otherwise, if nothing's changed, go fast.  The one exception is
-	 * that a single character or no characters are both column 0, and,
-	 * if the single character required multiple screen columns, there
-	 * may have still been movement.
-	 */
-	if (CNO == OCNO) {
-		if (CNO == 0)
-			goto slow;
+	/* Otherwise, if nothing's changed, go fast. */
+	if (CNO == OCNO)
 		goto fast;
-	}
 
 	/*
 	 * Get the current line.  If this fails, we either have an empty
@@ -321,6 +332,15 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 			goto slow;
 
 		/*
+		 * Quit sanity check -- it's hard to figure out exactly when
+		 * we cross a screen boundary as we do in the cursor right
+		 * movement.  If cnt is so large that we're going to cross the
+		 * boundary no matter what, stop now.
+		 */
+		if (SCNO + 1 + MAX_CHARACTER_COLUMNS < cnt)
+			goto lscreen;
+
+		/*
 		 * Count up the widths of the characters.  If it's a tab
 		 * character, go do it the the slow way.
 		 */
@@ -346,7 +366,7 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 		 * calculate a new screen.
 		 */
 		if (SCNO < cwtotal) {
-			if (O_ISSET(sp, O_LEFTRIGHT)) {
+lscreen:		if (O_ISSET(sp, O_LEFTRIGHT)) {
 				for (smp = HMAP; smp <= TMAP; ++smp)
 					--smp->off;
 				goto paint;
@@ -365,17 +385,21 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 
 		/*
 		 * Count up the widths of the characters.  If it's a tab
-		 * character, go do it the the slow way.
+		 * character, go do it the the slow way.  If we cross a
+		 * screen boundary, we can quit.
 		 */
-		for (cwtotal = 0; cnt--; cwtotal += cname[ch].len)
+		for (cwtotal = SCNO; cnt--;) {
 			if ((ch = *(u_char *)p++) == '\t')
 				goto slow;
+			if ((cwtotal += cname[ch].len) >= SCREEN_COLS(sp))
+				break;
+		}
 
 		/*
 		 * Increment the screen cursor by the total width of the
 		 * characters.
 		 */
-		SCNO += cwtotal;
+		SCNO = cwtotal;
 
 		/*
 		 * If the new column moved us out of the current screen,
@@ -412,10 +436,16 @@ slow:	/* Find the current line in the map. */
 		}
 	}
 
-	/* Update all of the screen lines for this file line. */
-	for (; smp <= TMAP && smp->lno == LNO; ++smp)
+	/*
+	 * Update screen lines for this file line until we have a new
+	 * screen cursor position.
+	*/
+	for (y = -1; smp <= TMAP && smp->lno == LNO; ++smp) {
 		if (svi_line(sp, ep, smp, &y, &SCNO))
 			return (1);
+		if (y != -1)
+			break;
+	}
 
 	/* Not too bad, move the cursor. */
 	goto update;
