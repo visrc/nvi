@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 5.17 1993/02/11 15:12:06 bostic Exp $ (Berkeley) $Date: 1993/02/11 15:12:06 $";
+static char sccsid[] = "$Id: v_scroll.c,v 5.18 1993/02/12 13:32:43 bostic Exp $ (Berkeley) $Date: 1993/02/12 13:32:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -166,7 +166,7 @@ v_hpagedown(vp, fm, tm, rp)
 
 	/* Check for EOF. */
 	last = file_lline(curf);
-	if (fm->lno == last) {
+	if (fm->lno > last) {
 		v_eof(NULL);
 		return (1);
 	}
@@ -209,7 +209,7 @@ v_pagedown(vp, fm, tm, rp)
 
 	/* Check for EOF. */
 	last = file_lline(curf);
-	if (fm->lno == last) {
+	if (fm->lno > last) {
 		v_eof(NULL);
 		return (1);
 	}
