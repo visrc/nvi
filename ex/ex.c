@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.105 1994/03/15 15:03:25 bostic Exp $ (Berkeley) $Date: 1994/03/15 15:03:25 $";
+static char sccsid[] = "$Id: ex.c,v 8.106 1994/03/23 17:27:57 bostic Exp $ (Berkeley) $Date: 1994/03/23 17:27:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1462,7 +1462,7 @@ search:		if (ep == NULL) {
 		m.lno = sp->lno;
 		m.cno = sp->cno;
 		flags = SEARCH_MSG | SEARCH_PARSE | SEARCH_SET;
-		if (b_search(sp, ep, &m, &m, cmd, &endp, &flags))
+		if (sf(sp, ep, &m, &m, cmd, &endp, &flags))
 			return (1);
 		cur->lno = m.lno;
 		cur->cno = m.cno;
