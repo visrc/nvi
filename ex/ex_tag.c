@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 9.4 1994/11/17 20:43:31 bostic Exp $ (Berkeley) $Date: 1994/11/17 20:43:31 $";
+static char sccsid[] = "$Id: ex_tag.c,v 9.5 1994/11/17 20:44:55 bostic Exp $ (Berkeley) $Date: 1994/11/17 20:44:55 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -253,7 +253,7 @@ err:		free(tag);
 		 */
 		m.lno = 1;
 		m.cno = 0;
-		flags = SEARCH_FILE | SEARCH_TAG | SEARCH_TERM;
+		flags = SEARCH_FILE | SEARCH_TAG;
 		sval = f_search(sp, &m, &m, search, NULL, &flags);
 		if (sval && (p = strrchr(search, '(')) != NULL) {
 			p[1] = '\0';
