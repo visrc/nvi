@@ -3,10 +3,10 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: vi.chars,v 8.2 1994/05/23 14:29:20 ah Exp $ (Berkeley) $Date: 1994/05/23 14:29:20 $
+.\"	$Id: vi.chars,v 8.3 1996/06/27 19:53:17 bostic Exp $ (Berkeley) $Date: 1996/06/27 19:53:17 $
 .\"
 .bd S 3
-..pn 21
+.pn 21
 .de iP
 .IP "\fB\\$1\fR" \\$2
 ..
