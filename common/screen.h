@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 5.14 1993/02/13 15:36:10 bostic Exp $ (Berkeley) $Date: 1993/02/13 15:36:10 $
+ *	$Id: screen.h,v 5.15 1993/02/16 20:08:10 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:08:10 $
  */
 
 /*
@@ -32,10 +32,9 @@
 	((ISSET(O_NUMBER) ? (ep)->cols - O_NUMBER_LENGTH : (ep)->cols))
 
 /* Move, and fail if it doesn't work. */
-#define	MOVE(lno, cno) {						\
+#define	MOVE(ep, lno, cno) {						\
 	if (move(lno, cno) == ERR) {					\
-		bell();							\
-		msg("Error: %s/%d: move(%u, %u).",			\
+		msg(ep, M_ERROR, "Error: %s/%d: move(%u, %u).",		\
 		    tail(__FILE__), __LINE__, lno, cno);		\
 		return (1);						\
 	}								\
@@ -47,7 +46,7 @@
  * Flags to the screen change routine.  The LINE_LOGICAL flag is OR'd into
  * the other flags if the operation is only logical.   The problem this is
  * meant to solve is that if the operation is logical, not physical, the top
- * line value may change, i.e. curf->top is changed as part of the update.
+ * line value may change, i.e. EXF->top is changed as part of the update.
  * LINE_LOGICAL is not meaningful for the LINE_RESET flag.
  */
 #define	LINE_LOGICAL	0x001		/* Logical, not physical. */

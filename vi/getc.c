@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: getc.c,v 5.8 1992/12/05 11:10:35 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:10:35 $";
+static char sccsid[] = "$Id: getc.c,v 5.9 1993/02/16 20:08:08 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:08:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,18 +28,19 @@ static u_char *p;
  *	Initialize getc routines.
  */
 int
-getc_init(fm, chp)
+getc_init(ep, fm, chp)
+	EXF *ep;
 	MARK *fm;
 	int *chp;
 {
 	u_char *p;
 
 	m = *fm;
-	if ((p = file_gline(curf, fm->lno, &len)) == NULL) {
-		if (file_lline(curf) == 0)
-			v_eol(NULL);
+	if ((p = file_gline(ep, fm->lno, &len)) == NULL) {
+		if (file_lline(ep) == 0)
+			v_eol(ep, NULL);
 		else
-			GETLINE_ERR(fm->lno);
+			GETLINE_ERR(ep, fm->lno);
 		return (1);
 	}
 	*chp = len == 0 ? EMPTYLINE : p[m.cno];
@@ -51,7 +52,8 @@ getc_init(fm, chp)
  *	Retrieve the next character.
  */
 int
-getc_next(dir, chp)
+getc_next(ep, dir, chp)
+	EXF *ep;
 	enum direction dir;
 	int *chp;
 {
@@ -61,7 +63,7 @@ getc_next(dir, chp)
 	if (dir == FORWARD)
 		if (len == 0 || m.cno == len - 1) {
 			m.cno = 0;		/* EOF; restore the cursor. */
-			if ((p = file_gline(curf, ++m.lno, &len)) == NULL) {
+			if ((p = file_gline(ep, ++m.lno, &len)) == NULL) {
 				m = save;
 				return (0);
 			}
@@ -73,7 +75,7 @@ getc_next(dir, chp)
 			++m.cno;
 	else /* if (dir == BACKWARD) */
 		if (m.cno == 0) {		/* EOF; restore the cursor. */
-			if ((p = file_gline(curf, --m.lno, &len)) == NULL) {
+			if ((p = file_gline(ep, --m.lno, &len)) == NULL) {
 				m = save;
 				return (0);
 			}
@@ -93,7 +95,8 @@ getc_next(dir, chp)
  *	Return the last cursor position.
  */
 void
-getc_set(rp)
+getc_set(ep, rp)
+	EXF *ep;
 	MARK *rp;
 {
 	*rp = m;

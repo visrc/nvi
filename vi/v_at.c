@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_at.c,v 5.13 1993/02/11 20:07:29 bostic Exp $ (Berkeley) $Date: 1993/02/11 20:07:29 $";
+static char sccsid[] = "$Id: v_at.c,v 5.14 1993/02/16 20:08:13 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:08:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,14 +19,14 @@ static char sccsid[] = "$Id: v_at.c,v 5.13 1993/02/11 20:07:29 bostic Exp $ (Ber
 #include <string.h>
 
 #include "vi.h"
-#include "exf.h"
 #include "vcmd.h"
 
 u_long atkeybuflen;				/* Length of shared buffer. */
 char *atkeybuf, *atkeyp;			/* Shared at buffer. */
 
 int
-v_at(vp, fm, tm, rp)
+v_at(ep, vp, fm, tm, rp)
+	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
@@ -38,13 +38,14 @@ v_at(vp, fm, tm, rp)
 	char *p, *start;
 
 	key = vp->character;
-	CBNAME(key, cb);
-	CBEMPTY(key, cb);
+	CBNAME(ep, key, cb);
+	CBEMPTY(ep, key, cb);
 
 	if (atkeybuflen == 0)
 		memset(rstack, 0, sizeof(rstack));
 	else if (rstack[key]) {
-		msg("Buffer %c already occurs in this command.", key);
+		msg(ep, M_ERROR,
+		    "Buffer %c already occurs in this command.", key);
 		return (1);
 	}
 
@@ -54,12 +55,12 @@ v_at(vp, fm, tm, rp)
 	/* Check for overflow. */
 	len = cb->len + remain;
 	if (len < cb->len + remain) {
-		msg("Buffer overflow.");
+		msg(ep, M_ERROR, "Buffer overflow.");
 		return (1);
 	}
 
 	if ((start = p = malloc(len)) == NULL) {
-		msg("Error: %s", strerror(errno));
+		msg(ep, M_ERROR, "Error: %s", strerror(errno));
 		return (1);
 	}
 
