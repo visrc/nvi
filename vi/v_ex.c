@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 5.3 1992/04/28 13:50:38 bostic Exp $ (Berkeley) $Date: 1992/04/28 13:50:38 $";
+static char sccsid[] = "$Id: v_ex.c,v 5.4 1992/04/28 17:39:08 bostic Exp $ (Berkeley) $Date: 1992/04/28 17:39:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -16,6 +16,7 @@ static char sccsid[] = "$Id: v_ex.c,v 5.3 1992/04/28 13:50:38 bostic Exp $ (Berk
 #include <stdio.h>
 
 #include "vi.h"
+#include "excmd.h"
 #include "options.h"
 #include "tty.h"
 #include "vcmd.h"
@@ -23,11 +24,8 @@ static char sccsid[] = "$Id: v_ex.c,v 5.3 1992/04/28 13:50:38 bostic Exp $ (Berk
 
 /*
  * v_ex --
- *	Executes a string of ex commands.  If the ex commands output anything,
- *	it waits for a user keystroke before returning to the vi screen.  If
- *	that keystroke is another ':', it continues the ex commands.
+ *	Execute strings of ex commands.
  */
-int ex_prerase;
 MARK
 v_ex()
 {
@@ -36,15 +34,45 @@ v_ex()
 
 	v_startex();
 	for (flags = 0;; flags = GB_NLECHO) {
-		if ((p = gb(ISSET(O_PROMPT) ? ':' : 0, flags)) == NULL)
+		/*
+		 * Get an ex command; echo the newline on any prompts after
+		 * the first.  We may have to overwrite the command later;
+		 * get the length for later.
+		 */
+		if ((p =
+		    gb(ISSET(O_PROMPT) ? ':' : 0, &ex_prerase, flags)) == NULL)
 			break;
-		ex_prerase = strlen(p);
-		if (ex_cstring(p, ex_prerase, 0) || ex_prstate < PR_PRINTED)
+
+		/*
+		 * Execute the command.  If the command fails, and nothing was
+		 * printed, we return to vi, confident that the error messages
+		 * will be displayed.  If something has been printed, we want
+		 * to group the errors together with the normal output, so we
+		 * supply a terminating newline if it's needed, and then display
+		 * the error messages.
+		 *
+		 * If successful and nothing was printed, return to vi.
+		 *
+		 * In either case, if something was printed, wait for the user
+		 * to confirm that they saw it.
+		 */
+		if (ex_cstring(p, ex_prerase, 0)) {
+			if (ex_prstate == PR_NONE)
+				break;
+			if (ex_prstate == PR_STARTED)
+				EX_PRNEWLINE;
+			if (msgcnt)
+				msg_eflush();
+			else
+				(void)printf("Error...\n");
+		} else if (ex_prstate < PR_PRINTED)
 			break;
 		(void)tputs(SO, 0, __putchar);
 		(void)printf("Enter key to continue: ");
 		(void)tputs(SE, 0, __putchar);
 		(void)fflush(stdout);
+
+		/* The user may continue in ex mode by entering a ':'. */
 		if ((key = getkey(0)) != ':')
 			break;
 		(void)printf("\n");
