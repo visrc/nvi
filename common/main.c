@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.41 1993/02/11 20:02:12 bostic Exp $ (Berkeley) $Date: 1993/02/11 20:02:12 $";
+static char sccsid[] = "$Id: main.c,v 5.42 1993/02/11 20:03:39 bostic Exp $ (Berkeley) $Date: 1993/02/11 20:03:39 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -39,11 +39,11 @@ static char sccsid[] = "$Id: main.c,v 5.41 1993/02/11 20:02:12 bostic Exp $ (Ber
 FILE *tracefp;
 #endif
 
-enum editmode mode;				/* See vi.h. */
+enum editmode mode;			/* Editor mode; see vi.h. */
 
-struct termios original_termios;		/* See ex_shell.c. */
+struct termios original_termios;	/* Original terminal state. */
 
-char *VB;					/* See util.c, options.c. */
+char *VB;				/* Visual bell termcap string. */
 
 static void obsolete __P((char *[]));
 static void usage __P((void));
