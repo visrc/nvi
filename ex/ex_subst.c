@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_subst.c,v 10.27 1996/05/03 08:58:24 bostic Exp $ (Berkeley) $Date: 1996/05/03 08:58:24 $";
+static const char sccsid[] = "$Id: ex_subst.c,v 10.28 1996/05/13 17:19:51 bostic Exp $ (Berkeley) $Date: 1996/05/13 17:19:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -941,6 +941,13 @@ re_compile(sp, ptrn, ptrnp, lenp, rep, flags)
 		if (LF_ISSET(RE_C_CSCOPE)) {
 			if (re_cscope_conv(sp, &ptrn, &replaced))
 				return (1);
+			/*
+			 * XXX
+			 * Currently, the match-any-<blank> expression used in
+			 * re_cscope_conv() requires extended RE's.  This may
+			 * not be right or safe.
+			 */
+			reflags |= REG_EXTENDED;
 		} else if (LF_ISSET(RE_C_TAG)) {
 			if (re_tag_conv(sp, &ptrn, &replaced))
 				return (1);
