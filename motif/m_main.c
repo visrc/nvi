@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_main.c,v 8.33 1996/12/18 10:27:26 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:27:26 $";
+static const char sccsid[] = "$Id: m_main.c,v 8.34 1996/12/18 14:49:49 bostic Exp $ (Berkeley) $Date: 1996/12/18 14:49:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -39,7 +39,12 @@ static const char sccsid[] = "$Id: m_main.c,v 8.33 1996/12/18 10:27:26 bostic Ex
 #endif
 
 #if defined(ColorIcon)
+#if XT_REVISION >= 6
 #include <X11/xpm.h>
+#else
+#include "xpm.h"
+#endif
+
 #include "nvi.xpm"		/* Icon pixmap. */
 #else
 #include "nvi.xbm"		/* Icon bitmap. */
