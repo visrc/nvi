@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 8.47 1994/09/18 11:57:53 bostic Exp $ (Berkeley) $Date: 1994/09/18 11:57:53 $";
+static char sccsid[] = "$Id: ex_tag.c,v 8.48 1994/10/28 08:03:20 bostic Exp $ (Berkeley) $Date: 1994/10/28 08:03:20 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -457,7 +457,7 @@ ex_tagdisplay(sp, ep)
 
 	exp = EXP(sp);
 	if ((tp = exp->tagq.tqh_first) == NULL) {
-		(void)ex_printf(EXCOOKIE, "No tags to display.\n");
+		msgq(sp, M_INFO, "260|No tags to display");
 		return (0);
 	}
 
