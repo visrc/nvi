@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 8.13 1994/08/29 17:03:09 bostic Exp $ (Berkeley) $Date: 1994/08/29 17:03:09 $";
+static char sccsid[] = "$Id: msg.c,v 8.14 1994/08/29 18:02:51 bostic Exp $ (Berkeley) $Date: 1994/08/29 18:02:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -210,7 +210,8 @@ binc_err:	return;
 			    strchr("diouxXfeEgGcspn", ch) != NULL)
 				break;
 		str[soff].suffix = p - u;
-		++p;
+		if (ch != '\0)
+			++p;
 		++soff;
 	}
 
