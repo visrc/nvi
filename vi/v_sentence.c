@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_sentence.c,v 8.7 1993/08/26 12:14:09 bostic Exp $ (Berkeley) $Date: 1993/08/26 12:14:09 $";
+static char sccsid[] = "$Id: v_sentence.c,v 8.8 1994/01/24 19:01:45 bostic Exp $ (Berkeley) $Date: 1994/01/24 19:01:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -17,6 +17,7 @@ static char sccsid[] = "$Id: v_sentence.c,v 8.7 1993/08/26 12:14:09 bostic Exp $
 #include "vcmd.h"
 
 /*
+ * !!!
  * In historic vi, a sentence was delimited by a '.', '?' or '!' character
  * followed by TWO spaces or a newline.  One or more empty lines was also
  * treated as a separate sentence.  The Berkeley documentation for historical
