@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 9.27 1995/01/31 09:42:25 bostic Exp $ (Berkeley) $Date: 1995/01/31 09:42:25 $";
+static char sccsid[] = "$Id: ex.c,v 9.28 1995/01/31 13:09:49 bostic Exp $ (Berkeley) $Date: 1995/01/31 13:09:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1248,6 +1248,10 @@ addr2:	switch (exc.addrcnt) {
 	 * move to line 3 and line 'b, respectively, but ":3|" prints line 3.
 	 *
 	 * !!!
+	 * In addition, IF THE LINE CHANGES, move to the first nonblank of
+	 * the line.
+	 *
+	 * !!!
 	 * This is done before the absolute mark gets set; historically,
 	 * "/a/,/b/" did NOT set vi's absolute mark, but "/a/,/b/d" did.
 	 */
@@ -1255,12 +1259,18 @@ addr2:	switch (exc.addrcnt) {
 	    pflags & EXPAR_NOPRDEF) && uselastcmd && vi_address == 0) {
 		switch (exc.addrcnt) {
 		case 2:
-			sp->lno = exc.addr2.lno ? exc.addr2.lno : 1;
-			sp->cno = exc.addr2.cno;
+			if (sp->lno != (exc.addr2.lno ? exc.addr2.lno : 1)) {
+				sp->lno = exc.addr2.lno ? exc.addr2.lno : 1;
+				sp->cno = 0;
+				(void)nonblank(sp, sp->lno, &sp->cno);
+			}
 			break;
 		case 1:
-			sp->lno = exc.addr1.lno ? exc.addr1.lno : 1;
-			sp->cno = exc.addr1.cno;
+			if (sp->lno != (exc.addr1.lno ? exc.addr1.lno : 1)) {
+				sp->lno = exc.addr1.lno ? exc.addr1.lno : 1;
+				sp->cno = 0;
+				(void)nonblank(sp, sp->lno, &sp->cno);
+			}
 			break;
 		}
 		cmd = save_cmd;
