@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 5.25 1993/04/18 09:37:36 bostic Exp $ (Berkeley) $Date: 1993/04/18 09:37:36 $
+ *	$Id: key.h,v 5.26 1993/04/19 15:27:59 bostic Exp $ (Berkeley) $Date: 1993/04/19 15:27:59 $
  */
 
 /* Special character lookup values. */
@@ -13,16 +13,17 @@
 #define	K_CNTRLR	 3
 #define	K_CNTRLT	 4
 #define	K_CNTRLZ	 5
-#define	K_CR		 6
-#define	K_ESCAPE	 7
-#define	K_FORMFEED	 8
-#define	K_NL		 9
-#define	K_TAB		10
-#define	K_VERASE	11
-#define	K_VKILL		12
-#define	K_VLNEXT	13
-#define	K_VWERASE	14
-#define	K_ZERO		15
+#define	K_COLON	 	 6
+#define	K_CR		 7
+#define	K_ESCAPE	 8
+#define	K_FORMFEED	 9
+#define	K_NL		10
+#define	K_TAB		11
+#define	K_VERASE	12
+#define	K_VKILL		13
+#define	K_VLNEXT	14
+#define	K_VWERASE	15
+#define	K_ZERO		16
 
 /* The mark at the end of a range. */
 #define	END_CH		'$'
@@ -61,4 +62,4 @@
 
 /* Support keyboard routines. */
 int	 getkey __P((SCR *, u_int));
-int	 key_special __P((SCR *));
+int	 term_init __P((SCR *));
