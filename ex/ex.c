@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.25 1993/09/07 19:57:40 bostic Exp $ (Berkeley) $Date: 1993/09/07 19:57:40 $";
+static char sccsid[] = "$Id: ex.c,v 8.26 1993/09/08 09:34:32 bostic Exp $ (Berkeley) $Date: 1993/09/08 09:34:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -380,6 +380,7 @@ ex_cmd(sp, ep, exc, arg1_len)
 		if ((cp == &cmds[C_SHIFTL] && *p == '<') ||
 		    (cp == &cmds[C_SHIFTR] && *p == '>')) {
 			sp->ex_argv[0] = p;
+			sp->ex_argv[1] = NULL;
 			cmd.argc = 1;
 			cmd.argv = sp->ex_argv;
 			for (ch = *p, exc = p; *++exc == ch;);
@@ -512,6 +513,7 @@ two:		switch (cmd.addrcnt) {
 	 */
 	if (cp->syntax[0] == 's') {
 		sp->ex_argv[0] = exc;
+		sp->ex_argv[1] = NULL;
 		cmd.argc = 1;
 		cmd.argv = sp->ex_argv;
 		goto addr2;
@@ -630,7 +632,8 @@ end2:			break;
 				return (1);
 			goto countchk;
 		case 's':				/* string */
-			sp->ex_argv[0] = *p ? exc : NULL;
+			sp->ex_argv[0] = exc;
+			sp->ex_argv[1] = NULL;
 			cmd.argc = 1;
 			cmd.argv = sp->ex_argv;
 			goto addr2;
@@ -662,6 +665,7 @@ end2:			break;
 				if (sp->special[ch] == K_VLNEXT && p[0] != '\0')
 					ch = *p++;
 			*t = '\0';
+			sp->ex_argv[2] = NULL;
 			cmd.argc = 2;
 			cmd.argv = sp->ex_argv;
 			goto addr2;
