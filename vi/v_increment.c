@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_increment.c,v 9.4 1995/01/07 16:36:10 bostic Exp $ (Berkeley) $Date: 1995/01/07 16:36:10 $";
+static char sccsid[] = "$Id: v_increment.c,v 9.5 1995/01/08 11:21:09 bostic Exp $ (Berkeley) $Date: 1995/01/08 11:21:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -59,7 +59,7 @@ v_increment(sp, vp)
 	u_long ulval;
 	long change, ltmp, lval;
 	size_t beg, blen, end, len, nlen, wlen;
-	int base, moved, rval;
+	int base, rval;
 	char *bp, *ntype, *p, *t, nbuf[100];
 
 	/* Validate the operator. */
@@ -91,11 +91,10 @@ v_increment(sp, vp)
 	 * implies moving the cursor to its beginning, if we moved, refresh
 	 * now.
 	 */
-	for (moved = 0, beg = vp->m_start.cno;
-	    beg < len && isspace(p[beg]); moved = 1, ++beg);
+	for (beg = vp->m_start.cno; beg < len && isspace(p[beg]); ++beg);
 	if (beg >= len)
 		goto nonum;
-	if (moved) {
+	if (beg != vp->m_start.cno) {
 		sp->cno = beg;
 		(void)sp->s_refresh(sp);
 	}
@@ -107,16 +106,19 @@ v_increment(sp, vp)
 
 	/*
 	 * Look for 0[Xx], or leading + or - signs, guess at the base.
-	 * The character after that must be a number.
+	 * The character after that must be a number.  Wlen is set to
+	 * the remaining characters in the line that could be part of
+	 * the number.
 	 */
-	if (len > 2 &&
+	wlen = len - beg;
+	if (wlen > 2 &&
 	    p[beg] == '0' && (p[beg + 1] == 'X' || p[beg + 1] == 'x')) {
 		base = 16;
 		end = beg + 2;
 		ntype = p[beg + 1] == 'X' ? fmt[HEXC] : fmt[HEXL];
 		if (!ishex(p[end]))
 			goto nonum;
-	} else if (len > 2 && p[beg] == '0') {
+	} else if (wlen > 1 && p[beg] == '0') {
 		base = 8;
 		end = beg + 1;
 		ntype = fmt[OCTAL];
@@ -126,7 +128,7 @@ v_increment(sp, vp)
 			if (!isdigit(p[end]))
 				goto nonum;
 		}
-	} else if (len >= 1 && (p[beg] == '+' || p[beg] == '-')) {
+	} else if (wlen >= 1 && (p[beg] == '+' || p[beg] == '-')) {
 		base = 10;
 		end = beg + 1;
 		ntype = fmt[SDEC];
