@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 8.4 1993/08/17 15:22:13 bostic Exp $ (Berkeley) $Date: 1993/08/17 15:22:13 $";
+static char sccsid[] = "$Id: ex_argv.c,v 8.5 1993/08/19 15:07:12 bostic Exp $ (Berkeley) $Date: 1993/08/19 15:07:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -23,33 +23,29 @@ static char sccsid[] = "$Id: ex_argv.c,v 8.4 1993/08/17 15:22:13 bostic Exp $ (B
 #define	SHELLOFFSET	(sizeof(SHELLECHO) - 1)
 
 /*
- * buildargv --
- *	Build an argv from a string.
+ * file_argv --
+ *	Do file name and shell expansion on a string, then
+ *	break it up into an argv.
  */
 int
-buildargv(sp, ep, s, expand, argcp, argvp)
+file_argv(sp, ep, s, argcp, argvp)
 	SCR *sp;
 	EXF *ep;
 	char *s, ***argvp;
-	int expand, *argcp;
+	int *argcp;
 {
 	size_t len, blen, tlen;
-	int cnt, done, off;
-	char *ap, *bp, *p, *t;
+	int rval;
+	char *bp, *p, *t;
 
 	GET_SPACE(sp, bp, blen, 512);
 
-	p = bp;
-	len = 0;
-	if (expand) {
-		/* It's going to become a shell command. */
-		memmove(p, SHELLECHO, SHELLOFFSET);
-		p += SHELLOFFSET;
-		len += SHELLOFFSET;
-	}
+	memmove(bp, SHELLECHO, SHELLOFFSET);
+	p = bp + SHELLOFFSET;
+	len = SHELLOFFSET;
 
 #if DEBUG && 0
-	TRACE(sp, "argv: {%s}\n", s);
+	TRACE(sp, "file_argv: {%s}\n", s);
 #endif
 
 	/* Replace file name characters. */
@@ -83,6 +79,16 @@ buildargv(sp, ep, s, expand, argcp, argvp)
 			p += tlen;
 			len += tlen;
 			break;
+		case '\\':
+			/*
+			 * QUOTING NOTE:
+			 *
+			 * Strip backslashes that protected the file
+			 * expansion characters.
+			 */
+			if (s[1] == '%' || s[1] == '#')
+				++s;
+			/* FALLTHROUGH */
 		default:
 			ADD_SPACE(sp, bp, blen, len + 1);
 			*p++ = *s;
@@ -101,31 +107,50 @@ buildargv(sp, ep, s, expand, argcp, argvp)
 	 * what magic characters the user's shell expects.  If it's not
 	 * pure vanilla, don't even try.
 	 */
-	if (expand) {
-		for (p = bp; *p; ++p)
-			if (!isalnum(*p) && !isspace(*p) && *p != '/')
-				break;
-		if (*p) {
-			if (ex_run_process(sp, bp, &len, bp, blen))
-				return (1);
-			p = bp;
-		} else
-			p = bp + SHELLOFFSET;
-	} else
+	for (p = bp; *p; ++p)
+		if (!isalnum(*p) && !isspace(*p) && *p != '/')
+			break;
+	if (*p) {
+		if (ex_run_process(sp, bp, &len, bp, blen))
+			return (1);
 		p = bp;
+	} else
+		p = bp + SHELLOFFSET;
 
 #if DEBUG && 0
 	TRACE(sp, "post-shell: {%s}\n", bp);
 #endif
 
-	/* Break into argv vector. */
+	rval = word_argv(sp, ep, p, argcp, argvp);
+
+	FREE_SPACE(sp, bp, blen);
+	return (rval);
+}
+
+/*
+ * word_argv --
+ *	Build an argv from a string.
+ */
+int
+word_argv(sp, ep, p, argcp, argvp)
+	SCR *sp;
+	EXF *ep;
+	char *p, ***argvp;
+	int *argcp;
+{
+	size_t len;
+	int cnt, done, off;
+	char *ap, *t;
+
 	for (done = off = 0;; ) {
 		/*
-		 * New argument; NULL terminate, skipping anything that's
-		 * preceded by a quoting character.
+		 * ESCAPE CHARACTER NOTE:
+		 *
+		 * New argument; NULL terminate, skipping anything
+		 * that's preceded by the user's quoting character.
 		 */
-		for (ap = p; p[0]; ++p) {
-			if (p[0] == '\\' && p[1])
+		for (ap = p; p[0] != '\0'; ++p) {
+			if (sp->special[p[0]] == K_VLNEXT && p[1])
 				p += 2;
 			if (isspace(p[0]))
 				break;
@@ -154,8 +179,7 @@ buildargv(sp, ep, s, expand, argcp, argvp)
 mem1:				sp->argscnt = 0;
 				sp->args = NULL;
 				sp->argv = NULL;
-				msgq(sp, M_ERR,
-				    "Error: %s.", strerror(errno));
+				msgq(sp, M_ERR, "Error: %s.", strerror(errno));
 				return (1);
 			}
 			memset(&sp->args[off], 0, cnt * sizeof(ARGS));
@@ -170,20 +194,18 @@ mem1:				sp->argscnt = 0;
 			sp->args[off].bp = NULL;
 			sp->args[off].len = 0;
 			msgq(sp, M_ERR, "Error: %s.", strerror(errno));
-			FREE_SPACE(sp, bp, blen);
 			return (1);
 		}
 		sp->argv[off] = sp->args[off].bp;
 		sp->args[off].flags |= A_ALLOCATED;
 
 		/*
-		 * Copy the argument into place, losing quote chars.
-		 *
 		 * ESCAPE CHARACTER NOTE:
-		 * Remove another level of quotes from the user's command.
+		 *
+		 * Copy the argument into place, losing quote chars.
 		 */
 		for (t = sp->args[off].bp; len; *t++ = *ap++, --len)
-			if (*ap == '\\' && len) {
+			if (sp->special[*ap] == K_VLNEXT && len) {
 				++ap;
 				--len;
 			}
@@ -200,8 +222,6 @@ mem1:				sp->argscnt = 0;
 	sp->argv[off] = NULL;
 	*argvp = sp->argv;
 	*argcp = off;
-
-	FREE_SPACE(sp, bp, blen);
 
 #if DEBUG && 0
 	for (cnt = 0; cnt < off; ++cnt)
