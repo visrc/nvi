@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 9.1 1994/11/09 18:38:09 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:38:09 $";
+static char sccsid[] = "$Id: search.c,v 9.2 1994/11/18 13:19:57 bostic Exp $ (Berkeley) $Date: 1994/11/18 13:19:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,10 +31,9 @@ static char sccsid[] = "$Id: search.c,v 9.1 1994/11/09 18:38:09 bostic Exp $ (Be
 #include "vi.h"
 #include "excmd.h"
 
-static int	check_delta __P((SCR *, long, recno_t));
 static int	ctag_conv __P((SCR *, char **, int *));
-static int	resetup __P((SCR *, regex_t **, enum direction,
-		    char *, char **, long *, u_int *));
+static int	resetup __P((SCR *,
+		    regex_t **, enum direction, char *, char **, u_int *));
 
 enum smsgtype { S_EMPTY, S_EOF, S_NOTFOUND, S_SOF, S_WRAP };
 static void	smsg __P((SCR *, enum smsgtype));
@@ -44,26 +43,21 @@ static void	smsg __P((SCR *, enum smsgtype));
  *	Set up a search for a regular expression.
  */
 static int
-resetup(sp, rep, dir, ptrn, epp, deltap, flagp)
+resetup(sp, rep, dir, ptrn, epp, flagp)
 	SCR *sp;
 	regex_t **rep;
 	enum direction dir;
 	char *ptrn, **epp;
-	long *deltap;
 	u_int *flagp;
 {
 	u_int flags;
-	size_t len;
 	int delim, eval, re_flags, replaced;
-	char *p, *t, *omsg, *umsg;
-
-	/* Set return information the default. */
-	*deltap = 0;
+	char *p, *t;
 
 	/*
 	 * Use saved pattern if no pattern supplied, or if only a delimiter
 	 * character is supplied.  Only the pattern was saved, historic vi
-	 * did not reuse any delta supplied.
+	 * did not reuse any addressing information/delta supplied.
 	 */
 	flags = *flagp;
 	if (ptrn == NULL)
@@ -99,11 +93,14 @@ prev:		if (!F_ISSET(sp, S_SRE_SET)) {
 
 	replaced = 0;
 	if (LF_ISSET(SEARCH_PARSE)) {		/* Parse the string. */
-		/* Set delimiter. */
-		delim = *ptrn++;
-
-		/* Find terminating delimiter, handling escaped delimiters. */
-		for (p = t = ptrn;;) {
+		/*
+		 * Set delimiter, and move forward to terminating delimiter,
+		 * handling escaped delimiters.
+		 *
+		 * QUOTING NOTE:
+		 * Only toss an escape character if it escapes a delimiter.
+		 */
+		for (delim = *ptrn++, p = t = ptrn;; *t++ = *p++) {
 			if (p[0] == '\0' || p[0] == delim) {
 				if (p[0] == delim)
 					++p;
@@ -112,48 +109,12 @@ prev:		if (!F_ISSET(sp, S_SRE_SET)) {
 			}
 			if (p[1] == delim && p[0] == '\\')
 				++p;
-			*t++ = *p++;
 		}
-
-		/*
-		 * If non-<blank> characters after the terminating delimiter,
-		 * it may be an error or may be a line delta (an ex address
-		 * offset, actually).  In either case, we return the end of
-		 * the string, whatever it may be.
-		 *
-		 * !!!
-		 * Historically, a delta on a search pattern used as a motion
-		 * command caused the command to became a line mode command
-		 * regardless of the cursor positions.  A common trick is to
-		 * use a delta of "+0", just to make this happen.
-		 */
-		for (; *p != '\0'; ++p) {
-			if (isblank(p[0]))
-				continue;
-			if (isdigit(p[0]) ||
-			    p[0] == '+' || p[0] == '-' || p[0] == '^')
-				*flagp |= SEARCH_DELTA;
-			break;
-		}
-		if (*p != '\0') {
-			omsg = "247|Search delta value overflow";
-			umsg = "248|Search delta value underflow";
-			len = strlen(p);		/* XXX: 8-bit */
-			if (ex_offset(sp, &p, &len, deltap, omsg, umsg))
-				return (1);
-			if (*p != '\0' && LF_ISSET(SEARCH_TERM)) {
-				msgq(sp, M_ERR,
-		"244|Characters after search string and/or line offset");
-				return (1);
-			}
-		}
-		if (epp != NULL)
-			*epp = p;
-
-		/* Check for "/   " or other such silliness. */
+		/* Check for "//". */
 		if (*ptrn == '\0')
 			goto prev;
-
+		if (epp != NULL)
+			*epp = p;
 		if (re_conv(sp, &ptrn, &replaced))
 			return (1);
 	} else if (LF_ISSET(SEARCH_TAG)) {
@@ -253,7 +214,6 @@ f_search(sp, fm, rm, ptrn, eptrn, flagp)
 	regex_t *re, lre;
 	recno_t lno;
 	size_t coff, len;
-	long delta;
 	u_int flags;
 	int btear, eval, rval, wrapped;
 	char *l;
@@ -268,7 +228,7 @@ f_search(sp, fm, rm, ptrn, eptrn, flagp)
 	}
 
 	re = &lre;
-	if (resetup(sp, &re, FORWARD, ptrn, eptrn, &delta, flagp))
+	if (resetup(sp, &re, FORWARD, ptrn, eptrn, flagp))
 		return (1);
 
 	/*
@@ -354,32 +314,21 @@ f_search(sp, fm, rm, ptrn, eptrn, flagp)
 		if (wrapped && O_ISSET(sp, O_WARN) && LF_ISSET(SEARCH_MSG))
 			smsg(sp, S_WRAP);
 
-		/*
-		 * If an offset, see if it's legal.  It's possible to match
-		 * past the end of the line with $, so check for that case.
-		 */
-		if (delta) {
-			if (check_delta(sp, delta, lno))
-				break;
-			rm->lno = delta + lno;
-			rm->cno = 0;
-		} else {
 #if defined(DEBUG) && 0
-			TRACE(sp, "found: %qu to %qu\n",
-			    match[0].rm_so, match[0].rm_eo);
+		TRACE(sp, "F found: %qu to %qu\n",
+		    match[0].rm_so, match[0].rm_eo);
 #endif
-			rm->lno = lno;
-			rm->cno = match[0].rm_so;
+		rm->lno = lno;
+		rm->cno = match[0].rm_so;
 
-			/*
-			 * If a change command, it's possible to move beyond
-			 * the end of a line.  Historic vi generally got this
-			 * wrong (try "c?$<cr>").  Not all that sure this gets
-			 * it right, there are lots of strange cases.
-			 */
-			if (!LF_ISSET(SEARCH_EOL) && rm->cno >= len)
-				rm->cno = len ? len - 1 : 0;
-		}
+		/*
+		 * If a change command, it's possible to move beyond the end
+		 * of a line.  Historic vi generally got this wrong (try
+		 * "c?$<cr>").  Not all that sure this gets it right, there
+		 * are lots of strange cases.
+		 */
+		if (!LF_ISSET(SEARCH_EOL) && rm->cno >= len)
+			rm->cno = len ? len - 1 : 0;
 		rval = 0;
 		break;
 	}
@@ -401,7 +350,6 @@ b_search(sp, fm, rm, ptrn, eptrn, flagp)
 	regex_t *re, lre;
 	recno_t lno;
 	size_t coff, len, last;
-	long delta;
 	u_int flags;
 	int btear, eval, rval, wrapped;
 	char *l;
@@ -416,7 +364,7 @@ b_search(sp, fm, rm, ptrn, eptrn, flagp)
 	}
 
 	re = &lre;
-	if (resetup(sp, &re, BACKWARD, ptrn, eptrn, &delta, flagp))
+	if (resetup(sp, &re, BACKWARD, ptrn, eptrn, flagp))
 		return (1);
 
 	/* If in the first column, start searching on the previous line. */
@@ -491,48 +439,40 @@ b_search(sp, fm, rm, ptrn, eptrn, flagp)
 		if (wrapped && O_ISSET(sp, O_WARN) && LF_ISSET(SEARCH_MSG))
 			smsg(sp, S_WRAP);
 
-		if (delta) {
-			if (check_delta(sp, delta, lno))
-				break;
-			rm->lno = delta + lno;
-			rm->cno = 0;
-		} else {
 #if defined(DEBUG) && 0
-			TRACE(sp, "found: %qu to %qu\n",
-			    match[0].rm_so, match[0].rm_eo);
+		TRACE(sp, "B found: %qu to %qu\n",
+		    match[0].rm_so, match[0].rm_eo);
 #endif
-			/*
-			 * We now have the first match on the line.  Step
-			 * through the line character by character until we
-			 * find the last acceptable match.  This is painful,
-			 * we need a better interface to regex to make this
-			 * work.
-			 */
-			for (;;) {
-				last = match[0].rm_so++;
-				if (match[0].rm_so >= len)
-					break;
-				match[0].rm_eo = len;
-				eval = regexec(re, l, 1, match,
-				    (match[0].rm_so == 0 ? 0 : REG_NOTBOL) |
-				    REG_STARTEND);
-				if (eval == REG_NOMATCH)
-					break;
-				if (eval != 0) {
-					re_error(sp, eval, re);
-					goto err;
-				}
-				if (coff && match[0].rm_so >= coff)
-					break;
+		/*
+		 * We now have the first match on the line.  Step through the
+		 * line character by character until find the last acceptable
+		 * match.  This is painful, we need a better interface to regex
+		 * to make this work.
+		 */
+		for (;;) {
+			last = match[0].rm_so++;
+			if (match[0].rm_so >= len)
+				break;
+			match[0].rm_eo = len;
+			eval = regexec(re, l, 1, match,
+			    (match[0].rm_so == 0 ? 0 : REG_NOTBOL) |
+			    REG_STARTEND);
+			if (eval == REG_NOMATCH)
+				break;
+			if (eval != 0) {
+				re_error(sp, eval, re);
+				goto err;
 			}
-			rm->lno = lno;
-
-			/* See comment in f_search(). */
-			if (!LF_ISSET(SEARCH_EOL) && last >= len)
-				rm->cno = len ? len - 1 : 0;
-			else
-				rm->cno = last;
+			if (coff && match[0].rm_so >= coff)
+				break;
 		}
+		rm->lno = lno;
+
+		/* See comment in f_search(). */
+		if (!LF_ISSET(SEARCH_EOL) && last >= len)
+			rm->cno = len ? len - 1 : 0;
+		else
+			rm->cno = last;
 		rval = 0;
 		break;
 	}
@@ -697,46 +637,6 @@ re_conv(sp, ptrnp, replacedp)
 
 	*ptrnp = bp;
 	*replacedp = 1;
-	return (0);
-}
-
-/*
- * check_delta --
- *	Check a line delta to see if it's legal.
- */
-static int
-check_delta(sp, delta, lno)
-	SCR *sp;
-	long delta;
-	recno_t lno;
-{
-	char *omsg;
-
-	/*
-	 * A delta can overflow a record number.  We don't check for
-	 * underflow, a value less than 1 is bad enough.
-	 */
-	if (delta < 0) {
-		if (-delta >= lno) {
-			msgq(sp, M_ERR, "249|Search offset before line 1");
-			return (1);
-		}
-	} else {
-		/*
-		 * XXX
-		 * This code incorrectly assumes that a recno_t will fit
-		 * into an unsigned long.  Since it's the largest integral
-		 * type we can depend on having, there aren't many other
-		 * choices.
-		 */
-		omsg = "250|Delta value overflow";
-		if (add_uslong(sp, (u_long)lno, (u_long)delta, omsg))
-			return (1);
-		if (file_gline(sp, lno + delta, NULL) == NULL) {
-			msgq(sp, M_ERR, "251|Search offset past end-of-file");
-			return (1);
-		}
-	}
 	return (0);
 }
 
