@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_zexit.c,v 8.5 1993/12/10 12:22:17 bostic Exp $ (Berkeley) $Date: 1993/12/10 12:22:17 $";
+static char sccsid[] = "$Id: v_zexit.c,v 8.6 1994/02/25 19:06:48 bostic Exp $ (Berkeley) $Date: 1994/02/25 19:06:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,15 +18,14 @@ static char sccsid[] = "$Id: v_zexit.c,v 8.5 1993/12/10 12:22:17 bostic Exp $ (B
 #include "vcmd.h"
 
 /*
- * v_exit -- ZZ
+ * v_zexit -- ZZ
  *	Save the file and exit.
  */
 int
-v_exit(sp, ep, vp, fm, tm, rp)
+v_zexit(sp, ep, vp)
 	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
-	MARK *fm, *tm, *rp;
 {
 	if (F_ISSET(ep, F_MODIFIED) &&
 	    file_write(sp, ep, NULL, NULL, NULL, FS_ALL))
@@ -37,8 +36,8 @@ v_exit(sp, ep, vp, fm, tm, rp)
 	 * Historic practice: quit! or two quit's done in succession
 	 * (where ZZ counts as a quit) didn't check for other files.
 	 *
-	 * Also check for related screens; if they exist, quit, the
-	 * user will get the message on the last screen.
+	 * Check for related screens; quit if they exist, the user will
+	 * get a message on the last screen.
 	 */
 	if (sp->ccnt != sp->q_ccnt + 1 &&
 	    ep->refcnt <= 1 && file_unedited(sp) != NULL) {

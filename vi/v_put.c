@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_put.c,v 8.6 1994/01/09 14:21:13 bostic Exp $ (Berkeley) $Date: 1994/01/09 14:21:13 $";
+static char sccsid[] = "$Id: v_put.c,v 8.7 1994/02/25 19:07:08 bostic Exp $ (Berkeley) $Date: 1994/02/25 19:07:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,16 +21,16 @@ static void	inc_buf __P((SCR *, VICMDARG *));
  *	Insert the contents of the buffer before the cursor.
  */
 int
-v_Put(sp, ep, vp, fm, tm, rp)
+v_Put(sp, ep, vp)
 	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
-	MARK *fm, *tm, *rp;
 {
 	if (F_ISSET(vp, VC_ISDOT))
 		inc_buf(sp, vp);
-	return (put(sp, ep,
-	    NULL, F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL, fm, rp, 0));
+
+	return (put(sp, ep, NULL, F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
+	    &vp->m_start, &vp->m_final, 0));
 }
 
 /*
@@ -38,20 +38,20 @@ v_Put(sp, ep, vp, fm, tm, rp)
  *	Insert the contents of the buffer after the cursor.
  */
 int
-v_put(sp, ep, vp, fm, tm, rp)
+v_put(sp, ep, vp)
 	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
-	MARK *fm, *tm, *rp;
 {
 	if (F_ISSET(vp, VC_ISDOT))
 		inc_buf(sp, vp);
 
-	return (put(sp, ep,
-	    NULL, F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL, fm, rp, 1));
+	return (put(sp, ep, NULL, F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
+	    &vp->m_start, &vp->m_final, 1));
 }
 
 /*
+ * !!!
  * Historical whackadoo.  The dot command `puts' the numbered buffer
  * after the last one put.  For example, `"4p.' would put buffer #4
  * and buffer #5.  If the user continued to enter '.', the #9 buffer
