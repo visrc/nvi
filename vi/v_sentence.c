@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_sentence.c,v 8.5 1993/08/25 16:50:05 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:50:05 $";
+static char sccsid[] = "$Id: v_sentence.c,v 8.6 1993/08/26 11:57:31 bostic Exp $ (Berkeley) $Date: 1993/08/26 11:57:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,18 +18,22 @@ static char sccsid[] = "$Id: v_sentence.c,v 8.5 1993/08/25 16:50:05 bostic Exp $
 
 /*
  * In historic vi, a sentence was delimited by a '.', '?' or '!' character
- * followed by TWO spaces, an empty line or a newline.  One or more empty
- * lines was also treated as a separate sentence.  Once again, historical vi
- * didn't do sentence movements associated with counts consistently, mostly
- * in the presence of lines containing only white-space characters.
+ * followed by TWO spaces or a newline.  One or more empty lines was also
+ * treated as a separate sentence.  The Berkeley documentation for historical
+ * vi states that any number of ')', ']', '"' and '\'' characters can be
+ * between the delimiter character and the spaces or end of line, however,
+ * the historical implementation did not handle additional '"' characters.
+ * We follow the documentation here, not the implementation.
+ *
+ * Once again, historical vi didn't do sentence movements associated with
+ * counts consistently, mostly in the presence of lines containing only
+ * white-space characters.
  *
  * This implementation also permits a single tab to delimit sentences, and
  * treats lines containing only white-space characters as empty lines.
  * And, tabs are eaten (along with spaces) when skipping to the start of the
  * text follow a "sentence".
  */
-#define	ISSPACE								\
-	(cs.cs_flags == CS_EOL || isblank(cs.cs_ch))
 
 /*
  * v_sentencef -- [count])
@@ -58,16 +62,12 @@ v_sentencef(sp, ep, vp, fm, tm, rp)
 	 * This may not handle "  .  " correctly, but it's real unclear
 	 * what correctly means in that case.
 	 */
-	if (cs.cs_flags == CS_EMP || cs.cs_flags == 0 && ISSPACE) {
+	if (cs.cs_flags == CS_EMP || cs.cs_flags == 0 && isblank(cs.cs_ch)) {
 		if (cs_fblank(sp, ep, &cs))
 			return (1);
 		if (--cnt == 0) {
-			if (fm->lno != cs.cs_lno || fm->cno != cs.cs_cno) {
-				rp->lno = cs.cs_lno;
-				rp->cno = cs.cs_cno;
-				return (0);
-			}
-			v_eof(sp, ep, NULL);
+			if (fm->lno != cs.cs_lno || fm->cno != cs.cs_cno)
+				goto okret;
 			return (1);
 		}
 	}
@@ -80,21 +80,21 @@ v_sentencef(sp, ep, vp, fm, tm, rp)
 			if ((state == PERIOD || state == BLANK) && --cnt == 0) {
 				if (cs_next(sp, ep, &cs))
 					return (1);
-				if (cs.cs_flags == 0 && ISSPACE &&
-				    cs_fblank(sp, ep, &cs))
+				if (cs.cs_flags == 0 &&
+				    isblank(cs.cs_ch) && cs_fblank(sp, ep, &cs))
 					return (1);
-				goto ret;
+				goto okret;
 			}
 			state = NONE;
 			continue;
 		}
 		if (cs.cs_flags == CS_EMP) {	/* An EMP is two sentences. */
 			if (--cnt == 0)
-				goto ret;
+				goto okret;
 			if (cs_fblank(sp, ep, &cs))
 				return (1);
 			if (--cnt == 0)
-				goto ret;
+				goto okret;
 			state = NONE;
 			continue;
 		}
@@ -103,6 +103,13 @@ v_sentencef(sp, ep, vp, fm, tm, rp)
 		case '?':
 		case '!':
 			state = PERIOD;
+			break;
+		case ')':
+		case ']':
+		case '"':
+		case '\'':
+			if (state != PERIOD)
+				state = NONE;
 			break;
 		case '\t':
 			if (state == PERIOD)
@@ -116,9 +123,7 @@ v_sentencef(sp, ep, vp, fm, tm, rp)
 			if (state == BLANK && --cnt == 0) {
 				if (cs_fblank(sp, ep, &cs))
 					return (1);
-ret:				rp->lno = cs.cs_lno;
-				rp->cno = cs.cs_cno;
-				return (0);
+				goto okret;
 			}
 			/* FALLTHROUGH */
 		default:
@@ -128,13 +133,27 @@ ret:				rp->lno = cs.cs_lno;
 	}
 
 	/* EOF is a movement sink. */
-	if (fm->lno != cs.cs_lno || fm->cno != cs.cs_cno) {
-		rp->lno = cs.cs_lno;
-		rp->cno = cs.cs_cno;
-		return (0);
-	}
+	if (fm->lno != cs.cs_lno || fm->cno != cs.cs_cno)
+		goto okret;
 	v_eof(sp, ep, NULL);
 	return (1);
+
+okret:	rp->lno = cs.cs_lno;
+	rp->cno = cs.cs_cno;
+
+	/*
+	 * Historic, uh, features, yeah, that's right, call 'em features.
+	 * If the sentence movement is cutting an entire line, the buffer
+	 * is in line mode.  Reach up into the caller's VICMDARG structure,
+	 * and whack the flags.
+	 */
+	if (F_ISSET(vp, VC_C | VC_D | VC_Y) &&
+	    fm->cno == 0 && rp->cno == 0 || cs.cs_flags != 0) {
+		if (rp->cno == 0)
+			--rp->lno;
+		F_SET(vp, VC_LMODE);
+	}
+	return (0);
 }
 
 /*
@@ -150,7 +169,7 @@ v_sentenceb(sp, ep, vp, fm, tm, rp)
 {
 	VCS cs;
 	recno_t slno;
-	size_t scno;
+	size_t len, scno;
 	u_long cnt;
 	int last1, last2;
 
@@ -184,7 +203,7 @@ v_sentenceb(sp, ep, vp, fm, tm, rp)
 	for (last1 = last2 = 0;;) {
 		if (cs_prev(sp, ep, &cs))
 			return (1);
-		if (cs.cs_flags == CS_SOF)
+		if (cs.cs_flags == CS_SOF)	/* SOF is a movement sink. */
 			break;
 		if (cs.cs_flags == CS_EOL) {
 			last2 = last1;
@@ -199,30 +218,41 @@ v_sentenceb(sp, ep, vp, fm, tm, rp)
 			last1 = last2 = 0;
 			continue;
 		}
-		if (last1 && last2 &&
-		    (cs.cs_ch == '.' || cs.cs_ch == '?' || cs.cs_ch == '!')) {
-			if (--cnt != 0) {
-				last1 = last2 = 0;
+		switch (cs.cs_ch) {
+		case '.':
+		case '?':
+		case '!':
+			if (!last1 || --cnt != 0) {
+				last2 = last1 = 0;
 				continue;
 			}
 
 ret:			slno = cs.cs_lno;
 			scno = cs.cs_cno;
 
-			/* Move to the start of the sentence. */
-			if (cs_fblank(sp, ep, &cs))
+			/*
+			 * Move to the start of the sentence, skipping blanks
+			 * and special characters.
+			 */
+			do {
+				if (cs_next(sp, ep, &cs))
+					return (1);
+			} while (!cs.cs_flags &&
+			    (cs.cs_ch == ')' || cs.cs_ch == ']' ||
+			    cs.cs_ch == '"' || cs.cs_ch == '\''));
+			if ((cs.cs_flags || isblank(cs.cs_ch)) &&
+			    cs_fblank(sp, ep, &cs))
 				return (1);
+
 			/*
 			 * If it was ".  xyz", with the cursor on the 'x', or
 			 * "end.  ", with the cursor in the spaces, or the
 			 * beginning of a sentence preceded by an empty line,
 			 * we can end up where we started.  Fix it.
 			 */
-			if (fm->lno != cs.cs_lno || fm->cno != cs.cs_cno) {
-				rp->lno = cs.cs_lno;
-				rp->cno = cs.cs_cno;
-				return (0);
-			}
+			if (fm->lno != cs.cs_lno || fm->cno != cs.cs_cno)
+				goto okret;
+
 			/*
 			 * Well, if an empty line preceded possible blanks
 			 * and the sentence, it could be a real sentence.
@@ -232,29 +262,41 @@ ret:			slno = cs.cs_lno;
 					return (1);
 				if (cs.cs_flags == CS_EOL)
 					continue;
-				if (cs.cs_flags == 0 && ISSPACE)
+				if (cs.cs_flags == 0 && isblank(cs.cs_ch))
 					continue;
 				break;
 			}
-			if (cs.cs_flags == CS_EMP) {
-				rp->lno = cs.cs_lno;
-				rp->cno = cs.cs_cno;
-				return (0);
-			}
+			if (cs.cs_flags == CS_EMP)
+				goto okret;
+
 			/* But it wasn't; try again. */
-			cnt = 1;
+			++cnt;
 			cs.cs_lno = slno;
 			cs.cs_cno = scno;
 			last2 = last1 = 0;
-		} else if (cs.cs_ch == '\t') {
+			break;
+		case '\t':
 			last1 = last2 = 1;
-		} else {
+			break;
+		default:
 			last2 = last1;
-			last1 = ISSPACE ? 1 : 0;
+			last1 =
+			    cs.cs_flags == CS_EOL || isblank(cs.cs_ch) ||
+			    cs.cs_ch == ')' || cs.cs_ch == ']' ||
+			    cs.cs_ch == '"' || cs.cs_ch == '\'' ? 1 : 0;
 		}
 	}
 
-	/* SOF is a movement sink. */
-	rp->lno = cs.cs_lno;
+okret:	rp->lno = cs.cs_lno;
+	rp->cno = cs.cs_cno;
+
+	/*
+	 * See comment in v_sentencef().  Ignore errors, they should
+	 * never occur, and they'll get caught later.
+	 */
+	if (F_ISSET(vp, VC_C | VC_D | VC_Y) && rp->cno == 0 &&
+	    file_gline(sp, ep, fm->lno, &len) != NULL && (len == 0 ||
+	    fm->cno == len - 1))
+		F_SET(vp, VC_LMODE);
 	return (0);
 }
