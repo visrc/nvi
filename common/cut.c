@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 5.13 1992/05/22 10:33:48 bostic Exp $ (Berkeley) $Date: 1992/05/22 10:33:48 $";
+static char sccsid[] = "$Id: cut.c,v 5.14 1992/05/27 10:32:35 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:32:35 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -25,8 +25,7 @@ static char sccsid[] = "$Id: cut.c,v 5.13 1992/05/22 10:33:48 bostic Exp $ (Berk
 #include "pathnames.h"
 #include "extern.h"
 
-static int	cutline __P((recno_t, size_t, size_t, CBLINE **));
-static void	freecbline __P((CBLINE *));
+static int	cutline __P((recno_t, size_t, size_t, TEXT **));
 
 CB cuts[UCHAR_MAX + 2];		/* Set of cut buffers. */
 
@@ -44,7 +43,7 @@ cut(buffer, fm, tm, lmode)
 	MARK *fm, *tm;
 {
 	CB *cb;
-	CBLINE *cbl, *cblp;
+	TEXT *tp;
 	MARK m;
 	size_t len;
 	recno_t lno;
@@ -64,42 +63,22 @@ cut(buffer, fm, tm, lmode)
 
 	/* Free old buffer. */
 	if (cb->head != NULL && !append) {
-		freecbline(cb->head);
+		freetext(cb->head);
 		cb->head = NULL;
 		cb->len = 0;
 		cb->flags = 0;
 	}
 
-	/* Make cut from fm and to tm, swapping pointers if necessary. */
-	if (fm->lno > tm->lno || fm->lno == tm->lno && fm->cno > tm->cno) {
-		m = *fm;
-		*fm = *tm;
-		*tm = m;
-		append = 0;
-	} else
-		append = 1;
-		
 #if DEBUG && 1
 	TRACE("cut: from {%lu, %d}, to {%lu, %d}\n",
 	    fm->lno, fm->cno, tm->lno, tm->cno);
 #endif
 
-/* Append a new CBLINE structure into the CB chain. */
-#define	CAPPEND {							\
-	if ((cblp = cb->head) == NULL)					\
-		cb->head = cbl;						\
-	else {								\
-		for (; cblp->next; cblp = cblp->next);			\
-		cblp->next = cbl;					\
-	}								\
-	cb->len += cbl->len;						\
-}
-
 	if (lmode) {
 		for (lno = fm->lno; lno <= tm->lno; ++lno) {
-			if (cutline(lno, 0, 0, &cbl))
+			if (cutline(lno, 0, 0, &tp))
 				goto mem;
-			CAPPEND;
+			TEXTAPPEND(cb, tp);
 		}
 		cb->flags |= CB_LMODE;
 		return (0);
@@ -107,27 +86,27 @@ cut(buffer, fm, tm, lmode)
 		
 	/* Get the first line. */
 	len = fm->lno < tm->lno ? 0 : tm->cno - fm->cno;
-	if (cutline(fm->lno, fm->cno, len, &cbl))
+	if (cutline(fm->lno, fm->cno, len, &tp))
 		goto mem;
 
-	CAPPEND;
+	TEXTAPPEND(cb, tp);
 
 	for (lno = fm->lno; ++lno < tm->lno;) {
-		if (cutline(lno, 0, 0, &cbl))
+		if (cutline(lno, 0, 0, &tp))
 			goto mem;
-		CAPPEND;
+		TEXTAPPEND(cb, tp);
 	}
 
 	if (tm->lno > fm->lno && tm->cno > 0) {
-		if (cutline(lno, 0, tm->cno, &cbl)) {
+		if (cutline(lno, 0, tm->cno, &tp)) {
 mem:			if (append)
 				msg("Contents of buffer %s lost.",
 				    charname(buffer));
-			freecbline(cb->head);
+			freetext(cb->head);
 			cb->head = NULL;
 			return (1);
 		}
-		CAPPEND;
+		TEXTAPPEND(cb, tp);
 	}
 	return (0);
 }
@@ -141,18 +120,18 @@ static int
 cutline(lno, fcno, len, newp)
 	recno_t lno;
 	size_t fcno, len;
-	CBLINE **newp;
+	TEXT **newp;
 {
-	CBLINE *cp;
+	TEXT *tp;
 	size_t llen;
 	char *lp, *p;
 
 	EGETLINE(p, lno, llen);
-	if ((cp = malloc(sizeof(CBLINE))) == NULL)
+	if ((tp = malloc(sizeof(TEXT))) == NULL)
 		goto mem;
 	if (llen == 0) {
-		cp->lp = NULL;
-		cp->len = 0;
+		tp->lp = NULL;
+		tp->len = 0;
 #if DEBUG && 1
 		TRACE("{}\n");
 #endif
@@ -160,29 +139,29 @@ cutline(lno, fcno, len, newp)
 		if (len == 0)
 			len = llen - fcno;
 		if ((lp = malloc(len)) == NULL) {
-			free(cp);
+			free(tp);
 mem:			bell();
 			msg("Error: %s", strerror(errno));
 			return (1);
 		}
 		bcopy(p + fcno, lp, len);
-		cp->lp = lp;
-		cp->len = len;
+		tp->lp = lp;
+		tp->len = len;
 #if DEBUG && 1
 		TRACE("\t{%.*s}\n", MIN(len, 20), p + fcno);
 #endif
 	}
-	cp->next = NULL;
-	*newp = cp;
+	tp->next = NULL;
+	*newp = tp;
 	return (0);
 }
 
 /* Increase the buffer space as necessary. */
-#define	BFCHECK {							\
-	if (blen < len + cblp->len) {					\
-		blen += MAX(blen + 256, len + cblp->len);		\
+#define	BFCHECK(tp) {							\
+	if (blen < len + tp->len) {					\
+		blen += MAX(blen + 256, len + tp->len);			\
 		if ((bp = realloc(bp, blen)) == NULL) {			\
-			msg("Error: %s", strerror(errno));		\
+			msg("Put error: %s", strerror(errno));		\
 			blen = 0;					\
 			return (1);					\
 		}							\
@@ -191,7 +170,7 @@ mem:			bell();
 
 /*
  * put --
- *	Put cut buffer contents back into the text.
+ *	Put text buffer contents into the file.
  */	
 int
 put(buffer, cp, rp, append)
@@ -201,45 +180,43 @@ put(buffer, cp, rp, append)
 	static char *bp;
 	static size_t blen;
 	CB *cb;
-	CBLINE *cblp;
+	TEXT *tp;
 	recno_t lno;
 	size_t clen, len;
-	int intermediate;
+	int intermediate, lmode;
 	char *p, *t;
 
 	CBNAME(buffer, cb);
 	CBEMPTY(buffer, cb);
+	tp = cb->head;
+	lmode = cb->flags & CB_LMODE;
 
 	/*
-	 * If buffer was cut in line mode, append each new line into the
-	 * file.  Otherwise, insert the first line into place, append
-	 * each new line into the file, and insert the last line into
-	 * place.
+	 * If buffer was created in line mode, append each new line into the
+	 * file.  Otherwise, insert the first line into place, append each
+	 * new line into the file, and insert the last line into place.
 	 *
 	 * XXX
 	 * We have to do some fairly interesting stuff to make this work
 	 * for inserting above the first line.  This might be better done
 	 * in db(3) by allowing record 0.
 	 */
-	if (cb->flags & CB_LMODE) {
+	if (lmode) {
 		if (append) {
-			for (lno = cp->lno, cblp = cb->head; cblp;
-			    ++lno, cblp = cblp->next)
-				if (file_aline(curf, lno, cblp->lp, cblp->len))
+			for (lno = cp->lno; tp; ++lno, tp = tp->next)
+				if (file_aline(curf, lno, tp->lp, tp->len))
 					return (1);
 			rp->lno = cp->lno + 1;
 		} else if ((lno = cp->lno) != 1) {
-			for (cblp = cb->head, --lno;
-			    cblp; cblp = cblp->next, ++lno)
-				if (file_aline(curf, lno, cblp->lp, cblp->len))
+			for (--lno; tp; tp = tp->next, ++lno)
+				if (file_aline(curf, lno, tp->lp, tp->len))
 					return (1);
 			rp->lno = cp->lno;
 		} else {
-			cblp = cb->head;
-			if (file_iline(curf, (recno_t)1, cblp->lp, cblp->len))
+			if (file_iline(curf, (recno_t)1, tp->lp, tp->len))
 				return (1);
-			for (lno = 1; cblp = cblp->next; ++lno)
-				if (file_aline(curf, lno, cblp->lp, cblp->len))
+			for (lno = 1; tp = tp->next; ++lno)
+				if (file_aline(curf, lno, tp->lp, tp->len))
 					return (1);
 			rp->lno = 1;
 		}
@@ -253,14 +230,12 @@ put(buffer, cp, rp, append)
 	 * to the right of the split plus the last line in the CB.
 	 */
 	else {
-		cblp = cb->head;
-
 		/* Get the first line. */
 		lno = cp->lno;
 		EGETLINE(p, lno, len);
 
 		/* Check for space. */
-		BFCHECK;
+		BFCHECK(tp);
 
 		/* Original line, left of the split. */
 		t = bp;
@@ -271,8 +246,8 @@ put(buffer, cp, rp, append)
 		}
 
 		/* First line from the CB. */
-		bcopy(cblp->lp, t, cblp->len);
-		t += cblp->len;
+		bcopy(tp->lp, t, tp->len);
+		t += tp->len;
 
 		/* Calculate length left in original line. */
 		clen = len ? len - cp->cno - (append ? 1 : 0) : 0;
@@ -281,10 +256,7 @@ put(buffer, cp, rp, append)
 		 * If no more lines in the CB, append the rest of the original
 		 * line and quit.
 		 */
-		if (cblp->next == NULL) {
-			rp->lno = lno;
-			rp->cno = t - bp;
-
+		if (tp->next == NULL) {
 			if (clen > 0) {
 				bcopy(p, t, clen);
 				t += clen;
@@ -292,6 +264,8 @@ put(buffer, cp, rp, append)
 			if (file_sline(curf, lno, bp, t - bp))
 				return (1);
 
+			rp->lno = lno;
+			rp->cno = t - bp;
 		} else {
 			/* Output the line replacing the original line. */
 			if (file_sline(curf, lno, bp, t - bp))
@@ -299,25 +273,26 @@ put(buffer, cp, rp, append)
 
 			/* Output any intermediate lines in the CB alone. */
 			for (;;) {
-				cblp = cblp->next;
-				if (cblp->next == NULL)
+				tp = tp->next;
+				if (tp->next == NULL)
 					break;
-				if (file_aline(curf, lno, cblp->lp, cblp->len))
+				if (file_aline(curf, lno, tp->lp, tp->len))
 					return (1);
 				++lno;
 			}
 
-			/* Last part of original line. */
-
-			/* Check for space. */
-			BFCHECK;
+			/* Last part of original line; check for space. */
+			BFCHECK(tp);
 
 			t = bp;
-			bcopy(cblp->lp, t, cblp->len);
-			t += cblp->len;
+			if (tp->len) {
+				bcopy(tp->lp, t, tp->len);
+				t += tp->len;
+			}
 
-			rp->lno = lno;
-			rp->cno = t - bp;
+			/* This is the end of the added text; set cursor. */
+			rp->lno = lno + 1;
+			rp->cno = t - bp - 1;
 
 			if (clen) {
 				bcopy(p, t, clen);
@@ -342,14 +317,14 @@ put(buffer, cp, rp, append)
 }
 
 /*
- * freecbline --
- *	Free a chain of cbline structures.
+ * freetext --
+ *	Free a chain of text structures.
  */
-static void
-freecbline(cp)
-	CBLINE *cp;
+void
+freetext(cp)
+	TEXT *cp;
 {
-	CBLINE *np;
+	TEXT *np;
 
 	do {
 		np = cp->next;
