@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.12 1994/03/03 12:59:40 bostic Exp $ (Berkeley) $Date: 1994/03/03 12:59:40 $
+.\"     $Id: vi.ref,v 8.13 1994/03/03 13:15:03 bostic Exp $ (Berkeley) $Date: 1994/03/03 13:15:03 $
 .\"
 .Dd "%Q%"
 .Dt EX/VI 1
@@ -296,7 +296,7 @@ rc.local (or other startup) file:
 .ne 7v
 .Bd -literal -offset indent -compact
 # Recover nvi editor files.
-virecovery=/var/tmp/vi.recover/recover.*
+virecovery=`echo /var/tmp/vi.recover/recover.*`
 if [ "$virecovery" != "/var/tmp/vi.recover/recover.*" ]; then
 	echo 'Recovering vi editor sessions'
 	for i in $virecovery; do
