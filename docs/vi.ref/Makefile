@@ -1,17 +1,17 @@
-#	$Id: Makefile,v 8.7 1994/05/26 00:06:26 bostic Exp $ (Berkeley) $Date: 1994/05/26 00:06:26 $
+#	$Id: Makefile,v 8.8 1994/05/26 01:42:01 bostic Exp $ (Berkeley) $Date: 1994/05/26 01:42:01 $
 
 DIR=	usd/13.viref
 SRCS=	vi.ref ex.cmd.roff set.opt.roff vi.cmd.roff ref.so
 MACROS=	-me
 CLEANFILES+=vi.ref.txt vi.ref.ps vi.ref.roff index index.so __1 __2 __3 __4
 
-paper.ps: index.so vi.ref.roff
-	soelim vi.ref.roff | ${TBL} | ${ROFF} > ${.TARGET}
+paper.ps: vi.ref.roff
+	soelim vi.ref.roff | ${TBL} | ${ROFF} ${PAGES} > ${.TARGET}
 
-vi.ref.txt: index.so vi.ref.roff
+vi.ref.txt: vi.ref.roff
 	soelim vi.ref.roff | ${TBL} | groff -me -Tascii ${PAGES} > $@
 
-vi.ref.ps: index.so vi.ref.roff
+vi.ref.ps: vi.ref.roff
 	soelim vi.ref.roff | ${TBL} | groff -me ${PAGES} > $@
 
 vi.ref.roff: ${SRCS}
@@ -19,7 +19,7 @@ vi.ref.roff: ${SRCS}
 
 .include <bsd.doc.mk>
 
-index.so: index
+index.so: paper.ps
 	@sed -e 's/MINUSSIGN/\\-/' \
 	    -e 's/DOUBLEQUOTE/"/' \
 	    -e 's/ /__SPACE/g' < index | \
