@@ -1,4 +1,4 @@
-#	$Id: README,v 8.59 1994/04/18 11:16:18 bostic Exp $ (Berkeley) $Date: 1994/04/18 11:16:18 $
+#	$Id: README,v 8.60 1994/04/20 15:41:49 bostic Exp $ (Berkeley) $Date: 1994/04/20 15:41:49 $
 
 This is the README for version 1.14 of nex/nvi, a freely redistributable
 replacement for the Berkeley ex and vi text editors.  The compressed tar
@@ -141,11 +141,23 @@ nvi/PORT:
 	db/		-- 4.4BSD DB routines.
 	regex/		-- Henry Spencer's POSIX.2 RE support.
 
+nvi/USD.doc:
+	Ex/vi documentation, both historic and current.
+
+	edit/		Roff source for "Edit: A tutorial", USD:14 in the
+			4.3BSD manuals.
+	ex/		Roff source for "Ex Reference Manual -- Version
+			3.7", USD:16 in the 4.3BSD manuals.
+	vi/		Roff source for "An Introduction to Display
+			Editing with Vi", USD:15 in the 4.3BSD manuals.
+			Includes the "Vi Quick Reference" card.
+	vi.man/		Manual page for nex/nvi.
+	vi.ref/		Reference document for nex/nvi.
+
 nvi/docs:
-	The nvi/docs directory has all of the nvi documentation:
+	Random nvi documentation:
 
 	README		-- Nvi main README file.
-	USD.doc/	-- Historic vi documentation (in roff source form).
 	bugs.current	-- Known bugs in the current nvi implementation.
 	changelog	-- Log of changes from version to version.
 	features	-- Todo list, suggested features list.
@@ -157,12 +169,6 @@ nvi/docs:
 	    structures	-- Nvi internal structure description.
 	spell.ok	-- Misspellings list for README, vi.1.
 	tutorial/	-- Historic vi tutorial
-	vi.1		-- Nvi man page (in roff source form).
-	vi.0.ps		-- PostScript of vi.1.
-	vi.0.txt	-- Flat text of vi.1.
-	vi.ref		-- Nvi reference (in roff source form).
-	vi.ref.ps	-- PostScript of vi.ref.
-	vi.ref.txt	-- Flat text of vi.ref.
 
 nvi/ex:
 	The nvi/ex directory is the ex source code.  Because vi has the
