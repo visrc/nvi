@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 9.17 1995/02/16 12:05:55 bostic Exp $ (Berkeley) $Date: 1995/02/16 12:05:55 $";
+static char sccsid[] = "$Id: vs_split.c,v 9.18 1995/02/16 12:06:27 bostic Exp $ (Berkeley) $Date: 1995/02/16 12:06:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -47,7 +47,7 @@ svi_split(sp, topp, botp)
 
 	/* Can be called from ex before we're ready. */
 	if (!SVI_SCRINIT(sp)) {
-		svi_message(sp, "split", SVIM_NOINIT);
+		svi_message(sp, "screen split", SVIM_NOINIT);
 		return (1);
 	}
 
