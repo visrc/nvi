@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.78 1993/12/20 12:24:09 bostic Exp $ (Berkeley) $Date: 1993/12/20 12:24:09 $
+ *	$Id: screen.h,v 8.79 1993/12/22 15:10:25 bostic Exp $ (Berkeley) $Date: 1993/12/22 15:10:25 $
  */
 
 /*
@@ -199,7 +199,7 @@ struct _scr {
 					/* Screen's ex write function. */
 	int	 (*s_ex_write) __P((void *, const char *, int));
 					/* Foreground the screen. */
-	int	 (*s_fg) __P((SCR *, char *));
+	int	 (*s_fg) __P((SCR *, CHAR_T *));
 					/* Fill the screen's map. */
 	int	 (*s_fill) __P((SCR *, EXF *, recno_t, enum position));
 	enum input			/* Get a line from the user. */
