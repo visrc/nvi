@@ -22,8 +22,8 @@
  * 5. The editor's :version command and the message it displays may not be
  *    altered in any way, without the written permission of Keith Bostic,
  *    other than to add supplemental information to the version's release
- *    number and release date.  For permission to change the :version
- *    command or its message, contact Keith Bostic:
+ *    number and release date.  For permission to change the :version command
+ *    or its message, contact Keith Bostic:
  *
  * 	Keith Bostic		+1-508-287-4781
  * 	394 E. Riding Dr.	bostic@bostic.com
