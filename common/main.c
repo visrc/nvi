@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.92 1994/05/21 09:42:33 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:42:33 $";
+static char sccsid[] = "$Id: main.c,v 8.93 1994/05/21 09:52:05 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:52:05 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -532,16 +532,18 @@ gs_end(gp)
 	    sp != (void *)&__global_list->dq; sp = sp->q.cqe_next)
 		for (mp = sp->msgq.lh_first;
 		    mp != NULL && !(F_ISSET(mp, M_EMPTY)); mp = mp->q.le_next)
-			(void)fprintf(stderr, "%.*s\n", (int)mp->len, mp->mbuf);
+			(void)fprintf(stderr,
+			    "%.*s.\n", (int)mp->len, mp->mbuf);
 	for (sp = __global_list->hq.cqh_first;
 	    sp != (void *)&__global_list->hq; sp = sp->q.cqe_next)
 		for (mp = sp->msgq.lh_first;
 		    mp != NULL && !(F_ISSET(mp, M_EMPTY)); mp = mp->q.le_next)
-			(void)fprintf(stderr, "%.*s\n", (int)mp->len, mp->mbuf);
+			(void)fprintf(stderr,
+			    "%.*s.\n", (int)mp->len, mp->mbuf);
 	/* Flush messages on the global queue. */
 	for (mp = gp->msgq.lh_first;
 	    mp != NULL && !(F_ISSET(mp, M_EMPTY)); mp = mp->q.le_next)
-		(void)fprintf(stderr, "%.*s\n", (int)mp->len, mp->mbuf);
+		(void)fprintf(stderr, "%.*s.\n", (int)mp->len, mp->mbuf);
 
 	/*
 	 * DON'T FREE THE GLOBAL STRUCTURE -- WE DIDN'T TURN
