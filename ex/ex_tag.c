@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 8.39 1994/03/19 11:18:06 bostic Exp $ (Berkeley) $Date: 1994/03/19 11:18:06 $";
+static char sccsid[] = "$Id: ex_tag.c,v 8.40 1994/03/22 14:24:04 bostic Exp $ (Berkeley) $Date: 1994/03/22 14:24:04 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -616,15 +616,17 @@ tag_get(sp, tag, tagp, filep, searchp)
 	    tfp != NULL && p == NULL; tfp = tfp->q.tqe_next) {
 		errno = 0;
 		F_CLR(tfp, TAGF_DNE);
-		if (!search(sp, tfp->name, tag, &p))
-			break;
-		if (errno == ENOENT) {
-			if (!F_ISSET(tfp, TAGF_DNE_WARN)) {
-				dne = 1;
-				F_SET(tfp, TAGF_DNE);
-			}
-		} else
-			msgq(sp, M_SYSERR, tfp->name);
+		if (search(sp, tfp->name, tag, &p))
+			if (errno == ENOENT) {
+				if (!F_ISSET(tfp, TAGF_DNE_WARN)) {
+					dne = 1;
+					F_SET(tfp, TAGF_DNE);
+				}
+			} else
+				msgq(sp, M_SYSERR, tfp->name);
+		else
+			if (p != NULL)
+				break;
 	}
 
 	if (p == NULL) {
