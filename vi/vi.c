@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vi.c,v 10.43 1996/04/27 11:40:38 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:38 $";
+static const char sccsid[] = "$Id: vi.c,v 10.44 1996/05/02 10:21:29 bostic Exp $ (Berkeley) $Date: 1996/05/02 10:21:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -358,8 +358,8 @@ gc_event:
 
 		if (0) {
 err:			if (v_event_flush(sp, CH_MAPPED))
-				msgq(sp, M_ERR,
-			"110|Vi command failed: mapped keys discarded");
+				msgq(sp, M_BERR,
+			    "110|Vi command failed: mapped keys discarded");
 		}
 
 		/*
