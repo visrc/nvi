@@ -255,3 +255,123 @@ perl.c: $(visrcdir)/perl_api/perl.xs $(visrcdir)/perl_api/typemap
 	          -e   'if /newXS\("VI::([^\":]*)"/;' $@ ; echo "1;") > VI.pm
 perlxsi.c:
 	perl -MExtUtils::Embed -e xsinit -- -std VI
+
+chmod=	@vi_cv_path_chmod@
+cp=	@vi_cv_path_cp@
+ln=	@vi_cv_path_ln@
+mkdir=	@vi_cv_path_mkdir@
+rm=	@vi_cv_path_rm@
+strip=	@vi_cv_path_strip@
+
+dmode=	755
+emode=	555
+fmode=	444
+
+install-exec-local:
+	cd $(DESTDIR)$(bindir) && $(rm) -f `echo ex | sed '$(transform)'`
+	cd $(DESTDIR)$(bindir) && $(rm) -f `echo view | sed '$(transform)'`
+	cd $(DESTDIR)$(bindir) && $(ln) \
+		`echo vi | sed '$(transform)'` `echo ex | sed '$(transform)'`
+	cd $(DESTDIR)$(bindir) && $(ln) \
+		`echo vi | sed '$(transform)'` `echo view | sed '$(transform)'`
+
+install-data-local: install_common
+	@[ -d $(DESTDIR)$(mandir) ] || \
+	    ($(mkdir) $(DESTDIR)$(mandir) && \
+	     $(chmod) $(dmode) $(DESTDIR)$(mandir))
+	@[ -d $(DESTDIR)$(mandir)/cat1 ] || \
+	    ($(mkdir) $(DESTDIR)$(mandir)/cat1 && \
+	     $(chmod) $(dmode) $(DESTDIR)$(mandir)/cat1)
+	@echo "Installing man pages: $(DESTDIR)$(mandir) ..."
+	@cd $(DESTDIR)$(mandir)/cat1 && \
+	    $(rm) -f `echo vi.0 | sed '$(transform)'`
+	@$(cp) $(visrcdir)/docs/vi.man/vi.0 \
+	    $(DESTDIR)$(mandir)/cat1/`echo vi.0 | sed '$(transform)'`
+	@cd $(DESTDIR)$(mandir)/cat1 && \
+	    $(chmod) $(fmode) `echo vi.0 | sed '$(transform)'`
+	@cd $(DESTDIR)$(mandir)/cat1 && \
+	    $(rm) -f `echo ex.0 | sed '$(transform)'`
+	@cd $(DESTDIR)$(mandir)/cat1 && \
+	    $(rm) -f `echo view.0 | sed '$(transform)'`
+	@cd $(DESTDIR)$(mandir)/cat1 && $(ln) \
+	    `echo vi.0 | sed '$(transform)'` `echo ex.0 | sed '$(transform)'`
+	@cd $(DESTDIR)$(mandir)/cat1 && $(ln) \
+	    `echo vi.0 | sed '$(transform)'` `echo view.0 | sed '$(transform)'`
+	@[ -d $(DESTDIR)$(mandir)/man1 ] || \
+	    ($(mkdir) $(DESTDIR)$(mandir)/man1 && \
+	     $(chmod) $(dmode) $(DESTDIR)$(mandir)/man1)
+	@cd $(DESTDIR)$(mandir)/man1 && \
+	    $(rm) -f `echo vi.1 | sed '$(transform)'`
+	@$(cp) $(visrcdir)/docs/vi.man/vi.1 \
+	    $(DESTDIR)$(mandir)/man1/`echo vi.1 | sed '$(transform)'`
+	@cd $(DESTDIR)$(mandir)/man1 && \
+	    $(chmod) $(fmode) `echo vi.1 | sed '$(transform)'`
+	@cd $(DESTDIR)$(mandir)/man1 && \
+	    $(rm) -f `echo ex.1 | sed '$(transform)'`
+	@cd $(DESTDIR)$(mandir)/man1 && \
+	    $(rm) -f `echo view.1 | sed '$(transform)'`
+	@cd $(DESTDIR)$(mandir)/man1 && $(ln) \
+	    `echo vi.1 | sed '$(transform)'` `echo ex.1 | sed '$(transform)'`
+	@cd $(DESTDIR)$(mandir)/man1 && $(ln) \
+	    `echo vi.1 | sed '$(transform)'` `echo view.1 | sed '$(transform)'`
+
+cat=	dutch english french german ru_SU.KOI8-R spanish swedish
+install_common:
+	@[ -f $(chmod) ] || (echo 'chmod not found.'; exit 1)
+	@[ -f $(cp) ] || (echo 'cp not found.'; exit 1)
+	@[ -f $(ln) ] || (echo 'ln not found.'; exit 1)
+	@[ -f $(mkdir) ] || (echo 'mkdir not found.'; exit 1)
+	@[ -f $(rm) ] || (echo 'rm not found.'; exit 1)
+	@[ -d $(DESTDIR)$(prefix) ] || \
+	    ($(mkdir) $(DESTDIR)$(prefix) && \
+		$(chmod) $(dmode) $(DESTDIR)$(prefix))
+	@[ -d $(DESTDIR)$(exec_prefix) ] || \
+	    ($(mkdir) $(DESTDIR)$(exec_prefix) && \
+		$(chmod) $(dmode) $(DESTDIR)$(exec_prefix))
+	@[ -d $(DESTDIR)$(datadir) ] || \
+	    ($(mkdir) $(DESTDIR)$(datadir) && \
+		$(chmod) $(dmode) $(DESTDIR)$(datadir))
+	@$(rm) -rf $(DESTDIR)$(datadir)/vi
+	@$(mkdir) $(DESTDIR)$(datadir)/vi && \
+	    $(chmod) $(dmode) $(DESTDIR)$(datadir)/vi
+	@echo "Installing message catalogs: $(datadir)/vi/catalog ..."
+	@$(mkdir) $(DESTDIR)$(datadir)/vi/catalog && \
+	    $(chmod) $(dmode) $(DESTDIR)$(datadir)/vi/catalog
+	@(cd $(visrcdir)/catalog && \
+	    $(cp) $(cat) $(DESTDIR)$(datadir)/vi/catalog && \
+	    cd $(DESTDIR)$(datadir)/vi/catalog && $(chmod) $(fmode) *)
+	@echo "Installing Perl scripts: $(datadir)/vi/perl ..."
+	@$(mkdir) $(DESTDIR)$(datadir)/vi/perl && \
+	    $(chmod) $(dmode) $(DESTDIR)$(datadir)/vi/perl
+	@[ ! -f VI.pm ] || \
+	    ($(cp) VI.pm $(DESTDIR)$(datadir)/vi/perl && \
+	    (cd $(DESTDIR)$(datadir)/vi/perl && $(chmod) $(fmode) VI.pm))
+	@(cd $(visrcdir)/perl_scripts && \
+	    $(cp) *.pl $(DESTDIR)$(datadir)/vi/perl && \
+	    cd $(DESTDIR)$(datadir)/vi/perl && $(chmod) $(fmode) *.pl)
+	@echo "Installing Tcl scripts: $(datadir)/vi/tcl ..."
+	@$(mkdir) $(DESTDIR)$(datadir)/vi/tcl && \
+	    $(chmod) $(dmode) $(DESTDIR)$(datadir)/vi/tcl
+	@(cd $(visrcdir)/tcl_scripts && \
+	    $(cp) *.tcl $(DESTDIR)$(datadir)/vi/tcl && \
+	    cd $(DESTDIR)$(datadir)/vi/tcl && $(chmod) $(fmode) *.tcl)
+	@echo "Installing recover script: $(datadir)/vi/recover ..."
+	@($(cp) recover $(DESTDIR)$(datadir)/vi/recover && \
+	    $(chmod) $(emode) $(DESTDIR)$(datadir)/vi/recover)
+
+uninstall-local:
+	$(rm) -rf $(DESTDIR)$(datadir)/vi
+	cd $(DESTDIR)$(bindir) && $(rm) -f `echo ex | sed '$(transform)'`
+	cd $(DESTDIR)$(bindir) && $(rm) -f `echo view | sed '$(transform)'`
+	cd $(DESTDIR)$(mandir)/cat1 && \
+	    $(rm) -f `echo ex.0 | sed '$(transform)'`
+	cd $(DESTDIR)$(mandir)/cat1 && \
+	    $(rm) -f `echo vi.0 | sed '$(transform)'`
+	cd $(DESTDIR)$(mandir)/cat1 && \
+	    $(rm) -f `echo view.0 | sed '$(transform)'`
+	cd $(DESTDIR)$(mandir)/man1 && \
+	    $(rm) -f `echo ex.1 | sed '$(transform)'`
+	cd $(DESTDIR)$(mandir)/man1 && \
+	    $(rm) -f `echo vi.1 | sed '$(transform)'`
+	cd $(DESTDIR)$(mandir)/man1 && \
+	    $(rm) -f `echo view.1 | sed '$(transform)'`
