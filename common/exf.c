@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.98 1994/08/31 17:11:57 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:11:57 $";
+static char sccsid[] = "$Id: exf.c,v 8.99 1994/09/01 08:16:12 bostic Exp $ (Berkeley) $Date: 1994/09/01 08:16:12 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -231,8 +231,19 @@ file_init(sp, frp, rcv_name, force)
 		goto err;
 
 	/*
-	 * Close the previous file; if that fails, close the new one and
-	 * run for the border.
+	 * Set the alternate file name to be the file we're discarding.
+	 *
+	 * !!!
+	 * Temporary files can't become alternate files, so there's no file
+	 * name.  This matches historical practice, although it could only
+	 * happen in historical vi as the result of the initial command, i.e.
+	 * if vi was executed without a file name.
+	 */
+	set_alt_name(sp, F_ISSET(sp->frp, FR_TMPFILE) ? NULL : sp->frp->name);
+
+	/*
+	 * Close the previous file; if that fails, close the new one and run
+	 * for the border.
 	 *
 	 * !!!
 	 * There's a nasty special case.  If the user edits a temporary file,
@@ -334,23 +345,10 @@ file_init(sp, frp, rcv_name, force)
 		F_SET(frp, FR_RDONLY);
 
 	/*
-	 * Set the alternate file name to be the file we've just discarded.
-	 *
-	 * !!!
-	 * If the current file was a temporary file, the call to file_end()
-	 * unlinked it and free'd the name.  So, there is no previous file,
-	 * and there is no alternate file name.  This matches historical
-	 * practice, although in historical vi it could only happen as the
-	 * result of the initial command, i.e. if vi was executed without a
-	 * file name.
-	 */
-	set_alt_name(sp, sp->frp == NULL ? NULL : sp->frp->name);
-
-	/*
 	 * Switch...
 	 *
 	 * !!!
-	 * Note, because the EXF structure is examine at interrupt time,
+	 * Note, because the EXF structure is examined at interrupt time,
 	 * the underlying DB structures have to be consistent as soon as
 	 * it's assigned to an SCR structure.
 	 */
