@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: log.c,v 10.20 2000/08/29 15:52:37 skimo Exp $ (Berkeley) $Date: 2000/08/29 15:52:37 $";
+static const char sccsid[] = "$Id: log.c,v 10.21 2001/01/01 20:26:47 skimo Exp $ (Berkeley) $Date: 2001/01/01 20:26:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -101,8 +101,8 @@ log_init(sp, ep)
 	ep->l_high = ep->l_cur = 1;
 
 	if (db_create(&ep->log, sp->gp->env, 0) != 0 ||
-	    ep->log->open(ep->log, NULL, NULL, DB_RECNO, DB_CREATE | DB_THREAD,
-	    S_IRUSR | S_IWUSR) != 0) {
+	    ep->log->open(ep->log, NULL, NULL, DB_RECNO, 
+			  DB_CREATE | VI_DB_THREAD, S_IRUSR | S_IWUSR) != 0) {
 		msgq(sp, M_SYSERR, "009|Log file");
 		F_SET(ep, F_NOLOG);
 		return (1);

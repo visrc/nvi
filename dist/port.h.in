@@ -1,4 +1,4 @@
-/* $Id: port.h.in,v 8.14 2000/07/06 19:38:00 skimo Exp $ (Berkeley) $Date: 2000/07/06 19:38:00 $ */
+/* $Id: port.h.in,v 8.15 2001/01/01 20:26:48 skimo Exp $ (Berkeley) $Date: 2001/01/01 20:26:48 $ */
 
 /*
  * Declare the basic types, if they aren't already declared.  Named and
@@ -190,4 +190,10 @@
 
 #ifdef NEED_FPRINTF_PROTO
 extern  int     fprintf( FILE *, const char *, ... );
+#endif
+
+#ifdef HAVE_PTHREAD
+#define VI_DB_THREAD DB_THREAD
+#else
+#define VI_DB_THREAD 0
 #endif

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: exf.c,v 10.60 2000/09/01 09:43:02 skimo Exp $ (Berkeley) $Date: 2000/09/01 09:43:02 $";
+static const char sccsid[] = "$Id: exf.c,v 10.61 2001/01/01 20:26:47 skimo Exp $ (Berkeley) $Date: 2001/01/01 20:26:47 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -289,7 +289,7 @@ file_init(sp, frp, rcv_name, flags)
 #endif
 
 	if ((sp->db_error = ep->db->open(ep->db, ep->rcv_path, NULL, DB_RECNO, 
-	    ((rcv_name == 0) ? DB_TRUNCATE : 0) | DB_THREAD | NOMMAPIFFCNTL,
+	    ((rcv_name == 0) ? DB_TRUNCATE : 0) | VI_DB_THREAD | NOMMAPIFFCNTL,
 	    S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)) != 0) {
 		msgq_str(sp,
 		    M_DBERR, rcv_name == NULL ? oname : rcv_name, "%s");
