@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_main.c,v 10.16 1995/10/31 10:52:15 bostic Exp $ (Berkeley) $Date: 1995/10/31 10:52:15 $";
+static char sccsid[] = "$Id: cl_main.c,v 10.17 1995/10/31 11:03:54 bostic Exp $ (Berkeley) $Date: 1995/10/31 11:03:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -84,9 +84,7 @@ main(argc, argv)
 	 * We have to know what terminal it is from the start, since we may
 	 * have to use termcap/terminfo to find out how big the screen is.
 	 */
-	if ((ttype = getenv("TERM")) == NULL)
-		ttype = "unknown";
-	term_init(ttype);
+	term_init((ttype = getenv("TERM")) == NULL ? "unknown" : ttype);
 
 	/* Figure out how big the screen is. */
 	if (cl_ssize(NULL, 0, &rows, &cols, NULL))
@@ -100,7 +98,7 @@ main(argc, argv)
 		exit (1);
 
 	/* Run ex/vi. */
-	rval = editor(gp, argc, argv, rows, cols);
+	rval = editor(gp, argc, argv, ttype, rows, cols);
 
 	/* Clean up signals. */
 	sig_end(gp);

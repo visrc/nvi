@@ -16,7 +16,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 10.16 1995/09/28 13:14:53 bostic Exp $ (Berkeley) $Date: 1995/09/28 13:14:53 $";
+static char sccsid[] = "$Id: main.c,v 10.17 1995/10/31 11:04:17 bostic Exp $ (Berkeley) $Date: 1995/10/31 11:04:17 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -45,13 +45,13 @@ static int	 v_obsolete __P((char *, char *[]));
  * editor --
  *	Main editor routine.
  *
- * PUBLIC: int editor __P((GS *, int, char *[], recno_t, size_t));
+ * PUBLIC: int editor __P((GS *, int, char *[], char *, recno_t, size_t));
  */
 int
-editor(gp, argc, argv, rows, cols)
+editor(gp, argc, argv, ttype, rows, cols)
 	GS *gp;
 	int argc;
-	char *argv[];
+	char *argv[], *ttype;
 	recno_t rows;
 	size_t cols;
 {
@@ -243,7 +243,7 @@ editor(gp, argc, argv, rows, cols)
 		*oargp++ = O_SHOWMATCH;
 	}
 	*oargp = -1;			/* Options initialization. */
-	if (opts_init(sp, oargs, rows, cols))
+	if (opts_init(sp, oargs, ttype, rows, cols))
 		goto err;
 	}
 	if (wsizearg != NULL) {

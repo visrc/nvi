@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 10.17 1995/10/19 13:53:01 bostic Exp $ (Berkeley) $Date: 1995/10/19 13:53:01 $";
+static char sccsid[] = "$Id: options.c,v 10.18 1995/10/31 11:04:20 bostic Exp $ (Berkeley) $Date: 1995/10/31 11:04:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -256,12 +256,13 @@ static OABBREV const abbrev[] = {
  * opts_init --
  *	Initialize some of the options.
  *
- * PUBLIC: int opts_init __P((SCR *, int *, recno_t, size_t));
+ * PUBLIC: int opts_init __P((SCR *, int *, char *, recno_t, size_t));
  */
 int
-opts_init(sp, oargs, rows, cols)
+opts_init(sp, oargs, ttype, rows, cols)
 	SCR *sp;
 	int *oargs;
+	char *ttype;
 	recno_t rows;
 	size_t cols;
 {
@@ -288,11 +289,13 @@ opts_init(sp, oargs, rows, cols)
 	}								\
 }
 
-	/* Set rows, cols first, used by other options. */
+	/* Set terminal, rows, cols first, used by other options. */
 	(void)snprintf(b1, sizeof(b1), "lines=%u", rows);
 	OI(O_LINES, b1, 1);
 	(void)snprintf(b1, sizeof(b1), "columns=%u", cols);
 	OI(O_COLUMNS, b1, 1);
+	(void)snprintf(b1, sizeof(b1), "term=%s", ttype);
+	OI(O_TERM, b1, 1);
 
 	/* If oargs NULL, then it's a window resize, return. */
 	if (oargs == NULL)
@@ -350,9 +353,6 @@ opts_init(sp, oargs, rows, cols)
 	OI(O_TABSTOP, "tabstop=8", 1);
 	(void)snprintf(b1, sizeof(b1), "tags=%s", _PATH_TAGS);
 	OI(O_TAGS, b1, 1);
-	(void)snprintf(b1, sizeof(b1), "term=%s",
-	    (s = getenv("TERM")) == NULL ? "unknown" : s);
-	OI(O_TERM, b1, 1);
 
 	/*
 	 * XXX
