@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.25 1993/11/26 15:31:29 bostic Exp $ (Berkeley) $Date: 1993/11/26 15:31:29 $";
+static char sccsid[] = "$Id: util.c,v 8.26 1993/11/26 17:32:48 bostic Exp $ (Berkeley) $Date: 1993/11/26 17:32:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -79,13 +79,29 @@ msgq(sp, mt, fmt, va_alist)
 
 	/* Length is the min length of the message or the buffer. */
 	if (mt == M_SYSERR)
-		len = snprintf(msgbuf, sizeof(msgbuf), "Error: %s%s%s.",
-		    fmt == NULL ? "" : fmt, fmt == NULL ? "" : ": ",
-		    strerror(errno));
-	else
-		len = vsnprintf(msgbuf, sizeof(msgbuf), fmt, ap);
-	if (len > sizeof(msgbuf))
-		len = sizeof(msgbuf);
+		if (F_ISSET(sp, S_FILEINPUT))
+			len = snprintf(msgbuf, sizeof(msgbuf),
+			    "Error: %s, %d: %s%s%s.", sp->if_name, sp->if_lno,
+			    fmt == NULL ? "" : fmt, fmt == NULL ? "" : ": ",
+			    strerror(errno));
+		else
+			len = snprintf(msgbuf, sizeof(msgbuf),
+			    "Error: %s%s%s.",
+			    fmt == NULL ? "" : fmt, fmt == NULL ? "" : ": ",
+			    strerror(errno));
+	else {
+		len = F_ISSET(sp, S_FILEINPUT) ?
+		    snprintf(msgbuf, sizeof(msgbuf),
+		        "%s, %d: ", sp->if_name, sp->if_lno) : 0;
+		len += vsnprintf(msgbuf + len, sizeof(msgbuf) - len, fmt, ap);
+	}
+
+	/*
+	 * If len >= the size, some characters were discarded.
+	 * Ignore trailing nul.
+	 */
+	if (len >= sizeof(msgbuf))
+		len = sizeof(msgbuf) - 1;
 
 	msg_app(__global_list, sp, mt == M_ERR ? 1 : 0, msgbuf, len);
 }
