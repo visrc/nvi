@@ -1,4 +1,4 @@
-#	$Id: README,v 8.10 1996/03/10 13:26:58 bostic Exp $ (Berkeley) $Date: 1996/03/10 13:26:58 $
+#	$Id: README,v 8.11 1996/03/11 09:20:25 bostic Exp $ (Berkeley) $Date: 1996/03/11 09:20:25 $
 
 Nvi uses the GNU autoconf program for configuration and compilation.  You
 should enter:
@@ -90,8 +90,8 @@ enable-perlinterp:
 
 	--enable-perlinterp
 
-	as an argument to configure.  Note: this is NOT possible to do
-	with Perl 4.
+	as an argument to configure.  (Note: this is NOT possible with
+	Perl 4, or even with Perl 5 versions earlier than 5.002.)
 
 enable-tclinterp:
 	If you have the Tk/Tcl libraries and you want to compile in the
