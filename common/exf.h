@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 5.38 1993/02/28 13:58:30 bostic Exp $ (Berkeley) $Date: 1993/02/28 13:58:30 $
+ *	$Id: exf.h,v 5.39 1993/03/01 12:45:20 bostic Exp $ (Berkeley) $Date: 1993/03/01 12:45:20 $
  */
 
 #ifndef _EXF_H_
@@ -49,6 +49,9 @@ typedef struct exf {
 
 	recno_t	rptlines;		/* Count of lines modified. */
 	char *rptlabel;			/* How lines modified. */
+
+	TAGF **tfhead;			/* List of tag files. */
+	TAG *thead;			/* Tag stack. */
 
 	char *name;			/* File name. */
 	char *tname;			/* Temporary file name. */
