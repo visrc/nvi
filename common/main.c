@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.10 1993/08/27 17:08:30 bostic Exp $ (Berkeley) $Date: 1993/08/27 17:08:30 $";
+static char sccsid[] = "$Id: main.c,v 8.11 1993/08/30 08:36:48 bostic Exp $ (Berkeley) $Date: 1993/08/30 08:36:48 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -222,10 +222,14 @@ main(argc, argv)
 		}
 	else if ((p = getenv("HOME")) != NULL && *p) {
 		(void)snprintf(path, sizeof(path), "%s/%s", p, _PATH_NEXRC);
-		if (stat(path, &sb))
+		if (!stat(path, &sb))
+			(void)ex_cfile(sp, NULL, path);
+		else {
 			(void)snprintf(path,
 			    sizeof(path), "%s/%s", p, _PATH_EXRC);
-		(void)ex_cfile(sp, NULL, path);
+			if (!stat(path, &sb))
+				(void)ex_cfile(sp, NULL, path);
+		}
 	}
 	if (O_ISSET(sp, O_EXRC) && !stat(_PATH_EXRC, &sb))
 		(void)ex_cfile(sp, NULL, _PATH_EXRC);
