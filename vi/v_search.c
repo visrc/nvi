@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 5.11 1992/05/15 11:13:13 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:13:13 $";
+static char sccsid[] = "$Id: v_search.c,v 5.12 1992/05/27 10:37:50 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:37:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,19 +25,19 @@ static int getptrn __P((int, char **));
  *	Repeat last search.
  */
 int
-v_nsearch(vp, cp, rp)
+v_nsearch(vp, fm, tm, rp)
 	VICMDARG *vp;
-	MARK *cp, *rp;
+	MARK *fm, *tm, *rp;
 {
 	MARK *m;
 
 	switch(searchdir) {
 	case BACKWARD:
-		if ((m = b_search(cp, NULL, NULL, 0)) == NULL)
+		if ((m = b_search(fm, NULL, NULL, 0)) == NULL)
 			return (1);
 		break;
 	case FORWARD:
-		if ((m = f_search(cp, NULL, NULL, 0)) == NULL)
+		if ((m = f_search(fm, NULL, NULL, 0)) == NULL)
 			return (1);
 		break;
 	}
@@ -50,19 +50,19 @@ v_nsearch(vp, cp, rp)
  *	Reverse last search.
  */
 int
-v_Nsearch(vp, cp, rp)
+v_Nsearch(vp, fm, tm, rp)
 	VICMDARG *vp;
-	MARK *cp, *rp;
+	MARK *fm, *tm, *rp;
 {
 	MARK *m;
 
 	switch(searchdir) {
 	case BACKWARD:
-		if ((m = f_search(cp, NULL, NULL, 0)) == NULL)
+		if ((m = f_search(fm, NULL, NULL, 0)) == NULL)
 			return (1);
 		break;
 	case FORWARD:
-		if ((m = b_search(cp, NULL, NULL, 0)) == NULL)
+		if ((m = b_search(fm, NULL, NULL, 0)) == NULL)
 			return (1);
 		break;
 	}
@@ -75,9 +75,9 @@ v_Nsearch(vp, cp, rp)
  *	Search for the cursor word.
  */
 int
-v_wsearch(vp, cp, rp)
+v_wsearch(vp, fm, tm, rp)
 	VICMDARG *vp;
-	MARK *cp, *rp;
+	MARK *fm, *tm, *rp;
 {
 	MARK *mp;
 	size_t len;
@@ -94,7 +94,7 @@ v_wsearch(vp, cp, rp)
 	msg("%s", vp->keyword);
 	msg_vflush();
 
-	if ((mp = f_search(cp, buf, NULL, 1)) == NULL)
+	if ((mp = f_search(fm, buf, NULL, 1)) == NULL)
 		return (1);
 	*rp = *mp;
 	return (0);
@@ -104,9 +104,9 @@ v_wsearch(vp, cp, rp)
  * v_bsearch -- [count]?RE
  *	Search backward.
  */
-v_bsearch(vp, cp, rp)
+v_bsearch(vp, fm, tm, rp)
 	VICMDARG *vp;
-	MARK *cp, *rp;
+	MARK *fm, *tm, *rp;
 {
 	MARK *m;
 	char *ptrn;
@@ -115,7 +115,7 @@ v_bsearch(vp, cp, rp)
 		return (1);
 	if (ptrn == NULL)
 		return (0);
-	if ((m = b_search(cp, ptrn, NULL, 1)) == NULL)
+	if ((m = b_search(fm, ptrn, NULL, 1)) == NULL)
 		return (1);
 	*rp = *m;
 	return (0);
@@ -125,9 +125,9 @@ v_bsearch(vp, cp, rp)
  * v_fsearch -- [count]/RE
  *	Search forward.
  */
-v_fsearch(vp, cp, rp)
+v_fsearch(vp, fm, tm, rp)
 	VICMDARG *vp;
-	MARK *cp, *rp;
+	MARK *fm, *tm, *rp;
 {
 	MARK *m;
 	char *ptrn;
@@ -136,7 +136,7 @@ v_fsearch(vp, cp, rp)
 		return (1);
 	if (ptrn == NULL)
 		return (0);
-	if ((m = f_search(cp, ptrn, NULL, 1)) == NULL)
+	if ((m = f_search(fm, ptrn, NULL, 1)) == NULL)
 		return (1);
 	*rp = *m;
 	return (0);

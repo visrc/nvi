@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_sentence.c,v 5.1 1992/05/15 11:15:07 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:15:07 $";
+static char sccsid[] = "$Id: v_sentence.c,v 5.2 1992/05/27 10:37:57 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:37:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -23,18 +23,18 @@ static char *ptrn = "[\\.?!][ \t]|[\\.?!]$";
  *	Move forward count sentences.
  */
 int
-v_fsentence(vp, cp, rp)
+v_fsentence(vp, fm, tm, rp)
 	VICMDARG *vp;
-	MARK *cp, *rp;
+	MARK *fm, *tm, *rp;
 {
 	u_long cnt;
 
 	for (cnt = vp->flags & VC_C1SET ? vp->count : 1; cnt--;)
-		if ((cp = f_search(cp, ptrn, NULL, 0)) == NULL)
+		if ((fm = f_search(fm, ptrn, NULL, 0)) == NULL)
 			return (1);
 return (0);
 /*
-	return (v_fword(vp, cp, rp));
+	return (v_fword(vp, fm, rp));
 */
 }
 
@@ -43,17 +43,17 @@ return (0);
  *	Move forward count sentences.
  */
 int
-v_bsentence(vp, cp, rp)
+v_bsentence(vp, fm, tm, rp)
 	VICMDARG *vp;
-	MARK *cp, *rp;
+	MARK *fm, *tm, *rp;
 {
 	u_long cnt;
 
 	for (cnt = vp->flags & VC_C1SET ? vp->count : 1; cnt--;)
-		if ((cp = b_search(cp, ptrn, NULL, 0)) == NULL)
+		if ((fm = b_search(fm, ptrn, NULL, 0)) == NULL)
 			return (1);
 /*
-	return (v_fword(vp, cp, rp));
+	return (v_fword(vp, fm, rp));
 */
 	return (0);
 }

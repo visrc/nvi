@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_status.c,v 5.7 1992/05/18 07:53:01 bostic Exp $ (Berkeley) $Date: 1992/05/18 07:53:01 $";
+static char sccsid[] = "$Id: v_status.c,v 5.8 1992/05/27 10:38:05 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:38:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,9 +22,9 @@ static char sccsid[] = "$Id: v_status.c,v 5.7 1992/05/18 07:53:01 bostic Exp $ (
  *	Show the file status.
  */
 int
-v_status(vp, cp, rp)
+v_status(vp, fm, tm, rp)
 	VICMDARG *vp;
-	MARK *cp, *rp;
+	MARK *fm, *tm, *rp;
 {
 	u_long lno;
 
@@ -33,6 +33,6 @@ v_status(vp, cp, rp)
 	    curf->name,
 	    curf->flags & F_MODIFIED ? "[MODIFIED]" : "[UNMODIFIED]",
 	    curf->flags & F_RDONLY || ISSET(O_READONLY) ? "[READONLY]" : "",
-	    cp->lno, lno, (cp->lno * 100) / lno);
+	    fm->lno, lno, (fm->lno * 100) / lno);
 	return (1);
 }

@@ -6,11 +6,12 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_put.c,v 5.5 1992/05/21 12:59:39 bostic Exp $ (Berkeley) $Date: 1992/05/21 12:59:39 $";
+static char sccsid[] = "$Id: v_put.c,v 5.6 1992/05/27 10:36:49 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:36:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 #include <limits.h>
+#include <stddef.h>
 
 #include "vi.h"
 #include "vcmd.h"
@@ -22,11 +23,11 @@ static char sccsid[] = "$Id: v_put.c,v 5.5 1992/05/21 12:59:39 bostic Exp $ (Ber
  *	Insert the contents of the buffer before the cursor.
  */
 int
-v_Put(vp, cp, rp)
+v_Put(vp, fm, tm, rp)
 	VICMDARG *vp;
-	MARK *cp, *rp;
+	MARK *fm, *tm, *rp;
 {
-	return (put(vp->buffer == OOBCB ? DEFCB : vp->buffer, cp, rp, 0));
+	return (put(vp->buffer == OOBCB ? DEFCB : vp->buffer, fm, rp, 0));
 }
 
 /*
@@ -34,9 +35,9 @@ v_Put(vp, cp, rp)
  *	Insert the contents of the buffer after the cursor.
  */
 int
-v_put(vp, cp, rp)
+v_put(vp, fm, tm, rp)
 	VICMDARG *vp;
-	MARK *cp, *rp;
+	MARK *fm, *tm, *rp;
 {
-	return (put(vp->buffer == OOBCB ? DEFCB : vp->buffer, cp, rp, 1));
+	return (put(vp->buffer == OOBCB ? DEFCB : vp->buffer, NULL, fm, rp, 1));
 }

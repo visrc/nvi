@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_word.c,v 5.3 1992/05/21 12:52:28 bostic Exp $ (Berkeley) $Date: 1992/05/21 12:52:28 $";
+static char sccsid[] = "$Id: v_word.c,v 5.4 1992/05/27 10:39:05 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:39:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -47,11 +47,11 @@ static int fword __P((VICMDARG *, MARK *, MARK *, int));
  *	Move forward a word at a time.
  */
 int
-v_wordw(vp, cp, rp)
+v_wordw(vp, fm, tm, rp)
 	VICMDARG *vp;
-	MARK *cp, *rp;
+	MARK *fm, *tm, *rp;
 {
-	return (fword(vp, cp, rp, 0));
+	return (fword(vp, fm, rp, 0));
 }
 
 /*
@@ -59,11 +59,11 @@ v_wordw(vp, cp, rp)
  *	Move forward a bigword at a time.
  */
 int
-v_wordW(vp, cp, rp)
+v_wordW(vp, fm, tm, rp)
 	VICMDARG *vp;
-	MARK *cp, *rp;
+	MARK *fm, *tm, *rp;
 {
-	return (fword(vp, cp, rp, 1));
+	return (fword(vp, fm, rp, 1));
 }
 
 /*
@@ -71,9 +71,9 @@ v_wordW(vp, cp, rp)
  *	Move forward by words.
  */
 static int
-fword(vp, cp, rp, spaceonly)
+fword(vp, fm, rp, spaceonly)
 	VICMDARG *vp;
-	MARK *cp, *rp;
+	MARK *fm, *rp;
 	int spaceonly;
 {
 	register char *p;
@@ -82,8 +82,8 @@ fword(vp, cp, rp, spaceonly)
 	int empty;
 	char *startp;
 
-	lno = cp->lno;
-	cno = cp->cno;
+	lno = fm->lno;
+	cno = fm->cno;
 
 	EGETLINE(p, lno, len);
 
@@ -118,8 +118,7 @@ fword(vp, cp, rp, spaceonly)
 					v_eof(NULL);
 					return (1);
 				}
-				--lno;
-				EGETLINE(p, lno, len);
+				EGETLINE(p, --lno, len);
 				rp->lno = lno;
 				rp->cno = len ?
 				    vp->flags & VC_ISMOTION ? len : len - 1 : 0;
@@ -142,11 +141,11 @@ fword(vp, cp, rp, spaceonly)
  *	Move backward a word at a time.
  */
 int
-v_wordb(vp, cp, rp)
+v_wordb(vp, fm, tm, rp)
 	VICMDARG *vp;
-	MARK *cp, *rp;
+	MARK *fm, *tm, *rp;
 {
-	return (bword(vp, cp, rp, 0));
+	return (bword(vp, fm, rp, 0));
 }
 
 /*
@@ -154,11 +153,11 @@ v_wordb(vp, cp, rp)
  *	Move backward a bigword at a time.
  */
 int
-v_wordB(vp, cp, rp)
+v_wordB(vp, fm, tm, rp)
 	VICMDARG *vp;
-	MARK *cp, *rp;
+	MARK *fm, *tm, *rp;
 {
-	return (bword(vp, cp, rp, 1));
+	return (bword(vp, fm, rp, 1));
 }
 
 /*
@@ -166,9 +165,9 @@ v_wordB(vp, cp, rp)
  *	Move backward by words.
  */
 static int
-bword(vp, cp, rp, spaceonly)
+bword(vp, fm, rp, spaceonly)
 	VICMDARG *vp;
-	MARK *cp, *rp;
+	MARK *fm, *rp;
 	int spaceonly;
 {
 	register char *p;
@@ -176,8 +175,8 @@ bword(vp, cp, rp, spaceonly)
 	u_long cno, cnt, lno;
 	char *startp;
 
-	lno = cp->lno;
-	cno = cp->cno;
+	lno = fm->lno;
+	cno = fm->cno;
 
 	/* Check for start of file. */
 	if (lno == 1 && cno == 0) {
@@ -280,11 +279,11 @@ line:			if (lno == 1) {
  *	Move forward to the end of the word.
  */
 int
-v_worde(vp, cp, rp)
+v_worde(vp, fm, tm, rp)
 	VICMDARG *vp;
-	MARK *cp, *rp;
+	MARK *fm, *tm, *rp;
 {
-	return (eword(vp, cp, rp, 0));
+	return (eword(vp, fm, rp, 0));
 }
 
 /*
@@ -292,11 +291,11 @@ v_worde(vp, cp, rp)
  *	Move forward to the end of the bigword.
  */
 int
-v_wordE(vp, cp, rp)
+v_wordE(vp, fm, tm, rp)
 	VICMDARG *vp;
-	MARK *cp, *rp;
+	MARK *fm, *tm, *rp;
 {
-	return (eword(vp, cp, rp, 1));
+	return (eword(vp, fm, rp, 1));
 }
 
 /*
@@ -304,9 +303,9 @@ v_wordE(vp, cp, rp)
  *	Move forward to the end of the word.
  */
 static int
-eword(vp, cp, rp, spaceonly)
+eword(vp, fm, rp, spaceonly)
 	VICMDARG *vp;
-	MARK *cp, *rp;
+	MARK *fm, *rp;
 	int spaceonly;
 {
 	register char *p;
@@ -315,8 +314,8 @@ eword(vp, cp, rp, spaceonly)
 	int empty;
 	char *startp;
 
-	lno = cp->lno;
-	cno = cp->cno;
+	lno = fm->lno;
+	cno = fm->cno;
 
 	EGETLINE(p, lno, len);
 
@@ -371,8 +370,7 @@ line:			GETLINE(p, ++lno, len);
 					v_eof(NULL);
 					return (1);
 				}
-				--lno;
-				EGETLINE(p, lno, len);
+				EGETLINE(p, --lno, len);
 				rp->lno = lno;
 				rp->cno = len ? len - 1 : 0;
 				return (0);

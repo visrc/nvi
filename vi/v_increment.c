@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_increment.c,v 5.6 1992/05/23 08:50:00 bostic Exp $ (Berkeley) $Date: 1992/05/23 08:50:00 $";
+static char sccsid[] = "$Id: v_increment.c,v 5.7 1992/05/27 10:36:14 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:36:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -37,9 +37,9 @@ static char *fmt[] = {
  *	Increment/decrement a keyword number.
  */
 int
-v_increment(vp, cp, rp)
+v_increment(vp, fm, tm, rp)
 	VICMDARG *vp;
-	MARK *cp, *rp;
+	MARK *fm, *tm, *rp;
 {
 	MARK ecursor;
 	u_long ulval;
@@ -107,9 +107,9 @@ underflow:			bell();
 		len = snprintf(nbuf, sizeof(nbuf), ntype, len, lval);
 	}
 
-	*rp = *cp;
-	ecursor = *cp;
+	*rp = *fm;
+	ecursor = *fm;
 	ecursor.cno += vp->klen;
 			
-	return (change(cp, &ecursor, nbuf, len));
+	return (change(fm, &ecursor, nbuf, len));
 }

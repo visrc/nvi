@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_right.c,v 5.2 1992/05/21 13:00:05 bostic Exp $ (Berkeley) $Date: 1992/05/21 13:00:05 $";
+static char sccsid[] = "$Id: v_right.c,v 5.3 1992/05/27 10:37:42 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:37:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -48,23 +48,23 @@ static char sccsid[] = "$Id: v_right.c,v 5.2 1992/05/21 13:00:05 bostic Exp $ (B
  *	Move right by columns.
  */
 int
-v_right(vp, cp, rp)
+v_right(vp, fm, tm, rp)
 	VICMDARG *vp;
-	MARK *cp, *rp;
+	MARK *fm, *tm, *rp;
 {
 	u_long cnt;
 	size_t len;
 	char *p;
 
-	EGETLINE(p, cp->lno, len);
+	EGETLINE(p, fm->lno, len);
 
-	if (len == 0 || cp->cno == len - 1)
+	if (len == 0 || fm->cno == len - 1)
 		EOLERR;
 
 	cnt = vp->flags & VC_C1SET ? vp->count : 1;
 
-	rp->lno = cp->lno;
-	rp->cno = cp->cno + cnt;
+	rp->lno = fm->lno;
+	rp->cno = fm->cno + cnt;
 	if (rp->cno > len - 1)
 		rp->cno = len - 1;
 	return (0);
@@ -78,19 +78,19 @@ v_right(vp, cp, rp)
  *	the line.
  */
 int
-v_eol(vp, cp, rp)
+v_eol(vp, fm, tm, rp)
 	VICMDARG *vp;
-	MARK *cp, *rp;
+	MARK *fm, *tm, *rp;
 {
 	size_t len;
 	char *p;
 
-	EGETLINE(p, cp->lno, len);
+	EGETLINE(p, fm->lno, len);
 
 	if (len == 0)
 		EOLERR;
 
-	rp->lno = cp->lno;
+	rp->lno = fm->lno;
 	rp->cno = vp->flags & VC_ISMOTION ? len : len - 1;
 	return (0);
 }

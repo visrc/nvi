@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ulcase.c,v 5.7 1992/05/18 07:54:07 bostic Exp $ (Berkeley) $Date: 1992/05/18 07:54:07 $";
+static char sccsid[] = "$Id: v_ulcase.c,v 5.8 1992/05/27 10:38:23 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:38:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -24,9 +24,9 @@ static char sccsid[] = "$Id: v_ulcase.c,v 5.7 1992/05/18 07:54:07 bostic Exp $ (
  *	associated motion, but it's too late to change it now.
  */
 int
-v_ulcase(vp, cp, rp)
+v_ulcase(vp, fm, tm, rp)
 	VICMDARG *vp;
-	MARK *cp, *rp;
+	MARK *fm, *tm, *rp;
 {
 	register int ch;
 	register char *p;
@@ -36,8 +36,8 @@ v_ulcase(vp, cp, rp)
 	int change;
 	char *start;
 
-	lno = cp->lno;
-	cno = cp->cno;
+	lno = fm->lno;
+	cno = fm->cno;
 
 	EGETLINE(start, lno, len);
 	p = start + cno;

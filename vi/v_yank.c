@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_yank.c,v 5.4 1992/05/21 13:00:54 bostic Exp $ (Berkeley) $Date: 1992/05/21 13:00:54 $";
+static char sccsid[] = "$Id: v_yank.c,v 5.5 1992/05/27 10:39:13 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:39:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,10 +22,10 @@ static char sccsid[] = "$Id: v_yank.c,v 5.4 1992/05/21 13:00:54 bostic Exp $ (Be
  *	Yank text into a cut buffer.
  */
 int
-v_yank(vp, cp, rp)
+v_yank(vp, fm, tm, rp)
 	VICMDARG *vp;
-	MARK *cp, *rp;
+	MARK *fm, *tm, *rp;
 {
 	return (cut(vp->buffer == OOBCB ? DEFCB : vp->buffer,
-	    cp, &vp->motion, vp->flags & VC_LMODE));
+	    fm, tm, vp->flags & VC_LMODE));
 }

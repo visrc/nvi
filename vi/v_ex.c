@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 5.7 1992/05/15 11:14:09 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:14:09 $";
+static char sccsid[] = "$Id: v_ex.c,v 5.8 1992/05/27 10:36:05 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:36:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,9 +25,9 @@ static char sccsid[] = "$Id: v_ex.c,v 5.7 1992/05/15 11:14:09 bostic Exp $ (Berk
  *	Execute strings of ex commands.
  */
 int
-v_ex(vp, cp, rp)
+v_ex(vp, fm, tm, rp)
 	VICMDARG *vp;
-	MARK *cp, *rp;
+	MARK *fm, *tm, *rp;
 {
 	int flags, key;
 	char *p;
