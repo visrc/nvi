@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 9.4 1994/11/13 17:26:57 bostic Exp $ (Berkeley) $Date: 1994/11/13 17:26:57 $";
+static char sccsid[] = "$Id: v_init.c,v 9.5 1994/11/13 18:08:38 bostic Exp $ (Berkeley) $Date: 1994/11/13 18:08:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,8 +29,6 @@ static char sccsid[] = "$Id: v_init.c,v 9.4 1994/11/13 17:26:57 bostic Exp $ (Be
 #include "vi.h"
 #include "vcmd.h"
 #include "excmd.h"
-
-static int v_comment __P((SCR *));
 
 /*
  * v_screen_copy --
@@ -133,7 +131,7 @@ v_init(sp)
 			}
 		}
 	} else
-		if (O_ISSET(sp, O_COMMENT) && v_comment(sp))
+		if (O_ISSET(sp, O_COMMENT) && ex_comment(sp))
 			return (1);
 
 	/* Reset strange attraction. */
@@ -177,31 +175,5 @@ v_optchange(sp, opt)
 	case O_SECTIONS:
 		return (v_buildps(sp));
 	}
-	return (0);
-}
-
-/*
- * v_comment --
- *	Skip the first comment.
- */
-static int
-v_comment(sp)
-	SCR *sp;
-{
-	recno_t lno;
-	size_t len;
-	char *p;
-
-	for (lno = 1;
-	    (p = file_gline(sp, lno, &len)) != NULL && len == 0; ++lno);
-	if (p == NULL || len <= 1 || memcmp(p, "/*", 2))
-		return (0);
-	do {
-		for (; len; --len, ++p)
-			if (p[0] == '*' && len > 1 && p[1] == '/') {
-				sp->lno = lno;
-				return (0);
-			}
-	} while ((p = file_gline(sp, ++lno, &len)) != NULL);
 	return (0);
 }
