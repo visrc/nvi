@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_match.c,v 5.17 1993/04/12 14:50:54 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:50:54 $";
+static char sccsid[] = "$Id: v_match.c,v 5.18 1993/05/03 13:21:47 bostic Exp $ (Berkeley) $Date: 1993/05/03 13:21:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -45,7 +45,32 @@ v_match(sp, ep, vp, fm, tm, rp)
 	if (len == 0)
 		goto nomatch;
 
-	switch(startc = p[fm->cno]) {
+	switch (startc = p[fm->cno]) {
+	case '/':
+		matchc = '*';
+		if (fm->cno < len - 1 && p[fm->cno + 1] == '*') {
+			++fm->cno;
+			dir = FORWARD;
+			break;
+		}
+		if (fm->cno > 0 && p[fm->cno - 1] == '*') {
+			--fm->cno;
+			dir = BACKWARD;
+			break;
+		}
+		goto fm;
+	case '*':
+		startc = '/';			/* Ignore startc. */
+		matchc = '*';
+		if (fm->cno < len - 1 && p[fm->cno + 1] == '/') {
+			dir = BACKWARD;
+			break;
+		}
+		if (fm->cno > 0 && p[fm->cno - 1] == '/') {
+			dir = FORWARD;
+			break;
+		}
+		goto fm;
 	case '(':
 		matchc = ')';
 		dir = FORWARD;
@@ -71,7 +96,7 @@ v_match(sp, ep, vp, fm, tm, rp)
 		dir = BACKWARD;
 		break;
 	default:
-		if (findmatchc(fm, p, len, rp)) {
+fm:		if (findmatchc(fm, p, len, rp)) {
 nomatch:		msgq(sp, M_BERR, "No match character on this line.");
 			return (1);
 		}
@@ -81,15 +106,21 @@ nomatch:		msgq(sp, M_BERR, "No match character on this line.");
 	if (getc_init(sp, ep, fm, &ch))
 		return (1);
 	for (cnt = 1; getc_next(sp, ep, dir, &ch);)
-		if (ch == matchc) {
+		if (ch == startc) {
+			if (startc != '/')
+				++cnt;
+		} else if (ch == matchc) {
+			if (ch == '*') {
+				if (!getc_next(sp, ep, dir, &ch))
+					break;
+				if (ch != '/')
+					continue;
+			}
 			if (--cnt == 0) {
 				getc_set(sp, ep, rp);
 				return (0);
 			}
-		} else if (ch == startc) {
-			++cnt;
-			continue;
-		}
+		} 
 
 	msgq(sp, M_BERR, "Matching character not found.");
 	return (1);
@@ -98,9 +129,12 @@ nomatch:		msgq(sp, M_BERR, "No match character on this line.");
 /*
  * findmatchc --
  *	If we're not on a character we know how to match, try and find the
- *	closest one on the line.  Vi used to do this, but in an inexplicable
- *	manner.  We search forward, then backward, and go to the closest one.
- *	Ties go to the left for no reason.
+ *	closest character from the set "{}[]()".  (It might be useful to be
+ *	able to enter % in the middle of the comment and find a match, but
+ *	that would require searching across larger areas.)  The historic vi
+ *	also looked for a character to match against, but in a completely
+ *	inexplicable and apparently random fashion.  We search forward, then
+ *	backward, and go to the closest one.  Ties go left for no reason.
  */
 static int
 findmatchc(fm, p, len, rp)
@@ -114,17 +148,35 @@ findmatchc(fm, p, len, rp)
 	char *t;
 
 	leftfound = rightfound = 0;
-	for (off = 0, t = &p[off]; off++ < fm->cno;)
-		if (strchr("{}[]()", *t++)) {
-			left = off - 1;
+	for (off = 0, t = &p[off]; off++ < fm->cno; ++t)
+		if (strchr("/*{}[]()", t[0])) {
+			if (t[0] == '/') {
+				if (off == fm->cno || t[1] != '*')
+					continue;
+				left = off;
+			} else if (t[0] == '*') {
+				if (off == fm->cno || t[1] != '/')
+					continue;
+				left = off;
+			} else
+				left = off - 1;
 			leftfound = 1;
 			break;
 		}
 
 	--len;
-	for (off = fm->cno + 1, t = &p[off]; off++ < len;)
-		if (strchr("{}[]()", *t++)) {
-			right = off - 1;
+	for (off = fm->cno + 1, t = &p[off]; off++ < len; ++t)
+		if (strchr("/*{}[]()", t[0])) {
+			if (t[0] == '/') {
+				if (off == len || t[1] != '*')
+					continue;
+				right = off;
+			} else if (t[0] == '*') {
+				if (off == fm->cno || t[1] != '/')
+					continue;
+				right = off;
+			} else
+				right = off - 1;
 			rightfound = 1;
 			break;
 		}
