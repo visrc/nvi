@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 5.49 1993/05/05 10:40:59 bostic Exp $ (Berkeley) $Date: 1993/05/05 10:40:59 $
+ *	$Id: exf.h,v 5.50 1993/05/08 16:04:22 bostic Exp $ (Berkeley) $Date: 1993/05/08 16:04:22 $
  */
 
 					/* Undo direction. */
@@ -43,6 +43,8 @@ typedef struct _exf {
 	char	*getc_bp;		/* Getc buffer. */
 	size_t	 getc_blen;		/* Getc buffer length. */
 
+	struct _mark	absmark;	/* Current absolute mark. */
+	struct _mark	labsmark;	/* Last absolute mark. */
 					/* File marks. */
 	struct _mark	marks[UCHAR_MAX + 1];
 
