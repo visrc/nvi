@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 5.10 1992/10/26 09:09:35 bostic Exp $ (Berkeley) $Date: 1992/10/26 09:09:35 $";
+static char sccsid[] = "$Id: v_scroll.c,v 5.11 1992/10/29 14:43:42 bostic Exp $ (Berkeley) $Date: 1992/10/29 14:43:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -110,7 +110,7 @@ v_bottom(vp, fm, tm, rp)
 	recno_t cnt, lno;
 
 	if (file_gline(curf, BOTLINE(curf, curf->otop), NULL) == NULL) {
-		lno = file_lline(curf) / 2;
+		lno = file_lline(curf);
 		if (lno == 0)
 			lno = 1;
 	} else
