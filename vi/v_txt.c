@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.62 1996/05/04 18:50:50 bostic Exp $ (Berkeley) $Date: 1996/05/04 18:50:50 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.63 1996/05/07 21:32:06 bostic Exp $ (Berkeley) $Date: 1996/05/07 21:32:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -2543,9 +2543,13 @@ txt_isrch(sp, vp, tp, is_flagsp)
 	savech = tp->lb[tp->cno];
 	tp->lb[tp->cno] = '\0';
 
-	/* Remember the input line and discard the special input map. */
+	/*
+	 * Remember the input line and discard the special input map,
+	 * but don't overwrite the input line on the screen.
+	 */
 	lno = tp->lno;
-	F_CLR(sp, SC_TINPUT);
+	F_SET(VIP(sp), VIP_S_MODELINE);
+	F_CLR(sp, SC_TINPUT | SC_TINPUT_INFO);
 	if (txt_map_end(sp))
 		return (1);
 
@@ -2582,7 +2586,8 @@ txt_isrch(sp, vp, tp, is_flagsp)
 	/* Reinstantiate the special input map. */
 	if (txt_map_init(sp))
 		return (1);
-	F_SET(sp, SC_TINPUT);
+	F_CLR(VIP(sp), VIP_S_MODELINE);
+	F_SET(sp, SC_TINPUT | SC_TINPUT_INFO);
 
 	/* Reset the line number of the input line. */
 	tp->lno = TMAP[0].lno; 
