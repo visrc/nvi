@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_msg.c,v 10.34 1995/11/10 10:26:18 bostic Exp $ (Berkeley) $Date: 1995/11/10 10:26:18 $";
+static char sccsid[] = "$Id: vs_msg.c,v 10.35 1995/11/10 14:26:40 bostic Exp $ (Berkeley) $Date: 1995/11/10 14:26:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -479,7 +479,6 @@ vs_ex_resolve(sp, continuep)
 	EVENT ev;
 	GS *gp;
 	VI_PRIVATE *vip;
-	sw_t wtype;
 	int cancontinue;
 
 	gp = sp->gp;
@@ -515,20 +514,16 @@ vs_ex_resolve(sp, continuep)
 	if (F_ISSET(sp, S_SCR_EXWROTE) && sp->gp->scr_screen(sp, S_VI))
 		return (1);
 
-	/* Wait, unless there's a reason not to. */
-	if (!F_ISSET(sp, S_EX_DONTWAIT)) {
-		/*
-		 * If the user interrupted the command or is leaving (or trying
-		 * to leave) the screen, don't ask if they want to continue.
-		 */
-		*continuep = !(INTERRUPTED(sp) ||
-		    F_ISSET(sp, S_EXIT | S_EXIT_FORCE | S_FSWITCH | S_SSWITCH));
-		wtype = *continuep ? SCROLL_W_EX : SCROLL_W;
-
+	/*
+	 * Wait, unless explicitly told not to wait, the user interrupted
+	 * the command or is leaving (or trying to leave) the screen.
+	 */
+	if (!F_ISSET(sp, S_EX_DONTWAIT) && !INTERRUPTED(sp) &&
+	    !F_ISSET(sp, S_EXIT | S_EXIT_FORCE | S_FSWITCH | S_SSWITCH)) {
 		if (F_ISSET(sp, S_SCR_EXWROTE))
-			vs_wait(sp, continuep, wtype);
+			vs_wait(sp, continuep, SCROLL_W_EX);
 		else
-			vs_scroll(sp, continuep, wtype);
+			vs_scroll(sp, continuep, SCROLL_W_EX);
 		if (*continuep)
 			return (0);
 	}
@@ -754,10 +749,16 @@ vs_wait(sp, continuep, wtype)
 	 */
 	if (continuep != NULL)
 		*continuep = 0;
-	do {
-		if (v_event_get(sp, &ev, 0, 0))
+	for (;;) {
+		if (v_event_get(sp, &ev, 0, EC_INTERRUPT))
 			return;
-	} while (ev.e_event != E_CHARACTER);
+		if (ev.e_event == E_CHARACTER)
+			break;
+		if (ev.e_event == E_INTERRUPT) {
+			ev.e_c = CH_QUIT;
+			break;
+		}
+	}
 	switch (wtype) {
 	case SCROLL_W_QUIT:
 		if (ev.e_c == CH_QUIT)
