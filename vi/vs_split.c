@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_split.c,v 10.24 1996/05/04 18:50:54 bostic Exp $ (Berkeley) $Date: 1996/05/04 18:50:54 $";
+static const char sccsid[] = "$Id: vs_split.c,v 10.25 1996/06/08 14:38:10 bostic Exp $ (Berkeley) $Date: 1996/06/08 14:38:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -51,6 +51,10 @@ vs_split(sp, new, ccl)
 		    "222|Screen must be larger than %d lines to split", 4 - 1);
 		return (1);
 	}
+
+	/* Wait for any messages in the screen. */
+	vs_resolve(sp, 1);
+
 	half = sp->rows / 2;
 	if (ccl && half > 6)
 		half = 6;
