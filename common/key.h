@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 5.24 1993/04/17 11:53:47 bostic Exp $ (Berkeley) $Date: 1993/04/17 11:53:47 $
+ *	$Id: key.h,v 5.25 1993/04/18 09:37:36 bostic Exp $ (Berkeley) $Date: 1993/04/18 09:37:36 $
  */
 
 /* Special character lookup values. */
@@ -53,7 +53,8 @@
 	 TXT_REPLACE | TXT_REPLAY | TXT_RESOLVE)
 
 #define	TXT_VALID_EX							\
-	(TXT_BEAUTIFY | TXT_CR | TXT_MAPCOMMAND | TXT_MAPINPUT | TXT_NLECHO)
+	(TXT_BEAUTIFY | TXT_CR | TXT_MAPCOMMAND | TXT_MAPINPUT |	\
+	 TXT_NLECHO | TXT_PROMPT)
 
 #define	TXT_GETKEY_MASK							\
 	(TXT_BEAUTIFY | TXT_MAPCOMMAND | TXT_MAPINPUT)
