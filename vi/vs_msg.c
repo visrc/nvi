@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_msg.c,v 10.24 1995/10/17 10:13:36 bostic Exp $ (Berkeley) $Date: 1995/10/17 10:13:36 $";
+static char sccsid[] = "$Id: vs_msg.c,v 10.25 1995/10/19 13:15:44 bostic Exp $ (Berkeley) $Date: 1995/10/19 13:15:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -469,7 +469,7 @@ vs_ex_wrchk(sp)
 		p = msg_cmsg(sp, CMSG_CONT, &len);
 		(void)write(STDOUT_FILENO, p, len);
 		do {
-			if (v_event_get(sp, &ev, 0))
+			if (v_event_get(sp, &ev, 0, 0))
 				return (1);
 		} while (ev.e_event != E_CHARACTER);
 		F_CLR(sp, S_EX_WROTE);
@@ -705,7 +705,7 @@ vs_scroll(sp, chp, flags)
 		 * XXX
 		 * We're ignoring any errors or illegal events.
 		 */
-		if (v_event_get(sp, &ev, 0) || ev.e_event != E_CHARACTER) {
+		if (v_event_get(sp, &ev, 0, 0) || ev.e_event != E_CHARACTER) {
 			if (chp != NULL)
 				*chp = CH_QUIT;
 			F_SET(gp, G_INTERRUPTED);

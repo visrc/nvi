@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 10.22 1995/10/18 11:58:17 bostic Exp $ (Berkeley) $Date: 1995/10/18 11:58:17 $";
+static char sccsid[] = "$Id: vi.c,v 10.23 1995/10/19 13:15:40 bostic Exp $ (Berkeley) $Date: 1995/10/19 13:15:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1114,7 +1114,7 @@ v_key(sp, command_events, evp, ec_flags)
 	u_int32_t quote;
 
 	for (quote = 0;;) {
-		if (v_event_get(sp, evp, ec_flags | quote))
+		if (v_event_get(sp, evp, 0, ec_flags | quote))
 			return (GC_ERR);
 		quote = 0;
 

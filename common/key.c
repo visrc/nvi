@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 10.15 1995/10/18 11:35:14 bostic Exp $ (Berkeley) $Date: 1995/10/18 11:35:14 $";
+static char sccsid[] = "$Id: key.c,v 10.16 1995/10/19 13:14:40 bostic Exp $ (Berkeley) $Date: 1995/10/19 13:14:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -515,18 +515,19 @@ v_event_append(sp, argp)
  * point.  Given that this might make the log grow unacceptably (consider that
  * cursor keys are done with maps), for now we leave any changes made in place.
  *
- * PUBLIC: int v_event_get __P((SCR *, EVENT *, u_int32_t));
+ * PUBLIC: int v_event_get __P((SCR *, EVENT *, int, u_int32_t));
  */
 int
-v_event_get(sp, argp, flags)
+v_event_get(sp, argp, timeout, flags)
 	SCR *sp;
 	EVENT *argp;
+	int timeout;
 	u_int32_t flags;
 {
 	EVENT *evp, ev;
 	GS *gp;
 	SEQ *qp;
-	int init_nomap, ispartial, istimeout, remap_cnt, timeout;
+	int init_nomap, ispartial, istimeout, remap_cnt;
 
 	gp = sp->gp;
 
@@ -534,13 +535,20 @@ v_event_get(sp, argp, flags)
 	if (argp == NULL)
 		argp = &ev;
 
-retry:	istimeout = remap_cnt = timeout = 0;
+retry:	istimeout = remap_cnt = 0;
 
 	/*
-	 * If the queue is empty or we're checking for interrupts, get more
-	 * events.
+	 * If the queue isn't empty and we're timing out for characters,
+	 * return immediately.
 	 */
-	if (gp->i_cnt == 0 || LF_ISSET(EC_INTERRUPT)) {
+	if (gp->i_cnt != 0 && LF_ISSET(EC_TIMEOUT))
+		return (0);
+
+	/*
+	 * If the queue is empty, we're checking for interrupts, or we're
+	 * timing out for characters, get more events.
+	 */
+	if (gp->i_cnt == 0 || LF_ISSET(EC_INTERRUPT | EC_TIMEOUT)) {
 		/*
 		 * If we're reading new characters, check any scripting
 		 * windows for input.
@@ -569,8 +577,8 @@ loop:		if (gp->scr_event(sp,
 			F_SET(sp->gp, G_INTERRUPTED);
 
 			/*
-			 * If the caller is only interested in interrupts,
-			 * return immediately.
+			 * If the caller was interested in interrupts, return
+			 * immediately.
 			 */
 			if (LF_ISSET(EC_INTERRUPT))
 				return (0);
@@ -587,11 +595,11 @@ append:			if (v_event_append(sp, argp))
 	}
 
 	/*
-	 * If the caller was only interested in interrupts, return that we
-	 * didn't get one.  (We may have gotten characters, and that's okay,
-	 * they were queued up for later use.)
+	 * If the caller was only interested in interrupts or timeouts, return
+	 * immediately.  (We may have gotten characters, and that's okay, they
+	 * were queued up for later use.)
 	 */
-	if (LF_ISSET(EC_INTERRUPT))
+	if (LF_ISSET(EC_INTERRUPT | EC_TIMEOUT))
 		return (0);
 	 
 newmap:	evp = &gp->i_event[gp->i_next];

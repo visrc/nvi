@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 10.6 1995/09/28 10:38:36 bostic Exp $ (Berkeley) $Date: 1995/09/28 10:38:36 $
+ *	$Id: key.h,v 10.7 1995/10/19 13:14:44 bostic Exp $ (Berkeley) $Date: 1995/10/19 13:14:44 $
  */
 
 /*
@@ -175,7 +175,7 @@ extern KEYLIST keylist[];
 #define	INTERRUPT_CHECK	100
 #define	INTERRUPTED(sp)							\
 	(F_ISSET((sp)->gp, G_INTERRUPTED) ||				\
-	!v_event_get(sp, NULL, EC_INTERRUPT) &&				\
+	!v_event_get(sp, NULL, 0, EC_INTERRUPT) &&			\
 	F_ISSET((sp)->gp, G_INTERRUPTED))
 #define	CLR_INTERRUPT(sp)						\
 	F_CLR((sp)->gp, G_INTERRUPTED)
@@ -186,6 +186,7 @@ extern KEYLIST keylist[];
 #define	EC_MAPINPUT	0x004		/* Apply the input map. */
 #define	EC_MAPNODIGIT	0x008		/* Return to a digit. */
 #define	EC_QUOTED	0x010		/* Try to quote next character */
+#define	EC_TIMEOUT	0x020		/* Timeout to next character. */
 
 /* Flags describing text input special cases. */
 #define	TXT_ADDNEWLINE	0x00000001	/* Replay starts on a new line. */
