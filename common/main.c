@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.110 1994/09/02 13:24:47 bostic Exp $ (Berkeley) $Date: 1994/09/02 13:24:47 $";
+static char sccsid[] = "$Id: main.c,v 8.111 1994/09/02 20:18:49 bostic Exp $ (Berkeley) $Date: 1994/09/02 20:18:49 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -344,6 +344,17 @@ main(argc, argv)
 				break;
 			}
 	}
+
+	/*
+	 * !!!
+	 * Initialize the default ^D, ^U scrolling value here, after the
+	 * user has had every opportunity to set the window option.
+	 *
+	 * It's historic practice that changing the value of the window
+	 * option did not alter the default scrolling value, only giving
+	 * a count to ^D/^U did that.
+	 */
+	sp->defscroll = (O_VAL(sp, O_WINDOW) + 1) / 2;
 
 	/* List recovery files if -r specified without file arguments. */
 	if (flagchk == 'r' && argv[0] == NULL)
