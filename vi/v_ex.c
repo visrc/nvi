@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_ex.c,v 10.27 1996/03/18 08:09:36 bostic Exp $ (Berkeley) $Date: 1996/03/18 08:09:36 $";
+static const char sccsid[] = "$Id: v_ex.c,v 10.28 1996/03/18 09:08:42 bostic Exp $ (Berkeley) $Date: 1996/03/18 09:08:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -487,25 +487,27 @@ static int
 v_ecl(sp)
 	SCR *sp;
 {
+	GS *gp;
 	SCR *new;
 
 	/* Initialize the screen, if necessary. */
-	if (sp->gp->ed_ep == NULL && v_ecl_init(sp))
+	gp = sp->gp;
+	if (gp->ccl_sp == NULL && v_ecl_init(sp))
 		return (1);
 
 	/* Get a new screen. */
-	if (screen_init(sp->gp, sp, &new))
+	if (screen_init(gp, sp, &new))
 		return (1);
-	if (vs_split(sp, new)) {
+	if (vs_split(sp, new, 1)) {
 		(void)screen_end(new);
 		return (1);
 	}
 
 	/* Attach to the screen. */
-	new->ep = sp->gp->ed_ep;
+	new->ep = gp->ccl_sp->ep;
 	++new->ep->refcnt;
 
-	new->frp = sp->gp->ed_frp;
+	new->frp = gp->ccl_sp->frp;
 	new->frp->flags = sp->frp->flags;
 
 	/* Move the cursor to the end. */
@@ -514,7 +516,7 @@ v_ecl(sp)
 		new->lno = 1;
 
 	/* Remember the originating window. */
-	sp->gp->ed_parent = sp;
+	sp->ccl_parent = sp;
 
 	/* It's a special window. */
 	F_SET(new, S_COMEDIT);
@@ -550,7 +552,7 @@ v_ecl_exec(sp)
 		return (1);
 
 	/* Set up the switch. */
-	sp->nextdisp = sp->gp->ed_parent;
+	sp->nextdisp = sp->ccl_parent;
 	F_SET(sp, S_EXIT);
 	return (0);
 }
@@ -564,23 +566,19 @@ v_ecl_log(sp, tp)
 	SCR *sp;
 	TEXT *tp;
 {
-	EXF *ep, *save_ep;
+	EXF *save_ep;
 	recno_t lno;
 	int rval;
 
 	/* Initialize the screen, if necessary. */
-	ep = sp->gp->ed_ep;
-	if (ep == NULL) {
-		if (v_ecl_init(sp))
-			return (1);
-		ep = sp->gp->ed_ep;
-	}
+	if (sp->gp->ccl_sp == NULL && v_ecl_init(sp))
+		return (1);
 
 	/*
 	 * Don't log colon command window commands into the colon command
 	 * window...
 	 */
-	if (sp->ep == ep)
+	if (sp->ep == sp->gp->ccl_sp->ep)
 		return (0);
 
 	/*
@@ -590,7 +588,7 @@ v_ecl_log(sp, tp)
 	 * to the current EXF.
 	 */
 	save_ep = sp->ep;
-	sp->ep = ep;
+	sp->ep = sp->gp->ccl_sp->ep;
 	if (db_last(sp, &lno)) {
 		sp->ep = save_ep;
 		return (1);
@@ -608,33 +606,27 @@ static int
 v_ecl_init(sp)
 	SCR *sp;
 {
-	SCR *new;
+	FREF *frp;
+	GS *gp;
 
 	/* Get a temporary file. */
-	if (sp->gp->ed_frp == NULL &&
-	    (sp->gp->ed_frp = file_add(sp, NULL)) == NULL)
+	if ((frp = file_add(sp, NULL)) == NULL)
 		return (1);
 
 	/*
 	 * XXX
 	 * Create a screen -- the file initialization code wants one.
 	 */
-	if (screen_init(sp->gp, sp, &new))
+	gp = sp->gp;
+	if (screen_init(gp, sp, &gp->ccl_sp))
 		return (1);
-	if (file_init(new, sp->gp->ed_frp, NULL, 0)) {
-		(void)screen_end(new);
+	if (file_init(gp->ccl_sp, frp, NULL, 0)) {
+		(void)screen_end(gp->ccl_sp);
 		return (1);
 	}
 
-	/* This file isn't recoverable. */
-	F_CLR(new->ep, F_RCV_ON);
-
-	/* Grab a handle on the underlying file. */
-	sp->gp->ed_ep = new->ep;
-
-	/* Discard the screen. */
-	if (screen_end(new))
-		return (1);
+	/* The underlying file isn't recoverable. */
+	F_CLR(gp->ccl_sp->ep, F_RCV_ON);
 
 	return (0);
 }
