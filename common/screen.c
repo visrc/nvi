@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.25 1993/11/01 11:59:01 bostic Exp $ (Berkeley) $Date: 1993/11/01 11:59:01 $";
+static char sccsid[] = "$Id: screen.c,v 8.26 1993/11/01 13:28:15 bostic Exp $ (Berkeley) $Date: 1993/11/01 13:28:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,10 +38,11 @@ screen_init(orig, sp)
 
 /* INITIALIZED AT SCREEN CREATE. */
 	memset(sp, 0, sizeof(SCR));
-	if (orig == NULL)
-		list_enter_head(&gp->screens, sp, SCR *, screenq);
-	else
+	if (orig == NULL) {
+		list_enter_head(&__global_list->screens, sp, SCR *, screenq);
+	} else {
 		list_insert_after(&orig->screenq, sp, SCR *, screenq);
+	}
 
 	queue_init(&sp->frefq);
 
@@ -235,14 +236,13 @@ screen_end(sp)
 		FREE(sp->newl, sp->newl_len);
 
 	/* Free up linked lists of sequences. */
-	{ SEQ *qp, *next;
-		for (qp = sp->seqhdr.next;
-		    qp != (SEQ *)&sp->seqhdr; qp = next) {
-			next = qp->next;
+	{ SEQ *qp;
+		while ((qp = sp->seqq.le_next) != NULL) {
+			list_remove(qp, SEQ *, q);
 			if (qp->name != NULL)
 				FREE(qp->name, strlen(qp->name) + 1);
-			FREE(qp->output, strlen(qp->output) + 1);
-			FREE(qp->input, strlen(qp->input) + 1);
+			FREE(qp->output, qp->olen);
+			FREE(qp->input, qp->ilen);
 			FREE(qp, sizeof(SEQ));
 		}
 	}
@@ -347,10 +347,7 @@ seq_copy(a, b)
 {
 	SEQ *ap;
 
-	/* Initialize linked list. */
-	HDR_INIT(b->seqhdr, next, prev);
-
-	for (ap = a->seqhdr.next; ap != (SEQ *)&a->seqhdr; ap = ap->next)
+	for (ap = a->seqq.le_next; ap != NULL; ap = ap->q.qe_next)
 		if (seq_set(b,
 		    ap->name, ap->input, ap->output, ap->stype,
 		    F_ISSET(ap, S_USERDEF)))
