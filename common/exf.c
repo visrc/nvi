@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.53 1993/11/26 16:16:54 bostic Exp $ (Berkeley) $Date: 1993/11/26 16:16:54 $";
+static char sccsid[] = "$Id: exf.c,v 8.54 1993/12/02 10:36:01 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:36:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,7 +46,7 @@ FREF *
 file_add(sp, frp_append, name, ignore)
 	SCR *sp;
 	FREF *frp_append;
-	char *name;
+	CHAR_T *name;
 	int ignore;
 {
 	FREF *frp;
@@ -60,15 +60,13 @@ file_add(sp, frp_append, name, ignore)
 	if (name != NULL)
 		for (frp = sp->frefq.tqh_first;
 		    frp != NULL; frp = frp->q.tqe_next) {
-			p = FILENAME(frp);
-			if (p != NULL && !strcmp(p, name))
+			if ((p = FILENAME(frp)) != NULL && !strcmp(p, name))
 				return (frp);
 		}
 
 	/* Allocate and initialize the FREF structure. */
-	if ((frp = malloc(sizeof(FREF))) == NULL)
+	if ((frp = calloc(1, sizeof(FREF))) == NULL)
 		goto mem;
-	memset(frp, 0, sizeof(FREF));
 
 	/*
 	 * If no file name specified, or if the file name is a request
@@ -76,13 +74,11 @@ file_add(sp, frp_append, name, ignore)
 	 * name.
 	 */
 #define	TEMPORARY_FILE_STRING	"/tmp"
-	if (name != NULL && strcmp(name, TEMPORARY_FILE_STRING)) {
-		if ((frp->name = strdup(name)) == NULL) {
-			FREE(frp, sizeof(FREF));
-mem:			msgq(sp, M_SYSERR, NULL);
-			return (NULL);
-		}
-		frp->nlen = strlen(name);
+	if (name != NULL && strcmp(name, TEMPORARY_FILE_STRING) &&
+	    (frp->name = strdup(name)) == NULL) {
+		FREE(frp, sizeof(FREF));
+mem:		msgq(sp, M_SYSERR, NULL);
+		return (NULL);
 	}
 
 	/* Only the initial argument list is "remembered". */
@@ -192,8 +188,6 @@ file_init(sp, frp, rcv_name, force)
 			(void)unlink(tname);
 			goto err;
 		}
-		frp->tlen = strlen(tname);
-
 		oname = frp->tname;
 		psize = 4 * 1024;
 		F_SET(frp, FR_NEWFILE);
@@ -353,11 +347,11 @@ file_init(sp, frp, rcv_name, force)
 
 err:	if (frp->tname != NULL) {
 		(void)unlink(frp->tname);
-		FREE(frp->tname, frp->tlen);
+		free(frp->tname);
 		frp->tname = NULL;
 	}
 	if (ep->rcv_path != NULL) {
-		FREE(ep->rcv_path, strlen(ep->rcv_path));
+		free(ep->rcv_path);
 		ep->rcv_path = NULL;
 	}
 	FREE(ep, sizeof(EXF));
@@ -425,16 +419,16 @@ file_end(sp, ep, force)
 	if (ep->rcv_fd != -1)
 		(void)close(ep->rcv_fd);
 	if (ep->rcv_path != NULL)
-		FREE(ep->rcv_path, strlen(ep->rcv_path));
+		free(ep->rcv_path);
 	if (ep->rcv_mpath != NULL)
-		FREE(ep->rcv_mpath, strlen(ep->rcv_mpath));
+		free(ep->rcv_mpath);
 
 	/* Unlink any temporary file, file name. */
 	if (frp->tname != NULL) {
 		if (unlink(frp->tname))
 			msgq(sp, M_ERR,
 			    "%s: remove: %s", frp->tname, strerror(errno));
-		FREE(frp->tname, frp->tlen);
+		free(frp->tname);
 		frp->tname = NULL;
 	}
 
