@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 10.10 1995/09/23 19:43:51 bostic Exp $ (Berkeley) $Date: 1995/09/23 19:43:51 $";
+static char sccsid[] = "$Id: key.c,v 10.11 1995/09/25 08:31:54 bostic Exp $ (Berkeley) $Date: 1995/09/25 08:31:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -651,8 +651,9 @@ nomap:		if (!isdigit(evp->e_c) && LF_ISSET(EC_MAPNODIGIT))
 	 */
 	if (LF_ISSET(EC_MAPNODIGIT) &&
 	    qp->output != NULL && !isdigit(qp->output[0])) {
-not_digit:	argp-> e_c = CH_NOT_DIGIT;
+not_digit:	argp->e_c = CH_NOT_DIGIT;
 		argp->e_value = K_NOTUSED;
+		argp->e_event = E_CHARACTER;
 		F_INIT(&argp->e_ch, 0);
 		return (0);
 	}
