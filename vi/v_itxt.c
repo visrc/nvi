@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 5.5 1992/05/28 13:50:04 bostic Exp $ (Berkeley) $Date: 1992/05/28 13:50:04 $";
+static char sccsid[] = "$Id: v_itxt.c,v 5.6 1992/05/28 13:52:42 bostic Exp $ (Berkeley) $Date: 1992/05/28 13:52:42 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -234,11 +234,9 @@ v_Change(vp, fm, tm, rp)
 	MARK *fm, *tm, *rp;
 {
 	size_t len;
-	int buffer;
 	char *p;
 
-	buffer = vp->buffer == OOBCB ? DEFCB : vp->buffer;
-	if (cut(buffer, fm, tm, 1))
+	if (cut(VICB(vp), fm, tm, 1))
 		return (1);
 
 	/*
@@ -283,12 +281,11 @@ v_change(vp, fm, tm, rp)
 	MARK *fm, *tm, *rp;
 {
 	size_t len;
-	int buffer, lmode;
+	int lmode;
 	char *p;
 
 	lmode = vp->flags & VC_LMODE;
-	buffer = vp->buffer == OOBCB ? DEFCB : vp->buffer;
-	if (cut(buffer, fm, tm, lmode))
+	if (cut(VICB(vp), fm, tm, lmode))
 		return (1);
 
 	/*
@@ -368,7 +365,6 @@ v_subst(vp, fm, tm, rp)
 	MARK *fm, *tm, *rp;
 {
 	size_t len;
-	int buffer;
 	char *p;
 
 	EGETLINE(p, fm->lno, len);
@@ -378,8 +374,7 @@ v_subst(vp, fm, tm, rp)
 	if (tm->cno > len)
 		tm->cno = len;
 
-	buffer = vp->buffer == OOBCB ? DEFCB : vp->buffer;
-	if (cut(buffer, fm, tm, 0))
+	if (cut(VICB(vp), fm, tm, 0))
 		return (1);
 
 	return (newtext(vp, tm, p, len, rp, N_EMARK | N_OVERWRITE));

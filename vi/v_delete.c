@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_delete.c,v 5.7 1992/05/27 11:50:21 bostic Exp $ (Berkeley) $Date: 1992/05/27 11:50:21 $";
+static char sccsid[] = "$Id: v_delete.c,v 5.8 1992/05/28 13:52:40 bostic Exp $ (Berkeley) $Date: 1992/05/28 13:52:40 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -28,7 +28,6 @@ v_Delete(vp, fm, tm, rp)
 	MARK *fm, *tm, *rp;
 {
 	size_t len;
-	int buffer;
 	char *p;
 
 	EGETLINE(p, fm->lno, len);
@@ -39,8 +38,7 @@ v_Delete(vp, fm, tm, rp)
 	tm->lno = fm->lno;
 	tm->cno = len;
 
-	buffer = vp->buffer == OOBCB ? DEFCB : vp->buffer;
-	if (cut(buffer, fm, tm, 0) || delete(fm, tm, 0))
+	if (cut(VICB(vp), fm, tm, 0) || delete(fm, tm, 0))
 		return (1);
 
 	rp->lno = fm->lno;
@@ -57,11 +55,10 @@ v_delete(vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	int buffer, lmode;
+	int lmode;
 	
 	lmode = vp->flags & VC_LMODE;
-	buffer = vp->buffer == OOBCB ? DEFCB : vp->buffer;
-	if (cut(buffer, fm, tm, lmode) || delete(fm, tm, lmode))
+	if (cut(VICB(vp), fm, tm, lmode) || delete(fm, tm, lmode))
 		return (1);
 
 	/* If deleting lines, leave the cursor at the lowest line deleted. */
