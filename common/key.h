@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 8.17 1993/11/18 08:17:22 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:17:22 $
+ *	$Id: key.h,v 8.18 1993/11/28 16:58:04 bostic Exp $ (Berkeley) $Date: 1993/11/28 16:58:04 $
  */
 
 /* Structure for a key input buffer. */
@@ -132,5 +132,7 @@ enum input	{ INP_OK=0, INP_EOF, INP_ERR };
 int	term_init __P((SCR *));
 enum input
 	term_key __P((SCR *, CHAR_T *, u_int));
+enum input
+	term_user_key __P((SCR *, CHAR_T *));
 int	term_push __P((SCR *, IBUF *, char *, size_t));
 int	term_waiting __P((SCR *));
