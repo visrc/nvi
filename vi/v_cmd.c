@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 8.32 1994/04/26 11:30:29 bostic Exp $ (Berkeley) $Date: 1994/04/26 11:30:29 $";
+static char sccsid[] = "$Id: v_cmd.c,v 8.33 1994/05/07 11:01:22 bostic Exp $ (Berkeley) $Date: 1994/05/07 11:01:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -130,7 +130,9 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    "^[ <escape>",
 	    "^[ <escape> leave input mode, return to command mode"},
 /* 034  ^\ */
-	{NULL},
+	{v_exmode,	0,
+	    "^\\",
+	    " ^\\ switch to ex mode"},
 /* 035  ^] */
 	{v_tagpush,	V_KEYW|VM_RCM_SET,
 	    "^]",
