@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 8.7 1993/08/25 16:52:29 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:52:29 $";
+static char sccsid[] = "$Id: v_init.c,v 8.8 1993/08/27 11:45:30 bostic Exp $ (Berkeley) $Date: 1993/08/27 11:45:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -109,17 +109,6 @@ v_init(sp, ep)
 
 		if (O_ISSET(sp, O_COMMENT) && v_comment(sp, ep))
 			return (1);
-	}
-
-	/*
-	 * Now have the real address the user wants.
-	 * Fill the screen map.
-	 */
-	if (F_ISSET(sp, S_REFORMAT)) {
-		if (sp->s_fill(sp, ep, sp->lno, P_FILL))
-			return (1);
-		F_CLR(sp, S_REFORMAT);
-		F_SET(sp, S_REDRAW);
 	}
 
 	/* Display the status line. */
