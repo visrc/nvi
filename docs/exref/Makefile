@@ -1,11 +1,11 @@
-#	$Id: Makefile,v 6.3 1993/06/05 17:21:41 bostic Exp $ (Berkeley) $Date: 1993/06/05 17:21:41 $
+#	$Id: Makefile,v 6.4 1993/06/05 17:25:31 bostic Exp $ (Berkeley) $Date: 1993/06/05 17:25:31 $
 
 DIR=	usd/13.ex
 SRCS=	ex.rm
 MACROS=	-msU
 CLEANFILES=summary.*
 
-paper.ps ${SRCS} summary.${PRINTER}
+paper.ps ${SRCS} summary.ps
 	${ROFF} ${SRCS} > ${.TARGET}
 
 summary.ps: ex.summary
