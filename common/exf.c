@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.71 1993/05/16 12:24:02 bostic Exp $ (Berkeley) $Date: 1993/05/16 12:24:02 $";
+static char sccsid[] = "$Id: exf.c,v 5.72 1993/05/16 16:22:31 bostic Exp $ (Berkeley) $Date: 1993/05/16 16:22:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -234,6 +234,7 @@ file_start(sp, ep, rcv_fname)
 	if (oip != NULL) {
 		F_SET(ep, F_RCV_ON);
 		oinfo.bfname = ep->rcv_path;
+		oinfo.psize = 4 * 1024;
 		oinfo.bval = '\n';
 	}
 
