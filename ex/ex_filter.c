@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 8.23 1993/11/13 18:02:35 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:02:35 $";
+static char sccsid[] = "$Id: ex_filter.c,v 8.24 1993/11/28 12:36:30 bostic Exp $ (Berkeley) $Date: 1993/11/28 12:36:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -183,12 +183,16 @@ err:		if (input[0] != -1)
 	/*
 	 * FILTER_READ:
 	 *
-	 * Reading is the simple case -- we don't need a parent writer, so
-	 * the parent reads the output from the read end of the output pipe
-	 * until it finishes, then waits for the child.  Ex_readfp appends
-	 * to the MARK, and closes ofp.  Set the return cursor to the last
-	 * line read in, checking to make sure that it's not past EOF because
-	 * we were reading into an empty file.
+	 * Reading is the simple case -- we don't need a parent writer,
+	 * so the parent reads the output from the read end of the output
+	 * pipe until it finishes, then waits for the child.  Ex_readfp
+	 * appends to the MARK, and closes ofp.
+	 *
+	 * !!!
+	 * Set the return cursor to the last line read in.  Historically,
+	 * this behaves differently from ":r file" command, which leaves
+	 * the cursor at the first line read in.  Check to make sure that
+	 * it's not past EOF because we were reading into an empty file.
 	 */
 	if (ftype == FILTER_READ) {
 		rval = ex_readfp(sp, ep, "filter", ofp, fm, &nread, 0);
