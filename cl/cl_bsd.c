@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_bsd.c,v 8.13 1995/11/26 21:55:59 bostic Exp $ (Berkeley) $Date: 1995/11/26 21:55:59 $";
+static char sccsid[] = "$Id: cl_bsd.c,v 8.14 1995/11/29 09:41:01 bostic Exp $ (Berkeley) $Date: 1995/11/29 09:41:01 $";
 #endif /* not lint */
 
 /*
@@ -247,6 +247,13 @@ int
 tigetnum(name)
 	char *name;
 {
+	TL *tlp;
+
+	if ((tlp = bsearch(name,
+	    list, sizeof(list) / sizeof(TL), sizeof(TL), lcmp)) != NULL) {
+		name = tlp->termcap;
+	}
+
 	return (tgetnum(name));
 }
 /*
