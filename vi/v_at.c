@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_at.c,v 5.17 1993/03/26 13:40:18 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:40:18 $";
+static char sccsid[] = "$Id: v_at.c,v 5.18 1993/04/12 14:49:37 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:49:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -39,7 +39,7 @@ v_at(sp, ep, vp, fm, tm, rp)
 	if (sp->atkey_len == 0)
 		memset(sp->atkey_stack, 0, sizeof(sp->atkey_stack));
 	else if (sp->atkey_stack[key]) {
-		msgq(sp, M_ERROR, "Buffer %s already occurs in this command.",
+		msgq(sp, M_ERR, "Buffer %s already occurs in this command.",
 		    charname(sp, key));
 		return (1);
 	}
@@ -51,22 +51,20 @@ v_at(sp, ep, vp, fm, tm, rp)
 	/* Check for overflow. */
 	len = cb->len + remain;
 	if (len < cb->len + remain) {
-		msgq(sp, M_ERROR, "Buffer overflow.");
+		msgq(sp, M_ERR, "Buffer overflow.");
 		return (1);
 	}
 
 	if ((start = p = malloc(len)) == NULL) {
-		msgq(sp, M_ERROR, "Error: %s", strerror(errno));
+		msgq(sp, M_ERR, "Error: %s", strerror(errno));
 		return (1);
 	}
 
 	/* Copy into the new buffer. */
-	for (tp = cb->head;;) {
-		memmove(p, tp->lp, tp->len);
+	for (tp = cb->txthdr.next; tp != (TEXT *)&cb->txthdr; tp = tp->next) {
+		memmove(p, tp->lb, tp->len);
 		p += tp->len;
 		*p++ = '\n';
-		if ((tp = tp->next) == NULL)
-			break;
 	}
 	
 	/* Copy the rest of the current at string into place. */
