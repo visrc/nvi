@@ -16,7 +16,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 9.15 1995/01/23 16:58:49 bostic Exp $ (Berkeley) $Date: 1995/01/23 16:58:49 $";
+static char sccsid[] = "$Id: main.c,v 9.16 1995/01/24 09:54:07 bostic Exp $ (Berkeley) $Date: 1995/01/24 09:54:07 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -41,16 +41,34 @@ static char sccsid[] = "$Id: main.c,v 9.15 1995/01/23 16:58:49 bostic Exp $ (Ber
 #include <pathnames.h>
 
 #include "vi.h"
+#include "../cl/cl.h"
 #include "../ex/tag.h"
 #include "../sex/sex_screen.h"
+#include "../svi/svi_screen.h"
 
+static void	 estr __P((char *, int, char *));
 static void	 gs_end __P((GS *));
 static GS	*gs_init __P((char *));
 static int	 obsolete __P((char *, char *[]));
 static void	 usage __P((int));
-static void	 nomem __P((char *));
 
 GS *__global_list;			/* GLOBAL: List of screens. */
+
+#ifndef VI_LIBRARY
+int
+main(argc, argv)
+	int argc;
+	char *argv[];
+{
+	static int reenter;
+
+	/* If loaded at 0 and indirecting through a NULL pointer, stop. */
+	if (reenter++)
+		abort();
+
+	exit (vi_main(argc, argv, cl_ssize));
+}
+#endif
 
 int
 vi_main(argc, argv, e_ssize)
@@ -66,7 +84,7 @@ vi_main(argc, argv, e_ssize)
 	u_int32_t saved_vi_mode;
 	u_int flags;
 	int ch, eval, flagchk, lflag, readonly, silent, snapshot;
-	char *excmdarg, *myname,*p, *tag_f, *trace_f, *wsizearg;
+	char *excmdarg, *myname, *tag_f, *trace_f, *wsizearg;
 	char path[MAXPATHLEN];
 
 #ifdef GDBATTACH
@@ -117,9 +135,11 @@ vi_main(argc, argv, e_ssize)
 			readonly = 1;
 			break;
 		case 'r':		/* Recover. */
-			if (flagchk == 't')
-				errx(1,
+			if (flagchk == 't') {
+				estr(myname, 0,
 				    "only one of -r and -t may be specified.");
+				return (1);
+			}
 			flagchk = 'r';
 			break;
 		case 's':
@@ -129,12 +149,16 @@ vi_main(argc, argv, e_ssize)
 			trace_f = optarg;
 			break;
 		case 't':		/* Tag. */
-			if (flagchk == 'r')
-				errx(1,
+			if (flagchk == 'r') {
+				estr(myname, 0,
 				    "only one of -r and -t may be specified.");
-			if (flagchk == 't')
-				errx(1,
+				return (1);
+			}
+			if (flagchk == 't') {
+				estr(myname, 0,
 				    "only one tag file may be specified.");
+				return (1);
+			}
 			flagchk = 't';
 			tag_f = optarg;
 			break;
@@ -175,8 +199,11 @@ vi_main(argc, argv, e_ssize)
 		F_SET(gp, G_SNAPSHOT);
 
 	/* Silent is only applicable to ex. */
-	if (silent && !LF_ISSET(S_EX))
-		errx(1, "-s only applicable to ex.");
+	if (silent && !LF_ISSET(S_EX)) {
+		estr(myname, 0,
+		    "-s option is only applicable to ex.");
+		return (1);
+	}
 
 	/*
 	 * If not reading from a terminal, it's like -s was specified to
@@ -196,8 +223,7 @@ vi_main(argc, argv, e_ssize)
 	if (trace_f != NULL) {		/* Trace file initialization. */
 #ifdef DEBUG
 		if ((gp->tracefp = fopen(trace_f, "w")) == NULL) {
-			(void)fprintf(stderr, "%s: %s: %s\n",
-			    gp->progname, trace_f, strerror(errno));
+			estr(gp->progname, errno, trace_f);
 			return (1);
 		}
 		(void)fprintf(gp->tracefp, "\n===\ntrace: open %s\n", trace_f);
@@ -248,9 +274,6 @@ vi_main(argc, argv, e_ssize)
 	}
 	if (wsizearg != NULL) {
 		ARGS *av[2], a, b;
-		errno = 0;
-		if (strtol(wsizearg, &p, 10) < 0 || errno || *p)
-			errx(1, "illegal window size -- %s.", wsizearg);
 		(void)snprintf(path, sizeof(path), "window=%s", wsizearg);
 		a.bp = (CHAR_T *)path;
 		a.len = strlen(path);
@@ -258,9 +281,7 @@ vi_main(argc, argv, e_ssize)
 		b.len = 0;
 		av[0] = &a;
 		av[1] = &b;
-		if (opts_set(sp, av, 0, NULL))
-			 msgq(sp, M_ERR,
-		     "042|Unable to set command line window size option");
+		(void)opts_set(sp, av, 0, NULL);
 	}
 	if (silent) {			/* Ex batch mode option values. */
 		O_CLR(sp, O_AUTOPRINT);
@@ -323,7 +344,7 @@ vi_main(argc, argv, e_ssize)
 			MALLOC_NOMSG(sp,
 			    *--argv, char *, strlen(sp->frp->name) + 1);
 			if (*argv == NULL) {
-				nomem(gp->progname);
+				estr(gp->progname, errno, NULL);
 				return (1);
 			}
 			(void)strcpy(*argv, sp->frp->name);
@@ -403,7 +424,7 @@ gs_init(name)
 
 	CALLOC_NOMSG(NULL, gp, GS *, 1, sizeof(GS));
 	if (gp == NULL) {
-		nomem(name);
+		estr(name, errno, NULL);
 		return (NULL);
 	}
 
@@ -439,8 +460,7 @@ gs_init(name)
 		F_SET(gp, G_TERMIOS_SET);
 	} else if ((fd = open(_PATH_TTY, O_RDONLY, 0)) != -1) {
 		if (tcgetattr(fd, &gp->original_termios) == -1) {
-tcfail:			(void)fprintf(stderr,
-			    "%s: tcgetattr: %s\n", name, strerror(errno));
+tcfail:			estr(name, errno, "tcgetattr");
 			free(gp);
 			return (NULL);
 		}
@@ -472,11 +492,9 @@ gs_end(gp)
 	/* Reset anything that needs resetting. */
 	if (gp->flags & G_SETMODE)			/* O_MESG */
 		if ((tty = ttyname(STDERR_FILENO)) == NULL)
-			(void)fprintf(stderr, "%s: ttyname: %s\n",
-			    gp->progname, strerror(errno));
+			estr(gp->progname, errno, "ttyname");
 		else if (chmod(tty, gp->origmode) < 0)
-			(void)fprintf(stderr, "%s: %s: %s\n",
-			    gp->progname, tty, strerror(errno));
+			estr(gp->progname, errno, tty);
 
 	/* Close message catalogs. */
 	msg_close(gp);
@@ -544,7 +562,7 @@ obsolete(name, argv)
 			if (argv[0][1] == '\0') {
 				MALLOC_NOMSG(NULL, argv[0], char *, 3);
 				if (argv[0] == NULL) {
-nomem:					nomem(name);
+nomem:					estr(name, errno, NULL);
 					return (1);
 				}
 				(void)strcpy(argv[0], "-s");
@@ -569,8 +587,14 @@ usage(is_ex)
 }
 
 static void
-nomem(name)
-	char *name;
+estr(name, eno, msg)
+	char *name, *msg;
+	int eno;
 {
-	(void)fprintf(stderr, "%s: %s\n", name, strerror(errno));
+	(void)fprintf(stderr, "%s", name);
+	if (msg != NULL)
+		(void)fprintf(stderr, ": %s", msg);
+	if (eno)
+		(void)fprintf(stderr, ": %s", strerror(errno));
+	(void)fprintf(stderr, "\n");
 }
