@@ -1,21 +1,18 @@
-#	$Id: README,v 5.11 1993/05/16 20:26:23 bostic Exp $ (Berkeley) $Date: 1993/05/16 20:26:23 $
+#	$Id: README,v 5.12 1993/06/09 21:54:28 bostic Exp $ (Berkeley) $Date: 1993/06/09 21:54:28 $
 
-This is the README for version 0.3 of nex/nvi.  It's retrievable by
-anonymous ftp from vangogh.cs.berkeley.edu, in ~ftp/hidden/nvi.tar.Z.
-It is an ALPHA version of the nvi which will be distributed in 4.4BSD.
+This is the README for version 0.4 of nex/nvi, a freely redistributable
+replacement for the vi/ex text editors.  Please note that this is ALPHA
+software at the time of its release with 4.4BSD, and that it is not yet
+ready for prime time!
 
-Please note that this is ALPHA software, and is not yet ready for prime
-time!
+New versions of this software will be available by anonymous ftp from
+ftp.cs.berkeley.edu, in the file ucb/4bsd/nvi.tar.Z, or from ftp.uu.net.
 
 This software is derived from software contributed to UC Berkeley by
 Steve Kirkendall, the author of the vi clone elvis.  Without his work,
 this work would have been far more difficult.
 
-Nvi is being distributed for development and review only -- please don't
-redistribute it to anyone without talking to me first!
-
-	Keith Bostic				bostic@cs.berkeley.edu
-						510-642-8524
+Email questions may be addressed to Keith Bostic at bostic@cs.berkeley.edu.
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
@@ -42,7 +39,7 @@ will be integrated at the same time it is made fully 8-bit clean.
 	o Nvi uses POSIX 1003.2 basic and extended RE's.  The historic
 	  hacks will be put in soon.
 
-	And, fairly random other stuff.
+	And, frankly, fairly random other stuff.
 
 + Some of the cool stuff:
 
