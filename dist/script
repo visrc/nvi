@@ -1,4 +1,5 @@
 # setup
+# DON'T RUN AS ROOT.
 setenv VERSION 
 setenv S /usr/src/nvi
 
@@ -27,7 +28,7 @@ cd $S/build.local && make cleandocs docs
 
 # cleanup
 cd $S && allout
-cd $S && mv ip ip_cl build.local RCS/
+cd $S && mv build.local RCS/
 find . -type d \! -perm 775
 find . \( -name '*.rej' -o -name '*.orig' \)
 find . -name RCS -prune -o -name SCCS -prune -o \
@@ -38,5 +39,5 @@ chown -R bin.wsrc .
 cd $S/.. && mv -i nvi nvi-$VERSION
 tar cFFf - nvi-$VERSION | gzip --best > /tmp/nvi-$VERSION.tar.gz
 chmod 444 /tmp/nvi-$VERSION.tar.gz && mv -i nvi-$VERSION nvi
-cd $S && mv RCS/build.local RCS/ip RCS/ip_cl .
+cd $S && mv RCS/build.local .
 cd $S/docs && sco changelog
