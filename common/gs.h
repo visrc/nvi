@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 8.12 1993/11/02 13:31:16 bostic Exp $ (Berkeley) $Date: 1993/11/02 13:31:16 $
+ *	$Id: gs.h,v 8.13 1993/11/03 10:13:57 bostic Exp $ (Berkeley) $Date: 1993/11/03 10:13:57 $
  */
 
 struct _scr;
@@ -29,6 +29,10 @@ typedef struct _gs {
 	struct _ibuf	*tty;		/* Tty input buffer. */
 
 	struct _cb	*cuts;		/* Cut buffers. */
+
+#define	MAX_BIT_SEQ	128		/* Max + 1 fast check character. */
+	bitstr_t bit_decl(seqb, 128);	/* Bit map of chars in list. */
+	struct list_entry seqq;		/* Linked list of maps, abbrevs. */
 
 #define	G_BELLSCHED	0x0001		/* Bell scheduled. */
 #define	G_ISFROMTTY	0x0002		/* Reading from a tty. */

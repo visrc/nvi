@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.49 1993/11/01 19:10:53 bostic Exp $ (Berkeley) $Date: 1993/11/01 19:10:53 $
+ *	$Id: screen.h,v 8.50 1993/11/03 10:13:59 bostic Exp $ (Berkeley) $Date: 1993/11/03 10:13:59 $
  */
 
 /*
@@ -64,10 +64,9 @@ typedef struct _fref {
  *	The screen structure.
  *
  * Most of the traditional ex/vi options and values follow the screen, and
- * are therefore kept here.  For those of you that didn't follow that sentence,
- * read "dumping ground".  For example, things like tags and mapped character
- * sequences are stored here.  Each new screen that is added to the editor will
- * almost certainly have to keep its own stuff in here as well.
+ * are kept here.  For those of you that didn't follow that sentence, read
+ * "dumping ground".  Each new screen added to the editor will probably have
+ * to keep its own stuff in here as well.
  */
 typedef struct _scr {
 /* INITIALIZED AT SCREEN CREATE. */
@@ -191,10 +190,6 @@ typedef struct _scr {
 
 	CHNAME	const *cname;		/* Display names of characters. */
 	u_char	 special[UCHAR_MAX];	/* Special character array. */
-
-#define	MAX_BIT_SEQ	128		/* Max + 1 fast check character. */
-	bitstr_t bit_decl(seqb, 128);	/* Bit map of chars in list. */
-	struct list_entry seqq;		/* Linked list of maps, abbrevs. */
 
 	char const *time_msg;		/* ITIMER_REAL message. */
 	struct itimerval time_value;	/* ITIMER_REAL saved value. */

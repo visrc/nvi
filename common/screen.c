@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.28 1993/11/02 14:47:02 bostic Exp $ (Berkeley) $Date: 1993/11/02 14:47:02 $";
+static char sccsid[] = "$Id: screen.c,v 8.29 1993/11/03 10:13:57 bostic Exp $ (Berkeley) $Date: 1993/11/03 10:13:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,7 +22,6 @@ static char sccsid[] = "$Id: screen.c,v 8.28 1993/11/02 14:47:02 bostic Exp $ (B
 #include "tag.h"
 
 static int	 opt_copy __P((SCR *, SCR *));
-static int	 seq_copy __P((SCR *, SCR *));
 static int	 tag_copy __P((SCR *, SCR *));
 
 /*
@@ -128,9 +127,6 @@ screen_init(orig, sp)
 		sp->cname = orig->cname;
 		memmove(sp->special, orig->special, sizeof(sp->special));
 
-		if (seq_copy(orig, sp))
-			goto mem;
-
 		sp->at_lbuf = orig->at_lbuf;
 
 		if (opt_copy(orig, sp)) {
@@ -233,18 +229,6 @@ screen_end(sp)
 	if (sp->newl != NULL)
 		FREE(sp->newl, sp->newl_len);
 
-	/* Free up linked lists of sequences. */
-	{ SEQ *qp;
-		while ((qp = sp->seqq.le_next) != NULL) {
-			list_remove(qp, SEQ *, q);
-			if (qp->name != NULL)
-				FREE(qp->name, strlen(qp->name) + 1);
-			FREE(qp->output, qp->olen);
-			FREE(qp->input, qp->ilen);
-			FREE(qp, sizeof(SEQ));
-		}
-	}
-
 	/* Free all the options */
 	opts_free(sp);
 
@@ -332,24 +316,6 @@ opt_copy(a, b)
 			    "Error: option copy: %s", strerror(errno));
 			return (1);
 		}
-	return (0);
-}
-
-/*
- * seq_copy --
- *	Copy a screen's SEQ structures.
- */
-static int
-seq_copy(a, b)
-	SCR *a, *b;
-{
-	SEQ *ap;
-
-	for (ap = a->seqq.le_next; ap != NULL; ap = ap->q.qe_next)
-		if (seq_set(b,
-		    ap->name, ap->input, ap->output, ap->stype,
-		    F_ISSET(ap, S_USERDEF)))
-			return (1);
 	return (0);
 }
 

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 8.11 1993/11/02 18:43:58 bostic Exp $ (Berkeley) $Date: 1993/11/02 18:43:58 $";
+static char sccsid[] = "$Id: seq.c,v 8.12 1993/11/03 10:14:00 bostic Exp $ (Berkeley) $Date: 1993/11/03 10:14:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -43,7 +43,7 @@ seq_set(sp, name, input, output, stype, userdef)
 	 * Q's are sorted by character and length within that character.
 	 */
 	ilen = strlen(input);
-	for (lastqp = NULL, qp = sp->seqq.le_next;
+	for (lastqp = NULL, qp = sp->gp->seqq.le_next;
 	    qp != NULL; lastqp = qp, qp = qp->q.qe_next) {
 		if (qp->input[0] < input[0])
 			continue;
@@ -85,13 +85,13 @@ mem1:		msgq(sp, M_ERR, "Error: %s", strerror(errno));
 
 	/* Link into the chain. */
 	if (lastqp == NULL) {
-		list_enter_head(&sp->seqq, qp, SEQ *, q);
+		list_enter_head(&sp->gp->seqq, qp, SEQ *, q);
 	} else {
 		list_insert_after(&lastqp->q, qp, SEQ *, q);
 	}
 
 	/* Set the fast lookup bit. */
-	bit_set(sp->seqb, qp->input[0]);
+	bit_set(sp->gp->seqb, qp->input[0]);
 
 	return (0);
 }
@@ -139,7 +139,8 @@ seq_find(sp, input, ilen, stype, ispartialp)
 		*ispartialp = 0;
 
 	if (ispartialp)
-		for (qp = sp->seqq.le_next; qp != NULL; qp = qp->q.qe_next) {
+		for (qp = sp->gp->seqq.le_next;
+		    qp != NULL; qp = qp->q.qe_next) {
 			if (qp->input[0] < input[0])
 				continue;
 			if (qp->input[0] > input[0])
@@ -160,7 +161,8 @@ seq_find(sp, input, ilen, stype, ispartialp)
 			}
 		}
 	else
-		for (qp = sp->seqq.le_next; qp != NULL; qp = qp->q.qe_next) {
+		for (qp = sp->gp->seqq.le_next;
+		    qp != NULL; qp = qp->q.qe_next) {
 			if (qp->input[0] < input[0])
 				continue;
 			if (qp->input[0] > input[0] || qp->ilen > ilen)
@@ -190,7 +192,7 @@ seq_dump(sp, stype, isname)
 	cnt = 0;
 	cname = sp->cname;
 	tablen = O_VAL(sp, O_TABSTOP);
-	for (qp = sp->seqq.le_next; qp != NULL; qp = qp->q.qe_next) {
+	for (qp = sp->gp->seqq.le_next; qp != NULL; qp = qp->q.qe_next) {
 		if (stype != qp->stype)
 			continue;
 		++cnt;
@@ -231,7 +233,7 @@ seq_save(sp, fp, prefix, stype)
 	esc = sp->gp->original_termios.c_cc[VLNEXT];
 
 	/* Write a sequence command for all keys the user defined. */
-	for (qp = sp->seqq.le_next; qp != NULL; qp = qp->q.qe_next) {
+	for (qp = sp->gp->seqq.le_next; qp != NULL; qp = qp->q.qe_next) {
 		if (!F_ISSET(qp, S_USERDEF))
 			continue;
 		if (stype != qp->stype)
