@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 8.36 1994/03/14 10:47:52 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:47:52 $";
+static char sccsid[] = "$Id: vs_smap.c,v 8.37 1994/03/15 16:24:57 bostic Exp $ (Berkeley) $Date: 1994/03/15 16:24:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -613,7 +613,7 @@ svi_sm_up(sp, ep, rp, count, cursor_move)
 	 */
 	if (p->lno != svmap.lno || p->off != svmap.off) {
 		rp->lno = p->lno;
-		rp->cno = svi_rcm_private(sp, ep, p->lno, p->off);
+		rp->cno = svi_cm_private(sp, ep, p->lno, p->off, sp->rcm);
 	}
 	return (0);
 }
@@ -801,7 +801,7 @@ svi_sm_down(sp, ep, rp, count, cursor_move)
 	 */
 	if (p->lno != svmap.lno || p->off != svmap.off) {
 		rp->lno = p->lno;
-		rp->cno = svi_rcm_private(sp, ep, p->lno, p->off);
+		rp->cno = svi_cm_private(sp, ep, p->lno, p->off, sp->rcm);
 	}
 	return (0);
 }
