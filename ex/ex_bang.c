@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 8.12 1993/11/03 17:18:46 bostic Exp $ (Berkeley) $Date: 1993/11/03 17:18:46 $";
+static char sccsid[] = "$Id: ex_bang.c,v 8.13 1993/11/08 14:13:08 bostic Exp $ (Berkeley) $Date: 1993/11/08 14:13:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -119,18 +119,16 @@ ex_bang(sp, ep, cmdp)
 	 * If the file has been modified, autowrite is not set and the
 	 * warn option is set, tell the user about the file.
 	 */
-	if (F_ISSET(ep, F_MODIFIED)) {
+	msg = "\n";
+	if (F_ISSET(ep, F_MODIFIED))
 		if (O_ISSET(sp, O_AUTOWRITE)) {
 			if (file_write(sp, ep, NULL, NULL, NULL, FS_ALL))
 				return (1);
 		} else if (O_ISSET(sp, O_WARN))
-			if (F_ISSET(sp, S_MODE_VI) &&
-			    F_ISSET(cmdp, E_MODIFY))
+			if (F_ISSET(sp, S_MODE_VI) && F_ISSET(cmdp, E_MODIFY))
 				msg = "\nFile modified since last write.\n";
 			else
 				msg = "File modified since last write.\n";
-	} else
-		msg = "\n";
 
 	/* Run the command. */
 	rval = ex_exec_proc(sp, O_STR(sp, O_SHELL), cmdp->argv[0], msg);
