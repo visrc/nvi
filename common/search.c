@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: search.c,v 10.20 1996/05/07 21:12:22 bostic Exp $ (Berkeley) $Date: 1996/05/07 21:12:22 $";
+static const char sccsid[] = "$Id: search.c,v 10.21 1996/05/12 17:28:40 bostic Exp $ (Berkeley) $Date: 1996/05/12 17:28:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -152,13 +152,6 @@ f_search(sp, fm, rm, ptrn, eptrn, flags)
 	if (search_setup(sp, FORWARD, ptrn, eptrn, flags))
 		return (1);
 
-	/*
-	 * Start searching immediately after the cursor.  If at the end of the
-	 * line, start searching on the next line.  This is incompatible (read
-	 * bug fix) with the historic vi -- searches for the '$' pattern never
-	 * moved forward, and "-t foo" didn't work if "foo" was the first thing
-	 * in the file.
-	 */
 	if (LF_ISSET(SEARCH_FILE)) {
 		lno = 1;
 		coff = 0;
@@ -166,9 +159,23 @@ f_search(sp, fm, rm, ptrn, eptrn, flags)
 		if (db_get(sp, fm->lno, DBG_FATAL, &l, &len))
 			return (1);
 		lno = fm->lno;
-		if (LF_ISSET(SEARCH_INCR))
-			coff = fm->cno;
-		else if (fm->cno + 1 >= len) {
+
+		/*
+		 * If doing incremental search, start searching at the previous
+		 * column, so that we search a minimal distance and still match
+		 * special patterns, e.g., \< for beginning of a word.
+		 *
+		 * Otherwise, start searching immediately after the cursor.  If
+		 * at the end of the line, start searching on the next line.
+		 * This is incompatible (read bug fix) with the historic vi --
+		 * searches for the '$' pattern never moved forward, and the
+		 * "-t foo" didn't work if the 'f' was the first character in
+		 * the file.
+		 */
+		if (LF_ISSET(SEARCH_INCR)) {
+			if ((coff = fm->cno) != 0)
+				--coff;
+		} else if (fm->cno + 1 >= len) {
 			coff = 0;
 			lno = fm->lno + 1;
 			if (db_get(sp, lno, 0, &l, &len)) {
@@ -228,7 +235,10 @@ f_search(sp, fm, rm, ptrn, eptrn, flags)
 		if (eval == REG_NOMATCH)
 			continue;
 		if (eval != 0) {
-			re_error(sp, eval, &sp->re_c);
+			if (LF_ISSET(SEARCH_MSG))
+				re_error(sp, eval, &sp->re_c);
+			else
+				(void)sp->gp->scr_bell(sp);
 			break;
 		}
 
@@ -299,11 +309,20 @@ b_search(sp, fm, rm, ptrn, eptrn, flags)
 	if (search_setup(sp, BACKWARD, ptrn, eptrn, flags))
 		return (1);
 
+	/*
+	 * If doing incremental search, set the "starting" position past the
+	 * current column, so that we search a minimal distance and still
+	 * match special patterns, e.g., \> for the end of a word.  This is
+	 * safe when the cursor is at the end of a line because we only use
+	 * it for comparison with the location of the match.
+	 *
+	 * Otherwise, start searching immediately before the cursor.  If in
+	 * the first column, start search on the previous line.
+	 */
 	if (LF_ISSET(SEARCH_INCR)) {
 		lno = fm->lno;
 		coff = fm->cno + 1;
 	} else {
-		/* If in the first column, start search on the previous line. */
 		if (fm->cno == 0) {
 			if (fm->lno == 1 && !O_ISSET(sp, O_WRAPSCAN)) {
 				if (LF_ISSET(SEARCH_MSG))
@@ -366,7 +385,10 @@ b_search(sp, fm, rm, ptrn, eptrn, flags)
 		if (eval == REG_NOMATCH)
 			continue;
 		if (eval != 0) {
-			re_error(sp, eval, &sp->re_c);
+			if (LF_ISSET(SEARCH_MSG))
+				re_error(sp, eval, &sp->re_c);
+			else
+				(void)sp->gp->scr_bell(sp);
 			break;
 		}
 
