@@ -18,7 +18,7 @@ static const char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static const char sccsid[] = "$Id: main.c,v 10.37 1996/05/02 11:01:43 bostic Exp $ (Berkeley) $Date: 1996/05/02 11:01:43 $";
+static const char sccsid[] = "$Id: main.c,v 10.38 1996/05/03 09:01:42 bostic Exp $ (Berkeley) $Date: 1996/05/03 09:01:42 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -416,7 +416,6 @@ v_end(gp)
 {
 	MSGS *mp;
 	SCR *sp;
-	char *tty;
 
 	/* If there are any remaining screens, kill them off. */
 	if (gp->ccl_sp != NULL) {

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_write.c,v 10.23 1996/05/01 15:06:11 bostic Exp $ (Berkeley) $Date: 1996/05/01 15:06:11 $";
+static const char sccsid[] = "$Id: ex_write.c,v 10.24 1996/05/03 09:00:54 bostic Exp $ (Berkeley) $Date: 1996/05/03 09:00:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -227,7 +227,7 @@ exwr(sp, cmdp, cmd)
 		 * "unnamed" files, or, if the file had a name, set
 		 * the alternate file name.
 		 */
-writeit:	if (F_ISSET(sp->frp, FR_TMPFILE) &&
+		if (F_ISSET(sp->frp, FR_TMPFILE) &&
 		    !F_ISSET(sp->frp, FR_EXNAMED)) {
 			if ((p = v_strdup(sp,
 			    cmdp->argv[1]->bp, cmdp->argv[1]->len)) != NULL) {
