@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.56 1993/11/22 17:36:02 bostic Exp $ (Berkeley) $Date: 1993/11/22 17:36:02 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.57 1993/11/27 15:52:45 bostic Exp $ (Berkeley) $Date: 1993/11/27 15:52:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,6 +19,7 @@ static char sccsid[] = "$Id: v_txt.c,v 8.56 1993/11/22 17:36:02 bostic Exp $ (Be
 #include <unistd.h>
 
 #include "vi.h"
+#include "seq.h"
 #include "vcmd.h"
 
 static int	 txt_abbrev __P((SCR *, TEXT *, int *, ARG_CHAR_T));
@@ -877,7 +878,7 @@ txt_abbrev(sp, tp, didsubp, pushc)
 	}
 
 	/* Check for any abbreviations. */
-	if ((qp = seq_find(sp, p, len, SEQ_ABBREV, NULL)) == NULL) {
+	if ((qp = seq_find(sp, NULL, p, len, SEQ_ABBREV, NULL)) == NULL) {
 		*didsubp = 0;
 		return (0);
 	}
