@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 9.16 1994/12/01 18:17:08 bostic Exp $ (Berkeley) $Date: 1994/12/01 18:17:08 $";
+static char sccsid[] = "$Id: ex.c,v 9.17 1994/12/01 23:05:29 bostic Exp $ (Berkeley) $Date: 1994/12/01 23:05:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1076,8 +1076,9 @@ end2:			break;
 				goto err;
 			}
 			/*
-			 * The target line must exist for these commands,
-			 * but 0 is legal for all of them as well.
+			 * The target line should exist for these commands,
+			 * but 0 is legal for them as well.
+			 */
 			if (cur.lno != 0 &&
 			    file_gline(sp, cur.lno, NULL) == NULL) {
 				ex_badaddr(sp, NULL, A_EOF, NUM_OK);
