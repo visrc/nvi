@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_abbrev.c,v 5.19 1993/04/05 07:11:21 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:11:21 $";
+static char sccsid[] = "$Id: ex_abbrev.c,v 5.20 1993/04/12 14:40:34 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:40:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,7 +30,7 @@ ex_abbr(sp, ep, cmdp)
 
 	if (cmdp->string == NULL) {
 		if (seq_dump(sp, SEQ_ABBREV, 0) == 0)
-			msgq(sp, M_ERROR, "No abbreviations.");
+			msgq(sp, M_ERR, "No abbreviations.");
 		return (0);
 	}
 
@@ -44,7 +44,7 @@ ex_abbr(sp, ep, cmdp)
 	if (*output != '\0')
 		for (*output++ = '\0'; isspace(*output); ++output);
 	if (*output == '\0') {
-		msgq(sp, M_ERROR, "Usage: %s.", cmdp->cmd->usage);
+		msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
 		return (1);
 	}
 
@@ -68,7 +68,7 @@ ex_unabbr(sp, ep, cmdp)
 
 	input = cmdp->argv[0];
 	if (!F_ISSET(sp, S_ABBREV) || seq_delete(sp, input, SEQ_ABBREV)) {
-		msgq(sp, M_ERROR,
+		msgq(sp, M_ERR,
 		    "\"%s\" was never an abbreviation.", input);
 		return (1);
 	}
