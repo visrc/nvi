@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 8.3 1993/08/27 11:42:34 bostic Exp $ (Berkeley) $Date: 1993/08/27 11:42:34 $
+ *	$Id: gs.h,v 8.4 1993/09/29 16:42:08 bostic Exp $ (Berkeley) $Date: 1993/09/29 16:42:08 $
  */
 
 struct _scr;
@@ -25,11 +25,12 @@ typedef struct _gs {
 	FILE	*tracefp;		/* Trace file pointer. */
 #endif
 
-#define	G_SETMODE	0x01		/* Tty mode changed. */
-#define	G_SNAPSHOT	0x02		/* Always snapshot files. */
-#define	G_TMP_INUSE	0x04		/* Temporary buffer in use. */
-#define	G_RECOVER_SET	0x08		/* Recover system initialized. */
-#define	G_SIGWINCH	0x10		/* Window size change received. */
+#define	G_ISFROMTTY	0x01		/* Reading from a tty. */
+#define	G_SETMODE	0x02		/* Tty mode changed. */
+#define	G_SNAPSHOT	0x04		/* Always snapshot files. */
+#define	G_TMP_INUSE	0x08		/* Temporary buffer in use. */
+#define	G_RECOVER_SET	0x10		/* Recover system initialized. */
+#define	G_SIGWINCH	0x20		/* Window size change received. */
 	u_int	 flags;
 } GS;
 
