@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 5.47 1993/05/15 10:07:15 bostic Exp $ (Berkeley) $Date: 1993/05/15 10:07:15 $
+ *	$Id: ex.h,v 5.48 1993/05/15 15:33:21 bostic Exp $ (Berkeley) $Date: 1993/05/15 15:33:21 $
  */
 
 struct _excmdarg;
@@ -157,6 +157,7 @@ EXPROTO(int, ex_move);
 EXPROTO(int, ex_next);
 EXPROTO(int, ex_number);
 EXPROTO(int, ex_pr);
+EXPROTO(int, ex_preserve);
 EXPROTO(int, ex_prev);
 EXPROTO(int, ex_put);
 EXPROTO(int, ex_quit);
