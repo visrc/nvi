@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.67 1993/02/20 12:58:03 bostic Exp $ (Berkeley) $Date: 1993/02/20 12:58:03 $";
+static char sccsid[] = "$Id: ex.c,v 5.68 1993/02/21 19:07:25 bostic Exp $ (Berkeley) $Date: 1993/02/21 19:07:25 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -294,8 +294,7 @@ ex_cmd(ep, exc)
 	 * first, we can't allow any command that requires file state.
 	 * Historic vi generally took the easy way out and dropped core.
  	 */
-	if (FF_ISSET(ep, F_DUMMY) &&
-	    flags & (E_ADDR1|E_ADDR2|E_ADDR2_ALL|E_ADDR2_NONE)) {
+	if (FF_ISSET(ep, F_DUMMY) && flags & E_NORC) {
 		msg(ep, M_ERROR,
 	"The %s command requires a file to already have been read in.",
 		    cp->name);

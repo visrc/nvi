@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 5.30 1993/02/18 12:45:42 bostic Exp $ (Berkeley) $Date: 1993/02/18 12:45:42 $
+ *	$Id: ex.h,v 5.31 1993/02/21 19:07:28 bostic Exp $ (Berkeley) $Date: 1993/02/21 19:07:28 $
  */
 
 struct excmdarg;
@@ -33,9 +33,10 @@ typedef struct {
 
 #define	E_NOGLOBAL	0x02000		/* Not in a global. */
 #define	E_NOPERM	0x04000		/* Permission denied for now. */
-#define	E_SETLAST	0x08000		/* Reset last command. */
-#define	E_ZERO		0x10000		/* 0 is a legal addr1. */
-#define	E_ZERODEF	0x20000		/* 0 is default addr1 of empty files. */
+#define	E_NORC		0x08000		/* Not from a .exrc or EXINIT. */
+#define	E_SETLAST	0x10000		/* Reset last command. */
+#define	E_ZERO		0x20000		/* 0 is a legal addr1. */
+#define	E_ZERODEF	0x40000		/* 0 is default addr1 of empty files. */
 	u_int flags;
 	char *syntax;			/* Syntax script. */
 	char *usage;			/* Usage line. */
@@ -131,6 +132,7 @@ int	 ex_shell __P((EXF *, EXCMDARG *));
 int	 ex_shiftl __P((EXF *, EXCMDARG *));
 int	 ex_shiftr __P((EXF *, EXCMDARG *));
 int	 ex_source __P((EXF *, EXCMDARG *));
+int	 ex_stop __P((EXF *, EXCMDARG *));
 int	 ex_subagain __P((EXF *, EXCMDARG *));
 int	 ex_substitute __P((EXF *, EXCMDARG *));
 int	 ex_tagpop __P((EXF *, EXCMDARG *));
