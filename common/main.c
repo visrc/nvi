@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.86 1994/05/01 15:18:19 bostic Exp $ (Berkeley) $Date: 1994/05/01 15:18:19 $";
+static char sccsid[] = "$Id: main.c,v 8.87 1994/05/02 13:49:34 bostic Exp $ (Berkeley) $Date: 1994/05/02 13:49:34 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -54,6 +54,7 @@ static enum rc	 exrc_isok __P((SCR *, struct stat *, char *, int));
 static void	 gs_end __P((GS *));
 static GS	*gs_init __P((void));
 static void	 h_hup __P((int));
+static void	 h_int __P((int));
 static void	 h_term __P((int));
 static void	 h_winch __P((int));
 static void	 obsolete __P((char *[]));
@@ -380,14 +381,14 @@ main(argc, argv)
 	 */
 	if (excmdarg != NULL)
 		if (IN_EX_MODE(sp)) {
-			if (term_push(sp, excmdarg, strlen(excmdarg), 0, 0))
+			if (term_push(sp, excmdarg, strlen(excmdarg), 0))
 				goto err;
 		} else if (IN_VI_MODE(sp)) {
-			if (term_push(sp, "\n", 1, 0, 0))
+			if (term_push(sp, "\n", 1, 0))
 				goto err;
-			if (term_push(sp, excmdarg, strlen(excmdarg), 0, 0))
+			if (term_push(sp, excmdarg, strlen(excmdarg), 0))
 				goto err;
-			if (term_push(sp, ":", 1, 0, 0))
+			if (term_push(sp, ":", 1, 0))
 				goto err;
 			if (file_lline(sp, sp->ep, &sp->frp->lno))
 				goto err;
@@ -561,8 +562,8 @@ sig_init(sp)
 	/*
 	 * Initialize the signals.  Use sigaction(2), not signal(3), because
 	 * we don't always want to restart system calls on 4BSD systems -- 
-	 * the example is when waiting for a command mode keystroke and we
-	 * a SIGWINCH arrives.  Try and set the resetart bit (SA_RESTART) on
+	 * the example is when waiting for a command mode keystroke and a
+	 * SIGWINCH arrives.  Try and set the resetart bit (SA_RESTART) on
 	 * SIGALRM, anyway, it's just that many fewer interruptions to deal
 	 * with.
 	 *
@@ -570,37 +571,31 @@ sig_init(sp)
 	 *	Walk structures and call handling routines.
 	 * SIGHUP, SIGTERM, SIGWINCH:
 	 *	Catch and set a global bit.
+	 * SIGINT:
+	 *	Walk structures and set a bit.
 	 * SIGQUIT:
 	 *	Always ignore.
 	 */
-	act.sa_handler = h_alrm;
-	sigemptyset(&act.sa_mask);
-#ifdef SA_RESTART
-	act.sa_flags = SA_RESTART;
-#else
-	act.sa_flags = 0;
+#ifndef	SA_RESTART
+#define	SA_RESTART	0
 #endif
-	if (sigaction(SIGALRM, &act, NULL)) {
-		msgq(sp, M_SYSERR, "timer: sigaction");
-		return (1);
-	}
-	act.sa_handler = h_hup;
-	sigemptyset(&act.sa_mask);
-	act.sa_flags = 0;
-	(void)sigaction(SIGHUP, &act, NULL);
-	act.sa_handler = h_term;
-	sigemptyset(&act.sa_mask);
-	act.sa_flags = 0;
-	(void)sigaction(SIGTERM, &act, NULL);
-	act.sa_handler = h_winch;
-	sigemptyset(&act.sa_mask);
-	act.sa_flags = 0;
-	(void)sigaction(SIGWINCH, &act, NULL);
-	act.sa_handler = SIG_IGN;
-	sigemptyset(&act.sa_mask);
-	act.sa_flags = 0;
-	(void)sigaction(SIGQUIT, &act, NULL);
+#define	SETSIG(signal, flags, handler) {				\
+	act.sa_handler = handler;					\
+	sigemptyset(&act.sa_mask);					\
+	act.sa_flags = flags;						\
+	if (sigaction(signal, &act, NULL))				\
+		goto err;						\
+}
+	SETSIG(SIGALRM, SA_RESTART, h_alrm);
+	SETSIG(SIGHUP, 0, h_hup);
+	SETSIG(SIGINT, 0, h_int);
+	SETSIG(SIGQUIT, 0, SIG_IGN);
+	SETSIG(SIGTERM, 0, h_term);
+	SETSIG(SIGWINCH, 0, h_winch);
 	return (0);
+
+err:	msgq(sp, M_SYSERR, "sigaction");
+	return (1);
 }
 
 /*
@@ -622,6 +617,21 @@ sig_end()
 	 * Don't bother using sigaction(2) 'cause we want the default behavior.
 	 */
 	(void)signal(SIGQUIT, SIG_DFL);
+}
+
+/*
+ * h_int --
+ *	Handle SIGINT.
+ */
+static void
+h_int(signo)
+	int signo;
+{
+	SCR *sp;
+
+	for (sp = __global_list->dq.cqh_first;
+	    sp != (void *)&__global_list->dq; sp = sp->q.cqe_next)
+		F_SET(sp, S_INTERRUPTED);
 }
 
 /*
