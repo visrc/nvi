@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 10.23 1995/11/01 10:04:12 bostic Exp $ (Berkeley) $Date: 1995/11/01 10:04:12 $";
+static char sccsid[] = "$Id: msg.c,v 10.24 1995/11/08 08:32:53 bostic Exp $ (Berkeley) $Date: 1995/11/08 08:32:53 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -340,7 +340,7 @@ nofmt:	mp += len;
 	if (gp != NULL)
 		gp->scr_msg(sp, mt, bp, mlen);
 	else
-		(void)fprintf(stderr, ".*s", (int)mlen, bp);
+		(void)fprintf(stderr, "%.*s", (int)mlen, bp);
 
 	/* Cleanup. */
 ret:	FREE_SPACE(sp, bp, blen);
