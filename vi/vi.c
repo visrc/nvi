@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vi.c,v 10.40 1996/03/30 13:47:18 bostic Exp $ (Berkeley) $Date: 1996/03/30 13:47:18 $";
+static const char sccsid[] = "$Id: vi.c,v 10.41 1996/04/15 22:41:07 bostic Exp $ (Berkeley) $Date: 1996/04/15 22:41:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -389,6 +389,8 @@ intr:			CLR_INTERRUPT(sp);
 			/* Switch screens. */
 			sp = sp->nextdisp;
 			vip = VIP(sp);
+
+			/* Don't trust the cursor. */
 			F_SET(vip, VIP_CUR_INVALID);
 
 			/* Refresh so we can display messages. */
