@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.72 1993/12/02 10:29:43 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:29:43 $
+ *	$Id: screen.h,v 8.73 1993/12/02 15:13:40 bostic Exp $ (Berkeley) $Date: 1993/12/02 15:13:40 $
  */
 
 /*
@@ -216,12 +216,14 @@ struct _scr {
 					/* Return column at screen position. */
 	int	 (*s_position) __P((SCR *, EXF *,
 		    MARK *, u_long, enum position));
+					/* Change the absolute screen size. */
+	int	 (*s_rabs) __P((SCR *, long));
 					/* Refresh the screen. */
 	int	 (*s_refresh) __P((SCR *, EXF *));
 					/* Return column close to last char. */
 	size_t	 (*s_relative) __P((SCR *, EXF *, recno_t));
-					/* Change the screen size. */
-	int	 (*s_resize) __P((SCR *, long));
+					/* Change the relative screen size. */
+	int	 (*s_rrel) __P((SCR *, long));
 					/* Split the screen. */
 	int	 (*s_split) __P((SCR *, ARGS *[]));
 					/* Suspend the screen. */
