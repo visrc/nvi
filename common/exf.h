@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 8.11 1993/09/30 13:16:18 bostic Exp $ (Berkeley) $Date: 1993/09/30 13:16:18 $
+ *	$Id: exf.h,v 8.12 1993/10/04 19:20:43 bostic Exp $ (Berkeley) $Date: 1993/10/04 19:20:43 $
  */
 
 					/* Undo direction. */
@@ -35,7 +35,7 @@ typedef struct _exf {
 	enum udirection lundo;		/* Last undo direction. */
 
 	MARK	 absmark;		/* Saved absolute mark. */
-	HDR	 marks;			/* Linked list of file MARK's. */
+	struct list_entry marks;	/* Linked list of file MARK's. */
 
 /*
  * If F_RCV_NORM is not set, rcv_path and rcv_mpath are unlinked on

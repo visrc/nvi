@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: mark.c,v 8.2 1993/09/27 16:24:13 bostic Exp $ (Berkeley) $Date: 1993/09/27 16:24:13 $";
+static char sccsid[] = "$Id: mark.c,v 8.3 1993/10/04 19:20:45 bostic Exp $ (Berkeley) $Date: 1993/10/04 19:20:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -65,7 +65,6 @@ mark_init(sp, ep)
 	 * Make sure the marks have been set up.  If they
 	 * haven't, do so, and create the absolute mark.
 	 */
-	HDR_INIT(ep->marks, next, prev);
 	if ((mp = malloc(sizeof(MARK))) == NULL) {
 		msgq(sp, M_ERR, "Error: %s", strerror(errno));
 		return (1);
@@ -74,8 +73,25 @@ mark_init(sp, ep)
 	ep->absmark.cno = mp->cno = 0;
 	mp->name = ABSMARK1;
 	mp->flags = 0;
-	HDR_INSERT(mp, &ep->marks, next, prev, MARK);
+	list_enter_head(&ep->marks, mp, MARK *, q);
 	return (0);
+}
+
+/*
+ * mark_end --
+ *	Free up the marks.
+ */
+int
+mark_end(sp, ep)
+	SCR *sp;
+	EXF *ep;
+{
+	MARK *mp;
+
+	while ((mp = ep->marks.le_next) != NULL) {
+		list_remove(mp, FREF *, q);
+		FREE(mp, sizeof(MARK));
+	}
 }
 
 /*
@@ -146,7 +162,7 @@ mark_set(sp, ep, key, value, userset)
 			msgq(sp, M_ERR, "Error: %s", strerror(errno));
 			return (1);
 		}
-		HDR_APPEND(mt, mp, next, prev, MARK);
+		list_insert_after(&mp->q, mt, MARK *, q);
 		mp = mt;
 	} else {
 		if (!userset &&
@@ -176,17 +192,17 @@ mark_find(sp, ep, key)
 	EXF *ep;
 	ARG_CHAR_T key;
 {
-	HDR *hp;
-	MARK *mp;
+	MARK *mp, *lastmp;
 
 	/*
 	 * Return the requested mark or the slot immediately before
 	 * where it should go.
 	 */
-	for (hp = &ep->marks, mp = hp->next; mp != (MARK *)hp; mp = mp->next)
+	for (lastmp = NULL, mp = ep->marks.le_next;
+	    mp != NULL; lastmp = mp, mp = mp->q.qe_next)
 		if (mp->name >= key)
-			return (mp->name == key ? mp : mp->prev);
-	return (mp->prev);
+			return (mp->name == key ? mp : lastmp);
+	return (lastmp);
 }
 
 /*
@@ -199,10 +215,9 @@ mark_delete(sp, ep, lno)
 	EXF *ep;
 	recno_t lno;
 {
-	HDR *hp;
 	MARK *mp;
 
-	for (hp = &ep->marks, mp = hp->next; mp != (MARK *)hp; mp = mp->next)
+	for (mp = ep->marks.le_next; mp != NULL; mp = mp->q.qe_next)
 		if (mp->lno >= lno)
 			if (mp->lno == lno) {
 				F_SET(mp, MARK_DELETED);
@@ -221,10 +236,9 @@ mark_insert(sp, ep, lno)
 	EXF *ep;
 	recno_t lno;
 {
-	HDR *hp;
 	MARK *mp;
 
-	for (hp = &ep->marks, mp = hp->next; mp != (MARK *)hp; mp = mp->next)
+	for (mp = ep->marks.le_next; mp != NULL; mp = mp->q.qe_next)
 		if (mp->lno >= lno)
 			++mp->lno;
 }

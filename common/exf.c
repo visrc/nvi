@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.32 1993/10/04 10:09:24 bostic Exp $ (Berkeley) $Date: 1993/10/04 10:09:24 $";
+static char sccsid[] = "$Id: exf.c,v 8.33 1993/10/04 19:20:40 bostic Exp $ (Berkeley) $Date: 1993/10/04 19:20:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -354,7 +354,6 @@ file_end(sp, ep, force)
 	int force;
 {
 	FREF *frp;
-	MARK *mp;
 	int termsignal;
 
 	/*
@@ -423,10 +422,7 @@ file_end(sp, ep, force)
 	}
 
 	/* Free up any marks. */
-	while ((mp = ep->marks.next) != NULL && mp != (MARK *)&ep->marks) {
-		HDR_DELETE(mp, next, prev, MARK);
-		FREE(mp, sizeof(MARK));
-	}
+	mark_end(sp, ep);
 
 	if (!termsignal) {
 		/* Delete the EXF structure from the chain. */

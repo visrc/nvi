@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: mark.h,v 8.2 1993/09/27 16:21:51 bostic Exp $ (Berkeley) $Date: 1993/09/27 16:21:51 $
+ *	$Id: mark.h,v 8.3 1993/10/04 19:20:46 bostic Exp $ (Berkeley) $Date: 1993/10/04 19:20:46 $
  */
 
 /*
@@ -16,22 +16,23 @@
  * The column number is of type size_t, guaranteeing that we can malloc a line.
  */
 typedef struct _mark {
-	struct _mark	*next, *prev;		/* Linked list of marks. */
-#define	OOBLNO		0			/* Out-of-band line number. */
-	recno_t	lno;				/* Line number. */
-	size_t	cno;				/* Column number. */
-	CHAR_T	name;				/* Mark name. */
+	struct queue_entry q;		/* Linked list of marks. */
+#define	OOBLNO		0		/* Out-of-band line number. */
+	recno_t	lno;			/* Line number. */
+	size_t	cno;			/* Column number. */
+	CHAR_T	name;			/* Mark name. */
 
-#define	MARK_DELETED	0x01			/* Mark was deleted. */
-#define	MARK_USERSET	0x02			/* User set this mark. */
+#define	MARK_DELETED	0x01		/* Mark was deleted. */
+#define	MARK_USERSET	0x02		/* User set this mark. */
 	u_char	flags;
 } MARK;
 
-#define	ABSMARK1	'\''			/* Absolute mark name. */
-#define	ABSMARK2	'`'			/* Absolute mark name. */
+#define	ABSMARK1	'\''		/* Absolute mark name. */
+#define	ABSMARK2	'`'		/* Absolute mark name. */
 
 /* Mark routines. */
 void	 mark_delete __P((struct _scr *, struct _exf *, recno_t));
+int	 mark_end __P((struct _scr *, struct _exf *));
 MARK	*mark_get __P((struct _scr *, struct _exf *, ARG_CHAR_T));
 int	 mark_init __P((struct _scr *, struct _exf *));
 void	 mark_insert __P((struct _scr *, struct _exf *, recno_t));
