@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 10.21 1995/11/10 10:23:51 bostic Exp $ (Berkeley) $Date: 1995/11/10 10:23:51 $";
+static char sccsid[] = "$Id: ex_append.c,v 10.22 1995/11/11 10:02:04 bostic Exp $ (Berkeley) $Date: 1995/11/11 10:02:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -87,6 +87,7 @@ ex_aci(sp, cmdp, cmd)
 	recno_t cnt, lno;
 	size_t len;
 	u_int32_t flags;
+	int need_newline;
 
 	NEEDFILE(sp, cmdp);
 
@@ -212,10 +213,12 @@ ex_aci(sp, cmdp, cmd)
 			ex_emsg(sp, cmdp->cmd->name, EXM_NOCANON);
 			return (1);
 		}
-		F_SET(sp, S_SCR_EX | S_SCR_EXWROTE);
 
-		/* Move out of the vi screen. */
-		(void)ex_puts(sp, "\n");
+		/* If we're stil in a vi screen, move out explicitly. */
+		need_newline = !F_ISSET(sp, S_SCR_EXWROTE);
+		F_SET(sp, S_SCR_EX | S_SCR_EXWROTE);
+		if (need_newline)
+			(void)ex_puts(sp, "\n");
 
 		/*
 		 * !!!

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 10.20 1995/11/10 10:21:34 bostic Exp $ (Berkeley) $Date: 1995/11/10 10:21:34 $";
+static char sccsid[] = "$Id: ex_shell.c,v 10.21 1995/11/11 10:02:07 bostic Exp $ (Berkeley) $Date: 1995/11/11 10:02:07 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -41,12 +41,14 @@ ex_shell(sp, cmdp)
 	char buf[MAXPATHLEN];
 
 	(void)snprintf(buf, sizeof(buf), "%s -i", O_STR(sp, O_SHELL));
-	rval = ex_exec_proc(sp, cmdp, buf, NULL, 1);
+
+	/* If we're stil in a vi screen, move out explicitly. */
+	rval = ex_exec_proc(sp, cmdp, buf, NULL, !F_ISSET(sp, S_SCR_EXWROTE));
 
 	/*
 	 * !!!
-	 * Historically, vi didn't require a continue message after
-	 * the return of the shell.  Match it.
+	 * Historically, vi didn't require a continue message after the
+	 * return of the shell.  Match it.
 	 */
 	F_SET(sp, S_EX_DONTWAIT);
 
