@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.27 1993/11/26 17:39:30 bostic Exp $ (Berkeley) $Date: 1993/11/26 17:39:30 $";
+static char sccsid[] = "$Id: util.c,v 8.28 1993/11/27 15:53:19 bostic Exp $ (Berkeley) $Date: 1993/11/27 15:53:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -79,7 +79,7 @@ msgq(sp, mt, fmt, va_alist)
 
 	/* Length is the min length of the message or the buffer. */
 	if (mt == M_SYSERR)
-		if (F_ISSET(sp, S_FILEINPUT))
+		if (sp->if_name != NULL)
 			len = snprintf(msgbuf, sizeof(msgbuf),
 			    "Error: %s, %d: %s%s%s.", sp->if_name, sp->if_lno,
 			    fmt == NULL ? "" : fmt, fmt == NULL ? "" : ": ",
@@ -90,9 +90,8 @@ msgq(sp, mt, fmt, va_alist)
 			    fmt == NULL ? "" : fmt, fmt == NULL ? "" : ": ",
 			    strerror(errno));
 	else {
-		len = F_ISSET(sp, S_FILEINPUT) ?
-		    snprintf(msgbuf, sizeof(msgbuf),
-		        "%s, %d: ", sp->if_name, sp->if_lno) : 0;
+		len = sp->if_name == NULL ? 0 : snprintf(msgbuf, sizeof(msgbuf),
+		        "%s, %d: ", sp->if_name, sp->if_lno);
 		len += vsnprintf(msgbuf + len, sizeof(msgbuf) - len, fmt, ap);
 	}
 
