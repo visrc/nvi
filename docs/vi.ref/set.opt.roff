@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: set.opt.roff,v 8.54 1996/04/15 20:42:26 bostic Exp $ (Berkeley) $Date: 1996/04/15 20:42:26 $
+.\"     $Id: set.opt.roff,v 8.55 1996/04/27 13:42:59 bostic Exp $ (Berkeley) $Date: 1996/04/27 13:42:59 $
 .\"
 .SH 1 "Set Options"
 .pp
@@ -485,6 +485,12 @@ never writes
 characters to the terminal, unlike historic versions of
 .EV ex vi ,
 this option does not currently have any affect.
+.KY iclower
+.IP "iclower [off]"
+The
+.OP iclower
+edit option makes all Regular Expression searches case-insensitive,
+as long as an upper-case letter does not appear in the search string.
 .KY ignorecase
 .IP "ignorecase, ic [off]"
 This option causes regular expressions, both in
@@ -596,12 +602,6 @@ This option only permits you to disallow messages for the edit session.
 See the
 .XR mesg 1
 utility for more information.
-.KY mic
-.IP "mic [off]"
-The
-.OP mic
-edit option makes all Regular Expression searches case-insensitive,
-as long as an upper-case letter does not appear in the search string.
 .KY msgcat
 .IP "msgcat [./]"
 This option selects a message catalog to be used to display error and

@@ -166,6 +166,7 @@ hangup
 hardtabs
 ht
 ic
+iclower
 ifdef
 ignorecase
 ile
@@ -195,7 +196,6 @@ matchtime
 mber
 mesg
 meta
-mic
 mk
 mkexrc
 modeful
