@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 10.9 1995/10/16 15:25:43 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:25:43 $";
+static char sccsid[] = "$Id: ex_print.c,v 10.10 1995/10/17 08:29:44 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:29:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -309,7 +309,7 @@ ex_printf(sp, fmt, va_alist)
 
 	off += n;
 	if (off > sizeof(buf) / 2) {
-		(void)sp->gp->scr_msg(sp, M_NONE, buf, off);
+		sp->gp->scr_msg(sp, M_NONE, buf, off);
 		off = 0;
 	}
 	return (n);
@@ -330,7 +330,7 @@ ex_puts(sp, str)
 
 	for (n = 0; *str != '\0'; ++n) {
 		if (off > sizeof(buf)) {
-			(void)sp->gp->scr_msg(sp, M_NONE, buf, off);
+			sp->gp->scr_msg(sp, M_NONE, buf, off);
 			off = 0;
 		}
 		buf[off++] = *str++;
@@ -349,9 +349,15 @@ ex_fflush(sp)
 	SCR *sp;
 {
 	if (off != 0) {
-		(void)sp->gp->scr_msg(sp, M_NONE, buf, off);
+		sp->gp->scr_msg(sp, M_NONE, buf, off);
 		off = 0;
 	}
-	(void)sp->gp->scr_msg(sp, M_NONE, NULL, 0);
+	/*
+	 * !!!
+	 * For now, we don't need to flush anything, and this gets
+	 * called a *lot*.
+	 *
+	 * sp->gp->scr_msg(sp, M_NONE, NULL, 0);
+	 */
 	return (0);
 }
