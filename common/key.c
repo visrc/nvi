@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.53 1994/03/22 15:22:22 bostic Exp $ (Berkeley) $Date: 1994/03/22 15:22:22 $";
+static char sccsid[] = "$Id: key.c,v 8.54 1994/03/22 18:42:14 bostic Exp $ (Berkeley) $Date: 1994/03/22 18:42:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,12 +30,10 @@ static char sccsid[] = "$Id: key.c,v 8.53 1994/03/22 15:22:22 bostic Exp $ (Berk
 #include <regex.h>
 
 #include "vi.h"
-#include "interrupt.h"
 #include "seq.h"
 
 static int	keycmp __P((const void *, const void *));
 static void	termkeyset __P((GS *, int, int));
-static void	term_intr __P((int));
 
 /*
  * If we're reading less than 20 characters, up the size of the tty buffer.
@@ -438,14 +436,13 @@ term_key(sp, chp, flags)
 	CH *chp;
 	u_int flags;
 {
-	DECLARE_INTERRUPTS;
 	enum input rval;
 	struct timeval t, *tp;
 	CHAR_T ch;
 	GS *gp;
 	IBUF *tty;
 	SEQ *qp;
-	int cmap, ispartial, nr;
+	int cmap, ispartial, nr, teardown;
 
 	gp = sp->gp;
 	tty = gp->tty;
@@ -470,8 +467,7 @@ loop:	if (tty->cnt == 0) {
 	}
 
 	/* If no limit on remaps, set it up so the user can interrupt. */
-	if (!O_ISSET(sp, O_REMAPMAX))
-		SET_UP_INTERRUPTS(term_intr);
+	teardown = O_ISSET(sp, O_REMAPMAX) ? 0 : !intr_init(sp);
 
 	/* If the key is mappable and should be mapped, look it up. */
 	if (!(tty->chf[tty->next] & CH_NOMAP) &&
@@ -577,29 +573,9 @@ not_digit_ch:	chp->ch = NOT_DIGIT_CH;
 	QREM_HEAD(tty, 1);
 	rval = INP_OK;
 
-	/* If an error setting up the interrupts, we're kind of hosed. */
-	if (0) {
-interrupt_err:	rval = INP_ERR;
-	}
-ret:	if (!O_ISSET(sp, O_REMAPMAX))
-		TEAR_DOWN_INTERRUPTS;
+ret:	if (teardown)
+		intr_end(sp);
 	return (rval);
-}
-
-/*
- * term_intr --
- *	Set the interrupt bit.
- */
-static void
-term_intr(signo)
-	int signo;
-{
-	SCR *sp;
-
-	for (sp = __global_list->dq.cqh_first;
-	    sp != (void *)&__global_list->dq; sp = sp->q.cqe_next)
-		if (F_ISSET(sp, S_INTERRUPTIBLE))
-			F_SET(sp, S_INTERRUPTED);
 }
 
 /*

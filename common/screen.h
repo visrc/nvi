@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.87 1994/03/16 08:05:54 bostic Exp $ (Berkeley) $Date: 1994/03/16 08:05:54 $
+ *	$Id: screen.h,v 8.88 1994/03/22 18:41:59 bostic Exp $ (Berkeley) $Date: 1994/03/22 18:41:59 $
  */
 
 /*
@@ -141,6 +141,10 @@ struct _scr {
 	struct itimerval time_value;	/* ITIMER_REAL saved value. */
 	struct sigaction time_handler;	/* ITIMER_REAL saved handler. */
 
+	struct sigaction intr_act;	/* Interrupt saved signal state. */
+	struct termios	 intr_term;	/* Interrupt saved terminal state. */
+	int	 intr_level;		/* 1-N: Interrupt level. */
+
 	void	*vi_private;		/* Vi private area. */
 	void	*ex_private;		/* Ex private area. */
 	void	*svi_private;		/* Vi curses screen private area. */
@@ -264,7 +268,7 @@ struct _scr {
 #define	S_TIMER_SET	0x0400000	/* If a busy timer is running. */
 #define	S_UPDATE_MODE	0x0800000	/* Don't repaint modeline. */
 #define	S_VLITONLY	0x1000000	/* ^V literal next only. */
-	u_int flags;
+	u_int32_t flags;
 };
 
 /* Generic routines to start/stop a screen. */

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.38 1994/03/14 10:38:58 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:38:58 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.39 1994/03/22 18:42:27 bostic Exp $ (Berkeley) $Date: 1994/03/22 18:42:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,7 +30,6 @@ static char sccsid[] = "$Id: ex_subst.c,v 8.38 1994/03/14 10:38:58 bostic Exp $ 
 
 #include "vi.h"
 #include "excmd.h"
-#include "interrupt.h"
 
 #define	SUB_FIRST	0x01		/* The 'r' flag isn't reasonable. */
 #define	SUB_MUSTSETR	0x02		/* The 'r' flag is required. */
@@ -38,7 +37,6 @@ static char sccsid[] = "$Id: ex_subst.c,v 8.38 1994/03/14 10:38:58 bostic Exp $ 
 static int		checkmatchsize __P((SCR *, regex_t *));
 static inline int	regsub __P((SCR *,
 			    char *, char **, size_t *, size_t *));
-static void		subst_intr __P((int));
 static int		substitute __P((SCR *, EXF *,
 			    EXCMDARG *, char *, regex_t *, u_int));
 
@@ -343,13 +341,12 @@ substitute(sp, ep, cmdp, s, re, flags)
 	regex_t *re;
 	u_int flags;
 {
-	DECLARE_INTERRUPTS;
 	MARK from, to;
 	recno_t elno, lno;
 	size_t blen, cnt, last, lbclen, lblen, len, llen, offset, saved_offset;
-	int didsub, do_eol_match, eflags, empty_ok, eval;
-	int linechanged, matched, quit, rval;
 	int cflag, gflag, lflag, nflag, pflag, rflag;
+	int didsub, do_eol_match, eflags, empty_ok, eval;
+	int linechanged, matched, quit, rval, teardown;
 	char *bp, *lb;
 
 	/*
@@ -441,8 +438,8 @@ usage:		msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
 		return (1);
 	}
 
-	if (!F_ISSET(sp, S_GLOBAL))
-		SET_UP_INTERRUPTS(subst_intr);
+	/* Set up interrupts. */
+	teardown = !intr_init(sp);
 
 	/*
 	 * bp:		if interactive, line cache
@@ -784,9 +781,8 @@ endmatch:	if (!linechanged)
 ret1:		rval = 1;
 	}
 
-interrupt_err:
-	if (!F_ISSET(sp, S_GLOBAL))
-		TEAR_DOWN_INTERRUPTS;
+	if (teardown)
+		intr_end(sp);
 
 	if (bp != NULL)
 		FREE_SPACE(sp, bp, blen);
@@ -948,26 +944,4 @@ checkmatchsize(sp, re)
 		}
 	}
 	return (0);
-}
-
-/*
- * subst_intr --
- *	Set the interrupt bit in any screen that is interruptible.
- *
- * XXX
- * In the future this may be a problem.  The user should be able to move to
- * another screen and keep typing while this runs.  If so, and the user has
- * more than one substitute running, it will be hard to decide which one to
- * stop.
- */
-static void
-subst_intr(signo)
-	int signo;
-{
-	SCR *sp;
-
-	for (sp = __global_list->dq.cqh_first;
-	    sp != (void *)&__global_list->dq; sp = sp->q.cqe_next)
-		if (F_ISSET(sp, S_INTERRUPTIBLE))
-			F_SET(sp, S_INTERRUPTED);
 }

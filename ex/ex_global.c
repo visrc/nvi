@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 8.31 1994/03/14 10:37:08 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:37:08 $";
+static char sccsid[] = "$Id: ex_global.c,v 8.32 1994/03/22 18:42:25 bostic Exp $ (Berkeley) $Date: 1994/03/22 18:42:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,12 +30,10 @@ static char sccsid[] = "$Id: ex_global.c,v 8.31 1994/03/14 10:37:08 bostic Exp $
 
 #include "vi.h"
 #include "excmd.h"
-#include "interrupt.h"
 
 enum which {GLOBAL, VGLOBAL};
 
 static int	global __P((SCR *, EXF *, EXCMDARG *, enum which));
-static void	global_intr __P((int));
 
 /*
  * ex_global -- [line [,line]] g[lobal][!] /pattern/ [commands]
@@ -71,14 +69,13 @@ global(sp, ep, cmdp, cmd)
 	EXCMDARG *cmdp;
 	enum which cmd;
 {
-	DECLARE_INTERRUPTS;
 	RANGE *rp;
 	EX_PRIVATE *exp;
 	recno_t elno, lno;
 	regmatch_t match[1];
 	regex_t *re, lre;
 	size_t clen, len;
-	int delim, eval, reflags, replaced, rval;
+	int delim, eval, reflags, replaced, rval, teardown;
 	char *cb, *ptrn, *p, *t;
 
 	/*
@@ -173,7 +170,7 @@ global(sp, ep, cmdp, cmd)
 
 	/* Set the global flag, and set up interrupts. */
 	F_SET(sp, S_GLOBAL);
-	SET_UP_INTERRUPTS(global_intr);
+	teardown = !intr_init(sp);
 
 	/*
 	 * For each line...  The semantics of global matching are that we first
@@ -273,9 +270,9 @@ interrupted:		msgq(sp, M_INFO, "Interrupted.");
 err:		rval = 1;
 	}
 
-interrupt_err:
 	F_CLR(sp, S_GLOBAL);
-	TEAR_DOWN_INTERRUPTS;
+	if (teardown)
+		intr_end(sp);
 
 	/* Free any remaining ranges and the command buffer. */
 	while ((rp = exp->rangeq.cqh_first) != (void *)&exp->rangeq) {
@@ -362,27 +359,4 @@ global_insdel(sp, ep, op, lno)
 	 * the line after the deleted/inserted line.
 	 */
 	exp->range_lno = lno;
-}
-
-/*
- * global_intr --
- *	Set the interrupt bit in any screen that is running an interruptible
- *	global.
- *
- * XXX
- * In the future this may be a problem.  The user should be able to move to
- * another screen and keep typing while this runs.  If so, and the user has
- * more than one global running, it will be hard to decide which one to
- * stop.
- */
-static void
-global_intr(signo)
-	int signo;
-{
-	SCR *sp;
-
-	for (sp = __global_list->dq.cqh_first;
-	    sp != (void *)&__global_list->dq; sp = sp->q.cqe_next)
-		if (F_ISSET(sp, S_GLOBAL) && F_ISSET(sp, S_INTERRUPTIBLE))
-			F_SET(sp, S_INTERRUPTED);
 }
