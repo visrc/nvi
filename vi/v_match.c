@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_match.c,v 5.19 1993/05/06 01:17:59 bostic Exp $ (Berkeley) $Date: 1993/05/06 01:17:59 $";
+static char sccsid[] = "$Id: v_match.c,v 5.20 1993/05/08 10:52:43 bostic Exp $ (Berkeley) $Date: 1993/05/08 10:52:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -96,7 +96,12 @@ v_match(sp, ep, vp, fm, tm, rp)
 		dir = BACKWARD;
 		break;
 	default:
-search:		if (findmatchc(fm, p, len, rp)) {
+search:		if (F_ISSET(vp, VC_C | VC_D | VC_Y)) {
+			msgq(sp, M_BERR,
+			"Proximity search doesn't work for motion commands.");
+			return (1);
+		}
+		if (findmatchc(fm, p, len, rp)) {
 nomatch:		msgq(sp, M_BERR, "No match character on this line.");
 			return (1);
 		}
@@ -116,14 +121,25 @@ nomatch:		msgq(sp, M_BERR, "No match character on this line.");
 				if (ch != '/')
 					continue;
 			}
-			if (--cnt == 0) {
-				getc_set(sp, ep, rp);
-				return (0);
-			}
+			if (--cnt == 0)
+				break;
 		} 
+	if (cnt) {
+		msgq(sp, M_BERR, "Matching character not found.");
+		return (1);
+	}
+	getc_set(sp, ep, rp);
 
-	msgq(sp, M_BERR, "Matching character not found.");
-	return (1);
+	/* Movement commands go one space further. */
+	if (F_ISSET(vp, VC_C | VC_D | VC_Y)) {
+		if (file_gline(sp, ep, rp->lno, &len) == NULL) {
+			GETLINE_ERR(sp, rp->lno);
+			return (1);
+		}
+		if (len)
+			++rp->cno;
+	}
+	return (0);
 }
 
 /*
