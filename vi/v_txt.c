@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.50 1996/04/10 19:36:07 bostic Exp $ (Berkeley) $Date: 1996/04/10 19:36:07 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.51 1996/04/11 20:22:25 bostic Exp $ (Berkeley) $Date: 1996/04/11 20:22:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -2518,10 +2518,10 @@ txt_isrch(sp, vp, tp, is_flagsp)
 		vp->m_final.cno = vp->m_start.cno;
 	}
 	if (tp->lb[0] == '/' ?
-	    !f_search(sp,
-	    &vp->m_final, &vp->m_final, tp->lb + 1, NULL, SEARCH_INCR) :
-	    !b_search(sp,
-	    &vp->m_final, &vp->m_final, tp->lb + 1, NULL, SEARCH_INCR)) {
+	    !f_search(sp, &vp->m_final,
+	    &vp->m_final, tp->lb + 1, NULL, SEARCH_INCR | SEARCH_SET) :
+	    !b_search(sp, &vp->m_final,
+	    &vp->m_final, tp->lb + 1, NULL, SEARCH_INCR | SEARCH_SET)) {
 		sp->lno = vp->m_final.lno;
 		sp->cno = vp->m_final.cno;
 		FL_CLR(*is_flagsp, IS_FAILED | IS_RESET);
