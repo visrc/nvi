@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 5.41 1993/05/13 11:43:25 bostic Exp $ (Berkeley) $Date: 1993/05/13 11:43:25 $";
+static char sccsid[] = "$Id: cut.c,v 5.42 1993/05/13 15:48:09 bostic Exp $ (Berkeley) $Date: 1993/05/13 15:48:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -250,10 +250,10 @@ put(sp, ep, buffer, cp, rp, append)
 			return (1);
 		}
 
-		GET_SPACE(sp, bp, blen, tp->len);
+		GET_SPACE(sp, bp, blen, tp->len + len + 1);
+		t = bp;
 
 		/* Original line, left of the split. */
-		t = bp;
 		if (len > 0 && (clen = cp->cno + (append ? 1 : 0)) > 0) {
 			memmove(bp, p, clen);
 			p += clen;
@@ -296,10 +296,13 @@ put(sp, ep, buffer, cp, rp, append)
 			 * same buffer, so we don't have to have another buffer
 			 * floating around.
 			 *
-			 * Last part of original line; check for space.
+			 * Last part of original line; check for space, reset
+			 * the pointer into the buffer.
 			 */
 			ltp = cb->txthdr.prev;
+			len = t - bp;
 			ADD_SPACE(sp, bp, blen, ltp->len + clen);
+			t = bp + len;
 
 			/* Add in last part of the CB. */
 			memmove(t, ltp->lb, ltp->len);
@@ -322,12 +325,7 @@ put(sp, ep, buffer, cp, rp, append)
 			/*
 			 * Historical practice is that if a non-line mode put
 			 * covers multiple lines, the cursor ends up on the
-			 * first character inserted.
-			 *
-			 * Q: What's the difference between whomever made up
-			 *    the cursor placement semantics of vi and the
-			 *    Boy Scouts?
-			 * A: The Boy Scounts have adult supervision.
+			 * first character inserted.  (Of course.)
 			 */
 			rp->lno = lno;
 			rp->cno = (t - bp) - 1;
