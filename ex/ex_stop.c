@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_stop.c,v 5.7 1993/04/12 14:37:55 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:37:55 $";
+static char sccsid[] = "$Id: ex_stop.c,v 5.8 1993/05/04 20:24:26 bostic Exp $ (Berkeley) $Date: 1993/05/04 20:24:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -20,7 +20,7 @@ static char sccsid[] = "$Id: ex_stop.c,v 5.7 1993/04/12 14:37:55 bostic Exp $ (B
 #include "excmd.h"
 
 /*
- * ex_stop -- :stop
+ * ex_stop -- :stop[!]
  *	Suspend execution.
  */
 int
@@ -29,7 +29,8 @@ ex_stop(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	if (!(cmdp->flags & E_FORCE))
+	/* For some strange reason, the force flag turns off autowrite. */
+	if (!F_ISSET(cmdp, E_FORCE))
 		AUTOWRITE(sp, ep);
 
 	return (ex_suspend(sp));
