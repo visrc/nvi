@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 5.12 1992/10/24 14:21:05 bostic Exp $ (Berkeley) $Date: 1992/10/24 14:21:05 $
+ *	$Id: exf.h,v 5.13 1992/10/26 17:44:22 bostic Exp $ (Berkeley) $Date: 1992/10/26 17:44:22 $
  */
 
 #ifndef _EXF_H_
@@ -34,18 +34,24 @@ typedef struct exf {
 #define	RCM_FNB		0x01		/* Column suck: first non-blank. */
 #define	RCM_LAST	0x02		/* Column suck: last. */
 	u_char rcmflags;
+					/* Underlying database state. */
+	DB *db;				/* File db structure. */
+	u_char *c_lp;			/* Cached line. */
+	size_t c_len;			/* Cached line length. */
+	recno_t c_lno;			/* Cached line number. */
+	recno_t c_nlines;		/* Lines in the file. */
+
+	DB *sdb;			/* Shadow db structure. */
 
 	char *name;			/* File name. */
 	size_t nlen;			/* File name length. */
-	DB *db;				/* File db structure. */
-	DB *sdb;			/* Shadow db structure. */
-
 #define	F_CREATED	0x001		/* File was created. */
-#define	F_MODIFIED	0x002		/* File was modified. */
-#define	F_NAMECHANGED	0x004		/* File name changed. */
-#define	F_NONAME	0x008		/* File has no name. */
-#define	F_RDONLY	0x010		/* File is read-only. */
-#define	F_WRITTEN	0x020		/* File has been written. */
+#define	F_IGNORE	0x002		/* File inserted later. */
+#define	F_MODIFIED	0x004		/* File was modified. */
+#define	F_NAMECHANGED	0x008		/* File name changed. */
+#define	F_NONAME	0x010		/* File has no name. */
+#define	F_RDONLY	0x020		/* File is read-only. */
+#define	F_WRITTEN	0x040		/* File has been written. */
 	u_int flags;
 } EXF;
 
@@ -87,7 +93,8 @@ typedef struct {
 EXF	*file_first __P((void));
 void	 file_init __P((void));
 int	 file_ins __P((EXF *, char *, int));
-int	 file_iscurrent __P((char *));
+EXF	*file_locate __P((char *));
+int	 file_modify __P((EXF *, int));
 EXF	*file_next __P((EXF *));
 EXF	*file_prev __P((EXF *));
 int	 file_set __P((int, char *[]));

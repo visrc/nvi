@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 5.3 1992/10/26 09:30:57 bostic Exp $ (Berkeley) $Date: 1992/10/26 09:30:57 $";
+static char sccsid[] = "$Id: db.c,v 5.4 1992/10/26 17:44:39 bostic Exp $ (Berkeley) $Date: 1992/10/26 17:44:39 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -19,10 +19,6 @@ static char sccsid[] = "$Id: db.c,v 5.3 1992/10/26 09:30:57 bostic Exp $ (Berkel
 #include "exf.h"
 #include "screen.h"
 #include "extern.h"
-
-static recno_t	 ll_lno = OOBLNO;		/* One line cache. */
-static size_t	 ll_len;
-static u_char	*ll_lp;
 
 /*
  * file_gline --
@@ -43,7 +39,7 @@ file_gline(ep, lno, lenp)
 	 * have to have an oob condition for the look-aside into the input
 	 * buffer anyway.
 	 */
-	if (lno == OOBLNO)
+	if (lno == 0)
 		return (NULL);
 
 	/*
@@ -64,12 +60,12 @@ file_gline(ep, lno, lenp)
 	}
 
 	/* Check the cache. */
-	if (lno == ll_lno) {
+	if (lno == ep->c_lno) {
 		if (lenp)
-			*lenp = ll_len;
-		return (ll_lp);
+			*lenp = ep->c_len;
+		return (ep->c_lp);
 	}
-	ll_lno = OOBLNO;
+	ep->c_lno = OOBLNO;
 
 	/* Get the line from the underlying database. */
 	key.data = &lno;
@@ -87,9 +83,11 @@ file_gline(ep, lno, lenp)
 	if (lenp)
 		*lenp = data.size;
 
-	ll_lno = lno;
-	ll_len = data.size;
-	ll_lp = data.data;
+	/* Fill the cache. */
+	ep->c_lno = lno;
+	ep->c_len = data.size;
+	ep->c_lp = data.data;
+
 	return (data.data);
 }
 
@@ -122,8 +120,11 @@ file_dline(ep, lno)
 	scr_update(ep, lno, NULL, 0, LINE_DELETE);
 
 	/* Flush the cache. */
-	if (lno <= ll_lno)
-		ll_lno = OOBLNO;
+	if (lno <= ep->c_lno)
+		ep->c_lno = OOBLNO;
+
+	/* Update line count. */
+	--ep->c_nlines;
 
 	/* File now dirty. */
 	ep->flags |= F_MODIFIED;
@@ -163,8 +164,11 @@ file_aline(ep, lno, p, len)
 	scr_update(ep, lno, p, len, LINE_APPEND);
 
 	/* Flush the cache. */
-	if (lno >= ll_lno)
-		ll_lno = OOBLNO;
+	if (lno >= ep->c_lno)
+		ep->c_lno = OOBLNO;
+
+	/* Update line count. */
+	++ep->c_nlines;
 
 	/* File now dirty. */
 	ep->flags |= F_MODIFIED;
@@ -203,8 +207,11 @@ file_iline(ep, lno, p, len)
 	scr_update(ep, lno, p, len, LINE_INSERT);
 
 	/* Flush the cache. */
-	if (lno >= ll_lno)
-		ll_lno = OOBLNO;
+	if (lno >= ep->c_lno)
+		ep->c_lno = OOBLNO;
+
+	/* Update line count. */
+	++ep->c_nlines;
 
 	/* File now dirty. */
 	ep->flags |= F_MODIFIED;
@@ -243,8 +250,8 @@ file_sline(ep, lno, p, len)
 	scr_update(ep, lno, p, len, LINE_RESET);
 	
 	/* Flush the cache. */
-	if (lno == ll_lno)
-		ll_lno = OOBLNO;
+	if (lno == ep->c_lno)
+		ep->c_lno = OOBLNO;
 
 	/* File now dirty. */
 	ep->flags |= F_MODIFIED;
@@ -291,7 +298,10 @@ file_ibresolv(ep, ibp)
 	}
 
 	/* Flush the cache. */
-	ll_lno = OOBLNO;
+	ep->c_lno = OOBLNO;
+
+	/* Update line count. */
+	ep->c_nlines = OOBLNO;
 
 	/* File now dirty. */
 	ep->flags |= F_MODIFIED;
@@ -301,8 +311,6 @@ file_ibresolv(ep, ibp)
 /*
  * file_lline --
  *	Return the number of lines in the file.
- * XXX
- * This may need to be cached.
  */
 recno_t
 file_lline(ep)
@@ -310,6 +318,10 @@ file_lline(ep)
 {
 	DBT data, key;
 	recno_t lno;
+
+	/* Check the cache. */
+	if (ep->c_nlines != OOBLNO)
+		return (ep->c_nlines);
 
 	key.data = &lno;
 	key.size = sizeof(lno);
@@ -326,5 +338,11 @@ file_lline(ep)
 		bcopy(key.data, &lno, sizeof(lno));
 		break;
 	}
+
+	/* Fill the cache. */
+	ep->c_lno = lno;
+	ep->c_len = data.size;
+	ep->c_lp = data.data;
+
 	return (lno);
 }
