@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.126 1994/08/04 14:12:33 bostic Exp $ (Berkeley) $Date: 1994/08/04 14:12:33 $
+ *	$Id: screen.h,v 8.127 1994/08/08 10:10:18 bostic Exp $ (Berkeley) $Date: 1994/08/08 10:10:18 $
  */
 
 /*
@@ -56,10 +56,11 @@ struct _fref {
 #define	FR_NAMECHANGE	0x008		/* If the name changed. */
 #define	FR_NEWFILE	0x010		/* File doesn't really exist yet. */
 #define	FR_RDONLY	0x020		/* File is read-only. */
-#define	FR_RECOVER	0x040		/* File is being recovered. */
-#define	FR_TMPEXIT	0x080		/* Modified temporary file, no exit. */
-#define	FR_TMPFILE	0x100		/* If file has no name. */
-#define	FR_UNLOCKED	0x200		/* File couldn't be locked. */
+#define	FR_READNAMED	0x040		/* Read renamed the file. */
+#define	FR_RECOVER	0x080		/* File is being recovered. */
+#define	FR_TMPEXIT	0x100		/* Modified temporary file, no exit. */
+#define	FR_TMPFILE	0x200		/* If file has no name. */
+#define	FR_UNLOCKED	0x400		/* File couldn't be locked. */
 	u_int16_t flags;
 };
 
@@ -109,13 +110,12 @@ struct _scr {
 
 #define	L_ADDED		0		/* Added lines. */
 #define	L_CHANGED	1		/* Changed lines. */
-#define	L_COPIED	2		/* Copied lines. */
-#define	L_DELETED	3		/* Deleted lines. */
-#define	L_JOINED	4		/* Joined lines. */
-#define	L_MOVED		5		/* Moved lines. */
-#define	L_LSHIFT	6		/* Left shift lines. */
-#define	L_RSHIFT	7		/* Right shift lines. */
-#define	L_YANKED	8		/* Yanked lines. */
+#define	L_DELETED	2		/* Deleted lines. */
+#define	L_JOINED	3		/* Joined lines. */
+#define	L_MOVED		4		/* Moved lines. */
+#define	L_LSHIFT	5		/* Left shift lines. */
+#define	L_RSHIFT	6		/* Right shift lines. */
+#define	L_YANKED	7		/* Yanked lines. */
 	recno_t	 rptlchange;		/* Ex/vi: last L_CHANGED lno. */
 	recno_t	 rptlines[L_YANKED + 1];/* Ex/vi: lines changed by last op. */
 
