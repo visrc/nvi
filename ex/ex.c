@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.89 1994/01/08 13:16:01 bostic Exp $ (Berkeley) $Date: 1994/01/08 13:16:01 $";
+static char sccsid[] = "$Id: ex.c,v 8.90 1994/01/23 20:35:48 bostic Exp $ (Berkeley) $Date: 1994/01/23 20:35:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1167,7 +1167,7 @@ addr2:	switch (exc.addrcnt) {
 	 * string was a single command or not.  Try and guess, it's useful
 	 * to know if part of the command was discarded.
 	 */
-	if (save_cmdlen == 0)
+err:	if (save_cmdlen == 0)
 		for (; cmdlen; --cmdlen)
 			if ((ch = *cmd++) == vlit && cmdlen > 1) {
 				--cmdlen;
@@ -1180,7 +1180,7 @@ addr2:	switch (exc.addrcnt) {
 	if (save_cmdlen != 0)
 		msgq(sp, M_ERR,
 		    "Ex command failed: remaining command input discarded.");
-err:	term_map_flush(sp, "Ex command failed");
+	term_map_flush(sp, "Ex command failed");
 	return (1);
 }
 
