@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_sentence.c,v 10.5 1995/10/16 15:34:05 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:34:05 $";
+static char sccsid[] = "$Id: v_sentence.c,v 10.6 1995/10/17 10:33:19 bostic Exp $ (Berkeley) $Date: 1995/10/17 10:33:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -156,10 +156,11 @@ okret:	vp->m_stop.lno = cs.cs_lno;
 	/*
 	 * !!!
 	 * Historic, uh, features, yeah, that's right, call 'em features.
-	 * If the ending cursor position is at the first column in the
-	 * line, i.e. the movement is cutting an entire line, the buffer
-	 * is in line mode, and the ending position is the last character
-	 * of the previous line.
+	 * If the starting and ending cursor positions are at the first
+	 * column in their lines, i.e. the movement is cutting entire lines,
+	 * the buffer is in line mode, and the ending position is the last
+	 * character of the previous line.  Note check to make sure that
+	 * it's not within a single line.
 	 *
 	 * Non-motion commands move to the end of the range.  Delete and
 	 * yank stay at the start.  Ignore others.  Adjust the end of the
@@ -168,9 +169,12 @@ okret:	vp->m_stop.lno = cs.cs_lno;
 	if (ISMOTION(vp)) {
 		if (vp->m_start.cno == 0 &&
 		    (cs.cs_flags != 0 || vp->m_stop.cno == 0)) {
-			if (db_get(sp, --vp->m_stop.lno, DBG_FATAL, NULL, &len))
-				return (1);
-			vp->m_stop.cno = len ? len - 1 : 0;
+			if (vp->m_start.lno < vp->m_stop.lno) {
+				if (db_get(sp,
+				    --vp->m_stop.lno, DBG_FATAL, NULL, &len))
+					return (1);
+				vp->m_stop.cno = len ? len - 1 : 0;
+			}
 			F_SET(vp, VM_LMODE);
 		} else
 			--vp->m_stop.cno;
