@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.31 1993/11/30 10:29:57 bostic Exp $ (Berkeley) $Date: 1993/11/30 10:29:57 $";
+static char sccsid[] = "$Id: key.c,v 8.32 1993/12/02 10:33:52 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:33:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -143,7 +143,8 @@ term_init(sp)
 #endif
 
 	/* Sort the special key list. */
-	qsort(keylist, sizeof(keylist), sizeof(keylist[0]), keycmp);
+	qsort(keylist,
+	    sizeof(keylist) / sizeof(keylist[0]), sizeof(keylist[0]), keycmp);
 
 	/* Initialize the fast lookup table. */
 	if ((gp->special_key =
@@ -151,8 +152,8 @@ term_init(sp)
 		msgq(sp, M_SYSERR, NULL);
 		return (1);
 	}
-	for (gp->max_special = 0,
-	    kp = keylist, cnt = sizeof(keylist); cnt--; ++kp) {
+	for (gp->max_special = 0, kp = keylist,
+	    cnt = sizeof(keylist) / sizeof(keylist[0]); cnt--; ++kp) {
 		if (gp->max_special < kp->value)
 			gp->max_special = kp->value;
 		if (kp->ch <= MAX_FAST_KEY)
@@ -175,7 +176,8 @@ term_init(sp)
 		sbp = sbuf;
 		if ((t = tgetstr(tkp->ts, &sbp)) == NULL)
 			continue;
-		if (seq_set(sp, tkp->name, t, tkp->output, SEQ_COMMAND, 0))
+		if (seq_set(sp, tkp->name, strlen(tkp->name), t, strlen(t),
+		    tkp->output, strlen(tkp->output), SEQ_COMMAND, 0))
 			return (1);
 	}
 	return (0);
@@ -591,7 +593,8 @@ __term_key_val(sp, ch)
 	KEYLIST k, *kp;
 
 	k.ch = ch;
-	kp = bsearch(&k, keylist, sizeof(keylist), sizeof(keylist[0]), keycmp);
+	kp = bsearch(&k, keylist,
+	    sizeof(keylist) / sizeof(keylist[0]), sizeof(keylist[0]), keycmp);
 	return (kp == NULL ? 0 : kp->value);
 }
 
