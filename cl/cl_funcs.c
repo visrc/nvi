@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_funcs.c,v 10.49 1996/09/23 20:34:12 bostic Exp $ (Berkeley) $Date: 1996/09/23 20:34:12 $";
+static const char sccsid[] = "$Id: cl_funcs.c,v 10.50 1996/09/24 20:48:03 bostic Exp $ (Berkeley) $Date: 1996/09/24 20:48:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -572,7 +572,7 @@ cl_suspend(sp, allowedp)
 	 */
 	if (F_ISSET(sp, SC_EX)) { 
 		/* Save the terminal settings, and restore the original ones. */
-		if (F_ISSET(gp, G_STDIN_TTY)) {
+		if (F_ISSET(clp, CL_STDIN_TTY)) {
 			(void)tcgetattr(STDIN_FILENO, &t);
 			(void)tcsetattr(STDIN_FILENO,
 			    TCSASOFT | TCSADRAIN, &clp->orig);
@@ -584,7 +584,7 @@ cl_suspend(sp, allowedp)
 		/* Time passes ... */
 
 		/* Restore terminal settings. */
-		if (F_ISSET(gp, G_STDIN_TTY))
+		if (F_ISSET(clp, CL_STDIN_TTY))
 			(void)tcsetattr(STDIN_FILENO, TCSASOFT | TCSADRAIN, &t);
 		return (0);
 	}
@@ -649,7 +649,7 @@ cl_suspend(sp, allowedp)
 
 #ifdef HAVE_BSD_CURSES
 	/* Restore terminal settings. */
-	if (F_ISSET(gp, G_STDIN_TTY))
+	if (F_ISSET(clp, CL_STDIN_TTY))
 		(void)tcsetattr(STDIN_FILENO, TCSASOFT | TCSADRAIN, &t);
 
 	(void)cl_attr(sp, SA_ALTERNATE, 1);

@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: cl.h,v 10.18 1996/09/15 15:56:26 bostic Exp $ (Berkeley) $Date: 1996/09/15 15:56:26 $
+ *	$Id: cl.h,v 10.19 1996/09/24 20:48:02 bostic Exp $ (Berkeley) $Date: 1996/09/24 20:48:02 $
  */
 
 typedef struct _cl_private {
@@ -47,6 +47,7 @@ typedef struct _cl_private {
 #define	CL_SIGINT	0x0040	/* SIGINT arrived. */
 #define	CL_SIGTERM	0x0080	/* SIGTERM arrived. */
 #define	CL_SIGWINCH	0x0100	/* SIGWINCH arrived. */
+#define	CL_STDIN_TTY	0x0200	/* Talking to a terminal. */
 	u_int32_t flags;
 } CL_PRIVATE;
 

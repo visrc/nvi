@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_main.c,v 10.34 1996/09/20 20:32:42 bostic Exp $ (Berkeley) $Date: 1996/09/20 20:32:42 $";
+static const char sccsid[] = "$Id: cl_main.c,v 10.35 1996/09/24 20:48:03 bostic Exp $ (Berkeley) $Date: 1996/09/24 20:48:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -229,17 +229,21 @@ cl_init(gp)
 	gp->cl_private = clp;
 
 	/*
-	 * Set the G_STDIN_TTY flag.  It's purpose is to avoid setting and
-	 * resetting the tty if the input isn't from there.
+	 * Set the CL_STDIN_TTY flag.  It's purpose is to avoid setting
+	 * and resetting the tty if the input isn't from there.  We also
+	 * use the same test to determine if we're running a script or
+	 * not.
 	 */
 	if (isatty(STDIN_FILENO))
-		F_SET(gp, G_STDIN_TTY);
+		F_SET(clp, CL_STDIN_TTY);
+	else
+		F_SET(gp, G_SCRIPTED);
 
 	/*
 	 * We expect that if we've lost our controlling terminal that the
 	 * open() (but not the tcgetattr()) will fail.
 	 */
-	if (F_ISSET(gp, G_STDIN_TTY)) {
+	if (F_ISSET(clp, CL_STDIN_TTY)) {
 		if (tcgetattr(STDIN_FILENO, &clp->orig) == -1)
 			goto tcfail;
 	} else if ((fd = open(_PATH_TTY, O_RDONLY, 0)) != -1) {

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_read.c,v 10.14 1996/06/30 17:49:08 bostic Exp $ (Berkeley) $Date: 1996/06/30 17:49:08 $";
+static const char sccsid[] = "$Id: cl_read.c,v 10.15 1996/09/24 20:48:03 bostic Exp $ (Berkeley) $Date: 1996/09/24 20:48:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -148,6 +148,7 @@ cl_read(sp, flags, bp, blen, nrp, tp)
 	input_t rval;
 	int maxfd, nr, term_reset;
 
+	gp = sp->gp;
 	clp = CLP(sp);
 	term_reset = 0;
 
@@ -157,8 +158,7 @@ cl_read(sp, flags, bp, blen, nrp, tp)
 	 *    when trying to complete a map, but we're going to hang
 	 *    on the next read anyway.
 	 */
-	gp = sp->gp;
-	if (!F_ISSET(gp, G_STDIN_TTY)) {
+	if (!F_ISSET(clp, CL_STDIN_TTY)) {
 		switch (nr = read(STDIN_FILENO, bp, blen)) {
 		case 0:
 			return (INP_EOF);
@@ -221,7 +221,7 @@ cl_read(sp, flags, bp, blen, nrp, tp)
 	 * It's ugly that we wait on scripting file descriptors here, but it's
 	 * the only way to keep from locking out scripting windows.
 	 */
-	if (F_ISSET(gp, G_SCRIPT)) {
+	if (F_ISSET(gp, G_SCRWIN)) {
 loop:		FD_ZERO(&rdfd);
 		FD_SET(STDIN_FILENO, &rdfd);
 		maxfd = STDIN_FILENO;
