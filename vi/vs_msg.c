@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_msg.c,v 10.46 1996/03/06 19:55:03 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:55:03 $";
+static const char sccsid[] = "$Id: vs_msg.c,v 10.47 1996/03/06 20:53:20 bostic Exp $ (Berkeley) $Date: 1996/03/06 20:53:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -142,12 +142,12 @@ vs_busy(sp, msg, btype)
  * vs_update --
  *	Update a command.
  *
- * PUBLIC: void vs_update __P((SCR *, char *, char *));
+ * PUBLIC: void vs_update __P((SCR *, const char *, const char *));
  */
 void
 vs_update(sp, m1, m2)
 	SCR *sp;
-	char *m1, *m2;
+	const char *m1, *m2;
 {
 	GS *gp;
 	size_t len, mlen, oldy, oldx;
