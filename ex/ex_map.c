@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_map.c,v 5.7 1992/04/16 17:57:16 bostic Exp $ (Berkeley) $Date: 1992/04/16 17:57:16 $";
+static char sccsid[] = "$Id: ex_map.c,v 5.8 1992/04/17 09:03:26 bostic Exp $ (Berkeley) $Date: 1992/04/17 09:03:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,6 +30,7 @@ int
 ex_map(cmdp)
 	CMDARG *cmdp;
 {
+	register int ch;
 	register char *input, *output;
 	enum seqtype stype;
 	int key;
@@ -43,12 +44,12 @@ ex_map(cmdp)
 	}
 
 	/*
-	 * Input is the first word, output is everything else, i.e. any
-	 * space characters are included.  This is why we can't parse
-	 * this command in the ex parser itself.
+	 * Input is the first word, output is everything else, i.e. any space
+	 * characters are included.  This is why we can't parse this command
+	 * in the main parser.
 	 */
-	for (input = output = cmdp->string;
-	    *output && !isspace(*output); ++output);
+	for (input = cmdp->string; isspace(*input); ++input);
+	for (output = input; (ch = *output) && !isspace(ch); ++output);
 	if (*output != '\0')
 		for (*output++ = '\0'; isspace(*output); ++output);
 	if (*output == '\0') {
