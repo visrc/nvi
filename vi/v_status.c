@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_status.c,v 5.8 1992/05/27 10:38:05 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:38:05 $";
+static char sccsid[] = "$Id: v_status.c,v 5.9 1992/06/04 16:41:03 bostic Exp $ (Berkeley) $Date: 1992/06/04 16:41:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,12 +27,12 @@ v_status(vp, fm, tm, rp)
 	MARK *fm, *tm, *rp;
 {
 	u_long lno;
+	char *ro;
 
 	lno = file_lline(curf);
-	msg("\"%s\" %s%s: line %lu of %lu [%ld%%]",
-	    curf->name,
-	    curf->flags & F_MODIFIED ? "[MODIFIED]" : "[UNMODIFIED]",
-	    curf->flags & F_RDONLY || ISSET(O_READONLY) ? "[READONLY]" : "",
-	    fm->lno, lno, (fm->lno * 100) / lno);
+	ro = curf->flags & F_RDONLY || ISSET(O_READONLY) ? ", readonly" : "";
+	msg("%s: %s%s: line %lu of %lu [%ld%%]",
+	    curf->name, curf->flags & F_MODIFIED ? "modified" : "unmodified",
+	    ro, fm->lno, lno, (fm->lno * 100) / lno);
 	return (1);
 }
