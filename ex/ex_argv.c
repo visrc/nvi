@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 8.32 1994/07/16 12:11:46 bostic Exp $ (Berkeley) $Date: 1994/07/16 12:11:46 $";
+static char sccsid[] = "$Id: ex_argv.c,v 8.33 1994/07/22 18:21:41 bostic Exp $ (Berkeley) $Date: 1994/07/22 18:21:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -97,7 +97,7 @@ argv_exp1(sp, ep, excp, cmd, cmdlen, is_bang)
 {
 	EX_PRIVATE *exp;
 	size_t blen, len;
-	char *bp;
+	char *bp, *p, *t;
 
 	GET_SPACE_RET(sp, bp, blen, 512);
 
@@ -108,6 +108,16 @@ argv_exp1(sp, ep, excp, cmd, cmdlen, is_bang)
 		return (1);
 	}
 
+	/* If it's empty, we're done. */
+	if (len != 0) {
+		for (p = bp, t = bp + len; p < t; ++p)
+			if (!isblank(*p))
+				break;
+		if (p == t)
+			goto ret;
+	} else
+		goto ret;
+
 	argv_alloc(sp, len);
 	memmove(exp->args[exp->argsoff]->bp, bp, len);
 	exp->args[exp->argsoff]->bp[len] = '\0';
@@ -116,7 +126,7 @@ argv_exp1(sp, ep, excp, cmd, cmdlen, is_bang)
 	excp->argv = exp->args;
 	excp->argc = exp->argsoff;
 
-	FREE_SPACE(sp, bp, blen);
+ret:	FREE_SPACE(sp, bp, blen);
 	return (0);
 }
 
@@ -324,7 +334,7 @@ argv_fexp(sp, excp, cmd, cmdlen, p, lenp, bpp, blenp, is_bang)
 			 * Strip any backslashes that protected the file
 			 * expansion characters.
 			 */
-			if (cmdlen > 1 && cmd[1] == '%' || cmd[1] == '#')
+			if (cmdlen > 1 && (cmd[1] == '%' || cmd[1] == '#'))
 				++cmd;
 			/* FALLTHROUGH */
 		default:
@@ -532,7 +542,7 @@ err:		(void)close(output[0]);
 		}
 
 	/* Delete the final newline, nul terminate the string. */
-	if (p > bp && p[-1] == '\n' || p[-1] == '\r') {
+	if (p > bp && (p[-1] == '\n' || p[-1] == '\r')) {
 		--len;
 		*--p = '\0';
 	} else
