@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.41 1994/05/26 01:41:02 bostic Exp $ (Berkeley) $Date: 1994/05/26 01:41:02 $
+.\"     $Id: vi.ref,v 8.42 1994/05/27 01:07:15 bostic Exp $ (Berkeley) $Date: 1994/05/27 01:07:15 $
 .\"
 .\"
 .so ref.so
@@ -70,7 +70,7 @@ was done by Elan Amir.
 The Institute of Electrical and Electronics Engineers has
 given us permission to reprint portions of their documentation.
 Portions of this document are reprinted and reproduced from
-from IEEE Std 1003.2-1992, IEEE Standard Portable Operating
+IEEE Std 1003.2-1992, IEEE Standard Portable Operating
 System Interface for Computer Environments (POSIX),
 copyright 1992 by the Institute of Electrical and Electronics
 Engineers, Inc.
@@ -380,8 +380,8 @@ In both
 .CO ex
 and
 .CO vi ,
-printable characters as (defined by
-.XR isprint 3 ),
+printable characters as defined by
+.XR isprint 3,
 are displayed using the local character set.
 .pp
 Non-printable characters, for which
@@ -421,7 +421,7 @@ characters which take up more than one column on the screen.
 .SH 1 "Multiple Screens"
 .pp
 .CO Nvi
-supports multiple screens by dividing the window up into regions.
+supports multiple screens by dividing the window into regions.
 It also supports stacks of screens by permitting the user to change
 the set of screens that are currently displayed.
 .pp
@@ -705,7 +705,7 @@ into text input mode:
 .CO change
 and
 .CO insert .
-Once in input mode, entering an line containing only a single period
+Once in input mode, entering a line containing only a single period
 .PQ \&.
 terminates text input mode and returns to command mode,
 where the prompt is redisplayed.
@@ -1161,16 +1161,13 @@ line wrapping.
 .bp
 .SH 1 Index
 .lp
-.nr PS 9
-.nr VS 11
-.in 2m
-.TS
-expand;
-l r c l r c l r.
+.2c +0.5i 3
+.ta \n($luR
+.nf
 .so index.so
-.\" for some reason, soelim requires this extra line
-.TE
+.fi
 .bp 2
+.1c
 .ce 1
 \fB\s+2Table of Contents\s0\fP
 .sp
