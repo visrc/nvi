@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 8.8 1993/08/27 11:44:05 bostic Exp $ (Berkeley) $Date: 1993/08/27 11:44:05 $";
+static char sccsid[] = "$Id: options_f.c,v 8.9 1993/09/10 18:32:21 bostic Exp $ (Berkeley) $Date: 1993/09/10 18:32:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -88,42 +88,10 @@ DECL(f_columns)
 
 DECL(f_flash)
 {
-	size_t len;
-	char *s, *t, b1[2048], b2[2048];
-	
-	if (turnoff) {
+	if (turnoff)
 		O_CLR(sp, O_FLASH);
-		return (0);
-	}
-
-	/* Get the termcap information. */
-	s = O_STR(sp, O_TERM);
-	if (tgetent(b1, s) != 1) {
-		msgq(sp, M_ERR, "No termcap entry for %s", s);
-		return (1);
-	}
-
-	/* Get the visual bell string. */
-	t = b2;
-	if (tgetstr("vb", &t) == NULL) {
-		msgq(sp, M_VINFO, "No visual bell for %s terminal type", s);
-		O_CLR(sp, O_FLASH);
-		return (0);
-	}
-
-	len = t - b2;
-	if ((s = malloc(len)) == NULL) {
-		msgq(sp, M_ERR, "Error: %s", strerror(errno));
-		return (1);
-	}
-
-	memmove(s, b2, len);
-
-	if (sp->VB != NULL)
-		free(sp->VB);
-	sp->VB = t;
-
-	O_SET(sp, O_FLASH);
+	else
+		O_SET(sp, O_FLASH);
 	return (0);
 }
 
