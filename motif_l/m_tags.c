@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_tags.c,v 8.1 1996/12/11 19:34:33 bostic Exp $ (Berkeley) $Date: 1996/12/11 19:34:33 $";
+static const char sccsid[] = "$Id: m_tags.c,v 8.2 1996/12/11 20:58:25 bostic Exp $ (Berkeley) $Date: 1996/12/11 20:58:25 $";
 #endif /* not lint */
 
 /* This module implements a dialog for navigating the tag stack
@@ -53,13 +53,15 @@ static const char sccsid[] = "$Id: m_tags.c,v 8.1 1996/12/11 19:34:33 bostic Exp
 #include <Xm/PushBG.h>
 
 #if ! defined(SelfTest)
-#include <stdio.h>
-#include <bitstring.h>
 #include <sys/types.h>
 #include <sys/queue.h>
+
+#include <bitstring.h>
+#include <stdio.h>
 #include <string.h>
+
 #include "../common/common.h"
-#include "../ip_vi/ip.h"
+#include "../ip/ip.h"
 #endif
 
 

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_util.c,v 8.7 1996/12/03 12:07:47 bostic Exp $ (Berkeley) $Date: 1996/12/03 12:07:47 $";
+static const char sccsid[] = "$Id: m_util.c,v 8.8 1996/12/11 20:58:25 bostic Exp $ (Berkeley) $Date: 1996/12/11 20:58:25 $";
 #endif /* not lint */
 
 #include <X11/Intrinsic.h>
@@ -21,7 +21,7 @@ static const char sccsid[] = "$Id: m_util.c,v 8.7 1996/12/03 12:07:47 bostic Exp
 #include <stdio.h>
 #include <string.h>
 
-#include "ipc_mutil.h"
+#include "m_util.h"
 
 static Colormap	cmap = 0;
 static Display  *cmap_display = 0;

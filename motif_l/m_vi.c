@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_vi.c,v 8.26 1996/12/11 15:04:40 bostic Exp $ (Berkeley) $Date: 1996/12/11 15:04:40 $";
+static const char sccsid[] = "$Id: m_vi.c,v 8.27 1996/12/11 20:58:26 bostic Exp $ (Berkeley) $Date: 1996/12/11 20:58:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,11 +36,12 @@ static const char sccsid[] = "$Id: m_vi.c,v 8.26 1996/12/11 15:04:40 bostic Exp 
 #include <unistd.h>
 
 #include "../common/common.h"
-#include "../ip_vi/ip.h"
-#include "ipc_motif.h"
-#include "ipc_mutil.h"
+#include "../ip/ip.h"
+#include "m_motif.h"
+#include "m_util.h"
+#include "m_extern.h"
+#include "vi_mextern.h"
 #include "ipc_extern.h"
-#include "ipc_mextern.h"
 #include "pathnames.h"
 
 static	void	f_copy();
@@ -236,13 +237,13 @@ static	Boolean		process_pipe_input( pread )
 
 
 /*
- * vi_pipe_input_func --
+ * vi_input_func --
  *	We've received input on the pipe from vi.
  *
- * PUBLIC: void vi_pipe_input_func __P((XtPointer, int *, XtInputId *));
+ * PUBLIC: void vi_input_func __P((XtPointer, int *, XtInputId *));
  */
 void
-vi_pipe_input_func(client_data, source, id)
+vi_input_func(client_data, source, id)
 	XtPointer client_data;
 	int *source;
 	XtInputId *id;

@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	"$Id: m_motif.h,v 8.5 1996/12/11 13:35:12 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:35:12 $";
+ *	"$Id: m_motif.h,v 8.6 1996/12/11 20:58:24 bostic Exp $ (Berkeley) $Date: 1996/12/11 20:58:24 $";
  */
 
 #if XtSpecificationRelease == 4
@@ -72,17 +72,6 @@ typedef	struct {
 
 #define	COLUMN( scr, x )	\
 	( (x) / scr->ch_width )
-
-/*
- * Globals, the list of names that we expose to the outside world.
- *
- * External use:
- *
- * Applications using the Motif nvi widget code will have to initialize these
- * or the library code will fail.
- */
-extern char	*vi_progname;			/* Program name. */
-extern int	 vi_ofd;			/* Output file descriptor. */
 
 /* Internal use: */
 extern GC	   __vi_copy_gc;

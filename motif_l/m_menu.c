@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_menu.c,v 8.18 1996/12/11 15:04:38 bostic Exp $ (Berkeley) $Date: 1996/12/11 15:04:38 $";
+static const char sccsid[] = "$Id: m_menu.c,v 8.19 1996/12/11 20:58:23 bostic Exp $ (Berkeley) $Date: 1996/12/11 20:58:23 $";
 #endif /* not lint */
 
 #include <sys/queue.h>
@@ -28,7 +28,7 @@ static const char sccsid[] = "$Id: m_menu.c,v 8.18 1996/12/11 15:04:38 bostic Ex
 #include <stdio.h>
 
 #include "../common/common.h"
-#include "../ip_vi/ip.h"
+#include "../ip/ip.h"
 #include "ipc_extern.h"
 
 /* save this for creation of children */
@@ -527,7 +527,7 @@ static	void		add_entries( parent, actions )
 /*
  * vi_create_menubar --
  *
- * PUBLIC: Widget __vi_create_menubar __P((Widget));
+ * PUBLIC: Widget vi_create_menubar __P((Widget));
  */
 Widget
 vi_create_menubar(parent)
