@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_relative.c,v 8.3 1993/10/28 17:04:53 bostic Exp $ (Berkeley) $Date: 1993/10/28 17:04:53 $";
+static char sccsid[] = "$Id: vs_relative.c,v 8.4 1993/11/13 09:53:03 bostic Exp $ (Berkeley) $Date: 1993/11/13 09:53:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -64,7 +64,7 @@ svi_lrelative(sp, ep, lno, off)
 {
 	CHNAME const *cname;
 	size_t len, llen, scno;
-	int ch;
+	int ch, listset;
 	char *lp, *p;
 
 	/* Need the line to go any further. */
@@ -84,14 +84,10 @@ svi_lrelative(sp, ep, lno, off)
 
 	/* Discard logical lines. */
 	cname = sp->cname;
+	listset = O_ISSET(sp, O_LIST);
 	for (p = lp, llen = len; --off;) {
-		for (; len && scno < sp->cols; --len) {
-			ch = *(u_char *)p++;
-			if (ch == '\t' && !O_ISSET(sp, O_LIST))
-				scno += TAB_OFF(sp, scno);
-			else
-				scno += cname[ch].len;
-		}
+		for (; len && scno < sp->cols; --len)
+			SCNO_INCREMENT;
 		if (len == 0)
 			return (llen - 1);
 		scno -= sp->cols;
@@ -99,12 +95,7 @@ svi_lrelative(sp, ep, lno, off)
 
 	/* Step through the line until reach the right character. */
 	while (len--) {
-		ch = *(u_char *)p++;
-		if (ch == '\t' && !O_ISSET(sp, O_LIST))
-			scno += TAB_OFF(sp, scno);
-		else
-			scno += cname[ch].len;
-
+		SCNO_INCREMENT;
 		if (scno >= sp->rcm) {
 			/* Get the offset of this character. */
 			len = p - lp;
@@ -137,7 +128,7 @@ svi_chposition(sp, ep, lno, cno)
 {
 	CHNAME const *cname;
 	size_t len, llen, scno;
-	int ch;
+	int ch, listset;
 	char *lp, *p;
 
 	/* Need the line to go any further. */
@@ -150,13 +141,9 @@ svi_chposition(sp, ep, lno, cno)
 
 	/* Step through the line until reach the right character. */
 	cname = sp->cname;
+	listset = O_ISSET(sp, O_LIST);
 	for (scno = 0, len = llen, p = lp; len--;) {
-		ch = *(u_char *)p++;
-		if (ch == '\t' && !O_ISSET(sp, O_LIST))
-			scno += TAB_OFF(sp, scno);
-		else
-			scno += cname[ch].len;
-
+		SCNO_INCREMENT;
 		if (scno >= cno) {
 			/* Get the offset of this character. */
 			len = p - lp;
