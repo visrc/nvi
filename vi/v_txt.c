@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.77 1993/12/29 17:30:45 bostic Exp $ (Berkeley) $Date: 1993/12/29 17:30:45 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.78 1993/12/30 10:06:19 bostic Exp $ (Berkeley) $Date: 1993/12/30 10:06:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1669,7 +1669,7 @@ txt_margin(sp, tp, didbreak, pushc)
 	}
 
 	ch = pushc;
-	if (term_push(sp, &ch, 1, 0, CH_NOMAP | CH_QUOTED))
+	if (term_push(sp, &ch, 1, 0, CH_NOMAP))
 		return (1);
 	if (len && term_push(sp, wp, len, 0, CH_NOMAP | CH_QUOTED))
 		return (1);
