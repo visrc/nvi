@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 10.9 1995/10/04 12:32:45 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:32:45 $";
+static char sccsid[] = "$Id: ex_global.c,v 10.10 1995/10/04 20:54:41 bostic Exp $ (Berkeley) $Date: 1995/10/04 20:54:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -72,6 +72,7 @@ ex_g_setup(sp, cmdp, cmd)
 	EXCMD *ecp;
 	MARK abs;
 	RANGE *rp;
+	busy_t btype;
 	recno_t start, end;
 	regex_t *re, lre;
 	regmatch_t match[1];
@@ -217,6 +218,7 @@ usage:		ex_emsg(sp, cmdp->cmd->usage, EXM_USAGE);
 	 * routines call when a line is created or deleted.  This doesn't help
 	 * the layering much.
 	 */
+	btype = BUSY_ON;
 	cnt = INTERRUPT_CHECK;
 	for (start = cmdp->addr1.lno,
 	    end = cmdp->addr2.lno; start <= end; ++start) {
@@ -227,7 +229,8 @@ usage:		ex_emsg(sp, cmdp->cmd->usage, EXM_USAGE);
 				free(ecp);
 				break;
 			}
-			search_busy(sp, 1);
+			search_busy(sp, btype);
+			btype = BUSY_UPDATE;
 			cnt = INTERRUPT_CHECK;
 		}
 		if ((p = file_gline(sp, start, &len)) == NULL) {
@@ -264,7 +267,7 @@ usage:		ex_emsg(sp, cmdp->cmd->usage, EXM_USAGE);
 		rp->start = rp->stop = start;
 		CIRCLEQ_INSERT_TAIL(&ecp->rq, rp, q);
 	}
-	search_busy(sp, 0);
+	search_busy(sp, BUSY_OFF);
 	return (0);
 }
 
