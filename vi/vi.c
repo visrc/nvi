@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.82 1994/08/10 11:38:21 bostic Exp $ (Berkeley) $Date: 1994/08/10 11:38:21 $";
+static char sccsid[] = "$Id: vi.c,v 8.83 1994/08/10 11:44:07 bostic Exp $ (Berkeley) $Date: 1994/08/10 11:44:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -280,6 +280,8 @@ err:				term_flush(sp, "Vi error", CH_MAPPED);
 #define	KEY(key, map) {							\
 	if (getkey(sp, &ikey, map))					\
 		return (1);						\
+	if (ikey.value == K_ESCAPE)					\
+		goto esc;						\
 	key = ikey.ch;							\
 }
 
@@ -365,12 +367,8 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 		}
 		KEY(vp->buffer, 0);
 		F_SET(vp, VC_BUFFER);
-		if (ikey.value == K_ESCAPE)
-			goto esc;
 
 		KEY(key, TXT_MAPCOMMAND);
-		if (ikey.value == K_ESCAPE)
-			goto esc;
 	}
 
 	/*
@@ -384,8 +382,6 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 		*comcountp = 1;
 
 		KEY(key, TXT_MAPCOMMAND);
-		if (ikey.value == K_ESCAPE)
-			goto esc;
 	} else
 		*comcountp = 0;
 
@@ -403,12 +399,8 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 		}
 		KEY(vp->buffer, 0);
 		F_SET(vp, VC_BUFFER);
-		if (ikey.value == K_ESCAPE)
-			goto esc;
 
 		KEY(key, TXT_MAPCOMMAND);
-		if (ikey.value == K_ESCAPE)
-			goto esc;
 	}
 
 	/* Check for an OOB command key. */
@@ -490,8 +482,6 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 		if (LF_ISSET(V_RBUF)) {
 			KEY(vp->buffer, 0);
 			F_SET(vp, VC_BUFFER);
-			if (ikey.value == K_ESCAPE)
-				goto esc;
 		}
 	}
 
@@ -501,14 +491,12 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 	 * characters do just frost your shorts?
 	 */
 	if (vp->key == '[' || vp->key == ']' || vp->key == 'Z') {
-		KEY(key, TXT_MAPCOMMAND);
 		/*
 		 * Historically, half entered [[, ]] or Z commands weren't
 		 * cancelled by <escape>, the terminal was beeped instead.
 		 * I think it's more consistent to cancel them.
 		 */
-		if (ikey.value == K_ESCAPE)
-			goto esc;
+		KEY(key, TXT_MAPCOMMAND);
 
 		if (vp->key != key) {
 usage:			if (ismotion == NULL)
@@ -524,16 +512,11 @@ usage:			if (ismotion == NULL)
 	/* Special case: 'z' command. */
 	if (vp->key == 'z') {
 		KEY(vp->character, 0);
-		if (ikey.value == K_ESCAPE)
-			goto esc;
-
 		if (isdigit(vp->character)) {
 			if (getcount(sp, vp->character, &vp->count2))
 				return (1);
 			F_SET(vp, VC_C2SET);
 			KEY(vp->character, 0);
-			if (ikey.value == K_ESCAPE)
-				goto esc;
 		}
 	}
 
@@ -548,11 +531,8 @@ usage:			if (ismotion == NULL)
 	}
 
 	/* Required character. */
-	if (LF_ISSET(V_CHAR)) {
+	if (LF_ISSET(V_CHAR))
 		KEY(vp->character, 0);
-		if (ikey.value == K_ESCAPE)
-			goto esc;
-	}
 
 	return (0);
 
