@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: options.h,v 8.13 1993/12/10 16:31:26 bostic Exp $ (Berkeley) $Date: 1993/12/10 16:31:26 $
+ *	$Id: options.h,v 8.14 1993/12/20 16:52:07 bostic Exp $ (Berkeley) $Date: 1993/12/20 16:52:07 $
  */
 
 struct _option {
@@ -72,6 +72,7 @@ int	f_ruler __P((SCR *, OPTION *, char *, u_long));
 int	f_section __P((SCR *, OPTION *, char *, u_long));
 int	f_shiftwidth __P((SCR *, OPTION *, char *, u_long));
 int	f_sidescroll __P((SCR *, OPTION *, char *, u_long));
+int	f_sourceany __P((SCR *, OPTION *, char *, u_long));
 int	f_tabstop __P((SCR *, OPTION *, char *, u_long));
 int	f_tags __P((SCR *, OPTION *, char *, u_long));
 int	f_term __P((SCR *, OPTION *, char *, u_long));
