@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.100 1994/04/10 16:44:15 bostic Exp $ (Berkeley) $Date: 1994/04/10 16:44:15 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.101 1994/04/11 09:48:39 bostic Exp $ (Berkeley) $Date: 1994/04/11 09:48:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -52,12 +52,6 @@ static void	 txt_unmap __P((SCR *, TEXT *, u_int *));
 #undef	CURSOR_CH
 #define	CURSOR_CH	'+'
 #endif
-
-/* Local version of BINC. */
-#define	TBINC(sp, lp, llen, nlen) {					\
-	if ((nlen) > llen && binc(sp, &(lp), &(llen), nlen))		\
-		goto err;						\
-}
 
 /*
  * v_ntext --
@@ -343,10 +337,10 @@ next_ch:	if (term_key(sp, &ikey, quoted == Q_THISCHAR ?
 		 * characters, but not worth fixing.
 		 */
 		if (LF_ISSET(TXT_RECORD)) {
-			TBINC(sp, VIP(sp)->rep, VIP(sp)->rep_len, rcol + 1);
+			BINC_GOTO(sp, VIP(sp)->rep, VIP(sp)->rep_len, rcol + 1);
 			VIP(sp)->rep[rcol++] = ch;
 		}
-		TBINC(sp, tp->lb, tp->lb_len, tp->len + 1);
+		BINC_GOTO(sp, tp->lb, tp->lb_len, tp->len + 1);
 
 		/*
 		 * If the character was quoted, replace the last character
@@ -494,7 +488,8 @@ next_ch:	if (term_key(sp, &ikey, quoted == Q_THISCHAR ?
 
 			/* New lines are TXT_APPENDEOL. */
 			if (ntp->owrite == 0 && ntp->insert == 0) {
-				TBINC(sp, ntp->lb, ntp->lb_len, ntp->len + 1);
+				BINC_GOTO(sp,
+				    ntp->lb, ntp->lb_len, ntp->len + 1);
 				LF_SET(TXT_APPENDEOL);
 				ntp->lb[ntp->ai] = CURSOR_CH;
 				++ntp->insert;
@@ -567,7 +562,7 @@ k_escape:		LINE_RESOLVE;
 					goto err;
 				F_CLR(sp, S_INPUT);
 			} else {
-				TBINC(sp, tp->lb, tp->lb_len, tp->len + 1);
+				BINC_GOTO(sp, tp->lb, tp->lb_len, tp->len + 1);
 				tp->lb[tp->len] = '\0';
 			}
 
@@ -609,7 +604,7 @@ k_escape:		LINE_RESOLVE;
 				/* Save the ai string for later. */
 				ait.lb = NULL;
 				ait.lb_len = 0;
-				TBINC(sp, ait.lb, ait.lb_len, tp->ai);
+				BINC_GOTO(sp, ait.lb, ait.lb_len, tp->ai);
 				memmove(ait.lb, tp->lb, tp->ai);
 				ait.ai = ait.len = tp->ai;
 
@@ -928,7 +923,7 @@ insq_ch:		/*
 			 * in more characters than the length of the motion.
 			 */
 ebuf_chk:		if (sp->cno >= tp->len) {
-				TBINC(sp, tp->lb, tp->lb_len, tp->len + 1);
+				BINC_GOTO(sp, tp->lb, tp->lb_len, tp->len + 1);
 				LF_SET(TXT_APPENDEOL);
 				tp->lb[sp->cno] = CURSOR_CH;
 				++tp->insert;
@@ -957,8 +952,9 @@ ret:	F_CLR(sp, S_INPUT);
 		VIP(sp)->rep_cnt = rcol;
 	return (eval);
 
-	/* Error jump. */
-err:	eval = 1;
+err:	/* Error jumps. */
+binc_err:
+	eval = 1;
 	txt_err(sp, ep, tiqh);
 	goto ret;
 }
@@ -1133,10 +1129,6 @@ txt_unmap(sp, tp, iflagsp)
 	else
 		*iflagsp |= TXT_MAPINPUT;
 }
-
-
-/* Offset to next column of stop size. */
-#define	STOP_OFF(c, stop)	(stop - (c) % stop)
 
 /*
  * txt_ai_resolve --
