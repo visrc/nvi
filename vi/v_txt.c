@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.30 1993/10/26 16:39:22 bostic Exp $ (Berkeley) $Date: 1993/10/26 16:39:22 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.31 1993/10/26 19:15:56 bostic Exp $ (Berkeley) $Date: 1993/10/26 19:15:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,6 +25,7 @@ static char sccsid[] = "$Id: v_txt.c,v 8.30 1993/10/26 16:39:22 bostic Exp $ (Be
 static int	 txt_abbrev __P((SCR *, TEXT *, int *, ARG_CHAR_T));
 static TEXT	*txt_backup __P((SCR *, EXF *, HDR *, TEXT *, u_int));
 static void	 txt_err __P((SCR *, EXF *, HDR *));
+static int	 txt_hex __P((SCR *, TEXT *, int *, ARG_CHAR_T));
 static int	 txt_indent __P((SCR *, TEXT *));
 static int	 txt_margin __P((SCR *, TEXT *, int *, ARG_CHAR_T));
 static int	 txt_outdent __P((SCR *, TEXT *));
@@ -87,10 +88,12 @@ v_ntext(sp, ep, hp, tm, p, len, rp, prompt, ai_line, flags)
 {
 				/* State of the "[^0]^D" sequences. */
 	enum { C_CARATSET, C_NOCHANGE, C_NOTSET, C_ZEROSET } carat_st;
+				/* State of abbreviation checks. */
+	enum { A_NOCHECK, A_SPACE, A_NOTSPACE } abb;
+				/* State of the hex input character. */
+	enum { H_NOTSET, H_NEXTCHAR, H_INHEX } hex;
 				/* State of quotation. */
 	enum { Q_NOTSET, Q_NEXTCHAR, Q_THISCHAR } quoted;
-				/* State of abbreviation checks. */
-	enum { L_NOCHECK, L_SPACE, L_NOTSPACE } lch;
 	CHAR_T ch;		/* Input character. */
 	TEXT *tp, *ntp;		/* Input text structures. */
 	TEXT *aitp;		/* Autoindent text structure. */
@@ -232,10 +235,10 @@ newtp:		if ((tp = text_init(sp, p, len, len + 32)) == NULL)
 	replay = LF_ISSET(TXT_REPLAY);
 
 	/* Initialize abbreviations check. */
-	lch = F_ISSET(sp, S_ABBREV) &&
-	    LF_ISSET(TXT_MAPINPUT) ? L_NOTSPACE : L_NOCHECK;
+	abb = F_ISSET(sp, S_ABBREV) &&
+	    LF_ISSET(TXT_MAPINPUT) ? A_NOTSPACE : A_NOCHECK;
 
-	for (carat_st = C_NOTSET,
+	for (carat_st = C_NOTSET, hex = H_NOTSET,
 	    showmatch = 0, quoted = Q_NOTSET, tty_cwait = 0;;) {
 
 		/*
@@ -279,13 +282,22 @@ next_ch:	if (replay)
 		TBINC(sp, tp->lb, tp->lb_len, tp->len + 1);
 
 		/*
-		 * If the character was quoted, replace the last
-		 * character (the literal mark) with the new character.
+		 * If the character was quoted, replace the last character
+		 * (the literal mark) with the new character.
+		 *
+		 * !!!
+		 * Extension -- if the quoted character is HEX_CH, enter hex
+		 * mode.  If the user enters "<HEX_CH>[isxdigit()]*" we will
+		 * try to use the value as a character.  Anything else resets
+		 * hex mode.
 		 */
 		if (quoted == Q_THISCHAR) {
 			--sp->cno;
 			++tp->overwrite;
 			quoted = Q_NOTSET;
+
+			if (ch == HEX_CH)
+				hex = H_NEXTCHAR;
 			goto ins_ch;
 		}
 
@@ -294,14 +306,23 @@ next_ch:	if (replay)
 		case K_NL:				/* New line. */
 #define	LINE_RESOLVE {							\
 			/* Handle abbreviations. */			\
-			if (lch == L_NOTSPACE && !replay) {		\
+			if (abb == A_NOTSPACE && !replay) {		\
 				if (txt_abbrev(sp, tp, &tmp, ch))	\
 					ERR;				\
 				if (tmp)				\
 					goto next_ch;			\
 			}						\
-			if (lch != L_NOCHECK)				\
-				lch = L_SPACE;				\
+			if (abb != A_NOCHECK)				\
+				abb = A_SPACE;				\
+			/* Handle hex numbers. */			\
+			if (hex == H_INHEX) {				\
+				if (txt_hex(sp, tp, &tmp, ch))		\
+					ERR;				\
+				if (tmp) {				\
+					hex = H_NOTSET;			\
+					goto next_ch;			\
+				}					\
+			}						\
 			/*						\
 			 * The "R" command doesn't delete characters	\
 			 * that it could have overwritten.  Other input	\
@@ -676,15 +697,24 @@ k_escape:		if (tp->insert && tp->overwrite)
 			quoted = Q_NEXTCHAR;
 			/* FALLTHROUGH */
 		default:			/* Insert the character. */
-			/*
+ins_ch:			/*
 			 * If entering a space character after a word,
 			 * check for abbreviations.
 			 */
-ins_ch:			if (isblank(ch) && lch == L_NOTSPACE && !replay) {
+			if (isblank(ch) && abb == A_NOTSPACE && !replay) {
 				if (txt_abbrev(sp, tp, &tmp, ch))
 					ERR;
 				if (tmp)
 					goto next_ch;
+			}
+			/* If in hex mode, see if we've entered a hex value. */
+			if (hex == H_INHEX && !isxdigit(ch)) {
+				if (txt_hex(sp, tp, &tmp, ch))
+					ERR;
+				if (tmp) {
+					hex = H_NOTSET;
+					goto next_ch;
+				}
 			}
 			/* Check to see if we've crossed the margin. */
 			if (margin && sp->sc_col >= margin) {
@@ -693,8 +723,8 @@ ins_ch:			if (isblank(ch) && lch == L_NOTSPACE && !replay) {
 				if (tmp)
 					goto next_ch;
 			}
-			if (lch != L_NOCHECK)
-				lch = isblank(ch) ? L_SPACE : L_NOTSPACE;
+			if (abb != A_NOCHECK)
+				abb = isblank(ch) ? A_SPACE : A_NOTSPACE;
 
 			if (tp->overwrite)	/* Overwrite a character. */
 				--tp->overwrite;
@@ -723,6 +753,8 @@ ebuf_chk:		if (sp->cno >= tp->len) {
 				++tp->len;
 			}
 
+			if (hex == H_NEXTCHAR)
+				hex = H_INHEX;
 			if (quoted == Q_NEXTCHAR)
 				quoted = Q_THISCHAR;
 			break;
@@ -754,9 +786,10 @@ txt_abbrev(sp, tp, didsubp, pushc)
 	int *didsubp;
 	ARG_CHAR_T pushc;
 {
+	CHAR_T ch;
 	SEQ *qp;
 	size_t len, off;
-	char *p, ch;
+	char *p;
 
 	/* Find the beginning of this "word". */
 	for (off = sp->cno - 1, p = tp->lb + off, len = 0;; --p, --off) {
@@ -800,8 +833,15 @@ txt_abbrev(sp, tp, didsubp, pushc)
 	if (term_push(sp, sp->gp->tty, qp->output, qp->olen))
 		return (1);
 
+	/* Move the cursor to the start of the hex value, adjust the length. */
 	sp->cno -= len;
-	tp->overwrite += len;
+	tp->len -= len;
+
+	/* Copy any insert characters back. */
+	if (tp->insert)
+		memmove(tp->lb + sp->cno + tp->overwrite,
+		    tp->lb + sp->cno + tp->overwrite + len, tp->insert);
+
 	*didsubp = 1;
 	return (0);
 }
@@ -942,6 +982,81 @@ txt_err(sp, ep, hp)
 
 	/* Redraw the screen, just in case. */
 	F_SET(sp, S_REDRAW);
+}
+
+/*
+ * txt_hex --
+ *	Let the user insert any character value they want.
+ *
+ * !!!
+ * This is an extension.  The pattern "^V0[Xx][0-9a-fA-F]*" is a way
+ * for the user to specify a character value which their keyboard may
+ * not be able to enter.
+ */
+static int
+txt_hex(sp, tp, was_hex, pushc)
+	SCR *sp;
+	TEXT *tp;
+	int *was_hex;
+	ARG_CHAR_T pushc;
+{
+	CHAR_T ch, savec;
+	size_t len, off;
+	u_long value;
+	char *p, *wp;
+
+	/*
+	 * Null-terminate the string.  Since 0 isn't a legal hex value,
+	 * this should be okay, and let's us use the local routine to
+	 * convert the value, whatever that may be.
+	 */
+	savec = tp->lb[sp->cno];
+	tp->lb[sp->cno] = 0;
+
+	/* Find the previous HEX_CH. */
+	for (off = sp->cno - 1, p = tp->lb + off, len = 0;; --p, --off) {
+		if (*p == HEX_CH) {
+			wp = p + 1;
+			break;
+		}
+		++len;
+		/* If not on this line, there's nothing to do. */
+		if (off == tp->ai || off == tp->offset)
+			goto nothex;
+	}
+
+	/* If no length, then it wasn't a hex value. */
+	if (len == 0)
+		goto nothex;
+
+	/* Get the value. */
+	value = strtol(wp, NULL, 16);
+	if (value == LONG_MIN || value == LONG_MAX || value > MAX_CHAR_T) {
+nothex:		tp->lb[sp->cno] = savec;
+		*was_hex = 0;
+		return (0);
+	}
+		
+	ch = pushc;
+	if (term_push(sp, sp->gp->tty, &ch, 1))
+		return (1);
+	ch = value;
+	if (term_push(sp, sp->gp->tty, &ch, 1))
+		return (1);
+
+	tp->lb[sp->cno] = savec;
+
+	/* Move the cursor to the start of the hex value, adjust the length. */
+	sp->cno -= len + 1;
+	tp->len -= len + 1;
+
+	/* Copy any insert characters back. */
+	if (tp->insert)
+		memmove(tp->lb + sp->cno + tp->overwrite,
+		    tp->lb + sp->cno + tp->overwrite + len + 1, tp->insert);
+
+	*was_hex = 1;
+	return (0);
 }
 
 /*
@@ -1208,8 +1323,9 @@ txt_margin(sp, tp, didbreak, pushc)
 	int *didbreak;
 	ARG_CHAR_T pushc;
 {
+	CHAR_T ch;
 	size_t len, off, tlen;
-	char *p, *wp, ch;
+	char *p, *wp;
 
 	/* Find the closest previous blank. */
 	for (off = sp->cno - 1, p = tp->lb + off, len = 0;; --p, --off) {
