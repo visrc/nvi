@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 8.48 1994/09/16 16:59:52 bostic Exp $ (Berkeley) $Date: 1994/09/16 16:59:52 $
+ *	$Id: common.h,v 8.49 1994/10/09 14:03:44 bostic Exp $ (Berkeley) $Date: 1994/10/09 14:03:44 $
  */
 
 /*
@@ -46,17 +46,7 @@ typedef struct _text		TEXT;
 #include "exf.h"
 #include "log.h"
 #include "mem.h"
-
-#if FWOPEN_NOT_AVAILABLE	/* See PORT/clib/fwopen.c. */
-#define	EXCOOKIE	sp
-int	 ex_fflush __P((SCR *));
-int	 ex_printf __P((SCR *, const char *, ...));
-FILE	*fwopen __P((SCR *, void *));
-#else
-#define	EXCOOKIE	sp->stdfp
-#define	ex_fflush	fflush
-#define	ex_printf	fprintf
-#endif
+#include "util.h"
 
 /* Macros to set/clear/test flags. */
 #define	F_SET(p, f)	(p)->flags |= (f)
@@ -69,29 +59,16 @@ FILE	*fwopen __P((SCR *, void *));
 #define	LF_ISSET(f)	(flags & (f))
 
 /*
- * XXX
- * MIN/MAX have traditionally been in <sys/param.h>.  Don't
- * try to get them from there, it's just not worth the effort.
+ * !!!
+ * Fake the 4.4BSD fwopen(3) routines.  See PORT/clib/fwopen.c.
  */
-#ifndef	MAX
-#define	MAX(_a,_b)	((_a)<(_b)?(_b):(_a))
+#if FWOPEN_NOT_AVAILABLE
+#define	EXCOOKIE	sp
+int	 ex_fflush __P((SCR *));
+int	 ex_printf __P((SCR *, const char *, ...));
+FILE	*fwopen __P((SCR *, void *));
+#else
+#define	EXCOOKIE	sp->stdfp
+#define	ex_fflush	fflush
+#define	ex_printf	fprintf
 #endif
-#ifndef	MIN
-#define	MIN(_a,_b)	((_a)<(_b)?(_a):(_b))
-#endif
-
-/* Function prototypes that don't seem to belong anywhere else. */
-int	 nonblank __P((SCR *, EXF *, recno_t, size_t *));
-void	 set_alt_name __P((SCR *, char *));
-char	*tail __P((char *));
-CHAR_T	*v_strdup __P((SCR *, const CHAR_T *, size_t));
-void	 vi_putchar __P((int));
-
-#ifdef DEBUG
-void	TRACE __P((SCR *, const char *, ...));
-#endif
-
-/* Digraphs (not currently real). */
-int	digraph __P((SCR *, int, int));
-int	digraph_init __P((SCR *));
-void	digraph_save __P((SCR *, int));
