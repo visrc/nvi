@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 8.4 1993/09/29 16:16:44 bostic Exp $ (Berkeley) $Date: 1993/09/29 16:16:44 $";
+static char sccsid[] = "$Id: ex_args.c,v 8.5 1993/10/03 14:15:23 bostic Exp $ (Berkeley) $Date: 1993/10/03 14:15:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -41,8 +41,8 @@ ex_next(sp, ep, cmdp)
 
 	if (cmdp->argc) {
 		/* Mark all the current files as ignored. */
-		for (frp = sp->frefhdr.next;
-		    frp != (FREF *)&sp->frefhdr; frp = frp->next)
+		for (frp = sp->frefq.qe_next;
+		    frp != NULL; frp = frp->q.qe_next)
 			F_SET(frp, FR_IGNORE);
 
 		/* Add the new files into the file list. */
@@ -107,8 +107,7 @@ ex_rew(sp, ep, cmdp)
 	MODIFY_CHECK(sp, ep, F_ISSET(cmdp, E_FORCE));
 
 	/* Turn off the edited bit. */
-	for (tfrp = sp->frefhdr.next;
-	    tfrp != (FREF *)&sp->frefhdr; tfrp = tfrp->next)
+	for (tfrp = sp->frefq.qe_next; tfrp != NULL; tfrp = tfrp->q.qe_next)
 		F_CLR(tfrp, FR_EDITED);
 
 	if (file_init(sp, frp, NULL, F_ISSET(cmdp, E_FORCE)))
@@ -131,8 +130,8 @@ ex_args(sp, ep, cmdp)
 	int cnt, col, len, sep;
 
 	col = len = sep = 0;
-	for (cnt = 1, frp = sp->frefhdr.next;
-	    frp != (FREF *)&sp->frefhdr; frp = frp->next) {
+	for (cnt = 1, frp = sp->frefq.qe_next;
+	    frp != NULL; frp = frp->q.qe_next) {
 		/*
 		 * Ignore files that aren't in the "argument" list unless
 		 * they are the one we're currently editing.  I'm not sure
