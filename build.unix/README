@@ -1,4 +1,4 @@
-#	$Id: README,v 8.12 1996/03/18 16:58:05 bostic Exp $ (Berkeley) $Date: 1996/03/18 16:58:05 $
+#	$Id: README,v 8.13 1996/03/20 19:35:43 bostic Exp $ (Berkeley) $Date: 1996/03/20 19:35:43 $
 
 Nvi uses the GNU autoconf program for configuration and compilation.  You
 should enter:
@@ -63,10 +63,11 @@ disable-db:
 	you use are at least version 1.85 or later.
 
 disable-re:
-	By default, nvi loads its own versions of the POSIX 1003.2 RE
-	routines (which are Henry Spencer's implementation).  If your C
-	library contains an implementation of these routines and you want
-	to use them instead, enter:
+	By default, nvi loads its own versions of the POSIX 1003.2 Regular
+	Expression routines (which are Henry Spencer's implementation).
+	If your C library contains an implementation of the POSIX 1003.2
+	RE routines (note, this is NOT the same as the historic UNIX RE
+	routines), and you want to use them instead, enter:
 
 	--disable-re
 
