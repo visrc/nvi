@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 8.44 1994/08/07 09:26:30 bostic Exp $ (Berkeley) $Date: 1994/08/07 09:26:30 $";
+static char sccsid[] = "$Id: vs_split.c,v 8.45 1994/08/08 12:03:29 bostic Exp $ (Berkeley) $Date: 1994/08/08 12:03:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -245,7 +245,7 @@ svi_split(sp, argv, argc)
 	clrtoeol();
 
 	/* Redraw the status line for the parent screen. */
-	(void)status(sp, sp->ep, sp->lno, 0);
+	(void)msg_status(sp, sp->ep, sp->lno, 0);
 
 	/* Save the parent screen's cursor information. */
 	sp->frp->lno = sp->lno;
@@ -577,7 +577,7 @@ toosmall:			msgq(sp, M_BERR,
 		g->t_minrows += count;
 	g->t_maxrows += count;
 	_TMAP(g) += count;
-	(void)status(g, g->ep, g->lno, 0);
+	(void)msg_status(g, g->ep, g->lno, 0);
 	F_SET(g, S_REFORMAT);
 
 	s->rows -= count;
@@ -586,7 +586,7 @@ toosmall:			msgq(sp, M_BERR,
 	if (s->t_minrows > s->t_maxrows)
 		s->t_minrows = s->t_maxrows;
 	_TMAP(s) -= count;
-	(void)status(s, s->ep, s->lno, 0);
+	(void)msg_status(s, s->ep, s->lno, 0);
 	F_SET(s, S_REFORMAT);
 
 	return (0);

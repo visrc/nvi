@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 8.7 1994/08/08 10:10:49 bostic Exp $ (Berkeley) $Date: 1994/08/08 10:10:49 $";
+static char sccsid[] = "$Id: msg.c,v 8.8 1994/08/08 12:02:45 bostic Exp $ (Berkeley) $Date: 1994/08/08 12:02:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -208,7 +208,7 @@ ret:	reenter = 0;
 }
 
 /*
- * msgrpt --
+ * msg_rpt --
  *	Report on the lines that changed.
  *
  * !!!
@@ -286,6 +286,69 @@ msg_rpt(sp, is_message)
 	/* Clear after each report. */
 norpt:	sp->rptlchange = OOBLNO;
 	memset(sp->rptlines, 0, sizeof(sp->rptlines));
+	return (0);
+}
+
+/*
+ * msg_status --
+ *	Report on the file's status.
+ */
+int
+msg_status(sp, ep, lno, showlast)
+	SCR *sp;
+	EXF *ep;
+	recno_t lno;
+	int showlast;
+{
+	recno_t last;
+	char *mo, *nc, *nf, *pid, *ro, *ul;
+#ifdef DEBUG
+	char pbuf[50];
+
+	(void)snprintf(pbuf, sizeof(pbuf), " (pid %u)", getpid());
+	pid = pbuf;
+#else
+	pid = "";
+#endif
+	/*
+	 * See nvi/exf.c:file_init() for a description of how and
+	 * when the read-only bit is set.
+	 *
+	 * !!!
+	 * The historic display for "name changed" was "[Not edited]".
+	 */
+	if (F_ISSET(sp->frp, FR_NEWFILE)) {
+		F_CLR(sp->frp, FR_NEWFILE);
+		nf = "new file";
+		mo = nc = "";
+	} else {
+		nf = "";
+		if (F_ISSET(sp->frp, FR_NAMECHANGE)) {
+			nc = "name changed";
+			mo = F_ISSET(ep, F_MODIFIED) ?
+			    ", modified" : ", unmodified";
+		} else {
+			nc = "";
+			mo = F_ISSET(ep, F_MODIFIED) ?
+			    "modified" : "unmodified";
+		}
+	}
+	ro = F_ISSET(sp->frp, FR_RDONLY) ? ", readonly" : "";
+	ul = F_ISSET(sp->frp, FR_UNLOCKED) ? ", UNLOCKED" : "";
+	if (showlast) {
+		if (file_lline(sp, ep, &last))
+			return (1);
+		if (last >= 1)
+			msgq(sp, M_INFO,
+			    "%s: %s%s%s%s%s: line %lu of %lu [%ld%%]%s",
+			    sp->frp->name, nf, nc, mo, ul, ro, lno,
+			    last, (lno * 100) / last, pid);
+		else
+			msgq(sp, M_INFO, "%s: %s%s%s%s%s: empty file%s",
+			    sp->frp->name, nf, nc, mo, ul, ro, pid);
+	} else
+		msgq(sp, M_INFO, "%s: %s%s%s%s%s: line %lu%s",
+		    sp->frp->name, nf, nc, mo, ul, ro, lno, pid);
 	return (0);
 }
 

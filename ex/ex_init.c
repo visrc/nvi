@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_init.c,v 8.15 1994/08/02 09:26:03 bostic Exp $ (Berkeley) $Date: 1994/08/02 09:26:03 $";
+static char sccsid[] = "$Id: ex_init.c,v 8.16 1994/08/08 12:03:00 bostic Exp $ (Berkeley) $Date: 1994/08/08 12:03:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -143,7 +143,7 @@ ex_init(sp, ep)
 	}
 
 	/* Display the status line. */
-	return (status(sp, ep, sp->lno, 0));
+	return (msg_status(sp, ep, sp->lno, 0));
 }
 
 /*
