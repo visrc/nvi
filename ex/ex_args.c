@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 8.22 1994/06/29 18:50:03 bostic Exp $ (Berkeley) $Date: 1994/06/29 18:50:03 $";
+static char sccsid[] = "$Id: ex_args.c,v 8.23 1994/06/29 19:08:15 bostic Exp $ (Berkeley) $Date: 1994/06/29 19:08:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -133,7 +133,6 @@ ex_prev(sp, ep, cmdp)
 	EXCMDARG *cmdp;
 {
 	FREF *frp;
-	char *name;
 
 	MODIFY_RET(sp, ep, F_ISSET(cmdp, E_FORCE));
 
@@ -204,7 +203,7 @@ ex_args(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	int cnt, col, len, nlen, sep;
+	int cnt, col, len, sep;
 	char **ap;
 
 	if (sp->argv == NULL) {
