@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 9.12 1995/01/30 09:13:13 bostic Exp $ (Berkeley) $Date: 1995/01/30 09:13:13 $";
+static char sccsid[] = "$Id: v_search.c,v 9.13 1995/01/30 12:00:57 bostic Exp $ (Berkeley) $Date: 1995/01/30 12:00:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -146,7 +146,7 @@ search_addr(sp, vp, dir)
 			nb = 1;
 		sp->lno = vp->m_stop.lno;
 		sp->cno = vp->m_stop.cno;
-		if (sp->lno == 0 || file_gline(sp, sp->lno, NULL) == NULL) {
+		if (sp->lno == 0 || !file_eline(sp, sp->lno)) {
 			ex_badaddr(sp,
 			    &fake, sp->lno == 0 ? A_ZERO : A_EOF, NUM_OK);
 			goto err2;

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_delete.c,v 9.4 1995/01/11 16:22:06 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:22:06 $";
+static char sccsid[] = "$Id: v_delete.c,v 9.5 1995/01/30 12:00:50 bostic Exp $ (Berkeley) $Date: 1995/01/30 12:00:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -58,7 +58,7 @@ v_delete(sp, vp)
 	 * Check for deletion of the entire file.  Try to check a close
 	 * by line so we don't go to the end of the file unnecessarily.
 	 */
-	if (file_gline(sp, vp->m_final.lno + 1, &len) == NULL) {
+	if (!file_eline(sp, vp->m_final.lno + 1)) {
 		if (file_lline(sp, &nlines))
 			return (1);
 		if (nlines == 0) {
