@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 5.6 1993/05/11 16:11:41 bostic Exp $ (Berkeley) $Date: 1993/05/11 16:11:41 $";
+static char sccsid[] = "$Id: vs_split.c,v 5.7 1993/05/15 21:27:36 bostic Exp $ (Berkeley) $Date: 1993/05/15 21:27:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -51,7 +51,7 @@ svi_split(sp, ep)
 	}
 
 	/* Start the file. */
-	if ((tsp->ep = file_start(tsp, ep)) == NULL) {
+	if ((tsp->ep = file_start(tsp, ep, NULL)) == NULL) {
 		free(tsp);
 		return (1);
 	}
