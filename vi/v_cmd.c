@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 9.2 1994/11/12 11:31:28 bostic Exp $ (Berkeley) $Date: 1994/11/12 11:31:28 $";
+static char sccsid[] = "$Id: v_cmd.c,v 9.3 1994/11/16 19:51:17 bostic Exp $ (Berkeley) $Date: 1994/11/16 19:51:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -252,7 +252,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    "@buffer",
 	    " @ execute buffer"},
 /* 101   A */
-	{NULL,		0,
+	{v_iA,		V_CNT|V_DOT|VM_RCM_SET,
 	    "[count]A",
 	    " A append to the line"},
 /* 102   B */
@@ -284,9 +284,9 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    "[count]H",
 	    " H move to count lines from screen top"},
 /* 111   I */
-	{NULL,		0,
+	{v_iI,		V_CNT|V_DOT|VM_RCM_SET,
 	    "[count]I",
-	    " I insert at first nonblank"},
+	    " I insert before first nonblank"},
 /* 112   J */
 	{v_join,	V_CNT|V_DOT|VM_RCM_SET,
 	    "[count]J",

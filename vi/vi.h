@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 9.2 1994/11/12 11:40:12 bostic Exp $ (Berkeley) $Date: 1994/11/12 11:40:12 $
+ *	$Id: vi.h,v 9.3 1994/11/16 19:50:20 bostic Exp $ (Berkeley) $Date: 1994/11/16 19:50:20 $
  */
 
 typedef struct _vikeys VIKEYS;
@@ -244,7 +244,9 @@ VIPROTO(v_fmark);
 VIPROTO(v_home);
 VIPROTO(v_hpagedown);
 VIPROTO(v_hpageup);
+VIPROTO(v_iA);
 VIPROTO(v_ia);
+VIPROTO(v_iI);
 VIPROTO(v_ii);
 VIPROTO(v_increment);
 VIPROTO(v_iO);
