@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.17 1993/09/30 11:28:21 bostic Exp $ (Berkeley) $Date: 1993/09/30 11:28:21 $";
+static char sccsid[] = "$Id: vi.c,v 8.18 1993/10/07 13:38:20 bostic Exp $ (Berkeley) $Date: 1993/10/07 13:38:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -689,6 +689,7 @@ static inline int
 getkey(sp, keyp, esc_bell)
 	SCR *sp;
 	CHAR_T *keyp;
+	int esc_bell;
 {
 	CHAR_T key;
 
