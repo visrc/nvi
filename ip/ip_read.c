@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_read.c,v 8.19 2000/07/05 11:33:17 skimo Exp $ (Berkeley) $Date: 2000/07/05 11:33:17 $";
+static const char sccsid[] = "$Id: ip_read.c,v 8.20 2000/07/11 19:07:19 skimo Exp $ (Berkeley) $Date: 2000/07/11 19:07:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -109,7 +109,7 @@ VIPFUNLIST const vipfuns[] = {
 
 typedef enum { INP_OK=0, INP_EOF, INP_ERR, INP_TIMEOUT } input_t;
 
-static input_t	ip_read __P((SCR *, IP_PRIVATE *, struct timeval *));
+static input_t	ip_read __P((SCR *, IP_PRIVATE *, struct timeval *, int, int*));
 static int	ip_resize __P((SCR *, u_int32_t, u_int32_t));
 static int	ip_trans __P((SCR *, IP_PRIVATE *, EVENT *));
 
@@ -148,6 +148,8 @@ ip_wevent(wp, sp, evp, flags, ms)
 {
 	IP_PRIVATE *ipp;
 	struct timeval t, *tp;
+	int termread;
+	int nr;
 
 	if (LF_ISSET(EC_INTERRUPT)) {		/* XXX */
 		evp->e_event = E_TIMEOUT;
@@ -163,8 +165,11 @@ ip_wevent(wp, sp, evp, flags, ms)
 		ipp->iskip = 0;
 	}
 
+	termread = F_ISSET(ipp, IP_IN_EX) ||
+		    (sp && F_ISSET(sp, SC_SCR_EXWROTE));
+
 	/* Process possible remaining commands */
-	if (ipp->iblen >= IPO_CODE_LEN && ip_trans(sp, ipp, evp))
+	if (!termread && ipp->iblen >= IPO_CODE_LEN && ip_trans(sp, ipp, evp))
 		return 0;
 
 	/* Set timer. */
@@ -178,9 +183,13 @@ ip_wevent(wp, sp, evp, flags, ms)
 
 	/* Read input events. */
 	for (;;) {
-		switch (ip_read(sp, ipp, tp)) {
+		switch (ip_read(sp, ipp, tp, termread, &nr)) {
 		case INP_OK:
-			if (!ip_trans(sp, ipp, evp))
+			if (termread) {
+				evp->e_csp = ipp->tbuf;
+				evp->e_len = nr;
+				evp->e_event = E_STRING;
+			} else if (!ip_trans(sp, ipp, evp))
 				continue;
 			break;
 		case INP_EOF:
@@ -205,24 +214,26 @@ ip_wevent(wp, sp, evp, flags, ms)
  *	Read characters from the input.
  */
 static input_t
-ip_read(sp, ipp, tp)
+ip_read(sp, ipp, tp, termread, nr)
 	SCR *sp;
 	IP_PRIVATE *ipp;
 	struct timeval *tp;
+	int termread;
+	int *nr;
 {
 	struct timeval poll;
 	GS *gp;
-	SCR *tsp;
-	WIN *wp;
 	fd_set rdfd;
 	input_t rval;
 	size_t blen;
-	int maxfd, nr;
+	int maxfd;
 	char *bp;
+	int fd;
 
 	gp = sp == NULL ? __global_list : sp->gp;
 	bp = ipp->ibuf + ipp->iblen;
 	blen = sizeof(ipp->ibuf) - ipp->iblen;
+	fd = termread ? ipp->t_fd : ipp->i_fd;
 
 	/*
 	 * 1: A read with an associated timeout, e.g., trying to complete
@@ -232,8 +243,8 @@ ip_read(sp, ipp, tp)
 	poll.tv_sec = 0;
 	poll.tv_usec = 0;
 	if (tp != NULL) {
-		FD_SET(ipp->i_fd, &rdfd);
-		switch (select(ipp->i_fd + 1,
+		FD_SET(fd, &rdfd);
+		switch (select(fd + 1,
 		    &rdfd, NULL, NULL, tp == NULL ? &poll : tp)) {
 		case 0:
 			return (INP_TIMEOUT);
@@ -252,44 +263,27 @@ ip_read(sp, ipp, tp)
 	 * the only way to keep from locking out scripting windows.
 	 */
 	if (sp != NULL && F_ISSET(gp, G_SCRWIN)) {
-loop:		FD_ZERO(&rdfd);
-		FD_SET(ipp->i_fd, &rdfd);
-		maxfd = ipp->i_fd;
-		for (tsp = wp->scrq.cqh_first; 
-		    tsp != (void *)&wp->scrq; tsp = tsp->q.cqe_next)
-			if (F_ISSET(sp, SC_SCRIPT)) {
-				FD_SET(sp->script->sh_master, &rdfd);
-				if (sp->script->sh_master > maxfd)
-					maxfd = sp->script->sh_master;
-			}
-		switch (select(maxfd + 1, &rdfd, NULL, NULL, NULL)) {
-		case 0:
-			abort();
-		case -1:
+		FD_ZERO(&rdfd);
+		FD_SET(fd, &rdfd);
+		maxfd = fd;
+		if (sscr_check_input(sp, &rdfd, maxfd))
 			goto err;
-		default:
-			break;
-		}
-		if (!FD_ISSET(ipp->i_fd, &rdfd)) {
-			if (sscr_input(sp))
-				return (INP_ERR);
-			goto loop;
-		}
 	}
 
 	/*
 	 * 3: Read the input.
 	 */
-	switch (nr = read(ipp->i_fd, bp, blen)) {
+	switch (*nr = read(fd, termread ? ipp->tbuf : bp, 
+			      termread ? sizeof(ipp->tbuf) : blen)) {
 	case  0:				/* EOF. */
 		rval = INP_EOF;
 		break;
 	case -1:				/* Error or interrupt. */
-err:		rval = INP_ERR;
+err:	        rval = INP_ERR;
 		msgq(sp, M_SYSERR, "input");
 		break;
 	default:				/* Input characters. */
-		ipp->iblen += nr;
+		if (!termread) ipp->iblen += *nr;
 		rval = INP_OK;
 		break;
 	}

@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_funcs.c,v 8.18 2000/07/11 15:11:00 skimo Exp $ (Berkeley) $Date: 2000/07/11 15:11:00 $";
+static const char sccsid[] = "$Id: ip_funcs.c,v 8.19 2000/07/11 19:07:19 skimo Exp $ (Berkeley) $Date: 2000/07/11 19:07:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -79,6 +79,11 @@ ip_attr(sp, attribute, on)
 {
 	IP_BUF ipb;
 	IP_PRIVATE *ipp = IPP(sp);
+
+	if (attribute == SA_ALTERNATE) {
+		if (on) F_SET(ipp, IP_ON_ALTERNATE);
+		else F_CLR(ipp, IP_ON_ALTERNATE);
+	}
 
 	ipb.code = SI_ATTRIBUTE;
 	ipb.val1 = attribute;
@@ -164,8 +169,6 @@ ip_child(sp)
 {
 	IP_PRIVATE *ipp = IPP(sp);
 
-	puts("prepape child");
-	printf("%d\n", ipp->t_fd);
 	if (ipp->t_fd != -1) {
 	    dup2(ipp->t_fd, 0);
 	    dup2(ipp->t_fd, 1);
@@ -375,6 +378,26 @@ ip_move(sp, lno, cno)
 	ipb.val1 = RLNO(sp, lno);
 	ipb.val2 = RCNO(sp, cno);
 	return (vi_send(ipp->o_fd, "12", &ipb));
+}
+
+/*
+ * PUBLIC: void ip_msg __P((SCR *, mtype_t, char *, size_t));
+ */
+void
+ip_msg(sp, mtype, line, len)
+	SCR *sp;
+	mtype_t mtype;
+	char *line;
+	size_t len;
+{
+	IP_PRIVATE *ipp = IPP(sp);
+
+	if (F_ISSET(ipp, IP_ON_ALTERNATE))
+		vs_msg(sp, mtype, line, len);
+	else {
+		write(ipp->t_fd, line, len);
+		F_CLR(sp, SC_EX_WAIT_NO);
+	}
 }
 
 /*

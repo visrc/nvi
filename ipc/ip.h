@@ -4,7 +4,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: ip.h,v 8.26 2000/07/11 15:11:00 skimo Exp $ (Berkeley) $Date: 2000/07/11 15:11:00 $
+ *	$Id: ip.h,v 8.27 2000/07/11 19:07:19 skimo Exp $ (Berkeley) $Date: 2000/07/11 19:07:19 $
  */
 
 #include <sys/socket.h>
@@ -36,8 +36,11 @@ typedef struct _ip_private {
 	size_t	 iskip;		/* Returned input buffer. */
 	char	 ibuf[256];	/* Input buffer. */
 
+	char 	 tbuf[256];	/* Input keys. */
+
 #define	IP_IN_EX  	0x0001  /* Currently running ex. */
-#define	IP_SCR_VI_INIT  0x0002  /* Vi screen initialized. */
+#define IP_ON_ALTERNATE 0x0002	/* Alternate on. */
+#define	IP_SCR_VI_INIT  0x0004  /* Vi screen initialized. */
 	u_int32_t flags;
 } IP_PRIVATE;
 

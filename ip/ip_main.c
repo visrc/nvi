@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_main.c,v 8.19 2000/07/11 15:11:00 skimo Exp $ (Berkeley) $Date: 2000/07/11 15:11:00 $";
+static const char sccsid[] = "$Id: ip_main.c,v 8.20 2000/07/11 19:07:19 skimo Exp $ (Berkeley) $Date: 2000/07/11 19:07:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -289,7 +289,7 @@ ip_func_std(gp)
 	gp->scr_insertln = ip_insertln;
 	gp->scr_keyval = ip_keyval;
 	gp->scr_move = ip_move;
-	gp->scr_msg = NULL;
+	gp->scr_msg = ip_msg;
 	gp->scr_optchange = ip_optchange;
 	gp->scr_refresh = ip_refresh;
 	gp->scr_rename = ip_rename;

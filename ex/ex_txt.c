@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_txt.c,v 10.19 1996/12/18 10:28:34 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:28:34 $";
+static const char sccsid[] = "$Id: ex_txt.c,v 10.20 2000/07/11 19:07:18 skimo Exp $ (Berkeley) $Date: 2000/07/11 19:07:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -362,16 +362,16 @@ txt_prompt(sp, tp, prompt, flags)
 {
 	/* Display the prompt. */
 	if (LF_ISSET(TXT_PROMPT))
-		(void)printf("%c", prompt);
+		(void)ex_printf(sp, "%c", prompt);
 
 	/* Display the line number. */
 	if (LF_ISSET(TXT_NUMBER) && O_ISSET(sp, O_NUMBER))
-		(void)printf("%6lu  ", (u_long)tp->lno);
+		(void)ex_printf(sp, "%6lu  ", (u_long)tp->lno);
 
 	/* Print out autoindent string. */
 	if (LF_ISSET(TXT_AUTOINDENT))
-		(void)printf("%.*s", (int)tp->ai, tp->lb);
-	(void)fflush(stdout);
+		(void)ex_printf(sp, "%.*s", (int)tp->ai, tp->lb);
+	(void)ex_fflush(sp);
 }
 
 /*

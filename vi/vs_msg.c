@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_msg.c,v 10.79 2000/06/25 17:34:42 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:42 $";
+static const char sccsid[] = "$Id: vs_msg.c,v 10.80 2000/07/11 19:07:19 skimo Exp $ (Berkeley) $Date: 2000/07/11 19:07:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -826,7 +826,7 @@ vs_wait(sp, continuep, wtype)
 			abort();
 			/* NOTREACHED */
 		}
-	(void)gp->scr_addstr(sp, p, len);
+	(void)gp->scr_msg(sp, M_NONE, p, len);
 
 	++vip->totalcount;
 	vip->linecount = 0;

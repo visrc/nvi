@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_read.c,v 10.17 2000/06/25 17:34:36 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:36 $";
+static const char sccsid[] = "$Id: cl_read.c,v 10.18 2000/07/11 19:07:18 skimo Exp $ (Berkeley) $Date: 2000/07/11 19:07:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -222,29 +222,11 @@ cl_read(sp, flags, bp, blen, nrp, tp)
 	 * the only way to keep from locking out scripting windows.
 	 */
 	if (F_ISSET(gp, G_SCRWIN)) {
-loop:		FD_ZERO(&rdfd);
+		FD_ZERO(&rdfd);
 		FD_SET(STDIN_FILENO, &rdfd);
 		maxfd = STDIN_FILENO;
-		for (tsp = sp->wp->scrq.cqh_first;
-		    tsp != (void *)&sp->wp->scrq; tsp = tsp->q.cqe_next)
-			if (F_ISSET(sp, SC_SCRIPT)) {
-				FD_SET(sp->script->sh_master, &rdfd);
-				if (sp->script->sh_master > maxfd)
-					maxfd = sp->script->sh_master;
-			}
-		switch (select(maxfd + 1, &rdfd, NULL, NULL, NULL)) {
-		case 0:
-			abort();
-		case -1:
+		if (sscr_check_input(sp, &rdfd, maxfd))
 			goto err;
-		default:
-			break;
-		}
-		if (!FD_ISSET(STDIN_FILENO, &rdfd)) {
-			if (sscr_input(sp))
-				return (INP_ERR);
-			goto loop;
-		}
 	}
 
 	/*

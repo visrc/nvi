@@ -147,10 +147,8 @@ gtk_vi_window_new (GtkVi *vi)
     window->table = table;
 
 
-    /*
     gtk_notebook_set_show_tabs(GTK_NOTEBOOK(window), FALSE);
     gtk_notebook_set_show_border(GTK_NOTEBOOK(window), FALSE);
-    */
     gtk_notebook_append_page(GTK_NOTEBOOK(window), table, NULL);
 
     term = 0;
@@ -431,7 +429,6 @@ vi_attribute(ipviwin,attribute,on)
 	GtkViWindow* window = (GtkViWindow*)(ipviwin->private_data);
 
 	if (attribute == SA_ALTERNATE) {
-		printf("on: %d\n", on);
 		gtk_vi_show_term(window, !on);
 	}
 	else

@@ -13,7 +13,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_script.c,v 10.33 2000/06/27 17:19:06 skimo Exp $ (Berkeley) $Date: 2000/06/27 17:19:06 $";
+static const char sccsid[] = "$Id: ex_script.c,v 10.34 2000/07/11 19:07:18 skimo Exp $ (Berkeley) $Date: 2000/07/11 19:07:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -364,6 +364,49 @@ err1:			rval = 1;
 	if (matchprompt)
 		FREE_SPACE(sp, bp, blen);
 	return (rval);
+}
+
+/*
+ * sscr_check_input -
+ *	Check whether any input from shell or passed set.
+ *
+ * PUBLIC: int sscr_check_input __P((SCR *sp, fd_set *rdfd, int maxfd));
+ */
+int
+sscr_check_input(SCR *sp, fd_set *fdset, int maxfd)
+{
+	fd_set rdfd;
+	SCR *tsp;
+	WIN *wp;
+
+	wp = sp->wp;
+
+loop:	memcpy(&rdfd, fdset, sizeof(fd_set));
+
+	for (tsp = wp->scrq.cqh_first; 
+	    tsp != (void *)&wp->scrq; tsp = tsp->q.cqe_next)
+		if (F_ISSET(sp, SC_SCRIPT)) {
+			FD_SET(sp->script->sh_master, &rdfd);
+			if (sp->script->sh_master > maxfd)
+				maxfd = sp->script->sh_master;
+		}
+	switch (select(maxfd + 1, &rdfd, NULL, NULL, NULL)) {
+	case 0:
+		abort();
+	case -1:
+		return 1;
+	default:
+		break;
+	}
+	for (tsp = wp->scrq.cqh_first; 
+	    tsp != (void *)&wp->scrq; tsp = tsp->q.cqe_next)
+		if (F_ISSET(sp, SC_SCRIPT) &&
+		    FD_ISSET(sp->script->sh_master, &rdfd)) {
+			if (sscr_input(sp))
+				return 1;
+			goto loop;
+		}
+	return 0;
 }
 
 /*

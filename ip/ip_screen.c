@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_screen.c,v 8.6 2000/07/11 15:11:00 skimo Exp $ (Berkeley) $Date: 2000/07/11 15:11:00 $";
+static const char sccsid[] = "$Id: ip_screen.c,v 8.7 2000/07/11 19:07:19 skimo Exp $ (Berkeley) $Date: 2000/07/11 19:07:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -53,6 +53,12 @@ ip_screen(sp, flags)
 	/* Ex isn't possible if there is no terminal. */
 	if (LF_ISSET(SC_EX) && ipp->t_fd == -1)
 		return (1);
+
+	if (F_ISSET(sp, SC_SCR_EX))
+		F_CLR(sp, SC_SCR_EX);
+
+	if (F_ISSET(sp, SC_SCR_VI))
+		F_CLR(sp, SC_SCR_VI);
 
 	if (LF_ISSET(SC_EX)) {
 		F_SET(ipp, IP_IN_EX);
