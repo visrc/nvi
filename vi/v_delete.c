@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_delete.c,v 5.21 1993/05/02 18:30:19 bostic Exp $ (Berkeley) $Date: 1993/05/02 18:30:19 $";
+static char sccsid[] = "$Id: v_delete.c,v 5.22 1993/05/13 16:07:46 bostic Exp $ (Berkeley) $Date: 1993/05/13 16:07:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -89,9 +89,10 @@ v_delete(sp, ep, vp, fm, tm, rp)
 		rp->lno = MIN(fm->lno, tm->lno);
 		if (rp->lno > nlines)
 			rp->lno = nlines;
-	} else
-		rp->lno = fm->lno;
+		return (nonblank(sp, ep, rp->lno, &rp->cno));
+	}
 
+	rp->lno = fm->lno;
 	if (file_gline(sp, ep, rp->lno, &len) == NULL) {
 		GETLINE_ERR(sp, rp->lno);
 		return (1);
