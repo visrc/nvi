@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 10.14 1995/10/17 11:42:29 bostic Exp $ (Berkeley) $Date: 1995/10/17 11:42:29 $";
+static char sccsid[] = "$Id: options.c,v 10.15 1995/10/17 11:46:52 bostic Exp $ (Berkeley) $Date: 1995/10/17 11:46:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -521,7 +521,7 @@ found:		if (op == NULL) {
 			/* Security. */
 			if (F_ISSET(op, OPT_NOUNSET) && turnoff) {
 				msgq_str(sp, M_ERR, name,
-				    "035|set: %s may not be turned off");
+				    "291|set: %s may not be turned off");
 				rval = 1;
 				break;
 			}
