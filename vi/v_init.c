@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 5.14 1993/02/24 13:00:34 bostic Exp $ (Berkeley) $Date: 1993/02/24 13:00:34 $";
+static char sccsid[] = "$Id: v_init.c,v 5.15 1993/02/25 17:52:28 bostic Exp $ (Berkeley) $Date: 1993/02/25 17:52:28 $";
 #endif /* not lint */
 
 #include <curses.h>
@@ -62,9 +62,11 @@ int
 v_init(ep)
 	EXF *ep;
 {
+	/* Set up ex functions. */
 	ep->s_confirm = v_confirm;
 	ep->s_end = v_end;
 
+	/* Make ex display to a special function. */
 #ifdef FWOPEN_NOT_AVAILABLE
 	if ((ep->stdfp = fopen(_PATH_DEVNULL, "w")) == NULL)
 		return (1);
@@ -92,14 +94,12 @@ int
 v_end(ep)
 	EXF *ep;
 {
+	scr_end(ep);
+
 #ifdef FWOPEN_NOT_AVAILABLE
 	v_ep = NULL;
 	v_fd = -1;
-#endif
 	(void)fclose(ep->stdfp);
-	ep->stdfp = stdout;
-
-	scr_end(ep);
-
+#endif
 	return (0);
 }
