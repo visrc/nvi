@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.123 1996/07/14 11:11:57 bostic Exp $ (Berkeley) $Date: 1996/07/14 11:11:57 $
+dnl	$Id: configure.in,v 8.124 1996/07/14 11:30:36 bostic Exp $ (Berkeley) $Date: 1996/07/14 11:30:36 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(../common/main.c)
@@ -254,21 +254,14 @@ if test "$vi_cv_tclinterp" = "yes"; then
 	AC_DEFINE(HAVE_TCL_INTERP)
 fi
 
-dnl Make sure that we found a Tk/Tcl library.
+dnl Make sure that we can find a Tk/Tcl library.
 if test "$vi_cv_tknvi" = "yes" || test "$vi_cv_tclinterp" = "yes"; then
-	if test "$vi_cv_tclinterp" != yes; then
-		SAVE_LIBS="$LIBS"
-		LIBS=$TKLIBS
-	fi
-	AC_TRY_LINK([#include <tcl.h>], [Tcl_Eval(0, 0);],
-		[vi_cv_tkfatal="no"], [vi_cv_tkfatal="yes"])
+	AC_CHECK_LIB(tcl, main,
+		[vi_cv_tkfatal="no"], [vi_cv_tkfatal="yes"], -ltk -lm)
 	if test "$vi_cv_tkfatal" = "yes"; then
 		echo "Fatal error: no Tk/Tcl library; see the section"
 		echo "ADDING LIBRARIES AND INCLUDE FILES in the README file."
 		exit 1
-	fi
-	if test "$vi_cv_tclinterp" != yes; then
-		LIBS="$SAVE_LIBS"
 	fi
 fi
 
