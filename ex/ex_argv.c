@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_argv.c,v 10.20 1996/08/10 17:00:27 bostic Exp $ (Berkeley) $Date: 1996/08/10 17:00:27 $";
+static const char sccsid[] = "$Id: ex_argv.c,v 10.21 1996/08/10 19:24:35 bostic Exp $ (Berkeley) $Date: 1996/08/10 19:24:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -220,12 +220,14 @@ argv_exp2(sp, excp, cmd, cmdlen)
 	case 1:
 		if (*p == '*') {
 			*p++ = '\0';
+			n = p - bp;
 			if (argv_prefix(sp,
 			    bp + SHELLOFFSET, p, &bp, &blen, &len)) {
 				rval = 1;
 				goto err;
 			}
-			len -= p - bp;
+			p = bp + n;
+			len -= n;
 			break;
 		}
 		/* FALLTHROUGH */
@@ -518,7 +520,7 @@ argv_prefix(sp, path, wp, bpp, blenp, lenp)
 {
 	DIR *dirp;
 	struct dirent *dp;
-	size_t blen, dlen, len, nlen;
+	size_t blen, dlen, doffset, len, nlen;
 	char *bp, *dname, *name, *p;
 
 	/*
@@ -566,10 +568,13 @@ argv_prefix(sp, path, wp, bpp, blenp, lenp)
 		if (nlen == 0 ||
 		    (dp->d_namlen >= nlen && !memcmp(dp->d_name, name, nlen))) {
 			if (blen < dp->d_namlen + dlen + 5) {
+				doffset = dname - bp;
 				ADD_SPACE_GOTO(sp, bp, *blenp,
 				    *blenp * 2 + dp->d_namlen + dlen + 5);
 				p = bp + len;
 				blen = *blenp - len;
+				if (dname == path)
+					dname = bp + doffset;
 			}
 			if (dlen != 0) {
 				memcpy(p, dname, dlen);
