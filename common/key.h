@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 8.14 1993/11/10 09:39:29 bostic Exp $ (Berkeley) $Date: 1993/11/10 09:39:29 $
+ *	$Id: key.h,v 8.15 1993/11/10 09:43:49 bostic Exp $ (Berkeley) $Date: 1993/11/10 09:43:49 $
  */
 
 /* Structure for a key input buffer. */
@@ -85,9 +85,11 @@ enum input	{ INP_OK=0, INP_EOF, INP_ERR };
 #define	K_VWERASE	17
 #define	K_ZERO		18
 
-/* Various special characters. */
-#define	HEX_CH		'x'			/* Leading hex number. */
+/* Various special characters, messages. */
+#define	CURSOR_CH	' '			/* Cursor character. */
 #define	END_CH		'$'			/* End of a range. */
+#define	HEX_CH		'x'			/* Leading hex number. */
+#define	NOT_DIGIT_CH	'a'			/* A non-isdigit() character. */
 #define	NO_CH		'n'			/* No. */
 #define	QUIT_CH		'q'			/* Quit. */
 #define	YES_CH		'y'			/* Yes. */
