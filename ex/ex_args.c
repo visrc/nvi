@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 10.6 1995/07/04 12:42:06 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:42:06 $";
+static char sccsid[] = "$Id: ex_args.c,v 10.7 1995/07/08 12:51:27 bostic Exp $ (Berkeley) $Date: 1995/07/08 12:51:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -282,7 +282,7 @@ ex_args(sp, cmdp)
 		++cnt;
 
 		(void)ex_printf(sp, "%s%s%s", ap == sp->cargv ? "[" : "",
-		    *ap, ap == sp->cargv ? "[" : "");
+		    *ap, ap == sp->cargv ? "]" : "");
 		if (INTERRUPTED(sp))
 			break;
 	}
