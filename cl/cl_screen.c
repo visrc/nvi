@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_screen.c,v 10.18 1995/10/30 10:16:48 bostic Exp $ (Berkeley) $Date: 1995/10/30 10:16:48 $";
+static char sccsid[] = "$Id: cl_screen.c,v 10.19 1995/10/31 10:52:14 bostic Exp $ (Berkeley) $Date: 1995/10/31 10:52:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -88,7 +88,6 @@ cl_screen(sp, flags)
 		F_CLR(sp, S_VI);
 		F_CLR(clp, CL_SCR_VI);
 	}
-
 
 	/* Enter the requested mode. */
 	if (LF_ISSET(S_EX)) {
@@ -276,14 +275,13 @@ cl_vi_init(sp)
 	clp->vi_enter.c_cc[VSUSP] = _POSIX_VDISABLE;
 
 	/* Initialize terminal based information. */
-	if (cl_term_init(sp)) {
-err:		(void)cl_vi_end(sp->gp);
-		return (1);
-	}
+	if (cl_term_init(sp))
+		goto err;
 
 fast:	if (tcsetattr(STDIN_FILENO, TCSASOFT | TCSADRAIN, &clp->vi_enter)) {
 		msgq(sp, M_SYSERR, "tcsetattr");
-		goto err;
+err:		(void)cl_vi_end(sp->gp);
+		return (1);
 	}
 
 
@@ -341,7 +339,7 @@ cl_ex_init(sp)
 	SCR *sp;
 {
 	CL_PRIVATE *clp;
-	int err;
+	size_t len;
 	char *t;
 
 	clp = CLP(sp);
@@ -354,45 +352,30 @@ cl_ex_init(sp)
 	if (!F_ISSET(sp->gp, G_STDIN_TTY))
 		return (0);
 
+	/* Get the ex termcap/terminfo strings. */
 #define	GETCAP(name, element) {						\
-	size_t __len;							\
 	if ((t = tigetstr(name)) != NULL &&				\
-	    t != (char *)-1 && (__len = strlen(t)) != 0) {		\
-		MALLOC_RET(sp, clp->element, char *, __len + 1);	\
-		memmove(clp->element, t, __len + 1);			\
+	    t != (char *)-1 && (len = strlen(t)) != 0) {		\
+		MALLOC_RET(sp, clp->element, char *, len + 1);		\
+		memmove(clp->element, t, len + 1);			\
 	}								\
 }
-	/*
-	 * Set up the terminal database information, and get cursor_address,
-	 * enter_standout_mode, exit_standout_mode, cursor_up, clr_eol.
-	 */
-	setupterm(O_STR(sp, O_TERM), STDOUT_FILENO, &err);
-	switch (err) {
-	case -1:
-		msgq(sp, M_ERR, "No terminal database found");
-		return (1);
-	case 0:
-		msgq(sp, M_ERR, "%s: unknown terminal type", O_STR(sp, O_TERM));
-		return (1);
-	case 1:
-		GETCAP("cup", cup);
-		GETCAP("smso", smso);
-		GETCAP("rmso", rmso);
-		GETCAP("el", el);
-		GETCAP("cuu1", cuu1);
+	GETCAP("cup", cup);
+	GETCAP("smso", smso);
+	GETCAP("rmso", rmso);
+	GETCAP("el", el);
+	GETCAP("cuu1", cuu1);
 
-		/* Enter_standout_mode and exit_standout_mode are paired. */
-		if (clp->smso == NULL || clp->rmso == NULL) {
-			if (clp->smso != NULL) {
-				free(clp->smso);
-				clp->smso = NULL;
-			}
-			if (clp->rmso != NULL) {
-				free(clp->rmso);
-				clp->rmso = NULL;
-			}
+	/* Enter_standout_mode and exit_standout_mode are paired. */
+	if (clp->smso == NULL || clp->rmso == NULL) {
+		if (clp->smso != NULL) {
+			free(clp->smso);
+			clp->smso = NULL;
 		}
-		break;
+		if (clp->rmso != NULL) {
+			free(clp->rmso);
+			clp->rmso = NULL;
+		}
 	}
 
 	/*

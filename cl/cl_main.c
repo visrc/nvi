@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_main.c,v 10.15 1995/09/29 16:53:42 bostic Exp $ (Berkeley) $Date: 1995/09/29 16:53:42 $";
+static char sccsid[] = "$Id: cl_main.c,v 10.16 1995/10/31 10:52:15 bostic Exp $ (Berkeley) $Date: 1995/10/31 10:52:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,6 +36,7 @@ sigset_t __sigblockset;				/* GLOBAL: Blocked signals. */
 static GS	*gs_init __P((char *));
 static int	 sig_init __P((GS *));
 static void	 sig_end __P((GS *));
+static void	 term_init __P((char *));
 
 /*
  * main --
@@ -52,7 +53,7 @@ main(argc, argv)
 	recno_t rows;
 	size_t cols;
 	int rval;
-	char **p_av, **t_av;
+	char **p_av, **t_av, *ttype;
 
 	/* If loaded at 0 and jumping through a NULL pointer, stop. */
 	if (reenter++)
@@ -60,6 +61,7 @@ main(argc, argv)
 
 	/* Create and initialize the global structure. */
 	__global_list = gp = gs_init(argv[0]);
+	clp = GCLP(gp);
 
 #ifdef NOT_NEEDED_FOR_CURSES
 	/*
@@ -75,6 +77,16 @@ main(argc, argv)
 		*p_av++ = *t_av++;
 	}
 #endif
+
+	/*
+	 * Initialize the terminal information.
+	 *
+	 * We have to know what terminal it is from the start, since we may
+	 * have to use termcap/terminfo to find out how big the screen is.
+	 */
+	if ((ttype = getenv("TERM")) == NULL)
+		ttype = "unknown";
+	term_init(ttype);
 
 	/* Figure out how big the screen is. */
 	if (cl_ssize(NULL, 0, &rows, &cols, NULL))
@@ -97,7 +109,6 @@ main(argc, argv)
 	(void)cl_quit(gp);
 
 	/* If a killer signal arrived, pretend we just got it. */
-	clp = GCLP(gp);
 	if (clp->killersig) {
 		(void)signal(clp->killersig, SIG_DFL);
 		(void)kill(getpid(), clp->killersig);
@@ -190,6 +201,28 @@ tcfail:			(void)fprintf(stderr,
 
 	gp->progname = name;
 	return (gp);
+}
+
+/*
+ * term_init --
+ *	Initialize terminal information.
+ */
+static void
+term_init(ttype)
+	char *ttype;
+{
+	int err;
+
+	/* Set up the terminal database information. */
+	setupterm(ttype, STDOUT_FILENO, &err);
+	switch (err) {
+	case -1:
+		(void)fprintf(stderr, "No terminal database found");
+		exit (1);
+	case 0:
+		(void)fprintf(stderr, "%s: unknown terminal type", ttype);
+		exit (1);
+	}
 }
 
 #define	GLOBAL_CLP \
