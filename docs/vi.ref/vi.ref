@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.43 1994/06/02 11:51:25 bostic Exp $ (Berkeley) $Date: 1994/06/02 11:51:25 $
+.\"     $Id: vi.ref,v 8.44 1994/06/25 12:39:33 bostic Exp $ (Berkeley) $Date: 1994/06/25 12:39:33 $
 .\"
 .\"
 .so ref.so
@@ -265,7 +265,7 @@ where, again,
 is associated with the process ID.
 Both files are removed at the end of a normal edit session,
 but will remain if the edit session is abnormally terminated
-or the user enters the
+or the user runs the
 .CO ex
 .QC preserve
 command.
@@ -273,7 +273,7 @@ The use of the
 .LI /var/tmp
 directory may be changed by setting the
 .OP recdir
-option in the user's or system startup information.
+option in the user's or system's startup information.
 (Note, however, that if a memory based file system is used as the backup
 directory, each system reboot will delete all of the recovery files!)
 .pp
@@ -291,7 +291,7 @@ will attempt to create it.
 This can result in the recovery directory being owned by a normal user,
 which means that that user will be able to remove other user's recovery
 and backup files.
-This is annoying, but is not be a security issue as the user cannot
+This is annoying, but is not a security issue as the user cannot
 otherwise access or modify the files.
 .pp
 The recovery file has all of the necessary information in it to enable the
@@ -308,9 +308,18 @@ option of
 .CO sendmail
 (or a similar mechanism in other mailers).
 .pp
-A simple way to do this is to insert the following script into your
+Finally, the owner execute bit is set on backup files when they are
+created, and unset when they are first modified, e.g. backup files
+that have no associated email recovery file will have this bit set.
+(There is also a small window where empty files can be created and
+not yet have this bit set.)
+These files should be deleted when the system reboots.
+.pp
+A simple way to do this cleanup is to insert the following Bourne
+shell script into your
 .LI /etc/rc.local
-(or other startup) file:
+(or other startup) file.
+(It should also work with a POSIX 1003.2 shell or the Korn shell.)
 .sp
 .(b
 .ft C
@@ -320,6 +329,15 @@ if [ "$virecovery" != "/var/tmp/vi.recover/recover.*" ]; then
 	echo 'Recovering vi editor sessions'
 	for i in $virecovery; do
 		sendmail -t < $i
+	done
+fi
+# Delete unmodified nvi editor backup files.
+vibackup=`echo /var/tmp/vi.recover/vi.*`
+if [ "$vibackup" != "/var/tmp/vi.recover/vi.*" ]; then
+	for i in $vibackup; do
+		if test -x $i -o ! -s $i; then
+			rm $i
+		fi
 	done
 fi
 .ft R
