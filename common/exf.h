@@ -4,13 +4,16 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 5.9 1992/10/10 13:35:41 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:35:41 $
+ *	$Id: exf.h,v 5.10 1992/10/17 16:07:52 bostic Exp $ (Berkeley) $Date: 1992/10/17 16:07:52 $
  */
 
 #ifndef _EXF_H_
 #define	_EXF_H_
 
 #include <db.h>
+
+#include "mark.h"
+#include "cut.h"
 
 typedef struct exf {
 	struct exf *next, *prev;		/* Linked list of files. */
@@ -24,6 +27,7 @@ typedef struct exf {
 	size_t scno;			/* 0-N: Logical cursor col. */
 	size_t shift;			/* 0-N: Shift count. */
 	size_t rcm;			/* 0-N: Column suck. */
+	u_char cwidth;			/* Width of current character. */
 #define	RCM_FNB		0x01		/* Column suck: first non-blank. */
 #define	RCM_LAST	0x02		/* Column suck: last. */
 	u_char rcmflags;
@@ -45,9 +49,6 @@ typedef struct exf {
 } EXF;
 
 extern EXF *curf;			/* Current file. */
-
-enum upmode 
-    {LINE_APPEND, LINE_DELETE, LINE_INSERT, LINE_RESET, LINE_SET};
 
 typedef struct {
 	EXF *next, *prev;
@@ -92,36 +93,25 @@ typedef struct {
 	}								\
 }
 
-/*
- * There's a shadow recno db that parallels underlying file db.  For each
- * line in the file db there are two bytes of information as defined by
- * the following structure.  The shared data structure between the screen
- * routines and the rest of the editor is the file.  Rather than have the
- * screen routines figure out what the rest of the editor already knows,
- * or have the rest of the editor know too much about the screen, information
- * about each line is passed in this parallel structure.
- */
-typedef struct {
-#define	LINE_WIDECH	0x01			/* Line has wide characters. */
-	u1byte_t flags;
-#define	MAXTABCNT	255			/* Max representable. */
-	u1byte_t tabcnt;			/* Leading tab count. */
-} SLINE; 
-
-int	 file_aline __P((EXF *, recno_t, u_char *, size_t));
-int	 file_dline __P((EXF *, recno_t));
+/* File routines. */
 EXF	*file_first __P((void));
-u_char	*file_gline __P((EXF *, recno_t, size_t *));
-int	 file_iline __P((EXF *, recno_t, u_char *, size_t));
 void	 file_init __P((void));
 int	 file_ins __P((EXF *, char *, int));
 int	 file_iscurrent __P((char *));
-recno_t	 file_lline __P((EXF *));
 EXF	*file_next __P((EXF *));
 EXF	*file_prev __P((EXF *));
 int	 file_set __P((int, char *[]));
-int	 file_sline __P((EXF *, recno_t, u_char *, size_t));
 int	 file_start __P((EXF *));
 int	 file_stop __P((EXF *, int));
 int	 file_sync __P((EXF *, int));
+
+/* Line routines. */
+int	 file_aline __P((EXF *, recno_t, u_char *, size_t));
+int	 file_dline __P((EXF *, recno_t));
+u_char	*file_gline __P((EXF *, recno_t, size_t *));
+int	 file_ibresolv __P((EXF *, IB *));
+int	 file_iline __P((EXF *, recno_t, u_char *, size_t));
+recno_t	 file_lline __P((EXF *));
+int	 file_sline __P((EXF *, recno_t, u_char *, size_t));
+
 #endif /* !_EXF_H_ */
