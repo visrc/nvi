@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_smap.c,v 10.17 1996/03/06 19:55:09 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:55:09 $";
+static const char sccsid[] = "$Id: vs_smap.c,v 10.18 1996/03/18 09:25:35 bostic Exp $ (Berkeley) $Date: 1996/03/18 09:25:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -442,13 +442,16 @@ vs_sm_reset(sp, lno)
 		if (diff > cnt)
 			diff = cnt;
 
-		/* Push down the extra lines. */
-		(void)sp->gp->scr_move(sp, p - HMAP, 0);
-		if (vs_insertln(sp, diff))
-			return (1);
+		/* If there are any following lines, push them down. */
+		if (cnt > 1) {
+			(void)sp->gp->scr_move(sp, p - HMAP, 0);
+			if (vs_insertln(sp, diff))
+				return (1);
 
-		/* Shift the screen map down. */
-		memmove(p + diff, p, (((TMAP - p) - diff) + 1) * sizeof(SMAP));
+			/* Shift the screen map down. */
+			memmove(p + diff, p,
+			    (((TMAP - p) - diff) + 1) * sizeof(SMAP));
+		}
 
 		/* Fill in the SMAP for the replaced line, and display. */
 		for (cnt = 1, t = p; cnt_new-- && t <= TMAP; ++t, ++cnt) {
@@ -785,7 +788,7 @@ vs_deleteln(sp, cnt)
 		(void)gp->scr_cursor(sp, &oldy, &oldx);
 		while (cnt--) {
 			(void)gp->scr_deleteln(sp);
-			(void)gp->scr_move(sp, LASTLINE(sp) - 1, 0);
+			(void)gp->scr_move(sp, LASTLINE(sp), 0);
 			(void)gp->scr_insertln(sp);
 			(void)gp->scr_move(sp, oldy, oldx);
 		}
