@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.74 1993/12/26 11:23:34 bostic Exp $ (Berkeley) $Date: 1993/12/26 11:23:34 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.75 1993/12/27 17:09:26 bostic Exp $ (Berkeley) $Date: 1993/12/27 17:09:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -990,12 +990,15 @@ txt_abbrev(sp, tp, pushc, isinfoline, didsubp, turnoffp)
 	 * resulted in an error message that "bar" wasn't mapped.  Finally,
 	 * since the string was already exploded by the time the unabbreviate
 	 * command got it, all it knew was that an abbreviation had occurred.
-	 * Cleverly, it checked the replacement string for a match, which meant
-	 * that the commands:
+	 * Cleverly, it checked the replacement string for its unabbreviation
+	 * match, which meant that the commands:
 	 *	:ab foo1 bar
 	 *	:ab foo2 bar
 	 *	:unab foo2
-	 * unabbreviates "foo1".
+	 * unabbreviates "foo1", and the commands:
+	 *	:ab foo bar
+	 *	:ab bar baz
+	 * unabbreviates "foo"!
 	 *
 	 * Anyway, people neglected to first ask my opinion before they wrote
 	 * macros that depend on this stuff, so, we make this work as follows.
