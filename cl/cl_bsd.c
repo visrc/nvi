@@ -6,9 +6,12 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_bsd.c,v 8.10 1995/11/10 17:52:18 bostic Exp $ (Berkeley) $Date: 1995/11/10 17:52:18 $";
+static char sccsid[] = "$Id: cl_bsd.c,v 8.11 1995/11/11 10:56:08 bostic Exp $ (Berkeley) $Date: 1995/11/11 10:56:08 $";
 #endif /* not lint */
 
+/*
+ * PUBLIC: #ifdef BSD_CURSES_INTERFACE
+ */
 #ifdef BSD_CURSES_INTERFACE
 #include <sys/types.h>
 #include <sys/queue.h>
@@ -228,4 +231,7 @@ tigetnum(name)
 {
 	return (tgetnum(name));
 }
+/*
+ * PUBLIC: #endif /* BSD_CURSES_INTERFACE */
+ */
 #endif /* BSD_CURSES_INTERFACE */
