@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 8.9 1994/02/26 17:19:58 bostic Exp $ (Berkeley) $Date: 1994/02/26 17:19:58 $";
+static char sccsid[] = "$Id: v_scroll.c,v 8.10 1994/03/04 10:05:08 bostic Exp $ (Berkeley) $Date: 1994/03/04 10:05:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -153,8 +153,10 @@ goto_adjust(vp)
 	 * Move to the first non-blank of the line, unless it's a yank to the
 	 * current line or greater.
 	 */
-	if (!F_ISSET(vp, VC_Y) || vp->m_stop.lno < vp->m_start.lno)
+	if (!F_ISSET(vp, VC_Y) || vp->m_stop.lno < vp->m_start.lno) {
+		F_CLR(vp, VM_RCM_MASK);
 		F_SET(vp, VM_RCM_SETFNB);
+	}
 	vp->m_final = vp->m_stop;
 	if (!ISMOTION(vp))
 		return;
