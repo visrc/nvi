@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.41 1993/10/28 14:59:49 bostic Exp $ (Berkeley) $Date: 1993/10/28 14:59:49 $
+ *	$Id: screen.h,v 8.42 1993/10/28 16:49:49 bostic Exp $ (Berkeley) $Date: 1993/10/28 16:49:49 $
  */
 
 /*
@@ -276,10 +276,6 @@ typedef struct _scr {
 #define	S_TIMER_SET	0x0200000	/* If a busy timer is running. */
 #define	S_TERMSIGNAL	0x0400000	/* Termination signal received. */
 #define	S_UPDATE_MODE	0x0800000	/* Don't repaint modeline. */
-
-#define	S_SCREEN_RETAIN			/* Retain at screen create. */	\
-	(S_MODE_EX | S_MODE_VI | S_RE_SET)
-
 	u_int flags;
 } SCR;
 
