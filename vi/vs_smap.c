@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 5.3 1993/02/20 16:44:28 bostic Exp $ (Berkeley) $Date: 1993/02/20 16:44:28 $";
+static char sccsid[] = "$Id: vs_smap.c,v 5.4 1993/02/23 10:40:03 bostic Exp $ (Berkeley) $Date: 1993/02/23 10:40:03 $";
 #endif /* not lint */
 
 #include <curses.h>
@@ -216,7 +216,9 @@ scr_sm_up(ep, lnop, count, cursor_move)
 	 * the line, and one where it doesn't.  In the latter, we try and keep
 	 * the cursor at the same position on the screen, but, if the screen
 	 * is small enough and the line length large enough, the cursor can
-	 * end up in very strange places.  Probably not worthing fixing.
+	 * end up in very strange places.  Probably not worth fixing.
+	 *
+	 * Find the line in the SMAP.
 	 */
 	for (p = HMAP;; ++p) {
 		if (p > TMAP) {
@@ -238,7 +240,7 @@ scr_sm_up(ep, lnop, count, cursor_move)
 		if (scr_sm_next(ep, TMAP, &t))
 			return (1);
 
-		/* If the line doesn't exist, we're done .*/
+		/* If the line doesn't exist, we're done. */
 		if (t.lno > last)
 			break;
 			
@@ -252,39 +254,31 @@ scr_sm_up(ep, lnop, count, cursor_move)
 
 	if (cursor_move) {
 		/*
-		 * If we didn't change the screen and the
-		 * cursor is on the last line, it's an error.
+		 * If didn't move enough lines, it's an error if we're at the
+		 * EOF, else move there.  Otherwise, try and place the cursor
+		 * roughly where it was before.
 		 */
-		if (!scrolled && ep->lno == TMAP->lno) {
-			v_eof(ep, NULL);
-			return (1);
-		}
-
-		/*
-		 * If didn't move enough lines, move the cursor to the end
-		 * of the file.  Otherwise, try and place the cursor roughly
-		 * where it was before.
-		 */
-		if (!scrolled || count)
+		if (!scrolled || count) {
+			if (ep->lno == TMAP->lno) {
+				v_eof(ep, NULL);
+				return (1);
+			}
 			*lnop = TMAP->lno;
-		else
+		} else
 			*lnop = p->lno;
 	} else {
-		/* If we didn't change the screen it's an error. */
-		if (!scrolled) {
+		/* It's an error if we didn't scroll enough. */
+		if (!scrolled || count) {
 			v_eof(ep, NULL);
 			return (1);
 		}
 
-		/*
-		 * If the cursor is gone from the screen, move it to the
-		 * top of the screen.
-		 */
+		/* If the cursor moved off the screen, move it to the top. */
 		 *lnop = ep->lno < HMAP->lno ? HMAP->lno : ep->lno;
 	}
-
 	return (0);
 }
+
 /*
  * scr_sm_1up --
  *	Scroll the SMAP up one.
@@ -332,7 +326,9 @@ scr_sm_down(ep, lnop, count, cursor_move)
 	 * the line, and one where it doesn't.  In the latter, we try and keep
 	 * the cursor at the same position on the screen, but, if the screen
 	 * is small enough and the line length large enough, the cursor can
-	 * end up in very strange places.  Probably not worthing fixing.
+	 * end up in very strange places.  Probably not worth fixing.
+	 *
+	 * Find the line in the SMAP.
 	 */
 	for (p = HMAP;; ++p) {
 		if (p > TMAP) {
@@ -349,7 +345,7 @@ scr_sm_down(ep, lnop, count, cursor_move)
 			break;
 		--count;
 
-		/* If the line doesn't exist, we're done .*/
+		/* If the line doesn't exist, we're done. */
 		if (HMAP->lno == 1 && HMAP->off == 1)
 			break;
 			
@@ -361,37 +357,29 @@ scr_sm_down(ep, lnop, count, cursor_move)
 			++p;
 	}
 
-	if (cursor_move) {
+	if (cursor_move)
 		/*
-		 * If we didn't change the screen and the
-		 * cursor is on the last line, it's an error.
+		 * If didn't move enough lines, it's an error if we're at the
+		 * SOF, else move there.  Otherwise, try and place the cursor
+		 * roughly where it was before.
 		 */
-		if (!scrolled && ep->lno == HMAP->lno) {
-			v_sof(ep, NULL);
-			return (1);
-		}
-
-		/*
-		 * If didn't move enough lines, move the cursor to the end
-		 * of the file.  Otherwise, try and place the cursor roughly
-		 * where it was before.
-		 */
-		if (!scrolled || count)
+		if (!scrolled || count) {
+			if (ep->lno == HMAP->lno) {
+				v_sof(ep, NULL);
+				return (1);
+			}
 			*lnop = HMAP->lno;
-		else
+		} else
 			*lnop = p->lno;
-	} else {
-		/* If we didn't change the screen it's an error. */
-		if (!scrolled) {
+	else {
+		/* It's an error if we didn't scroll enough. */
+		if (!scrolled || count) {
 			v_sof(ep, NULL);
 			return (1);
 		}
 
-		/*
-		 * If the cursor is gone from the screen, move it to the
-		 * bottom of the screen.
-		 */
-		 *lnop = ep->lno > TMAP->lno ? TMAP->lno : ep->lno;
+		/* If the cursor moved off the screen, move it to the bottom. */
+		*lnop = ep->lno > TMAP->lno ? TMAP->lno : ep->lno;
 	}
 	return (0);
 }
