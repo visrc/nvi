@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.3 1993/07/21 08:52:51 bostic Exp $ (Berkeley) $Date: 1993/07/21 08:52:51 $";
+static char sccsid[] = "$Id: ex.c,v 8.4 1993/08/05 18:08:34 bostic Exp $ (Berkeley) $Date: 1993/08/05 18:08:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -47,6 +47,9 @@ ex(sp, ep)
 
 	if (sp->s_refresh(sp, ep))
 		return (ex_end(sp));
+
+	/* Edited as it can be. */
+	F_SET(sp->frp, FR_EDITED);
 
 	for (eval = 0;;) {
 		if (sp->s_get(sp, ep,
