@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 5.23 1993/02/28 14:00:45 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:00:45 $";
+static char sccsid[] = "$Id: ex_tag.c,v 5.24 1993/03/01 12:47:23 bostic Exp $ (Berkeley) $Date: 1993/03/01 12:47:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,7 +21,6 @@ static char sccsid[] = "$Id: ex_tag.c,v 5.23 1993/02/28 14:00:45 bostic Exp $ (B
 #include "excmd.h"
 #include "options.h"
 #include "screen.h"
-#include "tag.h"
 
 static int tagchange __P((EXF *, TAG *, int));
 
@@ -77,7 +76,7 @@ ex_tagpop(ep, cmdp)
 	TAG *tag;
 	int force;
 
-	if ((tag = tag_head()) == NULL) {
+	if ((tag = tag_head(ep)) == NULL) {
 		ep->msg(ep, M_ERROR, "No tags on the stack.");
 		return (1);
 	}
@@ -102,7 +101,7 @@ ex_tagtop(ep, cmdp)
 {
 	TAG *tag;
 
-	for (tag = NULL; tag_head() != NULL;)
+	for (tag = NULL; tag_head(ep) != NULL;)
 		tag = tag_pop(ep);
 	if (tag == NULL) {
 		ep->msg(ep, M_ERROR, "No tags on the stack.");
@@ -133,12 +132,16 @@ tagchange(ep, tag, force)
 			return (1);
 		if ((tep = file_first(0)) == NULL)
 			return (1);
+		if ((tep = file_start(tep)) == NULL)
+			return (1);
 	} else if (strcmp(ep->name, tag->fname)) {
 		MODIFY_CHECK(ep, force);
 		if ((tep = file_locate(tag->fname)) == NULL) {
 			if (file_ins(ep, tag->fname, 1))
 				return (1);
 			if ((tep = file_next(ep, 0)) == NULL)
+				return (1);
+			if ((tep = file_start(tep)) == NULL)
 				return (1);
 			FF_SET(tep, F_IGNORE);
 		}
@@ -157,6 +160,6 @@ tagchange(ep, tag, force)
 	SCRCNO(tep) = mp->cno;
 
 	FF_SET(ep, F_SWITCH);
-	ep->eprev = tep;
+	ep->enext = tep;
 	return (0);
 }
