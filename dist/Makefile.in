@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.18 1996/02/27 16:40:28 bostic Exp $ (Berkeley) $Date: 1996/02/27 16:40:28 $
+#	$Id: Makefile.in,v 8.19 1996/02/27 17:41:39 bostic Exp $ (Berkeley) $Date: 1996/02/27 17:41:39 $
 
 #GCCF=	-Wall
 #DEBUG=	-g -DDEBUG
@@ -51,7 +51,7 @@ nvi: $(NVIALL)
 
 TKALL=	$(TKOBJS) $(VIOBJS) @LIBOBJS@
 tknvi: $(TKALL)
-	$(CC) $(LDFLAGS) -o $@ $(TKALL) @TKLIBS@
+	$(CC) $(LDFLAGS) -o $@ $(TKALL) @LIBS@
 
 clean:
 	rm -f nex nvi tknvi @LIBOBJS@ \
