@@ -1,4 +1,4 @@
-#	$Id: Makefile,v 8.2 1994/09/02 10:33:30 bostic Exp $ (Berkeley) $Date: 1994/09/02 10:33:30 $
+#	$Id: Makefile,v 8.3 1994/09/19 12:44:28 bostic Exp $ (Berkeley) $Date: 1994/09/19 12:44:28 $
 
 FILES=	../common/*.c ../ex/*.c ../sex/*.c ../vi/*.c ../svi/*.c ../xaw/*.c
 english: dump ${FILES}
@@ -19,7 +19,7 @@ catalog:
 			for (; nline < $$1; ++nline)			\
 				print "";				\
 			print $0;					\
-		}' < $$i | tee /tmp/_f |				\
+		}' < $$i |						\
 		sed -e '/"/s/^[^"]*"//'					\
 		    -e '/"/s/"$$//' > `basename $$i .base`;		\
 	done
