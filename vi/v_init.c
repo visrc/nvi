@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 5.26 1993/05/06 01:30:39 bostic Exp $ (Berkeley) $Date: 1993/05/06 01:30:39 $";
+static char sccsid[] = "$Id: v_init.c,v 5.27 1993/05/06 12:20:52 bostic Exp $ (Berkeley) $Date: 1993/05/06 12:20:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -50,8 +50,8 @@ write(fd, buf, n)
 	 * Walk the list of screens, and see if anyone is trapping
 	 * this file descriptor.
 	 */
-	for (sp = __global_list.scrhdr.next;
-	    sp != (SCR *)&__global_list.scrhdr; sp = sp->next)
+	for (sp = __global_list->scrhdr.next;
+	    sp != (SCR *)&__global_list->scrhdr; sp = sp->next)
 		if (fd == sp->trapped_fd)
 			return (svi_exwrite(sp, buf, n));
 
