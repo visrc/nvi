@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_display.c,v 8.18 1994/05/21 09:38:06 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:38:06 $";
+static char sccsid[] = "$Id: ex_display.c,v 8.19 1994/07/18 17:32:04 bostic Exp $ (Berkeley) $Date: 1994/07/18 17:32:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -117,7 +117,7 @@ db(sp, cbp, name)
 
 	(void)ex_printf(EXCOOKIE, "********** %s%s\n",
 	    name == NULL ? KEY_NAME(sp, cbp->name) : name,
-	    F_ISSET(cbp, CB_LMODE) ? " (line mode)" : "");
+	    F_ISSET(cbp, CB_LMODE) ? " (line mode)" : " (character mode)");
 	for (tp = cbp->textq.cqh_first;
 	    tp != (void *)&cbp->textq; tp = tp->q.cqe_next) {
 		for (len = tp->len, p = tp->lb; len--; ++p) {
