@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 8.8 1993/11/03 17:18:48 bostic Exp $ (Berkeley) $Date: 1993/11/03 17:18:48 $";
+static char sccsid[] = "$Id: ex_shell.c,v 8.9 1993/11/03 17:49:59 bostic Exp $ (Berkeley) $Date: 1993/11/03 17:49:59 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -45,23 +45,39 @@ ex_exec_proc(sp, shell, cmd, msg)
 	const u_char *shell, *cmd;
 	char *msg;
 {
+	struct sigaction act, oact;
+	struct termios term;
 	const char *name;
-	struct termios t;
 	pid_t pid;
-	int rval;
+	int isig, rval;
 
-	/* Save ex/vi terminal settings, and restore the original ones. */
+	/*
+	 * Save ex/vi terminal settings, and restore the original ones.
+	 *
+	 * The old terminal values almost certainly turn on VINTR, VQUIT and
+	 * VSUSP.  We don't want to interrupt the parent(s), so we ignore
+	 * VINTR.  VQUIT is ignored by main() because nvi never wants to catch
+	 * it.  A handler for VSUSP should have been installed by the screen
+	 * code.
+	 */
 	if (F_ISSET(sp->gp, G_ISFROMTTY)) {
-		if (tcgetattr(STDIN_FILENO, &t)) {
-			msgq(sp, M_ERR,
-			    "Error: tcgetattr: %s", strerror(errno));
-			return (1);
-		}
-		if (tcsetattr(STDIN_FILENO,
-		    TCSADRAIN, &sp->gp->original_termios)) {
-			msgq(sp, M_ERR,
-			    "Error: tcsetattr: %s", strerror(errno));
-			return (1);
+		act.sa_handler = SIG_IGN;;
+		sigemptyset(&act.sa_mask);
+		act.sa_flags = 0;
+		if (isig = !sigaction(SIGINT, &act, &oact)) {
+			if (tcgetattr(STDIN_FILENO, &term)) {
+				msgq(sp, M_ERR,
+				    "Error: tcgetattr: %s", strerror(errno));
+				rval = 1;
+				goto ret;
+			}
+			if (tcsetattr(STDIN_FILENO,
+			    TCSADRAIN, &sp->gp->original_termios)) {
+				msgq(sp, M_ERR,
+				    "Error: tcsetattr: %s", strerror(errno));
+				rval = 1;
+				goto ret;
+			}
 		}
 	}
 
@@ -70,7 +86,8 @@ ex_exec_proc(sp, shell, cmd, msg)
 	switch (pid = vfork()) {
 	case -1:			/* Error. */
 		msgq(sp, M_ERR, "vfork: %s", strerror(errno));
-		return (1);
+		rval = 1;
+		goto ret;
 	case 0:				/* Utility. */
 		/*
 		 * The utility has default signal behavior.  Don't bother
@@ -93,11 +110,16 @@ ex_exec_proc(sp, shell, cmd, msg)
 	rval = proc_wait(sp, (long)pid, cmd, 0);
 
 	/* Restore ex/vi terminal settings. */
-	if (F_ISSET(sp->gp, G_ISFROMTTY))
-		if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &t)) {
+ret:	if (F_ISSET(sp->gp, G_ISFROMTTY) && isig) {
+		if (sigaction(SIGINT, &oact, NULL)) {
+			msgq(sp, M_ERR, "Error: signal: %s", strerror(errno));
+			rval = 1;
+		}
+		if (tcsetattr(STDIN_FILENO, TCSANOW | TCSASOFT, &term)) {
 			msgq(sp, M_ERR,
 			    "Error: tcsetattr: %s", strerror(errno));
 			rval = 1;
 		}
+	}
 	return (rval);
 }
