@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_util.c,v 5.1 1992/05/15 11:15:09 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:15:09 $";
+static char sccsid[] = "$Id: v_util.c,v 5.2 1992/05/21 13:00:46 bostic Exp $ (Berkeley) $Date: 1992/05/21 13:00:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -79,6 +79,8 @@ v_nonblank(rp)
 }
 
 static u_long oldy, oldx;
+static struct termios save;
+
 
 /*
  * v_startex --
@@ -96,25 +98,25 @@ v_startex()
 	 * This doesn't work yet; curses needs a line oriented semantic
 	 * to force writing regardless of differences.
 	 */
-	getyx(stdscr, oldy, oldx);
 	move(LINES - 1, 0);
 	clrtoeol();
 	refresh();
 
-	/* Suspend the window. */
-	suspendwin();
+	/* Save the curses state. */
+	(void)tcgetattr(STDIN_FILENO, &save);
 
-	/* We have special needs... */
-	(void)tcgetattr(STDIN_FILENO, &t);
-	cfmakeraw(&t);
+	/* Suspend the window. */
+	endwin();
 
 	/*
 	 * XXX
-	 * This line means that we know much too much about the tty driver.
+	 * These lines mean that we know much too much about the tty driver.
 	 * We want raw input, but we want NL -> CR mapping on output.  The
 	 * only way to get that in the 4.4BSD tty driver is to have OPOST
 	 * turned on and it's turned off by cfmakeraw(3).
 	 */
+	(void)tcgetattr(STDIN_FILENO, &t);
+	cfmakeraw(&t);
 	t.c_oflag |= ONLCR|OPOST;
 	(void)tcsetattr(STDIN_FILENO, TCSADRAIN, &t);
 
@@ -129,9 +131,22 @@ v_startex()
 void
 v_leaveex()
 {
-	/* Restart the curses window, repainting if necessary. */
-	restartwin(ex_prstate == PR_PRINTED);
+	/* Make sure ex got everything out. */
+	(void)fflush(stdout);
 
-	/* Return to the last cursor position. */
-	move(oldy, oldx);
+	/* Switch back to the curses termios values. */
+	(void)tcsetattr(STDIN_FILENO, TCSADRAIN, &save);
+
+	/*
+	 * If wrote a carriage return, repaint the screen, we've got no
+	 * idea what's out there.  Otherwise, repaint the screen and
+	 * erase the last line.
+	 */
+	if (ex_prstate == PR_PRINTED)
+		wrefresh(curscr);
+	else {
+		wrefresh(stdscr);
+		touchline(stdscr, LINES - 1, 0, COLS - 1);
+		refresh();
+	}
 }
