@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 8.1 1993/06/09 22:25:47 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:25:47 $";
+static char sccsid[] = "$Id: vs_smap.c,v 8.2 1993/07/20 10:25:16 bostic Exp $ (Berkeley) $Date: 1993/07/20 10:25:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -308,7 +308,7 @@ svi_sm_reset(sp, ep, lno)
 	 */
         for (p = HMAP; p->lno != lno; ++p);
 	for (cnt_orig = 0, t = p;
-	    t->lno == lno && t <= TMAP; ++cnt_orig, ++t);
+	    t <= TMAP && t->lno == lno; ++cnt_orig, ++t);
 	cnt_new = svi_screens(sp, ep, lno, NULL);
 
 	TOO_WEIRD;
