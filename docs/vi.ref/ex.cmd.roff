@@ -1,0 +1,1514 @@
+.\" Copyright (c) 1994
+.\"	The Regents of the University of California.  All rights reserved.
+.\"
+.\" %sccs.include.redist.roff%
+.\"
+.\"	$Id: ex.cmd.roff,v 8.1 1994/04/23 11:04:28 bostic Exp $ (Berkeley) $Date: 1994/04/23 11:04:28 $
+.\"
+#ifdef REFERENCE
+.Sh EX DESCRIPTION
+When
+.Nm \&ex
+is executed,
+the text of a file is read (or a temporary file is created),
+and then all editing changes happen to a copy of the file.
+No changes effect the file until the file is written out,
+either using a write command or based on the value of the
+.Sy autowrite
+option.
+.Pp
+.Nm \&Ex
+is a modeful editor, i.e. it has two modes,
+.Dq command
+and
+.Dq "text input" .
+When
+.Nm \&ex
+first starts, it is in command mode.
+There are three commands that change
+.Nm \&ex
+into text input mode
+.Sy append ,
+.Sy change
+and
+.Sy insert .
+In input mode, entering an empty line with a single period
+.Pq Dq Li .
+on it terminates input and returns to command mode.
+.Pp
+When
+.Nm \&ex
+is in command mode, it displays a colon (``:'') prompt.
+.Sh EX ADDRESSING
+Addressing in
+.Nm \&ex
+relates to the current line.
+In general, the current line is the last line affected by a command.
+The exact effect on the current line is discussed under the description
+of each command.
+When the buffer contains no lines, the current line is zero.
+.Pp
+Addresses are constructed by one or more of the following methods:
+.Bl -enum -compact
+.It
+The address
+.Dq Li .
+refers to the current line.
+.It
+The address
+.Dq Li $
+refers to the last line of the file.
+.It
+The address
+The address
+.Dq Li N ,
+where
+.Li N
+is a positive number, refers to the N-th line of the file.
+.It
+The address
+.Dq Li '<character>
+refers to the line marked with name <character>.
+(See the
+.Sy k
+or
+.Sy m
+commands for more information on how to mark lines.)
+.It
+A regular expression (RE) enclosed by slashes
+.Pq Dq Li /
+is an address,
+and it refers to the first line found by searching forwards from
+the line
+.Em after
+the current line toward the end of the file, and stopping at the
+first line containing a string matching the RE.
+(The trailing slash can be omitted at the end of the command line.)
+If the
+.Sy extended
+option is set, the RE is handled as an extended RE, not a basic RE.
+If the
+.Sy wrapscan
+option is set, the search wraps around to the beginning of the file
+and continues up to and including the current line, so that the entire
+file is searched.
+.It
+An RE enclosed in question marks
+.Pq Dq Li ?
+addresses the first line found by searching backwards from the line
+.Em preceding
+the current line, toward the beginning of the file and stopping at the
+first line containing a string matching the RE.
+(The trailing question mark can be omitted at the end of a command line.)
+If the
+.Sy extended
+option is set, the RE is handled as an extended RE, not a basic RE.
+If the
+.Sy wrapscan
+option is set, the search  wraps around from the beginning of the file to
+the end of the file and continues up to and including the current line,
+so that the entire file is searched.
+.It
+An address followed by a plus sign
+.Pq Dq Li +
+or a minus sign
+.Pq Dq Li -
+followed by a number is an offset address and refers to the
+address plus (or minus) the indicated number of lines.
+If the address is omitted, the addition or subtraction is done with
+respect to the current line.
+.It
+An address of
+.Dq Li +
+or
+.Dq Li -
+followed by a number is an offset from the current line.
+For example,
+.Dq Li -5
+is the same as
+.Dq Li .-5 .
+.It
+An address ending with
+.Dq Li +
+or
+.Dq Li -
+has 1 added to or subtracted from the address, respectively.
+As a consequence of this rule and of the previous rule,
+the address
+.Dq Li -
+refers to the line preceding the current line.
+Moreover, trailing
+.Dq Li +
+and
+.Dq Li -
+characters have a cumulative effect.
+For example,
+.Dq Li ++-++
+refers to the current line plus 3.
+.It
+A percent sign
+.Pq Dq Li %
+is equivalent to the address range
+.Dq Li 1,$ .
+.Pp
+.Nm \&Ex
+commands require zero, one, or two addresses.
+It is an error to specify an address to a command which requires zero
+addresses.
+.Pp
+The addresses in a range are separated from each other by a comma
+.Pq Dq ,
+or a semicolon
+.Pq Dq ; .
+In the latter case, the current line
+.Pq Dq .
+is set to the first address,
+and only then is the second address calculated.
+This feature can be used to determine the starting line for forwards and
+backwards searches (see rules (5) and (6) above).
+The second address of any two-address sequence corresponds to a line that
+follows, in the file, the line corresponding to the first address.
+The first address must be less than or equal to the second address.
+The first address must be greater than or equal to the first line of the
+file, and the last address must be less than or equal to the last line
+of the file.
+.Pp
+If you provide more than the expected number of addresses to any
+.Nm \&ex
+command, the first addresses specified are discarded.
+For example,
+.Dq Li "1,2,3,5 print"
+prints lines 3 through 5, because the
+.Sy print
+command only takes two addresses.
+.bp
+#endif /* REFERENCE */
+.Sh EX COMMANDS
+The following words have special meanings for
+.Nm \&ex
+commands.
+.sp
+.Bl -tag -width "XXXX" -compact
+.It Li "current pathname"
+The pathname of the file currently being edited by vi.
+When the character
+.Dq Li \&%
+appears in a pathname entered as part of an
+.Nm \&ex
+command argument, it's replaced by the current pathname.
+The
+.Dq Li \&%
+character can be escaped by preceding it with a backslash.
+.It Li "alternate pathname"
+The name of the last file mentioned in an
+.Nm \&ex
+command, or, the previous current pathname if the last file mentioned
+becomes the current file.
+When the character
+.Dq Li \&#
+appears in a pathname entered as part of an
+.Nm \&ex
+command argument, it's replaced by the alternate pathname.
+The
+.Dq Li \&#
+character can be escaped by preceding it with a backslash.
+.It Li "line"
+A single-line address, given in any of the forms described in the
+Ex Addressing section.
+The default for
+.Li line
+is the current line.
+.It Li "range"
+A line, or a pair of line addresses, separated by a comma or semicolon.
+The default for range shall be the current line
+.Em only ,
+i.e.
+.Dq Li .,. .
+A percent sign
+.Pq Dq Li %
+stands for the range
+.Dq Li 1,$ .
+The starting address must be less than, or equal to, the ending address.
+.It Li "count"
+A positive integer, specifying the number of lines to be affected by
+the command; the default is 1.
+.It Li "flags"
+One or more of the characters
+.Dq # ,
+.Dq p ,
+and
+.Dq l .
+When a command that accepts these flags completes, the addressed line(s)
+are written out as if by the corresponding
+.Sy # ,
+.Sy l
+or
+.Sy p
+commands.
+In addition, any number of
+.Dq Li +
+or
+.Dq Li -
+characters can be specified before, after, or during the flags, in which
+case th eline written is not necessarily the one affected by the command,
+but rather the line addressed by the offset address specified.
+The default for
+.Li flags
+is none.
+.Dq Li "buffer"
+.GG
+.It Li "file"
+A pattern used to derive a pathname; the default is the current file.
+File names are subected to normal
+.Xr sh 1
+word expansions.
+.It Li "<literal next>"
+.HH
+.It Li "word"
+A word consists of a sequence of letters, digits, and underscores,
+delimited at both ends by characters other than letters, digits, or
+underscores, or by the beginning or end of a line or the file.
+.Pp
+If both a count and a range are specified for a command that uses either,
+the number of lines affected is that specified by the count value and
+not the range.
+The starting line for the command is the first line addressed by the range.
+.Pp
+When only a line or range is specified, with no command, the implied
+command is either a
+.Sy print ,
+.Sy list
+or
+.Sy number
+command.
+The command used is the last of these three commands to be used,
+including any use as a flag.
+If none of these commands have been used before, the
+.Sy print
+command is used.
+When no range or count is specified and the command line is a blank line,
+the current line is displayed, and the current line is incremented by 1.
+.Pp
+Zero or more whitespace characters may precede or follow the addresses,
+count, flags, or command name.
+Any object following a command name (such as buffer, file, etc.) that
+begins with an alphabetic character should be separated from the command
+name by at least one whitespace character.
+.Pp
+Any character, including <carriage-return>,
+.Dq Li %
+and
+.Dq Li #
+retain their literal value when preceded by a backslash.
+.Pp
+Each
+.Nm \&ex
+command described below notes the value of the current line after it
+is executed.
+.Pp
+In each entry below, the tag line is a usage synopsis for the command.
+For each of the commands, the command can be entered as the abbreviation
+(those characters in the synopsis command word preceding the [), the full
+command (all characters shown for the command word, omitting the [ and ]),
+or any subset of the characters of the full command down to the abbreviation.
+For example, the args command (shown as
+.Dq Li ar[gs]
+in the synopsis)
+can be entered as
+.Dq Li ar ,
+.Dq Li arg
+or
+.Dq Li args .
+.sp
+#ifdef REFERENCE
+.Bl -tag -width "XXXX"
+#endif
+#ifdef MANUAL
+.Bl -tag -width "XXXX" -compact
+#endif
+.It Li "ab[brev] word rhs"
+Add the named abbreviation to the current abbreviation list.
+#ifdef REFERENCE
+In visual mode, if word is typed so that it is preceded and followed
+by characters that cannot be part of a word, it is replaced by the
+string
+.Dq Li rhs .
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+Unchanged.
+.It "Options:"
+None.
+.El
+#endif
+.It Li "[line] a[ppend][!]"
+The input text is appended to the specified line.
+#ifdef REFERENCE
+If line 0 is specified, the text is inserted at the beginning of the file.
+The current line changes to the last line input.
+If no lines are input, then it changes to
+.Li line ,
+or to the first line of the file if a
+.Li line
+of 0 was specified.
+Following the command name with
+.Dq Li !
+causes the
+.Sy autoindent
+editor option to be toggled for the duration of the command.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+Unchanged.
+.It "Options:"
+Affected by the
+.Sy altwerase ,
+.Sy autoindent ,
+.Sy beautify ,
+.Sy showmatch ,
+.Sy ttywerase
+and
+.Sy wrapmargin
+options.
+.El
+#endif
+.It Li "ar[gs]"
+#ifdef MANUAL
+Display the argument list.
+#endif
+#ifdef REFERENCE
+Display the argument list with the current argument inside
+.Dq Li [
+and
+.Dq Li ]
+characters.
+The argument list is the list of operands specified on startup,
+which can be replaced using the
+.Sy next
+command.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+Unchanged.
+.It "Options:"
+None.
+.El
+#endif
+.It Li "[range] c[hange][!] [count]"
+Replace the lines with input text.
+#ifdef REFERENCE
+Following the command name with
+.Dq Li !
+causes the
+.Sy autoindent
+editor option to be toggled for the duration of the command.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+The current line changes to the last line input, or, if no lines were
+input, it changes to the line before the target line, or to the first
+line of the file if there are no lines preceding the target line.
+.It "Options:"
+Affected by the
+.Sy altwerase ,
+.Sy autoindent ,
+.Sy beautify ,
+.Sy showmatch ,
+.Sy ttywerase
+and
+.Sy wrapmargin
+options.
+.El
+#endif
+.It Li "chd[ir][!] [directory]"
+.It Li "cd[!] [directory]"
+Change the current working directory.
+#ifdef REFERENCE
+The
+.Li directory
+argument is subjected to
+.Xr sh 1
+word expansions.
+When invoked with no directory argument and the
+.Ev HOME
+environment variable is set, the directory named by the
+.Ev HOME
+environment variable becomes the new current directory.
+Otherwise, the new current directory becomes the directory returned
+by the
+.Xr getpwent 3
+routine.
+.Pp
+The
+.Sy chdir
+command will fail if the file has been modified since the last complete
+write of the file.
+You can override this check by appending a
+.Dq Li !
+to the command.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+Unchanged.
+.It "Options:"
+None.
+.El
+#endif
+.It Li "[range] co[py] line [flags]"
+.It Li "[range] t line [flags]"
+Copy the specified lines (range) after the destination line.
+Line 0 places the lines at the beginning of the file.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+Unchanged.
+.It "Options:"
+None.
+.El
+#endif
+.It Li "[range] d[elete] [buffer] [count] [flags]"
+Delete the lines from the file.
+#ifdef REFERENCE
+If a named buffer is specified, the deleted text shall be saved in it.
+Otherwise, the deleted text is saved in the unnamed buffer.
+If the command name is followed by a letter that could be interpreted
+as either a buffer name or a flag value (because neither a count nor
+an additional flags value was given),
+.Nm \&ex treats the letter as a flags value if the letter immediately
+follows the command name, without any whitespace separation.
+If the letter is preceded by whitespace characters, it treats it as a
+buffer name.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+The current line changes to the line following the deleted lines,
+or to the last line if the deleted lines were at the end.
+.It "Options:"
+None.
+.El
+#endif
+.It Li "e[dit][!] [+cmd] [file]"
+.It Li "ex[!] [+cmd] [file]"
+Start editing a different file.
+#ifdef REFERENCE
+If the current buffer has been modified since the last complete write,
+the command will fail.
+You can override this by appending a
+.Dq Li !
+to the command name.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+If you have previously edited the file, the current line will be set
+to your last position in the file.
+If that position does not exist, or you have not previously edited the
+file, the current line will be set to the first line of the file if
+you are in visual mode, and the last line of the file, otherwise.
+.Pp
+If the
+.Dq Li +cmd
+option is specified, the
+.Nm \&ex
+command will be executed in the new file.
+Any
+.Nm \&ex
+command may be used, although the most common use of this feature is
+to specify a line number or search pattern to set the initial location
+in the new file.
+.It "Options:"
+Affected by
+.Sy autowrite
+and
+.Sy writeany .
+.El
+#endif
+.It Li "f[ile] [file]"
+Display and optionally change the file name.
+#ifdef REFERENCE
+If a file name is specified, the current pathname is changed to the
+specified name.
+The current pathname, the number of lines, and the current position
+in the file are displayed.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+Unchanged.
+.It "Options:"
+None.
+.El
+#endif
+.It Li "[range] g[lobal] /pattern/ [commands]"
+.It Li "[range] v /pattern/ [commands]
+#ifdef MANUAL
+Global commands matching a pattern
+.Pq Li g[lobal] ,
+or not matching a pattern
+.Pq Li v .
+#endif
+#ifdef REFERENCE
+The lines within the given range that match
+.Pq Li g[lobal] ,
+or do not match
+.Pq Li v
+the given pattern are selected.
+Then, the specified
+.Nm \&ex
+command(s) are executed with the current line
+.Pq Dq Li .
+set to each selected line.
+If no range is specified, the entire file is searched for matching,
+or not matching, lines.
+.Pp
+Multiple commands can be specified, one per line, by escaping each
+<newline> character with a backslash, or by separating commands with a
+.Dq Li |
+character.
+If no commands are specified, the command defaults to the
+.Sy print
+command.
+For the
+.Sy append ,
+.Sy change
+and
+.Sy insert
+commands, the input text must be part of the global command line.
+In this case, the terminating period can be omitted if it ends the commands.
+The
+.Sy visual
+command may be specified as one of the commands.
+In this mode, input shall be taken from the terminal.
+Entering a
+.Sy Q
+from visual mode shall cause the next line matching the pattern to be
+selected and visual mode to be reentered, until the list is exhausted.
+.Pp
+The
+.Sy global ,
+.Sy v
+and
+.Sy undo
+commands cannot be used as part of these commands.
+.Pp
+The editor options
+.Sy autoprint ,
+.Sy autoindent ,
+and
+.Sy report
+are turned off for the duration of the
+.Sy global
+and
+.Sy v
+commands.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+The last line modified.
+.It "Options:"
+None.
+.El
+#endif
+.It Li "[line] i[nsert][!]"
+The input text is inserted before the specified line.
+#ifdef REFERENCE
+Following the command name with the character
+.Dq Li !
+causes the
+.Sy autoindent
+editor option setting to be toggled for the duration of this command.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+The current line moves to last line input; if no lines were input,
+it moves to the line before the target line, or to the first line
+of the file if there are no lines preceding the target line.
+.It "Options:"
+Affected by the
+.Sy altwerase ,
+.Sy autoindent ,
+.Sy beautify ,
+.Sy showmatch ,
+.Sy ttywerase
+and
+.Sy wrapmargin
+options.
+.El
+#endif
+.It Li "[range] j[oin][!] [count] [flags]"
+Join lines of text together.
+#ifdef REFERENCE
+When the last character on the first line of a pair of lines to be
+joined is a period, two space's are added following the period.
+When the last character of the first line is a whitespace character,
+or when the first character on the second line of the pair is a
+.Dq Li ) , no whitespace characters are added.
+Otherwise, one space is added following the last character of the
+first line.
+Any trailing blanks at the start of a line are discarded.
+.Pp
+Appending a
+.Dq Li !
+character to the command name causes a simpler join with no
+white-space processing.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+Unchanged.
+.It "Options:"
+None.
+.El
+#endif
+.It Li "[range] l[ist] [count] [flags]"
+Display the lines unambiguously.
+#ifdef REFERENCE
+Tabs are displayed as
+.Dq Li ^I .
+Nonprintable characters are displayed as hexadecimal values.
+The end of the line is marked with a
+.Dq Li $ .
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+The current line is set to the last line displayed.
+.It "Options:"
+Affected by the
+.Sy octal
+option.
+None.
+.El
+#endif
+.It Li "map[!] [lhs rhs]"
+Define or display maps (for visual mode only).
+#ifdef REFERENCE
+When the
+.Dq Li lhs
+character sequence is entered in visual mode, the action shall be as if
+the corresponding
+.Dq Li rhs
+had been entered.
+If the character
+.Dq Li !
+is appended to the command name, the mapping is effective during text
+input mode instead of command mode.
+This allows
+.Dq Li lhs
+to have two different macro definitions at the same time: one for command
+mode and one for input mode.
+Nonprintable characters, except for tab,
+require escaping with a <literal next> character to be entered in the
+arguments.
+.Pp
+If
+.Dq Li lhs
+and
+.Dq Li rhs
+are not specified, the current set of command mode maps are displayed.
+If a
+.Dq Li !
+character is appended to to the command, the text input mode maps are
+displayed.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+Unchanged.
+.It "Options:"
+None.
+.El
+#endif
+.It Li "[line] ma[rk] <character>"
+.It Li "[line] k <character>"
+Mark the line with the mark <character>.
+#ifdef REFERENCE
+The expressions
+.Dq Li '<character>
+and
+.Dq Li `<character>
+can then be used as an address in any command requiring one.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+Unchanged.
+.It "Options:"
+None.
+.El
+#endif
+.It Li "[range] m[ove] line"
+Move the specified lines (range) to be after the target line (line).
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+The current line is changed to the first of the moved lines.
+.It "Options:"
+None.
+.El
+#endif
+.It Li "n[ext][!] [file ...]"
+Edit the next file from the argument list.
+#ifdef REFERENCE
+The
+.Sy next
+command will fail if the file has been modified since the last complete
+write.
+This check can be overridden by appending the
+.Dq Li !
+character to the command name.
+The argument list can optionally be replaced by specifying a new one
+as arguments to this command.
+In this case, editing starts with the first file on the new list.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+The current line is changed as described for the
+.Sy edit
+command.
+.It "Options:"
+Affected by the options
+.Sy autowrite
+and
+.Sy writeany .
+None.
+.El
+#endif
+.It Li "[range] nu[mber] [count] [flags]"
+.It Li "[range] # [count] [flags]"
+Display the selected lines, each preceded with its line number.
+#ifdef REFERENCE
+Nonprintable characters, except for tab's, are expanded as specified
+by the
+.Sy print
+command.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+The current line is changed to the last line displayed.
+.It "Options:"
+None.
+.El
+#endif
+.It Li "[line] o[pen] /pattern/ [flags]"
+Enter open mode.
+#ifdef REFERENCE
+Open mode is the same as visual mode, but with a one-line window.
+All the visual mode commands are available.
+If a match is found for the optional RE argument,
+the cursor shall be moved to the start of the matching pattern.
+.Pp
+.Em "This command is not yet implemented."
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+Unchanged, unless the optional RE is specified, in which case it is
+changed to the line where the matching pattern is found.
+.It "Options:"
+Affected by the
+.Sy open
+option.
+.El
+#endif
+.It Li "pre[serve]"
+Save the file in a form that can later be recovered by using
+.Nm \&ex
+.Fl l
+and
+.Fl r
+options.
+When the file is preserved, an email message is sent to the user.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+Unchanged.
+.It "Options:"
+None.
+.El
+#endif
+.It Li "[range] p[rint] [count] [flags]"
+Display the specified lines.
+#ifdef REFERENCE
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+The current line is changed to the last line displayed.
+.It "Options:"
+None.
+.El
+#endif
+.It Li "[line] pu[t] [buffer]"
+Append buffer contents to the current line.
+#ifdef REFERENCE
+If a buffer is specified, its contents are appended to the line,
+otherwise, the contents of the unnamed buffer are used.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+The current line is changed to the line after the current line.
+.It "Options:"
+None.
+.El
+#endif
+.It Li "q[uit][!]"
+End the editing session.
+#ifdef REFERENCE
+If the file has been modified since the last complete write, the
+.Sy quit
+command will fail.
+This check may be overridden by appending a
+.Dq Li !
+character to the command.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+Unchanged.
+.It "Options:"
+None.
+.El
+#endif
+.It Li "[line] r[ead][!] [file]"
+Read a file.
+#ifdef REFERENCE
+A copy of the specified file is appended after the specified line.
+If
+.Dq Li line
+is 0, the copy is inserted at the beginning of the file.
+If no file is specified, the current file is read; if there is no
+current file, then
+.Dq Li file
+becomes the current file.
+If there is no current file and no
+.Dq Li file
+is specified, then the
+.Sy read
+command will fail.
+.Pp
+If
+.Dq Li file
+is preceded by a
+.Dq Li ! ,
+.Dq Li file
+shall be treated as if it were a shell command, and passed to the program
+named by the
+.Ev SHELL
+environment variable. 
+The standard and standard error outputs of that command are read into
+the file after the specified line.
+The special meaning of the
+.Dq Li !
+character can be overridden by escaping it with a backslash
+.Pq Dq Li \e
+character.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+The current line changes to the last line read.
+In visual mode, the current line changes to the first line read. 
+.It "Options:"
+None.
+.El
+#endif
+.It Li "rec[over] file"
+Recover the file.
+#ifdef REFERENCE
+Attempt to recover file if it was previously saved.
+.Pp
+.Em "This command is not yet implemented."
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+The current line is set as described for the
+.Sy edit
+command.
+.It "Options:"
+None.
+.El
+#endif
+.It Li "rew[ind][!]"
+Rewind the argument list.
+#ifdef REFERENCE
+The current file is set to the first file in the argument list.
+If the current file has been modified since the last complete write, the
+.Sy rewind
+command will fail.
+This check may be overriden by appending the
+.Dq Li !
+character to the command.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+The current line is set as described for the
+.Sy edit
+command.
+.It "Options:"
+Affected by the
+.Sy autowrite
+and
+.Sy writeany
+options.
+.El
+#endif
+.It Li "se[t] [option[=[value]] ...] [nooption ...] [option? ...] [all]"
+Display or set editor options.
+#ifdef REFERENCE
+When no arguments are specified, write the editor option
+.Sy term ,
+and any editor options whose values have been changed from the
+default settings.
+when the argument
+.Dq Li all
+is specified, display the values of all of editor options.
+.Pp
+Specifying an option name followed by the character
+.Dq Li ?
+causes the current value of that option to be displayed.
+The
+.Dq Li ?
+can be separated from the option name by whitespace characters.
+The
+.Dq Li ?
+is necessary only for Boolean valued options.
+Boolean options can be given values by the form
+.Dq Li "set option"
+to turn them on, or
+.Dq Li "set nooption"
+to turn them off.
+String and numeric options can be assigned by the form
+.Dq Li "set option=value" .
+Any whitespace characters in strings can be included literally by preceding
+each with a backslash.
+More than one option can be set or listed by a single set command,
+by specifying multiple arguments, each separated from the next by
+whitespace characters.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+Unchanged.
+.It "Options:"
+None.
+.El
+#endif
+.It Li "sh[ell]"
+Run a shell program.
+#ifdef REFERENCE
+The program named by the
+.Ev shell
+environment variable is run with the
+.Fl i
+(interactive) option.
+Editing is resumed when that program exits.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+Unchanged.
+.It "Options:"
+None.
+.El
+#endif
+.It Li "so[urce] file"
+Read and execute
+.Nm \&ex
+commands from a file.
+#ifdef REFERENCE
+Read and execute commands from
+.Li file .
+.Sy Source
+commands may be nested.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+Unchanged.
+.It "Options:"
+None.
+.El
+#endif
+.It Li "[range] s[ubstitute] [/pattern/replace/[options] [count] [flags]]"
+Make substitutions.
+#ifdef REFERENCE
+Replace the first instance of
+.Li pattern
+with the string
+.Li replace
+on the specified line(s).
+If the
+.Dq Li /pattern/repl/
+argument is not specified, the
+.Dq Li /pattern/repl/
+from the previous
+.Sy substitute
+command is used.
+.Pp
+If
+.Li options
+includes the letter
+.Dq Li g
+(global), all nonoverlapping instances of
+.Li pattern
+in the line are replaced.
+If
+.Li options
+includes the letter
+.Dq Li c
+(confirm), you will be prompted for confirmation before each replacement
+is done.
+An affirmative response (in English, a
+.Dq Li y
+character) causes the replacement to be made.
+A quit response (in English, a
+.Dq Li q
+character) causes the
+.Sy substitute
+command to be terminated.
+Any other response causes the replacement to not be made, and the
+.Sy substitute
+command continues.
+.Pp
+The
+.Sy substitute
+command may be interrupted, using the terminal interrupt character.
+All substitutions completed before the interrupt are retained.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+The current line changes to the last line upon which a replacement was made.
+.It "Options:"
+None.
+.El
+#endif
+.It Li "su[spend][!]"
+.It Li "st[op][!]"
+.It Li <suspend>
+Suspend the edit session.
+#ifdef REFERENCE
+Appending a
+.Dq Li !
+character to the command turns off the
+.Sy autowrite
+option for this command.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+Unchanged.
+.It "Options:"
+Affected by the
+.Sy autowrite
+option.
+.El
+#endif
+.It Li "ta[g][!] tagstring"
+Edit the file containing the specified tag.
+#ifdef REFERENCE
+Search for the tagstring, which can be in a different file.
+If the tag is in a different file, then the new file is edited.
+If the current file has been modified since the last complete write,
+the
+.Sy tag
+command will fail.
+This check can be overridden by appending the
+.Dq Li !
+character to the command name.
+.Pp
+The
+.Sy tag
+command searches for
+.Li tagstring
+in the tags file(s) specified by the
+.Sy tags
+option.
+(See
+.Xr ctags 1
+for more information on tags files.)
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+The current line changes to the line indicated by the tag.
+.It "Options:"
+Affected by the
+.Sy autowrite ,
+.Sy taglength ,
+.Sy tags
+and
+.Sy writeany 
+options.
+.El
+#endif
+.It Li "una[bbrev] word"
+Delete an abbreviation.
+#ifdef REFERENCE
+Delete
+.Li word
+from the current list of abbreviations.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+Unchanged.
+.It "Options:"
+None.
+.El
+#endif
+.It Li "u[ndo]"
+Undo the last change made to the file.
+Changes made by
+.Sy global ,
+.Sy v ,
+.Sy visual
+and map sequences are considered a single command.
+If repeated, the
+.Sy u
+command alternates between these two states, and is its own inverse.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+The current line changes to the last line modified by the command.
+.It "Options:"
+None.
+.El
+#endif
+.It Li "unm[ap][!] lhs"
+Unmap a mapped string.
+#ifdef REFERENCE
+Delete the command mode map definition for
+.Li lhs .
+If a
+.Dq Li !
+character is appended to the command name, delete the text input mode
+map definition instead.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+Unchanged.
+.It "Options:"
+None.
+.El
+#endif
+.It Li "[line] vi[sual] [type] [count] [flags]"
+Enter visual mode.
+#ifdef REFERENCE
+The
+.Li type
+is optional, and can be
+.Dq Li - ,
+.Dq Li +
+or
+.Dq Li ^ ,
+as in the
+.Nm \&ex
+.Sy z
+command, to specify the the position of the specified line in the screen
+window.
+(The default is to place the line at the top of the screen window.)
+A
+.Li count
+specifies the number of lines that will initially be displayed.
+(The default is the value of the editor option
+.Sy window .)
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+Unchanged unless
+.Li line
+is specified, in which case the current line changes to that line.
+.It "Options:"
+None.
+.El
+#endif
+.It Li "[range] w[rite][!] [>>] [file]"
+.It Li "[range] w[rite] [!] [file]"
+.It Li "[range] wq[!] [>>] [file]"
+Write the file.
+#ifdef REFERENCE
+The specified lines (the entire file, if no range is given) is written
+to
+.Li file .
+If
+.Li file
+is not specified, the current pathname is used.
+If
+.Li file
+is specified, and it exists, or if the current pathname was set using the
+.Sy file
+command, and the file already exists, these commands will fail.
+Appending a
+.Dq Li !
+character to the command name will override this check and the write
+will be attempted, regardless.
+.Pp
+Specifying the optional
+.Dq Li >>
+string will cause the write to be appended to the file, in which case
+not tests are made for the file already existing.
+.Pp
+If the file is preceded by a
+.Dq Li !
+character, the program named in the SHELL environment variable shall be
+invoked with file as its second argument, and the specified lines shall
+be passed as standard input to that command.
+The
+.Dq Li !
+in this usage must be separated from command name by at least one
+whitespace character.
+The special meaning of the
+.Dq Li !
+may be overridden by escaping it with a backslash
+.Pq Dq Li \e
+character.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+Unchanged.
+.It "Options:"
+Affected by the
+.Sy readonly
+and
+.Sy writeany
+options.
+.El
+#endif
+.It Li "[range] x[it][!] [file]"
+Write the file if it has been modified.
+#ifdef REFERENCE
+The specified lines are written to
+.Li file ,
+if the file has been modified since the last complete write to any
+file.
+If no
+.Li range
+is specified, the entire file is written.
+If the command succeeds, the editor session ends.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+Unchanged.
+.It "Options:"
+Affected by the
+.Sy readonly
+and
+.Sy writeany
+options.
+.El
+#endif
+.It Li "[range] ya[nk] [buffer] [count]"
+Copy the specified lines to a buffer.
+#ifdef REFERENCE
+If no buffer is specified, the unnamed buffer is used.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+Unchanged.
+.It "Options:"
+None.
+.El
+#endif
+.It Li "[line] z [type] [count] [flags]"
+Adjust the window.
+#ifdef REFERENCE
+If no
+.Li type
+is specified, then
+.Li count
+lines following the specified line are displayed.
+The default
+.Li count
+is the value of the
+.Sy window
+option.
+The
+.Li type
+argument changes the position at which
+.Li line
+is displayed on the screen by changing the number of lines
+displayed before and after
+.Li line .
+The following
+.Li type
+characters may be used:
+.Bl -tag -width "XXXX" -compact
+.It Dq Li -
+Place line at the bottom of the screen.
+.It Dq Li +
+Place line at the top of the screen.
+.It Dq Li .
+Place line in the middle of the screen.
+.It Dq Li ^
+Write out count lines starting
+.Li "count * 2"
+lines before
+.Li line ;
+the net effect of this shall be that a
+.Dq Li z^
+command following a
+.Sy z
+command writes the previous page.
+.It Dq Li =
+Center
+.Li line
+on the screen with a line of hyphens displayed immediately before and
+after it.
+The number of preceding and following lines of text displayed are
+reduced to account for those lines.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+The current line changes to the last line displayed,
+with the exception of the
+.Dq Li =
+.Li type ,
+where the current line changes to the line specified by the command.
+.It "Options:"
+Affected by the
+.Sy window
+option.
+.El
+#endif
+.It Li "! command"
+.It Li "[range]! command"
+Run a command through the shell.
+#ifdef REFERENCE
+The remainder of the line after the
+.Dq Li !
+character is passed to the program named by the
+.Ev SHELL
+environment variable for execution.
+You will be warned if the file has been modified since the last complete
+write. 
+A single
+.Dq Li !
+character is displayed when the command completes.
+.Pp
+Within the text of
+.Li command ,
+.Dq Li %
+and
+.Dq Li #
+are expanded as pathnames (the current and alternate pathnames,
+respectively), and
+.Dq Li !
+is replaced with the text of the previous
+.Dq Li !
+command.
+(Thus,
+.Dq Li !!
+repeats the previous
+.Dq Li !
+command.)
+If any such replacement is done, the line as passed to the shell
+is displayed.
+.Pp
+The special meanings of
+.Dq Li % ,
+.Dq Li #
+and
+.Dq Li !
+can be overridden by escaping them with a backslash
+.Pq Dq Li \e
+character.
+.Pp
+In the second form of the
+.Sy !
+command, the remainder of the line after the
+.Dq Li !
+is passed to the program named in the SHELL environment variable,
+as described above.
+The specified lines are passed to the program as standard input, and
+the standard and standard error output of the program replace the
+original lines.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+Unchanged.
+.It "Options:"
+Affected by the
+.Sy autowrite
+and
+.Sy writeany
+options.
+.El
+#endif
+.It Li "[range] <[< ...] [count] [flags]"
+Shift left.
+#ifdef REFERENCE
+The specified lines are shifted to the left, by the number of columns
+specified by the
+.Sy shiftwidth
+option.
+Only leading whitespace characters are deleted, no other characters
+are affected.
+.Pp
+If the command character
+.Dq Li <
+is repeated more than once, the command is repeated once for each
+additional command character.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+The current line changes to the last line modified by the command.
+.It "Options:"
+Affected by the
+.Sy shiftwidth
+option.
+.El
+#endif
+.It Li "[range] >[> ...] [count] [flags]"
+Shift right.
+#ifdef REFERENCE
+The specified lines are shifted to the right by the number of columns
+specified by the
+.Sy shiftwidth
+option, by inserting tab and space characters.
+Empty lines are not changed.
+.Pp
+If the command character
+.Dq Li >
+is repeated more than once, the command is repeated once for each
+additional command character.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+The current line changes to the last line modified by the command.
+.It "Options:"
+None.
+.El
+#endif
+.It Li "[range] & [options] [count] [flags]"
+.It Li "[range] s[ubstitute] [options] [count] [flags]"
+.It Li "[range] ~ [options] [count] [flags]"
+Repeat a substitution.
+#ifdef REFERENCE
+Repeat the previous substitute command, as if
+.Dq Li &
+were replaced by the previous
+.Dq Li s/pattern/replace/
+command.
+(The same effect can obtained by omitting the
+.Dq Li /pattern/replace/
+string in the
+.Sy substitute
+command.)
+The
+.Sy ~
+version of the command is the same as
+.Sy &
+and
+.Sy s ,
+but the pattern used is the last RE used in any command,
+not necessarily the one used in the last
+.Sy substitute
+command.
+For example, in the sequence
+.Bd -literal -offset indent -compact
+s/red/blue/
+/green
+~
+.Ed
+the
+.Dq Li ~
+is equivalent to
+.Dq Li s/green/blue/ .
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+Unchanged.
+.It "Options:"
+None.
+.El
+#endif
+.It Li "<eof>"
+Scroll the screen.
+#ifdef REFERENCE
+Write the next N lines, where N is the value of the
+.Sy scroll
+option.
+The command is the end-of-file terminal character, which may be
+different on different terminals.
+Traditionally, it is the
+.Dq Li <control-D>
+key.
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+The current line indicator changes to the last line written.
+.It "Options:"
+None.
+.El
+#endif
+.It Li "[line] = [flags]"
+Display the line number.
+#ifdef REFERENCE
+Display the line number of
+.Li line
+(which defaults to the last line in the file).
+.Bl -tag -width "XXCurrent line:" -compact
+.It "Current line:"
+Unchanged.
+.It "Options:"
+None.
+.El
+#endif
+.It Li "@ buffer"
+.It Li "* buffer"
+Execute a buffer.
+#ifdef REFERENCE
+Each line in the named buffer is executed as an
+.Nm \&ex
+command.
+If no buffer is specified, or if the specified buffer is
+.Dq Li @
+or
+.Dq Li * ,
+the last buffer executed is used.
+.It Li "\""
+Command lines beginning with the double-quote character
+.Pq Dq Li "
+are ignored.
+This permits comments in editor scripts and startup files.
+.El
