@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.37 1994/03/06 11:24:47 bostic Exp $ (Berkeley) $Date: 1994/03/06 11:24:47 $";
+static char sccsid[] = "$Id: util.c,v 8.38 1994/03/06 13:13:03 bostic Exp $ (Berkeley) $Date: 1994/03/06 13:13:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -518,13 +518,37 @@ baud_from_bval(sp)
 		return (2400);
 	case B4800:
 		return (4800);
+#ifdef B7200
+	case B7200:
+		return (7200);
+#endif
 	case B0:				/* Hangup -- ignore. */
 	case B9600:
 		return (9600);
+#ifdef B14400
+	case B14400:
+		return (14400);
+#endif
 	case B19200:
 		return (19200);
+#ifdef B28800
+	case B28800:
+		return (28800);
+#endif
 	case B38400:
 		return (38400);
+#ifdef B57600
+	case B57600:
+		return (57600);
+#endif
+#ifdef B115200
+	case B115200:
+		return (115200);
+#endif
+#ifdef B230400
+	case B230400:
+		return (230400);
+#endif
 	default:
 		/*
 		 * EXTA and EXTB aren't required by POSIX 1003.1, and
