@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: log.h,v 5.5 1993/05/10 11:14:17 bostic Exp $ (Berkeley) $Date: 1993/05/10 11:14:17 $
+ *	$Id: log.h,v 5.6 1993/05/17 16:46:56 bostic Exp $ (Berkeley) $Date: 1993/05/17 16:46:56 $
  */
 
 #define	LOG_NOTYPE		0
@@ -24,4 +24,4 @@ int	log_forward __P((struct _scr *, struct _exf *, struct _mark *));
 int	log_init __P((struct _scr *, struct _exf *));
 int	log_line __P((struct _scr *, struct _exf *, recno_t, u_int));
 int	log_mark __P((struct _scr *, struct _exf *, u_int, struct _mark *));
-int	log_setline __P((struct _scr *, struct _exf *));
+int	log_setline __P((struct _scr *, struct _exf *, struct _mark *));
