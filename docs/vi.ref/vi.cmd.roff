@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: vi.cmd.roff,v 8.33 1994/08/31 22:22:57 bostic Exp $ (Berkeley) $Date: 1994/08/31 22:22:57 $
+.\"	$Id: vi.cmd.roff,v 8.34 1994/09/02 19:01:40 bostic Exp $ (Berkeley) $Date: 1994/09/02 19:01:40 $
 .\"
 .SH 1 "Vi Description"
 .pp
@@ -1449,7 +1449,7 @@ The command is terminated by a
 or
 .LI <escape>
 character; all of these characters may be escaped by using a
-.LI "<literal next>"
+.LI "<literal-next>"
 character.
 The command is then executed.
 .sp
@@ -3004,8 +3004,8 @@ permits it to be used at any time during insert mode.
 .KY <control-H>
 .Ip <control-H>
 Erase the last character.
-.KY "<literal next>"
-.IP "<literal next>"
+.KY "<literal-next>"
+.IP "<literal-next>"
 Quote the next character.
 The next character will not be mapped (see the
 .CO map
