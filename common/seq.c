@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 9.2 1995/01/11 15:58:33 bostic Exp $ (Berkeley) $Date: 1995/01/11 15:58:33 $";
+static char sccsid[] = "$Id: seq.c,v 9.3 1995/02/12 18:36:30 bostic Exp $ (Berkeley) $Date: 1995/02/12 18:36:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -302,8 +302,7 @@ seq_save(sp, fp, prefix, stype)
 
 	/* Write a sequence command for all keys the user defined. */
 	for (qp = sp->gp->seqq.lh_first; qp != NULL; qp = qp->q.le_next) {
-		if (stype != qp->stype ||
-		    F_ISSET(qp, SEQ_FUNCMAP) || !F_ISSET(qp, SEQ_USERDEF))
+		if (stype != qp->stype || !F_ISSET(qp, SEQ_USERDEF))
 			continue;
 		if (prefix)
 			(void)fprintf(fp, "%s", prefix);
