@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 9.7 1995/01/31 11:27:43 bostic Exp $ (Berkeley) $Date: 1995/01/31 11:27:43 $";
+static char sccsid[] = "$Id: screen.c,v 9.8 1995/02/02 15:00:44 bostic Exp $ (Berkeley) $Date: 1995/02/02 15:00:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -54,6 +54,8 @@ screen_init(orig, spp)
 	*spp = sp;
 
 /* INITIALIZED AT SCREEN CREATE. */
+	sp->refcnt = 1;
+
 	sp->gp = __global_list;			/* All ref the GS structure. */
 
 	LIST_INIT(&sp->msgq);
@@ -160,6 +162,10 @@ screen_end(sp)
 {
 	int rval;
 
+	/* If multiply referenced, just decrement the count and return. */
+	 if (--sp->refcnt != 0)
+		 return (0);
+
 	/*
 	 * Remove the screen from the displayed queue.
 	 *
@@ -246,4 +252,37 @@ screen_end(sp)
 	FREE(sp, sizeof(SCR));
 
 	return (rval);
+}
+
+/*
+ * screen_fcopy --
+ *	Copy the screen functions.
+ */
+void
+screen_fcopy(sp, copy, save)
+	SCR *sp;
+	void (*copy[SCR_ROUTINES_N])();
+	int save;
+{
+	if (save) {
+		copy[0] = (void (*)())sp->e_bell;
+		copy[1] = (void (*)())sp->e_busy;
+		copy[2] = (void (*)())sp->e_change;
+		copy[3] = (void (*)())sp->e_clrtoeos;
+		copy[4] = (void (*)())sp->e_confirm;
+		copy[5] = (void (*)())sp->e_fmap;
+		copy[6] = (void (*)())sp->e_refresh;
+		copy[7] = (void (*)())sp->e_ssize;
+		copy[8] = (void (*)())sp->e_suspend;
+	} else {
+		sp->e_bell	= (int (*)())copy[0];
+		sp->e_busy	= (int (*)())copy[1];
+		sp->e_change	= (int (*)())copy[2];
+		sp->e_clrtoeos	= (int (*)())copy[3];
+		sp->e_confirm	= (conf_t (*)())copy[4];
+		sp->e_fmap	= (int (*)())copy[5];
+		sp->e_refresh	= (int (*)())copy[6];
+		sp->e_ssize	= (int (*)())copy[7];
+		sp->e_suspend	= (int (*)())copy[8];
+	}
 }
