@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 5.13 1992/05/15 11:02:58 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:02:58 $";
+static char sccsid[] = "$Id: util.c,v 5.14 1992/05/18 09:11:14 bostic Exp $ (Berkeley) $Date: 1992/05/18 09:11:14 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -30,11 +30,14 @@ static char sccsid[] = "$Id: util.c,v 5.13 1992/05/15 11:02:58 bostic Exp $ (Ber
 void
 bell()
 {
+	/* Ex doesn't need bells rung. */
+	if (mode == MODE_EX)
+		return;
+
 	if (ISSET(O_VBELL)) {
 		(void)tputs(VB, 1, __putchar);
 		(void)fflush(stdout);
-	}
-	else if (ISSET(O_ERRORBELLS))
+	} else if (ISSET(O_ERRORBELLS))
 		(void)write(STDOUT_FILENO, "\007", 1);	/* '\a' */
 }
 
