@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.31 1994/01/02 17:54:08 bostic Exp $ (Berkeley) $Date: 1994/01/02 17:54:08 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.32 1994/01/02 17:56:04 bostic Exp $ (Berkeley) $Date: 1994/01/02 17:56:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -754,8 +754,8 @@ endmatch:	if (!linechanged)
 		FREE_SPACE(sp, bp, blen);
 	return (0);
 
-	if (bp != NULL)
-ret1:		FREE_SPACE(sp, bp, blen);
+ret1:	if (bp != NULL)
+		FREE_SPACE(sp, bp, blen);
 	return (1);
 }
 
