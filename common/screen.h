@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.112 1994/05/21 18:18:12 bostic Exp $ (Berkeley) $Date: 1994/05/21 18:18:12 $
+ *	$Id: screen.h,v 8.113 1994/05/22 10:24:53 bostic Exp $ (Berkeley) $Date: 1994/05/22 10:24:53 $
  */
 
 /*
@@ -286,10 +286,10 @@ struct _scr {
  * underlying system calls in the DB package interrupted and not restarted,
  * it could theoretically cause consistency problems.
  */
-#define	SIGBLOCK \
-	(void)sigprocmask(SIG_BLOCK, &sp->gp->blockset, NULL);
-#define	SIGUNBLOCK \
-	(void)sigprocmask(SIG_UNBLOCK, &sp->gp->blockset, NULL);
+#define	SIGBLOCK(gp) \
+	(void)sigprocmask(SIG_BLOCK, &(gp)->blockset, NULL);
+#define	SIGUNBLOCK(gp) \
+	(void)sigprocmask(SIG_UNBLOCK, &(gp)->blockset, NULL);
 
 void	 busy_off __P((SCR *));
 int	 busy_on __P((SCR *, char const *));
