@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 5.21 1992/12/20 18:34:26 bostic Exp $ (Berkeley) $Date: 1992/12/20 18:34:26 $";
+static char sccsid[] = "$Id: v_itxt.c,v 5.22 1992/12/27 19:19:08 bostic Exp $ (Berkeley) $Date: 1992/12/27 19:19:08 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -33,7 +33,7 @@ static char sccsid[] = "$Id: v_itxt.c,v 5.21 1992/12/20 18:34:26 bostic Exp $ (B
 #define	END_CH		'$'		/* End-of-change character. */
 
 #define	SCREEN_UPDATE {							\
-	scr_cchange(curf);						\
+	curf->scr_update(curf);						\
 	if (ISSET(O_RULER))						\
 		scr_modeline(curf, 1);					\
 	refresh();							\
@@ -510,7 +510,8 @@ newtext(vp, tm, p, len, rp, flags)
 		}
 		if (flags & N_EMARK) {
 			ib.ilb[tm->cno - 1] = END_CH;
-			scr_update(curf, ib.start.lno, ib.ilb, len, LINE_RESET);
+			curf->scr_change(curf,
+			    ib.start.lno, ib.ilb, len, LINE_RESET);
 			refresh();
 		}
 	} else
@@ -584,7 +585,7 @@ newtext(vp, tm, p, len, rp, flags)
 			ib.len = col += insert + overwrite;
 
 			/* Update the screen. */
-			scr_update(curf,
+			curf->scr_change(curf,
 			    ib.stop.lno, ib.ilb, ib.len, LINE_RESET);
 			SCREEN_UPDATE;
 
@@ -617,7 +618,7 @@ newtext(vp, tm, p, len, rp, flags)
 			/* Repaint the current line if necessary. */
 			if (flags & N_REPLACE || insert || flag) {
 				bcopy(p, ib.ilb, insert + overwrite);
-				scr_update(curf,
+				curf->scr_change(curf,
 				    ib.stop.lno, tp->lp, tp->len, LINE_RESET);
 			}
 
@@ -686,7 +687,7 @@ insch:			*p++ = ch;
 			abort();
 		}
 		ib.len = col + insert + overwrite;
-		scr_update(curf, ib.stop.lno, ib.ilb, ib.len,
+		curf->scr_change(curf, ib.stop.lno, ib.ilb, ib.len,
 		    !quoted && (special[ch] == K_NL || special[ch] == K_CR) ?
 		    LINE_INSERT : LINE_RESET);
 		SCREEN_UPDATE;

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.35 1992/12/25 16:23:17 bostic Exp $ (Berkeley) $Date: 1992/12/25 16:23:17 $";
+static char sccsid[] = "$Id: vi.c,v 5.36 1992/12/27 19:19:36 bostic Exp $ (Berkeley) $Date: 1992/12/27 19:19:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -42,9 +42,11 @@ vi()
 	register VICMDARG *vp;
 	MARK fm, tm, m;
 	u_int flags;
+	int rval;
 
-	scr_init(curf);
-	for (;;) {
+	if (scr_init(curf))
+		return (1);
+	for (rval = 0;;) {
 		/*
 		 * If the file has changed, init the file structure and
 		 * refresh the screen.  Otherwise, report any status info
@@ -53,7 +55,10 @@ vi()
 		if (FF_ISSET(curf, F_NEWSESSION)) {
 			if (v_init(curf))
 				return (1);
-			scr_cchange(curf);
+			if (curf->scr_update(curf)) {
+				rval = 1;
+				break;
+			}
 			status(curf, curf->lno);
 			FF_CLR(curf, F_NEWSESSION);
 		} else if (curf->rptlines) {
@@ -176,7 +181,7 @@ err:		if (msgcnt) {
 		 */
 		flags = vp->kp->flags;
 		if (flags & V_RCM)
-			m.cno = scr_relative(curf, m.lno);
+			m.cno = curf->scr_relative(curf, m.lno);
 		else if (flags & V_RCM_SETFNB) {
 			/*
 			 * Hack -- instead of calling nonblank() in all of
@@ -192,7 +197,7 @@ err:		if (msgcnt) {
 		/* Update the cursor. */
 		curf->lno = m.lno;
 		curf->cno = m.cno;
-		scr_cchange(curf);
+		curf->scr_update(curf);
 
 		if (flags & V_RCM_SET) {
 			curf->rcmflags = 0;
@@ -200,7 +205,7 @@ err:		if (msgcnt) {
 		}
 	}
 	(void)scr_end(curf);
-	return (0);
+	return (rval);
 }
 
 #define	KEY(k, flags) {							\
@@ -581,7 +586,7 @@ noword:		bell();
 	 */
 	if (beg != curf->cno) {
 		curf->cno = beg;
-		scr_cchange(curf);
+		curf->scr_update(curf);
 		refresh();
 	}
 

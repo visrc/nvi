@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 5.27 1992/12/25 16:22:44 bostic Exp $ (Berkeley) $Date: 1992/12/25 16:22:44 $";
+static char sccsid[] = "$Id: v_ex.c,v 5.28 1992/12/27 19:18:58 bostic Exp $ (Berkeley) $Date: 1992/12/27 19:18:58 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -117,7 +117,7 @@ v_leaveex(ep)
 	}
 	do {
 		--extotalcount;
-		(void)scr_update(ep,
+		(void)ep->scr_change(ep,
 		    BOTLINE(ep, ep->otop) - extotalcount, NULL, 0, LINE_RESET);
 	} while (extotalcount);
 }
