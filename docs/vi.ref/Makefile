@@ -1,17 +1,20 @@
-#	$Id: Makefile,v 8.1 1994/04/20 15:45:39 bostic Exp $ (Berkeley) $Date: 1994/04/20 15:45:39 $
+#	$Id: Makefile,v 8.2 1994/04/22 12:05:01 bostic Exp $ (Berkeley) $Date: 1994/04/22 12:05:01 $
 
+DIR=	usd/13.viref
 SRCS=	vi.ref set.opt.roff
-DOCS=	vi.ref.txt vi.ref.ps
+MACROS=	-man
+CLEANFILES+=vi.ref.txt vi.ref.ps vi.ref.roff
 
-all: ${DOCS}
+paper.ps: vi.ref.roff
+	${ROFF} vi.ref.roff > ${.TARGET}
 
-vi.ref.txt: ${SRCS}
-	cpp -DREFERENCE -I. vi.ref | \
-	    sed -e '/^#/d' -e '/^$$/d' | groff -man -Tascii > $@
-vi.ref.ps: ${SRCS}
-	cpp -DREFERENCE -I. vi.ref | \
-	    sed -e '/^#/d' -e '/^$$/d' | groff -man > $@
+vi.ref.txt: vi.ref.roff
+	groff -man -Tascii < vi.ref.roff > $@
 
-clean:
-	rm -f ${DOCS}
+vi.ref.ps: vi.ref.roff
+	groff -man < vi.ref.roff > $@
 
+vi.ref.roff: ${SRCS}
+	cpp -DREFERENCE -I. ${.CURDIR}/vi.ref | sed -e '/^#/d' -e '/^$$/d' > $@
+
+.include <bsd.doc.mk>
