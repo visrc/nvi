@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_send.c,v 8.1 1996/11/27 10:09:04 bostic Exp $ (Berkeley) $Date: 1996/11/27 10:09:04 $";
+static const char sccsid[] = "$Id: ip_send.c,v 8.2 1996/12/10 18:01:51 bostic Exp $ (Berkeley) $Date: 1996/12/10 18:01:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,6 +22,12 @@ static const char sccsid[] = "$Id: ip_send.c,v 8.1 1996/11/27 10:09:04 bostic Ex
 #include "../common/common.h"
 #include "../ip_vi/ip.h"
 #include "ipc_extern.h"
+
+static void nomem()
+{
+    puts( "out of memory" );
+    exit(1);
+}
 
 /*
  * ip_send --

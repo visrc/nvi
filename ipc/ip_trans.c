@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_trans.c,v 8.7 1996/12/05 23:05:53 bostic Exp $ (Berkeley) $Date: 1996/12/05 23:05:53 $";
+static const char sccsid[] = "$Id: ip_trans.c,v 8.8 1996/12/10 18:01:51 bostic Exp $ (Berkeley) $Date: 1996/12/10 18:01:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,7 +38,7 @@ ip_trans(bp, lenp)
 	char *bp;
 	size_t *lenp;
 {
-	extern int (*iplist[IPO_EVENT_MAX - 1]) __P((IP_BUF *));
+	extern int (*_vi_iplist[IPO_EVENT_MAX - 1]) __P((IP_BUF *));
 	IP_BUF ipb;
 	size_t len, needlen;
 	u_int32_t *vp;
@@ -105,7 +105,7 @@ value:				needlen += IPO_INT_LEN;
 		len -= needlen;
 
 		/* Call the underlying routine. */
-		if (foff <= IPO_EVENT_MAX && iplist[foff - 1](&ipb))
+		if (foff <= IPO_EVENT_MAX && _vi_iplist[foff - 1](&ipb))
 			break;
 	}
 partial:

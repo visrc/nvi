@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_run.c,v 8.2 1996/11/27 12:00:44 bostic Exp $ (Berkeley) $Date: 1996/11/27 12:00:44 $";
+static const char sccsid[] = "$Id: ip_run.c,v 8.3 1996/12/10 18:01:51 bostic Exp $ (Berkeley) $Date: 1996/12/10 18:01:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,7 +40,7 @@ static void arg_format __P((char *, int *, char **[], int, int));
 static void attach __P((void));
 #endif
 
-extern char *progname;				/* Program name. */
+char *vi_progname = "vi";			/* Default program name. */
 
 /*
  * run_vi --
@@ -106,7 +106,7 @@ run_vi(argc, argv, ip, op)
 	 * rpipe[1].
 	 */
 	if (pipe(rpipe) == -1 || pipe(wpipe) == -1) {
-		(void)fprintf(stderr, "%s: %s\n", progname, strerror(errno));
+		(void)fprintf(stderr, "%s: %s\n", vi_progname, strerror(errno));
 		exit (1);
 	}
 	*ip = rpipe[0];
@@ -122,7 +122,7 @@ run_vi(argc, argv, ip, op)
 	/* Run vi. */
 	switch (pid = fork()) {
 	case -1:				/* Error. */
-		(void)fprintf(stderr, "%s: %s\n", progname, strerror(errno));
+		(void)fprintf(stderr, "%s: %s\n", vi_progname, strerror(errno));
 		exit (1);
 	case 0:					/* Vi. */
 		/*
@@ -134,7 +134,7 @@ run_vi(argc, argv, ip, op)
 			execv("nvi", argv);
 		execv(execp, argv);
 		(void)fprintf(stderr,
-		    "%s: %s %s\n", progname, execp, strerror(errno));
+		    "%s: %s %s\n", vi_progname, execp, strerror(errno));
 		exit (1);
 	default:				/* Ip_cl. */
 		break;
@@ -156,7 +156,7 @@ arg_format(execp, argcp, argvp, i_fd, o_fd)
 	/* Get space for the argument array and the -I argument. */
 	if ((iarg = malloc(64)) == NULL ||
 	    (largv = malloc((*argcp + 3) * sizeof(char *))) == NULL) {
-		(void)fprintf(stderr, "%s: %s\n", progname, strerror(errno));
+		(void)fprintf(stderr, "%s: %s\n", vi_progname, strerror(errno));
 		exit (1);
 	}
 	memcpy(largv + 2, *argvp, *argcp * sizeof(char *) + 1);
@@ -197,7 +197,7 @@ attach()
 
 	if ((fd = open(_PATH_TTY, O_RDONLY, 0)) < 0) {
 		(void)fprintf(stderr,
-		    "%s: %s, %s\n", progname, _PATH_TTY, strerror(errno));
+		    "%s: %s, %s\n", vi_progname, _PATH_TTY, strerror(errno));
 		exit (1);;
 	}
 	do {
