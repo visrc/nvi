@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 10.3 1995/06/09 12:47:54 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:47:54 $";
+static char sccsid[] = "$Id: options_f.c,v 10.4 1995/06/20 15:25:42 bostic Exp $ (Berkeley) $Date: 1995/06/20 15:25:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -361,7 +361,7 @@ prset(sp, str, set_index, unset_index)
 
 	/* Delete characters from the unset index edit option. */
 	if ((p = O_STR(sp, unset_index)) != NULL)
-		for (s = str; *s != NULL; ++s) {
+		for (s = str; *s != '\0'; ++s) {
 			for (p = t = O_STR(sp, unset_index); *p != '\0'; ++p)
 				if (*p != *s)
 					*t++ = *p;
@@ -380,7 +380,7 @@ prset(sp, str, set_index, unset_index)
 		MEMMOVE(p, O_STR(sp, set_index), len + 1);
 	else
 		p[0] = '\0';
-	for (s = str; *s != NULL; ++s) {
+	for (s = str; *s != '\0'; ++s) {
 		for (t = p; *t != '\0'; ++t)
 			if (*t == *s)
 				break;

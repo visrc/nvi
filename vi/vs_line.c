@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 10.2 1995/05/05 18:58:37 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:58:37 $";
+static char sccsid[] = "$Id: vs_line.c,v 10.3 1995/06/20 15:26:21 bostic Exp $ (Berkeley) $Date: 1995/06/20 15:26:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -415,7 +415,7 @@ vs_number(sp)
 			continue;
 		if (F_ISSET(vip, VIP_INFOLINE))
 			break;
-		if (smp->lno != 1 && !exist && file_eline(sp, smp->lno) == NULL)
+		if (smp->lno != 1 && !exist && !file_eline(sp, smp->lno))
 			break;
 		(void)gp->scr_move(sp, smp - HMAP, 0);
 		(void)snprintf(nbuf, sizeof(nbuf), O_NUMBER_FMT, smp->lno);
