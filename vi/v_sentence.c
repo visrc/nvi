@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_sentence.c,v 8.2 1993/06/28 13:18:59 bostic Exp $ (Berkeley) $Date: 1993/06/28 13:18:59 $";
+static char sccsid[] = "$Id: v_sentence.c,v 8.3 1993/06/28 14:22:11 bostic Exp $ (Berkeley) $Date: 1993/06/28 14:22:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -251,6 +251,6 @@ ret:			slno = cs.cs_lno;
 	}
 
 	/* SOF is a movement sink. */
-sof:	rp->lno = cs.cs_lno;
+	rp->lno = cs.cs_lno;
 	return (0);
 }
