@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.54 1994/04/28 12:16:33 bostic Exp $ (Berkeley) $Date: 1994/04/28 12:16:33 $";
+static char sccsid[] = "$Id: util.c,v 8.55 1994/05/02 15:37:18 bostic Exp $ (Berkeley) $Date: 1994/05/02 15:37:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -547,84 +547,31 @@ u_long
 baud_from_bval(sp)
 	SCR *sp;
 {
-	speed_t v;
-
 	if (!F_ISSET(sp->gp, G_TERMIOS_SET))
 		return (9600);
 
-	switch (v = cfgetospeed(&sp->gp->original_termios)) {
+	/*
+	 * XXX
+	 * There's no portable way to get a "baud rate" -- cfgetospeed(3)
+	 * returns the value associated with some #define, which we never
+	 * have heard of, or which may be a purely local speed.  Vi only
+	 * cares if it's SLOW (w300), slow (w1200) or fast (w9600).  Just
+	 * try and detect the slow ones, and default to fast.
+	 */
+	switch (cfgetospeed(&sp->gp->original_termios)) {
 	case B50:
-		return (50);
 	case B75:
-		return (75);
 	case B110:
-		return (110);
 	case B134:
-		return (134);
 	case B150:
-		return (150);
 	case B200:
-		return (200);
 	case B300:
-		return (300);
 	case B600:
 		return (600);
 	case B1200:
 		return (1200);
-	case B1800:
-		return (1800);
-	case B2400:
-		return (2400);
-	case B4800:
-		return (4800);
-#ifdef B7200
-	case B7200:
-		return (7200);
-#endif
-	case B0:				/* Hangup -- ignore. */
-	case B9600:
-		return (9600);
-#ifdef B14400
-	case B14400:
-		return (14400);
-#endif
-	case B19200:
-		return (19200);
-#ifdef B28800
-	case B28800:
-		return (28800);
-#endif
-	case B38400:
-		return (38400);
-#ifdef B57600
-	case B57600:
-		return (57600);
-#endif
-#ifdef B115200
-	case B115200:
-		return (115200);
-#endif
-#ifdef B230400
-	case B230400:
-		return (230400);
-#endif
-	default:
-		/*
-		 * EXTA and EXTB aren't required by POSIX 1003.1, and
-		 * are almost certainly the same as some of the above
-		 * values, so they can't be part of the case statement.
-		 */
-#ifdef EXTA
-		if (v == EXTA)
-			return (19200);
-#endif
-#ifdef EXTB
-		if (v == EXTB)
-			return (38400);
-#endif
-		msgq(sp, M_ERR, "Unknown terminal baud rate %u.", (u_int)v);
-		return (9600);
 	}
+	return (9600);
 }
 
 /*
