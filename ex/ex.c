@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.43 1992/11/07 13:41:40 bostic Exp $ (Berkeley) $Date: 1992/11/07 13:41:40 $";
+static char sccsid[] = "$Id: ex.c,v 5.44 1992/11/07 18:42:31 bostic Exp $ (Berkeley) $Date: 1992/11/07 18:42:31 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -174,13 +174,12 @@ static EXCMDLIST *lastcmd = &cmds[C_PRINT];
 
 /*
  * ex_cmd --
- *    Parse and execute an ex command.
+ *	Parse and execute an ex command.  
  */
 int
 ex_cmd(exc)
 	register u_char *exc;
 {
-	extern int reading_exrc;
 	register int cmdlen;
 	register u_char *p;
 	EXCMDARG cmd;
@@ -212,8 +211,8 @@ ex_cmd(exc)
 	cmd.buffer = OOBCB;
 
 	/*
-	 * Parse line specifiers.  New command line position is returned,
-	 * or NULL on error.
+	 * Parse line specifiers if the command uses addresses.  New command
+	 * line position is returned, or NULL on error.  
 	 */
 	if ((exc = linespec(exc, &cmd)) == NULL)
 		return (1);
@@ -254,9 +253,17 @@ ex_cmd(exc)
 		uselastcmd = 1;
 	}
 
-	/* Some commands aren't permitted in .exrc files. */
-	if (reading_exrc && !(cp->flags & E_EXRCOK)) {
-		msg("Can't use the %s command in a .exrc file.", cp->name);
+	/*
+	 * File state must be checked throughout this code, because it is
+	 * called when reading the .exrc file and similar things.  There's
+	 * this little chicken and egg problem -- if we read the file first,
+	 * we won't know how to display it.  If we read/set the exrc stuff
+	 * first, we can't allow any command that requires file state.
+	 * Historic vi generally took the easy way out, by dropping core.
+ 	 */
+	if (ep == NULL &&
+	    cp->flags & (E_ADDR1|E_ADDR2|E_ADDR2_ALL|E_ADDR2_NONE)) {
+		msg("The %s command requires a file to be read in.", cp->name);
 		return (1);
 	}
 
@@ -400,12 +407,14 @@ two:		switch(cmd.addrcnt) {
 					goto end2;
 				}
 end2:			break;
+#ifdef XXX_THIS_NO_LONGER_USED
 		case '>':				/*  >> */
 			if (exc[0] == '>' && exc[1] == '>') {
 				cmd.flags |= E_APPEND;
 				exc += 2;
 			}
 			break;
+#endif
 		case 'b':				/* buffer */
 			cmd.buffer = *exc++;
 			break;
@@ -446,6 +455,9 @@ end2:			break;
 			if (buildargv(exc, 1, &cmd))
 				return (1);
 			goto countchk;
+		case 's':				/* string */
+			cmd.string = exc;
+			goto addr2;
 		case 'w':				/* word */
 			if (buildargv(exc, 0, &cmd))
 				return (1);
@@ -550,8 +562,14 @@ addr2:	switch(cmd.addrcnt) {
 #endif
 	/* Do the command. */
 	autoprint = 0;
+	if (curf != NULL)
+		curf->rptlines = 0;
 	if ((cp->fn)(&cmd))
 		return (1);
+
+	/* If no file state, the rest of this isn't all that useful. */
+	if (curf == NULL)
+		return (0);
 
 	/*
 	 * If the command was successful, and there was an explicit flag to
