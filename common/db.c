@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 9.4 1994/12/16 12:44:53 bostic Exp $ (Berkeley) $Date: 1994/12/16 12:44:53 $";
+static char sccsid[] = "$Id: db.c,v 9.5 1995/01/09 17:21:26 bostic Exp $ (Berkeley) $Date: 1995/01/09 17:21:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -90,12 +90,12 @@ file_rline(sp, lno, lenp)
 	DBT data, key;
 	EXF *ep;
 
-#if defined(DEBUG) && 0
-	TRACE(sp, "get line %lu\n", lno);
-#endif
 	/* Check the cache. */
 	ep = sp->ep;
 	if (lno == ep->c_lno) {
+#if defined(DEBUG) && 0
+	TRACE(sp, "get cached line %lu\n", lno);
+#endif
 		if (lenp)
 			*lenp = ep->c_len;
 		return (ep->c_lp);
@@ -103,6 +103,9 @@ file_rline(sp, lno, lenp)
 	ep->c_lno = OOBLNO;
 
 	/* Get the line from the underlying database. */
+#if defined(DEBUG) && 0
+	TRACE(sp, "get uncached line %lu\n", lno);
+#endif
 	key.data = &lno;
 	key.size = sizeof(lno);
 	switch (ep->db->get(ep->db, &key, &data, 0)) {
