@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.5 1993/08/05 21:08:03 bostic Exp $ (Berkeley) $Date: 1993/08/05 21:08:03 $
+ *	$Id: screen.h,v 8.6 1993/08/06 12:02:42 bostic Exp $ (Berkeley) $Date: 1993/08/06 12:02:42 $
  */
 
 /*
@@ -154,6 +154,9 @@ typedef struct _scr {
 	recno_t	 rptlines[L_YANKED + 1];/* Ex/vi: lines changed by last op. */
 
 	struct _msg	*msgp;		/* User message list. */
+
+	u_long	ccnt;			/* Command count. */
+	u_long	q_ccnt;			/* Quit command count. */
 
 	struct _args	*args;		/* Ex/vi: argument buffers. */
 	char   **argv;			/* Arguments. */
@@ -308,7 +311,7 @@ typedef struct _scr {
 #define	S_UPDATE_MODE	0x1000000	/* Don't repaint modeline. */
 
 #define	S_SCREEN_RETAIN			/* Retain at screen create. */	\
-	(S_MODE_EX | S_MODE_VI | S_ISFROMTTY)
+	(S_MODE_EX | S_MODE_VI | S_ISFROMTTY | S_RE_SET)
 
 	u_int flags;
 } SCR;
