@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.4 1993/08/22 12:09:03 bostic Exp $ (Berkeley) $Date: 1993/08/22 12:09:03 $";
+static char sccsid[] = "$Id: options.c,v 8.5 1993/08/25 16:38:45 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:38:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -385,7 +385,7 @@ found:		if (op == NULL) {
 				break;
 			}
 			value = strtol(equals, &endp, 10);
-			if (*endp && !isspace(*endp)) {
+			if (*endp && !isblank(*endp)) {
 				msgq(sp, M_ERR,
 				    "set %s: illegal number %s", name, equals);
 				break;
@@ -561,13 +561,13 @@ opts_save(sp, fp)
 			break;
 		case OPT_STR:
 			for (p = op->name; (ch = *p) != '\0'; ++p) {
-				if (isspace(ch))
+				if (isblank(ch))
 					(void)putc('\\', fp);
 				(void)putc(ch, fp);
 			}
 			(void)putc('=', fp);
 			for (p = O_STR(sp, cnt); (ch = *p) != '\0'; ++p) {
-				if (isspace(ch))
+				if (isblank(ch))
 					(void)putc('\\', fp);
 				(void)putc(ch, fp);
 			}

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.4 1993/08/20 13:13:08 bostic Exp $ (Berkeley) $Date: 1993/08/20 13:13:08 $";
+static char sccsid[] = "$Id: util.c,v 8.5 1993/08/25 16:38:37 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:38:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -272,7 +272,7 @@ nonblank(sp, ep, lno, cnop)
 		*cnop = 0;
 		return (0);
 	}
-	for (cnt = 0; len && isspace(*p); ++cnt, ++p, --len);
+	for (cnt = 0; len && isblank(*p); ++cnt, ++p, --len);
 	*cnop = len ? cnt : cnt - 1;
 	return (0);
 }
