@@ -1,28 +1,25 @@
-#	$Id: Makefile,v 8.8 1994/10/09 19:13:44 bostic Exp $ (Berkeley) $Date: 1994/10/09 19:13:44 $
+#	$Id: Makefile,v 8.9 1994/10/28 08:08:23 bostic Exp $ (Berkeley) $Date: 1994/10/28 08:08:23 $
 
-CAT=	vi_english vi_german
+CAT=	vi_dutch vi_english vi_german
 FILES=	../common/*.c ../ex/*.c ../sex/*.c ../vi/*.c ../svi/*.c ../xaw/*.c
 
 all: dump ${CAT}
 
 ${CAT}: vi_english.base
-	@for i in *.base; do						\
-		echo "... $$i";						\
-		f=`basename $$i .base`;					\
-		rm -f $$f;						\
-		awk '{							\
-			if (++nline > $$1) {				\
-				print "DUPLICATE MESSAGE NUMBERS";	\
-				exit;					\
-			}						\
-			for (; nline < $$1; ++nline)			\
-				print "";				\
-			print $0;					\
-		}' < $$i |						\
-		sed -e '/"/s/^[^"]*"//'					\
-		    -e '/"/s/"$$//' > $$f;				\
-		chmod 444 $$f;						\
-	done
+	@echo "... $@";							\
+	rm -f $@;							\
+	awk '{								\
+		if (++nline > $$1) {					\
+			print "DUPLICATE MESSAGE NUMBERS";		\
+			exit;						\
+		}							\
+		for (; nline < $$1; ++nline)				\
+			print "";					\
+		print $0;						\
+	}' < $@.base |							\
+	sed -e '/"/s/^[^"]*"//'						\
+	    -e '/"/s/"$$//' > $@;					\
+	chmod 444 $@;							\
 
 check: ${CAT}
 	@for i in *.base; do						\
