@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_msg.c,v 10.38 1995/11/11 10:12:34 bostic Exp $ (Berkeley) $Date: 1995/11/11 10:12:34 $";
+static char sccsid[] = "$Id: vs_msg.c,v 10.39 1995/11/11 11:12:15 bostic Exp $ (Berkeley) $Date: 1995/11/11 11:12:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -771,7 +771,7 @@ vs_wait(sp, continuep, wtype)
 			*continuep = 1;
 		break;
 	case SCROLL_W:
-		abort();
+		break;
 	}
 }
 
