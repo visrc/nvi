@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.1 1992/04/19 10:54:29 bostic Exp $ (Berkeley) $Date: 1992/04/19 10:54:29 $";
+static char sccsid[] = "$Id: vi.c,v 5.2 1992/04/22 08:09:52 bostic Exp $ (Berkeley) $Date: 1992/04/22 08:09:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -58,12 +58,6 @@ vi()
 	/* Repeatedly handle VI commands */
 	for (count = 0, prevkey = '\0'; mode == MODE_VI; )
 	{
-		/* if we've moved off the undoable line, then we can't undo it at all */
-		if (markline(cursor) != U_line)
-		{
-			U_line = 0L;
-		}
-
 		/* report any changes from the previous command */
 		if (rptlines >= LVAL(O_REPORT))
 		{
@@ -129,12 +123,7 @@ vi()
 			dotkey2 = '\0';
 			dotcnt = count;
 
-			/* remember the line before any changes are made */
-			if (U_line != markline(cursor))
-			{
-				U_line = markline(cursor);
-				strcpy(U_text, fetchline(U_line, NULL));
-			}
+			v_undosave(cursor);
 		}
 
 		/* if this is "." then set other vars from the "dot" vars */
@@ -153,12 +142,7 @@ vi()
 			}
 			doingdot = TRUE;
 
-			/* remember the line before any changes are made */
-			if (U_line != markline(cursor))
-			{
-				U_line = markline(cursor);
-				strcpy(U_text, fetchline(U_line, NULL));
-			}
+			v_undosave(cursor);
 		}
 		else
 		{
