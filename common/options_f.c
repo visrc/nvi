@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 10.10 1996/02/04 19:01:03 bostic Exp $ (Berkeley) $Date: 1996/02/04 19:01:03 $";
+static char sccsid[] = "$Id: options_f.c,v 10.11 1996/02/06 11:59:46 bostic Exp $ (Berkeley) $Date: 1996/02/06 11:59:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,50 +28,33 @@ static char sccsid[] = "$Id: options_f.c,v 10.10 1996/02/04 19:01:03 bostic Exp 
 #include "common.h"
 #include "../ex/tag.h"
 
-static int	opt_dup __P((SCR *, int, char *));
-static int	prset __P((SCR *, CHAR_T *, int, int));
-
-#define	DECL(f)								\
-	int								\
-	f(sp, op, str, val)						\
-		SCR *sp;						\
-		OPTION *op;						\
-		char *str;						\
-		u_long val;
-#define	CALL(f)								\
-	f(sp, op, str, val)
-
-#define	turnoff	val
-
 /*
- * PUBLIC: int f_altwerase __P((SCR *, OPTION *, char *, u_long));
+ * PUBLIC: int f_altwerase __P((SCR *, OPTION *, char *, u_long *));
  */
-DECL(f_altwerase)
+int
+f_altwerase(sp, op, str, valp)
+	SCR *sp;
+	OPTION *op;
+	char *str;
+	u_long *valp;
 {
-	if (turnoff)
-		O_CLR(sp, O_ALTWERASE);
-	else {
-		O_SET(sp, O_ALTWERASE);
+	if (!*valp)
 		O_CLR(sp, O_TTYWERASE);
-	}
 	return (0);
 }
 
 /*
- * PUBLIC: int f_cdpath __P((SCR *, OPTION *, char *, u_long)); 
+ * PUBLIC: int f_columns __P((SCR *, OPTION *, char *, u_long *));
  */
-DECL(f_cdpath)
-{
-	return (opt_dup(sp, O_CDPATH, str));
-}
-
-/*
- * PUBLIC: int f_columns __P((SCR *, OPTION *, char *, u_long));
- */
-DECL(f_columns)
+int
+f_columns(sp, op, str, valp)
+	SCR *sp;
+	OPTION *op;
+	char *str;
+	u_long *valp;
 {
 	/* Validate the number. */
-	if (val < MINIMUM_SCREEN_COLS) {
+	if (*valp < MINIMUM_SCREEN_COLS) {
 		msgq(sp, M_ERR, "040|Screen columns too small, less than %d",
 		    MINIMUM_SCREEN_COLS);
 		return (1);
@@ -86,68 +69,26 @@ DECL(f_columns)
 	 * core.
 	 */
 #define	MAXIMUM_SCREEN_COLS	500
-	if (val > MAXIMUM_SCREEN_COLS) {
+	if (*valp > MAXIMUM_SCREEN_COLS) {
 		msgq(sp, M_ERR, "041|Screen columns too large, greater than %d",
 		    MAXIMUM_SCREEN_COLS);
 		return (1);
 	}
-
-	/* This is expensive, don't do it unless it's necessary. */
-	if (O_VAL(sp, O_COLUMNS) == val)
-		return (0);
-
-	/* Set the value. */
-	O_VAL(sp, O_COLUMNS) =  val;
-
 	return (0);
 }
 
 /*
- * PUBLIC: int f_extended __P((SCR *, OPTION *, char *, u_long));
+ * PUBLIC: int f_lines __P((SCR *, OPTION *, char *, u_long *));
  */
-DECL(f_extended)
-{
-	if (turnoff)
-		O_CLR(sp, O_EXTENDED);
-	else
-		O_SET(sp, O_EXTENDED);
-	F_SET(sp, S_RE_RECOMPILE);
-	return (0);
-}
-
-/*
- * PUBLIC: int f_ignorecase __P((SCR *, OPTION *, char *, u_long));
- */
-DECL(f_ignorecase)
-{
-	if (turnoff)
-		O_CLR(sp, O_IGNORECASE);
-	else
-		O_SET(sp, O_IGNORECASE);
-	F_SET(sp, S_RE_RECOMPILE);
-	return (0);
-}
-
-/*
- * PUBLIC: int f_leftright __P((SCR *, OPTION *, char *, u_long));
- */
-DECL(f_leftright)
-{
-	if (turnoff)
-		O_CLR(sp, O_LEFTRIGHT);
-	else
-		O_SET(sp, O_LEFTRIGHT);
-	F_SET(sp, S_SCR_REFORMAT);
-	return (0);
-}
-
-/*
- * PUBLIC: int f_lines __P((SCR *, OPTION *, char *, u_long));
- */
-DECL(f_lines)
+int
+f_lines(sp, op, str, valp)
+	SCR *sp;
+	OPTION *op;
+	char *str;
+	u_long *valp;
 {
 	/* Validate the number. */
-	if (val < MINIMUM_SCREEN_ROWS) {
+	if (*valp < MINIMUM_SCREEN_ROWS) {
 		msgq(sp, M_ERR, "042|Screen lines too small, less than %d",
 		    MINIMUM_SCREEN_ROWS);
 		return (1);
@@ -162,98 +103,43 @@ DECL(f_lines)
 	 * core.
 	 */
 #define	MAXIMUM_SCREEN_ROWS	500
-	if (val > MAXIMUM_SCREEN_ROWS) {
+	if (*valp > MAXIMUM_SCREEN_ROWS) {
 		msgq(sp, M_ERR, "043|Screen lines too large, greater than %d",
 		    MAXIMUM_SCREEN_ROWS);
 		return (1);
 	}
 
-	/* This is expensive, don't do it unless it's necessary. */
-	if (O_VAL(sp, O_LINES) == val)
-		return (0);
-
 	/*
 	 * Set the value, and the related scroll value.  If no window
 	 * value set, set a new default window.
 	 */
-	if ((O_VAL(sp, O_LINES) = val) == 1) {
+	if ((O_VAL(sp, O_LINES) = *valp) == 1) {
 		sp->defscroll = 1;
 
 		if (O_VAL(sp, O_WINDOW) == O_D_VAL(sp, O_WINDOW) ||
-		    O_VAL(sp, O_WINDOW) > val)
+		    O_VAL(sp, O_WINDOW) > *valp)
 			O_VAL(sp, O_WINDOW) = O_D_VAL(sp, O_WINDOW) = 1;
 	} else {
-		sp->defscroll = (val - 1) / 2;
+		sp->defscroll = (*valp - 1) / 2;
 
 		if (O_VAL(sp, O_WINDOW) == O_D_VAL(sp, O_WINDOW) ||
-		    O_VAL(sp, O_WINDOW) > val)
-			O_VAL(sp, O_WINDOW) = O_D_VAL(sp, O_WINDOW) = val - 1;
+		    O_VAL(sp, O_WINDOW) > *valp)
+			O_VAL(sp, O_WINDOW) = O_D_VAL(sp, O_WINDOW) = *valp - 1;
 	}
 	return (0);
 }
 
 /*
- * PUBLIC: int f_lisp __P((SCR *, OPTION *, char *, u_long));
+ * PUBLIC: int f_lisp __P((SCR *, OPTION *, char *, u_long *));
  */
-DECL(f_lisp)
+int
+f_lisp(sp, op, str, valp)
+	SCR *sp;
+	OPTION *op;
+	char *str;
+	u_long *valp;
 {
 	msgq(sp, M_ERR, "044|The lisp option is not implemented");
-	return (0);
-}
-
-/*
- * PUBLIC: int f_list __P((SCR *, OPTION *, char *, u_long));
- */
-DECL(f_list)
-{
-	if (turnoff)
-		O_CLR(sp, O_LIST);
-	else
-		O_SET(sp, O_LIST);
-
-	F_SET(sp, S_SCR_REFORMAT);
-	return (0);
-}
-
-/*
- * PUBLIC: int f_mesg __P((SCR *, OPTION *, char *, u_long));
- */
-DECL(f_mesg)
-{
-	struct stat sb;
-	char *tty;
-
-	/* Find the tty. */
-	if ((tty = ttyname(STDERR_FILENO)) == NULL) {
-		msgq(sp, M_SYSERR, "stderr");
-		return (1);
-	}
-
-	/* Save the tty mode for later; only save it once. */
-	if (!F_ISSET(sp->gp, G_SETMODE)) {
-		F_SET(sp->gp, G_SETMODE);
-		if (stat(tty, &sb) < 0) {
-			msgq(sp, M_SYSERR, "%s", tty);
-			return (1);
-		}
-		sp->gp->origmode = sb.st_mode;
-	}
-
-	if (turnoff) {
-		if (chmod(tty, sp->gp->origmode & ~S_IWGRP) < 0) {
-			msgq(sp, M_SYSERR,
-			    "045|messages not turned off: %s", tty);
-			return (1);
-		}
-		O_CLR(sp, O_MESG);
-	} else {
-		if (chmod(tty, sp->gp->origmode | S_IWGRP) < 0) {
-			msgq(sp, M_SYSERR,
-			    "046|messages not turned on: %s", tty);
-			return (1);
-		}
-		O_SET(sp, O_MESG);
-	}
 	return (0);
 }
 
@@ -266,129 +152,62 @@ DECL(f_mesg)
  *	mixing code and data.  Don't add it, or I will kill you.
  *
  *
- * PUBLIC: int f_modeline __P((SCR *, OPTION *, char *, u_long));
+ * PUBLIC: int f_modeline __P((SCR *, OPTION *, char *, u_long *));
  */
-DECL(f_modeline)
+int
+f_modeline(sp, op, str, valp)
+	SCR *sp;
+	OPTION *op;
+	char *str;
+	u_long *valp;
 {
-	if (!turnoff)
+	if (!*valp)
 		msgq(sp, M_ERR, "047|The modeline(s) option may never be set");
 	return (0);
 }
 
 /*
- * PUBLIC: int f_msgcat __P((SCR *, OPTION *, char *, u_long));
+ * PUBLIC: int f_msgcat __P((SCR *, OPTION *, char *, u_long *));
  */
-DECL(f_msgcat)
+int
+f_msgcat(sp, op, str, valp)
+	SCR *sp;
+	OPTION *op;
+	char *str;
+	u_long *valp;
 {
 	(void)msg_open(sp, str);
-	return (opt_dup(sp, O_MSGCAT, str));
-}
-
-/*
- * PUBLIC: int f_number __P((SCR *, OPTION *, char *, u_long));
- */
-DECL(f_number)
-{
-	if (turnoff)
-		O_CLR(sp, O_NUMBER);
-	else
-		O_SET(sp, O_NUMBER);
-
-	F_SET(sp, S_SCR_REFORMAT);
 	return (0);
 }
 
 /*
- * PUBLIC: int f_octal __P((SCR *, OPTION *, char *, u_long));
+ * PUBLIC: int f_paragraph __P((SCR *, OPTION *, char *, u_long *));
  */
-DECL(f_octal)
-{
-	if (turnoff)
-		O_CLR(sp, O_OCTAL);
-	else
-		O_SET(sp, O_OCTAL);
-
-	/* Reinitialize the key fast lookup table. */
-	v_key_ilookup(sp);
-
-	/* Reformat the screen. */
-	F_SET(sp, S_SCR_REFORMAT);
-	return (0);
-}
-
-/*
- * PUBLIC: int f_paragraph __P((SCR *, OPTION *, char *, u_long));
- */
-DECL(f_paragraph)
+int
+f_paragraph(sp, op, str, valp)
+	SCR *sp;
+	OPTION *op;
+	char *str;
+	u_long *valp;
 {
 	if (strlen(str) & 1) {
 		msgq(sp, M_ERR,
 		    "048|The paragraph option must be in two character groups");
 		return (1);
 	}
-	return (opt_dup(sp, O_PARAGRAPHS, str));
+	return (0);
 }
 
 /*
- * PUBLIC: int f_noprint __P((SCR *, OPTION *, char *, u_long));
+ * PUBLIC: int f_print __P((SCR *, OPTION *, char *, u_long *));
  */
-DECL(f_noprint)
-{
-	return (prset(sp, str, O_NOPRINT, O_PRINT));
-}
-
-/*
- * PUBLIC: int f_print __P((SCR *, OPTION *, char *, u_long));
- */
-DECL(f_print)
-{
-	return (prset(sp, str, O_PRINT, O_NOPRINT));
-}
-
-static int
-prset(sp, str, set_index, unset_index)
+int
+f_print(sp, op, str, valp)
 	SCR *sp;
-	CHAR_T *str;
-	int set_index, unset_index;
+	OPTION *op;
+	char *str;
+	u_long *valp;
 {
-	CHAR_T *p, *s, *t;
-	size_t len;
-
-	/* Delete characters from the unset index edit option. */
-	if ((p = O_STR(sp, unset_index)) != NULL)
-		for (s = str; *s != '\0'; ++s) {
-			for (p = t = O_STR(sp, unset_index); *p != '\0'; ++p)
-				if (*p != *s)
-					*t++ = *p;
-			*t = '\0';
-		}
-
-	/*
-	 * Create a new copy of the set_index edit option, and integrate
-	 * the new characters from str into it, avoiding any duplication.
-	 */
-	len = strlen(str);
-	if (O_STR(sp, set_index) != NULL)
-		len += strlen(O_STR(sp, set_index));
-	MALLOC_RET(sp, p, CHAR_T *, (len + 1) * sizeof(CHAR_T));
-	if (O_STR(sp, set_index) != NULL)
-		MEMMOVE(p, O_STR(sp, set_index), len + 1);
-	else
-		p[0] = '\0';
-	for (s = str; *s != '\0'; ++s) {
-		for (t = p; *t != '\0'; ++t)
-			if (*t == *s)
-				break;
-		if (*t == '\0') {
-			*t = *s;
-			*++t = '\0';
-		}
-	}
-	if (O_STR(sp, set_index) != NULL &&
-	    O_STR(sp, set_index) != O_D_STR(sp, set_index))
-		free(O_STR(sp, set_index));
-	O_STR(sp, set_index) = p;
-
 	/* Reinitialize the key fast lookup table. */
 	v_key_ilookup(sp);
 
@@ -398,45 +217,84 @@ prset(sp, str, set_index, unset_index)
 }
 
 /*
- * PUBLIC: int f_readonly __P((SCR *, OPTION *, char *, u_long));
+ * PUBLIC: int f_readonly __P((SCR *, OPTION *, char *, u_long *));
  */
-DECL(f_readonly)
+int
+f_readonly(sp, op, str, valp)
+	SCR *sp;
+	OPTION *op;
+	char *str;
+	u_long *valp;
 {
-	if (turnoff) {
-		O_CLR(sp, O_READONLY);
-		if (sp->frp != NULL)
-			F_CLR(sp->frp, FR_RDONLY);
-	} else {
-		O_SET(sp, O_READONLY);
-		if (sp->frp != NULL)
-			F_SET(sp->frp, FR_RDONLY);
-	}
+	if (sp->frp == NULL)
+		return (0);
+	if (*valp)
+		F_CLR(sp->frp, FR_RDONLY);
+	else
+		F_SET(sp->frp, FR_RDONLY);
 	return (0);
 }
 
 /*
- * PUBLIC: int f_section __P((SCR *, OPTION *, char *, u_long));
+ * PUBLIC: int f_recompile __P((SCR *, OPTION *, char *, u_long *));
  */
-DECL(f_section)
+int
+f_recompile(sp, op, str, valp)
+	SCR *sp;
+	OPTION *op;
+	char *str;
+	u_long *valp;
+{
+	F_SET(sp, S_RE_RECOMPILE);
+	return (0);
+}
+
+/*
+ * PUBLIC: int f_reformat __P((SCR *, OPTION *, char *, u_long *));
+ */
+int
+f_reformat(sp, op, str, valp)
+	SCR *sp;
+	OPTION *op;
+	char *str;
+	u_long *valp;
+{
+	F_SET(sp, S_SCR_REFORMAT);
+	return (0);
+}
+
+/*
+ * PUBLIC: int f_section __P((SCR *, OPTION *, char *, u_long *));
+ */
+int
+f_section(sp, op, str, valp)
+	SCR *sp;
+	OPTION *op;
+	char *str;
+	u_long *valp;
 {
 	if (strlen(str) & 1) {
 		msgq(sp, M_ERR,
 		    "049|The section option must be in two character groups");
 		return (1);
 	}
-	return (opt_dup(sp, O_SECTIONS, str));
+	return (0);
 }
 
 /*
- * PUBLIC: int f_shiftwidth __P((SCR *, OPTION *, char *, u_long));
+ * PUBLIC: int f_shiftwidth __P((SCR *, OPTION *, char *, u_long *));
  */
-DECL(f_shiftwidth)
+int
+f_shiftwidth(sp, op, str, valp)
+	SCR *sp;
+	OPTION *op;
+	char *str;
+	u_long *valp;
 {
-	if (val == 0) {
+	if (*valp == 0) {
 		msgq(sp, M_ERR, "050|The shiftwidth may not be set to 0");
 		return (1);
 	}
-	O_VAL(sp, O_SHIFTWIDTH) = val;
 	return (0);
 }
 
@@ -448,64 +306,62 @@ DECL(f_shiftwidth)
  *	.exrc files the user didn't own.  This is an obvious security problem,
  *	and we ignore the option.
  *
- * PUBLIC: int f_sourceany __P((SCR *, OPTION *, char *, u_long));
+ * PUBLIC: int f_sourceany __P((SCR *, OPTION *, char *, u_long *));
  */
-DECL(f_sourceany)
+int
+f_sourceany(sp, op, str, valp)
+	SCR *sp;
+	OPTION *op;
+	char *str;
+	u_long *valp;
 {
-	if (!turnoff)
+	if (!*valp)
 		msgq(sp, M_ERR, "051|The sourceany option may never be set");
 	return (0);
 }
 
 /*
- * PUBLIC: int f_tabstop __P((SCR *, OPTION *, char *, u_long));
+ * PUBLIC: int f_tabstop __P((SCR *, OPTION *, char *, u_long *));
  */
-DECL(f_tabstop)
+int
+f_tabstop(sp, op, str, valp)
+	SCR *sp;
+	OPTION *op;
+	char *str;
+	u_long *valp;
 {
-	if (val == 0) {
+	if (*valp == 0) {
 		msgq(sp, M_ERR, "052|Tab stops may not be set to 0");
 		return (1);
 	}
-	O_VAL(sp, O_TABSTOP) = val;
-
 	F_SET(sp, S_SCR_REFORMAT);
 	return (0);
 }
 
 /*
- * PUBLIC: int f_tags __P((SCR *, OPTION *, char *, u_long));
+ * PUBLIC: int f_ttywerase __P((SCR *, OPTION *, char *, u_long *));
  */
-DECL(f_tags)
+int
+f_ttywerase(sp, op, str, valp)
+	SCR *sp;
+	OPTION *op;
+	char *str;
+	u_long *valp;
 {
-	return (opt_dup(sp, O_TAGS, str));
-}
-
-/*
- * PUBLIC: int f_term __P((SCR *, OPTION *, char *, u_long));
- */
-DECL(f_term)
-{
-	return (opt_dup(sp, O_TERM, str));
-}
-
-/*
- * PUBLIC: int f_ttywerase __P((SCR *, OPTION *, char *, u_long));
- */
-DECL(f_ttywerase)
-{
-	if (turnoff)
-		O_CLR(sp, O_TTYWERASE);
-	else {
-		O_SET(sp, O_TTYWERASE);
+	if (!*valp)
 		O_CLR(sp, O_ALTWERASE);
-	}
 	return (0);
 }
 
 /*
- * PUBLIC: int f_w300 __P((SCR *, OPTION *, char *, u_long));
+ * PUBLIC: int f_w300 __P((SCR *, OPTION *, char *, u_long *));
  */
-DECL(f_w300)
+int
+f_w300(sp, op, str, valp)
+	SCR *sp;
+	OPTION *op;
+	char *str;
+	u_long *valp;
 {
 	u_long v;
 
@@ -515,20 +371,18 @@ DECL(f_w300)
 	if (v >= 1200)
 		return (0);
 
-	if (CALL(f_window))
-		return (1);
-
-	if (val >= O_VAL(sp, O_LINES) - 1 &&
-	    (val = O_VAL(sp, O_LINES) - 1) == 0)
-		val = 1;
-	O_VAL(sp, O_W300) = val;
-	return (0);
+	return (f_window(sp, op, str, valp));
 }
 
 /*
- * PUBLIC: int f_w1200 __P((SCR *, OPTION *, char *, u_long));
+ * PUBLIC: int f_w1200 __P((SCR *, OPTION *, char *, u_long *));
  */
-DECL(f_w1200)
+int
+f_w1200(sp, op, str, valp)
+	SCR *sp;
+	OPTION *op;
+	char *str;
+	u_long *valp;
 {
 	u_long v;
 
@@ -538,20 +392,18 @@ DECL(f_w1200)
 	if (v < 1200 || v > 4800)
 		return (0);
 
-	if (CALL(f_window))
-		return (1);
-
-	if (val >= O_VAL(sp, O_LINES) - 1 &&
-	    (val = O_VAL(sp, O_LINES) - 1) == 0)
-		val = 1;
-	O_VAL(sp, O_W1200) = val;
-	return (0);
+	return (f_window(sp, op, str, valp));
 }
 
 /*
- * PUBLIC: int f_w9600 __P((SCR *, OPTION *, char *, u_long));
+ * PUBLIC: int f_w9600 __P((SCR *, OPTION *, char *, u_long *));
  */
-DECL(f_w9600)
+int
+f_w9600(sp, op, str, valp)
+	SCR *sp;
+	OPTION *op;
+	char *str;
+	u_long *valp;
 {
 	u_long v;
 
@@ -561,48 +413,21 @@ DECL(f_w9600)
 	if (v <= 4800)
 		return (0);
 
-	if (CALL(f_window))
-		return (1);
-
-	if (val >= O_VAL(sp, O_LINES) - 1 &&
-	    (val = O_VAL(sp, O_LINES) - 1) == 0)
-		val = 1;
-	O_VAL(sp, O_W9600) = val;
-	return (0);
+	return (f_window(sp, op, str, valp));
 }
 
 /*
- * PUBLIC: int f_window __P((SCR *, OPTION *, char *, u_long));
+ * PUBLIC: int f_window __P((SCR *, OPTION *, char *, u_long *));
  */
-DECL(f_window)
-{
-	if (val >= O_VAL(sp, O_LINES) - 1 &&
-	    (val = O_VAL(sp, O_LINES) - 1) == 0)
-		val = 1;
-	O_VAL(sp, O_WINDOW) = val;
-
-	return (0);
-}
-
-/*
- * opt_dup --
- *	Copy a string value for user display.
- */
-static int
-opt_dup(sp, opt, str)
+int
+f_window(sp, op, str, valp)
 	SCR *sp;
-	int opt;
+	OPTION *op;
 	char *str;
+	u_long *valp;
 {
-	char *p;
-
-	/* Copy for user display. */
-	if ((p = strdup(str)) == NULL) {
-		msgq(sp, M_SYSERR, NULL);
-		return (1);
-	}
-	if (O_STR(sp, opt) != NULL && O_STR(sp, opt) != O_D_STR(sp, opt))
-		free(O_STR(sp, opt));
-	O_STR(sp, opt) = p;
+	if (*valp >= O_VAL(sp, O_LINES) - 1 &&
+	    (*valp = O_VAL(sp, O_LINES) - 1) == 0)
+		*valp = 1;
 	return (0);
 }
