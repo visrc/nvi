@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: key.h,v 10.49 2001/06/24 19:48:06 skimo Exp $ (Berkeley) $Date: 2001/06/24 19:48:06 $
+ *	$Id: key.h,v 10.50 2001/06/28 17:53:58 skimo Exp $ (Berkeley) $Date: 2001/06/28 17:53:58 $
  */
 
 #include "multibyte.h"
@@ -30,7 +30,7 @@ typedef	u_int		ARG_CHAR_T;
     sp->conv.file2int(sp, n, nlen, &sp->wp->cw, &wlen, &w)
 #define INT2FILE(sp,w,wlen,n,nlen) 					    \
     sp->conv.int2file(sp, w, wlen, &sp->wp->cw, &nlen, &n)
-#define CHAR2INTB(sp,n,nlen,w,wlen,buf)					    \
+#define CHAR2INT5(sp,buf,n,nlen,w,wlen)					    \
     sp->conv.sys2int(sp, n, nlen, &buf, &wlen, &w)
 #define INT2CHAR(sp,w,wlen,n,nlen) 					    \
     sp->conv.int2sys(sp, w, wlen, &sp->wp->cw, &nlen, &n)
@@ -38,8 +38,6 @@ typedef	u_int		ARG_CHAR_T;
     sp->conv.int2sys(sp, w, wlen, &sp->wp->cw, &nlen, &n)
 #define INPUT2INT5(sp,cw,n,nlen,w,wlen)					    \
     sp->conv.input2int(sp, n, nlen, &(cw), &wlen, &w)
-#define INPUT2INT(sp,n,nlen,w,wlen)					    \
-    INPUT2INT5(sp, n, nlen, sp->wp->cw, wlen, w)
 #define CONST
 #define ISCNTRL(ch) \
     iswcntrl((ch))
@@ -63,13 +61,13 @@ typedef	u_int		ARG_CHAR_T;
     (w = n, wlen = nlen, 0)
 #define INT2FILE(sp,w,wlen,n,nlen) \
     (n = w, nlen = wlen, 0)
-#define CHAR2INTB(sp,n,nlen,w,wlen,buf) \
+#define CHAR2INT5(sp,buf,n,nlen,w,wlen) \
     (w = n, wlen = nlen, 0)
 #define INT2CHAR(sp,w,wlen,n,nlen) \
     (n = w, nlen = wlen, 0)
 #define INT2SYS(sp,w,wlen,n,nlen) \
     (n = w, nlen = wlen, 0)
-#define INPUT2INT(sp,n,nlen,w,wlen) \
+#define INPUT2INT5(sp,buf,n,nlen,w,wlen) \
     (w = n, wlen = nlen, 0)
 #define CONST const
 #define ISCNTRL(ch) \
@@ -91,7 +89,7 @@ typedef	u_int		ARG_CHAR_T;
 #define WC		"%c"
 #endif
 #define CHAR2INT(sp,n,nlen,w,wlen)					    \
-    CHAR2INTB(sp,n,nlen,w,wlen,sp->wp->cw)
+    CHAR2INT5(sp,sp->wp->cw,n,nlen,w,wlen)
 
 #define MEMCPYW(to, from, n) \
     memcpy(to, from, (n) * sizeof(CHAR_T))

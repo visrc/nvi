@@ -14,7 +14,7 @@
 #undef VI
 
 #ifndef lint
-static const char sccsid[] = "$Id: perl.xs,v 8.40 2001/06/23 18:39:50 skimo Exp $ (Berkeley) $Date: 2001/06/23 18:39:50 $";
+static const char sccsid[] = "$Id: perl.xs,v 8.41 2001/06/28 17:53:58 skimo Exp $ (Berkeley) $Date: 2001/06/28 17:53:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -72,7 +72,7 @@ typedef struct _perl_data {
 } perl_data_t;
 
 #define CHAR2INTP(sp,n,nlen,w,wlen)					    \
-    CHAR2INTB(sp,n,nlen,w,wlen,((perl_data_t *)sp->wp->perl_private)->cw)
+    CHAR2INT5(sp,((perl_data_t *)sp->wp->perl_private)->cw,n,nlen,w,wlen)
 
 /*
  * INITMESSAGE --
