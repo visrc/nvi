@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_msg.c,v 10.47 1996/03/06 20:53:20 bostic Exp $ (Berkeley) $Date: 1996/03/06 20:53:20 $";
+static const char sccsid[] = "$Id: vs_msg.c,v 10.48 1996/03/14 21:28:17 bostic Exp $ (Berkeley) $Date: 1996/03/14 21:28:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -225,10 +225,12 @@ vs_msg(sp, mtype, line, len)
 	 * XXX
 	 * Shouldn't we save this, too?
 	 */
-	if (F_ISSET(sp, S_INPUT_INFO) || F_ISSET(gp, G_BELLSCHED)) {
-		F_CLR(gp, G_BELLSCHED);
-		(void)gp->scr_bell(sp);
-	}
+	if (F_ISSET(sp, S_INPUT_INFO) || F_ISSET(gp, G_BELLSCHED))
+		if (F_ISSET(sp, S_SCR_VI)) {
+			F_CLR(gp, G_BELLSCHED);
+			(void)gp->scr_bell(sp);
+		} else
+			F_SET(gp, G_BELLSCHED);
 
 	/*
 	 * If vi is using the error line for text input, there's no screen
@@ -281,6 +283,12 @@ vs_msg(sp, mtype, line, len)
 		(void)vs_msgsave(sp, mtype, line, len);
 		return;
 	}
+
+	/*
+	 * Refresh the screen, we may have been delaying it while
+	 * keys were coming in fast.
+	 */
+	(void)gp->scr_refresh(sp, 0);
 
 	/* Save the cursor position. */
 	(void)gp->scr_cursor(sp, &oldy, &oldx);
@@ -383,11 +391,13 @@ vs_output(sp, mtype, line, llen)
 	const char *line;
 	int llen;
 {
+	CHAR_T *kp;
 	GS *gp;
 	VI_PRIVATE *vip;
-	size_t notused;
-	int len, rlen, tlen;
+	size_t chlen, notused;
+	int ch, len, rlen, tlen;
 	const char *p, *t;
+	char *cbp, *ecbp, cbuf[128];
 
 	gp = sp->gp;
 	vip = VIP(sp);
@@ -441,12 +451,27 @@ vs_output(sp, mtype, line, llen)
 		} else
 			(void)gp->scr_move(sp, LASTLINE(sp), vip->lcontinue);
 
-		/* Display the line, doing character translation. */
+		/* Error messages are in inverse video. */
 		if (mtype == M_ERR)
 			(void)gp->scr_attr(sp, SA_INVERSE, 1);
-		for (t = line, tlen = len; tlen--; ++t)
-			(void)gp->scr_addstr(sp,
-			    KEY_NAME(sp, *t), KEY_LEN(sp, *t));
+
+		/* Display the line, doing character translation. */
+#define	FLUSH {								\
+	*cbp = '\0';							\
+	(void)gp->scr_addstr(sp, cbuf, cbp - cbuf);			\
+	cbp = cbuf;							\
+}
+		ecbp = (cbp = cbuf) + sizeof(cbuf) - 1;
+		for (t = line, tlen = len; tlen--; ++t) {
+			ch = *t;
+			chlen = KEY_LEN(sp, ch);
+			if (cbp + chlen >= ecbp)
+				FLUSH;
+			for (kp = KEY_NAME(sp, ch); chlen--;)
+				*cbp++ = *kp++;
+		}
+		if (cbp > cbuf)
+			FLUSH;
 		if (mtype == M_ERR)
 			(void)gp->scr_attr(sp, SA_INVERSE, 0);
 
@@ -584,6 +609,9 @@ vs_ex_resolve(sp, continuep)
 
 		/* Redraw. */
 		(void)vs_repaint(sp, &ev);
+
+		/* Regardless, we don't trust the cursor. */
+		F_SET(vip, VIP_CUR_INVALID);
 	} else
 		/* Reset the count of overwriting lines. */
 		vip->linecount = vip->lcontinue = vip->totalcount = 0;
