@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 8.10 1993/09/29 16:15:27 bostic Exp $ (Berkeley) $Date: 1993/09/29 16:15:27 $
+ *	$Id: exf.h,v 8.11 1993/09/30 13:16:18 bostic Exp $ (Berkeley) $Date: 1993/09/30 13:16:18 $
  */
 
 					/* Undo direction. */
@@ -37,6 +37,11 @@ typedef struct _exf {
 	MARK	 absmark;		/* Saved absolute mark. */
 	HDR	 marks;			/* Linked list of file MARK's. */
 
+/*
+ * If F_RCV_NORM is not set, rcv_path and rcv_mpath are unlinked on
+ * file exit.  If rcv_path or rcv_mpath are not NULL, they are free'd
+ * as well.  (This means that, on error, F_RCV_NORM is normally set.
+ */
 	char	*rcv_path;		/* Recover file name. */
 	char	*rcv_mpath;		/* Recover mail file name. */
 
