@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 8.34 1994/04/27 14:44:03 bostic Exp $ (Berkeley) $Date: 1994/04/27 14:44:03 $";
+static char sccsid[] = "$Id: v_itxt.c,v 8.35 1994/05/09 09:42:36 bostic Exp $ (Berkeley) $Date: 1994/05/09 09:42:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -85,6 +85,7 @@ v_iA(sp, ep, vp)
 	int first;
 	char *p;
 
+	sp->showmode = "Append";
 	flags = set_txt_std(sp, vp, TXT_APPENDEOL);
 	for (first = 1, lno = vp->m_start.lno,
 	    cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
@@ -137,6 +138,7 @@ v_ia(sp, ep, vp)
 	size_t len;
 	char *p;
 
+	sp->showmode = "Append";
 	flags = set_txt_std(sp, vp, 0);
 	for (lno = vp->m_start.lno,
 	    cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
@@ -191,6 +193,7 @@ v_iI(sp, ep, vp)
 	int first;
 	char *p;
 
+	sp->showmode = "Insert";
 	flags = set_txt_std(sp, vp, 0);
 	for (first = 1, lno = vp->m_start.lno,
 	    cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
@@ -245,6 +248,7 @@ v_ii(sp, ep, vp)
 	u_int flags;
 	char *p;
 
+	sp->showmode = "Insert";
 	flags = set_txt_std(sp, vp, 0);
 	for (lno = vp->m_start.lno,
 	    cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
@@ -295,6 +299,7 @@ v_iO(sp, ep, vp)
 	int first;
 	char *p;
 
+	sp->showmode = "Insert";
 	flags = set_txt_std(sp, vp, TXT_APPENDEOL);
 	for (first = 1, cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
 		if (sp->lno == 1) {
@@ -349,6 +354,7 @@ v_io(sp, ep, vp)
 	int first;
 	char *p;
 
+	sp->showmode = "Insert";
 	flags = set_txt_std(sp, vp, TXT_APPENDEOL);
 	for (first = 1,
 	    cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
@@ -451,6 +457,7 @@ v_CS(sp, ep, vp, iflags)
 	char *p;
 	u_int flags;
 
+	sp->showmode = "Change";
 	flags = set_txt_std(sp, vp, iflags);
 
 	/*
@@ -544,6 +551,7 @@ v_change(sp, ep, vp)
 	int lmode, rval;
 	char *bp, *p;
 
+	sp->showmode = "Change";
 	flags = set_txt_std(sp, vp, 0);
 
 	/*
@@ -676,6 +684,7 @@ v_Replace(sp, ep, vp)
 	u_int flags;
 	char *p;
 
+	sp->showmode = "Replace";
 	flags = set_txt_std(sp, vp, 0);
 
 	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
@@ -751,6 +760,7 @@ v_subst(sp, ep, vp)
 	u_int flags;
 	char *p;
 
+	sp->showmode = "Change";
 	flags = set_txt_std(sp, vp, 0);
 	if ((p = file_gline(sp, ep, vp->m_start.lno, &len)) == NULL) {
 		if (file_lline(sp, ep, &lno))

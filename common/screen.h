@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.110 1994/05/07 12:15:23 bostic Exp $ (Berkeley) $Date: 1994/05/07 12:15:23 $
+ *	$Id: screen.h,v 8.111 1994/05/09 09:42:00 bostic Exp $ (Berkeley) $Date: 1994/05/09 09:42:00 $
  */
 
 /*
@@ -149,6 +149,9 @@ struct _scr {
 					/* Display character. */
 	CHAR_T	 cname[MAX_CHARACTER_COLUMNS + 1];
 	size_t	 clen;			/* Length of display character. */
+
+#define	MAX_MODE_NAME	12
+	char	*showmode;		/* Mode. */
 
 	void	*ex_private;		/* Ex private area. */
 	void	*sex_private;		/* Ex screen private area. */

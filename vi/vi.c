@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.68 1994/05/08 10:08:06 bostic Exp $ (Berkeley) $Date: 1994/05/08 10:08:06 $";
+static char sccsid[] = "$Id: vi.c,v 8.69 1994/05/09 09:42:39 bostic Exp $ (Berkeley) $Date: 1994/05/09 09:42:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -64,15 +64,24 @@ vi(sp, ep)
 	/* Start vi and paint the screen. */
 	if (v_init(sp, ep))
 		return (1);
-	if (sp->s_refresh(sp, ep)) {
-		(void)v_end(sp);
-		return (1);
-	}
 
 	/* Command initialization. */
 	memset(&cmd, 0, sizeof(VICMDARG));
 
 	for (eval = 0, vp = &cmd;;) {
+		/* Refresh the screen. */
+		sp->showmode = "Command";
+		if (sp->s_refresh(sp, ep)) {
+			eval = 1;
+			break;
+		}
+
+		/* Set the new favorite position. */
+		if (F_ISSET(vp, VM_RCM_SET | VM_RCM_SETFNB | VM_RCM_SETNNB)) {
+			sp->rcm_last = 0;
+			(void)sp->s_column(sp, ep, &sp->rcm);
+		}
+
 		/*
 		 * Check and clear for interrupts; there's an obvious race,
 		 * but I don't want to make a system call to eliminate it.
@@ -246,21 +255,9 @@ vi(sp, ep)
 
 		if (!MAPPED_KEYS_WAITING(sp)) {
 			(void)msg_rpt(sp, 1);
-
 			if (0) {
 err:				term_flush(sp, "Vi error", CH_MAPPED);
 			}
-		}
-		/* Refresh the screen. */
-		if (sp->s_refresh(sp, ep)) {
-			eval = 1;
-			break;
-		}
-
-		/* Set the new favorite position. */
-		if (F_ISSET(vp, VM_RCM_SET | VM_RCM_SETFNB | VM_RCM_SETNNB)) {
-			sp->rcm_last = 0;
-			(void)sp->s_column(sp, ep, &sp->rcm);
 		}
 	}
 	return (v_end(sp) || eval);
