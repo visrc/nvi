@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.19 1993/10/07 10:57:49 bostic Exp $ (Berkeley) $Date: 1993/10/07 10:57:49 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.20 1993/10/07 11:13:20 bostic Exp $ (Berkeley) $Date: 1993/10/07 11:13:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -565,13 +565,19 @@ update:	OCNO = CNO;
 		svi_bell(sp);
 
 	/*
-	 * If the bottom line isn't in use already, display any messages,
-	 * or, paint the mode line.
+	 * If the bottom line isn't in use by the colon command:
+	 *
+	 *	Display any messages.  Don't test S_UPDATE_MODE.  The
+	 *	message printing routine set it to avoid anyone else
+	 *	destroying the message we're about to display.
+	 *
+	 *	If the bottom line isn't in use by anyone, put out the
+	 *	standard status line.
 	 */
-	if (!F_ISSET(SVP(sp), SVI_INFOLINE) && !F_ISSET(sp, S_UPDATE_MODE))
+	if (!F_ISSET(SVP(sp), SVI_INFOLINE))
 		if (sp->msgp != NULL && !F_ISSET(sp->msgp, M_EMPTY))
 			svi_msgflush(sp);
-		else
+		else if (!F_ISSET(sp, S_UPDATE_MODE))
 			svi_modeline(sp, ep);
 
 	/* Refresh the screen. */
