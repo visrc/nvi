@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_visual.c,v 10.5 1995/09/21 12:07:45 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:07:45 $";
+static char sccsid[] = "$Id: ex_visual.c,v 10.6 1995/10/18 19:56:38 bostic Exp $ (Berkeley) $Date: 1995/10/18 19:56:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -137,13 +137,12 @@ nopush:	/*
 		 * !!!
 		 * Historically, if the user exited the vi screen(s) using an
 		 * ex quit command (e.g. :wq, :q) ex/vi exited, it was only if
-		 * they exited vi using the Q command that ex continued.  We
-		 * continue in ex regardless, based on the belief that Q isn't
-		 * that intuitive for most users and the intent was clear.
+		 * they exited vi using the Q command that ex continued.  Some
+		 * early versions of nvi continued in ex regardless, but users
+		 * didn't like the semantic.
+		 *
+		 * Reset the screen.
 		 */
-		F_CLR(sp, S_EXIT | S_EXIT_FORCE | S_SSWITCH);
-
-		/* Reset the screen. */
 		if (sp->gp->scr_screen(sp, S_EX))
 			return (1);
 		F_SET(sp, S_SCREEN_READY);
