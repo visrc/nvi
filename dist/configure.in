@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.35 1996/02/27 16:40:14 bostic Exp $ (Berkeley) $Date: 1996/02/27 16:40:14 $
+dnl	$Id: configure.in,v 8.36 1996/02/27 17:01:50 bostic Exp $ (Berkeley) $Date: 1996/02/27 17:01:50 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(configure)
@@ -12,26 +12,28 @@ AC_CANONICAL_HOST
 
 dnl Compilers, compiler flags and libraries per architecture.
 dnl XXX
+dnl Don't override CFLAGS if it's already set from the environment.
+dnl XXX
 dnl A/UX	has broken getopt(3), strpbrk(3).
 dnl		-ZP disables _BSD_SOURCE et al, but enables POSIX at link time.
 AC_SUBST(CPPFLAGS)
 case "$host_os" in
-aix4\.1)  CFLAGS="-O3 $CFLAGS"
+aix4\.1)  CFLAGS=${CFLAGS-"-O3"}
 	  CPPFLAGS="-qstrict $CPPFLAGS";;
 aix*)	  LIBS="-lbsd $LIBS";;
-aux*)	  CFLAGS="-O $CFLAGS"
+aux*)	  CFLAGS=${CFLAGS-"-O"}
 	  CPPFLAGS="-ZP -D_BSD_SOURCE -D_SYSV_SOURCE -D_AUX_SOURCE $CPPFLAGS"
 	  LDFLAGS="-ZP"
 	  LIBOBJS="getopt.o strpbrk.o $LIBOBJS";;
-bsd4\.4)  CFLAGS="-O2 $CFLAGS"
+bsd4\.4)  CFLAGS=${CFLAGS-"-O2"}
 	  LIBS="-lutil $LIBS";;
 bsdi2\.1) CC=shlicc
-	  CFLAGS="-O2 $CFLAGS"
+	  CFLAGS=${CFLAGS-"-O2"}
 	  LIBS="-lipc $LIBS";;
-bsdi*)	  CFLAGS="-O2 $CFLAGS";;
+bsdi*)	  CFLAGS=${CFLAGS-"-O2"};;
 dgux*)	  LIBS="-ldgc $LIBS";;
-hpux*)	  CFLAGS="-O1 $CFLAGS";;
-irix*)	  CFLAGS="-O2 $CFLAGS"
+hpux*)	  CFLAGS=${CFLAGS-"-O1"};;
+irix*)	  CFLAGS=${CFLAGS-"-O2"}
 	  CPPFLAGS="-cckr $CPPFLAGS"
 	  LIBS="-lc_s -lbsd $LIBS";;
 isc*)	  LIBS="-lcposix -linet $LIBS";;
@@ -39,7 +41,7 @@ netbsd*)  LIBS="-lutil $LIBS";;
 ptx*)	  LIBS="-lseq -linet -lsocket $LIBS";;
 sinix*)	  LIBS="-lelf -lc $LIBS";;
 wgs*)	  LIBS="-lnsl $LIBS";;
-*)	  CFLAGS="-O $CFLAGS";;
+*)	  CFLAGS=${CFLAGS-"-O"};;
 esac
 
 dnl The default compiler is cc.
