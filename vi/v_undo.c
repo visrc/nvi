@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_undo.c,v 8.9 1994/03/14 10:45:38 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:45:38 $";
+static char sccsid[] = "$Id: v_undo.c,v 8.10 1994/05/07 12:48:47 bostic Exp $ (Berkeley) $Date: 1994/05/07 12:48:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -99,6 +99,24 @@ v_undo(sp, ep, vp)
 	 * Since we provide a much better method of viewing buffers, and
 	 * nobody can think of a better way of adding in multiple undo, this
 	 * remains broken.
+	 *
+	 * !!!
+	 * There is change to historic practice for the final cursor position
+	 * in this implementation.  In historic vi, if an undo was isolated to
+	 * a single line, the cursor moved to the start of the change, and
+	 * then, subsequent 'u' commands would not move it again. (It has been
+	 * pointed out that users used multiple undo commands to get the cursor
+	 * to the start of the changed text.)  Nvi toggles between the cursor
+	 * position before and after the change was made.  One final issue is
+	 * that historic vi only did this if the user had not moved off of the
+	 * line before entering the undo command; otherwise, vi would move the
+	 * cursor to the most attractive position on the changed line.
+	 *
+	 * It would be difficult to match historic practice in this area. You
+	 * not only have to know that the changes were isolated to one line,
+	 * but whether it was the first or second undo command as well.  And,
+	 * to completely match historic practice, we'd have to track users line
+	 * changes, too.  This isn't worth the effort.
 	 */
 	if (!F_ISSET(ep, F_UNDO)) {
 		F_SET(ep, F_UNDO);
