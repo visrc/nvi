@@ -16,6 +16,18 @@
  *	bell		user settable visible bell
  *
  *	busy		don't understand the protocol
+ *
+ *	mouse		need to send IPO_MOVE_CARET( row, column )
+ *			(note that screen code does not know about tabs or
+ *			line wraps)
+ *			Connect to window manager cut buffer
+ *			need to send IPO_EXTEND_SELECT( r1, c1, r2, c1 )
+ *			otherwise core and screen duplicate selection logic
+ *			Need to determine correct screen for event.  Not
+ *			needed until split is implemented.
+ *
+ *	arrow keys	need to define a protocol.  I can easily send
+ *			the vt100 sequences (and currently do).
  */
 
 #include "config.h"
@@ -37,9 +49,11 @@
 #include "X11/Intrinsic.h"
 #include "X11/StringDefs.h"
 #include "X11/cursorfont.h"
+#include "X11/keysym.h"
 #include "Xm/PanedW.h"
 #include "Xm/DrawingA.h"
 #include "Xm/MainW.h"
+#include "Xm/VirtKeys.h"
 #include "xutilities.h"
 
 #include "../common/common.h"
@@ -68,7 +82,6 @@ void	usage __P((void));
 
 typedef	struct {
     Widget	area;
-    GC		gc;
     int		color;
     int		rows,
 		cols;
@@ -83,14 +96,61 @@ typedef	struct {
 void	draw_caret __P( (xvi_screen *) );
 void	set_cursor __P( (xvi_screen *, Boolean ) );
 
+#define	ToRowCol( scr, lin, r, c )	\
+	    r = (lin) / scr->cols;	\
+	    c = ((lin) - r * (scr->cols)) % scr->cols;
+#define	Linear( scr, y, x )	\
+	    ( (y) * scr->cols + (x) )
+#define	CharAt( scr, y, x )	\
+	    ( scr->characters + Linear( scr, y, x ) )
+#define	FlagAt( scr, y, x )	\
+	    ( scr->flags + Linear( scr, y, x ) )
+
+#define	XPOS( scr, x )	\
+	scr->ch_width * (x)
+#define	YPOS( scr, y )	\
+	scr->ch_height * ((y)+1) - scr->ch_descent
+
+#define	ROW( scr, y )	\
+	( (y) / scr->ch_height )
+
+#define	COLUMN( scr, x )	\
+	( (x) / scr->ch_width )
+
+
+/*
+ * Globals and costants
+ */
+
+#define	BufferSize	1024
+
+XFontStruct	*font;
+GC		gc;
+
+xvi_screen	*cur_screen = NULL;
+Widget		top_level;
+XtAppContext	ctx;
+Cursor		std_cursor;
+Cursor		busy_cursor;
+XtTranslations	area_trans;
+int		multi_click_length;
+
 
 /*
  * Color support
  */
 
-#define	COLOR_INVALID	-1
-#define	COLOR_STANDARD	0
-#define	COLOR_INVERSE	1
+#define	COLOR_INVALID	0xff	/* force color change */
+
+/* These are color indeces.  When vi passes color info,
+ * we can do 2..0x3f in the 8 bits i've allocated
+ */
+#define	COLOR_STANDARD	0x00	/* standard video */
+#define	COLOR_INVERSE	0x01	/* reverse video */
+
+/* These are flag bits.  they override the above colors */
+#define	COLOR_CARET	0x80	/* draw the caret */
+#define	COLOR_SELECT	0x40	/* draw the selection */
 
 
 #if defined(__STDC__)
@@ -101,26 +161,50 @@ xvi_screen	*this_screen;
 int		val;
 #endif
 {
-    Pixel	fg, bg;
+    static Pixel	fg, bg, hi, shade;
+    static int		prev = COLOR_INVALID;
 
     /* no change? */
-    if ( this_screen->color == val ) return;
+    if ( prev == val ) return;
 
-    /* what colors are selected for the drawing area? */
-    XtVaGetValues( this_screen->area,
-		   XtNbackground,	&bg,
-		   XtNforeground,	&fg,
-		   0
-		   );
+    /* init? */
+    if ( gc == NULL ) {
 
-    switch (this_screen->color = val) {
+	/* what colors are selected for the drawing area? */
+	XtVaGetValues( this_screen->area,
+		       XtNbackground,		&bg,
+		       XtNforeground,		&fg,
+		       XmNhighlightColor,	&hi,
+		       XmNtopShadowColor,	&shade,
+		       0
+		       );
+
+	gc = XCreateGC( XtDisplay(this_screen->area),
+		        DefaultRootWindow(XtDisplay(this_screen->area)),
+			0,
+			0
+			);
+
+	XSetFont( XtDisplay(this_screen->area), gc, font->fid );
+    }
+
+    /* special colors? */
+    if ( val & COLOR_CARET ) {
+	XSetForeground( XtDisplay(this_screen->area), gc, fg );
+	XSetBackground( XtDisplay(this_screen->area), gc, hi );
+    }
+    else if ( val & COLOR_SELECT ) {
+	XSetForeground( XtDisplay(this_screen->area), gc, fg );
+	XSetBackground( XtDisplay(this_screen->area), gc, shade );
+    }
+    else switch (val) {
 	case COLOR_STANDARD:
-	    XSetForeground( XtDisplay(this_screen->area), this_screen->gc, fg );
-	    XSetBackground( XtDisplay(this_screen->area), this_screen->gc, bg );
+	    XSetForeground( XtDisplay(this_screen->area), gc, fg );
+	    XSetBackground( XtDisplay(this_screen->area), gc, bg );
 	    break;
 	case COLOR_INVERSE:
-	    XSetForeground( XtDisplay(this_screen->area), this_screen->gc, bg );
-	    XSetBackground( XtDisplay(this_screen->area), this_screen->gc, fg );
+	    XSetForeground( XtDisplay(this_screen->area), gc, bg );
+	    XSetBackground( XtDisplay(this_screen->area), gc, fg );
 	    break;
 	default:	/* implement color map later */
 	    break;
@@ -145,6 +229,11 @@ nomem()
 
 #define REALLOC( ptr, size )	\
 	((ptr == NULL) ? malloc(size) : realloc(ptr,size))
+
+
+#if ! defined(__STDC__)
+#define	memmove(a,b,c)	bcopy( b,a,c )
+#endif
 
 
 /*
@@ -207,26 +296,27 @@ usage()
  * drawing areas
  */
 
-#define	CharAt( scr, y, x )	\
-	    ( scr->characters + (y) * scr->cols + (x) )
+void	select_start();
+void	select_extend();
+void	select_paste();
+void	key_press();
 
-#define	FlagAt( scr, y, x )	\
-	    ( scr->flags + (y) * scr->cols + (x) )
+static XtActionsRec	area_actions[] = {
+    { "select_start",	select_start	},
+    { "select_extend",	select_extend	},
+    { "select_paste",	select_paste	},
+    { "key_press",	key_press	},
+};
 
-#define	XPOS( scr, x )	\
-	scr->ch_width * (x)
-#define	YPOS( scr, y )	\
-	scr->ch_height * ((y)+1) - scr->ch_descent
+char	areaTrans[] =
+    "<Btn1Down>:	select_start()		\n\
+     <Btn3Down>:	select_extend()		\n\
+     <Btn1Motion>:	select_extend()		\n\
+     <Btn3Motion>:	select_extend()		\n\
+     <Btn2Down>:	select_paste()		\n\
+     <Key>:		key_press()";
 
-xvi_screen	*cur_screen = NULL;
-Widget		top_level;
-XtAppContext	ctx;
-XFontStruct	*font;
-Cursor		std_cursor;
-Cursor		busy_cursor;
-GC		gc_highlight;
-
-static	String	fallback_rsrcs[] = {
+String	fallback_rsrcs[] = {
 
     /* Do not define default colors when running under CDE
      * (e.g. VUE on HPUX). The result is that you don't look
@@ -287,8 +377,8 @@ int		*source;
 XtInputId	id;
 #endif
 {
-    static	char	bp[ 1024 ];
-    static	int	len = 0, blen = 1024;
+    static	char	bp[ BufferSize ];
+    static	int	len = 0, blen = BufferSize;
 		int	nr, skip;
 
     TRACE( ("input from vi\n") );
@@ -379,6 +469,80 @@ XtPointer	call_data;
 }
 
 
+/* draw from backing store */
+#if defined(__STDC__)
+void		draw_text( xvi_screen *this_screen,
+			   int row,
+			   int start_col,
+			   int len
+			   )
+#else
+void		draw_text( this_screen, row, start_col, len )
+xvi_screen	*this_screen;
+int		row;
+int		start_col;
+int		len;
+#endif
+{
+    int		col, color, xpos;
+    char	*start, *end;
+
+    start = CharAt( cur_screen, row, start_col );
+    color = *FlagAt( cur_screen, row, start_col );
+    xpos  = XPOS( cur_screen, start_col );
+
+    /* one column at a time */
+    for ( col=start_col;
+	  col<this_screen->cols && col<start_col+len;
+	  col++ ) {
+
+	/* has the color changed? */
+	if ( *FlagAt( cur_screen, row, col ) == color )
+	    continue;
+
+	/* is there anything to write? */
+	end  = CharAt( cur_screen, row, col );
+	if ( end == start )
+	    continue;
+
+	/* yes. write in the previous color */
+	set_gc_colors( cur_screen, color );
+
+	/* add to display */
+	XDrawImageString( XtDisplay(cur_screen->area),
+			  XtWindow(cur_screen->area),
+			  gc,
+			  xpos,
+			  YPOS( cur_screen, row ),
+			  start,
+			  end - start
+			  );
+
+	/* this is the new context */
+	color = *FlagAt( cur_screen, row, col );
+	xpos  = XPOS( cur_screen, col );
+	start = end;
+    }
+
+    /* is there anything to write? */
+    end = CharAt( cur_screen, row, col );
+    if ( end != start ) {
+	/* yes. write in the previous color */
+	set_gc_colors( cur_screen, color );
+
+	/* add to display */
+	XDrawImageString( XtDisplay(cur_screen->area),
+			  XtWindow(cur_screen->area),
+			  gc,
+			  xpos,
+			  YPOS( cur_screen, row ),
+			  start,
+			  end - start
+			  );
+    }
+}
+
+
 /* redraw the window's contents.
  * NOTE:  when vi wants to force a redraw, we are called with
  * NULL widget and call_data
@@ -395,12 +559,8 @@ XtPointer	client_data;
 XtPointer	call_data;
 #endif
 {
-    IP_BUF			ipb;
-    xvi_screen			*this_screen = (xvi_screen *) client_data;
-    XmDrawingAreaCallbackStruct	*cbs;
-    int				row, col, xpos;
-    int				color, save_color;
-    char			*start, *end;
+    xvi_screen	*this_screen = (xvi_screen *) client_data;
+    int		row;
 
     /* future:  only do redraw when last expose is received.
      *		set clipping rectangles accordingly
@@ -410,70 +570,12 @@ XtPointer	call_data;
 		  XtWindow(cur_screen->area)
 		  );
 
-    /* save context */
-    save_color = this_screen->color;
-
     /* one row at a time */
     for (row=0; row<this_screen->rows; row++) {
 
-	start = CharAt( cur_screen, row, 0 );
-	color = *FlagAt( cur_screen, row, 0 );
-	xpos  = XPOS( cur_screen, 0 );
-
-	/* one column at a time */
-	for (col=0; col<this_screen->cols; col++) {
-
-	    /* has the color changed? */
-	    if ( *FlagAt( cur_screen, row, col ) == color )
-		continue;
-
-	    /* is there anything to write? */
-	    end  = CharAt( cur_screen, row, col );
-	    if ( end == start )
-		continue;
-
-	    /* yes. write in the previous color */
-	    set_gc_colors( cur_screen, color );
-
-	    /* add to display */
-	    XDrawImageString( XtDisplay(cur_screen->area),
-			      XtWindow(cur_screen->area),
-			      cur_screen->gc,
-			      xpos,
-			      YPOS( cur_screen, row ),
-			      start,
-			      end - start
-			      );
-
-	    /* this is the new context */
-	    color = *FlagAt( cur_screen, row, col );
-	    xpos  = XPOS( cur_screen, col );
-	    start = end;
-	}
-
-	/* is there anything to write? */
-	end = CharAt( cur_screen, row, col );
-	if ( end != start ) {
-	    /* yes. write in the previous color */
-	    set_gc_colors( cur_screen, color );
-
-	    /* add to display */
-	    XDrawImageString( XtDisplay(cur_screen->area),
-			      XtWindow(cur_screen->area),
-			      cur_screen->gc,
-			      xpos,
-			      YPOS( cur_screen, row ),
-			      start,
-			      end - start
-			      );
-	}
+	/* draw from the backing store */
+	draw_text( this_screen, row, 0, this_screen->cols );
     }
-
-    /* when vi wants to force a redraw, we are called with
-     * NULL widget and call_data.  When we are called from X,
-     * we must restore the caret
-     */
-    draw_caret( cur_screen );
 
     TRACE( ("expose_func\n") );
 }
@@ -481,38 +583,73 @@ XtPointer	call_data;
 
 /* mouse or keyboard input. */
 #if defined(__STDC__)
-void		input_func( Widget wid,
-			    XtPointer client_data,
-			    XtPointer call_data
-			    )
+void		key_press( Widget widget, 
+			   XKeyEvent *event, 
+			   String str, 
+			   Cardinal *cardinal
+			   )
 #else
-void		input_func( wid, client_data, call_data )
-Widget		wid;
-XtPointer	client_data;
-XtPointer	call_data;
+void		key_press( widget, event, str, cardinal )
+Widget          widget; 
+XKeyEvent       *event; 
+String          str;    
+Cardinal        *cardinal;
 #endif
 {
-    IP_BUF			ipb;
-    xvi_screen			*this_screen = (xvi_screen *) client_data;
-    XmDrawingAreaCallbackStruct	*cbs;
-    XEvent			*ev;
-    char			bp[1024];
+    IP_BUF	ipb;
+    char	bp[BufferSize];
 
-    cbs = (XmDrawingAreaCallbackStruct *) call_data;
-    ev = cbs->event;
-    switch( ev->type ) {
-	case KeyPress:
-	    ipb.len = XLookupString( (XKeyEvent *) ev, bp, 1024, NULL, NULL );
-	    if ( ipb.len != 0 ) {
-		ipb.code = IPO_STRING;
-		ipb.str = bp;
-		ip_send("s", &ipb);
-	    }
+    switch ( XKeycodeToKeysym(XtDisplay(widget),event->keycode,0) ) {
+
+#if defined(osfXK_Up)
+	case osfXK_Up:
+#endif
+#if defined(XK_Up)
+	case XK_Up:
+#endif
+	    strcpy( bp, "\033[A" );
+	    ipb.len = strlen( bp );
 	    break;
-	case ButtonPress:
+
+#if defined(osfXK_Down)
+	case osfXK_Down:
+#endif
+#if defined(XK_Down)
+	case XK_Down:
+#endif
+	    strcpy( bp, "\033[B" );
+	    ipb.len = strlen( bp );
 	    break;
+
+#if defined(osfXK_Right)
+	case osfXK_Right:
+#endif
+#if defined(XK_Right)
+	case XK_Right:
+#endif
+	    strcpy( bp, "\033[C" );
+	    ipb.len = strlen( bp );
+	    break;
+
+#if defined(osfXK_Left)
+	case osfXK_Left:
+#endif
+#if defined(XK_Left)
+	case XK_Left:
+#endif
+	    strcpy( bp, "\033[D" );
+	    ipb.len = strlen( bp );
+	    break;
+
 	default:
+	    ipb.len = XLookupString( event, bp, BufferSize, NULL, NULL );
 	    break;
+    }
+
+    if ( ipb.len != 0 ) {
+	ipb.code = IPO_STRING;
+	ipb.str = bp;
+	ip_send("s", &ipb);
     }
 }
 
@@ -527,7 +664,7 @@ Widget		parent;
     xvi_screen	*new_screen = (xvi_screen *) calloc( 1, sizeof(xvi_screen) );
 
     /* figure out the sizes */
-    new_screen->color		= COLOR_INVALID;	/* force GC */
+    new_screen->color		= COLOR_STANDARD;
     new_screen->rows		= 24;
     new_screen->cols		= 80;
     new_screen->ch_width	= font->max_bounds.width;
@@ -537,21 +674,19 @@ Widget		parent;
     /* allocate and init the backing stores */
     resize_backing_store( new_screen );
 
-    /* populate it with a drawing area into which we will put text */
-    new_screen->area = XtVaCreateManagedWidget( "screen",
-		    xmDrawingAreaWidgetClass,
-		    parent,
-		    XmNheight,	new_screen->ch_height * new_screen->rows,
-		    XmNwidth,	new_screen->ch_width * new_screen->cols,
-		    NULL
-		    );
+    /* set up a translation table for the X toolkit */
+    if ( area_trans == NULL )   
+	area_trans = XtParseTranslationTable(areaTrans);
 
-    /* this callback is for keyboard and mouse input */
-    XtAddCallback( new_screen->area,
-		   XmNinputCallback,
-		   input_func,
-		   new_screen
-		   );
+    /* create a drawing area into which we will put text */
+    new_screen->area = XtVaCreateManagedWidget( "screen",
+	    xmDrawingAreaWidgetClass,
+	    parent,
+	    XmNheight,		new_screen->ch_height * new_screen->rows,
+	    XmNwidth,		new_screen->ch_width * new_screen->cols,
+	    XmNtranslations,	area_trans,
+	    NULL
+	    );
 
     /* this callback is for when the drawing area is resized */
     XtAddCallback( new_screen->area,
@@ -566,17 +701,6 @@ Widget		parent;
 		   expose_func,
 		   new_screen
 		   );
-
-    /* create the drawing context.  as a default we'll just set the
-     * font and fg/bg colors and function.
-     */
-    new_screen->gc = XCreateGC(	XtDisplay(parent),
-				DefaultRootWindow(XtDisplay(parent)),
-				0,
-				0
-				);
-    set_gc_colors( new_screen, COLOR_STANDARD );
-    XSetFont( XtDisplay(new_screen->area), new_screen->gc, font->fid );
 
     return new_screen;
 }
@@ -607,6 +731,12 @@ char	**argv;
 				 get_fallback_rsrcs( argv[0] ),
 				 NULL, 0	/* args */
 				 );
+
+    /* add our own special actions */
+    XtAppAddActions( ctx, area_actions, XtNumber(area_actions) );
+
+    /* how long is double-click? */
+    multi_click_length = XtGetMultiClickTime( XtDisplay(top_level) );
 
     /* check the resource database for interesting resources */
     XutConvertResources( top_level,
@@ -643,6 +773,258 @@ char	**argv;
 }
 
 
+/* These routines deal with the selection buffer */
+
+int	selection_start, selection_end, selection_anchor;
+enum	select_enum {
+	    select_char, select_word, select_line
+	} select_type = select_char;
+int	last_click;
+
+#if defined(__STDC__)
+void		mark_selection( xvi_screen *cur_screen, int start, int end )
+#else
+void		mark_selection( cur_screen, start, end )
+xvi_screen	*cur_screen;
+int		start;
+int		end;
+#endif
+{
+    int	row, col, i;
+
+    for ( i=start; i<=end; i++ ) {
+	if ( !( cur_screen->flags[i] & COLOR_SELECT ) ) {
+	    cur_screen->flags[i] |= COLOR_SELECT;
+	    ToRowCol( cur_screen, i, row, col );
+	    draw_text( cur_screen, row, col, 1 );
+	}
+    }
+}
+
+
+#if defined(__STDC__)
+void		erase_selection( xvi_screen *cur_screen, int start, int end )
+#else
+void		erase_selection( cur_screen, start, end )
+xvi_screen	*cur_screen;
+int		start;
+int		end;
+#endif
+{
+    int	row, col, i;
+
+    for ( i=start; i<=end; i++ ) {
+	if ( cur_screen->flags[i] & COLOR_SELECT ) {
+	    cur_screen->flags[i] &= ~COLOR_SELECT;
+	    ToRowCol( cur_screen, i, row, col );
+	    draw_text( cur_screen, row, col, 1 );
+	}
+    }
+}
+
+
+#if defined(__STDC__)
+void		left_expand_selection( xvi_screen *cur_screen, int *start )
+#else
+void		left_expand_selection( cur_screen, start )
+xvi_screen	*cur_screen;
+int		*start;
+#endif
+{
+    int row, col;
+
+    switch ( select_type ) {
+	case select_word:
+	    if ( *start == 0 || isspace( cur_screen->characters[*start] ) )
+		return;
+	    for (;;) {
+		if ( isspace( cur_screen->characters[*start-1] ) )
+		    return;
+		if ( --(*start) == 0 )
+		   return;
+	    }
+	case select_line:
+	    ToRowCol( cur_screen, *start, row, col );
+	    col = 0;
+	    *start = Linear( cur_screen, row, col );
+	    break;
+    }
+}
+
+
+#if defined(__STDC__)
+void		right_expand_selection( xvi_screen *cur_screen, int *end )
+#else
+void		right_expand_selection( cur_screen, end )
+xvi_screen	*cur_screen;
+int		*end;
+#endif
+{
+    int row, col, last = cur_screen->cols * cur_screen->rows - 1;
+
+    switch ( select_type ) {
+	case select_word:
+	    if ( *end == last || isspace( cur_screen->characters[*end] ) )
+		return;
+	    for (;;) {
+		if ( isspace( cur_screen->characters[*end+1] ) )
+		    return;
+		if ( ++(*end) == last )
+		   return;
+	    }
+	case select_line:
+	    ToRowCol( cur_screen, *end, row, col );
+	    col = cur_screen->cols -1;
+	    *end = Linear( cur_screen, row, col );
+	    break;
+    }
+}
+
+
+#if defined(__STDC__)
+static	void	select_start( Widget widget, 
+			      XEvent *event,
+			      String str, 
+			      Cardinal *cardinal
+			      )
+#else
+static	void	select_start( widget, event, str, cardinal )
+Widget		widget;     
+XEvent		*event;
+String		str; 
+Cardinal        *cardinal;
+#endif
+{
+    char		buffer[BufferSize];
+    IP_BUF		ipb;
+    int			xpos, ypos;
+    XPointerMovedEvent	*ev = (XPointerMovedEvent *) event;
+    static int		last_click;
+
+    /* NOTE:  when multiple panes are implemented, we need to find
+     * the correct screen.  For now, there is only one.
+     */
+    xpos = COLUMN( cur_screen, ev->x );
+    ypos = ROW( cur_screen, ev->y );
+
+    /* remove the old one */
+    erase_selection( cur_screen, selection_start, selection_end );
+
+    /* left click should also move the caret for vi.
+     * we really want to send an r,c position, but for now
+     * the protocol is only existing vi commands.  Note that the |
+     * will get the correct column, but we can't take into account
+     * tabs or line wrappping
+     */
+    if ( ypos == 0 )
+	sprintf( buffer, "H%d|", xpos+1 );
+    else
+	sprintf( buffer, "H%dj%d|", ypos, xpos+1 );
+    ipb.len = strlen( buffer );
+    ipb.code = IPO_STRING;
+    ipb.str = buffer;
+    ip_send("s", &ipb);
+
+    /* click-click, and we go for words, lines, etc */
+    if ( ev->time - last_click < multi_click_length )
+	select_type = (enum select_enum) ((((int)select_type)+1)%3);
+    else
+	select_type = select_char;
+    last_click = ev->time;
+
+    /* put the selection here */
+    selection_anchor	= Linear( cur_screen, ypos, xpos );
+    selection_start	= selection_anchor;
+    selection_end	= selection_anchor;
+
+    /* expand to include words, line, etc */
+    left_expand_selection( cur_screen, &selection_start );
+    right_expand_selection( cur_screen, &selection_end );
+
+    /* draw the new one */
+    mark_selection( cur_screen, selection_start, selection_end );
+}
+
+
+#if defined(__STDC__)
+static	void	select_extend( Widget widget, 
+			       XEvent *event,
+			       String str, 
+			       Cardinal *cardinal
+			       )
+#else
+static	void	select_extend( widget, event, str, cardinal )
+Widget		widget;     
+XEvent		*event;
+String		str; 
+Cardinal        *cardinal;
+#endif
+{
+    int			xpos, ypos, pos;
+    XPointerMovedEvent	*ev = (XPointerMovedEvent *) event;
+
+    /* NOTE:  when multiple panes are implemented, we need to find
+     * the correct screen.  For now, there is only one.
+     */
+    xpos = COLUMN( cur_screen, ev->x );
+    ypos = ROW( cur_screen, ev->y );
+
+    /* deal with words, lines, etc */
+    pos = Linear( cur_screen, ypos, xpos );
+    if ( pos < selection_anchor )
+	left_expand_selection( cur_screen, &pos );
+    else
+	right_expand_selection( cur_screen, &pos );
+
+    /* extend from before the start? */
+    if ( pos < selection_start ) {
+	mark_selection( cur_screen, pos, selection_start-1 );
+	selection_start = pos;
+    }
+
+    /* extend past the end? */
+    else if ( pos > selection_end ) {
+	mark_selection( cur_screen, selection_end+1, pos );
+	selection_end = pos;
+    }
+
+    /* between the anchor and the start? */
+    else if ( pos < selection_anchor ) {
+	erase_selection( cur_screen, selection_start, pos-1 );
+	selection_start = pos;
+    }
+
+    /* between the anchor and the end? */
+    else {
+	erase_selection( cur_screen, pos+1, selection_end );
+	selection_end = pos;
+    }
+
+    /* and draw it */
+}
+
+
+#if defined(__STDC__)
+static	void	select_paste( Widget widget, 
+			      XEvent *event,
+			      String str, 
+			      Cardinal *cardinal
+			      )
+#else
+static	void	select_paste( widget, event, str, cardinal )
+Widget		widget;     
+XEvent		*event;
+String		str; 
+Cardinal        *cardinal;
+#endif
+{
+    /* NOTE:  when multiple panes are implemented, we need to find
+     * the correct screen.  For now, there is only one, so PASTE makes
+     * no sense (I think)
+     */
+}
+
+
 /* These routines deal with the cursor */
 
 #if defined(__STDC__)
@@ -663,79 +1045,43 @@ Boolean		is_busy;
 
 /* These routines deal with the caret */
 
-/* move the caret */
 #if defined(__STDC__)
 void		draw_caret( xvi_screen *this_screen )
 #else
-void		move_caret( this_screen )
+void		draw_caret( this_screen )
 xvi_screen	*this_screen;
 #endif
 {
-    Pixel	fg, hi;
-
-    /* what color do we draw the caret? */
-    if ( gc_highlight == NULL ) {
-	XtVaGetValues( this_screen->area,
-		       XtNforeground,		&fg,
-		       XmNhighlightColor,	&hi,
-		       0
-		       );
-	gc_highlight = XCreateGC( XtDisplay(this_screen->area),
-				  DefaultRootWindow(XtDisplay(this_screen->area)),
-				  0,
-				  0
-				  );
-	XSetFont( XtDisplay(this_screen->area), gc_highlight, font->fid );
-	XSetForeground( XtDisplay(this_screen->area), gc_highlight, fg );
-	XSetBackground( XtDisplay(this_screen->area), gc_highlight, hi );
-    }
-
     /* draw the caret by drawing the text in highlight color */
-    XDrawImageString( XtDisplay(this_screen->area),
-		      XtWindow(this_screen->area),
-		      gc_highlight,
-		      XPOS( this_screen, this_screen->curx ),
-		      YPOS( this_screen, this_screen->cury ),
-		      CharAt( this_screen,
-			      this_screen->cury,
-			      this_screen->curx
-			      ),
-		      1
-		      );
+    *FlagAt( cur_screen, this_screen->cury, this_screen->curx ) |= COLOR_CARET;
+    draw_text( this_screen, this_screen->cury, this_screen->curx, 1 );
 }
 
-/* move the caret */
+
+#if defined(__STDC__)
+void		erase_caret( xvi_screen *this_screen )
+#else
+void		erase_caret( this_screen )
+xvi_screen	*this_screen;
+#endif
+{
+    /* erase the caret by drawing the text in normal video */
+    *FlagAt( cur_screen, this_screen->cury, this_screen->curx ) &= ~COLOR_CARET;
+    draw_text( cur_screen, this_screen->cury, this_screen->curx, 1 );
+}
+
+
 #if defined(__STDC__)
 void		move_caret( xvi_screen *this_screen, int newy, int newx )
 #else
 void		move_caret( this_screen, newy, newx )
 xvi_screen	*this_screen;
 int		newy;
-int		newx,
+int		newx;
 #endif
 {
-    int color = this_screen->color;
-
-    /* erase the caret by drawing the text in normal video */
-    set_gc_colors( cur_screen,
-		   *FlagAt( this_screen,
-			    this_screen->cury,
-			    this_screen->curx
-			    )
-		  );
-    XDrawImageString( XtDisplay(this_screen->area),
-		      XtWindow(this_screen->area),
-		      this_screen->gc,
-		      XPOS( this_screen, this_screen->curx ),
-		      YPOS( this_screen, this_screen->cury ),
-		      CharAt( this_screen,
-			      this_screen->cury,
-			      this_screen->curx
-			      ),
-		      1
-		      );
-    set_gc_colors( cur_screen, color );
-
+    /* caret is now here */
+    erase_caret( this_screen );
     this_screen->curx = newx;
     this_screen->cury = newy;
     draw_caret( this_screen );
@@ -896,16 +1242,6 @@ ip_trans(bp, len, skipp)
 	case IPO_ADDSTR:
 		TRACE( ("addnstr {%.*s}\n", (int)ipb.len, ipb.str) );
 
-		/* add to display */
-		XDrawImageString( XtDisplay(cur_screen->area),
-				  XtWindow(cur_screen->area),
-				  cur_screen->gc,
-				  XPOS( cur_screen, cur_screen->curx ),
-				  YPOS( cur_screen, cur_screen->cury ),
-				  ipb.str,
-				  ipb.len
-				  );
-
 		/* add to backing store */
 		memcpy( CharAt(cur_screen, cur_screen->cury, cur_screen->curx),
 			ipb.str,
@@ -916,11 +1252,18 @@ ip_trans(bp, len, skipp)
 			ipb.len
 			);
 
+		/* draw from backing store */
+		draw_text( cur_screen,
+			   cur_screen->cury,
+			   cur_screen->curx,
+			   ipb.len
+			   );
+
 		/* advance the caret */
 		move_caret( cur_screen,
-			     cur_screen->cury,
-			     cur_screen->curx + ipb.len
-			     );
+			    cur_screen->cury,
+			    cur_screen->curx + ipb.len
+			    );
 		break;
 
 	case IPO_ATTRIBUTE:
@@ -934,7 +1277,7 @@ ip_trans(bp, len, skipp)
 			break;
 		case SA_INVERSE:
 			TRACE( ("attr: inverse\n") );
-			set_gc_colors( cur_screen, ipb.val2 );
+			cur_screen->color = ipb.val2;
 			break;
 		default:
 			abort();
@@ -974,21 +1317,21 @@ ip_trans(bp, len, skipp)
 			len
 			);
 
-		/* clear display (note that we use the cleared backing store) */
-		XDrawImageString( XtDisplay(cur_screen->area),
-				  XtWindow(cur_screen->area),
-				  cur_screen->gc,
-				  XPOS( cur_screen, cur_screen->curx ),
-				  YPOS( cur_screen, cur_screen->cury ),
-				  ptr,
-				  len
-				  );
+		/* draw from backing store */
+		draw_text( cur_screen,
+			   cur_screen->cury,
+			   cur_screen->curx,
+			   len
+			   );
 		}
 		break;
 
 	case IPO_DELETELN:
 		{
 		int len = cur_screen->cols * (cur_screen->rows - cur_screen->cury);
+
+		/* don't want to copy the caret! */
+		erase_caret( cur_screen );
 
 		/* adjust backing store and the flags */
 		memmove( CharAt( cur_screen, cur_screen->cury, 0 ),
@@ -1013,6 +1356,9 @@ ip_trans(bp, len, skipp)
 		     *to = CharAt( cur_screen, cur_screen->cury+1, 0 );
 		int rows = cur_screen->rows - (1+cur_screen->cury);
 
+		/* don't want to copy the caret! */
+		erase_caret( cur_screen );
+
 		/* adjust backing store */
 		memmove( to, from, cur_screen->cols * rows );
 		memset( from, ' ', cur_screen->cols );
@@ -1032,8 +1378,6 @@ ip_trans(bp, len, skipp)
 
 	case IPO_MOVE:
 		TRACE( ("move: %lu %lu\n", (u_long)ipb.val1, (u_long)ipb.val2) );
-
-		/* advance the caret */
 		move_caret( cur_screen, ipb.val1, ipb.val2 );
 		break;
 

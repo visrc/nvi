@@ -29,6 +29,10 @@
  *		anywhere in the widget heirarchy.
  */
 
+#if ! defined(__STDC__)
+#define	const
+#endif
+
 #ifndef lint
 static const char sccsid[] = "";
 #endif /* not lint */
@@ -271,7 +275,7 @@ String	prompt;
 #if defined(__STDC__)
 void	string_command( Widget w, String prefix, String prompt )
 #else
-void	string_command( prefix )
+void	string_command( w, prefix, prompt )
 Widget	w;
 String	prefix;
 String	prompt;
@@ -293,7 +297,7 @@ String	prompt;
 #if defined(__STDC__)
 void	file_command( Widget w, String prefix, String prompt )
 #else
-void	file_command( prefix )
+void	file_command( w, prefix, prompt )
 Widget	w;
 String	prefix;
 String	prompt;
@@ -618,7 +622,7 @@ XtPointer	call_data;
 XtPointer	client_data;
 #endif
 {
-    send_command_string( ":t" );
+    send_command_string( ":tag" );
 }
 
 
@@ -634,7 +638,7 @@ XtPointer	call_data;
 XtPointer	client_data;
 #endif
 {
-    send_command_string( ":T" );
+    send_command_string( ":Tag" );
 }
 
 
