@@ -36,4 +36,4 @@ chown -R bin.wsrc .
 cd $S/.. && mv -i nvi nvi-$VERSION
 tar cFFf - nvi-$VERSION | gzip --best > /tmp/nvi-$VERSION.tar.gz
 chmod 444 /tmp/nvi-$VERSION.tar.gz && mv -i nvi-$VERSION nvi
-cd $S && mv -i RCS/build.local RCS/ip RCS/ip_cl .
+cd $S && mv RCS/build.local RCS/ip RCS/ip_cl .
