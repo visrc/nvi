@@ -6,10 +6,12 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_right.c,v 5.4 1992/05/28 13:47:32 bostic Exp $ (Berkeley) $Date: 1992/05/28 13:47:32 $";
+static char sccsid[] = "$Id: v_right.c,v 5.5 1992/10/10 14:02:28 bostic Exp $ (Berkeley) $Date: 1992/10/10 14:02:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
+
+#include <limits.h>
 #include <stdio.h>
 
 #include "vi.h"
@@ -37,7 +39,7 @@ v_right(vp, fm, tm, rp)
 {
 	u_long cnt;
 	size_t len;
-	char *p;
+	u_char *p;
 
 	EGETLINE(p, fm->lno, len);
 
@@ -73,7 +75,7 @@ v_eol(vp, fm, tm, rp)
 	MARK *fm, *tm, *rp;
 {
 	size_t len;
-	char *p;
+	u_char *p;
 
 	EGETLINE(p, fm->lno, len);
 

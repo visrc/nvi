@@ -6,10 +6,12 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_section.c,v 5.2 1992/06/16 07:27:21 bostic Exp $ (Berkeley) $Date: 1992/06/16 07:27:21 $";
+static char sccsid[] = "$Id: v_section.c,v 5.3 1992/10/10 14:02:44 bostic Exp $ (Berkeley) $Date: 1992/10/10 14:02:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
+
+#include <limits.h>
 #include <stdio.h>
 
 #include "vi.h"
@@ -36,7 +38,7 @@ v_sectionf(vp, fm, tm, rp)
 {
 	size_t len;
 	recno_t cnt, lno;
-	char *p, *list, *lp;
+	u_char *p, *list, *lp;
 
 	/* Get macro list. */
 	if ((list = PVAL(O_SECTIONS)) == NULL)
@@ -81,7 +83,7 @@ v_sectionb(vp, fm, tm, rp)
 {
 	size_t len;
 	recno_t cnt, lno;
-	char *p, *list, *lp;
+	u_char *p, *list, *lp;
 
 	/* Check for SOF. */
 	if (fm->lno <= 1) {

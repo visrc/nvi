@@ -6,10 +6,12 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_match.c,v 5.4 1992/06/08 09:27:10 bostic Exp $ (Berkeley) $Date: 1992/06/08 09:27:10 $";
+static char sccsid[] = "$Id: v_match.c,v 5.5 1992/10/10 14:01:34 bostic Exp $ (Berkeley) $Date: 1992/10/10 14:01:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
+
+#include <limits.h>
 #include <stdio.h>
 
 #include "vi.h"
@@ -18,7 +20,7 @@ static char sccsid[] = "$Id: v_match.c,v 5.4 1992/06/08 09:27:10 bostic Exp $ (B
 #include "options.h"
 #include "extern.h"
 
-static int	findmatchc __P((MARK *, char *, size_t, MARK *));
+static int	findmatchc __P((MARK *, u_char *, size_t, MARK *));
 
 /*
  * v_match -- %
@@ -33,7 +35,7 @@ v_match(vp, fm, tm, rp)
 	enum direction dir;
 	size_t len;
 	int ch;
-	char *p;
+	u_char *p;
 
 	EGETLINE(p, fm->lno, len);
 	if (len == 0)
@@ -103,13 +105,13 @@ nomatch:		bell();
 static int
 findmatchc(fm, p, len, rp)
 	MARK *fm, *rp;
-	char *p;
+	u_char *p;
 	size_t len;
 {
 	register size_t off;
 	size_t left, right;
 	int leftfound, rightfound;
-	char *t;
+	u_char *t;
 
 	leftfound = rightfound = 0;
 	for (off = 0, t = &p[off]; off++ < fm->cno;)
