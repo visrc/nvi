@@ -11,6 +11,7 @@
 /* This function contains the movement functions that perform RE searching */
 
 #include <sys/types.h>
+#include <stdio.h>
 
 #include "options.h"
 #include "vi.h"

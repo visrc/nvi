@@ -11,6 +11,7 @@
 /* This file contains movement functions which are screen-relative */
 
 #include <sys/types.h>
+#include <stdio.h>
 
 #include "options.h"
 #include "vi.h"
