@@ -1,4 +1,4 @@
-/* $Id: acconfig.h,v 8.14 1996/04/10 20:05:00 bostic Exp $ (Berkeley) $Date: 1996/04/10 20:05:00 $ */
+/* $Id: acconfig.h,v 8.15 1996/04/15 22:02:27 bostic Exp $ (Berkeley) $Date: 1996/04/15 22:02:27 $ */
 
 /* Define to `int' if <sys/types.h> doesn't define.  */
 #undef ssize_t
@@ -62,6 +62,9 @@
 
 /* Define if you have the Berkeley style revoke(2) system call. */
 #undef HAVE_REVOKE
+
+/* Define if you have the Berkeley style strsep(3) function. */
+#undef HAVE_STRSEP
 
 /* Define if you have <sys/mman.h> */
 #undef HAVE_SYS_MMAN_H

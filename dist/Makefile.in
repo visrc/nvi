@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.43 1996/04/12 10:49:44 bostic Exp $ (Berkeley) $Date: 1996/04/12 10:49:44 $
+#	$Id: Makefile.in,v 8.44 1996/04/15 22:02:27 bostic Exp $ (Berkeley) $Date: 1996/04/15 22:02:27 $
 
 srcdir=	@srcdir@/..
 CC=	@CC@
@@ -72,7 +72,8 @@ distrib: distclean
 	    sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../cl/*.c > $$f && \
 	    chmod 444 $$f
 	f=../include/common_extern.h && rm -f $$f && \
-	    sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../common/*.c > $$f && \
+	    sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" \
+	    ../clib/*.c ../common/*.c > $$f && \
 	    chmod 444 $$f
 	f=../include/ex_define.h && rm -f $$f && \
 	    awk -f ../ex/ex.awk ../ex/ex_cmd.c > $$f && \
