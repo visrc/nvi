@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_file.c,v 8.5 1993/11/20 10:05:38 bostic Exp $ (Berkeley) $Date: 1993/11/20 10:05:38 $";
+static char sccsid[] = "$Id: ex_file.c,v 8.6 1993/11/26 16:22:42 bostic Exp $ (Berkeley) $Date: 1993/11/26 16:22:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,7 +29,7 @@ ex_file(sp, ep, cmdp)
 	EXCMDARG *cmdp;
 {
 	FREF *frp;
-	char *p;
+	char *p, *t;
 
 	switch (cmdp->argc) {
 	case 0:
@@ -37,11 +37,18 @@ ex_file(sp, ep, cmdp)
 	case 1:
 		frp = sp->frp;
 
-		/* Fill in the changed name field. */
+		/* Make sure can allocate enough space. */
 		if ((p = strdup((char *)cmdp->argv[0])) == NULL) {
 			msgq(sp, M_SYSERR, NULL);
 			return (1);
 		}
+
+		/* If already have a file name, it becomes the alternate. */
+		t = FILENAME(frp);
+		if (t != NULL)
+			set_alt_name(sp, t);
+
+		/* Free any previously changed name. */
 		if (frp->cname != NULL)
 			FREE(frp->cname, frp->clen);
 		frp->cname = p;
@@ -52,10 +59,6 @@ ex_file(sp, ep, cmdp)
 
 		/* Have to force a write if the file exists, next time. */
 		F_CLR(frp, FR_CHANGEWRITE);
-
-		/* If already have a file name, it becomes the alternate. */
-		if (frp->cname != NULL || frp->name != NULL)
-			set_alt_name(sp, FILENAME(frp));
 		break;
 	default:
 		abort();
