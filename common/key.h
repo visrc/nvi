@@ -4,21 +4,23 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 5.17 1993/02/21 19:44:10 bostic Exp $ (Berkeley) $Date: 1993/02/21 19:44:10 $
+ *	$Id: key.h,v 5.18 1993/02/28 11:54:19 bostic Exp $ (Berkeley) $Date: 1993/02/28 11:54:19 $
  */
 
 #define	K_CARAT		1
 #define	K_CNTRLD	2
-#define	K_CR		3
-#define	K_ESCAPE	4
-#define	K_FORMFEED	5
-#define	K_NL		6
-#define	K_TAB		7
-#define	K_VERASE	8
-#define	K_VKILL		9
-#define	K_VLNEXT	10
-#define	K_VWERASE	11
-#define	K_ZERO		12
+#define	K_CNTRLR	3
+#define	K_CNTRLZ	4
+#define	K_CR		5
+#define	K_ESCAPE	6
+#define	K_FORMFEED	7
+#define	K_NL		8
+#define	K_TAB		9
+#define	K_VERASE	10
+#define	K_VKILL		11
+#define	K_VLNEXT	12
+#define	K_VWERASE	13
+#define	K_ZERO		14
 extern u_char special[];		/* Special characters. */
 
 #define	GB_BEAUTIFY	0x001		/* Only printable characters. */
@@ -26,9 +28,14 @@ extern u_char special[];		/* Special characters. */
 #define	GB_ESC		0x004		/* Escape executes command. */
 #define	GB_MAPCOMMAND	0x008		/* Use the command map. */
 #define	GB_MAPINPUT	0x010		/* Use the input map. */
-#define	GB_NL		0x020		/* Leave the newline on. */
-#define	GB_NLECHO	0x040		/* Echo the newline. */
-#define	GB_OFF		0x080		/* Leave first buffer char empty. */
+#define	GB_NLECHO	0x020		/* Echo the newline. */
+#define	GB_OFF		0x040		/* Leave first buffer char empty. */
+
+#define	GB_VALID_EX \
+	(GB_BEAUTIFY | GB_MAPCOMMAND | GB_MAPINPUT | GB_NLECHO)
+#define	GB_VALID_VI \
+	(GB_BEAUTIFY | GB_BS | GB_ESC | GB_MAPCOMMAND | GB_MAPINPUT | \
+	    GB_NLECHO | GB_OFF)
 
 #define	ISQ(off)	gb_qb[(off)]
 #define	QINIT		memset(gb_qb, 0, gb_blen);
