@@ -17,6 +17,7 @@ libvi_la_SOURCES = \
 	$(visrcdir)/common/log.h \
 	$(visrcdir)/common/mark.h \
 	$(visrcdir)/common/mem.h \
+	$(visrcdir)/common/multibyte.h \
 	$(visrcdir)/common/msg.h \
 	$(visrcdir)/common/options.h \
 	$(visrcdir)/common/options_def.h \
