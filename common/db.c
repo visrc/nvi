@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 8.3 1993/07/06 08:55:05 bostic Exp $ (Berkeley) $Date: 1993/07/06 08:55:05 $";
+static char sccsid[] = "$Id: db.c,v 8.4 1993/08/06 22:14:36 bostic Exp $ (Berkeley) $Date: 1993/08/06 22:14:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -20,23 +20,29 @@ static char sccsid[] = "$Id: db.c,v 8.3 1993/07/06 08:55:05 bostic Exp $ (Berkel
 /*
  * UPDATE_SCREENS --
  *	Macro to walk the screens and update all of them that are backed
- *	by the file that just changed.
+ *	by the file that just changed.  Always update the current screen
+ *	last, so that the cursor ends up in the right place.
  */
 #define	UPDATE_SCREENS(op) {						\
-	if (ep->refcnt == 1) {						\
-		if (sp->s_change != NULL)				\
-			sp->s_change(sp, ep, lno, op);			\
-	} else {							\
+	if (ep->refcnt != 1) {						\
 		SCR *__tsp;						\
-		for (__tsp = sp->gp->scrhdr.next;			\
-		    __tsp != (SCR *)&sp->gp->scrhdr;			\
-		    __tsp = __tsp->next)				\
+		for (__tsp = sp->parent;				\
+		    __tsp != NULL; __tsp = __tsp->parent)		\
 			if (__tsp->ep == ep &&				\
 			    __tsp->s_change != NULL) {			\
-				sp->s_change(__tsp, ep, lno, op);	\
-				sp->s_refresh(__tsp, ep);		\
+				(void)sp->s_change(__tsp, ep, lno, op);	\
+				(void)sp->s_refresh(__tsp, ep);		\
+			}						\
+		for (__tsp = sp->child;					\
+		    __tsp != NULL; __tsp = __tsp->child)		\
+			if (__tsp->ep == ep &&				\
+			    __tsp->s_change != NULL) {			\
+				(void)sp->s_change(__tsp, ep, lno, op);	\
+				(void)sp->s_refresh(__tsp, ep);		\
 			}						\
 	}								\
+	if (sp->s_change != NULL)					\
+		(void)sp->s_change(sp, ep, lno, op);			\
 }
 
 /*
