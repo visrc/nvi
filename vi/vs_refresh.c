@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.4 1993/08/17 15:44:51 bostic Exp $ (Berkeley) $Date: 1993/08/17 15:44:51 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.5 1993/08/26 18:48:23 bostic Exp $ (Berkeley) $Date: 1993/08/26 18:48:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -409,7 +409,22 @@ paint:	for (smp = HMAP; smp <= TMAP; ++smp)
 			return (1);
 	F_CLR(sp, S_REDRAW);
 
-update:	/* Ring the bell if scheduled. */
+	/* Update saved information. */
+update:	OCNO = CNO;
+	OLNO = LNO;
+	sp->sc_row = y;
+
+	/*
+	 * XXX
+	 * This isn't pretty -- if there are any keys waiting, we keep on
+	 * going.  The reason is that there may be messages that we want
+	 * to display, and, if there are multiple ones, we're going to get
+	 * the wrong key as a message delimiter.
+	 */
+	if (term_waiting(sp))
+		return (0);
+
+	/* Ring the bell if scheduled. */
 	if (F_ISSET(sp, S_BELLSCHED))
 		svi_bell(sp);
 
@@ -435,11 +450,6 @@ update:	/* Ring the bell if scheduled. */
 
 	/* Flush it all out. */
 	refresh();
-
-	/* Update saved information. */
-	OCNO = CNO;
-	OLNO = LNO;
-	sp->sc_row = y;
 
 	return (0);
 }
@@ -504,7 +514,7 @@ lcont:		/* Move to the message line and clear it. */
 			ADDNSTR(MCONTMSG, sizeof(MCONTMSG) - 1);
 			refresh();
 			while (sp->special[ch = term_key(sp, 0)] != K_CR &&
-			    !isspace(ch))
+			    !isblank(ch))
 				svi_bell(sp);
 		}
 
