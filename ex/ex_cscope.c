@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_cscope.c,v 10.12 1996/08/11 16:30:31 bostic Exp $ (Berkeley) $Date: 1996/08/11 16:30:31 $";
+static const char sccsid[] = "$Id: ex_cscope.c,v 10.13 1996/09/15 15:59:30 bostic Exp $ (Berkeley) $Date: 1996/09/15 15:59:30 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -25,7 +25,6 @@ static const char sccsid[] = "$Id: ex_cscope.c,v 10.12 1996/08/11 16:30:31 bosti
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
-#include <signal.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
