@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 5.27 1993/04/06 11:37:18 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:37:18 $";
+static char sccsid[] = "$Id: ex_print.c,v 5.28 1993/04/12 14:37:35 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:37:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,7 +32,7 @@ ex_list(sp, ep, cmdp)
 
 	flags = cmdp->flags & E_F_MASK;
 	if (flags & ~E_F_HASH) {
-		msgq(sp, M_ERROR, "Usage: %s.", cmdp->cmd->usage);
+		msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
 		return (1);
 	}
 	if (ex_print(sp, ep, &cmdp->addr1, &cmdp->addr2, E_F_LIST | flags))
@@ -57,7 +57,7 @@ ex_number(sp, ep, cmdp)
 
 	flags = cmdp->flags & E_F_MASK;
 	if (flags & ~E_F_LIST) {
-		msgq(sp, M_ERROR, "Usage: %s.", cmdp->cmd->usage);
+		msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
 		return (1);
 	}
 	if (ex_print(sp, ep, &cmdp->addr1, &cmdp->addr2, E_F_HASH | flags))
@@ -82,7 +82,7 @@ ex_pr(sp, ep, cmdp)
 
 	flags = cmdp->flags & E_F_MASK;
 	if (flags & ~(E_F_HASH | E_F_LIST)) {
-		msgq(sp, M_ERROR, "Usage: %s.", cmdp->cmd->usage);
+		msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
 		return (1);
 	}
 	if (ex_print(sp, ep, &cmdp->addr1, &cmdp->addr2, E_F_PRINT | flags))

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_stop.c,v 5.6 1993/03/26 13:39:12 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:39:12 $";
+static char sccsid[] = "$Id: ex_stop.c,v 5.7 1993/04/12 14:37:55 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:37:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -50,7 +50,7 @@ ex_suspend(sp)
 	(void)tcsetattr(STDIN_FILENO, TCSADRAIN, &sp->gp->original_termios);
 
 	if (kill(0, SIGTSTP)) {
-		msgq(sp, M_ERROR, "Error: SIGTSTP: %s", strerror(errno));
+		msgq(sp, M_ERR, "Error: SIGTSTP: %s", strerror(errno));
 		return (1);
 	}
 

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_quit.c,v 5.16 1993/03/26 13:38:53 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:38:53 $";
+static char sccsid[] = "$Id: ex_quit.c,v 5.17 1993/04/12 14:36:01 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:36:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,7 +30,7 @@ ex_quit(sp, ep, cmdp)
 
 	/* Historic practice: quit! doesn't check for other files. */
 	if (!force && file_next(sp, ep, 0)) {
-		msgq(sp, M_ERROR,
+		msgq(sp, M_ERR,
 	"More files; use \":n\" to go to the next file, \":q!\" to quit.");
 		return (1);
 	}
@@ -53,7 +53,7 @@ ex_wq(sp, ep, cmdp)
 		return (1);
 
 	if (!force && file_next(sp, ep, 0)) {
-		msgq(sp, M_ERROR,
+		msgq(sp, M_ERR,
 		    "More files to edit; use \":n\" to go to the next file");
 		return (1);
 	}

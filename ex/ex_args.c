@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 5.37 1993/04/05 07:11:23 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:11:23 $";
+static char sccsid[] = "$Id: ex_args.c,v 5.38 1993/04/12 14:34:43 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:34:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -48,7 +48,7 @@ ex_next(sp, ep, cmdp)
 		if ((tep = file_first(sp, 1)) == NULL)
 			return (1);
 	} else if ((tep = file_next(sp, ep, 0)) == NULL) {
-		msgq(sp, M_ERROR, "No more files to edit.");
+		msgq(sp, M_ERR, "No more files to edit.");
 		return (1);
 	}
 
@@ -72,7 +72,7 @@ ex_prev(sp, ep, cmdp)
 	MODIFY_CHECK(sp, ep, cmdp->flags & E_FORCE);
 
 	if ((tep = file_prev(sp, ep, 0)) == NULL) {
-		msgq(sp, M_ERROR, "No previous files to edit.");
+		msgq(sp, M_ERR, "No previous files to edit.");
 		return (1);
 	}
 
@@ -95,7 +95,7 @@ ex_rew(sp, ep, cmdp)
 
 	/* Historic practice -- you can rewind to the current file. */
 	if ((tep = file_first(sp, 0)) == NULL) {
-		msgq(sp, M_ERROR, "No previous files to rewind.");
+		msgq(sp, M_ERR, "No previous files to rewind.");
 		return (1);
 	}
 

@@ -6,10 +6,10 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.81 1993/04/06 11:37:09 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:37:09 $";
+static char sccsid[] = "$Id: ex.c,v 5.82 1993/04/12 14:34:35 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:34:35 $";
 #endif /* not lint */
 
-#include <sys/param.h>
+#include <sys/types.h>
 #include <sys/stat.h>
 
 #include <ctype.h>
@@ -110,7 +110,7 @@ ex_cfile(sp, ep, filename, noexisterr)
 
 e3:	free(bp);
 e2:	(void)close(fd);
-e1:	msgq(sp, M_ERROR, "%s: %s.", filename, strerror(errno));
+e1:	msgq(sp, M_ERR, "%s: %s.", filename, strerror(errno));
 	return (1);
 }
 
@@ -160,7 +160,7 @@ cend:			if (p > cmd) {
 				return (rval);
 			if (saved_mode != F_ISSET(sp,
 			    S_MODE_EX | S_MODE_VI | S_FILE_CHANGED)) {
-				msgq(sp, M_ERROR,
+				msgq(sp, M_ERR,
 		    "File or status changed, remaining input discarded.");
 				return (1);
 			}
@@ -249,7 +249,7 @@ ex_cmd(sp, ep, exc)
 		}
 		for (cp = cmds; cp->name && memcmp(p, cp->name, cmdlen); ++cp);
 		if (cp->name == NULL) {
-			msgq(sp, M_ERROR,
+			msgq(sp, M_ERR,
 			    "The %.*s command is unknown.", cmdlen, p);
 			return (1);
 		}
@@ -257,7 +257,7 @@ ex_cmd(sp, ep, exc)
 
 		/* Some commands are turned off. */
 		if (cp->flags & E_NOPERM) {
-			msgq(sp, M_ERROR,
+			msgq(sp, M_ERR,
 			    "The %.*s command is not currently supported.",
 			    cmdlen, p);
 			return (1);
@@ -265,7 +265,7 @@ ex_cmd(sp, ep, exc)
 
 		/* Some commands aren't okay in globals. */
 		if (F_ISSET(sp, S_IN_GLOBAL) && cp->flags & E_NOGLOBAL) {
-			msgq(sp, M_ERROR,
+			msgq(sp, M_ERR,
 "The %.*s command can't be used as part of a global command.", cmdlen, p);
 			return (1);
 		}
@@ -284,7 +284,7 @@ ex_cmd(sp, ep, exc)
 	 * Historic vi generally took the easy way out and dropped core.
  	 */
 	if (flags & E_NORC && ep == NULL) {
-		msgq(sp, M_ERROR,
+		msgq(sp, M_ERR,
 	"The %s command requires a file to already have been read in.",
 		    cp->name);
 		return (1);
@@ -368,17 +368,16 @@ two:		switch(cmd.addrcnt) {
 	}
 		
 	/*
-	 * If the rest of the string is parsed by the command itself, we
-	 * don't even skip leading white-space, it's significant for some
-	 * commands.  However, require that there be *something*.
+	 * If the entire string is parsed by the command itself, we don't
+	 * even skip leading white-space, it's significant for some commands.
+	 * However, require that there be *something*.
 	 */
-	p = cp->syntax;
-	if (*p == 's') {
+	if (cp->syntax[0] == 's') {
 		for (p = exc; *p && isspace(*p); ++p);
 		cmd.string = *p ? exc : NULL;
 		goto addr2;
 	}
-	for (lcount = 0; *p; ++p) {
+	for (lcount = 0, p = cp->syntax; *p; ++p) {
 		for (; isspace(*exc); ++exc);		/* Skip whitespace. */
 		if (!*exc)
 			break;
@@ -463,7 +462,7 @@ end2:			break;
 			if (isdigit(*exc)) {
 				lcount = strtol(exc, &endp, 10);
 				if (lcount == 0) {
-					msgq(sp, M_ERROR,
+					msgq(sp, M_ERR,
 					    "Count may not be zero.");
 					return (1);
 				}
@@ -489,7 +488,8 @@ end2:			break;
 				return (1);
 			goto countchk;
 		case 's':				/* string */
-			cmd.string = exc;
+			for (p = exc; *p && isspace(*p); ++p);
+			cmd.string = *p ? exc : NULL;
 			goto addr2;
 		case 'w':				/* word */
 			if (buildargv(sp, ep, exc, 0, &cmd.argc, &cmd.argv))
@@ -507,7 +507,7 @@ countchk:		if (*++p != 'N') {		/* N */
 			}
 			goto addr2;
 		default:
-			msgq(sp, M_ERROR,
+			msgq(sp, M_ERR,
 			    "Internal syntax table error (%s).", cp->name);
 		}
 	}
@@ -518,25 +518,19 @@ countchk:		if (*++p != 'N') {		/* N */
 	 */
 	for (; *exc && isspace(*exc); ++exc);
 	if (*exc || strpbrk(p, "lr")) {
-usage:		msgq(sp, M_ERROR, "Usage: %s.", cp->usage);
+usage:		msgq(sp, M_ERR, "Usage: %s.", cp->usage);
 		return (1);
 	}
 
 	/* Verify that the addresses are legal. */
 addr2:	switch(cmd.addrcnt) {
 	case 2:
-		num = cmd.addr2.lno;
-		if (num < 0) {
-			msgq(sp, M_ERROR,
-			    "%lu is an invalid address.", num);
-			return (1);
-		}
 		lcount = file_lline(sp, ep);
-		if (num > lcount) {
+		if (cmd.addr2.lno > lcount) {
 			if (lcount == 0)
-				msgq(sp, M_ERROR, "The file is empty.");
+				msgq(sp, M_ERR, "The file is empty.");
 			else
-				msgq(sp, M_ERROR,
+				msgq(sp, M_ERR,
 				    "Only %lu line%s in the file",
 				    lcount, lcount > 1 ? "s" : "");
 			return (1);
@@ -552,19 +546,14 @@ addr2:	switch(cmd.addrcnt) {
 		if (num == 0 &&
 		    (!F_ISSET(sp, S_MODE_VI) || uselastcmd != 1) &&
 		    !(flags & E_ZERO)) {
-			msgq(sp, M_ERROR,
+			msgq(sp, M_ERR,
 			    "The %s command doesn't permit an address of 0.",
 			    cp->name);
 			return (1);
 		}
-		if (num < 0) {
-			msgq(sp, M_ERROR,
-			    "%lu is an invalid address.", num);
-			return (1);
-		}
 		lcount = file_lline(sp, ep);
 		if (num > lcount) {
-			msgq(sp, M_ERROR, "Only %lu line%s in the file",
+			msgq(sp, M_ERR, "Only %lu line%s in the file",
 			    lcount, lcount > 1 ? "s" : "");
 			return (1);
 		}
@@ -654,12 +643,12 @@ addr2:	switch(cmd.addrcnt) {
 	if (flagoff) {
 		if (flagoff < 0) {
 			if ((recno_t)flagoff > sp->lno) {
-				msgq(sp, M_ERROR,
+				msgq(sp, M_ERR,
 				    "Flag offset before line 1.");
 				return (1);
 			}
 		} else if (sp->lno + flagoff > file_lline(sp, ep)) {
-			msgq(sp, M_ERROR, "Flag offset past end-of-file.");
+			msgq(sp, M_ERR, "Flag offset past end-of-file.");
 			return (1);
 		}
 		sp->lno += flagoff;
@@ -759,7 +748,7 @@ linespec(sp, ep, cmd, cp)
 			break;
 		case '\'':		/* Set mark. */
 			if (cmd[1] == '\0') {
-				msgq(sp, M_ERROR,
+				msgq(sp, M_ERR,
 				    "No mark name; use 'a' to 'z'.");
 				return (NULL);
 			}
@@ -817,7 +806,7 @@ linespec(sp, ep, cmd, cp)
 			}
 		}
 		if (total < 0 && -total > cur.lno) {
-			msgq(sp, M_ERROR,
+			msgq(sp, M_ERR,
 			    "Reference to a line number less than 0.");
 			return (NULL);
 		}

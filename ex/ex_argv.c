@@ -6,10 +6,10 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 5.2 1993/04/06 11:37:12 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:37:12 $";
+static char sccsid[] = "$Id: ex_argv.c,v 5.3 1993/04/12 14:34:52 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:34:52 $";
 #endif /* not lint */
 
-#include <sys/param.h>
+#include <sys/types.h>
 
 #include <ctype.h>
 #include <errno.h>
@@ -83,7 +83,7 @@ buildargv(sp, ep, s, expand, argcp, argvp)
 mem1:				sp->argscnt = 0;
 				sp->args = NULL;
 				sp->argv = NULL;
-				msgq(sp, M_ERROR,
+				msgq(sp, M_ERR,
 				    "Error: %s.", strerror(errno));
 				return (1);
 			}
@@ -110,7 +110,7 @@ mem1:				sp->argscnt = 0;
 			    realloc(sp->args[off].bp, len)) == NULL) {
 				sp->args[off].bp = NULL;
 				sp->args[off].len = 0;
-				msgq(sp, M_ERROR,
+				msgq(sp, M_ERR,
 				    "Error: %s.", strerror(errno));
 				return (1);
 			}
@@ -163,7 +163,7 @@ fileexpand(sp, ep, globp, word, wordlen)
 		switch (*p) {
 		case '%':
 			if (F_ISSET(ep, F_NONAME)) {
-				msgq(sp, M_ERROR,
+				msgq(sp, M_ERR,
 				    "No filename to substitute for %%.");
 				return (1);
 			}
@@ -173,7 +173,7 @@ fileexpand(sp, ep, globp, word, wordlen)
 			if (prev_ep == NULL)
 				prev_ep = file_prev(sp, ep, 0);
 			if (prev_ep == NULL || F_ISSET(prev_ep, F_NONAME)) {
-				msgq(sp, M_ERROR,
+				msgq(sp, M_ERR,
 				    "No filename to substitute for #.");
 				return (1);
 			}
@@ -193,7 +193,7 @@ fileexpand(sp, ep, globp, word, wordlen)
 		 */
 		if (F_ISSET(gp, G_TMP_INUSE)) {
 			if ((tpath = malloc(len)) == NULL) {
-				msgq(sp, M_ERROR,
+				msgq(sp, M_ERR,
 				    "Error: %s.", strerror(errno));
 				return (1);
 			}

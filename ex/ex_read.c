@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 5.32 1993/04/06 11:37:18 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:37:18 $";
+static char sccsid[] = "$Id: ex_read.c,v 5.33 1993/04/12 14:37:36 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:37:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -41,7 +41,7 @@ ex_read(sp, ep, cmdp)
 	/* If nothing, just read the file. */
 	if ((p = cmdp->string) == NULL) {
 		if (F_ISSET(ep, F_NONAME)) {
-			msgq(sp, M_ERROR, "No filename from which to read.");
+			msgq(sp, M_ERR, "No filename from which to read.");
 			return (1);
 		}
 		fname = ep->name;
@@ -63,7 +63,7 @@ ex_read(sp, ep, cmdp)
 	if (*p == '!') {
 		for (; *p && isspace(*p); ++p);
 		if (*p == '\0') {
-			msgq(sp, M_ERROR, "Usage: %s.", cmdp->cmd->usage);
+			msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
 			return (1);
 		}
 		if (filtercmd(sp, ep, &cmdp->addr1, NULL, &rm, ++p, NOINPUT))
@@ -84,19 +84,19 @@ ex_read(sp, ep, cmdp)
 		fname = (char *)cmdp->argv[0];
 		break;
 	default:
-		msgq(sp, M_ERROR, "Usage: %s.", cmdp->cmd->usage);
+		msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
 		return (1);
 	}
 
 	/* Open the file. */
 noargs:	if ((fp = fopen(fname, "r")) == NULL || fstat(fileno(fp), &sb)) {
-		msgq(sp, M_ERROR, "%s: %s", fname, strerror(errno));
+		msgq(sp, M_ERR, "%s: %s", fname, strerror(errno));
 		return (1);
 	}
 
 	/* If not a regular file, force must be set. */
 	if (!force && !S_ISREG(sb.st_mode)) {
-		msgq(sp, M_ERROR,
+		msgq(sp, M_ERR,
 		    "%s is not a regular file -- use ! to read it.", fname);
 		return (1);
 	}
@@ -158,12 +158,12 @@ ex_readfp(sp, ep, fname, fp, fm, cntp)
 		}
 
 	if (ferror(fp)) {
-		msgq(sp, M_ERROR, "%s: %s", fname, strerror(errno));
+		msgq(sp, M_ERR, "%s: %s", fname, strerror(errno));
 		rval = 1;
 	}
 
 	if (fclose(fp)) {
-		msgq(sp, M_ERROR, "%s: %s", fname, strerror(errno));
+		msgq(sp, M_ERR, "%s: %s", fname, strerror(errno));
 		return (1);
 	}
 

@@ -6,11 +6,10 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 5.35 1993/04/06 11:37:23 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:37:23 $";
+static char sccsid[] = "$Id: ex_subst.c,v 5.36 1993/04/12 14:38:18 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:38:18 $";
 #endif /* not lint */
 
-#include <sys/param.h>
-#include <sys/cdefs.h>
+#include <sys/types.h>
 
 #include <ctype.h>
 #include <errno.h>
@@ -55,7 +54,7 @@ ex_substitute(sp, ep, cmdp)
 
 		/* Get the replacement string, save it off. */
 		if (*endp == NULL) {
-			msgq(sp, M_ERROR, "No replacement string specified.");
+			msgq(sp, M_ERR, "No replacement string specified.");
 			return (1);
 		}
 		if (sp->repl != NULL)
@@ -67,7 +66,7 @@ ex_substitute(sp, ep, cmdp)
 		/* If the substitute string is empty, use the last one. */
 		if (*sub == NULL) {
 			if (!F_ISSET(sp, S_RE_SET)) {
-				msgq(sp, M_ERROR,
+				msgq(sp, M_ERR,
 				    "No previous regular expression.");
 				return (1);
 			}
@@ -113,7 +112,7 @@ ex_subagain(sp, ep, cmdp)
 	EXCMDARG *cmdp;
 {
 	if (!F_ISSET(sp, S_RE_SET)) {
-		msgq(sp, M_ERROR, "No previous regular expression.");
+		msgq(sp, M_ERR, "No previous regular expression.");
 		return (1);
 	}
 	return (substitute(sp, ep, cmdp, cmdp->string, &sp->sre, AGAIN));
@@ -132,7 +131,7 @@ ex_subagain(sp, ep, cmdp)
 		sp->newl_len += 25;					\
 		if ((sp->newl = realloc(sp->newl,			\
 		    sp->newl_len * sizeof(size_t))) == NULL) {		\
-			msgq(sp, M_ERROR,				\
+			msgq(sp, M_ERR,					\
 			    "Error: %s", strerror(errno));		\
 			sp->newl_len = 0;				\
 			return (1);					\
@@ -144,7 +143,7 @@ ex_subagain(sp, ep, cmdp)
 	if (lbclen + (len) > lblen) {					\
 		lblen += MAX(lbclen + (len), 256);			\
 		if ((lb = realloc(lb, lblen)) == NULL) {		\
-			msgq(sp, M_ERROR,				\
+			msgq(sp, M_ERR,					\
 			    "Error: %s", strerror(errno));		\
 			lbclen = 0;					\
 			return (1);					\
@@ -158,7 +157,7 @@ ex_subagain(sp, ep, cmdp)
 	if (lbclen + (len) > lblen) {					\
 		lblen += MAX(lbclen + (len), 256);			\
 		if ((lb = realloc(lb, lblen)) == NULL) {		\
-			msgq(sp, M_ERROR,				\
+			msgq(sp, M_ERR,					\
 			    "Error: %s", strerror(errno));		\
 			lbclen = 0;					\
 			return (1);					\
@@ -199,7 +198,7 @@ substitute(sp, ep, cmdp, s, re, cmd)
 			break;
 		case '#':
 			if (F_ISSET(sp, S_MODE_VI)) {
-				msgq(sp, M_ERROR,
+				msgq(sp, M_ERR,
 				    "'#' flag not supported in vi mode.");
 				return (1);
 			}
@@ -213,7 +212,7 @@ substitute(sp, ep, cmdp, s, re, cmd)
 			break;
 		case 'l':
 			if (F_ISSET(sp, S_MODE_VI)) {
-				msgq(sp, M_ERROR,
+				msgq(sp, M_ERR,
 				    "'l' flag not supported in vi mode.");
 				return (1);
 			}
@@ -221,7 +220,7 @@ substitute(sp, ep, cmdp, s, re, cmd)
 			break;
 		case 'p':
 			if (F_ISSET(sp, S_MODE_VI)) {
-				msgq(sp, M_ERROR,
+				msgq(sp, M_ERR,
 				    "'p' flag not supported in vi mode.");
 				return (1);
 			}
@@ -229,12 +228,12 @@ substitute(sp, ep, cmdp, s, re, cmd)
 			break;
 		case 'r':
 			if (cmd == FIRST) {
-				msgq(sp, M_ERROR,
+				msgq(sp, M_ERR,
 		    "Regular expression specified; r flag meaningless.");
 				return (1);
 			}
 			if (!F_ISSET(sp, S_RE_SET)) {
-				msgq(sp, M_ERROR,
+				msgq(sp, M_ERR,
 				    "No previous regular expression.");
 				return (1);
 			}
@@ -245,7 +244,7 @@ substitute(sp, ep, cmdp, s, re, cmd)
 		}
 
 	if (rflag == 0 && cmd == MUSTSETR) {
-usage:		msgq(sp, M_ERROR, "Usage: %s", cmdp->cmd->usage);
+usage:		msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
 		return (1);
 	}
 
@@ -422,7 +421,7 @@ nomatch:	if (len)
 	 * screen, put something up.
 	 */
 	if (sp->rptlines == 0 && !F_ISSET(sp, S_IN_GLOBAL))
-		msgq(sp, M_DISPLAY, "No match found.");
+		msgq(sp, M_INFO, "No match found.");
 	else if (!lflag && !nflag && !pflag)
 		F_SET(sp, S_AUTOPRINT);
 
@@ -492,7 +491,7 @@ checkmatchsize(sp, re)
 		sp->matchsize = re->re_nsub + 1;
 		if ((sp->match = realloc(sp->match,
 		    sp->matchsize * sizeof(regmatch_t))) == NULL) {
-			msgq(sp, M_ERROR, "Error: %s", strerror(errno));
+			msgq(sp, M_ERR, "Error: %s", strerror(errno));
 			sp->matchsize = 0;
 			return (1);
 		}

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_map.c,v 5.21 1993/04/05 07:11:39 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:11:39 $";
+static char sccsid[] = "$Id: ex_map.c,v 5.22 1993/04/12 14:37:00 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:37:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,7 +38,7 @@ ex_map(sp, ep, cmdp)
 
 	if (cmdp->string == NULL) {
 		if (seq_dump(sp, stype, 1) == 0)
-			msgq(sp, M_ERROR, "No map entries.");
+			msgq(sp, M_ERR, "No map entries.");
 		return (0);
 	}
 
@@ -52,7 +52,7 @@ ex_map(sp, ep, cmdp)
 	if (*output != '\0')
 		for (*output++ = '\0'; isspace(*output); ++output);
 	if (*output == '\0') {
-		msgq(sp, M_ERROR, "Usage: %s.", cmdp->cmd->usage);
+		msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
 		return (1);
 	}
 	
@@ -68,7 +68,7 @@ ex_map(sp, ep, cmdp)
 			input = FKEY[key];
 			name = buf;
 		} else {
-			msgq(sp, M_ERROR, "This terminal has no %s key.", buf);
+			msgq(sp, M_ERR, "This terminal has no %s key.", buf);
 			return (1);
 		}
 #else
@@ -91,7 +91,7 @@ ex_map(sp, ep, cmdp)
 				goto noremap;
 			case ':':
 				s = ":";
-noremap:			msgq(sp, M_ERROR,
+noremap:			msgq(sp, M_ERR,
 				    "The %s character may not be remapped.", s);
 				return (1);
 			}
@@ -114,7 +114,7 @@ ex_unmap(sp, ep, cmdp)
 	input = cmdp->argv[0];
 	if (seq_delete(sp,
 	    input, cmdp->flags & E_FORCE ? SEQ_INPUT : SEQ_COMMAND)) {
-		msgq(sp, M_ERROR, "\"%s\" isn't mapped.", input);
+		msgq(sp, M_ERR, "\"%s\" isn't mapped.", input);
 		return (1);
 	}
 	return (0);

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_mkexrc.c,v 5.18 1993/03/26 13:39:01 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:39:01 $";
+static char sccsid[] = "$Id: ex_mkexrc.c,v 5.19 1993/04/12 14:37:02 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:37:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -50,7 +50,7 @@ ex_mkexrc(sp, ep, cmdp)
 	if ((fd = open(fname,
 	    (cmdp->flags & E_FORCE ? 0 : O_EXCL)|O_CREAT|O_TRUNC|O_WRONLY,
 	    S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) < 0) {
-		msgq(sp, M_ERROR, "%s: %s", fname, strerror(errno));
+		msgq(sp, M_ERR, "%s: %s", fname, strerror(errno));
 		return (1);
 	}
 
@@ -58,7 +58,7 @@ ex_mkexrc(sp, ep, cmdp)
 	(void)fchmod(fd, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
 
 	if ((fp = fdopen(fd, "w")) == NULL) {
-		msgq(sp, M_ERROR, "%s: %s", fname, strerror(errno));
+		msgq(sp, M_ERR, "%s: %s", fname, strerror(errno));
 		return (1);
 	}
 
@@ -69,13 +69,13 @@ ex_mkexrc(sp, ep, cmdp)
 	if (opts_save(sp, fp) || ferror(fp))
 		goto err;
 	if (fclose(fp)) {
-err:		msgq(sp, M_ERROR,
+err:		msgq(sp, M_ERR,
 		    "%s: incomplete: %s", fname, strerror(errno));
 		return (1);
 	}
 #ifndef NO_DIGRAPH
 	digraph_save(sp, fd);
 #endif
-	msgq(sp, M_DISPLAY, "New .exrc file: %s. ", fname);
+	msgq(sp, M_INFO, "New .exrc file: %s. ", fname);
 	return (0);
 }
