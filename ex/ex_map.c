@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_map.c,v 5.2 1992/04/04 16:31:14 bostic Exp $ (Berkeley) $Date: 1992/04/04 16:31:14 $";
+static char sccsid[] = "$Id: ex_map.c,v 5.3 1992/04/05 09:23:40 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:23:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,8 +21,8 @@ static char sccsid[] = "$Id: ex_map.c,v 5.2 1992/04/04 16:31:14 bostic Exp $ (Be
 #include "excmd.h"
 #include "extern.h"
 
-static void map_dump __P((enum whenmapped));
-static void map_set __P((char *, char *, char *, enum whenmapped, int));
+static int map_dump __P((enum whenmapped));
+static int map_set __P((char *, char *, char *, enum whenmapped, int));
 
 MAP *map[UCHAR_MAX];
 MAPLIST mhead;
@@ -31,9 +31,11 @@ MAPLIST mhead;
  * map_init --
  *	Initialize the termcap key maps.
  */
-void
+int
 map_init()
 {
+	int rval;
+
 	/* Link the linked list together. */
 	mhead.lnext = mhead.lprev = (MAP *)&mhead;
 
@@ -42,33 +44,35 @@ map_init()
 	 * termcap capabilities.  The variables are defined as part of
 	 * the curses package.
 	 */
+	rval = 0;
 	if (has_KU)
-		map_set("up", has_KU, "k", COMMAND, 0);
+		rval |= map_set("up", has_KU, "k", COMMAND, 0);
 	if (has_KD)
-		map_set("down", has_KD, "j", COMMAND, 0);
+		rval |= map_set("down", has_KD, "j", COMMAND, 0);
 	if (has_KL)
-		map_set("left", has_KL, "h", COMMAND, 0);
+		rval |= map_set("left", has_KL, "h", COMMAND, 0);
 	if (has_KR)
-		map_set("right", has_KR, "l", COMMAND, 0);
+		rval |= map_set("right", has_KR, "l", COMMAND, 0);
 	if (has_HM)
-		map_set("home", has_HM, "^", COMMAND, 0);
+		rval |= map_set("home", has_HM, "^", COMMAND, 0);
 	if (has_EN)
-		map_set("end", has_EN, "$", COMMAND, 0);
+		rval |= map_set("end", has_EN, "$", COMMAND, 0);
 	if (has_PU)
-		map_set("page up", has_PU, "\002", COMMAND, 0);
+		rval |= map_set("page up", has_PU, "\002", COMMAND, 0);
 	if (has_PD)
-		map_set("page down", has_PD, "\006", COMMAND, 0);
+		rval |= map_set("page down", has_PD, "\006", COMMAND, 0);
 	if (has_KI)
-		map_set("insert", has_KI, "i", COMMAND, 0);
+		rval |= map_set("insert", has_KI, "i", COMMAND, 0);
 	if (ERASEKEY != '\177')
-		map_set("delete", "\177", "x", COMMAND, 0);
+		rval |= map_set("delete", "\177", "x", COMMAND, 0);
+	return (rval);
 }
 
 /*
  * ex_map -- (:map[!] [key replacement])
  *	Map a key or display mapped keys.
  */
-void
+int
 ex_map(cmdp)
 	CMDARG *cmdp;
 {
@@ -80,7 +84,7 @@ ex_map(cmdp)
 
 	if (cmdp->string == NULL) {
 		map_dump(when);
-		return;
+		return (0);
 	}
 
 	/*
@@ -92,8 +96,10 @@ ex_map(cmdp)
 	    *output && !isspace(*output); ++output);
 	if (*output != '\0')
 		for (*output++ = '\0'; isspace(*output); ++output);
-	if (*output == '\0')
+	if (*output == '\0') {
 		msg("Usage: %s.", cmdp->cmd->usage);
+		return (1);
+	}
 	
 	/*
 	 * If the mapped string is #[0-9], then map to a function
@@ -107,18 +113,18 @@ ex_map(cmdp)
 			name = buf;
 		} else {
 			msg("This terminal has no %s key.", buf);
-			return;
+			return (1);
 		}
 	} else
 		name = NULL;
-	map_set(name, input, output, when, 1);
+	return (map_set(name, input, output, when, 1));
 }
 
 /*
  * ex_unmap -- (:unmap[!] key)
  *	Unmap a key.
  */
-void
+int
 ex_unmap(cmdp)
 	CMDARG *cmdp;
 {
@@ -150,16 +156,17 @@ ex_unmap(cmdp)
 			free(p->input);
 			free(p->output);
 			free(p);
-			return;
+			return (0);
 		}
 	msg("The key sequence \"%s\" was never mapped.", input);
+	return (1);
 }
 
 /*
  * map_set --
  *	Internal version to map a key.
  */
-static void
+static int
 map_set(name, input, output, when, userdef)
 	char *name, *input, *output;
 	enum whenmapped when;
@@ -175,7 +182,7 @@ map_set(name, input, output, when, userdef)
 			free(mp->output);
 			if ((mp->output = strdup(output)) == NULL)
 				goto mem1;
-			return;
+			return (0);
 		}
 
 	/* Allocate space. */
@@ -206,20 +213,21 @@ map_set(name, input, output, when, userdef)
 	mhead.lnext->lprev = mp;
 	mhead.lnext = mp;
 	mp->lprev = (MAP *)&mhead;
-	return;
+	return (0);
 
 mem4:	free(mp->input);
 mem3:	if (mp->name)
 		free(mp->name);
 mem2:	free(mp);
 mem1:	msg("Error: %s", strerror(errno));
+	return (1);
 }
 
 /*
  * map_dump --
  *	Display key mappings of a specified type.
  */
-void
+int
 map_dump(when)
 	enum whenmapped when;
 {
@@ -257,13 +265,14 @@ map_dump(when)
 		addch('\n');
 		exrefresh();
 	}
+	return (0);
 }
 
 /*
  * map_save --
  *	Save the current mapped keys to a file.
  */
-void
+int
 map_save(fp)
 	FILE *fp;
 {
@@ -294,6 +303,7 @@ map_save(fp)
 			(void)putc(ch, fp);
 		}
 	}
+	return (0);
 }
 
 /*

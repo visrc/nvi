@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_quit.c,v 5.2 1992/04/04 10:02:35 bostic Exp $ (Berkeley) $Date: 1992/04/04 10:02:35 $";
+static char sccsid[] = "$Id: ex_quit.c,v 5.3 1992/04/05 09:23:36 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:23:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -20,25 +20,28 @@ static char sccsid[] = "$Id: ex_quit.c,v 5.2 1992/04/04 10:02:35 bostic Exp $ (B
 enum which {QUIT, WQ, XIT};
 static void quit __P((CMDARG *, enum which));
 
-void
+int
 ex_quit(cmdp)
 	CMDARG *cmdp;
 {
 	quit(cmdp, QUIT);
+	return (0);
 }
 
-void
+int
 ex_wq(cmdp)
 	CMDARG *cmdp;
 {
 	quit(cmdp, WQ);
+	return (0);
 }
 
-void
+int
 ex_xit(cmdp)
 	CMDARG *cmdp;
 {
 	quit(cmdp, XIT);
+	return (0);
 }
 
 /* also called from :wq -- always writes back in this case */

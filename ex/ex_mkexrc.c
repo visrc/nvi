@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_mkexrc.c,v 5.4 1992/04/04 16:30:54 bostic Exp $ (Berkeley) $Date: 1992/04/04 16:30:54 $";
+static char sccsid[] = "$Id: ex_mkexrc.c,v 5.5 1992/04/05 09:23:42 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:23:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,7 +22,7 @@ static char sccsid[] = "$Id: ex_mkexrc.c,v 5.4 1992/04/04 16:30:54 bostic Exp $ 
  * ex_mkexrc -- (:mkexrc[!] [file])
  *	Create (or overwrite) a .exrc file with the current info.
  */
-void
+int
 ex_mkexrc(cmdp)
 	CMDARG *cmdp;
 {
@@ -44,20 +44,20 @@ ex_mkexrc(cmdp)
 	    (cmdp->flags & E_FORCE ? 0 : O_EXCL)|O_CREAT|O_TRUNC|O_WRONLY,
 	    S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) < 0) {
 		msg("%s: %s", name, strerror(errno));
-		return;
+		return (1);
 	}
 
 	/* In case it already existed, set the permissions. */
 	(void)fchmod(fd, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
 
-	map_save(fp);
-	if (ferror(fp))
+	if (map_save(fp) || ferror(fp))
 		goto err;
-	opts_save(fp);
+	if (opts_save(fp) || ferror(fp))
+		goto err;
 	fflush(fp);			/* XXX all should use fp. */
 	if (ferror(fp)) {
 err:		msg("%s: incomplete: %s", name, strerror(errno));
-		return;
+		return (1);
 	}
 #ifndef NO_DIGRAPH
 	digraph_save(fd);
@@ -71,4 +71,5 @@ err:		msg("%s: incomplete: %s", name, strerror(errno));
 
 	(void)close(fd);
 	msg("New .exrc file: %s. ", name);
+	return (0);
 }

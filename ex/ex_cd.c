@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cd.c,v 5.2 1992/04/04 10:02:29 bostic Exp $ (Berkeley) $Date: 1992/04/04 10:02:29 $";
+static char sccsid[] = "$Id: ex_cd.c,v 5.3 1992/04/05 09:23:30 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:23:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,7 +19,7 @@ static char sccsid[] = "$Id: ex_cd.c,v 5.2 1992/04/04 10:02:29 bostic Exp $ (Ber
 #include "excmd.h"
 #include "extern.h"
 
-void
+int
 ex_cd(cmdp)
 	CMDARG *cmdp;
 {
@@ -29,7 +29,7 @@ ex_cd(cmdp)
 	case 0:
 		if ((dir = getenv("HOME")) == NULL) {
 			msg("Environment variable HOME not set.");
-			return;
+			return (1);
 		}
 		break;
 	case 1:
@@ -37,9 +37,12 @@ ex_cd(cmdp)
 		break;
 	default:
 		msg("Usage: %s", cmdp->cmd->usage);
-		return;
+		return (1);
 	}
 
-	if (chdir(dir) < 0)
+	if (chdir(dir) < 0) {
 		msg("Error: %s", strerror(errno));
+		return (1);
+	}
+	return (0);
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 5.2 1992/04/04 10:02:43 bostic Exp $ (Berkeley) $Date: 1992/04/04 10:02:43 $";
+static char sccsid[] = "$Id: ex_shell.c,v 5.3 1992/04/05 09:23:47 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:23:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,16 +22,18 @@ static char sccsid[] = "$Id: ex_shell.c,v 5.2 1992/04/04 10:02:43 bostic Exp $ (
  *	Invoke the program named in the SHELL environment variable with
  *	the argument -i.
  */
-void
+int
 ex_shell(cmdp)
 	CMDARG *cmdp;
 {
+	int rval;
 	char buf[MAXPATHLEN];
 
 	suspend_curses();
 
 	(void)snprintf(buf, sizeof(buf), "%s -i", PVAL(O_SHELL));
-	system(buf);
+	rval = system(buf);
 
 	resume_curses(mode == MODE_EX);
+	return (rval);
 }

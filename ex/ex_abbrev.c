@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_abbrev.c,v 5.2 1992/04/04 10:02:25 bostic Exp $ (Berkeley) $Date: 1992/04/04 10:02:25 $";
+static char sccsid[] = "$Id: ex_abbrev.c,v 5.3 1992/04/05 09:23:26 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:23:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,7 +22,7 @@ static struct _AB {
 	char small[1];	/* the abbreviated form (appended to struct) */
 } *abbrev;
 
-void
+int
 ex_abbr(cmdp)
 	CMDARG *cmdp;
 {
@@ -46,7 +46,7 @@ ex_abbr(cmdp)
 			addch('\n');
 			exrefresh();
 		}
-		return;
+		return (0);
 	}
 
 	/* else one or more arguments.  Parse the first & look up in abbrev[] */
@@ -73,7 +73,7 @@ ex_abbr(cmdp)
 		if (!ab)
 		{
 			msg("\"%s\" not an abbreviation", extra);
-			return;
+			return (0);
 		}
 
 		/* undo the abbreviation */
@@ -84,7 +84,7 @@ ex_abbr(cmdp)
 		free(ab->large);
 		free(ab);
 
-		return;
+		return (0);
 	}
 
 	/* multiple args - [re]define an abbreviation */
@@ -100,7 +100,7 @@ ex_abbr(cmdp)
 		if (!ab)
 		{
 			msg("Out of memory -- Sorry");
-			return;
+			return (0);
 		}
 		strncpy(ab->small, extra, smlen);
 		ab->small[smlen] = '\0';
@@ -114,6 +114,7 @@ ex_abbr(cmdp)
 	/* store the new form */
 	ab->large = (char *)malloc((unsigned)(strlen(&extra[lrg]) + 1));
 	strcpy(ab->large, &extra[lrg]);
+	return (0);
 }
 
 /* This function is called from ex_mkexrc() to save the abbreviations */

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 5.4 1992/04/04 10:02:27 bostic Exp $ (Berkeley) $Date: 1992/04/04 10:02:27 $";
+static char sccsid[] = "$Id: ex_args.c,v 5.5 1992/04/05 09:23:28 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:23:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,7 +26,7 @@ static int	total, current;
  * cmd_next -- (:next [files])
  *	Edit the next file.
  */
-void
+int
 ex_next(cmdp)
 	CMDARG *cmdp;
 {
@@ -38,17 +38,19 @@ ex_next(cmdp)
 		if (tmpabort(cmdp->flags & E_FORCE)) {
 			tmpstart(s_flist[current]);
 			++current;
+			return (0);
 		} else
 			msg("Use next! to discard changes, or w to save them.");
 	else
 		msg("No more files to edit.");
+	return (1);
 }
 
 /*
  * file_prev -- (:prev)
  *	Edit the previous file.
  */
-void
+int
 ex_prev(cmdp)
 	CMDARG *cmdp;
 {
@@ -56,17 +58,19 @@ ex_prev(cmdp)
 		if (tmpabort(cmdp->flags & E_FORCE)) {
 			--current;
 			tmpstart(s_flist[current - 1]);
+			return (0);
 		} else
 			msg("Use prev! to discard changes, or w to save them.");
 	else
 		msg("No previous files to edit.");
+	return (1);
 }
 
 /*
  * file_rew -- (:rew)
  *	Edit the first file.
  */
-void
+int
 ex_rew(cmdp)
 	CMDARG *cmdp;
 {
@@ -74,17 +78,19 @@ ex_rew(cmdp)
 		if (tmpabort(cmdp->flags & E_FORCE)) {
 			tmpstart(s_flist[0]);
 			current = 1;
+			return (0);
 		} else
 			msg("Use rew! to discard changes, or w to save them.");
 	else
 		msg("No previous files to edit.");
+	return (1);
 }
 
 /*
  * file_args -- (:args)
  *	Display the list of files.
  */
-void
+int
 ex_args(cmdp)
 	CMDARG *cmdp;
 {
@@ -93,7 +99,7 @@ ex_args(cmdp)
 
 	if (current == 0) {
 		msg("No file names.");
-		return;
+		return (1);
 	}
 
 	col = len = newline = 0;
@@ -117,6 +123,7 @@ ex_args(cmdp)
 	if (newline)
 		addch('\n');
 	exrefresh();
+	return (0);
 }
 
 /*

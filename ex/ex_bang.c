@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 5.2 1992/04/04 10:02:28 bostic Exp $ (Berkeley) $Date: 1992/04/04 10:02:28 $";
+static char sccsid[] = "$Id: ex_bang.c,v 5.3 1992/04/05 09:23:29 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:23:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,7 +22,7 @@ static char sccsid[] = "$Id: ex_bang.c,v 5.2 1992/04/04 10:02:28 bostic Exp $ (B
  *	Pass the rest of the line after the character to the program
  *	named by the SHELL environment variable.
  */
-void
+int
 ex_bang(cmdp)
 	CMDARG *cmdp;
 {
@@ -37,7 +37,7 @@ ex_bang(cmdp)
 		if (!*prevextra)
 		{
 			msg("No previous shell command to substitute for '!'");
-			return;
+			return (1);
 		}
 		extra = prevextra;
 	}
@@ -69,5 +69,6 @@ ex_bang(cmdp)
 
 	/* resume curses quietly for MODE_EX, but noisily otherwise */
 	resume_curses(mode == MODE_EX);
+	return (0);
 }
 

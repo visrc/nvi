@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_put.c,v 5.2 1992/04/04 10:02:41 bostic Exp $ (Berkeley) $Date: 1992/04/04 10:02:41 $";
+static char sccsid[] = "$Id: ex_put.c,v 5.3 1992/04/05 09:23:45 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:23:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -16,7 +16,7 @@ static char sccsid[] = "$Id: ex_put.c,v 5.2 1992/04/04 10:02:41 bostic Exp $ (Be
 #include "excmd.h"
 #include "extern.h"
 
-void
+int
 ex_put(cmdp)
 	CMDARG *cmdp;
 {
@@ -38,4 +38,5 @@ ex_put(cmdp)
 	{
 		cursor = paste(cmdp->addr1, TRUE, FALSE);
 	}
+	return (0);
 }

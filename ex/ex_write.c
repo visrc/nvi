@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 5.2 1992/04/04 10:02:50 bostic Exp $ (Berkeley) $Date: 1992/04/04 10:02:50 $";
+static char sccsid[] = "$Id: ex_write.c,v 5.3 1992/04/05 09:23:56 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:23:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -17,7 +17,7 @@ static char sccsid[] = "$Id: ex_write.c,v 5.2 1992/04/04 10:02:50 bostic Exp $ (
 #include "excmd.h"
 #include "extern.h"
 
-void
+int
 ex_write(cmdp)
 	CMDARG *cmdp;
 {
@@ -37,7 +37,7 @@ ex_write(cmdp)
 	if (cmdp->addr1 == MARK_FIRST && cmdp->addr2 == MARK_LAST)
 	{
 		tmpsave(extra, cmdp->flags & E_FORCE);
-		return;
+		return (0);
 	}
 
 	/* see if we're going to do this in append mode or not */
@@ -52,7 +52,7 @@ ex_write(cmdp)
 	if (access(extra, 0) == 0 && !cmdp->flags & E_FORCE && !append)
 	{
 		msg("File already exists - Use :w! to overwrite");
-		return;
+		return (1);
 	}
 
 	/* else do it line-by-line, like ex_print() */
@@ -79,7 +79,7 @@ ex_write(cmdp)
 		if (fd < 0)
 		{
 			msg("Can't write to \"%s\"", extra);
-			return;
+			return (1);
 		}
 	}
 	for (l = markline(cmdp->addr1); l <= markline(cmdp->addr2); l++)
@@ -93,4 +93,5 @@ ex_write(cmdp)
 		write(fd, scan, i);
 	}
 	close(fd);
+	return (0);
 }	

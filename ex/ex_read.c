@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 5.2 1992/04/04 10:02:42 bostic Exp $ (Berkeley) $Date: 1992/04/04 10:02:42 $";
+static char sccsid[] = "$Id: ex_read.c,v 5.3 1992/04/05 09:23:45 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:23:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -17,7 +17,7 @@ static char sccsid[] = "$Id: ex_read.c,v 5.2 1992/04/04 10:02:42 bostic Exp $ (B
 #include "excmd.h"
 #include "extern.h"
 
-void
+int
 ex_read(cmdp)
 	CMDARG *cmdp;
 {
@@ -35,7 +35,7 @@ ex_read(cmdp)
 	if (extra[0] == '!')
 	{
 		filter(cmdp->addr1, MARK_UNSET, extra + 1);
-		return;
+		return (0);
 	}
 
 	/* open the file */
@@ -43,7 +43,7 @@ ex_read(cmdp)
 	if (fd < 0)
 	{
 		msg("Can't open \"%s\"", extra);
-		return;
+		return (1);
 	}
 
 	if (stat(extra, &statb) < 0)
@@ -53,7 +53,7 @@ ex_read(cmdp)
 	if ((statb.st_mode & S_IFMT) != S_IFREG)
 	{
 		msg("\"%s\" is not a regular file", extra);
-		return;
+		return (0);
 	}
 
 	/* get blocks from the file, and add them */
@@ -132,4 +132,5 @@ ex_read(cmdp)
 		msg("Newlines were added to break up long lines");
 	if (hadnul)
 		msg("NULs were converted to 0x80");
+	return (0);
 }

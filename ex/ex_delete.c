@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_delete.c,v 5.2 1992/04/04 10:02:31 bostic Exp $ (Berkeley) $Date: 1992/04/04 10:02:31 $";
+static char sccsid[] = "$Id: ex_delete.c,v 5.3 1992/04/05 09:23:32 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:23:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,18 +19,20 @@ static char sccsid[] = "$Id: ex_delete.c,v 5.2 1992/04/04 10:02:31 bostic Exp $ 
 enum which {DELETE, YANK};
 static void Xdelete __P((CMDARG *, enum which));
 
-void
+int
 ex_delete(cmdp)
 	CMDARG *cmdp;
 {
 	Xdelete(cmdp, DELETE);
+	return (0);
 }
 
-void
+int
 ex_yank(cmdp)
 	CMDARG *cmdp;
 {
 	Xdelete(cmdp, YANK);
+	return (0);
 }
 
 static void

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_join.c,v 5.2 1992/04/04 10:02:37 bostic Exp $ (Berkeley) $Date: 1992/04/04 10:02:37 $";
+static char sccsid[] = "$Id: ex_join.c,v 5.3 1992/04/05 09:23:39 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:23:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -16,7 +16,7 @@ static char sccsid[] = "$Id: ex_join.c,v 5.2 1992/04/04 10:02:37 bostic Exp $ (B
 #include "excmd.h"
 #include "extern.h"
 
-void
+int
 ex_join(cmdp)
 	CMDARG *cmdp;
 {
@@ -33,7 +33,7 @@ ex_join(cmdp)
 	if (markline(frommark) == nlines)
 	{
 		msg("Nothing to join with this line");
-		return;
+		return (1);
 	}
 	if (markline(frommark) == markline(tomark))
 	{
@@ -61,7 +61,7 @@ ex_join(cmdp)
 		if (strlen(scan) + len + 3 > BLKSIZE)
 		{
 			msg("Can't join -- the resulting line would be too long");
-			return;
+			return (1);
 		}
 
 		/* catenate it, with a space (or two) in between */
@@ -91,4 +91,5 @@ ex_join(cmdp)
 	/* Reporting... */
 	rptlines = markline(tomark) - markline(frommark) - 1L;
 	rptlabel = "joined";
+	return (0);
 }

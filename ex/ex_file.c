@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_file.c,v 5.2 1992/04/04 10:02:36 bostic Exp $ (Berkeley) $Date: 1992/04/04 10:02:36 $";
+static char sccsid[] = "$Id: ex_file.c,v 5.3 1992/04/05 09:23:37 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:23:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -16,7 +16,7 @@ static char sccsid[] = "$Id: ex_file.c,v 5.2 1992/04/04 10:02:36 bostic Exp $ (B
 #include "excmd.h"
 #include "extern.h"
 
-void
+int
 ex_file(cmdp)
 	CMDARG *cmdp;
 {
@@ -29,7 +29,7 @@ ex_file(cmdp)
 		break;
 	default:
 		msg("Usage: file [newname].");
-		return;
+		return (1);
 	}
 
 	msg("\"%s\" %s%s %ld lines,  line %ld [%ld%%]",
@@ -39,4 +39,5 @@ ex_file(cmdp)
 		nlines,
 		markline(cmdp->addr1),
 		markline(cmdp->addr1) * 100 / nlines);
+	return (0);
 }

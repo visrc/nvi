@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_move.c,v 5.2 1992/04/04 10:02:40 bostic Exp $ (Berkeley) $Date: 1992/04/04 10:02:40 $";
+static char sccsid[] = "$Id: ex_move.c,v 5.3 1992/04/05 09:23:43 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:23:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,18 +19,20 @@ static char sccsid[] = "$Id: ex_move.c,v 5.2 1992/04/04 10:02:40 bostic Exp $ (B
 enum which {COPY, MOVE};
 static void copy __P((CMDARG *, enum which));
 
-void
+int
 ex_copy(cmdp)
 	CMDARG *cmdp;
 {
 	move(cmdp, COPY);
+	return (0);
 }
 
-void
+int
 ex_move(cmdp)
 	CMDARG *cmdp;
 {
 	move(cmdp, MOVE);
+	return (0);
 }
 
 /* move or copy selected lines */

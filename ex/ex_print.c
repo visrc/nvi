@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 5.2 1992/04/04 10:02:40 bostic Exp $ (Berkeley) $Date: 1992/04/04 10:02:40 $";
+static char sccsid[] = "$Id: ex_print.c,v 5.3 1992/04/05 09:23:44 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:23:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,11 +25,12 @@ static void print __P((CMDARG *, enum which));
  *	Write the addressed lines such that the output is unambiguous.  The
  *	only valid flag is '#'.
  */
-void
+int
 ex_list(cmdp)
 	CMDARG *cmdp;
 {
 	print(cmdp, LIST);
+	return (0);
 }
 
 /*
@@ -37,22 +38,24 @@ ex_list(cmdp)
  *	Write the addressed lines with a leading line number.  The only valid
  *	flag is 'l'.
  */
-void
+int
 ex_number(cmdp)
 	CMDARG *cmdp;
 {
 	print(cmdp, NUMBER);
+	return (0);
 }
 
 /*
  * ex_print -- (:[line [,line]] p[rint] [count] [flags])
  *	Write the addressed lines.  The only meaningful flags are '#' and 'l'.
  */
-void
+int
 ex_print(cmdp)
 	CMDARG *cmdp;
 {
 	print(cmdp, PRINT);
+	return (0);
 }
 
 /* print the selected lines */

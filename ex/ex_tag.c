@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 5.2 1992/04/04 10:02:47 bostic Exp $ (Berkeley) $Date: 1992/04/04 10:02:47 $";
+static char sccsid[] = "$Id: ex_tag.c,v 5.3 1992/04/05 09:23:52 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:23:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,7 +18,7 @@ static char sccsid[] = "$Id: ex_tag.c,v 5.2 1992/04/04 10:02:47 bostic Exp $ (Be
 #include "pathnames.h"
 #include "extern.h"
 
-void
+int
 ex_tag(cmdp)
 	CMDARG *cmdp;
 {
@@ -43,7 +43,7 @@ ex_tag(cmdp)
 		if (!*prevtag)
 		{
 			msg("No previous tag");
-			return;
+			return (1);
 		}
 		extra = prevtag;
 	}
@@ -58,7 +58,7 @@ ex_tag(cmdp)
 	if (fd < 0)
 	{
 		msg("No tags file");
-		return;
+		return (1);
 	}
 
 	/* Hmmm... this would have been a lot easier with <stdio.h> */
@@ -75,7 +75,7 @@ ex_tag(cmdp)
 			{
 				msg("tag \"%s\" not found", extra);
 				close(fd);
-				return;
+				return (1);
 			}
 		}
 
@@ -131,7 +131,7 @@ ex_tag(cmdp)
 		if (!tmpabort(cmdp->flags & E_FORCE))
 		{
 			msg("Use :tag! to abort changes, or :w to save changes");
-			return;
+			return (1);
 		}
 		tmpstart(tmpblk.c);
 	}
@@ -156,4 +156,5 @@ ex_tag(cmdp)
 	if (wasmagic)
 		SET(O_MAGIC);
 #endif
+	return (0);
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 5.2 1992/04/04 10:02:26 bostic Exp $ (Berkeley) $Date: 1992/04/04 10:02:26 $";
+static char sccsid[] = "$Id: ex_append.c,v 5.3 1992/04/05 09:23:27 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:23:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -24,18 +24,20 @@ static void Xchange __P((CMDARG *, enum which));
  *	Append one ore more lines of new text after the specified line,
  *	or the current line if no address is specified.
  */
-void
+int
 ex_append(cmdp)
 	CMDARG *cmdp;
 {
 	Xchange(cmdp, APPEND);
+	return (0);
 }
 
-void
+int
 ex_change(cmdp)
 	CMDARG *cmdp;
 {
 	Xchange(cmdp, CHANGE);
+	return (0);
 }
 
 static void
