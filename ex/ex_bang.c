@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 5.42 1993/05/13 11:09:20 bostic Exp $ (Berkeley) $Date: 1993/05/13 11:09:20 $";
+static char sccsid[] = "$Id: ex_bang.c,v 5.43 1993/05/15 10:54:58 bostic Exp $ (Berkeley) $Date: 1993/05/15 10:54:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -109,26 +109,21 @@ ex_bang(sp, ep, cmdp)
 			default:
 				*t++ = ch;
 			}
-		*p = '\0';
+		*t = '\0';
 	} else
 		memmove(com, cmdp->string, len);
-		
 
 	/* Swap commands. */
-	if (sp->lastbcomm)
+	if (sp->lastbcomm != NULL)
 		free(sp->lastbcomm);
 	sp->lastbcomm = com;
 
-	AUTOWRITE(sp, ep);
-	EX_MODIFY_WARN(sp, ep);
-
-	/* If modified, echo the new command. */
 	if (modified)
 		(void)fprintf(sp->stdfp, "%s\n", com);
 
 	/*
-	 * If no addresses were specified, just run the command,
-	 * otherwise pipe lines from the file through the command.
+	 * If addresses were specified, pipe lines from the file through
+	 * the command.
 	 */
 	if (cmdp->addrcnt != 0) {
 		if (filtercmd(sp, ep,
@@ -138,6 +133,12 @@ ex_bang(sp, ep, cmdp)
 		F_SET(sp, S_AUTOPRINT);
 		return (0);
 	}
+
+	/* If no addresses were specified, run the command. */
+	AUTOWRITE(sp, ep);
+
+	if (F_ISSET(sp, S_MODE_EX))
+		MODIFY_WARN(sp, ep);
 
 	/* Run the command. */
 	if (ex_run_process(sp, com, NULL, NULL, 0))
