@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_msg.c,v 10.12 1995/09/28 10:41:12 bostic Exp $ (Berkeley) $Date: 1995/09/28 10:41:12 $";
+static char sccsid[] = "$Id: vs_msg.c,v 10.13 1995/09/28 14:20:26 bostic Exp $ (Berkeley) $Date: 1995/09/28 14:20:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -490,6 +490,7 @@ vs_resolve(sp)
 	MSG *mp;
 	VI_PRIVATE *vip;
 	size_t oldy, oldx;
+	int redraw;
 
 	/* Save the cursor position. */
 	gp = sp->gp;
@@ -519,27 +520,38 @@ vs_resolve(sp)
 	/* Report on line modifications. */
 	msg_rpt(sp);
 
-	/*
-	 * If >1 message line in use, prompt the user to continue and
-	 * repaint overwritten lines.
-	 */
 	vip = VIP(sp);
-	if (vip->totalcount > 1) {
+	switch (vip->totalcount) {
+	case 0:
+		redraw = 0;
+		break;
+	case 1:
+		redraw = 0;
+
+		/* Skip the modeline if it's in use. */
+		F_SET(vip, VIP_S_MODELINE);
+		break;
+	default:
+		/*
+		 * If >1 message line in use, prompt the user to continue and
+		 * repaint overwritten lines.
+		 */
 		vs_scroll(sp, NULL, SCROLL_WAIT);
 
 		ev.e_event = E_REPAINT;
 		ev.e_flno = vip->totalcount >=
 		    sp->rows ? 1 : sp->rows - vip->totalcount;
 		ev.e_tlno = sp->rows;
-		(void)vs_repaint(sp, &ev);
+		redraw = 1;
+		break;
 	}
-
-	/* Put up the modeline if 0 lines in use or had to wait. */
-	if (vip->totalcount == 1)
-		F_SET(vip, VIP_S_MODELINE);
 
 	/* Reset the count of overwriting lines. */
 	vip->linecount = vip->lcontinue = vip->totalcount = 0;
+
+	/* Redraw. */
+	if (redraw)
+		(void)vs_repaint(sp, &ev);
 
 	/* Restore the cursor position. */
 	(void)gp->scr_move(sp, oldy, oldx);
