@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 10.4 1995/10/16 15:24:38 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:24:38 $
+ *	$Id: exf.h,v 10.5 1996/02/26 13:55:56 bostic Exp $ (Berkeley) $Date: 1996/02/26 13:55:56 $
  */
 					/* Undo direction. */
 /*
@@ -51,7 +51,6 @@ struct _exf {
 	char	*rcv_path;		/* Recover file name. */
 	char	*rcv_mpath;		/* Recover mail file name. */
 	int	 rcv_fd;		/* Locked mail file descriptor. */
-	struct timeval rcv_tod;		/* ITIMER_REAL: recovery time-of-day. */
 
 #define	F_FIRSTMODIFY	0x001		/* File not yet modified. */
 #define	F_MODIFIED	0x002		/* File is currently dirty. */
