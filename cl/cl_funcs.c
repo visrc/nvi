@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_funcs.c,v 10.20 1995/09/29 16:53:44 bostic Exp $ (Berkeley) $Date: 1995/09/29 16:53:44 $";
+static char sccsid[] = "$Id: cl_funcs.c,v 10.21 1995/10/17 10:13:52 bostic Exp $ (Berkeley) $Date: 1995/10/17 10:13:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -101,6 +101,7 @@ cl_attr(sp, attribute, on)
 				(void)tputs(clp->smso, 1, cl_putchar);
 			else
 				(void)tputs(clp->rmso, 1, cl_putchar);
+			(void)fflush(stdout);
 			break;
 		case S_VI:
 			if (on)
