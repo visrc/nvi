@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.36 1993/11/18 08:17:13 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:17:13 $";
+static char sccsid[] = "$Id: recover.c,v 8.37 1993/11/18 09:20:29 bostic Exp $ (Berkeley) $Date: 1993/11/18 09:20:29 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -44,7 +44,7 @@ static char sccsid[] = "$Id: recover.c,v 8.36 1993/11/18 08:17:13 bostic Exp $ (
  * key routines are called.
  *
  * We don't use timers other than to flag that the file should be synced.  This
- * would require that the SCR and HDR data structures be locked, the dbopen(3)
+ * would require that the SCR and EXF data structures be locked, the dbopen(3)
  * routines lock out the timers for each update, etc.  It's just not worth it.
  * The only way we can lose in the current scheme is if the file is saved, then
  * the user types furiously for RCV_PERIOD - 1 seconds, and types nothing more.
