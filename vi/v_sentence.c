@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_sentence.c,v 8.6 1993/08/26 11:57:31 bostic Exp $ (Berkeley) $Date: 1993/08/26 11:57:31 $";
+static char sccsid[] = "$Id: v_sentence.c,v 8.7 1993/08/26 12:14:09 bostic Exp $ (Berkeley) $Date: 1993/08/26 12:14:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -148,7 +148,7 @@ okret:	rp->lno = cs.cs_lno;
 	 * and whack the flags.
 	 */
 	if (F_ISSET(vp, VC_C | VC_D | VC_Y) &&
-	    fm->cno == 0 && rp->cno == 0 || cs.cs_flags != 0) {
+	    fm->cno == 0 && (rp->cno == 0 || cs.cs_flags != 0)) {
 		if (rp->cno == 0)
 			--rp->lno;
 		F_SET(vp, VC_LMODE);
