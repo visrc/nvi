@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 9.12 1995/01/30 09:09:25 bostic Exp $ (Berkeley) $Date: 1995/01/30 09:09:25 $";
+static char sccsid[] = "$Id: options_f.c,v 9.13 1995/02/22 11:57:24 bostic Exp $ (Berkeley) $Date: 1995/02/22 11:57:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -173,13 +173,23 @@ DECL(f_lines)
 	if (O_VAL(sp, O_LINES) == val)
 		return (0);
 
-	/* Set the value, and the related scroll value. */
-	O_VAL(sp, O_LINES) = val;
-	O_VAL(sp, O_SCROLL) = (val - 1) / 2;
+	/*
+	 * Set the value, and the related scroll value.  If no window
+	 * value set, set a new default window.
+	 */
+	if ((O_VAL(sp, O_LINES) = val) == 1) {
+		sp->defscroll = 1;
 
-	/* If no window value set, set a new default window. */
-	if (O_VAL(sp, O_WINDOW) == O_D_VAL(sp, O_WINDOW))
-		O_VAL(sp, O_WINDOW) = O_D_VAL(sp, O_WINDOW) = val - 1;
+		if (O_VAL(sp, O_WINDOW) == O_D_VAL(sp, O_WINDOW) ||
+		    O_VAL(sp, O_WINDOW) > val)
+			O_VAL(sp, O_WINDOW) = O_D_VAL(sp, O_WINDOW) = 1;
+	} else {
+		sp->defscroll = (val - 1) / 2;
+
+		if (O_VAL(sp, O_WINDOW) == O_D_VAL(sp, O_WINDOW) ||
+		    O_VAL(sp, O_WINDOW) > val)
+			O_VAL(sp, O_WINDOW) = O_D_VAL(sp, O_WINDOW) = val - 1;
+	}
 
 	F_SET(sp, S_SCR_RESIZE);
 	return (0);
@@ -465,8 +475,9 @@ DECL(f_w300)
 	if (CALL(f_window))
 		return (1);
 
-	if (val > O_VAL(sp, O_LINES) - 1)
-		val = O_VAL(sp, O_LINES) - 1;
+	if (val >= O_VAL(sp, O_LINES) - 1 &&
+	    (val = O_VAL(sp, O_LINES) - 1) == 0)
+		val = 1;
 	O_VAL(sp, O_W300) = val;
 	return (0);
 }
@@ -483,8 +494,9 @@ DECL(f_w1200)
 	if (CALL(f_window))
 		return (1);
 
-	if (val > O_VAL(sp, O_LINES) - 1)
-		val = O_VAL(sp, O_LINES) - 1;
+	if (val >= O_VAL(sp, O_LINES) - 1 &&
+	    (val = O_VAL(sp, O_LINES) - 1) == 0)
+		val = 1;
 	O_VAL(sp, O_W1200) = val;
 	return (0);
 }
@@ -501,8 +513,9 @@ DECL(f_w9600)
 	if (CALL(f_window))
 		return (1);
 
-	if (val > O_VAL(sp, O_LINES) - 1)
-		val = O_VAL(sp, O_LINES) - 1;
+	if (val >= O_VAL(sp, O_LINES) - 1 &&
+	    (val = O_VAL(sp, O_LINES) - 1) == 0)
+		val = 1;
 	O_VAL(sp, O_W9600) = val;
 	return (0);
 }
