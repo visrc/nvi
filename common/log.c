@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: log.c,v 5.1 1992/11/11 09:29:04 bostic Exp $ (Berkeley) $Date: 1992/11/11 09:29:04 $";
+static char sccsid[] = "$Id: log.c,v 5.2 1992/11/11 18:32:14 bostic Exp $ (Berkeley) $Date: 1992/11/11 18:32:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,8 +19,8 @@ static char sccsid[] = "$Id: log.c,v 5.1 1992/11/11 09:29:04 bostic Exp $ (Berke
 #include <stdlib.h>
 #include <string.h>
 
+#include "vi.h"
 #include "exf.h"
-#include "/usr/src/lib/libc/db/btree/btree.h"
 #include "log.h"
 #include "screen.h"
 #include "extern.h"
@@ -49,6 +49,9 @@ log_init(ep)
 {
 	DBT key;
 
+	ep->l_lp = NULL;
+	ep->l_len = 0;
+
 	ep->log = dbopen(NULL, O_CREAT | O_EXLOCK | O_NONBLOCK | O_RDWR,
 	    S_IRUSR | S_IWUSR, DB_RECNO, NULL);
 	if (ep->log == NULL) {
@@ -75,9 +78,30 @@ log_init(ep)
 		nolog = 1;
 		return (1);
 	}
+
 	return (0);
 }
 
+/*
+ * log_end --
+ *	Close the logging package.
+ */
+int
+log_end(ep)
+	EXF *ep;
+{
+	if (ep->log != NULL) {
+		(void)(ep->log->close)(ep->log);
+		ep->log = NULL;
+	}
+	if (ep->l_lp != NULL) {
+		free(ep->l_lp);
+		ep->l_lp = NULL;
+	}
+	ep->l_len = 0;
+	return (0);
+}
+		
 /*
  * log_cursor --
  *	Log a cursor position.
@@ -93,10 +117,16 @@ log_cursor(ep)
 	if (nolog)
 		return (0);
 
-	m.lno = curf->lno;
-	m.cno = curf->cno;
-	data.data = &m;
-	data.size = sizeof(MARK);
+	BINC(ep->l_lp, ep->l_len, sizeof(u_char) + sizeof(MARK));
+		
+	ep->l_lp[0] = LOG_CURSOR;
+
+	m.lno = ep->lno;
+	m.cno = ep->cno;
+	bcopy(&m, ep->l_lp + sizeof(u_char), sizeof(MARK));
+
+	data.data = ep->l_lp;
+	data.size = sizeof(u_char) + sizeof(MARK);
 
 	/* If the last record was a cursor move, just overwrite it. */
 	if (c_ltype == LOG_CURSOR) {
@@ -107,17 +137,8 @@ log_cursor(ep)
 	} else if (ep->log->put(ep->log, &key, &data, R_CURSORLOG) == -1)
 		LOG_ERR;
 
-#define	RRR	((struct BTREE *)(curf->log->internal))->bt_rcursor
-TRACE("put into log %u: cursor @ %u\n", RRR, m.lno);
-
 	bcopy(key.data, &recno_saved, sizeof(recno_t));
-	
 	c_ltype = LOG_CURSOR;
-	data.data = &c_ltype;
-	data.size = sizeof(u_char);
-	if (ep->log->put(ep->log, &key, &data, R_CURSORLOG) == -1)
-		LOG_ERR;
-TRACE("put into log %u: CURSOR LOG\n", RRR);
 	return (0);
 }
 
@@ -132,25 +153,17 @@ log_line(ep, lno, action)
 	u_int action;
 {
 	DBT data, key;
+	size_t len;
+	u_char *lp;
 
 	if (nolog)
 		return (0);
 
-	if (action == LINE_DELETE || action == LINE_RESET) {
-		if ((data.data = file_gline(ep, lno, &data.size)) == NULL) {
-			GETLINE_ERR(lno);
-			return (1);
-		}
-		if (ep->log->put(ep->log, &key, &data, R_CURSORLOG) == -1)
-			LOG_ERR;
-TRACE("put into log %u: line %u\n", RRR, lno);
+	if ((lp = file_gline(ep, lno, &len)) == NULL) {
+		GETLINE_ERR(lno);
+		return (1);
 	}
-
-	data.data = &lno;
-	data.size = sizeof(recno_t);
-	if (ep->log->put(ep->log, &key, &data, R_CURSORLOG) == -1)
-		LOG_ERR;
-TRACE("put into log %u: lno %u\n", RRR, lno);
+	BINC(ep->l_lp, ep->l_len, len + sizeof(u_char) + sizeof(recno_t));
 
 	switch(action) {
 	case LINE_APPEND:
@@ -169,8 +182,13 @@ TRACE("put into log %u: lno %u\n", RRR, lno);
 		abort();
 	}
 
-	data.data = &c_ltype;
-	data.size = sizeof(u_char);
+	ep->l_lp[0] = c_ltype;
+	bcopy(&lno, ep->l_lp + sizeof(u_char), sizeof(recno_t));
+	bcopy(lp, ep->l_lp + sizeof(u_char) + sizeof(recno_t), len);
+
+	data.data = ep->l_lp;
+	data.size = len + sizeof(u_char) + sizeof(recno_t);
+
 	if (ep->log->put(ep->log, &key, &data, R_CURSORLOG) == -1)
 		LOG_ERR;
 	return (0);
@@ -187,34 +205,118 @@ log_mark(ep, kch, mp)
 	MARK *mp;
 {
 	DBT data, key;
-	u_char kch2;
 
 	if (nolog)
 		return (0);
 
-	data.data = mp;
-	data.size = sizeof(MARK);
-	if (ep->log->put(ep->log, &key, &data, R_CURSORLOG) == -1)
-		LOG_ERR;
+	BINC(ep->l_lp,
+	    ep->l_len, sizeof(u_char) + sizeof(u_char) + sizeof(MARK));
 
-	kch2 = kch;
-	data.data = &kch2;
-	data.size = sizeof(u_char);
+	ep->l_lp[0] = LOG_MARK;
+	ep->l_lp[1] = kch;
+	bcopy(mp, ep->l_lp + sizeof(u_char) + sizeof(u_char), sizeof(MARK));
+
+	data.data = ep->l_lp;
+	data.size = sizeof(u_char) + sizeof(u_char) + sizeof(MARK);
 	if (ep->log->put(ep->log, &key, &data, R_CURSORLOG) == -1)
 		LOG_ERR;
 
 	c_ltype = LOG_MARK;
-	if (ep->log->put(ep->log, &key, &data, R_CURSORLOG) == -1)
-		LOG_ERR;
 	return (0);
 }
 
 /*
- * log_undo --
- *	Undo the last operation.
+ * Log_backward --
+ *	Roll the log backward one operation.
  */
 int
-log_undo(ep, rp)
+log_backward(ep, rp, undolno)
+	EXF *ep;
+	MARK *rp;
+	recno_t undolno;
+{
+	DBT key, data;
+	MARK m;
+	recno_t lno;
+	int didop;
+
+	if (nolog) {
+		msg("Logging not being performed, undo not possible.");
+		return (1);
+	}
+	nolog = 1;			/* Turn off logging. */
+	c_ltype = LOG_NOTYPE;		/* Turn off caching. */
+
+	for (didop = 0;;) {
+		if (ep->log->seq(ep->log, &key, &data, R_PREV))
+			LOG_ERR;
+
+		switch(*(u_char *)data.data) {
+		case LOG_CURSOR:
+			if (didop != 0 || undolno != OOBLNO) {
+				bcopy(data.data +
+				    sizeof(u_char), rp, sizeof(MARK));
+				if (undolno != OOBLNO && rp->lno == lno)
+					break;
+				if (ep->log->seq(ep->log, &key, &data, R_PREV))
+					LOG_ERR;
+				nolog = 0;
+				return (0);
+			}
+			break;
+		case LOG_LINE_APPEND:
+		case LOG_LINE_INSERT:
+			didop = 1;
+			bcopy(data.data +
+			    sizeof(u_char), &lno, sizeof(recno_t));
+			if (file_dline(ep, lno))
+				goto err;
+			break;
+		case LOG_LINE_DELETE:
+			didop = 1;
+			bcopy(data.data +
+			    sizeof(u_char), &lno, sizeof(recno_t));
+			if (file_iline(ep, lno, data.data + sizeof(u_char) +
+			    sizeof(recno_t), data.size - sizeof(u_char) -
+			    sizeof(recno_t)))
+				goto err;
+			break;
+		case LOG_LINE_RESET:
+			didop = 1;
+			if (ep->log->seq(ep->log, &key, &data, R_PREV))
+				LOG_ERR;
+			bcopy(data.data +
+			    sizeof(u_char), &lno, sizeof(recno_t));
+			if (file_sline(ep, lno, data.data + sizeof(u_char) +
+			    sizeof(recno_t), data.size - sizeof(u_char) -
+			    sizeof(recno_t)))
+				goto err;
+			break;
+		case LOG_MARK:
+			didop = 1;
+			bcopy(data.data +
+			    sizeof(u_char) + sizeof(u_char), &m, sizeof(MARK));
+			if (mark_set(*(((u_char *)data.data) + 1), &m))
+				goto err;
+			break;
+		case LOG_START:
+			if (didop == 0)
+				msg("Nothing to undo.");
+err:			nolog = 0;
+			return (1);
+		default:
+			abort();
+		}
+	}
+	/* NOTREACHED */
+}
+
+/*
+ * Log_forward --
+ *	Roll the log forward one operation.
+ */
+int
+log_forward(ep, rp)
 	EXF *ep;
 	MARK *rp;
 {
@@ -222,77 +324,73 @@ log_undo(ep, rp)
 	MARK m;
 	recno_t lno;
 	int didop, rval;
-	u_char ltype;
-
-	ltype = LOG_NOTYPE;
 
 	if (nolog) {
-		msg("Logging not being performed, undo not possible.");
+		msg("Logging not being performed, roll-forward not possible.");
 		return (1);
 	}
-	nolog = 1;			/* Turn off logging while in undo. */
-
-	/* Rewind to the just logged current cursor record. */
-	if (ep->log->seq(ep->log, &key, &data, R_PREV))
-		LOG_ERR;
+	nolog = 1;			/* Turn off logging. */
+	c_ltype = LOG_NOTYPE;		/* Turn off caching. */
 
 	for (didop = 0;;) {
-		if (ep->log->seq(ep->log, &key, &data, R_PREV))
-			LOG_ERR;
-
-		ltype = *(u_char *)data.data;
-		if (ltype == LOG_START) {
-			msg("Nothing to undo.");
+		rval = ep->log->seq(ep->log, &key, &data, R_NEXT);
+		if (rval == 1) {
+			msg("No further changes to roll forward.");
 			nolog = 0;
 			return (1);
 		}
-
-		if (ep->log->seq(ep->log, &key, &data, R_PREV))
+		if (rval)
 			LOG_ERR;
 
-		switch(ltype) {
+		switch(*(u_char *)data.data) {
 		case LOG_CURSOR:
 			if (didop != 0) {
-				bcopy(data.data, rp, sizeof(MARK));
-				if ((rval = ep->log->seq(ep->log,
-				    &key, &data, R_PREV)) && rval != 1)
-					LOG_ERR;
+				bcopy(data.data +
+				    sizeof(u_char), rp, sizeof(MARK));
 				nolog = 0;
-				c_ltype = LOG_NOTYPE;
-TRACE("undo complete: cursor @ %u\n", RRR);
 				return (0);
 			}
 			break;
 		case LOG_LINE_APPEND:
 		case LOG_LINE_INSERT:
 			didop = 1;
-			bcopy(data.data, &lno, sizeof(recno_t));
-			if (file_dline(ep, lno))
+			bcopy(data.data +
+			    sizeof(u_char), &lno, sizeof(recno_t));
+			if (file_iline(ep, lno, data.data + sizeof(u_char) +
+			    sizeof(recno_t), data.size - sizeof(u_char) -
+			    sizeof(recno_t))) {
+				nolog = 0;
 				return (1);
+			}
 			break;
 		case LOG_LINE_DELETE:
 			didop = 1;
-			bcopy(data.data, &lno, sizeof(recno_t));
-			if (ep->log->seq(ep->log, &key, &data, R_PREV))
-				LOG_ERR;
-			if (file_iline(ep, lno, data.data, data.size))
+			bcopy(data.data +
+			    sizeof(u_char), &lno, sizeof(recno_t));
+			if (file_dline(ep, lno)) {
+				nolog = 0;
 				return (1);
+			}
 			break;
 		case LOG_LINE_RESET:
 			didop = 1;
-			bcopy(data.data, &lno, sizeof(recno_t));
-			if (ep->log->seq(ep->log, &key, &data, R_PREV))
+			if (ep->log->seq(ep->log, &key, &data, R_NEXT))
 				LOG_ERR;
-			if (file_sline(ep, lno, data.data, data.size))
+			bcopy(data.data +
+			    sizeof(u_char), &lno, sizeof(recno_t));
+			if (file_sline(ep, lno, data.data + sizeof(u_char) +
+			    sizeof(recno_t), data.size - sizeof(u_char) -
+			    sizeof(recno_t)))
 				return (1);
 			break;
 		case LOG_MARK:
 			didop = 1;
-			bcopy(data.data, &m, sizeof(MARK));
-			if (ep->log->seq(ep->log, &key, &data, R_PREV))
-				LOG_ERR;
-			if (mark_set(*(u_char *)data.data, &m))
+			bcopy(data.data +
+			    sizeof(u_char) + sizeof(u_char), &m, sizeof(MARK));
+			if (mark_set(*(((u_char *)data.data) + 1), &m)) {
+				nolog = 0;
 				return (1);
+			}
 			break;
 		default:
 			abort();
