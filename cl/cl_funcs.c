@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_funcs.c,v 10.62 2000/07/23 11:14:44 skimo Exp $ (Berkeley) $Date: 2000/07/23 11:14:44 $";
+static const char sccsid[] = "$Id: cl_funcs.c,v 10.63 2001/04/21 06:36:24 skimo Exp $ (Berkeley) $Date: 2001/04/21 06:36:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,36 +32,8 @@ static const char sccsid[] = "$Id: cl_funcs.c,v 10.62 2000/07/23 11:14:44 skimo 
 
 static void cl_rdiv __P((SCR *));
 
-/*
- * cl_addstr --
- *	Add len bytes from the string at the cursor, advancing the cursor.
- *
- * PUBLIC: int cl_waddstr __P((SCR *, const CHAR_T *, size_t));
- */
-int
-cl_waddstr(sp, str, len)
-	SCR *sp;
-	const CHAR_T *str;
-	size_t len;
-{
-	CONST char *np;
-	size_t nlen;
-
-	INT2DISP(sp, str, len, np, nlen);
-	cl_addstr(sp, np, nlen);
-}
-
-/*
- * cl_addstr --
- *	Add len bytes from the string at the cursor, advancing the cursor.
- *
- * PUBLIC: int cl_addstr __P((SCR *, const char *, size_t));
- */
-int
-cl_addstr(sp, str, len)
-	SCR *sp;
-	const char *str;
-	size_t len;
+static int 
+addstr4(SCR *sp, void *str, size_t len, int wide)
 {
 	CL_PRIVATE *clp;
 	WINDOW *win;
@@ -83,12 +55,51 @@ cl_addstr(sp, str, len)
 		(void)wstandout(win);
 	}
 
-	if (waddnstr(win, str, len) == ERR)
+#ifdef USE_WIDECHAR
+	if (wide) {
+	    wchar_t *dstr;
+	    size_t dlen;
+	    INT2DISP(sp, str, len, dstr, dlen);
+	    if (waddnwstr(win, (wchar_t*) str, len) == ERR)
 		return (1);
+	} else 
+#endif
+	    if (waddnstr(win, str, len) == ERR)
+		    return (1);
 
 	if (iv)
 		(void)wstandend(win);
 	return (0);
+}
+
+/*
+ * cl_waddstr --
+ *	Add len bytes from the string at the cursor, advancing the cursor.
+ *
+ * PUBLIC: int cl_waddstr __P((SCR *, const CHAR_T *, size_t));
+ */
+int
+cl_waddstr(sp, str, len)
+	SCR *sp;
+	const CHAR_T *str;
+	size_t len;
+{
+    addstr4(sp, (void *)str, len, 1);
+}
+
+/*
+ * cl_addstr --
+ *	Add len bytes from the string at the cursor, advancing the cursor.
+ *
+ * PUBLIC: int cl_addstr __P((SCR *, const char *, size_t));
+ */
+int
+cl_addstr(sp, str, len)
+	SCR *sp;
+	const char *str;
+	size_t len;
+{
+    addstr4(sp, (void *)str, len, 0);
 }
 
 /*

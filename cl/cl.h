@@ -6,16 +6,19 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: cl.h,v 10.25 2000/09/02 12:31:42 skimo Exp $ (Berkeley) $Date: 2000/09/02 12:31:42 $
+ *	$Id: cl.h,v 10.26 2001/04/21 06:36:24 skimo Exp $ (Berkeley) $Date: 2001/04/21 06:36:24 $
  */
 #ifdef USE_SLANG_CURSES
 #include <slcurses.h>
 #else
-#ifdef HAVE_NCURSES_H
+#ifdef HAVE_NCURSES_H /* { */
 #include <ncurses.h>
+#ifndef HAVE_CURSES_ADDNWSTR /* { */
+#define waddnwstr   waddchnstr
+#endif /* } */
 #else
 #include <curses.h>
-#endif
+#endif /* } */
 #endif
 
 typedef struct _cl_private {

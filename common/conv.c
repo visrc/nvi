@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: conv.c,v 1.7 2000/08/27 17:15:04 skimo Exp $ (Berkeley) $Date: 2000/08/27 17:15:04 $";
+static const char sccsid[] = "$Id: conv.c,v 1.8 2001/04/21 06:36:25 skimo Exp $ (Berkeley) $Date: 2001/04/21 06:36:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,6 +26,9 @@ static const char sccsid[] = "$Id: conv.c,v 1.7 2000/08/27 17:15:04 skimo Exp $ 
 #include <unistd.h>
 
 #include "common.h"
+#ifdef HAVE_NCURSESW
+#include <ncurses.h>
+#endif
 
 int 
 default_char2int(CONV *conv, const char * str, ssize_t len, CHAR_T **tostr, size_t *tolen, size_t *blen)
@@ -55,6 +58,30 @@ default_int2char(CONV *conv, const CHAR_T * str, ssize_t len, char **tostr, size
     return 0;
 }
 
+//#ifdef HAVE_NCURSESW
+#ifdef HAVE_ADDNWSTR
+int 
+default_int2disp(CONV *conv, const CHAR_T * str, ssize_t len, char **tostr, size_t *tolen, size_t *blen)
+{
+    int i, j;
+    chtype *dest;
+
+    BINC_RET(NULL, *tostr, *blen, len * sizeof(chtype));
+
+    dest = *tostr;
+
+    for (i = 0, j = 0; i < len; ++i)
+	if (str[i] > 0xffff) {
+	    dest[j++] = 0xfffd;
+	} else
+	    dest[j++] = str[i];
+    *tolen = j;
+
+    return 0;
+}
+
+#else
+
 int 
 default_int2disp(CONV *conv, const CHAR_T * str, ssize_t len, char **tostr, size_t *tolen, size_t *blen)
 {
@@ -72,6 +99,7 @@ default_int2disp(CONV *conv, const CHAR_T * str, ssize_t len, char **tostr, size
 
     return 0;
 }
+#endif
 
 int 
 gb2int(CONV *conv, const char * str, ssize_t len, CHAR_T **tostr, size_t *tolen, size_t *blen)
