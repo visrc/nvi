@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: options.h,v 5.16 1993/05/27 21:09:42 bostic Exp $ (Berkeley) $Date: 1993/05/27 21:09:42 $
+ *	$Id: options.h,v 5.17 1993/05/28 00:19:22 bostic Exp $ (Berkeley) $Date: 1993/05/28 00:19:22 $
  */
 
 typedef struct _option {
@@ -55,6 +55,7 @@ int	f_mesg __P((struct _scr *, struct _option *, char *, u_long));
 int	f_modelines __P((struct _scr *, struct _option *, char *, u_long));
 int	f_number __P((struct _scr *, struct _option *, char *, u_long));
 int	f_paragraph __P((struct _scr *, struct _option *, char *, u_long));
+int	f_readonly __P((struct _scr *, struct _option *, char *, u_long));
 int	f_ruler __P((struct _scr *, struct _option *, char *, u_long));
 int	f_section __P((struct _scr *, struct _option *, char *, u_long));
 int	f_shiftwidth __P((struct _scr *, struct _option *, char *, u_long));

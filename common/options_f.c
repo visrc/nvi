@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 5.9 1993/05/08 16:08:24 bostic Exp $ (Berkeley) $Date: 1993/05/08 16:08:24 $";
+static char sccsid[] = "$Id: options_f.c,v 5.10 1993/05/28 00:19:23 bostic Exp $ (Berkeley) $Date: 1993/05/28 00:19:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -257,6 +257,18 @@ DECL(f_paragraph)
 	}
 	F_SET(&sp->opts[O_PARAGRAPHS], OPT_ALLOCATED | OPT_SET);
 	return (ps_list(sp));
+}
+
+DECL(f_readonly)
+{
+	if (turnoff) {
+		O_CLR(sp, O_READONLY);
+		F_CLR(sp->ep, F_RDONLY);
+	} else {
+		O_SET(sp, O_READONLY);
+		F_SET(sp->ep, F_RDONLY);
+	}
+	return (0);
 }
 
 DECL(f_ruler)
