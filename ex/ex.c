@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.20 1993/08/27 18:14:05 bostic Exp $ (Berkeley) $Date: 1993/08/27 18:14:05 $";
+static char sccsid[] = "$Id: ex.c,v 8.21 1993/08/29 11:27:56 bostic Exp $ (Berkeley) $Date: 1993/08/29 11:27:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -459,7 +459,7 @@ ex_cmd(sp, ep, exc, arg1_len)
 			} else
 				cmd.addr1.lno = 1;
 			cmd.addr1.cno = cmd.addr2.cno = 0;
-			cmd.flags |= E_ADDR2_ALL;
+			F_SET(&cmd, E_ADDR2_ALL);
 			break;
 		}
 		/* FALLTHROUGH */
@@ -527,7 +527,7 @@ two:		switch (cmd.addrcnt) {
 		case '!':				/* ! */
 			if (*exc == '!') {
 				++exc;
-				cmd.flags |= E_FORCE;
+				F_SET(&cmd, E_FORCE);
 			}
 			break;
 		case '+':				/* +cmd */
@@ -550,13 +550,13 @@ two:		switch (cmd.addrcnt) {
 			for (; *exc == '#' || *exc == 'l' || *exc == 'p'; ++exc)
 				switch (*exc) {
 				case '#':
-					cmd.flags |= E_F_HASH;
+					F_SET(&cmd, E_F_HASH);
 					break;
 				case 'l':
-					cmd.flags |= E_F_LIST;
+					F_SET(&cmd, E_F_LIST);
 					break;
 				case 'p':
-					cmd.flags |= E_F_PRINT;
+					F_SET(&cmd, E_F_PRINT);
 					break;
 				}
 			for (; *exc == '+' || *exc == '-'; ++exc)
@@ -573,16 +573,16 @@ two:		switch (cmd.addrcnt) {
 			for (;; ++exc)
 				switch (*exc) {
 				case '-':
-					cmd.flags |= E_F_DASH;
+					F_SET(&cmd, E_F_DASH);
 					break;
 				case '.':
-					cmd.flags |= E_F_DOT;
+					F_SET(&cmd, E_F_DOT);
 					break;
 				case '+':
-					cmd.flags |= E_F_PLUS;
+					F_SET(&cmd, E_F_PLUS);
 					break;
 				case '^':
-					cmd.flags |= E_F_CARAT;
+					F_SET(&cmd, E_F_CARAT);
 					break;
 				default:
 					goto end2;
@@ -601,13 +601,19 @@ end2:			break;
 				}
 				exc = endp;
 				/*
-				 * Fix up the addresses.  Count's only occur
-				 * with commands taking two addresses.  The
-				 * historic vi practice was to use the count
-				 * as an offset from the *second* address.
+				 * Fix the addresses.  Count's only occur with
+				 * commands taking two addresses.  Historic vi
+				 * practice was to use the count as an offset
+				 * from the *second* address.
 				 */
 				cmd.addr1 = cmd.addr2;
 				cmd.addr2.lno = cmd.addr1.lno + lcount - 1;
+				/*
+				 * Set the count flag; some underlying commands
+				 * (see join) do different things with counts
+				 * than with line addresses.
+				 */
+				F_SET(&cmd, E_COUNT);
 			}
 			break;
 		case 'l':				/* line */
@@ -697,15 +703,26 @@ addr2:	switch (cmd.addrcnt) {
 	case 2:
 		if (file_lline(sp, ep, &lcount))
 			return (1);
-		if (cmd.addr2.lno > lcount) {
-			if (lcount == 0)
-				msgq(sp, M_ERR, "The file is empty.");
-			else
-				msgq(sp, M_ERR,
-				    "Only %lu line%s in the file",
-				    lcount, lcount > 1 ? "s" : "");
-			return (1);
-		}
+		/*
+		 * Historic ex/vi permitted commands with counts to go past
+		 * EOF.  So, for example, if the file only had 5 lines, the
+		 * ex command "1,6>" would fail, but the command ">300"
+		 * would succeed.  Since we don't want to have to make all
+		 * of the underlying commands handle random line numbers,
+		 * fix it here.
+		 */
+		if (cmd.addr2.lno > lcount)
+			if (F_ISSET(&cmd, E_COUNT))
+				cmd.addr2.lno = lcount;
+			else {
+				if (lcount == 0)
+					msgq(sp, M_ERR, "The file is empty.");
+				else
+					msgq(sp, M_ERR,
+					    "Only %lu line%s in the file",
+					    lcount, lcount > 1 ? "s" : "");
+				return (1);
+			}
 		/* FALLTHROUGH */
 	case 1:
 		num = cmd.addr1.lno;
@@ -806,7 +823,7 @@ addr2:	switch (cmd.addrcnt) {
 	 * stuff to print out.
 	 */
 	 if (LF_ISSET(E_F_PRCLEAR))
-		 cmd.flags &= ~(E_F_HASH | E_F_LIST | E_F_PRINT);
+		F_CLR(&cmd, E_F_HASH | E_F_LIST | E_F_PRINT);
 
 	/*
 	 * If the command was successful, and there was an explicit flag to
@@ -835,7 +852,7 @@ addr2:	switch (cmd.addrcnt) {
 	if (F_ISSET(sp, S_AUTOPRINT) && O_ISSET(sp, O_AUTOPRINT))
 		LF_INIT(E_F_PRINT);
 	else
-		LF_INIT(cmd.flags & (E_F_HASH | E_F_LIST | E_F_PRINT));
+		LF_INIT(F_ISSET(&cmd, E_F_HASH | E_F_LIST | E_F_PRINT));
 
 	memset(&cmd, 0, sizeof(EXCMDARG));
 	cmd.addrcnt = 2;
