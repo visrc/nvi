@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_msg.c,v 10.60 1996/04/28 12:41:02 bostic Exp $ (Berkeley) $Date: 1996/04/28 12:41:02 $";
+static const char sccsid[] = "$Id: vs_msg.c,v 10.61 1996/04/30 18:56:35 bostic Exp $ (Berkeley) $Date: 1996/04/30 18:56:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -332,8 +332,15 @@ vs_msg(sp, mtype, line, len)
 	}
 
 	/*
-	 * Need up to three padding characters normally; a semi-colon and
-	 * two separating spaces.  If only a single line on the screen, add
+	 * If it's a vi message, strip the trailing <newline> so we can
+	 * try and paste messages together.
+	 */
+	if (line[len - 1] == '\n')
+		--len;
+
+	/*
+	 * Need up to two padding characters normally; a semi-colon and
+	 * a separating space.  If only a single line on the screen, add
 	 * some more for the trailing continuation message.
 	 *
 	 * XXX
@@ -343,7 +350,7 @@ vs_msg(sp, mtype, line, len)
 		(void)msg_cmsg(sp, CMSG_CONT_S, &padding);
 	else
 		padding = 0;
-	padding += 3;
+	padding += 2;
 
 	/*
 	 * If a message won't fit on a single line, try to split on a <blank>.
@@ -359,7 +366,7 @@ vs_msg(sp, mtype, line, len)
 			vs_output(sp, mtype, ".\n", 2);
 		else  {
 			vs_output(sp, mtype, ";", 1);
-			vs_output(sp, M_NONE, "  ", 2);
+			vs_output(sp, M_NONE, " ", 1);
 		}
 	for (cols = sp->cols - padding, s = line; len > 0; s = t) {
 		for (; isblank(*s) && --len != 0; ++s);
