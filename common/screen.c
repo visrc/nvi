@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 5.7 1993/04/19 15:24:43 bostic Exp $ (Berkeley) $Date: 1993/04/19 15:24:43 $";
+static char sccsid[] = "$Id: screen.c,v 5.8 1993/05/04 15:58:28 bostic Exp $ (Berkeley) $Date: 1993/05/04 15:58:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -144,6 +144,8 @@ mem:			msgq(orig, M_ERR,
 		sp->inc_lastch = '+';
 		sp->inc_lastval = 1;
 
+		HDR_INIT(sp->taghdr, next, prev);
+
 		sp->searchdir = NOTSET;
 		sp->csearchdir = CNOTSET;
 
@@ -216,6 +218,13 @@ scr_end(sp)
 		}
 		if (sp->tlast != NULL)
 			FREE(sp->tlast, strlen(sp->tlast) + 1);
+	}
+
+	{ TAG *tp;
+		while ((tp = sp->taghdr.next) != (TAG *)&sp->taghdr) {
+			HDR_DELETE(tp, next, prev, TAG);
+			FREE(tp, sizeof(TAG));
+		}
 	}
 
 	/* Free up search information. */
@@ -394,36 +403,18 @@ static int
 tag_copy(a, b)
 	SCR *a, *b;
 {
+	TAG *ap, *tp;
 	TAGF **atfp, **btfp;
-	TAG *atp, *btp, *tp;
 	int cnt;
 
-	/* Copy the tag stack. */
-	for (atp = a->thead; atp != NULL; atp = atp->prev) {
+	/* Initialize linked list. */
+	HDR_INIT(b->taghdr, next, prev);
+
+	for (ap = a->taghdr.next; ap != (TAG *)&a->taghdr; ap = ap->next) {
 		if ((tp = malloc(sizeof(TAG))) == NULL)
 			goto nomem;
-		if ((tp->tag = strdup(atp->tag)) == NULL) {
-			FREE(tp, sizeof(TAG));
-			goto nomem;
-		}
-		if ((tp->fname = strdup(atp->fname)) == NULL) {
-			FREE(tp, sizeof(TAG));
-			FREE(tp->tag, strlen(tp->tag) + 1);
-			goto nomem;
-		}
-		if ((tp->line = strdup(atp->line)) == NULL) {
-			FREE(tp, sizeof(TAG));
-			FREE(tp->tag, strlen(tp->tag) + 1);
-			FREE(tp->fname, strlen(tp->fname) + 1);
-			goto nomem;
-		}
-		tp->prev = NULL;
-		if (b->thead == NULL)
-			btp = b->thead = tp;
-		else {
-			btp->prev = tp;
-			btp = tp;
-		}
+		*tp = *ap;
+		HDR_INSERT(tp, &b->taghdr, next, prev, TAG);
 	}
 
 	/* Copy the list of tag files. */
