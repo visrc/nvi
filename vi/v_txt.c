@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 10.21 1995/11/05 14:41:50 bostic Exp $ (Berkeley) $Date: 1995/11/05 14:41:50 $";
+static char sccsid[] = "$Id: v_txt.c,v 10.22 1995/11/07 08:40:35 bostic Exp $ (Berkeley) $Date: 1995/11/07 08:40:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -399,7 +399,11 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 	 *
 	 * XXX
 	 * It would be nice if we could swallow backspaces and such, but it's
-	 * not all that easy to do.
+	 * not all that easy to do.  What we can do is turn off the common
+	 * error messages during the replay.  Otherwise, when the user enters
+	 * an illegal command, e.g., "Ia<erase><erase><erase><erase>b<escape>",
+	 * and then does a '.', they get a list of error messages after command
+	 * completion.
 	 */
 	rcol = 0;
 	if (LF_ISSET(TXT_REPLAY)) {
@@ -428,7 +432,12 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 next:	if (v_event_get(sp, evp, 0, ec_flags))
 		return (1);
 
-	/* If file completion overwrote part of the screen, clean up. */
+	/*
+	 * If file completion overwrote part of the screen, clean up.  We
+	 * don't do this as part of the normal message resolution because
+	 * we know the user is on the colon command line and there's no
+	 * reason to make them enter an explicit character to continue.
+	 */
 	if (filec_redraw) {
 		filec_redraw = 0;
 
@@ -499,6 +508,8 @@ next:	if (v_event_get(sp, evp, 0, ec_flags))
 				msgq(sp, M_ERR,
 "191|Abbreviation exceeded expansion limit: characters discarded");
 			abcnt = 0;
+			if (LF_ISSET(TXT_REPLAY))
+				goto done;
 			goto ret;
 		}
 	} else
@@ -897,7 +908,8 @@ leftmargin:		tp->lb[sp->cno - 1] = ' ';
 
 		/* If nothing to erase, bell the user. */
 		if (sp->cno <= tp->offset) {
-			txt_nomorech(sp);
+			if (!LF_ISSET(TXT_REPLAY))
+				txt_nomorech(sp);
 			break;
 		}
 
@@ -932,7 +944,8 @@ leftmargin:		tp->lb[sp->cno - 1] = ' ';
 		 * If at offset, nothing to erase so bell the user.
 		 */
 		if (sp->cno <= tp->offset) {
-			txt_nomorech(sp);
+			if (!LF_ISSET(TXT_REPLAY))
+				txt_nomorech(sp);
 			break;
 		}
 
@@ -1017,7 +1030,8 @@ leftmargin:		tp->lb[sp->cno - 1] = ' ';
 
 		/* If at offset, nothing to erase so bell the user. */
 		if (sp->cno <= tp->offset) {
-			txt_nomorech(sp);
+			if (!LF_ISSET(TXT_REPLAY))
+				txt_nomorech(sp);
 			break;
 		}
 
@@ -1106,6 +1120,8 @@ ins_ch:		/*
 		    evp->e_value != K_FORMFEED && evp->e_value != K_TAB) {
 			msgq(sp, M_BERR,
 			    "192|Illegal character; quote to enter");
+			if (LF_ISSET(TXT_REPLAY)
+				goto done;
 			break;
 		}
 
@@ -1209,16 +1225,23 @@ ebuf_chk:	if (sp->cno >= tp->len) {
 	}
 
 #if defined(DEBUG) && 1
-	if (sp->cno + tp->insert + tp->owrite != tp->len)
+	if (sp->cno + tp->insert + tp->owrite != tp->len) {
 		msgq(sp, M_ERR,
 		    "len %u != cno: %u ai: %u insert %u overwrite %u",
 		    tp->len, sp->cno, tp->ai, tp->insert, tp->owrite);
-	tp->len = sp->cno + tp->insert + tp->owrite;
+		if (LF_ISSET(TXT_REPLAY)
+			goto done;
+		tp->len = sp->cno + tp->insert + tp->owrite;
+	}
 #endif
 
 ret:	/* If replaying text, keep going. */
 	if (LF_ISSET(TXT_REPLAY))
 		goto replay;
+
+	/* Resolve any messages. */
+	if (vip->totalcount != 0 && !filec_redraw && vs_resolve(sp))
+		return (1);
 
 	/*
 	 * Reset the line and update the screen.  (The txt_showmatch() code
@@ -1239,18 +1262,16 @@ ret:	/* If replaying text, keep going. */
 	/* Keep going. */
 	goto next;
 
-	if (0) {
-done:		/* Leave input mode. */
-		F_CLR(sp, S_INPUT);
+done:	/* Leave input mode. */
+	F_CLR(sp, S_INPUT);
 
-		/* If recording for playback, save it. */
-		if (LF_ISSET(TXT_RECORD))
-			vip->rep_cnt = rcol;
+	/* If recording for playback, save it. */
+	if (LF_ISSET(TXT_RECORD))
+		vip->rep_cnt = rcol;
 
-		/* Set the final cursor position. */
-		vp->m_final.lno = sp->lno;
-		vp->m_final.cno = sp->cno;
-	}
+	/* Set the final cursor position. */
+	vp->m_final.lno = sp->lno;
+	vp->m_final.cno = sp->cno;
 	return (0);
 
 err:
@@ -1623,7 +1644,9 @@ txt_backup(sp, tiqh, tp, flagsp)
 
 	/* Get a handle on the previous TEXT structure. */
 	if ((ntp = tp->q.cqe_prev) == (void *)tiqh) {
-		msgq(sp, M_BERR, "193|Already at the beginning of the insert");
+		if (!FL_ISSET(*flagsp, TXT_REPLAY))
+			msgq(sp, M_BERR,
+			    "193|Already at the beginning of the insert");
 		return (tp);
 	}
 
