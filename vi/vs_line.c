@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_line.c,v 10.35 2001/07/01 20:22:57 skimo Exp $ (Berkeley) $Date: 2001/07/01 20:22:57 $";
+static const char sccsid[] = "$Id: vs_line.c,v 10.36 2001/08/29 12:23:38 skimo Exp $ (Berkeley) $Date: 2001/08/29 12:23:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -191,6 +191,12 @@ empty:					(void)gp->scr_addstr(sp,
 		(void)gp->scr_move(sp, oldy, oldx);
 		return (0);
 	}
+
+	/* If we shortened this line in another screen, the cursor
+	 * position may have fallen off.
+	 */
+	if (sp->cno >= len)
+	    sp->cno = len - 1;
 
 	/*
 	 * If we just wrote this or a previous line, we cached the starting
