@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 5.11 1992/12/05 11:06:32 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:06:32 $";
+static char sccsid[] = "$Id: search.c,v 5.12 1993/02/11 18:21:51 bostic Exp $ (Berkeley) $Date: 1993/02/11 18:21:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -47,47 +47,55 @@ resetup(rep, dir, ptrn, epp, deltap, flags)
 noprev:		msg("No previous search pattern.");
 		return (1);
 	}
+
+	/* Set return values to defaults. */
 	if (deltap != NULL)
 		*deltap = 0;
 	if (epp != NULL)
 		*epp = NULL;
-	if (ptrn) {
-		reflags = 0;				/* Set flags. */
-		if (ISSET(O_EXTENDED))
-			reflags |= REG_EXTENDED;
-		if (ISSET(O_IGNORECASE))
-			reflags |= REG_ICASE;
-							/* Parse the string. */
-		if (flags & SEARCH_PARSE) {
-			delim[0] = *ptrn++;
-			delim[1] = '\0';
-			ep = ptrn;
-			ptrn = USTRSEP(&ep, delim);
-			if (deltap != NULL && ep != NULL)
-				*deltap = USTRTOL(ep, &ep, 10);
-			if (epp == NULL && *ep) {
-				msg("Characters after search string.");
-				return (1);
-			}
-			if (*ptrn == '\0') {
-				if (searchdir == NOTSET)
-					goto noprev;
-				*rep = &sre;
-			}
-		}
-TRACE("ptrn is <%s>\n", ptrn);
-							/* Compile RE. */
-		eval = regcomp(*rep, (char *)ptrn, reflags);
-		if (eval != 0) {
-			re_error(eval, *rep);
+
+	/*
+	 * Use saved pattern if no pattern supplied.  Only the pattern
+	 * is retained, historic vi did not reuse any delta supplied.
+	 */
+	if (ptrn == NULL) {
+		*rep = &sre;
+		return (0);
+	}
+
+	reflags = 0;				/* Set flags. */
+	if (ISSET(O_EXTENDED))
+		reflags |= REG_EXTENDED;
+	if (ISSET(O_IGNORECASE))
+		reflags |= REG_ICASE;
+						/* Parse the string. */
+	if (flags & SEARCH_PARSE) {
+		delim[0] = *ptrn++;
+		delim[1] = '\0';
+		ep = ptrn;
+		ptrn = USTRSEP(&ep, delim);
+		if (deltap != NULL && ep != NULL)
+			*deltap = USTRTOL(ep, &ep, 10);
+		if (epp == NULL && ep != NULL && *ep) {
+			msg("Characters after search string.");
 			return (1);
 		}
-		if (flags & SEARCH_SET) {
-			searchdir = dir;
-			sre = **rep;
+		if (*ptrn == '\0') {
+			if (searchdir == NOTSET)
+				goto noprev;
+			*rep = &sre;
 		}
-	} else
-		*rep = &sre;
+	}
+						/* Compile the RE. */
+	eval = regcomp(*rep, (char *)ptrn, reflags);
+	if (eval != 0) {
+		re_error(eval, *rep);
+		return (1);
+	}
+	if (flags & SEARCH_SET) {
+		searchdir = dir;
+		sre = **rep;
+	}
 	return (0);
 }
 
