@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vi.c,v 10.45 1996/05/04 18:50:51 bostic Exp $ (Berkeley) $Date: 1996/05/04 18:50:51 $";
+static const char sccsid[] = "$Id: vi.c,v 10.46 1996/05/17 14:56:17 bostic Exp $ (Berkeley) $Date: 1996/05/17 14:56:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -302,10 +302,9 @@ gc_event:
 		/*
 		 * Some vi row movements are "attracted" to the last position
 		 * set, i.e. the VM_RCM commands are moths to the VM_RCM_SET
-		 * commands' candle.  It's broken into two parts.  Here we deal
-		 * with the command flags.  In sp->relative(), we deal with the
-		 * screen flags.  If the movement is to the EOL the vi command
-		 * handles it.  If it's to the beginning, we handle it here.
+		 * commands' candle.  If the movement is to the EOL the vi
+		 * command handles it.  If it's to the beginning, we handle it
+		 * here.
 		 *
 		 * Note, some commands (e.g. _, ^) don't set the VM_RCM_SETFNB
 		 * flag, but do the work themselves.  The reason is that they
