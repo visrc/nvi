@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.72 1993/02/26 10:09:08 bostic Exp $ (Berkeley) $Date: 1993/02/26 10:09:08 $";
+static char sccsid[] = "$Id: ex.c,v 5.73 1993/02/28 11:52:46 bostic Exp $ (Berkeley) $Date: 1993/02/28 11:52:46 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -52,9 +52,9 @@ ex(ep)
 
 	if (ex_init(ep))
 		return (1);
+	status(ep, SCRLNO(ep));
 	do {
-		if (ex_gb(ep, ISSET(O_PROMPT) ? ':' : 0,
-		    &p, &len, GB_MAPCOMMAND) || !p)
+		if (ex_gb(ep, 1, &p, &len, GB_MAPCOMMAND))
 			continue;
 		if (*p) {
 			(void)fputc('\n', ep->stdfp);
@@ -65,7 +65,7 @@ ex(ep)
 			memmove(defcom, DEFCOM, sizeof(DEFCOM));
 			ex_cstring(ep, defcom, sizeof(DEFCOM) - 1, 0);
 		}
-	} while (FF_SET(ep, F_MODE_EX) && !FF_ISSET(ep, F_FILE_RESET));
+	} while (FF_ISSET(ep, F_MODE_EX) && !FF_ISSET(ep, F_FILE_RESET));
 	return (ex_end(ep));
 }
 
@@ -133,6 +133,7 @@ ex_cstring(ep, cmd, len, doquoting)
 	u_char *cmd;
 	register int len, doquoting;
 {
+	u_int saved_mode;
 	register int cnt;
 	register u_char *p, *t;
 
@@ -142,6 +143,7 @@ ex_cstring(ep, cmd, len, doquoting)
 	 */
 	if (doquoting)
 		QINIT;
+	saved_mode = FF_ISSET(ep, F_MODE_EX | F_MODE_VI | F_FILE_RESET);
 	for (p = t = cmd, cnt = 0;; ++cnt, ++t, --len) {
 		if (len == 0)
 			goto cend;
@@ -161,9 +163,10 @@ cend:			if (p > cmd) {
 			}
 			if (len == 0)
 				return (0);
-			if (ep->flags & F_FILE_RESET) {
+			if (saved_mode != FF_ISSET(ep,
+			    F_MODE_EX | F_MODE_VI | F_FILE_RESET)) {
 				msg(ep, M_ERROR,
-				    "File changed, remaining input discarded.");
+		    "File or status changed, remaining input discarded.");
 				return (0);
 			}
 			if (doquoting)
@@ -202,6 +205,7 @@ ex_cmd(ep, exc)
 	EXCMDLIST *cp;
 	recno_t lcount, num;
 	long flagoff;
+	u_int saved_mode;
 	int flags, uselastcmd;
 	u_char *endp;
 
@@ -534,8 +538,8 @@ addr2:	switch(cmd.addrcnt) {
 			if (lcount == 0)
 				msg(ep, M_ERROR, "The file is empty.");
 			else
-				msg(ep, M_ERROR,
-				    "Only %lu lines in the file.", lcount);
+				msg(ep, M_ERROR, "Only %lu line%s in the file",
+				    lcount, lcount > 1 ? "s" : "");
 			return (1);
 		}
 		/* FALLTHROUGH */
@@ -558,9 +562,10 @@ addr2:	switch(cmd.addrcnt) {
 			msg(ep, M_ERROR, "%lu is an invalid address.", num);
 			return (1);
 		}
-		if (num > file_lline(ep)) {
-			msg(ep, M_ERROR,
-			    "Only %lu lines in the file.", file_lline(ep));
+		lcount = file_lline(ep);
+		if (num > lcount) {
+			msg(ep, M_ERROR, "Only %lu line%s in the file",
+			    lcount, lcount > 1 ? "s" : "");
 			return (1);
 		}
 		break;
@@ -618,12 +623,16 @@ addr2:	switch(cmd.addrcnt) {
 	if (!FF_ISSET(ep, F_DUMMY | F_IN_GLOBAL))
 		(void)log_cursor(ep);
 
-	/* Do the command. */
+	/*
+	 * Do the command.  If the world changes, or we're just starting
+	 * up, we're done.
+	 */
+	saved_mode = FF_ISSET(ep, F_MODE_EX | F_MODE_VI | F_FILE_RESET);
 	if ((cp->fn)(ep, &cmd))
 		return (1);
-
-	/* We may be editing a new file. */
-	if (FF_ISSET(ep, F_DUMMY | F_FILE_RESET))
+	if (saved_mode != FF_ISSET(ep, F_MODE_EX | F_MODE_VI | F_FILE_RESET))
+		return (0);
+	if (FF_ISSET(ep, F_DUMMY))
 		return (0);
 
 	/*
@@ -653,7 +662,7 @@ addr2:	switch(cmd.addrcnt) {
 		SCRLNO(ep) += flagoff;
 	}
 
-	if (FF_ISSET(ep, F_AUTOPRINT | F_MODE_EX) && ISSET(O_AUTOPRINT))
+	if (FF_ISSET(ep, F_AUTOPRINT) && ISSET(O_AUTOPRINT))
 		flags = E_F_PRINT;
 	else
 		flags = cmd.flags & (E_F_HASH | E_F_LIST | E_F_PRINT);
