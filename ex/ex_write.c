@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 8.14 1993/11/20 10:05:44 bostic Exp $ (Berkeley) $Date: 1993/11/20 10:05:44 $";
+static char sccsid[] = "$Id: ex_write.c,v 8.15 1993/12/02 11:51:39 bostic Exp $ (Berkeley) $Date: 1993/12/02 11:51:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -104,10 +104,10 @@ exwr(sp, ep, cmdp, cmd)
 	EXCMDARG *cmdp;
 	enum which cmd;
 {
-	register char *p;
+	EX_PRIVATE *exp;
 	MARK rm;
-	int flags;
-	char *name;
+	int flags, off;
+	char *name, *p;
 
 	/* All write commands can have an associated '!'. */
 	LF_INIT(FS_POSSIBLE);
@@ -115,7 +115,7 @@ exwr(sp, ep, cmdp, cmd)
 		LF_SET(FS_FORCE);
 
 	/* If no more arguments, just write the file back. */
-	for (p = cmdp->argv[0]; *p && isblank(*p); ++p);
+	for (p = cmdp->argv[0]->bp; *p && isblank(*p); ++p);
 	if (*p == '\0') {
 		if (F_ISSET(cmdp, E_ADDR2_ALL))
 			LF_SET(FS_ALL);
@@ -124,16 +124,17 @@ exwr(sp, ep, cmdp, cmd)
 	}
 
 	/* If "write !" it's a pipe to a utility. */
+	exp = EXP(sp);
 	if (cmd == WRITE && *p == '!') {
-		for (; *p && isblank(*p); ++p);
+		for (++p; *p && isblank(*p); ++p);
 		if (*p == '\0') {
 			msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
 			return (1);
 		}
-		if (argv_exp1(sp, ep, cmdp, p, 0))
+		if (argv_exp1(sp, ep, cmdp, p, strlen(p), 0))
 			return (1);
-		if (filtercmd(sp, ep,
-		    &cmdp->addr1, &cmdp->addr2, &rm, ++p, FILTER_WRITE))
+		if (filtercmd(sp, ep, &cmdp->addr1, &cmdp->addr2,
+		    &rm, cmdp->argv[exp->argsoff - 1]->bp, FILTER_WRITE))
 			return (1);
 		sp->lno = rm.lno;
 		return (0);
@@ -148,15 +149,16 @@ exwr(sp, ep, cmdp, cmd)
 	}
 
 	/* Build an argv so we get an argument count and file expansion. */
-	if (argv_exp2(sp, ep, cmdp, p, 0))
+	off = exp->argsoff;
+	if (argv_exp2(sp, ep, cmdp, p, strlen(p), 0))
 		return (1);
 
-	switch (cmdp->argc) {
+	switch (exp->argsoff - off) {
 	case 0:
 		name = NULL;
 		break;
 	case 1:
-		name = (char *)cmdp->argv[0];
+		name = cmdp->argv[exp->argsoff - 1]->bp;
 		set_alt_name(sp, name);
 		break;
 	default:
