@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 8.8 1994/03/14 10:37:46 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:37:46 $";
+static char sccsid[] = "$Id: ex_print.c,v 8.9 1994/04/10 16:32:03 bostic Exp $ (Berkeley) $Date: 1994/04/10 16:32:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -95,12 +95,13 @@ ex_print(sp, ep, fp, tp, flags)
 	MARK *fp, *tp;
 	register int flags;
 {
-	register int ch, col, rlen;
 	recno_t from, to;
 	size_t len;
-	int cnt;
+	u_long ts;
+	int ch, cnt, col, rlen;
 	char *p, buf[10];
 
+	ts = O_VAL(sp, O_TABSTOP);
 	F_SET(sp, S_INTERRUPTIBLE);
 	for (from = fp->lno, to = tp->lno; from <= to; ++from) {
 		/* Display the line number. */
@@ -145,8 +146,8 @@ ex_print(sp, ep, fp, tp, flags)
 			else {
 				ch &= 0x7f;
 				if (ch == '\t') {
-					while (col < sp->cols &&
-					    ++col % O_VAL(sp, O_TABSTOP))
+					for (len = ts - col % ts;
+					    col < sp->cols && len--; ++col)
 						(void)ex_printf(EXCOOKIE, " ");
 					if (col == sp->cols) {
 						col = 0;
