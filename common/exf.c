@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.79 1994/06/25 12:05:41 bostic Exp $ (Berkeley) $Date: 1994/06/25 12:05:41 $";
+static char sccsid[] = "$Id: exf.c,v 8.80 1994/06/26 09:56:34 bostic Exp $ (Berkeley) $Date: 1994/06/26 09:56:34 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -419,6 +419,8 @@ err:	if (frp->tname != NULL) {
 		free(ep->rcv_path);
 		ep->rcv_path = NULL;
 	}
+	if (ep->db != NULL)
+		(void)ep->db->close(ep->db);
 	FREE(ep, sizeof(EXF));
 	return (1);
 }
@@ -473,6 +475,11 @@ file_end(sp, ep, force)
 	/*
 	 * Delete recovery files, close the open descriptor, free recovery
 	 * memory.  See recover.c for a description of the protocol.
+	 *
+	 * XXX
+	 * Unlink backup file first, we can detect that the recovery file
+	 * doesn't reference anything when the user tries to recover it.
+	 * There's a race, here, obviously, but it's fairly small.
 	 */
 	if (!F_ISSET(ep, F_RCV_NORM)) {
 		if (ep->rcv_path != NULL && unlink(ep->rcv_path))
