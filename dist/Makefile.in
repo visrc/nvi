@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.47 1996/04/29 21:04:20 bostic Exp $ (Berkeley) $Date: 1996/04/29 21:04:20 $
+#	$Id: Makefile.in,v 8.48 1996/04/30 11:20:23 bostic Exp $ (Berkeley) $Date: 1996/04/30 11:20:23 $
 
 srcdir=	@srcdir@/..
 CC=	@CC@
@@ -69,50 +69,69 @@ rm=	@vi_cv_path_rm@
 strip=	@vi_cv_path_strip@
 
 prefix=	@prefix@
-exec_prefix=@exec_prefix@
 bindir=	@bindir@
 datadir=@datadir@
-transform=@program_transform_name@
-
-install: all install_init
-	$(mv) nvi $(bindir)/`echo nvi | sed '$(transform)'`
-	(cd $(bindir) && $(ln) \
-	    $(bindir)/`echo nvi | sed '$(transform)'` \
-	    $(bindir)/`echo nex | sed '$(transform)'`)
-	(cd $(bindir) && $(ln) \
-	    $(bindir)/`echo nvi | sed '$(transform)'` \
-	    $(bindir)/`echo nview | sed '$(transform)'`)
-
-install_asvi: all install_init
-	$(mv) nvi $(bindir)/`echo vi | sed '$(transform)'`
-	(cd $(bindir) && $(ln) \
-	    $(bindir)/`echo vi | sed '$(transform)'` \
-	    $(bindir)/`echo ex | sed '$(transform)'`)
-	(cd $(bindir) && $(ln) \
-	    $(bindir)/`echo vi | sed '$(transform)'` \
-	    $(bindir)/`echo view | sed '$(transform)'`)
+mandir=	@mandir@
+exec_prefix=@exec_prefix@
 
 dmode=	755
+emode=	555
 fmode=	444
+
+transform=@program_transform_name@
+
+install: all install_common
+	@echo "Installing vi, ex, view: $(bindir)..."
+	@sh -c 'fv=$(bindir)/`echo nvi | sed '$(transform)'`; \
+	    fe=`echo nex | sed '$(transform)'`; \
+	    fn=`echo nview | sed '$(transform)'`; \
+	    $(mv) nvi $$fv && cd $(bindir) && \
+	    $(rm) -f $$fe $$fn && $(ln) $$fv $$fe && $(ln) $$fv $$fn'
+	@echo "Installing man pages: $(mandir)/cat1/..."
+	@sh -c 'cd $(srcdir)/docs/USD.doc/vi.man && \
+	    $(cp) vi.0 $(mandir)/cat1/nvi.0 && cd $(mandir)/cat1 && \
+	    $(chmod) $(fmode) nvi.0 && $(rm) nex.0 nview.0 && \
+	    $(ln) nvi.0 nex.0 && $(ln) nvi.0 nview.0'
+
+install_asvi: all install_common
+	@echo "Installing vi, ex, view: $(bindir)..."
+	@sh -c 'fv=$(bindir)/`echo vi | sed '$(transform)'`; \
+	    fe=`echo ex | sed '$(transform)'`; \
+	    fn=`echo view | sed '$(transform)'`; \
+	    $(mv) nvi $$fv && cd $(bindir) && \
+	    $(rm) -f $$fe $$fn && $(ln) $$fv $$fe && $(ln) $$fv $$fn'
+	@echo "Installing man pages: $(mandir)/cat1/..."
+	@sh -c 'cd $(srcdir)/docs/USD.doc/vi.man && \
+	    $(cp) vi.0 $(mandir)/cat1/vi.0 && cd $(mandir)/cat1 && \
+	    $(chmod) $(fmode) vi.0 && $(rm) ex.0 view.0 && \
+	    $(ln) vi.0 ex.0 && $(ln) vi.0 view.0'
+
 cat=	dutch english german ru_SU.KOI8-R swedish
-install_init:
-	[ -f $(chmod) ] && [ -f $(cp) ] && [ -f $(ln) ] && \
-	    [ -f $(mkdir) ] && [ -f $(mv) ] && [ -f $(rm) ] && [ -f $(strip) ]
-	$(rm) -rf $(datadir)/vi
-	$(mkdir) $(datadir)/vi && $(chmod) $(dmode) $(datadir)/vi
-	$(mkdir) $(datadir)/vi/catalog && \
+install_common:
+	[ -f $(chmod) ]
+	[ -f $(cp) ]
+	[ -f $(ln) ]
+	[ -f $(mkdir) ]
+	[ -f $(mv) ]
+	[ -f $(rm) ]
+	@$(rm) -rf $(datadir)/vi
+	@$(mkdir) $(datadir)/vi && $(chmod) $(dmode) $(datadir)/vi
+	@echo "Installing message catalogs: $(datadir)/vi/catalog..."
+	@$(mkdir) $(datadir)/vi/catalog && \
 	    $(chmod) $(dmode) $(datadir)/vi/catalog
-	(cd $(srcdir)/catalog && $(cp) $(cat) $(datadir)/vi/catalog && \
+	@(cd $(srcdir)/catalog && $(cp) $(cat) $(datadir)/vi/catalog && \
 	    cd $(datadir)/vi/catalog && $(chmod) $(fmode) *)
-	$(mkdir) $(datadir)/vi/perl && $(chmod) $(dmode) $(datadir)/vi/perl
-	(cd $(srcdir)/perl_scripts && $(cp) *.pl $(datadir)/vi/perl && \
+	@echo "Installing Perl5 scripts: $(datadir)/vi/perl..."
+	@$(mkdir) $(datadir)/vi/perl && $(chmod) $(dmode) $(datadir)/vi/perl
+	@(cd $(srcdir)/perl_scripts && $(cp) *.pl $(datadir)/vi/perl && \
 	    cd $(datadir)/vi/perl && $(chmod) $(fmode) *.pl)
-	$(mkdir) $(datadir)/vi/tcl && $(chmod) $(dmode) $(datadir)/vi/tcl
-	(cd $(srcdir)/tcl_scripts && $(cp) *.tcl $(datadir)/vi/tcl && \
+	@echo "Installing Tcl scripts: $(datadir)/vi/tcl..."
+	@$(mkdir) $(datadir)/vi/tcl && $(chmod) $(dmode) $(datadir)/vi/tcl
+	@(cd $(srcdir)/tcl_scripts && $(cp) *.tcl $(datadir)/vi/tcl && \
 	    cd $(datadir)/vi/tcl && $(chmod) $(fmode) *.tcl)
-	$(strip) nvi
-	$(chmod) 555 nvi
-	$(rm) nex
+	@[ -f $(strip) ] && $(strip) nvi
+	@$(chmod) $(emode) nvi
+	@$(rm) -f nex
 
 # Vi curses sources.
 cl_bsd.o: $(srcdir)/cl/cl_bsd.c
