@@ -8,7 +8,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: tag.h,v 10.4 1996/05/08 11:36:36 bostic Exp $ (Berkeley) $Date: 1996/05/08 11:36:36 $
+ *	$Id: tag.h,v 10.5 1996/05/15 17:41:31 bostic Exp $ (Berkeley) $Date: 1996/05/15 17:41:31 $
  */
 
 /*
@@ -42,7 +42,7 @@ struct _csc {
 struct _tagf {			/* Tag files. */
 	TAILQ_ENTRY(_tagf) q;	/* Linked list of tag files. */
 	char	*name;		/* Tag file name. */
-	int	 errno;		/* Error. */
+	int	 errnum;	/* Errno. */
 
 #define	TAGF_ERR	0x01	/* Error occurred. */
 #define	TAGF_ERR_WARN	0x02	/* Error reported. */

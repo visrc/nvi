@@ -13,19 +13,16 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_tag.c,v 10.30 1996/05/08 21:03:58 bostic Exp $ (Berkeley) $Date: 1996/05/08 21:03:58 $";
+static const char sccsid[] = "$Id: ex_tag.c,v 10.31 1996/05/15 17:41:13 bostic Exp $ (Berkeley) $Date: 1996/05/15 17:41:13 $";
 #endif /* not lint */
 
 #include <sys/param.h>
-/*
- * XXX
- * AIX 3.2.5, AIX 4.1 <sys/param.h> doesn't include <sys/types.h>.
- * Idiots.
- */
-#include <sys/types.h>
+#include <sys/types.h>		/* XXX: param.h may not have included types.h */
+
 #ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
 #endif
+
 #include <sys/queue.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -1041,7 +1038,7 @@ ctag_get(sp, tag, tagp, taglenp, filep, filelenp, searchp, searchlenp)
 			    tfp != NULL; tfp = tfp->q.tqe_next)
 				if (F_ISSET(tfp, TAGF_ERR) &&
 				    !F_ISSET(tfp, TAGF_ERR_WARN)) {
-					errno = tfp->errno;
+					errno = tfp->errnum;
 					msgq_str(sp, M_SYSERR, tfp->name, "%s");
 					F_SET(tfp, TAGF_ERR_WARN);
 				}
@@ -1130,7 +1127,7 @@ search(sp, tfp, tname, tag)
 	char *endp, *back, *front, *map, *p;
 
 	if ((fd = open(tfp->name, O_RDONLY, 0)) < 0) {
-		tfp->errno = errno;
+		tfp->errnum = errno;
 		return (1);
 	}
 
@@ -1153,7 +1150,7 @@ search(sp, tfp, tname, tag)
 	 */
 	if (fstat(fd, &sb) || (map = mmap(NULL, (size_t)sb.st_size,
 	    PROT_READ, MAP_FILE | MAP_PRIVATE, fd, (off_t)0)) == (caddr_t)-1) {
-		tfp->errno = errno;
+		tfp->errnum = errno;
 		(void)close(fd);
 		return (1);
 	}
