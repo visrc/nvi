@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 8.46 1994/05/02 13:50:29 bostic Exp $ (Berkeley) $Date: 1994/05/02 13:50:29 $
+ *	$Id: key.h,v 8.47 1994/07/15 15:59:11 bostic Exp $ (Berkeley) $Date: 1994/07/15 15:59:11 $
  */
 
 /*
@@ -58,6 +58,13 @@ struct _ch {
 #define	CH_QUOTED	0x08	/* Character is already quoted. */
 	u_int8_t flags;
 };
+
+typedef struct _keylist {
+	u_int8_t value;		/* Special value. */
+	CHAR_T	 ch;		/* Key. */
+} KEYLIST;
+
+extern KEYLIST keylist[];
 
 /* Structure for the key input buffer. */
 struct _ibuf {
@@ -169,5 +176,3 @@ enum input	 term_key __P((SCR *, CH *, u_int));
 enum input	 term_user_key __P((SCR *, CH *));
 int		 term_init __P((SCR *));
 int		 term_push __P((SCR *, CHAR_T *, size_t, u_int));
-int		 term_tgetent __P((SCR *, char *, char *));
-int		 term_waiting __P((SCR *));

@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: seq.h,v 8.9 1994/03/16 08:05:57 bostic Exp $ (Berkeley) $Date: 1994/03/16 08:05:57 $
+ *	$Id: seq.h,v 8.10 1994/07/15 15:59:53 bostic Exp $ (Berkeley) $Date: 1994/07/15 15:59:53 $
  */
 
 /*
@@ -37,16 +37,17 @@ struct _seq {
 	char	*output;		/* Sequence output keys. */
 	size_t	 olen;			/* Output keys length. */
 
-#define	S_USERDEF	0x01		/* If sequence user defined. */
+#define	SEQ_FUNCMAP	0x01		/* If unresolved function key.*/
+#define	SEQ_SCREEN	0x02		/* If screen specific. */
+#define	SEQ_USERDEF	0x04		/* If user defined. */
 	u_char	 flags;
 };
 
-int	 abbr_save __P((SCR *, FILE *));
-int	 map_save __P((SCR *, FILE *));
 int	 seq_delete __P((SCR *, char *, size_t, enum seqtype));
 int	 seq_dump __P((SCR *, enum seqtype, int));
 SEQ	*seq_find __P((SCR *, SEQ **, char *, size_t, enum seqtype, int *));
 void	 seq_init __P((SCR *));
+int	 seq_mdel __P((SEQ *));
 int	 seq_save __P((SCR *, FILE *, char *, enum seqtype));
 int	 seq_set __P((SCR *, char *, size_t,
 	    char *, size_t, char *, size_t, enum seqtype, int));

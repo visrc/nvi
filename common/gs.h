@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 8.36 1994/05/21 18:18:14 bostic Exp $ (Berkeley) $Date: 1994/05/21 18:18:14 $
+ *	$Id: gs.h,v 8.37 1994/07/15 15:59:44 bostic Exp $ (Berkeley) $Date: 1994/07/15 15:59:44 $
  */
 
 struct _gs {
@@ -58,24 +58,23 @@ struct _gs {
 
 /* Interrupt macros. */
 #define	INTERRUPTED(sp)							\
-	(F_ISSET((sp), S_INTERRUPTED) || F_ISSET((sp)->gp, G_SIGINTR))
+	(F_ISSET((sp), S_INTERRUPTED) || F_ISSET((sp)->gp, G_SIGINT))
 #define	CLR_INTERRUPT(sp) {						\
 	F_CLR((sp), S_INTERRUPTED | S_INTERRUPTIBLE);			\
-	F_CLR((sp)->gp, G_SIGINTR);					\
+	F_CLR((sp)->gp, G_SIGINT);					\
 }
 
-#define	G_ABBREV	0x00001		/* If have abbreviations. */
-#define	G_BELLSCHED	0x00002		/* Bell scheduled. */
-#define	G_CURSES_INIT	0x00004		/* Curses: initialized. */
-#define	G_RECOVER_SET	0x00008		/* Recover system initialized. */
-#define	G_SETMODE	0x00010		/* Tty mode changed. */
-#define	G_SIGALRM	0x00020		/* SIGALRM arrived. */
-#define	G_SIGINTR	0x00040		/* SIGINT arrived. */
-#define	G_SIGWINCH	0x00080		/* SIGWINCH arrived. */
-#define	G_SNAPSHOT	0x00100		/* Always snapshot files. */
-#define	G_STDIN_TTY	0x00200		/* Standard input is a tty. */
-#define	G_TERMIOS_SET	0x00400		/* Termios structure is valid. */
-#define	G_TMP_INUSE	0x00800		/* Temporary buffer in use. */
+#define	G_ABBREV	0x0001		/* If have abbreviations. */
+#define	G_BELLSCHED	0x0002		/* Bell scheduled. */
+#define	G_RECOVER_SET	0x0004		/* Recover system initialized. */
+#define	G_SETMODE	0x0008		/* Tty mode changed. */
+#define	G_SIGALRM	0x0010		/* SIGALRM arrived. */
+#define	G_SIGINT	0x0020		/* SIGINT arrived. */
+#define	G_SIGWINCH	0x0040		/* SIGWINCH arrived. */
+#define	G_SNAPSHOT	0x0080		/* Always snapshot files. */
+#define	G_STDIN_TTY	0x0100		/* Standard input is a tty. */
+#define	G_TERMIOS_SET	0x0200		/* Termios structure is valid. */
+#define	G_TMP_INUSE	0x0400		/* Temporary buffer in use. */
 
 	u_int	 flags;
 };

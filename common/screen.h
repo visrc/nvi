@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.118 1994/06/29 18:15:11 bostic Exp $ (Berkeley) $Date: 1994/06/29 18:15:11 $
+ *	$Id: screen.h,v 8.119 1994/07/15 16:00:01 bostic Exp $ (Berkeley) $Date: 1994/07/15 16:00:01 $
  */
 
 /*
@@ -207,6 +207,9 @@ struct _scr {
 		(*s_get) __P((SCR *, EXF *, TEXTH *, ARG_CHAR_T, u_int));
 	enum input			/* Get a key from the user. */
 		(*s_key_read) __P((SCR *, int *, struct timeval *));
+					/* Map a function key. */
+	int	(*s_map) __P((SCR *,
+		    enum seqtype, CHAR_T *, size_t, CHAR_T *, size_t));
 					/* Tell the screen an option changed. */
 	int	(*s_optchange) __P((SCR *, int));
 					/* Return column at screen position. */
@@ -224,6 +227,8 @@ struct _scr {
 	int	(*s_split) __P((SCR *, ARGS *[], int));
 					/* Suspend the screen. */
 	int	(*s_suspend) __P((SCR *));
+					/* Set the window size. */
+	int	(*s_window) __P((SCR *, size_t, int));
 
 /* Editor screens. */
 #define	S_EX		0x0000001	/* Ex screen. */

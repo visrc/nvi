@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.68 1994/07/05 14:53:03 bostic Exp $ (Berkeley) $Date: 1994/07/05 14:53:03 $";
+static char sccsid[] = "$Id: util.c,v 8.69 1994/07/15 15:59:37 bostic Exp $ (Berkeley) $Date: 1994/07/15 15:59:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -123,138 +123,6 @@ tail(path)
 	if ((p = strrchr(path, '/')) == NULL)
 		return (path);
 	return (p + 1);
-}
-
-/*
- * set_window_size --
- *	Set the window size, the row may be provided as an argument.
- */
-int
-set_window_size(sp, set_row, sigwinch)
-	SCR *sp;
-	u_int set_row;
-	int sigwinch;
-{
-	struct winsize win;
-	size_t col, row;
-	int rval, user_set;
-	ARGS *argv[2], a, b;
-	char *s, buf[2048];
-
-	/*
-	 * Get the screen rows and columns.  If the values are wrong, it's
-	 * not a big deal -- as soon as the user sets them explicitly the
-	 * environment will be set and the screen package will use the new
-	 * values.
-	 *
-	 * Try TIOCGWINSZ.
-	 */
-	row = col = 0;
-#ifdef TIOCGWINSZ
-	if (ioctl(STDERR_FILENO, TIOCGWINSZ, &win) != -1) {
-		row = win.ws_row;
-		col = win.ws_col;
-	}
-#endif
-	/* If here because of a signal, TIOCGWINSZ is all we trust. */
-	if (sigwinch) {
-		if (row == 0 || col == 0) {
-			msgq(sp, M_SYSERR, "TIOCGWINSZ");
-			return (1);
-		}
-		goto sigw;
-	}
-
-	/*
-	 * If TIOCGWINSZ failed, or had entries of 0, try termcap.  Get
-	 * the terminal from the environment, the options code hasn't been
-	 * initialized yet.  We permit the TERM environmental variable to
-	 * be uninitialized, we may be running ex.
-	 */
-	if (row == 0 || col == 0) {
-		if ((s = getenv("TERM")) == NULL)
-			goto noterm;
-#ifdef SYSV_CURSES
-		if (row == 0)
-			if ((rval = tigetnum("lines")) < 0)
-				msgq(sp, M_SYSERR, "tigetnum: lines");
-			else
-				row = rval;
-		if (col == 0)
-			if ((rval = tigetnum("cols")) < 0)
-				msgq(sp, M_SYSERR, "tigetnum: cols");
-			else
-				col = rval;
-#else
-		if (term_tgetent(sp, buf, s))
-			goto noterm;
-		if (row == 0)
-			if ((rval = tgetnum("li")) < 0)
-				msgq(sp, M_ERR,
-				    "no \"li\" capability for %s", s);
-			else
-				row = rval;
-		if (col == 0)
-			if ((rval = tgetnum("co")) < 0)
-				msgq(sp, M_ERR,
-				    "no \"co\" capability for %s", s);
-			else
-				col = rval;
-#endif
-	}
-
-	/*
-	 * If it's something completely unreasonable, stop now.  The actual
-	 * error (probably ENOMEM) is likely to be much less informative.
-	 */
-	if (row > 1500) {
-		msgq(sp, M_ERR, "%lu rows isn't believable", (u_long)row);
-		return (1);
-	}
-	if (col > 1500) {
-		msgq(sp, M_ERR, "%lu columns isn't believable", (u_long)col);
-		return (1);
-	}
-
-	/* If nothing else, well, it's probably a VT100. */
-noterm:	if (row == 0)
-		row = 24;
-	if (col == 0)
-		col = 80;
-
-	/* POSIX 1003.2 requires the environment to override. */
-	if ((s = getenv("LINES")) != NULL)
-		row = strtol(s, NULL, 10);
-	if ((s = getenv("COLUMNS")) != NULL)
-		col = strtol(s, NULL, 10);
-
-	/* But, if we got an argument for the rows, use it. */
-	if (set_row)
-		row = set_row;
-
-sigw:	a.bp = buf;
-	b.bp = NULL;
-	b.len = 0;
-	argv[0] = &a;
-	argv[1] = &b;;
-
-	/*
-	 * Tell the options code that the screen size has changed.
-	 * Since the user didn't do the set, clear the set bits.
-	 */
-	user_set = F_ISSET(&sp->opts[O_LINES], OPT_SET);
-	a.len = snprintf(buf, sizeof(buf), "lines=%u", row);
-	if (opts_set(sp, argv))
-		return (1);
-	if (user_set)
-		F_CLR(&sp->opts[O_LINES], OPT_SET);
-	user_set = F_ISSET(&sp->opts[O_COLUMNS], OPT_SET);
-	a.len = snprintf(buf, sizeof(buf), "columns=%u", col);
-	if (opts_set(sp, argv))
-		return (1);
-	if (user_set)
-		F_CLR(&sp->opts[O_COLUMNS], OPT_SET);
-	return (0);
 }
 
 /*

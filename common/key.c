@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.74 1994/07/06 12:16:15 bostic Exp $ (Berkeley) $Date: 1994/07/06 12:16:15 $";
+static char sccsid[] = "$Id: key.c,v 8.75 1994/07/15 16:00:18 bostic Exp $ (Berkeley) $Date: 1994/07/15 16:00:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,7 +31,6 @@ static char sccsid[] = "$Id: key.c,v 8.74 1994/07/06 12:16:15 bostic Exp $ (Berk
 #include <regex.h>
 
 #include "vi.h"
-#include "seq.h"
 
 static int	 keycmp __P((const void *, const void *));
 static int	 term_key_queue __P((SCR *));
@@ -46,72 +45,6 @@ static void	 term_key_set __P((GS *, int, int));
 	(tty)->nelem - ((tty)->cnt + (tty)->next) >= 20 ?	\
 	0 : __term_read_grow(sp, tty, 64)
 static int __term_read_grow __P((SCR *, IBUF *, int));
-
-/*
- * XXX
- * THIS REQUIRES THAT ALL SCREENS SHARE A TERMINAL TYPE.
- */
-typedef struct _tklist {
-	char	*ts;			/* Key's termcap string. */
-	char	*output;		/* Corresponding vi command. */
-	char	*name;			/* Name. */
-	u_char	 value;			/* Special value (for lookup). */
-} TKLIST;
-static TKLIST const c_tklist[] = {	/* Command mappings. */
-#ifdef SYSV_CURSES
-	{"kil1",	"O",	"insert line"},
-	{"kdch1",	"x",	"delete character"},
-	{"kcud1",	"j",	"cursor down"},
-	{"kel",		"D",	"delete to eol"},
-	{"kind",     "\004",	"scroll down"},
-	{"kll",		"$",	"go to eol"},
-	{"khome",	"^",	"go to sol"},
-	{"kich1",	"i",	"insert at cursor"},
-	{"kdl1",       "dd",	"delete line"},
-	{"kcub1",	"h",	"cursor left"},
-	{"knp",	     "\006",	"page down"},
-	{"kpp",	     "\002",	"page up"},
-	{"kri",	     "\025",	"scroll up"},
-	{"ked",	       "dG",	"delete to end of screen"},
-	{"kcuf1",	"l",	"cursor right"},
-	{"kcuu1",	"k",	"cursor up"},
-#else
-	{"kA",		"O",	"insert line"},
-	{"kD",		"x",	"delete character"},
-	{"kd",		"j",	"cursor down"},
-	{"kE",		"D",	"delete to eol"},
-	{"kF",	     "\004",	"scroll down"},
-	{"kH",		"$",	"go to eol"},
-	{"kh",		"^",	"go to sol"},
-	{"kI",		"i",	"insert at cursor"},
-	{"kL",	       "dd",	"delete line"},
-	{"kl",		"h",	"cursor left"},
-	{"kN",	     "\006",	"page down"},
-	{"kP",	     "\002",	"page up"},
-	{"kR",	     "\025",	"scroll up"},
-	{"kS",	       "dG",	"delete to end of screen"},
-	{"kr",		"l",	"cursor right"},
-	{"ku",		"k",	"cursor up"},
-#endif
-	{NULL},
-};
-static TKLIST const m1_tklist[] = {	/* Input mappings (lookup). */
-	{NULL},
-};
-static TKLIST const m2_tklist[] = {	/* Input mappings (set or delete). */
-#ifdef SYSV_CURSES
-	{"kcud1",  "\033ja",	"cursor down"},
-	{"kcub1",  "\033ha",	"cursor left"},
-	{"kcuu1",  "\033ka",	"cursor up"},
-	{"kcuf1",  "\033la",	"cursor right"},
-#else
-	{"kd",	   "\033ja",	"cursor down"},
-	{"kl",	   "\033ha",	"cursor left"},
-	{"ku",	   "\033ka",	"cursor up"},
-	{"kr",	   "\033la",	"cursor right"},
-#endif
-	{NULL},
-};
 
 /*
  * !!!
@@ -140,11 +73,7 @@ static TKLIST const m2_tklist[] = {	/* Input mappings (set or delete). */
  * XXX
  * THIS REQUIRES THAT ALL SCREENS SHARE A SPECIAL KEY SET.
  */
-typedef struct _keylist {
-	u_char	value;			/* Special value. */
-	CHAR_T	ch;			/* Key. */
-} KEYLIST;
-static KEYLIST keylist[] = {
+KEYLIST keylist[] = {
 	{K_CARAT,	   '^'},	/*  ^ */
 	{K_CNTRLD,	'\004'},	/* ^D */
 	{K_CNTRLR,	'\022'},	/* ^R */
@@ -173,8 +102,7 @@ static int nkeylist = (sizeof(keylist) / sizeof(keylist[0])) - 3;
 
 /*
  * term_init --
- *	Initialize the special key lookup table, and the special keys
- *	defined by the terminal's termcap entry.
+ *	Initialize the special key lookup table.
  */
 int
 term_init(sp)
@@ -182,9 +110,7 @@ term_init(sp)
 {
 	GS *gp;
 	KEYLIST *kp;
-	TKLIST const *tkp;
 	int cnt;
-	char *sbp, *t, buf[2 * 1024], sbuf[128];
 
 	/*
 	 * XXX
@@ -214,106 +140,8 @@ term_init(sp)
 		if (kp->ch <= MAX_FAST_KEY)
 			gp->special_key[kp->ch] = kp->value;
 	}
-
-	/* Set key sequences found in the termcap entry. */
-#ifdef SYSV_CURSES
-	(void)setupterm(O_STR(sp, O_TERM), fileno(stdout), NULL);
-#else
-	if (term_tgetent(sp, buf, O_STR(sp, O_TERM)))
-		return (0);
-#endif
-
-	/* Command mappings. */
-	for (tkp = c_tklist; tkp->name != NULL; ++tkp) {
-#ifdef SYSV_CURSES
-		if ((t = tigetstr(tkp->ts)) == NULL || t == (char *)-1)
-			continue;
-#else
-		sbp = sbuf;
-		if ((t = tgetstr(tkp->ts, &sbp)) == NULL)
-			continue;
-#endif
-		if (seq_set(sp, tkp->name, strlen(tkp->name), t, strlen(t),
-		    tkp->output, strlen(tkp->output), SEQ_COMMAND, 0))
-			return (1);
-	}
-	/* Input mappings needing to be looked up. */
-	for (tkp = m1_tklist; tkp->name != NULL; ++tkp) {
-#ifdef SYSV_CURSES
-		if ((t = tigetstr(tkp->ts)) == NULL || t == (char *)-1)
-			continue;
-#else
-		sbp = sbuf;
-		if ((t = tgetstr(tkp->ts, &sbp)) == NULL)
-			continue;
-#endif
-		for (kp = keylist;; ++kp)
-			if (kp->value == tkp->value)
-				break;
-		if (kp == NULL)
-			continue;
-		if (seq_set(sp, tkp->name, strlen(tkp->name),
-		    t, strlen(t), &kp->ch, 1, SEQ_INPUT, 0))
-			return (1);
-	}
-	/* Input mappings that are already set or are text deletions. */
-	for (tkp = m2_tklist; tkp->name != NULL; ++tkp) {
-#ifdef SYSV_CURSES
-		if ((t = tigetstr(tkp->ts)) == NULL || t == (char *)-1)
-			continue;
-#else
-		sbp = sbuf;
-		if ((t = tgetstr(tkp->ts, &sbp)) == NULL)
-			continue;
-#endif
-		/*
-		 * !!!
-		 * Some terminals' <cursor_left> keys send single <backspace>
-		 * characters.  This is okay in command mapping, but not okay
-		 * in input mapping.  That combination is the only one we'll
-		 * ever see, hopefully, so kluge it here for now.
-		 */
-		if (!strcmp(t, "\b"))
-			continue;
-		if (tkp->output == NULL) {
-			if (seq_set(sp, tkp->name, strlen(tkp->name),
-			    t, strlen(t), NULL, 0, SEQ_INPUT, 0))
-				return (1);
-		} else
-			if (seq_set(sp, tkp->name, strlen(tkp->name),
-			    t, strlen(t), tkp->output, strlen(tkp->output),
-			    SEQ_INPUT, 0))
-				return (1);
-	}
 	return (0);
 }
-
-#ifndef SYSV_CURSES
-/*
- * term_tgetent --
- *	Routine to fill in the tgetent buffer, broken out so that
- *	the error code isn't endlessly repeated.
- */
-int
-term_tgetent(sp, buf, term)
-	SCR *sp;
-	char *buf, *term;
-{
-	if (term == NULL) {
-		msgq(sp, M_ERR, "No terminal type set");
-		return (1);
-	}
-	switch (tgetent(buf, term)) {
-	case -1:
-		msgq(sp, M_SYSERR, "tgetent: %s", term);
-		return (1);
-	case 0:
-		msgq(sp, M_ERR, "%s: unknown terminal type", term);
-		return (1);
-	}
-	return (0);
-}
-#endif
 
 /*
  * term_key_set --

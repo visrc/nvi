@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 8.28 1994/04/13 10:36:27 bostic Exp $ (Berkeley) $Date: 1994/04/13 10:36:27 $";
+static char sccsid[] = "$Id: seq.c,v 8.29 1994/07/15 15:59:27 bostic Exp $ (Berkeley) $Date: 1994/07/15 15:59:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,7 +28,6 @@ static char sccsid[] = "$Id: seq.c,v 8.28 1994/04/13 10:36:27 bostic Exp $ (Berk
 #include <regex.h>
 
 #include "vi.h"
-#include "seq.h"
 #include "excmd.h"
 
 /*
@@ -140,7 +139,17 @@ seq_delete(sp, input, ilen, stype)
 
 	if ((qp = seq_find(sp, NULL, input, ilen, stype, NULL)) == NULL)
 		return (1);
+	return (seq_mdel(qp));
+}
 
+/*
+ * seq_mdel --
+ *	Delete a map entry, without lookup.
+ */
+int
+seq_mdel(qp)
+	SEQ *qp;
+{
 	LIST_REMOVE(qp, q);
 	if (qp->name != NULL)
 		free(qp->name);
@@ -286,7 +295,7 @@ seq_save(sp, fp, prefix, stype)
 
 	/* Write a sequence command for all keys the user defined. */
 	for (qp = sp->gp->seqq.lh_first; qp != NULL; qp = qp->q.le_next) {
-		if (!F_ISSET(qp, S_USERDEF) || stype != qp->stype)
+		if (!F_ISSET(qp, SEQ_USERDEF) || stype != qp->stype)
 			continue;
 		if (prefix)
 			(void)fprintf(fp, "%s", prefix);

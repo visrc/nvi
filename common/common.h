@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 8.44 1994/05/02 15:07:45 bostic Exp $ (Berkeley) $Date: 1994/05/02 15:07:45 $
+ *	$Id: common.h,v 8.45 1994/07/15 15:59:18 bostic Exp $ (Berkeley) $Date: 1994/07/15 15:59:18 $
  */
 
 /*
@@ -40,6 +40,7 @@ typedef struct _text		TEXT;
 
 #include "msg.h"		/* Required by gs.h. */
 #include "cut.h"		/* Required by gs.h. */
+#include "seq.h"		/* Required by screen.h. */
 #include "gs.h"			/* Required by screen.h. */
 #include "screen.h"		/* Required by exf.h. */
 #include "mark.h"		/* Required by exf.h. */
@@ -84,7 +85,6 @@ FILE	*fwopen __P((SCR *, void *));
 u_long	 baud_from_bval __P((SCR *));
 int	 nonblank __P((SCR *, EXF *, recno_t, size_t *));
 void	 set_alt_name __P((SCR *, char *));
-int	 set_window_size __P((SCR *, u_int, int));
 int	 status __P((SCR *, EXF *, recno_t, int));
 char	*tail __P((char *));
 CHAR_T	*v_strdup __P((SCR *, CHAR_T *, size_t));
