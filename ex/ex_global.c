@@ -6,14 +6,13 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 8.13 1993/10/27 14:46:45 bostic Exp $ (Berkeley) $Date: 1993/10/27 14:46:45 $";
+static char sccsid[] = "$Id: ex_global.c,v 8.14 1993/10/28 11:21:38 bostic Exp $ (Berkeley) $Date: 1993/10/28 11:21:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
 #include <ctype.h>
 #include <errno.h>
-#include <signal.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -58,13 +57,14 @@ global(sp, ep, cmdp, cmd)
 	EXCMDARG *cmdp;
 	enum which cmd;
 {
+	struct sigaction act, oact;
 	struct termios nterm, term;
 	recno_t elno, last1, last2, lno;
 	regmatch_t match[1];
 	regex_t *re, lre;
-	sig_ret_t saveintr;
 	size_t len;
-	int delim, eval, reflags, replaced, rval;
+	u_int istate;
+	int delim, eval, isig, reflags, replaced, rval;
 	char *ptrn, *p, *t, cbuf[1024];
 
 	/*
@@ -154,19 +154,27 @@ global(sp, ep, cmdp, cmd)
 	 * because nvi never wants to catch it.  A handler for VSUSP should
 	 * have been installed by the screen code.
 	 */
-	if (F_ISSET(sp->gp, G_ISFROMTTY) &&
-	    (saveintr = signal(SIGINT, global_intr)) != (sig_ret_t)-1) {
-		F_CLR(sp, S_INTERRUPTED);
-		F_SET(sp, S_INTERRUPTIBLE);
-		if (tcgetattr(STDIN_FILENO, &term)) {
-			msgq(sp, M_ERR, "tcgetattr: %s", strerror(errno));
-			return (1);
-		}
-		nterm = term;
-		nterm.c_lflag |= ISIG;
-		if (tcsetattr(STDIN_FILENO, TCSANOW | TCSASOFT, &nterm)) {
-			msgq(sp, M_ERR, "tcsetattr: %s", strerror(errno));
-			return (1);
+	if (F_ISSET(sp->gp, G_ISFROMTTY)) {
+		act.sa_handler = global_intr;
+		sigemptyset(&act.sa_mask);
+		act.sa_flags = 0;
+		if (isig = !sigaction(SIGINT, &act, &oact)) {
+			istate = F_ISSET(sp, S_INTERRUPTIBLE);
+			F_CLR(sp, S_INTERRUPTED);
+			F_SET(sp, S_INTERRUPTIBLE);
+			if (tcgetattr(STDIN_FILENO, &term)) {
+				msgq(sp, M_ERR,
+				    "tcgetattr: %s", strerror(errno));
+				return (1);
+			}
+			nterm = term;
+			nterm.c_lflag |= ISIG;
+			if (tcsetattr(STDIN_FILENO,
+			    TCSANOW | TCSASOFT, &nterm)) {
+				msgq(sp, M_ERR,
+				    "tcsetattr: %s", strerror(errno));
+				return (1);
+			}
 		}
 	}
 
@@ -234,11 +242,14 @@ err:			rval = 1;
 	}
 	F_CLR(sp, S_GLOBAL);
 
-	if (F_ISSET(sp->gp, G_ISFROMTTY) && saveintr != (sig_ret_t)-1) {
-		if (signal(SIGINT, saveintr) == (sig_ret_t)-1)
+	if (F_ISSET(sp->gp, G_ISFROMTTY) && isig) {
+		if (sigaction(SIGINT, &oact, NULL))
 			msgq(sp, M_ERR, "signal: %s", strerror(errno));
 		if (tcsetattr(STDIN_FILENO, TCSANOW | TCSASOFT, &term))
 			msgq(sp, M_ERR, "tcsetattr: %s", strerror(errno));
+		F_CLR(sp, S_INTERRUPTED);
+		if (!istate)
+			F_CLR(sp, S_INTERRUPTIBLE);
 	}
 	return (rval);
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 8.19 1993/10/11 10:27:03 bostic Exp $ (Berkeley) $Date: 1993/10/11 10:27:03 $";
+static char sccsid[] = "$Id: ex_filter.c,v 8.20 1993/10/28 11:21:47 bostic Exp $ (Berkeley) $Date: 1993/10/28 11:21:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -15,7 +15,6 @@ static char sccsid[] = "$Id: ex_filter.c,v 8.19 1993/10/11 10:27:03 bostic Exp $
 #include <errno.h>
 #include <fcntl.h>
 #include <paths.h>
-#include <signal.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -38,12 +37,12 @@ filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
 	char *cmd;
 	enum filtertype ftype;
 {
+	struct sigaction act, oact;
 	struct termios nterm, term;
 	FILE *ifp, *ofp;		/* GCC: can't be uninitialized. */
 	pid_t parent_writer_pid, utility_pid;
 	recno_t lno, nread;
-	sig_ret_t saveintr;
-	int input[2], output[2], rval;
+	int input[2], isig, output[2], rval;
 	char *name;
 
 	/* Set return cursor position; guard against a line number of zero. */
@@ -102,19 +101,24 @@ filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
 	 * because nvi never wants to catch it.  A handler for VSUSP should
 	 * have been installed by the screen code.
 	 */
-	if (F_ISSET(sp->gp, G_ISFROMTTY) &&
-	    (saveintr = signal(SIGINT, SIG_IGN)) != (sig_ret_t)-1) {
-		if (tcgetattr(STDIN_FILENO, &term)) {
-			msgq(sp, M_ERR,
-			    "Error: tcgetattr: %s", strerror(errno));
-			goto err;
-		}
-		nterm = term;
-		nterm.c_lflag |= ISIG;
-		if (tcsetattr(STDIN_FILENO, TCSANOW | TCSASOFT, &nterm)) {
-			msgq(sp, M_ERR,
-			    "Error: tcsetattr: %s", strerror(errno));
-			goto err;
+	if (F_ISSET(sp->gp, G_ISFROMTTY)) {
+		act.sa_handler = SIG_IGN;;
+		sigemptyset(&act.sa_mask);
+		act.sa_flags = 0;
+		if (isig = !sigaction(SIGINT, &act, &oact)) {
+			if (tcgetattr(STDIN_FILENO, &term)) {
+				msgq(sp, M_ERR,
+				    "Error: tcgetattr: %s", strerror(errno));
+				goto err;
+			}
+			nterm = term;
+			nterm.c_lflag |= ISIG;
+			if (tcsetattr(STDIN_FILENO,
+			    TCSANOW | TCSASOFT, &nterm)) {
+				msgq(sp, M_ERR,
+				    "Error: tcsetattr: %s", strerror(errno));
+				goto err;
+			}
 		}
 	}
 
@@ -136,7 +140,10 @@ err:		if (input[0] != -1)
 			(void)close(output[1]);
 		return (1);
 	case 0:				/* Utility. */
-		/* The utility has default signal behavior. */
+		/*
+		 * The utility has default signal behavior.  Don't bother
+		 * using sigaction(2) 'cause we want the default behavior.
+		 */
 		(void)signal(SIGINT, SIG_DFL);
 		(void)signal(SIGQUIT, SIG_DFL);
 
@@ -286,8 +293,8 @@ err:		if (input[0] != -1)
 
 uwait:	rval |= proc_wait(sp, (long)utility_pid, cmd, 0);
 
-	if (F_ISSET(sp->gp, G_ISFROMTTY) && saveintr != (sig_ret_t)-1) {
-		if (signal(SIGINT, saveintr) == (sig_ret_t)-1)
+	if (F_ISSET(sp->gp, G_ISFROMTTY) && isig) {
+		if (sigaction(SIGINT, &oact, NULL))
 			msgq(sp, M_ERR, "Error: signal: %s", strerror(errno));
 		if (tcsetattr(STDIN_FILENO, TCSANOW | TCSASOFT, &term))
 			msgq(sp, M_ERR,

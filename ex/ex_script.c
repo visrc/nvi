@@ -6,13 +6,12 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_script.c,v 8.2 1993/10/10 10:58:23 bostic Exp $ (Berkeley) $Date: 1993/10/10 10:58:23 $";
+static char sccsid[] = "$Id: ex_script.c,v 8.3 1993/10/28 11:22:01 bostic Exp $ (Berkeley) $Date: 1993/10/28 11:22:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
 #include <errno.h>
-#include <signal.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -100,7 +99,10 @@ err:		if (sp->sh_in[0] != -1)
 			(void)close(sp->sh_out[1]);
 		return (1);
 	case 0:				/* Utility. */
-		/* The utility has default signal behavior. */
+		/*
+		 * The utility has default signal behavior.  Don't bother
+		 * using sigaction(2) 'cause we want the default behavior.
+		 */
 		(void)signal(SIGINT, SIG_DFL);
 		(void)signal(SIGQUIT, SIG_DFL);
 

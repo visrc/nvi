@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 8.5 1993/10/07 13:36:26 bostic Exp $ (Berkeley) $Date: 1993/10/07 13:36:26 $";
+static char sccsid[] = "$Id: ex_shell.c,v 8.6 1993/10/28 11:21:54 bostic Exp $ (Berkeley) $Date: 1993/10/28 11:21:54 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -74,7 +74,10 @@ ex_exec_process(sp, shell, cmd, needcontinue)
 		msgq(sp, M_ERR, "vfork: %s", strerror(errno));
 		return (1);
 	case 0:				/* Utility. */
-		/* The utility has default signal behavior. */
+		/*
+		 * The utility has default signal behavior.  Don't bother
+		 * using sigaction(2) 'cause we want the default behavior.
+		 */
 		(void)signal(SIGINT, SIG_DFL);
 		(void)signal(SIGQUIT, SIG_DFL);
 
