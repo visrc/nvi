@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 9.4 1995/01/11 15:58:28 bostic Exp $ (Berkeley) $Date: 1995/01/11 15:58:28 $";
+static char sccsid[] = "$Id: search.c,v 9.5 1995/01/11 18:47:14 bostic Exp $ (Berkeley) $Date: 1995/01/11 18:47:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -37,7 +37,7 @@ static int	ctag_conv __P((SCR *, char **, int *));
 static int	resetup __P((SCR *,
 		    regex_t **, enum direction, char *, char **, u_int *));
 
-enum smsgtype { S_EMPTY, S_EOF, S_NOTFOUND, S_SOF, S_WRAP };
+enum smsgtype { S_EMPTY, S_EOF, S_NOPREV, S_NOTFOUND, S_SOF, S_WRAP };
 static void	smsg __P((SCR *, enum smsgtype));
 
 /*
@@ -72,26 +72,31 @@ resetup(sp, rep, dir, ptrn, epp, flagp)
 	if (ptrn[0] == ptrn[1] && ptrn[2] == '\0') {
 		if (epp != NULL)
 			*epp = ptrn + 2;
-prev:		if (!F_ISSET(sp, S_SRE_SET)) {
-			msgq(sp, M_ERR, "243|No previous search pattern");
+prev:		if (!F_ISSET(sp, S_RE_SEARCH)) {
+			smsg(sp, S_NOPREV);
 			return (1);
 		}
+		/*
+		 * See if we need to recompile because an edit option changed.
+		 * The options code doesn't check error cases, it just sets a
+		 * bit -- be careful.   If we can't recompile for some reason,
+		 * quit, we've already reported the out-of-memory message.
+		 */
+		if (F_ISSET(sp, S_RE_RECOMPILE)) {
+			if (sp->re == NULL) {
+				smsg(sp, S_NOPREV);
+				return (1);
+			}
+			ptrn = sp->re;
+			goto recomp;
+		}
+
 		*rep = &sp->sre;
 
-		/* Empty patterns set the direction. */
-		if (LF_ISSET(SEARCH_SET)) {
-			F_SET(sp, S_SRE_SET);
+		if (LF_ISSET(SEARCH_SET))
 			sp->searchdir = dir;
-			sp->sre = **rep;
-		}
 		return (0);
 	}
-
-	re_flags = 0;				/* Set RE flags. */
-	if (O_ISSET(sp, O_EXTENDED))
-		re_flags |= REG_EXTENDED;
-	if (O_ISSET(sp, O_IGNORECASE))
-		re_flags |= REG_ICASE;
 
 	replaced = 0;
 	if (LF_ISSET(SEARCH_PARSE)) {		/* Parse the string. */
@@ -119,19 +124,36 @@ prev:		if (!F_ISSET(sp, S_SRE_SET)) {
 			*epp = p;
 		if (re_conv(sp, &ptrn, &replaced))
 			return (1);
-	} else if (LF_ISSET(SEARCH_TAG)) {
-		if (ctag_conv(sp, &ptrn, &replaced))
-			return (1);
-		re_flags &= ~(REG_EXTENDED | REG_ICASE);
-	}
+	} else if (LF_ISSET(SEARCH_TAG) && ctag_conv(sp, &ptrn, &replaced))
+		return (1);
 
-	/* Compile the RE. */
+	/*
+	 * It's not enough to save only the compiled RE; changing the
+	 * edit options that modify search (e.g. extended, ignorecase)
+	 * require that we recompile the RE.
+	 */
+	if (sp->re != NULL)
+		free(sp->re);
+	sp->re = v_strdup(sp, ptrn, sp->re_len = strlen(ptrn));
+
+	/* Set up the flags and compile the RE. */
+recomp:	re_flags = 0;
+	if (!LF_ISSET(SEARCH_TAG)) {
+		if (O_ISSET(sp, O_EXTENDED))
+			re_flags |= REG_EXTENDED;
+		if (O_ISSET(sp, O_IGNORECASE))
+			re_flags |= REG_ICASE;
+	}
 	if (eval = regcomp(*rep, ptrn, re_flags))
 		re_error(sp, eval, *rep);
-	else if (LF_ISSET(SEARCH_SET)) {
-		F_SET(sp, S_SRE_SET);
-		sp->searchdir = dir;
-		sp->sre = **rep;
+	else {
+		if (LF_ISSET(SEARCH_SET))
+			sp->searchdir = dir;
+		if (LF_ISSET(SEARCH_SET) || F_ISSET(sp, S_RE_RECOMPILE)) {
+			sp->sre = **rep;
+			F_SET(sp, S_RE_SEARCH);
+		}
+		F_CLR(sp, S_RE_RECOMPILE);
 	}
 
 	/* Free up any extra memory. */
@@ -681,6 +703,9 @@ smsg(sp, msg)
 	case S_EOF:
 		msgq(sp, M_INFO,
 		    "239|Reached end-of-file without finding the pattern");
+		break;
+	case S_NOPREV:
+		msgq(sp, M_ERR, "243|No previous search pattern");
 		break;
 	case S_NOTFOUND:
 		msgq(sp, M_INFO, "240|Pattern not found");
