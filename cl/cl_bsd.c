@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_bsd.c,v 8.14 1995/11/29 09:41:01 bostic Exp $ (Berkeley) $Date: 1995/11/29 09:41:01 $";
+static char sccsid[] = "$Id: cl_bsd.c,v 8.15 1996/02/06 10:44:13 bostic Exp $ (Berkeley) $Date: 1996/02/06 10:44:13 $";
 #endif /* not lint */
 
 /*
@@ -69,7 +69,7 @@ flash()
 
 #ifdef IDLOK_MISSING
 /*
- * Ultrix supports the BSD curses package except for the idlock function.
+ * Ultrix supports the BSD curses package except for the idlok function.
  *
  * idlok --
  *	Turn on/off hardware line insert/delete.
