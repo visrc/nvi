@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_cscope.c,v 10.5 1996/05/15 17:41:40 bostic Exp $ (Berkeley) $Date: 1996/05/15 17:41:40 $";
+static const char sccsid[] = "$Id: ex_cscope.c,v 10.6 1996/05/16 18:38:34 bostic Exp $ (Berkeley) $Date: 1996/05/16 18:38:34 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -91,7 +91,7 @@ static CC const cscope_cmds[] = {
 
 static TAGQ	*create_cs_cmd __P((SCR *, char *, size_t *));
 static int	 csc_help __P((SCR *, char *));
-static void	 find_file __P((SCR *,
+static void	 csc_file __P((SCR *,
 		    CSC *, char *, char **, size_t *, int *));
 static int	 get_paths __P((SCR *, CSC *));
 static CC const	*lookup_ccmd __P((char *));
@@ -709,7 +709,7 @@ parse(sp, csc, tqp, matchesp)
 		slen = strlen(p);
 
 		/* Resolve the file name. */
-		find_file(sp, csc, name, &dname, &dlen, &isnewer);
+		csc_file(sp, csc, name, &dname, &dlen, &isnewer);
 
 		/*
 		 * If the file was modified less recently than the cscope
@@ -756,11 +756,11 @@ io_err:	if (feof(csc->from_fp))
 }
 
 /*
- * find_file --
+ * csc_file --
  *	Search for the right path to this file.
  */
 static void
-find_file(sp, csc, name, dirp, dlenp, isnewerp)
+csc_file(sp, csc, name, dirp, dlenp, isnewerp)
 	SCR *sp;
 	CSC *csc;
 	char *name, **dirp;
