@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 8.27 1994/04/15 17:25:18 bostic Exp $ (Berkeley) $Date: 1994/04/15 17:25:18 $";
+static char sccsid[] = "$Id: v_cmd.c,v 8.28 1994/04/18 11:04:26 bostic Exp $ (Berkeley) $Date: 1994/04/18 11:04:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,7 +40,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 /* 002  ^B */
 	{v_pageup,	V_ABS|V_CNT|VM_RCM_SETLFNB,
 	    "[count]^B",
-	    "^B page up by screens"},
+	    "^B scroll up by screens"},
 /* 003  ^C */
 	{NULL,		0,
 	    "^C",
@@ -48,15 +48,15 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 /* 004  ^D */
 	{v_hpagedown,	V_ABS|V_CNT|VM_RCM_SETLFNB,
 	    "[count]^D",
-	    "^D page down by half screens (setting count)"},
+	    "^D scroll down by half screens (setting count)"},
 /* 005  ^E */
 	{v_linedown,	V_CNT,
 	    "[count]^E",
-	    "^E page down by lines"},
+	    "^E scroll down by lines"},
 /* 006  ^F */
 	{v_pagedown,	V_ABS|V_CNT|VM_RCM_SETLFNB,
 	    "[count]^F",
-	    "^F page down by screens"},
+	    "^F scroll down by screens"},
 /* 007  ^G */
 	{v_status,	0,
 	    "^G",
@@ -64,7 +64,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 /* 010  ^H */
 	{v_left,	V_CNT|V_MOVE|VM_RCM_SET,
 	    "[count]^H",
-	    "^H move left by columns"},
+	    "^H move left by characters"},
 /* 011  ^I */
 	{NULL},
 /* 012  ^J */
