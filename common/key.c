@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.50 1994/03/14 11:02:24 bostic Exp $ (Berkeley) $Date: 1994/03/14 11:02:24 $";
+static char sccsid[] = "$Id: key.c,v 8.51 1994/03/15 12:35:47 bostic Exp $ (Berkeley) $Date: 1994/03/15 12:35:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -41,8 +41,8 @@ static void	termkeyset __P((GS *, int, int));
  * possible if a map is large enough.
  */
 #define	term_read_grow(sp, tty)					\
-	(tty)->len - (tty)->cnt >= 20 ? 0 : __term_read_grow(sp, tty)
-static int __term_read_grow __P((SCR *, IBUF *));
+	(tty)->nelem - (tty)->cnt >= 20 ? 0 : __term_read_grow(sp, tty, 64)
+static int __term_read_grow __P((SCR *, IBUF *, int));
 
 /*
  * XXX
@@ -280,47 +280,42 @@ termkeyset(gp, name, val)
  *
  * There is a single input buffer in ex/vi.  Characters are read onto the
  * end of the buffer by the terminal input routines, and pushed onto the
- * front of the buffer various other functions in ex/vi.  Each key has an
- * associated flag value, which indicates if it has already been quoted,
- * if it is the result of a mapping or an abbreviation.
+ * front of the buffer by various other functions in ex/vi.  Each key has
+ * an associated flag value, which indicates if it has already been quoted,
+ * if it is the result of a mapping or an abbreviation, as well as a count
+ * of the number of times it has been mapped.
  */
 int
-term_push(sp, s, len, cmap, flags)
+term_push(sp, s, nchars, cmap, flags)
 	SCR *sp;
 	CHAR_T *s;			/* Characters. */
-	size_t len;			/* Number of chars. */
+	size_t nchars;			/* Number of chars. */
 	u_int cmap;			/* Map count. */
 	u_int flags;			/* CH_* flags. */
 {
 	IBUF *tty;
-	size_t nlen, olen;
+	size_t olen;
 	u_short *p, *t;
 
 	/* If we have room, stuff the keys into the buffer. */
 	tty = sp->gp->tty;
-	if (len <= tty->next ||
-	    (tty->ch != NULL && tty->cnt == 0 && len <= tty->len)) {
+	if (nchars <= tty->next ||
+	    (tty->ch != NULL && tty->cnt == 0 && nchars <= tty->nelem)) {
 		if (tty->cnt != 0)
-			tty->next -= len;
-		tty->cnt += len;
-		MEMMOVE(tty->ch + tty->next, s, len);
-		MEMSET(tty->chf + tty->next, flags, len);
+			tty->next -= nchars;
+		tty->cnt += nchars;
+		MEMMOVE(tty->ch + tty->next, s, nchars);
+		MEMSET(tty->chf + tty->next, flags, nchars);
 		for (p = tty->cmap + tty->next,
-		    t = tty->cmap + tty->next + len; p < t;)
+		    t = tty->cmap + tty->next + nchars; p < t;)
 			*p++ = cmap;
 		return (0);
 	}
 
 	/* Get enough space plus a little extra. */
-	nlen = tty->cnt + len;
-	if (nlen > tty->len) {
-		nlen += 64;
-		olen = tty->len;
-		BINC_RET(sp, tty->ch, olen, nlen * sizeof(tty->ch[0]));
-		olen = tty->len;
-		BINC_RET(sp, tty->chf, olen, nlen * sizeof(tty->chf[0]));
-		BINC_RET(sp, tty->cmap, tty->len, nlen * sizeof(tty->cmap[0]));
-	}
+	if (tty->cnt + nchars >= tty->nelem &&
+	    __term_read_grow(sp, tty, MAX(nchars, 64)))
+		return (1);
 
 	/*
 	 * If there are currently characters in the queue, shift them up,
@@ -328,21 +323,21 @@ term_push(sp, s, len, cmap, flags)
 	 */
 #define	TERM_PUSH_SHIFT	30
 	if (tty->cnt) {
-		MEMMOVE(tty->ch + TERM_PUSH_SHIFT + len,
+		MEMMOVE(tty->ch + TERM_PUSH_SHIFT + nchars,
 		    tty->ch + tty->next, tty->cnt);
-		MEMMOVE(tty->chf + TERM_PUSH_SHIFT + len,
+		MEMMOVE(tty->chf + TERM_PUSH_SHIFT + nchars,
 		    tty->chf + tty->next, tty->cnt);
-		MEMMOVE(tty->cmap + TERM_PUSH_SHIFT + len,
+		MEMMOVE(tty->cmap + TERM_PUSH_SHIFT + nchars,
 		    tty->cmap + tty->next, tty->cnt);
 	}
 
 	/* Put the new characters into the queue. */
 	tty->next = TERM_PUSH_SHIFT;
-	tty->cnt += len;
-	MEMMOVE(tty->ch + TERM_PUSH_SHIFT, s, len);
-	MEMSET(tty->chf + TERM_PUSH_SHIFT, flags, len);
+	tty->cnt += nchars;
+	MEMMOVE(tty->ch + TERM_PUSH_SHIFT, s, nchars);
+	MEMSET(tty->chf + TERM_PUSH_SHIFT, flags, nchars);
 	for (p = tty->cmap + TERM_PUSH_SHIFT,
-	    t = tty->cmap + TERM_PUSH_SHIFT + len; p < t;)
+	    t = tty->cmap + TERM_PUSH_SHIFT + nchars; p < t;)
 		*p++ = cmap;
 	return (0);
 }
@@ -696,25 +691,24 @@ __term_key_val(sp, ch)
  *	the term_read_grow() macro.
  */
 static int
-__term_read_grow(sp, tty)
+__term_read_grow(sp, tty, add)
 	SCR *sp;
 	IBUF *tty;
+	int add;
 {
-	size_t alen, len, nlen;
+	size_t new_nelem, olen;
 
-	nlen = tty->len + 64;
-	alen = tty->len - (tty->next + tty->cnt);
+	new_nelem = tty->nelem + add;
+	olen = tty->nelem * sizeof(tty->ch[0]);
+	BINC_RET(sp, tty->ch, olen, new_nelem * sizeof(tty->ch[0]));
 
-	len = tty->len;
-	BINC_RET(sp, tty->ch, len, nlen * sizeof(tty->ch[0]));
-	MEMSET(tty->ch + tty->next + tty->cnt, 0, alen);
+	olen = tty->nelem * sizeof(tty->chf[0]);
+	BINC_RET(sp, tty->chf, olen, new_nelem * sizeof(tty->chf[0]));
 
-	len = tty->len;
-	BINC_RET(sp, tty->chf, len, nlen * sizeof(tty->chf[0]));
-	MEMSET(tty->chf + tty->next + tty->cnt, 0, alen);
+	olen = tty->nelem * sizeof(tty->cmap[0]);
+	BINC_RET(sp, tty->cmap, olen, new_nelem * sizeof(tty->cmap[0]));
 
-	BINC_RET(sp, tty->cmap, tty->len, nlen * sizeof(tty->cmap[0]));
-	MEMSET(tty->cmap + tty->next + tty->cnt, 0, alen);
+	tty->nelem = new_nelem;
 	return (0);
 }
 

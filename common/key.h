@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 8.33 1994/03/14 11:02:41 bostic Exp $ (Berkeley) $Date: 1994/03/14 11:02:41 $
+ *	$Id: key.h,v 8.34 1994/03/15 12:35:49 bostic Exp $ (Berkeley) $Date: 1994/03/15 12:35:49 $
  */
 
 /* Structure to return a character and associated information. */
@@ -52,7 +52,7 @@ struct _ibuf {
 	u_short *cmap;		/* Number of times character has been mapped. */
 
 	size_t	 cnt;		/* Count of remaining characters. */
-	size_t	 len;		/* Array length. */
+	size_t	 nelem;		/* Numer of array elements. */
 	size_t	 next;		/* Offset of next array entry. */
 };
 				/* Return if more keys in queue. */
