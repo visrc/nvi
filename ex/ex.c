@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.31 1992/06/07 13:48:03 bostic Exp $ (Berkeley) $Date: 1992/06/07 13:48:03 $";
+static char sccsid[] = "$Id: ex.c,v 5.32 1992/08/22 19:13:42 bostic Exp $ (Berkeley) $Date: 1992/08/22 19:13:42 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -75,10 +75,15 @@ ex_cfile(filename, noexisterr)
 	if (fstat(fd, &sb))
 		goto e2;
 
+	if (sb.st_size > SIZE_T_MAX) {
+		errno = E2BIG;
+		goto e2;
+	}
+
 	if ((bp = malloc(sb.st_size)) == NULL)
 		goto e2;
 
-	len = read(fd, bp, sb.st_size);
+	len = read(fd, bp, (int)sb.st_size);
 	if (len == -1 || len != sb.st_size) {
 		if (len != sb.st_size)
 			errno = EIO;
@@ -250,6 +255,7 @@ ex_cmd(exc)
 	 * (the E_ADDR2_ALL flag), 0 defaults to the entire file.  For one
 	 * (the `!' command, the E_ADDR2_NONE flag), 0 defaults to no lines.
 	 */
+	flagoff = 0;
 addr1:	switch(cp->flags & (E_ADDR1|E_ADDR2|E_ADDR2_ALL|E_ADDR2_NONE)) {
 	case E_ADDR1:				/* One address: */
 		switch(cmd.addrcnt) {
@@ -310,7 +316,7 @@ two:		switch(cmd.addrcnt) {
 		cmd.string = *p ? exc : NULL;
 		goto addr2;
 	}
-	for (lcount = flagoff = 0; *p; ++p) {
+	for (lcount = 0; *p; ++p) {
 		for (; isspace(*exc); ++exc);		/* Skip whitespace. */
 		if (!*exc)
 			break;
