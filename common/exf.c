@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.12 1992/06/08 09:28:43 bostic Exp $ (Berkeley) $Date: 1992/06/08 09:28:43 $";
+static char sccsid[] = "$Id: exf.c,v 5.13 1992/06/15 09:47:22 bostic Exp $ (Berkeley) $Date: 1992/06/15 09:47:22 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -410,6 +410,14 @@ file_start(ep)
 
 	/* Set the global state. */
 	curf = ep;
+
+	/*
+	 * Reset any marks.
+	 * XXX
+	 * Not sure this should be here, but don't know where else to put
+	 * it, either.
+	 */
+	mark_reset();
 
 	/*
 	 * XXX
