@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_smap.c,v 10.22 1996/05/04 18:50:54 bostic Exp $ (Berkeley) $Date: 1996/05/04 18:50:54 $";
+static const char sccsid[] = "$Id: vs_smap.c,v 10.23 1996/05/07 19:59:00 bostic Exp $ (Berkeley) $Date: 1996/05/07 19:59:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -361,11 +361,8 @@ vs_sm_insert(sp, lno)
 	 * needed to display the line.
 	 */
 	for (p = HMAP; p->lno != lno; ++p);
-	if (O_ISSET(sp, O_LEFTRIGHT))
-		cnt_orig = 1;
-	else
-		cnt_orig = vs_screens(sp, lno, NULL);
 
+	cnt_orig = vs_screens(sp, lno, NULL);
 	HANDLE_WEIRDNESS(cnt_orig);
 
 	/*

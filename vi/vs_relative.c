@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_relative.c,v 10.9 1996/05/04 18:50:53 bostic Exp $ (Berkeley) $Date: 1996/05/04 18:50:53 $";
+static const char sccsid[] = "$Id: vs_relative.c,v 10.10 1996/05/07 19:58:59 bostic Exp $ (Berkeley) $Date: 1996/05/07 19:58:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -62,10 +62,9 @@ vs_screens(sp, lno, cnop)
 {
 	size_t cols, screens;
 
-#ifdef	DEBUG
+	/* Left-right screens are simple, it's always 1. */
 	if (O_ISSET(sp, O_LEFTRIGHT))
-		abort();
-#endif
+		return (1);
 
 	/*
 	 * Check for a cached value.  We maintain a cache because, if the
