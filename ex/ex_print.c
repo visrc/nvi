@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_print.c,v 10.21 2000/07/14 14:29:20 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:20 $";
+static const char sccsid[] = "$Id: ex_print.c,v 10.22 2001/06/17 14:16:51 skimo Exp $ (Berkeley) $Date: 2001/06/17 14:16:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,7 +30,8 @@ static const char sccsid[] = "$Id: ex_print.c,v 10.21 2000/07/14 14:29:20 skimo 
 
 #include "../common/common.h"
 
-static int ex_prchars __P((SCR *, const char *, size_t *, size_t, u_int, int));
+static int ex_prchars __P((SCR *, const CHAR_T *, size_t *, size_t, 
+                           u_int, int));
 
 /*
  * ex_list -- :[line [,line]] l[ist] [count] [flags]
@@ -107,8 +108,8 @@ ex_print(sp, cmdp, fp, tp, flags)
 	GS *gp;
 	db_recno_t from, to;
 	size_t col, len;
-	char *p;
-	char buf[10];
+	CHAR_T *p;
+	CHAR_T buf[10];
 	CHAR_T *wp;
 	size_t wlen;
 
@@ -125,10 +126,10 @@ ex_print(sp, cmdp, fp, tp, flags)
 		 */
 		if (LF_ISSET(E_C_HASH)) {
 			if (from <= 999999) {
-				snprintf(buf, sizeof(buf), "%6ld  ", from);
+				SPRINTF(buf, SIZE(buf), L("%6ld  "), from);
 				p = buf;
 			} else
-				p = "TOOBIG  ";
+				p = L("TOOBIG  ");
 			if (ex_prchars(sp, p, &col, 8, 0, 0))
 				return (1);
 		}
@@ -138,9 +139,8 @@ ex_print(sp, cmdp, fp, tp, flags)
 		 * especially in handling end-of-line tabs, but they're almost
 		 * backward compatible.
 		 */
-		if (db_get(sp, from, DBG_FATAL, &wp, &wlen))
+		if (db_get(sp, from, DBG_FATAL, &p, &len))
 			return (1);
-		INT2CHAR(sp, wp, wlen, p, len);
 
 		if (len == 0 && !LF_ISSET(E_C_LIST))
 			(void)ex_puts(sp, "\n");
@@ -157,19 +157,15 @@ ex_print(sp, cmdp, fp, tp, flags)
  * ex_ldisplay --
  *	Display a line without any preceding number.
  *
- * PUBLIC: int ex_ldisplay __P((SCR *, const char *, size_t, size_t, u_int));
+ * PUBLIC: int ex_ldisplay __P((SCR *, const CHAR_T *, size_t, size_t, u_int));
  */
 int
-ex_ldisplay(sp, p, len, col, flags)
-	SCR *sp;
-	const char *p;
-	size_t len, col;
-	u_int flags;
+ex_ldisplay(SCR *sp, const CHAR_T *p, size_t len, size_t col, u_int flags)
 {
 	if (len > 0 && ex_prchars(sp, p, &col, len, LF_ISSET(E_C_LIST), 0))
 		return (1);
 	if (!INTERRUPTED(sp) && LF_ISSET(E_C_LIST)) {
-		p = "$";
+		p = L("$");
 		if (ex_prchars(sp, p, &col, 1, LF_ISSET(E_C_LIST), 0))
 			return (1);
 	}
@@ -189,21 +185,18 @@ ex_scprint(sp, fp, tp)
 	SCR *sp;
 	MARK *fp, *tp;
 {
-	char *p;
+	CHAR_T *p;
 	size_t col, len;
-	CHAR_T *wp;
-	size_t wlen;
 
 	col = 0;
 	if (O_ISSET(sp, O_NUMBER)) {
-		p = "        ";
+		p = L("        ");
 		if (ex_prchars(sp, p, &col, 8, 0, 0))
 			return (1);
 	}
 
-	if (db_get(sp, fp->lno, DBG_FATAL, &wp, &wlen))
+	if (db_get(sp, fp->lno, DBG_FATAL, &p, &len))
 		return (1);
-	INT2CHAR(sp, wp, wlen, p, len);
 
 	if (ex_prchars(sp, p, &col, fp->cno, 0, ' '))
 		return (1);
@@ -213,7 +206,7 @@ ex_scprint(sp, fp, tp)
 		return (1);
 	if (INTERRUPTED(sp))
 		return (1);
-	p = "[ynq]";		/* XXX: should be msg_cat. */
+	p = L("[ynq]");		/* XXX: should be msg_cat. */
 	if (ex_prchars(sp, p, &col, 5, 0, 0))
 		return (1);
 	(void)ex_fflush(sp);
@@ -225,12 +218,8 @@ ex_scprint(sp, fp, tp)
  *	Local routine to dump characters to the screen.
  */
 static int
-ex_prchars(sp, p, colp, len, flags, repeatc)
-	SCR *sp;
-	const char *p;
-	size_t *colp, len;
-	u_int flags;
-	int repeatc;
+ex_prchars(SCR *sp, const CHAR_T *p, size_t *colp, size_t len, 
+	    u_int flags, int repeatc)
 {
 	CHAR_T ch;
 	char *kp;
@@ -242,7 +231,7 @@ ex_prchars(sp, p, colp, len, flags, repeatc)
 	gp = sp->gp;
 	ts = O_VAL(sp, O_TABSTOP);
 	for (col = *colp; len--;)
-		if ((ch = *p++) == '\t' && !LF_ISSET(E_C_LIST))
+		if ((ch = *p++) == L('\t') && !LF_ISSET(E_C_LIST))
 			for (tlen = ts - col % ts;
 			    col < sp->cols && tlen--; ++col) {
 				(void)ex_printf(sp,
@@ -251,8 +240,15 @@ ex_prchars(sp, p, colp, len, flags, repeatc)
 					goto intr;
 			}
 		else {
-			kp = KEY_NAME(sp, ch);
-			tlen = KEY_LEN(sp, ch);
+			/* XXXX */
+			if (INTISWIDE(ch)) {
+			    CHAR_T str[2] = {0, 0};
+			    str[0] = ch;
+			    INT2CHAR(sp, str, 2, kp, tlen);
+			} else {
+			    kp = KEY_NAME(sp, ch);
+			    tlen = KEY_LEN(sp, ch);
+			}
 			if (!repeatc  && col + tlen < sp->cols) {
 				(void)ex_puts(sp, kp);
 				col += tlen;

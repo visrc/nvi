@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_filter.c,v 10.41 2001/06/10 10:23:44 skimo Exp $ (Berkeley) $Date: 2001/06/10 10:23:44 $";
+static const char sccsid[] = "$Id: ex_filter.c,v 10.42 2001/06/17 14:16:50 skimo Exp $ (Berkeley) $Date: 2001/06/17 14:16:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -307,14 +307,11 @@ filter_ldisplay(sp, fp)
 	FILE *fp;
 {
 	size_t len;
-	char *np;
-	size_t nlen;
 
 	EX_PRIVATE *exp;
 
 	for (exp = EXP(sp); !ex_getline(sp, fp, &len) && !INTERRUPTED(sp);) {
-		INT2CHAR(sp, exp->ibp, len, np, nlen);
-		if (ex_ldisplay(sp, np, nlen, 0, 0))
+		if (ex_ldisplay(sp, exp->ibp, len, 0, 0))
 			break;
 	}
 	if (ferror(fp))

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_global.c,v 10.28 2000/07/16 20:49:32 skimo Exp $ (Berkeley) $Date: 2000/07/16 20:49:32 $";
+static const char sccsid[] = "$Id: ex_global.c,v 10.29 2001/06/17 14:16:50 skimo Exp $ (Berkeley) $Date: 2001/06/17 14:16:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -97,8 +97,8 @@ ex_g_setup(sp, cmdp, cmd)
 	 */
 	if (cmdp->argc == 0)
 		goto usage;
-	for (p = cmdp->argv[0]->bp; isblank(*p); ++p);
-	if (*p == '\0' || isalnum(*p) ||
+	for (p = cmdp->argv[0]->bp; ISBLANK(*p); ++p);
+	if (*p == '\0' || ISALNUM(*p) ||
 	    *p == '\\' || *p == '|' || *p == '\n') {
 usage:		ex_emsg(sp, cmdp->cmd->usage, EXM_USAGE);
 		return (1);
@@ -120,19 +120,19 @@ usage:		ex_emsg(sp, cmdp->cmd->usage, EXM_USAGE);
 			 * Nul terminate the pattern string -- it's passed
 			 * to regcomp which doesn't understand anything else.
 			 */
-			*t = '\0';
+			*t = L('\0');
 			break;
 		}
-		if (p[0] == '\\')
+		if (p[0] == L('\\'))
 			if (p[1] == delim)
 				++p;
-			else if (p[1] == '\\')
+			else if (p[1] == L('\\'))
 				*t++ = *p++;
 		*t++ = *p++;
 	}
 
 	/* If the pattern string is empty, use the last one. */
-	if (*ptrn == '\0') {
+	if (*ptrn == L('\0')) {
 		if (sp->re == NULL) {
 			ex_emsg(sp, NULL, EXM_NOPREVRE);
 			return (1);
@@ -175,8 +175,7 @@ usage:		ex_emsg(sp, cmdp->cmd->usage, EXM_USAGE);
 	 * parsing it.
 	 */
 	if ((len = cmdp->argv[0]->len - (p - cmdp->argv[0]->bp)) == 0) {
-		static CHAR_T pp[] = {'p', 'p', 0};
-		p = pp;
+		p = L("p");
 		len = 1;
 	}
 
