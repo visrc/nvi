@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 9.8 1994/11/18 14:42:02 bostic Exp $ (Berkeley) $Date: 1994/11/18 14:42:02 $";
+static char sccsid[] = "$Id: main.c,v 9.9 1994/12/03 12:13:41 bostic Exp $ (Berkeley) $Date: 1994/12/03 12:13:41 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -549,6 +549,8 @@ obsolete(argv)
 	 *	Change "+" into "-c$".
 	 *	Change "+<anything else>" into "-c<anything else>".
 	 *	Change "-" into "-s"
+	 *	The c, T, t, w and X options take arguments, don't allow
+	 *	    them to be special arguments.
 	 */
 	while (*++argv)
 		if (argv[0][0] == '+') {
@@ -567,12 +569,17 @@ obsolete(argv)
 				argv[0][1] = 'c';
 				(void)strcpy(argv[0] + 2, p + 1);
 			}
-		} else if (argv[0][0] == '-' && argv[0][1] == '\0') {
-			MALLOC_NOMSG(NULL, argv[0], char *, 3);
-			if (argv[0] == NULL)
-				err(1, NULL);
-			(void)strcpy(argv[0], "-s");
-		}
+		} else if (argv[0][0] == '-')
+			if (argv[0][1] == '\0') {
+				MALLOC_NOMSG(NULL, argv[0], char *, 3);
+				if (argv[0] == NULL)
+					err(1, NULL);
+				(void)strcpy(argv[0], "-s");
+			} else if ((argv[0][1] == 'c' ||
+			    argv[0][1] == 'T' || argv[0][1] == 't' ||
+			    argv[0][1] == 'w' || argv[0][1] == 'X') &&
+			    argv[0][2] == '\0')
+				++argv;
 }
 
 static void
