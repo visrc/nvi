@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_funcs.c,v 10.22 1995/10/29 15:24:53 bostic Exp $ (Berkeley) $Date: 1995/10/29 15:24:53 $";
+static char sccsid[] = "$Id: cl_funcs.c,v 10.23 1995/10/30 13:37:56 bostic Exp $ (Berkeley) $Date: 1995/10/30 13:37:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -290,14 +290,6 @@ cl_deleteln(sp)
 			if (++col >= sp->cols)
 				break;
 		}
-
-#ifndef THIS_FIXES_A_BUG_IN_NCURSES
-		/*
-		 * This line fixes a bug in ncurses, where "file|file|file"
-		 * shows up with half the lines in reverse video.
-		 */
-		refresh();
-#endif
 		F_CLR(clp, CL_LLINE_IV);
 #endif
 		(void)move(oldy, oldx);
@@ -451,11 +443,7 @@ cl_move(sp, lno, cno)
 	EX_ABORT(sp);
 	VI_INIT_ABORT(sp);
 
-	/*
-	 * See the comment in cl_cursor.  Screens implementing split screens
-	 * using physically distinct screens won't need to adjust the cl_move
-	 * parameters.
-	 */
+	/* See the comment in cl_cursor. */
 	if (move(RLNO(sp, lno), cno) == ERR) {
 		msgq(sp, M_ERR,
 		    "Error: move: l(%u) c(%u) o(%u)", lno, cno, sp->woff);
