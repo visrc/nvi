@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_relative.c,v 10.11 1996/05/13 10:20:03 bostic Exp $ (Berkeley) $Date: 1996/05/13 10:20:03 $";
+static const char sccsid[] = "$Id: vs_relative.c,v 10.12 1996/12/04 09:46:41 bostic Exp $ (Berkeley) $Date: 1996/12/04 09:46:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -219,6 +219,27 @@ vs_rcm(sp, lno, islast)
 		return (0);
 
 	return (vs_colpos(sp, lno, sp->rcm));
+}
+
+/*
+ * vs_pos --
+ *	Return the physical line/column that will display a character
+ *	closest to the specified line and screen column.
+ *
+ * PUBLIC: int vs_pos __P((SCR *, size_t, size_t, recno_t *, size_t *));
+ */
+int
+vs_pos(sp, slno, scno, lnop, cnop)
+	SCR *sp;
+	size_t slno, scno, *cnop;
+	recno_t *lnop;
+{
+	SMAP *smp;
+
+	smp = HMAP + slno;
+	*lnop = smp->lno;
+	*cnop = vs_colpos(sp, smp->lno, scno + (smp->soff - 1) * sp->cols);
+	return (0);
 }
 
 /*
