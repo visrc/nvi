@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 8.8 1993/08/31 16:43:01 bostic Exp $ (Berkeley) $Date: 1993/08/31 16:43:01 $";
+static char sccsid[] = "$Id: vs_smap.c,v 8.9 1993/09/01 12:23:19 bostic Exp $ (Berkeley) $Date: 1993/09/01 12:23:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -104,6 +104,11 @@ svi_change(sp, ep, lno, op)
  *	right position.  There isn't any way to tell if an SMAP
  *	entry has been filled in, so this routine had better be
  *	called with P_FILL set before anything else is done.
+ *
+ * !!!
+ * Unexported interface: if lno is OOBLNO, P_TOP means that the HMAP
+ * slot is already filled in, P_BOTTOM means that the TMAP slot is
+ * already filled in, and we just finish up the job.
  */
 int
 svi_sm_fill(sp, ep, lno, pos)
@@ -142,8 +147,12 @@ svi_sm_fill(sp, ep, lno, pos)
 		}
 		goto middle;
 	case P_TOP:
+		if (lno != OOBLNO) {
+top:			HMAP->lno = lno;
+			HMAP->off = 1;
+		}
 		/* If we fail, just punt. */
-top:		for (p = HMAP, p->lno = lno, p->off = 1; p < TMAP; ++p)
+		for (p = HMAP; p < TMAP; ++p)
 			if (svi_sm_next(sp, ep, p, p + 1))
 				goto err;
 		break;
@@ -163,9 +172,11 @@ middle:		p = HMAP + (TMAP - HMAP) / 2;
 				goto err;
 		break;
 	case P_BOTTOM:
+		if (lno != OOBLNO) {
+			TMAP->lno = lno;
+			TMAP->off = svi_screens(sp, ep, lno, NULL);
+		}
 		/* If we fail, guess that the file is too small. */
-		TMAP->lno = lno;
-		TMAP->off = svi_screens(sp, ep, lno, NULL);
 bottom:		for (p = TMAP; p > HMAP; --p)
 			if (svi_sm_prev(sp, ep, p, p - 1)) {
 				lno = 1;
@@ -776,92 +787,48 @@ svi_sm_prev(sp, ep, p, t)
  *	know what's really out there.
  */
 int
-svi_sm_position(sp, ep, lnop, cnt, pos)
+svi_sm_position(sp, ep, rp, cnt, pos)
 	SCR *sp;
 	EXF *ep;
-	recno_t *lnop;
+	MARK *rp;
 	u_long cnt;
 	enum position pos;
 {
-	SMAP *p, *t;
-	recno_t down, last;
+	SMAP *smp;
+	recno_t last;
 	
 	switch (pos) {
 	case P_TOP:
-		/*
-		 * Note, the top line number may not be at the top of the
-		 * screen, because we search for a line that starts on the
-		 * screen.  It works that way because that's how the historic
-		 * vi behaved.
-		 *
-		 * Set t to point at the map entry one past the last legal
-		 * entry in the map.
-		 */
-		if (file_lline(sp, ep, &last))
-			return (1);
-		if (TMAP->lno <= last)
-			t = TMAP + 1;
-		else
-			for (t = HMAP; t->lno <= last; ++t);
-
-		/* Step past cnt start-of-lines, stopping at t. */
-		for (p = HMAP - 1; cnt; --cnt)
-			for (;;) {
-				if (++p == t) {
-					msgq(sp, M_ERR,
-					    "No such line on the screen.");
-					return (1);
-				}
-				if (p->off == 1)
-					break;
-			}
-		*lnop = p->lno;
+		if (cnt > TMAP - HMAP)
+			goto err;
+		smp = HMAP + cnt;
 		break;
 	case P_MIDDLE:
-		/*
-		 * Note, the middle line number may not be anywhere near the
-		 * middle of the screen, because that's how the historic vi
-		 * behaved.
-		 *
-		 * Check for less than a full screen of lines.
-		 */
-		if (file_lline(sp, ep, &last))
-			return (1);
-		if (TMAP->lno < last)
-			last = TMAP->lno;
-
-		down = (last - HMAP->lno + 1) / 2;
-		if (down == 0 && HMAP->off != 1) {
-			msgq(sp, M_ERR, "No such line on the screen.");
+		if (cnt > (TMAP - HMAP) / 2)
+			goto err;
+		smp = (HMAP + (TMAP - HMAP) / 2) + cnt;
+		goto eof;
+	case P_BOTTOM:
+		if (cnt > TMAP - HMAP) {
+err:			msgq(sp, M_BERR, "Movement past the end-of-screen.");
 			return (1);
 		}
-		*lnop = HMAP->lno + down;
-		break;
-	case P_BOTTOM:
-		/* Set p to point at the last legal entry in the map. */
-		if (file_lline(sp, ep, &last))
-			return (1);
-		if (TMAP->lno <= last)
-			p = TMAP + 1;
-		else
-			for (p = HMAP; p->lno <= last; ++p);
-
-		/* Step past cnt start-of-lines, stopping at HMAP. */
-		for (; cnt; --cnt)
-			for (;;) {
-				if (--p < HMAP) {
-					msgq(sp, M_ERR,
-					    "No such line on the screen.");
-					return (1);
-				}
-				if (p->off == 1)
-					break;
-			}
-		*lnop = p->lno;
+		smp = TMAP - cnt;
+eof:		if (file_gline(sp, ep, smp->lno, NULL) == NULL) {
+			if (file_lline(sp, ep, &last))
+				return (1);
+			for (; smp->lno > last && smp > HMAP; --smp);
+		}
 		break;
 	default:
 		abort();
 	}
+
+	if (!SMAP_CACHE(smp) && svi_line(sp, ep, smp, NULL, NULL))
+		return (1);
+	rp->lno = smp->lno;
+	rp->cno = smp->c_sboff;
+
 	return (0);
 }
 
