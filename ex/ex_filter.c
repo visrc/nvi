@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 10.12 1995/09/28 10:39:07 bostic Exp $ (Berkeley) $Date: 1995/09/28 10:39:07 $";
+static char sccsid[] = "$Id: ex_filter.c,v 10.13 1995/10/04 12:37:40 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:37:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -50,8 +50,8 @@ filtercmd(sp, cmdp, fm, tm, rp, cmd, ftype)
 	FILE *ifp, *ofp;
 	pid_t parent_writer_pid, utility_pid;
 	recno_t nread;
-	int input[2], output[2], nf, rval;
-	char *name, *p;
+	int input[2], output[2], rval;
+	char *name;
 
 	/* Set return cursor position; guard against a line number of zero. */
 	*rp = *fm;
@@ -99,7 +99,7 @@ filtercmd(sp, cmdp, fm, tm, rp, cmd, ftype)
 	 */
 	if (ftype == FILTER_READ && F_ISSET(sp, S_VI)) {
 		if (sp->gp->scr_screen(sp, S_EX)) {
-			ex_message(sp, cmdp->cmd->name, EXM_NOCANON);
+			ex_emsg(sp, cmdp->cmd->name, EXM_NOCANON);
 			return (1);
 		}
 		F_SET(sp, S_SCREEN_READY);
@@ -150,10 +150,7 @@ err:		if (input[0] != -1)
 			++name;
 
 		execl(O_STR(sp, O_SHELL), name, "-c", cmd, NULL);
-		p = msg_print(sp, O_STR(sp, O_SHELL), &nf);
-		msgq(sp, M_SYSERR, "execl: %s", p);
-		if (nf)
-			FREE_SPACE(sp, p, 0);
+		msgq_str(sp, M_SYSERR, O_STR(sp, O_SHELL), "execl: %s");
 		_exit (127);
 		/* NOTREACHED */
 	default:			/* Parent-reader, parent-writer. */
