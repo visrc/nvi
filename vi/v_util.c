@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_util.c,v 5.4 1992/10/10 14:04:45 bostic Exp $ (Berkeley) $Date: 1992/10/10 14:04:45 $";
+static char sccsid[] = "$Id: v_util.c,v 5.5 1992/10/18 13:10:46 bostic Exp $ (Berkeley) $Date: 1992/10/18 13:10:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -43,6 +43,18 @@ v_eof(mp)
 			else
 				msg("Movement past the end-of-file.");
 		}
+}
+
+/*
+ * v_eol --
+ *	Vi end-of-line error.
+ */
+void
+v_eol()
+{
+	bell();
+	if (ISSET(O_VERBOSE))
+		msg("Already at end-of-line.");
 }
 
 /*
