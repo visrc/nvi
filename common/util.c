@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.30 1993/12/03 15:40:29 bostic Exp $ (Berkeley) $Date: 1993/12/03 15:40:29 $";
+static char sccsid[] = "$Id: util.c,v 8.31 1993/12/09 19:42:18 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:42:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -138,25 +138,25 @@ msg_app(gp, sp, inv_video, p, len)
 	 */
 	if (sp != NULL) {
 		if ((mp = sp->msgq.lh_first) == NULL) {
-			if ((mp = malloc(sizeof(MSG))) == NULL)
+			CALLOC(sp, mp, MSG *, 1, sizeof(MSG));
+			if (mp == NULL)
 				goto ret;
-			memset(mp, 0, sizeof(MSG));
 			LIST_INSERT_HEAD(&sp->msgq, mp, q);
 			goto store;
 		}
 	} else if ((mp = gp->msgq.lh_first) == NULL) {
-		if ((mp = malloc(sizeof(MSG))) == NULL)
+		CALLOC(sp, mp, MSG *, 1, sizeof(MSG));
+		if (mp == NULL)
 			goto ret;
-		memset(mp, 0, sizeof(MSG));
 		LIST_INSERT_HEAD(&gp->msgq, mp, q);
 		goto store;
 	}
 	while (!F_ISSET(mp, M_EMPTY) && mp->q.le_next != NULL)
 		mp = mp->q.le_next;
 	if (!F_ISSET(mp, M_EMPTY)) {
-		if ((nmp = malloc(sizeof(MSG))) == NULL)
+		CALLOC(sp, nmp, MSG *, 1, sizeof(MSG));
+		if (nmp == NULL)
 			goto ret;
-		memset(nmp, 0, sizeof(MSG));
 		LIST_INSERT_AFTER(mp, nmp, q);
 		mp = nmp;
 	}
@@ -206,7 +206,7 @@ msg_rpt(sp, is_message)
 	if ((rval = O_VAL(sp, O_REPORT)) == 0)
 		goto norpt;
 
-	GET_SPACE(sp, bp, blen, 512);
+	GET_SPACE_RET(sp, bp, blen, 512);
 	p = bp;
 
 	total = 0;
@@ -534,10 +534,9 @@ v_strdup(sp, str, len)
 {
 	CHAR_T *copy;
 
-	if ((copy = malloc(len)) == NULL) {
-		msgq(sp, M_SYSERR, NULL);
+	MALLOC(sp, copy, CHAR_T *, len);
+	if (copy == NULL)
 		return (NULL);
-	}
 	memmove(copy, str, len * sizeof(CHAR_T));
 	return (copy);
 }

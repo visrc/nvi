@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.33 1993/12/04 10:20:54 bostic Exp $ (Berkeley) $Date: 1993/12/04 10:20:54 $";
+static char sccsid[] = "$Id: key.c,v 8.34 1993/12/09 19:42:16 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:42:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -147,11 +147,8 @@ term_init(sp)
 	    sizeof(keylist) / sizeof(keylist[0]), sizeof(keylist[0]), keycmp);
 
 	/* Initialize the fast lookup table. */
-	if ((gp->special_key =
-	    calloc(MAX_FAST_KEY + 1, sizeof(u_char))) == NULL) {
-		msgq(sp, M_SYSERR, NULL);
-		return (1);
-	}
+	CALLOC_RET(sp,
+	    gp->special_key, u_char *, MAX_FAST_KEY + 1, sizeof(u_char));
 	for (gp->max_special = 0, kp = keylist,
 	    cnt = sizeof(keylist) / sizeof(keylist[0]); cnt--; ++kp) {
 		if (gp->max_special < kp->value)
@@ -224,10 +221,10 @@ term_push(sp, s, len, cmap, flags)
 
 		nlen += 64;
 		olen = tty->len;
-		BINC(sp, tty->ch, olen, nlen * sizeof(tty->ch[0]));
+		BINC_RET(sp, tty->ch, olen, nlen * sizeof(tty->ch[0]));
 		olen = tty->len;
-		BINC(sp, tty->chf, olen, nlen * sizeof(tty->chf[0]));
-		BINC(sp, tty->cmap, tty->len, nlen * sizeof(tty->cmap[0]));
+		BINC_RET(sp, tty->chf, olen, nlen * sizeof(tty->chf[0]));
+		BINC_RET(sp, tty->cmap, tty->len, nlen * sizeof(tty->cmap[0]));
 	}
 
 	/*
@@ -616,14 +613,14 @@ __term_read_grow(sp, tty)
 	alen = tty->len - (tty->next + tty->cnt);
 
 	len = tty->len;
-	BINC(sp, tty->ch, len, nlen * sizeof(tty->ch[0]));
+	BINC_RET(sp, tty->ch, len, nlen * sizeof(tty->ch[0]));
 	memset(tty->ch + tty->next + tty->cnt, 0, alen * sizeof(tty->ch[0]));
 
 	len = tty->len;
-	BINC(sp, tty->chf, len, nlen * sizeof(tty->chf[0]));
+	BINC_RET(sp, tty->chf, len, nlen * sizeof(tty->chf[0]));
 	memset(tty->chf + tty->next + tty->cnt, 0, alen * sizeof(tty->chf[0]));
 
-	BINC(sp, tty->cmap, tty->len, nlen * sizeof(tty->cmap[0]));
+	BINC_RET(sp, tty->cmap, tty->len, nlen * sizeof(tty->cmap[0]));
 	memset(tty->cmap +
 	    tty->next + tty->cnt, 0, alen * sizeof(tty->cmap[0]));
 	return (0);

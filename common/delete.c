@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: delete.c,v 8.6 1993/10/05 12:04:55 bostic Exp $ (Berkeley) $Date: 1993/10/05 12:04:55 $";
+static char sccsid[] = "$Id: delete.c,v 8.7 1993/12/09 19:42:05 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:42:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -72,7 +72,7 @@ delete(sp, ep, fm, tm, lmode)
 				GETLINE_ERR(sp, fm->lno);
 				return (1);
 			}
-			GET_SPACE(sp, bp, blen, fm->cno);
+			GET_SPACE_RET(sp, bp, blen, fm->cno);
 			memmove(bp, p, fm->cno);
 			if (file_sline(sp, ep, fm->lno, bp, fm->cno))
 				return (1);
@@ -86,7 +86,7 @@ delete(sp, ep, fm, tm, lmode)
 			GETLINE_ERR(sp, fm->lno);
 			return (1);
 		}
-		GET_SPACE(sp, bp, blen, len);
+		GET_SPACE_RET(sp, bp, blen, len);
 		memmove(bp, p, fm->cno);
 		memmove(bp + fm->cno, p + tm->cno, len - tm->cno);
 		if (file_sline(sp, ep, fm->lno, bp, len - (tm->cno - fm->cno)))
@@ -121,7 +121,7 @@ delete(sp, ep, fm, tm, lmode)
 		return (1);
 	}
 
-	GET_SPACE(sp, bp, blen, tlen);
+	GET_SPACE_RET(sp, bp, blen, tlen);
 
 	/* Copy the start partial line into place. */
 	if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {

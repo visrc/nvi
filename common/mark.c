@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: mark.c,v 8.10 1993/11/29 14:14:48 bostic Exp $ (Berkeley) $Date: 1993/11/29 14:14:48 $";
+static char sccsid[] = "$Id: mark.c,v 8.11 1993/12/09 19:42:11 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:42:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -65,10 +65,7 @@ mark_init(sp, ep)
 	 * Make sure the marks have been set up.  If they
 	 * haven't, do so, and create the absolute mark.
 	 */
-	if ((mp = malloc(sizeof(MARK))) == NULL) {
-		msgq(sp, M_SYSERR, NULL);
-		return (1);
-	}
+	MALLOC_RET(sp, mp, MARK *, sizeof(MARK));
 	mp->lno = 1;
 	mp->cno = 0;
 	mp->name = ABSMARK1;
@@ -156,10 +153,7 @@ mark_set(sp, ep, key, value, userset)
 	 */
 	mp = mark_find(sp, ep, key);
 	if (mp == NULL || mp->name != key) {
-		if ((mt = malloc(sizeof(MARK))) == NULL) {
-			msgq(sp, M_SYSERR, NULL);
-			return (1);
-		}
+		MALLOC_RET(sp, mt, MARK *, sizeof(MARK));
 		if (mp == NULL) {
 			LIST_INSERT_HEAD(&ep->marks, mt, q);
 		} else

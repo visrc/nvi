@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 8.29 1993/12/02 10:28:15 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:28:15 $
+ *	$Id: common.h,v 8.30 1993/12/09 19:42:19 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:42:19 $
  */
 
 /* System includes. */
@@ -83,6 +83,7 @@ typedef	u_int		ARG_CHAR_T;
 
 #include "exf.h"		
 #include "log.h"
+#include "mem.h"
 
 #if FWOPEN_NOT_AVAILABLE	/* See PORT/clib/fwopen.c. */
 #define	EXCOOKIE	sp
@@ -104,55 +105,6 @@ FILE	*fwopen __P((SCR *, void *));
 #define	LF_SET(f)	flags |= (f)
 #define	LF_CLR(f)	flags &= ~(f)
 #define	LF_ISSET(f)	(flags & (f))
-
-/* Memory allocation macros. */
-#define	BINC(sp, lp, llen, nlen) {					\
-	if ((nlen) > llen && binc(sp, &(lp), &(llen), nlen))		\
-		return (1);						\
-}
-int	binc __P((SCR *, void *, size_t *, size_t));
-
-#define	GET_SPACE(sp, bp, blen, nlen) {					\
-	GS *__gp = (sp)->gp;						\
-	if (F_ISSET(__gp, G_TMP_INUSE)) {				\
-		bp = NULL;						\
-		blen = 0;						\
-		BINC(sp, bp, blen, nlen); 				\
-	} else {							\
-		BINC(sp, __gp->tmp_bp, __gp->tmp_blen, nlen);		\
-		bp = __gp->tmp_bp;					\
-		blen = __gp->tmp_blen;					\
-		F_SET(__gp, G_TMP_INUSE);				\
-	}								\
-}
-
-#define	ADD_SPACE(sp, bp, blen, nlen) {					\
-	GS *__gp = (sp)->gp;						\
-	if (bp == __gp->tmp_bp) {					\
-		F_CLR(__gp, G_TMP_INUSE);				\
-		BINC(sp, __gp->tmp_bp, __gp->tmp_blen, nlen);		\
-		bp = __gp->tmp_bp;					\
-		blen = __gp->tmp_blen;					\
-		F_SET(__gp, G_TMP_INUSE);				\
-	} else								\
-		BINC(sp, bp, blen, nlen);				\
-}
-
-#define	FREE_SPACE(sp, bp, blen) {					\
-	if (bp == sp->gp->tmp_bp)					\
-		F_CLR(sp->gp, G_TMP_INUSE);				\
-	else								\
-		FREE(bp, blen);						\
-}
-
-#ifdef DEBUG
-#define	FREE(p, sz) {							\
-	memset(p, 0xff, sz);						\
-	free(p);							\
-}
-#else
-#define	FREE(p, sz)	free(p);
-#endif
 
 /*
  * XXX

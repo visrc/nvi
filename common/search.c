@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.29 1993/12/02 11:46:43 bostic Exp $ (Berkeley) $Date: 1993/12/02 11:46:43 $";
+static char sccsid[] = "$Id: search.c,v 8.30 1993/12/09 19:42:13 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:42:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -156,7 +156,7 @@ ctag_conv(sp, ptrnp, replacedp)
 	len = strlen(p = *ptrnp);
 
 	/* Max memory usage is 2 times the length of the string. */
-	GET_SPACE(sp, bp, blen, len * 2);
+	GET_SPACE_RET(sp, bp, blen, len * 2);
 
 	t = bp;
 
@@ -686,7 +686,7 @@ re_conv(sp, ptrnp, replacedp)
 	 * XXX
 	 * It's nul-terminated, for now.
 	 */
-	GET_SPACE(sp, bp, blen, needlen + 1);
+	GET_SPACE_RET(sp, bp, blen, needlen + 1);
 
 	for (p = *ptrnp, t = bp; *p != '\0'; ++p)
 		switch (*p) {

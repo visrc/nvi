@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 8.20 1993/12/02 15:01:51 bostic Exp $ (Berkeley) $Date: 1993/12/02 15:01:51 $";
+static char sccsid[] = "$Id: seq.c,v 8.21 1993/12/09 19:42:15 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:42:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -50,7 +50,8 @@ seq_set(sp, name, nlen, input, ilen, output, olen, stype, userdef)
 	}
 
 	/* Allocate and initialize space. */
-	if ((qp = calloc(1, sizeof(SEQ))) == NULL) 
+	CALLOC(sp, qp, SEQ *, 1, sizeof(SEQ));
+	if (qp == NULL)
 		goto mem1;
 	if (name == NULL)
 		qp->name = NULL;

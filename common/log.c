@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: log.c,v 8.7 1993/11/13 18:00:31 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:00:31 $";
+static char sccsid[] = "$Id: log.c,v 8.8 1993/12/09 19:42:07 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:42:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -162,7 +162,7 @@ log_cursor1(sp, ep, type)
 {
 	DBT data, key;
 
-	BINC(sp, ep->l_lp, ep->l_len, sizeof(u_char) + sizeof(MARK));
+	BINC_RET(sp, ep->l_lp, ep->l_len, sizeof(u_char) + sizeof(MARK));
 	ep->l_lp[0] = type;
 	memmove(ep->l_lp + sizeof(u_char), &ep->l_cursor, sizeof(MARK));
 
@@ -236,7 +236,8 @@ log_line(sp, ep, lno, action)
 			GETLINE_ERR(sp, lno);
 			return (1);
 		}
-	BINC(sp, ep->l_lp, ep->l_len, len + sizeof(u_char) + sizeof(recno_t));
+	BINC_RET(sp,
+	    ep->l_lp, ep->l_len, len + sizeof(u_char) + sizeof(recno_t));
 	ep->l_lp[0] = action;
 	memmove(ep->l_lp + sizeof(u_char), &lno, sizeof(recno_t));
 	memmove(ep->l_lp + sizeof(u_char) + sizeof(recno_t), lp, len);
@@ -303,7 +304,7 @@ log_mark(sp, ep, mp)
 		ep->l_cursor.lno = OOBLNO;
 	}
 
-	BINC(sp, ep->l_lp,
+	BINC_RET(sp, ep->l_lp,
 	    ep->l_len, sizeof(u_char) + sizeof(MARK));
 	ep->l_lp[0] = LOG_MARK;
 	memmove(ep->l_lp + sizeof(u_char), mp, sizeof(MARK));

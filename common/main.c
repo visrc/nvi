@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.52 1993/12/03 15:40:23 bostic Exp $ (Berkeley) $Date: 1993/12/03 15:40:23 $";
+static char sccsid[] = "$Id: main.c,v 8.53 1993/12/09 19:42:09 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:42:09 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -418,7 +418,8 @@ gs_init()
 	GS *gp;
 	int fd;
 
-	if ((gp = calloc(1, sizeof(GS))) == NULL)
+	CALLOC_NOMSG(NULL, gp, GS *, 1, sizeof(GS));
+	if (gp == NULL)
 		err(1, NULL);
 
 	CIRCLEQ_INIT(&gp->dq);
@@ -426,7 +427,8 @@ gs_init()
 	LIST_INIT(&gp->msgq);
 
 	/* Structures shared by screens so stored in the GS structure. */
-	if ((gp->tty = calloc(1, sizeof(IBUF))) == NULL)
+	CALLOC_NOMSG(NULL, gp->tty, IBUF *, 1, sizeof(IBUF));
+	if (gp->tty == NULL)
 		err(1, NULL);
 
 	LIST_INIT(&gp->cutq);
@@ -563,13 +565,15 @@ obsolete(argv)
 	for (myname = argv[0]; *++argv;)
 		if (argv[0][0] == '+') {
 			if (argv[0][1] == '\0') {
-				if ((argv[0] = malloc(4)) == NULL)
+				MALLOC_NOMSG(NULL, argv[0], char *, 4);
+				if (argv[0] == NULL)
 					err(1, NULL);
 				(void)strcpy(argv[0], "-c$");
 			} else  {
 				p = argv[0];
 				len = strlen(argv[0]);
-				if ((argv[0] = malloc(len + 2)) == NULL)
+				MALLOC_NOMSG(NULL, argv[0], char *, len + 2);
+				if (argv[0] == NULL)
 					err(1, NULL);
 				argv[0][0] = '-';
 				argv[0][1] = 'c';
@@ -580,7 +584,8 @@ obsolete(argv)
 				if (argv[0][2] == '\0' && argv[1] == NULL)
 					argv[0][1] = 'l';
 			} else if (argv[0][1] == '\0') {
-				if ((argv[0] = malloc(3)) == NULL)
+				MALLOC_NOMSG(NULL, argv[0], char *, 3);
+				if (argv[0] == NULL)
 					err(1, NULL);
 				(void)strcpy(argv[0], "-s");
 			}

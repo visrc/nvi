@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.46 1993/12/02 22:49:39 bostic Exp $ (Berkeley) $Date: 1993/12/02 22:49:39 $";
+static char sccsid[] = "$Id: screen.c,v 8.47 1993/12/09 19:42:12 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:42:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,11 +33,7 @@ screen_init(orig, spp, flags)
 	SCR *sp;
 	size_t len;
 
-	if ((sp = malloc(sizeof(SCR))) == NULL) {
-		msgq(orig, M_SYSERR, NULL);
-		return (1);
-	}
-	memset(sp, 0, sizeof(SCR));
+	CALLOC_RET(orig, sp, SCR *, 1, sizeof(SCR));
 
 /* INITIALIZED AT SCREEN CREATE. */
 	sp->gp = __global_list;			/* All ref the GS structure. */
@@ -94,20 +90,23 @@ screen_init(orig, spp, flags)
 
 		if (orig->matchsize) {
 			len = orig->matchsize * sizeof(regmatch_t);
-			if ((sp->match = malloc(len)) == NULL)
+			MALLOC(sp, sp->match, regmatch_t *, len);
+			if (sp->match == NULL)
 				goto mem;
 			sp->matchsize = orig->matchsize;
 			memmove(sp->match, orig->match, len);
 		}
 		if (orig->repl_len) {
-			if ((sp->repl = malloc(orig->repl_len)) == NULL)
+			MALLOC(sp, sp->repl, char *, orig->repl_len);
+			if (sp->repl == NULL)
 				goto mem;
 			sp->repl_len = orig->repl_len;
 			memmove(sp->repl, orig->repl, orig->repl_len);
 		}
 		if (orig->newl_len) {
 			len = orig->newl_len * sizeof(size_t);
-			if ((sp->newl = malloc(len)) == NULL)
+			MALLOC(sp, sp->newl, size_t *, len);
+			if (sp->newl == NULL)
 				goto mem;
 			sp->newl_len = orig->newl_len;
 			sp->newl_cnt = orig->newl_cnt;

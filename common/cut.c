@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 8.14 1993/11/19 11:54:55 bostic Exp $ (Berkeley) $Date: 1993/11/19 11:54:55 $";
+static char sccsid[] = "$Id: cut.c,v 8.15 1993/12/09 19:42:03 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:42:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -73,11 +73,7 @@ cut(sp, ep, name, fm, tm, lmode)
 	 * Otherwise, if it's not an append, free its current contents.
 	 */
 	if (cbp == NULL) {
-		if ((cbp = malloc(sizeof(CB))) == NULL) {
-			msgq(sp, M_SYSERR, NULL);
-			return (1);
-		}
-		memset(cbp, 0, sizeof(CB));
+		CALLOC(sp, cbp, CB *, 1, sizeof(CB));
 		cbp->name = name;
 		LIST_INSERT_HEAD(&sp->gp->cutq, cbp, q);
 		CIRCLEQ_INIT(&cbp->textq);
@@ -228,11 +224,13 @@ text_init(sp, p, len, total_len)
 {
 	TEXT *tp;
 
-	if ((tp = malloc(sizeof(TEXT))) == NULL)
-		goto mem;
-	if ((tp->lb = malloc(tp->lb_len = total_len)) == NULL) {
-		free(tp);
-mem:		msgq(sp, M_SYSERR, NULL);
+	MALLOC(sp, tp, TEXT *, sizeof(TEXT));
+	if (tp == NULL)
+		return (NULL);
+	tp->lb_len = total_len;
+	MALLOC(sp, tp->lb, CHAR_T *, total_len);
+	if (tp->lb == NULL) {
+		FREE(tp, sizeof(TEXT));
 		return (NULL);
 	}
 #ifdef DEBUG
@@ -365,7 +363,7 @@ put(sp, ep, name, cp, rp, append)
 		return (1);
 	}
 
-	GET_SPACE(sp, bp, blen, tp->len + len + 1);
+	GET_SPACE_RET(sp, bp, blen, tp->len + len + 1);
 	t = bp;
 
 	/* Original line, left of the split. */
@@ -416,7 +414,7 @@ put(sp, ep, name, cp, rp, append)
 		 */
 		ltp = cbp->textq.cqh_last;
 		len = t - bp;
-		ADD_SPACE(sp, bp, blen, ltp->len + clen);
+		ADD_SPACE_RET(sp, bp, blen, ltp->len + clen);
 		t = bp + len;
 
 		/* Add in last part of the CB. */

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.54 1993/12/02 10:36:01 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:36:01 $";
+static char sccsid[] = "$Id: exf.c,v 8.55 1993/12/09 19:42:06 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:42:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -65,8 +65,9 @@ file_add(sp, frp_append, name, ignore)
 		}
 
 	/* Allocate and initialize the FREF structure. */
-	if ((frp = calloc(1, sizeof(FREF))) == NULL)
-		goto mem;
+	CALLOC(sp, frp, FREF *, 1, sizeof(FREF));
+	if (frp == NULL)
+		return (NULL);
 
 	/*
 	 * If no file name specified, or if the file name is a request
@@ -77,7 +78,7 @@ file_add(sp, frp_append, name, ignore)
 	if (name != NULL && strcmp(name, TEMPORARY_FILE_STRING) &&
 	    (frp->name = strdup(name)) == NULL) {
 		FREE(frp, sizeof(FREF));
-mem:		msgq(sp, M_SYSERR, NULL);
+		msgq(sp, M_SYSERR, NULL);
 		return (NULL);
 	}
 
@@ -150,19 +151,13 @@ file_init(sp, frp, rcv_name, force)
 	int fd;
 	char *p, *oname, tname[sizeof(_PATH_TMPNAME) + 1];
 
-	/* Create the EXF. */
-	if ((ep = malloc(sizeof(EXF))) == NULL) {
-		msgq(sp, M_SYSERR, NULL);
-		return (1);
-	}
-
 	/*
 	 * Required ep initialization:
 	 *	Flush the line caches.
 	 *	Default recover mail file fd to -1.
 	 *	Set initial EXF flag bits.
 	 */
-	memset(ep, 0, sizeof(EXF));
+	CALLOC_RET(sp, ep, EXF *, 1, sizeof(EXF));
 	ep->c_lno = ep->c_nlines = OOBLNO;
 	ep->rcv_fd = -1;
 	LIST_INIT(&ep->marks);
