@@ -1,4 +1,4 @@
-#	$Id: README,v 8.146 1996/08/18 14:32:02 bostic Exp $ (Berkeley) $Date: 1996/08/18 14:32:02 $
+#	$Id: README,v 8.147 1996/10/19 11:22:47 bostic Exp $ (Berkeley) $Date: 1996/10/19 11:22:47 $
 
 This is the README for nex/nvi, a freely redistributable implementation
 of the ex/vi text editors originally distributed as part of the Fourth
@@ -44,7 +44,7 @@ o This software is several years old and is the product of many folks' work.
 	George Neville-Neil added the Tcl interpreter, and the initial
 	interpreter design was his.
 
-	Sven Verdoolaege added the Perl5 interpreter.
+	Sven Verdoolaege added the Perl interpreter.
 
 	Rob Mayoff provided the original Cscope support.
 
