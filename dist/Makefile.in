@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.7 1996/02/21 11:36:36 bostic Exp $ (Berkeley) $Date: 1996/02/21 11:36:36 $
+#	$Id: Makefile.in,v 8.8 1996/02/21 15:43:10 bostic Exp $ (Berkeley) $Date: 1996/02/21 15:43:10 $
 
 #GCCF=	-Wall
 #DEBUG=	-DDEBUG
@@ -51,7 +51,7 @@ nvi: ${NVIALL}
 
 TKALL=	${TKOBJS} ${VIOBJS} @dbobjs@ @reobjs@ @LIBOBJS@
 tknvi: ${TKALL}
-	${CC} -o $@ ${TKALL} -L/usr/X11/lib -ltk -ltcl -lm -lX11
+	${CC} -o $@ ${TKALL} @LIBS@ -L/usr/X11/lib -lX11
 
 clean:
 	rm -f nex nvi tknvi @LIBOBJS@ \
