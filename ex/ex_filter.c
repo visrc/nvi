@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 8.30 1994/03/23 20:25:17 bostic Exp $ (Berkeley) $Date: 1994/03/23 20:25:17 $";
+static char sccsid[] = "$Id: ex_filter.c,v 8.31 1994/03/23 20:26:37 bostic Exp $ (Berkeley) $Date: 1994/03/23 20:26:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -75,6 +75,7 @@ filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
 	 * input.  Redirect its input from /dev/null.  Otherwise open
 	 * up utility input pipe.
 	 */
+	teardown = 0;
 	ifp = ofp = NULL;
 	input[0] = input[1] = output[0] = output[1] = -1;
 	if (ftype == FILTER_READ) {
