@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.39 1996/03/28 14:59:58 bostic Exp $ (Berkeley) $Date: 1996/03/28 14:59:58 $
+#	$Id: Makefile.in,v 8.40 1996/03/29 09:24:30 bostic Exp $ (Berkeley) $Date: 1996/03/29 09:24:30 $
 
 srcdir=	@srcdir@/..
 CC=	@CC@
@@ -107,7 +107,7 @@ cl_funcs.o: $(srcdir)/cl/cl_funcs.c
 cl_main.o: $(srcdir)/cl/cl_main.c
 	$(CC) $(CFLAGS) $?
 cl_read.o: $(srcdir)/cl/cl_read.c
-	 $(CC) -c @no_op_CFLAGS@ -I. -I$(srcdir)/include @CPPFLAGS@ $?
+	$(CC) $(CFLAGS) $?
 cl_screen.o: $(srcdir)/cl/cl_screen.c
 	$(CC) $(CFLAGS) $?
 cl_term.o: $(srcdir)/cl/cl_term.c
