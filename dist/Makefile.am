@@ -174,6 +174,7 @@ bin_PROGRAMS = @vi_curses@ @vi_ipc@ @vi_motif@ @vi_gtk@
 EXTRA_PROGRAMS = vi vi-ipc vi-motif vi-gtk
 
 vi_SOURCES = \
+	$(visrcdir)/cl/cl.h \
 	$(visrcdir)/cl/cl_bsd.c \
 	$(visrcdir)/cl/cl_funcs.c \
 	$(visrcdir)/cl/cl_main.c \
