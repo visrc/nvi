@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.32 1993/11/02 14:41:51 bostic Exp $ (Berkeley) $Date: 1993/11/02 14:41:51 $";
+static char sccsid[] = "$Id: main.c,v 8.33 1993/11/02 14:46:53 bostic Exp $ (Berkeley) $Date: 1993/11/02 14:46:53 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -196,14 +196,17 @@ main(argc, argv)
 		case 's':		/* No snapshot. */
 			F_CLR(gp, G_SNAPSHOT);
 			break;
-#ifdef DEBUG
 		case 'T':		/* Trace. */
+#ifdef DEBUG
 			if ((gp->tracefp = fopen(optarg, "w")) == NULL)
 				err(1, "%s", optarg);
 			(void)fprintf(gp->tracefp,
 			    "\n===\ntrace: open %s\n", optarg);
-			break;
+#else
+			msgq(sp, M_ERR,
+			    "-T support not compiled into this version.");
 #endif
+			break;
 		case 't':		/* Tag. */
 			if (flagchk == 't')
 				errx(1,
