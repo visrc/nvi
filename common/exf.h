@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 5.46 1993/04/17 11:45:12 bostic Exp $ (Berkeley) $Date: 1993/04/17 11:45:12 $
+ *	$Id: exf.h,v 5.47 1993/04/19 15:23:18 bostic Exp $ (Berkeley) $Date: 1993/04/19 15:23:18 $
  */
 
 					/* Undo direction. */
@@ -77,7 +77,7 @@ typedef struct _exf {
 		if (O_ISSET(sp, O_AUTOWRITE)) {				\
 			if (file_sync((sp), (ep), (force)))		\
 				return (1);				\
-		} else if (!(force)) {					\
+		} else if (ep->refcnt <= 1 && !(force)) {		\
 			msgq(sp, M_ERR,					\
 	"Modified since last write; write or use ! to override.");	\
 			return (1);					\
