@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 8.2 1993/06/29 16:52:17 bostic Exp $ (Berkeley) $Date: 1993/06/29 16:52:17 $";
+static char sccsid[] = "$Id: ex_read.c,v 8.3 1993/07/06 18:44:32 bostic Exp $ (Berkeley) $Date: 1993/07/06 18:44:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,7 +35,8 @@ ex_read(sp, ep, cmdp)
 	struct stat sb;
 	FILE *fp;
 	MARK rm;
-	int force;
+	recno_t nlines;
+	int force, rval;
 	char *fname;
 
 	/* If nothing, just read the file. */
@@ -102,16 +103,23 @@ noargs:	if ((fp = fopen(fname, "r")) == NULL || fstat(fileno(fp), &sb)) {
 		return (1);
 	}
 
-	if (ex_readfp(sp, ep, fname, fp, &cmdp->addr1, &sp->rptlines[L_READ]))
-		return (1);
+	rval = ex_readfp(sp, ep, fname, fp, &cmdp->addr1, &nlines, 1);
+	sp->rptlines[L_READ] += nlines;
 
-	/* Set the cursor. */
-	sp->lno = cmdp->addr1.lno + 1;
+	/*
+	 * Set the cursor to the first line read in, if anything read
+	 * in, otherwise, the address.  (Historic vi set it to the
+	 * line after the address regardless, but since that line may
+	 * not exist we don't bother.)
+	 */
+	sp->lno = cmdp->addr1.lno;
+	if (nlines)
+		++sp->lno;
 	
 	/* Set autoprint. */
 	F_SET(sp, S_AUTOPRINT);
 
-	return (0);
+	return (rval);
 }
 
 /*
@@ -119,28 +127,33 @@ noargs:	if ((fp = fopen(fname, "r")) == NULL || fstat(fileno(fp), &sb)) {
  *	Read lines into the file.
  */
 int
-ex_readfp(sp, ep, fname, fp, fm, cntp)
+ex_readfp(sp, ep, fname, fp, fm, nlinesp, success_msg)
 	SCR *sp;
 	EXF *ep;
 	char *fname;
 	FILE *fp;
 	MARK *fm;
-	recno_t *cntp;
+	recno_t *nlinesp;
+	int success_msg;
 {
+	register u_long ccnt;
 	size_t len;
-	recno_t lno;
+	recno_t lno, nlines;
 	int rval;
 
 	/*
 	 * Add in the lines from the output.  Insertion starts at the line
 	 * following the address.
 	 */
+	ccnt = 0;
 	rval = 0;
-	for (lno = fm->lno; !ex_getline(sp, fp, &len); ++lno)
+	for (lno = fm->lno; !ex_getline(sp, fp, &len); ++lno) {
 		if (file_aline(sp, ep, 1, lno, sp->ibp, len)) {
 			rval = 1;
 			break;
 		}
+		ccnt += len;
+	}
 
 	if (ferror(fp)) {
 		msgq(sp, M_ERR, "%s: %s", fname, strerror(errno));
@@ -156,8 +169,13 @@ ex_readfp(sp, ep, fname, fp, fm, cntp)
 		return (1);
 
 	/* Return the number of lines read in. */
-	if (cntp != NULL)
-		*cntp += lno - fm->lno;
+	nlines = lno - fm->lno;
+	if (nlinesp != NULL)
+		*nlinesp = nlines;
+
+	if (success_msg)
+		msgq(sp, M_INFO, "%s: %lu line%s, %lu characters.",
+		    fname, nlines, nlines == 1 ? "" : "s", ccnt);
 
 	return (0);
 }
