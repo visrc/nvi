@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_redraw.c,v 10.2 1995/05/05 18:55:35 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:55:35 $";
+static char sccsid[] = "$Id: v_redraw.c,v 10.3 1995/07/06 11:51:58 bostic Exp $ (Berkeley) $Date: 1995/07/06 11:51:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,7 +29,7 @@ static char sccsid[] = "$Id: v_redraw.c,v 10.2 1995/05/05 18:55:35 bostic Exp $ 
 #include "vi.h"
 
 /*
- * v_redraw -- ^R
+ * v_redraw -- ^L, ^R
  *	Redraw the screen.
  *
  * PUBLIC: int v_redraw __P((SCR *, VICMD *));
@@ -39,6 +39,5 @@ v_redraw(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	F_SET(sp, S_SCR_REFRESH);
-	return (0);
+	return (sp->gp->scr_refresh(sp, 1));
 }
