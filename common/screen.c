@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.5 1993/08/19 15:12:18 bostic Exp $ (Berkeley) $Date: 1993/08/19 15:12:18 $";
+static char sccsid[] = "$Id: screen.c,v 8.6 1993/08/25 16:41:17 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:41:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -162,6 +162,8 @@ scr_init(orig, sp)
 		if (seq_copy(orig, sp))
 			goto mem;
 
+		sp->at_lbuf = orig->at_lbuf;
+
 		if (opt_copy(orig, sp)) {
 mem:			msgq(orig, M_ERR,
 			    "new screen attributes: %s", strerror(errno));
@@ -183,6 +185,8 @@ mem:			msgq(orig, M_ERR,
 		sp->csearchdir = CNOTSET;
 
 		sp->cname = asciiname;			/* XXX */
+
+		sp->at_lbuf = OOBCB;
 
 		F_SET(sp, S_REFORMAT);
 	}
@@ -213,13 +217,15 @@ scr_end(sp)
 		FREE(sp->argv, sp->argscnt * sizeof(char *));
 	}
 
+	/* Free input buffers. */
+	if (sp->key.buf != NULL)
+		FREE(sp->key.buf, sp->key.len);
+	if (sp->tty.buf != NULL)
+		FREE(sp->tty.buf, sp->tty.len);
+
 	/* Free line input buffer. */
 	if (sp->ibp != NULL)
 		FREE(sp->ibp, sp->ibp_len);
-
-	/* Free saved/initial command buffer. */
-	if (sp->comm != NULL)
-		free(sp->comm);
 
 	/* Free text input, command chains. */
 	hdr_text_free(&sp->txthdr);
@@ -299,10 +305,6 @@ scr_end(sp)
 			FREE(qp, sizeof(SEQ));
 		}
 	}
-
-	/* Free up executed buffer. */
-	if (sp->atkey_buf)
-		FREE(sp->atkey_buf, sp->atkey_len);
 
 	/*
 	 * Free the message chain last, so previous failures have a place
