@@ -4,7 +4,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: ip.h,v 8.6 1996/12/04 09:46:02 bostic Exp $ (Berkeley) $Date: 1996/12/04 09:46:02 $
+ *	$Id: ip.h,v 8.7 1996/12/04 18:17:58 bostic Exp $ (Berkeley) $Date: 1996/12/04 18:17:58 $
  */
 
 typedef struct _ip_private {
@@ -94,6 +94,6 @@ typedef struct _ip_buf {
 #define	IPO_RENAME	13	/* Rename the screen: IPO_STR. */
 #define	IPO_REWRITE	14	/* Rewrite a line: IPO_INT. */
 #define	IPO_SPLIT	15	/* Split the screen. */
-#define	IPO_EVENT_MAX	14
+#define	IPO_EVENT_MAX	15
 
 #include "ip_extern.h"
