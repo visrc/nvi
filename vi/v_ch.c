@@ -6,10 +6,12 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ch.c,v 5.12 1992/06/15 10:51:25 bostic Exp $ (Berkeley) $Date: 1992/06/15 10:51:25 $";
+static char sccsid[] = "$Id: v_ch.c,v 5.13 1992/10/10 13:59:34 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:59:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
+
+#include <limits.h>
 #include <stdio.h>
 
 #include "vi.h"
@@ -124,10 +126,10 @@ v_chf(vp, fm, tm, rp)
 	MARK *fm, *tm, *rp;
 {
 	register int key;
-	register char *ep, *p;
+	register u_char *ep, *p;
 	size_t len;
 	u_long cnt;
-	char *sp;
+	u_char *sp;
 
 	lastdir = fSEARCH;
 	lastkey = key = vp->character;
@@ -177,7 +179,7 @@ v_chF(vp, fm, tm, rp)
 	MARK *fm, *tm, *rp;
 {
 	register int key;
-	register char *p, *ep;
+	register u_char *p, *ep;
 	size_t len;
 	u_long cnt;
 
