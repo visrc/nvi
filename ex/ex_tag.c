@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 10.11 1995/10/17 08:07:41 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:07:41 $";
+static char sccsid[] = "$Id: ex_tag.c,v 10.12 1995/10/19 18:52:42 bostic Exp $ (Berkeley) $Date: 1995/10/19 18:52:42 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -223,7 +223,8 @@ err:		free(tag);
 	case TC_CHANGE:
 		break;
 	}
-	F_SET(sp, S_SCR_CENTER);
+
+	F_SET(sp, S_FSWITCH | S_SCR_CENTER);
 	return (0);
 }
 
@@ -369,6 +370,8 @@ ex_tagpop(sp, cmdp)
 	/* If returning to the first tag, the stack is now empty. */
 	if (exp->tagq.tqh_first->q.tqe_next == NULL)
 		TAILQ_REMOVE(&exp->tagq, exp->tagq.tqh_first, q);
+
+	F_SET(sp, S_FSWITCH);
 	return (0);
 }
 
@@ -413,6 +416,8 @@ ex_tagtop(sp, cmdp)
 	/* Empty out the queue. */
 	while ((tp = exp->tagq.tqh_first) != NULL)
 		FREETAG(tp);
+
+	F_SET(sp, S_FSWITCH);
 	return (0);
 }
 

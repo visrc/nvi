@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 10.25 1995/10/19 13:28:19 bostic Exp $ (Berkeley) $Date: 1995/10/19 13:28:19 $";
+static char sccsid[] = "$Id: ex.c,v 10.26 1995/10/19 18:52:30 bostic Exp $ (Berkeley) $Date: 1995/10/19 18:52:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -142,9 +142,12 @@ ex(spp)
 			msgq(sp, M_ERR, "170|Interrupted");
 		}
 
-		/* If switching screens or into vi, return. */
+		/* If the last command switched screens or into vi, return. */
 		if (F_ISSET(sp, S_SSWITCH | S_VI))
 			break;
+
+		/* If the last command switched files, we don't care. */
+		F_CLR(sp, S_FSWITCH);
 
 		/*
 		 * If we're exiting this screen, move to the next one.  By
@@ -241,7 +244,7 @@ loop:	ecp = gp->ecq.lh_first;
 		F_CLR(ecp, E_NEWLINE);
 	}
 
-	/* (Re)initialize the EXCMD structure. */
+	/* (Re)initialize the EXCMD structure, preserving some flags. */
 	CLEAR_EX_CMD(ecp);
 
 	/* Initialize the argument structures. */
@@ -1498,20 +1501,20 @@ addr_verify:
 
 	/*
 	 * !!!
-	 * If we've changed underlying files, it's not a problem, we continue
-	 * with the rest of the ex command(s), operating on the new file.
-	 * However, if we switch screens (either by exiting or by an explicit
-	 * command), we have no way of knowing where to put output messages,
-	 * and, since we don't control screens here, we could screw up the
-	 * upper layers, (e.g. we could exit/reenter a screen multiple times).
-	 * So, return and continue after we've got a new screen.
-	 *
 	 * If we've changed screens or underlying files, any pending global or
 	 * v command, or @ buffer that has associated addresses, has to be
 	 * discarded.  This is historic practice for globals, and necessary for
 	 * @ buffers that had associated addresses.
+	 *
+	 * Otherwise, if we've changed underlying files, it's not a problem,
+	 * we continue with the rest of the ex command(s), operating on the
+	 * new file.  However, if we switch screens (either by exiting or by
+	 * an explicit command), we have no way of knowing where to put output
+	 * messages, and, since we don't control screens here, we could screw
+	 * up the upper layers, (e.g. we could exit/reenter a screen multiple
+	 * times).  So, return and continue after we've got a new screen.
 	 */
-	if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE | S_SSWITCH)) {
+	if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE | S_FSWITCH | S_SSWITCH)) {
 		at_found = gv_found = 0;
 		for (ecp = sp->gp->ecq.lh_first;
 		    ecp != NULL; ecp = ecp->q.le_next)
@@ -1523,7 +1526,7 @@ addr_verify:
 				if (!at_found) {
 					at_found = 1;
 					msgq(sp, M_ERR,
-"090|@ with range pending when file/screen changed; commands discarded");
+		"090|@ with range running when file/screen changed");
 				}
 				break;
 			case AGV_GLOBAL:
@@ -1531,15 +1534,18 @@ addr_verify:
 				if (!gv_found) {
 					gv_found = 1;
 					msgq(sp, M_ERR,
-"091|Global/v command pending when file/screen changed; commands discarded");
+		"091|Global/v command running when file/screen changed");
 				}
 				break;
 			default:
 				abort();
 			}
-		if (at_found || gv_found)
+		if (at_found || gv_found) {
 			ex_discard(sp);
-		goto rsuccess;
+			goto err;
+		}
+		if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE | S_SSWITCH))
+			goto rsuccess;
 	}
 
 	goto loop;

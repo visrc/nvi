@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 10.5 1995/09/21 12:07:08 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:07:08 $";
+static char sccsid[] = "$Id: ex_edit.c,v 10.6 1995/10/19 18:52:40 bostic Exp $ (Berkeley) $Date: 1995/10/19 18:52:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -96,6 +96,8 @@ ex_edit(sp, cmdp)
 	if (file_init(sp, frp, NULL, (setalt ? FS_SETALT : 0) |
 	    (FL_ISSET(cmdp->iflags, E_C_FORCE) ? FS_FORCE : 0)))
 		return (1);
+
+	F_SET(sp, S_FSWITCH);
 	return (0);
 }
 

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 10.17 1995/10/17 11:43:55 bostic Exp $ (Berkeley) $Date: 1995/10/17 11:43:55 $";
+static char sccsid[] = "$Id: v_ex.c,v 10.18 1995/10/19 18:53:01 bostic Exp $ (Berkeley) $Date: 1995/10/19 18:53:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,7 +25,7 @@ static char sccsid[] = "$Id: v_ex.c,v 10.17 1995/10/17 11:43:55 bostic Exp $ (Be
 #include "../common/common.h"
 #include "vi.h"
 
-static int v_ex_cmd __P((SCR *, VICMD *, EXCMD *));
+static int v_exec_ex __P((SCR *, VICMD *, EXCMD *));
 static int v_ex_done __P((SCR *, VICMD *));
 
 /*
@@ -44,7 +44,7 @@ v_again(sp, vp)
 
 	ex_cbuild(&cmd, C_SUBAGAIN,
 	    2, vp->m_start.lno, vp->m_start.lno, 1, ap, &a, "");
-	return (v_ex_cmd(sp, vp, &cmd));
+	return (v_exec_ex(sp, vp, &cmd));
 }
 
 /*
@@ -105,7 +105,7 @@ v_join(sp, vp)
 		lno = vp->m_start.lno + (vp->count - 1);
 
 	ex_cbuild(&cmd, C_JOIN, 2, vp->m_start.lno, lno, 0, ap, &a, NULL);
-	return (v_ex_cmd(sp, vp, &cmd));
+	return (v_exec_ex(sp, vp, &cmd));
 }
 
 /*
@@ -124,7 +124,7 @@ v_shiftl(sp, vp)
 
 	ex_cbuild(&cmd, C_SHIFTL,
 	    2, vp->m_start.lno, vp->m_stop.lno, 0, ap, &a, "<");
-	return (v_ex_cmd(sp, vp, &cmd));
+	return (v_exec_ex(sp, vp, &cmd));
 }
 
 /*
@@ -143,7 +143,7 @@ v_shiftr(sp, vp)
 
 	ex_cbuild(&cmd, C_SHIFTR,
 	    2, vp->m_start.lno, vp->m_stop.lno, 0, ap, &a, ">");
-	return (v_ex_cmd(sp, vp, &cmd));
+	return (v_exec_ex(sp, vp, &cmd));
 }
 
 /*
@@ -161,7 +161,7 @@ v_suspend(sp, vp)
 	EXCMD cmd;
 
 	ex_cbuild(&cmd, C_STOP, 0, OOBLNO, OOBLNO, 0, ap, &a, "suspend");
-	return (v_ex_cmd(sp, vp, &cmd));
+	return (v_exec_ex(sp, vp, &cmd));
 }
 
 /*
@@ -193,7 +193,7 @@ v_switch(sp, vp)
 		return (1);
 
 	ex_cbuild(&cmd, C_EDIT, 0, OOBLNO, OOBLNO, 0, ap, &a, name);
-	return (v_ex_cmd(sp, vp, &cmd));
+	return (v_exec_ex(sp, vp, &cmd));
 }
 
 /*
@@ -211,7 +211,7 @@ v_tagpush(sp, vp)
 	EXCMD cmd;
 
 	ex_cbuild(&cmd, C_TAG, 0, OOBLNO, 0, 0, ap, &a, VIP(sp)->keyw);
-	return (v_ex_cmd(sp, vp, &cmd));
+	return (v_exec_ex(sp, vp, &cmd));
 }
 
 /*
@@ -229,7 +229,7 @@ v_tagpop(sp, vp)
 	EXCMD cmd;
 
 	ex_cbuild(&cmd, C_TAGPOP, 0, OOBLNO, 0, 0, ap, &a, NULL);
-	return (v_ex_cmd(sp, vp, &cmd));
+	return (v_exec_ex(sp, vp, &cmd));
 }
 
 /*
@@ -276,7 +276,7 @@ v_filter(sp, vp)
 			return (1);
 		cmd.argc = EXP(sp)->argsoff;		/* XXX */
 		cmd.argv = EXP(sp)->args;		/* XXX */
-		return (v_ex_cmd(sp, vp, &cmd));
+		return (v_exec_ex(sp, vp, &cmd));
 	}
 
 	/* Get the command from the user. */
@@ -306,7 +306,7 @@ v_filter(sp, vp)
 		return (1);
 	cmd.argc = EXP(sp)->argsoff;		/* XXX */
 	cmd.argv = EXP(sp)->args;		/* XXX */
-	return (v_ex_cmd(sp, vp, &cmd));
+	return (v_exec_ex(sp, vp, &cmd));
 }
 
 /*
@@ -336,15 +336,15 @@ v_event_exec(sp, vp)
 	default:
 		abort();
 	}
-	return (v_ex_cmd(sp, vp, &cmd));
+	return (v_exec_ex(sp, vp, &cmd));
 }
 
 /*
- * v_ex_cmd --
+ * v_exec_ex --
  *	Execute an ex command.
  */
 static int
-v_ex_cmd(sp, vp, exp)
+v_exec_ex(sp, vp, exp)
 	SCR *sp;
 	VICMD *vp;
 	EXCMD *exp;
@@ -418,7 +418,7 @@ v_ex(sp, vp)
 
 		/* Return if we were interrupted or left the screen .*/
 		can_continue = INTERRUPTED(sp) || 
-		    !F_ISSET(sp, S_EXIT | S_EXIT_FORCE | S_SSWITCH);
+		    !F_ISSET(sp, S_EXIT | S_EXIT_FORCE | S_FSWITCH | S_SSWITCH);
 
 		/* Resolve messages. */
 		if (vs_ex_resolve(sp, can_continue ? &colon : NULL))

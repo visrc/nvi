@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 10.5 1995/09/21 10:56:21 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:56:21 $
+ *	$Id: screen.h,v 10.6 1995/10/19 18:53:18 bostic Exp $ (Berkeley) $Date: 1995/10/19 18:53:18 $
  */
 
 /*
@@ -155,20 +155,21 @@ struct _scr {
 /* Screen/file changes. */
 #define	S_EXIT		0x00000080	/* Exiting (not forced). */
 #define	S_EXIT_FORCE	0x00000100	/* Exiting (forced). */
-#define	S_SSWITCH	0x00000200	/* Switch screens. */
+#define	S_FSWITCH	0x00000200	/* Switch underlying files. */
+#define	S_SSWITCH	0x00000400	/* Switch screens. */
 
-#define	S_ARGNOFREE	0x00000400	/* Argument list wasn't allocated. */
-#define	S_ARGRECOVER	0x00000800	/* Argument list is recovery files. */
-#define	S_AT_SET	0x00001000	/* Last at buffer set. */
-#define	S_EX_GLOBAL	0x00002000	/* Ex: executing a global command. */
-#define	S_EX_SILENT	0x00004000	/* Ex: batch script. */
-#define	S_EX_WROTE	0x00008000	/* Ex: did output to canonical tty. */
-#define	S_INPUT		0x00010000	/* Doing text input. */
-#define	S_INPUT_INFO	0x00020000	/* Doing text input on info line. */
-#define	S_RE_RECOMPILE	0x00040000	/* The search RE needs recompiling. */
-#define	S_RE_SEARCH	0x00080000	/* The search RE has been set. */
-#define	S_RE_SUBST	0x00100000	/* The substitute RE has been set. */
-#define	S_SCRIPT	0x00200000	/* Window is a shell script. */
-#define	S_STATUS	0x00400000	/* Schedule welcome message. */
+#define	S_ARGNOFREE	0x00000800	/* Argument list wasn't allocated. */
+#define	S_ARGRECOVER	0x00001000	/* Argument list is recovery files. */
+#define	S_AT_SET	0x00002000	/* Last at buffer set. */
+#define	S_EX_GLOBAL	0x00004000	/* Ex: executing a global command. */
+#define	S_EX_SILENT	0x00008000	/* Ex: batch script. */
+#define	S_EX_WROTE	0x00010000	/* Ex: did output to canonical tty. */
+#define	S_INPUT		0x00020000	/* Doing text input. */
+#define	S_INPUT_INFO	0x00040000	/* Doing text input on info line. */
+#define	S_RE_RECOMPILE	0x00080000	/* The search RE needs recompiling. */
+#define	S_RE_SEARCH	0x00100000	/* The search RE has been set. */
+#define	S_RE_SUBST	0x00200000	/* The substitute RE has been set. */
+#define	S_SCRIPT	0x00400000	/* Window is a shell script. */
+#define	S_STATUS	0x00800000	/* Schedule welcome message. */
 	u_int32_t flags;
 };

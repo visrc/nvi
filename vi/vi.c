@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 10.23 1995/10/19 13:15:40 bostic Exp $ (Berkeley) $Date: 1995/10/19 13:15:40 $";
+static char sccsid[] = "$Id: vi.c,v 10.24 1995/10/19 18:53:03 bostic Exp $ (Berkeley) $Date: 1995/10/19 18:53:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -380,6 +380,9 @@ intr:			CLR_INTERRUPT(sp);
 			if (vs_refresh(sp))
 				return (1);
 		}
+
+		/* If the last command switched files, we don't care. */
+		F_CLR(sp, S_FSWITCH);
 
 		/* If leaving vi, return to the main editor loop. */
 		if (!F_ISSET(sp, S_VI))
