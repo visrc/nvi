@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 5.31 1993/04/05 07:11:31 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:11:31 $";
+static char sccsid[] = "$Id: ex_edit.c,v 5.32 1993/04/13 16:22:51 bostic Exp $ (Berkeley) $Date: 1993/04/13 16:22:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -99,6 +99,6 @@ edit(sp, ep, cmdp, cmd)
 				sp->lno = 1;
 		}
 	if (cmdp->plus)
-		(void)ex_cstring(sp, ep, cmdp->plus, strlen(cmdp->plus), 1);
+		(void)ex_cstring(sp, ep, cmdp->plus, strlen(cmdp->plus));
 	return (0);
 }
