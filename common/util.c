@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.11 1993/09/12 12:21:50 bostic Exp $ (Berkeley) $Date: 1993/09/12 12:21:50 $";
+static char sccsid[] = "$Id: util.c,v 8.12 1993/09/15 14:39:50 bostic Exp $ (Berkeley) $Date: 1993/09/15 14:39:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -196,8 +196,11 @@ msg_rpt(sp, fp)
 			first = 0;
 		}
 
-	/* If nothing to report, return. */
-	if (total != 0 && total >= O_VAL(sp, O_REPORT)) {
+	/*
+	 * If nothing to report, return.  Note that the number of lines
+	 * must be > than the user'ss value, not >=; historic practice.
+	 */
+	if (total > O_VAL(sp, O_REPORT)) {
 		*p = '\0';
 
 		if (fp != NULL)
