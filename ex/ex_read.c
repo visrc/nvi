@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 10.10 1995/09/30 10:39:21 bostic Exp $ (Berkeley) $Date: 1995/09/30 10:39:21 $";
+static char sccsid[] = "$Id: ex_read.c,v 10.11 1995/10/01 11:43:49 bostic Exp $ (Berkeley) $Date: 1995/10/01 11:43:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -50,7 +50,7 @@ ex_read(sp, cmdp)
 	GS *gp;
 	MARK rm;
 	recno_t nlines;
-	size_t arglen, blen;
+	size_t arglen;
 	int argc, nf, rval;
 	char *p;
 
@@ -112,16 +112,9 @@ ex_read(sp, cmdp)
 
 		/* Redisplay the user's argument if it's changed. */
 		if (F_ISSET(cmdp, E_MODIFY))
-			if (F_ISSET(sp, S_VI)) {
-				GET_SPACE_RET(sp,
-				    p, blen, cmdp->argv[argc]->len + 2);
-				p[0] = '!';
-				memmove(p + 1, cmdp->argv[argc]->bp,
-				    cmdp->argv[argc]->len + 1);
-				(void)vs_update(sp,
-				    p, cmdp->argv[argc]->len + 2);
-				FREE_SPACE(sp, p, blen);
-			} else {
+			if (F_ISSET(sp, S_VI))
+				(void)vs_update(sp, cmdp->argv[argc]->bp);
+			else {
 				(void)ex_printf(sp,
 				    "!%s\n", cmdp->argv[argc]->bp);
 				(void)ex_fflush(sp);

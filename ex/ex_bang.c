@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 10.10 1995/09/30 10:38:56 bostic Exp $ (Berkeley) $Date: 1995/09/30 10:38:56 $";
+static char sccsid[] = "$Id: ex_bang.c,v 10.11 1995/10/01 11:43:48 bostic Exp $ (Berkeley) $Date: 1995/10/01 11:43:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -53,9 +53,8 @@ ex_bang(sp, cmdp)
 	EX_PRIVATE *exp;
 	MARK rm;
 	recno_t lno;
-	size_t blen;
 	int rval;
-	char *bp, *msg;
+	char *msg;
 
 	ap = cmdp->argv[0];
 	if (ap->len == 0) {
@@ -83,13 +82,9 @@ ex_bang(sp, cmdp)
 		 * expansion.  If piping lines in vi, it would be immediately
 		 * overwritten by any error or line change reporting.
 		 */
-		if (F_ISSET(sp, S_VI)) {
-			GET_SPACE_RET(sp, bp, blen, ap->len + 3);
-			bp[0] = '!';
-			memmove(bp + 1, ap->bp, ap->len);
-			vs_update(sp, bp, ap->len + 1);
-			FREE_SPACE(sp, bp, blen);
-		} else {
+		if (F_ISSET(sp, S_VI))
+			vs_update(sp, ap->bp);
+		else {
 			(void)ex_printf(sp, "!%s\n", ap->bp);
 			(void)ex_fflush(sp);
 		}

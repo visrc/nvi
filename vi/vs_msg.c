@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_msg.c,v 10.15 1995/09/30 10:40:57 bostic Exp $ (Berkeley) $Date: 1995/09/30 10:40:57 $";
+static char sccsid[] = "$Id: vs_msg.c,v 10.16 1995/10/01 11:43:31 bostic Exp $ (Berkeley) $Date: 1995/10/01 11:43:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -126,28 +126,28 @@ vs_busy(sp, msg, btype)
  * vs_update --
  *	Update a command.
  *
- * PUBLIC: int vs_update __P((SCR *, char *));
+ * PUBLIC: void vs_update __P((SCR *, char *));
  */
 void
-vs_update(sp, cmd, len)
+vs_update(sp, cmd)
 	SCR *sp;
 	char *cmd;
-	size_t len;
 {
 	GS *gp;
+	size_t len;
 
 	if (!F_ISSET(sp, S_SCREEN_READY))
 		return;
 
-	if (F_ISSET(sp, S_EX)) {
-		(void)ex_printf(sp, "%.*s\n", (int)len, cmd);
-		(void)ex_fflush(sp);
-	}
 	/*
 	 * When the ex read and ! commands are changed during expansion, they
 	 * are supposed to be redisplayed.  This is the special purpose hook
 	 * to make it happen.
 	 */
+	if (F_ISSET(sp, S_EX)) {
+		(void)ex_printf(sp, "%s\n", cmd);
+		(void)ex_fflush(sp);
+	}
 	gp = sp->gp;
 	(void)gp->scr_move(sp, LASTLINE(sp), 0);
 
@@ -155,8 +155,10 @@ vs_update(sp, cmd, len)
 	 * XXX
 	 * Don't let long file names screw up the screen.
 	 */
-	if (len > sp->cols - 1)
-		len = sp->cols - 1;
+	len = strlen(cmd);
+	if (len > sp->cols - 2)
+		len = sp->cols - 2;
+	(void)gp->scr_addstr(sp, "!", 1);
 	(void)gp->scr_addstr(sp, cmd, len);
 
 	(void)gp->scr_clrtoeol(sp);
