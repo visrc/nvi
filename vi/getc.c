@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: getc.c,v 8.5 1993/09/17 09:18:37 bostic Exp $ (Berkeley) $Date: 1993/09/17 09:18:37 $";
+static char sccsid[] = "$Id: getc.c,v 8.6 1993/10/26 17:22:58 bostic Exp $ (Berkeley) $Date: 1993/10/26 17:22:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -109,7 +109,13 @@ cs_next(sp, ep, csp)
 
 /*
  * cs_fspace --
- *	Eat forward until something other than a space.
+ *	If on a space, eat forward until something other than a
+ *	whitespace character.
+ *
+ * XXX
+ * Semantics of checking the current character were coded for the fword()
+ * function -- once the other word routines are converted, they may have
+ * to change.
  */
 int
 cs_fspace(sp, ep, csp)
@@ -117,6 +123,8 @@ cs_fspace(sp, ep, csp)
 	EXF *ep;
 	VCS *csp;
 {
+	if (csp->cs_flags != 0 || !isblank(csp->cs_ch))
+		return (0);
 	for (;;) {
 		if (cs_next(sp, ep, csp))
 			return (1);
