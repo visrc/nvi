@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 5.43 1993/04/06 11:36:17 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:36:17 $
+ *	$Id: exf.h,v 5.44 1993/04/12 14:23:56 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:23:56 $
  */
 
 					/* Undo direction. */
@@ -64,7 +64,7 @@ typedef struct _exf {
 }
 
 #define	GETLINE_ERR(sp, lno) {						\
-	msgq(sp, M_ERROR,						\
+	msgq(sp, M_ERR,							\
 	    "Error: %s/%d: unable to retrieve line %u.",		\
 	    tail(__FILE__), __LINE__, lno);				\
 }
@@ -75,7 +75,7 @@ typedef struct _exf {
 			if (file_sync((sp), (ep), (force)))		\
 				return (1);				\
 		} else if (!(force)) {					\
-			msgq(sp, M_ERROR,				\
+			msgq(sp, M_ERR,					\
 	"Modified since last write; write or use ! to override.");	\
 			return (1);					\
 		}							\
@@ -83,7 +83,7 @@ typedef struct _exf {
 
 #define	MODIFY_WARN(sp, ep) {						\
 	if (F_ISSET(ep, F_MODIFIED) && O_ISSET(sp, O_WARN))		\
-		msgq(sp, M_ERROR, "Modified since last write.");	\
+		msgq(sp, M_ERR, "Modified since last write.");		\
 }
 
 /* File routines. */
