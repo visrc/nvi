@@ -182,12 +182,15 @@ void
 gtk_vi_window_scrollbar(GtkViWindow *vi, guint top, guint size, guint max)
 {
     GtkViScreen *vi_screen;
+    /* work around gcc bug */
+    volatile guint mymax = max;
+    volatile guint mysize = size;
 
     vi_screen = GTK_VI_SCREEN(vi->vi_screen);
     vi_screen->vadj->value = top;
-    vi_screen->vadj->upper = max;
+    vi_screen->vadj->upper = mymax;
     vi_screen->vadj->page_size =
-	vi_screen->vadj->page_increment = size;
+	vi_screen->vadj->page_increment = mysize;
     gtk_signal_handler_block(GTK_OBJECT(vi_screen->vadj), vi->value_changed);
     gtk_adjustment_changed(vi_screen->vadj);
     /*
@@ -573,7 +576,7 @@ vi_scrollbar(ipviwin, top, size, max)
 {
 	GtkViWindow* vi = (GtkViWindow*)(ipviwin->private_data);
 
-	gtk_vi_window_scrollbar(GTK_VI_WINDOW(vi), top, size, max);
+	gtk_vi_window_scrollbar(vi, top, size, max);
 
 	return (0);
 }
