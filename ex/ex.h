@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 5.46 1993/05/13 10:17:09 bostic Exp $ (Berkeley) $Date: 1993/05/13 10:17:09 $
+ *	$Id: ex.h,v 5.47 1993/05/15 10:07:15 bostic Exp $ (Berkeley) $Date: 1993/05/15 10:07:15 $
  */
 
 struct _excmdarg;
@@ -79,6 +79,31 @@ extern char *defcmdarg[2];	/* Default array. */
 
 /* Control character. */
 #define	ctrl(ch)	((ch) & 0x1f)
+
+#define	AUTOWRITE(sp, ep) {						\
+	if (F_ISSET((ep), F_MODIFIED) && O_ISSET((sp), O_AUTOWRITE) &&	\
+	    file_write((sp), (ep), NULL, NULL, NULL, FS_ALL))		\
+		return (1);						\
+}
+
+#define	MODIFY_CHECK(sp, ep, force) {					\
+	if (F_ISSET((ep), F_MODIFIED))					\
+		if (O_ISSET((sp), O_AUTOWRITE)) {			\
+			if (file_write((sp), (ep), NULL, NULL, NULL,	\
+			    FS_ALL | force?FS_FORCE:0 | FS_POSSIBLE))	\
+				return (1);				\
+		} else if (ep->refcnt <= 1 && !(force)) {		\
+			msgq(sp, M_ERR,					\
+	"Modified since last write; write or use ! to override.");	\
+			return (1);					\
+		}							\
+}
+
+#define	MODIFY_WARN(sp, ep) {						\
+	if (F_ISSET(ep, F_MODIFIED) && O_ISSET(sp, O_WARN))		\
+		(void)fprintf(sp->stdfp,				\
+		    "Modified since last write.\n");			\
+}
 
 /* Ex function prototypes. */
 int	buildargv __P((SCR *, EXF *, char *, int, int *, char ***));
