@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 5.26 1993/02/16 20:10:27 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:27 $";
+static char sccsid[] = "$Id: ex_subst.c,v 5.27 1993/02/19 19:46:29 bostic Exp $ (Berkeley) $Date: 1993/02/19 19:46:29 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -457,6 +457,7 @@ regsub(ep, ip)
 					/* Partial pattern. */
 		} else if (ch == '\\' && isdigit(*rp)) {
 			no = *rp++ - '0';
+			--rpl;
 sub:			if (match[no].rm_so != -1 && match[no].rm_eo != -1) {
 				mlen = match[no].rm_eo - match[no].rm_so;
 				NEEDSP(ep, mlen, lbp);
