@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_replace.c,v 10.17 1996/06/30 17:50:24 bostic Exp $ (Berkeley) $Date: 1996/06/30 17:50:24 $";
+static const char sccsid[] = "$Id: v_replace.c,v 10.18 1996/12/04 19:09:11 bostic Exp $ (Berkeley) $Date: 1996/12/04 19:09:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -134,7 +134,7 @@ next:		if (v_event_get(sp, &ev, 0, 0))
 			v_emsg(sp, NULL, VIM_WRESIZE);
 			return (0);
 		case E_REPAINT:
-			if (vs_repaint(sp, &ev))
+			if (v_erepaint(sp, &ev))
 				return (1);
 			goto next;
 		default:

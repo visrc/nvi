@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.87 1996/10/13 14:25:20 bostic Exp $ (Berkeley) $Date: 1996/10/13 14:25:20 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.88 1996/12/04 19:09:16 bostic Exp $ (Berkeley) $Date: 1996/12/04 19:09:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -498,7 +498,7 @@ next:	if (v_event_get(sp, evp, 0, ec_flags))
 		    sp->rows ? 1 : sp->rows - vip->totalcount;
 		fc.e_tlno = sp->rows;
 		vip->linecount = vip->lcontinue = vip->totalcount = 0;
-		(void)vs_repaint(sp, &fc);
+		(void)v_erepaint(sp, &fc);
 		(void)vs_refresh(sp, 1);
 	}
 
@@ -520,7 +520,7 @@ next:	if (v_event_get(sp, evp, 0, ec_flags))
 		 */
 		goto k_escape;
 	case E_REPAINT:
-		if (vs_repaint(sp, &ev))
+		if (v_erepaint(sp, &ev))
 			return (1);
 		goto next;
 	case E_WRESIZE:

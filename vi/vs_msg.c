@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_msg.c,v 10.77 1996/10/13 14:25:21 bostic Exp $ (Berkeley) $Date: 1996/10/13 14:25:21 $";
+static const char sccsid[] = "$Id: vs_msg.c,v 10.78 1996/12/04 19:10:04 bostic Exp $ (Berkeley) $Date: 1996/12/04 19:10:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -634,7 +634,7 @@ vs_ex_resolve(sp, continuep)
 		vip->linecount = vip->lcontinue = vip->totalcount = 0;
 
 		/* Redraw. */
-		(void)vs_repaint(sp, &ev);
+		(void)v_erepaint(sp, &ev);
 	} else
 		/* Reset the count of overwriting lines. */
 		vip->linecount = vip->lcontinue = vip->totalcount = 0;
@@ -745,7 +745,7 @@ vs_resolve(sp, csp, forcewait)
 
 	/* Redraw. */
 	if (redraw)
-		(void)vs_repaint(sp, &ev);
+		(void)v_erepaint(sp, &ev);
 
 	/* Restore the cursor position. */
 	(void)gp->scr_move(csp, oldy, oldx);
