@@ -4,13 +4,27 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 5.23 1993/03/26 13:37:53 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:37:53 $
+ *	$Id: screen.h,v 5.24 1993/03/28 19:04:44 bostic Exp $ (Berkeley) $Date: 1993/03/28 19:04:44 $
  */
 
-/* Confirmation routine interface. */
-#define	CONFIRMCHAR	'y'		/* Make change character. */
-#define	QUITCHAR	'q'		/* Quit character. */
-enum confirmation { YES, NO, QUIT };
+/*
+ * There are minimum values that vi has to have to display a screen.  These
+ * are about the MINIMUM that you can have.  Changing these is not a good
+ * idea.  In particular, while I intend to get the minimum rows down to 2
+ * for the curses screen version of the vi screen, (1 for the line, 1 for
+ * the error messages) changing the minimum columns is a lot trickier.  For
+ * example, you have to have enough columns to display the line number, not
+ * to mention the tabstop and shiftwidth values.  It's a lot simpler to have
+ * a fixed value and not worry about it.
+ */
+#define	MINIMUM_SCREEN_ROWS	 4		/* XXX Should be 2. */
+#define	MINIMUM_SCREEN_COLS	20
+
+enum confirmation { YES, NO, QUIT };	/* Confirmation routine interface. */
+					/* Line operations. */
+enum operation { LINE_APPEND, LINE_DELETE, LINE_INSERT, LINE_RESET };
+					/* Standard continue message. */
+#define	CONTMSG	"Enter return to continue: "
 
 /*
  * Structure for mapping lines to the screen.  SMAP is an array of
@@ -29,8 +43,12 @@ enum confirmation { YES, NO, QUIT };
  * the map, though, because you have to increment through the structures
  * instead of doing a memmove.
  */
+
+/* Map positions. */
+enum position { P_TOP, P_FILL, P_MIDDLE, P_BOTTOM };
+
 typedef struct _smap {
-	recno_t lno;			/* 1-N: File line number. */
+	recno_t lno;			/* 1-N: Physical file line number. */
 	size_t off;			/* 1-N: Screen offset in the line. */
 } SMAP;
 
@@ -40,7 +58,8 @@ typedef struct _smap {
  *	values follow the screen, and therefore are kept here.  For those
  *	of you that didn't follow that sentence, read "dumping ground".
  *	For example, things like tags and mapped character sequences are
- *	stored here.
+ *	stored here.  Each new screen that is added to the editor will
+ *	almost certainly have to keep its own stuff in here as well.
  */
 struct _exf;
 typedef struct _scr {
@@ -52,7 +71,7 @@ typedef struct _scr {
 	struct _exf	*enext;		/* Next file to edit. */
 	struct _exf	*eprev;		/* Last file edited. */
 
-	/* Screen information. */
+	/* Vi curses screen information. */
 	struct _smap	*h_smap;	/* Head of screen/line map. */
 	struct _smap	*t_smap;	/* Tail screen/line map. */
 	size_t	 scno;			/* 0-N: Logical screen cursor column. */
@@ -138,12 +157,32 @@ typedef struct _scr {
 	size_t	 extotalcount;		/* Ex/vi overwrite count. */
 	size_t	 exlcontinue;		/* Ex/vi line continue value. */
 
-	/* Ex/vi: support routines. */
-	enum confirmation		/* Confirm an action, yes or no. */
+	/*
+	 * Screen support routines.  This is the set of routines that
+	 * have to be replaced to add a new screen to the editor.
+	 */
+	void	 (*bell) __P((struct _scr *));
+	int	 (*change) __P((struct _scr *,
+		     struct _exf *, recno_t, enum operation));
+	enum confirmation
 		 (*confirm) __P((struct _scr *,
 		     struct _exf *, struct _mark *, struct _mark *));
-					/* End a screen session. */
+	int	 (*down) __P((struct _scr *,
+		     struct _exf *, struct _mark *, recno_t, int));
 	int	 (*end) __P((struct _scr *));
+	int	 (*exwrite) __P((void *, const char *, int));
+	int	 (*fill) __P((struct _scr *,
+		     struct _exf *, recno_t, enum position));
+	int	 (*gb) __P((struct _scr *, int, u_char **, size_t *, u_int));
+	int	 (*position) __P((struct _scr *,
+		     struct _exf *, recno_t *, u_long, enum position));
+	int	 (*refresh) __P((struct _scr *, struct _exf *));
+	size_t	 (*relative) __P((struct _scr *, struct _exf *, recno_t));
+	recno_t	 (*textlines) __P((struct _scr *));
+	int	 (*up) __P((struct _scr *,
+		     struct _exf *, struct _mark *, recno_t, int));
+	int	 (*vex) __P((struct _scr *, struct _exf *,
+		     struct _mark *, struct _mark *, struct _mark *));
 
 #define	S_EXIT		0x0000001	/* Exiting (forced). */
 #define	S_EXIT_FORCE	0x0000002	/* Exiting (not forced). */
@@ -160,96 +199,18 @@ typedef struct _scr {
 #define	S_CHARDELETED	0x0000800	/* Character deleted. */
 #define	S_CUR_INVALID	0x0001000	/* Cursor position is wrong. */
 #define	S_IN_GLOBAL	0x0002000	/* Doing a global command. */
-#define	S_MSGREENTER	0x0004000	/* If msg routine reentered. */
-#define	S_MSGWAIT	0x0008000	/* Hold messages for awhile. */
-#define	S_NEEDMERASE	0x0010000	/* Erase modeline after keystroke. */
-#define	S_RE_SET	0x0020000	/* The file's RE has been set. */
-#define	S_REDRAW	0x0040000	/* Redraw the screen. */
-#define	S_REFORMAT	0x0080000	/* Reformat the lines. */
-#define	S_REFRESH	0x0100000	/* Refresh the screen. */
-#define	S_RESIZE	0x0200000	/* Resize the screen. */
+#define	S_INPUT		0x0004000	/* Doing text input. */
+#define	S_MSGREENTER	0x0008000	/* If msg routine reentered. */
+#define	S_RE_SET	0x0010000	/* The file's RE has been set. */
+#define	S_REDRAW	0x0020000	/* Redraw the screen. */
+#define	S_REFORMAT	0x0040000	/* Reformat the lines. */
+#define	S_REFRESH	0x0080000	/* Refresh the screen. */
+#define	S_RESIZE	0x0100000	/* Resize the screen. */
+#define	S_SCHED_UPDATE	0x0200000	/* Erase modeline after keystroke. */
+#define	S_SCREENWAIT	0x0400000	/* Hold messages for awhile. */
 	u_int flags;
 } SCR;
 
-/*
- * There are various minimum values that vi has to have to display a
- * screen.  These are about the MINIMUM that you can have.  Changing
- * these is not a good idea.  In particular, while it's probably
- * possible to get the minimum rows down to 2 (1 for the line, 1 for
- * the error messages) changing the minimum columns is a lot trickier.
- * For example, you have to have enough columns to display the line
- * number.
- */
-#define	MINIMUM_SCREEN_ROWS	 4		/* XXX Should be 2. */
-#define	MINIMUM_SCREEN_COLS	20
-
-/* Standard continue message. */
-#define	CONTMSG	"Enter return to continue: "
-
-#define	SCREENSIZE(sp)	((sp)->lines - 1)	/* Last screen line. */
-#define	TEXTSIZE(sp)	((sp)->lines - 2)	/* Last text line. */
-
-
-/* Line operations. */
-enum operation { LINE_APPEND, LINE_DELETE, LINE_INSERT, LINE_RESET };
-
-/* Map positions. */
-enum position { P_TOP, P_FILL, P_MIDDLE, P_BOTTOM };
-
-/*
- * Macros for the O_NUMBER format and length, plus macro for the number
- * of columns on a screen.
- */
-#define	O_NUMBER_FMT	"%7lu "
-#define	O_NUMBER_LENGTH	8
-#define	SCREEN_COLS(sp) \
-	((ISSET(O_NUMBER) ? (sp)->cols - O_NUMBER_LENGTH : (sp)->cols))
-
-/* Move, and fail if it doesn't work. */
-#define	MOVE(sp, lno, cno) {						\
-	if (move(lno, cno) == ERR) {					\
-		msgq(sp, M_ERROR, "Error: %s/%d: move(%u, %u).",	\
-		    tail(__FILE__), __LINE__, lno, cno);		\
-		return (1);						\
-	}								\
-}
-
-/* General screen functions. */
-int	ex_s_end __P((struct _scr *));
-int	vi_s_end __P((struct _scr *));
-int	ex_s_init __P((struct _scr *, struct _exf *));
-int	vi_s_init __P((struct _scr *, struct _exf *));
-int	scr_def __P((struct _scr *, SCR *));
-size_t	scr_lrelative __P((struct _scr *, struct _exf *, recno_t, size_t));
-int	scr_modeline __P((struct _scr *, struct _exf *, int));
-int	scr_refresh __P((struct _scr *, struct _exf *, size_t));
-size_t	scr_relative __P((struct _scr *, struct _exf *, recno_t));
-int	scr_sm_bot __P((struct _scr *, struct _exf *, recno_t *, u_long));
-int	scr_sm_down __P((struct _scr *,
-	    struct _exf *, struct _mark *, recno_t, int));
-int	scr_sm_mid __P((struct _scr *, struct _exf *, recno_t *));
-int	scr_sm_top __P((struct _scr *, struct _exf *, recno_t *, u_long));
-int	scr_sm_up __P((struct _scr *,
-	    struct _exf *, struct _mark *, recno_t, int));
-int	scr_update __P((struct _scr *, struct _exf *));
-int	scr_change __P((struct _scr *, struct _exf *, recno_t, enum operation));
-int	scr_sm_fill __P((struct _scr *, struct _exf *, recno_t, enum position));
-
-/* PRIVATE? vi screen functions. */
-size_t	scr_screens __P((struct _scr *, struct _exf *, recno_t, size_t *));
-int	scr_line __P((struct _scr *, struct _exf *,
-	    struct _smap *, u_char *, size_t, size_t *, size_t *));
-int	scr_sm_1down __P((struct _scr *, struct _exf *));
-int	scr_sm_1up __P((struct _scr *, struct _exf *));
-int	scr_sm_delete __P((struct _scr *, struct _exf *, recno_t));
-int	scr_sm_insert __P((struct _scr *, struct _exf *, recno_t));
-int	scr_sm_next __P((struct _scr *,
-	    struct _exf *, struct _smap *, struct _smap *));
-recno_t	scr_sm_nlines __P((struct _scr *,
-	    struct _exf *, struct _smap *, recno_t, size_t));
-int	scr_sm_prev __P((struct _scr *,
-	    struct _exf *, struct _smap *, struct _smap *));
-
-#ifdef DEBUG
-void	scr_sm_dmap __P((struct _scr *, char *));
-#endif
+/* Public interfaces to the screens. */
+int	sex_init __P((struct _scr *, struct _exf *));
+int	svi_init __P((struct _scr *, struct _exf *));

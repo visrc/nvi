@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 5.36 1993/03/26 13:39:22 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:39:22 $
+ *	$Id: ex.h,v 5.37 1993/03/28 19:05:23 bostic Exp $ (Berkeley) $Date: 1993/03/28 19:05:23 $
  */
 
 struct _excmdarg;
@@ -95,7 +95,6 @@ int	 ex_cfile __P((SCR *, EXF *, char *, int));
 int	 ex_change __P((SCR *, EXF *, EXCMDARG *));
 int	 ex_cmd __P((SCR *, EXF *, u_char *));
 int	 ex_color __P((SCR *, EXF *, EXCMDARG *));
-enum confirmation ex_confirm __P((SCR *, EXF *, MARK *, MARK *));
 int	 ex_copy __P((SCR *, EXF *, EXCMDARG *));
 int	 ex_cstring __P((SCR *, EXF *, u_char *, int, int));
 int	 ex_debug __P((SCR *, EXF *, EXCMDARG *));
@@ -116,7 +115,6 @@ int	 ex_map __P((SCR *, EXF *, EXCMDARG *));
 int	 ex_mark __P((SCR *, EXF *, EXCMDARG *));
 int	 ex_mkexrc __P((SCR *, EXF *, EXCMDARG *));
 int	 ex_move __P((SCR *, EXF *, EXCMDARG *));
-void	 ex_msgflush __P((SCR *));
 int	 ex_next __P((SCR *, EXF *, EXCMDARG *));
 int	 ex_number __P((SCR *, EXF *, EXCMDARG *));
 int	 ex_prev __P((SCR *, EXF *, EXCMDARG *));

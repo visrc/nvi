@@ -6,13 +6,12 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 5.33 1993/03/26 13:40:52 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:40:52 $";
+static char sccsid[] = "$Id: v_itxt.c,v 5.34 1993/03/28 19:05:49 bostic Exp $ (Berkeley) $Date: 1993/03/28 19:05:49 $";
 #endif /* not lint */
 
-#include <sys/param.h>
+#include <sys/types.h>
 
 #include <ctype.h>
-#include <curses.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
@@ -490,13 +489,10 @@ v_subst(sp, ep, vp, fm, tm, rp)
 }
 
 #define	SCREEN_UPDATE(sp) {						\
-	if (scr_update(sp, ep)) {					\
+	if (sp->refresh(sp, ep)) {					\
 		eval = 1;						\
 		goto done;						\
 	}								\
-	if (ISSET(O_RULER))						\
-		scr_modeline(sp, ep, 1);				\
-	refresh();							\
 }
 
 /*
@@ -534,6 +530,9 @@ newtext(sp, ep, vp, tm, p, len, rp, ai_line, flags)
 	int replay;		/* If replaying a set of input. */
 	int tmp;
 	u_char *repp;		/* Replay buffer. */
+
+	/* Set input flag. */
+	F_SET(sp, S_INPUT);
 
 	/* Set the initial cursor position. */
 	ib.start.lno = ib.stop.lno = ep->lno;
@@ -610,7 +609,7 @@ newtext(sp, ep, vp, tm, p, len, rp, ai_line, flags)
 	}
 
 	/* Reset the line and update the screen. */
-	if (scr_change(sp, ep, ib.start.lno, LINE_RESET))
+	if (sp->change(sp, ep, ib.start.lno, LINE_RESET))
 		return (1);
 	SCREEN_UPDATE(sp);
 		
@@ -715,7 +714,7 @@ next_ch:	if (replay)
 			overwrite = 0;
 
 			/* Update the screen. */
-			scr_change(sp, ep, ib.stop.lno, LINE_RESET);
+			sp->change(sp, ep, ib.stop.lno, LINE_RESET);
 			SCREEN_UPDATE(sp);
 
 			/* Append the line into the text structure. */
@@ -757,7 +756,7 @@ next_ch:	if (replay)
 			 * so the line is retrieved from the TEXT structure.
 			 */
 			++ib.stop.lno;
-			if (scr_change(sp, ep, ib.stop.lno - 1, LINE_RESET)) {
+			if (sp->change(sp, ep, ib.stop.lno - 1, LINE_RESET)) {
 				eval = 1;
 				goto done;
 			}
@@ -826,7 +825,7 @@ next_ch:	if (replay)
 		case K_VERASE:			/* Erase the last character. */
 			/* Check for nothing to erase. */
 			if (col == startcol) {
-				bell(sp);
+				sp->bell(sp);
 				break;
 			}
 			/*
@@ -847,7 +846,7 @@ next_ch:	if (replay)
 		case K_VWERASE:			/* Skip back one word. */
 			/* Check for nothing to erase. */
 werase:			if (col == startcol) {
-				bell(sp);
+				sp->bell(sp);
 				break;
 			}
 			/* Skip over space characters. */
@@ -906,7 +905,7 @@ ins_qch:		*p++ = ch;
 			break;
 		}
 		ib.len = col + insert + overwrite;
-		scr_change(sp, ep, ib.stop.lno, !quoted &&
+		sp->change(sp, ep, ib.stop.lno, !quoted &&
 		    (sp->special[ch] == K_NL || sp->special[ch] == K_CR) ?
 		    LINE_INSERT : LINE_RESET);
 		SCREEN_UPDATE(sp);
@@ -931,6 +930,9 @@ done:	if (eval == 1)
 		ib.head = NULL;
 	}
 	ib.stop.lno = OOBLNO;
+
+	/* Clear input flag. */
+	F_CLR(sp, S_INPUT);
 
 	return (eval);
 }

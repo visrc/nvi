@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 5.31 1993/03/26 13:38:00 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:38:00 $";
+static char sccsid[] = "$Id: util.c,v 5.32 1993/03/28 19:04:47 bostic Exp $ (Berkeley) $Date: 1993/03/28 19:04:47 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -26,37 +26,6 @@ static char sccsid[] = "$Id: util.c,v 5.31 1993/03/26 13:38:00 bostic Exp $ (Ber
 #endif
 
 #include "vi.h"
-
-/*
- * __putchar --
- *	Functional version of putchar, for tputs.
- */
-static void
-bell_putchar(ch)
-	int ch;
-{
-	(void)putchar(ch);
-}
-
-/*
- * bell --
- *	Ring the terminal's bell.
- */
-void
-bell(sp)
-	SCR *sp;
-{
-	/* Ex doesn't need bells rung. */
-	if (F_ISSET(sp, S_MODE_EX))
-		return;
-
-	if (ISSET(O_FLASH)) {
-		(void)tputs(sp->VB, 1, bell_putchar);
-		(void)fflush(stdout);
-	} else if (ISSET(O_ERRORBELLS))
-		(void)write(STDOUT_FILENO, "\007", 1);	/* '\a' */
-	F_CLR(sp, S_BELLSCHED);
-}
 
 /*
  * msgq --
@@ -229,10 +198,10 @@ void
 onhup(signo)
 	int signo;
 {
+#ifdef XXX_RIP_THIS_OUT
 	/* Restore the terminal's sanity. */
 	endwin();
 
-#ifdef XXX_RIP_THIS_OUT
 	/* If we had a temp file going, then preserve it. */
 	if (tmpnum > 0 && tmpfd >= 0) {
 		(void)close(tmpfd);

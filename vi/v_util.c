@@ -6,14 +6,13 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_util.c,v 5.28 1993/03/26 13:40:56 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:40:56 $";
+static char sccsid[] = "$Id: v_util.c,v 5.29 1993/03/28 19:05:52 bostic Exp $ (Berkeley) $Date: 1993/03/28 19:05:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 #include <sys/ioctl.h>
 
 #include <ctype.h>
-#include <curses.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
@@ -85,87 +84,4 @@ v_sof(sp, mp)
 		msgq(sp, M_BELL, "Already at the beginning of the file.");
 	else
 		msgq(sp, M_BELL, "Movement past the beginning of the file.");
-}
-
-/*
- * v_msgflush --
- *	Flush any accumulated vi messages.
- */
-int
-v_msgflush(sp)
-	SCR *sp;
-{
-	MSG *mp;
-	size_t len, oldy, oldx;
-	int ch;
-	char *p;
-
-	/* Ring the bell. */
-	if (F_ISSET(sp, S_BELLSCHED))
-		bell(sp);
-
-	/* May not be any messages. */
-	if (sp->msgp == NULL || sp->msgp->flags & M_EMPTY)
-		return (0);
-
-	/* Save off cursor position. */
-	getyx(stdscr, oldy, oldx);
-
-#define	MCONTMSG	" [More ...]"
-
-	/* Display the messages. */
-	for (mp = sp->msgp, p = NULL;
-	    mp != NULL && !(mp->flags & M_EMPTY); mp = mp->next) {
-
-		p = mp->mbuf;
-
-lcont:		/* Move to the message line and clear it. */
-		MOVE(sp, SCREENSIZE(sp), 0);
-		clrtoeol();
-
-		/* Turn on standout mode if requested. */
-		if (mp->flags & (M_BELL | M_ERROR))
-			standout();
-
-		/*
-		 * Figure out how much to print, and print it.
-		 * Adjust for the next line.
-		 */
-		len = sp->cols;
-		if (mp->next != NULL && !(mp->next->flags & M_EMPTY))
-			len -= sizeof(MCONTMSG);
-		if (mp->len < len)
-			len = mp->len;
-		addnstr(p, len);
-		p += len;
-		mp->len -= len;
-
-		/* Turn off standout mode. */
-		if (mp->flags & (M_BELL | M_ERROR))
-			standend();
-
-		/* If more, print continue message. */
-		if (mp->len ||
-		    mp->next != NULL && !(mp->next->flags & M_EMPTY)) {
-			addnstr(MCONTMSG, sizeof(MCONTMSG) - 1);
-			refresh();
-			while (sp->special[ch = getkey(sp, 0)] != K_CR &&
-			    !isspace(ch))
-				bell(sp);
-		}
-		if (mp->len)
-			goto lcont;
-
-		refresh();
-		mp->flags |= M_EMPTY;
-	}
-
-	/* Restore cursor position. */
-	MOVE(sp, oldy, oldx);
-	refresh();
-
-	/* Leave the message alone until after the next keystroke. */
-	F_SET(sp, S_NEEDMERASE);
-
-	return (0);
 }

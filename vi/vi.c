@@ -6,13 +6,12 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.53 1993/03/26 13:41:07 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:41:07 $";
+static char sccsid[] = "$Id: vi.c,v 5.54 1993/03/28 19:05:54 bostic Exp $ (Berkeley) $Date: 1993/03/28 19:05:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
 #include <ctype.h>
-#include <curses.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
@@ -37,40 +36,18 @@ vi(sp, ep)
 {
 	MARK fm, tm, m;
 	VICMDARG *vp;
+	int eval;
 	u_int flags;
 
-	if (v_init(sp, ep) || scr_update(sp, ep))
+	if (v_init(sp, ep))
 		return (1);
 	status(sp, ep, ep->lno);
 
-	for (;;) {
-		/* Report on the status of the last command. */
-		if (sp->rptlines) {
-			if (LVAL(O_REPORT) && sp->rptlines >= LVAL(O_REPORT)) {
-				msgq(sp, M_DISPLAY,
-				    "%ld line%s %s", sp->rptlines,
-				    sp->rptlines == 1 ? "" : "s", sp->rptlabel);
-			}
-			sp->rptlines = 0;
+	for (eval = 0;;) {
+err:		if (!F_ISSET(sp, S_SCREENWAIT) && sp->refresh(sp, ep)) {
+			eval = 1;
+			break;
 		}
-
-		/*
-		 * If ex left a message on the screen, leave the screen alone
-		 * until the next keystroke.  If a vi message is waiting,
-		 * display it.
-		 */
-err:		if (!F_ISSET(sp, S_MSGWAIT))
-			v_msgflush(sp);
-
-		if (!F_ISSET(sp, S_NEEDMERASE))
-			scr_modeline(sp, ep, 0);
-
-		/*
-		 * XXX
-		 * If key already waiting, and it's not a key requiring
-		 * a motion component, should skip the repaint.
-		 */
-		refresh();
 
 		/*
 		 * We get a command, which may or may not have an associated
@@ -114,11 +91,6 @@ err:		if (!F_ISSET(sp, S_MSGWAIT))
 				tm = fm;
 		}
 
-		if (flags & V_INPUT && ISSET(O_SHOWMODE)) {
-			scr_modeline(sp, ep, 1);
-			refresh();
-		}
-
 		/* Log the start of an action. */
 		(void)log_cursor(sp, ep);
 
@@ -150,7 +122,7 @@ err:		if (!F_ISSET(sp, S_MSGWAIT))
 		 * Some vi row movements are "attracted" to the last position
 		 * set, i.e. the V_RCM commands are moths to the V_RCM_SET
 		 * commands' candle.  It's broken into two parts.  Here we deal
-		 * with the command flags.  In scr_relative(), we deal with the
+		 * with the command flags.  In sp->relative(), we deal with the
 		 * screen flags.  If the movement is to the EOL, the vi command
 		 * handles it.  If it's to the beginning, we handle it here.
 		 *
@@ -159,7 +131,7 @@ err:		if (!F_ISSET(sp, S_MSGWAIT))
 		 * you don't.
 		 */
 		if (flags & V_RCM)
-			m.cno = scr_relative(sp, ep, m.lno);
+			m.cno = sp->relative(sp, ep, m.lno);
 		else if (flags & V_RCM_SETFNB) {
 			if (nonblank(sp, ep, m.lno, &m.cno))
 				goto err;
@@ -171,7 +143,16 @@ err:		if (!F_ISSET(sp, S_MSGWAIT))
 		/* Update the cursor. */
 		ep->lno = m.lno;
 		ep->cno = m.cno;
-		(void)scr_update(sp, ep);
+
+		/* Report on the changes from the command. */
+		if (sp->rptlines) {
+			if (LVAL(O_REPORT) && sp->rptlines >= LVAL(O_REPORT)) {
+				msgq(sp, M_DISPLAY,
+				    "%ld line%s %s", sp->rptlines,
+				    sp->rptlines == 1 ? "" : "s", sp->rptlabel);
+			}
+			sp->rptlines = 0;
+		}
 
 		/* Set the new favorite position. */
 		if (flags & V_RCM_SET) {
@@ -179,15 +160,14 @@ err:		if (!F_ISSET(sp, S_MSGWAIT))
 			sp->rcm = sp->scno;
 		}
 	}
-	return (v_end(sp));
+	return (v_end(sp) || eval);
 }
 
 #define	KEY(sp, k, flags) {						\
 	(k) = getkey(sp, flags);					\
-	if (F_ISSET(sp, S_NEEDMERASE)) {				\
-		scr_modeline(sp, ep, 0);				\
-		F_CLR(sp, S_NEEDMERASE);				\
-		refresh();						\
+	if (F_ISSET(sp, S_SCHED_UPDATE)) {				\
+		F_CLR(sp, S_SCHED_UPDATE);				\
+		sp->refresh(sp, ep);					\
 	}								\
 	if (sp->special[(k)] == K_VLNEXT)				\
 		(k) = getkey(sp, 0);					\
@@ -568,8 +548,7 @@ noword:		msgq(sp, M_BELL, "Cursor not in a %s.",
 	 */
 	if (beg != ep->cno) {
 		ep->cno = beg;
-		scr_update(sp, ep);
-		refresh();
+		sp->refresh(sp, ep);
 	}
 
 	/*

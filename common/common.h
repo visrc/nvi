@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 5.42 1993/03/26 13:38:01 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:38:01 $
+ *	$Id: common.h,v 5.43 1993/03/28 19:04:48 bostic Exp $ (Berkeley) $Date: 1993/03/28 19:04:48 $
  */
 
 #include <db.h>				/* Ordered before local includes. */

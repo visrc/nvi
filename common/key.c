@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.50 1993/03/26 13:39:30 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:39:30 $";
+static char sccsid[] = "$Id: key.c,v 5.51 1993/03/28 19:04:45 bostic Exp $ (Berkeley) $Date: 1993/03/28 19:04:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -113,7 +113,7 @@ getkey(sp, flags)
 	if (sp->mapoutput) {
 		ch = *sp->mapoutput;
 		if (*++sp->mapoutput == '\0') {
-			F_CLR(sp, S_MSGWAIT);
+			F_CLR(sp, S_SCREENWAIT);
 			sp->mapoutput = NULL;
 		}
 		goto ret;
@@ -166,7 +166,7 @@ retry:		qp = seq_find(sp, &sp->keybuf[sp->nextkey], sp->nkeybuf,
 			sp->nkeybuf -= qp->ilen;
 			sp->nextkey += qp->ilen;
 			sp->mapoutput = qp->output;
-			F_SET(sp, S_MSGWAIT);
+			F_SET(sp, S_SCREENWAIT);
 			ch = *sp->mapoutput++;
 			goto ret;
 		}
@@ -191,7 +191,7 @@ ret:	if (flags & GB_BEAUTIFY && ISSET(O_BEAUTIFY)) {
 		    sp->special[ch] == K_FORMFEED || sp->special[ch] == K_NL ||
 		    sp->special[ch] == K_TAB)
 			return (ch);
-		bell(sp);
+		sp->bell(sp);
 		return (getkey(sp, flags));
 	}
 	return (ch);

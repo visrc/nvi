@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_z.c,v 5.27 1993/03/26 13:41:00 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:41:00 $";
+static char sccsid[] = "$Id: v_z.c,v 5.28 1993/03/28 19:05:53 bostic Exp $ (Berkeley) $Date: 1993/03/28 19:05:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -45,16 +45,16 @@ v_z(sp, ep, vp, fm, tm, rp)
 
 	switch(vp->character) {
 	case '.':
-		if (scr_sm_fill(sp, ep, lno, P_MIDDLE))
+		if (sp->fill(sp, ep, lno, P_MIDDLE))
 			return (1);
 		break;
 	case '-':
-		if (scr_sm_fill(sp, ep, lno, P_BOTTOM))
+		if (sp->fill(sp, ep, lno, P_BOTTOM))
 			return (1);
 		break;
 	default:
 		if (sp->special[vp->character] == K_CR) {
-			if (scr_sm_fill(sp, ep, lno, P_TOP))
+			if (sp->fill(sp, ep, lno, P_TOP))
 				return (1);
 			break;
 		}

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_init.c,v 5.10 1993/03/26 13:38:57 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:38:57 $";
+static char sccsid[] = "$Id: ex_init.c,v 5.11 1993/03/28 19:05:21 bostic Exp $ (Berkeley) $Date: 1993/03/28 19:05:21 $";
 #endif /* not lint */
 
 #include <unistd.h>
@@ -32,10 +32,6 @@ ex_init(sp, ep)
 	raw.c_oflag |= OPOST|ONLCR;
 	if (tcsetattr(STDIN_FILENO, TCSADRAIN, &raw))
 		return (1);
-
-	/* Set up ex functions. */
-	sp->confirm = ex_confirm;
-	sp->end = ex_end;
 
 	/*
 	 * Ex always starts editing at the end of the file;

@@ -6,12 +6,10 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 5.26 1993/03/26 13:40:43 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:40:43 $";
+static char sccsid[] = "$Id: v_scroll.c,v 5.27 1993/03/28 19:05:43 bostic Exp $ (Berkeley) $Date: 1993/03/28 19:05:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
-
-#include <curses.h>
 
 #include "vi.h"
 #include "vcmd.h"
@@ -54,8 +52,8 @@ v_home(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	return (scr_sm_top(sp, ep,
-	    &rp->lno, vp->flags & VC_C1SET ? vp->count : 1));
+	return (sp->position(sp, ep,
+	    &rp->lno, vp->flags & VC_C1SET ? vp->count : 1, P_TOP));
 }
 
 /*
@@ -70,7 +68,7 @@ v_middle(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	return (scr_sm_mid(sp, ep, &rp->lno));
+	return (sp->position(sp, ep, &rp->lno, 0, P_MIDDLE));
 }
 
 /*
@@ -85,8 +83,8 @@ v_bottom(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	return (scr_sm_bot(sp, ep,
-	    &rp->lno, vp->flags & VC_C1SET ? vp->count : 1));
+	return (sp->position(sp, ep,
+	    &rp->lno, vp->flags & VC_C1SET ? vp->count : 1, P_BOTTOM));
 }
 
 /*
@@ -172,7 +170,7 @@ v_hpageup(sp, ep, vp, fm, tm, rp)
 	else
 		vp->count = LVAL(O_SCROLL);
 
-	return (scr_sm_down(sp, ep, rp, (recno_t)LVAL(O_SCROLL), 1));
+	return (sp->down(sp, ep, rp, (recno_t)LVAL(O_SCROLL), 1));
 }
 
 /*
@@ -196,7 +194,7 @@ v_hpagedown(sp, ep, vp, fm, tm, rp)
 	else
 		vp->count = LVAL(O_SCROLL);
 
-	return (scr_sm_up(sp, ep, rp, (recno_t)LVAL(O_SCROLL), 1));
+	return (sp->up(sp, ep, rp, (recno_t)LVAL(O_SCROLL), 1));
 }
 
 /*
@@ -213,8 +211,9 @@ v_pageup(sp, ep, vp, fm, tm, rp)
 	recno_t count;
 
 	/* Calculation from POSIX 1003.2/D8. */
-	count = (vp->flags & VC_C1SET ? vp->count : 1) * (TEXTSIZE(sp) - 1);
-	return (scr_sm_down(sp, ep, rp, count, 1));
+	count =
+	    (vp->flags & VC_C1SET ? vp->count : 1) * (sp->textlines(sp) - 1);
+	return (sp->down(sp, ep, rp, count, 1));
 }
 
 /*
@@ -231,8 +230,9 @@ v_pagedown(sp, ep, vp, fm, tm, rp)
 	recno_t count;
 
 	/* Calculation from POSIX 1003.2/D8. */
-	count = (vp->flags & VC_C1SET ? vp->count : 1) * (TEXTSIZE(sp) - 1);
-	return (scr_sm_up(sp, ep, rp, count, 1));
+	count =
+	    (vp->flags & VC_C1SET ? vp->count : 1) * (sp->textlines(sp) - 1);
+	return (sp->up(sp, ep, rp, count, 1));
 }
 
 /*
@@ -250,7 +250,7 @@ v_lineup(sp, ep, vp, fm, tm, rp)
 	 * The cursor moves down, staying with its original line, unless it
 	 * reaches the bottom of the screen.
 	 */
-	return (scr_sm_down(sp, ep,
+	return (sp->down(sp, ep,
 	    rp, vp->flags & VC_C1SET ? vp->count : 1, 0));
 }
 
@@ -269,6 +269,6 @@ v_linedown(sp, ep, vp, fm, tm, rp)
 	 * The cursor moves up, staying with its original line, unless it
 	 * reaches the top of the screen.
 	 */
-	return (scr_sm_up(sp, ep,
+	return (sp->up(sp, ep,
 	    rp, vp->flags & VC_C1SET ? vp->count : 1, 0));
 }

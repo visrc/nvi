@@ -6,10 +6,10 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 5.18 1993/03/26 13:40:29 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:40:29 $";
+static char sccsid[] = "$Id: v_init.c,v 5.19 1993/03/28 19:05:41 bostic Exp $ (Berkeley) $Date: 1993/03/28 19:05:41 $";
 #endif /* not lint */
 
-#include <curses.h>
+#include <sys/types.h>
 
 #include "vi.h"
 #include "vcmd.h"
@@ -57,10 +57,6 @@ v_init(sp, ep)
 	SCR *sp;
 	EXF *ep;
 {
-	/* Set up ex functions. */
-	sp->confirm = v_confirm;
-	sp->end = v_end;
-
 	/* Make ex display to a special function. */
 #ifdef FWOPEN_NOT_AVAILABLE
 	if ((sp->stdfp = fopen(_PATH_DEVNULL, "w")) == NULL)
@@ -68,7 +64,7 @@ v_init(sp, ep)
 	v_fd = fileno(sp->stdfp);
 	v_sp = sp;
 #else
-	sp->stdfp = fwopen(sp, v_exwrite);
+	sp->stdfp = fwopen(sp, sp->exwrite);
 #endif
 
 	if (F_ISSET(ep, F_NEWSESSION) &&

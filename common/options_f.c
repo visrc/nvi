@@ -6,14 +6,16 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 5.3 1993/03/26 13:39:26 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:39:26 $";
+static char sccsid[] = "$Id: options_f.c,v 5.4 1993/03/28 19:05:24 bostic Exp $ (Berkeley) $Date: 1993/03/28 19:05:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include <ctype.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "vi.h"
@@ -55,11 +57,16 @@ f_columns(sp, valp, eqp)
 		    "Screen columns too small, less than wrapmargin.");
 		return (1);
 	}
+#ifdef notdef
+	/*
+	 * This has to be checked by reaching down into the screen code.
+	 */
 	if (val < O_NUMBER_LENGTH) {
 		msgq(sp, M_ERROR,
 		    "Screen columns too small, less than number option.");
 		return (1);
 	}
+#endif
 	(void)snprintf(buf, sizeof(buf), "COLUMNS=%lu", val);
 	(void)putenv(buf);
 
@@ -175,6 +182,7 @@ f_leftright(sp, valp, eqp)
 	char *eqp;
 {
 	F_SET(sp, S_REDRAW);
+	return (0);
 }
 
 int
@@ -315,7 +323,6 @@ f_tags(sp, valp, eqp)
 	void *valp;
 	char *eqp;
 {
-	TAGF *tfp;
 	size_t len;
 	int cnt;
 	char *p, *t;

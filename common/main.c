@@ -12,11 +12,13 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.56 1993/03/26 13:37:49 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:37:49 $";
+static char sccsid[] = "$Id: main.c,v 5.57 1993/03/28 19:04:42 bostic Exp $ (Berkeley) $Date: 1993/03/28 19:04:42 $";
 #endif /* not lint */
 
 #include <sys/param.h>
+#include <sys/stat.h>
 
+#include <ctype.h>
 #include <errno.h>
 #include <setjmp.h>
 #include <signal.h>
@@ -35,6 +37,7 @@ static char sccsid[] = "$Id: main.c,v 5.56 1993/03/26 13:37:49 bostic Exp $ (Ber
 #include "excmd.h"
 
 static void err __P((const char *, ...));
+static void msgflush __P((SCR *));
 static void obsolete __P((char *[]));
 static void reset __P((SCR *));
 static void usage __P((void));
@@ -215,11 +218,11 @@ main(argc, argv)
 		/* Initialize the screen. */
 		switch(sp->flags & (S_MODE_EX | S_MODE_VI)) {
 		case S_MODE_EX:
-			if (ex_s_init(sp, ep))
+			if (sex_init(sp, ep))
 				goto err1;
 			break;
 		case S_MODE_VI:
-			if (vi_s_init(sp, ep))
+			if (svi_init(sp, ep))
 				goto err1;
 			break;
 		default:
@@ -278,18 +281,8 @@ main(argc, argv)
 		    mode == sp->flags & (S_MODE_EX | S_MODE_VI));
 
 		/* End the screen. */
-		switch(mode) {
-		case S_MODE_EX:
-			if (ex_s_end(sp))
-				goto err1;
-			break;
-		case S_MODE_VI:
-			if (vi_s_end(sp))
-				goto err1;
-			break;
-		default:
-			abort();
-		}
+		if (sp->end(sp))
+			goto err1;
 	} while (!F_ISSET(sp, S_EXIT | S_EXIT_FORCE));
 
 	/* Yeah, I don't like it either. */
@@ -297,10 +290,10 @@ main(argc, argv)
 err1:		eval = 1;
 
 	/* Reset anything that needs resetting. */
-err2:	reset(sp);
+	reset(sp);
 
 	/* Flush any left-over error messages. */
-	ex_s_msgflush(sp);
+	msgflush(sp);
 
 	if (tcsetattr(STDIN_FILENO, TCSADRAIN, &gp->original_termios))
 		err("tcsetattr: %s", strerror(errno));
@@ -323,6 +316,26 @@ reset(sp)
 		else if (chmod(tty, sp->gp->origmode) < 0)
 			msgq(sp, M_ERROR, "%s: %s", strerror(errno));
 	}
+}
+
+/*
+ * msgflush --
+ *	Flush any remaining messages.
+ */
+static void
+msgflush(sp)
+	SCR *sp;
+{
+	MSG *mp;
+
+	/* Ring the bell. */
+	if (F_ISSET(sp, S_BELLSCHED))
+		(void)fprintf(stderr, "\07");		/* \a */
+
+	/* Display the messages. */
+	for (mp = sp->msgp;
+	    mp != NULL && !(mp->flags & M_EMPTY); mp = mp->next) 
+		(void)fprintf(stderr, "%.*s\n", mp->len, mp->mbuf);
 }
 
 static void
