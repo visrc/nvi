@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_xchar.c,v 5.9 1992/10/18 13:10:57 bostic Exp $ (Berkeley) $Date: 1992/10/18 13:10:57 $";
+static char sccsid[] = "$Id: v_xchar.c,v 5.10 1992/10/26 17:48:55 bostic Exp $ (Berkeley) $Date: 1992/10/26 17:48:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -69,7 +69,7 @@ v_xchar(vp, fm, tm, rp)
 		m.cno = fm->cno ? fm->cno - 1 : 0;
 	}
 
-	if (cut(VICB(vp), fm, tm, 0) || delete(fm, tm, 0))
+	if (cut(VICB(vp), fm, tm, 0) || delete(curf, fm, tm, 0))
 		return (1);
 
 	*rp = m;
@@ -102,7 +102,7 @@ v_Xchar(vp, fm, tm, rp)
 	cnt = vp->flags & VC_C1SET ? vp->count : 1;
 	fm->cno = cnt >= tm->cno ? 0 : tm->cno - cnt;
 
-	if (cut(VICB(vp), fm, tm, 0) || delete(fm, tm, 0))
+	if (cut(VICB(vp), fm, tm, 0) || delete(curf, fm, tm, 0))
 			return (1);
 
 	*rp = *fm;
