@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.43 1993/12/23 10:22:03 bostic Exp $ (Berkeley) $Date: 1993/12/23 10:22:03 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.44 1994/03/04 16:41:59 bostic Exp $ (Berkeley) $Date: 1994/03/04 16:41:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -262,15 +262,16 @@ small_fill:			MOVE(sp, INFOLINE(sp), 0);
 		}
 
 	/*
-	 * 3a: Line down.
+	 * 3a: Line down, or current screen.
 	 */
 	if (LNO >= HMAP->lno) {
+		/* Current screen. */
 		if (LNO <= TMAP->lno)
 			goto adjust;
 
 		/*
-		 * If less than half a screen away, scroll down until the
-		 * line is on the screen.
+		 * If less than half a screen above the line, scroll down
+		 * until the line is on the screen.
 		 */
 		lcnt = svi_sm_nlines(sp, ep, TMAP, LNO, HALFTEXT(sp));
 		if (lcnt < HALFTEXT(sp)) {
@@ -279,14 +280,31 @@ small_fill:			MOVE(sp, INFOLINE(sp), 0);
 					return (1);
 			goto adjust;
 		}
+		goto bottom;
+	}
+
+	/*
+	 * 3b: Line up.
+	 */
+	lcnt = svi_sm_nlines(sp, ep, HMAP, LNO, HALFTEXT(sp));
+	if (lcnt < HALFTEXT(sp)) {
+		/*
+		 * If less than half a screen below the line, scroll up until
+		 * the line is the first line on the screen.  Special check so
+		 * that if the screen has been emptied, we refill it.
+		 */
+		if (file_gline(sp, ep, HMAP->lno, &len) != NULL) {
+			while (lcnt--)
+				if (svi_sm_1down(sp, ep))
+					return (1);
+			goto adjust;
+		}
 
 		/*
-		 * If less than a full screen from the bottom of the file, put
-		 * the last line of the file on the bottom of the screen.  The
-		 * calculation is safe because we know there's at least one
-		 * full screen of lines, otherwise couldn't have gotten here.
+		 * If less than a full screen from the bottom of the file,
+		 * put the last line of the file on the bottom of the screen.
 		 */
-		if (file_lline(sp, ep, &lastline))
+bottom:		if (file_lline(sp, ep, &lastline))
 			return (1);
 		tmp.lno = LNO;
 		tmp.off = 1;
@@ -297,26 +315,8 @@ small_fill:			MOVE(sp, INFOLINE(sp), 0);
 			F_SET(sp, S_REDRAW);
 			goto adjust;
 		}
-
-		/*
-		 * If more than a full screen from the last line of the file,
-		 * put the new line in the middle of the screen.
-		 */
+		/* It's not close, just put the line in the middle. */
 		goto middle;
-	}
-
-	/*
-	 * 3b: Line up.
-	 *
-	 * If less than half a screen away, scroll up until the line is
-	 * the first line on the screen.
-	 */
-	lcnt = svi_sm_nlines(sp, ep, HMAP, LNO, HALFTEXT(sp));
-	if (lcnt < HALFTEXT(sp)) {
-		while (lcnt--)
-			if (svi_sm_1down(sp, ep))
-				return (1);
-		goto adjust;
 	}
 
 	/*
@@ -382,14 +382,10 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 	 *
 	 * Decide cursor position.  If the line has changed, the cursor has
 	 * moved over a tab, or don't know where the cursor was, reparse the
-	 * line.  Note, if we think that the cursor "hasn't moved", reparse
-	 * the line.  This is 'cause if it hasn't moved, we've almost always
-	 * lost track of it.
-	 *
-	 * Otherwise, we've just moved over fixed-width characters, and can
-	 * calculate the left/right scrolling and cursor movement without
-	 * reparsing the line.  Note that we don't know which (if any) of
-	 * the characters between the old and new cursor positions changed.
+	 * line.  Otherwise, we've just moved over fixed-width characters,
+	 * and can calculate the left/right scrolling and cursor movement
+	 * without reparsing the line.  Note that we don't know which (if any)
+	 * of the characters between the old and new cursor positions changed.
 	 *
 	 * XXX
 	 * With some work, it should be possible to handle tabs quickly, at
@@ -451,7 +447,7 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 			goto slow;
 
 		/*
-		 * Quit sanity check -- it's hard to figure out exactly when
+		 * Quick sanity check -- it's hard to figure out exactly when
 		 * we cross a screen boundary as we do in the cursor right
 		 * movement.  If cnt is so large that we're going to cross the
 		 * boundary no matter what, stop now.
