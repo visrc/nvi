@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 8.10 1993/09/11 16:11:25 bostic Exp $ (Berkeley) $Date: 1993/09/11 16:11:25 $";
+static char sccsid[] = "$Id: ex_filter.c,v 8.11 1993/09/13 13:57:04 bostic Exp $ (Berkeley) $Date: 1993/09/13 13:57:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,10 +40,11 @@ filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
 	char *cmd;
 	enum filtertype ftype;
 {
-	struct termios term;
+	struct termios nterm, term;
 	FILE *ifp, *ofp;		/* GCC: can't be uninitialized. */
 	pid_t parent_writer_pid, utility_pid;
 	recno_t lno, nread;
+	sig_ret_t saveintr;
 	int input[2], output[2], rval;
 	char *name;
 
@@ -87,8 +88,25 @@ filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
 	if (pipe(output) < 0 || (ofp = fdopen(output[0], "r")) == NULL)
 		goto err;
 
-	if (turn_interrupts_on(sp, &term, filter_intr))
-		goto err;
+	/*
+	 * ISIG turns on VINTR, VQUIT and VSUSP.  We don't want to interrupt
+	 * the parent(s), so we ignore VINTR.  VQUIT is ignored by main()
+	 * because nvi never wants to catch it.  A handler for VSUSP should
+	 * have been installed by the screen code.
+	 */
+	if ((saveintr = signal(SIGINT, SIG_IGN)) != (sig_ret_t)-1) {
+		if (tcgetattr(STDIN_FILENO, &term)) {
+			msgq(sp, M_ERR,
+			    "tcgetattr: %s", strerror(errno));
+			goto err;
+		}
+		nterm = term;
+		nterm.c_lflag |= ISIG;
+		if (tcsetattr(STDIN_FILENO, TCSANOW | TCSASOFT, &nterm)) {
+			msgq(sp, M_ERR, "tcsetattr: %s", strerror(errno));
+			goto err;
+		}
+	}
 
 	/* Fork off the utility process. */
 	switch (utility_pid = vfork()) {
@@ -108,8 +126,9 @@ err:		if (input[0] != -1)
 		msgq(sp, M_ERR, "filter: %s", strerror(errno));
 		return (1);
 	case 0:				/* Utility. */
-		/* The utility dies on interrupt. */
-		signal(SIGINT, SIG_DFL);
+		/* The utility have default behavior. */
+		(void)signal(SIGINT, SIG_DFL);
+		(void)signal(SIGQUIT, SIG_DFL);
 
 		/*
 		 * Redirect stdin from the read end of the input pipe,
@@ -249,7 +268,12 @@ err:		if (input[0] != -1)
 
 uwait:	rval |= filter_wait(sp, utility_pid, cmd, 0);
 
-	(void)turn_interrupts_off;
+	if (saveintr != (sig_ret_t)-1) {
+		if (signal(SIGINT, saveintr) == (sig_ret_t)-1)
+			msgq(sp, M_ERR, "signal: %s", strerror(errno));
+		if (tcsetattr(STDIN_FILENO, TCSANOW | TCSASOFT, &term))
+			msgq(sp, M_ERR, "tcsetattr: %s", strerror(errno));
+	}
 	return (rval);
 }
 
