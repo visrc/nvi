@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.1 1993/06/09 22:25:19 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:25:19 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.2 1993/07/21 09:34:15 bostic Exp $ (Berkeley) $Date: 1993/07/21 09:34:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -499,7 +499,7 @@ lcont:		/* Move to the message line and clear it. */
 
 		/* If more, print continue message. */
 		if (mp->len ||
-		    mp->next != NULL && !F_ISSET(mp->next, M_EMPTY)) {
+		    (mp->next != NULL && !F_ISSET(mp->next, M_EMPTY))) {
 			ADDNSTR(MCONTMSG, sizeof(MCONTMSG) - 1);
 			refresh();
 			while (sp->special[ch = term_key(sp, 0)] != K_CR &&
