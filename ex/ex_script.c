@@ -13,7 +13,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_script.c,v 10.22 1996/04/22 19:37:01 bostic Exp $ (Berkeley) $Date: 1996/04/22 19:37:01 $";
+static const char sccsid[] = "$Id: ex_script.c,v 10.23 1996/04/22 22:57:13 bostic Exp $ (Berkeley) $Date: 1996/04/22 22:57:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -42,6 +42,7 @@ static const char sccsid[] = "$Id: ex_script.c,v 10.22 1996/04/22 19:37:01 bosti
 
 #include "../common/common.h"
 #include "script.h"
+#include "pathnames.h"
 
 static void	sscr_check __P((SCR *));
 static int	sscr_getprompt __P((SCR *));
