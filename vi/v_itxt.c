@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 8.26 1994/03/04 11:03:03 bostic Exp $ (Berkeley) $Date: 1994/03/04 11:03:03 $";
+static char sccsid[] = "$Id: v_itxt.c,v 8.27 1994/03/06 12:08:04 bostic Exp $ (Berkeley) $Date: 1994/03/06 12:08:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -59,8 +59,19 @@ static char sccsid[] = "$Id: v_itxt.c,v 8.26 1994/03/04 11:03:03 bostic Exp $ (B
  * it fails is if the user entered 'o' from anywhere but the last character of
  * the line, the undo returned the cursor to the start of the line.  If the
  * user was on the last character of the line, the cursor returned to that
- * position.)
+ * position.)  We also check for mapped keys waiting, i.e. if we're in the
+ * middle of a map, don't bother logging the cursor.
  */
+#define	LOG_CORRECT {							\
+	if (!MAPPED_KEYS_WAITING(sp))					\
+		(void)log_cursor(sp, ep);				\
+}
+#define	LOG_CORRECT_FIRST {						\
+	if (first == 1) {						\
+		LOG_CORRECT;						\
+		first = 0;						\
+	}								\
+}
 
 static int v_CS __P((SCR *, EXF *, VICMDARG *, u_int));
 
@@ -98,11 +109,12 @@ v_iA(sp, ep, vp)
 			len = 0;
 		} else {
 			/* Correct logging for implied cursor motion. */
-			sp->cno = len == 0 ? 0 : len - 1;
 			if (first == 1) {
-				log_cursor(sp, ep);
+				sp->cno = len == 0 ? 0 : len - 1;
+				LOG_CORRECT;
 				first = 0;
 			}
+
 			/* Start the change after the line. */
 			sp->cno = len;
 		}
@@ -212,11 +224,9 @@ v_iI(sp, ep, vp)
 			sp->cno = 0;
 			if (nonblank(sp, ep, lno, &sp->cno))
 				return (1);
+
 			/* Correct logging for implied cursor motion. */
-			if (first == 1) {
-				log_cursor(sp, ep);
-				first = 0;
-			}
+			LOG_CORRECT_FIRST;
 		}
 		if (len == 0)
 			LF_SET(TXT_APPENDEOL);
@@ -315,11 +325,10 @@ v_iO(sp, ep, vp)
 		} else {
 insert:			p = "";
 			sp->cno = 0;
+
 			/* Correct logging for implied cursor motion. */
-			if (first == 1) {
-				log_cursor(sp, ep);
-				first = 0;
-			}
+			LOG_CORRECT_FIRST;
+
 			if (file_iline(sp, ep, sp->lno, p, 0))
 				return (1);
 			if ((p = file_gline(sp, ep, sp->lno, &len)) == NULL) {
@@ -373,11 +382,10 @@ v_io(sp, ep, vp)
 		} else {
 insert:			p = "";
 			sp->cno = 0;
+
 			/* Correct logging for implied cursor motion. */
-			if (first == 1) {
-				log_cursor(sp, ep);
-				first = 0;
-			}
+			LOG_CORRECT_FIRST;
+
 			len = 0;
 			if (file_aline(sp, ep, 1, sp->lno, p, len))
 				return (1);
@@ -533,8 +541,10 @@ v_CS(sp, ep, vp, iflags)
 		}
 		tm = &vp->m_stop;
 	}
+
 	/* Correct logging for implied cursor motion. */
-	log_cursor(sp, ep);
+	LOG_CORRECT;
+
 	return (v_ntext(sp, ep,
 	    &sp->tiq, tm, p, len, &vp->m_final, 0, OOBLNO, flags));
 }
@@ -579,7 +589,7 @@ v_change(sp, ep, vp)
 	sp->cno = vp->m_start.cno;
 
 	/* Correct logging for implied cursor motion. */
-	log_cursor(sp, ep);
+	LOG_CORRECT;
 
 	/*
 	 * If changing within a single line, the line either currently has
