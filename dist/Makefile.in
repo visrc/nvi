@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.55 1996/05/15 16:55:14 bostic Exp $ (Berkeley) $Date: 1996/05/15 16:55:14 $
+#	$Id: Makefile.in,v 8.56 1996/05/18 13:33:35 bostic Exp $ (Berkeley) $Date: 1996/05/18 13:33:35 $
 
 srcdir=	@srcdir@/..
 CC=	@CC@
@@ -99,7 +99,7 @@ install: all install_common
 	    $(mkdir) $(mandir) && $(chmod) $(dmode) $(mandir)
 	[ -d $(mandir)/cat1 ] || \
 	    $(mkdir) $(mandir)/cat1 && $(chmod) $(dmode) $(mandir)/cat1
-	@echo "Installing man pages: $(mandir)/cat1 ..."
+	@echo "Installing man pages: $(mandir) ..."
 	cd $(mandir)/cat1 && $(rm) -f `echo vi.0 | sed '$(transform)'`
 	$(cp) $(srcdir)/docs/USD.doc/vi.man/vi.0 \
 	    $(mandir)/cat1/`echo vi.0 | sed '$(transform)'`
@@ -110,6 +110,18 @@ install: all install_common
 	    `echo vi.0 | sed '$(transform)'` `echo ex.0 | sed '$(transform)'`
 	cd $(mandir)/cat1 && $(ln) \
 	    `echo vi.0 | sed '$(transform)'` `echo view.0 | sed '$(transform)'`
+	[ -d $(mandir)/man1 ] || \
+	    $(mkdir) $(mandir)/man1 && $(chmod) $(dmode) $(mandir)/man1
+	cd $(mandir)/man1 && $(rm) -f `echo vi.1 | sed '$(transform)'`
+	$(cp) $(srcdir)/docs/USD.doc/vi.man/vi.1 \
+	    $(mandir)/man1/`echo vi.1 | sed '$(transform)'`
+	cd $(mandir)/man1 && $(chmod) $(fmode) `echo vi.1 | sed '$(transform)'`
+	cd $(mandir)/man1 && $(rm) -f `echo ex.1 | sed '$(transform)'`
+	cd $(mandir)/man1 && $(rm) -f `echo view.1 | sed '$(transform)'`
+	cd $(mandir)/man1 && $(ln) \
+	    `echo vi.1 | sed '$(transform)'` `echo ex.1 | sed '$(transform)'`
+	cd $(mandir)/man1 && $(ln) \
+	    `echo vi.1 | sed '$(transform)'` `echo view.1 | sed '$(transform)'`
 
 cat=	dutch english german ru_SU.KOI8-R swedish
 install_common:
