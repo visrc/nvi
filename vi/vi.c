@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.73 1994/07/01 10:10:06 bostic Exp $ (Berkeley) $Date: 1994/07/01 10:10:06 $";
+static char sccsid[] = "$Id: vi.c,v 8.74 1994/07/01 20:44:50 bostic Exp $ (Berkeley) $Date: 1994/07/01 20:44:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -187,7 +187,10 @@ vi(sp, ep)
 		 if (saved_mode != F_ISSET(sp, S_SCREENS | S_MAJOR_CHANGE))
 			break;
 
-		/* Set the absolute mark. */
+		/*
+		 * Set the absolute mark -- set even if a tags or similar
+		 * command, since the tag may be moving to the same file.
+		 */
 		if (F_ISSET(vp, V_ABS) && mark_set(sp, ep, ABSMARK1, &abs, 1))
 			goto err;
 
