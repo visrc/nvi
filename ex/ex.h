@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 5.27 1993/02/11 20:08:22 bostic Exp $ (Berkeley) $Date: 1993/02/11 20:08:22 $
+ *	$Id: ex.h,v 5.28 1993/02/12 10:02:40 bostic Exp $ (Berkeley) $Date: 1993/02/12 10:02:40 $
  */
 
 #include "exf.h"
@@ -35,7 +35,8 @@ typedef struct {
 #define	E_NOGLOBAL	0x01000		/* Not in a global. */
 #define	E_NOPERM	0x02000		/* Permission denied for now. */
 #define	E_SETLAST	0x04000		/* Reset last command. */
-#define	E_ZERO		0x08000		/* 0 is a legal (first) address.*/
+#define	E_ZERO		0x08000		/* 0 is a legal addr1. */
+#define	E_ZERODEF	0x10000		/* 0 is default addr1 of empty files. */
 	u_int flags;
 	char *syntax;			/* Syntax script. */
 	char *usage;			/* Usage line. */
