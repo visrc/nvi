@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 8.18 1993/11/20 10:06:25 bostic Exp $ (Berkeley) $Date: 1993/11/20 10:06:25 $";
+static char sccsid[] = "$Id: vs_split.c,v 8.19 1993/11/28 18:32:06 bostic Exp $ (Berkeley) $Date: 1993/11/28 18:32:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -223,7 +223,6 @@ svi_split(sp, argv)
 
 	/* Redraw the status line for the parent screen. */
 	(void)status(sp, sp->ep, sp->lno, 0);
-	(void)svi_paint(sp, sp->ep);
 
 	/* Save the parent screen's cursor information. */
 	sp->frp->lno = sp->lno;

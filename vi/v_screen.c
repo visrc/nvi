@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_screen.c,v 8.7 1993/11/19 08:33:06 bostic Exp $ (Berkeley) $Date: 1993/11/19 08:33:06 $";
+static char sccsid[] = "$Id: v_screen.c,v 8.8 1993/11/28 18:31:30 bostic Exp $ (Berkeley) $Date: 1993/11/28 18:31:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -42,7 +42,6 @@ v_screen(sp, ep, vp, fm, tm, rp)
 	 * find the screen they want.
 	 */
 	(void)status(sp, ep, fm->lno, 0);
-	(void)sp->s_refresh(sp, ep);
 
 	/* Save the old screen's cursor information. */
 	sp->frp->lno = sp->lno;
