@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 5.16 1993/05/11 16:11:22 bostic Exp $ (Berkeley) $Date: 1993/05/11 16:11:22 $";
+static char sccsid[] = "$Id: v_txt.c,v 5.17 1993/05/12 09:16:53 bostic Exp $ (Berkeley) $Date: 1993/05/12 09:16:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -149,6 +149,15 @@ newtp:		if ((tp = text_init(sp, p, len, len + 32)) == NULL)
 		if (txt_auto(sp, ep, ai_line, tp))
 			return (1);
 		sp->cno = tp->ai;
+	}
+
+	/*
+	 * The change command has a special "feature" -- leading space
+	 * characters are handled as autoindent characters.  Beauty!
+	 */
+	else if (LF_ISSET(TXT_AICHARS)) {
+		tp->offset = 0;
+		tp->ai = sp->cno;
 	} else
 		tp->offset = sp->cno;
 
