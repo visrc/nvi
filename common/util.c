@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.26 1993/11/26 17:32:48 bostic Exp $ (Berkeley) $Date: 1993/11/26 17:32:48 $";
+static char sccsid[] = "$Id: util.c,v 8.27 1993/11/26 17:39:30 bostic Exp $ (Berkeley) $Date: 1993/11/26 17:39:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -355,16 +355,13 @@ set_window_size(sp, set_row, ign_env)
 	 *
 	 * Try TIOCGWINSZ.
 	 */
+	row = col = 0;
 	if (ioctl(STDERR_FILENO, TIOCGWINSZ, &win) != -1) {
 		row = win.ws_row;
 		col = win.ws_col;
-	} else
-		row = col = 0;
+	}
 
-	/*
-	 * If TIOCGWINSZ failed, or had entries of 0, try termcap.
-	 * If that fails, use some defaults.
-	 */
+	/* If TIOCGWINSZ failed, or had entries of 0, try termcap. */
 	if (row == 0 || col == 0) {
 		s = NULL;
 		if (F_ISSET(&sp->opts[O_TERM], OPT_SET))
@@ -376,11 +373,13 @@ set_window_size(sp, set_row, ign_env)
 				row = tgetnum("li");
 			if (col == 0)
 				col = tgetnum("co");
-		} else {
-			row = 24;
-			col = 80;
 		}
 	}
+	/* If nothing else, well, it's probably a VT100. */
+	if (row == 0)
+		row = 24;
+	if (col == 0)
+		col = 80;
 
 	/*
 	 * POSIX 1003.2 requires the environment to override, however,
