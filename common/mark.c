@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: mark.c,v 5.15 1993/04/20 18:41:12 bostic Exp $ (Berkeley) $Date: 1993/04/20 18:41:12 $";
+static char sccsid[] = "$Id: mark.c,v 5.16 1993/05/08 16:06:27 bostic Exp $ (Berkeley) $Date: 1993/05/08 16:06:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -24,20 +24,20 @@ static char sccsid[] = "$Id: mark.c,v 5.15 1993/04/20 18:41:12 bostic Exp $ (Ber
  */
 
 /*
- * mark_reset --
- *	Reset the marks for file changes.
+ * mark_init --
+ *	Initialize the marks for a file.
  */
-void
-mark_reset(sp, ep)
+int
+mark_init(sp, ep)
 	SCR *sp;
 	EXF *ep;
 {
 	MARK m;
 
-	memset(ep->marks, 0, sizeof(ep->marks));
-	m.lno = 1;
-	m.cno = 0;
-	SETABSMARK(sp, ep, &m);
+	/* Default absolute marks. */
+	ep->absmark.lno = ep->labsmark.lno = 1;
+	ep->absmark.cno = ep->labsmark.cno = 0;
+	return (0);
 }
 
 /*
