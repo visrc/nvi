@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.40 1993/11/05 10:50:20 bostic Exp $ (Berkeley) $Date: 1993/11/05 10:50:20 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.41 1993/11/06 11:20:00 bostic Exp $ (Berkeley) $Date: 1993/11/06 11:20:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -215,6 +215,11 @@ newtp:		if ((tp = text_init(sp, p, len, len + 32)) == NULL)
 	 * Historic practice is that the wrapmargin value was a distance
 	 * from the RIGHT-HAND column, not the left.  It's more useful to
 	 * us as a distance from the left-hand column.
+	 *
+	 * XXX
+	 * Setting margin causes a significant performance hit.  Normally
+	 * we don't update the screen if there are keys waiting, but, if
+	 * margin is set we have to or we don't know where the cursor is.
 	 */
 	if (!LF_ISSET(TXT_WRAPMARGIN))
 		margin = 0;
@@ -246,7 +251,8 @@ newtp:		if ((tp = text_init(sp, p, len, len + 32)) == NULL)
 		 * code refreshes the screen for us.)  Don't refresh unless
 		 * we're about to wait on a character.
 		 */
-		if (showmatch || gp->key->cnt == 0 && gp->tty->cnt == 0) {
+		if (showmatch || margin ||
+		    gp->key->cnt == 0 && gp->tty->cnt == 0) {
 			if (sp->s_change(sp, ep, tp->lno, LINE_RESET))
 				ERR;
 			if (showmatch) {
@@ -364,16 +370,15 @@ next_ch:	if (replay)
 			ntp->lno = tp->lno + 1;
 			ntp->insert = tp->insert;
 
-			/* Resolve autoindented characters for the old line. */
-			if (LF_ISSET(TXT_AUTOINDENT))
-				txt_ai_resolve(sp, tp);
-
 			/*
+			 * Resolve autoindented characters for the old line.
 			 * Reset the autoindent line value.  0^D keeps the ai
 			 * line from changing, ^D changes the level, even if
 			 * there are no characters in the old line.
 			 */
 			if (LF_ISSET(TXT_AUTOINDENT)) {
+				txt_ai_resolve(sp, tp);
+
 				if (txt_auto(sp, ep, OOBLNO,
 				    carat_st == C_NOCHANGE ? &ait : tp, ntp))
 					ERR;
@@ -425,8 +430,9 @@ next_ch:	if (replay)
 				ERR;
 
 			/* Refresh if nothing waiting. */
-			if (gp->key->cnt == 0 &&
-			    gp->tty->cnt == 0 && sp->s_refresh(sp, ep))
+			if ((margin ||
+			    gp->key->cnt == 0 && gp->tty->cnt == 0) &&
+			    sp->s_refresh(sp, ep))
 				ERR;
 			goto next_ch;
 		case K_ESCAPE:				/* Escape. */
