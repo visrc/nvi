@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_relative.c,v 9.2 1995/01/11 16:18:53 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:18:53 $";
+static char sccsid[] = "$Id: vs_relative.c,v 9.3 1995/01/12 19:28:52 bostic Exp $ (Berkeley) $Date: 1995/01/12 19:28:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,19 +31,15 @@ static char sccsid[] = "$Id: vs_relative.c,v 9.2 1995/01/11 16:18:53 bostic Exp 
 
 /*
  * svi_column --
- *	Return the logical column of the cursor.
+ *	Return the logical column of the cursor in the line.
  */
 int
-svi_column(sp, cp)
+svi_column(sp, colp)
 	SCR *sp;
-	size_t *cp;
+	size_t *colp;
 {
-	size_t col;
-
-	col = SVP(sp)->sc_col;
-	if (O_ISSET(sp, O_NUMBER))
-		col -= O_NUMBER_LENGTH;
-	*cp = col;
+	*colp = (SVP(sp)->sc_smap->off - 1) * sp->cols +
+	    SVP(sp)->sc_col - (O_ISSET(sp, O_NUMBER) ? O_NUMBER_LENGTH : 0);
 	return (0);
 }
 
@@ -123,10 +119,8 @@ svi_screens(sp, lp, llen, lno, cnop)
 
 	listset = O_ISSET(sp, O_LIST);
 
-#define	SET_CHLEN {							\
-	chlen = (ch = *(u_char *)p++) == '\t' &&			\
-	    !listset ? TAB_OFF(sp, tab_off) : KEY_LEN(sp, ch);		\
-}
+#define	CHLEN(val) (ch = *(u_char *)p++) == '\t' &&			\
+	    !listset ? TAB_OFF(sp, val) : KEY_LEN(sp, ch);
 #define	TAB_RESET {							\
 	/*								\
 	 * If past the end of the screen, and the character was a tab,	\
@@ -145,13 +139,13 @@ svi_screens(sp, lp, llen, lno, cnop)
 	scno = tab_off = 0;
 	if (cnop == NULL)
 		while (len--) {
-			SET_CHLEN;
+			chlen = CHLEN(tab_off);
 			scno += chlen;
 			TAB_RESET;
 		}
 	else
 		for (cno = *cnop; len--; --cno) {
-			SET_CHLEN;
+			chlen = CHLEN(tab_off);
 			scno += chlen;
 			TAB_RESET;
 			if (cno == 0)
@@ -173,68 +167,30 @@ svi_rcm(sp, lno)
 {
 	size_t len;
 
+	/* First character is easy, and common. */
+	if (sp->rcm == 0)
+		return (0);
+
 	/* Last character is easy, and common. */
 	if (sp->rcm_last)
 		return (file_gline(sp,
 		    lno, &len) == NULL || len == 0 ? 0 : len - 1);
 
-	/* First character is easy, and common. */
-	if (HMAP->off == 1 && sp->rcm == 0)
-		return (0);
-
-	/*
-	 * Get svi_cm_private() to do the hard work.  If doing leftright
-	 * scrolling, we use the current screen offset, otherwise, use
-	 * the first screen, i.e. an offset of 1.
-	 *
-	 * XXX
-	 * I'm not sure that an offset of 1 is right.  What happens is that
-	 * the vi main loop calls us for the VM_RCM case.  By using an offset
-	 * of 1, we're assuming that every VM_RCM command changes lines, and
-	 * that we want to position on the first screen for that line.  This
-	 * is currently the way it works, but it's not clean. I'd prefer it if
-	 * we could find the SMAP entry the cursor references, and use that
-	 * screen offset.  Unfortunately, that's not going to be easy, as we
-	 * don't keep that information around and it may be expensive to get.
-	 */
-	return (svi_cm_private(sp, lno,
-	    O_ISSET(sp, O_LEFTRIGHT) ? HMAP->off : 1, sp->rcm));
+	return (svi_colpos(sp, lno, sp->rcm));
 }
 
 /*
- * svi_cm_public --
+ * svi_colpos --
  *	Return the physical column from the line that will display a
  *	character closest to the specified screen column.
- *
- *	The extra interface is because it's called by vi, which doesn't
- *	have a handle on the SMAP structure.
  */
 size_t
-svi_cm_public(sp, lno, cno)
+svi_colpos(sp, lno, cno)
 	SCR *sp;
 	recno_t lno;
 	size_t cno;
 {
-	return (svi_cm_private(sp, lno, HMAP->off, cno));
-}
-
-/*
- * svi_cm_private --
- *	Return the physical column from the line that will display a
- *	character closest to the specified screen column, taking into
- *	account the screen offset.
- *
- *	The offset is for the commands that move logical distances, i.e.
- *	if it's a logical scroll the closest physical distance is based
- *	on the logical line, not the physical line.
- */
-size_t
-svi_cm_private(sp, lno, off, cno)
-	SCR *sp;
-	recno_t lno;
-	size_t off, cno;
-{
-	size_t chlen, len, llen, scno, tab_off;
+	size_t chlen, len, llen, off, scno, tab_off;
 	int ch, listset;
 	char *lp, *p;
 
@@ -248,10 +204,11 @@ svi_cm_private(sp, lno, off, cno)
 	listset = O_ISSET(sp, O_LIST);
 
 	/* Discard screen (logical) lines. */
-	for (scno = 0, p = lp, len = llen; --off;) {
+	off = cno / sp->cols;
+	cno %= sp->cols;
+	for (scno = 0, p = lp, len = llen; off--;) {
 		for (; len && scno < sp->cols; --len)
-			scno += (ch = *(u_char *)p++) == '\t' &&
-			    !listset ? TAB_OFF(sp, scno) : KEY_LEN(sp, ch);
+			scno += CHLEN(scno);
 
 		/*
 		 * If reached the end of the physical line, return
@@ -273,7 +230,7 @@ svi_cm_private(sp, lno, off, cno)
 
 	/* Step through the line until reach the right character or EOL. */
 	for (tab_off = scno; len--;) {
-		SET_CHLEN;
+		chlen = CHLEN(tab_off);
 
 		/*
 		 * If we've reached the specific character, there are three

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 9.3 1995/01/11 16:18:56 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:18:56 $";
+static char sccsid[] = "$Id: vs_smap.c,v 9.4 1995/01/12 19:28:56 bostic Exp $ (Berkeley) $Date: 1995/01/12 19:28:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -672,8 +672,8 @@ svi_sm_up(sp, rp, count, scmd, smp)
 		 */
 		if (echanged) {
 			rp->lno = smp->lno;
-			rp->cno =
-			    svi_cm_private(sp, smp->lno, smp->off, sp->rcm);
+			rp->cno = svi_colpos(sp, smp->lno,
+			    (smp->off - 1) * sp->cols + sp->rcm % sp->cols);
 		}
 		return (0);
 	case CNTRL_F:
@@ -897,8 +897,8 @@ svi_sm_down(sp, rp, count, scmd, smp)
 		 */
 		if (ychanged) {
 			rp->lno = smp->lno;
-			rp->cno =
-			    svi_cm_private(sp, smp->lno, smp->off, sp->rcm);
+			rp->cno = svi_colpos(sp, smp->lno,
+			    (smp->off - 1) * sp->cols + sp->rcm % sp->cols);
 		}
 		return (0);
 	case Z_CARAT:

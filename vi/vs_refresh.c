@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 9.12 1995/01/11 21:32:04 bostic Exp $ (Berkeley) $Date: 1995/01/11 21:32:04 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 9.13 1995/01/12 19:28:50 bostic Exp $ (Berkeley) $Date: 1995/01/12 19:28:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -168,11 +168,11 @@ svi_paint(sp, flags)
 
 		/* Toss svi_line() cached information. */
 		if (F_ISSET(sp, S_SCR_TOP)) {
-			if (svi_sm_fill(sp, sp->lno, P_TOP))
+			if (svi_sm_fill(sp, LNO, P_TOP))
 				return (1);
 		}
 		else if (F_ISSET(sp, S_SCR_CENTER)) {
-			if (svi_sm_fill(sp, sp->lno, P_MIDDLE))
+			if (svi_sm_fill(sp, LNO, P_MIDDLE))
 				return (1);
 		} else
 			if (svi_sm_fill(sp, HMAP->lno, P_TOP))
@@ -626,8 +626,10 @@ slow:	for (smp = HMAP; smp->lno != LNO; ++smp);
 	for (y = -1; smp <= TMAP && smp->lno == LNO; ++smp) {
 		if (svi_line(sp, smp, &y, &SCNO))
 			return (1);
-		if (y != -1)
+		if (y != -1) {
+			svp->sc_smap = smp;
 			break;
+		}
 	}
 	goto number;
 
@@ -657,9 +659,12 @@ paint:	if (LF_ISSET(PAINT_FLUSH) &&
 	}
 	for (smp = HMAP; smp <= TMAP; ++smp)
 		SMAP_FLUSH(smp);
-	for (smp = HMAP; smp <= TMAP; ++smp)
+	for (y = -1, smp = HMAP; smp <= TMAP; ++smp) {
 		if (svi_line(sp, smp, &y, &SCNO))
 			return (1);
+		if (y != -1)
+			svp->sc_smap = smp;
+	}
 
 	/*
 	 * If it's a small screen and we're redrawing, clear the unused lines,
@@ -745,6 +750,12 @@ number:	if (O_ISSET(sp, O_NUMBER) &&
 		(void)svi_column(sp, &sp->rcm);
 
 	return (0);
+
+#undef	 LNO
+#undef	OLNO
+#undef	 CNO
+#undef	OCNO
+#undef	SCNO
 }
 
 /*
@@ -755,9 +766,7 @@ static int
 svi_modeline(sp)
 	SCR *sp;
 {
-	SMAP *smp;
-	SVI_PRIVATE *svp;
-	size_t cols, curlen, endpoint, len, midpoint, scno;
+	size_t cols, curlen, endpoint, len, midpoint;
 	char *p, buf[20];
 
 	/* Clear the mode line. */
@@ -808,27 +817,9 @@ svi_modeline(sp)
 	 * column on the screen.
 	 */
 	if (O_ISSET(sp, O_RULER)) {
-		/*
-		 * If it's a leftright screen or we're on the first screen of
-		 * the line, it's a calculation.  Otherwise, we have to figure
-		 * it out.
-		 */
-		svp = SVP(sp);
-		if (O_ISSET(sp, O_LEFTRIGHT))
-			scno = (HMAP->off - 1) *
-			    SCREEN_COLS(sp) + svp->sc_col + 1;
-		else {
-			for (smp = HMAP; smp->lno != sp->lno; ++smp);
-			if (smp->off == 1 &&
-			    (smp == TMAP || smp[1].lno != sp->lno))
-				scno = svp->sc_col + 1;
-			else
-				scno = svi_screens(sp,
-				    NULL, 0, sp->lno, &sp->cno);
-		}
-		if (O_ISSET(sp, O_NUMBER))
-			scno -= O_NUMBER_LENGTH;
-		len = snprintf(buf, sizeof(buf), "%lu,%lu", sp->lno, scno);
+		len = snprintf(buf, sizeof(buf), "%lu,%lu", sp->lno,
+		    (SVP(sp)->sc_smap->off - 1) * sp->cols + SVP(sp)->sc_col -
+		    (O_ISSET(sp, O_NUMBER) ? O_NUMBER_LENGTH : 0) + 1);
 		midpoint = (cols - ((len + 1) / 2)) / 2;
 		if (curlen < midpoint) {
 			MOVE(sp, INFOLINE(sp), midpoint);
