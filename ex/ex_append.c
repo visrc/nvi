@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 9.6 1994/12/02 10:29:32 bostic Exp $ (Berkeley) $Date: 1994/12/02 10:29:32 $";
+static char sccsid[] = "$Id: ex_append.c,v 9.7 1995/01/07 12:00:46 bostic Exp $ (Berkeley) $Date: 1995/01/07 12:00:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -92,7 +92,7 @@ aci(sp, cmdp, cmd)
 	 * Set input flags; the ! flag turns off autoindent for append,
 	 * change and insert.
 	 */
-	LF_INIT(TXT_DOTTERM | TXT_NLECHO);
+	LF_INIT(TXT_DOTTERM | TXT_NUMBER);
 	if (!F_ISSET(cmdp, E_FORCE) && O_ISSET(sp, O_AUTOINDENT))
 		LF_SET(TXT_AUTOINDENT);
 	if (O_ISSET(sp, O_BEAUTIFY))
@@ -118,11 +118,9 @@ aci(sp, cmdp, cmd)
 		sv_tiqp = sp->tiqp;
 		sp->tiqp = &tiq;
 
-		if (F_ISSET(sp->gp, G_STDIN_TTY))
-			SEX_RAW(&t);
+		if (sex_tsetup(sp, &t))
+			return (1);
 		(void)write(STDOUT_FILENO, "\n", 1);
-		LF_SET(TXT_NLECHO);
-
 	}
 
 	/* Set the line number, so that autoindent works correctly. */
@@ -184,11 +182,9 @@ err:			rval = 1;
 		text_lfree(&tiq);
 
 		/* Reset the terminal state. */
-		if (F_ISSET(sp->gp, G_STDIN_TTY)) {
-			if (SEX_NORAW(&t))
-				rval = 1;
-			F_SET(sp, S_SCR_REFRESH);
-		}
+		if (sex_tteardown(sp, &t))
+			rval = 1;
+		F_SET(sp, S_SCR_REFRESH);
 	}
 	return (rval);
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 9.18 1994/12/16 14:41:16 bostic Exp $ (Berkeley) $Date: 1994/12/16 14:41:16 $";
+static char sccsid[] = "$Id: ex.c,v 9.19 1995/01/07 12:01:30 bostic Exp $ (Berkeley) $Date: 1995/01/07 12:01:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,6 +32,7 @@ static char sccsid[] = "$Id: ex.c,v 9.18 1994/12/16 14:41:16 bostic Exp $ (Berke
 
 #include "vi.h"
 #include "excmd.h"
+#include "../sex/sex_screen.h"
 
 #if defined(DEBUG) && defined(COMLOG)
 static void	ex_comlog __P((SCR *, EXCMDARG *));
@@ -72,7 +73,7 @@ ex(sp)
 	 * from a file.  In addition, the first time a ^H was discarded from
 	 * the input, a message "^H discarded" was displayed.  We don't bother.
 	 */
-	LF_INIT(TXT_BACKSLASH | TXT_CNTRLD | TXT_CR | TXT_EXSUSPEND);
+	LF_INIT(TXT_BACKSLASH | TXT_CNTRLD | TXT_CR);
 
 	for (eval = 0;; ++sp->if_lno) {
 		/* Set the flags that the user can change. */
@@ -92,8 +93,7 @@ ex(sp)
 		CLR_INTERRUPT(sp);
 		irval = sp->s_get(sp, sp->tiqp, ':', flags);
 		if (INTERRUPTED(sp)) {
-			(void)fputc('\n', stdout);
-			(void)fflush(stdout);
+			(void)putchar('\n');
 			goto refresh;
 		}
 		switch (irval) {
@@ -375,13 +375,14 @@ done:		if (bp != NULL)
 		goto err;
 
 	/*
-	 * Check to see if this is a command for which we may want to output
-	 * a \r separator instead of a \n.  (The command :1<CR> puts out a \n,
-	 * but the command :<CR> puts out a \r.)  If the line is empty except
-	 * for <blank>s, <carriage-return> or <eof>, we'll probably want to
-	 * output \r.  I don't think there's any way to get <blank> characters
-	 * *after* the command character, but this is the ex parser, and I've
-	 * been wrong before.
+	 * Check to see if this is a command for which we may want to move
+	 * the cursor back up to the previous line.  (The command :1<CR>
+	 * wants a <newline> separator, but the command :<CR> wants to erase
+	 * the command line.)  If the line is empty except for <blank>s,
+	 * <carriage-return> or <eof>, we'll probably want to move up.  I
+	 * don't think there's any way to get <blank> characters *after* the
+	 * command character, but this is the ex parser, and I've been wrong
+	 * before.
 	 */
 	if (sep == NOTSET)
 		sep = cmdlen == 0 || cmdlen == 1 && cmd[0] == '\004' ?
@@ -1301,34 +1302,27 @@ addr2:	switch (exc.addrcnt) {
 	 * If this is the first command in the command line, we received the
 	 * command from the ex command loop and we're talking to a tty, and
 	 * and there's nothing else on the command line, and it's one of the
-	 * special commands, we erase the prompt character with a '\r'.  Else,
-	 * we put out a newline character to separate the command from the
-	 * output from the command.  It's OK if vi calls us -- we won't be in
-	 * ex mode so we'll do nothing.
+	 * special commands, we move back up to the previous line, and erase
+	 * the prompt character with the output.  Since ex runs in canonical
+	 * mode, we don't have to do anything else, a <newline> has already
+	 * been echoed by the tty driver.  It's OK if vi calls us -- we won't
+	 * be in ex mode so we'll do nothing.
 	 *
 	 * !!!
-	 * Historically, ex only put out a \r, so, if the displayed line was
-	 * only a single character long, and <eof> was represented as ^D, the
-	 * output wouldn't overwrite the user's input.  Sex currently doesn't
-	 * display the <eof> character if it's going to be the scroll command,
-	 * i.e. if it's the first non-<blank> character in the line.  If sex
-	 * is changed to run in cooked mode, i.e. <eof> is displayed, this code
-	 * will have to overwrite it.  We also don't treat lines with extra
-	 * prompt characters as empty -- it's not worth the effort since we'd
-	 * have to overwrite some indeterminate number of columns with spaces
-	 * to clean up.  For now, put out enough spaces to overwrite the prompt.
+	 * Historically, ex didn't erase the line, so, if the displayed line
+	 * was only a single character long, and <eof> was represented as ^D,
+	 * the output wouldn't overwrite the user's input.  To fix this, we
+	 * print the maxiumum character number of spaces.  Note, this won't
+	 * help if the user entered extra prompt or <blank> characters before
+	 * the command character.  We'd have to do a lot of work to make that
+	 * work, and it's not worth the effort.
 	 */
 	if (sep != NONE) {
 		if (sp->ep != NULL &&
 		    IN_EX_MODE(sp) && F_ISSET(sp->gp, G_STDIN_TTY))
 			if (sep == NEEDSEP_NR &&
-			    (uselastcmd || cp == &cmds[C_SCROLL])) {
-				(void)putchar('\r');
-				for (len = KEY_LEN(sp, PROMPTCHAR); len--;)
-					(void)putchar(' ');
-				(void)putchar('\r');
-			} else
-				(void)putchar('\n');
+			    (uselastcmd || cp == &cmds[C_SCROLL]))
+				sex_termcap(sp, EX_TERM_SCROLL);
 		sep = NONE;
 	}
 
@@ -1460,20 +1454,13 @@ addr2:	switch (exc.addrcnt) {
 	/* NOTREACHED */
 
 	/*
-	 * If we haven't put out a separator line, do it now.  For more
-	 * detailed comments, see above.
-	 */
-err:	if (sep != NONE && sp->ep != NULL &&
-	    IN_EX_MODE(sp) && F_ISSET(sp->gp, G_STDIN_TTY))
-		(void)fputc('\n', stdout);
-	/*
 	 * On error, we discard any keys we have left, as well as any keys
 	 * that were mapped.  The test of save_cmdlen isn't necessarily
 	 * correct.  If we fail early enough we don't know if the entire
 	 * string was a single command or not.  Try and guess, it's useful
 	 * to know if part of the command was discarded.
 	 */
-	if (save_cmdlen == 0)
+err:	if (save_cmdlen == 0)
 		for (; cmdlen; --cmdlen) {
 			ch = *cmd++;
 			if (IS_ESCAPE(sp, ch) && cmdlen > 1) {
