@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.59 1996/04/27 12:26:01 bostic Exp $ (Berkeley) $Date: 1996/04/27 12:26:01 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.60 1996/04/27 17:46:10 bostic Exp $ (Berkeley) $Date: 1996/04/27 17:46:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -613,24 +613,20 @@ replay:	if (LF_ISSET(TXT_REPLAY))
 	 * If this character was quoted by a K_VLNEXT or a backslash, replace
 	 * the placeholder (a carat or a backslash) with the new character.
 	 * Skip tests for abbreviations; ":ab xa XA" followed by "ixa^V<space>"
-	 * doesn't perform an abbreviation.  Special case, ^V^J is the same as
-	 * ^J, historically.
+	 * doesn't perform an abbreviation.  Special case, ^V^J (not ^V^M) is
+	 * the same as ^J, historically.
 	 */
 	if (F_ISSET(&evp->e_ch, CH_QUOTED))
 		goto insq_ch;
 	if (quote != Q_NOTSET) {
+		FL_CLR(ec_flags, EC_QUOTED);
+
 		if (quote == Q_VTHIS && evp->e_value != K_NL ||
 		    quote == Q_BTHIS &&
 		    (evp->e_value == K_VERASE || evp->e_value == K_VKILL)) {
-			--tp->cno;
-			++tp->owrite;
-			FL_CLR(ec_flags, EC_QUOTED);
 			quote = Q_NOTSET;
 			goto insl_ch;
 		}
-		if (quote == Q_VTHIS && evp->e_value == K_NL)
-			--tp->cno;
-		FL_CLR(ec_flags, EC_QUOTED);
 		quote = Q_NOTSET;
 	}
 
@@ -1244,6 +1240,16 @@ insl_ch:	if (txt_insch(sp, tp, &evp->e_c, flags))
 			goto err;
 
 		/*
+		 * If we're using K_VLNEXT to quote the next character, then
+		 * we want the cursor to position itself on the ^ placeholder
+		 * we're displaying, to match historic practice.
+		 */
+		if (quote == Q_VNEXT) {
+			--tp->cno;
+			++tp->owrite;
+		}
+
+		/*
 		 * !!!
 		 * Translate "<CH_HEX>[isxdigit()]*" to a character with
 		 * a hex value: this test delimits the value by the max
@@ -1297,6 +1303,7 @@ ebuf_chk:	if (tp->cno >= tp->len) {
 			++tp->len;
 		}
 
+		/* Step the quote state forward. */
 		if (quote != Q_NOTSET) {
 			if (quote == Q_BNEXT)
 				quote = Q_BTHIS;
