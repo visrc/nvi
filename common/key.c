@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.52 1994/03/15 14:16:11 bostic Exp $ (Berkeley) $Date: 1994/03/15 14:16:11 $";
+static char sccsid[] = "$Id: key.c,v 8.53 1994/03/22 15:22:22 bostic Exp $ (Berkeley) $Date: 1994/03/22 15:22:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,10 +30,12 @@ static char sccsid[] = "$Id: key.c,v 8.52 1994/03/15 14:16:11 bostic Exp $ (Berk
 #include <regex.h>
 
 #include "vi.h"
+#include "interrupt.h"
 #include "seq.h"
 
 static int	keycmp __P((const void *, const void *));
 static void	termkeyset __P((GS *, int, int));
+static void	term_intr __P((int));
 
 /*
  * If we're reading less than 20 characters, up the size of the tty buffer.
@@ -294,7 +296,6 @@ term_push(sp, s, nchars, cmap, flags)
 	u_int flags;			/* CH_* flags. */
 {
 	IBUF *tty;
-	u_short *p, *t;
 
 	/* If we have room, stuff the keys into the buffer. */
 	tty = sp->gp->tty;
@@ -305,9 +306,7 @@ term_push(sp, s, nchars, cmap, flags)
 		tty->cnt += nchars;
 		MEMMOVE(tty->ch + tty->next, s, nchars);
 		MEMSET(tty->chf + tty->next, flags, nchars);
-		for (p = tty->cmap + tty->next,
-		    t = tty->cmap + tty->next + nchars; p < t;)
-			*p++ = cmap;
+		MEMSET(tty->cmap + tty->next, cmap, nchars);
 		return (0);
 	}
 
@@ -335,16 +334,13 @@ term_push(sp, s, nchars, cmap, flags)
 	tty->cnt += nchars;
 	MEMMOVE(tty->ch + TERM_PUSH_SHIFT, s, nchars);
 	MEMSET(tty->chf + TERM_PUSH_SHIFT, flags, nchars);
-	for (p = tty->cmap + TERM_PUSH_SHIFT,
-	    t = tty->cmap + TERM_PUSH_SHIFT + nchars; p < t;)
-		*p++ = cmap;
+	MEMSET(tty->cmap + TERM_PUSH_SHIFT, cmap, nchars);
 	return (0);
 }
 
 /*
  * Remove characters from the queue, simultaneously clearing the flag
- * and map counts.  Note that the memset of tty->cmap is safe because
- * we're zeroing it out.
+ * and map counts.
  */
 #define	QREM_HEAD(q, len) {						\
 	size_t __off = (q)->next;					\
@@ -442,6 +438,7 @@ term_key(sp, chp, flags)
 	CH *chp;
 	u_int flags;
 {
+	DECLARE_INTERRUPTS;
 	enum input rval;
 	struct timeval t, *tp;
 	CHAR_T ch;
@@ -472,6 +469,10 @@ loop:	if (tty->cnt == 0) {
 			F_CLR(sp, S_UPDATE_MODE);
 	}
 
+	/* If no limit on remaps, set it up so the user can interrupt. */
+	if (!O_ISSET(sp, O_REMAPMAX))
+		SET_UP_INTERRUPTS(term_intr);
+
 	/* If the key is mappable and should be mapped, look it up. */
 	if (!(tty->chf[tty->next] & CH_NOMAP) &&
 	    LF_ISSET(TXT_MAPCOMMAND | TXT_MAPINPUT)) {
@@ -499,10 +500,12 @@ remap:		qp = seq_find(sp, NULL, &tty->ch[tty->next], tty->cnt,
 		 * unmapped.
 		 */
 		if (ispartial) {
-			if (term_read_grow(sp, tty))
-				return (INP_ERR);
+			if (term_read_grow(sp, tty)) {
+				rval = INP_ERR;
+				goto ret;
+			}
 			if (rval = sp->s_key_read(sp, &nr, tp))
-				return (rval);
+				goto ret;
 			if (nr)
 				goto remap;
 			goto nomap;
@@ -525,9 +528,12 @@ remap:		qp = seq_find(sp, NULL, &tty->ch[tty->next], tty->cnt,
 		 * Only permit a character to be remapped a certain number
 		 * of times before we figure that it's not going to finish.
 		 */
-		if ((cmap = tty->cmap[tty->next]) > MAX_MAP_COUNT) {
+		if (O_ISSET(sp, O_REMAPMAX) &&
+		    (cmap = tty->cmap[tty->next]) > MAX_MAP_COUNT ||
+		    !O_ISSET(sp, O_REMAPMAX) && F_ISSET(sp, S_INTERRUPTED)) {
 			term_map_flush(sp, "Character remapped too many times");
-			return (INP_ERR);
+			rval = INP_ERR;
+			goto ret;
 		}
 
 		/* Delete the mapped characters from the queue. */
@@ -539,14 +545,18 @@ remap:		qp = seq_find(sp, NULL, &tty->ch[tty->next], tty->cnt,
 
 		/* If remapping characters, push the character on the queue. */
 		if (O_ISSET(sp, O_REMAP)) {
-			if (term_push(sp, qp->output, qp->olen, ++cmap, 0))
-				return (INP_ERR);
+			if (term_push(sp, qp->output, qp->olen, ++cmap, 0)) {
+				rval = INP_ERR;
+				goto ret;
+			}
 			goto newmap;
 		}
 
 		/* Else, push the characters on the queue and return one. */
-		if (term_push(sp, qp->output, qp->olen, 0, CH_NOMAP))
-			return (INP_ERR);
+		if (term_push(sp, qp->output, qp->olen, 0, CH_NOMAP)) {
+			rval = INP_ERR;
+			goto ret;
+		}
 	}
 
 nomap:	ch = tty->ch[tty->next];
@@ -554,7 +564,8 @@ nomap:	ch = tty->ch[tty->next];
 not_digit_ch:	chp->ch = NOT_DIGIT_CH;
 		chp->value = 0;
 		chp->flags = 0;
-		return (INP_OK);
+		rval = INP_OK;
+		goto ret;
 	}
 
 	/* Fill in the return information. */
@@ -564,7 +575,31 @@ not_digit_ch:	chp->ch = NOT_DIGIT_CH;
 
 	/* Delete the character from the queue. */
 	QREM_HEAD(tty, 1);
-	return (INP_OK);
+	rval = INP_OK;
+
+	/* If an error setting up the interrupts, we're kind of hosed. */
+	if (0) {
+interrupt_err:	rval = INP_ERR;
+	}
+ret:	if (!O_ISSET(sp, O_REMAPMAX))
+		TEAR_DOWN_INTERRUPTS;
+	return (rval);
+}
+
+/*
+ * term_intr --
+ *	Set the interrupt bit.
+ */
+static void
+term_intr(signo)
+	int signo;
+{
+	SCR *sp;
+
+	for (sp = __global_list->dq.cqh_first;
+	    sp != (void *)&__global_list->dq; sp = sp->q.cqe_next)
+		if (F_ISSET(sp, S_INTERRUPTIBLE))
+			F_SET(sp, S_INTERRUPTED);
 }
 
 /*

@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 8.35 1994/03/16 08:05:58 bostic Exp $ (Berkeley) $Date: 1994/03/16 08:05:58 $
+ *	$Id: key.h,v 8.36 1994/03/22 15:21:52 bostic Exp $ (Berkeley) $Date: 1994/03/22 15:21:52 $
  */
 
 /* Structure to return a character and associated information. */
@@ -31,25 +31,20 @@ struct _ch {
 #define	K_VLNEXT	17
 #define	K_VWERASE	18
 #define	K_ZERO		19
-	u_char	 value;		/* Special character flag values. */
+	u_int8_t value;		/* Special character flag values. */
 
 #define	CH_ABBREVIATED	0x01	/* Character from an abbreviation. */
 #define	CH_NOMAP	0x02	/* Do not attempt to map the character. */
 #define	CH_QUOTED	0x04	/* Character is already quoted. */
-	u_char	 flags;
+	u_int8_t flags;
 };
 
-/*
- * Structure for the key input buffer.
- *
- * MAX_MAP_COUNT was chosen based on the vi maze script, which remaps
- * characters roughly 250 times.
- */
+/* Structure for the key input buffer. */
 struct _ibuf {
-	CHAR_T	*ch;		/* Array of characters. */
-	u_char	*chf;		/* Array of character flags (CH_*). */
-#define	MAX_MAP_COUNT	270	/* Maximum times a character can remap. */
-	u_short *cmap;		/* Number of times character has been mapped. */
+	CHAR_T	 *ch;		/* Array of characters. */
+	u_int8_t *chf;		/* Array of character flags (CH_*). */
+#define	MAX_MAP_COUNT	50	/* Infinite loop check. */
+	u_int8_t *cmap;		/* Number of times character has been mapped. */
 
 	size_t	 cnt;		/* Count of remaining characters. */
 	size_t	 nelem;		/* Numer of array elements. */
@@ -66,7 +61,7 @@ struct _ibuf {
  */
 struct _chname {
 	char	*name;		/* Character name. */
-	u_char	 len;		/* Length of the character name. */
+	u_int8_t len;		/* Length of the character name. */
 };
 
 /*
