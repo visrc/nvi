@@ -16,7 +16,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 10.14 1995/09/28 12:54:55 bostic Exp $ (Berkeley) $Date: 1995/09/28 12:54:55 $";
+static char sccsid[] = "$Id: main.c,v 10.15 1995/09/28 12:57:28 bostic Exp $ (Berkeley) $Date: 1995/09/28 12:57:28 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -499,8 +499,11 @@ v_obsolete(name, argv)
 	 *	Change "-" into "-s"
 	 *	The c, T, t and w options take arguments so they can't be
 	 *	    special arguments.
+	 *
+	 * Stop if we find "--" as an argument, the user may want to edit
+	 * a file named "+foo".
 	 */
-	while (*++argv)
+	while (*++argv && strcmp(argv[0], "--"))
 		if (argv[0][0] == '+') {
 			if (argv[0][1] == '\0') {
 				MALLOC_NOMSG(NULL, argv[0], char *, 4);
