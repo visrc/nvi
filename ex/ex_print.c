@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 10.10 1995/10/17 08:29:44 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:29:44 $";
+static char sccsid[] = "$Id: ex_print.c,v 10.11 1995/11/10 10:22:57 bostic Exp $ (Berkeley) $Date: 1995/11/10 10:22:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -352,12 +352,5 @@ ex_fflush(sp)
 		sp->gp->scr_msg(sp, M_NONE, buf, off);
 		off = 0;
 	}
-	/*
-	 * !!!
-	 * For now, we don't need to flush anything, and this gets
-	 * called a *lot*.
-	 *
-	 * sp->gp->scr_msg(sp, M_NONE, NULL, 0);
-	 */
 	return (0);
 }
