@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_util.c,v 5.2 1992/05/21 13:00:46 bostic Exp $ (Berkeley) $Date: 1992/05/21 13:00:46 $";
+static char sccsid[] = "$Id: v_util.c,v 5.3 1992/09/01 15:37:18 bostic Exp $ (Berkeley) $Date: 1992/09/01 15:37:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -81,7 +81,6 @@ v_nonblank(rp)
 static u_long oldy, oldx;
 static struct termios save;
 
-
 /*
  * v_startex --
  *	Enter into ex mode.
@@ -91,13 +90,9 @@ v_startex()
 {
 	struct termios t;
 
-	/*
-	 * Go to the ex window line and clear it.
-	 *
-	 * XXX
-	 * This doesn't work yet; curses needs a line oriented semantic
-	 * to force writing regardless of differences.
-	 */
+	getyx(stdscr, oldy, oldx);
+
+	/* Go to the ex window line and clear it. */
 	move(LINES - 1, 0);
 	clrtoeol();
 	refresh();
@@ -110,17 +105,17 @@ v_startex()
 
 	/*
 	 * XXX
-	 * These lines mean that we know much too much about the tty driver.
-	 * We want raw input, but we want NL -> CR mapping on output.  The
-	 * only way to get that in the 4.4BSD tty driver is to have OPOST
-	 * turned on and it's turned off by cfmakeraw(3).
+	 * These lines know much too much about the tty driver.  We want raw
+	 * input, but we want NL -> CR mapping on output.  The only way to get
+	 * that in the 4.4BSD tty driver is to have OPOST turned on and it's
+	 * currently turned off by cfmakeraw(3).
 	 */
 	(void)tcgetattr(STDIN_FILENO, &t);
 	cfmakeraw(&t);
 	t.c_oflag |= ONLCR|OPOST;
 	(void)tcsetattr(STDIN_FILENO, TCSADRAIN, &t);
 
-	/* Initialize the globals that let vi know what happened in ex. */
+	/* Initialize the global that let vi know what happened in ex. */
 	ex_prstate = PR_NONE;
 }
 
@@ -131,22 +126,45 @@ v_startex()
 void
 v_leaveex()
 {
+	extern int needexerase;
+	register int cnt;
+
 	/* Make sure ex got everything out. */
 	(void)fflush(stdout);
 
 	/* Switch back to the curses termios values. */
 	(void)tcsetattr(STDIN_FILENO, TCSADRAIN, &save);
 
+	/* Put the cursor back. */
+	move(oldy, oldx);
+	refresh();
+
 	/*
-	 * If wrote a carriage return, repaint the screen, we've got no
-	 * idea what's out there.  Otherwise, repaint the screen and
-	 * erase the last line.
+	 * Clear the mode line.
+	 *
+ 	 * XXX
+	 * We have to clear the line even though the curses package doesn't
+	 * know that anything is there.  So, we hack the current screen
+	 * behind it's back.  This stupidity is because curses doesn't have
+	 * a way to force a line to be updated.
 	 */
-	if (ex_prstate == PR_PRINTED)
+	getyx(curscr, oldy, oldx);
+	wmove(curscr, LINES - 1, 0);
+	for (cnt = COLS; cnt--;)
+		waddch(curscr, 'x');
+	wmove(curscr, oldy, oldx);
+	touchline(stdscr, LINES - 1, 0, COLS - 1);
+
+	/*
+	 * Wrote a carriage return; repaint everything.  Since we waited
+	 * in the v_ex() routine, no need to schedule an erase for later.
+	 *
+	 * If we haven't waited for the user to read the information
+	 * printed (or nothing was printed), schedule an erase.
+	 */
+	if (ex_prstate == PR_PRINTED) {
 		wrefresh(curscr);
-	else {
-		wrefresh(stdscr);
-		touchline(stdscr, LINES - 1, 0, COLS - 1);
-		refresh();
-	}
+		needexerase = 0;
+	} else
+		needexerase = 1;
 }
