@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 10.18 1995/10/18 17:55:07 bostic Exp $ (Berkeley) $Date: 1995/10/18 17:55:07 $";
+static char sccsid[] = "$Id: msg.c,v 10.19 1995/10/18 18:10:19 bostic Exp $ (Berkeley) $Date: 1995/10/18 18:10:19 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -397,20 +397,24 @@ msgq_rpt(sp)
 	SCR *sp;
 {
 	static char * const action[] = {
-		"added",
-		"changed",
-		"deleted",
-		"joined",
-		"moved",
-		"shifted",
-		"yanked",
+		"293|added",
+		"294|changed",
+		"295|deleted",
+		"296|joined",
+		"297|moved",
+		"298|shifted",
+		"299|yanked",
+	};
+	static char * const lines[] = {
+		"300|line",
+		"301|lines",
 	};
 	recno_t total;
 	u_long rptval;
 	int first, cnt;
 	size_t blen, len, tlen;
 	char * const *ap;
-	char *bp, *p;
+	char *bp, *p, *t;
 
 	/* Change reports are turned off in batch mode. */
 	if (F_ISSET(sp, S_EX_SILENT))
@@ -451,9 +455,25 @@ msgq_rpt(sp)
 	for (p = bp, first = 1, tlen = 0,
 	    ap = action, cnt = 0; cnt < ARSIZE(action); ++ap, ++cnt)
 		if (sp->rptlines[cnt] != 0) {
-			len = snprintf(p, MAXNUM, "%s%lu lines %s",
-			    first ? "" : "; ", sp->rptlines[cnt], *ap);
-			first = 0;
+			if (first)
+				first = 0;
+			else {
+				*p++ = ';';
+				*p++ = ' ';
+				tlen += 2;
+			}
+			len = sprintf(p, "%lu ", sp->rptlines[cnt]);
+			p += len;
+			tlen += len;
+			t = msg_cat(sp,
+			    lines[sp->rptlines[cnt] == 1 ? 0 : 1], &len);
+			memmove(p, t, len);
+			p += len;
+			tlen += len;
+			*p++ = ' ';
+			++tlen;
+			t = msg_cat(sp, *ap, &len);
+			memmove(p, t, len);
 			p += len;
 			tlen += len;
 			sp->rptlines[cnt] = 0;
