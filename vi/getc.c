@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: getc.c,v 8.6 1993/10/26 17:22:58 bostic Exp $ (Berkeley) $Date: 1993/10/26 17:22:58 $";
+static char sccsid[] = "$Id: getc.c,v 8.7 1994/02/25 19:03:43 bostic Exp $ (Berkeley) $Date: 1994/02/25 19:03:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -99,7 +99,8 @@ cs_next(sp, ep, csp)
 		else
 			csp->cs_ch = csp->cs_bp[++csp->cs_cno];
 		break;
-	case CS_EOF:				/* EOF; only returned once. */
+	case CS_EOF:				/* EOF. */
+		break;
 	default:
 		abort();
 		/* NOTREACHED */
@@ -192,11 +193,15 @@ cs_prev(sp, ep, csp)
 		break;
 	case 0:
 		if (csp->cs_cno == 0)
-			csp->cs_flags = CS_EOL;
+			if (csp->cs_lno == 1)
+				csp->cs_flags = CS_SOF;
+			else
+				csp->cs_flags = CS_EOL;
 		else
 			csp->cs_ch = csp->cs_bp[--csp->cs_cno];
 		break;
-	case CS_SOF:				/* SOF; only returned once. */
+	case CS_SOF:				/* SOF. */
+		break;
 	default:
 		abort();
 		/* NOTREACHED */
