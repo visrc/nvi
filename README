@@ -1,0 +1,11 @@
+#	$Id: README,v 5.1 1993/01/24 20:09:59 bostic Exp $ (Berkeley) $Date: 1993/01/24 20:09:59 $
+
+This is the new version of ex/vi, which will be distributed as "nvi"
+in 4.4BSD.  This software is currently being distributed for test and
+review ONLY, and may not be redistributed by anyone for any purpose
+whatsoever.  This software will be made freely redistributable by when
+.4BSD is released, if not sooner.
+
+This software is derived from software contributed to UC Berkeley by
+Steve Kirkendall, the author of elvis.  Without his original work,
+this work would have been much more difficult.
