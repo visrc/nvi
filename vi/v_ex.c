@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 5.8 1992/05/27 10:36:05 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:36:05 $";
+static char sccsid[] = "$Id: v_ex.c,v 5.9 1992/06/05 11:04:17 bostic Exp $ (Berkeley) $Date: 1992/06/05 11:04:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,9 +29,11 @@ v_ex(vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
+	EXF *scurf;
 	int flags, key;
 	char *p;
 
+	scurf = curf;
 	v_startex();
 	for (flags = GB_BS;; flags |= GB_NLECHO) {
 		/*
@@ -78,5 +80,14 @@ v_ex(vp, fm, tm, rp)
 		(void)printf("\n");
 	}
 	v_leaveex();
+
+	/* The file may have changed. */
+	if (scurf != curf)
+		scr_ref();
+
+	/* The only cursor modifications will have been real. */
+	rp->lno = curf->lno;
+	rp->cno = curf->cno;
+
 	return (0);
 }
