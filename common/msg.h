@@ -4,9 +4,8 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: msg.h,v 5.5 1993/04/12 14:29:00 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:29:00 $
+ *	$Id: msg.h,v 5.6 1993/04/17 11:50:04 bostic Exp $ (Berkeley) $Date: 1993/04/17 11:50:04 $
  */
-
 
 /*
  * M_BERR	-- Error: ring a bell if O_VERBOSE not set, else
