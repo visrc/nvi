@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.3 1993/08/06 12:16:10 bostic Exp $ (Berkeley) $Date: 1993/08/06 12:16:10 $";
+static char sccsid[] = "$Id: screen.c,v 8.4 1993/08/06 15:43:59 bostic Exp $ (Berkeley) $Date: 1993/08/06 15:43:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,7 +21,6 @@ static char sccsid[] = "$Id: screen.c,v 8.3 1993/08/06 12:16:10 bostic Exp $ (Be
 #include "excmd.h"
 #include "tag.h"
 
-static int	 cut_copy __P((SCR *, SCR *));
 static int	 opt_copy __P((SCR *, SCR *));
 static int	 seq_copy __P((SCR *, SCR *));
 static int	 tag_copy __P((SCR *, SCR *));
@@ -69,6 +68,15 @@ scr_init(orig, sp)
 
 	sp->lastcmd = &cmds[C_PRINT];
 
+/* SHARED BETWEEN SCREENS. */
+	if (orig != NULL)
+		sp->cuts = orig->cuts;
+	else {
+		if ((sp->cuts = malloc((UCHAR_MAX + 2) * sizeof(CB))) == NULL)
+			goto mem;
+		memset(sp->cuts, 0, (UCHAR_MAX + 2) * sizeof(CB));
+	}
+
 /* PARTIALLY OR COMPLETELY COPIED FROM PREVIOUS SCREEN. */
 	if (orig != NULL) {
 		sp->gp = orig->gp;
@@ -96,8 +104,10 @@ scr_init(orig, sp)
 		sp->inc_lastch = orig->inc_lastch;
 		sp->inc_lastval = orig->inc_lastval;
 
+#ifdef UNSHARED_CUT_BUFFERS
 		if (cut_copy(orig, sp))
 			goto mem;
+#endif
 
 		/*
 		 * XXX
@@ -232,12 +242,14 @@ scr_end(sp)
 		}
 	}
 
+#ifdef UNSHARED_CUT_BUFFERS
 	/* Free cut buffers. */
 	{ CB *cb; int cnt;
 		for (cb = sp->cuts, cnt = 0; cnt < UCHAR_MAX; ++cb, ++cnt)
 			if (cb->txthdr.next != NULL)
 				hdr_text_free(&cb->txthdr);
 	}
+#endif
 
 	/* Free paragraph search list. */
 	if (sp->paragraph != NULL)
@@ -354,6 +366,9 @@ scr_end(sp)
 	return (0);
 }
 
+#ifdef UNSHARED_CUT_BUFFERS
+static int	 cut_copy __P((SCR *, SCR *));
+
 /*
  * cut_copy --
  *	Copy a screen's cut buffers.
@@ -390,6 +405,7 @@ cut_copy(a, b)
 	}
 	return (0);
 }
+#endif
 
 /*
  * opt_copy --

@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: cut.h,v 8.1 1993/06/09 22:20:40 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:20:40 $
+ *	$Id: cut.h,v 8.2 1993/08/06 15:43:51 bostic Exp $ (Berkeley) $Date: 1993/08/06 15:43:51 $
  */
 
 typedef struct _cb {			/* Cut buffer. */
@@ -58,7 +58,7 @@ typedef struct _text {			/* Text: a linked list of lines. */
  * Translate upper-case buffer names to lower-case buffer names.
  */
 #define	CBNAME(sp, bname, cb) {						\
-	if ((bname) > sizeof(sp->cuts) - 1) {				\
+	if ((bname) > UCHAR_MAX + 1) {					\
 		msgq(sp, M_ERR, "Invalid cut buffer name.");		\
 		return (1);						\
 	}								\
