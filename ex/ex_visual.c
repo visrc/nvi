@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_visual.c,v 8.11 1994/07/15 19:35:10 bostic Exp $ (Berkeley) $Date: 1994/07/15 19:35:10 $";
+static char sccsid[] = "$Id: ex_visual.c,v 8.12 1994/07/15 20:11:29 bostic Exp $ (Berkeley) $Date: 1994/07/15 20:11:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -73,7 +73,7 @@ ex_visual(sp, ep, cmdp)
 		break;
 	default:
 		sp->frp->lno = sp->lno;
-		F_SET(sp->frp, FR_CURSORSET);
+		F_SET(sp->frp, FR_CURSORSET | FR_FNONBLANK);
 		goto nopush;
 	}
 

@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.121 1994/07/15 16:13:46 bostic Exp $ (Berkeley) $Date: 1994/07/15 16:13:46 $
+ *	$Id: screen.h,v 8.122 1994/07/15 20:10:33 bostic Exp $ (Berkeley) $Date: 1994/07/15 20:10:33 $
  */
 
 /*
@@ -52,12 +52,13 @@ struct _fref {
 
 #define	FR_CURSORSET	0x001		/* If lno/cno values valid. */
 #define	FR_DONTDELETE	0x002		/* Don't delete the temporary file. */
-#define	FR_NAMECHANGE	0x004		/* If the name changed. */
-#define	FR_NEWFILE	0x008		/* File doesn't really exist yet. */
-#define	FR_RDONLY	0x010		/* File is read-only. */
-#define	FR_RECOVER	0x020		/* File is being recovered. */
-#define	FR_TMPFILE	0x040		/* If file has no name. */
-#define	FR_UNLOCKED	0x080		/* File couldn't be locked. */
+#define	FR_FNONBLANK	0x004		/* Move to the first non-<blank>. */
+#define	FR_NAMECHANGE	0x008		/* If the name changed. */
+#define	FR_NEWFILE	0x010		/* File doesn't really exist yet. */
+#define	FR_RDONLY	0x020		/* File is read-only. */
+#define	FR_RECOVER	0x040		/* File is being recovered. */
+#define	FR_TMPFILE	0x080		/* If file has no name. */
+#define	FR_UNLOCKED	0x100		/* File couldn't be locked. */
 	u_int8_t flags;
 };
 

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.83 1994/06/29 18:15:08 bostic Exp $ (Berkeley) $Date: 1994/06/29 18:15:08 $";
+static char sccsid[] = "$Id: exf.c,v 8.84 1994/07/15 20:11:16 bostic Exp $ (Berkeley) $Date: 1994/07/15 20:11:16 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -380,6 +380,7 @@ file_end(sp, ep, force)
 	frp->lno = sp->lno;
 	frp->cno = sp->cno;
 	F_SET(frp, FR_CURSORSET);
+	F_CLR(frp, FR_FNONBLANK);
 
 	/*
 	 * We may no longer need the temporary backing file, so clean it

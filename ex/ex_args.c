@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 8.24 1994/07/02 11:49:23 bostic Exp $ (Berkeley) $Date: 1994/07/02 11:49:23 $";
+static char sccsid[] = "$Id: ex_args.c,v 8.25 1994/07/15 20:11:27 bostic Exp $ (Berkeley) $Date: 1994/07/15 20:11:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -180,7 +180,7 @@ ex_rew(sp, ep, cmdp)
 	 */
 	for (frp = sp->frefq.cqh_first;
 	    frp != (FREF *)&sp->frefq; frp = frp->q.cqe_next)
-		F_CLR(frp, FR_CURSORSET);
+		F_CLR(frp, FR_CURSORSET | FR_FNONBLANK);
 	
 	/* Switch to the first one. */
 	sp->cargv = sp->argv;

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 8.22 1994/04/06 11:37:55 bostic Exp $ (Berkeley) $Date: 1994/04/06 11:37:55 $";
+static char sccsid[] = "$Id: v_init.c,v 8.23 1994/07/15 20:11:44 bostic Exp $ (Berkeley) $Date: 1994/07/15 20:11:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -132,11 +132,21 @@ v_init(sp, ep)
 			}
 		} else if (sp->cno >= len)
 			sp->cno = 0;
+
+		if (F_ISSET(sp->frp, FR_FNONBLANK)) {
+			sp->cno = 0;
+			if (nonblank(sp, ep, sp->lno, &sp->cno))
+				return (1);
+		}
 	} else {
 		sp->lno = 1;
 		sp->cno = 0;
 
 		if (O_ISSET(sp, O_COMMENT) && v_comment(sp, ep))
+			return (1);
+
+		/* Vi always starts up on the first non-<blank>. */
+		if (nonblank(sp, ep, sp->lno, &sp->cno))
 			return (1);
 	}
 
