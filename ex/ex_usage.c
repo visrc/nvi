@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_usage.c,v 8.10 1993/12/03 15:40:52 bostic Exp $ (Berkeley) $Date: 1993/12/03 15:40:52 $";
+static char sccsid[] = "$Id: ex_usage.c,v 8.11 1993/12/17 13:43:59 bostic Exp $ (Berkeley) $Date: 1993/12/17 13:43:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -60,9 +60,24 @@ ex_usage(sp, ep, cmdp)
 			(void)ex_printf(EXCOOKIE,
 			    "The %.*s command is unknown.",
 			    (int)ap->len, ap->bp);
-		else
+		else {
 			(void)ex_printf(EXCOOKIE,
 			    "Command: %s\n  Usage: %s\n", cp->help, cp->usage);
+			/*
+			 * !!!
+			 * The "visual" command has two modes, one from ex,
+			 * one from the vi colon line.  Don't ask.
+			 */
+			if (cp != &cmds[C_VISUAL_EX] &&
+			    cp != &cmds[C_VISUAL_VI])
+				break;
+			if (cp == &cmds[C_VISUAL_EX])
+				cp = &cmds[C_VISUAL_VI];
+			else
+				cp = &cmds[C_VISUAL_EX];
+			(void)ex_printf(EXCOOKIE,
+			    "Command: %s\n  Usage: %s\n", cp->help, cp->usage);
+		}
 		break;
 	case 0:
 		for (cp = cmds; cp->name != NULL; ++cp)
