@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vi.c,v 10.57 1996/10/13 14:25:21 bostic Exp $ (Berkeley) $Date: 1996/10/13 14:25:21 $";
+static const char sccsid[] = "$Id: vi.c,v 10.58 1996/10/29 12:13:50 bostic Exp $ (Berkeley) $Date: 1996/10/29 12:13:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -969,7 +969,7 @@ v_init(sp)
 		sp->t_maxrows = sp->rows - 1;
 	} else
 		sp->t_maxrows = 1;
-	sp->woff = 0;
+	sp->roff = sp->coff = 0;
 
 	/* Create a screen map. */
 	CALLOC_RET(sp, HMAP, SMAP *, SIZE_HMAP(sp), sizeof(SMAP));

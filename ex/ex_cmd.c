@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_cmd.c,v 10.20 1996/10/10 22:42:26 bostic Exp $ (Berkeley) $Date: 1996/10/10 22:42:26 $";
+static const char sccsid[] = "$Id: ex_cmd.c,v 10.21 1996/10/29 12:12:43 bostic Exp $ (Berkeley) $Date: 1996/10/29 12:12:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -418,6 +418,11 @@ EXCMDLIST const cmds[] = {
 	    "w1o",
 	    "[viu]sage [key]",
 	    "display vi key usage statement"},
+/* C_VSPLIT */
+	{"vsplit",	ex_edit,	E_VIONLY,
+	    "f1o",
+	    "vs[plit] [file]",
+	    "split the current screen vertically"},
 /* C_WRITE */
 	{"write",	ex_write,	E_ADDR2_ALL|E_ADDR_ZERODEF,
 	    "!s",

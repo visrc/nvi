@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_scroll.c,v 10.9 1996/04/27 11:40:36 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:36 $";
+static const char sccsid[] = "$Id: v_scroll.c,v 10.10 1996/10/29 12:13:42 bostic Exp $ (Berkeley) $Date: 1996/10/29 12:13:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -361,13 +361,13 @@ v_pagedown(sp, vp)
 	 * any screen but the "next" one anyway.  We do it the historical
 	 * way as there's no good reason to change it.
 	 *
-	 * If the screen has been split, use the smaller of the current
-	 * window size and the window option value.
+	 * If the screen has been split horizontally, use the smaller of
+	 * the current window size and the window option value.
 	 *
 	 * It possible for this calculation to be less than 1; move at
 	 * least one line.
 	 */
-	offset = (F_ISSET(vp, VC_C1SET) ? vp->count : 1) * (IS_SPLIT(sp) ?
+	offset = (F_ISSET(vp, VC_C1SET) ? vp->count : 1) * (IS_HSPLIT(sp) ?
 	    MIN(sp->t_maxrows, O_VAL(sp, O_WINDOW)) : O_VAL(sp, O_WINDOW));
 	offset = offset <= 2 ? 1 : offset - 2;
 	if (vs_sm_scroll(sp, &vp->m_stop, offset, CNTRL_F))
@@ -414,13 +414,13 @@ v_pageup(sp, vp)
 	 * but the first screen.  We do it the historical way as there's
 	 * no good reason to change it.
 	 *
-	 * If the screen has been split, use the smaller of the current
-	 * window size and the window option value.
+	 * If the screen has been split horizontally, use the smaller of
+	 * the current window size and the window option value.
 	 *
 	 * It possible for this calculation to be less than 1; move at
 	 * least one line.
 	 */
-	offset = (F_ISSET(vp, VC_C1SET) ? vp->count : 1) * (IS_SPLIT(sp) ?
+	offset = (F_ISSET(vp, VC_C1SET) ? vp->count : 1) * (IS_HSPLIT(sp) ?
 	    MIN(sp->t_maxrows, O_VAL(sp, O_WINDOW)) : O_VAL(sp, O_WINDOW));
 	offset = offset <= 2 ? 1 : offset - 2;
 	if (vs_sm_scroll(sp, &vp->m_stop, offset, CNTRL_B))
