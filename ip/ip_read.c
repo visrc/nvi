@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_read.c,v 8.9 1996/12/05 22:03:57 bostic Exp $ (Berkeley) $Date: 1996/12/05 22:03:57 $";
+static const char sccsid[] = "$Id: ip_read.c,v 8.10 1996/12/10 21:02:04 bostic Exp $ (Berkeley) $Date: 1996/12/10 21:02:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -17,8 +17,11 @@ static const char sccsid[] = "$Id: ip_read.c,v 8.9 1996/12/05 22:03:57 bostic Ex
 
 #include <bitstring.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <termios.h>
 #include <time.h>
+#include <unistd.h>
  
 #include "../common/common.h"
 #include "../ex/script.h"
@@ -203,10 +206,10 @@ ip_trans(sp, ipp, evp)
 	u_int32_t val1, val2;
 
 	switch (ipp->ibuf[0]) {
-	case IPO_C_DOWN:
-	case IPO_C_PGDOWN:
-	case IPO_C_PGUP:
-	case IPO_C_UP:
+	case VI_C_DOWN:
+	case VI_C_PGDOWN:
+	case VI_C_PGUP:
+	case VI_C_UP:
 		if (ipp->iblen < IPO_CODE_LEN + IPO_INT_LEN)
 			return (0);
 		evp->e_event = E_IPCOMMAND;
@@ -215,48 +218,48 @@ ip_trans(sp, ipp, evp)
 		evp->e_lno = ntohl(val1);
 		ipp->iskip = IPO_CODE_LEN + IPO_INT_LEN;
 		return (1);
-	case IPO_C_BOL:
-	case IPO_C_BOTTOM:
-	case IPO_C_DEL:
-	case IPO_C_EOL:
-	case IPO_C_INSERT:
-	case IPO_C_LEFT:
-	case IPO_C_RIGHT:
-	case IPO_C_TOP:
-	case IPO_QUIT:
-	case IPO_TAG:
-	case IPO_TAGSPLIT:
-	case IPO_UNDO:
-	case IPO_WQ:
-	case IPO_WRITE:
+	case VI_C_BOL:
+	case VI_C_BOTTOM:
+	case VI_C_DEL:
+	case VI_C_EOL:
+	case VI_C_INSERT:
+	case VI_C_LEFT:
+	case VI_C_RIGHT:
+	case VI_C_TOP:
+	case VI_QUIT:
+	case VI_TAG:
+	case VI_TAGSPLIT:
+	case VI_UNDO:
+	case VI_WQ:
+	case VI_WRITE:
 		evp->e_event = E_IPCOMMAND;
 		evp->e_ipcom = ipp->ibuf[0];
 		ipp->iskip = IPO_CODE_LEN;
 		return (1);
-	case IPO_EDIT:
-	case IPO_EDITSPLIT:
-	case IPO_TAGAS:
-	case IPO_WRITEAS:
+	case VI_EDIT:
+	case VI_EDITSPLIT:
+	case VI_TAGAS:
+	case VI_WRITEAS:
 		evp->e_event = E_IPCOMMAND;
 		evp->e_ipcom = ipp->ibuf[0];
 		goto string;
-	case IPO_EOF:
+	case VI_EOF:
 		evp->e_event = E_EOF;
 		ipp->iskip = IPO_CODE_LEN;
 		return (1);
-	case IPO_ERR:
+	case VI_ERR:
 		evp->e_event = E_ERR;
 		ipp->iskip = IPO_CODE_LEN;
 		return (1);
-	case IPO_INTERRUPT:
+	case VI_INTERRUPT:
 		evp->e_event = E_INTERRUPT;
 		ipp->iskip = IPO_CODE_LEN;
 		return (1);
-	case IPO_MOUSE_MOVE:
+	case VI_MOUSE_MOVE:
 		if (ipp->iblen < IPO_CODE_LEN + IPO_INT_LEN * 2)
 			return (0);
 		evp->e_event = E_IPCOMMAND;
-		evp->e_ipcom = IPO_MOUSE_MOVE;
+		evp->e_ipcom = VI_MOUSE_MOVE;
 		memcpy(&val1, ipp->ibuf + IPO_CODE_LEN, IPO_INT_LEN);
 		evp->e_lno = ntohl(val1);
 		memcpy(&val2,
@@ -264,7 +267,7 @@ ip_trans(sp, ipp, evp)
 		evp->e_cno = ntohl(val2);
 		ipp->iskip = IPO_CODE_LEN + IPO_INT_LEN * 2;
 		return (1);
-	case IPO_RESIZE:
+	case VI_RESIZE:
 		if (ipp->iblen < IPO_CODE_LEN + IPO_INT_LEN * 2)
 			return (0);
 		evp->e_event = E_WRESIZE;
@@ -276,15 +279,15 @@ ip_trans(sp, ipp, evp)
 		ip_resize(sp, val1, val2);
 		ipp->iskip = IPO_CODE_LEN + IPO_INT_LEN * 2;
 		return (1);
-	case IPO_SIGHUP:
+	case VI_SIGHUP:
 		evp->e_event = E_SIGHUP;
 		ipp->iskip = IPO_CODE_LEN;
 		return (1);
-	case IPO_SIGTERM:
+	case VI_SIGTERM:
 		evp->e_event = E_SIGTERM;
 		ipp->iskip = IPO_CODE_LEN;
 		return (1);
-	case IPO_STRING:
+	case VI_STRING:
 		evp->e_event = E_STRING;
 string:		if (ipp->iblen < IPO_CODE_LEN + IPO_INT_LEN)
 			return (0);
