@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.160 1994/09/02 12:40:32 bostic Exp $ (Berkeley) $Date: 1994/09/02 12:40:32 $";
+static char sccsid[] = "$Id: ex.c,v 8.161 1994/09/12 09:48:24 bostic Exp $ (Berkeley) $Date: 1994/09/12 09:48:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1870,6 +1870,5 @@ badlno(sp, lno)
 		msgq(sp, M_ERR, "118|Illegal address: the file is empty");
 	else
 		msgq(sp, M_ERR,
-		    "119|Illegal address: only %lu line%s in the file",
-		    lno, lno > 1 ? "s" : "");
+		    "119|Illegal address: only %lu lines in the file", lno);
 }

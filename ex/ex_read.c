@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 8.43 1994/08/31 18:43:01 bostic Exp $ (Berkeley) $Date: 1994/08/31 18:43:01 $";
+static char sccsid[] = "$Id: ex_read.c,v 8.44 1994/09/12 09:48:27 bostic Exp $ (Berkeley) $Date: 1994/09/12 09:48:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -282,12 +282,12 @@ ex_readfp(sp, ep, name, fp, fm, nlinesp, success_msg)
 		p = msg_print(sp, name, &nf);
 		if (INTERRUPTED(sp))
 			msgq(sp, M_INFO,
-		    "151|Interrupted read: %s: %lu line%s, %lu characters",
-			    p, lcnt, lcnt == 1 ? "" : "s", ccnt);
+		    "151|Interrupted read: %s: %lu lines, %lu characters",
+			    p, lcnt, ccnt);
 		else
 			msgq(sp, M_INFO,
-			    "152|%s: %lu line%s, %lu characters",
-			    p, lcnt, lcnt == 1 ? "" : "s", ccnt);
+			    "152|%s: %lu lines, %lu characters",
+			    p, lcnt, ccnt);
 		if (nf)
 			FREE_SPACE(sp, p, 0);
 	}
