@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 5.31 1993/05/03 14:27:14 bostic Exp $ (Berkeley) $Date: 1993/05/03 14:27:14 $";
+static char sccsid[] = "$Id: search.c,v 5.32 1993/05/08 20:31:47 bostic Exp $ (Berkeley) $Date: 1993/05/08 20:31:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,6 +19,7 @@ static char sccsid[] = "$Id: search.c,v 5.31 1993/05/03 14:27:14 bostic Exp $ (B
 
 static int	check_delta __P((SCR *, EXF *, long, recno_t));
 static int	check_word __P((SCR *, char **, int *, int *));
+static int	ctag_conv __P((SCR *, char **, int *));
 static int	get_delta __P((SCR *, char **, long *));
 static int	resetup __P((SCR *, regex_t **, enum direction,
 		    char *, char **, long *, int *, u_int));
@@ -110,7 +111,9 @@ noprev:			msgq(sp, M_INFO, "No previous search pattern.");
 		/* Replace any word search pattern. */
 		if (check_word(sp, &ptrn, &replaced, wordoffsetp))
 			return (1);
-	}
+	} else if (LF_ISSET(SEARCH_TAG))
+		if (ctag_conv(sp, &ptrn, &replaced))
+			return (1);
 
 	/* Compile the RE. */
 	if (eval = regcomp(*rep, (char *)ptrn, re_flags))
@@ -445,6 +448,80 @@ check_word(sp, ptrnp, replacedp, wordoffsetp)
 	*t = '\0';
 
 	*ptrnp = mp;
+	*replacedp = 1;
+	return (0);
+}
+
+/*
+ * ctag_conv --
+ *	Convert a tags search path into something that regex can handle.
+ */
+static int
+ctag_conv(sp, ptrnp, replacedp)
+	SCR *sp;
+	char **ptrnp;
+	int *replacedp;
+{
+	GS *gp;
+	size_t blen, len;
+	int lastdollar;
+	char *bp, *p, *t;
+
+	*replacedp = 0;
+
+	len = strlen(p = *ptrnp);
+
+	/* Max memory usage is 2 times the length of the string. */
+	gp = sp->gp;
+	if (F_ISSET(gp, G_TMP_INUSE)) {
+		bp = NULL;
+		blen = 0;
+		BINC(sp, bp, blen, len * 2);
+	} else {
+		BINC(sp, gp->tmp_bp, gp->tmp_blen, len * 2);
+		bp = gp->tmp_bp;
+		F_SET(gp, G_TMP_INUSE);
+	}
+
+	t = bp;
+
+	/* The last charcter is a '/' or '?', we just strip it. */
+	if (p[len - 1] == '/' || p[len - 1] == '?')
+		p[len - 1] = '\0';
+
+	/* The next-to-last character is a '$', and it's magic. */
+	if (p[len - 2] == '$') {
+		lastdollar = 1;
+		p[len - 2] = '\0';
+	} else
+		lastdollar = 0;
+
+	/* The first character is a '/' or '?', we just strip it. */
+	if (p[0] == '/' || p[0] == '?')
+		++p;
+
+	/* The second character is a '^', and it's magic. */
+	if (p[0] == '^')
+		*t++ = *p++;
+		
+	/*
+	 * Escape every other magic character we can find, stripping the
+	 * backslashes ctags inserts to escape the search delimiter
+	 * characters.
+	 */
+	while (p[0]) {
+		/* Ctags escapes the search delimiter characters. */
+		if (p[0] == '\\' && (p[1] == '/' || p[1] == '?'))
+			++p;
+		else if (strchr("^.[$()|*+?{\\", p[0]))
+			*t++ = '\\';
+		*t++ = *p++;
+	}
+	if (lastdollar)
+		*t++ = '$';
+	*t++ = '\0';
+
+	*ptrnp = bp;
 	*replacedp = 1;
 	return (0);
 }
