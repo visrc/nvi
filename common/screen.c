@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.49 1993/12/14 18:21:27 bostic Exp $ (Berkeley) $Date: 1993/12/14 18:21:27 $";
+static char sccsid[] = "$Id: screen.c,v 8.50 1993/12/16 14:59:01 bostic Exp $ (Berkeley) $Date: 1993/12/16 14:59:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -129,7 +129,6 @@ mem:			msgq(orig, M_SYSERR, "new screen attributes");
 		sp->s_clear		= orig->s_clear;
 		sp->s_column		= orig->s_column;
 		sp->s_confirm		= orig->s_confirm;
-		sp->s_copy		= orig->s_copy;
 		sp->s_down		= orig->s_down;
 		sp->s_edit		= orig->s_edit;
 		sp->s_end		= orig->s_end;
@@ -153,11 +152,15 @@ mem:			msgq(orig, M_SYSERR, "new screen attributes");
 		F_SET(sp, F_ISSET(orig, S_SCREENS));
 	}
 
-	if (sp->s_copy(orig, sp))		/* Initialize screen. */
+	if (xaw_screen_copy(orig, sp))		/* Init S_VI_XAW screen. */
 		return (1);
-	if (v_screen_copy(orig, sp))		/* Initialize vi. */
+	if (svi_screen_copy(orig, sp))		/* Init S_VI_CURSES screen. */
 		return (1);
-	if (ex_screen_copy(orig, sp))		/* Initialize ex. */
+	if (sex_screen_copy(orig, sp))		/* Init S_EX screen. */
+		return (1);
+	if (v_screen_copy(orig, sp))		/* Init vi. */
+		return (1);
+	if (ex_screen_copy(orig, sp))		/* Init ex. */
 		return (1);
 
 	*spp = sp;
@@ -175,11 +178,15 @@ screen_end(sp)
 	int rval;
 
 	rval = 0;
+	if (xaw_screen_end(sp))			/* End S_VI_XAW screen. */
+		rval = 1;
+	if (svi_screen_end(sp))			/* End S_VI_CURSES screen. */
+		rval = 1;
+	if (sex_screen_end(sp))			/* End S_EX screen. */
+		rval = 1;
 	if (v_screen_end(sp))			/* End vi. */
 		rval = 1;
 	if (ex_screen_end(sp))			/* End ex. */
-		rval = 1;
-	if (sp->s_end(sp))			/* End screen. */
 		rval = 1;
 
 	/* Free FREF's. */
