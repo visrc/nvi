@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 8.36 1994/07/01 09:42:03 bostic Exp $ (Berkeley) $Date: 1994/07/01 09:42:03 $";
+static char sccsid[] = "$Id: ex_global.c,v 8.37 1994/07/23 09:47:56 bostic Exp $ (Berkeley) $Date: 1994/07/23 09:47:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -69,6 +69,7 @@ global(sp, ep, cmdp, cmd)
 	EXCMDARG *cmdp;
 	enum which cmd;
 {
+	MARK abs;
 	RANGE *rp;
 	EX_PRIVATE *exp;
 	recno_t elno, lno;
@@ -170,6 +171,12 @@ global(sp, ep, cmdp, cmd)
 
 	/* Set the global flag. */
 	F_SET(sp, S_GLOBAL);
+
+	/* The global commands always set the previous context mark. */
+	abs.lno = sp->lno;
+	abs.cno = sp->cno;
+	if (mark_set(sp, ep, ABSMARK1, &abs, 1))
+		goto err;
 
 	/*
 	 * For each line...  The semantics of global matching are that we first
