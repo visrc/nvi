@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: mark.c,v 5.17 1993/05/08 17:03:39 bostic Exp $ (Berkeley) $Date: 1993/05/08 17:03:39 $";
+static char sccsid[] = "$Id: mark.c,v 5.18 1993/05/21 15:54:49 bostic Exp $ (Berkeley) $Date: 1993/05/21 15:54:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -16,11 +16,22 @@ static char sccsid[] = "$Id: mark.c,v 5.17 1993/05/08 17:03:39 bostic Exp $ (Ber
 #include "vi.h"
 
 /*
- * XXX
+ * Historic vi got mark updates wrong.  Marks were fixed, and if the line
+ * subsequently changed modifications of the line wouldn't update the mark's
+ * offset in the line.  This is arguably correct in some cases, e.g. when
+ * the user wants to keep track of the start of a line, even after inserting
+ * text at the beginning of the line.  However, given that single quotes mark
+ * lines, not specific locations in the line, and that it would be difficult
+ * to reproduce the exact vi semantics, these routines do it "correctly".
  *
+ * XXX
  * Right now, it's expensive to find the marks since we traverse the array
  * linearly.  Should have a doubly linked list of mark entries so we can
  * traverse it quickly on updates.
+ *
+ * In the historic vi, marks would return if the operation was undone.  This
+ * code doesn't handle that problem.  It should be done as part of TXN undo,
+ * logged from here.
  */
 
 /*
@@ -90,19 +101,6 @@ mark_get(sp, ep, key)
 }
 
 /*
- * Historic vi got mark updates wrong.  Marks were fixed, and subsequent
- * modifications of the line wouldn't update the position of the mark.  This
- * is arguably correct in some cases, e.g. when the user wants to keep track
- * of the start of a line.  However, given that single quote marks mark lines,
- * not specific locations, and that it would be fairly difficult to reproduce
- * the exact vi semantics, these routines do it "correctly".
- *
- * XXX
- * In the historic vi, marks would return if the operation was undone.  This
- * code doesn't handle that problem.  It should be done as part of TXN undo,
- * logged from here.
- */
-/*
  * mark_delete --
  *	Update the marks based on a deletion.
  */
@@ -167,7 +165,7 @@ mark_insert(sp, ep, fm, tm)
 		if (mp->lno < fm->lno)
 			continue;
 		if (mp->lno > tm->lno) {
-			tm->lno += lno;
+			mp->lno += lno;
 			continue;
 		}
 		if (mp->cno < fm->cno)
