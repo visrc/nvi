@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	"$Id: m_motif.h,v 8.1 1996/12/03 12:06:39 bostic Exp $ (Berkeley) $Date: 1996/12/03 12:06:39 $";
+ *	"$Id: m_motif.h,v 8.2 1996/12/03 18:39:06 bostic Exp $ (Berkeley) $Date: 1996/12/03 18:39:06 $";
  */
 
 /* Describes a single 'screen' implemented in X widgetry. */
@@ -67,8 +67,6 @@ extern xvi_screen *cur_screen;
 
 #define	COLUMN( scr, x )	\
 	( (x) / scr->ch_width )
-
-void	set_cursor __P((xvi_screen *, Boolean));
 
 extern GC	copy_gc;
 extern Widget	top_level;

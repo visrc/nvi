@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_func.c,v 8.5 1996/12/03 18:14:22 bostic Exp $ (Berkeley) $Date: 1996/12/03 18:14:22 $";
+static const char sccsid[] = "$Id: m_func.c,v 8.6 1996/12/03 18:39:05 bostic Exp $ (Berkeley) $Date: 1996/12/03 18:39:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -78,17 +78,18 @@ ipo_bell(ipbp)
 }
 
 int
-ipo_busy(ipbp)
+ipo_busyon(ipbp)
 	IP_BUF *ipbp;
 {
-#if 0
-	/*
-	 * I'm just guessing here, but I believe we are supposed to set
-	 * the busy cursor when the text is non-null, and restore the
-	 * default cursor otherwise.
-	 */
-	set_cursor(cur_screen, ipbp->len != 0);
-#endif
+	set_cursor(cur_screen, 1);
+	return (0);
+}
+
+int
+ipo_busyoff(ipbp)
+	IP_BUF *ipbp;
+{
+	set_cursor(cur_screen, 0);
 	return (0);
 }
 
@@ -279,7 +280,8 @@ int (*iplist[IPO_EVENT_MAX]) __P((IP_BUF *)) = {
 	ipo_addstr,
 	ipo_attribute,
 	ipo_bell,
-	ipo_busy,
+	ipo_busyoff,
+	ipo_busyon,
 	ipo_clrtoeol,
 	ipo_deleteln,
 	ipo_discard,

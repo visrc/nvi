@@ -4,7 +4,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: ip.h,v 8.4 1996/11/27 12:00:22 bostic Exp $ (Berkeley) $Date: 1996/11/27 12:00:22 $
+ *	$Id: ip.h,v 8.5 1996/12/03 18:38:26 bostic Exp $ (Berkeley) $Date: 1996/12/03 18:38:26 $
  */
 
 typedef struct _ip_private {
@@ -79,17 +79,18 @@ typedef struct _ip_buf {
 #define	IPO_ADDSTR	 1	/* Add a string: IPO_STR. */
 #define	IPO_ATTRIBUTE	 2	/* Set screen attribute: IPO_INT, IPO_INT. */
 #define	IPO_BELL	 3	/* Beep/bell/flash the terminal. */
-#define	IPO_BUSY	 4	/* Display a busy message: IPO_STR. */
-#define	IPO_CLRTOEOL	 5	/* Clear to the end of the line. */
-#define	IPO_DELETELN	 6	/* Delete a line. */
-#define	IPO_DISCARD	 7	/* Discard the screen. */
-#define	IPO_INSERTLN	 8	/* Insert a line. */
-#define	IPO_MOVE	 9	/* Move the cursor: IPO_INT, IPO_INT. */
-#define	IPO_REDRAW	10	/* Redraw the screen. */
-#define	IPO_REFRESH	11	/* Refresh the screen. */
-#define	IPO_RENAME	12	/* Rename the screen: IPO_STR. */
-#define	IPO_REWRITE	13	/* Rewrite a line: IPO_INT. */
-#define	IPO_SPLIT	14	/* Split the screen. */
+#define	IPO_BUSY_OFF	 4	/* Display a busy message: IPO_STR. */
+#define	IPO_BUSY_ON	 5	/* Display a busy message: IPO_STR. */
+#define	IPO_CLRTOEOL	 6	/* Clear to the end of the line. */
+#define	IPO_DELETELN	 7	/* Delete a line. */
+#define	IPO_DISCARD	 8	/* Discard the screen. */
+#define	IPO_INSERTLN	 9	/* Insert a line. */
+#define	IPO_MOVE	10	/* Move the cursor: IPO_INT, IPO_INT. */
+#define	IPO_REDRAW	11	/* Redraw the screen. */
+#define	IPO_REFRESH	12	/* Refresh the screen. */
+#define	IPO_RENAME	13	/* Rename the screen: IPO_STR. */
+#define	IPO_REWRITE	14	/* Rewrite a line: IPO_INT. */
+#define	IPO_SPLIT	15	/* Split the screen. */
 #define	IPO_EVENT_MAX	14
 
 #include "ip_extern.h"

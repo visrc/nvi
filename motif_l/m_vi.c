@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_vi.c,v 8.15 1996/12/03 13:17:37 bostic Exp $ (Berkeley) $Date: 1996/12/03 13:17:37 $";
+static const char sccsid[] = "$Id: m_vi.c,v 8.16 1996/12/03 18:39:06 bostic Exp $ (Berkeley) $Date: 1996/12/03 18:39:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1374,15 +1374,15 @@ Widget	widget;
 }
 
 
-/* These routines deal with the cursor */
-
-#if defined(__STDC__)
-void		set_cursor( xvi_screen *cur_screen, Boolean is_busy )
-#else
-void		set_cursor( cur_screen, is_busy )
-xvi_screen	*cur_screen;
-Boolean		is_busy;
-#endif
+/*
+ * These routines deal with the cursor.
+ *
+ * PUBLIC: void set_cursor __P((xvi_screen *, int));
+ */
+void
+set_cursor(cur_screen, is_busy)
+	xvi_screen *cur_screen;
+	int is_busy;
 {
     XDefineCursor( XtDisplay(cur_screen->area),
 		   XtWindow(cur_screen->area),

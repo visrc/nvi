@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_funcs.c,v 8.5 1996/11/27 12:00:23 bostic Exp $ (Berkeley) $Date: 1996/11/27 12:00:23 $";
+static const char sccsid[] = "$Id: ip_funcs.c,v 8.6 1996/12/03 18:38:33 bostic Exp $ (Berkeley) $Date: 1996/12/03 18:38:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -129,17 +129,21 @@ ip_busy(sp, str, bval)
 {
 	IP_BUF ipb;
 
-	ipb.code = IPO_BUSY;
-	if (str == NULL) {
-		ipb.len = 0;
-		ipb.str = "";
-	} else {
+	switch (bval) {
+	case BUSY_ON:
+		ipb.code = IPO_BUSY_ON;
 		ipb.len = strlen(str);
 		ipb.str = str;
+		(void)ip_send(sp, "s1", &ipb);
+		break;
+	case BUSY_OFF:
+		ipb.code = IPO_BUSY_OFF;
+		(void)ip_send(sp, NULL, &ipb);
+		break;
+	case BUSY_UPDATE:
+		break;
 	}
-	ipb.val1 = bval;
-
-	(void)ip_send(sp, "s1", &ipb);
+	return;
 }
 
 /*

@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_trans.c,v 8.5 1996/12/03 18:13:58 bostic Exp $ (Berkeley) $Date: 1996/12/03 18:13:58 $";
+static const char sccsid[] = "$Id: ip_trans.c,v 8.6 1996/12/03 18:38:38 bostic Exp $ (Berkeley) $Date: 1996/12/03 18:38:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -50,7 +50,7 @@ ip_trans(bp, lenp)
 		case IPO_RENAME:
 			fmt = "s";
 			break;
-		case IPO_BUSY:
+		case IPO_BUSY_ON:
 			fmt = "s1";
 			break;
 		case IPO_ATTRIBUTE:
