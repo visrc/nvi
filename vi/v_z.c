@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_z.c,v 10.9 1996/04/27 11:40:37 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:37 $";
+static const char sccsid[] = "$Id: v_z.c,v 10.10 1996/05/16 20:11:45 bostic Exp $ (Berkeley) $Date: 1996/05/16 20:11:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -54,17 +54,21 @@ v_z(sp, vp)
 	vp->m_final.cno = vp->m_start.cno;
 
 	/*
-	 * The second count is the displayed window size, i.e. the 'z'
-	 * command is another way to get artificially small windows.
+	 * The second count is the displayed window size, i.e. the 'z' command
+	 * is another way to get artificially small windows.  Note, you can't
+	 * grow beyond the size of the window.
 	 *
 	 * !!!
 	 * A window size of 0 was historically allowed, and simply ignored.
-	 * Also, this could be much more simply done by modifying the value
-	 * of the O_WINDOW option, but that's not how it worked historically.
+	 * This could be much more simply done by modifying the value of the
+	 * O_WINDOW option, but that's not how it worked historically.
 	 */
-	if (F_ISSET(vp, VC_C2SET) &&
-	    vp->count2 != 0 && vs_crel(sp, vp->count2))
-		return (1);
+	if (F_ISSET(vp, VC_C2SET) && vp->count2 != 0) {
+		if (vp->count2 > O_VAL(sp, O_WINDOW))
+			vp->count2 = O_VAL(sp, O_WINDOW);
+		if (vs_crel(sp, vp->count2))
+			return (1);
+	}
 
 	switch (vp->character) {
 	case '-':		/* Put the line at the bottom. */
@@ -136,10 +140,6 @@ vs_crel(sp, count)
 	SCR *sp;
 	long count;
 {
-	/* Can't grow beyond the size of the window. */
-	if (count > O_VAL(sp, O_WINDOW))
-		count = O_VAL(sp, O_WINDOW);
-
 	sp->t_minrows = sp->t_rows = count;
 	if (sp->t_rows > sp->rows - 1)
 		sp->t_minrows = sp->t_rows = sp->rows - 1;
