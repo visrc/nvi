@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.35 1992/12/20 21:10:38 bostic Exp $ (Berkeley) $Date: 1992/12/20 21:10:38 $";
+static char sccsid[] = "$Id: exf.c,v 5.36 1992/12/25 16:45:53 bostic Exp $ (Berkeley) $Date: 1992/12/25 16:45:53 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -25,26 +25,12 @@ static char sccsid[] = "$Id: exf.c,v 5.35 1992/12/20 21:10:38 bostic Exp $ (Berk
 #include "options.h"
 #include "pathnames.h"
 
+EXF *curf;					/* Current file. */
+
 static EXFLIST exfhdr;				/* List of files. */
 static EXF *last;				/* Last file. */
 
-EXF *curf;					/* Current file. */
-
-static EXF defexf = {
-	NULL, NULL,				/* next, prev */
-	1, 1, 1, 1,				/* top, otop, lno, olno */
-	0, 0, 0, 0,				/* cno, ocno, scno, shift */
-	0, 0, 0,				/* rcm, lines, cols */
-	0, 0,					/* cwidth, rcmflags */
-	NULL, NULL,				/* s_confirm, s_end */
-	NULL,					/* db */
-	NULL, 0, OOBLNO, OOBLNO,		/* c_{lp,len,lno,nlines} */
-	NULL, NULL, 0,				/* log, l_lp, l_len */
-	stdout, 				/* stdfp */
-	{ 0 },					/* sre */
-	0, NULL,				/* rptlines, rptlabel */
-	NULL, 0, 0,				/* name, nlen, flags */
-};
+static void file_def __P((EXF *));
 
 /*
  * file_init --
@@ -70,7 +56,7 @@ file_ins(ep, name, append)
 
 	if ((nep = malloc(sizeof(EXF))) == NULL)
 		goto err;
-	*nep = defexf;
+	file_def(nep);
 
 	if ((nep->name = strdup(name)) == NULL) {
 		free(nep);
@@ -111,7 +97,7 @@ file_set(argc, argv)
 	for (; *argv; ++argv) {
 		if ((ep = malloc(sizeof(EXF))) == NULL)
 			goto err;
-		*ep = defexf;
+		file_def(ep);
 		if ((ep->name = strdup(*argv)) == NULL) {
 			free(ep);
 err:			msg("Error: %s", strerror(errno));
@@ -361,4 +347,19 @@ err:		msg("%s: %s", ep->name, strerror(errno));
 
 	FF_CLR(ep, F_MODIFIED);
 	return (0);
+}
+
+/*
+ * file_def --
+ *	Fill in a default EXF structure.  It's a function because I
+ *	just got tired of getting burned 'cause the structure changed.
+ */
+static void
+file_def(ep)
+	EXF *ep;
+{
+	memset(ep, 0, sizeof(EXF));
+	ep->top = ep->otop = ep->lno = ep->olno = 1;
+	ep->c_lno = OOBLNO;
+	ep->stdfp = stdout;
 }
