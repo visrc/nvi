@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 9.5 1994/11/12 14:19:29 bostic Exp $ (Berkeley) $Date: 1994/11/12 14:19:29 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 9.6 1994/11/12 16:58:09 bostic Exp $ (Berkeley) $Date: 1994/11/12 16:58:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -620,8 +620,19 @@ slow:	for (smp = HMAP; smp->lno != LNO; ++smp);
 	 * S_SCR_REDRAW gets set when the screen isn't worth fixing, and
 	 * it's simpler to repaint.  So, don't trust anything that we
 	 * think we know about it.
+	 *
+	 * The clear() call causes the screen itself to be cleared when the
+	 * next refresh() is done.  If painting the window from scratch, we
+	 * might as well clear the screen, it will gives the user a cleaner
+	 * visual image.  In addition, there are times where both the screen
+	 * is trashed and the current screen map doesn't match the file.  We
+	 * have to repaint, but we also have to clear the screen.  Since the
+	 * clear() causes the screen to be cleared and repainted at refresh()
+	 * time, we don't have to do the operations separately, avoiding a
+	 * screen flash.
 	 */
-paint:	for (smp = HMAP; smp <= TMAP; ++smp)
+paint:	clear();
+	for (smp = HMAP; smp <= TMAP; ++smp)
 		SMAP_FLUSH(smp);
 	for (smp = HMAP; smp <= TMAP; ++smp)
 		if (svi_line(sp, smp, &y, &SCNO))
@@ -658,10 +669,12 @@ number:	if (O_ISSET(sp, O_NUMBER) && F_ISSET(svp, SVI_SCR_NUMBER)) {
 	/*
 	 * 7: Refresh the screen.
 	 *
-	 * If the screen was corrupted, refresh it.
+	 * If the screen was corrupted, clear/refresh it, unless we painted
+	 * it from scratch, which will do it for us.
 	 */
 	if (F_ISSET(sp, S_SCR_REFRESH)) {
-		wrefresh(curscr);
+		if (!didpaint)
+			wrefresh(curscr);
 		F_CLR(sp, S_SCR_REFRESH);
 	}
 
