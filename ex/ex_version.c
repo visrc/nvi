@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_version.c,v 5.5 1992/04/19 08:54:06 bostic Exp $ (Berkeley) $Date: 1992/04/19 08:54:06 $";
+static char sccsid[] = "$Id: ex_version.c,v 5.6 1992/04/27 16:41:32 bostic Exp $ (Berkeley) $Date: 1992/04/27 16:41:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -17,7 +17,7 @@ static char sccsid[] = "$Id: ex_version.c,v 5.5 1992/04/19 08:54:06 bostic Exp $
 #include "extern.h"
 
 /*
- * ex_version -- (:version)
+ * ex_version -- :version
  *	Display the program version.
  */
 /* ARGSUSED */
@@ -25,6 +25,6 @@ int
 ex_version(cmdp)
 	EXCMDARG *cmdp;
 {
-	msg("Version 1.0 (Berkeley): %s", "$Date: 1992/04/19 08:54:06 $");
+	msg("Version 1.0 (The CSRG, U.C. Berkeley.): %s", "$Date: 1992/04/27 16:41:32 $");
 	return (0);
 }
