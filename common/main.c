@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.23 1992/05/07 12:45:38 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:45:38 $";
+static char sccsid[] = "$Id: main.c,v 5.24 1992/05/15 10:56:54 bostic Exp $ (Berkeley) $Date: 1992/05/15 10:56:54 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -25,6 +25,7 @@ static char sccsid[] = "$Id: main.c,v 5.23 1992/05/07 12:45:38 bostic Exp $ (Ber
 #include <string.h>
 
 #include "vi.h"
+#include "exf.h"
 #include "excmd.h"
 #include "options.h"
 #include "pathnames.h"
@@ -172,12 +173,12 @@ main(argc, argv)
 
 	/* Search for a tag (or an error) now, if desired. */
 	if (tag) {
-		SETCMDARG(cmd, C_TAG, 0, OOBLC, OOBLC, 0, tag);
+		SETCMDARG(cmd, C_TAG, 0, OOBLNO, 0, 0, tag);
 		ex_tag(&cmd);
 	} else
 #ifndef NO_ERRLIST
 	if (err) {
-		SETCMDARG(cmd, C_ERRLIST, 0, OOBLC, OOBLC, 0, err);
+		SETCMDARG(cmd, C_ERRLIST, 0, OOBLNO, 0, 0, err);
 		ex_errlist(&cmd);
 	} else
 #endif

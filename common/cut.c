@@ -7,6 +7,7 @@
 #include <stdio.h>
 
 #include "vi.h"
+#include "exf.h"
 #include "options.h"
 #include "pathnames.h"
 #include "extern.h"
