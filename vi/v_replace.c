@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_replace.c,v 10.8 1995/09/25 08:32:17 bostic Exp $ (Berkeley) $Date: 1995/09/25 08:32:17 $";
+static char sccsid[] = "$Id: v_replace.c,v 10.9 1995/10/16 15:33:56 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:33:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -66,10 +66,8 @@ v_replace(sp, vp)
 	 *	   the end of the line, also work, which would be a bit odd.
 	 *	3: Replacing with a <newline> has somewhat odd semantics.
 	 */
-	if ((p = file_gline(sp, vp->m_start.lno, &len)) == NULL) {
-		FILE_LERR(sp, vp->m_start.lno);
+	if (db_get(sp, vp->m_start.lno, DBG_FATAL, &p, &len))
 		return (1);
-	}
 	if (len == 0) {
 		msgq(sp, M_BERR, "186|No characters to replace");
 		return (1);
@@ -150,7 +148,7 @@ next:		if (v_event_get(sp, &ev, 0))
 		vp->m_stop.cno = 0;
 
 		/* The first part of the current line. */
-		if (file_sline(sp, vp->m_start.lno, p, vp->m_start.cno))
+		if (db_set(sp, vp->m_start.lno, p, vp->m_start.cno))
 			goto err_ret;
 
 		/*
@@ -167,7 +165,7 @@ next:		if (v_event_get(sp, &ev, 0))
 		if (v_txt_auto(sp, vp->m_start.lno, NULL, 0, tp))
 			goto err_ret;
 		vp->m_stop.cno = tp->ai ? tp->ai - 1 : 0;
-		if (file_aline(sp, 1, vp->m_start.lno, tp->lb, tp->len))
+		if (db_append(sp, 1, vp->m_start.lno, tp->lb, tp->len))
 			goto err_ret;
 		text_free(tp);
 
@@ -175,13 +173,13 @@ next:		if (v_event_get(sp, &ev, 0))
 
 		/* All of the middle lines. */
 		while (--cnt)
-			if (file_aline(sp, 1, vp->m_start.lno, "", 0)) {
+			if (db_append(sp, 1, vp->m_start.lno, "", 0)) {
 err_ret:			rval = 1;
 				break;
 			}
 	} else {
 		memset(bp + vp->m_start.cno, vip->rlast, cnt);
-		rval = file_sline(sp, vp->m_start.lno, bp, len);
+		rval = db_set(sp, vp->m_start.lno, bp, len);
 	}
 	FREE_SPACE(sp, bp, blen);
 

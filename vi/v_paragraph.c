@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_paragraph.c,v 10.4 1995/09/21 12:08:29 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:08:29 $";
+static char sccsid[] = "$Id: v_paragraph.c,v 10.5 1995/10/16 15:33:54 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:33:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -69,6 +69,7 @@ v_paragraphf(sp, vp)
 	enum { P_INTEXT, P_INBLANK } pstate;
 	size_t lastlen, len;
 	recno_t cnt, lastlno, lno;
+	int isempty;
 	char *p, *lp;
 
 	/*
@@ -99,7 +100,7 @@ v_paragraphf(sp, vp)
 
 	/* Figure out what state we're currently in. */
 	lno = vp->m_start.lno;
-	if ((p = file_gline(sp, lno, &len)) == NULL)
+	if (db_get(sp, lno, 0, &p, &len))
 		goto eof;
 
 	/*
@@ -118,7 +119,7 @@ v_paragraphf(sp, vp)
 	for (;;) {
 		lastlno = lno;
 		lastlen = len;
-		if ((p = file_gline(sp, ++lno, &len)) == NULL)
+		if (db_get(sp, ++lno, 0, &p, &len))
 			goto eof;
 		switch (pstate) {
 		case P_INTEXT:
@@ -164,13 +165,9 @@ found:			if (ISMOTION(vp)) {
 	 * have to make it okay.
 	 */
 eof:	if (vp->m_start.lno == lno || vp->m_start.lno == lno - 1) {
-		if (file_gline(sp, vp->m_start.lno, &len) == NULL) {
-			if (file_lline(sp, &lno))
+		if (db_eget(sp, vp->m_start.lno, &p, &len, &isempty)) {
+			if (!isempty)
 				return (1);
-			if (vp->m_start.lno != 1 || lno != 0) {
-				FILE_LERR(sp, vp->m_start.lno);
-				return (1);
-			}
 			vp->m_start.cno = 0;
 			return (0);
 		}
@@ -248,7 +245,7 @@ v_paragraphb(sp, vp)
 		goto sof;
 
 	/* Figure out what state we're currently in. */
-	if ((p = file_gline(sp, lno, &len)) == NULL)
+	if (db_get(sp, lno, 0, &p, &len))
 		goto sof;
 
 	/*
@@ -273,7 +270,7 @@ v_paragraphb(sp, vp)
 	}
 
 	for (;;) {
-		if ((p = file_gline(sp, --lno, &len)) == NULL)
+		if (db_get(sp, --lno, 0, &p, &len))
 			goto sof;
 		switch (pstate) {
 		case P_INTEXT:

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_sentence.c,v 10.4 1995/09/21 12:08:41 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:08:41 $";
+static char sccsid[] = "$Id: v_sentence.c,v 10.5 1995/10/16 15:34:05 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:34:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -168,10 +168,8 @@ okret:	vp->m_stop.lno = cs.cs_lno;
 	if (ISMOTION(vp)) {
 		if (vp->m_start.cno == 0 &&
 		    (cs.cs_flags != 0 || vp->m_stop.cno == 0)) {
-			if (file_gline(sp, --vp->m_stop.lno, &len) == NULL) {
-				FILE_LERR(sp, vp->m_stop.lno);
+			if (db_get(sp, --vp->m_stop.lno, DBG_FATAL, NULL, &len))
 				return (1);
-			}
 			vp->m_stop.cno = len ? len - 1 : 0;
 			F_SET(vp, VM_LMODE);
 		} else
@@ -343,10 +341,9 @@ okret:	vp->m_stop.lno = cs.cs_lno;
 	if (ISMOTION(vp))
 		if (vp->m_start.cno == 0 &&
 		    (cs.cs_flags != 0 || vp->m_stop.cno == 0)) {
-			if (file_gline(sp, --vp->m_start.lno, &len) == NULL) {
-				FILE_LERR(sp, vp->m_start.lno);
+			if (db_get(sp,
+			    --vp->m_start.lno, DBG_FATAL, NULL, &len))
 				return (1);
-			}
 			vp->m_start.cno = len ? len - 1 : 0;
 			F_SET(vp, VM_LMODE);
 		} else

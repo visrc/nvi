@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ulcase.c,v 10.4 1995/09/21 12:08:48 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:08:48 $";
+static char sccsid[] = "$Id: v_ulcase.c,v 10.5 1995/10/16 15:34:14 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:34:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -60,7 +60,7 @@ v_ulcase(sp, vp)
 	/* EOF is an infinite count sink. */
 	for (cnt =
 	    F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt > 0; cno = 0, ++lno) {
-		if ((p = file_gline(sp, lno, &len)) == NULL)
+		if (db_get(sp, lno, 0, &p, &len))
 			break;
 
 		/* Empty lines decrement the count by one. */
@@ -89,8 +89,9 @@ v_ulcase(sp, vp)
 	}
 
 	/* Check to see if we tried to move past EOF. */
-	if (!file_eline(sp, vp->m_final.lno)) {
-		(void)file_gline(sp, --vp->m_final.lno, &len);
+	if (!db_exist(sp, vp->m_final.lno)) {
+		if (db_get(sp, --vp->m_final.lno, DBG_FATAL, NULL, &len))
+			return (1);
 		vp->m_final.cno = len == 0 ? 0 : len - 1;
 	}
 	return (0);
@@ -112,10 +113,8 @@ v_mulcase(sp, vp)
 	recno_t lno;
 
 	for (lno = vp->m_start.lno;;) {
-		if ((p = file_gline(sp, lno, &len)) == NULL) {
-			FILE_LERR(sp, lno);
+		if (db_get(sp, lno, DBG_FATAL, &p, &len))
 			return (1);
-		}
 		if (len != 0 && ulcase(sp, lno, p, len,
 		    lno == vp->m_start.lno ? vp->m_start.cno : 0,
 		    !F_ISSET(vp, VM_LMODE) &&
@@ -169,7 +168,7 @@ ulcase(sp, lno, lp, len, scno, ecno)
 		}
 	}
 
-	if (change && file_sline(sp, lno, bp, len))
+	if (change && db_set(sp, lno, bp, len))
 		rval = 1;
 
 	FREE_SPACE(sp, bp, blen);

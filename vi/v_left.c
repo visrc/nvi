@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_left.c,v 10.4 1995/09/21 12:08:26 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:08:26 $";
+static char sccsid[] = "$Id: v_left.c,v 10.5 1995/10/16 15:33:46 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:33:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -114,7 +114,7 @@ v_cfirst(sp, vp)
 	 */
 	if (vp->m_stop.lno == 1 &&
 	    vp->m_stop.cno == 0 && ISCMD(vp->rkp, 'd')) {
-		if (file_lline(sp, &lno))
+		if (db_last(sp, &lno))
 			return (1);
 		if (lno == 0) {
 			v_sol(sp);

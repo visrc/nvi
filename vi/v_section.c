@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_section.c,v 10.4 1995/09/21 12:08:40 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:08:40 $";
+static char sccsid[] = "$Id: v_section.c,v 10.5 1995/10/16 15:34:03 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:34:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -93,8 +93,7 @@ v_sectionf(sp, vp)
 		}
 
 	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
-	for (lno = vp->m_start.lno;
-	    (p = file_gline(sp, ++lno, &len)) != NULL;) {
+	for (lno = vp->m_start.lno; !db_get(sp, ++lno, 0, &p, &len);) {
 		if (len == 0)
 			continue;
 		if (p[0] == '{' || ISMOTION(vp) && p[0] == '}') {
@@ -144,7 +143,7 @@ adjust2:			vp->m_stop.lno = lno;
 		return (1);
 	}
 
-ret1:	if (file_gline(sp, --lno, &len) == NULL)
+ret1:	if (db_get(sp, --lno, DBG_FATAL, NULL, &len))
 		return (1);
 	vp->m_stop.lno = lno;
 	vp->m_stop.cno = len ? len - 1 : 0;
@@ -188,8 +187,7 @@ v_sectionb(sp, vp)
 		return (1);
 
 	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
-	for (lno = vp->m_start.lno;
-	    (p = file_gline(sp, --lno, &len)) != NULL;) {
+	for (lno = vp->m_start.lno; db_get(sp, --lno, 0, &p, &len);) {
 		if (len == 0)
 			continue;
 		if (p[0] == '{') {

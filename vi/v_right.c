@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_right.c,v 10.4 1995/09/21 12:08:35 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:08:35 $";
+static char sccsid[] = "$Id: v_right.c,v 10.5 1995/10/16 15:33:57 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:33:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,20 +35,17 @@ v_right(sp, vp)
 {
 	recno_t lno;
 	size_t len;
+	int isempty;
 
-	if (file_gline(sp, vp->m_start.lno, &len) == NULL) {
-		if (file_lline(sp, &lno))
-			return (1);
-		if (lno == 0)
-			v_eol(sp, NULL);
-		else
-			FILE_LERR(sp, vp->m_start.lno);
+	if (db_eget(sp, vp->m_start.lno, NULL, &len, &isempty)) {
+		if (isempty)
+			goto eol;
 		return (1);
 	}
 
 	/* It's always illegal to move right on empty lines. */
 	if (len == 0) {
-		v_eol(sp, NULL);
+eol:		v_eol(sp, NULL);
 		return (1);
 	}
 
@@ -91,6 +88,7 @@ v_dollar(sp, vp)
 {
 	recno_t lno;
 	size_t len;
+	int isempty;
 
 	/*
 	 * !!!
@@ -123,13 +121,9 @@ v_dollar(sp, vp)
 	 * To fix it, we let c$ go through, on the assumption that it's
 	 * not a problem for it to work.
 	 */
-	if (file_gline(sp, vp->m_stop.lno, &len) == NULL) {
-		if (file_lline(sp, &lno))
+	if (db_eget(sp, vp->m_stop.lno, NULL, &len, &isempty)) {
+		if (!isempty)
 			return (1);
-		if (lno != 0) {
-			FILE_LERR(sp, vp->m_start.lno);
-			return (1);
-		}
 		len = 0;
 	}
 

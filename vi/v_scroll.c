@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 10.5 1995/09/21 12:08:37 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:08:37 $";
+static char sccsid[] = "$Id: v_scroll.c,v 10.6 1995/10/16 15:33:58 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:33:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -72,13 +72,13 @@ v_lgoto(sp, vp)
 	recno_t nlines;
 
 	if (F_ISSET(vp, VC_C1SET)) {
-		if (!file_eline(sp, vp->count)) {
+		if (!db_exist(sp, vp->count)) {
 			/*
 			 * !!!
 			 * Historically, 1G was legal in an empty file.
 			 */
 			if (vp->count == 1) {
-				if (file_lline(sp, &nlines))
+				if (db_last(sp, &nlines))
 					return (1);
 				if (nlines == 0)
 					return (0);
@@ -88,7 +88,7 @@ v_lgoto(sp, vp)
 		}
 		vp->m_stop.lno = vp->count;
 	} else {
-		if (file_lline(sp, &nlines))
+		if (db_last(sp, &nlines))
 			return (1);
 		vp->m_stop.lno = nlines ? nlines : 1;
 	}
@@ -262,7 +262,7 @@ v_down(sp, vp)
 	recno_t lno;
 
 	lno = vp->m_start.lno + (F_ISSET(vp, VC_C1SET) ? vp->count : 1);
-	if (!file_eline(sp, lno)) {
+	if (!db_exist(sp, lno)) {
 		v_eof(sp, &vp->m_start);
 		return (1);
 	}

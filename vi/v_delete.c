@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_delete.c,v 10.4 1995/09/21 12:08:19 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:08:19 $";
+static char sccsid[] = "$Id: v_delete.c,v 10.5 1995/10/16 15:33:38 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:33:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -54,8 +54,8 @@ v_delete(sp, vp)
 	 * Check for deletion of the entire file.  Try to check a close
 	 * by line so we don't go to the end of the file unnecessarily.
 	 */
-	if (!file_eline(sp, vp->m_final.lno + 1)) {
-		if (file_lline(sp, &nlines))
+	if (!db_exist(sp, vp->m_final.lno + 1)) {
+		if (db_last(sp, &nlines))
 			return (1);
 		if (nlines == 0) {
 			vp->m_final.lno = 1;
@@ -69,11 +69,9 @@ v_delete(sp, vp)
 	 * character.  We check it here instead of checking in every command
 	 * that can be a motion component.
 	 */
-	if (file_gline(sp, vp->m_final.lno, &len) == NULL) {
-		if (file_gline(sp, nlines, &len) == NULL) {
-			FILE_LERR(sp, nlines);
+	if (db_get(sp, vp->m_final.lno, 0, NULL, &len)) {
+		if (db_get(sp, nlines, DBG_FATAL, NULL, &len))
 			return (1);
-		}
 		vp->m_final.lno = nlines;
 	}
 	if (vp->m_final.cno >= len)

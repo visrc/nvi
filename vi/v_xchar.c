@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_xchar.c,v 10.5 1995/09/21 12:08:52 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:08:52 $";
+static char sccsid[] = "$Id: v_xchar.c,v 10.6 1995/10/16 15:34:16 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:34:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,13 +35,11 @@ v_xchar(sp, vp)
 {
 	recno_t lno;
 	size_t len;
+	int isempty;
 
-	if (file_gline(sp, vp->m_start.lno, &len) == NULL) {
-		if (file_lline(sp, &lno))
-			return (1);
-		if (lno == 0)
+	if (db_eget(sp, vp->m_start.lno, NULL, &len, &isempty)) {
+		if (isempty)
 			goto nodel;
-		FILE_LERR(sp, vp->m_start.lno);
 		return (1);
 	}
 	if (len == 0) {

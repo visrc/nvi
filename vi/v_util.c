@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_util.c,v 10.8 1995/10/04 12:38:43 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:38:43 $";
+static char sccsid[] = "$Id: v_util.c,v 10.9 1995/10/16 15:34:15 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:34:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -42,7 +42,7 @@ v_eof(sp, mp)
 	if (mp == NULL)
 		v_emsg(sp, NULL, VIM_EOF);
 	else {
-		if (file_lline(sp, &lno))
+		if (db_last(sp, &lno))
 			return;
 		if (mp->lno >= lno)
 			v_emsg(sp, NULL, VIM_EOF);
@@ -67,10 +67,8 @@ v_eol(sp, mp)
 	if (mp == NULL)
 		v_emsg(sp, NULL, VIM_EOL);
 	else {
-		if (file_gline(sp, mp->lno, &len) == NULL) {
-			FILE_LERR(sp, mp->lno);
+		if (db_get(sp, mp->lno, DBG_FATAL, NULL, &len))
 			return;
-		}
 		if (mp->cno == len - 1)
 			v_emsg(sp, NULL, VIM_EOL);
 		else

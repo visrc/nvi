@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 10.12 1995/09/28 10:41:22 bostic Exp $ (Berkeley) $Date: 1995/09/28 10:41:22 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 10.13 1995/10/16 15:34:30 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:34:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -139,7 +139,7 @@ vs_paint(sp, flags)
 	VI_PRIVATE *vip;
 	recno_t lastline, lcnt;
 	size_t cwtotal, cnt, len, x, y;
-	int ch, didpaint, leftright_warp;
+	int ch, didpaint, isempty, leftright_warp;
 	char *p;
 
 #define	 LNO	sp->lno
@@ -301,7 +301,7 @@ small_fill:			(void)gp->scr_move(sp, LASTLINE(sp), 0);
 		 * the line is the first line on the screen.  Special check so
 		 * that if the screen has been emptied, we refill it.
 		 */
-		if (file_eline(sp, HMAP->lno)) {
+		if (db_exist(sp, HMAP->lno)) {
 			while (lcnt--)
 				if (vs_sm_1down(sp))
 					return (1);
@@ -312,7 +312,7 @@ small_fill:			(void)gp->scr_move(sp, LASTLINE(sp), 0);
 		 * If less than a half screen from the bottom of the file,
 		 * put the last line of the file on the bottom of the screen.
 		 */
-bottom:		if (file_lline(sp, &lastline))
+bottom:		if (db_last(sp, &lastline))
 			return (1);
 		tmp.lno = LNO;
 		tmp.off = 1;
@@ -435,12 +435,9 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 	 * isn't a performance issue because there aren't any ways to get
 	 * here repeatedly.
 	 */
-	if ((p = file_gline(sp, LNO, &len)) == NULL) {
-		if (file_lline(sp, &lastline))
-			return (1);
-		if (lastline == 0)
+	if (db_eget(sp, LNO, &p, &len, &isempty)) {
+		if (isempty)
 			goto slow;
-		FILE_LERR(sp, LNO);
 		return (1);
 	}
 

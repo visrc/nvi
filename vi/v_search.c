@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 10.9 1995/09/29 09:30:59 bostic Exp $ (Berkeley) $Date: 1995/09/29 09:30:59 $";
+static char sccsid[] = "$Id: v_search.c,v 10.10 1995/10/16 15:34:00 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:34:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -153,7 +153,7 @@ v_exaddr(sp, vp, dir)
 		vp->m_stop = cmdp->addr2;
 		break;
 	}
-	if (!file_eline(sp, vp->m_stop.lno)) {
+	if (!db_exist(sp, vp->m_stop.lno)) {
 		ex_badaddr(sp, &fake,
 		    vp->m_stop.lno == 0 ? A_ZERO : A_EOF, NUM_OK);
 		goto err2;
@@ -440,10 +440,8 @@ v_correct(sp, vp, isdelta)
 	 * end at column 0 of another line.
 	 */
 	if (vp->m_start.lno < vp->m_stop.lno && vp->m_stop.cno == 0) {
-		if (file_gline(sp, --vp->m_stop.lno, &len) == NULL) {
-			FILE_LERR(sp, vp->m_stop.lno);
+		if (db_get(sp, --vp->m_stop.lno, DBG_FATAL, NULL, &len))
 			return (1);
-		}
 		if (vp->m_start.cno == 0)
 			F_SET(vp, VM_LMODE);
 		vp->m_stop.cno = len ? len - 1 : 0;

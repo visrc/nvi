@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 10.5 1995/09/21 12:08:24 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:08:24 $";
+static char sccsid[] = "$Id: v_itxt.c,v 10.6 1995/10/16 15:33:43 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:33:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -70,7 +70,7 @@ v_iA(sp, vp)
 {
 	size_t len;
 
-	if (file_gline(sp, vp->m_start.lno, &len) != NULL)
+	if (!db_get(sp, vp->m_start.lno, 0, NULL, &len))
 		sp->cno = len == 0 ? 0 : len - 1;
 
 	LOG_CORRECT;
@@ -93,6 +93,7 @@ v_ia(sp, vp)
 	recno_t lno;
 	size_t len;
 	u_int32_t flags;
+	int isempty;
 	char *p;
 
 	flags = set_txt_std(sp, vp, 0);
@@ -100,13 +101,9 @@ v_ia(sp, vp)
 	sp->lno = vp->m_start.lno;
 
 	/* Move the cursor one column to the right and repaint the screen. */
-	if ((p = file_gline(sp, sp->lno, &len)) == NULL) {
-		if (file_lline(sp, &lno))
+	if (db_eget(sp, sp->lno, &p, &len, &isempty)) {
+		if (!isempty)
 			return (1);
-		if (lno != 0) {
-			FILE_LERR(sp, lno);
-			return (1);
-		}
 		len = 0;
 		LF_SET(TXT_APPENDEOL);
 	} else if (len) {
@@ -156,19 +153,16 @@ v_ii(sp, vp)
 	recno_t lno;
 	size_t len;
 	u_int32_t flags;
+	int isempty;
 	char *p;
 
 	flags = set_txt_std(sp, vp, 0);
 	sp->showmode = SM_INSERT;
 	sp->lno = vp->m_start.lno;
 
-	if ((p = file_gline(sp, sp->lno, &len)) == NULL) {
-		if (file_lline(sp, &lno))
+	if (db_eget(sp, sp->lno, &p, &len, &isempty)) {
+		if (!isempty)
 			return (1);
-		if (lno != 0) {
-			FILE_LERR(sp, vp->m_start.lno);
-			return (1);
-		}
 		len = 0;
 	}
 
@@ -223,7 +217,7 @@ io(sp, vp, cmd)
 	sp->showmode = SM_INSERT;
 
 	if (sp->lno == 1) {
-		if (file_lline(sp, &lno))
+		if (db_last(sp, &lno))
 			return (1);
 		if (lno != 0)
 			goto insert;
@@ -236,20 +230,16 @@ insert:		p = "";
 		LOG_CORRECT;
 
 		if (cmd == O_cmd) {
-			if (file_iline(sp, sp->lno, p, 0))
+			if (db_insert(sp, sp->lno, p, 0))
 				return (1);
-			if ((p = file_gline(sp, sp->lno, &len)) == NULL) {
-				FILE_LERR(sp, sp->lno);
+			if (db_get(sp, sp->lno, DBG_FATAL, &p, &len))
 				return (1);
-			}
 			ai_line = sp->lno + 1;
 		} else {
-			if (file_aline(sp, 1, sp->lno, p, 0))
+			if (db_append(sp, 1, sp->lno, p, 0))
 				return (1);
-			if ((p = file_gline(sp, ++sp->lno, &len)) == NULL) {
-				FILE_LERR(sp, sp->lno);
+			if (db_get(sp, ++sp->lno, DBG_FATAL, &p, &len))
 				return (1);
-			}
 			ai_line = sp->lno - 1;
 		}
 	}
@@ -272,7 +262,7 @@ v_change(sp, vp)
 	recno_t lno;
 	size_t blen, len;
 	u_int32_t flags;
-	int lmode, rval;
+	int isempty, lmode, rval;
 	char *bp, *p;
 
 	/*
@@ -280,13 +270,9 @@ v_change(sp, vp)
 	 * special case.
 	 */
 	if (vp->m_start.lno == vp->m_stop.lno &&
-	    (p = file_gline(sp, vp->m_start.lno, &len)) == NULL) {
-		if (file_lline(sp, &lno))
+	    db_eget(sp, vp->m_start.lno, &p, &len, &isempty)) {
+		if (!isempty)
 			return (1);
-		if (lno != 0) {
-			FILE_LERR(sp, vp->m_start.lno);
-			return (1);
-		}
 		return (v_ia(sp, vp));
 	}
 
@@ -361,12 +347,12 @@ v_change(sp, vp)
 
 	/* If replacing entire lines and there's leading text. */
 	if (lmode && vp->m_start.cno) {
-		/* Get a copy of the first line changed. */
-		if ((p = file_gline(sp, vp->m_start.lno, &len)) == NULL) {
-			FILE_LERR(sp, vp->m_start.lno);
+		/*
+		 * Get a copy of the first line changed, and copy out the
+		 * leading text.
+		 */
+		if (db_get(sp, vp->m_start.lno, DBG_FATAL, &p, &len))
 			return (1);
-		}
-		/* Copy the leading text elsewhere. */
 		GET_SPACE_RET(sp, bp, blen, vp->m_start.cno);
 		memmove(bp, p, vp->m_start.cno);
 	} else
@@ -378,20 +364,16 @@ v_change(sp, vp)
 
 	/* If replacing entire lines, insert a replacement line. */
 	if (lmode) {
-		if (file_iline(sp, vp->m_start.lno, bp, vp->m_start.cno))
+		if (db_insert(sp, vp->m_start.lno, bp, vp->m_start.cno))
 			return (1);
 		sp->lno = vp->m_start.lno;
 		len = sp->cno = vp->m_start.cno;
 	}
 
 	/* Get the line we're editing. */
-	if ((p = file_gline(sp, vp->m_start.lno, &len)) == NULL) {
-		if (file_lline(sp, &lno))
+	if (db_eget(sp, vp->m_start.lno, &p, &len, &isempty)) {
+		if (!isempty)
 			return (1);
-		if (lno != 0) {
-			FILE_LERR(sp, vp->m_start.lno);
-			return (1);
-		}
 		len = 0;
 	}
 
@@ -426,18 +408,15 @@ v_Replace(sp, vp)
 	recno_t lno;
 	size_t len;
 	u_int32_t flags;
+	int isempty;
 	char *p;
 
 	flags = set_txt_std(sp, vp, 0);
 	sp->showmode = SM_REPLACE;
 
-	if ((p = file_gline(sp, vp->m_start.lno, &len)) == NULL) {
-		if (file_lline(sp, &lno))
+	if (db_eget(sp, vp->m_start.lno, &p, &len, &isempty)) {
+		if (!isempty)
 			return (1);
-		if (lno != 0) {
-			FILE_LERR(sp, vp->m_start.lno);
-			return (1);
-		}
 		len = 0;
 		LF_SET(TXT_APPENDEOL);
 	} else {
@@ -465,18 +444,15 @@ v_subst(sp, vp)
 	recno_t lno;
 	size_t len;
 	u_int32_t flags;
+	int isempty;
 	char *p;
 
 	flags = set_txt_std(sp, vp, 0);
 	sp->showmode = SM_CHANGE;
 
-	if ((p = file_gline(sp, vp->m_start.lno, &len)) == NULL) {
-		if (file_lline(sp, &lno))
+	if (db_eget(sp, vp->m_start.lno, &p, &len, &isempty)) {
+		if (!isempty)
 			return (1);
-		if (lno != 0) {
-			FILE_LERR(sp, vp->m_start.lno);
-			return (1);
-		}
 		len = 0;
 		LF_SET(TXT_APPENDEOL);
 	} else {

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 10.15 1995/10/03 20:11:02 bostic Exp $ (Berkeley) $Date: 1995/10/03 20:11:02 $";
+static char sccsid[] = "$Id: v_txt.c,v 10.16 1995/10/16 15:34:07 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:34:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -726,7 +726,7 @@ k_cr:		if (LF_ISSET(TXT_CR)) {
 		 *
 		 * !!!
 		 * DON'T insert until the old line has been updated, or the
-		 * inserted line count in line.c:file_gline() will be wrong.
+		 * inserted line count in line.c:db_get() will be wrong.
 		 */
 		tp = ntp;
 		CIRCLEQ_INSERT_TAIL(&sp->tiq, tp, q);
@@ -1570,7 +1570,7 @@ v_txt_auto(sp, lno, aitp, len, tp)
 			tp->ai = 0;
 			return (0);
 		}
-		if ((t = file_gline(sp, lno, &len)) == NULL)
+		if (db_get(sp, lno, DBG_FATAL, &t, &len))
 			return (1);
 	} else
 		t = aitp->lb;
@@ -2051,7 +2051,7 @@ txt_err(sp, tiqh)
 	 * chain.
 	 */
 	for (lno = tiqh->cqh_first->lno;
-	    !file_eline(sp, lno) && lno > 0; --lno);
+	    !db_exist(sp, lno) && lno > 0; --lno);
 
 	sp->lno = lno == 0 ? 1 : lno;
 	sp->cno = 0;
@@ -2154,13 +2154,13 @@ txt_resolve(sp, tiqh, flags)
 	tp = tiqh->cqh_first;
 	if (LF_ISSET(TXT_AUTOINDENT))
 		txt_ai_resolve(sp, tp);
-	if (file_sline(sp, tp->lno, tp->lb, tp->len))
+	if (db_set(sp, tp->lno, tp->lb, tp->len))
 		return (1);
 
 	for (lno = tp->lno; (tp = tp->q.cqe_next) != (void *)&sp->tiq; ++lno) {
 		if (LF_ISSET(TXT_AUTOINDENT))
 			txt_ai_resolve(sp, tp);
-		if (file_aline(sp, 0, lno, tp->lb, tp->len))
+		if (db_append(sp, 0, lno, tp->lb, tp->len))
 			return (1);
 	}
 

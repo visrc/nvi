@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 10.14 1995/10/02 16:52:22 bostic Exp $ (Berkeley) $Date: 1995/10/02 16:52:22 $";
+static char sccsid[] = "$Id: v_ex.c,v 10.15 1995/10/16 15:33:39 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:33:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -438,11 +438,7 @@ v_ex_done(sp, vp)
 	 * Ex will soon have to start handling the column correctly; see
 	 * the POSIX 1003.2 standard.
 	 */
-	if (file_gline(sp, sp->lno, &len) == NULL) {
-		if (file_lline(sp, &lno))
-			return (1);
-		if (lno != 0)
-			FILE_LERR(sp, sp->lno);
+	if (db_eget(sp, sp->lno, NULL, &len, NULL)) {
 		sp->lno = 1;
 		sp->cno = 0;
 	} else if (sp->cno >= len)

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ch.c,v 10.5 1995/09/21 12:08:16 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:08:16 $";
+static char sccsid[] = "$Id: v_ch.c,v 10.6 1995/10/16 15:33:36 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:33:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -145,7 +145,7 @@ v_chf(sp, vp)
 	size_t len;
 	recno_t lno;
 	u_long cnt;
-	int key;
+	int isempty, key;
 	char *endp, *p, *startp;
 
 	/*
@@ -158,19 +158,14 @@ v_chf(sp, vp)
 		VIP(sp)->lastckey = key;
 	VIP(sp)->csearchdir = fSEARCH;
 
-	if ((p = file_gline(sp, vp->m_start.lno, &len)) == NULL) {
-		if (file_lline(sp, &lno))
-			return (1);
-		if (lno == 0) {
-			notfound(sp, key);
-			return (1);
-		}
-		FILE_LERR(sp, vp->m_start.lno);
+	if (db_eget(sp, vp->m_start.lno, &p, &len, &isempty)) {
+		if (isempty)
+			goto empty;
 		return (1);
 	}
 
 	if (len == 0) {
-		notfound(sp, key);
+empty:		notfound(sp, key);
 		return (1);
 	}
 
@@ -236,7 +231,7 @@ v_chF(sp, vp)
 	recno_t lno;
 	size_t len;
 	u_long cnt;
-	int key;
+	int isempty, key;
 	char *endp, *p;
 
 	/*
@@ -250,19 +245,14 @@ v_chF(sp, vp)
 		VIP(sp)->lastckey = key;
 	VIP(sp)->csearchdir = FSEARCH;
 
-	if ((p = file_gline(sp, vp->m_start.lno, &len)) == NULL) {
-		if (file_lline(sp, &lno))
-			return (1);
-		if (lno == 0) {
-			notfound(sp, key);
-			return (1);
-		}
-		FILE_LERR(sp, vp->m_start.lno);
+	if (db_eget(sp, vp->m_start.lno, &p, &len, &isempty)) {
+		if (isempty)
+			goto empty;
 		return (1);
 	}
 
 	if (len == 0) {
-		notfound(sp, key);
+empty:		notfound(sp, key);
 		return (1);
 	}
 

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 10.19 1995/10/04 20:35:40 bostic Exp $ (Berkeley) $Date: 1995/10/04 20:35:40 $";
+static char sccsid[] = "$Id: vi.c,v 10.20 1995/10/16 15:34:18 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:34:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -743,7 +743,7 @@ v_motion(sp, dm, vp, mappedp)
 		 * text.
 		 */
 		vp->m_stop.lno = sp->lno + motion.count - 1;
-		if (file_gline(sp, vp->m_stop.lno, &len) == NULL) {
+		if (db_get(sp, vp->m_stop.lno, 0, NULL, &len)) {
 			if (vp->m_stop.lno != 1 ||
 			   vp->key != 'c' && vp->key != '!') {
 				v_emsg(sp, NULL, VIM_EMPTY);
@@ -799,7 +799,7 @@ v_motion(sp, dm, vp, mappedp)
 		 * text.  Otherwise fail -- most motion commands will have
 		 * already failed, but some, e.g. G, succeed in empty files.
 		 */
-		if (!file_eline(sp, vp->m_stop.lno)) {
+		if (!db_exist(sp, vp->m_stop.lno)) {
 			if (vp->m_stop.lno != 1 ||
 			   vp->key != 'c' && vp->key != '!') {
 				v_emsg(sp, NULL, VIM_EMPTY);
@@ -984,8 +984,8 @@ v_keyword(sp)
 	int moved, state;
 	char *p;
 
-	if ((p = file_gline(sp, sp->lno, &len)) == NULL)
-		goto err;
+	if (db_get(sp, sp->lno, DBG_FATAL, &p, &len))
+		return (1);
 
 	/*
 	 * !!!
@@ -1005,7 +1005,7 @@ v_keyword(sp)
 	for (moved = 0,
 	    beg = sp->cno; beg < len && isspace(p[beg]); moved = 1, ++beg);
 	if (beg >= len) {
-err:		msgq(sp, M_BERR, "212|Cursor not in a word");
+		msgq(sp, M_BERR, "212|Cursor not in a word");
 		return (1);
 	}
 	if (moved) {

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: getc.c,v 10.6 1995/10/03 20:07:44 bostic Exp $ (Berkeley) $Date: 1995/10/03 20:07:44 $";
+static char sccsid[] = "$Id: getc.c,v 10.7 1995/10/16 15:33:34 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:33:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,14 +46,11 @@ cs_init(sp, csp)
 	VCS *csp;
 {
 	recno_t lno;
+	int isempty;
 
-	if ((csp->cs_bp = file_gline(sp, csp->cs_lno, &csp->cs_len)) == NULL) {
-		if (file_lline(sp, &lno))
-			return (1);
-		if (lno == 0)
+	if (db_eget(sp, csp->cs_lno, &csp->cs_bp, &csp->cs_len, &isempty)) {
+		if (isempty)
 			msgq(sp, M_BERR, "177|Empty file");
-		else
-			FILE_LERR(sp, csp->cs_lno);
 		return (1);
 	}
 	if (csp->cs_len == 0 || v_isempty(csp->cs_bp, csp->cs_len)) {
@@ -77,21 +74,11 @@ cs_next(sp, csp)
 	SCR *sp;
 	VCS *csp;
 {
-	recno_t slno;
-
 	switch (csp->cs_flags) {
 	case CS_EMP:				/* EMP; get next line. */
 	case CS_EOL:				/* EOL; get next line. */
-		slno = csp->cs_lno;		/* Save current line. */
-		if ((csp->cs_bp =
-		    file_gline(sp, ++csp->cs_lno, &csp->cs_len)) == NULL) {
-			csp->cs_lno = slno;
-			if (file_lline(sp, &slno))
-				return (1);
-			if (slno > csp->cs_lno) {
-				FILE_LERR(sp, csp->cs_lno);
-				return (1);
-			}
+		if (db_get(sp, ++csp->cs_lno, 0, &csp->cs_bp, &csp->cs_len)) {
+			--csp->cs_lno;
 			csp->cs_flags = CS_EOF;
 		} else if (csp->cs_len == 0 ||
 		    v_isempty(csp->cs_bp, csp->cs_len)) {
@@ -178,8 +165,6 @@ cs_prev(sp, csp)
 	SCR *sp;
 	VCS *csp;
 {
-	recno_t slno;
-
 	switch (csp->cs_flags) {
 	case CS_EMP:				/* EMP; get previous line. */
 	case CS_EOL:				/* EOL; get previous line. */
@@ -187,11 +172,9 @@ cs_prev(sp, csp)
 			csp->cs_flags = CS_SOF;
 			break;
 		}
-		slno = csp->cs_lno;		/* Save current line. */
-		if ((csp->cs_bp =		/* Line should exist. */
-		    file_gline(sp, --csp->cs_lno, &csp->cs_len)) == NULL) {
-			FILE_LERR(sp, csp->cs_lno);
-			csp->cs_lno = slno;
+		if (db_get(sp,			/* The line should exist. */
+		    --csp->cs_lno, DBG_FATAL, &csp->cs_bp, &csp->cs_len)) {
+			++csp->cs_lno;
 			return (1);
 		}
 		if (csp->cs_len == 0 || v_isempty(csp->cs_bp, csp->cs_len)) {

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 10.10 1995/09/28 10:40:51 bostic Exp $ (Berkeley) $Date: 1995/09/28 10:40:51 $";
+static char sccsid[] = "$Id: vs_smap.c,v 10.11 1995/10/16 15:34:35 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:34:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -64,8 +64,8 @@ vs_change(sp, lno, op)
 	 * Check for line #2 before going to the end of the file.
 	 */
 	if ((op == LINE_APPEND && lno == 0 ||
-	    op == LINE_INSERT && lno == 1) && !file_eline(sp, 2)) {
-		if (file_lline(sp, &lline))
+	    op == LINE_INSERT && lno == 1) && !db_exist(sp, 2)) {
+		if (db_last(sp, &lline))
 			return (1);
 		if (lline == 1) {
 			SMAP_FLUSH(HMAP);
@@ -210,7 +210,7 @@ vs_sm_fill(sp, lno, pos)
 		}
 
 		/* See if less than half a screen from the bottom. */
-		if (file_lline(sp, &tmp.lno))
+		if (db_last(sp, &tmp.lno))
 			return (1);
 		if (!O_ISSET(sp, O_LEFTRIGHT))
 			tmp.off = vs_opt_screens(sp, tmp.lno, NULL);
@@ -588,14 +588,14 @@ vs_sm_up(sp, rp, count, scmd, smp)
 	 */
 	if (vs_sm_next(sp, TMAP, &s1))
 		return (1);
-	if (s1.lno > TMAP->lno && !file_eline(sp, s1.lno)) {
+	if (s1.lno > TMAP->lno && !db_exist(sp, s1.lno)) {
 		if (scmd == CNTRL_E || scmd == Z_PLUS || smp == TMAP) {
 			v_eof(sp, NULL);
 			return (1);
 		}
 		if (vs_sm_next(sp, smp, &s1))
 			return (1);
-		if (s1.lno > smp->lno && !file_eline(sp, s1.lno)) {
+		if (s1.lno > smp->lno && !db_exist(sp, s1.lno)) {
 			v_eof(sp, NULL);
 			return (1);
 		}
@@ -621,7 +621,7 @@ vs_sm_up(sp, rp, count, scmd, smp)
 			for (; count--; s1 = s2) {
 				if (vs_sm_next(sp, &s1, &s2))
 					return (1);
-				if (s2.lno != s1.lno && !file_eline(sp, s2.lno))
+				if (s2.lno != s1.lno && !db_exist(sp, s2.lno))
 					break;
 			}
 			TMAP[0] = s2;
@@ -634,7 +634,7 @@ vs_sm_up(sp, rp, count, scmd, smp)
 		    sp->t_rows != sp->t_maxrows; --count, ++sp->t_rows) {
 			if (vs_sm_next(sp, TMAP, &s1))
 				return (1);
-			if (TMAP->lno != s1.lno && !file_eline(sp, s1.lno))
+			if (TMAP->lno != s1.lno && !db_exist(sp, s1.lno))
 				break;
 			*++TMAP = s1;
 			/* vs_sm_next() flushed the cache. */
@@ -658,7 +658,7 @@ vs_sm_up(sp, rp, count, scmd, smp)
 			return (1);
 
 		/* If the line doesn't exist, we're done. */
-		if (TMAP->lno != s1.lno && !file_eline(sp, s1.lno))
+		if (TMAP->lno != s1.lno && !db_exist(sp, s1.lno))
 			break;
 
 		/* Scroll the screen cursor up one logical line. */
@@ -720,7 +720,7 @@ vs_sm_up(sp, rp, count, scmd, smp)
 		 * file is smaller than the screen.)
 		 */
 		for (; count; --count, ++smp)
-			if (smp == TMAP || !file_eline(sp, smp[1].lno))
+			if (smp == TMAP || !db_exist(sp, smp[1].lno))
 				break;
 		break;
 	case Z_PLUS:
@@ -904,7 +904,7 @@ vs_sm_down(sp, rp, count, scmd, smp)
 		 */
 		if (!count) {
 			for (smp = TMAP; smp > HMAP; --smp)
-				if (file_eline(sp, smp->lno))
+				if (db_exist(sp, smp->lno))
 					break;
 			break;
 		}
@@ -1149,7 +1149,7 @@ vs_sm_position(sp, rp, cnt, pos)
 		if (cnt > TMAP - HMAP)
 			goto sof;
 		smp = HMAP + cnt;
-		if (cnt && !file_eline(sp, smp->lno)) {
+		if (cnt && !db_exist(sp, smp->lno)) {
 sof:			msgq(sp, M_BERR, "220|Movement past the end-of-screen");
 			return (1);
 		}
@@ -1161,8 +1161,8 @@ sof:			msgq(sp, M_BERR, "220|Movement past the end-of-screen");
 		 * If the screen isn't filled, find the middle of what's
 		 * real and move there.
 		 */
-		if (!file_eline(sp, TMAP->lno)) {
-			if (file_lline(sp, &last))
+		if (!db_exist(sp, TMAP->lno)) {
+			if (db_last(sp, &last))
 				return (1);
 			for (smp = TMAP; smp->lno > last && smp > HMAP; --smp);
 			if (smp > HMAP)
@@ -1180,8 +1180,8 @@ sof:			msgq(sp, M_BERR, "220|Movement past the end-of-screen");
 		if (cnt > TMAP - HMAP)
 			goto eof;
 		smp = TMAP - cnt;
-		if (!file_eline(sp, smp->lno)) {
-			if (file_lline(sp, &last))
+		if (!db_exist(sp, smp->lno)) {
+			if (db_last(sp, &last))
 				return (1);
 			for (; smp->lno > last && smp > HMAP; --smp);
 			if (cnt > smp - HMAP) {

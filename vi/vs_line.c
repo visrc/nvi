@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 10.8 1995/09/27 12:07:01 bostic Exp $ (Berkeley) $Date: 1995/09/27 12:07:01 $";
+static char sccsid[] = "$Id: vs_line.c,v 10.9 1995/10/16 15:34:27 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:34:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -85,9 +85,6 @@ vs_line(sp, smp, yp, xp)
 	(void)gp->scr_cursor(sp, &oldy, &oldx);
 	(void)gp->scr_move(sp, smp - HMAP, 0);
 
-	/* Get a copy of the line. */
-	p = file_gline(sp, smp->lno, &len);
-
 	/*
 	 * Special case if we're printing the info/mode line.  Skip printing
 	 * the leading number, as well as other minor setup.  If painting the
@@ -135,7 +132,7 @@ vs_line(sp, smp, yp, xp)
 	 * file.  In both cases, the cursor position is 0, but corrected
 	 * for the O_NUMBER field if it was displayed.
 	 */
-	if (p == NULL || len == 0) {
+	if (db_get(sp, smp->lno, 0, &p, &len) || len == 0) {
 		/* Fill in the cursor. */
 		if (yp != NULL && smp->lno == sp->lno) {
 			*yp = smp - HMAP;
@@ -427,7 +424,7 @@ vs_number(sp)
 	 * The problem is that file_lline will lie, and tell us that the
 	 * info line is the last line in the file.
 	 */
-	exist = file_eline(sp, TMAP->lno + 1);
+	exist = db_exist(sp, TMAP->lno + 1);
 
 	gp = sp->gp;
 	vip = VIP(sp);
@@ -436,7 +433,7 @@ vs_number(sp)
 	for (smp = HMAP; smp <= TMAP; ++smp) {
 		if (smp->off != 1)
 			continue;
-		if (smp->lno != 1 && !exist && !file_eline(sp, smp->lno))
+		if (smp->lno != 1 && !exist && !db_exist(sp, smp->lno))
 			break;
 		(void)gp->scr_move(sp, smp - HMAP, 0);
 		len = snprintf(nbuf, sizeof(nbuf), O_NUMBER_FMT, smp->lno);

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_increment.c,v 10.7 1995/10/04 12:38:00 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:38:00 $";
+static char sccsid[] = "$Id: v_increment.c,v 10.8 1995/10/16 15:33:42 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:33:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -57,7 +57,7 @@ v_increment(sp, vp)
 	u_long ulval;
 	long change, ltmp, lval;
 	size_t beg, blen, end, len, nlen, wlen;
-	int base, rval;
+	int base, isempty, rval;
 	char *bp, *ntype, *p, *t, nbuf[100];
 
 	/* Validate the operator. */
@@ -79,10 +79,9 @@ v_increment(sp, vp)
 		change = 1;
 
 	/* Get the line. */
-	if ((p = file_gline(sp, vp->m_start.lno, &len)) == NULL) {
-		if (file_lline(sp, &lno))
-			return (1);
-		FILE_LERR(sp, vp->m_start.lno);
+	if (db_eget(sp, vp->m_start.lno, &p, &len, &isempty)) {
+		if (isempty)
+			goto nonum;
 		return (1);
 	}
 
@@ -239,7 +238,7 @@ nonum:			msgq(sp, M_ERR, "181|Cursor not in a number");
 	len = beg + nlen + (len - beg - (end - beg));
 
 	nret = NUM_OK;
-	rval = file_sline(sp, vp->m_start.lno, bp, len);
+	rval = db_set(sp, vp->m_start.lno, bp, len);
 
 	if (0) {
 err:		rval = 1;

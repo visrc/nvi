@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_relative.c,v 10.4 1995/09/21 12:09:05 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:09:05 $";
+static char sccsid[] = "$Id: vs_relative.c,v 10.5 1995/10/16 15:34:33 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:34:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -111,7 +111,7 @@ vs_screens(sp, lp, llen, lno, cnop)
 
 	/* Need the line to go any further. */
 	if (lp == NULL)
-		lp = file_gline(sp, lno, &llen);
+		(void)db_get(sp, lno, 0, &lp, &llen);
 
 	/* Missing or empty lines are easy. */
 	if (lp == NULL || llen == 0)
@@ -171,9 +171,11 @@ vs_rcm(sp, lno, islast)
 	size_t len;
 
 	/* Last character is easy, and common. */
-	if (islast)
-		return (file_gline(sp,
-		    lno, &len) == NULL || len == 0 ? 0 : len - 1);
+	if (islast) {
+		if (db_get(sp, lno, 0, NULL, &len) || len == 0)
+			return (0);
+		return (len - 1);
+	}
 
 	/* First character is easy, and common. */
 	if (sp->rcm == 0)
@@ -200,7 +202,7 @@ vs_colpos(sp, lno, cno)
 	char *lp, *p;
 
 	/* Need the line to go any further. */
-	lp = file_gline(sp, lno, &llen);
+	(void)db_get(sp, lno, 0, &lp, &llen);
 
 	/* Missing or empty lines are easy. */
 	if (lp == NULL || llen == 0)

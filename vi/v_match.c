@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_match.c,v 10.5 1995/09/21 12:08:28 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:08:28 $";
+static char sccsid[] = "$Id: v_match.c,v 10.6 1995/10/16 15:33:50 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:33:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,27 +38,22 @@ v_match(sp, vp)
 	MARK *mp;
 	recno_t lno;
 	size_t cno, len, off;
-	int cnt, matchc, startc, (*gc)__P((SCR *, VCS *));
+	int cnt, isempty, matchc, startc, (*gc)__P((SCR *, VCS *));
 	char *p;
 
 	/*
 	 * !!!
 	 * Historic practice; ignore the count.
+	 *
+	 * !!!
+	 * Historical practice was to search for the initial character in the
+	 * forward direction only.
 	 */
-	if ((p = file_gline(sp, vp->m_start.lno, &len)) == NULL) {
-		if (file_lline(sp, &lno))
-			return (1);
-		if (lno == 0)
+	if (db_eget(sp, vp->m_start.lno, &p, &len, &isempty)) {
+		if (isempty)
 			goto nomatch;
-		FILE_LERR(sp, vp->m_start.lno);
 		return (1);
 	}
-
-	/*
-	 * !!!
-	 * Historical practice was to search for the initial character
-	 * in the forward direction only.
-	 */
 	for (off = vp->m_start.cno;; ++off) {
 		if (off >= len) {
 nomatch:		msgq(sp, M_BERR, "184|No match character on this line");
@@ -164,10 +159,8 @@ nomatch:		msgq(sp, M_BERR, "184|No match character on this line");
 			return (0);
 	}
 	mp = vp->m_start.lno < vp->m_stop.lno ? &vp->m_stop : &vp->m_start;
-	if ((p = file_gline(sp, mp->lno, &len)) == NULL) {
-		FILE_LERR(sp, mp->lno);
+	if (db_get(sp, mp->lno, DBG_FATAL, &p, &len))
 		return (1);
-	}
 	for (p += mp->cno + 1, len -= mp->cno; --len; ++p)
 		if (!isblank(*p))
 			return (0);
