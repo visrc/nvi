@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.10 1993/08/16 17:36:42 bostic Exp $ (Berkeley) $Date: 1993/08/16 17:36:42 $";
+static char sccsid[] = "$Id: exf.c,v 8.11 1993/08/17 14:34:41 bostic Exp $ (Berkeley) $Date: 1993/08/17 14:34:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -334,13 +334,19 @@ file_end(sp, ep, force)
 	 */
 	(void)log_end(sp, ep);
 
-	/* Unlink any temporary file. */
+	/*
+	 * Unlink any temporary file; if FR_NONAME set, we're also freeing
+	 * fname (since it pointed to tname), so set it to NULL so it isn't
+	 * free'd again in scr_end();
+	 */
 	if (sp->frp->tname != NULL) {
 		if (unlink(sp->frp->tname))
 			msgq(sp, M_ERR,
 			    "%s: remove: %s", sp->frp->tname, strerror(errno));
 		FREE(sp->frp->tname, strlen(sp->frp->tname));
 		sp->frp->tname = NULL;
+		if (F_ISSET(sp->frp, FR_NONAME))
+			sp->frp->fname = NULL;
 	}
 
 	/* Delete the EXF structure from the chain. */
