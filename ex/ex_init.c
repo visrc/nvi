@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_init.c,v 10.22 1996/05/15 17:41:35 bostic Exp $ (Berkeley) $Date: 1996/05/15 17:41:35 $";
+static const char sccsid[] = "$Id: ex_init.c,v 10.23 1996/06/26 19:47:34 bostic Exp $ (Berkeley) $Date: 1996/06/26 19:47:34 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -187,10 +187,10 @@ ex_exrc(sp)
 	}
 
 	if ((p = getenv("NEXINIT")) != NULL) {
-		if (ex_run_str(sp, "NEXINIT", p, strlen(p), 1, 1))
+		if (ex_run_str(sp, "NEXINIT", p, strlen(p), 1, 0))
 			return (1);
 	} else if ((p = getenv("EXINIT")) != NULL) {
-		if (ex_run_str(sp, "EXINIT", p, strlen(p), 1, 1))
+		if (ex_run_str(sp, "EXINIT", p, strlen(p), 1, 0))
 			return (1);
 	} else if ((p = getenv("HOME")) != NULL && *p) {
 		(void)snprintf(path, sizeof(path), "%s/%s", p, _PATH_NEXRC);
