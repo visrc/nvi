@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: conv.c,v 1.14 2001/05/12 15:16:05 skimo Exp $ (Berkeley) $Date: 2001/05/12 15:16:05 $";
+static const char sccsid[] = "$Id: conv.c,v 1.15 2001/05/13 09:05:06 skimo Exp $ (Berkeley) $Date: 2001/05/13 09:05:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -194,7 +194,7 @@ default_int2char(SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw,
 	char *bp = buffer;						\
 	while (len != 0) {						\
 	    size_t outleft = cw->blen1 - offset;			\
-	    char *obp = cw->bp1 + offset;			    	\
+	    char *obp = (char *)cw->bp1 + offset;		    	\
 	    if (cw->blen1 < offset + MB_CUR_MAX) {		    	\
 		nlen += 256;						\
 		BINC_RET(NULL, cw->bp1, cw->blen1, nlen);		\
@@ -254,7 +254,6 @@ err:
     return 1;
 }
 
-//#ifdef HAVE_NCURSESW
 #ifdef HAVE_ADDNWSTR
 int 
 default_int2disp (SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw, 

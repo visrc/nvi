@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: log.c,v 10.21 2001/01/01 20:26:47 skimo Exp $ (Berkeley) $Date: 2001/01/01 20:26:47 $";
+static const char sccsid[] = "$Id: log.c,v 10.22 2001/05/13 09:05:06 skimo Exp $ (Berkeley) $Date: 2001/05/13 09:05:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -109,7 +109,7 @@ log_init(sp, ep)
 	}
 
 	ep->l_win = NULL;
-	//LOCK_INIT(sp->wp, ep);
+	/*LOCK_INIT(sp->wp, ep);*/
 
 	return (0);
 }
@@ -129,7 +129,7 @@ log_end(sp, ep)
 	 * !!!
 	 * ep MAY NOT BE THE SAME AS sp->ep, DON'T USE THE LATTER.
 	 */
-	//LOCK_END(sp->wp, ep);
+	/*LOCK_END(sp->wp, ep);*/
 	if (ep->log != NULL) {
 		(void)(ep->log->close)(ep->log,DB_NOSYNC);
 		ep->log = NULL;
