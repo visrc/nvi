@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 8.17 1993/11/19 10:54:36 bostic Exp $ (Berkeley) $Date: 1993/11/19 10:54:36 $";
+static char sccsid[] = "$Id: db.c,v 8.18 1993/11/22 17:26:52 bostic Exp $ (Berkeley) $Date: 1993/11/22 17:26:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,6 +31,7 @@ file_gline(sp, ep, lno, lenp)
 	size_t *lenp;				/* Length store. */
 {
 	TEXT *tp;
+	recno_t l1, l2;
 
 	/*
 	 * The underlying recno stuff handles zero by returning NULL, but
@@ -44,14 +45,22 @@ file_gline(sp, ep, lno, lenp)
 	 * Look-aside into the TEXT buffers and see if the line we want
 	 * is there.
 	 */
-	if (F_ISSET(sp, S_INPUT) &&
-	    ((TEXT *)sp->tiq.cqh_first)->lno <= lno &&
-	    ((TEXT *)sp->tiq.cqh_last)->lno >= lno) {
-		for (tp = sp->tiq.cqh_first;
-		    tp->lno != lno; tp = tp->q.cqe_next);
-		if (lenp)
-			*lenp = tp->len;
-		return (tp->lb);
+	if (F_ISSET(sp, S_INPUT)) {
+		l1 = ((TEXT *)sp->tiq.cqh_first)->lno;
+		l2 = ((TEXT *)sp->tiq.cqh_last)->lno;
+		if (l1 <= lno && l2 >= lno) {
+			for (tp = sp->tiq.cqh_first;
+			    tp->lno != lno; tp = tp->q.cqe_next);
+			if (lenp)
+				*lenp = tp->len;
+			return (tp->lb);
+		}
+		/*
+		 * Adjust the line number for the number of lines used
+		 * by the text input buffers.
+		 */
+		if (lno > l2)
+			lno -= l2 - l1;
 	}
 	return (file_rline(sp, ep, lno, lenp));
 }
