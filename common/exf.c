@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: exf.c,v 10.35 1996/05/16 08:12:23 bostic Exp $ (Berkeley) $Date: 1996/05/16 08:12:23 $";
+static const char sccsid[] = "$Id: exf.c,v 10.36 1996/06/10 20:59:11 bostic Exp $ (Berkeley) $Date: 1996/06/10 20:59:11 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -1069,16 +1069,25 @@ file_comment(sp)
 	char *p;
 
 	for (lno = 1; !db_get(sp, lno, 0, &p, &len) && len == 0; ++lno);
-	if (p == NULL || len <= 1 || p[0] != '/' || p[1] != '*')
+	if (p == NULL)
 		return;
-	F_SET(sp, SC_SCR_TOP);
-	do {
-		for (; len; --len, ++p)
-			if (p[0] == '*' && len > 1 && p[1] == '/') {
+	if (p[0] == '#') {
+		F_SET(sp, SC_SCR_TOP);
+		while (!db_get(sp, ++lno, 0, &p, &len))
+			if (len < 1 || p[0] != '#') {
 				sp->lno = lno;
 				return;
 			}
-	} while (!db_get(sp, ++lno, 0, &p, &len));
+	} else if (len >= 1 && p[0] == '/' && p[1] == '*') {
+		F_SET(sp, SC_SCR_TOP);
+		do {
+			for (; len > 1; --len, ++p)
+				if (p[0] == '*' && p[1] == '/') {
+					sp->lno = lno;
+					return;
+				}
+		} while (!db_get(sp, ++lno, 0, &p, &len));
+	}
 }
 
 /*
