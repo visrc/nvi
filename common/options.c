@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.70 1994/09/02 20:27:14 bostic Exp $ (Berkeley) $Date: 1994/09/02 20:27:14 $";
+static char sccsid[] = "$Id: options.c,v 8.71 1994/09/16 12:37:48 bostic Exp $ (Berkeley) $Date: 1994/09/16 12:37:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -180,6 +180,8 @@ static OPTLIST const optlist[] = {
 	{"warn",	NULL,		OPT_1BOOL,	0},
 /* O_WINDOW	    4BSD */
 	{"window",	f_window,	OPT_NUM,	0},
+/* O_WRAPLEN	  4.4BSD */
+	{"wraplen",	NULL,		OPT_NUM,	OPT_NOSTR},
 /* O_WRAPMARGIN	    4BSD */
 	{"wrapmargin",	NULL,		OPT_NUM,	OPT_NOSTR},
 /* O_WRAPSCAN	    4BSD */
@@ -228,6 +230,7 @@ static OABBREV const abbrev[] = {
 	{"w",		O_WINDOW},		/* O'Reilly */
 	{"wa",		O_WRITEANY},		/*     4BSD */
 	{"wi",		O_WINDOW},		/*     4BSD (undocumented) */
+	{"wl",		O_WRAPLEN},		/*   4.4BSD */
 	{"wm",		O_WRAPMARGIN},		/*     4BSD */
 	{"ws",		O_WRAPSCAN},		/*     4BSD */
 	{NULL},
@@ -335,8 +338,6 @@ opts_init(sp, oargs)
 		v = O_VAL(sp, O_LINES) - 1;
 	(void)snprintf(b1, sizeof(b1), "window=%lu", v);
 	SET_DEF(O_WINDOW, b1);
-
-	SET_DEF(O_WRAPMARGIN, "wrapmargin=0");
 
 	/*
 	 * Some options can be initialized by the command name or the
