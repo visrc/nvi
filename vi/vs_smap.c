@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 9.1 1994/11/09 18:35:39 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:35:39 $";
+static char sccsid[] = "$Id: vs_smap.c,v 9.2 1994/11/10 16:18:44 bostic Exp $ (Berkeley) $Date: 1994/11/10 16:18:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -159,7 +159,7 @@ svi_sm_fill(sp, lno, pos)
 	 * is already in the map or close by -- scrolling the screen would
 	 * be a lot better than redrawing.
 	 */
-	F_SET(sp, S_SCR_REFRESH);
+	F_SET(sp, S_SCR_REDRAW);
 
 	switch (pos) {
 	case P_FILL:
@@ -257,7 +257,7 @@ err:	HMAP->lno = 1;
 		if (file_gline(sp, lno, NULL) == NULL)			\
 			if (file_lline(sp, &lno))			\
 				return (1);				\
-		F_SET(sp, S_SCR_REFRESH);				\
+		F_SET(sp, S_SCR_REDRAW);				\
 		return (svi_sm_fill(sp, lno, P_TOP));			\
 	}								\
 }

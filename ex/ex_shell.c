@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 9.1 1994/11/09 18:41:05 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:41:05 $";
+static char sccsid[] = "$Id: ex_shell.c,v 9.2 1994/11/10 16:19:38 bostic Exp $ (Berkeley) $Date: 1994/11/10 16:19:38 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -123,7 +123,7 @@ ex_exec_proc(sp, cmd, p1, p2)
 	 * resolution from the stat(2) timers, this can and should go away,
 	 * we're repainting the screen unnecessarily.
 	 */
-	F_SET(sp, S_SCR_REFRESH);
+	F_SET(sp, S_SCR_REDRAW);
 
 	return (rval);
 }

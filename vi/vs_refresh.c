@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 9.2 1994/11/09 22:58:22 bostic Exp $ (Berkeley) $Date: 1994/11/09 22:58:22 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 9.3 1994/11/10 16:18:40 bostic Exp $ (Berkeley) $Date: 1994/11/10 16:18:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -65,20 +65,20 @@ svi_refresh(sp)
 		if (svi_sm_fill(sp, sp->lno, P_FILL))
 			return (1);
 		F_CLR(sp, S_SCR_RESIZE | S_SCR_REFORMAT);
-		F_SET(sp, S_SCR_REFRESH);
+		F_SET(sp, S_SCR_REDRAW);
 	}
 
 	/*
 	 * 2: Refresh the screen.
 	 *
-	 * If S_SCR_REFRESH is set in the current screen, repaint everything
+	 * If S_SCR_REDRAW is set in the current screen, repaint everything
 	 * that we can find.
 	 */
-	if (F_ISSET(sp, S_SCR_REFRESH))
+	if (F_ISSET(sp, S_SCR_REDRAW))
 		for (tsp = sp->gp->dq.cqh_first;
 		    tsp != (void *)&sp->gp->dq; tsp = tsp->q.cqe_next)
 			if (tsp != sp)
-				F_SET(tsp, S_SCR_REFRESH);
+				F_SET(tsp, S_SCR_REDRAW);
 	/*
 	 * 3: Related or dirtied screens, or screens with messages.
 	 *
@@ -87,7 +87,7 @@ svi_refresh(sp)
 	 * set, or where messages are waiting.  Finally, if we refresh any
 	 * screens other than the current one, the cursor will be trashed.
 	 */
-	pub_paint = S_SCR_REFORMAT | S_SCR_REFRESH;
+	pub_paint = S_SCR_REFORMAT | S_SCR_REDRAW;
 	priv_paint = SVI_SCR_DIRTY;
 	if (O_ISSET(sp, O_NUMBER))
 		priv_paint |= SVI_SCR_NUMBER;
@@ -107,7 +107,7 @@ svi_refresh(sp)
 	 * 4: Refresh the current screen.
 	 *
 	 * Always refresh the current screen, it may be a cursor movement.
-	 * Also, always do it last -- that way, S_SCR_REFRESH can be set
+	 * Also, always do it last -- that way, S_SCR_REDRAW can be set
 	 * in the current screen only, and the screen won't flash.
 	 */
 	F_CLR(sp, SVI_SCR_DIRTY);
@@ -163,7 +163,7 @@ svi_paint(sp)
 			for (smp = HMAP; smp <= TMAP; ++smp)
 				smp->off = cnt;
 		F_CLR(sp, S_SCR_REFORMAT);
-		F_SET(sp, S_SCR_REFRESH);
+		F_SET(sp, S_SCR_REDRAW);
 	}
 
 	/*
@@ -194,7 +194,7 @@ svi_paint(sp)
 			HMAP->off = svi_opt_screens(sp, LNO, &CNO);
 			goto paint;
 		}
-		F_SET(sp, S_SCR_REFRESH);
+		F_SET(sp, S_SCR_REDRAW);
 		goto adjust;
 	}
 
@@ -264,7 +264,7 @@ small_fill:			MOVE(sp, INFOLINE(sp), 0);
 				}
 				if (svi_sm_fill(sp, LNO, P_FILL))
 					return (1);
-				F_SET(sp, S_SCR_REFRESH);
+				F_SET(sp, S_SCR_REDRAW);
 				goto adjust;
 			}
 		}
@@ -320,7 +320,7 @@ bottom:		if (file_lline(sp, &lastline))
 		if (lcnt < HALFTEXT(sp)) {
 			if (svi_sm_fill(sp, lastline, P_BOTTOM))
 				return (1);
-			F_SET(sp, S_SCR_REFRESH);
+			F_SET(sp, S_SCR_REDRAW);
 			goto adjust;
 		}
 		/* It's not close, just put the line in the middle. */
@@ -341,7 +341,7 @@ bottom:		if (file_lline(sp, &lastline))
 	} else
 middle:		if (svi_sm_fill(sp, LNO, P_MIDDLE))
 			return (1);
-	F_SET(sp, S_SCR_REFRESH);
+	F_SET(sp, S_SCR_REDRAW);
 
 	/*
 	 * At this point we know part of the line is on the screen.  Since
@@ -365,7 +365,7 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 			if ((HMAP->off - cnt) > HALFTEXT(sp)) {
 				HMAP->off = cnt;
 				svi_sm_fill(sp, OOBLNO, P_TOP);
-				F_SET(sp, S_SCR_REFRESH);
+				F_SET(sp, S_SCR_REDRAW);
 			} else
 				while (cnt < HMAP->off)
 					if (svi_sm_1down(sp))
@@ -374,7 +374,7 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 			if ((cnt - TMAP->off) > HALFTEXT(sp)) {
 				TMAP->off = cnt;
 				svi_sm_fill(sp, OOBLNO, P_BOTTOM);
-				F_SET(sp, S_SCR_REFRESH);
+				F_SET(sp, S_SCR_REDRAW);
 			} else
 				while (cnt > TMAP->off)
 					if (svi_sm_1up(sp))
@@ -387,7 +387,7 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 	 * the grounds that the cursor code would handle it.  Make sure
 	 * the right screen is up.
 	 */
-	if (F_ISSET(sp, S_SCR_REFRESH)) {
+	if (F_ISSET(sp, S_SCR_REDRAW)) {
 		if (O_ISSET(sp, O_LEFTRIGHT)) {
 			cnt = svi_opt_screens(sp, LNO, &CNO);
 			if (HMAP->off != cnt)
@@ -599,7 +599,7 @@ slow:	for (smp = HMAP; smp->lno != LNO; ++smp);
 	 * 5: Repaint the entire screen.
 	 *
 	 * Lost big, do what you have to do.  We flush the cache, since
-	 * S_SCR_REFRESH gets set when the screen isn't worth fixing, and
+	 * S_SCR_REDRAW gets set when the screen isn't worth fixing, and
 	 * it's simpler to repaint.  So, don't trust anything that we
 	 * think we know about it.
 	 */
@@ -613,7 +613,7 @@ paint:	for (smp = HMAP; smp <= TMAP; ++smp)
 	 * If it's a small screen and we're redrawing, clear the unused lines,
 	 * ex may have overwritten them.
 	 */
-	if (F_ISSET(sp, S_SCR_REFRESH) && ISSMALLSCREEN(sp))
+	if (F_ISSET(sp, S_SCR_REDRAW) && ISSMALLSCREEN(sp))
 		for (cnt = sp->t_rows; cnt <= sp->t_maxrows; ++cnt) {
 			MOVE(sp, cnt, 0);
 			clrtoeol();
@@ -639,9 +639,9 @@ number:	if (O_ISSET(sp, O_NUMBER) && F_ISSET(svp, SVI_SCR_NUMBER)) {
 	 *
 	 * If the screen was corrupted, refresh it.
 	 */
-	if (F_ISSET(sp, S_SCR_REFRESH)) {
+	if (F_ISSET(sp, S_SCR_REDRAW)) {
 		wrefresh(curscr);
-		F_CLR(sp, S_SCR_REFRESH);
+		F_CLR(sp, S_SCR_REDRAW);
 	}
 
 	if (F_ISSET(sp, S_BELLSCHED))

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 9.3 1994/11/09 22:27:19 bostic Exp $ (Berkeley) $Date: 1994/11/09 22:27:19 $";
+static char sccsid[] = "$Id: v_txt.c,v 9.4 1994/11/10 16:19:08 bostic Exp $ (Berkeley) $Date: 1994/11/10 16:19:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -893,7 +893,7 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 #endif
 #ifdef	HISTORIC_PRACTICE_IS_TO_INSERT_NOT_REPAINT
 		case K_FORMFEED:
-			F_SET(sp, S_SCR_REFRESH);
+			F_SET(sp, S_SCR_REDRAW);
 			break;
 #endif
 		case K_RIGHTBRACE:
@@ -1496,7 +1496,7 @@ txt_err(sp, tiqh)
 	sp->cno = 0;
 
 	/* Redraw the screen, just in case. */
-	F_SET(sp, S_SCR_REFRESH);
+	F_SET(sp, S_SCR_REDRAW);
 }
 
 /*

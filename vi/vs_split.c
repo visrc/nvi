@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 9.1 1994/11/09 18:35:42 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:35:42 $";
+static char sccsid[] = "$Id: vs_split.c,v 9.2 1994/11/10 16:18:46 bostic Exp $ (Berkeley) $Date: 1994/11/10 16:18:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -254,7 +254,7 @@ svi_split(sp, argv, argc)
 	F_SET(sp->frp, FR_CURSORSET);
 
 	/* Completely redraw the child screen. */
-	F_SET(tsp, S_SCR_REFRESH);
+	F_SET(tsp, S_SCR_REDRAW);
 
 	/* Switch screens. */
 	sp->nextdisp = tsp;
@@ -358,7 +358,7 @@ svi_join(csp, nsp)
 		TMAP = HMAP + (sp->t_rows - 1);
 		if (svi_sm_fill(sp, sp->lno, P_FILL))
 			return (1);
-		F_SET(sp, S_SCR_REFRESH);
+		F_SET(sp, S_SCR_REDRAW);
 	}
 
 	/* Reset the length of the default scroll. */
@@ -517,7 +517,7 @@ svi_swap(csp, nsp, name)
 	CIRCLEQ_INSERT_AFTER(&csp->gp->dq, csp, sp, q);
 	SIGUNBLOCK(sp->gp);
 
-	F_SET(sp, S_SCR_REFRESH);
+	F_SET(sp, S_SCR_REDRAW);
 	return (0);
 }
 
