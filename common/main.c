@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 9.9 1994/12/03 12:13:41 bostic Exp $ (Berkeley) $Date: 1994/12/03 12:13:41 $";
+static char sccsid[] = "$Id: main.c,v 9.10 1994/12/04 10:01:17 bostic Exp $ (Berkeley) $Date: 1994/12/04 10:01:17 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -68,7 +68,7 @@ main(argc, argv)
 	FREF *frp;
 	SCR *sp;
 	u_int flags, saved_vi_mode;
-	int ch, eval, flagchk, lflag, need_lreset, readonly, silent, snapshot;
+	int ch, eval, flagchk, lflag, readonly, silent, snapshot;
 	char *excmdarg, *myname, *p, *tag_f, *trace_f, *wsizearg;
 	char path[MAXPATHLEN];
 
@@ -304,12 +304,8 @@ main(argc, argv)
 	sp->defscroll = (O_VAL(sp, O_WINDOW) + 1) / 2;
 
 	/* Use a tag file if specified. */
-	if (tag_f != NULL) {
-		if (ex_tagfirst(sp, tag_f))
-			goto errexit;
-		need_lreset = 0;
-	} else
-		need_lreset = 1;
+	if (tag_f != NULL && ex_tagfirst(sp, tag_f))
+		goto errexit;
 
 	/*
 	 * Append any remaining arguments as file names.  Files are recovery
@@ -335,53 +331,49 @@ main(argc, argv)
 	 * created a file, create one.  If no files as arguments, use a
 	 * temporary file.
 	 */
-	if (sp->frp == NULL && tag_f == NULL) {
+	if (sp->frp == NULL) {
 		if ((frp = file_add(sp,
 		    sp->argv == NULL ? NULL : (CHAR_T *)(sp->argv[0]))) == NULL)
 			goto errexit;
 		if (F_ISSET(sp, S_ARGRECOVER))
 			F_SET(frp, FR_RECOVER);
+
+		/*
+		 * Historically, if there's an initial command, it was always
+		 * executed from the last line of the file.  That doesn't make
+		 * sense if we've already specified an address either through
+		 * a tags entry or commands in the startup information, so we
+		 * ignore those cases, but, otherwise, move to the last line.
+		 *
+		 * The word is done in the file initialization routines, but
+		 * we define it here by setting the initial screen type.  The
+		 * user may have tried to set it themselves in the startup
+		 * information, but that's too bad -- they called us with a
+		 * specific name, and that applies now.
+		 */
+		if (excmdarg == NULL) {
+			F_CLR(sp, S_SCREENS);
+			F_SET(sp, LF_ISSET(S_SCREENS));
+		}
 		if (file_init(sp, frp, NULL, 0))
 			goto errexit;
-		need_lreset = 1;
 	}
 
 	/*
-	 * If there's an initial command, it was always executed from the
-	 * last line of the file by default.  So, if we haven't already
-	 * gotten an address in the file, move to the last line.  This
-	 * happens before the screen type gets set, so that we initialize
-	 * for ex mode and not for vi mode.
-	 */
-	if (excmdarg != NULL && need_lreset) {
-		file_cinit(sp);
-		need_lreset = 0;
-	}
-
-	/*
-	 * Set the initial screen type.  The user may have tried to set
-	 * it themselves in the startup information, but that's too bad
-	 * -- they called us with a specific name, and that applies now.
+	 * If there's an initial command, execute it.  Historically, it was
+	 * always an ex command, not vi in vi mode and ex in ex mode.  The
+	 * current line value has already been set.  The screen type is also
+	 * set, regardless -- any "default" commands will change the line
+	 * number in vi mode, not print the line.
 	 */
 	F_CLR(sp, S_SCREENS);
 	F_SET(sp, LF_ISSET(S_SCREENS));
-
-	/*
-	 * If there's an initial command, execute it.  Historically, it
-	 * was always an ex command, not vi in vi mode and ex in ex mode.
-	 * The line value has already been set.  Note: the screen type
-	 * has also been set -- any "default" commands will change the
-	 * line number, not print the line.
-	 */
 	if (excmdarg != NULL) {
 		if (sex_screen_icmd(sp, excmdarg))
 			goto errexit;
 		if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE))
 			goto done;
 	}
-
-	if (need_lreset)
-		file_cinit(sp);
 
 	for (;;) {
 		/* Edit, ignoring errors -- other screens may succeed. */
