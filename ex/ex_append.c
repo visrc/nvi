@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 5.28 1993/04/06 11:37:11 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:37:11 $";
+static char sccsid[] = "$Id: ex_append.c,v 5.29 1993/04/13 16:22:16 bostic Exp $ (Berkeley) $Date: 1993/04/13 16:22:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -53,10 +53,9 @@ ac(sp, ep, cmdp, cmd)
 	enum which cmd;
 {
 	MARK m;
+	TEXT *tp;
 	recno_t cnt;
-	size_t len;
 	int rval, set;
-	char *p;
 
 	/* The ! flag turns off autoindent for change and append. */
 	if (cmdp->flags & E_FORCE) {
@@ -75,18 +74,19 @@ ac(sp, ep, cmdp, cmd)
 	if (m.lno == 0)
 		cmd = APPEND;
 	if (cmd == CHANGE)
-		for (;;) {
+		for (;; ++m.lno) {
 			if (m.lno > cmdp->addr2.lno) {
 				cmd = APPEND;
 				--m.lno;
 				break;
 			}
-			if (ex_gb(sp, 0, &p, &len,
-			    GB_BEAUTIFY | GB_MAPINPUT | GB_NLECHO)) {
+			if (ex_gb(sp, ep, &sp->bhdr, 0,
+			    TXT_BEAUTIFY | TXT_MAPINPUT | TXT_NLECHO)) {
 				rval = 1;
 				goto done;
 			}
-			if (len == 1 && p[0] == '.') {
+			tp = sp->bhdr.next;
+			if (tp->len == 1 && tp->lb[0] == '.') {
 				cnt = cmdp->addr2.lno - m.lno;
 				while (cnt--)
 					if (file_dline(sp, ep, m.lno)) {
@@ -95,28 +95,26 @@ ac(sp, ep, cmdp, cmd)
 					}
 				goto done;
 			}
-			if (file_sline(sp, ep, m.lno, p, len)) {
+			if (file_sline(sp, ep, m.lno, tp->lb, tp->len)) {
 				rval = 1;
 				goto done;
 			}
-			++m.lno;
 		}
 
 	if (cmd == APPEND)
-		for (;;) {
-			if (ex_gb(sp, 0, &p, &len,
-			    GB_BEAUTIFY | GB_MAPINPUT | GB_NLECHO)) {
+		for (;; ++m.lno) {
+			if (ex_gb(sp, ep, &sp->bhdr, 0,
+			    TXT_BEAUTIFY | TXT_MAPINPUT | TXT_NLECHO)) {
 				rval = 1;
 				goto done;
 			}
-
-			if (len == 1 && p[0] == '.')
+			tp = sp->bhdr.next;
+			if (tp->len == 1 && tp->lb[0] == '.')
 				break;
-			if (file_aline(sp, ep, m.lno, p, len)) {
+			if (file_aline(sp, ep, m.lno, tp->lb, tp->len)) {
 				rval = 1;
 				goto done;
 			}
-			++m.lno;
 		}
 
 done:	if (rval == 0) {
