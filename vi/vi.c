@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.13 1992/05/22 10:50:45 bostic Exp $ (Berkeley) $Date: 1992/05/22 10:50:45 $";
+static char sccsid[] = "$Id: vi.c,v 5.14 1992/05/23 08:50:20 bostic Exp $ (Berkeley) $Date: 1992/05/23 08:50:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -98,6 +98,10 @@ err:		if (msgcnt) {
 			mp = &motion;
 		}
 
+		/* Get any associated keyword. */
+		if (flags & (V_KEYNUM|V_KEYW) && getkeyword(vp, flags))
+			goto err;
+
 		/*
 	 	 * Get resulting motion mark.  Motion commands can be doubled
 		 * to indicate the current line.  In this case, or if the
@@ -142,10 +146,6 @@ err:		if (msgcnt) {
 			mp->count = cnt;
 		} else
 			fm = cursor;
-
-		/* Get any associated keyword. */
-		if (flags & (V_KEYNUM|V_KEYW) && getkeyword(vp, flags))
-			goto err;
 
 		/* If a non-relative movement, set the '' mark. */
 		if (flags & V_ABS)
@@ -362,7 +362,7 @@ usage:				bell();
 	return (0);
 }
 
-#define	innum(c)	(isdigit(c) || index("abcdefABCDEF+-", c))
+#define	innum(c)	(isdigit(c) || index("abcdefABCDEF", c))
 
 static int
 getkeyword(kp, flags)
@@ -389,22 +389,34 @@ noword:		bell();
 
 	/* Find the beginning/end of the keyword. */
 	if (beg != 0) {
-		if (flags & V_KEYW)
+		if (flags & V_KEYW) {
 			do {
 				--beg;
 			} while (inword(p[beg]) && beg > 0);
-		else
+		} else {
 			do {
 				--beg;
 			} while (innum(p[beg]) && beg > 0);
-		++beg;
-	}
-	for (end = cursor.cno; ++end < len && inword(p[end]););
-	--end;
 
-	/* Just a sign isn't a number. */
-	if (end == beg && (p[beg] == '+' || p[beg] == '-'))
-		goto noword;
+			/* Skip possible leading sign. */
+			if (beg != 0 && p[beg] == '+' || p[beg] == '-')
+				--beg;
+		}
+		if (beg != 0)
+			++beg;
+	}
+
+	if (flags & V_KEYW) {
+		for (end = cursor.cno; ++end < len && inword(p[end]););
+		--end;
+	} else {
+		for (end = cursor.cno; ++end < len && innum(p[end]););
+
+		/* Just a sign isn't a number. */
+		if (end == beg && (p[beg] == '+' || p[beg] == '-'))
+			goto noword;
+		--end;
+	}
 
 	/*
 	 * Getting a keyword implies moving the cursor to its beginning.
@@ -422,8 +434,8 @@ noword:		bell();
 	 * and friends.  This would have to be fixed in v_increment and here
 	 * to not depend on a trailing NULL.
 	 */
-	len = end - beg + 2;				/* XXX */
-	kp->klen = end - beg + 1;
+	len = (end - beg) + 2;				/* XXX */
+	kp->klen = (end - beg) + 1;
 	if (kp->kbuflen <= len) {
 		kp->kbuflen += len + 50;
 		if ((kp->keyword =
