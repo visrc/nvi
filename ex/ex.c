@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.78 1993/12/20 10:24:31 bostic Exp $ (Berkeley) $Date: 1993/12/20 10:24:31 $";
+static char sccsid[] = "$Id: ex.c,v 8.79 1993/12/20 11:13:11 bostic Exp $ (Berkeley) $Date: 1993/12/20 11:13:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -421,15 +421,6 @@ loop:	if (nl) {
 	 * Anyhow, the following code makes this all work.  First, for the
 	 * special cases we move past their special argument.  Then, we do
 	 * normal command processing on whatever is left.  Barf-O-Rama.
-	 *
-	 * QUOTING NOTE:
-	 *
-	 * Historically, vi permitted ^V's to escape <newline>'s in the .exrc
-	 * file.  It was almost certainly a bug, but that's what bug-for-bug
-	 * compatibility means, Grasshopper.  Also, permit command separators
-	 * to be escaped.  The literal next quote characters in front of the
-	 * newlines, '|' characters or literal next characters are stripped as
-	 * as they're no longer useful.
 	 */
 	save_cmd = cmd;
 	(void)term_key_ch(sp, K_VLNEXT, &vlit);
@@ -521,15 +512,25 @@ loop:	if (nl) {
 	/*
 	 * Use normal quoting and termination rules to find the end
 	 * of this command.
+	 *
+	 * QUOTING NOTE:
+	 *
+	 * Historically, vi permitted ^V's to escape <newline>'s in the .exrc
+	 * file.  It was almost certainly a bug, but that's what bug-for-bug
+	 * compatibility means, Grasshopper.  Also, ^V's escape the command 
+	 * delimiters.  Literal next quote characters in front of the newlines,
+	 * '|' characters or literal next characters are stripped as as they're
+	 * no longer useful.
 	 */
-	for (p = cmd; cmdlen > 0; --cmdlen, ++cmd) {
-		if ((ch = *cmd) == vlit && cmdlen > 1) {
+	for (p = cmd, cnt = 0; cmdlen > 0; --cmdlen, ++cmd) {
+		if ((ch = cmd[0]) == vlit && cmdlen > 1) {
 			ch = cmd[1];
 			if (ch == '\n' || ch == '|') {
 				if (ch == '\n')
 					++sp->if_lno;
 				--cmdlen;
 				++cmd;
+				++cnt;
 			} else
 				ch = vlit;
 		} else if (ch == '\n' || ch == '|') {
@@ -549,7 +550,7 @@ loop:	if (nl) {
 	cmd = save_cmd;
 	save_cmd = p;
 	save_cmdlen = cmdlen;
-	cmdlen = (save_cmd - cmd) - 1;
+	cmdlen = ((save_cmd - cmd) - 1) - cnt;
 
 	/*
 	 * !!!
