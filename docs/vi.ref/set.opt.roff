@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: set.opt.roff,v 8.51 1996/03/30 15:34:57 bostic Exp $ (Berkeley) $Date: 1996/03/30 15:34:57 $
+.\"     $Id: set.opt.roff,v 8.52 1996/04/02 21:29:54 bostic Exp $ (Berkeley) $Date: 1996/04/02 21:29:54 $
 .\"
 .SH 1 "Set Options"
 .pp
@@ -848,8 +848,45 @@ scroll value; the POSIX 1003.2 standard specified the window size, which
 is a better choice.
 .KY searchci
 .IP "searchci [off]"
-All Regular Expression searches are case-insensitive
-if an upper-case letter does not appear in the search string.
+The
+.OP searchci
+edit option makes all Regular Expression searches case-insensitive,
+as long as an upper-case letter does not appear in the search string.
+.KY searchincr
+.IP "searchincr [off]"
+The
+.OP searchincr
+edit option makes the search commands
+.CO \&/
+and
+.CO \&?
+incremental, i.e. the screen is updated and the cursor moves to the matching
+text as the search pattern is entered.
+If the search pattern is not found,
+the screen is beeped and the cursor remains on the colon-command line.
+Erasing characters from the search pattern backs the cursor up to the
+previous matching text.
+.KY sections
+.IP "sections, sect [NHSHH HUnhsh]"
+.CO Vi
+only.
+Define additional section boundaries for the
+.CO [[
+and
+.CO ]]
+commands.
+The
+.OP sections
+option should be set to a character string consisting of zero or
+more character pairs.
+In the text to be edited, the character string
+.LI "<newline>.<char-pair>" ,
+(where
+.LI <char-pair>
+is one of the character pairs in the option's value),
+defines a section boundary in the same manner that
+.OP paragraph
+option boundaries are defined.
 .KY secure
 .IP "secure [off]"
 The
@@ -879,27 +916,6 @@ Once set,
 the
 .OP secure
 edit option may not be unset.
-.KY sections
-.IP "sections, sect [NHSHH HUnhsh]"
-.CO Vi
-only.
-Define additional section boundaries for the
-.CO [[
-and
-.CO ]]
-commands.
-The
-.OP sections
-option should be set to a character string consisting of zero or
-more character pairs.
-In the text to be edited, the character string
-.LI "<newline>.<char-pair>" ,
-(where
-.LI <char-pair>
-is one of the character pairs in the option's value),
-defines a section boundary in the same manner that
-.OP paragraph
-option boundaries are defined.
 .KY shell
 .IP "shell, sh [environment variable SHELL, or /bin/sh]"
 Select the shell used by the editor.
