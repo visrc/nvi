@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ch.c,v 5.11 1992/05/27 10:35:13 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:35:13 $";
+static char sccsid[] = "$Id: v_ch.c,v 5.12 1992/06/15 10:51:25 bostic Exp $ (Berkeley) $Date: 1992/06/15 10:51:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,11 +36,11 @@ static int lastkey;
 }
 
 /*
- * v_repeatch -- [count];
+ * v_chrepeat -- [count];
  *	Repeat the last F, f, T or t search.
  */
 int
-v_repeatch(vp, fm, tm, rp)
+v_chrepeat(vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
@@ -50,23 +50,23 @@ v_repeatch(vp, fm, tm, rp)
 	case NOTSET:
 		NOPREV;
 	case FSEARCH:
-		return (v_Fch(vp, fm, tm, rp));
+		return (v_chF(vp, fm, tm, rp));
 	case fSEARCH:
-		return (v_fch(vp, fm, tm, rp));
+		return (v_chf(vp, fm, tm, rp));
 	case TSEARCH:
-		return (v_Tch(vp, fm, tm, rp));
+		return (v_chT(vp, fm, tm, rp));
 	case tSEARCH:
-		return (v_tch(vp, fm, tm, rp));
+		return (v_cht(vp, fm, tm, rp));
 	}
 	/* NOTREACHED */
 }
 
 /*
- * v_rrepeatch -- [count],
+ * v_chrrepeat -- [count],
  *	Repeat the last F, f, T or t search in the reverse direction.
  */
 int
-v_rrepeatch(vp, fm, tm, rp)
+v_chrrepeat(vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
@@ -80,16 +80,16 @@ v_rrepeatch(vp, fm, tm, rp)
 	case NOTSET:
 		NOPREV;
 	case FSEARCH:
-		rval = v_fch(vp, fm, tm, rp);
+		rval = v_chf(vp, fm, tm, rp);
 		break;
 	case fSEARCH:
-		rval = v_Fch(vp, fm, tm, rp);
+		rval = v_chF(vp, fm, tm, rp);
 		break;
 	case TSEARCH:
-		rval = v_tch(vp, fm, tm, rp);
+		rval = v_cht(vp, fm, tm, rp);
 		break;
 	case tSEARCH:
-		rval = v_Tch(vp, fm, tm, rp);
+		rval = v_chT(vp, fm, tm, rp);
 		break;
 	}
 	lastdir = savedir;
@@ -97,29 +97,29 @@ v_rrepeatch(vp, fm, tm, rp)
 }
 
 /*
- * v_tch -- [count]tc
+ * v_cht -- [count]tc
  *	Search forward in the line for the next occurrence of the character.
  *	Place the cursor to its left.
  */
 int
-v_tch(vp, fm, tm, rp)
+v_cht(vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
 	int rval;
 
-	if (!(rval = v_fch(vp, fm, tm, rp)))
+	if (!(rval = v_chf(vp, fm, tm, rp)))
 		--rp->cno;
 	lastdir = tSEARCH;
 	return (rval);
 }
 	
 /*
- * v_fch -- [count]fc
+ * v_chf -- [count]fc
  *	Search forward in the line for the next occurrence of the character.
  */
 int
-v_fch(vp, fm, tm, rp)
+v_chf(vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
@@ -150,29 +150,29 @@ v_fch(vp, fm, tm, rp)
 }
 
 /*
- * v_Tch -- [count]Tc
+ * v_chT -- [count]Tc
  *	Search backward in the line for the next occurrence of the character.
  *	Place the cursor to its right.
  */
 int
-v_Tch(vp, fm, tm, rp)
+v_chT(vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
 	int rval;
 
-	if (!(rval = v_Fch(vp, fm, tm, rp)))
+	if (!(rval = v_chF(vp, fm, tm, rp)))
 		++rp->cno;
 	lastdir = TSEARCH;
 	return (0);
 }
 
 /*
- * v_Fch -- [count]Fc
+ * v_chF -- [count]Fc
  *	Search backward in the line for the next occurrence of the character.
  */
 int
-v_Fch(vp, fm, tm, rp)
+v_chF(vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {

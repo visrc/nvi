@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 5.12 1992/05/27 10:37:50 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:37:50 $";
+static char sccsid[] = "$Id: v_search.c,v 5.13 1992/06/15 10:51:40 bostic Exp $ (Berkeley) $Date: 1992/06/15 10:51:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,11 +21,11 @@ static char sccsid[] = "$Id: v_search.c,v 5.12 1992/05/27 10:37:50 bostic Exp $ 
 static int getptrn __P((int, char **));
 
 /*
- * v_nsearch -- n
+ * v_searchn -- n
  *	Repeat last search.
  */
 int
-v_nsearch(vp, fm, tm, rp)
+v_searchn(vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
@@ -46,11 +46,11 @@ v_nsearch(vp, fm, tm, rp)
 }
 
 /*
- * v_Nsearch -- N
+ * v_searchN -- N
  *	Reverse last search.
  */
 int
-v_Nsearch(vp, fm, tm, rp)
+v_searchN(vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
@@ -71,11 +71,11 @@ v_Nsearch(vp, fm, tm, rp)
 }
 
 /*
- * v_wsearch -- [count]^A
+ * v_searchw -- [count]^A
  *	Search for the cursor word.
  */
 int
-v_wsearch(vp, fm, tm, rp)
+v_searchw(vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
@@ -101,10 +101,10 @@ v_wsearch(vp, fm, tm, rp)
 }
 
 /*
- * v_bsearch -- [count]?RE
+ * v_searchb -- [count]?RE
  *	Search backward.
  */
-v_bsearch(vp, fm, tm, rp)
+v_searchb(vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
@@ -122,10 +122,10 @@ v_bsearch(vp, fm, tm, rp)
 }
 
 /*
- * v_fsearch -- [count]/RE
+ * v_searchf -- [count]/RE
  *	Search forward.
  */
-v_fsearch(vp, fm, tm, rp)
+v_searchf(vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
