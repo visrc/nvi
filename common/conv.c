@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: conv.c,v 1.15 2001/05/13 09:05:06 skimo Exp $ (Berkeley) $Date: 2001/05/13 09:05:06 $";
+static const char sccsid[] = "$Id: conv.c,v 1.16 2001/05/14 15:50:23 skimo Exp $ (Berkeley) $Date: 2001/05/14 15:50:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -254,7 +254,7 @@ err:
     return 1;
 }
 
-#ifdef HAVE_ADDNWSTR
+#ifdef USE_WIDECHAR
 int 
 default_int2disp (SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw, 
 		size_t *tolen, char **dst)
@@ -275,7 +275,7 @@ default_int2disp (SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw,
 	    dest[j++] = str[i];
     *tolen = j;
 
-    *dst = cw.bp1;
+    *dst = cw->bp1;
 
     return 0;
 }

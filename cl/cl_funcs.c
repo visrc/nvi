@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_funcs.c,v 10.65 2001/04/24 21:47:44 skimo Exp $ (Berkeley) $Date: 2001/04/24 21:47:44 $";
+static const char sccsid[] = "$Id: cl_funcs.c,v 10.66 2001/05/14 15:50:22 skimo Exp $ (Berkeley) $Date: 2001/05/14 15:50:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -60,7 +60,7 @@ addstr4(SCR *sp, void *str, size_t len, int wide)
 	    wchar_t *dstr;
 	    size_t dlen;
 	    INT2DISP(sp, str, len, dstr, dlen);
-	    if (waddnwstr(win, (wchar_t*) str, len) == ERR)
+	    if (waddnwstr(win, dstr, dlen) == ERR)
 		return (1);
 	} else 
 #endif
