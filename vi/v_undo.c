@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_undo.c,v 5.8 1992/10/10 14:04:10 bostic Exp $ (Berkeley) $Date: 1992/10/10 14:04:10 $";
+static char sccsid[] = "$Id: v_undo.c,v 5.9 1992/10/24 14:25:53 bostic Exp $ (Berkeley) $Date: 1992/10/24 14:25:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,8 +28,10 @@ v_undo(vp, fm, tm, rp)
 	MARK *fm, *tm, *rp;
 {
 #ifdef NOT_RIGHT_NOW
-	if (undo())
+	if (undo()) {
 		scr_ref();
+		refresh();
+	}
 #endif
 	*rp = *fm;
 	return (0);
