@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_msg.c,v 10.10 1995/09/27 12:06:01 bostic Exp $ (Berkeley) $Date: 1995/09/27 12:06:01 $";
+static char sccsid[] = "$Id: vs_msg.c,v 10.11 1995/09/27 12:34:12 bostic Exp $ (Berkeley) $Date: 1995/09/27 12:34:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -457,15 +457,17 @@ vs_ex_resolve(sp, continuep)
 	if (F_ISSET(vip, VIP_N_REDRAW))
 		F_SET(sp, S_SCR_REDRAW);
 
-	/* Redraw the screen. */
+	/* Set up the redraw of the overwritten lines. */
 	ev.e_event = E_REPAINT;
 	ev.e_flno = vip->totalcount >=
 	    sp->rows ? 1 : sp->rows - vip->totalcount;
 	ev.e_tlno = sp->rows;
-	(void)vs_repaint(sp, &ev);
 
 	/* Reset the count of overwriting lines. */
 	vip->linecount = vip->lcontinue = vip->totalcount = 0;
+
+	/* Redraw. */
+	(void)vs_repaint(sp, &ev);
 
 	return (0);
 }
