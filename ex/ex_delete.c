@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_delete.c,v 8.5 1994/01/09 14:20:54 bostic Exp $ (Berkeley) $Date: 1994/01/09 14:20:54 $";
+static char sccsid[] = "$Id: ex_delete.c,v 8.6 1994/01/11 22:18:38 bostic Exp $ (Berkeley) $Date: 1994/01/11 22:18:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,11 +27,9 @@ ex_delete(sp, ep, cmdp)
 {
 	recno_t lno;
 
-	/* Yank the lines; the default buffer for deletes is '1'. */
-	if (!F_ISSET(cmdp, E_BUFFER))
-		cmdp->buffer = '1';
-	if (cut(sp, ep, NULL, &cmdp->buffer,
-	    &cmdp->addr1, &cmdp->addr2, CUT_LINEMODE | CUT_ROTATE))
+	/* Yank the lines. */
+	if (cut(sp, ep, NULL, F_ISSET(cmdp, E_BUFFER) ? &cmdp->buffer : NULL,
+	    &cmdp->addr1, &cmdp->addr2, CUT_DELETE | CUT_LINEMODE))
 		return (1);
 
 	/* Delete the lines. */

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_delete.c,v 8.6 1994/01/09 14:21:11 bostic Exp $ (Berkeley) $Date: 1994/01/09 14:21:11 $";
+static char sccsid[] = "$Id: v_delete.c,v 8.7 1994/01/11 22:18:46 bostic Exp $ (Berkeley) $Date: 1994/01/11 22:18:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -43,10 +43,9 @@ v_Delete(sp, ep, vp, fm, tm, rp)
 	tm->lno = fm->lno;
 	tm->cno = len;
 
-	/* The default buffer for deletes is '1'. */
-	if (!F_ISSET(vp, VC_BUFFER))
-		vp->buffer = '1';
-	if (cut(sp, ep, NULL, &vp->buffer, fm, tm, CUT_ROTATE))
+	/* Yank the lines. */
+	if (cut(sp, ep, NULL,
+	    F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL, fm, tm, CUT_DELETE))
 		return (1);
 	if (delete(sp, ep, fm, tm, 0))
 		return (1);
@@ -71,12 +70,11 @@ v_delete(sp, ep, vp, fm, tm, rp)
 	size_t len;
 	int lmode;
 	
-	/* The default buffer for deletes is '1'. */
-	if (!F_ISSET(vp, VC_BUFFER))
-		vp->buffer = '1';
-
+	/* Yank the lines. */
 	lmode = F_ISSET(vp, VC_LMODE) ? CUT_LINEMODE : 0;
-	if (cut(sp, ep, NULL, &vp->buffer, fm, tm, lmode | CUT_ROTATE))
+	if (cut(sp, ep, NULL,
+	    F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
+	    fm, tm, lmode | CUT_DELETE))
 		return (1);
 	if (delete(sp, ep, fm, tm, lmode))
 		return (1);
