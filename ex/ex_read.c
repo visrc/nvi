@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 10.22 1995/11/17 11:18:59 bostic Exp $ (Berkeley) $Date: 1995/11/17 11:18:59 $";
+static char sccsid[] = "$Id: ex_read.c,v 10.23 1995/11/17 12:24:12 bostic Exp $ (Berkeley) $Date: 1995/11/17 12:24:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -135,11 +135,29 @@ ex_read(sp, cmdp)
 		}
 
 		/*
-		 * Historically, filter reads didn't wait for the user. If
-		 * S_SCR_EXWROTE not already set, set the don't-wait flag.
+		 * Historically, filter reads as the first ex command didn't
+		 * wait for the user. If S_SCR_EXWROTE not already set, set
+		 * the don't-wait flag.
 		 */
 		if (!F_ISSET(sp, S_SCR_EXWROTE))
 			F_SET(sp, S_EX_DONTWAIT);
+
+		/*
+		 * Switch into ex canonical mode.  The reason to restore the
+		 * original terminal modes for read filters is so that users
+		 * can do things like ":r! cat /dev/tty".
+		 *
+		 * !!!
+		 * We do not output an extra <newline>, so that we don't touch
+		 * the screen on a normal read.
+		 */
+		if (F_ISSET(sp, S_VI)) {
+			if (sp->gp->scr_screen(sp, S_EX)) {
+				ex_emsg(sp, cmdp->cmd->name, EXM_NOCANON_F);
+				return (1);
+			}
+			F_SET(sp, S_SCR_EX | S_SCR_EXWROTE);
+		}
 
 		if (ex_filter(sp, cmdp, &cmdp->addr1,
 		    NULL, &rm, cmdp->argv[argc]->bp, FILTER_READ))

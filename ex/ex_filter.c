@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 10.22 1995/11/17 11:18:56 bostic Exp $ (Berkeley) $Date: 1995/11/17 11:18:56 $";
+static char sccsid[] = "$Id: ex_filter.c,v 10.23 1995/11/17 12:24:29 bostic Exp $ (Berkeley) $Date: 1995/11/17 12:24:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -88,23 +88,6 @@ ex_filter(sp, cmdp, fm, tm, rp, cmd, ftype)
 	if ((ofp = fdopen(output[0], "r")) == NULL) {
 		msgq(sp, M_SYSERR, "fdopen");
 		goto err;
-	}
-
-	/*
-	 * If doing a filter read, switch into ex canonical mode.  The reason
-	 * to restore the original terminal modes for read filters is so that
-	 * users can do things like ":r! cat /dev/tty".
-	 *
-	 * !!!
-	 * We do not output an extra <newline>, so that we don't touch the
-	 * screen on a normal read.
-	 */
-	if (ftype == FILTER_READ && F_ISSET(sp, S_VI)) {
-		if (sp->gp->scr_screen(sp, S_EX)) {
-			ex_emsg(sp, cmdp->cmd->name, EXM_NOCANON_F);
-			return (1);
-		}
-		F_SET(sp, S_SCR_EX | S_SCR_EXWROTE);
 	}
 
 	/* Fork off the utility process. */
