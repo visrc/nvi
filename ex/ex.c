@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.109 1994/04/07 10:32:34 bostic Exp $ (Berkeley) $Date: 1994/04/07 10:32:34 $";
+static char sccsid[] = "$Id: ex.c,v 8.110 1994/04/07 12:57:32 bostic Exp $ (Berkeley) $Date: 1994/04/07 12:57:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1016,7 +1016,7 @@ addr2:	switch (exc.addrcnt) {
 					msgq(sp, M_ERR, "The file is empty.");
 				else
 					msgq(sp, M_ERR,
-					    "Only %lu line%s in the file",
+					    "Only %lu line%s in the file.",
 					    lno, lno > 1 ? "s" : "");
 				goto err;
 			}
@@ -1041,7 +1041,7 @@ addr2:	switch (exc.addrcnt) {
 			if (lno == 0)
 				msgq(sp, M_ERR, "The file is empty.");
 			else
-				msgq(sp, M_ERR, "Only %lu line%s in the file",
+				msgq(sp, M_ERR, "Only %lu line%s in the file.",
 				    lno, lno > 1 ? "s" : "");
 			goto err;
 		}
