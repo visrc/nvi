@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.83 1994/03/02 15:57:11 bostic Exp $ (Berkeley) $Date: 1994/03/02 15:57:11 $
+ *	$Id: screen.h,v 8.84 1994/03/03 11:36:51 bostic Exp $ (Berkeley) $Date: 1994/03/03 11:36:51 $
  */
 
 /*
@@ -171,60 +171,60 @@ struct _scr {
  * A SCR * MUST be the first argument to these routines.
  */
 					/* Ring the screen bell. */
-	void	 (*s_bell) __P((SCR *));
+	void	(*s_bell) __P((SCR *));
 					/* Background the screen. */
-	int	 (*s_bg) __P((SCR *));
+	int	(*s_bg) __P((SCR *));
 					/* Put up a busy message. */
-	int	 (*s_busy) __P((SCR *, char const *));
+	int	(*s_busy) __P((SCR *, char const *));
 					/* Change a screen line. */
-	int	 (*s_change) __P((SCR *, EXF *, recno_t, enum operation));
+	int	(*s_change) __P((SCR *, EXF *, recno_t, enum operation));
 					/* Return column close to specified. */
-	size_t	 (*s_chposition) __P((SCR *, EXF *, recno_t, size_t));
+	size_t	(*s_chposition) __P((SCR *, EXF *, recno_t, size_t));
 					/* Clear the screen. */
-	int	 (*s_clear) __P((SCR *));
+	int	(*s_clear) __P((SCR *));
 					/* Return the logical cursor column. */
-	int	 (*s_column) __P((SCR *, EXF *, size_t *));
+	int	(*s_column) __P((SCR *, EXF *, size_t *));
 	enum confirm			/* Confirm an action with the user. */
-		 (*s_confirm) __P((SCR *, EXF *, MARK *, MARK *));
-					/* Move down the screen. */
-	int	 (*s_down) __P((SCR *, EXF *, MARK *, recno_t, int));
-					/* Edit a file. */
-	int	 (*s_edit) __P((SCR *, EXF *));
-					/* End a screen. */
-	int	 (*s_end) __P((SCR *));
-					/* Run a single ex command. */
-	int	 (*s_ex_cmd) __P((SCR *, EXF *, EXCMDARG *, MARK *));
-					/* Run user's ex commands. */
-	int	 (*s_ex_run) __P((SCR *, EXF *, MARK *));
-					/* Screen's ex write function. */
-	int	 (*s_ex_write) __P((void *, const char *, int));
-					/* Foreground the screen. */
-	int	 (*s_fg) __P((SCR *, CHAR_T *));
-					/* Fill the screen's map. */
-	int	 (*s_fill) __P((SCR *, EXF *, recno_t, enum position));
-	enum input			/* Get a line from the user. */
-		 (*s_get) __P((SCR *, EXF *, TEXTH *, int, u_int));
-	enum input			/* Get a key from the user. */
-		 (*s_key_read) __P((SCR *, int *, struct timeval *));
-					/* Tell the screen an option changed. */
-	int	 (*s_optchange) __P((SCR *, int));
-					/* Return column at screen position. */
-	int	 (*s_position) __P((SCR *, EXF *,
-		    MARK *, u_long, enum position));
-					/* Change the absolute screen size. */
-	int	 (*s_rabs) __P((SCR *, long, enum adjust));
-					/* Refresh the screen. */
-	int	 (*s_refresh) __P((SCR *, EXF *));
-					/* Return column close to last char. */
-	size_t	 (*s_relative) __P((SCR *, EXF *, recno_t));
+		(*s_confirm) __P((SCR *, EXF *, MARK *, MARK *));
 					/* Change the relative screen size. */
-	int	 (*s_rrel) __P((SCR *, long));
+	int	(*s_crel) __P((SCR *, long));
+					/* Move down the screen. */
+	int	(*s_down) __P((SCR *, EXF *, MARK *, recno_t, int));
+					/* Edit a file. */
+	int	(*s_edit) __P((SCR *, EXF *));
+					/* End a screen. */
+	int	(*s_end) __P((SCR *));
+					/* Run a single ex command. */
+	int	(*s_ex_cmd) __P((SCR *, EXF *, EXCMDARG *, MARK *));
+					/* Run user's ex commands. */
+	int	(*s_ex_run) __P((SCR *, EXF *, MARK *));
+					/* Screen's ex write function. */
+	int	(*s_ex_write) __P((void *, const char *, int));
+					/* Foreground the screen. */
+	int	(*s_fg) __P((SCR *, CHAR_T *));
+					/* Fill the screen's map. */
+	int	(*s_fill) __P((SCR *, EXF *, recno_t, enum position));
+	enum input			/* Get a line from the user. */
+		(*s_get) __P((SCR *, EXF *, TEXTH *, int, u_int));
+	enum input			/* Get a key from the user. */
+		(*s_key_read) __P((SCR *, int *, struct timeval *));
+					/* Tell the screen an option changed. */
+	int	(*s_optchange) __P((SCR *, int));
+					/* Return column at screen position. */
+	int	(*s_position) __P((SCR *, EXF *,
+		   MARK *, u_long, enum position));
+					/* Change the absolute screen size. */
+	int	(*s_rabs) __P((SCR *, long, enum adjust));
+					/* Refresh the screen. */
+	int	(*s_refresh) __P((SCR *, EXF *));
+					/* Return column close to last char. */
+	size_t	(*s_relative) __P((SCR *, EXF *, recno_t));
 					/* Split the screen. */
-	int	 (*s_split) __P((SCR *, ARGS *[]));
+	int	(*s_split) __P((SCR *, ARGS *[]));
 					/* Suspend the screen. */
-	int	 (*s_suspend) __P((SCR *));
+	int	(*s_suspend) __P((SCR *));
 					/* Move up the screen. */
-	int	 (*s_up) __P((SCR *, EXF *, MARK *, recno_t, int));
+	int	(*s_up) __P((SCR *, EXF *, MARK *, recno_t, int));
 
 /* Editor screens. */
 #define	S_EX		0x0000001	/* Ex screen. */
