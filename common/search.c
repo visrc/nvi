@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 9.9 1995/02/01 20:47:22 bostic Exp $ (Berkeley) $Date: 1995/02/01 20:47:22 $";
+static char sccsid[] = "$Id: search.c,v 9.10 1995/02/10 09:45:08 bostic Exp $ (Berkeley) $Date: 1995/02/10 09:45:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -55,49 +55,51 @@ resetup(sp, rep, dir, ptrn, epp, flags)
 	int delim, eval, re_flags, replaced;
 	char *p, *t;
 
-	/*
-	 * Use saved pattern if no pattern supplied, or if only a delimiter
-	 * character is supplied.  Only the pattern was saved, historic vi
-	 * did not reuse any addressing information/delta supplied.
-	 */
-	if (ptrn == NULL)
-		goto prev;
-	if (ptrn[1] == '\0') {
-		if (epp != NULL)
-			*epp = ptrn + 1;
-		goto prev;
-	}
-	if (ptrn[0] == ptrn[1]) {
-		if (epp != NULL)
-			*epp = ptrn + 2;
-prev:		if (!F_ISSET(sp, S_RE_SEARCH)) {
-			smsg(sp, S_NOPREV);
-			return (1);
-		}
+	replaced = 0;
+	if (LF_ISSET(SEARCH_PARSE)) {		/* Parse the string. */
 		/*
-		 * See if we need to recompile because an edit option changed.
-		 * The options code doesn't check error cases, it just sets a
-		 * bit -- be careful.   If we can't recompile for some reason,
-		 * quit, we've already reported the out-of-memory message.
+		 * Use saved pattern if no pattern supplied, or if only the
+		 * delimiter character is supplied.  Only the pattern was
+		 * saved, historiclly vi didn't reuse addressing or delta
+		 * information.
 		 */
-		if (F_ISSET(sp, S_RE_RECOMPILE)) {
-			if (sp->re == NULL) {
+		if (ptrn == NULL)
+			goto prev;
+		if (ptrn[1] == '\0') {
+			if (epp != NULL)
+				*epp = ptrn + 1;
+			goto prev;
+		}
+		if (ptrn[0] == ptrn[1]) {
+			if (epp != NULL)
+				*epp = ptrn + 2;
+prev:			if (!F_ISSET(sp, S_RE_SEARCH)) {
 				smsg(sp, S_NOPREV);
 				return (1);
 			}
-			ptrn = sp->re;
-			goto recomp;
+			/*
+			 * May need to recompile if an edit option was changed.
+			 * The options code doesn't check error cases, it just
+			 * sets a bit -- be careful.   If we can't recompile
+			 * for some reason, quit, someone else already reported
+			 * the out-of-memory message.
+			 */
+			if (F_ISSET(sp, S_RE_RECOMPILE)) {
+				if (sp->re == NULL) {
+					smsg(sp, S_NOPREV);
+					return (1);
+				}
+				ptrn = sp->re;
+				goto recomp;
+			}
+
+			*rep = &sp->sre;
+
+			if (LF_ISSET(SEARCH_SET))
+				sp->searchdir = dir;
+			return (0);
 		}
 
-		*rep = &sp->sre;
-
-		if (LF_ISSET(SEARCH_SET))
-			sp->searchdir = dir;
-		return (0);
-	}
-
-	replaced = 0;
-	if (LF_ISSET(SEARCH_PARSE)) {		/* Parse the string. */
 		/*
 		 * Set delimiter, and move forward to terminating delimiter,
 		 * handling escaped delimiters.
