@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 9.3 1994/11/13 16:40:12 bostic Exp $ (Berkeley) $Date: 1994/11/13 16:40:12 $";
+static char sccsid[] = "$Id: ex_bang.c,v 9.4 1994/12/02 12:27:53 bostic Exp $ (Berkeley) $Date: 1994/12/02 12:27:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -184,7 +184,7 @@ ex_bang(sp, cmdp)
 	msg = NULL;
 	if (F_ISSET(sp->ep, F_MODIFIED))
 		if (O_ISSET(sp, O_AUTOWRITE)) {
-			if (file_write(sp, NULL, NULL, NULL, FS_ALL)) {
+			if (file_aw(sp, FS_ALL)) {
 				rval = 1;
 				goto ret1;
 			}
