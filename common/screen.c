@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 9.8 1995/02/02 15:00:44 bostic Exp $ (Berkeley) $Date: 1995/02/02 15:00:44 $";
+static char sccsid[] = "$Id: screen.c,v 9.9 1995/02/02 16:50:43 bostic Exp $ (Berkeley) $Date: 1995/02/02 16:50:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -259,30 +259,29 @@ screen_end(sp)
  *	Copy the screen functions.
  */
 void
-screen_fcopy(sp, copy, save)
+screen_fcopy(sp, save)
 	SCR *sp;
-	void (*copy[SCR_ROUTINES_N])();
 	int save;
 {
 	if (save) {
-		copy[0] = (void (*)())sp->e_bell;
-		copy[1] = (void (*)())sp->e_busy;
-		copy[2] = (void (*)())sp->e_change;
-		copy[3] = (void (*)())sp->e_clrtoeos;
-		copy[4] = (void (*)())sp->e_confirm;
-		copy[5] = (void (*)())sp->e_fmap;
-		copy[6] = (void (*)())sp->e_refresh;
-		copy[7] = (void (*)())sp->e_ssize;
-		copy[8] = (void (*)())sp->e_suspend;
+		sp->sv_func[0] = (void (*)())sp->e_bell;
+		sp->sv_func[1] = (void (*)())sp->e_busy;
+		sp->sv_func[2] = (void (*)())sp->e_change;
+		sp->sv_func[3] = (void (*)())sp->e_clrtoeos;
+		sp->sv_func[4] = (void (*)())sp->e_confirm;
+		sp->sv_func[5] = (void (*)())sp->e_fmap;
+		sp->sv_func[6] = (void (*)())sp->e_refresh;
+		sp->sv_func[7] = (void (*)())sp->e_ssize;
+		sp->sv_func[8] = (void (*)())sp->e_suspend;
 	} else {
-		sp->e_bell	= (int (*)())copy[0];
-		sp->e_busy	= (int (*)())copy[1];
-		sp->e_change	= (int (*)())copy[2];
-		sp->e_clrtoeos	= (int (*)())copy[3];
-		sp->e_confirm	= (conf_t (*)())copy[4];
-		sp->e_fmap	= (int (*)())copy[5];
-		sp->e_refresh	= (int (*)())copy[6];
-		sp->e_ssize	= (int (*)())copy[7];
-		sp->e_suspend	= (int (*)())copy[8];
+		sp->e_bell	=    (int (*)())sp->sv_func[0];
+		sp->e_busy	=    (int (*)())sp->sv_func[1];
+		sp->e_change	=    (int (*)())sp->sv_func[2];
+		sp->e_clrtoeos	=    (int (*)())sp->sv_func[3];
+		sp->e_confirm	= (conf_t (*)())sp->sv_func[4];
+		sp->e_fmap	=    (int (*)())sp->sv_func[5];
+		sp->e_refresh	=    (int (*)())sp->sv_func[6];
+		sp->e_ssize	=    (int (*)())sp->sv_func[7];
+		sp->e_suspend	=    (int (*)())sp->sv_func[8];
 	}
 }
