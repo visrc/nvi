@@ -4,10 +4,8 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 8.1 1993/06/09 22:21:01 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:21:01 $
+ *	$Id: gs.h,v 8.2 1993/08/21 11:58:05 bostic Exp $ (Berkeley) $Date: 1993/08/21 11:58:05 $
  */
-
-#include <termios.h>
 
 struct _scr;
 typedef struct _gs {
