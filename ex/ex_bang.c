@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 8.5 1993/08/18 16:21:36 bostic Exp $ (Berkeley) $Date: 1993/08/18 16:21:36 $";
+static char sccsid[] = "$Id: ex_bang.c,v 8.6 1993/09/08 14:36:23 bostic Exp $ (Berkeley) $Date: 1993/09/08 14:36:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,7 +38,7 @@ ex_bang(sp, ep, cmdp)
 	char *com;
 
 	/* Make sure we got something. */
-	if (cmdp->argv[0] == NULL) {
+	if (cmdp->argv[0][0] == '\0') {
 		msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
 		return (1);
 	}
@@ -129,23 +129,22 @@ ex_bang(sp, ep, cmdp)
 	 */
 	if (cmdp->addrcnt != 0) {
 		/*
-		 * Major Kluge.
-		 *
+		 * !!!
 		 * Historical vi permitted "!!" in an empty file, for no
-		 * immediately apparent reason.  When that happens, we
-		 * end up here with addresses of 1,1 and a bad attitude.
+		 * immediately apparent reason.  When it happens, we end
+		 * up here with line addresses of 0,1 and a bad attitude.
 		 */
-		ftype = STANDARD;
-		if (cmdp->addr1.lno == 1 && cmdp->addr2.lno == 1) {
+		ftype = FILTER;
+		if (cmdp->addr1.lno == 0 && cmdp->addr2.lno == 1) {
 			if (file_lline(sp, ep, &lno))
 				return (1);
 			if (lno == 0) {
 				cmdp->addr1.lno = cmdp->addr2.lno = 0;
-				ftype = NOINPUT;
+				ftype = FILTER_READ;
 			}
 		}
-		if (filtercmd(sp,
-		    ep, &cmdp->addr1, &cmdp->addr2, &rm, com, ftype))
+		if (filtercmd(sp, ep,
+		    &cmdp->addr1, &cmdp->addr2, &rm, com, ftype))
 			return (1);
 		sp->lno = rm.lno;
 		F_SET(sp, S_AUTOPRINT);
