@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 10.9 1995/10/16 15:24:49 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:24:49 $";
+static char sccsid[] = "$Id: search.c,v 10.10 1995/11/01 17:39:13 bostic Exp $ (Berkeley) $Date: 1995/11/01 17:39:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,14 +30,13 @@ typedef enum { S_EMPTY, S_EOF, S_NOPREV, S_NOTFOUND, S_SOF, S_WRAP } smsg_t;
 
 static int	ctag_conv __P((SCR *, char **, int *));
 static void	search_msg __P((SCR *, smsg_t));
+static int	search_setup __P((SCR *, dir_t, char *, char **, u_int));
 
 /*
  * search_setup --
  *	Set up a search.
- *
- * PUBLIC: int search_setup __P((SCR *, dir_t, char *, char **, u_int));
  */
-int
+static int
 search_setup(sp, dir, ptrn, epp, flags)
 	SCR *sp;
 	dir_t dir;
@@ -149,10 +148,8 @@ recomp:	re_flags = 0;
 	else {
 		if (LF_ISSET(SEARCH_SET))
 			sp->searchdir = dir;
-		if (LF_ISSET(SEARCH_SET) || F_ISSET(sp, S_RE_RECOMPILE)) {
-			sp->sre = re;
-			F_SET(sp, S_RE_SEARCH);
-		}
+		sp->sre = re;
+		F_SET(sp, S_RE_SEARCH);
 		F_CLR(sp, S_RE_RECOMPILE);
 	}
 
