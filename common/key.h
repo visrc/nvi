@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 8.24 1993/12/22 13:44:43 bostic Exp $ (Berkeley) $Date: 1993/12/22 13:44:43 $
+ *	$Id: key.h,v 8.25 1993/12/29 16:54:07 bostic Exp $ (Berkeley) $Date: 1993/12/29 16:54:07 $
  */
 
 /* Structure to return a character and associated information. */
@@ -25,10 +25,11 @@ struct _ch {
 #define	K_TAB		12
 #define	K_VEOF	 	13
 #define	K_VERASE	14
-#define	K_VKILL		15
-#define	K_VLNEXT	16
-#define	K_VWERASE	17
-#define	K_ZERO		18
+#define	K_VINTR		15
+#define	K_VKILL		16
+#define	K_VLNEXT	17
+#define	K_VWERASE	18
+#define	K_ZERO		19
 	u_char	 value;		/* Special character flag values. */
 
 #define	CH_ABBREVIATED	0x01	/* Character from an abbreviation. */
