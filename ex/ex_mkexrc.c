@@ -6,11 +6,12 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_mkexrc.c,v 5.3 1992/04/03 09:16:44 bostic Exp $ (Berkeley) $Date: 1992/04/03 09:16:44 $";
+static char sccsid[] = "$Id: ex_mkexrc.c,v 5.4 1992/04/04 16:30:54 bostic Exp $ (Berkeley) $Date: 1992/04/04 16:30:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <stdio.h>
 
 #include "vi.h"
 #include "excmd.h"
@@ -25,6 +26,7 @@ void
 ex_mkexrc(cmdp)
 	CMDARG *cmdp;
 {
+	FILE *fp;
 	int fd;
 	char *name;
 
@@ -48,8 +50,15 @@ ex_mkexrc(cmdp)
 	/* In case it already existed, set the permissions. */
 	(void)fchmod(fd, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
 
-	map_save(fd);
-	opts_save(fd);
+	map_save(fp);
+	if (ferror(fp))
+		goto err;
+	opts_save(fp);
+	fflush(fp);			/* XXX all should use fp. */
+	if (ferror(fp)) {
+err:		msg("%s: incomplete: %s", name, strerror(errno));
+		return;
+	}
 #ifndef NO_DIGRAPH
 	digraph_save(fd);
 #endif
