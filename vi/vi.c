@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.78 1994/07/23 16:49:47 bostic Exp $ (Berkeley) $Date: 1994/07/23 16:49:47 $";
+static char sccsid[] = "$Id: vi.c,v 8.79 1994/07/27 11:42:58 bostic Exp $ (Berkeley) $Date: 1994/07/27 11:42:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -255,20 +255,22 @@ vi(sp, ep)
 		    mark_set(sp, ep, ABSMARK1, &abs, 1))
 			goto err;
 
-		/*
-		 * Check and clear the interrupts; there's an obvious race,
-		 * but it's not worth cleaning up.
-		 */
-		if (INTERRUPTED(sp))
-			term_flush(sp, "Interrupted", CH_MAPPED);
-		CLR_INTERRUPT(sp);
-
 		if (!MAPPED_KEYS_WAITING(sp)) {
 			(void)msg_rpt(sp, 1);
 			if (0) {
 err:				term_flush(sp, "Vi error", CH_MAPPED);
 			}
 		}
+
+		/*
+		 * Check and clear the interrupts.  There's an obvious race,
+		 * but it's not worth cleaning up.  This is done after the
+		 * err: lable, so that if the "error" was an interupt it gets
+		 * cleaned up.
+		 */
+		if (INTERRUPTED(sp))
+			term_flush(sp, "Interrupted", CH_MAPPED);
+		CLR_INTERRUPT(sp);
 	}
 
 	/* Free allocated keyword memory. */
@@ -830,9 +832,24 @@ getkey(sp, ikeyp, map)
 	CH *ikeyp;
 	u_int map;
 {
-	if (term_key(sp, ikeyp, map) == INP_OK)
+	switch (term_key(sp, ikeyp, map)) {
+	case INP_EOF:
+	case INP_ERR:
+		F_SET(sp, S_EXIT_FORCE);
+		return (1);
+	case INP_INTR:
+		/*
+		 * !!!
+		 * Historically, vi beeped on command level interrupts.
+		 *
+		 * Historically, vi exited to ex mode if no file was named
+		 * on the command line, and two interrupts were generated
+		 * in a row.  (Just figured you might want to know that.)
+		 */
+		(void)sp->s_bell(sp);
+		return (1);
+	case INP_OK:
 		return (0);
-
-	F_SET(sp, S_EXIT_FORCE);
-	return (1);
+	}
+	/* NOTREACHED */
 }
