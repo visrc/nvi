@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 8.17 1994/09/02 13:24:50 bostic Exp $ (Berkeley) $Date: 1994/09/02 13:24:50 $";
+static char sccsid[] = "$Id: msg.c,v 8.18 1994/09/12 10:17:43 bostic Exp $ (Berkeley) $Date: 1994/09/12 10:17:43 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -576,12 +576,12 @@ msg_open(sp, file)
 		p = file;
 	if ((db = dbopen(p,
 	    O_NONBLOCK | O_RDONLY, 0, DB_RECNO, NULL)) == NULL) {
-		if (O_STR(sp, O_MSGCAT) != NULL) {
-			p = msg_print(sp, p, &nf);
-			msgq(sp, M_SYSERR, "%s", p);
-			if (nf)
-				FREE_SPACE(sp, p, 0);
-		}
+		if (O_STR(sp, O_MSGCAT) == NULL)
+			return (1);
+		p = msg_print(sp, p, &nf);
+		msgq(sp, M_SYSERR, "%s", p);
+		if (nf)
+			FREE_SPACE(sp, p, 0);
 		return (1);
 	}
 
@@ -600,6 +600,8 @@ msg_open(sp, file)
 	    data.size != sizeof(VMC) - 1 ||
 	    memcmp(data.data, VMC, sizeof(VMC) - 1)) {
 		(void)db->close(db);
+		if (O_STR(sp, O_MSGCAT) == NULL)
+			return (1);
 		p = msg_print(sp, p, &nf);
 		msgq(sp, M_ERR, "232|The file %s is not a message catalog", p);
 		if (nf)
