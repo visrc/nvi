@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 8.22 1993/11/02 19:44:01 bostic Exp $ (Berkeley) $Date: 1993/11/02 19:44:01 $";
+static char sccsid[] = "$Id: vs_smap.c,v 8.23 1993/11/03 17:15:36 bostic Exp $ (Berkeley) $Date: 1993/11/03 17:15:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -435,7 +435,6 @@ svi_sm_up(sp, ep, rp, count, cursor_move)
 	int cursor_move;
 {
 	SMAP *p, svmap, tmp;
-	recno_t lno;
 	int ignore_cursor;
 
 	/* Set the default return position. */
@@ -554,7 +553,7 @@ svi_sm_up(sp, ep, rp, count, cursor_move)
 	 * next "real" movement will return the cursor to the closest position
 	 * to the last real movement.
 	 */
-ret:	if (p->lno != svmap.lno || p->off != svmap.off) {
+	if (p->lno != svmap.lno || p->off != svmap.off) {
 		rp->lno = p->lno;
 		rp->cno = svi_lrelative(sp, ep, p->lno, p->off);
 	}
