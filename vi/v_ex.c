@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 8.6 1994/06/27 11:22:35 bostic Exp $ (Berkeley) $Date: 1994/06/27 11:22:35 $";
+static char sccsid[] = "$Id: v_ex.c,v 8.7 1994/07/18 17:39:19 bostic Exp $ (Berkeley) $Date: 1994/07/18 17:39:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -90,6 +90,12 @@ v_exmode(sp, ep, vp)
 	EXF *ep;
 	VICMDARG *vp;
 {
+	/* Save the current line/column number. */
+	sp->frp->lno = sp->lno;
+	sp->frp->cno = sp->cno;
+	F_SET(sp->frp, FR_CURSORSET);
+
+	/* Switch to ex mode. */
 	sp->saved_vi_mode = F_ISSET(sp, S_VI_CURSES | S_VI_XAW);
 	F_CLR(sp, S_SCREENS);
 	F_SET(sp, S_EX);
