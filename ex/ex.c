@@ -1,18 +1,11 @@
-/* ex.c */
-
-/* Author:
- *	Steve Kirkendall
- *	14407 SW Teal Blvd. #C
- *	Beaverton, OR 97005
- *	kirkenda@cs.pdx.edu
- */
-
-
 /* This file contains the code for reading ex commands. */
 
+#include <stdio.h>
 #include "config.h"
 #include "ctype.h"
 #include "vi.h"
+#include "pathnames.h"
+#include "extern.h"
 
 /* This data type is used to describe the possible argument combinations */
 typedef short ARGT;
@@ -565,7 +558,7 @@ void doexcmd(cmdbuf)
 	/* bad arguments? */
 	if (!(argt & EXRCOK) && nlines < 1L)
 	{
-		msg("Can't use the \"%s\" command in a %s file", cmdnames[cmdidx].name, EXRC);
+		msg("Can't use the \"%s\" command in a %s file", cmdnames[cmdidx].name, _NAME_EXRC);
 		return;
 	}
 	if (!(argt & (ZERO | EXRCOK)) && frommark == MARK_UNSET)

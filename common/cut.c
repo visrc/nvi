@@ -1,29 +1,16 @@
-/* cut.c */
-
-/* Author:
- *	Steve Kirkendall
- *	14407 SW Teal Blvd. #C
- *	Beaverton, OR 97005
- *	kirkenda@cs.pdx.edu
- */
-
-
 /* This file contains function which manipulate the cut buffers. */
 
+#include <sys/types.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include "config.h"
 #include "vi.h"
-#if TURBOC
-#include <process.h>		/* needed for getpid */
-#endif
-#if TOS
-#include <osbind.h>
-#define	rename(a,b)	Frename(0,a,b)
-#endif
+#include "pathnames.h"
+#include "extern.h"
 
 # define NANONS	9	/* number of anonymous buffers */
 
-static struct cutbuf
-{
+static struct cutbuf {
 	short	*phys;	/* pointer to an array of #s of BLKs containing text */
 	int	nblks;	/* number of blocks in phys[] array */
 	int	start;	/* offset into first block of start of cut */
@@ -117,14 +104,7 @@ static void maybezap(num)
 	/* if nobody else needs it, then discard the tmp file */
 	if (i < 0)
 	{
-#if MSDOS || TOS
-		strcpy(cutfname, o_directory);
-		if ((i = strlen(cutfname)) && !strchr(":/\\", cutfname[i - 1]))
-			cutfname[i++] = SLASH;
-		sprintf(cutfname + i, TMPNAME + 3, getpid(), num);
-#else
-		sprintf(cutfname, TMPNAME, o_directory, getpid(), num);
-#endif
+		sprintf(cutfname, _PATH_TMPNAME, o_directory, getpid(), num);
 		unlink(cutfname);
 	}
 }
@@ -435,14 +415,7 @@ static void readcutblk(cb, blkno)
 	}
 	else
 	{
-#if MSDOS || TOS
-		strcpy(cutfname, o_directory);
-		if ((i = strlen(cutfname)) && !strchr(":/\\", cutfname[i-1]))
-			cutfname[i++]=SLASH;
-		sprintf(cutfname+i, TMPNAME+3, getpid(), cb->tmpnum);
-#else
-		sprintf(cutfname, TMPNAME, o_directory, getpid(), cb->tmpnum);
-#endif
+		sprintf(cutfname, _PATH_TMPNAME, o_directory, getpid(), cb->tmpnum);
 		fd = open(cutfname, O_RDONLY);
 	}
 

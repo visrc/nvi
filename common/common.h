@@ -1,52 +1,10 @@
-/* vi.h */
-
-/* Author:
- *	Steve Kirkendall
- *	14407 SW Teal Blvd. #C
- *	Beaverton, OR 97005
- *	kirkenda@cs.pdx.edu
- */
-
-
-/* This is the header file for my version of vi. */
-
-#define VERSION "ELVIS 1.5i, by Steve Kirkendall"
-#define COPYING	"This version of ELVIS is freely redistributable."
-
 #include <errno.h>
-extern int errno;
-#if TOS && !defined(__GNUC__)
-#define ENOENT (-AEFILNF)
-#endif
 
-#if TOS || VMS
-# include <types.h>
-# define O_RDONLY	0
-# define O_WRONLY	1
-# define O_RDWR		2
-# ifdef __GNUC__
-#  define S_IJDIR	S_IFDIR
-# endif
-#else
-# if OSK
-#  include <modes.h>
-#  define O_RDONLY	S_IREAD
-#  define O_WRONLY	S_IWRITE
-#  define O_RDWR	(S_IREAD | S_IWRITE)
-#  define ENOENT	E_PNNF
-#  define sprintf	Sprintf
-# else
-#  include <sys/types.h>
-#  if COHERENT
-#   include <sys/fcntl.h>
-#  else
-#   include <fcntl.h>
-#  endif
-# endif
-#endif
+#include <sys/types.h>
+#include <fcntl.h>
 
 #ifndef O_BINARY
-# define O_BINARY	0
+#define O_BINARY	0
 #endif
 
 #include "curses.h"
@@ -101,13 +59,16 @@ extern struct _viflags
 #define tstflag(x,y)	(viflags.x & y)
 #define initflags()	viflags.file = 0;
 
+#ifndef MAXPATHLEN			/* XXX */
+#define	MAXPATHLEN	1024
+#endif
 /* The options */
 extern char	o_autoindent[1];
 extern char	o_autoprint[1];
 extern char	o_autotab[1];
 extern char	o_autowrite[1];
 extern char	o_columns[3];
-extern char	o_directory[30];
+extern char	o_directory[MAXPATHLEN];
 extern char	o_edcompatible[1];
 extern char	o_equalprg[80];
 extern char	o_errorbells[1];
@@ -121,7 +82,7 @@ extern char	o_number[1];
 extern char	o_readonly[1];
 extern char	o_report[3];
 extern char	o_scroll[3];
-extern char	o_shell[60];
+extern char	o_shell[MAXPATHLEN];
 extern char	o_shiftwidth[3];
 extern char	o_sidescroll[3];
 extern char	o_sync[1];
@@ -582,7 +543,7 @@ extern char *dbmalloc();
 # define QCHK(addr)	(Qflags[(int)((addr) - Qbase)])
 #endif
 #ifdef DEBUG
-# define QTST(addr)	(((int)((addr) - Qbase) < Qlen && (int)((addr) - Qbase) > 0) ? QCHK(addr) : abort())
+# define QTST(addr)	(((int)((addr) - Qbase) < Qlen && (int)((addr) - Qbase) > 0) ? QCHK(addr) : (abort(), 0))
 #else
 # define QTST(addr)	QCHK(addr)
 #endif

@@ -1,23 +1,12 @@
-/* opts.c */
-
-/* Author:
- *	Steve Kirkendall
- *	14407 SW Teal Blvd. #C
- *	Beaverton, OR 97005
- *	kirkenda@cs.pdx.edu
- */
-
-
 /* This file contains the code that manages the run-time options -- The 
  * values that can be modified via the "set" command.
  */
 
+#include <sys/param.h>
+#include <stdlib.h>
 #include "config.h"
+#include "pathnames.h"
 #include "vi.h"
-#ifndef NULL
-#define NULL (char *)0
-#endif
-extern char	*getenv();
 
 /* maximum width to permit for strings, including ="" */
 #define MAXWIDTH 20
@@ -28,7 +17,7 @@ char	o_autoprint[1] =	{TRUE};
 char	o_autotab[1] =		{TRUE};
 char	o_autowrite[1] = 	{FALSE};
 char	o_columns[3] =		{80, 32, 255};
-char	o_directory[30] =	TMPDIR;
+char	o_directory[MAXPATHLEN] =		_PATH_TMP;
 char	o_edcompatible[1] =	{FALSE};
 char	o_equalprg[80] =	{"fmt"};
 char	o_errorbells[1] =	{TRUE};
@@ -42,10 +31,10 @@ char	o_number[1] =		{FALSE};
 char	o_readonly[1] =		{FALSE};
 char	o_report[3] =		{5, 1, 127};
 char	o_scroll[3] =		{12, 1, 127};
-char	o_shell[60] =		SHELL;
+char	o_shell[MAXPATHLEN] =		_PATH_BSHELL;
 char	o_shiftwidth[3] =	{8, 1, 255};
 char	o_sidescroll[3] =	{8, 1, 40};
-char	o_sync[1] =		{NEEDSYNC};
+char	o_sync[1] =		{FALSE};
 char	o_tabstop[3] =		{8, 1, 40};
 char	o_term[30] =		"?";
 char	o_vbell[1] =		{TRUE};
@@ -67,8 +56,8 @@ char	o_writeany[1] =		{FALSE};
 #endif
 
 #ifndef NO_ERRLIST
-char	o_cc[30] =		{CC_COMMAND};
-char	o_make[30] =		{MAKE_COMMAND};
+char	o_cc[30] =		{"cc -c"};
+char	o_make[30] =		{"make"};
 #endif
 
 #ifndef NO_CHARATTR
@@ -107,10 +96,6 @@ char	o_modeline[1] =		{FALSE};
 #ifndef NO_SENTENCE
 char	o_paragraphs[30] =	"PPppIPLPQP";
 char	o_sections[30] =	"NHSHSSSEse";
-#endif
-
-#if MSDOS
-char	o_pcbios[1] =		{TRUE};
 #endif
 
 #ifndef NO_SHOWMATCH
@@ -208,9 +193,6 @@ struct
 #ifndef NO_SENTENCE
 	{ "paragraphs",	"pa",	STR,	CANSET,		o_paragraphs	},
 #endif
-#if MSDOS
-	{ "pcbios",	"pc",	BOOL,	SET|NOSAVE,	o_pcbios	},
-#endif
 #ifndef CRUNCH
 	{ "prompt",	"pr",	BOOL,	CANSET,		o_prompt	},
 #endif
@@ -265,32 +247,12 @@ void initopts()
 	int	i;
 
 	/* set some stuff from environment variables */
-#if MSDOS
-	if (val = getenv("COMSPEC")) /* yes, ASSIGNMENT! */
-#else
 	if (val = getenv("SHELL")) /* yes, ASSIGNMENT! */
-#endif
 	{
 		strcpy(o_shell, val);
 	}
 
 	strcpy(o_term, termtype);
-#if MSDOS
-	if (strcmp(termtype, "pcbios"))
-	{
-		o_pcbios[0] = FALSE;
-	}
-	else
-	{
-		o_pcbios[0] = TRUE;
-	}
-#endif
-
-#if MSDOS || TOS
-	if ((val = getenv("TMP")) /* yes, ASSIGNMENT! */
-	||  (val = getenv("TEMP")))
-		strcpy(o_directory, val);
-#endif
 
 #ifndef CRUNCH
 	if ((val = getenv("LINES")) && atoi(val) > 30) /* yes, ASSIGNMENT! */
@@ -699,7 +661,8 @@ void setopts(assignments)
 		}
 		else if ((opts[i].flags & RCSET) != CANSET && nlines >= 1L)
 		{
-			msg("option \"%s\" can only be set in a %s file", name, EXRC);
+			msg("option \"%s\" can only be set in a %s file",
+			    name, _NAME_EXRC);
 		}
 		else if (value)
 		{

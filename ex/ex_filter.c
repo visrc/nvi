@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include "config.h"
 #include "vi.h"
+#include "pathnames.h"
 #include "extern.h"
 
 extern char	**environ;
@@ -268,14 +269,7 @@ int filter(from, to, cmd)
 	if (to)
 	{
 		/* we have lines */
-#if MSDOS || TOS
-		strcpy(scrout, o_directory);
-		if ((i=strlen(scrout)) && !strchr("\\/:", scrout[i-1]))
-			scrout[i++]=SLASH;
-		strcpy(scrout+i, SCRATCHOUT+3);
-#else
-		sprintf(scrout, SCRATCHOUT, o_directory);
-#endif
+		(void)sprintf(scrout, _PATH_SCRATCH, o_directory);
 		mktemp(scrout);
 		cmd_write(from, to, CMD_BANG, 0, scrout);
 

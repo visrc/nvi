@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.2 1991/12/18 10:16:54 bostic Exp $ (Berkeley) $Date: 1991/12/18 10:16:54 $";
+static char sccsid[] = "$Id: main.c,v 5.3 1991/12/18 11:50:34 bostic Exp $ (Berkeley) $Date: 1991/12/18 11:50:34 $";
 #endif /* not lint */
 
 #include <signal.h>
@@ -21,6 +21,7 @@ static char sccsid[] = "$Id: main.c,v 5.2 1991/12/18 10:16:54 bostic Exp $ (Berk
 #include <stdio.h>
 #include "config.h"
 #include "vi.h"
+#include "pathnames.h"
 #include "extern.h"
 
 #ifdef DEBUG
@@ -180,28 +181,23 @@ main(argc, argv)
 #endif
 
 	/* Read the .exrc files and EXINIT environment variable. */
-#ifdef SYSEXRC
-	doexrc(SYSEXRC);
-#endif
+	doexrc(_PATH_SYSEXRC);
 #ifdef HMEXRC
 	str = getenv("HOME");
 	if (str && *str)
 	{
 		strcpy(tmpblk.c, str);
 		str = tmpblk.c + strlen(tmpblk.c);
-		if (str[-1] != SLASH)
-			*str++ = SLASH;
+		if (str[-1] != '/')
+			*str++ = '/';
 		strcpy(str, HMEXRC);
 		doexrc(tmpblk.c);
 	}
 #endif
 	if (*o_exrc)
-		doexrc(EXRC);
-#ifdef EXINIT
-	str = getenv(EXINIT);
-	if (str)
+		doexrc(_NAME_EXRC);
+	if ((str = getenv("EXINIT")) != NULL)
 		exstring(str, strlen(str));
-#endif
 
 	/* search for a tag (or an error) now, if desired */
 	blkinit();
@@ -398,7 +394,7 @@ onhup(signo)
 	if (tmpnum > 0 && tmpfd >= 0) {
 		(void)close(tmpfd);
 		(void)sprintf(tmpblk.c,
-		    "%s \"%s\" %s", PRESERVE, "vi died", tmpname);
+		    "%s \"%s\" %s", _PATH_PRESERVE, "vi died", tmpname);
 		(void)system(tmpblk.c);
 	}
 
