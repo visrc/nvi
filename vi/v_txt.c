@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.11 1993/09/13 13:57:51 bostic Exp $ (Berkeley) $Date: 1993/09/13 13:57:51 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.12 1993/09/13 14:16:54 bostic Exp $ (Berkeley) $Date: 1993/09/13 14:16:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -941,7 +941,7 @@ txt_indent(sp, tp)
 	for (; tp->overwrite && tabs; --tp->overwrite, --tabs, ++tp->ai)
 		tp->lb[sp->cno++] = '\t';
 	for (; tp->overwrite && spaces; --tp->overwrite, --spaces, ++tp->ai)
-		tp->lb[sp->cno++] = '\t';
+		tp->lb[sp->cno++] = ' ';
 
 	if (!tabs && !spaces)
 		return (0);
