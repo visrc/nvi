@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 5.36 1993/04/12 14:38:18 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:38:18 $";
+static char sccsid[] = "$Id: ex_subst.c,v 5.37 1993/05/02 16:30:09 bostic Exp $ (Berkeley) $Date: 1993/05/02 16:30:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,7 +22,7 @@ static char sccsid[] = "$Id: ex_subst.c,v 5.36 1993/04/12 14:38:18 bostic Exp $ 
 enum which {AGAIN, MUSTSETR, FIRST};
 
 static int		checkmatchsize __P((SCR *, regex_t *));
-static inline int	regsub __P((SCR *, char *, char *, size_t, size_t));
+static inline int	regsub __P((SCR *, char *, char *, size_t *, size_t *));
 static int		substitute __P((SCR *, EXF *,
 			    EXCMDARG *, char *, regex_t *, enum which));
 
@@ -306,7 +306,7 @@ skipmatch:	eval = regexec(re,
 		BUILD(sp, s, sp->match[0].rm_so);
 
 		/* Copy matching bytes. */
-		if (regsub(sp, s, lb, lbclen, lblen))
+		if (regsub(sp, s, lb, &lbclen, &lblen))
 			return (1);
 
 skip:		s += sp->match[0].rm_eo;
@@ -433,12 +433,13 @@ nomatch:	if (len)
  * 	Do the substitution for a regular expression.
  */
 static inline int
-regsub(sp, ip, lb, lbclen, lblen)
+regsub(sp, ip, lb, lbclenp, lblenp)
 	SCR *sp;
 	char *ip;			/* Input line. */
 	char *lb;
-	size_t lbclen, lblen;
+	size_t *lbclenp, *lblenp;
 {
+	size_t lbclen, lblen;		/* Local copies. */
 	size_t mlen;			/* Match length. */
 	size_t rpl;			/* Remaining replacement length. */
 	char *rp;			/* Replacement pointer. */
@@ -448,6 +449,8 @@ regsub(sp, ip, lb, lbclen, lblen)
 
 	rp = sp->repl;			/* Set up replacment info. */
 	rpl = sp->repl_len;
+	lbclen = *lbclenp;
+	lblen = *lblenp;
 	for (lbp = lb + lbclen; rpl--;) {
 		ch = *rp++;
 		if (ch == '&') {	/* Entire pattern. */
@@ -478,6 +481,8 @@ sub:			if (sp->match[no].rm_so != -1 &&
 			++lbclen;
 		}
 	}
+	*lbclenp = lbclen;
+	*lblenp = lblenp;
 	return (0);
 }
 
