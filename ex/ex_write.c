@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_write.c,v 10.19 1996/03/06 19:52:54 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:52:54 $";
+static const char sccsid[] = "$Id: ex_write.c,v 10.20 1996/03/29 09:47:27 bostic Exp $ (Berkeley) $Date: 1996/03/29 09:47:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -149,18 +149,10 @@ exwr(sp, cmdp, cmd)
 
 	/* Skip any leading whitespace. */
 	if (cmdp->argc != 0)
-		for (p = cmdp->argv[0]->bp; *p && isblank(*p); ++p);
-
-	/* If no arguments, just write the file back. */
-	if (cmdp->argc == 0 || *p == '\0') {
-		if (F_ISSET(cmdp, E_ADDR2_ALL))
-			LF_SET(FS_ALL);
-		return (file_write(sp,
-		    &cmdp->addr1, &cmdp->addr2, NULL, flags));
-	}
+		for (p = cmdp->argv[0]->bp; *p != '\0' && isblank(*p); ++p);
 
 	/* If "write !" it's a pipe to a utility. */
-	if (cmd == WRITE && *p == '!') {
+	if (cmdp->argc != 0 && cmd == WRITE && *p == '!') {
 		/* Secure means no shell access. */
 		if (O_ISSET(sp, O_SECURE)) {
 			ex_emsg(sp, cmdp->cmd->name, EXM_SECURE_F);
@@ -189,11 +181,19 @@ exwr(sp, cmdp, cmd)
 	}
 
 	/* If "write >>" it's an append to a file. */
-	if (cmd != XIT && p[0] == '>' && p[1] == '>') {
+	if (cmdp->argc != 0 && cmd != XIT && p[0] == '>' && p[1] == '>') {
 		LF_SET(FS_APPEND);
 
 		/* Skip ">>" and whitespace. */
 		for (p += 2; *p && isblank(*p); ++p);
+	}
+
+	/* If no arguments, just write the file back. */
+	if (cmdp->argc == 0 || *p == '\0') {
+		if (F_ISSET(cmdp, E_ADDR2_ALL))
+			LF_SET(FS_ALL);
+		return (file_write(sp,
+		    &cmdp->addr1, &cmdp->addr2, NULL, flags));
 	}
 
 	/* Build an argv so we get an argument count and file expansion. */
@@ -250,9 +250,8 @@ writeit:	if (F_ISSET(sp->frp, FR_TMPFILE) &&
 			set_alt_name(sp, name);
 		break;
 	default:
-		msgq_str(sp, M_ERR, cmdp->argv[0]->bp,
+		msgq_str(sp, M_ERR, p,
 		    "176|%s expanded into too many file names");
-		ex_emsg(sp, cmdp->cmd->usage, EXM_USAGE);
 		return (1);
 	}
 
