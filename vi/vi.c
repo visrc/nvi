@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.25 1992/11/02 09:41:48 bostic Exp $ (Berkeley) $Date: 1992/11/02 09:41:48 $";
+static char sccsid[] = "$Id: vi.c,v 5.26 1992/11/03 15:07:03 bostic Exp $ (Berkeley) $Date: 1992/11/03 15:07:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -98,13 +98,23 @@ err:		if (msgcnt) {
 			SETABSMARK(&m);
 		}
 
-		/* Do any required motion. */
+		/*
+		 * Do any required motion.  If no motion specified, and it's
+		 * a line-oriented command, set the to MARK anyway, it's used
+		 * by some commands.  If count specified, then the to MARK is
+		 * set to that many lines, counting the current one.
+		 */
 		if (flags & V_MOTION) {
 			if (getmotion(vp, &fm, &tm))
 				goto err;
 		} else {
 			fm.lno = curf->lno;
 			fm.cno = curf->cno;
+			if (vp->kp->flags & V_LMODE && vp->flags & VC_C1SET) {
+				tm.lno = curf->lno + vp->count - 1;
+				tm.cno = curf->cno;
+			} else
+				tm = fm;
 		}
 
 		if (flags & V_INPUT && ISSET(O_SHOWMODE)) {
