@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_msg.c,v 10.51 1996/03/28 18:02:41 bostic Exp $ (Berkeley) $Date: 1996/03/28 18:02:41 $";
+static const char sccsid[] = "$Id: vs_msg.c,v 10.52 1996/03/28 18:06:20 bostic Exp $ (Berkeley) $Date: 1996/03/28 18:06:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -121,10 +121,10 @@ vs_busy(sp, msg, btype)
 		if (vip->totalcount != 0 || vip->busy_ref == 0)
 			break;
 
-		/* Update no more than every 1/4 of a second. */
+		/* Update no more than every 1/8 of a second. */
 		(void)gettimeofday(&tv, NULL);
 		if (((tv.tv_sec - vip->busy_tv.tv_sec) * 1000000 +
-		    (tv.tv_usec - vip->busy_tv.tv_usec)) < 250000)
+		    (tv.tv_usec - vip->busy_tv.tv_usec)) < 125000)
 			return;
 		vip->busy_tv = tv;
 
