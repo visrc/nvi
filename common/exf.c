@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.21 1992/10/24 15:25:30 bostic Exp $ (Berkeley) $Date: 1992/10/24 15:25:30 $";
+static char sccsid[] = "$Id: exf.c,v 5.22 1992/10/26 17:43:19 bostic Exp $ (Berkeley) $Date: 1992/10/26 17:43:19 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -28,9 +28,17 @@ static char sccsid[] = "$Id: exf.c,v 5.21 1992/10/24 15:25:30 bostic Exp $ (Berk
 static EXFLIST exfhdr;				/* List of files. */
 EXF *curf;					/* Current file. */
 
-#ifdef FILE_LIST_DEBUG
-void file_show __P((char *));
-#endif
+static EXF defexf = {
+	NULL, NULL,				/* next, prev */
+	1, 1, 1, 1,				/* top, otop, lno, olno */
+	0, 0, 0, 0,				/* cno, ocno, scno, shift */
+	0, 0, 0,				/* rcm, lines, cols */
+	0, 0,					/* cwidth, rcmflags */
+	NULL,					/* db */
+	NULL, 0, OOBLNO, OOBLNO,		/* c_lp, c_len, c_lno, nlines */
+	NULL,					/* sdb */
+	NULL, 0, 0,				/* name, nlen, flags */
+};
 
 static void file_copyright __P((EXF *));
 
@@ -42,15 +50,6 @@ void
 file_init()
 {
 	exfhdr.next = exfhdr.prev = (EXF *)&exfhdr;
-}
-
-#define	EPSET(ep) {							\
-	ep->lno = ep->olno = ep->top = ep->otop = 1;			\
-	ep->cno = ep->ocno = ep->scno = ep->shift = 0;			\
-	ep->cwidth = 0;							\
-	ep->rcm = ep->rcmflags = 0;					\
-	ep->nlen = strlen(ep->name);					\
-	ep->flags = 0;							\
 }
 
 /*
@@ -67,13 +66,15 @@ file_ins(ep, name, append)
 
 	if ((nep = malloc(sizeof(EXF))) == NULL)
 		goto err;
+	*nep = defexf;
 
 	if ((nep->name = strdup(name)) == NULL) {
 		free(nep);
 err:		msg("Error: %s", strerror(errno));
 		return (1);
 	}
-	EPSET(nep);
+	nep->nlen = strlen(nep->name);
+	
 	if (append) {
 		insexf(nep, ep);
 	} else {
@@ -106,37 +107,15 @@ file_set(argc, argv)
 	for (; *argv; ++argv) {
 		if ((ep = malloc(sizeof(EXF))) == NULL)
 			goto err;
+		*ep = defexf;
 		if ((ep->name = strdup(*argv)) == NULL) {
 			free(ep);
 err:			msg("Error: %s", strerror(errno));
 			return (1);
 		}
-		EPSET(ep);
 		instailexf(ep, &exfhdr);
 	}
 	return (0);
-}
-
-/*
- * file_iscurrent --
- *	Return if the filename is the same as the current one.
- */
-int
-file_iscurrent(name)
-	char *name;
-{
-	char *p;
-
-	/*
-	 * XXX
-	 * Compare the dev/ino , not just the name; then, quit looking at
-	 * just the file name (see parse_err in ex_errlist.c).
-	 */
-	if ((p = rindex(curf->name, '/')) == NULL)
-		p = curf->name;
-	else
-		++p;
-	return (!strcmp(p, name));
 }
 
 /*
@@ -146,7 +125,15 @@ file_iscurrent(name)
 EXF *
 file_first()
 {
-	return (exfhdr.next);
+	EXF *ep;
+
+	for (ep = exfhdr.next;;) {
+		if (ep == (EXF *)&exfhdr)
+			return (NULL);
+		if (!(ep->flags & F_IGNORE))
+			return (ep);
+	}
+	/* NOTREACHED */
 }
 
 /*
@@ -157,7 +144,14 @@ EXF *
 file_next(ep)
 	EXF *ep;
 {
-	return (ep->next != (EXF *)&exfhdr ? ep->next : NULL);
+	for (;;) {
+		ep = ep->next;
+		if (ep == (EXF *)&exfhdr)
+			return (NULL);
+		if (!(ep->flags & F_IGNORE))
+			return (ep);
+	}
+	/* NOTREACHED */
 }
 
 /*
@@ -168,7 +162,30 @@ EXF *
 file_prev(ep)
 	EXF *ep;
 {
-	return (ep->prev != (EXF *)&exfhdr ? ep->prev : NULL);
+	for (;;) {
+		ep = ep->prev;
+		if (ep == (EXF *)&exfhdr)
+			return (NULL);
+		if (!(ep->flags & F_IGNORE))
+			return (ep);
+	}
+	/* NOTREACHED */
+}
+
+/*
+ * file_locate --
+ *	Return the appropriate structure if we've seen this file before.
+ */
+EXF *
+file_locate(name)
+	char *name;
+{
+	EXF *p;
+
+	for (p = exfhdr.next; p != (EXF *)&exfhdr; p = p->next)
+		if (!bcmp(p->name, name, p->nlen))
+			return (p);
+	return (NULL);
 }
 
 /*
@@ -183,7 +200,7 @@ file_start(ep)
 	int fd, flags;
 	char tname[sizeof(_PATH_TMPNAME) + 1];
 
-	if (ep->name == NULL) {
+	if (ep == NULL) {
 		(void)strcpy(tname, _PATH_TMPNAME);
 		if ((fd = mkstemp(tname)) == -1) {
 			msg("Temporary file: %s", strerror(errno));
@@ -212,6 +229,9 @@ file_start(ep)
 	}
 	if (ep->flags & F_NONAME)
 		(void)close(fd);
+
+	/* Flush the line caches. */
+	ep->c_lno = ep->c_nlines = OOBLNO;
 
 	/* Open a shadow db structure. */
 	(void)strcpy(tname, _PATH_TMPNAME);
