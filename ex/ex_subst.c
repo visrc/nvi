@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_subst.c,v 10.48 2001/06/25 15:19:20 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:20 $";
+static const char sccsid[] = "$Id: ex_subst.c,v 10.49 2001/09/11 20:52:45 skimo Exp $ (Berkeley) $Date: 2001/09/11 20:52:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1043,11 +1043,11 @@ re_conv(SCR *sp, CHAR_T **ptrnp, size_t *plenp, int *replacedp)
 				switch (*++p) {
 				case '<':
 					magic = 1;
-					needlen += RE_WSTART_LEN;
+					needlen += RE_WSTART_LEN + 1;
 					break;
 				case '>':
 					magic = 1;
-					needlen += RE_WSTOP_LEN;
+					needlen += RE_WSTOP_LEN + 1;
 					break;
 				case '~':
 					if (!O_ISSET(sp, O_MAGIC)) {
@@ -1105,13 +1105,13 @@ re_conv(SCR *sp, CHAR_T **ptrnp, size_t *plenp, int *replacedp)
 				switch (*++p) {
 				case '<':
 					MEMCPY(t,
-					    RE_WSTART, RE_WSTART_LEN - 1);
-					t += RE_WSTART_LEN - 1;
+					    RE_WSTART, RE_WSTART_LEN);
+					t += RE_WSTART_LEN;
 					break;
 				case '>':
 					MEMCPY(t,
-					    RE_WSTOP, RE_WSTOP_LEN - 1);
-					t += RE_WSTOP_LEN - 1;
+					    RE_WSTOP, RE_WSTOP_LEN);
+					t += RE_WSTOP_LEN;
 					break;
 				case '~':
 					if (O_ISSET(sp, O_MAGIC))

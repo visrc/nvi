@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: screen.h,v 10.47 2001/08/29 12:25:13 skimo Exp $ (Berkeley) $Date: 2001/08/29 12:25:13 $
+ *	$Id: screen.h,v 10.48 2001/09/11 20:52:45 skimo Exp $ (Berkeley) $Date: 2001/09/11 20:52:45 $
  */
 
 /*
@@ -168,8 +168,8 @@ struct _scr {
 					/* Ex/vi: re_compile flags. */
 #define	RE_WSTART	L("[[:<:]]")	/* Ex/vi: not-in-word search pattern. */
 #define	RE_WSTOP	L("[[:>:]]")
-#define RE_WSTART_LEN	(sizeof(RE_WSTART)/sizeof(CHAR_T))
-#define RE_WSTOP_LEN	(sizeof(RE_WSTOP)/sizeof(CHAR_T))
+#define RE_WSTART_LEN	(sizeof(RE_WSTART)/sizeof(CHAR_T)-1)
+#define RE_WSTOP_LEN	(sizeof(RE_WSTOP)/sizeof(CHAR_T)-1)
 					/* Ex/vi: flags to search routines. */
 #define	SEARCH_CSCOPE	0x000001	/* Search for a cscope pattern. */
 #define	SEARCH_CSEARCH	0x000002	/* Compile search replacement. */

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_search.c,v 10.29 2001/06/25 15:19:35 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:35 $";
+static const char sccsid[] = "$Id: v_search.c,v 10.30 2001/09/11 20:52:46 skimo Exp $ (Berkeley) $Date: 2001/09/11 20:52:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -328,10 +328,10 @@ v_searchw(SCR *sp, VICMD *vp)
 	len = VIP(sp)->klen + RE_WSTART_LEN + RE_WSTOP_LEN;
 	GET_SPACE_RETW(sp, bp, blen, len);
 	MEMCPY(bp, RE_WSTART, RE_WSTART_LEN); 
-	p = bp + sizeof(RE_WSTART)/sizeof(CHAR_T) - 1;
+	p = bp + RE_WSTART_LEN;
 	MEMCPY(p, VIP(sp)->keyw, VIP(sp)->klen);
 	p += VIP(sp)->klen;
-	MEMCPY(bp, RE_WSTOP, RE_WSTOP_LEN); 
+	MEMCPY(p, RE_WSTOP, RE_WSTOP_LEN); 
 
 	rval = v_search(sp, vp, bp, len, SEARCH_SET, FORWARD);
 
