@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_screen.c,v 8.5 1995/02/09 15:24:08 bostic Exp $ (Berkeley) $Date: 1995/02/09 15:24:08 $";
+static char sccsid[] = "$Id: cl_screen.c,v 8.6 1995/02/12 18:31:50 bostic Exp $ (Berkeley) $Date: 1995/02/12 18:31:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -163,21 +163,6 @@ cl_init(sp)
 		(void)tcsetattr(STDIN_FILENO, TCSASOFT | TCSADRAIN, &t);
 	}
 
-	/*
-	 * The historic 4BSD curses had an uneasy relationship with termcap.
-	 * Termcap used a static buffer to hold the terminal information,
-	 * which was was then used by the curses functions.  We want to use
-	 * it too, for lots of random things, but we've put it off until after
-	 * initscr() was called.  Do it now.
-	 */
-	if (cl_term_init(sp)) {
-		free(clp);
-		return (1);
-	}
-
-	/* Put the cursor keys into application mode. */
-	(void)cl_keypad(sp, 1);
-
 	/* Fill in the general functions that the screen owns. */
 	sp->e_bell = cl_bell;
 	sp->e_fmap = cl_fmap;
@@ -200,7 +185,24 @@ cl_init(sp)
 	svp->scr_restore = cl_restore;
 	svp->scr_size = cl_ssize;
 
+	/* Things are now initialized -- set the bit. */
 	F_SET(clp, CL_CURSES_INIT);
+
+	/*
+	 * The historic 4BSD curses had an uneasy relationship with termcap.
+	 * Termcap used a static buffer to hold the terminal information,
+	 * which was was then used by the curses functions.  We want to use
+	 * it too, for lots of random things, but we've put it off until after
+	 * initscr() was called and the CL_CURSES_INIT bit was set.  Do it now.
+	 */
+	if (cl_term_init(sp)) {
+		free(clp);
+		return (1);
+	}
+
+	/* Put the cursor keys into application mode. */
+	(void)cl_keypad(sp, 1);
+
 	return (0);
 }
 
