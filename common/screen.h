@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 9.9 1995/01/11 17:26:07 bostic Exp $ (Berkeley) $Date: 1995/01/11 17:26:07 $
+ *	$Id: screen.h,v 9.10 1995/01/11 18:46:15 bostic Exp $ (Berkeley) $Date: 1995/01/11 18:46:15 $
  */
 
 /*
@@ -289,9 +289,11 @@ struct _scr {
 #define	S_GLOBAL	0x0040000	/* Doing a global command. */
 #define	S_INPUT		0x0080000	/* Doing text input. */
 #define	S_INTERRUPTED	0x0100000	/* If have been interrupted. */
-#define	S_SCRIPT	0x0200000	/* Window is a shell script. */
-#define	S_SRE_SET	0x0400000	/* The search RE has been set. */
-#define	S_SUBRE_SET	0x0800000	/* The substitute RE has been set. */
+#define	S_RE_RECOMPILE	0x0200000	/* The search RE needs recompiling. */
+#define	S_RE_SEARCH	0x0400000	/* The search RE has been set. */
+#define	S_RE_SUBST	0x0800000	/* The substitute RE has been set. */
+#define	S_SCRIPT	0x1000000	/* Window is a shell script. */
+
 	u_int32_t flags;
 };
 
