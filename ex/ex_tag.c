@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 8.24 1993/11/22 20:29:24 bostic Exp $ (Berkeley) $Date: 1993/11/22 20:29:24 $";
+static char sccsid[] = "$Id: ex_tag.c,v 8.25 1993/11/22 20:29:47 bostic Exp $ (Berkeley) $Date: 1993/11/22 20:29:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -395,7 +395,7 @@ ex_tagdisplay(sp, ep)
 	int cnt;
 	FREF *frp;
 	TAG *tp;
-	size_t len, maxlen, slen;
+	size_t len, maxlen;
 	char *name;
 
 	if ((tp = EXP(sp)->tagq.tqh_first) == NULL) {
