@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_send.c,v 8.2 1996/12/10 18:01:51 bostic Exp $ (Berkeley) $Date: 1996/12/10 18:01:51 $";
+static const char sccsid[] = "$Id: ip_send.c,v 8.3 1996/12/10 21:03:45 bostic Exp $ (Berkeley) $Date: 1996/12/10 21:03:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -17,30 +17,26 @@ static const char sccsid[] = "$Id: ip_send.c,v 8.2 1996/12/10 18:01:51 bostic Ex
 #include <bitstring.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "../common/common.h"
 #include "../ip_vi/ip.h"
 #include "ipc_extern.h"
 
-static void nomem()
-{
-    puts( "out of memory" );
-    exit(1);
-}
+extern int vi_ofd;				/* Output file descriptor. */
 
 /*
- * ip_send --
+ * __vi_send --
  *	Construct and send an IP buffer.
  *
- * PUBLIC: int ip_send __P((char *, IP_BUF *));
+ * PUBLIC: int __vi_send __P((char *, IP_BUF *));
  */
 int
-ip_send(fmt, ipbp)
+__vi_send(fmt, ipbp)
 	char *fmt;
 	IP_BUF *ipbp;
 {
-	extern int o_fd;
 	static char *bp;
 	static size_t blen;
 	size_t off;
@@ -54,11 +50,11 @@ ip_send(fmt, ipbp)
 	 * XXX
 	 * How is that possible!?!?
 	 */
-	if (o_fd == 0)
+	if (vi_ofd == 0)
 		return (0);
 
 	if (blen == 0 && (bp = malloc(blen = 512)) == NULL)
-		nomem();
+		return (1);
 
 	p = bp;
 	nlen = 0;
@@ -73,12 +69,15 @@ ip_send(fmt, ipbp)
 				goto value;
 			case '2':			/* Value 2. */
 				ilen = htonl(ipbp->val2);
+				goto value;
+			case '3':			/* Value 3. */
+				ilen = htonl(ipbp->val3);
 value:				nlen += IPO_INT_LEN;
 				if (nlen >= blen) {
 					blen = blen * 2 + nlen;
 					off = p - bp;
 					if ((bp = realloc(bp, blen)) == NULL)
-						nomem();
+						return (1);
 					p = bp + off;
 				}
 				memmove(p, &ilen, IPO_INT_LEN);
@@ -92,7 +91,7 @@ value:				nlen += IPO_INT_LEN;
 					blen = blen * 2 + nlen;
 					off = p - bp;
 					if ((bp = realloc(bp, blen)) == NULL)
-						nomem();
+						return (1);
 					p = bp + off;
 				}
 				memmove(p, &ilen, IPO_INT_LEN);
@@ -101,21 +100,8 @@ value:				nlen += IPO_INT_LEN;
 				p += ipbp->len;
 				break;
 			}
-#ifdef TR
-	trace("WROTE: ");
-	for (n = p - bp, p = bp; n > 0; --n, ++p)
-		if (isprint(*p))
-			(void)trace("%c", *p);
-		else
-			trace("<%x>", (u_char)*p);
-	trace("\n");
-#endif
-
 	for (n = p - bp, p = bp; n > 0; n -= nw, p += nw)
-		if ((nw = write(o_fd, p, n)) < 0) {
-			perror("ip_cl: write");
-			exit(1);
-		}
-
+		if ((nw = write(vi_ofd, p, n)) < 0)
+			return (1);
 	return (0);
 }
