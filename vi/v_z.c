@@ -1,20 +1,10 @@
-/* move4.c */
-
-/* Author:
- *	Steve Kirkendall
- *	14407 SW Teal Blvd. #C
- *	Beaverton, OR 97005
- *	kirkenda@cs.pdx.edu
- */
-
-
 /* This file contains movement functions which are screen-relative */
 
 #include <sys/types.h>
+#include <curses.h>
 #include <stdio.h>
 
 #include "vi.h"
-#include "curses.h"
 #include "options.h"
 #include "vcmd.h"
 #include "extern.h"

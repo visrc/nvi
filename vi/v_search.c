@@ -6,14 +6,14 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 5.8 1992/04/22 09:27:37 bostic Exp $ (Berkeley) $Date: 1992/04/22 09:27:37 $";
+static char sccsid[] = "$Id: v_search.c,v 5.9 1992/04/28 13:52:22 bostic Exp $ (Berkeley) $Date: 1992/04/28 13:52:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
+#include <curses.h>
 #include <stdio.h>
 
 #include "vi.h"
-#include "curses.h"
 #include "vcmd.h"
 #include "extern.h"
 
@@ -31,7 +31,7 @@ v_wsearch(word, m, cnt)
 
 	/* Show the searched-for word on the bottom line. */
 	move(LINES - 1, 0);
-	qaddstr(buf);
+	addstr(buf);
 	clrtoeol();
 	refresh();
 

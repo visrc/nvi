@@ -6,16 +6,16 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.2 1992/04/22 08:09:52 bostic Exp $ (Berkeley) $Date: 1992/04/22 08:09:52 $";
+static char sccsid[] = "$Id: vi.c,v 5.3 1992/04/28 13:53:10 bostic Exp $ (Berkeley) $Date: 1992/04/28 13:53:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 #include <termios.h>
+#include <curses.h>
 #include <stdio.h>
 #include <ctype.h>
 
 #include "vi.h"
-#include "curses.h"
 #include "options.h"
 #include "tty.h"
 #include "vcmd.h"
@@ -40,9 +40,6 @@ vi()
 	REG int			i;
 	char *p;
 
-	/* Tell the redraw() function to start from scratch. */
-	iredraw();
-
 #ifdef lint
 	/* lint says that "range" might be used before it is set.  This
 	 * can't really happen due to the way "range" and "prevkey" are used,
@@ -58,6 +55,11 @@ vi()
 	/* Repeatedly handle VI commands */
 	for (count = 0, prevkey = '\0'; mode == MODE_VI; )
 	{
+		if (msgcnt)
+			msg_flush();
+
+		scr_redraw(0);
+
 		/* report any changes from the previous command */
 		if (rptlines >= LVAL(O_REPORT))
 		{
@@ -70,6 +72,8 @@ vi()
 		{
 			key = getkey(WHEN_VICMD);
 		} while (key < 0 || key > 127);
+
+TRACE("{%c}\n", key);
 
 		/* Convert a doubled-up operator such as "dd" into "d_" */
 		if (prevkey && key == prevkey)
@@ -288,12 +292,13 @@ vi()
 			break;
 
 		  case CURSOR_TEXT:
+			v_startex();
 		  	do
 		  	{	
 				if ((p =
 				    gb(key, GB_BS|GB_ESC|GB_OFF)) != NULL) {
 					/* reassure user that <CR> was hit */
-					qaddch('\r');
+					addch('\r');
 					refresh();
 
 					/* call the function with the text */
@@ -302,11 +307,12 @@ vi()
 				}
 				else
 				{
-					if (exwrote || mode == MODE_COLON)
+					if (exwrote)
 						iredraw();
 					mode = MODE_VI;
 				}
-			} while (mode == MODE_COLON);
+			} while (mode == MODE_EX);
+			v_leaveex();
 			count = 0L;
 			break;
 		}
@@ -418,7 +424,8 @@ vi()
  * it isn't past the end of the line, and that the column hasn't been
  * *accidentally* changed.
  */
-MARK adjmove(old, new, flags)
+MARK
+adjmove(old, new, flags)
 	MARK		old;	/* the cursor position before the command */
 	REG MARK	new;	/* the cursor position after the command */
 	int		flags;	/* various flags regarding cursor mvmt */
@@ -515,6 +522,5 @@ MARK adjmove(old, new, flags)
 		}
 		new = (new & ~(BLKSIZE - 1)) + (int)(text - ptext);
 	}
-
-	return new;
+	return (new);
 }
