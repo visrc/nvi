@@ -1,5 +1,5 @@
 #! /bin/sh
-# $Id: distrib,v 8.6 1996/08/18 15:27:41 bostic Exp $ (Berkeley) $Date: 1996/08/18 15:27:41 $
+# $Id: distrib,v 8.7 1996/08/20 19:34:39 bostic Exp $ (Berkeley) $Date: 1996/08/20 19:34:39 $
 
 # Clean
 make -f Makefile.in clean
@@ -68,6 +68,6 @@ chmod 444 $f
 
 # Build tags files.
 rm -f tags
-ctags ../cl/*.[ch] ../common/*.[ch] ../ex/*.[ch] ../perl_api/*.[ch] \
+ctags -d ../cl/*.[ch] ../common/*.[ch] ../ex/*.[ch] ../perl_api/*.[ch] \
     ../tcl_api/*.[ch] ../tk/*.[ch] ../vi/*.[ch]
 chmod 444 tags
