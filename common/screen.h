@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.29 1993/09/30 12:40:46 bostic Exp $ (Berkeley) $Date: 1993/09/30 12:40:46 $
+ *	$Id: screen.h,v 8.30 1993/09/30 13:18:02 bostic Exp $ (Berkeley) $Date: 1993/09/30 13:18:02 $
  */
 
 /*
@@ -49,11 +49,13 @@ typedef struct _fref {
 
 #define	FR_CURSORSET	0x001		/* If lno/cno valid. */
 #define	FR_EDITED	0x002		/* If the file was ever edited. */
-#define	FR_IGNORE	0x004		/* File isn't part of argument list. */
-#define	FR_NAMECHANGED	0x008		/* File name was changed. */
-#define	FR_NEWFILE	0x010		/* File doesn't really exist yet. */
-#define	FR_NONAME	0x020		/* File has no name. */
-#define	FR_RDONLY	0x040		/* File is read-only. */
+#define	FR_FREE_TNAME	0x004		/* Free the tname field. */
+#define	FR_IGNORE	0x008		/* File isn't part of argument list. */
+#define	FR_NAMECHANGED	0x010		/* File name was changed. */
+#define	FR_NEWFILE	0x020		/* File doesn't really exist yet. */
+#define	FR_NONAME	0x040		/* File has no name. */
+#define	FR_RDONLY	0x080		/* File is read-only. */
+#define	FR_UNLINK_TFILE	0x100		/* Unlink the temporary file. */
 	u_char	 flags;
 } FREF;
 
