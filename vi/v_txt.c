@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.93 1994/03/15 09:52:41 bostic Exp $ (Berkeley) $Date: 1994/03/15 09:52:41 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.94 1994/03/18 11:50:59 bostic Exp $ (Berkeley) $Date: 1994/03/18 11:50:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,13 +33,13 @@ static char sccsid[] = "$Id: v_txt.c,v 8.93 1994/03/15 09:52:41 bostic Exp $ (Be
 #include "vcmd.h"
 #include "excmd.h"
 
-static int	 txt_abbrev __P((SCR *, TEXT *, ARG_CHAR_T, int, int *, int *));
+static int	 txt_abbrev __P((SCR *, TEXT *, CHAR_T *, int, int *, int *));
 static void	 txt_ai_resolve __P((SCR *, TEXT *));
 static TEXT	*txt_backup __P((SCR *, EXF *, TEXTH *, TEXT *, u_int));
 static void	 txt_err __P((SCR *, EXF *, TEXTH *));
-static int	 txt_hex __P((SCR *, TEXT *, int *, ARG_CHAR_T));
+static int	 txt_hex __P((SCR *, TEXT *, int *, CHAR_T *));
 static int	 txt_indent __P((SCR *, TEXT *));
-static int	 txt_margin __P((SCR *, TEXT *, int *, ARG_CHAR_T));
+static int	 txt_margin __P((SCR *, TEXT *, int *, CHAR_T *));
 static int	 txt_outdent __P((SCR *, TEXT *));
 static void	 txt_showmatch __P((SCR *, EXF *));
 static void	 txt_Rcleanup __P((SCR *,
@@ -379,7 +379,7 @@ next_ch:	if (term_key(sp, &ikey, quoted == Q_THISCHAR ?
 			 * discard the replay characters.		\
 			 */						\
 			if (abb == A_INWORD && !replay) {		\
-				if (txt_abbrev(sp, tp, ch,		\
+				if (txt_abbrev(sp, tp, &ch,		\
 				    LF_ISSET(TXT_INFOLINE), &tmp,	\
 				    &ab_turnoff))			\
 					goto err;			\
@@ -395,7 +395,7 @@ next_ch:	if (term_key(sp, &ikey, quoted == Q_THISCHAR ?
 				txt_unmap(sp, tp, &iflags);		\
 			/* Handle hex numbers. */			\
 			if (hex == H_INHEX) {				\
-				if (txt_hex(sp, tp, &tmp, ch))		\
+				if (txt_hex(sp, tp, &tmp, &ch))		\
 					goto err;			\
 				if (tmp) {				\
 					hex = H_NOTSET;			\
@@ -852,7 +852,7 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 		case K_VLNEXT:			/* Quote the next character. */
 			/* If in hex mode, see if we've entered a hex value. */
 			if (hex == H_INHEX) {
-				if (txt_hex(sp, tp, &tmp, ch))
+				if (txt_hex(sp, tp, &tmp, &ch))
 					goto err;
 				if (tmp) {
 					hex = H_NOTSET;
@@ -890,7 +890,7 @@ insq_ch:		/*
 			 */
 			if (!inword(ch)) {
 				if (abb == A_INWORD && !replay) {
-					if (txt_abbrev(sp, tp, ch,
+					if (txt_abbrev(sp, tp, &ch,
 					    LF_ISSET(TXT_INFOLINE),
 					    &tmp, &ab_turnoff))
 						goto err;
@@ -905,7 +905,7 @@ insq_ch:		/*
 			}
 			/* If in hex mode, see if we've entered a hex value. */
 			if (hex == H_INHEX && !isxdigit(ch)) {
-				if (txt_hex(sp, tp, &tmp, ch))
+				if (txt_hex(sp, tp, &tmp, &ch))
 					goto err;
 				if (tmp) {
 					hex = H_NOTSET;
@@ -917,7 +917,7 @@ insq_ch:		/*
 				if (sp->s_column(sp, ep, &col))
 					goto err;
 				if (col >= margin) {
-					if (txt_margin(sp, tp, &tmp, ch))
+					if (txt_margin(sp, tp, &tmp, &ch))
 						goto err;
 					if (tmp)
 						goto next_ch;
@@ -986,10 +986,10 @@ err:	eval = 1;
  *	Handle abbreviations.
  */
 static int
-txt_abbrev(sp, tp, pushc, isinfoline, didsubp, turnoffp)
+txt_abbrev(sp, tp, pushcp, isinfoline, didsubp, turnoffp)
 	SCR *sp;
 	TEXT *tp;
-	ARG_CHAR_T pushc;
+	CHAR_T *pushcp;
 	int isinfoline, *didsubp, *turnoffp;
 {
 	CHAR_T ch;
@@ -1083,7 +1083,7 @@ txt_abbrev(sp, tp, pushc, isinfoline, didsubp, turnoffp)
 	 * queue would have to be adjusted, and the line state when an initial
 	 * abbreviated character was received would have to be saved.
 	 */
-	ch = pushc;
+	ch = *pushcp;
 	if (term_push(sp, &ch, 1, 0, CH_ABBREVIATED))
 		return (1);
 	if (term_push(sp, qp->output, qp->olen, 0, CH_ABBREVIATED))
@@ -1390,11 +1390,11 @@ txt_err(sp, ep, tiqh)
  * may not be able to enter.
  */
 static int
-txt_hex(sp, tp, was_hex, pushc)
+txt_hex(sp, tp, was_hex, pushcp)
 	SCR *sp;
 	TEXT *tp;
 	int *was_hex;
-	ARG_CHAR_T pushc;
+	CHAR_T *pushcp;
 {
 	CHAR_T ch, savec;
 	size_t len, off;
@@ -1433,7 +1433,7 @@ nothex:		tp->lb[sp->cno] = savec;
 		return (0);
 	}
 
-	ch = pushc;
+	ch = *pushcp;
 	if (term_push(sp, &ch, 1, 0, CH_NOMAP | CH_QUOTED))
 		return (1);
 	ch = value;
@@ -1713,11 +1713,11 @@ txt_showmatch(sp, ep)
  * break the line.  I don't, it tends to wake the cats.
  */
 static int
-txt_margin(sp, tp, didbreak, pushc)
+txt_margin(sp, tp, didbreak, pushcp)
 	SCR *sp;
 	TEXT *tp;
 	int *didbreak;
-	ARG_CHAR_T pushc;
+	CHAR_T *pushcp;
 {
 	CHAR_T ch;
 	size_t len, off, tlen;
@@ -1749,7 +1749,7 @@ txt_margin(sp, tp, didbreak, pushc)
 			break;
 	}
 
-	ch = pushc;
+	ch = *pushcp;
 	if (term_push(sp, &ch, 1, 0, CH_NOMAP))
 		return (1);
 	if (len && term_push(sp, wp, len, 0, CH_NOMAP | CH_QUOTED))
