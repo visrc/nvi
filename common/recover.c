@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.24 1993/10/28 11:21:11 bostic Exp $ (Berkeley) $Date: 1993/10/28 11:21:11 $";
+static char sccsid[] = "$Id: recover.c,v 8.25 1993/11/01 08:18:04 bostic Exp $ (Berkeley) $Date: 1993/11/01 08:18:04 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -307,8 +307,7 @@ rcv_alrm(signo)
  *	xterm window closed.)
  */
 void
-rcv_hup(signo)
-	int signo;
+rcv_hup()
 {
 	SCR *sp;
 	char comm[4096];
@@ -354,15 +353,9 @@ rcv_hup(signo)
 /*
  * rcv_term --
  *	Recovery SIGTERM interrupt handler.  (Reboot or halt is running.)
- *
- *	The only race should be with linking and unlinking the SCR
- *	chain, and using the underlying EXF * from the SCR structure.
- *
- *	DON'T USE MSG ROUTINES, THEY'RE NOT PROTECTED AGAINST US!
  */
 void
-rcv_term(signo)
-	int signo;
+rcv_term()
 {
 	SCR *sp;
 
