@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: cut.h,v 9.6 1995/05/05 18:40:42 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:40:42 $
+ *	$Id: cut.h,v 10.1 1995/06/08 18:59:59 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:59:59 $
  */
 
 typedef struct _texth TEXTH;		/* TEXT list head structure. */

@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: log.h,v 9.3 1995/05/05 18:42:26 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:42:26 $
+ *	$Id: log.h,v 10.1 1995/06/08 19:00:00 bostic Exp $ (Berkeley) $Date: 1995/06/08 19:00:00 $
  */
 
 #define	LOG_NOTYPE		0
