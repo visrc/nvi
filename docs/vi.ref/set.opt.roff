@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: set.opt.roff,v 8.43 1995/10/03 20:52:24 bostic Exp $ (Berkeley) $Date: 1995/10/03 20:52:24 $
+.\"     $Id: set.opt.roff,v 8.44 1995/10/17 12:09:50 bostic Exp $ (Berkeley) $Date: 1995/10/17 12:09:50 $
 .\"
 .SH 1 "Set Options"
 .pp
@@ -776,6 +776,35 @@ Historically, the
 command, when specified without a count, used two times the size of the
 scroll value; the POSIX 1003.2 standard specified the window size, which
 is a better choice.
+.KY secure
+.IP "secure [off]"
+The
+.OP secure
+edit option turns off all access to external programs.
+This means that the versions of the
+.CO read
+and
+.CO write
+commands that filter text through other programs,
+the
+.CO vi
+.CO \&!
+and
+.CO <control-Z>
+commands,
+the
+.CO ex
+.CO \&! ,
+.CO script ,
+.CO shell ,
+.CO stop
+and
+.CO suspend
+commands and file name expansion will not be permitted.
+Once set,
+the
+.OP secure
+edit option may not be unset.
 .KY sections
 .IP "sections, sect [NHSHH HUnhsh]"
 .CO Vi
