@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 10.32 1996/02/06 12:00:24 bostic Exp $ (Berkeley) $Date: 1996/02/06 12:00:24 $";
+static char sccsid[] = "$Id: v_txt.c,v 10.33 1996/02/11 12:32:50 bostic Exp $ (Berkeley) $Date: 1996/02/11 12:32:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -508,14 +508,14 @@ next:	if (v_event_get(sp, evp, 0, ec_flags))
 	}
 
 	/* File name completion. */
-	if (LF_ISSET(TXT_FILEC) &&
+	if (quote == Q_NOTSET && LF_ISSET(TXT_FILEC) &&
 	    O_STR(sp, O_FILEC) != NULL && O_STR(sp, O_FILEC)[0] == evp->e_c) {
 		if (txt_fc(sp, tp, &filec_redraw))
 			goto err;
 		goto ret;
 	}
 
-	/* Abbreviation check.  See comment in txt_abbrev(). */
+	/* Abbreviation overflow check.  See comment in txt_abbrev(). */
 #define	MAX_ABBREVIATION_EXPANSION	256
 	if (F_ISSET(&evp->e_ch, CH_ABBREVIATED)) {
 		if (++abcnt > MAX_ABBREVIATION_EXPANSION) {
@@ -1899,7 +1899,10 @@ retry:	for (off = sp->cno - 1, p = tp->lb + off, len = 0;; --p, --off) {
 	ex_cinit(&cmd, 0, 0, OOBLNO, OOBLNO, 0, NULL);
 	if (argv_init(sp, &cmd))
 		return (1);
-	(void)argv_exp2(sp, &cmd, p, len + 1);
+	if (argv_exp2(sp, &cmd, p, len + 1)) {
+		p[len] = s_ch;
+		return (0);
+	}
 	argc = cmd.argc;
 	argv = cmd.argv;
 
@@ -2006,7 +2009,7 @@ txt_fc_col(sp, argc, argv)
 	ARGS **av;
 	CHAR_T *p;
 	size_t base, cnt, col, colwidth, numrows, numcols, prefix, row;
-	int ac, nf;
+	int ac, nf, reset;
 
 	/* Trim any directory prefix common to all of the files. */
 	if ((p = strrchr(argv[0]->bp, '/')) == NULL)
@@ -2035,6 +2038,16 @@ txt_fc_col(sp, argc, argv)
 			colwidth = col;
 	}
 	colwidth += COL_OFF(colwidth, 6);
+
+	/*
+	 * Writing to the bottom line of the screen is always turned off when
+	 * S_INPUT_INFO is set.  Turn it back on, we know what we're doing.
+	 */
+	if (F_ISSET(sp, S_INPUT_INFO)) {
+		reset = 1;
+		F_CLR(sp, S_INPUT_INFO);
+	} else
+		reset = 0;
 
 	/* If the largest file name is too large, just print them. */
 	if (colwidth > sp->cols) {
@@ -2070,6 +2083,10 @@ txt_fc_col(sp, argc, argv)
 		(void)ex_puts(sp, "\n");
 	}
 	(void)ex_fflush(sp);
+
+	if (reset)
+		F_SET(sp, S_INPUT_INFO);
+
 	return (0);
 }
 
