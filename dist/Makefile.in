@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.89 1996/12/14 13:57:56 bostic Exp $ (Berkeley) $Date: 1996/12/14 13:57:56 $
+#	$Id: Makefile.in,v 8.90 1996/12/16 17:29:57 bostic Exp $ (Berkeley) $Date: 1996/12/16 17:29:57 $
 
 srcdir=	@srcdir@/..
 CC=	@CC@
@@ -60,7 +60,7 @@ vi ex: $(VIALL)
 	-$(rm) -f ex
 	$(ln) $@ ex
 
-MALL=	m_main.o m_cde.o trace.o libmvi.a
+MALL=	m_main.o m_cde.o trace.o libmvi.a @LIBOBJS@
 vi_motif: $(MALL)
 	$(SHRPENV) $(CC) $(LDFLAGS) -o $@ $(MALL) @MOTIFLIBS@
 
