@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_script.c,v 8.8 1993/12/19 19:36:59 bostic Exp $ (Berkeley) $Date: 1993/12/19 19:36:59 $";
+static char sccsid[] = "$Id: ex_script.c,v 8.9 1993/12/20 19:48:13 bostic Exp $ (Berkeley) $Date: 1993/12/20 19:48:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -223,18 +223,18 @@ more:	len = sizeof(buf) - (endp - buf);
 	}
 
 	/* If any complete lines, push them into the file. */
-	for (p = t = buf; t < endp; ++t) {
-		value = term_key_val(sp, *t);
+	for (p = t = buf; p < endp; ++p) {
+		value = term_key_val(sp, *p);
 		if (value == K_CR || value == K_NL) {
 			if (file_lline(sp, ep, &lline) ||
-			    file_aline(sp, ep, 0, lline, buf, t - p))
+			    file_aline(sp, ep, 0, lline, t, p - t))
 				goto prompterr;
-			p = ++t;
+			t = p + 1;
 		}
 	}
 	if (p > buf) {
-		memmove(buf, p, endp - p);
-		endp = buf + (endp - p);
+		memmove(buf, t, endp - t);
+		endp = buf + (endp - t);
 	}
 	if (endp == buf)
 		goto more;
