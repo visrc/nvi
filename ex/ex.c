@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.112 1994/04/10 13:07:04 bostic Exp $ (Berkeley) $Date: 1994/04/10 13:07:04 $";
+static char sccsid[] = "$Id: ex.c,v 8.113 1994/04/10 13:49:15 bostic Exp $ (Berkeley) $Date: 1994/04/10 13:49:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -82,10 +82,10 @@ ex(sp, ep)
 		 * Get the next command.  Interrupt flag manipulation is safe
 		 * because ex_icmd clears them all.
 		 */
+		F_CLR(sp, S_INTERRUPTED);
 		F_SET(sp, S_INTERRUPTIBLE);
 		irval = sp->s_get(sp, ep, &sp->tiq, ':', flags);
 		if (F_ISSET(sp, S_INTERRUPTED)) {
-			F_CLR(sp, S_INTERRUPTED);
 			(void)fputc('\n', stdout);
 			(void)fflush(stdout);
 			goto refresh;
