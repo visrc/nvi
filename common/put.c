@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: put.c,v 10.6 1995/10/16 15:24:46 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:24:46 $";
+static char sccsid[] = "$Id: put.c,v 10.7 1995/10/16 18:33:58 bostic Exp $ (Berkeley) $Date: 1995/10/16 18:33:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -133,8 +133,24 @@ put(sp, cbp, namep, cp, rp, append)
 	memmove(t, tp->lb, tp->len);
 	t += tp->len;
 
-	/* Calculate length left in original line. */
-	clen = len ? len - cp->cno - (append ? 1 : 0) : 0;
+	/* Calculate length left in the original line. */
+	clen = len != 0 ? len - cp->cno - (append ? 1 : 0) : 0;
+
+	/*
+	 * !!!
+	 * In the historical 4BSD version of vi, character mode puts within
+	 * a single line have two cursor behaviors: if the put is from the
+	 * unnamed buffer, the cursor moves to the character inserted which
+	 * appears last in the file.  If the put is from a named buffer,
+	 * the cursor moves to the character inserted which appears first
+	 * in the file.  In System III/V, it was changed at some point and
+	 * the cursor always moves to the first character.  In both versions
+	 * of vi, character mode puts that cross line boundaries leave the
+	 * cursor on the first character.  Nvi implements the System III/V
+	 * behavior, and expect POSIX.2 to do so as well.
+	 */
+	rp->lno = lno;
+	rp->cno = len == 0 ? 0 : sp->cno + (append ? 1 : 0);
 
 	/*
 	 * If no more lines in the CB, append the rest of the original
@@ -142,28 +158,13 @@ put(sp, cbp, namep, cp, rp, append)
 	 * the intermediate lines, because the line changes will lose
 	 * the cached line.
 	 */
-	rval = 0;
 	if (tp->q.cqe_next == (void *)&cbp->textq) {
-		/*
-		 * !!!
-		 * Unbelievable.  Historically, if a non-line mode put is
-		 * inside a single line, and the put is from the unnamed
-		 * buffer, the cursor ends up on the last character inserted.
-		 * If the put is from a named buffer, the cursor ends up on
-		 * the first character inserted.
-		 */
-		rp->lno = lno;
-		if (namep == NULL)
-			rp->cno = (t - bp) - 1;
-		else
-			rp->cno = sp->cno + (append ? 1 : 0);
-
 		if (clen > 0) {
 			memmove(t, p, clen);
 			t += clen;
 		}
 		if (db_set(sp, lno, bp, t - bp))
-			goto mem;
+			goto err;
 		if (sp->rptlchange != lno) {
 			sp->rptlchange = lno;
 			++sp->rptlines[L_CHANGED];
@@ -200,31 +201,28 @@ put(sp, cbp, namep, cp, rp, append)
 		 * Output the line replacing the original line.
 		 */
 		if (db_set(sp, lno, bp, t - bp))
-			goto mem;
+			goto err;
 		if (sp->rptlchange != lno) {
 			sp->rptlchange = lno;
 			++sp->rptlines[L_CHANGED];
 		}
-
-		/*
-		 * Historical practice is that if a non-line mode put
-		 * covers multiple lines, the cursor ends up on the
-		 * first character inserted.  (Of course.)
-		 */
-		rp->lno = lno;
-		rp->cno = (t - bp) - 1;
 
 		/* Output any intermediate lines in the CB. */
 		for (tp = tp->q.cqe_next;
 		    tp->q.cqe_next != (void *)&cbp->textq;
 		    ++lno, ++sp->rptlines[L_ADDED], tp = tp->q.cqe_next)
 			if (db_append(sp, 1, lno, tp->lb, tp->len))
-				goto mem;
+				goto err;
 
 		if (db_append(sp, 1, lno, t, clen))
-mem:			rval = 1;
+			goto err;
 		++sp->rptlines[L_ADDED];
 	}
+	rval = 0;
+
+	if (0)
+err:		rval = 1;
+
 	FREE_SPACE(sp, bp, blen);
 	return (rval);
 }
