@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 9.20 1995/01/31 09:50:37 bostic Exp $ (Berkeley) $Date: 1995/01/31 09:50:37 $";
+static char sccsid[] = "$Id: vi.c,v 9.21 1995/01/31 11:43:37 bostic Exp $ (Berkeley) $Date: 1995/01/31 11:43:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -69,6 +69,7 @@ vi(sp)
 	GS *gp;
 	MARK abs;
 	VICMDARG cmd, *vp;
+	VI_PRIVATE *vip;
 	u_int flags, saved_mode;
 	int comcount, eval, mapped;
 
@@ -83,11 +84,11 @@ vi(sp)
 	/* Cause reset of strange attraction. */
 	F_SET(vp, VM_RCM_SET);
 
-	for (gp = sp->gp, eval = 0;;) {
+	for (gp = sp->gp, vip = VIP(sp), eval = 0;;) {
 		/* Refresh the screen. */
 		sp->showmode = "Command";
-		if (F_ISSET(VIP(sp), VIP_SKIPREFRESH))
-			F_CLR(VIP(sp), VIP_SKIPREFRESH);
+		if (F_ISSET(vip, VIP_SKIPREFRESH))
+			F_CLR(vip, VIP_SKIPREFRESH);
 		else if (sp->e_refresh(sp)) {
 			eval = 1;
 			break;
@@ -95,7 +96,7 @@ vi(sp)
 
 		/* Set the new favorite position. */
 		if (F_ISSET(vp, VM_RCM_SET | VM_RCM_SETFNB | VM_RCM_SETNNB)) {
-			F_CLR(vp, VIP_RCM_LAST);
+			F_CLR(vip, VIP_RCM_LAST);
 			(void)svi_column(sp, &sp->rcm);
 		}
 
@@ -278,10 +279,10 @@ vi(sp)
 			break;
 		case VM_RCM:
 			vp->m_final.cno = svi_rcm(sp,
-			    vp->m_final.lno, F_ISSET(vp, VIP_RCM_LAST));
+			    vp->m_final.lno, F_ISSET(vip, VIP_RCM_LAST));
 			break;
 		case VM_RCM_SETLAST:
-			F_SET(vp, VIP_RCM_LAST);
+			F_SET(vip, VIP_RCM_LAST);
 			break;
 		case VM_RCM_SETFNB:
 			vp->m_final.cno = 0;
