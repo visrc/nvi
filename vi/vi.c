@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.21 1993/10/26 17:50:17 bostic Exp $ (Berkeley) $Date: 1993/10/26 17:50:17 $";
+static char sccsid[] = "$Id: vi.c,v 8.22 1993/10/28 08:55:53 bostic Exp $ (Berkeley) $Date: 1993/10/28 08:55:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -68,13 +68,15 @@ vi(sp, ep)
 	 * probably to have a vi private area in the SCR structure, but
 	 * that will require more reorganization than I want right now.
 	 */
-	if (sp->sdot == NULL) {
-		sp->sdot = malloc(sizeof(VICMDARG));
-		sp->sdotmotion = malloc(sizeof(VICMDARG));
-		if (sp->sdot == NULL || sp->sdotmotion == NULL) {
-			msgq(sp, M_ERR, "Error: %s", strerror(errno));
-			return (1);
-		}
+	sp->sdot = malloc(sizeof(VICMDARG));
+	sp->sdotmotion = malloc(sizeof(VICMDARG));
+	if (sp->sdot == NULL || sp->sdotmotion == NULL) {
+		if (sp->sdot != NULL)
+			FREE(sp->sdot, sizeof(VICMDARG));
+		if (sp->sdotmotion != NULL)
+			FREE(sp->sdotmotion, sizeof(VICMDARG));
+		msgq(sp, M_ERR, "Error: %s", strerror(errno));
+		return (1);
 	}
 
 	/* Edited as it can be. */
@@ -250,6 +252,9 @@ err:				TERM_KEY_FLUSH(sp);
 			sp->rcm = sp->sc_col;
 		}
 	}
+
+	FREE(sp->sdot, sizeof(VICMDARG));
+	FREE(sp->sdotmotion, sizeof(VICMDARG));
 
 	return (v_end(sp) || eval);
 }
