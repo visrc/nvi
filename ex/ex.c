@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.53 1993/11/18 10:08:50 bostic Exp $ (Berkeley) $Date: 1993/11/18 10:08:50 $";
+static char sccsid[] = "$Id: ex.c,v 8.54 1993/11/18 17:26:24 bostic Exp $ (Berkeley) $Date: 1993/11/18 17:26:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -342,11 +342,11 @@ ex_cmd(sp, ep, exc, arg1_len)
 	TRACE(sp, "ex: {%s}\n", exc);
 #endif
 	/*
-	 * Permit a single extra colon at the start of the line, for
-	 * historical reasons.
+	 * !!!
+	 * Permit extra colons at the start of the line.  Historically,
+	 * ex/vi allowed a single extra one.  It's simpler not to count.
 	 */
-	if (*exc == ':')
-		++exc;
+	for (; *exc == ':'; ++exc);
 
 	/* Ignore command lines that start with a double-quote. */
 	if (*exc == '"')
