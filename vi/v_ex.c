@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_ex.c,v 10.49 2000/07/22 17:31:21 skimo Exp $ (Berkeley) $Date: 2000/07/22 17:31:21 $";
+static const char sccsid[] = "$Id: v_ex.c,v 10.50 2000/09/01 16:15:42 skimo Exp $ (Berkeley) $Date: 2000/09/01 16:15:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -608,6 +608,8 @@ v_ecl_log(sp, tp)
 	EXF *save_ep;
 	db_recno_t lno;
 	int rval;
+	CHAR_T *p;
+	size_t len;
 
 	/* Initialize the screen, if necessary. */
 	if (sp->gp->ccl_sp == NULL && v_ecl_init(sp))
@@ -632,9 +634,17 @@ v_ecl_log(sp, tp)
 		sp->ep = save_ep;
 		return (1);
 	}
-	rval = db_append(sp, 0, lno, tp->lb, tp->len);
-	/* XXXX end "transaction" on ccl */
-	log_cursor(sp);
+	/* Don't look line that is identical to previous one */
+	if (lno > 0 &&
+	    !db_get(sp, lno, 0, &p, &len) &&
+	    len == tp->len &&
+	    !MEMCMP(tp->lb, p, len))
+		rval = 0;
+	else {
+		rval = db_append(sp, 0, lno, tp->lb, tp->len);
+		/* XXXX end "transaction" on ccl */
+		log_cursor(sp);
+	}
 	sp->ep = save_ep;
 	return (rval);
 }
