@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.30 1993/09/30 13:19:31 bostic Exp $ (Berkeley) $Date: 1993/09/30 13:19:31 $";
+static char sccsid[] = "$Id: exf.c,v 8.31 1993/10/03 14:14:23 bostic Exp $ (Berkeley) $Date: 1993/10/03 14:14:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -52,14 +52,13 @@ file_add(sp, frp_append, fname, ignore)
 	 * of an argument list, and had the ignore bit set as part of adding
 	 * a new argument list.
 	 */
-	if (fname != NULL) {
-		for (frp = sp->frefhdr.next;
-		    frp != (FREF *)&sp->frefhdr; frp = frp->next)
+	if (fname != NULL)
+		for (frp = sp->frefq.qe_next;
+		    frp != NULL; frp = frp->q.qe_next)
 			if (!strcmp(frp->fname, fname)) {
 				F_CLR(frp, FR_IGNORE);
 				return (frp);
 			}
-	}
 
 	/* Allocate and initialize the FREF structure. */
 	if ((frp = malloc(sizeof(FREF))) == NULL)
@@ -88,9 +87,9 @@ mem:		msgq(sp, M_ERR, "Error: %s", strerror(errno));
 
 	/* Append into the chain of file names. */
 	if (frp_append != NULL) {
-		HDR_APPEND(frp, frp_append, next, prev, FREF);
+		queue_insert_after(&sp->frefq, &frp_append->q, frp, FREF *, q);
 	} else
-		HDR_INSERT(frp, &sp->frefhdr, next, prev, FREF);
+		queue_enter_tail(&sp->frefq, frp, FREF *, q);
 
 	return (frp);
 }
@@ -107,8 +106,7 @@ file_first(sp, all)
 	FREF *frp;
 
 	/* Return the first file name. */
-	for (frp = sp->frefhdr.next;
-	    frp != (FREF *)&sp->frefhdr; frp = frp->next)
+	for (frp = sp->frefq.qe_next; frp != NULL; frp = frp->q.qe_next)
 		if (all || !F_ISSET(frp, FR_IGNORE))
 			return (frp);
 	return (NULL);
@@ -126,8 +124,7 @@ file_next(sp, all)
 	FREF *frp;
 
 	/* Return the next file name. */
-	for (frp = sp->frefhdr.next;
-	    frp != (FREF *)&sp->frefhdr; frp = frp->next)
+	for (frp = sp->frefq.qe_next; frp != NULL; frp = frp->q.qe_next)
 		if (all || !F_ISSET(frp, FR_EDITED | FR_IGNORE))
 			return (frp);
 	return (NULL);
