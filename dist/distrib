@@ -1,5 +1,5 @@
 #! /bin/sh
-# $Id: distrib,v 8.2 1996/05/13 18:46:43 bostic Exp $ (Berkeley) $Date: 1996/05/13 18:46:43 $
+# $Id: distrib,v 8.3 1996/05/16 08:09:17 bostic Exp $ (Berkeley) $Date: 1996/05/16 08:09:17 $
 
 # Clean
 make -f Makefile.in distclean
@@ -24,7 +24,7 @@ rm -f $f
 sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../clib/*.c ../common/*.c > $f
 chmod 444 $f
 
-f=../include/ex_define.h
+f=../include/ex_def.h
 echo "Building $f ..."
 rm -f $f
 awk -f ../ex/ex.awk ../ex/ex_cmd.c > $f
@@ -36,7 +36,7 @@ rm -f $f
 sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../ex/*.c > $f
 chmod 444 $f
 
-f=../include/options_define.h
+f=../include/options_def.h
 echo "Building $f ..."
 rm -f $f
 awk -f ../common/options.awk ../common/options.c > $f
