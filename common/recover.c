@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.26 1993/11/01 11:58:59 bostic Exp $ (Berkeley) $Date: 1993/11/01 11:58:59 $";
+static char sccsid[] = "$Id: recover.c,v 8.27 1993/11/02 13:08:02 bostic Exp $ (Berkeley) $Date: 1993/11/02 13:08:02 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -461,11 +461,13 @@ rcv_read(sp, name)
 	char *name;
 {
 	struct dirent *dp;
+	struct stat sb;
 	DIR *dirp;
 	FREF *frp;
 	FILE *fp;
-	int found;
-	char *p, *t;
+	time_t rec_mtime;
+	int found, requested;
+	char *p, *t, *recp, *pathp;
 	char recpath[MAXPATHLEN], file[MAXPATHLEN], path[MAXPATHLEN];
 		
 	if ((dirp = opendir(O_STR(sp, O_DIRECTORY))) == NULL) {
@@ -474,7 +476,8 @@ rcv_read(sp, name)
 		return (1);
 	}
 
-	for (found = 0; (dp = readdir(dirp)) != NULL;) {
+	recp = pathp = NULL;
+	for (found = requested = 0; (dp = readdir(dirp)) != NULL;) {
 		if (strncmp(dp->d_name, "recover.", 8))
 			continue;
 
@@ -485,7 +488,7 @@ rcv_read(sp, name)
 			continue;
 
 		/* Check the headers. */
-		if (fgets(file, sizeof(path), fp) == NULL ||
+		if (fgets(file, sizeof(file), fp) == NULL ||
 		    strncmp(file, VI_FHEADER, sizeof(VI_FHEADER) - 1) ||
 		    (p = strchr(file, '\n')) == NULL ||
 		    fgets(path, sizeof(path), fp) == NULL ||
@@ -493,43 +496,74 @@ rcv_read(sp, name)
 		    (t = strchr(path, '\n')) == NULL) {
 			msgq(sp, M_ERR,
 			    "%s: malformed recovery file.", recpath);
-			(void)fclose(fp);
-			continue;
+			goto next;
 		}
+		++found;
 		*t = *p = '\0';
-		(void)fclose(fp);
+
+		/* Get the last modification time. */
+		if (fstat(fileno(fp), &sb)) {
+			msgq(sp, M_ERR,
+			    "vi: %s: %s", dp->d_name, strerror(errno));
+			goto next;
+		}
 
 		/* Check the file name. */
-		if (!strcmp(file + sizeof(VI_FHEADER) - 1, name)) {
-			found = 1;
-			break;
+		if (strcmp(file + sizeof(VI_FHEADER) - 1, name))
+			goto next;
+
+		++requested;
+
+		/* If we've found more than one, take the most recent. */
+		if (recp == NULL || rec_mtime < sb.st_mtime) {
+			p = recp;
+			t = pathp;
+			if ((recp = strdup(recpath)) == NULL) {
+				msgq(sp, M_ERR,
+				    "vi: Error: %s.\n", strerror(errno));
+				recp = p;
+				goto next;
+			}
+			if ((pathp = strdup(path)) == NULL) {
+				msgq(sp, M_ERR,
+				    "vi: Error: %s.\n", strerror(errno));
+				FREE(recp, strlen(recp) + 1);
+				recp = p;
+				pathp = t;
+				goto next;
+			}
+			if (p != NULL) {
+				FREE(p, strlen(p) + 1);
+				FREE(t, strlen(t) + 1);
+			}
+			rec_mtime = sb.st_mtime;
 		}
+
+next:		(void)fclose(fp);
 	}
 	(void)closedir(dirp);
 
-	if (!found) {
+	if (recp == NULL) {
 		msgq(sp, M_INFO,
 		    "No files named %s, owned by you, to edit.", name);
 		return (1);
 	}
-
-	/* Create the FREF structure. */
-	if ((frp = file_add(sp, NULL, name, 0)) == NULL) {
-		FREE(p, strlen(p));
-		return (1);
+	if (found) {
+		if (requested > 1)
+			msgq(sp, M_INFO,
+		   "There are older versions of this file for you to recover.");
+		if (found > requested)
+			msgq(sp, M_INFO,
+			    "There are other files for you to recover.");
 	}
 
-	/* Copy the recovery file name. */
-	if ((p = strdup(recpath)) == NULL) {
-		msgq(sp, M_ERR, "Error: %s", strerror(errno));
+	/* Create the FREF structure, start the btree file. */
+	if ((frp = file_add(sp, NULL, name, 0)) == NULL ||
+	    file_init(sp, frp, pathp + sizeof(VI_PHEADER) - 1, 0)) {
+		FREE(recp, strlen(recp) + 1);
+		FREE(pathp, strlen(pathp) + 1);
 		return (1);
 	}
-
-	/* Start the btree file. */
-	if (file_init(sp, frp, path + sizeof(VI_PHEADER) - 1, 0)) {
-		FREE(p, strlen(p));
-		return (1);
-	}
-	sp->ep->rcv_mpath = p;
+	sp->ep->rcv_mpath = recp;
 	return (0);
 }
