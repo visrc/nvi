@@ -501,7 +501,7 @@ __vi_mark_print(dbenv, dbtp, lsnp, notused2, notused3)
 	    (u_long)argp->txnid->txnid,
 	    (u_long)argp->prev_lsn.file,
 	    (u_long)argp->prev_lsn.offset);
-	(void)printf("\tlmp: %lu\n", (u_long)argp->lmp);
+	(void)printf("\tlmp: %%\n", argp->lmp);
 	(void)printf("\n");
 	__os_free(dbenv, argp, 0);
 	return (0);

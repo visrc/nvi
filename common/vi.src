@@ -28,7 +28,7 @@ ARG	cno		size_t		d
 END
 
 BEGIN	mark		202
-POINTER	lmp		LMARK *		lu
+POINTER	lmp		LMARK *		%
 END
 
 BEGIN	change		203
