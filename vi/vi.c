@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.12 1993/08/26 18:46:58 bostic Exp $ (Berkeley) $Date: 1993/08/26 18:46:58 $";
+static char sccsid[] = "$Id: vi.c,v 8.13 1993/08/31 18:07:23 bostic Exp $ (Berkeley) $Date: 1993/08/31 18:07:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -120,12 +120,12 @@ vi(sp, ep)
 			if (getmotion(sp, ep, DOTMOTION, vp, &fm, &tm))
 				goto err;
 		} else {
-			fm.lno = sp->lno;
-			fm.cno = sp->cno;
-#ifdef DEBUG
-			tm.lno = OOBLNO;
-			tm.cno = -1;
-#endif
+			/*
+			 * Set everything to the current cursor position.
+			 * Line commands (ex: Y) default to the current line.
+			 */
+			tm.lno = fm.lno = sp->lno;
+			tm.cno = fm.cno = sp->cno;
 
 			/*
 			 * Set line mode flag, for example, "yy".
