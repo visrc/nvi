@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 8.3 1993/08/05 18:07:57 bostic Exp $ (Berkeley) $Date: 1993/08/05 18:07:57 $";
+static char sccsid[] = "$Id: ex_argv.c,v 8.4 1993/08/17 15:22:13 bostic Exp $ (Berkeley) $Date: 1993/08/17 15:22:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -83,10 +83,6 @@ buildargv(sp, ep, s, expand, argcp, argvp)
 			p += tlen;
 			len += tlen;
 			break;
-		case '\\':
-			if (p[1] != '\0')
-				++s;
-			/* FALLTHROUGH */
 		default:
 			ADD_SPACE(sp, bp, blen, len + 1);
 			*p++ = *s;
@@ -179,7 +175,13 @@ mem1:				sp->argscnt = 0;
 		}
 		sp->argv[off] = sp->args[off].bp;
 		sp->args[off].flags |= A_ALLOCATED;
-		/* Copy the argument into place, losing quote chars. */
+
+		/*
+		 * Copy the argument into place, losing quote chars.
+		 *
+		 * ESCAPE CHARACTER NOTE:
+		 * Remove another level of quotes from the user's command.
+		 */
 		for (t = sp->args[off].bp; len; *t++ = *ap++, --len)
 			if (*ap == '\\' && len) {
 				++ap;
