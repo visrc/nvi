@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_screen.c,v 8.5 1993/11/16 21:43:49 bostic Exp $ (Berkeley) $Date: 1993/11/16 21:43:49 $";
+static char sccsid[] = "$Id: v_screen.c,v 8.6 1993/11/18 13:50:56 bostic Exp $ (Berkeley) $Date: 1993/11/18 13:50:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,15 +31,13 @@ v_screen(sp, ep, vp, fm, tm, rp)
 	 * Try for the next lower screen, or, go back to the first
 	 * screen on the stack.
 	 */
-	if (sp->child != NULL)
-		sp->snext = sp->child;
-	else if (sp->parent == NULL) {
+	if (sp->q.cqe_next != (void *)&sp->gp->dq)
+		sp->nextdisp = sp->q.cqe_next;
+	else if (sp->gp->dq.cqh_first == sp) {
 		msgq(sp, M_ERR, "No other screen to switch to.");
 		return (1);
-	} else {
-		for (p = sp; p->parent != NULL; p = p->parent);
-		sp->snext = p;
-	}
+	} else
+		sp->nextdisp = sp->gp->dq.cqh_first;
 
 	/*
 	 * Display the old screen's status line so the user can

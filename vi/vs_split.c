@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 8.16 1993/11/18 08:18:09 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:18:09 $";
+static char sccsid[] = "$Id: vs_split.c,v 8.17 1993/11/18 13:51:14 bostic Exp $ (Berkeley) $Date: 1993/11/18 13:51:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -81,12 +81,8 @@ svi_split(sp, argv)
 		sp->rows = half;
 		sp->t_maxrows = sp->rows - 1;
 
-		/* Link into place. */
-		if ((tsp->child = sp->child) != NULL)
-			sp->child->parent = tsp;
-		sp->child = tsp;
-		tsp->parent = sp;
-
+		/* Link in after the parent. */
+		CIRCLEQ_INSERT_AFTER(&sp->gp->dq, sp, tsp, q);
 		splitup = 0;
 	} else {				/* Parent is bottom half. */
 		/* Child. */
@@ -103,12 +99,8 @@ svi_split(sp, argv)
 		memmove(_HMAP(sp),
 		    _HMAP(sp) + tsp->rows, sp->t_maxrows * sizeof(SMAP));
 
-		/* Link into place. */
-		if ((tsp->parent = sp->parent) != NULL)
-			sp->parent->child = tsp;
-		sp->parent = tsp;
-		tsp->child = sp;
-
+		/* Link in before the parent. */
+		CIRCLEQ_INSERT_BEFORE(&sp->gp->dq, sp, tsp, q);
 		splitup = 1;
 	}
 
@@ -229,11 +221,9 @@ svi_split(sp, argv)
 	MOVE(tsp, INFOLINE(tsp), 0);
 	clrtoeol();
 
-	/* Redraw the status line for the parent screen, if it's on top. */
-	if (splitup == 0) {
-		(void)status(sp, sp->ep, sp->lno, 0);
-		(void)svi_paint(sp, sp->ep);
-	}
+	/* Redraw the status line for the parent screen. */
+	(void)status(sp, sp->ep, sp->lno, 0);
+	(void)svi_paint(sp, sp->ep);
 
 	/* Save the parent screen's cursor information. */
 	sp->frp->lno = sp->lno;
@@ -241,10 +231,10 @@ svi_split(sp, argv)
 	F_SET(sp->frp, FR_CURSORSET);
 
 	/* Completely redraw the child screen. */
-	F_SET(tsp, S_DISPLAYED | S_REDRAW);
+	F_SET(tsp, S_REDRAW);
 
 	/* Switch screens. */
-	sp->snext = tsp;
+	sp->nextdisp = tsp;
 	F_SET(sp, S_SSWITCH);
 	return (0);
 
@@ -275,7 +265,7 @@ svi_bg(csp)
 	}
 
 	/* Switch screens. */
-	csp->snext = sp;
+	csp->nextdisp = sp;
 	F_SET(csp, S_SSWITCH);
 
 	return (0);
@@ -298,8 +288,8 @@ svi_join(csp, nsp)
 	 * to clean up the screen's values.  If it's not exiting, we'll
 	 * get it when the user asks to show it again.
 	 */
-	if ((sp = csp->parent) == NULL) {
-		if ((sp = csp->child) == NULL) {
+	if ((sp = csp->q.cqe_prev) == (void *)&csp->gp->dq) {
+		if ((sp = csp->q.cqe_next) == (void *)&csp->gp->dq) {
 			*nsp = NULL;
 			return (0);
 		}
@@ -329,14 +319,9 @@ svi_join(csp, nsp)
 	if (!F_ISSET(&sp->opts[O_SCROLL], OPT_SET))
 		O_VAL(sp, O_SCROLL) = sp->t_maxrows / 2;
 
-	/* Delete the screen from the parent/child list. */
-	if (csp->parent != NULL)
-		csp->parent->child = csp->child;
-	if (csp->child != NULL)
-		csp->child->parent = csp->parent;
-
 	/* Screen is no longer displayed. */
-	F_CLR(csp, S_DISPLAYED);
+	CIRCLEQ_REMOVE(&csp->gp->dq, csp, q);
+	CIRCLEQ_INSERT_TAIL(&csp->gp->hq, csp, q);
 
 	*nsp = sp;
 	return (0);
@@ -369,7 +354,7 @@ svi_fg(csp, fname)
 
 /*
  * svi_swap --
- *	Swap the two screens.
+ *	Swap the current screen with a hidden one.
  */
 int
 svi_swap(csp, nsp, fname)
@@ -380,11 +365,11 @@ svi_swap(csp, nsp, fname)
 	int issmallscreen;
 
 	/* Find the screen, or, if fname is NULL, the first screen. */
-	for (sp = __global_list->scrq.lh_first; sp != NULL; sp = sp->q.le_next)
-		if (!F_ISSET(sp, S_DISPLAYED) &&
-		    (fname == NULL || !strcmp(sp->frp->fname, fname)))
+	for (sp = csp->gp->hq.cqh_first;
+	    sp != (void *)&csp->gp->hq; sp = sp->q.cqe_next)
+		if (fname == NULL || !strcmp(sp->frp->fname, fname))
 			break;
-	if (sp == NULL) {
+	if (sp == (void *)&csp->gp->hq) {
 		*nsp = NULL;
 		return (0);
 	}
@@ -396,9 +381,8 @@ svi_swap(csp, nsp, fname)
 	F_SET(csp->frp, FR_CURSORSET);
 
 	/* Switch screens. */
-	csp->snext = sp;
+	csp->nextdisp = sp;
 	F_SET(csp, S_SSWITCH);
-	F_CLR(csp, S_DISPLAYED);
 
 	/* Initialize terminal information. */
 	SVP(sp)->srows = SVP(csp)->srows;
@@ -454,14 +438,13 @@ svi_swap(csp, nsp, fname)
 	if (svi_sm_fill(sp, sp->ep, sp->lno, P_FILL))
 		return (1);
 
-	F_SET(sp, S_DISPLAYED | S_REDRAW);
-
 	/* The new screen replaces the old screen in the parent/child list. */
-	if ((sp->parent = csp->parent) != NULL)
-		csp->parent->child = sp;
-	if ((sp->child = csp->child) != NULL)
-		csp->child->parent = sp;
+	CIRCLEQ_REMOVE(&sp->gp->hq, sp, q);
+	CIRCLEQ_INSERT_AFTER(&csp->gp->dq, csp, sp, q);
+	CIRCLEQ_REMOVE(&csp->gp->dq, csp, q);
+	CIRCLEQ_INSERT_TAIL(&csp->gp->hq, csp, q);
 
+	F_SET(sp, S_REDRAW);
 	return (0);
 }
 
@@ -487,22 +470,21 @@ svi_resize(sp, count)
 		s = sp;
 		if (s->t_maxrows < MINIMUM_SCREEN_ROWS + count)
 			goto toosmall;
-		if ((g = sp->parent) == NULL) {
-			if ((g = sp->child) == NULL)
+		if ((g = sp->q.cqe_prev) == (void *)&sp->gp->dq) {
+			if ((g = sp->q.cqe_next) == (void *)&sp->gp->dq)
 				goto toobig;
 			g->woff -= count;
 		} else
 			s->woff += count;
 	} else {
 		g = sp;
-		if ((s = sp->child) != NULL)
+		if ((s = sp->q.cqe_next) != (void *)&sp->gp->dq)
 			if (s->t_maxrows < MINIMUM_SCREEN_ROWS + count)
 				s = NULL;
 			else
 				s->woff += count;
 		if (s == NULL) {
-			s = sp->parent;
-			if (s == NULL) {
+			if ((s = sp->q.cqe_prev) == (void *)&sp->gp->dq) {
 toobig:				msgq(sp, M_BERR, "The screen cannot %s.",
 				    count < 0 ? "shrink" : "grow");
 				return (1);

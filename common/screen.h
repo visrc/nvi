@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.61 1993/11/18 10:55:06 bostic Exp $ (Berkeley) $Date: 1993/11/18 10:55:06 $
+ *	$Id: screen.h,v 8.62 1993/11/18 13:50:29 bostic Exp $ (Berkeley) $Date: 1993/11/18 13:50:29 $
  */
 
 /*
@@ -23,7 +23,7 @@
 #define	MINIMUM_SCREEN_COLS	20
 					/* Line operations. */
 enum operation { LINE_APPEND, LINE_DELETE, LINE_INSERT, LINE_RESET };
-					/* Standard continue message. */
+					/* Position values. */
 enum position { P_BOTTOM, P_FILL, P_MIDDLE, P_TOP };
 
 /*
@@ -67,13 +67,11 @@ struct _fref {
  */
 struct _scr {
 /* INITIALIZED AT SCREEN CREATE. */
-	LIST_ENTRY(_scr) q;		/* Linked list of screens. */
+	CIRCLEQ_ENTRY(_scr) q;		/* Screens. */
 
 	GS	*gp;			/* Pointer to global area. */
 
-	SCR	*child;			/* split screen: child screen. */
-	SCR	*parent;		/* split screen: parent screen. */
-	SCR	*snext;			/* split screen: next display screen. */
+	SCR	*nextdisp;		/* Next display screen. */
 
 	EXF	*ep;			/* Screen's current EXF structure. */
 
@@ -133,10 +131,10 @@ struct _scr {
 	struct itimerval time_value;	/* ITIMER_REAL saved value. */
 	struct sigaction time_handler;	/* ITIMER_REAL saved handler. */
 
-	void	*vi_private;		/* Vi information. */
-	void	*ex_private;		/* Ex information. */
-	void	*svi_private;		/* Vi curses screen information. */
-	void	*xaw_private;		/* Vi XAW screen information. */
+	void	*vi_private;		/* Vi private area. */
+	void	*ex_private;		/* Ex private area. */
+	void	*svi_private;		/* Vi curses screen private area. */
+	void	*xaw_private;		/* Vi XAW screen private area. */
 
 /* PARTIALLY OR COMPLETELY COPIED FROM PREVIOUS SCREEN. */
 	char	*alt_fname;		/* Ex/vi: alternate file name. */
@@ -158,7 +156,7 @@ struct _scr {
 	CHNAME	const *cname;		/* Display names of characters. */
 	u_char	 special[UCHAR_MAX];	/* Special character array. */
 
-	u_int	 saved_vi_mode;		/* Saved vi display. */
+	u_int	 saved_vi_mode;		/* Saved vi display type. */
 
 	OPTION	 opts[O_OPTIONCOUNT];	/* Options. */
 
@@ -174,11 +172,9 @@ struct _scr {
 					/* Put up a busy message. */
 	int	 (*s_busy) __P((SCR *, char const *));
 					/* Change a screen line. */
-	int	 (*s_change) __P((SCR *,
-		     EXF *, recno_t, enum operation));
+	int	 (*s_change) __P((SCR *, EXF *, recno_t, enum operation));
 					/* Return column close to specified. */
-	size_t	 (*s_chposition) __P((SCR *,
-		     EXF *, recno_t, size_t));
+	size_t	 (*s_chposition) __P((SCR *, EXF *, recno_t, size_t));
 					/* Clear the screen. */
 	int	 (*s_clear) __P((SCR *));
 	enum confirm			/* Confirm an action with the user. */
@@ -247,20 +243,19 @@ struct _scr {
 #define	S_AUTOPRINT	0x0000100	/* Autoprint flag. */
 #define	S_BELLSCHED	0x0000200	/* Bell scheduled. */
 #define	S_CONTINUE	0x0000400	/* Need to ask the user to continue. */
-#define	S_DISPLAYED	0x0000800	/* If screen is currently displayed. */
-#define	S_GLOBAL	0x0001000	/* Doing a global command. */
-#define	S_INPUT		0x0002000	/* Doing text input. */
-#define	S_INTERRUPTED	0x0004000	/* If have been interrupted. */
-#define	S_INTERRUPTIBLE	0x0008000	/* If can be interrupted. */
-#define	S_REDRAW	0x0010000	/* Redraw the screen. */
-#define	S_REFORMAT	0x0020000	/* Reformat the screen. */
-#define	S_REFRESH	0x0040000	/* Refresh the screen. */
-#define	S_RESIZE	0x0080000	/* Resize the screen. */
-#define	S_SCRIPT	0x0100000	/* Window is a shell script. */
-#define	S_SRE_SET	0x0200000	/* The search RE has been set. */
-#define	S_SUBRE_SET	0x0400000	/* The substitute RE has been set. */
-#define	S_TIMER_SET	0x0800000	/* If a busy timer is running. */
-#define	S_UPDATE_MODE	0x1000000	/* Don't repaint modeline. */
+#define	S_GLOBAL	0x0000800	/* Doing a global command. */
+#define	S_INPUT		0x0001000	/* Doing text input. */
+#define	S_INTERRUPTED	0x0002000	/* If have been interrupted. */
+#define	S_INTERRUPTIBLE	0x0004000	/* If can be interrupted. */
+#define	S_REDRAW	0x0008000	/* Redraw the screen. */
+#define	S_REFORMAT	0x0010000	/* Reformat the screen. */
+#define	S_REFRESH	0x0020000	/* Refresh the screen. */
+#define	S_RESIZE	0x0040000	/* Resize the screen. */
+#define	S_SCRIPT	0x0080000	/* Window is a shell script. */
+#define	S_SRE_SET	0x0100000	/* The search RE has been set. */
+#define	S_SUBRE_SET	0x0200000	/* The substitute RE has been set. */
+#define	S_TIMER_SET	0x0400000	/* If a busy timer is running. */
+#define	S_UPDATE_MODE	0x0800000	/* Don't repaint modeline. */
 	u_int flags;
 };
 

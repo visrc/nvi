@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 8.10 1993/11/07 17:02:59 bostic Exp $ (Berkeley) $Date: 1993/11/07 17:02:59 $";
+static char sccsid[] = "$Id: vs_line.c,v 8.11 1993/11/18 13:51:07 bostic Exp $ (Berkeley) $Date: 1993/11/18 13:51:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -97,7 +97,7 @@ svi_line(sp, ep, smp, yp, xp)
 	reverse_video = 0;
 	cols_per_screen = sp->cols;
 	if (is_infoline = ISINFOLINE(sp, smp)) {
-		if (sp->child != NULL) {
+		if (sp->q.cqe_next != (void *)&sp->gp->dq) {
 			reverse_video = 1;
 			standout();
 		}

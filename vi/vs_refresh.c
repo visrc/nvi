@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.31 1993/11/18 10:55:17 bostic Exp $ (Berkeley) $Date: 1993/11/18 10:55:17 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.32 1993/11/18 13:51:10 bostic Exp $ (Berkeley) $Date: 1993/11/18 13:51:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -65,18 +65,25 @@ svi_refresh(sp, ep)
 	 * modified as well.  Refresh them if the dirty bit is set.
 	 */
 #define	PAINTBITS	S_REDRAW | S_REFORMAT | S_REFRESH
-	for (tsp = sp->child; tsp != NULL; tsp = tsp->child)
+	for (tsp = sp;;) {
+		if ((tsp = tsp->q.cqe_prev) == (void *)&sp->gp->dq)
+			break;
 		if (F_ISSET(tsp, PAINTBITS) ||
 		    tsp->ep == ep && F_ISSET(SVP(tsp), SVI_SCREENDIRTY)) {
 			(void)svi_paint(tsp, tsp->ep);
 			F_CLR(SVP(tsp), SVI_SCREENDIRTY);
 		}
-	for (tsp = sp->parent; tsp != NULL; tsp = tsp->parent)
+	}
+	for (tsp = sp;;) {
+		if ((tsp = tsp->q.cqe_next) == (void *)&sp->gp->dq)
+			break;
 		if (F_ISSET(tsp, PAINTBITS) ||
 		    tsp->ep == ep && F_ISSET(SVP(tsp), SVI_SCREENDIRTY)) {
 			(void)svi_paint(tsp, tsp->ep);
 			F_CLR(SVP(tsp), SVI_SCREENDIRTY);
 		}
+	}
+
 	/*
 	 * 3: Refresh the current screen.
 	 *
@@ -660,7 +667,8 @@ lcont:		/* Move to the message line and clear it. */
 		 * Turn on standout mode if requested, or, if we've split
 		 * the screen and need a divider.
 		 */
-		if (F_ISSET(mp, M_INV_VIDEO) || sp->child != NULL)
+		if (F_ISSET(mp, M_INV_VIDEO) ||
+		    sp->q.cqe_next != (void *)&sp->gp->dq)
 			standout();
 
 		/*
@@ -702,7 +710,8 @@ lcont:		/* Move to the message line and clear it. */
 		}
 
 		/* Turn off standout mode. */
-		if (F_ISSET(mp, M_INV_VIDEO) || sp->child != NULL)
+		if (F_ISSET(mp, M_INV_VIDEO) ||
+		    sp->q.cqe_next != (void *)&sp->gp->dq)
 			standend();
 
 		if (mp->len)
@@ -732,7 +741,7 @@ svi_modeline(sp, ep)
 	clrtoeol();
 
 	/* Display the dividing line. */
-	if (sp->child != NULL)
+	if (sp->q.cqe_next != (void *)&sp->gp->dq)
 		svi_divider(sp);
 
 	/* Display the ruler. */

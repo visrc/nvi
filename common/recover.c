@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.37 1993/11/18 09:20:29 bostic Exp $ (Berkeley) $Date: 1993/11/18 09:20:29 $";
+static char sccsid[] = "$Id: recover.c,v 8.38 1993/11/18 13:50:25 bostic Exp $ (Berkeley) $Date: 1993/11/18 13:50:25 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -68,6 +68,7 @@ static char sccsid[] = "$Id: recover.c,v 8.37 1993/11/18 09:20:29 bostic Exp $ (
 
 static void	rcv_alrm __P((int));
 static int	rcv_mailfile __P((SCR *, EXF *));
+static void	rcv_syncit __P((SCR *, int));
 
 /*
  * rcv_tmp --
@@ -314,31 +315,17 @@ void
 rcv_hup()
 {
 	SCR *sp;
-	char comm[4096];
 
 	/*
-	 * Walk the list of screens, sync'ing the files; only sync
+	 * Walk the lists of screens, sync'ing the files; only sync
 	 * each file once.  Send email to the user for each file saved.
-	 *
-	 * !!!
-	 * If you need to port this to a system that doesn't have sendmail,
-	 * the -t flag being used causes sendmail to read the message for
-	 * the recipients instead of us specifying them some other way.
 	 */
-	for (sp = __global_list->scrq.lh_first; sp != NULL; sp = sp->q.le_next)
-		if (sp->ep != NULL) {
-			if (F_ISSET(sp->ep, F_MODIFIED) &&
-			    F_ISSET(sp->ep, F_RCV_ON)) {
-				(void)sp->ep->db->sync(sp->ep->db, R_RECNOSYNC);
-				F_SET(sp->ep, F_RCV_NORM);
-
-				(void)snprintf(comm, sizeof(comm),
-				    "%s -t < %s", _PATH_SENDMAIL,
-				    sp->ep->rcv_mpath);
-				(void)system(comm);
-			}
-			(void)file_end(sp, sp->ep, 1);
-		}
+	for (sp = __global_list->dq.cqh_first;
+	    sp != (void *)&__global_list->dq; sp = sp->q.cqe_next)
+		rcv_syncit(sp, 1);
+	for (sp = __global_list->hq.cqh_first;
+	    sp != (void *)&__global_list->hq; sp = sp->q.cqe_next)
+		rcv_syncit(sp, 1);
 
 	/*
 	 * Die with the proper exit status.  Don't bother using
@@ -361,18 +348,15 @@ rcv_term()
 	SCR *sp;
 
 	/*
-	 * Walk the list of screens, sync'ing the files; only sync
+	 * Walk the lists of screens, sync'ing the files; only sync
 	 * each file once.
 	 */
-	for (sp = __global_list->scrq.lh_first; sp != NULL; sp = sp->q.le_next)
-		if (sp->ep != NULL) {
-			if (F_ISSET(sp->ep, F_MODIFIED) &&
-			    F_ISSET(sp->ep, F_RCV_ON)) {
-				(void)sp->ep->db->sync(sp->ep->db, R_RECNOSYNC);
-				F_SET(sp->ep, F_RCV_NORM);
-			}
-			(void)file_end(sp, sp->ep, 1);
-		}
+	for (sp = __global_list->dq.cqh_first;
+	    sp != (void *)&__global_list->dq; sp = sp->q.cqe_next)
+		rcv_syncit(sp, 0);
+	for (sp = __global_list->hq.cqh_first;
+	    sp != (void *)&__global_list->hq; sp = sp->q.cqe_next)
+		rcv_syncit(sp, 0);
 
 	/*
 	 * Die with the proper exit status.  Don't bother using
@@ -383,6 +367,39 @@ rcv_term()
 
 	/* NOTREACHED */
 	exit (1);
+}
+
+/*
+ * rcv_syncit --
+ *	Sync the file, optionally send mail.
+ */
+static void
+rcv_syncit(sp, email)
+	SCR *sp;
+	int email;
+{
+	EXF *ep;
+	char comm[1024];
+
+	if ((ep = sp->ep) == NULL ||
+	    !F_ISSET(ep, F_MODIFIED) || !F_ISSET(ep, F_RCV_ON))
+		return;
+
+	(void)ep->db->sync(ep->db, R_RECNOSYNC);
+	F_SET(ep, F_RCV_NORM);
+
+	/*
+	 * !!!
+	 * If you need to port this to a system that doesn't have sendmail,
+	 * the -t flag being used causes sendmail to read the message for
+	 * the recipients instead of us specifying them some other way.
+	 */
+	if (email) {
+		(void)snprintf(comm, sizeof(comm),
+		    "%s -t < %s", _PATH_SENDMAIL, ep->rcv_mpath);
+		(void)system(comm);
+	}
+	(void)file_end(sp, ep, 1);
 }
 
 /*

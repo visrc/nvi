@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.26 1993/11/18 08:17:17 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:17:17 $";
+static char sccsid[] = "$Id: search.c,v 8.27 1993/11/18 13:50:31 bostic Exp $ (Berkeley) $Date: 1993/11/18 13:50:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -265,8 +265,8 @@ search_intr(signo)
 {
 	SCR *sp;
 
-	for (sp = __global_list->scrq.lh_first;
-	    sp != NULL; sp = sp->q.le_next)
+	for (sp = __global_list->dq.cqh_first;
+	    sp != (void *)&__global_list->dq; sp = sp->q.cqe_next)
 		if (F_ISSET(sp, S_INTERRUPTIBLE))
 			F_SET(sp, S_INTERRUPTED);
 }

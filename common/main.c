@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.44 1993/11/18 10:55:01 bostic Exp $ (Berkeley) $Date: 1993/11/18 10:55:01 $";
+static char sccsid[] = "$Id: main.c,v 8.45 1993/11/18 13:50:23 bostic Exp $ (Berkeley) $Date: 1993/11/18 13:50:23 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -170,6 +170,7 @@ main(argc, argv)
 	/* Build and initialize the first/current screen. */
 	if (screen_init(NULL, &sp, flags))
 		goto err1;
+	CIRCLEQ_INSERT_HEAD(&__global_list->dq, sp, q);
 
 	if (trace_f != NULL) {
 #ifdef DEBUG
@@ -400,7 +401,8 @@ gs_init()
 		err(1, NULL);
 	memset(gp, 0, sizeof(GS));
 
-	LIST_INIT(&gp->scrq);
+	CIRCLEQ_INIT(&gp->dq);
+	CIRCLEQ_INIT(&gp->hq);
 	LIST_INIT(&gp->msgq);
 
 	/* Structures shared by screens so stored in the GS structure. */

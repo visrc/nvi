@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_screen.c,v 8.4 1993/11/18 08:17:44 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:17:44 $";
+static char sccsid[] = "$Id: ex_screen.c,v 8.5 1993/11/18 13:50:43 bostic Exp $ (Berkeley) $Date: 1993/11/18 13:50:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -82,15 +82,12 @@ ex_sargs(sp, ep, cmdp)
 	EXCMDARG *cmdp;
 {
 	SCR *tsp;
-	FREF *frp;
 	int cnt, col, len, sep;
 
 	col = len = sep = 0;
-	for (cnt = 1, tsp = __global_list->scrq.lh_first;
-	    tsp != NULL; tsp = tsp->q.le_next) {
-		frp = tsp->frp;
-		col += len =
-		    frp->nlen + sep + (F_ISSET(tsp, S_DISPLAYED) ? 2 : 0);
+	for (cnt = 1, tsp = sp->gp->hq.cqh_first;
+	    tsp != (void *)&sp->gp->hq; tsp = tsp->q.cqe_next) {
+		col += len = tsp->frp->nlen + sep;
 		if (col >= sp->cols - 1) {
 			col = len;
 			sep = 0;
@@ -99,10 +96,7 @@ ex_sargs(sp, ep, cmdp)
 			sep = 1;
 			(void)ex_printf(EXCOOKIE, " ");
 		}
-		if (F_ISSET(tsp, S_DISPLAYED))
-			(void)ex_printf(EXCOOKIE, "[%s]", frp->fname);
-		else
-			(void)ex_printf(EXCOOKIE, "%s", frp->fname);
+		(void)ex_printf(EXCOOKIE, "%s", tsp->frp->fname);
 		++cnt;
 	}
 	(void)ex_printf(EXCOOKIE, "\n");

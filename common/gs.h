@@ -4,11 +4,12 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 8.19 1993/11/18 10:55:00 bostic Exp $ (Berkeley) $Date: 1993/11/18 10:55:00 $
+ *	$Id: gs.h,v 8.20 1993/11/18 13:50:21 bostic Exp $ (Berkeley) $Date: 1993/11/18 13:50:21 $
  */
 
 struct _gs {
-	LIST_HEAD(_scrh, _scr) scrq;	/* Linked list of SCR structures. */
+	CIRCLEQ_HEAD(_dqh, _scr) dq;	/* Displayed screens. */
+	CIRCLEQ_HEAD(_hqh, _scr) hq;	/* Hidden screens. */
 	
 	mode_t	 origmode;		/* Original terminal mode. */
 	struct termios

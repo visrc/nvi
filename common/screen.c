@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.37 1993/11/18 10:55:04 bostic Exp $ (Berkeley) $Date: 1993/11/18 10:55:04 $";
+static char sccsid[] = "$Id: screen.c,v 8.38 1993/11/18 13:50:27 bostic Exp $ (Berkeley) $Date: 1993/11/18 13:50:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,7 +35,7 @@ screen_init(orig, spp, flags)
 	size_t len;
 
 	if ((sp = malloc(sizeof(SCR))) == NULL) {
-		msgq(NULL, M_SYSERR, NULL);
+		msgq(orig, M_SYSERR, NULL);
 		return (1);
 	}
 	memset(sp, 0, sizeof(SCR));
@@ -79,7 +79,6 @@ screen_init(orig, spp, flags)
 		}
 
 		sp->flags = flags;
-		LIST_INSERT_HEAD(&__global_list->scrq, sp, q);
 	} else {
 		if (orig->alt_fname != NULL &&
 		    (sp->alt_fname = strdup(orig->alt_fname)) == NULL)
@@ -157,7 +156,6 @@ mem:			msgq(orig, M_SYSERR, "new screen attributes");
 		sp->s_up		= orig->s_up;
 
 		F_SET(sp, F_ISSET(orig, S_SCREENS));
-		LIST_INSERT_AFTER(orig, sp, q);
 	}
 
 	/* Copy screen private information. */
@@ -216,16 +214,13 @@ screen_end(sp)
 	 * any screen, the global area. 
 	 */
 	{ SCR *c_sp; MSG *mp, *next;
-		if (sp->parent != NULL) {
-			c_sp = sp->parent;
+		if ((c_sp = sp->q.cqe_prev) != (void *)&sp->gp->dq) {
 			if (F_ISSET(sp, S_BELLSCHED))
 				F_SET(c_sp, S_BELLSCHED);
-		} else if (sp->child != NULL) {
-			c_sp = sp->child;
+		} else if ((c_sp = sp->q.cqe_next) != (void *)&sp->gp->dq) {
 			if (F_ISSET(sp, S_BELLSCHED))
 				F_SET(c_sp, S_BELLSCHED);
-		} else if (sp->q.le_next != NULL) {
-			c_sp = sp->q.le_next;
+		} else if ((c_sp = sp->q.cqe_next) != NULL) {
 			if (F_ISSET(sp, S_BELLSCHED))
 				F_SET(c_sp, S_BELLSCHED);
 		} else {
@@ -246,15 +241,7 @@ screen_end(sp)
 	}
 
 	/* Remove the screen from the global screen chain. */
-	LIST_REMOVE(sp, q);
-
-	/* Remove the screen from the chain of related screens. */
-	if (sp->parent != NULL) {
-		sp->parent->child = sp->child;
-		if (sp->child != NULL)
-			sp->child->parent = sp->parent;
-	} else if (sp->child != NULL)
-		sp->child->parent = NULL;
+	CIRCLEQ_REMOVE(&sp->gp->dq, sp, q);
 
 	/* Free the screen itself. */
 	FREE(sp, sizeof(SCR));
