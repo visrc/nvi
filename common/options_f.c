@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 5.8 1993/05/07 09:09:27 bostic Exp $ (Berkeley) $Date: 1993/05/07 09:09:27 $";
+static char sccsid[] = "$Id: options_f.c,v 5.9 1993/05/08 16:08:24 bostic Exp $ (Berkeley) $Date: 1993/05/08 16:08:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,6 +28,8 @@ static char sccsid[] = "$Id: options_f.c,v 5.8 1993/05/07 09:09:27 bostic Exp $ 
 		char *str;						\
 		u_long val;
 #define	turnoff	val
+
+static int ps_list __P((SCR *));
 
 DECL(f_columns)
 {
@@ -239,6 +241,24 @@ DECL(f_number)
 	return (0);
 }
 
+DECL(f_paragraph)
+{
+	if (strlen(str) & 1) {
+		msgq(sp, M_ERR,
+		    "Paragraph options must be in sets of two characters.");
+		return (1);
+	}
+
+	if (F_ISSET(&sp->opts[O_PARAGRAPHS], OPT_ALLOCATED))
+		free(O_STR(sp, O_PARAGRAPHS));
+	if ((O_STR(sp, O_PARAGRAPHS) = strdup(str)) == NULL) {
+		msgq(sp, M_ERR, "Error: %s", strerror(errno));
+		return (1);
+	}
+	F_SET(&sp->opts[O_PARAGRAPHS], OPT_ALLOCATED | OPT_SET);
+	return (ps_list(sp));
+}
+
 DECL(f_ruler)
 {
 	if (turnoff)
@@ -246,6 +266,24 @@ DECL(f_ruler)
 	else
 		O_SET(sp, O_RULER);
 	return (0);
+}
+
+DECL(f_section)
+{
+	if (strlen(str) & 1) {
+		msgq(sp, M_ERR,
+		    "Section options must be in sets of two characters.");
+		return (1);
+	}
+
+	if (F_ISSET(&sp->opts[O_SECTIONS], OPT_ALLOCATED))
+		free(O_STR(sp, O_SECTIONS));
+	if ((O_STR(sp, O_SECTIONS) = strdup(str)) == NULL) {
+		msgq(sp, M_ERR, "Error: %s", strerror(errno));
+		return (1);
+	}
+	F_SET(&sp->opts[O_SECTIONS], OPT_ALLOCATED | OPT_SET);
+	return (ps_list(sp));
 }
 
 DECL(f_shiftwidth)
@@ -316,7 +354,6 @@ DECL(f_tags)
 			free(sp->tfhead[cnt]->fname);
 		free(sp->tfhead);
 	}
-
 						/* Copy for user display. */
 	if (F_ISSET(&sp->opts[O_TAGS], OPT_ALLOCATED))
 		free(O_STR(sp, O_TAGS));
@@ -393,5 +430,39 @@ DECL(f_wrapmargin)
 		return (1);
 	}
 	O_VAL(sp, O_WRAPMARGIN) = val;
+	return (0);
+}
+
+static int
+ps_list(sp)
+	SCR *sp;
+{
+	size_t p_len, s_len;
+	char *p_p, *s_p;
+	char *p;
+
+	/*
+	 * The vi paragraph command searches for either a paragraph or
+	 * section option macro.
+	 */
+	p_len = (p_p = O_STR(sp, O_PARAGRAPHS)) == NULL ? 0 : strlen(p_p);
+	s_len = (s_p = O_STR(sp, O_SECTIONS)) == NULL ? 0 : strlen(s_p);
+
+	if (p_len == 0 && s_len == 0)
+		return (0);
+
+	if ((p = malloc(p_len + s_len + 1)) == NULL) {
+		msgq(sp, M_ERR, "Error: %s", strerror(errno));
+		return (1);
+	}
+
+	if (sp->paragraph != NULL)
+		FREE(sp->paragraph, strlen(sp->paragraph) + 1);
+
+	if (p_p != NULL)
+		memmove(p, p_p, p_len);
+	if (s_p != NULL)
+		memmove(p + p_len, s_p, s_len + 1);
+	sp->paragraph = p;
 	return (0);
 }

@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 5.35 1993/05/06 11:39:25 bostic Exp $ (Berkeley) $Date: 1993/05/06 11:39:25 $
+ *	$Id: screen.h,v 5.36 1993/05/08 16:07:54 bostic Exp $ (Berkeley) $Date: 1993/05/08 16:07:54 $
  */
 
 /*
@@ -154,6 +154,8 @@ typedef struct _scr {
 	long	 inc_lastval;		/* Vi: Last increment value. */
 
 	struct _cb cuts[UCHAR_MAX + 2];	/* Ex/vi: cut buffers. */
+
+	char	*paragraph;		/* Vi: Paragraph search list. */
 
 	struct _hdr	taghdr;		/* Ex/vi: tag stack. */
 	struct _tagf   **tfhead;	/* List of tag files. */

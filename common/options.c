@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.57 1993/05/04 16:45:09 bostic Exp $ (Berkeley) $Date: 1993/05/04 16:45:09 $";
+static char sccsid[] = "$Id: options.c,v 5.58 1993/05/08 16:07:35 bostic Exp $ (Berkeley) $Date: 1993/05/08 16:07:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -82,7 +82,7 @@ static OPTLIST const optlist[] = {
 /* O_OPTIMIZE */
 	{"optimize",	NULL,		OPT_1BOOL,	0},
 /* O_PARAGRAPHS */
-	{"paragraphs",	NULL,		OPT_STR,	0},
+	{"paragraphs",	f_paragraph,	OPT_STR,	0},
 /* O_PROMPT */
 	{"prompt",	NULL,		OPT_1BOOL,	0},
 /* O_READONLY */
@@ -98,7 +98,7 @@ static OPTLIST const optlist[] = {
 /* O_SCROLL */
 	{"scroll",	NULL,		OPT_NUM,	0},
 /* O_SECTIONS */
-	{"sections",	NULL,		OPT_STR,	0},
+	{"sections",	f_section,	OPT_STR,	0},
 /* O_SHELL */
 	{"shell",	NULL,		OPT_STR,	0},
 /* O_SHIFTWIDTH */
