@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 8.4 1993/08/05 18:09:09 bostic Exp $ (Berkeley) $Date: 1993/08/05 18:09:09 $";
+static char sccsid[] = "$Id: ex_read.c,v 8.5 1993/08/06 18:57:57 bostic Exp $ (Berkeley) $Date: 1993/08/06 18:57:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -104,7 +104,6 @@ noargs:	if ((fp = fopen(fname, "r")) == NULL || fstat(fileno(fp), &sb)) {
 	}
 
 	rval = ex_readfp(sp, ep, fname, fp, &cmdp->addr1, &nlines, 1);
-	sp->rptlines[L_READ] += nlines;
 
 	/*
 	 * Set the cursor to the first line read in, if anything read

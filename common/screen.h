@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.7 1993/08/06 13:18:17 bostic Exp $ (Berkeley) $Date: 1993/08/06 13:18:17 $
+ *	$Id: screen.h,v 8.8 1993/08/06 18:56:59 bostic Exp $ (Berkeley) $Date: 1993/08/06 18:56:59 $
  */
 
 /*
@@ -140,17 +140,16 @@ typedef struct _scr {
 #define	RCM_LAST	0x02		/* Column suck: last. */
 	u_int	 rcmflags;
 
-#define	L_ADDED		 0		/* Added lines. */
-#define	L_CHANGED	 1		/* Changed lines. */
-#define	L_COPIED	 2		/* Copied lines. */
-#define	L_DELETED	 3		/* Deleted lines. */
-#define	L_JOINED	 4		/* Joined lines. */
-#define	L_MOVED		 5		/* Moved lines. */
-#define	L_PUT		 6		/* Put lines. */
-#define	L_READ		 7		/* Read lines. */
-#define	L_LSHIFT	 8		/* Left shift lines. */
-#define	L_RSHIFT	 9		/* Right shift lines. */
-#define	L_YANKED	10		/* Yanked lines. */
+#define	L_ADDED		0		/* Added lines. */
+#define	L_CHANGED	1		/* Changed lines. */
+#define	L_COPIED	2		/* Copied lines. */
+#define	L_DELETED	3		/* Deleted lines. */
+#define	L_JOINED	4		/* Joined lines. */
+#define	L_MOVED		5		/* Moved lines. */
+#define	L_PUT		6		/* Put lines. */
+#define	L_LSHIFT	7		/* Left shift lines. */
+#define	L_RSHIFT	8		/* Right shift lines. */
+#define	L_YANKED	9		/* Yanked lines. */
 	recno_t	 rptlines[L_YANKED + 1];/* Ex/vi: lines changed by last op. */
 
 	struct _msg	*msgp;		/* User message list. */
