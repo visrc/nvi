@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.21 1993/09/30 13:19:35 bostic Exp $ (Berkeley) $Date: 1993/09/30 13:19:35 $";
+static char sccsid[] = "$Id: recover.c,v 8.22 1993/10/04 19:36:34 bostic Exp $ (Berkeley) $Date: 1993/10/04 19:36:34 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -489,7 +489,6 @@ rcv_read(sp, name)
 {
 	struct dirent *dp;
 	DIR *dirp;
-	EXF *ep;
 	FREF *frp;
 	FILE *fp;
 	int found;
@@ -558,6 +557,6 @@ rcv_read(sp, name)
 		FREE(p, strlen(p));
 		return (1);
 	}
-	ep->rcv_mpath = p;
+	sp->ep->rcv_mpath = p;
 	return (0);
 }
