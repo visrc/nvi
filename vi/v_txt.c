@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.58 1996/04/27 11:40:36 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:36 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.59 1996/04/27 12:26:01 bostic Exp $ (Berkeley) $Date: 1996/04/27 12:26:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -41,6 +41,8 @@ static int	 txt_fc_col __P((SCR *, int, ARGS **));
 static int	 txt_hex __P((SCR *, TEXT *));
 static int	 txt_insch __P((SCR *, TEXT *, CHAR_T *, u_int));
 static int	 txt_isrch __P((SCR *, VICMD *, TEXT *, u_int8_t *));
+static int	 txt_map_end __P((SCR *));
+static int	 txt_map_init __P((SCR *));
 static int	 txt_margin __P((SCR *, TEXT *, TEXT *, int *, u_int32_t));
 static void	 txt_nomorech __P((SCR *));
 static void	 txt_Rcleanup __P((SCR *,
@@ -112,7 +114,11 @@ v_tcmd(sp, vp, prompt, flags)
 	return (0);
 }
 
-int
+/*
+ * txt_map_init
+ *	Initialize the screen map for colon command-line input.
+ */
+static int
 txt_map_init(sp)
 	SCR *sp;
 {
@@ -158,7 +164,11 @@ txt_map_init(sp)
 	return (0);
 }
 
-int
+/*
+ * txt_map_end
+ *	Reset the screen map for colon command-line input.
+ */
+static int
 txt_map_end(sp)
 	SCR *sp;
 {
@@ -259,9 +269,8 @@ v_txt(sp, vp, tm, lp, len, prompt, ai_line, rcount, flags)
 	size_t rcol;		/* 0-N: insert offset in the replay buffer. */
 	size_t tcol;		/* Temporary column. */
 	u_int32_t ec_flags;	/* Input mapping flags. */
-#define	IS_FAILED	0x01	/* Incremental search failed. */
-#define	IS_RESET	0x02	/* Reset the incremental search. */
-#define	IS_RUNNING	0x04	/* Incremental search turned on. */
+#define	IS_RESTART	0x01	/* Reset the incremental search. */
+#define	IS_RUNNING	0x02	/* Incremental search turned on. */
 	u_int8_t is_flags;
 	int abcnt, ab_turnoff;	/* Abbreviation character count, switch. */
 	int filec_redraw;	/* Redraw after the file completion routine. */
@@ -451,7 +460,8 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 	/* Other text input mode setup. */
 	quote = Q_NOTSET;
 	carat = C_NOTSET;
-	FL_INIT(is_flags, LF_ISSET(TXT_SEARCHINCR) ? IS_RESET | IS_RUNNING : 0);
+	FL_INIT(is_flags,
+	    LF_ISSET(TXT_SEARCHINCR) ? IS_RESTART | IS_RUNNING : 0);
 	filec_redraw = hexcnt = showmatch = 0;
 
 	/* Initialize input flags. */
@@ -658,11 +668,11 @@ k_cr:		if (LF_ISSET(TXT_CR)) {
 			if (tp->cno <= tp->offset)
 				tp->term = TERM_CR;
 			/*
-			 * Set term condition: if incrementally searching and
-			 * entered a pattern.
+			 * Set term condition: if searching incrementally and
+			 * the user entered a pattern, return a completed
+			 * search, regardless if the entire pattern was found.
 			 */
 			if (FL_ISSET(is_flags, IS_RUNNING) &&
-			    !FL_ISSET(is_flags, IS_FAILED) &&
 			    tp->cno >= tp->offset + 1)
 				tp->term = TERM_SEARCH;
 
@@ -846,12 +856,11 @@ k_cr:		if (LF_ISSET(TXT_CR)) {
 		if (tp->cno <= tp->offset)
 			tp->term = TERM_ESC;
 		/*
-		 * Set term condition: if incrementally searching and
-		 * entered a pattern.
+		 * Set term condition: if searching incrementally and the user
+		 * entered a pattern, return a completed search, regardless if
+		 * the entire pattern was found.
 		 */
-		if (FL_ISSET(is_flags, IS_RUNNING) &&
-		    !FL_ISSET(is_flags, IS_FAILED) &&
-		    tp->cno >= tp->offset + 1)
+		if (FL_ISSET(is_flags, IS_RUNNING) && tp->cno >= tp->offset + 1)
 			tp->term = TERM_SEARCH;
 
 k_escape:	LINE_RESOLVE;
@@ -1000,7 +1009,7 @@ leftmargin:		tp->lb[tp->cno - 1] = ' ';
 
 		/* Reset if we deleted an incremental search character. */
 		if (FL_ISSET(is_flags, IS_RUNNING))
-			FL_SET(is_flags, IS_RESET);
+			FL_SET(is_flags, IS_RESTART);
 		break;
 	case K_VWERASE:			/* Skip back one word. */
 		/*
@@ -1090,7 +1099,7 @@ leftmargin:		tp->lb[tp->cno - 1] = ' ';
 
 		/* Reset if we deleted an incremental search character. */
 		if (FL_ISSET(is_flags, IS_RUNNING))
-			FL_SET(is_flags, IS_RESET);
+			FL_SET(is_flags, IS_RESTART);
 		break;
 	case K_VKILL:			/* Restart this line. */
 		/*
@@ -1132,7 +1141,7 @@ leftmargin:		tp->lb[tp->cno - 1] = ' ';
 
 		/* Reset if we deleted an incremental search character. */
 		if (FL_ISSET(is_flags, IS_RUNNING))
-			FL_SET(is_flags, IS_RESET);
+			FL_SET(is_flags, IS_RESTART);
 		break;
 	case K_CNTRLT:			/* Add autoindent characters. */
 		if (!LF_ISSET(TXT_CNTRLT))
@@ -1815,7 +1824,7 @@ txt_dent(sp, tp, isindent)
 {
 	CHAR_T ch;
 	u_long sw, ts;
-	size_t cno, current, off, spaces, target, tabs;
+	size_t cno, current, spaces, target, tabs;
 	int ai_reset;
 
 	ts = O_VAL(sp, O_TABSTOP);
@@ -2468,6 +2477,7 @@ txt_isrch(sp, vp, tp, is_flagsp)
 	u_int8_t *is_flagsp;
 {
 	CHAR_T savech;
+	MARK start;
 	recno_t lno;
 	u_int sf;
 
@@ -2479,17 +2489,20 @@ txt_isrch(sp, vp, tp, is_flagsp)
 
 	/*
 	 * If the user erases back to the beginning of the buffer, there's
-	 * nothing to search for.
-	 *
-	 * If it's an RE quote character, ignore it for now, but don't let
-	 * the user return with the string successfully found.
+	 * nothing to search for.  Reset the cursor to the starting point.
 	 */
-	if (tp->cno <= 1 || tp->lb[tp->cno - 1] == '\\') {
-		vp->m_final.lno = vp->m_start.lno;
-		vp->m_final.cno = vp->m_start.cno;
-		FL_SET(*is_flagsp, IS_FAILED);
+	if (tp->cno <= 1) {
+		vp->m_final = vp->m_start;
 		return (0);
 	}
+
+	/*
+	 * If it's an RE quote character, and not a quoted RE quote character,
+	 * ignore it for now.
+	 */
+	if (tp->lb[tp->cno - 1] == '\\' &&
+	    (tp->cno == 2 || tp->lb[tp->cno - 2] != '\\'))
+		return (0);
 
 	/*
 	 * If we see the search pattern termination character, then quit doing
@@ -2498,9 +2511,9 @@ txt_isrch(sp, vp, tp, is_flagsp)
 	 * the original location, the ex search routines don't know anything
 	 * about incremental searches.
 	 */
-	if (tp->lb[0] == tp->lb[tp->cno - 1] && tp->lb[tp->cno - 2] != '\\') {
-		vp->m_final.lno = vp->m_start.lno;
-		vp->m_final.cno = vp->m_start.cno;
+	if (tp->lb[0] == tp->lb[tp->cno - 1] &&
+	    (tp->cno == 2 || tp->lb[tp->cno - 2] != '\\')) {
+		vp->m_final = vp->m_start;
 		FL_CLR(*is_flagsp, IS_RUNNING);
 		return (0);
 	}
@@ -2522,26 +2535,25 @@ txt_isrch(sp, vp, tp, is_flagsp)
 	 * we have to move the cursor, otherwise, we don't want to move the
 	 * cursor in case the text at the current position continues to match.
 	 */
-	if (FL_ISSET(*is_flagsp, IS_RESET)) {
+	if (FL_ISSET(*is_flagsp, IS_RESTART)) {
+		start = vp->m_start;
 		sf = SEARCH_SET;
-		vp->m_final.lno = vp->m_start.lno;
-		vp->m_final.cno = vp->m_start.cno;
-	} else
+	} else {
+		start = vp->m_final;
 		sf = SEARCH_INCR | SEARCH_SET;
+	}
 
 	if (tp->lb[0] == '/' ?
-	    !f_search(sp, &vp->m_final, &vp->m_final, tp->lb + 1, NULL, sf) :
-	    !b_search(sp, &vp->m_final, &vp->m_final, tp->lb + 1, NULL, sf)) {
+	    !f_search(sp, &start, &vp->m_final, tp->lb + 1, NULL, sf) :
+	    !b_search(sp, &start, &vp->m_final, tp->lb + 1, NULL, sf)) {
 		sp->lno = vp->m_final.lno;
 		sp->cno = vp->m_final.cno;
-		FL_CLR(*is_flagsp, IS_FAILED | IS_RESET);
+		FL_CLR(*is_flagsp, IS_RESTART);
 
 		if (!KEYS_WAITING(sp) && vs_refresh(sp, 0))
 			return (1);
 	} else {
-		vp->m_final.lno = vp->m_start.lno;
-		vp->m_final.cno = vp->m_start.cno;
-		FL_SET(*is_flagsp, IS_FAILED | IS_RESET);
+		FL_SET(*is_flagsp, IS_RESTART);
 
 		(void)sp->gp->scr_bell(sp);
 	}
