@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_paragraph.c,v 8.6 1994/03/04 10:05:09 bostic Exp $ (Berkeley) $Date: 1994/03/04 10:05:09 $";
+static char sccsid[] = "$Id: v_paragraph.c,v 8.7 1994/03/04 11:47:46 bostic Exp $ (Berkeley) $Date: 1994/03/04 11:47:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -184,32 +184,38 @@ v_paragraphb(sp, ep, vp)
 
 	/*
 	 * !!!
-	 * If the starting cursor position is in the first column (backward
-	 * paragraph movements did NOT historically pay attention to non-blank
-	 * characters) i.e. the movement is cutting the entire line, the buffer
-	 * is in line mode.  It's a lot easier to check here, because we know
-	 * that the end is going to be at the start or end of a line.
+	 * Check for SOF.  The historic vi didn't complain if users hit SOF
+	 * repeatedly, unless it was part of a motion command.  There is no
+	 * question but that Emerson's editor of choice was vi.
 	 *
-	 * Also, correct for a left motion component.
-	 */
-	if (ISMOTION(vp))
-		if (vp->m_start.cno == 0)
-			F_SET(vp, VM_LMODE);
-		else
-			--vp->m_start.cno;
-	/*
 	 * The { command historically moved to the beginning of the first
 	 * line if invoked on the first line.
 	 *
 	 * !!!
-	 * Check for SOF.  The historic vi didn't complain if users hit
-	 * SOF repeatedly.  Emerson would have loved vi.
+	 * If the starting cursor position is in the first column (backward
+	 * paragraph movements did NOT historically pay attention to non-blank
+	 * characters) i.e. the movement is cutting the entire line, the buffer
+	 * is in line mode.  Cuts from the beginning of the line also did not
+	 * cut the current line, but started at the previous EOL.
+	 *
+	 * Correct for a left motion component while we're thinking about it.
 	 */
+	lno = vp->m_start.lno;
+	if (ISMOTION(vp))
+		if (vp->m_start.cno == 0) {
+			if (vp->m_start.lno == 1) {
+				v_sof(sp, &vp->m_start);
+				return (1);
+			} else
+				--vp->m_start.lno;
+			F_SET(vp, VM_LMODE);
+		} else
+			--vp->m_start.cno;
+
 	if (vp->m_start.lno <= 1)
 		goto sof;
 
 	/* Figure out what state we're currently in. */
-	lno = vp->m_start.lno;
 	if ((p = file_gline(sp, ep, lno, &len)) == NULL)
 		goto sof;
 
