@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_abbrev.c,v 8.5 1993/12/02 10:48:42 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:48:42 $";
+static char sccsid[] = "$Id: ex_abbrev.c,v 8.6 1993/12/22 16:15:15 bostic Exp $ (Berkeley) $Date: 1993/12/22 16:15:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -41,7 +41,7 @@ ex_abbr(sp, ep, cmdp)
 	if (seq_set(sp, NULL, 0, cmdp->argv[0]->bp, cmdp->argv[0]->len,
 	    cmdp->argv[1]->bp, cmdp->argv[1]->len, SEQ_ABBREV, 1))
 		return (1);
-	F_SET(sp, S_ABBREV);
+	F_SET(sp->gp, G_ABBREV);
 	return (0);
 }
 
@@ -58,7 +58,7 @@ ex_unabbr(sp, ep, cmdp)
 	ARGS *ap;
 
 	ap = cmdp->argv[0];
-	if (!F_ISSET(sp, S_ABBREV) ||
+	if (!F_ISSET(sp->gp, G_ABBREV) ||
 	    seq_delete(sp, ap->bp, ap->len, SEQ_ABBREV)) {
 		msgq(sp, M_ERR, "\"%s\" is not an abbreviation.", ap->bp);
 		return (1);
