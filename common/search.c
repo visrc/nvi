@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.3 1993/07/06 18:00:47 bostic Exp $ (Berkeley) $Date: 1993/07/06 18:00:47 $";
+static char sccsid[] = "$Id: search.c,v 8.4 1993/07/09 09:00:33 bostic Exp $ (Berkeley) $Date: 1993/07/09 09:00:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -445,7 +445,7 @@ check_word(sp, ptrnp, replacedp)
 	/* Count up the "word" patterns. */
 	*replacedp = 0;
 	for (p = *ptrnp, cnt = 0; *p; ++p)
-		if (p[0] == '\\' && p[1] && p[1] == '<')
+		if (p[0] == '\\' && p[1] && (p[1] == '<' || p[1] == '>'))
 			++cnt;
 	if (cnt == 0)
 		return (0);
@@ -456,7 +456,7 @@ check_word(sp, ptrnp, replacedp)
 	GET_SPACE(sp, bp, blen, needspace);
 
 	for (p = *ptrnp, t = bp; *p;)
-		if (p[0] == '\\' && p[1] && p[1] == '<' || p[1] == '>') {
+		if (p[0] == '\\' && p[1] && (p[1] == '<' || p[1] == '>')) {
 			if (p[1] == '<') {
 				memmove(t, RE_WSTART, sizeof(RE_WSTART) - 1);
 				t += sizeof(RE_WSTART) - 1;
