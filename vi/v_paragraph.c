@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_paragraph.c,v 8.12 1994/07/20 17:26:56 bostic Exp $ (Berkeley) $Date: 1994/07/20 17:26:56 $";
+static char sccsid[] = "$Id: v_paragraph.c,v 8.13 1994/07/23 15:02:17 bostic Exp $ (Berkeley) $Date: 1994/07/23 15:02:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,14 +29,39 @@ static char sccsid[] = "$Id: v_paragraph.c,v 8.12 1994/07/20 17:26:56 bostic Exp
 #include "vi.h"
 #include "vcmd.h"
 
-/*
- * Paragraphs are empty lines after text or values from the paragraph
- * or section options.
- */
+#define	INTEXT_CHECK {							\
+	if (len == 0 || v_isempty(p, len)) {				\
+		if (!--cnt)						\
+			goto found;					\
+		pstate = P_INBLANK;					\
+	}								\
+	/*								\
+	 * !!!								\
+	 * Historic documentation (USD:15-11, 4.2) said that formfeed	\
+	 * characters (^L) in the first column delimited paragraphs.	\
+	 * The historic vi code mentions formfeed characters, but never	\
+	 * implements them.  It seems reasonable, do it.		\
+	 */								\
+	if (p[0] == '\014') {						\
+		if (!--cnt)						\
+			goto found;					\
+		continue;						\
+	}								\
+	if (p[0] != '.' || len < 2)					\
+		continue;						\
+	for (lp = VIP(sp)->paragraph; *lp != '\0'; lp += 2)		\
+		if (lp[0] == p[1] &&					\
+		    (lp[1] == ' ' && len == 2 || lp[1] == p[2]) &&	\
+		    !--cnt)						\
+			goto found;					\
+}
 
 /*
  * v_paragraphf -- [count]}
  *	Move forward count paragraphs.
+ *
+ * Paragraphs are empty lines after text, formfeed characters, or values
+ * from the paragraph or section options.
  */
 int
 v_paragraphf(sp, ep, vp)
@@ -100,18 +125,7 @@ v_paragraphf(sp, ep, vp)
 			goto eof;
 		switch (pstate) {
 		case P_INTEXT:
-			if (p[0] == '.' && len > 1)
-				for (lp = VIP(sp)->paragraph; *lp; lp += 2)
-					if (lp[0] == p[1] &&
-					    (lp[1] == ' ' && len == 2 ||
-					    lp[1] == p[2]) &&
-					    !--cnt)
-						goto found;
-			if (len == 0 || v_isempty(p, len)) {
-				if (!--cnt)
-					goto found;
-				pstate = P_INBLANK;
-			}
+			INTEXT_CHECK;
 			break;
 		case P_INBLANK:
 			if (len == 0 || v_isempty(p, len))
@@ -170,11 +184,11 @@ eof:	if (vp->m_start.lno == lno || vp->m_start.lno == lno - 1) {
 	}
 	/*
 	 * !!!
-	 * Non-motion commands move to the end of the range, VC_D and
-	 * VC_Y stay at the start.  Ignore VC_C and VC_S.
+	 * Non-motion commands move to the end of the range, VC_D and VC_Y
+	 * stay at the start.  Ignore VC_C and VC_S.
 	 *
-	 * If deleting the line (which happens if deleting to EOF),
-	 * then cursor movement is to the first nonblank.
+	 * If deleting the line (which happens if deleting to EOF), then
+	 * cursor movement is to the first nonblank.
 	 */
 	if (F_ISSET(vp, VC_D)) {
 		F_CLR(vp, VM_RCM_MASK);
@@ -256,23 +270,11 @@ v_paragraphb(sp, ep, vp)
 			goto sof;
 		switch (pstate) {
 		case P_INTEXT:
-			if (p[0] == '.' && len >= 2)
-				for (lp = VIP(sp)->paragraph; *lp; lp += 2)
-					if (lp[0] == p[1] &&
-					    (lp[1] == ' ' && len == 2 ||
-					    lp[1] == p[2]) &&
-					    !--cnt)
-						goto ret;
-			if (len == 0 || v_isempty(p, len)) {
-				if (!--cnt)
-					goto ret;
-				pstate = P_INBLANK;
-			}
-			break;
+			INTEXT_CHECK;
 		case P_INBLANK:
 			if (len != 0 && !v_isempty(p, len)) {
 				if (!--cnt)
-					goto ret;
+					goto found;
 				pstate = P_INTEXT;
 			}
 			break;
@@ -284,7 +286,7 @@ v_paragraphb(sp, ep, vp)
 	/* SOF is a movement sink. */
 sof:	lno = 1;
 
-ret:	vp->m_stop.lno = lno;
+found:	vp->m_stop.lno = lno;
 	vp->m_stop.cno = 0;
 
 	/*
