@@ -10,19 +10,19 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_menu.c,v 8.12 1996/12/04 10:16:13 bostic Exp $ (Berkeley) $Date: 1996/12/04 10:16:13 $";
+static const char sccsid[] = "$Id: m_menu.c,v 8.13 1996/12/05 12:30:57 bostic Exp $ (Berkeley) $Date: 1996/12/05 12:30:57 $";
 #endif /* not lint */
 
-#include "X11/Intrinsic.h"
-#include "X11/StringDefs.h"
-#include "Xm/PushB.h"
-#include "Xm/CascadeB.h"
-#include "Xm/RowColumn.h"
-#include "Xm/Separator.h"
-#include "Xm/FileSB.h"
-#include "Xm/SelectioB.h"
-
 #include <sys/queue.h>
+
+#include <X11/Intrinsic.h>
+#include <X11/StringDefs.h>
+#include <Xm/PushB.h>
+#include <Xm/CascadeB.h>
+#include <Xm/RowColumn.h>
+#include <Xm/Separator.h>
+#include <Xm/FileSB.h>
+#include <Xm/SelectioB.h>
 
 #include <bitstring.h>
 #include <stdio.h>
@@ -57,12 +57,15 @@ static const char sccsid[] = "$Id: m_menu.c,v 8.12 1996/12/04 10:16:13 bostic Ex
 
 #define	BufferSize	1024
 
-
 /* Utility:  Send a menu command to vi
  *
  *	Future:
  *	change IPO_STRING to IPO_COMMAND so that menu actions cannot
  *		be confusing when in insert mode
+ *
+ * XXX
+ * THIS SHOULD GO AWAY -- WE SHOULDN'T SEND UNINTERPRETED STRINGS TO THE
+ * CORE.
  */
 
 #if defined(__STDC__)
@@ -93,8 +96,6 @@ String	str;
     ipb.len = strlen(buffer);
     ip_send("s", &ipb);
 }
-
-
 /* Utility:  beep for unimplemented command */
 
 #if defined(__STDC__)
@@ -273,192 +274,129 @@ String	prompt;
 }
 
 
-/* Utility:  perform an action on a string */
-
-#if defined(__STDC__)
-void	string_command( Widget w, String prefix, String prompt )
-#else
-void	string_command( w, prefix, prompt )
-Widget	w;
-String	prefix;
-String	prompt;
-#endif
+/*
+ * string_command --
+ *	Get a string and send it with the command to the core.
+ */
+static void
+string_command(w, code, prompt)
+	Widget w;
+	int code;
+	String prompt;
 {
-    char	buffer[BufferSize];
-    char	*str;
+	IP_BUF ipb;
+	char *str;
 
-    if (( str = get_string( w, prompt )) != NULL ) {
-	strcpy( buffer, prefix );
-	strcat( buffer, str );
-	send_command_string( buffer );
-    }
+	if ((str = get_string(w, prompt)) != NULL ) {
+		ipb.code = code;
+		ipb.str = str;
+		/*
+		 * XXX
+		 * This is REALLY sleazy.  We pass the nul along with the
+		 * string so that the core editor doesn't have to copy the
+		 * string to get a nul termination.  This should be fixed
+		 * as part of making the editor fully 8-bit clean.
+		 */
+		ipb.len = strlen(str) + 1;
+		ip_send("s", &ipb);
+	}
 }
 
 
-/* Utility:  perform an action on a file */
-
-#if defined(__STDC__)
-void	file_command( Widget w, String prefix, String prompt )
-#else
-void	file_command( w, prefix, prompt )
-Widget	w;
-String	prefix;
-String	prompt;
-#endif
+/*
+ * file_command --
+ *	Get a file name and send it with the command to the core.
+ */
+static void
+file_command(w, code, prompt)
+	Widget	w;
+	int code;
+	String prompt;
 {
-    char	buffer[BufferSize];
-    char	*file;
+	IP_BUF ipb;
+	char *file;
 
-    if (( file = get_file( w, prompt )) != NULL ) {
-	strcpy( buffer, prefix );
-	strcat( buffer, file );
-	send_command_string( buffer );
-    }
+	if ((file = get_file(w, prompt)) != NULL) {
+		ipb.code = code;
+		ipb.str = file;
+		ipb.len = strlen(file);
+		ip_send("s", &ipb);
+	}
 }
 
 
-/* Menu action routines (one per menu entry)
+/*
+ * Menu action routines (one per menu entry)
  *
  * These are in the order in which they appear in the menu structure.
  */
-
-#if defined(__STDC__)
-void		ma_edit_file(	Widget w,
-				XtPointer call_data,
-				XtPointer client_data
-				)
-#else
-void		ma_edit_file( w, call_data, client_data )
-Widget		w;
-XtPointer	call_data;
-XtPointer	client_data;
-#endif
+void
+ma_edit_file(w, call_data, client_data)
+	Widget w;
+	XtPointer call_data, client_data;
 {
-    file_command( w, ":e ", "Edit" );
+	file_command(w, IPO_EDIT, "Edit");
 }
 
-
-#if defined(__STDC__)
-void		ma_split(	Widget w,
-				XtPointer call_data,
-				XtPointer client_data
-				)
-#else
-void		ma_split( w, call_data, client_data )
-Widget		w;
-XtPointer	call_data;
-XtPointer	client_data;
-#endif
+void
+ma_split(w, call_data, client_data)
+	Widget w;
+	XtPointer call_data, client_data;
 {
-#if 1
-    send_command_string( ":E" );
-#else
-    split_screen();
-#endif
+	file_command(w, IPO_SPLIT, "Edit");
 }
 
-
-#if defined(__STDC__)
-void		ma_split_as(	Widget w,
-				XtPointer call_data,
-				XtPointer client_data
-				)
-#else
-void		ma_split_as( w, call_data, client_data )
-Widget		w;
-XtPointer	call_data;
-XtPointer	client_data;
-#endif
+void
+ma_save(w, call_data, client_data)
+	Widget w;
+	XtPointer call_data, client_data;
 {
-    file_command( w, ":e ", "Edit" );
+	IP_BUF ipb;
+
+	ipb.code = IPO_WRITE;
+	(void)ip_send(NULL, &ipb);
 }
 
-
-#if defined(__STDC__)
-void		ma_save(	Widget w,
-				XtPointer call_data,
-				XtPointer client_data
-				)
-#else
-void		ma_save( w, call_data, client_data )
-Widget		w;
-XtPointer	call_data;
-XtPointer	client_data;
-#endif
+void
+ma_save_as(w, call_data, client_data)
+	Widget w;
+	XtPointer call_data, client_data;
 {
-    IP_BUF ipb;
-
-    ipb.code = IPO_WRITE;
-    (void)ip_send(NULL, &ipb);
+	file_command(w, IPO_WRITEAS, "Save As");
 }
 
-
-#if defined(__STDC__)
-void		ma_save_as(	Widget w,
-				XtPointer call_data,
-				XtPointer client_data
-				)
-#else
-void		ma_save_as( w, call_data, client_data )
-Widget		w;
-XtPointer	call_data;
-XtPointer	client_data;
-#endif
+void
+ma_wq(w, call_data, client_data)
+	Widget w;
+	XtPointer call_data, client_data;
 {
-    file_command( w, ":w ", "Save As" );
+	IP_BUF ipb;
+
+	ipb.code = IPO_WQ;
+	(void)ip_send(NULL, &ipb);
 }
 
-
-#if defined(__STDC__)
-void		ma_quit(	Widget w,
-				XtPointer call_data,
-				XtPointer client_data
-				)
-#else
-void		ma_quit( w, call_data, client_data )
-Widget		w;
-XtPointer	call_data;
-XtPointer	client_data;
-#endif
+void
+ma_quit(w, call_data, client_data)
+	Widget w;
+	XtPointer call_data, client_data;
 {
-    IP_BUF ipb;
+	IP_BUF ipb;
 
-    ipb.code = IPO_QUIT;
-    (void)ip_send(NULL, &ipb);
+	ipb.code = IPO_QUIT;
+	(void)ip_send(NULL, &ipb);
 }
 
-
-#if defined(__STDC__)
-void		ma_undo(	Widget w,
-				XtPointer call_data,
-				XtPointer client_data
-				)
-#else
-void		ma_undo( w, call_data, client_data )
-Widget		w;
-XtPointer	call_data;
-XtPointer	client_data;
-#endif
+void
+ma_undo(w, call_data, client_data)
+	Widget w;
+	XtPointer call_data, client_data;
 {
-    send_command_string( "u" );
+	IP_BUF ipb;
+
+	ipb.code = IPO_UNDO;
+	(void)ip_send(NULL, &ipb);
 }
-
-
-#if defined(__STDC__)
-void		ma_again(	Widget w,
-				XtPointer call_data,
-				XtPointer client_data
-				)
-#else
-void		ma_again( w, call_data, client_data )
-Widget		w;
-XtPointer	call_data;
-XtPointer	client_data;
-#endif
-{
-    send_command_string( "." );
-}
-
 
 #if defined(__STDC__)
 void		ma_cut(	Widget w,
@@ -510,132 +448,98 @@ XtPointer	client_data;
     send_beep( w );
 }
 
+void
+ma_append(w, call_data, client_data)
+	Widget w;
+	XtPointer call_data, client_data;
+{
+	IP_BUF ipb;
+
+	ipb.code = IPO_APPEND;
+	(void)ip_send(NULL, &ipb);
+}
+
+void
+ma_insert(w, call_data, client_data)
+	Widget w;
+	XtPointer call_data, client_data;
+{
+	IP_BUF ipb;
+
+	ipb.code = IPO_INSERT;
+	(void)ip_send(NULL, &ipb);
+}
+
+void
+ma_escape(w, call_data, client_data)
+	Widget w;
+	XtPointer call_data, client_data;
+{
+	IP_BUF ipb;
+
+	ipb.code = IPO_EINSERT;
+	(void)ip_send(NULL, &ipb);
+}
+
+void
+ma_find(w, call_data, client_data)
+	Widget w;
+	XtPointer call_data, client_data;
+{
+	xip_show_search_dialog( w, "Find" );
+}
+
+void
+ma_find_next(w, call_data, client_data)
+	Widget w;
+	XtPointer call_data, client_data;
+{
+	xip_next_search();
+}
+
+void
+ma_tag(w, call_data, client_data)
+	Widget w;
+	XtPointer call_data, client_data;
+{
+	IP_BUF ipb;
+
+	ipb.code = IPO_TAG;
+	(void)ip_send(NULL, &ipb);
+}
+
+void
+ma_tagsplit(w, call_data, client_data)
+	Widget w;
+	XtPointer call_data, client_data;
+{
+	IP_BUF ipb;
+
+	ipb.code = IPO_TAGSPLIT;
+	(void)ip_send(NULL, &ipb);
+}
+
+void
+ma_tagas(w, call_data, client_data)
+	Widget w;
+	XtPointer call_data, client_data;
+{
+	string_command(w, IPO_TAGAS, "Tag");
+}
 
 #if defined(__STDC__)
-void		ma_append(	Widget w,
+void		ma_preferences(	Widget w,
 				XtPointer call_data,
 				XtPointer client_data
 				)
 #else
-void		ma_append( w, call_data, client_data )
+void		ma_preferences( w, call_data, client_data )
 Widget		w;
 XtPointer	call_data;
 XtPointer	client_data;
 #endif
 {
-    send_command_string( "a" );
-}
-
-
-#if defined(__STDC__)
-void		ma_insert(	Widget w,
-				XtPointer call_data,
-				XtPointer client_data
-				)
-#else
-void		ma_insert( w, call_data, client_data )
-Widget		w;
-XtPointer	call_data;
-XtPointer	client_data;
-#endif
-{
-    send_command_string( "i" );
-}
-
-
-#if defined(__STDC__)
-void		ma_escape(	Widget w,
-				XtPointer call_data,
-				XtPointer client_data
-				)
-#else
-void		ma_escape( w, call_data, client_data )
-Widget		w;
-XtPointer	call_data;
-XtPointer	client_data;
-#endif
-{
-    send_command_string( "\033" );
-}
-
-
-#if defined(__STDC__)
-void		ma_find(	Widget w,
-				XtPointer call_data,
-				XtPointer client_data
-				)
-#else
-void		ma_find( w, call_data, client_data )
-Widget		w;
-XtPointer	call_data;
-XtPointer	client_data;
-#endif
-{
-    xip_show_search_dialog( w, "Find" );
-}
-
-
-#if defined(__STDC__)
-void		ma_find_next(	Widget w,
-				XtPointer call_data,
-				XtPointer client_data
-				)
-#else
-void		ma_find_next( w, call_data, client_data )
-Widget		w;
-XtPointer	call_data;
-XtPointer	client_data;
-#endif
-{
-    xip_next_search();
-}
-
-
-#if defined(__STDC__)
-void		ma_goto_tag(	Widget w,
-				XtPointer call_data,
-				XtPointer client_data
-				)
-#else
-void		ma_goto_tag( w, call_data, client_data )
-Widget		w;
-XtPointer	call_data;
-XtPointer	client_data;
-#endif
-{
-    send_command_string( ":tag" );
-}
-
-
-#if defined(__STDC__)
-void		ma_split_to_tag(	Widget w,
-					XtPointer call_data,
-					XtPointer client_data
-					)
-#else
-void		ma_split_to_tag( w, call_data, client_data )
-Widget		w;
-XtPointer	call_data;
-XtPointer	client_data;
-#endif
-{
-    send_command_string( ":Tag" );
-}
-
-
-#if defined(__STDC__)
-void		ma_tag_as(	Widget w,
-				XtPointer call_data,
-				XtPointer client_data
-				)
-#else
-void		ma_tag_as( w, call_data, client_data )
-Widget		w;
-XtPointer	call_data;
-XtPointer	client_data;
-#endif
-{
-    string_command( w, ":tag ", "Tag" );
+    xip_show_options_dialog( w, "Preferences" );
 }
 
 
@@ -655,19 +559,18 @@ typedef	struct {
 pull_down	file_menu[] = {
     { "Edit File...",		ma_edit_file },
     { "",			NULL },
-    { "Split Window",		ma_split },
-    { "Split Window As ...",	ma_split_as },
+    { "Split Window...",	ma_split },
     { "",			NULL },
     { "Save ",			ma_save },
     { "Save As...",		ma_save_as },
     { "",			NULL },
+    { "Write and Quit",		ma_wq },
     { "Quit",			ma_quit },
     { NULL,			NULL },
 };
 
 pull_down	edit_menu[] = {
     { "Undo",			ma_undo },
-    { "Again",			ma_again },
     { "",			NULL },
     { "Cut",			ma_cut },
     { "Copy",			ma_copy },
@@ -683,13 +586,16 @@ pull_down	edit_menu[] = {
 };
 
 pull_down	options_menu[] = {
+    { "Preferences",		ma_preferences },
+    { "Command Mode Maps",	NULL },
+    { "Insert Mode Maps",	NULL },
     { NULL,			NULL },
 };
 
 pull_down	tag_menu[] = {
-    { "Go To Tag",		ma_goto_tag },
-    { "Split To Tag",		ma_split_to_tag },
-    { "Tag As...",		ma_tag_as },
+    { "Go To Tag",		ma_tag },
+    { "Split To Tag",		ma_tagsplit },
+    { "Tag As...",		ma_tagas },
     { NULL,			NULL },
 };
 
