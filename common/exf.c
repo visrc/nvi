@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: exf.c,v 10.71 2002/04/11 19:49:29 skimo Exp $ (Berkeley) $Date: 2002/04/11 19:49:29 $";
+static const char sccsid[] = "$Id: exf.c,v 10.72 2003/08/10 09:44:01 skimo Exp $ (Berkeley) $Date: 2003/08/10 09:44:01 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -1488,7 +1488,7 @@ set_alt_name(SCR *sp, char *name)
 
 /*
  * file_lock --
- *	Get an exclusive lock on a file.
+ *	Get an exclusive lock on a file and set close-on-exec flag
  *
  * XXX
  * The default locking is flock(2) style, not fcntl(2).  The latter is
@@ -1512,6 +1512,8 @@ set_alt_name(SCR *sp, char *name)
 lockr_t
 file_lock(SCR *sp, char *name, int *fdp, int fd, int iswrite)
 {
+	fcntl(fd, F_SETFD, 1);
+
 	if (!O_ISSET(sp, O_LOCKFILES))
 		return (LOCK_SUCCESS);
 	
