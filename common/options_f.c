@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 8.3 1993/08/05 18:02:26 bostic Exp $ (Berkeley) $Date: 1993/08/05 18:02:26 $";
+static char sccsid[] = "$Id: options_f.c,v 8.4 1993/08/16 13:07:20 bostic Exp $ (Berkeley) $Date: 1993/08/16 13:07:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -129,12 +129,10 @@ DECL(f_flash)
 
 DECL(f_keytime)
 {
-#define	MAXKEYTIME	20
-	if (val > MAXKEYTIME) {
-		msgq(sp, M_ERR,
-		    "Keytime too large, more than %d.", MAXKEYTIME);
-		return (1);
-	}
+#define	BIGKEYTIME	20
+	if (val > BIGKEYTIME)
+		msgq(sp, M_VINFO,
+		    "A keytime of %lu tenths of a second is quite large.", val);
 	O_VAL(sp, O_KEYTIME) = val;
 	return (0);
 }
