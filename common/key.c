@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.45 1994/03/08 19:38:17 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:38:17 $";
+static char sccsid[] = "$Id: key.c,v 8.46 1994/03/10 13:05:23 bostic Exp $ (Berkeley) $Date: 1994/03/10 13:05:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -127,9 +127,8 @@ term_init(sp)
 	KEYLIST *kp;
 	TKLIST const *tkp;
 	cc_t ch;
-	size_t olen;
 	int cnt;
-	char *sbp, *p, *t, buf[2 * 1024], kbuf[2], sbuf[128];
+	char *sbp, *t, buf[2 * 1024], sbuf[128];
 
 	/*
 	 * XXX
@@ -256,7 +255,7 @@ term_push(sp, s, len, cmap, flags)
 	u_int flags;			/* CH_* flags. */
 {
 	IBUF *tty;
-	size_t nlen;
+	size_t nlen, olen;
 	u_short *p, *t;
 
 	/* If we have room, stuff the keys into the buffer. */
@@ -277,8 +276,6 @@ term_push(sp, s, len, cmap, flags)
 	/* Get enough space plus a little extra. */
 	nlen = tty->cnt + len;
 	if (nlen > tty->len) {
-		size_t olen;
-
 		nlen += 64;
 		olen = tty->len;
 		BINC_RET(sp, tty->ch, olen, nlen * sizeof(tty->ch[0]));
