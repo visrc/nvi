@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 9.1 1994/11/09 18:37:58 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:37:58 $";
+static char sccsid[] = "$Id: options.c,v 9.2 1994/11/09 18:47:04 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:47:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -104,7 +104,7 @@ static OPTLIST const optlist[] = {
  * it's a serious startup performance problem over some remote links.
  */
 /* O_LOCK	  4.4BSD */
-	{"lock",	NULL,		OPT_0BOOL,	0},
+	{"lock",	NULL,		OPT_1BOOL,	0},
 /* O_MAGIC	    4BSD */
 	{"magic",	NULL,		OPT_1BOOL,	0},
 /* O_MATCHTIME	  4.4BSD */
