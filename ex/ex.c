@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 10.26 1995/10/19 18:52:30 bostic Exp $ (Berkeley) $Date: 1995/10/19 18:52:30 $";
+static char sccsid[] = "$Id: ex.c,v 10.27 1995/10/27 20:05:59 bostic Exp $ (Berkeley) $Date: 1995/10/27 20:05:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -2164,6 +2164,7 @@ ex_unknown(sp, cmd, len)
 	FREE_SPACE(sp, bp, blen);
 
 alloc_err:
+	return;
 }
 
 /*
