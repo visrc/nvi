@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 10.17 1995/10/20 10:25:42 bostic Exp $ (Berkeley) $Date: 1995/10/20 10:25:42 $";
+static char sccsid[] = "$Id: ex_filter.c,v 10.18 1995/11/05 16:01:37 bostic Exp $ (Berkeley) $Date: 1995/11/05 16:01:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -59,10 +59,8 @@ ex_filter(sp, cmdp, fm, tm, rp, cmd, ftype)
 		return (1);
 	}
 
-	/* Set return cursor position; guard against a line number of zero. */
+	/* Set return cursor position. */
 	*rp = *fm;
-	if (fm->lno == 0)
-		rp->lno = 1;
 
 	/*
 	 * There are three different processes running through this code.
