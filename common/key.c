@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 10.19 1995/11/27 18:22:33 bostic Exp $ (Berkeley) $Date: 1995/11/27 18:22:33 $";
+static char sccsid[] = "$Id: key.c,v 10.20 1996/02/03 15:08:18 bostic Exp $ (Berkeley) $Date: 1996/02/03 15:08:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -253,16 +253,14 @@ __v_key_name(sp, ach)
 
 	/*
 	 * Historical (ARPA standard) mappings.  Printable characters are left
-	 * alone.  Control characters less than '\177' are represented as '^'
+	 * alone.  Control characters less than 0x20 are represented as '^'
 	 * followed by the character offset from the '@' character in the ASCII
-	 * map.  '\177' is represented as '^' followed by '?'.
+	 * character set.  Del (0x7f) is represented as '^' followed by '?'.
 	 *
 	 * XXX
 	 * The following code depends on the current locale being identical to
-	 * the ASCII map from '\100' to '\076' (\076 since that's the largest
-	 * character for which we can offset from '@' and get something that's
-	 * a printable character in ASCII.  I'm told that this is a reasonable
-	 * assumption...
+	 * the ASCII map from 0x40 to 0x5f (since 0x1f + 0x40 == 0x5f).  I'm
+	 * told that this is a reasonable assumption...
 	 *
 	 * XXX
 	 * This code will only work with CHAR_T's that are multiples of 8-bit
@@ -277,9 +275,9 @@ pr:		sp->cname[0] = ch;
 		len = 1;
 		goto done;
 	}
-nopr:	if (ch <= '\076' && iscntrl(ch)) {
+nopr:	if (iscntrl(ch) && (ch < 0x20 || ch == 0x7f)) {
 		sp->cname[0] = '^';
-		sp->cname[1] = ch == '\177' ? '?' : '@' + ch;
+		sp->cname[1] = ch == 0x7f ? '?' : '@' + ch;
 		len = 2;
 	} else if (O_ISSET(sp, O_OCTAL)) {
 #define	BITS	(sizeof(CHAR_T) * 8)
