@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 8.8 1993/08/26 10:31:17 bostic Exp $ (Berkeley) $Date: 1993/08/26 10:31:17 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 8.9 1993/09/08 14:38:23 bostic Exp $ (Berkeley) $Date: 1993/09/08 14:38:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -167,7 +167,7 @@ EXCMDLIST const cmds[] = {
 	    "!",	"q[uit][!]"},
 /* C_READ */
 	{"read",	ex_read,	E_ADDR1|E_NORC|E_ZERO|E_ZERODEF,
-	    "s",	"[line] r[ead] [!cmd | [file]]"},
+	    "!s",	"[line] r[ead] [!cmd | [file]]"},
 /* C_REWIND */
 	{"rewind",	ex_rew,		E_NOGLOBAL|E_NORC,
 	    "!",	"rew[ind][!]"},
@@ -229,10 +229,10 @@ EXCMDLIST const cmds[] = {
 	    "w1r",	"[viu]sage key"},
 /* C_WRITE */
 	{"write",	ex_write,	E_ADDR2_ALL|E_NOGLOBAL|E_NORC|E_ZERODEF,
-	    "s",	"[line [,line]] w[rite][!] [!cmd | [>>] [file]]"},
+	    "!s",	"[line [,line]] w[rite][!] [!cmd | [>>] [file]]"},
 /* C_WQ */
 	{"wq",		ex_wq,		E_ADDR2_ALL|E_NOGLOBAL|E_NORC|E_ZERODEF,
-	    "s",	"[line [,line]] wq[!] [>>] [file]"},
+	    "!s",	"[line [,line]] wq[!] [>>] [file]"},
 /* C_XIT */
 	{"xit",		ex_xit,		E_ADDR2_ALL|E_NOGLOBAL|E_NORC|E_ZERODEF,
 	    "!f1o",	"[line [,line]] x[it][!] [file]"},
