@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex.c,v 10.41 1996/04/22 21:32:06 bostic Exp $ (Berkeley) $Date: 1996/04/22 21:32:06 $";
+static const char sccsid[] = "$Id: ex.c,v 10.42 1996/04/23 10:08:41 bostic Exp $ (Berkeley) $Date: 1996/04/23 10:08:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -2058,6 +2058,11 @@ ex_load(sp)
 	 * can't be an AGV command, which makes things a bit easier.
 	 */
 	for (gp = sp->gp;;) {
+		/*
+		 * If we're back to the original structure, leave it around,
+		 * but discard any allocated source name, we've returned to
+		 * the beginning of the command stack.
+		 */
 		if ((ecp = gp->ecq.lh_first) == &gp->excmd) {
 			if (F_ISSET(ecp, E_NAMEDISCARD)) {
 				free(ecp->if_name);
@@ -2065,6 +2070,21 @@ ex_load(sp)
 			}
 			return (0);
 		}
+
+		/*
+		 * ecp->clen will be 0 for the first discarded command, but
+		 * may not be 0 for subsequent ones, e.g. if the original
+		 * command was ":g/xx/@a|s/b/c/", then when we discard the
+		 * command pushed on the stack by the @a, we have to resume
+		 * the global command which included the substitute command.
+		 */
+		if (ecp->clen != 0)
+			return (0);
+
+		/*
+		 * If it's an @, global or v command, we may need to continue
+		 * the command on a different line.
+		 */
 		if (FL_ISSET(ecp->agv_flags, AGV_ALL)) {
 			/* Discard any exhausted ranges. */
 			while ((rp = ecp->rq.cqh_first) != (void *)&ecp->rq)
@@ -2090,9 +2110,7 @@ ex_load(sp)
 						sp->lno = 1;
 				}
 			free(ecp->o_cp);
-		} else
-			if (ecp->clen != 0)
-				return (0);
+		}
 
 		/* Discard the EXCMD. */
 		LIST_REMOVE(ecp, q);
