@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_term.c,v 9.4 1995/01/23 18:32:27 bostic Exp $ (Berkeley) $Date: 1995/01/23 18:32:27 $";
+static char sccsid[] = "$Id: cl_term.c,v 9.5 1995/01/30 09:23:35 bostic Exp $ (Berkeley) $Date: 1995/01/30 09:23:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -434,7 +434,5 @@ sigw:	a.bp = buf;
 	a.len = snprintf(buf, sizeof(buf), "columns=%u", col);
 	if (opts_set(sp, argv, 1, NULL))
 		return (1);
-
-	F_SET(sp, S_SCR_RESIZE);
 	return (0);
 }
