@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.45 1993/11/07 14:01:15 bostic Exp $ (Berkeley) $Date: 1993/11/07 14:01:15 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.46 1993/11/09 10:03:27 bostic Exp $ (Berkeley) $Date: 1993/11/09 10:03:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -126,7 +126,7 @@ v_ntext(sp, ep, hp, tm, p, len, rp, prompt, ai_line, flags)
 			hdr_text_free(hp);
 			goto newtp;
 		}
-		tp->ai = tp->insert = tp->offset = tp->overwrite = 0;
+		tp->ai = tp->insert = tp->offset = tp->owrite = 0;
 		if (p != NULL) {
 			tp->len = len;
 			memmove(tp->lb, p, len);
@@ -149,7 +149,7 @@ newtp:		if ((tp = text_init(sp, p, len, len + 32)) == NULL)
 	 */
 	if (len) {
 		if (LF_ISSET(TXT_OVERWRITE)) {
-			tp->overwrite = tm->cno - sp->cno;
+			tp->owrite = tm->cno - sp->cno;
 			tp->insert = len - tm->cno;
 		} else
 			tp->insert = len - sp->cno;
@@ -294,7 +294,7 @@ next_ch:	if (replay)
 		 */
 		if (quoted == Q_THISCHAR) {
 			--sp->cno;
-			++tp->overwrite;
+			++tp->owrite;
 			quoted = Q_NOTSET;
 
 			if (ch == HEX_CH)
@@ -330,8 +330,8 @@ next_ch:	if (replay)
 			 * modes do.					\
 			 */						\
 			if (LF_ISSET(TXT_REPLACE)) {			\
-				tp->insert += tp->overwrite;		\
-				tp->overwrite = 0;			\
+				tp->insert += tp->owrite;		\
+				tp->owrite = 0;				\
 			}						\
 			/* Delete any appended cursor. */		\
 			if (LF_ISSET(TXT_APPENDEOL)) {			\
@@ -353,16 +353,16 @@ next_ch:	if (replay)
 			 * characters following the inserted newline.
 			 * This affects the 'R', 'c', and 's' commands.
 			 */
-			for (p = tp->lb + sp->cno + tp->overwrite;
+			for (p = tp->lb + sp->cno + tp->owrite;
 			    tp->insert && isblank(*p);
-			    ++p, ++tp->overwrite, --tp->insert);
+			    ++p, ++tp->owrite, --tp->insert);
 
 			/*
 			 * Move any remaining insert characters into
 			 * a new TEXT structure.
 			 */
 			if ((ntp = text_init(sp,
-			    tp->lb + sp->cno + tp->overwrite,
+			    tp->lb + sp->cno + tp->owrite,
 			    tp->insert, tp->insert + 32)) == NULL)
 				ERR;
 			HDR_INSERT(ntp, hp, next, prev, TEXT);
@@ -402,7 +402,7 @@ next_ch:	if (replay)
 
 			/* Reset bookkeeping for the old line. */
 			tp->len = sp->cno;
-			tp->ai = tp->insert = tp->overwrite = 0;
+			tp->ai = tp->insert = tp->owrite = 0;
 
 			/* New cursor position. */
 			sp->cno = ntp->ai;
@@ -448,17 +448,16 @@ next_ch:	if (replay)
 			 * the autoindent characters.
 			 */
 			if (!tp->insert && sp->cno <= tp->ai) {
-				tp->len = tp->overwrite = 0;
+				tp->len = tp->owrite = 0;
 				sp->cno = 0;
 			} else if (LF_ISSET(TXT_AUTOINDENT))
 				txt_ai_resolve(sp, tp);
 
 			/* If there are insert characters, copy them down. */
-k_escape:		if (tp->insert && tp->overwrite)
+k_escape:		if (tp->insert && tp->owrite)
 				memmove(tp->lb + sp->cno,
-				    tp->lb + sp->cno + tp->overwrite,
-				    tp->insert);
-			tp->len -= tp->overwrite;
+				    tp->lb + sp->cno + tp->owrite, tp->insert);
+			tp->len -= tp->owrite;
 
 			/*
 			 * Delete any lines that were inserted into the text
@@ -532,7 +531,7 @@ k_escape:		if (tp->insert && tp->overwrite)
 					goto ins_ch;
 				carat_st = C_NOTSET;
 leftmargin:			tp->lb[sp->cno - 1] = ' ';
-				tp->overwrite += sp->cno - tp->offset;
+				tp->owrite += sp->cno - tp->offset;
 				tp->ai = 0;
 				sp->cno = tp->offset;
 				break;
@@ -584,7 +583,7 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 			 * Historic vi did not permit users to use erase
 			 * characters to delete autoindent characters.
 			 */
-			++tp->overwrite;
+			++tp->owrite;
 			if (sp->cno < tp->ai)
 				--tp->ai;
 			break;
@@ -627,7 +626,7 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 			/* Skip over trailing space characters. */
 			while (sp->cno > max && isblank(tp->lb[sp->cno - 1])) {
 				--sp->cno;
-				++tp->overwrite;
+				++tp->owrite;
 			}
 			if (sp->cno == max)
 				break;
@@ -653,14 +652,14 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 			if (LF_ISSET(TXT_TTYWERASE))
 				while (sp->cno > max) {
 					--sp->cno;
-					++tp->overwrite;
+					++tp->owrite;
 					if (isblank(tp->lb[sp->cno - 1]))
 						break;
 				}
 			else {
 				if (LF_ISSET(TXT_ALTWERASE)) {
 					--sp->cno;
-					++tp->overwrite;
+					++tp->owrite;
 					if (isblank(tp->lb[sp->cno - 1]))
 						break;
 				}
@@ -668,7 +667,7 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 					tmp = inword(tp->lb[sp->cno - 1]);
 				while (sp->cno > max) {
 					--sp->cno;
-					++tp->overwrite;
+					++tp->owrite;
 					if (tmp != inword(tp->lb[sp->cno - 1])
 					    || isblank(tp->lb[sp->cno - 1]))
 						break;
@@ -708,7 +707,7 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 				tp->ai = 0;
 				max = tp->offset;
 			}
-			tp->overwrite += sp->cno - max;
+			tp->owrite += sp->cno - max;
 			sp->cno = max;
 			break;
 		case K_CNTRLT:			/* Add autoindent char. */
@@ -772,8 +771,8 @@ ins_ch:			/*
 			if (abb != A_NOCHECK)
 				abb = isblank(ch) ? A_SPACE : A_NOTSPACE;
 
-			if (tp->overwrite)	/* Overwrite a character. */
-				--tp->overwrite;
+			if (tp->owrite)		/* Overwrite a character. */
+				--tp->owrite;
 			else if (tp->insert) {	/* Insert a character. */
 				++tp->len;
 				if (tp->insert == 1)
@@ -806,12 +805,11 @@ ebuf_chk:		if (sp->cno >= tp->len) {
 			break;
 		}
 #if defined(DEBUG) && 1
-		if (sp->cno + tp->insert + tp->overwrite != tp->len)
+		if (sp->cno + tp->insert + tp->owrite != tp->len)
 			msgq(sp, M_ERR,
 			    "len %u != cno: %u ai: %u insert %u overwrite %u",
-			    tp->len, sp->cno, tp->ai, tp->insert,
-			    tp->overwrite);
-		tp->len = sp->cno + tp->insert + tp->overwrite;
+			    tp->len, sp->cno, tp->ai, tp->insert, tp->owrite);
+		tp->len = sp->cno + tp->insert + tp->owrite;
 #endif
 	}
 
@@ -885,8 +883,8 @@ txt_abbrev(sp, tp, didsubp, pushc)
 
 	/* Copy any insert characters back. */
 	if (tp->insert)
-		memmove(tp->lb + sp->cno + tp->overwrite,
-		    tp->lb + sp->cno + tp->overwrite + len, tp->insert);
+		memmove(tp->lb + sp->cno + tp->owrite,
+		    tp->lb + sp->cno + tp->owrite + len, tp->insert);
 
 	*didsubp = 1;
 	return (0);
@@ -1174,8 +1172,8 @@ nothex:		tp->lb[sp->cno] = savec;
 
 	/* Copy any insert characters back. */
 	if (tp->insert)
-		memmove(tp->lb + sp->cno + tp->overwrite,
-		    tp->lb + sp->cno + tp->overwrite + len + 1, tp->insert);
+		memmove(tp->lb + sp->cno + tp->owrite,
+		    tp->lb + sp->cno + tp->owrite + len + 1, tp->insert);
 
 	*was_hex = 1;
 	return (0);
@@ -1235,13 +1233,10 @@ txt_indent(sp, tp)
 		cno += STOP_OFF(cno, ts);
 	spaces = scno - cno;
 
-	/*
-	 * Put space/tab characters in place of any overwrite
-	 * characters.
-	 */
-	for (; tp->overwrite && tabs; --tp->overwrite, --tabs, ++tp->ai)
+	/* Put space/tab characters in place of any overwrite characters. */
+	for (; tp->owrite && tabs; --tp->owrite, --tabs, ++tp->ai)
 		tp->lb[sp->cno++] = '\t';
-	for (; tp->overwrite && spaces; --tp->overwrite, --spaces, ++tp->ai)
+	for (; tp->owrite && spaces; --tp->owrite, --spaces, ++tp->ai)
 		tp->lb[sp->cno++] = ' ';
 
 	if (!tabs && !spaces)
@@ -1290,7 +1285,7 @@ txt_outdent(sp, tp)
 	for (cno = scno; --scno % sw != 0;);
 
 	/* Decrement characters until less than or equal to that slot. */
-	for (; cno > scno; --sp->cno, --tp->ai, ++tp->overwrite)
+	for (; cno > scno; --sp->cno, --tp->ai, ++tp->owrite)
 		if (tp->lb[--off] == '\t')
 			cno -= STOP_OFF(cno, ts);
 		else
@@ -1307,7 +1302,7 @@ txt_outdent(sp, tp)
 	BINC(sp, tp->lb, tp->lb_len, tp->len + spaces);
 
 	/* Use up any overwrite characters. */
-	for (; tp->overwrite && spaces; --spaces, ++tp->ai, --tp->overwrite)
+	for (; tp->owrite && spaces; --spaces, ++tp->ai, --tp->owrite)
 		tp->lb[sp->cno++] = ' ';
 
 	/* Maybe that was enough. */
@@ -1489,7 +1484,7 @@ txt_margin(sp, tp, didbreak, pushc)
 		return (1);
 
 	sp->cno -= tlen;
-	tp->overwrite += tlen;
+	tp->owrite += tlen;
 	*didbreak = 1;
 	return (0);
 }
