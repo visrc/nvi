@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.105 1994/10/14 18:14:51 bostic Exp $ (Berkeley) $Date: 1994/10/14 18:14:51 $";
+static char sccsid[] = "$Id: exf.c,v 8.106 1994/10/23 10:21:11 bostic Exp $ (Berkeley) $Date: 1994/10/23 10:21:11 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -22,6 +22,7 @@ static char sccsid[] = "$Id: exf.c,v 8.105 1994/10/14 18:14:51 bostic Exp $ (Ber
 #include <sys/file.h>
 
 #include <bitstring.h>
+#include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
@@ -39,6 +40,8 @@ static char sccsid[] = "$Id: exf.c,v 8.105 1994/10/14 18:14:51 bostic Exp $ (Ber
 
 #include "vi.h"
 #include "excmd.h"
+
+static int file_backup __P((SCR *, EXF *, char *, char *));
 
 /*
  * file_add --
@@ -634,6 +637,11 @@ file_write(sp, ep, fm, tm, name, flags)
 	else
 		oflags |= O_TRUNC;
 
+	/* Backup the file if requested. */
+	p = O_STR(sp, O_BACKUP);
+	if (p[0] != '\0' && file_backup(sp, ep, name, p) && !LF_ISSET(FS_FORCE))
+		return (1);
+
 	/* Open the file. */
 	if ((fd = open(name, oflags, DEFFILEMODE)) < 0) {
 		p = msg_print(sp, name, &nf);
@@ -757,6 +765,199 @@ file_write(sp, ep, fm, tm, name, flags)
 	if (nf)
 		FREE_SPACE(sp, p, 0);
 	return (0);
+}
+
+/*
+ * file_backup --
+ *	Backup the about-to-be-written file.
+ *
+ * XXX
+ * We do the backup by copying the entire file.  It would be nice to do
+ * a rename instead, but: (1) both files may not fit and we want to fail
+ * before doing the rename; (2) the backup file may not be on the same
+ * disk partition as the file being written; (3) there may be optional
+ * file information (MACs, DACs, whatever) that we won't get right if we
+ * recreate the file.  So, let's not risk it.
+ */
+static int
+file_backup(sp, ep, name, bname)
+	SCR *sp;
+	EXF *ep;
+	char *name, *bname;
+{
+	struct dirent *dp;
+	struct stat sb;
+	ARGS *ap[2], a;
+	DIR *dirp;
+	EXCMDARG cmd;
+	off_t off;
+	size_t blen;
+	int flags, maxnum, nf, nr, num, nw, rfd, wfd, version;
+	char *bp, *estr, *p, *pct, *slash, *t, *wfname, buf[8192];
+
+	rfd = wfd = -1;
+	bp = estr = wfname = NULL;
+
+	/*
+	 * Open the current file for reading.  Do this first, so that
+	 * we don't exec a shell before the most likely failure point.
+	 */
+	if ((rfd = open(name, O_RDONLY, 0)) < 0) {
+		estr = name;
+		goto err;
+	}
+
+	/*
+	 * If the name starts with an 'N' character, add a version number
+	 * to the name.  Strip the leading N from the string passed to the
+	 * expansion routines, for no particular reason.  It would be nice
+	 * to permit users to put the version number anywhere in the backup
+	 * name, but there isn't a special character that we can use in the
+	 * name, and giving a new character a special meaning leads to ugly
+	 * hacks both here and in the supporting ex routines.
+	 *
+	 * Shell and file name expand the option's value.
+	 */
+	argv_init(sp, ep, &cmd);
+	ex_cbuild(&cmd, 0, 0, 0, 0, 0, ap, &a, NULL);
+	if (bname[0] == 'N') {
+		version = 1;
+		++bname;
+	} else
+		version = 0;
+	if (argv_exp2(sp, ep, &cmd, bname, strlen(bname)))
+		return (1);
+
+	/*
+	 *  0 args: impossible.
+	 *  1 args: use it.
+	 * >1 args: object, too many args.
+	 */
+	if (cmd.argc != 1) {
+		(void)close(rfd);
+		p = msg_print(sp, bname, &nf);
+		msgq(sp, M_ERR,
+		    "XXX|%s expanded into too many file names", p);
+		if (nf)
+			FREE_SPACE(sp, p, 0);
+		return (1);
+	}
+
+	/*
+	 * If appending a version number, read through the directory, looking
+	 * for file names that match the name followed by a number.  Make all
+	 * of the other % characters in name literal, so the user doesn't get
+	 * surprised and sscanf doesn't drop core indirecting through pointers
+	 * that don't exist.  If any such files are found, increment its number
+	 * by one.
+	 */
+	if (version) {
+		GET_SPACE_GOTO(sp, bp, blen, cmd.argv[0]->len * 2 + 50);
+		for (t = bp, slash = NULL,
+		    p = cmd.argv[0]->bp; p[0] != '\0'; *t++ = *p++)
+			if (p[0] == '%') {
+				if (p[1] != '%')
+					*t++ = '%';
+			} else if (p[0] == '/')
+				slash = t;
+		pct = t;
+		*t++ = '%';
+		*t++ = 'd';
+		*t = '\0';
+
+		if (slash == NULL) {
+			dirp = opendir(".");
+			p = bp;
+		} else {
+			*slash = '\0';
+			dirp = opendir(bp);
+			*slash = '/';
+			p = slash + 1;
+		}
+		if (dirp == NULL) {
+			estr = cmd.argv[0]->bp;
+			goto err;
+		}
+
+		for (maxnum = 0; (dp = readdir(dirp)) != NULL;)
+			if (sscanf(dp->d_name, p, &num) == 1 && num > maxnum)
+				maxnum = num;
+		(void)closedir(dirp);
+
+		/* Format the backup file name. */
+		(void)snprintf(pct, blen - (pct - bp), "%d", maxnum + 1);
+		wfname = bp;
+	} else {
+		bp = NULL;
+		wfname = cmd.argv[0]->bp;
+	}
+	
+	/* Open the backup file, avoiding lurkers. */
+	if (stat(wfname, &sb) == 0) {
+		if (!S_ISREG(sb.st_mode)) {
+			t = "XXX|%s: not a regular file";
+			goto perm;
+		}
+		if (sb.st_uid != getuid()) {
+			t = "XXX|%s: not owned by you";
+			goto perm;
+		}
+		if (sb.st_mode & (S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)) {
+			t = "XXX|%s: accessible by a user other than the owner";
+perm:			p = msg_print(sp, bname, &nf);
+			msgq(sp, M_ERR, t, p);
+			if (nf)
+				FREE_SPACE(sp, p, 0);
+			goto err;
+		}
+		flags = O_TRUNC;
+	} else
+		flags = O_CREAT | O_EXCL;
+	if ((wfd = open(wfname, flags | O_WRONLY, S_IRUSR | S_IWUSR)) < 0) {
+		estr = bname;
+		goto err;
+	}
+
+	/* Copy the file's current contents to its backup value. */
+	while ((nr = read(rfd, buf, sizeof(buf))) > 0)
+		for (off = 0; nr != 0; nr -= nw, off += nw)
+			if ((nw = write(wfd, buf + off, nr)) < 0) {
+				estr = wfname;
+				goto err;
+			}
+	if (nr < 0) {
+		estr = name;
+		goto err;
+	}
+
+	if (close(rfd)) {
+		estr = name;
+		goto err;
+	}
+	if (close(wfd)) {
+		estr = wfname;
+		goto err;
+	}
+	if (bp != NULL)
+		FREE_SPACE(sp, bp, blen);
+	return (0);
+
+binc_err:
+err:	if (rfd != -1)
+		(void)close(rfd);
+	if (wfd != -1) {
+		(void)unlink(wfname);
+		(void)close(wfd);
+	}
+	if (estr) {
+		p = msg_print(sp, estr, &nf);
+		msgq(sp, M_SYSERR, "%s", p);
+		if (nf)
+			FREE_SPACE(sp, p, 0);
+	}
+	if (bp != NULL)
+		FREE_SPACE(sp, bp, blen);
+	return (1);
 }
 
 /*
