@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_split.c,v 10.39 2000/07/17 18:53:35 skimo Exp $ (Berkeley) $Date: 2000/07/17 18:53:35 $";
+static const char sccsid[] = "$Id: vs_split.c,v 10.40 2001/02/25 16:32:23 skimo Exp $ (Berkeley) $Date: 2001/02/25 16:32:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -667,7 +667,6 @@ vs_fg(sp, nspp, name, newscreen)
 		/* Move the old screen to the background queue. */
 		CIRCLEQ_REMOVE(&wp->scrq, sp, q);
 		CIRCLEQ_INSERT_TAIL(&gp->hq, sp, q);
-		sp->wp = 0;
 	}
 	return (0);
 }
@@ -701,7 +700,6 @@ vs_bg(sp)
 	/* Move the old screen to the background queue. */
 	CIRCLEQ_REMOVE(&wp->scrq, sp, q);
 	CIRCLEQ_INSERT_TAIL(&gp->hq, sp, q);
-	sp->wp = 0;
 
 	/* Toss the screen map. */
 	free(_HMAP(sp));
