@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.71 1994/06/29 18:37:08 bostic Exp $ (Berkeley) $Date: 1994/06/29 18:37:08 $";
+static char sccsid[] = "$Id: vi.c,v 8.72 1994/06/30 09:38:10 bostic Exp $ (Berkeley) $Date: 1994/06/30 09:38:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,9 +32,9 @@ static char sccsid[] = "$Id: vi.c,v 8.71 1994/06/29 18:37:08 bostic Exp $ (Berke
 
 static int getcmd __P((SCR *, EXF *,
 		VICMDARG *, VICMDARG *, VICMDARG *, int *));
-static inline int
+static __inline int
 	   getcount __P((SCR *, ARG_CHAR_T, u_long *));
-static inline int
+static __inline int
 	   getkey __P((SCR *, CH *, u_int));
 static int getkeyword __P((SCR *, EXF *, VICMDARG *, u_int));
 static int getmotion __P((SCR *, EXF *, VICMDARG *, VICMDARG *));
@@ -768,7 +768,7 @@ noword:		msgq(sp, M_BERR, "Cursor not in a %s",
  * getcount --
  *	Return the next count.
  */
-static inline int
+static __inline int
 getcount(sp, fkey, countp)
 	SCR *sp;
 	ARG_CHAR_T fkey;
@@ -804,7 +804,7 @@ getcount(sp, fkey, countp)
  * getkey --
  *	Return the next key.
  */
-static inline int
+static __inline int
 getkey(sp, ikeyp, map)
 	SCR *sp;
 	CH *ikeyp;

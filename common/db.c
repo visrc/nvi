@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 8.29 1994/06/27 09:33:23 bostic Exp $ (Berkeley) $Date: 1994/06/27 09:33:23 $";
+static char sccsid[] = "$Id: db.c,v 8.30 1994/06/30 09:37:32 bostic Exp $ (Berkeley) $Date: 1994/06/30 09:37:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,7 +28,8 @@ static char sccsid[] = "$Id: db.c,v 8.29 1994/06/27 09:33:23 bostic Exp $ (Berke
 #include "vi.h"
 #include "excmd.h"
 
-static inline int scr_update __P((SCR *, EXF *, recno_t, enum operation, int));
+static __inline int scr_update
+    __P((SCR *, EXF *, recno_t, enum operation, int));
 
 /*
  * file_gline --
@@ -446,7 +447,7 @@ file_lline(sp, ep, lnop)
  *	Update all of the screens that are backed by the file that
  *	just changed.
  */
-static inline int
+static __inline int
 scr_update(sp, ep, lno, op, current)
 	SCR *sp;
 	EXF *ep;

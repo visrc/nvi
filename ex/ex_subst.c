@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.51 1994/06/26 11:36:10 bostic Exp $ (Berkeley) $Date: 1994/06/26 11:36:10 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.52 1994/06/30 09:37:58 bostic Exp $ (Berkeley) $Date: 1994/06/30 09:37:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,7 +34,7 @@ static char sccsid[] = "$Id: ex_subst.c,v 8.51 1994/06/26 11:36:10 bostic Exp $ 
 #define	SUB_FIRST	0x01		/* The 'r' flag isn't reasonable. */
 #define	SUB_MUSTSETR	0x02		/* The 'r' flag is required. */
 
-static inline int	regsub __P((SCR *, char *,
+static __inline int	regsub __P((SCR *, char *,
 			    char **, size_t *, size_t *, regmatch_t [10]));
 static int		substitute __P((SCR *, EXF *,
 			    EXCMDARG *, char *, regex_t *, u_int));
@@ -827,7 +827,7 @@ ret1:		rval = 1;
  * regsub --
  * 	Do the substitution for a regular expression.
  */
-static inline int
+static __inline int
 regsub(sp, ip, lbp, lbclenp, lblenp, match)
 	SCR *sp;
 	char *ip;			/* Input line. */

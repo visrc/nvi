@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.126 1994/06/28 10:09:11 bostic Exp $ (Berkeley) $Date: 1994/06/28 10:09:11 $";
+static char sccsid[] = "$Id: ex.c,v 8.127 1994/06/30 09:37:42 bostic Exp $ (Berkeley) $Date: 1994/06/30 09:37:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,7 +34,7 @@ static char sccsid[] = "$Id: ex.c,v 8.126 1994/06/28 10:09:11 bostic Exp $ (Berk
 #include "excmd.h"
 
 static void	badlno __P((SCR *, recno_t));
-static inline EXCMDLIST const *
+static __inline EXCMDLIST const *
 		ex_comm_search __P((char *, size_t));
 static int	ep_line __P((SCR *, EXF *, MARK *, char **, size_t *, int *));
 static int	ep_range __P((SCR *, EXF *, EXCMDARG *, char **, size_t *));
@@ -1606,7 +1606,7 @@ ex_is_unmap(name, len)
 	    cp == &cmds[C_UNMAP]);
 }
 
-static inline EXCMDLIST const *
+static __inline EXCMDLIST const *
 ex_comm_search(name, len)
 	char *name;
 	size_t len;
