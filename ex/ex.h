@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 9.5 1994/11/17 14:18:11 bostic Exp $ (Berkeley) $Date: 1994/11/17 14:18:11 $
+ *	$Id: ex.h,v 9.6 1994/12/01 17:45:23 bostic Exp $ (Berkeley) $Date: 1994/12/01 17:45:23 $
  */
 
 #define	PROMPTCHAR	':'		/* Prompt character. */
@@ -176,6 +176,10 @@ void	ex_message __P((SCR *, const EXCMDLIST *, enum exmtype));
 int	ex_cfile __P((SCR *, char *, u_int));
 int	ex_cmd __P((SCR *, char *, size_t, u_int));
 int	ex_icmd __P((SCR *, char *, size_t, u_int));
+
+/* Ex address errors. */
+enum badaddr {A_COMBO, A_EMPTY, A_EOF, A_NOTSET, A_ZERO };
+void	ex_badaddr __P((SCR *, EXCMDLIST const *, enum badaddr, enum nresult));
 
 /* Ex function prototypes. */
 int	ex __P((SCR *));
