@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 8.14 1994/10/13 13:33:07 bostic Exp $ (Berkeley) $Date: 1994/10/13 13:33:07 $";
+static char sccsid[] = "$Id: v_ex.c,v 8.15 1994/10/23 10:18:47 bostic Exp $ (Berkeley) $Date: 1994/10/23 10:18:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,9 +28,6 @@ static char sccsid[] = "$Id: v_ex.c,v 8.14 1994/10/13 13:33:07 bostic Exp $ (Ber
 #include "excmd.h"
 #include "vcmd.h"
 
-static void excmd __P((EXCMDARG *,
-    int, int, recno_t, recno_t, int, ARGS *[], ARGS *, char *));
-
 /*
  * v_again -- &
  *	Repeat the previous substitution.
@@ -44,7 +41,7 @@ v_again(sp, ep, vp)
 	ARGS *ap[2], a;
 	EXCMDARG cmd;
 
-	excmd(&cmd, C_SUBAGAIN,
+	ex_cbuild(&cmd, C_SUBAGAIN,
 	    2, vp->m_start.lno, vp->m_start.lno, 1, ap, &a, "");
 	return (sp->s_ex_cmd(sp, ep, &cmd, &vp->m_final));
 }
@@ -62,7 +59,7 @@ v_at(sp, ep, vp)
 	ARGS *ap[2], a;
 	EXCMDARG cmd;
 
-        excmd(&cmd, C_AT, 0, OOBLNO, OOBLNO, 0, ap, &a, NULL);
+        ex_cbuild(&cmd, C_AT, 0, OOBLNO, OOBLNO, 0, ap, &a, NULL);
 	if (F_ISSET(vp, VC_BUFFER)) {
 		F_SET(&cmd, E_BUFFER);
 		cmd.buffer = vp->buffer;
@@ -138,7 +135,7 @@ v_filter(sp, ep, vp)
 	 * Historical vi ran the last bang command if N or n was used as the
 	 * search motion.
 	 */
-	excmd(&cmd, C_BANG,
+	ex_cbuild(&cmd, C_BANG,
 	    2, vp->m_start.lno, vp->m_stop.lno, 0, ap, &a, NULL);
 	EXP(sp)->argsoff = 0;			/* XXX */
 	if (F_ISSET(vp, VC_ISDOT) ||
@@ -193,7 +190,7 @@ v_join(sp, ep, vp)
 	if (F_ISSET(vp, VC_C1SET) && vp->count > 2)
 		lno = vp->m_start.lno + (vp->count - 1);
 
-	excmd(&cmd, C_JOIN, 2, vp->m_start.lno, lno, 0, ap, &a, NULL);
+	ex_cbuild(&cmd, C_JOIN, 2, vp->m_start.lno, lno, 0, ap, &a, NULL);
 	return (sp->s_ex_cmd(sp, ep, &cmd, &vp->m_final));
 }
 
@@ -210,7 +207,7 @@ v_shiftl(sp, ep, vp)
 	ARGS *ap[2], a;
 	EXCMDARG cmd;
 
-	excmd(&cmd, C_SHIFTL,
+	ex_cbuild(&cmd, C_SHIFTL,
 	    2, vp->m_start.lno, vp->m_stop.lno, 0, ap, &a, "<");
 	return (sp->s_ex_cmd(sp, ep, &cmd, &vp->m_final));
 }
@@ -228,7 +225,7 @@ v_shiftr(sp, ep, vp)
 	ARGS *ap[2], a;
 	EXCMDARG cmd;
 
-	excmd(&cmd, C_SHIFTR,
+	ex_cbuild(&cmd, C_SHIFTR,
 	    2, vp->m_start.lno, vp->m_stop.lno, 0, ap, &a, ">");
 	return (sp->s_ex_cmd(sp, ep, &cmd, &vp->m_final));
 }
@@ -260,7 +257,7 @@ v_switch(sp, ep, vp)
 	if (file_m1(sp, ep, 0, FS_ALL))
 		return (1);
 
-	excmd(&cmd, C_EDIT, 0, OOBLNO, OOBLNO, 0, ap, &a, name);
+	ex_cbuild(&cmd, C_EDIT, 0, OOBLNO, OOBLNO, 0, ap, &a, name);
 	return (sp->s_ex_cmd(sp, ep, &cmd, &vp->m_final));
 }
 
@@ -277,7 +274,7 @@ v_tagpush(sp, ep, vp)
 	ARGS *ap[2], a;
 	EXCMDARG cmd;
 
-	excmd(&cmd, C_TAG, 0, OOBLNO, 0, 0, ap, &a, vp->keyword);
+	ex_cbuild(&cmd, C_TAG, 0, OOBLNO, 0, 0, ap, &a, vp->keyword);
 	return (sp->s_ex_cmd(sp, ep, &cmd, &vp->m_final));
 }
 
@@ -294,38 +291,6 @@ v_tagpop(sp, ep, vp)
 	ARGS *ap[2], a;
 	EXCMDARG cmd;
 
-	excmd(&cmd, C_TAGPOP, 0, OOBLNO, 0, 0, ap, &a, NULL);
+	ex_cbuild(&cmd, C_TAGPOP, 0, OOBLNO, 0, 0, ap, &a, NULL);
 	return (sp->s_ex_cmd(sp, ep, &cmd, &vp->m_final));
-}
-
-/*
- * excmd --
- *	Build an EX command structure.
- */
-static void
-excmd(cmdp, cmd_id, naddr, lno1, lno2, force, ap, a, arg)
-	EXCMDARG *cmdp;
-	int cmd_id, force, naddr;
-	recno_t lno1, lno2;
-	ARGS *ap[2], *a;
-	char *arg;
-{
-	memset(cmdp, 0, sizeof(EXCMDARG));
-	cmdp->cmd = &cmds[cmd_id];
-	cmdp->addrcnt = naddr;
-	cmdp->addr1.lno = lno1;
-	cmdp->addr2.lno = lno2;
-	cmdp->addr1.cno = cmdp->addr2.cno = 1;
-	if (force)
-		cmdp->flags |= E_FORCE;
-	if ((a->bp = arg) == NULL) {
-		cmdp->argc = 0;
-		a->len = 0;
-	} else {
-		cmdp->argc = 1;
-		a->len = strlen(arg);
-	}
-	ap[0] = a;
-	ap[1] = NULL;
-	cmdp->argv = ap;
 }
