@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_undo.c,v 5.17 1993/05/17 16:49:49 bostic Exp $ (Berkeley) $Date: 1993/05/17 16:49:49 $";
+static char sccsid[] = "$Id: ex_undo.c,v 5.18 1993/05/17 17:25:55 bostic Exp $ (Berkeley) $Date: 1993/05/17 17:25:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,19 +25,21 @@ ex_undol(sp, ep, cmdp)
 	EXCMDARG *cmdp;
 {
 	MARK m;
-	int rval;
+
+	if (O_ISSET(sp, O_NUNDO)) {
+		if (log_forward(sp, ep, &m))
+			return (1);
+	} else {
+		if (log_setline(sp, ep, &m))
+			return (1);
+	}
+
+	sp->lno = m.lno;
+	sp->cno = m.cno;
 
 	F_SET(sp, S_AUTOPRINT);
 
-	if (O_ISSET(sp, O_NUNDO))
-		rval = log_forward(sp, ep, &m);
-	else
-		rval = log_setline(sp, ep, &m);
-	if (rval == 0) {
-		sp->lno = m.lno;
-		sp->cno = m.cno;
-	}
-	return (rval);
+	return (0);
 }
 
 /*
@@ -51,31 +53,32 @@ ex_undo(sp, ep, cmdp)
 	EXCMDARG *cmdp;
 {
 	MARK m;
-	int rval;
 
 	if (O_ISSET(sp, O_NUNDO)) {
-		return (log_backward(sp, ep, &m));
-
-	if (!F_ISSET(ep, F_UNDO)) {
-		ep->lundo = UFORWARD;
-		F_SET(ep, F_UNDO);
-	}
-
-	switch (ep->lundo) {
-	case UBACKWARD:
-		if (log_forward(sp, ep, &m)) {
-			F_CLR(ep, F_UNDO);
+		if (log_backward(sp, ep, &m))
 			return (1);
+	} else {
+		if (!F_ISSET(ep, F_UNDO)) {
+			ep->lundo = UFORWARD;
+			F_SET(ep, F_UNDO);
 		}
-		ep->lundo = UFORWARD;
-		break;
-	case UFORWARD:
-		if (log_backward(sp, ep, &m)) {
-			F_CLR(ep, F_UNDO);
-			return (1);
+
+		switch (ep->lundo) {
+		case UBACKWARD:
+			if (log_forward(sp, ep, &m)) {
+				F_CLR(ep, F_UNDO);
+				return (1);
+			}
+			ep->lundo = UFORWARD;
+			break;
+		case UFORWARD:
+			if (log_backward(sp, ep, &m)) {
+				F_CLR(ep, F_UNDO);
+				return (1);
+			}
+			ep->lundo = UBACKWARD;
+			break;
 		}
-		ep->lundo = UBACKWARD;
-		break;
 	}
 	sp->lno = m.lno;
 	sp->cno = m.cno;
