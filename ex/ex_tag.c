@@ -6,156 +6,66 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 5.5 1992/04/22 08:08:04 bostic Exp $ (Berkeley) $Date: 1992/04/22 08:08:04 $";
+static char sccsid[] = "$Id: ex_tag.c,v 5.6 1992/05/01 18:43:34 bostic Exp $ (Berkeley) $Date: 1992/05/01 18:43:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
-#include <fcntl.h>
+#include <errno.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "vi.h"
 #include "excmd.h"
-#include "options.h"
-#include "pathnames.h"
+#include "tag.h"
 #include "extern.h"
 
+/*
+ * ex_tag -- :tag [file]
+ *	Display a tag.
+ */
 int
 ex_tag(cmdp)
 	EXCMDARG *cmdp;
 {
-	int	fd;	/* file descriptor used to read the file */
-	char	*scan;	/* used to scan through the tmpblk.c */
-#ifndef EXTERNAL_TAGS
-	char	*cmp;	/* char of tag name we're comparing, or NULL */
-	char	*end;	/* marks the end of chars in tmpblk.c */
-#else
-	int	i;
-#endif
-#ifndef NO_MAGIC
-	char	wasmagic; /* preserves the original state of O_MAGIC */
-#endif
-	static char prevtag[30];
-	char *extra;
-
-	extra = cmdp->argv[0];
-	/* if no tag is given, use the previous tag */
-	if (!extra || !*extra)
-	{
-		if (!*prevtag)
-		{
-			msg("No previous tag");
-			return (1);
-		}
-		extra = prevtag;
-	}
-	else
-	{
-		strncpy(prevtag, extra, sizeof prevtag);
-		prevtag[sizeof prevtag - 1] = '\0';
-	}
-
-	/* open the tags file */
-	fd = open(_NAME_TAGS, O_RDONLY);
-	if (fd < 0)
-	{
-		msg("No tags file");
+	TAG *tag;
+	static char *lasttag;
+	
+	/*
+	 * If the file has been modified, write a warning and fail, unless
+	 * overridden by the '!' flag.
+	 */
+	if (!(cmdp->flags & E_FORCE) && tstflag(file, MODIFIED)) {
+		msg("%s has been modified but not written.", origname);
 		return (1);
 	}
 
-	/* Hmmm... this would have been a lot easier with <stdio.h> */
-
-	/* find the line with our tag in it */
-	for(scan = end = tmpblk.c, cmp = extra; ; scan++)
-	{
-		/* read a block, if necessary */
-		if (scan >= end)
-		{
-			end = tmpblk.c + read(fd, tmpblk.c, BLKSIZE);
-			scan = tmpblk.c;
-			if (scan >= end)
-			{
-				msg("tag \"%s\" not found", extra);
-				close(fd);
-				return (1);
-			}
-		}
-
-		/* if we're comparing, compare... */
-		if (cmp)
-		{
-			/* matched??? wow! */
-			if (!*cmp && *scan == '\t')
-			{
-				break;
-			}
-			if (*cmp++ != *scan)
-			{
-				/* failed! skip to newline */
-				cmp = (char *)0;
-			}
-		}
-
-		/* if we're skipping to newline, do it fast! */
-		if (!cmp)
-		{
-			while (scan < end && *scan != '\n')
-			{
-				scan++;
-			}
-			if (scan < end)
-			{
-				cmp = extra;
-			}
-		}
-	}
-
-	/* found it! get the rest of the line into memory */
-	for (cmp = tmpblk.c, scan++; scan < end && *scan != '\n'; )
-	{
-		*cmp++ = *scan++;
-	}
-	if (scan == end)
-	{
-		read(fd, cmp, BLKSIZE - (int)(cmp - tmpblk.c));
-	}
-
-	/* we can close the tags file now */
-	close(fd);
-
-	/* extract the filename from the line, and edit the file */
-	for (scan = tmpblk.c; *scan != '\t'; scan++)
-	{
-	}
-	*scan++ = '\0';
-	if (strcmp(origname, tmpblk.c) != 0)
-	{
-		if (!tmpabort(cmdp->flags & E_FORCE))
-		{
-			msg("Use :tag! to abort changes, or :w to save changes");
+	switch (cmdp->argc) {
+	case 1:
+		if ((lasttag = strdup(cmdp->argv[0])) == NULL) {
+			msg("Error: %s", strerror(errno));
 			return (1);
 		}
-		tmpstart(tmpblk.c);
+		/* FALLTHROUGH */
+	case 0:
+		if ((tag = tag_push(lasttag)) == NULL)
+			return (1);
+		break;
 	}
 
-	/* move to the desired line (or to line 1 if that fails) */
-#ifndef NO_MAGIC
-	wasmagic = ISSET(O_MAGIC);
-	UNSET(O_MAGIC);
-#endif
-	cursor = MARK_FIRST;
-{
-	EXCMDARG __xxx;
-	linespec(scan, &__xxx);
-	cursor = __xxx.addr1;
-}
-	if (cursor == MARK_UNSET)
-	{
-		cursor = MARK_FIRST;
-		msg("Tag's address is out of date");
+TRACE("tag %s, fname %s, line %s\n", tag->tag, tag->fname, tag->line);
+
+	if (strcmp(origname, tag->fname)) {
+		if (!tmpabort(cmdp->flags & E_FORCE)) {
+		msg("Use :tag! to abort changes, or :w to save changes");
+			return (1);
+		}
+		tmpstart(tag->fname);
 	}
-#ifndef NO_MAGIC
-	if (wasmagic)
-		SET(O_MAGIC);
-#endif
+
+	if ((cursor = f_search(MARK_FIRST, tag->line)) == MARK_UNSET) {
+		msg("Tag search pattern not found.");
+		cursor = MARK_FIRST;
+		return (1);
+	}
 	return (0);
 }
