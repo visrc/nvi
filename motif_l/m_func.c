@@ -1,12 +1,14 @@
 /*-
  * Copyright (c) 1996
  *	Rob Zimmermann.  All rights reserved.
+ * Copyright (c) 1996
+ *	Keith Bostic.  All rights reserved.
  *
  * See the LICENSE file for redistribution information.
  */
 
 #ifndef lint
-static const char XXsccsid[] = "$Id: m_func.c,v 8.1 1996/11/27 09:26:05 bostic Exp $ (Berkeley) $Date: 1996/11/27 09:26:05 $";
+static const char XXsccsid[] = "$Id: m_func.c,v 8.2 1996/11/27 09:28:38 bostic Exp $ (Berkeley) $Date: 1996/11/27 09:28:38 $";
 #endif /* not lint */
 
 int

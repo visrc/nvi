@@ -1,9 +1,17 @@
 /*-
  * Copyright (c) 1996
+ *	Rob Zimmermann.  All rights reserved.
+ * Copyright (c) 1996
  *	Keith Bostic.  All rights reserved.
  *
  * See the LICENSE file for redistribution information.
  */
+
+#include "config.h"
+
+#ifndef lint
+static const char sccsid[] = "$Id: m_menu.c,v 8.6 1996/11/27 09:28:38 bostic Exp $ (Berkeley) $Date: 1996/11/27 09:28:38 $";
+#endif /* not lint */
 
 /* This module defines the menu structure for vi.  Each menu
  * item has an action routine associated with it.  For the most

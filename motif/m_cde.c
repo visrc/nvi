@@ -1,3 +1,18 @@
+/*-
+ * Copyright (c) 1996
+ *	Rob Zimmermann.  All rights reserved.
+ * Copyright (c) 1996
+ *	Keith Bostic.  All rights reserved.
+ *
+ * See the LICENSE file for redistribution information.
+ */
+
+#include "config.h"
+
+#ifndef lint
+static const char sccsid[] = "$Id: m_cde.c,v 8.2 1996/11/27 09:28:37 bostic Exp $ (Berkeley) $Date: 1996/11/27 09:28:37 $";
+#endif /* not lint */
+
 /* Boolean	is_cde( Display *d )
  *
  * When running under CDE (or VUE on HPUX) applications should not

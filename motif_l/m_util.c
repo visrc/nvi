@@ -1,3 +1,18 @@
+/*-
+ * Copyright (c) 1996
+ *	Rob Zimmermann.  All rights reserved.
+ * Copyright (c) 1996
+ *	Keith Bostic.  All rights reserved.
+ *
+ * See the LICENSE file for redistribution information.
+ */
+
+#include "config.h"
+
+#ifndef lint
+static const char sccsid[] = "$Id: m_util.c,v 8.4 1996/11/27 09:28:39 bostic Exp $ (Berkeley) $Date: 1996/11/27 09:28:39 $";
+#endif /* not lint */
+
 #include <X11/Intrinsic.h>
 #include <X11/StringDefs.h>
 #include <X11/Shell.h>
