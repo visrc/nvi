@@ -6,14 +6,13 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_move.c,v 5.6 1992/04/19 08:53:56 bostic Exp $ (Berkeley) $Date: 1992/04/19 08:53:56 $";
+static char sccsid[] = "$Id: ex_move.c,v 5.7 1992/04/28 13:45:12 bostic Exp $ (Berkeley) $Date: 1992/04/28 13:45:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 #include <stdio.h>
 
 #include "vi.h"
-#include "curses.h"
 #include "excmd.h"
 #include "extern.h"
 
@@ -24,7 +23,7 @@ int
 ex_copy(cmdp)
 	EXCMDARG *cmdp;
 {
-	move(cmdp, COPY);
+	copy(cmdp, COPY);
 	return (0);
 }
 
@@ -32,7 +31,7 @@ int
 ex_move(cmdp)
 	EXCMDARG *cmdp;
 {
-	move(cmdp, MOVE);
+	copy(cmdp, MOVE);
 	return (0);
 }
 
@@ -96,7 +95,7 @@ copy(cmdp, cmd)
 		}
 
 		/* add the new text */
-		paste(destmark, FALSE, FALSE);
+		paste(destmark, 0, 0);
 	}
 
 	/* move the cursor to the last line of the moved text */
