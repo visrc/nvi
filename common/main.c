@@ -16,7 +16,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 10.8 1995/06/23 19:14:08 bostic Exp $ (Berkeley) $Date: 1995/06/23 19:14:08 $";
+static char sccsid[] = "$Id: main.c,v 10.9 1995/07/04 12:43:21 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:43:21 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -261,6 +261,9 @@ v_init(gp, argc, argv, rows, cols)
 		F_SET(sp, S_EX_SILENT);
 	}
 
+	sp->rows = O_VAL(sp, O_LINES);	/* Make ex formatting work. */
+	sp->cols = O_VAL(sp, O_COLUMNS);
+
 	if (!silent) {			/* Read EXINIT, exrc files. */
 		if (ex_exrc(sp))
 			goto err;
@@ -407,13 +410,17 @@ v_end(gp)
 		(void)fprintf(stderr, "\07");		/* \a */
 
 	/*
-	 * Flush any remaining messages.  If a message is here, it's
-	 * almost certainly the message about the event that killed us.
-	 * Prepend a program name.
+	 * Flush any remaining messages.  If a message is here, it's almost
+	 * certainly the message about the event that killed us (although
+	 * it's possible that the user is sourcing a file that exits from the
+	 * editor).
 	 */
 	while ((mp = gp->msgq.lh_first) != NULL) {
-		(void)fprintf(stderr,
-		    "%s: %.*s.\n", gp->progname, (int)mp->len, mp->buf);
+		if (mp->mtype == M_NONE)
+			(void)fprintf(stderr, "%.*s", (int)mp->len, mp->buf);
+		else
+			(void)fprintf(stderr,
+			    "ex/vi: %.*s.\n", (int)mp->len, mp->buf);
 		LIST_REMOVE(mp, q);
 #if defined(DEBUG) || defined(PURIFY) || !defined(STANDALONE)
 		free(mp->buf);

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 10.6 1995/06/14 11:33:04 bostic Exp $ (Berkeley) $Date: 1995/06/14 11:33:04 $";
+static char sccsid[] = "$Id: key.c,v 10.7 1995/07/04 12:43:13 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:43:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -436,13 +436,8 @@ v_event_append(sp, s, nchars, flags)
  * !!!
  * We're calling back into the main screen code, i.e. a callback into the
  * main event loop.  This is probably the least event-driven part of nvi.
- * The problem scenario is as follows: we've been humming along writing stuff
- * on the screen, and now some error message or other output is about to
- * scroll off the screen.  We have to wait to make sure the user has seen
- * it, and we can pretty much get here from anywhere in the program.  To fix
- * this we'd have to be able to restart any routine that calls the vi output
- * message routines, at any point, or, to be blunt, it won't be fixed until
- * some thread package is portable.
+ * This is used for substitute confirmation, i.e. when the user wants to
+ * confirm a change.
  *
  * PUBLIC: int v_getkey __P((SCR *, CHAR_T *));
  */
@@ -455,10 +450,7 @@ v_getkey(sp, chp)
 
 	/*
 	 * !!!
-	 * Historic practice is that any key can be used to continue.  Nvi used
-	 * to require that the user enter a <carriage-return> or <newline>, but
-	 * this broke historic users.  For this reason we have to make sure that
-	 * the user doesn't already have a key queued up before we go read one.
+	 * Return the next key (including mapped keys).
 	 */
 	gp = sp->gp;
 	if (gp->i_cnt != 0) {
@@ -475,8 +467,8 @@ v_getkey(sp, chp)
 	 * Otherwise, act as if it was an interrupt.
 	 *
 	 * XXX
-	 * This is ugly, but either an interrupt or an error occurred, and this
-	 * seems to work reasonably well.
+	 * This is ugly, but either an interrupt or an error occurred, and
+	 * this seems to work reasonably well.
 	 */
 	F_SET(sp, S_INTERRUPTED);
 	*chp = CH_QUIT;
@@ -610,6 +602,7 @@ v_event_handler(sp, evp, tp)
 		dead = 1;
 		/* FALLTHROUGH */
 	case E_INTERRUPT:
+	case E_REPAINT:
 	case E_RESIZE:
 	case E_SIGCONT:
 	case E_START:

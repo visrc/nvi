@@ -6,8 +6,13 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: msg.h,v 10.2 1995/06/08 18:57:45 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:57:45 $
+ *	$Id: msg.h,v 10.3 1995/07/04 12:43:26 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:43:26 $
  */
+
+/*
+ * Common messages (continuation or confirmation).
+ */
+typedef enum { CMSG_CONF, CMSG_CONT, CMSG_CONT_S, CMSG_CONT_Q } cmsg_t;
 
 /*
  * Message types.
@@ -18,8 +23,7 @@
  * O_VERBOSE results in informational displays about common errors, for
  * naive users.
  *
- * M_NONE	Uninitialized value.
- * M_CAT	Display to the user, no reformatting, no nothing.
+ * M_NONE	Display to the user, no reformatting, no nothing.
  *
  * M_BERR	Error: M_ERR if O_VERBOSE, else bell.
  * M_ERR	Error: Display in inverse video.
@@ -27,22 +31,23 @@
  * M_SYSERR	Error: M_ERR, using strerror(3) message.
  * M_VINFO	 Info: M_INFO if O_VERBOSE, else ignore.
  *
- * The underlying message display routines only need to know about M_CAT,
+ * The underlying message display routines only need to know about M_NONE,
  * M_ERR and M_INFO -- all the other message types are converted into one
  * of them by the message routines.
  */
 typedef enum {
-	M_NONE = 0, M_BERR, M_CAT, M_ERR, M_INFO, M_SYSERR, M_VINFO } mtype_t;
+	M_NONE = 1, M_BERR, M_ERR, M_INFO, M_SYSERR, M_VINFO } mtype_t;
 
 /*
- * It's possible for vi to generate messages before we have a screen in which
- * to display them.  There's a queue in the global area to hold them.
+ * It's possible for vi to generate messages before we have a screen in
+ * which to display them.  There's a queue in the global area to hold
+ * them.
  */
 typedef struct _msgh MSGH;	/* MSG list head structure. */
 LIST_HEAD(_msgh, _msg);
 struct _msg {
 	LIST_ENTRY(_msg) q;	/* Linked list of messages. */
-	mtype_t	 mtype;		/* Message type: M_CAT, M_ERR, M_INFO. */
+	mtype_t	 mtype;		/* Message type: M_NONE, M_ERR, M_INFO. */
 	char	*buf;		/* Message buffer. */
 	size_t	 len;		/* Message length. */
 };

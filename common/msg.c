@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 10.7 1995/06/23 19:13:35 bostic Exp $ (Berkeley) $Date: 1995/06/23 19:13:35 $";
+static char sccsid[] = "$Id: msg.c,v 10.8 1995/07/04 12:43:24 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:43:24 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -40,8 +40,6 @@ static char sccsid[] = "$Id: msg.c,v 10.7 1995/06/23 19:13:35 bostic Exp $ (Berk
 
 #include "common.h"
 #include "vi.h"
-
-static void msg_save __P((SCR *, mtype_t, const char *, size_t));
 
 /*
  * msgq --
@@ -346,25 +344,8 @@ nofmt:	mp += len;
 		mt = M_ERR;
 	}
 
-	/*
-	 * XXX
-	 * We find out about screen support based on one of the function
-	 * pointers being initialized.  That's just not right.  I'd like
-	 * to get rid of this whole concept, somehow...  Otherwise, write
-	 * through the output routine.
-	 *
-	 * XXX
-	 * Vi has to flush any pending ex output before writing the characters.
-	 * This violates the layering somewhat.
-	 */
-	if (gp->scr_attr == NULL)
-		msg_save(sp, mt, bp, mlen);
-	else if (F_ISSET(sp, S_EX | S_EX_CANON))
-		ex_msgwrite(sp, mt, bp, mlen);
-	else {
-		(void)ex_fflush(sp);
-		vs_msgwrite(sp, mt, bp, mlen);
-	}
+	(void)ex_fflush(sp);
+	(void)gp->scr_msg(sp, mt, "%.*s", (int)mlen, bp);
 
 	/* Cleanup. */
 ret:	FREE_SPACE(sp, bp, blen);
@@ -454,14 +435,8 @@ msg_rpt(sp)
 			sp->rptlines[cnt] = 0;
 		}
 
-	if (sp->gp->scr_attr == NULL)
-		msg_save(sp, M_INFO, bp, len);
-	else if (F_ISSET(sp, S_EX | S_EX_CANON))
-		ex_msgwrite(sp, M_INFO, bp, len);
-	else {
-		(void)ex_fflush(sp);
-		vs_msgwrite(sp, M_INFO, bp, len);
-	}
+	(void)ex_fflush(sp);
+	(void)sp->gp->scr_msg(sp, M_INFO, "%.*s", (int)len, bp);
 
 	FREE_SPACE(sp, bp, blen);
 	return (0);
@@ -574,14 +549,8 @@ msg_status(sp, lno, showlast)
 	(void)sprintf(p, " (pid %lu)", (u_long)getpid());
 	p += strlen(p);
 #endif
-	if (sp->gp->scr_attr == NULL)
-		msg_save(sp, M_INFO, bp, p - bp);
-	else if (F_ISSET(sp, S_EX | S_EX_CANON))
-		ex_msgwrite(sp, M_INFO, bp, p - bp);
-	else {
-		(void)ex_fflush(sp);
-		vs_msgwrite(sp, M_INFO, bp, p - bp);
-	}
+	(void)ex_fflush(sp);
+	(void)sp->gp->scr_msg(sp, M_INFO, "%.*s", (int)(p - bp), bp);
 
 	FREE_SPACE(sp, bp, blen);
 	return (0);
@@ -670,6 +639,35 @@ msg_close(gp)
 {
 	if (gp->msg != NULL)
 		(void)gp->msg->close(gp->msg);
+}
+
+/*
+ * msg_cont --
+ *	Return common messages.
+ *
+ * PUBLIC: const char *msg_cmsg __P((SCR *, cmsg_t, size_t *));
+ */
+const char *
+msg_cmsg(sp, which, lenp)
+	SCR *sp;
+	cmsg_t which;
+	size_t *lenp;
+{
+	switch (which) {
+	case CMSG_CONF:
+		return (msg_cat(sp, "268|confirm? [ynq]", lenp));
+	case CMSG_CONT:
+
+		return (msg_cat(sp, "269|Press any key to continue: ", lenp));
+	case CMSG_CONT_S:
+		return (msg_cat(sp, "279| cont?", lenp));
+	case CMSG_CONT_Q:
+		return (msg_cat(sp,
+		    "280|Press any key to continue [q to quit]: ", lenp));
+	default:
+		abort();
+	}
+	/* NOTREACHED */
 }
 
 /*
@@ -775,48 +773,4 @@ binc_err:	return ("");
 		goto retry;
 	*p = '\0';
 	return (bp);
-}
-
-/*
- * msg_save --
- *	Save a message for later display.
- */
-static void
-msg_save(sp, mt, p, len)
-	SCR *sp;
-	mtype_t mt;
-	const char *p;
-	size_t len;
-{
-	GS *gp;
-	MSG *mp_c, *mp_n;
-
-	/*
-	 * We have to handle messages before we have any place to put them.
-	 * If there's no screen support yet, allocate a msg structure, copy
-	 * in the message, and queue it on the global structure.  If we can't
-	 * allocate memory here, we're genuinely screwed, dump the message
-	 * to stderr in the (probably) vain hope that someone will see it.
-	 */
-	CALLOC_NOMSG(sp, mp_n, MSG *, 1, sizeof(MSG));
-	if (mp_n == NULL)
-		goto nomem;
-	MALLOC_NOMSG(sp, mp_n->buf, char *, len);
-	if (mp_n->buf == NULL) {
-		free(mp_n);
-nomem:		(void)fprintf(stderr, "%.*s\n", (int)len, p);
-		return;
-	}
-
-	memmove(mp_n->buf, p, len);
-	mp_n->len = len;
-	mp_n->mtype = mt == M_ERR ? M_ERR : M_INFO;
-
-	gp = sp->gp;
-	if ((mp_c = gp->msgq.lh_first) == NULL) {
-		LIST_INSERT_HEAD(&gp->msgq, mp_n, q);
-	} else {
-		for (; mp_c->q.le_next != NULL; mp_c = mp_c->q.le_next);
-		LIST_INSERT_AFTER(mp_c, mp_n, q);
-	}
 }

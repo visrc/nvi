@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_txt.c,v 10.3 1995/06/20 19:36:16 bostic Exp $ (Berkeley) $Date: 1995/06/20 19:36:16 $";
+static char sccsid[] = "$Id: ex_txt.c,v 10.4 1995/07/04 12:42:21 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:42:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -201,7 +201,7 @@ notlast:		CIRCLEQ_REMOVE(&exp->im_tiq, tp, q);
 
 #ifdef __TK__
 		/* Display any accumulated error messages. */
-		if (sp->gp->scr_msgflush(sp, NULL, NULL))
+		if (ex_fflush(sp);
 			goto err;
 #endif
 

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 10.5 1995/06/23 19:25:17 bostic Exp $ (Berkeley) $Date: 1995/06/23 19:25:17 $";
+static char sccsid[] = "$Id: ex_global.c,v 10.6 1995/07/04 12:42:13 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:42:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,7 +35,6 @@ static char sccsid[] = "$Id: ex_global.c,v 10.5 1995/06/23 19:25:17 bostic Exp $
 enum which {GLOBAL, V};
 
 static int ex_g_setup __P((SCR *, EXCMD *, enum which));
-static int ex_g_search __P((SCR *, EVENT *, int *));
 
 /*
  * ex_global -- [line [,line]] g[lobal][!] /pattern/ [commands]

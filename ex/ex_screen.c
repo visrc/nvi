@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_screen.c,v 10.5 1995/06/23 19:22:08 bostic Exp $ (Berkeley) $Date: 1995/06/23 19:22:08 $";
+static char sccsid[] = "$Id: ex_screen.c,v 10.6 1995/07/04 12:42:16 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:42:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -99,30 +99,32 @@ int
 ex_sdisplay(sp)
 	SCR *sp;
 {
+	GS *gp;
 	SCR *tsp;
 	int cnt, col, len, sep;
 
-	if ((tsp = sp->gp->hq.cqh_first) == (void *)&sp->gp->hq) {
+	gp = sp->gp;
+	if ((tsp = gp->hq.cqh_first) == (void *)&gp->hq) {
 		msgq(sp, M_INFO, "149|No background screens to display");
 		return (0);
 	}
 
 	col = len = sep = 0;
-	for (cnt = 1; tsp != (void *)&sp->gp->hq && !INTERRUPTED(sp);
+	for (cnt = 1; tsp != (void *)&gp->hq && !INTERRUPTED(sp);
 	    tsp = tsp->q.cqe_next) {
 		col += len = strlen(tsp->frp->name) + sep;
 		if (col >= sp->cols - 1) {
 			col = len;
 			sep = 0;
-			(void)ex_printf(sp, "\n");
+			(void)ex_puts(sp, "\n");
 		} else if (cnt != 1) {
 			sep = 1;
-			(void)ex_printf(sp, " ");
+			(void)ex_puts(sp, " ");
 		}
-		(void)ex_printf(sp, "%s", tsp->frp->name);
+		(void)ex_puts(sp, tsp->frp->name);
 		++cnt;
 	}
 	if (!INTERRUPTED(sp))
-		(void)ex_printf(sp, "\n");
+		(void)ex_puts(sp, "\n");
 	return (0);
 }

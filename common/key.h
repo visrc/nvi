@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 10.2 1995/05/05 18:46:07 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:46:07 $
+ *	$Id: key.h,v 10.3 1995/07/04 12:43:17 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:43:17 $
  */
 
 /*
@@ -160,11 +160,6 @@ extern KEYLIST keylist[];
 #define	CH_NOT_DIGIT	'a'			/* A non-isdigit() character. */
 #define	CH_QUIT		'q'			/* Quit. */
 #define	CH_YES		'y'			/* Yes. */
-
-#define	STR_CONFIRM	"confirm? [ynq]"
-#define	STR_CMSG	"Press any key to continue: "
-#define	STR_CMSG_S	" cont?"
-#define	STR_QMSG	"Press any key to continue [q to quit]: "
 
 /* Flags describing text input special cases. */
 #define	TXT_ADDNEWLINE	0x00000001	/* Replay starts on a new line. */

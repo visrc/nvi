@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_usage.c,v 10.4 1995/06/23 19:21:40 bostic Exp $ (Berkeley) $Date: 1995/06/23 19:21:40 $";
+static char sccsid[] = "$Id: ex_usage.c,v 10.5 1995/07/04 12:42:22 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:42:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,17 +40,15 @@ ex_help(sp, cmdp)
 	SCR *sp;
 	EXCMD *cmdp;
 {
-	ENTERCANONICAL(sp, cmdp, 0);
-
-	(void)ex_printf(sp, "%s",
+	(void)ex_puts(sp,
 	    "To see the list of vi commands, enter \":viusage<CR>\"\n");
-	(void)ex_printf(sp, "%s",
+	(void)ex_puts(sp,
 	    "To see the list of ex commands, enter \":exusage<CR>\"\n");
-	(void)ex_printf(sp, "%s",
+	(void)ex_puts(sp,
 	    "For an ex command usage statement enter \":exusage [cmd]<CR>\"\n");
-	(void)ex_printf(sp, "%s",
+	(void)ex_puts(sp,
 	    "For a vi key usage statement enter \":viusage [key]<CR>\"\n");
-	(void)ex_printf(sp, "%s", "To exit, enter \":q!\"\n");
+	(void)ex_puts(sp, "To exit, enter \":q!\"\n");
 	return (0);
 }
 
@@ -68,8 +66,6 @@ ex_usage(sp, cmdp)
 	ARGS *ap;
 	EXCMDLIST const *cp;
 	char *name;
-
-	ENTERCANONICAL(sp, cmdp, 0);
 
 	switch (cmdp->argc) {
 	case 1:
@@ -126,11 +122,11 @@ ex_viusage(sp, cmdp)
 	SCR *sp;
 	EXCMD *cmdp;
 {
+	GS *gp;
 	VIKEYS const *kp;
 	int key;
 
-	ENTERCANONICAL(sp, cmdp, 0);
-
+	gp = sp->gp;
 	switch (cmdp->argc) {
 	case 1:
 		if (cmdp->argv[0]->len != 1) {

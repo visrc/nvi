@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 10.6 1995/06/19 19:56:38 bostic Exp $ (Berkeley) $Date: 1995/06/19 19:56:38 $";
+static char sccsid[] = "$Id: options.c,v 10.7 1995/07/04 12:43:27 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:43:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -679,6 +679,7 @@ opts_dump(sp, type)
 	SCR *sp;
 	enum optdisp type;
 {
+	GS *gp;
 	OPTLIST const *op;
 	int base, b_num, cnt, col, colwidth, curlen, s_num;
 	int numcols, numrows, row;
@@ -694,6 +695,7 @@ opts_dump(sp, type)
 	 *
 	 * Find a column width we can live with.
 	 */
+	gp = sp->gp;
 	for (cnt = 6; cnt > 1; --cnt) {
 		colwidth = (sp->cols - 1) / cnt & ~(STANDARD_TAB - 1);
 		if (colwidth >= 10) {
@@ -789,21 +791,20 @@ opts_dump(sp, type)
 				cnt = opts_print(sp, &optlist[s_op[base]]);
 				if ((base += numrows) >= s_num)
 					break;
-				(void)ex_printf(sp,
-				    "%*s", (int)(colwidth - cnt), "");
+				(void)ex_printf(sp, "%*s",
+				    (int)(colwidth - cnt), "");
 			}
 			if (++row < numrows || b_num)
-				(void)ex_printf(sp, "\n");
+				(void)ex_puts(sp, "\n");
 		}
 	}
 
 	for (row = 0; row < b_num;) {
 		(void)opts_print(sp, &optlist[b_op[row]]);
 		if (++row < b_num)
-			(void)ex_printf(sp, "\n");
+			(void)ex_puts(sp, "\n");
 	}
-	F_SET(sp, S_EX_WROTE);
-	(void)ex_printf(sp, "\n");
+	(void)ex_puts(sp, "\n");
 }
 
 /*
@@ -826,8 +827,7 @@ opts_print(sp, op)
 		    "%s%s", O_ISSET(sp, offset) ? "" : "no", op->name);
 		break;
 	case OPT_NUM:
-		curlen += ex_printf(sp,
-		     "%s=%ld", op->name, O_VAL(sp, offset));
+		curlen += ex_printf(sp, "%s=%ld", op->name, O_VAL(sp, offset));
 		break;
 	case OPT_STR:
 		curlen += ex_printf(sp, "%s=\"%s\"", op->name,

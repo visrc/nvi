@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 10.6 1995/06/23 19:20:23 bostic Exp $ (Berkeley) $Date: 1995/06/23 19:20:23 $";
+static char sccsid[] = "$Id: ex_shell.c,v 10.7 1995/07/04 12:42:17 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:42:17 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -67,11 +67,13 @@ ex_exec_proc(sp, cmdp, cmd, p1, p2)
 	char *p;
 
 	/* Flush messages and enter canonical mode. */
-	ENTERCANONICAL(sp, cmdp, 1);
+	if (sp->gp->scr_canon(sp, 1)) {
+		ex_message(sp, cmdp->cmd->name, EXM_NOCANON);
+		return (1);
+	}
 
 	/* Put out special messages. */
 	if (p1 != NULL || p2 != NULL) {
-		F_SET(sp, S_EX_WROTE);
 		if (p1 != NULL)
 			(void)write(STDOUT_FILENO, p1, strlen(p1));
 		if (p2 != NULL)
@@ -99,17 +101,5 @@ ex_exec_proc(sp, cmdp, cmd, p1, p2)
 		rval = proc_wait(sp, (long)pid, cmd, 0);
 		break;
 	}
-
-	/*
-	 * XXX
-	 * It would be nice to stat(2) the tty structures to figure out if
-	 * anything on the screen changed, so we could decide if we need to
-	 * repaint anything.  However, a stat only gives us a 1-second
-	 * resolution.  A fast '!' command, e.g. ":!pwd" can beat us to the
-	 * refresh.  When there's better resolution from the stat(2) timers,
-	 * this should be changed to be conditional, as we're unnecessarily
-	 * repainting the screen.
-	 */
-	F_SET(sp, S_EX_WROTE);
 	return (rval);
 }

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 10.3 1995/06/23 19:25:11 bostic Exp $ (Berkeley) $Date: 1995/06/23 19:25:11 $";
+static char sccsid[] = "$Id: ex_print.c,v 10.4 1995/07/04 12:42:14 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:42:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -110,14 +110,15 @@ ex_print(sp, cmdp, fp, tp, flags)
 	MARK *fp, *tp;
 	u_int32_t flags;
 {
+	GS *gp;
 	const char *p;
 	recno_t from, to;
 	size_t col, len;
 	char buf[10];
 
 	NEEDFILE(sp, cmdp);
-	ENTERCANONICAL(sp, cmdp, 0);
 
+	gp = sp->gp;
 	for (from = fp->lno, to = tp->lno; from <= to; ++from) {
 		col = 0;
 
@@ -147,7 +148,7 @@ ex_print(sp, cmdp, fp, tp, flags)
 		}
 
 		if (len == 0 && !LF_ISSET(E_C_LIST))
-			(void)ex_printf(sp, "\n");
+			(void)ex_puts(sp, "\n");
 		else if (ex_ldisplay(sp, p, len, col, flags))
 			return (1);
 
@@ -178,7 +179,7 @@ ex_ldisplay(sp, p, len, col, flags)
 			return (1);
 	}
 	if (!INTERRUPTED(sp))
-		(void)ex_printf(sp, "\n");
+		(void)ex_puts(sp, "\n");
 	return (0);
 }
 
@@ -234,11 +235,13 @@ ex_prchars(sp, p, colp, len, flags, repeatc)
 	u_int flags;
 	int repeatc;
 {
-	size_t col, tlen, ts;
 	CHAR_T ch, *kp;
+	GS *gp;
+	size_t col, tlen, ts;
 
 	if (O_ISSET(sp, O_LIST))
 		LF_SET(E_C_LIST);
+	gp = sp->gp;
 	ts = O_VAL(sp, O_TABSTOP);
 	for (col = *colp; len--;)
 		if ((ch = *p++) == '\t' && !LF_ISSET(E_C_LIST))
@@ -253,13 +256,13 @@ ex_prchars(sp, p, colp, len, flags, repeatc)
 			kp = KEY_NAME(sp, ch);
 			tlen = KEY_LEN(sp, ch);
 			if (!repeatc  && col + tlen < sp->cols) {
-				(void)ex_printf(sp, "%s", kp);
+				(void)ex_puts(sp, kp);
 				col += tlen;
 			} else
 				for (; tlen--; ++kp, ++col) {
 					if (col == sp->cols) {
 						col = 0;
-						(void)ex_printf(sp, "\n");
+						(void)ex_puts(sp, "\n");
 					}
 					(void)ex_printf(sp,
 					    "%c", repeatc ? repeatc : *kp);
@@ -272,29 +275,9 @@ intr:	*colp = col;
 }
 
 /*
- * ex_msgwrite --
- *	Ex's message output routine.
- *
- * PUBLIC: void ex_msgwrite __P((SCR *, mtype_t, const char *, size_t));
- */
-void
-ex_msgwrite(sp, mtype, line, len)
-	SCR *sp;
-	mtype_t mtype;
-	const char *line;
-	size_t len;
-{
-	if (mtype == M_ERR)
-		(void)sp->gp->scr_attr(sp, SA_INVERSE, 1);
-	(void)ex_printf(sp, "%.*s.\n", (int)len, line);
-	if (mtype == M_ERR)
-		(void)sp->gp->scr_attr(sp, SA_INVERSE, 0);
-}
-
-/*
- * Buffers for the ex data.  The vi screen doesn't do character buffering
- * of any kind.  We do it here so that we're not calling the screen output
- * routines on every character.
+ * Buffers for the ex data.  The screen support doesn't do any character
+ * buffering of any kind.  We do it here so that we're not calling the
+ * screen output routines on every character.
  *
  * XXX
  * Move into screen specific ex private area, change to grow dynamically.
@@ -319,40 +302,49 @@ ex_printf(sp, fmt, va_alist)
 #endif
 {
 	va_list ap;
-	int n;
-	char b1[1024];
+	size_t n;
 
 #ifdef __STDC__
 	va_start(ap, fmt);
 #else
 	va_start(ap);
 #endif
-
-	/* If ex running, or in ex canonical mode, let stdio(3) do the work. */
-	if (F_ISSET(sp, S_EX | S_EX_CANON)) {
-		F_SET(sp, S_EX_WROTE);
-		return (vfprintf(stdout, fmt, ap));
-	}
-
 	/*
 	 * XXX
-	 * Discard any characters past the first 1024.
+	 * We discard any characters past the first sizeof(buf) / 2.
 	 */
-	n = vsnprintf(b1, sizeof(b1), fmt, ap);
+	n = vsnprintf(buf + off, sizeof(buf) / 2, fmt, ap);
 	va_end(ap);
 
-	if (n > 512 || n + off > sizeof(buf)) {
-		(void)vs_msgwrite(sp, M_CAT, buf, off);
-		off = 0;
-		if (n > 512) {
-			(void)vs_msgwrite(sp, M_CAT, b1, n);
-			if (INTERRUPTED(sp))
-				off = 0;
-			return (n);
-		}
-	}
-	memmove(buf + off, b1, n);
 	off += n;
+	if (off > sizeof(buf) / 2) {
+		(void)sp->gp->scr_msg(sp, M_NONE, "%.*s", (int)off, buf);
+		off = 0;
+	}
+	return (n);
+}
+
+/*
+ * ex_puts --
+ *	Ex's version of puts.
+ *
+ * PUBLIC: int ex_puts __P((SCR *, const char *));
+ */
+int
+ex_puts(sp, str)
+	SCR *sp;
+	const char *str;
+{
+	int n;
+
+	for (n = 0; *str != '\0'; ++n) {
+		if (off > sizeof(buf)) {
+			(void)sp->gp->scr_msg(sp,
+			    M_NONE, "%.*s", (int)off, buf);
+			off = 0;
+		}
+		buf[off++] = *str++;
+	}
 	return (n);
 }
 
@@ -366,12 +358,10 @@ int
 ex_fflush(sp)
 	SCR *sp;
 {
-	if (F_ISSET(sp, S_EX | S_EX_CANON))
-		return (fflush(stdout));
-
 	if (off != 0) {
-		(void)vs_msgwrite(sp, M_CAT, buf, off);
+		(void)sp->gp->scr_msg(sp, M_NONE, "%.*s", (int)off, buf);
 		off = 0;
 	}
+	(void)sp->gp->scr_msg(sp, M_NONE, NULL);
 	return (0);
 }

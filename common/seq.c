@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 10.3 1995/06/19 19:56:50 bostic Exp $ (Berkeley) $Date: 1995/06/19 19:56:50 $";
+static char sccsid[] = "$Id: seq.c,v 10.4 1995/07/04 12:43:32 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:43:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -298,36 +298,37 @@ seq_dump(sp, stype, isname)
 	int isname;
 {
 	CHAR_T *p;
+	GS *gp;
 	SEQ *qp;
 	int cnt, len, olen;
 
 	cnt = 0;
-	for (qp = sp->gp->seqq.lh_first; qp != NULL; qp = qp->q.le_next) {
+	gp = sp->gp;
+	for (qp = gp->seqq.lh_first; qp != NULL; qp = qp->q.le_next) {
 		if (stype != qp->stype || F_ISSET(qp, SEQ_FUNCMAP))
 			continue;
 		++cnt;
 		for (p = qp->input,
 		    olen = qp->ilen, len = 0; olen > 0; --olen, ++p)
-			len += ex_printf(sp, "%s", KEY_NAME(sp, *p));
+			len += ex_puts(sp, KEY_NAME(sp, *p));
 		for (len = STANDARD_TAB - len % STANDARD_TAB; len > 0;)
-			len -= ex_printf(sp, " ");
+			len -= ex_puts(sp, " ");
 
 		if (qp->output != NULL)
 			for (p = qp->output,
 			    olen = qp->olen, len = 0; olen > 0; --olen, ++p)
-				len += ex_printf(sp, "%s", KEY_NAME(sp, *p));
+				len += ex_puts(sp, KEY_NAME(sp, *p));
 		else
 			len = 0;
 
 		if (isname && qp->name != NULL) {
 			for (len = STANDARD_TAB - len % STANDARD_TAB; len > 0;)
-				len -= ex_printf(sp, " ");
+				len -= ex_puts(sp, " ");
 			for (p = qp->name,
 			    olen = qp->nlen; olen > 0; --olen, ++p)
-				(void)ex_printf(sp, "%s", KEY_NAME(sp, *p));
+				(void)ex_puts(sp, KEY_NAME(sp, *p));
 		}
-		F_SET(sp, S_EX_WROTE);
-		(void)ex_printf(sp, "\n");
+		(void)ex_puts(sp, "\n");
 	}
 	return (cnt);
 }

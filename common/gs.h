@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 10.6 1995/06/19 19:56:06 bostic Exp $ (Berkeley) $Date: 1995/06/19 19:56:06 $
+ *	$Id: gs.h,v 10.7 1995/07/04 12:43:12 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:43:12 $
  */
 
 #define	TEMPORARY_FILE_STRING	"/tmp"	/* Default temporary file name. */
@@ -160,10 +160,8 @@ struct _gs {
 	u_int16_t flags;
 
 	/* Screen interface functions. */
-					/* Add a byte string to the screen. */
-	int	(*scr_addnstr) __P((SCR *, const char *, size_t));
 					/* Add a string to the screen. */
-	int	(*scr_addstr) __P((SCR *, const char *));
+	int	(*scr_addstr) __P((SCR *, const char *, size_t));
 					/* Toggle a screen attribute. */
 	int	(*scr_attr) __P((SCR *, scr_attr_t, int));
 					/* Beep/bell/flash the terminal. */
@@ -182,8 +180,6 @@ struct _gs {
 	int	(*scr_discard) __P((SCR *, SCR **));
 					/* Ex: screen adjustment routine. */
 	int	(*scr_ex_adjust) __P((SCR *, exadj_t));
-					/* Ex: start screen routine. */
-	int	(*scr_ex_init) __P((SCR *));
 	int	(*scr_fmap)		/* Set a function key. */
 	    __P((SCR *, seq_t, CHAR_T *, size_t, CHAR_T *, size_t));
 					/* Get a keyboard event. */
@@ -194,6 +190,8 @@ struct _gs {
 	int	(*scr_interrupt) __P((SCR *));
 					/* Move the cursor. */
 	int	(*scr_move) __P((SCR *, size_t, size_t));
+					/* Message or ex output. */
+	int	(*scr_msg) __P((SCR *, mtype_t, const char *, ...));
 					/* Refresh the screen. */
 	int	(*scr_refresh) __P((SCR *, int));
 					/* Resize two screens. */
