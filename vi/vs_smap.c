@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_smap.c,v 10.24 1996/07/02 20:32:48 bostic Exp $ (Berkeley) $Date: 1996/07/02 20:32:48 $";
+static const char sccsid[] = "$Id: vs_smap.c,v 10.25 1996/07/12 21:46:18 bostic Exp $ (Berkeley) $Date: 1996/07/12 21:46:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -357,7 +357,7 @@ vs_sm_insert(sp, lno)
 	size_t cnt_orig, cnt, coff;
 
 	/* Save the offset. */
-	coff = p->coff;
+	coff = HMAP->coff;
 
 	/*
 	 * Find the line in the map, find out how many screen lines
