@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 5.29 1993/05/02 15:55:40 bostic Exp $ (Berkeley) $Date: 1993/05/02 15:55:40 $
+ *	$Id: key.h,v 5.30 1993/05/10 11:16:24 bostic Exp $ (Berkeley) $Date: 1993/05/10 11:16:24 $
  */
 
 /* Special character lookup values. */
@@ -60,6 +60,7 @@
 	(TXT_BEAUTIFY | TXT_MAPCOMMAND)
 
 /* Support keyboard routines. */
-void	flush_mappedkey __P((SCR *));
-int	getkey __P((SCR *, u_int));
+void	term_flush_pseudo __P((SCR *));
 int	term_init __P((SCR *));
+int	term_key __P((SCR *, u_int));
+int	term_more_pseudo __P((SCR *));
