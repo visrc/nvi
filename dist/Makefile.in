@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.35 1996/03/22 10:30:43 bostic Exp $ (Berkeley) $Date: 1996/03/22 10:30:43 $
+#	$Id: Makefile.in,v 8.36 1996/03/22 10:56:16 bostic Exp $ (Berkeley) $Date: 1996/03/22 10:56:16 $
 
 srcdir=	@srcdir@/..
 CC=	@CC@
@@ -342,7 +342,7 @@ vs_msg.o: $(srcdir)/vi/vs_msg.c
 vs_refresh.o: $(srcdir)/vi/vs_refresh.c
 	 $(CC) $(CFLAGS) $?
 vs_relative.o: $(srcdir)/vi/vs_relative.c
-	 $(CC) -c @no_op_CFLAGS@ -I. -I$(srcdir)/include @CPPFLAGS@ $?
+	 $(CC) $(CFLAGS) $?
 vs_smap.o: $(srcdir)/vi/vs_smap.c
 	 $(CC) $(CFLAGS) $?
 vs_split.o: $(srcdir)/vi/vs_split.c
