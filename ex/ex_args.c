@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 8.25 1994/07/15 20:11:27 bostic Exp $ (Berkeley) $Date: 1994/07/15 20:11:27 $";
+static char sccsid[] = "$Id: ex_args.c,v 8.26 1994/08/02 10:29:07 bostic Exp $ (Berkeley) $Date: 1994/08/02 10:29:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -229,5 +229,6 @@ ex_args(sp, ep, cmdp)
 		else
 			(void)ex_printf(EXCOOKIE, "%s", *ap);
 	}
+	(void)ex_printf(EXCOOKIE, "\n");
 	return (0);
 }
