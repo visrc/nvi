@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 5.43 1993/05/16 14:42:50 bostic Exp $ (Berkeley) $Date: 1993/05/16 14:42:50 $";
+static char sccsid[] = "$Id: ex_subst.c,v 5.44 1993/05/16 17:57:40 bostic Exp $ (Berkeley) $Date: 1993/05/16 17:57:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -288,6 +288,14 @@ skipmatch:	eval = regexec(re,
 			to.lno = lno;
 			to.cno = sp->match[0].rm_eo;
 
+			/* If matched on '$', it's past EOL! */
+			if (len != 0) {
+				if (to.cno >= len)
+					to.cno = len - 1;
+				if (from.cno >= len)
+					from.cno = len - 1;
+			}
+
 			switch (sp->s_confirm(sp, ep, &from, &to)) {
 			case YES:
 				break;
@@ -392,13 +400,18 @@ nomatch:	if (len)
 				last = sp->newl[cnt] + 1;
 			}
 			lbclen -= last;
-			sp->newl_cnt = 0;
 		}
 
-		/* Store the line. */
-		if (lbclen)
+		/*
+		 * Store the line; always store if newl_cnt set, if zero
+		 * length it just means that we substitute a newline for
+		 * '$'.
+		 */
+		if (lbclen || sp->newl_cnt)
 			if (file_sline(sp, ep, lno, lb + last, lbclen))
 				return (1);
+
+		sp->newl_cnt = 0;
 
 		/* Display as necessary. */
 		if (!lflag && !nflag && !pflag)
