@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_main.c,v 10.27 1996/04/28 13:19:34 bostic Exp $ (Berkeley) $Date: 1996/04/28 13:19:34 $";
+static const char sccsid[] = "$Id: cl_main.c,v 10.28 1996/06/09 10:48:52 bostic Exp $ (Berkeley) $Date: 1996/06/09 10:48:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,17 +28,21 @@ static const char sccsid[] = "$Id: cl_main.c,v 10.27 1996/04/28 13:19:34 bostic 
 #include <unistd.h>
 
 #include "../common/common.h"
+#ifdef notyet
+#include "../ip/ip.h"
+#endif
 #include "cl.h"
 #include "pathnames.h"
 
 GS *__global_list;				/* GLOBAL: List of screens. */
 sigset_t __sigblockset;				/* GLOBAL: Blocked signals. */
 
-static GS	*gs_init __P((char *));
-static void	 nomem __P((char *));
-static int	 setsig __P((int, struct sigaction *, void (*)(int)));
-static void	 sig_end __P((GS *));
-static void	 term_init __P((char *, char *));
+static CL_PRIVATE *cl_init __P((GS *));
+static GS	  *gs_init __P((char *));
+static void	   nomem __P((char *));
+static int	   setsig __P((int, struct sigaction *, void (*)(int)));
+static void	   sig_end __P((GS *));
+static void	   term_init __P((char *, char *));
 
 /*
  * main --
@@ -54,7 +58,7 @@ main(argc, argv)
 	GS *gp;
 	size_t rows, cols;
 	int rval;
-	char **p_av, **t_av, *ttype;
+	char *ip_arg, **p_av, **t_av, *ttype;
 
 	/* If loaded at 0 and jumping through a NULL pointer, stop. */
 	if (reenter++)
@@ -62,22 +66,52 @@ main(argc, argv)
 
 	/* Create and initialize the global structure. */
 	__global_list = gp = gs_init(argv[0]);
-	clp = GCLP(gp);
 
-#ifdef NOT_NEEDED_FOR_CURSES
 	/*
 	 * Strip out any arguments that vi isn't going to understand.  There's
 	 * no way to portably call getopt twice, so arguments parsed here must
 	 * be removed from the argument list.
 	 */
+#ifdef notyet
+	ip_arg = NULL;
 	for (p_av = t_av = argv;;) {
 		if (*t_av == NULL) {
 			*p_av = NULL;
 			break;
 		}
+		if (!strcmp(*t_av, "--")) {
+			while ((*p_av++ = *t_av++) != NULL);
+			break;
+		}
+		if (!memcmp(*t_av, "-I", sizeof("-I") - 1)) {
+			if (t_av[0][2] != '\0') {
+				ip_arg = t_av[0] + 2;
+				++t_av;
+				--argc;
+				continue;
+			}
+			if (t_av[1] != NULL) {
+				ip_arg = t_av[1];
+				t_av += 2;
+				argc -= 2;
+				continue;
+			}
+		}
 		*p_av++ = *t_av++;
 	}
+
+	/*
+	 * If we're being called as an editor library, we're done here, we
+	 * get loaded with the curses screen, we don't share much code.
+	 */
+	if (ip_arg != NULL)
+		exit (ip_main(argc, argv, gp, ip_arg));
+#else
+	ip_arg = ip_arg;
 #endif
+		
+	/* Create and initialize the CL_PRIVATE structure. */
+	clp = cl_init(gp);
 
 	/*
 	 * Initialize the terminal information.
@@ -151,7 +185,6 @@ gs_init(name)
 {
 	CL_PRIVATE *clp;
 	GS *gp;
-	int fd;
 	char *p;
 
 	/* Figure out what our name is. */
@@ -160,12 +193,29 @@ gs_init(name)
 
 	/* Allocate the global structure. */
 	CALLOC_NOMSG(NULL, gp, GS *, 1, sizeof(GS));
+	if (gp == NULL)
+		nomem(name);
+
+
+	gp->progname = name;
+	return (gp);
+}
+
+/*
+ * cl_init --
+ *	Create and partially initialize the CL structure.
+ */
+static CL_PRIVATE *
+cl_init(gp)
+	GS *gp;
+{
+	CL_PRIVATE *clp;
+	int fd;
 
 	/* Allocate the CL private structure. */
-	if (gp != NULL)
-		CALLOC_NOMSG(NULL, clp, CL_PRIVATE *, 1, sizeof(CL_PRIVATE));
-	if (gp == NULL || clp == NULL)
-		nomem(name);
+	CALLOC_NOMSG(NULL, clp, CL_PRIVATE *, 1, sizeof(CL_PRIVATE));
+	if (clp == NULL)
+		nomem(gp->progname);
 	gp->cl_private = clp;
 
 	/* Initialize the list of curses functions. */
@@ -207,15 +257,13 @@ gs_init(name)
 			goto tcfail;
 	} else if ((fd = open(_PATH_TTY, O_RDONLY, 0)) != -1) {
 		if (tcgetattr(fd, &clp->orig) == -1) {
-tcfail:			(void)fprintf(stderr,
-			    "%s: tcgetattr: %s\n", name, strerror(errno));
+tcfail:			(void)fprintf(stderr, "%s: tcgetattr: %s\n",
+			    gp->progname, strerror(errno));
 			exit (1);
 		}
 		(void)close(fd);
 	}
-
-	gp->progname = name;
-	return (gp);
+	return (clp);
 }
 
 /*
