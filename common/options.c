@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.68 1994/08/31 19:09:48 bostic Exp $ (Berkeley) $Date: 1994/08/31 19:09:48 $";
+static char sccsid[] = "$Id: options.c,v 8.69 1994/09/02 13:23:39 bostic Exp $ (Berkeley) $Date: 1994/09/02 13:23:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -345,7 +345,6 @@ opts_init(sp, oargs)
 	 */
 	for (; *oargs != -1; ++oargs)
 		SET_DEF(*oargs, optlist[*oargs].name);
-		
 
 	/*
 	 * By default, the historic vi always displayed information
@@ -372,7 +371,7 @@ opts_set(sp, usage, argv)
 	OPTION *spo;
 	u_long value, turnoff;
 	int ch, equals, nf, offset, qmark, rval;
-	char *endp, *name, *p, *sep; 
+	char *endp, *name, *p, *sep;
 
 	disp = NO_DISPLAY;
 	for (rval = 0; argv[0]->len != 0; ++argv) {
