@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 8.7 1993/08/21 14:33:45 bostic Exp $ (Berkeley) $Date: 1993/08/21 14:33:45 $";
+static char sccsid[] = "$Id: ex_global.c,v 8.8 1993/08/25 16:44:53 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:44:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -65,7 +65,7 @@ global(sp, ep, cmdp, cmd)
 	 * non-alphanumeric to serve as the substitution command
 	 * delimiter.
 	 */
-	for (p = cmdp->argv[0]; isspace(*p); ++p);
+	for (p = cmdp->argv[0]; isblank(*p); ++p);
 	delim = *p++;
 	if (isalnum(delim)) {
 		msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 8.6 1993/08/18 16:22:38 bostic Exp $ (Berkeley) $Date: 1993/08/18 16:22:38 $";
+static char sccsid[] = "$Id: ex_read.c,v 8.7 1993/08/25 16:44:58 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:44:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -58,11 +58,11 @@ ex_read(sp, ep, cmdp)
 		force = 0;
 
 	/* Skip whitespace. */
-	for (; *p && isspace(*p); ++p);
+	for (; *p && isblank(*p); ++p);
 
 	/* If "read !" it's a pipe from a utility. */
 	if (*p == '!') {
-		for (; *p && isspace(*p); ++p);
+		for (; *p && isblank(*p); ++p);
 		if (*p == '\0') {
 			msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
 			return (1);

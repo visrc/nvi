@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 8.5 1993/08/19 15:07:12 bostic Exp $ (Berkeley) $Date: 1993/08/19 15:07:12 $";
+static char sccsid[] = "$Id: ex_argv.c,v 8.6 1993/08/25 16:45:33 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:45:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -108,7 +108,7 @@ file_argv(sp, ep, s, argcp, argvp)
 	 * pure vanilla, don't even try.
 	 */
 	for (p = bp; *p; ++p)
-		if (!isalnum(*p) && !isspace(*p) && *p != '/')
+		if (!isalnum(*p) && !isblank(*p) && *p != '/')
 			break;
 	if (*p) {
 		if (ex_run_process(sp, bp, &len, bp, blen))
@@ -152,7 +152,7 @@ word_argv(sp, ep, p, argcp, argvp)
 		for (ap = p; p[0] != '\0'; ++p) {
 			if (sp->special[p[0]] == K_VLNEXT && p[1])
 				p += 2;
-			if (isspace(p[0]))
+			if (isblank(p[0]))
 				break;
 		}
 		if (*p)
@@ -215,7 +215,7 @@ mem1:				sp->argscnt = 0;
 			break;
 
 		/* Skip whitespace. */
-		while (isspace(*++p));
+		while (isblank(*++p));
 		if (!*p)
 			break;
 	}

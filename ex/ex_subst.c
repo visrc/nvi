@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.8 1993/08/19 15:08:26 bostic Exp $ (Berkeley) $Date: 1993/08/19 15:08:26 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.9 1993/08/25 16:45:17 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:45:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,7 +38,7 @@ ex_substitute(sp, ep, cmdp)
 	char *arg, *sub, *rep, *p, *t;
 
 	/* Skip leading white space. */
-	for (arg = cmdp->argv[0]; isspace(*arg); ++arg);
+	for (arg = cmdp->argv[0]; isblank(*arg); ++arg);
 
 	/*
 	 * Historic vi allowed any non-alphanumeric to serve as

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 8.5 1993/08/18 16:23:09 bostic Exp $ (Berkeley) $Date: 1993/08/18 16:23:09 $";
+static char sccsid[] = "$Id: ex_write.c,v 8.6 1993/08/25 16:45:23 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:45:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -123,7 +123,7 @@ exwr(sp, ep, cmdp, cmd)
 	}
 
 	/* If no more arguments, just write the file back. */
-	for (; *p && isspace(*p); ++p);
+	for (; *p && isblank(*p); ++p);
 	if (!*p) {
 		if (F_ISSET(cmdp, E_ADDR2_ALL))
 			LF_SET(FS_ALL);
@@ -133,7 +133,7 @@ exwr(sp, ep, cmdp, cmd)
 
 	/* If "write !" it's a pipe to a utility. */
 	if (cmd == WRITE && *p == '!') {
-		for (; *p && isspace(*p); ++p);
+		for (; *p && isblank(*p); ++p);
 		if (*p == '\0') {
 			msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
 			return (1);
@@ -150,7 +150,7 @@ exwr(sp, ep, cmdp, cmd)
 		LF_SET(FS_APPEND);
 
 		/* Skip ">>" and whitespace. */
-		for (p += 2; *p && isspace(*p); ++p);
+		for (p += 2; *p && isblank(*p); ++p);
 	}
 
 	/* Build an argv (so we get file expansion). */
