@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 9.10 1994/12/16 11:30:23 bostic Exp $ (Berkeley) $Date: 1994/12/16 11:30:23 $";
+static char sccsid[] = "$Id: ex_tag.c,v 9.11 1994/12/16 16:01:15 bostic Exp $ (Berkeley) $Date: 1994/12/16 16:01:15 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -70,7 +70,7 @@ ex_tagfirst(sp, tagarg)
 
 	/* Get the tag information. */
 	if (tag_get(sp, tagarg, &tag, &name, &search))
-		return (1);
+		return (0);
 
 	/* Create the file entry. */
 	if ((frp = file_add(sp, name)) == NULL)
