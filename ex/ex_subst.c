@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 5.47 1993/05/16 20:18:22 bostic Exp $ (Berkeley) $Date: 1993/05/16 20:18:22 $";
+static char sccsid[] = "$Id: ex_subst.c,v 5.48 1993/05/19 12:44:19 bostic Exp $ (Berkeley) $Date: 1993/05/19 12:44:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -167,6 +167,12 @@ ex_subagain(sp, ep, cmdp)
 	}								\
 }
 
+/*
+ * substitute --
+ *	Do the substitution.  This stuff is *really* tricky.  There are
+ *	lots of special cases, and general nastiness.  Don't mess with it
+ * 	unless you're pretty confident.
+ */
 static int
 substitute(sp, ep, cmdp, s, re, cmd)
 	SCR *sp;
@@ -179,7 +185,7 @@ substitute(sp, ep, cmdp, s, re, cmd)
 	MARK from, to;
 	recno_t elno, lno, lastline;
 	size_t blen, cnt, last, lbclen, lblen, len, offset;
-	int eflags, eval, quit;
+	int eflags, eval, linechanged, quit;
 	int cflag, gflag, lflag, nflag, pflag, rflag;
 	char *bp, *lb;
 
@@ -189,7 +195,7 @@ substitute(sp, ep, cmdp, s, re, cmd)
 	 * make any sense.  In the current model the problem is combining
 	 * them with the 'c' flag -- the screen would have to flip back
 	 * and forth between the confirm screen and the ex print screen,
-	 * which would be pretty awful.
+	 * which would be pretty awful.  Not worth the effort.
 	 */
 	cflag = gflag = lflag = nflag = pflag = rflag = 0;
 	for (; *s; ++s)
@@ -252,11 +258,21 @@ usage:		msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
 	/* Get some space. */
 	GET_SPACE(sp, bp, blen, 512);
 
-
-	/* For each line... */
+	/*
+	 * lb:		build buffer pointer.
+	 * lbclen:	current length of built buffer.
+	 * lblen;	length of build buffer.
+	 */
 	lb = NULL;
 	lbclen = lblen = 0;
+
+	/*
+	 * Since multiple changes can happen in a line, we only increment
+	 * the change count on the first change to a line.
+	 */
 	lastline = OOBLNO;
+
+	/* For each line... */
 	for (quit = 0, lno = cmdp->addr1.lno,
 	    elno = cmdp->addr2.lno; !quit && lno <= elno; ++lno) {
 
@@ -266,22 +282,44 @@ usage:		msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
 			return (1);
 		}
 
-		ADD_SPACE(sp, bp, blen, len)
-		memmove(bp, s, len);
-		s = bp;
+		/*
+		 * Make a local copy if doing confirmation -- when calling
+		 * the confirm routine we're likely to lose our cached copy.
+		 */
+		if (cflag) {
+			ADD_SPACE(sp, bp, blen, len)
+			memmove(bp, s, len);
+			s = bp;
+		}
 
+		/* Reset the buffer pointer. */
 		lbclen = 0;
+
+		/*
+		 * We don't want to have to do a setline if the line didn't
+		 * change -- keep track of whether or not this line changed.
+		 */
+		linechanged = 0;
+
+		/* It's not nul terminated, but we pretend it is. */
 		eflags = REG_STARTEND;
 
-		/* Search for a match. */
+		/* The search area is from 's' to the end of the line. */
 nextmatch:	sp->match[0].rm_so = 0;
 		sp->match[0].rm_eo = len;
 
+		/* Get the next match. */
 skipmatch:	eval = regexec(re,
 		    (char *)s, re->re_nsub + 1, sp->match, eflags);
+
+		/*
+		 * There wasn't a match -- if there was an error, deal with
+		 * it.  If there was a previous match in this line, resolve
+		 * the changes into the database.  Otherwise, just move on.
+		 */
 		if (eval == REG_NOMATCH) {
-			if (lbclen != 0)
-				goto nomatch;
+			if (linechanged)
+				goto endmatch;
 			continue;
 		}
 		if (eval != 0) {
@@ -291,12 +329,20 @@ skipmatch:	eval = regexec(re,
 
 		/* Confirm change. */
 		if (cflag) {
+			/*
+			 * Set the cursor position for confirmation.  Note,
+			 * if we matched on a '$', the cursor may be past
+			 * the end of line.
+			 *
+			 * XXX
+			 * May want to "fix" this in the confirm routine;
+			 * the confirm routine may be able to display a
+			 * cursor past EOL.
+			 */
 			from.lno = lno;
 			from.cno = sp->match[0].rm_so;
 			to.lno = lno;
 			to.cno = sp->match[0].rm_eo;
-
-			/* If matched on '$', it's past EOL! */
 			if (len != 0) {
 				if (to.cno >= len)
 					to.cno = len - 1;
@@ -308,47 +354,63 @@ skipmatch:	eval = regexec(re,
 			case YES:
 				break;
 			case NO:
-				/* Copy prefix, matching bytes. */
+				/*
+				 * Copy the bytes before the match and the
+				 * bytes in the match into the build buffer.
+				 */
 				BUILD(sp, s, sp->match[0].rm_eo);
 				goto skip;
 			case QUIT:
+				/* Set the quit flag. */
 				quit = 1;
+
+				/* If in a global, pass the info back. */
 				if (F_ISSET(sp, S_GLOBAL))
 					F_SET(sp, S_GLOBAL_QUIT);
-				if (lbclen != 0)
-					goto nomatch;
+				
+				/*
+				 * If any changes, resolve them, otherwise
+				 * return to the main loop.
+				 */
+				if (linechanged)
+					goto endmatch;
 				continue;
 			}
 		}
 
-		/* Copy prefix. */
+		/* Copy the bytes before the match into the build buffer. */
 		BUILD(sp, s, sp->match[0].rm_so);
 
-		/* Copy matching bytes. */
+		/* Substitute the matching bytes. */
 		if (regsub(sp, s, &lb, &lbclen, &lblen))
 			goto ret1;
 
+		/* Set the change flag so we know this line was modified. */
+		linechanged = 1;
+
+		/* Move the pointers past the matched bytes. */
 skip:		s += sp->match[0].rm_eo;
 		len -= sp->match[0].rm_eo;
 
 		/*
-		 * We have to update the screen.  The basic idea is to store
-		 * the line so the screen update routines can find it, but
-		 * start at the old offset.
+		 * If doing a global change with confirmation, we have to
+		 * update the screen.  The basic idea is to store the line
+		 * so the screen update routines can find it, but start at
+		 * the old offset.
 		 */
-		if (len && lbclen && gflag && cflag) {
+		if (linechanged && gflag && cflag) {
 			/* Save offset. */
 			offset = lbclen;
 			
-			/* Copy suffix. */
+			/* Copy the suffix. */
 			if (len)
 				BUILD(sp, s, len)
 
-			/* Store any inserted lines. */
+			/* Store inserted lines, adjusting the build buffer. */
 			last = 0;
 			if (sp->newl_cnt) {
-				for (cnt = 0;
-				    cnt < sp->newl_cnt; ++cnt, ++lno, ++elno) {
+				for (cnt = 0; cnt < sp->newl_cnt;
+				    ++cnt, ++lno, ++elno, ++lastline) {
 					if (file_iline(sp, ep, lno,
 					    lb + last, sp->newl[cnt] - last))
 						goto ret1;
@@ -357,11 +419,13 @@ skip:		s += sp->match[0].rm_eo;
 				}
 				lbclen -= last;
 				offset -= last;
+
 				sp->newl_cnt = 0;
+				linechanged = 1;
 			}
 
-			/* Store the line. */
-			if (lbclen)
+			/* Store the changed line. */
+			if (linechanged)
 				if (file_sline(sp, ep, lno, lb + last, lbclen))
 					goto ret1;
 
@@ -370,11 +434,14 @@ skip:		s += sp->match[0].rm_eo;
 				GETLINE_ERR(sp, lno);
 				goto ret1;
 			}
+			ADD_SPACE(sp, bp, blen, len)
+			memmove(bp, s, len);
+			s = bp;
 
-			/* Restart the buffer. */
+			/* Restart the build. */
 			lbclen = 0;
 
-			/* Update counters. */
+			/* Update changed line counter. */
 			if (lastline != lno) {
 				++sp->rptlines[L_CHANGED];
 				lastline = lno;
@@ -386,27 +453,24 @@ skip:		s += sp->match[0].rm_eo;
 			goto skipmatch;
 		}
 
-		/* Get the next match. */
+		/*
+		 * If it's a global change, and there's something left in
+		 * the line, check it.
+		 */
 		if (len && gflag) {
 			eflags |= REG_NOTBOL;
 			goto nextmatch;
 		}
 
-		/* Copy suffix. */
-nomatch:	if (len)
+		/* Copy any remaining bytes into the build buffer. */
+endmatch:	if (len)
 			BUILD(sp, s, len)
 
-		/* Update counters. */
-		if (lastline != lno) {
-			++sp->rptlines[L_CHANGED];
-			lastline = lno;
-		}
-
-		/* Store any inserted lines. */
+		/* Store inserted lines, adjusting the build buffer. */
 		last = 0;
 		if (sp->newl_cnt) {
-			for (cnt = 0;
-			    cnt < sp->newl_cnt; ++cnt, ++lno, ++elno) {
+			for (cnt = 0; cnt < sp->newl_cnt;
+			    ++cnt, ++lno, ++elno, ++lastline) {
 				if (file_iline(sp, ep,
 				    lno, lb + last, sp->newl[cnt] - last))
 					goto ret1;
@@ -414,32 +478,40 @@ nomatch:	if (len)
 				++sp->rptlines[L_ADDED];
 			}
 			lbclen -= last;
+
+			sp->newl_cnt = 0;
+			linechanged = 1;
 		}
 
-		/*
-		 * Store the line; always store if newl_cnt set, if zero
-		 * length it just means that we substitute a newline for
-		 * '$'.
-		 */
-		if (lbclen || sp->newl_cnt)
+		/* Store the changed line. */
+		if (linechanged)
 			if (file_sline(sp, ep, lno, lb + last, lbclen))
 				goto ret1;
 
-		sp->newl_cnt = 0;
+		/* Update changed line counter. */
+		if (lastline != lno) {
+			++sp->rptlines[L_CHANGED];
+			lastline = lno;
+		}
 
 		/* Display as necessary. */
-		if (!lflag && !nflag && !pflag)
-			continue;
-		if (lflag)
-			ex_print(sp, ep, &from, &to, E_F_LIST);
-		if (nflag)
-			ex_print(sp, ep, &from, &to, E_F_HASH);
-		if (pflag)
-			ex_print(sp, ep, &from, &to, E_F_PRINT);
+		if (lflag || nflag || pflag) {
+			from.lno = to.lno = lno;
+			from.cno = to.cno = 0;
+			if (lflag)
+				ex_print(sp, ep, &from, &to, E_F_LIST);
+			if (nflag)
+				ex_print(sp, ep, &from, &to, E_F_HASH);
+			if (pflag)
+				ex_print(sp, ep, &from, &to, E_F_PRINT);
+		}
 	}
 
-	/* Cursor moves to last line changed. */
-	if (lastline != OOBLNO)
+	/*
+	 * Cursor moves to last line changed, unless doing confirm,
+	 * in which case don't move it.
+	 */
+	if (!cflag && lastline != OOBLNO)
 		sp->lno = lastline;
 
 	/*
