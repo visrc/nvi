@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shift.c,v 5.9 1992/05/15 11:07:30 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:07:30 $";
+static char sccsid[] = "$Id: ex_shift.c,v 5.10 1992/06/17 10:06:46 bostic Exp $ (Berkeley) $Date: 1992/06/17 10:06:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -39,75 +39,78 @@ shift(cmdp, rl)
 	EXCMDARG *cmdp;
 	enum which rl;
 {
-	MARK fm, tm;
-	u_long flno, tlno;
-	size_t len;
-	int oldidx;		/* Number of chars used for indent. */
-	int newidx;		/* Number of chars in the new indent string. */
-	int oldcol;		/* Previous indent amount. */
-	int newcol;		/* New indent amount. */
-	char *p, sbuf[100];
+	recno_t from, to;
+	size_t blen, len, newcol, oldcol, oldidx;
+	char *p, *buf, *bp;
 
-	flno = cmdp->addr1.lno;
-	tlno = cmdp->addr2.lno;
-	for (; flno < tlno; ++flno) {
+	if (LVAL(O_SHIFTWIDTH) == 0)
+		return (0);
 
+	blen = 0;
+	buf = NULL;
+	for (from = cmdp->addr1.lno, to = cmdp->addr2.lno; from <= to; ++from) {
 		/* Get the line. */
-		if ((p = file_gline(curf, flno, &len)) == NULL)
-			return (1);
+		if ((p = file_gline(curf, from, &len)) == NULL)
+			goto err;
+
 		if (!len)
 			continue;
 
-		/* Calculate oldidx and oldcol. */
-		for (oldidx = 0, oldcol = 0;
-		    p[oldidx] == ' ' || p[oldidx] == '\t'; oldidx++)
+		/*
+		 * Calculate the old number of characters used for the indent
+		 * and the previous indent amount.
+		 */
+		for (oldidx = 0, oldcol = 0;; ++oldidx)
 			if (p[oldidx] == ' ')
-				oldcol += 1;
-			else
+				++oldcol;
+			else if (p[oldidx] == '\t')
 				oldcol +=
 				    LVAL(O_TABSTOP) - oldcol % LVAL(O_TABSTOP);
+			else
+				break;
 
-		/* Calculate newcol. */
+		/* Calculate the new indent amount. */
 		if (rl == RIGHT)
-			newcol = oldcol + (LVAL(O_SHIFTWIDTH) & 0xff);
-			if (newcol == oldcol)
-				continue;
+			newcol = oldcol + LVAL(O_SHIFTWIDTH);
 		else {
-			newcol = oldcol - (LVAL(O_SHIFTWIDTH) & 0xff);
-			if (newcol < 0)
-				newcol = 0;
+			newcol = oldcol < LVAL(O_SHIFTWIDTH) ?
+			    0 : oldcol - LVAL(O_SHIFTWIDTH);
 			if (newcol == oldcol)
 				continue;
 		}
 
-		if (newcol > sizeof(sbuf) - 1) {
-			msg("Shift too large.");
-			return (1);
-		}
+		/* Get a buffer that will hold the new line. */
+		if (blen < newcol + len && binc(&buf, &blen, 0))
+			goto err;
 
 		/* Build a new indent string. */
-		newidx = 0;
+		bp = buf;
 		if (ISSET(O_AUTOTAB))
 			while (newcol >= LVAL(O_TABSTOP)) {
-				sbuf[newidx++] = '\t';
+				*bp++ = '\t';
 				newcol -= LVAL(O_TABSTOP);
 			}
 
 		for (; newcol > 0; --newcol)
-			sbuf[newidx++] = ' ';
+			*bp++ = ' ';
 
-		/* Change the old indent string into the new. */
-		fm.lno = tm.lno = flno;
-		fm.cno = 0;
-		tm.cno = oldidx;
-		change(&fm, &tm, sbuf, newidx);
+		/* Add the original line. */
+		bcopy(p + oldidx, bp, len - oldidx);
+
+		/* Set the replacement line. */
+		if (file_sline(curf, from, buf, (bp + (len - oldidx)) - buf)) {
+err:			if (buf != NULL)
+				free(buf);
+			return (1);
+		}
 	}
+	if (buf != NULL)
+		free(buf);
 
 	/* Reporting. */
 	rptlines = cmdp->addr2.lno - cmdp->addr1.lno + 1;
 	rptlabel = rl == RIGHT ? "shifted right" : "shifted left";
 
 	autoprint = 1;
-
 	return (0);
 }
