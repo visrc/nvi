@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.69 1993/02/22 18:24:03 bostic Exp $ (Berkeley) $Date: 1993/02/22 18:24:03 $";
+static char sccsid[] = "$Id: ex.c,v 5.70 1993/02/24 12:54:56 bostic Exp $ (Berkeley) $Date: 1993/02/24 12:54:56 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -27,6 +27,7 @@ static char sccsid[] = "$Id: ex.c,v 5.69 1993/02/22 18:24:03 bostic Exp $ (Berke
 #include "excmd.h"
 #include "log.h"
 #include "options.h"
+#include "screen.h"
 #include "search.h"
 #include "term.h"
 #include "vcmd.h"
@@ -325,8 +326,8 @@ ex_cmd(ep, exc)
 				cmd.addr1.lno = 0;
 				flags |= E_ZERO;
 			} else
-				cmd.addr1.lno = ep->lno;
-			cmd.addr1.cno = ep->cno;
+				cmd.addr1.lno = SCRLNO(ep);
+			cmd.addr1.cno = SCRCNO(ep);
 			break;
 		case 1:
 			break;
@@ -357,8 +358,8 @@ ex_cmd(ep, exc)
 two:		switch(cmd.addrcnt) {
 		case 0:				/* Default to cursor. */
 			cmd.addrcnt = 2;
-			cmd.addr1.lno = cmd.addr2.lno = ep->lno;
-			cmd.addr1.cno = cmd.addr2.cno = ep->cno;
+			cmd.addr1.lno = cmd.addr2.lno = SCRLNO(ep);
+			cmd.addr1.cno = cmd.addr2.cno = SCRCNO(ep);
 			break;
 		case 1:				/* Default to first address. */
 			cmd.addrcnt = 2;
@@ -574,8 +575,8 @@ addr2:	switch(cmd.addrcnt) {
 
 	/* If doing a default command, vi just moves to the line. */
 	if (mode == MODE_VI && uselastcmd) {
-		ep->lno = cmd.addr1.lno ? cmd.addr1.lno : 1;
-		ep->cno = cmd.addr1.cno;
+		SCRLNO(ep) = cmd.addr1.lno ? cmd.addr1.lno : 1;
+		SCRCNO(ep) = cmd.addr1.cno;
 		return (0);
 	}
 
@@ -649,16 +650,16 @@ addr2:	switch(cmd.addrcnt) {
 	 */
 	if (flagoff) {
 		if (flagoff < 0) {
-			if ((recno_t)flagoff > ep->lno) {
+			if ((recno_t)flagoff > SCRLNO(ep)) {
 				msg(ep, M_ERROR,
 				    "Flag offset before line 1.");
 				return (1);
 			}
-		} else if (ep->lno + flagoff > file_lline(ep)) {
+		} else if (SCRLNO(ep) + flagoff > file_lline(ep)) {
 			msg(ep, M_ERROR, "Flag offset past end-of-file.");
 			return (1);
 		}
-		ep->lno += flagoff;
+		SCRLNO(ep) += flagoff;
 	}
 
 	if (mode == MODE_EX &&
@@ -666,8 +667,8 @@ addr2:	switch(cmd.addrcnt) {
 		flags = E_F_PRINT;
 	else
 		flags = cmd.flags & (E_F_HASH | E_F_LIST | E_F_PRINT);
-	parg.addr1.lno = parg.addr2.lno = ep->lno;
-	parg.addr1.cno = parg.addr2.cno = ep->cno;
+	parg.addr1.lno = parg.addr2.lno = SCRLNO(ep);
+	parg.addr1.cno = parg.addr2.cno = SCRCNO(ep);
 	if (flags) {
 		switch (flags) {
 		case E_F_HASH:
@@ -728,10 +729,10 @@ linespec(ep, cmd, cp)
 			if (cp->addrcnt == 0)
 				goto done;
 			if (!savecursor_set) {
-				savecursor.lno = ep->lno;
-				savecursor.cno = ep->cno;
-				ep->lno = cp->addr1.lno;
-				ep->cno = cp->addr1.cno;
+				savecursor.lno = SCRLNO(ep);
+				savecursor.cno = SCRCNO(ep);
+				SCRLNO(ep) = cp->addr1.lno;
+				SCRCNO(ep) = cp->addr1.cno;
 			}
 			savecursor_set = 1;
 			/* FALLTHROUGH */
@@ -762,23 +763,23 @@ linespec(ep, cmd, cp)
 			cmd += 2;
 			break;
 		case '/':		/* Search forward. */
-			sm.lno = ep->lno;
-			sm.cno = ep->cno;
+			sm.lno = SCRLNO(ep);
+			sm.cno = SCRCNO(ep);
 			if ((mp = f_search(ep, &sm, cmd,
 			    &endp, SEARCH_MSG | SEARCH_PARSE)) == NULL)
 				return (NULL);
-			cur.lno = ep->lno = mp->lno;
-			cur.cno = ep->cno = mp->cno;
+			cur.lno = SCRLNO(ep) = mp->lno;
+			cur.cno = SCRCNO(ep) = mp->cno;
 			cmd = endp;
 			break;
 		case '?':		/* Search backward. */
-			sm.lno = ep->lno;
-			sm.cno = ep->cno;
+			sm.lno = SCRLNO(ep);
+			sm.cno = SCRCNO(ep);
 			if ((mp = b_search(ep, &sm, cmd,
 			    &endp, SEARCH_MSG | SEARCH_PARSE)) == NULL)
 				return (NULL);
-			cur.lno = ep->lno = mp->lno;
-			cur.cno = ep->cno = mp->cno;
+			cur.lno = SCRLNO(ep) = mp->lno;
+			cur.cno = SCRCNO(ep) = mp->cno;
 			cmd = endp;
 			break;
 		case '.':		/* Current position. */
@@ -787,12 +788,12 @@ linespec(ep, cmd, cp)
 		case '+':		/* Increment. */
 		case '-':		/* Decrement. */
 			/* If an empty file, then '.' is 0, not 1. */
-			if (ep->lno == 1) {
+			if (SCRLNO(ep) == 1) {
 				if ((cur.lno = file_lline(ep)) != 0)
 					cur.lno = 1;
 			} else
-				cur.lno = ep->lno;
-			cur.cno = ep->cno;
+				cur.lno = SCRLNO(ep);
+			cur.cno = SCRCNO(ep);
 			break;
 		default:
 			goto done;
@@ -839,8 +840,8 @@ linespec(ep, cmd, cp)
 	 * out what the historical ex did for ";,;,;5p" or similar stupidity.
 	 */
 done:	if (savecursor_set) {
-		ep->lno = savecursor.lno;
-		ep->cno = savecursor.cno;
+		SCRLNO(ep) = savecursor.lno;
+		SCRCNO(ep) = savecursor.cno;
 	}
 
 	return (cmd);
