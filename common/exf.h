@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 5.21 1992/12/20 15:12:05 bostic Exp $ (Berkeley) $Date: 1992/12/20 15:12:05 $
+ *	$Id: exf.h,v 5.22 1992/12/20 21:10:31 bostic Exp $ (Berkeley) $Date: 1992/12/20 21:10:31 $
  */
 
 #ifndef _EXF_H_
@@ -110,9 +110,9 @@ typedef struct {
 }
 
 #define	MODIFY_CHECK(ep, force) {					\
-	if ((ep)->flags & F_MODIFIED && !force) {			\
+	if ((ep)->flags & F_MODIFIED && !(force)) {			\
 		if (ISSET(O_AUTOWRITE)) {				\
-			if (file_sync((ep), force))			\
+			if (file_sync((ep), (force)))			\
 				return (1);				\
 		} else {						\
 	msg("Modified since last write; write or use ! to override.");	\
