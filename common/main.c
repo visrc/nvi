@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.24 1992/05/15 10:56:54 bostic Exp $ (Berkeley) $Date: 1992/05/15 10:56:54 $";
+static char sccsid[] = "$Id: main.c,v 5.25 1992/05/21 13:04:18 bostic Exp $ (Berkeley) $Date: 1992/05/21 13:04:18 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -84,7 +84,8 @@ main(argc, argv)
 			break;
 		case 'r':		/* Recover. */
 			(void)fprintf(stderr,
-			    "%s: recover option not currently implemented.\n");
+			    "%s: recover option not currently implemented.\n",
+			    *argv);
 			exit(1);
 #ifdef DEBUG
 		case 'T':		/* Trace. */
@@ -120,10 +121,9 @@ main(argc, argv)
 	/* Initialize the key sequence list. */
 	seq_init();
 
-	/* Catch HUP, TSTP, WINCH */
+	/* Catch HUP, WINCH */
 	(void)signal(SIGHUP, onhup);
 #ifdef notdef
-	(void)signal(SIGTSTP, onstop);			/* CCC */
 	(void)signal(SIGWINCH, onwinch);		/* CCC */
 #endif
 
@@ -213,11 +213,8 @@ main(argc, argv)
 		}
 	}
 
-	/* Free up the cut buffers. */
-mexit:	cutend();
-
 	/* End the window. */
-	endwin();
+mexit:	endwin();
 
 	/* Flush any left-over error message. */
 	msg_eflush();
