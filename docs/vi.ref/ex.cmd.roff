@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: ex.cmd.roff,v 8.21 1994/05/26 01:41:49 bostic Exp $ (Berkeley) $Date: 1994/05/26 01:41:49 $
+.\"	$Id: ex.cmd.roff,v 8.22 1994/05/27 00:52:52 bostic Exp $ (Berkeley) $Date: 1994/05/27 00:52:52 $
 .\"
 #ifdef REFERENCE
 .SH 1 "Ex Description"
@@ -82,7 +82,7 @@ File names are subjected to normal
 .XR sh 1
 word expansions.
 .pp
-Anywhere that a file name is specified, it is also possible to use
+Anywhere a file name is specified, it is also possible to use
 the special string
 .QT /tmp .
 This will be replaced with a temporary file name which can be used
@@ -106,8 +106,8 @@ command is either a
 or
 .CO print
 command.
-The command used is the most recent of the three commands to have be used
-(including any use as a flag).
+The command used is the most recent of the three commands to have been
+used (including any use as a flag).
 If none of these commands have been used before, the
 .CO print
 command is the implied command.
@@ -140,7 +140,7 @@ editor.
 In each entry below, the tag line is a usage synopsis for the command.
 #ifdef REFERENCE
 .pp
-For each of the commands, the command can be entered as the abbreviation
+Each command can be entered as the abbreviation
 (those characters in the synopsis command word preceding the
 .QQ [
 character),
