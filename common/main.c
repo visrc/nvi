@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.101 1994/08/08 06:34:17 bostic Exp $ (Berkeley) $Date: 1994/08/08 06:34:17 $";
+static char sccsid[] = "$Id: main.c,v 8.102 1994/08/08 10:09:48 bostic Exp $ (Berkeley) $Date: 1994/08/08 10:09:48 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -279,7 +279,7 @@ main(argc, argv)
 		case NOPERM:
 			break;
 		case OK:
-			(void)ex_cfile(sp, NULL, _PATH_SYSEXRC);
+			(void)ex_cfile(sp, NULL, _PATH_SYSEXRC, 0);
 			break;
 		}
 
@@ -290,7 +290,7 @@ main(argc, argv)
 				goto err;
 			} else {
 				F_SET(sp, S_VLITONLY);
-				(void)ex_icmd(sp, NULL, p, strlen(p));
+				(void)ex_icmd(sp, NULL, p, strlen(p), 0);
 				F_CLR(sp, S_VLITONLY);
 				free(p);
 			}
@@ -302,12 +302,12 @@ main(argc, argv)
 				(void)snprintf(path,
 				    sizeof(path), "%s/%s", p, _PATH_EXRC);
 				if (exrc_isok(sp, &hsb, path, 0, 1) == OK)
-					(void)ex_cfile(sp, NULL, path);
+					(void)ex_cfile(sp, NULL, path, 0);
 				break;
 			case NOPERM:
 				break;
 			case OK:
-				(void)ex_cfile(sp, NULL, path);
+				(void)ex_cfile(sp, NULL, path, 0);
 				break;
 			}
 		}
@@ -319,14 +319,15 @@ main(argc, argv)
 				    &lsb, _PATH_EXRC, 0, 0) == OK &&
 				    (lsb.st_dev != hsb.st_dev ||
 				    lsb.st_ino != hsb.st_ino))
-					(void)ex_cfile(sp, NULL, _PATH_EXRC);
+					(void)ex_cfile(sp, NULL, _PATH_EXRC, 0);
 				break;
 			case NOPERM:
 				break;
 			case OK:
 				if (lsb.st_dev != hsb.st_dev ||
 				    lsb.st_ino != hsb.st_ino)
-					(void)ex_cfile(sp, NULL, _PATH_NEXRC);
+					(void)ex_cfile(sp,
+					    NULL, _PATH_NEXRC, 0);
 				break;
 			}
 	}
