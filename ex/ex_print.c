@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_print.c,v 10.14 1996/03/06 20:51:17 bostic Exp $ (Berkeley) $Date: 1996/03/06 20:51:17 $";
+static const char sccsid[] = "$Id: ex_print.c,v 10.15 1996/03/28 20:58:05 bostic Exp $ (Berkeley) $Date: 1996/03/28 20:58:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -291,26 +291,25 @@ ex_printf(sp, fmt, va_alist)
 	va_dcl
 #endif
 {
+	EX_PRIVATE *exp;
 	va_list ap;
 	size_t n;
+
+	exp = EXP(sp);
 
 #ifdef __STDC__
 	va_start(ap, fmt);
 #else
 	va_start(ap);
 #endif
-	/*
-	 * XXX
-	 * We discard any characters past the first sizeof(buf) / 2.
-	 */
-	n = vsnprintf(buf + off, sizeof(buf) / 2, fmt, ap);
+	exp->obp_len += n = vsnprintf(buf + exp->obp_len,
+	    sizeof(exp->obp) - exp->obp_len, fmt, ap);
 	va_end(ap);
 
-	off += n;
-	if (off > sizeof(buf) / 2) {
-		sp->gp->scr_msg(sp, M_NONE, buf, off);
-		off = 0;
-	}
+	/* Flush when reach a <newline> or half the buffer. */
+	if (exp->obp[exp->obp_len - 1] == '\n' ||
+	    exp->obp_len > sizeof(exp->obp) / 2)
+		(void)ex_fflush(sp);
 	return (n);
 }
 
@@ -325,15 +324,20 @@ ex_puts(sp, str)
 	SCR *sp;
 	const char *str;
 {
-	int n;
+	EX_PRIVATE *exp;
+	int doflush, n;
 
-	for (n = 0; *str != '\0'; ++n) {
-		if (off > sizeof(buf)) {
-			sp->gp->scr_msg(sp, M_NONE, buf, off);
-			off = 0;
-		}
-		buf[off++] = *str++;
+	exp = EXP(sp);
+
+	/* Flush when reach a <newline> or the end of the buffer. */
+	for (doflush = n = 0; *str != '\0'; ++n) {
+		if (exp->obp_len > sizeof(exp->obp))
+			(void)ex_fflush(sp);
+		if ((exp->obp[exp->obp_len++] = *str++) == '\n')
+			doflush = 1;
 	}
+	if (doflush)
+		(void)ex_fflush(sp);
 	return (n);
 }
 
@@ -347,9 +351,13 @@ int
 ex_fflush(sp)
 	SCR *sp;
 {
-	if (off != 0) {
-		sp->gp->scr_msg(sp, M_NONE, buf, off);
-		off = 0;
+	EX_PRIVATE *exp;
+
+	exp = EXP(sp);
+
+	if (exp->obp_len != 0) {
+		sp->gp->scr_msg(sp, M_NONE, exp->obp, exp->obp_len);
+		exp->obp_len = 0;
 	}
 	return (0);
 }
