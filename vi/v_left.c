@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_left.c,v 5.1 1992/05/15 11:15:04 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:15:04 $";
+static char sccsid[] = "$Id: v_left.c,v 5.2 1992/05/18 07:48:31 bostic Exp $ (Berkeley) $Date: 1992/05/18 07:48:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -43,6 +43,35 @@ v_left(vp, cp, rp)
 	else
 		rp->cno = 0;
 	return (0);
+}
+
+/*
+ * v_first -- ^, _
+ *	Move to the first non-blank column on this line.
+ */
+v_first(vp, cp, rp)
+	VICMDARG *vp;
+	MARK *cp, *rp;
+{
+	rp->lno = cp->lno;
+	return (v_nonblank(rp));
+}
+
+/*
+ * v_ncol -- [count]|
+ *	Move to column count, or the first non-blank column on this line.
+ */
+v_ncol(vp, cp, rp)
+	VICMDARG *vp;
+	MARK *cp, *rp;
+{
+	if (vp->flags & VC_C1SET) {
+		rp->lno = cp->lno;
+		cp->cno = vp->count;
+		return (0);
+	}
+	rp->lno = cp->lno;
+	return (v_nonblank(rp));
 }
 
 /*
