@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 8.35 1994/07/23 18:49:00 bostic Exp $ (Berkeley) $Date: 1994/07/23 18:49:00 $";
+static char sccsid[] = "$Id: ex_argv.c,v 8.36 1994/08/04 16:45:50 bostic Exp $ (Berkeley) $Date: 1994/08/04 16:45:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -59,7 +59,7 @@ argv_init(sp, ep, excp)
 
 /*
  * argv_exp0 --
- *	Put a string into an argv.
+ *	Append a string to the argument list.
  */
 int
 argv_exp0(sp, ep, excp, cmd, cmdlen)
@@ -84,7 +84,8 @@ argv_exp0(sp, ep, excp, cmd, cmdlen)
 
 /*
  * argv_exp1 --
- *	Do file name expansion on a string, and leave it in a string.
+ *	Do file name expansion on a string, and append it to the
+ *	argument list.
  */
 int
 argv_exp1(sp, ep, excp, cmd, cmdlen, is_bang)
@@ -118,22 +119,16 @@ argv_exp1(sp, ep, excp, cmd, cmdlen, is_bang)
 	} else
 		goto ret;
 
-	argv_alloc(sp, len);
-	memmove(exp->args[exp->argsoff]->bp, bp, len);
-	exp->args[exp->argsoff]->bp[len] = '\0';
-	exp->args[exp->argsoff]->len = len;
-	++exp->argsoff;
-	excp->argv = exp->args;
-	excp->argc = exp->argsoff;
-
+	(void)argv_exp0(sp, ep, excp, bp, len);
+		
 ret:	FREE_SPACE(sp, bp, blen);
 	return (0);
 }
 
 /*
  * argv_exp2 --
- *	Do file name and shell expansion on a string, and break
- *	it up into an argv.
+ *	Do file name and shell expansion on a string, and append it to
+ *	the argument list.
  */
 int
 argv_exp2(sp, ep, excp, cmd, cmdlen, is_bang)
@@ -218,7 +213,8 @@ err:	FREE_SPACE(sp, bp, blen);
 
 /*
  * argv_exp3 --
- *	Take a string and break it up into an argv.
+ *	Take a string and break it up into an argv, which is appended
+ *	to the argument list.
  */
 int
 argv_exp3(sp, ep, excp, cmd, cmdlen)
