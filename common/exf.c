@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.42 1993/02/16 20:16:15 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:16:15 $";
+static char sccsid[] = "$Id: exf.c,v 5.43 1993/02/22 13:17:38 bostic Exp $ (Berkeley) $Date: 1993/02/22 13:17:38 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -323,6 +323,10 @@ file_sync(ep, force)
 	FILE *fp;
 	MARK from, to;
 	int fd;
+
+	/* If not modified, we're done. */
+	if (!FF_ISSET(ep, F_MODIFIED))
+		return (0);
 
 	/* Can't write the temporary file. */
 	if (FF_ISSET(ep, F_NONAME)) {
