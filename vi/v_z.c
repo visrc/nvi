@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_z.c,v 8.15 1994/07/17 12:26:29 bostic Exp $ (Berkeley) $Date: 1994/07/17 12:26:29 $";
+static char sccsid[] = "$Id: v_z.c,v 8.16 1994/07/17 13:17:37 bostic Exp $ (Berkeley) $Date: 1994/07/17 13:17:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -81,34 +81,41 @@ v_z(sp, ep, vp)
 	case '+':
 		/*
 		 * If the user specified a line number, put that line at the
-		 * top.  Otherwise, scroll forward a screen from the current
-		 * screen.
+		 * top and move the cursor to it.  Otherwise, scroll forward
+		 * a screen from the current screen.
 		 */
 		if (F_ISSET(vp, VC_C1SET)) {
 			if (sp->s_fill(sp, ep, lno, P_TOP))
 				return (1);
 			if (sp->s_position(sp, ep, &vp->m_final, 0, P_TOP))
 				return (1);
-		} else {
-			if (sp->s_position(sp, ep, &vp->m_final, 0, P_TOP))
-				return (1);
+		} else
 			if (sp->s_scroll(sp, ep,
 			    &vp->m_final, sp->t_rows, Z_PLUS))
 				return (1);
-		}
 		break;
 	case '^':
 		/*
 		 * If the user specified a line number, put that line at the
-		 * bottom.  Then, display the screen before that one.  Else,
-		 * display the screen before the current one.
+		 * bottom, move the cursor to it, and then display the screen
+		 * before that one.  Otherwise, scroll backward a screen from
+		 * the current screen.
+		 *
+		 * !!!
+		 * Note, we match the off-by-one characteristics of historic
+		 * vi, here.
 		 */
 		if (F_ISSET(vp, VC_C1SET)) {
 			if (sp->s_fill(sp, ep, lno, P_BOTTOM))
 				return (1);
-		}
-		if (sp->s_scroll(sp, ep, &vp->m_final, sp->t_rows, Z_CARAT))
-			return (1);
+			if (sp->s_position(sp, ep, &vp->m_final, 0, P_TOP))
+				return (1);
+			if (sp->s_fill(sp, ep, vp->m_final.lno, P_BOTTOM))
+				return (1);
+		} else
+			if (sp->s_scroll(sp, ep,
+			    &vp->m_final, sp->t_rows, Z_CARAT))
+				return (1);
 		break;
 	default:		/* Put the line at the top for <cr>. */
 		value = KEY_VAL(sp, vp->character);
