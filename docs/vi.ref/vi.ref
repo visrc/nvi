@@ -1,9 +1,11 @@
 .\" Copyright (c) 1994
 .\"     The Regents of the University of California.  All rights reserved.
+.\" Copyright (c) 1994, 1995
+.\"	Keith Bostic.  All rights reserved.
 .\"
-.\" %sccs.include.redist.roff%
+.\" %sccs.include.redist.nvi.roff%
 .\"
-.\"     $Id: vi.ref,v 8.57 1995/01/11 09:41:38 bostic Exp $ (Berkeley) $Date: 1995/01/11 09:41:38 $
+.\"     $Id: vi.ref,v 8.58 1995/01/11 16:04:56 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:04:56 $
 .\"
 .\"
 .so ref.so
