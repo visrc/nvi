@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_util.c,v 5.15 1993/02/17 11:30:05 bostic Exp $ (Berkeley) $Date: 1993/02/17 11:30:05 $";
+static char sccsid[] = "$Id: v_util.c,v 5.16 1993/02/18 14:15:22 bostic Exp $ (Berkeley) $Date: 1993/02/18 14:15:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -102,12 +102,15 @@ v_msgflush(ep)
 	size_t oldy, oldx;
 	register int ch, cnt;
 
+	/* Ring the bell. */
 	if (FF_ISSET(ep, F_BELLSCHED))
 		bell(ep);
 
+	/* May not be any messages. */
 	if (msgcnt == 0)
 		return (0);
 
+	/* Display the messages. */
 	getyx(stdscr, oldy, oldx);
 	MOVE(ep, SCREENSIZE(ep), 0);
 	clrtoeol();
@@ -115,6 +118,13 @@ v_msgflush(ep)
 		standout();
 		addstr(msglist[cnt]);
 		free(msglist[cnt]);
+
+		/*
+		 * XXX
+		 * This may be wrong -- should figure out how much of the
+		 * message can be displayed here, not in the msg() routine,
+		 * and then display it on multiple lines, as necessary.
+		 */
 		if (++cnt < msgcnt)
 			addstr(" [More ...]");
 		standend();
@@ -130,6 +140,10 @@ v_msgflush(ep)
 	}
 	MOVE(ep, oldy, oldx);
 	refresh();
+
+	/* Leave the message alone until after the next keystroke. */
+	FF_SET(ep, F_NEEDMERASE);
+
 	msgcnt = 0;
 	return (0);
 }
