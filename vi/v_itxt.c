@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 8.22 1994/01/09 14:21:13 bostic Exp $ (Berkeley) $Date: 1994/01/09 14:21:13 $";
+static char sccsid[] = "$Id: v_itxt.c,v 8.23 1994/01/09 23:24:44 bostic Exp $ (Berkeley) $Date: 1994/01/09 23:24:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -191,7 +191,7 @@ v_iI(sp, ep, vp, fm, tm, rp)
 	size_t len;
 	u_int flags;
 	int first;
-	char *p, *t;
+	char *p;
 
 	SET_TXT_STD(sp, 0);
 	if (F_ISSET(vp,  VC_ISDOT))
