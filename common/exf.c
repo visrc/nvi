@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 9.22 1995/01/31 09:44:05 bostic Exp $ (Berkeley) $Date: 1995/01/31 09:44:05 $";
+static char sccsid[] = "$Id: exf.c,v 9.23 1995/01/31 17:48:49 bostic Exp $ (Berkeley) $Date: 1995/01/31 17:48:49 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -494,6 +494,12 @@ file_cinit(sp)
 		sp->cno = 0;
 		(void)nonblank(sp, sp->lno, &sp->cno);
 	}
+
+	/*
+	 * !!!
+	 * The initial column is also the most attractive column.
+	 */
+	sp->rcm = sp->cno;
 
 	/*
 	 * !!!
