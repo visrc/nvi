@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.74 1994/08/17 14:28:21 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:28:21 $";
+static char sccsid[] = "$Id: recover.c,v 8.75 1994/08/17 15:24:52 bostic Exp $ (Berkeley) $Date: 1994/08/17 15:24:52 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -256,13 +256,17 @@ rcv_sync(sp, ep, flags)
 	if (ep == NULL || !F_ISSET(ep, F_RCV_ON))
 		return (0);
 
+	/* Called by :preserve code, block signal entrance. */
+	SIGBLOCK(sp->gp);
+
 	/* Sync the file if it's been modified. */
 	if (F_ISSET(ep, F_MODIFIED)) {
 		if (ep->db->sync(ep->db, R_RECNOSYNC)) {
 			F_CLR(ep, F_RCV_ON | F_RCV_NORM);
 			msgq(sp, M_SYSERR,
 			    "File backup failed: %s", ep->rcv_path);
-			return (1);
+			rval = 1;
+			goto ret;
 		}
 
 		/* REQUEST: don't remove backing file on exit. */
@@ -307,6 +311,9 @@ e1:			if (fd != -1)
 	/* REQUEST: end the file session. */
 	if (LF_ISSET(RCV_ENDSESSION) && file_end(sp, ep, 1))
 		rval = 1;
+
+	/* Called by :preserve code, unblock signals. */
+ret:	SIGUNBLOCK(sp->gp);
 
 	return (rval);
 }
