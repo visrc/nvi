@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.17 1993/09/10 15:09:34 bostic Exp $ (Berkeley) $Date: 1993/09/10 15:09:34 $";
+static char sccsid[] = "$Id: recover.c,v 8.18 1993/09/16 09:08:20 bostic Exp $ (Berkeley) $Date: 1993/09/16 09:08:20 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -327,9 +327,13 @@ rcv_hup(signo)
 	char comm[4096];
 
 	/*
-	 * Walk the list of screens, sync'ing the files; only sync
-	 * each file once.  Send email to the user for each file
-	 * saved.
+	 * Walk the list of screens, sync'ing the files; only sync each file
+	 * once.  Send email to the user for each file saved.
+	 *
+	 * !!!
+	 * If you need to port this to a system that doesn't have sendmail,
+	 * the -t flag being used causes sendmail to read the message for
+	 * the recipients instead of specifying them on the command line.
 	 */
 	for (sp = __global_list->scrhdr.next;
 	    sp != (SCR *)&__global_list->scrhdr; sp = sp->next) {
