@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.15 1992/05/15 11:06:32 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:06:32 $";
+static char sccsid[] = "$Id: options.c,v 5.16 1992/05/21 12:56:42 bostic Exp $ (Berkeley) $Date: 1992/05/21 12:56:42 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -390,14 +390,6 @@ found:		if (op == NULL || off && !ISFSETP(op, OPT_0BOOL|OPT_1BOOL)) {
 	}
 
 	/* Special processing. */
-
-	/*
-	 * If "readonly" then set the READONLY flag for this file.
-	 * XXX
-	 * Should set for all files?
-	 */
-	if (ISSET(O_READONLY))
-		curf->flags |= F_RDONLY;
 
 	/*
 	 * Copy O_LINES and O_COLUMNS into LINES and COLS.
