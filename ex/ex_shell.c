@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 10.29 1996/02/22 19:55:31 bostic Exp $ (Berkeley) $Date: 1996/02/22 19:55:31 $";
+static char sccsid[] = "$Id: ex_shell.c,v 10.30 1996/02/25 16:35:37 bostic Exp $ (Berkeley) $Date: 1996/02/25 16:35:37 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -88,7 +88,6 @@ ex_exec_proc(sp, cmdp, cmd, msg, need_newline)
 	if (opts_empty(sp, O_SHELL, 0))
 		return (1);
 
-	/*
 	/* Enter ex mode. */
 	if (F_ISSET(sp, S_VI)) {
 		if (sp->gp->scr_screen(sp, S_EX)) {
