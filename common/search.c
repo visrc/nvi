@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.52 1994/10/09 15:21:02 bostic Exp $ (Berkeley) $Date: 1994/10/09 15:21:02 $";
+static char sccsid[] = "$Id: search.c,v 8.53 1994/11/02 10:39:21 bostic Exp $ (Berkeley) $Date: 1994/11/02 10:39:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -130,8 +130,8 @@ prev:		if (!F_ISSET(sp, S_SRE_SET)) {
 		for (; *p != '\0'; ++p) {
 			if (isblank(p[0]))
 				continue;
-			if (isdigit(p[0] ||
-			    p[0] == '+' || p[0] == '-' || p[0] == '^'))
+			if (isdigit(p[0]) ||
+			    p[0] == '+' || p[0] == '-' || p[0] == '^')
 				*flagp |= SEARCH_DELTA;
 			break;
 		}
