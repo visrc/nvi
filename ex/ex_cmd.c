@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 8.40 1994/03/13 15:43:26 bostic Exp $ (Berkeley) $Date: 1994/03/13 15:43:26 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 8.41 1994/03/14 10:41:08 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:41:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,7 +34,7 @@ static char sccsid[] = "$Id: ex_cmd.c,v 8.40 1994/03/13 15:43:26 bostic Exp $ (B
  * e.g. "r" means "read", not "rewind", because "read" is listed before
  * "rewind".
  *
- * The syntax of the ex commands is unbelievably irregular, and a special 
+ * The syntax of the ex commands is unbelievably irregular, and a special
  * case from beginning to end.  Each command has an associated "syntax
  * script" which describes the "arguments" that are possible.  The script
  * syntax is as follows:
@@ -110,7 +110,7 @@ EXCMDLIST const cmds[] = {
 	    "specify an input abbreviation"},
 /* C_ARGS */
 	{"args",	ex_args,	E_NOGLOBAL|E_NORC,
-	    "",	
+	    "",
 	    "ar[gs]",
 	    "display file argument list"},
 /* C_BG */
@@ -145,12 +145,12 @@ EXCMDLIST const cmds[] = {
 	    "delete lines from the file"},
 /* C_DISPLAY */
 	{"display",	ex_display,	E_NOGLOBAL|E_NORC,
-	    "w1r",	
+	    "w1r",
 	    "display b[uffers] | s[creens] | t[ags]",
 	    "display buffers, screens or tags"},
 /* C_DIGRAPH */
 	{"digraph",	ex_digraph,	E_NOGLOBAL|E_NOPERM|E_NORC,
-	    "",	
+	    "",
 	    "digraph",
 	    "specify digraphs (not implemented)"},
 /* C_EDIT */
@@ -250,7 +250,7 @@ EXCMDLIST const cmds[] = {
 	    "display lines"},
 /* C_PRESERVE */
 	{"preserve",	ex_preserve,	E_NOGLOBAL|E_NORC,
-	    "",	
+	    "",
 	    "pre[serve]",
 	    "preserve an edit session for recovery"},
 /* C_PREVIOUS */
@@ -300,12 +300,12 @@ EXCMDLIST const cmds[] = {
 	    "set options (use \":set all\" to see all options)"},
 /* C_SHELL */
 	{"shell",	ex_shell,	E_NOGLOBAL|E_NORC,
-	    "", 
+	    "",
 	    "sh[ell]",
 	    "suspend editing and run a shell"},
 /* C_SOURCE */
 	{"source",	ex_source,	E_NOGLOBAL,
-	    "f1r", 
+	    "f1r",
 	    "so[urce] file",
 	    "read a file of ex commands"},
 /* C_SPLIT */
@@ -325,57 +325,57 @@ EXCMDLIST const cmds[] = {
 	    "suspend the edit session"},
 /* C_T */
 	{"t",		ex_copy,	E_ADDR2|E_AUTOPRINT|E_NORC,
-	    "l1", 
+	    "l1",
 	    "[line [,line]] t line [flags]",
 	    "move lines elsewhere in the file"},
 /* C_TAG */
 	{"tag",		ex_tagpush,	E_NOGLOBAL,
-	    "!w1o", 
+	    "!w1o",
 	    "ta[g][!] [string]",
 	    "edit the file containing the tag"},
 /* C_TAGPOP */
 	{"tagpop",	ex_tagpop,	E_NOGLOBAL|E_NORC,
-	    "!w1o", 
+	    "!w1o",
 	    "tagp[op][!] [number | file]",
 	    "return to a previous tag"},
 /* C_TAGTOP */
 	{"tagtop",	ex_tagtop,	E_NOGLOBAL|E_NORC,
-	    "!", 
+	    "!",
 	    "tagt[op][!]",
 	    "return to the first tag"},
 /* C_UNDOL */
 	{"Undo",	ex_undol,	E_AUTOPRINT|E_NOGLOBAL|E_NORC,
-	    "", 
+	    "",
 	    "U[ndo]",
 	    "undo all the changes to this line"},
 /* C_UNDO */
 	{"undo",	ex_undo,	E_AUTOPRINT|E_NOGLOBAL|E_NORC,
-	    "", 
+	    "",
 	    "u[ndo]",
 	    "undo the most recent change"},
 /* C_UNABBREVIATE */
 	{"unabbreviate",ex_unabbr,	E_NOGLOBAL,
-	    "w1r", 
+	    "w1r",
 	    "una[bbrev] word",
 	    "delete an abbreviation"},
 /* C_UNMAP */
 	{"unmap",	ex_unmap,	E_NOGLOBAL,
-	    "!w1r", 
+	    "!w1r",
 	    "unm[ap][!] word",
 	    "delete an input or command map"},
 /* C_VGLOBAL */
 	{"vglobal",	ex_vglobal,	E_ADDR2_ALL|E_NOGLOBAL|E_NORC,
-	    "s", 
+	    "s",
 	    "[line [,line]] v[global] [;/]RE[;/] [commands]",
 	    "execute a global command on lines NOT matching an RE"},
 /* C_VERSION */
 	{"version",	ex_version,	E_NOGLOBAL|E_NORC,
-	    "", 
+	    "",
 	    "version",
 	    "display the program version information"},
 /* C_VISUAL_EX */
 	{"visual",	ex_visual,	E_ADDR1|E_NOGLOBAL|E_NORC|E_ZERODEF,
-	    "2c11", 
+	    "2c11",
 	    "[line] vi[sual] [-|.|+|^] [window_size] [flags]",
 	    "enter visual (vi) mode from ex mode"},
 /* C_VISUAL_VI */
