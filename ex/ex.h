@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.61 1994/05/02 18:31:53 bostic Exp $ (Berkeley) $Date: 1994/05/02 18:31:53 $
+ *	$Id: ex.h,v 8.62 1994/05/09 10:33:24 bostic Exp $ (Berkeley) $Date: 1994/05/09 10:33:24 $
  */
 
 /* Ex command structure. */
@@ -98,7 +98,6 @@ typedef struct _ex_private {
 
 	CHAR_T	*lastbcomm;		/* Last bang command. */
 
-	struct sigaction leave_act;	/* ex_[sr]leave signal state. */
 	struct termios leave_term;	/* ex_[sr]leave tty state. */
 	/* XXX: Should be struct timespec's, but time_t is more portable. */
 	time_t leave_atime;		/* ex_[sr]leave old access time. */

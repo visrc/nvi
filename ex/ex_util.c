@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_util.c,v 8.8 1994/04/26 16:18:35 bostic Exp $ (Berkeley) $Date: 1994/04/26 16:18:35 $";
+static char sccsid[] = "$Id: ex_util.c,v 8.9 1994/05/09 10:33:23 bostic Exp $ (Berkeley) $Date: 1994/05/09 10:33:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -81,7 +81,6 @@ int
 ex_sleave(sp)
 	SCR *sp;
 {
-	struct sigaction act;
 	struct stat sb;
 	EX_PRIVATE *exp;
 
@@ -89,21 +88,7 @@ ex_sleave(sp)
 	if (!F_ISSET(sp->gp, G_STDIN_TTY))
 		return (1);
 	
-	/*
-	 * The old terminal values almost certainly turn on VINTR, VQUIT and
-	 * VSUSP.  We don't want to interrupt the parent(s), so we ignore
-	 * VINTR.  VQUIT is ignored by main() because nvi never wants to catch
-	 * it.  A VSUSP handler have been installed by the screen code.
-	 */
-	act.sa_handler = SIG_IGN;
-	sigemptyset(&act.sa_mask);
-	act.sa_flags = 0;
-
 	exp = EXP(sp);
-	if (sigaction(SIGINT, &act, &exp->leave_act)) {
-		msgq(sp, M_SYSERR, "sigaction");
-		return (1);
-	}
 	if (tcgetattr(STDIN_FILENO, &exp->leave_term)) {
 		msgq(sp, M_SYSERR, "tcgetattr");
 		goto err;
@@ -111,12 +96,7 @@ ex_sleave(sp)
 	if (tcsetattr(STDIN_FILENO,
 	    TCSANOW | TCSASOFT, &sp->gp->original_termios)) {
 		msgq(sp, M_SYSERR, "tcsetattr");
-		/*
-		 * If an error occurs, back out the changes and run
-		 * without interrupts.
-		 */
-err:		(void)sigaction(SIGINT, &exp->leave_act, NULL);
-		return (1);
+err:		return (1);
 	}
 	/*
 	 * The process may write to the terminal.  Save the access time
@@ -148,13 +128,9 @@ ex_rleave(sp)
 
 	exp = EXP(sp);
 
-	/* Turn off interrupts. */
+	/* Restore the terminal modes. */
 	if (tcsetattr(STDIN_FILENO, TCSANOW | TCSASOFT, &exp->leave_term))
 		msgq(sp, M_SYSERR, "tcsetattr");
-
-	/* Reset the signal state. */
-	if (sigaction(SIGINT, &exp->leave_act, NULL))
-		msgq(sp, M_SYSERR, "sigaction");
 
 	/* If the terminal was used, refresh the screen. */
 	if (fstat(STDIN_FILENO, &sb) || exp->leave_atime == 0 ||
