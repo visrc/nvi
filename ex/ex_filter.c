@@ -8,19 +8,17 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 10.23 1995/11/17 12:24:29 bostic Exp $ (Berkeley) $Date: 1995/11/17 12:24:29 $";
+static char sccsid[] = "$Id: ex_filter.c,v 10.24 1995/11/27 11:27:38 bostic Exp $ (Berkeley) $Date: 1995/11/27 11:27:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 #include <sys/queue.h>
 #include <sys/time.h>
-#include <sys/wait.h>
 
 #include <bitstring.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -270,83 +268,6 @@ err:		if (input[0] != -1)
 	 */
 uwait:	return (proc_wait(sp, (long)utility_pid, cmd,
 	    ftype == FILTER_READ && F_ISSET(sp, S_VI) ? 1 : 0, 0) || rval);
-}
-
-/*
- * proc_wait --
- *	Wait for one of the processes.
- *
- * !!!
- * The pid_t type varies in size from a short to a long depending on the
- * system.  It has to be cast into something or the standard promotion
- * rules get you.  I'm using a long based on the belief that nobody is
- * going to make it unsigned and it's unlikely to be a quad.
- *
- * PUBLIC: int proc_wait __P((SCR *, long, const char *, int, int));
- */
-int
-proc_wait(sp, pid, cmd, silent, okpipe)
-	SCR *sp;
-	long pid;
-	const char *cmd;
-	int silent, okpipe;
-{
-	extern const char *const sys_siglist[];
-	size_t len;
-	int nf, pstat;
-	char *p;
-
-	/* Wait for the utility, ignoring interruptions. */
-	for (;;) {
-		errno = 0;
-		if (waitpid((pid_t)pid, &pstat, 0) != -1)
-			break;
-		if (errno != EINTR) {
-			msgq(sp, M_SYSERR, "waitpid");
-			return (1);
-		}
-	}
-
-	/*
-	 * Display the utility's exit status.  Ignore SIGPIPE from the
-	 * parent-writer, as that only means that the utility chose to
-	 * exit before reading all of its input.
-	 */
-	if (WIFSIGNALED(pstat) && (!okpipe || WTERMSIG(pstat) != SIGPIPE)) {
-		for (; isblank(*cmd); ++cmd);
-		p = msg_print(sp, cmd, &nf);
-		len = strlen(p);
-		msgq(sp, M_ERR, "%.*s%s: received signal: %s%s",
-		    MIN(len, 20), p, len > 20 ? " ..." : "",
-		    sys_siglist[WTERMSIG(pstat)],
-		    WCOREDUMP(pstat) ? "; core dumped" : "");
-		if (nf)
-			FREE_SPACE(sp, p, 0);
-		return (1);
-	}
-
-	if (WIFEXITED(pstat) && WEXITSTATUS(pstat)) {
-		/*
-		 * Remain silent for "normal" errors when doing shell file
-		 * name expansions, they almost certainly indicate nothing
-		 * more than a failure to match.
-		 *
-		 * Remain silent for vi read filter errors.  It's historic
-		 * practice.
-		 */
-		if (!silent) {
-			for (; isblank(*cmd); ++cmd);
-			p = msg_print(sp, cmd, &nf);
-			len = strlen(p);
-			msgq(sp, M_ERR, "%.*s%s: exited with status %d",
-			    MIN(len, 20), p, len > 20 ? " ..." : "",
-			    WEXITSTATUS(pstat));
-			if (nf)
-				FREE_SPACE(sp, p, 0);
-		}
-		return (1);
-	}
-	return (0);
 }
 
 /*
