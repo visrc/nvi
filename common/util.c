@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.28 1993/11/27 15:53:19 bostic Exp $ (Berkeley) $Date: 1993/11/27 15:53:19 $";
+static char sccsid[] = "$Id: util.c,v 8.29 1993/12/02 10:37:51 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:37:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -68,9 +68,12 @@ msgq(sp, mt, fmt, va_alist)
 		if (sp != NULL && !O_ISSET(sp, O_VERBOSE))
 			return;
 		mt = M_INFO;
+		/* FALLTHROUGH */
+	case M_INFO:
+		if (F_ISSET(sp, S_EXSILENT))
+			return;
 		break;
 	case M_ERR:
-	case M_INFO:
 	case M_SYSERR:
 		break;
 	default:
@@ -197,6 +200,9 @@ msg_rpt(sp, is_message)
 	const char *const *ap;
 	char *bp, *p, number[40];
 
+	if (F_ISSET(sp, S_EXSILENT))
+		return (0);
+
 	if ((rval = O_VAL(sp, O_REPORT)) == 0)
 		goto norpt;
 
@@ -261,9 +267,9 @@ binc(sp, argp, bsizep, min)
 
 	/* For non-ANSI C realloc implementations. */
 	if (bpp == NULL)
-		bpp = malloc(csize);
+		bpp = malloc(csize * sizeof(CHAR_T));
 	else
-		bpp = realloc(bpp, csize);
+		bpp = realloc(bpp, csize * sizeof(CHAR_T));
 	if (bpp == NULL) {
 		msgq(sp, M_SYSERR, NULL);
 		*bsizep = 0;
@@ -344,7 +350,8 @@ set_window_size(sp, set_row, ign_env)
 	struct winsize win;
 	size_t col, row;
 	int user_set;
-	char *argv[2], *s, buf[2048];
+	ARGS *argv[2], a;
+	char *s, buf[2048];
 
 	/*
 	 * Get the screen rows and columns.  If the values are wrong, it's
@@ -396,7 +403,8 @@ set_window_size(sp, set_row, ign_env)
 	if (set_row)
 		row = set_row;
 
-	argv[0] = buf;
+	a.bp = buf;
+	argv[0] = &a;
 	argv[1] = NULL;
 
 	/*
@@ -510,4 +518,24 @@ baud_from_bval(sp)
 		msgq(sp, M_ERR, "Unknown terminal baud rate %u.\n", v);
 		return (9600);
 	}
+}
+
+/*
+ * v_strdup --
+ *	Strdup for wide character strings with an associated length.
+ */
+CHAR_T *
+v_strdup(sp, str, len)
+	SCR *sp;
+	CHAR_T *str;
+	size_t len;
+{
+	CHAR_T *copy;
+
+	if ((copy = malloc(len)) == NULL) {
+		msgq(sp, M_SYSERR, NULL);
+		return (NULL);
+	}
+	memmove(copy, str, len * sizeof(CHAR_T));
+	return (copy);
 }
