@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_usage.c,v 8.13 1994/03/13 16:10:24 bostic Exp $ (Berkeley) $Date: 1994/03/13 16:10:24 $";
+static char sccsid[] = "$Id: ex_usage.c,v 8.14 1994/03/14 10:40:15 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:40:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -63,7 +63,7 @@ ex_usage(sp, ep, cmdp)
 	ARGS *ap;
 	EXCMDLIST const *cp;
 	char *name;
-	
+
 	switch (cmdp->argc) {
 	case 1:
 		ap = cmdp->argv[0];

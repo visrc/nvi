@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: options.h,v 8.14 1993/12/20 16:52:07 bostic Exp $ (Berkeley) $Date: 1993/12/20 16:52:07 $
+ *	$Id: options.h,v 8.15 1994/03/14 10:35:28 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:35:28 $
  */
 
 struct _option {
@@ -24,7 +24,7 @@ struct _optlist {
 	char	*name;			/* Name. */
 					/* Change function. */
 	int	(*func) __P((SCR *, OPTION *, char *, u_long));
-					/* Type of object. */	
+					/* Type of object. */
 	enum { OPT_0BOOL, OPT_1BOOL, OPT_NUM, OPT_STR } type;
 
 #define	OPT_NEVER	0x01		/* Never display the option. */

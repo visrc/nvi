@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_script.c,v 8.11 1994/03/08 19:39:39 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:39:39 $";
+static char sccsid[] = "$Id: ex_script.c,v 8.12 1994/03/14 10:38:19 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:38:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -456,7 +456,7 @@ ret:	FREE_SPACE(sp, bp, blen);
  * sscr_setprompt --
  *
  * Set the prompt to the last line we got from the shell.
- * 
+ *
  */
 static int
 sscr_setprompt(sp, buf, len)
@@ -536,7 +536,7 @@ sscr_end(sp)
 
 	/* Turn off the script flag. */
 	F_CLR(sp, S_SCRIPT);
-	
+
 	/* Close down the parent's file descriptors. */
 	if (sc->sh_master != -1)
 	    (void)close(sc->sh_master);

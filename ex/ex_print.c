@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 8.7 1994/03/08 19:39:34 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:39:34 $";
+static char sccsid[] = "$Id: ex_print.c,v 8.8 1994/03/14 10:37:46 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:37:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -108,7 +108,7 @@ ex_print(sp, ep, fp, tp, flags)
 			col = ex_printf(EXCOOKIE, "%7ld ", from);
 		else
 			col = 0;
-	
+
 		/*
 		 * Display the line.  The format for E_F_PRINT isn't very good,
 		 * especially in handling end-of-line tabs, but they're almost

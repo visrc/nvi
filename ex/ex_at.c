@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_at.c,v 8.17 1994/03/08 19:39:11 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:39:11 $";
+static char sccsid[] = "$Id: ex_at.c,v 8.18 1994/03/14 10:36:32 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:36:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -67,7 +67,7 @@ ex_at(sp, ep, cmdp)
 	/* Save for reuse. */
 	exp->at_lbuf = name;
 	exp->at_lbuf_set = 1;
-		
+
 	/*
 	 * If the buffer was cut in line mode or had portions of more
 	 * than one line, <newlines> are appended to each line as it

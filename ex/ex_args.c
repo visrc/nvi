@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 8.15 1994/03/08 19:39:08 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:39:08 $";
+static char sccsid[] = "$Id: ex_args.c,v 8.16 1994/03/14 10:36:18 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:36:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -61,7 +61,7 @@ ex_next(sp, ep, cmdp)
 		for (argv = cmdp->argv; argv[0]->len != 0; ++argv)
 			if (file_add(sp, NULL, argv[0]->bp, 0) == NULL)
 				return (1);
-		
+
 		if ((frp = file_first(sp)) == NULL)
 			return (1);
 	} else if ((frp = file_next(sp, sp->a_frp)) == NULL) {

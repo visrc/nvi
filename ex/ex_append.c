@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 8.8 1994/03/11 10:44:08 bostic Exp $ (Berkeley) $Date: 1994/03/11 10:44:08 $";
+static char sccsid[] = "$Id: ex_append.c,v 8.9 1994/03/14 10:36:03 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:36:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -109,7 +109,7 @@ aci(sp, ep, cmdp, cmd)
 	LF_INIT(TXT_CR | TXT_NLECHO);
 	if (O_ISSET(sp, O_BEAUTIFY))
 		LF_SET(TXT_BEAUTIFY);
-		
+
 	if (cmd == CHANGE)
 		for (;; ++m.lno) {
 			if (m.lno > cmdp->addr2.lno) {

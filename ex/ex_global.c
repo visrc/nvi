@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 8.30 1994/03/08 19:39:22 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:39:22 $";
+static char sccsid[] = "$Id: ex_global.c,v 8.31 1994/03/14 10:37:08 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:37:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -185,7 +185,7 @@ global(sp, ep, cmdp, cmd)
 	 * What we do is create linked list of lines that are tracked through
 	 * each ex command.  There's a callback routine which the DB interface
 	 * routines call when a line is created or deleted.  This doesn't help
-	 * the layering much. 
+	 * the layering much.
 	 */
 	exp = EXP(sp);
 	for (rval = 0, lno = cmdp->addr1.lno,

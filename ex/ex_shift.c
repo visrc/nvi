@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shift.c,v 8.13 1994/03/08 19:39:42 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:39:42 $";
+static char sccsid[] = "$Id: ex_shift.c,v 8.14 1994/03/14 10:38:35 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:38:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -39,7 +39,7 @@ ex_shiftl(sp, ep, cmdp)
 {
 	return (shift(sp, ep, cmdp, LEFT));
 }
-	
+
 int
 ex_shiftr(sp, ep, cmdp)
 	SCR *sp;

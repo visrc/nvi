@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_join.c,v 8.9 1994/03/08 19:39:25 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:39:25 $";
+static char sccsid[] = "$Id: ex_join.c,v 8.10 1994/03/14 10:37:25 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:37:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -121,7 +121,7 @@ ex_join(sp, ep, cmdp)
 				for (; len && isblank(*p); --len, ++p);
 			}
 		}
-			
+
 		if (len != 0) {
 			memmove(tbp, p, len);
 			tbp += len;
@@ -161,7 +161,7 @@ ex_join(sp, ep, cmdp)
         for (from = cmdp->addr1.lno, to = cmdp->addr2.lno; to > from; --to)
 		if (file_dline(sp, ep, to))
 			goto err;
-		
+
 	/* Reset the original line. */
 	if (file_sline(sp, ep, from, bp, tbp - bp)) {
 err:		FREE_SPACE(sp, bp, blen);

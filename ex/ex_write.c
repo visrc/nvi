@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 8.22 1994/03/08 19:39:56 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:39:56 $";
+static char sccsid[] = "$Id: ex_write.c,v 8.23 1994/03/14 10:40:42 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:40:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -170,7 +170,7 @@ exwr(sp, ep, cmdp, cmd)
 	switch (cmdp->argc) {
 	case 1:
 		/*
-		 * Nothing to expand, write the current file. 
+		 * Nothing to expand, write the current file.
 		 * XXX
 		 * Should never happen, already checked this case.
 		 */

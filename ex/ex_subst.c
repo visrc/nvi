@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.37 1994/03/08 19:39:46 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:39:46 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.38 1994/03/14 10:38:58 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:38:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -283,7 +283,7 @@ ex_subtilde(sp, ep, cmdp)
 	return (substitute(sp, ep, cmdp, cmdp->argv[0]->bp, &sp->sre, 0));
 }
 
-/* 
+/*
  * The nasty part of the substitution is what happens when the replacement
  * string contains newlines.  It's a bit tricky -- consider the information
  * that has to be retained for "s/f\(o\)o/^M\1^M\1/".  The solution here is
@@ -606,7 +606,7 @@ nextmatch:	sp->match[0].rm_so = 0;
 				/* If interruptible, pass the info back. */
 				if (F_ISSET(sp, S_INTERRUPTIBLE))
 					F_SET(sp, S_INTERRUPTED);
-				
+
 				/*
 				 * If any changes, resolve them, otherwise
 				 * return to the main loop.
@@ -824,7 +824,7 @@ regsub(sp, ip, lbp, lbclenp, lblenp)
 	 * There are some special sequences that vi provides in the
 	 * replacement patterns.
 	 *	 & string the RE matched (\& if nomagic set)
-	 *	\# n-th regular subexpression	
+	 *	\# n-th regular subexpression
 	 *	\E end \U, \L conversion
 	 *	\e end \U, \L conversion
 	 *	\l convert the next character to lower-case

@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 8.35 1994/03/08 19:38:22 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:38:22 $
+ *	$Id: common.h,v 8.36 1994/03/14 10:35:02 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:35:02 $
  */
 
 /*
@@ -43,7 +43,7 @@ typedef struct _text		TEXT;
  *
  * If no integral type can hold a character, don't even try the port.
  */
-typedef	u_char		CHAR_T;	
+typedef	u_char		CHAR_T;
 typedef	u_int		ARG_CHAR_T;
 #define	MAX_CHAR_T	0xff
 
@@ -63,7 +63,7 @@ typedef	u_int		ARG_CHAR_T;
 #include "gs.h"			/* Required by screen.h. */
 #include "screen.h"		/* Required by exf.h. */
 #include "mark.h"		/* Required by exf.h. */
-#include "exf.h"		
+#include "exf.h"
 #include "log.h"
 #include "mem.h"
 
