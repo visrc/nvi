@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_options.c,v 8.8 1996/12/14 14:04:39 bostic Exp $ (Berkeley) $Date: 1996/12/14 14:04:39 $";
+static const char sccsid[] = "$Id: m_options.c,v 8.9 1996/12/16 09:42:54 bostic Exp $ (Berkeley) $Date: 1996/12/16 09:42:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,32 +36,7 @@ static const char sccsid[] = "$Id: m_options.c,v 8.8 1996/12/14 14:04:39 bostic 
 #include "m_motif.h"
 #include "m_extern.h"
 
-/*
- * Types
- */
-typedef enum {
-	optToggle,
-	optInteger,
-	optString,
-	optFile,
-	optTerminator
-} optKind;
-
-typedef struct {
-	optKind	kind;
-	String	name;
-	void	*value;
-} optData;
-
-typedef	struct {
-	String	name;
-	Widget	holder;
-	optData	*toggles;
-	optData	*ints;
-	optData	*others;
-} optSheet;
-
-static void set_opt __P((Widget, optData *));
+static void set_opt __P((Widget, XtPointer, XtPointer));
 
 
 /* constants */
@@ -81,181 +56,100 @@ static void set_opt __P((Widget, optData *));
  * global data
  */
 
-static	Widget	preferences = NULL;
+static Widget	preferences = NULL;
 
-static	optData	Search_toggles[] = {
+static optData	toggles[] = {
+	{ optToggle,	"altwerase",	},
+	{ optToggle,	"autoindent",	},
+	{ optToggle,	"autoprint",	},
+	{ optToggle,	"autowrite",	},
+	{ optToggle,	"beautify",	},
+	{ optToggle,	"comment",	},
 	{ optToggle,	"edcompatible",	},
+	{ optToggle,	"errorbells",	},
+	{ optToggle,	"exrc",		},
 	{ optToggle,	"extended",	},
+	{ optToggle,	"flash",	},
 	{ optToggle,	"iclower",	},
 	{ optToggle,	"ignorecase",	},
-	{ optToggle,	"magic",	},
-	{ optToggle,	"searchincr",	},
-	{ optToggle,	"wrapscan",	},
-	{ optTerminator,		},
-},
-		File_toggles[] = {
-	{ optToggle,	"autowrite",	},
-	{ optToggle,	"lock",		},
-	{ optToggle,	"readonly",	},
-	{ optToggle,	"warn",		},
-	{ optToggle,	"writeany",	},
-	{ optTerminator,		},
-},
-		Shell_toggles[] = {
-	{ optToggle,	"secure",	},
-	{ optTerminator,		},
-},
-		Ex_toggles[] = {
-	{ optToggle,	"autoprint",	},
-	{ optToggle,	"exrc",		},
-	{ optToggle,	"prompt",	},
-	{ optTerminator,		},
-},
-		Programming_toggles[] = {
-	{ optToggle,	"autoindent",	},
-	{ optToggle,	"lisp",		},
-	{ optToggle,	"showmatch",	},
-	{ optTerminator,		},
-},
-		Display_toggles[] = {
-	{ optToggle,	"comment",	},
 	{ optToggle,	"leftright",	},
+	{ optToggle,	"lisp",		},
 	{ optToggle,	"list",		},
+	{ optToggle,	"lock",		},
+	{ optToggle,	"magic",	},
 	{ optToggle,	"number",	},
 	{ optToggle,	"octal",	},
-	{ optToggle,	"ruler",	},
-	{ optToggle,	"showmode",	},
-	{ optToggle,	"windowname",	},
-	{ optTerminator,		},
-},
-		Insert_toggles[] = {
-	{ optToggle,	"altwerase",	},
-	{ optToggle,	"beautify",	},
+	{ optToggle,	"prompt",	},
+	{ optToggle,	"readonly",	},
 	{ optToggle,	"remap",	},
+	{ optToggle,	"ruler",	},
+	{ optToggle,	"searchincr",	},
+	{ optToggle,	"secure",	},
+	{ optToggle,	"showmatch",	},
+	{ optToggle,	"showmode",	},
+	{ optToggle,	"tildeop",	},
 	{ optToggle,	"timeout",	},
 	{ optToggle,	"ttywerase",	},
-	{ optTerminator,		},
-},
-		Command_toggles[] = {
-	{ optToggle,	"tildeop",	},
-	{ optTerminator,		},
-},
-		Error_toggles[] = {
-	{ optToggle,	"errorbells",	},
-	{ optToggle,	"flash",	},
 	{ optToggle,	"verbose",	},
+	{ optToggle,	"warn",		},
+	{ optToggle,	"windowname",	},
+	{ optToggle,	"wrapscan",	},
+	{ optToggle,	"writeany",	},
 	{ optTerminator,		},
-};
-
-static	optData Programming_ints[] = {
-	{ optInteger,	"matchtime",	},
-	{ optInteger,	"shiftwidth",	},
-	{ optInteger,	"taglength",	},
-	{ optTerminator,		},
-},
-		Display_ints[] = {
-	{ optInteger,	"report",	},
-	{ optInteger,	"tabstop",	},
-	{ optTerminator,		},
-},
-		Insert_ints[] = {
-	{ optInteger,	"wrapmargin",	},
+}, values[] = {
 	{ optInteger,	"escapetime",	},
+	{ optInteger,	"matchtime",	},
+	{ optInteger,	"report",	},
+	{ optInteger,	"shiftwidth",	},
+	{ optInteger,	"tabstop",	},
+	{ optInteger,	"taglength",	},
 	{ optInteger,	"wraplen",	},
+	{ optInteger,	"wrapmargin",	},
 	{ optTerminator,		},
-};
-
-static	optData	Search_others[] = {
-	{ optString,	"paragraphs",	},
-	{ optString,	"sections",	},
-	{ optTerminator,		},
-},
-		File_others[] = {
-	{ optFile,	"directory",	},
-	{ optFile,	"recdir",	},
-	{ optString,	"backup",	},
+}, strings[] = {
 	{ optString,	"filec",	},
-	{ optString,	"path",		},
-	{ optTerminator,		},
-},
-		Shell_others[] = {
-	{ optString,	"cdpath",	},
-	{ optFile,	"shell",	},
-	{ optString,	"shellmeta",	},
-	{ optTerminator,		},
-},
-		Ex_others[] = {
-	{ optString,	"cedit",	},
-	{ optTerminator,		},
-},
-		Programming_others[] = {
-	{ optString,	"tags",		},
-	{ optTerminator,		},
-},
-		Display_others[] = {
+	{ optString,	"msgcat",	},
+	{ optString,	"paragraphs",	},
 	{ optString,	"print",	},
 	{ optString,	"noprint",	},
+	{ optString,	"sections",	},
+	{ optString,	"shellmeta",	},
 	{ optTerminator,		},
-},
-		Error_others[] = {
-	{ optString,	"msgcat",	},
+}, files[] = {
+	{ optFile,	"directory",	},
+	{ optFile,	"recdir",	},
+	{ optFile,	"shell",	},
+	{ optString,	"backup",	},
+	{ optString,	"cdpath",	},
+	{ optString,	"path",		},
+	{ optString,	"tags",		},
 	{ optTerminator,		},
 };
 
 static	optSheet sheets[] = {
-	{	"File",	/* must be first because it's the largest */
+	{	"Toggles",	/* Must be first because it's the largest. */
 		NULL,
-		File_toggles,
-		NULL,
-		File_others
-	},
-	{	"Search",
-		NULL,
-		Search_toggles,
-		NULL,
-		Search_others
-	},
-	{	"Shell",
-		NULL,
-		Shell_toggles,
-		NULL,
-		Shell_others
-	},
-	{	"Ex",
-		NULL,
-		Ex_toggles,
-		NULL,
-		Ex_others
-	},
-	{	"Programming",
-		NULL,
-		Programming_toggles,
-		Programming_ints,
-		Programming_others
-	},
-	{	"Display",
-		NULL,
-		Display_toggles,
-		Display_ints,
-		Display_others
-	},
-	{	"Insert",
-		NULL,
-		Insert_toggles,
-		Insert_ints,
-		NULL
-	},
-	{	"Command",
-		NULL,
-		Command_toggles,
+		toggles,
 		NULL,
 		NULL
 	},
-	{	"Error",
+	{	"Strings",
 		NULL,
-		Error_toggles,
 		NULL,
-		Error_others
+		NULL,
+		strings,
+	},
+	{	"Values",
+		NULL,
+		NULL,
+		values,
+		NULL,
+	},
+	{	"Files",
+		NULL,
+		NULL,
+		NULL,
+		files
 	},
 };
 
@@ -296,34 +190,21 @@ __vi_editopt(ipbp)
 {
 	optData *opt;
 
-#undef	SEARCH
-#define	SEARCH(toggle) {						\
-	for (opt = toggle; opt->kind != optTerminator; ++opt)		\
+#undef	NSEARCH
+#define	NSEARCH(list) {							\
+	for (opt = list; opt->kind != optTerminator; ++opt)		\
 		if (!strcmp(opt->name, ipbp->str1))			\
 			goto found;					\
 }
 
-	SEARCH(Search_toggles);
-	SEARCH(File_toggles);
-	SEARCH(Shell_toggles);
-	SEARCH(Ex_toggles);
-	SEARCH(Programming_toggles);
-	SEARCH(Display_toggles);
-	SEARCH(Insert_toggles);
-	SEARCH(Command_toggles);
-	SEARCH(Error_toggles);
-	SEARCH(Programming_ints);
-	SEARCH(Display_ints);
-	SEARCH(Insert_ints);
-	SEARCH(Search_others);
-	SEARCH(File_others);
-	SEARCH(Shell_others);
-	SEARCH(Ex_others);
-	SEARCH(Programming_others);
-	SEARCH(Display_others);
-	SEARCH(Error_others);
+	NSEARCH(toggles);
+	NSEARCH(values);
+	NSEARCH(strings);
+	NSEARCH(files);
+
 	return (0);
 
+trace("edit opt: %s\n", opt->name);
 found:	switch (opt->kind) {
 	case optToggle:
 		opt->value = (void *)ipbp->val1;
@@ -331,9 +212,9 @@ found:	switch (opt->kind) {
 	case optInteger:
 		if (opt->value != NULL)
 			free(opt->value);
-		if ((opt->value = malloc(15)) != NULL)
+		if ((opt->value = malloc(8)) != NULL)
 			(void)snprintf(opt->value,
-			    15, "%lu", (u_long)ipbp->val1);
+			    8, "%lu", (u_long)ipbp->val1);
 		break;
 	case optString:
 	case optFile:
@@ -351,13 +232,16 @@ found:	switch (opt->kind) {
  *	Send a set-edit-option message to core.
  */
 static void
-set_opt(w, opt)
+set_opt(w, closure, call_data)
 	Widget w;
-	optData *opt;
+	XtPointer closure, call_data;
 {
+	optData *opt;
 	Boolean set;
 	IP_BUF ipb;
 	String str;
+
+	opt = closure;
 
 	ipb.code = VI_EDITOPT;
 	ipb.str1 = opt->name;
@@ -424,9 +308,7 @@ static	Widget	create_toggles( outer, toggles )
 			      xmRowColumnWidgetClass,
 			      outer,
 			      XmNpacking,		XmPACK_COLUMN,
-#if defined(SelfTest)
-			      XmNnumColumns,		toggleColumns,
-#endif
+			      XmNnumColumns,		4,
 			      XmNtopAttachment,		XmATTACH_FORM,
 			      XmNrightAttachment,	XmATTACH_FORM,
 			      XmNleftAttachment,	XmATTACH_FORM,
@@ -524,8 +406,9 @@ static	Widget		create_sheet( parent, sheet )
 			      0
 			      );
 
-    /* add the toggles */
-    inner = create_toggles( outer, sheet->toggles );
+    /* Add any toggles. */
+    inner = sheet->toggles == NULL ?
+	outer : create_toggles( outer, sheet->toggles );
 
     inner = XtVaCreateWidget( "otherOptions",
 			      xmRowColumnWidgetClass,
@@ -673,23 +556,47 @@ __vi_show_options_dialog(parent, title)
 /* module entry point
  * Utilities for the search dialog
  *
- *	Boolean	__vi_incremental_search()
- *	returns the value of searchincr
+ * __vi_toggle --
+ *	Returns the current value of a toggle.
  *
- *	Widget	__vi_create_search_toggles( parent )
- *	creates the search toggles.  this is so the options and
- *	search widgets share their appearance
+ * PUBLIC: int __vi_toggle __P((char *));
  */
-
-Boolean	__vi_incremental_search()
+int
+__vi_toggle(name)
+	char *name;
 {
-	return (Boolean) Search_toggles[1].value;
+	optData *opt;
+
+	for (opt = toggles; opt->kind != optTerminator; ++opt)
+		if (!strcmp(opt->name, name))
+			return ((int)opt->value);
+	return (0);
 }
 
-
-Widget	__vi_create_search_toggles( parent )
+/*
+ * __vi_create_search_toggles --
+ *	Creates the search toggles.  This is so the options and search widgets
+ *	share their appearance.
+ *
+ * PUBLIC: Widget __vi_create_search_toggles __P((Widget, optData[]));
+ */
+Widget
+__vi_create_search_toggles(parent, list)
+	Widget parent;
+	optData list[];
 {
-    return  create_toggles( parent, Search_toggles );
+	optData *opt;
+
+	/*
+	 * Copy current options information into the search table.
+	 *
+	 * XXX
+	 * This is an O(M*N) loop, but I don't think it matters.
+	 */
+	for (opt = list; opt->kind != optTerminator; ++opt)
+		opt->value = (void *)__vi_toggle(opt->name);
+
+	return (create_toggles(parent, list));
 }
 
 

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_search.c,v 8.7 1996/12/14 14:05:22 bostic Exp $ (Berkeley) $Date: 1996/12/14 14:05:22 $";
+static const char sccsid[] = "$Id: m_search.c,v 8.8 1996/12/16 09:42:54 bostic Exp $ (Berkeley) $Date: 1996/12/16 09:42:54 $";
 #endif /* not lint */
 
 #include <sys/queue.h>
@@ -32,6 +32,7 @@ static const char sccsid[] = "$Id: m_search.c,v 8.7 1996/12/14 14:05:22 bostic E
 
 #include "../common/common.h"
 #include "../ip/ip.h"
+#include "m_motif.h"
 #include "ipc_extern.h"
 
 
@@ -51,27 +52,20 @@ typedef struct	{
 } ButtonData;
 
 
-#if defined(SelfTest)
-
-typedef struct	{
-    String	name;
-    Boolean	*value;
-    int		flag;
-} ToggleData;
-
-static	ToggleData	toggle_data[] = {
-    { "Ignore Case",		0, VI_SEARCH_IC		},
-    { "Incremental", 		0, VI_SEARCH_INCR	}
-    { "Literal", 		0, VI_SEARCH_LIT	},
-    { "Wrap End Of File", 	0, VI_SEARCH_WR		},
-};
-
-#endif
-
-
 /* globals and constants */
 
-static	String	PatternWidget	 = "text";
+static	String	PatternWidget = "text";
+static	String	pattern = NULL;
+
+static optData  search_toggles[] = {
+	{ optToggle,	"extended",	NULL,	VI_SEARCH_EXT	},
+	{ optToggle,	"iclower",	NULL,	VI_SEARCH_ICL	},
+	{ optToggle,	"ignorecase",	NULL,	VI_SEARCH_IC	},
+	{ optToggle,	"literal",	NULL,	VI_SEARCH_LIT	},
+	{ optToggle,	"searchincr",	NULL,	VI_SEARCH_INCR	},
+	{ optToggle,	"wrapscan",	NULL,	VI_SEARCH_WR	},
+	{ optTerminator,		},
+};
 
 static void done_func __P((Widget));
 static void next_func __P((Widget));
@@ -83,8 +77,6 @@ static	ButtonData button_data[] = {
     { "Previous", 	False,	prev_func	},
     { "Cancel", 	False,	done_func	}
 };
-
-static	String		pattern = NULL;
 
 
 /* Xt utilities */
@@ -102,25 +94,6 @@ static	Widget	get_child_widget( parent, name )
     strcpy( buffer, "*" );
     strcat( buffer, name );
     return XtNameToWidget( parent, buffer );
-}
-
-
-#if defined(__STDC__)
-static	String	get_widget_string( Widget w, String resource )
-#else
-static	String	get_widget_string( w, resource )
-	Widget	w;
-	String	resource;
-#endif
-{
-    XmString	xmstr;
-    String	str;
-
-    XtVaGetValues( w, resource, &xmstr, 0 );
-    XmStringGetLtoR( xmstr, XmSTRING_DEFAULT_CHARSET, &str );
-    XmStringFree( xmstr );
-
-    return str;
 }
 
 
@@ -189,26 +162,24 @@ search(w, flags)
 	Widget w;
 	int flags;
 {
-    IP_BUF ipb;
-    int i;
+	IP_BUF ipb;
+	optData *opt;
 
-    /* get current data from the root of the widget tree? */
-    if ( w != NULL ) get_state( w );
+	/* Get current data from the root of the widget tree? */
+	if (w != NULL)
+		get_state(w);
 
-    ipb.str1 = pattern;
-    ipb.len1 = strlen(pattern);
+	ipb.str1 = pattern;
+	ipb.len1 = strlen(pattern);
 
-#if defined(SelfTest)
-    /* initialize the search flags based on the buttons. */
-    ipb.val1 = flags;
-    for (i=0; i<XtNumber(toggle_data); i++) {
-	if (toggle_data[i].value)
-	    ipb.val1 |= toggle_data[i].flag;
-    }
-#endif
+	/* Initialize the search flags based on the buttons. */
+	ipb.val1 = flags;
+	for (opt = search_toggles; opt->kind != optTerminator; ++opt)
+		if (opt->value != NULL)
+			ipb.val1 |= opt->flags;
 
-    ipb.code = VI_C_SEARCH;
-    __vi_send("1a", &ipb);
+	ipb.code = VI_C_SEARCH;
+	__vi_send("a1", &ipb);
 }
 
 #if defined(__STDC__)
@@ -473,7 +444,7 @@ static	Widget	create_search_dialog( parent, title )
 #if defined(SelfTest)
     checks = create_check_boxes( form, toggle_data, XtNumber(toggle_data) );
 #else
-    checks = (Widget) __vi_create_search_toggles( form );
+    checks = (Widget) __vi_create_search_toggles( form, search_toggles );
 #endif
     XtVaSetValues( checks,
 		   XmNtopAttachment,	XmATTACH_WIDGET,

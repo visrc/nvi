@@ -6,27 +6,8 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	"$Id: m_motif.h,v 8.7 1996/12/13 11:38:21 bostic Exp $ (Berkeley) $Date: 1996/12/13 11:38:21 $";
+ *	"$Id: m_motif.h,v 8.8 1996/12/16 09:42:53 bostic Exp $ (Berkeley) $Date: 1996/12/16 09:42:53 $";
  */
-
-/* Describes a single 'screen' implemented in X widgetry. */
-typedef	struct {
-    Widget	parent,		/* the pane */
-		area,		/* text goes here */
-		form,		/* holds text and scrollbar */
-		scroll;		/* not connected yet */
-    Region	clip;
-    int		color;
-    int		rows,
-		cols;
-    int		ch_width,
-		ch_height,
-		ch_descent;
-    int		curx, cury;
-    char	*characters;
-    char	*flags;
-    Boolean	init;
-} xvi_screen;
 
 /*
  * Color support
@@ -66,6 +47,51 @@ typedef	struct {
 
 #define	COLUMN( scr, x )	\
 	( (x) / scr->ch_width )
+
+/* Describes a single 'screen' implemented in X widgetry. */
+typedef	struct {
+    Widget	parent,		/* the pane */
+		area,		/* text goes here */
+		form,		/* holds text and scrollbar */
+		scroll;		/* not connected yet */
+    Region	clip;
+    int		color;
+    int		rows,
+		cols;
+    int		ch_width,
+		ch_height,
+		ch_descent;
+    int		curx, cury;
+    char	*characters;
+    char	*flags;
+    Boolean	init;
+} xvi_screen;
+
+/* Option type. */
+typedef enum {
+	optToggle,
+	optInteger,
+	optString,
+	optFile,
+	optTerminator
+} optKind;
+
+/* Option entry. */
+typedef struct {
+	optKind	kind;				/* Option type. */
+	String	name;				/* Option name. */
+	void	*value;				/* Current option value. */
+	u_int	flags;				/* Associated flags. */
+} optData;
+
+/* Option page. */
+typedef	struct {
+	String	name;
+	Widget	holder;
+	optData	*toggles;
+	optData	*ints;
+	optData	*others;
+} optSheet;
 
 /* Internal use: */
 extern GC	   __vi_copy_gc;
