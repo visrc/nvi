@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_script.c,v 9.4 1994/12/02 10:02:44 bostic Exp $ (Berkeley) $Date: 1994/12/02 10:02:44 $";
+static char sccsid[] = "$Id: ex_script.c,v 9.5 1994/12/16 12:40:20 bostic Exp $ (Berkeley) $Date: 1994/12/16 12:40:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -310,7 +310,7 @@ sscr_exec(sp, lno)
 	if (file_lline(sp, &last_lno))
 		return (1);
 	if ((p = file_gline(sp, last_lno, &last_len)) == NULL) {
-		GETLINE_ERR(sp, last_lno);
+		FILE_LERR(sp, last_lno);
 		return (1);
 	}
 	if (sscr_matchprompt(sp, p, last_len, &tlen) && tlen == 0) {
@@ -327,7 +327,7 @@ sscr_exec(sp, lno)
 		if (lno == 0)
 			goto empty;
 		else
-			GETLINE_ERR(sp, lno);
+			FILE_LERR(sp, lno);
 		goto err1;
 	}
 

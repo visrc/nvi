@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 9.9 1994/11/14 09:54:05 bostic Exp $ (Berkeley) $Date: 1994/11/14 09:54:05 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 9.10 1994/12/16 12:41:14 bostic Exp $ (Berkeley) $Date: 1994/12/16 12:41:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -462,7 +462,7 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 			return (1);
 		if (lastline == 0)
 			goto slow;
-		GETLINE_ERR(sp, LNO);
+		FILE_LERR(sp, LNO);
 		return (1);
 	}
 

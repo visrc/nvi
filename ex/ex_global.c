@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 9.2 1994/11/09 21:50:35 bostic Exp $ (Berkeley) $Date: 1994/11/09 21:50:35 $";
+static char sccsid[] = "$Id: ex_global.c,v 9.3 1994/12/16 12:40:17 bostic Exp $ (Berkeley) $Date: 1994/12/16 12:40:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -206,7 +206,7 @@ usage:		ex_message(sp, cmdp->cmd, EXM_USAGE);
 
 		/* Get the line and search for a match. */
 		if ((t = file_gline(sp, lno, &len)) == NULL) {
-			GETLINE_ERR(sp, lno);
+			FILE_LERR(sp, lno);
 			goto err;
 		}
 		match[0].rm_so = 0;

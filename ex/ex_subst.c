@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 9.4 1994/11/13 12:24:38 bostic Exp $ (Berkeley) $Date: 1994/11/13 12:24:38 $";
+static char sccsid[] = "$Id: ex_subst.c,v 9.5 1994/12/16 12:40:22 bostic Exp $ (Berkeley) $Date: 1994/12/16 12:40:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -499,7 +499,7 @@ noargs:	if (IN_VI_MODE(sp) && sp->c_suffix && (lflag || nflag || pflag)) {
 
 		/* Get the line. */
 		if ((s = file_gline(sp, lno, &llen)) == NULL) {
-			GETLINE_ERR(sp, lno);
+			FILE_LERR(sp, lno);
 			goto ret1;
 		}
 
@@ -699,7 +699,7 @@ skip:		offset += match[0].rm_eo;
 			if (file_sline(sp, lno, lb + last, lbclen))
 				goto ret1;
 			if ((s = file_gline(sp, lno, &llen)) == NULL) {
-				GETLINE_ERR(sp, lno);
+				FILE_LERR(sp, lno);
 				goto ret1;
 			}
 			ADD_SPACE_RET(sp, bp, blen, llen)

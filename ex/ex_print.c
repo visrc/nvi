@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 9.3 1994/11/13 13:50:42 bostic Exp $ (Berkeley) $Date: 1994/11/13 13:50:42 $";
+static char sccsid[] = "$Id: ex_print.c,v 9.4 1994/12/16 12:40:18 bostic Exp $ (Berkeley) $Date: 1994/12/16 12:40:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -126,7 +126,7 @@ ex_print(sp, fp, tp, flags)
 		 * backward compatible.
 		 */
 		if ((p = file_gline(sp, from, &len)) == NULL) {
-			GETLINE_ERR(sp, from);
+			FILE_LERR(sp, from);
 			return (1);
 		}
 
@@ -187,7 +187,7 @@ ex_scprint(sp, fp, tp)
 	}
 
 	if ((p = file_gline(sp, fp->lno, &len)) == NULL) {
-		GETLINE_ERR(sp, fp->lno);
+		FILE_LERR(sp, fp->lno);
 		return (1);
 	}
 
