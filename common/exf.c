@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: exf.c,v 10.25 1996/03/06 19:50:13 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:50:13 $";
+static const char sccsid[] = "$Id: exf.c,v 10.26 1996/03/14 21:25:16 bostic Exp $ (Berkeley) $Date: 1996/03/14 21:25:16 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -462,7 +462,7 @@ file_cinit(sp)
 			sp->cno = 0;
 		}
 		if (ex_run_str(sp,
-		    "-c option", gp->c_option, strlen(gp->c_option), 0))
+		    "-c option", gp->c_option, strlen(gp->c_option), 1, 1))
 			return;
 		gp->c_option = NULL;
 	} else if (F_ISSET(sp, S_EX)) {

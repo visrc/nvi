@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_init.c,v 10.13 1996/03/06 19:52:22 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:52:22 $";
+static const char sccsid[] = "$Id: ex_init.c,v 10.14 1996/03/14 21:25:31 bostic Exp $ (Berkeley) $Date: 1996/03/14 21:25:31 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -181,10 +181,10 @@ ex_exrc(sp)
 	}
 
 	if ((p = getenv("NEXINIT")) != NULL) {
-		if (ex_run_str(sp, "NEXINIT", p, strlen(p), 1))
+		if (ex_run_str(sp, "NEXINIT", p, strlen(p), 1, 1))
 			return (1);
 	} else if ((p = getenv("EXINIT")) != NULL) {
-		if (ex_run_str(sp, "EXINIT", p, strlen(p), 1))
+		if (ex_run_str(sp, "EXINIT", p, strlen(p), 1, 1))
 			return (1);
 	} else if ((p = getenv("HOME")) != NULL && *p) {
 		(void)snprintf(path, sizeof(path), "%s/%s", p, _PATH_NEXRC);
@@ -260,14 +260,14 @@ ex_run_file(sp, name)
  * ex_run_str --
  *	Set up a string of ex commands to run.
  *
- * PUBLIC: int ex_run_str __P((SCR *, char *, char *, size_t, int));
+ * PUBLIC: int ex_run_str __P((SCR *, char *, char *, size_t, int, int));
  */
 int
-ex_run_str(sp, name, str, len, nocopy)
+ex_run_str(sp, name, str, len, ex_flags, nocopy)
 	SCR *sp;
 	char *name, *str;
 	size_t len;
-	int nocopy;
+	int ex_flags, nocopy;
 {
 	EXCMD *ecp;
 
@@ -288,7 +288,8 @@ ex_run_str(sp, name, str, len, nocopy)
 		ecp->if_lno = 1;
 	}
 
-	F_INIT(ecp, E_BLIGNORE | E_NOAUTO | E_NOPRDEF | E_VLITONLY);
+	F_INIT(ecp,
+	    ex_flags ? E_BLIGNORE | E_NOAUTO | E_NOPRDEF | E_VLITONLY : 0);
 
 	LIST_INSERT_HEAD(&sp->gp->ecq, ecp, q);
 	return (0);
