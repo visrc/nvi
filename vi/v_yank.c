@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_yank.c,v 10.6 1996/03/06 19:54:51 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:54:51 $";
+static const char sccsid[] = "$Id: v_yank.c,v 10.7 1996/05/17 14:18:07 bostic Exp $ (Berkeley) $Date: 1996/05/17 14:18:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,8 +31,8 @@ static const char sccsid[] = "$Id: v_yank.c,v 10.6 1996/03/06 19:54:51 bostic Ex
  *
  * !!!
  * Historic vi moved the cursor to the from MARK if it was before the current
- * cursor and on a different line, e.g., "yj" moves the cursor but "yk" and
- * "yh" do not.  Unfortunately, it's too late to change this now.  Matching
+ * cursor and on a different line, e.g., "yk" moves the cursor but "yj" and
+ * "yl" do not.  Unfortunately, it's too late to change this now.  Matching
  * the historic semantics isn't easy.  The line number was always changed and
  * column movement was usually relative.  However, "y'a" moved the cursor to
  * the first non-blank of the line marked by a, while "y`a" moved the cursor
