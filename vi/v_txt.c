@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.127 1994/09/07 11:30:45 bostic Exp $ (Berkeley) $Date: 1994/09/07 11:30:45 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.128 1994/09/08 08:34:07 bostic Exp $ (Berkeley) $Date: 1994/09/08 08:34:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1097,7 +1097,8 @@ txt_abbrev(sp, tp, pushcp, isinfoline, didsubp, turnoffp)
 	 * the file.  For example, in the string "abc<space>", when the <space>
 	 * character triggered the abbreviation check, the type of the 'b'
 	 * character was used for moving through the string.  Maybe there's a
-	 * reason for not using the 'c' character, but I can't think of one.
+	 * reason for not using the first (i.e. 'c') character, but I can't
+	 * think of one.
 	 *
 	 * Terminate at the beginning of the insert or the character after the
 	 * offset character -- both can be tested for using tp->offset.
@@ -1107,24 +1108,17 @@ txt_abbrev(sp, tp, pushcp, isinfoline, didsubp, turnoffp)
 	len = 1;				/* One character test. */
 	if (off == tp->offset || isblank(p[-1]))
 		goto search;
-
-	--off;					/* Type character. */
-	--p;
-	++len;
-	if (off == tp->offset)			/* Two characters test. */
-		goto search;
-	if (inword(*p))				/* Move backward to change. */
-		for (;; --p, ++len) {
-			if (--off == tp->offset)
-				break;
-			if (!inword(p[-1]))
+	if (inword(p[-1]))			/* Move backward to change. */
+		for (;;) {
+			--off; --p; ++len;
+			if (off == tp->offset || !inword(p[-1]))
 				break;
 		}
 	else
-		for (;; --p, ++len) {
-			if (--off == tp->offset)
-				break;
-			if (inword(p[-1]) || isblank(p[-1]))
+		for (;;) {
+			--off; --p; ++len;
+			if (off == tp->offset ||
+			    inword(p[-1]) || isblank(p[-1]))
 				break;
 		}
 
