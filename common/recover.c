@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.7 1993/08/15 12:46:19 bostic Exp $ (Berkeley) $Date: 1993/08/15 12:46:19 $";
+static char sccsid[] = "$Id: recover.c,v 8.8 1993/08/17 20:47:02 bostic Exp $ (Berkeley) $Date: 1993/08/17 20:47:02 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -165,14 +165,14 @@ rcv_mailfile(sp, ep)
 	EXF *ep;
 {
 	struct passwd *pw;
+	uid_t uid;
 	FILE *fp;
 	time_t now;
 	int fd;
 	char *p, host[MAXHOSTNAMELEN], path[MAXPATHLEN];
 
-	if ((pw = getpwuid(getuid())) == NULL) {
-		msgq(sp, M_ERR,
-		    "Information on user id %u not found.", getuid());
+	if ((pw = getpwuid(uid = getuid())) == NULL) {
+		msgq(sp, M_ERR, "Information on user id %u not found.", uid);
 		return (1);
 	}
 
