@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 5.20 1993/05/07 13:59:36 bostic Exp $ (Berkeley) $Date: 1993/05/07 13:59:36 $";
+static char sccsid[] = "$Id: vs_smap.c,v 5.21 1993/05/08 18:18:33 bostic Exp $ (Berkeley) $Date: 1993/05/08 18:18:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -406,11 +406,16 @@ svi_sm_up(sp, ep, rp, count, cursor_move)
 		 * roughly where it was before.
 		 */
 		if (!scrolled || count) {
-			if (sp->lno == TMAP->lno) {
+			if (sp->lno == last) {
 				v_eof(sp, ep, NULL);
 				return (1);
 			}
-			p = TMAP;
+			if (last < TMAP->lno) {
+				for (p = HMAP;; ++p)
+					if (p->lno == last)
+						break;
+			} else
+				p = TMAP;
 		}
 	} else {
 		/*
