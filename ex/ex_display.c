@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_display.c,v 8.10 1993/11/18 10:08:55 bostic Exp $ (Berkeley) $Date: 1993/11/18 10:08:55 $";
+static char sccsid[] = "$Id: ex_display.c,v 8.11 1993/11/21 16:00:10 bostic Exp $ (Berkeley) $Date: 1993/11/21 16:00:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -15,48 +15,75 @@ static char sccsid[] = "$Id: ex_display.c,v 8.10 1993/11/18 10:08:55 bostic Exp 
 #include <string.h>
 
 #include "vi.h"
+#include "tag.h"
 #include "excmd.h"
 
-static void db __P((SCR *, CB *));
+static int	bdisplay __P((SCR *, EXF *));
+static void	db __P((SCR *, CB *));
 
 /*
- * ex_bdisplay -- :bdisplay
+ * ex_display -- :display b[uffers] | s[creens] | t[ags]
  *
- *	Display cut buffer contents.
+ *	Display buffers, tags or screens.
  */
 int
-ex_bdisplay(sp, ep, cmdp)
+ex_display(sp, ep, cmdp)
 	SCR *sp;
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	CB *cbp;
-	int displayed;
+	switch (cmdp->argv[0][0]) {
+	case 'b':
+		return (bdisplay(sp, ep));
+	case 's':
+		return (ex_sdisplay(sp, ep));
+	case 't':
+		return (ex_tagdisplay(sp, ep));
+	}
+	msgq(sp, M_ERR,
+	    "Unknown display argument %s, use b[uffers], s[creens], or t[ags].",
+	    cmdp->argv[0]);
+	return (1);
+}
 
-	displayed = 0;
+/*
+ * bdisplay --
+ *
+ *	Display buffers.
+ */
+static int
+bdisplay(sp, ep)
+	SCR *sp;
+	EXF *ep;
+{
+	CB *cbp;
+
+	if (sp->gp->cutq.lh_first == NULL) {
+		(void)ex_printf(EXCOOKIE, "No cut buffers to display.");
+		return (0);
+	}
+
 	/* Display regular cut buffers. */
 	for (cbp = sp->gp->cutq.lh_first; cbp != NULL; cbp = cbp->q.le_next) {
 		if (isdigit(cbp->name))
 			continue;
-		if (cbp->textq.cqh_first != (void *)&cbp->textq) {
-			displayed = 1;
+		if (cbp->textq.cqh_first != (void *)&cbp->textq)
 			db(sp, cbp);
-		}
 	}
 	/* Display numbered buffers. */
 	for (cbp = sp->gp->cutq.lh_first; cbp != NULL; cbp = cbp->q.le_next) {
 		if (!isdigit(cbp->name))
 			continue;
-		if (cbp->textq.cqh_first != (void *)&cbp->textq) {
-			displayed = 1;
+		if (cbp->textq.cqh_first != (void *)&cbp->textq)
 			db(sp, cbp);
-		}
 	}
-	if (!displayed)
-		msgq(sp, M_VINFO, "No buffers to display.");
 	return (0);
 }
 
+/*
+ * db --
+ *	Display a buffer.
+ */
 static void
 db(sp, cbp)
 	SCR *sp;
@@ -66,8 +93,7 @@ db(sp, cbp)
 	size_t len;
 	char *p;
 
-	(void)ex_printf(EXCOOKIE,
-	    "================ %s%s\n", charname(sp, cbp->name),
+	(void)ex_printf(EXCOOKIE, "********** %s%s\n", charname(sp, cbp->name),
 	    F_ISSET(cbp, CB_LMODE) ? " (line mode)" : "");
 	for (tp = cbp->textq.cqh_first;
 	    tp != (void *)&cbp->textq; tp = tp->q.cqe_next) {
