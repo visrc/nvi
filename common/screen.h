@@ -4,51 +4,23 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 5.9 1992/10/29 14:36:56 bostic Exp $ (Berkeley) $Date: 1992/10/29 14:36:56 $
+ *	$Id: screen.h,v 5.10 1992/12/25 16:24:03 bostic Exp $ (Berkeley) $Date: 1992/12/25 16:24:03 $
  */
 
-/* 
- * The interface to the screen is defined by the following functions:
+/*
+ * The basic screen macros.
  *
- *	scr_cchange
- *		Change the screen for a cursor movement.
- *	scr_end
- *		Close down curses, end the screen.
- *	scr_init
- *		Set up curses, initialize the screen.
- *	scr_modeline
- *		Display the modeline (ruler, mode).
- *	scr_ref
- *		Repaint the screen from scratch.
- *	scr_relative
- *		Return the physical column that would display closest to
- *		a specified character position.
- *	scr_update
- *		Inform the screen a line has been modified.
- *
- * We use a single curses window for vi.  The model would be simpler with
- * two windows (one for the text, and one for the modeline) because scrolling
- * the text window down would work correctly, then, not affecting the mode
- * line.  As it is we have to play games to make it look right.  The reasons
- * we don't use two windows are three-fold.  First, the ex code doesn't want
- * to deal with curses.  With two windows vi would have a different method
- * of putting out ex messages than ex would.  As it is now, we just switch
- * between methods when we cross into the ex code and ex can simply use
- * printf and friends without regard for vi.  Second, it would be difficult
- * for curses to optimize the movement, i.e.  detect that the down scroll
- * isn't going to change the modeline, set the scrolling region on the
- * terminal and only scroll the first part of the text window.  Third, even
- * if curses did detect it, the set-scrolling-region terminal commands can't
- * be used by curses because it's indeterminate where the cursor ends up
- * after they are sent.
+ * BOTLINE:
+ *	The line number at the bottom of the screen, not counting the mode
+ *	line, or, if `l' == 0, the number of text lines on the screen.
+ * SCREENSIZE:
+ *	The number of lines in the screen.
+ * HALFSCREEN:
+ *	Half the number of lines in the screen.
  */
-
-extern int needexerase;
-
 #define	BOTLINE(ep, l)	((l) + (ep)->lines - 2)
-#define	COLSIZE(ep)	(ISSET(O_NUMBER) ? (ep)->cols - 9 : (ep)->cols - 1)
-#define	HALFSCREEN(ep)	(((ep)->lines - 1) / 2)
 #define	SCREENSIZE(ep)	((ep)->lines - 1)
+#define	HALFSCREEN(ep)	(SCREENSIZE(ep) / 2)
 
 #define	MOVE(lno, cno) {						\
 	if (move(lno, cno) == ERR) {					\
@@ -61,11 +33,27 @@ extern int needexerase;
 
 #define	CONTMSG	"Enter return to continue: "
 
+/* 
+ * The interface to the screen is defined by the following functions:
+ *
+ *	scr_cchange
+ *		Change the screen for a cursor movement.
+ *	scr_end
+ *		Close down curses, end the screen.
+ *	scr_init
+ *		Set up curses, initialize the screen.
+ *	scr_modeline
+ *		Display the modeline (ruler, mode).
+ *	scr_relative
+ *		Return the physical column that would display closest to
+ *		a specified character position.
+ *	scr_update
+ *		Inform the screen a line has been modified.
+ */
 int	scr_cchange __P((EXF *));
 int	scr_end __P((EXF *));
 int	scr_init __P((EXF *));
 int	scr_modeline __P((EXF *, int));
-int	scr_ref __P((EXF *));
 size_t	scr_relative __P((EXF *, recno_t));
 
 /*
