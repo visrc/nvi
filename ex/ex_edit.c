@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 9.5 1995/02/08 19:38:40 bostic Exp $ (Berkeley) $Date: 1995/02/08 19:38:40 $";
+static char sccsid[] = "$Id: ex_edit.c,v 9.6 1995/02/09 10:16:28 bostic Exp $ (Berkeley) $Date: 1995/02/09 10:16:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,7 +32,7 @@ static char sccsid[] = "$Id: ex_edit.c,v 9.5 1995/02/08 19:38:40 bostic Exp $ (B
 #include "excmd.h"
 #include "../svi/svi_screen.h"
 
-static int ex_N_edit __P((SCR *, EXCMDARG *));
+static int ex_N_edit __P((SCR *, EXCMDARG *, FREF *, int));
 
 /*
  * ex_edit --	:e[dit][!] [+cmd] [file]
@@ -53,7 +53,7 @@ ex_edit(sp, cmdp)
 	EXCMDARG *cmdp;
 {
 	FREF *frp;
-	int setalt;
+	int attach, setalt;
 
 	/*
 	 * Check for modifications.
@@ -64,10 +64,6 @@ ex_edit(sp, cmdp)
 	if (file_m2(sp, F_ISSET(cmdp, E_FORCE)))
 		return (1);
 
-	if (F_ISSET(cmdp, E_NEWSCREEN))
-		return (ex_N_edit(sp, cmdp));
-
-	frp = sp->frp;
 	switch (cmdp->argc) {
 	case 0:
 		/*
@@ -77,22 +73,28 @@ ex_edit(sp, cmdp)
 		 * reason for not reusing temporary files is that there is
 		 * special exit processing of them, and reuse is tricky.
 		 */
+		frp = sp->frp;
 		if (sp->ep == NULL || F_ISSET(frp, FR_TMPFILE)) {
 			if ((frp = file_add(sp, NULL)) == NULL)
 				return (1);
-		} else if ((frp = file_add(sp, frp->name)) == NULL)
-			return (1);
+			attach = 0;
+		} else
+			attach = 1;
 		setalt = 0;
 		break;
 	case 1:
 		if ((frp = file_add(sp, cmdp->argv[0]->bp)) == NULL)
 			return (1);
+		attach = 0;
 		setalt = 1;
 		set_alt_name(sp, cmdp->argv[0]->bp);
 		break;
 	default:
 		abort();
 	}
+
+	if (F_ISSET(cmdp, E_NEWSCREEN))
+		return (ex_N_edit(sp, cmdp, frp, attach));
 
 	/* Switch files. */
 	if (file_init(sp, frp, NULL, (setalt ? FS_SETALT : 0) |
@@ -106,26 +108,13 @@ ex_edit(sp, cmdp)
  *	New screen version of ex_edit.
  */
 static int
-ex_N_edit(sp, cmdp)
+ex_N_edit(sp, cmdp, frp, attach)
 	SCR *sp;
 	EXCMDARG *cmdp;
+	FREF *frp;
+	int attach;
 {
 	SCR *bot, *new, *top;
-	FREF *frp;
-
-	switch (cmdp->argc) {
-	case 0:
-		/* Edit a temporary file. */
-		if ((frp = file_add(sp, NULL)) == NULL)
-			return (1);
-		break;
-	case 1:
-		if ((frp = file_add(sp, cmdp->argv[0]->bp)) == NULL)
-			return (1);
-		break;
-	default:
-		abort();
-	}
 
 	/* Get a new screen. */
 	if (svi_split(sp, &top, &bot))
@@ -133,7 +122,17 @@ ex_N_edit(sp, cmdp)
 	new = sp == top ? bot : top;
 
 	/* Switch files. */
-	if (file_init(new, frp, NULL,
+	if (attach) {
+		/* Copy file state, keep the screen and cursor the same. */
+		new->ep = sp->ep;
+		++new->ep->refcnt;
+
+		new->frp = frp;
+		new->frp->flags = sp->frp->flags;
+
+		new->lno = sp->lno;
+		new->cno = sp->cno;
+	} else if (file_init(new, frp, NULL,
 	    FS_WELCOME | (F_ISSET(cmdp, E_FORCE) ? FS_FORCE : 0))) {
 		if (sp == top)
 			(void)svi_join(new, sp, NULL, NULL);
