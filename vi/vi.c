@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.62 1993/05/02 11:01:14 bostic Exp $ (Berkeley) $Date: 1993/05/02 11:01:14 $";
+static char sccsid[] = "$Id: vi.c,v 5.63 1993/05/05 16:23:08 bostic Exp $ (Berkeley) $Date: 1993/05/05 16:23:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -447,9 +447,13 @@ getmotion(sp, ep, dm, vp, fm, tm)
 			return (1);
 		}
 
-		/* Set the origin of the command. */
+		/*
+		 * Set the origin of the command.  Don't set the cursor column
+		 * value, since some commands use it to set the return column
+		 * value -- underlying functions are expected to recognized
+		 * line mode without using the column number.
+		 */
 		fm->lno = sp->lno;
-		fm->cno = 0;
 	} else {
 		/*
 		 * Motion commands change the underlying movement (*snarl*).
