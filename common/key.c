@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.39 1994/01/07 19:29:07 bostic Exp $ (Berkeley) $Date: 1994/01/07 19:29:07 $";
+static char sccsid[] = "$Id: key.c,v 8.40 1994/01/08 12:45:58 bostic Exp $ (Berkeley) $Date: 1994/01/08 12:45:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -551,11 +551,11 @@ term_user_key(sp, chp)
 		return (rval);
 			
 	/* Fill in the return information. */
+	tty = sp->gp->tty;
 	chp->ch = tty->ch[tty->next + (tty->cnt - 1)];
 	chp->flags = 0;
 	chp->value = term_key_val(sp, chp->ch);
 
-	tty = sp->gp->tty;
 	QREM_TAIL(tty, 1);
 	return (INP_OK);
 }
