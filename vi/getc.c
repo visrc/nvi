@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: getc.c,v 8.4 1993/08/25 16:52:45 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:52:45 $";
+static char sccsid[] = "$Id: getc.c,v 8.5 1993/09/17 09:18:37 bostic Exp $ (Berkeley) $Date: 1993/09/17 09:18:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -103,6 +103,25 @@ cs_next(sp, ep, csp)
 	default:
 		abort();
 		/* NOTREACHED */
+	}
+	return (0);
+}
+
+/*
+ * cs_fspace --
+ *	Eat forward until something other than a space.
+ */
+int
+cs_fspace(sp, ep, csp)
+	SCR *sp;
+	EXF *ep;
+	VCS *csp;
+{
+	for (;;) {
+		if (cs_next(sp, ep, csp))
+			return (1);
+		if (csp->cs_flags != 0 || !isblank(csp->cs_ch))
+			break;
 	}
 	return (0);
 }

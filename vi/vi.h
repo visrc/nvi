@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 8.6 1993/09/02 11:12:12 bostic Exp $ (Berkeley) $Date: 1993/09/02 11:12:12 $
+ *	$Id: vi.h,v 8.7 1993/09/17 09:17:55 bostic Exp $ (Berkeley) $Date: 1993/09/17 09:17:55 $
  */
 
 /* Structure passed around to functions implementing vi commands. */
@@ -110,6 +110,7 @@ typedef struct _vcs {
 
 int	cs_bblank __P((SCR *, EXF *, VCS *));
 int	cs_fblank __P((SCR *, EXF *, VCS *));
+int	cs_fspace __P((SCR *, EXF *, VCS *));
 int	cs_init __P((SCR *, EXF *, VCS *));
 int	cs_next __P((SCR *, EXF *, VCS *));
 int	cs_prev __P((SCR *, EXF *, VCS *));
