@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_bsd.c,v 8.6 1995/10/31 20:12:53 bostic Exp $ (Berkeley) $Date: 1995/10/31 20:12:53 $";
+static char sccsid[] = "$Id: cl_bsd.c,v 8.7 1995/10/31 20:13:39 bostic Exp $ (Berkeley) $Date: 1995/10/31 20:13:39 $";
 #endif /* not lint */
 
 #ifdef BSD_CURSES_INTERFACE
@@ -45,17 +45,6 @@ beep()
 }
 
 /*
- * bsd_putchar --
- *	Function version of putchar, for tputs.
- */
-static int
-bsd_putchar(ch)
-	int ch;
-{
-	return (putchar(ch));
-}
-
-/*
  * flash --
  *	Flash the screen.
  *
@@ -65,7 +54,7 @@ void
 flash()
 {
 	if (vb != NULL) {
-		(void)tputs(vb, 1, bsd_putchar);
+		(void)tputs(vb, 1, cl_putchar);
 		(void)fflush(stdout);
 	} else
 		beep();
@@ -86,7 +75,7 @@ keypad(a, on)
 
 	sbp = sbuf;
 	if ((p = tgetstr(on ? "ks" : "ke", &sbp)) != NULL) {
-		(void)tputs(p, 0, bsd_putchar);
+		(void)tputs(p, 0, cl_putchar);
 		(void)fflush(stdout);
 	}
 	return (0);
