@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 5.7 1992/04/04 16:27:02 bostic Exp $ (Berkeley) $Date: 1992/04/04 16:27:02 $";
+static char sccsid[] = "$Id: v_cmd.c,v 5.8 1992/04/05 09:38:20 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:38:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -156,11 +156,7 @@ static struct keystru
 /*  =  preset filter	*/	{v_reformat,	CURSOR_MOVED,	SDOT|FRNT|LNMD|INCL|VIZ},
 /*  >  shift text right	*/	{v_rshift,	CURSOR_MOVED,	SDOT|FRNT|LNMD|INCL|VIZ},
 /*  ?  backward search	*/	{m_bsrch,	CURSOR_TEXT,	MVMT|NREL|VIZ},
-#ifndef NO_AT
 /*  @  execute a cutbuf */	{v_at,		C_C_K_CUT,	NO_FLAGS},
-#else
-/*  @  not defined	*/	{NO_FUNC,	NO_ARGS,	NO_FLAGS},
-#endif
 /*  A  append at EOL	*/	{v_insert,	CURSOR,		SDOT},
 /*  B  move back Word	*/	{m_bword,	CURSOR,		MVMT|VIZ},
 /*  C  change to EOL	*/	{v_change,	CURSOR_EOL,	SDOT},
