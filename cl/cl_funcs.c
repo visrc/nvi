@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_funcs.c,v 10.7 1995/06/26 11:06:20 bostic Exp $ (Berkeley) $Date: 1995/06/26 11:06:20 $";
+static char sccsid[] = "$Id: cl_funcs.c,v 10.8 1995/07/04 12:46:45 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:46:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -37,26 +37,12 @@ static int cl_lline_copy __P((SCR *, size_t *, CHAR_T **, size_t *));
 
 /*
  * cl_addstr --
- *	Add the string at the cursor, advancing the cursor.
- *
- * PUBLIC: int cl_addstr __P((SCR *, const char *));
- */
-int
-cl_addstr(sp, str)
-	SCR *sp;
-	const char *str;
-{
-	return (cl_addnstr(sp, str, strlen(str)));
-}
-
-/*
- * cl_addnstr --
  *	Add len bytes from the string at the cursor, advancing the cursor.
  *
- * PUBLIC: int cl_addnstr __P((SCR *, const char *, size_t));
+ * PUBLIC: int cl_addstr __P((SCR *, const char *, size_t));
  */
 int
-cl_addnstr(sp, str, len)
+cl_addstr(sp, str, len)
 	SCR *sp;
 	const char *str;
 	size_t len;
@@ -69,6 +55,7 @@ cl_addnstr(sp, str, len)
 	VI_INIT_IGNORE(sp);
 
 	/*
+	 * !!!
 	 * If the last line:
 	 *	If a busy message already there, discard the busy message.
 	 *	if a split screen, use inverse video.
@@ -87,7 +74,7 @@ cl_addnstr(sp, str, len)
 	if (iv)
 		(void)standout();
 	if (rval = (addnstr(str, len) == ERR))
-		msgq(sp, M_ERR, "Error: addstr/addnstr: %.*s", (int)len, str);
+		msgq(sp, M_ERR, "Error: addstr: %.*s", (int)len, str);
 	if (iv)
 		(void)standend();
 	return (rval);
@@ -175,9 +162,9 @@ cl_busy(sp, msg, on)
 	if (F_ISSET(sp, S_EX | S_EX_CANON | S_EX_SILENT))
 		return (0);
 
-	clp = CLP(sp);
 	VI_INIT_IGNORE(sp);
 
+	clp = CLP(sp);
 	lno = RLNO(sp, INFOLINE(sp));
 	if (on)
 		switch (clp->busy_state) {
@@ -263,8 +250,8 @@ cl_busy(sp, msg, on)
  *	Enter/leave tty canonical mode.
  *
  * XXX
- * This need not be supported by any screen model not supporting full ex
- * canonical mode.
+ * This function is not needed by any screen model not supporting full
+ * ex canonical mode, and can simply return failure.
  *
  * PUBLIC: int cl_canon __P((SCR *, int));
  */
@@ -358,13 +345,13 @@ cl_deleteln(sp)
 	 *	Restore the busy message.
 	 */ 
 	if (clp->busy_state == BUSY_ON) {
-		getyx(stdscr, oldy, oldx);
+		(void)getyx(stdscr, oldy, oldx);
 		p = NULL;
 		len = llen = 0;
 		if (cl_lline_copy(sp, &len, &p, &llen))
 			return (1);
 		if (clp->lline_len == 0)
-			clrtoeol();
+			(void)clrtoeol();
 		else {
 			(void)move(RLNO(sp, INFOLINE(sp)), 0);
 			(void)addnstr(clp->lline, clp->lline_len);
@@ -390,13 +377,18 @@ cl_deleteln(sp)
 			return (1);
 
 		if (clp->lline_len == 0)
-			clrtoeol();
+			(void)clrtoeol();
 		else {
-			getyx(stdscr, oldy, oldx);
+			(void)getyx(stdscr, oldy, oldx);
 			(void)move(RLNO(sp, INFOLINE(sp)), 0);
 			(void)addnstr(clp->lline, clp->lline_len);
 			(void)move(oldy, oldx);
 			clp->lline_len = 0;
+#ifndef __TK__
+/* THIS FIXES A BUG IN NCURSES, I THINK, WHERE file|file|file SHOWS
+ * UP HALF IN REVERSE VIDEO. */
+refresh();
+#endif
 		}
 		F_CLR(clp, CL_LLINE_IV);
 	}
@@ -441,8 +433,8 @@ cl_discard(sp, addp)
  *	Adjust the screen for ex.  All special purpose, all special case.
  *
  * XXX
- * This need not be supported by any screen model not supporting full ex
- * canonical mode.
+ * This function is not needed by any screen model not supporting full
+ * ex canonical mode, and can simply return failure.
  *
  * PUBLIC: int cl_ex_adjust __P((SCR *, exadj_t));
  */
@@ -512,6 +504,8 @@ cl_getkey(sp, chp)
 {
 	CL_PRIVATE *clp;
 	int nr;
+
+	VI_ABORT(sp);
 
 	clp = CLP(sp);
 	switch (cl_read(sp, clp->ibuf, sizeof(clp->ibuf), &nr, NULL)) {

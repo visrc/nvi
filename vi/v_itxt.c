@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 10.2 1995/05/05 18:56:25 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:56:25 $";
+static char sccsid[] = "$Id: v_itxt.c,v 10.3 1995/07/04 12:45:59 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:45:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -583,7 +583,6 @@ v_tcmd_setup(sp, vp, prompt, flags)
 {
 	SMAP *esmp;
 	VI_PRIVATE *vip;
-	size_t cnt;
 
 	vip = VIP(sp);
 
@@ -632,7 +631,7 @@ v_tcmd_setup(sp, vp, prompt, flags)
 	sp->cno = 0;
 
 	/* Don't update the modeline for now. */
-	F_SET(vip, VIP_INFOLINE);
+	F_SET(sp, S_INPUT_INFO);
 
 	FL_INIT(vip->im_flags,
 	    flags | TXT_APPENDEOL | TXT_CR | TXT_ESCAPE | TXT_INFOLINE);
@@ -658,8 +657,9 @@ v_tcmd_td(sp, vp)
 	VI_PRIVATE *vip;
 	size_t cnt;
 
+	F_CLR(sp, S_INPUT_INFO);
+
 	vip = VIP(sp);
-	F_CLR(vip, VIP_INFOLINE);
 	if (!IS_ONELINE(sp)) {
 		/* Restore the screen information. */
 		sp->t_rows = vip->gsv_t_rows;

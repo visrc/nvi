@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_z.c,v 10.2 1995/05/05 18:57:03 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:57:03 $";
+static char sccsid[] = "$Id: v_z.c,v 10.3 1995/07/04 12:46:02 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:46:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -126,5 +126,28 @@ v_z(sp, vp)
 			return (1);
 		break;
 	}
+	return (0);
+}
+
+/*
+ * vs_crel --
+ *	Change the relative size of the current screen.
+ *
+ * PUBLIC: int vs_crel __P((SCR *, long));
+ */
+int
+vs_crel(sp, count)
+	SCR *sp;
+	long count;
+{
+	/* Can't grow beyond the size of the window. */
+	if (count > O_VAL(sp, O_WINDOW))
+		count = O_VAL(sp, O_WINDOW);
+
+	sp->t_minrows = sp->t_rows = count;
+	if (sp->t_rows > sp->rows - 1)
+		sp->t_minrows = sp->t_rows = sp->rows - 1;
+	TMAP = HMAP + (sp->t_rows - 1);
+	F_SET(sp, S_SCR_REDRAW);
 	return (0);
 }

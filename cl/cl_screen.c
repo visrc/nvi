@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_screen.c,v 10.9 1995/07/02 11:57:13 bostic Exp $ (Berkeley) $Date: 1995/07/02 11:57:13 $";
+static char sccsid[] = "$Id: cl_screen.c,v 10.10 1995/07/04 12:46:46 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:46:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,10 +33,6 @@ static char sccsid[] = "$Id: cl_screen.c,v 10.9 1995/07/02 11:57:13 bostic Exp $
 #include "common.h"
 #include "cl.h"
 
-static int	cl_common __P((SCR *));
-static void	cl_sig_end __P((SCR *));
-static int	cl_sig_init __P((SCR *));
-
 /*
  * cl_vi_init --
  *	Initialize the vi screen.
@@ -49,7 +45,6 @@ cl_vi_init(sp)
 {
 	GS *gp;
 	struct termios t;
-	int nf;
 
 	/* Curses vi always reads from (and writes to) a terminal. */
 	gp = sp->gp;
@@ -58,9 +53,6 @@ cl_vi_init(sp)
 		    "016|Vi's standard input and output must be a terminal");
 		return (1);
 	}
-
-	if (gp->cl_private == NULL && cl_common(sp))
-		return (1);
 
 	/*
 	 * The SunOS/System V initscr() isn't reentrant.  Don't even think
@@ -179,7 +171,7 @@ cl_vi_end(sp)
 	CL_PRIVATE *clp;
 
 	clp = CLP(sp);
-	if (clp == NULL || !F_ISSET(clp, CL_INIT_VI))
+	if (!F_ISSET(clp, CL_INIT_VI))
 		return (0);
 
 	/* Restore the cursor keys to normal mode. */
@@ -190,9 +182,6 @@ cl_vi_end(sp)
 
 	/* Restore the terminal, and map sequences. */
 	cl_term_end(sp);
-
-	/* Restore signals. */
-	cl_sig_end(sp);
 
 #if defined(DEBUG) || defined(PURIFY) || !defined(STANDALONE)
 	if (clp->lline != NULL)
@@ -218,11 +207,7 @@ cl_ex_init(sp)
 	int err;
 	char *t;
 
-	if ((clp = CLP(sp)) == NULL) {
-		if (cl_common(sp))
-			return (1);
-		clp = CLP(sp);
-	}
+	clp = CLP(sp);
 
 #define	GETCAP(name, element) {						\
 	size_t __len;							\
@@ -232,7 +217,10 @@ cl_ex_init(sp)
 		memmove(clp->element, t, __len + 1);			\
 	}								\
 }
-	/* Set up the terminal database information. */
+	/*
+	 * Set up the terminal database information, and get cursor_address,
+	 * enter_standout_mode, exit_standout_mode, cursor_up, clr_eol.
+	 */
 	setupterm(O_STR(sp, O_TERM), STDOUT_FILENO, &err);
 	switch (err) {
 	case -1:
@@ -242,10 +230,6 @@ cl_ex_init(sp)
 		msgq(sp, M_ERR, "%s: unknown terminal type", O_STR(sp, O_TERM));
 		break;
 	case 1:
-		/*
-		 * Get cursor_address, enter_standout_mode, exit_standout_mode,
-		 * cursor_up, clr_eol.
-		 */
 		GETCAP("cup", cup);
 		GETCAP("smso", smso);
 		GETCAP("rmso", rmso);
@@ -292,11 +276,8 @@ cl_ex_end(sp)
 	CL_PRIVATE *clp;
 
 	clp = CLP(sp);
-	if (clp == NULL || !F_ISSET(CLP(sp), CL_INIT_EX))
+	if (!F_ISSET(clp, CL_INIT_EX))
 		return (0);
-
-	/* Restore signals. */
-	cl_sig_end(sp);
 
 	/* Restore the tty. */
 	if (cl_ex_tend(sp))
@@ -317,10 +298,8 @@ cl_ex_end(sp)
 
 	if (clp->lline != NULL)
 		free(clp->lline);
-	free(clp);
 #endif
-	sp->gp->cl_private = NULL;
-
+	F_CLR(clp, CL_INIT_EX);
 	return (0);
 }
 
@@ -407,129 +386,4 @@ cl_ex_tend(sp)
 
 	F_CLR(sp, S_EX_CANON);
 	return (0);
-}
-
-/*
- * cl_common --
- *	Allocation and common initialization for the CL private structure.
- */
-static int
-cl_common(sp)
-	SCR *sp;
-{
-	GS *gp;
-	CL_PRIVATE *clp;
-
-	gp = sp->gp;
-
-	CALLOC_RET(sp, clp, CL_PRIVATE *, 1, sizeof(CL_PRIVATE));
-	gp->cl_private = clp;
-
-	/* Start catching signals. */
-	if (cl_sig_init(sp))
-		return (1);
-
-	/* Initialize the functions. */
-	gp->scr_addnstr = cl_addnstr;
-	gp->scr_addstr = cl_addstr;
-	gp->scr_attr = cl_attr;
-	gp->scr_bell = cl_bell;
-	gp->scr_busy = cl_busy;
-	gp->scr_canon = cl_canon;
-	gp->scr_clrtoeol = cl_clrtoeol;
-	gp->scr_cursor = cl_cursor;
-	gp->scr_deleteln = cl_deleteln;
-	gp->scr_discard = cl_discard;
-	gp->scr_ex_adjust = cl_ex_adjust;
-	gp->scr_ex_init = cl_ex_init;
-	gp->scr_fmap = cl_fmap;
-	gp->scr_getkey = cl_getkey;
-	gp->scr_insertln = cl_insertln;
-	gp->scr_interrupt = cl_interrupt;
-	gp->scr_move = cl_move;
-	gp->scr_refresh = cl_refresh;
-	gp->scr_resize = cl_resize;
-	gp->scr_split = cl_split;
-	gp->scr_suspend = cl_suspend;
-
-	return (0);
-}
-
-#define	HANDLER(name, flag)						\
-static void name(signo)	int signo; {					\
-	F_SET(((CL_PRIVATE *)__global_list->cl_private), flag);		\
-}
-HANDLER(h_cont, CL_SIGCONT)
-HANDLER(h_hup, CL_SIGHUP)
-HANDLER(h_int, CL_SIGINT)
-HANDLER(h_term, CL_SIGTERM)
-HANDLER(h_winch, CL_SIGWINCH)
-
-/*
- * cl_sig_init --
- *	Initialize signals.
- */
-static int
-cl_sig_init(sp)
-	SCR *sp;
-{
-	CL_PRIVATE *clp;
-	GS *gp;
-	struct sigaction act;
-
-	/* Initialize the signals. */
-	gp = sp->gp;
-	(void)sigemptyset(&gp->blockset);
-
-	/*
-	 * Use sigaction(2), not signal(3), since we don't always want to
-	 * restart system calls.  The example is when waiting for a command
-	 * mode keystroke and SIGWINCH arrives.  Besides, you can't portably
-	 * restart system calls.
-	 */
-	clp = CLP(sp);
-#define	SETSIG(signal, handler, off) {					\
-	if (sigaddset(&gp->blockset, signal))				\
-		goto err;						\
-	act.sa_handler = handler;					\
-	sigemptyset(&act.sa_mask);					\
-	act.sa_flags = 0;						\
-	if (sigaction(signal, &act, &clp->oact[off]))			\
-		goto err;						\
-}
-	SETSIG(SIGCONT, h_cont, INDX_CONT);
-	SETSIG(SIGHUP, h_hup, INDX_HUP);
-	SETSIG(SIGINT, h_int, INDX_INT);
-	SETSIG(SIGTERM, h_term, INDX_TERM);
-	SETSIG(SIGWINCH, h_winch, INDX_WINCH);
-#undef SETSIG
-
-	/* Notify generic code that signals need to be blocked. */
-	F_SET(sp->gp, G_SIGBLOCK);
-	return (0);
-
-err:	msgq(sp, M_SYSERR, "signal init");
-	return (1);
-}
-
-/*
- * cl_sig_end --
- *	End signal setup.
- */
-static void
-cl_sig_end(sp)
-	SCR *sp;
-{
-	CL_PRIVATE *clp;
-
-	/* If never initialized, don't reset. */
-	if (!F_ISSET(sp->gp, G_SIGBLOCK))
-		return;
-
-	clp = CLP(sp);
-	(void)sigaction(SIGCONT, NULL, &clp->oact[INDX_CONT]);
-	(void)sigaction(SIGHUP, NULL, &clp->oact[INDX_HUP]);
-	(void)sigaction(SIGINT, NULL, &clp->oact[INDX_INT]);
-	(void)sigaction(SIGTERM, NULL, &clp->oact[INDX_TERM]);
-	(void)sigaction(SIGWINCH, NULL, &clp->oact[INDX_WINCH]);
 }

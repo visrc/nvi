@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 10.4 1995/06/09 12:52:29 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:52:29 $";
+static char sccsid[] = "$Id: v_search.c,v 10.5 1995/07/04 12:45:58 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:45:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -331,8 +331,6 @@ v_s_setup(sp, vp, ptrn, flags, dir)
 	char *ptrn;
 	dir_t dir;
 {
-	VI_PRIVATE *vip;
-
 	switch (dir) {
 	case BACKWARD:
 		if (b_search(sp, &vp->m_start, &vp->m_stop, ptrn, NULL,

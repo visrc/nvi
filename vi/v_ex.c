@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 10.6 1995/06/23 19:19:50 bostic Exp $ (Berkeley) $Date: 1995/06/23 19:19:50 $";
+static char sccsid[] = "$Id: v_ex.c,v 10.7 1995/07/04 12:45:56 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:45:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -399,7 +399,6 @@ v_ex_td2(sp, vp)
 {
 	GS *gp;
 	VI_PRIVATE *vip;
-	int isc;
 
 	gp = sp->gp;
 	vip = VIP(sp);
@@ -441,18 +440,16 @@ v_ex_td2(sp, vp)
 
 	switch (gp->cm_state) {
 	case ES_PARSE:
-		if (v_ex_done(sp, vp))
-			return (1);
 		/*
-	 	 * Get a continue character; users may continue in ex mode by
-		 * entering a ':'.  Historic practice is that any key can be
-		 * used to continue.  Nvi used to require a <carriage-return>
-		 * or <newline>, but this broke historic users badly.
+		 * We've just completed an ex command, catch up on messages,
+		 * and possibly leave canonical mode.  This is all done by
+		 * the screen so that it's possible to do it in a variety of
+		 * different ways.
 		 */
-		isc = 1;
-		if (vs_msgflush(sp, 0, &isc, NULL))
-			return (1);
-		return (isc ? v_ex(sp, vp) : 0);
+		F_SET(sp, S_COMPLETE_EX);
+		if (F_ISSET(sp, S_EX_CANON))
+			F_SET(vip, VIP_SKIPREFRESH);
+		return (v_ex_done(sp, vp));
 	case ES_RUNNING:
 		vip->run_func = EXP(sp)->run_func;
 		vip->cm_state = VS_RUNNING;
@@ -474,13 +471,8 @@ v_ex_done(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	CHAR_T ch;
-	VI_PRIVATE *vip;
 	recno_t lno;
 	size_t len;
-
-	/* Flush any remaining output, and clear screen tracking information. */
-	(void)ex_fflush(sp);
 
 	/*
 	 * The only cursor modifications are real, however, the underlying
@@ -508,40 +500,5 @@ v_ex_done(sp, vp)
 
 	vp->m_final.lno = sp->lno;
 	vp->m_final.cno = sp->cno;
-
-
-	/*
-	 * If ex entered canonical mode for some reason, wait to ensure that
-	 * the user saw any output and reset the terminal.  The entire screen
-	 * will need to be redrawn (there may have been vi messages at the
-	 * bottom of the screen when we entered canonical mode) and may need
-	 * to be repainted (ex may have trashed the screen).
-	 */
-	if (F_ISSET(sp, S_EX_CANON)) {
-		if (F_ISSET(sp, S_EX_WROTE)) {
-			F_CLR(sp, S_EX_WROTE);
-			(void)write(STDOUT_FILENO,
-			    STR_CMSG, sizeof(STR_CMSG) - 1);
-			if (v_getkey(sp, &ch))
-				return (1);
-			/*
-			 * XXX
-			 * We've already waited, don't wait again in the refresh
-			 * code.
-			 */
-			vip = VIP(sp);
-			vip->lcontinue = vip->linecount = vip->totalcount = 0;
-
-			/*
-			 * XXX
-			 * If ex wrote anything, we have to repaint the
-			 * entire screen.
-			 */
-			F_SET(sp, S_SCR_REFRESH);
-		}
-
-		if (sp->gp->scr_canon(sp, 0))
-			return (1);
-	}
 	return (0);
 }

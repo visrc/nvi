@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 10.5 1995/06/15 19:40:31 bostic Exp $ (Berkeley) $Date: 1995/06/15 19:40:31 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 10.6 1995/07/04 12:46:09 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:46:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,6 +34,28 @@ static char sccsid[] = "$Id: vs_refresh.c,v 10.5 1995/06/15 19:40:31 bostic Exp 
 #define	PAINT_CURSOR	0x01			/* Update cursor. */
 #define	PAINT_FLUSH	0x02			/* Flush to screen. */
 static int	vs_paint __P((SCR *, u_int));
+
+/*
+ * v_repaint --
+ *	Repaint selected lines from the screen.
+ *
+ * PUBLIC: int vs_repaint __P((SCR *, EVENT *));
+ */
+int
+vs_repaint(sp, evp)
+	SCR *sp;
+	EVENT *evp;
+{
+	SMAP *smp;
+
+	for (; evp->e_flno <= evp->e_tlno; ++evp->e_flno) {
+		smp = HMAP + evp->e_flno - 1;
+		SMAP_FLUSH(smp);
+		if (vs_line(sp, smp, NULL, NULL))
+			return (1);
+	}
+	return (0);
+}
 
 /*
  * vs_refresh --
@@ -109,12 +131,11 @@ vs_paint(sp, flags)
 	u_int flags;
 {
 	GS *gp;
-	MSG *freep, *mp;
 	SMAP *smp, tmp;
 	VI_PRIVATE *vip;
 	recno_t lastline, lcnt;
 	size_t cwtotal, cnt, len, x, y;
-	int ch, didpaint, inuse, leftright_warp, needrefresh;
+	int ch, didpaint, leftright_warp;
 	char *p;
 
 #define	 LNO	sp->lno
@@ -557,7 +578,7 @@ slow:	for (smp = HMAP; smp->lno != LNO; ++smp);
 	if (O_ISSET(sp, O_LEFTRIGHT)) {
 		cnt = vs_opt_screens(sp, LNO, &CNO) % SCREEN_COLS(sp);
 		if (cnt != HMAP->off) {
-			if (F_ISSET(vip, VIP_INFOLINE))
+			if (F_ISSET(sp, S_INPUT_INFO))
 				smp->off = cnt;
 			else {
 				for (smp = HMAP; smp <= TMAP; ++smp)
@@ -619,69 +640,31 @@ number:	if (O_ISSET(sp, O_NUMBER) &&
 			return (1);
 
 	/*
-	 * 9: Clear the flags that are handled by this routine.
+	 * 9: Flush changes to the screen.
 	 *
-	 * Done before displaying the modeline, because that code decides
-	 * whether or not to repaint lines it uses based on if the entire
-	 * screen is being repainted.  Since we just did that, clear the
-	 * lines.
+	 * Update and position the cursor, and flush.
 	 */
-	needrefresh = F_ISSET(sp, S_SCR_REFRESH);
+	if (LF_ISSET(PAINT_FLUSH)) {
+		OCNO = CNO;
+		OLNO = LNO;
+		(void)gp->scr_move(sp, y, SCNO);
+		(void)gp->scr_refresh(sp, F_ISSET(sp, S_SCR_REFRESH));
+
+		/*
+		 * XXX
+		 * Recalculate the "most favorite" cursor position.  Vi won't
+		 * know that we've warped the screen, so it's going to have a
+		 * wrong idea about where the cursor should be.  This is vi's
+		 * problem, and fixing it here is a gross layering violation.
+		 */
+		if (leftright_warp)
+			(void)vs_column(sp, &sp->rcm);
+	}
+
+	/* 10: Clear the flags that are handled by this routine. */
 	F_CLR(sp, S_SCR_CENTER |
 	    S_SCR_REDRAW | S_SCR_REFORMAT | S_SCR_REFRESH | S_SCR_TOP);
 	F_CLR(vip, VIP_CUR_INVALID | VIP_SCR_NUMBER);
-
-	/*
-	 * 10: Display the modeline.
-	 *
-	 * If the bottom line isn't in use by the colon command:
-	 *
-	 * Flush any queued messages and report on any line changes.  Then,
-	 * if the line isn't in use by messages, and we're not in the middle
-	 * of a map, put out the standard status line.  Queued messages are a
-	 * weird special case -- messages get written before we have a screen
-	 * on which to display them.  Display them as soon as we can.
-	 */
-	if (!F_ISSET(vip, VIP_INFOLINE) && !KEYS_WAITING(sp)) {
-		for (mp = sp->gp->msgq.lh_first; mp != NULL;) {
-			(void)vs_msgwrite(sp, mp->mtype, mp->buf, mp->len);
-			freep = mp;
-			mp = mp->q.le_next;
-			LIST_REMOVE(freep, q);
-			free(freep->buf);
-			free(freep);
-		}
-		if (F_ISSET(sp, S_STATUS)) {
-			F_CLR(sp, S_STATUS);
-			msg_status(sp, sp->lno, 0);
-		}
-		(void)msg_rpt(sp);
-		(void)vs_msgflush(sp, 0, NULL, &inuse);
-		if (!IS_ONELINE(sp) && !inuse)
-			vs_modeline(sp);
-	}
-
-	/* If not flushing to the screen, we're done. */
-	if (!LF_ISSET(PAINT_FLUSH))
-		return (0);
-
-	/* Update saved information. */
-	OCNO = CNO;
-	OLNO = LNO;
-
-	/* Place the cursor and flush it out. */
-	(void)gp->scr_move(sp, y, SCNO);
-	(void)gp->scr_refresh(sp, needrefresh);
-
-	/*
-	 * XXX
-	 * Recalculate the "most favorite" cursor position.  Vi doesn't know
-	 * that we've warped the screen and it's going to have a completely
-	 * wrong idea about where the cursor should be.  This is vi's problem,
-	 * and fixing it here is a gross violation of layering.
-	 */
-	if (leftright_warp)
-		(void)vs_column(sp, &sp->rcm);
 
 	return (0);
 
@@ -690,112 +673,4 @@ number:	if (O_ISSET(sp, O_NUMBER) &&
 #undef	 CNO
 #undef	OCNO
 #undef	SCNO
-}
-
-/*
- * vs_modeline --
- *	Update the mode line.
- *
- * PUBLIC: int vs_modeline __P((SCR *));
- */
-int
-vs_modeline(sp)
-	SCR *sp;
-{
-	static const char *modes[] = {
-		"215|Append",			/* SM_APPEND */
-		"216|Change",			/* SM_CHANGE */
-		"217|Command",			/* SM_COMMAND */
-		"218|Insert",			/* SM_INSERT */
-		"219|Replace",			/* SM_REPLACE */
-	};
-	GS *gp;
-	size_t cols, curlen, endpoint, len, midpoint, oldy, oldx;
-	const char *t;
-	char *p, buf[20];
-
-	/* Clear the mode line. */
-	gp = sp->gp;
-	(void)gp->scr_cursor(sp, &oldy, &oldx);
-	(void)gp->scr_move(sp, INFOLINE(sp), 0);
-	(void)gp->scr_clrtoeol(sp);
-
-	/*
-	 * We put down the file name, the ruler, the mode and the dirty flag.
-	 * If there's not enough room, there's not enough room, we don't play
-	 * any special games.  We try to put the ruler in the middle and the
-	 * mode and dirty flag at the end.
-	 *
-	 * !!!
-	 * Leave the last character blank, in case it's a really dumb terminal
-	 * with hardware scroll.  Second, don't paint the last character in the
-	 * screen, SunOS 4.1.1 and Ultrix 4.2 curses won't let you.
-	 */
-	cols = sp->cols - 1;
-
-	curlen = 0;
-	for (p = sp->frp->name; *p != '\0'; ++p);
-	while (--p > sp->frp->name) {
-		if (*p == '/') {
-			++p;
-			break;
-		}
-		if ((curlen += KEY_LEN(sp, *p)) > cols) {
-			curlen -= KEY_LEN(sp, *p);
-			++p;
-			break;
-		}
-	}
-	(void)gp->scr_move(sp, INFOLINE(sp), 0);
-	for (; *p != '\0'; ++p)
-		(void)ADDCH(sp, *p);
-
-	/*
-	 * Display the ruler.  If we're not at the midpoint yet, move there.
-	 * Otherwise, just add in two extra spaces.
-	 *
-	 * XXX
-	 * Assume that numbers, commas, and spaces only take up a single
-	 * column on the screen.
-	 */
-	if (O_ISSET(sp, O_RULER)) {
-		len = snprintf(buf, sizeof(buf), "%lu,%lu", sp->lno,
-		    (VIP(sp)->sc_smap->off - 1) * sp->cols + VIP(sp)->sc_col -
-		    (O_ISSET(sp, O_NUMBER) ? O_NUMBER_LENGTH : 0) + 1);
-		midpoint = (cols - ((len + 1) / 2)) / 2;
-		if (curlen < midpoint) {
-			(void)gp->scr_move(sp, INFOLINE(sp), midpoint);
-			(void)gp->scr_addstr(sp, buf);
-			curlen += len;
-		} else if (curlen + 2 + len < cols) {
-			(void)gp->scr_addstr(sp, "  ");
-			(void)gp->scr_addstr(sp, buf);
-			curlen += 2 + len;
-		}
-	}
-
-	/*
-	 * Display the mode and the modified flag, as close to the end of the
-	 * line as possible, but guaranteeing at least two spaces between the
-	 * ruler and the modified flag.
-	 */
-#define	MODESIZE	9
-	endpoint = cols;
-	if (O_ISSET(sp, O_SHOWMODE)) {
-		if (F_ISSET(sp->ep, F_MODIFIED))
-			--endpoint;
-		t = msg_cat(sp, modes[sp->showmode], &len);
-		endpoint -= len;
-	}
-
-	if (endpoint > curlen + 2) {
-		(void)gp->scr_move(sp, INFOLINE(sp), endpoint);
-		if (O_ISSET(sp, O_SHOWMODE)) {
-			if (F_ISSET(sp->ep, F_MODIFIED))
-				(void)gp->scr_addstr(sp, "*");
-			(void)gp->scr_addstr(sp, t);
-		}
-	}
-	(void)gp->scr_move(sp, oldy, oldx);
-	return (0);
 }

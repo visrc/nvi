@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 10.3 1995/06/20 15:26:21 bostic Exp $ (Berkeley) $Date: 1995/06/20 15:26:21 $";
+static char sccsid[] = "$Id: vs_line.c,v 10.4 1995/07/04 12:46:08 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:46:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -52,7 +52,7 @@ vs_line(sp, smp, yp, xp)
 	GS *gp;
 	SMAP *tsmp;
 	size_t chlen, cols_per_screen, cno_cnt, len, scno, skip_screens;
-	size_t offset_in_char, offset_in_line, oldy, oldx;
+	size_t offset_in_char, offset_in_line, nlen, oldy, oldx;
 	int ch, is_cached, is_infoline, is_partial, is_tab;
 	int list_tab, list_dollar;
 	char *p, nbuf[10];
@@ -106,7 +106,7 @@ vs_line(sp, smp, yp, xp)
 	 */
 	cols_per_screen = sp->cols;
 	list_tab = O_ISSET(sp, O_LIST);
-	if (is_infoline = F_ISSET(VIP(sp), VIP_INFOLINE)) {
+	if (is_infoline = F_ISSET(sp, S_INPUT_INFO)) {
 		list_dollar = 0;
 		if (O_ISSET(sp, O_LEFTRIGHT))
 			skip_screens = 0;
@@ -124,9 +124,9 @@ vs_line(sp, smp, yp, xp)
 		if (O_ISSET(sp, O_NUMBER)) {
 			cols_per_screen -= O_NUMBER_LENGTH;
 			if ((smp->lno == 1 || p != NULL) && skip_screens == 0) {
-				(void)snprintf(nbuf,
+				nlen = snprintf(nbuf,
 				    sizeof(nbuf), O_NUMBER_FMT, smp->lno);
-				(void)gp->scr_addstr(sp, nbuf);
+				(void)gp->scr_addstr(sp, nbuf, nlen);
 			}
 		}
 	}
@@ -341,12 +341,12 @@ empty:					(void)ADDCH(sp, ch);
 		 */
 		if (is_tab) {
 			if (chlen <= sizeof(TABSTR) - 1) {
-				(void)gp->scr_addnstr(sp, TABSTR, chlen);
+				(void)gp->scr_addstr(sp, TABSTR, chlen);
 			} else
 				while (chlen--)
 					(void)ADDCH(sp, TABCH);
 		} else
-			(void)gp->scr_addnstr(sp,
+			(void)gp->scr_addstr(sp,
 			    KEY_NAME(sp, ch) + offset_in_char, chlen);
 	}
 
@@ -387,9 +387,13 @@ vs_number(sp)
 	GS *gp;
 	SMAP *smp;
 	VI_PRIVATE *vip;
-	size_t oldy, oldx;
+	size_t len, oldy, oldx;
 	int exist;
 	char nbuf[10];
+
+	/* No reason to do anything if we're in input mode on the info line. */
+	if (F_ISSET(sp, S_INPUT_INFO))
+		return (0);
 
 	/*
 	 * Try and avoid getting the last line in the file, by getting the
@@ -413,13 +417,11 @@ vs_number(sp)
 	for (smp = HMAP; smp <= TMAP; ++smp) {
 		if (smp->off != 1)
 			continue;
-		if (F_ISSET(vip, VIP_INFOLINE))
-			break;
 		if (smp->lno != 1 && !exist && !file_eline(sp, smp->lno))
 			break;
 		(void)gp->scr_move(sp, smp - HMAP, 0);
-		(void)snprintf(nbuf, sizeof(nbuf), O_NUMBER_FMT, smp->lno);
-		(void)gp->scr_addstr(sp, nbuf);
+		len = snprintf(nbuf, sizeof(nbuf), O_NUMBER_FMT, smp->lno);
+		(void)gp->scr_addstr(sp, nbuf, len);
 	}
 	(void)gp->scr_move(sp, oldy, oldx);
 	return (0);

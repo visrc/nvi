@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 10.5 1995/07/02 12:00:11 bostic Exp $ (Berkeley) $Date: 1995/07/02 12:00:11 $";
+static char sccsid[] = "$Id: vi.c,v 10.6 1995/07/04 12:46:02 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:46:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -110,6 +110,9 @@ vi(sp, evp)
 		if (vip->cm_state == VS_RUNNING)
 			break;
 		goto interrupt;
+	case E_REPAINT:
+		F_SET(vip, VIP_CUR_INVALID);
+		return (vs_repaint(sp, evp) || vs_refresh(sp));
 	case E_RESIZE:
 		v_dtoh(sp);
 		if (v_scr_init(sp))
@@ -1072,6 +1075,9 @@ cmd:		vp = vip->vp = &vip->cmd;
 		sp->showmode = SM_COMMAND;
 		FL_CLR(gp->ec_flags, EC_MAPINPUT);
 		FL_SET(gp->ec_flags, EC_MAPCOMMAND);
+		 
+		/* Command completed, tell screen to catch up on messages. */
+		F_SET(sp, S_COMPLETE);
 	}
 
 	/* Clear any interrupt, it's been dealt with. */

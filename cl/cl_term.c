@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_term.c,v 10.3 1995/06/26 11:05:44 bostic Exp $ (Berkeley) $Date: 1995/06/26 11:05:44 $";
+static char sccsid[] = "$Id: cl_term.c,v 10.4 1995/07/04 12:46:49 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:46:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -190,10 +190,12 @@ cl_fmap(sp, stype, from, flen, to, tlen)
 	int nf;
 	char *p, *t, keyname[64];
 
+	EX_INIT_IGNORE(sp);
 	VI_INIT_IGNORE(sp);
 
 	(void)snprintf(keyname, sizeof(keyname), "kf%d", atoi(from + 1));
-	if ((t = tigetstr(keyname)) == NULL || t == (char *)-1)
+	if ((t = tigetstr(keyname)) == NULL ||
+	    t == (char *)-1 || strlen(t) == 0)
 		t = NULL;
 	if (t == NULL) {
 		p = msg_print(sp, from, &nf);
@@ -268,6 +270,8 @@ cl_optchange(sp, opt)
 		if (cl_putenv(buf))
 			return (1);
 		
+		/* If we're not really running, just ignore it. */
+		EX_INIT_IGNORE(sp);
 		VI_INIT_IGNORE(sp);
 
 		/* Restart curses.  If this fails, we're done. */
@@ -308,8 +312,8 @@ cl_ssize(sp, sigwinch, rowp, colp)
 	struct winsize win;
 #endif
 	size_t col, row;
-	int nf, rval;
-	char *p, *s, buf[2048];
+	int rval;
+	char *p;
 
 	/*
 	 * !!!
@@ -366,7 +370,7 @@ cl_ssize(sp, sigwinch, rowp, colp)
 	 * let it go, at least ex can run.
 	 */
 	if (row == 0 || col == 0) {
-		if ((s = getenv("TERM")) == NULL)
+		if ((p = getenv("TERM")) == NULL)
 			goto noterm;
 		if (row == 0)
 			if ((rval = tigetnum("lines")) < 0)
@@ -393,10 +397,10 @@ noterm:	if (row == 0)
 	 * deleting the LINES and COLUMNS environment variables from their
 	 * dot-files.
 	 */
-	if ((s = getenv("LINES")) != NULL)
-		row = strtol(s, NULL, 10);
-	if ((s = getenv("COLUMNS")) != NULL)
-		col = strtol(s, NULL, 10);
+	if ((p = getenv("LINES")) != NULL)
+		row = strtol(p, NULL, 10);
+	if ((p = getenv("COLUMNS")) != NULL)
+		col = strtol(p, NULL, 10);
 
 	if (rowp != NULL)
 		*rowp = row;

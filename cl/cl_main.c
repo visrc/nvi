@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_main.c,v 10.5 1995/06/26 11:06:28 bostic Exp $ (Berkeley) $Date: 1995/06/26 11:06:28 $";
+static char sccsid[] = "$Id: cl_main.c,v 10.6 1995/07/04 12:46:47 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:46:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,12 +33,12 @@ static char sccsid[] = "$Id: cl_main.c,v 10.5 1995/06/26 11:06:28 bostic Exp $ (
 
 #include "common.h"
 #include "cl.h"
-#include "../ex/script.h"
 
 GS *__global_list;			/* GLOBAL: List of screens. */
 
+static int	 cl_sig_init __P((SCR *));
+static void	 cl_sig_end __P((GS *));
 static GS	*gs_init __P((char *));
-static int	 ignore_busy __P((SCR *, const char *, int));
 static void	 killsig __P((SCR *));
 
 int
@@ -52,11 +52,13 @@ main(argc, argv)
 	CL_PRIVATE *clp;
 	EVENT ev;
 	GS *gp;
+	MSG *mp, *freep;
 	SCR *next, *sp;
 	recno_t rows;
-	size_t cols;
+	size_t cols, len;
 	u_int32_t flags, timeout;
 	int killset, nr, rval;
+	const char *p;
 
 	/* If loaded at 0 and jumping through a NULL pointer, stop. */
 	if (reenter++)
@@ -104,13 +106,13 @@ main(argc, argv)
 	 */
 	clp = CLP(sp);
 	if (F_ISSET(sp, S_VI)) {
-		if (clp != NULL && F_ISSET(clp, CL_INIT_EX)) {
-			if (F_ISSET(sp, S_EX_WROTE)) {
-				(void)write(STDOUT_FILENO,
-				    STR_CMSG, sizeof(STR_CMSG) - 1);
+		if (F_ISSET(clp, CL_INIT_EX)) {
+			if (F_ISSET(clp, CL_EX_WROTE)) {
+				p = msg_cmsg(sp, CMSG_CONT, &len);
+				(void)write(STDOUT_FILENO, p, len);
 				if (cl_getkey(sp, &ch))
 					goto err;
-				F_CLR(sp, S_EX_WROTE);
+				F_CLR(clp, CL_EX_WROTE);
 			}
 			/*
 			 * XXX
@@ -121,18 +123,32 @@ main(argc, argv)
 		}
 		if (cl_vi_init(sp))
 			goto err;
-		clp = CLP(sp);
 	} else
-		if (clp == NULL || !F_ISSET(clp, CL_INIT_EX)) {
-			if (cl_ex_init(sp))
-				goto err;
-			clp = CLP(sp);
-		}
+		if (!F_ISSET(clp, CL_INIT_EX) && cl_ex_init(sp))
+			goto err;
+
+	/* Start catching signals. */
+	if (cl_sig_init(sp))
+		return (1);
 
 	/* Editor startup. */
+	timeout = 0;
 	ev.e_event = E_START;
 	if (v_event_handler(sp, &ev, &timeout))
 		goto err;
+
+	/*
+	 * Messages get written before we have a screen on which to put them.
+	 * Make sure they get displayed as soon as we can.
+	 */
+	for (mp = gp->msgq.lh_first; mp != NULL;) {
+		(void)cl_msg(sp, mp->mtype, "%.*s", (int)mp->len, mp->buf);
+		freep = mp;
+		mp = mp->q.le_next;
+		LIST_REMOVE(freep, q);
+		free(freep->buf);
+		free(freep);
+	}
 
 #ifdef NCURSES_DEBUG
 	trace(TRACE_UPDATE | TRACE_MOVE | TRACE_CALLS);
@@ -228,10 +244,16 @@ handle:			timeout = 0;
 			    F_ISSET(sp, S_EX | S_VI | S_EXIT | S_EXIT_FORCE))
 				break;
 
-			/* Check for switched screens. */
+			/*
+			 * Check for switched screens, flush any waiting
+			 * messages.
+			 */
 			if (F_ISSET(sp, S_SSWITCH)) {
 				F_CLR(sp, S_SSWITCH);
+
+				cl_resolve(sp, 0);
 				sp = sp->nextdisp;
+				cl_resolve(sp, 1);
 			}
 		}
 
@@ -256,7 +278,6 @@ handle:			timeout = 0;
 			} else
 				if (cl_vi_end(sp) || cl_ex_init(sp))
 					goto err;
-			clp = CLP(sp);
 
 			ev.e_event = E_START;
 			if (v_event_handler(sp, &ev, &timeout))
@@ -292,201 +313,12 @@ err:		rval = 1;
 			(void)cl_vi_end(sp);
 	}
 
+	/* Stop catching signals. */
+	cl_sig_end(gp);
+
 	/* Shutdown screens/global area. */
 	v_end(gp);
 	exit (rval);
-}
-
-/*
- * cl_read --
- *	Read characters from the input.
- *
- * PUBLIC: input_t cl_read __P((SCR *,
- * PUBLIC: CHAR_T *, size_t, int *, struct timeval *));
- */
-input_t
-cl_read(sp, bp, blen, nrp, timeout)
-	SCR *sp;
-	CHAR_T *bp;
-	size_t blen;
-	int *nrp;
-	struct timeval *timeout;
-{
-	struct termios term1, term2;
-	struct timeval t, *tp;
-	GS *gp;
-	input_t rval;
-	int maxfd, nr, term_reset;
-
-	/*
-	 * There are three cases here:
-	 *
-	 * 1: A read from a file or a pipe.  In this case, the reads
-	 *    never timeout regardless.  This means that we can hang
-	 *    when trying to complete a map, but we're going to hang
-	 *    on the next read anyway.
-	 */
-	gp = sp->gp;
-	if (!F_ISSET(gp, G_STDIN_TTY)) {
-		if ((nr = read(STDIN_FILENO, bp, blen)) > 0) {
-			*nrp = nr;
-			return (INP_OK);
-		}
-		return (nr == 0 ? INP_EOF : INP_ERR);
-	}
-
-	/*
-	 * 2: A read with an associated timeout.  In this case, we are trying
-	 *    to complete a map sequence.  Ignore script windows and timeout
-	 *    as specified.  If input arrives, we fall into #3, but because
-	 *    timeout isn't NULL, don't read anything but command input.
-	 */
-	if (timeout != NULL) {
-		if (F_ISSET(sp, S_SCRIPT))
-			FD_CLR(sp->script->sh_master, &sp->rdfd);
-		FD_SET(STDIN_FILENO, &sp->rdfd);
-		switch (select(STDIN_FILENO + 1,
-		    &sp->rdfd, NULL, NULL, timeout)) {
-		case -1:			/* Error or interrupt. */
-			if (errno == EINTR)
-				return (INP_INTR);
-			goto err;
-		case  1:			/* Characters ready. */
-			break;
-		case  0:			/* Timeout. */
-			return (INP_TIMEOUT);
-		}
-	}
-
-	/*
-	 * The user can enter a key in the editor to quote a character.  If we
-	 * get here and the next key is supposed to be quoted, do what we can.
-	 * Reset the tty so that the user can enter a ^C, ^Q, ^S.  There's an
-	 * obvious race here, when the key has already been entered, but there's
-	 * nothing that we can do to fix that problem.
-	 */
-	if (FL_ISSET(gp->ec_flags, EC_QUOTED) &&
-	    !tcgetattr(STDIN_FILENO, &term1)) {
-		term2 = term1;
-		term2.c_lflag &= ~ISIG;
-		term2.c_iflag &= ~(IXON | IXOFF);
-		term_reset = 1;
-		(void)tcsetattr(STDIN_FILENO, TCSASOFT | TCSADRAIN, &term2);
-	} else
-		term_reset = 0;
-
-	/*
-	 * 3: At this point, we'll take anything that comes.  Select on the
-	 *    command file descriptor and the file descriptor for the script
-	 *    window if there is one.  Poll the fd's, increasing the timeout
-	 *    each time each time we don't get anything until we're blocked
-	 *    on I/O.
-	 */
-	for (t.tv_sec = t.tv_usec = 0;;) {
-		/*
-		 * Reset each time -- sscr_input() may call other
-		 * routines which could reset bits.
-		 */
-		if (timeout == NULL && F_ISSET(sp, S_SCRIPT)) {
-			tp = &t;
-
-			FD_SET(STDIN_FILENO, &sp->rdfd);
-			if (F_ISSET(sp, S_SCRIPT)) {
-				FD_SET(sp->script->sh_master, &sp->rdfd);
-				maxfd =
-				    MAX(STDIN_FILENO, sp->script->sh_master);
-			} else
-				maxfd = STDIN_FILENO;
-		} else {
-			tp = NULL;
-
-			FD_SET(STDIN_FILENO, &sp->rdfd);
-			if (F_ISSET(sp, S_SCRIPT))
-				FD_CLR(sp->script->sh_master, &sp->rdfd);
-			maxfd = STDIN_FILENO;
-		}
-
-		switch (select(maxfd + 1, &sp->rdfd, NULL, NULL, tp)) {
-		case -1:		/* Error or interrupt. */
-			if (errno == EINTR)
-				rval = INP_INTR;
-			else {
-err:				msgq(sp, M_SYSERR, "select");
-				rval = INP_ERR;
-			}
-			goto ret;
-		case 0:			/* Timeout. */
-			if (t.tv_usec) {
-				++t.tv_sec;
-				t.tv_usec = 0;
-			} else
-				t.tv_usec += 500000;
-			continue;
-		}
-
-		if (timeout == NULL && F_ISSET(sp, S_SCRIPT) &&
-		    FD_ISSET(sp->script->sh_master, &sp->rdfd)) {
-			sscr_input(sp);
-			continue;
-		}
-
-		/*
-		 * !!!
-		 * What's going on here is fairly scary stuff.  Ex runs the
-		 * terminal in canonical mode.  This means that the <newline>
-		 * character terminating a line of input is returned in the
-		 * buffer, but a trailing <EOF> character is not similarly
-		 * included.  Ex uses 0<EOF> and ^<EOF> as autoindent commands,
-		 * so it has to see the trailing <EOF> characters to determine
-		 * the difference between the user entering "0ab" or "0<EOF>ab".
-		 * We leave an extra slot in the buffer, so that if the buffer
-		 * isn't terminated by a <newline>, we can add a trailing <EOF>
-		 * character.  We lose if the buffer is too small for the line
-		 * and exactly N characters are entered followed by an <EOF>
-		 * character.
-		 */
-#define	ONE_FOR_EOF	1
-		switch (nr = read(STDIN_FILENO, bp, blen - ONE_FOR_EOF)) {
-		case  0:			/* EOF. */
-			/*
-			 * ^D in canonical mode returns a read of 0, i.e. EOF.
-			 * It's a valid command, but we don't want to run
-			 * forever if the terminal driver is returning EOF
-			 * after the user has disconnected.  We'll almost
-			 * certainly try to write something before this fires,
-			 * which should kill us, but You Never Know.
-			 */
-			if (++CLP(sp)->eof_count < 75) {
-				bp[0] = gp->original_termios.c_cc[VEOF];
-				*nrp = 1;
-				rval = INP_OK;
-
-			} else
-				rval = INP_EOF;
-			goto ret;
-		case -1:			/* Error or interrupt. */
-			if (errno == EINTR)
-				rval = INP_INTR;
-			else {
-				rval = INP_ERR;
-				msgq(sp, M_SYSERR, "read");
-			}
-			goto ret;
-		default:			/* Input characters. */
-			if (F_ISSET(sp, S_EX) && bp[nr - 1] != '\n')
-				bp[nr++] = gp->original_termios.c_cc[VEOF];
-			*nrp = nr;
-			CLP(sp)->eof_count = 0;
-			rval = INP_OK;
-			goto ret;
-		}
-		/* NOTREACHED */
-	}
-
-ret:	/* Restore the terminal state if it was modified. */
-	if (term_reset)
-		(void)tcsetattr(STDIN_FILENO, TCSASOFT | TCSADRAIN, &term1);
-	return (rval);
 }
 
 /*
@@ -497,6 +329,7 @@ static GS *
 gs_init(name)
 	char *name;
 {
+	CL_PRIVATE *clp;
 	GS *gp;
 	int fd;
 	char *p;
@@ -507,10 +340,37 @@ gs_init(name)
 
 	/* Allocate the global structure. */
 	CALLOC_NOMSG(NULL, gp, GS *, 1, sizeof(GS));
-	if (gp == NULL) {
+
+	/* Allocate the CL private structure. */
+	if (gp != NULL)
+		CALLOC_NOMSG(NULL, clp, CL_PRIVATE *, 1, sizeof(CL_PRIVATE));
+	if (gp == NULL || clp == NULL) {
 		(void)fprintf(stderr, "%s: %s\n", name, strerror(errno));
 		exit(1);
 	}
+	gp->cl_private = clp;
+
+	/* Initialize the functions. */
+	gp->scr_addstr = cl_addstr;
+	gp->scr_attr = cl_attr;
+	gp->scr_bell = cl_bell;
+	gp->scr_busy = cl_busy;
+	gp->scr_canon = cl_canon;
+	gp->scr_clrtoeol = cl_clrtoeol;
+	gp->scr_cursor = cl_cursor;
+	gp->scr_deleteln = cl_deleteln;
+	gp->scr_discard = cl_discard;
+	gp->scr_ex_adjust = cl_ex_adjust;
+	gp->scr_fmap = cl_fmap;
+	gp->scr_getkey = cl_getkey;
+	gp->scr_insertln = cl_insertln;
+	gp->scr_interrupt = cl_interrupt;
+	gp->scr_move = cl_move;
+	gp->scr_msg = cl_msg;
+	gp->scr_refresh = cl_refresh;
+	gp->scr_resize = cl_resize;
+	gp->scr_split = cl_split;
+	gp->scr_suspend = cl_suspend;
 
 	/*
 	 * Set the G_STDIN_TTY flag.  It's purpose is to avoid setting and
@@ -539,28 +399,88 @@ tcfail:			(void)fprintf(stderr,
 		(void)close(fd);
 	}
 
-	/*
-	 * There are two functions that can be called without preparation:
-	 * scr_busy and scr_canon.  Set it up so the right things happen.
-	 */
-	gp->scr_busy = ignore_busy;
-	gp->scr_canon = cl_canon;
-
 	gp->progname = name;
 	return (gp);
 }
 
+#define	HANDLER(name, flag)						\
+static void name(signo)	int signo; {					\
+	F_SET(((CL_PRIVATE *)__global_list->cl_private), flag);		\
+}
+HANDLER(h_cont, CL_SIGCONT)
+HANDLER(h_hup, CL_SIGHUP)
+HANDLER(h_int, CL_SIGINT)
+HANDLER(h_term, CL_SIGTERM)
+HANDLER(h_winch, CL_SIGWINCH)
+
 /*
- * ignore_busy --
- *	Placeholder for busy messages before the screen exists.
+ * cl_sig_init --
+ *	Initialize signals.
  */
 static int
-ignore_busy(sp, msg, on)
+cl_sig_init(sp)
 	SCR *sp;
-	const char *msg;
-	int on;
 {
+	CL_PRIVATE *clp;
+	GS *gp;
+	struct sigaction act;
+
+	gp = sp->gp;
+	clp = CLP(sp);
+
+	/* Initialize the signals. */
+	(void)sigemptyset(&gp->blockset);
+
+	/*
+	 * Use sigaction(2), not signal(3), since we don't always want to
+	 * restart system calls.  The example is when waiting for a command
+	 * mode keystroke and SIGWINCH arrives.  Besides, you can't portably
+	 * restart system calls.
+	 */
+#define	SETSIG(signal, handler, off) {					\
+	if (sigaddset(&gp->blockset, signal))				\
+		goto err;						\
+	act.sa_handler = handler;					\
+	sigemptyset(&act.sa_mask);					\
+	act.sa_flags = 0;						\
+	if (sigaction(signal, &act, &clp->oact[off]))			\
+		goto err;						\
+}
+	SETSIG(SIGCONT, h_cont, INDX_CONT);
+	SETSIG(SIGHUP, h_hup, INDX_HUP);
+	SETSIG(SIGINT, h_int, INDX_INT);
+	SETSIG(SIGTERM, h_term, INDX_TERM);
+	SETSIG(SIGWINCH, h_winch, INDX_WINCH);
+#undef SETSIG
+
+	/* Notify generic code that signals need to be blocked. */
+	F_SET(gp, G_SIGBLOCK);
 	return (0);
+
+err:	msgq(sp, M_SYSERR, "signal init");
+	return (1);
+}
+
+/*
+ * cl_sig_end --
+ *	End signal setup.
+ */
+static void
+cl_sig_end(gp)
+	GS *gp;
+{
+	CL_PRIVATE *clp;
+
+	/* If never initialized, don't reset. */
+	if (!F_ISSET(gp, G_SIGBLOCK))
+		return;
+
+	clp = (CL_PRIVATE *)gp->cl_private;
+	(void)sigaction(SIGCONT, NULL, &clp->oact[INDX_CONT]);
+	(void)sigaction(SIGHUP, NULL, &clp->oact[INDX_HUP]);
+	(void)sigaction(SIGINT, NULL, &clp->oact[INDX_INT]);
+	(void)sigaction(SIGTERM, NULL, &clp->oact[INDX_TERM]);
+	(void)sigaction(SIGWINCH, NULL, &clp->oact[INDX_WINCH]);
 }
 
 /*

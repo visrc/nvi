@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 10.2 1995/06/08 19:02:15 bostic Exp $ (Berkeley) $Date: 1995/06/08 19:02:15 $
+ *	$Id: vi.h,v 10.3 1995/07/04 12:46:06 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:46:06 $
  */
 
 /* Definition of a vi "word". */
@@ -340,24 +340,17 @@ typedef struct _vi_private {
 	size_t	 sc_col;	/* 0-N: LOGICAL screen column. */
 	SMAP	*sc_smap;	/* SMAP entry where sc_col occurs. */
 
-	mtype_t	 mtype;		/* Last displayed message type. */
-	size_t	 linecount;	/* 1-N: Output overwrite count. */
-	size_t	 lcontinue;	/* 1-N: Output line continue value. */
-	size_t	 totalcount;	/* 1-N: Output overwrite count. */
-
-#define	VIP_AB_TURNOFF	0x00001	/* If abbreviations turned off. */
-#define	VIP_CUR_INVALID	0x00002	/* Cursor position is unknown. */
-#define	VIP_DIVIDER	0x00004	/* Divider line was displayed. */
-#define	VIP_INFOLINE	0x00008	/* The infoline is being used by v_ntext(). */
-#define	VIP_MAPPED	0x00010	/* If command included mapped chars. */
-#define	VIP_PARTIAL	0x00020	/* If partial command entered. */
-#define	VIP_RCM_LAST	0x00040	/* Cursor drawn to the last column. */
-#define	VIP_REPLAY_TEST	0x00080	/* Test first character for nul replay. */
-#define	VIP_SCR_DIRTY	0x00100	/* Screen needs refreshing. */
-#define	VIP_SCR_NUMBER	0x00200	/* Screen numbering changed. */
-#define	VIP_SKIPREFRESH	0x00400	/* Skip next refresh. */
-#define	VIP_WM_SET	0x00800	/* Wrapmargin: happened. */
-#define	VIP_WM_SKIP	0x01000	/* Wrapmargin: skip follow blanks. */
+#define	VIP_AB_TURNOFF	0x0001	/* If abbreviations turned off. */
+#define	VIP_CUR_INVALID	0x0002	/* Cursor position is unknown. */
+#define	VIP_MAPPED	0x0004	/* If command included mapped chars. */
+#define	VIP_PARTIAL	0x0008	/* If partial command entered. */
+#define	VIP_RCM_LAST	0x0010	/* Cursor drawn to the last column. */
+#define	VIP_REPLAY_TEST	0x0020	/* Test first character for nul replay. */
+#define	VIP_SCR_DIRTY	0x0040	/* Screen needs refreshing. */
+#define	VIP_SCR_NUMBER	0x0080	/* Screen numbering changed. */
+#define	VIP_SKIPREFRESH	0x0100	/* Skip next refresh. */
+#define	VIP_WM_SET	0x0200	/* Wrapmargin: happened. */
+#define	VIP_WM_SKIP	0x0400	/* Wrapmargin: skip follow blanks. */
 	u_int16_t flags;
 } VI_PRIVATE;
 
@@ -398,7 +391,7 @@ typedef struct _vi_private {
 
 /* Add a character into the text. */
 #define	ADDCH(sp, ch)							\
-    (sp)->gp->scr_addnstr(sp, KEY_NAME(sp, ch), KEY_LEN(sp, ch));
+    (sp)->gp->scr_addstr(sp, KEY_NAME(sp, ch), KEY_LEN(sp, ch));
 
 /* If more than one screen being shown. */
 #define	IS_SPLIT(sp)							\
