@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 5.18 1992/12/05 11:08:45 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:08:45 $";
+static char sccsid[] = "$Id: ex_print.c,v 5.19 1992/12/20 12:03:44 bostic Exp $ (Berkeley) $Date: 1992/12/20 12:03:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -108,20 +108,11 @@ ex_print(ep, fp, tp, flags)
 	u_char *p;
 	char buf[10];
 
-#define	WCHECK(ch) {							\
-	if (col == ep->cols) {						\
-		(void)fprintf(ep->stdfp, "\n");				\
-		col = 0;						\
-	}								\
-	(void)putc(ch, ep->stdfp);					\
-	++col;								\
-}
 	for (from = fp->lno, to = tp->lno; from <= to; ++from) {
 		/* Display the line number. */
-		if (flags & E_F_HASH) {
-			(void)fprintf(ep->stdfp, "%7ld ", from);
-			col = 8;
-		} else
+		if (flags & E_F_HASH)
+			col = fprintf(ep->stdfp, "%7ld ", from);
+		else
 			col = 0;
 	
 		/*
@@ -133,6 +124,15 @@ ex_print(ep, fp, tp, flags)
 			GETLINE_ERR(from);
 			return (1);
 		}
+
+#define	WCHECK(ch) {							\
+	if (col == ep->cols) {						\
+		(void)putc('\n', ep->stdfp);				\
+		col = 0;						\
+	}								\
+	(void)putc(ch, ep->stdfp);					\
+	++col;								\
+}
 		for (rlen = len; rlen--;) {
 			ch = *p++;
 			if (flags & E_F_LIST)
