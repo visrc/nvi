@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.59 1994/04/10 10:10:43 bostic Exp $ (Berkeley) $Date: 1994/04/10 10:10:43 $";
+static char sccsid[] = "$Id: key.c,v 8.60 1994/04/13 10:36:41 bostic Exp $ (Berkeley) $Date: 1994/04/13 10:36:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -661,7 +661,7 @@ flush:			term_map_flush(sp, "Character remapped too many times");
 
 nomap:	ch = tty->ch[tty->next];
 	if (LF_ISSET(TXT_MAPNODIGIT) && !isdigit(ch)) {
-not_digit_ch:	chp->ch = NOT_DIGIT_CH;
+not_digit_ch:	chp->ch = CH_NOT_DIGIT;
 		chp->value = 0;
 		chp->flags = 0;
 		rval = INP_OK;

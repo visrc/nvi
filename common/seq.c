@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 8.27 1994/04/09 18:09:03 bostic Exp $ (Berkeley) $Date: 1994/04/09 18:09:03 $";
+static char sccsid[] = "$Id: seq.c,v 8.28 1994/04/13 10:36:27 bostic Exp $ (Berkeley) $Date: 1994/04/13 10:36:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -292,9 +292,9 @@ seq_save(sp, fp, prefix, stype)
 			(void)fprintf(fp, "%s", prefix);
 		for (p = qp->input, olen = qp->ilen; olen > 0; --olen) {
 			ch = *p++;
-			if (ch == LITERAL_CH || ch == '|' ||
+			if (ch == CH_LITERAL || ch == '|' ||
 			    isblank(ch) || KEY_VAL(sp, ch) == K_NL)
-				(void)putc(LITERAL_CH, fp);
+				(void)putc(CH_LITERAL, fp);
 			(void)putc(ch, fp);
 		}
 		(void)putc(' ', fp);
@@ -302,9 +302,9 @@ seq_save(sp, fp, prefix, stype)
 			for (p = qp->output,
 			    olen = qp->olen; olen > 0; --olen) {
 				ch = *p++;
-				if (ch == LITERAL_CH || ch == '|' ||
+				if (ch == CH_LITERAL || ch == '|' ||
 				    KEY_VAL(sp, ch) == K_NL)
-					(void)putc(LITERAL_CH, fp);
+					(void)putc(CH_LITERAL, fp);
 				(void)putc(ch, fp);
 			}
 		(void)putc('\n', fp);

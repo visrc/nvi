@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 8.40 1994/04/12 09:57:22 bostic Exp $ (Berkeley) $Date: 1994/04/12 09:57:22 $
+ *	$Id: key.h,v 8.41 1994/04/13 10:36:49 bostic Exp $ (Berkeley) $Date: 1994/04/13 10:36:49 $
  */
 
 /*
@@ -114,18 +114,21 @@ enum confirm	{ CONF_NO, CONF_QUIT, CONF_YES };
 #define	STANDARD_TAB	6
 
 /* Various special characters, messages. */
-#define	CURSOR_CH	' '			/* Cursor character. */
-#define	END_CH		'$'			/* End of a range. */
-#define	HEX_CH		'x'			/* Leading hex number. */
-#define	LITERAL_CH	'\026'			/* Standard literal ^V. */
-#define	NOT_DIGIT_CH	'a'			/* A non-isdigit() character. */
-#define	NO_CH		'n'			/* No. */
-#define	QUIT_CH		'q'			/* Quit. */
-#define	YES_CH		'y'			/* Yes. */
+#define	CH_BSEARCH	'?'			/* Backward search prompt. */
+#define	CH_CURSOR	' '			/* Cursor character. */
+#define	CH_ENDMARK	'$'			/* End of a range. */
+#define	CH_EXPROMPT	':'			/* Ex prompt. */
+#define	CH_FSEARCH	'/'			/* Forward search prompt. */
+#define	CH_HEX		'x'			/* Leading hex number. */
+#define	CH_LITERAL	'\026'			/* ASCII ^V. */
+#define	CH_NO		'n'			/* No. */
+#define	CH_NOT_DIGIT	'a'			/* A non-isdigit() character. */
+#define	CH_QUIT		'q'			/* Quit. */
+#define	CH_YES		'y'			/* Yes. */
 
-#define	CONFSTRING	"confirm? [ynq]"
-#define	CONTMSG		"Enter return to continue: "
-#define	CONTMSG_I	"Enter return to continue [q to quit]: "
+#define	STR_CONFIRM	"confirm? [ynq]"
+#define	STR_CMSG	"Enter return to continue: "
+#define	STR_QMSG	"Enter return to continue [q to quit]: "
 
 /* Flags describing how input is handled. */
 #define	TXT_AICHARS	0x00000001	/* Leading autoindent chars. */

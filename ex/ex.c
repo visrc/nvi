@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.116 1994/04/12 11:06:32 bostic Exp $ (Berkeley) $Date: 1994/04/12 11:06:32 $";
+static char sccsid[] = "$Id: ex.c,v 8.117 1994/04/13 10:36:11 bostic Exp $ (Berkeley) $Date: 1994/04/13 10:36:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -73,9 +73,11 @@ ex(sp, ep)
 	 * from a file.  In addition, the first time a ^H was discarded from
 	 * the input, a message "^H discarded" was displayed.  We don't bother.
 	 */
-	LF_INIT(TXT_BACKSLASH | TXT_CNTRLD | TXT_CR | TXT_PROMPT);
+	LF_INIT(TXT_BACKSLASH | TXT_CNTRLD | TXT_CR);
 	if (O_ISSET(sp, O_BEAUTIFY))
 		LF_SET(TXT_BEAUTIFY);
+	if (O_ISSET(sp, O_PROMPT))
+		LF_SET(TXT_PROMPT);
 
 	for (eval = 0;; ++sp->if_lno) {
 		/*
@@ -648,7 +650,7 @@ loop:	if (nl) {
 	if (cp == &cmds[C_SET])
 		for (p = cmd, len = cmdlen; len > 0; --len, ++p)
 			if (*p == '\\')
-				*p = LITERAL_CH;
+				*p = CH_LITERAL;
 
 	/*
 	 * Set the default addresses.  It's an error to specify an address for
