@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.88 1994/03/22 18:41:59 bostic Exp $ (Berkeley) $Date: 1994/03/22 18:41:59 $
+ *	$Id: screen.h,v 8.89 1994/03/23 14:45:13 bostic Exp $ (Berkeley) $Date: 1994/03/23 14:45:13 $
  */
 
 /*
@@ -70,6 +70,25 @@ struct _fref {
 #define	FILENAME(frp)							\
 	((frp)->cname != NULL) ? (frp)->cname :				\
 	((frp)->name != NULL) ? (frp)->name : (frp)->tname
+
+/* Timer structure. */
+typedef struct _timer {
+	struct timeval tod;		/* Time-of-day for timer fire. */
+	int period;			/* Periodic timer value. */
+	char const *msg;		/* Busy message. */
+	int (*handler)			/* Timer handler. */
+	    __P((SCR *, char const *));
+
+#define	TIMER_ISRUNNING	0x01		/* Timer is live. */
+#define	TIMER_REPEATS	0x02		/* Timer is reset. */
+	u_int8_t flags;
+} TIMER;
+
+/* Timer structure supporting routines. */
+void	 h_alrm __P((int));
+TIMER	*start_timer __P((SCR *,
+	    int, int (*)(SCR *, char const *), char const *, u_int));
+void	 stop_timer __P((SCR *, TIMER *));
 
 /*
  * SCR --
@@ -137,13 +156,12 @@ struct _scr {
 
 	SCRIPT	*script;		/* Vi: script mode information .*/
 
-	char const *time_msg;		/* ITIMER_REAL message. */
-	struct itimerval time_value;	/* ITIMER_REAL saved value. */
-	struct sigaction time_handler;	/* ITIMER_REAL saved handler. */
+#define	MAX_TIMERS	5		/* ITIMER_REAL max count. */
+	TIMER timers[MAX_TIMERS];	/* ITIMER_REAL array. */
 
 	struct sigaction intr_act;	/* Interrupt saved signal state. */
 	struct termios	 intr_term;	/* Interrupt saved terminal state. */
-	int	 intr_level;		/* 1-N: Interrupt level. */
+	int	 intr_level;		/* 0-N: Interrupt level. */
 
 	void	*vi_private;		/* Vi private area. */
 	void	*ex_private;		/* Ex private area. */
@@ -271,23 +289,27 @@ struct _scr {
 	u_int32_t flags;
 };
 
+/* Interrupts have no structure, so routines are here. */
+void	 intr_end __P((SCR *));
+int	 intr_init __P((SCR *));
+
 /* Generic routines to start/stop a screen. */
-int	screen_end __P((SCR *));
-int	screen_init __P((SCR *, SCR **, u_int));
+int	 screen_end __P((SCR *));
+int	 screen_init __P((SCR *, SCR **, u_int));
 
 /* Public interfaces to the underlying screens. */
-int	ex_screen_copy __P((SCR *, SCR *));
-int	ex_screen_end __P((SCR *));
-int	ex_screen_init __P((SCR *));
-int	sex_screen_copy __P((SCR *, SCR *));
-int	sex_screen_end __P((SCR *));
-int	sex_screen_init __P((SCR *));
-int	svi_screen_copy __P((SCR *, SCR *));
-int	svi_screen_end __P((SCR *));
-int	svi_screen_init __P((SCR *));
-int	v_screen_copy __P((SCR *, SCR *));
-int	v_screen_end __P((SCR *));
-int	v_screen_init __P((SCR *));
-int	xaw_screen_copy __P((SCR *, SCR *));
-int	xaw_screen_end __P((SCR *));
-int	xaw_screen_init __P((SCR *));
+int	 ex_screen_copy __P((SCR *, SCR *));
+int	 ex_screen_end __P((SCR *));
+int	 ex_screen_init __P((SCR *));
+int	 sex_screen_copy __P((SCR *, SCR *));
+int	 sex_screen_end __P((SCR *));
+int	 sex_screen_init __P((SCR *));
+int	 svi_screen_copy __P((SCR *, SCR *));
+int	 svi_screen_end __P((SCR *));
+int	 svi_screen_init __P((SCR *));
+int	 v_screen_copy __P((SCR *, SCR *));
+int	 v_screen_end __P((SCR *));
+int	 v_screen_init __P((SCR *));
+int	 xaw_screen_copy __P((SCR *, SCR *));
+int	 xaw_screen_end __P((SCR *));
+int	 xaw_screen_init __P((SCR *));

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.38 1994/03/22 19:47:36 bostic Exp $ (Berkeley) $Date: 1994/03/22 19:47:36 $";
+static char sccsid[] = "$Id: search.c,v 8.39 1994/03/23 14:44:53 bostic Exp $ (Berkeley) $Date: 1994/03/23 14:44:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -233,6 +233,7 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 	char *ptrn, **eptrn;
 	u_int *flagp;
 {
+	TIMER *timerp;
 	regmatch_t match[1];
 	regex_t *re, lre;
 	recno_t lno;
@@ -288,7 +289,8 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 	}
 
 	/* Set up busy message, interrupts. */
-	busy_on(sp, 1, "Searching...");
+	timerp = F_ISSET(sp, S_EXSILENT) ?
+	    NULL : start_timer(sp, 8, sp->s_busy, "Searching...", 0);
 	teardown = !intr_init(sp);
 
 	for (rval = 1, wrapped = 0;; ++lno, coff = 0) {
@@ -370,7 +372,8 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 	}
 
 	/* Turn off busy message, interrupts. */
-	busy_off(sp);
+	if (timerp != NULL)
+		stop_timer(sp, timerp);
 	if (teardown)
 		intr_end(sp);
 	return (rval);
@@ -384,6 +387,7 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 	char *ptrn, **eptrn;
 	u_int *flagp;
 {
+	TIMER *timerp;
 	regmatch_t match[1];
 	regex_t *re, lre;
 	recno_t lno;
@@ -420,7 +424,8 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 		lno = fm->lno;
 
 	/* Turn on busy message, interrupts. */
-	busy_on(sp, 1, "Searching...");
+	timerp = F_ISSET(sp, S_EXSILENT) ?
+	    NULL : start_timer(sp, 8, sp->s_busy, "Searching...", 0);
 	teardown = !intr_init(sp);
 
 	for (rval = 1, wrapped = 0, coff = fm->cno;; --lno, coff = 0) {
@@ -526,7 +531,8 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 	}
 
 	/* Turn off busy message, interrupts. */
-err:	busy_off(sp);
+err:	if (timerp != NULL)
+		stop_timer(sp, timerp);
 	if (teardown)
 		intr_end(sp);
 

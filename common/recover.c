@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.46 1994/03/22 19:53:26 bostic Exp $ (Berkeley) $Date: 1994/03/22 19:53:26 $";
+static char sccsid[] = "$Id: recover.c,v 8.47 1994/03/23 14:45:22 bostic Exp $ (Berkeley) $Date: 1994/03/23 14:45:22 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -76,7 +76,7 @@ static char sccsid[] = "$Id: recover.c,v 8.46 1994/03/22 19:53:26 bostic Exp $ (
 #define	VI_FHEADER	"Vi-recover-file: "
 #define	VI_PHEADER	"Vi-recover-path: "
 
-static void	rcv_alrm __P((int));
+static int	rcv_alrm __P((SCR *, char const *));
 static int	rcv_mailfile __P((SCR *, EXF *));
 static void	rcv_syncit __P((SCR *, int));
 
@@ -153,6 +153,7 @@ rcv_init(sp, ep)
 	SCR *sp;
 	EXF *ep;
 {
+	TIMER *timerp;
 	struct itimerval value;
 	struct sigaction act;
 	recno_t lno;
@@ -171,32 +172,23 @@ rcv_init(sp, ep)
 		goto err;
 
 	/* Turn on a busy message, and sync it to backing store. */
-	busy_on(sp, 1, "Copying file for recovery...");
+
+	timerp = F_ISSET(sp, S_EXSILENT) ? NULL :
+	    start_timer(sp, 8, sp->s_busy, "Copying file for recovery...", 0);
 	if (ep->db->sync(ep->db, R_RECNOSYNC)) {
 		msgq(sp, M_ERR, "Preservation failed: %s: %s",
 		    ep->rcv_path, strerror(errno));
-		busy_off(sp);
+		if (timerp != NULL)
+			stop_timer(sp, timerp);
 		goto err;
 	}
-	busy_off(sp);
+	if (timerp != NULL)
+		stop_timer(sp, timerp);
 
-	if (!F_ISSET(sp->gp, G_RECOVER_SET)) {
-		/* Install the recovery timer handler. */
-		act.sa_handler = rcv_alrm;
-		sigemptyset(&act.sa_mask);
-		act.sa_flags = 0;
-		(void)sigaction(SIGALRM, &act, NULL);
-
-		/* Start the recovery timer. */
-		value.it_interval.tv_sec = value.it_value.tv_sec = RCV_PERIOD;
-		value.it_interval.tv_usec = value.it_value.tv_usec = 0;
-		if (setitimer(ITIMER_REAL, &value, NULL)) {
-			msgq(sp, M_ERR,
-			    "Error: setitimer: %s", strerror(errno));
-err:			msgq(sp, M_ERR,
-			    "Recovery after system crash not possible.");
-			return (1);
-		}
+	if (!F_ISSET(sp->gp, G_RECOVER_SET) && start_timer(sp,
+	    RCV_PERIOD, rcv_alrm, NULL, TIMER_REPEATS) == NULL) {
+err:		msgq(sp, M_ERR, "Recovery after system crash not possible.");
+		return (1);
 	}
 
 	/* We believe the file is recoverable. */
@@ -208,11 +200,13 @@ err:			msgq(sp, M_ERR,
  * rcv_alrm --
  *	Recovery timer interrupt handler.
  */
-static void
-rcv_alrm(signo)
-	int signo;
+static int
+rcv_alrm(sp, msg)
+	SCR *sp;
+	char const *msg;
 {
-	F_SET(__global_list, G_SIGALRM);
+	F_SET(sp->gp, G_SIGALRM);
+	return (0);
 }
 
 /*
