@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.142 1994/08/05 10:14:31 bostic Exp $ (Berkeley) $Date: 1994/08/05 10:14:31 $";
+static char sccsid[] = "$Id: ex.c,v 8.143 1994/08/07 10:29:22 bostic Exp $ (Berkeley) $Date: 1994/08/07 10:29:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -399,23 +399,22 @@ loop:	if (nl) {
 		 * further arguments (flag, buffer, count).  Make it work.
 		 * Permit further arguments for the few shreds of dignity
 		 * it offers.
+		 *
+		 * !!!
+		 * Note, adding commands that start with 'd', and match
+		 * "delete" up to a l, p, +, - or # character can break
+		 * this code.
 		 */
-		if (p[0] == 'd' && (namelen == 1 || p[1] == 'e')) {
+		if (p[0] == 'd') {
 			for (s = p,
 			    t = cmds[C_DELETE].name; *s == *t; ++s, ++t);
-			switch(s[0]) {
-			case 'l':
-			case 'p':
-				cmd -= s - p;
-				cmdlen += s - p;
-				/* FALLTHROUGH */
-			case '+':
-			case '-':
-			case '#':
+			if (s[0] == 'l' || s[0] == 'p' ||
+			    s[0] == '+' || s[0] == '-' || s[0] == '#') {
+				len = (cmd - p) - (s - p);
+				cmd -= len;
+				cmdlen += len;
 				cp = &cmd_del2;
 				goto skip;
-			default:
-				break;
 			}
 		}
 
