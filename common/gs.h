@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 8.38 1994/07/17 00:28:42 bostic Exp $ (Berkeley) $Date: 1994/07/17 00:28:42 $
+ *	$Id: gs.h,v 8.39 1994/07/23 13:29:13 bostic Exp $ (Berkeley) $Date: 1994/07/23 13:29:13 $
  */
 
 struct _gs {
@@ -30,7 +30,7 @@ struct _gs {
 	IBUF	*tty;			/* Key input buffer. */
 
 	CB	*dcbp;			/* Default cut buffer pointer. */
-	CB	*dcb_store;		/* Default cut buffer storage. */
+	CB	 dcb_store;		/* Default cut buffer storage. */
 	LIST_HEAD(_cuth, _cb) cutq;	/* Linked list of cut buffers. */
 
 #define	MAX_BIT_SEQ	128		/* Max + 1 fast check character. */
