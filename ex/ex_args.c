@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 8.23 1994/06/29 19:08:15 bostic Exp $ (Berkeley) $Date: 1994/06/29 19:08:15 $";
+static char sccsid[] = "$Id: ex_args.c,v 8.24 1994/07/02 11:49:23 bostic Exp $ (Berkeley) $Date: 1994/07/02 11:49:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -90,7 +90,7 @@ ex_next(sp, ep, cmdp)
 			return (1);
 		noargs = 0;
 	} else {
-		if (sp->cargv[1] == NULL) {
+		if (sp->cargv == NULL || sp->cargv[1] == NULL) {
 			msgq(sp, M_ERR, "No more files to edit");
 			return (1);
 		}
