@@ -4,9 +4,10 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 5.34 1993/02/14 18:00:27 bostic Exp $ (Berkeley) $Date: 1993/02/14 18:00:27 $
+ *	$Id: common.h,v 5.35 1993/02/14 18:02:44 bostic Exp $ (Berkeley) $Date: 1993/02/14 18:02:44 $
  */
 
+#include <limits.h>		/* XXX */
 #include <db.h>
 
 /*
