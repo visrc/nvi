@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 5.1 1993/05/16 12:39:26 bostic Exp $ (Berkeley) $Date: 1993/05/16 12:39:26 $";
+static char sccsid[] = "$Id: recover.c,v 5.2 1993/05/16 12:49:47 bostic Exp $ (Berkeley) $Date: 1993/05/16 12:49:47 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -247,7 +247,7 @@ rcv_list()
 			    "vi: %s: %s\n", dp->d_name, strerror(errno));
 			continue;
 		}
-		if ((p = strchr(dp->d_name + 3, '.')) == NULL)
+		if ((p = strrchr(dp->d_name + 3, '.')) == NULL)
 			continue;
 		if (myid != 0 && myid != sb.st_uid)
 			continue;
@@ -290,7 +290,7 @@ rcv_read(sp, name)
 	while ((dp = readdir(dirp)) != NULL) {
 		if (dp->d_namlen <= 3 || strncmp(dp->d_name, "vi.", 3))
 			continue;
-		if ((p = strchr(dp->d_name + 3, '.')) == NULL)
+		if ((p = strrchr(dp->d_name + 3, '.')) == NULL)
 			continue;
 		(void)snprintf(path, sizeof(path),
 		    "%s/%s", _PATH_PRESERVE, dp->d_name);
