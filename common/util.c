@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.1 1993/06/09 22:22:31 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:22:31 $";
+static char sccsid[] = "$Id: util.c,v 8.2 1993/08/05 18:01:59 bostic Exp $ (Berkeley) $Date: 1993/08/05 18:01:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -364,4 +364,35 @@ set_window_size(sp, set_row)
 	if (isset)
 		F_CLR(&sp->opts[O_COLUMNS], OPT_SET);
 	return (0);
+}
+
+/*
+ * set_alt_fname --
+ *	Set the alternate file name.
+ *
+ * Swap the alternate file name.  It's a routine because I wanted some place
+ * to hang this comment.  The alternate file name (normally referenced using
+ * the special character '#' during file expansion) is set by many
+ * operations.  In the historic vi, the commands "ex", and "edit" obviously
+ * set the alternate file name because they switched the underlying file.
+ * Less obviously, the "read", "file", "write" and "wq" commands set it as
+ * well.  In this implementation, some new commands have been added to the
+ * list.  Where it gets interesting is that the alternate file name is set
+ * multiple times by some commands.  If an edit attempt fails (for whatever
+ * reason, like the current file is modified but as yet unwritten), it is
+ * set to the file name that the user was unable to edit.  If the edit
+ * succeeds, it is set to the last file name that was edited.  Good fun.
+ *
+ * XXX
+ * Add errlist if it doesn't get ripped out.
+ */
+void
+set_alt_fname(sp, fname)
+	SCR *sp;
+	char *fname;
+{
+	if (sp->alt_fname != NULL)
+		FREE(sp->alt_fname, strlen(sp->alt_fname));
+	if ((sp->alt_fname = strdup(fname)) == NULL)
+		msgq(sp, M_ERR, "Error: %s", strerror(errno));
 }
