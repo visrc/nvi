@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 8.15 1993/12/02 11:51:39 bostic Exp $ (Berkeley) $Date: 1993/12/02 11:51:39 $";
+static char sccsid[] = "$Id: ex_write.c,v 8.16 1993/12/03 08:24:37 bostic Exp $ (Berkeley) $Date: 1993/12/03 08:24:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -115,8 +115,9 @@ exwr(sp, ep, cmdp, cmd)
 		LF_SET(FS_FORCE);
 
 	/* If no more arguments, just write the file back. */
-	for (p = cmdp->argv[0]->bp; *p && isblank(*p); ++p);
-	if (*p == '\0') {
+	if (cmdp->argc != 0)
+		for (p = cmdp->argv[0]->bp; *p && isblank(*p); ++p);
+	if (cmdp->argc == 0 || *p == '\0') {
 		if (F_ISSET(cmdp, E_ADDR2_ALL))
 			LF_SET(FS_ALL);
 		return (file_write(sp, ep,
