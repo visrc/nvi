@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_cscope.c,v 10.19 2001/06/25 15:19:15 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:15 $";
+static const char sccsid[] = "$Id: ex_cscope.c,v 10.20 2003/01/26 15:39:46 skimo Exp $ (Berkeley) $Date: 2003/01/26 15:39:46 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -251,6 +251,10 @@ cscope_add(SCR *sp, EXCMD *cmdp, CHAR_T *dname)
 		dbname = CSCOPE_DBFILE;
 	} else if ((dbname = strrchr(np, '/')) != NULL)
 		*dbname++ = '\0';
+	else {
+		dbname = np;
+		np = ".";
+	}
 
 	/* Allocate a cscope connection structure and initialize its fields. */
 	len = strlen(np);
@@ -276,12 +280,7 @@ cscope_add(SCR *sp, EXCMD *cmdp, CHAR_T *dname)
 	LIST_INSERT_HEAD(&exp->cscq, csc, q);
 
 	/* Read the initial prompt from the cscope to make sure it's okay. */
-	if (read_prompt(sp, csc)) {
-		terminate(sp, csc, 0);
-		return (1);
-	}
-
-	return (0);
+	return read_prompt(sp, csc);
 
 err:	free(csc);
 	return (1);
@@ -754,8 +753,7 @@ parse(SCR *sp, CSC *csc, TAGQ *tqp, int *matchesp)
 		++*matchesp;
 	}
 
-	(void)read_prompt(sp, csc);
-	return (0);
+	return read_prompt(sp, csc);
 
 io_err:	if (feof(csc->from_fp))
 		errno = EIO;
