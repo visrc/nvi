@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.23 1993/10/27 16:16:04 bostic Exp $ (Berkeley) $Date: 1993/10/27 16:16:04 $";
+static char sccsid[] = "$Id: recover.c,v 8.24 1993/10/28 11:21:11 bostic Exp $ (Berkeley) $Date: 1993/10/28 11:21:11 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -17,7 +17,6 @@ static char sccsid[] = "$Id: recover.c,v 8.23 1993/10/27 16:16:04 bostic Exp $ (
 #include <errno.h>
 #include <fcntl.h>
 #include <pwd.h>
-#include <signal.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -59,7 +58,8 @@ static char sccsid[] = "$Id: recover.c,v 8.23 1993/10/27 16:16:04 bostic Exp $ (
 #define	VI_FHEADER	"Vi-recover-file: "
 #define	VI_PHEADER	"Vi-recover-path: "
 
-static rcv_mailfile __P((SCR *, EXF *));
+static void	rcv_alrm __P((int));
+static int	rcv_mailfile __P((SCR *, EXF *));
 
 /*
  * rcv_tmp --
@@ -130,6 +130,7 @@ rcv_init(sp, ep)
 	EXF *ep;
 {
 	struct itimerval value;
+	struct sigaction act;
 	recno_t lno;
 
 	F_CLR(ep, F_FIRSTMODIFY | F_RCV_ON);
@@ -155,8 +156,13 @@ rcv_init(sp, ep)
 	busy_off(sp);
 
 	if (!F_ISSET(sp->gp, G_RECOVER_SET)) {
+		/* Install the recovery timer handler. */
+		act.sa_handler = rcv_alrm;
+		sigemptyset(&act.sa_mask);
+		act.sa_flags = 0;
+		(void)sigaction(SIGALRM, &act, NULL);
+
 		/* Start the recovery timer. */
-		(void)signal(SIGALRM, rcv_alrm);
 		value.it_interval.tv_sec = value.it_value.tv_sec = RCV_PERIOD;
 		value.it_interval.tv_usec = value.it_value.tv_usec = 0;
 		if (setitimer(ITIMER_REAL, &value, NULL)) {
@@ -334,7 +340,10 @@ rcv_hup(signo)
 		}
 	}
 
-	/* Die with the proper exit status. */
+	/*
+	 * Die with the proper exit status.  Don't bother using
+	 * sigaction(2) 'cause we want the default behavior.
+	 */
 	(void)signal(SIGHUP, SIG_DFL);
 	(void)kill(0, SIGHUP);
 
@@ -375,7 +384,10 @@ rcv_term(signo)
 		}
 	}
 
-	/* Die with the proper exit status. */
+	/*
+	 * Die with the proper exit status.  Don't bother using
+	 * sigaction(2) 'cause we want the default behavior.
+	 */
 	(void)signal(SIGTERM, SIG_DFL);
 	(void)kill(0, SIGTERM);
 
