@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_main.c,v 10.30 1996/06/18 12:49:46 bostic Exp $ (Berkeley) $Date: 1996/06/18 12:49:46 $";
+static const char sccsid[] = "$Id: cl_main.c,v 10.31 1996/06/22 12:19:48 bostic Exp $ (Berkeley) $Date: 1996/06/22 12:19:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -24,6 +24,9 @@ static const char sccsid[] = "$Id: cl_main.c,v 10.30 1996/06/18 12:49:46 bostic 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef HAVE_TERM_H
+#include <term.h>
+#endif
 #include <termios.h>
 #include <unistd.h>
 
