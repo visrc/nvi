@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.23 1994/04/18 09:56:26 bostic Exp $ (Berkeley) $Date: 1994/04/18 09:56:26 $
+.\"     $Id: vi.ref,v 8.24 1994/04/21 08:08:40 bostic Exp $ (Berkeley) $Date: 1994/04/21 08:08:40 $
 .\"
 .Dd "%Q%"
 .Dt "EX/VI REFERENCE MANUAL" 1
@@ -556,5 +556,4 @@ information to the user itself.
 If you don't have the sendmail program on your system, the source file
 .Pa nvi/recover.c
 will have to be modified to use your local mail delivery programs.
-.Sh SET OPTIONS
 #include <set.opt.roff>
