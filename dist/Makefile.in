@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.77 1996/11/30 10:07:51 bostic Exp $ (Berkeley) $Date: 1996/11/30 10:07:51 $
+#	$Id: Makefile.in,v 8.78 1996/12/03 10:20:54 bostic Exp $ (Berkeley) $Date: 1996/12/03 10:20:54 $
 
 srcdir=	@srcdir@/..
 CC=	@CC@
@@ -255,32 +255,36 @@ ip_term.o: $(srcdir)/ip_vi/ip_term.c
 # VI is the binary that the client programs run.
 VI=-DVI=\"$(bindir)/`echo vi | sed '$(transform)'`\"
 
+# TR turns on IP tracing and defines the trace file.
+#TR=__log
+#TR=/dev/ttyp8
+
 # Shared IP client sources.
 $(srcdir)/ipc/ipc_run.c: Makefile
 ipc_run.o: $(srcdir)/ipc/ipc_run.c
-	$(CC) $(VI) $(CFLAGS) $<
+	$(CC) $(TR) $(VI) $(CFLAGS) $<
 ipc_send.o: $(srcdir)/ipc/ipc_send.c
-	$(CC) $(CFLAGS) $<
+	$(CC) $(TR) $(CFLAGS) $<
 ipc_trans.o: $(srcdir)/ipc/ipc_trans.c
-	$(CC) $(CFLAGS) $<
+	$(CC) $(TR) $(CFLAGS) $<
 
 # Curses IP client sources.
 ipc_cmain.o: $(srcdir)/ipc_curses/ipc_cmain.c
-	$(CC) $(CFLAGS) $<
+	$(CC) $(TR) $(CFLAGS) $<
 ipc_cfunc.o: $(srcdir)/ipc_curses/ipc_cfunc.c
-	$(CC) $(CFLAGS) $<
+	$(CC) $(TR) $(CFLAGS) $<
 
 # Motif IP client sources.
 ipc_mcde.o: $(srcdir)/ipc_motif/ipc_mcde.c
-	$(CC) $(CFLAGS) @XINCS@ $<
+	$(CC) $(TR) $(CFLAGS) @XINCS@ $<
 ipc_mcopypaste.o: $(srcdir)/ipc_motif/ipc_mcopypaste.c
-	$(CC) $(CFLAGS) @XINCS@ $<
+	$(CC) $(TR) $(CFLAGS) @XINCS@ $<
 ipc_mmain.o: $(srcdir)/ipc_motif/ipc_mmain.c
-	$(CC) $(CFLAGS) @XINCS@ $<
+	$(CC) $(TR) $(CFLAGS) @XINCS@ $<
 ipc_mmenu.o: $(srcdir)/ipc_motif/ipc_mmenu.c
-	$(CC) $(CFLAGS) @XINCS@ $<
+	$(CC) $(TR) $(CFLAGS) @XINCS@ $<
 ipc_mutil.o: $(srcdir)/ipc_motif/ipc_mutil.c
-	$(CC) $(CFLAGS) @XINCS@ $<
+	$(CC) $(TR) $(CFLAGS) @XINCS@ $<
 
 # Vi Tcl/Perl interpreter sources.
 api.o: $(srcdir)/common/api.c
