@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 9.5 1995/01/23 18:31:37 bostic Exp $ (Berkeley) $Date: 1995/01/23 18:31:37 $";
+static char sccsid[] = "$Id: screen.c,v 9.6 1995/01/30 15:09:52 bostic Exp $ (Berkeley) $Date: 1995/01/30 15:09:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -213,29 +213,15 @@ screen_end(sp)
 
 	/*
 	 * Free the message chain last, so previous failures have a place
-	 * to put messages.  Copy messages to (in order) a related screen,
-	 * any screen, the global area.
+	 * to put messages.  Copy messages to the global area.
 	 */
-	{ SCR *c_sp; MSG *mp, *next;
-		if ((c_sp = sp->q.cqe_prev) != (void *)&sp->gp->dq) {
-			if (F_ISSET(sp, S_BELLSCHED))
-				F_SET(c_sp, S_BELLSCHED);
-		} else if ((c_sp = sp->q.cqe_next) != (void *)&sp->gp->dq) {
-			if (F_ISSET(sp, S_BELLSCHED))
-				F_SET(c_sp, S_BELLSCHED);
-		} else if ((c_sp =
-		    sp->gp->hq.cqh_first) != (void *)&sp->gp->hq) {
-			if (F_ISSET(sp, S_BELLSCHED))
-				F_SET(c_sp, S_BELLSCHED);
-		} else {
-			c_sp = NULL;
-			if (F_ISSET(sp, S_BELLSCHED))
-				F_SET(sp->gp, G_BELLSCHED);
-		}
+	{ MSG *mp, *next;
+		if (F_ISSET(sp, S_BELLSCHED))
+			F_SET(sp->gp, G_BELLSCHED);
 
 		for (mp = sp->msgq.lh_first; mp != NULL; mp = next) {
 			if (!F_ISSET(mp, M_EMPTY))
-				msg_app(sp->gp, c_sp,
+				msg_app(sp->gp, NULL,
 				    mp->flags & M_INV_VIDEO, mp->mbuf, mp->len);
 			next = mp->q.le_next;
 			if (mp->mbuf != NULL)
@@ -244,10 +230,17 @@ screen_end(sp)
 		}
 	}
 
-	/* Remove the screen from the displayed queue. */
-	SIGBLOCK(sp->gp);
-	CIRCLEQ_REMOVE(&sp->gp->dq, sp, q);
-	SIGUNBLOCK(sp->gp);
+	/*
+	 * Remove the screen from the displayed queue.
+	 *
+	 * If a created screen failed during initialization, it may not
+	 * be linked into the chain.
+	 */
+	if (sp->q.cqe_next != NULL) {
+		SIGBLOCK(sp->gp);
+		CIRCLEQ_REMOVE(&sp->gp->dq, sp, q);
+		SIGUNBLOCK(sp->gp);
+	}
 
 	/* Free the screen itself. */
 	FREE(sp, sizeof(SCR));
