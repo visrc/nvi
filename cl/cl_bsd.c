@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_bsd.c,v 8.24 1996/04/10 19:51:38 bostic Exp $ (Berkeley) $Date: 1996/04/10 19:51:38 $";
+static const char sccsid[] = "$Id: cl_bsd.c,v 8.25 1996/04/30 17:36:22 bostic Exp $ (Berkeley) $Date: 1996/04/30 17:36:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -216,8 +216,10 @@ static const TL list[] = {
 	"kpp",		"kP",		/* Page up. */
 	"kri",		"kR",		/* Scroll up. */
 	"lines",	"li",		/* Terminal lines. */
+	"rmcup",	"te",		/* Terminal end string. */
 	"rmkx",		"ke",		/* Exit "keypad-transmit" mode. */
 	"rmso",		"se",		/* Standout end. */
+	"smcup",	"ti",		/* Terminal initialization string. */
 	"smkx",		"ks",		/* Enter "keypad-transmit" mode. */
 	"smso",		"so",		/* Standout begin. */
 };
