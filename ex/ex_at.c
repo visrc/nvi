@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_at.c,v 8.10 1993/11/18 10:08:54 bostic Exp $ (Berkeley) $Date: 1993/11/18 10:08:54 $";
+static char sccsid[] = "$Id: ex_at.c,v 8.11 1993/11/19 09:45:05 bostic Exp $ (Berkeley) $Date: 1993/11/19 09:45:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -56,7 +56,7 @@ ex_at(sp, ep, cmdp)
 	/*
 	 * If the buffer was cut in line mode or had portions of more
 	 * than one line, <newlines> are appended to each line as it
-	 * is executed.
+	 * is pushed onto the stack.
 	 */
 	tp = cbp->textq.cqh_last;
 	lmode = F_ISSET(cbp, CB_LMODE) || tp->q.cqe_prev != (void *)&cbp->textq;
