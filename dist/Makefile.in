@@ -1,7 +1,7 @@
-#	$Id: Makefile.in,v 8.13 1996/02/25 13:13:06 bostic Exp $ (Berkeley) $Date: 1996/02/25 13:13:06 $
+#	$Id: Makefile.in,v 8.14 1996/02/25 18:22:53 bostic Exp $ (Berkeley) $Date: 1996/02/25 18:22:53 $
 
 #GCCF=	-Wall
-#DEBUG=	-DDEBUG
+#DEBUG=	-g -DDEBUG
 CC=	@CC@
 CFLAGS=	-c $(GCCF) $(DEBUG) -I. -I../include @CFLAGS@
 
@@ -530,4 +530,6 @@ strsep.o: ../clib/strsep.c
 strtol.o: ../clib/strtol.c
 	$(CC) $(CFLAGS) $?
 strtoul.o: ../clib/strtoul.c
+	$(CC) $(CFLAGS) $?
+unsetenv.o: ../clib/unsetenv.c
 	$(CC) $(CFLAGS) $?
