@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: gs.h,v 10.25 1996/03/15 20:15:09 bostic Exp $ (Berkeley) $Date: 1996/03/15 20:15:09 $
+ *	$Id: gs.h,v 10.26 1996/03/18 09:26:46 bostic Exp $ (Berkeley) $Date: 1996/03/18 09:26:46 $
  */
 
 #define	TEMPORARY_FILE_STRING	"/tmp"	/* Default temporary file name. */
@@ -60,9 +60,7 @@ struct _gs {
 	CIRCLEQ_HEAD(_dqh, _scr) dq;	/* Displayed screens. */
 	CIRCLEQ_HEAD(_hqh, _scr) hq;	/* Hidden screens. */
 
-	EXF	*ed_ep;			/* Colon command-line edit file. */
-	FREF	*ed_frp;		/* Colon command-line name. */
-	SCR	*ed_parent;		/* Colon command-line screen. */
+	SCR	*ccl_sp;		/* Colon command-line screen. */
 
 	void	*perl_interp;		/* Perl interpreter. */
 	void	*tcl_interp;		/* Tcl_Interp *: Tcl interpreter. */
