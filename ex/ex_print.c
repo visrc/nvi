@@ -6,11 +6,12 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 5.5 1992/04/16 17:57:37 bostic Exp $ (Berkeley) $Date: 1992/04/16 17:57:37 $";
+static char sccsid[] = "$Id: ex_print.c,v 5.6 1992/04/18 09:59:09 bostic Exp $ (Berkeley) $Date: 1992/04/18 09:59:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 #include <stdio.h>
+#include <ctype.h>
 
 #include "vi.h"
 #include "curses.h"
@@ -18,113 +19,150 @@ static char sccsid[] = "$Id: ex_print.c,v 5.5 1992/04/16 17:57:37 bostic Exp $ (
 #include "options.h"
 #include "extern.h"
 
-enum which {LIST, NUMBER, PRINT};
-static void print __P((CMDARG *, enum which));
+static int print __P((CMDARG *, int));
 
 /*
- * ex_list -- (:[line [,line]] l[ist] [count] [flags])
- *	Write the addressed lines such that the output is unambiguous.  The
- *	only valid flag is '#'.
+ * ex_list -- :[line [,line]] l[ist] [count] [flags]
+ *	Display the addressed lines such that the output is unambiguous.
+ *	The only valid flag is '#'.
  */
 int
 ex_list(cmdp)
 	CMDARG *cmdp;
 {
-	print(cmdp, LIST);
-	return (0);
+	int flags;
+
+	flags = cmdp->flags & E_F_MASK;
+	if (flags & ~E_F_HASH) {
+		msg("Usage: %s.", cmdp->cmd->usage);
+		return (1);
+	}
+	return (print(cmdp, E_F_LIST | flags));
 }
 
 /*
- * ex_number -- (:[line [,line]] nu[mber] [count] [flags])
- *	Write the addressed lines with a leading line number.  The only valid
- *	flag is 'l'.
+ * ex_number -- :[line [,line]] nu[mber] [count] [flags]
+ *	Display the addressed lines with a leading line number.
+ *	The only valid flag is 'l'.
  */
 int
 ex_number(cmdp)
 	CMDARG *cmdp;
 {
-	print(cmdp, NUMBER);
-	return (0);
+	int flags;
+
+	flags = cmdp->flags & E_F_MASK;
+	if (flags & ~E_F_LIST) {
+		msg("Usage: %s.", cmdp->cmd->usage);
+		return (1);
+	}
+	return (print(cmdp, E_F_HASH | flags));
 }
 
 /*
- * ex_print -- (:[line [,line]] p[rint] [count] [flags])
- *	Write the addressed lines.  The only meaningful flags are '#' and 'l'.
+ * ex_print -- :[line [,line]] p[rint] [count] [flags]
+ *	Display the addressed lines.
+ *	The only valid flags are '#' and 'l'.
  */
 int
 ex_print(cmdp)
 	CMDARG *cmdp;
 {
-	print(cmdp, PRINT);
-	return (0);
+	int flags;
+
+	flags = cmdp->flags & E_F_MASK;
+	if (flags & ~(E_F_HASH | E_F_LIST)) {
+		msg("Usage: %s.", cmdp->cmd->usage);
+		return (1);
+	}
+	return (print(cmdp, E_F_PRINT | flags));
 }
 
-/* print the selected lines */
-static void
-print(cmdp, cmd)
+/*
+ * print --
+ *	Print the selected lines.
+ */
+static int
+print(cmdp, flags)
 	CMDARG *cmdp;
-	enum which cmd;
+	register int flags;
 {
-	REG char	*scan;
-	REG long	l;
-	REG int		col;
+	register long cur, end;
+	register int ch, col, rlen;
+	size_t len;
+	int cnt;
+	u_char *p;
+	char buf[10];
 
-	for (l = markline(cmdp->addr1); l <= markline(cmdp->addr2); l++)
-	{
-		/* display a line number, if CMD_NUMBER */
-		if (cmd == NUMBER)
-		{
-			sprintf(tmpblk.c, "%6ld  ", l);
-			qaddstr(tmpblk.c);
+	for (cur = markline(cmdp->addr1), end = markline(cmdp->addr2);
+	    cur <= end; ++cur) {
+
+		/* Display the line number. */
+		if (flags & E_F_HASH) {
+			(void)snprintf(buf, sizeof(buf), "%7ld ", cur);
+			qaddstr(buf);
 			col = 8;
-		}
-		else
-		{
+		} else
 			col = 0;
+	
+#define	WCHECK(ch) { \
+	if (!has_AM && col == COLS) { \
+		qaddch('\n'); \
+		qaddch('\r'); \
+		col = 0; \
+	} \
+	qaddch(ch); \
+	++col; \
+}
+		/*
+		 * Display the line.  The format for E_F_PRINT isn't very good,
+		 * especially in handling end-of-line tabs, but they're almost
+		 * backward compatible.
+		 */
+		p = (u_char *)fetchline(cur, &len);
+		for (rlen = len; rlen--;) {
+			ch = *p++;
+			if (flags & E_F_LIST)
+				if (ch != '\t' && isprint(ch)) {
+					WCHECK(ch);
+				} else if (ch & 0x80) {
+					len = snprintf(buf,
+					    sizeof(buf), "\\%03o", ch);
+					for (cnt = 0; cnt < len; ++cnt)
+						WCHECK(buf[cnt]);
+				} else {
+					WCHECK('^');
+					WCHECK(ch + 0x40);
+				}
+			else {
+				ch &= 0x7f;
+				if (ch == '\t') {
+					while (col < COLS &&
+					    ++col % LVAL(O_TABSTOP))
+						qaddch(' ');
+					if (col == COLS) {
+						qaddch('\n');
+						qaddch('\r');
+						col = 0;
+					}
+				} else if (isprint(ch)) {
+					WCHECK(ch);
+				} else if (ch == '\n') {
+					qaddch('\n');
+					qaddch('\r');
+					col = 0;
+				} else {
+					WCHECK('^');
+					WCHECK(ch + 0x40);
+				}
+			}
 		}
-
-		/* get the next line & display it */
-		for (scan = fetchline(l, NULL); *scan; scan++)
-		{
-			/* expand tabs to the proper width */
-			if (*scan == '\t' && cmd != LIST)
-			{
-				do
-				{
-					qaddch(' ');
-					col++;
-				} while (col % LVAL(O_TABSTOP) != 0);
-			}
-			else if (*scan > 0 && *scan < ' ' || *scan == '\177')
-			{
-				qaddch('^');
-				qaddch(*scan ^ 0x40);
-				col += 2;
-			}
-			else if ((*scan & 0x80) && cmd == LIST)
-			{
-				sprintf(tmpblk.c, "\\%03o", *scan);
-				qaddstr(tmpblk.c);
-				col += 4;
-			}
-			else
-			{
-				qaddch(*scan);
-				col++;
-			}
-
-			/* wrap at the edge of the screen */
-			if (!has_AM && col >= COLS)
-			{
-				addch('\n');
-				col -= COLS;
-			}
-		}
-		if (cmd == LIST)
-		{
-			qaddch('$');
-		}
-		addch('\n');
-		ex_refresh();
+		if (flags & E_F_LIST)
+			WCHECK('$');
+		qaddch('\n');
+		qaddch('\r');
 	}
+	ex_refresh();
+	cursor = cmdp->addr2;
+	return (0);
 }
