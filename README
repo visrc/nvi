@@ -1,61 +1,103 @@
-#	$Id: README,v 8.3 1993/07/07 18:02:17 bostic Exp $ (Berkeley) $Date: 1993/07/07 18:02:17 $
+#	$Id: README,v 8.4 1993/08/07 11:07:59 bostic Exp $ (Berkeley) $Date: 1993/08/07 11:07:59 $
 
-This is the README for version 0.5 of nex/nvi, a freely redistributable
-replacement for the vi/ex text editors.  Please note that this is ALPHA
-software at the time of its release with 4.4BSD, and that it is not yet
-ready for prime time!
+This is the README for version 0.6 of nex/nvi, a (soon to be) freely
+redistributable replacement for the vi/ex text editors.
 
-New versions of this software will be available by anonymous ftp from
-ftp.cs.berkeley.edu, in the file ucb/4bsd/nvi.tar.Z, or from ftp.uu.net.
+This is still ALPHA software, please do not redistribute it without
+talking to me first.  A BETA version will be released RSN, and it
+will be redistributable as you choose.  It and future versions this
+software will be available by anonymous ftp from ftp.cs.berkeley.edu,
+in the file ucb/4bsd/nvi.tar.Z, or from ftp.uu.net.
 
-This software is derived from software contributed to UC Berkeley by
-Steve Kirkendall, the author of the vi clone elvis.  Without his work,
-this work would have been far more difficult.
+This software is derived from software contributed to the University
+of California, Berkeley by Steve Kirkendall, the author of the vi clone
+elvis.  Without his work, this work would have been far more difficult.
 
-Regular expressions support is courtesy of Henry Spencer, for which I
-am *very* grateful.
+POSIX 1003.2 style regular expression support is courtesy of Henry Spencer,
+for which I am *very* grateful.
 
-Email questions may be addressed to Keith Bostic at bostic@cs.berkeley.edu.
+If you have any questions, please send them by email to me at one
+of the following email addresses:
+
+	uunet!bostic
+	bostic@cs.berkeley.edu
+
+Keith Bostic
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
-+ Comments:
+o Comments:
 
-This software is alpha software, at best.  I believe that almost all of
-the necessary functionality for ex/vi is in it, but it's definitely not
-ready for prime time.  Code fixes are, of course, very much appreciated,
-but if you don't have time, please send me as much information as you can
-as to how to reproduce the bug, and I'll fix it here.  In particular, the
-screen routines are nasty stuff, and you probably don't want to mess with
-them.  Stack traces of core dumps are helpful, but even more helpful is
-an example file with a set of keystrokes.
+This software is alpha software, although it's getting fairly stable.  I
+believe that almost all of the necessary functionality for ex/vi is in
+it, but it's definitely not ready for prime time.  Code fixes are, of
+course, very much appreciated, but if you don't have time, please send me
+as much information as you can as to how to reproduce the bug, and I'll
+fix it here.  In particular, the screen routines are nasty stuff, and you
+probably don't want to mess with them.  Stack traces of core dumps are
+helpful, but even more helpful is an example file with a set of keystrokes.
 
 Nvi is mostly 8-bit clean.  This isn't difficult to fix, and was left in
 during initial development to make things easier.  Wide character support
 will be integrated at the same time it is made fully 8-bit clean.
 
-+ Major known bugs:
+=-=-=-=-=-=-=-=-=-=-=
+o New features:
 
-	o Characters input using the 'R' command cannot be erased.
+There aren't a lot of new features in nex/nvi, but there are a few
+things you might like:
+
+	o 8-bit clean data, practically infinite lines/files, however,
+	  "nvi /vmunix" is a bit slow.
+	o Split screens:
+		:split [file ...]" splits the screen
+		^W switches between screens
+	o Buffer display:
+		:b[display] displays the current cut buffers
+	o Tag stacks:
+		^T returns from previous tag location
+		":tagpop" returns to previous tag location
+		":tagtop" returns to original tag location
+	o Infinite undo:
+		":set nundo" toggles this behavior
+		u un-does the previous operation
+		U re-does the next operation
+	o Usage information:
+		":exu[sage] cmd" for ex commands
+		":viu[sage] key" for vi commands
+	o Word search:
+		^A searches for the word referenced by the cursor
+	o Number increment:
+		# increments the number referenced by the cursor
+	o Previous file:
+		:"prev[ious][!]" edits the previous file
+
+=-=-=-=-=-=-=-=-=-=-=
+o Known bugs:
+
+	o Erasure of characters input using the 'R' command isn't
+	  correct.
 	o Several options have not been implemented: wrapmargin,
 	  showmatch, remap, and a few others.
 	o Nvi uses POSIX 1003.2 basic and extended RE's.  The historic
-	  hacks will be put in soon.
+	  RE hack will be put in RSN.
+	o Piping more than 4K or so at a time through a system command
+	  causes nvi to hang.
 
-	And, frankly, fairly random other stuff.
+	And, frankly, lots of fairly random other stuff.
 
-+ Some of the cool stuff:
-
-	o Split screens; try :split, and ^W to move around.
-	o Practically infinite lines/files; try nvi /vmunix.
-	o Tag stacks; try ^T to return from tagged positions.
-
-+ Porting information:
+=-=-=-=-=-=-=-=-=-=-=
+o Porting information:
 
 The directory PORT has a old-style Makefile which builds the entire nvi
 distribution.  See it and the file PORT/README for more information.
 
-+ Temporary files and recovery:
+=-=-=-=-=-=-=-=-=-=-=
+o Temporary files and recovery:
+
+There is no "recovery" program with nvi, nor does not run setuid.  Users
+may "recover" any file which they may read, i.e. the superuser can recover
+any edit session.
 
 Edit sessions are backed by files in /var/tmp/vi.recover, and are named
 "vi.XXX", where "XXX" is a number usually associated with the process id.
@@ -63,24 +105,25 @@ When the file is first modified, a second file, which contains an email
 message for the user, is created, and is named "recover.XXX", where,
 again, "XXX" is associated with the process id.  Both files are removed
 at the end of a normal edit session, but will remain if the edit session
-is abnormally terminated or the user uses the ex/vi "preserve" command.
+is abnormally terminated or the user uses the ex/vi ":preserve" command.
+
 The recover file has all of the necessary information in it to enable the
 user to recover the edit session.  In addition, it has all of the
 necessary email headers for sendmail.  When the system is rebooted, all
-of the files in /var/tmp/vi.recover named "recover.XXX" should be emailed,
-using the -t flag of sendmail (or a similar mechanism with other mailers).
-A simple way to do this is to insert the following script into your
-rc.local file:
+of the files in /var/tmp/vi.recover named "recover.XXX" should be sent
+by email, using the -t flag of sendmail (or a similar mechanism with other
+mailers).  A simple way to do this is to insert the following script into
+your rc.local file:
 
 	for i in /var/tmp/vi.recover/recover.*; do
 		sendmail -t < $i
 	done
 
-There is no "recovery" program with nvi, nor does not run setuid.  Users
-may "recover" any file which they may read, i.e. the superuser can recover
-any edit session.
+If nex/nvi receives a hangup (SIGHUP) signal, it mails the recovery
+information to the user itself.
 
-+ A quick tour:
+=-=-=-=-=-=-=-=-=-=-=
+o A quick tour:
 
 The main directory, nvi, contains some source files for various pieces
 of code that are shared by both ex and vi, mostly logging code or code
@@ -102,7 +145,8 @@ it easy to add new screens in the future.  The nvi/sex directory is the
 screen code for ex.  The nvi/svi directory is the curses screen code for
 vi.
 
-+ Data structures:
+=-=-=-=-=-=-=-=-=-=-=
+o Data structures:
 
 There are three basic data structures in this editor.  The first is a
 single global structure (GS) which contains information common to all
@@ -114,7 +158,9 @@ screen structures (SCR).  They contain information theoretically unique
 to a screen or file, respectively.  The GS structure contains linked
 lists of EXF and SCR structures.  The structures can also be classed by
 persistence.  The GS structure never goes away and the SCR structure
-persists over instances of files.
+persists over instances of files.  File names have different properties
+than files themselves, so the name information is held in an FREF structure
+which is chained from the SCR structure.
 
 In general, we pass an SCR structure and an EXF structure around to editor
 functions.  The SCR structure is necessary for any routine that wishes to
@@ -128,7 +174,7 @@ The naming is consistent across the program.  (Macros even depend on it,
 so don't try and change it!)  The global structure is "gp", the screen
 structure is "sp", and the file structure is "ep".
 
-A few others data structures:
+A few other data structures:
 
 TEXT	In nvi/cut.h.  This structure describes a portion of a line,
 	and is used by the input routines and as the "line" part of a
