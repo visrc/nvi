@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_refresh.c,v 10.29 1996/04/23 14:33:34 bostic Exp $ (Berkeley) $Date: 1996/04/23 14:33:34 $";
+static const char sccsid[] = "$Id: vs_refresh.c,v 10.30 1996/04/26 15:32:07 bostic Exp $ (Berkeley) $Date: 1996/04/26 15:32:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -422,9 +422,9 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 	 * With some work, it should be possible to handle tabs quickly, at
 	 * least in obvious situations, like moving right and encountering
 	 * a tab, without reparsing the whole line.
+	 *
+	 * If the line we're working with has changed, reread it..
 	 */
-
-	/* If the line we're working with has changed, reparse. */
 	if (F_ISSET(vip, VIP_CUR_INVALID) || LNO != OLNO)
 		goto slow;
 
@@ -650,30 +650,31 @@ number:	if (O_ISSET(sp, O_NUMBER) &&
 
 	/*
 	 * 10: Update the mode line, position the cursor, and flush changes.
+	 *
+	 * If we warped the screen, we have to refresh everything.
 	 */
-	if (leftright_warp || LF_ISSET(UPDATE_SCREEN)) {
-		if (!F_ISSET(sp, S_TINPUT_INFO) &&
-		    !F_ISSET(vip, VIP_S_MODELINE) && !IS_ONELINE(sp))
-			vs_modeline(sp);
+	if ((LF_ISSET(UPDATE_SCREEN) || leftright_warp) &&
+	    !F_ISSET(sp, S_TINPUT_INFO) &&
+	    !F_ISSET(vip, VIP_S_MODELINE) && !IS_ONELINE(sp))
+		vs_modeline(sp);
 
-		if (LF_ISSET(UPDATE_CURSOR)) {
-			(void)gp->scr_move(sp, y, SCNO);
+	if (LF_ISSET(UPDATE_CURSOR)) {
+		(void)gp->scr_move(sp, y, SCNO);
 
-			/*
-			 * XXX
-			 * If the screen shifted, we recalculate the "most
-			 * favorite" cursor position.  Vi won't know that
-			 * we've warped the screen, so it's going to have
-			 * a wrong idea about where the cursor should be.
-			 * This is vi's problem, and fixing it here is a
-			 * gross layering violation.
-			 */
-			if (leftright_warp)
-				(void)vs_column(sp, &sp->rcm);
-		}
-
-		(void)gp->scr_refresh(sp, F_ISSET(vip, VIP_N_EX_PAINT));
+		/*
+		 * XXX
+		 * If the screen shifted, we recalculate the "most favorite"
+		 * cursor position.  Vi won't know that we've warped the
+		 * screen, so it's going to have a wrong idea about where the
+		 * cursor should be.  This is vi's problem, and fixing it here
+		 * is a gross layering violation.
+		 */
+		if (leftright_warp)
+			(void)vs_column(sp, &sp->rcm);
 	}
+
+	if (LF_ISSET(UPDATE_SCREEN) || leftright_warp)
+		(void)gp->scr_refresh(sp, F_ISSET(vip, VIP_N_EX_PAINT));
 
 	/* 11: Clear the flags that are handled by this routine. */
 	F_CLR(sp, S_SCR_CENTER | S_SCR_REDRAW | S_SCR_REFORMAT | S_SCR_TOP);
