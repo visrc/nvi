@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 5.28 1993/04/17 11:48:44 bostic Exp $ (Berkeley) $Date: 1993/04/17 11:48:44 $";
+static char sccsid[] = "$Id: db.c,v 5.29 1993/05/06 01:08:22 bostic Exp $ (Berkeley) $Date: 1993/05/06 01:08:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,7 +27,7 @@ static char sccsid[] = "$Id: db.c,v 5.28 1993/04/17 11:48:44 bostic Exp $ (Berke
 		    __tsp = __tsp->next)				\
 			if (__tsp->ep == ep && __tsp->change != NULL) {	\
 				sp->change(__tsp, ep, lno, op);		\
-				sp->refresh(__tsp, ep);			\
+				sp->srefresh(__tsp, ep);		\
 			}						\
 	}								\
 }
