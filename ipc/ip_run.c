@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_run.c,v 8.4 1996/12/10 21:03:13 bostic Exp $ (Berkeley) $Date: 1996/12/10 21:03:13 $";
+static const char sccsid[] = "$Id: ip_run.c,v 8.5 1996/12/11 13:05:47 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:05:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,22 +25,16 @@ static const char sccsid[] = "$Id: ip_run.c,v 8.4 1996/12/10 21:03:13 bostic Exp
 #include <string.h>
 #include <unistd.h>
 
-#ifdef __STDC__
-#include <stdarg.h>
-#else
-#include <varargs.h>
-#endif
-
 #include "../common/common.h"
 #include "../ip_vi/ip.h"
 #include "ipc_extern.h"
 #include "pathnames.h"
 
 static void arg_format __P((char *, int *, char **[], int, int));
+static void fatal __P((void));
 #ifdef DEBUG
 static void attach __P((void));
 #endif
-static void fatal __P((void));
 
 char *vi_progname = "vi";			/* Default program name. */
 
@@ -58,7 +52,7 @@ vi_run(argc, argv, ip, op, pidp)
 {
 	struct stat sb;
 	int pflag, rpipe[2], wpipe[2];
-	char *execp, **p_av, **t_av;
+	char *execp, *p, **p_av, **t_av;
 
 	pflag = 0;
 	execp = VI;
@@ -77,6 +71,17 @@ vi_run(argc, argv, ip, op, pidp)
 		if (!memcmp(*t_av, "-D", sizeof("-D") - 1)) {
 			attach();
 
+			++t_av;
+			--argc;
+			continue;
+		}
+		if (!memcmp(*t_av, "-T", sizeof("-T") - 1)) {
+			p = &t_av[0][sizeof("-T") - 1];
+			if (*p == '\0') {
+				--argc;
+				p = *++t_av;
+			}
+			trace_init(p);
 			++t_av;
 			--argc;
 			continue;
@@ -137,9 +142,9 @@ vi_run(argc, argv, ip, op, pidp)
 		    "%s: %s %s\n", vi_progname, execp, strerror(errno));
 		(void)fprintf(stderr,
 #ifdef DEBUG
-		    "usage: %s [-D] [-P vi_program] [vi arguments]\n",
+	    "usage: %s [-D] [-P vi_program] [-T trace] [vi arguments]\n",
 #else
-		    "usage: %s [-P vi_program] [vi arguments]\n",
+	    "usage: %s [-P vi_program] [vi arguments]\n",
 #endif
 		    vi_progname);
 		_exit (1);
@@ -224,38 +229,4 @@ attach()
 	} while (ch != '\n' && ch != '\r');
 	(void)close(fd);
 }
-#endif /* DEBUG */
-
-#ifdef TR
-/*
- * trace --
- *	Debugging trace routine.
- *
- * PUBLIC: void trace __P((const char *, ...));
- */
-void
-#ifdef __STDC__
-trace(const char *fmt, ...)
-#else
-trace(fmt, va_alist)
-	char *fmt;
-	va_dcl
 #endif
-{
-	static FILE *tfp;
-	va_list ap;
-
-	if (tfp == NULL && (tfp = fopen(TR, "w")) == NULL)
-		tfp = stderr;
-	
-#ifdef __STDC__
-	va_start(ap, fmt);
-#else
-	va_start(ap);
-#endif
-	(void)vfprintf(tfp, fmt, ap);
-	va_end(ap);
-
-	(void)fflush(tfp);
-}
-#endif /* TR */
