@@ -14,7 +14,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: perl.xs,v 8.25 1996/09/26 11:02:03 bostic Exp $ (Berkeley) $Date: 1996/09/26 11:02:03 $";
+static const char sccsid[] = "$Id: perl.xs,v 8.26 1996/10/10 19:00:31 bostic Exp $ (Berkeley) $Date: 1996/10/10 19:00:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -73,7 +73,7 @@ perl_end(gp)
 	 * methods.
 	 */
 	if (gp->perl_interp) {
-		Irestartop = 0;            			/* XXX */
+		/*Irestartop = 0;            			/ * XXX */
 		perl_run(gp->perl_interp);
 		perl_destruct(gp->perl_interp);
 #if defined(DEBUG) || defined(PURIFY) || defined(LIBRARY)
@@ -82,23 +82,14 @@ perl_end(gp)
 	}
 }
 
-static int
-clear_eval_sv(sv)
-    SV * sv;
-{
-	sv_setpv(GvSV(errgv),"");
-	hv_clear(GvHV(errgv));
-	perl_eval_sv(sv, G_DISCARD | G_NOARGS | G_KEEPERR);
-}
-
-static int 
+static void 
 perl_eval(string)
 	char *string;
 {
 #ifdef HAVE_PERL_5_003_01
 	SV* sv = newSVpv(string, 0);
 
-	clear_eval_sv(sv);
+	perl_eval_sv(sv, G_DISCARD | G_NOARGS);
 	SvREFCNT_dec(sv);
 #else
 	char *argv[2];
@@ -113,30 +104,36 @@ perl_eval(string)
  * perl_init --
  *	Create the perl commands used by nvi.
  *
- * PUBLIC: int perl_init __P((GS *));
+ * PUBLIC: int perl_init __P((SCR *));
  */
 int
-perl_init(gp)
-	GS *gp;
+perl_init(scrp)
+	SCR *scrp;
 {
 	AV * av;
+	GS *gp;
 	char *bootargs[] = { "VI", NULL };
+#ifndef USE_SFIO
+	SV *svcurscr = 0;
+#endif
 
 #ifndef HAVE_PERL_5_003_01
-	static char *embedding[] = { "", "-e", "sub _eval_ { eval $_[0] }" };
+	static char *args[] = { "", "-e", "sub _eval_ { eval $_[0] }" };
 #else
-	static char *args[] = { "", "-e" };
+	static char *args[] = { "", "-e", "" };
 #endif
 	STRLEN length;
 	char *file = __FILE__;
 
+	gp = scrp->gp;
 	gp->perl_interp = perl_alloc();
   	perl_construct(gp->perl_interp);
-#ifndef HAVE_PERL_5_003_01
-	perl_parse(gp->perl_interp, xs_init, 3, embedding, 0);
-#else
-	perl_parse(gp->perl_interp, xs_init, 2, args, 0);
-#endif
+	if (perl_parse(gp->perl_interp, xs_init, 3, args, 0)) {
+		perl_destruct(gp->perl_interp);
+		perl_free(gp->perl_interp);
+		gp->perl_interp = NULL;
+		return 1;
+	}
         perl_call_argv("VI::bootstrap", G_DISCARD, bootargs);
 	perl_eval("$SIG{__WARN__}='VI::Warn'");
 
@@ -144,6 +141,16 @@ perl_init(gp)
 	av_store(av, 0, newSVpv(_PATH_PERLSCRIPTS,
 				sizeof(_PATH_PERLSCRIPTS)-1));
 
+#ifdef USE_SFIO
+	sfdisc(PerlIO_stdout(), sfdcnewnvi(scrp));
+	sfdisc(PerlIO_stderr(), sfdcnewnvi(scrp));
+#else
+	svcurscr = perl_get_sv("curscr", TRUE);
+	sv_magic((SV *)gv_fetchpv("STDOUT",TRUE, SVt_PVIO), svcurscr,
+		 	'q', Nullch, 0);
+	sv_magic((SV *)gv_fetchpv("STDERR",TRUE, SVt_PVIO), svcurscr,
+		 	'q', Nullch, 0);
+#endif /* USE_SFIO */
 	return (0);
 }
 
@@ -219,21 +226,12 @@ perl_ex_perl(scrp, cmdp, cmdlen, f_lno, t_lno)
 	/* Initialize the interpreter. */
 	gp = scrp->gp;
 	if (!svcurscr) {
-		if (gp->perl_interp == NULL && perl_init(gp))
+		if (gp->perl_interp == NULL && perl_init(scrp))
 			return (1);
 		SvREADONLY_on(svcurscr = perl_get_sv("curscr", TRUE));
 		SvREADONLY_on(svstart = perl_get_sv("VI::StartLine", TRUE));
 		SvREADONLY_on(svstop = perl_get_sv("VI::StopLine", TRUE));
 		SvREADONLY_on(svid = perl_get_sv("VI::ScreenId", TRUE));
-#ifdef USE_SFIO
-		sfdisc(PerlIO_stdout(), sfdcnewnvi(scrp));
-		sfdisc(PerlIO_stderr(), sfdcnewnvi(scrp));
-#else
-		sv_magic((SV *)gv_fetchpv("STDOUT",TRUE, SVt_PVIO), svcurscr,
-		 	'q', Nullch, 0);
-		sv_magic((SV *)gv_fetchpv("STDERR",TRUE, SVt_PVIO), svcurscr,
-		 	'q', Nullch, 0);
-#endif /* USE_SFIO */
 	}
 
 	sv_setiv(svstart, f_lno);
@@ -260,6 +258,38 @@ perl_ex_perl(scrp, cmdp, cmdlen, f_lno, t_lno)
 	return (1);
 }
 
+/*
+ * replace_line
+ *	replace a line with the contents of the perl variable $_
+ *	lines are split at '\n's
+ *	if $_ is undef, the line is deleted
+ *	returns possibly adjusted linenumber
+ */
+static int 
+replace_line(scrp, line, t_lno)
+	SCR *scrp;
+	recno_t line, *t_lno;
+{
+	char *str, *next;
+	size_t len;
+
+	if (SvOK(GvSV(defgv))) {
+		str = SvPV(GvSV(defgv),len);
+		next = memchr(str, '\n', len);
+		api_sline(scrp, line, str, next ? (next - str) : len);
+		while (next++) {
+			len -= next - str;
+			next = memchr(str = next, '\n', len);
+			api_iline(scrp, ++line, str, next ? (next - str) : len);
+			(*t_lno)++;
+		}
+	} else {
+		api_dline(scrp, line--);
+		(*t_lno)--;
+	}
+	return line;
+}
+
 /* 
  * perl_ex_perldo -- :[line [,line]] perl [command]
  *	Run a set of lines through the perl interpreter.
@@ -273,12 +303,13 @@ perl_ex_perldo(scrp, cmdp, cmdlen, f_lno, t_lno)
 	size_t cmdlen;
 	recno_t f_lno, t_lno;
 {
+	static SV *svcurscr = 0, *svstart, *svstop, *svid;
 	CHAR_T *p;
 	GS *gp;
 	STRLEN length;
 	size_t len;
-	int i;
-	char *str, *next;
+	recno_t i;
+	char *str;
 #ifndef HAVE_PERL_5_003_01
 	char *argv[2];
 #else
@@ -288,8 +319,15 @@ perl_ex_perldo(scrp, cmdp, cmdlen, f_lno, t_lno)
 
 	/* Initialize the interpreter. */
 	gp = scrp->gp;
-	if (gp->perl_interp == NULL && perl_init(gp))
-		return (1);
+	if (!svcurscr) {
+		if (gp->perl_interp == NULL && perl_init(scrp))
+			return (1);
+		SPAGAIN;
+		SvREADONLY_on(svcurscr = perl_get_sv("curscr", TRUE));
+		SvREADONLY_on(svstart = perl_get_sv("VI::StartLine", TRUE));
+		SvREADONLY_on(svstop = perl_get_sv("VI::StopLine", TRUE));
+		SvREADONLY_on(svid = perl_get_sv("VI::ScreenId", TRUE));
+	}
 
 #ifndef HAVE_PERL_5_003_01
 	argv[0] = cmdp;
@@ -300,47 +338,44 @@ perl_ex_perldo(scrp, cmdp, cmdlen, f_lno, t_lno)
 	sv_setpvn(sv, "sub VI::perldo {", sizeof("sub VI::perldo {")-1); 
 	sv_catpvn(sv, cmdp, length);
 	sv_catpvn(sv, "}", 1);
-	clear_eval_sv(sv);
+	perl_eval_sv(sv, G_DISCARD | G_NOARGS);
 	SvREFCNT_dec(sv);
 	str = SvPV(GvSV(errgv),length);
 	if (length)
 		goto err;
 #endif
 
+	newVIrv(svcurscr, scrp);
+	/* Backwards compatibility. */
+	newVIrv(svid, scrp);
+
 	ENTER;
 	SAVETMPS;
-	for (i = f_lno; i <= t_lno; i++) {
-		api_gline(scrp, i, &str, &len);
+	for (i = f_lno; i <= t_lno && !api_gline(scrp, i, &str, &len); i++) {
 		sv_setpvn(GvSV(defgv),str,len);
+		sv_setiv(svstart, i);
+		sv_setiv(svstop, i);
 #ifndef HAVE_PERL_5_003_01
 		perl_call_argv("_eval_", G_SCALAR | G_EVAL | G_KEEPERR, argv);
 #else
 		PUSHMARK(sp);
-                perl_call_pv("VI::perldo", G_SCALAR | G_EVAL | G_KEEPERR);
+                perl_call_pv("VI::perldo", G_SCALAR | G_EVAL);
 #endif
 		str = SvPV(GvSV(errgv), length);
 		if (length) break;
 		SPAGAIN;
-		if(SvTRUEx(POPs)) {
-		    if (SvOK(GvSV(defgv))) {
-		    	str = SvPV(GvSV(defgv),len);
-			next = memchr(str, '\n', len);
-		    	api_sline(scrp, i, str, next ? (next - str) : len);
-			while (next++) {
-			    len -= next - str;
-			    next = memchr(str = next, '\n', len);
-			    api_iline(scrp, ++i, str, next ? (next - str) : len);
-			    t_lno++;
-			}
-		    } else {
-			api_dline(scrp, i--);
-			t_lno--;
-		    }
-		}
+		if(SvTRUEx(POPs)) 
+			i = replace_line(scrp, i, &t_lno);
 		PUTBACK;
 	}
 	FREETMPS;
 	LEAVE;
+
+	SvREFCNT_dec(SvRV(svcurscr));
+	SvROK_off(svcurscr);
+	SvREFCNT_dec(SvRV(svid));
+	SvROK_off(svid);
+
 	if (!length)
 		return (0);
 
