@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_xchar.c,v 5.14 1993/02/19 18:37:41 bostic Exp $ (Berkeley) $Date: 1993/02/19 18:37:41 $";
+static char sccsid[] = "$Id: v_xchar.c,v 5.15 1993/02/24 13:01:01 bostic Exp $ (Berkeley) $Date: 1993/02/24 13:01:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -15,8 +15,8 @@ static char sccsid[] = "$Id: v_xchar.c,v 5.14 1993/02/19 18:37:41 bostic Exp $ (
 #include <stdio.h>
 
 #include "vi.h"
-#include "vcmd.h"
 #include "options.h"
+#include "vcmd.h"
 
 #define	NODEL(ep) {							\
 	msg(ep, M_BELL, "No characters to delete.");			\
