@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 8.17 1993/09/30 11:27:03 bostic Exp $ (Berkeley) $Date: 1993/09/30 11:27:03 $";
+static char sccsid[] = "$Id: ex_filter.c,v 8.18 1993/10/06 16:11:13 bostic Exp $ (Berkeley) $Date: 1993/10/06 16:11:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,7 +22,6 @@ static char sccsid[] = "$Id: ex_filter.c,v 8.17 1993/09/30 11:27:03 bostic Exp $
 #include "vi.h"
 #include "excmd.h"
 
-static int	filter_wait __P((SCR *, long, char *, int));
 static int	filter_ldisplay __P((SCR *, FILE *));
 
 /*
@@ -79,13 +78,26 @@ filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
 			    "filter: %s: %s", _PATH_DEVNULL, strerror(errno));
 			return (1);
 		}
-	} else
-		if (pipe(input) < 0 || (ifp = fdopen(input[1], "w")) == NULL)
+	} else {
+		if (pipe(input) < 0) {
+			msgq(sp, M_ERR, "Error: pipe: %s", strerror(errno));
 			goto err;
+		}
+		if ((ifp = fdopen(input[1], "w")) == NULL) {
+			msgq(sp, M_ERR, "Error: fdopen: %s", strerror(errno));
+			goto err;
+		}
+	}
 
 	/* Open up utility output pipe. */
-	if (pipe(output) < 0 || (ofp = fdopen(output[0], "r")) == NULL)
+	if (pipe(output) < 0) {
+		msgq(sp, M_ERR, "Error: pipe: %s", strerror(errno));
 		goto err;
+	}
+	if ((ofp = fdopen(output[0], "r")) == NULL) {
+		msgq(sp, M_ERR, "Error: fdopen: %s", strerror(errno));
+		goto err;
+	}
 
 	/*
 	 * ISIG turns on VINTR, VQUIT and VSUSP.  We don't want to interrupt
@@ -97,13 +109,14 @@ filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
 	    (saveintr = signal(SIGINT, SIG_IGN)) != (sig_ret_t)-1) {
 		if (tcgetattr(STDIN_FILENO, &term)) {
 			msgq(sp, M_ERR,
-			    "tcgetattr: %s", strerror(errno));
+			    "Error: tcgetattr: %s", strerror(errno));
 			goto err;
 		}
 		nterm = term;
 		nterm.c_lflag |= ISIG;
 		if (tcsetattr(STDIN_FILENO, TCSANOW | TCSASOFT, &nterm)) {
-			msgq(sp, M_ERR, "tcsetattr: %s", strerror(errno));
+			msgq(sp, M_ERR,
+			    "Error: tcsetattr: %s", strerror(errno));
 			goto err;
 		}
 	}
@@ -111,6 +124,7 @@ filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
 	/* Fork off the utility process. */
 	switch (utility_pid = vfork()) {
 	case -1:			/* Error. */
+		msgq(sp, M_ERR, "Error: vfork: %s", strerror(errno));
 err:		if (input[0] != -1)
 			(void)close(input[0]);
 		if (ifp != NULL)
@@ -123,10 +137,9 @@ err:		if (input[0] != -1)
 			(void)close(output[0]);
 		if (output[1] != -1)
 			(void)close(output[1]);
-		msgq(sp, M_ERR, "filter: %s", strerror(errno));
 		return (1);
 	case 0:				/* Utility. */
-		/* The utility have default behavior. */
+		/* The utility has default signal behavior. */
 		(void)signal(SIGINT, SIG_DFL);
 		(void)signal(SIGQUIT, SIG_DFL);
 
@@ -151,8 +164,8 @@ err:		if (input[0] != -1)
 			++name;
 
 		execl(O_STR(sp, O_SHELL), name, "-c", cmd, NULL);
-		msgq(sp, M_ERR,
-		    "exec: %s: %s", O_STR(sp, O_SHELL), strerror(errno));
+		msgq(sp, M_ERR, "Error: execl: %s: %s",
+		    O_STR(sp, O_SHELL), strerror(errno));
 		_exit (127);
 		/* NOTREACHED */
 	default:			/* Parent-reader, parent-writer. */
@@ -217,7 +230,7 @@ err:		if (input[0] != -1)
 	switch (parent_writer_pid = fork()) {
 	case -1:			/* Error. */
 		rval = 1;
-		msgq(sp, M_ERR, "filter: %s", strerror(errno));
+		msgq(sp, M_ERR, "Error: fork: %s", strerror(errno));
 		(void)close(input[1]);
 		(void)close(output[0]);
 		break;
@@ -249,7 +262,7 @@ err:		if (input[0] != -1)
 		}
 
 		/* Wait for the parent-writer. */
-		rval |= filter_wait(sp,
+		rval |= proc_wait(sp,
 		    (long)parent_writer_pid, "parent-writer", 1);
 
 		/* Delete any lines written to the utility. */
@@ -267,20 +280,21 @@ err:		if (input[0] != -1)
 	}
 	F_CLR(ep, F_MULTILOCK);
 
-uwait:	rval |= filter_wait(sp, (long)utility_pid, cmd, 0);
+uwait:	rval |= proc_wait(sp, (long)utility_pid, cmd, 0);
 
 	if (F_ISSET(sp->gp, G_ISFROMTTY) && saveintr != (sig_ret_t)-1) {
 		if (signal(SIGINT, saveintr) == (sig_ret_t)-1)
-			msgq(sp, M_ERR, "signal: %s", strerror(errno));
+			msgq(sp, M_ERR, "Error: signal: %s", strerror(errno));
 		if (tcsetattr(STDIN_FILENO, TCSANOW | TCSASOFT, &term))
-			msgq(sp, M_ERR, "tcsetattr: %s", strerror(errno));
+			msgq(sp, M_ERR,
+			    "Error: tcsetattr: %s", strerror(errno));
 	}
 	return (rval);
 }
 
 /*
- * filter_wait --
- *	Wait for one of the filter processes.
+ * proc_wait --
+ *	Wait for one of the processes.
  *
  * !!!
  * The pid_t type varies in size from a short to a long depending on the
@@ -288,11 +302,11 @@ uwait:	rval |= filter_wait(sp, (long)utility_pid, cmd, 0);
  * rules get you.  I'm using a long based on the belief that nobody is
  * going to make it unsigned and it's unlikely to be a quad.
  */
-static int
-filter_wait(sp, pid, cmd, okpipe)
+int
+proc_wait(sp, pid, cmd, okpipe)
 	SCR *sp;
 	long pid;
-	char *cmd;
+	const char *cmd;
 	int okpipe;
 {
 	extern const char *const sys_siglist[];
