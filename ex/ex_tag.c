@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 8.7 1993/08/16 16:21:33 bostic Exp $ (Berkeley) $Date: 1993/08/16 16:21:33 $";
+static char sccsid[] = "$Id: ex_tag.c,v 8.8 1993/08/26 18:41:47 bostic Exp $ (Berkeley) $Date: 1993/08/26 18:41:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,7 +31,7 @@ static char sccsid[] = "$Id: ex_tag.c,v 8.7 1993/08/16 16:21:33 bostic Exp $ (Be
 static char	*binary_search __P((char *, char *, char *));
 static int	 compare __P((char *, char *, char *));
 static char	*linear_search __P((char *, char *, char *));
-static int	 search __P((char *, char *, char **));
+static int	 search __P((SCR *, char *, char *, char **));
 static int	 tag_get __P((SCR *, char *, char **, char **, char **));
 
 /*
@@ -316,13 +316,15 @@ tag_get(sp, tag, tagp, filep, searchp)
 
 	/* Find the tag, only display missing file messages once. */
 	p = NULL;
-	for (tfp = sp->tfhead; *tfp != NULL && p == NULL; ++tfp)
-		if (search((*tfp)->fname, tag, &p) &&
+	for (tfp = sp->tfhead; *tfp != NULL && p == NULL; ++tfp) {
+		errno = 0;
+		if (search(sp, (*tfp)->fname, tag, &p) &&
 		    (errno != ENOENT || !F_ISSET((*tfp), TAGF_ERROR))) {
 			msgq(sp, M_ERR,
 			    "%s: %s", (*tfp)->fname, strerror(errno));
 			F_SET((*tfp),TAGF_ERROR);
 		}
+	}
 	
 	if (p == NULL) {
 		msgq(sp, M_ERR, "%s: tag not found.", tag);
@@ -334,14 +336,14 @@ tag_get(sp, tag, tagp, filep, searchp)
 	 * the allocated string, filep points to the nul-terminated file name,
 	 * searchp points to the nul-terminated search string.
 	 */
-	for (*tagp = p; *p && !isspace(*p); ++p);
+	for (*tagp = p; *p && !isblank(*p); ++p);
 	if (*p == '\0')
 		goto malformed;
-	for (*p++ = '\0'; isspace(*p); ++p);
-	for (*filep = p; *p && !isspace(*p); ++p);
+	for (*p++ = '\0'; isblank(*p); ++p);
+	for (*filep = p; *p && !isblank(*p); ++p);
 	if (*p == '\0')
 		goto malformed;
-	for (*p++ = '\0'; isspace(*p); ++p);
+	for (*p++ = '\0'; isblank(*p); ++p);
 	*searchp = p;
 	if (*p == '\0') {
 malformed:	free(*tagp);
@@ -360,12 +362,13 @@ malformed:	free(*tagp);
  *	Search a file for a tag.
  */
 static int
-search(fname, tname, tag)
+search(sp, fname, tname, tag)
+	SCR *sp;
 	char *fname, *tname, **tag;
 {
 	struct stat sb;
 	int fd, len;
-	char *endp, *back, *front, *p;
+	char *endp, *back, *front, *map, *p;
 
 	if ((fd = open(fname, O_RDONLY, 0)) < 0)
 		return (1);
@@ -379,32 +382,36 @@ search(fname, tname, tag)
 	 * is flatly impossible.  Hope that malloc fails if the file is too
 	 * large.
 	 */
-	if (fstat(fd, &sb) || (front = mmap(NULL, (size_t)sb.st_size,
+	if (fstat(fd, &sb) || (map = mmap(NULL, (size_t)sb.st_size,
 	    PROT_READ, MAP_PRIVATE, fd, (off_t)0)) == (caddr_t)-1) {
 		(void)close(fd);
 		return (1);
 	}
+	front = map;
 	back = front + sb.st_size;
 
 	front = binary_search(tname, front, back);
 	front = linear_search(tname, front, back);
 
-	if (front == NULL)
+	if (front == NULL || (endp = strchr(front, '\n')) == NULL) {
+		*tag = NULL;
 		goto done;
-	if ((endp = strchr(front, '\n')) == NULL)
-		goto done;
+	}
 
 	len = endp - front;
 	if ((p = malloc(len + 1)) == NULL) {
-done:		(void)close(fd);
+		msgq(sp, M_ERR, "Error: %s.", strerror(errno));
 		*tag = NULL;
-		return (0);
+		goto done;
 	}
-
 	memmove(p, front, len);
 	p[len] = '\0';
-	(void)close(fd);
 	*tag = p;
+
+done:	if (munmap(map, (size_t)sb.st_size))
+		msgq(sp, M_ERR, "tags: munmap: %s", strerror(errno));
+	if (close(fd))
+		msgq(sp, M_ERR, "tags: munmap: %s", strerror(errno));
 	return (0);
 }
 
