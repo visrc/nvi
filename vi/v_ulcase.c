@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ulcase.c,v 10.5 1995/10/16 15:34:14 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:34:14 $";
+static char sccsid[] = "$Id: v_ulcase.c,v 10.6 1995/10/19 19:38:56 bostic Exp $ (Berkeley) $Date: 1995/10/19 19:38:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -57,43 +57,44 @@ v_ulcase(sp, vp)
 	lno = vp->m_start.lno;
 	cno = vp->m_start.cno;
 
-	/* EOF is an infinite count sink. */
-	for (cnt =
-	    F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt > 0; cno = 0, ++lno) {
-		if (db_get(sp, lno, 0, &p, &len))
+	for (cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt > 0; cno = 0) {
+		/* SOF is an error, EOF is an infinite count sink. */
+		if (db_get(sp, lno, 0, &p, &len)) {
+			if (lno == 1) {
+				v_emsg(sp, NULL, VIM_EMPTY);
+				return (1);
+			}
+			--lno;
 			break;
+		}
 
 		/* Empty lines decrement the count by one. */
 		if (len == 0) {
 			--cnt;
-			vp->m_final.lno = lno + 1;
 			vp->m_final.cno = 0;
-		} else {
-			if (cno + cnt >= len) {
-				lcnt = len - 1;
-				cnt -= len - cno;
-
-				vp->m_final.lno = lno + 1;
-				vp->m_final.cno = 0;
-			} else {
-				lcnt = cno + cnt - 1;
-				cnt = 0;
-
-				vp->m_final.lno = lno;
-				vp->m_final.cno = lcnt + 1;
-			}
-
-			if (ulcase(sp, lno, p, len, cno, lcnt))
-				return (1);
+			continue;
 		}
+
+		if (cno + cnt >= len) {
+			lcnt = len - 1;
+			cnt -= len - cno;
+
+			vp->m_final.cno = len - 1;
+		} else {
+			lcnt = cno + cnt - 1;
+			cnt = 0;
+
+			vp->m_final.cno = lcnt + 1;
+		}
+
+		if (ulcase(sp, lno, p, len, cno, lcnt))
+			return (1);
+
+		if (cnt > 0)
+			++lno;
 	}
 
-	/* Check to see if we tried to move past EOF. */
-	if (!db_exist(sp, vp->m_final.lno)) {
-		if (db_get(sp, --vp->m_final.lno, DBG_FATAL, NULL, &len))
-			return (1);
-		vp->m_final.cno = len == 0 ? 0 : len - 1;
-	}
+	vp->m_final.lno = lno;
 	return (0);
 }
 
