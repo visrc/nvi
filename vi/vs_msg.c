@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_msg.c,v 10.32 1995/11/07 08:41:01 bostic Exp $ (Berkeley) $Date: 1995/11/07 08:41:01 $";
+static char sccsid[] = "$Id: vs_msg.c,v 10.33 1995/11/07 20:28:06 bostic Exp $ (Berkeley) $Date: 1995/11/07 20:28:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -507,8 +507,7 @@ vs_ex_to_vi(sp, continuep)
  *	Deal with ex message output.
  *
  * This routine is called when exiting a colon command to resolve any ex
- * output that may have occurred.  We may be in ex mode when we get here,
- * so return as necessary.
+ * output that may have occurred.
  *
  * PUBLIC: int vs_ex_resolve __P((SCR *, int *));
  */
@@ -526,9 +525,6 @@ vs_ex_resolve(sp, continuep)
 	gp = sp->gp;
 	vip = VIP(sp);
 
-	/* Report on line modifications. */
-	msgq_rpt(sp);
-
 	/* Flush ex messages. */
 	(void)ex_fflush(sp);
 
@@ -542,27 +538,47 @@ vs_ex_resolve(sp, continuep)
 
 	/* If we switched into ex mode, return into vi mode. */
 	if (F_ISSET(sp, S_EX_CANON)) {
+		/*
+		 * If we know that the user can't continue, clear the ex wrote
+		 * flag, which is what vs_ex_to_vi uses to decide if the user
+		 * gets a message.
+		 */
 		if (!cancontinue)
 			F_CLR(sp, S_EX_WROTE);
 		if (vs_ex_to_vi(sp, continuep))
 			return (1);
 		if (*continuep == 1)
 			return (0);
-	} else {
-		/* If 0 or 1 lines of output, simply continue. */
-		if (vip->totalcount < 2)
-			return (0);
 
+		F_SET(sp, S_SCR_REDRAW);
+	} else {
 		/*
-		 * If not interrupted, put up the return-to-continue message
-		 * and wait.
+		 * If 0 or 1 lines of output, we may be able to continue w/o
+		 * making the user wait.  First, if no lines of output, we
+		 * can simply return, leaving the line modifications report
+		 * to the next call to vs_resolve from the main vi loop.  Else,
+		 * output that report and see if that pushes us over the edge.
+		 * If it does, we wait, else we can return, again leaving the
+		 * line modification report until later.
+		 *
+		 * Note, all other code paths require waiting, so those cases
+		 * simply leave the report of modified lines until later.  As
+		 * a result sets of ex commands will have cumulative line
+		 * modification reports.  That seems right to me.
 		 */
-		if (cancontinue) {
-			vs_scroll(sp, &ch, SCROLL_EXWAIT);
-			if (ch == ':') {
-				*continuep = 1;
+		if (vip->totalcount < 2) {
+			if (vip->totalcount == 0)
 				return (0);
-			}
+			msgq_rpt(sp);
+			if (vip->totalcount < 2)
+				return (0);
+		}
+
+		/* Put up the message and wait. */
+		vs_scroll(sp, &ch, cancontinue ? SCROLL_EXWAIT : SCROLL_WAIT);
+		if (cancontinue && ch == ':') {
+			*continuep = 1;
+			return (0);
 		}
 
 		/* If ex changed the underlying screen, redraw from scratch. */
@@ -570,13 +586,16 @@ vs_ex_resolve(sp, continuep)
 			F_SET(sp, S_SCR_REDRAW);
 	}
 
-	if (F_ISSET(sp, S_SCR_REDRAW)) {
-		if (vs_refresh(sp))
-			return (1);
-
-		/* Reset the count of overwriting lines. */
-		vip->linecount = vip->lcontinue = vip->totalcount = 0;
-	} else {
+	/*
+	 * We may need to repaint some of the screen, e.g.:
+	 *
+	 *	:set
+	 *	:!ls
+	 *
+	 * gives us a combination of some lines that are "wrong", and a
+	 * need for a full refresh.
+	 */
+	if (vip->totalcount != 0) {
 		/* Set up the redraw of the overwritten lines. */
 		ev.e_event = E_REPAINT;
 		ev.e_flno = vip->totalcount >=
@@ -607,12 +626,15 @@ vs_resolve(sp)
 {
 	EVENT ev;
 	GS *gp;
+	MSG *mp;
 	VI_PRIVATE *vip;
 	size_t oldy, oldx;
 	int redraw;
 
-	/* Save the cursor position. */
 	gp = sp->gp;
+	vip = VIP(sp);
+
+	/* Save the cursor position. */
 	(void)gp->scr_cursor(sp, &oldy, &oldx);
 
 	/* Ring the bell if it's scheduled. */
@@ -630,7 +652,24 @@ vs_resolve(sp)
 	/* Report on line modifications. */
 	msgq_rpt(sp);
 
-	vip = VIP(sp);
+	/*
+	 * Flush any saved messages.  If the screen isn't ready, refresh
+	 * it.  (A side-effect of screen refresh is that we can display
+	 * messages.)  Once this is done, don't trust the cursor.  That
+	 * extra refresh screwed the pooch.
+	 */
+	if (gp->msgq.lh_first != NULL) {
+		if (!F_ISSET(sp, S_SCREEN_READY) && vs_refresh(sp))
+			return (1);
+		while ((mp = gp->msgq.lh_first) != NULL) {
+			gp->scr_msg(sp, mp->mtype, mp->buf, mp->len);
+			LIST_REMOVE(mp, q);
+			free(mp->buf);
+			free(mp);
+		}
+		F_SET(vip, VIP_CUR_INVALID);
+	}
+
 	switch (vip->totalcount) {
 	case 0:
 		redraw = 0;
