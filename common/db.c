@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 8.23 1994/03/15 12:28:16 bostic Exp $ (Berkeley) $Date: 1994/03/15 12:28:16 $";
+static char sccsid[] = "$Id: db.c,v 8.24 1994/04/10 14:31:06 bostic Exp $ (Berkeley) $Date: 1994/04/10 14:31:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -58,10 +58,10 @@ file_gline(sp, ep, lno, lenp)
 	 * is there.
 	 */
 	if (F_ISSET(sp, S_INPUT)) {
-		l1 = ((TEXT *)sp->tiq.cqh_first)->lno;
-		l2 = ((TEXT *)sp->tiq.cqh_last)->lno;
+		l1 = ((TEXT *)sp->tiqp->cqh_first)->lno;
+		l2 = ((TEXT *)sp->tiqp->cqh_last)->lno;
 		if (l1 <= lno && l2 >= lno) {
-			for (tp = sp->tiq.cqh_first;
+			for (tp = sp->tiqp->cqh_first;
 			    tp->lno != lno; tp = tp->q.cqe_next);
 			if (lenp)
 				*lenp = tp->len;
@@ -391,8 +391,8 @@ file_lline(sp, ep, lnop)
 	/* Check the cache. */
 	if (ep->c_nlines != OOBLNO) {
 		*lnop = (F_ISSET(sp, S_INPUT) &&
-		    ((TEXT *)sp->tiq.cqh_last)->lno > ep->c_nlines ?
-		    ((TEXT *)sp->tiq.cqh_last)->lno : ep->c_nlines);
+		    ((TEXT *)sp->tiqp->cqh_last)->lno > ep->c_nlines ?
+		    ((TEXT *)sp->tiqp->cqh_last)->lno : ep->c_nlines);
 		return (0);
 	}
 
@@ -421,8 +421,8 @@ file_lline(sp, ep, lnop)
 
 	/* Return the value. */
 	*lnop = (F_ISSET(sp, S_INPUT) &&
-	    ((TEXT *)sp->tiq.cqh_last)->lno > lno ?
-	    ((TEXT *)sp->tiq.cqh_last)->lno : lno);
+	    ((TEXT *)sp->tiqp->cqh_last)->lno > lno ?
+	    ((TEXT *)sp->tiqp->cqh_last)->lno : lno);
 	return (0);
 }
 

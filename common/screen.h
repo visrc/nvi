@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.96 1994/04/09 18:08:54 bostic Exp $ (Berkeley) $Date: 1994/04/09 18:08:54 $
+ *	$Id: screen.h,v 8.97 1994/04/10 14:31:08 bostic Exp $ (Berkeley) $Date: 1994/04/10 14:31:08 $
  */
 
 /*
@@ -131,7 +131,8 @@ struct _scr {
 
 	fd_set	 rdfd;			/* Ex/vi: read fd select mask. */
 
-	TEXTH	 tiq;			/* Ex/vi: text input queue. */
+	TEXTH	 __tiq;			/* Ex/vi: text input queue. */
+	TEXTH	 *tiqp;			/* Ex/vi: text input queue reference. */
 
 	SCRIPT	*script;		/* Vi: script mode information .*/
 
