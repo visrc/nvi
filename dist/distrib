@@ -1,5 +1,5 @@
 #! /bin/sh
-# $Id: distrib,v 8.13 1996/12/03 12:12:37 bostic Exp $ (Berkeley) $Date: 1996/12/03 12:12:37 $
+# $Id: distrib,v 8.14 1996/12/10 20:58:44 bostic Exp $ (Berkeley) $Date: 1996/12/10 20:58:44 $
 
 # Clean
 #make -f Makefile.in clean
@@ -85,6 +85,5 @@ echo "Building tags files"
 rm -f tags
 ctags -w -d ../cl/*.[ch] ../common/*.[ch] ../ex/*.[ch] \
     ../perl_api/*.[ch] ../tcl_api/*.[ch] \
-    ../ip_vi/*.[ch] ../ipc/*.[ch] ../ipc_motif/*.[ch] ../ipc_curses/*.[ch] \
-    ../vi/*.[ch]
+    ../ip_vi/*.[ch] ../ipc/*.[ch] ../ipc_motif/*.[ch] ../vi/*.[ch]
 chmod 444 tags
