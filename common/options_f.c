@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 8.5 1993/08/16 17:36:01 bostic Exp $ (Berkeley) $Date: 1993/08/16 17:36:01 $";
+static char sccsid[] = "$Id: options_f.c,v 8.6 1993/08/20 17:36:46 bostic Exp $ (Berkeley) $Date: 1993/08/20 17:36:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -199,7 +199,7 @@ DECL(f_mesg)
 	if (!F_ISSET(sp->gp, G_SETMODE)) {
 		F_SET(sp->gp, G_SETMODE);
 		if (stat(tty, &sb) < 0) {
-			msgq(sp, M_ERR, "%s: %s", strerror(errno));
+			msgq(sp, M_ERR, "%s: %s", tty, strerror(errno));
 			return (1);
 		}
 		sp->gp->origmode = sb.st_mode;
@@ -207,13 +207,15 @@ DECL(f_mesg)
 
 	if (turnoff) {
 		if (chmod(tty, sb.st_mode & ~S_IWGRP) < 0) {
-			msgq(sp, M_ERR, "%s: %s", strerror(errno));
+			msgq(sp, M_ERR, "messages not turned off: %s: %s",
+			    tty, strerror(errno));
 			return (1);
 		}
 		O_CLR(sp, O_MESG);
 	} else {
 		if (chmod(tty, sb.st_mode | S_IWGRP) < 0) {
-			msgq(sp, M_ERR, "%s: %s", strerror(errno));
+			msgq(sp, M_ERR, "messages not turned on: %s: %s",
+			    tty, strerror(errno));
 			return (1);
 		}
 		O_SET(sp, O_MESG);
