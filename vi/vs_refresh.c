@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.40 1993/12/02 16:24:13 bostic Exp $ (Berkeley) $Date: 1993/12/02 16:24:13 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.41 1993/12/02 18:11:15 bostic Exp $ (Berkeley) $Date: 1993/12/02 18:11:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -793,20 +793,19 @@ svi_modeline(sp, ep)
 	return (0);
 }
 
+/*
+ * svi_divider --
+ *	Draw a dividing line between the screens.
+ */
 int
 svi_divider(sp)
 	SCR *sp;
 {
-#define	DIVIDESIZE	10
-	int dividesize;
-	char buf[DIVIDESIZE + 1];
+	size_t len;
 
-	dividesize = DIVIDESIZE > sp->cols ? sp->cols : DIVIDESIZE;
-	memset(buf, ' ', dividesize);
-	if (standout() == ERR)
-		return (1);
-	ADDNSTR(buf, dividesize);
-	if (standend() == ERR)
-		return (1);
+#define	DIVIDESTR	"+=+=+=+=+=+=+=+"
+	len = sizeof(DIVIDESTR) - 1 > sp->cols ?
+	    sp->cols : sizeof(DIVIDESTR) - 1;
+	ADDNSTR(DIVIDESTR, len);
 	return (0);
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 8.14 1993/11/29 14:15:43 bostic Exp $ (Berkeley) $Date: 1993/11/29 14:15:43 $";
+static char sccsid[] = "$Id: vs_line.c,v 8.15 1993/12/02 18:11:13 bostic Exp $ (Berkeley) $Date: 1993/12/02 18:11:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -42,7 +42,6 @@ svi_line(sp, ep, smp, yp, xp)
 	size_t offset_in_char, offset_in_line;
 	size_t oldy, oldx;
 	int ch, is_cached, is_infoline, is_partial, is_tab, listset;
-	int reverse_video;
 	char *p, nbuf[10];
 
 #if defined(DEBUG) && 0
@@ -94,13 +93,8 @@ svi_line(sp, ep, smp, yp, xp)
 	 *
 	 * Set the number of columns for this screen.
 	 */
-	reverse_video = 0;
 	cols_per_screen = sp->cols;
 	if (is_infoline = ISINFOLINE(sp, smp)) {
-		if (sp->q.cqe_next != (void *)&sp->gp->dq) {
-			reverse_video = 1;
-			standout();
-		}
 		listset = 0;
 		if (O_ISSET(sp, O_LEFTRIGHT))
 			skip_screens = 0;
@@ -345,9 +339,7 @@ svi_line(sp, ep, smp, yp, xp)
 			clrtoeol();
 	}
 
-ret:	if (reverse_video)
-		standend();
-	MOVEA(sp, oldy, oldx);
+ret:	MOVEA(sp, oldy, oldx);
 	return (0);
 }
 
