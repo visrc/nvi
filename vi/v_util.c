@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_util.c,v 5.25 1993/02/28 14:02:06 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:02:06 $";
+static char sccsid[] = "$Id: v_util.c,v 5.26 1993/03/01 12:51:15 bostic Exp $ (Berkeley) $Date: 1993/03/01 12:51:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -222,7 +222,9 @@ lcont:		/* Move to the message line and clear it. */
 		 * Figure out how much to print, and print it.
 		 * Adjust for the next line.
 		 */
-		len = SCRCOL(ep) - sizeof(MCONTMSG) - 1;
+		len = SCRCOL(ep);
+		if (mp->next != NULL && !(mp->next->flags & M_EMPTY))
+			len -= sizeof(MCONTMSG);
 		if (mp->len < len)
 			len = mp->len;
 		addnstr(p, len);
