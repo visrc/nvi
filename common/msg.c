@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 9.13 1995/02/08 12:06:17 bostic Exp $ (Berkeley) $Date: 1995/02/08 12:06:17 $";
+static char sccsid[] = "$Id: msg.c,v 9.14 1995/02/10 16:08:04 bostic Exp $ (Berkeley) $Date: 1995/02/10 16:08:04 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -67,8 +67,10 @@ msgq(sp, mt, fmt, va_alist)
 		size_t	 suffix;	/* Suffix string length. */
 	} str[__NL_ARGMAX];
 #endif
+	static int reenter;		/* STATIC: Re-entrancy check. */
 	CHAR_T ch;
 	GS *gp;
+	MSG *mp_c, *mp_n;
 	size_t blen, cnt1, cnt2, len, mlen, nlen, soff;
 	const char *p, *t, *u;
 	char *bp, *mp, *rbp, *s_rbp;
@@ -84,9 +86,17 @@ msgq(sp, mt, fmt, va_alist)
 	 * the message.  If sp is NULL, ignore the special cases and
 	 * just build the message, using __global_list.
 	 */
-	if (sp == NULL)
+	if (sp == NULL) {
 		gp = __global_list;
-	else {
+		switch (mt) {
+		case M_BERR:
+			mt = M_ERR;
+			break;
+		case M_VINFO:
+			mt = M_INFO;
+			break;
+		}
+	} else {
 		gp = sp->gp;
 		switch (mt) {
 		case M_BERR:
@@ -110,10 +120,26 @@ msgq(sp, mt, fmt, va_alist)
 		case M_ERR:
 		case M_SYSERR:
 			break;
-		default:
-			abort();
 		}
 	}
+
+	/*
+	 * It's possible to reenter msg when it allocates space.  We're
+	 * probably dead anyway, but there's no reason to drop core.
+	 *
+	 * We can be entered as the result of a signal arriving, trying
+	 * to sync the file and failing.  This shouldn't be a hot spot,
+	 * block the signals.
+	 *
+	 * XXX
+	 * Yes, there's a race, but it should only be two instructions.
+	 */
+	SIGBLOCK(gp);
+	if (reenter++) {
+		SIGUNBLOCK(gp);
+		return;
+	}
+	SIGUNBLOCK(gp);
 
 	/* Get space for the message. */
 	nlen = 1024;
@@ -124,9 +150,6 @@ retry:		FREE_SPACE(sp, bp, blen);
 	bp = NULL;
 	blen = 0;
 	GET_SPACE_GOTO(sp, bp, blen, nlen);
-	if (0) {
-binc_err:	return;
-	}
 
 	/*
 	 * Error prefix.
@@ -181,7 +204,7 @@ binc_err:	return;
 	 * of msgq are responsible for making sure that all the non-printable
 	 * characters are formatted for printing before calling msgq, we use a
 	 * random non-printable character selected at terminal initialization
-	 * time.  This code isn't fast by any means, but since as messages are
+	 * time.  This code isn't fast by any means, but as messages should be
 	 * relatively short and normally have only a few arguments, it won't be
 	 * too bad.  Regardless, nobody has come up with any other solution.
 	 *
@@ -317,88 +340,51 @@ nofmt:	mp += len;
 			goto retry;
 	}
 
-#ifdef DEBUG
-	if (sp != NULL)
-		TRACE(sp, "mesg: {%.*s}\n", mlen, bp);
-#endif
-	msg_app(__global_list, sp,
-	    mt == M_ERR || mt == M_SYSERR ? 1 : 0, bp, mlen);
-
-err:	FREE_SPACE(sp, bp, blen);
-}
-
-/*
- * msg_app --
- *	Append a message into the queue.  This can fail, but there's
- *	nothing we can do if it does.
- */
-void
-msg_app(gp, sp, inv_video, p, len)
-	GS *gp;
-	SCR *sp;
-	int inv_video;
-	char *p;
-	size_t len;
-{
-	static int reenter;		/* STATIC: Re-entrancy check. */
-	MSG *mp, *nmp;
-
-	/*
-	 * It's possible to reenter msg when it allocates space.
-	 * We're probably dead anyway, but no reason to drop core.
-	 */
-	if (reenter)
-		return;
-	reenter = 1;
-
-	/*
-	 * We can be entered as the result of a signal arriving, trying
-	 * to sync the file and failing.  This shouldn't be a hot spot,
-	 * block the signals.
-	 */
-	SIGBLOCK(gp);
-
 	/*
 	 * Find an empty structure, or allocate a new one.  Use the
 	 * screen structure if it exists, otherwise the global one.
 	 */
 	if (sp != NULL) {
-		if ((mp = sp->msgq.lh_first) == NULL) {
-			CALLOC(sp, mp, MSG *, 1, sizeof(MSG));
-			if (mp == NULL)
-				goto ret;
-			LIST_INSERT_HEAD(&sp->msgq, mp, q);
+		if ((mp_c = sp->msgq.lh_first) == NULL) {
+			CALLOC(sp, mp_c, MSG *, 1, sizeof(MSG));
+			if (mp_c == NULL)
+				goto err;
+			LIST_INSERT_HEAD(&sp->msgq, mp_c, q);
 			goto store;
 		}
-	} else if ((mp = gp->msgq.lh_first) == NULL) {
-		CALLOC(sp, mp, MSG *, 1, sizeof(MSG));
-		if (mp == NULL)
-			goto ret;
-		LIST_INSERT_HEAD(&gp->msgq, mp, q);
-		goto store;
-	}
-	while (!F_ISSET(mp, M_EMPTY) && mp->q.le_next != NULL)
-		mp = mp->q.le_next;
-	if (!F_ISSET(mp, M_EMPTY)) {
-		CALLOC(sp, nmp, MSG *, 1, sizeof(MSG));
-		if (nmp == NULL)
-			goto ret;
-		LIST_INSERT_AFTER(mp, nmp, q);
-		mp = nmp;
+	} else
+		if ((mp_c = gp->msgq.lh_first) == NULL) {
+			CALLOC(sp, mp_c, MSG *, 1, sizeof(MSG));
+			if (mp_c == NULL)
+				goto err;
+			LIST_INSERT_HEAD(&gp->msgq, mp_c, q);
+			goto store;
+		}
+
+	while (!F_ISSET(mp_c, M_EMPTY) && mp_c->q.le_next != NULL)
+		mp_c = mp_c->q.le_next;
+	if (!F_ISSET(mp_c, M_EMPTY)) {
+		CALLOC(sp, mp_n, MSG *, 1, sizeof(MSG));
+		if (mp_n == NULL)
+			goto err;
+		LIST_INSERT_AFTER(mp_c, mp_n, q);
+		mp_c = mp_n;
 	}
 
 	/* Get enough memory for the message. */
-store:	if (len > mp->blen &&
-	    (mp->mbuf = binc(sp, mp->mbuf, &mp->blen, len)) == NULL)
-		goto ret;
+store:	if (mlen > mp_c->blen &&
+	    (mp_c->mbuf = binc(sp, mp_c->mbuf, &mp_c->blen, mlen)) == NULL)
+		goto err;
 
 	/* Store the message. */
-	memmove(mp->mbuf, p, len);
-	mp->len = len;
-	mp->flags = inv_video ? M_INV_VIDEO : 0;
+	memmove(mp_c->mbuf, bp, mlen);
+	mp_c->len = mlen;
+	mp_c->flags = mt == M_ERR || mt == M_SYSERR ? M_INV_VIDEO : 0;
 
-ret:	reenter = 0;
-	SIGUNBLOCK(gp);
+	/* Cleanup. */
+err:	FREE_SPACE(sp, bp, blen);
+binc_err:
+	reenter = 0;
 }
 
 /*
