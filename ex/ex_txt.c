@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_txt.c,v 10.1 1995/06/08 18:53:55 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:53:55 $";
+static char sccsid[] = "$Id: ex_txt.c,v 10.2 1995/06/09 13:43:19 bostic Exp $ (Berkeley) $Date: 1995/06/09 13:43:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -376,7 +376,7 @@ txt_prompt(sp, tp)
 
 	/* Display the line number. */
 	if (FL_ISSET(exp->im_flags, TXT_NUMBER) && O_ISSET(sp, O_NUMBER))
-		(void)printf("%6ld  ", tp->lno);
+		(void)printf("%6lu  ", (u_long)tp->lno);
 
 	/* Print out autoindent string. */
 	if (FL_ISSET(exp->im_flags, TXT_AUTOINDENT))

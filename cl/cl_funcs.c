@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_funcs.c,v 10.1 1995/06/08 19:00:31 bostic Exp $ (Berkeley) $Date: 1995/06/08 19:00:31 $";
+static char sccsid[] = "$Id: cl_funcs.c,v 10.2 1995/06/09 13:43:53 bostic Exp $ (Berkeley) $Date: 1995/06/09 13:43:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -419,7 +419,7 @@ cl_deleteln(sp)
 {
 	CHAR_T *p;
 	CL_PRIVATE *clp;
-	size_t col, len, llen, lno, oldy, oldx, spcnt;
+	size_t len, llen, oldy, oldx;
 
 	EX_ABORT(sp);
 	VI_INIT_IGNORE(sp);
