@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: msg.c,v 10.43 1996/08/17 11:56:22 bostic Exp $ (Berkeley) $Date: 1996/08/17 11:56:22 $";
+static const char sccsid[] = "$Id: msg.c,v 10.44 1996/08/18 10:35:29 bostic Exp $ (Berkeley) $Date: 1996/08/18 10:35:29 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -516,6 +516,7 @@ msgq_status(sp, lno, flags)
 	recno_t lno;
 	u_int flags;
 {
+	static int poisoned;
 	recno_t last;
 	size_t blen, len;
 	int cnt, needsep;
@@ -625,7 +626,25 @@ msgq_status(sp, lno, flags)
 	(void)sprintf(p, " (pid %lu)", (u_long)getpid());
 	p += strlen(p);
 #endif
+	len = p - bp;
+
+	/*
+	 * Poison.
+	 *
+	 * This message may not be altered in any way, without the express,
+	 * written permission of Keith Bostic.  See the LICENSE file for
+	 * further information.
+	 */
+#define	POISON	"  (UNLICENSED)"
+	if (!poisoned && len + 1 + (sizeof(POISON) - 1) < sp->cols - 2) {
+		memcpy(p, POISON, sizeof(POISON) - 1);
+		p += sizeof(POISON) - 1;
+		len += sizeof(POISON) - 1;
+		poisoned = 1;
+	}
+
 	*p++ = '\n';
+	++len;
 
 	/*
 	 * There's a nasty problem with long path names.  Cscope and tags files
@@ -643,19 +662,17 @@ msgq_status(sp, lno, flags)
 	 * characters for those screens.  Make it really hard to screw this up.
 	 */
 	s = bp;
-	if (LF_ISSET(MSTAT_TRUNCATE))
-		if ((p - s) >= sp->cols) {
-			for (; s < np &&
-			    (*s != '/' || (p - s) > sp->cols - 3); ++s);
-			if (s == np) {
-				s = p - (sp->cols - 5);
-				*--s = ' ';
-			}
-			*--s = '.';
-			*--s = '.';
-			*--s = '.';
+	if (LF_ISSET(MSTAT_TRUNCATE) && len >= sp->cols) {
+		for (; s < np && (*s != '/' || (p - s) > sp->cols - 3); ++s);
+		if (s == np) {
+			s = p - (sp->cols - 5);
+			*--s = ' ';
 		}
-	len = p - s;
+		*--s = '.';
+		*--s = '.';
+		*--s = '.';
+		len = p - s;
+	}
 
 	/* Flush any waiting ex messages. */
 	(void)ex_fflush(sp);
