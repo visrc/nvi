@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: key.c,v 10.31 1996/06/08 14:47:58 bostic Exp $ (Berkeley) $Date: 1996/06/08 14:47:58 $";
+static const char sccsid[] = "$Id: key.c,v 10.32 1996/06/30 17:49:52 bostic Exp $ (Berkeley) $Date: 1996/06/30 17:49:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -789,6 +789,9 @@ v_event_err(sp, evp)
 		break;
 	case E_TIMEOUT:
 		msgq(sp, M_ERR, "286|Unexpected timeout event");
+		break;
+	case E_WRESIZE:
+		msgq(sp, M_ERR, "316|Unexpected resize event");
 		break;
 	case E_WRITE:
 		msgq(sp, M_ERR, "287|Unexpected write event");

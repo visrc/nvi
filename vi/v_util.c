@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_util.c,v 10.10 1996/03/06 19:54:47 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:54:47 $";
+static const char sccsid[] = "$Id: v_util.c,v 10.11 1996/06/30 17:50:33 bostic Exp $ (Berkeley) $Date: 1996/06/30 17:50:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -169,6 +169,9 @@ v_emsg(sp, p, which)
 		msgq(sp,
 		    which == VIM_NOCOM_B ? M_BERR : M_ERR,
 		    "204|%s isn't a vi command", p);
+		break;
+	case VIM_WRESIZE:
+		msgq(sp, M_ERR, "Window resize interrupted text input mode");
 		break;
 	case VIM_USAGE:
 		msgq(sp, M_ERR, "205|Usage: %s", p);

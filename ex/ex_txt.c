@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_txt.c,v 10.13 1996/03/06 19:52:48 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:52:48 $";
+static const char sccsid[] = "$Id: ex_txt.c,v 10.14 1996/06/30 17:50:15 bostic Exp $ (Berkeley) $Date: 1996/06/30 17:50:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -122,6 +122,7 @@ newtp:		if ((tp = text_init(sp, NULL, 0, 32)) == NULL)
 		case E_ERR:
 			goto err;
 		case E_REPAINT:
+		case E_WRESIZE:
 			continue;
 		case E_EOF:
 			rval = 1;

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.72 1996/06/30 16:41:48 bostic Exp $ (Berkeley) $Date: 1996/06/30 16:41:48 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.73 1996/06/30 17:51:05 bostic Exp $ (Berkeley) $Date: 1996/06/30 17:51:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -516,14 +516,17 @@ next:	if (v_event_get(sp, evp, 0, ec_flags))
 		 * Historically, <interrupt> exited the user from text input
 		 * mode or cancelled a colon command, and returned to command
 		 * mode.  It also beeped the terminal, but that seems a bit
-		 * excessive.  We also get resize events here, which mean that
-		 * our text structures may no longer be correct.
+		 * excessive.
 		 */
 		goto k_escape;
 	case E_REPAINT:
 		if (vs_repaint(sp, &ev))
 			return (1);
 		goto next;
+	case E_WRESIZE:
+		/* <resize> interrupts the input mode. */
+		v_emsg(sp, NULL, VIM_WRESIZE);
+		goto k_escape;
 	default:
 		v_event_err(sp, evp);
 		goto k_escape;

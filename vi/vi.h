@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: vi.h,v 10.18 1996/05/04 18:50:51 bostic Exp $ (Berkeley) $Date: 1996/05/04 18:50:51 $
+ *	$Id: vi.h,v 10.19 1996/06/30 17:50:28 bostic Exp $ (Berkeley) $Date: 1996/06/30 17:50:28 $
  */
 
 /* Definition of a vi "word". */
@@ -370,8 +370,8 @@ typedef enum {
 
 /* Vi common error messages. */
 typedef enum {
-	VIM_COMBUF, VIM_EMPTY, VIM_EOF, VIM_EOL, VIM_NOCOM, VIM_NOCOM_B,
-	VIM_USAGE
+	VIM_COMBUF, VIM_EMPTY, VIM_EOF, VIM_EOL,
+	VIM_NOCOM, VIM_NOCOM_B, VIM_USAGE, VIM_WRESIZE
 } vim_t;
 
 #include "vi_extern.h"

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vi.c,v 10.51 1996/06/19 20:49:19 bostic Exp $ (Berkeley) $Date: 1996/06/19 20:49:19 $";
+static const char sccsid[] = "$Id: vi.c,v 10.52 1996/06/30 17:51:09 bostic Exp $ (Berkeley) $Date: 1996/06/30 17:51:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1205,6 +1205,8 @@ v_key(sp, command_events, evp, ec_flags)
 			if (vs_repaint(sp, evp))
 				return (GC_FATAL);
 			break;
+		case E_WRESIZE:
+			return (GC_ERR);
 		case E_QUIT:
 		case E_WRITE:
 			if (command_events)
