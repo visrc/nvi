@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 9.6 1995/01/23 16:58:35 bostic Exp $ (Berkeley) $Date: 1995/01/23 16:58:35 $
+ *	$Id: gs.h,v 9.7 1995/02/06 14:21:09 bostic Exp $ (Berkeley) $Date: 1995/02/06 14:21:09 $
  */
 
 struct _gs {
@@ -36,6 +36,9 @@ struct _gs {
 	size_t	 tmp_blen;		/* Temporary buffer size. */
 
 	char	*icommand;		/* Initial command. */
+
+	char	*postcmd;		/* Ex posted command. */
+	size_t	 postcmd_len;		/* Ex posted command length. */
 
 	sigset_t blockset;		/* Signal mask. */
 
