@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_split.c,v 10.16 1996/03/06 19:55:12 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:55:12 $";
+static const char sccsid[] = "$Id: vs_split.c,v 10.17 1996/03/14 21:26:37 bostic Exp $ (Berkeley) $Date: 1996/03/14 21:26:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -91,8 +91,8 @@ vs_split(sp, new)
 		 * If the parent is the bottom half of the screen, shift
 		 * the map down to match on-screen text.
 		 */
-		memmove(_HMAP(sp),
-		    _HMAP(sp) + new->rows, sp->t_maxrows * sizeof(SMAP));
+		memmove(_HMAP(sp), _HMAP(sp) + new->rows,
+		    (sp->t_maxrows - new->rows) * sizeof(SMAP));
 	} else {				/* Old is top half. */
 		new->rows = sp->rows - half;	/* New. */
 		new->woff = sp->woff + half;
