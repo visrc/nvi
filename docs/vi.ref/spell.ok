@@ -34,6 +34,7 @@ POSIX
 PostScript
 RE's
 README
+RECDIR
 Reference''USD:13
 SIGHUP
 SIGWINCH
@@ -56,6 +57,7 @@ XON
 XOptions
 XXCOLUMNS
 XXXX
+XXXXXX
 XXb
 ZZ
 ab
@@ -112,6 +114,7 @@ ext
 exu
 exusage
 fi
+filesystem
 ftp.cs.berkeley.edu
 ftp.uu.net
 gdb
@@ -138,6 +141,7 @@ keytime
 leftright
 lhs
 li
+lib
 libc.tags
 lobal
 lowercase
@@ -175,8 +179,11 @@ rc.local
 readonly
 rec
 recdir
+recfile
 recover.XXXX
+recover.XXXXXX
 recover.c
+recover.script
 remapmax
 res
 rew
@@ -237,6 +244,7 @@ vi.0.ps
 vi.0.txt
 vi.1
 vi.XXXX
+vi.XXXXXX
 vi.cmd.roff
 vi.exrc
 vi.recover
