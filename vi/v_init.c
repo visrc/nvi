@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 5.23 1993/04/19 15:32:58 bostic Exp $ (Berkeley) $Date: 1993/04/19 15:32:58 $";
+static char sccsid[] = "$Id: v_init.c,v 5.24 1993/04/20 18:44:00 bostic Exp $ (Berkeley) $Date: 1993/04/20 18:44:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -82,23 +82,23 @@ v_init(sp, ep)
 	 * Otherwise, check to make sure that the location exists.
 	 */
 	if (F_ISSET(ep, F_NOSETPOS)) {
-		if (O_ISSET(sp, O_COMMENT)) {
-			if (v_comment(sp, ep))
-				return (1);
-		} else {
-			sp->lno = 1;
-			sp->cno = 0;
-		}
-		F_CLR(ep, F_NOSETPOS);
-	} else if (file_gline(sp, ep, sp->lno, &len) == NULL) {
-		if (sp->lno != 1 || sp->cno != 0) {
-			sp->lno = file_lline(sp, ep);
-			if (sp->lno == 0)
-				sp->lno = 1;
-			sp->cno = 0;
-		}
-	} else if (sp->cno >= len)
+		sp->lno = 1;
 		sp->cno = 0;
+		if (O_ISSET(sp, O_COMMENT) && v_comment(sp, ep))
+			return (1);
+		F_CLR(ep, F_NOSETPOS);
+	} else {
+		sp->lno = ep->lno;
+		sp->cno = ep->cno;
+		if (file_gline(sp, ep, sp->lno, &len) == NULL) {
+			if (sp->lno != 1 || sp->cno != 0) {
+				if ((sp->lno = file_lline(sp, ep)) == 0)
+					sp->lno = 1;
+				sp->cno = 0;
+			}
+		} else if (sp->cno >= len)
+			sp->cno = 0;
+	}
 
 	/*
 	 * After location established, run any initial command.  Failure
@@ -138,6 +138,9 @@ int
 v_end(sp)
 	SCR *sp;
 {
+	/* Save the cursor location. */
+	sp->ep->lno = sp->lno;
+	sp->ep->cno = sp->cno;
 
 #ifdef FWOPEN_NOT_AVAILABLE
 	sp->trapped_fd = -1;
