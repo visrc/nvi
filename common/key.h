@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 9.1 1994/11/09 18:38:17 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:38:17 $
+ *	$Id: key.h,v 9.2 1995/01/07 12:57:51 bostic Exp $ (Berkeley) $Date: 1995/01/07 12:57:51 $
  */
 
 /*
@@ -136,27 +136,28 @@ enum confirm	{ CONF_NO, CONF_QUIT, CONF_YES };
 #define	TXT_BACKSLASH	0x00000010	/* Backslashes escape characters. */
 #define	TXT_BEAUTIFY	0x00000020	/* Only printable characters. */
 #define	TXT_BS		0x00000040	/* Backspace returns the buffer. */
-#define	TXT_CNTRLD	0x00000080	/* Control-D is a special command. */
+#define	TXT_CNTRLD	0x00000080	/* Control-D is a command. */
 #define	TXT_CNTRLT	0x00000100	/* Control-T is an indent special. */
 #define	TXT_CR		0x00000200	/* CR returns the buffer. */
 #define	TXT_DOTTERM	0x00000400	/* Leading '.' terminates the input. */
 #define	TXT_EMARK	0x00000800	/* End of replacement mark. */
-#define	TXT_ESCAPE	0x00001000	/* Escape returns the buffer. */
-#define	TXT_EXSUSPEND	0x00002000	/* ^Z should suspend the session. */
+#define	TXT_EOFCHAR	0x00001000	/* ICANON set, return EOF character. */
+#define	TXT_ESCAPE	0x00002000	/* Escape returns the buffer. */
 #define	TXT_INFOLINE	0x00004000	/* Editing the info line. */
 #define	TXT_MAPCOMMAND	0x00008000	/* Apply the command map. */
 #define	TXT_MAPINPUT	0x00010000	/* Apply the input map. */
 #define	TXT_MAPNODIGIT	0x00020000	/* Return to a digit. */
 #define	TXT_NLECHO	0x00040000	/* Echo the newline. */
-#define	TXT_OVERWRITE	0x00080000	/* Overwrite characters. */
-#define	TXT_PROMPT	0x00100000	/* Display a prompt. */
-#define	TXT_RECORD	0x00200000	/* Record for replay. */
-#define	TXT_REPLACE	0x00400000	/* Replace; don't delete overwrite. */
-#define	TXT_REPLAY	0x00800000	/* Replay the last input. */
-#define	TXT_RESOLVE	0x01000000	/* Resolve the text into the file. */
-#define	TXT_SHOWMATCH	0x02000000	/* Option: showmatch. */
-#define	TXT_TTYWERASE	0x04000000	/* Option: ttywerase. */
-#define	TXT_WRAPMARGIN	0x08000000	/* Option: wrapmargin. */
+#define	TXT_NUMBER	0x00080000	/* Number the line. */
+#define	TXT_OVERWRITE	0x00100000	/* Overwrite characters. */
+#define	TXT_PROMPT	0x00200000	/* Display a prompt. */
+#define	TXT_RECORD	0x00400000	/* Record for replay. */
+#define	TXT_REPLACE	0x00800000	/* Replace; don't delete overwrite. */
+#define	TXT_REPLAY	0x01000000	/* Replay the last input. */
+#define	TXT_RESOLVE	0x02000000	/* Resolve the text into the file. */
+#define	TXT_SHOWMATCH	0x04000000	/* Option: showmatch. */
+#define	TXT_TTYWERASE	0x08000000	/* Option: ttywerase. */
+#define	TXT_WRAPMARGIN	0x10000000	/* Option: wrapmargin. */
 
 /* Support keyboard routines. */
 size_t		 __key_len __P((SCR *, ARG_CHAR_T));

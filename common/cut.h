@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: cut.h,v 9.1 1994/11/09 18:37:39 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:37:39 $
+ *	$Id: cut.h,v 9.2 1995/01/07 12:57:35 bostic Exp $ (Berkeley) $Date: 1995/01/07 12:57:35 $
  */
 
 typedef struct _texth TEXTH;		/* TEXT list head structure. */
@@ -37,10 +37,6 @@ struct _text {				/* Text: a linked list of lines. */
 	size_t	 R_erase;		/* 0-N: 'R' erase count. */
 	size_t	 sv_cno;		/* 0-N: Saved line cursor. */
 	size_t	 sv_len;		/* 0-N: Saved line length. */
-
-	/* These fields are used by the ex text input routine. */
-	u_char	*wd;			/* Width buffer. */
-	size_t	 wd_len;		/* Width buffer length. */
 };
 
 /*

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 9.2 1994/12/16 12:44:48 bostic Exp $ (Berkeley) $Date: 1994/12/16 12:44:48 $";
+static char sccsid[] = "$Id: cut.c,v 9.3 1995/01/07 12:57:33 bostic Exp $ (Berkeley) $Date: 1995/01/07 12:57:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -332,7 +332,5 @@ text_free(tp)
 {
 	if (tp->lb != NULL)
 		FREE(tp->lb, tp->lb_len);
-	if (tp->wd != NULL)
-		FREE(tp->wd, tp->wd_len);
 	FREE(tp, sizeof(TEXT));
 }

@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 9.5 1994/11/12 14:14:25 bostic Exp $ (Berkeley) $Date: 1994/11/12 14:14:25 $
+ *	$Id: screen.h,v 9.6 1995/01/07 12:57:58 bostic Exp $ (Berkeley) $Date: 1995/01/07 12:57:58 $
  */
 
 /*
@@ -204,7 +204,7 @@ struct _scr {
 	enum input			/* Get a line from the user. */
 		(*s_get) __P((SCR *, TEXTH *, ARG_CHAR_T, u_int));
 	enum input			/* Get a key from the user. */
-		(*s_key_read) __P((SCR *, int *, struct timeval *));
+		(*s_key_read) __P((SCR *, int *, u_int, struct timeval *));
 					/* Map a function key. */
 	int	(*s_fmap) __P((SCR *,
 		    enum seqtype, CHAR_T *, size_t, CHAR_T *, size_t));

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 9.7 1994/12/17 17:14:23 bostic Exp $ (Berkeley) $Date: 1994/12/17 17:14:23 $";
+static char sccsid[] = "$Id: key.c,v 9.8 1995/01/07 12:57:43 bostic Exp $ (Berkeley) $Date: 1995/01/07 12:57:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -491,7 +491,7 @@ term_key(sp, chp, flags)
 loop:	if (gp->i_cnt == 0) {
 		if (term_read_grow(sp))
 			return (INP_ERR);
-		if ((rval = sp->s_key_read(sp, &nr, NULL)) != INP_OK)
+		if ((rval = sp->s_key_read(sp, &nr, flags, NULL)) != INP_OK)
 			return (rval);
 #if defined(DEBUG) && 0
 		TRACE(sp, "read: {%.*s}\n", gp->i_cnt, &gp->i_ch[gp->i_next]);
@@ -552,7 +552,8 @@ remap:		qp = seq_find(sp, NULL, &gp->i_ch[gp->i_next], gp->i_cnt,
 			} else
 				tp = NULL;
 
-			if ((rval = sp->s_key_read(sp, &nr, tp)) != INP_OK)
+			if ((rval =
+			    sp->s_key_read(sp, &nr, flags, tp)) != INP_OK)
 				return (rval);
 			if (nr)
 				goto remap;
