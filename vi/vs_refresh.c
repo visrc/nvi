@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.25 1993/11/01 19:11:11 bostic Exp $ (Berkeley) $Date: 1993/11/01 19:11:11 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.26 1993/11/07 13:15:42 bostic Exp $ (Berkeley) $Date: 1993/11/07 13:15:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -538,7 +538,7 @@ slow:	/* Find the current line in the map. */
 	/*
 	 * Update screen lines for this file line until we have a new
 	 * screen cursor position.
-	*/
+	 */
 	for (y = -1; smp <= TMAP && smp->lno == LNO; ++smp) {
 		if (svi_line(sp, ep, smp, &y, &SCNO))
 			return (1);
@@ -549,8 +549,15 @@ slow:	/* Find the current line in the map. */
 	/* Not too bad, move the cursor. */
 	goto update;
 
-	/* Lost big, do what you have to do. */
+	/*
+	 * Lost big, do what you have to do.  We flush the cache since
+	 * S_REDRAW gets set when the screen isn't worth fixing, and
+	 * it's simpler to just repaint.  So, don't trust anything that
+	 * we think we know about it.
+	 */
 paint:	for (smp = HMAP; smp <= TMAP; ++smp)
+		SMAP_FLUSH(smp);
+	for (smp = HMAP; smp <= TMAP; ++smp)
 		if (svi_line(sp, ep, smp, &y, &SCNO))
 			return (1);
 
