@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.41 1996/04/10 11:32:31 bostic Exp $ (Berkeley) $Date: 1996/04/10 11:32:31 $
+#	$Id: Makefile.in,v 8.42 1996/04/11 19:23:38 bostic Exp $ (Berkeley) $Date: 1996/04/11 19:23:38 $
 
 srcdir=	@srcdir@/..
 CC=	@CC@
@@ -263,7 +263,7 @@ ex_usage.o: $(srcdir)/ex/ex_usage.c
 ex_util.o: $(srcdir)/ex/ex_util.c
 	 $(CC) $(CFLAGS) $?
 ex_version.o: $(srcdir)/ex/ex_version.c
-	 $(CC) -DEX_VERSION="\"`cat $(srcdir)/VERSION`\"" $(CFLAGS) $?
+	 $(CC) -DEX_VERSION="'`cat $(srcdir)/VERSION`'" $(CFLAGS) $?
 ex_visual.o: $(srcdir)/ex/ex_visual.c
 	 $(CC) $(CFLAGS) $?
 ex_write.o: $(srcdir)/ex/ex_write.c
