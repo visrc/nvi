@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.36 1993/12/20 18:17:14 bostic Exp $ (Berkeley) $Date: 1993/12/20 18:17:14 $";
+static char sccsid[] = "$Id: key.c,v 8.37 1993/12/20 18:25:50 bostic Exp $ (Berkeley) $Date: 1993/12/20 18:25:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -409,7 +409,7 @@ remap:		qp = seq_find(sp, NULL, &tty->ch[tty->next], tty->cnt,
 		if (ispartial) {
 			if (term_read_grow(sp, tty))
 				return (INP_ERR);
-			if (rval = sp->s_key_read(sp, &nr, &t))
+			if (rval = sp->s_key_read(sp, &nr, tp))
 				return (rval);
 			if (nr)
 				goto remap;
