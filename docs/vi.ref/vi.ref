@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.29 1994/05/17 12:25:15 bostic Exp $ (Berkeley) $Date: 1994/05/17 12:25:15 $
+.\"     $Id: vi.ref,v 8.30 1994/05/18 19:37:08 bostic Exp $ (Berkeley) $Date: 1994/05/18 19:37:08 $
 .\"
 .Dd "%Q%"
 .Dt "EX/VI REFERENCE MANUAL" 1
@@ -214,13 +214,22 @@ option in the user's or system startup information.
 (Note, however, that if a memory based file system is used as the backup
 directory, each system reboot will delete all of the recovery files!)
 .Pp
-The recovery directory should have the
+The recovery directory should be owned by
+.Dq Li root
+(or by a pseudo-user).
+In addition, if directory
 .Dq "sticky-bit"
-set so that only the owners of files may remove them.
-If this is not possible on the system, then a pseudo-user should
-own the recovery directory.
-The recovery directory must be both read and write-able by
-any user.
+semantics are available, the directory should have the sticky bit set so
+that files may only be removed by their owners.
+The recovery directory must be both read and write-able by any user.
+.Pp
+If the recovery directory does not exist,
+.Nm ex/vi
+attempts to create it.
+This can result in the recovery directory being owned by a normal user,
+and that user can then remove other user's recovery and backup files.
+This is annoying, but should not be a security issue as they cannot
+read the files.
 .Pp
 The recovery file has all of the necessary information in it to enable the
 user to recover the edit session.
@@ -250,8 +259,12 @@ fi
 .Pp
 If
 .Nm ex/vi
-receives a hangup (SIGHUP) signal, it will automatically email the
-recovery information to the user.
+receives a hangup (SIGHUP) signal, or the user executes the
+.Nm ex
+.Sy preserve
+command,
+.Nm ex/vi
+will automatically email the recovery information to the user.
 .Pp
 If your system doesn't have the
 .Xr sendmail 8
