@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 9.12 1995/01/11 16:15:59 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:15:59 $";
+static char sccsid[] = "$Id: ex_tag.c,v 9.13 1995/01/11 17:12:34 bostic Exp $ (Berkeley) $Date: 1995/01/11 17:12:34 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -640,10 +640,10 @@ tag_get(sp, tag, tagp, filep, searchp)
 					F_SET(tfp, TAGF_DNE);
 				}
 			} else {
-				p = msg_print(sp, tfp->name, &nf1);
-				msgq(sp, M_SYSERR, "%s", p);
+				t = msg_print(sp, tfp->name, &nf1);
+				msgq(sp, M_SYSERR, "%s", t);
 				if (nf1)
-					FREE_SPACE(sp, p, 0);
+					FREE_SPACE(sp, t, 0);
 			}
 		else
 			if (p != NULL)
