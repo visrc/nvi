@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.1 1993/06/09 22:22:17 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:22:17 $";
+static char sccsid[] = "$Id: key.c,v 8.2 1993/06/28 14:20:32 bostic Exp $ (Berkeley) $Date: 1993/06/28 14:20:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,6 +21,7 @@ static char sccsid[] = "$Id: key.c,v 8.1 1993/06/09 22:22:17 bostic Exp $ (Berke
 #include <unistd.h>
 
 #include "vi.h"
+#include "recover.h"
 
 static void	check_sigwinch __P((SCR *));
 static void	onwinch __P((int));
