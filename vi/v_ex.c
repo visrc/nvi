@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_ex.c,v 10.34 1996/03/28 20:57:31 bostic Exp $ (Berkeley) $Date: 1996/03/28 20:57:31 $";
+static const char sccsid[] = "$Id: v_ex.c,v 10.35 1996/03/29 20:52:30 bostic Exp $ (Berkeley) $Date: 1996/03/29 20:52:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -308,6 +308,9 @@ v_filter(sp, vp)
 		return (0);
 	}
 
+	/* Home the cursor. */
+	vs_home(sp);
+
 	ex_cinit(&cmd, C_BANG, 2, vp->m_start.lno, vp->m_stop.lno, 0, NULL);
 	EXP(sp)->argsoff = 0;			/* XXX */
 
@@ -430,6 +433,9 @@ v_ex(sp, vp)
 			if (ex_run_str(sp, NULL, tp->lb, tp->len, 0, 1))
 				return (1);
 		}
+
+		/* Home the cursor. */
+		vs_home(sp);
 
 		/* Call the ex parser. */
 		(void)ex_cmd(sp);
