@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.6 1993/08/06 12:02:42 bostic Exp $ (Berkeley) $Date: 1993/08/06 12:02:42 $
+ *	$Id: screen.h,v 8.7 1993/08/06 13:18:17 bostic Exp $ (Berkeley) $Date: 1993/08/06 13:18:17 $
  */
 
 /*
@@ -186,6 +186,9 @@ typedef struct _scr {
 
 	struct _excmdlist *lastcmd;	/* Ex: last command. */
 
+/* SHARED BETWEEN SCREENS. */
+	struct _cb *cuts;		/* Ex/vi: cut buffers. */
+
 /* PARTIALLY OR COMPLETELY COPIED FROM PREVIOUS SCREEN. */
 	struct _gs	*gp;		/* Pointer to global area. */
 
@@ -200,8 +203,6 @@ typedef struct _scr {
 
 	u_char	 inc_lastch;		/* Vi: Last increment character. */
 	long	 inc_lastval;		/*     Last increment value. */
-
-	struct _cb cuts[UCHAR_MAX + 2];	/* Ex/vi: cut buffers. */
 
 	void	*sdot;			/* Vi: saved dot, motion command. */
 	void	*sdotmotion;
