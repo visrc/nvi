@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.22 1993/10/04 19:36:34 bostic Exp $ (Berkeley) $Date: 1993/10/04 19:36:34 $";
+static char sccsid[] = "$Id: recover.c,v 8.23 1993/10/27 16:16:04 bostic Exp $ (Berkeley) $Date: 1993/10/27 16:16:04 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -262,24 +262,6 @@ err:		msgq(sp, M_ERR, "Error: %s", strerror(errno));
 }
 
 /*
- * rcv_end --
- *	Turn off the timer, handlers.
- */
-void
-rcv_end()
-{
-	struct itimerval value;
-
-	(void)signal(SIGALRM, SIG_IGN);
-	(void)signal(SIGHUP, SIG_IGN);
-	(void)signal(SIGTERM, SIG_IGN);
-
-	value.it_interval.tv_sec = value.it_interval.tv_usec = 0;
-	value.it_value.tv_sec = value.it_value.tv_usec = 0;
-	(void)setitimer(ITIMER_REAL, &value, NULL);
-}
-
-/*
  * rcv_sync --
  *	Sync the backing file.
  */
@@ -305,32 +287,18 @@ rcv_sync(sp, ep)
 /*
  * rcv_alrm --
  *	Recovery timer interrupt handler.
- *
- *	The only race should be with linking and unlinking the SCR
- *	chain, and using the underlying EXF * from the SCR structure.
  */
 void
 rcv_alrm(signo)
 	int signo;
 {
-	SCR *sp;
-
-	/* Walk the list of screens, noting that the file should be synced. */
-	for (sp = __global_list->scrhdr.next;
-	    sp != (SCR *)&__global_list->scrhdr; sp = sp->next)
-		if (sp->ep != NULL && F_ISSET(sp->ep, F_RCV_ON))
-			F_SET(sp->ep, F_RCV_ALRM);
+	F_SET(__global_list, G_SIGALRM);
 }
 
 /*
  * rcv_hup --
  *	Recovery SIGHUP interrupt handler.  (Modem line dropped, or
  *	xterm window closed.)
- *
- *	The only race should be with linking and unlinking the SCR
- *	chain, and using the underlying EXF * from the SCR structure.
- *
- *	DON'T USE MSG ROUTINES, THEY'RE NOT PROTECTED AGAINST US!
  */
 void
 rcv_hup(signo)
@@ -340,13 +308,13 @@ rcv_hup(signo)
 	char comm[4096];
 
 	/*
-	 * Walk the list of screens, sync'ing the files; only sync each file
-	 * once.  Send email to the user for each file saved.
+	 * Walk the list of screens, sync'ing the files; only sync
+	 * each file once.  Send email to the user for each file saved.
 	 *
 	 * !!!
 	 * If you need to port this to a system that doesn't have sendmail,
 	 * the -t flag being used causes sendmail to read the message for
-	 * the recipients instead of specifying them on the command line.
+	 * the recipients instead of us specifying them some other way.
 	 */
 	for (sp = __global_list->scrhdr.next;
 	    sp != (SCR *)&__global_list->scrhdr; sp = sp->next) {
