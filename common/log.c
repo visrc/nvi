@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: log.c,v 5.3 1992/12/05 11:07:03 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:07:03 $";
+static char sccsid[] = "$Id: log.c,v 5.4 1992/12/20 15:13:19 bostic Exp $ (Berkeley) $Date: 1992/12/20 15:13:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -157,6 +157,8 @@ log_line(ep, lno, action)
 
 	if (nolog)
 		return (0);
+
+	FF_CLR(ep, F_UNDO);	/* Vi hack.  Clear the undo flag. */
 
 	if ((lp = file_gline(ep, lno, &len)) == NULL) {
 		GETLINE_ERR(lno);
