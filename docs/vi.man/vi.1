@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.1,v 8.43 1996/06/26 10:54:45 bostic Exp $ (Berkeley) $Date: 1996/06/26 10:54:45 $
+.\"     $Id: vi.1,v 8.44 1996/06/28 17:15:27 bostic Exp $ (Berkeley) $Date: 1996/06/28 17:15:27 $
 .\"
 .TH VI 1 "%Q%"
 .UC
@@ -833,9 +833,9 @@ Delete the lines from the file.
 .B "di[splay] b[uffers] | c[onnections] | s[creens] | t[ags]"
 Display buffers, Cscope connections, screens or tags.
 .TP
-.B "e[dit][!] [+cmd] [file]"
+.B "[Ee][dit][!] [+cmd] [file]"
 .TP
-.B "ex[!] [+cmd] [file]"
+.B "[Ee]x[!] [+cmd] [file]"
 Edit a different file.
 .TP
 .B "exu[sage] [command]"
@@ -846,7 +846,7 @@ command.
 .B "f[ile] [file]"
 Display and optionally change the file name.
 .TP
-.B "fg [name]"
+.B "[Ff]g [name]"
 .I \&Vi
 mode only.
 Foreground the specified screen.
@@ -886,7 +886,7 @@ Move the specified lines after the target line.
 Write the abbreviations, editor options and maps to the specified
 file.
 .TP
-.B "n[ext][!] [file ...]"
+.B "[Nn][ext][!] [file ...]"
 Edit the next file from the argument list.
 .TP
 .B "[line] o[pen] /pattern/ [flags]"
@@ -898,7 +898,7 @@ Save the file in a form that can later be recovered using the
 .B \-r
 option.
 .TP
-.B "prev[ious][!]"
+.B "[Pp]rev[ious][!]"
 Edit the previous file from the argument list.
 .TP
 .B "[range] p[rint] [count] [flags]"
@@ -951,7 +951,7 @@ Make substitutions.
 .B <suspend>
 Suspend the edit session.
 .TP
-.B "ta[g][!] tagstring"
+.B "[Tt]a[g][!] tagstring"
 Edit the file containing the specified tag.
 .TP
 .B "tagn[ext][!]"
@@ -977,7 +977,7 @@ mode only.
 Enter
 .IR \&vi .
 .TP
-.B "vi[sual][!] [+cmd] [file]"
+.B "[Vi]i[sual][!] [+cmd] [file]"
 .I \&Vi
 mode only.
 Edit a new file.
