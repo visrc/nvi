@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.15 1993/09/27 10:43:28 bostic Exp $ (Berkeley) $Date: 1993/09/27 10:43:28 $";
+static char sccsid[] = "$Id: search.c,v 8.16 1993/09/27 10:49:08 bostic Exp $ (Berkeley) $Date: 1993/09/27 10:49:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -675,10 +675,10 @@ underflow:			msgq(sp, M_ERR, "Delta value underflow.");
 				msgq(sp, M_ERR, "Error: %s.", strerror(errno));
 			return (1);
 		}
-		if (val >= 0)
+		if (val >= 0) {
 			if (LONG_MAX - val < tval)
 				goto overflow;
-		else
+		} else
 			if (-(LONG_MIN - tval) > val)
 				goto underflow;
 		tval += val;
