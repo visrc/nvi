@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 9.4 1994/11/18 13:14:35 bostic Exp $ (Berkeley) $Date: 1994/11/18 13:14:35 $";
+static char sccsid[] = "$Id: v_search.c,v 9.5 1994/11/18 14:02:38 bostic Exp $ (Berkeley) $Date: 1994/11/18 14:02:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -144,14 +144,9 @@ search_addr(sp, vp, dir)
 				len = 0;
 				break;
 			}
+			/* No blanks, just like the z command. */
 			for (t = p + 1, tlen = len - 1; tlen > 0; ++t, --tlen)
-				if (!isblank(*t))
-					break;
-			for (; tlen > 0; ++t, --tlen)
 				if (!isdigit(*t))
-					break;
-			for (; tlen > 0; ++t, --tlen)
-				if (!isblank(*t))
 					break;
 			if (tlen && (*t == '-' ||
 			    *t == '.' || *t == '+' || *t == '^')) {
