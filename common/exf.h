@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 8.6 1993/08/05 18:01:48 bostic Exp $ (Berkeley) $Date: 1993/08/05 18:01:48 $
+ *	$Id: exf.h,v 8.7 1993/08/19 15:11:31 bostic Exp $ (Berkeley) $Date: 1993/08/19 15:11:31 $
  */
 
 					/* Undo direction. */
@@ -38,19 +38,16 @@ typedef struct _exf {
 					/* File marks. */
 	struct _mark	marks[UCHAR_MAX + 1];
 
-	char	*icommand;		/* Initial command. */
-
 	char	*rcv_path;		/* Recover file name. */
 	char	*rcv_mpath;		/* Recover mail file name. */
 
 #define	F_FIRSTMODIFY	0x001		/* File not yet modified. */
-#define	F_ICOMMAND	0x002		/* Initial command set. */
-#define	F_MODIFIED	0x004		/* File is currently dirty. */
-#define	F_NOLOG		0x008		/* Logging turned off. */
-#define	F_RCV_ALRM	0x010		/* File should be synced. */
-#define	F_RCV_NORM	0x020		/* Don't remove the recovery file. */
-#define	F_RCV_ON	0x040		/* File is recoverable. */
-#define	F_UNDO		0x080		/* No change since last undo. */
+#define	F_MODIFIED	0x002		/* File is currently dirty. */
+#define	F_NOLOG		0x004		/* Logging turned off. */
+#define	F_RCV_ALRM	0x008		/* File should be synced. */
+#define	F_RCV_NORM	0x010		/* Don't remove the recovery file. */
+#define	F_RCV_ON	0x020		/* File is recoverable. */
+#define	F_UNDO		0x040		/* No change since last undo. */
 	u_int	 flags;
 } EXF;
 
