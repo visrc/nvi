@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 9.1 1994/11/09 18:36:08 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:36:08 $";
+static char sccsid[] = "$Id: v_txt.c,v 9.2 1994/11/09 21:52:59 bostic Exp $ (Berkeley) $Date: 1994/11/09 21:52:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -252,11 +252,9 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 		margin = 0;
 
 	/* Initialize abbreviations checks. */
-	if (F_ISSET(sp->gp, G_ABBREV) && LF_ISSET(TXT_MAPINPUT)) {
-		abb = A_INWORD;
-		ab_cnt = ab_turnoff = 0;
-	} else
-		abb = A_NOTSET;
+	ab_cnt = ab_turnoff = 0;
+	abb = F_ISSET(sp->gp, G_ABBREV) && LF_ISSET(TXT_MAPINPUT) ?
+	    A_INWORD : A_NOTSET;
 
 	/*
 	 * Set up the dot command.  Dot commands are done by saving the
