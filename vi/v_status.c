@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_status.c,v 5.10 1992/10/10 14:03:06 bostic Exp $ (Berkeley) $Date: 1992/10/10 14:03:06 $";
+static char sccsid[] = "$Id: v_status.c,v 5.11 1992/10/24 14:24:56 bostic Exp $ (Berkeley) $Date: 1992/10/24 14:24:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,13 +28,24 @@ v_status(vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	u_long lno;
+	status(curf, fm->lno);
+	return (1);
+}
+
+void
+status(ep, lno)
+	EXF *ep;
+	recno_t lno;
+{
+	recno_t last;
 	char *ro;
 
-	lno = file_lline(curf);
-	ro = curf->flags & F_RDONLY || ISSET(O_READONLY) ? ", readonly" : "";
-	msg("%s: %s%s: line %lu of %lu [%ld%%]",
-	    curf->name, curf->flags & F_MODIFIED ? "modified" : "unmodified",
-	    ro, fm->lno, lno, (fm->lno * 100) / lno);
-	return (1);
+	ro = ep->flags & F_RDONLY || ISSET(O_READONLY) ? ", readonly" : "";
+	if ((last = file_lline(ep)) >= 1)
+		msg("%s: %s%s: line %lu of %lu [%ld%%]", ep->name,
+		    ep->flags & F_MODIFIED ? "modified" : "unmodified", ro,
+		    lno, last, (lno * 100) / last);
+	else
+		msg("%s: %s%s: empty file", ep->name,
+		    ep->flags & F_MODIFIED ? "modified" : "unmodified", ro);
 }
