@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.55 1993/05/06 01:19:13 bostic Exp $ (Berkeley) $Date: 1993/05/06 01:19:13 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.56 1993/05/06 16:11:12 bostic Exp $ (Berkeley) $Date: 1993/05/06 16:11:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -179,10 +179,10 @@ svi_refresh(sp, ep)
 	tmp.lno = 1;
 	tmp.off = 1;
 	lcnt = svi_sm_nlines(sp, ep, &tmp, LNO, HALFSCREEN(sp));
-	if (lcnt < HALFSCREEN(sp))
+	if (lcnt < HALFSCREEN(sp)) {
 		if (svi_sm_fill(sp, ep, 1, P_TOP))
 			return (1);
-	else
+	} else
 middle:		if (svi_sm_fill(sp, ep, LNO, P_MIDDLE))
 			return (1);
 	F_SET(sp, S_REDRAW);
