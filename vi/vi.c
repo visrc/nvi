@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 10.4 1995/06/09 12:52:38 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:52:38 $";
+static char sccsid[] = "$Id: vi.c,v 10.5 1995/07/02 12:00:11 bostic Exp $ (Berkeley) $Date: 1995/07/02 12:00:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -103,7 +103,8 @@ vi(sp, evp)
 		break;
 	case E_EOF:
 	case E_ERR:
-		return (0);
+		F_SET(sp, S_EXIT_FORCE);
+		goto done;
 	case E_INTERRUPT:
 		/* Interrupts get passed on to other handlers. */
 		if (vip->cm_state == VS_RUNNING)
