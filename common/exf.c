@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.46 1993/02/25 20:27:16 bostic Exp $ (Berkeley) $Date: 1993/02/25 20:27:16 $";
+static char sccsid[] = "$Id: exf.c,v 5.47 1993/02/28 14:19:35 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:19:35 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -72,7 +72,7 @@ file_ins(ep, name, append)
 
 mem3:	free(SCRP(nep));
 mem2:	free(nep);
-mem1:	msg(ep, M_ERROR, "Error: %s", strerror(errno));
+mem1:	ep->msg(ep, M_ERROR, "Error: %s", strerror(errno));
 	return (1);
 }
 
@@ -104,7 +104,7 @@ file_set(argc, argv)
 
 mem3:	free(SCRP(ep));
 mem2:	free(ep);
-mem1:	msg(ep, M_ERROR, "Error: %s", strerror(errno));
+mem1:	ep->msg(ep, M_ERROR, "Error: %s", strerror(errno));
 	return (1);
 }
 
@@ -202,7 +202,7 @@ file_start(ep)
 	if (ep == NULL || stat(ep->name, &sb)) { 
 		(void)strcpy(tname, _PATH_TMPNAME);
 		if ((fd = mkstemp(tname)) == -1) {
-			msg(ep, M_ERROR,
+			ep->msg(ep, M_ERROR,
 			    "Temporary file: %s", strerror(errno));
 			return (NULL);
 		}
@@ -237,12 +237,12 @@ file_start(ep)
 		ep->db = dbopen(openname, O_CREAT | O_NONBLOCK | O_RDONLY,
 		    DEFFILEMODE, DB_RECNO, NULL);
 		if (ep->db != NULL)
-			msg(ep, M_ERROR,
+			ep->msg(ep, M_ERROR,
 			    "%s already locked, session is read-only",
 			    ep->name);
 	}
 	if (ep->db == NULL) {
-		msg(ep, M_ERROR, "%s: %s", ep->name, strerror(errno));
+		ep->msg(ep, M_ERROR, "%s: %s", ep->name, strerror(errno));
 		return (NULL);
 	}
 	if (fd != -1)
@@ -279,12 +279,13 @@ file_stop(ep, force)
 	int force;
 {
 	/* Clean up the session, if necessary. */
-	if (ep->s_end && ep->s_end(ep))
+	if (ep->end && ep->end(ep))
 		return (1);
 
 	/* Close the db structure. */
 	if ((ep->db->close)(ep->db) && !force) {
-		msg(ep, M_ERROR, "%s: close: %s", ep->name, strerror(errno));
+		ep->msg(ep, M_ERROR,
+		    "%s: close: %s", ep->name, strerror(errno));
 		return (1);
 	}
 
@@ -293,7 +294,8 @@ file_stop(ep, force)
 
 	/* Unlink any temporary file, ignore any error. */
 	if (ep->tname != NULL && unlink(ep->tname)) {
-		msg(ep, M_ERROR, "%s: remove: %s", ep->tname, strerror(errno));
+		ep->msg(ep, M_ERROR,
+		    "%s: remove: %s", ep->tname, strerror(errno));
 		free(ep->tname);
 	}
 
@@ -326,13 +328,13 @@ file_sync(ep, force)
 
 	/* Can't write the temporary file. */
 	if (FF_ISSET(ep, F_NONAME)) {
-		msg(ep, M_ERROR, "No filename to which to write.");
+		ep->msg(ep, M_ERROR, "No filename to which to write.");
 		return (1);
 	}
 
 	/* Can't write if read-only. */
 	if ((ISSET(O_READONLY) || FF_ISSET(ep, F_RDONLY)) && !force) {
-		msg(ep, M_ERROR,
+		ep->msg(ep, M_ERROR,
 		    "Read-only file, not written; use ! to override.");
 		return (1);
 	}
@@ -342,7 +344,7 @@ file_sync(ep, force)
 	 * unless forced.
 	 */
 	if (FF_ISSET(ep, F_NAMECHANGED) && !force && !stat(ep->name, &sb)) {
-		msg(ep, M_ERROR,
+		ep->msg(ep, M_ERROR,
 		    "%s exists, not written; use ! to override.", ep->name);
 		return (1);
 	}
@@ -353,7 +355,7 @@ file_sync(ep, force)
 
 	if ((fp = fdopen(fd, "w")) == NULL) {
 		(void)close(fd);
-err:		msg(ep, M_ERROR, "%s: %s", ep->name, strerror(errno));
+err:		ep->msg(ep, M_ERROR, "%s: %s", ep->name, strerror(errno));
 		return (1);
 	}
 
