@@ -1,4 +1,4 @@
-#	$Id: README,v 8.61 1994/04/29 07:43:59 bostic Exp $ (Berkeley) $Date: 1994/04/29 07:43:59 $
+#	$Id: README,v 8.62 1994/04/29 09:07:30 bostic Exp $ (Berkeley) $Date: 1994/04/29 09:07:30 $
 
 This is the README for version 1.15 of nex/nvi, a freely redistributable
 replacement for the Berkeley ex and vi text editors.  The compressed tar
@@ -22,7 +22,7 @@ California, but may be freely redistributed (or sold, or used to line
 your birdcage) under the following conditions:
 
 /*-
- * Copyright (c) 1991, 1993, 1994
+ * Copyright (c) 1991, 1992, 1993, 1994
  *	The Regents of the University of California.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
