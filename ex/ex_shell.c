@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 8.14 1993/12/02 10:58:30 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:58:30 $";
+static char sccsid[] = "$Id: ex_shell.c,v 8.15 1993/12/19 12:32:12 bostic Exp $ (Berkeley) $Date: 1993/12/19 12:32:12 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -66,7 +66,7 @@ ex_exec_proc(sp, cmd, p1, p2)
 	 * code.
 	 */
 	if (F_ISSET(sp->gp, G_ISFROMTTY)) {
-		act.sa_handler = SIG_IGN;;
+		act.sa_handler = SIG_IGN;
 		sigemptyset(&act.sa_mask);
 		act.sa_flags = 0;
 		if (isig = !sigaction(SIGINT, &act, &oact)) {
