@@ -16,7 +16,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 9.20 1995/02/09 15:22:38 bostic Exp $ (Berkeley) $Date: 1995/02/09 15:22:38 $";
+static char sccsid[] = "$Id: main.c,v 9.21 1995/02/15 12:09:51 bostic Exp $ (Berkeley) $Date: 1995/02/15 12:09:51 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -537,6 +537,10 @@ gs_end(gp)
 	for (mp = gp->msgq.lh_first;
 	    mp != NULL && !(F_ISSET(mp, M_EMPTY)); mp = mp->q.le_next)
 		(void)fprintf(stderr, "%.*s.\n", (int)mp->len, mp->mbuf);
+
+	/* Free any temporary space. */
+	if (gp->tmp_bp != NULL)
+		free(gp->tmp_bp);
 
 	free(gp);
 }
