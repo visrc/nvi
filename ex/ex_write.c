@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 8.4 1993/08/05 18:08:50 bostic Exp $ (Berkeley) $Date: 1993/08/05 18:08:50 $";
+static char sccsid[] = "$Id: ex_write.c,v 8.5 1993/08/18 16:23:09 bostic Exp $ (Berkeley) $Date: 1993/08/18 16:23:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -114,7 +114,7 @@ exwr(sp, ep, cmdp, cmd)
 	/* All write commands can have an associated '!'. */
 	LF_INIT(FS_POSSIBLE);
 
-	p = cmdp->string ? cmdp->string : "";
+	p = cmdp->argv[0] ? cmdp->argv[0] : "";
 
 	/* If "write!" it's a force to a file. */
 	if (*p == '!') {
@@ -154,7 +154,7 @@ exwr(sp, ep, cmdp, cmd)
 	}
 
 	/* Build an argv (so we get file expansion). */
-	if (buildargv(sp, ep, p, 1, &cmdp->argc, &cmdp->argv))
+	if (file_argv(sp, ep, p, &cmdp->argc, &cmdp->argv))
 		return (1);
 
 	switch(cmdp->argc) {

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shift.c,v 8.2 1993/08/15 13:10:50 bostic Exp $ (Berkeley) $Date: 1993/08/15 13:10:50 $";
+static char sccsid[] = "$Id: ex_shift.c,v 8.3 1993/08/18 16:22:44 bostic Exp $ (Berkeley) $Date: 1993/08/18 16:22:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -59,14 +59,14 @@ shift(sp, ep, cmdp, rl)
 	 * The historic version of vi permitted the user to string any number
 	 * of '>' or '<' characters together, resulting in an indent of the
 	 * appropriate levels.  There's a special hack in ex_cmd() so that
-	 * cmdp->string points to the string of '>' or '<' characters, but it
+	 * cmdp->argv[0] points to the string of '>' or '<' characters, but it
 	 * may not be nul terminated.
 	 *
 	 * Q: What's the difference between the people adding features
 	 *    to vi and the Girl Scouts?
 	 * A: The Girl Scouts have mint cookies and adult supervision.
 	 */
-	if ((p = cmdp->string) != NULL)
+	if ((p = cmdp->argv[0]) != NULL)
 		for (sw = 0; *p && (*p == '>' || *p == '<'); ++p)
 			sw += O_VAL(sp, O_SHIFTWIDTH);
 
