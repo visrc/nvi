@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_term.c,v 10.21 1996/07/12 18:23:14 bostic Exp $ (Berkeley) $Date: 1996/07/12 18:23:14 $";
+static const char sccsid[] = "$Id: cl_term.c,v 10.22 1996/09/15 15:56:26 bostic Exp $ (Berkeley) $Date: 1996/09/15 15:56:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -183,8 +183,11 @@ cl_fmap(sp, stype, from, flen, to, tlen)
 	CHAR_T *from, *to;
 	size_t flen, tlen;
 {
-	EX_INIT_IGNORE(sp);
-	VI_INIT_IGNORE(sp);
+	/* Ignore until the screen is running, do the real work then. */
+	if (F_ISSET(sp, SC_VI) && !F_ISSET(sp, SC_SCR_VI))
+		return (0);
+	if (F_ISSET(sp, SC_EX) && !F_ISSET(sp, SC_SCR_EX))
+		return (0);
 
 	return (cl_pfmap(sp, stype, from, flen, to, tlen));
 }
