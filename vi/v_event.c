@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_event.c,v 8.2 1996/12/04 19:09:06 bostic Exp $ (Berkeley) $Date: 1996/12/04 19:09:06 $";
+static const char sccsid[] = "$Id: v_event.c,v 8.3 1996/12/04 19:25:00 bostic Exp $ (Berkeley) $Date: 1996/12/04 19:25:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -120,7 +120,7 @@ v_event(sp, vp)
 {
 	/* This array maps events to vi command functions. */
 	static VIKEYS const vievents[] = {
-		{v_mmark,	V_ABS_L|V_MOVE},	/* E_MOVE */
+		{v_emark,	V_ABS_L|V_MOVE},	/* E_MOVE */
 		{v_equit,	0},			/* E_QUIT */
 		{v_ewq,		0},			/* E_WQ */
 		{v_ewrite,	0},			/* E_WRITE */

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_mark.c,v 10.9 1996/12/04 09:47:59 bostic Exp $ (Berkeley) $Date: 1996/12/04 09:47:59 $";
+static const char sccsid[] = "$Id: v_mark.c,v 10.10 1996/12/04 19:25:01 bostic Exp $ (Berkeley) $Date: 1996/12/04 19:25:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -82,18 +82,27 @@ v_fmark(sp, vp)
 }
 
 /*
- * v_mmark -- <mouse>
- *	Move to a mouse mark.
+ * v_emark -- <mouse click>
+ *	Mouse mark.
  *
- * PUBLIC: int v_mmark __P((SCR *, VICMD *));
+ * PUBLIC: int v_emark __P((SCR *, VICMD *));
  */
 int
-v_mmark(sp, vp)
+v_emark(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	(void)vs_pos(sp,
-	    vp->ev.e_lno, vp->ev.e_cno, &vp->m_stop.lno, &vp->m_stop.cno);
+	SMAP *smp;
+	recno_t lno;
+
+	smp = HMAP + vp->ev.e_lno;
+	if (smp > TMAP) {
+		msgq(sp, M_BERR, "320|Unknown cursor position.");
+		return (1);
+	}
+	vp->m_stop.lno = smp->lno;
+	vp->m_stop.cno =
+	    vs_colpos(sp, smp->lno, vp->ev.e_cno + (smp->soff - 1) * sp->cols);
 	return (mark(sp, vp, 0, BQMARK));
 }
 
