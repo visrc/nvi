@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 10.29 1995/11/25 09:50:47 bostic Exp $ (Berkeley) $Date: 1995/11/25 09:50:47 $";
+static char sccsid[] = "$Id: v_txt.c,v 10.30 1995/12/01 10:45:34 bostic Exp $ (Berkeley) $Date: 1995/12/01 10:45:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -747,11 +747,6 @@ k_cr:		if (LF_ISSET(TXT_CR)) {
 
 		goto ret;
 	case K_ESCAPE:				/* Escape. */
-		if (LF_ISSET(TXT_FILEC) && O_ISSET(sp, O_FILEC)) {
-			if (txt_fc(sp, tp, &filec_redraw))
-				goto err;
-			goto ret;
-		}
 		if (!LF_ISSET(TXT_ESCAPE))
 			goto ins_ch;
 
@@ -1104,6 +1099,13 @@ leftmargin:		tp->lb[sp->cno - 1] = ' ';
 	case K_HEXCHAR:
 		hexcnt = 1;
 		goto insq_ch;
+	case K_TAB:
+		if (LF_ISSET(TXT_FILEC) && O_ISSET(sp, O_FILEC)) {
+			if (txt_fc(sp, tp, &filec_redraw))
+				goto err;
+			goto ret;
+		}
+		goto ins_ch;
 	default:			/* Insert the character. */
 ins_ch:		/*
 		 * Historically, vi eliminated nul's out of hand.  If the
@@ -1926,10 +1928,8 @@ retry:	for (off = sp->cno - 1, p = tp->lb + off, len = 0;; --p, --off) {
 
 		/* Find the length of the shortest match. */
 		for (nlen = cmd.argv[0]->len; --argc > 0;) {
-			if (cmd.argv[argc]->len < nlen) {
+			if (cmd.argv[argc]->len < nlen)
 				nlen = cmd.argv[argc]->len;
-				continue;
-			}
 			for (indx = 0; indx < nlen &&
 			    cmd.argv[argc]->bp[indx] == cmd.argv[0]->bp[indx];
 			    ++indx);
