@@ -1,4 +1,4 @@
-#	$Id: Makefile,v 6.3 1993/06/05 17:20:05 bostic Exp $ (Berkeley) $Date: 1993/06/05 17:20:05 $
+#	$Id: Makefile,v 8.1 1993/06/08 12:48:55 bostic Exp $ (Berkeley) $Date: 1993/06/08 12:48:55 $
 
 DIR=	usd/11.edit
 SRCS=	edittut.ms
