@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_preserve.c,v 8.5 1994/03/08 19:39:33 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:39:33 $";
+static char sccsid[] = "$Id: ex_preserve.c,v 8.6 1994/04/24 17:40:42 bostic Exp $ (Berkeley) $Date: 1994/04/24 17:40:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -61,5 +61,46 @@ ex_preserve(sp, ep, cmdp)
 	F_SET(ep, F_RCV_NORM);
 
 	msgq(sp, M_INFO, "File preserved.");
+	return (0);
+}
+
+/*
+ * ex_recover -- :rec[over][!] file
+ *
+ * Recover the file.
+ */
+int
+ex_recover(sp, ep, cmdp)
+	SCR *sp;
+	EXF *ep;
+	EXCMDARG *cmdp;
+{
+	ARGS *ap;
+	FREF *frp;
+
+	/* Get a file structure for the file. */
+	ap = cmdp->argv[0];
+	if ((frp = file_add(sp, sp->frp, ap->bp, 1)) == NULL)
+		return (1);
+	set_alt_name(sp, ap->bp);
+
+	/* Set the recover bit. */
+	F_SET(frp, FR_RECOVER);
+
+	/*
+	 * Check for modifications.  Autowrite did not historically
+	 * affect :recover.
+	 */
+	if (F_ISSET(ep, F_MODIFIED) &&
+	    ep->refcnt <= 1 && !F_ISSET(cmdp, E_FORCE)) {
+		msgq(sp, M_ERR,
+		    "Modified since last write; write or use ! to override.");
+		return (1);
+	}
+
+	/* Switch files. */
+	if (file_init(sp, frp, NULL, F_ISSET(cmdp, E_FORCE)))
+		return (1);
+	F_SET(sp, S_FSWITCH);
 	return (0);
 }

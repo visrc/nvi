@@ -7,12 +7,12 @@
 
 #ifndef lint
 static char copyright[] =
-"%Z% Copyright (c) 1992, 1993\n\
+"%Z% Copyright (c) 1992, 1993, 1994\n\
 	The Regents of the University of California.  All rights reserved.\n";
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.80 1994/04/15 15:54:40 bostic Exp $ (Berkeley) $Date: 1994/04/15 15:54:40 $";
+static char sccsid[] = "$Id: main.c,v 8.81 1994/04/24 17:40:15 bostic Exp $ (Berkeley) $Date: 1994/04/24 17:40:15 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -76,7 +76,7 @@ main(argc, argv)
 	SCR *sp;
 	u_int flags, saved_vi_mode;
 	int ch, eval, flagchk, readonly, silent, snapshot;
-	char *excmdarg, *myname, *p, *rec_f, *tag_f, *trace_f, *wsizearg;
+	char *excmdarg, *myname, *p, *tag_f, *trace_f, *wsizearg;
 	char path[MAXPATHLEN];
 
 	/* Stop if indirecting through a NULL pointer. */
@@ -104,10 +104,10 @@ main(argc, argv)
 
 	/* Parse the arguments. */
 	flagchk = '\0';
-	excmdarg = rec_f = tag_f = trace_f = wsizearg = NULL;
+	excmdarg = tag_f = trace_f = wsizearg = NULL;
 	silent = 0;
 	snapshot = 1;
-	while ((ch = getopt(argc, argv, "c:eFlRr:sT:t:vw:x:")) != EOF)
+	while ((ch = getopt(argc, argv, "c:eFRrsT:t:vw:x:")) != EOF)
 		switch (ch) {
 		case 'c':		/* Run the command. */
 			excmdarg = optarg;
@@ -119,26 +119,14 @@ main(argc, argv)
 		case 'F':		/* No snapshot. */
 			snapshot = 0;
 			break;
-		case 'l':
-			if (flagchk != '\0' && flagchk != 'l')
-				errx(1,
-				    "only one of -%c and -l may be specified.",
-				    flagchk);
-			flagchk = 'l';
-			break;
 		case 'R':		/* Readonly. */
 			readonly = 1;
 			break;
 		case 'r':		/* Recover. */
-			if (flagchk == 'r')
+			if (flagchk == 't')
 				errx(1,
-				    "only one recovery file may be specified.");
-			if (flagchk != '\0')
-				errx(1,
-				    "only one of -%c and -r may be specified.",
-				    flagchk);
+				    "only one of -r and -t may be specified.");
 			flagchk = 'r';
-			rec_f = optarg;
 			break;
 		case 's':
 			silent = 1;
@@ -147,13 +135,12 @@ main(argc, argv)
 			trace_f = optarg;
 			break;
 		case 't':		/* Tag. */
+			if (flagchk == 'r')
+				errx(1,
+				    "only one of -r and -t may be specified.");
 			if (flagchk == 't')
 				errx(1,
 				    "only one tag file may be specified.");
-			if (flagchk != '\0')
-				errx(1,
-				    "only one of -%c and -t may be specified.",
-				    flagchk);
 			flagchk = 't';
 			tag_f = optarg;
 			break;
@@ -344,31 +331,34 @@ main(argc, argv)
 			}
 	}
 
-	/* List recovery files if -l specified. */
-	if (flagchk == 'l')
+	/* List recovery files if -r specified without file arguments. */
+	if (flagchk == 'r' && argv[0] == NULL)
 		exit(rcv_list(sp));
 
 	/* Set the file snapshot flag. */
 	if (snapshot)
 		F_SET(gp, G_SNAPSHOT);
 
-	/* Use a tag file or recovery file if specified. */
+	/* Use a tag file if specified. */
 	if (tag_f != NULL && ex_tagfirst(sp, tag_f))
 		goto err;
-	else if (rec_f != NULL && rcv_read(sp, rec_f))
-		goto err;
-
-	/* Append any remaining arguments as file names. */
-	if (*argv != NULL)
-		for (; *argv != NULL; ++argv)
-			if (file_add(sp, NULL, *argv, 0) == NULL)
-				goto err;
 
 	/*
-	 * If no recovery or tag file, get an EXF structure.
-	 * If no argv file, use a temporary file.
+	 * Append any remaining arguments as file names.  Files are
+	 * recovery files if -r specified.
 	 */
-	if (tag_f == NULL && rec_f == NULL) {
+	for (; *argv != NULL; ++argv) {
+		if ((frp = file_add(sp, NULL, *argv, 0)) == NULL)
+			goto err;
+		if (flagchk == 'r')
+			F_SET(frp, FR_RECOVER);
+	}
+
+	/*
+	 * If no tag file, get an EXF structure.  If no argv file,
+	 * use a temporary file.
+	 */
+	if (tag_f == NULL) {
 		if ((frp = file_first(sp)) == NULL &&
 		    (frp = file_add(sp, NULL, NULL, 1)) == NULL)
 			goto err;
@@ -729,7 +719,6 @@ obsolete(argv)
 	 *	Change "+" into "-c$".
 	 *	Change "+<anything else>" into "-c<anything else>".
 	 *	Change "-" into "-s"
-	 *	Change "-r" into "-l"
 	 */
 	while (*++argv)
 		if (argv[0][0] == '+') {
@@ -748,16 +737,11 @@ obsolete(argv)
 				argv[0][1] = 'c';
 				(void)strcpy(argv[0] + 2, p + 1);
 			}
-		} else if (argv[0][0] == '-') {
-			if (argv[0][1] == 'r') {
-				if (argv[0][2] == '\0' && argv[1] == NULL)
-					argv[0][1] = 'l';
-			} else if (argv[0][1] == '\0') {
-				MALLOC_NOMSG(NULL, argv[0], char *, 3);
-				if (argv[0] == NULL)
-					err(1, NULL);
-				(void)strcpy(argv[0], "-s");
-			}
+		} else if (argv[0][0] == '-' && argv[0][1] == '\0') {
+			MALLOC_NOMSG(NULL, argv[0], char *, 3);
+			if (argv[0] == NULL)
+				err(1, NULL);
+			(void)strcpy(argv[0], "-s");
 		}
 }
 
@@ -766,10 +750,10 @@ usage(is_ex)
 	int is_ex;
 {
 #define	EX_USAGE \
-	"usage: ex [-eFlRsv] [-c command] [-r file] [-t tag] [-w size] [-x aw]"
+    "ex [-eFRrsv] [-c command] [-t tag] [-w size] [-x aw] [files ...]"
 #define	VI_USAGE \
-	"usage: vi [-eFlRv] [-c command] [-r file] [-t tag] [-w size] [-x aw]"
+    "vi [-eFRrv] [-c command] [-t tag] [-w size] [-x aw] [files ...]"
 
-	(void)fprintf(stderr, "%s\n", is_ex ? EX_USAGE : VI_USAGE);
+	(void)fprintf(stderr, "usage: %s\n", is_ex ? EX_USAGE : VI_USAGE);
 	exit(1);
 }

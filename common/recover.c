@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.51 1994/03/25 12:41:44 bostic Exp $ (Berkeley) $Date: 1994/03/25 12:41:44 $";
+static char sccsid[] = "$Id: recover.c,v 8.52 1994/04/24 17:40:24 bostic Exp $ (Berkeley) $Date: 1994/04/24 17:40:24 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -471,18 +471,17 @@ next:		(void)fclose(fp);
  *	Start a recovered file as the file to edit.
  */
 int
-rcv_read(sp, name)
+rcv_read(sp, frp)
 	SCR *sp;
-	char *name;
+	FREF *frp;
 {
 	struct dirent *dp;
 	struct stat sb;
 	DIR *dirp;
-	FREF *frp;
 	FILE *fp, *sv_fp;
 	time_t rec_mtime;
 	int found, requested;
-	char *p, *t, *recp, *pathp;
+	char *name, *p, *t, *recp, *pathp;
 	char recpath[MAXPATHLEN], file[MAXPATHLEN], path[MAXPATHLEN];
 
 	if ((dirp = opendir(O_STR(sp, O_RECDIR))) == NULL) {
@@ -491,6 +490,7 @@ rcv_read(sp, name)
 		return (1);
 	}
 
+	name = FILENAME(frp);
 	sv_fp = NULL;
 	rec_mtime = 0;
 	recp = pathp = NULL;
@@ -570,7 +570,7 @@ next:			(void)fclose(fp);
 
 	if (recp == NULL) {
 		msgq(sp, M_INFO,
-		    "No files named %s, owned by you, to edit.", name);
+		    "No files named %s, readable by you, to recover.", name);
 		return (1);
 	}
 	if (found) {
@@ -583,8 +583,7 @@ next:			(void)fclose(fp);
 	}
 
 	/* Create the FREF structure, start the btree file. */
-	if ((frp = file_add(sp, NULL, name, 0)) == NULL ||
-	    file_init(sp, frp, pathp + sizeof(VI_PHEADER) - 1, 0)) {
+	if (file_init(sp, frp, pathp + sizeof(VI_PHEADER) - 1, 0)) {
 		FREE(recp, strlen(recp) + 1);
 		FREE(pathp, strlen(pathp) + 1);
 		(void)fclose(sv_fp);

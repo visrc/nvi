@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.72 1994/03/25 12:41:29 bostic Exp $ (Berkeley) $Date: 1994/03/25 12:41:29 $";
+static char sccsid[] = "$Id: exf.c,v 8.73 1994/04/24 17:40:17 bostic Exp $ (Berkeley) $Date: 1994/04/24 17:40:17 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -195,6 +195,19 @@ file_init(sp, frp, rcv_name, force)
 	size_t psize;
 	int fd;
 	char *p, *oname, tname[MAXPATHLEN];
+
+	/*
+	 * If the file is a recovery file, let the recovery code handle it.
+	 * Clear the FR_RECOVER flag first -- the recovery code does set up,
+	 * and then calls us!  If the recovery call fails, it's probably
+	 * because the named file doesn't exist.  So, move boldly forward,
+	 * presuming that there's an error message the user will get to see.
+	 */
+	if (F_ISSET(frp, FR_RECOVER)) {
+		F_CLR(frp, FR_RECOVER);
+		if (!rcv_read(sp, frp))
+			return (0);
+	}
 
 	/*
 	 * Required ep initialization:

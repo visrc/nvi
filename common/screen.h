@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.99 1994/04/24 14:10:01 bostic Exp $ (Berkeley) $Date: 1994/04/24 14:10:01 $
+ *	$Id: screen.h,v 8.100 1994/04/24 17:40:21 bostic Exp $ (Berkeley) $Date: 1994/04/24 17:40:21 $
  */
 
 /*
@@ -59,6 +59,7 @@ struct _fref {
 #define	FR_IGNORE	0x008		/* File isn't part of argument list. */
 #define	FR_NEWFILE	0x010		/* File doesn't really exist yet. */
 #define	FR_RDONLY	0x020		/* File is read-only. */
+#define	FR_RECOVER	0x040		/* File is to be recovered. */
 	u_int	 flags;
 };
 
