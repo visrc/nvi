@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 9.13 1995/01/11 17:12:34 bostic Exp $ (Berkeley) $Date: 1995/01/11 17:12:34 $";
+static char sccsid[] = "$Id: ex_tag.c,v 9.14 1995/01/11 17:55:42 bostic Exp $ (Berkeley) $Date: 1995/01/11 17:55:42 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -931,6 +931,8 @@ tag_msg(sp, msg, tag)
 		p = msg_print(sp, tag, &nf);
 		msgq(sp, M_ERR, "161|%s: search pattern not found", p);
 		break;
+	default:
+		abort();
 	}
 	if (nf)
 		FREE_SPACE(sp, p, 0);
