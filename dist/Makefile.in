@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.50 1996/04/30 20:11:04 bostic Exp $ (Berkeley) $Date: 1996/04/30 20:11:04 $
+#	$Id: Makefile.in,v 8.51 1996/05/09 09:50:25 bostic Exp $ (Berkeley) $Date: 1996/05/09 09:50:25 $
 
 srcdir=	@srcdir@/..
 CC=	@CC@
@@ -95,7 +95,7 @@ install: all install_common
 	    $(ln) vi.0 ex.0 && $(ln) vi.0 view.0'
 
 install_asnvi: all install_common
-	@echo "Installing vi, ex, view: $(bindir) ..."
+	@echo "Installing nvi, nex, nview: $(bindir) ..."
 	@sh -c 'fv=$(bindir)/`echo nvi | sed '$(transform)'`; \
 	    fe=`echo nex | sed '$(transform)'`; \
 	    fn=`echo nview | sed '$(transform)'`; \

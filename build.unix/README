@@ -1,4 +1,4 @@
-#	$Id: README,v 8.16 1996/04/30 11:53:00 bostic Exp $ (Berkeley) $Date: 1996/04/30 11:53:00 $
+#	$Id: README,v 8.17 1996/05/09 09:50:25 bostic Exp $ (Berkeley) $Date: 1996/05/09 09:50:25 $
 
 Nvi uses the GNU autoconf program for configuration and compilation.  You
 should enter:
@@ -28,13 +28,13 @@ your mind as to the curses library that you want to use, enter:
 
 and then reconfigure using "configure" and whatever options you choose.
 
-To install as "nvi", "nex" and "nview", enter:
+To install as "vi", "ex" and "view", enter:
 
 	make install
 
-To install as "vi", "ex" and "view", enter:
+To install as "nvi", "nex" and "nview", enter:
 
-	make install_asvi
+	make install_asnvi
 
 See the section below on installation for details.
 
