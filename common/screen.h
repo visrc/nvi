@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 5.18 1993/02/24 13:04:55 bostic Exp $ (Berkeley) $Date: 1993/02/24 13:04:55 $
+ *	$Id: screen.h,v 5.19 1993/02/25 21:09:04 bostic Exp $ (Berkeley) $Date: 1993/02/25 21:09:04 $
  */
 
 /*
@@ -119,7 +119,7 @@ int	scr_update __P((EXF *));
 
 enum operation { LINE_APPEND, LINE_DELETE, LINE_INSERT, LINE_RESET };
 int	scr_change __P((EXF *, recno_t, enum operation));
-enum position { P_TOP, P_MIDDLE, P_BOTTOM };
+enum position { P_TOP, P_FILL, P_MIDDLE, P_BOTTOM };
 int	scr_sm_fill __P((EXF *, recno_t, enum position));
 
 /* The private vi screen functions. */

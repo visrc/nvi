@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.35 1993/02/25 19:38:05 bostic Exp $ (Berkeley) $Date: 1993/02/25 19:38:05 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.36 1993/02/25 21:09:05 bostic Exp $ (Berkeley) $Date: 1993/02/25 21:09:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -71,7 +71,6 @@ scr_begin(ep)
 	EXF *ep;
 {
 	void *p;
-	size_t lcnt;
 
 	if (initscr() == NULL) {
 		msg(ep,
@@ -95,20 +94,7 @@ scr_begin(ep)
 	HMAP = (SMAP *)p;
 	TMAP = (SMAP *)p + TEXTSIZE(ep);
 
-	/*
-	 * Initialize the top line.  If not starting at the top of
-	 * the file, try and place the line in the middle.
-	 */
-	HMAP->lno = 1;
-	HMAP->off = 1;
-	if (SCRLNO(ep) != 1) {
-		lcnt = scr_sm_nlines(ep, HMAP, SCRLNO(ep), HALFSCREEN(ep));
-		if (lcnt >= HALFSCREEN(ep))
-			(void)scr_sm_fill(ep, SCRLNO(ep), P_MIDDLE);
-		else
-			(void)scr_sm_fill(ep, SCRLNO(ep), P_TOP);
-	} else
-		(void)scr_sm_fill(ep, SCRLNO(ep), P_TOP);
+	(void)scr_sm_fill(ep, SCRLNO(ep), P_FILL);
 
 	SF_CLR(ep, S_REFORMAT | S_RESIZE);
 	SF_SET(ep, S_REDRAW);

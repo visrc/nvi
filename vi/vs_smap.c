@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 5.5 1993/02/24 13:04:59 bostic Exp $ (Berkeley) $Date: 1993/02/24 13:04:59 $";
+static char sccsid[] = "$Id: vs_smap.c,v 5.6 1993/02/25 21:09:07 bostic Exp $ (Berkeley) $Date: 1993/02/25 21:09:07 $";
 #endif /* not lint */
 
 #include <curses.h>
@@ -20,6 +20,8 @@ static char sccsid[] = "$Id: vs_smap.c,v 5.5 1993/02/24 13:04:59 bostic Exp $ (B
 
 #define	SMAP_PRIVATE
 #include "screen.h"
+
+#define	HALFSCREEN(ep)	(SCREENSIZE(ep) / 2)	/* Half a screen. */
 
 #define	HMAP		(SCRP(ep)->h_smap)	/* Head of line map. */
 #define	TMAP		(SCRP(ep)->t_smap)	/* Tail of line map. */
@@ -35,16 +37,25 @@ scr_sm_fill(ep, lno, pos)
 	recno_t lno;
 	enum position pos;
 {
-	SMAP *p;
+	size_t lcnt;
+	SMAP *p, tmp;
 	
 	switch (pos) {
+	case P_FILL:
+		tmp.lno = 1;
+		tmp.off = 1;
+		if (scr_sm_nlines(ep,
+		    &tmp, lno, HALFSCREEN(ep)) >= HALFSCREEN(ep))
+			goto middle;
+		lno = 1;
+		/* FALLTHROUGH */
 	case P_TOP:
 		for (p = HMAP, p->lno = lno, p->off = 1; p < TMAP; ++p)
 			if (scr_sm_next(ep, p, p + 1))
 				goto err;
 		break;
 	case P_MIDDLE:
-		p = HMAP + (TMAP - HMAP) / 2;
+middle:		p = HMAP + (TMAP - HMAP) / 2;
 		for (p->lno = lno, p->off = 1; p < TMAP; ++p)
 			if (scr_sm_next(ep, p, p + 1))
 				goto err;
