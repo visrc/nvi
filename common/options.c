@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.35 1993/12/29 15:25:11 bostic Exp $ (Berkeley) $Date: 1993/12/29 15:25:11 $";
+static char sccsid[] = "$Id: options.c,v 8.36 1993/12/29 16:11:34 bostic Exp $ (Berkeley) $Date: 1993/12/29 16:11:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -607,7 +607,7 @@ opts_dump(sp, type)
 			if ((base += numrows) >= s_num)
 				break;
 			(void)ex_printf(EXCOOKIE,
-			    "%*.s", (int)(colwidth - cnt), "");
+			    "%*s", (int)(colwidth - cnt), "");
 		}
 		if (++row < numrows || b_num)
 			(void)ex_printf(EXCOOKIE, "\n");
