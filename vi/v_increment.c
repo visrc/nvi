@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_increment.c,v 10.5 1995/09/21 12:08:22 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:08:22 $";
+static char sccsid[] = "$Id: v_increment.c,v 10.6 1995/10/03 13:43:39 bostic Exp $ (Berkeley) $Date: 1995/10/03 13:43:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,11 +32,11 @@ static char * const fmt[] = {
 #define	SDEC	1
 	"%+ld",
 #define	HEXC	2
-	"%#0.*lX",
+	"%#0*lX",
 #define	HEXL	3
-	"%#0.*lx",
+	"%#0*lx",
 #define	OCTAL	4
-	"%#0.*lo",
+	"%#0*lo",
 };
 
 static void inc_err __P((SCR *, enum nresult));
