@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_zexit.c,v 8.10 1994/08/04 14:13:39 bostic Exp $ (Berkeley) $Date: 1994/08/04 14:13:39 $";
+static char sccsid[] = "$Id: v_zexit.c,v 8.11 1994/08/04 15:08:36 bostic Exp $ (Berkeley) $Date: 1994/08/04 15:08:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,27 +38,18 @@ v_zexit(sp, ep, vp)
 	EXF *ep;
 	VICMDARG *vp;
 {
-	/* Check to make sure it's not a temporary file. */
-	if (file_m3(sp, ep, 0))
-		return (1);
-
 	/* Write back any modifications. */
 	if (F_ISSET(ep, F_MODIFIED) &&
 	    file_write(sp, ep, NULL, NULL, NULL, FS_ALL))
 		return (1);
 
-	/*
-	 * !!!
-	 * Historic practice: quit! or two quit's done in succession
-	 * (where ZZ counts as a quit) didn't check for other files.
-	 */
-	if (sp->ccnt != sp->q_ccnt + 1 &&
-	    sp->cargv != NULL && sp->cargv[1] != NULL) {
-		sp->q_ccnt = sp->ccnt;
-		msgq(sp, M_ERR,
-	    "More files to edit; use \":n[ext]\" to go to the next file");
+	/* Check to make sure it's not a temporary file. */
+	if (file_m3(sp, ep, 0))
 		return (1);
-	}
+
+	/* Check for more files to edit. */
+	if (ex_ncheck(sp, 0))
+		return (1);
 
 	F_SET(sp, S_EXIT);
 	return (0);
