@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_relative.c,v 8.10 1994/03/10 11:21:57 bostic Exp $ (Berkeley) $Date: 1994/03/10 11:21:57 $";
+static char sccsid[] = "$Id: vs_relative.c,v 8.11 1994/03/14 10:47:12 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:47:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -240,7 +240,7 @@ svi_cm_public(sp, ep, lno, cno)
  * svi_cm_private --
  *	Return the physical column from the line that will display a
  *	character closest to the specified screen column, taking into
- *	account the screen offset. 
+ *	account the screen offset.
  *
  *	The offset is for the commands that move logical distances, i.e.
  *	if it's a logical scroll the closest physical distance is based
@@ -273,7 +273,7 @@ svi_cm_private(sp, ep, lno, off, cno)
 		while (len-- && scno < sp->cols)
 			scno += (ch = *(u_char *)p++) == '\t' &&
 			    !listset ? TAB_OFF(sp, scno) : cname[ch].len;
-			
+
 		/*
 		 * If reached the end of the physical line, return
 		 * the last physical character in the line.

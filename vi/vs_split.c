@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 8.35 1994/03/08 19:40:44 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:40:44 $";
+static char sccsid[] = "$Id: vs_split.c,v 8.36 1994/03/14 10:48:10 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:48:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -85,7 +85,7 @@ svi_split(sp, argv)
 	 * The columns in the screen don't change.
 	 */
 	tsp->cols = sp->cols;
-	
+
 	cnt = svi_sm_cursor(sp, sp->ep, &smp) ? 0 : smp - HMAP;
 	if (cnt <= half) {			/* Parent is top half. */
 		/* Child. */
@@ -416,7 +416,7 @@ svi_swap(csp, nsp, name)
 		return (0);
 	}
 	*nsp = sp;
-		
+
 	/* Save the old screen's cursor information. */
 	csp->frp->lno = csp->lno;
 	csp->frp->cno = csp->cno;

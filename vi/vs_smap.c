@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 8.35 1994/03/11 12:09:03 bostic Exp $ (Berkeley) $Date: 1994/03/11 12:09:03 $";
+static char sccsid[] = "$Id: vs_smap.c,v 8.36 1994/03/14 10:47:52 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:47:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -145,10 +145,10 @@ svi_sm_fill(sp, ep, lno, pos)
 	enum position pos;
 {
 	SMAP *p, tmp;
-	
+
 	/* Flush all cached information from the SMAP. */
 	for (p = HMAP; p <= TMAP; ++p)
-		SMAP_FLUSH(p);	
+		SMAP_FLUSH(p);
 
 	switch (pos) {
 	case P_FILL:
@@ -276,7 +276,7 @@ svi_sm_delete(sp, ep, lno)
 	MOVE(sp, p - HMAP, 0);
 	if (svi_deleteln(sp, cnt_orig))
 		return (1);
-		
+
 	/* Shift the screen map up. */
 	memmove(p, p + cnt_orig, (((TMAP - p) - cnt_orig) + 1) * sizeof(SMAP));
 
@@ -428,7 +428,7 @@ svi_sm_reset(sp, ep, lno)
 		MOVE(sp, p - HMAP, 0);
 		if (svi_deleteln(sp, diff))
 			return (1);
-		
+
 		/* Shift the screen map up. */
 		memmove(p, p + diff, (((TMAP - p) - diff) + 1) * sizeof(SMAP));
 
@@ -524,7 +524,7 @@ svi_sm_up(sp, ep, rp, count, cursor_move)
 			return (1);
 		}
 	}
-			
+
 	/*
 	 * Small screens: see svi/svi_refresh.c:svi_refresh, section 3b.
 	 *
@@ -567,7 +567,7 @@ svi_sm_up(sp, ep, rp, count, cursor_move)
 		/* If the line doesn't exist, we're done. */
 		if (TMAP->lno != tmp.lno && !file_gline(sp, ep, tmp.lno, NULL))
 			break;
-			
+
 		/* Scroll the screen cursor up one logical line. */
 		if (svi_sm_1up(sp, ep))
 			return (1);
@@ -759,7 +759,7 @@ svi_sm_down(sp, ep, rp, count, cursor_move)
 		/* If the line doesn't exist, we're done. */
 		if (HMAP->lno == 1 && HMAP->off == 1)
 			break;
-			
+
 		/* Scroll the screen and cursor down one logical line. */
 		if (svi_sm_1down(sp, ep))
 			return (1);
@@ -966,7 +966,7 @@ svi_sm_position(sp, ep, rp, cnt, pos)
 {
 	SMAP *smp;
 	recno_t last;
-	
+
 	switch (pos) {
 	case P_TOP:
 		/*
