@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.36 1993/11/28 16:22:03 bostic Exp $ (Berkeley) $Date: 1993/11/28 16:22:03 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.37 1993/11/28 17:49:07 bostic Exp $ (Berkeley) $Date: 1993/11/28 17:49:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -614,37 +614,24 @@ number:	if (O_ISSET(sp, O_NUMBER) && F_ISSET(sp, S_RENUMBER) && !didpaint) {
 		F_CLR(sp, S_REFRESH);
 	}
 
+	if (F_ISSET(sp, S_BELLSCHED))
+		svi_bell(sp);
 	/*
-	 * If there are any keys waiting, we don't ring the bell or update
-	 * the messages.  The reason is that there may be multiple messages,
-	 * and we're going to get the wrong key as a message delimiter.
+	 * If the bottom line isn't in use by the colon command:
 	 *
-	 * XXX
-	 * This is wrong.  If you type quickly enough, the status message
-	 * for a screen may not be displayed during a split command because
-	 * there were keys waiting so we switched screens without ever
-	 * displaying it.  Maybe the split code should flush messages?
+	 *	Display any messages.  Don't test S_UPDATE_MODE.  The
+	 *	message printing routine set it to avoid anyone else
+	 *	destroying the message we're about to display.
+	 *
+	 *	If the bottom line isn't in use by anyone, put out the
+	 *	standard status line.
 	 */
-	if (!sex_key_wait(sp)) {
-		if (F_ISSET(sp, S_BELLSCHED))
-			svi_bell(sp);
-		/*
-		 * If the bottom line isn't in use by the colon command:
-		 *
-		 *	Display any messages.  Don't test S_UPDATE_MODE.  The
-		 *	message printing routine set it to avoid anyone else
-		 *	destroying the message we're about to display.
-		 *
-		 *	If the bottom line isn't in use by anyone, put out the
-		 *	standard status line.
-		 */
-		if (!F_ISSET(SVP(sp), SVI_INFOLINE))
-			if (sp->msgq.lh_first != NULL &&
-			    !F_ISSET(sp->msgq.lh_first, M_EMPTY))
-				svi_msgflush(sp);
-			else if (!F_ISSET(sp, S_UPDATE_MODE))
-				svi_modeline(sp, ep);
-	}
+	if (!F_ISSET(SVP(sp), SVI_INFOLINE))
+		if (sp->msgq.lh_first != NULL &&
+		    !F_ISSET(sp->msgq.lh_first, M_EMPTY))
+			svi_msgflush(sp);
+		else if (!F_ISSET(sp, S_UPDATE_MODE))
+			svi_modeline(sp, ep);
 
 	/* Update saved information. */
 	OCNO = CNO;
@@ -659,6 +646,7 @@ number:	if (O_ISSET(sp, O_NUMBER) && F_ISSET(sp, S_RENUMBER) && !didpaint) {
 	return (0);
 }
 
+enum input term_user_key __P((SCR *, CHAR_T *));
 /*
  * svi_msgflush --
  *	Flush any accumulated messages.
@@ -722,7 +710,7 @@ lcont:		/* Move to the message line and clear it. */
 			ADDNSTR(MCONTMSG, sizeof(MCONTMSG) - 1);
 			refresh();
 			for (;;) {
-				if (term_key(sp, &ch, 0) != INP_OK)
+				if (term_user_key(sp, &ch) != INP_OK)
 					break;
 				if (sp->special[ch] == K_CR ||
 				    sp->special[ch] == K_NL || isblank(ch))
