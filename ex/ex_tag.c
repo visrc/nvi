@@ -11,10 +11,16 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 10.16 1996/02/27 16:36:33 bostic Exp $ (Berkeley) $Date: 1996/02/27 16:36:33 $";
+static char sccsid[] = "$Id: ex_tag.c,v 10.17 1996/02/29 19:16:40 bostic Exp $ (Berkeley) $Date: 1996/02/29 19:16:40 $";
 #endif /* not lint */
 
 #include <sys/param.h>
+/*
+ * XXX
+ * AIX 3.2.5, AIX 4.1 <sys/param.h> doesn't include <sys/types.h>.
+ * Idiots.
+ */
+#include <sys/types.h>	
 #ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
 #endif
