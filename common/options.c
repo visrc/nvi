@@ -6,19 +6,20 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.24 1992/10/29 14:42:39 bostic Exp $ (Berkeley) $Date: 1992/10/29 14:42:39 $";
+static char sccsid[] = "$Id: options.c,v 5.25 1992/11/01 22:56:02 bostic Exp $ (Berkeley) $Date: 1992/11/01 22:56:02 $";
 #endif /* not lint */
 
 #include <sys/param.h>
 #include <sys/ioctl.h>
 
+#include <ctype.h>
 #include <curses.h>
 #include <errno.h>
 #include <limits.h>
 #include <paths.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <strings.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "vi.h"
@@ -83,6 +84,8 @@ OPTIONS opts[] = {
 	"exrc",		NULL,		OPT_0BOOL,
 /* O_EXREFRESH */
 	"exrefresh",	NULL,		OPT_1BOOL,
+/* O_EXTENDED */
+	"extended",	NULL,		OPT_0BOOL,
 /* O_FLASH */
 	"flash",	NULL,		OPT_1BOOL,
 /* O_IGNORECASE */
@@ -217,9 +220,12 @@ static ABBREV abbrev[] = {
 int
 opts_init()
 {
-	struct  winsize win;
-	u_short row, col;
+	struct winsize win;
+	size_t row, col;
 	char *s;
+
+	row = 80;
+	col = 24;
 
 	/*
 	 * Get the screen rows and columns.  The idea is to duplicate what
@@ -560,7 +566,6 @@ opts_print(op)
 	OPTIONS *op;
 {
 	int curlen;
-	char nbuf[20];
 
 	curlen = 0;
 	switch (op->flags & OPT_TYPE) {
@@ -592,12 +597,14 @@ opts_print(op)
 	return (curlen);
 }
 
+int
 opts_abbcmp(a, b)
         const void *a, *b;
 {
         return(strcmp(((ABBREV *)a)->name, ((ABBREV *)b)->name));
 }
 
+int
 opts_cmp(a, b)
         const void *a, *b;
 {
