@@ -13,7 +13,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_tag.c,v 10.33 1996/06/03 14:09:57 bostic Exp $ (Berkeley) $Date: 1996/06/03 14:09:57 $";
+static const char sccsid[] = "$Id: ex_tag.c,v 10.34 1996/06/09 13:59:57 bostic Exp $ (Berkeley) $Date: 1996/06/09 13:59:57 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -798,7 +798,13 @@ tagq_free(sp, tqp)
 		CIRCLEQ_REMOVE(&tqp->tagq, tp, q);
 		free(tp);
 	}
-	CIRCLEQ_REMOVE(&exp->tq, tqp, q);
+	/*
+	 * !!!
+	 * If allocated and then the user failed to switch files, the TAGQ
+	 * structure was never attached to any list.
+	 */
+	if (tqp->q.cqe_next != NULL)
+		CIRCLEQ_REMOVE(&exp->tq, tqp, q);
 	free(tqp);
 	return (0);
 }
