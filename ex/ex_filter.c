@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 8.2 1993/06/28 16:47:27 bostic Exp $ (Berkeley) $Date: 1993/06/28 16:47:27 $";
+static char sccsid[] = "$Id: ex_filter.c,v 8.3 1993/07/06 18:43:47 bostic Exp $ (Berkeley) $Date: 1993/07/06 18:43:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -39,7 +39,7 @@ filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
 	pid_t pid;
 	sig_ret_t intsave, quitsave;
 	sigset_t bmask, omask;
-	recno_t lno;
+	recno_t lno, nread;
 	size_t len;
 	int input[2], output[2], pstat, rval;
 	char *name;
@@ -164,8 +164,8 @@ err:		if (input[0] != -1)
 	if (rval == 0 && ftype != NOOUTPUT) {
 		if (ftype != NOINPUT && fm->lno > 0)
 			--fm->lno;
-		rval = ex_readfp(sp, ep,
-		    "filter", ofp, fm, &sp->rptlines[L_ADDED]);
+		rval = ex_readfp(sp, ep, "filter", ofp, fm, &nread, 0);
+		sp->rptlines[L_ADDED] += nread;
 	}
 
 	/* Wait for the child to finish. */
