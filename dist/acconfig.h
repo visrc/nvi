@@ -1,4 +1,4 @@
-/* $Id: acconfig.h,v 8.20 2000/05/07 19:49:41 skimo Exp $ (Berkeley) $Date: 2000/05/07 19:49:41 $ */
+/* $Id: acconfig.h,v 8.21 2000/07/05 17:58:23 skimo Exp $ (Berkeley) $Date: 2000/07/05 17:58:23 $ */
 
 /* Define to `int' if <sys/types.h> doesn't define.  */
 #undef ssize_t
@@ -57,8 +57,8 @@
 /* Define if you want to compile in the Perl interpreter. */
 #undef HAVE_PERL_INTERP
 
-/* Define if your Perl is at least 5.003_01. */
-#undef HAVE_PERL_5_003_01
+/* Define if using pthread. */
+#undef HAVE_PTHREAD
 
 /* Define if you have the Berkeley style revoke(2) system call. */
 #undef HAVE_REVOKE
@@ -86,4 +86,3 @@
 
 /* Define when fprintf prototype not in an obvious place */
 #undef NEED_FPRINTF_PROTO
-

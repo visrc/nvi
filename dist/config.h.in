@@ -91,8 +91,8 @@
 /* Define if you want to compile in the Perl interpreter. */
 #undef HAVE_PERL_INTERP
 
-/* Define if your Perl is at least 5.003_01. */
-#undef HAVE_PERL_5_003_01
+/* Define if using pthread. */
+#undef HAVE_PTHREAD
 
 /* Define if you have the Berkeley style revoke(2) system call. */
 #undef HAVE_REVOKE
@@ -183,3 +183,10 @@
 
 /* Define if you have the <unistd.h> header file.  */
 #undef HAVE_UNISTD_H
+
+/* Name of package */
+#undef PACKAGE
+
+/* Version number of package */
+#undef VERSION
+

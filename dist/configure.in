@@ -2,12 +2,15 @@ dnl	@(#)configure.in	8.149 (Berkeley) 03/08/00
 dnl Process this file with autoconf to produce a configure script.
 
 AC_INIT(../common/main.c)
-AC_CONFIG_HEADER(config.h)
+AM_INIT_AUTOMAKE(vi, 1.80)
+AM_CONFIG_HEADER(config.h)
 
 dnl Configure setup.
 AC_PROG_INSTALL()
 AC_CANONICAL_HOST
 AC_ARG_PROGRAM()
+
+AC_PROG_LIBTOOL
 
 dnl If the user wants a debugging environment, set OPTFLAG now, some
 dnl compilers won't mix optimizing and debug flags.)
@@ -176,6 +179,7 @@ fi
 AC_MSG_RESULT($vi_cv_path_preserve)
 
 dnl Check for programs used for installation
+AC_PROG_AWK
 AC_PATH_PROG(vi_cv_path_ar, ar, missing_ar)
 AC_PATH_PROG(vi_cv_path_chmod, chmod, missing_chmod)
 AC_PATH_PROG(vi_cv_path_cp, cp, missing_cp)
@@ -212,7 +216,7 @@ AC_ARG_ENABLE(motif,
 	[vi_cv_motif="yes"], [vi_cv_motif="no"])
 AC_MSG_RESULT($vi_cv_motif)
 if test "$vi_cv_motif" = "yes"; then
-	vi_motif=vi_motif
+	vi_motif=vi-motif
 
 	dnl XXX
 	dnl BSDI's Motif libraries aren't shared.
@@ -253,9 +257,32 @@ if test "$vi_cv_motif" = "yes"; then
 	MOTIFLIBS="$MOTIFLIBS $XLIBS -lm $LIBS"
 fi
 
+dnl Check for threads
+AC_MSG_CHECKING(if --enable-threads option specified)
+AC_ARG_ENABLE(threads,
+	[  --enable-threads     Turn on thread support.],
+	[vi_cv_threads="yes"], [vi_cv_threads="no"])
+AC_MSG_RESULT($vi_cv_threads)
+if test "$vi_cv_threads" = "yes"; then
+	LIBS="$LIBS -pthread"
+	AC_CACHE_VAL(vi_cv_have_pthreads, [dnl
+	AC_TRY_LINK([#include <pthread.h>],
+		[pthread_self()],
+		[vi_cv_have_pthreads=yes],
+		[vi_cv_have_pthreads=no])])
+	if test "$vi_cv_have_pthreads" = "no"; then
+		AC_MSG_ERROR(No threading library found)
+	fi
+	LTLIBOBJS="pthread.lo $LTLIBOBJS"
+	AC_DEFINE(HAVE_PTHREAD)
+fi
+
 dnl If the user wants a Perl interpreter in nvi, load it.
 AC_SUBST(shrpenv)
+AC_SUBST(perlldflags)
+AC_SUBST(perllibs)
 AC_SUBST(vi_cv_perllib)
+AC_SUBST(LTLIBOBJS)
 AC_MSG_CHECKING(if --enable-perlinterp option specified)
 AC_ARG_ENABLE(perlinterp,
 	[  --enable-perlinterp     Include a Perl interpreter in vi.],
@@ -268,13 +295,8 @@ if test "$vi_cv_perlinterp" = "yes"; then
 	$vi_cv_path_perl -e 'require 5.004' || {
 		AC_MSG_ERROR([perl5 must be version 5.004 or later.])
 	}
-	$vi_cv_path_perl -e 'close(STDERR);require 5.003_01' &&
-	    AC_DEFINE(HAVE_PERL_5_003_01)
 
 	eval `$vi_cv_path_perl -V:shrpenv`
-	if test "X$shrpenv" = "XUNKNOWN"; then # pre 5.003_04
-	    shrpenv=""
-	fi
 	vi_cv_perllib=`$vi_cv_path_perl -MConfig -e 'print $Config{privlib}'`
 	perlcppflags=`$vi_cv_path_perl -Mlib=$srcdir -MExtUtils::Embed \
         	-e 'ccflags;perl_inc'`
@@ -283,15 +305,9 @@ if test "$vi_cv_perlinterp" = "yes"; then
 	fi
 	perllibs=`cd $srcdir;$vi_cv_path_perl -MExtUtils::Embed \
         	-e 'ldopts'`
-	if test "X$perllibs" != "X"; then
-		LIBS="$perllibs $LIBS"
-	fi
 	perlldflags=`cd $srcdir;$vi_cv_path_perl -MExtUtils::Embed \
         	-e 'ccdlflags'`
-	if test "X$perlldflags" != "X"; then
-		LDFLAGS="$perlldflags $LDFLAGS"
-	fi
-	LIBOBJS="perl.o perlxsi.o perlsfio.o $LIBOBJS"
+	LTLIBOBJS="perl.lo perlxsi.lo perlsfio.lo $LTLIBOBJS"
 	AC_DEFINE(HAVE_PERL_INTERP)
 fi
 
@@ -388,6 +404,9 @@ if test "$need_strsep" = yes; then
 	LIBOBJS="strsep.o $LIBOBJS"
 fi
 
+dnl XXX not sure whether this is a good idea
+LTLIBOBJS="`echo $LIBOBJS | sed 's/\.o/.lo/g'` $LTLIBOBJS"
+
 dnl Check for fcntl/flock
 dnl Use flock preferentially, since it has cleaner semantics and won't
 dnl hang up the editor.
@@ -458,7 +477,7 @@ else
 	dnl Check for the waddnstr function.
 	AC_MSG_CHECKING(for waddnstr)
 	AC_CACHE_VAL(vi_cv_have_curses_waddnstr, [dnl
-	AC_TRY_LINK([#include <curses.h>], [waddnstr(0, 0);],
+	AC_TRY_LINK([#include <curses.h>], [waddnstr(stdscr, 0, 0);],
 		[vi_cv_have_curses_waddnstr=yes],
 		[vi_cv_have_curses_waddnstr=no])])
 	if test "$vi_cv_have_curses_waddnstr" = yes; then
@@ -748,7 +767,7 @@ if test "$vi_cv_dl" = yes; then
 	PATH="$OLDPATH"
 
 	AC_DEFINE(USE_DYNAMIC_LOADING)
-	LIBOBJS="dldb.o $LIBOBJS"
+	LTLIBOBJS="dldb.lo $LTLIBOBJS"
 	dl_src=../common/dldb.c
 	LIBS="-ldl $LIBS"
 else
@@ -764,8 +783,8 @@ AC_ARG_ENABLE(re,
 AC_MSG_RESULT($vi_cv_re_lib)
 case "$vi_cv_re_lib" in
 "bundled RE")
-	CPPFLAGS="-I\$(srcdir)/regex $CPPFLAGS"
-	LIBOBJS="\$(REOBJS) $LIBOBJS";;
+	CPPFLAGS="-I\$(visrcdir)/regex $CPPFLAGS"
+	LTLIBOBJS="\$(REOBJS) $LTLIBOBJS";;
 "other RE")
 	;;
 esac

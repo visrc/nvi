@@ -1,5 +1,9 @@
 #! /bin/sh
-# $Id: distrib,v 8.19 2000/07/05 11:33:16 skimo Exp $ (Berkeley) $Date: 2000/07/05 11:33:16 $
+# $Id: distrib,v 8.20 2000/07/05 17:58:24 skimo Exp $ (Berkeley) $Date: 2000/07/05 17:58:24 $
+
+echo "Building aclocal.m4"
+rm -f aclocal.m4
+aclocal
 
 # Build autoconf structure.
 echo "Running autoheader"
@@ -9,6 +13,9 @@ rm -f configure
 echo "Running autoconf"
 autoconf 2>&1 | sed '/warning: AC_TRY_RUN called without default/d'
 chmod 555 configure config.guess config.sub install-sh
+echo "Running automake"
+#./automake --foreign --include-deps
+./automake --foreign
 
 msg="/* Do not edit: automatically built by build/distrib. */"
 # Build automatically generated header files.
@@ -42,12 +49,22 @@ rm -f $f
 chmod 444 $f
 
 # Build the automatically generated function prototype files.
-for i in cl common ex ip ipc motif motif_l perl_api tcl_api vi; do
+for i in cl common ex ip ipc motif motif_l tcl_api vi; do
 	f=../$i/extern.h
 	rm -f $f
 	echo "Building $f"
 	(echo "$msg" && \
 	    sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../$i/*.c) > $f
+	chmod 444 $f
+done
+
+# Build the automatically generated function prototype files.
+for i in perl_api ; do
+	f=../$i/extern.h
+	rm -f $f
+	echo "Building $f"
+	(echo "$msg" && \
+	    sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../$i/*.c ../$i/*.xs) > $f
 	chmod 444 $f
 done
 

@@ -1,0 +1,209 @@
+visrcdir= @srcdir@/..
+
+lib_LTLIBRARIES = libvi.la
+libvi_la_SOURCES = \
+	$(visrcdir)/common/api.c \
+	$(visrcdir)/common/cut.c \
+	$(visrcdir)/common/delete.c \
+	$(visrcdir)/ex/ex.c \
+	$(visrcdir)/ex/ex_abbrev.c \
+	$(visrcdir)/ex/ex_append.c \
+	$(visrcdir)/ex/ex_args.c \
+	$(visrcdir)/ex/ex_argv.c \
+	$(visrcdir)/ex/ex_at.c \
+	$(visrcdir)/ex/ex_bang.c \
+	$(visrcdir)/ex/ex_cd.c \
+	$(visrcdir)/ex/ex_cmd.c \
+	$(visrcdir)/ex/ex_cscope.c \
+	$(visrcdir)/ex/ex_delete.c \
+	$(visrcdir)/ex/ex_display.c \
+	$(visrcdir)/ex/ex_edit.c \
+	$(visrcdir)/ex/ex_equal.c \
+	$(visrcdir)/ex/ex_file.c \
+	$(visrcdir)/ex/ex_filter.c \
+	$(visrcdir)/ex/ex_global.c \
+	$(visrcdir)/ex/ex_init.c \
+	$(visrcdir)/ex/ex_join.c \
+	$(visrcdir)/ex/ex_map.c \
+	$(visrcdir)/ex/ex_mark.c \
+	$(visrcdir)/ex/ex_mkexrc.c \
+	$(visrcdir)/ex/ex_move.c \
+	$(visrcdir)/ex/ex_open.c \
+	$(visrcdir)/ex/ex_perl.c \
+	$(visrcdir)/ex/ex_preserve.c \
+	$(visrcdir)/ex/ex_print.c \
+	$(visrcdir)/ex/ex_put.c \
+	$(visrcdir)/ex/ex_quit.c \
+	$(visrcdir)/ex/ex_read.c \
+	$(visrcdir)/ex/ex_screen.c \
+	$(visrcdir)/ex/ex_script.c \
+	$(visrcdir)/ex/ex_set.c \
+	$(visrcdir)/ex/ex_shell.c \
+	$(visrcdir)/ex/ex_shift.c \
+	$(visrcdir)/ex/ex_source.c \
+	$(visrcdir)/ex/ex_stop.c \
+	$(visrcdir)/ex/ex_subst.c \
+	$(visrcdir)/ex/ex_tag.c \
+	$(visrcdir)/ex/ex_tcl.c \
+	$(visrcdir)/ex/ex_txt.c \
+	$(visrcdir)/ex/ex_undo.c \
+	$(visrcdir)/ex/ex_usage.c \
+	$(visrcdir)/ex/ex_util.c \
+	$(visrcdir)/ex/ex_version.c \
+	$(visrcdir)/ex/ex_visual.c \
+	$(visrcdir)/ex/ex_write.c \
+	$(visrcdir)/ex/ex_yank.c \
+	$(visrcdir)/ex/ex_z.c \
+	$(visrcdir)/common/exf.c \
+	$(visrcdir)/vi/getc.c \
+	$(visrcdir)/common/gs.c \
+	$(visrcdir)/common/key.c \
+	$(visrcdir)/common/db.c \
+	$(visrcdir)/common/log.c \
+	$(visrcdir)/common/main.c \
+	$(visrcdir)/common/mark.c \
+	$(visrcdir)/common/msg.c \
+	$(visrcdir)/common/options.c \
+	$(visrcdir)/common/options_f.c \
+	$(visrcdir)/common/put.c \
+	$(visrcdir)/common/recover.c \
+	$(visrcdir)/common/screen.c \
+	$(visrcdir)/common/search.c \
+	$(visrcdir)/common/seq.c \
+	$(visrcdir)/common/trace.c \
+	$(visrcdir)/common/util.c \
+	$(visrcdir)/vi/v_at.c \
+	$(visrcdir)/vi/v_ch.c \
+	$(visrcdir)/vi/v_cmd.c \
+	$(visrcdir)/vi/v_delete.c \
+	$(visrcdir)/vi/v_event.c \
+	$(visrcdir)/vi/v_ex.c \
+	$(visrcdir)/vi/v_increment.c \
+	$(visrcdir)/vi/v_init.c \
+	$(visrcdir)/vi/v_itxt.c \
+	$(visrcdir)/vi/v_left.c \
+	$(visrcdir)/vi/v_mark.c \
+	$(visrcdir)/vi/v_match.c \
+	$(visrcdir)/vi/v_paragraph.c \
+	$(visrcdir)/vi/v_put.c \
+	$(visrcdir)/vi/v_redraw.c \
+	$(visrcdir)/vi/v_replace.c \
+	$(visrcdir)/vi/v_right.c \
+	$(visrcdir)/vi/v_screen.c \
+	$(visrcdir)/vi/v_scroll.c \
+	$(visrcdir)/vi/v_search.c \
+	$(visrcdir)/vi/v_section.c \
+	$(visrcdir)/vi/v_sentence.c \
+	$(visrcdir)/vi/v_status.c \
+	$(visrcdir)/vi/v_txt.c \
+	$(visrcdir)/vi/v_ulcase.c \
+	$(visrcdir)/vi/v_undo.c \
+	$(visrcdir)/vi/v_util.c \
+	$(visrcdir)/vi/v_word.c \
+	$(visrcdir)/vi/v_xchar.c \
+	$(visrcdir)/vi/v_yank.c \
+	$(visrcdir)/vi/v_z.c \
+	$(visrcdir)/vi/v_zexit.c \
+	$(visrcdir)/vi/vi.c \
+	$(visrcdir)/vi/vs_line.c \
+	$(visrcdir)/vi/vs_msg.c \
+	$(visrcdir)/vi/vs_refresh.c \
+	$(visrcdir)/vi/vs_relative.c \
+	$(visrcdir)/vi/vs_smap.c \
+	$(visrcdir)/vi/vs_split.c
+EXTRA_libvi_la_SOURCES = \
+	$(visrcdir)/regex/regcomp.c \
+	$(visrcdir)/regex/regerror.c \
+	$(visrcdir)/regex/regexec.c \
+	$(visrcdir)/regex/regfree.c \
+	$(visrcdir)/common/dldb.c \
+	$(visrcdir)/perl_api/perl.xs \
+	$(visrcdir)/perl_api/perlsfio.c \
+	$(visrcdir)/clib/bsearch.c \
+	$(visrcdir)/clib/env.c \
+	$(visrcdir)/clib/gethostname.c \
+	$(visrcdir)/clib/getopt.c \
+	$(visrcdir)/clib/memchr.c \
+	$(visrcdir)/clib/memmove.c \
+	$(visrcdir)/clib/memset.c \
+	$(visrcdir)/clib/mkstemp.c \
+	$(visrcdir)/clib/mmap.c \
+	$(visrcdir)/clib/snprintf.c \
+	$(visrcdir)/clib/strdup.c \
+	$(visrcdir)/clib/strerror.c \
+	$(visrcdir)/clib/strpbrk.c \
+	$(visrcdir)/clib/strsep.c \
+	$(visrcdir)/clib/strtol.c \
+	$(visrcdir)/clib/strtoul.c \
+	$(visrcdir)/clib/vsnprintf.c \
+	$(visrcdir)/common/pthread.c \
+	perl.c \
+	perlxsi.c
+# Is this the way to do it ?
+REOBJS=	regcomp.lo regerror.lo regexec.lo regfree.lo
+libvi_la_DEPENDENCIES = @LTLIBOBJS@
+libvi_la_LIBADD = @LTLIBOBJS@
+
+bin_PROGRAMS = vi vi-ipc @vi_motif@
+EXTRA_PROGRAMS = vi-motif
+
+vi_SOURCES = \
+	$(visrcdir)/cl/cl_bsd.c \
+	$(visrcdir)/cl/cl_funcs.c \
+	$(visrcdir)/cl/cl_main.c \
+	$(visrcdir)/cl/cl_read.c \
+	$(visrcdir)/cl/cl_screen.c \
+	$(visrcdir)/cl/cl_term.c
+vi_LDADD = libvi.la @perllibs@
+vi_LDFLAGS = @perlldflags@
+
+vi_ipc_SOURCES = \
+	$(visrcdir)/ip/ip_funcs.c \
+	$(visrcdir)/ip/ip_main.c \
+	$(visrcdir)/ip/ip_read.c \
+	$(visrcdir)/ip/ip_screen.c \
+	$(visrcdir)/ipc/ip_send.c \
+	$(visrcdir)/ip/ip_term.c 
+vi_ipc_LDADD = libvi.la @perllibs@
+vi_ipc_LDFLAGS = @perlldflags@
+
+vi_motif_SOURCES = \
+	$(visrcdir)/ipc/ip_run.c \
+	$(visrcdir)/ipc/ip_send.c \
+	$(visrcdir)/ipc/ip_trans.c \
+	$(visrcdir)/ipc/ipc_cmd.c \
+	$(visrcdir)/ipc/ipc_method.c \
+	$(visrcdir)/motif/m_main.c \
+	$(visrcdir)/motif/m_cde.c \
+	$(visrcdir)/common/trace.c \
+	$(visrcdir)/motif_l/m_copypaste.c \
+	$(visrcdir)/motif_l/m_func.c \
+	$(visrcdir)/motif_l/m_menu.c \
+	$(visrcdir)/motif_l/m_options.c \
+	$(visrcdir)/motif_l/m_prompt.c \
+	$(visrcdir)/motif_l/m_ruler.c \
+	$(visrcdir)/motif_l/m_search.c \
+	$(visrcdir)/motif_l/m_tags.c \
+	$(visrcdir)/motif_l/m_util.c \
+	$(visrcdir)/motif_l/m_vi.c \
+	$(visrcdir)/motif_l/xtabbed.c
+vi_motif_LDADD = @MOTIFLIBS@ @LIBOBJS@
+
+VI=-DVI=\"$(bindir)/`echo vi-ipc | sed '$(transform)'`\"
+CFLAGS=	 -D__REGEX_PRIVATE $(OPTFLAG) @CFLAGS@ -I. -I$(visrcdir)/include \
+	    @CPPFLAGS@ $(VI) @XINCS@
+PERL=	@vi_cv_path_perl@
+PERLLIB=@vi_cv_perllib@
+SHRPENV=@shrpenv@
+
+perl.c: $(visrcdir)/perl_api/perl.xs $(visrcdir)/perl_api/typemap
+	echo "#define _PATH_PERLSCRIPTS \"$(datadir)/vi/perl\"" > $@
+	$(PERL) -e 'unless ($$] >= 5.005) {' \
+	       	-e   'for (qw(incgv sv_undef errgv na)) {' \
+		-e     'print "#define PL_$$_ $$_\n" }} ' >> $@
+	$(PERL) $(PERLLIB)/ExtUtils/xsubpp -typemap \
+	    $(PERLLIB)/ExtUtils/typemap $(visrcdir)/perl_api/perl.xs >> $@
+	($(PERL) -ne 'print "sub $$1 {\$$curscr->$$1(\@_)}\n"' \
+	          -e   'if /newXS\("VI::([^\":]*)"/;' $@ ; echo "1;") > VI.pm
+perlxsi.c:
+	perl -MExtUtils::Embed -e xsinit -- -std VI
