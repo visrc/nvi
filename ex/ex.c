@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.18 1992/04/18 09:56:36 bostic Exp $ (Berkeley) $Date: 1992/04/18 09:56:36 $";
+static char sccsid[] = "$Id: ex.c,v 5.19 1992/04/18 10:09:09 bostic Exp $ (Berkeley) $Date: 1992/04/18 10:09:09 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -24,6 +24,7 @@ static char sccsid[] = "$Id: ex.c,v 5.18 1992/04/18 09:56:36 bostic Exp $ (Berke
 #include "pathnames.h"
 #include "extern.h"
 
+int autoprint;
 char *defcmdarg[2];
 
 static int fileexpand __P((glob_t *, char *, int));
@@ -524,37 +525,37 @@ addr2:	switch(cmd.addrcnt) {
 }
 #endif
 	/* Do the command. */
-	if (!(cp->fn)(&cmd)) {
-		/*
-		 * If the command was successful, and either there was an
-		 * explicit flag to display the line we ended up on, or
-		 * we're in ex, autoprint is set, and a real change was
-		 * made, display the line.
-		 */
-		flags = cmd.flags & (E_F_HASH|E_F_LIST|E_F_PRINT);
-		if (flags) {
-			if (cmd.flagoff)
-				cursor = MARK_AT_LINE(markline(cursor) +
-				    cmd.flagoff);
-		} else if (mode == MODE_EX && autoprint &&
-		    ISSET(O_AUTOPRINT))
-			flags = E_F_PRINT;
-		parg.addr1 = parg.addr2 = cursor;
-		if (flags) {
-			switch (flags) {
-			case E_F_HASH:
-				parg.cmd = &cmds[C_HASH];
-				ex_number(&parg);
-				break;
-			case E_F_LIST:
-				parg.cmd = &cmds[C_LIST];
-				ex_list(&parg);
-				break;
-			case E_F_PRINT:
-				parg.cmd = &cmds[C_PRINT];
-				ex_print(&parg);
-				break;
-			}
+	autoprint = 0;
+	if ((cp->fn)(&cmd))
+		return (1);
+
+	/*
+	 * If the command was successful, and either there was an
+	 * explicit flag to display the new cursor line, or we're
+	 * in ex, autoprint is set, and a change was made, display
+	 * the line.
+	 */
+	flags = cmd.flags & (E_F_HASH|E_F_LIST|E_F_PRINT);
+	if (flags) {
+		if (cmd.flagoff)
+			cursor = MARK_AT_LINE(markline(cursor) + cmd.flagoff);
+	} else if (mode == MODE_EX && autoprint && ISSET(O_AUTOPRINT))
+		flags = E_F_PRINT;
+	parg.addr1 = parg.addr2 = cursor;
+	if (flags) {
+		switch (flags) {
+		case E_F_HASH:
+			parg.cmd = &cmds[C_HASH];
+			ex_number(&parg);
+			break;
+		case E_F_LIST:
+			parg.cmd = &cmds[C_LIST];
+			ex_list(&parg);
+			break;
+		case E_F_PRINT:
+			parg.cmd = &cmds[C_PRINT];
+			ex_print(&parg);
+			break;
 		}
 	}
 }
