@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 8.50 1994/09/02 20:17:01 bostic Exp $ (Berkeley) $Date: 1994/09/02 20:17:01 $";
+static char sccsid[] = "$Id: vs_smap.c,v 8.51 1994/09/12 11:28:23 bostic Exp $ (Berkeley) $Date: 1994/09/12 11:28:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -155,7 +155,14 @@ svi_sm_fill(sp, ep, lno, pos)
 	for (p = HMAP; p <= TMAP; ++p)
 		SMAP_FLUSH(p);
 
-	/* If the map is filled, the screen must be redrawn. */
+	/*
+	 * If the map is filled, the screen must be redrawn.
+	 *
+	 * XXX
+	 * This is a bug.  We should try and figure out if the desired line
+	 * is already in the map or close by -- scrolling the screen would
+	 * be a lot better than redrawing.
+	 */
 	F_SET(sp, S_REDRAW);
 
 	switch (pos) {
