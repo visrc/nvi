@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 8.17 1993/10/28 08:55:36 bostic Exp $ (Berkeley) $Date: 1993/10/28 08:55:36 $";
+static char sccsid[] = "$Id: ex_tag.c,v 8.18 1993/11/07 17:40:40 bostic Exp $ (Berkeley) $Date: 1993/11/07 17:40:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -86,10 +86,8 @@ ex_tagfirst(sp, tagarg)
 			sval = f_search(sp, sp->ep,
 			    &m, &m, search, NULL, &flags);
 		}
-		if (sval) {
+		if (sval)
 			msgq(sp, M_ERR, "%s: search pattern not found.", tag);
-			return (1);
-		}
 	}
 
 	/* Set up the screen. */
