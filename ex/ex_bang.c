@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 8.25 1994/05/04 17:46:50 bostic Exp $ (Berkeley) $Date: 1994/05/04 17:46:50 $";
+static char sccsid[] = "$Id: ex_bang.c,v 8.26 1994/07/27 09:54:36 bostic Exp $ (Berkeley) $Date: 1994/07/27 09:54:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -119,7 +119,10 @@ ex_bang(sp, ep, cmdp)
 		 * !!!
 		 * Historical vi permitted "!!" in an empty file.  When it
 		 * happens, we get called with two addresses of 1,1 and a
-		 * bad attitude.
+		 * bad attitude.  The simple solution is to turn it into a
+		 * FILTER_READ operation, but that means that we don't put
+		 * an empty line into the default cut buffer as did historic
+		 * vi.  Tough.
 		 */
 		ftype = FILTER;
 		if (cmdp->addr1.lno == 1 && cmdp->addr2.lno == 1) {
