@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_util.c,v 5.19 1993/02/19 13:40:14 bostic Exp $ (Berkeley) $Date: 1993/02/19 13:40:14 $";
+static char sccsid[] = "$Id: v_util.c,v 5.20 1993/02/19 13:54:10 bostic Exp $ (Berkeley) $Date: 1993/02/19 13:54:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -120,7 +120,7 @@ v_msgflush(ep)
 #define	MCONTMSG	" [More ...]"
 	for (mp = ep->msgp, p = NULL;
 	    mp != NULL && !(mp->flags & M_EMPTY); mp = mp->next) {
-		if (mp->flags & M_BELL)
+		if (mp->flags & (M_BELL | M_ERROR))
 			standout();
 
 		for (p = mp->mbuf; mp->len;) {
@@ -134,7 +134,7 @@ v_msgflush(ep)
 
 		mp->flags |= M_EMPTY;
 
-		if (mp->flags & M_BELL)
+		if (mp->flags & (M_BELL | M_ERROR))
 			standend();
 		clrtoeol();
 
