@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: options.c,v 10.47 1996/07/12 18:23:35 bostic Exp $ (Berkeley) $Date: 1996/07/12 18:23:35 $";
+static const char sccsid[] = "$Id: options.c,v 10.48 1996/08/10 18:22:50 bostic Exp $ (Berkeley) $Date: 1996/08/10 18:22:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -135,6 +135,8 @@ OPTLIST const optlist[] = {
 	{"optimize",	NULL,		OPT_1BOOL,	0},
 /* O_PARAGRAPHS	    4BSD */
 	{"paragraphs",	f_paragraph,	OPT_STR,	0},
+/* O_PATH	  4.4BSD */
+	{"path",	NULL,		OPT_STR,	0},
 /* O_PRINT	  4.4BSD */
 	{"print",	f_print,	OPT_STR,	0},
 /* O_PROMPT	    4BSD */
@@ -346,6 +348,8 @@ opts_init(sp, oargs)
 	OI(O_MSGCAT, b1);
 	OI(O_REPORT, "report=5");
 	OI(O_PARAGRAPHS, "paragraphs=IPLPPPQPP LIpplpipbp");
+	(void)snprintf(b1, sizeof(b1), "path=%s", "");
+	OI(O_PATH, b1);
 	(void)snprintf(b1, sizeof(b1), "recdir=%s", _PATH_PRESERVE);
 	OI(O_RECDIR, b1);
 	OI(O_SECTIONS, "sections=NHSHH HUnhsh");

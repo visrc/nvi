@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: exf.c,v 10.44 1996/07/12 18:23:35 bostic Exp $ (Berkeley) $Date: 1996/07/12 18:23:35 $";
+static const char sccsid[] = "$Id: exf.c,v 10.45 1996/08/10 18:22:50 bostic Exp $ (Berkeley) $Date: 1996/08/10 18:22:50 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -41,6 +41,7 @@ static const char sccsid[] = "$Id: exf.c,v 10.44 1996/07/12 18:23:35 bostic Exp 
 static int	file_backup __P((SCR *, char *, char *));
 static void	file_cinit __P((SCR *));
 static void	file_comment __P((SCR *));
+static int	file_spath __P((SCR *, FREF *, struct stat *, int *));
 
 /*
  * file_add --
@@ -133,7 +134,7 @@ file_init(sp, frp, rcv_name, flags)
 	RECNOINFO oinfo;
 	struct stat sb;
 	size_t psize;
-	int fd, open_err, readonly;
+	int fd, exists, open_err, readonly;
 	char *oname, tname[MAXPATHLEN];
 
 	open_err = readonly = 0;
@@ -168,13 +169,20 @@ file_init(sp, frp, rcv_name, flags)
 	F_SET(ep, F_FIRSTMODIFY);
 
 	/*
+	 * Scan the user's path to find the file that we're going to
+	 * try and open.
+	 */
+	if (file_spath(sp, frp, &sb, &exists))
+		return (1);
+
+	/*
 	 * If no name or backing file, for whatever reason, create a backing
 	 * temporary file, saving the temp file name so we can later unlink
 	 * it.  If the user never named this file, copy the temporary file name
 	 * to the real name (we display that until the user renames it).
 	 */
 	oname = frp->name;
-	if (LF_ISSET(FS_OPENERR) || oname == NULL || stat(oname, &sb)) {
+	if (LF_ISSET(FS_OPENERR) || oname == NULL || !exists) {
 		if (opts_empty(sp, O_DIRECTORY, 0))
 			goto err;
 		(void)snprintf(tname, sizeof(tname),
@@ -429,6 +437,73 @@ oerr:	if (F_ISSET(ep, F_RCV_ON))
 
 	return (open_err ?
 	    file_init(sp, frp, rcv_name, flags | FS_OPENERR) : 1);
+}
+
+/*
+ * file_spath --
+ *	Scan the user's path to find the file that we're going to
+ *	try and open.
+ */
+static int
+file_spath(sp, frp, sbp, existsp)
+	SCR *sp;
+	FREF *frp;
+	struct stat *sbp;
+	int *existsp;
+{
+	CHAR_T savech;
+	size_t len;
+	int found;
+	char *name, *p, *t, path[MAXPATHLEN];
+
+	/*
+	 * If the name is NULL or an explicit reference (i.e., the first
+	 * component is . or ..) ignore the O_PATH option.
+	 */
+	name = frp->name;
+	if (name == NULL) {
+		*existsp = 0;
+		return (0);
+	}
+	if (name[0] == '/' || name[0] == '.' &&
+	    (name[1] == '/' || name[1] == '.' && name[2] == '/')) {
+		*existsp = !stat(name, sbp);
+		return (0);
+	}
+
+	/* Try . */
+	if (!stat(name, sbp)) {
+		*existsp = 1;
+		return (0);
+	}
+
+	/* Try the O_PATH option values. */
+	for (found = 0, p = t = O_STR(sp, O_PATH);; ++p) {
+		if (*p == ':' || *p == '\0') {
+			if (t < p - 1) {
+				savech = *p;
+				*p = '\0';
+				len = snprintf(path,
+				    sizeof(path), "%s/%s", t, name);
+				if (!stat(path, sbp))
+					found = 1;
+				*p = savech;
+			}
+			t = p + 1;
+		}
+		if (*p == '\0' || found)
+			break;
+	}
+
+	/* If we found it, build a new pathname and discard the old one. */
+	if (found) {
+		MALLOC_RET(sp, p, char *, len + 1);
+		memcpy(p, path, len + 1);
+		free(frp->name);
+		frp->name = p;
+	}
+	*existsp = found;
+	return (0);
 }
 
 /*
