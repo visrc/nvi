@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: key.h,v 10.43 2001/06/09 18:26:27 skimo Exp $ (Berkeley) $Date: 2001/06/09 18:26:27 $
+ *	$Id: key.h,v 10.44 2001/06/09 21:53:51 skimo Exp $ (Berkeley) $Date: 2001/06/09 21:53:51 $
  */
 
 #include "multibyte.h"
@@ -49,6 +49,10 @@ typedef	u_int		ARG_CHAR_T;
     iswprint((ch))
 #define ISBLANK(ch) \
     iswblank((ch))
+#define ISALPHA(ch) \
+    iswalpha((ch))
+#define ISALNUM(ch) \
+    iswalnum((ch))
 #define CHAR_WIDTH(sp, ch)  wcwidth(ch)
 #define INTISWIDE(c)	(!!(c >> 8))	    /* XXX wrong name */
 #define L(ch)		L ## ch
@@ -78,6 +82,10 @@ typedef	u_int		ARG_CHAR_T;
     isprint((ch))
 #define ISBLANK(ch) \
     isblank((ch))
+#define ISALPHA(ch) \
+    isalpha((ch))
+#define ISALNUM(ch) \
+    isalnum((ch))
 #define INTISWIDE(c)	    0
 #define CHAR_WIDTH(sp, ch)  1
 #define L(ch)		ch

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex.c,v 10.69 2001/03/17 22:42:27 skimo Exp $ (Berkeley) $Date: 2001/03/17 22:42:27 $";
+static const char sccsid[] = "$Id: ex.c,v 10.70 2001/06/09 21:53:52 skimo Exp $ (Berkeley) $Date: 2001/06/09 21:53:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -209,9 +209,10 @@ ex_cmd(sp)
 	u_int32_t flags;
 	long ltmp;
 	int at_found, gv_found;
-	int ch, cnt, delim, isaddr, namelen;
+	int cnt, delim, isaddr, namelen;
 	int newscreen, notempty, tmp, vi_address;
 	CHAR_T *arg1, *s, *p, *t;
+	CHAR_T ch;
 	char *n;
 
 	gp = sp->gp;
@@ -265,7 +266,7 @@ loop:	ecp = wp->ecq.lh_first;
 		if ((ch = *ecp->cp) == '\n') {
 			++wp->if_lno;
 			++ecp->if_lno;
-		} else if (isblank(ch))
+		} else if (ISBLANK(ch))
 			notempty = 1;
 		else
 			break;
@@ -304,7 +305,7 @@ loop:	ecp = wp->ecq.lh_first;
 	/* Skip whitespace. */
 	for (; ecp->clen > 0; ++ecp->cp, --ecp->clen) {
 		ch = *ecp->cp;
-		if (!isblank(ch))
+		if (!ISBLANK(ch))
 			break;
 	}
 
@@ -359,7 +360,7 @@ loop:	ecp = wp->ecq.lh_first;
 	 */
 	for (; ecp->clen > 0; ++ecp->cp, --ecp->clen) {
 		ch = *ecp->cp;
-		if (!isblank(ch) && ch != ':')
+		if (!ISBLANK(ch) && ch != ':')
 			break;
 	}
 
@@ -394,7 +395,7 @@ loop:	ecp = wp->ecq.lh_first;
 		} else {
 			for (p = ecp->cp;
 			    ecp->clen > 0; --ecp->clen, ++ecp->cp)
-				if (!isalpha(*ecp->cp))
+				if (!ISALPHA(*ecp->cp))
 					break;
 			if ((namelen = ecp->cp - p) == 0) {
 				msgq(sp, M_ERR, "080|Unknown command name");
@@ -651,7 +652,7 @@ skip_srch:	if (ecp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, SC_VI))
 			ecp->save_cmd = ecp->cp;
 		}
 		for (; ecp->clen > 0; --ecp->clen, ++ecp->cp)
-			if (!isblank(*ecp->cp))
+			if (!ISBLANK(*ecp->cp))
 				break;
 		/*
 		 * QUOTING NOTE:
@@ -673,7 +674,7 @@ skip_srch:	if (ecp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, SC_VI))
 					++discard;
 					--ecp->clen;
 					ch = *++ecp->cp;
-				} else if (isblank(ch))
+				} else if (ISBLANK(ch))
 					break;
 				*p++ = ch;
 			}
@@ -717,7 +718,7 @@ skip_srch:	if (ecp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, SC_VI))
 		 */
 		for (tmp = 0; ecp->clen > 0; --ecp->clen, ++ecp->cp) {
 			ch = *ecp->cp;
-			if (isblank(ch))
+			if (ISBLANK(ch))
 				tmp = 1;
 			else
 				break;
@@ -735,10 +736,10 @@ skip_srch:	if (ecp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, SC_VI))
 		 * into something like ":s g", so use the special s command.
 		 */
 		for (; ecp->clen > 0; --ecp->clen, ++ecp->cp)
-			if (!isblank(ecp->cp[0]))
+			if (!ISBLANK(ecp->cp[0]))
 				break;
 
-		if (isalnum(ecp->cp[0]) || ecp->cp[0] == '|') {
+		if (ISALNUM(ecp->cp[0]) || ecp->cp[0] == '|') {
 			ecp->rcmd = cmds[C_SUBSTITUTE];
 			ecp->rcmd.fn = ex_subagain;
 			ecp->cmd = &ecp->rcmd;
@@ -782,7 +783,7 @@ skip_srch:	if (ecp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, SC_VI))
 	for (p = ecp->cp; ecp->clen > 0; --ecp->clen, ++ecp->cp) {
 		ch = ecp->cp[0];
 		if (IS_ESCAPE(sp, ecp, ch) && ecp->clen > 1) {
-			tmp = ecp->cp[1];
+			CHAR_T tmp = ecp->cp[1];
 			if (tmp == '\n' || tmp == '|') {
 				if (tmp == '\n') {
 					++wp->if_lno;
@@ -959,7 +960,7 @@ two_addr:	switch (ecp->addrcnt) {
 
 		/* Skip leading <blank>s. */
 		for (; ecp->clen > 0; --ecp->clen, ++ecp->cp)
-			if (!isblank(*ecp->cp))
+			if (!ISBLANK(*ecp->cp))
 				break;
 		if (ecp->clen == 0)
 			break;
@@ -1047,7 +1048,7 @@ end_case23:		break;
 			 * command "d2" would be a delete into buffer '2', and
 			 * not a two-line deletion.
 			 */
-			if (!isdigit(ecp->cp[0])) {
+			if (!ISDIGIT(ecp->cp[0])) {
 				ecp->buffer = *ecp->cp;
 				++ecp->cp;
 				--ecp->clen;
@@ -1057,7 +1058,7 @@ end_case23:		break;
 		case 'c':				/* count [01+a] */
 			++n;
 			/* Validate any signed value. */
-			if (!isdigit(*ecp->cp) && (*n != '+' ||
+			if (!ISDIGIT(*ecp->cp) && (*n != '+' ||
 			    (*ecp->cp != '+' && *ecp->cp != '-')))
 				break;
 			/* If a signed value, set appropriate flags. */
@@ -1156,7 +1157,7 @@ end_case23:		break;
 				    ecp, ch) && ecp->clen > 1) {
 					--ecp->clen;
 					*p++ = *++ecp->cp;
-				} else if (isblank(ch)) {
+				} else if (ISBLANK(ch)) {
 					++ecp->cp;
 					--ecp->clen;
 					break;
@@ -1170,7 +1171,7 @@ end_case23:		break;
 			for (; ecp->clen > 0;
 			    --ecp->clen, ++ecp->cp) {
 				ch = *ecp->cp;
-				if (!isblank(ch))
+				if (!ISBLANK(ch))
 					break;
 			}
 			if (ecp->clen == 0)
@@ -1215,7 +1216,7 @@ arg_cnt_chk:		if (*++n != 'N') {		/* N */
 	/* Skip trailing whitespace. */
 	for (; ecp->clen > 0; --ecp->clen) {
 		ch = *ecp->cp++;
-		if (!isblank(ch))
+		if (!ISBLANK(ch))
 			break;
 	}
 
@@ -1950,7 +1951,7 @@ search:		mp->lno = sp->lno;
 		 * the '+' could be omitted.  (This feature is found in ed
 		 * as well.)
 		 */
-		if (ecp->clen > 1 && isdigit(ecp->cp[1]))
+		if (ecp->clen > 1 && ISDIGIT(ecp->cp[1]))
 			*ecp->cp = '+';
 		else {
 			++ecp->cp;
@@ -1961,14 +1962,14 @@ search:		mp->lno = sp->lno;
 
 	/* Skip trailing <blank>s. */
 	for (; ecp->clen > 0 &&
-	    isblank(ecp->cp[0]); ++ecp->cp, --ecp->clen);
+	    ISBLANK(ecp->cp[0]); ++ecp->cp, --ecp->clen);
 
 	/*
 	 * Evaluate any offset.  If no address yet found, the offset
 	 * is relative to ".".
 	 */
 	total = 0;
-	if (ecp->clen != 0 && (isdigit(ecp->cp[0]) ||
+	if (ecp->clen != 0 && (ISDIGIT(ecp->cp[0]) ||
 	    ecp->cp[0] == '+' || ecp->cp[0] == '-' ||
 	    ecp->cp[0] == '^')) {
 		if (!*isaddrp) {
@@ -2004,14 +2005,14 @@ search:		mp->lno = sp->lno;
 		 */
 		F_SET(ecp, E_DELTA);
 		for (;;) {
-			for (; ecp->clen > 0 && isblank(ecp->cp[0]);
+			for (; ecp->clen > 0 && ISBLANK(ecp->cp[0]);
 			    ++ecp->cp, --ecp->clen);
-			if (ecp->clen == 0 || !isdigit(ecp->cp[0]) &&
+			if (ecp->clen == 0 || !ISDIGIT(ecp->cp[0]) &&
 			    ecp->cp[0] != '+' && ecp->cp[0] != '-' &&
 			    ecp->cp[0] != '^')
 				break;
-			if (!isdigit(ecp->cp[0]) &&
-			    !isdigit(ecp->cp[1])) {
+			if (!ISDIGIT(ecp->cp[0]) &&
+			    !ISDIGIT(ecp->cp[1])) {
 				total += ecp->cp[0] == '+' ? 1 : -1;
 				--ecp->clen;
 				++ecp->cp;

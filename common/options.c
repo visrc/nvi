@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: options.c,v 10.60 2001/06/09 18:53:18 skimo Exp $ (Berkeley) $Date: 2001/06/09 18:53:18 $";
+static const char sccsid[] = "$Id: options.c,v 10.61 2001/06/09 21:53:51 skimo Exp $ (Berkeley) $Date: 2001/06/09 21:53:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -310,7 +310,7 @@ opts_init(sp, oargs)
 	/* Set numeric and string default values. */
 #define	OI(indx, str) {							\
 	a.len = STRLEN(str);						\
-	if (str != b2)	     /* GCC puts strings in text-space. */	\
+	if ((CHAR_T*)str != b2)	  /* GCC puts strings in text-space. */	\
 		(void)MEMCPY(b2, str, a.len+1);				\
 	if (opts_set(sp, argv, NULL)) {					\
 		 optindx = indx;					\
@@ -613,7 +613,7 @@ opts_set(sp, argv, usage)
 				break;
 			}
 
-			if (!isdigit(sep[0]))
+			if (!ISDIGIT(sep[0]))
 				goto badnum;
 			if ((nret =
 			    nget_uslong(sp, &value, sep, &endp, 10)) != NUM_OK) {
@@ -643,7 +643,7 @@ opts_set(sp, argv, usage)
 				rval = 1;
 				break;
 			}
-			if (*endp && !isblank(*endp)) {
+			if (*endp && !ISBLANK(*endp)) {
 badnum:				INT2CHAR(sp, name, STRLEN(name) + 1, 
 					     np, nlen);
 				p2 = msg_print(sp, np, &nf);

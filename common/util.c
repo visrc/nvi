@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: util.c,v 10.20 2001/06/09 18:26:28 skimo Exp $ (Berkeley) $Date: 2001/06/09 18:26:28 $";
+static const char sccsid[] = "$Id: util.c,v 10.21 2001/06/09 21:53:51 skimo Exp $ (Berkeley) $Date: 2001/06/09 21:53:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -164,16 +164,6 @@ v_wstrdup(sp, str, len)
 }
 
 /*
- * PUBLIC: int v_strcmp __P((const CHAR_T *s1, const CHAR_T *s2));
- */
-int 
-v_strcmp(const CHAR_T *s1, const CHAR_T *s2)
-{
-	while (*s1 && *s2 && *s1 == *s2) s1++, s2++;
-	return *s1 - *s2;
-}
-
-/*
  * nget_uslong --
  *      Get an unsigned long, checking for overflow.
  *
@@ -187,14 +177,8 @@ nget_uslong(sp, valp, p, endp, base)
 	CHAR_T **endp;
 	int base;
 {
-	CONST char *np;
-	char *endnp;
-	size_t nlen;
-
-	INT2CHAR(sp, p, STRLEN(p) + 1, np, nlen);
 	errno = 0;
-	*valp = strtoul(np, &endnp, base);
-	*endp = (CHAR_T*)p + (endnp - np);
+	*valp = STRTOUL(p, endp, base);
 	if (errno == 0)
 		return (NUM_OK);
 	if (errno == ERANGE && *valp == ULONG_MAX)
@@ -216,14 +200,8 @@ nget_slong(sp, valp, p, endp, base)
 	CHAR_T **endp;
 	int base;
 {
-	CONST char *np;
-	char *endnp;
-	size_t nlen;
-
-	INT2CHAR(sp, p, STRLEN(p) + 1, np, nlen);
 	errno = 0;
-	*valp = strtol(np, &endnp, base);
-	*endp = (CHAR_T*)p + (endnp - np);
+	*valp = STRTOL(p, endp, base);
 	if (errno == 0)
 		return (NUM_OK);
 	if (errno == ERANGE) {

@@ -12,7 +12,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: api.c,v 8.37 2001/06/09 18:53:18 skimo Exp $ (Berkeley) $Date: 2001/06/09 18:53:18 $";
+static const char sccsid[] = "$Id: api.c,v 8.38 2001/06/09 21:53:51 skimo Exp $ (Berkeley) $Date: 2001/06/09 21:53:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -513,9 +513,7 @@ api_opts_set(SCR *sp, CHAR_T *name,
 	OPTLIST const *op;
 	int rval;
 	size_t blen;
-	char *bp;
-	size_t wblen;
-	CHAR_T *wbp;
+	CHAR_T *bp;
 
 	if ((op = opts_search(name)) == NULL) {
 		opts_nomatch(sp, name);
@@ -525,32 +523,27 @@ api_opts_set(SCR *sp, CHAR_T *name,
 	switch (op->type) {
 	case OPT_0BOOL:
 	case OPT_1BOOL:
-		GET_SPACE_RET(sp, bp, blen, 64);
-		a.len = snprintf(bp, 64, "%s"WS, bool_value ? "" : "no", name);
+		GET_SPACE_RETW(sp, bp, blen, 64);
+		a.len = SPRINTF(bp, 64, L("%s"WS), bool_value ? "" : "no", name);
 		break;
 	case OPT_NUM:
-		GET_SPACE_RET(sp, bp, blen, 64);
-		a.len = snprintf(bp, 64, WS"=%lu", name, num_value);
+		GET_SPACE_RETW(sp, bp, blen, 64);
+		a.len = SPRINTF(bp, 64, L(""WS"=%lu"), name, num_value);
 		break;
 	case OPT_STR:
-		GET_SPACE_RET(sp, bp, blen, 1024);
-		a.len = snprintf(bp, 1024, WS"=%s", name, str_value);
+		GET_SPACE_RETW(sp, bp, blen, 1024);
+		a.len = SPRINTF(bp, 1024, L(""WS"=%s"), name, str_value);
 		break;
 	}
 
-	CHAR2INT(sp, bp, a.len, wbp, wblen);
-	a.len = wblen;
-	wbp = v_wstrdup(sp, wbp, wblen);
-
-	a.bp = wbp;
+	a.bp = bp;
 	b.len = 0;
 	b.bp = NULL;
 	ap[0] = &a;
 	ap[1] = &b;
 	rval = opts_set(sp, ap, NULL);
 
-	free(wbp);
-	FREE_SPACE(sp, bp, blen);
+	FREE_SPACEW(sp, bp, blen);
 
 	return (rval);
 }

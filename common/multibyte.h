@@ -13,6 +13,7 @@ typedef	u_int		UCHAR_T;
 
 #define STRLEN		wcslen
 #define STRTOL		wcstol
+#define STRTOUL		wcstoul
 #define SPRINTF		swprintf
 #define STRCMP		wcscmp
 
@@ -25,6 +26,7 @@ typedef	u_char		UCHAR_T;
 
 #define STRLEN		strlen
 #define STRTOL		strtol
+#define STRTOUL		strtoul
 #define SPRINTF		snprintf
 #define STRCMP		strcmp
 

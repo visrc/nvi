@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_argv.c,v 10.36 2001/06/09 18:26:29 skimo Exp $ (Berkeley) $Date: 2001/06/09 18:26:29 $";
+static const char sccsid[] = "$Id: ex_argv.c,v 10.37 2001/06/09 21:53:52 skimo Exp $ (Berkeley) $Date: 2001/06/09 21:53:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -624,7 +624,7 @@ static int
 argv_comp(a, b)
 	const void *a, *b;
 {
-	return (v_strcmp((*(ARGS **)a)->bp, (*(ARGS **)b)->bp));
+	return (STRCMP((*(ARGS **)a)->bp, (*(ARGS **)b)->bp));
 }
 
 /*
