@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.5 1992/04/03 08:23:27 bostic Exp $ (Berkeley) $Date: 1992/04/03 08:23:27 $";
+static char sccsid[] = "$Id: key.c,v 5.6 1992/04/04 16:22:20 bostic Exp $ (Berkeley) $Date: 1992/04/04 16:22:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -84,4 +84,127 @@ ttyread(buf, len, time)
 			/* Read it. */
 			return (read(STDIN_FILENO, buf, len));
 		}
+}
+
+/*
+ * msg --
+ *	Write a message.
+ *
+ * In MODE_EX or MODE_COLON, the message is written immediately, with a
+ * newline at the end.
+ *
+ * In MODE_VI, the message is stored in a character buffer.  It is not
+ * displayed until getkey() is called.  Msg() will call getkey() itself,
+ * if necessary, to prevent messages from being lost.
+ *
+ * msg("")		- flushes the message line
+ * msg("%s %d", ...)	- does a printf onto the message line
+ *
+ * msgwaiting		- flag to signal message waiting to be output.
+ * msgbuf		- message buffer; assumed larger than any message.
+ */
+int msgwaiting;
+static char msgbuf[512];
+
+#if __STDC__
+#include <stdarg.h>
+#else
+#include <varargs.h>
+#endif
+
+void
+#if __STDC__
+msg(const char *fmt, ...)
+#else
+msg(fmt, va_alist)
+        char *fmt;
+        va_dcl
+#endif
+{
+        va_list ap;
+#if __STDC__
+        va_start(ap, fmt);
+#else
+        va_start(ap);
+#endif
+	if (mode == MODE_VI) {
+		if (msgwaiting)
+			getkey(WHEN_MSG);
+		if (*fmt) {
+			(void)vsnprintf(msgbuf, sizeof(msgbuf), fmt, ap);
+			msgwaiting = 1;
+		}
+	} else {
+		vsnprintf(msgbuf, sizeof(msgbuf), fmt, ap);
+		qaddstr(msgbuf);
+		addch('\n');
+		exrefresh();
+	}
+}
+
+/*
+ * endmsg --
+ *	Flush out any waiting messages; MODE_VI is assumed.
+ * XXX
+ * Should do the "more" processing from getkey here.
+ */
+int
+endmsg()
+{
+	if (!msgwaiting)
+		return (0);
+
+	/* Display the message. */
+	move(LINES - 1, 0);
+	standout();
+	qaddch(' ');
+	qaddstr(msgbuf);
+	qaddch(' ');
+	standend();
+	clrtoeol();
+	addch('\n');
+
+	msgwaiting = 0;
+	return (1);
+}
+
+/*
+ * exrefresh --
+ *	This function calls refresh() if the option exrefresh is set.
+ */
+void
+exrefresh()
+{
+	register char *p;
+
+	/*
+	 * If this ex command wrote ANYTHING, set exwrote so vi's : command
+	 * can tell that it must wait for a user keystroke before redrawing.
+	 */
+	for (p = kbuf; p < stdscr; p++)
+		if (*p == '\n')
+			exwrote = 1;
+
+	/* Now we do the refresh thing. */
+	if (ISSET(O_EXREFRESH))
+		refresh();
+	else
+		wqrefresh();
+	if (mode != MODE_VI)
+		msgwaiting = 0;
+}
+
+/*
+ * bell --
+ *	Ring the terminal's bell.
+ */
+void
+bell()
+{
+	if (ISSET(O_VBELL)) {
+		do_VB();
+		refresh();
+	}
+	else if (ISSET(O_ERRORBELLS))
+		(void)write(STDOUT_FILENO, "\007", 1);	/* '\a' */
 }
