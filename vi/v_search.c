@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 10.8 1995/09/27 12:05:43 bostic Exp $ (Berkeley) $Date: 1995/09/27 12:05:43 $";
+static char sccsid[] = "$Id: v_search.c,v 10.9 1995/09/29 09:30:59 bostic Exp $ (Berkeley) $Date: 1995/09/29 09:30:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -137,6 +137,10 @@ v_exaddr(sp, vp, dir)
 	cmdp = &gp->excmd;
 	if (ex_range(sp, cmdp, &err))
 		return (1);
+	
+	/* Clean up the fake ex command. */
+	gp->excmd.clen = 0;
+
 	if (err)
 		goto err2;
 
