@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 5.12 1993/05/07 17:29:59 bostic Exp $ (Berkeley) $Date: 1993/05/07 17:29:59 $";
+static char sccsid[] = "$Id: v_txt.c,v 5.13 1993/05/10 15:36:14 bostic Exp $ (Berkeley) $Date: 1993/05/10 15:36:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -47,22 +47,9 @@ static int	 txt_resolve __P((SCR *, EXF *, HDR *));
 		ERR;							\
 }
 
-#define	SCREEN_UPDATE(sp, ep, lno, mode) {				\
-	if (sp->change(sp, ep, lno, mode) || sp->srefresh(sp, ep))	\
-		ERR;							\
-}
-
 /*
  * newtext --
  *	Read in text from the user.
- *
- * 	Re: S_CUR_INVALID.  Note the use of S_CUR_INVALID in several places.
- *	The svi code tries to do fast calculation of new cursor positions by
- *	reviewing the characters between the old and new cursor positions.
- *	This is impossible if a character has been deleted, or a character
- *	has been inserted at other than the current cursor position.  The
- *	flag is set to force the fast cursor code to be skipped and the line
- *	to be reevaluated as a whole.
  */
 int
 v_ntext(sp, ep, hp, tm, p, len, rp, prompt, ai_line, flags)
@@ -88,6 +75,7 @@ v_ntext(sp, ep, hp, tm, p, len, rp, prompt, ai_line, flags)
 	int ch;			/* Input character. */
 	int eval;		/* Routine return value. */
 	int replay;		/* If replaying a set of input. */
+	int tty_cwait;		/* Characters waiting. */
 	int max, tmp;
 
 	/* Set the input flag. */
@@ -204,16 +192,24 @@ newtp:		if ((tp = text_init(sp, p, len, len + 32)) == NULL)
 	lch = F_ISSET(sp, S_ABBREV) &&
 	    LF_ISSET(TXT_MAPINPUT) ? L_NOTSPACE : L_NOCHECK;
 
-	for (carat_st = C_NOTSET, quoted = Q_NOTSET;;) {
+	for (carat_st = C_NOTSET, quoted = Q_NOTSET, tty_cwait = 0;;) {
 
 		/* Reset the line and update the screen. */
-		SCREEN_UPDATE(sp, ep, tp->lno, LINE_RESET);
+		if (sp->change(sp, ep, tp->lno, LINE_RESET))
+			ERR;
+		/* Three chosen by random selection. */
+		if (tty_cwait > 3 || !term_waiting(sp)) {
+			tty_cwait = 0;
+			if (sp->srefresh(sp, ep))
+				ERR;
+		} else
+			++tty_cwait;
 		
 next_ch:	if (replay)
 			ch = sp->rep[rcol++];
 		else {
 			/* Get the character. */
-			ch = getkey(sp, flags & TXT_GETKEY_MASK);
+			ch = term_key(sp, flags & TXT_GETKEY_MASK);
 
 			/*
 			 * Check if the character fits into the input and
@@ -267,16 +263,14 @@ next_ch:	if (replay)
 			 * autoindent only applies to empty lines.	\
 			 * Otherwise, delete any appended cursor.	\
 			 */						\
-			if (LF_ISSET(TXT_AUTOINDENT) &&			\
+			if (LF_ISSET(TXT_AUTOINDENT) && tp->ai &&	\
 			    sp->cno <= tp->ai) {			\
 				tp->insert = tp->len =			\
 				    tp->overwrite = 0;			\
 				sp->cno = 0;				\
-				F_SET(sp, S_CUR_INVALID);		\
 			} else if (LF_ISSET(TXT_APPENDEOL)) {		\
 				--tp->len;				\
 				--tp->insert;				\
-				F_SET(sp, S_CUR_INVALID);		\
 			}						\
 }
 			LINE_RESOLVE;
@@ -309,8 +303,8 @@ next_ch:	if (replay)
 			if (LF_ISSET(TXT_AUTOINDENT)) {
 				if (ai_line == OOBLNO || carat_st == C_NOCHANGE)
 					ai_line = tp->lno;
-				else
-					++ai_line;
+				else if (tp->len)
+					ai_line = tp->lno;
 
 				if (txt_auto(sp, ep, ai_line, ntp))
 					ERR;
@@ -338,7 +332,9 @@ next_ch:	if (replay)
 			sp->lno = tp->lno;
 
 			/* Update the new line. */
-			SCREEN_UPDATE(sp, ep, tp->lno, LINE_INSERT);
+			if (sp->change(sp, ep, tp->lno, LINE_INSERT) ||
+			    sp->srefresh(sp, ep))
+				ERR;
 
 			goto next_ch;
 		case K_ESCAPE:				/* Escape. */
@@ -412,7 +408,6 @@ k_escape:		if (tp->insert && tp->overwrite)
 				sp->cno = 0;
 				break;
 			case C_NOTSET:		/* ^D */
-				F_SET(sp, S_CUR_INVALID);
 				(void)txt_outdent(sp, tp);
 				break;
 			default:
@@ -557,27 +552,15 @@ ins_ch:			if (isspace(ch) &&
 			if (lch != L_NOCHECK)
 				lch = isspace(ch) ? L_SPACE : L_NOTSPACE;
 
-			if (tp->overwrite) {	/* Overwrite a character. */
+			if (tp->overwrite)	/* Overwrite a character. */
 				--tp->overwrite;
-				F_SET(sp, S_CUR_INVALID);
-			} else {		/* Insert a character. */
-				if (tp->insert == 1) {
-					/*
-					 * Kludge.  The fast cursor code in the
-					 * svi refresh routines would normally
-					 * have to be skipped since the insert
-					 * isn't at the current cursor position.
-					 * Cheat...
-					 */
-					--sp->ocno;
-					--sp->sc_col;
+			else if (tp->insert) {	/* Insert a character. */
+				++tp->len;
+				if (tp->insert == 1)
 					tp->lb[sp->cno + 1] = tp->lb[sp->cno];
-				} else if (tp->insert) {
-					F_SET(sp, S_CUR_INVALID);
+				else
 					memmove(tp->lb + sp->cno + 1,
 					    tp->lb + sp->cno, tp->insert);
-				}
-				++tp->len;
 			}
 
 			tp->lb[sp->cno++] = ch;
@@ -600,7 +583,7 @@ ins_ch:			if (isspace(ch) &&
 				quoted = Q_THISCHAR;
 			break;
 		}
-#ifdef DEBUG
+#if DEBUG && 1
 		if (sp->cno + tp->insert + tp->overwrite != tp->len)
 			msgq(sp, M_ERR,
 			    "len %u != cno: %u ai: %u insert %u overwrite %u",
@@ -659,7 +642,6 @@ txt_abbrev(sp, tp)
 		tp->len -= diff;
 	}
 	memmove(p, qp->output, qp->olen);
-	F_SET(sp, S_CUR_INVALID);
 	return (0);
 }
 
