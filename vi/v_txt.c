@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.63 1996/05/07 21:32:06 bostic Exp $ (Berkeley) $Date: 1996/05/07 21:32:06 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.64 1996/05/10 17:13:56 bostic Exp $ (Berkeley) $Date: 1996/05/10 17:13:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1338,24 +1338,27 @@ ebuf_chk:	if (tp->cno >= tp->len) {
 	}
 #endif
 
-resolve:/* If replaying text, keep going. */
-	if (LF_ISSET(TXT_REPLAY))
+resolve:/*
+	 * 1: If we don't need to know where the cursor really is and we're
+	 *    replaying text, keep going.
+	 */
+	if (margin == 0 && LF_ISSET(TXT_REPLAY))
 		goto replay;
 
 	/*
-	 * 1: Reset the line.  Don't bother unless we're about to wait on
+	 * 2: Reset the line.  Don't bother unless we're about to wait on
 	 *    a character or we need to know where the cursor really is.
 	 *    We have to do this before showing matching characters so the
-	 *    user can see what's matching.
+	 *    user can see what they're matching.
 	 */
 	if ((margin != 0 || !KEYS_WAITING(sp)) &&
 	    vs_change(sp, tp->lno, LINE_RESET))
 		return (1);
 
 	/*
-	 * 2: If there aren't keys waiting, display the matching character.
+	 * 3: If there aren't keys waiting, display the matching character.
 	 *    We have to do this before resolving any messages, otherwise
-	 *    the error message from a missing match won't behave correctly.
+	 *    the error message from a missing match won't appear correctly.
 	 */
 	if (showmatch) {
 		if (!KEYS_WAITING(sp) && txt_showmatch(sp, tp))
@@ -1364,16 +1367,16 @@ resolve:/* If replaying text, keep going. */
 	}
 
 	/*
-	 * 3: If there have been messages, not editing on the colon command
-	 *    line and not doing file completion, resolve them.
+	 * 4: If there have been messages and we're not editing on the colon
+	 *    command line or doing file name completion, resolve them.
 	 */
 	if ((vip->totalcount != 0 || F_ISSET(gp, G_BELLSCHED)) &&
 	    !F_ISSET(sp, SC_TINPUT_INFO) && !filec_redraw && vs_resolve(sp))
 		return (1);
 
 	/*
-	 * 4: Update the screen.  Don't refresh unless we're about to wait on
-	 *    a character or we need to know where the cursor really is.
+	 * 5: Refresh the screen if we're about to wait on a character or we
+	 *    need to know where the cursor really is.
 	 */
 	if (margin != 0 || !KEYS_WAITING(sp)) {
 		UPDATE_POSITION(sp, tp);
@@ -1381,11 +1384,13 @@ resolve:/* If replaying text, keep going. */
 			return (1);
 	}
 
-	/* 5: Proceed with the incremental search. */
+	/* 6: Proceed with the incremental search. */
 	if (FL_ISSET(is_flags, IS_RUNNING) && txt_isrch(sp, vp, tp, &is_flags))
 		return (1);
 
-	/* Keep going. */
+	/* 7: Next character... */
+	if (LF_ISSET(TXT_REPLAY))
+		goto replay;
 	goto next;
 
 done:	/* Leave input mode. */
