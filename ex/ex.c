@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.169 1994/09/27 14:23:27 bostic Exp $ (Berkeley) $Date: 1994/09/27 14:23:27 $";
+static char sccsid[] = "$Id: ex.c,v 8.170 1994/10/09 10:04:05 bostic Exp $ (Berkeley) $Date: 1994/10/09 10:04:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1568,7 +1568,8 @@ ep_range(sp, ep, excp, cmdp, cmdlenp)
 	 * !!!
 	 * Absolute <blank> separated addresses were additive, for example,
 	 * "2 2 3p" was the same as "7p", or, "/ZZZ/ 2" was the same as
-	 * "/ZZZ/+2".  However, "2 /ZZZ/" was an error.
+	 * "/ZZZ/+2".  However, "2 /ZZZ/" was an error.  It was also legal
+	 * to insert single signs, so "3 - 2" was legal, adn equal to 4.
 	 */
 	 for (excp->addrcnt = 0, addr_found = 0; cmdlen > 0;)
 		switch (*cmd) {
@@ -1611,12 +1612,19 @@ ep_range(sp, ep, excp, cmdp, cmdlenp)
 			++cmd;
 			--cmdlen;
 			break;
+		case '+': case '-':
 		case '0': case '1': case '2': case '3': case '4':
 		case '5': case '6': case '7': case '8': case '9':
 			if (addr_found) {
 /* 8-bit XXX */			lno = strtol(cmd, &endp, 10);
-				cmdlen -= (endp - cmd);
-				cmd = endp;
+				if (endp == cmd) {
+					lno = *cmd == '+' ? 1 : -1;
+					--cmdlen;
+					++cmd;
+				} else {
+					cmdlen -= (endp - cmd);
+					cmd = endp;
+				}
 				switch (excp->addrcnt) {
 				case 0:
 					abort();
