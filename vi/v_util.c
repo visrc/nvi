@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_util.c,v 5.21 1993/02/19 18:41:01 bostic Exp $ (Berkeley) $Date: 1993/02/19 18:41:01 $";
+static char sccsid[] = "$Id: v_util.c,v 5.22 1993/02/20 12:55:48 bostic Exp $ (Berkeley) $Date: 1993/02/20 12:55:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -111,41 +111,57 @@ v_msgflush(ep)
 	if (ep->msgp == NULL || ep->msgp->flags & M_EMPTY)
 		return (0);
 
-	/* Display the messages. */
+	/* Save off cursor position. */
 	getyx(stdscr, oldy, oldx);
-	MOVE(ep, SCREENSIZE(ep), 0);
-	clrtoeol();
 
 #define	MCONTMSG	" [More ...]"
+
+	/* Display the messages. */
 	for (mp = ep->msgp, p = NULL;
 	    mp != NULL && !(mp->flags & M_EMPTY); mp = mp->next) {
+
+		p = mp->mbuf;
+
+lcont:		/* Move to the message line and clear it. */
+		MOVE(ep, SCREENSIZE(ep), 0);
+		clrtoeol();
+
+		/* Turn on standout mode if requested. */
 		if (mp->flags & (M_BELL | M_ERROR))
 			standout();
 
-		for (p = mp->mbuf; mp->len;) {
-			len = ep->cols - sizeof(MCONTMSG) - 1;
-			if (mp->len < len)
-				len = mp->len;
-			addnstr(p, len);
-			p += len;
-			mp->len -= len;
-		}
+		/*
+		 * Figure out how much to print, and print it.
+		 * Adjust for the next line.
+		 */
+		len = ep->cols - sizeof(MCONTMSG) - 1;
+		if (mp->len < len)
+			len = mp->len;
+		addnstr(p, len);
+		p += len;
+		mp->len -= len;
 
-		mp->flags |= M_EMPTY;
-
+		/* Turn off standout mode. */
 		if (mp->flags & (M_BELL | M_ERROR))
 			standend();
-		clrtoeol();
 
-		if (mp->next != NULL && !(mp->flags & M_EMPTY)) {
+		/* If more, print continue message. */
+		if (mp->len ||
+		    mp->next != NULL && !(mp->next->flags & M_EMPTY)) {
 			addnstr(MCONTMSG, sizeof(MCONTMSG) - 1);
 			refresh();
 			while (special[ch = getkey(ep, 0)] != K_CR &&
 			    !isspace(ch))
 				bell(ep);
-			MOVE(ep, SCREENSIZE(ep), 0);
 		}
+		if (mp->len)
+			goto lcont;
+
+		refresh();
+		mp->flags |= M_EMPTY;
 	}
+
+	/* Restore cursor position. */
 	MOVE(ep, oldy, oldx);
 	refresh();
 
