@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.98 1994/07/22 19:49:11 bostic Exp $ (Berkeley) $Date: 1994/07/22 19:49:11 $";
+static char sccsid[] = "$Id: main.c,v 8.99 1994/07/23 13:32:04 bostic Exp $ (Berkeley) $Date: 1994/07/23 13:32:04 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -472,6 +472,7 @@ gs_init()
 	if (gp->tty == NULL)
 		err(1, NULL);
 
+	CIRCLEQ_INIT(&gp->dcb_store.textq);
 	LIST_INIT(&gp->cutq);
 	LIST_INIT(&gp->seqq);
 
@@ -514,6 +515,8 @@ gs_end(gp)
 	SCR *sp;
 	char *tty;
 
+	/* Default buffer storage. */
+	(void)text_lfree(&gp->dcb_store.textq);
 	/* Reset anything that needs resetting. */
 	if (gp->flags & G_SETMODE)			/* O_MESG */
 		if ((tty = ttyname(STDERR_FILENO)) == NULL)

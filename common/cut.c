@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 8.29 1994/07/20 16:27:49 bostic Exp $ (Berkeley) $Date: 1994/07/20 16:27:49 $";
+static char sccsid[] = "$Id: cut.c,v 8.30 1994/07/23 13:32:02 bostic Exp $ (Berkeley) $Date: 1994/07/23 13:32:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -49,7 +49,9 @@ static int	cb_rotate __P((SCR *));
  *
  * In all cases, upper-case buffer names are the same as lower-case names,
  * with the exception that they cause the buffer to be appended to instead
- * of replaced.
+ * of replaced.  Note, however, that if text is appended to a buffer, the
+ * default buffer only contains the appended text, not the entire contents
+ * of the buffer.
  *
  * !!!
  * The contents of the default buffer would disappear after most operations
@@ -70,11 +72,10 @@ cut(sp, ep, namep, fm, tm, flags)
 	int flags;
 	MARK *fm, *tm;
 {
-	enum { NOCOPY, NEEDCOPY, DOINGCOPY } copy;
 	CB *cbp;
 	CHAR_T name;
 	recno_t lno;
-	int append, namedbuffer;
+	int append, copy_one, copy_def;
 
 	/*
 	 * If the user specified a buffer, put it there.  (This may require
@@ -87,26 +88,27 @@ cut(sp, ep, namep, fm, tm, flags)
 	 *
 	 * Otherwise, put it in the unnamed buffer.
 	 */
-	copy = NOCOPY;
-	append = namedbuffer = 0;
+	append = copy_one = copy_def = 0;
 	if (namep != NULL) {
 		name = *namep;
 		if (LF_ISSET(CUT_NBUFFER) &&
 		    (LF_ISSET(CUT_LINEMODE) || fm->lno != tm->lno)) {
+			copy_one = 1;
 			cb_rotate(sp);
-			copy = NEEDCOPY;
 		}
-		if ((append = isupper(name)) == 1)
+		if ((append = isupper(name)) == 1) {
+			if (!copy_one)
+				copy_def = 1;
 			name = tolower(name);
+		}
 namecb:		CBNAME(sp, cbp, name);
-		namedbuffer = 1;
 	} else if (LF_ISSET(CUT_NBUFFER) &&
 	    (LF_ISSET(CUT_LINEMODE) || fm->lno != tm->lno)) {
 		name = '1';
 		cb_rotate(sp);
 		goto namecb;
 	} else
-		cbp = sp->gp->dcb_store;
+		cbp = &sp->gp->dcb_store;
 
 copyloop:
 	/*
@@ -117,10 +119,7 @@ copyloop:
 		CALLOC_RET(sp, cbp, CB *, 1, sizeof(CB));
 		cbp->name = name;
 		CIRCLEQ_INIT(&cbp->textq);
-		if (namedbuffer) {
-			LIST_INSERT_HEAD(&sp->gp->cutq, cbp, q);
-		} else
-			sp->gp->dcb_store = cbp;
+		LIST_INSERT_HEAD(&sp->gp->cutq, cbp, q);
 	} else if (!append) {
 		text_lfree(&cbp->textq);
 		cbp->len = 0;
@@ -159,12 +158,18 @@ cut_line_err:		text_lfree(&cbp->textq);
 		}
 	}
 
-	if (copy != DOINGCOPY)
-		sp->gp->dcbp = cbp;	/* Repoint default buffer. */
-	if (copy == NEEDCOPY) {
+	append = 0;		/* Only append to the named buffer. */
+	sp->gp->dcbp = cbp;	/* Repoint the default buffer on each pass. */
+
+	if (copy_one) {		/* Copy into numeric buffer 1. */
 		name = '1';
-		copy = DOINGCOPY;
 		CBNAME(sp, cbp, name);
+		copy_one = 0;
+		goto copyloop;
+	}
+	if (copy_def) {		/* Copy into the default buffer. */
+		cbp = &sp->gp->dcb_store;
+		copy_def = 0;
 		goto copyloop;
 	}
 	return (0);
