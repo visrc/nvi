@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.56 1994/03/17 15:03:56 bostic Exp $ (Berkeley) $Date: 1994/03/17 15:03:56 $";
+static char sccsid[] = "$Id: vi.c,v 8.57 1994/03/18 13:31:20 bostic Exp $ (Berkeley) $Date: 1994/03/18 13:31:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -223,6 +223,7 @@ vi(sp, ep)
 			 * really long lines work.
 			 */
 			if (vp->m_start.lno != vp->m_final.lno) {
+				vp->m_final.cno = 0;
 				if (nonblank(sp, ep,
 				    vp->m_final.lno, &vp->m_final.cno))
 					goto err;
