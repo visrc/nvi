@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.40 1993/02/12 11:25:25 bostic Exp $ (Berkeley) $Date: 1993/02/12 11:25:25 $";
+static char sccsid[] = "$Id: exf.c,v 5.41 1993/02/15 14:20:54 bostic Exp $ (Berkeley) $Date: 1993/02/15 14:20:54 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -323,6 +323,12 @@ file_sync(ep, force)
 	FILE *fp;
 	MARK from, to;
 	int fd;
+
+	/* Can't write the temporary file. */
+	if (FF_ISSET(ep, F_NONAME)) {
+		msg("No filename to which to write.");
+		return (1);
+	}
 
 	/* Can't write if read-only. */
 	if ((ISSET(O_READONLY) || FF_ISSET(ep, F_RDONLY)) && !force) {
