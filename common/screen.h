@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 5.38 1993/05/11 16:09:52 bostic Exp $ (Berkeley) $Date: 1993/05/11 16:09:52 $
+ *	$Id: screen.h,v 5.39 1993/05/11 16:12:44 bostic Exp $ (Berkeley) $Date: 1993/05/11 16:12:44 $
  */
 
 /*
@@ -149,6 +149,8 @@ typedef struct _scr {
 	char	*VB;			/* Visual bell termcap string. */
 
 	char	*lastbcomm;		/* Ex/vi: last bang command. */
+
+	char	*altfname;		/* Ex/vi: alternate file name. */
 
 	u_char	 inc_lastch;		/* Vi: Last increment character. */
 	long	 inc_lastval;		/* Vi: Last increment value. */
