@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 10.5 1995/06/15 19:01:09 bostic Exp $ (Berkeley) $Date: 1995/06/15 19:01:09 $
+ *	$Id: gs.h,v 10.6 1995/06/19 19:56:06 bostic Exp $ (Berkeley) $Date: 1995/06/19 19:56:06 $
  */
 
 #define	TEMPORARY_FILE_STRING	"/tmp"	/* Default temporary file name. */
@@ -180,10 +180,10 @@ struct _gs {
 	int	(*scr_deleteln) __P((SCR *));
 					/* Discard a screen. */
 	int	(*scr_discard) __P((SCR *, SCR **));
-					/* Ex screen adjustment routine. */
-	int	(*scr_exadjust) __P((SCR *, exadj_t));
-					/* Ex start screen routine. */
-	int	(*scr_exinit) __P((SCR *));
+					/* Ex: screen adjustment routine. */
+	int	(*scr_ex_adjust) __P((SCR *, exadj_t));
+					/* Ex: start screen routine. */
+	int	(*scr_ex_init) __P((SCR *));
 	int	(*scr_fmap)		/* Set a function key. */
 	    __P((SCR *, seq_t, CHAR_T *, size_t, CHAR_T *, size_t));
 					/* Get a keyboard event. */
