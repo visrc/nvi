@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_funcs.c,v 10.64 2001/04/22 19:55:52 skimo Exp $ (Berkeley) $Date: 2001/04/22 19:55:52 $";
+static const char sccsid[] = "$Id: cl_funcs.c,v 10.65 2001/04/24 21:47:44 skimo Exp $ (Berkeley) $Date: 2001/04/24 21:47:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -602,7 +602,7 @@ cl_refresh(sp, repaint)
 	 * draw a dividing line.
 	 */
 	if (repaint || F_ISSET(clp, CL_LAYOUT)) {
-		getyx(win, y, x);
+		getyx(stdscr, y, x);
 		for (psp = sp; 
 		    psp != (void *)&sp->wp->scrq; psp = psp->q.cqe_next)
 			for (tsp = psp->q.cqe_next;
@@ -615,7 +615,7 @@ cl_refresh(sp, repaint)
 				    if (tsp->coff + tsp->cols + 1 == psp->coff)
 					cl_rdiv(tsp);
 				}
-		(void)wmove(win, y, x);
+		(void)wmove(stdscr, y, x);
 		F_CLR(clp, CL_LAYOUT);
 	}
 
@@ -626,7 +626,8 @@ cl_refresh(sp, repaint)
 	 */
 	if (repaint)
 		clearok(curscr, 1);
-	return (wrefresh(stdscr) == ERR || wrefresh(win) == ERR);
+	return (wnoutrefresh(stdscr) == ERR || 
+		wnoutrefresh(win) == ERR || doupdate() == ERR);
 }
 
 /*
@@ -637,10 +638,7 @@ static void
 cl_rdiv(sp)
 	SCR *sp;
 {
-	WINDOW *win;
 	size_t cnt;
-
-	win = CLSP(sp) ? CLSP(sp) : stdscr;
 
 	for (cnt = 0; cnt < sp->rows - 1; ++cnt) {
 		wmove(stdscr, sp->roff + cnt, sp->cols + sp->coff);
