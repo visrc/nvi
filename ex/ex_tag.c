@@ -13,7 +13,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_tag.c,v 10.22 1996/04/10 11:31:31 bostic Exp $ (Berkeley) $Date: 1996/04/10 11:31:31 $";
+static const char sccsid[] = "$Id: ex_tag.c,v 10.23 1996/04/10 12:49:40 bostic Exp $ (Berkeley) $Date: 1996/04/10 12:49:40 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -286,7 +286,7 @@ ex_tag_next(sp, cmdp)
 		return (1);
 	}
 	if ((tp = tqp->current->q.cqe_next) == (void *)&tqp->tagq) {
-		msgq(sp, M_ERR, "312|Already at the last tag of this group");
+		msgq(sp, M_ERR, "313|Already at the last tag of this group");
 		return (1);
 	}
 	if (ex_tag_nswitch(sp, tp, FL_ISSET(cmdp->iflags, E_C_FORCE)))
