@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.140 1994/08/05 08:16:29 bostic Exp $ (Berkeley) $Date: 1994/08/05 08:16:29 $";
+static char sccsid[] = "$Id: ex.c,v 8.141 1994/08/05 09:29:31 bostic Exp $ (Berkeley) $Date: 1994/08/05 09:29:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -234,6 +234,13 @@ static EXCMDLIST const cmd_subagain =
 	    "[line [,line]] s [cgr] [count] [#lp]",
 	    "repeat the last subsitution"};
 
+/* Special command structure for :d[flags]. */
+static EXCMDLIST const cmd_del2 = 
+	{"delete",	ex_delete,	E_ADDR2|E_AUTOPRINT|E_NORC,
+	    "1bca1",
+	    "[line [,line]] d[elete] [buffer] [count] [flags]",
+	    "delete lines from the file"};
+
 /*
  * ex_cmd --
  *	Parse and execute a string containing ex commands.
@@ -393,21 +400,42 @@ loop:	if (nl) {
 		 * 'k' in the 'k' command.  Make it work.
 		 *
 		 * !!!
+		 * Historic vi permitted flags to immediately follow the 'd'
+		 * in the 'delete' command, but then did not permit further
+		 * arguments (flag, buffer, count).  Make it work, but permit
+		 * further arguments for the shreds of consistency it offers.
+		 *
+		 * !!!
 		 * Historic vi permitted pretty much anything to follow the
 		 * substitute command, e.g. "s/e/E/|s|sgc3p" was fine.  Make
 		 * the command "sgc" work.
 		 */
-		if ((cp = ex_comm_search(p, namelen)) == NULL)
-			if (p[0] == 'k' && p[1] && !p[2]) {
-				cmd -= namelen - 1;
-				cmdlen += namelen - 1;
-				cp = &cmds[C_K];
-			} else if (p[0] == 's') {
+		if (p[0] == 'd' && p[1] == '#' ||
+		    (cp = ex_comm_search(p, namelen)) == NULL)
+			switch (p[0]) {
+			case 'd':
+				if (index("+-#lp", p[1]) != NULL) {
+					cmd -= namelen - 1;
+					cmdlen += namelen - 1;
+					cp = &cmd_del2;
+					break;
+				}
+				goto unknown;
+			case 'k':
+				if (p[1] && !p[2]) {
+					cmd -= namelen - 1;
+					cmdlen += namelen - 1;
+					cp = &cmds[C_K];
+					break;
+				}
+				goto unknown;
+			case 's':
 				cmd -= namelen - 1;
 				cmdlen += namelen - 1;
 				cp = &cmd_subagain;
-			} else {
-				msgq(sp, M_ERR,
+				break;
+			default:
+unknown:				msgq(sp, M_ERR,
 				    "The %.*s command is unknown", namelen, p);
 				goto err;
 			}
@@ -913,6 +941,18 @@ end1:			break;
 end2:			break;
 		case 'b':				/* buffer */
 			/*
+			 * !!!
+			 * Historically, "d #" was a delete with a flag, not a
+			 * delete into the '#' buffer.  If the current command
+			 * permits a flag, don't use one as a buffer.  However,
+			 * the 'l' and 'p' flags were legal buffer names in the
+			 * historic ex, and were used as buffers, not flags.
+			 */
+			if ((cmd[0] == '+' || cmd[0] == '-' || cmd[0] == '#') &&
+			    index(p, '1') != NULL)
+				break;
+			/*
+			 * !!!
 			 * Digits can't be buffer names in ex commands, or the
 			 * command "d2" would be a delete into buffer '2', and
 			 * not a two-line deletion.
@@ -1287,8 +1327,8 @@ addr2:	switch (exc.addrcnt) {
 	if (ep != NULL && IN_EX_MODE(sp) && sp->lno != 0) {
 		/*
 		 * The print commands have already handled the `print' flags.
-		 * If so, clear them.  Don't return, autoprint may still have
-		 * stuff to print out.
+		 * If so, clear them.  Don't return yet, autoprint may still
+		 * have stuff to print out.
 		 */
 		 if (LF_ISSET(E_F_PRCLEAR))
 			F_CLR(&exc, E_F_HASH | E_F_LIST | E_F_PRINT);
@@ -1317,29 +1357,32 @@ addr2:	switch (exc.addrcnt) {
 			sp->lno += flagoff;
 		}
 
-		if (O_ISSET(sp, O_AUTOPRINT) &&
+		/* If flags set use them, otherwise default to print. */
+		LF_INIT(F_ISSET(&exc, E_F_HASH | E_F_LIST | E_F_PRINT));
+		if (!LF_ISSET(E_F_HASH | E_F_LIST | E_F_PRINT) &&
+		    O_ISSET(sp, O_AUTOPRINT) &&
 		    (F_ISSET(exp, EX_AUTOPRINT) || F_ISSET(cp, E_AUTOPRINT)))
 			LF_INIT(E_F_PRINT);
-		else
-			LF_INIT(F_ISSET(&exc, E_F_HASH | E_F_LIST | E_F_PRINT));
 
-		memset(&exc, 0, sizeof(EXCMDARG));
-		exc.addrcnt = 2;
-		exc.addr1.lno = exc.addr2.lno = sp->lno;
-		exc.addr1.cno = exc.addr2.cno = sp->cno;
-		switch (LF_ISSET(E_F_HASH | E_F_LIST | E_F_PRINT)) {
-		case E_F_HASH:
-			exc.cmd = &cmds[C_HASH];
-			ex_number(sp, ep, &exc);
-			break;
-		case E_F_LIST:
-			exc.cmd = &cmds[C_LIST];
-			ex_list(sp, ep, &exc);
-			break;
-		case E_F_PRINT:
-			exc.cmd = &cmds[C_PRINT];
-			ex_pr(sp, ep, &exc);
-			break;
+		if (LF_ISSET(E_F_HASH | E_F_LIST | E_F_PRINT)) {
+			memset(&exc, 0, sizeof(EXCMDARG));
+			exc.addrcnt = 2;
+			exc.addr1.lno = exc.addr2.lno = sp->lno;
+			exc.addr1.cno = exc.addr2.cno = sp->cno;
+			switch (LF_ISSET(E_F_HASH | E_F_LIST | E_F_PRINT)) {
+			case E_F_HASH:
+				exc.cmd = &cmds[C_HASH];
+				ex_number(sp, ep, &exc);
+				break;
+			case E_F_LIST:
+				exc.cmd = &cmds[C_LIST];
+				ex_list(sp, ep, &exc);
+				break;
+			case E_F_PRINT:
+				exc.cmd = &cmds[C_PRINT];
+				ex_pr(sp, ep, &exc);
+				break;
+			}
 		}
 	}
 
