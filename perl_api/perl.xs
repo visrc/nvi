@@ -14,7 +14,7 @@
 #undef VI
 
 #ifndef lint
-static const char sccsid[] = "$Id: perl.xs,v 8.33 2000/06/30 19:57:40 skimo Exp $ (Berkeley) $Date: 2000/06/30 19:57:40 $";
+static const char sccsid[] = "$Id: perl.xs,v 8.34 2000/07/03 20:09:51 skimo Exp $ (Berkeley) $Date: 2000/07/03 20:09:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1482,7 +1482,8 @@ Push(tagq)
 
 void
 DESTROY(tagq)
-	VI::TAGQ2    tagq; /* Can already be invalidated by push */
+	# Can already be invalidated by push 
+	VI::TAGQ2    tagq; 
 
 	PREINIT:
 	SCR *sp;
