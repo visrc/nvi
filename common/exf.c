@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.64 1993/05/08 16:03:42 bostic Exp $ (Berkeley) $Date: 1993/05/08 16:03:42 $";
+static char sccsid[] = "$Id: exf.c,v 5.65 1993/05/08 20:42:00 bostic Exp $ (Berkeley) $Date: 1993/05/08 20:42:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -354,7 +354,7 @@ file_write(sp, ep, fm, tm, fname, flags)
 		fname = ep->name;
 
 	/* Don't do partial writes, unless forced. */
-	if (!LF_ISSET(FS_ALL | FS_FORCE)) {
+	if (!LF_ISSET(FS_ALL | FS_FORCE) && !stat(fname, &sb)) {
 		if (LF_ISSET(FS_POSSIBLE))
 			msgq(sp, M_ERR, "Use ! to write a partial file.");
 		else
