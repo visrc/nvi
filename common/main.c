@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.13 1993/09/10 18:27:15 bostic Exp $ (Berkeley) $Date: 1993/09/10 18:27:15 $";
+static char sccsid[] = "$Id: main.c,v 8.14 1993/09/12 16:57:13 bostic Exp $ (Berkeley) $Date: 1993/09/12 16:57:13 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -263,13 +263,17 @@ main(argc, argv)
 
 	/*
 	 * Initialize the window change size handler.  Use sigaction(2),
-	 * not signal(3) since don't want read system calls restarted.
+	 * not signal(3) so we can specify that we don't want to restart
+	 * read(2) system calls.
 	 */
 	act.sa_handler = rcv_winch;
 	sigemptyset(&act.sa_mask);
 	sigaddset(&act.sa_mask, SIGWINCH);
 	act.sa_flags = 0;
 	(void)sigaction(SIGWINCH, &act, NULL);
+
+	/* We never want to catch SIGQUIT. */
+	(void)signal(SIGQUIT, SIG_IGN);
 
 	/* Initialize the about-to-die handlers. */
 	(void)signal(SIGHUP, rcv_hup);
