@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.17 1993/08/26 10:31:31 bostic Exp $ (Berkeley) $Date: 1993/08/26 10:31:31 $";
+static char sccsid[] = "$Id: ex.c,v 8.18 1993/08/26 18:15:43 bostic Exp $ (Berkeley) $Date: 1993/08/26 18:15:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -95,8 +95,8 @@ ex_cfile(sp, ep, filename)
 	char *filename;
 {
 	struct stat sb;
-	int fd, len, rval;
-	char *bp;
+	int fd, len, rval, tlen;
+	char *bp, *p, *t;
 
 	if ((fd = open(filename, O_RDONLY, 0)) < 0)
 		goto e1;
@@ -122,6 +122,18 @@ ex_cfile(sp, ep, filename)
 		goto e3;
 	}
 	bp[sb.st_size] = '\0';
+
+	/*
+	 * Historically, vi did really strange things with ^V's that preceded
+	 * <newline>'s in the file.  They don't really make much sense, given
+	 * that the .exrc is a text file, so strip them out here.
+	 */
+	for (p = t = bp, tlen = len; tlen; --tlen, *t++ = *p++)
+		if (sp->special[p[0]] == K_VLNEXT &&
+		    tlen > 1 && sp->special[p[1]] == K_NL) {
+			++p;
+			--len;
+		}
 
 	rval = ex_cstring(sp, ep, bp, len);
 	/*
