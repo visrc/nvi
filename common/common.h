@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 5.49 1993/05/06 00:31:09 bostic Exp $ (Berkeley) $Date: 1993/05/06 00:31:09 $
+ *	$Id: common.h,v 5.50 1993/05/06 00:32:57 bostic Exp $ (Berkeley) $Date: 1993/05/06 00:32:57 $
  */
 
 #include <glob.h>			/* Ordered before local includes. */
@@ -79,7 +79,7 @@ int	filtercmd __P((struct _scr *, struct _exf *, struct _mark *,
 	free(p);							\
 }
 #else
-#define	FREE(p)		free(p);
+#define	FREE(p, sz)	free(p);
 #endif
 
 /* Portability stuff. */
