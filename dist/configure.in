@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.51 1996/03/02 16:00:47 bostic Exp $ (Berkeley) $Date: 1996/03/02 16:00:47 $
+dnl	$Id: configure.in,v 8.52 1996/03/03 16:40:11 bostic Exp $ (Berkeley) $Date: 1996/03/03 16:40:11 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(configure)
@@ -136,6 +136,7 @@ LIBS=$SAVED_LIBS
 AC_MSG_RESULT($vi_cv_tcltk)
 
 dnl If the user wants a Tcl/Tk interpreter in nvi, load it.
+vi_cv_added_local_libs=no
 AC_MSG_CHECKING(for Tcl/Tk interpreter)
 AC_CACHE_VAL(vi_cv_tclinterp, [dnl
 AC_ARG_ENABLE(tclinterp,
@@ -143,9 +144,13 @@ AC_ARG_ENABLE(tclinterp,
 	[vi_cv_tclinterp="yes"], [vi_cv_tclinterp="no"])])
 if test "$vi_cv_tclinterp" = yes; then
 	if test "$vi_cv_tcltk" = yes; then
+		vi_cv_added_local_libs=yes
+
+		CPPFLAGS="-I/usr/local/include $CPPFLAGS"
+		LIBS="-L/usr/contrib/lib -L/usr/local/lib -ltk -ltcl -lm $LIBS"
+
 		AC_DEFINE(HAVE_TCL_INTERP)
-		LIBS=$TKLIBS
-		LIBOBJS="\$(TCLOBJS) $LIBOBJS"
+		LIBOBJS="tcl.o $LIBOBJS"
 	else
 		echo
 		echo "Fatal error: the Tcl/Tk libraries not found."
@@ -153,6 +158,34 @@ if test "$vi_cv_tclinterp" = yes; then
 	fi
 fi
 AC_MSG_RESULT($vi_cv_tclinterp)
+
+dnl If the user wants a Perl interpreter in nvi, load it.
+AC_MSG_CHECKING(for Perl interpreter)
+AC_CACHE_VAL(vi_cv_perlinterp, [dnl
+AC_ARG_ENABLE(perlinterp,
+	[  --enable-perlinterp     Compile a Perl interpreter into vi.],
+	[vi_cv_perlinterp="yes"], [vi_cv_perlinterp="no"])])
+if test "$vi_cv_perlinterp" = yes; then
+	if test "$vi_cv_perltk" = yes; then
+		if test "$vi_cv_added_local_libs" = no; then
+			CPPFLAGS="-I/usr/local/include $CPPFLAGS"
+			LIBS="-L/usr/contrib/lib -L/usr/local/lib -lperl $LIBS"
+		fi
+
+		AC_DEFINE(HAVE_PERL_INTERP)
+		LIBOBJS="perl.o $LIBOBJS"
+	else
+		echo
+		echo "Fatal error: the Perl libraries not found."
+		exit 1
+	fi
+fi
+AC_MSG_RESULT($vi_cv_perlinterp)
+
+dnl Both Tcl/Tk and Perl interpreters need the vi api code.
+if test "$vi_cv_tclinterp" = yes || test "$vi_cv_perlinterp" = yes; then
+	LIBOBJS="api.o $LIBOBJS"
+fi
 
 dnl Check for the termcap/termlib library.
 AC_CHECK_LIB(termlib, tgetent,

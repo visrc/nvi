@@ -1,4 +1,4 @@
-/* $Id: acconfig.h,v 8.9 1996/02/29 18:55:00 bostic Exp $ (Berkeley) $Date: 1996/02/29 18:55:00 $ */
+/* $Id: acconfig.h,v 8.10 1996/03/03 16:39:47 bostic Exp $ (Berkeley) $Date: 1996/03/03 16:39:47 $ */
 
 /* Define to `int' if <sys/types.h> doesn't define.  */
 #undef ssize_t
@@ -44,6 +44,9 @@
 
 /* Define if you have flock(2) style locking. */
 #undef HAVE_LOCK_FLOCK
+
+/* Define if you want to compile in the Perl interpreter. */
+#undef HAVE_PERL_INTERP
 
 /* Define if you have the Berkeley style revoke(2) system call. */
 #undef HAVE_REVOKE
