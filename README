@@ -1,4 +1,4 @@
-#	$Id: README,v 8.25 1993/11/22 22:11:00 bostic Exp $ (Berkeley) $Date: 1993/11/22 22:11:00 $
+#	$Id: README,v 8.26 1993/11/23 10:18:52 bostic Exp $ (Berkeley) $Date: 1993/11/23 10:18:52 $
 
 This is the README for version 0.84 of nex/nvi, a (soon to be) freely
 redistributable replacement for the vi/ex text editors.
@@ -74,15 +74,15 @@ things you might like:
 		:resize count grows/shrinks the current screen.
 	o Background/foreground screens
 		:bg backgrounds the current screen.
-		:display s[creens] lists the hidden screens.
+		:di[splay] s[creens] lists the hidden screens.
 		:fg [file] foregrounds the specified (or next) screen.
 	o Shell screens:
 		:sc[ript] [file ...] runs a shell in the screen.
 		Carriage return sends a line to the shell.
 	o Buffer, screens, tags display:
 		:di[splay] b[uffers] displays the current cut buffers.
-		:di[splay] s[creens] displays the current tags stack.
-		:di[splay] t[ags] displays the hidden screen names.
+		:di[splay] s[creens] displays the hidden screen names.
+		:di[splay] t[ags] displays the current tags stack.
 	o Tag stacks:
 		^T returns to previous tag location.
 		:tagpop [number | file] returns to previous tag location,
