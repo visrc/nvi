@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 5.27 1993/05/03 13:44:57 bostic Exp $ (Berkeley) $Date: 1993/05/03 13:44:57 $";
+static char sccsid[] = "$Id: ex_global.c,v 5.28 1993/05/08 21:23:54 bostic Exp $ (Berkeley) $Date: 1993/05/08 21:23:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -79,7 +79,7 @@ global(sp, ep, cmdp, cmd)
 	ptrn = strsep(&endp, delim);
 
 	/* Get the command string. */
-	if (*endp == NULL) {
+	if (endp == NULL || *endp == NULL) {
 		msgq(sp, M_ERR, "No command string specified.");
 		return (1);
 	}
