@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.163 1994/09/16 17:14:43 bostic Exp $ (Berkeley) $Date: 1994/09/16 17:14:43 $";
+static char sccsid[] = "$Id: ex.c,v 8.164 1994/09/18 14:20:44 bostic Exp $ (Berkeley) $Date: 1994/09/18 14:20:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1507,9 +1507,9 @@ ep_range(sp, ep, excp, cmdp, cmdlenp)
 	char **cmdp;
 	size_t *cmdlenp;
 {
-	MARK cur, savecursor;
+	MARK cur;
 	size_t cmdlen;
-	int savecursor_set, tmp;
+	int tmp;
 	char *cmd;
 
 	/* Percent character is all lines in the file. */
@@ -1532,23 +1532,31 @@ ep_range(sp, ep, excp, cmdp, cmdlenp)
 	}
 
 	/* Parse comma or semi-colon delimited line specs. */
-	for (savecursor_set = 0, excp->addrcnt = 0; cmdlen > 0;)
+	for (excp->addrcnt = 0; cmdlen > 0;)
 		switch (*cmd) {
 		case ';':		/* Semi-colon delimiter. */
 			/*
-			 * Comma delimiters delimit; semi-colon delimiters
-			 * change the current address for the 2nd address
-			 * to be the first address.  Trailing or multiple
-			 * delimiters are discarded.
+			 * Semi-colon delimiters update the current address
+			 * to be the last address.  For example, the command
+			 *	:3;/pattern/cmd
+			 * will search for foo from line 3.  In addition, if
+			 * cmd is not a valid command, the current line will
+			 * be left at 3, not at the original address.
+			 *
+			 * If no addresses yet, it's an error.  I don't think
+			 * that this can happen.
 			 */
-			if (excp->addrcnt == 0)
+			switch (excp->addrcnt) {
+			case 0:
 				goto done;
-			if (!savecursor_set) {
-				savecursor.lno = sp->lno;
-				savecursor.cno = sp->cno;
+			case 1:
 				sp->lno = excp->addr1.lno;
 				sp->cno = excp->addr1.cno;
-				savecursor_set = 1;
+				break;
+			case 2:
+				sp->lno = excp->addr2.lno;
+				sp->cno = excp->addr2.cno;
+				break;
 			}
 			++cmd;
 			--cmdlen;
@@ -1593,17 +1601,7 @@ ep_range(sp, ep, excp, cmdp, cmdlenp)
 			break;
 		}
 
-	/*
-	 * XXX
-	 * This is probably not the right behavior for savecursor --
-	 * need to figure out what the historical ex did for ";,;,;5p"
-	 * or similar stupidity.
-	 */
-done:	if (savecursor_set) {
-		sp->lno = savecursor.lno;
-		sp->cno = savecursor.cno;
-	}
-	if (excp->addrcnt == 2 && excp->addr2.lno < excp->addr1.lno) {
+done:	if (excp->addrcnt == 2 && excp->addr2.lno < excp->addr1.lno) {
 		msgq(sp, M_ERR,
 		    "113|The second address is smaller than the first");
 		return (1);
