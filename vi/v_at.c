@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_at.c,v 8.1 1993/06/09 22:26:38 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:26:38 $";
+static char sccsid[] = "$Id: v_at.c,v 8.2 1993/07/06 08:55:22 bostic Exp $ (Berkeley) $Date: 1993/07/06 08:55:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,7 +32,7 @@ v_at(sp, ep, vp, fm, tm, rp)
 	int key;
 	char *p, *start;
 
-	key = vp->character;
+	key = vp->buffer;
 	CBNAME(sp, key, cb);
 	CBEMPTY(sp, key, cb);
 
