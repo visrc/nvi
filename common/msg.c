@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 10.9 1995/07/05 23:19:31 bostic Exp $ (Berkeley) $Date: 1995/07/05 23:19:31 $";
+static char sccsid[] = "$Id: msg.c,v 10.10 1995/07/14 14:04:07 bostic Exp $ (Berkeley) $Date: 1995/07/14 14:04:07 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -389,7 +389,7 @@ msg_rpt(sp)
 	recno_t total;
 	u_long rptval;
 	int first, cnt;
-	size_t blen, len;
+	size_t blen, len, tlen;
 	char * const *ap;
 	char *bp, *p;
 
@@ -425,18 +425,19 @@ msg_rpt(sp)
 
 	/* Build and display the message. */
 	GET_SPACE_RET(sp, bp, blen, sizeof(action) * MAXNUM);
-	for (p = bp,
-	    ap = action, cnt = 0, first = 1; cnt < ARSIZE(action); ++ap, ++cnt)
+	for (p = bp, first = 1, tlen = 0,
+	    ap = action, cnt = 0; cnt < ARSIZE(action); ++ap, ++cnt)
 		if (sp->rptlines[cnt] != 0) {
 			len = snprintf(p, MAXNUM, "%s%lu lines %s",
 			    first ? "" : "; ", sp->rptlines[cnt], *ap);
-			p += len;
 			first = 0;
+			p += len;
+			tlen += len;
 			sp->rptlines[cnt] = 0;
 		}
 
 	(void)ex_fflush(sp);
-	(void)sp->gp->scr_msg(sp, M_INFO, bp, len);
+	(void)sp->gp->scr_msg(sp, M_INFO, bp, tlen);
 
 	FREE_SPACE(sp, bp, blen);
 	return (0);
