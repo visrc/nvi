@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 9.11 1995/01/23 16:58:37 bostic Exp $ (Berkeley) $Date: 1995/01/23 16:58:37 $";
+static char sccsid[] = "$Id: msg.c,v 9.12 1995/02/01 20:44:44 bostic Exp $ (Berkeley) $Date: 1995/02/01 20:44:44 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -690,18 +690,19 @@ msg_cat(gp, str, lenp)
 char *
 msg_print(sp, s, needfree)
 	SCR *sp;
-	char *s;
+	const char *s;
 	int *needfree;
 {
 	size_t blen, nlen;
+	const char *cp;
 	char *bp, *ep, *p, *t;
 
 	*needfree = 0;
-	for (p = s; *p != '\0'; ++p)
-		if (!isprint(*p))
+	for (cp = s; *cp != '\0'; ++cp)
+		if (!isprint(*cp))
 			break;
-	if (*p == '\0')
-		return (s);
+	if (*cp == '\0')
+		return ((char *)s);	/* SAFE: needfree set to 0. */
 
 	nlen = 0;
 	if (0) {
