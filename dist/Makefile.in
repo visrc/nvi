@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.79 1996/12/03 12:14:43 bostic Exp $ (Berkeley) $Date: 1996/12/03 12:14:43 $
+#	$Id: Makefile.in,v 8.80 1996/12/04 09:41:26 bostic Exp $ (Berkeley) $Date: 1996/12/04 09:41:26 $
 
 srcdir=	@srcdir@/..
 CC=	@CC@
@@ -35,8 +35,8 @@ VIOBJS= cut.o delete.o ex.o ex_abbrev.o ex_append.o ex_args.o ex_argv.o \
 	ex_txt.o ex_undo.o ex_usage.o ex_util.o ex_version.o ex_visual.o \
 	ex_write.o ex_yank.o ex_z.o exf.o getc.o key.o line.o log.o main.o \
 	mark.o msg.o options.o options_f.o put.o recover.o screen.o \
-	search.o seq.o util.o v_at.o v_ch.o v_cmd.o v_delete.o v_ex.o \
-	v_increment.o v_init.o v_itxt.o v_left.o v_mark.o v_match.o \
+	search.o seq.o util.o v_at.o v_ch.o v_cmd.o v_delete.o v_event.o \
+	v_ex.o v_increment.o v_init.o v_itxt.o v_left.o v_mark.o v_match.o \
 	v_paragraph.o v_put.o v_redraw.o v_replace.o v_right.o v_screen.o \
 	v_scroll.o v_search.o v_section.o v_sentence.o v_status.o v_txt.o \
 	v_ulcase.o v_undo.o v_util.o v_word.o v_xchar.o v_yank.o v_z.o \
@@ -450,6 +450,8 @@ v_ch.o: $(srcdir)/vi/v_ch.c
 v_cmd.o: $(srcdir)/vi/v_cmd.c
 	$(CC) $(CFLAGS) $<
 v_delete.o: $(srcdir)/vi/v_delete.c
+	$(CC) $(CFLAGS) $<
+v_event.o: $(srcdir)/vi/v_event.c
 	$(CC) $(CFLAGS) $<
 v_ex.o: $(srcdir)/vi/v_ex.c
 	$(CC) $(CFLAGS) $<
