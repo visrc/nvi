@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex.c,v 10.68 2000/07/16 20:49:30 skimo Exp $ (Berkeley) $Date: 2000/07/16 20:49:30 $";
+static const char sccsid[] = "$Id: ex.c,v 10.69 2001/03/17 22:42:27 skimo Exp $ (Berkeley) $Date: 2001/03/17 22:42:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -124,7 +124,7 @@ ex(spp)
 		 */
 		tp = sp->tiq.cqh_first;
 		if (tp->len == 0) {
-			static CHAR_T space;
+			static CHAR_T space = ' ';
 			wp->excmd.cp = &space;	/* __TK__ why not |? */
 			wp->excmd.clen = 1;
 		} else {
