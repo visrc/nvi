@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.23 1993/10/31 17:17:25 bostic Exp $ (Berkeley) $Date: 1993/10/31 17:17:25 $";
+static char sccsid[] = "$Id: screen.c,v 8.24 1993/11/01 08:17:02 bostic Exp $ (Berkeley) $Date: 1993/11/01 08:17:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,23 +35,11 @@ screen_init(orig, sp)
 {
 	extern CHNAME const asciiname[];	/* XXX */
 	size_t len;
-	sigset_t bmask, omask;
 
 /* INITIALIZED AT SCREEN CREATE. */
-
-	/*
-	 * NULL the sp->ep field first, so the recovery timer won't access.
-	 * Block SIGALRM and SIGHUP when manipulating the SCR chain.
-	 */
 	memset(sp, 0, sizeof(SCR));
-	if (orig != NULL) {
-		sigemptyset(&bmask);
-		sigaddset(&bmask, SIGALRM);
-		sigaddset(&bmask, SIGHUP);
-		(void)sigprocmask(SIG_BLOCK, &bmask, &omask);
+	if (orig != NULL)
 		HDR_APPEND(sp, orig, next, prev, SCR);
-		(void)sigprocmask(SIG_SETMASK, &omask, NULL);
-	}
 
 	queue_init(&sp->frefq);
 
@@ -179,8 +167,6 @@ int
 screen_end(sp)
 	SCR *sp;
 {
-	sigset_t bmask, omask;
-
 	/* Free remembered file names. */
 	{ FREF *frp;
 		while ((frp = sp->frefq.qe_next) != NULL) {
@@ -303,16 +289,8 @@ screen_end(sp)
 		}
 	}
 
-	/*
-	 * Remove the screen from the global chain of screens.
-	 * Block SIGALRM and SIGHUP when manipulating the SCR chain.
-	 */
-	sigemptyset(&bmask);
-	sigaddset(&bmask, SIGALRM);
-	sigaddset(&bmask, SIGHUP);
-	(void)sigprocmask(SIG_BLOCK, &bmask, &omask);
+	/* Remove the screen from the global screen chain. */
 	HDR_DELETE(sp, next, prev, SCR);
-	(void)sigprocmask(SIG_SETMASK, &omask, NULL);
 
 	/* Remove the screen from the chain of related screens. */
 	if (sp->parent != NULL) {
