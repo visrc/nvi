@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_line.c,v 10.28 2000/09/01 11:31:15 skimo Exp $ (Berkeley) $Date: 2000/09/01 11:31:15 $";
+static const char sccsid[] = "$Id: vs_line.c,v 10.29 2000/09/02 09:12:17 skimo Exp $ (Berkeley) $Date: 2000/09/02 09:12:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -363,10 +363,6 @@ display:
 			}
 			smp->c_eboff = offset_in_line;
 
-			/* don't display half a wide character */
-			if (is_partial && CHAR_WIDTH(sp, ch) > 1)
-				break;
-
 			/* Terminate the loop. */
 			offset_in_line = len;
 		}
@@ -420,6 +416,13 @@ display:
 		else {
 			if (cbp + chlen >= ecbp)
 				FLUSH;
+
+			/* don't display half a wide character */
+			if (is_partial && CHAR_WIDTH(sp, ch) > 1) {
+				*cbp++ = ' ';
+				break;
+			}
+
 			if (INTISWIDE(ch))
 				*cbp++ = ch;
 			else

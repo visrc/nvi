@@ -750,33 +750,31 @@ draw_lines(GtkViScreen *vi, gint ymin, gint xmin, gint ymax, gint xmax)
 	    /* hack to not display half a wide character that wasn't
 	     * removed.
 	     */
-	    if (xpos + blen <= vi->cols) {
-		if (!pango)
-		    gdk_draw_text (vi->text_area, font, fg,
-				    xpos * vi->ch_width, 
-				    y * vi->ch_height + vi->ch_ascent, 
-				    p, blen);
+	    if (!pango)
+		gdk_draw_text (vi->text_area, font, fg,
+				xpos * vi->ch_width, 
+				y * vi->ch_height + vi->ch_ascent, 
+				p, blen);
 #ifdef HAVE_PANGO
-		else {
-		    PangoGlyphString *gs;
-		    GList *list;
-		    PangoItem *item;
-		    char buf[3];
-		    int len;
+	    else {
+		PangoGlyphString *gs;
+		GList *list;
+		PangoItem *item;
+		char buf[3];
+		int len;
 
-		    len = ucs2utf8(line+x, 1, buf);
-		    list = pango_itemize(vi->conx, buf, len, vi->alist);
-		    item = list->data;
-		    gs = pango_glyph_string_new ();
-		    pango_shape(buf, len, &item->analysis, gs);
+		len = ucs2utf8(line+x, 1, buf);
+		list = pango_itemize(vi->conx, buf, len, vi->alist);
+		item = list->data;
+		gs = pango_glyph_string_new ();
+		pango_shape(buf, len, &item->analysis, gs);
 
-		    pango_x_render(GDK_DISPLAY (), 
-			GDK_WINDOW_XWINDOW(vi->text_area), GDK_GC_XGC(fg),
-			item->analysis.font, gs, xpos * vi->ch_width, 
-			y * vi->ch_height + vi->ch_ascent);
-		}
-#endif
+		pango_x_render(GDK_DISPLAY (), 
+		    GDK_WINDOW_XWINDOW(vi->text_area), GDK_GC_XGC(fg),
+		    item->analysis.font, gs, xpos * vi->ch_width, 
+		    y * vi->ch_height + vi->ch_ascent);
 	    }
+#endif
 	}
     }
 }
