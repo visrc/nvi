@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 5.31 1993/05/28 01:42:41 bostic Exp $ (Berkeley) $Date: 1993/05/28 01:42:41 $";
+static char sccsid[] = "$Id: vs_smap.c,v 5.32 1993/05/30 18:00:48 bostic Exp $ (Berkeley) $Date: 1993/05/30 18:00:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -325,6 +325,13 @@ svi_sm_reset(sp, ep, lno)
 		/* Get the difference. */
 		diff = cnt_new - cnt_orig;
 
+		/*
+		 * The lines left in the screen override the number of screen
+		 * lines in the inserted line.
+		 */
+		if (diff > cnt_orig)
+			diff = cnt_orig;
+
 		/* Push down the extra lines. */
 		MOVE(sp, p - HMAP, 0);
 		if (svi_insertln(sp, diff))
@@ -334,7 +341,7 @@ svi_sm_reset(sp, ep, lno)
 		memmove(p + diff, p, (((TMAP - p) - diff) + 1) * sizeof(SMAP));
 
 		/* Fill in the SMAP for the replaced line, and display. */
-		for (cnt = 1, t = p; cnt_new--; ++t, ++cnt) {
+		for (cnt = 1, t = p; cnt_new-- && t <= TMAP; ++t, ++cnt) {
 			t->lno = lno;
 			t->off = cnt;
 			if (svi_line(sp, ep, t, NULL, 0, NULL, NULL))
