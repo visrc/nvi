@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 8.4 1993/06/21 09:46:33 bostic Exp $ (Berkeley) $Date: 1993/06/21 09:46:33 $
+ *	$Id: exf.h,v 8.5 1993/07/06 12:38:21 bostic Exp $ (Berkeley) $Date: 1993/07/06 12:38:21 $
  */
 
 					/* Undo direction. */
@@ -47,6 +47,7 @@ typedef struct _exf {
 	char	*icommand;		/* Initial command. */
 
 	char	*rcv_path;		/* Recover file name. */
+	char	*rcv_mpath;		/* Recover mail file name. */
 
 #define	F_EADDR_LOAD	0x0001		/* Load the EXF line/column. */
 #define	F_EADDR_NONE	0x0002		/* EXF has no valid line column. */
