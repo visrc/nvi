@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_relative.c,v 10.7 1996/03/18 09:09:44 bostic Exp $ (Berkeley) $Date: 1996/03/18 09:09:44 $";
+static const char sccsid[] = "$Id: vs_relative.c,v 10.8 1996/03/29 09:17:38 bostic Exp $ (Berkeley) $Date: 1996/03/29 09:17:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -103,12 +103,15 @@ vs_screens(sp, lp, lno, cnop, diffp)
 	char *p;
 
 	/* Need the line to go any further. */
-	if (lp == NULL)
+	if (lp == NULL) {
 		(void)db_get(sp, lno, 0, &lp, &len);
+		if (len == 0)
+			goto done;
+	}
 
 	/* Missing or empty lines are easy. */
-	if (lp == NULL || len == 0) {
-		if (diffp != NULL)		/* XXX */
+	if (lp == NULL) {
+done:		if (diffp != NULL)		/* XXX */
 			*diffp = 0;
 		return (0);
 	}
