@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 5.9 1993/02/12 15:18:22 bostic Exp $ (Berkeley) $Date: 1993/02/12 15:18:22 $";
+static char sccsid[] = "$Id: v_init.c,v 5.10 1993/02/13 13:09:11 bostic Exp $ (Berkeley) $Date: 1993/02/13 13:09:11 $";
 #endif /* not lint */
 
 #include <curses.h>
@@ -44,9 +44,11 @@ write(fd, buf, n)
 {
         if (fd == v_fd)
                 return (v_exwrite(v_ep, buf, n));
-        else
-                /* return (_write(fd, buf, n)); */
-		/* return (syscall(SYS_write, fd, buf, n)); */
+#ifdef SYS_write
+	return (syscall(SYS_write, fd, buf, n));
+#else
+	return (_write(fd, buf, n));
+#endif
 }
 #endif
 
