@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 5.13 1992/05/04 11:52:18 bostic Exp $ (Berkeley) $Date: 1992/05/04 11:52:18 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 5.14 1992/05/23 09:34:44 bostic Exp $ (Berkeley) $Date: 1992/05/23 09:34:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -42,209 +42,201 @@ static char sccsid[] = "$Id: ex_cmd.c,v 5.13 1992/05/04 11:52:18 bostic Exp $ (B
  *	w[N]|#[or]	-- word (a number or N, optional or required)
  *	s		-- string (parse locally)
  */
-/* START_SED_INCLUDE */
 EXCMDLIST cmds[] = {
-#define	C_BANG		0
+/* C_BANG */
 	"!",		ex_bang,	E_ADDR2_NONE|E_EXRCOK,
 	    "s",	"[line [,line]] ! command",
-#define	C_HASH		1
+/* C_HASH */
 	"#",		ex_number,	E_ADDR2|E_SETLAST,
 	    "c1",	"[line [,line]] # [count] [l]",
-#define	C_SUBAGAIN	2
+/* C_SUBAGAIN */
 	"&",		ex_subagain,	E_ADDR2,
 	    "s",	"[line [,line]] & [options] [count] [flags]",
-#define	C_STAR		3
+/* C_STAR */
 	"*",		ex_at,		0,
 	    "b",	"@ [buffer]",
-#define	C_SHIFTL	4
+/* C_SHIFTL */
 	"<",		ex_shiftl,	E_ADDR2,
 	    "c1",	"[line [,line]] < [count] [flags]",
-#define	C_EQUAL		5
+/* C_EQUAL */
 	"=",		ex_equal,	E_ADDR1,
 	    "1",	"[line] = [flags]",
-#define	C_SHIFTR	6
+/* C_SHIFTR */
 	">",		ex_shiftr,	E_ADDR2,
 	    "c1",	"[line [,line]] > [count] [flags]",
-#define	C_AT		7
+/* C_AT */
 	"@",		ex_at,		0,
 	    "b",	"@ [buffer]",
-#define	C_APPEND	8
+/* C_APPEND */
 	"append",	ex_append,	E_ADDR1|E_ZERO,
 	    "!",	"[line] a[ppend][!]",
-#define	C_ABBR		9
+/* C_ABBR */
 	"abbreviate", 	ex_abbr,	E_EXRCOK,
 	    "s",	"ab[brev] word replace",
-#define	C_ARGS		10
+/* C_ARGS */
 	"args",		ex_args,	E_EXRCOK,
 	    "",		"ar[gs]",
-#define	C_CHANGE	11
+/* C_CHANGE */
 	"change",	ex_change,	E_ADDR2,
 	    "!c",	"[line [,line]] c[hange][!] [count]",
-#undef	E_PERM
 #ifdef	NO_ERRLIST
 #define	E_PERM		E_NOPERM
 #else
 #define	E_PERM		0
 #endif
-#define	C_CC		12
+/* C_CC */
 	"cc",		ex_cc,		E_PERM,
 	    "s",	"cc [argument ...]",
-#define	C_CD		13
+/* C_CD */
 	"cd",		ex_cd,		E_EXRCOK,
 	    "!f1o",	"cd[!] [directory]",
-#define	C_CHDIR		14
+/* C_CHDIR */
 	"chdir",	ex_cd,		E_EXRCOK,
 	    "!f1o",	"chd[ir][!] [directory]",
-#define	C_COPY		15
+/* C_COPY */
 	"copy",		ex_copy,	E_ADDR2,
 	    "l1",	"[line [,line]] co[py] line [flags]",
-#undef	E_PERM
-#define	C_DELETE	16
+/* C_DELETE */
 	"delete",	ex_delete,	E_ADDR2,
 	    "bc1",	"[line [,line]] d[elete] [buffer] [count] [flags]",
-#undef	E_PERM
 #ifdef NO_DIGRAPH
 #define	E_PERM		E_NOPERM
 #else
 #define	E_PERM		0
 #endif
-#define	C_DIGRAPH	17
+/* C_DIGRAPH */
 	"digraph",	ex_digraph,	E_EXRCOK|E_PERM,
 	    "",		"digraph XXX",
-#define	C_EDIT		18
+/* C_EDIT */
 	"edit",		ex_edit,	0,
 	    "!+f1o",	"e[dit][!] [+cmd] [file]",
-#undef	E_PERM
 #ifdef NO_ERRLIST
 #define	E_PERM		E_NOPERM
 #else
 #define	E_PERM		0
 #endif
-#define	C_ERRLIST	19
+/* C_ERRLIST */
 	"errlist",	ex_errlist,	E_PERM,
 	    "f1o",	"errlist [file]",
-#define	C_EX		20
+/* C_EX */
 	"ex",		ex_edit,	0,
 	    "!+f1o",	"ex[!] [+cmd] [file]",
-#define	C_FILE		21
+/* C_FILE */
 	"file",		ex_file,	0,
 	    "f10",	"f[ile] [name]",
-#define	C_GLOBAL	22
+/* C_GLOBAL */
 	"global",	ex_global,	E_ADDR2_ALL,
 	    "s",	"[line [,line]] g[lobal] /pattern/ [commands]",
-#define	C_INSERT	23
+/* C_INSERT */
 	"insert",	ex_append,	E_ADDR1,
 	    "!",	"[line] i[nsert][!]",
-#define	C_JOIN		24
+/* C_JOIN */
 	"join",		ex_join,	E_ADDR2,
 	    "!c1",	"[line [,line]] j[oin][!] [count] [flags]",
-#define	C_K		25
+/* C_K */
 	"k",		ex_mark,	E_ADDR1,
 	    "w1r",	"[line] k key",
-#define	C_LIST		26
+/* C_LIST */
 	"list",		ex_list,	E_ADDR2|E_SETLAST,
 	    "c1",	"[line [,line]] l[ist] [count] [#]",
-#define	C_MOVE		27
+/* C_MOVE */
 	"move",		ex_move,	E_ADDR2,
 	    "l",	"[line [,line]] m[ove] line",
-#define	C_MARK		28
+/* C_MARK */
 	"mark",		ex_mark,	E_ADDR1,
 	    "w1r",	"[line] ma[rk] key",
-#undef	E_PERM
 #ifdef NO_ERRLIST
 #define	E_PERM		E_NOPERM
 #else
 #define	E_PERM		0
 #endif
-#define	C_MAKE		29
+/* C_MAKE */
 	"make",		ex_make,	E_PERM,
 	    "s",	"make [argument ...]",
-#define	C_MAP		30
+/* C_MAP */
 	"map",		ex_map,		E_EXRCOK,
 	    "s",	"map[!] [key replace]",
-#undef	E_PERM
 #ifdef NO_MKEXRC
 #define	E_PERM		E_NOPERM
 #else
 #define	E_PERM		0
 #endif
-#define	C_MKEXRC	31
+/* C_MKEXRC */
 	"mkexrc",	ex_mkexrc,	E_PERM,
 	    "!f1r",	"mkexrc[!] file",
-#define	C_NEXT		32
+/* C_NEXT */
 	"next",		ex_next,	0,
 	    "fN",	"n[ext][!] [file ...]",
-#define	C_NUMBER	33
+/* C_NUMBER */
 	"number",	ex_number,	E_ADDR2|E_SETLAST,
 	    "c1",	"[line [,line]] nu[mber] [count] [l]",
-#define	C_PRINT		34
+/* C_PRINT */
 	"print",	ex_print,	E_ADDR2|E_SETLAST,
 	    "c1",	"[line [,line]] p[rint] [count] [#l]",
-#define	C_PREVIOUS	35
+/* C_PREVIOUS */
 	"previous",	ex_prev,	0,
 	    "!fN",	"prev[ious][!] [file ...]",
-#define	C_PUT		36
+/* C_PUT */
 	"put",		ex_put,		E_ADDR1|E_ZERO,
 	    "b",	"[line] pu[t] [buffer]",
-#define	C_QUIT		37
+/* C_QUIT */
 	"quit",		ex_quit,	0,
 	    "!",	"q[uit][!]",
-#define	C_READ		38
+/* C_READ */
 	"read",		ex_read,	E_ADDR1|E_ZERO,
 	    "s",	"[line] r[ead] [!cmd | [file]]",
-#define	C_REWIND	39
+/* C_REWIND */
 	"rewind",	ex_rew,		0,
 	    "!",	"rew[ind][!]",
-#define	C_SUBSTITUTE	40
+/* C_SUBSTITUTE */
 	"substitute",	ex_substitute,	E_ADDR2,
 	    "s",
 	    "[line [,line]] s[ubstitute] [/pat/repl/[options] [count] [flags]]",
-#define	C_SET		41
+/* C_SET */
 	"set",		ex_set,		E_EXRCOK,
 	    "wN",
 	    "se[t] [option[=[value]]...] [nooption ...] [option? ...] [all]",
-#define	C_SHELL		42
+/* C_SHELL */
 	"shell",	ex_shell,	0,
 	    "", 	"sh[ell]",
-#define	C_SOURCE	43
+/* C_SOURCE */
 	"source",	ex_source,	E_EXRCOK,
 	    "f1r", 	"so[urce] file",
-#define	C_T		44
+/* C_T */
 	"t",		ex_move,	E_ADDR2,
 	    "l1", 	"[line [,line]] t line [flags]",
-#define	C_TAG		45
+/* C_TAG */
 	"tag",		ex_tag,		0,
 	    "!w1o", 	"ta[g][!] [string]",
-#define	C_UNDO		46
+/* C_UNDO */
 	"undo",		ex_undo,	0,
 	    "", 	"u[ndo]",
-#define	C_UNABBREVIATE	47
+/* C_UNABBREVIATE */
 	"unabbreviate",	ex_unabbr,	E_EXRCOK,
 	    "w1r", 	"una[bbrev] word",
-#define	C_UNMAP		48
+/* C_UNMAP */
 	"unmap",	ex_unmap,	E_EXRCOK,
 	    "!w1r", 	"unm[ap][!] key",
-#define	C_VGLOBAL	49
+/* C_VGLOBAL */
 	"vglobal",	ex_global,	E_ADDR2_ALL,
 	    "s", 	"[line [,line]] v[global] /pattern/ [commands]",
-#define	C_VERSION	50
+/* C_VERSION */
 	"version",	ex_version,	E_EXRCOK,
 	    "", 	"version",
-#define	C_VISUAL	51
+/* C_VISUAL */
 	"visual",	ex_visual,	E_ADDR2,
 	    "2c1", 	"[line] vi[sual] [type] [count] [flags]",
-#define	C_WRITE		52
+/* C_WRITE */
 	"write",	ex_write,	E_ADDR2_ALL,
 	    "s",	"[line [,line]] w[rite] [!cmd | [>>] [file]]",
-#define	C_WQ		53
+/* C_WQ */
 	"wq",		ex_wq,		E_ADDR2_ALL,
 	    "!>f1o",	"[line [,line]] wq[!] [>>] [file]",
-#define	C_XIT		54
+/* C_XIT */
 	"xit",		ex_xit,		E_ADDR2_ALL,
 	    "!f1o",	"[line [,line]] x[it][!] [file]",
-#define	C_YANK		55
+/* C_YANK */
 	"yank",		ex_yank,	E_ADDR2,
 	    "bc",	"[line [,line]] ya[nk] [buffer] [count]",
 	{NULL},
 };
-/* END_SED_INCLUDE */

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.16 1992/05/21 12:56:42 bostic Exp $ (Berkeley) $Date: 1992/05/21 12:56:42 $";
+static char sccsid[] = "$Id: options.c,v 5.17 1992/05/23 09:34:47 bostic Exp $ (Berkeley) $Date: 1992/05/23 09:34:47 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -47,108 +47,105 @@ static long o_taglength[3] = {0, 0, 30};
 static long o_window[3] = {24, 1, 24};
 static long o_wrapmargin[3] = {0, 0, 255};
 
-/* START_SED_INCLUDE */
 OPTIONS opts[] = {
-#define	O_AUTOINDENT	0
+/* O_AUTOINDENT */
 	"autoindent",	NULL,		OPT_0BOOL,
-#define	O_AUTOPRINT	1
+/* O_AUTOPRINT */
 	"autoprint",	NULL,		OPT_1BOOL,
-#define	O_AUTOTAB	2
+/* O_AUTOTAB */
 	"autotab",	NULL,		OPT_1BOOL,
-#define	O_AUTOWRITE	3
+/* O_AUTOWRITE */
 	"autowrite",	NULL,		OPT_0BOOL,
-#define	O_BEAUTIFY	4
+/* O_BEAUTIFY */
 	"beautify",	NULL,		OPT_0BOOL,
-#define	O_CC		5
+/* O_CC */
 	"cc",		"cc -c",	OPT_STR,
-#define	O_COLUMNS	6
+/* O_COLUMNS */
 	"columns",	&o_columns,	OPT_NOSAVE|OPT_NUM|OPT_REDRAW,
-#define	O_DIGRAPH	7
+/* O_DIGRAPH */
 	"digraph",	NULL,		OPT_0BOOL,
-#define	O_DIRECTORY	8
+/* O_DIRECTORY */
 	"directory",	_PATH_TMP,	OPT_NOSAVE|OPT_STR,
-#define	O_EDCOMPATIBLE	9
+/* O_EDCOMPATIBLE */
 	"edcompatible",	NULL,		OPT_0BOOL,
-#define	O_EQUALPRG	10
+/* O_EQUALPRG */
 	"equalprg",	"fmt",		OPT_STR,
-#define	O_ERRORBELLS	11
+/* O_ERRORBELLS */
 	"errorbells",	NULL,		OPT_1BOOL,
-#define	O_EXRC		12
+/* O_EXRC */
 	"exrc",		NULL,		OPT_0BOOL,
-#define	O_EXREFRESH	13
+/* O_EXREFRESH */
 	"exrefresh",	NULL,		OPT_1BOOL,
-#define	O_FLASH		14
+/* O_FLASH */
 	"flash",	NULL,		OPT_1BOOL,
-#define	O_IGNORECASE	15
+/* O_IGNORECASE */
 	"ignorecase",	NULL,		OPT_0BOOL,
-#define	O_KEYTIME	16
+/* O_KEYTIME */
 	"keytime",	&o_keytime,	OPT_NUM,
-#define	O_LINES		17
+/* O_LINES */
 	"lines",	&o_lines,	OPT_NOSAVE|OPT_NUM|OPT_REDRAW,
-#define	O_LIST		18
+/* O_LIST */
 	"list",		NULL,		OPT_0BOOL|OPT_REDRAW,
-#define	O_MAGIC		19
+/* O_MAGIC */
 	"magic",	NULL,		OPT_1BOOL,
-#define	O_MAKE		20
+/* O_MAKE */
 	"make",		"make",		OPT_STR,
-#define	O_MESG		21
+/* O_MESG */
 	"mesg",		NULL,		OPT_1BOOL,
-#define	O_NUMBER	22
+/* O_NUMBER */
 	"number",	NULL,		OPT_0BOOL|OPT_REDRAW,
-#define	O_PARAGRAPHS	23
+/* O_PARAGRAPHS */
 	"paragraphs",	"PPppIPLPQP",	OPT_STR,
-#define	O_PROMPT	24
+/* O_PROMPT */
 	"prompt",	NULL,		OPT_1BOOL,
-#define	O_READONLY	25
+/* O_READONLY */
 	"readonly",	NULL,		OPT_0BOOL,
-#define	O_REPORT	26
+/* O_REPORT */
 	"report",	&o_report,	OPT_NUM,
-#define	O_RULER		27
+/* O_RULER */
 	"ruler",	NULL,		OPT_0BOOL,
-#define	O_SCROLL	28
+/* O_SCROLL */
 	"scroll",	&o_scroll,	OPT_NUM,
-#define	O_SECTIONS	29
+/* O_SECTIONS */
 	"sections",	"NHSHSSSEse",	OPT_STR,
-#define	O_SHELL		30
+/* O_SHELL */
 	"shell",	_PATH_BSHELL,	OPT_STR,
-#define	O_SHIFTWIDTH	31
+/* O_SHIFTWIDTH */
 	"shiftwidth",	&o_shiftwidth,	OPT_NUM,
-#define	O_SHOWMATCH	32
+/* O_SHOWMATCH */
 	"showmatch",	NULL,		OPT_0BOOL,
-#define	O_SHOWMODE	33
+/* O_SHOWMODE */
 	"showmode",	NULL,		OPT_0BOOL,
-#define	O_SIDESCROLL	34
+/* O_SIDESCROLL */
 	"sidescroll",	&o_sidescroll,	OPT_NUM,
-#define	O_SYNC		35
+/* O_SYNC */
 	"sync",		NULL,		OPT_0BOOL,
-#define	O_TABSTOP	36
+/* O_TABSTOP */
 	"tabstop",	&o_tabstop,	OPT_NUM|OPT_REDRAW,
-#define	O_TAGLENGTH	37
+/* O_TAGLENGTH */
 	"taglength",	&o_taglength,	OPT_NUM,
-#define	O_TERM		38
+/* O_TERM */
 	"term",		"unknown",	OPT_NOSAVE|OPT_STR,
-#define	O_TERSE		39
+/* O_TERSE */
 	"terse",	NULL,		OPT_0BOOL,
-#define	O_TIMEOUT	40
+/* O_TIMEOUT */
 	"timeout",	NULL,		OPT_0BOOL,
-#define	O_VBELL		41
+/* O_VBELL */
 	"vbell",	NULL,		OPT_0BOOL,
-#define	O_VERBOSE	42
+/* O_VERBOSE */
 	"verbose",	NULL,		OPT_0BOOL,
-#define	O_WARN		43
+/* O_WARN */
 	"warn",		NULL,		OPT_1BOOL,
-#define	O_WINDOW	44
+/* O_WINDOW */
 	"window",	&o_window,	OPT_NUM|OPT_REDRAW,
-#define	O_WRAPMARGIN	45
+/* O_WRAPMARGIN */
 	"wrapmargin",	&o_wrapmargin,	OPT_NUM,
-#define	O_WRAPSCAN	46
+/* O_WRAPSCAN */
 	"wrapscan",	NULL,		OPT_1BOOL,
-#define	O_WRITEANY	47
+/* O_WRITEANY */
 	"writeany",	NULL,		OPT_0BOOL,
 	NULL,
 };
-#define	O_OPTIONCOUNT	48
-/* END_SED_INCLUDE */
 
 typedef struct abbrev {
         char *name;
