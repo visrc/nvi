@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 5.41 1993/05/07 14:18:49 bostic Exp $ (Berkeley) $Date: 1993/05/07 14:18:49 $";
+static char sccsid[] = "$Id: v_itxt.c,v 5.42 1993/05/08 09:54:50 bostic Exp $ (Berkeley) $Date: 1993/05/08 09:54:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,9 +19,13 @@ static char sccsid[] = "$Id: v_itxt.c,v 5.41 1993/05/07 14:18:49 bostic Exp $ (B
 #include "vi.h"
 #include "vcmd.h"
 
-#define	TXT_INPUT_STD							\
-	(TXT_BEAUTIFY | TXT_CNTRLT | TXT_ESCAPE | TXT_MAPINPUT |	\
-	 TXT_RECORD | TXT_RESOLVE)
+#define	SET_TXT_STD(sp, f) {						\
+	LF_INIT((f) | TXT_BEAUTIFY | TXT_CNTRLT | TXT_ESCAPE |		\
+	    TXT_MAPINPUT | TXT_RECORD | TXT_RESOLVE);			\
+	if (O_ISSET(sp, O_AUTOINDENT))					\
+		LF_SET(TXT_AUTOINDENT);					\
+}
+
 /*
  * v_iA -- [count]A
  *	Append text to the end of the line.
@@ -38,7 +42,7 @@ v_iA(sp, ep, vp, fm, tm, rp)
 	u_int flags;
 	char *p;
 
-	LF_INIT(TXT_APPENDEOL | TXT_INPUT_STD);
+	SET_TXT_STD(sp, TXT_APPENDEOL);
 	if (F_ISSET(vp,  VC_ISDOT))
 		LF_SET(TXT_REPLAY);
 	for (cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
@@ -57,7 +61,7 @@ v_iA(sp, ep, vp, fm, tm, rp)
 		    &sp->txthdr, NULL, p, len, rp, 0, OOBLNO, flags))
 			return (1);
 
-		LF_INIT(TXT_APPENDEOL | TXT_REPLAY | TXT_INPUT_STD);
+		SET_TXT_STD(sp, TXT_APPENDEOL | TXT_REPLAY);
 	}
 	return (0);
 }
@@ -78,7 +82,7 @@ v_ia(sp, ep, vp, fm, tm, rp)
 	size_t len;
 	char *p;
 
-	LF_INIT(TXT_INPUT_STD);
+	SET_TXT_STD(sp, 0);
 	if (F_ISSET(vp,  VC_ISDOT))
 		LF_SET(TXT_REPLAY);
 	for (cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
@@ -105,7 +109,7 @@ v_ia(sp, ep, vp, fm, tm, rp)
 		    &sp->txthdr, NULL, p, len, rp, 0, OOBLNO, flags))
 			return (1);
 
-		LF_INIT(TXT_REPLAY | TXT_INPUT_STD);
+		SET_TXT_STD(sp, TXT_REPLAY);
 	}
 	return (0);
 }
@@ -126,7 +130,7 @@ v_iI(sp, ep, vp, fm, tm, rp)
 	u_int flags;
 	char *p;
 
-	LF_INIT(TXT_INPUT_STD);
+	SET_TXT_STD(sp, 0);
 	if (F_ISSET(vp,  VC_ISDOT))
 		LF_SET(TXT_REPLAY);
 	for (cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
@@ -148,7 +152,7 @@ v_iI(sp, ep, vp, fm, tm, rp)
 		    &sp->txthdr, NULL, p, len, rp, 0, OOBLNO, flags))
 			return (1);
 
-		LF_INIT(TXT_REPLAY | TXT_INPUT_STD);
+		SET_TXT_STD(sp, TXT_REPLAY);
 	}
 	return (0);
 }
@@ -169,7 +173,7 @@ v_ii(sp, ep, vp, fm, tm, rp)
 	u_int flags;
 	char *p;
 
-	LF_INIT(TXT_INPUT_STD);
+	SET_TXT_STD(sp, 0);
 	if (F_ISSET(vp,  VC_ISDOT))
 		LF_SET(TXT_REPLAY);
 	for (cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
@@ -186,7 +190,7 @@ v_ii(sp, ep, vp, fm, tm, rp)
 		    &sp->txthdr, NULL, p, len, rp, 0, OOBLNO, flags))
 			return (1);
 
-		LF_INIT(TXT_REPLAY | TXT_INPUT_STD);
+		SET_TXT_STD(sp, TXT_REPLAY);
 	}
 	return (0);
 }
@@ -202,21 +206,20 @@ v_iO(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	u_long cnt;
+	recno_t ai_line;
 	size_t len;
+	u_long cnt;
 	u_int flags;
 	char *p;
 
-	LF_INIT(TXT_APPENDEOL | TXT_INPUT_STD);
+	SET_TXT_STD(sp, TXT_APPENDEOL);
 	if (F_ISSET(vp, VC_ISDOT))
 		LF_SET(TXT_REPLAY);
-	if (O_ISSET(sp, O_AUTOINDENT))
-		LF_SET(TXT_AUTOINDENT);
 	for (cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
 		if (fm->lno == 1 && file_lline(sp, ep) == 0) {
 			p = NULL;
 			len = 0;
-			LF_CLR(TXT_AUTOINDENT);
+			ai_line = OOBLNO;
 		} else {
 			p = "";
 			len = 0;
@@ -227,14 +230,13 @@ v_iO(sp, ep, vp, fm, tm, rp)
 				return (1);
 			}
 			sp->cno = 0;
+			ai_line = sp->lno + 1;
 		}
 		if (v_ntext(sp, ep,
-		    &sp->txthdr, NULL, p, len, rp, 0, sp->lno + 1, flags))
+		    &sp->txthdr, NULL, p, len, rp, 0, ai_line, flags))
 			return (1);
 
-		LF_INIT(TXT_APPENDEOL | TXT_REPLAY | TXT_INPUT_STD);
-		if (O_ISSET(sp, O_AUTOINDENT))
-			LF_SET(TXT_AUTOINDENT);
+		SET_TXT_STD(sp, TXT_APPENDEOL | TXT_REPLAY);
 	}
 	return (0);
 }
@@ -250,21 +252,20 @@ v_io(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	u_long cnt;
+	recno_t ai_line;
 	size_t len;
+	u_long cnt;
 	u_int flags;
 	char *p;
 
-	LF_INIT(TXT_APPENDEOL | TXT_INPUT_STD);
+	SET_TXT_STD(sp, TXT_APPENDEOL);
 	if (F_ISSET(vp,  VC_ISDOT))
 		LF_SET(TXT_REPLAY);
-	if (O_ISSET(sp, O_AUTOINDENT))
-		LF_SET(TXT_AUTOINDENT);
 	for (cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
 		if (sp->lno == 1 && file_lline(sp, ep) == 0) {
 			p = NULL;
 			len = 0;
-			LF_CLR(TXT_AUTOINDENT);
+			ai_line = OOBLNO;
 		} else {
 			p = "";
 			len = 0;
@@ -275,12 +276,13 @@ v_io(sp, ep, vp, fm, tm, rp)
 				return (1);
 			}
 			sp->cno = 0;
+			ai_line = sp->lno - 1;
 		}
 		if (v_ntext(sp, ep,
-		    &sp->txthdr, NULL, p, len, rp, 0, sp->lno - 1, flags))
+		    &sp->txthdr, NULL, p, len, rp, 0, ai_line, flags))
 			return (1);
 
-		LF_INIT(TXT_APPENDEOL | TXT_REPLAY | TXT_INPUT_STD);
+		SET_TXT_STD(sp, TXT_APPENDEOL | TXT_REPLAY);
 		if (O_ISSET(sp, O_AUTOINDENT))
 			LF_SET(TXT_AUTOINDENT);
 	}
@@ -302,9 +304,10 @@ v_Change(sp, ep, vp, fm, tm, rp)
 	u_int flags;
 	char *p;
 
-	LF_INIT(TXT_INPUT_STD);
+	SET_TXT_STD(sp, 0);
 	if (F_ISSET(vp,  VC_ISDOT))
 		LF_SET(TXT_REPLAY);
+
 	/*
 	 * There are two cases -- if a count is supplied, we do a line
 	 * mode change where we delete the lines and then insert text
@@ -372,7 +375,7 @@ v_change(sp, ep, vp, fm, tm, rp)
 	int lmode;
 	char *p;
 
-	LF_INIT(TXT_INPUT_STD);
+	SET_TXT_STD(sp, 0);
 	if (F_ISSET(vp,  VC_ISDOT))
 		LF_SET(TXT_REPLAY);
 	lmode = F_ISSET(vp, VC_LMODE);
@@ -436,7 +439,7 @@ v_Replace(sp, ep, vp, fm, tm, rp)
 	u_int flags;
 	char *p;
 
-	LF_INIT(TXT_INPUT_STD);
+	SET_TXT_STD(sp, 0);
 	if (F_ISSET(vp,  VC_ISDOT))
 		LF_SET(TXT_REPLAY);
 
@@ -470,7 +473,7 @@ v_Replace(sp, ep, vp, fm, tm, rp)
 	while (--cnt) {
 		if ((p = file_gline(sp, ep, rp->lno, &len)) == NULL)
 			GETLINE_ERR(sp, rp->lno);
-		LF_INIT(TXT_REPLAY | TXT_INPUT_STD);
+		SET_TXT_STD(sp, TXT_REPLAY);
 
 		sp->lno = rp->lno;
 
@@ -506,7 +509,7 @@ v_subst(sp, ep, vp, fm, tm, rp)
 	u_int flags;
 	char *p;
 
-	LF_INIT(TXT_INPUT_STD);
+	SET_TXT_STD(sp, 0);
 	if (F_ISSET(vp,  VC_ISDOT))
 		LF_SET(TXT_REPLAY);
 	if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
