@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 5.16 1993/05/10 20:01:49 bostic Exp $ (Berkeley) $Date: 1993/05/10 20:01:49 $";
+static char sccsid[] = "$Id: vs_line.c,v 5.17 1993/05/14 13:52:13 bostic Exp $ (Berkeley) $Date: 1993/05/14 13:52:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -51,6 +51,10 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 	int ch, listset, partial, reverse_video;
 	char nbuf[10];
 
+#if DEBUG && 0
+	TRACE(sp, "svi_line: row %u: line: %u off: %u\n",
+	    smp - HMAP, smp->lno, smp->off);
+#endif
 	/* Move to the line. */
 	MOVE(sp, smp - HMAP, 0);
 
