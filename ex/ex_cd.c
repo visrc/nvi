@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cd.c,v 8.2 1993/11/13 18:02:21 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:02:21 $";
+static char sccsid[] = "$Id: ex_cd.c,v 8.3 1993/12/02 10:47:00 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:47:00 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -40,7 +40,7 @@ ex_cd(sp, ep, cmdp)
 		}
 		break;
 	case 1:
-		dir = (char *)cmdp->argv[0];
+		dir = cmdp->argv[0]->bp;
 		break;
 	default:
 		abort();
