@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_global.c,v 10.19 1996/04/27 11:40:21 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:21 $";
+static const char sccsid[] = "$Id: ex_global.c,v 10.20 1996/05/03 08:56:45 bostic Exp $ (Berkeley) $Date: 1996/05/03 08:56:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -75,10 +75,10 @@ ex_g_setup(sp, cmdp, cmd)
 	RANGE *rp;
 	busy_t btype;
 	recno_t start, end;
-	regex_t *re, lre;
+	regex_t *re;
 	regmatch_t match[1];
 	size_t len;
-	int cnt, delim, eval, reflags, replaced;
+	int cnt, delim, eval;
 	char *ptrn, *p, *t;
 
 	NEEDFILE(sp, cmdp);
