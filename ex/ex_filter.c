@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 8.29 1994/03/23 14:46:01 bostic Exp $ (Berkeley) $Date: 1994/03/23 14:46:01 $";
+static char sccsid[] = "$Id: ex_filter.c,v 8.30 1994/03/23 20:25:17 bostic Exp $ (Berkeley) $Date: 1994/03/23 20:25:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -51,7 +51,7 @@ filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
 	FILE *ifp, *ofp;		/* GCC: can't be uninitialized. */
 	pid_t parent_writer_pid, utility_pid;
 	recno_t lno, nread;
-	int input[2], isig, output[2], rval, teardown;
+	int input[2], output[2], rval, teardown;
 	char *name;
 
 	/* Set return cursor position; guard against a line number of zero. */
