@@ -10,6 +10,7 @@ typedef	wchar_t		RCHAR_T;
 typedef	wchar_t		CHAR_T;
 #define	MAX_CHAR_T	0xffffff    /* XXXX */
 typedef	u_int		UCHAR_T;
+#define RCHAR_BIT	24
 
 #define STRLEN		wcslen
 #define STRTOL		wcstol
@@ -27,6 +28,7 @@ typedef	char		RCHAR_T;
 typedef	u_char		CHAR_T;
 #define	MAX_CHAR_T	0xff
 typedef	u_char		UCHAR_T;
+#define RCHAR_BIT	CHAR_BIT
 
 #define STRLEN		strlen
 #define STRTOL		strtol

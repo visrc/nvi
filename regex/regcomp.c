@@ -541,7 +541,7 @@ int starordinary;		/* is a leading * an ordinary character? */
 	register sopno pos;
 	register int i;
 	register sopno subno;
-#	define	BACKSL	(1<<CHAR_BIT)
+#	define	BACKSL	(1<<RCHAR_BIT)
 
 	pos = HERE();		/* repetion op, if any, covers from here */
 
@@ -1109,10 +1109,10 @@ register struct parse *p;
 	register int i;
 
 	if (no >= p->ncsalloc) {	/* need another column of space */
-		p->ncsalloc += CHAR_BIT;
+		p->ncsalloc += RCHAR_BIT;
 		nc = p->ncsalloc;
-		assert(nc % CHAR_BIT == 0);
-		nbytes = nc / CHAR_BIT * css;
+		assert(nc % RCHAR_BIT == 0);
+		nbytes = nc / RCHAR_BIT * css;
 		if (p->g->sets == NULL)
 			p->g->sets = (cset *)malloc(nc * sizeof(cset));
 		else
@@ -1125,7 +1125,7 @@ register struct parse *p;
 								nbytes);
 			/* xxx this isn't right if setbits is now NULL */
 			for (i = 0; i < no; i++)
-				p->g->sets[i].ptr = p->g->setbits + css*(i/CHAR_BIT);
+				p->g->sets[i].ptr = p->g->setbits + css*(i/RCHAR_BIT);
 		}
 		if (p->g->sets != NULL && p->g->setbits != NULL)
 			(void) memset((char *)p->g->setbits + (nbytes - css),
@@ -1139,8 +1139,8 @@ register struct parse *p;
 
 	assert(p->g->sets != NULL);	/* xxx */
 	cs = &p->g->sets[no];
-	cs->ptr = p->g->setbits + css*((no)/CHAR_BIT);
-	cs->mask = 1 << ((no) % CHAR_BIT);
+	cs->ptr = p->g->setbits + css*((no)/RCHAR_BIT);
+	cs->mask = 1 << ((no) % RCHAR_BIT);
 	cs->hash = 0;
 	cs->smultis = 0;
 	cs->multis = NULL;
@@ -1371,7 +1371,7 @@ int c;
 {
 	register uch *col;
 	register int i;
-	register int ncols = (g->ncsets+(CHAR_BIT-1)) / CHAR_BIT;
+	register int ncols = (g->ncsets+(RCHAR_BIT-1)) / RCHAR_BIT;
 	register unsigned uc = (unsigned char)c;
 
 	for (i = 0, col = g->setbits; i < ncols; i++, col += g->csetsize)
@@ -1392,7 +1392,7 @@ int c2;
 {
 	register uch *col;
 	register int i;
-	register int ncols = (g->ncsets+(CHAR_BIT-1)) / CHAR_BIT;
+	register int ncols = (g->ncsets+(RCHAR_BIT-1)) / RCHAR_BIT;
 	register unsigned uc1 = (unsigned char)c1;
 	register unsigned uc2 = (unsigned char)c2;
 
