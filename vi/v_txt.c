@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.36 1996/03/06 19:54:40 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:54:40 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.37 1996/03/14 09:33:18 bostic Exp $ (Berkeley) $Date: 1996/03/14 09:33:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,13 +33,15 @@ static const char sccsid[] = "$Id: v_txt.c,v 10.36 1996/03/06 19:54:40 bostic Ex
 static int	 txt_abbrev __P((SCR *, TEXT *, CHAR_T *, int, int *, int *));
 static void	 txt_ai_resolve __P((SCR *, TEXT *));
 static TEXT	*txt_backup __P((SCR *, TEXTH *, TEXT *, u_int32_t *));
+static int	 txt_dent __P((SCR *, TEXT *, int));
+static int	 txt_emark __P((SCR *, TEXT *, size_t));
 static void	 txt_err __P((SCR *, TEXTH *));
 static int	 txt_fc __P((SCR *, TEXT *, int *));
 static int	 txt_fc_col __P((SCR *, int, ARGS **));
 static int	 txt_hex __P((SCR *, TEXT *));
+static int	 txt_insch __P((SCR *, TEXT *, CHAR_T *, u_int));
 static int	 txt_margin __P((SCR *, TEXT *, TEXT *, int *, u_int32_t));
 static void	 txt_nomorech __P((SCR *));
-static int	 txt_dent __P((SCR *, TEXT *, int));
 static void	 txt_Rcleanup __P((SCR *,
 		    TEXTH *, TEXT *, const char *, const size_t));
 static int	 txt_resolve __P((SCR *, TEXTH *, u_int32_t));
@@ -193,17 +195,6 @@ u_long __rcount;		/* Replay count. */
  * v_txt --
  *	Vi text input.
  *
- * !!!
- * Historic vi did a special screen optimization for tab characters.  For
- * the keystrokes "iabcd<esc>0C<tab>", the tab would overwrite the rest of
- * the string when it was displayed.  Because this implementation redisplays
- * the entire line on each keystroke, the "bcd" gets pushed to the right as
- * we ignore that the user has "promised" to change the rest of the characters.
- * Users have noticed, but this isn't worth fixing, and, the way that the
- * historic vi did it results in an even worse bug.  Given the keystrokes
- * "iabcd<esc>0R<tab><esc>", the "bcd" disappears, and magically reappears
- * on the second <esc> key.
- *
  * PUBLIC: int v_txt __P((SCR *, VICMD *, MARK *,
  * PUBLIC:    const char *, size_t, ARG_CHAR_T, recno_t, u_long, u_int32_t));
  */
@@ -303,10 +294,8 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 		} else
 			tp->insert = len - sp->cno;
 
-		if (LF_ISSET(TXT_EMARK)) {
-			tp->lb[tm->cno] = CH_ENDMARK;
-			(void)vs_change(sp, tp->lno, LINE_RESET);
-		}
+		if (LF_ISSET(TXT_EMARK) && txt_emark(sp, tp, tm->cno))
+			return (1);
 	}
 
 	/*
@@ -466,7 +455,7 @@ next:	if (v_event_get(sp, evp, 0, ec_flags))
 		(void)vs_repaint(sp, &fc);
 		(void)vs_refresh(sp);
 	}
-		
+
 	/* Deal with all non-character events. */
 	switch (evp->e_event) {
 	case E_CHARACTER:
@@ -553,12 +542,6 @@ replay:	if (LF_ISSET(TXT_REPLAY))
 		if (evp->e_c == ' ')
 			goto ret;
 	}
-
-	/*
-	 * Check to see if the character fits into the input buffer.  (Use
-	 * tp->len, ignore overwrite characters.)
-	 */
-	BINC_GOTO(sp, tp->lb, tp->lb_len, tp->len + 1);
 
 	/*
 	 * If quoted by someone else, simply insert the character.
@@ -799,7 +782,7 @@ k_cr:		if (LF_ISSET(TXT_CR)) {
 		/* If empty, set termination condition. */
 		if (sp->cno <= tp->offset)
 			tp->term = TERM_ESC;
-		
+
 k_escape:	LINE_RESOLVE;
 
 		/*
@@ -1166,17 +1149,8 @@ insq_ch:	/*
 		if (abb != AB_NOTSET)
 			abb = inword(evp->e_c) ? AB_INWORD : AB_NOTWORD;
 
-insl_ch:	if (tp->owrite)			/* Overwrite a character. */
-			--tp->owrite;
-		else if (tp->insert) {		/* Insert a character. */
-			++tp->len;
-			if (tp->insert == 1)
-				tp->lb[sp->cno + 1] = tp->lb[sp->cno];
-			else
-				memmove(tp->lb + sp->cno + 1,
-				    tp->lb + sp->cno, tp->insert);
-		}
-		tp->lb[sp->cno++] = evp->e_c;	/* Finally! */
+insl_ch:	if (txt_insch(sp, tp, &evp->e_c, flags))
+			goto err;
 
 		/*
 		 * !!!
@@ -1741,6 +1715,7 @@ txt_dent(sp, tp, isindent)
 	TEXT *tp;
 	int isindent;
 {
+	CHAR_T ch;
 	u_long sw, ts;
 	size_t cno, current, off, spaces, target, tabs;
 	int ai_reset;
@@ -1811,44 +1786,13 @@ txt_dent(sp, tp, isindent)
 		tp->ai = tabs + spaces;
 
 	/*
-	 * If there are insert characters in the line, shift them up or
-	 * down depending on if we're gaining or losing characters.
-	 *
-	 * XXX
-	 * I'm not sure this is right, we're overwriting characters with
-	 * inserted whitespace, and that might not be the best interface.
-	 * The alternative would be to only overwrite ai and previous
-	 * <blank> characters with the inserted whitespace, and push the
-	 * user's characters forward as usual, letting them be overwritten
-	 * with normally entered characters, or discarded when <escape>
-	 * or <carriage-return> is entered.
+	 * Call txt_insch() to insert each character, so that we get the
+	 * correct effect when we add a <tab> to replace N <spaces>.
 	 */
-	if (tp->insert && tabs + spaces != tp->owrite)
-		if (tabs + spaces > tp->owrite) {
-			BINC_RET(sp,
-			    tp->lb, tp->lb_len, tp->len + tabs + spaces);
-			off = (tabs + spaces) - tp->owrite;
-			memmove(tp->lb + sp->cno + tp->owrite + off,
-			    tp->lb + sp->cno + tp->owrite, tp->insert);
-			tp->len += off;
-			tp->owrite += off;
-		} else {
-			off = tp->owrite - (tabs + spaces);
-			memmove(tp->lb + sp->cno + tp->owrite - off,
-			    tp->lb + sp->cno + tp->owrite, tp->insert);
-			tp->len -= off;
-			tp->owrite -= off;
-		}
-
-	/* Enter the replacement characters. */
-	for (; tabs > 0; --tabs) {
-		--tp->owrite;
-		tp->lb[sp->cno++] = '\t';
-	}
-	for (; spaces > 0; --spaces) {
-		--tp->owrite;
-		tp->lb[sp->cno++] = ' ';
-	}
+	for (ch = '\t'; tabs > 0; --tabs)
+		(void)txt_insch(sp, tp, &ch, 0);
+	for (ch = ' '; spaces > 0; --spaces)
+		(void)txt_insch(sp, tp, &ch, 0);
 	return (0);
 }
 
@@ -1932,7 +1876,7 @@ retry:	for (off = sp->cno - 1, p = tp->lb + off, len = 0;; --p, --off) {
 			p += len;
 			goto isdir;
 		}
-			
+
 		/* If nothing changed, period, ring the bell. */
 		if (!trydir)
 			(void)sp->gp->scr_bell(sp);
@@ -2098,6 +2042,58 @@ txt_fc_col(sp, argc, argv)
 }
 
 /*
+ * txt_emark --
+ *	Set the end mark on the line.
+ */
+static int
+txt_emark(sp, tp, cno)
+	SCR *sp;
+	TEXT *tp;
+	size_t cno;
+{
+	CHAR_T ch, *kp;
+	size_t chlen, nlen, olen;
+	char *p;
+
+	ch = CH_ENDMARK;
+
+	/*
+	 * The end mark may not be the same size as the current character.
+	 * Don't let the line shift.
+	 */
+	nlen = KEY_LEN(sp, ch);
+	if (tp->lb[cno] == '\t')
+		(void)vs_screens(sp, tp->lb, sp->lno, &cno, &olen);
+	else
+		olen = KEY_LEN(sp, tp->lb[cno]);
+
+	/*
+	 * If the line got longer, well, it's weird, but it's easy.  If
+	 * it's the same length, it's easy.  If it got shorter, we have
+	 * to fix it up.
+	 */
+	if (olen > nlen) {
+		BINC_RET(sp, tp->lb, tp->lb_len, tp->len + olen);
+		chlen = olen - nlen;
+		if (tp->insert != 0)
+			memmove(tp->lb + cno + chlen, tp->lb + cno, tp->insert);
+
+		tp->len += chlen;
+		tp->owrite += chlen;
+		p = tp->lb + cno;
+		if (tp->lb[cno] == '\t')
+			for (cno += chlen; chlen--;)
+				*p++ = ' ';
+		else
+			for (kp = KEY_NAME(sp, tp->lb[cno]),
+			    cno += chlen; chlen--;)
+				*p++ = *kp++;
+	}
+	tp->lb[cno] = ch;
+	(void)vs_change(sp, tp->lno, LINE_RESET);
+}
+
+/*
  * txt_err --
  *	Handle an error during input processing.
  */
@@ -2195,6 +2191,137 @@ nothex:		tp->lb[sp->cno] = savec;
 		memmove(tp->lb + sp->cno + tp->owrite,
 		    tp->lb + sp->cno + tp->owrite + len, tp->insert);
 
+	return (0);
+}
+
+/*
+ * txt_insch --
+ *
+ * !!!
+ * Historic vi did a special screen optimization for tab characters.  As an
+ * example, for the keystrokes "iabcd<esc>0C<tab>", the tab overwrote the
+ * rest of the string when it was displayed.
+ *
+ * Because early versions of this implementation redisplayed the entire line
+ * on each keystroke, the "bcd" was pushed to the right as it ignored that
+ * the user had "promised" to change the rest of the characters.  However,
+ * the historic vi implementation had an even worse bug: given the keystrokes
+ * "iabcd<esc>0R<tab><esc>", the "bcd" disappears, and magically reappears
+ * on the second <esc> key.
+ *
+ * POSIX 1003.2 requires (will require) that this be fixed, specifying that
+ * vi overwrite characters the user has committed to changing, on the basis
+ * of the screen space they require, but that it not overwrite other characters.
+ */
+static int
+txt_insch(sp, tp, chp, flags)
+	SCR *sp;
+	TEXT *tp;
+	CHAR_T *chp;
+	u_int flags;
+{
+	CHAR_T *kp, savech;
+	size_t chlen, cno, copydown, olen, nlen;
+	char *p;
+
+	/*
+	 * The 'R' command does one-for-one replacement, because there's
+	 * no way to know how many characters the user intends to replace.
+	 */
+	if (LF_ISSET(TXT_REPLACE)) {
+		if (tp->owrite) {
+			--tp->owrite;
+			tp->lb[sp->cno++] = *chp;
+			return (0);
+		}
+	} else if (tp->owrite) {		/* Overwrite a character. */
+		cno = sp->cno;
+
+		/*
+		 * If the old or new characters are tabs, then the length of the
+		 * display depends on the character position in the display.  We
+		 * don't even try to handle this here, just ask the screen.
+		 */
+		if (*chp == '\t') {
+			savech = tp->lb[cno];
+			tp->lb[cno] = '\t';
+			(void)vs_screens(sp, tp->lb, sp->lno, &cno, &nlen);
+			tp->lb[cno] = savech;
+		} else
+			nlen = KEY_LEN(sp, *chp);
+
+		/*
+		 * Eat overwrite characters until we run out of them or we've
+		 * handled the length of the new character.  If we only eat
+		 * part of an overwrite character, break it into its component
+		 * elements and display the remaining components.
+		 */
+		for (copydown = 0; nlen != 0 && tp->owrite != 0;) {
+			--tp->owrite;
+
+			if (tp->lb[cno] == '\t')
+				(void)vs_screens(sp,
+				    tp->lb, sp->lno, &cno, &olen);
+			else
+				olen = KEY_LEN(sp, tp->lb[cno]);
+
+			if (olen == nlen) {
+				nlen = 0;
+				break;
+			}
+			if (olen < nlen) {
+				++copydown;
+				nlen -= olen;
+			} else {
+				BINC_RET(sp,
+				    tp->lb, tp->lb_len, tp->len + olen);
+				chlen = olen - nlen;
+				memmove(tp->lb + cno + 1 + chlen,
+				    tp->lb + cno + 1, tp->owrite + tp->insert);
+
+				tp->len += chlen;
+				tp->owrite += chlen;
+				if (tp->lb[cno] == '\t')
+					for (p = tp->lb + cno + 1; chlen--;)
+						*p++ = ' ';
+				else
+					for (kp =
+					    KEY_NAME(sp, tp->lb[cno]) + nlen,
+					    p = tp->lb + cno + 1; chlen--;)
+						*p++ = *kp++;
+				nlen = 0;
+				break;
+			}
+		}
+
+		/*
+		 * If had to erase several characters, we adjust the total
+		 * count, and if there are any characters left, shift them
+		 * into position.
+		 */
+		if (copydown != 0 && (tp->len -= copydown) != 0)
+			memmove(tp->lb + cno, tp->lb + cno + copydown,
+			    tp->owrite + tp->insert + (copydown - 1));
+
+		/* If we had enough overwrite characters, we're done. */
+		if (nlen == 0) {
+			tp->lb[sp->cno++] = *chp;
+			return (0);
+		}
+	}
+
+	/* Check to see if the character fits into the input buffer. */
+	BINC_RET(sp, tp->lb, tp->lb_len, tp->len + 1);
+
+	++tp->len;
+	if (tp->insert) {			/* Insert a character. */
+		if (tp->insert == 1)
+			tp->lb[sp->cno + 1] = tp->lb[sp->cno];
+		else
+			memmove(tp->lb + sp->cno + 1,
+			    tp->lb + sp->cno, tp->owrite + tp->insert);
+	}
+	tp->lb[sp->cno++] = *chp;
 	return (0);
 }
 
