@@ -13,7 +13,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_tag.c,v 10.49 2001/08/28 13:29:16 skimo Exp $ (Berkeley) $Date: 2001/08/28 13:29:16 $";
+static const char sccsid[] = "$Id: ex_tag.c,v 10.50 2004/03/16 14:09:11 skimo Exp $ (Berkeley) $Date: 2004/03/16 14:09:11 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -48,7 +48,7 @@ static void	 ctag_file __P((SCR *, TAGF *, char *, char **, size_t *));
 static int	 ctag_search __P((SCR *, CHAR_T *, size_t, char *));
 static int	 ctag_sfile __P((SCR *, TAGF *, TAGQ *, char *));
 static TAGQ	*ctag_slist __P((SCR *, CHAR_T *));
-static char	*linear_search __P((char *, char *, char *));
+static char	*linear_search __P((char *, char *, char *, long));
 static int	 tag_copy __P((SCR *, TAG *, TAG **));
 static int	 tag_pop __P((SCR *, TAGQ *, int));
 static int	 tagf_copy __P((SCR *, TAGF *, TAGF **));
@@ -1053,6 +1053,7 @@ ctag_sfile(SCR *sp, TAGF *tfp, TAGQ *tqp, char *tname)
 	char *back, *cname, *dname, *front, *map, *name, *p, *search, *t;
 	CHAR_T *wp;
 	size_t wlen;
+	long tl;
 
 	if ((fd = open(tfp->name, O_RDONLY, 0)) < 0) {
 		tfp->errnum = errno;
@@ -1083,10 +1084,11 @@ ctag_sfile(SCR *sp, TAGF *tfp, TAGQ *tqp, char *tname)
 		return (1);
 	}
 
+	tl = O_VAL(sp, O_TAGLENGTH);
 	front = map;
 	back = front + sb.st_size;
 	front = binary_search(tname, front, back);
-	front = linear_search(tname, front, back);
+	front = linear_search(tname, front, back, tl);
 	if (front == NULL)
 		goto done;
 
@@ -1149,7 +1151,7 @@ corrupt:		p = msg_print(sp, tname, &nf1);
 		}
 
 		/* Check for passing the last entry. */
-		if (strcmp(tname, cname))
+		if (tl ? strncmp(tname, cname, tl) : strcmp(tname, cname))
 			break;
 
 		/* Resolve the file name. */
@@ -1287,10 +1289,12 @@ binary_search(register char *string, register char *front, register char *back)
  *	o front is before or at the first line to be printed.
  */
 static char *
-linear_search(char *string, char *front, char *back)
+linear_search(char *string, char *front, char *back, long tl)
 {
+	char *end;
 	while (front < back) {
-		switch (compare(string, front, back)) {
+		end = tl && back-front > tl ? front+tl : back;
+		switch (compare(string, front, end)) {
 		case EQUAL:		/* Found it. */
 			return (front);
 		case LESS:		/* No such string. */
