@@ -10,7 +10,6 @@
 
 /* This file contains movement functions that perform character searches */
 
-#include "config.h"
 #include "vi.h"
 
 #ifndef NO_CHARSEARCH

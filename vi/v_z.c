@@ -12,7 +12,6 @@
 
 #include <sys/types.h>
 
-#include "config.h"
 #include "options.h"
 #include "vi.h"
 
