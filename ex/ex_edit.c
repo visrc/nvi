@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 5.9 1992/04/28 13:38:38 bostic Exp $ (Berkeley) $Date: 1992/04/28 13:38:38 $";
+static char sccsid[] = "$Id: ex_edit.c,v 5.10 1992/04/28 16:55:39 bostic Exp $ (Berkeley) $Date: 1992/04/28 16:55:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,7 +33,12 @@ int
 ex_visual(cmdp)
 	EXCMDARG *cmdp;
 {
-	return (edit(cmdp, VISUAL));
+	if (edit(cmdp, VISUAL))
+		return (1);
+
+	/* Switch to visual mode. */
+	mode = MODE_VI;
+	return (0);
 }
 
 static int
@@ -46,22 +51,13 @@ edit(cmdp, cmd)
 
 	switch(cmdp->argc) {
 	case 0:
+		if (cmd == VISUAL)
+			return (0);
 		fname = origname;
 		break;
 	case 1:
 		fname = cmdp->argv[0];
 		break;
-	}
-
-	/*
-	 * If ":vi", then switch to visual mode, and if no file is
-	 * named, don't switch files.
-	 */
-	if (cmd == VISUAL) {
-		mode = MODE_VI;
-		msg("");
-		if (cmdp->argc == 0)
-			return (0);
 	}
 
 	/*
@@ -81,9 +77,8 @@ edit(cmdp, cmd)
 			if (line <= nlines && line >= 1)
 				cursor = MARK_AT_LINE(line);
 		}
-		refresh();
 		return (0);
 	}
-	msg("The file has been modified but not written.");
+	msg("%s has been modified but not written.", origname);
 	return (1);
 }
