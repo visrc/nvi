@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 10.18 1995/10/04 16:16:23 bostic Exp $ (Berkeley) $Date: 1995/10/04 16:16:23 $";
+static char sccsid[] = "$Id: vi.c,v 10.19 1995/10/04 20:35:40 bostic Exp $ (Berkeley) $Date: 1995/10/04 20:35:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1016,14 +1016,12 @@ err:		msgq(sp, M_BERR, "212|Cursor not in a word");
 	/* Find the end of the word. */
 	for (state = inword(p[beg]),
 	    end = beg; ++end < len && state == inword(p[end]););
-	--end;
 
 	vip = VIP(sp);
-	len = (end - beg) + 2;				/* XXX */
-	vip->klen = (end - beg) + 1;
+	len = (end - beg);
 	BINC_RET(sp, vip->keyw, vip->klen, len);
-	memmove(vip->keyw, p + beg, vip->klen);
-	vip->keyw[vip->klen] = '\0';			/* XXX */
+	memmove(vip->keyw, p + beg, len);
+	vip->keyw[len] = '\0';				/* XXX */
 	return (0);
 }
 
