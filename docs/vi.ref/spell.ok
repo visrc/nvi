@@ -2,6 +2,7 @@ Amir
 Autoprint
 BRE's
 Bostic
+Bourne
 DOUBLEQUOTE
 Dq
 Ds
@@ -15,6 +16,7 @@ Fl
 HUnhsh
 IPLPPPQPP
 Kirkendall
+Korn
 LIpplpipbp
 LaA
 Li
@@ -35,6 +37,7 @@ README
 Reference''USD:13
 SIGHUP
 SIGWINCH
+SQUOTE
 Se
 Std
 Std1003.2
@@ -216,6 +219,7 @@ tmp
 ts
 ttytype
 ttywerase
+uR
 ubstitute
 ucb
 uffers
@@ -236,6 +240,7 @@ vi.XXXX
 vi.cmd.roff
 vi.exrc
 vi.recover
+vibackup
 virecovery
 viu
 viusage
