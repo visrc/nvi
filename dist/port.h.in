@@ -1,4 +1,4 @@
-/* $Id: port.h.in,v 8.8 1996/03/06 17:25:00 bostic Exp $ (Berkeley) $Date: 1996/03/06 17:25:00 $ */
+/* $Id: port.h.in,v 8.9 1996/03/21 18:12:20 bostic Exp $ (Berkeley) $Date: 1996/03/21 18:12:20 $ */
 
 /*
  * Declare the basic types, if they aren't already declared.  Named and
@@ -23,6 +23,16 @@
 #define	__P(protos)	protos		/* ANSI C prototypes */
 #else
 #define	__P(protos)	()		/* K&R C preprocessor */
+#endif
+
+/*
+ * Hack _POSIX_VDISABLE to \377 since Ultrix doesn't honor _POSIX_VDISABLE
+ * (treats it as ^@).  The symptom is that the ^@ keystroke immediately
+ * drops core.
+ */
+#ifdef HAVE_BROKEN_VDISABLE
+#undef	_POSIX_VDISABLE
+#define	_POSIX_VDISABLE	((unsigned char)'\377')
 #endif
 
 /* 
