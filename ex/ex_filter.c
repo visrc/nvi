@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 8.9 1993/09/11 14:08:38 bostic Exp $ (Berkeley) $Date: 1993/09/11 14:08:38 $";
+static char sccsid[] = "$Id: ex_filter.c,v 8.10 1993/09/11 16:11:25 bostic Exp $ (Berkeley) $Date: 1993/09/11 16:11:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -300,31 +300,23 @@ filter_wait(sp, pid, cmd, okpipe)
  *	Display a line output from a utility.
  *
  * XXX
- * This should probably be combined with some of the ex_print() routines
- * into a single display routine.
+ * This should probably be combined with some of the ex_print()
+ * routines into a single display routine.
  */
 static int
 filter_ldisplay(sp, fp)
 	SCR *sp;
 	FILE *fp;
 {
-	CHNAME *cname;
-	char *p;
 	size_t len;
-	int rval;
 
-	cname = sp->cname;
-	for (rval = 0; !ex_getline(sp, fp, &len);) {
-		for (p = sp->ibp; len--; ++p) {
-			(void)fprintf(sp->stdfp, "%s", cname[*p].name);
-			if (ferror(sp->stdfp)) {
-				msgq(sp, M_ERR,
-				    "I/O error: %s", strerror(errno));
-				(void)fclose(fp);
-				return (1);
-			}
+	while (!ex_getline(sp, fp, &len)) {
+		(void)fprintf(sp->stdfp, "%.*s\n", len, sp->ibp);
+		if (ferror(sp->stdfp)) {
+			msgq(sp, M_ERR, "I/O error: %s", strerror(errno));
+			(void)fclose(fp);
+			return (1);
 		}
-		putc('\n', sp->stdfp);
 	}
 	if (fclose(fp)) {
 		msgq(sp, M_ERR, "I/O error: %s", strerror(errno));
