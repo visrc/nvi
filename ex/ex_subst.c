@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.26 1993/12/20 09:45:26 bostic Exp $ (Berkeley) $Date: 1993/12/20 09:45:26 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.27 1993/12/23 10:11:49 bostic Exp $ (Berkeley) $Date: 1993/12/23 10:11:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -822,8 +822,8 @@ regsub(sp, ip, lbp, lbclenp, lblenp)
 	 * all escape characters.  This (hopefully) follows historic practice.
 	 */
 #define	ADDCH(ch) {							\
-	u_int __value;							\
-	__value = term_key_val(sp, ch);					\
+	CHAR_T __ch = (ch);						\
+	u_int __value = term_key_val(sp, __ch);				\
 	if (__value == K_CR || __value == K_NL) {			\
 		NEEDNEWLINE(sp);					\
 		sp->newl[sp->newl_cnt++] = lbclen;			\
@@ -833,22 +833,22 @@ regsub(sp, ip, lbp, lbclenp, lblenp)
 			conv = C_NOTSET;				\
 			/* FALLTHROUGH */				\
 		case C_LOWER:						\
-			if (isupper(ch))				\
-				ch = tolower(ch);			\
+			if (isupper(__ch))				\
+				__ch = tolower(__ch);			\
 			break;						\
 		case C_ONEUPPER:					\
 			conv = C_NOTSET;				\
 			/* FALLTHROUGH */				\
 		case C_UPPER:						\
-			if (islower(ch))				\
-				ch = toupper(ch);			\
+			if (islower(__ch))				\
+				__ch = toupper(__ch);			\
 			break;						\
 		default:						\
 			abort();					\
 		}							\
 	}								\
 	NEEDSP(sp, 1, p);						\
-	*p++ = ch;							\
+	*p++ = __ch;							\
 	++lbclen;							\
 }
 	conv = C_NOTSET;
