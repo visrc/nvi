@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 8.16 1994/03/14 10:36:18 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:36:18 $";
+static char sccsid[] = "$Id: ex_args.c,v 8.17 1994/05/04 16:31:27 bostic Exp $ (Berkeley) $Date: 1994/05/04 16:31:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,7 +30,7 @@ static char sccsid[] = "$Id: ex_args.c,v 8.16 1994/03/14 10:36:18 bostic Exp $ (
 #include "excmd.h"
 
 /*
- * ex_next -- :next [files]
+ * ex_next -- :next [+cmd] [files]
  *	Edit the next file, optionally setting the list of files.
  *
  * !!!
@@ -45,12 +45,24 @@ ex_next(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	ARGS **argv;
+	ARGS **argv, **pc;
 	FREF *frp;
 	char *name;
 
 	MODIFY_RET(sp, ep, F_ISSET(cmdp, E_FORCE));
 
+	/*
+	 * If the first argument is a plus sign, '+', it's an initial
+	 * ex command.
+	 */
+	argv = cmdp->argv;
+	if (cmdp->argc && argv[0]->bp[0] == '+') {
+		--cmdp->argc;
+		pc = argv++;
+	} else
+		pc = NULL;
+
+	/* Any other arguments are a replacement file list. */
 	if (cmdp->argc) {
 		/* Mark all the current files as ignored. */
 		for (frp = sp->frefq.cqh_first;
@@ -85,6 +97,19 @@ ex_next(sp, ep, cmdp)
 	}
 	if (file_init(sp, frp, NULL, F_ISSET(cmdp, E_FORCE)))
 		return (1);
+
+	/* Push the initial command onto the stack. */
+	if (pc != NULL)
+		if (IN_EX_MODE(sp))
+			(void)term_push(sp, pc[0]->bp, pc[0]->len, 0);
+		else if (IN_VI_MODE(sp)) {
+			(void)term_push(sp, "\n", 1, 0);
+			(void)term_push(sp, pc[0]->bp, pc[0]->len, 0);
+			(void)term_push(sp, ":", 1, 0);
+			(void)file_lline(sp, sp->ep, &sp->frp->lno);
+			F_SET(sp->frp, FR_CURSORSET);
+		}
+
 	sp->a_frp = frp;
 	F_SET(sp, S_FSWITCH);
 	return (0);

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.123 1994/05/04 10:39:41 bostic Exp $ (Berkeley) $Date: 1994/05/04 10:39:41 $";
+static char sccsid[] = "$Id: ex.c,v 8.124 1994/05/04 16:31:22 bostic Exp $ (Berkeley) $Date: 1994/05/04 16:31:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -470,15 +470,15 @@ loop:	if (nl) {
 	 * 1: The bang, global, vglobal and the filter versions of the read and
 	 *    write commands are delimited by newlines (they can contain shell
 	 *    pipes).
-	 * 2: The ex, edit and visual in vi mode commands take ex commands as
-	 *    their first arguments.
+	 * 2: The ex, edit, next and visual in vi mode commands all take ex
+	 *    commands as their first arguments.
 	 * 3: The substitute command takes an RE as its first argument, and
 	 *    wants it to be specially delimited.
 	 *
 	 * Historically, '|' characters in the first argument of the ex, edit,
-	 * and substitute commands did not delimit the command.  And, in the
-	 * filter cases for read and write, and the bang, global and vglobal
-	 * commands, they did not delimit the command at all.
+	 * next, vi visual, and substitute commands didn't delimit the command.
+	 * And, in the filter cases for read and write, and the bang, global
+	 * and vglobal commands, they did not delimit the command at all.
 	 *
 	 * For example, the following commands were legal:
 	 *
@@ -508,8 +508,8 @@ loop:	if (nl) {
 	 */
 	arg1_len = 0;
 	save_cmd = cmd;
-	if (cp == &cmds[C_EDIT] ||
-	    cp == &cmds[C_EX] || cp == &cmds[C_VISUAL_VI]) {
+	if (cp == &cmds[C_EDIT] || cp == &cmds[C_EX] ||
+	    cp == &cmds[C_NEXT] || cp == &cmds[C_VISUAL_VI]) {
 		/*
 		 * Move to the next non-whitespace character.
 		 * The first '!' is eaten as a force flag.
