@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.42 1994/04/12 09:27:54 bostic Exp $ (Berkeley) $Date: 1994/04/12 09:27:54 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.43 1994/04/12 12:25:02 bostic Exp $ (Berkeley) $Date: 1994/04/12 12:25:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -127,14 +127,16 @@ ex_substitute(sp, ep, cmdp)
 		*t++ = *p++;
 	}
 
-	/* If the pattern string is empty, use the last one. */
+	/*
+	 * If the pattern string is empty, use the last RE (not just the
+	 * last substitution RE).
+	 */
 	if (*ptrn == NULL) {
-		if (!F_ISSET(sp, S_SUBRE_SET)) {
-			msgq(sp, M_ERR,
-			    "No previous regular expression.");
+		if (!F_ISSET(sp, S_SRE_SET)) {
+			msgq(sp, M_ERR, "No previous regular expression.");
 			return (1);
 		}
-		re = &sp->subre;
+		re = &sp->sre;
 		flags = 0;
 	} else {
 		/* Set RE flags. */
@@ -194,12 +196,27 @@ ex_substitute(sp, ep, cmdp)
 	 *
 	 * Only toss an escape character if it escapes a delimiter or
 	 * if O_MAGIC is set and it escapes a tilde.
+	 *
+	 * !!!
+	 * If the entire replacement pattern is "%", then use the last
+	 * replacement pattern.  This semantic was added to vi in System
+	 * V and then percolated elsewhere, presumably around the time
+	 * that it was added to their version of ed(1).
 	 */
-	if (*p == '\0') {
+	if (p[0] == '\0' || p[0] == delim) {
+		if (p[0] == delim) {
+			if (p[1] != '\0')
+				return (1);
+			p[0] = '\0';
+		}
 		if (sp->repl != NULL)
 			FREE(sp->repl, sp->repl_len);
 		sp->repl = NULL;
 		sp->repl_len = 0;
+	} else if (p[0] == '%' && (p[1] == '\0' || p[1] == delim)) {
+		if (p[1] == delim && p[2] != '\0')
+			return (1);
+		p[0] = '\0';
 	} else {
 		for (rep = p, len = 0;
 		    p[0] != '\0' && p[0] != delim; ++p, ++len)
