@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_section.c,v 8.1 1993/06/09 22:27:58 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:27:58 $";
+static char sccsid[] = "$Id: v_section.c,v 8.2 1993/07/21 09:58:31 bostic Exp $ (Berkeley) $Date: 1993/07/21 09:58:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -53,7 +53,7 @@ v_sectionf(sp, ep, vp, fm, tm, rp)
 
 	rp->cno = 0;
 	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
-	for (lno = fm->lno; p = file_gline(sp, ep, ++lno, &len);)
+	for (lno = fm->lno; (p = file_gline(sp, ep, ++lno, &len)) != NULL;)
 		switch(len) {
 		case 0:
 			break;;
@@ -117,7 +117,7 @@ v_sectionb(sp, ep, vp, fm, tm, rp)
 
 	rp->cno = 0;
 	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
-	for (lno = fm->lno; p = file_gline(sp, ep, --lno, &len);)
+	for (lno = fm->lno; (p = file_gline(sp, ep, --lno, &len)) != NULL;)
 		switch(len) {
 		case 0:
 			break;
