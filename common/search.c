@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 5.18 1993/02/25 17:44:17 bostic Exp $ (Berkeley) $Date: 1993/02/25 17:44:17 $";
+static char sccsid[] = "$Id: search.c,v 5.19 1993/02/28 13:59:20 bostic Exp $ (Berkeley) $Date: 1993/02/28 13:59:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,7 +38,7 @@ resetup(ep, rep, dir, ptrn, epp, deltap, flags)
 	char delim[2];
 
 	if (ptrn == NULL && !FF_ISSET(ep, F_RE_SET)) {
-noprev:		msg(ep, M_DISPLAY, "No previous search pattern.");
+noprev:		ep->msg(ep, M_DISPLAY, "No previous search pattern.");
 		return (1);
 	}
 
@@ -80,7 +80,7 @@ noprev:		msg(ep, M_DISPLAY, "No previous search pattern.");
 		 */
 		if (endp != NULL) {
 			if (flags & SEARCH_TERM) {
-				msg(ep, M_ERROR,
+				ep->msg(ep, M_ERROR,
 				    "Characters after search string.");
 				return (1);
 			}
@@ -138,7 +138,7 @@ f_search(ep, fm, ptrn, eptrn, flags)
 
 	if ((lno = file_lline(ep)) == 0) {
 		if (flags & SEARCH_MSG)
-			msg(ep, M_DISPLAY, EMPTYMSG);
+			ep->msg(ep, M_DISPLAY, EMPTYMSG);
 		return (NULL);
 	}
 
@@ -155,7 +155,7 @@ f_search(ep, fm, ptrn, eptrn, flags)
 		if (fm->lno == lno) {
 			if (!ISSET(O_WRAPSCAN)) {
 				if (flags & SEARCH_MSG)
-					msg(ep, M_DISPLAY, EOFMSG);
+					ep->msg(ep, M_DISPLAY, EOFMSG);
 				return (NULL);
 			}
 			lno = 1;
@@ -169,12 +169,12 @@ f_search(ep, fm, ptrn, eptrn, flags)
 		if ((l = file_gline(ep, lno, &len)) == NULL) {
 			if (wrapped) {
 				if (flags & SEARCH_MSG)
-					msg(ep, M_DISPLAY, NOTFOUND);
+					ep->msg(ep, M_DISPLAY, NOTFOUND);
 				break;
 			}
 			if (!ISSET(O_WRAPSCAN)) {
 				if (flags & SEARCH_MSG)
-					msg(ep, M_DISPLAY, EOFMSG);
+					ep->msg(ep, M_DISPLAY, EOFMSG);
 				break;
 			}
 			lno = 1;
@@ -205,7 +205,7 @@ f_search(ep, fm, ptrn, eptrn, flags)
 		
 		/* Warn if wrapped. */
 		if (wrapped && ISSET(O_WARN) && flags & SEARCH_MSG)
-			msg(ep, M_DISPLAY, WRAPMSG);
+			ep->msg(ep, M_DISPLAY, WRAPMSG);
 
 		/*
 		 * If an offset, see if it's legal.  It's possible to match
@@ -248,7 +248,7 @@ b_search(ep, fm, ptrn, eptrn, flags)
 
 	if ((lno = file_lline(ep)) == 0) {
 		if (flags & SEARCH_MSG)
-			msg(ep, M_DISPLAY, EMPTYMSG);
+			ep->msg(ep, M_DISPLAY, EMPTYMSG);
 		return (NULL);
 	}
 
@@ -261,7 +261,7 @@ b_search(ep, fm, ptrn, eptrn, flags)
 		if (fm->lno == 1) {
 			if (!ISSET(O_WRAPSCAN)) {
 				if (flags & SEARCH_MSG)
-					msg(ep, M_DISPLAY, SOFMSG);
+					ep->msg(ep, M_DISPLAY, SOFMSG);
 				return (NULL);
 			}
 		} else
@@ -274,19 +274,19 @@ b_search(ep, fm, ptrn, eptrn, flags)
 		if (lno == 0) {
 			if (!ISSET(O_WRAPSCAN)) {
 				if (flags & SEARCH_MSG)
-					msg(ep, M_DISPLAY, SOFMSG);
+					ep->msg(ep, M_DISPLAY, SOFMSG);
 				break;
 			}
 			if ((lno = file_lline(ep)) == 0) {
 				if (flags & SEARCH_MSG)
-					msg(ep, M_DISPLAY, EMPTYMSG);
+					ep->msg(ep, M_DISPLAY, EMPTYMSG);
 				break;
 			}
 			wrapped = 1;
 			continue;
 		} else if (lno == fm->lno && wrapped) {
 			if (flags & SEARCH_MSG)
-				msg(ep, M_DISPLAY, NOTFOUND);
+				ep->msg(ep, M_DISPLAY, NOTFOUND);
 			break;
 		}
 
@@ -312,7 +312,7 @@ b_search(ep, fm, ptrn, eptrn, flags)
 
 		/* Warn if wrapped. */
 		if (wrapped && ISSET(O_WARN) && flags & SEARCH_MSG)
-			msg(ep, M_DISPLAY, WRAPMSG);
+			ep->msg(ep, M_DISPLAY, WRAPMSG);
 		
 		if (delta) {
 			if (checkdelta(ep, delta, lno))
@@ -358,11 +358,11 @@ checkdelta(ep, delta, lno)
 	recno_t delta, lno;
 {
 	if (delta < 0 && (recno_t)delta >= lno) {
-		msg(ep, M_ERROR, "Search offset before line 1.");
+		ep->msg(ep, M_ERROR, "Search offset before line 1.");
 		return (1);
 	}
 	if (file_gline(ep, lno + delta, NULL) == NULL) {
-		msg(ep, M_ERROR, "Search offset past end-of-file.");
+		ep->msg(ep, M_ERROR, "Search offset past end-of-file.");
 		return (1);
 	}
 	return (0);
@@ -381,9 +381,9 @@ re_error(ep, errcode, preg)
 		free(oe);
 	s = regerror(errcode, preg, "", 0);
 	if ((oe = malloc(s)) == NULL)
-		msg(ep, M_ERROR, "Error: %s", strerror(errno));
+		ep->msg(ep, M_ERROR, "Error: %s", strerror(errno));
 	else {
 		(void)regerror(errcode, preg, oe, s);
-		msg(ep, M_ERROR, "RE error: %s", oe);
+		ep->msg(ep, M_ERROR, "RE error: %s", oe);
 	}
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_match.c,v 5.12 1993/02/25 17:51:47 bostic Exp $ (Berkeley) $Date: 1993/02/25 17:51:47 $";
+static char sccsid[] = "$Id: v_match.c,v 5.13 1993/02/28 14:01:50 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:01:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -75,7 +75,8 @@ v_match(ep, vp, fm, tm, rp)
 		break;
 	default:
 		if (findmatchc(fm, p, len, rp)) {
-nomatch:		msg(ep, M_BELL, "No match character on this line.");
+nomatch:		ep->msg(ep, M_BELL,
+			    "No match character on this line.");
 			return (1);
 		}
 		return (0);
@@ -94,7 +95,7 @@ nomatch:		msg(ep, M_BELL, "No match character on this line.");
 			continue;
 		}
 
-	msg(ep, M_BELL, "Matching character not found.");
+	ep->msg(ep, M_BELL, "Matching character not found.");
 	return (1);
 }
 

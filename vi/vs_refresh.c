@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.36 1993/02/25 21:09:05 bostic Exp $ (Berkeley) $Date: 1993/02/25 21:09:05 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.37 1993/02/28 14:01:54 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:01:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -73,7 +73,7 @@ scr_begin(ep)
 	void *p;
 
 	if (initscr() == NULL) {
-		msg(ep,
+		ep->msg(ep,
 		    M_ERROR, "Error: initscr failed: %s", strerror(errno));
 		return (1);
 	}
@@ -472,7 +472,7 @@ adjust:	if (LNO == HMAP->lno) {
 		cnt = (CNO - OCNO) + 1;
 #ifdef DEBUG
 		if (CNO >= len) {
-			msg(ep, M_ERROR,
+			ep->msg(ep, M_ERROR,
 			    "Error: %s/%d: SCRCNO(ep) (%u) >= len (%u)",
 			     tail(__FILE__), __LINE__, CNO, len);
 			return (1);

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 5.22 1993/02/25 17:47:38 bostic Exp $ (Berkeley) $Date: 1993/02/25 17:47:38 $";
+static char sccsid[] = "$Id: ex_tag.c,v 5.23 1993/02/28 14:00:45 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:00:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -42,13 +42,13 @@ ex_tagpush(ep, cmdp)
 		if (lasttag)
 			free(lasttag);
 		if ((lasttag = strdup((char *)cmdp->argv[0])) == NULL) {
-			msg(ep, M_ERROR, "Error: %s", strerror(errno));
+			ep->msg(ep, M_ERROR, "Error: %s", strerror(errno));
 			return (1);
 		}
 		break;
 	case 0:
 		if (lasttag == NULL) {
-			msg(ep, M_ERROR, "No previous tag entered.");
+			ep->msg(ep, M_ERROR, "No previous tag entered.");
 			return (1);
 		}
 		break;
@@ -78,7 +78,7 @@ ex_tagpop(ep, cmdp)
 	int force;
 
 	if ((tag = tag_head()) == NULL) {
-		msg(ep, M_ERROR, "No tags on the stack.");
+		ep->msg(ep, M_ERROR, "No tags on the stack.");
 		return (1);
 	}
 
@@ -105,7 +105,7 @@ ex_tagtop(ep, cmdp)
 	for (tag = NULL; tag_head() != NULL;)
 		tag = tag_pop(ep);
 	if (tag == NULL) {
-		msg(ep, M_ERROR, "No tags on the stack.");
+		ep->msg(ep, M_ERROR, "No tags on the stack.");
 		return (1);
 	}
 	return (tagchange(ep, tag, cmdp->flags & E_FORCE));
@@ -149,7 +149,8 @@ tagchange(ep, tag, force)
 	m.cno = 0;
 	if ((mp = f_search(tep, &m,
 	    (u_char *)tag->line, NULL, SEARCH_PARSE | SEARCH_TERM)) == NULL) {
-		msg(ep, M_ERROR, "%s: search pattern not found.", tag->tag);
+		ep->msg(ep, M_ERROR,
+		    "%s: search pattern not found.", tag->tag);
 		return (1);
 	}
 	SCRLNO(tep) = mp->lno;

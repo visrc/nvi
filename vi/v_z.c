@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_z.c,v 5.24 1993/02/24 13:01:45 bostic Exp $ (Berkeley) $Date: 1993/02/24 13:01:45 $";
+static char sccsid[] = "$Id: v_z.c,v 5.25 1993/02/28 14:02:08 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:02:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -62,7 +62,7 @@ v_z(ep, vp, fm, tm, rp)
 				return (1);
 			break;
 		}
-		msg(ep, M_ERROR, "usage: %s.", vp->kp->usage);
+		ep->msg(ep, M_ERROR, "usage: %s.", vp->kp->usage);
 		return (1);
 	}
 

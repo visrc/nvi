@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.50 1993/02/25 17:50:27 bostic Exp $ (Berkeley) $Date: 1993/02/25 17:50:27 $";
+static char sccsid[] = "$Id: vi.c,v 5.51 1993/02/28 14:02:12 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:02:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -52,7 +52,7 @@ vi(ep)
 		/* Report on the status of the last command. */
 		if (ep->rptlines) {
 			if (LVAL(O_REPORT) && ep->rptlines >= LVAL(O_REPORT)) {
-				msg(ep, M_DISPLAY,
+				ep->msg(ep, M_DISPLAY,
 				    "%ld line%s %s", ep->rptlines,
 				    ep->rptlines == 1 ? "" : "s", ep->rptlabel);
 			}
@@ -205,7 +205,7 @@ err:		if (!FF_ISSET(ep, F_MSGWAIT))
 	do {								\
 		hold = count * 10 + key - '0';				\
 		if (count > hold) {					\
-			msg(ep, M_ERROR,				\
+			ep->msg(ep, M_ERROR,				\
 			    "Number larger than %lu", ULONG_MAX);	\
 			return (NULL);					\
 		}							\
@@ -243,7 +243,7 @@ getcmd(ep, vp, ismotion)
 
 	KEY(ep, key, GB_MAPCOMMAND);
 	if (key < 0 || key > MAXVIKEY) {
-		msg(ep, M_BELL, "%s isn't a command.", CHARNAME(key));
+		ep->msg(ep, M_BELL, "%s isn't a command.", CHARNAME(key));
 		return (1);
 	}
 
@@ -269,7 +269,8 @@ getcmd(ep, vp, ismotion)
 	/* Pick up optional buffer. */
 	if (key == '"') {
 		if (vp->buffer != OOBCB) {
-			msg(ep, M_ERROR, "Only one buffer can be specified.");
+			ep->msg(ep, M_ERROR,
+			    "Only one buffer can be specified.");
 			return (1);
 		}
 		KEY(ep, key, 0);
@@ -294,10 +295,11 @@ getcmd(ep, vp, ismotion)
 				*vp = dot;
 				return (0);
 			}
-			msg(ep, M_ERROR,
+			ep->msg(ep, M_ERROR,
 			    "No commands which set dot executed yet.");
 		} else
-			msg(ep, M_ERROR, "%s isn't a command.", CHARNAME(key));
+			ep->msg(ep, M_ERROR,
+			    "%s isn't a command.", CHARNAME(key));
 		return (1);
 	}
 
@@ -320,7 +322,7 @@ getcmd(ep, vp, ismotion)
 				goto usage;
 			KEY(ep, key, 0);
 			if (key > UCHAR_MAX) {
-ebuf:				msg(ep, M_ERROR, "Invalid buffer name.");
+ebuf:				ep->msg(ep, M_ERROR, "Invalid buffer name.");
 				return (1);
 			}
 			vp->buffer = key;
@@ -358,7 +360,7 @@ ebuf:				msg(ep, M_ERROR, "Invalid buffer name.");
 	 * imply the current line.
 	 */
 	else if (ismotion->key != key && !(flags & V_MOVE)) {
-usage:		msg(ep, M_ERROR, "Usage: %s", ismotion != NULL ?
+usage:		ep->msg(ep, M_ERROR, "Usage: %s", ismotion != NULL ?
 		    vikeys[ismotion->key].usage : kp->usage);
 		return (1);
 	}
@@ -504,7 +506,7 @@ getkeyword(ep, kp, flags)
 	if (!len ||
 	    flags & V_KEYW && !inword(p[beg]) ||
 	    flags & V_KEYNUM && !innum(p[beg])) {
-noword:		msg(ep, M_BELL, "Cursor not in a %s.",
+noword:		ep->msg(ep, M_BELL, "Cursor not in a %s.",
 		    flags & V_KEYW ? "word" : "number");
 		return (1);
 	}

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 5.28 1993/02/24 12:53:33 bostic Exp $ (Berkeley) $Date: 1993/02/24 12:53:33 $";
+static char sccsid[] = "$Id: util.c,v 5.29 1993/02/28 13:59:32 bostic Exp $ (Berkeley) $Date: 1993/02/28 13:59:32 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -37,6 +37,26 @@ __putchar(ch)
 }
 
 /*
+ * bell --
+ *	Ring the terminal's bell.
+ */
+void
+bell(ep)
+	EXF *ep;
+{
+	/* Ex doesn't need bells rung. */
+	if (FF_ISSET(ep, F_MODE_EX))
+		return;
+
+	if (ISSET(O_FLASH)) {
+		(void)tputs(VB, 1, __putchar);
+		(void)fflush(stdout);
+	} else if (ISSET(O_ERRORBELLS))
+		(void)write(STDOUT_FILENO, "\007", 1);	/* '\a' */
+	FF_CLR(ep, F_BELLSCHED);
+}
+
+/*
  * binc --
  *	Increase the size of a buffer.
  */
@@ -63,7 +83,7 @@ binc(ep, argp, bsizep, min)
 	else
 		bpp = realloc(bpp, csize);
 	if (bpp == NULL) {
-		msg(ep, M_ERROR, "Error: %s.", strerror(errno));
+		ep->msg(ep, M_ERROR, "Error: %s.", strerror(errno));
 		*bsizep = 0;
 		return (1);
 	}
@@ -151,7 +171,6 @@ onhup(signo)
 /*
  * set_window_size --
  *	Set the window size, the row may be provided as an argument.
- *	No error messages, because it's not worth making msg reentrant.
  */
 int
 set_window_size(ep, set_row)

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_left.c,v 5.10 1993/02/16 20:08:35 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:08:35 $";
+static char sccsid[] = "$Id: v_left.c,v 5.11 1993/02/28 14:01:49 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:01:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,7 +33,7 @@ v_left(ep, vp, fm, tm, rp)
 	cnt = vp->flags & VC_C1SET ? vp->count : 1;
 
 	if (fm->cno == 0) {
-		msg(ep, M_BELL, "Already in the first column.");
+		ep->msg(ep, M_BELL, "Already in the first column.");
 		return (1);
 	}
 

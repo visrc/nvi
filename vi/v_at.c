@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_at.c,v 5.14 1993/02/16 20:08:13 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:08:13 $";
+static char sccsid[] = "$Id: v_at.c,v 5.15 1993/02/28 14:01:44 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:01:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -44,7 +44,7 @@ v_at(ep, vp, fm, tm, rp)
 	if (atkeybuflen == 0)
 		memset(rstack, 0, sizeof(rstack));
 	else if (rstack[key]) {
-		msg(ep, M_ERROR,
+		ep->msg(ep, M_ERROR,
 		    "Buffer %c already occurs in this command.", key);
 		return (1);
 	}
@@ -55,12 +55,12 @@ v_at(ep, vp, fm, tm, rp)
 	/* Check for overflow. */
 	len = cb->len + remain;
 	if (len < cb->len + remain) {
-		msg(ep, M_ERROR, "Buffer overflow.");
+		ep->msg(ep, M_ERROR, "Buffer overflow.");
 		return (1);
 	}
 
 	if ((start = p = malloc(len)) == NULL) {
-		msg(ep, M_ERROR, "Error: %s", strerror(errno));
+		ep->msg(ep, M_ERROR, "Error: %s", strerror(errno));
 		return (1);
 	}
 

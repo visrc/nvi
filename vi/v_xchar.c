@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_xchar.c,v 5.15 1993/02/24 13:01:01 bostic Exp $ (Berkeley) $Date: 1993/02/24 13:01:01 $";
+static char sccsid[] = "$Id: v_xchar.c,v 5.16 1993/02/28 14:02:07 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:02:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,7 +19,7 @@ static char sccsid[] = "$Id: v_xchar.c,v 5.15 1993/02/24 13:01:01 bostic Exp $ (
 #include "vcmd.h"
 
 #define	NODEL(ep) {							\
-	msg(ep, M_BELL, "No characters to delete.");			\
+	ep->msg(ep, M_BELL, "No characters to delete.");		\
 	return (1);							\
 }
 
@@ -87,7 +87,7 @@ v_Xchar(ep, vp, fm, tm, rp)
 	u_long cnt;
 
 	if (fm->cno == 0) {
-		msg(ep, M_BELL, "Already at the left-hand margin.");
+		ep->msg(ep, M_BELL, "Already at the left-hand margin.");
 		return (1);
 	}
 

@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 5.33 1993/02/28 11:53:34 bostic Exp $ (Berkeley) $Date: 1993/02/28 11:53:34 $
+ *	$Id: ex.h,v 5.34 1993/02/28 14:00:49 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:00:49 $
  */
 
 struct excmdarg;
@@ -116,6 +116,7 @@ int	 ex_map __P((EXF *, EXCMDARG *));
 int	 ex_mark __P((EXF *, EXCMDARG *));
 int	 ex_mkexrc __P((EXF *, EXCMDARG *));
 int	 ex_move __P((EXF *, EXCMDARG *));
+void	 ex_msg __P((EXF *, u_int, const char *, ...));
 int	 ex_next __P((EXF *, EXCMDARG *));
 int	 ex_number __P((EXF *, EXCMDARG *));
 int	 ex_prev __P((EXF *, EXCMDARG *));

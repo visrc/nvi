@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_at.c,v 5.19 1993/02/25 17:46:03 bostic Exp $ (Berkeley) $Date: 1993/02/25 17:46:03 $";
+static char sccsid[] = "$Id: ex_at.c,v 5.20 1993/02/28 14:00:28 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:00:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -37,7 +37,7 @@ ex_at(ep, cmdp)
 
 	if (cmdp->buffer == OOBCB) {
 		if (lastbuf == OOBCB) {
-			msg(ep, M_ERROR, "No previous buffer to execute.");
+			ep->msg(ep, M_ERROR, "No previous buffer to execute.");
 			return (1);
 		}
 		buffer = lastbuf;
@@ -50,7 +50,7 @@ ex_at(ep, cmdp)
 	if (recurse == 0)
 		memset(rstack, 0, sizeof(rstack));
 	else if (rstack[buffer]) {
-		msg(ep, M_ERROR,
+		ep->msg(ep, M_ERROR,
 		    "Buffer %c already occurs in this command.", buffer);
 		return (1);
 	}

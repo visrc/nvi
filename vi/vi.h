@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 5.32 1993/02/24 13:02:44 bostic Exp $ (Berkeley) $Date: 1993/02/24 13:02:44 $
+ *	$Id: vi.h,v 5.33 1993/02/28 14:02:09 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:02:09 $
  */
 
 /* Structure passed around to functions implementing vi commands. */
@@ -138,6 +138,7 @@ int	v_markbt __P((EXF *, VICMDARG *, MARK *, MARK *, MARK *));
 int	v_marksq __P((EXF *, VICMDARG *, MARK *, MARK *, MARK *));
 int	v_match __P((EXF *, VICMDARG *, MARK *, MARK *, MARK *));
 int	v_middle __P((EXF *, VICMDARG *, MARK *, MARK *, MARK *));
+void	v_msg __P((EXF *, u_int, const char *, ...));
 int	v_msgflush __P((EXF *));
 int	v_ncol __P((EXF *, VICMDARG *, MARK *, MARK *, MARK *));
 int	v_pagedown __P((EXF *, VICMDARG *, MARK *, MARK *, MARK *));

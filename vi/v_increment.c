@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_increment.c,v 5.17 1993/02/16 20:08:31 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:08:31 $";
+static char sccsid[] = "$Id: v_increment.c,v 5.18 1993/02/28 14:01:47 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:01:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -61,7 +61,7 @@ v_increment(ep, vp, fm, tm, rp)
 		lastcnt = vp->count;
 
 	if (vp->character != '+' && vp->character != '-') {
-		msg(ep, M_ERROR, "usage: %s.", vp->kp->usage);
+		ep->msg(ep, M_ERROR, "usage: %s.", vp->kp->usage);
 		return (1);
 	}
 	lastch = vp->character;
@@ -92,14 +92,16 @@ v_increment(ep, vp, fm, tm, rp)
 		if (vp->character == '+') {
 			lval = strtol(vp->keyword, NULL, 0);
 			if (LONG_MAX - lval < lastcnt) {
-overflow:			msg(ep, M_ERROR, "Resulting number too large.");
+overflow:			ep->msg(ep, M_ERROR,
+				    "Resulting number too large.");
 				return (1);
 			}
 			lval += lastcnt;
 		} else {
 			lval = strtol(vp->keyword, NULL, 0);
 			if (lval < 0 && -(LONG_MIN - lval) > lastcnt) {
-underflow:			msg(ep, M_ERROR, "Resulting number too small.");
+underflow:			ep->msg(ep, M_ERROR,
+				    "Resulting number too small.");
 				return (1);
 			}
 			lval -= lastcnt;
@@ -115,7 +117,7 @@ underflow:			msg(ep, M_ERROR, "Resulting number too small.");
 	}
 
 	if ((np = malloc(len + nlen)) == NULL) {
-		msg(ep, M_ERROR, "Error: %s", strerror(errno));
+		ep->msg(ep, M_ERROR, "Error: %s", strerror(errno));
 		return (1);
 	}
 	memmove(np, p, fm->cno);

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 5.30 1993/02/24 13:02:59 bostic Exp $ (Berkeley) $Date: 1993/02/24 13:02:59 $";
+static char sccsid[] = "$Id: v_itxt.c,v 5.31 1993/02/28 14:02:03 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:02:03 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -474,7 +474,7 @@ v_subst(ep, vp, fm, tm, rp)
 	    (tp->lp = malloc(ib.len)) == NULL) {			\
 		if (tp != NULL)						\
 			free(tp);					\
-		msg(ep, M_ERROR, "Error: %s.", strerror(errno));	\
+		ep->msg(ep, M_ERROR, "Error: %s.", strerror(errno));	\
 		eval = 1;						\
 		goto done;						\
 	}								\

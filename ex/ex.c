@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.74 1993/02/28 12:19:05 bostic Exp $ (Berkeley) $Date: 1993/02/28 12:19:05 $";
+static char sccsid[] = "$Id: ex.c,v 5.75 1993/02/28 14:00:24 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:00:24 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -58,12 +58,12 @@ ex(ep)
 			continue;
 		if (*p) {
 			(void)fputc('\n', ep->stdfp);
-			ex_cstring(ep, p, len, 0);
+			(void)ex_cstring(ep, p, len, 0);
 		} else {
 			(void)fputc('\r', ep->stdfp);
 			(void)fflush(ep->stdfp);
 			memmove(defcom, DEFCOM, sizeof(DEFCOM));
-			ex_cstring(ep, defcom, sizeof(DEFCOM) - 1, 0);
+			(void)ex_cstring(ep, defcom, sizeof(DEFCOM) - 1, 0);
 		}
 	} while (FF_ISSET(ep, F_MODE_EX) && !FF_ISSET(ep, F_FILE_RESET));
 	return (ex_end(ep));
@@ -118,7 +118,7 @@ ex_cfile(ep, filename, noexisterr)
 
 e3:	free(bp);
 e2:	(void)close(fd);
-e1:	msg(ep, M_ERROR, "%s: %s.", filename, strerror(errno));
+e1:	ep->msg(ep, M_ERROR, "%s: %s.", filename, strerror(errno));
 	return (1);
 }
 
@@ -131,11 +131,11 @@ int
 ex_cstring(ep, cmd, len, doquoting)
 	EXF *ep;
 	u_char *cmd;
-	register int len, doquoting;
+	int len, doquoting;
 {
 	u_int saved_mode;
-	register int cnt;
-	register u_char *p, *t;
+	int cnt, rval;
+	u_char *p, *t;
 
 	/*
 	 * Walk the string, checking for '^V' quotes and '|' or '\n'
@@ -143,6 +143,7 @@ ex_cstring(ep, cmd, len, doquoting)
 	 */
 	if (doquoting)
 		QINIT;
+	rval = 0;
 	saved_mode = FF_ISSET(ep, F_MODE_EX | F_MODE_VI | F_FILE_RESET);
 	for (p = t = cmd, cnt = 0;; ++cnt, ++t, --len) {
 		if (len == 0)
@@ -158,16 +159,17 @@ cend:			if (p > cmd) {
 				 * Errors are ignored, although error
 				 * messages will be displayed later.
 				 */
-				(void)ex_cmd(ep, cmd);
+				if (ex_cmd(ep, cmd))
+					rval = 1;
 				p = cmd;
 			}
 			if (len == 0)
-				return (0);
+				return (rval);
 			if (saved_mode != FF_ISSET(ep,
 			    F_MODE_EX | F_MODE_VI | F_FILE_RESET)) {
-				msg(ep, M_ERROR,
+				ep->msg(ep, M_ERROR,
 		    "File or status changed, remaining input discarded.");
-				return (0);
+				return (1);
 			}
 			if (doquoting)
 				QINIT;
@@ -197,17 +199,15 @@ static EXCMDLIST *lastcmd = &cmds[C_PRINT];
 int
 ex_cmd(ep, exc)
 	EXF *ep;
-	register u_char *exc;
+	u_char *exc;
 {
-	register int cmdlen;
-	register u_char *p;
 	EXCMDARG cmd;
 	EXCMDLIST *cp;
 	recno_t lcount, num;
 	long flagoff;
 	u_int saved_mode;
-	int flags, uselastcmd;
-	u_char *endp;
+	int cmdlen, flags, uselastcmd;
+	u_char *p, *endp;
 
 #if DEBUG && 0
 	TRACE("ex: {%s}\n", exc);
@@ -257,7 +257,7 @@ ex_cmd(ep, exc)
 		}
 		for (cp = cmds; cp->name && memcmp(p, cp->name, cmdlen); ++cp);
 		if (cp->name == NULL) {
-			msg(ep, M_ERROR,
+			ep->msg(ep, M_ERROR,
 			    "The %.*s command is unknown.", cmdlen, p);
 			return (1);
 		}
@@ -265,7 +265,7 @@ ex_cmd(ep, exc)
 
 		/* Some commands are turned off. */
 		if (cp->flags & E_NOPERM) {
-			msg(ep, M_ERROR,
+			ep->msg(ep, M_ERROR,
 			    "The %.*s command is not currently supported.",
 			    cmdlen, p);
 			return (1);
@@ -273,7 +273,7 @@ ex_cmd(ep, exc)
 
 		/* Some commands aren't okay in globals. */
 		if (FF_ISSET(ep, F_IN_GLOBAL) && cp->flags & E_NOGLOBAL) {
-			msg(ep, M_ERROR,
+			ep->msg(ep, M_ERROR,
 "The %.*s command can't be used as part of a global command.", cmdlen, p);
 			return (1);
 		}
@@ -292,7 +292,7 @@ ex_cmd(ep, exc)
 	 * Historic vi generally took the easy way out and dropped core.
  	 */
 	if (FF_ISSET(ep, F_DUMMY) && flags & E_NORC) {
-		msg(ep, M_ERROR,
+		ep->msg(ep, M_ERROR,
 	"The %s command requires a file to already have been read in.",
 		    cp->name);
 		return (1);
@@ -471,7 +471,7 @@ end2:			break;
 			if (isdigit(*exc)) {
 				lcount = USTRTOL(exc, &endp, 10);
 				if (lcount == 0) {
-					msg(ep, M_ERROR,
+					ep->msg(ep, M_ERROR,
 					    "Count may not be zero.");
 					return (1);
 				}
@@ -515,7 +515,7 @@ countchk:		if (*++p != 'N') {		/* N */
 			}
 			goto addr2;
 		default:
-			msg(ep, M_ERROR,
+			ep->msg(ep, M_ERROR,
 			    "Internal syntax table error (%s).", cp->name);
 		}
 	}
@@ -526,7 +526,7 @@ countchk:		if (*++p != 'N') {		/* N */
 	 */
 	for (; *exc && isspace(*exc); ++exc);
 	if (*exc || USTRPBRK(p, "lr")) {
-usage:		msg(ep, M_ERROR, "Usage: %s.", cp->usage);
+usage:		ep->msg(ep, M_ERROR, "Usage: %s.", cp->usage);
 		return (1);
 	}
 
@@ -535,15 +535,17 @@ addr2:	switch(cmd.addrcnt) {
 	case 2:
 		num = cmd.addr2.lno;
 		if (num < 0) {
-			msg(ep, M_ERROR, "%lu is an invalid address.", num);
+			ep->msg(ep, M_ERROR,
+			    "%lu is an invalid address.", num);
 			return (1);
 		}
 		lcount = file_lline(ep);
 		if (num > lcount) {
 			if (lcount == 0)
-				msg(ep, M_ERROR, "The file is empty.");
+				ep->msg(ep, M_ERROR, "The file is empty.");
 			else
-				msg(ep, M_ERROR, "Only %lu line%s in the file",
+				ep->msg(ep, M_ERROR,
+				    "Only %lu line%s in the file",
 				    lcount, lcount > 1 ? "s" : "");
 			return (1);
 		}
@@ -558,18 +560,19 @@ addr2:	switch(cmd.addrcnt) {
 		if (num == 0 &&
 		    (!FF_ISSET(ep, F_MODE_VI) || uselastcmd != 1) &&
 		    !(flags & E_ZERO)) {
-			msg(ep, M_ERROR,
+			ep->msg(ep, M_ERROR,
 			    "The %s command doesn't permit an address of 0.",
 			    cp->name);
 			return (1);
 		}
 		if (num < 0) {
-			msg(ep, M_ERROR, "%lu is an invalid address.", num);
+			ep->msg(ep, M_ERROR,
+			    "%lu is an invalid address.", num);
 			return (1);
 		}
 		lcount = file_lline(ep);
 		if (num > lcount) {
-			msg(ep, M_ERROR, "Only %lu line%s in the file",
+			ep->msg(ep, M_ERROR, "Only %lu line%s in the file",
 			    lcount, lcount > 1 ? "s" : "");
 			return (1);
 		}
@@ -656,12 +659,12 @@ addr2:	switch(cmd.addrcnt) {
 	if (flagoff) {
 		if (flagoff < 0) {
 			if ((recno_t)flagoff > SCRLNO(ep)) {
-				msg(ep, M_ERROR,
+				ep->msg(ep, M_ERROR,
 				    "Flag offset before line 1.");
 				return (1);
 			}
 		} else if (SCRLNO(ep) + flagoff > file_lline(ep)) {
-			msg(ep, M_ERROR, "Flag offset past end-of-file.");
+			ep->msg(ep, M_ERROR, "Flag offset past end-of-file.");
 			return (1);
 		}
 		SCRLNO(ep) += flagoff;
@@ -757,7 +760,7 @@ linespec(ep, cmd, cp)
 			break;
 		case '\'':		/* Set mark. */
 			if (cmd[1] == '\0') {
-				msg(ep, M_ERROR,
+				ep->msg(ep, M_ERROR,
 				    "No mark name; use 'a' to 'z'.");
 				return (NULL);
 			}
@@ -815,7 +818,7 @@ linespec(ep, cmd, cp)
 			}
 		}
 		if (total < 0 && -total > cur.lno) {
-			msg(ep, M_ERROR,
+			ep->msg(ep, M_ERROR,
 			    "Reference to a line number less than 0.");
 			return (NULL);
 		}
@@ -873,8 +876,7 @@ buildargv(ep, exc, expand, cp)
 	static int argscnt;
 	static u_char **argv;
 	static glob_t g;
-	register int ch;
-	int cnt, done, globoff, len, needslots, off;
+	int ch, cnt, done, globoff, len, needslots, off;
 	u_char *ap;
 
 	/* Discard any previous information. */
@@ -925,7 +927,7 @@ buildargv(ep, exc, expand, cp)
 mem1:				argscnt = 0;
 				args = NULL;
 				argv = NULL;
-				msg(ep, M_ERROR,
+				ep->msg(ep, M_ERROR,
 				    "Error: %s.", strerror(errno));
 				return (1);
 			}
@@ -951,7 +953,7 @@ mem1:				argscnt = 0;
 			    realloc(args[off].bp, len)) == NULL) {
 				args[off].bp = NULL;
 				args[off].len = 0;
-				msg(ep, M_ERROR,
+				ep->msg(ep, M_ERROR,
 				    "Error: %s.", strerror(errno));
 				return (1);
 			}
@@ -1004,7 +1006,7 @@ fileexpand(ep, gp, word, wordlen)
 		switch (*p) {
 		case '%':
 			if (FF_ISSET(ep, F_NONAME)) {
-				msg(ep, M_ERROR,
+				ep->msg(ep, M_ERROR,
 				    "No filename to substitute for %%.");
 				return (1);
 			}
@@ -1014,7 +1016,7 @@ fileexpand(ep, gp, word, wordlen)
 			if (prev_ep == NULL)
 				prev_ep = file_prev(ep, 0);
 			if (prev_ep == NULL || FF_ISSET(prev_ep, F_NONAME)) {
-				msg(ep, M_ERROR,
+				ep->msg(ep, M_ERROR,
 				    "No filename to substitute for #.");
 				return (1);
 			}
@@ -1036,7 +1038,7 @@ fileexpand(ep, gp, word, wordlen)
 			if ((tpath = realloc(tpath, len)) == NULL) {
 				tpathlen = 0;
 				tpath = NULL;
-				msg(ep, M_ERROR,
+				ep->msg(ep, M_ERROR,
 				    "Error: %s.", strerror(errno));
 				return (1);
 			}

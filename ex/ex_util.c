@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_util.c,v 5.2 1993/02/16 20:10:31 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:31 $";
+static char sccsid[] = "$Id: ex_util.c,v 5.3 1993/02/28 14:00:47 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:00:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -15,6 +15,13 @@ static char sccsid[] = "$Id: ex_util.c,v 5.2 1993/02/16 20:10:31 bostic Exp $ (B
 #include <stdio.h>
 
 #include "vi.h"
+#include "options.h"
+
+#ifdef __STDC__
+#include <stdarg.h>
+#else
+#include <varargs.h>
+#endif
 
 u_char *
 ex_getline(ep, fp, lenp)
@@ -47,4 +54,34 @@ ex_getline(ep, fp, lenp)
 		*p++ = ch;
 	}
 	/* NOTREACHED */
+}
+
+/*
+ * ex_msg --
+ *	Display a message.
+ */
+void
+#ifdef __STDC__
+ex_msg(EXF *ep, u_int flags, const char *fmt, ...)
+#else
+ex_msg(ep, flags, fmt, va_alist)
+	EXF *ep;
+	u_int flags;
+        char *fmt;
+        va_dcl
+#endif
+{
+        va_list ap;
+#ifdef __STDC__
+        va_start(ap, fmt);
+#else
+        va_start(ap);
+#endif
+
+	/* If extra information message, check user's wishes. */
+	if (!(flags & (M_DISPLAY | M_ERROR)) && !ISSET(O_VERBOSE))
+		return;
+
+	(void)vfprintf(ep->stdfp, fmt, ap);
+	(void)putc('\n', ep->stdfp);
 }

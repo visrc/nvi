@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_init.c,v 5.7 1993/02/24 12:56:07 bostic Exp $ (Berkeley) $Date: 1993/02/24 12:56:07 $";
+static char sccsid[] = "$Id: ex_init.c,v 5.8 1993/02/28 14:00:35 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:00:35 $";
 #endif /* not lint */
 
 #include <limits.h>
@@ -38,8 +38,9 @@ ex_init(ep)
 		return (1);
 
 	/* Set up ex functions. */
-	ep->s_confirm = ex_confirm;
-	ep->s_end = ex_end;
+	ep->confirm = ex_confirm;
+	ep->end = ex_end;
+	ep->msg = ex_msg;
 
 	/* Write to the terminal. */
 	ep->stdfp = stdout;

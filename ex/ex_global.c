@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 5.20 1993/02/25 17:47:26 bostic Exp $ (Berkeley) $Date: 1993/02/25 17:47:26 $";
+static char sccsid[] = "$Id: ex_global.c,v 5.21 1993/02/28 14:00:35 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:00:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -67,7 +67,7 @@ global(ep, cmdp, cmd)
 
 	/* Get delimiter. */
 	if (*s != '/' && *s != ';') {
-		msg(ep, M_ERROR, "Usage: %s.", cmdp->cmd->usage);
+		ep->msg(ep, M_ERROR, "Usage: %s.", cmdp->cmd->usage);
 		return (1);
 	}
 
@@ -81,14 +81,14 @@ global(ep, cmdp, cmd)
 
 	/* Get the command string. */
 	if (*endp == NULL) {
-		msg(ep, M_ERROR, "No command string specified.");
+		ep->msg(ep, M_ERROR, "No command string specified.");
 		return (1);
 	}
 
 	/* If the substitute string is empty, use the last one. */
 	if (*ptrn == NULL) {
 		if (!FF_ISSET(ep, F_RE_SET)) {
-			msg(ep, M_ERROR, "No previous regular expression.");
+			ep->msg(ep, M_ERROR, "No previous regular expression.");
 			return (1);
 		}
 		re = &ep->sre;

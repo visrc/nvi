@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 5.20 1993/02/24 12:56:50 bostic Exp $ (Berkeley) $Date: 1993/02/24 12:56:50 $";
+static char sccsid[] = "$Id: ex_write.c,v 5.21 1993/02/28 14:00:48 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:00:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -44,7 +44,7 @@ ex_write(ep, cmdp)
 	/* If nothing, just write the file back. */
 	if ((p = cmdp->string) == NULL) {
 		if (FF_ISSET(ep, F_NONAME)) {
-			msg(ep, M_ERROR, "No filename to which to write.");
+			ep->msg(ep, M_ERROR, "No filename to which to write.");
 			return (1);
 		}
 		if (FF_ISSET(ep, F_NAMECHANGED)) {
@@ -70,7 +70,7 @@ ex_write(ep, cmdp)
 	if (*p == '!') {
 		for (; *p && isspace(*p); ++p);
 		if (*p == '\0') {
-			msg(ep, M_ERROR, "Usage: %s.", cmdp->cmd->usage);
+			ep->msg(ep, M_ERROR, "Usage: %s.", cmdp->cmd->usage);
 			return (1);
 		}
 		if (filtercmd(ep,
@@ -101,24 +101,24 @@ ex_write(ep, cmdp)
 		fname = (char *)cmdp->argv[0];
 		break;
 	default:
-		msg(ep, M_ERROR, "Usage: %s.", cmdp->cmd->usage);
+		ep->msg(ep, M_ERROR, "Usage: %s.", cmdp->cmd->usage);
 		return (1);
 	}
 
 	/* If the file exists, must either be a ! or a >> flag. */
 noargs:	if (!force && flags != O_APPEND && !stat(fname, &sb)) {
-		msg(ep, M_ERROR,
+		ep->msg(ep, M_ERROR,
 		    "%s already exists -- use ! to overwrite it.", fname);
 		return (1);
 	}
 
 	if ((fd = open(fname, flags | O_CREAT | O_WRONLY, DEFFILEMODE)) < 0) {
-		msg(ep, M_ERROR, "%s: %s", fname, strerror(errno));
+		ep->msg(ep, M_ERROR, "%s: %s", fname, strerror(errno));
 		return (1);
 	}
 	if ((fp = fdopen(fd, "w")) == NULL) {
 		(void)close(fd);
-		msg(ep, M_ERROR, "%s: %s", fname, strerror(errno));
+		ep->msg(ep, M_ERROR, "%s: %s", fname, strerror(errno));
 		return (1);
 	}
 	if (ex_writefp(ep, fname, fp, &cmdp->addr1, &cmdp->addr2, 1))
@@ -166,11 +166,11 @@ ex_writefp(ep, fname, fp, fm, tm, success_msg)
 				break;
 		}
 	if (fclose(fp)) {
-		msg(ep, M_ERROR, "%s: %s", fname, strerror(errno));
+		ep->msg(ep, M_ERROR, "%s: %s", fname, strerror(errno));
 		return (1);
 	}
 	if (success_msg)
-		msg(ep, M_DISPLAY, "%s: %lu lines, %lu characters.",
+		ep->msg(ep, M_DISPLAY, "%s: %lu lines, %lu characters.",
 		    fname, tm->lno == 0 ? 0 : tm->lno - fm->lno + 1, ccnt);
 	return (0);
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 5.30 1993/02/25 17:47:59 bostic Exp $ (Berkeley) $Date: 1993/02/25 17:47:59 $";
+static char sccsid[] = "$Id: ex_subst.c,v 5.31 1993/02/28 14:00:44 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:00:44 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -66,7 +66,8 @@ ex_substitute(ep, cmdp)
 
 		/* Get the replacement string, save it off. */
 		if (*endp == NULL) {
-			msg(ep, M_ERROR, "No replacement string specified.");
+			ep->msg(ep, M_ERROR,
+			    "No replacement string specified.");
 			return (1);
 		}
 		if (repl != NULL)
@@ -78,7 +79,7 @@ ex_substitute(ep, cmdp)
 		/* If the substitute string is empty, use the last one. */
 		if (*sub == NULL) {
 			if (!FF_ISSET(ep, F_RE_SET)) {
-				msg(ep, M_ERROR,
+				ep->msg(ep, M_ERROR,
 				    "No previous regular expression.");
 				return (1);
 			}
@@ -122,7 +123,7 @@ ex_subagain(ep, cmdp)
 	EXCMDARG *cmdp;
 {
 	if (!FF_ISSET(ep, F_RE_SET)) {
-		msg(ep, M_ERROR, "No previous regular expression.");
+		ep->msg(ep, M_ERROR, "No previous regular expression.");
 		return (1);
 	}
 	return (substitute(ep, cmdp, cmdp->string, &ep->sre, AGAIN));
@@ -147,7 +148,7 @@ static size_t newlcnt;			/* Newlines in replacement. */
 	if (lbclen + (len) > lblen) {					\
 		lblen += MAX(lbclen + (len), 256);			\
 		if ((lb = realloc(lb, lblen)) == NULL) {		\
-			msg(ep, M_ERROR,				\
+			ep->msg(ep, M_ERROR,				\
 			    "Error: %s", strerror(errno));		\
 			lbclen = 0;					\
 			return (1);					\
@@ -162,7 +163,7 @@ static size_t newlcnt;			/* Newlines in replacement. */
 		newlsize += 25;						\
 		if ((newl = realloc(newl,				\
 		    newlsize * sizeof(size_t))) == NULL) {		\
-			msg(ep, M_ERROR,				\
+			ep->msg(ep, M_ERROR,				\
 			    "Error: %s", strerror(errno));		\
 			newlsize = 0;					\
 			return (1);					\
@@ -174,7 +175,7 @@ static size_t newlcnt;			/* Newlines in replacement. */
 	if (lbclen + (len) > lblen) {					\
 		lblen += MAX(lbclen + (len), 256);			\
 		if ((lb = realloc(lb, lblen)) == NULL) {		\
-			msg(ep, M_ERROR,				\
+			ep->msg(ep, M_ERROR,				\
 			    "Error: %s", strerror(errno));		\
 			lbclen = 0;					\
 			return (1);					\
@@ -213,7 +214,7 @@ substitute(ep, cmdp, s, re, cmd)
 			break;
 		case '#':
 			if (FF_ISSET(ep, F_MODE_VI)) {
-				msg(ep, M_ERROR,
+				ep->msg(ep, M_ERROR,
 				    "'#' flag not supported in vi mode.");
 				return (1);
 			}
@@ -227,7 +228,7 @@ substitute(ep, cmdp, s, re, cmd)
 			break;
 		case 'l':
 			if (FF_ISSET(ep, F_MODE_VI)) {
-				msg(ep, M_ERROR,
+				ep->msg(ep, M_ERROR,
 				    "'l' flag not supported in vi mode.");
 				return (1);
 			}
@@ -235,7 +236,7 @@ substitute(ep, cmdp, s, re, cmd)
 			break;
 		case 'p':
 			if (FF_ISSET(ep, F_MODE_VI)) {
-				msg(ep, M_ERROR,
+				ep->msg(ep, M_ERROR,
 				    "'p' flag not supported in vi mode.");
 				return (1);
 			}
@@ -243,12 +244,12 @@ substitute(ep, cmdp, s, re, cmd)
 			break;
 		case 'r':
 			if (cmd == FIRST) {
-		msg(ep, M_ERROR,
+		ep->msg(ep, M_ERROR,
 		    "Regular expression specified; r flag meaningless.");
 				return (1);
 			}
 			if (!FF_ISSET(ep, F_RE_SET)) {
-				msg(ep, M_ERROR,
+				ep->msg(ep, M_ERROR,
 				    "No previous regular expression.");
 				return (1);
 			}
@@ -259,7 +260,7 @@ substitute(ep, cmdp, s, re, cmd)
 		}
 
 	if (rflag == 0 && cmd == MUSTSETR) {
-usage:		msg(ep, M_ERROR, "Usage: %s", cmdp->cmd->usage);
+usage:		ep->msg(ep, M_ERROR, "Usage: %s", cmdp->cmd->usage);
 		return (1);
 	}
 
@@ -301,7 +302,7 @@ skipmatch:	eval = regexec(re, (char *)s, re->re_nsub + 1, match, eflags);
 			to.lno = lno;
 			to.cno = match[0].rm_eo;
 
-			switch(ep->s_confirm(ep, &from, &to)) {
+			switch(ep->confirm(ep, &from, &to)) {
 			case YES:
 				break;
 			case NO:
@@ -432,7 +433,7 @@ nomatch:	if (len)
 	 * screen, put something up.
 	 */
 	if (ep->rptlines == 0 && !FF_ISSET(ep, F_IN_GLOBAL))
-		msg(ep, M_DISPLAY, "No match found.");
+		ep->msg(ep, M_DISPLAY, "No match found.");
 	else if (!lflag && !nflag && !pflag)
 		FF_SET(ep, F_AUTOPRINT);
 
@@ -497,7 +498,7 @@ checkmatchsize(ep, re)
 		matchsize = re->re_nsub + 1;
 		if ((match =
 		    realloc(match, matchsize * sizeof(regmatch_t))) == NULL) {
-			msg(ep, M_ERROR, "Error: %s", strerror(errno));
+			ep->msg(ep, M_ERROR, "Error: %s", strerror(errno));
 			matchsize = 0;
 			return (1);
 		}

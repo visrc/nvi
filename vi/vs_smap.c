@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 5.6 1993/02/25 21:09:07 bostic Exp $ (Berkeley) $Date: 1993/02/25 21:09:07 $";
+static char sccsid[] = "$Id: vs_smap.c,v 5.7 1993/02/28 14:01:59 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:01:59 $";
 #endif /* not lint */
 
 #include <curses.h>
@@ -72,7 +72,7 @@ middle:		p = HMAP + (TMAP - HMAP) / 2;
 	}
 	return (0);
 
-err:	msg(ep, M_BELL, "Movement not possible");
+err:	ep->msg(ep, M_BELL, "Movement not possible");
 	for (p = HMAP; p < TMAP; ++p)
 		(void)scr_sm_next(ep, p, p + 1);
 	return (1);
@@ -209,7 +209,7 @@ scr_sm_up(ep, rp, count, cursor_move)
 	 */
 	for (p = HMAP;; ++p) {
 		if (p > TMAP) {
-			msg(ep, M_ERROR,
+			ep->msg(ep, M_ERROR,
 			    "Line %lu not on the screen.", SCRLNO(ep));
 			return (1);
 		}
@@ -331,7 +331,7 @@ scr_sm_down(ep, rp, count, cursor_move)
 	 */
 	for (p = HMAP;; ++p) {
 		if (p > TMAP) {
-			msg(ep, M_ERROR,
+			ep->msg(ep, M_ERROR,
 			    "Line %lu not on the screen.", SCRLNO(ep));
 			return (1);
 		}
@@ -499,7 +499,8 @@ scr_sm_bot(ep, lnop, cnt)
 	for (; cnt; --cnt)
 		for (;;) {
 			if (--p < HMAP) {
-				msg(ep, M_ERROR, "No such line on the screen.");
+				ep->msg(ep, M_ERROR,
+				    "No such line on the screen.");
 				return (1);
 			}
 			if (p->off == 1)
@@ -531,7 +532,7 @@ scr_sm_mid(ep, lnop)
 
 	down = (last - HMAP->lno + 1) / 2;
 	if (down == 0 && HMAP->off != 1) {
-		msg(ep, M_ERROR, "No such line on the screen.");
+		ep->msg(ep, M_ERROR, "No such line on the screen.");
 		return (1);
 	}
 	*lnop = HMAP->lno + down;
@@ -569,7 +570,8 @@ scr_sm_top(ep, lnop, cnt)
 	for (p = HMAP - 1; cnt; --cnt)
 		for (;;) {
 			if (++p == t) {
-				msg(ep, M_ERROR, "No such line on the screen.");
+				ep->msg(ep, M_ERROR,
+				    "No such line on the screen.");
 				return (1);
 			}
 			if (p->off == 1)

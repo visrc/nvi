@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 5.26 1993/02/16 20:16:12 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:16:12 $";
+static char sccsid[] = "$Id: cut.c,v 5.27 1993/02/28 13:57:50 bostic Exp $ (Berkeley) $Date: 1993/02/28 13:57:50 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -56,8 +56,8 @@ cut(ep, buffer, fm, tm, lmode)
 	 */
 	if (append = isupper(buffer))
 		if (!lmode && cb->flags & CB_LMODE)
-			msg(ep, M_DISPLAY, "Buffer %s changed to line mode.",
-			    CHARNAME(buffer));
+			ep->msg(ep, M_DISPLAY,
+			    "Buffer %s changed to line mode", CHARNAME(buffer));
 
 	/* Free old buffer. */
 	if (cb->head != NULL && !append) {
@@ -100,7 +100,7 @@ cut(ep, buffer, fm, tm, lmode)
 	if (tm->lno > fm->lno && tm->cno > 0) {
 		if (cutline(ep, lno, 0, tm->cno, &tp)) {
 mem:			if (append)
-				msg(ep, M_DISPLAY,
+				ep->msg(ep, M_DISPLAY,
 				    "Contents of %s buffer lost.",
 				    CHARNAME(buffer));
 			freetext(cb->head);
@@ -147,7 +147,7 @@ cutline(ep, lno, fcno, len, newp)
 			len = llen - fcno;
 		if ((lp = malloc(len)) == NULL) {
 			free(tp);
-mem:			msg(ep, M_ERROR, "Error: %s", strerror(errno));
+mem:			ep->msg(ep, M_ERROR, "Error: %s", strerror(errno));
 			return (1);
 		}
 		memmove(lp, p + fcno, len);
@@ -167,7 +167,7 @@ mem:			msg(ep, M_ERROR, "Error: %s", strerror(errno));
 	if (blen < len + tp->len) {					\
 		blen += MAX(blen + 256, len + tp->len);			\
 		if ((bp = realloc(bp, blen)) == NULL) {			\
-			msg(ep, M_ERROR,				\
+			ep->msg(ep, M_ERROR,				\
 			    "Put error: %s", strerror(errno));		\
 			blen = 0;					\
 			return (1);					\

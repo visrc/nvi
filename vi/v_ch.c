@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ch.c,v 5.20 1993/02/16 20:08:14 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:08:14 $";
+static char sccsid[] = "$Id: v_ch.c,v 5.21 1993/02/28 14:01:45 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:01:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -24,12 +24,12 @@ static enum csearchdir lastdir;
 static int lastkey;
 
 #define	NOPREV {							\
-	msg(ep, M_BELL, "No previous F, f, T or t search.");		\
+	ep->msg(ep, M_BELL, "No previous F, f, T or t search.");	\
 	return (1);							\
 }
 
 #define	NOTFOUND(ch) {							\
-	msg(ep, M_BELL, "%s not found.", asciiname[ch]);		\
+	ep->msg(ep, M_BELL, "%s not found.", asciiname[ch]);		\
 	return (1);							\
 }
 

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: delete.c,v 5.18 1993/02/25 17:44:48 bostic Exp $ (Berkeley) $Date: 1993/02/25 17:44:48 $";
+static char sccsid[] = "$Id: delete.c,v 5.19 1993/02/28 13:58:01 bostic Exp $ (Berkeley) $Date: 1993/02/28 13:58:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -88,7 +88,7 @@ delete(ep, fm, tm, lmode)
 			return (1);
 		}
 		if ((bp = malloc(len)) == NULL) {
-			msg(ep, M_ERROR,
+			ep->msg(ep, M_ERROR,
 			    "Error: %s", strerror(errno));
 			return (1);
 		}
@@ -118,7 +118,7 @@ delete(ep, fm, tm, lmode)
 	}
 	tlen += len;		/* XXX Possible overflow! */
 	if ((bp = malloc(tlen)) == NULL) {
-		msg(ep, M_ERROR, "Error: %s", strerror(errno));
+		ep->msg(ep, M_ERROR, "Error: %s", strerror(errno));
 		return (1);
 	}
 

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: log.c,v 5.8 1993/02/24 12:53:42 bostic Exp $ (Berkeley) $Date: 1993/02/24 12:53:42 $";
+static char sccsid[] = "$Id: log.c,v 5.9 1993/02/28 13:58:55 bostic Exp $ (Berkeley) $Date: 1993/02/28 13:58:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,11 +28,11 @@ static int nolog;
 
 /* Try and restart the log on failure, i.e. if we run out of memory. */
 #define	LOG_ERR(ep) {							\
-	msg(ep, M_ERROR, "Error: %s/%d: put log error: %s.",		\
+	ep->msg(ep, M_ERROR, "Error: %s/%d: put log error: %s.",	\
 	    tail(__FILE__), __LINE__, strerror(errno));			\
 	(void)ep->log->close(ep->log);					\
 	if (!log_init(ep))						\
-		msg(ep, M_DISPLAY, "Log restarted.");			\
+		ep->msg(ep, M_DISPLAY, "Log restarted.");		\
 	return (1);							\
 }
 
@@ -52,7 +52,7 @@ log_init(ep)
 	ep->log = dbopen(NULL, O_CREAT | O_EXLOCK | O_NONBLOCK | O_RDWR,
 	    S_IRUSR | S_IWUSR, DB_RECNO, NULL);
 	if (ep->log == NULL) {
-		msg(ep, M_ERROR, "log db: %s", strerror(errno));
+		ep->msg(ep, M_ERROR, "log db: %s", strerror(errno));
 		nolog = 1;
 		return (1);
 	}
@@ -68,7 +68,7 @@ log_init(ep)
 	key.data = &c_ltype;
 	key.size = sizeof(u_char);
 	if (ep->log->put(ep->log, &key, &key, R_CURSORLOG) == -1) {
-		msg(ep, M_ERROR, "Error: %s/%d: put log error: %s.",
+		ep->msg(ep, M_ERROR, "Error: %s/%d: put log error: %s.",
 		    tail(__FILE__), __LINE__, strerror(errno));
 		(void)(ep->log->close)(ep->log);
 		nolog = 1;
@@ -239,7 +239,7 @@ log_backward(ep, rp, undolno)
 	int didop;
 
 	if (nolog) {
-		msg(ep, M_DISPLAY,
+		ep->msg(ep, M_DISPLAY,
 		    "Logging not being performed, undo not possible.");
 		return (1);
 	}
@@ -302,7 +302,7 @@ log_backward(ep, rp, undolno)
 			break;
 		case LOG_START:
 			if (didop == 0)
-				msg(ep, M_DISPLAY, "Nothing to undo.");
+				ep->msg(ep, M_DISPLAY, "Nothing to undo.");
 err:			nolog = 0;
 			return (1);
 		default:
@@ -327,7 +327,7 @@ log_forward(ep, rp)
 	int didop, rval;
 
 	if (nolog) {
-		msg(ep, M_DISPLAY,
+		ep->msg(ep, M_DISPLAY,
 		    "Logging not being performed, roll-forward not possible.");
 		return (1);
 	}
@@ -337,7 +337,7 @@ log_forward(ep, rp)
 	for (didop = 0;;) {
 		rval = ep->log->seq(ep->log, &key, &data, R_NEXT);
 		if (rval == 1) {
-			msg(ep, M_DISPLAY,
+			ep->msg(ep, M_DISPLAY,
 			    "No further changes to roll forward.");
 			nolog = 0;
 			return (1);

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_replace.c,v 5.14 1993/02/24 12:58:59 bostic Exp $ (Berkeley) $Date: 1993/02/24 12:58:59 $";
+static char sccsid[] = "$Id: v_replace.c,v 5.15 1993/02/28 14:01:53 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:01:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -72,7 +72,8 @@ v_replace(ep, vp, fm, tm, rp)
 
 		if (p != emptybuf) {
 			if ((np = malloc(len)) == NULL) {
-				msg(ep, M_ERROR, "Error: %s", strerror(errno));
+				ep->msg(ep, M_ERROR,
+				    "Error: %s", strerror(errno));
 				return (1);
 			}
 			memmove(np, p, len);
@@ -92,7 +93,7 @@ err:				if (p != emptybuf)
 		break;
 	default:
 		if ((np = malloc(len)) == NULL) {
-			msg(ep, M_ERROR, "Error: %s", strerror(errno));
+			ep->msg(ep, M_ERROR, "Error: %s", strerror(errno));
 			return (1);
 		}
 		memmove(np, p, len);

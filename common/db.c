@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 5.20 1993/02/25 17:45:35 bostic Exp $ (Berkeley) $Date: 1993/02/25 17:45:35 $";
+static char sccsid[] = "$Id: db.c,v 5.21 1993/02/28 13:58:49 bostic Exp $ (Berkeley) $Date: 1993/02/28 13:58:49 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -72,7 +72,8 @@ file_gline(ep, lno, lenp)
 	key.size = sizeof(lno);
 	switch((ep->db->get)(ep->db, &key, &data, 0)) {
         case -1:
-		msg(ep, M_ERROR, "Error: %s/%d: unable to get line %u: %s.",
+		ep->msg(ep, M_ERROR,
+		    "Error: %s/%d: unable to get line %u: %s.",
 		    tail(__FILE__), __LINE__, lno, strerror(errno));
 		/* FALLTHROUGH */
         case 1:
@@ -112,7 +113,8 @@ file_dline(ep, lno)
 	key.data = &lno;
 	key.size = sizeof(lno);
 	if ((ep->db->del)(ep->db, &key, 0) == 1) {
-		msg(ep, M_ERROR, "Error: %s/%d: unable to delete line %u: %s.",
+		ep->msg(ep, M_ERROR,
+		    "Error: %s/%d: unable to delete line %u: %s.",
 		    tail(__FILE__), __LINE__, lno, strerror(errno));
 		return (1);
 	}
@@ -154,7 +156,7 @@ file_aline(ep, lno, p, len)
 	data.data = p;
 	data.size = len;
 	if ((ep->db->put)(ep->db, &key, &data, R_IAFTER) == -1) {
-		msg(ep, M_ERROR,
+		ep->msg(ep, M_ERROR,
 		    "Error: %s/%d: unable to append to line %u: %s.",
 		    tail(__FILE__), __LINE__, lno, strerror(errno));
 		return (1);
@@ -200,7 +202,7 @@ file_iline(ep, lno, p, len)
 	data.data = p;
 	data.size = len;
 	if ((ep->db->put)(ep->db, &key, &data, R_IBEFORE) == -1) {
-		msg(ep, M_ERROR,
+		ep->msg(ep, M_ERROR,
 		    "Error: %s/%d: unable to insert at line %u: %s.",
 		    tail(__FILE__), __LINE__, lno, strerror(errno));
 		return (1);
@@ -249,7 +251,8 @@ file_sline(ep, lno, p, len)
 	data.data = p;
 	data.size = len;
 	if ((ep->db->put)(ep->db, &key, &data, 0) == -1) {
-		msg(ep, M_ERROR, "Error: %s/%d: unable to store line %u: %s.",
+		ep->msg(ep, M_ERROR,
+		    "Error: %s/%d: unable to store line %u: %s.",
 		    tail(__FILE__), __LINE__, lno, strerror(errno));
 		return (1);
 	}
@@ -291,7 +294,8 @@ file_ibresolv(ep, lno)
 	data.data = tp->lp;
 	data.size = tp->len;
 	if ((ep->db->put)(ep->db, &key, &data, 0) == -1) {
-		msg(ep, M_ERROR, "Error: %s/%d: unable to store line %u: %s.",
+		ep->msg(ep, M_ERROR,
+		    "Error: %s/%d: unable to store line %u: %s.",
 		    tail(__FILE__), __LINE__, lno, strerror(errno));
 		return (1);
 	}
@@ -302,7 +306,7 @@ file_ibresolv(ep, lno)
 		data.data = tp->lp;
 		data.size = tp->len;
 		if ((ep->db->put)(ep->db, &key, &data, R_IAFTER) == -1) {
-			msg(ep, M_ERROR,
+			ep->msg(ep, M_ERROR,
 			    "Error: %s/%d: unable to store line %u: %s.",
 			    tail(__FILE__), __LINE__, lno, strerror(errno));
 			return (1);
@@ -339,7 +343,8 @@ file_lline(ep)
 
 	switch((ep->db->seq)(ep->db, &key, &data, R_LAST)) {
         case -1:
-		msg(ep, M_ERROR, "Error: %s/%d: unable to get last line: %s.",
+		ep->msg(ep, M_ERROR,
+		    "Error: %s/%d: unable to get last line: %s.",
 		    tail(__FILE__), __LINE__, strerror(errno));
 		/* FALLTHROUGH */
         case 1:

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: mark.c,v 5.10 1993/02/16 20:16:21 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:16:21 $";
+static char sccsid[] = "$Id: mark.c,v 5.11 1993/02/28 13:59:12 bostic Exp $ (Berkeley) $Date: 1993/02/28 13:59:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -52,7 +52,7 @@ mark_set(ep, key, mp)
 	MARK *mp;
 {
 	if (key > UCHAR_MAX) {
-		msg(ep, M_ERROR, "Invalid mark name.");
+		ep->msg(ep, M_ERROR, "Invalid mark name.");
 		return (1);
 	}
 	marks[key] = *mp;
@@ -71,12 +71,12 @@ mark_get(ep, key)
 	MARK *mp;
 
 	if (key > UCHAR_MAX) {
-		msg(ep, M_ERROR, "Invalid mark name.");
+		ep->msg(ep, M_ERROR, "Invalid mark name.");
 		return (NULL);
 	}
 	mp = &marks[key];
 	if (mp->lno == OOBLNO) {
-		msg(ep, M_ERROR, "Mark '%c not set.", key);
+		ep->msg(ep, M_ERROR, "Mark '%c not set.", key);
                 return (NULL);
 	}
 	return (mp);

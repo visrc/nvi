@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 5.30 1993/02/25 19:41:23 bostic Exp $ (Berkeley) $Date: 1993/02/25 19:41:23 $";
+static char sccsid[] = "$Id: ex_bang.c,v 5.31 1993/02/28 14:00:29 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:00:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,7 +46,7 @@ ex_bang(ep, cmdp)
 
 	/* Make sure we got something. */
 	if (cmdp->string == NULL) {
-		msg(ep, M_ERROR, "Usage: %s", cmdp->cmd->usage);
+		ep->msg(ep, M_ERROR, "Usage: %s", cmdp->cmd->usage);
 		return (1);
 	}
 
@@ -57,7 +57,7 @@ ex_bang(ep, cmdp)
 		switch (*p) {
 		case '!':
 			if (lastcom == NULL) {
-				msg(ep, M_ERROR,
+				ep->msg(ep, M_ERROR,
 				    "No previous command to replace \"!\".");
 				return (1);
 			}
@@ -66,7 +66,7 @@ ex_bang(ep, cmdp)
 			break;
 		case '%':
 			if (FF_ISSET(ep, F_NONAME)) {
-				msg(ep, M_ERROR,
+				ep->msg(ep, M_ERROR,
 				    "No filename to substitute for %%.");
 				return (1);
 			}
@@ -75,7 +75,7 @@ ex_bang(ep, cmdp)
 			break;
 		case '#':
 			if (FF_ISSET(ep, F_NONAME)) {
-				msg(ep, M_ERROR,
+				ep->msg(ep, M_ERROR,
 				    "No filename to substitute for #.");
 				return (1);
 			}
@@ -90,7 +90,7 @@ ex_bang(ep, cmdp)
 
 	/* Allocate space. */
 	if ((com = malloc(len)) == NULL) {
-		msg(ep, M_ERROR, "Error: %s", strerror(errno));
+		ep->msg(ep, M_ERROR, "Error: %s", strerror(errno));
 		return (1);
 	}
 

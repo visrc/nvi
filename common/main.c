@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.52 1993/02/25 20:55:55 bostic Exp $ (Berkeley) $Date: 1993/02/25 20:55:55 $";
+static char sccsid[] = "$Id: main.c,v 5.53 1993/02/28 13:59:05 bostic Exp $ (Berkeley) $Date: 1993/02/28 13:59:05 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -50,6 +50,7 @@ struct termios original_termios;	/* Original terminal state. */
 
 char *VB;				/* Visual bell termcap string. */
 
+static void eflush __P((EXF *));
 static void err __P((const char *, ...));
 static void obsolete __P((char *[]));
 static void usage __P((void));
@@ -84,6 +85,7 @@ main(argc, argv)
 	ep = &fake_exf;
 	exf_def(ep);
 	ep->flags = F_DUMMY | F_IGNORE;
+	ep->msg = ex_msg;
 	SCRP(ep) = &fake_scr;
 	scr_def(SCRP(ep));
 	set_window_size(ep, 0);
@@ -152,7 +154,7 @@ main(argc, argv)
 
 	/* Initialize the options. */
 	if (opts_init(ep)) {
-		msg_eflush(ep);
+		eflush(ep);
 		exit(1);
 	}
 
@@ -182,7 +184,7 @@ main(argc, argv)
 	/* Source the EXINIT environment variable. */
 	if ((p = getenv("EXINIT")) != NULL)
 		if ((p = strdup(p)) == NULL)
-			msg(ep, M_ERROR, "Error: %s", strerror(errno));
+			ep->msg(ep, M_ERROR, "Error: %s", strerror(errno));
 		else {
 			(void)ex_cstring(ep, (u_char *)p, strlen(p), 1);
 			free(p);
@@ -197,7 +199,7 @@ main(argc, argv)
 	if (errf) {
 		SETCMDARG(cmd, C_ERRLIST, 0, OOBLNO, 0, 0, errf);
 		if (ex_errlist(ep, &cmd)) {
-			msg_eflush(ep);
+			eflush(ep);
 			exit(1);
 		}
 	} else
@@ -206,7 +208,7 @@ main(argc, argv)
 	if (tag) {
 		SETCMDARG(cmd, C_TAG, 0, OOBLNO, 0, 0, tag);
 		if (ex_tagpush(ep, &cmd)) {
-			msg_eflush(ep);
+			eflush(ep);
 			exit(1);
 		}
 	}
@@ -214,7 +216,7 @@ main(argc, argv)
 	/* Get a real EXF structure. */
 	ep->enext = file_first(1);
 	if ((tep = file_switch(ep, 0)) == NULL) {
-		msg_eflush(ep);
+		eflush(ep);
 		exit(1);
 	}
 	ep = tep;
@@ -271,7 +273,7 @@ main(argc, argv)
 	opts_end(ep);
 
 	/* Flush any left-over error message. */
-	msg_eflush(ep);
+	eflush(ep);
 
 	exit(0);
 }
@@ -324,6 +326,25 @@ usage()
 	(void)fprintf(stderr,
 	    "usage: vi [-eRrv] [-c command] [-m file] [-t tag]\n");
 	exit(1);
+}
+
+/*
+ * eflush --
+ *	Flush any accumulated messages to the terminal.
+ */
+static void
+eflush(ep)
+	EXF *ep;
+{
+	MSG *mp;
+
+	if (FF_ISSET(ep, F_BELLSCHED))
+		bell(ep);
+	for (mp = ep->msgp;
+	    mp != NULL && !(mp->flags & M_EMPTY); mp = mp->next) {
+		(void)fprintf(ep->stdfp, "%.*s\n", mp->len, mp->mbuf);
+		mp->flags |= M_EMPTY;
+	}
 }
 
 void
