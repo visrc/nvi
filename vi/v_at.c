@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_at.c,v 5.18 1993/04/12 14:49:37 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:49:37 $";
+static char sccsid[] = "$Id: v_at.c,v 5.19 1993/05/17 16:37:24 bostic Exp $ (Berkeley) $Date: 1993/05/17 16:37:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -79,5 +79,6 @@ v_at(sp, ep, vp, fm, tm, rp)
 
 	sp->atkey_stack[key] = 1;
 
+	*rp = *fm;
 	return (0);
 }
