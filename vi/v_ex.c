@@ -6,10 +6,10 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 5.15 1992/11/01 14:19:33 bostic Exp $ (Berkeley) $Date: 1992/11/01 14:19:33 $";
+static char sccsid[] = "$Id: v_ex.c,v 5.16 1992/11/01 22:16:19 bostic Exp $ (Berkeley) $Date: 1992/11/01 22:16:19 $";
 #endif /* not lint */
 
-#include <sys/types.h>
+#include <sys/param.h>
 
 #include <curses.h>
 #include <limits.h>
@@ -80,9 +80,17 @@ v_ex(vp, fm, tm, rp)
 	else
 		v_leaveex();
 
-	/* The only cursor modifications will have been real. */
+	/*
+	 * The only cursor modifications will have been real.  However,
+	 * the underlying line may have changed; don't trust anything.
+	 */
 	rp->lno = curf->lno;
-	rp->cno = curf->cno;
+	if (file_gline(curf, curf->lno, &len) == NULL) {
+		GETLINE_ERR(curf->lno);
+		return (1);
+	}
+	rp->cno = MIN(curf->cno, len ? len - 1 : 0);
+	curf->olno = OOBLNO;
 
 	return (0);
 }
