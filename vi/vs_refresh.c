@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.64 1993/05/17 14:21:20 bostic Exp $ (Berkeley) $Date: 1993/05/17 14:21:20 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.65 1993/05/27 22:02:15 bostic Exp $ (Berkeley) $Date: 1993/05/27 22:02:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -203,18 +203,20 @@ middle:		if (svi_sm_fill(sp, ep, LNO, P_MIDDLE))
 	 * lines.  This gets to the right spot by scrolling, and, in a
 	 * binary, by scrolling hundreds of lines.
 	 */
-adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
-	    (LNO == HMAP->lno || LNO == TMAP->lno)) {
-		cnt = svi_screens(sp, ep, LNO, &CNO);
-		if (LNO == HMAP->lno && cnt < HMAP->off) {
-			while (cnt < HMAP->off)
-				if (svi_sm_1down(sp, ep))
-					return (1);
-		} else if (LNO == TMAP->lno && cnt > TMAP->off)
-			while (cnt > TMAP->off)
-				if (svi_sm_1up(sp, ep))
-					return (1);
-	}
+adjust:	if (!O_ISSET(sp, O_LEFTRIGHT))
+		if (LNO == HMAP->lno) {
+			cnt = svi_screens(sp, ep, LNO, &CNO);
+			if (cnt < HMAP->off)
+				while (cnt < HMAP->off)
+					if (svi_sm_1down(sp, ep))
+						return (1);
+		} else if (LNO == TMAP->lno) {
+			cnt = svi_screens(sp, ep, LNO, &CNO);
+			if (cnt > TMAP->off)
+				while (cnt > TMAP->off)
+					if (svi_sm_1up(sp, ep))
+						return (1);
+		}
 
 	/* If the screen needs to be repainted, skip cursor optimization. */
 	if (F_ISSET(sp, S_REDRAW))
