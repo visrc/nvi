@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.31 1996/02/26 14:54:07 bostic Exp $ (Berkeley) $Date: 1996/02/26 14:54:07 $
+dnl	$Id: configure.in,v 8.32 1996/02/26 15:21:00 bostic Exp $ (Berkeley) $Date: 1996/02/26 15:21:00 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(configure)
@@ -82,21 +82,27 @@ dnl Checks for libraries.
 dnl Find the X libraries and includes.
 AC_PATH_X
 if test "$no_x" != yes; then
-	LIBS="-L$x_libraries -lX11 $LIBS"
+	XLIBS="-L$x_libraries -lX11"
 fi
 
 dnl Check to see if we can load a Tcl interpreter and Tk vi front-end.
+dnl If we can, then both nvi and tknvi have the same load libraries.
+dnl If we can't, then nvi doesn't want to load the X libraries, and we
+dnl don't care about tknvi.
 AC_SUBST(tknvi)
+AC_SUBST(TKLIBS)
 SAVED_CFLAGS="$CFLAGS"
 CFLAGS="-I/usr/local/include $CFLAGS"
 SAVED_LIBS="$LIBS"
-LIBS="-L/usr/local/lib -ltk -ltcl -lm $LIBS"
+LIBS="-L/usr/local/lib -ltk -ltcl -lm $XLIBS $LIBS"
+
 AC_MSG_CHECKING(for Tcl interpreter)
 AC_CACHE_VAL(vi_cv_tcltk, [dnl
 AC_TRY_LINK([#include <tcl.h>], [Tcl_Eval(0, 0);],
 	[vi_cv_tcltk=yes], [vi_cv_tcltk=no])])
 if test "$vi_cv_tcltk" = yes; then
 	tknvi=tknvi
+	TKLIBS=$LIBS
 	AC_DEFINE(HAVE_TCL_INTERP)
 else
 	CFLAGS=$SAVED_CFLAGS
@@ -116,7 +122,6 @@ if test "$vi_cv_termlib" != no; then
 fi
 
 dnl Check to see what curses library the user wants.
-AC_SUBST(cobjs)
 AC_MSG_CHECKING(for curses library)
 AC_CACHE_VAL(vi_cv_curses, [dnl
 AC_ARG_WITH(curses,
@@ -156,7 +161,7 @@ if test "$vi_cv_curses" = "system curses"; then
 fi
 if test "$vi_cv_curses" = "vi curses"; then
 	CFLAGS="$CFLAGS -I../curses"
-	cobjs=\$\{COBJS\}
+	LIBOBJS="\$(COBJS) $LIBOBJS"
 fi
 if test "$vi_cv_curses" = "user specified"; then
 	CFLAGS="$CFLAGS -I`cat curses_include_path`"
@@ -268,9 +273,10 @@ if test "$vi_cv_curses" = "vi curses"; then
 else
 	dnl Check for the addnstr function.
 	AC_MSG_CHECKING(for addnstr)
+	AC_CACHE_VAL(vi_cv_have_curses_addnstr, [dnl
 	AC_TRY_LINK([#include <curses.h>], [addnstr(0, 0);],
 		[vi_cv_have_curses_addnstr=yes],
-		[vi_cv_have_curses_addnstr=no])
+		[vi_cv_have_curses_addnstr=no])])
 	if test "$vi_cv_have_curses_addnstr" = yes; then
 		AC_DEFINE(HAVE_CURSES_ADDNSTR)
 	fi
@@ -278,9 +284,10 @@ else
 
 	dnl Check for the beep function.
 	AC_MSG_CHECKING(for beep)
+	AC_CACHE_VAL(vi_cv_have_curses_beep, [dnl
 	AC_TRY_LINK([#include <curses.h>], [beep();],
 		[vi_cv_have_curses_beep=yes],
-		[vi_cv_have_curses_beep=no])
+		[vi_cv_have_curses_beep=no])])
 	if test "$vi_cv_have_curses_beep" = yes; then
 		AC_DEFINE(HAVE_CURSES_BEEP)
 	fi
@@ -288,9 +295,10 @@ else
 
 	dnl Check for the flash function.
 	AC_MSG_CHECKING(for flash)
+	AC_CACHE_VAL(vi_cv_have_curses_flash, [dnl
 	AC_TRY_LINK([#include <curses.h>], [flash();],
 		[vi_cv_have_curses_flash=yes],
-		[vi_cv_have_curses_flash=no])
+		[vi_cv_have_curses_flash=no])])
 	if test "$vi_cv_have_curses_flash" = yes; then
 		AC_DEFINE(HAVE_CURSES_FLASH)
 	fi
@@ -298,9 +306,10 @@ else
 
 	dnl Check for the idlok function.
 	AC_MSG_CHECKING(for idlok)
+	AC_CACHE_VAL(vi_cv_have_curses_idlok, [dnl
 	AC_TRY_LINK([#include <curses.h>], [idlok(0, 0);],
 		[vi_cv_have_curses_idlok=yes],
-		[vi_cv_have_curses_idlok=no])
+		[vi_cv_have_curses_idlok=no])])
 	if test "$vi_cv_have_curses_idlok" = yes; then
 		AC_DEFINE(HAVE_CURSES_IDLOK)
 	fi
@@ -308,9 +317,10 @@ else
 
 	dnl Check for the keypad function.
 	AC_MSG_CHECKING(for keypad)
+	AC_CACHE_VAL(vi_cv_have_curses_keypad, [dnl
 	AC_TRY_LINK([#include <curses.h>], [keypad(0, 0);],
 		[vi_cv_have_curses_keypad=yes],
-		[vi_cv_have_curses_keypad=no])
+		[vi_cv_have_curses_keypad=no])])
 	if test "$vi_cv_have_curses_keypad" = yes; then
 		AC_DEFINE(HAVE_CURSES_KEYPAD)
 	fi
@@ -318,9 +328,10 @@ else
 
 	dnl Check for the newterm function.
 	AC_MSG_CHECKING(for newterm)
+	AC_CACHE_VAL(vi_cv_have_curses_newterm, [dnl
 	AC_TRY_LINK([#include <curses.h>], [newterm(0, 0, 0);],
 		[vi_cv_have_curses_newterm=yes],
-		[vi_cv_have_curses_newterm=no])
+		[vi_cv_have_curses_newterm=no])])
 	if test "$vi_cv_have_curses_newterm" = yes; then
 		AC_DEFINE(HAVE_CURSES_NEWTERM)
 	fi
@@ -382,7 +393,6 @@ dnl it in, unless the user specifies on the command line that we're to use
 dnl the C library one.  However, we try and compile in the C library's DB
 dnl hash routines, since vi doesn't use them and the local versions may be
 dnl used to support the password and termcap databases, and may have diverged.
-AC_SUBST(dbobjs)
 AC_MSG_CHECKING(for Berkeley DB package)
 AC_CACHE_VAL(vi_cv_db_lib, [dnl
 AC_ARG_WITH(db,
@@ -401,7 +411,7 @@ AC_ARG_WITH(db,
 	fi], [vi_cv_db_lib="vi DB routines"])])
 if test "$vi_cv_db_lib" = "vi DB routines"; then
 	CFLAGS="$CFLAGS -I../db/include"
-	dbobjs=\$\{DBOBJS\}
+	LIBOBJS="\$(DBOBJS) $LIBOBJS"
 fi
 AC_MSG_RESULT($vi_cv_db_lib)
 AC_MSG_CHECKING(for DB hash routines)
@@ -418,7 +428,6 @@ dnl XXX
 dnl Need to have Henry's word-search extensions, so for now, always compile
 dnl it in, unless the user specifies on the command line that we're to use
 dnl the C library one.
-AC_SUBST(reobjs)
 AC_MSG_CHECKING(for POSIX 1003.2 RE routines)
 AC_CACHE_VAL(vi_cv_re_lib, [dnl
 AC_ARG_WITH(re, 
@@ -437,7 +446,7 @@ AC_ARG_WITH(re,
 	fi], [vi_cv_re_lib="vi RE routines"])])
 if test "$vi_cv_re_lib" = "vi RE routines"; then
 	CFLAGS="$CFLAGS -I../regex"
-	reobjs=\$\{REOBJS\}
+	LIBOBJS="\$(REOBJS) $LIBOBJS"
 fi
 AC_MSG_RESULT($vi_cv_re_lib)
 
