@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_word.c,v 5.16 1993/05/02 18:02:13 bostic Exp $ (Berkeley) $Date: 1993/05/02 18:02:13 $";
+static char sccsid[] = "$Id: v_word.c,v 5.17 1993/05/02 18:50:38 bostic Exp $ (Berkeley) $Date: 1993/05/02 18:50:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -111,7 +111,7 @@ fword(sp, ep, vp, fm, rp, spaceonly)
 	 * BSD's ugliest city."
 	 */
 	len = llen - cno;
-	empty = len == 1;
+	empty = len == 0;
 	for (startp = p += cno; cnt--; empty = 0) {
 		if (len != 0)
 			if (spaceonly) {
@@ -130,22 +130,20 @@ fword(sp, ep, vp, fm, rp, spaceonly)
 					break;
 				FW(isspace(*p));
 			}
-		if (cnt == 0) {
-			/* 'c' and 'y' don't move into the next line. */
-			if (F_ISSET(vp, VC_C | VC_Y))
-				break;
-			/*
-			 * 'd' moves into the next line only if this line
-			 * was empty.
-			 */
-			if (F_ISSET(vp, VC_D) && llen != 0)
-				break;
-		}
+		/*
+		 * 'c', 'd' and 'y' don't move into the next line unless
+		 * this line was empty.
+		 */
+		if (cnt == 0 && llen != 0 && F_ISSET(vp, VC_C | VC_D | VC_Y))
+			break;
 		if (len == 0) {
 			/* If we hit EOF, stay there (historic practice). */
 			if ((p = file_gline(sp, ep, ++lno, &llen)) == NULL) {
-				/* If were already at eof, complain. */
-				if (empty && !F_ISSET(vp, VC_C | VC_D | VC_Y)) {
+				/*
+				 * Complain if were already at eof, unless
+				 * it's a change command.
+				 */
+				if (empty && !F_ISSET(vp, VC_C)) {
 					v_eof(sp, ep, NULL);
 					return (1);
 				}
@@ -155,7 +153,8 @@ fword(sp, ep, vp, fm, rp, spaceonly)
 					return (1);
 				}
 				rp->lno = lno;
-				/* 'c', 'd', and 'y' go 1 past EOF. */
+
+				/* 'c', 'd', and 'y' move 1 past EOF. */
 				rp->cno = llen ?
 				    F_ISSET(vp, VC_C | VC_D | VC_Y) ? 
 				    llen : llen - 1 : 0;
