@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 10.8 1995/09/21 12:07:13 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:07:13 $";
+static char sccsid[] = "$Id: ex_global.c,v 10.9 1995/10/04 12:32:45 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:32:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -97,7 +97,7 @@ ex_g_setup(sp, cmdp, cmd)
 	for (p = cmdp->argv[0]->bp; isblank(*p); ++p);
 	if (*p == '\0' || isalnum(*p) ||
 	    *p == '\\' || *p == '|' || *p == '\n') {
-usage:		ex_message(sp, cmdp->cmd->usage, EXM_USAGE);
+usage:		ex_emsg(sp, cmdp->cmd->usage, EXM_USAGE);
 		return (1);
 	}
 	delim = *p++;
@@ -131,7 +131,7 @@ usage:		ex_message(sp, cmdp->cmd->usage, EXM_USAGE);
 	/* If the pattern string is empty, use the last one. */
 	if (*ptrn == '\0') {
 		if (!F_ISSET(sp, S_RE_SEARCH)) {
-			ex_message(sp, NULL, EXM_NOPREVRE);
+			ex_emsg(sp, NULL, EXM_NOPREVRE);
 			return (1);
 		}
 		re = &sp->sre;
