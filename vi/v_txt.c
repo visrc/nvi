@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.114 1994/05/16 19:18:01 bostic Exp $ (Berkeley) $Date: 1994/05/16 19:18:01 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.115 1994/05/16 19:24:53 bostic Exp $ (Berkeley) $Date: 1994/05/16 19:24:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -888,6 +888,14 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 				(void)tcsetattr(STDIN_FILENO,
 				    TCSASOFT | TCSADRAIN, &t);
 			}
+			/*
+			 * XXX
+			 * Pass the tests for abbreviations, so ":ab xa XA",
+			 * "ixa^V<space>" works.  Historic vi did something
+			 * weird here: ":ab x y", "ix\<space>" resulted in
+			 * "<space>x\", for some unknown reason.  Had to be
+			 * a bug.
+			 */
 			goto insl_ch;
 		case K_HEXCHAR:
 			hex = H_NEXTCHAR;
