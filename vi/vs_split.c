@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_split.c,v 10.32 1996/10/31 09:34:26 bostic Exp $ (Berkeley) $Date: 1996/10/31 09:34:26 $";
+static const char sccsid[] = "$Id: vs_split.c,v 10.33 1996/10/31 09:49:59 bostic Exp $ (Berkeley) $Date: 1996/10/31 09:49:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -217,7 +217,7 @@ vs_vsplit(sp, new)
 	/* Check to see if it's possible. */
 	if (sp->cols / 2 <= MINIMUM_SCREEN_COLS) {
 		msgq(sp, M_ERR,
-		    "222|Screen must be larger than %d columns to split",
+		    "288|Screen must be larger than %d columns to split",
 		    MINIMUM_SCREEN_COLS * 2);
 		return (1);
 	}
