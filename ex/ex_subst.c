@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.54 1994/07/16 17:42:04 bostic Exp $ (Berkeley) $Date: 1994/07/16 17:42:04 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.55 1994/07/21 13:57:44 bostic Exp $ (Berkeley) $Date: 1994/07/21 13:57:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -130,7 +130,7 @@ ex_substitute(sp, ep, cmdp)
 	 * If the pattern string is empty, use the last RE (not just the
 	 * last substitution RE).
 	 */
-	if (*ptrn == NULL) {
+	if (*ptrn == '\0') {
 		if (!F_ISSET(sp, S_SRE_SET)) {
 			msgq(sp, M_ERR, "No previous regular expression");
 			return (1);

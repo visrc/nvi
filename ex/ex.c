@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.131 1994/07/21 11:02:21 bostic Exp $ (Berkeley) $Date: 1994/07/21 11:02:21 $";
+static char sccsid[] = "$Id: ex.c,v 8.132 1994/07/21 13:57:16 bostic Exp $ (Berkeley) $Date: 1994/07/21 13:57:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1194,7 +1194,7 @@ addr2:	switch (exc.addrcnt) {
 		 *	vi
 		 *	:edit +1|s/|/PIPE/|w file1| e file2|1 | s/\//SLASH/|wq
 		 */
-		if (arg1_len == NULL && save_cmdlen == 0)
+		if (arg1_len == 0 && save_cmdlen == 0)
 			return (0);
 		if (IN_VI_MODE(sp) && term_push(sp, "\n", 1, 0))
 			goto err;
