@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_bsd.c,v 8.25 1996/04/30 17:36:22 bostic Exp $ (Berkeley) $Date: 1996/04/30 17:36:22 $";
+static const char sccsid[] = "$Id: cl_bsd.c,v 8.26 1996/06/12 14:15:22 bostic Exp $ (Berkeley) $Date: 1996/06/12 14:15:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -130,7 +130,7 @@ keypad(a, on)
 {
 	char *p;
 
-	if ((p = tigetstr(on ? "smkx" : "rmkx")) != (char *)-1) {
+	if ((p = (char *)tigetstr(on ? "smkx" : "rmkx")) != (char *)-1) {
 		(void)tputs(p, 0, cl_putchar);
 		(void)fflush(stdout);
 	}
@@ -176,13 +176,16 @@ setupterm(ttype, fno, errp)
 	if ((*errp = tgetent(buf, ttype)) > 0) {
 		if (ke != NULL)
 			free(ke);
-		ke = ((p = tigetstr("rmkx")) == (char *)-1) ? NULL : strdup(p);
+		ke = ((p = (char *)tigetstr("rmkx")) == (char *)-1) ?
+		    NULL : strdup(p);
 		if (ks != NULL)
 			free(ks);
-		ks = ((p = tigetstr("smkx")) == (char *)-1) ? NULL : strdup(p);
+		ks = ((p = (char *)tigetstr("smkx")) == (char *)-1) ?
+		    NULL : strdup(p);
 		if (vb != NULL)
 			free(vb);
-		vb = ((p = tigetstr("flash")) == (char *)-1) ? NULL : strdup(p);
+		vb = ((p = (char *)tigetstr("flash")) == (char *)-1) ?
+		    NULL : strdup(p);
 	}
 }
 #endif /* !HAVE_CURSES_SETUPTERM */
