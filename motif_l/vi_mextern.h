@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	"$Id: vi_mextern.h,v 8.1 1996/12/12 09:16:31 bostic Exp $ (Berkeley) $Date: 1996/12/12 09:16:31 $";
+ *	"$Id: vi_mextern.h,v 8.2 1996/12/12 09:32:27 bostic Exp $ (Berkeley) $Date: 1996/12/12 09:32:27 $";
  */
 
 /*
@@ -20,8 +20,6 @@ extern char *vi_progname;			/* Program name. */
 extern int   vi_ofd;				/* Output file descriptor. */
 
 /*
- * The standard input function.
- *
  * RAZ -- anyway we can get the library to do this setup?
  */
 #ifdef __STDC__
