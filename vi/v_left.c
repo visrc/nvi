@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_left.c,v 8.11 1994/08/17 14:35:55 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:35:55 $";
+static char sccsid[] = "$Id: v_left.c,v 8.12 1994/10/13 13:59:26 bostic Exp $ (Berkeley) $Date: 1994/10/13 13:59:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -55,14 +55,13 @@ v_left(sp, ep, vp)
 		vp->m_stop.cno = 0;
 
 	/*
-	 * VC_D and non-motion commands move to the end of the range,
-	 * VC_Y stays at the start.  Ignore VC_C and VC_DEF.  Motion
-	 * commands adjust the starting point to the character before
-	 * the current one.
+	 * All commands move to the end of the range.  Motion commands
+	 * adjust the starting point to the character before the current
+	 * one.
 	 */
-	vp->m_final = F_ISSET(vp, VC_Y) ? vp->m_start : vp->m_stop;
 	if (ISMOTION(vp))
 		--vp->m_start.cno;
+	vp->m_final = vp->m_stop;
 	return (0);
 }
 
@@ -110,10 +109,11 @@ v_cfirst(sp, ep, vp)
 		return (1);
 
 	/*
-	 * VC_D and non-motion commands move to the end of the range,
-	 * VC_Y stays at the start.  Ignore VC_C and VC_DEF.
+	 * Delete and non-motion commands move to the end of the range,
+	 * yank stays at the start.  Ignore others.
 	 */
-	vp->m_final = F_ISSET(vp, VC_Y) ? vp->m_start : vp->m_stop;
+	vp->m_final =
+	    ISMOTION(vp) && ISCMD(vp->rkp, 'y') ? vp->m_start : vp->m_stop;
 	return (0);
 }
 
@@ -156,14 +156,13 @@ v_first(sp, ep, vp)
 	}
 
 	/*
-	 * VC_D and non-motion commands move to the end of the range,
-	 * VC_Y stays at the start.  Ignore VC_C and VC_DEF.  Motion
-	 * commands adjust the starting point to the character before
-	 * the current one.
+	 * All commands move to the end of the range.  Motion commands
+	 * adjust the starting point to the character before the current
+	 * one.
 	 */
-	vp->m_final = F_ISSET(vp, VC_Y) ? vp->m_start : vp->m_stop;
 	if (ISMOTION(vp))
 		--vp->m_start.cno;
+	vp->m_final = vp->m_stop;
 	return (0);
 }
 
@@ -209,20 +208,18 @@ v_ncol(sp, ep, vp)
 
 	/*
 	 * If moving right, non-motion commands move to the end of the range.
-	 * VC_D and VC_Y stay at the start.  If moving left, non-motion and
-	 * VC_D commands move to the end of the range.  VC_Y remains at the
-	 * start.  Ignore VC_C and VC_DEF.  Motion left commands adjust the
-	 * starting point to the character before the current one.
+	 * Delete and yank stay at the start.
+	 *
+	 * If moving left, all commands move to the end of the range.  Motion
+	 * commands adjust the starting point to the character before the
+	 * current one.
 	 */
 	if (vp->m_start.cno < vp->m_stop.cno)
 		vp->m_final = ISMOTION(vp) ? vp->m_start : vp->m_stop;
 	else {
-		vp->m_final = vp->m_stop;
-		if (ISMOTION(vp)) {
-			if (F_ISSET(vp, VC_Y))
-				vp->m_final = vp->m_start;
+		if (ISMOTION(vp))
 			--vp->m_start.cno;
-		}
+		vp->m_final = vp->m_stop;
 	}
 	return (0);
 }
@@ -248,14 +245,13 @@ v_zero(sp, ep, vp)
 	}
 
 	/*
-	 * VC_D and non-motion commands move to the end of the range,
-	 * VC_Y stays at the start.  Ignore VC_C and VC_DEF.  Motion
-	 * commands adjust the starting point to the character before
-	 * the current one.
+	 * All commands move to the end of the range.  Motion commands
+	 * adjust the starting point to the character before the current
+	 * one.
 	 */
 	vp->m_stop.cno = 0;
-	vp->m_final = F_ISSET(vp, VC_Y) ? vp->m_start : vp->m_stop;
 	if (ISMOTION(vp))
 		--vp->m_start.cno;
+	vp->m_final = vp->m_stop;
 	return (0);
 }

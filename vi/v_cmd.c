@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 8.43 1994/09/01 08:24:38 bostic Exp $ (Berkeley) $Date: 1994/09/01 08:24:38 $";
+static char sccsid[] = "$Id: v_cmd.c,v 8.44 1994/10/13 13:59:37 bostic Exp $ (Berkeley) $Date: 1994/10/13 13:59:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -148,7 +148,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    "[count]' '",
 	    "   <space> move right by columns"},
 /* 041   ! */
-	{v_filter,	V_CNT|V_DOT|V_MOTION|VC_DEF|VM_RCM_SET,
+	{v_filter,	V_CNT|V_DOT|V_MOTION|VM_RCM_SET,
 	    "[count]![count]motion command(s)",
 	    " ! filter through command(s) to motion"},
 /* 042   " */
@@ -234,13 +234,13 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    "[count];",
 	    " ; repeat last F, f, T or t search"},
 /* 074   < */
-	{v_shiftl,	V_CNT|V_DOT|V_MOTION|VC_DEF|VM_RCM_SET,
+	{v_shiftl,	V_CNT|V_DOT|V_MOTION|VM_RCM_SET,
 	    "[count]<[count]motion",
 	    " < shift lines left to motion"},
 /* 075   = */
 	{NULL},
 /* 076   > */
-	{v_shiftr,	V_CNT|V_DOT|V_MOTION|VC_DEF|VM_RCM_SET,
+	{v_shiftr,	V_CNT|V_DOT|V_MOTION|VM_RCM_SET,
 	    "[count]>[count]motion",
 	    " > shift lines right to motion"},
 /* 077   ? */
@@ -391,11 +391,11 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    "[count]b",
 	    " b move back word"},
 /* 143   c */
-	{v_change,	V_CNT|V_DOT|V_MOTION|V_OBUF|VC_C|VM_RCM_SET,
+	{v_change,	V_CNT|V_DOT|V_MOTION|V_OBUF|VM_RCM_SET,
 	    "[buffer][count]c[count]motion",
 	    " c change to motion"},
 /* 144   d */
-	{v_delete,	V_CNT|V_DOT|V_MOTION|V_OBUF|VC_D|VM_RCM_SET,
+	{v_delete,	V_CNT|V_DOT|V_MOTION|V_OBUF|VM_RCM_SET,
 	    "[buffer][count]d[count]motion",
 	    " d delete to motion"},
 /* 145   e */
@@ -477,7 +477,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    "[buffer][count]x",
 	    " x delete character"},
 /* 171   y */
-	{v_yank,	V_CNT|V_DOT|V_MOTION|V_OBUF|VC_Y|VM_RCM_SET,
+	{v_yank,	V_CNT|V_DOT|V_MOTION|V_OBUF|VM_RCM_SET,
 	    "[buffer][count]y[count]motion",
 	    " y copy text to motion into a cut buffer"},
 /* 172   z */

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_word.c,v 8.23 1994/08/17 14:36:21 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:36:21 $";
+static char sccsid[] = "$Id: v_word.c,v 8.24 1994/10/13 13:59:35 bostic Exp $ (Berkeley) $Date: 1994/10/13 13:59:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -127,10 +127,10 @@ fword(sp, ep, vp, type)
 	 *	don't move off the end of the line.
 	 */
 	if (cs.cs_flags == CS_EMP || cs.cs_flags == 0 && isblank(cs.cs_ch)) {
-		if (cs.cs_flags != CS_EMP && cnt == 1) {
-			if (F_ISSET(vp, VC_C))
+		if (ISMOTION(vp) && cs.cs_flags != CS_EMP && cnt == 1) {
+			if (ISCMD(vp->rkp, 'c'))
 				return (0);
-			if (F_ISSET(vp, VC_D | VC_Y)) {
+			if (ISCMD(vp->rkp, 'd') || ISCMD(vp->rkp, 'y')) {
 				if (cs_fspace(sp, ep, &cs))
 					return (1);
 				goto ret;
@@ -164,7 +164,8 @@ fword(sp, ep, vp, type)
 			 * of the line regardless.
 			 */
 			if (cnt == 0 && ISMOTION(vp)) {
-				if (F_ISSET(vp, VC_D | VC_Y) &&
+				if ((ISCMD(vp->rkp, 'd') ||
+				    ISCMD(vp->rkp, 'y')) &&
 				    cs_fspace(sp, ep, &cs))
 					return (1);
 				break;
@@ -196,7 +197,8 @@ fword(sp, ep, vp, type)
 			}
 			/* See comment above. */
 			if (cnt == 0 && ISMOTION(vp)) {
-				if (F_ISSET(vp, VC_D | VC_Y) &&
+				if ((ISCMD(vp->rkp, 'd') ||
+				    ISCMD(vp->rkp, 'y')) &&
 				    cs_fspace(sp, ep, &cs))
 					return (1);
 				break;
@@ -229,8 +231,8 @@ ret:	if (!ISMOTION(vp) &&
 		--vp->m_stop.cno;
 
 	/*
-	 * Non-motion commands move to the end of the range.  VC_D
-	 * and VC_Y stay at the start.  Ignore VC_C and VC_DEF.
+	 * Non-motion commands move to the end of the range.  Delete
+	 * and yank stay at the start, ignore others.
 	 */
 	vp->m_final = ISMOTION(vp) ? vp->m_start : vp->m_stop;
 	return (0);
@@ -381,8 +383,8 @@ ret:	if (!ISMOTION(vp) &&
 	vp->m_stop.cno = cs.cs_cno;
 
 	/*
-	 * Non-motion commands move to the end of the range.  VC_D
-	 * and VC_Y stay at the start.  Ignore VC_C and VC_DEF.
+	 * Non-motion commands move to the end of the range.
+	 * Delete and yank stay at the start, ignore others.
 	 */
 	vp->m_final = ISMOTION(vp) ? vp->m_start : vp->m_stop;
 	return (0);

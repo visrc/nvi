@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 8.37 1994/10/09 09:52:09 bostic Exp $ (Berkeley) $Date: 1994/10/09 09:52:09 $";
+static char sccsid[] = "$Id: v_search.c,v 8.38 1994/10/13 13:59:32 bostic Exp $ (Berkeley) $Date: 1994/10/13 13:59:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -301,6 +301,14 @@ correct(sp, ep, vp, flags)
 
 	/*
 	 * !!!
+	 * Searches become line mode operations if there was a delta specified
+	 * to the search pattern.
+	 */
+	if (LF_ISSET(SEARCH_DELTA))
+		F_SET(vp, VM_LMODE);
+
+	/*
+	 * !!!
 	 * We may have wrapped if wrapscan was set, and we may have returned
 	 * to the position where the cursor started.  Historic vi didn't cope
 	 * with this well.  Yank wouldn't beep, but the first put after the
@@ -319,14 +327,6 @@ correct(sp, ep, vp, flags)
 	}
 
 	/*
-	 * !!!
-	 * Searches become line mode operations if there was a delta
-	 * specified to the search pattern.
-	 */
-	if (LF_ISSET(SEARCH_DELTA))
-		F_SET(vp, VM_LMODE);
-
-	/*
 	 * If the motion is in the reverse direction, switch the start and
 	 * stop MARK's so that it's in a forward direction.  (There's no
 	 * reason for this other than to make the tests below easier.  The
@@ -337,31 +337,22 @@ correct(sp, ep, vp, flags)
 	if (vp->m_start.lno > vp->m_stop.lno ||
 	    vp->m_start.lno == vp->m_stop.lno &&
 	    vp->m_start.cno > vp->m_stop.cno) {
-		dir = BACKWARD;
 		m = vp->m_start;
 		vp->m_start = vp->m_stop;
 		vp->m_stop = m;
+		dir = BACKWARD;
 	} else
 		dir = FORWARD;
 
 	/*
 	 * BACKWARD:
-	 *	VC_D commands move to the end of the range.  VC_Y stays at
-	 *	the start unless the end of the range is on a different line,
-	 *	when it moves to the end of the range.  Ignore VC_C and
-	 *	VC_DEF.
+	 *	Delete and yank commands move to the end of the range.
+	 *	Ignore others.
 	 *
 	 * FORWARD:
-	 *	VC_D and VC_Y commands don't move.  Ignore VC_C and VC_DEF.
+	 *	Delete and yank commands don't move.  Ignore others.
 	 */
-	if (dir == BACKWARD)
-		if (F_ISSET(vp, VC_D) ||
-		    F_ISSET(vp, VC_Y) && vp->m_start.lno != vp->m_stop.lno)
-			vp->m_final = vp->m_start;
-		else
-			vp->m_final = vp->m_stop;
-	else
-		vp->m_final = vp->m_start;
+	vp->m_final = vp->m_start;
 
 	/*
 	 * !!!

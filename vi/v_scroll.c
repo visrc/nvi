@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 8.22 1994/08/17 14:36:06 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:36:06 $";
+static char sccsid[] = "$Id: v_scroll.c,v 8.23 1994/10/13 13:59:31 bostic Exp $ (Berkeley) $Date: 1994/10/13 13:59:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -182,15 +182,15 @@ goto_adjust(vp)
 		return;
 
 	/*
-	 * If moving backward in the file, VC_D and VC_Y move to the end
-	 * of the range, unless the line didn't change, in which case VC_Y
-	 * doesn't move.  If moving forward in the file, VC_D and VC_Y stay
-	 * at the start of the range.  Ignore VC_C and VC_DEF.
+	 * If moving backward in the file, delete and yank move to the end
+	 * of the range, unless the line didn't change, in which case yank
+	 * doesn't move.  If moving forward in the file, delete and yank
+	 * stay at the start of the range.  Ignore others.
 	 */
 	if (vp->m_stop.lno < vp->m_start.lno ||
 	    vp->m_stop.lno == vp->m_start.lno &&
 	    vp->m_stop.cno < vp->m_start.cno) {
-		if (F_ISSET(vp, VC_Y) && vp->m_stop.lno == vp->m_start.lno)
+		if (ISCMD(vp->rkp, 'y') && vp->m_stop.lno == vp->m_start.lno)
 			vp->m_final = vp->m_start;
 	} else
 		vp->m_final = vp->m_start;

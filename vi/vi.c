@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.96 1994/09/16 13:02:13 bostic Exp $ (Berkeley) $Date: 1994/09/16 13:02:13 $";
+static char sccsid[] = "$Id: vi.c,v 8.97 1994/10/13 13:59:40 bostic Exp $ (Berkeley) $Date: 1994/10/13 13:59:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -310,13 +310,9 @@ err:		if (INTERRUPTED(sp))
  * The O_TILDEOP option makes the ~ command take a motion instead
  * of a straight count.  This is the replacement structure we use
  * instead of the one currently in the VIKEYS table.
- *
- * XXX
- * Note, I used VC_Y instead of creating a new motion command, it's
- * a lot easier.
  */
 VIKEYS const tmotion = {
-	v_mulcase,	V_CNT|V_DOT|V_MOTION|VC_Y|VM_RCM_SET,
+	v_mulcase,	V_CNT|V_DOT|V_MOTION|VM_RCM_SET,
 	"[count]~[count]motion",
 	" ~ change case to motion"
 };
@@ -656,7 +652,21 @@ getmotion(sp, ep, dm, vp, mappedp)
 		 * For example, "l" is illegal at the end of a line, but "dl"
 		 * is not.  Set flags so the function knows the situation.
 		 */
-		F_SET(&motion, vp->kp->flags & VC_COMMASK);
+		motion.rkp = vp->kp;
+
+		/*
+		 * XXX
+		 *
+		 * THIS IS HORRIBLY WRONG!!!
+		 *
+		 * Use yank instead of creating a new motion command, it's a
+		 * lot easier for now.  This MUST be fixed when yank is fixed
+		 * to quit doing all the bizarre checks against the line having
+		 * changed.  The checks are NOT historic practice, it only
+		 * looks that way!
+		 */
+		if (vp->kp == &tmotion)
+			vp->kp = &vikeys['y'];
 
 		/*
 		 * Copy the key flags into the local structure, except for
@@ -689,6 +699,13 @@ getmotion(sp, ep, dm, vp, mappedp)
 		 */
 		F_SET(vp, F_ISSET(&motion, VM_COMMASK | VM_RCM_MASK));
 
+		/*
+		 * Commands can change behaviors based on the motion command
+		 * used, for example, the ! command repeated the last bang
+		 * command if N or n was used as the motion.
+		 */
+		vp->rkp = motion.kp;
+		
 		/*
 		 * Motion commands can reset all of the cursor information.
 		 * If the motion is in the reverse direction, switch the

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_mark.c,v 8.11 1994/09/02 12:39:20 bostic Exp $ (Berkeley) $Date: 1994/09/02 12:39:20 $";
+static char sccsid[] = "$Id: v_mark.c,v 8.12 1994/10/13 13:59:26 bostic Exp $ (Berkeley) $Date: 1994/10/13 13:59:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -87,9 +87,9 @@ mark(sp, ep, vp, cmd)
 	VICMDARG *vp;
 	enum which cmd;
 {
+	enum direction dir;
 	MARK m;
 	size_t len;
-	enum direction dir;
 
 	if (mark_get(sp, ep, vp->character, &vp->m_stop))
 		return (1);
@@ -122,60 +122,83 @@ mark(sp, ep, vp, cmd)
 	 * stop MARK's so that it's in a forward direction.  (There's no
 	 * reason for this other than to make the tests below easier.  The
 	 * code in vi.c:vi() would have done the switch.)  Both forward
-	 * and backward motions can happen for either kind of mark command.
+	 * and backward motions can happen for any kind of search command
+	 * because of the wrapscan option.
 	 */
 	if (vp->m_start.lno > vp->m_stop.lno ||
 	    vp->m_start.lno == vp->m_stop.lno &&
 	    vp->m_start.cno > vp->m_stop.cno) {
-		dir = BACKWARD;
 		m = vp->m_start;
 		vp->m_start = vp->m_stop;
 		vp->m_stop = m;
+		dir = BACKWARD;
 	} else
 		dir = FORWARD;
 
 	/*
-	 * BACKWARD:
-	 *	VC_D commands move to the end of the range.  VC_Y stays at
-	 *	the start unless the end of the range is on a different line,
-	 *	when it moves to the end of the range.  Ignore VC_C and
-	 *	VC_DEF.
+	 * Yank cursor motion, when associated with marks as motion commands,
+	 * historically behaved as follows:
 	 *
-	 * FORWARD:
-	 *	VC_D and VC_Y commands don't move.  Ignore VC_C and VC_DEF.
+	 * ` motion			' motion
+	 *		Line change?		Line change?
+	 *		Y	N		Y	N
+	 *	      --------------	      ---------------
+	 * FORWARD:  |	NM	NM	      | NM	NM
+	 *	     |			      |
+	 * BACKWARD: |	M	M	      | M	NM(1)
+	 *
+	 * where NM means the cursor didn't move, and M means the cursor
+	 * moved to the mark.
+	 *
+	 * As the cursor was usually moved for yank commands associated
+	 * with backward motions, this implementation regularizes it by
+	 * changing the NM at position (1) to be an M.  This makes mark
+	 * motions match search motions, which is probably A Good Thing.
+	 *
+	 * Delete cursor motion was always to the start of the text region,
+	 * regardless.  Ignore other motion commands.
 	 */
-	if (dir == BACKWARD)
-		if (F_ISSET(vp, VC_D) ||
-		    F_ISSET(vp, VC_Y) && vp->m_start.lno != vp->m_stop.lno)
-			vp->m_final = vp->m_start;
-		else
+#ifdef HISTORICAL_PRACTICE
+	if (ISCMD(vp->rkp, 'y')) {
+		if ((cmd == BMARK ||
+		    cmd == FMARK && vp->m_start.lno != vp->m_stop.lno) &&
+		    (vp->m_start.lno > vp->m_stop.lno ||
+		    vp->m_start.lno == vp->m_stop.lno &&
+		    vp->m_start.cno > vp->m_stop.cno))
 			vp->m_final = vp->m_stop;
-	else
-		vp->m_final = vp->m_start;
+	} else if (ISCMD(vp->rkp, 'd'))
+		if (vp->m_start.lno > vp->m_stop.lno ||
+		    vp->m_start.lno == vp->m_stop.lno &&
+		    vp->m_start.cno > vp->m_stop.cno)
+			vp->m_final = vp->m_stop;
+#else
+	vp->m_final = vp->m_start;
+#endif
 
+	/*
+	 * Forward marks are always line oriented, and it's set in the
+	 * vcmd.c table.
+	 */
 	if (cmd == FMARK)
 		return (0);
 
 	/*
-	 * Forward marks are always line oriented, and it's set in the
-	 * vcmd.c table.  Backward marks that start and stop at column
-	 * 0 of the line are also line mode commands.
-	 */
-	if (vp->m_start.cno == 0 && vp->m_stop.cno == 0)
-		F_SET(vp, VM_LMODE);
-
-	/*
-	 * BMARK'S that move backward and start at column 0, or move forward
-	 * and end at column 0 are corrected to the last column of the previous
-	 * line.  Else, adjust the starting/ending point to the character
-	 * before the current one (this is safe because we know the command had
-	 * to move to succeed).
+	 * BMARK'S moving backward and starting at column 0, and ones moving
+	 * forward and ending at column 0 are corrected to the last column of
+	 * the previous line.  Otherwise, adjust the starting/ending point to
+	 * the character before the current one (this is safe because we know
+	 * the search had to move to succeed).
+	 *
+	 * Mark motions become line mode opertions if they start at column 0
+	 * and end at column 0 of another line.
 	 */
 	if (vp->m_start.lno < vp->m_stop.lno && vp->m_stop.cno == 0) {
 		if (file_gline(sp, ep, --vp->m_stop.lno, &len) == NULL) {
 			GETLINE_ERR(sp, vp->m_stop.lno);
 			return (1);
 		}
+		if (vp->m_start.cno == 0)
+			F_SET(vp, VM_LMODE);
 		vp->m_stop.cno = len ? len - 1 : 0;
 	} else
 		--vp->m_stop.cno;

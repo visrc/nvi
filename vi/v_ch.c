@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ch.c,v 8.16 1994/08/31 17:15:05 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:15:05 $";
+static char sccsid[] = "$Id: v_ch.c,v 8.17 1994/10/13 13:59:25 bostic Exp $ (Berkeley) $Date: 1994/10/13 13:59:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -187,8 +187,8 @@ v_chf(sp, ep, vp)
 	vp->m_stop.cno = p - startp;
 
 	/*
-	 * Non-motion commands move to the end of the range.  VC_D
-	 * and VC_Y stay at the start.  Ignore VC_C and VC_DEF.
+	 * Non-motion commands move to the end of the range.
+	 * Delete and yank stay at the start, ignore others.
 	 */
 	vp->m_final = ISMOTION(vp) ? vp->m_start : vp->m_stop;
 	return (0);
@@ -214,17 +214,7 @@ v_chT(sp, ep, vp)
 	 * we had to move left for v_chF() to have succeeded.
 	 */
 	++vp->m_stop.cno;
-
-	/*
-	 * Make any necessary correction to the motion decision made
-	 * by the v_chF routine.
-	 *
-	 * XXX
-	 * If you change this, notice that v_chF changes vp->m_start
-	 * AFTER setting vp->m_final.
-	 */
-	if (!F_ISSET(vp, VC_Y))
-		vp->m_final = vp->m_stop;
+	vp->m_final = vp->m_stop;
 
 	VIP(sp)->csearchdir = TSEARCH;
 	return (0);
@@ -287,12 +277,11 @@ v_chF(sp, ep, vp)
 	vp->m_stop.cno = (p - endp) - 1;
 
 	/*
-	 * VC_D and non-motion commands move to the end of the range,
-	 * VC_Y stays at the start.  Ignore VC_C and VC_DEF.  Motion
-	 * commands adjust the starting point to the character before
-	 * the current one.
+	 * All commands move to the end of the range.  Motion commands
+	 * adjust the starting point to the character before the current
+	 * one.
 	 */
-	vp->m_final = F_ISSET(vp, VC_Y) ? vp->m_start : vp->m_stop;
+	vp->m_final = vp->m_stop;
 	if (ISMOTION(vp))
 		--vp->m_start.cno;
 	return (0);

@@ -4,21 +4,24 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 8.41 1994/09/16 12:37:13 bostic Exp $ (Berkeley) $Date: 1994/09/16 12:37:13 $
+ *	$Id: vi.h,v 8.42 1994/10/13 13:59:39 bostic Exp $ (Berkeley) $Date: 1994/10/13 13:59:39 $
  */
 
 typedef struct _vikeys VIKEYS;
 
 /* Structure passed around to functions implementing vi commands. */
 typedef struct _vicmdarg {
-#define	vp_startzero	buffer		/* START ZERO OUT. */
 	CHAR_T	key;			/* Command key. */
+#define	vp_startzero	buffer		/* START ZERO OUT. */
 	CHAR_T	buffer;			/* Buffer. */
 	CHAR_T	character;		/* Character. */
 	u_long	count;			/* Count. */
 	u_long	count2;			/* Second count (only used by z). */
-	VIKEYS const *kp;		/* VIKEYS key. */
-	size_t	klen;			/* Keyword length. */
+
+#define	ISCMD(p, key)	((p) == &vikeys[key])
+	VIKEYS const *kp;		/* Command/Motion VIKEYS entry. */
+#define	ISMOTION(vp)	(vp->rkp != NULL && F_ISSET(vp->rkp, V_MOTION))
+	VIKEYS const *rkp;		/* Related C/M VIKEYS entry. */
 
 	/*
 	 * Historic vi allowed "dl" when the cursor was on the last column,
@@ -36,43 +39,37 @@ typedef struct _vicmdarg {
 	 * by setting flags per command so that the underlying command and
 	 * motion routines know what's really going on.
 	 *
-	 * The VC_* and VM_* flags are set in the vikeys array, and the VM_*
-	 * flags may be set by the underlying functions (motion component or
-	 * command) as well.  For this reason, the flags in the VICMDARG and
-	 * VIKEYS structures live in the same name space.
+	 * The VM_* flags are set in the vikeys array and by the underlying
+	 * functions (motion component or command) as well.  For this reason,
+	 * the flags in the VICMDARG and VIKEYS structures live in the same
+	 * name space.
 	 */
-#define	VC_C		0x00000001	/* The 'c' command. */
-#define	VC_D		0x00000002	/* The 'd' command. */
-#define	VC_DEF		0x00000004	/* The '<', '>' and '!' commands. */
-#define	VC_Y		0x00000008	/* The 'y' command. */
-#define	VC_COMMASK	0x0000000f	/* Mask for VC flags. */
-#define	ISMOTION(vp)	F_ISSET(vp, VC_COMMASK)
-
-#define	VM_CUTREQ	0x00000010	/* Always cut into numeric buffers. */
-#define	VM_LDOUBLE	0x00000020	/* Doubled command for line mode. */
-#define	VM_LMODE	0x00000040	/* Motion is line oriented. */
-#define	VM_NOMOTION	0x00000080	/* Motion command not entered. */
-#define	VM_COMMASK	0x000000f0	/* Mask for VM flags. */
+#define	VM_CUTREQ	0x00000001	/* Always cut into numeric buffers. */
+#define	VM_LDOUBLE	0x00000002	/* Doubled command for line mode. */
+#define	VM_LMODE	0x00000004	/* Motion is line oriented. */
+#define	VM_NOMOTION	0x00000008	/* Motion command not entered. */
+#define	VM_COMMASK	0x0000000f	/* Mask for VM flags. */
 
 	/*
 	 * The VM_RCM_* flags are single usage, i.e. if you set one, you have
 	 * to clear the others.
 	 */
-#define	VM_RCM		0x00000100	/* Use relative cursor movment (RCM). */
-#define	VM_RCM_SET	0x00000200	/* RCM: set to current position. */
-#define	VM_RCM_SETFNB	0x00000400	/* RCM: set to first non-blank (FNB). */
-#define	VM_RCM_SETLAST	0x00000800	/* RCM: set to last character. */
-#define	VM_RCM_SETNNB	0x00001000	/* RCM: set to next non-blank. */
-#define	VM_RCM_MASK	0x00001f00	/* Mask for RCM flags. */
+#define	VM_RCM		0x00000010	/* Use relative cursor movment (RCM). */
+#define	VM_RCM_SET	0x00000020	/* RCM: set to current position. */
+#define	VM_RCM_SETFNB	0x00000040	/* RCM: set to first non-blank (FNB). */
+#define	VM_RCM_SETLAST	0x00000080	/* RCM: set to last character. */
+#define	VM_RCM_SETNNB	0x00000100	/* RCM: set to next non-blank. */
+#define	VM_RCM_MASK	0x000001f0	/* Mask for RCM flags. */
 
 	/* Flags for the underlying function. */
-#define	VC_BUFFER	0x00002000	/* The buffer was set. */
-#define	VC_C1RESET	0x00004000	/* Reset C1SET flag for dot commands. */
-#define	VC_C1SET	0x00008000	/* Count 1 was set. */
-#define	VC_C2SET	0x00010000	/* Count 2 was set. */
-#define	VC_ISDOT	0x00020000	/* Command was the dot command. */
+#define	VC_BUFFER	0x00000200	/* The buffer was set. */
+#define	VC_C1RESET	0x00000400	/* Reset C1SET flag for dot commands. */
+#define	VC_C1SET	0x00000800	/* Count 1 was set. */
+#define	VC_C2SET	0x00001000	/* Count 2 was set. */
+#define	VC_ISDOT	0x00002000	/* Command was the dot command. */
 	u_int32_t flags;
 
+	size_t	klen;			/* Keyword length. */
 #define	vp_endzero	keyword		/* END ZERO OUT. */
 	char	*keyword;		/* Keyword. */
 	size_t	 kbuflen;		/* Keyword buffer length. */
@@ -101,10 +98,10 @@ typedef struct _vicmdarg {
 	 *	1: If not a motion component, the final cursor is at the end
 	 *	   of the range.
 	 *	2: If moving backward in the file:
-	 *	 a:	VC_D moves to the end of the range.
-	 *	 b:	If the line hasn't changed, VC_Y doesn't move, else it
-	 *		moves to the end of the range.
-	 *	3: If moving forward in the file, VC_D and VC_Y stay at the
+	 *	 a:	Delete moves to the end of the range.
+	 *	 b:	If the line hasn't changed, yank doesn't move, else
+	 *		it moves to the end of the range.
+	 *	3: If moving forward in the file, delete and yank stay at the
 	 *	   start of the range.
 	 *
 	 * Usually, if moving backward in the file and it's a motion component,
@@ -134,18 +131,18 @@ typedef struct _vicmdarg {
 /* Vi command structure. */
 struct _vikeys {			/* Underlying function. */
 	int	 (*func) __P((SCR *, EXF *, VICMDARG *));
-#define	V_ABS		0x00040000	/* Absolute movement, set '' mark. */
-#define	V_ABS_C		0x00080000	/* V_ABS: if the line/column changed. */
-#define	V_ABS_L		0x00100000	/* V_ABS: if the line changed. */
-#define	V_CHAR		0x00200000	/* Character (required, trailing). */
-#define	V_CNT		0x00400000	/* Count (optional, leading). */
-#define	V_DOT		0x00800000	/* On success, sets dot command. */
-#define	V_KEYNUM	0x01000000	/* Cursor referenced number. */
-#define	V_KEYW		0x02000000	/* Cursor referenced word. */
-#define	V_MOTION	0x04000000	/* Motion (required, trailing). */
-#define	V_MOVE		0x08000000	/* Command defines movement. */
-#define	V_OBUF		0x10000000	/* Buffer (optional, leading). */
-#define	V_RBUF		0x20000000	/* Buffer (required, trailing). */
+#define	V_ABS		0x00004000	/* Absolute movement, set '' mark. */
+#define	V_ABS_C		0x00008000	/* V_ABS: if the line/column changed. */
+#define	V_ABS_L		0x00010000	/* V_ABS: if the line changed. */
+#define	V_CHAR		0x00020000	/* Character (required, trailing). */
+#define	V_CNT		0x00040000	/* Count (optional, leading). */
+#define	V_DOT		0x00080000	/* On success, sets dot command. */
+#define	V_KEYNUM	0x00100000	/* Cursor referenced number. */
+#define	V_KEYW		0x00200000	/* Cursor referenced word. */
+#define	V_MOTION	0x00400000	/* Motion (required, trailing). */
+#define	V_MOVE		0x00800000	/* Command defines movement. */
+#define	V_OBUF		0x01000000	/* Buffer (optional, leading). */
+#define	V_RBUF		0x02000000	/* Buffer (required, trailing). */
 	u_int32_t flags;
 	char	*usage;			/* Usage line. */
 	char	*help;			/* Help line. */

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_section.c,v 8.13 1994/09/02 12:39:22 bostic Exp $ (Berkeley) $Date: 1994/09/02 12:39:22 $";
+static char sccsid[] = "$Id: v_section.c,v 8.14 1994/10/13 13:59:33 bostic Exp $ (Berkeley) $Date: 1994/10/13 13:59:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -153,8 +153,8 @@ ret1:	if (file_gline(sp, ep, --lno, &len) == NULL)
 	vp->m_stop.cno = len ? len - 1 : 0;
 
 	/*
-	 * Non-motion commands go to the end of the range.  VC_D and
-	 * VC_Y stay at the start of the range.  Ignore VC_C and VC_DEF.
+	 * Non-motion commands go to the end of the range.  Delete and
+	 * yank stay at the start of the range.  Ignore others.
 	 */
 ret2:	if (ISMOTION(vp)) {
 		vp->m_final = vp->m_start;
