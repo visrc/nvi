@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 10.27 1996/02/23 10:48:27 bostic Exp $ (Berkeley) $Date: 1996/02/23 10:48:27 $";
+static char sccsid[] = "$Id: ex_filter.c,v 10.28 1996/02/23 11:16:45 bostic Exp $ (Berkeley) $Date: 1996/02/23 11:16:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -228,14 +228,14 @@ err:		if (input[0] != -1)
 		/* NOTREACHED */
 	default:			/* Parent-reader. */
 		(void)close(input[1]);
-		if (ftype == FILTER_WRITE)
+		if (ftype == FILTER_WRITE) {
 			/*
 			 * Read the output from the read end of the output
 			 * pipe and display it.  Filter_ldisplay closes ofp.
 			 */
 			if (filter_ldisplay(sp, ofp))
 				rval = 1;
-		else {
+		} else {
 			/*
 			 * Read the output from the read end of the output
 			 * pipe.  Ex_readfp appends to the MARK and closes
