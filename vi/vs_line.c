@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 8.18 1994/01/22 17:26:54 bostic Exp $ (Berkeley) $Date: 1994/01/22 17:26:54 $";
+static char sccsid[] = "$Id: vs_line.c,v 8.19 1994/02/28 17:21:54 bostic Exp $ (Berkeley) $Date: 1994/02/28 17:21:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -358,7 +358,6 @@ svi_number(sp, ep)
 	EXF *ep;
 {
 	SMAP *smp;
-	recno_t lno;
 	size_t oldy, oldx;
 	char *lp, *p, nbuf[10];
 
