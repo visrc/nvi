@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.35 1994/01/24 19:28:31 bostic Exp $ (Berkeley) $Date: 1994/01/24 19:28:31 $";
+static char sccsid[] = "$Id: util.c,v 8.36 1994/03/01 11:37:29 bostic Exp $ (Berkeley) $Date: 1994/03/01 11:37:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -479,6 +479,9 @@ baud_from_bval(sp)
 	SCR *sp;
 {
 	speed_t v;
+
+	if (!F_ISSET(sp->gp, G_TERMIOS_SET))
+		return (9600);
 
 	switch (v = cfgetospeed(&sp->gp->original_termios)) {
 	case B50:

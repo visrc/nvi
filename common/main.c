@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.66 1994/02/25 15:28:17 bostic Exp $ (Berkeley) $Date: 1994/02/25 15:28:17 $";
+static char sccsid[] = "$Id: main.c,v 8.67 1994/03/01 11:37:27 bostic Exp $ (Berkeley) $Date: 1994/03/01 11:37:27 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -376,7 +376,7 @@ main(argc, argv)
 		}
 		
 	/* Vi reads from the terminal. */
-	if (!F_ISSET(gp, G_ISFROMTTY) && !F_ISSET(sp, S_EX)) {
+	if (!F_ISSET(gp, G_STDIN_TTY) && !F_ISSET(sp, S_EX)) {
 		msgq(sp, M_ERR, "Vi's standard input must be a terminal.");
 		goto err;
 	}
@@ -446,7 +446,7 @@ err:		eval = 1;
 	 * other systems mess up characters typed after the quit command to
 	 * vi but before vi actually exits.
 	 */
-	if (F_ISSET(gp, G_ISFROMTTY))
+	if (F_ISSET(gp, G_TERMIOS_SET))
 		(void)tcsetattr(STDIN_FILENO, TCSADRAIN, &gp->original_termios);
 	exit(eval);
 }
@@ -479,26 +479,27 @@ gs_init()
 
 	/* Set a flag if we're reading from the tty. */
 	if (isatty(STDIN_FILENO))
-		F_SET(gp, G_ISFROMTTY);
+		F_SET(gp, G_STDIN_TTY);
 
 	/*
-	 * XXX
-	 * Set a flag and don't do terminal sets/resets if the input isn't
-	 * from a tty.  Under all circumstances put reasonable things into
-	 * the original_termios field, as some routines (seq.c:seq_save()
-	 * and term.c:term_init()) want values for special characters.
+	 * Set the G_STDIN_TTY flag.  It's purpose is to avoid setting and
+	 * resetting the tty if the input isn't from there.
+	 *
+	 * Set the G_TERMIOS_SET flag.  It's purpose is to avoid using the
+	 * original_termios information (mostly special character values)
+	 * if it's not valid.  We expect that if we've lost our controlling
+	 * terminal that the open() (but not the tcgetattr()) will fail.
 	 */
-	if (F_ISSET(gp, G_ISFROMTTY)) {
-		if (tcgetattr(STDIN_FILENO, &gp->original_termios))
+	if (F_ISSET(gp, G_STDIN_TTY)) {
+		if (tcgetattr(STDIN_FILENO, &gp->original_termios) == -1)
 			err(1, "tcgetattr");
-	} else {
-		if ((fd = open(_PATH_TTY, O_RDONLY, 0)) == -1)
-			err(1, "%s", _PATH_TTY);
-		if (tcgetattr(fd, &gp->original_termios))
+		F_SET(gp, G_TERMIOS_SET);
+	} else if ((fd = open(_PATH_TTY, O_RDONLY, 0)) != -1) {
+		if (tcgetattr(fd, &gp->original_termios) == -1)
 			err(1, "tcgetattr");
+		F_SET(gp, G_TERMIOS_SET);
 		(void)close(fd);
 	}
-
 	return (gp);
 }
 

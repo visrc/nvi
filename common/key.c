@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.41 1994/01/23 20:18:27 bostic Exp $ (Berkeley) $Date: 1994/01/23 20:18:27 $";
+static char sccsid[] = "$Id: key.c,v 8.42 1994/03/01 11:37:33 bostic Exp $ (Berkeley) $Date: 1994/03/01 11:37:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -119,7 +119,8 @@ term_init(sp)
 
 	/* Set keys found in the termios structure. */
 #define	TERMSET(name, val) {						\
-	if ((ch = gp->original_termios.c_cc[name]) != _POSIX_VDISABLE)	\
+	if (F_ISSET(gp, G_TERMIOS_SET) &&				\
+	    (ch = gp->original_termios.c_cc[name]) != _POSIX_VDISABLE)	\
 		for (kp = keylist;; ++kp)				\
 			if (kp->value == (val)) {			\
 				kp->ch = ch;				\
