@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ch.c,v 5.24 1993/04/05 07:10:06 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:10:06 $";
+static char sccsid[] = "$Id: v_ch.c,v 5.25 1993/04/12 14:50:03 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:50:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -17,12 +17,12 @@ static char sccsid[] = "$Id: v_ch.c,v 5.24 1993/04/05 07:10:06 bostic Exp $ (Ber
 #include "vcmd.h"
 
 #define	NOPREV {							\
-	msgq(sp, M_BELL, "No previous F, f, T or t search.");		\
+	msgq(sp, M_BERR, "No previous F, f, T or t search.");		\
 	return (1);							\
 }
 
 #define	NOTFOUND(ch) {							\
-	msgq(sp, M_BELL, "%s not found.", charname(sp, ch));		\
+	msgq(sp, M_BERR, "%s not found.", charname(sp, ch));		\
 	return (1);							\
 }
 
@@ -148,7 +148,7 @@ v_chf(sp, ep, vp, fm, tm, rp)
 	startp = p;
 	endp = p + len;
 	p += fm->cno;
-	for (cnt = vp->flags & VC_C1SET ? vp->count : 1; cnt--;) {
+	for (cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
 		while (++p < endp && *p != key);
 		if (p == endp)
 			NOTFOUND(key);
@@ -209,7 +209,7 @@ v_chF(sp, ep, vp, fm, tm, rp)
 
 	endp = p - 1;
 	p += fm->cno;
-	for (cnt = vp->flags & VC_C1SET ? vp->count : 1; cnt--;) {
+	for (cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
 		while (--p > endp && *p != key);
 		if (p == endp)
 			NOTFOUND(key);
