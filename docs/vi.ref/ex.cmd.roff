@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: ex.cmd.roff,v 8.34 1995/02/08 16:40:33 bostic Exp $ (Berkeley) $Date: 1995/02/08 16:40:33 $
+.\"	$Id: ex.cmd.roff,v 8.35 1995/02/09 18:27:32 bostic Exp $ (Berkeley) $Date: 1995/02/09 18:27:32 $
 .\"
 .SH 1 "Ex Description"
 .pp
@@ -644,11 +644,14 @@ command may be used, although the most common use of this feature is
 to specify a line number or search pattern to set the initial location
 in the new file.
 .sp
-Using a capital letter form of the command, i.e.
+Capitalizing the first letter of the command, i.e.
 .CO Edit
 or
 .CO Ex ,
-while in vi mode, will edit the file in a new screen.
+while in
+.CO vi
+mode, will edit the file in a new screen.
+In this case, any modifications to the current file are ignored.
 .SS
 .SP Line:
 If you have previously edited the file, the current line will be set
@@ -1006,9 +1009,12 @@ The argument list can optionally be replaced by specifying a new one
 as arguments to this command.
 In this case, editing starts with the first file on the new list.
 .sp
-Using a capital letter form of the command, i.e.
+Capitalizing the first letter of the command, i.e.
 .CO Next ,
-while in vi mode, will edit the next file in a new screen.
+while in
+.CO vi
+mode, will set the argument list and edit the file in a new screen.
+In this case, any modifications to the current file are ignored.
 .SS
 .SP Line:
 Set as described for the
@@ -1451,9 +1457,12 @@ option.
 .XR ctags 1
 for more information on tags files.)
 .sp
-Using a capital form of the command, i.e.
+Capitalizing the first letter of the command, i.e.
 .CO Tag ,
-while in vi mode, will edit the file in a new screen.
+while in
+.CO vi
+mode, will edit the file in a new screen.
+In this case, any modifications to the current file are ignored.
 .SS
 .SP Line:
 Set to the line indicated by the tag.
@@ -1615,9 +1624,10 @@ Identical to the
 .QT "edit[!] [+cmd] [file]"
 command.
 .sp
-Using a capital form of the command, i.e.
+Capitalizing the first letter of the command, i.e.
 .CO Visual ,
 will edit the file in a new screen.
+In this case, any modifications to the current file are ignored.
 .KY viusage
 .IP "viu[sage] [command]"
 Display usage for a
