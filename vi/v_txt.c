@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.46 1993/11/09 10:03:27 bostic Exp $ (Berkeley) $Date: 1993/11/09 10:03:27 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.47 1993/11/10 09:45:01 bostic Exp $ (Berkeley) $Date: 1993/11/10 09:45:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,9 +34,8 @@ static int	 txt_resolve __P((SCR *, EXF *, HDR *));
 
 /* Cursor character (space is hard to track on the screen). */
 #if defined(DEBUG) && 0
-#define	CURSOR_CHAR	'+'
-#else
-#define	CURSOR_CHAR	' '
+#undef	CURSOR_CH
+#define	CURSOR_CH	'+'
 #endif
 
 /* Error jump. */
@@ -206,7 +205,7 @@ newtp:		if ((tp = text_init(sp, p, len, len + 32)) == NULL)
 	 * strictly necessary.  Not a big deal.
 	 */
 	if (LF_ISSET(TXT_APPENDEOL)) {
-		tp->lb[sp->cno] = CURSOR_CHAR;
+		tp->lb[sp->cno] = CURSOR_CH;
 		++tp->len;
 		++tp->insert;
 	}
@@ -411,7 +410,7 @@ next_ch:	if (replay)
 			if (ntp->insert == 0) {
 				TBINC(sp, tp->lb, tp->lb_len, tp->len + 1);
 				LF_SET(TXT_APPENDEOL);
-				ntp->lb[sp->cno] = CURSOR_CHAR;
+				ntp->lb[sp->cno] = CURSOR_CH;
 				++ntp->insert;
 				++ntp->len;
 			}
@@ -793,7 +792,7 @@ ins_ch:			/*
 ebuf_chk:		if (sp->cno >= tp->len) {
 				TBINC(sp, tp->lb, tp->lb_len, tp->len + 1);
 				LF_SET(TXT_APPENDEOL);
-				tp->lb[sp->cno] = CURSOR_CHAR;
+				tp->lb[sp->cno] = CURSOR_CH;
 				++tp->insert;
 				++tp->len;
 			}
@@ -1063,7 +1062,7 @@ txt_backup(sp, ep, hp, tp, flags)
 	/* Set bookkeeping information. */
 	col = tp->len;
 	if (LF_ISSET(TXT_APPENDEOL)) {
-		tp->lb[col] = CURSOR_CHAR;
+		tp->lb[col] = CURSOR_CH;
 		++tp->insert;
 		++tp->len;
 	}
