@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 10.16 1995/11/05 09:50:42 bostic Exp $ (Berkeley) $Date: 1995/11/05 09:50:42 $
+ *	$Id: gs.h,v 10.17 1995/11/05 13:12:27 bostic Exp $ (Berkeley) $Date: 1995/11/05 13:12:27 $
  */
 
 #define	TEMPORARY_FILE_STRING	"/tmp"	/* Default temporary file name. */
@@ -173,7 +173,7 @@ struct _gs {
 					/* Move the cursor. */
 	int	(*scr_move) __P((SCR *, size_t, size_t));
 					/* Message or ex output. */
-	void	(*scr_msg) __P((SCR *, mtype_t, const char *, size_t));
+	void	(*scr_msg) __P((SCR *, mtype_t, char *, size_t));
 					/* Refresh the screen. */
 	int	(*scr_refresh) __P((SCR *, int));
 					/* Rename the file. */

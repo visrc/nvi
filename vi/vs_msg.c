@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_msg.c,v 10.26 1995/10/28 10:11:19 bostic Exp $ (Berkeley) $Date: 1995/10/28 10:11:19 $";
+static char sccsid[] = "$Id: vs_msg.c,v 10.27 1995/11/05 13:12:06 bostic Exp $ (Berkeley) $Date: 1995/11/05 13:12:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,7 +31,7 @@ static char sccsid[] = "$Id: vs_msg.c,v 10.26 1995/10/28 10:11:19 bostic Exp $ (
 
 static void	vs_divider __P((SCR *));
 static void	vs_output __P((SCR *, mtype_t, const char *, int));
-static void	vs_msgsave __P((SCR *, mtype_t, const char *, size_t));
+static void	vs_msgsave __P((SCR *, mtype_t, char *, size_t));
 static void	vs_scroll __P((SCR *, CHAR_T *, u_int));
 
 /*
@@ -196,13 +196,13 @@ vs_update(sp, m1, m2)
  * alternate method of displaying messages, e.g. dialog boxes, should set their
  * scr_msg function to the correct function before calling the editor.
  *
- * PUBLIC: void vs_msg __P((SCR *, mtype_t, const char *, size_t));
+ * PUBLIC: void vs_msg __P((SCR *, mtype_t, char *, size_t));
  */
 void
 vs_msg(sp, mtype, line, len)
 	SCR *sp;
 	mtype_t mtype;
-	const char *line;
+	char *line;
 	size_t len;
 {
 	GS *gp;
@@ -745,7 +745,7 @@ static void
 vs_msgsave(sp, mt, p, len)
 	SCR *sp;
 	mtype_t mt;
-	const char *p;
+	char *p;
 	size_t len;
 {
 	GS *gp;
