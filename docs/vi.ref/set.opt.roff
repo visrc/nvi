@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: set.opt.roff,v 8.27 1994/08/31 17:55:42 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:55:42 $
+.\"     $Id: set.opt.roff,v 8.28 1994/09/02 20:26:19 bostic Exp $ (Berkeley) $Date: 1994/09/02 20:26:19 $
 .\"
 .SH 1 "Set Options"
 .pp
@@ -634,12 +634,12 @@ the set value, it is reported to the user.
 only.
 Display a row/column ruler on the colon command line.
 .KY scroll
-.IP "scroll, scr [window / 2]"
+.IP "scroll, scr [(environment variable LINES - 1) / 2]"
 Set the number of lines scrolled by the
-.CO vi
+.CO ex
 .CO <control-D>
 and
-.CO <control-U>
+.CO <end-of-file>
 commands.
 .sp
 Historically, the
@@ -849,22 +849,28 @@ been modified, since it was last written, before a
 .CO !
 command.
 .KY window
-.IP "window, w, wi [environment variable LINES]"
+.IP "window, w, wi [environment variable LINES - 1]"
 This option determines the default number of lines in a screenful,
-as written by the
+as displayed by the
 .CO z
 command.
 It also determines the number of lines scrolled by the
 .CO vi
 commands
-.CO <control-F>
+.CO <control-B>
 and
-.CO <control-B> .
+.CO <control-F> ,
+and the default number of lines scrolled by the
+.CO vi
+commands
+.CO <control-D>
+and
+.CO <control-U> .
 The value of window can be unrelated to the real screen size,
-although it starts out as the number of lines on the screen (see
-the section entitled
+although it starts out as the number of lines on the screen.
+See the section entitled
 .QB "Sizing the Screen"
-for more information).
+for more information.
 Setting the value of the
 .OP window
 option is the same as using the
@@ -879,13 +885,20 @@ option (as set by the
 .OP w1200
 or
 .OP w9600
-options) is smaller than the actual size of the screen, large screen
-movements will result in displaying only that smaller number of lines
-on the screen.
+options) is smaller than the actual size of the screen,
+large screen movements will result in displaying only that smaller
+number of lines on the screen.
 (Further movements in that same area will result in the screen being
 filled.)
 This can provide a performance improvement when viewing different
 places in one or more files over a slow link.
+.sp
+Resetting the window size does not reset the default number of lines
+scrolled by the
+.CO <control-D>
+and
+.CO <control-U>
+commands.
 .KY wrapmargin
 .IP "wrapmargin, wm [0]"
 .CO Vi
