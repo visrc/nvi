@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.25 1992/11/04 10:41:39 bostic Exp $ (Berkeley) $Date: 1992/11/04 10:41:39 $";
+static char sccsid[] = "$Id: exf.c,v 5.26 1992/11/06 18:07:06 bostic Exp $ (Berkeley) $Date: 1992/11/06 18:07:06 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -26,6 +26,8 @@ static char sccsid[] = "$Id: exf.c,v 5.25 1992/11/04 10:41:39 bostic Exp $ (Berk
 #include "extern.h"
 
 static EXFLIST exfhdr;				/* List of files. */
+static EXF *last;				/* Last file. */
+
 EXF *curf;					/* Current file. */
 
 static EXF defexf = {
@@ -34,7 +36,7 @@ static EXF defexf = {
 	0, 0, 0, 0,				/* cno, ocno, scno, shift */
 	0, 0, 0,				/* rcm, lines, cols */
 	0, 0,					/* cwidth, rcmflags */
-	NULL,					/* s_confirm */
+	NULL, NULL,				/* s_confirm, s_end */
 	NULL,					/* db */
 	NULL, 0, OOBLNO, OOBLNO,		/* c_{lp,len,lno,nlines} */
 	stdout, 				/* stdfp */
@@ -115,6 +117,7 @@ file_set(argc, argv)
 err:			msg("Error: %s", strerror(errno));
 			return (1);
 		}
+		ep->nlen = strlen(ep->name);
 		instailexf(ep, &exfhdr);
 	}
 	return (0);
@@ -125,15 +128,17 @@ err:			msg("Error: %s", strerror(errno));
  *	Return the first file.
  */
 EXF *
-file_first()
+file_first(all)
+	int all;
 {
 	EXF *ep;
 
 	for (ep = exfhdr.next;;) {
 		if (ep == (EXF *)&exfhdr)
 			return (NULL);
-		if (!(ep->flags & F_IGNORE))
-			return (ep);
+		if (!all && ep->flags & F_IGNORE)
+			continue;
+		return (ep);
 	}
 	/* NOTREACHED */
 }
@@ -143,15 +148,17 @@ file_first()
  *	Return the next file, if any.
  */
 EXF *
-file_next(ep)
+file_next(ep, all)
 	EXF *ep;
+	int all;
 {
 	for (;;) {
 		ep = ep->next;
 		if (ep == (EXF *)&exfhdr)
 			return (NULL);
-		if (!(ep->flags & F_IGNORE))
-			return (ep);
+		if (!all && ep->flags & F_IGNORE)
+			continue;
+		return (ep);
 	}
 	/* NOTREACHED */
 }
@@ -161,17 +168,29 @@ file_next(ep)
  *	Return the previous file, if any.
  */
 EXF *
-file_prev(ep)
+file_prev(ep, all)
 	EXF *ep;
+	int all;
 {
 	for (;;) {
 		ep = ep->prev;
 		if (ep == (EXF *)&exfhdr)
 			return (NULL);
-		if (!(ep->flags & F_IGNORE))
-			return (ep);
+		if (!all && ep->flags & F_IGNORE)
+			continue;
+		return (ep);
 	}
 	/* NOTREACHED */
+}
+
+/*
+ * file_last --
+ *	Return the last file edited.
+ */
+EXF *
+file_last()
+{
+	return (last);
 }
 
 /*
@@ -209,8 +228,9 @@ file_start(ep)
 			msg("Temporary file: %s", strerror(errno));
 			return (1);
 		}
-		file_ins((EXF *)&exfhdr, tname, 1);
-		ep = file_first();
+		if (file_ins((EXF *)&exfhdr, tname, 1))
+			return (1);
+		ep = file_first(1);
 		ep->flags |= F_CREATED | F_NONAME;
 	} else if (stat(ep->name, &sb))
 		ep->flags |= F_CREATED;
@@ -263,25 +283,9 @@ file_start(ep)
 	mark_reset();
 
 	/* Set the global state. */
+	last = curf;
 	curf = ep;
 
-	return (0);
-}
-
-/*
- * file_modify --
- *	Check for modification.
- */
-int
-file_modify(ep, force)
-	EXF *ep;
-	int force;
-{
-	/* If modified, must force. */
-	if (ep->flags & F_MODIFIED && !force) {
-		msg("Modified since last write; use ! to override.");
-		return (1);
-	}
 	return (0);
 }
 
@@ -341,10 +345,6 @@ file_sync(ep, force)
 	MARK from, to;
 	int fd;
 
-	/* If unmodified, nothing to sync. */
-	if (!(ep->flags & F_MODIFIED))
-		return (0);
-
 	/* Can't write if read-only. */
 	if ((ISSET(O_READONLY) || ep->flags & F_RDONLY) && !force) {
 		msg("Read-only file, not written; use ! to override.");
@@ -366,7 +366,8 @@ file_sync(ep, force)
 		return (1);
 	}
 
-	if ((fd = open(ep->name, O_WRONLY, 0)) < 0)
+	if ((fd = open(ep->name,
+	    O_CREAT | O_TRUNC | O_WRONLY, DEFFILEMODE)) < 0)
 		goto err;
 
 	if ((fp = fdopen(fd, "w")) == NULL) {
