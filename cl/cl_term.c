@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_term.c,v 10.15 1996/02/26 14:20:56 bostic Exp $ (Berkeley) $Date: 1996/02/26 14:20:56 $";
+static char sccsid[] = "$Id: cl_term.c,v 10.16 1996/02/27 19:36:07 bostic Exp $ (Berkeley) $Date: 1996/02/27 19:36:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -283,14 +283,13 @@ cl_omesg(sp, clp, on)
  * cl_ssize --
  *	Return the terminal size.
  *
- * PUBLIC: int cl_ssize __P((SCR *, int, recno_t *, size_t *, int *));
+ * PUBLIC: int cl_ssize __P((SCR *, int, size_t *, size_t *, int *));
  */
 int
 cl_ssize(sp, sigwinch, rowp, colp, changedp)
 	SCR *sp;
 	int sigwinch;
-	recno_t *rowp;
-	size_t *colp;
+	size_t *rowp, *colp;
 	int *changedp;
 {
 #ifdef TIOCGWINSZ

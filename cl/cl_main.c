@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_main.c,v 10.23 1996/02/26 14:20:54 bostic Exp $ (Berkeley) $Date: 1996/02/26 14:20:54 $";
+static char sccsid[] = "$Id: cl_main.c,v 10.24 1996/02/27 19:36:55 bostic Exp $ (Berkeley) $Date: 1996/02/27 19:36:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -49,8 +49,7 @@ main(argc, argv)
 	static int reenter;
 	CL_PRIVATE *clp;
 	GS *gp;
-	recno_t rows;
-	size_t cols;
+	size_t rows, cols;
 	int rval;
 	char **p_av, **t_av, *ttype;
 
