@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.85 1993/04/18 09:31:17 bostic Exp $ (Berkeley) $Date: 1993/04/18 09:31:17 $";
+static char sccsid[] = "$Id: ex.c,v 5.86 1993/04/19 15:28:52 bostic Exp $ (Berkeley) $Date: 1993/04/19 15:28:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -56,7 +56,7 @@ ex(sp, ep)
 	(void)signal(SIGINT, SIG_IGN);
 
 	for (eval = 0;;) {
-		if (sex_gb(sp, ep,
+		if (sp->gb(sp, ep,
 		    &sp->bhdr, ':', TXT_CR | TXT_MAPCOMMAND | TXT_PROMPT))
 			continue;
 		tp = sp->bhdr.next;
