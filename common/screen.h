@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 9.15 1995/01/30 09:11:36 bostic Exp $ (Berkeley) $Date: 1995/01/30 09:11:36 $
+ *	$Id: screen.h,v 9.16 1995/01/30 12:00:01 bostic Exp $ (Berkeley) $Date: 1995/01/30 12:00:01 $
  */
 
 /*
@@ -23,15 +23,6 @@
  */
 #define	MINIMUM_SCREEN_ROWS	 1
 #define	MINIMUM_SCREEN_COLS	20
-
-enum adjust {				/* Screen adjustment operations. */
-	A_DECREASE, A_INCREASE, A_SET };
-enum operation {			/* Line operations. */
-	LINE_APPEND, LINE_DELETE, LINE_INSERT, LINE_RESET };
-enum position {				/* Position operations. */
-	P_BOTTOM, P_FILL, P_MIDDLE, P_TOP };
-enum sctype {				/* Scroll operations. */
-	CNTRL_B, CNTRL_D, CNTRL_E, CNTRL_F, CNTRL_U, CNTRL_Y, Z_CARAT, Z_PLUS };
 
 /*
  * Structure for holding file references.  Each SCR structure contains a
@@ -182,7 +173,7 @@ struct _scr {
 					/* Display a busy message. */
 	int	(*e_busy) __P((SCR *, char const *));
 					/* File line changed callback. */
-	int	(*e_change) __P((SCR *, recno_t, enum operation));
+	int	(*e_change) __P((SCR *, recno_t, lnop_t));
 					/* Clear to the end of the screen. */
 	int	(*e_clrtoeos) __P((SCR *));
 					/* Confirm an action with the user. */
