@@ -4,12 +4,13 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: ip.h,v 8.10 1996/12/05 23:06:11 bostic Exp $ (Berkeley) $Date: 1996/12/05 23:06:11 $
+ *	$Id: ip.h,v 8.11 1996/12/10 21:00:14 bostic Exp $ (Berkeley) $Date: 1996/12/10 21:00:14 $
  */
+
+extern int vi_ofd;		/* Output file descriptor. */
 
 typedef struct _ip_private {
 	int	 i_fd;		/* Input file descriptor. */
-	int	 o_fd;		/* Output file descriptor. */
 
 	size_t	 row;		/* Current row. */
 	size_t	 col;		/* Current column. */
@@ -68,56 +69,57 @@ typedef struct _ip_buf {
  *
  * IP events sent from the screen to vi.
  */
-#define	IPO_C_BOL	 1	/* Cursor to start of line. */
-#define	IPO_C_BOTTOM	 2	/* Cursor to bottom. */
-#define	IPO_C_DEL	 3	/* Cursor delete. */
-#define	IPO_C_DOWN	 4	/* Cursor down N lines: IPO_INT. */
-#define	IPO_C_EOL	 5	/* Cursor to end of line. */
-#define	IPO_C_INSERT	 6	/* Cursor: enter insert mode. */
-#define	IPO_C_LEFT	 7	/* Cursor left. */
-#define	IPO_C_PGDOWN	 8	/* Cursor down N pages: IPO_INT. */
-#define	IPO_C_PGUP	 9	/* Cursor up N lines: IPO_INT. */
-#define	IPO_C_RIGHT	10	/* Cursor right. */
-#define	IPO_C_TOP	11	/* Cursor to top. */
-#define	IPO_C_UP	12	/* Cursor up N lines: IPO_INT. */
-#define	IPO_EDIT	13	/* Edit a file: IPO_STR. */
-#define	IPO_EDITSPLIT	14	/* Split to a file: IPO_STR. */
-#define	IPO_EOF		15	/* End of input (NOT ^D). */
-#define	IPO_ERR		16	/* Input error. */
-#define	IPO_INTERRUPT	17	/* Interrupt. */
-#define	IPO_MOUSE_MOVE	18	/* Mouse click move: IPO_INT, IPO_INT. */
-#define	IPO_QUIT	19	/* Quit. */
-#define	IPO_RESIZE	20	/* Screen resize: IPO_INT, IPO_INT. */
-#define	IPO_SIGHUP	21	/* SIGHUP. */
-#define	IPO_SIGTERM	22	/* SIGTERM. */
-#define	IPO_STRING	23	/* Input string: IPO_STR. */
-#define	IPO_TAG		24	/* Tag. */
-#define	IPO_TAGAS	25	/* Tag to a string: IPO_STR. */
-#define	IPO_TAGSPLIT	26	/* Split to a tag. */
-#define	IPO_UNDO	27	/* Undo. */
-#define	IPO_WQ		28	/* Write and quit. */
-#define	IPO_WRITE	29	/* Write. */
-#define	IPO_WRITEAS	30	/* Write as another file: IPO_STR. */
+#define	VI_C_BOL	 1	/* Cursor to start of line. */
+#define	VI_C_BOTTOM	 2	/* Cursor to bottom. */
+#define	VI_C_DEL	 3	/* Cursor delete. */
+#define	VI_C_DOWN	 4	/* Cursor down N lines: IPO_INT. */
+#define	VI_C_EOL	 5	/* Cursor to end of line. */
+#define	VI_C_INSERT	 6	/* Cursor: enter insert mode. */
+#define	VI_C_LEFT	 7	/* Cursor left. */
+#define	VI_C_PGDOWN	 8	/* Cursor down N pages: IPO_INT. */
+#define	VI_C_PGUP	 9	/* Cursor up N lines: IPO_INT. */
+#define	VI_C_RIGHT	10	/* Cursor right. */
+#define	VI_C_TOP	11	/* Cursor to top. */
+#define	VI_C_UP		12	/* Cursor up N lines: IPO_INT. */
+#define	VI_EDIT		13	/* Edit a file: IPO_STR. */
+#define	VI_EDITSPLIT	14	/* Split to a file: IPO_STR. */
+#define	VI_EOF		15	/* End of input (NOT ^D). */
+#define	VI_ERR		16	/* Input error. */
+#define	VI_INTERRUPT	17	/* Interrupt. */
+#define	VI_MOUSE_MOVE	18	/* Mouse click move: IPO_INT, IPO_INT. */
+#define	VI_QUIT		19	/* Quit. */
+#define	VI_RESIZE	20	/* Screen resize: IPO_INT, IPO_INT. */
+#define	VI_SIGHUP	21	/* SIGHUP. */
+#define	VI_SIGTERM	22	/* SIGTERM. */
+#define	VI_STRING	23	/* Input string: IPO_STR. */
+#define	VI_TAG		24	/* Tag. */
+#define	VI_TAGAS	25	/* Tag to a string: IPO_STR. */
+#define	VI_TAGSPLIT	26	/* Split to a tag. */
+#define	VI_UNDO		27	/* Undo. */
+#define	VI_WQ		28	/* Write and quit. */
+#define	VI_WRITE	29	/* Write. */
+#define	VI_WRITEAS	30	/* Write as another file: IPO_STR. */
 
 /*
  * IP events sent from vi to the screen.
  */
-#define	IPO_ADDSTR	 1	/* Add a string: IPO_STR. */
-#define	IPO_ATTRIBUTE	 2	/* Set screen attribute: 2 * IPO_INT. */
-#define	IPO_BELL	 3	/* Beep/bell/flash the terminal. */
-#define	IPO_BUSY_OFF	 4	/* Display a busy message: IPO_STR. */
-#define	IPO_BUSY_ON	 5	/* Display a busy message: IPO_STR. */
-#define	IPO_CLRTOEOL	 6	/* Clear to the end of the line. */
-#define	IPO_DELETELN	 7	/* Delete a line. */
-#define	IPO_DISCARD	 8	/* Discard the screen. */
-#define	IPO_INSERTLN	 9	/* Insert a line. */
-#define	IPO_MOVE	10	/* Move the cursor: 2 * IPO_INT. */
-#define	IPO_REDRAW	11	/* Redraw the screen. */
-#define	IPO_REFRESH	12	/* Refresh the screen. */
-#define	IPO_RENAME	13	/* Rename the screen: IPO_STR. */
-#define	IPO_REWRITE	14	/* Rewrite a line: IPO_INT. */
-#define	IPO_SCROLLBAR	15	/* Reset the scrollbar: 3 * IPO_INT. */
-#define	IPO_SPLIT	16	/* Split the screen. */
-#define	IPO_EVENT_MAX	16
+#define	SI_ADDSTR	 1	/* Add a string: IPO_STR. */
+#define	SI_ATTRIBUTE	 2	/* Set screen attribute: 2 * IPO_INT. */
+#define	SI_BELL		 3	/* Beep/bell/flash the terminal. */
+#define	SI_BUSY_OFF	 4	/* Display a busy message: IPO_STR. */
+#define	SI_BUSY_ON	 5	/* Display a busy message: IPO_STR. */
+#define	SI_CLRTOEOL	 6	/* Clear to the end of the line. */
+#define	SI_DELETELN	 7	/* Delete a line. */
+#define	SI_DISCARD	 8	/* Discard the screen. */
+#define	SI_INSERTLN	 9	/* Insert a line. */
+#define	SI_MOVE		10	/* Move the cursor: 2 * IPO_INT. */
+#define	SI_QUIT		11	/* Quit. */
+#define	SI_REDRAW	12	/* Redraw the screen. */
+#define	SI_REFRESH	13	/* Refresh the screen. */
+#define	SI_RENAME	14	/* Rename the screen: IPO_STR. */
+#define	SI_REWRITE	15	/* Rewrite a line: IPO_INT. */
+#define	SI_SCROLLBAR	16	/* Reset the scrollbar: 3 * IPO_INT. */
+#define	SI_SPLIT	17	/* Split the screen. */
+#define	SI_EVENT_MAX	17
 
 #include "ip_extern.h"
