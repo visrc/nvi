@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 10.7 1995/09/25 11:11:21 bostic Exp $ (Berkeley) $Date: 1995/09/25 11:11:21 $
+ *	$Id: ex.h,v 10.8 1995/09/28 12:00:03 bostic Exp $ (Berkeley) $Date: 1995/09/28 12:00:03 $
  */
 
 #define	PROMPTCHAR	':'		/* Prompt using a colon. */
@@ -199,6 +199,7 @@ typedef enum {
 	EXM_NOFILEYET,			/* Illegal until a file read in. */
 	EXM_NOPREVBUF,			/* No previous buffer specified. */
 	EXM_NOPREVRE,			/* No previous RE specified. */
+	EXM_NOSUSPEND,			/* No suspension. */
 	EXM_USAGE,			/* Standard usage message. */
 } exm_t;
 

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_util.c,v 10.9 1995/09/21 12:07:43 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:07:43 $";
+static char sccsid[] = "$Id: ex_util.c,v 10.10 1995/09/28 12:00:35 bostic Exp $ (Berkeley) $Date: 1995/09/28 12:00:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -183,6 +183,9 @@ ex_message(sp, p, which)
 		break;
 	case EXM_NOPREVRE:
 		msgq(sp, M_ERR, "172|No previous regular expression");
+		break;
+	case EXM_NOSUSPEND:
+		msgq(sp, M_ERR, "230|This screen may not be suspended");
 		break;
 	case EXM_USAGE:
 		msgq(sp, M_ERR, "174|Usage: %s", p);
