@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 8.25 1994/03/03 17:09:59 bostic Exp $ (Berkeley) $Date: 1994/03/03 17:09:59 $";
+static char sccsid[] = "$Id: v_itxt.c,v 8.26 1994/03/04 11:03:03 bostic Exp $ (Berkeley) $Date: 1994/03/04 11:03:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -599,15 +599,12 @@ v_change(sp, ep, vp)
 			vp->m_stop.cno = len = 0;
 			LF_SET(TXT_APPENDEOL);
 		} else {
-			if (len == 0) {
-				vp->m_stop.cno = 0;
-				LF_SET(TXT_APPENDEOL);
-			} else
-				vp->m_stop.cno = len - 1;
 			if (cut(sp, ep,
 			    NULL, F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
 			    &vp->m_start, &vp->m_stop, lmode))
 				return (1);
+			if (len == 0)
+				LF_SET(TXT_APPENDEOL);
 			LF_SET(TXT_EMARK | TXT_OVERWRITE);
 		}
 		return (v_ntext(sp, ep, &sp->tiq,
