@@ -5,186 +5,195 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.1,v 8.37 1996/05/16 09:12:25 bostic Exp $ (Berkeley) $Date: 1996/05/16 09:12:25 $
+.\"     $Id: vi.1,v 8.38 1996/05/18 13:26:48 bostic Exp $ (Berkeley) $Date: 1996/05/18 13:26:48 $
 .\"
-.Dd "%Q%"
-.Dt EX/VI 1
-.Os
-.Sh NAME
-.Nm ex, vi, view
-.Nd text editors
-.Sh SYNOPSIS
-.Nm \&ex
-.Op Fl eFRrsv
-.Op Fl c Ar cmd
-.Op Fl t Ar tag
-.Op Fl w Ar size
-.\".Op Fl X Ar \&aw
-.Op Ar "file ..."
-.Nm \&vi
-.Op Fl eFlRrv
-.Op Fl c Ar cmd
-.Op Fl t Ar tag
-.Op Fl w Ar size
-.\".Op Fl X Ar \&aw
-.Op Ar "file ..."
-.Nm view
-.Op Fl eFRrv
-.Op Fl c Ar cmd
-.Op Fl t Ar tag
-.Op Fl w Ar size
-.\".Op Fl X Ar \&aw
-.Op Ar "file ..."
-.Sh DESCRIPTION
-.Nm \&Vi
+.TH VI 1 "%Q%"
+.UC
+.SH NAME
+ex, vi, view \- text editors
+.SH SYNOPSIS
+.B ex
+[\c
+.B -eFRrsv\c
+] [\c
+.BI -c " cmd"\c
+] [\c
+.BI -t " tag"\c
+] [\c
+.BI -w " size"\c
+] [file ...]
+.br
+.B vi
+[\c
+.B -eFlRrv\c
+] [\c
+.BI -c " cmd"\c
+] [\c
+.BI -t " tag"\c
+] [\c
+.BI -w " size"\c
+] [file ...]
+.br
+.B view
+[\c
+.B -eFRrv\c
+] [\c
+.BI -c " cmd"\c
+] [\c
+.BI -t " tag"\c
+] [\c
+.BI -w " size"\c
+] [file ...]
+.SH DESCRIPTION
+.I \&Vi
 is a screen oriented text editor.
-.Nm \&Ex
+.I \&Ex
 is a line-oriented text editor.
-.Nm \&Ex
+.I \&Ex
 and
-.Nm \&vi
+.I \&vi
 are different interfaces to the same program,
 and it is possible to switch back and forth during an edit session.
-.Nm View
+.I View
 is the equivalent of using the
-.Fl R
+.B \-R
 (read-only) option of
-.Nm \&vi .
-.Pp
+.IR \&vi .
+.PP
 This manual page is the one provided with the
-.Nm nex/nvi
+.I nex/nvi
 versions of the
-.Nm ex/vi
+.I ex/vi
 text editors.
-.Nm Nex/nvi
+.I Nex/nvi
 are intended as bug-for-bug compatible replacements for the original
 Fourth Berkeley Software Distribution (4BSD)
-.Nm \&ex
+.I \&ex
 and
-.Nm \&vi
+.I \&vi
 programs.
 For the rest of this manual page,
-.Nm nex/nvi
+.I nex/nvi
 is used only when it's necessary to distinguish it from the historic
 implementations of
-.Nm ex/vi .
-.Pp
+.IR ex/vi .
+.PP
 This manual page is intended for users already familiar with
-.Nm ex/vi .
+.IR ex/vi .
 Anyone else should almost certainly read a good tutorial on the
 editor before this manual page.
 If you're in an unfamiliar environment, and you absolutely have to
 get work done immediately, read the section after the options
-description, entitled
-.Dq "Fast Startup" .
+description, entitled ``Fast Startup''.
 It's probably enough to get you going.
-.Pp
+.PP
 The following options are available:
-.Bl -tag -width Ds 
-.It Fl c
+.TP
+.B \-c
 Execute
-.Ar cmd
+.B cmd
 immediately after starting the edit session.
 Particularly useful for initial positioning in the file, however
-.Ar cmd
+.B cmd
 is not limited to positioning commands.
-This is the POSIX 1003.2 interface for the historic
-.Dq "+cmd"
-syntax.
-.Nm Nex/nvi
+This is the POSIX 1003.2 interface for the historic ``+cmd'' syntax.
+.I Nex/nvi
 supports both the old and new syntax.
-.It Fl e
+.TP
+.B \-e
 Start editing in ex mode, as if the command name were
-.Nm \&ex .
-.It Fl F
+.IR \&ex .
+.TP
+.B \-F
 Don't copy the entire file when first starting to edit.
 (The default is to make a copy in case someone else modifies
 the file during your edit session.)
-.It Fl l
+.TP
+.B \-l
 Start editing with the lisp and showmatch options set.
-.It Fl R
+.TP
+.B \-R
 Start editing in read-only mode, as if the command name was
-.Nm view ,
+.IR view ,
 or the
-.Sy readonly
+.B readonly
 option was set.
-.It Fl r
+.TP
+.B \-r
 Recover the specified files, or, if no files are specified,
 list the files that could be recovered.
 If no recoverable files by the specified name exist,
 the file is edited as if the
-.Fl r
+.B \-r
 option had not been specified.
-.It Fl s
+.TP
+.B \-s
 Enter batch mode; applicable only to
-.Nm \&ex
+.I \&ex
 edit sessions.
 Batch mode is useful when running
-.Nm \&ex
+.I \&ex
 scripts.
 Prompts, informative messages and other user oriented message
 are turned off,
 and no startup files or environmental variables are read.
-This is the POSIX 1003.2 interface for the historic
-.Dq \&\-
-argument.
-.Nm \&Nex/nvi
+This is the POSIX 1003.2 interface for the historic ``\-'' argument.
+.I \&Nex/nvi
 supports both the old and new syntax.
-.It Fl t
+.TP
+.B \-t
 Start editing at the specified tag.
 (See
-.Xr ctags 1 ).
-.It Fl w
+.IR ctags (1)).
+.TP
+.B \-w
 Set the initial window size to the specified number of lines.
-.It Fl v
+.TP
+.B \-v
 Start editing in vi mode, as if the command name was
-.Nm \&vi
+.I \&vi
 or
-.Nm view .
-.It Fl X
-Reserved for X11 interfaces.
-.Em "No X11 support is currently implemented."
-.El
-.Pp
+.IR view .
+.PP
 Command input for
-.Nm ex/vi
+.I ex/vi
 is read from the standard input.
 In the
-.Nm \&vi
+.I \&vi
 interface, it is an error if standard input is not a terminal.
 In the
-.Nm \&ex
+.I \&ex
 interface, if standard input is not a terminal,
-.Nm \&ex
+.I \&ex
 will read commands from it regardless, however, the session will be a
 batch mode session, exactly as if the
-.Fl s
+.B \-s
 option had been specified.
-.Pp
-.Nm Ex/vi
+.PP
+.I Ex/vi
 exits 0 on success, and greater than 0 if an error occurs.
-.Sh FAST STARTUP
+.SH FAST STARTUP
 This section will tell you the minimum amount that you need to
 do simple editing tasks using
-.Nm \&vi .
+.IR \&vi .
 If you've never used any screen editor before, you're likely to have
 problems even with this simple introduction.
 In that case you should find someone that already knows
-.Nm \&vi
+.I \&vi
 and have them walk you through this section.
-.Pp
-.Nm \&Vi
+.PP
+.I \&Vi
 is a screen editor.
 This means that it takes up almost the entire screen, displaying part
 of the file on each screen line, except for the last line of the screen.
 The last line of the screen is used for you to give commands to
-.Nm \&vi ,
+.IR \&vi ,
 and for
-.Nm \&vi
+.I \&vi
 to give information to you.
-.Pp
+.PP
 The other fact that you need to understand is that
-.Nm \&vi
+.I \&vi
 is a modeful editor, i.e. you are either entering text or you
 are executing commands, and you have to be in the right mode
 to do one or the other.
@@ -193,1157 +202,1390 @@ There are commands that switch you into input mode.
 There is only one key that takes you out of input mode,
 and that is the <escape> key.
 (Key names are written using less-than and greater-than signs, e.g.
-<escape> means the
-.Dq escape
-key, usually labeled
-.Dq esc
-on your terminal's keyboard.)
+<escape> means the ``escape'' key, usually labeled ``esc'' on your
+terminal's keyboard.)
 If you're ever confused as to which mode you're in,
 keep entering the <escape> key until
-.Nm \&vi
+.I \&vi
 beeps at you.
 (Generally,
-.Nm \&vi
+.I \&vi
 will beep at you if you try and do something that's not allowed.
 It will also display error messages.)
-.Pp
-To start editing a file, enter the command
-.Dq Li "vi file_name<carriage-return>" .
+.PP
+To start editing a file, enter the command ``vi file_name<carriage-return>''.
 The command you should enter as soon as you start editing is
-.Dq Li ":set verbose showmode<carriage-return>" .
+``:set verbose showmode<carriage-return>''.
 This will make the editor give you verbose error messages and display
 the current mode at the bottom of the screen.
-.Pp
+.PP
 The commands to move around the file are:
-.Bl -tag -width XXXX -compact
-.It Sy h
+.TP
+.B h
 Move the cursor left one character.
-.It Sy j
+.TP
+.B j
 Move the cursor down one line.
-.It Sy k
+.TP
+.B k
 Move the cursor up one line.
-.It Sy l
+.TP
+.B l
 Move the cursor right one character.
-.It Sy <cursor-arrows>
+.TP
+.B <cursor-arrows>
 The cursor arrow keys should work, too.
-.It Sy /text<carriage-return>
-Search for the string
-.Dq text
-in the file, and move the cursor to its first character.
-.El
-.Pp
+.TP
+.B /text<carriage-return>
+Search for the string ``text'' in the file,
+and move the cursor to its first character.
+.PP
 The commands to enter new text are:
-.Bl -tag -width XXXX -compact
-.It Sy a
+.TP
+.B a
 Append new text,
-.Em after
+.I after
 the cursor.
-.It Sy i
+.TP
+.B i
 Insert new text,
-.Em before
+.I before
 the cursor.
-.It Sy o
+.TP
+.B o
 Open a new line below the line the cursor is on, and start
 entering text.
-.It Sy O
+.TP
+.B O
 Open a new line above the line the cursor is on, and start
 entering text.
-.It Sy <escape>
+.TP
+.B <escape>
 Once you've entered input mode using the one of the
-.Sy \&a ,
-.Sy \&i ,
-.Sy \&O ,
+.BR \&a ,
+.BR \&i ,
+.BR \&O
 or 
-.Sy \&o
+.B \&o
 commands, use
-.Sy <escape>
+.B <escape>
 to quit entering text and return to command mode.
-.El
-.Pp
+.PP
 The commands to copy text are:
-.Bl -tag -width XXXX -compact
-.It Sy yy
+.TP
+.B yy
 Copy the line the cursor is on.
-.It Sy p
+.TP
+.B p
 Append the copied line after the line the cursor is on.
-.El
-.Pp
+.PP
 The commands to delete text are:
-.Bl -tag -width XXXX -compact
-.It Sy dd
+.TP
+.B dd
 Delete the line the cursor is on.
-.It Sy x
+.TP
+.B x
 Delete the character the cursor is on.
-.El
-.Pp
+.PP
 The commands to write the file are:
-.Bl -tag -width XXXX -compact
-.It Sy :w<carriage-return>
+.TP
+.B :w<carriage-return>
 Write the file back to the file with the name that you originally used
 as an argument on the
-.Nm \&vi
+.I \&vi
 command line.
-.It Sy :w file_name<carriage-return>
-Write the file back to the file with the name
-.Dq file_name .
-.El
-.Pp
+.TP
+.B ":w file_name<carriage-return>"
+Write the file back to the file with the name ``file_name''.
+.PP
 The commands to quit editing and exit the editor are:
-.Bl -tag -width XXXX -compact
-.It Sy :q<carriage-return>
+.TP
+.B :q<carriage-return>
 Quit editing and leave vi (if you've modified the file, but not
 saved your changes,
-.Nm \&vi
+.I \&vi
 will refuse to quit).
-.It Sy :q!<carriage-return>
+.TP
+.B :q!<carriage-return>
 Quit, discarding any modifications that you may have made.
-.El
-.Pp
+.PP
 One final caution.
 Unusual characters can take up more than one column on the screen,
 and long lines can take up more than a single screen line.
-The above commands work on
-.Dq physical
-characters and lines, i.e. they affect the entire line no matter
-how many screen lines it takes up and the entire character no matter
-how many screen columns it takes up.
-.Sh VI COMMANDS
+The above commands work on ``physical'' characters and lines,
+i.e. they affect the entire line no matter how many screen lines it
+takes up and the entire character no matter how many screen columns
+it takes up.
+.SH VI COMMANDS
 The following section describes the commands available in the command
 mode of the
-.Nm \&vi
+.I \&vi
 editor.
 In each entry below, the tag line is a usage synopsis for the command
 character.
-.sp
-.Bl -tag -width "XXXX" -compact
-.It Sy "[count] <control-A>"
+.PP
+.TP
+.B "[count] <control-A>"
 Search forward
-.Li count
+.I count
 times for the current word.
-.It Sy "[count] <control-B>"
+.TP
+.B "[count] <control-B>"
 Page backwards
-.Li count
+.I count
 screens.
-.It Sy "[count] <control-D>"
+.TP
+.B "[count] <control-D>"
 Scroll forward
-.Li count
+.I count
 lines.
-.It Sy "[count] <control-E>"
+.TP
+.B "[count] <control-E>"
 Scroll forward
-.Li count
+.I count
 lines, leaving the current line and column as is, if possible.
-.It Sy "[count] <control-F>"
+.TP
+.B "[count] <control-F>"
 Page forward
-.Li count
+.I count
 screens.
-.It Sy "<control-G>"
+.TP
+.B "<control-G>"
 Display the file information.
-.It Sy "<control-H>"
-.It Sy "[count] h"
+.TP
+.B "<control-H>"
+.TP
+.B "[count] h"
 Move the cursor back
-.Li count
+.I count
 characters in the current line.
-.It Sy "[count] <control-J>"
-.It Sy "[count] <control-N>"
-.It Sy "[count] j"
+.TP
+.B "[count] <control-J>"
+.TP
+.B "[count] <control-N>"
+.TP
+.B "[count] j"
 Move the cursor down
-.Li count
+.I count
 lines without changing the current column.
-.It Sy "<control-L>"
-.It Sy "<control-R>"
+.TP
+.B "<control-L>"
+.TP
+.B "<control-R>"
 Repaint the screen.
-.It Sy "[count] <control-M>"
-.It Sy "[count] +"
+.TP
+.B "[count] <control-M>"
+.TP
+.B "[count] +"
 Move the cursor down
-.Li count
+.I count
 lines to the first nonblank character of that line.
-.It Sy "[count] <control-P>"
-.It Sy "[count] k"
+.TP
+.B "[count] <control-P>"
+.TP
+.B "[count] k"
 Move the cursor up
-.Li count
+.I count
 lines, without changing the current column.
-.It Sy "<control-T>"
+.TP
+.B "<control-T>"
 Return to the most recent tag context.
-.It Sy "<control-U>"
+.TP
+.B "<control-U>"
 Scroll backwards
-.Li count
+.I count
 lines.
-.It Sy "<control-W>"
+.TP
+.B "<control-W>"
 Switch to the next lower screen in the window, or, to the first
 screen if there are no lower screens in the window.
-.It Sy "<control-Y>"
+.TP
+.B "<control-Y>"
 Scroll backwards
-.Li count
+.I count
 lines, leaving the current line and column as is, if possible.
-.It Sy "<control-Z>"
+.TP
+.B "<control-Z>"
 Suspend the current editor session.
-.It Sy "<escape>"
+.TP
+.B "<escape>"
 Execute
-.Nm \&ex
+.I \&ex
 commands or cancel partial commands.
-.It Sy "<control-]>"
+.TP
+.B "<control-]>"
 Push a tag reference onto the tag stack.
-.It Sy "<control-^>"
+.TP
+.B "<control-^>"
 Switch to the most recently edited file.
-.It Sy "[count] <space>"
-.It Sy "[count] l"
+.TP
+.B "[count] <space>"
+.TP
+.B "[count] l"
 Move the cursor forward
-.Li count
+.I count
 characters without changing the current line.
-.It Sy "[count] ! motion shell-argument(s)"
+.TP
+.B "[count] ! motion shell-argument(s)"
 Replace text with results from a shell command.
-.It Sy "[count] # #|+|-"
+.TP
+.B "[count] # #|+|-"
 Increment or decrement the cursor number.
-.It Sy "[count] $"
+.TP
+.B "[count] $"
 Move the cursor to the end of a line.
-.It Sy "%"
+.TP
+.B "%"
 Move to the matching character.
-.It Sy "&"
+.TP
+.B "&"
 Repeat the previous substitution command on the current line.
-.It Sy "'<character>"
-.It Sy "`<character>"
+.TP
+.B "'<character>"
+.TP
+.B "`<character>"
 Return to a context marked by the character
-.Li <character> .
-.It Sy "[count] ("
+.IR <character> .
+.TP
+.B "[count] ("
 Back up
-.Li count
+.I count
 sentences.
-.It Sy "[count] )"
+.TP
+.B "[count] )"
 Move forward
-.Li count
+.I count
 sentences.
-.It Sy "[count] ,"
+.TP
+.B "[count] ,"
 Reverse find character
-.Li count
+.I count
 times.
-.It Sy "[count] -"
+.TP
+.B "[count] -"
 Move to first nonblank of the previous line,
-.Li count
+.I count
 times.
-.It Sy "[count] ."
+.TP
+.B "[count] ."
 Repeat the last
-.Nm \&vi
+.I \&vi
 command that modified text.
-.It Sy "/RE<carriage-return>"
-.It Sy "/RE/ [offset]<carriage-return>"
-.It Sy "?RE<carriage-return>"
-.It Sy "?RE? [offset]<carriage-return>"
-.It Sy "N"
-.It Sy "n"
+.TP
+.B "/RE<carriage-return>"
+.TP
+.B "/RE/ [offset]<carriage-return>"
+.TP
+.B "?RE<carriage-return>"
+.TP
+.B "?RE? [offset]<carriage-return>"
+.TP
+.B "N"
+.TP
+.B "n"
 Search forward or backward for a regular expression.
-.It Sy "0"
+.TP
+.B "0"
 Move to the first character in the current line.
-.It Sy ":"
+.TP
+.B ":"
 Execute an ex command.
-.It Sy "[count] ;"
+.TP
+.B "[count] ;"
 Repeat the last character find
-.Li count
+.I count
 times.
-.It Sy "[count] < motion"
-.It Sy "[count] > motion"
+.TP
+.B "[count] < motion"
+.TP
+.B "[count] > motion"
 Shift lines left or right.
-.It Sy "@ buffer"
+.TP
+.B "@ buffer"
 Execute a named buffer.
-.It Sy "[count] A"
+.TP
+.B "[count] A"
 Enter input mode, appending the text after the end of the line.
-.It Sy "[count] B"
+.TP
+.B "[count] B"
 Move backwards
-.Li count
+.I count
 bigwords.
-.It Sy "[buffer] [count] C"
+.TP
+.B "[buffer] [count] C"
 Change text from the current position to the end-of-line.
-.It Sy "[buffer] D"
+.TP
+.B "[buffer] D"
 Delete text from the current position to the end-of-line.
-.It Sy "[count] E"
+.TP
+.B "[count] E"
 Move forward
-.Li count
+.I count
 end-of-bigwords.
-.It Sy "[count] F <character>"
+.TP
+.B "[count] F <character>"
 Search
-.Li count
+.I count
 times backward through the current line for
-.Li <character> .
-.It Sy "[count] G"
+.IR <character> .
+.TP
+.B "[count] G"
 Move to line
-.Li count ,
+.IR count ,
 or the last line of the file if
-.Li count
+.I count
 not specified.
-.It Sy "[count] H"
+.TP
+.B "[count] H"
 Move to the screen line
-.Li "count - 1"
+.I "count - 1"
 lines below the top of the screen.
-.It Sy "[count] I"
+.TP
+.B "[count] I"
 Enter input mode, inserting the text at the beginning of the line.
-.It Sy "[count] J"
+.TP
+.B "[count] J"
 Join lines.
-.It Sy "[count] L"
+.TP
+.B "[count] L"
 Move to the screen line
-.Li "count - 1"
+.I "count - 1"
 lines above the bottom of the screen.
-.It Sy " M"
+.TP
+.B " M"
 Move to the screen line in the middle of the screen.
-.It Sy "[count] O"
+.TP
+.B "[count] O"
 Enter input mode, appending text in a new line above the current line.
-.It Sy "[buffer] P"
+.TP
+.B "[buffer] P"
 Insert text from a buffer.
-.It Sy "Q"
+.TP
+.B "Q"
 Exit
-.Nm \&vi
+.I \&vi
 (or visual) mode and switch to
-.Nm \&ex
+.I \&ex
 mode.
-.It Sy "[count] R"
+.TP
+.B "[count] R"
 Enter input mode, replacing the characters in the current line.
-.It Sy "[buffer] [count] S"
+.TP
+.B "[buffer] [count] S"
 Substitute
-.Li count
+.I count
 lines.
-.It Sy "[count] T <character>"
+.TP
+.B "[count] T <character>"
 Search backwards,
-.Li count
+.I count
 times,
 through the current line for the character
-.Em after
+.I after
 the specified
-.Li <character> .
-.It Sy "U"
+.IR <character> .
+.TP
+.B "U"
 Restore the current line to its state before the cursor last
 moved to it.
-.It Sy "[count] W"
+.TP
+.B "[count] W"
 Move forward
-.Li count
+.I count
 bigwords.
-.It Sy "[buffer] [count] X"
+.TP
+.B "[buffer] [count] X"
 Delete
-.Li count
+.I count
 characters before the cursor.
-.It Sy "[buffer] [count] Y"
-Copy (or
-.Dq yank )
-.Li count
+.TP
+.B "[buffer] [count] Y"
+Copy (or ``yank'')
+.I count
 lines into the specified buffer.
-.It Sy "ZZ"
+.TP
+.B "ZZ"
 Write the file and exit
-.Nm \&vi .
-.It Sy "[count] [["
+.IR \&vi .
+.TP
+.B "[count] [["
 Back up
-.Li count
+.I count
 section boundaries.
-.It Sy "[count] ]]"
+.TP
+.B "[count] ]]"
 Move forward
-.Li count
+.I count
 section boundaries.
-.It Sy "\&^"
+.TP
+.B "\&^"
 Move to first nonblank character on the current line.
-.It Sy "[count] _"
+.TP
+.B "[count] _"
 Move down
-.Li "count - 1"
+.I "count - 1"
 lines, to the first nonblank character.
-.It Sy "[count] a"
+.TP
+.B "[count] a"
 Enter input mode, appending the text after the cursor.
-.It Sy "[count] b"
+.TP
+.B "[count] b"
 Move backwards
-.Li count
+.I count
 words.
-.It Sy "[buffer] [count] c motion"
+.TP
+.B "[buffer] [count] c motion"
 Change a region of text.
-.It Sy "[buffer] [count] d motion"
+.TP
+.B "[buffer] [count] d motion"
 Delete a region of text.
-.It Sy "[count] e"
+.TP
+.B "[count] e"
 Move forward
-.Li count
+.I count
 end-of-words.
-.It Sy "[count] f<character>"
+.TP
+.B "[count] f<character>"
 Search forward,
-.Li count
+.I count
 times, through the rest of the current line for
-.Li <character> .
-.It Sy "[count] i"
+.IR <character> .
+.TP
+.B "[count] i"
 Enter input mode, inserting the text before the cursor.
-.It Sy "m <character>"
+.TP
+.B "m <character>"
 Save the current context (line and column) as
-.Li <character> .
-.It Sy "[count] o"
+.IR <character> .
+.TP
+.B "[count] o"
 Enter input mode, appending text in a new line under the current line.
-.It Sy "[buffer] p"
+.TP
+.B "[buffer] p"
 Append text from a buffer.
-.It Sy "[count] r <character>
+.TP
+.B "[count] r <character>"
 Replace
-.Li count
+.I count
 characters.
-.It Sy "[buffer] [count] s"
+.TP
+.B "[buffer] [count] s"
 Substitute
-.Li count
+.I count
 characters in the current line starting with the current character.
-.It Sy "[count] t <character>"
+.TP
+.B "[count] t <character>"
 Search forward,
-.Li count
+.I count
 times, through the current line for the character immediately
-.Em before
-.Li <character> .
-.It Sy "u"
+.I before
+.IR <character> .
+.TP
+.B "u"
 Undo the last change made to the file.
-.It Sy "[count] w"
+.TP
+.B "[count] w"
 Move forward
-.Li count
+.I count
 words.
-.It Sy "[buffer] [count] x"
+.TP
+.B "[buffer] [count] x"
 Delete
-.Li count
+.I count
 characters.
-.It Sy "[buffer] [count] y motion"
-Copy (or
-.Dq yank )
+.TP
+.B "[buffer] [count] y motion"
+Copy (or ``yank'')
 a text region specified by the
-.Li count
+.I count
 and motion into a buffer.
-.It Sy "[count1] z [count2] -|.|+|^|<carriage-return>"
+.TP
+.B "[count1] z [count2] -|.|+|^|<carriage-return>"
 Redraw, optionally repositioning and resizing the screen.
-.It Sy "[count] {"
+.TP
+.B "[count] {"
 Move backward
-.Li count
+.I count
 paragraphs.
-.It Sy "[count] |"
+.TP
+.B "[count] |"
 Move to a specific
-.Em column
+.I column
 position on the current line.
-.It Sy "[count] }"
+.TP
+.B "[count] }"
 Move forward
-.Li count
+.I count
 paragraphs.
-.It Sy "[count] ~"
+.TP
+.B "[count] ~"
 Reverse the case of the next
-.Li count
+.I count
 character(s).
-.It Sy "[count] ~ motion"
+.TP
+.B "[count] ~ motion"
 Reverse the case of the characters in a text region specified by the
-.Li count
+.I count
 and
-.Li motion .
-.It Sy "<interrupt>"
+.IR motion .
+.TP
+.B "<interrupt>"
 Interrupt the current operation.
-.El
-.Sh VI TEXT INPUT COMMANDS
+.SH VI TEXT INPUT COMMANDS
 The following section describes the commands available in the text
 input mode of the
-.Nm \&vi
+.I \&vi
 editor.
-.Pp
-.Bl -tag -width "XXXX" -compact
-.It Sy "<nul>"
+.PP
+.TP
+.B "<nul>"
 Replay the previous input.
-.It Sy "<control-D>"
+.TP
+.B "<control-D>"
 Erase to the previous
-.Sy shiftwidth
+.B shiftwidth
 column boundary.
-.It Sy "^<control-D>"
+.TP
+.B "^<control-D>"
 Erase all of the autoindent characters, and reset the autoindent level.
-.It Sy "0<control-D>"
+.TP
+.B "0<control-D>"
 Erase all of the autoindent characters.
-.It Sy "<control-T>"
+.TP
+.B "<control-T>"
 Insert sufficient
-.Li <tab>
+.I <tab>
 and
-.Li <space>
+.I <space>
 characters to move forward to the next
-.Sy shiftwidth
+.B shiftwidth
 column boundary.
-.It Sy "<erase>
-.It Sy "<control-H>"
+.TP
+.B "<erase>
+.TP
+.B "<control-H>"
 Erase the last character.
-.It Sy "<literal next>"
+.TP
+.B "<literal next>"
 Quote the next character.
-.It Sy "<escape>
+.TP
+.B "<escape>
 Resolve all text input into the file, and return to command mode.
-.It Sy "<line erase>
+.TP
+.B "<line erase>"
 Erase the current line.
-.It Sy "<control-W>"
-.It Sy "<word erase>
+.TP
+.B "<control-W>"
+.TP
+.B "<word erase>"
 Erase the last word.
 The definition of word is dependent on the
-.Sy altwerase
+.B altwerase
 and
-.Sy ttywerase
+.B ttywerase
 options.
-.It Sy "<control-X>[0-9A-Fa-f]+"
+.TP
+.B "<control-X>[0-9A-Fa-f]+"
 Insert a character with the specified hexadecimal value into the text.
-.It Sy "<interrupt>"
+.TP
+.B "<interrupt>"
 Interrupt text input mode, returning to command mode.
-.El
-.Sh EX COMMANDS
+.SH EX COMMANDS
 The following section describes the commands available in the
-.Nm \&ex
+.I \&ex
 editor.
 In each entry below, the tag line is a usage synopsis for the command.
-.sp
-.Bl -tag -width "XXXX" -compact
-.It Sy "<end-of-file>"
+.PP
+.TP
+.B "<end-of-file>"
 Scroll the screen.
-.It Sy "! argument(s)"
-.It Sy "[range]! argument(s)"
+.TP
+.B "! argument(s)"
+.TP
+.B "[range]! argument(s)"
 Execute a shell command, or filter lines through a shell command.
-.It Sy \&"
+.TP
+.B \&"
 A comment.
-.It Sy "[range] nu[mber] [count] [flags]"
-.It Sy "[range] # [count] [flags]"
+.TP
+.B "[range] nu[mber] [count] [flags]"
+.TP
+.B "[range] # [count] [flags]"
 Display the selected lines, each preceded with its line number.
-.It Sy "@ buffer"
-.It Sy "* buffer"
+.TP
+.B "@ buffer"
+.TP
+.B "* buffer"
 Execute a buffer.
-.It Sy "[line] a[ppend][!]"
+.TP
+.B "[line] a[ppend][!]"
 The input text is appended after the specified line.
-.It Sy "[range] c[hange][!] [count]"
+.TP
+.B "[range] c[hange][!] [count]"
 The input text replaces the specified range.
-.It Sy "cs[cope] add | find | help | kill | reset"
+.TP
+.B "cs[cope] add | find | help | kill | reset"
 Execute a Cscope command.
-.It Sy "[range] d[elete] [buffer] [count] [flags]"
+.TP
+.B "[range] d[elete] [buffer] [count] [flags]"
 Delete the lines from the file.
-.It Sy "di[splay] b[uffers] | c[onnections] | s[creens] | t[ags]"
+.TP
+.B "di[splay] b[uffers] | c[onnections] | s[creens] | t[ags]"
 Display buffers, Cscope connections, screens or tags.
-.It Sy "e[dit][!] [+cmd] [file]"
-.It Sy "ex[!] [+cmd] [file]"
+.TP
+.B "e[dit][!] [+cmd] [file]"
+.TP
+.B "ex[!] [+cmd] [file]"
 Edit a different file.
-.It Sy "exu[sage] [command]"
+.TP
+.B "exu[sage] [command]"
 Display usage for an
-.Nm \&ex
+.I \&ex
 command.
-.It Sy "f[ile] [file]"
+.TP
+.B "f[ile] [file]"
 Display and optionally change the file name.
-.It Sy "fg [name]"
-.Nm \&Vi
+.TP
+.B "fg [name]"
+.I \&Vi
 mode only.
 Foreground the specified screen.
-.It Sy "[range] g[lobal] /pattern/ [commands]"
-.It Sy "[range] v /pattern/ [commands]
+.TP
+.B "[range] g[lobal] /pattern/ [commands]"
+.TP
+.B "[range] v /pattern/ [commands]"
 Apply commands to lines matching (or not matching) a pattern.
-.It Sy "he[lp]"
+.TP
+.B "he[lp]"
 Display a help message.
-.It Sy "[line] i[nsert][!]"
+.TP
+.B "[line] i[nsert][!]"
 The input text is inserted before the specified line.
-.It Sy "[range] j[oin][!] [count] [flags]"
+.TP
+.B "[range] j[oin][!] [count] [flags]"
 Join lines of text together.
-.It Sy "[range] l[ist] [count] [flags]"
+.TP
+.B "[range] l[ist] [count] [flags]"
 Display the lines unambiguously.
-.It Sy "map[!] [lhs rhs]"
+.TP
+.B "map[!] [lhs rhs]"
 Define or display maps (for
-.Nm \&vi
+.I \&vi
 only).
-.It Sy "[line] ma[rk] <character>"
-.It Sy "[line] k <character>"
+.TP
+.B "[line] ma[rk] <character>"
+.TP
+.B "[line] k <character>"
 Mark the line with the mark
-.Li <character> .
-.It Sy "[range] m[ove] line"
+.IR <character> .
+.TP
+.B "[range] m[ove] line"
 Move the specified lines after the target line.
-.It Sy "mk[exrc][!] file"
+.TP
+.B "mk[exrc][!] file"
 Write the abbreviations, editor options and maps to the specified
 file.
-.It Sy "n[ext][!] [file ...]"
+.TP
+.B "n[ext][!] [file ...]"
 Edit the next file from the argument list.
-.It Sy "[line] o[pen] /pattern/ [flags]"
+.TP
+.B "[line] o[pen] /pattern/ [flags]"
 Enter open mode.
-.It Sy "pre[serve]"
+.TP
+.B "pre[serve]"
 Save the file in a form that can later be recovered using the
-.Nm \&ex
-.Fl r
+.I \&ex
+.B \-r
 option.
-.It Sy "prev[ious][!]"
+.TP
+.B "prev[ious][!]"
 Edit the previous file from the argument list.
-.It Sy "[range] p[rint] [count] [flags]"
+.TP
+.B "[range] p[rint] [count] [flags]"
 Display the specified lines.
-.It Sy "[line] pu[t] [buffer]"
+.TP
+.B "[line] pu[t] [buffer]"
 Append buffer contents to the current line.
-.It Sy "q[uit][!]"
+.TP
+.B "q[uit][!]"
 End the editing session.
-.It Sy "[line] r[ead][!] [file]"
+.TP
+.B "[line] r[ead][!] [file]"
 Read a file.
-.It Sy "rec[over] file"
+.TP
+.B "rec[over] file"
 Recover
-.Li file
+.I file
 if it was previously saved.
-.It Sy "res[ize] [+|-]size"
-.Nm \&Vi
+.TP
+.B "res[ize] [+|-]size"
+.I \&Vi
 mode only.
 Grow or shrink the current screen.
-.It Sy "rew[ind][!]"
+.TP
+.B "rew[ind][!]"
 Rewind the argument list.
-.It Sy "se[t] [option[=[value]] ...] [nooption ...] [option? ...] [all]"
+.TP
+.B "se[t] [option[=[value]] ...] [nooption ...] [option? ...] [all]"
 Display or set editor options.
-.It Sy "sh[ell]"
+.TP
+.B "sh[ell]"
 Run a shell program.
-.It Sy "so[urce] file"
+.TP
+.B "so[urce] file"
 Read and execute
-.Nm \&ex
+.I \&ex
 commands from a file.
-.It Sy "[range] s[ubstitute] [/pattern/replace/] [options] [count] [flags]"
-.It Sy "[range] & [options] [count] [flags]"
-.It Sy "[range] ~ [options] [count] [flags]"
+.TP
+.B "[range] s[ubstitute] [/pattern/replace/] [options] [count] [flags]"
+.TP
+.B "[range] & [options] [count] [flags]"
+.TP
+.B "[range] ~ [options] [count] [flags]"
 Make substitutions.
-.It Sy "su[spend][!]"
-.It Sy "st[op][!]"
-.It Sy <suspend>
+.TP
+.B "su[spend][!]"
+.TP
+.B "st[op][!]"
+.TP
+.B <suspend>
 Suspend the edit session.
-.It Sy "ta[g][!] tagstring"
+.TP
+.B "ta[g][!] tagstring"
 Edit the file containing the specified tag.
-.It Sy "tagn[ext][!]"
+.TP
+.B "tagn[ext][!]"
 Edit the file containing the next context for the current tag.
-.It Sy "tagp[op][!] [file | number]"
+.TP
+.B "tagp[op][!] [file | number]"
 Pop to the specified tag in the tags stack.
-.It Sy "tagp[rev][!]"
+.TP
+.B "tagp[rev][!]"
 Edit the file containing the previous context for the current tag.
-.It Sy "unm[ap][!] lhs"
+.TP
+.B "unm[ap][!] lhs"
 Unmap a mapped string.
-.It Sy "ve[rsion]"
+.TP
+.B "ve[rsion]"
 Display the version of the
-.Nm \&ex/vi
+.I \&ex/vi
 editor.
-.It Sy "[line] vi[sual] [type] [count] [flags]"
-.Nm \&Ex
+.TP
+.B "[line] vi[sual] [type] [count] [flags]"
+.I \&Ex
 mode only.
 Enter
-.Nm \&vi .
-.It Sy "vi[sual][!] [+cmd] [file]"
-.Nm \&Vi
+.IR \&vi .
+.TP
+.B "vi[sual][!] [+cmd] [file]"
+.I \&Vi
 mode only.
 Edit a new file.
-.It Sy "viu[sage] [command]"
+.TP
+.B "viu[sage] [command]"
 Display usage for a
-.Nm \&vi
+.I \&vi
 command.
-.It Sy "[range] w[rite][!] [>>] [file]"
-.It Sy "[range] w[rite] [!] [file]"
-.It Sy "[range] wn[!] [>>] [file]"
-.It Sy "[range] wq[!] [>>] [file]"
+.TP
+.B "[range] w[rite][!] [>>] [file]"
+.TP
+.B "[range] w[rite] [!] [file]"
+.TP
+.B "[range] wn[!] [>>] [file]"
+.TP
+.B "[range] wq[!] [>>] [file]"
 Write the file.
-.It Sy "[range] x[it][!] [file]"
+.TP
+.B "[range] x[it][!] [file]"
 Write the file if it has been modified.
-.It Sy "[range] ya[nk] [buffer] [count]"
+.TP
+.B "[range] ya[nk] [buffer] [count]"
 Copy the specified lines to a buffer.
-.It Sy "[line] z [type] [count] [flags]"
+.TP
+.B "[line] z [type] [count] [flags]"
 Adjust the window.
-.El
-.Sh SET OPTIONS
+.SH SET OPTIONS
 There are a large number of options that may be set (or unset) to
 change the editor's behavior.
 This section describes the options, their abbreviations and their
 default values.
-.Pp
+.PP
 In each entry below, the first part of the tag line is the full name
 of the option, followed by any equivalent abbreviations.
 The part in square brackets is the default value of the option.
 Most of the options are boolean, i.e. they are either on or off,
 and do not have an associated value.
-.Pp
+.PP
 Options apply to both
-.Nm \&ex
+.I \&ex
 and
-.Nm \&vi
+.I \&vi
 modes, unless otherwise specified.
-.sp
-.Bl -tag -width "XXXX" -compact
-.It Sy "altwerase [off]"
-.Nm \&Vi
+.PP
+.TP
+.B "altwerase [off]"
+.I \&Vi
 only.
 Select an alternate word erase algorithm.
-.It Sy "autoindent, ai [off]"
+.TP
+.B "autoindent, ai [off]"
 Automatically indent new lines.
-.It Sy "autoprint, ap [off]"
-.Nm \&Ex
+.TP
+.B "autoprint, ap [off]"
+.I \&Ex
 only.
 Display the current line automatically.
-.It Sy "autowrite, aw [off]"
+.TP
+.B "autowrite, aw [off]"
 Write modified files automatically when changing files.
 .\" I cannot get a double quote to print between the square brackets
 .\" to save my life.  The ONLY way I've been able to get this to work
 .\" is with the .tr command.
 .tr Q"
 .ds ms backup [QQ]
-.It Sy "\*(ms"
+.TP
+.B "\*(ms"
 .tr QQ
 Backup files before they are overwritten.
-.It Sy "beautify, bf [off]"
+.TP
+.B "beautify, bf [off]"
 Discard control characters.
-.It Sy "cdpath [environment variable CDPATH, or current directory]"
+.TP
+.B "cdpath [environment variable CDPATH, or current directory]"
 The directory paths used as path prefixes for the
-.Sy cd
+.B cd
 command.
-.It Sy "cedit [no default]"
+.TP
+.B "cedit [no default]"
 Set the character to edit the colon command-line history.
-.It Sy "columns, co [80]"
+.TP
+.B "columns, co [80]"
 Set the number of columns in the screen.
-.It Sy "comment [off]"
-.Nm \&Vi
+.TP
+.B "comment [off]"
+.I \&Vi
 only.
 Skip leading comments in files.
-.It Sy "directory, dir [environment variable TMPDIR, or /tmp]"
+.TP
+.B "directory, dir [environment variable TMPDIR, or /tmp]"
 The directory where temporary files are created.
-.It Sy "edcompatible, ed [off]"
-Remember the values of the
-.Dq \&c
-and
-.Dq \&g
-suffices to the
-.Sy substitute
+.TP
+.B "edcompatible, ed [off]"
+Remember the values of the ``c'' and ``g'' suffices to the
+.B substitute
 commands, instead of initializing them as unset for each new
 command.
-.It Sy "errorbells, eb [off]"
-.Nm \&Ex
+.TP
+.B "errorbells, eb [off]"
+.I \&Ex
 only.
 Announce error messages with a bell.
-.It Sy "exrc, ex [off]"
+.TP
+.B "exrc, ex [off]"
 Read the startup files in the local directory.
-.It Sy "extended [off]"
+.TP
+.B "extended [off]"
 Regular expressions are extended (i.e.
-.Xr egrep 1
+.IR egrep (1)\-\c
 style) expressions.
-.It Sy "filec [no default]"
+.TP
+.B "filec [no default]"
 Set the character to perform file path completion on the colon
 command line.
-.It Sy "flash [on]"
+.TP
+.B "flash [on]"
 Flash the screen instead of beeping the keyboard on error.
-.It Sy "hardtabs, ht [8]"
+.TP
+.B "hardtabs, ht [8]"
 Set the spacing between hardware tab settings.
-.It Sy "iclower [off]"
+.TP
+.B "iclower [off]"
 Makes all Regular Expressions case-insensitive,
 as long as an upper-case letter does not appear in the search string.
-.It Sy "ignorecase, ic [off]"
+.TP
+.B "ignorecase, ic [off]"
 Ignore case differences in regular expressions.
-.It Sy "keytime [6]"
+.TP
+.B "keytime [6]"
 The 10th's of a second
-.Nm ex/vi
+.I ex/vi
 waits for a subsequent key to complete a key mapping.
-.It Sy "leftright [off]"
-.Nm \&Vi
+.TP
+.B "leftright [off]"
+.I \&Vi
 only.
 Do left-right scrolling.
-.It Sy "lines, li [24]"
-.Nm \&Vi
+.TP
+.B "lines, li [24]"
+.I \&Vi
 only.
 Set the number of lines in the screen.
-.It Sy "lisp [off]"
-.Nm \&Vi
+.TP
+.B "lisp [off]"
+.I \&Vi
 only.
 Modify various search commands and options to work with Lisp.
-.Pp
-.Em "This option is not yet implemented."
-.It Sy "list [off]"
+.I "This option is not yet implemented."
+.TP
+.B "list [off]"
 Display lines in an unambiguous fashion.
-.It Sy "lock [on]"
+.TP
+.B "lock [on]"
 Attempt to get an exclusive lock on any file being edited,
 read or written.
-.It Sy "magic [on]"
+.TP
+.B "magic [on]"
 Treat certain characters specially in regular expressions.
-.It Sy "matchtime [7]"
-.Nm \&Vi
+.TP
+.B "matchtime [7]"
+.I \&Vi
 only.
 The 10th's of a second
-.Nm ex/vi
+.I ex/vi
 pauses on the matching character when the
-.Sy showmatch
+.B showmatch
 option is set.
-.It Sy "mesg [on]"
+.TP
+.B "mesg [on]"
 Permit messages from other users.
-.It Sy "modelines, modeline [off]"
+.TP
+.B "modelines, modeline [off]"
 Read the first and last few lines of each file for
-.Nm ex
+.I ex
 commands.
-.Pp
-.Em "This option will never be implemented."
+.I "This option will never be implemented."
 .\" I cannot get a double quote to print between the square brackets
 .\" to save my life.  The ONLY way I've been able to get this to work
 .\" is with the .tr command.
 .tr Q"
 .ds ms noprint [QQ]
-.It Sy "\*(ms"
+.TP
+.B "\*(ms"
 .tr QQ
 Characters that are never handled as printable characters.
-.It Sy "number, nu [off]"
+.TP
+.B "number, nu [off]"
 Precede each line displayed with its current line number.
-.It Sy "octal [off]"
+.TP
+.B "octal [off]"
 Display unknown characters as octal numbers, instead of the default
 hexadecimal.
-.It Sy "open [on]"
-.Nm \&Ex
+.TP
+.B "open [on]"
+.I \&Ex
 only.
 If this option is not set, the
-.Sy open
+.B open
 and
-.Sy visual
+.B visual
 commands are disallowed.
-.It Sy "optimize, opt [on]"
-.Nm \&Vi
+.TP
+.B "optimize, opt [on]"
+.I \&Vi
 only.
 Optimize text throughput to dumb terminals.
-.Pp
-.Em "This option is not yet implemented."
-.It Sy "paragraphs, para [IPLPPPQPP LIpplpipbp]"
-.Nm \&Vi
+.I "This option is not yet implemented."
+.TP
+.B "paragraphs, para [IPLPPPQPP LIpplpipbp]"
+.I \&Vi
 only.
 Define additional paragraph boundaries for the
-.Sy \&{
+.B \&{
 and
-.Sy \&}
+.B \&}
 commands.
 .\" I cannot get a double quote to print between the square brackets
 .\" to save my life.  The ONLY way I've been able to get this to work
 .\" is with the .tr command.
 .tr Q"
 .ds ms print [QQ]
-.It Sy "\*(ms"
+.TP
+.B "\*(ms"
 .tr QQ
 Characters that are always handled as printable characters.
-.It Sy "prompt [on]"
-.Nm \&Ex
+.TP
+.B "prompt [on]"
+.I \&Ex
 only.
 Display a command prompt.
-.It Sy "readonly, ro [off]"
+.TP
+.B "readonly, ro [off]"
 Mark the file and session as read-only.
-.It Sy "recdir [/var/tmp/vi.recover]"
+.TP
+.B "recdir [/var/tmp/vi.recover]"
 The directory where recovery files are stored.
-.It Sy "redraw, re [off]"
-.Nm \&Vi
+.TP
+.B "redraw, re [off]"
+.I \&Vi
 only.
 Simulate an intelligent terminal on a dumb one.
-.Pp
-.Em "This option is not yet implemented."
-.It Sy "remap [on]"
+.I "This option is not yet implemented."
+.TP
+.B "remap [on]"
 Remap keys until resolved.
-.It Sy "report [5]"
+.TP
+.B "report [5]"
 Set the number of lines about which the editor reports changes
 or yanks.
-.It Sy "ruler [off]"
-.Nm \&Vi
+.TP
+.B "ruler [off]"
+.I \&Vi
 only.
 Display a row/column ruler on the colon command line.
-.It Sy "scroll, scr [window / 2]"
+.TP
+.B "scroll, scr [window / 2]"
 Set the number of lines scrolled.
-.It Sy "searchincr [off]"
+.TP
+.B "searchincr [off]"
 Makes the
-.Sy \&/
+.B \&/
 and
-.Sy \&?
+.B \&?
 commands incremental.
-.It Sy "sections, sect [NHSHH HUnhsh]"
-.Nm \&Vi
+.TP
+.B "sections, sect [NHSHH HUnhsh]"
+.I \&Vi
 only.
 Define additional section boundaries for the
-.Sy \&[[
+.B \&[[
 and
-.Sy \&]]
+.B \&]]
 commands.
-.It Sy "secure [off]"
+.TP
+.B "secure [off]"
 Turns off all access to external programs.
-.It Sy "shell, sh [environment variable SHELL, or /bin/sh]"
+.TP
+.B "shell, sh [environment variable SHELL, or /bin/sh]"
 Select the shell used by the editor.
 .\" I cannot get a double quote to print between the square brackets
 .\" to save my life.  The ONLY way I've been able to get this to work
 .\" is with the .tr command.
 .tr Q"
 .ds ms shellmeta [~{[*?$`'Q\e]
-.It Sy "\*(ms"
+.TP
+.B "\*(ms"
 .tr QQ
 Set the meta characters checked to determine if file name expansion
 is necessary.
-.It Sy "shiftwidth, sw [8]"
+.TP
+.B "shiftwidth, sw [8]"
 Set the autoindent and shift command indentation width.
-.It Sy "showmatch, sm [off]"
-.Nm \&Vi
+.TP
+.B "showmatch, sm [off]"
+.I \&Vi
 only.
-Note matching
-.Dq \&{
-and
-.Dq \&(
-for
-.Dq \&}
-and
-.Dq \&)
-characters.
-.It Sy "showmode [off]"
-.Nm \&Vi
+Note matching ``{'' and ``('' for ``}'' and ``)'' characters.
+.TP
+.B "showmode [off]"
+.I \&Vi
 only.
 Display the current editor mode and a ``modified'' flag.
-.It Sy "sidescroll [16]"
-.Nm \&Vi
+.TP
+.B "sidescroll [16]"
+.I \&Vi
 only.
 Set the amount a left-right scroll will shift.
-.It Sy "slowopen, slow [off]"
+.TP
+.B "slowopen, slow [off]"
 Delay display updating during text input.
-.Pp
-.Em "This option is not yet implemented."
-.It Sy "sourceany [off]"
+.I "This option is not yet implemented."
+.TP
+.B "sourceany [off]"
 Read startup files not owned by the current user.
-.Pp
-.Em "This option will never be implemented."
-.It Sy "tabstop, ts [8]"
+.I "This option will never be implemented."
+.TP
+.B "tabstop, ts [8]"
 This option sets tab widths for the editor display.
-.It Sy "taglength, tl [0]"
+.TP
+.B "taglength, tl [0]"
 Set the number of significant characters in tag names.
-.It Sy "tags, tag [tags /var/db/libc.tags /sys/kern/tags]"
+.TP
+.B "tags, tag [tags /var/db/libc.tags /sys/kern/tags]"
 Set the list of tags files.
-.It Sy "term, ttytype, tty [environment variable TERM]"
+.TP
+.B "term, ttytype, tty [environment variable TERM]"
 Set the terminal type.
-.It Sy "terse [off]"
+.TP
+.B "terse [off]"
 This option has historically made editor messages less verbose.
 It has no effect in this implementation.
-.It Sy "tildeop"
+.TP
+.B "tildeop"
 Modify the
-.Sy \&~
+.B \&~
 command to take an associated motion.
-.It Sy "timeout, to [on]"
+.TP
+.B "timeout, to [on]"
 Time out on keys which may be mapped.
-.It Sy "ttywerase [off]"
-.Nm \&Vi
+.TP
+.B "ttywerase [off]"
+.I \&Vi
 only.
 Select an alternate erase algorithm.
-.It Sy "verbose [off]"
-.NM \&Vi
+.TP
+.B "verbose [off]"
+.I \&Vi
 only.
 Display an error message for every error.
-.It Sy "w300 [no default]"
-.Nm \&Vi
+.TP
+.B "w300 [no default]"
+.I \&Vi
 only.
 Set the window size if the baud rate is less than 1200 baud.
-.It Sy "w1200 [no default]"
-.Nm \&Vi
+.TP
+.B "w1200 [no default]"
+.I \&Vi
 only.
 Set the window size if the baud rate is equal to 1200 baud.
-.It Sy "w9600 [no default]"
-.Nm \&Vi
+.TP
+.B "w9600 [no default]"
+.I \&Vi
 only.
 Set the window size if the baud rate is greater than 1200 baud.
-.It Sy "warn [on]"
-.Nm \&Ex
+.TP
+.B "warn [on]"
+.I \&Ex
 only.
 This option causes a warning message to the terminal if the file has
 been modified, since it was last written, before a
-.Sy \&!
+.B \&!
 command.
-.It Sy "window, w, wi [environment variable LINES]"
+.TP
+.B "window, w, wi [environment variable LINES]"
 Set the window size for the screen.
-.It Sy "wraplen, wl [0]"
-.Nm \&Vi
+.TP
+.B "wraplen, wl [0]"
+.I \&Vi
 only.
 Break lines automatically, the specified number of columns from the
 left-hand margin.
 If both the
-.Sy wraplen
+.B wraplen
 and
-.Sy wrapmargin
+.B wrapmargin
 edit options are set, the
-.Sy wrapmargin
+.B wrapmargin
 value is used.
-.It Sy "wrapmargin, wm [0]"
-.Nm \&Vi
+.TP
+.B "wrapmargin, wm [0]"
+.I \&Vi
 only.
 Break lines automatically, the specified number of columns from the
 right-hand margin.
 If both the
-.Sy wraplen
+.B wraplen
 and
-.Sy wrapmargin
+.B wrapmargin
 edit options are set, the
-.Sy wrapmargin
+.B wrapmargin
 value is used.
-.It Sy "wrapscan, ws [on]"
+.TP
+.B "wrapscan, ws [on]"
 Set searches to wrap around the end or beginning of the file.
-.It Sy "writeany, wa [off]"
+.TP
+.B "writeany, wa [off]"
 Turn off file-overwriting checks.
-.El
-.Sh ENVIRONMENTAL VARIABLES
-.Bl -tag -width "COLUMNSXX" -compact
-.It Ev COLUMNS
+.SH ENVIRONMENTAL VARIABLES
+.TP
+.I COLUMNS
 The number of columns on the screen.
 This value overrides any system or terminal specific values.
-If the COLUMNS environmental variable is not set when
-.Nm ex/vi
+If the
+.I COLUMNS
+environmental variable is not set when
+.I ex/vi
 runs, or the
-.Sy columns
+.B columns
 option is explicitly reset by the user,
-.Nm ex/vi
+.I ex/vi
 enters the value into the environment.
-.It Ev EXINIT
+.TP
+.I EXINIT
 A list of
-.Nm \&ex
+.I \&ex
 startup commands, read if the variable
-.Ev NEXINIT
+.I NEXINIT
 is not set.
-.It Ev HOME
+.TP
+.I HOME
 The user's home directory, used as the initial directory path
-for the startup
-.Pa $HOME/.nexrc
-and
-.Pa $HOME/.exrc
+for the startup ``$\fIHOME\fP/.nexrc'' and ``$\fIHOME\fP/.exrc''
 files.
 This value is also used as the default directory for the
-.Nm \&vi
-.Sy \&cd
+.I \&vi
+.B \&cd
 command.
-.It Ev LINES
+.TP
+.I LINES
 The number of rows on the screen.
 This value overrides any system or terminal specific values.
-If the LINES environmental variable is not set when
-.Nm ex/vi
+If the
+.I LINES
+environmental variable is not set when
+.I ex/vi
 runs, or the
-.Sy lines
+.B lines
 option is explicitly reset by the user,
-.Nm ex/vi
+.I ex/vi
 enters the value into the environment.
-.It Ev NEXINIT
+.TP
+.I NEXINIT
 A list of
-.Nm \&ex
+.I \&ex
 startup commands.
-.It Ev SHELL
+.TP
+.I SHELL
 The user's shell of choice (see also the
-.Sy shell
+.B shell
 option).
-.It Ev TERM
+.TP
+.I TERM
 The user's terminal type.
-The default is the type
-.Dq unknown .
-If the TERM environmental variable is not set when
-.Nm ex/vi
+The default is the type ``unknown''.
+If the
+.I TERM
+environmental variable is not set when
+.I ex/vi
 runs, or the
-.Sy term
+.B term
 option is explicitly reset by the user,
-.Nm ex/vi
+.I ex/vi
 enters the value into the environment.
-.It Ev TMPDIR
+.TP
+.I TMPDIR
 The location used to stored temporary files (see also the
-.Sy directory
-option).
-.El
-.Sh ASYNCHRONOUS EVENTS
-.Bl -tag -width "SIGWINCHXX" -compact
-.It SIGALRM
-.Nm \&Vi/ex
-uses this signal for periodic backups of file modifications
-and to display
-.Dq busy
-messages when operations are likely to take a long time.
-.It SIGHUP
-.It SIGTERM
+.B directory
+edit option).
+.SH ASYNCHRONOUS EVENTS
+.TP
+SIGALRM
+.I \&Vi/ex
+uses this signal for periodic backups of file modifications and to
+display ``busy'' messages when operations are likely to take a long time.
+.TP
+SIGHUP
+.TP
+SIGTERM
 If the current buffer has changed since it was last written in its
 entirety, the editor attempts to save the modified file so it can
 be later recovered.
 See the
-.Nm \&vi/ex
-Reference manual section entitled
-.Dq Recovery
-for more information.
-.It SIGINT
+.I \&vi/ex
+Reference manual section entitled ``Recovery'' for more information.
+.TP
+SIGINT
 When an interrupt occurs,
 the current operation is halted,
 and the editor returns to the command level.
 If interrupted during text input,
 the text already input is resolved into the file as if the text
 input had been normally terminated.
-.It SIGWINCH
+.TP
+SIGWINCH
 The screen is resized.
 See the
-.Nm \&vi/ex
-Reference manual section entitled
-.Dq "Sizing the Screen"
-for more information.
-.It SIGCONT
-.It SIGQUIT
-.It SIGTSTP
-.Nm \&Vi/ex
+.I \&vi/ex
+Reference manual section entitled ``Sizing the Screen'' for more information.
+.TP
+SIGCONT
+.TP
+SIGQUIT
+.TP
+SIGTSTP
+.I \&Vi/ex
 ignores these signals.
-.El
-.Sh BUGS
+.SH BUGS
 See the file
-.Pa nvi/docs/bugs.current
+.I nvi/docs/bugs.current
 for a list of the known bugs in this version.
-.Sh FILES
-.Bl -tag -width /var/tmp/vi.recover -compact
-.It Pa /bin/sh
+.SH FILES
+.TP
+/bin/sh
 The default user shell.
-.It Pa /etc/vi.exrc
+.TP
+/etc/vi.exrc
 System-wide vi startup file.
-.It Pa /tmp
+.TP
+/tmp
 Temporary file directory.
-.It Pa /var/tmp/vi.recover
+.TP
+/var/tmp/vi.recover
 The default recovery file directory.
-.It Pa $HOME/.nexrc
+.TP
+$HOME/.nexrc
 1st choice for user's home directory startup file.
-.It Pa $HOME/.exrc
+.TP
+$HOME/.exrc
 2nd choice for user's home directory startup file.
-.It Pa .nexrc
+.TP
+\&.nexrc
 1st choice for local directory startup file.
-.It Pa .exrc
+.TP
+\&.exrc
 2nd choice for local directory startup file.
-.El
-.Sh SEE ALSO
-.Xr ctags 1 ,
-.Xr more 1 ,
-.Xr curses 3 ,
-.Xr dbopen 3
+.SH SEE ALSO
+.IR ctags (1),
+.IR more (3),
+.IR curses (3),
+.IR dbopen (3)
 .sp
-The
-.Dq "Vi Quick Reference"
-card.
+The ``Vi Quick Reference'' card.
 .sp
-.Dq "\&An Introduction to Display Editing with Vi" ,
-found in the
-.Dq "UNIX User's Manual Supplementary Documents"
+``An Introduction to Display Editing with Vi'', found in the
+``UNIX User's Manual Supplementary Documents''
 section of both the 4.3BSD and 4.4BSD manual sets.
 This document is the closest thing available to an introduction to the
-.Nm \&vi
+.I \&vi
 screen editor.
 .sp
-.Dq "\&Ex Reference Manual (Version 3.7)" ,
+``Ex Reference Manual (Version 3.7)'',
 found in the
-.Dq "UNIX User's Manual Supplementary Documents"
+``UNIX User's Manual Supplementary Documents''
 section of both the 4.3BSD and 4.4BSD manual sets.
 This document is the final reference for the
-.Nm \&ex
+.I \&ex
 editor, as distributed in most historic 4BSD and System V systems.
 .sp
-.Dq "Edit: A tutorial" ,
+``Edit: A tutorial'',
 found in the
-.Dq "UNIX User's Manual Supplementary Documents"
+``UNIX User's Manual Supplementary Documents''
 section of the 4.3BSD manual set.
 This document is an introduction to a simple version of the
-.Nm \&ex
+.I \&ex
 screen editor.
 .sp
-.Dq "\&Ex/Vi Reference Manual" ,
+``Ex/Vi Reference Manual'',
 found in the
-.Dq "UNIX User's Manual Supplementary Documents"
+``UNIX User's Manual Supplementary Documents''
 section of the 4.4BSD manual set.
 This document is the final reference for the
-.Nm \&nex/nvi
+.I \&nex/nvi
 text editors, as distributed in 4.4BSD and 4.4BSD-Lite.
-.Pp
-.Nm Roff
+.PP
+.I Roff
 source for all of these documents is distributed with
-.Nm nex/nvi
+.I nex/nvi
 in the
-.Pa nvi/USD.doc
+.I nvi/USD.doc
 directory of the
-.Nm nex/nvi
+.I nex/nvi
 source code.
 .sp
-The files
-.Dq autowrite ,
-.Dq input ,
-.Dq quoting ,
-and
-.Dq structures ,
+The files ``autowrite'', ``input'', ``quoting'' and ``structures''
 found in the
-.Pa nvi/docs/internals
+.I nvi/docs/internals
 directory of the
-.Nm nex/nvi
+.I nex/nvi
 source code.
-.Sh HISTORY
+.SH HISTORY
 The
-.Nm nex/nvi
+.I nex/nvi
 replacements for the
-.Nm ex/vi
+.I ex/vi
 editor first appeared in 4.4BSD.
-.Sh STANDARDS
-.Nm \&Nex/nvi
+.SH STANDARDS
+.I \&Nex/nvi
 is close to IEEE Std1003.2 (``POSIX'').
 That document differs from historical
-.Nm ex/vi
+.I ex/vi
 practice in several places; there are changes to be made on both sides.
