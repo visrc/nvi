@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.16 1992/10/01 17:29:46 bostic Exp $ (Berkeley) $Date: 1992/10/01 17:29:46 $";
+static char sccsid[] = "$Id: exf.c,v 5.17 1992/10/10 13:33:42 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:33:42 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -46,8 +46,9 @@ file_init()
 }
 
 #define	EPSET(ep) {							\
-	ep->lno = ep->top = 1;						\
-	ep->cno = ep->lcno = 0;						\
+	ep->lno = ep->olno = ep->top = 1;				\
+	ep->cno = ep->ocno = ep->scno = ep->shift = 0;			\
+	ep->rcm = ep->rcmflags = 0;					\
 	ep->uwindow = ep->dwindow = 0;					\
 	ep->nlen = strlen(ep->name);					\
 	ep->flags = 0;							\
@@ -175,7 +176,7 @@ file_prev(ep)
  * file_gline --
  *	Retrieve a line from the file.
  */
-char *
+u_char *
 file_gline(ep, lno, lenp)
 	EXF *ep;
 	recno_t lno;				/* Line number. */
@@ -186,16 +187,17 @@ file_gline(ep, lno, lenp)
 	recno_t cnt;
 
 	/*
-	 * The underlying recno stuff handles zero by returning NULL, but have
-	 * to have an oob condition for the look-aside into the input buffer
-	 * anyway.
+	 * The underlying recno stuff handles zero by returning NULL, but
+	 * have to have an oob condition for the look-aside into the input
+	 * buffer anyway.
 	 */
 	if (lno == 0)
 		return (NULL);
 
 	/*
 	 * If we're in input mode, look-aside into the input buffer and
-	 * see if the line we want is there.
+	 * see if the line we want is there.  Note, make sure that the
+	 * screen routines are aware of the line, since it may have changed.
 	 */
 	if (ib.stop.lno >= lno && ib.start.lno <= lno) {
 		for (cnt = ib.start.lno, tp = ib.head; cnt < lno; ++cnt)
@@ -205,10 +207,9 @@ file_gline(ep, lno, lenp)
 		return (tp->lp);
 	}
 
-	/* Otherwise, get the line from the underlying file. */
+	/* Get the line from the underlying database. */
 	key.data = &lno;
 	key.size = sizeof(lno);
-
 	switch((ep->db->get)(ep->db, &key, &data, 0)) {
         case -1:
 		msg("%s: line %lu: %s", ep->name, lno, strerror(errno));
@@ -219,6 +220,12 @@ file_gline(ep, lno, lenp)
 	}
 	if (lenp)
 		*lenp = data.size;
+
+#ifdef NOTDEF
+	/* Update screen. */
+	scr_update(ep, lno, data.data, data.size, LINE_GET);
+#endif
+
 	return (data.data);
 }
 
@@ -236,14 +243,19 @@ file_dline(ep, lno)
 #if DEBUG && 1
 	TRACE("delete line %lu\n", lno);
 #endif
+
+	/* Update file. */
 	key.data = &lno;
 	key.size = sizeof(lno);
 	if ((ep->db->del)(ep->db, &key, 0) == 1) {
 		msg("%s: line %lu: not found", ep->name, lno);
 		return (1);
 	}
-	if (mode == MODE_VI)
-		scr_ldelete(lno);
+
+	/* Update screen. */
+	scr_update(ep, lno, NULL, 0, LINE_DELETE);
+
+	/* File now dirty. */
 	ep->flags |= F_MODIFIED;
 	return (0);
 }
@@ -256,25 +268,29 @@ int
 file_aline(ep, lno, p, len)
 	EXF *ep;
 	recno_t lno;
-	char *p;
+	u_char *p;
 	size_t len;
 {
 	DBT data, key;
 
+#if DEBUG && 1
+	TRACE("append to %lu: len %u {%.*s}\n", lno, len, MIN(len, 20), p);
+#endif
+
+	/* Update file. */
 	key.data = &lno;
 	key.size = sizeof(lno);
 	data.data = p;
 	data.size = len;
-
-#if DEBUG && 1
-	TRACE("append to %lu: len %u {%.*s}\n", lno, len, MIN(len, 20), p);
-#endif
 	if ((ep->db->put)(ep->db, &key, &data, R_IAFTER) == -1) {
 		msg("%s: line %lu: %s", ep->name, lno, strerror(errno));
 		return (1);
 	}
-	if (mode == MODE_VI)
-		scr_linsert(lno + 1, p, len);
+
+	/* Update screen. */
+	scr_update(ep, lno, p, len, LINE_APPEND);
+
+	/* File now dirty. */
 	ep->flags |= F_MODIFIED;
 	return (0);
 }
@@ -287,7 +303,7 @@ int
 file_iline(ep, lno, p, len)
 	EXF *ep;
 	recno_t lno;
-	char *p;
+	u_char *p;
 	size_t len;
 {
 	DBT data, key;
@@ -295,17 +311,21 @@ file_iline(ep, lno, p, len)
 #if DEBUG && 1
 	TRACE("insert before %lu: len %u {%.*s}\n", lno, len, MIN(len, 20), p);
 #endif
+
+	/* Update file. */
 	key.data = &lno;
 	key.size = sizeof(lno);
 	data.data = p;
 	data.size = len;
-
 	if ((ep->db->put)(ep->db, &key, &data, R_IBEFORE) == -1) {
 		msg("%s: line %lu: %s", ep->name, lno, strerror(errno));
 		return (1);
 	}
-	if (mode == MODE_VI)
-		scr_linsert(lno, p, len);
+
+	/* Update screen. */
+	scr_update(ep, lno, p, len, LINE_INSERT);
+
+	/* File now dirty. */
 	ep->flags |= F_MODIFIED;
 	return (0);
 }
@@ -318,7 +338,7 @@ int
 file_sline(ep, lno, p, len)
 	EXF *ep;
 	recno_t lno;
-	char *p;
+	u_char *p;
 	size_t len;
 {
 	DBT data, key;
@@ -326,17 +346,21 @@ file_sline(ep, lno, p, len)
 #if DEBUG && 1
 	TRACE("replace line %lu: len %u {%.*s}\n", lno, len, MIN(len, 20), p);
 #endif
+
+	/* Update file. */
 	key.data = &lno;
 	key.size = sizeof(lno);
 	data.data = p;
 	data.size = len;
-
 	if ((ep->db->put)(ep->db, &key, &data, 0) == -1) {
 		msg("%s: line %lu: %s", ep->name, lno, strerror(errno));
 		return (1);
 	}
-	if (mode == MODE_VI)
-		scr_lchange(lno, p, len);
+
+	/* Update screen. */
+	scr_update(ep, lno, p, len, LINE_SET);
+	
+	/* File now dirty. */
 	ep->flags |= F_MODIFIED;
 	return (0);
 }
@@ -390,7 +414,7 @@ file_start(ep)
 		ep = file_first();
 		ep->flags |= F_CREATED | F_NONAME;
 	} else if (stat(ep->name, &sb))
-		ep->flags | F_CREATED;
+		ep->flags |= F_CREATED;
 
 	/* Open a db structure. */
 	ep->db = dbopen(ep->name, O_CREAT | O_EXLOCK | O_NONBLOCK| O_RDONLY,
@@ -405,6 +429,22 @@ file_start(ep)
 	}
 	if (ep->db == NULL) {
 		msg("%s: %s", ep->name, strerror(errno));
+		return (1);
+	}
+	if (ep->flags & F_NONAME)
+		(void)close(fd);
+
+	/* Open a shadow db structure. */
+	(void)strcpy(tname, _PATH_TMPNAME);
+	if ((fd = mkstemp(tname)) == -1) {
+		msg("Temporary file: %s", strerror(errno));
+		return (1);
+	}
+	ep->sdb = dbopen(tname, O_CREAT | O_EXLOCK | O_NONBLOCK | O_RDWR,
+	    DEFFILEMODE, DB_RECNO, NULL);
+	(void)close(fd);
+	if (ep->sdb == NULL) {
+		msg("shadow db: %s", strerror(errno));
 		return (1);
 	}
 
@@ -450,6 +490,11 @@ file_stop(ep, force)
 		msg("%s: close: %s", ep->name, strerror(errno));
 		return (1);
 	}
+
+	/* Close the shadow structure. */
+	if ((ep->sdb->close)(ep->sdb))
+		msg("%s: shadow close: %s", ep->name, strerror(errno));
+
 	/*
 	 * Delete any created, empty file that was never written.
 	 *
