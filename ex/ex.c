@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.9 1993/08/19 15:10:54 bostic Exp $ (Berkeley) $Date: 1993/08/19 15:10:54 $";
+static char sccsid[] = "$Id: ex.c,v 8.10 1993/08/20 12:57:36 bostic Exp $ (Berkeley) $Date: 1993/08/20 12:57:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,9 +22,10 @@ static char sccsid[] = "$Id: ex.c,v 8.9 1993/08/19 15:10:54 bostic Exp $ (Berkel
 #include "vi.h"
 #include "excmd.h"
 
-static void	 e_comm __P((SCR *, char **, char **, int *, char **, int *));
-static char	*getline __P((SCR *, EXF *, char *, MARK *));
-static char	*getrange __P((SCR *, EXF *, char *, EXCMDARG *));
+static void	 ep_comm __P((SCR *, char **, char **, int *, char **, int *));
+static char	*ep_line __P((SCR *, EXF *, char *, MARK *));
+static char	*ep_range __P((SCR *, EXF *, char *, EXCMDARG *));
+static void	 ep_re __P((SCR *, char **, char **, int *));
 
 #define	DEFCOM	".+1"
 
@@ -149,10 +150,10 @@ ex_cstring(sp, ep, cmd, len)
 	int len;
 {
 	u_int saved_mode;
-	int ch, plus_len;
-	char *p, *t, *plus;
+	int ch, arg1_len;
+	char *p, *t, *arg1;
 
-	/* Just for the sheer paranoia of it. */
+	/* This is probably not necessary, but it's worth being safe. */
 	if (len == 0) {
 		sp->comm_len = 0;
 		return (0);
@@ -164,33 +165,46 @@ ex_cstring(sp, ep, cmd, len)
 	 * Commands may be separated by newline or '|' characters, and may
 	 * be escaped by literal next characters.  The quote characters are
 	 * stripped here since they are no longer useful.
+	 *
+	 * There are two exceptions to this, the two commands that take
+	 * ex commands are arguments (ex and edit), and the three commands
+	 * that take RE patterns (global, vglobal and substitute).  These
+	 * commands want their first argument be specially delimited, not
+	 * necessarily by '|' characters.  See ep_comm() and ep_re() below
+	 * for details.
 	 */
-	plus = NULL;
-	plus_len = 0;
+	arg1 = NULL;
+	arg1_len = 0;
 	saved_mode = F_ISSET(sp, S_MODE_EX | S_MODE_VI | S_MAJOR_CHANGE);
 	for (p = t = cmd;;) {
 		if (p == cmd) {
 			/* Skip leading whitespace. */
 			for (; len > 0 && isspace(*t); ++t, --len);
 
-			/* Special case ex/edit commands. */
-			if (t[0] == ':' && t[1] == 'e' || t[0] == 'e')
-				e_comm(sp, &p, &t, &len, &plus, &plus_len);
+			/* Special case ex/edit, RE commands. */
+			if (strchr("egvs", t[0] == ':' ? t[1] : t[0]))
+				if (t[0] == ':' && t[1] == 'e' || t[0] == 'e')
+					ep_comm(sp,
+					    &p, &t, &len, &arg1, &arg1_len);
+				else
+					ep_re(sp, &p, &t, &len);
+			if (len == 0)
+				goto cend;
 		}
 
 		ch = *t++;
 		--len;			/* Characters remaining. */
 		if (sp->special[ch] == K_VLNEXT && len > 0 &&
-		    (t[0] == '|' || sp->special[t[0]] == K_NL)) {
+		   (t[0] == '|' || sp->special[t[0]] == K_NL)) {
 			*p++ = *t++;
 			continue;
 		}
 		if (len == 0 || ch == '|' || sp->special[ch] == K_NL) {
 			if (len == 0 && ch != '|' && sp->special[ch] != K_NL)
 				*p++ = ch;
-			if (p > cmd) {
+cend:			if (p > cmd) {
 				*p = '\0';	/* XXX: 8BIT */
-				if (ex_cmd(sp, ep, cmd, plus_len)) {
+				if (ex_cmd(sp, ep, cmd, arg1_len)) {
 					if (len)
 						msgq(sp, M_ERR,
 		    "Ex command failed, remaining command input discarded.");
@@ -212,7 +226,7 @@ ex_cstring(sp, ep, cmd, len)
 	/*
 	 * Only here if the mode of the underlying file changed, the user
 	 * switched files or is exiting.  There are two things that we may
-	 * have to save.  First, any "+cmd" field that e_comm() set up will
+	 * have to save.  First, any "+cmd" field that ep_comm() set up will
 	 * have to be saved for later.  Also, there may be part of the
 	 * current ex command which we haven't executed,
 	 *
@@ -224,15 +238,17 @@ ex_cstring(sp, ep, cmd, len)
 	 * new comm field for the SCR structure.  If you really want to see
 	 * if a vi clone got the ex argument parsing right, try:
 	 *
-	 *	date > file1; date > file2
+	 *	echo 'foo|bar' > file1; echo 'foo/bar' > file2;
 	 *	vi
-	 *	:edit +1|s/./XXX/|w file1| e file2|1 | s/./XXX/|wq
+	 *	:edit +1|s/|/PIPE/|w file1| e file2|1 | s/\//SLASH/|wq
+
+	 *	date > file1; date > file2
 	 */
-	if (len == 0 && plus_len == 0) {
+	if (len == 0 && arg1_len == 0) {
 		sp->comm_len = 0;
 		return (0);
 	}
-	if ((p = malloc(len + plus_len + 5)) == NULL) {
+	if ((p = malloc(len + arg1_len + 5)) == NULL) {
 		msgq(sp, M_ERR, "Error: remaining command input discarded: %s",
 		    strerror(errno));
 		sp->comm_len = 0;
@@ -240,11 +256,11 @@ ex_cstring(sp, ep, cmd, len)
 		if (sp->comm != NULL)
 			free(sp->comm);
 		sp->comm = p;
-		sp->comm_len = plus_len + len + 1;
+		sp->comm_len = arg1_len + len + 1;
 
-		if (plus != NULL)
-			memmove(p, plus, plus_len);
-		p += plus_len;
+		if (arg1 != NULL)
+			memmove(p, arg1, arg1_len);
+		p += arg1_len;
 		*p++ = '|';		/* XXX: doesn't handle trailing ^V. */
 		memmove(p, t, len);
 	}
@@ -256,11 +272,11 @@ ex_cstring(sp, ep, cmd, len)
  *	Parse and execute an ex command.  
  */
 int
-ex_cmd(sp, ep, exc, plus_len)
+ex_cmd(sp, ep, exc, arg1_len)
 	SCR *sp;
 	EXF *ep;
 	char *exc;
-	int plus_len;
+	int arg1_len;
 {
 	EXCMDARG cmd;
 	EXCMDLIST *cp;
@@ -296,7 +312,7 @@ ex_cmd(sp, ep, exc, plus_len)
 	 * Parse line specifiers if the command uses addresses.  New command
 	 * line position is returned, or NULL on error.  
 	 */
-	if ((exc = getrange(sp, ep, exc, &cmd)) == NULL)
+	if ((exc = ep_range(sp, ep, exc, &cmd)) == NULL)
 		return (1);
 
 	/* Skip whitespace. */
@@ -501,7 +517,7 @@ two:		switch (cmd.addrcnt) {
 		case '+':				/* +cmd */
 			if (*exc != '+')
 				break;
-			exc += plus_len + 1;
+			exc += arg1_len + 1;
 			if (*exc)
 				*exc++ = '\0';
 			break;
@@ -579,7 +595,7 @@ end2:			break;
 			}
 			break;
 		case 'l':				/* line */
-			endp = getline(sp, ep, exc, &cur);
+			endp = ep_line(sp, ep, exc, &cur);
 			if (endp == NULL || exc == endp) {
 				msgq(sp, M_ERR, 
 				     "%s: bad line specification", exc);
@@ -729,8 +745,6 @@ addr2:	switch (cmd.addrcnt) {
 		TRACE(sp, "\tlineno %d", cmd.lineno);
 	if (cmd.flags)
 		TRACE(sp, "\tflags %0x", cmd.flags);
-	if (cmd.plus)
-		TRACE(sp, "\tplus %s", cmd.plus);
 	if (cmd.buffer != OOBCB)
 		TRACE(sp, "\tbuffer %c", cmd.buffer);
 	TRACE(sp, "\n");
@@ -831,37 +845,38 @@ addr2:	switch (cmd.addrcnt) {
 }
 
 /*
- * e_comm --
+ * ep_comm, ep_re --
  *
- * YASC.  Historically, '|' characters in the +cmd field of the ex and
- * edit commands did not separate commands, for example, the command:
+ * Historically, '|' characters in the first argument of the ex, edit,
+ * global, vglobal and substitute commands did not separate commands.
+ * For example, the following two commands were legal:
  *
  *	:edit +25|s/abc/ABC/ file.c
+ *	:substitute s/|/PIPE/
  *
- * would switch files, move to line 25 and execute the substitution on
- * that line.  The e_comm routine makes this work.  We get passed the
- * current state of the ex_cstring routine, and, if it's this special
- * case, we make everything look right.  Since we don't want to have to
- * parse the line twice, we save off the length of the +cmd string and
- * pass it on into ex_cmd().  Barf-O-Rama.
+ * It's not quite as simple as it looks, however.  The command:
  *
- * QUOTING NOTE:
+ *	:substitute s/a/b/|s/c/d|set
  *
- * This historic implementation of this "feature" ignored any escape
- * characters so there was no way to put a space or newline into the
- * +cmd field.  We do a simplistic job of handling it by moving to the
- * first space that isn't escaped by a literal next character.  The
- * literal next quote characters are stripped here since they are no
- * longer useful.
+ * was also legal, i.e. the historic ex parser (and I use the word loosely,
+ * since "parser" must imply some regularity of syntax) delimited the RE's
+ * based on its delimiter and not anything so vulgar as a command syntax.
+ *
+ * The ep_comm() and ep_re() routines make this work.  They are passed the
+ * state of ex_cstring(), and, if it's a special case, they parse the first
+ * argument and then return the new state.  For the +cmd field, since we
+ * don't want to parse the line more than once, a pointer to and the length
+ * of the first argument is returned to ex_cstring(), which will subsequently
+ * pass it into ex_cmd().  Barf-O-Rama.
  */
 static void
-e_comm(sp, pp, tp, lenp, plusp, plus_lenp)
+ep_comm(sp, pp, tp, lenp, arg1p, arg1_lenp)
 	SCR *sp;
-	char **pp, **tp, **plusp;
-	int *lenp, *plus_lenp;
+	char **pp, **tp, **arg1p;
+	int *lenp, *arg1_lenp;
 {
 	char *cp, *p, *t;
-	int ch, clen, len;
+	int ch, cnt, len;
 
 	/* Copy the state to local variables. */
 	p = *pp;
@@ -869,24 +884,33 @@ e_comm(sp, pp, tp, lenp, plusp, plus_lenp)
 	len = *lenp;
 
 	/*
-	 * Move to the next whitespace character.  We can do this fairly
-	 * brutally because we know there aren't any in the command names
-	 * and there has to be one to separate the name from its arguments.
-	 * If there isn't one, we're done.
+	 * Move to the next non-lower-case, alphabetic character.  We can
+	 * do this fairly brutally because we know that the command names
+	 * are all lower-case alphabetics, and there has to be a '+' to
+	 * start the arguments.  If there isn't one, we're done.
 	 */
-	for (; len && !isspace(*p = *t); ++p, ++t, --len);
+	if (*p == ':') {
+		*p++ = *t++;
+		--len;
+	}
+	for (; len && islower(*p = *t); ++p, ++t, --len);
 	if (len == 0)
 		return;
 
-	/* Make sure it's the ex or edit commands. */
+	/* Make sure it's the ex or edit command. */
 	cp = *pp;
-	if (*cp == ':')
+	if (*cp == ':') {
 		++cp;
-	clen = (p - cp) - 1;
-	if (strncmp(cp, "ex", clen) && strncmp(cp, "edit", clen))
+		cnt = (p - cp) - 1;
+	} else
+		cnt = (p - cp);
+	if (strncmp(cp, "ex", cnt) && strncmp(cp, "edit", cnt))
 		return;
 
-	/* Move to the '+'.  If it's not there, we're done. */
+	/*
+	 * Move to the '+'.  We don't check syntax here, if it's not
+	 * there, we're done.
+	 */
 	while (len--) {
 		ch = *++p = *++t;
 		if (!isspace(ch))
@@ -895,7 +919,18 @@ e_comm(sp, pp, tp, lenp, plusp, plus_lenp)
 	if (len == 0 || *p != '+')
 		return;
 
-	/* Move to the first non-escaped space. */
+	/*
+	 * QUOTING NOTE:
+	 *
+	 * The historic implementation of this "feature" ignored any escape
+	 * characters so there was no way to put a space or newline into the
+	 * +cmd field.  We do a simplistic job of handling it by moving to
+	 * the first whitespace character that isn't escaped by a literal next
+	 * character.  The literal next quote characters are stripped here
+	 * since they are no longer useful.
+	 *
+	 * Move to the first non-escaped space.
+	 */
 	for (cp = p; len;) {
 		ch = *++p = *++t;
 		--len;
@@ -907,9 +942,101 @@ e_comm(sp, pp, tp, lenp, plusp, plus_lenp)
 			break;
 	}
 
-	/* Return information about the +cmd string. */
-	*plusp = cp + 1;
-	*plus_lenp = (p - cp) - 1;
+	/* Return information about the first argument. */
+	*arg1p = cp + 1;
+	*arg1_lenp = (p - cp) - 1;
+
+	/* Restore the state. */
+	*pp = p;
+	*tp = t;
+	*lenp = len;
+}
+
+static void
+ep_re(sp, pp, tp, lenp)
+	SCR *sp;
+	char **pp, **tp;
+	int *lenp;
+{
+	char *cp, *p, *t;
+	int ch, cnt, delim, len;
+
+	/* Copy the state to local variables. */
+	p = *pp;
+	t = *tp;
+	len = *lenp;
+
+	/*
+	 * Move to the next non-lower-case, alphabetic character.  We can
+	 * do this fairly brutally because we know that the command names
+	 * are all lower-case alphabetics, and there has to be a delimiter
+	 * to start the arguments.  If there isn't one, we're done.
+	 */
+	if (*p == ':') {
+		*p++ = *t++;
+		--len;
+	}
+	for (; len; ++p, ++t, --len) {
+		ch = *p = *t;
+		if (!islower(ch))
+			break;
+	}
+	if (len == 0)
+		return;
+
+	/* Make sure it's the substitute, global or vglobal command. */
+	cp = *pp;
+	if (*cp == ':') {
+		++cp;
+		cnt = (p - cp) - 1;
+	} else
+		cnt = (p - cp);
+	if (strncmp(cp, "substitute", cnt) &&
+	    strncmp(cp, "global", cnt) && strncmp(cp, "vglobal", cnt))
+		return;
+
+	/*
+	 * Move to the delimiter.  (The first character; if it's an illegal
+	 * one, the RE code will catch it.)
+	 */
+	if (isspace(ch))
+		while (len--) {
+			ch = *++p = *++t;
+			if (!isspace(ch))
+				break;
+		}
+	delim = ch;
+	if (len == 0)
+		return;
+
+	/*
+	 * QUOTING NOTE:
+	 *
+	 * Backslashes quote delimiter characters for regular expressions.
+	 * The backslashes are left here since they'll be needed by the RE
+	 * code.
+	 *
+	 * Move to the third (non-escaped) delimiter.
+	 */
+	for (cnt = 2; len && cnt;) {
+		ch = *++p = *++t;
+		--len;
+		if (ch == '\\' && len > 0) {
+			*++p = *++t;
+			if (--len == 0)
+				break;
+		} else if (ch == delim) {
+			--cnt;
+			break;
+		}
+	}
+
+	/* Move past the delimiter if it's possible. */
+	if (len > 0) {
+		++t;
+		++p;
+		--len;
+	}
 
 	/* Restore the state. */
 	*pp = p;
@@ -918,11 +1045,11 @@ e_comm(sp, pp, tp, lenp, plusp, plus_lenp)
 }
 
 /*
- * getrange --
+ * ep_range --
  *	Get a line range for ex commands.
  */
 static char *
-getrange(sp, ep, cmd, cp)
+ep_range(sp, ep, cmd, cp)
 	SCR *sp;
 	EXF *ep;
 	char *cmd;
@@ -970,7 +1097,7 @@ getrange(sp, ep, cmd, cp)
 			++cmd;
 			break;
 		default:
-			if ((endp = getline(sp, ep, cmd, &cur)) == NULL)
+			if ((endp = ep_line(sp, ep, cmd, &cur)) == NULL)
 				return (NULL);
 			if (cmd == endp)
 				goto done;
@@ -1011,7 +1138,7 @@ done:	if (savecursor_set) {
  * Get a single line address specifier.
  */
 static char *
-getline(sp, ep, cmd, cur)
+ep_line(sp, ep, cmd, cur)
 	SCR *sp;
 	EXF *ep;
 	char *cmd;
