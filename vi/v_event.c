@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_event.c,v 8.12 1996/12/14 14:05:44 bostic Exp $ (Berkeley) $Date: 1996/12/14 14:05:44 $";
+static const char sccsid[] = "$Id: v_event.c,v 8.13 1996/12/17 19:49:19 bostic Exp $ (Berkeley) $Date: 1996/12/17 19:49:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,6 +27,42 @@ static const char sccsid[] = "$Id: v_event.c,v 8.12 1996/12/14 14:05:44 bostic E
 #include "../common/common.h"
 #include "../ip/ip.h"
 #include "vi.h"
+
+/*
+ * v_ec_settop --
+ *	Scrollbar position.
+ */
+static int
+v_ec_settop(sp, vp)
+	SCR *sp;
+	VICMD *vp;
+{
+	SMAP *smp;
+
+	/*
+	 * We want to scroll the screen, without changing the cursor position.
+	 * So, we fill the screen map and then flush it to the screen.  Then,
+	 * set the VIP_S_REFRESH flag so the main vi loop doesn't update the
+	 * screen.  When the next real command happens, the refresh code will
+	 * notice that the screen map is way wrong and fix it.
+	 *
+	 * XXX
+	 * There may be a serious performance problem here -- we're doing no
+	 * optimization whatsoever, which means that we're copying the entire
+	 * screen out to the X11 screen code on each change.
+	 */
+	if (vs_sm_fill(sp, vp->ev.e_lno, P_TOP))
+		return (1);
+	for (smp = HMAP; smp <= TMAP; ++smp) {
+                SMAP_FLUSH(smp);
+		if (vs_line(sp, smp, NULL, NULL))
+			return (1);
+        }
+
+	F_SET(VIP(sp), VIP_S_REFRESH);
+
+	return (sp->gp->scr_refresh(sp, 0));
+}
 
 /*
  * v_eedit --
@@ -236,29 +272,31 @@ v_event(sp, vp)
 {
 	/* This array maps events to vi command functions. */
 	static VIKEYS const vievents[] = {
-#define	V_EEDIT		 0				/* VI_EDIT */
+#define	V_C_SETTOP	 0				/* VI_C_SETTOP */
+		{v_ec_settop,	0},
+#define	V_EEDIT		 1				/* VI_EDIT */
 		{v_eedit,	0},
-#define	V_EEDITOPT	 1				/* VI_EDITOPT */
+#define	V_EEDITOPT	 2				/* VI_EDITOPT */
 		{v_eeditopt,	0},
-#define	V_EEDITSPLIT	 2				/* VI_EDITSPLIT */
+#define	V_EEDITSPLIT	 3				/* VI_EDITSPLIT */
 		{v_eeditsplit,	0},
-#define	V_EMARK		 3				/* VI_MOUSE_MOVE */
+#define	V_EMARK		 4				/* VI_MOUSE_MOVE */
 		{v_emark,	V_ABS_L|V_MOVE},
-#define	V_EQUIT		 4				/* VI_QUIT */
+#define	V_EQUIT		 5				/* VI_QUIT */
 		{v_equit,	0},
-#define	V_ESEARCH	 5				/* VI_SEARCH */
+#define	V_ESEARCH	 6				/* VI_SEARCH */
 		{v_esearch,	V_ABS_L|V_MOVE},
-#define	V_ETAG		 6				/* VI_TAG */
+#define	V_ETAG		 7				/* VI_TAG */
 		{v_etag,	0},
-#define	V_ETAGAS	 7				/* VI_TAGAS */
+#define	V_ETAGAS	 8				/* VI_TAGAS */
 		{v_etagas,	0},
-#define	V_ETAGSPLIT	 8				/* VI_TAGSPLIT */
+#define	V_ETAGSPLIT	 9				/* VI_TAGSPLIT */
 		{v_etagsplit,	0},
-#define	V_EWQ		 9				/* VI_WQ */
+#define	V_EWQ		10				/* VI_WQ */
 		{v_ewq,		0},
-#define	V_EWRITE	10				/* VI_WRITE */
+#define	V_EWRITE	11				/* VI_WRITE */
 		{v_ewrite,	0},
-#define	V_EWRITEAS	11				/* VI_WRITEAS */
+#define	V_EWRITEAS	12				/* VI_WRITEAS */
 		{v_ewriteas,	0},
 	};
 
@@ -303,10 +341,7 @@ v_event(sp, vp)
 		vp->kp = &vievents[V_ESEARCH];
 		break;
 	case VI_C_SETTOP:
-		F_SET(vp, VC_C1SET);
-		vp->character = '\n';
-		vp->count = vp->ev.e_lno;
-		vp->kp = &vikeys['z'];
+		vp->kp = &vievents[V_C_SETTOP];
 		break;
 	case VI_C_TOP:
 		F_SET(vp, VC_C1SET);
