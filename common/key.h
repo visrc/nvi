@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 8.13 1993/10/26 18:37:29 bostic Exp $ (Berkeley) $Date: 1993/10/26 18:37:29 $
+ *	$Id: key.h,v 8.14 1993/11/10 09:39:29 bostic Exp $ (Berkeley) $Date: 1993/11/10 09:39:29 $
  */
 
 /* Structure for a key input buffer. */
@@ -108,16 +108,17 @@ enum input	{ INP_OK=0, INP_EOF, INP_ERR };
 #define	TXT_ESCAPE	0x000200	/* Escape returns the buffer. */
 #define	TXT_MAPCOMMAND	0x000400	/* Apply the command map. */
 #define	TXT_MAPINPUT	0x000800	/* Apply the input map. */
-#define	TXT_NLECHO	0x001000	/* Echo the newline. */
-#define	TXT_OVERWRITE	0x002000	/* Overwrite characters. */
-#define	TXT_PROMPT	0x004000	/* Display a prompt. */
-#define	TXT_RECORD	0x008000	/* Record for replay. */
-#define	TXT_REPLACE	0x010000	/* Replace; don't delete overwrite. */
-#define	TXT_REPLAY	0x020000	/* Replay the last input. */
-#define	TXT_RESOLVE	0x040000	/* Resolve the text into the file. */
-#define	TXT_SHOWMATCH	0x080000	/* Option: showmatch. */
-#define	TXT_TTYWERASE	0x100000	/* Option: ttywerase. */
-#define	TXT_WRAPMARGIN	0x200000	/* Option: wrapmargin. */
+#define	TXT_MAPNODIGIT	0x001000	/* Return to a digit. */
+#define	TXT_NLECHO	0x002000	/* Echo the newline. */
+#define	TXT_OVERWRITE	0x004000	/* Overwrite characters. */
+#define	TXT_PROMPT	0x008000	/* Display a prompt. */
+#define	TXT_RECORD	0x010000	/* Record for replay. */
+#define	TXT_REPLACE	0x020000	/* Replace; don't delete overwrite. */
+#define	TXT_REPLAY	0x040000	/* Replay the last input. */
+#define	TXT_RESOLVE	0x080000	/* Resolve the text into the file. */
+#define	TXT_SHOWMATCH	0x100000	/* Option: showmatch. */
+#define	TXT_TTYWERASE	0x200000	/* Option: ttywerase. */
+#define	TXT_WRAPMARGIN	0x400000	/* Option: wrapmargin. */
 
 #define	TXT_VALID_EX							\
 	(TXT_BEAUTIFY | TXT_CR | TXT_NLECHO | TXT_PROMPT)
