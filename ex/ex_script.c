@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_script.c,v 8.7 1993/12/19 18:55:11 bostic Exp $ (Berkeley) $Date: 1993/12/19 18:55:11 $";
+static char sccsid[] = "$Id: ex_script.c,v 8.8 1993/12/19 19:36:59 bostic Exp $ (Berkeley) $Date: 1993/12/19 19:36:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,6 +21,11 @@ static char sccsid[] = "$Id: ex_script.c,v 8.7 1993/12/19 18:55:11 bostic Exp $ 
 #include "vi.h"
 #include "excmd.h"
 #include "script.h"
+
+/*
+ * XXX
+ */
+int openpty __P((int *, int *, char *, struct termios *, struct winsize *));
 
 static int sscr_getprompt __P((SCR *, EXF *));
 static int sscr_init __P((SCR *, EXF *));
