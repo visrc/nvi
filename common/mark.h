@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: mark.h,v 8.8 1994/03/16 08:05:51 bostic Exp $ (Berkeley) $Date: 1994/03/16 08:05:51 $
+ *	$Id: mark.h,v 8.9 1994/07/17 00:24:30 bostic Exp $ (Berkeley) $Date: 1994/07/17 00:24:30 $
  */
 
 /*
@@ -21,19 +21,19 @@
  */
 struct _mark {
 #define	OOBLNO		0		/* Out-of-band line number. */
-	recno_t	lno;			/* Line number. */
-	size_t	cno;			/* Column number. */
+	recno_t	 lno;			/* Line number. */
+	size_t	 cno;			/* Column number. */
 };
 
 struct _lmark {
 	LIST_ENTRY(_lmark) q;		/* Linked list of marks. */
-	recno_t	lno;			/* Line number. */
-	size_t	cno;			/* Column number. */
-	CHAR_T	name;			/* Mark name. */
+	recno_t	 lno;			/* Line number. */
+	size_t	 cno;			/* Column number. */
+	CHAR_T	 name;			/* Mark name. */
 
 #define	MARK_DELETED	0x01		/* Mark was deleted. */
 #define	MARK_USERSET	0x02		/* User set this mark. */
-	u_char	flags;
+	u_int8_t flags;
 };
 
 #define	ABSMARK1	'\''		/* Absolute mark name. */

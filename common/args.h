@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: args.h,v 8.4 1994/03/16 08:05:46 bostic Exp $ (Berkeley) $Date: 1994/03/16 08:05:46 $
+ *	$Id: args.h,v 8.5 1994/07/17 00:24:26 bostic Exp $ (Berkeley) $Date: 1994/07/17 00:24:26 $
  */
 
 /*
@@ -23,5 +23,5 @@ typedef struct _args {
 	size_t	 len;		/* Argument length. */
 
 #define	A_ALLOCATED	0x01	/* If allocated space. */
-	u_char	 flags;
+	u_int8_t flags;
 } ARGS;

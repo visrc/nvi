@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: seq.h,v 8.10 1994/07/15 15:59:53 bostic Exp $ (Berkeley) $Date: 1994/07/15 15:59:53 $
+ *	$Id: seq.h,v 8.11 1994/07/17 00:24:31 bostic Exp $ (Berkeley) $Date: 1994/07/17 00:24:31 $
  */
 
 /*
@@ -40,7 +40,7 @@ struct _seq {
 #define	SEQ_FUNCMAP	0x01		/* If unresolved function key.*/
 #define	SEQ_SCREEN	0x02		/* If screen specific. */
 #define	SEQ_USERDEF	0x04		/* If user defined. */
-	u_char	 flags;
+	u_int8_t flags;
 };
 
 int	 seq_delete __P((SCR *, char *, size_t, enum seqtype));

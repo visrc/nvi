@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: cut.h,v 8.16 1994/05/17 10:44:06 bostic Exp $ (Berkeley) $Date: 1994/05/17 10:44:06 $
+ *	$Id: cut.h,v 8.17 1994/07/17 00:24:27 bostic Exp $ (Berkeley) $Date: 1994/07/17 00:24:27 $
  */
 
 typedef struct _texth TEXTH;		/* TEXT list head structure. */
@@ -18,7 +18,7 @@ struct _cb {
 	size_t	 len;			/* Total length of cut text. */
 
 #define	CB_LMODE	0x01		/* Cut was in line mode. */
-	u_char	 flags;
+	u_int8_t flags;
 };
 
 /* Lines/blocks of text. */

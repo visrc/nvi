@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: msg.h,v 8.11 1994/05/16 16:03:41 bostic Exp $ (Berkeley) $Date: 1994/05/16 16:03:41 $
+ *	$Id: msg.h,v 8.12 1994/07/17 00:24:31 bostic Exp $ (Berkeley) $Date: 1994/07/17 00:24:31 $
  */
 
 /*
@@ -35,7 +35,7 @@ struct _msg {
 
 #define	M_EMPTY		0x01	/* No message. */
 #define	M_INV_VIDEO	0x02	/* Inverse video. */
-	u_int	 flags;		/* Flags. */
+	u_int8_t flags;
 };
 
 /*

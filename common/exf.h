@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 8.31 1994/06/29 18:15:10 bostic Exp $ (Berkeley) $Date: 1994/06/29 18:15:10 $
+ *	$Id: exf.h,v 8.32 1994/07/17 00:24:28 bostic Exp $ (Berkeley) $Date: 1994/07/17 00:24:28 $
  */
 					/* Undo direction. */
 /*
@@ -50,7 +50,7 @@ struct _exf {
 #define	F_RCV_NORM	0x010		/* Don't delete recovery files. */
 #define	F_RCV_ON	0x020		/* Recovery is possible. */
 #define	F_UNDO		0x040		/* No change since last undo. */
-	u_int	 flags;
+	u_int8_t flags;
 };
 
 /* Flags to file_write(). */
