@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 8.7 1994/07/18 17:39:19 bostic Exp $ (Berkeley) $Date: 1994/07/18 17:39:19 $";
+static char sccsid[] = "$Id: v_ex.c,v 8.8 1994/07/27 10:29:25 bostic Exp $ (Berkeley) $Date: 1994/07/27 10:29:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -118,11 +118,18 @@ v_filter(sp, ep, vp)
 
 	/*
 	 * !!!
-	 * Historical vi permitted "!!" in an empty file.  This is
-	 * handled as a special case in the ex_bang routine.  Don't
-	 * modify this setup without understanding that one.  In
-	 * particular, note that we're manipulating the ex argument
-	 * structures behind ex's back.
+	 * Historical vi permitted "!!" in an empty file, and it's handled
+	 * as a special case in the ex_bang routine.  Don't modify this setup
+	 * without understanding that one.  In particular, note that we're
+	 * manipulating the ex argument structures behind ex's back.
+	 *
+	 * !!!
+	 * Historical vi did not permit the '!' command to be associated with
+	 * a non-line oriented motion command, in general, although it did
+	 * with search commands.  So, !f; and !w would fail, but !/;<CR>
+	 * would succeed, even if they all moved to the same location in the
+	 * current line.  I don't see any reason to disallow '!' using any of
+	 * the possible motion commands.
 	 */
 	excmd(&cmd, C_BANG,
 	    2, vp->m_start.lno, vp->m_stop.lno, 0, ap, &a, NULL);
