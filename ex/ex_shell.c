@@ -6,12 +6,11 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 8.19 1994/03/16 10:56:10 bostic Exp $ (Berkeley) $Date: 1994/03/16 10:56:10 $";
+static char sccsid[] = "$Id: ex_shell.c,v 8.20 1994/03/23 14:46:19 bostic Exp $ (Berkeley) $Date: 1994/03/23 14:46:19 $";
 #endif /* not lint */
 
 #include <sys/param.h>
 #include <sys/queue.h>
-#include <sys/stat.h>
 #include <sys/time.h>
 
 #include <bitstring.h>
@@ -57,19 +56,16 @@ ex_exec_proc(sp, cmd, p1, p2)
 	SCR *sp;
 	char *cmd, *p1, *p2;
 {
-	struct sigaction act, oact;
-	struct stat osb, sb;
-	struct termios term;
 	const char *name;
 	pid_t pid;
-	int isig, rval;
+	int isig, rval, teardown;
 
 	/* Clear the rest of the screen. */
 	if (sp->s_clear(sp))
 		return (1);
 
 	/* Save ex/vi terminal settings, and restore the original ones. */
-	EX_LEAVE(sp, isig, act, oact, sb, osb, term);
+	teardown = !ex_sleave(sp);
 
 	/* Put out various messages. */
 	if (p1 != NULL)
@@ -105,14 +101,15 @@ ex_exec_proc(sp, cmd, p1, p2)
 	rval = proc_wait(sp, (long)pid, cmd, 0);
 
 	/* Restore ex/vi terminal settings. */
-err:	EX_RETURN(sp, isig, act, oact, sb, osb, term);
+err:	if (teardown)
+		ex_rleave(sp);
 
 	/*
 	 * XXX
-	 * EX_LEAVE/EX_RETURN only give us 1-second resolution on the tty
-	 * changes.  A fast '!' command, e.g. ":!pwd" can beat us to the
-	 * refresh.  When there's better resolution from the stat(2) timers,
-	 * this can go away.
+	 * Stat of the tty structures (see ex_sleave, ex_rleave) only give
+	 * us 1-second resolution on the tty changes.  A fast '!' command,
+	 * e.g. ":!pwd" can beat us to the refresh.  When there's better
+	 * resolution from the stat(2) timers, this can go away.
 	 */
 	F_SET(sp, S_REFRESH);
 

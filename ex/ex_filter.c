@@ -6,12 +6,11 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 8.28 1994/03/22 19:53:38 bostic Exp $ (Berkeley) $Date: 1994/03/22 19:53:38 $";
+static char sccsid[] = "$Id: ex_filter.c,v 8.29 1994/03/23 14:46:01 bostic Exp $ (Berkeley) $Date: 1994/03/23 14:46:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 #include <sys/queue.h>
-#include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/wait.h>
 
@@ -49,13 +48,10 @@ filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
 	char *cmd;
 	enum filtertype ftype;
 {
-	struct sigaction act, oact;
-	struct stat osb, sb;
-	struct termios term;
 	FILE *ifp, *ofp;		/* GCC: can't be uninitialized. */
 	pid_t parent_writer_pid, utility_pid;
 	recno_t lno, nread;
-	int input[2], isig, output[2], rval;
+	int input[2], isig, output[2], rval, teardown;
 	char *name;
 
 	/* Set return cursor position; guard against a line number of zero. */
@@ -112,7 +108,7 @@ filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
 	 * Save ex/vi terminal settings, and restore the original ones.
 	 * Restoration so that users can do things like ":r! cat /dev/tty".
 	 */
-	EX_LEAVE(sp, isig, act, oact, sb, osb, term);
+	teardown = !ex_sleave(sp);
 
 	/* Fork off the utility process. */
 	switch (utility_pid = vfork()) {
@@ -291,8 +287,8 @@ err:		if (input[0] != -1)
 uwait:	rval |= proc_wait(sp, (long)utility_pid, cmd, 0);
 
 	/* Restore ex/vi terminal settings. */
-ret:	EX_RETURN(sp, isig, act, oact, sb, osb, term);
-
+ret:	if (teardown)
+		ex_rleave(sp);
 	return (rval);
 }
 
