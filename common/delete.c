@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: delete.c,v 5.22 1993/04/05 07:12:22 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:12:22 $";
+static char sccsid[] = "$Id: delete.c,v 5.23 1993/04/12 14:22:49 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:22:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -58,7 +58,7 @@ delete(sp, ep, fm, tm, lmode)
 				GETLINE_ERR(sp, lno);
 				return (1);
 			}
-			eof = tm->cno > len ? 1 : 0;
+			eof = tm->cno >= len ? 1 : 0;
 		} else
 			eof = 1;
 		if (eof) {
@@ -87,7 +87,7 @@ delete(sp, ep, fm, tm, lmode)
 			return (1);
 		}
 		if ((bp = malloc(len)) == NULL) {
-			msgq(sp, M_ERROR, "Error: %s", strerror(errno));
+			msgq(sp, M_ERR, "Error: %s", strerror(errno));
 			return (1);
 		}
 		memmove(bp, p, fm->cno);
@@ -116,7 +116,7 @@ delete(sp, ep, fm, tm, lmode)
 	}
 	tlen += len;		/* XXX Possible overflow! */
 	if ((bp = malloc(tlen)) == NULL) {
-		msgq(sp, M_ERROR, "Error: %s", strerror(errno));
+		msgq(sp, M_ERR, "Error: %s", strerror(errno));
 		return (1);
 	}
 
