@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 10.4 1995/09/21 10:59:35 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:59:35 $
+ *	$Id: vi.h,v 10.5 1995/09/23 19:18:24 bostic Exp $ (Berkeley) $Date: 1995/09/23 19:18:24 $
  */
 
 /* Definition of a vi "word". */
@@ -217,50 +217,50 @@ typedef enum { Q_NOTSET, Q_BNEXT, Q_BTHIS, Q_VNEXT, Q_VTHIS } quote_t;
 
 /* Vi private, per-screen memory. */
 typedef struct _vi_private {
-	VICMD cmd;		/* Current command, motion. */
-	VICMD motion;
+	VICMD	cmd;		/* Current command, motion. */
+	VICMD	motion;
 
 	/*
 	 * !!!
 	 * The saved command structure can be modified by the underlying
 	 * vi functions, see v_Put() and v_put().
 	 */
-	VICMD	 sdot;		/* Saved dot, motion command. */
-	VICMD	 sdotmotion;
+	VICMD	sdot;		/* Saved dot, motion command. */
+	VICMD	sdotmotion;
 
-	CHAR_T	*keyw;		/* Keyword buffer. */
-	size_t	 klen;		/* Keyword length. */
-	size_t	 keywlen;	/* Keyword buffer length. */
+	CHAR_T *keyw;		/* Keyword buffer. */
+	size_t	klen;		/* Keyword length. */
+	size_t	keywlen;	/* Keyword buffer length. */
 
-	CHAR_T	 rlast;		/* Last 'r' replacement character. */
-	e_key_t	 rvalue;	/* Value of last replacement character. */
+	CHAR_T	rlast;		/* Last 'r' replacement character. */
+	e_key_t	rvalue;		/* Value of last replacement character. */
 
-	EVENT	*rep;		/* Input replay buffer. */
-	size_t	 rep_len;	/* Input replay buffer length. */
-	size_t	 rep_cnt;	/* Input replay buffer characters. */
+	EVENT  *rep;		/* Input replay buffer. */
+	size_t	rep_len;	/* Input replay buffer length. */
+	size_t	rep_cnt;	/* Input replay buffer characters. */
 
-	mtype_t	 mtype;		/* Last displayed message type. */
-	size_t	 linecount;	/* 1-N: Output overwrite count. */
-	size_t	 lcontinue;	/* 1-N: Output line continue value. */
-	size_t	 totalcount;	/* 1-N: Output overwrite count. */
+	mtype_t	mtype;		/* Last displayed message type. */
+	size_t	linecount;	/* 1-N: Output overwrite count. */
+	size_t	lcontinue;	/* 1-N: Output line continue value. */
+	size_t	totalcount;	/* 1-N: Output overwrite count. */
 
 				/* Busy state. */
 	enum { BUSY_OFF=0, BUSY_ON, BUSY_SILENT } busy_state;
-	int	 busy_ch;	/* Busy character. */
+	int	busy_ch;	/* Busy character. */
 	struct timeval
-		 busy_tv;	/* Busy timer. */
-	size_t	 busy_fx;	/* Busy character x coordinate. */
-	size_t	 busy_y, busy_x;/* Busy saved screen coordinates. */
+		busy_tv;	/* Busy timer. */
+	size_t	busy_fx;	/* Busy character x coordinate. */
+	size_t	busy_y, busy_x;/* Busy saved screen coordinates. */
 
-	char	*ps;		/* Paragraph plus section list. */
+	char   *ps;		/* Paragraph plus section list. */
 
-	u_long	 u_ccnt;	/* Undo command count. */
+	u_long	u_ccnt;		/* Undo command count. */
 
-	CHAR_T	 lastckey;	/* Last search character. */
-	cdir_t	 csearchdir;	/* Character search direction. */
+	CHAR_T	lastckey;	/* Last search character. */
+	cdir_t	csearchdir;	/* Character search direction. */
 
-	SMAP	*h_smap;	/* First slot of the line map. */
-	SMAP	*t_smap;	/*  Last slot of the line map. */
+	SMAP   *h_smap;	/* First slot of the line map. */
+	SMAP   *t_smap;	/*  Last slot of the line map. */
 	/*
 	 * One extra slot is always allocated for the map so that we can use
 	 * it to do vi :colon command input; see v_tcmd_setup().
@@ -279,15 +279,15 @@ typedef struct _vi_private {
 #define	_TMAP(sp)	(VIP(sp)->t_smap)
 #define	TMAP		_TMAP(sp)
 
-	recno_t	 ss_lno;	/* 1-N: vi_opt_screens cached line number. */
-	size_t	 ss_screens;	/* vi_opt_screens cached return value. */
+	recno_t	ss_lno;	/* 1-N: vi_opt_screens cached line number. */
+	size_t	ss_screens;	/* vi_opt_screens cached return value. */
 #define	VI_SCR_CFLUSH(vip)	vip->ss_lno = OOBLNO
 
-	size_t	 srows;		/* 1-N: rows in the terminal/window. */
-	recno_t	 olno;		/* 1-N: old cursor file line. */
-	size_t	 ocno;		/* 0-N: old file cursor column. */
-	size_t	 sc_col;	/* 0-N: LOGICAL screen column. */
-	SMAP	*sc_smap;	/* SMAP entry where sc_col occurs. */
+	size_t	srows;		/* 1-N: rows in the terminal/window. */
+	recno_t	olno;		/* 1-N: old cursor file line. */
+	size_t	ocno;		/* 0-N: old file cursor column. */
+	size_t	sc_col;	/* 0-N: LOGICAL screen column. */
+	SMAP   *sc_smap;	/* SMAP entry where sc_col occurs. */
 
 #define	VIP_CUR_INVALID	0x0001	/* Cursor position is unknown. */
 #define	VIP_DIVIDER	0x0002	/* Divider line was displayed. */
