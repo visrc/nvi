@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_screen.c,v 10.17 1995/10/29 15:23:02 bostic Exp $ (Berkeley) $Date: 1995/10/29 15:23:02 $";
+static char sccsid[] = "$Id: cl_screen.c,v 10.18 1995/10/30 10:16:48 bostic Exp $ (Berkeley) $Date: 1995/10/30 10:16:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -160,6 +160,7 @@ cl_vi_init(sp)
 {
 	CL_PRIVATE *clp;
 	GS *gp;
+	char *ttype;
 
 	gp = sp->gp;
 	clp = CLP(sp);
@@ -180,17 +181,21 @@ cl_vi_init(sp)
 	 * never have more than one SCREEN at a time.
 	 *
 	 * XXX
-	 * The SunOS/System V initscr() isn't reentrant.  Don't even think
-	 * about trying to use it.  It fails in subtle ways (e.g. select(2)
-	 * on fileno(stdin) stops working).
+	 * The SunOS initscr() isn't reentrant.  Don't even think about using
+	 * it.  It fails in subtle ways (e.g. select(2) on fileno(stdin) stops
+	 * working).
+	 *
+	 * XXX
+	 * The HP/UX newterm doesn't support the NULL first argument, so we
+	 * have to specify the terminal type.
 	 */
 	errno = 0;
-	if (newterm(NULL, stdout, stdin) == NULL) {
+	ttype = O_STR(sp, O_TERM);
+	if (newterm(ttype, stdout, stdin) == NULL) {
 		if (errno)
-			msgq(sp, M_SYSERR, "%s", O_STR(sp, O_TERM));
+			msgq(sp, M_SYSERR, "%s", ttype);
 		else
-			msgq(sp, M_ERR,
-			    "%s: unknown terminal type", O_STR(sp, O_TERM));
+			msgq(sp, M_ERR, "%s: unknown terminal type", ttype);
 		return (1);
 	}
 
