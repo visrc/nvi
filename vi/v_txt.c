@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.25 1993/10/05 12:05:53 bostic Exp $ (Berkeley) $Date: 1993/10/05 12:05:53 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.26 1993/10/07 12:15:25 bostic Exp $ (Berkeley) $Date: 1993/10/07 12:15:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -776,7 +776,7 @@ txt_abbrev(sp, tp, didsubp, pushc)
 		return (1);
 
 	sp->cno -= len;
-	tp->len -= len;
+	tp->overwrite += len;
 	*didsubp = 1;
 	return (0);
 }
