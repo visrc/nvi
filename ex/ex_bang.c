@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 9.2 1994/11/12 17:28:46 bostic Exp $ (Berkeley) $Date: 1994/11/12 17:28:46 $";
+static char sccsid[] = "$Id: ex_bang.c,v 9.3 1994/11/13 16:40:12 bostic Exp $ (Berkeley) $Date: 1994/11/13 16:40:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -123,9 +123,16 @@ ex_bang(sp, cmdp)
 		/* Autoprint is set historically, even if the command fails. */
 		F_SET(exp, EX_AUTOPRINT);
 
-		/* Vi gets a busy message. */
-		if (bp != NULL)
+		/*
+		 * Vi gets a busy message.
+		 *
+		 * !!!
+		 * Vi doesn't want the <newline> at the end of the message.
+		 */
+		if (bp != NULL) {
+			bp[ap->len + 1] = '\0';
 			(void)sp->s_busy(sp, bp);
+		}
 
 		/*
 		 * !!!
