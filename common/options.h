@@ -4,76 +4,59 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: options.h,v 5.13 1993/04/05 07:12:01 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:12:01 $
+ *	$Id: options.h,v 5.14 1993/04/06 11:36:27 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:36:27 $
  */
 
-/* Offset macros. */
-#define	ISFSET(option, flag)	(opts[(option)].flags & (flag))
-#define	FSET(option, flag)	(opts[(option)].flags |= (flag))
-#define	FUNSET(option, flag)	(opts[(option)].flags &= ~(flag))
-
-/* Pointer macros. */
-#define	ISFSETP(op, flag)	((op)->flags & (flag))
-#define	FSETP(op, flag)		((op)->flags |= (flag))
-#define	FUNSETP(op, flag)	((op)->flags &= ~(flag))
-
-#define	ISSET(option) 		(ISFSET(option, OPT_1BOOL))
-#define	SET(option) { \
-	int __offset = option; \
-	FUNSET(__offset, OPT_0BOOL); \
-	FSET(__offset, OPT_1BOOL); \
-}
-#define	UNSET(option) { \
-	int __offset = option; \
-	FUNSET(__offset, OPT_1BOOL); \
-	FSET(__offset, OPT_0BOOL); \
-}
-
-#define	LVAL(option) 		(*(long *)opts[(option)].value)
-#define	LVALP(op)		(*(long *)(op)->value)
-#define	PVAL(option)		(opts[(option)].value)
-
 typedef struct _option {
-	char	*name;			/* Name. */
-	void	*value;			/* Value. */
-					/* Initialization function. */
-	int	(*func) __P((SCR *, void *, char *));
+	union {
+		u_long	 val;		/* Value, boolean. */
+		char	*str;		/* String. */
+	} o_u;
 
-#define	OPT_0BOOL	0x001		/* Boolean (off). */
-#define	OPT_1BOOL	0x002		/* Boolean (on). */
-#define	OPT_NUM		0x004		/* Number. */
-#define	OPT_STR		0x008		/* String. */
-#define	OPT_TYPE	0x00f		/* Type mask. */
-
-#define	OPT_ALLOCATED	0x010		/* Allocated space. */
-#define	OPT_NOSAVE	0x020		/* Option not saved by mkexrc. */
-#define	OPT_NOSET	0x040		/* Option can't be set. */
-#define	OPT_REDRAW	0x080		/* Option requires a redraw. */
-#define	OPT_SET		0x100		/* Set (display for the user). */
+#define	OPT_ALLOCATED	0x01		/* Allocated space. */
+#define	OPT_SET		0x02		/* Set (display for the user). */
 	u_int	flags;
-} OPTIONS;
+} OPTION;
 
-extern OPTIONS opts[];
+typedef struct _optlist {
+	char	*name;			/* Name. */
+					/* Change function. */
+	int	(*func) __P((struct _scr *, struct _option *, char *, u_long));
+					/* Type of object. */	
+	enum { OPT_0BOOL, OPT_1BOOL, OPT_NUM, OPT_STR } type;
+
+#define	OPT_NOSAVE	0x01		/* Option not saved by mkexrc. */
+	u_int	 flags;
+} OPTLIST;
+
+/* Clear, set, test boolean options. */
+#define	O_SET(sp, o)		(sp)->opts[(o)].o_u.val = 1
+#define	O_CLR(sp, o)		(sp)->opts[(o)].o_u.val = 0
+#define	O_ISSET(sp, o)		((sp)->opts[(o)].o_u.val)
+
+/* Get option values. */
+#define	O_VAL(sp, o)		(sp)->opts[(o)].o_u.val
+#define	O_STR(sp, o)		(sp)->opts[(o)].o_u.str
 
 /* Option routines. */
-void	opts_dump __P((SCR *, int));
-int	opts_init __P((SCR *));
-int	opts_save __P((SCR *, FILE *));
-int	opts_set __P((SCR *, char **));
+void	opts_dump __P((struct _scr *, int));
+int	opts_init __P((struct _scr *));
+int	opts_save __P((struct _scr *, FILE *));
+int	opts_set __P((struct _scr *, char **));
 
-/* Per-option routines. */
-int	f_columns __P((SCR *, void *, char *));
-int	f_flash __P((SCR *, void *, char *));
-int	f_keytime __P((SCR *, void *, char *));
-int	f_leftright __P((SCR *, void *, char *));
-int	f_lines __P((SCR *, void *, char *));
-int	f_list __P((SCR *, void *, char *));
-int	f_mesg __P((SCR *, void *, char *));
-int	f_modelines __P((SCR *, void *, char *));
-int	f_ruler __P((SCR *, void *, char *));
-int	f_shiftwidth __P((SCR *, void *, char *));
-int	f_sidescroll __P((SCR *, void *, char *));
-int	f_tabstop __P((SCR *, void *, char *));
-int	f_tags __P((SCR *, void *, char *));
-int	f_term __P((SCR *, void *, char *));
-int	f_wrapmargin __P((SCR *, void *, char *));
+/* Per-option change routines. */
+int	f_columns __P((struct _scr *, struct _option *, char *, u_long));
+int	f_flash __P((struct _scr *, struct _option *, char *, u_long));
+int	f_keytime __P((struct _scr *, struct _option *, char *, u_long));
+int	f_leftright __P((struct _scr *, struct _option *, char *, u_long));
+int	f_lines __P((struct _scr *, struct _option *, char *, u_long));
+int	f_list __P((struct _scr *, struct _option *, char *, u_long));
+int	f_mesg __P((struct _scr *, struct _option *, char *, u_long));
+int	f_modelines __P((struct _scr *, struct _option *, char *, u_long));
+int	f_ruler __P((struct _scr *, struct _option *, char *, u_long));
+int	f_shiftwidth __P((struct _scr *, struct _option *, char *, u_long));
+int	f_sidescroll __P((struct _scr *, struct _option *, char *, u_long));
+int	f_tabstop __P((struct _scr *, struct _option *, char *, u_long));
+int	f_tags __P((struct _scr *, struct _option *, char *, u_long));
+int	f_term __P((struct _scr *, struct _option *, char *, u_long));
+int	f_wrapmargin __P((struct _scr *, struct _option *, char *, u_long));

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 5.31 1993/04/05 07:12:18 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:12:18 $";
+static char sccsid[] = "$Id: cut.c,v 5.32 1993/04/06 11:36:14 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:36:14 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -160,19 +160,6 @@ mem:			msgq(sp, M_ERROR, "Error: %s", strerror(errno));
 	return (0);
 }
 
-/* Increase the buffer space as necessary. */
-#define	BFCHECK(ep, tp) {						\
-	if (blen < len + tp->len) {					\
-		blen += MAX(blen + 256, len + tp->len);			\
-		if ((bp = realloc(bp, blen)) == NULL) {			\
-			msgq(sp, M_ERROR,				\
-			    "Put error: %s", strerror(errno));		\
-			blen = 0;					\
-			return (1);					\
-		}							\
-	}								\
-}
-
 /*
  * put --
  *	Put text buffer contents into the file.
@@ -184,14 +171,13 @@ put(sp, ep, buffer, cp, rp, append)
 	int buffer, append;
 	MARK *cp, *rp;
 {
-	static char *bp;
-	static size_t blen;
 	CB *cb;
+	GS *gp;
 	TEXT *tp;
 	recno_t lno;
-	size_t clen, len;
+	size_t blen, clen, len;
 	int lmode;
-	char *p, *t;
+	char *bp, *p, *t;
 
 	CBNAME(sp, buffer, cb);
 	CBEMPTY(sp, buffer, cb);
@@ -240,8 +226,17 @@ put(sp, ep, buffer, cp, rp, append)
 			return (1);
 		}
 
-		/* Check for space. */
-		BFCHECK(ep, tp);
+		/* Get some space. */
+		gp = sp->gp;
+		if (F_ISSET(gp, G_TMP_INUSE)) {
+			bp = NULL;
+			blen = 0;
+			BINC(sp, bp, blen, tp->len);
+		} else {
+			BINC(sp, gp->tmp_bp, gp->tmp_blen, tp->len);
+			bp = gp->tmp_bp;
+			F_SET(gp, G_TMP_INUSE);
+		}
 
 		/* Original line, left of the split. */
 		t = bp;
@@ -268,14 +263,14 @@ put(sp, ep, buffer, cp, rp, append)
 				t += clen;
 			}
 			if (file_sline(sp, ep, lno, bp, t - bp))
-				return (1);
+				goto mem;
 
 			rp->lno = lno;
 			rp->cno = t - bp;
 		} else {
 			/* Output the line replacing the original line. */
 			if (file_sline(sp, ep, lno, bp, t - bp))
-				return (1);
+				goto mem;
 
 			/* Output any intermediate lines in the CB alone. */
 			for (;;) {
@@ -283,12 +278,18 @@ put(sp, ep, buffer, cp, rp, append)
 				if (tp->next == NULL)
 					break;
 				if (file_aline(sp, ep, lno, tp->lp, tp->len))
-					return (1);
+					goto mem;
 				++lno;
 			}
 
 			/* Last part of original line; check for space. */
-			BFCHECK(ep, tp);
+			if (bp == gp->tmp_bp) {
+				F_CLR(gp, G_TMP_INUSE);
+				BINC(sp, gp->tmp_bp, gp->tmp_blen, tp->len);
+				bp = gp->tmp_bp;
+				F_SET(gp, G_TMP_INUSE);
+			} else
+				BINC(sp, bp, blen, tp->len);
 
 			t = bp;
 			if (tp->len) {
@@ -298,6 +299,7 @@ put(sp, ep, buffer, cp, rp, append)
 
 			/*
 			 * This is the end of the added text; set cursor.
+			 *
 			 * XXX
 			 * Historic vi put the cursor at the beginning of
 			 * the put.
@@ -309,9 +311,19 @@ put(sp, ep, buffer, cp, rp, append)
 				memmove(t, p, clen);
 				t += clen;
 			}
-			if (file_aline(sp, ep, lno, bp, t - bp))
+			if (file_aline(sp, ep, lno, bp, t - bp)) {
+mem:				if (bp == gp->tmp_bp)
+					F_CLR(gp, G_TMP_INUSE);
+				else
+					free(bp);
 				return (1);
+			}
 		}
+		/* Free memory. */
+		if (bp == gp->tmp_bp)
+			F_CLR(gp, G_TMP_INUSE);
+		else
+			free(bp);
 	}
 
 	/* Shift any marks in the range. */

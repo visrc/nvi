@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 5.27 1993/04/05 07:11:51 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:11:51 $";
+static char sccsid[] = "$Id: ex_tag.c,v 5.28 1993/04/06 11:37:26 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:37:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,7 +35,7 @@ ex_tagpush(sp, ep, cmdp)
 	
 	switch (cmdp->argc) {
 	case 1:
-		if (sp->tlast)
+		if (sp->tlast != NULL)
 			free(sp->tlast);
 		if ((sp->tlast = strdup((char *)cmdp->argv[0])) == NULL) {
 			msgq(sp, M_ERROR, "Error: %s", strerror(errno));
@@ -117,7 +117,7 @@ tagchange(sp, ep, tag, force)
 	int force;
 {
 	EXF *tep;
-	MARK m, *mp;
+	MARK m;
 	char *argv[2];
 
 	/*
@@ -141,13 +141,13 @@ tagchange(sp, ep, tag, force)
 
 	m.lno = 1;
 	m.cno = 0;
-	if ((mp = f_search(sp, tep, &m,
-	    tag->line, NULL, SEARCH_PARSE | SEARCH_TERM)) == NULL) {
+	if (f_search(sp, tep,
+	    &m, &m, tag->line, NULL, SEARCH_PARSE | SEARCH_TERM)) {
 		msgq(sp, M_ERROR, "%s: search pattern not found.", tag->tag);
 		return (1);
 	}
-	tep->start_lno = mp->lno;
-	tep->start_cno = mp->cno;
+	tep->start_lno = m.lno;
+	tep->start_cno = m.cno;
 
 	sp->enext = tep;
 	F_SET(sp, S_FSWITCH);

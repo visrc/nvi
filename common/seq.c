@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 5.25 1993/04/05 07:12:43 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:12:43 $";
+static char sccsid[] = "$Id: seq.c,v 5.26 1993/04/06 11:36:33 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:36:33 $";
 #endif /* not lint */
 
 #include <ctype.h>
@@ -208,7 +208,7 @@ seq_dump(sp, stype, isname)
 		return (0);
 
 	cnt = 0;
-	tablen = LVAL(O_TABSTOP);
+	tablen = O_VAL(sp, O_TABSTOP);
 	for (qp = sp->seqhdr.next; qp != (SEQ *)&sp->seqhdr; qp = qp->next) {
 		if (stype != qp->stype)
 			continue;

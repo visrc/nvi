@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 5.24 1993/04/05 07:11:35 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:11:35 $";
+static char sccsid[] = "$Id: ex_global.c,v 5.25 1993/04/06 11:37:17 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:37:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -94,9 +94,9 @@ global(sp, ep, cmdp, cmd)
 	} else {
 		/* Set RE flags. */
 		reflags = 0;
-		if (ISSET(O_EXTENDED))
+		if (O_ISSET(sp, O_EXTENDED))
 			reflags |= REG_EXTENDED;
-		if (ISSET(O_IGNORECASE))
+		if (O_ISSET(sp, O_IGNORECASE))
 			reflags |= REG_ICASE;
 
 		/* Compile the RE. */

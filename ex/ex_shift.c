@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shift.c,v 5.20 1993/04/05 07:11:48 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:11:48 $";
+static char sccsid[] = "$Id: ex_shift.c,v 5.21 1993/04/06 11:37:21 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:37:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -49,7 +49,7 @@ shift(sp, ep, cmdp, rl)
 	size_t blen, len, newcol, oldcol, oldidx;
 	char *p, *buf, *bp;
 
-	if (LVAL(O_SHIFTWIDTH) == 0)
+	if (O_VAL(sp, O_SHIFTWIDTH) == 0)
 		return (0);
 
 	blen = 0;
@@ -70,17 +70,17 @@ shift(sp, ep, cmdp, rl)
 			if (p[oldidx] == ' ')
 				++oldcol;
 			else if (p[oldidx] == '\t')
-				oldcol +=
-				    LVAL(O_TABSTOP) - oldcol % LVAL(O_TABSTOP);
+				oldcol += O_VAL(sp, O_TABSTOP) -
+				    oldcol % O_VAL(sp, O_TABSTOP);
 			else
 				break;
 
 		/* Calculate the new indent amount. */
 		if (rl == RIGHT)
-			newcol = oldcol + LVAL(O_SHIFTWIDTH);
+			newcol = oldcol + O_VAL(sp, O_SHIFTWIDTH);
 		else {
-			newcol = oldcol < LVAL(O_SHIFTWIDTH) ?
-			    0 : oldcol - LVAL(O_SHIFTWIDTH);
+			newcol = oldcol < O_VAL(sp, O_SHIFTWIDTH) ?
+			    0 : oldcol - O_VAL(sp, O_SHIFTWIDTH);
 			if (newcol == oldcol)
 				continue;
 		}
@@ -91,10 +91,10 @@ shift(sp, ep, cmdp, rl)
 
 		/* Build a new indent string. */
 		bp = buf;
-		if (ISSET(O_AUTOTAB))
-			while (newcol >= LVAL(O_TABSTOP)) {
+		if (O_ISSET(sp, O_AUTOTAB))
+			while (newcol >= O_VAL(sp, O_TABSTOP)) {
 				*bp++ = '\t';
-				newcol -= LVAL(O_TABSTOP);
+				newcol -= O_VAL(sp, O_TABSTOP);
 			}
 
 		for (; newcol > 0; --newcol)

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.80 1993/04/05 07:11:17 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:11:17 $";
+static char sccsid[] = "$Id: ex.c,v 5.81 1993/04/06 11:37:09 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:37:09 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -21,7 +21,6 @@ static char sccsid[] = "$Id: ex.c,v 5.80 1993/04/05 07:11:17 bostic Exp $ (Berke
 
 #include "vi.h"
 #include "excmd.h"
-#include "vcmd.h"
 
 char *defcmdarg[2];
 
@@ -184,9 +183,6 @@ cend:			if (p > cmd) {
 	/* NOTREACHED */
 }
 
-static EXCMDARG parg = { NULL, 2 };
-static EXCMDLIST *lastcmd = &cmds[C_PRINT];
-
 /*
  * ex_cmd --
  *	Parse and execute an ex command.  
@@ -274,7 +270,7 @@ ex_cmd(sp, ep, exc)
 			return (1);
 		}
 	} else {
-		cp = lastcmd;
+		cp = sp->lastcmd;
 		uselastcmd = 1;
 	}
 	flags = cp->flags;
@@ -584,7 +580,7 @@ addr2:	switch(cmd.addrcnt) {
 
 	/* Reset "last" command. */
 	if (flags & E_SETLAST)
-		lastcmd = cp;
+		sp->lastcmd = cp;
 
 	cmd.cmd = cp;
 #if DEBUG && 0
@@ -669,25 +665,28 @@ addr2:	switch(cmd.addrcnt) {
 		sp->lno += flagoff;
 	}
 
-	if (F_ISSET(sp, S_AUTOPRINT) && ISSET(O_AUTOPRINT))
+	if (F_ISSET(sp, S_AUTOPRINT) && O_ISSET(sp, O_AUTOPRINT))
 		flags = E_F_PRINT;
 	else
 		flags = cmd.flags & (E_F_HASH | E_F_LIST | E_F_PRINT);
-	parg.addr1.lno = parg.addr2.lno = sp->lno;
-	parg.addr1.cno = parg.addr2.cno = sp->cno;
+
+	memset(&cmd, 0, sizeof(EXCMDARG));
+	cmd.addrcnt = 2;
+	cmd.addr1.lno = cmd.addr2.lno = sp->lno;
+	cmd.addr1.cno = cmd.addr2.cno = sp->cno;
 	if (flags) {
 		switch (flags) {
 		case E_F_HASH:
-			parg.cmd = &cmds[C_HASH];
-			ex_number(sp, ep, &parg);
+			cmd.cmd = &cmds[C_HASH];
+			ex_number(sp, ep, &cmd);
 			break;
 		case E_F_LIST:
-			parg.cmd = &cmds[C_LIST];
-			ex_list(sp, ep, &parg);
+			cmd.cmd = &cmds[C_LIST];
+			ex_list(sp, ep, &cmd);
 			break;
 		case E_F_PRINT:
-			parg.cmd = &cmds[C_PRINT];
-			ex_pr(sp, ep, &parg);
+			cmd.cmd = &cmds[C_PRINT];
+			ex_pr(sp, ep, &cmd);
 			break;
 		}
 	}
@@ -772,21 +771,21 @@ linespec(sp, ep, cmd, cp)
 		case '/':		/* Search forward. */
 			sm.lno = sp->lno;
 			sm.cno = sp->cno;
-			if ((mp = f_search(sp, ep, &sm, cmd,
-			    &endp, SEARCH_MSG | SEARCH_PARSE)) == NULL)
+			if (f_search(sp, ep,
+			    &sm, &sm, cmd, &endp, SEARCH_MSG | SEARCH_PARSE))
 				return (NULL);
-			cur.lno = sp->lno = mp->lno;
-			cur.cno = sp->cno = mp->cno;
+			cur.lno = sp->lno = sm.lno;
+			cur.cno = sp->cno = sm.cno;
 			cmd = endp;
 			break;
 		case '?':		/* Search backward. */
 			sm.lno = sp->lno;
 			sm.cno = sp->cno;
-			if ((mp = b_search(sp, ep, &sm, cmd,
-			    &endp, SEARCH_MSG | SEARCH_PARSE)) == NULL)
+			if (b_search(sp, ep,
+			    &sm, &sm, cmd, &endp, SEARCH_MSG | SEARCH_PARSE))
 				return (NULL);
-			cur.lno = sp->lno = mp->lno;
-			cur.cno = sp->cno = mp->cno;
+			cur.lno = sp->lno = sm.lno;
+			cur.cno = sp->cno = sm.cno;
 			cmd = endp;
 			break;
 		case '.':		/* Current position. */

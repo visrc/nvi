@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.53 1993/03/26 13:39:23 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:39:23 $";
+static char sccsid[] = "$Id: options.c,v 5.54 1993/04/06 11:36:23 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:36:23 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -23,133 +23,118 @@ static char sccsid[] = "$Id: options.c,v 5.53 1993/03/26 13:39:23 bostic Exp $ (
 #include "vi.h"
 #include "excmd.h"
 
-static int	 opts_abbcmp __P((const void *, const void *));
-static int	 opts_cmp __P((const void *, const void *));
-static OPTIONS	*opts_prefix __P((char *));
-static int	 opts_print __P((SCR *, OPTIONS *));
+static int	 	 opts_abbcmp __P((const void *, const void *));
+static int	 	 opts_cmp __P((const void *, const void *));
+static OPTLIST const	*opts_prefix __P((char *));
+static int	 	 opts_print __P((SCR *, OPTLIST const *, OPTION *));
 
-static long	s_columns	= 80;
-static long	s_keytime	=  2;
-static long	s_lines		= 24;
-static long	s_report	=  5;
-static long	s_scroll	= 12;
-static long	s_shiftwidth	=  8;
-static long	s_sidescroll	= 16;
-static long	s_tabstop	=  8;
-static long	s_wrapmargin	=  0;
-
-OPTIONS opts[] = {
+static OPTLIST const optlist[] = {
 /* O_AUTOINDENT */
-	"autoindent",	NULL,		NULL,		OPT_0BOOL,
+	"autoindent",	NULL,		OPT_0BOOL,	0,
 /* O_AUTOPRINT */
-	"autoprint",	NULL,		NULL,		OPT_1BOOL,
+	"autoprint",	NULL,		OPT_1BOOL,	0,
 /* O_AUTOTAB */
-	"autotab",	NULL,		NULL,		OPT_1BOOL,
+	"autotab",	NULL,		OPT_1BOOL,	0,
 /* O_AUTOWRITE */
-	"autowrite",	NULL,		NULL,		OPT_0BOOL,
+	"autowrite",	NULL,		OPT_0BOOL,	0,
 /* O_BEAUTIFY */
-	"beautify",	NULL,		NULL,		OPT_0BOOL,
+	"beautify",	NULL,		OPT_0BOOL,	0,
 /* O_CC */
-	"cc",		"cc -c",	NULL,		OPT_STR,
+	"cc",		NULL,		OPT_STR,	0,
 /* O_COLUMNS */
-	"columns",	&s_columns,	f_columns,
-	    OPT_NOSAVE|OPT_NUM|OPT_REDRAW,
+	"columns",	f_columns,	OPT_NUM,	OPT_NOSAVE,
 /* O_COMMENT */
-	"comment",	NULL,		NULL,		OPT_0BOOL,
+	"comment",	NULL,		OPT_0BOOL,	0,
 /* O_DIGRAPH */
-	"digraph",	NULL,		NULL,		OPT_0BOOL,
+	"digraph",	NULL,		OPT_0BOOL,	0,
 /* O_DIRECTORY */
-	"directory",	_PATH_TMP,	NULL,		OPT_NOSAVE|OPT_STR,
+	"directory",	NULL,		OPT_STR,	OPT_NOSAVE,
 /* O_EDCOMPATIBLE */
-	"edcompatible",	NULL,		NULL,		OPT_0BOOL,
-/* O_EQUALPRG */
-	"equalprg",	"fmt",		NULL,		OPT_STR,
+	"edcompatible",	NULL,		OPT_0BOOL,	0,
 /* O_ERRORBELLS */
-	"errorbells",	NULL,		NULL,		OPT_0BOOL,
+	"errorbells",	NULL,		OPT_0BOOL,	0,
 /* O_EXRC */
-	"exrc",		NULL,		NULL,		OPT_0BOOL,
+	"exrc",		NULL,		OPT_0BOOL,	0,
 /* O_EXREFRESH */
-	"exrefresh",	NULL,		NULL,		OPT_1BOOL,
+	"exrefresh",	NULL,		OPT_1BOOL,	0,
 /* O_EXTENDED */
-	"extended",	NULL,		NULL,		OPT_0BOOL,
+	"extended",	NULL,		OPT_0BOOL,	0,
 /* O_FLASH */
-	"flash",	NULL,		f_flash,	OPT_1BOOL,
+	"flash",	f_flash,	OPT_0BOOL,	0,
 /* O_IGNORECASE */
-	"ignorecase",	NULL,		NULL,		OPT_0BOOL,
+	"ignorecase",	NULL,		OPT_0BOOL,	0,
 /* O_KEYTIME */
-	"keytime",	&s_keytime,	f_keytime,	OPT_NUM,
+	"keytime",	f_keytime,	OPT_NUM,	0,
 /* O_LEFTRIGHT */
-	"leftright",	NULL,		f_leftright,	OPT_0BOOL,
+	"leftright",	f_leftright,	OPT_0BOOL,	0,
 /* O_LINES */
-	"lines",	&s_lines,	f_lines,
-	    OPT_NOSAVE|OPT_NUM|OPT_REDRAW,
+	"lines",	f_lines,	OPT_NUM,	OPT_NOSAVE,
 /* O_LIST */
-	"list",		NULL,		f_list,		OPT_0BOOL|OPT_REDRAW,
+	"list",		f_list,		OPT_0BOOL,	0,
 /* O_MAGIC */
-	"magic",	NULL,		NULL,		OPT_1BOOL,
+	"magic",	NULL,		OPT_1BOOL,	0,
 /* O_MAKE */
-	"make",		"make",		NULL,		OPT_STR,
+	"make",		NULL,		OPT_STR,	0,
 /* O_MESG */
-	"mesg",		NULL,		f_mesg,		OPT_1BOOL,
+	"mesg",		f_mesg,		OPT_1BOOL,	0,
 /* O_MODELINES */
-	"modelines",	NULL,		f_modelines,	OPT_0BOOL,
+	"modelines",	f_modelines,	OPT_0BOOL,	0,
 /* O_NUMBER */
-	"number",	NULL,		NULL,		OPT_0BOOL|OPT_REDRAW,
+	"number",	NULL,		OPT_0BOOL,	0,
 /* O_NUNDO */
-	"nundo",	NULL,		NULL,		OPT_0BOOL,
+	"nundo",	NULL,		OPT_0BOOL,	0,
 /* O_OPTIMIZE */
-	"optimize",	NULL,		NULL,		OPT_1BOOL,
+	"optimize",	NULL,		OPT_1BOOL,	0,
 /* O_PARAGRAPHS */
-	"paragraphs",
-	    "IPLPPPQPP LIpplpipbp",	NULL,		OPT_STR,
+	"paragraphs",	NULL,		OPT_STR,	0,
 /* O_PROMPT */
-	"prompt",	NULL,		NULL,		OPT_1BOOL,
+	"prompt",	NULL,		OPT_1BOOL,	0,
 /* O_READONLY */
-	"readonly",	NULL,		NULL,		OPT_0BOOL,
+	"readonly",	NULL,		OPT_0BOOL,	0,
 /* O_REDRAW */
-	"redraw",	NULL,		NULL,		OPT_0BOOL,
+	"redraw",	NULL,		OPT_0BOOL,	0,
 /* O_REMAP */
-	"remap",	NULL,		NULL,		OPT_1BOOL,
+	"remap",	NULL,		OPT_1BOOL,	0,
 /* O_REPORT */
-	"report",	&s_report,	NULL,		OPT_NUM,
+	"report",	NULL,		OPT_NUM,	0,
 /* O_RULER */
-	"ruler",	NULL,		f_ruler,	OPT_0BOOL,
+	"ruler",	f_ruler,	OPT_0BOOL,	0,
 /* O_SCROLL */
-	"scroll",	&s_scroll,	NULL,		OPT_NUM,
+	"scroll",	NULL,		OPT_NUM,	0,
 /* O_SECTIONS */
-	"sections",	"NHSHH HUnhsh",	NULL,		OPT_STR,
+	"sections",	NULL,		OPT_STR,	0,
 /* O_SHELL */
-	"shell",	_PATH_BSHELL,	NULL,		OPT_STR,
+	"shell",	NULL,		OPT_STR,	0,
 /* O_SHIFTWIDTH */
-	"shiftwidth",	&s_shiftwidth,	f_shiftwidth,	OPT_NUM,
+	"shiftwidth",	f_shiftwidth,	OPT_NUM,	0,
 /* O_SHOWMATCH */
-	"showmatch",	NULL,		NULL,		OPT_0BOOL,
+	"showmatch",	NULL,		OPT_0BOOL,	0,
 /* O_SHOWMODE */
-	"showmode",	NULL,		NULL,		OPT_0BOOL,
+	"showmode",	NULL,		OPT_0BOOL,	0,
 /* O_SIDESCROLL */
-	"sidescroll",	&s_sidescroll,	f_sidescroll,	OPT_NUM,
+	"sidescroll",	f_sidescroll,	OPT_NUM,	0,
 /* O_SYNCCMD */
-	"sync",		NULL,		NULL,		OPT_0BOOL,
+	"sync",		NULL,		OPT_0BOOL,	0,
 /* O_TABSTOP */
-	"tabstop",	&s_tabstop,	f_tabstop,	OPT_NUM|OPT_REDRAW,
+	"tabstop",	f_tabstop,	OPT_NUM,	0,
 /* O_TAGS */
-	"tags",		NULL,		f_tags,		OPT_STR,
+	"tags",		f_tags,		OPT_STR,	0,
 /* O_TERM */
-	"term",		"unknown",	f_term,		OPT_NOSAVE|OPT_STR,
+	"term",		f_term,		OPT_STR,	OPT_NOSAVE,
 /* O_TERSE */
-	"terse",	NULL,		NULL,		OPT_0BOOL,
+	"terse",	NULL,		OPT_0BOOL,	0,
 /* O_TIMEOUT */
-	"timeout",	NULL,		NULL,		OPT_0BOOL,
+	"timeout",	NULL,		OPT_0BOOL,	0,
 /* O_VERBOSE */
-	"verbose",	NULL,		NULL,		OPT_0BOOL,
+	"verbose",	NULL,		OPT_0BOOL,	0,
 /* O_WARN */
-	"warn",		NULL,		NULL,		OPT_1BOOL,
+	"warn",		NULL,		OPT_1BOOL,	0,
 /* O_WRAPMARGIN */
-	"wrapmargin",	&s_wrapmargin,	f_wrapmargin,	OPT_NUM,
+	"wrapmargin",	f_wrapmargin,	OPT_NUM,	0,
 /* O_WRAPSCAN */
-	"wrapscan",	NULL,		NULL,		OPT_1BOOL,
+	"wrapscan",	NULL,		OPT_1BOOL,	0,
 /* O_WRITEANY */
-	"writeany",	NULL,		NULL,		OPT_0BOOL,
+	"writeany",	NULL,		OPT_0BOOL,	0,
 	NULL,
 };
 
@@ -158,7 +143,7 @@ typedef struct abbrev {
         int offset;
 } OABBREV;
 
-static OABBREV abbrev[] = {
+static OABBREV const abbrev[] = {
 	"ai",		O_AUTOINDENT,
 	"ap",		O_AUTOPRINT,
 	"at",		O_AUTOTAB,
@@ -170,7 +155,6 @@ static OABBREV abbrev[] = {
 	"dir",		O_DIRECTORY,
 	"eb",		O_ERRORBELLS,
 	"ed",		O_EDCOMPATIBLE,
-	"ep",		O_EQUALPRG,
 	"er",		O_EXREFRESH,
 	"fl",		O_FLASH,
 	"ic",		O_IGNORECASE,
@@ -210,35 +194,62 @@ static OABBREV abbrev[] = {
 /*
  * opts_init --
  *	Initialize some of the options.  Since the user isn't really
- *	"setting" these variables, we don't set their OPT_SET bits.
+ *	"setting" these variables, don't set their OPT_SET bits.
  */
 int
 opts_init(sp)
 	SCR *sp;
 {
+	OPTLIST const *op;
+	int cnt;
 	char *s, *argv[2], b1[1024];
-
-	(void)set_window_size(sp, 0);
 
 	argv[0] = b1;
 	argv[1] = NULL;
-							/* O_SCROLL */
-	(void)snprintf(b1, sizeof(b1), "sc=%ld", LVAL(O_LINES));
-	(void)opts_set(sp, argv);
-	FUNSET(O_SCROLL, OPT_SET);
 
-	if (s = getenv("SHELL")) {			/* O_SHELL */
-		(void)snprintf(b1, sizeof(b1), "shell=%s", s);
-		(void)opts_set(sp, argv);
-	}
-	FUNSET(O_SHELL, OPT_SET);
-							/* O_TAGS */
+#define	SET_DEF(opt, str) {						\
+	if (str != b1)		/* GCC puts strings in text-space. */	\
+		(void)strcpy(b1, str);					\
+	if (opts_set(sp, argv))						\
+		msgq(sp, M_ERROR,					\
+		    "Unable to set default %s option", optlist[opt]);	\
+	F_CLR(&sp->opts[opt], OPT_SET);					\
+}
+	/* Set default values. */
+	for (op = optlist, cnt = 0; op->name != NULL; ++op, ++cnt)
+		if (op->type == OPT_0BOOL)
+			O_CLR(sp, cnt);
+		else if (op->type == OPT_1BOOL)
+			O_SET(sp, cnt);
+			
+	SET_DEF(O_CC, "cc=cc -c");
+	(void)snprintf(b1, sizeof(b1), "directory=%s", _PATH_TMP);
+	SET_DEF(O_DIRECTORY, b1);
+	SET_DEF(O_KEYTIME, "keytime=2");
+	SET_DEF(O_MAKE, "make=make");
+	SET_DEF(O_REPORT, "report=5");
+	SET_DEF(O_PARAGRAPHS, "paragraphs=IPLPPPQPP LIpplpipbp");
+	(void)snprintf(b1, sizeof(b1), "scroll=%ld", O_VAL(sp, O_LINES) / 2);
+	SET_DEF(O_SCROLL, b1);
+	SET_DEF(O_SECTIONS, "sections=NHSHH HUnhsh");
+	(void)snprintf(b1, sizeof(b1),
+	    "shell=%s", (s = getenv("SHELL")) == NULL ? _PATH_BSHELL : s);
+	SET_DEF(O_SHELL, b1);
+	SET_DEF(O_SHIFTWIDTH, "shiftwidth=8");
+	SET_DEF(O_SIDESCROLL, "sidescroll=16");
+	SET_DEF(O_TABSTOP, "tabstop=8");
 	(void)snprintf(b1, sizeof(b1), "tags=%s", _PATH_TAGS);
-	(void)opts_set(sp, argv);
-	FUNSET(O_TAGS, OPT_SET);
+	SET_DEF(O_TAGS, b1);
+	(void)snprintf(b1, sizeof(b1),
+	    "term=%s", (s = getenv("TERM")) == NULL ? "unknown" : s);
+	SET_DEF(O_TERM, b1);
+	SET_DEF(O_WRAPMARGIN, "wrapmargin=0");
 
-	(void)f_flash(NULL, NULL, NULL);		/* O_FLASH */
-	FUNSET(O_FLASH, OPT_SET);
+	/*
+	 * By default, the historic vi displayed information about
+	 * two options, redraw and term.  Term seems sufficient.
+	 */
+	F_SET(&sp->opts[O_TERM], OPT_SET);
 	return (0);
 }
 
@@ -253,15 +264,17 @@ opts_set(sp, argv)
 {
 	register char *p;
 	OABBREV atmp, *ap;
-	OPTIONS otmp, *op;
-	long value;
-	int all, ch, off, rval;
+	OPTLIST const *op;
+	OPTLIST otmp;
+	OPTION *spo;
+	u_long value, turnoff;
+	int all, ch, offset, rval;
 	char *endp, *equals, *name;
 	
 	for (all = rval = 0; *argv; ++argv) {
 		/*
 		 * The historic vi dumped the options for each occurrence of
-		 * "all" in the set list.  Stupid.
+		 * "all" in the set list.  Puhleeze.
 		 */
 		if (!strcmp(*argv, "all")) {
 			all = 1;
@@ -282,7 +295,7 @@ opts_set(sp, argv)
 				break;
 			}
 
-		off = 0;
+		turnoff = 0;
 		op = NULL;
 		if (equals)
 			*equals++ = '\0';
@@ -292,20 +305,20 @@ opts_set(sp, argv)
 		if ((ap = bsearch(&atmp, abbrev,
 		    sizeof(abbrev) / sizeof(OABBREV) - 1,
 		    sizeof(OABBREV), opts_abbcmp)) != NULL) {
-			op = opts + ap->offset;
+			op = optlist + ap->offset;
 			goto found;
 		}
 
 		/* Check list of options. */
 		otmp.name = name;
-		if ((op = bsearch(&otmp, opts,
-		    sizeof(opts) / sizeof(OPTIONS) - 1,
-		    sizeof(OPTIONS), opts_cmp)) != NULL)
+		if ((op = bsearch(&otmp, optlist,
+		    sizeof(optlist) / sizeof(OPTLIST) - 1,
+		    sizeof(OPTLIST), opts_cmp)) != NULL)
 			goto found;
 
 		/* Try the name without any leading "no". */
 		if (name[0] == 'n' && name[1] == 'o') {
-			off = 1;
+			turnoff = 1;
 			name += 2;
 		} else
 			goto prefix;
@@ -315,34 +328,34 @@ opts_set(sp, argv)
 		if ((ap = bsearch(&atmp, abbrev,
 		    sizeof(abbrev) / sizeof(OABBREV) - 1,
 		    sizeof(OABBREV), opts_abbcmp)) != NULL) {
-			op = opts + ap->offset;
+			op = optlist + ap->offset;
 			goto found;
 		}
 
 		/* Check list of options. */
 		otmp.name = name;
-		if ((op = bsearch(&otmp, opts,
-		    sizeof(opts) / sizeof(OPTIONS) - 1,
-		    sizeof(OPTIONS), opts_cmp)) != NULL)
+		if ((op = bsearch(&otmp, optlist,
+		    sizeof(optlist) / sizeof(OPTLIST) - 1,
+		    sizeof(OPTLIST), opts_cmp)) != NULL)
 			goto found;
 
 		/* Check for prefix match. */
 prefix:		op = opts_prefix(name);
 
-found:		if (op == NULL || off && !ISFSETP(op, OPT_0BOOL|OPT_1BOOL)) {
+found:		if (op == NULL || turnoff &&
+		    (op->type != OPT_0BOOL && op->type != OPT_1BOOL)) {
 			msgq(sp, M_ERROR,
 			    "no option %s: 'set all' gives all option values",
 			    name);
 			continue;
 		}
 
-		/* Set name, value. */
-		if (ISFSETP(op, OPT_NOSET)) {
-			msgq(sp, M_ERROR, "%s: may not be set", name);
-			continue;
-		}
+		/* Find current option values. */
+		offset = op - optlist;
+		spo = sp->opts + offset;
 
-		switch (op->flags & OPT_TYPE) {
+		/* Set name, value. */
+		switch (op->type) {
 		case OPT_0BOOL:
 		case OPT_1BOOL:
 			if (equals) {
@@ -350,18 +363,18 @@ found:		if (op == NULL || off && !ISFSETP(op, OPT_0BOOL|OPT_1BOOL)) {
 				    "set: option [no]%s is a boolean", name);
 				break;
 			}
-			FUNSETP(op, OPT_0BOOL | OPT_1BOOL);
-			FSETP(op, (off ? OPT_0BOOL : OPT_1BOOL) | OPT_SET);
-			if (op->func && op->func(sp, &off, NULL)) {
-				rval = 1;
-				break;
-			}
-			goto draw;
+			if (op->func != NULL) {
+				if (op->func(sp, spo, NULL, turnoff))
+					rval = 1;
+			} else if (turnoff)
+				O_CLR(sp, offset);
+			else
+				O_SET(sp, offset);
+			break;
 		case OPT_NUM:
 			if (!equals) {
 				msgq(sp, M_ERROR,
-				    "set: option %s requires a value",
-				    name);
+				    "set: option %s requires a value", name);
 				break;
 			}
 			value = strtol(equals, &endp, 10);
@@ -370,35 +383,35 @@ found:		if (op == NULL || off && !ISFSETP(op, OPT_0BOOL|OPT_1BOOL)) {
 				    "set %s: illegal number %s", name, equals);
 				break;
 			}
-			if (op->func && op->func(sp, &value, equals)) {
-				rval = 1;
-				break;
+			if (op->func != NULL) {
+				if (op->func(sp, spo, equals, value))
+					rval = 1;
+			} else {
+				O_VAL(sp, offset) = value;
+				F_SET(&sp->opts[offset], OPT_SET);
 			}
-			LVALP(op) = value;
-			FSETP(op, OPT_SET);
-			goto draw;
+			break;
 		case OPT_STR:
 			if (!equals) {
 				msgq(sp, M_ERROR,
-				    "set: option %s requires a value",
-				    name);
+				    "set: option %s requires a value", name);
 				break;
 			}
-			if (op->func && op->func(sp, &value, equals)) {
-				rval = 1;
-				break;
+			if (op->func != NULL) {
+				if (op->func(sp, spo, equals, (u_long)0))
+					rval = 1;
+			} else {
+				if (F_ISSET(&sp->opts[offset], OPT_ALLOCATED))
+					free(O_STR(sp, offset));
+				if ((O_STR(sp, offset) =
+				    strdup(equals)) == NULL) {
+					msgq(sp, M_ERROR,
+					    "Error: %s", strerror(errno));
+					rval = 1;
+				} else
+					F_SET(&sp->opts[offset],
+					    OPT_ALLOCATED | OPT_SET);
 			}
-			if (ISFSETP(op, OPT_ALLOCATED))
-				free(op->value);
-			if ((op->value = strdup(equals)) == NULL) {
-				msgq(sp, M_ERROR,
-				    "Error: %s", strerror(errno));
-				rval = 1;
-				break;
-			}
-			FSETP(op, OPT_ALLOCATED | OPT_SET);
-draw:			if (ISFSETP(op, OPT_REDRAW))
-				F_SET(sp, S_REDRAW);
 			break;
 		default:
 			abort();
@@ -418,7 +431,7 @@ opts_dump(sp, all)
 	SCR *sp;
 	int all;
 {
-	OPTIONS *op;
+	OPTLIST const *op;
 	int base, b_num, chcnt, cnt, col, colwidth, curlen, endcol, s_num;
 	int numcols, numrows, row, tablen, termwidth;
 	int b_op[O_OPTIONCOUNT], s_op[O_OPTIONCOUNT];
@@ -434,25 +447,26 @@ opts_dump(sp, all)
 	 * and the full line length later on.
 	 */
 	colwidth = -1;
-	tablen = LVAL(O_TABSTOP);
+	tablen = O_VAL(sp, O_TABSTOP);
 	termwidth = (sp->cols - 1) / 2 & ~(tablen - 1);
-	for (b_num = s_num = 0, op = opts; op->name; ++op) {
-		if (!all && !ISFSETP(op, OPT_SET))
+	for (b_num = s_num = 0, op = optlist; op->name; ++op) {
+		cnt = op - optlist;
+		if (!all && !F_ISSET(&sp->opts[cnt], OPT_SET))
 			continue;
-		cnt = op - opts;
 		curlen = strlen(op->name);
-		switch (op->flags & OPT_TYPE) {
+		switch (op->type) {
 		case OPT_0BOOL:
-			curlen += 2;
-			break;
 		case OPT_1BOOL:
+			if (!O_ISSET(sp, cnt))
+				curlen += 2;
 			break;
 		case OPT_NUM:
-			(void)snprintf(nbuf, sizeof(nbuf), "%ld", LVAL(cnt));
+			(void)snprintf(nbuf,
+			    sizeof(nbuf), "%ld", O_VAL(sp, cnt));
 			curlen += strlen(nbuf);
 			break;
 		case OPT_STR:
-			curlen += strlen((char *)PVAL(cnt)) + 3;
+			curlen += strlen(O_STR(sp, cnt)) + 3;
 			break;
 		}
 		if (curlen < termwidth) {
@@ -476,7 +490,8 @@ opts_dump(sp, all)
 	for (row = 0; row < numrows;) {
 		endcol = colwidth;
 		for (base = row, chcnt = col = 0; col < numcols; ++col) {
-			chcnt += opts_print(sp, &opts[s_op[base]]);
+			chcnt += opts_print(sp,
+			    &optlist[s_op[base]], &sp->opts[s_op[base]]);
 			if ((base += numrows) >= s_num)
 				break;
 			while ((cnt =
@@ -491,7 +506,7 @@ opts_dump(sp, all)
 	}
 
 	for (row = 0; row < b_num;) {
-		(void)opts_print(sp, &opts[b_op[row]]);
+		(void)opts_print(sp, &optlist[b_op[row]], &sp->opts[b_op[row]]);
 		if (++row < b_num)
 			(void)putc('\n', sp->stdfp);
 	}
@@ -507,29 +522,37 @@ opts_save(sp, fp)
 	SCR *sp;
 	FILE *fp;
 {
-	OPTIONS *op;
+	OPTION *spo;
+	OPTLIST const *op;
+	int cnt;
 
-	for (op = opts; op->name; ++op) {
-		if (ISFSETP(op, OPT_NOSAVE))
+	for (spo = sp->opts, op = optlist; op->name; ++op) {
+		if (F_ISSET(op, OPT_NOSAVE))
 			continue;
-		switch (op->flags & OPT_TYPE) {
+		cnt = op - optlist;
+		switch (op->type) {
 		case OPT_0BOOL:
-			(void)fprintf(fp, "set no%s\n", op->name);
-			break;
 		case OPT_1BOOL:
-			(void)fprintf(fp, "set %s\n", op->name);
+			if (O_ISSET(sp, cnt))
+				(void)fprintf(fp, "set %s\n", op->name);
+			else
+				(void)fprintf(fp, "set no%s\n", op->name);
 			break;
 		case OPT_NUM:
 			(void)fprintf(fp,
-			    "set %s=%-3d\n", op->name, LVALP(op));
+			    "set %s=%-3d\n", op->name, O_VAL(sp, cnt));
 			break;
 		case OPT_STR:
 			(void)fprintf(fp,
-			    "set %s=\"%s\"\n", op->name, op->value);
+			    "set %s=\"%s\"\n", op->name, O_STR(sp, cnt));
 			break;
 		}
+		if (ferror(fp)) {
+			msgq(sp, M_ERROR, "I/O error: %s", strerror(errno));
+			return (1);
+		}
 	}
-	return (ferror(fp));
+	return (0);
 }
 
 /*
@@ -537,27 +560,30 @@ opts_save(sp, fp)
  *	Print out an option.
  */
 static int
-opts_print(sp, op)
+opts_print(sp, op, spo)
 	SCR *sp;
-	OPTIONS *op;
+	OPTLIST const *op;
+	OPTION *spo;
 {
-	int curlen;
+	int curlen, offset;
 
 	curlen = 0;
-	switch (op->flags & OPT_TYPE) {
+	offset = op - optlist;
+	switch (op->type) {
 	case OPT_0BOOL:
-		curlen += 2;
-		(void)putc('n', sp->stdfp);
-		(void)putc('o', sp->stdfp);
-		/* FALLTHROUGH */
 	case OPT_1BOOL:
+		if (!O_ISSET(sp, offset)) {
+			curlen += 2;
+			(void)putc('n', sp->stdfp);
+			(void)putc('o', sp->stdfp);
+		}
 		curlen += fprintf(sp->stdfp, "%s", op->name);
 		break;
 	case OPT_NUM:
 		curlen += fprintf(sp->stdfp, "%s", op->name);
 		curlen += 1;
 		(void)putc('=', sp->stdfp);
-		curlen += fprintf(sp->stdfp, "%ld", LVALP(op));
+		curlen += fprintf(sp->stdfp, "%ld", O_VAL(sp, offset));
 		break;
 	case OPT_STR:
 		curlen += fprintf(sp->stdfp, "%s", op->name);
@@ -565,7 +591,7 @@ opts_print(sp, op)
 		(void)putc('=', sp->stdfp);
 		curlen += 1;
 		(void)putc('"', sp->stdfp);
-		curlen += fprintf(sp->stdfp, "%s", op->value);
+		curlen += fprintf(sp->stdfp, "%s", O_STR(sp, offset));
 		curlen += 1;
 		(void)putc('"', sp->stdfp);
 		break;
@@ -575,24 +601,29 @@ opts_print(sp, op)
 
 /*
  * opts_prefix --
- *	Check to see if the name is the prefix of one (only one) option.
- *	If so, return that option.
+ *	Check to see if the name is the prefix of one (and only one)
+ *	option.  If so, return the option.
  */
-static OPTIONS *
+static OPTLIST const *
 opts_prefix(name)
 	char *name;
 {
-	OPTIONS *op, *save_op;
+	OPTLIST const *op, *save_op;
 	size_t len;
 
 	save_op = NULL;
 	len = strlen(name);
-	for (op = opts; op->name != NULL; ++op)
+	for (op = optlist; op->name != NULL; ++op) {
+		if (op->name[0] < name[0])
+			continue;
+		if (op->name[0] > name[0])
+			break;
 		if (!memcmp(op->name, name, len)) {
 			if (save_op != NULL)
 				return (NULL);
 			save_op = op;
 		}
+	}
 	return (save_op);
 }
 
@@ -607,5 +638,5 @@ static int
 opts_cmp(a, b)
         const void *a, *b;
 {
-        return(strcmp(((OPTIONS *)a)->name, ((OPTIONS *)b)->name));
+        return(strcmp(((OPTLIST *)a)->name, ((OPTLIST *)b)->name));
 }

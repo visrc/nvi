@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.52 1993/04/05 07:12:46 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:12:46 $";
+static char sccsid[] = "$Id: key.c,v 5.53 1993/04/06 11:36:34 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:36:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -23,6 +23,7 @@ static char sccsid[] = "$Id: key.c,v 5.52 1993/04/05 07:12:46 bostic Exp $ (Berk
 #include "vi.h"
 
 static void	check_sigwinch __P((SCR *));
+static void	onwinch __P((int));
 static int	ttyread __P((SCR *, char *, int, int));
 
 /*
@@ -110,7 +111,7 @@ getkey(sp, flags)
 	if (sp->mappedkey) {
 		ch = *sp->mappedkey;
 		if (*++sp->mappedkey == '\0') {
-			F_CLR(sp, S_SCREENWAIT);
+			F_CLR(sp, S_UPDATE_SCREEN);
 			sp->mappedkey = NULL;
 		}
 		goto ret;
@@ -153,7 +154,7 @@ retry:		qp = seq_find(sp, &sp->keybuf[sp->nextkey], sp->nkeybuf,
 				sp->nextkey = 0;
 				nr = ttyread(sp, sp->keybuf + sp->nkeybuf,
 				    sizeof(sp->keybuf) - sp->nkeybuf,
-				    (int)LVAL(O_KEYTIME));
+				    (int)O_VAL(sp, O_KEYTIME));
 				if (nr) {
 					sp->nkeybuf += nr;
 					goto retry;
@@ -163,7 +164,7 @@ retry:		qp = seq_find(sp, &sp->keybuf[sp->nextkey], sp->nkeybuf,
 			sp->nkeybuf -= qp->ilen;
 			sp->nextkey += qp->ilen;
 			sp->mappedkey = qp->output;
-			F_SET(sp, S_SCREENWAIT);
+			F_SET(sp, S_UPDATE_SCREEN);
 			ch = *sp->mappedkey++;
 			goto ret;
 		}
@@ -183,7 +184,7 @@ retry:		qp = seq_find(sp, &sp->keybuf[sp->nextkey], sp->nkeybuf,
 	 * O_BEAUTIFY eliminates all control characters except tab,
 	 * newline, form-feed and escape.
 	 */
-ret:	if (flags & GB_BEAUTIFY && ISSET(O_BEAUTIFY)) {
+ret:	if (flags & GB_BEAUTIFY && O_ISSET(sp, O_BEAUTIFY)) {
 		if (isprint(ch) || sp->special[ch] == K_ESCAPE ||
 		    sp->special[ch] == K_FORMFEED || sp->special[ch] == K_NL ||
 		    sp->special[ch] == K_TAB)
@@ -194,9 +195,8 @@ ret:	if (flags & GB_BEAUTIFY && ISSET(O_BEAUTIFY)) {
 	return (ch);
 }
 
-static int __check_sig_winch;				/* GLOBAL */
-static int __set_sig_winch;				/* GLOBAL */
-static void onwinch __P((int));
+static int __check_sig_winch;				/* XXX GLOBAL */
+static int __set_sig_winch;				/* XXX GLOBAL */
 
 static int
 ttyread(sp, buf, len, time)
@@ -205,8 +205,6 @@ ttyread(sp, buf, len, time)
 	int len;		/* max characters to read */
 	int time;		/* max tenth seconds to read */
 {
-	static enum { NOTSET, YES, NO } isfromtty = NOTSET;
-	static fd_set rd;
 	struct timeval t, *tp;
 	int nr, sval;
 
@@ -217,19 +215,10 @@ ttyread(sp, buf, len, time)
 	}
 
 	/*
-	 * Set if reading from a tty or not on the first entry.  Zero out
-	 * the file descriptor array.
-	 */
-	if (isfromtty == NOTSET) {
-		FD_ZERO(&rd);
-		isfromtty = isatty(STDIN_FILENO) ? YES : NO;
-	}
-
-	/*
 	 * If reading from a file or pipe, never timeout.  This
 	 * also affects the way that EOF is detected.
 	 */
-	if (isfromtty == NO) {
+	if (!F_ISSET(sp, S_ISFROMTTY)) {
 		if ((nr = read(STDIN_FILENO, buf, len)) == 0)
 			F_SET(sp, S_EXIT_FORCE);
 		return (0);
@@ -244,10 +233,9 @@ ttyread(sp, buf, len, time)
 		tp = NULL;
 
 	/* Select until characters become available, and then read them. */
-	FD_SET(STDIN_FILENO, &rd);
-
+	FD_SET(STDIN_FILENO, &sp->rdfd);
 	for (;;) {
-		sval = select(1, &rd, NULL, NULL, tp);
+		sval = select(1, &sp->rdfd, NULL, NULL, tp);
 		switch (sval) {
 		case -1:			/* Error. */
 			/* It's okay to be interrupted. */

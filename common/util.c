@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 5.33 1993/04/05 07:12:48 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:12:48 $";
+static char sccsid[] = "$Id: util.c,v 5.34 1993/04/06 11:36:35 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:36:35 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -65,31 +65,9 @@ msgq(sp, flags, fmt, va_alist)
 		F_SET(sp, S_BELLSCHED);
 
 	/* If extra information message, check user's wishes. */
-	if (!(flags & (M_DISPLAY | M_ERROR)) && !ISSET(O_VERBOSE))
-		goto done;
-
-	/*
-	 * Save the message.  If we don't have any memory, this
-	 * can fail, but what's a mother to do?
-	 */
-	if (sp->msgp == NULL) {
-		if ((sp->msgp = malloc(sizeof(MSG))) == NULL)
-			goto done;
-		mp = sp->msgp;
-		mp->next = NULL;
-		mp->mbuf = NULL;
-		mp->blen = 0;
-	} else {
-		for (mp = sp->msgp;
-		    mp->len && mp->next != NULL; mp = mp->next);
-		if (mp->len) {
-			if ((mp->next = malloc(sizeof(MSG))) == NULL)
-				goto done;
-			mp = mp->next;
-			mp->next = NULL;
-			mp->mbuf = NULL;
-			mp->blen = 0;
-		}
+	if (!(flags & (M_DISPLAY | M_ERROR)) && !O_ISSET(sp, O_VERBOSE)) {
+		F_CLR(sp, S_MSGREENTER);
+		return;
 	}
 
 	/* Length is the min length of the message or the buffer. */
@@ -99,14 +77,70 @@ msgq(sp, flags, fmt, va_alist)
 	else
 		++len;
 
+	msga(NULL, sp, flags, msgbuf, len);
+
+	F_CLR(sp, S_MSGREENTER);
+}
+
+/*
+ * msga --
+ *	Append a message into the queue.  This can fail, but there's
+ *	absolutely nothing we can do if it does.
+ */
+void
+msga(gp, sp, flags, p, len)
+	GS *gp;
+	SCR *sp;
+	u_int flags;
+	char *p;
+	size_t len;
+{
+	MSG *mp;
+	int new;
+
+	/*
+	 * Find an empty structure, or allocate a new one.  Use the
+	 * screen structure if possible, otherwise the global one.
+	 */
+	new = 0;
+	if (sp != NULL)
+		if (sp->msgp == NULL) {
+			if ((sp->msgp = malloc(sizeof(MSG))) == NULL)
+				return;
+			new = 1;
+			mp = sp->msgp;
+		} else {
+			mp = sp->msgp;
+			goto loop;
+		}
+	else if (gp->msgp == NULL) {
+		if ((gp->msgp = malloc(sizeof(MSG))) == NULL)
+			return;
+		mp = gp->msgp;
+		new = 1;
+	} else {
+		mp = gp->msgp;
+loop:		for (;
+		    !F_ISSET(mp, M_EMPTY) && mp->next != NULL; mp = mp->next);
+		if (!F_ISSET(mp, M_EMPTY)) {
+			if ((mp->next = malloc(sizeof(MSG))) == NULL)
+				return;
+			mp = mp->next;
+			new = 1;
+		}
+	}
+
+	/* Initialize new structures. */
+	if (new)
+		memset(mp, 0, sizeof(MSG));
+
 	/* Store the message. */
 	if (len > mp->blen && binc(sp, &mp->mbuf, &mp->blen, len))
-		goto done;
-	memmove(mp->mbuf, msgbuf, len);
+		return;
+
+	memmove(mp->mbuf, p, len);
 	mp->len = len;
 	mp->flags = flags;
-
-done:	F_CLR(sp, S_MSGREENTER);
 }
 
 /*
@@ -115,7 +149,7 @@ done:	F_CLR(sp, S_MSGREENTER);
  */
 int
 binc(sp, argp, bsizep, min)
-	SCR *sp;
+	SCR *sp;			/* MAY BE NULL */
 	void *argp;
 	size_t *bsizep, min;
 {
@@ -136,7 +170,8 @@ binc(sp, argp, bsizep, min)
 	else
 		bpp = realloc(bpp, csize);
 	if (bpp == NULL) {
-		msgq(sp, M_ERROR, "Error: %s.", strerror(errno));
+		if (sp != NULL)
+			msgq(sp, M_ERROR, "Error: %s.", strerror(errno));
 		*bsizep = 0;
 		return (1);
 	}

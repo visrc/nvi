@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 5.31 1993/04/05 07:11:44 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:11:44 $";
+static char sccsid[] = "$Id: ex_read.c,v 5.32 1993/04/06 11:37:18 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:37:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -132,7 +132,6 @@ ex_readfp(sp, ep, fname, fp, fm, cntp)
 	size_t len;
 	recno_t lno;
 	int rval;
-	char *p;
 
 	/*
 	 * There is one very nasty special case.  The historic vi code displays
@@ -152,8 +151,8 @@ ex_readfp(sp, ep, fname, fp, fm, cntp)
 	 * following the address.
 	 */
 	rval = 0;
-	for (lno = fm->lno; p = ex_getline(sp, fp, &len); ++lno)
-		if (file_aline(sp, ep, lno, p, len)) {
+	for (lno = fm->lno; !ex_getline(sp, fp, &len); ++lno)
+		if (file_aline(sp, ep, lno, sp->ibp, len)) {
 			rval = 1;
 			break;
 		}

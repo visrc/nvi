@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 5.2 1993/04/05 07:12:31 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:12:31 $
+ *	$Id: gs.h,v 5.3 1993/04/06 11:36:20 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:36:20 $
  */
 
 #include <termios.h>
@@ -18,6 +18,8 @@ typedef struct _gs {
 	struct termios
 		 original_termios;	/* Original terminal values. */
 
+	struct _msg	*msgp;		/* User message list. */
+
 	char	*tmp_bp;		/* Temporary buffer. */
 	size_t	 tmp_blen;		/* Size of temporary buffer. */
 
@@ -29,3 +31,5 @@ typedef struct _gs {
 #define	G_TMP_INUSE	0x02		/* Temporary buffer in use. */
 	u_int	 flags;
 } GS;
+
+extern GS *__global_list;		/* List of screens. */

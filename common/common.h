@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 5.44 1993/04/05 07:12:50 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:12:50 $
+ *	$Id: common.h,v 5.45 1993/04/06 11:36:37 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:36:37 $
  */
 
 #include <db.h>				/* Ordered before local includes. */
@@ -18,6 +18,7 @@
  * are far too interrelated for a clean solution.
  */
 struct _cb;
+struct _excmdlist;
 struct _exf;
 struct _gs;
 struct _hdr;
@@ -31,12 +32,13 @@ struct _tag;
 struct _tagf;
 struct _text;
 
-#include "hdr.h"			/* Insert before local includes. */
+#include "hdr.h"			/* Include before local includes. */
 
-#include "mark.h"			/* Insert before cut.h. */
+#include "mark.h"			/* Include before cut.h. */
 #include "cut.h"
 
-#include "search.h"			/* Insert before screen.h. */
+#include "search.h"			/* Include before screen.h. */
+#include "options.h"			/* Include before screen.h. */
 #include "screen.h"
 
 #include "char.h"
@@ -44,7 +46,6 @@ struct _text;
 #include "gs.h"
 #include "log.h"
 #include "msg.h"
-#include "options.h"
 #include "pathnames.h"
 #include "seq.h"
 #include "term.h"

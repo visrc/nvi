@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 5.26 1993/04/05 07:11:42 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:11:42 $";
+static char sccsid[] = "$Id: ex_print.c,v 5.27 1993/04/06 11:37:18 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:37:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -153,7 +153,7 @@ ex_print(sp, ep, fp, tp, flags)
 				ch &= 0x7f;
 				if (ch == '\t') {
 					while (col < sp->cno &&
-					    ++col % LVAL(O_TABSTOP))
+					    ++col % O_VAL(sp, O_TABSTOP))
 						(void)putc(' ', sp->stdfp);
 					if (col == sp->cno) {
 						col = 0;

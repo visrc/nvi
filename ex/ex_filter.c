@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 5.29 1993/04/05 07:12:29 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:12:29 $";
+static char sccsid[] = "$Id: ex_filter.c,v 5.30 1993/04/06 11:36:19 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:36:19 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -118,13 +118,13 @@ err:		if (input[0] != -1)
 			(void)close(output[0]);
 		(void)close(output[1]);
 
-		if ((name = strrchr((char *)PVAL(O_SHELL), '/')) == NULL)
-			name = (char *)PVAL(O_SHELL);
+		if ((name = strrchr(O_STR(sp, O_SHELL), '/')) == NULL)
+			name = O_STR(sp, O_SHELL);
 		else
 			++name;
-		execl((char *)PVAL(O_SHELL), name, "-c", cmd, NULL);
+		execl(O_STR(sp, O_SHELL), name, "-c", cmd, NULL);
 		msgq(sp, M_ERROR,
-		    "exec: %s: %s", PVAL(O_SHELL), strerror(errno));
+		    "exec: %s: %s", O_STR(sp, O_SHELL), strerror(errno));
 		_exit (1);
 		/* NOTREACHED */
 	}

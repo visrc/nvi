@@ -12,13 +12,14 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.58 1993/04/05 07:12:36 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:12:36 $";
+static char sccsid[] = "$Id: main.c,v 5.59 1993/04/06 11:36:20 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:36:20 $";
 #endif /* not lint */
 
 #include <sys/param.h>
 #include <sys/stat.h>
 
 #include <ctype.h>
+#include <err.h>
 #include <errno.h>
 #include <setjmp.h>
 #include <signal.h>
@@ -36,11 +37,12 @@ static char sccsid[] = "$Id: main.c,v 5.58 1993/04/05 07:12:36 bostic Exp $ (Ber
 #include "vi.h"
 #include "excmd.h"
 
-static void err __P((const char *, ...));
-static void msgflush __P((SCR *));
+static void msgflush __P((GS *));
 static void obsolete __P((char *[]));
-static void reset __P((SCR *));
+static void reset __P((GS *));
 static void usage __P((void));
+
+GS *__global_list;			/* GLOBAL: List of screens. */
 
 int
 main(argc, argv)
@@ -49,7 +51,7 @@ main(argc, argv)
 {
 	extern int optind;
 	extern char *optarg;
-	static int reenter;
+	static int reenter;		/* STATIC: Re-entrancy check. */
 	EXCMDARG cmd;
 	GS *gp;
 	SCR *nextsp, *sp;
@@ -70,21 +72,27 @@ main(argc, argv)
 
 	/* Build and initialize the GS structure. */
 	if ((gp = malloc(sizeof(GS))) == NULL)
-		err("%s", strerror(errno));
+		err(1, NULL);
+	__global_list = gp;
 	memset(gp, 0, sizeof(GS));
 	HDR_INIT(gp->scrhdr, next, prev, SCR);
 	HDR_INIT(gp->exfhdr, next, prev, EXF);
 	if (tcgetattr(STDIN_FILENO, &gp->original_termios))
-		err("%s: tcgetattr: %s", myname, strerror(errno));
+		err(1, "tcgetattr");
 		
-	/* Build and initialize the current screen. */
+	/* Build and initialize the first/current screen. */
 	if ((sp = malloc(sizeof(SCR))) == NULL)
-		err("%s", strerror(errno));
-	if (scr_def(NULL, sp))
-		goto err1;
+		err(1, NULL);
+	if (scr_init(NULL, sp))
+		err(1, NULL);
 	sp->gp = gp;		/* All screens point to the GS structure. */
 	HDR_INIT(sp->seqhdr, next, prev, SEQ);
 	HDR_APPEND(sp, (SCR *)&gp->scrhdr, next, prev, SCR);
+
+	set_window_size(sp, 0);	/* Set the window size. */
+
+	if (opts_init(sp))	/* Options initialization. */
+		goto err1;
 
 	if (key_special(sp))	/* Keymaps. */
 		goto err1;
@@ -92,16 +100,11 @@ main(argc, argv)
 	if (digraph_init(sp))	/* Digraph initialization. */
 		goto err1;
 #endif
-	if (opts_init(sp))	/* Options initialization. */
-		goto err1;
-
-	set_window_size(sp, 0);	/* Set the window size. */
-
 	/* Set screen mode based on the program name. */
 	if (!strcmp(myname, "ex") || !strcmp(myname, "nex"))
 		F_SET(sp, S_MODE_EX);
 	else if (!strcmp(myname, "view")) {
-		SET(O_READONLY)
+		O_SET(sp, O_READONLY);
 		F_SET(sp, S_MODE_VI);
 	} else
 		F_SET(sp, S_MODE_VI);
@@ -125,15 +128,14 @@ main(argc, argv)
 			break;
 #endif
 		case 'R':		/* Readonly. */
-			SET(O_READONLY);
+			O_SET(sp,O_READONLY);
 			break;
 		case 'r':		/* Recover. */
-			err("%s: recover option not yet implemented", myname);
+			errx(1, "recover option not yet implemented");
 #ifdef DEBUG
 		case 'T':		/* Trace. */
 			if ((gp->tracefp = fopen(optarg, "w")) == NULL)
-				err("%s: %s: %s",
-				    myname, optarg, strerror(errno));
+				err(1, "%s", optarg);
 			(void)fprintf(gp->tracefp,
 			    "\n===\ntrace: open %s\n", optarg);
 			break;
@@ -164,7 +166,7 @@ main(argc, argv)
 		(void)snprintf(path, sizeof(path), "%s/.exrc", p);
 		(void)ex_cfile(sp, NULL, path, 0);
 	}
-	if (ISSET(O_EXRC))
+	if (O_ISSET(sp, O_EXRC))
 		(void)ex_cfile(sp, NULL, _PATH_EXRC, 0);
 
 	/* Source the EXINIT environment variable. */
@@ -289,7 +291,8 @@ main(argc, argv)
 				else if (sp->child != NULL)
 					nextsp = sp->child;
 			if (nextsp != NULL) {
-				(void)sp->end(sp);
+				if (sp->end(sp) || scr_end(sp))
+					goto err1;
 				sp = nextsp;
 				F_CLR(sp, S_EXIT | S_EXIT_FORCE);
 			}
@@ -297,7 +300,7 @@ main(argc, argv)
 		    mode == (sp->flags & (S_MODE_EX | S_MODE_VI)));
 
 		/* End the screen. */
-		if (sp->end(sp))
+		if (sp->end(sp) || scr_end(sp))
 			goto err1;
 
 	} while (!F_ISSET(sp, S_EXIT | S_EXIT_FORCE));
@@ -307,13 +310,13 @@ main(argc, argv)
 err1:		eval = 1;
 
 	/* Reset anything that needs resetting. */
-	reset(sp);
+	reset(gp);
 
 	/* Flush any left-over error messages. */
-	msgflush(sp);
+	msgflush(gp);
 
 	if (tcsetattr(STDIN_FILENO, TCSADRAIN, &gp->original_termios))
-		err("tcsetattr: %s", strerror(errno));
+		err(1, "tcsetattr");
 	exit(eval);
 }
 
@@ -322,17 +325,16 @@ err1:		eval = 1;
  *	Reset any changed global state.
  */
 static void
-reset(sp)
-	SCR *sp;
+reset(gp)
+	GS *gp;
 {
 	char *tty;
 
-	if (sp->gp->flags & G_SETMODE) {			/* O_MESG */
+	if (gp->flags & G_SETMODE)			/* O_MESG */
 		if ((tty = ttyname(STDERR_FILENO)) == NULL)
-			msgq(sp, M_ERROR, "ttyname: %s", strerror(errno));
-		else if (chmod(tty, sp->gp->origmode) < 0)
-			msgq(sp, M_ERROR, "%s: %s", strerror(errno));
-	}
+			warn("ttyname");
+		else if (chmod(tty, gp->origmode) < 0)
+			warn("%s", tty);
 }
 
 /*
@@ -340,18 +342,18 @@ reset(sp)
  *	Flush any remaining messages.
  */
 static void
-msgflush(sp)
-	SCR *sp;
+msgflush(gp)
+	GS *gp;
 {
 	MSG *mp;
 
 	/* Ring the bell. */
-	if (F_ISSET(sp, S_BELLSCHED))
+	if (F_ISSET(gp, S_BELLSCHED))
 		(void)fprintf(stderr, "\07");		/* \a */
 
 	/* Display the messages. */
-	for (mp = sp->msgp;
-	    mp != NULL && !(mp->flags & M_EMPTY); mp = mp->next) 
+	for (mp = gp->msgp;
+	    mp != NULL && !(F_ISSET(mp, M_EMPTY)); mp = mp->next) 
 		(void)fprintf(stderr, "%.*s\n", mp->len, mp->mbuf);
 }
 
@@ -374,13 +376,13 @@ obsolete(argv)
 		if (argv[0][0] == '+')
 			if (argv[0][1] == '\0') {
 				if ((argv[0] = malloc(4)) == NULL)
-					err("%s: %s", myname, strerror(errno));
+					err(1, NULL);
 				memmove(argv[0], "-c$", 4);
 			} else if (argv[0][1] == '/') {
 				p = argv[0];
 				len = strlen(argv[0]);
 				if ((argv[0] = malloc(len + 3)) == NULL)
-					err("%s: %s", myname, strerror(errno));
+					err(1, NULL);
 				argv[0][0] = '-';
 				argv[0][1] = 'c';
 				(void)strcpy(argv[0] + 2, p + 1);
@@ -388,7 +390,7 @@ obsolete(argv)
 				p = argv[0];
 				len = strlen(argv[0]);
 				if ((argv[0] = malloc(len + 3)) == NULL)
-					err("%s: %s", myname, strerror(errno));
+					err(1, NULL);
 				argv[0][0] = '-';
 				argv[0][1] = 'c';
 				argv[0][2] = ':';
@@ -402,26 +404,5 @@ usage()
 {
 	(void)fprintf(stderr,
 	    "usage: vi [-eRrv] [-c command] [-m file] [-t tag]\n");
-	exit(1);
-}
-
-void
-#if __STDC__
-err(const char *fmt, ...)
-#else
-err(fmt, va_alist)
-	char *fmt;
-	va_dcl
-#endif
-{
-	va_list ap;
-#if __STDC__
-	va_start(ap, fmt);
-#else
-	va_start(ap);
-#endif
-	(void)vfprintf(stderr, fmt, ap);
-	va_end(ap);
-	(void)fprintf(stderr, "\n");
 	exit(1);
 }

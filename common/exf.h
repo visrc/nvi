@@ -4,8 +4,9 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 5.42 1993/04/05 07:12:27 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:12:27 $
+ *	$Id: exf.h,v 5.43 1993/04/06 11:36:17 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:36:17 $
  */
+
 					/* Undo direction. */
 enum udirection { UBACKWARD, UFORWARD };
 
@@ -57,7 +58,7 @@ typedef struct _exf {
 } EXF;
 
 #define	AUTOWRITE(sp, ep) {						\
-	if (F_ISSET(ep, F_MODIFIED) && ISSET(O_AUTOWRITE) &&		\
+	if (F_ISSET(ep, F_MODIFIED) && O_ISSET(sp, O_AUTOWRITE) &&	\
 	    file_sync(sp, ep, 0))					\
 		return (1);						\
 }
@@ -70,7 +71,7 @@ typedef struct _exf {
 
 #define	MODIFY_CHECK(sp, ep, force) {					\
 	if (F_ISSET(ep, F_MODIFIED))					\
-		if (ISSET(O_AUTOWRITE)) {				\
+		if (O_ISSET(sp, O_AUTOWRITE)) {				\
 			if (file_sync((sp), (ep), (force)))		\
 				return (1);				\
 		} else if (!(force)) {					\
@@ -81,7 +82,7 @@ typedef struct _exf {
 }
 
 #define	MODIFY_WARN(sp, ep) {						\
-	if (F_ISSET(ep, F_MODIFIED) && ISSET(O_WARN))			\
+	if (F_ISSET(ep, F_MODIFIED) && O_ISSET(sp, O_WARN))		\
 		msgq(sp, M_ERROR, "Modified since last write.");	\
 }
 

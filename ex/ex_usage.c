@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_usage.c,v 5.8 1993/04/05 07:11:53 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:11:53 $";
+static char sccsid[] = "$Id: ex_usage.c,v 5.9 1993/04/06 11:37:27 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:37:27 $";
 #endif /* not lint */
 
 #include <string.h>
@@ -49,7 +49,7 @@ ex_viusage(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	VIKEYS *kp;
+	VIKEYS const *kp;
 	int key;
 
 	key = *cmdp->argv[0];

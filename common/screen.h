@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 5.25 1993/04/05 07:12:38 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:12:38 $
+ *	$Id: screen.h,v 5.26 1993/04/06 11:36:30 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:36:30 $
  */
 
 /*
@@ -14,8 +14,8 @@
  * for the curses screen version of the vi screen, (1 for the line, 1 for
  * the error messages) changing the minimum columns is a lot trickier.  For
  * example, you have to have enough columns to display the line number, not
- * to mention the tabstop and shiftwidth values.  It's a lot simpler to have
- * a fixed value and not worry about it.
+ * to mention guaranteeing that the tabstop and shiftwidth values are smaller.
+ * It's a lot simpler to have a fixed value and not worry about it.
  */
 #define	MINIMUM_SCREEN_ROWS	 4		/* XXX Should be 2. */
 #define	MINIMUM_SCREEN_COLS	20
@@ -117,16 +117,26 @@ typedef struct _scr {
 	size_t	 exlinecount;		/* Ex/vi overwrite count. */
 	size_t	 extotalcount;		/* Ex/vi overwrite count. */
 	size_t	 exlcontinue;		/* Ex/vi line continue value. */
-
+#ifdef FWOPEN_NOT_AVAILABLE
+	int	 trapped_fd;		/* Ex/vi trapped file descriptor. */
+#endif
 					/* Ex/vi: terminal input. */
 	char	*gb_cb;			/* Input character buffer. */
 	char	*gb_qb;			/* Input character quote buffer. */
 	u_char	*gb_wb;			/* Input character widths buffer. */
 	size_t	 gb_len;		/* Input character buffer length. */
+
 	u_int	 nkeybuf;		/* # of keys in the input buffer. */
 	char	*mappedkey;		/* Mapped key return. */
 	u_int	 nextkey;		/* Index of next key in keybuf. */
 	char	 keybuf[256];		/* Key buffer. */
+
+	fd_set	 rdfd;			/* Ex/vi: read fd select mask. */
+
+	char	*ibp;			/* Ex: line input buffer. */
+	size_t	 ibp_len;		/* Line input buffer length. */
+
+	struct _excmdlist *lastcmd;	/* Ex: last command. */
 
 /* PARTIALLY OR COMPLETELY COPIED FROM PREVIOUS SCREEN. */
 	struct _gs	*gp;		/* Pointer to global area. */
@@ -146,11 +156,18 @@ typedef struct _scr {
 	struct _tagf   **tfhead;	/* List of tag files. */
 	char	*tlast;			/* Last tag. */
 
-					/* Ex/vi: search information. */
-	enum direction searchdir;	/* File search direction. */
-	enum cdirection csearchdir;	/* Character search direction. */
+					/* Ex/vi: search/substitute info. */
+	enum direction	searchdir;	/* File search direction. */
 	regex_t	 sre;			/* Last search RE. */
+	enum cdirection	csearchdir;	/* Character search direction. */
 	u_char	 lastckey;		/* Last search character. */
+	regmatch_t     *match;		/* Substitute match array. */
+	size_t	 matchsize;		/* Substitute match array size. */
+	char	*repl;			/* Substitute replacement. */
+	size_t	 repl_len;		/* Substitute replacement length.*/
+	size_t	*newl;			/* Newline offset array. */
+	size_t	 newl_len;		/* Newline array size. */
+	size_t	 newl_cnt;		/* Newlines in replacement. */
 
 	struct _chname *cname;		/* Display names of characters. */
 	u_char	 special[UCHAR_MAX];	/* Special character array. */
@@ -170,10 +187,11 @@ typedef struct _scr {
 					/* Ex at key stack. */
 	u_char	 exat_stack[UCHAR_MAX + 1];
 
+	OPTION	 opts[O_OPTIONCOUNT];	/* Ex/vi: options. */
+
 /*
  * SCREEN SUPPORT ROUTINES.
- * This is the set of routines that have to be replaced to add a new
- * screen to the editor.
+ * This is the set of routines that have to be written to add a screen.
  */
 	void	 (*bell) __P((struct _scr *));
 	int	 (*change) __P((struct _scr *,
@@ -206,13 +224,9 @@ typedef struct _scr {
 #define	S_FSWITCH	0x0000010	/* Switch files (not forced). */
 #define	S_FSWITCH_FORCE	0x0000020	/* Switch files (forced). */
 #define	S_SSWITCH	0x0000040	/* Switch screens. */
-#define	__UNUSED	0x0000080	/* Unused. */
-					/* File change mask. */
-#define	S_FILE_CHANGED \
+#define	__S_SPARE	0x0000080	/* Unused. */
+#define	S_FILE_CHANGED			/* File change mask. */ \
 	(S_EXIT | S_EXIT_FORCE | S_FSWITCH | S_FSWITCH_FORCE | S_SSWITCH)
-					/* Retain over screen create. */
-#define	S_SCREEN_RETAIN \
-	(S_MODE_EX | S_MODE_VI)
 
 #define	S_ABBREV	0x0000100	/* If have abbreviations. */
 #define	S_AUTOPRINT	0x0000200	/* Autoprint flag. */
@@ -221,17 +235,24 @@ typedef struct _scr {
 #define	S_CUR_INVALID	0x0001000	/* Cursor position is wrong. */
 #define	S_IN_GLOBAL	0x0002000	/* Doing a global command. */
 #define	S_INPUT		0x0004000	/* Doing text input. */
-#define	S_MSGREENTER	0x0008000	/* If msg routine reentered. */
-#define	S_RE_SET	0x0010000	/* The file's RE has been set. */
-#define	S_REDRAW	0x0020000	/* Redraw the screen. */
-#define	S_REFORMAT	0x0040000	/* Reformat the lines. */
-#define	S_REFRESH	0x0080000	/* Refresh the screen. */
-#define	S_RESIZE	0x0100000	/* Resize the screen. */
-#define	S_SCHED_UPDATE	0x0200000	/* Erase modeline after keystroke. */
-#define	S_SCREENWAIT	0x0400000	/* Hold messages for awhile. */
+#define	S_ISFROMTTY	0x0008000	/* Reading from a tty. */
+#define	S_MSGREENTER	0x0010000	/* If msg routine reentered. */
+#define	S_RE_SET	0x0020000	/* The file's RE has been set. */
+#define	S_REDRAW	0x0040000	/* Redraw the screen. */
+#define	S_REFORMAT	0x0080000	/* Reformat the lines. */
+#define	S_REFRESH	0x0100000	/* Refresh the screen. */
+#define	S_RESIZE	0x0200000	/* Resize the screen. */
+#define	S_UPDATE_MODE	0x0400000	/* Don't repaint modeline. */
+#define	S_UPDATE_SCREEN	0x0800000	/* Don't repaint screen. */
+
+#define	S_SCREEN_RETAIN			/* Retain over screen create. */ \
+	(S_MODE_EX | S_MODE_VI | S_ISFROMTTY)
+
 	u_int flags;
 } SCR;
 
 /* Public interfaces to the screens. */
+int	scr_end __P((struct _scr *));
+int	scr_init __P((struct _scr *, struct _scr *));
 int	sex_init __P((struct _scr *, struct _exf *));
 int	svi_init __P((struct _scr *, struct _exf *));
