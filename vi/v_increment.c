@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_increment.c,v 5.18 1993/02/28 14:01:47 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:01:47 $";
+static char sccsid[] = "$Id: v_increment.c,v 5.19 1993/03/25 15:01:14 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:01:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -20,9 +20,7 @@ static char sccsid[] = "$Id: v_increment.c,v 5.18 1993/02/28 14:01:47 bostic Exp
 #include "vi.h"
 #include "vcmd.h"
 
-static int lastch = '+';
-static int lastcnt = 1;
-static char *fmt[] = {
+static char * const fmt[] = {
 #define	DEC	0
 	"%.*ld",
 #define	SDEC	1
@@ -40,7 +38,8 @@ static char *fmt[] = {
  *	Increment/decrement a keyword number.
  */
 int
-v_increment(ep, vp, fm, tm, rp)
+v_increment(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
@@ -54,17 +53,17 @@ v_increment(ep, vp, fm, tm, rp)
 
 	/* Do repeat operations. */
 	if (vp->character == '#')
-		vp->character = lastch;
+		vp->character = sp->inc_lastch;
 
 	/* Get new value. */
 	if (vp->flags & VC_C1SET)
-		lastcnt = vp->count;
+		sp->inc_lastval = vp->count;
 
 	if (vp->character != '+' && vp->character != '-') {
-		ep->msg(ep, M_ERROR, "usage: %s.", vp->kp->usage);
+		msgq(sp, M_ERROR, "usage: %s.", vp->kp->usage);
 		return (1);
 	}
-	lastch = vp->character;
+	sp->inc_lastch = vp->character;
 
 	/* Figure out the resulting type and number. */
 	p = (u_char *)vp->keyword;
@@ -72,14 +71,14 @@ v_increment(ep, vp, fm, tm, rp)
 	if (len > 1 && p[0] == '0') {
 		if (vp->character == '+') {
 			ulval = strtoul(vp->keyword, NULL, 0);
-			if (ULONG_MAX - ulval < lastcnt)
+			if (ULONG_MAX - ulval < sp->inc_lastval)
 				goto overflow;
-			ulval += lastcnt;
+			ulval += sp->inc_lastval;
 		} else {
 			ulval = strtoul(vp->keyword, NULL, 0);
-			if (ulval < lastcnt)
+			if (ulval < sp->inc_lastval)
 				goto underflow;
-			ulval -= lastcnt;
+			ulval -= sp->inc_lastval;
 		}
 		ntype = fmt[OCTAL];
 		if (len > 2)
@@ -91,33 +90,33 @@ v_increment(ep, vp, fm, tm, rp)
 	} else {
 		if (vp->character == '+') {
 			lval = strtol(vp->keyword, NULL, 0);
-			if (LONG_MAX - lval < lastcnt) {
-overflow:			ep->msg(ep, M_ERROR,
+			if (LONG_MAX - lval < sp->inc_lastval) {
+overflow:			msgq(sp, M_ERROR,
 				    "Resulting number too large.");
 				return (1);
 			}
-			lval += lastcnt;
+			lval += sp->inc_lastval;
 		} else {
 			lval = strtol(vp->keyword, NULL, 0);
-			if (lval < 0 && -(LONG_MIN - lval) > lastcnt) {
-underflow:			ep->msg(ep, M_ERROR,
+			if (lval < 0 && -(LONG_MIN - lval) > sp->inc_lastval) {
+underflow:			msgq(sp, M_ERROR,
 				    "Resulting number too small.");
 				return (1);
 			}
-			lval -= lastcnt;
+			lval -= sp->inc_lastval;
 		}
 		ntype = *vp->keyword == '+' || *vp->keyword == '-' ?
 		    fmt[SDEC] : fmt[DEC];
 		nlen = snprintf(nbuf, sizeof(nbuf), ntype, len, lval);
 	}
 
-	if ((p = file_gline(ep, fm->lno, &len)) == NULL) {
-		GETLINE_ERR(ep, fm->lno);
+	if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
+		GETLINE_ERR(sp, fm->lno);
 		return (1);
 	}
 
 	if ((np = malloc(len + nlen)) == NULL) {
-		ep->msg(ep, M_ERROR, "Error: %s", strerror(errno));
+		msgq(sp, M_ERROR, "Error: %s", strerror(errno));
 		return (1);
 	}
 	memmove(np, p, fm->cno);
@@ -127,7 +126,7 @@ underflow:			ep->msg(ep, M_ERROR,
 	p = np;
 	len = len - vp->klen + nlen;
 
-	if (file_sline(ep, fm->lno, p, len))
+	if (file_sline(sp, ep, fm->lno, p, len))
 		rval = 1;
 	else {
 		*rp = *fm;

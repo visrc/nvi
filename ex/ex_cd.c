@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cd.c,v 5.16 1993/02/28 14:00:30 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:00:30 $";
+static char sccsid[] = "$Id: ex_cd.c,v 5.17 1993/03/25 14:59:43 bostic Exp $ (Berkeley) $Date: 1993/03/25 14:59:43 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -27,7 +27,8 @@ static char sccsid[] = "$Id: ex_cd.c,v 5.16 1993/02/28 14:00:30 bostic Exp $ (Be
  *	Change directories.
  */
 int
-ex_cd(ep, cmdp)
+ex_cd(sp, ep, cmdp)
+	SCR *sp;
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
@@ -36,7 +37,7 @@ ex_cd(ep, cmdp)
 	switch (cmdp->argc) {
 	case 0:
 		if ((dir = getenv("HOME")) == NULL) {
-			ep->msg(ep, M_ERROR,
+			msgq(sp, M_ERROR,
 			    "Environment variable HOME not set.");
 			return (1);
 		}
@@ -49,10 +50,10 @@ ex_cd(ep, cmdp)
 	}
 
 	if (chdir(dir) < 0) {
-		ep->msg(ep, M_ERROR, "%s: %s", dir, strerror(errno));
+		msgq(sp, M_ERROR, "%s: %s", dir, strerror(errno));
 		return (1);
 	}
 	if (getcwd(buf, sizeof(buf)) != NULL)
-		ep->msg(ep, M_DISPLAY, "New directory: %s", buf);
+		msgq(sp, M_DISPLAY, "New directory: %s", buf);
 	return (0);
 }

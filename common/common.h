@@ -4,17 +4,22 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 5.40 1993/03/01 12:45:06 bostic Exp $ (Berkeley) $Date: 1993/03/01 12:45:06 $
+ *	$Id: common.h,v 5.41 1993/03/25 14:59:18 bostic Exp $ (Berkeley) $Date: 1993/03/25 14:59:18 $
  */
 
 #include <limits.h>		/* XXX */
-#include <db.h>
+#include <termios.h>
 #include <regex.h>
+#include <db.h>
 
 #include "mark.h"
 #include "msg.h"
 #include "search.h"
 #include "tag.h"
+
+/* Undo direction. */
+enum udirection { UBACKWARD, UFORWARD };
+
 #include "exf.h"
 #include "cut.h"
 
@@ -52,24 +57,17 @@ enum confirmation { YES, NO, QUIT };
 typedef void (*sig_ret_t) __P((int));	/* Type of signal function. */
 
 /* Buffer allocation. */
-#define	BINC(ep, lp, llen, nlen) {					\
+#define	BINC(sp, lp, llen, nlen) {					\
 	if ((nlen) > llen &&						\
-	    binc(ep, &(lp), &(llen), nlen))				\
+	    binc(sp, &(lp), &(llen), nlen))				\
 		return (1);						\
 }
-int	binc __P((EXF *, void *, size_t *, size_t));
+int	binc __P((SCR *, void *, size_t *, size_t));
 
 /* Filter type. */
 enum filtertype { STANDARD, NOINPUT, NOOUTPUT };
-int	filtercmd
-	    __P((EXF *, MARK *, MARK *, MARK *, u_char *, enum filtertype));
-
-/* Visual bell. */
-extern char *VB;
 
 /* Display characters. */
-#define	CHARNAME(c)	(asciiname[c & 0xff])
-extern char *asciiname[UCHAR_MAX + 1];
-extern u_char asciilen[UCHAR_MAX + 1];
+#define	CHARNAME(sp, c)	((sp)->cname[c & UCHAR_MAX])
 
 #include "extern.h"

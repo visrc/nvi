@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_z.c,v 5.25 1993/02/28 14:02:08 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:02:08 $";
+static char sccsid[] = "$Id: v_z.c,v 5.26 1993/03/25 15:01:46 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:01:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -24,7 +24,8 @@ static char sccsid[] = "$Id: v_z.c,v 5.25 1993/02/28 14:02:08 bostic Exp $ (Berk
  *	Move the screen.
  */
 int
-v_z(ep, vp, fm, tm, rp)
+v_z(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
@@ -37,37 +38,37 @@ v_z(ep, vp, fm, tm, rp)
 	 */
 	if (vp->flags & VC_C1SET) {
 		lno = vp->count;
-		last = file_lline(ep);
+		last = file_lline(sp, ep);
 		if (lno > last)
 			lno = last;
 	} else
 		lno = fm->lno;
 
 	/* The second count is the window size. */
-	if (vp->flags & VC_C2SET && set_window_size(ep, vp->count2))
+	if (vp->flags & VC_C2SET && set_window_size(sp, vp->count2))
 		return (1);
 
 	switch(vp->character) {
 	case '.':
-		if (scr_sm_fill(ep, lno, P_MIDDLE))
+		if (scr_sm_fill(sp, ep, lno, P_MIDDLE))
 			return (1);
 		break;
 	case '-':
-		if (scr_sm_fill(ep, lno, P_BOTTOM))
+		if (scr_sm_fill(sp, ep, lno, P_BOTTOM))
 			return (1);
 		break;
 	default:
-		if (special[vp->character] == K_CR) {
-			if (scr_sm_fill(ep, lno, P_TOP))
+		if (sp->special[vp->character] == K_CR) {
+			if (scr_sm_fill(sp, ep, lno, P_TOP))
 				return (1);
 			break;
 		}
-		ep->msg(ep, M_ERROR, "usage: %s.", vp->kp->usage);
+		msgq(sp, M_ERROR, "usage: %s.", vp->kp->usage);
 		return (1);
 	}
 
 	/* If the map changes, have to redraw the entire screen. */
-	SF_SET(ep, S_REDRAW);
+	F_SET(sp, S_REDRAW);
 
 	rp->lno = lno;
 	rp->cno = fm->cno;

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_put.c,v 5.13 1993/02/16 20:08:39 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:08:39 $";
+static char sccsid[] = "$Id: v_put.c,v 5.14 1993/03/25 15:01:20 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:01:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,12 +22,13 @@ static char sccsid[] = "$Id: v_put.c,v 5.13 1993/02/16 20:08:39 bostic Exp $ (Be
  *	Insert the contents of the buffer before the cursor.
  */
 int
-v_Put(ep, vp, fm, tm, rp)
+v_Put(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	return (put(ep, VICB(vp), fm, rp, 0));
+	return (put(sp, ep, VICB(vp), fm, rp, 0));
 }
 
 /*
@@ -35,10 +36,11 @@ v_Put(ep, vp, fm, tm, rp)
  *	Insert the contents of the buffer after the cursor.
  */
 int
-v_put(ep, vp, fm, tm, rp)
+v_put(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	return (put(ep, VICB(vp), fm, rp, 1));
+	return (put(sp, ep, VICB(vp), fm, rp, 1));
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_usage.c,v 5.5 1993/02/28 14:00:46 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:00:46 $";
+static char sccsid[] = "$Id: ex_usage.c,v 5.6 1993/03/25 15:00:12 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:00:12 $";
 #endif /* not lint */
 
 #include <limits.h>
@@ -22,22 +22,22 @@ static char sccsid[] = "$Id: ex_usage.c,v 5.5 1993/02/28 14:00:46 bostic Exp $ (
  *	Display ex usage strings.
  */
 int
-ex_usage(ep, cmdp)
+ex_usage(sp, ep, cmdp)
+	SCR *sp;
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	EXCMDLIST *cp;
 	size_t len;
 	u_char *p;
-
 	
 	for (cp = cmds, p = cmdp->argv[0], len = USTRLEN(p);
 	    cp->name && memcmp(p, cp->name, len); ++cp);
 	if (cp->name == NULL) {
-		ep->msg(ep, M_ERROR, "The %.*s command is unknown.", len, p);
+		msgq(sp, M_ERROR, "The %.*s command is unknown.", len, p);
 		return (1);
 	}
-	(void)fprintf(ep->stdfp, "Usage: %s", cp->usage);
+	(void)fprintf(sp->stdfp, "Usage: %s", cp->usage);
 	return (0);
 }
 
@@ -46,7 +46,8 @@ ex_usage(ep, cmdp)
  *	Display vi usage strings.
  */
 int
-ex_viusage(ep, cmdp)
+ex_viusage(sp, ep, cmdp)
+	SCR *sp;
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
@@ -60,11 +61,11 @@ ex_viusage(ep, cmdp)
 
 	kp = &vikeys[key];
 	if (kp->func == NULL) {
-nokey:		ep->msg(ep, M_ERROR,
-		    "The %s key has no current meaning.", asciiname[key]);
+nokey:		msgq(sp, M_ERROR,
+		    "The %s key has no current meaning", CHARNAME(sp, key));
 		return (1);
 	}
 
-	(void)fprintf(ep->stdfp, "Usage: %s", kp->usage);
+	(void)fprintf(sp->stdfp, "Usage: %s", kp->usage);
 	return (0);
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shift.c,v 5.17 1993/02/16 20:10:24 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:24 $";
+static char sccsid[] = "$Id: ex_shift.c,v 5.18 1993/03/25 15:00:06 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:00:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,26 +21,29 @@ static char sccsid[] = "$Id: ex_shift.c,v 5.17 1993/02/16 20:10:24 bostic Exp $ 
 #include "options.h"
 
 enum which {LEFT, RIGHT};
-static int shift __P((EXF *, EXCMDARG *, enum which));
+static int shift __P((SCR *, EXF *, EXCMDARG *, enum which));
 
 int
-ex_shiftl(ep, cmdp)
+ex_shiftl(sp, ep, cmdp)
+	SCR *sp;
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	return (shift(ep, cmdp, LEFT));
+	return (shift(sp, ep, cmdp, LEFT));
 }
 	
 int
-ex_shiftr(ep, cmdp)
+ex_shiftr(sp, ep, cmdp)
+	SCR *sp;
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	return (shift(ep, cmdp, RIGHT));
+	return (shift(sp, ep, cmdp, RIGHT));
 }
 
 static int
-shift(ep, cmdp, rl)
+shift(sp, ep, cmdp, rl)
+	SCR *sp;
 	EXF *ep;
 	EXCMDARG *cmdp;
 	enum which rl;
@@ -56,7 +59,7 @@ shift(ep, cmdp, rl)
 	buf = NULL;
 	for (from = cmdp->addr1.lno, to = cmdp->addr2.lno; from <= to; ++from) {
 		/* Get the line. */
-		if ((p = file_gline(ep, from, &len)) == NULL)
+		if ((p = file_gline(sp, ep, from, &len)) == NULL)
 			goto err;
 
 		if (!len)
@@ -86,7 +89,7 @@ shift(ep, cmdp, rl)
 		}
 
 		/* Get a buffer that will hold the new line. */
-		if (blen < newcol + len && binc(ep, &buf, &blen, 0))
+		if (blen < newcol + len && binc(sp, &buf, &blen, 0))
 			goto err;
 
 		/* Build a new indent string. */
@@ -104,7 +107,8 @@ shift(ep, cmdp, rl)
 		memmove(bp, p + oldidx, len - oldidx);
 
 		/* Set the replacement line. */
-		if (file_sline(ep, from, buf, (bp + (len - oldidx)) - buf)) {
+		if (file_sline(sp, ep,
+		    from, buf, (bp + (len - oldidx)) - buf)) {
 err:			if (buf != NULL)
 				free(buf);
 			return (1);
@@ -114,9 +118,9 @@ err:			if (buf != NULL)
 		free(buf);
 
 	/* Reporting. */
-	ep->rptlines = cmdp->addr2.lno - cmdp->addr1.lno + 1;
-	ep->rptlabel = rl == RIGHT ? "shifted right" : "shifted left";
+	sp->rptlines = cmdp->addr2.lno - cmdp->addr1.lno + 1;
+	sp->rptlabel = rl == RIGHT ? "shifted right" : "shifted left";
 
-	FF_SET(ep, F_AUTOPRINT);
+	F_SET(sp, S_AUTOPRINT);
 	return (0);
 }

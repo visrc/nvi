@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_section.c,v 5.10 1993/02/28 14:01:58 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:01:58 $";
+static char sccsid[] = "$Id: v_section.c,v 5.11 1993/03/25 15:01:28 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:01:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,7 +35,8 @@ static char sccsid[] = "$Id: v_section.c,v 5.10 1993/02/28 14:01:58 bostic Exp $
  *	Move forward count sections/functions.
  */
 int
-v_sectionf(ep, vp, fm, tm, rp)
+v_sectionf(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
@@ -48,14 +49,14 @@ v_sectionf(ep, vp, fm, tm, rp)
 	if ((list = PVAL(O_SECTIONS)) == NULL)
 		return (1);
 	if (USTRLEN(list) & 1) {
-		ep->msg(ep, M_ERROR,
+		msgq(sp, M_ERROR,
 		    "Section options must be in groups of two characters.");
 		return (1);
 	}
 
 	rp->cno = 0;
 	cnt = vp->flags & VC_C1SET ? vp->count : 1;
-	for (lno = fm->lno; p = file_gline(ep, ++lno, &len);)
+	for (lno = fm->lno; p = file_gline(sp, ep, ++lno, &len);)
 		switch(len) {
 		case 0:
 			break;;
@@ -84,7 +85,7 @@ v_sectionf(ep, vp, fm, tm, rp)
 		rp->cno = len ? len - 1 : 0;
 		return (0);
 	}
-	v_eof(ep, NULL);
+	v_eof(sp, ep, NULL);
 	return (1);
 }
 
@@ -93,7 +94,8 @@ v_sectionf(ep, vp, fm, tm, rp)
  *	Move backward count sections/functions.
  */
 int
-v_sectionb(ep, vp, fm, tm, rp)
+v_sectionb(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
@@ -104,21 +106,21 @@ v_sectionb(ep, vp, fm, tm, rp)
 
 	/* Check for SOF. */
 	if (fm->lno <= 1) {
-		v_sof(ep, NULL);
+		v_sof(sp, NULL);
 		return (1);
 	}
 
 	if ((list = PVAL(O_SECTIONS)) == NULL)
 		return (1);
 	if (USTRLEN(list) & 1) {
-		ep->msg(ep, M_ERROR,
+		msgq(sp, M_ERROR,
 		    "Section options must be in groups of two characters.");
 		return (1);
 	}
 
 	rp->cno = 0;
 	cnt = vp->flags & VC_C1SET ? vp->count : 1;
-	for (lno = fm->lno; p = file_gline(ep, --lno, &len);)
+	for (lno = fm->lno; p = file_gline(sp, ep, --lno, &len);)
 		switch(len) {
 		case 0:
 			break;

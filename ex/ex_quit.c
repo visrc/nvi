@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_quit.c,v 5.14 1993/02/28 14:00:32 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:00:32 $";
+static char sccsid[] = "$Id: ex_quit.c,v 5.15 1993/03/25 14:59:50 bostic Exp $ (Berkeley) $Date: 1993/03/25 14:59:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,7 +19,8 @@ static char sccsid[] = "$Id: ex_quit.c,v 5.14 1993/02/28 14:00:32 bostic Exp $ (
 #include "options.h"
 
 int
-ex_quit(ep, cmdp)
+ex_quit(sp, ep, cmdp)
+	SCR *sp;
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
@@ -29,21 +30,22 @@ ex_quit(ep, cmdp)
 
 	/* Historic practice: quit! doesn't do autowrite. */
 	if (!force)
-		MODIFY_CHECK(ep, 0);
+		MODIFY_CHECK(sp, ep, 0);
 
 	/* Historic practice: quit! doesn't check for other files. */
-	if (!force && file_next(ep, 0)) {
-		ep->msg(ep, M_ERROR,
+	if (!force && file_next(sp, ep, 0)) {
+		msgq(sp, M_ERROR,
 	"More files; use \":n\" to go to the next file, \":q!\" to quit.");
 		return (1);
 	}
 
-	FF_SET(ep, force ? F_EXIT_FORCE : F_EXIT);
+	F_SET(sp, force ? S_EXIT_FORCE : S_EXIT);
 	return (0);
 }
 
 int
-ex_wq(ep, cmdp)
+ex_wq(sp, ep, cmdp)
+	SCR *sp;
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
@@ -51,21 +53,22 @@ ex_wq(ep, cmdp)
 
 	force = cmdp->flags & E_FORCE;
 
-	if (file_sync(ep, force))
+	if (file_sync(sp, ep, force))
 		return (1);
 
-	if (!force && file_next(ep, 0)) {
-		ep->msg(ep, M_ERROR,
+	if (!force && file_next(sp, ep, 0)) {
+		msgq(sp, M_ERROR,
 		    "More files to edit; use \":n\" to go to the next file");
 		return (1);
 	}
 
-	FF_SET(ep, force ? F_EXIT_FORCE : F_EXIT);
+	F_SET(sp, force ? S_EXIT_FORCE : S_EXIT);
 	return (0);
 }
 
 int
-ex_xit(ep, cmdp)
+ex_xit(sp, ep, cmdp)
+	SCR *sp;
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
@@ -73,8 +76,8 @@ ex_xit(ep, cmdp)
 
 	force = cmdp->flags & E_FORCE;
 
-	MODIFY_CHECK(ep, force);
+	MODIFY_CHECK(sp, ep, force);
 
-	FF_SET(ep, force ? F_EXIT_FORCE : F_EXIT);
+	F_SET(ep, force ? S_EXIT_FORCE : S_EXIT);
 	return (0);
 }

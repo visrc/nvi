@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_delete.c,v 5.16 1993/02/19 18:35:15 bostic Exp $ (Berkeley) $Date: 1993/02/19 18:35:15 $";
+static char sccsid[] = "$Id: v_delete.c,v 5.17 1993/03/25 15:01:08 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:01:08 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -22,17 +22,18 @@ static char sccsid[] = "$Id: v_delete.c,v 5.16 1993/02/19 18:35:15 bostic Exp $ 
  *	Delete line command.
  */
 int
-v_Delete(ep, vp, fm, tm, rp)
+v_Delete(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
 	size_t len;
 
-	if (file_gline(ep, fm->lno, &len) == NULL) {
-		if (file_lline(ep) == 0)
+	if (file_gline(sp, ep, fm->lno, &len) == NULL) {
+		if (file_lline(sp, ep) == 0)
 			return (0);
-		GETLINE_ERR(ep, fm->lno);
+		GETLINE_ERR(sp, fm->lno);
 		return (1);
 	}
 
@@ -42,7 +43,7 @@ v_Delete(ep, vp, fm, tm, rp)
 	tm->lno = fm->lno;
 	tm->cno = len;
 
-	if (cut(ep, VICB(vp), fm, tm, 0) || delete(ep, fm, tm, 0))
+	if (cut(sp, ep, VICB(vp), fm, tm, 0) || delete(sp, ep, fm, tm, 0))
 		return (1);
 
 	rp->lno = fm->lno;
@@ -55,7 +56,8 @@ v_Delete(ep, vp, fm, tm, rp)
  *	Delete a range of text.
  */
 int
-v_delete(ep, vp, fm, tm, rp)
+v_delete(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
@@ -65,14 +67,15 @@ v_delete(ep, vp, fm, tm, rp)
 	int lmode;
 	
 	lmode = vp->flags & VC_LMODE;
-	if (cut(ep, VICB(vp), fm, tm, lmode) || delete(ep, fm, tm, lmode))
+	if (cut(sp, ep, VICB(vp), fm, tm, lmode) ||
+	    delete(sp, ep, fm, tm, lmode))
 		return (1);
 
 	/*
 	 * If deleting lines, leave the cursor at the lowest line deleted,
 	 * otherwise, leave it where it started.  Always correct for EOF.
 	 */
-	nlines = file_lline(ep);
+	nlines = file_lline(sp, ep);
 	if (lmode) {
 		rp->lno = MIN(fm->lno, tm->lno);
 		if (rp->lno > nlines)
@@ -88,8 +91,8 @@ v_delete(ep, vp, fm, tm, rp)
 			rp->cno = 0;
 		} else {
 			rp->lno = nlines;
-			if (file_gline(ep, nlines, &len) == NULL) {
-				GETLINE_ERR(ep, rp->lno);
+			if (file_gline(sp, ep, nlines, &len) == NULL) {
+				GETLINE_ERR(sp, rp->lno);
 				return (1);
 			}
 			rp->cno = len ? len - 1 : 0;

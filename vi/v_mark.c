@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_mark.c,v 5.9 1993/02/16 20:08:36 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:08:36 $";
+static char sccsid[] = "$Id: v_mark.c,v 5.10 1993/03/25 15:01:17 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:01:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -23,12 +23,13 @@ static char sccsid[] = "$Id: v_mark.c,v 5.9 1993/02/16 20:08:36 bostic Exp $ (Be
  *	Define a mark.
  */
 int
-v_mark(ep, vp, fm, tm, rp)
+v_mark(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	return (mark_set(ep, vp->character, fm));
+	return (mark_set(sp, ep, vp->character, fm));
 }
 
 /*
@@ -36,14 +37,15 @@ v_mark(ep, vp, fm, tm, rp)
  *	Move to a mark.
  */
 int
-v_markbt(ep, vp, fm, tm, rp)
+v_markbt(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
 	MARK *mp;
 
-	if ((mp = mark_get(ep, vp->character)) == NULL)
+	if ((mp = mark_get(sp, ep, vp->character)) == NULL)
 		return (1);
 	*rp = *mp;
 	return (0);
@@ -54,14 +56,15 @@ v_markbt(ep, vp, fm, tm, rp)
  *	Move to the first nonblank character of a line containing a mark.
  */
 int
-v_marksq(ep, vp, fm, tm, rp)
+v_marksq(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
 	MARK *mp;
 
-	if ((mp = mark_get(ep, vp->character)) == NULL)
+	if ((mp = mark_get(sp, ep, vp->character)) == NULL)
 		return (1);
 	*rp = *mp;
 	return (0);

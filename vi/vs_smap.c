@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 5.7 1993/02/28 14:01:59 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:01:59 $";
+static char sccsid[] = "$Id: vs_smap.c,v 5.8 1993/03/25 15:01:31 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:01:31 $";
 #endif /* not lint */
 
 #include <curses.h>
@@ -14,17 +14,16 @@ static char sccsid[] = "$Id: vs_smap.c,v 5.7 1993/02/28 14:01:59 bostic Exp $ (B
 #include <stdlib.h>
 #include <string.h>
 
+#define	SMAP_PRIVATE
 #include "vi.h"
 #include "options.h"
+#include "screen.h"
 #include "vcmd.h"
 
-#define	SMAP_PRIVATE
-#include "screen.h"
+#define	HALFSCREEN(sp)	(SCREENSIZE(sp) / 2)	/* Half a screen. */
 
-#define	HALFSCREEN(ep)	(SCREENSIZE(ep) / 2)	/* Half a screen. */
-
-#define	HMAP		(SCRP(ep)->h_smap)	/* Head of line map. */
-#define	TMAP		(SCRP(ep)->t_smap)	/* Tail of line map. */
+#define	HMAP		(sp->h_smap)		/* Head of line map. */
+#define	TMAP		(sp->t_smap)		/* Tail of line map. */
 
 /*
  * scr_sm_fill --
@@ -32,7 +31,8 @@ static char sccsid[] = "$Id: vs_smap.c,v 5.7 1993/02/28 14:01:59 bostic Exp $ (B
  *	right position.
  */
 int
-scr_sm_fill(ep, lno, pos)
+scr_sm_fill(sp, ep, lno, pos)
+	SCR *sp;
 	EXF *ep;
 	recno_t lno;
 	enum position pos;
@@ -44,37 +44,37 @@ scr_sm_fill(ep, lno, pos)
 	case P_FILL:
 		tmp.lno = 1;
 		tmp.off = 1;
-		if (scr_sm_nlines(ep,
-		    &tmp, lno, HALFSCREEN(ep)) >= HALFSCREEN(ep))
+		if (scr_sm_nlines(sp, ep,
+		    &tmp, lno, HALFSCREEN(sp)) >= HALFSCREEN(sp))
 			goto middle;
 		lno = 1;
 		/* FALLTHROUGH */
 	case P_TOP:
 		for (p = HMAP, p->lno = lno, p->off = 1; p < TMAP; ++p)
-			if (scr_sm_next(ep, p, p + 1))
+			if (scr_sm_next(sp, ep, p, p + 1))
 				goto err;
 		break;
 	case P_MIDDLE:
 middle:		p = HMAP + (TMAP - HMAP) / 2;
 		for (p->lno = lno, p->off = 1; p < TMAP; ++p)
-			if (scr_sm_next(ep, p, p + 1))
+			if (scr_sm_next(sp, ep, p, p + 1))
 				goto err;
 		p = HMAP + (TMAP - HMAP) / 2;
 		for (; p > HMAP; --p)
-			if (scr_sm_prev(ep, p, p - 1))
+			if (scr_sm_prev(sp, ep, p, p - 1))
 				goto err;
 		break;
 	case P_BOTTOM:
 		for (p = TMAP, p->lno = lno, p->off = 1; p > HMAP; --p)
-			if (scr_sm_prev(ep, p, p - 1))
+			if (scr_sm_prev(sp, ep, p, p - 1))
 				goto err;
 		break;
 	}
 	return (0);
 
-err:	ep->msg(ep, M_BELL, "Movement not possible");
+err:	msgq(sp, M_BELL, "Movement not possible");
 	for (p = HMAP; p < TMAP; ++p)
-		(void)scr_sm_next(ep, p, p + 1);
+		(void)scr_sm_next(sp, ep, p, p + 1);
 	return (1);
 }
 
@@ -83,7 +83,8 @@ err:	ep->msg(ep, M_BELL, "Movement not possible");
  *	Delete a line out of the SMAP.
  */
 int
-scr_sm_delete(ep, lno)
+scr_sm_delete(sp, ep, lno)
+	SCR *sp;
 	EXF *ep;
 	recno_t lno;
 {
@@ -100,7 +101,7 @@ scr_sm_delete(ep, lno)
 	for (cnt1 = 1, t = p + 1; t <= TMAP && t->lno == lno; ++cnt1, ++t);
 
 	/* Delete that number of lines from the screen. */
-	MOVE(ep, p - HMAP, 0);
+	MOVE(sp, p - HMAP, 0);
 	for (cnt2 = cnt1; cnt2--;)
 		deleteln();
 
@@ -113,9 +114,9 @@ scr_sm_delete(ep, lno)
 
 	/* Display the new lines. */
 	for (p = TMAP - cnt1;;) {
-		if (p < TMAP && scr_sm_next(ep, p, p + 1))
+		if (p < TMAP && scr_sm_next(sp, ep, p, p + 1))
 			return (1);
-		if (scr_line(ep, ++p, NULL, 0, NULL, NULL))
+		if (scr_line(sp, ep, ++p, NULL, 0, NULL, NULL))
 			return (1);
 		if (p == TMAP)
 			break;
@@ -128,7 +129,8 @@ scr_sm_delete(ep, lno)
  *	Insert a line into the SMAP.
  */
 int
-scr_sm_insert(ep, lno)
+scr_sm_insert(sp, ep, lno)
+	SCR *sp;
 	EXF *ep;
 	recno_t lno;
 {
@@ -142,13 +144,13 @@ scr_sm_insert(ep, lno)
 	 * Figure out how many lines needed to display the line.
 	 * The lines left on the screen overrides that number.
 	 */
-	cnt1 = scr_screens(ep, lno, NULL);
+	cnt1 = scr_screens(sp, ep, lno, NULL);
 	cnt2 = (TMAP - p) + 1;
 	if (cnt1 > cnt2)
 		cnt1 = cnt2;
 
 	/* Push down that many lines. */
-	MOVE(ep, p - HMAP, 0);
+	MOVE(sp, p - HMAP, 0);
 	for (cnt2 = cnt1; cnt2--;)
 		insertln();
 
@@ -156,7 +158,7 @@ scr_sm_insert(ep, lno)
 	 * Clear the last line on the screen, it's going to have been
 	 * corrupted.
 	 */
-	MOVE(ep, SCREENSIZE(ep), 0);
+	MOVE(sp, SCREENSIZE(sp), 0);
 	clrtoeol();
 
 	/* Shift the screen map down. */
@@ -174,7 +176,7 @@ scr_sm_insert(ep, lno)
 
 	/* Display the new lines. */
 	for (; cnt1--; ++p)
-		if (scr_line(ep, p, NULL, 0, NULL, NULL))
+		if (scr_line(sp, ep, p, NULL, 0, NULL, NULL))
 			return (1);
 	return (0);
 }
@@ -184,7 +186,8 @@ scr_sm_insert(ep, lno)
  *	Scroll the SMAP up count logical lines.
  */
 int
-scr_sm_up(ep, rp, count, cursor_move)
+scr_sm_up(sp, ep, rp, count, cursor_move)
+	SCR *sp;
 	EXF *ep;
 	MARK *rp;
 	recno_t count;
@@ -195,8 +198,8 @@ scr_sm_up(ep, rp, count, cursor_move)
 	int scrolled;
 
 	/* Set the default return position. */
-	rp->lno = SCRLNO(ep);
-	rp->cno = SCRCNO(ep);
+	rp->lno = ep->lno;
+	rp->cno = ep->cno;
 
 	/*
 	 * There are two forms of this command, one where the cursor follows
@@ -209,22 +212,22 @@ scr_sm_up(ep, rp, count, cursor_move)
 	 */
 	for (p = HMAP;; ++p) {
 		if (p > TMAP) {
-			ep->msg(ep, M_ERROR,
-			    "Line %lu not on the screen.", SCRLNO(ep));
+			msgq(sp, M_ERROR,
+			    "Line %lu not on the screen.", ep->lno);
 			return (1);
 		}
-		if (p->lno == SCRLNO(ep))
+		if (p->lno == ep->lno)
 			break;
 	}
 
-	last = file_lline(ep);
+	last = file_lline(sp, ep);
 	for (svmap = *p, scrolled = 0;; scrolled = 1) {
 		if (count == 0)
 			break;
 		--count;
 
 		/* Decide what would show up on the screen. */
-		if (scr_sm_next(ep, TMAP, &tmp))
+		if (scr_sm_next(sp, ep, TMAP, &tmp))
 			return (1);
 
 		/* If the line doesn't exist, we're done. */
@@ -232,7 +235,7 @@ scr_sm_up(ep, rp, count, cursor_move)
 			break;
 			
 		/* Scroll up one logical line. */
-		if (scr_sm_1up(ep))
+		if (scr_sm_1up(sp, ep))
 			return (1);
 		
 		if (!cursor_move && p > HMAP)
@@ -246,8 +249,8 @@ scr_sm_up(ep, rp, count, cursor_move)
 		 * roughly where it was before.
 		 */
 		if (!scrolled || count) {
-			if (SCRLNO(ep) == TMAP->lno) {
-				v_eof(ep, NULL);
+			if (ep->lno == TMAP->lno) {
+				v_eof(sp, ep, NULL);
 				return (1);
 			}
 			p = TMAP;
@@ -255,12 +258,12 @@ scr_sm_up(ep, rp, count, cursor_move)
 	} else {
 		/* It's an error if we didn't scroll enough. */
 		if (!scrolled || count) {
-			v_eof(ep, NULL);
+			v_eof(sp, ep, NULL);
 			return (1);
 		}
 
 		/* If the cursor moved off the screen, move it to the top. */
-		if (SCRLNO(ep) < HMAP->lno)
+		if (ep->lno < HMAP->lno)
 			p = HMAP;
 	}
 	/*
@@ -271,7 +274,7 @@ scr_sm_up(ep, rp, count, cursor_move)
 	 */
 	if (p->lno != svmap.lno || p->off != svmap.off) {
 		rp->lno = p->lno;
-		rp->cno = scr_lrelative(ep, p->lno, p->off);
+		rp->cno = scr_lrelative(sp, ep, p->lno, p->off);
 	}
 	return (0);
 }
@@ -281,22 +284,23 @@ scr_sm_up(ep, rp, count, cursor_move)
  *	Scroll the SMAP up one.
  */
 int
-scr_sm_1up(ep)
+scr_sm_1up(sp, ep)
+	SCR *sp;
 	EXF *ep;
 {
 	/* Delete the top line of the screen. */
-	MOVE(ep, 0, 0);
+	MOVE(sp, 0, 0);
 	deleteln();
 
 	/* Shift the screen map up. */
-	memmove(HMAP, HMAP + 1, SCREENSIZE(ep) * sizeof(SMAP));
+	memmove(HMAP, HMAP + 1, SCREENSIZE(sp) * sizeof(SMAP));
 
 	/* Decide what to display at the bottom of the screen. */
-	if (scr_sm_next(ep, TMAP - 1, TMAP))
+	if (scr_sm_next(sp, ep, TMAP - 1, TMAP))
 		return (1);
 
 	/* Display it. */
-	if (scr_line(ep, TMAP, NULL, 0, NULL, NULL))
+	if (scr_line(sp, ep, TMAP, NULL, 0, NULL, NULL))
 		return (1);
 
 	return (0);
@@ -307,7 +311,8 @@ scr_sm_1up(ep)
  *	Scroll the SMAP down count logical lines.
  */
 int
-scr_sm_down(ep, rp, count, cursor_move)
+scr_sm_down(sp, ep, rp, count, cursor_move)
+	SCR *sp;
 	EXF *ep;
 	MARK *rp;
 	recno_t count;
@@ -317,8 +322,8 @@ scr_sm_down(ep, rp, count, cursor_move)
 	int scrolled;
 
 	/* Set the default return position. */
-	rp->lno = SCRLNO(ep);
-	rp->cno = SCRCNO(ep);
+	rp->lno = ep->lno;
+	rp->cno = ep->cno;
 
 	/*
 	 * There are two forms of this command, one where the cursor follows
@@ -331,11 +336,11 @@ scr_sm_down(ep, rp, count, cursor_move)
 	 */
 	for (p = HMAP;; ++p) {
 		if (p > TMAP) {
-			ep->msg(ep, M_ERROR,
-			    "Line %lu not on the screen.", SCRLNO(ep));
+			msgq(sp, M_ERROR,
+			    "Line %lu not on the screen", ep->lno);
 			return (1);
 		}
-		if (p->lno == SCRLNO(ep))
+		if (p->lno == ep->lno)
 			break;
 	}
 
@@ -349,7 +354,7 @@ scr_sm_down(ep, rp, count, cursor_move)
 			break;
 			
 		/* Scroll down one logical line. */
-		if (scr_sm_1down(ep))
+		if (scr_sm_1down(sp, ep))
 			return (1);
 		
 		if (!cursor_move && p < TMAP)
@@ -363,8 +368,8 @@ scr_sm_down(ep, rp, count, cursor_move)
 		 * roughly where it was before.
 		 */
 		if (!scrolled || count) {
-			if (SCRLNO(ep) == HMAP->lno) {
-				v_sof(ep, NULL);
+			if (ep->lno == HMAP->lno) {
+				v_sof(sp, NULL);
 				return (1);
 			}
 			p = HMAP;
@@ -372,12 +377,12 @@ scr_sm_down(ep, rp, count, cursor_move)
 	} else {
 		/* It's an error if we didn't scroll enough. */
 		if (!scrolled || count) {
-			v_sof(ep, NULL);
+			v_sof(sp, NULL);
 			return (1);
 		}
 
 		/* If the cursor moved off the screen, move it to the bottom. */
-		if (SCRLNO(ep) > TMAP->lno)
+		if (ep->lno > TMAP->lno)
 			p = TMAP;
 	}
 
@@ -389,7 +394,7 @@ scr_sm_down(ep, rp, count, cursor_move)
 	 */
 	if (p->lno != svmap.lno || p->off != svmap.off) {
 		rp->lno = p->lno;
-		rp->cno = scr_lrelative(ep, p->lno, p->off);
+		rp->cno = scr_lrelative(sp, ep, p->lno, p->off);
 	}
 	return (0);
 }
@@ -399,26 +404,27 @@ scr_sm_down(ep, rp, count, cursor_move)
  *	Scroll the SMAP down one.
  */
 int
-scr_sm_1down(ep)
+scr_sm_1down(sp, ep)
+	SCR *sp;
 	EXF *ep;
 {
 	/* Clear the bottom line of the screen. */
-	MOVE(ep, TEXTSIZE(ep), 0);
+	MOVE(sp, TEXTSIZE(sp), 0);
 	clrtoeol();
 
 	/* Insert a line at the top of the screen. */
-	MOVE(ep, 0, 0);
+	MOVE(sp, 0, 0);
 	insertln();
 
 	/* Shift the screen map down. */
-	memmove(HMAP + 1, HMAP, SCREENSIZE(ep) * sizeof(SMAP));
+	memmove(HMAP + 1, HMAP, SCREENSIZE(sp) * sizeof(SMAP));
 
 	/* Decide what to display at the top of the screen. */
-	if (scr_sm_prev(ep, HMAP + 1, HMAP))
+	if (scr_sm_prev(sp, ep, HMAP + 1, HMAP))
 		return (1);
 
 	/* Display it. */
-	if (scr_line(ep, HMAP, NULL, 0, NULL, NULL))
+	if (scr_line(sp, ep, HMAP, NULL, 0, NULL, NULL))
 		return (1);
 
 	return (0);
@@ -429,7 +435,8 @@ scr_sm_1down(ep)
  *	Fill in the next entry in the SMAP.
  */
 int
-scr_sm_next(ep, p, t)
+scr_sm_next(sp, ep, p, t)
+	SCR *sp;
 	EXF *ep;
 	SMAP *p, *t;
 {
@@ -439,7 +446,7 @@ scr_sm_next(ep, p, t)
 		t->lno = p->lno + 1;
 		t->off = p->off;
 	} else {
-		lcnt = scr_screens(ep, p->lno, NULL);
+		lcnt = scr_screens(sp, ep, p->lno, NULL);
 		if (lcnt == p->off) {
 			t->lno = p->lno + 1;
 			t->off = 1;
@@ -456,7 +463,8 @@ scr_sm_next(ep, p, t)
  *	Fill in the previous entry in the SMAP.
  */
 int
-scr_sm_prev(ep, p, t)
+scr_sm_prev(sp, ep, p, t)
+	SCR *sp;
 	EXF *ep;
 	SMAP *p, *t;
 {
@@ -468,7 +476,7 @@ scr_sm_prev(ep, p, t)
 		t->off = p->off - 1;
 	} else {
 		t->lno = p->lno - 1;
-		t->off = scr_screens(ep, t->lno, NULL);
+		t->off = scr_screens(sp, ep, t->lno, NULL);
 	}
 	return (t->lno == 0);
 }
@@ -480,7 +488,8 @@ scr_sm_prev(ep, p, t)
  *	really out there.
  */
 int
-scr_sm_bot(ep, lnop, cnt)
+scr_sm_bot(sp, ep, lnop, cnt)
+	SCR *sp;
 	EXF *ep;
 	recno_t *lnop;
 	u_long cnt;
@@ -489,7 +498,7 @@ scr_sm_bot(ep, lnop, cnt)
 	recno_t last;
 	
 	/* Set p to point at the last legal entry in the map. */
-	last = file_lline(ep);
+	last = file_lline(sp, ep);
 	if (TMAP->lno <= last)
 		p = TMAP + 1;
 	else
@@ -499,7 +508,7 @@ scr_sm_bot(ep, lnop, cnt)
 	for (; cnt; --cnt)
 		for (;;) {
 			if (--p < HMAP) {
-				ep->msg(ep, M_ERROR,
+				msgq(sp, M_ERROR,
 				    "No such line on the screen.");
 				return (1);
 			}
@@ -519,20 +528,21 @@ scr_sm_bot(ep, lnop, cnt)
  *	out there.
  */
 int
-scr_sm_mid(ep, lnop)
+scr_sm_mid(sp, ep, lnop)
+	SCR *sp;
 	EXF *ep;
 	recno_t *lnop;
 {
 	recno_t last, down;
 
 	/* Check for less than a full screen of lines. */
-	last = file_lline(ep);
+	last = file_lline(sp, ep);
 	if (TMAP->lno < last)
 		last = TMAP->lno;
 
 	down = (last - HMAP->lno + 1) / 2;
 	if (down == 0 && HMAP->off != 1) {
-		ep->msg(ep, M_ERROR, "No such line on the screen.");
+		msgq(sp, M_ERROR, "No such line on the screen.");
 		return (1);
 	}
 	*lnop = HMAP->lno + down;
@@ -548,7 +558,8 @@ scr_sm_mid(ep, lnop)
  *	because only the screen routines know what's really out there.
  */
 int
-scr_sm_top(ep, lnop, cnt)
+scr_sm_top(sp, ep, lnop, cnt)
+	SCR *sp;
 	EXF *ep;
 	recno_t *lnop;
 	u_long cnt;
@@ -560,7 +571,7 @@ scr_sm_top(ep, lnop, cnt)
 	 * Set t to point at the map entry one past the last legal
 	 * entry in the map.
 	 */
-	last = file_lline(ep);
+	last = file_lline(sp, ep);
 	if (TMAP->lno <= last)
 		t = TMAP + 1;
 	else
@@ -570,7 +581,7 @@ scr_sm_top(ep, lnop, cnt)
 	for (p = HMAP - 1; cnt; --cnt)
 		for (;;) {
 			if (++p == t) {
-				ep->msg(ep, M_ERROR,
+				msgq(sp, M_ERROR,
 				    "No such line on the screen.");
 				return (1);
 			}
@@ -587,7 +598,8 @@ scr_sm_top(ep, lnop, cnt)
  *	start of some file line, less than a maximum value.
  */
 recno_t
-scr_sm_nlines(ep, from_sp, to_lno, max)
+scr_sm_nlines(sp, ep, from_sp, to_lno, max)
+	SCR *sp;
 	EXF *ep;
 	SMAP *from_sp;
 	recno_t to_lno;
@@ -607,36 +619,36 @@ scr_sm_nlines(ep, from_sp, to_lno, max)
 	if (from_sp->lno > to_lno) {
 		lcnt = from_sp->off - 1;	/* Correct for off-by-one. */
 		for (lno = from_sp->lno; --lno >= to_lno && lcnt <= max;)
-			lcnt += scr_screens(ep, lno, NULL);
+			lcnt += scr_screens(sp, ep, lno, NULL);
 	} else {
 		lno = from_sp->lno;
-		lcnt = (scr_screens(ep, lno, NULL) - from_sp->off) + 1;
+		lcnt = (scr_screens(sp, ep, lno, NULL) - from_sp->off) + 1;
 		for (; ++lno < to_lno && lcnt <= max;)
-			lcnt += scr_screens(ep, lno, NULL);
+			lcnt += scr_screens(sp, ep, lno, NULL);
 	}
 	return (lcnt);
 }
 
 #ifdef DEBUG
 void
-gdmap(ep)
-	EXF *ep;
+gdmap(sp)
+	SCR *sp;
 {
-	scr_sm_dmap(ep, "gdb");
+	scr_sm_dmap(sp, "gdb");
 }
 
 void
-scr_sm_dmap(ep, msg)
-	EXF *ep;
+scr_sm_dmap(sp, msg)
+	SCR *sp;
 	char *msg;
 {
 	size_t cnt;
 	SMAP *p;
 
-	TRACE("==>  %s\n", msg);
+	TRACE(sp, "==>  %s\n", msg);
 	for (p = HMAP, cnt = 1; p <= TMAP; ++p, ++cnt)
-		TRACE("%s<%02lu:%u> ",
+		TRACE(sp, "%s<%02lu:%u> ",
 		    cnt % 10 == 0 ? "\n" : "", p->lno, p->off);
-	TRACE("\n");
+	TRACE(sp, "\n");
 }
 #endif

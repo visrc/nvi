@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: mark.c,v 5.11 1993/02/28 13:59:12 bostic Exp $ (Berkeley) $Date: 1993/02/28 13:59:12 $";
+static char sccsid[] = "$Id: mark.c,v 5.12 1993/03/25 14:59:12 bostic Exp $ (Berkeley) $Date: 1993/03/25 14:59:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,26 +19,27 @@ static char sccsid[] = "$Id: mark.c,v 5.11 1993/02/28 13:59:12 bostic Exp $ (Ber
 
 /*
  * XXX
+ *
  * Right now, it's expensive to find the marks since we traverse the array
  * linearly.  Should have a doubly linked list of mark entries so we can
  * traverse it quickly on updates.
  */
-static MARK marks[UCHAR_MAX + 1];
 
 /*
  * mark_reset --
  *	Reset the marks for file changes.
  */
 void
-mark_reset(ep)
+mark_reset(sp, ep)
+	SCR *sp;
 	EXF *ep;
 {
 	MARK m;
 
-	memset(marks, 0, sizeof(marks));
+	memset(ep->marks, 0, sizeof(ep->marks));
 	m.lno = 1;
 	m.cno = 0;
-	SETABSMARK(ep, &m);
+	SETABSMARK(sp, ep, &m);
 }
 
 /*
@@ -46,16 +47,17 @@ mark_reset(ep)
  *	Set the location referenced by a mark.
  */
 int
-mark_set(ep, key, mp)
+mark_set(sp, ep, key, mp)
+	SCR *sp;
 	EXF *ep;
 	int key;
 	MARK *mp;
 {
 	if (key > UCHAR_MAX) {
-		ep->msg(ep, M_ERROR, "Invalid mark name.");
+		msgq(sp, M_ERROR, "Invalid mark name.");
 		return (1);
 	}
-	marks[key] = *mp;
+	ep->marks[key] = *mp;
 	return (0);
 }
 
@@ -64,19 +66,20 @@ mark_set(ep, key, mp)
  *	Get the location referenced by a mark.
  */
 MARK *
-mark_get(ep, key)
+mark_get(sp, ep, key)
+	SCR *sp;
 	EXF *ep;
 	int key;
 {
 	MARK *mp;
 
 	if (key > UCHAR_MAX) {
-		ep->msg(ep, M_ERROR, "Invalid mark name.");
+		msgq(sp, M_ERROR, "Invalid mark name.");
 		return (NULL);
 	}
-	mp = &marks[key];
+	mp = &ep->marks[key];
 	if (mp->lno == OOBLNO) {
-		ep->msg(ep, M_ERROR, "Mark '%c not set.", key);
+		msgq(sp, M_ERROR, "Mark '%c not set.", key);
                 return (NULL);
 	}
 	return (mp);
@@ -100,7 +103,8 @@ mark_get(ep, key)
  *	Update the marks based on a deletion.
  */
 void
-mark_delete(ep, fm, tm, lmode)
+mark_delete(sp, ep, fm, tm, lmode)
+	SCR *sp;
 	EXF *ep;
 	MARK *fm, *tm;
 	int lmode;
@@ -111,8 +115,9 @@ mark_delete(ep, fm, tm, lmode)
 	cno = tm->cno - fm->cno;
 	if (tm->lno == fm->lno) {
 		lno = fm->lno;
-		for (cnt = 0, mp = marks;
-		    cnt < sizeof(marks) / sizeof(marks[0]); ++cnt, ++mp) {
+		for (cnt = 0, mp = ep->marks;
+		    cnt < sizeof(ep->marks) / sizeof(ep->marks[0]);
+		    ++cnt, ++mp) {
 			if (mp->lno != lno || mp->cno < fm->cno)
 				continue;
 			if (lmode || mp->cno < tm->cno)
@@ -122,8 +127,9 @@ mark_delete(ep, fm, tm, lmode)
 		}
 	} else {
 		lno = tm->lno - fm->lno + 1;
-		for (cnt = 0, mp = marks;
-		    cnt < sizeof(marks) / sizeof(marks[0]); ++cnt, ++mp) {
+		for (cnt = 0, mp = ep->marks;
+		    cnt < sizeof(ep->marks) / sizeof(ep->marks[0]);
+		    ++cnt, ++mp) {
 			if (mp->lno < fm->lno)
 				continue;
 			if (mp->lno == fm->lno)
@@ -142,7 +148,8 @@ mark_delete(ep, fm, tm, lmode)
  *	Update the marks based on an insertion.
  */
 void
-mark_insert(ep, fm, tm)
+mark_insert(sp, ep, fm, tm)
+	SCR *sp;
 	EXF *ep;
 	MARK *fm, *tm;
 {
@@ -151,8 +158,8 @@ mark_insert(ep, fm, tm)
 	
 	lno = tm->lno - fm->lno;
 	cno = tm->cno - fm->cno;
-	for (cnt = 0, mp = marks;
-	    cnt < sizeof(marks) / sizeof(marks[0]); ++cnt, ++mp) {
+	for (cnt = 0, mp = ep->marks;
+	    cnt < sizeof(ep->marks) / sizeof(ep->marks[0]); ++cnt, ++mp) {
 		if (mp->lno < fm->lno)
 			continue;
 		if (mp->lno > tm->lno) {

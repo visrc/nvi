@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 5.23 1993/02/28 14:00:42 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:00:42 $";
+static char sccsid[] = "$Id: ex_print.c,v 5.24 1993/03/25 14:59:59 bostic Exp $ (Berkeley) $Date: 1993/03/25 14:59:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,7 +28,8 @@ static char sccsid[] = "$Id: ex_print.c,v 5.23 1993/02/28 14:00:42 bostic Exp $ 
  *	The only valid flag is '#'.
  */
 int
-ex_list(ep, cmdp)
+ex_list(sp, ep, cmdp)
+	SCR *sp;
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
@@ -36,13 +37,13 @@ ex_list(ep, cmdp)
 
 	flags = cmdp->flags & E_F_MASK;
 	if (flags & ~E_F_HASH) {
-		ep->msg(ep, M_ERROR, "Usage: %s.", cmdp->cmd->usage);
+		msgq(sp, M_ERROR, "Usage: %s.", cmdp->cmd->usage);
 		return (1);
 	}
-	if (ex_print(ep, &cmdp->addr1, &cmdp->addr2, E_F_LIST | flags))
+	if (ex_print(sp, ep, &cmdp->addr1, &cmdp->addr2, E_F_LIST | flags))
 		return (1);
-	SCRLNO(ep) = cmdp->addr2.lno;
-	SCRCNO(ep) = cmdp->addr2.cno;
+	ep->lno = cmdp->addr2.lno;
+	ep->cno = cmdp->addr2.cno;
 	return (0);
 }
 
@@ -52,7 +53,8 @@ ex_list(ep, cmdp)
  *	The only valid flag is 'l'.
  */
 int
-ex_number(ep, cmdp)
+ex_number(sp, ep, cmdp)
+	SCR *sp;
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
@@ -60,13 +62,13 @@ ex_number(ep, cmdp)
 
 	flags = cmdp->flags & E_F_MASK;
 	if (flags & ~E_F_LIST) {
-		ep->msg(ep, M_ERROR, "Usage: %s.", cmdp->cmd->usage);
+		msgq(sp, M_ERROR, "Usage: %s.", cmdp->cmd->usage);
 		return (1);
 	}
-	if (ex_print(ep, &cmdp->addr1, &cmdp->addr2, E_F_HASH | flags))
+	if (ex_print(sp, ep, &cmdp->addr1, &cmdp->addr2, E_F_HASH | flags))
 		return (1);
-	SCRLNO(ep) = cmdp->addr2.lno;
-	SCRCNO(ep) = cmdp->addr2.cno;
+	ep->lno = cmdp->addr2.lno;
+	ep->cno = cmdp->addr2.cno;
 	return (0);
 }
 
@@ -76,7 +78,8 @@ ex_number(ep, cmdp)
  *	The only valid flags are '#' and 'l'.
  */
 int
-ex_pr(ep, cmdp)
+ex_pr(sp, ep, cmdp)
+	SCR *sp;
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
@@ -84,13 +87,13 @@ ex_pr(ep, cmdp)
 
 	flags = cmdp->flags & E_F_MASK;
 	if (flags & ~(E_F_HASH | E_F_LIST)) {
-		ep->msg(ep, M_ERROR, "Usage: %s.", cmdp->cmd->usage);
+		msgq(sp, M_ERROR, "Usage: %s.", cmdp->cmd->usage);
 		return (1);
 	}
-	if (ex_print(ep, &cmdp->addr1, &cmdp->addr2, E_F_PRINT | flags))
+	if (ex_print(sp, ep, &cmdp->addr1, &cmdp->addr2, E_F_PRINT | flags))
 		return (1);
-	SCRLNO(ep) = cmdp->addr2.lno;
-	SCRCNO(ep) = cmdp->addr2.cno;
+	ep->lno = cmdp->addr2.lno;
+	ep->cno = cmdp->addr2.cno;
 	return (0);
 }
 
@@ -99,7 +102,8 @@ ex_pr(ep, cmdp)
  *	Print the selected lines.
  */
 int
-ex_print(ep, fp, tp, flags)
+ex_print(sp, ep, fp, tp, flags)
+	SCR *sp;
 	EXF *ep;
 	MARK *fp, *tp;
 	register int flags;
@@ -114,7 +118,7 @@ ex_print(ep, fp, tp, flags)
 	for (from = fp->lno, to = tp->lno; from <= to; ++from) {
 		/* Display the line number. */
 		if (flags & E_F_HASH)
-			col = fprintf(ep->stdfp, "%7ld ", from);
+			col = fprintf(sp->stdfp, "%7ld ", from);
 		else
 			col = 0;
 	
@@ -123,17 +127,17 @@ ex_print(ep, fp, tp, flags)
 		 * especially in handling end-of-line tabs, but they're almost
 		 * backward compatible.
 		 */
-		if ((p = file_gline(ep, from, &len)) == NULL) {
-			GETLINE_ERR(ep, from);
+		if ((p = file_gline(sp, ep, from, &len)) == NULL) {
+			GETLINE_ERR(sp, from);
 			return (1);
 		}
 
 #define	WCHECK(ch) {							\
-	if (col == SCRCOL(ep)) {					\
-		(void)putc('\n', ep->stdfp);				\
+	if (col == ep->cno) {						\
+		(void)putc('\n', sp->stdfp);				\
 		col = 0;						\
 	}								\
-	(void)putc(ch, ep->stdfp);					\
+	(void)putc(ch, sp->stdfp);					\
 	++col;								\
 }
 		for (rlen = len; rlen--;) {
@@ -154,18 +158,18 @@ ex_print(ep, fp, tp, flags)
 			else {
 				ch &= 0x7f;
 				if (ch == '\t') {
-					while (col < SCRCOL(ep) &&
+					while (col < ep->cno &&
 					    ++col % LVAL(O_TABSTOP))
-						(void)putc(' ', ep->stdfp);
-					if (col == SCRCOL(ep)) {
+						(void)putc(' ', sp->stdfp);
+					if (col == ep->cno) {
 						col = 0;
-						(void)putc('\n', ep->stdfp);
+						(void)putc('\n', sp->stdfp);
 					}
 				} else if (isprint(ch)) {
 					WCHECK(ch);
 				} else if (ch == '\n') {
 					col = 0;
-					(void)putc('\n', ep->stdfp);
+					(void)putc('\n', sp->stdfp);
 				} else {
 					WCHECK('^');
 					WCHECK(ch + 0x40);
@@ -175,7 +179,7 @@ ex_print(ep, fp, tp, flags)
 		if (flags & E_F_LIST)
 			WCHECK('$');
 
-		(void)putc('\n', ep->stdfp);
+		(void)putc('\n', sp->stdfp);
 	}
 	return (0);
 }

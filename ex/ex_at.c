@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_at.c,v 5.20 1993/02/28 14:00:28 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:00:28 $";
+static char sccsid[] = "$Id: ex_at.c,v 5.21 1993/03/25 14:59:41 bostic Exp $ (Berkeley) $Date: 1993/03/25 14:59:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,48 +25,48 @@ static char sccsid[] = "$Id: ex_at.c,v 5.20 1993/02/28 14:00:28 bostic Exp $ (Be
  *	Execute the contents of the buffer.
  */
 int
-ex_at(ep, cmdp)
+ex_at(sp, ep, cmdp)
+	SCR *sp;
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	static int lastbuf = OOBCB, recurse;
-	static char rstack[UCHAR_MAX];
 	CB *cb;
 	TEXT *tp;
 	int buffer, rval;
 
 	if (cmdp->buffer == OOBCB) {
-		if (lastbuf == OOBCB) {
-			ep->msg(ep, M_ERROR, "No previous buffer to execute.");
+		if (sp->exat_lbuf == OOBCB) {
+			msgq(sp, M_ERROR, "No previous buffer to execute.");
 			return (1);
 		}
-		buffer = lastbuf;
+		buffer = sp->exat_lbuf;
 	} else
 		buffer = cmdp->buffer;
 
-	CBNAME(ep, buffer, cb);
-	CBEMPTY(ep, buffer, cb);
+	CBNAME(sp, buffer, cb);
+	CBEMPTY(sp, buffer, cb);
 		
-	if (recurse == 0)
-		memset(rstack, 0, sizeof(rstack));
-	else if (rstack[buffer]) {
-		ep->msg(ep, M_ERROR,
-		    "Buffer %c already occurs in this command.", buffer);
+	if (sp->exat_recurse == 0)
+		memset(sp->exat_stack, 0, sizeof(sp->exat_stack));
+	else if (sp->exat_stack[buffer]) {
+		msgq(sp, M_ERROR,
+		    "Buffer %s already occurs in this command.",
+		    CHARNAME(sp, buffer));
 		return (1);
 	}
 
-	rstack[buffer] = 1;
-	++recurse;
+	sp->exat_stack[buffer] = 1;
+	++sp->exat_recurse;
 
 	for (tp = cb->head;;) {
-		if (rval = ex_cstring(ep, tp->lp, tp->len, 1))
+		if (rval = ex_cstring(sp, ep, tp->lp, tp->len, 1))
 			break;
-		if (FF_ISSET(ep, F_FILE_RESET))
+		if (F_ISSET(sp, S_FILE_CHANGED))
 			break;
 		if ((tp = tp->next) == NULL)
 			break;
 	}
 		
-	--recurse;
+	--sp->exat_recurse;
 	return (0);
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_left.c,v 5.11 1993/02/28 14:01:49 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:01:49 $";
+static char sccsid[] = "$Id: v_left.c,v 5.12 1993/03/25 15:01:17 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:01:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -23,7 +23,8 @@ static char sccsid[] = "$Id: v_left.c,v 5.11 1993/02/28 14:01:49 bostic Exp $ (B
  *	Move left by columns.
  */
 int
-v_left(ep, vp, fm, tm, rp)
+v_left(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
@@ -33,7 +34,7 @@ v_left(ep, vp, fm, tm, rp)
 	cnt = vp->flags & VC_C1SET ? vp->count : 1;
 
 	if (fm->cno == 0) {
-		ep->msg(ep, M_BELL, "Already in the first column.");
+		msgq(sp, M_BELL, "Already in the first column.");
 		return (1);
 	}
 
@@ -50,7 +51,8 @@ v_left(ep, vp, fm, tm, rp)
  *	Move to the first non-blank column on this line.
  */
 int
-v_first(ep, vp, fm, tm, rp)
+v_first(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
@@ -64,7 +66,8 @@ v_first(ep, vp, fm, tm, rp)
  *	Move to column count, or the first non-blank column on this line.
  */
 int
-v_ncol(ep, vp, fm, tm, rp)
+v_ncol(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
@@ -72,7 +75,7 @@ v_ncol(ep, vp, fm, tm, rp)
 	rp->lno = fm->lno;
 	if (vp->flags & VC_C1SET)
 		rp->cno = vp->count;
-	else if (nonblank(ep, fm->lno, &rp->cno))
+	else if (nonblank(sp, ep, fm->lno, &rp->cno))
 		rp->cno = 0;
 	return (0);
 }
@@ -82,7 +85,8 @@ v_ncol(ep, vp, fm, tm, rp)
  *	Move to the first column on this line.
  */
 int
-v_zero(ep, vp, fm, tm, rp)
+v_zero(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;

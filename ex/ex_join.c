@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_join.c,v 5.19 1993/02/28 14:00:36 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:00:36 $";
+static char sccsid[] = "$Id: ex_join.c,v 5.20 1993/03/25 14:59:54 bostic Exp $ (Berkeley) $Date: 1993/03/25 14:59:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,7 +25,8 @@ static char sccsid[] = "$Id: ex_join.c,v 5.19 1993/02/28 14:00:36 bostic Exp $ (
  *	Join lines.
  */
 int
-ex_join(ep, cmdp)
+ex_join(sp, ep, cmdp)
+	SCR *sp;
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
@@ -38,8 +39,8 @@ ex_join(ep, cmdp)
 	to = cmdp->addr2.lno;
 
 	/* Check for no lines to join. */
-	if ((p = file_gline(ep, from + 1, &len)) == NULL) {
-		ep->msg(ep, M_ERROR, "No remaining lines to join.");
+	if ((p = file_gline(sp, ep, from + 1, &len)) == NULL) {
+		msgq(sp, M_ERROR, "No remaining lines to join.");
 		return (1);
 	}
 
@@ -51,7 +52,7 @@ ex_join(ep, cmdp)
 		 * Get next line.  Historic versions of vi allowed "10J" while
 		 * less than 10 lines from the end-of-file, so we do too.
 		 */
-		if ((p = file_gline(ep, from, &len)) == NULL)
+		if ((p = file_gline(sp, ep, from, &len)) == NULL)
 			break;
 
 		/* Empty lines just go away. */
@@ -66,7 +67,7 @@ ex_join(ep, cmdp)
 		tlen += len + 2;
 		if (blen < tlen) {
 			clen = bp == NULL ? 0 : bp - buf;
-			if (binc(ep, &buf, &blen, tlen)) {
+			if (binc(sp, &buf, &blen, tlen)) {
 				if (buf != NULL)
 					free(buf);
 				return (1);
@@ -108,11 +109,11 @@ ex_join(ep, cmdp)
 
 	/* Delete the joined lines. */
         for (from = cmdp->addr1.lno, to = cmdp->addr2.lno; to >= from; --to)
-		if (file_dline(ep, to))
+		if (file_dline(sp, ep, to))
 			goto err;
 		
 	/* Insert the new line into place. */
-	if (file_aline(ep, cmdp->addr1.lno - 1, buf, bp - buf)) {
+	if (file_aline(sp, ep, cmdp->addr1.lno - 1, buf, bp - buf)) {
 err:		if (buf != NULL)
 			free(buf);
 		return (1);
@@ -120,9 +121,9 @@ err:		if (buf != NULL)
 	if (buf != NULL)
 		free(buf);
 
-	ep->rptlines = (cmdp->addr2.lno - cmdp->addr1.lno) + 1;
-	ep->rptlabel = "joined";
+	sp->rptlines = (cmdp->addr2.lno - cmdp->addr1.lno) + 1;
+	sp->rptlabel = "joined";
 
-	FF_SET(ep, F_AUTOPRINT);
+	F_SET(sp, S_AUTOPRINT);
 	return (0);
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 5.28 1993/02/28 14:00:42 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:00:42 $";
+static char sccsid[] = "$Id: ex_read.c,v 5.29 1993/03/25 15:00:01 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:00:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,7 +29,8 @@ static char sccsid[] = "$Id: ex_read.c,v 5.28 1993/02/28 14:00:42 bostic Exp $ (
  *	Read from a file or utility.
  */
 int
-ex_read(ep, cmdp)
+ex_read(sp, ep, cmdp)
+	SCR *sp;
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
@@ -42,9 +43,8 @@ ex_read(ep, cmdp)
 
 	/* If nothing, just read the file. */
 	if ((p = cmdp->string) == NULL) {
-		if (FF_ISSET(ep, F_NONAME)) {
-			ep->msg(ep, M_ERROR,
-			    "No filename from which to read.");
+		if (F_ISSET(ep, F_NONAME)) {
+			msgq(sp, M_ERROR, "No filename from which to read.");
 			return (1);
 		}
 		fname = ep->name;
@@ -66,17 +66,17 @@ ex_read(ep, cmdp)
 	if (*p == '!') {
 		for (; *p && isspace(*p); ++p);
 		if (*p == '\0') {
-			ep->msg(ep, M_ERROR, "Usage: %s.", cmdp->cmd->usage);
+			msgq(sp, M_ERROR, "Usage: %s.", cmdp->cmd->usage);
 			return (1);
 		}
-		if (filtercmd(ep, &cmdp->addr1, NULL, &rm, ++p, NOINPUT))
+		if (filtercmd(sp, ep, &cmdp->addr1, NULL, &rm, ++p, NOINPUT))
 			return (1);
-		SCRLNO(ep) = rm.lno;
+		ep->lno = rm.lno;
 		return (0);
 	}
 
 	/* Build an argv. */
-	if (buildargv(ep, p, 1, cmdp))
+	if (buildargv(sp, ep, p, 1, cmdp))
 		return (1);
 
 	switch(cmdp->argc) {
@@ -87,35 +87,35 @@ ex_read(ep, cmdp)
 		fname = (char *)cmdp->argv[0];
 		break;
 	default:
-		ep->msg(ep, M_ERROR, "Usage: %s.", cmdp->cmd->usage);
+		msgq(sp, M_ERROR, "Usage: %s.", cmdp->cmd->usage);
 		return (1);
 	}
 
 	/* Open the file. */
 noargs:	if ((fp = fopen(fname, "r")) == NULL || fstat(fileno(fp), &sb)) {
-		ep->msg(ep, M_ERROR, "%s: %s", fname, strerror(errno));
+		msgq(sp, M_ERROR, "%s: %s", fname, strerror(errno));
 		return (1);
 	}
 
 	/* If not a regular file, force must be set. */
 	if (!force && !S_ISREG(sb.st_mode)) {
-		ep->msg(ep, M_ERROR,
+		msgq(sp, M_ERROR,
 		    "%s is not a regular file -- use ! to read it.", fname);
 		return (1);
 	}
 
-	if (ex_readfp(ep, fname, fp, &cmdp->addr1, &ep->rptlines))
+	if (ex_readfp(sp, ep, fname, fp, &cmdp->addr1, &sp->rptlines))
 		return (1);
 
 	/* Set the cursor. */
-	SCRLNO(ep) = cmdp->addr1.lno + 1;
-	SCRCNO(ep) = 0;
+	ep->lno = cmdp->addr1.lno + 1;
+	ep->cno = 0;
 	
 	/* Set autoprint. */
-	FF_SET(ep, F_AUTOPRINT);
+	F_SET(sp, S_AUTOPRINT);
 
 	/* Set reporting. */
-	ep->rptlabel = "read";
+	sp->rptlabel = "read";
 	return (0);
 }
 
@@ -124,7 +124,8 @@ noargs:	if ((fp = fopen(fname, "r")) == NULL || fstat(fileno(fp), &sb)) {
  *	Read lines into the file.
  */
 int
-ex_readfp(ep, fname, fp, fm, cntp)
+ex_readfp(sp, ep, fname, fp, fm, cntp)
+	SCR *sp;
 	EXF *ep;
 	char *fname;
 	FILE *fp;
@@ -146,27 +147,27 @@ ex_readfp(ep, fname, fp, fm, cntp)
 	 * line.  The hack here is to repaint the screen if we're appending to
 	 * an empty file.
 	 */
-	if (file_lline(ep) == 0)
-		SF_SET(ep, S_REDRAW);
+	if (file_lline(sp, ep) == 0)
+		F_SET(sp, S_REDRAW);
 
 	/*
 	 * Add in the lines from the output.  Insertion starts at the line
 	 * following the address.
 	 */
 	rval = 0;
-	for (lno = fm->lno; p = ex_getline(ep, fp, &len); ++lno)
-		if (file_aline(ep, lno, p, len)) {
+	for (lno = fm->lno; p = ex_getline(sp, fp, &len); ++lno)
+		if (file_aline(sp, ep, lno, p, len)) {
 			rval = 1;
 			break;
 		}
 
 	if (ferror(fp)) {
-		ep->msg(ep, M_ERROR, "%s: %s", fname, strerror(errno));
+		msgq(sp, M_ERROR, "%s: %s", fname, strerror(errno));
 		rval = 1;
 	}
 
 	if (fclose(fp)) {
-		ep->msg(ep, M_ERROR, "%s: %s", fname, strerror(errno));
+		msgq(sp, M_ERROR, "%s: %s", fname, strerror(errno));
 		return (1);
 	}
 

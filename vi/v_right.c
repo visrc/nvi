@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_right.c,v 5.12 1993/02/19 18:35:56 bostic Exp $ (Berkeley) $Date: 1993/02/19 18:35:56 $";
+static char sccsid[] = "$Id: v_right.c,v 5.13 1993/03/25 15:01:23 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:01:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,7 +25,8 @@ static char sccsid[] = "$Id: v_right.c,v 5.12 1993/02/19 18:35:56 bostic Exp $ (
  * Special case: the 'c' and 'd' commands can move past the end of line.
  */
 int
-v_right(ep, vp, fm, tm, rp)
+v_right(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
@@ -33,11 +34,11 @@ v_right(ep, vp, fm, tm, rp)
 	u_long cnt;
 	size_t len;
 
-	if (file_gline(ep, fm->lno, &len) == NULL) {
-		if (file_lline(ep) == 0)
-			v_eol(ep, NULL);
+	if (file_gline(sp, ep, fm->lno, &len) == NULL) {
+		if (file_lline(sp, ep) == 0)
+			v_eol(sp, ep, NULL);
 		else
-			GETLINE_ERR(ep, fm->lno);
+			GETLINE_ERR(sp, fm->lno);
 		return (1);
 	}
 		
@@ -47,7 +48,7 @@ v_right(ep, vp, fm, tm, rp)
 			rp->cno = len;
 			return (0);
 		}
-		v_eol(ep, NULL);
+		v_eol(sp, ep, NULL);
 		return (1);
 	}
 
@@ -69,23 +70,24 @@ v_right(ep, vp, fm, tm, rp)
  *	the line.
  */
 int
-v_dollar(ep, vp, fm, tm, rp)
+v_dollar(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
 	size_t len;
 
-	if (file_gline(ep, fm->lno, &len) == NULL) {
-		if (file_lline(ep) == 0)
-			v_eol(ep, NULL);
+	if (file_gline(sp, ep, fm->lno, &len) == NULL) {
+		if (file_lline(sp, ep) == 0)
+			v_eol(sp, ep, NULL);
 		else
-			GETLINE_ERR(ep, fm->lno);
+			GETLINE_ERR(sp, fm->lno);
 		return (1);
 	}
 		
 	if (len == 0) {
-		v_eol(ep, NULL);
+		v_eol(sp, ep, NULL);
 		return (1);
 	}
 

@@ -4,11 +4,11 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: cut.h,v 5.12 1993/02/28 13:57:56 bostic Exp $ (Berkeley) $Date: 1993/02/28 13:57:56 $
+ *	$Id: cut.h,v 5.13 1993/03/25 14:59:00 bostic Exp $ (Berkeley) $Date: 1993/03/25 14:59:00 $
  */
 
-typedef struct text {			/* Text: a linked list of lines. */
-	struct text *next;		/* Next buffer. */
+typedef struct _text {			/* Text: a linked list of lines. */
+	struct _text *next;		/* Next buffer. */
 	u_char *lp;			/* Line buffer. */
 	size_t len;			/* Line length. */
 } TEXT;
@@ -22,7 +22,7 @@ typedef struct {			/* Cut buffer. */
 } CB;
 extern CB cuts[UCHAR_MAX + 2];		/* Set of cut buffers. */
 		
-typedef struct {			/* Input buffer. */
+typedef struct _ib {			/* Input buffer. */
 	TEXT *head;			/* Linked list of input lines. */
 	MARK start;			/* Starting cursor position. */
 	MARK stop;			/* Ending cursor position. */
@@ -40,23 +40,23 @@ extern IB ib;				/* Input buffer. */
 #define	VICB(vp)	((vp)->buffer == OOBCB ? DEFCB : (vp)->buffer)
 
 /* Check a buffer name for validity. */
-#define	CBNAME(ep, buf, cb) {						\
+#define	CBNAME(sp, buf, cb) {						\
 	if ((buf) > sizeof(cuts) - 1) {					\
-		ep->msg(ep, M_ERROR, "Invalid cut buffer name.");	\
+		msgq(sp, M_ERROR, "Invalid cut buffer name.");	\
 		return (1);						\
 	}								\
 	cb = &cuts[isupper(buf) ? tolower(buf) : buf];			\
 }
 
 /* Check to see if a buffer has contents. */
-#define	CBEMPTY(ep, buf, cb) {						\
+#define	CBEMPTY(sp, buf, cb) {						\
 	if ((cb)->head == NULL) {					\
 		if (buf == DEFCB)					\
-			ep->msg(ep, M_ERROR,				\
+			msgq(sp, M_ERROR,				\
 			    "The default buffer is empty.");		\
 		else							\
-			ep->msg(ep, M_ERROR,				\
-			    "Buffer %s is empty.", CHARNAME(buf));	\
+			msgq(sp, M_ERROR,				\
+			    "Buffer %s is empty.", CHARNAME(sp, buf));	\
 		return (1);						\
 	}								\
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.51 1993/02/28 14:02:12 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:02:12 $";
+static char sccsid[] = "$Id: vi.c,v 5.52 1993/03/25 15:01:48 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:01:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,9 +26,9 @@ static char sccsid[] = "$Id: vi.c,v 5.51 1993/02/28 14:02:12 bostic Exp $ (Berke
 #include "term.h"
 #include "vcmd.h"
 
-static int getcmd __P((EXF *, VICMDARG *, VICMDARG *));
-static int getkeyword __P((EXF *, VICMDARG *, u_int));
-static int getmotion __P((EXF *, VICMDARG *, MARK *, MARK *));
+static int getcmd __P((SCR *, EXF *, VICMDARG *, VICMDARG *));
+static int getkeyword __P((SCR *, EXF *, VICMDARG *, u_int));
+static int getmotion __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *));
 
 static VICMDARG cmd, dot, dotmotion;
 
@@ -37,26 +37,27 @@ static VICMDARG cmd, dot, dotmotion;
  * 	Main vi command loop.
  */
 int
-vi(ep)
+vi(sp, ep)
+	SCR *sp;
 	EXF *ep;
 {
-	register VICMDARG *vp;
 	MARK fm, tm, m;
+	VICMDARG *vp;
 	u_int flags;
 
-	if (v_init(ep) || scr_update(ep))
+	if (v_init(sp, ep) || scr_update(sp, ep))
 		return (1);
-	status(ep, SCRLNO(ep));
+	status(sp, ep, ep->lno);
 
 	for (;;) {
 		/* Report on the status of the last command. */
-		if (ep->rptlines) {
-			if (LVAL(O_REPORT) && ep->rptlines >= LVAL(O_REPORT)) {
-				ep->msg(ep, M_DISPLAY,
-				    "%ld line%s %s", ep->rptlines,
-				    ep->rptlines == 1 ? "" : "s", ep->rptlabel);
+		if (sp->rptlines) {
+			if (LVAL(O_REPORT) && sp->rptlines >= LVAL(O_REPORT)) {
+				msgq(sp, M_DISPLAY,
+				    "%ld line%s %s", sp->rptlines,
+				    sp->rptlines == 1 ? "" : "s", sp->rptlabel);
 			}
-			ep->rptlines = 0;
+			sp->rptlines = 0;
 		}
 
 		/*
@@ -64,11 +65,11 @@ vi(ep)
 		 * until the next keystroke.  If a vi message is waiting,
 		 * display it.
 		 */
-err:		if (!FF_ISSET(ep, F_MSGWAIT))
-			v_msgflush(ep);
+err:		if (!F_ISSET(sp, S_MSGWAIT))
+			v_msgflush(sp);
 
-		if (!FF_ISSET(ep, F_NEEDMERASE))
-			scr_modeline(ep, 0);
+		if (!F_ISSET(sp, S_NEEDMERASE))
+			scr_modeline(sp, ep, 0);
 
 		/*
 		 * XXX
@@ -84,20 +85,20 @@ err:		if (!FF_ISSET(ep, F_MSGWAIT))
 		 * command setting the cursor to the resulting mark.
 		 */
 		vp = &cmd;
-		if (getcmd(ep, vp, NULL))
+		if (getcmd(sp, ep, vp, NULL))
 			goto err;
 
 		flags = vp->kp->flags;
 
 		/* Get any associated keyword. */
-		if (flags & (V_KEYNUM|V_KEYW) && getkeyword(ep, vp, flags))
+		if (flags & (V_KEYNUM|V_KEYW) && getkeyword(sp, ep, vp, flags))
 			goto err;
 
 		/* If a non-relative movement, set the '' mark. */
 		if (flags & V_ABS) {
-			m.lno = SCRLNO(ep);
-			m.cno = SCRCNO(ep);
-			SETABSMARK(ep, &m);
+			m.lno = ep->lno;
+			m.cno = ep->cno;
+			SETABSMARK(sp, ep, &m);
 		}
 
 		/*
@@ -107,35 +108,35 @@ err:		if (!FF_ISSET(ep, F_MSGWAIT))
 		 * set to that many lines, counting the current one.
 		 */
 		if (flags & V_MOTION) {
-			if (getmotion(ep, vp, &fm, &tm))
+			if (getmotion(sp, ep, vp, &fm, &tm))
 				goto err;
 		} else {
-			fm.lno = SCRLNO(ep);
-			fm.cno = SCRCNO(ep);
+			fm.lno = ep->lno;
+			fm.cno = ep->cno;
 			if (vp->kp->flags & V_LMODE && vp->flags & VC_C1SET) {
-				tm.lno = SCRLNO(ep) + vp->count - 1;
-				tm.cno = SCRCNO(ep);
+				tm.lno = ep->lno + vp->count - 1;
+				tm.cno = ep->cno;
 			} else
 				tm = fm;
 		}
 
 		if (flags & V_INPUT && ISSET(O_SHOWMODE)) {
-			scr_modeline(ep, 1);
+			scr_modeline(sp, ep, 1);
 			refresh();
 		}
 
 		/* Log the start of an action. */
-		(void)log_cursor(ep);
+		(void)log_cursor(sp, ep);
 
 		/* Call the function, update the cursor. */
-		if ((vp->kp->func)(ep, vp, &fm, &tm, &m))
+		if ((vp->kp->func)(sp, ep, vp, &fm, &tm, &m))
 			goto err;
 		
 		/*
 		 * If that command took us out of vi, then exit
 		 * the loop without further action.
 		 */
-		if (!FF_ISSET(ep, F_MODE_VI) || FF_ISSET(ep, F_FILE_RESET))
+		if (!F_ISSET(sp, S_MODE_VI) || F_ISSET(sp, S_FILE_CHANGED))
 			break;
 
 		/* Set the dot command structure. */
@@ -164,53 +165,53 @@ err:		if (!FF_ISSET(ep, F_MSGWAIT))
 		 * you don't.
 		 */
 		if (flags & V_RCM)
-			m.cno = scr_relative(ep, m.lno);
+			m.cno = scr_relative(sp, ep, m.lno);
 		else if (flags & V_RCM_SETFNB) {
-			if (nonblank(ep, m.lno, &m.cno))
+			if (nonblank(sp, ep, m.lno, &m.cno))
 				goto err;
-			SCRP(ep)->rcmflags = RCM_FNB;
+			sp->rcmflags = RCM_FNB;
 		}
 		else if (flags & V_RCM_SETLAST)
-			SCRP(ep)->rcmflags = RCM_LAST;
+			sp->rcmflags = RCM_LAST;
 			
 		/* Update the cursor. */
-		SCRLNO(ep) = m.lno;
-		SCRCNO(ep) = m.cno;
-		(void)scr_update(ep);
+		ep->lno = m.lno;
+		ep->cno = m.cno;
+		(void)scr_update(sp, ep);
 
 		/* Set the new favorite position. */
 		if (flags & V_RCM_SET) {
-			SCRP(ep)->rcmflags = 0;
-			SCRP(ep)->rcm = SCRP(ep)->scno;
+			sp->rcmflags = 0;
+			sp->rcm = sp->scno;
 		}
 	}
-	return (v_end(ep));
+	return (v_end(sp));
 }
 
-#define	KEY(ep, k, flags) {						\
-	(k) = getkey(ep, flags);					\
-	if (FF_ISSET(ep, F_NEEDMERASE)) {				\
-		scr_modeline(ep, 0);					\
-		FF_CLR(ep, F_NEEDMERASE);				\
+#define	KEY(sp, k, flags) {						\
+	(k) = getkey(sp, flags);					\
+	if (F_ISSET(sp, S_NEEDMERASE)) {				\
+		scr_modeline(sp, ep, 0);				\
+		F_CLR(sp, S_NEEDMERASE);				\
 		refresh();						\
 	}								\
-	if (special[(k)] == K_VLNEXT)					\
-		(k) = getkey(ep, 0);					\
-	else if (special[(k)] == K_ESCAPE)				\
+	if (sp->special[(k)] == K_VLNEXT)				\
+		(k) = getkey(sp, 0);					\
+	else if (sp->special[(k)] == K_ESCAPE)				\
 		return (1);						\
 }
 
-#define	GETCOUNT(ep, count) {						\
+#define	GETCOUNT(sp, count) {						\
 	count = 0;							\
 	do {								\
 		hold = count * 10 + key - '0';				\
 		if (count > hold) {					\
-			ep->msg(ep, M_ERROR,				\
+			msgq(sp, M_ERROR,				\
 			    "Number larger than %lu", ULONG_MAX);	\
 			return (NULL);					\
 		}							\
 		count = hold;						\
-		KEY(ep, key, 0);					\
+		KEY(sp, key, 0);					\
 	} while (isdigit(key));						\
 }
 
@@ -228,7 +229,8 @@ err:		if (!FF_ISSET(ep, F_MSGWAIT))
  *	[count] key [character]
  */
 static int
-getcmd(ep, vp, ismotion)
+getcmd(sp, ep, vp, ismotion)
+	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	VICMDARG *ismotion;	/* Previous key if getting motion component. */
@@ -241,19 +243,19 @@ getcmd(ep, vp, ismotion)
 	memset(&vp->vpstartzero, 0,
 	    (char *)&vp->vpendzero - (char *)&vp->vpstartzero);
 
-	KEY(ep, key, GB_MAPCOMMAND);
+	KEY(sp, key, GB_MAPCOMMAND);
 	if (key < 0 || key > MAXVIKEY) {
-		ep->msg(ep, M_BELL, "%s isn't a command.", CHARNAME(key));
+		msgq(sp, M_BELL, "%s isn't a command.", CHARNAME(sp, key));
 		return (1);
 	}
 
 	/* Pick up optional buffer. */
 	if (key == '"') {
-		KEY(ep, key, 0);
+		KEY(sp, key, 0);
 		if (!isalnum(key))
 			goto ebuf;
 		vp->buffer = key;
-		KEY(ep, key, 0);
+		KEY(sp, key, 0);
 	} else
 		vp->buffer = OOBCB;
 
@@ -262,22 +264,22 @@ getcmd(ep, vp, ismotion)
 	 * a count, it's a command.
 	 */
 	if (isdigit(key) && key != '0') {
-		GETCOUNT(ep, vp->count);
+		GETCOUNT(sp, vp->count);
 		vp->flags |= VC_C1SET;
 	}
 
 	/* Pick up optional buffer. */
 	if (key == '"') {
 		if (vp->buffer != OOBCB) {
-			ep->msg(ep, M_ERROR,
+			msgq(sp, M_ERROR,
 			    "Only one buffer can be specified.");
 			return (1);
 		}
-		KEY(ep, key, 0);
+		KEY(sp, key, 0);
 		if (!isalnum(key))
 			goto ebuf;
 		vp->buffer = key;
-		KEY(ep, key, 0);
+		KEY(sp, key, 0);
 	}
 
 	/* Find the command. */
@@ -295,11 +297,11 @@ getcmd(ep, vp, ismotion)
 				*vp = dot;
 				return (0);
 			}
-			ep->msg(ep, M_ERROR,
+			msgq(sp, M_ERROR,
 			    "No commands which set dot executed yet.");
 		} else
-			ep->msg(ep, M_ERROR,
-			    "%s isn't a command.", CHARNAME(key));
+			msgq(sp, M_ERROR,
+			    "%s isn't a command.", CHARNAME(sp, key));
 		return (1);
 	}
 
@@ -317,12 +319,12 @@ getcmd(ep, vp, ismotion)
 
 		/* Required buffer. */
 		if (flags & V_RBUF) {
-			KEY(ep, key, 0);
+			KEY(sp, key, 0);
 			if (key != '"')
 				goto usage;
-			KEY(ep, key, 0);
+			KEY(sp, key, 0);
 			if (key > UCHAR_MAX) {
-ebuf:				ep->msg(ep, M_ERROR, "Invalid buffer name.");
+ebuf:				msgq(sp, M_ERROR, "Invalid buffer name.");
 				return (1);
 			}
 			vp->buffer = key;
@@ -334,21 +336,21 @@ ebuf:				ep->msg(ep, M_ERROR, "Invalid buffer name.");
 		 * the *doubled* characters do just frost your shorts?
 		 */
 		if (vp->key == '[' || vp->key == ']') {
-			KEY(ep, key, 0);
+			KEY(sp, key, 0);
 			if (vp->key != key)
 				goto usage;
 		}
 		/* Special case: 'Z' command. */
 		if (vp->key == 'Z') {
-			KEY(ep, key, 0);
+			KEY(sp, key, 0);
 			if (vp->key != key)
 				goto usage;
 		}
 		/* Special case: 'z' command. */
 		if (vp->key == 'z') {
-			KEY(ep, key, 0);
+			KEY(sp, key, 0);
 			if (isdigit(key)) {
-				GETCOUNT(ep, vp->count2);
+				GETCOUNT(sp, vp->count2);
 				vp->flags |= VC_C2SET;
 			}
 			vp->character = key;
@@ -360,14 +362,14 @@ ebuf:				ep->msg(ep, M_ERROR, "Invalid buffer name.");
 	 * imply the current line.
 	 */
 	else if (ismotion->key != key && !(flags & V_MOVE)) {
-usage:		ep->msg(ep, M_ERROR, "Usage: %s", ismotion != NULL ?
+usage:		msgq(sp, M_ERROR, "Usage: %s", ismotion != NULL ?
 		    vikeys[ismotion->key].usage : kp->usage);
 		return (1);
 	}
 
 	/* Required character. */
 	if (flags & V_CHAR)
-		KEY(ep, vp->character, 0);
+		KEY(sp, vp->character, 0);
 
 	return (0);
 }
@@ -378,7 +380,8 @@ usage:		ep->msg(ep, M_ERROR, "Usage: %s", ismotion != NULL ?
  * Get resulting motion mark.
  */
 static int
-getmotion(ep, vp, fm, tm)
+getmotion(sp, ep, vp, fm, tm)
+	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm;
@@ -390,7 +393,7 @@ getmotion(ep, vp, fm, tm)
 	/* If '.' command, use the dot motion, else get the motion command. */
 	if (vp->flags & VC_ISDOT)
 		motion = dotmotion;
-	else if (getcmd(ep, &motion, vp))
+	else if (getcmd(sp, ep, &motion, vp))
 		return (1);
 
 	/*
@@ -423,7 +426,7 @@ getmotion(ep, vp, fm, tm)
 		vp->flags |= VC_LMODE;
 
 		/* Set the end of the command. */
-		tm->lno = SCRLNO(ep) + motion.count - 1;
+		tm->lno = ep->lno + motion.count - 1;
 		tm->cno = 1;
 
 		/*
@@ -431,15 +434,15 @@ getmotion(ep, vp, fm, tm)
 		 * historic vi permitted a "cc" command to change it.
 		 */
 		if (!(vp->kp->flags & VC_C) &&
-		    file_gline(ep, tm->lno, NULL) == NULL) {
-			m.lno = SCRLNO(ep);
-			m.cno = SCRCNO(ep);
-			v_eof(ep, &m);
+		    file_gline(sp, ep, tm->lno, NULL) == NULL) {
+			m.lno = ep->lno;
+			m.cno = ep->cno;
+			v_eof(sp, ep, &m);
 			return (1);
 		}
 
 		/* Set the origin of the command. */
-		fm->lno = SCRLNO(ep);
+		fm->lno = ep->lno;
 		fm->cno = 0;
 	} else {
 		/*
@@ -449,9 +452,9 @@ getmotion(ep, vp, fm, tm)
 		 */
 		motion.flags |= vp->kp->flags & VC_COMMASK;
 
-		m.lno = SCRLNO(ep);
-		m.cno = SCRCNO(ep);
-		if ((motion.kp->func)(ep, &motion, &m, NULL, tm))
+		m.lno = ep->lno;
+		m.cno = ep->cno;
+		if ((motion.kp->func)(sp, ep, &motion, &m, NULL, tm))
 			return (1);
 
 		/*
@@ -465,14 +468,14 @@ getmotion(ep, vp, fm, tm)
 		 * If the motion is in a backward direction, switch the current
 		 * location so that we're always moving in the same direction.
 		 */
-		if (tm->lno < SCRLNO(ep) ||
-		    tm->lno == SCRLNO(ep) && tm->cno < SCRCNO(ep)) {
+		if (tm->lno < ep->lno ||
+		    tm->lno == ep->lno && tm->cno < ep->cno) {
 			*fm = *tm;
-			tm->lno = SCRLNO(ep);
-			tm->cno = SCRCNO(ep);
+			tm->lno = ep->lno;
+			tm->cno = ep->cno;
 		} else {
-			fm->lno = SCRLNO(ep);
-			fm->cno = SCRCNO(ep);
+			fm->lno = ep->lno;
+			fm->cno = ep->cno;
 		}
 	}
 
@@ -490,7 +493,8 @@ getmotion(ep, vp, fm, tm)
 #define	innum(c)	(isdigit(c) || strchr("abcdefABCDEF", c))
 
 static int
-getkeyword(ep, kp, flags)
+getkeyword(sp, ep, kp, flags)
+	SCR *sp;
 	EXF *ep;
 	VICMDARG *kp;
 	u_int flags;
@@ -499,14 +503,14 @@ getkeyword(ep, kp, flags)
 	size_t len;
 	u_char *p;
 
-	p = file_gline(ep, SCRLNO(ep), &len);
-	beg = SCRCNO(ep);
+	p = file_gline(sp, ep, ep->lno, &len);
+	beg = ep->cno;
 
 	/* May not be a keyword at all. */
 	if (!len ||
 	    flags & V_KEYW && !inword(p[beg]) ||
 	    flags & V_KEYNUM && !innum(p[beg])) {
-noword:		ep->msg(ep, M_BELL, "Cursor not in a %s.",
+noword:		msgq(sp, M_BELL, "Cursor not in a %s.",
 		    flags & V_KEYW ? "word" : "number");
 		return (1);
 	}
@@ -545,10 +549,10 @@ noword:		ep->msg(ep, M_BELL, "Cursor not in a %s.",
 		}
 
 	if (flags & V_KEYW) {
-		for (end = SCRCNO(ep); ++end < len && inword(p[end]););
+		for (end = ep->cno; ++end < len && inword(p[end]););
 		--end;
 	} else {
-		for (end = SCRCNO(ep); ++end < len;) {
+		for (end = ep->cno; ++end < len;) {
 			if (p[end] == 'X' || p[end] == 'x') {
 				if (end != beg + 1 || p[beg] != '0')
 					break;
@@ -568,9 +572,9 @@ noword:		ep->msg(ep, M_BELL, "Cursor not in a %s.",
 	 * Getting a keyword implies moving the cursor to its beginning.
 	 * Refresh now.
 	 */
-	if (beg != SCRCNO(ep)) {
-		SCRCNO(ep) = beg;
-		scr_update(ep);
+	if (beg != ep->cno) {
+		ep->cno = beg;
+		scr_update(sp, ep);
 		refresh();
 	}
 
@@ -582,7 +586,7 @@ noword:		ep->msg(ep, M_BELL, "Cursor not in a %s.",
 	 */
 	len = (end - beg) + 2;				/* XXX */
 	kp->klen = (end - beg) + 1;
-	BINC(ep, kp->keyword, kp->kbuflen, len);
+	BINC(sp, kp->keyword, kp->kbuflen, len);
 	memmove(kp->keyword, p + beg, kp->klen);
 	kp->keyword[kp->klen] = '\0';			/* XXX */
 	return (0);

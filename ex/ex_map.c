@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_map.c,v 5.18 1993/02/28 14:00:37 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:00:37 $";
+static char sccsid[] = "$Id: ex_map.c,v 5.19 1993/03/25 14:59:55 bostic Exp $ (Berkeley) $Date: 1993/03/25 14:59:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,7 +27,8 @@ static char sccsid[] = "$Id: ex_map.c,v 5.18 1993/02/28 14:00:37 bostic Exp $ (B
  *	Map a key or display mapped keys.
  */
 int
-ex_map(ep, cmdp)
+ex_map(sp, ep, cmdp)
+	SCR *sp;
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
@@ -38,11 +39,11 @@ ex_map(ep, cmdp)
 	u_char *name;
 	char *s, buf[10];
 
-	stype = cmdp->flags & E_FORCE ? INPUT : COMMAND;
+	stype = cmdp->flags & E_FORCE ? SEQ_INPUT : SEQ_COMMAND;
 
 	if (cmdp->string == NULL) {
-		if (seq_dump(ep, stype, 1) == 0)
-			ep->msg(ep, M_ERROR, "No map entries.");
+		if (seq_dump(sp, stype, 1) == 0)
+			msgq(sp, M_ERROR, "No map entries.");
 		return (0);
 	}
 
@@ -56,7 +57,7 @@ ex_map(ep, cmdp)
 	if (*output != '\0')
 		for (*output++ = '\0'; isspace(*output); ++output);
 	if (*output == '\0') {
-		ep->msg(ep, M_ERROR, "Usage: %s.", cmdp->cmd->usage);
+		msgq(sp, M_ERROR, "Usage: %s.", cmdp->cmd->usage);
 		return (1);
 	}
 	
@@ -72,8 +73,7 @@ ex_map(ep, cmdp)
 			input = FKEY[key];
 			name = (u_char *)buf;
 		} else {
-			ep->msg(ep, M_ERROR,
-			    "This terminal has no %s key.", buf);
+			msgq(sp, M_ERROR, "This terminal has no %s key.", buf);
 			return (1);
 		}
 #else
@@ -83,7 +83,7 @@ ex_map(ep, cmdp)
 		name = NULL;
 
 		/* Some single keys may not be remapped in command mode. */
-		if (stype == COMMAND && input[1] == '\0')
+		if (stype == SEQ_COMMAND && input[1] == '\0')
 			switch (input[0]) {
 			case '\n':
 				s = "\\n";
@@ -96,12 +96,12 @@ ex_map(ep, cmdp)
 				goto noremap;
 			case ':':
 				s = ":";
-noremap:			ep->msg(ep, M_ERROR,
+noremap:			msgq(sp, M_ERROR,
 				    "The %s character may not be remapped.", s);
 				return (1);
 			}
 	}
-	return (seq_set(ep, name, input, output, stype, 1));
+	return (seq_set(sp, name, input, output, stype, 1));
 }
 
 /*
@@ -109,15 +109,17 @@ noremap:			ep->msg(ep, M_ERROR,
  *	Unmap a key.
  */
 int
-ex_unmap(ep, cmdp)
+ex_unmap(sp, ep, cmdp)
+	SCR *sp;
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	u_char *input;
 
 	input = cmdp->argv[0];
-	if (seq_delete(input, cmdp->flags & E_FORCE ? INPUT : COMMAND)) {
-		ep->msg(ep, M_ERROR, "\"%s\" isn't mapped.", input);
+	if (seq_delete(sp,
+	    input, cmdp->flags & E_FORCE ? SEQ_INPUT : SEQ_COMMAND)) {
+		msgq(sp, M_ERROR, "\"%s\" isn't mapped.", input);
 		return (1);
 	}
 	return (0);
@@ -128,11 +130,11 @@ ex_unmap(ep, cmdp)
  *	Save the mapped sequences to a file.
  */
 int
-map_save(fp)
+map_save(sp, fp)
+	SCR *sp;
 	FILE *fp;
 {
-	
-	if (seq_save(fp, (u_char *)"map ", COMMAND))
+	if (seq_save(sp, fp, (u_char *)"map ", SEQ_COMMAND))
 		return (1);
-	return (seq_save(fp, (u_char *)"map! ", INPUT));
+	return (seq_save(sp, fp, (u_char *)"map! ", SEQ_INPUT));
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_sentence.c,v 5.10 1993/02/25 17:50:41 bostic Exp $ (Berkeley) $Date: 1993/02/25 17:50:41 $";
+static char sccsid[] = "$Id: v_sentence.c,v 5.11 1993/03/25 15:01:29 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:01:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,8 +30,8 @@ static char sccsid[] = "$Id: v_sentence.c,v 5.10 1993/02/25 17:50:41 bostic Exp 
  * sentences, in both directions.
  */
 
-#define	EATBLANK(ep)							\
-	while (getc_next(ep, FORWARD, &ch) &&				\
+#define	EATBLANK(sp)							\
+	while (getc_next(sp, ep, FORWARD, &ch) &&			\
 	    (ch == EMPTYLINE || ch == ' ' || ch == '\t'))
 
 #define	ISSPACE(ch)							\
@@ -42,7 +42,8 @@ static char sccsid[] = "$Id: v_sentence.c,v 5.10 1993/02/25 17:50:41 bostic Exp 
  *	Move forward count sentences.
  */
 int
-v_sentencef(ep, vp, fm, tm, rp)
+v_sentencef(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
@@ -53,7 +54,7 @@ v_sentencef(ep, vp, fm, tm, rp)
 
 	cnt = vp->flags & VC_C1SET ? vp->count : 1;
 
-	if (getc_init(ep, fm, &ch))
+	if (getc_init(sp, ep, fm, &ch))
 		return (1);
 
 	/*
@@ -62,21 +63,21 @@ v_sentencef(ep, vp, fm, tm, rp)
 	 * what correctly means in that case.
 	 */
 	if (ISSPACE(ch)) {
-		EATBLANK(ep);
+		EATBLANK(sp);
 		if (--cnt == 0) {
-			getc_set(ep, rp);
+			getc_set(sp, ep, rp);
 			if (fm->lno != rp->lno || fm->cno != rp->cno)
 				return (0);
-			v_eof(ep, NULL);
+			v_eof(sp, ep, NULL);
 			return (1);
 		}
 	}
-	for (state = NONE; getc_next(ep, FORWARD, &ch);)
+	for (state = NONE; getc_next(sp, ep, FORWARD, &ch);)
 		switch(ch) {
 		case EMPTYLINE:
 			if ((state == PERIOD || state == BLANK) && --cnt == 0) {
-				EATBLANK(ep);
-				getc_set(ep, rp);
+				EATBLANK(sp);
+				getc_set(sp, ep, rp);
 				return (0);
 			}
 			state = NONE;
@@ -93,8 +94,8 @@ v_sentencef(ep, vp, fm, tm, rp)
 				break;
 			}
 			if (state == BLANK && --cnt == 0) {
-				EATBLANK(ep);
-				getc_set(ep, rp);
+				EATBLANK(sp);
+				getc_set(sp, ep, rp);
 				return (0);
 			}
 			break;
@@ -104,17 +105,17 @@ v_sentencef(ep, vp, fm, tm, rp)
 		}
 
 	/* EOF is a movement sink. */
-	getc_set(ep, rp);
+	getc_set(sp, ep, rp);
 	if (fm->lno != rp->lno || fm->cno != rp->cno)
 		return (0);
 
-	v_eof(ep, NULL);
+	v_eof(sp, ep, NULL);
 	return (1);
 }
 
 #undef	EATBLANK
-#define	EATBLANK(ep)							\
-	while (getc_next(ep, BACKWARD, &ch) &&				\
+#define	EATBLANK(sp)							\
+	while (getc_next(sp, ep, BACKWARD, &ch) &&			\
 	    (ch == EMPTYLINE || ch == ' ' || ch == '\t'))
 
 /*
@@ -122,7 +123,8 @@ v_sentencef(ep, vp, fm, tm, rp)
  *	Move forward count sentences.
  */
 int
-v_sentenceb(ep, vp, fm, tm, rp)
+v_sentenceb(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
@@ -131,27 +133,27 @@ v_sentenceb(ep, vp, fm, tm, rp)
 	u_long cnt;
 
 	if (fm->lno == 1 && fm->cno == 0) {
-		v_sof(ep, NULL);
+		v_sof(sp, NULL);
 		return (1);
 	}
 
 	cnt = vp->flags & VC_C1SET ? vp->count : 1;
 
-	if (getc_init(ep, fm, &ch))
+	if (getc_init(sp, ep, fm, &ch))
 		return (1);
 
 	/*
 	 * Make ".  xxx" with the cursor on the 'x', and "xxx.  ", with the
 	 * cursor in the spaces, work.
 	 */
-	if (getc_next(ep, BACKWARD, &ch) && ISSPACE(ch))
-		EATBLANK(ep);
+	if (getc_next(sp, ep, BACKWARD, &ch) && ISSPACE(ch))
+		EATBLANK(sp);
 
-	for (last1 = last2 = 'a'; getc_next(ep, BACKWARD, &ch);) {
+	for (last1 = last2 = 'a'; getc_next(sp, ep, BACKWARD, &ch);) {
 		if ((ch == '.' || ch == '?' || ch == '!') &&
 		    ISSPACE(last1) && ISSPACE(last2) && --cnt == 0) {
-			while (getc_next(ep, FORWARD, &ch) && ISSPACE(ch));
-			getc_set(ep, rp);
+			while (getc_next(sp, ep, FORWARD, &ch) && ISSPACE(ch));
+			getc_set(sp, ep, rp);
 			return (0);
 		}
 		last2 = last1;
@@ -159,6 +161,6 @@ v_sentenceb(ep, vp, fm, tm, rp)
 	}
 
 	/* SOF is a movement sink. */
-	getc_set(ep, rp);
+	getc_set(sp, ep, rp);
 	return (0);
 }

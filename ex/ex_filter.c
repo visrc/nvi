@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 5.26 1993/02/28 13:58:42 bostic Exp $ (Berkeley) $Date: 1993/02/28 13:58:42 $";
+static char sccsid[] = "$Id: ex_filter.c,v 5.27 1993/03/25 14:59:06 bostic Exp $ (Berkeley) $Date: 1993/03/25 14:59:06 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -31,7 +31,8 @@ static char sccsid[] = "$Id: ex_filter.c,v 5.26 1993/02/28 13:58:42 bostic Exp $
  *	original text with the stdout/stderr output of the filter.
  */
 int
-filtercmd(ep, fm, tm, rp, cmd, ftype)
+filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
+	SCR *sp;
 	EXF *ep;
 	MARK *fm, *tm, *rp;
 	u_char *cmd;
@@ -58,27 +59,27 @@ filtercmd(ep, fm, tm, rp, cmd, ftype)
 	 */
 	if (ftype == NOINPUT) {
 		if ((input[0] = open(_PATH_DEVNULL, O_RDONLY, 0)) < 0) {
-			ep->msg(ep, M_ERROR,
+			msgq(sp, M_ERROR,
 			    "filter: %s: %s", _PATH_DEVNULL, strerror(errno));
 			goto err;
 		}
 	} else
 		if (pipe(input) < 0 ||
 		    (ifp = fdopen(input[1], "w")) == NULL) {
-			ep->msg(ep, M_ERROR, "filter: %s", strerror(errno));
+			msgq(sp, M_ERROR, "filter: %s", strerror(errno));
 			goto err;
 		}
 
 	if (ftype == NOOUTPUT) {
 		if ((output[1] = open(_PATH_DEVNULL, O_WRONLY, 0)) < 0) {
-			ep->msg(ep, M_ERROR,
+			msgq(sp, M_ERROR,
 			    "filter: %s: %s", _PATH_DEVNULL, strerror(errno));
 			goto err;
 		}
 	} else
 		if (pipe(output) < 0 ||
 		    (ofp = fdopen(output[0], "r")) == NULL) {
-			ep->msg(ep, M_ERROR, "filter: %s", strerror(errno));
+			msgq(sp, M_ERROR, "filter: %s", strerror(errno));
 			goto err;
 		}
 
@@ -89,7 +90,7 @@ filtercmd(ep, fm, tm, rp, cmd, ftype)
 	switch (pid = vfork()) {
 	case -1:			/* Error. */
 		(void)sigprocmask(SIG_SETMASK, &omask, NULL);
-		ep->msg(ep, M_ERROR, "filter: %s", strerror(errno));
+		msgq(sp, M_ERROR, "filter: %s", strerror(errno));
 err:		if (input[0] != -1)
 			(void)close(input[0]);
 		if (input[0] != -1)
@@ -125,7 +126,7 @@ err:		if (input[0] != -1)
 		else
 			++name;
 		execl((char *)PVAL(O_SHELL), name, "-c", cmd, NULL);
-		ep->msg(ep, M_ERROR,
+		msgq(sp, M_ERROR,
 		    "exec: %s: %s", PVAL(O_SHELL), strerror(errno));
 		_exit (1);
 		/* NOTREACHED */
@@ -142,12 +143,12 @@ err:		if (input[0] != -1)
 	dlines = 0;
 	rval = 0;
 	if (ftype != NOINPUT)
-		if (ex_writefp(ep, "filter", ifp, fm, tm, 0))
+		if (ex_writefp(sp, ep, "filter", ifp, fm, tm, 0))
 			rval = 1;
 		else {
 			/* Delete old text, if any. */
 			for (lno = tm->lno; lno >= fm->lno; --lno)
-				if (file_dline(ep, lno))
+				if (file_dline(sp, ep, lno))
 					rval = 1;
 			dlines = tm->lno - fm->lno;
 		}
@@ -162,27 +163,27 @@ err:		if (input[0] != -1)
 		if (ftype != NOOUTPUT) {
 			rp->lno = fm->lno;
 			--fm->lno;
-			rval = ex_readfp(ep, "filter", ofp, fm, &ilines);
+			rval = ex_readfp(sp, ep, "filter", ofp, fm, &ilines);
 		}
 
 		/* Reporting. */
 		if (ilines == dlines) {
 			if (ilines != 0) {
-				ep->rptlines = ilines;
-				ep->rptlabel = "modified";
+				sp->rptlines = ilines;
+				sp->rptlabel = "modified";
 			}
 		} else if (dlines == 0) {
-			ep->rptlines = ilines;
-			ep->rptlabel = "added";
+			sp->rptlines = ilines;
+			sp->rptlabel = "added";
 		} else if (ilines == 0) {
-			ep->rptlines = dlines;
-			ep->rptlabel = "deleted";
+			sp->rptlines = dlines;
+			sp->rptlabel = "deleted";
 		} else if (ilines > dlines) {
-			ep->rptlines = ilines - dlines;
-			ep->rptlabel = "added";
+			sp->rptlines = ilines - dlines;
+			sp->rptlabel = "added";
 		} else {
-			ep->rptlines = dlines - ilines;
-			ep->rptlabel = "deleted";
+			sp->rptlines = dlines - ilines;
+			sp->rptlabel = "deleted";
 		}
 	}
 			
@@ -195,13 +196,13 @@ err:		if (input[0] != -1)
 	(void)signal(SIGQUIT, quitsave);
 
 	if (WIFSIGNALED(pstat)) {
-		ep->msg(ep, M_DISPLAY,
+		msgq(sp, M_DISPLAY,
 		    "filter: exited with signal %d%s.", WTERMSIG(pstat),
 		    WCOREDUMP(pstat) ? "; core dumped" : "");
 		return (1);
 	}
 	else if (WIFEXITED(pstat) && WEXITSTATUS(pstat)) {
-		ep->msg(ep, M_DISPLAY,
+		msgq(sp, M_DISPLAY,
 		    "filter: exited with status %d.", WEXITSTATUS(pstat));
 		return (1);
 	}

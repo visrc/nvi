@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_equal.c,v 5.9 1993/02/16 20:10:10 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:10 $";
+static char sccsid[] = "$Id: ex_equal.c,v 5.10 1993/03/25 14:59:48 bostic Exp $ (Berkeley) $Date: 1993/03/25 14:59:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -23,11 +23,12 @@ static char sccsid[] = "$Id: ex_equal.c,v 5.9 1993/02/16 20:10:10 bostic Exp $ (
  *	last line number in the file if no address specified.
  */
 int
-ex_equal(ep, cmdp)
+ex_equal(sp, ep, cmdp)
+	SCR *sp;
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	(void)fprintf(ep->stdfp,
-	    "%ld", cmdp->addrcnt ? cmdp->addr1.lno : file_lline(ep));
+	(void)fprintf(sp->stdfp,
+	    "%ld", cmdp->addrcnt ? cmdp->addr1.lno : file_lline(sp, ep));
 	return (0);
 }

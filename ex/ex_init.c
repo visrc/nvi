@@ -6,12 +6,10 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_init.c,v 5.8 1993/02/28 14:00:35 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:00:35 $";
+static char sccsid[] = "$Id: ex_init.c,v 5.9 1993/03/25 14:59:54 bostic Exp $ (Berkeley) $Date: 1993/03/25 14:59:54 $";
 #endif /* not lint */
 
-#include <limits.h>
 #include <stdio.h>
-#include <termios.h>
 #include <unistd.h>
 
 #include "vi.h"
@@ -24,7 +22,8 @@ static char sccsid[] = "$Id: ex_init.c,v 5.8 1993/02/28 14:00:35 bostic Exp $ (B
  *	Initialize ex.
  */
 int
-ex_init(ep)
+ex_init(sp, ep)
+	SCR *sp;
 	EXF *ep;
 {
 	struct termios raw;
@@ -38,24 +37,16 @@ ex_init(ep)
 		return (1);
 
 	/* Set up ex functions. */
-	ep->confirm = ex_confirm;
-	ep->end = ex_end;
-	ep->msg = ex_msg;
-
-	/* Write to the terminal. */
-	ep->stdfp = stdout;
-
-	/* Initialize the terminal size. */
-	SCRP(ep)->lines = LVAL(O_LINES);
-	SCRP(ep)->cols = LVAL(O_COLUMNS);
+	sp->confirm = ex_confirm;
+	sp->end = ex_end;
 
 	/*
 	 * Ex always starts editing at the end of the file;
 	 * going to ex from vi retains the current line.
 	 */
-	if (FF_ISSET(ep, F_NEWSESSION))
-		SCRLNO(ep) = file_lline(ep);
-	SCRCNO(ep) = 0;
+	if (F_ISSET(ep, F_NEWSESSION))
+		ep->lno = file_lline(sp, ep);
+	ep->cno = 0;
 	return (0);
 }
 
@@ -64,14 +55,10 @@ ex_init(ep)
  *	End ex session.
  */
 int
-ex_end(ep)
-	EXF *ep;
+ex_end(sp)
+	SCR *sp;
 {
-	extern struct termios original_termios;
-
-	/* Flush any remaining output. */
-	(void)fflush(ep->stdfp);
-
 	/* Reset the terminal state. */
-	return (tcsetattr(STDIN_FILENO, TCSADRAIN, &original_termios) ? 1 : 0);
+	return (tcsetattr(STDIN_FILENO,
+	    TCSADRAIN, &sp->gp->original_termios) ? 1 : 0);
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 5.28 1993/02/25 17:46:32 bostic Exp $ (Berkeley) $Date: 1993/02/25 17:46:32 $";
+static char sccsid[] = "$Id: ex_edit.c,v 5.29 1993/03/25 14:59:47 bostic Exp $ (Berkeley) $Date: 1993/03/25 14:59:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -24,18 +24,19 @@ static char sccsid[] = "$Id: ex_edit.c,v 5.28 1993/02/25 17:46:32 bostic Exp $ (
 
 enum which {EDIT, VISUAL};
 
-static int edit __P((EXF *, EXCMDARG *, enum which));
+static int edit __P((SCR *, EXF *, EXCMDARG *, enum which));
 
 /*
  * ex_edit --	:e[dit][!] [+cmd] [file]
  *	Edit a new file.
  */
 int
-ex_edit(ep, cmdp)
+ex_edit(sp, ep, cmdp)
+	SCR *sp;
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	return (edit(ep, cmdp, EDIT));
+	return (edit(sp, ep, cmdp, EDIT));
 }
 
 /*
@@ -43,20 +44,22 @@ ex_edit(ep, cmdp)
  *	Switch to visual mode.
  */
 int
-ex_visual(ep, cmdp)
+ex_visual(sp, ep, cmdp)
+	SCR *sp;
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	if (edit(ep, cmdp, VISUAL))
+	if (edit(sp, ep, cmdp, VISUAL))
 		return (1);
 
-	FF_CLR(ep, F_MODE_EX);
-	FF_SET(ep, F_MODE_VI);
+	F_CLR(sp, S_MODE_EX);
+	F_SET(sp, S_MODE_VI);
 	return (0);
 }
 
 static int
-edit(ep, cmdp, cmd)
+edit(sp, ep, cmdp, cmd)
+	SCR *sp;
 	EXF *ep;
 	EXCMDARG *cmdp;
 	enum which cmd;
@@ -72,11 +75,12 @@ edit(ep, cmdp, cmd)
 		new_ep = ep;
 		break;
 	case 1:
-		if ((new_ep = file_locate((char *)cmdp->argv[0])) == NULL) {
-			if (file_ins(ep, (char *)cmdp->argv[0], 1) ||
-			    (new_ep = file_next(ep, 0)) == NULL)
+		if ((new_ep =
+		    file_locate(sp, (char *)cmdp->argv[0])) == NULL) {
+			if (file_ins(sp, ep, (char *)cmdp->argv[0], 1) ||
+			    (new_ep = file_next(sp, ep, 0)) == NULL)
 				return (1);
-			FF_SET(new_ep, F_IGNORE);
+			F_SET(new_ep, F_IGNORE);
 		} else
 			reset = 1;
 		break;
@@ -84,11 +88,11 @@ edit(ep, cmdp, cmd)
 		abort();
 	}
 
-	MODIFY_CHECK(ep, cmdp->flags & E_FORCE);
+	MODIFY_CHECK(sp, ep, cmdp->flags & E_FORCE);
 
 	/* Switch files. */
-	FF_SET(ep, cmdp->flags & E_FORCE ? F_SWITCH_FORCE : F_SWITCH);
-	ep->enext = new_ep;
+	F_SET(sp, cmdp->flags & E_FORCE ? S_SWITCH_FORCE : S_SWITCH);
+	sp->enext = new_ep;
 
 	/*
 	 * Historic practice is that ex always starts at the end of the file
@@ -96,14 +100,14 @@ edit(ep, cmdp, cmd)
 	 * we're going to a file we've edited before.
 	 */
 	if (!reset)
-		if (cmdp->plus || cmd == VISUAL || FF_ISSET(ep, F_MODE_VI))
-			SCRLNO(new_ep) = 1;
+		if (cmdp->plus || cmd == VISUAL || F_ISSET(sp, S_MODE_VI))
+			ep->lno = 1;
 		else {
-			SCRLNO(new_ep) = file_lline(new_ep);
-			if (SCRLNO(new_ep) == 0)
-				SCRLNO(new_ep) = 1;
+			ep->lno = file_lline(sp, ep);
+			if (ep->lno == 0)
+				ep->lno = 1;
 		}
 	if (cmdp->plus)
-		(void)ex_cstring(ep, cmdp->plus, USTRLEN(cmdp->plus), 1);
+		(void)ex_cstring(sp, ep, cmdp->plus, USTRLEN(cmdp->plus), 1);
 	return (0);
 }

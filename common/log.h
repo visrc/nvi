@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: log.h,v 5.2 1992/11/11 18:32:36 bostic Exp $ (Berkeley) $Date: 1992/11/11 18:32:36 $
+ *	$Id: log.h,v 5.3 1993/03/25 14:59:10 bostic Exp $ (Berkeley) $Date: 1993/03/25 14:59:10 $
  */
 
 /*
@@ -35,10 +35,10 @@
 #define	LOG_MARK	6
 #define	LOG_START	7
 
-int	log_backward __P((EXF *, MARK *, recno_t));
-int	log_cursor __P((EXF *));
-int	log_end __P((EXF *));
-int	log_forward __P((EXF *, MARK *));
-int	log_init __P((EXF *));
-int	log_line __P((EXF *, recno_t, u_int));
-int	log_mark __P((EXF *, u_int, MARK *));
+int	log_backward __P((SCR *, EXF *, MARK *, recno_t));
+int	log_cursor __P((SCR *, EXF *));
+int	log_end __P((SCR *, EXF *));
+int	log_forward __P((SCR *, EXF *, MARK *));
+int	log_init __P((SCR *, EXF *));
+int	log_line __P((SCR *, EXF *, recno_t, u_int));
+int	log_mark __P((SCR *, EXF *, u_int, MARK *));

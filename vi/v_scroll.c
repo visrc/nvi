@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 5.24 1993/02/24 13:05:01 bostic Exp $ (Berkeley) $Date: 1993/02/24 13:05:01 $";
+static char sccsid[] = "$Id: v_scroll.c,v 5.25 1993/03/25 15:01:26 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:01:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,17 +26,18 @@ static char sccsid[] = "$Id: v_scroll.c,v 5.24 1993/02/24 13:05:01 bostic Exp $ 
  *	of the file by default.
  */
 int
-v_lgoto(ep, vp, fm, tm, rp)
+v_lgoto(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
 	recno_t last;
 
-	last = file_lline(ep);
+	last = file_lline(sp, ep);
 	if (vp->flags & VC_C1SET) {
 		if (last < vp->count) {
-			v_eof(ep, fm);
+			v_eof(sp, ep, fm);
 			return (1);
 		}
 		rp->lno = vp->count;
@@ -51,12 +52,13 @@ v_lgoto(ep, vp, fm, tm, rp)
  *	the top of the screen, 1 by default.
  */
 int
-v_home(ep, vp, fm, tm, rp)
+v_home(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	return (scr_sm_top(ep,
+	return (scr_sm_top(sp, ep,
 	    &rp->lno, vp->flags & VC_C1SET ? vp->count : 1));
 }
 
@@ -66,12 +68,13 @@ v_home(ep, vp, fm, tm, rp)
  *	of the screen.
  */
 int
-v_middle(ep, vp, fm, tm, rp)
+v_middle(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	return (scr_sm_mid(ep, &rp->lno));
+	return (scr_sm_mid(sp, ep, &rp->lno));
 }
 
 /*
@@ -80,12 +83,13 @@ v_middle(ep, vp, fm, tm, rp)
  *	the bottom of the screen, 1 by default.
  */
 int
-v_bottom(ep, vp, fm, tm, rp)
+v_bottom(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	return (scr_sm_bot(ep,
+	return (scr_sm_bot(sp, ep,
 	    &rp->lno, vp->flags & VC_C1SET ? vp->count : 1));
 }
 
@@ -94,7 +98,8 @@ v_bottom(ep, vp, fm, tm, rp)
  *	Move up by lines.
  */
 int
-v_up(ep, vp, fm, tm, rp)
+v_up(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
@@ -104,7 +109,7 @@ v_up(ep, vp, fm, tm, rp)
 	lno = vp->flags & VC_C1SET ? vp->count : 1;
 
 	if (fm->lno <= lno) {
-		v_sof(ep, fm);
+		v_sof(sp, fm);
 		return (1);
 	}
 	rp->lno = fm->lno - lno;
@@ -116,7 +121,8 @@ v_up(ep, vp, fm, tm, rp)
  *	Move down by lines.
  */
 int
-v_down(ep, vp, fm, tm, rp)
+v_down(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
@@ -126,8 +132,8 @@ v_down(ep, vp, fm, tm, rp)
 
 	lno = fm->lno + (vp->flags & VC_C1SET ? vp->count : 1);
 
-	if (file_gline(ep, lno, &len) == NULL) {
-		v_eof(ep, fm);
+	if (file_gline(sp, ep, lno, &len) == NULL) {
+		v_eof(sp, ep, fm);
 		return (1);
 	}
 	rp->lno = lno;
@@ -154,7 +160,8 @@ v_down(ep, vp, fm, tm, rp)
  *	Page up half screens.
  */
 int
-v_hpageup(ep, vp, fm, tm, rp)
+v_hpageup(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
@@ -169,7 +176,7 @@ v_hpageup(ep, vp, fm, tm, rp)
 	else
 		vp->count = LVAL(O_SCROLL);
 
-	return (scr_sm_down(ep, rp, (recno_t)LVAL(O_SCROLL), 1));
+	return (scr_sm_down(sp, ep, rp, (recno_t)LVAL(O_SCROLL), 1));
 }
 
 /*
@@ -177,7 +184,8 @@ v_hpageup(ep, vp, fm, tm, rp)
  *	Page down half screens.
  */
 int
-v_hpagedown(ep, vp, fm, tm, rp)
+v_hpagedown(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
@@ -192,7 +200,7 @@ v_hpagedown(ep, vp, fm, tm, rp)
 	else
 		vp->count = LVAL(O_SCROLL);
 
-	return (scr_sm_up(ep, rp, (recno_t)LVAL(O_SCROLL), 1));
+	return (scr_sm_up(sp, ep, rp, (recno_t)LVAL(O_SCROLL), 1));
 }
 
 /*
@@ -200,7 +208,8 @@ v_hpagedown(ep, vp, fm, tm, rp)
  *	Page up full screens.
  */
 int
-v_pageup(ep, vp, fm, tm, rp)
+v_pageup(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
@@ -208,8 +217,8 @@ v_pageup(ep, vp, fm, tm, rp)
 	recno_t count;
 
 	/* Calculation from POSIX 1003.2/D8. */
-	count = (vp->flags & VC_C1SET ? vp->count : 1) * (TEXTSIZE(ep) - 1);
-	return (scr_sm_down(ep, rp, count, 1));
+	count = (vp->flags & VC_C1SET ? vp->count : 1) * (TEXTSIZE(sp) - 1);
+	return (scr_sm_down(sp, ep, rp, count, 1));
 }
 
 /*
@@ -217,7 +226,8 @@ v_pageup(ep, vp, fm, tm, rp)
  *	Page down full screens.
  */
 int
-v_pagedown(ep, vp, fm, tm, rp)
+v_pagedown(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
@@ -225,8 +235,8 @@ v_pagedown(ep, vp, fm, tm, rp)
 	recno_t count;
 
 	/* Calculation from POSIX 1003.2/D8. */
-	count = (vp->flags & VC_C1SET ? vp->count : 1) * (TEXTSIZE(ep) - 1);
-	return (scr_sm_up(ep, rp, count, 1));
+	count = (vp->flags & VC_C1SET ? vp->count : 1) * (TEXTSIZE(sp) - 1);
+	return (scr_sm_up(sp, ep, rp, count, 1));
 }
 
 /*
@@ -234,7 +244,8 @@ v_pagedown(ep, vp, fm, tm, rp)
  *	Page up by lines.
  */
 int
-v_lineup(ep, vp, fm, tm, rp)
+v_lineup(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
@@ -243,7 +254,8 @@ v_lineup(ep, vp, fm, tm, rp)
 	 * The cursor moves down, staying with its original line, unless it
 	 * reaches the bottom of the screen.
 	 */
-	return (scr_sm_down(ep, rp, vp->flags & VC_C1SET ? vp->count : 1, 0));
+	return (scr_sm_down(sp, ep,
+	    rp, vp->flags & VC_C1SET ? vp->count : 1, 0));
 }
 
 /*
@@ -251,7 +263,8 @@ v_lineup(ep, vp, fm, tm, rp)
  *	Page down by lines.
  */
 int
-v_linedown(ep, vp, fm, tm, rp)
+v_linedown(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
@@ -260,5 +273,6 @@ v_linedown(ep, vp, fm, tm, rp)
 	 * The cursor moves up, staying with its original line, unless it
 	 * reaches the top of the screen.
 	 */
-	return (scr_sm_up(ep, rp, vp->flags & VC_C1SET ? vp->count : 1, 0));
+	return (scr_sm_up(sp, ep,
+	    rp, vp->flags & VC_C1SET ? vp->count : 1, 0));
 }

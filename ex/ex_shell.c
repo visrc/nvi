@@ -6,14 +6,12 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 5.21 1993/02/25 19:41:26 bostic Exp $ (Berkeley) $Date: 1993/02/25 19:41:26 $";
+static char sccsid[] = "$Id: ex_shell.c,v 5.22 1993/03/25 15:00:05 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:00:05 $";
 #endif /* not lint */
 
 #include <sys/param.h>
 
-#include <limits.h>
 #include <stdio.h>
-#include <termios.h>
 #include <unistd.h>
 
 #include "vi.h"
@@ -28,31 +26,31 @@ static char sccsid[] = "$Id: ex_shell.c,v 5.21 1993/02/25 19:41:26 bostic Exp $ 
  *	with the argument -i.
  */
 int
-ex_shell(ep, cmdp)
+ex_shell(sp, ep, cmdp)
+	SCR *sp;
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	extern struct termios original_termios;
 	struct termios t;
 	int rval;
 	char buf[MAXPATHLEN];
 
-	MODIFY_WARN(ep);
+	MODIFY_WARN(sp, ep);
 
 	/* Save ex/vi terminal settings, and restore the original ones. */
 	(void)tcgetattr(STDIN_FILENO, &t);
-	(void)tcsetattr(STDIN_FILENO, TCSADRAIN, &original_termios);
+	(void)tcsetattr(STDIN_FILENO, TCSADRAIN, &sp->gp->original_termios);
 
 	/* Start with a new line. */
 	(void)write(STDOUT_FILENO, "\n", 1);
 
 	(void)snprintf(buf, sizeof(buf), "%s -i", PVAL(O_SHELL));
-	rval = esystem(ep, PVAL(O_SHELL), (u_char *)buf);
+	rval = esystem(sp, PVAL(O_SHELL), (u_char *)buf);
 
 	/* Restore ex/vi terminal settings. */
 	(void)tcsetattr(STDIN_FILENO, TCSAFLUSH, &t);
 
 	/* Repaint the screen. */
-	SF_SET(ep, S_REFRESH);
+	F_SET(sp, S_REFRESH);
 	return (rval);
 }

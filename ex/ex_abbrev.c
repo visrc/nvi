@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_abbrev.c,v 5.16 1993/02/28 14:00:26 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:00:26 $";
+static char sccsid[] = "$Id: ex_abbrev.c,v 5.17 1993/03/25 14:59:38 bostic Exp $ (Berkeley) $Date: 1993/03/25 14:59:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,22 +19,21 @@ static char sccsid[] = "$Id: ex_abbrev.c,v 5.16 1993/02/28 14:00:26 bostic Exp $
 #include "excmd.h"
 #include "seq.h"
 
-int have_abbr;				/* If any abbreviations */
-
 /*
  * ex_abbr -- :abbreviate [key replacement]
  *	Create an abbreviation or display abbreviations.
  */
 int
-ex_abbr(ep, cmdp)
+ex_abbr(sp, ep, cmdp)
+	SCR *sp;
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
 	register u_char *input, *output;
 
 	if (cmdp->string == NULL) {
-		if (seq_dump(ep, ABBREV, 0) == 0)
-			ep->msg(ep, M_ERROR, "No abbreviations.");
+		if (seq_dump(sp, SEQ_ABBREV, 0) == 0)
+			msgq(sp, M_ERROR, "No abbreviations.");
 		return (0);
 	}
 
@@ -48,13 +47,13 @@ ex_abbr(ep, cmdp)
 	if (*output != '\0')
 		for (*output++ = '\0'; isspace(*output); ++output);
 	if (*output == '\0') {
-		ep->msg(ep, M_ERROR, "Usage: %s.", cmdp->cmd->usage);
+		msgq(sp, M_ERROR, "Usage: %s.", cmdp->cmd->usage);
 		return (1);
 	}
 
-	if (seq_set(ep, NULL, input, output, ABBREV, 1))
+	if (seq_set(sp, NULL, input, output, SEQ_ABBREV, 1))
 		return (1);
-	have_abbr = 1;
+	F_SET(sp, S_ABBREV);
 	return (0);
 }
 
@@ -63,15 +62,16 @@ ex_abbr(ep, cmdp)
  *      Delete an abbreviation.
  */
 int
-ex_unabbr(ep, cmdp)
+ex_unabbr(sp, ep, cmdp)
+	SCR *sp;
 	EXF *ep;
         EXCMDARG *cmdp;
 {
 	u_char *input;
 
 	input = cmdp->argv[0];
-	if (!have_abbr || seq_delete(input, ABBREV)) {
-		ep->msg(ep, M_ERROR,
+	if (!F_ISSET(sp, S_ABBREV) || seq_delete(sp, input, SEQ_ABBREV)) {
+		msgq(sp, M_ERROR,
 		    "\"%s\" was never an abbreviation.", input);
 		return (1);
 	}
@@ -83,8 +83,9 @@ ex_unabbr(ep, cmdp)
  *	Save the abbreviation sequences to a file.
  */
 int
-abbr_save(fp)
+abbr_save(sp, fp)
+	SCR *sp;
 	FILE *fp;
 {
-	return (seq_save(fp, NULL, ABBREV));
+	return (seq_save(sp, fp, NULL, SEQ_ABBREV));
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 5.27 1993/02/28 13:57:50 bostic Exp $ (Berkeley) $Date: 1993/02/28 13:57:50 $";
+static char sccsid[] = "$Id: cut.c,v 5.28 1993/03/25 14:58:58 bostic Exp $ (Berkeley) $Date: 1993/03/25 14:58:58 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -23,7 +23,7 @@ static char sccsid[] = "$Id: cut.c,v 5.27 1993/02/28 13:57:50 bostic Exp $ (Berk
 #include "options.h"
 #include "pathnames.h"
 
-static int	cutline __P((EXF *, recno_t, size_t, size_t, TEXT **));
+static int	cutline __P((SCR *, EXF *, recno_t, size_t, size_t, TEXT **));
 
 CB cuts[UCHAR_MAX + 2];		/* Set of cut buffers. */
 
@@ -36,7 +36,8 @@ CB cuts[UCHAR_MAX + 2];		/* Set of cut buffers. */
  * back and use ex_write to dump the cut into a temporary file.
  */
 int
-cut(ep, buffer, fm, tm, lmode)
+cut(sp, ep, buffer, fm, tm, lmode)
+	SCR *sp;
 	EXF *ep;
 	int buffer, lmode;
 	MARK *fm, *tm;
@@ -47,7 +48,7 @@ cut(ep, buffer, fm, tm, lmode)
 	recno_t lno;
 	int append;
 
-	CBNAME(ep, buffer, cb);
+	CBNAME(sp, buffer, cb);
 
 	/*
 	 * Upper-case buffer names map into lower-case buffers, but with
@@ -56,8 +57,8 @@ cut(ep, buffer, fm, tm, lmode)
 	 */
 	if (append = isupper(buffer))
 		if (!lmode && cb->flags & CB_LMODE)
-			ep->msg(ep, M_DISPLAY,
-			    "Buffer %s changed to line mode", CHARNAME(buffer));
+			msgq(sp, M_DISPLAY, "Buffer %s changed to line mode",
+			    CHARNAME(sp, buffer));
 
 	/* Free old buffer. */
 	if (cb->head != NULL && !append) {
@@ -68,12 +69,12 @@ cut(ep, buffer, fm, tm, lmode)
 	}
 
 #if DEBUG && 0
-	TRACE("cut: from {%lu, %d}, to {%lu, %d}%s\n",
+	TRACE(sp->gp, "cut: from {%lu, %d}, to {%lu, %d}%s\n",
 	    fm->lno, fm->cno, tm->lno, tm->cno, lmode ? " LINE MODE" : "");
 #endif
 	if (lmode) {
 		for (lno = fm->lno; lno <= tm->lno; ++lno) {
-			if (cutline(ep, lno, 0, 0, &tp))
+			if (cutline(sp, ep, lno, 0, 0, &tp))
 				goto mem;
 			TEXTAPPEND(cb, tp);
 			cb->len += tp->len;
@@ -84,25 +85,25 @@ cut(ep, buffer, fm, tm, lmode)
 		
 	/* Get the first line. */
 	len = fm->lno < tm->lno ? 0 : tm->cno - fm->cno;
-	if (cutline(ep, fm->lno, fm->cno, len, &tp))
+	if (cutline(sp, ep, fm->lno, fm->cno, len, &tp))
 		goto mem;
 
 	TEXTAPPEND(cb, tp);
 	cb->len += tp->len;
 
 	for (lno = fm->lno; ++lno < tm->lno;) {
-		if (cutline(ep, lno, 0, 0, &tp))
+		if (cutline(sp, ep, lno, 0, 0, &tp))
 			goto mem;
 		TEXTAPPEND(cb, tp);
 		cb->len += tp->len;
 	}
 
 	if (tm->lno > fm->lno && tm->cno > 0) {
-		if (cutline(ep, lno, 0, tm->cno, &tp)) {
+		if (cutline(sp, ep, lno, 0, tm->cno, &tp)) {
 mem:			if (append)
-				ep->msg(ep, M_DISPLAY,
-				    "Contents of %s buffer lost.",
-				    CHARNAME(buffer));
+				msgq(sp,
+				    M_DISPLAY, "Contents of %s buffer lost.",
+				    CHARNAME(sp, buffer));
 			freetext(cb->head);
 			cb->head = NULL;
 			return (1);
@@ -119,7 +120,8 @@ mem:			if (append)
  * 	from the MARK to the end of the line.
  */
 static int
-cutline(ep, lno, fcno, len, newp)
+cutline(sp, ep, lno, fcno, len, newp)
+	SCR *sp;
 	EXF *ep;
 	recno_t lno;
 	size_t fcno, len;
@@ -129,8 +131,8 @@ cutline(ep, lno, fcno, len, newp)
 	size_t llen;
 	u_char *lp, *p;
 
-	if ((p = file_gline(ep, lno, &llen)) == NULL) {
-		GETLINE_ERR(ep, lno);
+	if ((p = file_gline(sp, ep, lno, &llen)) == NULL) {
+		GETLINE_ERR(sp, lno);
 		return (1);
 	}
 
@@ -140,21 +142,21 @@ cutline(ep, lno, fcno, len, newp)
 		tp->lp = NULL;
 		tp->len = 0;
 #if DEBUG && 0
-		TRACE("{}\n");
+		TRACE(ep, "{}\n");
 #endif
 	} else {
 		if (len == 0)
 			len = llen - fcno;
 		if ((lp = malloc(len)) == NULL) {
 			free(tp);
-mem:			ep->msg(ep, M_ERROR, "Error: %s", strerror(errno));
+mem:			msgq(sp, M_ERROR, "Error: %s", strerror(errno));
 			return (1);
 		}
 		memmove(lp, p + fcno, len);
 		tp->lp = lp;
 		tp->len = len;
 #if DEBUG && 0
-		TRACE("\t{%.*s}\n", MIN(len, 20), p + fcno);
+		TRACE(ep, "\t{%.*s}\n", MIN(len, 20), p + fcno);
 #endif
 	}
 	tp->next = NULL;
@@ -167,7 +169,7 @@ mem:			ep->msg(ep, M_ERROR, "Error: %s", strerror(errno));
 	if (blen < len + tp->len) {					\
 		blen += MAX(blen + 256, len + tp->len);			\
 		if ((bp = realloc(bp, blen)) == NULL) {			\
-			ep->msg(ep, M_ERROR,				\
+			msgq(sp, M_ERROR,				\
 			    "Put error: %s", strerror(errno));		\
 			blen = 0;					\
 			return (1);					\
@@ -180,7 +182,8 @@ mem:			ep->msg(ep, M_ERROR, "Error: %s", strerror(errno));
  *	Put text buffer contents into the file.
  */	
 int
-put(ep, buffer, cp, rp, append)
+put(sp, ep, buffer, cp, rp, append)
+	SCR *sp;
 	EXF *ep;
 	int buffer, append;
 	MARK *cp, *rp;
@@ -194,8 +197,9 @@ put(ep, buffer, cp, rp, append)
 	int lmode;
 	u_char *p, *t;
 
-	CBNAME(ep, buffer, cb);
-	CBEMPTY(ep, buffer, cb);
+	CBNAME(sp, buffer, cb);
+	CBEMPTY(sp, buffer, cb);
+
 	tp = cb->head;
 	lmode = cb->flags & CB_LMODE;
 
@@ -207,19 +211,19 @@ put(ep, buffer, cp, rp, append)
 	if (lmode) {
 		if (append) {
 			for (lno = cp->lno; tp; ++lno, tp = tp->next)
-				if (file_aline(ep, lno, tp->lp, tp->len))
+				if (file_aline(sp, ep, lno, tp->lp, tp->len))
 					return (1);
 			rp->lno = cp->lno + 1;
 		} else if ((lno = cp->lno) != 1) {
 			for (--lno; tp; tp = tp->next, ++lno)
-				if (file_aline(ep, lno, tp->lp, tp->len))
+				if (file_aline(sp, ep, lno, tp->lp, tp->len))
 					return (1);
 			rp->lno = cp->lno;
 		} else {
-			if (file_iline(ep, (recno_t)1, tp->lp, tp->len))
+			if (file_iline(sp, ep, (recno_t)1, tp->lp, tp->len))
 				return (1);
 			for (lno = 1; tp = tp->next; ++lno)
-				if (file_aline(ep, lno, tp->lp, tp->len))
+				if (file_aline(sp, ep, lno, tp->lp, tp->len))
 					return (1);
 			rp->lno = 1;
 		}
@@ -235,8 +239,8 @@ put(ep, buffer, cp, rp, append)
 	else {
 		/* Get the first line. */
 		lno = cp->lno;
-		if ((p = file_gline(ep, lno, &len)) == NULL) {
-			GETLINE_ERR(ep, lno);
+		if ((p = file_gline(sp, ep, lno, &len)) == NULL) {
+			GETLINE_ERR(sp, lno);
 			return (1);
 		}
 
@@ -267,14 +271,14 @@ put(ep, buffer, cp, rp, append)
 				memmove(t, p, clen);
 				t += clen;
 			}
-			if (file_sline(ep, lno, bp, t - bp))
+			if (file_sline(sp, ep, lno, bp, t - bp))
 				return (1);
 
 			rp->lno = lno;
 			rp->cno = t - bp;
 		} else {
 			/* Output the line replacing the original line. */
-			if (file_sline(ep, lno, bp, t - bp))
+			if (file_sline(sp, ep, lno, bp, t - bp))
 				return (1);
 
 			/* Output any intermediate lines in the CB alone. */
@@ -282,7 +286,7 @@ put(ep, buffer, cp, rp, append)
 				tp = tp->next;
 				if (tp->next == NULL)
 					break;
-				if (file_aline(ep, lno, tp->lp, tp->len))
+				if (file_aline(sp, ep, lno, tp->lp, tp->len))
 					return (1);
 				++lno;
 			}
@@ -309,17 +313,17 @@ put(ep, buffer, cp, rp, append)
 				memmove(t, p, clen);
 				t += clen;
 			}
-			if (file_aline(ep, lno, bp, t - bp))
+			if (file_aline(sp, ep, lno, bp, t - bp))
 				return (1);
 		}
 	}
 
 	/* Shift any marks in the range. */
-	mark_insert(ep, cp, rp);
+	mark_insert(sp, ep, cp, rp);
 
 	/* Reporting... */
-	ep->rptlabel = "put";
-	ep->rptlines = lno - cp->lno;
+	sp->rptlabel = "put";
+	sp->rptlines = lno - cp->lno;
 
 	return (0);
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_yank.c,v 5.14 1993/02/16 20:09:13 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:09:13 $";
+static char sccsid[] = "$Id: v_yank.c,v 5.15 1993/03/25 15:01:45 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:01:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,15 +22,16 @@ static char sccsid[] = "$Id: v_yank.c,v 5.14 1993/02/16 20:09:13 bostic Exp $ (B
  *	Yank lines of text into a cut buffer.
  */
 int
-v_Yank(ep, vp, fm, tm, rp)
+v_Yank(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
 	*rp = *fm;
-	ep->rptlines = tm->lno - fm->lno + 1;
-	ep->rptlabel = "yanked";
-	return (cut(ep, VICB(vp), fm, tm, 1));
+	sp->rptlines = tm->lno - fm->lno + 1;
+	sp->rptlabel = "yanked";
+	return (cut(sp, ep, VICB(vp), fm, tm, 1));
 }
 
 /*
@@ -38,13 +39,14 @@ v_Yank(ep, vp, fm, tm, rp)
  *	Yank text into a cut buffer.
  */
 int
-v_yank(ep, vp, fm, tm, rp)
+v_yank(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
 	*rp = *fm;
-	ep->rptlines = tm->lno - fm->lno + 1;
-	ep->rptlabel = "yanked";
-	return (cut(ep, VICB(vp), fm, tm, vp->flags & VC_LMODE));
+	sp->rptlines = tm->lno - fm->lno + 1;
+	sp->rptlabel = "yanked";
+	return (cut(sp, ep, VICB(vp), fm, tm, vp->flags & VC_LMODE));
 }

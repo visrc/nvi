@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_move.c,v 5.21 1993/02/28 14:00:41 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:00:41 $";
+static char sccsid[] = "$Id: ex_move.c,v 5.22 1993/03/25 14:59:58 bostic Exp $ (Berkeley) $Date: 1993/03/25 14:59:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,18 +19,19 @@ static char sccsid[] = "$Id: ex_move.c,v 5.21 1993/02/28 14:00:41 bostic Exp $ (
 #include "screen.h"
 
 enum which {COPY, MOVE};
-static int cm __P((EXF *, EXCMDARG *, enum which));
+static int cm __P((SCR *, EXF *, EXCMDARG *, enum which));
 
 /*
  * ex_copy -- :[line [,line]] co[py] line [flags]
  *	Copy selected lines.
  */
 int
-ex_copy(ep, cmdp)
+ex_copy(sp, ep, cmdp)
+	SCR *sp;
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	return (cm(ep, cmdp, COPY));
+	return (cm(sp, ep, cmdp, COPY));
 }
 
 /*
@@ -38,15 +39,17 @@ ex_copy(ep, cmdp)
  *	Move selected lines.
  */
 int
-ex_move(ep, cmdp)
+ex_move(sp, ep, cmdp)
+	SCR *sp;
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	return (cm(ep, cmdp, MOVE));
+	return (cm(sp, ep, cmdp, MOVE));
 }
 
 static int
-cm(ep, cmdp, cmd)
+cm(sp, ep, cmdp, cmd)
+	SCR *sp;
 	EXF *ep;
 	EXCMDARG *cmdp;
 	enum which cmd;
@@ -61,39 +64,42 @@ cm(ep, cmdp, cmd)
 
 	/* Make sure the destination is valid. */
 	if (cmd == MOVE && tm.lno >= fm1.lno && tm.lno < fm2.lno) {
-		ep->msg(ep, M_ERROR,
+		msgq(sp, M_ERROR,
 		    "Destination line is inside move range.");
 		return (1);
 	}
 
 	/* Save the text to a cut buffer. */
-	cut(ep, DEFCB, &fm1, &fm2, 1);
+	if (cut(sp, ep, DEFCB, &fm1, &fm2, 1))
+		return (1);
 
 	/* If we're not copying, delete the old text & adjust tm. */
 	if (cmd == MOVE) {
-		delete(ep, &fm1, &fm2, 1);
+		if (delete(sp, ep, &fm1, &fm2, 1))
+			return (1);
 		if (tm.lno >= fm1.lno)
 			tm.lno -= fm2.lno - fm1.lno;
 	}
 
 	/* Add the new text. */
-	m.lno = SCRLNO(ep);
-	m.cno = SCRCNO(ep);
-	(void)put(ep, DEFCB, &tm, &m, 1);
+	m.lno = ep->lno;
+	m.cno = ep->cno;
+	if (put(sp, ep, DEFCB, &tm, &m, 1))
+		return (1);
 
-	if (SCRLNO(ep) < 1)
-		SCRLNO(ep) = 1;
+	if (ep->lno < 1)
+		ep->lno = 1;
 	else {
-		lline = file_lline(ep);
-		if (SCRLNO(ep) > lline)
-			SCRLNO(ep) = lline;
+		lline = file_lline(sp, ep);
+		if (ep->lno > lline)
+			ep->lno = lline;
 	}
 
 	/* Reporting. */
-	if ((ep->rptlines = fm2.lno - fm1.lno) == 0)
-		ep->rptlines = 1;
-	ep->rptlabel = (cmd == MOVE ? "moved" : "copied");
+	if ((sp->rptlines = fm2.lno - fm1.lno) == 0)
+		sp->rptlines = 1;
+	sp->rptlabel = (cmd == MOVE ? "moved" : "copied");
 
-	FF_SET(ep, F_AUTOPRINT);
+	F_SET(sp, S_AUTOPRINT);
 	return (0);
 }

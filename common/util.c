@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 5.29 1993/02/28 13:59:32 bostic Exp $ (Berkeley) $Date: 1993/02/28 13:59:32 $";
+static char sccsid[] = "$Id: util.c,v 5.30 1993/03/25 14:59:17 bostic Exp $ (Berkeley) $Date: 1993/03/25 14:59:17 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -20,6 +20,12 @@ static char sccsid[] = "$Id: util.c,v 5.29 1993/02/28 13:59:32 bostic Exp $ (Ber
 #include <string.h>
 #include <unistd.h>
 
+#ifdef __STDC__
+#include <stdarg.h>
+#else
+#include <varargs.h>
+#endif
+
 #include "vi.h"
 #include "options.h"
 #include "pathnames.h"
@@ -29,8 +35,8 @@ static char sccsid[] = "$Id: util.c,v 5.29 1993/02/28 13:59:32 bostic Exp $ (Ber
  * __putchar --
  *	Functional version of putchar, for tputs.
  */
-void
-__putchar(ch)
+static void
+bell_putchar(ch)
 	int ch;
 {
 	(void)putchar(ch);
@@ -41,19 +47,101 @@ __putchar(ch)
  *	Ring the terminal's bell.
  */
 void
-bell(ep)
-	EXF *ep;
+bell(sp)
+	SCR *sp;
 {
 	/* Ex doesn't need bells rung. */
-	if (FF_ISSET(ep, F_MODE_EX))
+	if (F_ISSET(sp, S_MODE_EX))
 		return;
 
 	if (ISSET(O_FLASH)) {
-		(void)tputs(VB, 1, __putchar);
+		(void)tputs(sp->VB, 1, bell_putchar);
 		(void)fflush(stdout);
 	} else if (ISSET(O_ERRORBELLS))
 		(void)write(STDOUT_FILENO, "\007", 1);	/* '\a' */
-	FF_CLR(ep, F_BELLSCHED);
+	F_CLR(sp, S_BELLSCHED);
+}
+
+/*
+ * msgq --
+ *	Display a message.
+ */
+void
+#ifdef __STDC__
+msgq(SCR *sp, u_int flags, const char *fmt, ...)
+#else
+msgq(sp, flags, fmt, va_alist)
+	SCR *sp;
+	u_int flags;
+        char *fmt;
+        va_dcl
+#endif
+{
+	MSG *mp;
+        va_list ap;
+	int len;
+	char msgbuf[1024];
+
+#ifdef __STDC__
+        va_start(ap, fmt);
+#else
+        va_start(ap);
+#endif
+	/*
+	 * It's possible to reenter msg when it allocates space.  We're
+	 * probably dead anyway, but no reason to drop core.
+	 */
+	if (F_ISSET(sp, S_MSGREENTER))
+		return;
+	F_SET(sp, S_MSGREENTER);
+
+	/* Schedule a bell, if requested. */
+	if (flags & (M_BELL | M_ERROR))
+		F_SET(sp, S_BELLSCHED);
+
+	/* If extra information message, check user's wishes. */
+	if (!(flags & (M_DISPLAY | M_ERROR)) && !ISSET(O_VERBOSE))
+		goto done;
+
+	/*
+	 * Save the message.  If we don't have any memory, this
+	 * can fail, but what's a mother to do?
+	 */
+	if (sp->msgp == NULL) {
+		if ((sp->msgp = malloc(sizeof(MSG))) == NULL)
+			goto done;
+		mp = sp->msgp;
+		mp->next = NULL;
+		mp->mbuf = NULL;
+		mp->blen = 0;
+	} else {
+		for (mp = sp->msgp;
+		    mp->len && mp->next != NULL; mp = mp->next);
+		if (mp->len) {
+			if ((mp->next = malloc(sizeof(MSG))) == NULL)
+				goto done;
+			mp = mp->next;
+			mp->next = NULL;
+			mp->mbuf = NULL;
+			mp->blen = 0;
+		}
+	}
+
+	/* Length is the min length of the message or the buffer. */
+	len = vsnprintf(msgbuf, sizeof(msgbuf), fmt, ap);
+	if (len > sizeof(msgbuf))
+		len = sizeof(msgbuf);
+	else
+		++len;
+
+	/* Store the message. */
+	if (len > mp->blen && binc(sp, &mp->mbuf, &mp->blen, len))
+		goto done;
+	memmove(mp->mbuf, msgbuf, len);
+	mp->len = len;
+	mp->flags = flags;
+
+done:	F_CLR(sp, S_MSGREENTER);
 }
 
 /*
@@ -61,8 +149,8 @@ bell(ep)
  *	Increase the size of a buffer.
  */
 int
-binc(ep, argp, bsizep, min)
-	EXF *ep;
+binc(sp, argp, bsizep, min)
+	SCR *sp;
 	void *argp;
 	size_t *bsizep, min;
 {
@@ -83,7 +171,7 @@ binc(ep, argp, bsizep, min)
 	else
 		bpp = realloc(bpp, csize);
 	if (bpp == NULL) {
-		ep->msg(ep, M_ERROR, "Error: %s.", strerror(errno));
+		msgq(sp, M_ERROR, "Error: %s.", strerror(errno));
 		*bsizep = 0;
 		return (1);
 	}
@@ -98,7 +186,8 @@ binc(ep, argp, bsizep, min)
  *	line.
  */
 int
-nonblank(ep, lno, cnop)
+nonblank(sp, ep, lno, cnop)
+	SCR *sp;
 	EXF *ep;
 	recno_t lno;
 	size_t *cnop;
@@ -107,12 +196,12 @@ nonblank(ep, lno, cnop)
 	register u_char *p;
 	size_t len;
 
-	if ((p = file_gline(ep, lno, &len)) == NULL) {
-		if (file_lline(ep) == 0) {
+	if ((p = file_gline(sp, ep, lno, &len)) == NULL) {
+		if (file_lline(sp, ep) == 0) {
 			*cnop = 0;
 			return (0);
 		}
-		GETLINE_ERR(ep, lno);
+		GETLINE_ERR(sp, lno);
 		return (1);
 	}
 	for (cnt = 0; len-- && isspace(*p); ++cnt, ++p);
@@ -173,8 +262,8 @@ onhup(signo)
  *	Set the window size, the row may be provided as an argument.
  */
 int
-set_window_size(ep, set_row)
-	EXF *ep;
+set_window_size(sp, set_row)
+	SCR *sp;
 	u_int set_row;
 {
 	struct winsize win;
@@ -214,13 +303,13 @@ set_window_size(ep, set_row)
 
 	/* Tell the options code that the screen size has changed. */
 	(void)snprintf(sbuf, sizeof(sbuf), "ls=%u", row ? row : win.ws_row);
-	if (opts_set(ep, argv))
+	if (opts_set(sp, argv))
 		return (1);
 	(void)snprintf(sbuf, sizeof(sbuf), "co=%u", win.ws_col);
-	if (opts_set(ep, argv))
+	if (opts_set(sp, argv))
 		return (1);
 
 	/* Schedule a resize. */
-	SF_SET(ep, S_RESIZE);
+	F_SET(sp, S_RESIZE);
 	return (0);
 }

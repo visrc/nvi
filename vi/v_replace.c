@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_replace.c,v 5.15 1993/02/28 14:01:53 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:01:53 $";
+static char sccsid[] = "$Id: v_replace.c,v 5.16 1993/03/25 15:01:22 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:01:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,7 +22,8 @@ static char sccsid[] = "$Id: v_replace.c,v 5.15 1993/02/28 14:01:53 bostic Exp $
 #include "vcmd.h"
 
 int
-v_replace(ep, vp, fm, tm, rp)
+v_replace(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
@@ -32,9 +33,9 @@ v_replace(ep, vp, fm, tm, rp)
 	u_long cnt;
 	u_char *np, *p, emptybuf[1];
 
-	if ((p = file_gline(ep, fm->lno, &len)) == NULL) {
-		if (file_lline(ep) != 0) {
-			GETLINE_ERR(ep, fm->lno);
+	if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
+		if (file_lline(sp, ep) != 0) {
+			GETLINE_ERR(sp, fm->lno);
 			return (1);
 		}
 		p = emptybuf;
@@ -48,7 +49,7 @@ v_replace(ep, vp, fm, tm, rp)
 
 	rp->cno = fm->cno + cnt - 1;
 	if (rp->cno > len - 1) {
-		v_eol(ep, fm);
+		v_eol(sp, ep, fm);
 		return (1);
 	}
 
@@ -58,7 +59,7 @@ v_replace(ep, vp, fm, tm, rp)
 	 * single character.  "Nr<carriage return>" where N was greater than 1
 	 * inserted a single carriage return.
 	 */
-	switch(special[vp->character]) {
+	switch(sp->special[vp->character]) {
 	case K_ESCAPE:
 		*rp = *fm;
 		break;
@@ -72,7 +73,7 @@ v_replace(ep, vp, fm, tm, rp)
 
 		if (p != emptybuf) {
 			if ((np = malloc(len)) == NULL) {
-				ep->msg(ep, M_ERROR,
+				msgq(sp, M_ERROR,
 				    "Error: %s", strerror(errno));
 				return (1);
 			}
@@ -80,11 +81,11 @@ v_replace(ep, vp, fm, tm, rp)
 			p = np;
 		}
 		for (; cnt--; ++lno, cno = 0) {
-			if (file_sline(ep, lno, p, cno))
+			if (file_sline(sp, ep, lno, p, cno))
 				goto err;
 			p += cno + 1;
 			len -= cno + 1;
-			if (file_aline(ep, lno, p, len)) {
+			if (file_aline(sp, ep, lno, p, len)) {
 err:				if (p != emptybuf)
 					free(np);
 				return (1);
@@ -93,12 +94,12 @@ err:				if (p != emptybuf)
 		break;
 	default:
 		if ((np = malloc(len)) == NULL) {
-			ep->msg(ep, M_ERROR, "Error: %s", strerror(errno));
+			msgq(sp, M_ERROR, "Error: %s", strerror(errno));
 			return (1);
 		}
 		memmove(np, p, len);
 		memset(np + fm->cno, vp->character, cnt);
-		if (file_sline(ep, fm->lno, np, len)) {
+		if (file_sline(sp, ep, fm->lno, np, len)) {
 			free(np);
 			return (1);
 		}

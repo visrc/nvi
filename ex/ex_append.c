@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 5.24 1993/02/28 12:19:08 bostic Exp $ (Berkeley) $Date: 1993/02/28 12:19:08 $";
+static char sccsid[] = "$Id: ex_append.c,v 5.25 1993/03/25 14:59:39 bostic Exp $ (Berkeley) $Date: 1993/03/25 14:59:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,7 +22,7 @@ static char sccsid[] = "$Id: ex_append.c,v 5.24 1993/02/28 12:19:08 bostic Exp $
 
 enum which {APPEND, CHANGE};
 
-static int ac __P((EXF *, EXCMDARG *, enum which));
+static int ac __P((SCR *, EXF *, EXCMDARG *, enum which));
 
 /*
  * ex_append -- :address append[!]
@@ -30,11 +30,12 @@ static int ac __P((EXF *, EXCMDARG *, enum which));
  *	or the current line if no address is specified.
  */
 int
-ex_append(ep, cmdp)
+ex_append(sp, ep, cmdp)
+	SCR *sp;
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	return (ac(ep, cmdp, APPEND));
+	return (ac(sp, ep, cmdp, APPEND));
 }
 
 /*
@@ -42,15 +43,17 @@ ex_append(ep, cmdp)
  *	Change one or more lines to the input text.
  */
 int
-ex_change(ep, cmdp)
+ex_change(sp, ep, cmdp)
+	SCR *sp;
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	return (ac(ep, cmdp, CHANGE));
+	return (ac(sp, ep, cmdp, CHANGE));
 }
 
 static int
-ac(ep, cmdp, cmd)
+ac(sp, ep, cmdp, cmd)
+	SCR *sp;
 	EXF *ep;
 	EXCMDARG *cmdp;
 	enum which cmd;
@@ -84,7 +87,7 @@ ac(ep, cmdp, cmd)
 				--m.lno;
 				break;
 			}
-			if (ex_gb(ep, 0, &p, &len,
+			if (ex_gb(sp, 0, &p, &len,
 			    GB_BEAUTIFY | GB_MAPINPUT | GB_NLECHO)) {
 				rval = 1;
 				goto done;
@@ -92,13 +95,13 @@ ac(ep, cmdp, cmd)
 			if (len == 1 && p[0] == '.') {
 				cnt = cmdp->addr2.lno - m.lno;
 				while (cnt--)
-					if (file_dline(ep, m.lno)) {
+					if (file_dline(sp, ep, m.lno)) {
 						rval = 1;
 						goto done;
 					}
 				goto done;
 			}
-			if (file_sline(ep, m.lno, p, len)) {
+			if (file_sline(sp, ep, m.lno, p, len)) {
 				rval = 1;
 				goto done;
 			}
@@ -107,7 +110,7 @@ ac(ep, cmdp, cmd)
 
 	if (cmd == APPEND)
 		for (;;) {
-			if (ex_gb(ep, 0, &p, &len,
+			if (ex_gb(sp, 0, &p, &len,
 			    GB_BEAUTIFY | GB_MAPINPUT | GB_NLECHO)) {
 				rval = 1;
 				goto done;
@@ -115,7 +118,7 @@ ac(ep, cmdp, cmd)
 
 			if (len == 1 && p[0] == '.')
 				break;
-			if (file_aline(ep, m.lno, p, len)) {
+			if (file_aline(sp, ep, m.lno, p, len)) {
 				rval = 1;
 				goto done;
 			}
@@ -130,11 +133,11 @@ done:	if (rval == 0) {
 		 * anything in the file.
 		 */
 		if (m.lno != 0)
-			FF_SET(ep, F_AUTOPRINT);
+			F_SET(sp, S_AUTOPRINT);
 
 		/* Set the cursor. */
-		SCRLNO(ep) = m.lno;
-		SCRCNO(ep) = 0;
+		ep->lno = m.lno;
+		ep->cno = 0;
 	}
 
 	if (set)

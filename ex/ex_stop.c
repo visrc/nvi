@@ -6,17 +6,15 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_stop.c,v 5.4 1993/02/28 14:00:43 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:00:43 $";
+static char sccsid[] = "$Id: ex_stop.c,v 5.5 1993/03/25 15:00:08 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:00:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
 #include <errno.h>
-#include <limits.h>
 #include <signal.h>
 #include <stdio.h>
 #include <string.h>
-#include <termios.h>
 #include <unistd.h>
 
 #include "vi.h"
@@ -29,15 +27,15 @@ static char sccsid[] = "$Id: ex_stop.c,v 5.4 1993/02/28 14:00:43 bostic Exp $ (B
  *	Suspend execution.
  */
 int
-ex_stop(ep, cmdp)
+ex_stop(sp, ep, cmdp)
+	SCR *sp;
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	if (!(cmdp->flags & E_FORCE)) {
-		AUTOWRITE(ep);
-	}
+	if (!(cmdp->flags & E_FORCE))
+		AUTOWRITE(sp, ep);
 
-	return (ex_suspend(ep));
+	return (ex_suspend(sp));
 }
 
 /*
@@ -45,18 +43,17 @@ ex_stop(ep, cmdp)
  *	Suspend execution.
  */
 int
-ex_suspend(ep)
-	EXF *ep;
+ex_suspend(sp)
+	SCR *sp;
 {
-	extern struct termios original_termios;
 	struct termios t;
 
 	/* Save ex/vi terminal settings, and restore the original ones. */
 	(void)tcgetattr(STDIN_FILENO, &t);
-	(void)tcsetattr(STDIN_FILENO, TCSADRAIN, &original_termios);
+	(void)tcsetattr(STDIN_FILENO, TCSADRAIN, &sp->gp->original_termios);
 
 	if (kill(0, SIGTSTP)) {
-		ep->msg(ep, M_ERROR, "Error: SIGTSTP: %s", strerror(errno));
+		msgq(sp, M_ERROR, "Error: SIGTSTP: %s", strerror(errno));
 		return (1);
 	}
 
@@ -64,6 +61,6 @@ ex_suspend(ep)
 	(void)tcsetattr(STDIN_FILENO, TCSAFLUSH, &t);
 
 	/* Repaint the screen. */
-	SF_SET(ep, S_REFRESH);
+	F_SET(sp, S_REFRESH);
 	return (0);
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_display.c,v 5.4 1993/02/16 20:10:03 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:03 $";
+static char sccsid[] = "$Id: ex_display.c,v 5.5 1993/03/25 14:59:43 bostic Exp $ (Berkeley) $Date: 1993/03/25 14:59:43 $";
 #endif /* not lint */
 
 #include <ctype.h>
@@ -16,14 +16,15 @@ static char sccsid[] = "$Id: ex_display.c,v 5.4 1993/02/16 20:10:03 bostic Exp $
 #include "vi.h"
 #include "excmd.h"
 
-static void db __P((EXF *, char *, CB *));
+static void db __P((SCR *, char *, CB *));
 
 /*
  * ex_bdisplay -- :bdisplay
  *	Display cut buffer contents.
  */
 int
-ex_bdisplay(ep, cmdp)
+ex_bdisplay(sp, ep, cmdp)
+	SCR *sp;
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
@@ -33,23 +34,23 @@ ex_bdisplay(ep, cmdp)
 	for (cb = cuts, cnt = 0; cnt < UCHAR_MAX; ++cb, ++cnt) {
 		if (cb->head == NULL)
 			continue;
-		db(ep, CHARNAME(cnt), cb);
+		db(sp, CHARNAME(sp, cnt), cb);
 	}
 	if (cuts[DEFCB].head != NULL)
-		db(ep, "default buffer", &cuts[DEFCB]);
+		db(sp, "default buffer", &cuts[DEFCB]);
 	return (0);
 }
 
 static void
-db(ep, name, cb)
-	EXF *ep;
+db(sp, name, cb)
+	SCR *sp;
 	char *name;
 	CB *cb;
 {
 	TEXT *tp;
 
-	(void)fprintf(ep->stdfp, "%s%s\n", name,
+	(void)fprintf(sp->stdfp, "%s%s\n", name,
 	    cb->flags & CB_LMODE ? ": line mode" : "");
 	for (tp = cb->head; tp; tp = tp->next)
-		(void)fprintf(ep->stdfp, "%.*s\n", tp->len, tp->lp);
+		(void)fprintf(sp->stdfp, "%.*s\n", tp->len, tp->lp);
 }

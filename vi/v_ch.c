@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ch.c,v 5.21 1993/02/28 14:01:45 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:01:45 $";
+static char sccsid[] = "$Id: v_ch.c,v 5.22 1993/03/25 15:01:05 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:01:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,17 +19,13 @@ static char sccsid[] = "$Id: v_ch.c,v 5.21 1993/02/28 14:01:45 bostic Exp $ (Ber
 #include "options.h"
 #include "vcmd.h"
 
-enum csearchdir { CNOTSET, FSEARCH, fSEARCH, TSEARCH, tSEARCH };
-static enum csearchdir lastdir;
-static int lastkey;
-
 #define	NOPREV {							\
-	ep->msg(ep, M_BELL, "No previous F, f, T or t search.");	\
+	msgq(sp, M_BELL, "No previous F, f, T or t search.");		\
 	return (1);							\
 }
 
 #define	NOTFOUND(ch) {							\
-	ep->msg(ep, M_BELL, "%s not found.", asciiname[ch]);		\
+	msgq(sp, M_BELL, "%s not found.", CHARNAME(sp, ch));		\
 	return (1);							\
 }
 
@@ -38,24 +34,25 @@ static int lastkey;
  *	Repeat the last F, f, T or t search.
  */
 int
-v_chrepeat(ep, vp, fm, tm, rp)
+v_chrepeat(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	vp->character = lastkey;
+	vp->character = sp->lastckey;
 
-	switch(lastdir) {
+	switch(sp->csearchdir) {
 	case CNOTSET:
 		NOPREV;
 	case FSEARCH:
-		return (v_chF(ep, vp, fm, tm, rp));
+		return (v_chF(sp, ep, vp, fm, tm, rp));
 	case fSEARCH:
-		return (v_chf(ep, vp, fm, tm, rp));
+		return (v_chf(sp, ep, vp, fm, tm, rp));
 	case TSEARCH:
-		return (v_chT(ep, vp, fm, tm, rp));
+		return (v_chT(sp, ep, vp, fm, tm, rp));
 	case tSEARCH:
-		return (v_cht(ep, vp, fm, tm, rp));
+		return (v_cht(sp, ep, vp, fm, tm, rp));
 	default:
 		abort();
 	}
@@ -67,36 +64,37 @@ v_chrepeat(ep, vp, fm, tm, rp)
  *	Repeat the last F, f, T or t search in the reverse direction.
  */
 int
-v_chrrepeat(ep, vp, fm, tm, rp)
+v_chrrepeat(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
 	int rval;
-	enum csearchdir savedir;
+	enum cdirection savedir;
 
-	vp->character = lastkey;
-	savedir = lastdir;
+	vp->character = sp->lastckey;
+	savedir = sp->csearchdir;
 
-	switch(lastdir) {
+	switch(sp->csearchdir) {
 	case CNOTSET:
 		NOPREV;
 	case FSEARCH:
-		rval = v_chf(ep, vp, fm, tm, rp);
+		rval = v_chf(sp, ep, vp, fm, tm, rp);
 		break;
 	case fSEARCH:
-		rval = v_chF(ep, vp, fm, tm, rp);
+		rval = v_chF(sp, ep, vp, fm, tm, rp);
 		break;
 	case TSEARCH:
-		rval = v_cht(ep, vp, fm, tm, rp);
+		rval = v_cht(sp, ep, vp, fm, tm, rp);
 		break;
 	case tSEARCH:
-		rval = v_chT(ep, vp, fm, tm, rp);
+		rval = v_chT(sp, ep, vp, fm, tm, rp);
 		break;
 	default:
 		abort();
 	}
-	lastdir = savedir;
+	sp->csearchdir = savedir;
 	return (rval);
 }
 
@@ -106,16 +104,17 @@ v_chrrepeat(ep, vp, fm, tm, rp)
  *	Place the cursor to its left.
  */
 int
-v_cht(ep, vp, fm, tm, rp)
+v_cht(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
 	int rval;
 
-	if (!(rval = v_chf(ep, vp, fm, tm, rp)))
+	if (!(rval = v_chf(sp, ep, vp, fm, tm, rp)))
 		--rp->cno;
-	lastdir = tSEARCH;
+	sp->csearchdir = tSEARCH;
 	return (rval);
 }
 	
@@ -124,7 +123,8 @@ v_cht(ep, vp, fm, tm, rp)
  *	Search forward in the line for the next occurrence of the character.
  */
 int
-v_chf(ep, vp, fm, tm, rp)
+v_chf(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
@@ -133,22 +133,22 @@ v_chf(ep, vp, fm, tm, rp)
 	register u_char *endp, *p;
 	size_t len;
 	u_long cnt;
-	u_char *sp;
+	u_char *startp;
 
-	lastdir = fSEARCH;
-	lastkey = key = vp->character;
+	sp->csearchdir = fSEARCH;
+	sp->lastckey = key = vp->character;
 
-	if ((p = file_gline(ep, fm->lno, &len)) == NULL) {
-		if (file_lline(ep) == 0)
+	if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
+		if (file_lline(sp, ep) == 0)
 			NOTFOUND(key);
-		GETLINE_ERR(ep, fm->lno);
+		GETLINE_ERR(sp, fm->lno);
 		return (1);
 	}
 
 	if (len == 0)
 		NOTFOUND(key);
 
-	sp = p;
+	startp = p;
 	endp = p + len;
 	p += fm->cno;
 	for (cnt = vp->flags & VC_C1SET ? vp->count : 1; cnt--;) {
@@ -157,7 +157,7 @@ v_chf(ep, vp, fm, tm, rp)
 			NOTFOUND(key);
 	}
 	rp->lno = fm->lno;
-	rp->cno = p - sp;
+	rp->cno = p - startp;
 	return (0);
 }
 
@@ -167,16 +167,17 @@ v_chf(ep, vp, fm, tm, rp)
  *	Place the cursor to its right.
  */
 int
-v_chT(ep, vp, fm, tm, rp)
+v_chT(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
 	int rval;
 
-	if (!(rval = v_chF(ep, vp, fm, tm, rp)))
+	if (!(rval = v_chF(sp, ep, vp, fm, tm, rp)))
 		++rp->cno;
-	lastdir = TSEARCH;
+	sp->csearchdir = TSEARCH;
 	return (0);
 }
 
@@ -185,7 +186,8 @@ v_chT(ep, vp, fm, tm, rp)
  *	Search backward in the line for the next occurrence of the character.
  */
 int
-v_chF(ep, vp, fm, tm, rp)
+v_chF(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
@@ -195,13 +197,13 @@ v_chF(ep, vp, fm, tm, rp)
 	size_t len;
 	u_long cnt;
 
-	lastdir = FSEARCH;
-	lastkey = key = vp->character;
+	sp->csearchdir = FSEARCH;
+	sp->lastckey = key = vp->character;
 
-	if ((p = file_gline(ep, fm->lno, &len)) == NULL) {
-		if (file_lline(ep) == 0)
+	if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
+		if (file_lline(sp, ep) == 0)
 			NOTFOUND(key);
-		GETLINE_ERR(ep, fm->lno);
+		GETLINE_ERR(sp, fm->lno);
 		return (1);
 	}
 

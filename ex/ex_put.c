@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_put.c,v 5.18 1993/02/24 12:55:45 bostic Exp $ (Berkeley) $Date: 1993/02/24 12:55:45 $";
+static char sccsid[] = "$Id: ex_put.c,v 5.19 1993/03/25 15:00:00 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:00:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,7 +21,8 @@ static char sccsid[] = "$Id: ex_put.c,v 5.18 1993/02/24 12:55:45 bostic Exp $ (B
 #include "screen.h"
 
 int
-ex_put(ep, cmdp)
+ex_put(sp, ep, cmdp)
+	SCR *sp;
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
@@ -33,14 +34,14 @@ ex_put(ep, cmdp)
 		buffer = DEFCB;
 	else {
 		buffer = cmdp->buffer;
-		CBNAME(ep, buffer, cb);
+		CBNAME(sp, buffer, cb);
 	}
 	
-	m.lno = SCRLNO(ep);
-	m.cno = SCRCNO(ep);
-	if (put(ep, buffer, &cmdp->addr1, &m, 1))
+	m.lno = ep->lno;
+	m.cno = ep->cno;
+	if (put(sp, ep, buffer, &cmdp->addr1, &m, 1))
 		return (1);
 
-	FF_SET(ep, F_AUTOPRINT);
+	F_SET(sp, S_AUTOPRINT);
 	return (0);
 }

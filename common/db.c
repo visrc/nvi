@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 5.21 1993/02/28 13:58:49 bostic Exp $ (Berkeley) $Date: 1993/02/28 13:58:49 $";
+static char sccsid[] = "$Id: db.c,v 5.22 1993/03/25 14:59:07 bostic Exp $ (Berkeley) $Date: 1993/03/25 14:59:07 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -25,7 +25,8 @@ static char sccsid[] = "$Id: db.c,v 5.21 1993/02/28 13:58:49 bostic Exp $ (Berke
  *	Retrieve a line from the file.
  */
 u_char *
-file_gline(ep, lno, lenp)
+file_gline(sp, ep, lno, lenp)
+	SCR *sp;
 	EXF *ep;
 	recno_t lno;				/* Line number. */
 	size_t *lenp;				/* Length store. */
@@ -72,7 +73,7 @@ file_gline(ep, lno, lenp)
 	key.size = sizeof(lno);
 	switch((ep->db->get)(ep->db, &key, &data, 0)) {
         case -1:
-		ep->msg(ep, M_ERROR,
+		msgq(sp, M_ERROR,
 		    "Error: %s/%d: unable to get line %u: %s.",
 		    tail(__FILE__), __LINE__, lno, strerror(errno));
 		/* FALLTHROUGH */
@@ -96,24 +97,25 @@ file_gline(ep, lno, lenp)
  *	Delete a line from the file.
  */
 int
-file_dline(ep, lno)
+file_dline(sp, ep, lno)
+	SCR *sp;
 	EXF *ep;
 	recno_t lno;
 {
 	DBT key;
 
 #if DEBUG && 1
-	TRACE("delete line %lu\n", lno);
+	TRACE(sp, "delete line %lu\n", lno);
 #endif
 
 	/* Log change. */
-	log_line(ep, lno, LINE_DELETE);
+	log_line(sp, ep, lno, LINE_DELETE);
 
 	/* Update file. */
 	key.data = &lno;
 	key.size = sizeof(lno);
 	if ((ep->db->del)(ep->db, &key, 0) == 1) {
-		ep->msg(ep, M_ERROR,
+		msgq(sp, M_ERROR,
 		    "Error: %s/%d: unable to delete line %u: %s.",
 		    tail(__FILE__), __LINE__, lno, strerror(errno));
 		return (1);
@@ -125,12 +127,12 @@ file_dline(ep, lno)
 	if (ep->c_nlines != OOBLNO)
 		--ep->c_nlines;
 
-	/* Update screen. */
-	if (FF_ISSET(ep, F_MODE_VI))
-		scr_change(ep, lno, LINE_DELETE);
-
 	/* File now dirty. */
-	FF_SET(ep, F_MODIFIED);
+	F_SET(ep, F_MODIFIED);
+
+	/* Update screen. */
+	if (F_ISSET(sp, S_MODE_VI))
+		scr_change(sp, ep, lno, LINE_DELETE);
 	return (0);
 }
 
@@ -139,7 +141,8 @@ file_dline(ep, lno)
  *	Append a line into the file.
  */
 int
-file_aline(ep, lno, p, len)
+file_aline(sp, ep, lno, p, len)
+	SCR *sp;
 	EXF *ep;
 	recno_t lno;
 	u_char *p;
@@ -148,7 +151,7 @@ file_aline(ep, lno, p, len)
 	DBT data, key;
 
 #if DEBUG && 1
-	TRACE("append to %lu: len %u {%.*s}\n", lno, len, MIN(len, 20), p);
+	TRACE(sp, "append to %lu: len %u {%.*s}\n", lno, len, MIN(len, 20), p);
 #endif
 	/* Update file. */
 	key.data = &lno;
@@ -156,7 +159,7 @@ file_aline(ep, lno, p, len)
 	data.data = p;
 	data.size = len;
 	if ((ep->db->put)(ep->db, &key, &data, R_IAFTER) == -1) {
-		ep->msg(ep, M_ERROR,
+		msgq(sp, M_ERROR,
 		    "Error: %s/%d: unable to append to line %u: %s.",
 		    tail(__FILE__), __LINE__, lno, strerror(errno));
 		return (1);
@@ -168,15 +171,15 @@ file_aline(ep, lno, p, len)
 	if (ep->c_nlines != OOBLNO)
 		++ep->c_nlines;
 
+	/* File now dirty. */
+	F_SET(ep, F_MODIFIED);
+
 	/* Log change. */
-	log_line(ep, lno + 1, LINE_APPEND);
+	log_line(sp, ep, lno + 1, LINE_APPEND);
 
 	/* Update screen. */
-	if (FF_ISSET(ep, F_MODE_VI))
-		scr_change(ep, lno, LINE_APPEND);
-
-	/* File now dirty. */
-	FF_SET(ep, F_MODIFIED);
+	if (F_ISSET(sp, S_MODE_VI))
+		scr_change(sp, ep, lno, LINE_APPEND);
 	return (0);
 }
 
@@ -185,7 +188,8 @@ file_aline(ep, lno, p, len)
  *	Insert a line into the file.
  */
 int
-file_iline(ep, lno, p, len)
+file_iline(sp, ep, lno, p, len)
+	SCR *sp;
 	EXF *ep;
 	recno_t lno;
 	u_char *p;
@@ -194,7 +198,8 @@ file_iline(ep, lno, p, len)
 	DBT data, key;
 
 #if DEBUG && 1
-	TRACE("insert before %lu: len %u {%.*s}\n", lno, len, MIN(len, 20), p);
+	TRACE(sp,
+	    "insert before %lu: len %u {%.*s}\n", lno, len, MIN(len, 20), p);
 #endif
 	/* Update file. */
 	key.data = &lno;
@@ -202,7 +207,7 @@ file_iline(ep, lno, p, len)
 	data.data = p;
 	data.size = len;
 	if ((ep->db->put)(ep->db, &key, &data, R_IBEFORE) == -1) {
-		ep->msg(ep, M_ERROR,
+		msgq(sp, M_ERROR,
 		    "Error: %s/%d: unable to insert at line %u: %s.",
 		    tail(__FILE__), __LINE__, lno, strerror(errno));
 		return (1);
@@ -214,15 +219,15 @@ file_iline(ep, lno, p, len)
 	if (ep->c_nlines != OOBLNO)
 		++ep->c_nlines;
 
+	/* File now dirty. */
+	F_SET(ep, F_MODIFIED);
+
 	/* Log change. */
-	log_line(ep, lno, LINE_INSERT);
+	log_line(sp, ep, lno, LINE_INSERT);
 
 	/* Update screen. */
-	if (FF_ISSET(ep, F_MODE_VI))
-		scr_change(ep, lno, LINE_INSERT);
-
-	/* File now dirty. */
-	FF_SET(ep, F_MODIFIED);
+	if (F_ISSET(sp, S_MODE_VI))
+		scr_change(sp, ep, lno, LINE_INSERT);
 	return (0);
 }
 
@@ -231,7 +236,8 @@ file_iline(ep, lno, p, len)
  *	Store a line in the file.
  */
 int
-file_sline(ep, lno, p, len)
+file_sline(sp, ep, lno, p, len)
+	SCR *sp;
 	EXF *ep;
 	recno_t lno;
 	u_char *p;
@@ -240,10 +246,11 @@ file_sline(ep, lno, p, len)
 	DBT data, key;
 
 #if DEBUG && 1
-	TRACE("replace line %lu: len %u {%.*s}\n", lno, len, MIN(len, 20), p);
+	TRACE(sp,
+	    "replace line %lu: len %u {%.*s}\n", lno, len, MIN(len, 20), p);
 #endif
 	/* Log change. */
-	log_line(ep, lno, LINE_RESET);
+	log_line(sp, ep, lno, LINE_RESET);
 
 	/* Update file. */
 	key.data = &lno;
@@ -251,7 +258,7 @@ file_sline(ep, lno, p, len)
 	data.data = p;
 	data.size = len;
 	if ((ep->db->put)(ep->db, &key, &data, 0) == -1) {
-		ep->msg(ep, M_ERROR,
+		msgq(sp, M_ERROR,
 		    "Error: %s/%d: unable to store line %u: %s.",
 		    tail(__FILE__), __LINE__, lno, strerror(errno));
 		return (1);
@@ -261,15 +268,15 @@ file_sline(ep, lno, p, len)
 	if (lno == ep->c_lno)
 		ep->c_lno = OOBLNO;
 
-	/* Log change. */
-	log_line(ep, lno, LINE_RESET);
-
-	/* Update screen. */
-	if (FF_ISSET(ep, F_MODE_VI))
-		scr_change(ep, lno, LINE_RESET);
-	
 	/* File now dirty. */
-	FF_SET(ep, F_MODIFIED);
+	F_SET(ep, F_MODIFIED);
+
+	/* Log change. */
+	log_line(sp, ep, lno, LINE_RESET);
+	
+	/* Update screen. */
+	if (F_ISSET(sp, S_MODE_VI))
+		scr_change(sp, ep, lno, LINE_RESET);
 	return (0);
 }
 
@@ -278,7 +285,8 @@ file_sline(ep, lno, p, len)
  *	Resolve the ib structure into the file.
  */
 int
-file_ibresolv(ep, lno)
+file_ibresolv(sp, ep, lno)
+	SCR *sp;
 	EXF *ep;
 	recno_t lno;
 {
@@ -294,7 +302,7 @@ file_ibresolv(ep, lno)
 	data.data = tp->lp;
 	data.size = tp->len;
 	if ((ep->db->put)(ep->db, &key, &data, 0) == -1) {
-		ep->msg(ep, M_ERROR,
+		msgq(sp, M_ERROR,
 		    "Error: %s/%d: unable to store line %u: %s.",
 		    tail(__FILE__), __LINE__, lno, strerror(errno));
 		return (1);
@@ -306,7 +314,7 @@ file_ibresolv(ep, lno)
 		data.data = tp->lp;
 		data.size = tp->len;
 		if ((ep->db->put)(ep->db, &key, &data, R_IAFTER) == -1) {
-			ep->msg(ep, M_ERROR,
+			msgq(sp, M_ERROR,
 			    "Error: %s/%d: unable to store line %u: %s.",
 			    tail(__FILE__), __LINE__, lno, strerror(errno));
 			return (1);
@@ -318,7 +326,7 @@ file_ibresolv(ep, lno)
 	ep->c_nlines = OOBLNO;
 
 	/* File now dirty. */
-	FF_SET(ep, F_MODIFIED);
+	F_SET(ep, F_MODIFIED);
 	return (0);
 }
 
@@ -327,7 +335,8 @@ file_ibresolv(ep, lno)
  *	Return the number of lines in the file.
  */
 recno_t
-file_lline(ep)
+file_lline(sp, ep)
+	SCR *sp;
 	EXF *ep;
 {
 	DBT data, key;
@@ -343,7 +352,7 @@ file_lline(ep)
 
 	switch((ep->db->seq)(ep->db, &key, &data, R_LAST)) {
         case -1:
-		ep->msg(ep, M_ERROR,
+		msgq(sp, M_ERROR,
 		    "Error: %s/%d: unable to get last line: %s.",
 		    tail(__FILE__), __LINE__, strerror(errno));
 		/* FALLTHROUGH */

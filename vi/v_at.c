@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_at.c,v 5.15 1993/02/28 14:01:44 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:01:44 $";
+static char sccsid[] = "$Id: v_at.c,v 5.16 1993/03/25 15:01:04 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:01:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,16 +21,13 @@ static char sccsid[] = "$Id: v_at.c,v 5.15 1993/02/28 14:01:44 bostic Exp $ (Ber
 #include "vi.h"
 #include "vcmd.h"
 
-u_long atkeybuflen;				/* Length of shared buffer. */
-char *atkeybuf, *atkeyp;			/* Shared at buffer. */
-
 int
-v_at(ep, vp, fm, tm, rp)
+v_at(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	static char rstack[UCHAR_MAX];
 	CB *cb;
 	TEXT *tp;
 	size_t len, remain;
@@ -38,29 +35,30 @@ v_at(ep, vp, fm, tm, rp)
 	char *p, *start;
 
 	key = vp->character;
-	CBNAME(ep, key, cb);
-	CBEMPTY(ep, key, cb);
+	CBNAME(sp, key, cb);
+	CBEMPTY(sp, key, cb);
 
-	if (atkeybuflen == 0)
-		memset(rstack, 0, sizeof(rstack));
-	else if (rstack[key]) {
-		ep->msg(ep, M_ERROR,
-		    "Buffer %c already occurs in this command.", key);
+	if (sp->atkey_len == 0)
+		memset(sp->atkey_stack, 0, sizeof(sp->atkey_stack));
+	else if (sp->atkey_stack[key]) {
+		msgq(sp, M_ERROR, "Buffer %s already occurs in this command.",
+		    CHARNAME(sp, key));
 		return (1);
 	}
 
 	/* Get buffer for rest of at string plus cut buffer. */
-	remain = atkeybuflen ? atkeybuflen - (atkeyp - atkeybuf) : 0;
+	remain = sp->atkey_len ?
+	    sp->atkey_len - (sp->atkey_cur - sp->atkey_buf) : 0;
 
 	/* Check for overflow. */
 	len = cb->len + remain;
 	if (len < cb->len + remain) {
-		ep->msg(ep, M_ERROR, "Buffer overflow.");
+		msgq(sp, M_ERROR, "Buffer overflow.");
 		return (1);
 	}
 
 	if ((start = p = malloc(len)) == NULL) {
-		ep->msg(ep, M_ERROR, "Error: %s", strerror(errno));
+		msgq(sp, M_ERROR, "Error: %s", strerror(errno));
 		return (1);
 	}
 
@@ -74,16 +72,16 @@ v_at(ep, vp, fm, tm, rp)
 	}
 	
 	/* Copy the rest of the current at string into place. */
-	if (atkeybuflen != 0) {
-		memmove(p, atkeyp, remain);
-		free(atkeybuf);
+	if (sp->atkey_len != 0) {
+		memmove(p, sp->atkey_cur, remain);
+		free(sp->atkey_buf);
 
 	}
 	/* Fix the pointers. */
-	atkeybuf = atkeyp = start;
-	atkeybuflen = len;
+	sp->atkey_buf = sp->atkey_cur = start;
+	sp->atkey_len = len;
 
-	rstack[key] = 1;
+	sp->atkey_stack[key] = 1;
 
 	return (0);
 }
