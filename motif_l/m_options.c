@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_options.c,v 8.9 1996/12/16 09:42:54 bostic Exp $ (Berkeley) $Date: 1996/12/16 09:42:54 $";
+static const char sccsid[] = "$Id: m_options.c,v 8.10 1996/12/16 17:25:34 bostic Exp $ (Berkeley) $Date: 1996/12/16 17:25:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -204,7 +204,6 @@ __vi_editopt(ipbp)
 
 	return (0);
 
-trace("edit opt: %s\n", opt->name);
 found:	switch (opt->kind) {
 	case optToggle:
 		opt->value = (void *)ipbp->val1;
