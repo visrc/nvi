@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 8.12 1993/10/31 14:21:22 bostic Exp $ (Berkeley) $Date: 1993/10/31 14:21:22 $";
+static char sccsid[] = "$Id: v_init.c,v 8.13 1993/11/11 12:34:00 bostic Exp $ (Berkeley) $Date: 1993/11/11 12:34:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -63,11 +63,13 @@ v_init(sp, ep)
 	sp->rcmflags = 0;
 
 	/* Create the private vi structure. */
-	if ((VP(sp) = malloc(sizeof(VI_PRIVATE))) == NULL) {
-		msgq(sp, M_ERR, "Error: %s", strerror(errno));
-		return (1);
+	if (VP(sp) == NULL) {
+		if ((VP(sp) = malloc(sizeof(VI_PRIVATE))) == NULL) {
+			msgq(sp, M_ERR, "Error: %s", strerror(errno));
+			return (1);
+		}
+		memset(VP(sp), 0, sizeof(VI_PRIVATE));
 	}
-	memset(VP(sp), 0, sizeof(VI_PRIVATE));
 
 	/* Make ex display to a special function. */
 	if ((sp->stdfp = fwopen(sp, sp->s_ex_write)) == NULL) {
@@ -94,9 +96,12 @@ v_end(sp)
 	sp->trapped_fd = -1;
 	(void)fclose(sp->stdfp);
 
-	/* Free private memory. */
-	FREE(VP(sp), sizeof(VI_PRIVATE));
-	VP(sp) = NULL;
-
+	/*
+	 * XXX
+	 * We can't delete the private VI memory, otherwise we'll lose
+	 * the dot/dotmotion and last 'r' character information.  The
+	 * correct fix is to have a way to register a "call-me-when-the
+	 * screen-is-deleted" function.
+	 */
 	return (0);
 }
