@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_ex.c,v 10.58 2003/07/18 23:16:46 skimo Exp $ (Berkeley) $Date: 2003/07/18 23:16:46 $";
+static const char sccsid[] = "$Id: v_ex.c,v 10.59 2003/07/18 23:31:51 skimo Exp $ (Berkeley) $Date: 2003/07/18 23:31:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -375,8 +375,10 @@ v_ex(SCR *sp, VICMD *vp)
 				break;
 
 			/* Log the command. */
-			if (O_STR(sp, O_CEDIT) != NULL && v_ecl_log(sp, tp))
-				return (1);
+			if (O_STR(sp, O_CEDIT) != NULL && v_ecl_log(sp, tp)) {
+				O_CLR(sp, O_CEDIT);
+				return 1;
+			}
 
 			/* Push a command on the command stack. */
 			if (ex_run_str(sp, NULL, tp->lb, tp->len, 0, 1))
