@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.13 1996/02/23 11:12:40 bostic Exp $ (Berkeley) $Date: 1996/02/23 11:12:40 $
+dnl	$Id: configure.in,v 8.14 1996/02/25 11:50:21 bostic Exp $ (Berkeley) $Date: 1996/02/25 11:50:21 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(configure)
@@ -92,6 +92,7 @@ if test "$vi_cv_curses" = "vi curses"; then
 fi
 if test "$vi_cv_curses" = "user specified"; then
 	cinc="-I`cat curses_include_path`"
+	CFLAGS="$CFLAGS $cinc"
 	LIBS="$LIBS `cat curses_library_path`"
 fi
 
@@ -150,7 +151,7 @@ aix*)	  LIBS="$LIBS -lbsd";;
 aux*)	  lflags="-O2 -ZP";;
 bsd4.4)	  lflags="-O2" LIBS="$LIBS -lutil";;
 bsdi2\.1) lflags="-O2" LIBS="$LIBS -lipc";;
-bsdi*)	  lflags="-O2"
+bsdi*)	  lflags="-O2";;
 dgux*)	  LIBS="$LIBS -ldgc";;
 hpux*)	  lflags="+O1";;
 irix*)	  lflags="-cckr -O2" LIBS="$LIBS -lc_s -lbsd";;
@@ -230,8 +231,16 @@ if test "$vi_cv_have_curses_tigetstr" = yes; then
 fi
 AC_MSG_RESULT($vi_cv_have_curses_tigetstr)
 
-dnl Check for potentially missing curses functions.
-if test "$vi_cv_curses" = "system curses"; then
+dnl Check for potentially missing curses functions in system or
+dnl user-specified libraries.  We also have to guess at whether
+dnl the specified library is a BSD or System V style curses.
+dnl Use the newterm function, all System V curses implementations
+dnl have it, none, as far as I know, of the BSD ones do.
+if test "$vi_cv_curses" = "vi curses"; then
+	AC_DEFINE(HAVE_BSD_CURSES)
+	AC_DEFINE(HAVE_CURSES_ADDNSTR)
+	AC_DEFINE(HAVE_CURSES_IDLOK)
+else
 	dnl Check for the addnstr function.
 	AC_MSG_CHECKING(for addnstr)
 	AC_TRY_LINK([#include <curses.h>], [addnstr(0, 0);],
@@ -292,18 +301,19 @@ if test "$vi_cv_curses" = "system curses"; then
 	fi
 	AC_MSG_RESULT($vi_cv_have_curses_newterm)
 
-else
-	AC_DEFINE(HAVE_CURSES_ADDNSTR)
-	AC_DEFINE(HAVE_CURSES_IDLOK)
+	if test "$vi_cv_have_curses_newterm" = no; then
+		AC_DEFINE(HAVE_BSD_CURSES)
+	fi
 fi
 
 dnl Check for the setupterm function.  We make this check regardless of
 dnl using the system library, because it may be part of the underlying
 dnl termcap/termlib support, and we want to use the local one.
 AC_MSG_CHECKING(for setupterm)
+AC_CACHE_VAL(vi_cv_have_curses_setupterm, [dnl
 AC_TRY_LINK([#include <curses.h>], [setupterm(0, 0, 0);],
 	[vi_cv_have_curses_setupterm=yes],
-	[vi_cv_have_curses_setupterm=no])
+	[vi_cv_have_curses_setupterm=no])])
 if test "$vi_cv_have_curses_setupterm" = yes; then
 	AC_DEFINE(HAVE_CURSES_SETUPTERM)
 fi
@@ -341,13 +351,16 @@ fi
 AC_MSG_RESULT($vi_cv_sprintf_count)
 
 dnl Check for local DB.
+dnl XXX
+dnl Some older versions of DB can't handle vi, so, for now, always
+dnl compile it in.
 AC_SUBST(dbinc)
 AC_SUBST(dbobjs)
 AC_MSG_CHECKING(for Berkeley DB package)
 AC_CACHE_VAL(vi_cv_db_lib, [dnl
 AC_TRY_LINK([#include <db.h>], [dbopen("a", 0, 0, 0, 0);],
 	[vi_cv_db_lib=yes], [vi_cv_db_lib=no])])
-if test "$vi_cv_db_lib" = no; then
+if test "$vi_cv_db_lib" != NOMATCH; then
 	dbinc="-I../db/include"
 	dbobjs=\$\{DBOBJS\}
 fi
