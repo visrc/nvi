@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 10.33 1995/11/17 11:18:39 bostic Exp $ (Berkeley) $Date: 1995/11/17 11:18:39 $";
+static char sccsid[] = "$Id: ex.c,v 10.34 1995/11/22 10:37:25 bostic Exp $ (Berkeley) $Date: 1995/11/22 10:37:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -838,9 +838,11 @@ skip_srch:	if (ecp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, S_VI))
 		goto two_addr;
 	case E_ADDR2_ALL:			/* Zero/two addresses: */
 		if (ecp->addrcnt == 0) {	/* Default entire/empty file. */
-			ecp->addrcnt = 2;
 			F_SET(ecp, E_ADDR_DEF);
-			if (db_last(sp, &ecp->addr2.lno))
+			ecp->addrcnt = 2;
+			if (sp->ep == NULL)
+				ecp->addr2.lno = 0;
+			else if (db_last(sp, &ecp->addr2.lno))
 				goto err;
 			if (F_ISSET(ecp, E_ADDR_ZERODEF) &&
 			    ecp->addr2.lno == 0) {
