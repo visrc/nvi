@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_util.c,v 10.1 1995/04/13 17:22:37 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:37 $";
+static char sccsid[] = "$Id: ex_util.c,v 10.2 1995/05/05 18:53:02 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:53:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,6 +35,9 @@ static char sccsid[] = "$Id: ex_util.c,v 10.1 1995/04/13 17:22:37 bostic Exp $ (
 /*
  * ex_cbuild --
  *	Build an EX command structure.
+ *
+ * PUBLIC: void ex_cbuild __P((EXCMD *,
+ * PUBLIC:   int, int, recno_t, recno_t, int, ARGS *[2], ARGS *a, char *));
  */
 void
 ex_cbuild(cmdp, cmd_id, naddr, lno1, lno2, force, ap, a, arg)
@@ -67,6 +70,8 @@ ex_cbuild(cmdp, cmd_id, naddr, lno1, lno2, force, ap, a, arg)
 /*
  * ex_getline --
  *	Return a line from the file.
+ *
+ * PUBLIC: int ex_getline __P((SCR *, FILE *, size_t *));
  */
 int
 ex_getline(sp, fp, lenp)
@@ -109,6 +114,8 @@ ex_getline(sp, fp, lenp)
  * ex_sleave --
  *	Save the terminal/signal state, screen modification time.
  * 	Specific to ex/filter.c and ex/ex_shell.c.
+ *
+ * PUBLIC: int ex_sleave __P((SCR *));
  */
 int
 ex_sleave(sp)
@@ -151,6 +158,8 @@ ex_sleave(sp)
  * ex_rleave --
  *	Return the terminal/signal state, not screen modification time.
  * 	Specific to ex/filter.c and ex/ex_shell.c.
+ *
+ * PUBLIC: void ex_rleave __P((SCR *));
  */
 void
 ex_rleave(sp)
@@ -174,6 +183,8 @@ ex_rleave(sp)
 /*
  * ex_ncheck --
  *	Check for more files to edit.
+ *
+ * PUBLIC: int ex_ncheck __P((SCR *, int));
  */
 int
 ex_ncheck(sp, force)
@@ -198,6 +209,8 @@ ex_ncheck(sp, force)
 /*
  * ex_message --
  *	Display a few common messages.
+ *
+ * PUBLIC: void ex_message __P((SCR *, char *, enum exmtype));
  */
 void
 ex_message(sp, p, which)

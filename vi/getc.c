@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: getc.c,v 10.1 1995/03/16 20:25:51 bostic Exp $ (Berkeley) $Date: 1995/03/16 20:25:51 $";
+static char sccsid[] = "$Id: getc.c,v 10.2 1995/05/05 18:54:27 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:54:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -43,6 +43,8 @@ static char sccsid[] = "$Id: getc.c,v 10.1 1995/03/16 20:25:51 bostic Exp $ (Ber
 /*
  * cs_init --
  *	Initialize character stream routines.
+ *
+ * PUBLIC: int cs_init __P((SCR *, VCS *));
  */
 int
 cs_init(sp, csp)
@@ -73,6 +75,8 @@ cs_init(sp, csp)
 /*
  * cs_next --
  *	Retrieve the next character.
+ *
+ * PUBLIC: int cs_next __P((SCR *, VCS *));
  */
 int
 cs_next(sp, csp)
@@ -128,6 +132,8 @@ cs_next(sp, csp)
  * Semantics of checking the current character were coded for the fword()
  * function -- once the other word routines are converted, they may have
  * to change.
+ *
+ * PUBLIC: int cs_fspace __P((SCR *, VCS *));
  */
 int
 cs_fspace(sp, csp)
@@ -148,6 +154,8 @@ cs_fspace(sp, csp)
 /*
  * cs_fblank --
  *	Eat forward to the next non-whitespace character.
+ *
+ * PUBLIC: int cs_fblank __P((SCR *, VCS *));
  */
 int
 cs_fblank(sp, csp)
@@ -168,6 +176,8 @@ cs_fblank(sp, csp)
 /*
  * cs_prev --
  *	Retrieve the previous character.
+ *
+ * PUBLIC: int cs_prev __P((SCR *, VCS *));
  */
 int
 cs_prev(sp, csp)
@@ -220,6 +230,8 @@ cs_prev(sp, csp)
 /*
  * cs_bblank --
  *	Eat backward to the next non-whitespace character.
+ *
+ * PUBLIC: int cs_bblank __P((SCR *, VCS *));
  */
 int
 cs_bblank(sp, csp)

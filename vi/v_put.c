@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_put.c,v 10.1 1995/03/16 20:35:22 bostic Exp $ (Berkeley) $Date: 1995/03/16 20:35:22 $";
+static char sccsid[] = "$Id: v_put.c,v 10.2 1995/05/05 18:55:32 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:55:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,6 +33,8 @@ static void	inc_buf __P((SCR *, VICMD *));
 /*
  * v_Put -- [buffer]P
  *	Insert the contents of the buffer before the cursor.
+ *
+ * PUBLIC: int v_Put __P((SCR *, VICMD *));
  */
 int
 v_Put(sp, vp)
@@ -64,6 +66,8 @@ v_Put(sp, vp)
 /*
  * v_put -- [buffer]p
  *	Insert the contents of the buffer after the cursor.
+ *
+ * PUBLIC: int v_put __P((SCR *, VICMD *));
  */
 int
 v_put(sp, vp)

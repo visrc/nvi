@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 10.1 1995/04/13 17:22:39 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:39 $";
+static char sccsid[] = "$Id: ex_write.c,v 10.2 1995/05/05 18:53:20 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:53:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,6 +40,8 @@ static int exwr __P((SCR *, EXCMD *, enum which));
 /*
  * ex_wn --	:wn[!] [>>] [file]
  *	Write to a file and switch to the next one.
+ *
+ * PUBLIC: int ex_wn __P((SCR *, EXCMD *));
  */
 int
 ex_wn(sp, cmdp)
@@ -60,6 +62,8 @@ ex_wn(sp, cmdp)
 /*
  * ex_wq --	:wq[!] [>>] [file]
  *	Write to a file and quit.
+ *
+ * PUBLIC: int ex_wq __P((SCR *, EXCMD *));
  */
 int
 ex_wq(sp, cmdp)
@@ -86,6 +90,8 @@ ex_wq(sp, cmdp)
  * ex_write --	:write[!] [>>] [file]
  *		:write [!] [cmd]
  *	Write to a file.
+ *
+ * PUBLIC: int ex_write __P((SCR *, EXCMD *));
  */
 int
 ex_write(sp, cmdp)
@@ -98,8 +104,9 @@ ex_write(sp, cmdp)
 
 /*
  * ex_xit -- :x[it]! [file]
- *
  *	Write out any modifications and quit.
+ *
+ * PUBLIC: int ex_xit __P((SCR *, EXCMD *));
  */
 int
 ex_xit(sp, cmdp)
@@ -246,6 +253,9 @@ exwr(sp, cmdp, cmd)
 /*
  * ex_writefp --
  *	Write a range of lines to a FILE *.
+ *
+ * PUBLIC: int ex_writefp
+ * PUBLIC:    __P((SCR *, char *, FILE *, MARK *, MARK *, u_long *, u_long *));
  */
 int
 ex_writefp(sp, name, fp, fm, tm, nlno, nch)

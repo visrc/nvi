@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_section.c,v 10.1 1995/03/16 20:39:09 bostic Exp $ (Berkeley) $Date: 1995/03/16 20:39:09 $";
+static char sccsid[] = "$Id: v_section.c,v 10.2 1995/05/05 18:56:06 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:56:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -62,6 +62,8 @@ static char sccsid[] = "$Id: v_section.c,v 10.1 1995/03/16 20:39:09 bostic Exp $
  * match } as well as the usual { and section values.  If it matched a { or
  * a section, it did NOT include the matched line.  If it matched a }, it
  * did include the line.  No clue why.
+ *
+ * PUBLIC: int v_sectionf __P((SCR *, VICMD *));
  */
 int
 v_sectionf(sp, vp)
@@ -169,6 +171,8 @@ ret2:	if (ISMOTION(vp)) {
 /*
  * v_sectionb -- [count][[
  *	Move backward count sections/functions.
+ *
+ * PUBLIC: int v_sectionb __P((SCR *, VICMD *));
  */
 int
 v_sectionb(sp, vp)

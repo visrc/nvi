@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_visual.c,v 10.1 1995/04/13 17:22:39 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:39 $";
+static char sccsid[] = "$Id: ex_visual.c,v 10.2 1995/05/05 18:53:12 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:53:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,12 +28,12 @@ static char sccsid[] = "$Id: ex_visual.c,v 10.1 1995/04/13 17:22:39 bostic Exp $
 #include <regex.h>
 
 #include "common.h"
-#include "../vi/vi.h"
 
 /*
  * ex_visual -- :[line] vi[sual] [^-.+] [window_size] [flags]
- *
  *	Switch to visual mode.
+ *
+ * PUBLIC: int ex_visual __P((SCR *, EXCMD *));
  */
 int
 ex_visual(sp, cmdp)

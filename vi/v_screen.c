@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_screen.c,v 10.1 1995/03/16 20:38:41 bostic Exp $ (Berkeley) $Date: 1995/03/16 20:38:41 $";
+static char sccsid[] = "$Id: v_screen.c,v 10.2 1995/05/05 18:55:46 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:55:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,6 +31,8 @@ static char sccsid[] = "$Id: v_screen.c,v 10.1 1995/03/16 20:38:41 bostic Exp $ 
 /*
  * v_screen -- ^W
  *	Switch screens.
+ *
+ * PUBLIC: int v_screen __P((SCR *, VICMD *));
  */
 int
 v_screen(sp, vp)

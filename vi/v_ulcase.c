@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ulcase.c,v 10.1 1995/03/16 20:39:43 bostic Exp $ (Berkeley) $Date: 1995/03/16 20:39:43 $";
+static char sccsid[] = "$Id: v_ulcase.c,v 10.2 1995/05/05 18:56:41 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:56:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -47,6 +47,8 @@ static int ulcase __P((SCR *, recno_t, CHAR_T *, size_t, size_t, size_t));
  * In historic vi, the count was ignored.  It would have been better
  * if there had been an associated motion, but it's too late to make
  * that the default now.
+ *
+ * PUBLIC: int v_ulcase __P((SCR *, VICMD *));
  */
 int
 v_ulcase(sp, vp)
@@ -103,6 +105,8 @@ v_ulcase(sp, vp)
 /*
  * v_mulcase -- [count]~[count]motion
  *	Toggle upper & lower case letters over a range.
+ *
+ * PUBLIC: int v_mulcase __P((SCR *, VICMD *));
  */
 int
 v_mulcase(sp, vp)

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_delete.c,v 10.1 1995/03/16 20:30:29 bostic Exp $ (Berkeley) $Date: 1995/03/16 20:30:29 $";
+static char sccsid[] = "$Id: v_delete.c,v 10.2 1995/05/05 18:54:49 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:54:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,6 +32,8 @@ static char sccsid[] = "$Id: v_delete.c,v 10.1 1995/03/16 20:30:29 bostic Exp $ 
  * v_delete -- [buffer][count]d[count]motion
  *	       [buffer][count]D
  *	Delete a range of text.
+ *
+ * PUBLIC: int v_delete __P((SCR *, VICMD *));
  */
 int
 v_delete(sp, vp)

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 10.1 1995/03/16 20:38:55 bostic Exp $ (Berkeley) $Date: 1995/03/16 20:38:55 $";
+static char sccsid[] = "$Id: v_scroll.c,v 10.2 1995/05/05 18:55:57 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:55:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -67,6 +67,8 @@ static void goto_adjust __P((VICMD *));
  * v_lgoto -- [count]G
  *	Go to first non-blank character of the line count, the last line
  *	of the file by default.
+ *
+ * PUBLIC: int v_lgoto __P((SCR *, VICMD *));
  */
 int
 v_lgoto(sp, vp)
@@ -104,6 +106,8 @@ v_lgoto(sp, vp)
  * v_home -- [count]H
  *	Move to the first non-blank character of the logical line
  *	count - 1 from the top of the screen, 0 by default.
+ *
+ * PUBLIC: int v_home __P((SCR *, VICMD *));
  */
 int
 v_home(sp, vp)
@@ -121,6 +125,8 @@ v_home(sp, vp)
  * v_middle -- M
  *	Move to the first non-blank character of the logical line
  *	in the middle of the screen.
+ *
+ * PUBLIC: int v_middle __P((SCR *, VICMD *));
  */
 int
 v_middle(sp, vp)
@@ -142,6 +148,8 @@ v_middle(sp, vp)
  * v_bottom -- [count]L
  *	Move to the first non-blank character of the logical line
  *	count - 1 from the bottom of the screen, 0 by default.
+ *
+ * PUBLIC: int v_bottom __P((SCR *, VICMD *));
  */
 int
 v_bottom(sp, vp)
@@ -206,6 +214,8 @@ goto_adjust(vp)
 /*
  * v_up -- [count]^P, [count]k, [count]-
  *	Move up by lines.
+ *
+ * PUBLIC: int v_up __P((SCR *, VICMD *));
  */
 int
 v_up(sp, vp)
@@ -228,6 +238,8 @@ v_up(sp, vp)
  * v_cr -- [count]^M
  *	In a script window, send the line to the shell.
  *	In a regular window, move down by lines.
+ *
+ * PUBLIC: int v_cr __P((SCR *, VICMD *));
  */
 int
 v_cr(sp, vp)
@@ -245,6 +257,8 @@ v_cr(sp, vp)
 /*
  * v_down -- [count]^J, [count]^N, [count]j, [count]^M, [count]+
  *	Move down by lines.
+ *
+ * PUBLIC: int v_down __P((SCR *, VICMD *));
  */
 int
 v_down(sp, vp)
@@ -266,6 +280,8 @@ v_down(sp, vp)
 /*
  * v_hpageup -- [count]^U
  *	Page up half screens.
+ *
+ * PUBLIC: int v_hpageup __P((SCR *, VICMD *));
  */
 int
 v_hpageup(sp, vp)
@@ -290,6 +306,8 @@ v_hpageup(sp, vp)
 /*
  * v_hpagedown -- [count]^D
  *	Page down half screens.
+ *
+ * PUBLIC: int v_hpagedown __P((SCR *, VICMD *));
  */
 int
 v_hpagedown(sp, vp)
@@ -318,6 +336,8 @@ v_hpagedown(sp, vp)
  * Historic vi did not move to the EOF if the screen couldn't move, i.e.
  * if EOF was already displayed on the screen.  This implementation does
  * move to EOF in that case, making ^F more like the the historic ^D.
+ *
+ * PUBLIC: int v_pagedown __P((SCR *, VICMD *));
  */
 int
 v_pagedown(sp, vp)
@@ -369,6 +389,8 @@ v_pagedown(sp, vp)
  * Historic vi did not move to the SOF if the screen couldn't move, i.e.
  * if SOF was already displayed on the screen.  This implementation does
  * move to SOF in that case, making ^B more like the the historic ^U.
+ *
+ * PUBLIC: int v_pageup __P((SCR *, VICMD *));
  */
 int
 v_pageup(sp, vp)
@@ -416,6 +438,8 @@ v_pageup(sp, vp)
 /*
  * v_lineup -- [count]^Y
  *	Page up by lines.
+ *
+ * PUBLIC: int v_lineup __P((SCR *, VICMD *));
  */
 int
 v_lineup(sp, vp)
@@ -436,6 +460,8 @@ v_lineup(sp, vp)
 /*
  * v_linedown -- [count]^E
  *	Page down by lines.
+ *
+ * PUBLIC: int v_linedown __P((SCR *, VICMD *));
  */
 int
 v_linedown(sp, vp)

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_right.c,v 10.1 1995/03/16 20:38:32 bostic Exp $ (Berkeley) $Date: 1995/03/16 20:38:32 $";
+static char sccsid[] = "$Id: v_right.c,v 10.2 1995/05/05 18:55:42 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:55:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,6 +31,8 @@ static char sccsid[] = "$Id: v_right.c,v 10.1 1995/03/16 20:38:32 bostic Exp $ (
 /*
  * v_right -- [count]' ', [count]l
  *	Move right by columns.
+ *
+ * PUBLIC: int v_right __P((SCR *, VICMD *));
  */
 int
 v_right(sp, vp)
@@ -85,6 +87,8 @@ v_right(sp, vp)
 /*
  * v_dollar -- [count]$
  *	Move to the last column.
+ *
+ * PUBLIC: int v_dollar __P((SCR *, VICMD *));
  */
 int
 v_dollar(sp, vp)

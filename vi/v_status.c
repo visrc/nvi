@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_status.c,v 10.1 1995/03/16 20:39:27 bostic Exp $ (Berkeley) $Date: 1995/03/16 20:39:27 $";
+static char sccsid[] = "$Id: v_status.c,v 10.2 1995/05/05 18:56:13 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:56:13 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -32,6 +32,8 @@ static char sccsid[] = "$Id: v_status.c,v 10.1 1995/03/16 20:39:27 bostic Exp $ 
 /*
  * v_status -- ^G
  *	Show the file status.
+ *
+ * PUBLIC: int v_status __P((SCR *, VICMD *));
  */
 int
 v_status(sp, vp)

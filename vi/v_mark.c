@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_mark.c,v 10.1 1995/03/16 20:35:03 bostic Exp $ (Berkeley) $Date: 1995/03/16 20:35:03 $";
+static char sccsid[] = "$Id: v_mark.c,v 10.2 1995/05/05 18:55:23 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:55:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,6 +32,8 @@ static char sccsid[] = "$Id: v_mark.c,v 10.1 1995/03/16 20:35:03 bostic Exp $ (B
 /*
  * v_mark -- m[a-z]
  *	Set a mark.
+ *
+ * PUBLIC: int v_mark __P((SCR *, VICMD *));
  */
 int
 v_mark(sp, vp)
@@ -57,6 +59,8 @@ static int mark __P((SCR *, VICMD *, enum which));
  * the same as "``".  Remember this fact -- you'll be amazed at how many
  * people don't know it and will be delighted that you are able to tell
  * them.
+ *
+ * PUBLIC: int v_bmark __P((SCR *, VICMD *));
  */
 int
 v_bmark(sp, vp)
@@ -71,6 +75,8 @@ v_bmark(sp, vp)
  *	Move to a mark.
  *
  * Move to the first nonblank character of the line containing the mark.
+ *
+ * PUBLIC: int v_fmark __P((SCR *, VICMD *));
  */
 int
 v_fmark(sp, vp)
@@ -80,6 +86,10 @@ v_fmark(sp, vp)
 	return (mark(sp, vp, FQMARK));
 }
 
+/*
+ * mark --
+ *	Mark corrections.
+ */
 static int
 mark(sp, vp, cmd)
 	SCR *sp;

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ch.c,v 10.1 1995/03/16 20:29:34 bostic Exp $ (Berkeley) $Date: 1995/03/16 20:29:34 $";
+static char sccsid[] = "$Id: v_ch.c,v 10.2 1995/05/05 18:54:38 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:54:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,6 +35,8 @@ static void noprev __P((SCR *));
 /*
  * v_chrepeat -- [count];
  *	Repeat the last F, f, T or t search.
+ *
+ * PUBLIC: int v_chrepeat __P((SCR *, VICMD *));
  */
 int
 v_chrepeat(sp, vp)
@@ -64,6 +66,8 @@ v_chrepeat(sp, vp)
 /*
  * v_chrrepeat -- [count],
  *	Repeat the last F, f, T or t search in the reverse direction.
+ *
+ * PUBLIC: int v_chrrepeat __P((SCR *, VICMD *));
  */
 int
 v_chrrepeat(sp, vp)
@@ -103,6 +107,8 @@ v_chrrepeat(sp, vp)
  * v_cht -- [count]tc
  *	Search forward in the line for the character before the next
  *	occurrence of the specified character.
+ *
+ * PUBLIC: int v_cht __P((SCR *, VICMD *));
  */
 int
 v_cht(sp, vp)
@@ -134,6 +140,8 @@ v_cht(sp, vp)
  * v_chf -- [count]fc
  *	Search forward in the line for the next occurrence of the
  *	specified character.
+ *
+ * PUBLIC: int v_chf __P((SCR *, VICMD *));
  */
 int
 v_chf(sp, vp)
@@ -196,6 +204,8 @@ v_chf(sp, vp)
  * v_chT -- [count]Tc
  *	Search backward in the line for the character after the next
  *	occurrence of the specified character.
+ *
+ * PUBLIC: int v_chT __P((SCR *, VICMD *));
  */
 int
 v_chT(sp, vp)
@@ -221,6 +231,8 @@ v_chT(sp, vp)
  * v_chF -- [count]Fc
  *	Search backward in the line for the next occurrence of the
  *	specified character.
+ *
+ * PUBLIC: int v_chF __P((SCR *, VICMD *));
  */
 int
 v_chF(sp, vp)

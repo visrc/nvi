@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 10.1 1995/04/13 17:19:14 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:19:14 $";
+static char sccsid[] = "$Id: vi.c,v 10.2 1995/05/05 18:57:32 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:57:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -65,6 +65,8 @@ VIKEYS const tmotion = {
  * command, with the syntax:
  *
  *	[count] key [character]
+ *
+ * PUBLIC: int vi __P((SCR *, EVENT *));
  */
 int
 vi(sp, evp)

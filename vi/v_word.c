@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_word.c,v 10.1 1995/03/16 20:40:10 bostic Exp $ (Berkeley) $Date: 1995/03/16 20:40:10 $";
+static char sccsid[] = "$Id: v_word.c,v 10.2 1995/05/05 18:56:52 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:56:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -77,6 +77,8 @@ static int fword __P((SCR *, VICMD *, enum which));
 /*
  * v_wordW -- [count]W
  *	Move forward a bigword at a time.
+ *
+ * PUBLIC: int v_wordW __P((SCR *, VICMD *));
  */
 int
 v_wordW(sp, vp)
@@ -89,6 +91,8 @@ v_wordW(sp, vp)
 /*
  * v_wordw -- [count]w
  *	Move forward a word at a time.
+ *
+ * PUBLIC: int v_wordw __P((SCR *, VICMD *));
  */
 int
 v_wordw(sp, vp)
@@ -240,6 +244,8 @@ ret:	if (!ISMOTION(vp) &&
 /*
  * v_wordE -- [count]E
  *	Move forward to the end of the bigword.
+ *
+ * PUBLIC: int v_wordE __P((SCR *, VICMD *));
  */
 int
 v_wordE(sp, vp)
@@ -252,6 +258,8 @@ v_wordE(sp, vp)
 /*
  * v_worde -- [count]e
  *	Move forward to the end of the word.
+ *
+ * PUBLIC: int v_worde __P((SCR *, VICMD *));
  */
 int
 v_worde(sp, vp)
@@ -389,6 +397,8 @@ ret:	if (!ISMOTION(vp) &&
 /*
  * v_WordB -- [count]B
  *	Move backward a bigword at a time.
+ *
+ * PUBLIC: int v_wordB __P((SCR *, VICMD *));
  */
 int
 v_wordB(sp, vp)
@@ -401,6 +411,8 @@ v_wordB(sp, vp)
 /*
  * v_wordb -- [count]b
  *	Move backward a word at a time.
+ *
+ * PUBLIC: int v_wordb __P((SCR *, VICMD *));
  */
 int
 v_wordb(sp, vp)

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 10.1 1995/03/16 20:32:15 bostic Exp $ (Berkeley) $Date: 1995/03/16 20:32:15 $";
+static char sccsid[] = "$Id: v_init.c,v 10.2 1995/05/05 18:55:10 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:55:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,6 +34,8 @@ static char sccsid[] = "$Id: v_init.c,v 10.1 1995/03/16 20:32:15 bostic Exp $ (B
 /*
  * v_screen_copy --
  *	Copy vi screen.
+ *
+ * PUBLIC: int v_screen_copy __P((SCR *, SCR *));
  */
 int
 v_screen_copy(orig, sp)
@@ -76,6 +78,8 @@ v_screen_copy(orig, sp)
 /*
  * v_screen_end --
  *	End a vi screen.
+ *
+ * PUBLIC: int v_screen_end __P((SCR *));
  */
 int
 v_screen_end(sp)
@@ -104,6 +108,8 @@ v_screen_end(sp)
 /*
  * v_optchange --
  *	Handle change of options for vi.
+ *
+ * PUBLIC: int v_optchange __P((SCR *, int));
  */
 int
 v_optchange(sp, opt)

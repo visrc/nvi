@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_paragraph.c,v 10.1 1995/03/16 20:35:16 bostic Exp $ (Berkeley) $Date: 1995/03/16 20:35:16 $";
+static char sccsid[] = "$Id: v_paragraph.c,v 10.2 1995/05/05 18:55:28 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:55:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -64,6 +64,8 @@ static char sccsid[] = "$Id: v_paragraph.c,v 10.1 1995/03/16 20:35:16 bostic Exp
  *
  * Paragraphs are empty lines after text, formfeed characters, or values
  * from the paragraph or section options.
+ *
+ * PUBLIC: int v_paragraphf __P((SCR *, VICMD *));
  */
 int
 v_paragraphf(sp, vp)
@@ -204,6 +206,8 @@ eof:	if (vp->m_start.lno == lno || vp->m_start.lno == lno - 1) {
 /*
  * v_paragraphb -- [count]{
  *	Move backward count paragraphs.
+ *
+ * PUBLIC: int v_paragraphb __P((SCR *, VICMD *));
  */
 int
 v_paragraphb(sp, vp)
@@ -310,6 +314,8 @@ found:	vp->m_stop.lno = lno;
 /*
  * v_buildps --
  *	Build the paragraph command search pattern.
+ *
+ * PUBLIC: int v_buildps __P((SCR *));
  */
 int
 v_buildps(sp)

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 10.1 1995/04/13 17:19:10 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:19:10 $";
+static char sccsid[] = "$Id: v_txt.c,v 10.2 1995/05/05 18:56:32 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:56:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -56,6 +56,9 @@ static void	 txt_unmap __P((SCR *, TEXT *));
 /*
  * v_txt_setup --
  *	Set up for vi text input.
+ *
+ * PUBLIC: int v_txt_setup __P((SCR *,
+ * PUBLIC:    VICMD *, MARK *, const char *, size_t, ARG_CHAR_T, recno_t));
  */
 int
 v_txt_setup(sp, vp, tm, lp, len, prompt, ai_line)
@@ -294,6 +297,8 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
  * historic vi did it results in an even worse bug.  Given the keystrokes
  * "iabcd<esc>0R<tab><esc>", the "bcd" disappears, and magically reappears
  * on the second <esc> key.
+ *
+ * PUBLIC: int v_txt_ev __P((SCR *, EVENT *, int *));
  */
 int
 v_txt_ev(sp, evp, completep)
@@ -1430,13 +1435,15 @@ txt_ai_resolve(sp, tp)
  * v_txt_auto --
  *	Handle autoindent.  If aitp isn't NULL, use it, otherwise,
  *	retrieve the line.
+ *
+ * PUBLIC: int v_txt_auto __P((SCR *, recno_t, TEXT *, size_t, TEXT *));
  */
 int
 v_txt_auto(sp, lno, aitp, len, tp)
 	SCR *sp;
 	recno_t lno;
-	size_t len;
 	TEXT *aitp, *tp;
+	size_t len;
 {
 	size_t nlen;
 	char *p, *t;

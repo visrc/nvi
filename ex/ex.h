@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 10.1 1995/04/13 17:22:44 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:44 $
+ *	$Id: ex.h,v 10.2 1995/05/05 18:53:57 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:53:57 $
  */
 
 #define	PROMPTCHAR	':'		/* Prompt character. */
@@ -211,11 +211,6 @@ typedef struct _ex_private {
 } EX_PRIVATE;
 #define	EXP(sp)	((EX_PRIVATE *)((sp)->ex_private))
 
-/* Generic interfaces to ex. */
-int	ex_optchange __P((SCR *, int));
-int	ex_screen_copy __P((SCR *, SCR *));
-int	ex_screen_end __P((SCR *));
-
 /*
  * Filter actions:
  *
@@ -224,128 +219,12 @@ int	ex_screen_end __P((SCR *));
  *	FILTER_WRITE	Write to the utility, display its output.
  */
 enum filtertype { FILTER, FILTER_READ, FILTER_WRITE };
-int	filtercmd __P((SCR *, MARK *, MARK *, MARK *, char *, enum filtertype));
 
-/* Argument expansion routines. */
-int	argv_init __P((SCR *, EXCMD *));
-int	argv_exp0 __P((SCR *, EXCMD *, char *, size_t));
-int	argv_exp1 __P((SCR *, EXCMD *, char *, size_t, int));
-int	argv_exp2 __P((SCR *, EXCMD *, char *, size_t));
-int	argv_exp3 __P((SCR *, EXCMD *, char *, size_t));
-int	argv_free __P((SCR *));
-
-/* Ex common messages. */
+/* Ex common error messages. */
 enum exmtype { EXM_EMPTYBUF, EXM_NOPREVBUF, EXM_NOPREVRE, EXM_NORC, EXM_USAGE };
-void	ex_message __P((SCR *, char *, enum exmtype));
 
-/* Ex address errors. */
+/* Ex address error types. */
 enum badaddr { A_COMBO, A_EMPTY, A_EOF, A_NOTSET, A_ZERO };
-void	ex_badaddr __P((SCR *, EXCMDLIST const *, enum badaddr, enum nresult));
 
-/* Ex function prototypes. */
-int	ex __P((SCR *, EVENT *));
-int	ex_aci_td __P((SCR *));
-void	ex_cbuild __P((EXCMD *, int, int, recno_t, recno_t, int, ARGS *[], ARGS *, char *));
-int	ex_cdalloc __P((SCR *, char *));
-int	ex_cdfree __P((SCR *));
-int	ex_cfile __P((SCR *, char *, u_int));
-int	ex_cmd __P((SCR *));
-int	ex_exec_proc __P((SCR *, char *, char *, char *));
-int	ex_gb __P((SCR *, TEXTH *, int, u_int));
-int	ex_getline __P((SCR *, FILE *, size_t *));
-int	ex_icmd __P((SCR *, char *));
-int	ex_is_abbrev __P((char *, size_t));
-int	ex_is_unmap __P((char *, size_t));
-int	ex_ldisplay __P((SCR *, const char *, size_t, size_t, u_int));
-int	ex_ncheck __P((SCR *, int));
-int	ex_print __P((SCR *, MARK *, MARK *, int));
-int	ex_range __P((SCR *, EXCMD *));
-int	ex_readfp __P((SCR *, char *, FILE *, MARK *, recno_t *, int));
-void	ex_refresh __P((SCR *));
-void	ex_rleave __P((SCR *));
-int	ex_scprint __P((SCR *, MARK *, MARK *));
-int	ex_screen_copy __P((SCR *, SCR *));
-int	ex_screen_end __P((SCR *));
-int	ex_sdisplay __P((SCR *));
-int	ex_sleave __P((SCR *));
-int	ex_suspend __P((SCR *));
-int	ex_tdisplay __P((SCR *));
-int	ex_tload __P((SCR *));
-int	ex_txt_ev __P((SCR *, EVENT *, int *));
-int	ex_txt_setup __P((SCR *, ARG_CHAR_T));
-int	ex_writefp __P((SCR *, char *, FILE *, MARK *, MARK *, u_long *, u_long *));
-void	global_insdel __P((SCR *, lnop_t, recno_t));
-int	proc_wait __P((SCR *, long, const char *, int));
-int	sscr_end __P((SCR *));
-int	sscr_exec __P((SCR *, recno_t));
-int	sscr_input __P((SCR *));
-
-#define	EXPROTO(name)	int name __P((SCR *, EXCMD *))
-EXPROTO(ex_abbr);
-EXPROTO(ex_append);
-EXPROTO(ex_args);
-EXPROTO(ex_at);
-EXPROTO(ex_bang);
-EXPROTO(ex_bg);
-EXPROTO(ex_cd);
-EXPROTO(ex_change);
-EXPROTO(ex_color);
-EXPROTO(ex_copy);
-EXPROTO(ex_debug);
-EXPROTO(ex_delete);
-EXPROTO(ex_digraph);
-EXPROTO(ex_display);
-EXPROTO(ex_edit);
-EXPROTO(ex_equal);
-EXPROTO(ex_fg);
-EXPROTO(ex_file);
-EXPROTO(ex_global);
-EXPROTO(ex_help);
-EXPROTO(ex_insert);
-EXPROTO(ex_join);
-EXPROTO(ex_list);
-EXPROTO(ex_map);
-EXPROTO(ex_mark);
-EXPROTO(ex_mkexrc);
-EXPROTO(ex_move);
-EXPROTO(ex_next);
-EXPROTO(ex_number);
-EXPROTO(ex_open);
-EXPROTO(ex_pr);
-EXPROTO(ex_preserve);
-EXPROTO(ex_prev);
-EXPROTO(ex_put);
-EXPROTO(ex_quit);
-EXPROTO(ex_read);
-EXPROTO(ex_recover);
-EXPROTO(ex_resize);
-EXPROTO(ex_rew);
-EXPROTO(ex_s);
-EXPROTO(ex_script);
-EXPROTO(ex_set);
-EXPROTO(ex_shell);
-EXPROTO(ex_shiftl);
-EXPROTO(ex_shiftr);
-EXPROTO(ex_source);
-EXPROTO(ex_split);
-EXPROTO(ex_stop);
-EXPROTO(ex_subagain);
-EXPROTO(ex_subtilde);
-EXPROTO(ex_tagpop);
-EXPROTO(ex_tagpush);
-EXPROTO(ex_tagtop);
-EXPROTO(ex_unabbr);
-EXPROTO(ex_undo);
-EXPROTO(ex_unmap);
-EXPROTO(ex_usage);
-EXPROTO(ex_v);
-EXPROTO(ex_validate);
-EXPROTO(ex_version);
-EXPROTO(ex_visual);
-EXPROTO(ex_viusage);
-EXPROTO(ex_wn);
-EXPROTO(ex_wq);
-EXPROTO(ex_write);
-EXPROTO(ex_xit);
-EXPROTO(ex_yank);
-EXPROTO(ex_z);
+#include "excmd_define.h"
+#include "excmd_extern.h"

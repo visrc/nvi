@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_yank.c,v 10.1 1995/03/16 20:40:25 bostic Exp $ (Berkeley) $Date: 1995/03/16 20:40:25 $";
+static char sccsid[] = "$Id: v_yank.c,v 10.2 1995/05/05 18:57:00 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:57:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -42,6 +42,8 @@ static char sccsid[] = "$Id: v_yank.c,v 10.1 1995/03/16 20:40:25 bostic Exp $ (B
  * the first non-blank of the line marked by a, while "y`a" moved the cursor
  * to the line and column marked by a.  Hopefully, the motion component code
  * got it right...   Unlike delete, we make no adjustments here.
+ *
+ * PUBLIC: int v_yank __P((SCR *, VICMD *));
  */
 int
 v_yank(sp, vp)

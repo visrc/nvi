@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_sentence.c,v 10.1 1995/03/16 20:39:18 bostic Exp $ (Berkeley) $Date: 1995/03/16 20:39:18 $";
+static char sccsid[] = "$Id: v_sentence.c,v 10.2 1995/05/05 18:56:09 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:56:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -52,6 +52,8 @@ static char sccsid[] = "$Id: v_sentence.c,v 10.1 1995/03/16 20:39:18 bostic Exp 
 /*
  * v_sentencef -- [count])
  *	Move forward count sentences.
+ *
+ * PUBLIC: int v_sentencef __P((SCR *, VICMD *));
  */
 int
 v_sentencef(sp, vp)
@@ -189,6 +191,8 @@ okret:	vp->m_stop.lno = cs.cs_lno;
 /*
  * v_sentenceb -- [count](
  *	Move backward count sentences.
+ *
+ * PUBLIC: int v_sentenceb __P((SCR *, VICMD *));
  */
 int
 v_sentenceb(sp, vp)

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_replace.c,v 10.1 1995/04/13 17:19:04 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:19:04 $";
+static char sccsid[] = "$Id: v_replace.c,v 10.2 1995/05/05 18:55:38 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:55:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -45,6 +45,8 @@ static int v_rcheck __P((SCR *, recno_t, char **, size_t *));
  * but "r<literal><escape>" erased a single character.  To enter a literal
  * <literal> character, it required three <literal> characters after the
  * command.  This may not be right, but at least it's not insane.
+ *
+ * PUBLIC: int v_replace __P((SCR *, VICMD *));
  */
 int
 v_replace(sp, vp)
@@ -73,6 +75,8 @@ v_replace(sp, vp)
 /*
  * v_replace_td --
  *	Do the replacement.
+ *
+ * PUBLIC: int v_replace_td __P((SCR *, VICMD *));
  */
 int
 v_replace_td(sp, vp)

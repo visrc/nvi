@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_increment.c,v 10.1 1995/03/16 20:30:41 bostic Exp $ (Berkeley) $Date: 1995/03/16 20:30:41 $";
+static char sccsid[] = "$Id: v_increment.c,v 10.2 1995/05/05 18:55:07 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:55:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -50,6 +50,8 @@ static void inc_err __P((SCR *, enum nresult));
 /*
  * v_increment -- [count]#[#+-]
  *	Increment/decrement a keyword number.
+ *
+ * PUBLIC: int v_increment __P((SCR *, VICMD *));
  */
 int
 v_increment(sp, vp)

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 10.1 1995/04/13 17:19:05 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:19:05 $";
+static char sccsid[] = "$Id: v_search.c,v 10.2 1995/05/05 18:56:03 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:56:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,6 +38,8 @@ static int v_s_setup __P((SCR *, VICMD *, char *, u_int, dir_t));
 /*
  * v_srch -- [count]?RE[? offset]
  *	Ex address search backward.
+ *
+ * PUBLIC: int v_searchb __P((SCR *, VICMD *));
  */
 int
 v_searchb(sp, vp)
@@ -50,6 +52,8 @@ v_searchb(sp, vp)
 /*
  * v_searchf -- [count]/RE[/ offset]
  *	Ex address search forward.
+ *
+ * PUBLIC: int v_searchf __P((SCR *, VICMD *));
  */
 int
 v_searchf(sp, vp)
@@ -90,6 +94,8 @@ v_a_setup(sp, vp, dir)
 /*
  * v_a_td1 --
  *	Tear down the ex address search text input and start the search.
+ *
+ * PUBLIC: int v_a_td1 __P((SCR *, VICMD *));
  */
 int
 v_a_td1(sp, vp)
@@ -133,6 +139,8 @@ v_a_td1(sp, vp)
 /*
  * v_a_td2 --
  *	 Start or continue an ex address search.
+ *
+ * PUBLIC: int v_a_td2 __P((SCR *, VICMD *));
  */
 int
 v_a_td2(sp, vp)
@@ -309,6 +317,8 @@ err2:	sp->lno = vip->s_lno;
 /*
  * v_searchN -- N
  *	Reverse last search.
+ *
+ * PUBLIC: int v_searchN __P((SCR *, VICMD *));
  */
 int
 v_searchN(sp, vp)
@@ -334,6 +344,8 @@ v_searchN(sp, vp)
 /*
  * v_searchn -- n
  *	Repeat last search.
+ *
+ * PUBLIC: int v_searchn __P((SCR *, VICMD *));
  */
 int
 v_searchn(sp, vp)
@@ -346,6 +358,8 @@ v_searchn(sp, vp)
 /*
  * v_searchw -- [count]^A
  *	Search for the word under the cursor.
+ *
+ * PUBLIC: int v_searchw __P((SCR *, VICMD *));
  */
 int
 v_searchw(sp, vp)
@@ -420,6 +434,8 @@ v_s_setup(sp, vp, ptrn, flags, dir)
  * placing the cursor on the 'A' and doing y?$ would so confuse it that 'h'
  * 'k' and put would no longer work correctly.  In any case, we try to do
  * the right thing, but it's not going to exactly match historic practice.
+ *
+ * PUBLIC: int v_correct __P((SCR *, VICMD *, int));
  */
 int
 v_correct(sp, vp, isdelta)

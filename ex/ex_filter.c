@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 10.1 1995/04/13 17:22:46 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:46 $";
+static char sccsid[] = "$Id: ex_filter.c,v 10.2 1995/05/05 18:54:06 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:54:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -41,6 +41,9 @@ static int	filter_ldisplay __P((SCR *, FILE *));
  *	Run a range of lines through a filter utility and optionally
  *	replace the original text with the stdout/stderr output of
  *	the utility.
+ *
+ * PUBLIC: int filtercmd
+ * PUBLIC:    __P((SCR *, MARK *, MARK *, MARK *, char *, enum filtertype));
  */
 int
 filtercmd(sp, fm, tm, rp, cmd, ftype)
@@ -293,6 +296,8 @@ ret:	if (teardown)
  * system.  It has to be cast into something or the standard promotion
  * rules get you.  I'm using a long based on the belief that nobody is
  * going to make it unsigned and it's unlikely to be a quad.
+ *
+ * PUBLIC: int proc_wait __P((SCR *, long, const char *, int));
  */
 int
 proc_wait(sp, pid, cmd, okpipe)

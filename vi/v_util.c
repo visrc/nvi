@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_util.c,v 10.1 1995/03/16 20:40:00 bostic Exp $ (Berkeley) $Date: 1995/03/16 20:40:00 $";
+static char sccsid[] = "$Id: v_util.c,v 10.2 1995/05/05 18:56:48 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:56:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,6 +35,8 @@ static char sccsid[] = "$Id: v_util.c,v 10.1 1995/03/16 20:40:00 bostic Exp $ (B
 /*
  * v_eof --
  *	Vi end-of-file error.
+ *
+ * PUBLIC: void v_eof __P((SCR *, MARK *));
  */
 void
 v_eof(sp, mp)
@@ -58,6 +60,8 @@ v_eof(sp, mp)
 /*
  * v_eol --
  *	Vi end-of-line error.
+ *
+ * PUBLIC: void v_eol __P((SCR *, MARK *));
  */
 void
 v_eol(sp, mp)
@@ -83,6 +87,8 @@ v_eol(sp, mp)
 /*
  * v_nomove --
  *	Vi no cursor movement error.
+ *
+ * PUBLIC: void v_nomove __P((SCR *));
  */
 void
 v_nomove(sp)
@@ -94,6 +100,8 @@ v_nomove(sp)
 /*
  * v_sof --
  *	Vi start-of-file error.
+ *
+ * PUBLIC: void v_sof __P((SCR *, MARK *));
  */
 void
 v_sof(sp, mp)
@@ -109,6 +117,8 @@ v_sof(sp, mp)
 /*
  * v_sol --
  *	Vi start-of-line error.
+ *
+ * PUBLIC: void v_sol __P((SCR *));
  */
 void
 v_sol(sp)
@@ -120,6 +130,8 @@ v_sol(sp)
 /*
  * v_isempty --
  *	Return if the line contains nothing but white-space characters.
+ *
+ * PUBLIC: int v_isempty __P((char *, size_t));
  */
 int
 v_isempty(p, len)
@@ -135,6 +147,8 @@ v_isempty(p, len)
 /*
  * v_message --
  *	Display a few common messages.
+ *
+ * PUBLIC: void v_message __P((SCR *, char *, enum vimtype));
  */
 void
 v_message(sp, p, which)

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_undo.c,v 10.1 1995/03/16 20:39:52 bostic Exp $ (Berkeley) $Date: 1995/03/16 20:39:52 $";
+static char sccsid[] = "$Id: v_undo.c,v 10.2 1995/05/05 18:56:44 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:56:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,6 +34,8 @@ static char sccsid[] = "$Id: v_undo.c,v 10.1 1995/03/16 20:39:52 bostic Exp $ (B
 /*
  * v_Undo -- U
  *	Undo changes to this line.
+ *
+ * PUBLIC: int v_Undo __P((SCR *, VICMD *));
  */
 int
 v_Undo(sp, vp)
@@ -68,6 +70,8 @@ v_Undo(sp, vp)
 /*
  * v_undo -- u
  *	Undo the last change.
+ *
+ * PUBLIC: int v_undo __P((SCR *, VICMD *));
  */
 int
 v_undo(sp, vp)
