@@ -14,7 +14,7 @@
 #undef VI
 
 #ifndef lint
-static const char sccsid[] = "$Id: perl.xs,v 8.32 2000/04/30 17:00:14 skimo Exp $ (Berkeley) $Date: 2000/04/30 17:00:14 $";
+static const char sccsid[] = "$Id: perl.xs,v 8.33 2000/06/30 19:57:40 skimo Exp $ (Berkeley) $Date: 2000/06/30 19:57:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -114,7 +114,9 @@ perl_eval(string)
 
 	SV* sv = newSVpv(string, 0);
 
-	perl_eval_sv(sv, G_DISCARD | G_NOARGS);
+	/* G_KEEPERR to catch syntax error; better way ? */
+	sv_setpv(ERRSV,"");
+	perl_eval_sv(sv, G_DISCARD | G_NOARGS | G_KEEPERR);
 	SvREFCNT_dec(sv);
 }
 
@@ -441,6 +443,7 @@ typedef struct {
 } perl_tagq;
 
 typedef perl_tagq *  VI__TAGQ;
+typedef perl_tagq *  VI__TAGQ2;
 
 MODULE = VI	PACKAGE = VI
 
@@ -1479,7 +1482,7 @@ Push(tagq)
 
 void
 DESTROY(tagq)
-	VI::TAGQ    tagq;
+	VI::TAGQ2    tagq; /* Can already be invalidated by push */
 
 	PREINIT:
 	SCR *sp;
