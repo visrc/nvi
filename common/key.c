@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.72 1994/05/21 09:47:48 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:47:48 $";
+static char sccsid[] = "$Id: key.c,v 8.73 1994/07/05 10:23:37 bostic Exp $ (Berkeley) $Date: 1994/07/05 10:23:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -238,6 +238,15 @@ term_init(sp)
 		if ((t = tgetstr(tkp->ts, &sbp)) == NULL)
 			continue;
 #endif
+		/*
+		 * !!!
+		 * Some terminals' <cursor_left> keys send single <backspace>
+		 * characters.  This is okay in command mapping, but not okay
+		 * in input mapping.  That combination is the only one we'll
+		 * ever see, hopefully, so kluge it here for now.
+		 */
+		if (!strcmp(t, "\b"))
+			continue;
 		if (tkp->output == NULL) {
 			if (seq_set(sp, tkp->name, strlen(tkp->name),
 			    t, strlen(t), NULL, 0, SEQ_INPUT, 0))
