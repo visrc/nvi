@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 5.3 1992/04/05 09:23:38 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:23:38 $";
+static char sccsid[] = "$Id: ex_global.c,v 5.4 1992/04/15 09:13:36 bostic Exp $ (Berkeley) $Date: 1992/04/15 09:13:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -108,7 +108,7 @@ global(cmdp, cmd)
 		     l--, lqty--)
 		{
 			/* fetch the line */
-			line = fetchline(nlines - l);
+			line = fetchline(nlines - l, NULL);
 
 			/* if it contains the search pattern... */
 			if ((!regexec(re, line, 1)) == isv)
@@ -121,7 +121,7 @@ global(cmdp, cmd)
 				 */
 				strcpy(cmdln, cmdptr);
 				rptlines = 0L;
-				excmd(cmdln);
+				ex_cmd(cmdln);
 				nchanged += rptlines;
 			}
 		}
