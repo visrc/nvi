@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.22 1996/02/25 13:17:22 bostic Exp $ (Berkeley) $Date: 1996/02/25 13:17:22 $
+dnl	$Id: configure.in,v 8.23 1996/02/25 15:34:13 bostic Exp $ (Berkeley) $Date: 1996/02/25 15:34:13 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(configure)
@@ -199,7 +199,7 @@ AC_FUNC_VFORK
 AC_FUNC_VPRINTF
 
 dnl Check for fcntl/flock
-dnl Check for fcntl first -- IRIX has both, but flock is broken.
+dnl Check for fcntl first -- IRIX and DGUX have both, but flock is broken.
 AC_MSG_CHECKING(for fcntl/flock)
 AC_CACHE_VAL(vi_cv_lock, [dnl
 AC_TRY_LINK([#include <fcntl.h>], [fcntl(0, F_SETLK, 0);],
