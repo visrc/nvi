@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vi.c,v 10.50 1996/06/18 18:53:20 bostic Exp $ (Berkeley) $Date: 1996/06/18 18:53:20 $";
+static const char sccsid[] = "$Id: vi.c,v 10.51 1996/06/19 20:49:19 bostic Exp $ (Berkeley) $Date: 1996/06/19 20:49:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -629,7 +629,7 @@ v_cmd(sp, dp, vp, ismotion, comcountp, mappedp)
 	/*
 	 * Special case: '[', ']' and 'Z' commands.  Doesn't the fact that
 	 * the *single* characters don't mean anything but the *doubled*
-	 * characters do just frost your shorts?
+	 * characters do, just frost your shorts?
 	 */
 	if (vp->key == '[' || vp->key == ']' || vp->key == 'Z') {
 		/*
@@ -637,8 +637,14 @@ v_cmd(sp, dp, vp, ismotion, comcountp, mappedp)
 		 * cancelled by <escape>, the terminal was beeped instead.
 		 * POSIX.2-1992 probably didn't notice, and requires that
 		 * they be cancelled instead of beeping.  Seems fine to me.
+		 *
+		 * Don't set the EC_MAPCOMMAND flag, apparently ] is a popular
+		 * vi meta-character, and we don't want the user to wait while
+		 * we time out a possible mapping.  This *appears* to match
+		 * historic vi practice, but with mapping characters, you Just
+		 * Never Know.
 		 */
-		KEY(key, EC_MAPCOMMAND);
+		KEY(key, 0);
 
 		if (vp->key != key) {
 usage:			if (ismotion == NULL)
