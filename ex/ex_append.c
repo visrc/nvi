@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 9.12 1995/02/02 18:18:41 bostic Exp $ (Berkeley) $Date: 1995/02/02 18:18:41 $";
+static char sccsid[] = "$Id: ex_append.c,v 9.13 1995/02/09 15:49:34 bostic Exp $ (Berkeley) $Date: 1995/02/09 15:49:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -90,11 +90,14 @@ aci(sp, cmdp, cmd)
 
 	NEEDFILE(sp, cmdp->cmd);
 
+	/* Set the line number, so that autoindent works correctly. */
+	sp->lno = cmdp->addr1.lno;
+
 	/*
 	 * If doing a change, replace lines for as long as possible.  Then,
 	 * append more lines or delete remaining lines.  Changes to an empty
-	 * file are just appends, and inserts are the same as appends to the
-	 * previous line.
+	 * file are appends, inserts are the same as appends to the previous
+	 * line.
 	 *
 	 * !!!
 	 * Adjust the current line number for the commands to match historic
@@ -215,9 +218,6 @@ aci(sp, cmdp, cmd)
 			return (1);
 		(void)write(STDOUT_FILENO, "\n", 1);
 	}
-
-	/* Set the line number, so that autoindent works correctly. */
-	sp->lno = cmdp->addr1.lno;
 
 	if (sex_get(sp, sp->tiqp, 0, flags) != INP_OK)
 		goto err;
