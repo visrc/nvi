@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 8.39 1994/03/23 12:25:04 bostic Exp $ (Berkeley) $Date: 1994/03/23 12:25:04 $
+ *	$Id: common.h,v 8.40 1994/04/07 12:17:53 bostic Exp $ (Berkeley) $Date: 1994/04/07 12:17:53 $
  */
 
 /*
@@ -90,6 +90,7 @@ int	 set_window_size __P((SCR *, u_int, int));
 int	 status __P((SCR *, EXF *, recno_t, int));
 char	*tail __P((char *));
 CHAR_T	*v_strdup __P((SCR *, CHAR_T *, size_t));
+void	 vi_putchar __P((int));
 
 #ifdef DEBUG
 void	TRACE __P((SCR *, const char *, ...));
