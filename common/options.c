@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.54 1994/04/09 17:45:22 bostic Exp $ (Berkeley) $Date: 1994/04/09 17:45:22 $";
+static char sccsid[] = "$Id: options.c,v 8.55 1994/04/24 14:17:47 bostic Exp $ (Berkeley) $Date: 1994/04/24 14:17:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -289,7 +289,13 @@ opts_init(sp)
 	SET_DEF(O_PARAGRAPHS, "paragraphs=IPLPPPQPP LIpplpipbp");
 	(void)snprintf(b1, sizeof(b1), "recdir=%s", _PATH_PRESERVE);
 	SET_DEF(O_RECDIR, b1);
-	(void)snprintf(b1, sizeof(b1), "scroll=%ld", O_VAL(sp, O_LINES) / 2);
+	/*
+	 * XXX
+	 * Initialize ^D, ^U scrolling value here, we didn't have the
+	 * options information when the screen was initialized.
+	 */
+	sp->defscroll = O_VAL(sp, O_LINES) / 2;
+	(void)snprintf(b1, sizeof(b1), "scroll=%ld", sp->defscroll);
 	SET_DEF(O_SCROLL, b1);
 	SET_DEF(O_SECTIONS, "sections=NHSHH HUnhsh");
 	(void)snprintf(b1, sizeof(b1), "shell=%s",

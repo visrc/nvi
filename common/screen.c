@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.57 1994/04/10 14:31:07 bostic Exp $ (Berkeley) $Date: 1994/04/10 14:31:07 $";
+static char sccsid[] = "$Id: screen.c,v 8.58 1994/04/24 14:18:12 bostic Exp $ (Berkeley) $Date: 1994/04/24 14:18:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -57,6 +57,12 @@ screen_init(orig, spp, flags)
 	sp->ccnt = 2;				/* Anything > 1 */
 
 	FD_ZERO(&sp->rdfd);
+
+	/*
+	 * XXX
+	 * sp->defscroll is initialized by the opts_init() code because
+	 * we don't have the option information yet.
+	 */
 
 	sp->tiqp = &sp->__tiq;
 	CIRCLEQ_INIT(&sp->__tiq);
