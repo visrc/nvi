@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.63 1993/05/10 11:16:13 bostic Exp $ (Berkeley) $Date: 1993/05/10 11:16:13 $";
+static char sccsid[] = "$Id: key.c,v 5.64 1993/05/10 15:32:35 bostic Exp $ (Berkeley) $Date: 1993/05/10 15:32:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -133,6 +133,24 @@ term_more_pseudo(sp)
 	SCR *sp;
 {
 	return (sp->atkey_len || sp->mappedkey != NULL);
+}
+
+/*
+ * term_waiting --
+ *	Return keys waiting.
+ */
+int
+term_waiting(sp)
+	SCR *sp;
+{
+	struct timeval t;
+
+	if (sp->atkey_len || sp->mappedkey != NULL)
+		return (1);
+
+	t.tv_sec = t.tv_usec = 0;
+	FD_SET(STDIN_FILENO, &sp->rdfd);
+	return (select(1, &sp->rdfd, NULL, NULL, &t));
 }
 
 /*
