@@ -18,7 +18,8 @@ cd $S/docs && vi changelog
 
 # build the distribution
 cd $S/build && make -f Makefile.in distrib
-cd $S/catalog && make clean all && rm dump && chmod 444 vi_english*
+cd $S/catalog && make clean all check && rm dump && \
+    chmod 444 vi_english* *.check
 
 # build a version
 cd $S && rm -rf build.local && mkdir build.local && \
