@@ -6,22 +6,22 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 9.14 1995/01/23 17:26:26 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:26:26 $
+ *	$Id: screen.h,v 9.15 1995/01/30 09:11:36 bostic Exp $ (Berkeley) $Date: 1995/01/30 09:11:36 $
  */
 
 /*
- * There are minimum values that vi has to have to display a screen.  The
- * row minimum is fixed at 1 line for the text, and 1 line for any error
- * messages.  The column calculation is a lot trickier.  For example, you
- * have to have enough columns to display the line number, not to mention
- * guaranteeing that tabstop and shiftwidth values are smaller than the
- * current column value.  It's a lot simpler to have a fixed value and not
+ * There are minimum values that vi has to have to display a screen.  The row
+ * minimum is fixed at 1 (the svi code can share a line between the text line
+ * and the colon command/message line).  Column calculation is a lot trickier.
+ * For example, you have to have enough columns to display the line number,
+ * not to mention guaranteeing that tabstop and shiftwidth values are smaller
+ * than the current column value.  It's simpler to have a fixed value and not
  * worry about it.
  *
  * XXX
- * MINIMUM_SCREEN_COLS is probably wrong.
+ * MINIMUM_SCREEN_COLS is almost certainly wrong.
  */
-#define	MINIMUM_SCREEN_ROWS	 2
+#define	MINIMUM_SCREEN_ROWS	 1
 #define	MINIMUM_SCREEN_COLS	20
 
 enum adjust {				/* Screen adjustment operations. */
@@ -207,12 +207,6 @@ struct _scr {
 #define	S_VI		(S_VI_CURSES | S_VI_XAW)
 #define	S_SCREENS	(S_EX | S_VI)
 
-/* Major screen/file changes. */
-#define	S_EXIT		0x0000008	/* Exiting (not forced). */
-#define	S_EXIT_FORCE	0x0000010	/* Exiting (forced). */
-#define	S_SSWITCH	0x0000020	/* Switch screens. */
-#define	S_MAJOR_CHANGE	(S_EXIT | S_EXIT_FORCE | S_SSWITCH)
-
 /*
  * Public screen formatting flags.  Each flag implies the flags that
  * follow it.
@@ -240,15 +234,21 @@ struct _scr {
  * S_SCR_UMODE
  *	Don't update the mode line until the user enters a character.
  */
-#define	S_SCR_RESIZE	0x0000040	/* Resize (reformat, refresh). */
-#define	S_SCR_REFORMAT	0x0000080	/* Reformat (refresh). */
-#define	S_SCR_REDRAW	0x0000100	/* Refresh. */
+#define	S_SCR_RESIZE	0x0000008	/* Resize (reformat, refresh). */
+#define	S_SCR_REFORMAT	0x0000010	/* Reformat (refresh). */
+#define	S_SCR_REDRAW	0x0000020	/* Refresh. */
 
-#define	S_SCR_CENTER	0x0000200	/* Center the line if not visible. */
-#define	S_SCR_EXWROTE	0x0000400	/* Ex wrote the screen. */
-#define	S_SCR_REFRESH	0x0000800	/* Repaint. */
-#define	S_SCR_TOP	0x0001000	/* Top the line if not visible. */
-#define	S_SCR_UMODE	0x0002000	/* Don't repaint modeline. */
+#define	S_SCR_CENTER	0x0000040	/* Center the line if not visible. */
+#define	S_SCR_EXWROTE	0x0000080	/* Ex wrote the screen. */
+#define	S_SCR_REFRESH	0x0000100	/* Repaint. */
+#define	S_SCR_TOP	0x0000200	/* Top the line if not visible. */
+#define	S_SCR_UMODE	0x0000400	/* Don't repaint modeline. */
+
+/* Screen/file changes that require exit/reenter of the editor. */
+#define	S_EXIT		0x0000800	/* Exiting (not forced). */
+#define	S_EXIT_FORCE	0x0001000	/* Exiting (forced). */
+#define	S_SSWITCH	0x0002000	/* Switch screens. */
+#define	S_MAJOR_CHANGE	(S_EXIT | S_EXIT_FORCE | S_SSWITCH | S_SCR_RESIZE)
 
 #define	S_ARGNOFREE	0x0004000	/* Argument list wasn't allocated. */
 #define	S_ARGRECOVER	0x0008000	/* Argument list is recovery files. */
