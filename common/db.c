@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 8.7 1993/09/27 16:43:10 bostic Exp $ (Berkeley) $Date: 1993/09/27 16:43:10 $";
+static char sccsid[] = "$Id: db.c,v 8.8 1993/10/03 13:36:09 bostic Exp $ (Berkeley) $Date: 1993/10/03 13:36:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -45,7 +45,7 @@ file_gline(sp, ep, lno, lenp)
 	 * Look-aside into the TEXT buffers and see if the line we want
 	 * is there.
 	 */
-	if (F_ISSET(&sp->txthdr, HDR_INUSE) &&
+	if (F_ISSET(sp, S_INPUT) &&
 	    ((TEXT *)sp->txthdr.next)->lno <= lno &&
 	    ((TEXT *)sp->txthdr.prev)->lno >= lno) {
 		for (tp = sp->txthdr.next; tp->lno != lno; tp = tp->next);
@@ -53,7 +53,7 @@ file_gline(sp, ep, lno, lenp)
 			*lenp = tp->len;
 		return (tp->lb);
 	}
-	if (F_ISSET(&sp->bhdr, HDR_INUSE) &&
+	if (F_ISSET(sp, S_INPUT) &&
 	    ((TEXT *)sp->bhdr.next)->lno <= lno &&
 	    ((TEXT *)sp->bhdr.prev)->lno >= lno) {
 		for (tp = sp->bhdr.next; tp->lno != lno; tp = tp->next);
