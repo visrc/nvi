@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 10.18 1995/10/17 08:03:46 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:03:46 $";
+static char sccsid[] = "$Id: ex.c,v 10.19 1995/10/17 08:29:54 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:29:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -72,7 +72,7 @@ ex(spp)
 
 	/* Flush any saved messages. */
 	while ((mp = gp->msgq.lh_first) != NULL) {
-		(void)gp->scr_msg(sp, mp->mtype, mp->buf, mp->len);
+		gp->scr_msg(sp, mp->mtype, mp->buf, mp->len);
 		LIST_REMOVE(mp, q);
 		free(mp->buf);
 		free(mp);
