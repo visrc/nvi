@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: delete.c,v 5.24 1993/05/02 17:59:18 bostic Exp $ (Berkeley) $Date: 1993/05/02 17:59:18 $";
+static char sccsid[] = "$Id: delete.c,v 5.25 1993/05/08 13:19:04 bostic Exp $ (Berkeley) $Date: 1993/05/08 13:19:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,8 +28,9 @@ delete(sp, ep, fm, tm, lmode)
 	MARK *fm, *tm;
 	int lmode;
 {
+	GS *gp;
 	recno_t lno;
-	size_t len, tlen;
+	size_t blen, len, tlen;
 	char *bp, *p;
 	int eof;
 
@@ -81,9 +82,16 @@ delete(sp, ep, fm, tm, lmode)
 			GETLINE_ERR(sp, fm->lno);
 			return (1);
 		}
-		if ((bp = malloc(len)) == NULL) {
-			msgq(sp, M_ERR, "Error: %s", strerror(errno));
-			return (1);
+		/* Get some space. */
+		gp = sp->gp;
+		if (F_ISSET(gp, G_TMP_INUSE)) {
+			bp = NULL;
+			blen = 0;
+			BINC(sp, bp, blen, len);
+		} else {
+			BINC(sp, gp->tmp_bp, gp->tmp_blen, len);
+			bp = gp->tmp_bp;
+			F_SET(gp, G_TMP_INUSE);
 		}
 		memmove(bp, p, fm->cno);
 		memmove(bp + fm->cno, p + tm->cno, len - tm->cno);
@@ -92,14 +100,11 @@ delete(sp, ep, fm, tm, lmode)
 		goto done;
 	}
 
-	/* Case 4 -- delete over multiple lines. */
-
-	/* Delete all the intermediate lines. */
-	for (lno = tm->lno - 1; lno > fm->lno; --lno)
-		if (file_dline(sp, ep, lno))
-			return (1);
-
-	/* Figure out how big a buffer we need. */
+	/*
+	 * Case 4 -- delete over multiple lines.
+	 *
+	 * Figure out how big a buffer we need.
+	 */
 	if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
 		GETLINE_ERR(sp, fm->lno);
 		return (1);
@@ -109,10 +114,22 @@ delete(sp, ep, fm, tm, lmode)
 		GETLINE_ERR(sp, tm->lno);
 		return (1);
 	}
-	tlen += len;		/* XXX Possible overflow! */
-	if ((bp = malloc(tlen)) == NULL) {
-		msgq(sp, M_ERR, "Error: %s", strerror(errno));
+	if (len > SIZE_T_MAX - tlen) {
+		msgq(sp, M_ERR, "Error: length overflow");
 		return (1);
+	}
+	tlen += len;
+
+	/* Get some space. */
+	gp = sp->gp;
+	if (F_ISSET(gp, G_TMP_INUSE)) {
+		bp = NULL;
+		blen = 0;
+		BINC(sp, bp, blen, tlen);
+	} else {
+		BINC(sp, gp->tmp_bp, gp->tmp_blen, tlen);
+		bp = gp->tmp_bp;
+		F_SET(gp, G_TMP_INUSE);
 	}
 
 	/* Copy the start partial line into place. */
@@ -135,15 +152,19 @@ delete(sp, ep, fm, tm, lmode)
 	if (file_sline(sp, ep, fm->lno, bp, tlen))
 		goto err;
 
-	/* Delete the new number of the old last line. */
-	if (file_dline(sp, ep, fm->lno + 1))
-		goto err;
+	/* Delete the last and intermediate lines. */
+	for (lno = tm->lno; lno > fm->lno; --lno)
+		if (file_dline(sp, ep, lno))
+			return (1);
 
 	/* Update the marks. */
 done:	mark_delete(sp, ep, fm, tm, lmode);
 
-	if (bp != NULL)
-		free(bp);
+	/* Free memory. */
+	if (bp == gp->tmp_bp)
+		F_CLR(gp, G_TMP_INUSE);
+	else if (bp != NULL)
+		FREE(bp, blen);
 
 	/*
 	 * Reporting.
@@ -155,7 +176,11 @@ done:	mark_delete(sp, ep, fm, tm, lmode);
 
 	return (0);
 
-err:	if (bp != NULL)
-		free(bp);
+	/* Free memory. */
+err:	if (bp == gp->tmp_bp)
+		F_CLR(gp, G_TMP_INUSE);
+	else
+		FREE(bp, blen);
+
 	return (1);
 }
