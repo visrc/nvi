@@ -103,7 +103,7 @@ static states step __P((struct re_guts *g, sopno start, sopno stop, states bef, 
 #define	BOW	(BOL+4)
 #define	EOW	(BOL+5)
 #define	CODEMAX	(BOL+5)		/* highest code used */
-#define	NONCHAR(c)	((c) > CHAR_MAX)
+#define	NONCHAR(c)	((c) > CHAR_T_MAX)
 #define	NNONCHAR	(CODEMAX-CHAR_MAX)
 #ifdef REDEBUG
 static void print __P((struct match *m, char *caption, states st, int ch, FILE *d));

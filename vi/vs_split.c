@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_split.c,v 10.38 2000/07/14 14:29:25 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:25 $";
+static const char sccsid[] = "$Id: vs_split.c,v 10.39 2000/07/17 18:53:35 skimo Exp $ (Berkeley) $Date: 2000/07/17 18:53:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -634,7 +634,10 @@ vs_fg(sp, nspp, name, newscreen)
 	gp = sp->gp;
 	wp = sp->wp;
 
-	INT2CHAR(sp, name, v_strlen(name) + 1, np, nlen);
+	if (name)
+	    INT2CHAR(sp, name, v_strlen(name) + 1, np, nlen);
+	else
+	    np = NULL;
 	if (newscreen)
 		/* Get the specified background screen. */
 		nsp = vs_getbg(sp, np);
