@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_join.c,v 8.5 1993/10/01 10:26:37 bostic Exp $ (Berkeley) $Date: 1993/10/01 10:26:37 $";
+static char sccsid[] = "$Id: ex_join.c,v 8.6 1993/11/14 17:16:28 bostic Exp $ (Berkeley) $Date: 1993/11/14 17:16:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,7 +30,7 @@ ex_join(sp, ep, cmdp)
 {
 	recno_t from, to;
 	size_t blen, clen, len, tlen;
-	int echar, first;
+	int echar, extra, first;
 	char *bp, *p, *tbp;
 
 	from = cmdp->addr1.lno;
@@ -95,12 +95,16 @@ ex_join(sp, ep, cmdp)
 		 *
 		 * Echar is the last character in the last line joined.
 		 */
+		extra = 0;
 		if (!first && !F_ISSET(cmdp, E_FORCE)) {
 			if (isblank(echar))
 				for (; len && isblank(*p); --len, ++p);
 			else if (p[0] != ')') {
-				if (strchr(".?!", echar))
+				if (strchr(".?!", echar)) {
 					*tbp++ = ' ';
+					++clen;
+					extra = 1;
+				}
 				*tbp++ = ' ';
 				++clen;
 				for (; len && isblank(*p); --len, ++p);
@@ -134,12 +138,11 @@ ex_join(sp, ep, cmdp)
 		 * line (possible with : commands), it is reset to the starting
 		 * line.
 		 */
-		if (!first)
-			sp->cno = (tbp - bp) - len - 1;
-		else {
-			sp->cno = (tbp - bp) - 1;
+		if (first) {
+			sp->cno = (tbp - bp) - (1 + extra);
 			first = 0;
-		}
+		} else
+			sp->cno = (tbp - bp) - len - (1 + extra);
 	}
 	sp->lno = cmdp->addr1.lno;
 
