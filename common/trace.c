@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: trace.c,v 8.2 1996/12/17 14:50:10 bostic Exp $ (Berkeley) $Date: 1996/12/17 14:50:10 $";
+static const char sccsid[] = "$Id: trace.c,v 8.3 1996/12/17 14:51:46 bostic Exp $ (Berkeley) $Date: 1996/12/17 14:51:46 $";
 #endif /* not lint */
 
 #include <sys/queue.h>
@@ -31,26 +31,26 @@ static const char sccsid[] = "$Id: trace.c,v 8.2 1996/12/17 14:50:10 bostic Exp 
 static FILE *tfp;
 
 /*
- * trace_end --
+ * vtrace_end --
  *	End tracing.
  *
- * PUBLIC: void trace_end __P((void));
+ * PUBLIC: void vtrace_end __P((void));
  */
 void
-trace_end()
+vtrace_end()
 {
 	if (tfp != NULL && tfp != stderr)
 		(void)fclose(tfp);
 }
 
 /*
- * trace_init --
+ * vtrace_init --
  *	Initialize tracing.
  *
- * PUBLIC: void trace_init __P((char *));
+ * PUBLIC: void vtrace_init __P((char *));
  */
 void
-trace_init(name)
+vtrace_init(name)
 	char *name;
 {
 	if (name == NULL || (tfp = fopen(name, "w")) == NULL)

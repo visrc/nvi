@@ -18,7 +18,7 @@ static const char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static const char sccsid[] = "$Id: main.c,v 10.49 1996/12/11 13:03:20 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:03:20 $";
+static const char sccsid[] = "$Id: main.c,v 10.50 1996/12/17 14:51:28 bostic Exp $ (Berkeley) $Date: 1996/12/17 14:51:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -176,7 +176,7 @@ editor(gp, argc, argv)
 			break;
 #ifdef TRACE
 		case 'T':		/* Trace. */
-			(void)trace_init(optarg);
+			(void)vtrace_init(optarg);
 			break;
 #endif
 		case 't':		/* Tag. */
@@ -508,7 +508,7 @@ v_end(gp)
 
 #if defined(TRACE)
 	/* Close tracing file descriptor. */
-	trace_end();
+	vtrace_end();
 #endif
 #endif
 }
