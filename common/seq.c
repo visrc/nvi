@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 8.2 1993/08/07 10:47:09 bostic Exp $ (Berkeley) $Date: 1993/08/07 10:47:09 $";
+static char sccsid[] = "$Id: seq.c,v 8.3 1993/08/18 16:19:15 bostic Exp $ (Berkeley) $Date: 1993/08/18 16:19:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -97,7 +97,7 @@ seq_delete(sp, input, stype)
 	char *input;
 	enum seqtype stype;
 {
-	register SEQ *qp;
+	SEQ *qp;
 
 	if ((qp = seq_find(sp, input, strlen(input), stype, NULL)) == NULL)
 		return (1);
@@ -172,44 +172,34 @@ seq_dump(sp, stype, isname)
 	enum seqtype stype;
 	int isname;
 {
-	register SEQ *qp;
-	register int ch, cnt, len, tablen;
-	register char *p;
+	CHNAME *cname;
+	SEQ *qp;
+	int ch, cnt, len, tablen;
+	char *p;
 
 	if (sp->seqhdr.next == (SEQ *)&sp->seqhdr)
 		return (0);
 
 	cnt = 0;
+	cname = sp->cname;
 	tablen = O_VAL(sp, O_TABSTOP);
 	for (qp = sp->seqhdr.next; qp != (SEQ *)&sp->seqhdr; qp = qp->next) {
 		if (stype != qp->stype)
 			continue;
 		++cnt;
 		for (p = qp->input, len = 0; (ch = *p); ++p, ++len)
-			if (iscntrl(ch)) {
-				(void)putc('^', sp->stdfp);
-				(void)putc(ch + 0x40, sp->stdfp);
-			} else
-				(void)putc(ch, sp->stdfp);
+			(void)fprintf(sp->stdfp, "%s", cname[ch].name);
 		for (len = tablen - len % tablen; len; --len)
 			(void)putc(' ', sp->stdfp);
 
 		for (p = qp->output; (ch = *p); ++p)
-			if (iscntrl(ch)) {
-				(void)putc('^', sp->stdfp);
-				(void)putc(ch + 0x40, sp->stdfp);
-			} else
-				(void)putc(ch, sp->stdfp);
+			(void)fprintf(sp->stdfp, "%s", cname[ch].name);
 
 		if (isname && qp->name) {
 			for (len = tablen - len % tablen; len; --len)
 				(void)putc(' ', sp->stdfp);
 			for (p = qp->name, len = 0; (ch = *p); ++p, ++len)
-				if (iscntrl(ch)) {
-					(void)putc('^', sp->stdfp);
-					(void)putc(ch + 0x40, sp->stdfp);
-				} else
-					(void)putc(ch, sp->stdfp);
+				(void)fprintf(sp->stdfp, "%s", cname[ch].name);
 		}
 		(void)putc('\n', sp->stdfp);
 	}
@@ -227,27 +217,33 @@ seq_save(sp, fp, prefix, stype)
 	char *prefix;
 	enum seqtype stype;
 {
-	register SEQ *qp;
-	register int ch;
-	register char *p;
+	SEQ *qp;
+	int ch, esc;
+	char *p;
+
+	esc = sp->gp->original_termios.c_cc[VLNEXT];
 
 	/* Write a sequence command for all keys the user defined. */
 	for (qp = sp->seqhdr.next; qp != (SEQ *)&sp->seqhdr; qp = qp->next) {
-		if (!(qp->flags & S_USERDEF))
+		if (!F_ISSET(qp, S_USERDEF))
+			continue;
+		if (stype != qp->stype)
 			continue;
 		if (prefix)
 			(void)fprintf(fp, "%s", prefix);
-		for (p = qp->input; ch = *p; ++p) {
-			if (!isprint(ch) || ch == '|')
-				(void)putc('\026', fp);
+		for (p = qp->input; (ch = *p) != '\0'; ++p) {
+			if (ch == esc || ch == '|' || isspace(ch) ||
+			    sp->special[ch] == K_NL)
+				(void)putc(esc, fp);
 			(void)putc(ch, fp);
 		}
 		(void)putc(' ', fp);
-		for (p = qp->output; ch = *p; ++p) {
-			if (!isprint(ch) || ch == '|')
-				(void)putc('\026', fp);		/* 026 == ^V */
+		for (p = qp->output; (ch = *p) != '\0'; ++p) {
+			if (ch == esc || ch == '|' || sp->special[ch] == K_NL)
+				(void)putc(esc, fp);
 			(void)putc(ch, fp);
 		}
+		(void)putc('\n', fp);
 	}
 	return (0);
 }
