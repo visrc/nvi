@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.19 1993/11/07 12:54:39 bostic Exp $ (Berkeley) $Date: 1993/11/07 12:54:39 $";
+static char sccsid[] = "$Id: util.c,v 8.20 1993/11/08 15:01:17 bostic Exp $ (Berkeley) $Date: 1993/11/08 15:01:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -252,8 +252,7 @@ binc(sp, argp, bsizep, min)
 	else
 		bpp = realloc(bpp, csize);
 	if (bpp == NULL) {
-		if (sp != NULL)
-			msgq(sp, M_ERR, "Error: %s.", strerror(errno));
+		msgq(sp, M_ERR, "Error: %s.", strerror(errno));
 		*bsizep = 0;
 		return (1);
 	}
