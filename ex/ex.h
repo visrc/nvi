@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 5.11 1992/04/28 13:42:07 bostic Exp $ (Berkeley) $Date: 1992/04/28 13:42:07 $
+ *	$Id: ex.h,v 5.12 1992/04/28 17:42:05 bostic Exp $ (Berkeley) $Date: 1992/04/28 17:42:05 $
  */
 
 struct excmdarg;
@@ -73,58 +73,6 @@ extern char *defcmdarg[2];	/* Default array. */
 	s.argc = _arg ? 1 : 0; \
 	s.argv = defcmdarg; \
 	defcmdarg[0] = _arg; \
-}
-
-/*
- * Vi has made the screen ready for ex to print, but there are special ways
- * that information gets displayed.   The output overwrites some ex commands,
- * so in that case we erase the command line, outputting a '\r' to guarantee
- * the first column.  (We could theoretically lose if the command line has
- * already wrapped, but this should only result in additional characters being
- * sent to the terminal.)  All other initial output lines are preceded by a
- * '\n'.  When the command(s) complete, vi waits if more than one line was
- * displayed, otherwise it continues.
- *
- * XXX
- * Currently, there's a bug.  The msg line isn't getting erased when the line
- * is used again without an intervening repaint, so there can be garabage on
- * the end of the line.  The fix is to change curses to support a "force this
- * line to be written" semantic.
- */
-/* Start the sequence. */
-#define	EX_PRSTART(overwrite) { \
-	if (mode == MODE_VI) { \
-		if (ex_prstate == PR_NONE) { \
-			if (overwrite) { \
-				while (ex_prerase--) { \
-					(void)putchar('\b'); \
-					(void)putchar(' '); \
-					(void)putchar('\b'); \
-				} \
-				(void)putchar('\r'); \
-				ex_prstate = PR_STARTED; \
-			} else { \
-				(void)putchar('\n'); \
-				ex_prstate = PR_PRINTED; \
-			} \
-		}  else if (ex_prstate == PR_STARTED) { \
-			(void)putchar('\n'); \
-			ex_prstate = PR_PRINTED; \
-		} \
-	} else \
-		(void)putchar('\n'); \
-}
-
-/* Print a newline. */
-#define	EX_PRNEWLINE { \
-	(void)putchar('\n'); \
-	ex_prstate = PR_PRINTED; \
-}
-
-/* Print a trailing newline, if necessary. */
-#define	EX_PRTRAIL { \
-	if (mode != MODE_VI || ex_prstate == PR_PRINTED) \
-		(void)putchar('\n'); \
 }
 
 void	 ex __P((void));
