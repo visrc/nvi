@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_status.c,v 8.12 1994/03/08 19:41:34 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:41:34 $";
+static char sccsid[] = "$Id: v_status.c,v 8.13 1994/05/01 13:06:35 bostic Exp $ (Berkeley) $Date: 1994/05/01 13:06:35 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -55,7 +55,7 @@ status(sp, ep, lno, showlast)
 	int showlast;
 {
 	recno_t last;
-	char *mo, *nc, *nf, *ro, *pid;
+	char *mo, *nc, *nf, *pid, *ro, *ul;
 #ifdef DEBUG
 	char pbuf[50];
 
@@ -66,14 +66,7 @@ status(sp, ep, lno, showlast)
 #endif
 	/*
 	 * See nvi/exf.c:file_init() for a description of how and
-	 * when the read-only bit is set.  Possible displays are:
-	 *
-	 *	new file
-	 *	new file, readonly
-	 *	[un]modified
-	 *	[un]modified, readonly
-	 *	name changed, [un]modified
-	 *	name changed, [un]modified, readonly
+	 * when the read-only bit is set.
 	 *
 	 * !!!
 	 * The historic display for "name changed" was "[Not edited]".
@@ -95,19 +88,20 @@ status(sp, ep, lno, showlast)
 		}
 	}
 	ro = F_ISSET(sp->frp, FR_RDONLY) ? ", readonly" : "";
+	ul = F_ISSET(sp->frp, FR_UNLOCKED) ? ", UNLOCKED" : "";
 	if (showlast) {
 		if (file_lline(sp, ep, &last))
 			return (1);
 		if (last >= 1)
 			msgq(sp, M_INFO,
-			    "%s: %s%s%s%s: line %lu of %lu [%ld%%]%s",
-			    FILENAME(sp->frp), nf, nc, mo, ro, lno,
+			    "%s: %s%s%s%s%s: line %lu of %lu [%ld%%]%s",
+			    FILENAME(sp->frp), nf, nc, mo, ul, ro, lno,
 			    last, (lno * 100) / last, pid);
 		else
-			msgq(sp, M_INFO, "%s: %s%s%s%s: empty file%s",
-			    FILENAME(sp->frp), nf, nc, mo, ro, pid);
+			msgq(sp, M_INFO, "%s: %s%s%s%s%s: empty file%s",
+			    FILENAME(sp->frp), nf, nc, mo, ul, ro, pid);
 	} else
-		msgq(sp, M_INFO, "%s: %s%s%s%s: line %lu%s",
-		    FILENAME(sp->frp), nf, nc, mo, ro, lno, pid);
+		msgq(sp, M_INFO, "%s: %s%s%s%s%s: line %lu%s",
+		    FILENAME(sp->frp), nf, nc, mo, ul, ro, lno, pid);
 	return (0);
 }

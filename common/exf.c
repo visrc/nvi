@@ -1,12 +1,12 @@
 /*-
- * Copyright (c) 1992, 1993
+ * Copyright (c) 1992, 1993, 1994
  *	The Regents of the University of California.  All rights reserved.
  *
  * %sccs.include.redist.c%
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.73 1994/04/24 17:40:17 bostic Exp $ (Berkeley) $Date: 1994/04/24 17:40:17 $";
+static char sccsid[] = "$Id: exf.c,v 8.74 1994/05/01 13:06:29 bostic Exp $ (Berkeley) $Date: 1994/05/01 13:06:29 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -363,6 +363,12 @@ file_init(sp, frp, rcv_name, force)
 	 * The locking is flock(2) style, not fcntl(2).  The latter is known
 	 * to fail badly on some systems, and its only advantage is that it
 	 * occasionally works over NFS.
+	 *
+	 * XXX
+	 * We don't make a big deal of not being able to lock the file.  As
+	 * locking rarely works over NFS, it's far too common to do anything
+	 * like print an error message, let alone make the file readonly.  At
+	 * some future time, this should be changed to be an error.
 	 */
 	if (flock(ep->db->fd(ep->db), LOCK_EX | LOCK_NB))
 		if (errno == EAGAIN || errno == EWOULDBLOCK) {
@@ -370,7 +376,7 @@ file_init(sp, frp, rcv_name, force)
 			    "%s already locked, session is read-only", oname);
 			F_SET(frp, FR_RDONLY);
 		} else
-			msgq(sp, M_VINFO, "%s cannot be locked", oname);
+			F_SET(frp, FR_UNLOCKED);
 
 	/*
 	 * Set the previous file pointer and the alternate file name to be
