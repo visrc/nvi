@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.100 1994/07/23 13:35:03 bostic Exp $ (Berkeley) $Date: 1994/07/23 13:35:03 $";
+static char sccsid[] = "$Id: main.c,v 8.101 1994/08/08 06:34:17 bostic Exp $ (Berkeley) $Date: 1994/08/08 06:34:17 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -375,10 +375,13 @@ main(argc, argv)
 	 *
 	 * !!!
 	 * Historically, all such commands were executed with the last
-	 * line of the file as the current line, and not the first.
+	 * line of the file as the current line, and not the first, so
+	 * set up vi to be at the end of the file.
 	 */
 	if (excmdarg != NULL)
 		if (IN_EX_MODE(sp)) {
+			if (term_push(sp, "\n", 1, 0))
+				goto err;
 			if (term_push(sp, excmdarg, strlen(excmdarg), 0))
 				goto err;
 		} else if (IN_VI_MODE(sp)) {
