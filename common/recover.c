@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.76 1994/08/31 17:12:19 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:12:19 $";
+static char sccsid[] = "$Id: recover.c,v 8.77 1994/10/28 11:50:03 bostic Exp $ (Berkeley) $Date: 1994/10/28 11:50:03 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -442,15 +442,16 @@ lerr:		msgq(sp, M_ERR, "082|Recovery file buffer overrun");
 wout:		*t2++ = '\n';
 
 		/* t2 points one after the last character to display. */
-		if (write(fd, t1, t2 - t1) != t2 - t1) {
-werr:			msgq(sp, M_SYSERR, "083|Recovery file");
-			goto err;
-		}
+		if (write(fd, t1, t2 - t1) != t2 - t1)
+			goto werr;
 	}
 
 	if (issync)
 		rcv_email(sp, mpath);
-
+	else if (close(fd)) {
+werr:		msgq(sp, M_SYSERR, "083|Recovery file");
+		goto err;
+	}
 	return (0);
 
 err:	if (!issync)
