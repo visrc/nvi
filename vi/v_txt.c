@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.72 1993/12/22 18:56:47 bostic Exp $ (Berkeley) $Date: 1993/12/22 18:56:47 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.73 1993/12/22 18:57:59 bostic Exp $ (Berkeley) $Date: 1993/12/22 18:57:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -982,15 +982,15 @@ txt_abbrev(sp, tp, pushc, isinfoline, didsubp, turnoffp)
 	 * examples of problems this caused in historic vi are:
 	 *	:ab foo bar
 	 *	:ab foo baz
-	 * results in "bar" abbreviated to "baz", which wasn't what the user
-	 * had in mind at all.  Also, the commands:
+	 * results in "bar" being abbreviated to "baz", which wasn't what the
+	 * user had in mind at all.  Also, the commands:
 	 *	:ab foo bar
 	 *	:unab foo<space>
 	 * resulted in an error message that "bar" wasn't mapped.  Finally,
 	 * since the string was already exploded by the time the unabbreviate
 	 * command got it, all it knew was that an abbreviation had occurred.
-	 * Cleverly, it check the replacement string for a match, which means
-	 * that:
+	 * Cleverly, it checked the replacement string for a match, which meant
+	 * that the commands:
 	 *	:ab foo1 bar
 	 *	:ab foo2 bar
 	 *	:unab foo2
