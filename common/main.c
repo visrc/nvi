@@ -18,7 +18,7 @@ static const char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static const char sccsid[] = "$Id: main.c,v 10.41 1996/05/15 18:07:56 bostic Exp $ (Berkeley) $Date: 1996/05/15 18:07:56 $";
+static const char sccsid[] = "$Id: main.c,v 10.42 1996/05/15 19:23:37 bostic Exp $ (Berkeley) $Date: 1996/05/15 19:23:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -317,6 +317,22 @@ editor(gp, argc, argv)
 	 */
 	sp->defscroll = (O_VAL(sp, O_WINDOW) + 1) / 2;
 
+	/*
+	 * If we don't have a command-line option, switch into the right
+	 * editor now, so that we position default files correctly, and
+	 * so that any tags file file-already-locked messages are in the
+	 * vi screen, not the ex screen.
+	 *
+	 * XXX
+	 * If we have a command-line option, the error message can end
+	 * up in the wrong place, but I think that the combination is
+	 * unlikely.
+	 */
+	if (gp->c_option == NULL) {
+		F_CLR(sp, SC_EX | SC_VI);
+		F_SET(sp, LF_ISSET(SC_EX | SC_VI));
+	}
+
 	/* Open a tag file if specified. */
 	if (tag_f != NULL && ex_tag_first(sp, tag_f))
 		goto err;
@@ -328,6 +344,7 @@ editor(gp, argc, argv)
 	 */
 	if (*argv != NULL) {
 		if (sp->frp != NULL) {
+			/* Cheat -- we know we have an extra argv slot. */
 			MALLOC_NOMSG(sp,
 			    *--argv, char *, strlen(sp->frp->name) + 1);
 			if (*argv == NULL) {
@@ -340,15 +357,6 @@ editor(gp, argc, argv)
 		F_SET(sp, SC_ARGNOFREE);
 		if (flagchk == 'r')
 			F_SET(sp, SC_ARGRECOVER);
-	}
-
-	/*
-	 * If we don't have a command-line option, switch into the right
-	 * editor now, so that we position default files correctly.
-	 */
-	if (gp->c_option == NULL) {
-		F_CLR(sp, SC_EX | SC_VI);
-		F_SET(sp, LF_ISSET(SC_EX | SC_VI));
 	}
 
 	/*
@@ -403,7 +411,7 @@ editor(gp, argc, argv)
 	}
 
 	/* Switch into the right editor, regardless. */
-	F_CLR(sp, SC_EX | SC_VI | SC_SCR_EX | SC_SCR_VI);
+	F_CLR(sp, SC_EX | SC_VI);
 	F_SET(sp, LF_ISSET(SC_EX | SC_VI));
 
 	/*
