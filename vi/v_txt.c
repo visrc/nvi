@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.90 1996/12/11 13:06:32 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:06:32 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.91 1997/07/01 12:52:44 bostic Exp $ (Berkeley) $Date: 1997/07/01 12:52:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -599,8 +599,11 @@ next:	if (v_event_get(sp, evp, 0, ec_flags))
 		vip->rep[rcol++] = *evp;
 	}
 
-replay:	if (LF_ISSET(TXT_REPLAY))
+replay:	if (LF_ISSET(TXT_REPLAY)) {
+		if (rcol == vip->rep_cnt)
+			goto k_escape;
 		evp = vip->rep + rcol++;
+	}
 
 	/* Wrapmargin check for leading space. */
 	if (wm_skip) {
