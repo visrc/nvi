@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.12 1993/09/13 14:16:54 bostic Exp $ (Berkeley) $Date: 1993/09/13 14:16:54 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.13 1993/09/13 17:23:08 bostic Exp $ (Berkeley) $Date: 1993/09/13 17:23:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -458,9 +458,12 @@ k_escape:		if (tp->insert && tp->overwrite)
 				break;
 			break;
 		case K_VERASE:			/* Erase the last character. */
-			/* If can erase over the prompt, return. */
+			/*
+			 * If can erase over the prompt, return.  Len is 0
+			 * if backspaced over the prompt, 1 if only CR entered.
+			 */
 			if (LF_ISSET(TXT_BS) && sp->cno <= tp->offset) {
-				tp->len = tp->offset;
+				tp->len = 0;
 				goto ret;
 			}
 

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 8.7 1993/09/10 12:19:26 bostic Exp $ (Berkeley) $Date: 1993/09/10 12:19:26 $";
+static char sccsid[] = "$Id: v_search.c,v 8.8 1993/09/13 17:23:10 bostic Exp $ (Berkeley) $Date: 1993/09/13 17:23:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -150,6 +150,8 @@ v_searchb(sp, ep, vp, fm, tm, rp)
 
 	if (getptrn(sp, ep, '?', &ptrn))
 		return (1);
+	if (ptrn == NULL)
+		return (0);
 
 	flags = SEARCH_MSG | SEARCH_PARSE | SEARCH_SET;
 	if (F_ISSET(vp, VC_C | VC_D | VC_Y))
@@ -178,6 +180,8 @@ v_searchf(sp, ep, vp, fm, tm, rp)
 
 	if (getptrn(sp, ep, '/', &ptrn))
 		return (1);
+	if (ptrn == NULL)
+		return (0);
 
 	flags = SEARCH_MSG | SEARCH_PARSE | SEARCH_SET;
 	if (F_ISSET(vp, VC_C | VC_D | VC_Y))
@@ -207,8 +211,9 @@ getptrn(sp, ep, prompt, storep)
 	    TXT_BS | TXT_CR | TXT_ESCAPE | TXT_PROMPT))
 		return (1);
 
+	/* Len is 0 if backspaced over the prompt, 1 if only CR entered. */
 	tp = sp->bhdr.next;
-	if (tp->len == 1)
+	if (tp->len == 0)
 		*storep = NULL;
 	else
 		*storep = tp->lb;
