@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.35 1993/11/19 14:28:42 bostic Exp $ (Berkeley) $Date: 1993/11/19 14:28:42 $";
+static char sccsid[] = "$Id: vi.c,v 8.36 1993/11/22 17:28:45 bostic Exp $ (Berkeley) $Date: 1993/11/22 17:28:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -238,7 +238,7 @@ err:				TERM_FLUSH(sp->gp->key);
 		/* Set the new favorite position. */
 		if (LF_ISSET(V_RCM_SET)) {
 			sp->rcmflags = 0;
-			sp->rcm = sp->sc_col;
+			(void)sp->s_column(sp, ep, &sp->rcm);
 		}
 	}
 

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.39 1993/11/20 10:05:21 bostic Exp $ (Berkeley) $Date: 1993/11/20 10:05:21 $";
+static char sccsid[] = "$Id: screen.c,v 8.40 1993/11/22 17:28:23 bostic Exp $ (Berkeley) $Date: 1993/11/22 17:28:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -134,6 +134,7 @@ mem:			msgq(orig, M_SYSERR, "new screen attributes");
 		sp->s_change		= orig->s_change;
 		sp->s_chposition	= orig->s_chposition;
 		sp->s_clear		= orig->s_clear;
+		sp->s_column		= orig->s_column;
 		sp->s_confirm		= orig->s_confirm;
 		sp->s_copy		= orig->s_copy;
 		sp->s_down		= orig->s_down;
