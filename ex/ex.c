@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.87 1993/05/01 18:14:44 bostic Exp $ (Berkeley) $Date: 1993/05/01 18:14:44 $";
+static char sccsid[] = "$Id: ex.c,v 5.88 1993/05/05 10:55:57 bostic Exp $ (Berkeley) $Date: 1993/05/05 10:55:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -272,7 +272,7 @@ ex_cmd(sp, ep, exc)
 		uselastcmd = 0;
 
 		/* Some commands are turned off. */
-		if (cp->flags & E_NOPERM) {
+		if (F_ISSET(cp, E_NOPERM)) {
 			msgq(sp, M_ERR,
 			    "The %.*s command is not currently supported.",
 			    cmdlen, p);
@@ -280,7 +280,7 @@ ex_cmd(sp, ep, exc)
 		}
 
 		/* Some commands aren't okay in globals. */
-		if (F_ISSET(sp, S_IN_GLOBAL) && cp->flags & E_NOGLOBAL) {
+		if (F_ISSET(sp, S_IN_GLOBAL) && F_ISSET(cp, E_NOGLOBAL)) {
 			msgq(sp, M_ERR,
 "The %.*s command can't be used as part of a global command.", cmdlen, p);
 			return (1);
@@ -289,7 +289,7 @@ ex_cmd(sp, ep, exc)
 		cp = sp->lastcmd;
 		uselastcmd = 1;
 	}
-	flags = cp->flags;
+	LF_INIT(cp->flags);
 
 	/*
 	 * File state must be checked throughout this code, because it is
@@ -299,7 +299,7 @@ ex_cmd(sp, ep, exc)
 	 * first, we can't allow any command that requires file state.
 	 * Historic vi generally took the easy way out and dropped core.
  	 */
-	if (flags & E_NORC && ep == NULL) {
+	if (LF_ISSET(E_NORC) && ep == NULL) {
 		msgq(sp, M_ERR,
 	"The %s command requires a file to already have been read in.",
 		    cp->name);
@@ -326,9 +326,9 @@ ex_cmd(sp, ep, exc)
 		switch(cmd.addrcnt) {
 		case 0:				/* Default cursor/empty file. */
 			cmd.addrcnt = 1;
-			if (flags & E_ZERODEF && file_lline(sp, ep) == 0) {
+			if (LF_ISSET(E_ZERODEF) && file_lline(sp, ep) == 0) {
 				cmd.addr1.lno = 0;
-				flags |= E_ZERO;
+				LF_SET(E_ZERO);
 			} else
 				cmd.addr1.lno = sp->lno;
 			cmd.addr1.cno = sp->cno;
@@ -348,9 +348,9 @@ ex_cmd(sp, ep, exc)
 		if (cmd.addrcnt == 0) {		/* Default entire/empty file. */
 			cmd.addrcnt = 2;
 			cmd.addr2.lno = file_lline(sp, ep);
-			if (flags & E_ZERODEF && cmd.addr2.lno == 0) {
+			if (LF_ISSET(E_ZERODEF) && cmd.addr2.lno == 0) {
 				cmd.addr1.lno = 0;
-				flags |= E_ZERO;
+				LF_SET(E_ZERO);
 			} else
 				cmd.addr1.lno = 1;
 			cmd.addr1.cno = cmd.addr2.cno = 0;
@@ -362,10 +362,10 @@ ex_cmd(sp, ep, exc)
 two:		switch(cmd.addrcnt) {
 		case 0:				/* Default cursor/empty file. */
 			cmd.addrcnt = 2;
-			if (flags & E_ZERODEF && sp->lno == 1 &&
+			if (LF_ISSET(E_ZERODEF) && sp->lno == 1 &&
 			    file_lline(sp, ep) == 0) {
 				cmd.addr1.lno = cmd.addr2.lno = 0;
-				flags |= E_ZERO;
+				LF_SET(E_ZERO);
 			} else
 				cmd.addr1.lno = cmd.addr2.lno = sp->lno;
 			cmd.addr1.cno = cmd.addr2.cno = sp->cno;
@@ -559,9 +559,8 @@ addr2:	switch(cmd.addrcnt) {
 		 * vi allowed this, note, it's also the hack that allows
 		 * "vi + nonexistent_file" to work.
 		 */
-		if (num == 0 &&
-		    (!F_ISSET(sp, S_MODE_VI) || uselastcmd != 1) &&
-		    !(flags & E_ZERO)) {
+		if (num == 0 && (!F_ISSET(sp, S_MODE_VI) || uselastcmd != 1) &&
+		    !LF_ISSET(E_ZERO)) {
 			msgq(sp, M_ERR,
 			    "The %s command doesn't permit an address of 0.",
 			    cp->name);
@@ -584,7 +583,7 @@ addr2:	switch(cmd.addrcnt) {
 	}
 
 	/* Reset "last" command. */
-	if (flags & E_SETLAST)
+	if (LF_ISSET(E_SETLAST))
 		sp->lastcmd = cp;
 
 	cmd.cmd = cp;
@@ -648,7 +647,7 @@ addr2:	switch(cmd.addrcnt) {
 	 * If so, clear them.  Don't return, autoprint may still have
 	 * stuff to print out.
 	 */
-	 if (flags & E_F_PRCLEAR)
+	 if (LF_ISSET(E_F_PRCLEAR))
 		 cmd.flags &= ~(E_F_HASH | E_F_LIST | E_F_PRINT);
 
 	/*
@@ -671,9 +670,9 @@ addr2:	switch(cmd.addrcnt) {
 	}
 
 	if (F_ISSET(sp, S_AUTOPRINT) && O_ISSET(sp, O_AUTOPRINT))
-		flags = E_F_PRINT;
+		LF_INIT(E_F_PRINT);
 	else
-		flags = cmd.flags & (E_F_HASH | E_F_LIST | E_F_PRINT);
+		LF_INIT(cmd.flags & (E_F_HASH | E_F_LIST | E_F_PRINT));
 
 	memset(&cmd, 0, sizeof(EXCMDARG));
 	cmd.addrcnt = 2;
