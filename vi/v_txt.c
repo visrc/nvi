@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 5.8 1993/05/02 15:54:36 bostic Exp $ (Berkeley) $Date: 1993/05/02 15:54:36 $";
+static char sccsid[] = "$Id: v_txt.c,v 5.9 1993/05/03 14:22:40 bostic Exp $ (Berkeley) $Date: 1993/05/03 14:22:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -469,8 +469,6 @@ k_escape:		if (tp->insert && tp->overwrite)
 
 			/*
 			 * If at offset, nothing to erase so bell the user.
-			 * Else, werase will go back to the autoindent, and,
-			 * further werase's will go back to the offset.
 			 */
 			if (sp->cno <= tp->offset) {
 				msgq(sp, M_BERR,
@@ -478,7 +476,14 @@ k_escape:		if (tp->insert && tp->overwrite)
 				break;
 			}
 
-			max = sp->cno <= tp->ai ? tp->offset : tp->ai;
+			/*
+			 * First werase goes back to any autoindent
+			 * and second werase goes back to the offset.
+			 */
+			if (tp->ai && sp->cno > tp->ai)
+				max = tp->ai;
+			else
+				max = tp->offset;
 
 			/* Skip over space characters. */
 			while (sp->cno > max && isspace(tp->lb[sp->cno - 1])) {
@@ -507,24 +512,23 @@ k_escape:		if (tp->insert && tp->overwrite)
 				tp = ntp;
 			}
 
-			/*
-			 * If at offset, nothing to erase so bell the user.
-			 * Else, first kill goes back to the autoindent, and
-			 * second kill goes back to the offset.
-			 */
+			/* If at offset, nothing to erase so bell the user. */
 			if (sp->cno <= tp->offset) {
 				msgq(sp, M_BERR,
 				    "No more characters to erase.");
 				break;
 			}
-			if (sp->cno <= tp->ai) {
-				sp->cno = tp->offset;
-				tp->overwrite =
-				    tp->len - (tp->offset + tp->insert);
-			} else {
-				sp->cno = tp->ai;
-				tp->overwrite = tp->len - (tp->ai + tp->insert);
-			}
+
+			/*
+			 * First kill goes back to any autoindent
+			 * and second kill goes back to the offset.
+			 */
+			if (tp->ai && sp->cno > tp->ai)
+				max = tp->ai;
+			else
+				max = tp->offset;
+			tp->overwrite += sp->cno - max;
+			sp->cno = max;
 			break;
 		case K_CNTRLZ:
 			if (kill(0, SIGTSTP))
