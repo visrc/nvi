@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 10.6 1995/09/24 11:59:58 bostic Exp $ (Berkeley) $Date: 1995/09/24 11:59:58 $
+ *	$Id: vi.h,v 10.7 1995/09/25 08:03:00 bostic Exp $ (Berkeley) $Date: 1995/09/25 08:03:00 $
  */
 
 /* Definition of a vi "word". */
@@ -296,6 +296,7 @@ typedef struct _vi_private {
 #define	VIP_SCR_DIRTY	0x0008	/* Screen needs refreshing. */
 #define	VIP_SCR_NUMBER	0x0010	/* Screen numbering changed. */
 #define	VIP_SKIPREFRESH	0x0020	/* Skip next refresh. */
+#define	VIP_SKIPMODE	0x0040	/* Skip next modeline refresh. */
 	u_int8_t flags;
 } VI_PRIVATE;
 
