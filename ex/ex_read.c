@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 5.21 1993/02/11 12:29:02 bostic Exp $ (Berkeley) $Date: 1993/02/11 12:29:02 $";
+static char sccsid[] = "$Id: ex_read.c,v 5.22 1993/02/11 19:42:31 bostic Exp $ (Berkeley) $Date: 1993/02/11 19:42:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -132,7 +132,7 @@ ex_readfp(fname, fp, fm, cntp)
 	 * following the address.
 	 */
 	rval = 0;
-	for (lno = fm->lno; p = fgetline(fp, &len); ++lno)
+	for (lno = fm->lno; p = ex_getline(fp, &len); ++lno)
 		if (file_aline(curf, lno, (u_char *)p, len)) {
 			rval = 1;
 			break;
