@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_init.c,v 9.8 1995/02/02 16:52:59 bostic Exp $ (Berkeley) $Date: 1995/02/02 16:52:59 $";
+static char sccsid[] = "$Id: ex_init.c,v 9.9 1995/02/17 11:39:33 bostic Exp $ (Berkeley) $Date: 1995/02/17 11:39:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -53,12 +53,8 @@ ex_screen_copy(orig, sp)
 	CIRCLEQ_INIT(&nexp->rangeq);
 
 	if (orig == NULL) {
-		nexp->at_lbuf_set = 0;
 	} else {
 		oexp = EXP(orig);
-
-		nexp->at_lbuf = oexp->at_lbuf;
-		nexp->at_lbuf_set = oexp->at_lbuf_set;
 
 		if (oexp->lastbcomm != NULL &&
 		    (nexp->lastbcomm = strdup(oexp->lastbcomm)) == NULL) {
