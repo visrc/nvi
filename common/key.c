@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.61 1993/05/06 01:06:52 bostic Exp $ (Berkeley) $Date: 1993/05/06 01:06:52 $";
+static char sccsid[] = "$Id: key.c,v 5.62 1993/05/06 01:07:54 bostic Exp $ (Berkeley) $Date: 1993/05/06 01:07:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -307,7 +307,7 @@ ttyread(sp, buf, len, timeout)
  * onwinch --
  *	Handle SIGWINCH.
  */
-void
+static void
 onwinch(signo)
 	int signo;
 {
