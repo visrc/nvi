@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 5.22 1992/12/20 21:10:31 bostic Exp $ (Berkeley) $Date: 1992/12/20 21:10:31 $
+ *	$Id: exf.h,v 5.23 1992/12/23 11:24:11 bostic Exp $ (Berkeley) $Date: 1992/12/23 11:24:11 $
  */
 
 #ifndef _EXF_H_
@@ -65,9 +65,10 @@ typedef struct exf {
 #define	F_NONAME	0x0020		/* File has no name. */
 #define	F_RDONLY	0x0040		/* File is read-only. */
 #define	F_RE_SET	0x0080		/* The file's RE has been set. */
-#define	F_REDRAW	0x0100		/* Repaint the screen. */
-#define	F_RESIZE	0x0200		/* Resize the screen. */
-#define	F_UNDO		0x0400		/* No change since last undo. */
+#define	F_READING	0x0100		/* Waiting on a read. */
+#define	F_REDRAW	0x0200		/* Repaint the screen. */
+#define	F_RESIZE	0x0400		/* Resize the screen. */
+#define	F_UNDO		0x0800		/* No change since last undo. */
 
 #define	FF_SET(ep, f)	(ep)->flags |= (f)
 #define	FF_CLR(ep, f)	(ep)->flags &= ~(f)
