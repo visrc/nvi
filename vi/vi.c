@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 10.30 1995/11/17 11:16:46 bostic Exp $ (Berkeley) $Date: 1995/11/17 11:16:46 $";
+static char sccsid[] = "$Id: vi.c,v 10.31 1995/11/17 16:17:40 bostic Exp $ (Berkeley) $Date: 1995/11/17 16:17:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -388,8 +388,10 @@ intr:			CLR_INTERRUPT(sp);
 		F_CLR(sp, S_FSWITCH);
 
 		/* If leaving vi, return to the main editor loop. */
-		if (!F_ISSET(sp, S_VI))
+		if (!F_ISSET(sp, S_VI)) {
+			v_dtoh(sp);
 			break;
+		}
 	}
 	if (0)
 ret:		rval = 1;
@@ -885,13 +887,6 @@ v_init(sp)
 	F_CLR(sp, S_EX | S_SCR_EX);
 	F_SET(sp, S_VI);
 
-	/* Invalidate the cursor, the line size cache. */
-	VI_SCR_CFLUSH(vip);
-	F_SET(vip, VIP_CUR_INVALID);
-
-	/* Initialize terminal values. */
-	vip->srows = O_VAL(sp, O_LINES);
-
 	/*
 	 * Initialize screen values.
 	 *
@@ -902,7 +897,7 @@ v_init(sp)
 	 *	t_maxrows is the maximum rows to display (rows - 1)
 	 *	t_rows is the rows currently being displayed
 	 */
-	sp->rows = vip->srows;
+	sp->rows = vip->srows = O_VAL(sp, O_LINES);
 	sp->cols = O_VAL(sp, O_COLUMNS);
 	sp->t_rows = sp->t_minrows = O_VAL(sp, O_WINDOW);
 	if (sp->rows != 1) {
@@ -917,21 +912,19 @@ v_init(sp)
 		sp->t_maxrows = 1;
 
 	/* Create a screen map. */
-	CALLOC(sp, HMAP, SMAP *, SIZE_HMAP(sp), sizeof(SMAP));
-	if (HMAP == NULL)
-		return (1);
+	CALLOC_RET(sp, HMAP, SMAP *, SIZE_HMAP(sp), sizeof(SMAP));
 	TMAP = HMAP + (sp->t_rows - 1);
+	HMAP->lno = sp->lno;
 
-	/*
-	 * Fill the current screen's map, incidentally losing any vs_line()
-	 * cached information.
-	 */
-	if (vs_sm_fill(sp, sp->lno,
-	    F_ISSET(sp, S_SCR_TOP) ? P_TOP :
-	    F_ISSET(sp, S_SCR_CENTER) ? P_MIDDLE : P_FILL))
-		return (1);
-
+	/* Fill the screen map from scratch. */
 	F_SET(sp, S_SCR_REFORMAT);
+
+	/* Invalidate the cursor. */
+	F_SET(vip, VIP_CUR_INVALID);
+
+	/* Paint the screen image from scratch. */
+	F_SET(vip, VIP_N_EX_PAINT);
+
 	return (0);
 }
 
