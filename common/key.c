@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.44 1993/02/25 17:49:32 bostic Exp $ (Berkeley) $Date: 1993/02/25 17:49:32 $";
+static char sccsid[] = "$Id: key.c,v 5.45 1993/02/25 19:37:30 bostic Exp $ (Berkeley) $Date: 1993/02/25 19:37:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -318,6 +318,7 @@ check_sigwinch(ep)
 		(void)sigprocmask(SIG_BLOCK, &bmask, &omask);
 
 		set_window_size(ep, 0);
+		SF_SET(ep, S_RESIZE);
 		if (FF_ISSET(ep, F_MODE_VI)) {
 			(void)scr_update(ep);
 			refresh();
