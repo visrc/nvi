@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_abbrev.c,v 10.1 1995/04/13 17:21:55 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:21:55 $";
+static char sccsid[] = "$Id: ex_abbrev.c,v 10.2 1995/05/05 18:48:22 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:48:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,11 +29,13 @@ static char sccsid[] = "$Id: ex_abbrev.c,v 10.1 1995/04/13 17:21:55 bostic Exp $
 #include <regex.h>
 
 #include "common.h"
-#include "../vi/vi.h"
+#include "vi.h"
 
 /*
  * ex_abbr -- :abbreviate [key replacement]
  *	Create an abbreviation or display abbreviations.
+ *
+ * PUBLIC: int ex_abbr __P((SCR *, EXCMD *));
  */
 int
 ex_abbr(sp, cmdp)
@@ -98,6 +100,8 @@ ex_abbr(sp, cmdp)
 /*
  * ex_unabbr -- :unabbreviate key
  *      Delete an abbreviation.
+ *
+ * PUBLIC: int ex_unabbr __P((SCR *, EXCMD *));
  */
 int
 ex_unabbr(sp, cmdp)

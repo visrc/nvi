@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shift.c,v 10.1 1995/04/13 17:22:28 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:28 $";
+static char sccsid[] = "$Id: ex_shift.c,v 10.2 1995/05/05 18:51:57 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:51:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,6 +32,12 @@ static char sccsid[] = "$Id: ex_shift.c,v 10.1 1995/04/13 17:22:28 bostic Exp $ 
 enum which {LEFT, RIGHT};
 static int shift __P((SCR *, EXCMD *, enum which));
 
+/*
+ * ex_shiftl -- :<[<...]
+ *
+ *
+ * PUBLIC: int ex_shiftl __P((SCR *, EXCMD *));
+ */
 int
 ex_shiftl(sp, cmdp)
 	SCR *sp;
@@ -40,6 +46,11 @@ ex_shiftl(sp, cmdp)
 	return (shift(sp, cmdp, LEFT));
 }
 
+/*
+ * ex_shiftr -- :>[>...]
+ *
+ * PUBLIC: int ex_shiftr __P((SCR *, EXCMD *));
+ */
 int
 ex_shiftr(sp, cmdp)
 	SCR *sp;
@@ -48,6 +59,10 @@ ex_shiftr(sp, cmdp)
 	return (shift(sp, cmdp, RIGHT));
 }
 
+/*
+ * shift --
+ *	Ex shift support.
+ */
 static int
 shift(sp, cmdp, rl)
 	SCR *sp;

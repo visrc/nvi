@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 10.1 1995/04/13 17:22:27 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:27 $";
+static char sccsid[] = "$Id: ex_shell.c,v 10.2 1995/05/05 18:51:50 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:51:50 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -35,6 +35,8 @@ static char sccsid[] = "$Id: ex_shell.c,v 10.1 1995/04/13 17:22:27 bostic Exp $ 
  * ex_shell -- :sh[ell]
  *	Invoke the program named in the SHELL environment variable
  *	with the argument -i.
+ *
+ * PUBLIC: int ex_shell __P((SCR *, EXCMD *));
  */
 int
 ex_shell(sp, cmdp)
@@ -50,6 +52,8 @@ ex_shell(sp, cmdp)
 /*
  * ex_exec_proc --
  *	Run a separate process.
+ *
+ * PUBLIC: int ex_exec_proc __P((SCR *, char *, char *, char *));
  */
 int
 ex_exec_proc(sp, cmd, p1, p2)
@@ -58,7 +62,7 @@ ex_exec_proc(sp, cmd, p1, p2)
 {
 	const char *name;
 	pid_t pid;
-	int nf, notused, rval, teardown;
+	int nf, rval, teardown;
 	char *p;
 
 	/* Clear the rest of the screen. */
@@ -71,7 +75,7 @@ ex_exec_proc(sp, cmd, p1, p2)
 	 * Flush waiting messages (autowrite, for example) so the output
 	 * matches historic practice.
 	 */
-	(void)sp->gp->scr_msgflush(sp, &notused);
+	(void)sp->gp->scr_msgflush(sp, NULL, NULL);
 
 	/* Put out various messages. */
 	if (p1 != NULL)

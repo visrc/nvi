@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 10.1 1995/04/13 17:21:59 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:21:59 $";
+static char sccsid[] = "$Id: ex_argv.c,v 10.2 1995/05/05 18:49:24 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:49:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,6 +40,8 @@ static int argv_sexp __P((SCR *, char **, size_t *, size_t *));
 /*
  * argv_init --
  *	Build  a prototype arguments list.
+ *
+ * PUBLIC: int argv_init __P((SCR *, EXCMD *));
  */
 int
 argv_init(sp, excp)
@@ -60,6 +62,8 @@ argv_init(sp, excp)
 /*
  * argv_exp0 --
  *	Append a string to the argument list.
+ *
+ * PUBLIC: int argv_expo0 __P((SCR *, EXCMD *, char *, size_t));
  */
 int
 argv_exp0(sp, excp, cmd, cmdlen)
@@ -85,6 +89,8 @@ argv_exp0(sp, excp, cmd, cmdlen)
  * argv_exp1 --
  *	Do file name expansion on a string, and append it to the
  *	argument list.
+ *
+ * PUBLIC: int argv_exp1 __P((SCR *, EXCMD *, char *, size_t, int));
  */
 int
 argv_exp1(sp, excp, cmd, cmdlen, is_bang)
@@ -127,6 +133,8 @@ ret:	FREE_SPACE(sp, bp, blen);
  * argv_exp2 --
  *	Do file name and shell expansion on a string, and append it to
  *	the argument list.
+ *
+ * PUBLIC: int argv_exp2 __P((SCR *, EXCMD *, char *, size_t));
  */
 int
 argv_exp2(sp, excp, cmd, cmdlen)
@@ -211,6 +219,8 @@ err:	FREE_SPACE(sp, bp, blen);
  * argv_exp3 --
  *	Take a string and break it up into an argv, which is appended
  *	to the argument list.
+ *
+ * PUBLIC: int argv_exp3 __P((SCR *, EXCMD *, char *, size_t));
  */
 int
 argv_exp3(sp, excp, cmd, cmdlen)
@@ -435,6 +445,8 @@ mem:			msgq(sp, M_SYSERR, NULL);
 /*
  * argv_free --
  *	Free up argument structures.
+ *
+ * PUBLIC: int argv_free __P((SCR *));
  */
 int
 argv_free(sp)

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 10.1 1995/04/13 17:21:56 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:21:56 $";
+static char sccsid[] = "$Id: ex_append.c,v 10.2 1995/05/05 18:48:27 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:48:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -37,6 +37,8 @@ static int ex_aci __P((SCR *, EXCMD *, enum which));
  * ex_append -- :[line] a[ppend][!]
  *	Append one or more lines of new text after the specified line,
  *	or the current line if no address is specified.
+ *
+ * PUBLIC: int ex_append __P((SCR *, EXCMD *));
  */
 int
 ex_append(sp, cmdp)
@@ -49,6 +51,8 @@ ex_append(sp, cmdp)
 /*
  * ex_change -- :[line[,line]] c[hange][!] [count]
  *	Change one or more lines to the input text.
+ *
+ * PUBLIC: int ex_change __P((SCR *, EXCMD *));
  */
 int
 ex_change(sp, cmdp)
@@ -62,6 +66,8 @@ ex_change(sp, cmdp)
  * ex_insert -- :[line] i[nsert][!]
  *	Insert one or more lines of new text before the specified line,
  *	or the current line if no address is specified.
+ *
+ * PUBLIC: int ex_insert __P((SCR *, EXCMD *));
  */
 int
 ex_insert(sp, cmdp)
@@ -71,6 +77,10 @@ ex_insert(sp, cmdp)
 	return (ex_aci(sp, cmdp, INSERT));
 }
 
+/*
+ * ex_aci --
+ *	Append, change, insert in ex.
+ */
 static int
 ex_aci(sp, cmdp, cmd)
 	SCR *sp;
@@ -245,6 +255,8 @@ ex_aci(sp, cmdp, cmd)
 /*
  * ex_aci_td --
  *	Teardown input text mode, and resolve input lines.
+ *
+ * PUBLIC: int ex_aci_td __P((SCR *));
  */
 int
 ex_aci_td(sp)

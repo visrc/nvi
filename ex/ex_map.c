@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_map.c,v 10.1 1995/04/13 17:22:13 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:13 $";
+static char sccsid[] = "$Id: ex_map.c,v 10.2 1995/05/05 18:50:38 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:50:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -44,6 +44,8 @@ static char sccsid[] = "$Id: ex_map.c,v 10.1 1995/04/13 17:22:13 bostic Exp $ (B
  *	mark at the start of the map, e.g. map X mx"xy ...), or if you
  *	put the map in a .exrc file, things would often work much better.
  *	No clue why.
+ *
+ * PUBLIC: int ex_map __P((SCR *, EXCMD *));
  */
 int
 ex_map(sp, cmdp)
@@ -107,6 +109,8 @@ nofunc:	if (stype == SEQ_COMMAND && input[1] == '\0')
 /*
  * ex_unmap -- (:unmap[!] key)
  *	Unmap a key.
+ *
+ * PUBLIC: int ex_unmap __P((SCR *, EXCMD *));
  */
 int
 ex_unmap(sp, cmdp)

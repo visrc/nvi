@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cd.c,v 10.1 1995/04/13 17:22:04 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:04 $";
+static char sccsid[] = "$Id: ex_cd.c,v 10.2 1995/05/05 18:49:44 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:49:44 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -35,6 +35,8 @@ static char sccsid[] = "$Id: ex_cd.c,v 10.1 1995/04/13 17:22:04 bostic Exp $ (Be
 /*
  * ex_cd -- :cd[!] [directory]
  *	Change directories.
+ *
+ * PUBLIC: int ex_cd __P((SCR *, EXCMD *));
  */
 int
 ex_cd(sp, cmdp)
@@ -128,6 +130,8 @@ err:	p = msg_print(sp, dir, &nf);
 /*
  * ex_cdalloc --
  *	Create a new list of cd paths.
+ *
+ * PUBLIC: int ex_cdalloc __P((SCR *, char *));
  */
 int
 ex_cdalloc(sp, str)
@@ -193,6 +197,8 @@ ex_cdalloc(sp, str)
 /*
  * ex_cdfree --
  *	Free the cd path list.
+ *
+ * PUBLIC: int ex_cdfree __P((SCR *));
  */
 int
 ex_cdfree(sp)

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 10.1 1995/04/13 17:22:07 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:07 $";
+static char sccsid[] = "$Id: ex_edit.c,v 10.2 1995/05/05 18:50:09 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:50:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,7 +29,6 @@ static char sccsid[] = "$Id: ex_edit.c,v 10.1 1995/04/13 17:22:07 bostic Exp $ (
 #include <regex.h>
 
 #include "common.h"
-#include "../vi/vi.h"
 
 static int ex_N_edit __P((SCR *, EXCMD *, FREF *, int));
 
@@ -46,6 +45,8 @@ static int ex_N_edit __P((SCR *, EXCMD *, FREF *, int));
  * Historic vi didn't permit the '+' command form without specifying
  * a file name as well.  This seems unreasonable, so we support it
  * regardless.
+ *
+ * PUBLIC: int ex_edit __P((SCR *, EXCMD *));
  */
 int
 ex_edit(sp, cmdp)

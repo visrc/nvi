@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_script.c,v 10.1 1995/04/13 17:22:25 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:25 $";
+static char sccsid[] = "$Id: ex_script.c,v 10.2 1995/05/05 18:51:43 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:51:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -50,8 +50,9 @@ static int sscr_setprompt __P((SCR *, char *, size_t));
 
 /*
  * ex_script -- : sc[ript][!] [file]
- *
  *	Switch to script mode.
+ *
+ * PUBLIC: int ex_script __P((SCR *, EXCMD *));
  */
 int
 ex_script(sp, cmdp)
@@ -289,6 +290,8 @@ prompterr:	sscr_end(sp);
 /*
  * sscr_exec --
  *	Take a line and hand it off to the shell.
+ *
+ * PUBLIC: int sscr_exec __P((SCR *, recno_t));
  */
 int
 sscr_exec(sp, lno)
@@ -366,6 +369,8 @@ err1:			rval = 1;
 /*
  * sscr_input --
  *	Take a line from the shell and insert it into the file.
+ *
+ * PUBLIC: int sscr_input __P((SCR *));
  */
 int
 sscr_input(sp)
@@ -522,6 +527,8 @@ sscr_matchprompt(sp, lp, line_len, lenp)
 /*
  * sscr_end --
  *	End the pipe to a shell.
+ *
+ * PUBLIC: int sscr_end __P((SCR *));
  */
 int
 sscr_end(sp)

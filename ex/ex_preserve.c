@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_preserve.c,v 10.1 1995/04/13 17:22:18 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:18 $";
+static char sccsid[] = "$Id: ex_preserve.c,v 10.2 1995/05/05 18:51:01 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:51:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,6 +32,8 @@ static char sccsid[] = "$Id: ex_preserve.c,v 10.1 1995/04/13 17:22:18 bostic Exp
 /*
  * ex_preserve -- :pre[serve]
  *	Push the file to recovery.
+ *
+ * PUBLIC: int ex_preserve __P((SCR *, EXCMD *));
  */
 int
 ex_preserve(sp, cmdp)
@@ -65,8 +67,9 @@ ex_preserve(sp, cmdp)
 
 /*
  * ex_recover -- :rec[over][!] file
+ *	Recover the file.
  *
- * Recover the file.
+ * PUBLIC: int ex_recover __P((SCR *, EXCMD *));
  */
 int
 ex_recover(sp, cmdp)

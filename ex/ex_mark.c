@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_mark.c,v 10.1 1995/04/13 17:22:14 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:14 $";
+static char sccsid[] = "$Id: ex_mark.c,v 10.2 1995/05/05 18:50:42 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:50:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,6 +27,14 @@ static char sccsid[] = "$Id: ex_mark.c,v 10.1 1995/04/13 17:22:14 bostic Exp $ (
 
 #include "common.h"
 
+/*
+ * ex_mark -- :mark char
+ *	      :k char
+ *	Mark lines.
+ *
+ *
+ * PUBLIC: int ex_mark __P((SCR *, EXCMD *));
+ */
 int
 ex_mark(sp, cmdp)
 	SCR *sp;

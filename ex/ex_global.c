@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 10.1 1995/04/13 17:22:10 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:10 $";
+static char sccsid[] = "$Id: ex_global.c,v 10.2 1995/05/05 18:50:23 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:50:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,6 +40,8 @@ static int	gsrch __P((SCR *, EVENT *, int *));
 /*
  * ex_global -- [line [,line]] g[lobal][!] /pattern/ [commands]
  *	Exec on lines matching a pattern.
+ *
+ * PUBLIC: int ex_global __P((SCR *, EXCMD *));
  */
 int
 ex_global(sp, cmdp)
@@ -53,6 +55,8 @@ ex_global(sp, cmdp)
 /*
  * ex_v -- [line [,line]] v /pattern/ [commands]
  *	Exec on lines not matching a pattern.
+ *
+ * PUBLIC: int ex_v __P((SCR *, EXCMD *));
  */
 int
 ex_v(sp, cmdp)
@@ -62,6 +66,10 @@ ex_v(sp, cmdp)
 	return (global(sp, cmdp, V));
 }
 
+/*
+ * global --
+ *	Ex global and v commands.
+ */
 static int
 global(sp, cmdp, cmd)
 	SCR *sp;
@@ -237,7 +245,7 @@ usage:		ex_message(sp, cmdp->cmd->usage, EXM_USAGE);
  * gsrch --
  *	Search the file for matches to the global pattern.
  */
-int
+static int
 gsrch(sp, evp, completep)
 	SCR *sp;
 	EVENT *evp;
@@ -318,6 +326,8 @@ gsrch(sp, evp, completep)
 /*
  * global_insdel --
  *	Update the ranges based on an insertion or deletion.
+ *
+ * PUBLIC: void global_insdel __P((SCR *, lnop_t, recno_t));
  */
 void
 global_insdel(sp, op, lno)

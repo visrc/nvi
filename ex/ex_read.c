@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 10.1 1995/04/13 17:22:21 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:21 $";
+static char sccsid[] = "$Id: ex_read.c,v 10.2 1995/05/05 18:51:31 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:51:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,10 +35,12 @@ static char sccsid[] = "$Id: ex_read.c,v 10.1 1995/04/13 17:22:21 bostic Exp $ (
 /*
  * ex_read --	:read [file]
  *		:read [!cmd]
- * Read from a file or utility.
+ *	Read from a file or utility.
  *
  * !!!
  * Historical vi wouldn't undo a filter read, for no apparent reason.
+ *
+ * PUBLIC: int ex_read __P((SCR *, EXCMD *));
  */
 int
 ex_read(sp, cmdp)
@@ -236,6 +238,8 @@ usage:			ex_message(sp, cmdp->cmd->usage, EXM_USAGE);
 /*
  * ex_readfp --
  *	Read lines into the file.
+ *
+ * PUBLIC: int ex_readfp __P((SCR *, char *, FILE *, MARK *, recno_t *, int));
  */
 int
 ex_readfp(sp, name, fp, fm, nlinesp, success_msg)

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_init.c,v 10.1 1995/04/13 17:22:11 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:11 $";
+static char sccsid[] = "$Id: ex_init.c,v 10.2 1995/05/05 18:50:30 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:50:30 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -41,6 +41,8 @@ static enum rc	exrc_isok __P((SCR *, struct stat *, char *, int, int));
 /*
  * ex_screen_copy --
  *	Copy ex screen.
+ *
+ * PUBLIC: int ex_screen_copy __P((SCR *, SCR *));
  */
 int
 ex_screen_copy(orig, sp)
@@ -78,6 +80,8 @@ ex_screen_copy(orig, sp)
 /*
  * ex_screen_end --
  *	End a vi screen.
+ *
+ * PUBLIC: int ex_screen_end __P((SCR *));
  */
 int
 ex_screen_end(sp)
@@ -117,6 +121,8 @@ ex_screen_end(sp)
 /*
  * ex_optchange --
  *	Handle change of options for ex.
+ *
+ * PUBLIC: int ex_optchange __P((SCR *, int));
  */
 int
 ex_optchange(sp, opt)
@@ -151,6 +157,8 @@ ex_optchange(sp, opt)
 /*
  * ex_icmd --
  *	Execute the command-line ex commands.
+ *
+ * PUBLIC: int ex_icmd __P((SCR *, char *));
  */
 int
 ex_icmd(sp, s)
@@ -166,6 +174,8 @@ ex_icmd(sp, s)
  * ex_exrc --
  *	Read the EXINIT environment variable and the startup exrc files,
  *	and execute their commands.
+ *
+ * PUBLIC: int ex_exrc __P((SCR *));
  */
 int
 ex_exrc(sp)
@@ -257,6 +267,8 @@ ex_exrc(sp)
 /*
  * ex_cfile --
  *	Execute ex commands from a file.
+ *
+ * PUBLIC: int ex_cfile __P((SCR *, char *, u_int32_t));
  */
 int
 ex_cfile(sp, filename, flags)

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_file.c,v 10.1 1995/04/13 17:22:09 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:09 $";
+static char sccsid[] = "$Id: ex_file.c,v 10.2 1995/05/05 18:50:17 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:50:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,6 +33,8 @@ static char sccsid[] = "$Id: ex_file.c,v 10.1 1995/04/13 17:22:09 bostic Exp $ (
 /*
  * ex_file -- :f[ile] [name]
  *	Change the file's name and display the status line.
+ *
+ * PUBLIC: int ex_file __P((SCR *, EXCMD *));
  */
 int
 ex_file(sp, cmdp)

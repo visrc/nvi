@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_stop.c,v 10.1 1995/04/13 17:22:30 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:30 $";
+static char sccsid[] = "$Id: ex_stop.c,v 10.2 1995/05/05 18:52:06 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:52:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,6 +34,8 @@ static char sccsid[] = "$Id: ex_stop.c,v 10.1 1995/04/13 17:22:30 bostic Exp $ (
  * ex_stop -- :stop[!]
  *	      :suspend[!]
  *	Suspend execution.
+ *
+ * PUBLIC: int ex_stop __P((SCR *, EXCMD *));
  */
 int
 ex_stop(sp, cmdp)
