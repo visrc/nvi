@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: key.c,v 10.46 2000/07/22 17:31:19 skimo Exp $ (Berkeley) $Date: 2000/07/22 17:31:19 $";
+static const char sccsid[] = "$Id: key.c,v 10.47 2001/06/05 19:57:28 skimo Exp $ (Berkeley) $Date: 2001/06/05 19:57:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -138,8 +138,8 @@ v_key_init(sp)
 
 	/* Initialize the fast lookup table. */
 	for (gp->max_special = 0, kp = keylist, cnt = nkeylist; cnt--; ++kp) {
-		if (gp->max_special < kp->value)
-			gp->max_special = kp->value;
+		if (gp->max_special < kp->ch)
+			gp->max_special = kp->ch;
 		if (kp->ch <= MAX_FAST_KEY)
 			gp->special_key[kp->ch] = kp->value;
 	}

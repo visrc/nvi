@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: gs.h,v 10.50 2000/07/22 17:31:18 skimo Exp $ (Berkeley) $Date: 2000/07/22 17:31:18 $
+ *	$Id: gs.h,v 10.51 2001/06/05 19:57:28 skimo Exp $ (Berkeley) $Date: 2001/06/05 19:57:28 $
  */
 
 #define	TEMPORARY_FILE_STRING	"/tmp"	/* Default temporary file name. */
@@ -108,9 +108,9 @@ struct _gs {
 	} cname[MAX_FAST_KEY + 1];	/* Fast lookup table. */
 
 #define	KEY_VAL(sp, ch)							\
-	((unsigned char)(ch) <= MAX_FAST_KEY ? 				\
+	((UCHAR_T)(ch) <= MAX_FAST_KEY ? 				\
 	    sp->gp->special_key[(unsigned char)ch] :			\
-	    (unsigned char)(ch) > sp->gp->max_special ? 0 : v_key_val(sp,ch))
+	    (UCHAR_T)(ch) > sp->gp->max_special ? K_NOTUSED : v_key_val(sp,ch))
 	CHAR_T	 max_special;		/* Max special character. */
 	u_char				/* Fast lookup table. */
 	    special_key[MAX_FAST_KEY + 1];
