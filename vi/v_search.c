@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 5.39 1993/05/13 11:43:41 bostic Exp $ (Berkeley) $Date: 1993/05/13 11:43:41 $";
+static char sccsid[] = "$Id: v_search.c,v 5.40 1993/05/15 11:07:13 bostic Exp $ (Berkeley) $Date: 1993/05/15 11:07:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -176,6 +176,7 @@ getptrn(sp, ep, prompt, storep)
 	if (sp->s_get(sp, ep, &sp->bhdr, prompt,
 	    TXT_BS | TXT_CR | TXT_ESCAPE | TXT_PROMPT))
 		return (1);
+	(void)sp->s_busy_cursor(sp, "Searching...");
 
 	tp = sp->bhdr.next;
 	if (tp->len == 1)
