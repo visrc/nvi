@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.69 1996/06/12 12:18:20 bostic Exp $ (Berkeley) $Date: 1996/06/12 12:18:20 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.70 1996/06/18 18:34:05 bostic Exp $ (Berkeley) $Date: 1996/06/18 18:34:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,7 +31,7 @@ static const char sccsid[] = "$Id: v_txt.c,v 10.69 1996/06/12 12:18:20 bostic Ex
 #include "vi.h"
 
 static int	 txt_abbrev __P((SCR *, TEXT *, CHAR_T *, int, int *, int *));
-static void	 txt_ai_resolve __P((SCR *, TEXT *));
+static void	 txt_ai_resolve __P((SCR *, TEXT *, int *));
 static TEXT	*txt_backup __P((SCR *, TEXTH *, TEXT *, u_int32_t *));
 static int	 txt_dent __P((SCR *, TEXT *, int));
 static int	 txt_emark __P((SCR *, TEXT *, size_t));
@@ -1619,18 +1619,20 @@ txt_unmap(sp, tp, ec_flagsp)
 
 /*
  * txt_ai_resolve --
- *	When a line is resolved by <esc> or <cr>, review autoindent
- *	characters.
+ *	When a line is resolved by <esc>, review autoindent characters.
  */
 static void
-txt_ai_resolve(sp, tp)
+txt_ai_resolve(sp, tp, changedp)
 	SCR *sp;
 	TEXT *tp;
+	int *changedp;
 {
 	u_long ts;
 	int del;
 	size_t cno, len, new, old, scno, spaces, tab_after_sp, tabs;
 	char *p;
+
+	*changedp = 0;
 
 	/*
 	 * If the line is empty, has an offset, or no autoindent
@@ -1699,6 +1701,7 @@ txt_ai_resolve(sp, tp)
 		*p++ = '\t';
 	while (spaces--)
 		*p++ = ' ';
+	*changedp = 1;
 }
 
 /*
@@ -2627,23 +2630,33 @@ txt_resolve(sp, tiqh, flags)
 	VI_PRIVATE *vip;
 	TEXT *tp;
 	recno_t lno;
+	int changed;
 
 	/*
 	 * The first line replaces a current line, and all subsequent lines
 	 * are appended into the file.  Resolve autoindented characters for
-	 * each line before committing it.
+	 * each line before committing it.  If the latter causes the line to
+	 * change, we have to redisplay it, otherwise the information cached
+	 * about the line will be wrong.
 	 */
 	vip = VIP(sp);
 	tp = tiqh->cqh_first;
+
 	if (LF_ISSET(TXT_AUTOINDENT))
-		txt_ai_resolve(sp, tp);
-	if (db_set(sp, tp->lno, tp->lb, tp->len))
+		txt_ai_resolve(sp, tp, &changed);
+	else
+		changed = 0;
+	if (db_set(sp, tp->lno, tp->lb, tp->len) ||
+	    changed && vs_change(sp, tp->lno, LINE_RESET))
 		return (1);
 
 	for (lno = tp->lno; (tp = tp->q.cqe_next) != (void *)&sp->tiq; ++lno) {
 		if (LF_ISSET(TXT_AUTOINDENT))
-			txt_ai_resolve(sp, tp);
-		if (db_append(sp, 0, lno, tp->lb, tp->len))
+			txt_ai_resolve(sp, tp, &changed);
+		else
+			changed = 0;
+		if (db_append(sp, 0, lno, tp->lb, tp->len) ||
+		    changed && vs_change(sp, tp->lno, LINE_RESET))
 			return (1);
 	}
 
