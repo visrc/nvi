@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 8.10 1993/09/12 12:21:11 bostic Exp $ (Berkeley) $Date: 1993/09/12 12:21:11 $
+ *	$Id: common.h,v 8.11 1993/09/27 16:17:53 bostic Exp $ (Berkeley) $Date: 1993/09/27 16:17:53 $
  */
 
 /* System includes. */
@@ -48,6 +48,14 @@ struct _text;
  */
 				/* Required by screen.h. */
 typedef void (*sig_ret_t) __P((int));
+
+/*
+ * Integral type that can hold a single character, and the type of that
+ * type when passed as an argument using traditional promotion rules.
+ * If no integral type can hold a character, forget it, you're done.
+ */
+typedef	u_char	CHAR_T;
+typedef	u_int	ARG_CHAR_T;
 
 /*
  * Local includes.
