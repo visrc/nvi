@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 8.32 1994/05/07 14:50:50 bostic Exp $ (Berkeley) $Date: 1994/05/07 14:50:50 $
+ *	$Id: vi.h,v 8.33 1994/05/08 10:08:14 bostic Exp $ (Berkeley) $Date: 1994/05/08 10:08:14 $
  */
 
 typedef struct _vikeys VIKEYS;
@@ -140,6 +140,7 @@ struct _vikeys {			/* Underlying function. */
 };
 #define	MAXVIKEY	126		/* List of vi commands. */
 extern VIKEYS const vikeys[MAXVIKEY + 1];
+extern VIKEYS const tmotion;		/* XXX Hacked ~ command. */
 
 /* Definition of a vi "word". */
 #define	inword(ch)	(isalnum(ch) || (ch) == '_')

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.67 1994/05/03 21:41:18 bostic Exp $ (Berkeley) $Date: 1994/05/03 21:41:18 $";
+static char sccsid[] = "$Id: vi.c,v 8.68 1994/05/08 10:08:06 bostic Exp $ (Berkeley) $Date: 1994/05/08 10:08:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -273,6 +273,21 @@ err:				term_flush(sp, "Vi error", CH_MAPPED);
 }
 
 /*
+ * The O_TILDEOP option makes the ~ command take a motion instead
+ * of a straight count.  This is the replacement structure we use
+ * instead of the one currently in the VIKEYS table.
+ *
+ * XXX
+ * Note, I used VC_Y instead of creating a new motion command, it's
+ * a lot easier.
+ */
+VIKEYS const tmotion = {
+	v_mulcase,	V_CNT|V_DOT|V_MOTION|VC_Y|VM_RCM_SET,
+	"[count]~[count]motion",
+	" ~ change case to motion"
+};
+
+/*
  * getcmd --
  *
  * The command structure for vi is less complex than ex (and don't think
@@ -297,6 +312,7 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 	u_int flags;
 	CH ikey;
 	CHAR_T key;
+	char *s;
 
 	/* Refresh the command structure. */
 	memset(&vp->vp_startzero, 0,
@@ -358,12 +374,18 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 		msgq(sp, M_BERR, "%s isn't a vi command", KEY_NAME(sp, key));
 		return (1);
 	}
+	kp = &vikeys[vp->key = key];
+
+	/* The tildeop option makes the ~ command take a motion. */
+	if (key == '~' && O_ISSET(sp, O_TILDEOP))
+		kp = &tmotion;
+
+	vp->kp = kp;
 
 	/*
 	 * Find the command.  The only legal command with no underlying
 	 * function is dot.
 	 */
-	kp = vp->kp = &vikeys[vp->key = key];
 	if (kp->func == NULL) {
 		if (key != '.') {
 			msgq(sp, M_ERR,
@@ -430,8 +452,13 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 	if (vp->key == '[' || vp->key == ']' || vp->key == 'Z') {
 		KEY(key, TXT_MAPCOMMAND);
 		if (vp->key != key) {
-usage:			msgq(sp, M_ERR, "Usage: %s", ismotion != NULL ?
-			    vikeys[ismotion->key].usage : kp->usage);
+usage:			if (ismotion == NULL)
+				s = kp->usage;
+			else if (ismotion->key == '~' && O_ISSET(sp, O_TILDEOP))
+				s = tmotion.usage;
+			else
+				s = vikeys[ismotion->key].usage;
+			msgq(sp, M_ERR, "Usage: %s", s);
 			return (1);
 		}
 	}
