@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.28 1993/02/16 20:19:20 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:19:20 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.29 1993/02/19 11:17:42 bostic Exp $ (Berkeley) $Date: 1993/02/19 11:17:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,49 +40,7 @@ static char sccsid[] = "$Id: vs_refresh.c,v 5.28 1993/02/16 20:19:20 bostic Exp 
  * it's indeterminate where the cursor ends up after they are sent.)
  */
 
-/*
- * Structure for mapping lines to the screen.  SMAP is an array of structures,
- * one per screen line, holding a physical line and screen offset into the
- * line.  For example, the pair 2:1 would be the first screen of line 2, and
- * 2:2 would be the second.  If doing left-right scrolling, all of the offsets
- * will be the same, i.e. for the second screen, 1:2, 2:2, 3:2, etc.  If doing
- * the standard, but unbelievably stupid, vi scrolling, it will be staggered,
- * i.e. 1:1, 1:2, 1:3, 2:1, 3:1, etc.
- *
- * It might be reasonable to make SMAP a linked list of structures, instead of
- * an array.  This wins if the top or bottom of the line is scrolling, because
- * you can just move the head and tail pointers instead of copying the array.
- * This loses when you're deleting three lines out of the middle of the map,
- * though, because you have to increment through the structures instead of just
- * doing a memmove.  Not particularly clear which choice is better.
- */
-typedef struct smap {
-	recno_t lno;			/* File line number. */
-	size_t off;			/* Screen line offset in the line. */
-} SMAP;
-
-#define	HMAP	((SMAP *)ep->h_smap)	/* Head of the map. */
-#define	TMAP	((SMAP *)ep->t_smap)	/* Tail of the map. */
-
-#ifdef DEBUG
-static void	dmap __P((EXF *, char *));
-#endif
-
-static int	scr_change __P((EXF *, recno_t, u_int));
-static int	scr_line __P((EXF *, SMAP *, u_char *, size_t,
-		    size_t *, size_t *));
-static recno_t	scr_nlines __P((EXF *, SMAP *, recno_t, size_t));
-static size_t	scr_relative __P((EXF *, recno_t));
-static size_t	scr_screens __P((EXF *, recno_t, size_t *));
-static int	scr_smdelete __P((EXF *, recno_t, int));
-static int	scr_smdown __P((EXF *));
-static int	scr_smfill __P((EXF *));
-static int	scr_sminit __P((EXF *));
-static int	scr_sminsert __P((EXF *, recno_t, int));
-static int	scr_smnext __P((EXF *, SMAP *));
-static int	scr_smprev __P((EXF *, SMAP *));
-static int	scr_smup __P((EXF *));
-static int	scr_update __P((EXF *));
+#define	HALFSCREEN(ep)	(SCREENSIZE(ep) / 2)	/* Middle of the screen. */
 
 /*
  * screen_init --
@@ -108,12 +66,7 @@ scr_begin(ep)
 	/* Force redraw. */
 	FF_SET(ep, F_REDRAW);
 
-	/* Initialize the functions. */
-	ep->scr_change = scr_change;
-	ep->scr_relative = scr_relative;
-	ep->scr_update = scr_update;
-
-	return (scr_sminit(ep));
+	return (scr_sm_init(ep));
 }
 
 /*
@@ -146,7 +99,7 @@ scr_end(ep)
  *	are right.  It seems like they could be changed to figure out what
  *	the new cursor position has to be.
  */
-static int
+int
 scr_change(ep, lno, action)
 	EXF *ep;
 	recno_t lno;
@@ -167,7 +120,7 @@ scr_change(ep, lno, action)
 	switch(action & ~LINE_LOGICAL) {
 	case LINE_DELETE:
 		/* Update SMAP. */
-		if (scr_smdelete(ep, lno, action & LINE_LOGICAL))
+		if (scr_sm_delete(ep, lno, action & LINE_LOGICAL))
 			return (1);
 
 		/*
@@ -185,7 +138,7 @@ scr_change(ep, lno, action)
 	case LINE_APPEND:
 	case LINE_INSERT:
 		/* Update SMAP. */
-		if (scr_sminsert(ep, lno, action & LINE_LOGICAL))
+		if (scr_sm_insert(ep, lno, action & LINE_LOGICAL))
 			return (1);
 
 		/*
@@ -202,9 +155,9 @@ scr_change(ep, lno, action)
 
 	case LINE_RESET:
 		/* Update SMAP. */
-		if (scr_smdelete(ep, lno, 0))
+		if (scr_sm_delete(ep, lno, 0))
 			return (1);
-		if (scr_sminsert(ep, lno, 0))
+		if (scr_sm_insert(ep, lno, 0))
 			return (1);
 		break;
 	default:
@@ -226,7 +179,7 @@ scr_change(ep, lno, action)
  *	repainting unless it's absolutely necessary.  If you change this code,
  *	you'd better know what you're doing.  It's subtle and quick to anger.
  */
-static int
+int
 scr_update(ep)
 	EXF *ep;
 {
@@ -270,23 +223,19 @@ scr_update(ep)
 		if (FF_ISSET(ep, F_REDRAW))		/* Redraw flag. */
 			goto win_redraw;
 							/* Check distance. */
-		lcnt = scr_nlines(ep, HMAP, ep->top, HALFSCREEN(ep));
+		lcnt = scr_sm_nlines(ep, HMAP, ep->top, HALFSCREEN(ep));
 		if (lcnt > HALFSCREEN(ep)) {
-win_redraw:		HMAP->lno = ep->top;
-			HMAP->off = 1;
-			for (sp = HMAP; sp < TMAP; ++sp)
-				if (scr_smnext(ep, sp))
-					return (1);
+win_redraw:		(void)scr_sm_fill(ep, ep->top, P_TOP);
 			goto paint;
 		}
 
 		if (ep->top > ep->otop) {		/* Window move down. */
 			while (HMAP->lno != ep->top || HMAP->off != 1)
-				if (scr_smup(ep))
+				if (scr_sm_1up(ep))
 					return (1);
 		} else					/* Window move up. */
 			while (HMAP->lno != ep->top)
-				if (scr_smdown(ep))
+				if (scr_sm_1down(ep))
 					return (1);
 	}
 		
@@ -310,10 +259,10 @@ win_redraw:		HMAP->lno = ep->top;
 		 * If less than half a screen away, scroll down until the
 		 * desired line is on the screen.
 		 */
-		lcnt = scr_nlines(ep, TMAP, ep->lno, HALFSCREEN(ep));
+		lcnt = scr_sm_nlines(ep, TMAP, ep->lno, HALFSCREEN(ep));
 		if (lcnt <= HALFSCREEN(ep)) {
 			while (lcnt--)
-				if (scr_smup(ep))
+				if (scr_sm_1up(ep))
 					return (1);
 			if (FF_ISSET(ep, F_REDRAW))
 				goto paint;
@@ -329,13 +278,9 @@ win_redraw:		HMAP->lno = ep->top;
 		lastline = file_lline(ep);
 		HMAP->lno = ep->lno;
 		HMAP->off = 1;
-		lcnt = scr_nlines(ep, HMAP, lastline, BOTLINE(ep, 0));
-		if (lcnt < BOTLINE(ep, 0)) {
-			TMAP->lno = lastline;
-			TMAP->off = scr_screens(ep, lastline, NULL);
-			for (sp = TMAP; sp > HMAP; --sp)
-				if (scr_smprev(ep, sp))
-					return (1);
+		lcnt = scr_sm_nlines(ep, HMAP, lastline, TEXTSIZE(ep));
+		if (lcnt < TEXTSIZE(ep)) {
+			scr_sm_fill(ep, lastline, P_BOTTOM);
 			goto paint;
 		}
 
@@ -352,10 +297,10 @@ win_redraw:		HMAP->lno = ep->top;
 	 * If less than half a screen away, reset the top line and scroll up
 	 * until the desired line is the first line on the screen.
 	 */
-	lcnt = scr_nlines(ep, HMAP, ep->lno, HALFSCREEN(ep));
+	lcnt = scr_sm_nlines(ep, HMAP, ep->lno, HALFSCREEN(ep));
 	if (lcnt <= HALFSCREEN(ep)) {
 		while (lcnt--)
-			if (scr_smdown(ep))
+			if (scr_sm_1down(ep))
 				return (1);
 		if (FF_ISSET(ep, F_REDRAW))
 			goto paint;
@@ -367,24 +312,11 @@ win_redraw:		HMAP->lno = ep->top;
 	 * line of the file at the top of the screen.  Otherwise, put the line
 	 * in the middle of the screen.
 	 */
-	lcnt = scr_nlines(ep, HMAP, ep->lno, HALFSCREEN(ep));
-	if (ep->lno < HALFSCREEN(ep)) {
-		HMAP->lno = 1;
-		HMAP->off = 1;
-		for (sp = HMAP; sp < TMAP; ++sp)
-			if (scr_smnext(ep, sp))
-				return (1);
-	} else {
-middle:		sp = HMAP + HALFSCREEN(ep);
-		sp->lno = ep->lno;
-		sp->off = 1;
-		for (; sp < TMAP; ++sp)
-			if (scr_smnext(ep, sp))
-				return (1);
-		for (sp = HMAP + HALFSCREEN(ep); sp > HMAP; --sp)
-			if (scr_smprev(ep, sp))
-				return (1);
-	}
+	lcnt = scr_sm_nlines(ep, HMAP, ep->lno, HALFSCREEN(ep));
+	if (lcnt < HALFSCREEN(ep))
+		(void)scr_sm_fill(ep, 1, P_TOP);
+	else
+middle:		(void)scr_sm_fill(ep, ep->lno, P_MIDDLE);
 	goto paint;
 
 	/*
@@ -570,9 +502,7 @@ slow:	/* Find the line. */
 	goto update;
 
 	/* Lost big, do what you have to do. */
-paint:	if (FF_ISSET(ep, F_REDRAW))
-		scr_smfill(ep);
-	for (sp = HMAP; sp <= TMAP; ++sp)
+paint:	for (sp = HMAP; sp <= TMAP; ++sp)
 		if (scr_line(ep, sp, NULL, 0, &y, &ep->scno))
 			return (1);
 	FF_CLR(ep, F_REDRAW);
@@ -601,49 +531,6 @@ update:	MOVE(ep, y, ep->scno);
 }
 
 /*
- * scr_modeline --
- *	Change the screen as necessary for a mode change, with refresh.
- */
-int
-scr_modeline(ep, isinput)
-	EXF *ep;
-	int isinput;
-{
-#define	RULERSIZE	15
-#define	MODESIZE	(RULERSIZE + 15)
-
-	static char buf[RULERSIZE];
-	size_t oldy, oldx;
-
-	getyx(stdscr, oldy, oldx);
-	MOVE(ep, SCREENSIZE(ep), 0);
-	clrtoeol();
-
-	if (!ISSET(O_RULER) && !ISSET(O_SHOWMODE) || ep->cols <= RULERSIZE) {
-		MOVE(ep, oldy, oldx);
-		return (0);
-	}
-
-	/* Display the ruler and mode. */
-	if (ISSET(O_RULER) && ep->cols > RULERSIZE) {
-		MOVE(ep, SCREENSIZE(ep), ep->cols / 2 - RULERSIZE / 2);
-		memset(buf, ' ', sizeof(buf) - 1);
-		(void)snprintf(buf,
-		    sizeof(buf) - 1, "%lu,%lu", ep->lno, ep->cno + 1);
-		buf[strlen(buf)] = ' ';
-		addstr(buf);
-	}
-
-	/* Show the mode. */
-	if (ISSET(O_SHOWMODE) && ep->cols > MODESIZE) {
-		MOVE(ep, SCREENSIZE(ep), ep->cols - 7);
-		addstr(isinput ? "Input" : "Command");
-	}
-	MOVE(ep, oldy, oldx);
-	return (0);
-}
-
-/*
  * scr_line --
  *	Update one line on the screen.  One nasty little side effect is
  *	that it returns the screen position for the current character.
@@ -655,7 +542,7 @@ scr_modeline(ep, isinput)
  *	across the line, it's going to be tricky.  Also, are there really
  *	enough folded lines that this is worthwhile?
  */
-static int
+int
 scr_line(ep, sp, p, len, yp, xp)
 	EXF *ep;
 	SMAP *sp;
@@ -803,408 +690,63 @@ scr_line(ep, sp, p, len, yp, xp)
 }
 
 /*
- * scr_sminit --
- *	Initialize the screen map.
+ * scr_modeline --
+ *	Change the screen as necessary for a mode change, with refresh.
  */
-static int
-scr_sminit(ep)
+int
+scr_modeline(ep, isinput)
 	EXF *ep;
+	int isinput;
 {
-	SMAP *p;
+#define	RULERSIZE	15
+#define	MODESIZE	(RULERSIZE + 15)
 
-	/* Build the map. */
-	if ((p = malloc(ep->lines * sizeof(SMAP))) == NULL)
-		return (1);
+	static char buf[RULERSIZE];
+	size_t oldy, oldx;
 
-	/* Put the map into the EXF structure. */
-	ep->h_smap = p;				/* HMAP = p; */
-	ep->t_smap = p + BOTLINE(ep, 0);	/* TMAP = ... */
-
-	/* Fill in the map. */
-	if (scr_smfill(ep)) {
-		free(p);
-		return (1);
-	}
-	return (0);
-}
-
-/*
- * scr_smfill --
- *	Fill in the screen map, based on the current "top" line.
- */
-static int
-scr_smfill(ep)
-	EXF *ep;
-{
-	SMAP *p;
-	
-	for (p = HMAP, p->lno = ep->otop, p->off = 1; p < TMAP; ++p)
-		if (scr_smnext(ep, p))
-			return (1);
-	return (0);
-}
-
-/*
- * scr_smdelete --
- *	Delete a line out of the SMAP.
- */
-static int
-scr_smdelete(ep, lno, islogical)
-	EXF *ep;
-	recno_t lno;
-	int islogical;
-{
-	SMAP *p, *t;
-	size_t cnt1, cnt2;
-
-	/* Find the line in the map. */
-        for (p = HMAP; p->lno != lno; ++p);
-
-	/*
-	 * Count the number of screen lines which display any part
-	 * of the deleted line.
-	 */
-	for (cnt1 = 1, t = p + 1; t <= TMAP && t->lno == lno; ++cnt1, ++t);
-
-	/* Delete that number of lines from the screen. */
-	MOVE(ep, p - HMAP, 0);
-	for (cnt2 = cnt1; cnt2--;)
-		deleteln();
-
-	/* Shift the screen map up. */
-	memmove(p, p + cnt1, (((TMAP - p) - cnt1) + 1) * sizeof(SMAP));
-
-	/*
-	 * If really deleting the line, decrement the line numbers for
-	 * the rest of the map.
-	 */
-	if (!islogical)
-		for (t = TMAP - cnt1; p <= t; ++p)
-			--p->lno;
-
-	/* Display the new lines. */
-	for (p = TMAP - cnt1;;) {
-		if (p < TMAP && scr_smnext(ep, p))
-			return (1);
-		if (scr_line(ep, ++p, NULL, 0, NULL, NULL))
-			return (1);
-		if (p == TMAP)
-			break;
-	}
-	return (0);
-}
-
-/*
- * scr_sminsert --
- *	Insert a line into the SMAP.
- */
-static int
-scr_sminsert(ep, lno, islogical)
-	EXF *ep;
-	recno_t lno;
-	int islogical;
-{
-	SMAP *p, *t;
-	size_t cnt1, cnt2;
-
-	/* Find the line in the map. */
-        for (p = HMAP; p->lno != lno; ++p);
-
-	/*
-	 * Figure out how many lines needed to display the line.
-	 * The lines left on the screen overrides that number.
-	 */
-	cnt1 = scr_screens(ep, lno, NULL);
-	cnt2 = (TMAP - p) + 1;
-	if (cnt1 > cnt2)
-		cnt1 = cnt2;
-
-	/* Push down that many lines. */
-	MOVE(ep, p - HMAP, 0);
-	for (cnt2 = cnt1; cnt2--;)
-		insertln();
-
-	/*
-	 * Clear the last line on the screen, it's going to have been
-	 * corrupted.
-	 */
+	getyx(stdscr, oldy, oldx);
 	MOVE(ep, SCREENSIZE(ep), 0);
 	clrtoeol();
 
-	/* Shift the screen map down. */
-	memmove(p + cnt1, p, (((TMAP - p) - cnt1) + 1) * sizeof(SMAP));
-
-	/*
-	 * If really inserting the line, increment the line numbers for
-	 * the rest of the map.
-	 */
-	 if (!islogical)
-		for (t = p + cnt1; t <= TMAP; ++t)
-			++t->lno;
-
-	/* Fill in the SMAP for the new lines. */
-	for (cnt2 = 1, t = p; cnt2 <= cnt1; ++t, ++cnt2) {
-		t->lno = lno;
-		t->off = cnt2;
+	if (!ISSET(O_RULER) && !ISSET(O_SHOWMODE) || ep->cols <= RULERSIZE) {
+		MOVE(ep, oldy, oldx);
+		return (0);
 	}
 
-	/* Display the new lines. */
-	for (; cnt1--; ++p)
-		if (scr_line(ep, p, NULL, 0, NULL, NULL))
-			return (1);
-	return (0);
-}
-
-/*
- * scr_smup --
- *	Scroll the SMAP up one.
- */
-static int
-scr_smup(ep)
-	EXF *ep;
-{
-	/* Delete the top line of the screen. */
-	MOVE(ep, 0, 0);
-	deleteln();
-
-	/* Shift the screen map up. */
-	memmove(HMAP, HMAP + 1, (ep->lines - 1) * sizeof(SMAP));
-
-	/* Set the new top line. */
-	ep->otop = HMAP->lno;
-
-	/* Decide what to display at the bottom of the screen. */
-	if (scr_smnext(ep, TMAP - 1))
-		return (1);
-
-	/* Display it. */
-	if (scr_line(ep, TMAP, NULL, 0, NULL, NULL))
-		return (1);
-
-	return (0);
-}
-
-/*
- * scr_smdown --
- *	Scroll the SMAP down one.
- */
-static int
-scr_smdown(ep)
-	EXF *ep;
-{
-	/* Clear the bottom line of the screen. */
-	MOVE(ep, BOTLINE(ep, 0), 0);
-	clrtoeol();
-
-	/* Insert a line at the top of the screen. */
-	MOVE(ep, 0, 0);
-	insertln();
-
-	/* Shift the screen map down. */
-	memmove(HMAP + 1, HMAP, (ep->lines - 1) * sizeof(SMAP));
-
-	/* Decide what to display at the top of the screen. */
-	if (scr_smprev(ep, HMAP + 1))
-		return (1);
-
-	/* Set the new top line. */
-	ep->otop = HMAP->lno;
-
-	/* Display it. */
-	if (scr_line(ep, HMAP, NULL, 0, NULL, NULL))
-		return (1);
-
-	return (0);
-}
-
-/*
- * scr_smnext --
- *	Fill in the next entry in the SMAP.
- */
-static int
-scr_smnext(ep, p)
-	EXF *ep;
-	SMAP *p;
-{
-	SMAP *t;
-	size_t lcnt;
-
-	t = p + 1;
-	if (ISSET(O_LEFTRIGHT)) {
-		t->lno = p->lno + 1;
-		t->off = p->off;
-	} else {
-		lcnt = scr_screens(ep, p->lno, NULL);
-		if (lcnt == p->off) {
-			t->lno = p->lno + 1;
-			t->off = 1;
-		} else {
-			t->lno = p->lno;
-			t->off = p->off + 1;
-		}
+	/* Display the ruler and mode. */
+	if (ISSET(O_RULER) && ep->cols > RULERSIZE) {
+		MOVE(ep, SCREENSIZE(ep), ep->cols / 2 - RULERSIZE / 2);
+		memset(buf, ' ', sizeof(buf) - 1);
+		(void)snprintf(buf,
+		    sizeof(buf) - 1, "%lu,%lu", ep->lno, ep->cno + 1);
+		buf[strlen(buf)] = ' ';
+		addstr(buf);
 	}
-	return (0);
-}
 
-/*
- * scr_smprev --
- *	Fill in the previous entry in the SMAP.
- */
-static int
-scr_smprev(ep, p)
-	EXF *ep;
-	SMAP *p;
-{
-	SMAP *t;
-
-	t = p - 1;
-	if (ISSET(O_LEFTRIGHT)) {
-		t->lno = p->lno - 1;
-		t->off = p->off;
-	} else if (p->off != 1) {
-		t->lno = p->lno;
-		t->off = p->off - 1;
-	} else {
-		t->lno = p->lno - 1;
-		t->off = scr_screens(ep, t->lno, NULL);
+	/* Show the mode. */
+	if (ISSET(O_SHOWMODE) && ep->cols > MODESIZE) {
+		MOVE(ep, SCREENSIZE(ep), ep->cols - 7);
+		addstr(isinput ? "Input" : "Command");
 	}
+	MOVE(ep, oldy, oldx);
 	return (0);
 }
 
 /*
- * scr_smbot --
- *	Return the line number of the last line on the screen.  (The vi
- *	L command.) Here because only the screen routines know what's
- *	really out there.
+ * scr_refresh --
+ *	Repaint a logical line on the screen.
  */
 int
-scr_smbot(ep, lnop, cnt)
+scr_refresh(ep, loff)
 	EXF *ep;
-	recno_t *lnop;
-	u_long cnt;
+	size_t loff;
 {
 	SMAP *p;
-	recno_t last;
-	
-	/* Set p to point at the last legal entry in the map. */
-	last = file_lline(ep);
-	if (TMAP->lno <= last)
-		p = TMAP + 1;
-	else
-		for (p = HMAP; p->lno <= last; ++p);
 
-	/* Step past cnt start-of-lines, stopping at HMAP. */
-	for (; cnt; --cnt)
-		for (;;) {
-			if (--p < HMAP)
-				return (1);
-			if (p->off == 1)
-				break;
-		}
-	*lnop = p->lno;
-	return (0);
-}
-
-/*
- * scr_mid --
- *	Return the line number of the middle line on the screen.  (The
- *	vi M command.  Note, the middle line number may not be anywhere
- *	near the middle of the screen, because that's how the historic
- *	vi behaved.)  Here because only the screen routines know what's
- *	out there.
- */
-int
-scr_smmid(ep, lnop)
-	EXF *ep;
-	recno_t *lnop;
-{
-	recno_t last, down;
-
-	/* Check for less than a full screen of lines. */
-	last = file_lline(ep);
-	if (TMAP->lno < last)
-		last = TMAP->lno;
-
-	down = (last - HMAP->lno + 1) / 2;
-	if (down == 0 && HMAP->off != 1)
+	p = HMAP + loff;
+	if (p > TMAP)
 		return (1);
-	*lnop = HMAP->lno + down;
-	return (0);
-}
-
-/*
- * scr_smtop --
- *	Return the line number of the first line on the screen.  (The vi
- *	L command.  Note, the top line number may not be at the top of the
- *	screen, because we search for a line that starts on the screen.
- *	It works that way because that's how the historic vi behave.) Here
- *	because only the screen routines know what's really out there.
- */
-int
-scr_smtop(ep, lnop, cnt)
-	EXF *ep;
-	recno_t *lnop;
-	u_long cnt;
-{
-	SMAP *p, *t;
-	recno_t last;
-
-	/*
-	 * Set t to point at the map entry one past the last legal
-	 * entry in the map.
-	 */
-	last = file_lline(ep);
-	if (TMAP->lno <= last)
-		t = TMAP + 1;
-	else
-		for (t = HMAP; t->lno <= last; ++t);
-
-	/* Step past cnt start-of-lines, stopping at t. */
-	for (p = HMAP - 1; cnt; --cnt)
-		for (;;) {
-			if (++p == t)
-				return (1);
-			if (p->off == 1)
-				break;
-		}
-	*lnop = p->lno;
-	return (0);
-}
-
-/*
- * scr_nlines --
- *	Return the number of screen lines from an SMAP entry to the
- *	start of some file line, less than a maximum value.
- */
-static recno_t
-scr_nlines(ep, from_sp, to_lno, max)
-	EXF *ep;
-	SMAP *from_sp;
-	recno_t to_lno;
-	size_t max;
-{
-	recno_t lno, lcnt;
-
-	if (ISSET(O_LEFTRIGHT))
-		if (from_sp->lno > to_lno)
-			return (from_sp->lno - to_lno);
-		else
-			return (to_lno - from_sp->lno);
-
-	if (from_sp->lno == to_lno)
-		return (from_sp->off - 1);
-
-	if (from_sp->lno > to_lno) {
-		lcnt = from_sp->off - 1;	/* Correct for off-by-one. */
-		for (lno = from_sp->lno; --lno >= to_lno && lcnt <= max;)
-			lcnt += scr_screens(ep, lno, NULL);
-	} else {
-		lno = from_sp->lno;
-		lcnt = (scr_screens(ep, lno, NULL) - from_sp->off) + 1;
-		for (; ++lno < to_lno && lcnt <= max; ++lno)
-			lcnt += scr_screens(ep, lno, NULL);
-	}
-	return (lcnt);
+	scr_line(ep, p, NULL, 0, NULL, NULL);
 }
 
 /*
@@ -1212,7 +754,7 @@ scr_nlines(ep, from_sp, to_lno, max)
  *	Return the number of screens required by the line, or, if a column
  *	is specified, by the column within the line.
  */
-static size_t
+size_t
 scr_screens(ep, lno, cnop)
 	EXF *ep;
 	recno_t lno;
@@ -1268,7 +810,7 @@ scr_screens(ep, lno, cnop)
  *	functions use this routine because only screen routine knows how many
  *	columns each character needs.
  */
-static size_t
+size_t
 scr_relative(ep, lno)
 	EXF *ep;
 	recno_t lno;
@@ -1316,27 +858,3 @@ scr_relative(ep, lno)
 	}
 	return (llen - 1);
 }
-
-#ifdef DEBUG
-static void
-gdmap(ep)
-	EXF *ep;
-{
-	dmap(ep, "gdb");
-}
-
-static void
-dmap(ep, msg)
-	EXF *ep;
-	char *msg;
-{
-	size_t cnt;
-	SMAP *p;
-
-	TRACE("==>  %s\n", msg);
-	for (p = HMAP, cnt = 1; p <= TMAP; ++p, ++cnt)
-		TRACE("%s<%02lu:%u> ",
-		    cnt % 10 == 0 ? "\n" : "", p->lno, p->off);
-	TRACE("\n");
-}
-#endif

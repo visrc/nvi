@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_z.c,v 5.22 1993/02/16 20:09:14 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:09:14 $";
+static char sccsid[] = "$Id: v_z.c,v 5.23 1993/02/19 11:17:45 bostic Exp $ (Berkeley) $Date: 1993/02/19 11:17:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,46 +29,47 @@ v_z(ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	recno_t lno;
-
-	if (vp->flags & VC_C1SET) {
-		fm->lno = vp->count;
-		if (file_gline(ep, fm->lno, NULL) == NULL)
-			fm->lno = file_lline(ep);
-	}
-	lno = fm->lno;
+	recno_t last, lno;
 
 	/*
-	 * XXX
-	 * The second count is the window size.  This needs to be
-	 * implemented when the general resizing routines are done.
+	 * The first count is the line to use.  If the value doesn't
+	 * exist, use the last line.
 	 */
+	if (vp->flags & VC_C1SET) {
+		lno = vp->count;
+		last = file_lline(ep);
+		if (lno > last)
+			lno = last;
+	} else
+		lno = fm->lno;
+
+	/* The second count is the window size. */
+	if (vp->flags & VC_C2SET && set_window_size(ep, vp->count2))
+		return (1);
 
 	switch(vp->character) {
 	case '.':
-		if (lno <= HALFSCREEN(ep))
-			break;
-		lno -= HALFSCREEN(ep);
-		if (file_gline(ep, lno, NULL) == NULL)
-			break;
-		ep->top = lno;
+		if (scr_sm_fill(ep, lno, P_MIDDLE))
+			return (1);
 		break;
 	case '-':
-		if (lno <= SCREENSIZE(ep))
-			break;
-		lno -= SCREENSIZE(ep) - 1;
-		if (file_gline(ep, lno, NULL) == NULL)
-			break;
-		ep->top = lno;
+		if (scr_sm_fill(ep, lno, P_BOTTOM))
+			return (1);
 		break;
 	default:
 		if (special[vp->character] == K_CR) {
-			ep->top = lno;
+			if (scr_sm_fill(ep, lno, P_TOP))
+				return (1);
 			break;
 		}
 		msg(ep, M_ERROR, "usage: %s.", vp->kp->usage);
 		return (1);
 	}
-	*rp = *fm;
+
+	/* If the map changes, have to redraw the entire screen. */
+	FF_SET(ep, F_REDRAW);
+
+	rp->lno = lno;
+	rp->cno = fm->cno;
 	return (0);
 }
