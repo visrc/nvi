@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_right.c,v 5.11 1993/02/16 20:08:44 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:08:44 $";
+static char sccsid[] = "$Id: v_right.c,v 5.12 1993/02/19 18:35:56 bostic Exp $ (Berkeley) $Date: 1993/02/19 18:35:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,9 +32,8 @@ v_right(ep, vp, fm, tm, rp)
 {
 	u_long cnt;
 	size_t len;
-	u_char *p;
 
-	if ((p = file_gline(ep, fm->lno, &len)) == NULL) {
+	if (file_gline(ep, fm->lno, &len) == NULL) {
 		if (file_lline(ep) == 0)
 			v_eol(ep, NULL);
 		else
@@ -76,9 +75,8 @@ v_dollar(ep, vp, fm, tm, rp)
 	MARK *fm, *tm, *rp;
 {
 	size_t len;
-	u_char *p;
 
-	if ((p = file_gline(ep, fm->lno, &len)) == NULL) {
+	if (file_gline(ep, fm->lno, &len) == NULL) {
 		if (file_lline(ep) == 0)
 			v_eol(ep, NULL);
 		else
