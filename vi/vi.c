@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.4 1992/04/28 17:39:28 bostic Exp $ (Berkeley) $Date: 1992/04/28 17:39:28 $";
+static char sccsid[] = "$Id: vi.c,v 5.5 1992/05/02 09:33:14 bostic Exp $ (Berkeley) $Date: 1992/05/02 09:33:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -49,6 +49,8 @@ vi()
 	range = 0L;
 #endif
 
+	scr_ref();
+
 	/* safeguard against '.' with no previous command */
 	dotkey = 0;
 
@@ -57,23 +59,19 @@ vi()
 	{
 		if (msgcnt)
 			msg_vflush();
-
-		scr_redraw(0);
+		refresh();
 
 		/* report any changes from the previous command */
 		if (rptlines >= LVAL(O_REPORT))
-		{
-			redraw(cursor, FALSE);
-			msg("%ld line%s %s", rptlines, (rptlines==1?"":"s"), rptlabel);
-		}
+			msg("%ld line%s %s",
+			    rptlines, (rptlines==1?"":"s"), rptlabel);
+
 		rptlines = 0L;
 
 		do
 		{
 			key = getkey(WHEN_VICMD);
 		} while (key < 0 || key > 127);
-
-TRACE("{%c}\n", key);
 
 		/* Convert a doubled-up operator such as "dd" into "d_" */
 		if (prevkey && key == prevkey)
@@ -307,8 +305,6 @@ TRACE("{%c}\n", key);
 				}
 				else
 				{
-					if (exwrote)
-						iredraw();
 					mode = MODE_VI;
 				}
 			} while (mode == MODE_EX);
@@ -408,6 +404,7 @@ TRACE("{%c}\n", key);
 			{
 				(void)adjmove(cursor, cursor, 0);
 				cursor = adjmove(cursor, tcurs, (int)vikeys[prevkey].flags);
+				scr_cchange();
 			}
 
 			/* cleanup */
@@ -416,6 +413,7 @@ TRACE("{%c}\n", key);
 		else if (!prevkey)
 		{
 			cursor = tcurs;
+			scr_cchange();
 		}
 	}
 }
@@ -430,6 +428,7 @@ adjmove(old, new, flags)
 	REG MARK	new;	/* the cursor position after the command */
 	int		flags;	/* various flags regarding cursor mvmt */
 {
+	int needclear;
 	static int	colno;	/* the column number that we want */
 	REG char	*text;	/* used to scan through the line's text */
 	REG int		i;

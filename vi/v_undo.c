@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_undo.c,v 5.2 1992/04/22 08:10:37 bostic Exp $ (Berkeley) $Date: 1992/04/22 08:10:37 $";
+static char sccsid[] = "$Id: v_undo.c,v 5.3 1992/05/02 09:33:27 bostic Exp $ (Berkeley) $Date: 1992/05/02 09:33:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,6 +25,6 @@ v_undo(m)
 	MARK m;
 {
 	if (undo())
-		iredraw();
+		scr_ref();
 	return (cursor);
 }
