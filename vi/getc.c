@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: getc.c,v 5.3 1992/10/17 16:10:35 bostic Exp $ (Berkeley) $Date: 1992/10/17 16:10:35 $";
+static char sccsid[] = "$Id: getc.c,v 5.4 1992/10/18 13:08:13 bostic Exp $ (Berkeley) $Date: 1992/10/18 13:08:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,8 +32,16 @@ getc_init(fm, chp)
 	MARK *fm;
 	int *chp;
 {
+	u_char *p;
+
 	m = *fm;
-	EGETLINE(p, fm->lno, len);
+	if ((p = file_gline(curf, fm->lno, &len)) == NULL) {
+		if (file_lline(curf) == 0)
+			v_eol();
+		else
+			GETLINE_ERR(fm->lno);
+		return (1);
+	}
 	*chp = len == 0 ? EMPTYLINE : p[m.cno];
 	return (0);
 }
@@ -52,9 +60,8 @@ getc_next(dir, chp)
 	save = m;
 	if (dir == FORWARD)
 		if (len == 0 || m.cno == len - 1) {
-			m.cno = 0;
-			GETLINE(p, ++m.lno, len);
-			if (p == NULL) {	/* EOF; restore the cursor. */
+			m.cno = 0;		/* EOF; restore the cursor. */
+			if ((p = file_gline(curf, ++m.lno, &len)) == NULL) {
 				m = save;
 				return (0);
 			}
@@ -65,9 +72,8 @@ getc_next(dir, chp)
 		} else
 			++m.cno;
 	else /* if (dir == BACKWARD) */
-		if (m.cno == 0) {
-			GETLINE(p, --m.lno, len);
-			if (p == NULL) {	/* EOF; restore the cursor. */
+		if (m.cno == 0) {		/* EOF; restore the cursor. */
+			if ((p = file_gline(curf, --m.lno, &len)) == NULL) {
 				m = save;
 				return (0);
 			}

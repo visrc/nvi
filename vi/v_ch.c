@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ch.c,v 5.13 1992/10/10 13:59:34 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:59:34 $";
+static char sccsid[] = "$Id: v_ch.c,v 5.14 1992/10/18 13:08:33 bostic Exp $ (Berkeley) $Date: 1992/10/18 13:08:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,10 +30,10 @@ static int lastkey;
 	return (1);							\
 }
 
-#define	NOTFOUND {							\
+#define	NOTFOUND(ch) {							\
 	bell();								\
 	if (ISSET(O_VERBOSE))						\
-		msg("Character not found.");				\
+		msg("%s not found.", asciiname[ch]);			\
 	return (1);							\
 }
 
@@ -134,9 +134,15 @@ v_chf(vp, fm, tm, rp)
 	lastdir = fSEARCH;
 	lastkey = key = vp->character;
 
-	EGETLINE(p, fm->lno, len);
+	if ((p = file_gline(curf, fm->lno, &len)) == NULL) {
+		if (file_lline(curf) == 0)
+			NOTFOUND(key);
+		GETLINE_ERR(fm->lno);
+		return (1);
+	}
+
 	if (len == 0)
-		NOTFOUND;
+		NOTFOUND(key);
 
 	sp = p;
 	ep = p + len;
@@ -144,7 +150,7 @@ v_chf(vp, fm, tm, rp)
 	for (cnt = vp->flags & VC_C1SET ? vp->count : 1; cnt--;) {
 		while (++p < ep && *p != key);
 		if (p == ep)
-			NOTFOUND;
+			NOTFOUND(key);
 	}
 	rp->lno = fm->lno;
 	rp->cno = p - sp;
@@ -186,16 +192,22 @@ v_chF(vp, fm, tm, rp)
 	lastdir = FSEARCH;
 	lastkey = key = vp->character;
 
-	EGETLINE(p, fm->lno, len);
+	if ((p = file_gline(curf, fm->lno, &len)) == NULL) {
+		if (file_lline(curf) == 0)
+			NOTFOUND(key);
+		GETLINE_ERR(fm->lno);
+		return (1);
+	}
+
 	if (len == 0)
-		NOTFOUND;
+		NOTFOUND(key);
 
 	ep = p - 1;
 	p += fm->cno;
 	for (cnt = vp->flags & VC_C1SET ? vp->count : 1; cnt--;) {
 		while (--p > ep && *p != key);
 		if (p == ep)
-			NOTFOUND;
+			NOTFOUND(key);
 	}
 	rp->lno = fm->lno;
 	rp->cno = (p - ep) - 1;
