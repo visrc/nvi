@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.49 1993/11/20 10:05:17 bostic Exp $ (Berkeley) $Date: 1993/11/20 10:05:17 $";
+static char sccsid[] = "$Id: exf.c,v 8.50 1993/11/21 16:08:51 bostic Exp $ (Berkeley) $Date: 1993/11/21 16:08:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -68,13 +68,12 @@ file_add(sp, frp_append, name, ignore)
 	memset(frp, 0, sizeof(FREF));
 
 	/*
-	 * If no file name specified, set the appropriate flag.
-	 *
-	 * XXX
-	 * This had better be *closely* followed by a file_init
-	 * so something gets filled in!
+	 * If no file name specified, or if the file name is a request
+	 * for something temporary, file_init() will allocate the file
+	 * name.
 	 */
-	if (name != NULL) {
+#define	TEMPORARY_FILE_STRING	"/tmp"
+	if (name != NULL && strcmp(name, "TEMPORARY_FILE_STRING")) {
 		if ((frp->name = strdup(name)) == NULL) {
 			FREE(frp, sizeof(FREF));
 mem:			msgq(sp, M_SYSERR, NULL);
