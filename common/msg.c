@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 9.4 1994/11/10 10:54:54 bostic Exp $ (Berkeley) $Date: 1994/11/10 10:54:54 $";
+static char sccsid[] = "$Id: msg.c,v 9.5 1994/11/10 19:06:07 bostic Exp $ (Berkeley) $Date: 1994/11/10 19:06:07 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -661,11 +661,20 @@ msg_cat(gp, str, lenp)
 		key.size = sizeof(recno_t);
 		msgno = atoi(str);
 
+		/*
+		 * XXX
+		 * Really sleazy hack -- we put an extra character on the
+		 * end of the format string, and then we change it to be
+		 * the nul termination of the string.  There ought to be
+		 * a better way.  Once we can allocate multiple temporary
+		 * memory buffers, maybe we can use one of them instead.
+		 */
 		if (gp->msg != NULL &&
 		    gp->msg->get(gp->msg, &key, &data, 0) == 0 &&
 		    data.size != 0) {
 			if (lenp != NULL)
-				*lenp = data.size;
+				*lenp = data.size - 1;
+			((char *)data.data)[data.size - 1] = '\0';
 			return (data.data);
 		}
 		str = &str[4];
