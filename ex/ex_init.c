@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_init.c,v 8.13 1994/03/08 19:39:24 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:39:24 $";
+static char sccsid[] = "$Id: ex_init.c,v 8.14 1994/03/18 10:51:28 bostic Exp $ (Berkeley) $Date: 1994/03/18 10:51:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -47,6 +47,7 @@ ex_screen_copy(orig, sp)
 	/* Initialize queues. */
 	TAILQ_INIT(&nexp->tagq);
 	TAILQ_INIT(&nexp->tagfq);
+	TAILQ_INIT(&nexp->cdq);
 	CIRCLEQ_INIT(&nexp->rangeq);
 
 	if (orig == NULL) {
@@ -93,6 +94,12 @@ ex_screen_end(sp)
 
 	if (exp->lastbcomm != NULL)
 		FREE(exp->lastbcomm, strlen(exp->lastbcomm) + 1);
+
+	if (ex_tagfree(sp))
+		rval = 1;
+
+	if (ex_cdfree(sp))
+		rval = 1;
 
 	/* Free private memory. */
 	FREE(exp, sizeof(EX_PRIVATE));
@@ -162,6 +169,8 @@ ex_optchange(sp, opt)
 	int opt;
 {
 	switch (opt) {
+	case O_CDPATH:
+		return (ex_cdalloc(sp, O_STR(sp, O_CDPATH)));
 	case O_TAGS:
 		return (ex_tagalloc(sp, O_STR(sp, O_TAGS)));
 	}
