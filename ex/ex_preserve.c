@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_preserve.c,v 8.1 1993/06/09 22:24:53 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:24:53 $";
+static char sccsid[] = "$Id: ex_preserve.c,v 8.2 1993/08/05 18:07:44 bostic Exp $ (Berkeley) $Date: 1993/08/05 18:07:44 $";
 #endif /* not lint */
 
 
@@ -17,6 +17,7 @@ static char sccsid[] = "$Id: ex_preserve.c,v 8.1 1993/06/09 22:24:53 bostic Exp 
 
 #include "vi.h"
 #include "excmd.h"
+#include "recover.h"
 
 /*
  * ex_preserve -- :pre[serve]
