@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 5.22 1993/04/17 12:01:49 bostic Exp $ (Berkeley) $Date: 1993/04/17 12:01:49 $";
+static char sccsid[] = "$Id: v_init.c,v 5.23 1993/04/19 15:32:58 bostic Exp $ (Berkeley) $Date: 1993/04/19 15:32:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -90,26 +90,15 @@ v_init(sp, ep)
 			sp->cno = 0;
 		}
 		F_CLR(ep, F_NOSETPOS);
-	} else if (file_gline(sp, ep, ep->lno, &len) == NULL) {
+	} else if (file_gline(sp, ep, sp->lno, &len) == NULL) {
 		if (sp->lno != 1 || sp->cno != 0) {
-			sp->lno = 1;
+			sp->lno = file_lline(sp, ep);
+			if (sp->lno == 0)
+				sp->lno = 1;
 			sp->cno = 0;
-			msgq(sp, M_INFO,
-			    "Cursor position changed since last edit");
 		}
-	} else {
-		sp->lno = ep->lno;
-		if (ep->cno >= len) {
-			sp->cno = 0;
-			msgq(sp, M_INFO,
-			    "Cursor position changed since last edit");
-		} else
-			sp->cno = ep->cno;
-	}
-
-	/* Update the file's information. */
-	ep->lno = sp->lno;
-	ep->cno = sp->cno;
+	} else if (sp->cno >= len)
+		sp->cno = 0;
 
 	/*
 	 * After location established, run any initial command.  Failure
@@ -149,9 +138,6 @@ int
 v_end(sp)
 	SCR *sp;
 {
-	/* Save cursor location. */
-	sp->ep->lno = sp->lno;
-	sp->ep->cno = sp->cno;
 
 #ifdef FWOPEN_NOT_AVAILABLE
 	sp->trapped_fd = -1;
