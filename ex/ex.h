@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 5.32 1993/02/25 19:40:39 bostic Exp $ (Berkeley) $Date: 1993/02/25 19:40:39 $
+ *	$Id: ex.h,v 5.33 1993/02/28 11:53:34 bostic Exp $ (Berkeley) $Date: 1993/02/28 11:53:34 $
  */
 
 struct excmdarg;
@@ -135,6 +135,7 @@ int	 ex_source __P((EXF *, EXCMDARG *));
 int	 ex_stop __P((EXF *, EXCMDARG *));
 int	 ex_subagain __P((EXF *, EXCMDARG *));
 int	 ex_substitute __P((EXF *, EXCMDARG *));
+int	 ex_suspend __P((EXF *));
 int	 ex_tagpop __P((EXF *, EXCMDARG *));
 int	 ex_tagpush __P((EXF *, EXCMDARG *));
 int	 ex_tagtop __P((EXF *, EXCMDARG *));
