@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_menu.c,v 8.9 1996/12/03 10:12:47 bostic Exp $ (Berkeley) $Date: 1996/12/03 10:12:47 $";
+static const char sccsid[] = "$Id: m_menu.c,v 8.10 1996/12/03 12:07:58 bostic Exp $ (Berkeley) $Date: 1996/12/03 12:07:58 $";
 #endif /* not lint */
 
 #include "X11/Intrinsic.h"
@@ -767,13 +767,14 @@ pull_down	*actions;
     }
 }
 
-
-#if defined(__STDC__)
-Widget create_menubar( Widget parent )
-#else
-Widget create_menubar( parent )
-Widget parent;
-#endif
+/*
+ * create_menubar --
+ *
+ * PUBLIC: Widget create_menubar __P((Widget));
+ */
+Widget
+create_menubar(parent)
+	Widget parent;
 {
     Widget	menu, pull, button;
     menu_bar	*ptr;

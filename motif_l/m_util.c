@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_util.c,v 8.6 1996/12/03 10:12:47 bostic Exp $ (Berkeley) $Date: 1996/12/03 10:12:47 $";
+static const char sccsid[] = "$Id: m_util.c,v 8.7 1996/12/03 12:07:47 bostic Exp $ (Berkeley) $Date: 1996/12/03 12:07:47 $";
 #endif /* not lint */
 
 #include <X11/Intrinsic.h>
@@ -267,14 +267,14 @@ int		count;
 }
 
 
-#if defined(__STDC__)
-void	XutSetIcon( Widget wid, int height, int width, Pixmap p )
-#else
-void	XutSetIcon( wid, height, width, p )
-Widget	wid;
-int	height, width;
-Pixmap	p;
-#endif
+/*
+ * PUBLIC: void XutSetIcon __P((Widget, int, int, Pixmap));
+ */
+void
+XutSetIcon(wid, height, width, p)
+	Widget wid;
+	int height, width;
+	Pixmap p;
 {
     Display	*display = XtDisplay(wid);
     Window	win;
@@ -317,6 +317,8 @@ Pixmap	p;
  *
  *	Future versions of this routine may handle multiple colormaps
  *	by name.
+ *
+ * PUBLIC: void XutInstallColormap __P((String, Widget));
  */
 
 static	enum { cmap_look, cmap_use, cmap_ignore } cmap_state = cmap_look;
@@ -327,13 +329,10 @@ XutResource	colormap_resources[] = {
     { "installColormap",	XutRKboolean,	&use_colormap	}
 };
 
-#if defined(__STDC__)
-void	XutInstallColormap( String name, Widget wid )
-#else
-void	XutInstallColormap( name, wid )
-String	name;
-Widget	wid;
-#endif
+void
+XutInstallColormap(name, wid)
+	String name;
+	Widget wid;
 {
     Display	*display = XtDisplay(wid);
 

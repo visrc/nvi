@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_copypaste.c,v 8.3 1996/11/27 12:10:54 bostic Exp $ (Berkeley) $Date: 1996/11/27 12:10:54 $";
+static const char sccsid[] = "$Id: m_copypaste.c,v 8.4 1996/12/03 12:08:05 bostic Exp $ (Berkeley) $Date: 1996/12/03 12:08:05 $";
 #endif /* not lint */
 
 /* ICCCM Cut and paste Utilities: */
@@ -27,19 +27,15 @@ static	PFI	icccm_paste,
 		icccm_clear,
 		icccm_error;
 
-#if defined(__STDC__)
-void	InitCopyPaste(  PFI f_copy,
-			PFI f_paste,
-			PFI f_clear,
-			PFI f_error
-			)
-#else
-void	InitCopyPaste( f_copy, f_paste, f_clear, f_error )
-PFI	f_copy;
-PFI	f_paste;
-PFI	f_clear;
-PFI	f_error;
-#endif
+/*
+ * InitCopyPaste --
+ *
+ * PUBLIC: void InitCopyPaste
+ * PUBLIC:    __P((int (*)(), int (*)(), int (*)(), int (*)())); 
+ */
+void
+InitCopyPaste(f_copy, f_paste, f_clear, f_error)
+	PFI f_copy, f_paste, f_clear, f_error;
 {
     icccm_paste	= f_paste;
     icccm_clear	= f_clear;
@@ -160,13 +156,14 @@ int	*format;
     return False;
 }
 
-
-#if defined(__STDC__)
-void 	AcquirePrimary( Widget widget )
-#else
-void 	AcquirePrimary( widget )
-Widget	widget;
-#endif
+/*
+ * AcquirePrimary --
+ *
+ * PUBLIC: void	AcquirePrimary __P((Widget));
+ */
+void 
+AcquirePrimary(widget)
+	Widget widget;
 {
     /* assert we own the primary selection */
     XtOwnSelection( widget,
@@ -219,13 +216,14 @@ static	void	gotProc( widget, data, selection, type, value, length, format )
     }
 }
 
-
-#if defined(__STDC__)
-void	PasteFromClipboard( Widget widget )
-#else
-void	PasteFromClipboard( widget )
-Widget	widget;
-#endif
+/*
+ * PasteFromClipboard --
+ *
+ * PUBLIC: void	PasteFromClipboard __P((Widget));
+ */
+void
+PasteFromClipboard(widget)
+	Widget widget;
 {
     XtGetSelectionValue( widget,
 			 XA_PRIMARY,

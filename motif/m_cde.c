@@ -10,15 +10,8 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_cde.c,v 8.3 1996/11/27 12:10:02 bostic Exp $ (Berkeley) $Date: 1996/11/27 12:10:02 $";
+static const char sccsid[] = "$Id: m_cde.c,v 8.4 1996/12/03 12:08:12 bostic Exp $ (Berkeley) $Date: 1996/12/03 12:08:12 $";
 #endif /* not lint */
-
-/* Boolean	is_cde( Display *d )
- *
- * When running under CDE (or VUE on HPUX) applications should not
- * define fallback colors (or fonts).  The only way to tell is to
- * check the atoms attached to the server.  This routine does that.
- */
 
 #include <X11/X.h>
 #include <X11/Xlib.h>
@@ -44,13 +37,18 @@ static struct {
     { "_MOTIF_WM_INFO",		Useful,		/* "mwm/dtwm" */	},
 };
 
-
-#if defined(__STDC__)
-int	is_cde( Display *d )
-#else
-int	is_cde( d )
-Display *d;
-#endif
+/*
+ * is_cde --
+ *
+ * When running under CDE (or VUE on HPUX) applications should not define
+ * fallback colors (or fonts).  The only way to tell is to check the atoms
+ * attached to the server.  This routine does that.
+ *
+ * PUBLIC: int is_cde __P((Display *));
+ */
+int
+is_cde(d)
+	Display *d;
 {
     int			i, r, format;
     unsigned long	nitems, remaining;
