@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 5.12 1993/05/13 10:02:07 bostic Exp $ (Berkeley) $Date: 1993/05/13 10:02:07 $";
+static char sccsid[] = "$Id: ex_argv.c,v 5.13 1993/05/13 11:12:09 bostic Exp $ (Berkeley) $Date: 1993/05/13 11:12:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,6 +34,10 @@ buildargv(sp, ep, s, expand, argcp, argvp)
 {
 	int cnt, done, globoff, len, needslots, off;
 	char *ap, *p;
+
+	/* Discard any previous information. */
+	if (sp->g.gl_pathc)
+		globfree(&sp->g);
 
 	/* Break into argv vector. */
 	for (done = globoff = off = 0;; ) {
@@ -136,6 +140,10 @@ mem1:				sp->argscnt = 0;
 	sp->argv[off] = NULL;
 	*argvp = sp->argv;
 	*argcp = off;
+#if DEBUG && 0
+	for (cnt = 0; cnt < off; ++cnt)
+		TRACE(sp, "arg %d: {%s}\n", cnt, sp->argv[cnt]);
+#endif
 	return (0);
 }
 
@@ -153,10 +161,6 @@ fileexpand(sp, ep, globp, word, wordlen)
 {
 	size_t blen, len, tlen;
 	char *bp, *p, *t;
-
-	/* Discard any previous information. */
-	if (sp->g.gl_pathc)
-		globfree(&sp->g);
 
 	GET_SPACE(sp, bp, blen, 512);
 
@@ -207,20 +211,39 @@ fileexpand(sp, ep, globp, word, wordlen)
 			++len;
 		}
 
+	/* Nul termination. */
+	ADD_SPACE(sp, bp, blen, len + 1);
+	*p = '\0';
+
+#if DEBUG && 0
+	TRACE(sp, "file char replacement: {%.*s}\n", len, bp);
+#endif
 	/*
 	 * Do shell word expansion -- it's very, very hard to figure out
-	 * what magic characters the user's shell expects.  Don't try.
+	 * what magic characters the user's shell expects.  If it's not
+	 * vanilla, don't even try.
 	 */
-	if (ex_run_process(sp, bp, bp, blen))
-		return (1);
+	for (p = bp; *p; ++p)
+		if (!isalnum(*p) && !isspace(*p) && *p != '/')
+			break;
+	if (*p) {
+		if (ex_run_process(sp, bp, &len, bp, blen))
+			return (1);
+#if DEBUG && 0
+		TRACE(sp, "shell word expansion: {%.*s}\n", len, bp);
+#endif
+		p = bp;
+	} else
+		p = bp + (sizeof("echo ") - 1);
 
 	/*
 	 * Do shell globbing.
 	 * XXX: GLOB_NOMAGIC:
 	 * Then error if no pattern matches and magic char included.
 	 */
-	glob(bp,
-	    GLOB_NOCHECK | GLOB_NOSORT | GLOB_QUOTE | GLOB_TILDE, NULL, globp);
+	glob(p,
+	    GLOB_APPEND | GLOB_NOCHECK | GLOB_NOSORT | GLOB_QUOTE | GLOB_TILDE,
+	    NULL, globp);
 
 	FREE_SPACE(sp, bp, blen);
 	return (0);
