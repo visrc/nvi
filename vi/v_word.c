@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_word.c,v 8.4 1993/07/22 12:05:38 bostic Exp $ (Berkeley) $Date: 1993/07/22 12:05:38 $";
+static char sccsid[] = "$Id: v_word.c,v 8.5 1993/08/16 18:01:59 bostic Exp $ (Berkeley) $Date: 1993/08/16 18:01:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,10 +34,12 @@ static char sccsid[] = "$Id: v_word.c,v 8.4 1993/07/22 12:05:38 bostic Exp $ (Be
  * as a single word, and the beginning and end of the file counts as an
  * infinite number of words.
  *
- * Movements associated with commands are slightly different than movement
- * commands.  For example, in "abc def ghi", "cw" is from 'a' to 'c', while
- * "w" is from 'a' to 'd'.  "Bill, it's another ugly tale from BSD's ugliest
- * city."
+ * Movements associated with commands are different than movement commands.
+ * For example, in "abc  def", with the cursor on the 'a', "cw" is from
+ * 'a' to 'c', while "w" is from 'a' to 'd'.  In general, trailing white
+ * space is discarded from the change movement.  Another example is that,
+ * in the same string, a "cw" on any white space character replaces that
+ * single character, and nothing else.  Ain't nothin' in here that's easy.
  *
  * One historic note -- in the original vi, the 'w', 'W' and 'B' commands
  * would treat groups of empty lines as individual words, i.e. the command
@@ -112,10 +114,16 @@ fword(sp, ep, vp, fm, rp, type)
 	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
 
 	/*
-	 * If in white-space, move to the first non-white-space character.
-	 * This counts as a single word move.
+	 * If in white-space:
+	 *	If the count is 1, and it's a change command, we're done.
+	 *	Else, move to the first non-white-space character, which
+	 *	    counts as a single word move.
 	 */
 	if (cs.cs_flags == CS_EMP || cs.cs_flags == 0 && isspace(cs.cs_ch)) {
+		if (cs.cs_flags != CS_EMP && cnt == 1 && F_ISSET(vp, VC_C)) {
+			++cs.cs_cno;
+			goto ret2;
+		}
 		if (cs_fblank(sp, ep, &cs))
 			return (1);
 		--cnt;
@@ -133,7 +141,7 @@ fword(sp, ep, vp, fm, rp, type)
 				if (cs_next(sp, ep, &cs))
 					return (1);
 				if (cs.cs_flags == CS_EOF)
-					goto ret;
+					goto ret1;
 				if (cs.cs_flags == 0 && isspace(cs.cs_ch))
 					break;
 			}
@@ -156,7 +164,7 @@ fword(sp, ep, vp, fm, rp, type)
 			if (cs_fblank(sp, ep, &cs))
 				return (1);
 			if (cs.cs_flags == CS_EOF)
-				goto ret;
+				goto ret1;
 		}
 	else
 		while (cnt--) {
@@ -166,7 +174,7 @@ fword(sp, ep, vp, fm, rp, type)
 				if (cs_next(sp, ep, &cs))
 					return (1);
 				if (cs.cs_flags == CS_EOF)
-					goto ret;
+					goto ret1;
 				if (cs.cs_flags != 0 || isspace(cs.cs_ch))
 					break;
 				if (state == INWORD) {
@@ -190,7 +198,7 @@ fword(sp, ep, vp, fm, rp, type)
 				if (cs_fblank(sp, ep, &cs))
 					return (1);
 			if (cs.cs_flags == CS_EOF)
-				goto ret;
+				goto ret1;
 		}
 
 	/*
@@ -202,7 +210,7 @@ fword(sp, ep, vp, fm, rp, type)
 		++cs.cs_cno;
 
 	/* If we didn't move, we must be at EOF. */
-ret:	if (cs.cs_lno == fm->lno && cs.cs_cno == fm->cno) {
+ret1:	if (cs.cs_lno == fm->lno && cs.cs_cno == fm->cno) {
 		v_eof(sp, ep, fm);
 		return (1);
 	}
@@ -212,7 +220,7 @@ ret:	if (cs.cs_lno == fm->lno && cs.cs_cno == fm->cno) {
 	 */
 	if (F_ISSET(vp, VC_C | VC_D | VC_Y) && cs.cs_flags == CS_EOF)
 		++cs.cs_cno;
-	rp->lno = cs.cs_lno;
+ret2:	rp->lno = cs.cs_lno;
 	rp->cno = cs.cs_cno;
 	return (0);
 }
