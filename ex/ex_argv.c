@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 5.7 1993/05/05 22:43:54 bostic Exp $ (Berkeley) $Date: 1993/05/05 22:43:54 $";
+static char sccsid[] = "$Id: ex_argv.c,v 5.8 1993/05/06 11:03:53 bostic Exp $ (Berkeley) $Date: 1993/05/06 11:03:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -129,7 +129,7 @@ mem1:				sp->argscnt = 0;
 			break;
 
 		/* Skip whitespace. */
-		while (!isspace(*++s));
+		while (isspace(*++s));
 		if (!*s)
 			break;
 	}
