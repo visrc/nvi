@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.44 1993/02/24 12:52:36 bostic Exp $ (Berkeley) $Date: 1993/02/24 12:52:36 $";
+static char sccsid[] = "$Id: exf.c,v 5.45 1993/02/25 17:42:43 bostic Exp $ (Berkeley) $Date: 1993/02/25 17:42:43 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -14,6 +14,7 @@ static char sccsid[] = "$Id: exf.c,v 5.44 1993/02/24 12:52:36 bostic Exp $ (Berk
 
 #include <errno.h>
 #include <fcntl.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -26,10 +27,7 @@ static char sccsid[] = "$Id: exf.c,v 5.44 1993/02/24 12:52:36 bostic Exp $ (Berk
 #include "screen.h"
 #include "pathnames.h"
 
-EXF *curf;					/* Current file. */
-
 static EXFLIST exfhdr;				/* List of files. */
-static EXF *last;				/* Last file. */
 
 /*
  * file_init --
@@ -88,15 +86,6 @@ file_set(argc, argv)
 	char *argv[];
 {
 	EXF *ep;
-
-	/* Free up any previous list. */
-	while (exfhdr.next != (EXF *)&exfhdr) {
-		ep = exfhdr.next;
-		rmexf(ep);
-		if (ep->name)
-			free(ep->name);
-		free(ep);
-	}
 
 	/* Insert new entries at the tail of the list. */
 	for (; *argv; ++argv) {
@@ -180,16 +169,6 @@ file_prev(ep, all)
 }
 
 /*
- * file_last --
- *	Return the last file edited.
- */
-EXF *
-file_last()
-{
-	return (last);
-}
-
-/*
  * file_locate --
  *	Return the appropriate structure if we've seen this file before.
  */
@@ -209,7 +188,7 @@ file_locate(name)
  * file_start --
  *	Start editing a file.
  */
-int
+EXF *
 file_start(ep)
 	EXF *ep;
 {
@@ -223,14 +202,14 @@ file_start(ep)
 		if ((fd = mkstemp(tname)) == -1) {
 			msg(ep, M_ERROR,
 			    "Temporary file: %s", strerror(errno));
-			return (1);
+			return (NULL);
 		}
 
 		if (ep == NULL) {
 			if (file_ins((EXF *)&exfhdr, tname, 1))
-				return (1);
+				return (NULL);
 			if ((ep = file_first(1)) == NULL)
-				PANIC;
+				return (NULL);
 			FF_SET(ep, F_NONAME);
 		}
 
@@ -247,7 +226,9 @@ file_start(ep)
 		openname = tname;
 	} else
 		openname = ep->name;
-	FF_SET(ep, F_NEWSESSION);
+
+	/* Only a few bits are retained between edit instances. */
+	ep->flags &= F_RETAINMASK;
 
 	/* Open a db structure. */
 	ep->db = dbopen(openname, O_CREAT | O_EXLOCK | O_NONBLOCK| O_RDONLY,
@@ -263,7 +244,7 @@ file_start(ep)
 	}
 	if (ep->db == NULL) {
 		msg(ep, M_ERROR, "%s: %s", ep->name, strerror(errno));
-		return (1);
+		return (NULL);
 	}
 	if (fd != -1)
 		(void)close(fd);
@@ -282,11 +263,7 @@ file_start(ep)
 	 */
 	mark_reset(ep);
 
-	/* Set the global state. */
-	last = curf;
-	curf = ep;
-
-	return (0);
+	return (ep);
 }
 
 /*
@@ -317,8 +294,12 @@ file_stop(ep, force)
 		free(ep->tname);
 	}
 
-	/* Only a few bits are retained between edit instances. */
-	ep->flags &= F_RETAINMASK;
+	/* Delete temporary space. */
+	if (ep->tmp_bp) {
+		free(ep->tmp_bp);
+		ep->tmp_bp = NULL;
+		ep->tmp_blen = 0;
+	}
 	return (0);
 }
 
@@ -385,6 +366,71 @@ err:		msg(ep, M_ERROR, "%s: %s", ep->name, strerror(errno));
 }
 
 /*
+ * file_switch --
+ *	Switch files.
+ */
+EXF *
+file_switch(ep, force)
+	EXF *ep;
+	int force;
+{
+	EXF *sp, tmp;
+	sigset_t bmask, omask;
+
+	/*
+	 * This is (theoretically) the only time in which the ep structure
+	 * can be inconsistent, or, we have more than a single ep structure
+	 * open.  Block the standard user generated signals.
+	 */
+	sigemptyset(&bmask);
+	sigaddset(&bmask, SIGHUP);
+	sigaddset(&bmask, SIGINT);
+	(void)sigprocmask(SIG_BLOCK, &bmask, &omask);
+
+	/*
+	 * There's this nasty little problem in that we might be editing the
+	 * same file again.  Tags, "e!", and "rew" are all possible paths into
+	 * that morass.  To avoid having to figure it out, we copy the "to"
+	 * EXF structure into a temporary space, and open up an instance of
+	 * the file, then close the from file, and copy the temporary space
+	 * back into the "to" file.  There's always a valid EXF structure,
+	 * and we don't have to figure out if we're reinitializing anything.
+	 */
+	if (ep->enext == NULL)
+		sp = file_start(ep->enext);
+	else {
+		tmp = *ep->enext;
+		sp = file_start(&tmp);
+	}
+	if (sp == NULL)
+		return (NULL);
+
+	/* Copy what we need from the last file. */
+	sp->scrp = ep->scrp;
+	sp->msgp = ep->msgp;
+	sp->flags |= ep->flags & F_COPYMASK;
+
+	/* Link the edit chain. */
+	sp->eprev = FF_ISSET(ep, F_DUMMY) ? NULL : ep;
+
+	if (!FF_ISSET(ep, F_DUMMY) && file_stop(ep, force)) {
+		FF_SET(sp, F_IGNORE);
+		(void)file_stop(sp, 1);
+		sp = NULL;
+	}
+
+	if (ep->enext == NULL)
+		ep->enext = sp;
+	else {
+		*ep->enext = *sp;
+		sp = ep->enext;
+	}
+
+	(void)sigprocmask(SIG_SETMASK, &omask, NULL);
+	return (sp);
+}
+
+/*
  * exf_def --
  *	Fill in a default EXF structure.  It's a function because I
  *	just got tired of getting burned 'cause the structure changed.
@@ -396,4 +442,6 @@ exf_def(ep)
 	memset(ep, 0, sizeof(EXF));
 	ep->c_lno = OOBLNO;
 	ep->stdfp = stdout;
+	ep->searchdir = NOTSET;
+	FF_SET(ep, F_NEWSESSION);
 }

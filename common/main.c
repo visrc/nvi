@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.49 1993/02/24 12:52:15 bostic Exp $ (Berkeley) $Date: 1993/02/24 12:52:15 $";
+static char sccsid[] = "$Id: main.c,v 5.50 1993/02/25 17:42:22 bostic Exp $ (Berkeley) $Date: 1993/02/25 17:42:22 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -46,8 +46,6 @@ static char sccsid[] = "$Id: main.c,v 5.49 1993/02/24 12:52:15 bostic Exp $ (Ber
 FILE *tracefp;
 #endif
 
-enum editmode mode;			/* Editor mode; see vi.h. */
-
 struct termios original_termios;	/* Original terminal state. */
 
 char *VB;				/* Visual bell termcap string. */
@@ -65,9 +63,8 @@ main(argc, argv)
 	extern char *optarg;
 	static int reenter;
 	EXCMDARG cmd;
-	EXF *ep, fake_exf;
+	EXF *ep, *tep, fake_exf;
 	SCR fake_scr;
-	MSG *mp;
 	int ch;
 	char *excmdarg, *errf, *p, *tag, path[MAXPATHLEN];
 
@@ -75,18 +72,34 @@ main(argc, argv)
 	if (reenter++)
 		abort();
 
+	/*
+	 * Fake up a file structure so it's available for the ex/vi routines.
+	 * Do basic initialization so there's a place to hang error messages
+	 * and such.
+	 *
+	 * XXX
+	 * It's going to be difficult to verify that all of the necessary
+	 * fields are filled in (or that F_DUMMY is checked appropriately).
+	 */
+	ep = &fake_exf;
+	exf_def(ep);
+	ep->flags = F_DUMMY | F_IGNORE;
+	SCRP(ep) = &fake_scr;
+	scr_def(SCRP(ep));
+	set_window_size(ep, 0);
+
 	/* Set mode based on the program name. */
 	if ((p = strrchr(*argv, '/')) == NULL)
 		p = *argv;
 	else
 		++p;
 	if (!strcmp(p, "ex") || !strcmp(p, "nex"))
-		mode = MODE_EX;
+		FF_SET(ep, F_MODE_EX);
 	else if (!strcmp(p, "view")) {
 		SET(O_READONLY)
-		mode = MODE_VI;
+		FF_SET(ep, F_MODE_VI);
 	} else
-		mode = MODE_VI;
+		FF_SET(ep, F_MODE_VI);
 
 	/* Get original terminal information. */
 	if (tcgetattr(STDIN_FILENO, &original_termios))
@@ -101,7 +114,7 @@ main(argc, argv)
 			excmdarg = optarg;
 			break;
 		case 'e':		/* Ex mode. */
-			mode = MODE_EX;
+			FF_SET(ep, F_MODE_EX);
 			break;
 #ifndef NO_ERRLIST
 		case 'm':		/* Error list. */
@@ -125,7 +138,7 @@ main(argc, argv)
 			tag = optarg;
 			break;
 		case 'v':		/* Vi mode. */
-			mode = MODE_VI;
+			FF_SET(ep, F_MODE_VI);
 			break;
 		case '?':
 		default:
@@ -133,22 +146,6 @@ main(argc, argv)
 		}
 	argc -= optind;
 	argv += optind;
-
-	/*
-	 * Fake up a file structure so it's available for the ex/vi routines.
-	 * Do basic initialization, so it's not really used, but there's a
-	 * place to hang error messages and such.
-	 *
-	 * XXX
-	 * It's going to be difficult to verify that all of the necessary
-	 * fields are filled in (or that F_DUMMY is checked appropriately).
-	 */
-	curf = ep = &fake_exf;
-	exf_def(ep);
-	ep->flags = F_DUMMY | F_IGNORE;
-	SCRP(ep) = &fake_scr;
-	scr_def(SCRP(ep));
-	set_window_size(ep, 0);
 
 	/* Initialize the key sequence list. */
 	seq_init();
@@ -165,6 +162,9 @@ main(argc, argv)
 
 	/* Initialize special key table. */
 	gb_init(ep);
+
+	/* Initialize file list. */
+	file_init();
 
 	/*
 	 * Source the system, ~user and local .exrc files.
@@ -188,9 +188,6 @@ main(argc, argv)
 			free(p);
 		}
 
-	/* Initialize file list. */
-	file_init();
-
 	/* Any remaining arguments are file names. */
 	if (argc)
 		file_set(argc, argv);
@@ -199,7 +196,10 @@ main(argc, argv)
 #ifndef NO_ERRLIST
 	if (errf) {
 		SETCMDARG(cmd, C_ERRLIST, 0, OOBLNO, 0, 0, errf);
-		ex_errlist(ep, &cmd);
+		if (ex_errlist(ep, &cmd)) {
+			msg_eflush(ep);
+			exit(1);
+		}
 	} else
 #endif
 	/* Use a tag file if specified. */
@@ -209,48 +209,62 @@ main(argc, argv)
 			msg_eflush(ep);
 			exit(1);
 		}
-	} else if (file_start(file_first(1))) {
+	}
+
+	/* Get a real EXF structure. */
+	ep->enext = file_first(1);
+	if ((tep = file_switch(ep, 0)) == NULL) {
 		msg_eflush(ep);
 		exit(1);
 	}
+	ep = tep;
 
-	/*
-	 * Should have a real EXF structure by now.  Copy any messages
-	 * into the new one.
-	 */
-	for (mp = ep->msgp;
-	    mp != NULL && !(mp->flags & M_EMPTY); mp = mp->next)
-		msg(curf, mp->flags, "%s", mp->mbuf);
-	ep = curf;
-
-	/* Do any commands from the command line. */
-	if (excmdarg)
-		(void)ex_cstring(ep, (u_char *)excmdarg, strlen(excmdarg), 0);
-
-	/* Catch HUP, INT, WINCH */
+	/* Can now handle signals. */
 	(void)signal(SIGHUP, onhup);
 	(void)signal(SIGINT, SIG_IGN);		/* XXX */
-	(void)signal(SIGWINCH, onwinch);
 
-	/* Repeatedly call ex() or vi() until the mode is set to MODE_QUIT. */
-	while (mode != MODE_QUIT) {
-		switch (mode) {
-		case MODE_VI:
-			if (vi(ep))
-				mode = MODE_QUIT;
-			break;
-		case MODE_EX:
+	/* Do command line commands. */
+	if (excmdarg != NULL)
+		(void)ex_cstring(ep, (u_char *)excmdarg, strlen(excmdarg), 0);
+
+	while (!FF_ISSET(ep, F_EXIT | F_EXIT_FORCE)) {
+
+#define	MFLAGS	(F_MODE_EX | F_MODE_VI)
+		switch(ep->flags & MFLAGS) {
+		case F_MODE_EX:
 			if (ex(ep))
-				mode = MODE_QUIT;
+				FF_SET(ep, F_EXIT_FORCE);
+			break;
+		case F_MODE_VI:
+			if (vi(ep))
+				FF_SET(ep, F_EXIT_FORCE);
 			break;
 		default:
 			abort();
 		}
-		/*
-		 * XXX
-		 * THE UNDERLYING EXF MAY HAVE CHANGED.
-		 */
-		ep = curf;
+
+#define	EFLAGS	(F_EXIT | F_EXIT_FORCE | F_SWITCH | F_SWITCH_FORCE)
+		switch (ep->flags & EFLAGS) {
+		case F_EXIT:
+			if (file_stop(ep, 0)) {
+				FF_CLR(ep, F_EXIT);
+				break;
+			}
+			break;
+		case F_EXIT_FORCE:
+			(void)file_stop(ep, 1);
+			break;
+		case F_SWITCH_FORCE:
+			if ((tep = file_switch(ep, 1)) != NULL)
+				ep = tep;
+			FF_CLR(ep, F_SWITCH_FORCE);
+			break;
+		case F_SWITCH:
+			if ((tep = file_switch(ep, 0)) != NULL)
+				ep = tep;
+			FF_CLR(ep, F_SWITCH);
+			break;
+		}
 	}
 
 	/* Reset anything that needs resetting. */
@@ -260,7 +274,6 @@ main(argc, argv)
 	msg_eflush(ep);
 
 	exit(0);
-	/* NOTREACHED */
 }
 
 static void
