@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.15 1993/10/03 11:48:23 bostic Exp $ (Berkeley) $Date: 1993/10/03 11:48:23 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.16 1993/10/03 13:39:14 bostic Exp $ (Berkeley) $Date: 1993/10/03 13:39:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -568,7 +568,7 @@ update:	OCNO = CNO;
 	 * If the bottom line isn't in use by vi, display any
 	 * messages or paint the mode line.
 	 */
-	if (!F_ISSET(&sp->bhdr, HDR_INUSE))
+	if (!F_ISSET(sp, S_INPUT))
 		if (sp->msgp != NULL && !F_ISSET(sp->msgp, M_EMPTY))
 			svi_msgflush(sp);
 		else if (!F_ISSET(sp, S_UPDATE_MODE)) {
