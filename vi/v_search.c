@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 8.22 1994/03/17 15:03:53 bostic Exp $ (Berkeley) $Date: 1994/03/17 15:03:53 $";
+static char sccsid[] = "$Id: v_search.c,v 8.23 1994/04/06 09:48:17 bostic Exp $ (Berkeley) $Date: 1994/04/06 09:48:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,8 +29,7 @@ static char sccsid[] = "$Id: v_search.c,v 8.22 1994/03/17 15:03:53 bostic Exp $ 
 #include "vi.h"
 #include "vcmd.h"
 
-static int bcorrect __P((SCR *, EXF *, VICMDARG *, u_int));
-static int fcorrect __P((SCR *, EXF *, VICMDARG *, u_int));
+static int correct __P((SCR *, EXF *, VICMDARG *, u_int));
 static int getptrn __P((SCR *, EXF *, int, char **));
 static int search __P((SCR *, EXF *, VICMDARG *, char *, int, enum direction));
 
@@ -168,7 +167,7 @@ search(sp, ep, vp, ptrn, flags, dir)
 		/* Non-motion commands move to the end of the range. */
 		if (!ISMOTION(vp))
 			vp->m_final = vp->m_stop;
-		else if (bcorrect(sp, ep, vp, flags))
+		else if (correct(sp, ep, vp, flags))
 			return (1);
 		break;
 	case FORWARD:
@@ -178,7 +177,7 @@ search(sp, ep, vp, ptrn, flags, dir)
 		/* Non-motion commands move to the end of the range. */
 		if (!ISMOTION(vp))
 			vp->m_final = vp->m_stop;
-		else if (fcorrect(sp, ep, vp, flags))
+		else if (correct(sp, ep, vp, flags))
 			return (1);
 		break;
 	case NOTSET:
@@ -217,14 +216,14 @@ getptrn(sp, ep, prompt, storep)
 }
 
 /*
- * !!!
- * Historically, commands didn't affect the line searched to if the motion
- * command was a search and the pattern match was the start or end of the
- * line.  There were some special cases, however, concerning search to the
- * start of end of a line.
+ * correct --
+ *	Handle command with a search as the motion.
  *
- * Vi was not, however, consistent, and it was fairly easy to confuse it.
- * For example, given the two lines:
+ * !!!
+ * Historically, commands didn't affect the line searched to/from if the
+ * motion command was a search and the final position was the start/end
+ * of the line.  There were some special cases and vi was not consistent;
+ * it was fairly easy to confuse it.  For example, given the two lines:
  *
  *	abcdefghi
  *	ABCDEFGHI
@@ -233,87 +232,71 @@ getptrn(sp, ep, prompt, storep)
  * 'k' and put would no longer work correctly.  In any case, we try to do
  * the right thing, but it's not going to exactly match historic practice.
  */
-
-/*
- * bcorrect --
- *	Handle command with a backward search as the motion.
- */
 static int
-bcorrect(sp, ep, vp, flags)
+correct(sp, ep, vp, flags)
 	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	u_int flags;
 {
+	enum direction dir;
+	MARK m;
 	size_t len;
 
 	/*
-	 * VC_D commands move to the end of the range.  VC_Y stays at the
-	 * start unless the end of the range is on a different line, when
-	 * it moves to the end of the range.  Ignore VC_C and VC_S.
+	 * !!!
+	 * Searches become line mode operations if there was a delta
+	 * specified to the search pattern.
 	 */
-	if (F_ISSET(vp, VC_D) ||
-	    F_ISSET(vp, VC_Y) && vp->m_start.lno != vp->m_stop.lno)
-		vp->m_final = vp->m_stop;
+	if (LF_ISSET(SEARCH_DELTA))
+		F_SET(vp, VM_LMODE);
+
+	/*
+	 * If the motion is in the reverse direction, switch the start and
+	 * stop MARK's so that it's in a forward direction.  (There's no
+	 * reason for this other than to make the tests below easier.  The
+	 * code in vi.c:vi() would have done the switch.)  Both forward
+	 * and backward motions can happen for any kind of search command
+	 * because of the wrapscan option.
+	 */
+	if (vp->m_start.lno > vp->m_stop.lno ||
+	    vp->m_start.lno == vp->m_stop.lno &&
+	    vp->m_start.cno > vp->m_stop.cno) {
+		dir = BACKWARD;
+		m = vp->m_start;
+		vp->m_start = vp->m_stop;
+		vp->m_stop = m;
+	} else
+		dir = FORWARD;
+
+	/*
+	 * BACKWARD:
+	 *	VC_D commands move to the end of the range.  VC_Y stays at
+	 *	the start unless the end of the range is on a different line,
+	 *	when it moves to the end of the range.  Ignore VC_C and VC_S.
+	 *
+	 * FORWARD:
+	 *	VC_D and VC_Y commands don't move.  Ignore VC_C and VC_S.
+	 */
+	if (dir == BACKWARD)
+		if (F_ISSET(vp, VC_D) ||
+		    F_ISSET(vp, VC_Y) && vp->m_start.lno != vp->m_stop.lno)
+			vp->m_final = vp->m_start;
+		else
+			vp->m_final = vp->m_stop;
 	else
 		vp->m_final = vp->m_start;
 
 	/*
 	 * !!!
-	 * Correct backward searches which start at column 0 to be the last
-	 * column of the previous line.  Otherwise, adjust the starting point
-	 * to the character before the current one.
+	 * Backward searches starting at column 0, and forward searches ending
+	 * at column 0 are corrected to the last column of the previous line.
+	 * Otherwise, adjust the starting/ending point to the character before
+	 * the current one (this is safe because we know the search had to move
+	 * to succeed).
 	 *
-	 * Backward searches become line mode operations if they start
-	 * at column 0 and end at column 0 of another line.
-	 */
-	if (vp->m_start.lno > vp->m_stop.lno && vp->m_start.cno == 0) {
-		if (file_gline(sp, ep, --vp->m_start.lno, &len) == NULL) {
-			GETLINE_ERR(sp, vp->m_stop.lno);
-			return (1);
-		}
-		if (vp->m_stop.cno == 0)
-			F_SET(vp, VM_LMODE);
-		vp->m_start.cno = len ? len - 1 : 0;
-	} else
-		--vp->m_start.cno;
-
-	/*
-	 * !!!
-	 * Commands become line mode operations if there was a delta
-	 * specified to the search pattern.
-	 */
-	if (LF_ISSET(SEARCH_DELTA)) {
-		F_SET(vp, VM_LMODE);
-		return (0);
-	}
-	return (0);
-}
-
-/*
- * fcorrect --
- *	Handle command with a forward search as the motion.
- */
-static int
-fcorrect(sp, ep, vp, flags)
-	SCR *sp;
-	EXF *ep;
-	VICMDARG *vp;
-	u_int flags;
-{
-	size_t len;
-
-	/* VC_D and VC_Y commands stay at the start.  Ignore VC_C and VC_S. */
-	vp->m_final = vp->m_start;
-
-	/*
-	 * !!!
-	 * Correct forward searches which end at column 0 to be the last
-	 * column of the previous line.  Otherwise, adjust the ending
-	 * point to the character before the current one.
-	 *
-	 * Forward searches become line mode operations if they start
-	 * at column 0 and end at column 0 of another line.
+	 * Searches become line mode operations if they start at column 0 and
+	 * end at column 0 of another line.
 	 */
 	if (vp->m_start.lno < vp->m_stop.lno && vp->m_stop.cno == 0) {
 		if (file_gline(sp, ep, --vp->m_stop.lno, &len) == NULL) {
@@ -325,16 +308,6 @@ fcorrect(sp, ep, vp, flags)
 		vp->m_stop.cno = len ? len - 1 : 0;
 	} else
 		--vp->m_stop.cno;
-
-	/*
-	 * !!!
-	 * Commands become line mode operations if there was a delta
-	 * specified to the search pattern.
-	 */
-	if (LF_ISSET(SEARCH_DELTA)) {
-		F_SET(vp, VM_LMODE);
-		return (0);
-	}
 
 	return (0);
 }
