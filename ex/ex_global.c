@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 8.35 1994/05/21 09:38:09 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:38:09 $";
+static char sccsid[] = "$Id: ex_global.c,v 8.36 1994/07/01 09:42:03 bostic Exp $ (Berkeley) $Date: 1994/07/01 09:42:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -137,7 +137,7 @@ global(sp, ep, cmdp, cmd)
 
 		/* Free up any allocated memory. */
 		if (replaced)
-			free(ptrn);
+			FREE_SPACE(sp, ptrn, 0);
 
 		if (eval) {
 			re_error(sp, eval, re);
