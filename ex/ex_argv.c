@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 5.11 1993/05/12 11:16:29 bostic Exp $ (Berkeley) $Date: 1993/05/12 11:16:29 $";
+static char sccsid[] = "$Id: ex_argv.c,v 5.12 1993/05/13 10:02:07 bostic Exp $ (Berkeley) $Date: 1993/05/13 10:02:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -151,132 +151,77 @@ fileexpand(sp, ep, globp, word, wordlen)
 	char *word;
 	int wordlen;
 {
-	GS *gp;
-	int ch, len;
-	char *p, *t, *gs, *tpath;
+	size_t blen, len, tlen;
+	char *bp, *p, *t;
 
 	/* Discard any previous information. */
 	if (sp->g.gl_pathc)
 		globfree(&sp->g);
 
-	/* Figure out how much space we need for this argument. */
-	for (p = word, len = 0; *p; ++p)
-		switch (*p) {
-		case '$':
-			for (t = p + 1; *t && !isspace(*t); ++t);
-			ch = *t;
-			*t = '\0';
-			if ((gs = getenv(p + 1)) == NULL) {
-				if (p + 1 == t)
-					msgq(sp, M_ERR,
-	    "'$' indicates an environmental variable; use \\$ to escape it.");
-				else
-					msgq(sp, M_ERR,
-					    "No environmental variable %s.",
-					    p + 1);
-				    return (1);
-			}
-			*t = ch;
-			p = t;
-			len += strlen(gs);
-			break;
+	GET_SPACE(sp, bp, blen, 512);
+
+	/* It's going to become a shell command. */
+	p = bp;
+	memmove(p, "echo ", sizeof("echo ") - 1);
+	p += sizeof("echo ") - 1;
+	len = sizeof("echo ") - 1;
+
+	/* Replace file name characters. */
+	for (; *word; ++word)
+		switch (*word) {
 		case '%':
 			if (F_ISSET(ep, F_NONAME)) {
 				msgq(sp, M_ERR,
 				    "No filename to substitute for %%.");
 				return (1);
 			}
+			ADD_SPACE(sp, bp, blen, len + ep->nlen);
+			memmove(p, ep->name, ep->nlen);
+			p += ep->nlen;
 			len += ep->nlen;
 			break;
 		case '#':
 			if (sp->altfname != NULL)
-				len += strlen(sp->altfname);
+				tlen = strlen(t = sp->altfname);
 			else if (sp->eprev != NULL &&
-			     !F_ISSET(sp->eprev, F_NONAME))
-				len += sp->eprev->nlen;
-			else {
+			     !F_ISSET(sp->eprev, F_NONAME)) {
+				t = sp->eprev->name;
+				tlen = sp->eprev->nlen;
+			} else {
 				msgq(sp, M_ERR,
 				    "No filename to substitute for #.");
 				return (1);
 			}
+			ADD_SPACE(sp, bp, blen, len + tlen);
+			memmove(p, t, tlen);
+			p += tlen;
+			len += tlen;
 			break;
 		case '\\':
 			if (p[1] != '\0')
 				++p;
 			/* FALLTHROUGH */
 		default:
+			ADD_SPACE(sp, bp, blen, len + 1);
+			*p++ = *word;
 			++len;
 		}
 
-	gp = sp->gp;
-	if (len != wordlen) {
-		/*
-		 * Copy argument into temporary space, replacing file
-		 * names.  Allocate temporary space if necessary.
-		 */
-		if (F_ISSET(gp, G_TMP_INUSE)) {
-			if ((tpath = malloc(len + 1)) == NULL) {
-				msgq(sp, M_ERR,
-				    "Error: %s.", strerror(errno));
-				return (1);
-			}
-		} else {
-			BINC(sp, gp->tmp_bp, gp->tmp_blen, len + 1);
-			tpath = gp->tmp_bp;
-			F_SET(gp, G_TMP_INUSE);
-		}
-
-		for (p = tpath; *word; ++word)
-			switch (*word) {
-			case '$':
-				for (t = word + 1; *t && !isspace(*t); ++t);
-				ch = *t;
-				*t = '\0';
-				len = strlen(gs = getenv(word + 1));
-				memmove(p, gs, len);
-				*t = ch;
-				word = t;
-				p += len;
-				break;
-			case '%':
-				memmove(p, ep->name, ep->nlen);
-				p += ep->nlen;
-				break;
-			case '#':
-				if (sp->altfname != NULL) {
-					len = strlen(sp->altfname);
-					memmove(p, sp->altfname, len);
-				} else {
-					len = sp->eprev->nlen;
-					memmove(p, sp->eprev->name, len);
-				}
-				p += len;
-				break;
-			case '\\':
-				if (p[1] != '\0')
-					++p;
-				/* FALLTHROUGH */
-			default:
-				*p++ = *word;
-			}
-		*p = '\0';
-		p = tpath;
-	} else {
-		tpath = NULL;
-		p = word;
-	}
+	/*
+	 * Do shell word expansion -- it's very, very hard to figure out
+	 * what magic characters the user's shell expects.  Don't try.
+	 */
+	if (ex_run_process(sp, bp, bp, blen))
+		return (1);
 
 	/*
+	 * Do shell globbing.
 	 * XXX: GLOB_NOMAGIC:
 	 * Then error if no pattern matches and magic char included.
 	 */
-	glob(p,
+	glob(bp,
 	    GLOB_NOCHECK | GLOB_NOSORT | GLOB_QUOTE | GLOB_TILDE, NULL, globp);
 
-	if (tpath != NULL)
-		if (tpath == gp->tmp_bp)
-			F_CLR(gp, G_TMP_INUSE);
-		else
-			free(tpath);
+	FREE_SPACE(sp, bp, blen);
 	return (0);
 }
