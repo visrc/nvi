@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.66 1993/05/04 15:57:27 bostic Exp $ (Berkeley) $Date: 1993/05/04 15:57:27 $";
+static char sccsid[] = "$Id: main.c,v 5.67 1993/05/07 17:13:20 bostic Exp $ (Berkeley) $Date: 1993/05/07 17:13:20 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -206,6 +206,13 @@ main(argc, argv)
 	if (excmdarg != NULL)
 		(void)ex_cstring(sp, sp->ep, excmdarg, strlen(excmdarg));
 
+	/* The commands we executed probably positioned the file. */
+	if (sp->lno != OOBLNO) {
+		sp->ep->lno = sp->lno;
+		sp->ep->cno = sp->cno;
+		F_CLR(sp->ep, F_NOSETPOS);
+	}
+
 	/* Call a screen. */
 	while (sp != NULL)
 		switch(F_ISSET(sp, S_MODE_EX | S_MODE_VI)) {
@@ -293,12 +300,12 @@ obsolete(argv)
 	 * Make sure it's not text space memory, because ex changes the
 	 * strings.
 	 *	Change "+/command" into "-ccommand".
-	 *	Change "+" into "-c$".
-	 *	Change "+[0-9]*" into "-c:[0-9]".
+	 *	Change "+" and "+$" into "-c$".
+	 *	Change "+[0-9]*" into "-c[0-9]".
 	 */
 	for (myname = argv[0]; *++argv;)
 		if (argv[0][0] == '+')
-			if (argv[0][1] == '\0') {
+			if (argv[0][1] == '\0' || argv[0][1] == '$') {
 				if ((argv[0] = malloc(4)) == NULL)
 					err(1, NULL);
 				memmove(argv[0], "-c$", 4);
@@ -313,12 +320,11 @@ obsolete(argv)
 			} else if (isdigit(argv[0][1])) {
 				p = argv[0];
 				len = strlen(argv[0]);
-				if ((argv[0] = malloc(len + 3)) == NULL)
+				if ((argv[0] = malloc(len + 2)) == NULL)
 					err(1, NULL);
 				argv[0][0] = '-';
 				argv[0][1] = 'c';
-				argv[0][2] = ':';
-				(void)strcpy(argv[0] + 3, p + 1);
+				(void)strcpy(argv[0] + 2, p + 1);
 			}
 			
 }
