@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 5.17 1992/11/03 15:36:10 bostic Exp $ (Berkeley) $Date: 1992/11/03 15:36:10 $";
+static char sccsid[] = "$Id: v_ex.c,v 5.18 1992/11/03 19:31:28 bostic Exp $ (Berkeley) $Date: 1992/11/03 19:31:28 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -84,13 +84,16 @@ v_ex(vp, fm, tm, rp)
 	 * The only cursor modifications will have been real.  However,
 	 * the underlying line may have changed; don't trust anything.
 	 */
+	curf->olno = OOBLNO;
 	rp->lno = curf->lno;
 	if (file_gline(curf, curf->lno, &len) == NULL) {
-		GETLINE_ERR(curf->lno);
-		return (1);
-	}
-	rp->cno = MIN(curf->cno, len ? len - 1 : 0);
-	curf->olno = OOBLNO;
+		rp->cno = 0;
+		if (file_lline(curf) != 0) {
+			GETLINE_ERR(curf->lno);
+			return (1);
+		}
+	} else
+		rp->cno = MIN(curf->cno, len ? len - 1 : 0);
 
 	return (0);
 }
@@ -168,8 +171,8 @@ v_exwrite(cookie, line, llen)
 				addbytes(CONTMSG, sizeof(CONTMSG) - 1);
 				clrtoeol();
 				refresh();
-				while ((ch = getkey(0)) != SPACE &&
-				    special[ch] != K_CR)
+				while (special[ch = getkey(0)] != K_CR &&
+				    !isspace(ch))
 					bell();
 				exlinecount = 0;
 			}
