@@ -6,10 +6,11 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 5.6 1992/04/03 08:28:38 bostic Exp $ (Berkeley) $Date: 1992/04/03 08:28:38 $";
+static char sccsid[] = "$Id: v_cmd.c,v 5.7 1992/04/04 16:27:02 bostic Exp $ (Berkeley) $Date: 1992/04/04 16:27:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
+#include <stdio.h>
 #include <ctype.h>
 
 #include "options.h"
@@ -203,11 +204,7 @@ static struct keystru
 /*  Y  yank text	*/	{v_yank,	CURSOR_MOVED,	NCOL},
 /*  Z  save file & exit	*/	{v_xit,		CURSOR_CNT_KEY,	NO_FLAGS},
 /*  [  move back section*/	{m_paragraph,	CURSOR,		MVMT|LNMD|NREL|VIZ},
-#ifndef NO_POPUP
-/*  \  pop-up menu	*/	{v_popup,	CURSOR_MOVED,	VIZ},
-#else
 /*  \  not defined	*/	{NO_FUNC,	NO_ARGS,	NO_FLAGS},
-#endif
 /*  ]  move fwd section */	{m_paragraph,	CURSOR,		MVMT|LNMD|NREL|VIZ},
 /*  ^  move to front	*/	{m_front,	CURSOR,		MVMT|VIZ},
 /*  _  current line	*/	{m_updnto,	CURSOR,		MVMT|LNMD|FRNT|INCL},
@@ -336,7 +333,7 @@ void vi()
 		 */
 		if (V_from && !(keyptr->flags & VIZ))
 		{
-			beep();
+			bell();
 			prevkey = 0;
 			count = 0;
 			continue;
@@ -348,7 +345,7 @@ void vi()
 		 */
 		if (prevkey && !(keyptr->flags & (MVMT|PTMV)))
 		{
-			beep();
+			bell();
 			prevkey = 0;
 			count = 0;
 			continue;
@@ -456,7 +453,7 @@ void vi()
 			}
 			else
 			{
-				beep();
+				bell();
 			}
 			count = 0L;
 			break;
@@ -696,7 +693,7 @@ MARK adjmove(old, new, flags)
 	/* if the command failed, bag it! */
 	if (new == MARK_UNSET)
 	{
-		beep();
+		bell();
 		return old;
 	}
 
@@ -787,31 +784,3 @@ MARK adjmove(old, new, flags)
 
 	return new;
 }
-
-
-#ifdef DEBUG
-watch()
-{
-	static wasset;
-
-	if (*origname)
-	{
-		wasset = TRUE;
-	}
-	else if (wasset)
-	{
-		mode = MODE_EX;
-		msg("origname was clobbered");
-		endwin();
-		abort();
-	}
-
-	if (wasset && nlines == 0)
-	{
-		mode = MODE_EX;
-		msg("nlines=0");
-		endwin();
-		abort();
-	}
-}
-#endif
