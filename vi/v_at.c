@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_at.c,v 5.11 1992/12/05 11:10:37 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:10:37 $";
+static char sccsid[] = "$Id: v_at.c,v 5.12 1993/01/18 11:29:20 bostic Exp $ (Berkeley) $Date: 1993/01/18 11:29:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -65,7 +65,7 @@ v_at(vp, fm, tm, rp)
 
 	/* Copy into the new buffer. */
 	for (tp = cb->head;;) {
-		bcopy(tp->lp, p, tp->len);
+		memmove(p, tp->lp, tp->len);
 		p += tp->len;
 		*p++ = '\n';
 		if ((tp = tp->next) == NULL)
@@ -74,7 +74,7 @@ v_at(vp, fm, tm, rp)
 	
 	/* Copy the rest of the current at string into place. */
 	if (atkeybuflen != 0) {
-		bcopy(atkeyp, p, remain);
+		memmove(p, atkeyp, remain);
 		free(atkeybuf);
 
 	}
