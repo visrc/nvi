@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.52 1994/08/13 18:28:05 bostic Exp $ (Berkeley) $Date: 1994/08/13 18:28:05 $
+.\"     $Id: vi.ref,v 8.53 1994/09/02 19:01:25 bostic Exp $ (Berkeley) $Date: 1994/09/02 19:01:25 $
 .\"
 .\"
 .so ref.so
@@ -482,8 +482,9 @@ file as the previous screen.
 .pp
 When more than one screen is editing a file, changes in any screen are
 reflected in all other screens editing the same file.
-Exiting any screen without saving any changes (or explicitly discarding
-them) is permitted until the last screen editing the file is exited.
+Exiting a screen without saving any changes (or explicitly discarding
+them) is permitted until the last screen editing the file is exited,
+at which time the changes must be saved or discarded.
 .pp
 The
 .CO resize
@@ -761,7 +762,7 @@ and
 .CO insert .
 Once in input mode, entering a line containing only a single period
 .PQ \&.
-terminates text input mode and returns to command mode,
+ends text input mode and returns to command mode,
 where the prompt is redisplayed.
 .pp
 When
@@ -784,7 +785,23 @@ and
 .CO s .
 Once in input mode, entering an
 .LI <escape>
-character terminates text input mode and returns to command mode.
+character ends text input mode and returns to command mode.
+.pp
+.EV Ex vi
+present three different interfaces to editing a file.
+.CO Ex
+presents a line oriented interface.
+.CO Vi
+presents a full screen display oriented interface,
+also known as
+.QQ "visual mode" .
+In addition, there is a third mode,
+.QQ "open mode" ,
+which is line oriented,
+but supports cursor movement and editing within the displayed line,
+similarly to visual mode.
+Open mode is not yet implemented in
+.CO nvi .
 .pp
 The following words have special meanings in both the
 .CO ex
@@ -797,8 +814,8 @@ The interrupt character is used to interrupt the current operation.
 Normally
 .LI <control-C> ,
 whatever character is set for the current terminal is used.
-.KY "<literal next>"
-.IP "<literal next>"
+.KY "<literal-next>"
+.IP "<literal-next>"
 The literal next character is used to escape the subsequent character
 from any special meaning.
 This character is always
@@ -844,14 +861,25 @@ it (i.e. the
 command cannot save the changed text in a named buffer).
 Buffers are named with a single character, preceded by a double quote,
 e.g.
-.LI """<character>" .
+.LI """<character>"
+in
+.CO vi
+and
+without the double quote, e.g.
+.LI <character> ,
+in
+.CO ex .
+(The double quote isn't necessary for
+.CO ex
+because buffers names are denoted by their position in the command line.)
 Historic implementations of
 .EV ex vi
 limited
 .LI <character>
 to the alphanumeric characters;
 .EV nex nvi
-permits the use of any character.
+permits the use of any character without another meaning in the position
+where a buffer name is expected.
 .sp
 Buffers named by uppercase characters are the same as buffers
 named by lowercase characters, e.g. the buffer named by the
@@ -871,12 +899,40 @@ The buffers named by the numeric characters (in English,
 .QT 1
 through
 .QT 9 ),
-are special, in that if at least one line is changed or deleted in
-the file,
-(or a command changes or deletes a region that crosses a line boundary)
-a copy of the text is placed into the numeric buffer
+are special.
+If a region of text including characters from more than one line,
+or a single line of text specified by using a line-oriented motion,
+is changed or deleted in the file using the
+.CO vi
+.CO change
+or
+.CO delete
+commands, a copy of the text is placed into the numeric buffer
 .QT 1 ,
 regardless of the user specifying another buffer in which to save it.
+In addition, there are a few commands which, when used as a
+.LI motion
+with the
+.CO vi
+.CO change
+and
+.CO delete
+commands,
+.i always
+copy the specified region of text into the numeric buffers regardless
+of the region including characters from more than one line.
+These commands are:
+.sp
+.ne 3v
+.ft C
+.TS
+r r r r.
+<control-A>	%	(	)
+`<character>	/	?	N
+n	{	}
+.TE
+.ft R
+.sp
 Before this copy is done, the previous contents of buffer
 .QT 1
 are moved into buffer
@@ -893,11 +949,17 @@ In
 text may be explicitly stored into the numeric buffers.
 In this case, the buffer rotation described above occurs before the
 replacement of the buffer's contents.
-(Text cannot be explicitly stored into the numeric buffers in
+The numeric buffers are only available in
+.LI visual
+and
+.LI open
+modes,
+and are not accessible by
 .CO ex
-because of ambiguities that this would cause in the
+in any way, although changed and deleted text is still stored there
+while in
 .CO ex
-command syntax.)
+mode.
 .sp
 When a
 .CO vi
@@ -940,9 +1002,40 @@ line itself will be split.
 .KY "unnamed buffer"
 .IP "unnamed buffer"
 The unnamed buffer is a text storage area which is used by commands
-that take a buffer as an argument, when no buffer is specified by
-the user.
-There is no way to explicitly reference this buffer.
+that use or operate on a buffer when no buffer is specified by the user.
+If the command stores text into a buffer,
+the text is stored into the unnamed buffer even if a buffer is also
+specified by the user,
+It is not possible to append text to the unnamed buffer.
+If text is appended to a named buffer,
+the named buffer contains both the old and new text,
+while the unnamed buffer contains only the new text.
+There is no way to explicitly reference the unnamed buffer.
+.sp
+Historically, the contents of the unnamed buffer were discarded by many
+different commands, even ones that didn't store text into it.
+.EV Nex nvi
+never discards the contents of the unnamed buffer until new text
+replaces them.
+.KY whitespace
+.IP whitespace
+The characters <tab> and <space>.
+.KY "<carriage-return>"
+.IP "<carriage-return>"
+The character represented by an ASCII
+.LI <control-M> .
+This character is almost always treated identically to a
+.LI <newline>
+character, but differs in that it can be escaped into the file text or
+into a command.
+.KY <newline>
+.IP <newline>
+The character represented by an ASCII
+.LI <control-J> .
+This character is almost always treated identically to a
+.LI <control-M>
+character, but differs in that it cannot be escaped into the file text or
+into a command.
 .oh 'Nvi/Nex Reference (Vi Commands)''USD:13-%'
 .eh 'USD:13-%''Nvi/Nex Reference (Vi Commands)'
 .so vi.cmd.roff
