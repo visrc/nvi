@@ -1,7 +1,14 @@
 /* TODO List:
- *	scrollbars	Wrap a scrolledWindow widget around the
- *			drawingArea (or create scrollbar manually because we
- *			will manually manage it anyway)
+ *	scrollbars	Need protocol messages that tell us what to display
+ *			in the scrollbars.  Suggestion:
+ *				scrollbar( bottom, lines, home )
+ *				bottom is $
+ *				lines is lines shown in the window
+ *					(takes wrap into account)
+ *				home is the line number ot the top visible line
+ *
+ *			On the way back send scroll( top )
+ *
  *			User should be able to enable/disable bar display
  *
  *	expose_func	optimize for redraw of clipped rectangle(s) only
@@ -9,9 +16,9 @@
  *	insert/delete	move display bits manually.  calling expose_func
  *			is too expensive
  *
- *	split		implement split screens by adding children to
- *			the paned window.  Ought to be able to put a
- *			title on each pane
+ *	split		Ought to be able to put a title on each pane
+ *			Need to adjust sizes better
+ *			Need protocol messages to shift focus
  *
  *	bell		user settable visible bell
  *
@@ -52,6 +59,9 @@
 #include "X11/keysym.h"
 #include "Xm/PanedW.h"
 #include "Xm/DrawingA.h"
+#include "Xm/Form.h"
+#include "Xm/Frame.h"
+#include "Xm/ScrollBar.h"
 #include "Xm/MainW.h"
 #include "Xm/VirtKeys.h"
 #include "xutilities.h"
@@ -81,7 +91,10 @@ void	usage __P((void));
  */
 
 typedef	struct {
-    Widget	area;
+    Widget	parent,		/* the pane */
+		area,		/* text goes here */
+		form,		/* holds text and scrollbar */
+		scroll;		/* not connected yet */
     int		color;
     int		rows,
 		cols;
@@ -327,14 +340,9 @@ String	fallback_rsrcs[] = {
     "*screen.background:	wheat",
     "*highlightColor:		red",
 
-    "*screen.borderWidth:	1",
-    "*pane.borderWidth:		1",
-
     "*font:			-*-*-*-r-*--14-*-*-*-m-*-*-*",
     "*pointerShape:		xterm",
     "*busyShape:		watch",
-    "*screen*borderWidth:	1",
-    "*pane*borderWidth:		1",
     NULL
 };
 
@@ -655,18 +663,23 @@ Cardinal        *cardinal;
 
 
 #if defined(__STDC__)
-xvi_screen	*create_screen( Widget parent )
+xvi_screen	*create_screen( Widget parent, int rows, int cols )
 #else
-xvi_screen	*create_screen( parent )
+xvi_screen	*create_screen( parent, rows, cols )
 Widget		parent;
+int		rows, cols;
 #endif
 {
     xvi_screen	*new_screen = (xvi_screen *) calloc( 1, sizeof(xvi_screen) );
+    Widget	frame;
+
+    /* init... */
+    new_screen->color		= COLOR_STANDARD;
+    new_screen->parent		= parent;
 
     /* figure out the sizes */
-    new_screen->color		= COLOR_STANDARD;
-    new_screen->rows		= 24;
-    new_screen->cols		= 80;
+    new_screen->rows		= rows;
+    new_screen->cols		= cols;
     new_screen->ch_width	= font->max_bounds.width;
     new_screen->ch_height	= font->descent + font->ascent;
     new_screen->ch_descent	= font->descent;
@@ -678,10 +691,49 @@ Widget		parent;
     if ( area_trans == NULL )   
 	area_trans = XtParseTranslationTable(areaTrans);
 
+    /* future, new screen gets inserted into the parent sash
+     * immediately after the current screen.  Default Pane action is
+     * to add it to the end
+     */
+
+    /* use a form to hold the drawing area and the scrollbar */
+    new_screen->form = XtVaCreateManagedWidget( "form",
+	    xmFormWidgetClass,
+	    parent,
+	    XmNpaneMinimum,		2*new_screen->ch_height,
+	    NULL
+	    );
+
+    /* create a scroolbar.
+     * Future, connect new Protocol messages to position the scrollbar
+     * Future, connect scrollbar messages to new Protocol messages 
+     */
+    new_screen->scroll = XtVaCreateManagedWidget( "scroll",
+	    xmScrollBarWidgetClass,
+	    new_screen->form,
+	    XmNtopAttachment,		XmATTACH_FORM,
+	    XmNbottomAttachment,	XmATTACH_FORM,
+	    XmNrightAttachment,		XmATTACH_FORM,
+	    NULL
+	    );
+
+    /* create a frame because they look nice */
+    frame = XtVaCreateManagedWidget( "frame",
+	    xmFrameWidgetClass,
+	    new_screen->form,
+	    XmNshadowType,		XmSHADOW_ETCHED_IN,
+	    XmNtopAttachment,		XmATTACH_FORM,
+	    XmNbottomAttachment,	XmATTACH_FORM,
+	    XmNleftAttachment,		XmATTACH_FORM,
+	    XmNrightAttachment,		XmATTACH_WIDGET,
+	    XmNrightWidget,		new_screen->scroll,
+	    NULL
+	    );
+
     /* create a drawing area into which we will put text */
     new_screen->area = XtVaCreateManagedWidget( "screen",
 	    xmDrawingAreaWidgetClass,
-	    parent,
+	    frame,
 	    XmNheight,		new_screen->ch_height * new_screen->rows,
 	    XmNwidth,		new_screen->ch_width * new_screen->cols,
 	    XmNtranslations,	area_trans,
@@ -703,6 +755,17 @@ Widget		parent;
 		   );
 
     return new_screen;
+}
+
+
+xvi_screen	*split_screen()
+{
+    xvi_screen	*new_screen = create_screen( cur_screen->parent,
+					     cur_screen->rows / 2,
+					     cur_screen->cols
+					     );
+
+    /* future, send resize messages to vi with the screen name */
 }
 
 
@@ -766,7 +829,7 @@ char	**argv;
     /* allocate our data structure.  in the future we will have several
      * screens running around at the same time
      */
-    cur_screen = create_screen( pane_w );
+    cur_screen = create_screen( pane_w, 24, 80 );
 
     /* put it up */
     XtRealizeWidget( top_level );
@@ -1613,4 +1676,3 @@ attach()
 	} while (ch != '\n' && ch != '\r');
 	(void)close(fd);
 }
-
