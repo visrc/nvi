@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 8.6 1993/08/27 11:42:48 bostic Exp $ (Berkeley) $Date: 1993/08/27 11:42:48 $
+ *	$Id: common.h,v 8.7 1993/09/08 08:45:34 bostic Exp $ (Berkeley) $Date: 1993/09/08 08:45:34 $
  */
 
 /* System includes. */
@@ -140,11 +140,6 @@ typedef void (*sig_ret_t) __P((int));
 #ifndef	MIN
 #define	MIN(_a,_b)	((_a)<(_b)?(_a):(_b))
 #endif
-
-/* Filter type. */
-enum filtertype { STANDARD, NOINPUT, NOOUTPUT };
-int	filtercmd __P((SCR *, EXF *, MARK *,
-	    MARK *, MARK *, char *, enum filtertype));
 
 /* Function prototypes that don't seem to belong anywhere else. */
 char	*charname __P((SCR *, int));

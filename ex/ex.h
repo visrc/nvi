@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.10 1993/08/29 14:22:51 bostic Exp $ (Berkeley) $Date: 1993/08/29 14:22:51 $
+ *	$Id: ex.h,v 8.11 1993/09/08 08:45:27 bostic Exp $ (Berkeley) $Date: 1993/09/08 08:45:27 $
  */
 
 struct _excmdarg;
@@ -103,6 +103,11 @@ int	free_argv __P((SCR *));
 int	word_argv __P((SCR *, EXF *, char *, int *, char ***));
 int	esystem __P((SCR *, const u_char *, const u_char *));
 int	ex_run_process __P((SCR *, char *, size_t *, char *, size_t));
+
+/* Filter type. */
+enum filtertype { STANDARD, NOINPUT, NOOUTPUT };
+int	filtercmd __P((SCR *, EXF *,
+	    MARK *, MARK *, MARK *, char *, enum filtertype));
 
 int	ex __P((SCR *, EXF *));
 int	ex_cfile __P((SCR *, EXF *, char *));
