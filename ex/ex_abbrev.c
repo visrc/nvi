@@ -6,11 +6,12 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_abbrev.c,v 5.12 1992/10/10 13:57:44 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:57:44 $";
+static char sccsid[] = "$Id: ex_abbrev.c,v 5.13 1992/11/01 13:43:45 bostic Exp $ (Berkeley) $Date: 1992/11/01 13:43:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
+#include <ctype.h>
 #include <limits.h>
 #include <stdio.h>
 
@@ -79,6 +80,7 @@ ex_unabbr(cmdp)
  * abbr_save --
  *	Save the abbreviation sequences to a file.
  */
+int
 abbr_save(fp)
 	FILE *fp;
 {
