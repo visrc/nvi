@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.73 1994/07/05 10:23:37 bostic Exp $ (Berkeley) $Date: 1994/07/05 10:23:37 $";
+static char sccsid[] = "$Id: key.c,v 8.74 1994/07/06 12:16:15 bostic Exp $ (Berkeley) $Date: 1994/07/06 12:16:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -58,32 +58,58 @@ typedef struct _tklist {
 	u_char	 value;			/* Special value (for lookup). */
 } TKLIST;
 static TKLIST const c_tklist[] = {	/* Command mappings. */
-	{"kA",    "O",	"insert line"},
-	{"kD",    "x",	"delete character"},
-	{"kd",    "j",	"cursor down"},
-	{"kE",    "D",	"delete to eol"},
-	{"kF", "\004",	"scroll down"},
-	{"kH",    "$",	"go to eol"},
-	{"kh",    "^",	"go to sol"},
-	{"kI",    "i",	"insert at cursor"},
-	{"kL",   "dd",	"delete line"},
-	{"kl",    "h",	"cursor left"},
-	{"kN", "\006",	"page down"},
-	{"kP", "\002",	"page up"},
-	{"kR", "\025",	"scroll up"},
-	{"kS",	 "dG",	"delete to end of screen"},
-	{"kr",    "l",	"cursor right"},
-	{"ku",    "k",	"cursor up"},
+#ifdef SYSV_CURSES
+	{"kil1",	"O",	"insert line"},
+	{"kdch1",	"x",	"delete character"},
+	{"kcud1",	"j",	"cursor down"},
+	{"kel",		"D",	"delete to eol"},
+	{"kind",     "\004",	"scroll down"},
+	{"kll",		"$",	"go to eol"},
+	{"khome",	"^",	"go to sol"},
+	{"kich1",	"i",	"insert at cursor"},
+	{"kdl1",       "dd",	"delete line"},
+	{"kcub1",	"h",	"cursor left"},
+	{"knp",	     "\006",	"page down"},
+	{"kpp",	     "\002",	"page up"},
+	{"kri",	     "\025",	"scroll up"},
+	{"ked",	       "dG",	"delete to end of screen"},
+	{"kcuf1",	"l",	"cursor right"},
+	{"kcuu1",	"k",	"cursor up"},
+#else
+	{"kA",		"O",	"insert line"},
+	{"kD",		"x",	"delete character"},
+	{"kd",		"j",	"cursor down"},
+	{"kE",		"D",	"delete to eol"},
+	{"kF",	     "\004",	"scroll down"},
+	{"kH",		"$",	"go to eol"},
+	{"kh",		"^",	"go to sol"},
+	{"kI",		"i",	"insert at cursor"},
+	{"kL",	       "dd",	"delete line"},
+	{"kl",		"h",	"cursor left"},
+	{"kN",	     "\006",	"page down"},
+	{"kP",	     "\002",	"page up"},
+	{"kR",	     "\025",	"scroll up"},
+	{"kS",	       "dG",	"delete to end of screen"},
+	{"kr",		"l",	"cursor right"},
+	{"ku",		"k",	"cursor up"},
+#endif
 	{NULL},
 };
 static TKLIST const m1_tklist[] = {	/* Input mappings (lookup). */
 	{NULL},
 };
 static TKLIST const m2_tklist[] = {	/* Input mappings (set or delete). */
-	{"kd",   "\033ja",	"cursor down"},
-	{"kl",   "\033ha",	"cursor left"},
-	{"ku",   "\033ka",	"cursor up"},
-	{"kr",   "\033la",	"cursor space"},
+#ifdef SYSV_CURSES
+	{"kcud1",  "\033ja",	"cursor down"},
+	{"kcub1",  "\033ha",	"cursor left"},
+	{"kcuu1",  "\033ka",	"cursor up"},
+	{"kcuf1",  "\033la",	"cursor right"},
+#else
+	{"kd",	   "\033ja",	"cursor down"},
+	{"kl",	   "\033ha",	"cursor left"},
+	{"ku",	   "\033ka",	"cursor up"},
+	{"kr",	   "\033la",	"cursor right"},
+#endif
 	{NULL},
 };
 
@@ -190,7 +216,9 @@ term_init(sp)
 	}
 
 	/* Set key sequences found in the termcap entry. */
-#ifndef SYSV_CURSES
+#ifdef SYSV_CURSES
+	(void)setupterm(O_STR(sp, O_TERM), fileno(stdout), NULL);
+#else
 	if (term_tgetent(sp, buf, O_STR(sp, O_TERM)))
 		return (0);
 #endif
@@ -198,7 +226,7 @@ term_init(sp)
 	/* Command mappings. */
 	for (tkp = c_tklist; tkp->name != NULL; ++tkp) {
 #ifdef SYSV_CURSES
-		if ((t = tigetstr(tkp->ts)) == (char *)-1)
+		if ((t = tigetstr(tkp->ts)) == NULL || t == (char *)-1)
 			continue;
 #else
 		sbp = sbuf;
@@ -212,7 +240,7 @@ term_init(sp)
 	/* Input mappings needing to be looked up. */
 	for (tkp = m1_tklist; tkp->name != NULL; ++tkp) {
 #ifdef SYSV_CURSES
-		if ((t = tigetstr(tkp->ts)) == (char *)-1)
+		if ((t = tigetstr(tkp->ts)) == NULL || t == (char *)-1)
 			continue;
 #else
 		sbp = sbuf;
@@ -231,7 +259,7 @@ term_init(sp)
 	/* Input mappings that are already set or are text deletions. */
 	for (tkp = m2_tklist; tkp->name != NULL; ++tkp) {
 #ifdef SYSV_CURSES
-		if ((t = tigetstr(tkp->ts)) == (char *)-1)
+		if ((t = tigetstr(tkp->ts)) == NULL || t == (char *)-1)
 			continue;
 #else
 		sbp = sbuf;
@@ -405,11 +433,11 @@ __key_name(sp, ach)
 	} else if (O_ISSET(sp, O_OCTAL)) {
 #define	BITS	(sizeof(CHAR_T) * 8)
 #define	SHIFT	(BITS - BITS % 3)
-#define	TOPMASK	(BITS % 3 == 2 ? 3 : 1) << BITS - BITS % 3
+#define	TOPMASK	(BITS % 3 == 2 ? 3 : 1) << (BITS - BITS % 3)
 		sp->cname[0] = '\\';
 		sp->cname[1] = octdigit[(ch & TOPMASK) >> SHIFT];
 		shift = SHIFT - 3;
-		for (len = 2, mask = 7 << SHIFT - 3,
+		for (len = 2, mask = 7 << (SHIFT - 3),
 		    cnt = BITS / 3; cnt-- > 0; mask >>= 3, shift -= 3)
 			sp->cname[len++] = octdigit[(ch & mask) >> shift];
 	} else {

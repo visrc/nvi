@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_map.c,v 8.13 1994/05/21 09:38:12 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:38:12 $";
+static char sccsid[] = "$Id: ex_map.c,v 8.14 1994/07/06 12:16:25 bostic Exp $ (Berkeley) $Date: 1994/07/06 12:16:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -80,7 +80,7 @@ ex_map(sp, ep, cmdp)
 		(void)snprintf(keyname,
 		    sizeof(keyname), "k%d", atoi(input + 1));
 #ifdef SYSV_CURSES
-		if ((t = tigetstr(keyname)) == (char *)-1)
+		if ((t = tigetstr(keyname)) == NULL || t == (char *)-1)
 			t = NULL;
 #else
 		{
