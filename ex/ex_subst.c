@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 10.7 1995/09/21 12:07:36 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:07:36 $";
+static char sccsid[] = "$Id: ex_subst.c,v 10.8 1995/09/23 19:43:06 bostic Exp $ (Berkeley) $Date: 1995/09/23 19:43:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -641,7 +641,7 @@ nextmatch:	match[0].rm_so = 0;
 					goto quit;
 
 			/* Get a character. */
-next:			if (v_get_event(sp, &ev, 0))
+next:			if (v_event_get(sp, &ev, 0))
 				goto err;
 
 			switch (ev.e_event) {
@@ -649,16 +649,16 @@ next:			if (v_get_event(sp, &ev, 0))
 				break;
 			case E_EOF:
 			case E_ERR:
-				return (1);
+			case E_INTERRUPT:
+				goto quit;
 			case E_REPAINT:
 				goto next;
 			case E_RESIZE:
 				ex_e_resize(sp);
 				goto next;
-			case E_INTERRUPT:
-				goto quit;
 			default:
-				abort();
+				v_event_err(sp, &ev);
+				goto quit;
 			}
 			switch (ev.e_c) {
 			case CH_YES:

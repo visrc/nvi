@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_replace.c,v 10.6 1995/09/21 12:08:32 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:08:32 $";
+static char sccsid[] = "$Id: v_replace.c,v 10.7 1995/09/23 19:42:52 bostic Exp $ (Berkeley) $Date: 1995/09/23 19:42:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -82,7 +82,7 @@ v_replace(sp, vp)
 		sp->showmode = SM_REPLACE;
 		if (vs_refresh(sp))
 			return (1);
-next:		if (v_get_event(sp, &ev, 0))
+next:		if (v_event_get(sp, &ev, 0))
 			return (1);
 
 		switch (ev.e_event) {
@@ -115,7 +115,8 @@ next:		if (v_get_event(sp, &ev, 0))
 			(void)v_event_push(sp, &ev, NULL, 1, 0);
 			return (0);
 		default:
-			abort();
+			v_event_err(sp, &ev);
+			return (0);
 		}
 	}
 

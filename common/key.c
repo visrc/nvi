@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 10.9 1995/09/21 12:05:54 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:05:54 $";
+static char sccsid[] = "$Id: key.c,v 10.10 1995/09/23 19:43:51 bostic Exp $ (Berkeley) $Date: 1995/09/23 19:43:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -428,7 +428,7 @@ v_event_append(sp, argp)
 }
 
 /*
- * v_get_event --
+ * v_event_get --
  *	Return the next event.
  *
  * !!!
@@ -500,10 +500,10 @@ v_event_append(sp, argp)
  * point.  Given that this might make the log grow unacceptably (consider that
  * cursor keys are done with maps), for now we leave any changes made in place.
  *
- * PUBLIC: int v_get_event __P((SCR *, EVENT *, u_int32_t));
+ * PUBLIC: int v_event_get __P((SCR *, EVENT *, u_int32_t));
  */
 int
-v_get_event(sp, argp, flags)
+v_event_get(sp, argp, flags)
 	SCR *sp;
 	EVENT *argp;
 	u_int32_t flags;
@@ -564,15 +564,10 @@ loop:		if (gp->scr_event(sp,
 			if (v_resize(sp, argp))
 				return (1);
 			goto append;
-		case E_EOF:
-		case E_CHARACTER:
-		case E_REPAINT:
-		case E_STRING:
+		default:
 append:			if (v_event_append(sp, argp))
 				return (1);
 			break;
-		default:
-			abort();
 		}
 	}
 
@@ -740,6 +735,64 @@ v_sync(sp, flags)
 		rcv_sync(sp, flags);
 	for (sp = gp->hq.cqh_first; sp != (void *)&gp->hq; sp = sp->q.cqe_next)
 		rcv_sync(sp, flags);
+}
+
+/*
+ * v_event_err --
+ *	Unexpected event.
+ *
+ * PUBLIC: void v_event_err __P((SCR *, EVENT *));
+ */
+void
+v_event_err(sp, evp)
+	SCR *sp;
+	EVENT *evp;
+{
+	switch (evp->e_event) {
+	case E_CHARACTER:
+		msgq(sp, M_ERR, "276|Unexpected character event");
+		break;
+	case E_EOF:
+		msgq(sp, M_ERR, "277|Unexpected end-of-file event");
+		break;
+	case E_ERR:
+		msgq(sp, M_ERR, "278|Unexpected error event");
+		break;
+	case E_INTERRUPT:
+		msgq(sp, M_ERR, "279|Unexpected interrupt event");
+		break;
+	case E_QUIT:
+		msgq(sp, M_ERR, "280|Unexpected quit event");
+		break;
+	case E_REPAINT:
+		msgq(sp, M_ERR, "281|Unexpected repaint event");
+		break;
+	case E_RESIZE:
+		msgq(sp, M_ERR, "282|Unexpected resize event");
+		break;
+	case E_SIGHUP:
+		msgq(sp, M_ERR, "283|Unexpected sighup event");
+		break;
+	case E_SIGTERM:
+		msgq(sp, M_ERR, "284|Unexpected sigterm event");
+		break;
+	case E_STRING:
+		msgq(sp, M_ERR, "285|Unexpected string event");
+		break;
+	case E_TIMEOUT:
+		msgq(sp, M_ERR, "286|Unexpected timeout event");
+		break;
+	case E_WRITE:
+		msgq(sp, M_ERR, "287|Unexpected write event");
+		break;
+	case E_WRITEQUIT:
+		msgq(sp, M_ERR, "288|Unexpected write-and-quit event");
+		break;
+	}
+
+	/* Free any allocated memory. */
+	if (evp->e_asp != NULL)
+		free(evp->e_asp);
 }
 
 /*

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 10.7 1995/09/21 12:08:44 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:08:44 $";
+static char sccsid[] = "$Id: v_txt.c,v 10.8 1995/09/23 19:42:41 bostic Exp $ (Berkeley) $Date: 1995/09/23 19:42:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -421,7 +421,7 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 
 	/* Get an event. */
 	evp = &ev;
-next:	if (v_get_event(sp, evp, ec_flags))
+next:	if (v_event_get(sp, evp, ec_flags))
 		return (1);
 
 	/* Deal with all non-character events. */
@@ -450,7 +450,8 @@ next:	if (v_get_event(sp, evp, ec_flags))
 		(void)v_event_push(sp, &ev, NULL, 1, 0);
 		goto k_escape;
 	default:
-		abort();
+		v_event_err(sp, evp);
+		goto k_escape;
 	}
 
 	/*

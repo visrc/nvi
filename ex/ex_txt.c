@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_txt.c,v 10.6 1995/09/21 12:07:40 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:07:40 $";
+static char sccsid[] = "$Id: ex_txt.c,v 10.7 1995/09/23 19:43:05 bostic Exp $ (Berkeley) $Date: 1995/09/23 19:43:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -112,7 +112,7 @@ newtp:		if ((tp = text_init(sp, NULL, 0, 32)) == NULL)
 		LF_CLR(TXT_AUTOINDENT);
 
 	for (carat_st = C_NOTSET;;) {
-		if (v_get_event(sp, &ev, 0))
+		if (v_event_get(sp, &ev, 0))
 			goto err;
 
 		/* Deal with all non-character events. */
@@ -137,7 +137,8 @@ newtp:		if ((tp = text_init(sp, NULL, 0, 32)) == NULL)
 			 */
 			goto notlast;
 		default:
-			abort();
+			v_event_err(sp, &ev);
+			goto notlast;
 		}
 
 		/*
