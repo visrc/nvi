@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.57 1993/04/12 15:02:16 bostic Exp $ (Berkeley) $Date: 1993/04/12 15:02:16 $";
+static char sccsid[] = "$Id: vi.c,v 5.58 1993/04/13 16:28:11 bostic Exp $ (Berkeley) $Date: 1993/04/13 16:28:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -229,7 +229,7 @@ getcmd(sp, ep, dp, vp, ismotion)
 	memset(&vp->vpstartzero, 0,
 	    (char *)&vp->vpendzero - (char *)&vp->vpstartzero);
 
-	KEY(sp, key, GB_MAPCOMMAND);
+	KEY(sp, key, TXT_MAPCOMMAND);
 	if (key < 0 || key > MAXVIKEY) {
 		msgq(sp, M_BERR, "%s isn't a command", charname(sp, key));
 		return (1);
