@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_mark.c,v 10.8 1996/09/20 11:24:05 bostic Exp $ (Berkeley) $Date: 1996/09/20 11:24:05 $";
+static const char sccsid[] = "$Id: v_mark.c,v 10.9 1996/12/04 09:47:59 bostic Exp $ (Berkeley) $Date: 1996/12/04 09:47:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,6 +25,9 @@ static const char sccsid[] = "$Id: v_mark.c,v 10.8 1996/09/20 11:24:05 bostic Ex
 #include "../common/common.h"
 #include "vi.h"
 
+enum which {BQMARK, FQMARK};
+static int mark __P((SCR *, VICMD *, int, enum which));
+
 /*
  * v_mark -- m[a-z]
  *	Set a mark.
@@ -38,10 +41,6 @@ v_mark(sp, vp)
 {
 	return (mark_set(sp, vp->character, &vp->m_start, 1));
 }
-
-enum which {BQMARK, FQMARK};
-static int mark __P((SCR *, VICMD *, enum which));
-
 
 /*
  * v_bmark -- `['`a-z]
@@ -63,7 +62,7 @@ v_bmark(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	return (mark(sp, vp, BQMARK));
+	return (mark(sp, vp, 1, BQMARK));
 }
 
 /*
@@ -79,7 +78,23 @@ v_fmark(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	return (mark(sp, vp, FQMARK));
+	return (mark(sp, vp, 1, FQMARK));
+}
+
+/*
+ * v_mmark -- <mouse>
+ *	Move to a mouse mark.
+ *
+ * PUBLIC: int v_mmark __P((SCR *, VICMD *));
+ */
+int
+v_mmark(sp, vp)
+	SCR *sp;
+	VICMD *vp;
+{
+	(void)vs_pos(sp,
+	    vp->ev.e_lno, vp->ev.e_cno, &vp->m_stop.lno, &vp->m_stop.cno);
+	return (mark(sp, vp, 0, BQMARK));
 }
 
 /*
@@ -87,16 +102,17 @@ v_fmark(sp, vp)
  *	Mark commands.
  */
 static int
-mark(sp, vp, cmd)
+mark(sp, vp, getmark, cmd)
 	SCR *sp;
 	VICMD *vp;
+	int getmark;
 	enum which cmd;
 {
 	dir_t dir;
 	MARK m;
 	size_t len;
 
-	if (mark_get(sp, vp->character, &vp->m_stop, M_BERR))
+	if (getmark && mark_get(sp, vp->character, &vp->m_stop, M_BERR))
 		return (1);
 
 	/*
