@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: options_f.c,v 10.22 1996/04/27 11:41:11 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:41:11 $";
+static const char sccsid[] = "$Id: options_f.c,v 10.23 1996/05/04 18:53:06 bostic Exp $ (Berkeley) $Date: 1996/05/04 18:53:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -269,41 +269,6 @@ f_section(sp, op, str, valp)
 		    "049|The section option must be in two character groups");
 		return (1);
 	}
-	return (0);
-}
-
-/*
- * PUBLIC: int f_shiftwidth __P((SCR *, OPTION *, char *, u_long *));
- */
-int
-f_shiftwidth(sp, op, str, valp)
-	SCR *sp;
-	OPTION *op;
-	char *str;
-	u_long *valp;
-{
-	if (*valp == 0) {
-		msgq(sp, M_ERR, "050|The shiftwidth may not be set to 0");
-		return (1);
-	}
-	return (0);
-}
-
-/*
- * PUBLIC: int f_tabstop __P((SCR *, OPTION *, char *, u_long *));
- */
-int
-f_tabstop(sp, op, str, valp)
-	SCR *sp;
-	OPTION *op;
-	char *str;
-	u_long *valp;
-{
-	if (*valp == 0) {
-		msgq(sp, M_ERR, "052|Tab stops may not be set to 0");
-		return (1);
-	}
-	F_SET(sp, SC_SCR_REFORMAT);
 	return (0);
 }
 

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: options.c,v 10.39 1996/04/29 16:12:27 bostic Exp $ (Berkeley) $Date: 1996/04/29 16:12:27 $";
+static const char sccsid[] = "$Id: options.c,v 10.40 1996/05/04 18:52:48 bostic Exp $ (Berkeley) $Date: 1996/05/04 18:52:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -164,13 +164,13 @@ OPTLIST const optlist[] = {
 /* O_SHELLMETA	  4.4BSD */
 	{"shellmeta",	NULL,		OPT_STR,	0},
 /* O_SHIFTWIDTH	    4BSD */
-	{"shiftwidth",	f_shiftwidth,	OPT_NUM,	0},
+	{"shiftwidth",	NULL,		OPT_NUM,	OPT_NOZERO},
 /* O_SHOWMATCH	    4BSD */
 	{"showmatch",	NULL,		OPT_0BOOL,	0},
 /* O_SHOWMODE	  4.4BSD */
 	{"showmode",	NULL,		OPT_0BOOL,	0},
 /* O_SIDESCROLL	  4.4BSD */
-	{"sidescroll",	NULL,		OPT_NUM,	0},
+	{"sidescroll",	NULL,		OPT_NUM,	OPT_NOZERO},
 /* O_SLOWOPEN	    4BSD  */
 	{"slowopen",	NULL,		OPT_0BOOL,	0},
 /* O_SOURCEANY	    4BSD (undocumented)
@@ -183,7 +183,7 @@ OPTLIST const optlist[] = {
  */
 	{"sourceany",	NULL,		OPT_0BOOL,	OPT_NOSET},
 /* O_TABSTOP	    4BSD */
-	{"tabstop",	f_tabstop,	OPT_NUM,	0},
+	{"tabstop",	f_reformat,	OPT_NUM,	OPT_NOZERO},
 /* O_TAGLENGTH	    4BSD */
 	{"taglength",	NULL,		OPT_NUM,	0},
 /* O_TAGS	    4BSD */
@@ -621,6 +621,14 @@ badnum:				p = msg_print(sp, name, &nf);
 					FREE_SPACE(sp, p, 0);
 				if (nf2)
 					FREE_SPACE(sp, t, 0);
+				rval = 1;
+				break;
+			}
+
+			/* Some options may never be set to zero. */
+			if (F_ISSET(op, OPT_NOZERO) && value == 0) {
+				msgq_str(sp, M_ERR, name,
+			    "314|set: the %s option may never be set to 0");
 				rval = 1;
 				break;
 			}
