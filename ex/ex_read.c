@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 8.1 1993/06/09 22:25:10 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:25:10 $";
+static char sccsid[] = "$Id: ex_read.c,v 8.2 1993/06/29 16:52:17 bostic Exp $ (Berkeley) $Date: 1993/06/29 16:52:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -130,21 +130,6 @@ ex_readfp(sp, ep, fname, fp, fm, cntp)
 	size_t len;
 	recno_t lno;
 	int rval;
-
-	/*
-	 * There is one very nasty special case.  The historic vi code displays
-	 * a single space (or a '$' if the list option is set) for the first
-	 * line in an "empty" file.  If we "insert" a line, that line gets
-	 * scrolled down, not repainted, so it's incorrect when we refresh the
-	 * the screen.  This is really hard to find and fix in the vi code --
-	 * the text input functions detect it explicitly and don't insert a new
-	 * line.  The hack here is to repaint the screen if we're appending to
-	 * an empty file.
-	 */
-	if (file_lline(sp, ep, &lno))
-		return (1);
-	if (lno == 0)
-		F_SET(sp, S_REDRAW);
 
 	/*
 	 * Add in the lines from the output.  Insertion starts at the line
