@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 5.9 1992/05/21 12:55:17 bostic Exp $ (Berkeley) $Date: 1992/05/21 12:55:17 $";
+static char sccsid[] = "$Id: ex_global.c,v 5.10 1992/06/07 13:46:31 bostic Exp $ (Berkeley) $Date: 1992/06/07 13:46:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -115,7 +115,7 @@ global(cmdp, cmd)
 			if ((!regexec(re, line, 1)) == isv)
 			{
 				/* move the cursor to that line */
-				cursor.lno = nlines - l;
+				curf->lno = nlines - l;
 
 				/* do the ex command (without mucking up
 				 * the original copy of the command line)

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_move.c,v 5.10 1992/05/21 12:55:30 bostic Exp $ (Berkeley) $Date: 1992/05/21 12:55:30 $";
+static char sccsid[] = "$Id: ex_move.c,v 5.11 1992/06/07 13:46:46 bostic Exp $ (Berkeley) $Date: 1992/06/07 13:46:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -48,8 +48,7 @@ cm(cmdp, cmd)
 	EXCMDARG *cmdp;
 	enum which cmd;
 {
-	MARK fm1, fm2, tm;
-	char *extra;
+	MARK fm1, fm2, m, tm;
 
 	fm1 = cmdp->addr1;
 	fm2 = cmdp->addr2;
@@ -73,13 +72,15 @@ cm(cmdp, cmd)
 	}
 
 	/* Add the new text. */
-	(void)put(DEFCB, &tm, &cursor, 1);
+	m.lno = curf->lno;
+	m.cno = curf->cno;
+	(void)put(DEFCB, &tm, &m, 1);
 
 	nlines = file_lline(curf);
-	if (cursor.lno < 1)
-		cursor.lno = 1;
-	else if (cursor.lno > nlines)
-		cursor.lno = nlines;
+	if (curf->lno < 1)
+		curf->lno = 1;
+	else if (curf->lno > nlines)
+		curf->lno = nlines;
 
 	/* Reporting. */
 	if ((rptlines = fm2.lno - fm1.lno) == 0)

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 5.12 1992/05/21 12:55:53 bostic Exp $ (Berkeley) $Date: 1992/05/21 12:55:53 $";
+static char sccsid[] = "$Id: ex_print.c,v 5.13 1992/06/07 13:46:53 bostic Exp $ (Berkeley) $Date: 1992/06/07 13:46:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -159,7 +159,8 @@ print(cmdp, flags)
 		/* The print commands require a keystroke to continue. */
 		EX_PRNEWLINE;
 	}
-	cursor = cmdp->addr2;
+	curf->lno = cmdp->addr2.lno;
+	curf->cno = cmdp->addr2.cno;
 	
 	return (0);
 }
