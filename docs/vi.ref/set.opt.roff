@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: set.opt.roff,v 8.1 1994/03/18 19:21:50 bostic Exp $ (Berkeley) $Date: 1994/03/18 19:21:50 $
+.\"     $Id: set.opt.roff,v 8.2 1994/03/18 20:04:31 bostic Exp $ (Berkeley) $Date: 1994/03/18 20:04:31 $
 .\"
 There are a large number of options that may be set (or unset) to
 change the editor's behavior.
@@ -319,7 +319,8 @@ command, instead of like the
 .Sy \&&
 command.
 #endif
-.Em "This option is not currently implemented."
+.br
+.Em "This option is not yet implemented."
 .It Li "errorbells, eb [off]"
 .Nm \&Ex
 only.
@@ -331,7 +332,8 @@ Causes
 .Nm \&ex
 error messages to be preceded by a bell.
 #endif
-.Em "This option is not currently implemented."
+.br
+.Em "This option is not yet implemented."
 .It Li "exrc, ex [off]"
 #ifdef MANUAL
 Never read startup files in the local directory.
@@ -440,7 +442,8 @@ Also, the
 .Sy autoindent
 option's behavior is changed to be appropriate for Lisp.
 #endif
-.Em "This option is not currently implemented."
+.br
+.Em "This option is not yet implemented."
 .It Li "list [off]"
 #ifdef MANUAL
 Display lines in an unambiguous fashion.
@@ -535,6 +538,7 @@ command, and another
 This option is a security problem of immense proportions,
 and should not be used under any circumstances.
 #endif
+.br
 .Em "This option will never be implemented."
 .It Li "number, nu [off]"
 Precede each line displayed with its current line number.
@@ -558,7 +562,8 @@ carriage returns when printing more than one (logical) line of output,
 greatly speeding output on terminals without addressable cursors when text
 with leading white space is printed.
 #endif
-.Em "This option is not currently implemented."
+.br
+.Em "This option is not yet implemented."
 .It Li "paragraphs, para [IPLPPPQPP LIpplpipbp]"
 .Nm \&Vi
 only.
@@ -622,7 +627,8 @@ terminal on a dumb terminal (e.g. during insertions in visual mode
 the characters to the right of the cursor are refreshed as each input
 character is typed).
 #endif
-.Em "This option is not currently implemented."
+.br
+.Em "This option is not yet implemented."
 .It Li "remap [on]"
 #ifdef MANUAL
 Remap keys until resolved.
@@ -801,7 +807,8 @@ This option affects the display algorithm used by
 holding off display updating during input of new text to improve
 throughput when the terminal in use is slow and unintelligent.
 #endif
-.Em "This option is not currently implemented."
+.br
+.Em "This option is not yet implemented."
 .It Li "sourceany [off]"
 #ifdef MANUAL
 Read startup files not owned by the current user.
@@ -815,6 +822,7 @@ See the STARTUP INFORMATION section for more information.
 This option is a security problem of immense proportions,
 and should not be used under any circumstances.
 #endif
+.br
 .Em "This option will never be implemented."
 .It Li "tabstop, ts [8]"
 This option sets tab widths for the editor display.
