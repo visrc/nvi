@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.74 1996/05/17 11:11:45 bostic Exp $ (Berkeley) $Date: 1996/05/17 11:11:45 $
+.\"     $Id: vi.ref,v 8.75 1996/05/21 09:30:27 bostic Exp $ (Berkeley) $Date: 1996/05/21 09:30:27 $
 .\"
 .\"
 .so ref.so
@@ -1177,7 +1177,6 @@ The
 editor currently supports two scripting languages, Tcl/Tk and Perl5.
 (Note that Perl4 isn't sufficient, and that the Perl5 must be version
 5.002 or later.
-See the )
 See the
 .QB "Building Nvi"
 section for more information.
