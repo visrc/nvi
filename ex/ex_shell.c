@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_shell.c,v 10.35 1996/06/28 15:28:36 bostic Exp $ (Berkeley) $Date: 1996/06/28 15:28:36 $";
+static const char sccsid[] = "$Id: ex_shell.c,v 10.36 1996/08/11 12:54:36 bostic Exp $ (Berkeley) $Date: 1996/08/11 12:54:36 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -55,7 +55,7 @@ ex_shell(sp, cmdp)
 	 */
 	(void)snprintf(buf, sizeof(buf), "%s -i", O_STR(sp, O_SHELL));
 
-	/* If we're stil in a vi screen, move out explicitly. */
+	/* If we're still in a vi screen, move out explicitly. */
 	rval = ex_exec_proc(sp, cmdp, buf, NULL, !F_ISSET(sp, SC_SCR_EXWROTE));
 
 	/*
