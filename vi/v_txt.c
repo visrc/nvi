@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.9 1993/09/12 10:45:37 bostic Exp $ (Berkeley) $Date: 1993/09/12 10:45:37 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.10 1993/09/12 11:47:09 bostic Exp $ (Berkeley) $Date: 1993/09/12 11:47:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -423,26 +423,28 @@ k_escape:		if (tp->insert && tp->overwrite)
 				carat_st = C_ZEROSET;
 			goto ins_ch;
 		case K_CNTRLD:			/* Delete autoindent char. */
-			if (!LF_ISSET(TXT_AUTOINDENT))
+			/*
+			 * If not doing autoindent, in the first column, no
+			 * characters to erase, or already inserted non-ai
+			 * characters, it's a literal.
+			 */
+			if (!LF_ISSET(TXT_AUTOINDENT) || sp->cno == 0 ||
+			    tp->ai == 0 || sp->cno > tp->ai + tp->offset)
 				goto ins_ch;
 			switch (carat_st) {
 			case C_CARATSET:	/* ^^D */
-				if (sp->cno == 0 || sp->cno > tp->ai + 1)
-					goto ins_ch;
 				carat_st = C_NOTSET;
-				tp->overwrite += sp->cno;
-				tp->ai = sp->cno = 0;
+				tp->lb[sp->cno - 1] = ' ';
+				tp->overwrite += sp->cno - tp->offset;
+				tp->ai = sp->cno = tp->offset;
 				break;
 			case C_ZEROSET:		/* 0^D */
-				if (sp->cno == 0 || sp->cno > tp->ai + 1)
-					goto ins_ch;
 				carat_st = C_NOCHANGE;
-				tp->overwrite += sp->cno;
-				tp->ai = sp->cno = 0;
+				tp->lb[sp->cno - 1] = ' ';
+				tp->overwrite += sp->cno - tp->offset;
+				tp->ai = sp->cno = tp->offset;
 				break;
 			case C_NOTSET:		/* ^D */
-				if (sp->cno == 0 || sp->cno > tp->ai)
-					goto ins_ch;
 				(void)txt_outdent(sp, tp);
 				break;
 			default:
