@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 8.5 1993/11/18 10:08:53 bostic Exp $ (Berkeley) $Date: 1993/11/18 10:08:53 $";
+static char sccsid[] = "$Id: ex_append.c,v 8.6 1993/11/23 11:18:06 bostic Exp $ (Berkeley) $Date: 1993/11/23 11:18:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -14,12 +14,12 @@ static char sccsid[] = "$Id: ex_append.c,v 8.5 1993/11/18 10:08:53 bostic Exp $ 
 #include "vi.h"
 #include "excmd.h"
 
-enum which {APPEND, CHANGE};
+enum which {APPEND, CHANGE, INSERT};
 
-static int ac __P((SCR *, EXF *, EXCMDARG *, enum which));
+static int aci __P((SCR *, EXF *, EXCMDARG *, enum which));
 
 /*
- * ex_append -- :address append[!]
+ * ex_append -- :[line] a[ppend][!]
  *	Append one or more lines of new text after the specified line,
  *	or the current line if no address is specified.
  */
@@ -29,11 +29,11 @@ ex_append(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	return (ac(sp, ep, cmdp, APPEND));
+	return (aci(sp, ep, cmdp, APPEND));
 }
 
 /*
- * ex_change -- :range change[!] [count]
+ * ex_change -- :[line[,line]] c[hange][!] [count]
  *	Change one or more lines to the input text.
  */
 int
@@ -42,11 +42,25 @@ ex_change(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	return (ac(sp, ep, cmdp, CHANGE));
+	return (aci(sp, ep, cmdp, CHANGE));
+}
+
+/*
+ * ex_insert -- :[line] i[nsert][!]
+ *	Insert one or more lines of new text before the specified line,
+ *	or the current line if no address is specified.
+ */
+int
+ex_insert(sp, ep, cmdp)
+	SCR *sp;
+	EXF *ep;
+	EXCMDARG *cmdp;
+{
+	return (aci(sp, ep, cmdp, INSERT));
 }
 
 static int
-ac(sp, ep, cmdp, cmd)
+aci(sp, ep, cmdp, cmd)
 	SCR *sp;
 	EXF *ep;
 	EXCMDARG *cmdp;
@@ -57,22 +71,27 @@ ac(sp, ep, cmdp, cmd)
 	recno_t cnt;
 	int rval, aiset;
 
-	/* The ! flag turns off autoindent for change and append. */
+	/*
+	 * The ! flag turns off autoindent for append, change and
+	 * insert.
+	 */
 	if (F_ISSET(cmdp, E_FORCE)) {
 		aiset = O_ISSET(sp, O_AUTOINDENT);
 		O_CLR(sp, O_AUTOINDENT);
 	} else
 		aiset = 0;
 
-	rval = 0;
-
 	/*
 	 * If doing a change, replace lines as long as possible.
-	 * Then, append more lines, or delete remaining lines.
+	 * Then, append more lines or delete remaining lines.
+	 * Inserts are the same as appends to the previous line.
 	 */
+	rval = 0;
 	m = cmdp->addr1;
-	if (m.lno == 0)
+	if (cmd == INSERT) {
+		--m.lno;
 		cmd = APPEND;
+	}
 	if (cmd == CHANGE)
 		for (;; ++m.lno) {
 			if (m.lno > cmdp->addr2.lno) {
@@ -91,8 +110,8 @@ ac(sp, ep, cmdp, cmd)
 			}
 			tp = sp->tiq.cqh_first;
 			if (tp->len == 1 && tp->lb[0] == '.') {
-				cnt = cmdp->addr2.lno - m.lno;
-				while (cnt--)
+				for (cnt =
+				    (cmdp->addr2.lno - m.lno) + 1; cnt--;)
 					if (file_dline(sp, ep, m.lno)) {
 						rval = 1;
 						goto done;
