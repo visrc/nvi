@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.57 1993/04/19 15:27:39 bostic Exp $ (Berkeley) $Date: 1993/04/19 15:27:39 $";
+static char sccsid[] = "$Id: key.c,v 5.58 1993/05/01 18:05:56 bostic Exp $ (Berkeley) $Date: 1993/05/01 18:05:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -107,6 +107,18 @@ term_init(sp)
 			return (1);
 	}
 	return (0);
+}
+
+/*
+ * flush_mappedkey --
+ *	Flush the mapped keys if an error occurred during the map.
+ */
+void
+flush_mappedkey(sp)
+	SCR *sp;
+{
+	F_CLR(sp, S_UPDATE_SCREEN);
+	sp->mappedkey = NULL;
 }
 
 /*
