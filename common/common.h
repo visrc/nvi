@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: common.h,v 10.11 1996/04/10 11:28:50 bostic Exp $ (Berkeley) $Date: 1996/04/10 11:28:50 $
+ *	$Id: common.h,v 10.12 1996/05/24 12:01:44 bostic Exp $ (Berkeley) $Date: 1996/05/24 12:01:44 $
  */
 
 /*
@@ -51,7 +51,7 @@ typedef struct _text		TEXT;
 typedef enum { C_NOTSET, C_CARATSET, C_NOCHANGE, C_ZEROSET } carat_t;
 
 /* Busy message types. */
-typedef enum { BUSY_ON, BUSY_OFF, BUSY_UPDATE } busy_t;
+typedef enum { BUSY_ON = 1, BUSY_OFF, BUSY_UPDATE } busy_t;
 
 /*
  * Routines that return a confirmation return:
