@@ -116,7 +116,7 @@ Associate a key with a perl procedure.
 
 =item * Msg
 
-    VI::msg(screenId,text);
+    VI::Msg(screenId,text);
 
 Set the message line to text.
 
@@ -127,6 +127,12 @@ Set the message line to text.
 
 Create a new screen.  If a filename is specified then the screen is
 opened with that file.
+
+=item * Run
+
+    VI::Run(screenId,cmd);
+
+Run the ex command cmd.
 
 =item * SetCursor
 
