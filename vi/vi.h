@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 8.22 1994/01/08 13:54:29 bostic Exp $ (Berkeley) $Date: 1994/01/08 13:54:29 $
+ *	$Id: vi.h,v 8.23 1994/01/08 16:40:33 bostic Exp $ (Berkeley) $Date: 1994/01/08 16:40:33 $
  */
 
 typedef struct _vikeys VIKEYS;
@@ -17,7 +17,8 @@ typedef struct _vicmdarg {
 	u_long	count;		/* Count. */
 	u_long	count2;		/* Second count (only used by z). */
 	int	key;		/* Command key. */
-	VIKEYS const *kp;	/* VIKEYS structure. */
+	VIKEYS const *kp;	/* VIKEYS key. */
+	VIKEYS const *mkp;	/* VIKEYS motion key. */
 	size_t	klen;		/* Keyword length. */
 
 /*
@@ -34,8 +35,9 @@ typedef struct _vicmdarg {
  * be fixed.  This is implemented by setting special flags per command so that
  * the motion routines know what's really going on.
  *
- * Note, the VC_COMMASK flags are set per command, and therefore must have
- * values not used the set of flags used by the VIKEYS structure below.
+ * Note, the VC_COMMASK flags are set in the vikeys array, and therefore
+ * must have values not used in the set of flags declared in the VIKEYS
+ * structure below.
  */
 #define	VC_C		0x0001	/* The 'c' command. */
 #define	VC_D		0x0002	/* The 'd' command. */
@@ -49,6 +51,7 @@ typedef struct _vicmdarg {
 #define	VC_C2SET	0x0080	/* Count 2 set. */
 #define	VC_LMODE	0x0100	/* Motion is line oriented. */
 #define	VC_ISDOT	0x0200	/* Command was the dot command. */
+#define	VC_REVMOVE	0x0400	/* Movement was before the cursor. */
 
 	u_int flags;
 

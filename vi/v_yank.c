@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_yank.c,v 8.9 1993/11/04 16:17:28 bostic Exp $ (Berkeley) $Date: 1993/11/04 16:17:28 $";
+static char sccsid[] = "$Id: v_yank.c,v 8.10 1994/01/08 16:40:31 bostic Exp $ (Berkeley) $Date: 1994/01/08 16:40:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -15,8 +15,30 @@ static char sccsid[] = "$Id: v_yank.c,v 8.9 1993/11/04 16:17:28 bostic Exp $ (Be
 #include "vcmd.h"
 
 /*
- * v_yank --	[buffer][count]Y
- *		[buffer][count]y[count][motion]
+ * v_Yank --	[buffer][count]Y
+ *	Yank lines of text into a cut buffer.
+ */
+int
+v_Yank(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
+	EXF *ep;
+	VICMDARG *vp;
+	MARK *fm, *tm, *rp;
+{
+	if (file_gline(sp, ep, tm->lno, NULL) == NULL) {
+		v_eof(sp, ep, fm);
+		return (1);
+	}
+	if (cut(sp, ep,
+	    F_ISSET(vp, VC_BUFFER) ? vp->buffer : DEFCB, fm, tm, 1))
+		return (1);
+
+	sp->rptlines[L_YANKED] += (tm->lno - fm->lno) + 1;
+	return (0);
+}
+
+/*
+ * v_yank --	[buffer][count]y[count][motion]
  *	Yank text (or lines of text) into a cut buffer.
  */
 int
@@ -38,6 +60,28 @@ v_yank(sp, ep, vp, fm, tm, rp)
 	    F_ISSET(vp, VC_BUFFER) ? vp->buffer : DEFCB, fm, tm, 0))
 		return (1);
 
-	sp->rptlines[L_YANKED] += tm->lno - fm->lno + 1;
+	/*
+	 * !!!
+	 * Historic vi moved the cursor to the from MARK if it was before the
+	 * current cursor.  This makes no sense.  For example, "yj" moves the
+	 * cursor but "yk" does not.  Unfortunately, it's too late to change
+	 * this now.  Matching the historic semantics isn't easy.  The line
+	 * number was always changed and column movement was usually relative.
+	 * However, "y'a" moved the cursor to the first non-blank of the line
+	 * marked by a, while "y`a" moved the cursor to the line and column
+	 * marked by a.
+	 */
+	if (F_ISSET(vp, VC_REVMOVE)) {
+		rp->lno = fm->lno;
+		if (vp->mkp == &vikeys['\'']) {
+			rp->cno = 0;
+			(void)nonblank(sp, ep, rp->lno, &rp->cno);
+		} else if (vp->mkp == &vikeys['`'])
+			rp->cno = fm->cno;
+		else
+			rp->cno = sp->s_relative(sp, ep, rp->lno);
+	}
+
+	sp->rptlines[L_YANKED] += (tm->lno - fm->lno) + 1;
 	return (0);
 }

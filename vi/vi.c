@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.43 1994/01/08 13:56:09 bostic Exp $ (Berkeley) $Date: 1994/01/08 13:56:09 $";
+static char sccsid[] = "$Id: vi.c,v 8.44 1994/01/08 16:40:34 bostic Exp $ (Berkeley) $Date: 1994/01/08 16:40:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -543,22 +543,16 @@ getmotion(sp, ep, dm, vp, fm, tm)
 		 * Because the motion is always from the from MARK to, but not
 		 * including, the to MARK, the function may have modified the
 		 * from MARK, so that it gets the one-past-the-place semantics
-		 * we use; see v_match() for an example.
-		 *
-		 * !!!
-		 * Historic vi changed the cursor as part of this, which made
-		 * no sense.  For example, "yj" would move the cursor but "yk"
-		 * would not.
+		 * we use; see v_match() for an example.  Also set a flag so
+		 * that the underlying function knows that we did this; v_yank,
+		 * for example, has to know so it gets the return cursor right.
 		 */
 		if (tm->lno < fm->lno ||
 		    tm->lno == fm->lno && tm->cno < fm->cno) {
 			m = *fm;
 			*fm = *tm;
 			*tm = m;
-#ifdef HISTORIC_MOVE_TO_START_OF_BLOCK
-			sp->lno = fm->lno;
-			sp->cno = fm->cno;
-#endif
+			F_SET(vp, VC_REVMOVE);
 		}
 	}
 
@@ -571,6 +565,9 @@ getmotion(sp, ep, dm, vp, fm, tm)
 		*dm = motion;
 		dm->count = cnt;
 	}
+
+	/* Let the underlying function know what motion command was used. */
+	vp->mkp = motion.kp;
 	return (0);
 }
 

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 8.20 1994/01/08 13:54:12 bostic Exp $ (Berkeley) $Date: 1994/01/08 13:54:12 $";
+static char sccsid[] = "$Id: v_cmd.c,v 8.21 1994/01/08 16:40:31 bostic Exp $ (Berkeley) $Date: 1994/01/08 16:40:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -330,7 +330,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    "[buffer][count]X",
 	    " X delete character before cursor"},
 /* 131   Y */
-	{v_yank,	V_CNT|V_LMODE|V_OBUF,
+	{v_Yank,	V_CNT|V_LMODE|V_OBUF,
 	    "[buffer][count]Y",
 	    " Y copy line"},
 /* 132   Z */
@@ -462,9 +462,9 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    "[buffer][count]x",
 	    " x delete character"},
 /* 171   y */
-	{v_yank,	V_CNT|V_MOTION|V_OBUF|VC_Y,
+	{v_yank,	V_CNT|V_MOTION|V_OBUF|V_RCM_SET|VC_Y,
 	    "[buffer][count]y[count]motion",
-	    " y copy text into a cut buffer to motion"},
+	    " y copy text to motion into a cut buffer"},
 /* 172   z */
 	/*
 	 * DON'T set the V_CHAR flag, the char isn't required,
