@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.51 1996/04/11 20:22:25 bostic Exp $ (Berkeley) $Date: 1996/04/11 20:22:25 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.52 1996/04/15 19:12:50 bostic Exp $ (Berkeley) $Date: 1996/04/15 19:12:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -659,9 +659,13 @@ k_cr:		if (LF_ISSET(TXT_CR)) {
 			/* Set term condition: if empty. */
 			if (tp->cno <= tp->offset)
 				tp->term = TERM_CR;
-			/* Set term condition: if incrementally searching. */
+			/*
+			 * Set term condition: if incrementally searching and
+			 * entered a pattern.
+			 */
 			if (FL_ISSET(is_flags, IS_RUNNING) &&
-			    !FL_ISSET(is_flags, IS_FAILED))
+			    !FL_ISSET(is_flags, IS_FAILED) &&
+			    tp->cno >= tp->offset + 1)
 				tp->term = TERM_SEARCH;
 
 			goto k_escape;
@@ -843,9 +847,13 @@ k_cr:		if (LF_ISSET(TXT_CR)) {
 		/* Set term condition: if empty. */
 		if (tp->cno <= tp->offset)
 			tp->term = TERM_ESC;
-		/* Set term condition: if incrementally searching. */
+		/*
+		 * Set term condition: if incrementally searching and
+		 * entered a pattern.
+		 */
 		if (FL_ISSET(is_flags, IS_RUNNING) &&
-		    !FL_ISSET(is_flags, IS_FAILED))
+		    !FL_ISSET(is_flags, IS_FAILED) &&
+		    tp->cno >= tp->offset + 1)
 			tp->term = TERM_SEARCH;
 
 k_escape:	LINE_RESOLVE;
