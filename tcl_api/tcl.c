@@ -12,7 +12,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: tcl.c,v 8.10 1996/04/28 14:59:08 bostic Exp $ (Berkeley) $Date: 1996/04/28 14:59:08 $";
+static const char sccsid[] = "$Id: tcl.c,v 8.11 1996/04/29 11:01:21 bostic Exp $ (Berkeley) $Date: 1996/04/29 11:01:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,9 +33,8 @@ static const char sccsid[] = "$Id: tcl.c,v 8.10 1996/04/28 14:59:08 bostic Exp $
 #include "../common/common.h"
 #include "tcl_extern.h"
 
-static int  getcno __P((Tcl_Interp *, size_t *, char *));
-static int  getlno __P((Tcl_Interp *, recno_t *, char *));
-static int  getscreenid __P((Tcl_Interp *, SCR **, int, char *));
+static int  getint __P((Tcl_Interp *, char *, char *, int *));
+static int  getscreenid __P((Tcl_Interp *, SCR **, char *, char *));
 static void msghandler __P((SCR *, mtype_t, char *, size_t));
 
 extern GS *__global_list;			/* XXX */
@@ -71,7 +70,7 @@ tcl_fscreen(clientData, interp, argc, argv)
 		return (TCL_ERROR);
 	}
 
-	if (getscreenid(interp, &sp, 0, argv[1]))
+	if (getscreenid(interp, &sp, NULL, argv[1]))
 		return (TCL_ERROR);
 
 	(void)sprintf(interp->result, "%d", sp->id);
@@ -93,9 +92,8 @@ tcl_aline(clientData, interp, argc, argv)
 	char **argv;
 {
 	SCR *sp;
-	recno_t lno;
 	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
-	int rval;
+	int lno, rval;
 
 	if (argc != 4) {
 		Tcl_SetResult(interp,
@@ -103,11 +101,11 @@ tcl_aline(clientData, interp, argc, argv)
 		return (TCL_ERROR);
 	}
 
-	if (getscreenid(interp, &sp, atoi(argv[1]), NULL) ||
-	    getlno(interp, &lno, argv[2]))
+	if (getscreenid(interp, &sp, argv[1], NULL) ||
+	    getint(interp, "line number", argv[2], &lno))
 		return (TCL_ERROR);
 	INITMESSAGE;
-	rval = api_aline(sp, lno, argv[3], strlen(argv[3]));
+	rval = api_aline(sp, (recno_t)lno, argv[3], strlen(argv[3]));
 	ENDMESSAGE;
 
 	return (rval ? TCL_ERROR : TCL_OK);
@@ -128,9 +126,8 @@ tcl_dline(clientData, interp, argc, argv)
 	char **argv;
 {
 	SCR *sp;
-	recno_t lno;
 	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
-	int rval;
+	int lno, rval;
 
 	if (argc != 3) {
 		Tcl_SetResult(interp,
@@ -138,11 +135,11 @@ tcl_dline(clientData, interp, argc, argv)
 		return (TCL_ERROR);
 	}
 
-	if (getscreenid(interp, &sp, atoi(argv[1]), NULL) ||
-	    getlno(interp, &lno, argv[2]))
+	if (getscreenid(interp, &sp, argv[1], NULL) ||
+	    getint(interp, "line number", argv[2], &lno))
 		return (TCL_ERROR);
 	INITMESSAGE;
-	rval = api_dline(sp, lno);
+	rval = api_dline(sp, (recno_t)lno);
 	ENDMESSAGE;
 
 	return (rval ? TCL_ERROR : TCL_OK);
@@ -164,9 +161,8 @@ tcl_gline(clientData, interp, argc, argv)
 {
 	SCR *sp;
 	size_t len;
-	recno_t lno;
 	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
-	int rval;
+	int lno, rval;
 	char *line, *p;
 
 	if (argc != 3) {
@@ -174,11 +170,11 @@ tcl_gline(clientData, interp, argc, argv)
 		    "Usage: viGetLine screenId lineNumber", TCL_STATIC);
 		return (TCL_ERROR);
 	}
-	if (getscreenid(interp, &sp, atoi(argv[1]), NULL) ||
-	    getlno(interp, &lno, argv[2]))
+	if (getscreenid(interp, &sp, argv[1], NULL) ||
+	    getint(interp, "line number", argv[2], &lno))
 		return (TCL_ERROR);
 	INITMESSAGE;
-	rval = api_gline(sp, lno, &p, &len);
+	rval = api_gline(sp, (recno_t)lno, &p, &len);
 	ENDMESSAGE;
 
 	if (rval)
@@ -207,9 +203,8 @@ tcl_iline(clientData, interp, argc, argv)
 	char **argv;
 {
 	SCR *sp;
-	recno_t lno;
 	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
-	int rval;
+	int lno, rval;
 
 	if (argc != 4) {
 		Tcl_SetResult(interp,
@@ -217,11 +212,11 @@ tcl_iline(clientData, interp, argc, argv)
 		return (TCL_ERROR);
 	}
 
-	if (getscreenid(interp, &sp, atoi(argv[1]), NULL) ||
-	    getlno(interp, &lno, argv[2]))
+	if (getscreenid(interp, &sp, argv[1], NULL) ||
+	    getint(interp, "line number", argv[2], &lno))
 		return (TCL_ERROR);
 	INITMESSAGE;
-	rval = api_iline(sp, lno, argv[3], strlen(argv[3]));
+	rval = api_iline(sp, (recno_t)lno, argv[3], strlen(argv[3]));
 	ENDMESSAGE;
 
 	return (rval ? TCL_ERROR : TCL_OK);
@@ -251,7 +246,7 @@ tcl_lline(clientData, interp, argc, argv)
 		return (TCL_ERROR);
 	}
 
-	if (getscreenid(interp, &sp, atoi(argv[1]), NULL))
+	if (getscreenid(interp, &sp, argv[1], NULL))
 		return (TCL_ERROR);
 	INITMESSAGE;
 	rval = api_lline(sp, &last);
@@ -278,9 +273,8 @@ tcl_sline(clientData, interp, argc, argv)
 	char **argv;
 {
 	SCR *sp;
-	recno_t lno;
 	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
-	int rval;
+	int lno, rval;
 
 	if (argc != 4) {
 		Tcl_SetResult(interp,
@@ -288,11 +282,11 @@ tcl_sline(clientData, interp, argc, argv)
 		return (TCL_ERROR);
 	}
 
-	if (getscreenid(interp, &sp, atoi(argv[1]), NULL) ||
-	    getlno(interp, &lno, argv[2]))
+	if (getscreenid(interp, &sp, argv[1], NULL) ||
+	    getint(interp, "line number", argv[2], &lno))
 		return (TCL_ERROR);
 	INITMESSAGE;
-	rval = api_sline(sp, lno, argv[3], strlen(argv[3]));
+	rval = api_sline(sp, (recno_t)lno, argv[3], strlen(argv[3]));
 	ENDMESSAGE;
 
 	return (rval ? TCL_ERROR : TCL_OK);
@@ -325,7 +319,7 @@ tcl_getmark(clientData, interp, argc, argv)
 		return (TCL_ERROR);
 	}
 
-	if (getscreenid(interp, &sp, atoi(argv[1]), NULL))
+	if (getscreenid(interp, &sp, argv[1], NULL))
 		return (TCL_ERROR);
 	INITMESSAGE;
 	rval = api_getmark(sp, (int)argv[2][0], &cursor);
@@ -358,7 +352,7 @@ tcl_setmark(clientData, interp, argc, argv)
 	MARK cursor;
 	SCR *sp;
 	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
-	int rval;
+	int i, rval;
 
 	if (argc != 5) {
 		Tcl_SetResult(interp,
@@ -366,10 +360,14 @@ tcl_setmark(clientData, interp, argc, argv)
 		return (TCL_ERROR);
 	}
 
-	if (getscreenid(interp, &sp, atoi(argv[1]), NULL) ||
-	    getlno(interp, &cursor.lno, argv[3]) ||
-	    getcno(interp, &cursor.cno, argv[4]))
+	if (getscreenid(interp, &sp, argv[1], NULL))
 		return (TCL_ERROR);
+	if (getint(interp, "line number", argv[3], &i))
+		return (TCL_ERROR);
+	cursor.lno = i;
+	if (getint(interp, "column number", argv[4], &i))
+		return (TCL_ERROR);
+	cursor.cno = i;
 	INITMESSAGE;
 	rval = api_setmark(sp, (int)argv[2][0], &cursor);
 	ENDMESSAGE;
@@ -404,7 +402,7 @@ tcl_getcursor(clientData, interp, argc, argv)
 		return (TCL_ERROR);
 	}
 
-	if (getscreenid(interp, &sp, atoi(argv[1]), NULL))
+	if (getscreenid(interp, &sp, argv[1], NULL))
 		return (TCL_ERROR);
 	INITMESSAGE;
 	rval = api_getcursor(sp, &cursor);
@@ -437,7 +435,7 @@ tcl_setcursor(clientData, interp, argc, argv)
 	MARK cursor;
 	SCR *sp;
 	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
-	int rval;
+	int i, rval;
 
 	if (argc != 4) {
 		Tcl_SetResult(interp,
@@ -445,10 +443,14 @@ tcl_setcursor(clientData, interp, argc, argv)
 		return (TCL_ERROR);
 	}
 
-	if (getscreenid(interp, &sp, atoi(argv[1]), NULL) ||
-	    getlno(interp, &cursor.lno, argv[2]) ||
-	    getcno(interp, &cursor.cno, argv[3]))
+	if (getscreenid(interp, &sp, argv[1], NULL))
 		return (TCL_ERROR);
+	if (getint(interp, "screen id", argv[2], &i))
+		return (TCL_ERROR);
+	cursor.lno = i;
+	if (getint(interp, "screen id", argv[3], &i))
+		return (TCL_ERROR);
+	cursor.cno = i;
 	INITMESSAGE;
 	rval = api_setcursor(sp, &cursor);
 	ENDMESSAGE;
@@ -477,7 +479,7 @@ tcl_msg(clientData, interp, argc, argv)
 		return (TCL_ERROR);
 	}
 
-	if (getscreenid(interp, &sp, atoi(argv[1]), NULL))
+	if (getscreenid(interp, &sp, argv[1], NULL))
 		return (TCL_ERROR);
 	api_imessage(sp, argv[2]);
 
@@ -509,7 +511,7 @@ tcl_iscreen(clientData, interp, argc, argv)
 		return (TCL_ERROR);
 	}
 
-	if (getscreenid(interp, &sp, atoi(argv[1]), NULL))
+	if (getscreenid(interp, &sp, argv[1], NULL))
 		return (TCL_ERROR);
 	INITMESSAGE;
 	rval = api_iscreen(sp, argv[2], &id);
@@ -546,7 +548,7 @@ tcl_escreen(clientData, interp, argc, argv)
 		return (TCL_ERROR);
 	}
 
-	if (getscreenid(interp, &sp, atoi(argv[1]), NULL))
+	if (getscreenid(interp, &sp, argv[1], NULL))
 		return (TCL_ERROR);
 	INITMESSAGE;
 	rval = api_escreen(sp);
@@ -580,11 +582,11 @@ tcl_swscreen(clientData, interp, argc, argv)
 		return (TCL_ERROR);
 	}
 
-	if (getscreenid(interp, &sp, atoi(argv[1]), NULL))
+	if (getscreenid(interp, &sp, argv[1], NULL))
+		return (TCL_ERROR);
+	if (getscreenid(interp, &new, argv[2], NULL))
 		return (TCL_ERROR);
 	INITMESSAGE;
-	if (getscreenid(interp, &new, atoi(argv[2]), NULL))
-		return (TCL_ERROR);
 	rval = api_swscreen(sp, new);
 	ENDMESSAGE;
 
@@ -616,7 +618,7 @@ tcl_map(clientData, interp, argc, argv)
 		return (TCL_ERROR);
 	}
 
-	if (getscreenid(interp, &sp, atoi(argv[1]), NULL))
+	if (getscreenid(interp, &sp, argv[1], NULL))
 		return (TCL_ERROR);
 	INITMESSAGE;
 	(void)snprintf(command, sizeof(command), ":tcl %s\n", argv[3]);
@@ -650,7 +652,7 @@ tcl_unmap(clientData, interp, argc, argv)
 		return (TCL_ERROR);
 	}
 
-	if (getscreenid(interp, &sp, atoi(argv[1]), NULL))
+	if (getscreenid(interp, &sp, argv[1], NULL))
 		return (TCL_ERROR);
 	INITMESSAGE;
 	rval = api_unmap(sp, argv[2]);
@@ -683,7 +685,7 @@ tcl_opts_set(clientData, interp, argc, argv)
 		return (TCL_ERROR);
 	}
 
-	if (getscreenid(interp, &sp, atoi(argv[1]), NULL))
+	if (getscreenid(interp, &sp, argv[1], NULL))
 		return (TCL_ERROR);
 	INITMESSAGE;
 	rval = api_opts_set(sp, argv[2]);
@@ -717,7 +719,7 @@ tcl_opts_get(clientData, interp, argc, argv)
 		return (TCL_ERROR);
 	}
 
-	if (getscreenid(interp, &sp, atoi(argv[1]), NULL))
+	if (getscreenid(interp, &sp, argv[1], NULL))
 		return (TCL_ERROR);
 	INITMESSAGE;
 	rval = api_opts_get(sp, argv[2], &value);
@@ -783,88 +785,45 @@ static int
 getscreenid(interp, spp, id, name)
 	Tcl_Interp *interp;
 	SCR **spp;
-	int id;
-	char *name;
+	char *id, *name;
 {
+	int scr_no;
 	char buf[64];
 
-	if (id < 1 || (*spp = api_fscreen(id, name)) == NULL) {
-		if (name == NULL)
-			(void)snprintf(buf,
-			    sizeof(buf), "unknown screen id: %d", id);
-		else
-			(void)snprintf(buf,
-			    sizeof(buf), "unknown screen: %s", name);
-		Tcl_SetResult(interp, buf, TCL_VOLATILE);
+	if (id != NULL && getint(interp, "screen id", id, &scr_no))
 		return (1);
-	}
-	return (0);
-}
-
-/*
- * getlno --
- *	Convert the line number into a recno_t.
- *
- * XXX
- * This should be a general purpose routine somewhere.
- */
-static int
-getlno(interp, lnop, s)
-	Tcl_Interp *interp;
-	recno_t *lnop;
-	char *s;
-{
-	u_long val;
-	char buf[64];
-
-	errno = 0;
-	val = strtoul(s, NULL, 10);
-	if (errno == ERANGE || val > ULONG_MAX) {
-		(void)snprintf(buf, sizeof(buf), "%s: line number overflow", s);
-		Tcl_SetResult(interp, buf, TCL_VOLATILE);
-		return (1);
-	}
-
-	/*
-	 * XXX
-	 * Assume that a recno_t is at least a u_long.
-	 */
-	*lnop = val;
-
-	return (0);
-}
-
-/*
- * getcno --
- *	Convert the line number into a size_t.
- *
- * XXX
- * This should be a general purpose routine somewhere.
- */
-static int
-getcno(interp, cnop, s)
-	Tcl_Interp *interp;
-	size_t *cnop;
-	char *s;
-{
-	u_long val;
-	char buf[64];
-
-	errno = 0;
-	val = strtoul(s, NULL, 10);
-	if (errno == ERANGE || val > UINT_MAX) {
+	if ((*spp = api_fscreen(scr_no, name)) == NULL) {
 		(void)snprintf(buf, sizeof(buf),
-		    "%s: column number overflow", s);
+		    "unknown screen id: %s", name == NULL ? id : name);
 		Tcl_SetResult(interp, buf, TCL_VOLATILE);
 		return (1);
 	}
+	return (0);
+}
 
-	/*
-	 * XXX
-	 * Assume that a size_t is at least a u_int.
-	 */
-	*cnop = val;
+/*
+ * getint --
+ *	Get a Tcl integer.
+ *
+ * XXX
+ * This code assumes that both recno_t and size_t are larger than ints.
+ */
+static int
+getint(interp, msg, s, intp)
+	Tcl_Interp *interp;
+	char *msg, *s;
+	int *intp;
+{
+	char buf[64];
 
+	if (Tcl_GetInt(interp, s, intp) == TCL_ERROR)
+		return (1);
+	if (*intp < 0) {
+		(void)snprintf(buf, sizeof(buf),
+		    "illegal %s %s: may not be negative", msg, s);
+		Tcl_SetResult(interp, buf, TCL_VOLATILE);
+		return (1);
+	}
 	return (0);
 }
 
