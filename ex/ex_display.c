@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_display.c,v 8.2 1993/08/20 17:44:53 bostic Exp $ (Berkeley) $Date: 1993/08/20 17:44:53 $";
+static char sccsid[] = "$Id: ex_display.c,v 8.3 1993/08/26 12:03:23 bostic Exp $ (Berkeley) $Date: 1993/08/26 12:03:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,12 +29,24 @@ ex_bdisplay(sp, ep, cmdp)
 {
 	CB *cb;
 	int cnt, displayed;
+	char *p;
 
+#define	NUMERICBUFS	"987654321"
 	displayed = 0;
-	for (cb = sp->cuts, cnt = 0; cnt < UCHAR_MAX; ++cb, ++cnt)
+	for (cb = sp->cuts, cnt = 0; cnt < UCHAR_MAX; ++cb, ++cnt) {
+		if (strchr(NUMERICBUFS, cnt))
+			continue;
 		if (cb->txthdr.next != NULL && cb->txthdr.next != &cb->txthdr) {
 			displayed = 1;
 			db(sp, charname(sp, cnt), cb);
+		}
+	}
+
+	for (p = NUMERICBUFS; *p; ++p)
+		if (sp->cuts[*p].txthdr.next != NULL &&
+		    sp->cuts[*p].txthdr.next != &sp->cuts[*p].txthdr) {
+			displayed = 1;
+			db(sp, charname(sp, *p), &sp->cuts[*p]);
 		}
 	if (sp->cuts[DEFCB].txthdr.next != NULL &&
 	    sp->cuts[DEFCB].txthdr.next != &sp->cuts[DEFCB].txthdr) {
