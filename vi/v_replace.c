@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_replace.c,v 10.9 1995/10/16 15:33:56 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:33:56 $";
+static char sccsid[] = "$Id: v_replace.c,v 10.10 1995/10/17 21:07:54 bostic Exp $ (Berkeley) $Date: 1995/10/17 21:07:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -153,17 +153,25 @@ next:		if (v_event_get(sp, &ev, 0))
 
 		/*
 		 * The rest of the current line.  And, of course, now it gets
-		 * tricky.  Any white space after the replaced character is
-		 * stripped, and autoindent is applied.  Put the cursor on the
-		 * last indent character as did historic vi.
+		 * tricky.  If the autoindent edit option is set, white space
+		 * after the replaced character is discarded, autoindent is
+		 * applied, and the cursor moves to the last indent character.
 		 */
-		for (p += vp->m_start.cno + cnt, len -= vp->m_start.cno + cnt;
-		    len && isblank(*p); --len, ++p);
+		p += vp->m_start.cno + cnt;
+		len -= vp->m_start.cno + cnt;
+		if (O_ISSET(sp, O_AUTOINDENT))
+			for (; len && isblank(*p); --len, ++p);
 
 		if ((tp = text_init(sp, p, len, len)) == NULL)
 			goto err_ret;
-		if (v_txt_auto(sp, vp->m_start.lno, NULL, 0, tp))
-			goto err_ret;
+
+		if (O_ISSET(sp, O_AUTOINDENT)) {
+			if (v_txt_auto(sp, vp->m_start.lno, NULL, 0, tp))
+				goto err_ret;
+			vp->m_stop.cno = tp->ai ? tp->ai - 1 : 0;
+		} else
+			vp->m_stop.cno = 0;
+
 		vp->m_stop.cno = tp->ai ? tp->ai - 1 : 0;
 		if (db_append(sp, 1, vp->m_start.lno, tp->lb, tp->len))
 			goto err_ret;
