@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 10.1 1995/04/13 17:18:26 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:18:26 $";
+static char sccsid[] = "$Id: options_f.c,v 10.2 1995/05/05 18:43:19 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:43:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -49,6 +49,9 @@ static int	prset __P((SCR *, CHAR_T *, int, int));
 
 #define	turnoff	val
 
+/*
+ * PUBLIC: int f_altwerase __P((SCR *, OPTION *, char *, u_long));
+ */
 DECL(f_altwerase)
 {
 	if (turnoff)
@@ -60,11 +63,17 @@ DECL(f_altwerase)
 	return (0);
 }
 
+/*
+ * PUBLIC: int f_cdpath __P((SCR *, OPTION *, char *, u_long)); 
+ */
 DECL(f_cdpath)
 {
 	return (opt_dup(sp, O_CDPATH, str));
 }
 
+/*
+ * PUBLIC: int f_columns __P((SCR *, OPTION *, char *, u_long));
+ */
 DECL(f_columns)
 {
 	/* Validate the number. */
@@ -98,6 +107,9 @@ DECL(f_columns)
 	return (0);
 }
 
+/*
+ * PUBLIC: int f_extended __P((SCR *, OPTION *, char *, u_long));
+ */
 DECL(f_extended)
 {
 	if (turnoff)
@@ -108,6 +120,9 @@ DECL(f_extended)
 	return (0);
 }
 
+/*
+ * PUBLIC: int f_ignorecase __P((SCR *, OPTION *, char *, u_long));
+ */
 DECL(f_ignorecase)
 {
 	if (turnoff)
@@ -118,6 +133,9 @@ DECL(f_ignorecase)
 	return (0);
 }
 
+/*
+ * PUBLIC: int f_leftright __P((SCR *, OPTION *, char *, u_long));
+ */
 DECL(f_leftright)
 {
 	if (turnoff)
@@ -128,6 +146,9 @@ DECL(f_leftright)
 	return (0);
 }
 
+/*
+ * PUBLIC: int f_lines __P((SCR *, OPTION *, char *, u_long));
+ */
 DECL(f_lines)
 {
 	/* Validate the number. */
@@ -176,12 +197,18 @@ DECL(f_lines)
 	return (0);
 }
 
+/*
+ * PUBLIC: int f_lisp __P((SCR *, OPTION *, char *, u_long));
+ */
 DECL(f_lisp)
 {
 	msgq(sp, M_ERR, "062|The lisp option is not implemented");
 	return (0);
 }
 
+/*
+ * PUBLIC: int f_list __P((SCR *, OPTION *, char *, u_long));
+ */
 DECL(f_list)
 {
 	if (turnoff)
@@ -193,6 +220,9 @@ DECL(f_list)
 	return (0);
 }
 
+/*
+ * PUBLIC: int f_mesg __P((SCR *, OPTION *, char *, u_long));
+ */
 DECL(f_mesg)
 {
 	struct stat sb;
@@ -239,6 +269,9 @@ DECL(f_mesg)
  *	a security problem of mammoth proportions, not to mention a stunning
  *	example of what your intro CS professor referred to as the perils of
  *	mixing code and data.  Don't add it, or I will kill you.
+ *
+ *
+ * PUBLIC: int f_modeline __P((SCR *, OPTION *, char *, u_long));
  */
 DECL(f_modeline)
 {
@@ -247,12 +280,18 @@ DECL(f_modeline)
 	return (0);
 }
 
+/*
+ * PUBLIC: int f_msgcat __P((SCR *, OPTION *, char *, u_long));
+ */
 DECL(f_msgcat)
 {
 	(void)msg_open(sp, str);
 	return (opt_dup(sp, O_MSGCAT, str));
 }
 
+/*
+ * PUBLIC: int f_number __P((SCR *, OPTION *, char *, u_long));
+ */
 DECL(f_number)
 {
 	if (turnoff)
@@ -264,6 +303,9 @@ DECL(f_number)
 	return (0);
 }
 
+/*
+ * PUBLIC: int f_octal __P((SCR *, OPTION *, char *, u_long));
+ */
 DECL(f_octal)
 {
 	if (turnoff)
@@ -279,6 +321,9 @@ DECL(f_octal)
 	return (0);
 }
 
+/*
+ * PUBLIC: int f_paragraph __P((SCR *, OPTION *, char *, u_long));
+ */
 DECL(f_paragraph)
 {
 	if (strlen(str) & 1) {
@@ -289,11 +334,17 @@ DECL(f_paragraph)
 	return (opt_dup(sp, O_PARAGRAPHS, str));
 }
 
+/*
+ * PUBLIC: int f_noprint __P((SCR *, OPTION *, char *, u_long));
+ */
 DECL(f_noprint)
 {
 	return (prset(sp, str, O_NOPRINT, O_PRINT));
 }
 
+/*
+ * PUBLIC: int f_print __P((SCR *, OPTION *, char *, u_long));
+ */
 DECL(f_print)
 {
 	return (prset(sp, str, O_PRINT, O_NOPRINT));
@@ -350,6 +401,9 @@ prset(sp, str, set_index, unset_index)
 	return (0);
 }
 
+/*
+ * PUBLIC: int f_readonly __P((SCR *, OPTION *, char *, u_long));
+ */
 DECL(f_readonly)
 {
 	if (turnoff) {
@@ -364,6 +418,9 @@ DECL(f_readonly)
 	return (0);
 }
 
+/*
+ * PUBLIC: int f_section __P((SCR *, OPTION *, char *, u_long));
+ */
 DECL(f_section)
 {
 	if (strlen(str) & 1) {
@@ -374,6 +431,9 @@ DECL(f_section)
 	return (opt_dup(sp, O_SECTIONS, str));
 }
 
+/*
+ * PUBLIC: int f_shiftwidth __P((SCR *, OPTION *, char *, u_long));
+ */
 DECL(f_shiftwidth)
 {
 	if (val == 0) {
@@ -391,6 +451,8 @@ DECL(f_shiftwidth)
  *	feature of historic vi which permitted the startup source'ing of
  *	.exrc files the user didn't own.  This is an obvious security problem,
  *	and we ignore the option.
+ *
+ * PUBLIC: int f_sourceany __P((SCR *, OPTION *, char *, u_long));
  */
 DECL(f_sourceany)
 {
@@ -399,6 +461,9 @@ DECL(f_sourceany)
 	return (0);
 }
 
+/*
+ * PUBLIC: int f_tabstop __P((SCR *, OPTION *, char *, u_long));
+ */
 DECL(f_tabstop)
 {
 	if (val == 0) {
@@ -411,16 +476,25 @@ DECL(f_tabstop)
 	return (0);
 }
 
+/*
+ * PUBLIC: int f_tags __P((SCR *, OPTION *, char *, u_long));
+ */
 DECL(f_tags)
 {
 	return (opt_dup(sp, O_TAGS, str));
 }
 
+/*
+ * PUBLIC: int f_term __P((SCR *, OPTION *, char *, u_long));
+ */
 DECL(f_term)
 {
 	return (opt_dup(sp, O_TERM, str));
 }
 
+/*
+ * PUBLIC: int f_ttywerase __P((SCR *, OPTION *, char *, u_long));
+ */
 DECL(f_ttywerase)
 {
 	if (turnoff)
@@ -432,6 +506,9 @@ DECL(f_ttywerase)
 	return (0);
 }
 
+/*
+ * PUBLIC: int f_w300 __P((SCR *, OPTION *, char *, u_long));
+ */
 DECL(f_w300)
 {
 	/* Historical behavior for w300 was < 1200. */
@@ -448,6 +525,9 @@ DECL(f_w300)
 	return (0);
 }
 
+/*
+ * PUBLIC: int f_w1200 __P((SCR *, OPTION *, char *, u_long));
+ */
 DECL(f_w1200)
 {
 	u_long v;
@@ -467,6 +547,9 @@ DECL(f_w1200)
 	return (0);
 }
 
+/*
+ * PUBLIC: int f_w9600 __P((SCR *, OPTION *, char *, u_long));
+ */
 DECL(f_w9600)
 {
 	speed_t v;
@@ -486,6 +569,9 @@ DECL(f_w9600)
 	return (0);
 }
 
+/*
+ * PUBLIC: int f_window __P((SCR *, OPTION *, char *, u_long));
+ */
 DECL(f_window)
 {
 	if (val >= O_VAL(sp, O_LINES) - 1 &&
@@ -522,6 +608,8 @@ opt_dup(sp, opt, str)
 /*
  * baud_from_bval --
  *	Return the baud rate using the standard defines.
+ *
+ * PUBLIC: u_long baud_from_bval __P((SCR *));
  */
 u_long
 baud_from_bval(sp)

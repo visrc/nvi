@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: put.c,v 10.1 1995/03/17 12:37:25 bostic Exp $ (Berkeley) $Date: 1995/03/17 12:37:25 $";
+static char sccsid[] = "$Id: put.c,v 10.2 1995/05/05 18:43:31 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:43:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,6 +33,8 @@ static char sccsid[] = "$Id: put.c,v 10.1 1995/03/17 12:37:25 bostic Exp $ (Berk
 /*
  * put --
  *	Put text buffer contents into the file.
+ *
+ * PUBLIC: int put __P((SCR *, CB *, CHAR_T *, MARK *, MARK *, int));
  */
 int
 put(sp, cbp, namep, cp, rp, append)

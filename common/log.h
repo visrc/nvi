@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: log.h,v 9.2 1995/01/11 15:58:09 bostic Exp $ (Berkeley) $Date: 1995/01/11 15:58:09 $
+ *	$Id: log.h,v 9.3 1995/05/05 18:42:26 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:42:26 $
  */
 
 #define	LOG_NOTYPE		0
@@ -18,12 +18,3 @@
 #define	LOG_LINE_RESET_F	6
 #define	LOG_LINE_RESET_B	7
 #define	LOG_MARK		8
-
-int	log_backward __P((SCR *, MARK *));
-int	log_cursor __P((SCR *));
-int	log_end __P((SCR *, EXF *));
-int	log_forward __P((SCR *, MARK *));
-int	log_init __P((SCR *, EXF *));
-int	log_line __P((SCR *, recno_t, u_int));
-int	log_mark __P((SCR *, LMARK *));
-int	log_setline __P((SCR *));

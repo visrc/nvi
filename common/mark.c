@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: mark.c,v 10.1 1995/03/17 12:36:24 bostic Exp $ (Berkeley) $Date: 1995/03/17 12:36:24 $";
+static char sccsid[] = "$Id: mark.c,v 10.2 1995/05/05 18:42:41 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:42:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -66,6 +66,8 @@ static LMARK *mark_find __P((SCR *, ARG_CHAR_T));
 /*
  * mark_init --
  *	Set up the marks.
+ *
+ * PUBLIC: int mark_init __P((SCR *, EXF *));
  */
 int
 mark_init(sp, ep)
@@ -85,6 +87,8 @@ mark_init(sp, ep)
 /*
  * mark_end --
  *	Free up the marks.
+ *
+ * PUBLIC: int mark_end __P((SCR *, EXF *));
  */
 int
 mark_end(sp, ep)
@@ -107,13 +111,15 @@ mark_end(sp, ep)
 /*
  * mark_get --
  *	Get the location referenced by a mark.
+ *
+ * PUBLIC: int mark_get __P((SCR *, ARG_CHAR_T, MARK *, mtype_t));
  */
 int
 mark_get(sp, key, mp, mtype)
 	SCR *sp;
 	ARG_CHAR_T key;
 	MARK *mp;
-	enum msgtype mtype;
+	mtype_t mtype;
 {
 	LMARK *lmp;
 
@@ -150,6 +156,8 @@ mark_get(sp, key, mp, mtype)
 /*
  * mark_set --
  *	Set the location referenced by a mark.
+ *
+ * PUBLIC: int mark_set __P((SCR *, ARG_CHAR_T, MARK *, int));
  */
 int
 mark_set(sp, key, value, userset)
@@ -214,6 +222,8 @@ mark_find(sp, key)
 /*
  * mark_insdel --
  *	Update the marks based on an insertion or deletion.
+ *
+ * PUBLIC: void mark_insdel __P((SCR *, lnop_t, recno_t));
  */
 void
 mark_insdel(sp, op, lno)

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 10.1 1995/04/13 17:18:33 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:18:33 $";
+static char sccsid[] = "$Id: search.c,v 10.2 1995/05/05 18:43:53 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:43:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,6 +40,8 @@ static void smsg __P((SCR *, enum smsgtype));
 /*
  * srch_setup --
  *	Set up a search.
+ *
+ * PUBLIC: int srch_setup __P((SCR *, dir_t, char *, char **, u_int));
  */
 int
 srch_setup(sp, dir, ptrn, epp, flags)
@@ -173,6 +175,8 @@ recomp:	re_flags = 0;
 /*
  * fsrch_setup --
  *	Set up for a forward search.
+ *
+ * PUBLIC: int fsrch_setup __P((SCR *, MARK *, MARK *, char *, char **, u_int));
  */
 int
 fsrch_setup(sp, fm, rm, ptrn, eptrn, flags)
@@ -195,6 +199,8 @@ fsrch_setup(sp, fm, rm, ptrn, eptrn, flags)
 /*
  * fsrch --
  *	Do a forward search.
+ *
+ * PUBLIC: int fsrch __P((SCR *, EVENT *, int *));
  */
 int
 fsrch(sp, evp, completep)
@@ -335,6 +341,8 @@ notfound:
 /*
  * bsrch_setup --
  *	Set up for a backward search.
+ *
+ * PUBLIC: int bsrch_setup __P((SCR *, MARK *, MARK *, char *, char **, u_int));
  */
 int
 bsrch_setup(sp, fm, rm, ptrn, eptrn, flags)
@@ -357,6 +365,8 @@ bsrch_setup(sp, fm, rm, ptrn, eptrn, flags)
 /*
  * bsrch --
  *	Do a backward search.
+ *
+ * PUBLIC: int bsrch __P((SCR *, EVENT *, int *));
  */
 int
 bsrch(sp, evp, completep)
@@ -505,6 +515,8 @@ notfound:
 /*
  * srch_busy --
  *	Put up a busy message for the searching routines.
+ *
+ * PUBLIC: void srch_busy __P((SCR *, int));
  */
 void
 srch_busy(sp, on)
@@ -606,6 +618,8 @@ ctag_conv(sp, ptrnp, replacedp)
  * the ~ substitution before calling the RE engine, so magic characters
  * in the replacement string will be expanded by the RE engine, and they
  * weren't historically.  It's a bug.
+ *
+ * PUBLIC: int re_conv __P((SCR *, char **, int *));
  */
 int
 re_conv(sp, ptrnp, replacedp)
@@ -745,6 +759,8 @@ re_conv(sp, ptrnp, replacedp)
 /*
  * re_error --
  *	Report a regular expression error.
+ *
+ * PUBLIC: void re_error __P((SCR *, int, regex_t *));
  */
 void
 re_error(sp, errcode, preg)

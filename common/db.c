@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 10.1 1995/04/13 17:18:16 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:18:16 $";
+static char sccsid[] = "$Id: db.c,v 10.2 1995/05/05 18:42:14 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:42:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,7 +28,6 @@ static char sccsid[] = "$Id: db.c,v 10.1 1995/04/13 17:18:16 bostic Exp $ (Berke
 #include <regex.h>
 
 #include "common.h"
-#include "../vi/vi.h"
 
 static __inline int scr_update __P((SCR *, recno_t, lnop_t, int));
 
@@ -36,6 +35,8 @@ static __inline int scr_update __P((SCR *, recno_t, lnop_t, int));
  * file_gline --
  *	Look in the text buffers for a line; if it's not there
  *	call file_rline to retrieve it from the database.
+ *
+ * PUBLIC: char *file_gline __P((SCR *, recno_t, size_t *));
  */
 char *
 file_gline(sp, lno, lenp)
@@ -82,6 +83,8 @@ file_gline(sp, lno, lenp)
  * file_rline --
  *	Look in the cache for a line; if it's not there retrieve
  *	it from the file.
+ *
+ * PUBLIC: char *file_rline __P((SCR *, recno_t, size_t *));
  */
 char *
 file_rline(sp, lno, lenp)
@@ -133,6 +136,8 @@ file_rline(sp, lno, lenp)
 /*
  * file_dline --
  *	Delete a line from the file.
+ *
+ * PUBLIC: int file_dline __P((SCR *, recno_t));
  */
 int
 file_dline(sp, lno)
@@ -186,6 +191,8 @@ file_dline(sp, lno)
 /*
  * file_aline --
  *	Append a line into the file.
+ *
+ * PUBLIC: int file_aline __P((SCR *, int, recno_t, char *, size_t));
  */
 int
 file_aline(sp, update, lno, p, len)
@@ -290,6 +297,8 @@ file_aline(sp, update, lno, p, len)
 /*
  * file_iline --
  *	Insert a line into the file.
+ *
+ * PUBLIC: int file_iline __P((SCR *, recno_t, char *, size_t));
  */
 int
 file_iline(sp, lno, p, len)
@@ -358,6 +367,8 @@ file_iline(sp, lno, p, len)
 /*
  * file_sline --
  *	Store a line in the file.
+ *
+ * PUBLIC: int file_sline __P((SCR *, recno_t, char *, size_t));
  */
 int
 file_sline(sp, lno, p, len)
@@ -409,6 +420,8 @@ file_sline(sp, lno, p, len)
 /*
  * file_eline --
  *	Return if a line exists.
+ *
+ * PUBLIC: int file_eline __P((SCR *, recno_t));
  */
 int
 file_eline(sp, lno)
@@ -431,6 +444,8 @@ file_eline(sp, lno)
 /*
  * file_lline --
  *	Return the number of lines in the file.
+ *
+ * PUBLIC: int file_lline __P((SCR *, recno_t *));
  */
 int
 file_lline(sp, lnop)
@@ -482,6 +497,8 @@ file_lline(sp, lnop)
 /*
  * file_lerr --
  *	Report a line error.
+ *
+ * PUBLIC: void file_lerr __P((SCR *, char *, recno_t, recno_t));
  */
 void
 file_lerr(sp, fname, fline, lno)

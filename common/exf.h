@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 10.1 1995/04/13 17:18:14 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:18:14 $
+ *	$Id: exf.h,v 10.2 1995/05/05 18:41:48 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:41:48 $
  */
 					/* Undo direction. */
 /*
@@ -63,16 +63,7 @@ struct _exf {
 	u_int8_t flags;
 };
 
-/* EXF routines. */
-FREF	*file_add __P((SCR *, CHAR_T *));
-int	 file_aw __P((SCR *, int));
-void	 file_cinit __P((SCR *));
-int	 file_end __P((SCR *, EXF *, int));
-lock_t	 file_lock __P((SCR *, char *, int *, int, int));
-int	 file_m1 __P((SCR *, int, int));
-int	 file_m2 __P((SCR *, int));
-int	 file_m3 __P((SCR *, int));
-
+/* Flags to file_init() and file_write(). */
 #define	FS_ALL		0x001	/* Write the entire file. */
 #define	FS_APPEND	0x002	/* Append to the file. */
 #define	FS_FORCE	0x004	/* Force is set. */
@@ -80,36 +71,13 @@ int	 file_m3 __P((SCR *, int));
 #define	FS_POSSIBLE	0x010	/* Force could have been set. */
 #define	FS_SETALT	0x020	/* Set alternate file name. */
 #define	FS_WELCOME	0x040	/* Display welcoming message. */
-int	 file_init __P((SCR *, FREF *, char *, int));
-int	 file_write __P((SCR *, MARK *, MARK *, char *, int));
 
-/* Recovery routines. */
-int	 rcv_init __P((SCR *));
-int	 rcv_list __P((SCR *));
-int	 rcv_on __P((SCR *));
-int	 rcv_read __P((SCR *, FREF *));
-
+/* Flags to rcv_sync(). */
 #define	RCV_EMAIL	0x01	/* Send the user email, IFF file modified. */
 #define	RCV_ENDSESSION	0x02	/* End the file session. */
 #define	RCV_PRESERVE	0x04	/* Preserve backup file, IFF file modified. */
 #define	RCV_SNAPSHOT	0x08	/* Snapshot the recovery, and send email. */
-int	 rcv_sync __P((SCR *, u_int));
-int	 rcv_tmp __P((SCR *, EXF *, char *));
-
-/* DB interface routines */
-int	 file_aline __P((SCR *, int, recno_t, char *, size_t));
-int	 file_dline __P((SCR *, recno_t));
-int	 file_eline __P((SCR *, recno_t));
-char	*file_gline __P((SCR *, recno_t, size_t *));
-int	 file_iline __P((SCR *, recno_t, char *, size_t));
-int	 file_lline __P((SCR *, recno_t *));
-char	*file_rline __P((SCR *, recno_t, size_t *));
-int	 file_sline __P((SCR *, recno_t, char *, size_t));
 
 /* Line retrieval error. */
 #define	FILE_LERR(sp, lno)						\
 	file_lerr(sp, __FILE__, __LINE__, lno);
-void	 file_lerr __P((SCR *, char *, recno_t, recno_t));
-
-/* Alternate file name (ex semantics). */
-void	 set_alt_name __P((SCR *, char *));

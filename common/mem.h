@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: mem.h,v 10.1 1995/03/17 12:36:58 bostic Exp $ (Berkeley) $Date: 1995/03/17 12:36:58 $
+ *	$Id: mem.h,v 10.2 1995/05/05 18:42:53 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:42:53 $
  */
 
 /* Increase the size of a malloc'd buffer.  Two versions, one that
@@ -167,6 +167,3 @@
  */
 #define	MEMMOVE(p, t, len)	memmove(p, t, (len) * sizeof(*(p)))
 #define	MEMSET(p, value, len)	memset(p, value, (len) * sizeof(*(p)))
-
-void	*binc __P((SCR *, void *, size_t *, size_t));
-CHAR_T	*v_strdup __P((SCR *, const CHAR_T *, size_t));

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: log.c,v 10.1 1995/03/17 12:36:13 bostic Exp $ (Berkeley) $Date: 1995/03/17 12:36:13 $";
+static char sccsid[] = "$Id: log.c,v 10.2 1995/05/05 18:42:18 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:42:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -85,6 +85,8 @@ static void	log_trace __P((SCR *, char *, recno_t, u_char *));
 /*
  * log_init --
  *	Initialize the logging subsystem.
+ *
+ * PUBLIC: int log_init __P((SCR *, EXF *));
  */
 int
 log_init(sp, ep)
@@ -119,6 +121,8 @@ log_init(sp, ep)
 /*
  * log_end --
  *	Close the logging subsystem.
+ *
+ * PUBLIC: int log_end __P((SCR *, EXF *));
  */
 int
 log_end(sp, ep)
@@ -147,6 +151,8 @@ log_end(sp, ep)
 /*
  * log_cursor --
  *	Log the current cursor position, starting an event.
+ *
+ * PUBLIC: int log_cursor __P((SCR *));
  */
 int
 log_cursor(sp)
@@ -210,6 +216,8 @@ log_cursor1(sp, type)
 /*
  * log_line --
  *	Log a line change.
+ *
+ * PUBLIC: int log_line __P((SCR *, recno_t, u_int));
  */
 int
 log_line(sp, lno, action)
@@ -310,6 +318,8 @@ log_line(sp, lno, action)
  *	aren't any operations that just put out a log record -- this
  *	would mean that undo operations would only reset marks, and not
  *	cause any other change.
+ *
+ * PUBLIC: int log_mark __P((SCR *, LMARK *));
  */
 int
 log_mark(sp, lmp)
@@ -354,6 +364,8 @@ log_mark(sp, lmp)
 /*
  * Log_backward --
  *	Roll the log backward one operation.
+ *
+ * PUBLIC: int log_backward __P((SCR *, MARK *));
  */
 int
 log_backward(sp, rp)
@@ -458,6 +470,8 @@ err:	F_CLR(ep, F_NOLOG);
  * unless a change was made.  If you do a change, move off the line,
  * then move back on and do a 'U', the line will be restored to the way
  * it was before the original change.
+ *
+ * PUBLIC: int log_setline __P((SCR *));
  */
 int
 log_setline(sp)
@@ -543,6 +557,8 @@ err:	F_CLR(ep, F_NOLOG);
 /*
  * Log_forward --
  *	Roll the log forward one operation.
+ *
+ * PUBLIC: int log_forward __P((SCR *, MARK *));
  */
 int
 log_forward(sp, rp)

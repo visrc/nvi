@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 10.1 1995/04/13 17:18:28 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:18:28 $";
+static char sccsid[] = "$Id: recover.c,v 10.2 1995/05/05 18:43:36 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:43:36 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -124,6 +124,8 @@ static void	 rcv_busy __P((SCR *, int));
 /*
  * rcv_tmp --
  *	Build a file name that will be used as the recovery file.
+ *
+ * PUBLIC: int rcv_tmp __P((SCR *, EXF *, char *));
  */
 int
 rcv_tmp(sp, ep, name)
@@ -184,6 +186,8 @@ err:		msgq(sp, M_ERR,
 /*
  * rcv_init --
  *	Force the file to be snapshotted for recovery.
+ *
+ * PUBLIC: int rcv_init __P((SCR *));
  */
 int
 rcv_init(sp)
@@ -248,6 +252,8 @@ err:	msgq(sp, M_ERR,
  *		snapshotting the backup file and send email to the user
  *		sending email to the user if the file was modified
  *		ending the file session
+ *
+ * PUBLIC: int rcv_sync __P((SCR *, u_int));
  */
 int
 rcv_sync(sp, flags)
@@ -472,6 +478,8 @@ err:	if (!issync)
  *
  * rcv_list --
  *	List the files that can be recovered by this user.
+ *
+ * PUBLIC: int rcv_list __P((SCR *));
  */
 int
 rcv_list(sp)
@@ -575,6 +583,8 @@ next:		(void)fclose(fp);
 /*
  * rcv_read --
  *	Start a recovered file as the file to edit.
+ *
+ * PUBLIC: int rcv_read __P((SCR *, FREF *));
  */
 int
 rcv_read(sp, frp)
