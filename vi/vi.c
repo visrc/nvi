@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vi.c,v 10.39 1996/03/30 10:11:35 bostic Exp $ (Berkeley) $Date: 1996/03/30 10:11:35 $";
+static const char sccsid[] = "$Id: vi.c,v 10.40 1996/03/30 13:47:18 bostic Exp $ (Berkeley) $Date: 1996/03/30 13:47:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -973,7 +973,7 @@ v_dtoh(sp)
 	for (hidden = 0, gp = sp->gp;
 	    (tsp = gp->dq.cqh_first) != (void *)&gp->dq; ++hidden) {
 		if (_HMAP(tsp) != NULL) {
-			FREE(_HMAP(tsp), SIZE_HMAP(tsp) * sizeof(SMAP));
+			free(_HMAP(tsp));
 			_HMAP(tsp) = NULL;
 		}
 		CIRCLEQ_REMOVE(&gp->dq, tsp, q);

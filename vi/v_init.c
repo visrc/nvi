@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_init.c,v 10.7 1996/03/06 19:54:18 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:54:18 $";
+static const char sccsid[] = "$Id: v_init.c,v 10.8 1996/03/30 13:47:10 bostic Exp $ (Berkeley) $Date: 1996/03/30 13:47:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -93,7 +93,7 @@ v_screen_end(sp)
 		free(vip->ps);
 
 	if (HMAP != NULL)
-		FREE(HMAP, SIZE_HMAP(sp) * sizeof(SMAP));
+		free(HMAP);
 
 	free(vip);
 	sp->vi_private = NULL;

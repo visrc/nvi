@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_split.c,v 10.20 1996/03/21 19:51:11 bostic Exp $ (Berkeley) $Date: 1996/03/21 19:51:11 $";
+static const char sccsid[] = "$Id: vs_split.c,v 10.21 1996/03/30 13:47:25 bostic Exp $ (Berkeley) $Date: 1996/03/30 13:47:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -312,7 +312,7 @@ vs_bg(csp)
 	CIRCLEQ_INSERT_TAIL(&gp->hq, csp, q);
 
 	/* Toss the screen map. */
-	FREE(_HMAP(csp), SIZE_HMAP(csp) * sizeof(SMAP));
+	free(_HMAP(csp));
 	_HMAP(csp) = NULL;
 
 	/* Switch screens. */
