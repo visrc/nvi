@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_join.c,v 8.4 1993/08/29 11:21:49 bostic Exp $ (Berkeley) $Date: 1993/08/29 11:21:49 $";
+static char sccsid[] = "$Id: ex_join.c,v 8.5 1993/10/01 10:26:37 bostic Exp $ (Berkeley) $Date: 1993/10/01 10:26:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -105,8 +105,7 @@ ex_join(sp, ep, cmdp)
 				++clen;
 				for (; len && isblank(*p); --len, ++p);
 			}
-		} else
-			first = 0;
+		}
 			
 		if (len != 0) {
 			memmove(tbp, p, len);
@@ -119,7 +118,8 @@ ex_join(sp, ep, cmdp)
 		/*
 		 * Historic practice for vi was to put the cursor at the first
 		 * inserted whitespace character, if there was one, or the
-		 * first character of the joined line, if there wasn't.  If
+		 * first character of the joined line, if there wasn't, or the
+		 * last character of the line if joined to an empty line.  If
 		 * a count was specified, the cursor was moved as described
 		 * for the first line joined, ignoring subsequent lines.  If
 		 * the join was a ':' command, the cursor was placed at the
@@ -128,12 +128,18 @@ ex_join(sp, ep, cmdp)
 		 * in which case it moved to the new end of line.  There are
 		 * probably several more special cases, but frankly, my dear,
 		 * I don't give a damn.  This implementation puts the cursor
-		 * on the first inserted whitespace character or the first
-		 * character of the joined line, regardless.  Note, if the
-		 * cursor isn't on the joined line (possible with : commands),
-		 * it is reset to the starting line.
+		 * on the first inserted whitespace character, the first
+		 * character of the joined line, or the last character of the
+		 * line regardless.  Note, if the cursor isn't on the joined
+		 * line (possible with : commands), it is reset to the starting
+		 * line.
 		 */
-		sp->cno = (tbp - bp) - len - 1;
+		if (!first)
+			sp->cno = (tbp - bp) - len - 1;
+		else {
+			sp->cno = (tbp - bp) - 1;
+			first = 0;
+		}
 	}
 	sp->lno = cmdp->addr1.lno;
 
