@@ -14,7 +14,7 @@
 #undef VI
 
 #ifndef lint
-static const char sccsid[] = "$Id: perl.xs,v 8.41 2001/06/28 17:53:58 skimo Exp $ (Berkeley) $Date: 2001/06/28 17:53:58 $";
+static const char sccsid[] = "$Id: perl.xs,v 8.42 2001/07/29 18:35:44 skimo Exp $ (Berkeley) $Date: 2001/07/29 18:35:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -855,26 +855,20 @@ SwitchScreen(screenFrom, screenTo)
 # Usage: VI::MapKey screenId key perlproc
 
 void
-MapKey(screen, key, perlproc)
+MapKey(screen, key, commandsv)
 	VI screen
 	char *key
-	SV *perlproc
+	SV *commandsv
 
 	PREINIT:
 	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
 	int rval;
 	int length;
 	char *command;
-	SV *svc;
-	SV *svn;
 
 	CODE:
 	INITMESSAGE(screen);
-	svc = sv_2mortal(newSVpv(":perl ", 6));
-	sv_catsv(svc, perlproc);
-	svn = sv_2mortal(newSVpv("\r", 1));
-	sv_catsv(svc, svn);
-	command = SvPV(svc, length);
+	command = SvPV(commandsv, length);
 	rval = api_map(screen, key, command, length);
 	ENDMESSAGE(screen);
 
@@ -1131,26 +1125,20 @@ DESTROY(screen)
 	SvREFCNT_dec((SV*)SvIV((SV*)SvRV(ST(0))));
 
 void
-STORE(screen, key, perlproc)
+STORE(screen, key, commandsv)
 	VI::MAP screen
 	char *key
-	SV *perlproc
+	SV *commandsv
 
 	PREINIT:
 	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
 	int rval;
 	int length;
 	char *command;
-	SV *svc;
-	SV *svn;
 
 	CODE:
 	INITMESSAGE(screen);
-	svc = sv_2mortal(newSVpv(":perl ", 6));
-	sv_catsv(svc, perlproc);
-	svn = sv_2mortal(newSVpv("\r", 1));
-	sv_catsv(svc, svn);
-	command = SvPV(svc, length);
+	command = SvPV(commandsv, length);
 	rval = api_map(screen, key, command, length);
 	ENDMESSAGE(screen);
 
