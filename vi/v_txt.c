@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.86 1994/03/09 14:16:32 bostic Exp $ (Berkeley) $Date: 1994/03/09 14:16:32 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.87 1994/03/11 12:08:01 bostic Exp $ (Berkeley) $Date: 1994/03/11 12:08:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -376,7 +376,7 @@ next_ch:	if (term_key(sp, &ikey, iflags) != INP_OK)
 		 * hex mode.
 		 */
 		if (ikey.flags & CH_QUOTED)
-			goto ins_ch;
+			goto insq_ch;
 		if (quoted == Q_THISCHAR) {
 			--sp->cno;
 			++tp->owrite;
@@ -384,7 +384,7 @@ next_ch:	if (term_key(sp, &ikey, iflags) != INP_OK)
 
 			if (ch == HEX_CH)
 				hex = H_NEXTCHAR;
-			goto ins_ch;
+			goto insq_ch;
 		}
 
 		switch (ikey.value) {
@@ -878,9 +878,28 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 			}
 			ch = '^';
 			quoted = Q_NEXTCHAR;
-			/* FALLTHROUGH */
+			goto insq_ch;
 		default:			/* Insert the character. */
 ins_ch:			/*
+	 		 * Historically, vi eliminated nul's out of hand.  If
+			 * the beautify option was set, it also deleted any
+			 * unknown ASCII value less than space (040) and the
+			 * del character (0177), except for tabs.  Unknown is
+			 * a key word here.  Most vi documentation claims that
+			 * it deleted everything but <tab>, <nl> and <ff>, as
+			 * that's what the original 4BSD documentation said.
+			 * This is obviously wrong, however, as <esc> would be
+			 * included in that list.  What we do is eliminate any
+			 * unquoted, iscntrl() character that wasn't a replay
+			 * and wasn't handled specially, except <tab> or <ff>.
+			 */
+			if (LF_ISSET(TXT_BEAUTIFY) && iscntrl(ch) &&
+			    ikey.value != K_FORMFEED && ikey.value != K_TAB) {
+				msgq(sp, M_BERR,
+				    "Illegal character; quote to enter.");
+				break;
+			}
+insq_ch:		/*
 			 * If entering a space character after a word, check
 			 * for abbreviations.  If there was one, discard the
 			 * replay characters.  Check for unmap commands, as
