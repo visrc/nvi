@@ -4,9 +4,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "config.h"
-#include "options.h"
 #include "vi.h"
+#include "options.h"
 #include "pathnames.h"
 #include "extern.h"
 
