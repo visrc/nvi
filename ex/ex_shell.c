@@ -6,17 +6,19 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 8.9 1993/11/03 17:49:59 bostic Exp $ (Berkeley) $Date: 1993/11/03 17:49:59 $";
+static char sccsid[] = "$Id: ex_shell.c,v 8.10 1993/11/12 16:43:09 bostic Exp $ (Berkeley) $Date: 1993/11/12 16:43:09 $";
 #endif /* not lint */
 
 #include <sys/param.h>
 
+#include <curses.h>
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
 
 #include "vi.h"
 #include "excmd.h"
+#include "../svi/svi_screen.h"
 
 /*
  * ex_shell -- :sh[ell]
@@ -32,7 +34,7 @@ ex_shell(sp, ep, cmdp)
 	char buf[MAXPATHLEN];
 
 	(void)snprintf(buf, sizeof(buf), "%s -i", O_STR(sp, O_SHELL));
-	return (ex_exec_proc(sp, O_STR(sp, O_SHELL), buf, "\n"));
+	return (ex_exec_proc(sp, O_STR(sp, O_SHELL), buf, "\n", NULL));
 }
 
 /*
@@ -40,16 +42,20 @@ ex_shell(sp, ep, cmdp)
  *	Run a separate process.
  */
 int
-ex_exec_proc(sp, shell, cmd, msg)
+ex_exec_proc(sp, shell, cmd, p1, p2)
 	SCR *sp;
 	const u_char *shell, *cmd;
-	char *msg;
+	char *p1, *p2;
 {
 	struct sigaction act, oact;
 	struct termios term;
 	const char *name;
 	pid_t pid;
 	int isig, rval;
+
+	/* Clear the rest of the screen. */
+	if (F_ISSET(sp, S_MODE_VI) && sp->s_clear(sp))
+		return (1);
 
 	/*
 	 * Save ex/vi terminal settings, and restore the original ones.
@@ -81,7 +87,12 @@ ex_exec_proc(sp, shell, cmd, msg)
 		}
 	}
 
-	(void)write(STDOUT_FILENO, msg, strlen(msg));
+	/* Put out various messages. */
+	if (p1 != NULL)
+		(void)write(STDOUT_FILENO, p1, strlen(p1));
+	if (p2 != NULL)
+		(void)write(STDOUT_FILENO, p2, strlen(p2));
+
 
 	switch (pid = vfork()) {
 	case -1:			/* Error. */
@@ -121,5 +132,10 @@ ret:	if (F_ISSET(sp->gp, G_ISFROMTTY) && isig) {
 			rval = 1;
 		}
 	}
+
+	/* If in vi mode, redraw. */
+	if (F_ISSET(sp, S_MODE_VI))
+		F_SET(sp, S_REDRAW);
+
 	return (rval);
 }
