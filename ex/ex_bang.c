@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 10.27 1995/11/13 08:55:18 bostic Exp $ (Berkeley) $Date: 1995/11/13 08:55:18 $";
+static char sccsid[] = "$Id: ex_bang.c,v 10.28 1995/11/25 09:48:42 bostic Exp $ (Berkeley) $Date: 1995/11/25 09:48:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -106,7 +106,7 @@ ex_bang(sp, cmdp)
 			} else if (O_ISSET(sp, O_WARN) &&
 			    !F_ISSET(sp, S_EX_SILENT))
 				msg = msg_cat(sp,
-				    "303|File modified since last write.\n",
+				    "303|File modified since last write.",
 				    NULL);
 
 		/* If we're still in a vi screen, move out explicitly. */

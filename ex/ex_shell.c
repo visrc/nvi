@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 10.23 1995/11/17 12:10:40 bostic Exp $ (Berkeley) $Date: 1995/11/17 12:10:40 $";
+static char sccsid[] = "$Id: ex_shell.c,v 10.24 1995/11/25 09:48:43 bostic Exp $ (Berkeley) $Date: 1995/11/25 09:48:43 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -83,8 +83,10 @@ ex_exec_proc(sp, cmdp, cmd, msg, need_newline)
 	/* Put out additional newline, message. */
 	if (need_newline)
 		(void)ex_puts(sp, "\n");
-	if (msg != NULL)
+	if (msg != NULL) {
 		(void)ex_puts(sp, msg);
+		(void)ex_puts(sp, "\n");
+	}
 	(void)ex_fflush(sp);
 
 	switch (pid = vfork()) {

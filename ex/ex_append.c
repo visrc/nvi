@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 10.23 1995/11/17 12:18:13 bostic Exp $ (Berkeley) $Date: 1995/11/17 12:18:13 $";
+static char sccsid[] = "$Id: ex_append.c,v 10.24 1995/11/25 09:48:40 bostic Exp $ (Berkeley) $Date: 1995/11/25 09:48:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -227,7 +227,8 @@ ex_aci(sp, cmdp, cmd)
 		 * it.  Give them an informational message.
 		 */
 		(void)ex_puts(sp,
-		    msg_cat(sp, "273|Entering ex input mode.\n", NULL));
+		    msg_cat(sp, "273|Entering ex input mode.", NULL));
+		(void)ex_puts(sp, "\n");
 		(void)ex_fflush(sp);
 	}
 
