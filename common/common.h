@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 5.54 1993/05/13 12:20:28 bostic Exp $ (Berkeley) $Date: 1993/05/13 12:20:28 $
+ *	$Id: common.h,v 5.55 1993/05/14 16:18:24 bostic Exp $ (Berkeley) $Date: 1993/05/14 16:18:24 $
  */
 
 #include <limits.h>			/* Ordered before local includes. */
@@ -131,7 +131,7 @@ void	 cursor_check __P((SCR *, EXF *, recno_t *, size_t *));
 int	 nonblank __P((SCR *, EXF *, recno_t, size_t *));
 void	 onhup __P((int));
 int	 set_window_size __P((SCR *, u_int));
-void	 status __P((SCR *, EXF *, recno_t));
+int	 status __P((SCR *, EXF *, recno_t, int));
 char	*tail __P((char *));
 
 #ifdef DEBUG
