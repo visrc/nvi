@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.68 1993/02/21 19:07:25 bostic Exp $ (Berkeley) $Date: 1993/02/21 19:07:25 $";
+static char sccsid[] = "$Id: ex.c,v 5.69 1993/02/22 18:24:03 bostic Exp $ (Berkeley) $Date: 1993/02/22 18:24:03 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -165,8 +165,8 @@ ex_cstring(ep, cmd, len, doquoting)
 cend:			if (p > cmd) {
 				*p = '\0';	/* XXX: 8BIT */
 				/*
-				 * Errors are ignored, although error messages
-				 * will be displayed later.
+				 * Errors are ignored, although error
+				 * messages will be displayed later.
 				 */
 				(void)ex_cmd(ep, cmd);
 				p = cmd;
