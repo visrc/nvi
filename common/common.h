@@ -398,7 +398,6 @@ extern void	doexcmd();
 extern void	cmd_abbr();
 #endif
 extern void	cmd_append();
-extern void	cmd_args();
 #ifndef NO_AT
 extern void	cmd_at();
 #endif
@@ -425,7 +424,6 @@ extern void	cmd_map();
 #ifndef NO_MKEXRC
 extern void	cmd_mkexrc();
 #endif
-extern void	cmd_next();
 extern void	cmd_print();
 extern void	cmd_put();
 extern void	cmd_read();
@@ -521,7 +519,7 @@ extern MARK	v_start();
 #ifdef DEBUG
 # define malloc dbmalloc
 # define free dbfree
-extern char *dbmalloc();
+extern void *dbmalloc();
 #endif
 
 /*----------------------------------------------------------------------*/
