@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 8.16 1994/04/25 10:09:38 bostic Exp $ (Berkeley) $Date: 1994/04/25 10:09:38 $";
+static char sccsid[] = "$Id: v_scroll.c,v 8.17 1994/04/25 16:26:09 bostic Exp $ (Berkeley) $Date: 1994/04/25 16:26:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -264,8 +264,7 @@ v_hpageup(sp, ep, vp)
 	 */
 	if (F_ISSET(vp, VC_C1SET))
 		sp->defscroll = vp->count;
-
-	if (sp->s_down(sp, ep, &vp->m_stop, sp->defscroll, 1))
+	if (sp->s_scroll(sp, ep, &vp->m_stop, sp->defscroll, CNTRL_U))
 		return (1);
 	vp->m_final = vp->m_stop;
 	return (0);
@@ -290,8 +289,7 @@ v_hpagedown(sp, ep, vp)
 	 */
 	if (F_ISSET(vp, VC_C1SET))
 		sp->defscroll = vp->count;
-
-	if (sp->s_up(sp, ep, &vp->m_stop, sp->defscroll, 1))
+	if (sp->s_scroll(sp, ep, &vp->m_stop, sp->defscroll, CNTRL_D))
 		return (1);
 	vp->m_final = vp->m_stop;
 	return (0);
@@ -335,9 +333,7 @@ v_pagedown(sp, ep, vp)
 	offset = (F_ISSET(vp, VC_C1SET) ? vp->count : 1) * sp->t_rows - 2;
 	if (offset == 0)
 		offset = 1;
-	if (sp->s_up(sp, ep, &vp->m_stop, offset, 0))
-		return (1);
-	if (sp->s_position(sp, ep, &vp->m_stop, 0, P_TOP))
+	if (sp->s_scroll(sp, ep, &vp->m_stop, offset, CNTRL_F))
 		return (1);
 	vp->m_final = vp->m_stop;
 	return (0);
@@ -387,9 +383,7 @@ v_pageup(sp, ep, vp)
 	offset = (F_ISSET(vp, VC_C1SET) ? vp->count : 1) * sp->t_rows - 2;
 	if (offset == 0)
 		offset = 1;
-	if (sp->s_down(sp, ep, &vp->m_stop, offset, 0))
-		return (1);
-	if (sp->s_position(sp, ep, &vp->m_stop, 0, P_BOTTOM))
+	if (sp->s_scroll(sp, ep, &vp->m_stop, offset, CNTRL_B))
 		return (1);
 	vp->m_final = vp->m_stop;
 	return (0);
@@ -409,8 +403,8 @@ v_lineup(sp, ep, vp)
 	 * The cursor moves down, staying with its original line, unless it
 	 * reaches the bottom of the screen.
 	 */
-	if (sp->s_down(sp, ep,
-	    &vp->m_stop, F_ISSET(vp, VC_C1SET) ? vp->count : 1, 0))
+	if (sp->s_scroll(sp, ep,
+	    &vp->m_stop, F_ISSET(vp, VC_C1SET) ? vp->count : 1, CNTRL_Y))
 		return (1);
 	vp->m_final = vp->m_stop;
 	return (0);
@@ -430,8 +424,8 @@ v_linedown(sp, ep, vp)
 	 * The cursor moves up, staying with its original line, unless it
 	 * reaches the top of the screen.
 	 */
-	if (sp->s_up(sp, ep,
-	    &vp->m_stop, F_ISSET(vp, VC_C1SET) ? vp->count : 1, 0))
+	if (sp->s_scroll(sp, ep,
+	    &vp->m_stop, F_ISSET(vp, VC_C1SET) ? vp->count : 1, CNTRL_E))
 		return (1);
 	vp->m_final = vp->m_stop;
 	return (0);
