@@ -18,7 +18,7 @@ static const char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static const char sccsid[] = "$Id: main.c,v 10.47 1996/09/24 20:51:24 bostic Exp $ (Berkeley) $Date: 1996/09/24 20:51:24 $";
+static const char sccsid[] = "$Id: main.c,v 10.48 1996/10/11 18:28:28 bostic Exp $ (Berkeley) $Date: 1996/10/11 18:28:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -511,9 +511,11 @@ v_end(gp)
 	if (gp->tmp_bp != NULL)
 		free(gp->tmp_bp);
 
+#if defined(DEBUG)
 	/* Close debugging file descriptor. */
 	if (gp->tracefp != NULL)
 		(void)fclose(gp->tracefp);
+#endif
 #endif
 }
 
