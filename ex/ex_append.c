@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 10.10 1995/07/06 11:49:42 bostic Exp $ (Berkeley) $Date: 1995/07/06 11:49:42 $";
+static char sccsid[] = "$Id: ex_append.c,v 10.11 1995/07/26 12:16:40 bostic Exp $ (Berkeley) $Date: 1995/07/26 12:16:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -159,9 +159,8 @@ ex_aci(sp, cmdp, cmd)
 	 * necessary if the text insert command was the last of the global
 	 * commands.
 	 */
-	if (cmdp->save_cmdlen != 0) {
-		for (p = cmdp->save_cmd,
-		    len = cmdp->save_cmdlen; len > 0; p = t) {
+	if (cmdp->clen != 0) {
+		for (p = cmdp->cp, len = cmdp->clen; len > 0; p = t) {
 			for (t = p; len > 0 && t[0] != '\n'; ++t, --len);
 			if (t != p || len == 0) {
 				if (F_ISSET(sp, S_EX_GLOBAL) &&
@@ -192,8 +191,8 @@ ex_aci(sp, cmdp, cmd)
 		 * input function below.
 		 */
 		if (len != 0)
-			cmdp->save_cmd = t;
-		cmdp->save_cmdlen = len;
+			cmdp->cp= t;
+		cmdp->clen = len;
 	}
 
 	if (F_ISSET(sp, S_EX_GLOBAL)) {
@@ -220,10 +219,10 @@ ex_aci(sp, cmdp, cmd)
 	/*
 	 * !!!
 	 * Users of historical versions of vi sometimes get confused when they
-	 * enter append mode, and can't seem to get out of it.  Give them an
-	 * informational message.
+	 * enter append mode, and can't seem to get out of it.  This problem
+	 * also applies to the .exrc file?  Give them an informational message.
 	 */
-	if (F_ISSET(sp, S_VI)) {
+	if (!F_ISSET(sp, S_EX)) {
 		(void)ex_puts(sp,
 		    msg_cat(sp, "280|\nEntering ex input mode.\n", NULL));
 		(void)ex_fflush(sp);

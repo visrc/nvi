@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_msg.c,v 10.6 1995/07/08 10:24:04 bostic Exp $ (Berkeley) $Date: 1995/07/08 10:24:04 $";
+static char sccsid[] = "$Id: vs_msg.c,v 10.7 1995/07/26 12:15:16 bostic Exp $ (Berkeley) $Date: 1995/07/26 12:15:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -71,22 +71,22 @@ cl_msg(sp, mtype, line, rlen)
 	}
 	
 	/*
-	 * Display ex output or error messages for the screen.  If ex
-	 * running, or in ex canonical mode, let stdio(3) do the work.
-	 */
-	clp = CLP(sp);
-	if (F_ISSET(clp, CL_INIT_EX) || F_ISSET(sp, S_EX | S_EX_CANON)) {
-		F_SET(clp, CL_EX_WROTE);
-		return (printf("%.*s", rlen, line));
-	}
-
-	/*
 	 * If no screen yet, the user is doing output from a .exrc file or
 	 * something similar.  Save the output for later.
 	 */
+	clp = CLP(sp);
 	if (!F_ISSET(clp, CL_INIT_EX | CL_INIT_VI)) {
 		cl_msgsave(sp, mtype, line, rlen);
 		return (rlen);
+	}
+
+	/*
+	 * Display ex output or error messages for the screen.  If ex is
+	 * running, or in ex canonical mode, let stdio(3) do the work.
+	 */
+	if (F_ISSET(sp, S_EX | S_EX_CANON)) {
+		F_SET(clp, CL_EX_WROTE);
+		return (printf("%.*s", rlen, line));
 	}
 
 	/* Save the current cursor. */
@@ -347,22 +347,20 @@ cl_resolve(sp, fakecomplete)
 	 *			Repaint overwritten screen lines.
 	 *	If in canonical mode, exit canonical mode.
 	 */
-	F_SET(clp, CL_PRIVWRITE);
 	msg_rpt(sp);
 	if (F_ISSET(sp, S_STATUS)) {
 		F_CLR(sp, S_STATUS);
 		msg_status(sp, sp->lno, 0);
 	}
-	if (clp->totalcount > 1 ||
-	    F_ISSET(sp, S_EX_CANON) && F_ISSET(clp, CL_EX_WROTE)) {
+	F_SET(clp, CL_PRIVWRITE);
+	if (clp->totalcount > 1 || F_ISSET(sp, S_EX_CANON)) {
 		cl_scroll(sp, &ch, SCROLL_WAIT);
 		if (F_ISSET(sp, S_COMPLETE_EX) && ch == ':') {
 			F_CLR(clp, CL_PRIVWRITE);
 			F_CLR(sp, S_COMPLETE | S_COMPLETE_EX);
 			return (1);
 		}
-		if (F_ISSET(clp, CL_REPAINT) ||
-		    F_ISSET(sp, S_EX_CANON) && F_ISSET(clp, CL_EX_WROTE)) {
+		if (F_ISSET(clp, CL_REPAINT) || F_ISSET(sp, S_EX_CANON)) {
 			clearok(curscr, 1);
 			ev.e_event = E_REPAINT;
 			ev.e_flno = 1;

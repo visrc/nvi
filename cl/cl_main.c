@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_main.c,v 10.8 1995/07/06 11:53:40 bostic Exp $ (Berkeley) $Date: 1995/07/06 11:53:40 $";
+static char sccsid[] = "$Id: cl_main.c,v 10.9 1995/07/26 12:15:47 bostic Exp $ (Berkeley) $Date: 1995/07/26 12:15:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -111,16 +111,14 @@ main(argc, argv)
 	clp = CLP(sp);
 	if (F_ISSET(sp, S_VI)) {
 		if (F_ISSET(clp, CL_INIT_EX)) {
-			if (F_ISSET(clp, CL_EX_WROTE)) {
-				p = msg_cmsg(sp, CMSG_CONT, &len);
-				(void)write(STDOUT_FILENO, p, len);
-				if (cl_getkey(sp, &ch))
-					goto err;
-				F_CLR(clp, CL_EX_WROTE);
-			}
+			p = msg_cmsg(sp, CMSG_CONT, &len);
+			(void)write(STDOUT_FILENO, p, len);
+			if (cl_getkey(sp, &ch))
+				goto err;
+
 			/*
 			 * XXX
-			 * This may discard characters from the tty queue.
+			 * This call may discard characters from the tty queue.
 			 */
 			if (cl_ex_end(sp))
 				goto err;
