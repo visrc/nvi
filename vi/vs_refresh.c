@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_refresh.c,v 10.44 1996/10/13 14:25:22 bostic Exp $ (Berkeley) $Date: 1996/10/13 14:25:22 $";
+static const char sccsid[] = "$Id: vs_refresh.c,v 10.45 1996/12/04 19:09:58 bostic Exp $ (Berkeley) $Date: 1996/12/04 19:09:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,28 +32,6 @@ static const char sccsid[] = "$Id: vs_refresh.c,v 10.44 1996/10/13 14:25:22 bost
 
 static void	vs_modeline __P((SCR *));
 static int	vs_paint __P((SCR *, u_int));
-
-/*
- * v_repaint --
- *	Repaint selected lines from the screen.
- *
- * PUBLIC: int vs_repaint __P((SCR *, EVENT *));
- */
-int
-vs_repaint(sp, evp)
-	SCR *sp;
-	EVENT *evp;
-{
-	SMAP *smp;
-
-	for (; evp->e_flno <= evp->e_tlno; ++evp->e_flno) {
-		smp = HMAP + evp->e_flno - 1;
-		SMAP_FLUSH(smp);
-		if (vs_line(sp, smp, NULL, NULL))
-			return (1);
-	}
-	return (0);
-}
 
 /*
  * vs_refresh --
