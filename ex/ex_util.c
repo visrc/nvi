@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_util.c,v 10.14 1995/10/17 11:48:23 bostic Exp $ (Berkeley) $Date: 1995/10/17 11:48:23 $";
+static char sccsid[] = "$Id: ex_util.c,v 10.15 1995/11/05 13:08:05 bostic Exp $ (Berkeley) $Date: 1995/11/05 13:08:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,14 +31,14 @@ static char sccsid[] = "$Id: ex_util.c,v 10.14 1995/10/17 11:48:23 bostic Exp $ 
  *	Build an EX command structure.
  *
  * PUBLIC: void ex_cbuild __P((EXCMD *,
- * PUBLIC:   int, int, recno_t, recno_t, int, ARGS *[2], ARGS *a, char *));
+ * PUBLIC:   int, int, recno_t, recno_t, int, ARGS **, ARGS *a, char *));
  */
 void
 ex_cbuild(cmdp, cmd_id, naddr, lno1, lno2, force, ap, a, arg)
 	EXCMD *cmdp;
 	int cmd_id, force, naddr;
 	recno_t lno1, lno2;
-	ARGS *ap[2], *a;
+	ARGS **ap, *a;
 	char *arg;
 {
 	memset(cmdp, 0, sizeof(EXCMD));
