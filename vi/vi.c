@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.38 1993/01/23 16:38:00 bostic Exp $ (Berkeley) $Date: 1993/01/23 16:38:00 $";
+static char sccsid[] = "$Id: vi.c,v 5.39 1993/02/11 16:40:10 bostic Exp $ (Berkeley) $Date: 1993/02/11 16:40:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -432,7 +432,7 @@ getmotion(vp, fm, tm)
 	}
 
 	/*
-	 * Motion commands can be doubled to indicate the current line.  In
+	 * Some commands can be repeated to indicate the current line.  In
 	 * this case, or if the command is a "line command", set the flags
 	 * appropriately.  If not a doubled command, run the function to get
 	 * the resulting mark.
@@ -443,7 +443,13 @@ getmotion(vp, fm, tm)
 		/* Set the end of the command. */
 		tm->lno = curf->lno + motion.count - 1;
 		tm->cno = 1;
-		if (file_gline(curf, tm->lno, NULL) == NULL) {
+
+		/*
+		 * If the current line is missing, i.e. the file is empty,
+		 * historic vi permitted a "cc" command to change it.
+		 */
+		if (!(vp->kp->flags & VC_C) &&
+		    file_gline(curf, tm->lno, NULL) == NULL) {
 			m.lno = curf->lno;
 			m.cno = curf->cno;
 			v_eof(&m);
