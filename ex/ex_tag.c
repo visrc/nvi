@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 8.32 1994/02/28 17:13:25 bostic Exp $ (Berkeley) $Date: 1994/02/28 17:13:25 $";
+static char sccsid[] = "$Id: ex_tag.c,v 8.33 1994/03/03 10:06:09 bostic Exp $ (Berkeley) $Date: 1994/03/03 10:06:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -66,8 +66,9 @@ ex_tagfirst(sp, tagarg)
 
 	/*
 	 * !!!
-	 * Historic vi accepted a line number as well as a search
-	 * string, and people are apparently still using the format.
+	 * The historic tags file format (from a long, long time ago...)
+	 * used a line number, not a search string.  I got complaints, so
+	 * people are still using the format.
 	 */
 	if (isdigit(search[0])) {
 		m.lno = atoi(search);
@@ -103,6 +104,19 @@ ex_tagfirst(sp, tagarg)
 	return (0);
 }
 
+/* Free a tag or tagf structure from a queue. */
+#define	FREETAG(tp) {							\
+	TAILQ_REMOVE(&exp->tagq, (tp), q);				\
+	if ((tp)->search != NULL)					\
+		free((tp)->search);					\
+	FREE((tp), sizeof(TAGF));					\
+}
+#define	FREETAGF(tfp) {							\
+	TAILQ_REMOVE(&exp->tagfq, (tfp), q);				\
+	free((tfp)->name);						\
+	FREE((tfp), sizeof(TAGF));					\
+}
+
 /*
  * ex_tagpush -- :tag [file]
  *	Move to a new tag.
@@ -126,6 +140,7 @@ ex_tagpush(sp, ep, cmdp)
 	EX_PRIVATE *exp;
 	FREF *frp;
 	MARK m;
+	SCR *save_sp;
 	TAG *tp;
 	u_int flags;
 	int sval;
@@ -160,10 +175,15 @@ ex_tagpush(sp, ep, cmdp)
 	if (tag_get(sp, exp->tlast, &tag, &name, &search))
 		return (1);
 
-	/* Get a new FREF structure. */
-	if ((frp = file_add(sp, sp->frp, name, 1)) == NULL) {
-		FREE(tag, strlen(tag));
-		return (1);
+	/* Get the (possibly new) FREF structure. */
+	if ((frp = file_add(sp, sp->frp, name, 1)) == NULL)
+		goto modify_err;
+
+	if (sp->frp == frp)
+		which = TC_CURRENT;
+	else {
+		MODIFY_GOTO(sp, sp->ep, F_ISSET(cmdp, E_FORCE));
+		which = TC_CHANGE;
 	}
 
 	/*
@@ -193,19 +213,15 @@ ex_tagpush(sp, ep, cmdp)
 		TAILQ_INSERT_HEAD(&exp->tagq, tp, q);
 	}
 
-	/* Switch to the new file. */
-	if (sp->frp == frp)
-		which = TC_CURRENT;
-	else {
-		MODIFY_CHECK(sp, sp->ep, F_ISSET(cmdp, E_FORCE));
-
-		if (file_init(sp, frp, NULL, 0)) {
-			if (tp != NULL)
-				FREE(tp, sizeof(TAG));
-			FREE(tag, strlen(tag));
-			return (1);
-		}
-		which = TC_CHANGE;
+	/* Switch files. */
+	if (which == TC_CHANGE && file_init(sp, frp, NULL, 0)) {
+		if (tp != NULL)
+			FREETAG(tp);
+		/* Handle special, first-tag case. */
+		if (exp->tagq.tqh_first->q.tqe_next == NULL)
+			TAILQ_REMOVE(&exp->tagq, exp->tagq.tqh_first, q);
+modify_err:	free(tag);
+		return (1);
 	}
 
 	/*
@@ -254,19 +270,6 @@ ex_tagpush(sp, ep, cmdp)
 	return (0);
 }
 
-/* Free a tag or tagf structure from a queue. */
-#define	FREETAG(tp) {							\
-	TAILQ_REMOVE(&exp->tagq, (tp), q);				\
-	if ((tp)->search != NULL)					\
-		free((tp)->search);					\
-	FREE((tp), sizeof(TAGF));					\
-}
-#define	FREETAGF(tfp) {							\
-	TAILQ_REMOVE(&exp->tagfq, (tfp), q);				\
-	free((tfp)->name);						\
-	FREE((tfp), sizeof(TAGF));					\
-}
-
 /*
  * ex_tagpop -- :tagp[op][!] [number | file]
  *	Pop the tag stack.
@@ -279,7 +282,7 @@ ex_tagpop(sp, ep, cmdp)
 {
 	EX_PRIVATE *exp;
 	TAG *ntp, *tp;
-	long off, saved_off;
+	long off;
 	size_t arglen;
 	char *arg, *p, *t;
 
@@ -292,53 +295,41 @@ ex_tagpop(sp, ep, cmdp)
 
 	switch (cmdp->argc) {
 	case 0:				/* Pop one tag. */
-		tp = exp->tagq.tqh_first;
-		FREETAG(tp);
+		ntp = exp->tagq.tqh_first;
 		break;
 	case 1:				/* Name or number. */
 		arg = cmdp->argv[0]->bp;
-		saved_off = strtol(arg, &p, 10);
+		off = strtol(arg, &p, 10);
 		if (*p == '\0') {
-			if (saved_off < 1)
+			if (off < 1)
 				return (0);
-			for (tp = exp->tagq.tqh_first, off = saved_off;
-			    tp != NULL && off-- > 1; tp = tp->q.tqe_next);
+			for (tp = exp->tagq.tqh_first;
+			    tp != NULL && --off > 1; tp = tp->q.tqe_next);
 			if (tp == NULL) {
 				msgq(sp, M_ERR,
-"Less than %d entries on the tags stack; use :display to see the tags stack.",
-				    saved_off);
+"Less than %s entries on the tags stack; use :display to see the tags stack.",
+				    arg);
 				return (1);
 			}
-			for (off = saved_off; off-- > 1;) {
-				tp = exp->tagq.tqh_first;
-				FREETAG(tp);
-			}
+			ntp = tp;
 		} else {
 			arglen = strlen(arg);
 			for (tp = exp->tagq.tqh_first;
-			    tp != NULL; tp = tp->q.tqe_next) {
+			    tp != NULL; ntp = tp, tp = tp->q.tqe_next) {
 				/* Use the user's original file name. */
 				p = tp->frp->name;
 				if ((t = strrchr(p, '/')) == NULL)
 					t = p;
 				else
 					++t;
-				if (!strncmp(arg, t, arglen)) {
-					ntp = tp;
+				if (!strncmp(arg, t, arglen))
 					break;
-				}
 			}
 			if (tp == NULL) {
 				msgq(sp, M_ERR,
 "No file named %s on the tags stack; use :display to see the tags stack.",
 				    arg);
 				return (1);
-			}
-			for (;;) {
-				tp = exp->tagq.tqh_first;
-				if (tp == ntp)
-					break;
-				FREETAG(tp);
 			}
 		}
 		break;
@@ -347,13 +338,12 @@ ex_tagpop(sp, ep, cmdp)
 	}
 
 	/* Update the cursor from the saved TAG information. */
-	tp = exp->tagq.tqh_first;
+	tp = ntp->q.tqe_next;
 	if (tp->frp == sp->frp) {
 		sp->lno = tp->lno;
 		sp->cno = tp->cno;
 	} else {
-		MODIFY_CHECK(sp, ep, F_ISSET(cmdp, E_FORCE));
-
+		MODIFY_RET(sp, ep, F_ISSET(cmdp, E_FORCE));
 		if (file_init(sp, tp->frp, NULL, 0))
 			return (1);
 
@@ -364,9 +354,17 @@ ex_tagpop(sp, ep, cmdp)
 		F_SET(sp, S_FSWITCH);
 	}
 
-	/* If returning to the first tag, the stack is now empty. */
-	if (tp->q.tqe_next == NULL)
+	/* Pop entries off the queue up to ntp. */
+	for (;;) {
+		tp = exp->tagq.tqh_first;
 		FREETAG(tp);
+		if (tp == ntp)
+			break;
+	}
+
+	/* If returning to the first tag, the stack is now empty. */
+	if (exp->tagq.tqh_first->q.tqe_next == NULL)
+		TAILQ_REMOVE(&exp->tagq, exp->tagq.tqh_first, q);
 	return (0);
 }
 
@@ -381,39 +379,36 @@ ex_tagtop(sp, ep, cmdp)
 	EXCMDARG *cmdp;
 {
 	EX_PRIVATE *exp;
-	TAG *tp, tmp;
-	int found;
+	TAG *tp;
 
-	/* Pop to oldest saved information. */
+	/* Find oldest saved information. */
 	exp = EXP(sp);
-	for (found = 0; (tp = exp->tagq.tqh_first) != NULL; found = 1) {
-		if (exp->tagq.tqh_first == NULL)
-			tmp = *tp;
-		FREETAG(tp);
-	}
-
-	if (!found) {
+	for (tp = exp->tagq.tqh_first;
+	    tp != NULL && tp->q.tqe_next != NULL; tp = tp->q.tqe_next);
+	if (tp == NULL) {
 		msgq(sp, M_INFO, "The tags stack is empty.");
 		return (1);
 	}
 
 	/* If not switching files, it's easy; else do the work. */
-	if (tmp.frp == sp->frp) {
-		sp->lno = tmp.lno;
-		sp->cno = tmp.cno;
+	if (tp->frp == sp->frp) {
+		sp->lno = tp->lno;
+		sp->cno = tp->cno;
 	} else {
-		MODIFY_CHECK(sp, sp->ep, F_ISSET(cmdp, E_FORCE));
-
-		if (file_init(sp, tmp.frp, NULL, 0))
+		MODIFY_RET(sp, sp->ep, F_ISSET(cmdp, E_FORCE));
+		if (file_init(sp, tp->frp, NULL, 0))
 			return (1);
 
-		tmp.frp->lno = tmp.lno;
-		tmp.frp->cno = tmp.cno;
+		tp->frp->lno = tp->lno;
+		tp->frp->cno = tp->cno;
 
 		F_SET(sp->frp, FR_CURSORSET);
-
 		F_SET(sp, S_FSWITCH);
 	}
+
+	/* Empty out the queue. */
+	while ((tp = exp->tagq.tqh_first) != NULL)
+		FREETAG(tp);
 	return (0);
 }
 
