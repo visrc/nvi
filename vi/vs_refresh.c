@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_refresh.c,v 10.39 1996/08/17 11:55:03 bostic Exp $ (Berkeley) $Date: 1996/08/17 11:55:03 $";
+static const char sccsid[] = "$Id: vs_refresh.c,v 10.40 1996/09/14 16:28:37 bostic Exp $ (Berkeley) $Date: 1996/09/14 16:28:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -669,13 +669,19 @@ paint:	for (smp = HMAP; smp <= TMAP; ++smp)
 	didpaint = 1;
 
 done_cursor:
-#ifdef DEBUG
 	/*
 	 * Sanity checking.  When the repainting code messes up, the usual
-	 * result is we don't repaint the cursor.  Die now.
+	 * result is we don't repaint the cursor and so sc_smap will be
+	 * NULL.  If we're debugging, die, otherwise restart from scratch.
 	 */
+#ifdef DEBUG
 	if (vip->sc_smap == NULL)
 		abort();
+#else
+	if (vip->sc_smap == NULL) {
+		F_SET(sp, SC_SCR_REFORMAT);
+		return (vs_paint(sp, flags));
+	}
 #endif
 
 	/*
