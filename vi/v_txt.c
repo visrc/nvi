@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 10.17 1995/10/17 08:59:32 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:59:32 $";
+static char sccsid[] = "$Id: v_txt.c,v 10.18 1995/10/17 21:18:22 bostic Exp $ (Berkeley) $Date: 1995/10/17 21:18:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -637,14 +637,13 @@ k_cr:		if (LF_ISSET(TXT_CR)) {
 			goto err;
 
 		/*
-		 * Historic practice was to delete <blank> characters following
-		 * the inserted newline.  This affected the 'R', 'c', and 's'
-		 * commands; 'c' and 's' retained the insert characters only,
-		 * 'R' moved overwrite and insert characters into the next TEXT
-		 * structure.  All other commands simply deleted the overwrite
-		 * characters.  We keep track of the number of characters erased
-		 * for the 'R' command so that we can get the final resolution
-		 * of the line correct.
+		 * Historic practice, when the autoindent edit option was set,
+		 * was to delete <blank> characters following the inserted
+		 * newline.  This affected the 'R', 'c', and 's' commands; 'c'
+		 * and 's' retained the insert characters only, 'R' moved the
+		 * overwrite and insert characters into the next TEXT structure.
+		 * We keep track of the number of characters erased for the 'R'
+		 * command so that the final resolution of the line is correct.
 		 */
 		tp->R_erase = 0;
 		owrite = tp->owrite;
@@ -656,8 +655,10 @@ k_cr:		if (LF_ISSET(TXT_CR)) {
 				for (; insert > 0 && isblank(*p);
 				    ++p, ++tp->R_erase, --insert);
 		} else {
-			for (p = tp->lb + sp->cno + owrite;
-			    insert > 0 && isblank(*p); ++p, --insert);
+			p = tp->lb + sp->cno + owrite;
+			if (O_ISSET(sp, O_AUTOINDENT))
+				for (; insert > 0 &&
+				    isblank(*p); ++p, --insert);
 			owrite = 0;
 		}
 
