@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: screen.h,v 10.42 2001/05/10 19:28:43 skimo Exp $ (Berkeley) $Date: 2001/05/10 19:28:43 $
+ *	$Id: screen.h,v 10.43 2001/05/11 20:09:38 skimo Exp $ (Berkeley) $Date: 2001/05/11 20:09:38 $
  */
 
 /*
@@ -144,7 +144,7 @@ struct _scr {
 	void	*perl_private;		/* Perl private area. */
 	void	*cl_private;		/* Curses private area. */
 
-	CONV	*conv;
+	CONV	conv;
 
 /* PARTIALLY OR COMPLETELY COPIED FROM PREVIOUS SCREEN. */
 	char	*alt_name;		/* Ex/vi: alternate file name. */

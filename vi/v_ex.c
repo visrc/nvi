@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_ex.c,v 10.51 2001/05/10 19:28:43 skimo Exp $ (Berkeley) $Date: 2001/05/10 19:28:43 $";
+static const char sccsid[] = "$Id: v_ex.c,v 10.52 2001/05/11 20:09:38 skimo Exp $ (Berkeley) $Date: 2001/05/11 20:09:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -558,6 +558,9 @@ v_ecl(sp)
 	/* It's a special window. */
 	F_SET(new, SC_COMEDIT);
 
+	/* Don't encode on writing to DB. */
+	o_set(new, O_FILEENCODING, OS_STRDUP, "WCHAR_T", 0);
+
 	/* Set up the switch. */
 	sp->nextdisp = new;
 	F_SET(sp, SC_SSWITCH);
@@ -606,6 +609,7 @@ v_ecl_log(sp, tp)
 	TEXT *tp;
 {
 	EXF *save_ep;
+	char *save_enc;
 	db_recno_t lno;
 	int rval;
 	CHAR_T *p;
@@ -627,9 +631,16 @@ v_ecl_log(sp, tp)
 	 * Swap the current EXF with the colon command file EXF.  This
 	 * isn't pretty, but too many routines "know" that sp->ep points
 	 * to the current EXF.
+	 *
+	 * XXXX
+	 * Temporarily change fileencoding as well.
 	 */
 	save_ep = sp->ep;
 	sp->ep = sp->gp->ccl_sp->ep;
+
+	save_enc = O_STR(sp, O_FILEENCODING);
+	o_set(sp, O_FILEENCODING, OS_STR | OS_NOFREE, "WCHAR_T", 0);
+
 	if (db_last(sp, &lno)) {
 		sp->ep = save_ep;
 		return (1);
@@ -646,6 +657,9 @@ v_ecl_log(sp, tp)
 		log_cursor(sp);
 	}
 	sp->ep = save_ep;
+
+	o_set(sp, O_FILEENCODING, OS_STR | OS_NOFREE, save_enc, 0);
+
 	return (rval);
 }
 

@@ -19,10 +19,15 @@ struct _conv_win {
     size_t   blen2;
 };
 
+typedef int (*char2wchar_t) 
+    (SCR *, const char *, ssize_t, struct _conv_win *, size_t *, CHAR_T **);
+typedef int (*wchar2char_t) 
+    (SCR *, const CHAR_T *, ssize_t, struct _conv_win *, size_t *, char **);
+
 struct _conv {
-	int	(*char2int) (SCR *, const char *, ssize_t, struct _conv_win *, size_t *, CHAR_T **);
-	int	(*int2char) (SCR *, const CHAR_T *, ssize_t, struct _conv_win *, size_t *, char **);
-	int	(*file2int) (SCR *, const char *, ssize_t, struct _conv_win *, size_t *, CHAR_T **);
-	int	(*int2file) (SCR *, const CHAR_T *, ssize_t, struct _conv_win *, size_t *, char **);
-	int	(*int2disp) (SCR *, const CHAR_T *, ssize_t, struct _conv_win *, size_t *, char **);
+	char2wchar_t	char2int;
+	wchar2char_t	int2char;
+	char2wchar_t	file2int;
+	wchar2char_t	int2file;
+	wchar2char_t	int2disp;
 };

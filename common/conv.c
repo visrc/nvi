@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: conv.c,v 1.12 2001/05/10 19:28:42 skimo Exp $ (Berkeley) $Date: 2001/05/10 19:28:42 $";
+static const char sccsid[] = "$Id: conv.c,v 1.13 2001/05/11 20:09:37 skimo Exp $ (Berkeley) $Date: 2001/05/11 20:09:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -127,6 +127,26 @@ err:
     *dst = cw->bp1;
 
     return 1;
+}
+
+int 
+CHAR_T_int2char(SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw, 
+	size_t *tolen, char **dst)
+{
+    *tolen = len * sizeof(CHAR_T);
+    *dst = (char*) str;
+
+    return 0;
+}
+
+int 
+CHAR_T_char2int(SCR *sp, const char * str, ssize_t len, CONVWIN *cw, 
+	size_t *tolen, CHAR_T **dst)
+{
+    *tolen = len / sizeof(CHAR_T);
+    *dst = (CHAR_T*) str;
+
+    return 0;
 }
 
 int 
@@ -288,19 +308,18 @@ default_int2disp (SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw,
 #endif
 
 
-CONV raw_conv = { raw2int, int2raw, 
-		  raw2int, int2raw, default_int2disp };
-CONV default_conv = { raw2int, int2raw, 
-		      default_char2int, default_int2char, default_int2disp };
-
 void
 conv_init (SCR *orig, SCR *sp)
 {
     if (orig != NULL)
-	sp->conv = orig->conv;
+	MEMCPY(&sp->conv, &orig->conv, 1);
     else {
 	setlocale(LC_ALL, "");
-	sp->conv = &default_conv;
+	sp->conv.char2int = raw2int;
+	sp->conv.int2char = int2raw;
+	sp->conv.file2int = default_char2int;
+	sp->conv.int2file = default_int2char;
+	sp->conv.int2disp = default_int2disp;
 	o_set(sp, O_FILEENCODING, OS_STRDUP, nl_langinfo(CODESET), 0);
     }
 }
@@ -311,9 +330,17 @@ conv_enc (SCR *sp, char *enc)
     iconv_t id;
 
     if (!*enc) {
-	sp->conv = &raw_conv;
+	sp->conv.file2int = raw2int;
+	sp->conv.int2file = int2raw;
 	return 0;
     }
+
+    if (!strcmp(enc, "WCHAR_T")) {
+	sp->conv.file2int = CHAR_T_char2int;
+	sp->conv.int2file = CHAR_T_int2char;
+	return 0;
+    }
+
     id = iconv_open(enc, nl_langinfo(CODESET));
     if (id == (iconv_t)-1)
 	goto err;
@@ -322,6 +349,9 @@ conv_enc (SCR *sp, char *enc)
     if (id == (iconv_t)-1)
 	goto err;
     iconv_close(id);
+
+    sp->conv.file2int = default_char2int;
+    sp->conv.int2file = default_int2char;
 
     F_CLR(sp, SC_CONV_ERROR);
 
