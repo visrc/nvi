@@ -6,13 +6,14 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 5.15 1992/05/21 13:05:37 bostic Exp $ (Berkeley) $Date: 1992/05/21 13:05:37 $";
+static char sccsid[] = "$Id: util.c,v 5.16 1992/05/27 10:29:36 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:29:36 $";
 #endif /* not lint */
 
 #include <sys/param.h>
 #include <sys/ioctl.h>
 #include <signal.h>
 #include <curses.h>
+#include <errno.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -51,6 +52,33 @@ __putchar(ch)
 	int ch;
 {
 	(void)putchar(ch);
+}
+
+/*
+ * binc --
+ *	Increase the size of a buffer.
+ */
+int
+binc(bpp, bsizep, min)
+	char **bpp;
+	size_t *bsizep, min;
+{
+	size_t csize;
+
+	/* If already larger than the minimum, just return. */
+	csize = *bsizep;
+	if (min && csize >= min)
+		return (0);
+
+	csize += MAX(min, 256);
+	if ((*bpp = realloc(*bpp, csize)) == NULL) {
+		bell();
+		msg("Error: %s.", strerror(errno));
+		*bsizep = 0;
+		return (1);
+	}
+	*bsizep = csize;
+	return (0);
 }
 
 /*
