@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.2 1993/06/28 18:38:33 bostic Exp $ (Berkeley) $Date: 1993/06/28 18:38:33 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.3 1993/06/29 17:06:09 bostic Exp $ (Berkeley) $Date: 1993/06/29 17:06:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -215,27 +215,22 @@ newtp:		if ((tp = text_init(sp, p, len, len + 32)) == NULL)
 		} else
 			++tty_cwait;
 		
+		/*
+		 * Get the character.  Check to see if the character fits
+		 * into the input (and replay, if necessary) buffers.  It
+		 * isn't necessary to have tp->len bytes, since it doesn't
+		 * consider the overwrite characters, but not worth fixing.
+		 */
 next_ch:	if (replay)
 			ch = sp->rep[rcol++];
 		else {
-			/* Get the character. */
 			ch = term_key(sp, flags & TXT_GETKEY_MASK);
-
-			/*
-			 * Check if the character fits into the input and
-			 * replay buffers; allocate space as necesssary.
-			 * It's not necessary to check tp->len, since it
-			 * doesn't include the overwrite characters, but
-			 * it's not worth fixing it.
-			 */
-			TBINC(sp, tp->lb, tp->lb_len, tp->len + 1);
-
 			if (LF_ISSET(TXT_RECORD)) {
-				/* Store the character into replay buffer. */
 				TBINC(sp, sp->rep, sp->rep_len, rcol + 1);
 				sp->rep[rcol++] = ch;
 			}
 		}
+		TBINC(sp, tp->lb, tp->lb_len, tp->len + 1);
 
 		/*
 		 * If the character was quoted, replace the last
