@@ -6,8 +6,14 @@
 #include "port.h"
 #include "../common/multibyte.h"
 
+#ifdef HAVE_PANGO
 #include <pango/pango.h>
 #include <pango/pangox.h>
+#else
+#define xthickness klass->xthickness
+#define ythickness klass->ythickness
+#define GTK_CLASS_TYPE(class)	class->type
+#endif
 
 #define GTK_TYPE_VI_SCREEN                  (gtk_vi_screen_get_type ())
 #define GTK_VI_SCREEN(obj)                  (GTK_CHECK_CAST ((obj), GTK_TYPE_VI_SCREEN, GtkViScreen))
@@ -40,8 +46,10 @@ struct _GtkViScreen
   gint  lastx, lasty;
   gint	marked_x, marked_y, marked_maxx, marked_maxy;
 
+#ifdef HAVE_PANGO
   PangoContext *conx;
   PangoAttrList* alist;
+#endif
 };
 
 struct _GtkViScreenClass

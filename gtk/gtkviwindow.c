@@ -105,6 +105,10 @@ gtk_vi_window_class_init (GtkViWindowClass *class)
 		    gtk_marshal_VOID__STRING,
 		    GTK_TYPE_NONE, 1, GTK_TYPE_STRING, 0);
 
+#ifndef HAVE_PANGO
+  gtk_object_class_add_signals(object_class, vi_window_signals, LAST_SIGNAL);
+#endif
+
   object_class->destroy = gtk_vi_window_destroy;
 }
 

@@ -170,7 +170,7 @@ REOBJS=	regcomp.lo regerror.lo regexec.lo regfree.lo
 libvi_la_DEPENDENCIES = @LTLIBOBJS@
 libvi_la_LIBADD = @LTLIBOBJS@
 
-bin_PROGRAMS = @vi_curses@ @vi_ipc@ @vi_motif@ @vi_gtk@
+bin_PROGRAMS = @vi_programs@ @vi_ipc@
 EXTRA_PROGRAMS = vi vi-ipc vi-motif vi-gtk
 
 vi_SOURCES = \
@@ -209,6 +209,7 @@ vi_gtk_SOURCES = \
 	$(visrcdir)/gtk/gtkviscreen.c \
 	$(visrcdir)/gtk/gtkviwindow.c
 vi_gtk_LDADD = @GTKLIBS@ @LIBOBJS@
+vi_gtk_CFLAGS = @GTKINCS@ @XINCS@
 
 vi_motif_SOURCES = \
 	$(visrcdir)/ipc/ip_run.c \
@@ -231,10 +232,11 @@ vi_motif_SOURCES = \
 	$(visrcdir)/motif_l/m_vi.c \
 	$(visrcdir)/motif_l/xtabbed.c
 vi_motif_LDADD = @MOTIFLIBS@ @LIBOBJS@
+vi_motif_CFLAGS = @XINCS@
 
 VI=-DVI=\"$(bindir)/`echo vi-ipc | sed '$(transform)'`\"
 CFLAGS=	 -D__REGEX_PRIVATE $(OPTFLAG) @CFLAGS@ -I. -I$(visrcdir)/include \
-	    @CPPFLAGS@ @GTKINCS@ $(VI) @XINCS@
+	    @CPPFLAGS@ $(VI)
 PERL=	@vi_cv_path_perl@
 PERLLIB=@vi_cv_perllib@
 SHRPENV=@shrpenv@

@@ -219,8 +219,8 @@ fi
 AC_MSG_RESULT($vi_cv_widechar)
 
 dnl If the user wants a Gtk IPC front-end for nvi, build it.
+AC_SUBST(vi_programs)
 AC_SUBST(vi_ipc)
-AC_SUBST(vi_gtk)
 AC_SUBST(GTKLIBS)
 AC_SUBST(GTKINCS)
 AC_MSG_CHECKING(if --enable-gtk option specified)
@@ -234,14 +234,26 @@ if test "$vi_cv_gtk" = "yes"; then
 	#
 	AC_PATH_PROG(PKG_CONFIG, pkg-config, no)
 	if test x$PKG_CONFIG = xno ; then
-	  AC_MSG_ERROR([*** pkg-config not found. See http://pkgconfig.sourceforge.net])
+	    if test "$vi_cv_widechar" = "yes"; then
+	        AC_MSG_ERROR(
+[*** pkg-config not found. See http://pkgconfig.sourceforge.net])
+	    fi
+
+	else
+	    if ! $PKG_CONFIG --atleast-pkgconfig-version 0.5 ; then
+		if test "$vi_cv_widechar" = "yes"; then
+		    AC_MSG_ERROR(
+[*** pkg-config too old; version 0.5 or better required.])
+		fi
+		PKG_CONFIG=no
+	    fi
+
+	fi
+	if test x$PKG_CONFIG = xno ; then
+	    PKG_CONFIG=/bin/false
 	fi
 
-	if ! pkg-config --atleast-pkgconfig-version 0.5 ; then
-	  AC_MSG_ERROR([*** pkg-config too old; version 0.5 or better required.])
-	fi
-
-	vi_gtk=vi-gtk
+	vi_programs="$vi_programs vi-gtk"
 	vi_ipc=vi-ipc
 	AC_MSG_CHECKING(for gtk+)
 	if $PKG_CONFIG gtk+-2.0 ; then
@@ -249,11 +261,18 @@ if test "$vi_cv_gtk" = "yes"; then
 	      GTKLIBS=`$PKG_CONFIG --libs gtk+-2.0`
 
 	      AC_MSG_RESULT(ok)
+	      AC_DEFINE(HAVE_PANGO)
 	else
-	      AC_MSG_ERROR([
+	    if test "$vi_cv_widechar" = "yes"; then
+	        AC_MSG_ERROR([
 *** gtk+-2.0 is required. The latest version of gtk
 *** is always available from ftp://ftp.gtk.org/.
-	  ])
+	  	])
+	    else
+		AM_PATH_GTK(1.2.0)
+		GTKINCS="$GTK_CFLAGS"
+		GTKLIBS="$GTK_LIBS $LIBS"
+	    fi
 	fi
 
 	SAVELIBS="$LIBS"
@@ -273,7 +292,6 @@ if test "$vi_cv_gtk" = "yes"; then
 fi
 
 dnl If the user wants a Motif IPC front-end for nvi, build it.
-AC_SUBST(vi_motif)
 AC_SUBST(MOTIFLIBS)
 AC_MSG_CHECKING(if --enable-motif option specified)
 AC_ARG_ENABLE(motif,
@@ -281,7 +299,7 @@ AC_ARG_ENABLE(motif,
 	[vi_cv_motif="yes"], [vi_cv_motif="no"])
 AC_MSG_RESULT($vi_cv_motif)
 if test "$vi_cv_motif" = "yes"; then
-	vi_motif=vi-motif
+	vi_programs="$vi_programs vi-motif"
 	vi_ipc=vi-ipc
 
 	dnl XXX
@@ -407,7 +425,6 @@ if test "$vi_cv_tclinterp" = "yes"; then
 fi
 
 dnl check for curses
-AC_SUBST(vi_curses)
 AC_SUBST(CURSLIBS)
 AC_SUBST(CURSCPPFLAGS)
 AC_SUBST(CURSLDFLAGS)
@@ -462,11 +479,13 @@ dnl 	[
 		AC_CHECK_HEADERS(ncursesw/ncurses.h, 
 			[CURSHEADER=ncursesw/ncurses.h])
 	    fi
-	    vi_curses=vi
+	    vi_programs="vi $vi_programs"
 	    CURSLIBS="-l$vi_cv_curses"
 	else
-	    AC_MSG_WARN([No suitable curses library found.])
-	    vi_curses=""
+	    AC_MSG_WARN([*** No suitable curses library found.])
+	    if test "$vi_programs"X = X; then
+		AC_MSG_ERROR([No executable to build.])
+	    fi
 	fi
 
 	LIBS="$SAVELIBS"

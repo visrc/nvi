@@ -1,6 +1,11 @@
 #ifndef __GTK_VI_WINDOW_H__
 #define __GTK_VI_WINDOW_H__
 
+#ifndef HAVE_PANGO
+#define gtk_marshal_VOID__STRING gtk_marshal_NONE__STRING
+#define GTK_CLASS_TYPE(class)	class->type
+#endif
+
 #define GTK_TYPE_VI_WINDOW                  (gtk_vi_window_get_type ())
 #define GTK_VI_WINDOW(obj)                  (GTK_CHECK_CAST ((obj), GTK_TYPE_VI_WINDOW, GtkViWindow))
 #define GTK_VI_WINDOW_CLASS(klass)          (GTK_CHECK_CLASS_CAST ((klass), GTK_TYPE_VI_WINDOW, GtkViWindowClass))

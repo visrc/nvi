@@ -283,6 +283,10 @@ gtk_vi_screen_class_init (GtkViScreenClass *class)
 		    gtk_marshal_NONE__INT_INT,
 		    GTK_TYPE_NONE, 2, GTK_TYPE_INT, GTK_TYPE_INT, 0);
 
+#ifndef HAVE_PANGO
+  gtk_object_class_add_signals(object_class, vi_screen_signals, LAST_SIGNAL);
+#endif
+
   gtk_object_add_arg_type ("GtkViScreen::vadjustment",
 			   GTK_TYPE_ADJUSTMENT,
 			   GTK_ARG_READWRITE | GTK_ARG_CONSTRUCT,
@@ -366,7 +370,9 @@ gtk_vi_screen_init (GtkViScreen *vi)
   vi->cols = 0;
   vi->rows = 0;
 
+#ifdef HAVE_PANGO
   vi->conx = NULL;
+#endif
 
   style = gtk_style_copy(GTK_WIDGET(vi)->style);
   gdk_font_unref(style->font);
@@ -507,8 +513,8 @@ static void
 gtk_vi_screen_size_request (GtkWidget      *widget,
 		       GtkRequisition *requisition)
 {
-  gint xthickness;
-  gint ythickness;
+  gint xthick;
+  gint ythick;
   gint char_height;
   gint char_width;
   GtkViScreen *vi;
@@ -519,8 +525,8 @@ gtk_vi_screen_size_request (GtkWidget      *widget,
   
   vi = GTK_VI_SCREEN (widget);
 
-  xthickness = widget->style->xthickness + VI_SCREEN_BORDER_ROOM;
-  ythickness = widget->style->ythickness + VI_SCREEN_BORDER_ROOM;
+  xthick = widget->style->xthickness + VI_SCREEN_BORDER_ROOM;
+  ythick = widget->style->ythickness + VI_SCREEN_BORDER_ROOM;
   
   vi->ch_ascent = widget->style->font->ascent;
   vi->ch_height = (widget->style->font->ascent + widget->style->font->descent) + 1;
@@ -528,8 +534,8 @@ gtk_vi_screen_size_request (GtkWidget      *widget,
   char_height = DEFAULT_VI_SCREEN_HEIGHT_LINES * vi->ch_height;
   char_width = DEFAULT_VI_SCREEN_WIDTH_CHARS * vi->ch_width;
   
-  requisition->width  = char_width  + xthickness * 2;
-  requisition->height = char_height + ythickness * 2;
+  requisition->width  = char_width  + xthick * 2;
+  requisition->height = char_height + ythick * 2;
 }
 
 static void
@@ -682,6 +688,7 @@ draw_lines(GtkViScreen *vi, gint ymin, gint xmin, gint ymax, gint xmax)
 		fg = vi->gc;
 	    }
 	    pango = 0;
+#ifdef HAVE_PANGO
 	    if (INTISUCS(*(line+x))) {
 		if (!vi->conx) {
 		    PangoFontDescription font_description;
@@ -701,7 +708,9 @@ draw_lines(GtkViScreen *vi, gint ymin, gint xmin, gint ymax, gint xmax)
 		}
 		blen = CHAR_WIDTH(NULL, *(line+x));
 		pango = 1;
-	    } else {
+	    } else 
+#endif
+	    {
 		font = GTK_WIDGET(vi)->style->font;
 		if (sizeof(CHAR_T) == sizeof(gchar))
 		    p = (gchar*)line+x;
@@ -722,6 +731,7 @@ draw_lines(GtkViScreen *vi, gint ymin, gint xmin, gint ymax, gint xmax)
 				xpos * vi->ch_width, 
 				y * vi->ch_height + vi->ch_ascent, 
 				p, blen);
+#ifdef HAVE_PANGO
 	    else {
 		PangoGlyphString *gs;
 		GList *list;
@@ -739,6 +749,7 @@ draw_lines(GtkViScreen *vi, gint ymin, gint xmin, gint ymax, gint xmax)
 				xpos * vi->ch_width, 
 				y * vi->ch_height + vi->ch_ascent, gs);
 	    }
+#endif
 	}
     }
 }
