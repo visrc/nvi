@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 9.7 1994/11/17 20:41:33 bostic Exp $ (Berkeley) $Date: 1994/11/17 20:41:33 $";
+static char sccsid[] = "$Id: ex.c,v 9.8 1994/11/19 12:24:32 bostic Exp $ (Berkeley) $Date: 1994/11/19 12:24:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1037,9 +1037,9 @@ end2:			break;
 			 */
 			if (*p == 'a') {
 				exc.addr1 = exc.addr2;
-				exc.addr2.lno = exc.addr1.lno + lno - 1;
+				exc.addr2.lno = exc.addr1.lno + ltmp - 1;
 			} else
-				exc.count = lno;
+				exc.count = ltmp;
 			F_SET(&exc, E_COUNT);
 			break;
 		case 'f':				/* file */
@@ -1404,7 +1404,7 @@ addr2:	switch (exc.addrcnt) {
 		 */
 		LF_INIT(F_ISSET(&exc, E_F_HASH | E_F_LIST | E_F_PRINT));
 		if (!LF_ISSET(E_F_HASH | E_F_LIST | E_F_PRINT) &&
-		    !pflags & EXPAR_NOAUTO && O_ISSET(sp, O_AUTOPRINT) &&
+		    !(pflags & EXPAR_NOAUTO) && O_ISSET(sp, O_AUTOPRINT) &&
 		    (F_ISSET(exp, EX_AUTOPRINT) || F_ISSET(cp, E_AUTOPRINT)))
 			LF_INIT(E_F_PRINT);
 
