@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_msg.c,v 10.25 1995/10/19 13:15:44 bostic Exp $ (Berkeley) $Date: 1995/10/19 13:15:44 $";
+static char sccsid[] = "$Id: vs_msg.c,v 10.26 1995/10/28 10:11:19 bostic Exp $ (Berkeley) $Date: 1995/10/28 10:11:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -17,7 +17,6 @@ static char sccsid[] = "$Id: vs_msg.c,v 10.25 1995/10/19 13:15:44 bostic Exp $ (
 
 #include <bitstring.h>
 #include <ctype.h>
-#include <curses.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -192,8 +191,8 @@ vs_update(sp, m1, m2)
  *	Display ex output or error messages for the screen.
  *
  * This routine is the default editor interface for all ex output, and all ex
- * and vi error/informational messages.  It implements the curses strategy of
- * stealing lines from the bottom of the vi text screen.  Screens using an
+ * and vi error/informational messages.  It implements the standard strategy
+ * of stealing lines from the bottom of the vi text screen.  Screens using an
  * alternate method of displaying messages, e.g. dialog boxes, should set their
  * scr_msg function to the correct function before calling the editor.
  *
