@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.111 1996/06/12 11:54:58 bostic Exp $ (Berkeley) $Date: 1996/06/12 11:54:58 $
+dnl	$Id: configure.in,v 8.112 1996/06/12 15:13:40 bostic Exp $ (Berkeley) $Date: 1996/06/12 15:13:40 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(../common/main.c)
@@ -565,7 +565,48 @@ case "$vi_cv_re_lib" in
 	;;
 esac
 
-dnl DB/Vi uses specific integer sizes.
+dnl Check for the standard shorthand types.
+AC_SUBST(u_char_decl)
+AC_MSG_CHECKING(for u_char)
+AC_CACHE_VAL(vi_cv_uchar, [dnl
+AC_TRY_COMPILE([#include <sys/types.h>], u_char foo;,
+	[vi_cv_uchar=yes], [vi_cv_uchar=no])])
+AC_MSG_RESULT($vi_cv_uchar)
+if test "$vi_cv_uchar" = no; then
+	u_char_decl="typedef unsigned char u_char;"
+fi
+
+AC_SUBST(u_short_decl)
+AC_MSG_CHECKING(for u_short)
+AC_CACHE_VAL(vi_cv_ushort, [dnl
+AC_TRY_COMPILE([#include <sys/types.h>], u_short foo;,
+	[vi_cv_ushort=yes], [vi_cv_ushort=no])])
+AC_MSG_RESULT($vi_cv_ushort)
+if test "$vi_cv_ushort" = no; then
+	u_short_decl="typedef unsigned short u_short;"
+fi
+
+AC_SUBST(u_int_decl)
+AC_MSG_CHECKING(for u_int)
+AC_CACHE_VAL(vi_cv_uint, [dnl
+AC_TRY_COMPILE([#include <sys/types.h>], u_int foo;,
+	[vi_cv_uint=yes], [vi_cv_uint=no])])
+AC_MSG_RESULT($vi_cv_uint)
+if test "$vi_cv_uint" = no; then
+	u_int_decl="typedef unsigned int u_int;"
+fi
+
+AC_SUBST(u_long_decl)
+AC_MSG_CHECKING(for u_long)
+AC_CACHE_VAL(vi_cv_ulong, [dnl
+AC_TRY_COMPILE([#include <sys/types.h>], u_long foo;,
+	[vi_cv_ulong=yes], [vi_cv_ulong=no])])
+AC_MSG_RESULT($vi_cv_ulong)
+if test "$vi_cv_ulong" = no; then
+	u_long_decl="typedef unsigned long u_long;"
+fi
+
+dnl DB/Vi use specific integer sizes.
 AC_SUBST(u_int8_decl)
 AC_MSG_CHECKING(for u_int8_t)
 AC_CACHE_VAL(vi_cv_uint8, [dnl
