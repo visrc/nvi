@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.35 1993/09/27 16:24:37 bostic Exp $ (Berkeley) $Date: 1993/09/27 16:24:37 $";
+static char sccsid[] = "$Id: ex.c,v 8.36 1993/09/30 11:27:17 bostic Exp $ (Berkeley) $Date: 1993/09/30 11:27:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -53,18 +53,28 @@ ex(sp, ep)
 
 	for (eval = 0;;) {
 		/* Get the next command. */
-		if (sp->s_get(sp, ep,
-		    &sp->bhdr, ':', TXT_CR | TXT_PROMPT))
+		switch (sp->s_get(sp, ep,
+		    &sp->bhdr, ':', TXT_CR | TXT_PROMPT)) {
+		case INP_OK:
+			break;
+		case INP_EOF:
+			F_SET(sp, S_EXIT_FORCE);
+			goto ret;
+		case INP_ERR:
 			continue;
+		}
 
 		tp = sp->bhdr.next;
 		if (tp->len == 0) {
-			(void)fputc('\r', sp->stdfp);
-			(void)fflush(sp->stdfp);
+			if (F_ISSET(sp->gp, G_ISFROMTTY)) {
+				(void)fputc('\r', sp->stdfp);
+				(void)fflush(sp->stdfp);
+			}
 			memmove(defcom, DEFCOM, sizeof(DEFCOM));
 			(void)ex_cstring(sp, ep, defcom, sizeof(DEFCOM) - 1);
 		} else {
-			(void)fputc('\n', sp->stdfp);
+			if (F_ISSET(sp->gp, G_ISFROMTTY))
+				(void)fputc('\n', sp->stdfp);
 			(void)ex_cstring(sp, ep, tp->lb, tp->len);
 		}
 		msg_rpt(sp, sp->stdfp);
@@ -77,7 +87,7 @@ ex(sp, ep)
 			break;
 		}
 	}
-	return (ex_end(sp) || eval);
+ret:	return (ex_end(sp) || eval);
 }
 
 /*
