@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 8.41 1994/08/01 14:57:33 bostic Exp $ (Berkeley) $Date: 1994/08/01 14:57:33 $";
+static char sccsid[] = "$Id: ex_filter.c,v 8.42 1994/08/01 17:02:06 bostic Exp $ (Berkeley) $Date: 1994/08/01 17:02:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -267,8 +267,8 @@ err:		if (input[0] != -1)
 
 		/* Delete any lines written to the utility. */
 		if (rval == 0 && ftype == FILTER &&
-		    cut(sp, ep, NULL, fm, tm, CUT_LINEMODE) ||
-		    delete(sp, ep, fm, tm, 1)) {
+		    (cut(sp, ep, NULL, fm, tm, CUT_LINEMODE) ||
+		    delete(sp, ep, fm, tm, 1))) {
 			rval = 1;
 			break;
 		}
