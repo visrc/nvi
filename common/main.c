@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.12 1993/09/09 14:23:15 bostic Exp $ (Berkeley) $Date: 1993/09/09 14:23:15 $";
+static char sccsid[] = "$Id: main.c,v 8.13 1993/09/10 18:27:15 bostic Exp $ (Berkeley) $Date: 1993/09/10 18:27:15 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -55,6 +55,7 @@ main(argc, argv)
 	extern int optind;
 	extern char *optarg;
 	static int reenter;		/* STATIC: Re-entrancy check. */
+	enum { EX_SCR, VI_CURSES_SCR, VI_XAW_SCR } scr_type;
 	struct sigaction act;
 	struct stat sb;
 	EXCMDARG cmd;
@@ -114,14 +115,16 @@ main(argc, argv)
 	if (digraph_init(sp))		/* Digraph initialization. */
 		goto err1;
 #endif
-	/* Set screen mode based on the program name. */
-	if (!strcmp(myname, "ex") || !strcmp(myname, "nex"))
+	/* Set screen type and mode based on the program name. */
+	if (!strcmp(myname, "ex") || !strcmp(myname, "nex")) {
 		F_SET(sp, S_MODE_EX);
-	else if (!strcmp(myname, "view")) {
-		O_SET(sp, O_READONLY);
+		scr_type = EX_SCR;
+	} else {
+		if (!strcmp(myname, "view"))
+			O_SET(sp, O_READONLY);
 		F_SET(sp, S_MODE_VI);
-	} else
-		F_SET(sp, S_MODE_VI);
+		scr_type = VI_CURSES_SCR;
+	}
 
 	/* Convert old-style arguments into new-style ones. */
 	obsolete(argv);
@@ -131,7 +134,7 @@ main(argc, argv)
 	/* Parse the arguments. */
 	flagchk = '\0';
 	excmdarg = errf = rfname = tfname = NULL;
-	while ((ch = getopt(argc, argv, "c:elmRr:sT:t:vw:")) != EOF)
+	while ((ch = getopt(argc, argv, "c:elmRr:sT:t:vw:x:")) != EOF)
 		switch (ch) {
 		case 'c':		/* Run the command. */
 			excmdarg = optarg;
@@ -197,6 +200,8 @@ main(argc, argv)
 			break;
 		case 'v':		/* Vi mode. */
 			F_SET(sp, S_MODE_VI);
+			if (scr_type == EX_SCR)
+				scr_type = VI_CURSES_SCR;
 			break;
 		case 'w':
 			av[0] = path;
@@ -209,6 +214,12 @@ main(argc, argv)
 				 msgq(sp, M_ERR,
 			     "Unable to set command line window option");
 			break;
+		case 'x':
+			if (!strcmp(optarg, "aw")) {
+				scr_type = VI_XAW_SCR;
+				break;
+			}
+			/* FALLTHROUGH */
 		case '?':
 		default:
 			usage();
@@ -319,17 +330,19 @@ main(argc, argv)
 		
 	/* Call a screen. */
 	while (sp != NULL)
-		switch (F_ISSET(sp, S_MODE_EX | S_MODE_VI)) {
-		case S_MODE_EX:
+		switch (scr_type) {
+		case EX_SCR:
 			if (sex(sp, sp->ep, &sp))
 				goto err2;
 			break;
-		case S_MODE_VI:
+		case VI_CURSES_SCR:
 			if (svi(sp, sp->ep, &sp))
 				goto err2;
 			break;
-		default:
-			abort();
+		case VI_XAW_SCR:
+			if (xaw(sp, sp->ep, &sp))
+				goto err2;
+			break;
 		}
 
 	/*
@@ -353,6 +366,7 @@ err2:		eval = 1;
 	/* Flush any left-over error messages. */
 	msgflush(gp);
 
+	/* Make absolutely sure that the modes are restored correctly. */
 	if (tcsetattr(STDIN_FILENO, TCSADRAIN, &gp->original_termios))
 		err(1, "tcsetattr");
 	exit(eval);
@@ -455,7 +469,8 @@ obsolete(argv)
 static void
 usage()
 {
-	(void)fprintf(stderr,
-"usage: vi [-eRsv] [-c command] [-m file] [-r file] [-t tag] [-w size]\n");
+	(void)fprintf(stderr, "%s%s\n", 
+	    "usage: vi [-eRsv] [-c command] [-m file] [-r file] ",
+	    "[-t tag] [-w size] [-x aw]");
 	exit(1);
 }
