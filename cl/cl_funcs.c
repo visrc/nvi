@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_funcs.c,v 10.67 2001/06/09 18:53:58 skimo Exp $ (Berkeley) $Date: 2001/06/09 18:53:58 $";
+static const char sccsid[] = "$Id: cl_funcs.c,v 10.68 2001/06/09 21:34:14 skimo Exp $ (Berkeley) $Date: 2001/06/09 21:34:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -410,6 +410,7 @@ cl_discard(discardp, acquirep)
 		return 0;
 
 	for (; (tsp = *acquirep) != NULL; ++acquirep) {
+		WINDOW *win = CLSP(tsp);
 		clp = CLP(tsp);
 		F_SET(clp, CL_LAYOUT);
 
@@ -417,6 +418,8 @@ cl_discard(discardp, acquirep)
 			delwin(CLSP(tsp));
 		CLSP(tsp) = subwin(stdscr, tsp->rows, tsp->cols,
 					   tsp->roff, tsp->coff);
+		if (win == clp->focus)
+			clp->focus = CLSP(tsp);
 	}
 
 	/* discardp is going away, acquirep is taking up its space. */
