@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.118 1996/06/27 20:46:27 bostic Exp $ (Berkeley) $Date: 1996/06/27 20:46:27 $
+dnl	$Id: configure.in,v 8.119 1996/06/28 08:56:00 bostic Exp $ (Berkeley) $Date: 1996/06/28 08:56:00 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(../common/main.c)
@@ -110,27 +110,33 @@ dnl Check for the perl5/perl path.
 AC_PATH_PROGS(vi_cv_path_perl, perl5 perl, no)
 
 dnl Check for the "preserve" path.
-dnl The Linux filesystem standard (FSSTND) uses /var/preserve; we add the
-dnl vi.recover directory beneath it so that we don't have name collisions
-dnl with other editors.
+dnl Historically, nvi has used /var/tmp/vi.recover.  The Linux filesystem
+dnl standard (FSSTND) uses /var/preserve; we add the vi.recover directory
+dnl beneath it so that we don't have name collisions with other editors.
+dnl Other systems have /var/preserve as well, so we test first for an already
+dnl existing name, and then use the first one that's writeable.
 AC_SUBST(vi_cv_path_preserve)
 AC_MSG_CHECKING(for preserve directory)
 AC_CACHE_VAL(vi_cv_path_preserve, [dnl
-	if test -d /var/preserve; then
-		vi_cv_path_preserve=/var/preserve/vi.recover
-	else
-	if test -d /var/tmp; then
-		vi_cv_path_preserve=/var/tmp/vi.recover
-	else
-	if test -d /usr/tmp; then
-		vi_cv_path_preserve=/usr/tmp/vi.recover
-	else
-		vi_cv_path_preserve=no
-	fi
-	fi
+	dirlist="/var/preserve /var/tmp /usr/tmp"
+	vi_cv_path_preserve=no
+	for i in $dirlist; do
+		if test -d $i/vi.recover; then
+			vi_cv_path_preserve=$i/vi.recover
+			break;
+		fi
+	done
+	if test "$vi_cv_path_preserve" = no; then
+		for i in $dirlist; do
+			if test -d $i -a -w $i; then
+				vi_cv_path_preserve=$i/vi.recover
+				break;
+			fi
+		done
+
 	fi])
 if test "$vi_cv_path_preserve" = no; then
-	echo "Fatal error: no preserve directory found."
+	echo "Fatal error: no writeable preserve directory found."
 	exit 1
 fi
 AC_MSG_RESULT($vi_cv_path_preserve)
