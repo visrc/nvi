@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 9.5 1994/12/01 20:11:51 bostic Exp $ (Berkeley) $Date: 1994/12/01 20:11:51 $";
+static char sccsid[] = "$Id: ex_read.c,v 9.6 1994/12/16 11:08:57 bostic Exp $ (Berkeley) $Date: 1994/12/16 11:08:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -85,6 +85,7 @@ ex_read(sp, cmdp)
 			return (1);
 		if (file_init(sp, frp, NULL, 0))
 			return (1);
+		(void)msg_status(sp, sp->lno, 0);
 	}
 
 	switch (which) {

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 9.2 1994/11/12 13:10:05 bostic Exp $ (Berkeley) $Date: 1994/11/12 13:10:05 $";
+static char sccsid[] = "$Id: ex_args.c,v 9.3 1994/12/16 11:08:53 bostic Exp $ (Berkeley) $Date: 1994/12/16 11:08:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -93,6 +93,7 @@ ex_next(sp, cmdp)
 	if (file_init(sp, frp, NULL,
 	    FS_SETALT | (F_ISSET(cmdp, E_FORCE) ? FS_FORCE : 0)))
 		return (1);
+	(void)msg_status(sp, sp->lno, 0);
 	if (noargs)
 		++sp->cargv;
 	return (0);
@@ -122,6 +123,7 @@ ex_prev(sp, cmdp)
 	if (file_init(sp, frp, NULL,
 	    FS_SETALT | (F_ISSET(cmdp, E_FORCE) ? FS_FORCE : 0)))
 		return (1);
+	(void)msg_status(sp, sp->lno, 0);
 	--sp->cargv;
 
 	return (0);
@@ -166,6 +168,7 @@ ex_rew(sp, cmdp)
 	if (file_init(sp, frp, NULL,
 	    FS_SETALT | (F_ISSET(cmdp, E_FORCE) ? FS_FORCE : 0)))
 		return (1);
+	(void)msg_status(sp, sp->lno, 0);
 	return (0);
 }
 

@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 9.7 1994/12/16 09:58:15 bostic Exp $ (Berkeley) $Date: 1994/12/16 09:58:15 $";
+static char sccsid[] = "$Id: ex_tag.c,v 9.8 1994/12/16 11:08:58 bostic Exp $ (Berkeley) $Date: 1994/12/16 11:08:58 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -111,6 +111,7 @@ ex_tagfirst(sp, tagarg)
 	/* Set up the screen. */
 	sp->lno = m.lno;
 	sp->cno = m.cno;
+	(void)msg_status(sp, sp->lno, 0);
 
 	/* Might as well make this the default tag. */
 	if ((EXP(sp)->tlast = strdup(tagarg)) == NULL) {
@@ -281,6 +282,8 @@ err:		free(tag);
 	case TC_CHANGE:
 		sp->lno = m.lno;
 		sp->cno = m.cno;
+		if (which == TC_CHANGE)
+			(void)msg_status(sp, sp->lno, 0);
 		break;
 	}
 	F_SET(sp, S_SCR_CENTER);
@@ -370,6 +373,7 @@ ex_tagpop(sp, cmdp)
 		F_SET(sp->frp, FR_CURSORSET);
 		if (file_init(sp, tp->frp, NULL, FS_SETALT))
 			return (1);
+		(void)msg_status(sp, tp->lno, 0);
 	}
 
 	/* Pop entries off the queue up to ntp. */
@@ -419,6 +423,7 @@ ex_tagtop(sp, cmdp)
 		F_SET(sp->frp, FR_CURSORSET);
 		if (file_init(sp, tp->frp, NULL, FS_SETALT))
 			return (1);
+		(void)msg_status(sp, tp->lno, 0);
 	}
 
 	/* Empty out the queue. */

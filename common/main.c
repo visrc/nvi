@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 9.10 1994/12/04 10:01:17 bostic Exp $ (Berkeley) $Date: 1994/12/04 10:01:17 $";
+static char sccsid[] = "$Id: main.c,v 9.11 1994/12/16 11:07:54 bostic Exp $ (Berkeley) $Date: 1994/12/16 11:07:54 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -357,6 +357,7 @@ main(argc, argv)
 		}
 		if (file_init(sp, frp, NULL, 0))
 			goto errexit;
+		(void)msg_status(sp, sp->lno, 0);
 	}
 
 	/*

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 9.3 1994/11/18 14:54:48 bostic Exp $ (Berkeley) $Date: 1994/11/18 14:54:48 $";
+static char sccsid[] = "$Id: recover.c,v 9.4 1994/12/16 11:07:56 bostic Exp $ (Berkeley) $Date: 1994/12/16 11:07:56 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -751,6 +751,7 @@ next:			(void)close(fd);
 		(void)close(sv_fd);
 		return (1);
 	}
+	(void)msg_status(sp, sp->lno, 0);
 
 	/*
 	 * We keep an open lock on the file so that the recover option can
