@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vi.c,v 10.72 2001/06/25 15:19:37 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:37 $";
+static const char sccsid[] = "$Id: vi.c,v 10.73 2002/04/11 19:49:30 skimo Exp $ (Berkeley) $Date: 2002/04/11 19:49:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -999,6 +999,7 @@ v_init(SCR *sp)
 	 * line in the middle, otherwise, it won't work and we'll end up with
 	 * the line at the top.
 	 */
+	F_CLR(sp, SC_SCR_TOP);
 	F_SET(sp, SC_SCR_REFORMAT | SC_SCR_CENTER);
 
 	/* Invalidate the cursor. */
