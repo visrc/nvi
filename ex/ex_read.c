@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 8.17 1993/12/09 19:42:43 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:42:43 $";
+static char sccsid[] = "$Id: ex_read.c,v 8.18 1993/12/19 12:59:19 bostic Exp $ (Berkeley) $Date: 1993/12/19 12:59:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -57,6 +57,8 @@ ex_read(sp, ep, cmdp)
 			msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
 			return (1);
 		}
+
+		/* Redisplay the user's argument if it's changed. */
 		if (F_ISSET(cmdp, E_MODIFY) && IN_VI_MODE(sp)) {
 			len = cmdp->argv[1]->len;
 			GET_SPACE_RET(sp, bp, blen, len + 2);
@@ -65,6 +67,7 @@ ex_read(sp, ep, cmdp)
 			(void)sp->s_busy(sp, bp);
 			FREE_SPACE(sp, bp, blen);
 		}
+
 		if (filtercmd(sp, ep,
 		    &cmdp->addr1, NULL, &rm, cmdp->argv[1]->bp, FILTER_READ))
 			return (1);
