@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 5.25 1993/05/15 21:26:49 bostic Exp $ (Berkeley) $Date: 1993/05/15 21:26:49 $";
+static char sccsid[] = "$Id: vs_smap.c,v 5.26 1993/05/16 18:45:44 bostic Exp $ (Berkeley) $Date: 1993/05/16 18:45:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,17 +34,26 @@ svi_change(sp, ep, lno, op)
 	size_t oldy, oldx;
 
 	/* Appending is the same as inserting, if the line is incremented. */
-	if (op == LINE_APPEND)
+	if (op == LINE_APPEND) {
 		++lno;
+		op = LINE_INSERT;
+	}
 
-	/* Ignore the change if the line is after the screen. */
+	/* Ignore the change if the line is after the map. */
 	if (lno > TMAP->lno)
 		return (0);
 
-	/* Decrement the map if the line is before the screen. */
+	/* If the line is before the map... */
 	if (lno < HMAP->lno) {
-		for (p = HMAP; p <= TMAP; ++p)
-			--p->lno;
+		/* If decremented line is before the map, map decrements. */
+		if (op == LINE_DELETE)
+			for (p = HMAP; p <= TMAP; ++p)
+				--p->lno;
+		/* If incremented line is before the map, map increments. */
+		if (op == LINE_INSERT)
+			for (p = HMAP; p <= TMAP; ++p)
+				++p->lno;
+		/* Else, ignore. */
 		return (0);
 	}
 
@@ -59,7 +68,6 @@ svi_change(sp, ep, lno, op)
 		if (svi_sm_delete(sp, ep, lno))
 			return (1);
 		break;
-	case LINE_APPEND:
 	case LINE_INSERT:
 		if (svi_sm_insert(sp, ep, lno))
 			return (1);
