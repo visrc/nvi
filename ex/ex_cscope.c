@@ -10,10 +10,11 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_cscope.c,v 10.4 1996/05/13 17:24:15 bostic Exp $ (Berkeley) $Date: 1996/05/13 17:24:15 $";
+static const char sccsid[] = "$Id: ex_cscope.c,v 10.5 1996/05/15 17:41:40 bostic Exp $ (Berkeley) $Date: 1996/05/15 17:41:40 $";
 #endif /* not lint */
 
 #include <sys/param.h>
+#include <sys/types.h>		/* XXX: param.h may not have included types.h */
 #include <sys/queue.h>
 #include <sys/stat.h>
 #include <sys/time.h>
