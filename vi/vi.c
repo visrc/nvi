@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.27 1992/11/03 19:16:25 bostic Exp $ (Berkeley) $Date: 1992/11/03 19:16:25 $";
+static char sccsid[] = "$Id: vi.c,v 5.28 1992/11/04 10:42:53 bostic Exp $ (Berkeley) $Date: 1992/11/04 10:42:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -44,12 +44,20 @@ vi()
 	MARK fm, tm, m;
 	u_int flags;
 
-	if (v_init(curf))
-		return (1);
-	status(curf, curf->lno);
+	scr_init(curf);
 	for (;;) {
-		/* Report any changes from the previous command. */
-		if (curf->rptlines) {
+		/*
+		 * If the file has changed, init the file structure and
+		 * refresh the screen.  Otherwise, report any status info
+		 * from the last command.
+		 */
+		if (curf->flags & F_NEWSESSION) {
+			if (v_init(curf))
+				return (1);
+			scr_ref(curf);
+			status(curf, curf->lno);
+			curf->flags &= ~F_NEWSESSION;
+		} else if (curf->rptlines) {
 			if (LVAL(O_REPORT) &&
 			    curf->rptlines >= LVAL(O_REPORT)) {
 				msg("%ld line%s %s", curf->rptlines,
@@ -133,6 +141,25 @@ err:		if (msgcnt) {
 		if (mode != MODE_VI)
 			break;
 
+		/* Set the dot command structure. */
+		if (flags & V_DOT) {
+			dot = cmd;
+			dot.flags |= VC_ISDOT;
+			/*
+			 * If a count supplied for both the motion and the
+			 * command, the count applies only to the motion.
+			 * Reset the command count in the dot structure.
+			 */
+			if (vp->flags & VC_C1RESET)
+				dot.flags |= VC_C1SET;
+		}
+		/*
+		 * If the underlying file has changed, don't bother with
+		 * cursor positioning.
+		 */
+		if (curf->flags & F_NEWSESSION)
+			continue;
+
 		/*
 		 * Some vi row movements are "attracted" to the last set
 		 * position, i.e. the V_RCM commands are moths to the
@@ -162,21 +189,8 @@ err:		if (msgcnt) {
 			curf->rcmflags = 0;
 			curf->rcm = curf->scno;
 		}
-
-		/* Set the dot command structure. */
-		if (flags & V_DOT) {
-			dot = cmd;
-			dot.flags |= VC_ISDOT;
-			/*
-			 * If a count supplied for both the motion and the
-			 * command, the count applies only to the motion.
-			 * Reset the command count in the dot structure.
-			 */
-			if (vp->flags & VC_C1RESET)
-				dot.flags |= VC_C1SET;
-		}
 	}
-	v_end(curf);
+	(void)scr_end(curf);
 	return (0);
 }
 
