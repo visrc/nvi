@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.66 1996/03/27 09:14:59 bostic Exp $ (Berkeley) $Date: 1996/03/27 09:14:59 $
+.\"     $Id: vi.ref,v 8.67 1996/03/28 16:01:33 bostic Exp $ (Berkeley) $Date: 1996/03/28 16:01:33 $
 .\"
 .\"
 .so ref.so
@@ -526,7 +526,7 @@ distribution.)
 .sp
 .(b
 .ft C
-.so ../../install/recover.script
+.so ../../../install/recover.script
 .ft R
 .)b
 .sp
