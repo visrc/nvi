@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.9 1992/05/21 13:59:55 bostic Exp $ (Berkeley) $Date: 1992/05/21 13:59:55 $";
+static char sccsid[] = "$Id: vi.c,v 5.10 1992/05/21 14:36:06 bostic Exp $ (Berkeley) $Date: 1992/05/21 14:36:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,7 +38,7 @@ vi()
 	VICMDARG cmd, motion;
 	MARK fm;
 	u_long cnt, oldy, oldx;
-	u_int flags;
+	u_int vc_c1set, flags;
 	int erase;
 
 	scr_ref();
@@ -107,15 +107,19 @@ err:		if (msgcnt) {
 		 * command and to the motion, in which case the count is
 		 * multiplicative.  For example, "3y4y" is the same as "12yy".
 		 * This count is provided to the motion command, not to the
-		 * regular function.
+		 * regular function.  Make sure we restore the original values
+		 * of the command structure so dot commands can change the
+		 * count values, e.g. "2dw" "3." deletes a total of five words.
 		 */
 		if (mp != NULL) {
-			mp->count = mp->flags & VC_C1SET ? mp->count : 1;
+			cnt = mp->count = mp->flags & VC_C1SET ? mp->count : 1;
 			if (vp->flags & VC_C1SET) {
 				mp->count *= vp->count;
 				mp->flags |= VC_C1SET;
 				vp->flags &= ~VC_C1SET;
-			}
+				vc_c1set = VC_C1SET;
+			} else
+				vc_c1set = 0;
 			if (vp->key == mp->key) {
 				vp->flags |= VC_LMODE;
 				vp->motion.lno = cursor.lno + mp->count - 1;
@@ -135,6 +139,7 @@ err:		if (msgcnt) {
 					vp->flags |= VC_LMODE;
 				fm = cursor;
 			}
+			mp->count = cnt;
 		} else
 			fm = cursor;
 
@@ -164,10 +169,10 @@ err:		if (msgcnt) {
 			break;
 		}
 
-		/* Set the dot variables, if necessary . */
+		/* Set the dot variables. */
 		if (flags & V_DOT) {
 			dot = cmd;
-			dot.flags |= VC_ISDOT;
+			dot.flags |= VC_ISDOT | vc_c1set;
 			dotmotion = motion;
 		}
 	}
@@ -258,8 +263,15 @@ getcmd(vp, ismotion)
 	/* Find the command. */
 	kp = vp->kp = &vikeys[vp->key = key];
 	if (kp->func == NULL) {
+		/* If dot, set new count/buffer, if any, and return. */
 		if (key == '.') {
 			if (dot.flags & VC_ISDOT) {
+				if (vp->flags & VC_C1SET) {
+					dot.flags |= VC_C1SET;
+					dot.count = vp->count;
+				}
+				if (vp->buffer != OOBCB)
+					dot.buffer = vp->buffer;
 				*vp = dot;
 				return (0);
 			}
