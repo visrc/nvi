@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 8.19 1993/12/18 11:28:32 bostic Exp $ (Berkeley) $Date: 1993/12/18 11:28:32 $";
+static char sccsid[] = "$Id: ex_write.c,v 8.20 1994/01/27 13:17:48 bostic Exp $ (Berkeley) $Date: 1994/01/27 13:17:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -238,8 +238,10 @@ ex_writefp(sp, ep, name, fp, fm, tm, nlno, nch)
 				break;
 			++ccnt;
 		}
+	if (fsync(fileno(fp)))
+		goto err;
 	if (fclose(fp)) {
-		if (!F_ISSET(ep, F_MULTILOCK))
+err:		if (!F_ISSET(ep, F_MULTILOCK))
 			msgq(sp, M_SYSERR, name);
 		return (1);
 	}
