@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 5.48 1993/05/01 09:35:43 bostic Exp $ (Berkeley) $Date: 1993/05/01 09:35:43 $
+ *	$Id: exf.h,v 5.49 1993/05/05 10:40:59 bostic Exp $ (Berkeley) $Date: 1993/05/05 10:40:59 $
  */
 
 					/* Undo direction. */
@@ -63,22 +63,29 @@ typedef struct _exf {
 	u_int	 flags;
 } EXF;
 
+/* Flags to file_write(). */
+#define	FS_ALL		0x01		/* Write the entire file. */
+#define	FS_APPEND	0x02		/* Append to the file. */
+#define	FS_FORCE	0x04		/* Force is set. */
+#define	FS_POSSIBLE	0x08		/* Force could be set. */
+
 #define	AUTOWRITE(sp, ep) {						\
-	if (F_ISSET(ep, F_MODIFIED) && O_ISSET(sp, O_AUTOWRITE) &&	\
-	    file_sync(sp, ep, 0))					\
+	if (F_ISSET((ep), F_MODIFIED) && O_ISSET((sp), O_AUTOWRITE) &&	\
+	    file_write((sp), (ep), NULL, NULL, NULL, FS_ALL))		\
 		return (1);						\
 }
 
 #define	GETLINE_ERR(sp, lno) {						\
-	msgq(sp, M_ERR,							\
+	msgq((sp), M_ERR,						\
 	    "Error: %s/%d: unable to retrieve line %u.",		\
-	    tail(__FILE__), __LINE__, lno);				\
+	    tail(__FILE__), __LINE__, (lno));				\
 }
 
 #define	MODIFY_CHECK(sp, ep, force) {					\
-	if (F_ISSET(ep, F_MODIFIED))					\
-		if (O_ISSET(sp, O_AUTOWRITE)) {				\
-			if (file_sync((sp), (ep), (force)))		\
+	if (F_ISSET((ep), F_MODIFIED))					\
+		if (O_ISSET((sp), O_AUTOWRITE)) {			\
+			if (file_write((sp), (ep), NULL, NULL, NULL,	\
+			    FS_ALL | force?FS_FORCE:0 | FS_POSSIBLE))	\
 				return (1);				\
 		} else if (ep->refcnt <= 1 && !(force)) {		\
 			msgq(sp, M_ERR,					\
@@ -109,4 +116,5 @@ int	 file_sline __P((struct _scr *,
 	    struct _exf *, recno_t, char *, size_t));
 EXF	*file_start __P((struct _scr *, struct _exf *));
 int	 file_stop __P((struct _scr *, struct _exf *, int));
-int	 file_sync __P((struct _scr *, struct _exf *, int));
+int	 file_write __P((struct _scr *, struct _exf *,
+	    struct _mark *, struct _mark *, char *, int));

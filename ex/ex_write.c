@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 5.25 1993/04/12 14:39:08 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:39:08 $";
+static char sccsid[] = "$Id: ex_write.c,v 5.26 1993/05/05 10:41:22 bostic Exp $ (Berkeley) $Date: 1993/05/05 10:41:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,36 +34,28 @@ ex_write(sp, ep, cmdp)
 {
 	register char *p;
 	struct stat sb;
-	FILE *fp;
 	MARK rm;
-	int fd, flags, force;
+	int flags;
 	char *fname;
+
+	/* All write commands can have an associated '!'. */
+	LF_INIT(FS_POSSIBLE);
 
 	p = cmdp->string ? cmdp->string : "";
 
 	/* If "write!" it's a force to a file. */
 	if (*p == '!') {
 		++p;
-		force = 1;
-	} else
-		force = 0;
+		LF_SET(FS_FORCE);
+	}
 
-	/* Skip whitespace. */
+	/* If no more arguments, just write the file back. */
 	for (; *p && isspace(*p); ++p);
-
-	/* If nothing, just write the file back. */
 	if (!*p) {
-		if (F_ISSET(ep, F_NONAME)) {
-			msgq(sp, M_ERR, "No filename to which to write.");
-			return (1);
-		}
-		if (F_ISSET(ep, F_NAMECHANGED)) {
-			fname = ep->name;
-			flags = O_TRUNC;
-			force = 0;
-			goto noargs;
-		} else
-			return (file_sync(sp, ep, force));
+		if (F_ISSET(cmdp, E_ADDR2_ALL))
+			LF_SET(FS_ALL);
+		return (file_write(sp, ep,
+		    &cmdp->addr1, &cmdp->addr2, NULL, flags));
 	}
 
 	/* If "write !" it's a pipe to a utility. */
@@ -82,14 +74,13 @@ ex_write(sp, ep, cmdp)
 
 	/* If "write >>" it's an append to a file. */
 	if (p[0] == '>' && p[1] == '>') {
-		flags = O_APPEND;
+		LF_SET(FS_APPEND);
 
 		/* Skip ">>" and whitespace. */
 		for (p += 2; *p && isspace(*p); ++p);
-	} else
-		flags = O_TRUNC;
+	}
 
-	/* Build an argv. */
+	/* Build an argv (so we get file expansion). */
 	if (buildargv(sp, ep, p, 1, &cmdp->argc, &cmdp->argv))
 		return (1);
 
@@ -105,28 +96,9 @@ ex_write(sp, ep, cmdp)
 		return (1);
 	}
 
-	/* If the file exists, must either be a ! or a >> flag. */
-noargs:	if (!force && flags != O_APPEND && !stat(fname, &sb)) {
-		msgq(sp, M_ERR,
-		    "%s already exists -- use ! to overwrite it.", fname);
-		return (1);
-	}
-
-	if ((fd = open(fname, flags | O_CREAT | O_WRONLY, DEFFILEMODE)) < 0) {
-		msgq(sp, M_ERR, "%s: %s", fname, strerror(errno));
-		return (1);
-	}
-	if ((fp = fdopen(fd, "w")) == NULL) {
-		(void)close(fd);
-		msgq(sp, M_ERR, "%s: %s", fname, strerror(errno));
-		return (1);
-	}
-	if (ex_writefp(sp, ep, fname, fp, &cmdp->addr1, &cmdp->addr2, 1))
-		return (1);
-	/* If wrote the entire file, turn off modify bit. */
-	if (cmdp->flags & E_ADDR2_ALL)
-		F_CLR(ep, F_MODIFIED);
-	return (0);
+	if (F_ISSET(cmdp, E_ADDR2_ALL))
+		LF_SET(FS_ALL);
+	return (file_write(sp, ep, &cmdp->addr1, &cmdp->addr2, fname, flags));
 }
 
 /*
@@ -143,6 +115,7 @@ ex_writefp(sp, ep, fname, fp, fm, tm, success_msg)
 	int success_msg;
 {
 	register u_long ccnt, fline, tline;
+	recno_t nlines;
 	size_t len;
 	char *p;
 
@@ -155,23 +128,27 @@ ex_writefp(sp, ep, fname, fp, fm, tm, success_msg)
 	 * since the way vi got around dealing with "empty" files was to
 	 * always have a line in the file no matter what, it wrote them as
 	 * files of a single, empty line.  `Alex, I'll take vi trivia for
-	 * $500.'
+	 * $1000.'
 	 */
 	if (tline != 0)
-		for (; fline <= tline; ++fline, ccnt += len) {
+		for (; fline <= tline; ++fline) {
 			if ((p = file_gline(sp, ep, fline, &len)) == NULL)
 				break;
 			if (fwrite(p, 1, len, fp) != len)
 				break;
+			ccnt += len;
 			if (putc('\n', fp) != '\n')
 				break;
+			++ccnt;
 		}
 	if (fclose(fp)) {
 		msgq(sp, M_ERR, "%s: %s", fname, strerror(errno));
 		return (1);
 	}
-	if (success_msg)
-		msgq(sp, M_INFO, "%s: %lu lines, %lu characters.",
-		    fname, tm->lno == 0 ? 0 : tm->lno - fm->lno + 1, ccnt);
+	if (success_msg) {
+		nlines = tm->lno == 0 ? 0 : tm->lno - fm->lno + 1;
+		msgq(sp, M_INFO, "%s: %lu line%s, %lu characters.",
+		    fname, nlines, nlines == 1 ? "" : "s", ccnt);
+	}
 	return (0);
 }

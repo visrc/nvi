@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.58 1993/05/03 09:35:00 bostic Exp $ (Berkeley) $Date: 1993/05/03 09:35:00 $";
+static char sccsid[] = "$Id: exf.c,v 5.59 1993/05/05 10:40:58 bostic Exp $ (Berkeley) $Date: 1993/05/05 10:40:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -283,14 +283,18 @@ file_stop(sp, ep, force)
 }
 
 /*
- * file_sync --
- *	Sync the file to disk.
+ * file_write --
+ *	Write the file to disk.  Historic vi had fairly convoluted
+ *	semantics for whether or not writes would happen.  That's
+ *	why all the flags.
  */
 int
-file_sync(sp, ep, force)
+file_write(sp, ep, fm, tm, fname, flags)
 	SCR *sp;
 	EXF *ep;
-	int force;
+	MARK *fm, *tm;
+	char *fname;
+	int flags;
 {
 	struct stat sb;
 	FILE *fp;
@@ -299,55 +303,92 @@ file_sync(sp, ep, force)
 
 	/*
 	 * Don't permit writing to temporary files.  The problem is that
-	 * if it's a temp file and the user does ":wq", we write and quit,
+	 * if it's a temp file, and the user does ":wq", we write and quit,
 	 * unlinking the temporary file.  Not what the user had in mind
-	 * at all.
+	 * at all.  This test cannot be forced.
 	 */
 	if (F_ISSET(ep, F_NONAME)) {
 		msgq(sp, M_ERR, "No filename to which to write.");
 		return (1);
 	}
 
-	/* Can't write if read-only. */
-	if ((O_ISSET(sp, O_READONLY) || F_ISSET(ep, F_RDONLY)) && !force) {
-		msgq(sp, M_ERR,
-		    "Read-only file, not written; use ! to override.");
+	/* Can't write read-only files, unless forced. */
+	if (!LF_ISSET(FS_FORCE) &&
+	    (O_ISSET(sp, O_READONLY) || F_ISSET(ep, F_RDONLY))) {
+		if (LF_ISSET(FS_POSSIBLE))
+			msgq(sp, M_ERR,
+			    "Read-only file, not written; use ! to override.");
+		else
+			msgq(sp, M_ERR,
+			    "Read-only file, not written.");
 		return (1);
 	}
 
 	/*
-	 * If the name was changed, normal rules apply, i.e. don't overwrite 
-	 * unless forced.
+	 * If the name was changed, or we're writing to a new file, don't
+	 * overwrite anything unless forced.  Appending is okay, though.
 	 */
-	if (F_ISSET(ep, F_NAMECHANGED) && !force && !stat(ep->name, &sb)) {
-		msgq(sp, M_ERR,
-		    "%s exists, not written; use ! to override.", ep->name);
+	if (!LF_ISSET(FS_FORCE | FS_APPEND) &&
+	    (fname != NULL && !stat(fname, &sb) ||
+	    F_ISSET(ep, F_NAMECHANGED) && !stat(ep->name, &sb))) {
+		if (fname == NULL)
+			fname = ep->name;
+		if (LF_ISSET(FS_POSSIBLE))
+			msgq(sp, M_ERR,
+			    "%s exists, not written; use ! to override.",
+			    fname);
+		else
+			msgq(sp, M_ERR, "%s exists, not written.", fname);
+		return (1);
+	}
+	if (fname == NULL)
+		fname = ep->name;
+
+	/* Don't do partial writes, unless forced. */
+	if (!LF_ISSET(FS_ALL | FS_FORCE)) {
+		if (LF_ISSET(FS_POSSIBLE))
+			msgq(sp, M_ERR, "Use ! to write a partial file.");
+		else
+			msgq(sp, M_ERR, "Partial file, not written.");
 		return (1);
 	}
 
-	/* Open the file, truncating its contents. */
-	if ((fd = open(ep->name,
-	    O_CREAT | O_TRUNC | O_WRONLY, DEFFILEMODE)) < 0)
-		goto err;
+	/* Open the file, either appending or truncating. */
+	flags = O_CREAT | O_WRONLY;
+	if (LF_ISSET(FS_APPEND))
+		flags |= O_APPEND;
+	else
+		flags |= O_TRUNC;
+	if ((fd = open(fname, flags, DEFFILEMODE)) < 0) {
+		msgq(sp, M_ERR, "%s: %s", fname, strerror(errno));
+		return (1);
+	}
 
 	/* Use stdio for buffering. */
 	if ((fp = fdopen(fd, "w")) == NULL) {
 		(void)close(fd);
-err:		msgq(sp, M_ERR, "%s: %s", ep->name, strerror(errno));
+		msgq(sp, M_ERR, "%s: %s", fname, strerror(errno));
 		return (1);
 	}
 
-	/* Build fake addresses. */
-	from.lno = 1;
-	from.cno = 0;
-	to.lno = file_lline(sp, ep);
-	to.cno = 0;
+	/* Build fake addresses, if necessary. */
+	if (fm == NULL) {
+		from.lno = 1;
+		from.cno = 0;
+		fm = &from;
+		to.lno = file_lline(sp, ep);
+		to.cno = 0;
+		tm = &to;
+	}
 
-	/* Use the underlying ex write routines. */
-	if (ex_writefp(sp, ep, ep->name, fp, &from, &to, 1))
+	/* Write the file. */
+	if (ex_writefp(sp, ep, fname, fp, fm, tm, 1))
 		return (1);
 
-	F_CLR(ep, F_MODIFIED);
+	/* If wrote the entire file, clear the modified bit. */
+	if (LF_ISSET(FS_ALL))
+		F_CLR(ep, F_MODIFIED);
+
 	return (0);
 }
 

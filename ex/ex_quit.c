@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_quit.c,v 5.19 1993/04/19 15:29:28 bostic Exp $ (Berkeley) $Date: 1993/04/19 15:29:28 $";
+static char sccsid[] = "$Id: ex_quit.c,v 5.20 1993/05/05 10:41:14 bostic Exp $ (Berkeley) $Date: 1993/05/05 10:41:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -50,9 +50,10 @@ ex_wq(sp, ep, cmdp)
 {
 	int force;
 
-	force = cmdp->flags & E_FORCE;
+	force = F_ISSET(cmdp, E_FORCE);
 
-	if (file_sync(sp, ep, force))
+	if (file_write(sp, ep,
+	    NULL, NULL, NULL, FS_ALL | force ? FS_FORCE : 0 | FS_POSSIBLE))
 		return (1);
 
 	if (!force && ep->refcnt <= 1 && file_next(sp, ep, 0)) {
