@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_funcs.c,v 10.43 1996/06/17 11:33:01 bostic Exp $ (Berkeley) $Date: 1996/06/17 11:33:01 $";
+static const char sccsid[] = "$Id: cl_funcs.c,v 10.44 1996/06/18 12:49:46 bostic Exp $ (Berkeley) $Date: 1996/06/18 12:49:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -496,6 +496,10 @@ int
 cl_rename(sp)
 	SCR *sp;
 {
+	CL_PRIVATE *clp;
+
+	clp = CLP(sp);
+
 	/*
 	 * XXX
 	 * We can only rename windows for xterm.  Since it's destructive (we
@@ -504,7 +508,9 @@ cl_rename(sp)
 	 */
 	if (O_ISSET(sp, O_WINDOWNAME) &&
 	    !strncmp(OG_STR(sp->gp, GO_TERM), "xterm", sizeof("xterm") - 1)) {
-		(void)printf("\033]0;%s\007", sp->frp->name);
+		F_SET(clp, CL_RENAME);
+
+		(void)printf(XTERM_RENAME, sp->frp->name);
 		(void)fflush(stdout);
 	}
 	return (0);
