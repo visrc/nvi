@@ -1,4 +1,4 @@
-#	$Id: README,v 8.17 1996/05/09 09:50:25 bostic Exp $ (Berkeley) $Date: 1996/05/09 09:50:25 $
+#	$Id: README,v 8.18 1996/05/10 12:04:15 bostic Exp $ (Berkeley) $Date: 1996/05/10 12:04:15 $
 
 Nvi uses the GNU autoconf program for configuration and compilation.  You
 should enter:
@@ -28,13 +28,11 @@ your mind as to the curses library that you want to use, enter:
 
 and then reconfigure using "configure" and whatever options you choose.
 
-To install as "vi", "ex" and "view", enter:
+By default, the programs are installed as "vi", "ex" and "view".  To
+install them using other names, use the configure program options.  For
+example, to install them as "nvi", "nex" and "nview", use:
 
-	make install
-
-To install as "nvi", "nex" and "nview", enter:
-
-	make install_asnvi
+	configure --program-prefix=n
 
 See the section below on installation for details.
 
@@ -274,8 +272,7 @@ Notes:
 	man pages are installed.
 
 	If you want to install vi, ex, view and the man pages as nvi, nex,
-	nview, use the command "make install_asnvi" instead of the default
-	"make install".
+	nview, use the configure option --program-prefix=n.
 
 	The default value for both "exec_prefix" and "prefix" is the
 	directory /usr/local.  The default values for "bindir", "datadir"
