@@ -80,7 +80,8 @@ variable length argument lists will very likely malfunction at run-time.
 Regardless of which LynxOS platform you are using (i.e. x86, PowerPC, Sparc,
 or m680x0) you may also want to apply the other small patch given below to
 your /usr/include/ioctl.h file.  This will prevent a few warnings during the
-build of nvi, but other than that, should have little if any noticable effect.
+build of nvi, but other than that, should have little, if any, noticeable
+effect.
 
 You can apply either or both of these patches simply by doing the following:
 
