@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.41 1993/11/06 11:20:00 bostic Exp $ (Berkeley) $Date: 1993/11/06 11:20:00 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.42 1993/11/06 11:46:25 bostic Exp $ (Berkeley) $Date: 1993/11/06 11:46:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -717,7 +717,7 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 		case K_CNTRLZ:
 			(void)sp->s_suspend(sp);
 			break;
-#ifdef	HISTORIC_PRACTICE_IS_NOT_TO_REPAINT
+#ifdef	HISTORIC_PRACTICE_IS_TO_INSERT_NOT_REPAINT
 		case K_FORMFEED:
 			F_SET(sp, S_REFRESH);
 			break;
@@ -1368,10 +1368,12 @@ txt_showmatch(sp, ep)
 	int cnt, endc, startc;
 
 	/*
-	 * We don't display the match if it's not on the screen.
-	 * Find out what the first character on the screen is.
+	 * We don't display the match if it's not on the screen.  Find
+	 * out what the first character on the screen is.  Have to do
+	 * a refresh first, just in case the v_ntext() code hasn't done
+	 * one in awhile.
 	 */
-	if (sp->s_position(sp, ep, &m, 0, P_TOP))
+	if (sp->s_refresh(sp, ep) || sp->s_position(sp, ep, &m, 0, P_TOP))
 		return;
 
 	/* Initialize the getc() interface. */
