@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.30 1993/11/11 12:06:07 bostic Exp $ (Berkeley) $Date: 1993/11/11 12:06:07 $";
+static char sccsid[] = "$Id: vi.c,v 8.31 1993/11/12 16:43:26 bostic Exp $ (Berkeley) $Date: 1993/11/12 16:43:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -566,11 +566,17 @@ getkeyword(sp, ep, kp, flags)
 	u_int flags;
 {
 	register size_t beg, end;
+	recno_t lno;
 	size_t len;
 	char *p;
 
 	if ((p = file_gline(sp, ep, sp->lno, &len)) == NULL) {
-		GETLINE_ERR(sp, sp->lno);
+		if (file_lline(sp, ep, &lno))
+			return (1);
+		if (lno == 0)
+			v_eof(sp, ep, NULL);
+		else
+			GETLINE_ERR(sp, sp->lno);
 		return (1);
 	}
 	beg = sp->cno;
