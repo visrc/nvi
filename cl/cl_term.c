@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_term.c,v 10.30 2001/06/25 15:19:06 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:06 $";
+static const char sccsid[] = "$Id: cl_term.c,v 10.31 2001/07/08 13:06:56 skimo Exp $ (Berkeley) $Date: 2001/07/08 13:06:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -238,7 +238,7 @@ cl_pfmap(SCR *sp, seq_t stype, CHAR_T *from, size_t flen, CHAR_T *to, size_t tle
 	}
 
 	nlen = SPRINTF(keyname,
-	    SIZE(keyname), "function key %d", 
+	    SIZE(keyname), L("function key %d"), 
 			(int)STRTOL(from+1,NULL,10));
 	CHAR2INT(sp, p, strlen(p), wp, wlen);
 	MEMCPYW(ts, wp, wlen);
