@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.56 1996/03/10 13:26:43 bostic Exp $ (Berkeley) $Date: 1996/03/10 13:26:43 $
+dnl	$Id: configure.in,v 8.57 1996/03/11 14:19:24 bostic Exp $ (Berkeley) $Date: 1996/03/11 14:19:24 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(configure)
@@ -459,11 +459,6 @@ fi
 AC_MSG_RESULT($vi_cv_sprintf_count)
 
 dnl We compile in nvi's DB routines unless the user specifies otherwise.
-dnl XXX
-dnl Try and compile in the C library's DB hash routines if they exist.
-dnl The problem is that vi doesn't use them, and they may be used
-dnl locally to support the password and termcap databases, and may have
-dnl diverged.
 AC_MSG_CHECKING(for Berkeley DB package)
 AC_CACHE_VAL(vi_cv_db_lib, [dnl
 AC_ARG_ENABLE(db,
@@ -473,16 +468,7 @@ AC_MSG_RESULT($vi_cv_db_lib)
 case "$vi_cv_db_lib" in
 "bundled DB")
 	CPPFLAGS="$CPPFLAGS -I../db/include"
-	LIBOBJS="\$(DBOBJS) $LIBOBJS"
-
-	AC_MSG_CHECKING(for Berkeley DB hash routines)
-	AC_CACHE_VAL(vi_cv_db_hash_open, [dnl
-	AC_TRY_LINK(, [__hash_open(0, 0, 0, 0, 0);],
-		[vi_cv_db_hash_open=yes], [vi_cv_db_hash_open=no])])
-	AC_MSG_RESULT($vi_cv_db_hash_open)
-	if test "$vi_cv_db_hash_open" = "yes"; then
-		AC_DEFINE(HAVE_DB_HASH_OPEN)
-	fi;;
+	LIBOBJS="\$(DBOBJS) $LIBOBJS";;
 "other DB")
 	;;
 esac
