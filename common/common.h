@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 8.2 1993/07/22 12:05:59 bostic Exp $ (Berkeley) $Date: 1993/07/22 12:05:59 $
+ *	$Id: common.h,v 8.3 1993/08/05 18:00:55 bostic Exp $ (Berkeley) $Date: 1993/08/05 18:00:55 $
  */
 
 					/* Ordered before local includes. */
@@ -20,6 +20,7 @@ struct _cb;
 struct _excmdarg;
 struct _excmdlist;
 struct _exf;
+struct _fref;
 struct _gs;
 struct _hdr;
 struct _ib;
@@ -37,12 +38,12 @@ struct _text;
 					/* Includes compat.h. */
 #include <db.h>				/* Required by exf.h. */
 
-#include "mark.h"			/* Include before cut.h. */
+#include "mark.h"			/* Include before cut.h, exf.h. */
 #include "cut.h"
 
 #include "search.h"			/* Include before screen.h. */
 #include "options.h"			/* Include before screen.h. */
-#include "screen.h"
+#include "screen.h"			/* Include before exf.h. */
 
 #include "char.h"
 #include "exf.h"
@@ -130,6 +131,7 @@ typedef void (*sig_ret_t) __P((int));	/* Type of signal function. */
 /* Function prototypes that don't seem to belong anywhere else. */
 char	*charname __P((SCR *, int));
 int	 nonblank __P((SCR *, EXF *, recno_t, size_t *));
+void	 set_alt_fname __P((SCR *, char *));
 int	 set_window_size __P((SCR *, u_int));
 int	 status __P((SCR *, EXF *, recno_t, int));
 char	*tail __P((char *));
