@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: vi.cmd.roff,v 8.29 1994/08/31 17:28:53 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:28:53 $
+.\"	$Id: vi.cmd.roff,v 8.30 1994/08/31 18:54:10 bostic Exp $ (Berkeley) $Date: 1994/08/31 18:54:10 $
 .\"
 .SH 1 "Vi Description"
 .pp
@@ -71,14 +71,19 @@ In
 text insert mode, the cursor is positioned on the first column of
 characters which take up more than one column on the screen.
 .pp
-Generally, if the cursor line and cursor column are not on the screen,
-then the screen is scrolled (if the target cursor is close) or repainted
-(if the target cursor is far away) so that the cursor is on the screen.
-If the screen is scrolled, it is moved a minimal amount, and the cursor
-line will usually appear at the top or bottom of the screen.
-In the screen is repainted, the cursor line will appear in the center of
-the screen, unless the cursor is sufficiently close to the beginning or
-end of the file that this is not possible.
+When positioning the cursor to a new line and column,
+the type of movement is defined by the distance to the new cursor postion.
+If the new position is close,
+the screen is scrolled to the new location.
+If the new position is far away,
+the screen is repainted so that the new position is on the screen.
+If the screen is scrolled,
+it is moved a minimal amount,
+and the cursor line will usually appear at the top or bottom of the screen.
+If the screen is repainted,
+the cursor line will appear in the center of the screen,
+unless the cursor is sufficiently close to the beginning or end of the file
+that this isn't possible.
 If the
 .OP leftright
 option is set, the screen may be scrolled or repainted in a horizontal
@@ -105,7 +110,7 @@ these commands acted on physical (as opposed to logical, or screen)
 lines.
 For lines that were sufficiently long in relation to the size of the
 screen, this meant that single line scroll commands might repaint the
-entire screen, scrolling or screen positioning command might not change
+entire screen, scrolling or screen positioning commands might not change
 the screen or move the cursor at all, and some lines simply could not
 be displayed, even though
 .CO vi
@@ -120,14 +125,13 @@ with lines significantly longer than a screen width.
 keeps track of the currently
 .QQ "most attractive"
 cursor position.
-Each command description (for commands that can change the current
-cursor position),
+Each command description (for commands that alter the current cursor
+position),
 specifies if the cursor is set to a specific location in the line,
 or if it is moved to the
 .QQ "most attractive cursor position" .
-The latter means that the cursor is moved to the cursor position
-that is vertically as close as possible to the current cursor
-position.
+The latter means that the cursor is moved to the cursor position that
+is horizontally as close as possible to the current cursor position.
 If the current line is shorter than the cursor position
 .CO vi
 would select, the cursor is positioned on the last character in the line.
@@ -230,8 +234,8 @@ l	n	t	w
 .sp
 The optional count prefix available for some of the
 .CO vi
-commands that take motion commands, or the count prefix available
-for the
+commands that take motion commands,
+or the count prefix available for the
 .CO vi
 commands that are used as motion components,
 may be included and is
@@ -244,10 +248,11 @@ and
 are equivalent, and the region affected by the
 .CO c
 command is two words of text.
-In addition, if the optional count prefix is specified for both the
+In addition,
+if the optional count prefix is specified for both the
 .CO vi
-command and its motion component, the effect is multiplicative and
-is considered part of the motion argument.
+command and its motion component,
+the effect is multiplicative and is considered part of the motion argument.
 For example, the commands
 .QT 4cw
 and
@@ -270,28 +275,40 @@ command synopsis shows both a
 and
 .LI [count] ,
 they may be presented in any order.
-.KY "bigword"
-.IP "bigword"
-A set of non-whitespace characters preceded and followed by whitespace
-characters or the beginning or end of the file or line.
-.sp
-Groups of empty lines (or lines containing only whitespace characters)
-are treated as a single bigword.
 .KY word
 .IP word
 Generally, in languages where it is applicable,
 .CO vi
 recognizes two kinds of words.
-First, a sequence of letters, digits and underscores, delimited at both
-ends by: characters other than letters, digits, or underscores; the
-beginning or end of a line; the beginning or end of the file.
+First, a sequence of letters, digits and underscores,
+delimited at both ends by:
+characters other than letters, digits, or underscores,
+the beginning or end of a line, and the beginning or end of the file.
 Second, a sequence of characters other than letters, digits, underscores,
 or whitespace characters, delimited at both ends by: a letter, digit,
-underscore, or whitespace character;
-the beginning or end of a line; the beginning or end of the file.
+underscore, or whitespace character,
+the beginning or end of a line, and the beginning or end of the file.
+For example, the characters
+.QT " !@#abc$%^ "
+contain three words:
+.QT "!@#" ,
+.QT "abc"
+and
+.QT "$%^" .
 .sp
 Groups of empty lines (or lines containing only whitespace characters)
 are treated as a single word.
+.KY "bigword"
+.IP "bigword"
+A set of non-whitespace characters preceded and followed by whitespace
+characters or the beginning or end of the file or line.
+For example, the characters
+.QT " !@#abc$%^ "
+contain one bigword:
+.QT "!@#abc$%^" .
+.sp
+Groups of empty lines (or lines containing only whitespace characters)
+are treated as a single bigword.
 .KY "paragraph"
 .IP "paragraph"
 An area of text that begins with either the beginning of a file,
@@ -302,7 +319,7 @@ Groups of empty lines (or lines containing only whitespace characters)
 are treated as a single paragraph.
 .sp
 Additional paragraph boundaries can be defined using the
-.OP paragraph
+.OP paragraphs
 option.
 .KY "section"
 .IP "section"
@@ -318,7 +335,7 @@ option.
 .IP "sentence"
 An area of text that begins with either the beginning of the file or the
 first nonblank character following the previous sentence, paragraph, or
-section boundary and continues until the end of the file or a or a period
+section boundary and continues until the end of the file or a period
 .PQ \&.
 exclamation point
 .PQ !
@@ -329,9 +346,11 @@ followed by either an end-of-line or two whitespace characters.
 Any number of closing parentheses
 .PQ ) ,
 brackets
-.PQ ]
-or double-quote
+.PQ ] ,
+double-quote
 .PQ """"
+or single quote
+.PQ '
 characters can appear between the period, exclamation point,
 or question mark and the whitespace characters or end-of-line.
 .sp
@@ -376,7 +395,6 @@ Set to the line where the word is found.
 Set to the first character of the word.
 .SP Options:
 Affected by the
-.OP extended ,
 .OP ignorecase
 and
 .OP wrapscan
@@ -387,8 +405,8 @@ options.
 Page backward
 .LI count
 screens.
-Two lines of overlap are maintained by displaying the window
-starting at line
+Two lines of overlap are maintained, if possible,
+by displaying the window starting at line
 .LI "(top_line - count * window_size) + 2" ,
 where
 .LI window_size
@@ -397,7 +415,7 @@ is the value of the
 option.
 (In the case of split screens, this size is corrected to the
 current screen size.)
-This is an error if the movement is past the beginning of the file.
+It is an error if the movement is past the beginning of the file.
 .sp
 The
 .CO <control-B>
@@ -408,7 +426,9 @@ Set to the last line of text displayed on the screen.
 .SP Column:
 Set to the first nonblank character of the line.
 .SP Options:
-None.
+Affected by the
+.OP window
+option.
 .SE
 .KY <control-D>
 .IP "[count] <control-D>"
@@ -430,7 +450,7 @@ command,
 scroll forward half the number of lines in the screen.
 (In the case of split screens, the default scrolling distance is
 corrected to half the current screen size.)
-This is an error if the movement is past the end of the file.
+It is an error if the movement is past the end of the file.
 .sp
 The
 .CO <control-D>
@@ -448,7 +468,7 @@ None.
 Scroll forward
 .LI count
 lines, leaving the cursor on the current line and column, if possible.
-This is an error if the movement is past the end of the file.
+It is an error if the movement is past the end of the file.
 .SS
 .SP Line:
 Unchanged unless the current line scrolls off the screen,
@@ -464,8 +484,8 @@ None.
 Page forward
 .LI count
 screens.
-Two lines of overlap are maintained by displaying the window
-starting at line
+Two lines of overlap are maintained, if possible,
+by displaying the window starting at line
 .LI "top_line + count * window_size - 2" ,
 where
 .LI window_size
@@ -474,7 +494,7 @@ is the value of the
 option.
 (In the case of split screens, this size is corrected to the
 current screen size.)
-This is an error if the movement is past the end of the file.
+It is an error if the movement is past the end of the file.
 .sp
 The
 .CO <control-F>
@@ -485,7 +505,9 @@ Set to the first line on the screen.
 .SP Column:
 Set to the first nonblank character of the current line.
 .SP Options:
-None.
+Affected by the
+.OP window
+option.
 .SE
 .KY <control-G>
 .IP "<control-G>"
@@ -509,7 +531,7 @@ None.
 Move the cursor back
 .LI count
 characters in the current line.
-This is an error if the cursor is on the first character in the line.
+It is an error if the cursor is on the first character in the line.
 .sp
 The
 .CO <control-H>
@@ -541,7 +563,7 @@ None.
 Move the cursor down
 .LI count
 lines without changing the current column.
-This is an error if the movement is past the end of the file.
+It is an error if the movement is past the end of the file.
 .sp
 The
 .CO <control-J> ,
@@ -581,7 +603,7 @@ None.
 Move the cursor down
 .LI count
 lines to the first nonblank character of that line.
-This is an error if the movement is past the end of the file.
+It is an error if the movement is past the end of the file.
 .sp
 The
 .CO <control-M>
@@ -607,7 +629,7 @@ None.
 Move the cursor up
 .LI count
 lines, without changing the current column.
-This is an error if the movement is past the beginning of the file.
+It is an error if the movement is past the beginning of the file.
 .sp
 The
 .CO <control-P>
@@ -619,7 +641,8 @@ commands, in which case any text copied into a buffer is
 line oriented.
 .SS
 .SP Line:
-Set to the current line minus count.
+Set to the current line minus
+.LI count .
 .SP Column:
 The most attractive cursor position.
 .SP Options:
@@ -640,7 +663,7 @@ Set to the context of the previous tag command.
 None.
 .SE
 .KY <control-U>
-.IP "<control-U>"
+.IP "[count] <control-U>"
 Scroll backward
 .LI count
 lines.
@@ -660,7 +683,7 @@ command,
 scroll backward half the number of lines in the screen.
 (In the case of split screens, the default scrolling distance is
 corrected to half the current screen size.)
-This is an error if the movement is past the beginning of the file.
+It is an error if the movement is past the beginning of the file.
 .sp
 The
 .CO <control-U>
@@ -686,11 +709,11 @@ Set to the previous cursor position in the window.
 None.
 .SE
 .KY <control-Y>
-.IP "<control-Y>"
+.IP "[count] <control-Y>"
 Scroll backward
 .LI count
 lines, leaving the current line and column as is, if possible.
-This is an error if the movement is past the beginning of the file.
+It is an error if the movement is past the beginning of the file.
 .SS
 .SP Line:
 Unchanged unless the current line scrolls off the screen,
@@ -815,7 +838,7 @@ option.
 Move the cursor forward
 .LI count
 characters without changing the current line.
-This is an error if the cursor is on the last character in the line.
+It is an error if the cursor is on the last character in the line.
 .sp
 The
 .CO <space>
@@ -842,7 +865,7 @@ current character.
 None.
 .SE
 .KY !
-.IP "[count] ! motion shell-argument(s)"
+.IP "[count] ! motion shell-argument(s)<carriage-return>"
 Replace text with results from a shell command.
 Pass the lines specified by the
 .LI count
@@ -871,7 +894,7 @@ or
 .CO :!
 commands.
 (Therefore, the command
-.CO !!
+.CO !<motion>!
 repeats the previous
 .CO !
 command.)
@@ -885,9 +908,10 @@ If no
 .CO !
 or
 .CO :!
-command has yet been executed, it is an error to use an unescaped
+command has yet been executed,
+it is an error to use an unescaped
 .QT !
-character.
+character as a shell argument.
 The
 .CO !
 command does
@@ -918,12 +942,15 @@ The first line of the replaced text.
 The first column of the replaced text.
 .SP Options:
 Affected by the
+.OP extended ,
+.OP magic
+and
 .OP shell
-option.
+options.
 .SE
 .KY #
 .IP "[count] # +|-|#"
-Increment or decrement the current number.
+Increment or decrement the number referenced by the cursor.
 The current number begins at the first non-number character on or
 before the current cursor position, or the beginning of the line,
 and extends up to the first non-number character on or after the
@@ -943,6 +970,8 @@ the previous increment or decrement is repeated.
 The format of the number (decimal, hexadecimal, and octal,
 and leading 0's) is retained unless the new value cannot be
 represented in the previous format.
+It is an error to use this command when the cursor is not positioned on
+a number.
 .SS
 .SP Line:
 Unchanged.
@@ -1091,16 +1120,17 @@ For the
 command, any text copied into a buffer is line oriented.
 For the
 .CO `
-command, any text copied into a buffer is character oriented, unless
-it both starts and stops at the first character in the line, in which
-case it is line oriented.
+command,
+any text copied into a buffer is character oriented,
+unless it both starts and stops at the first character in the line,
+in which case it is line oriented.
 In addition, when using the
 .CO `
 command as a motion component,
-commands which move backward and started at the first character in the
-line, or move forward and ended at the first character in the line,
-are corrected to the last character of the starting and ending lines,
-respectively.
+commands which move backward and started at the first character in the line,
+or move forward and ended at the first character in the line,
+are corrected to the last character of the line preceding the starting and
+ending lines, respectively.
 .SS
 .SP Line:
 Set to the line from the context.
@@ -1126,20 +1156,23 @@ The
 .CO (
 command may be used as the motion component of other
 .CO vi
-commands, in which case any text copied into a buffer is
-character oriented, unless the starting and stopping points of the
-region are the first character in the line, in which case it is
-line oriented.
-In the latter case, the stopping point of the region is adjusted
-to be the end of the line immediately before it, and not the original
-cursor position.
+commands,
+in which case any text copied into a buffer is character oriented,
+unless the starting and stopping points of the region are the first
+character in the line,
+in which case it is line oriented.
+If it is line oriented,
+the starting point of the region is adjusted to be the end of the line
+immediately before the starting cursor position.
 .SS
 .SP Line:
 Set to the line containing the beginning of the sentence.
 .SP Column:
 Set to the first nonblank character of the sentence.
 .SP Options:
-None.
+Affected by the
+.OP lisp
+option.
 .SE
 .KY )
 .IP "[count] )"
@@ -1166,7 +1199,9 @@ Set to the line containing the beginning of the sentence.
 .SP Column:
 Set to the first nonblank character of the sentence.
 .SP Options:
-None.
+Affected by the
+.OP lisp
+option.
 .SE
 .KY ,
 .IP "[count] ,"
@@ -1182,6 +1217,13 @@ or
 command, searching the other way in the line,
 .LI count
 times.
+It is an error if a
+.CO F ,
+.CO f ,
+.CO T
+or
+.CO t
+command has not been performed yet.
 .sp
 The
 .CO ,
@@ -1193,17 +1235,27 @@ character oriented.
 .SP Line:
 Unchanged.
 .SP Column:
-Set to the searched-for character.
+Set to the searched-for character for the
+.CO F
+and
+.CO f
+commands,
+before the character for the
+.CO t
+command
+and after the character for the
+.CO T
+command.
 .SP Options:
 None.
 .SE
 .KY MINUSSIGN
 .IP "[count] \-"
-Move to first nonblank of the previous line,
+Move to the first nonblank of the previous line,
 .LI count
 times.
 .sp
-This is an error if the movement is past the beginning of the file.
+It is an error if the movement is past the beginning of the file.
 .sp
 The
 .CO -
@@ -1371,8 +1423,10 @@ The
 .CO 0
 command may be used as the motion component of other
 .CO vi
-commands, in which case it is an error if the cursor is on the
-first character in the line.
+commands,
+in which case it is an error if the cursor is on the first character
+in the line,
+and any text copied into a buffer is character oriented.
 .SS
 .SP Line:
 Unchanged.
@@ -1383,7 +1437,9 @@ None.
 .SE
 .KY :
 .IP ":"
-Execute an ex command.
+Execute an
+.CO ex
+command.
 .CO Vi
 prompts for an
 .CO ex
@@ -1443,7 +1499,9 @@ The current column is set as described for the
 .CO ex
 command.
 .SP Options:
-None.
+Affected as described for the
+.CO ex
+command.
 .SE
 .KY ;
 .IP "[count] ;"
@@ -1457,6 +1515,13 @@ The last character find is one of the
 or
 .CO t
 commands.
+It is an error if a
+.CO F ,
+.CO f ,
+.CO T
+or
+.CO t
+command has not been performed yet.
 .sp
 The
 .CO ;
@@ -1468,7 +1533,17 @@ character oriented.
 .SP Line:
 Unchanged.
 .SP Column:
-Set to the searched-for character.
+Set to the searched-for character for the
+.CO F
+and
+.CO f
+commands,
+before the character for the
+.CO t
+command
+and after the character for the
+.CO T
+command.
 .SP Options:
 None.
 .SE
@@ -1477,9 +1552,10 @@ None.
 .KY >
 .Ip "[count] > motion"
 Shift lines left or right.
-Shift the number of lines in the region specified by the motion component,
-times
-.LI count ,
+Shift the number of lines in the region specified by the
+.LI count
+and
+.LI motion
 left (for the
 .CO <
 command) or right (for the
@@ -1487,11 +1563,10 @@ command) or right (for the
 command) by the number of columns specified by the
 .OP shiftwidth
 option.
-Only whitespace characters are deleted when shifting left;
-once the first character in the line contains a nonblank character,
-the
-.CO shift
-will succeed, but the line will not be modified.
+Only whitespace characters are deleted when shifting left.
+Once the first character in the line no longer contains a whitespace
+character, the command will succeed,
+but the line will not be modified.
 .SS
 .SP Line:
 Unchanged.
@@ -1529,9 +1604,11 @@ It is an error to specify
 .QT @@
 or
 .QT **
-if there were no buffer previous executions.
-The text of a macro may contain an
+if there were no previous buffer executions.
+The text of a buffer may contain an
 .CO @
+or
+.CO *
 command,
 and it is possible to create infinite loops in this manner.
 (The
@@ -2105,7 +2182,7 @@ commands, in which case any text copied into a buffer is
 character oriented, unless the starting position is column 0,
 in which case it is line oriented.
 .sp
-This is an error if the movement is past the beginning of the file.
+It is an error if the movement is past the beginning of the file.
 .SS
 .SP Line:
 Set to the previous line that is
@@ -2137,7 +2214,7 @@ commands, in which case any text copied into a buffer is
 character oriented, unless the starting position is column 0,
 in which case it is line oriented.
 .sp
-This is an error if the movement is past the end of the file.
+It is an error if the movement is past the end of the file.
 .SS
 .SP Line:
 Set to the line that is
@@ -2248,16 +2325,14 @@ None.
 .SE
 .KY c
 .IP "[buffer] [count] c motion"
-Change a region of text.
+Change the region of text specified by the
+.LI count
+and
+.LI motion .
 If only part of a single line is affected, then the last character
 being changed is marked with a
 .QT $ .
 Otherwise, the region of text is deleted, and input mode is entered.
-.sp
-If
-.LI count
-is specified, it is applied to the
-.LI motion .
 .SS
 .SP Line:
 Set to the last line upon which characters were entered.
@@ -2276,10 +2351,9 @@ options.
 .SE
 .KY d
 .IP "[buffer] [count] d motion"
-Delete a region of text.
-If
+Delete the region of text specified by the
 .LI count
-is specified, it is applied to the
+and
 .LI motion .
 .SS
 .SP Line:
@@ -2581,13 +2655,11 @@ None.
 .IP "[buffer] [count] y motion"
 Copy (or
 .QQ yank )
-a text region specified by the
+the text region specified by the
 .LI count
-and motion into a buffer.
-If
-.LI count
-is specified, it is applied to the
-.LI motion .
+and
+.LI motion ,
+into a buffer.
 .SS
 .SP Line:
 Unchanged, unless the region covers more than a single line,
