@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 10.7 1995/06/14 11:33:58 bostic Exp $ (Berkeley) $Date: 1995/06/14 11:33:58 $";
+static char sccsid[] = "$Id: vs_split.c,v 10.8 1995/07/08 09:51:16 bostic Exp $ (Berkeley) $Date: 1995/07/08 09:51:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -172,10 +172,11 @@ int
 vs_discard(csp, spp)
 	SCR *csp, **spp;
 {
-	SCR *sp;
+	SCR *sp, *next, *prev;
+	dir_t dir;
 
 	/* Discard the underlying screen. */
-	if (csp->gp->scr_discard(csp, &sp))
+	if (csp->gp->scr_discard(csp, &sp, &dir))
 		return (1);
 	if (spp != NULL)
 		*spp = sp;
@@ -195,14 +196,15 @@ vs_discard(csp, spp)
 		sp->t_rows = sp->t_minrows = sp->rows - 1;
 	sp->t_maxrows = sp->rows - 1;
 	sp->defscroll = sp->t_maxrows / 2;
+	*(HMAP + (sp->t_rows - 1)) = *TMAP;
 	TMAP = HMAP + (sp->t_rows - 1);
 
 	/*
 	 * Save the old screen's cursor information.
 	 *
 	 * XXX
-	 * If called after file_end(), if the underlying file was a tmp file
-	 * it may have gone away.
+	 * If called after file_end(), and the underlying file was a tmp
+	 * file, it may have gone away.
 	 */
 	if (csp->frp != NULL) {
 		csp->frp->lno = csp->lno;
@@ -211,13 +213,26 @@ vs_discard(csp, spp)
 	}
 
 	/*
-	 * The new screen has to be drawn from scratch.
+	 * Draw the new screen from scratch.
 	 *
 	 * XXX
-	 * Actually, we could play games with the map, but it's unclear it's
-	 * worth the effort.
+	 * We could play games with the map, if this were ever to be a
+	 * performance problem, but I wrote the code a few times and it
+	 * was never clean or easy.
 	 */
-	F_SET(sp, S_SCR_REFORMAT);
+	switch (dir) {
+	case FORWARD:
+		vs_sm_fill(sp, OOBLNO, P_TOP);
+		break;
+	case BACKWARD:
+		vs_sm_fill(sp, OOBLNO, P_BOTTOM);
+		break;
+	case NOTSET:
+		F_SET(sp, S_SCR_REFORMAT);
+		break;
+	default:
+		abort();
+	}
 	return (0);
 }
 
@@ -328,8 +343,8 @@ vs_swap(csp, nsp, name)
 	 * Save the old screen's cursor information.
 	 *
 	 * XXX
-	 * If called after file_end(), if the underlying file was a tmp file
-	 * it may have gone away.
+	 * If called after file_end(), and the underlying file was a tmp
+	 * file, it may have gone away.
 	 */
 	if (csp->frp != NULL) {
 		csp->frp->lno = csp->lno;
