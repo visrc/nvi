@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_quit.c,v 5.22 1993/05/11 17:14:08 bostic Exp $ (Berkeley) $Date: 1993/05/11 17:14:08 $";
+static char sccsid[] = "$Id: ex_quit.c,v 5.23 1993/05/27 19:53:30 bostic Exp $ (Berkeley) $Date: 1993/05/27 19:53:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -39,21 +39,5 @@ ex_quit(sp, ep, cmdp)
 	}
 
 	F_SET(sp, force ? S_EXIT_FORCE : S_EXIT);
-	return (0);
-}
-
-int
-ex_xit(sp, ep, cmdp)
-	SCR *sp;
-	EXF *ep;
-	EXCMDARG *cmdp;
-{
-	int force;
-
-	force = F_ISSET(cmdp, E_FORCE);
-
-	MODIFY_CHECK(sp, ep, force);
-
-	F_SET(ep, force ? S_EXIT_FORCE : S_EXIT);
 	return (0);
 }
