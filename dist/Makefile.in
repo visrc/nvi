@@ -1,10 +1,10 @@
-#	$Id: Makefile.in,v 8.3 1996/02/18 17:39:28 bostic Exp $ (Berkeley) $Date: 1996/02/18 17:39:28 $
+#	$Id: Makefile.in,v 8.4 1996/02/20 19:15:29 bostic Exp $ (Berkeley) $Date: 1996/02/20 19:15:29 $
 
 #GCCF=	-Wall
 #DEBUG=	-DDEBUG
 LFLAGS=	@lflags@
 OORG=	-g
-INCS=	-I. -I../common -I../ex -I../vi -I../cl @cinc@
+INCS=	-I. -I../include @dbinc@ @reinc@ @cinc@
 CFLAGS=	-c ${GCCF} ${DEBUG} ${LFLAGS} ${OORG} ${INCS}
 
 # Header files.
@@ -83,36 +83,28 @@ tags:
 
 # Header sources.
 cl_extern.h:
-	(echo '#include "config.h"' && \
-	    sed -n 's/^ \* PUBLIC: \(.*\)/\1/p' ../cl/*.c) > cl_extern.h
+	sed -n 's/^ \* PUBLIC: \(.*\)/\1/p' ../cl/*.c > cl_extern.h
 	chmod 444 $@
 common_extern.h:
-	(echo '#include "config.h"' && \
-	    sed -n 's/^ \* PUBLIC: \(.*\)/\1/p' ../common/*.c) > common_extern.h
+	sed -n 's/^ \* PUBLIC: \(.*\)/\1/p' ../common/*.c > common_extern.h
 	chmod 444 $@
 ex_define.h:
-	(echo '#include "config.h"' && \
-	    awk -f ../ex/ex.awk ../ex/ex_cmd.c) > ex_define.h
+	awk -f ../ex/ex.awk ../ex/ex_cmd.c > ex_define.h
 	chmod 444 $@
 ex_extern.h:
-	(echo '#include "config.h"' && \
-	    sed -n 's/^ \* PUBLIC: \(.*\)/\1/p' ../ex/*.c) > ex_extern.h
+	sed -n 's/^ \* PUBLIC: \(.*\)/\1/p' ../ex/*.c > ex_extern.h
 	chmod 444 $@
 options_define.h:
-	(echo '#include "config.h"' && \
-	    awk -f ../common/options.awk ../common/options.c) > options_define.h
+	awk -f ../common/options.awk ../common/options.c > options_define.h
 	chmod 444 $@
 tcl_extern.h:
-	(echo '#include "config.h"' && \
-	    sed -n 's/^ \* PUBLIC: \(.*\)/\1/p' ../tclapi/*.c) > tcl_extern.h
+	sed -n 's/^ \* PUBLIC: \(.*\)/\1/p' ../tclapi/*.c > tcl_extern.h
 	chmod 444 $@
 tk_extern.h:
-	(echo '#include "config.h"' && \
-	    sed -n 's/^ \* PUBLIC: \(.*\)/\1/p' ../tk/*.c) > tk_extern.h
+	sed -n 's/^ \* PUBLIC: \(.*\)/\1/p' ../tk/*.c > tk_extern.h
 	chmod 444 $@
 vi_extern.h:
-	(echo '#include "config.h"' && \
-	    sed -n 's/^ \* PUBLIC: \(.*\)/\1/p' ../vi/*.c) > vi_extern.h
+	sed -n 's/^ \* PUBLIC: \(.*\)/\1/p' ../vi/*.c > vi_extern.h
 	chmod 444 $@
 
 # Vi curses sources.
@@ -443,62 +435,62 @@ waddnstr.o: ../curses/waddnstr.c
 
 # DB sources.
 db.o: ../db/db/db.c
-	${CC} ${CFLAGS} $?
+	${CC} -D__DBINTERFACE_PRIVATE ${CFLAGS} $?
 mpool.o: ../db/mpool/mpool.c
-	${CC} ${CFLAGS} -I../db/mpool $?
+	${CC} -D__DBINTERFACE_PRIVATE ${CFLAGS} -I../db/mpool $?
 bt_close.o: ../db/btree/bt_close.c
-	${CC} ${CFLAGS} -I../db/btree $?
+	${CC} -D__DBINTERFACE_PRIVATE ${CFLAGS} -I../db/btree $?
 bt_conv.o: ../db/btree/bt_conv.c
-	${CC} ${CFLAGS} -I../db/btree $?
+	${CC} -D__DBINTERFACE_PRIVATE ${CFLAGS} -I../db/btree $?
 bt_debug.o: ../db/btree/bt_debug.c
-	${CC} ${CFLAGS} -I../db/btree $?
+	${CC} -D__DBINTERFACE_PRIVATE ${CFLAGS} -I../db/btree $?
 bt_delete.o: ../db/btree/bt_delete.c
-	${CC} ${CFLAGS} -I../db/btree $?
+	${CC} -D__DBINTERFACE_PRIVATE ${CFLAGS} -I../db/btree $?
 bt_get.o: ../db/btree/bt_get.c
-	${CC} ${CFLAGS} -I../db/btree $?
+	${CC} -D__DBINTERFACE_PRIVATE ${CFLAGS} -I../db/btree $?
 bt_open.o: ../db/btree/bt_open.c
-	${CC} ${CFLAGS} -I../db/btree $?
+	${CC} -D__DBINTERFACE_PRIVATE ${CFLAGS} -I../db/btree $?
 bt_overflow.o: ../db/btree/bt_overflow.c
-	${CC} ${CFLAGS} -I../db/btree $?
+	${CC} -D__DBINTERFACE_PRIVATE ${CFLAGS} -I../db/btree $?
 bt_page.o: ../db/btree/bt_page.c
-	${CC} ${CFLAGS} -I../db/btree $?
+	${CC} -D__DBINTERFACE_PRIVATE ${CFLAGS} -I../db/btree $?
 bt_put.o: ../db/btree/bt_put.c
-	${CC} ${CFLAGS} -I../db/btree $?
+	${CC} -D__DBINTERFACE_PRIVATE ${CFLAGS} -I../db/btree $?
 bt_search.o: ../db/btree/bt_search.c
-	${CC} ${CFLAGS} -I../db/btree $?
+	${CC} -D__DBINTERFACE_PRIVATE ${CFLAGS} -I../db/btree $?
 bt_seq.o: ../db/btree/bt_seq.c
-	${CC} ${CFLAGS} -I../db/btree $?
+	${CC} -D__DBINTERFACE_PRIVATE ${CFLAGS} -I../db/btree $?
 bt_split.o: ../db/btree/bt_split.c
-	${CC} ${CFLAGS} -I../db/btree $?
+	${CC} -D__DBINTERFACE_PRIVATE ${CFLAGS} -I../db/btree $?
 bt_utils.o: ../db/btree/bt_utils.c
-	${CC} ${CFLAGS} -I../db/btree $?
+	${CC} -D__DBINTERFACE_PRIVATE ${CFLAGS} -I../db/btree $?
 rec_close.o: ../db/recno/rec_close.c
-	${CC} ${CFLAGS} -I../db/recno $?
+	${CC} -D__DBINTERFACE_PRIVATE ${CFLAGS} -I../db/recno $?
 rec_delete.o: ../db/recno/rec_delete.c
-	${CC} ${CFLAGS} -I../db/recno $?
+	${CC} -D__DBINTERFACE_PRIVATE ${CFLAGS} -I../db/recno $?
 rec_get.o: ../db/recno/rec_get.c
-	${CC} ${CFLAGS} -I../db/recno $?
+	${CC} -D__DBINTERFACE_PRIVATE ${CFLAGS} -I../db/recno $?
 rec_open.o: ../db/recno/rec_open.c
-	${CC} ${CFLAGS} -I../db/recno $?
+	${CC} -D__DBINTERFACE_PRIVATE ${CFLAGS} -I../db/recno $?
 rec_put.o: ../db/recno/rec_put.c
-	${CC} ${CFLAGS} -I../db/recno $?
+	${CC} -D__DBINTERFACE_PRIVATE ${CFLAGS} -I../db/recno $?
 rec_search.o: ../db/recno/rec_search.c
-	${CC} ${CFLAGS} -I../db/recno $?
+	${CC} -D__DBINTERFACE_PRIVATE ${CFLAGS} -I../db/recno $?
 rec_seq.o: ../db/recno/rec_seq.c
-	${CC} ${CFLAGS} -I../db/recno $?
+	${CC} -D__DBINTERFACE_PRIVATE ${CFLAGS} -I../db/recno $?
 rec_utils.o: ../db/recno/rec_utils.c
-	${CC} ${CFLAGS} -I../db/recno $?
+	${CC} -D__DBINTERFACE_PRIVATE ${CFLAGS} -I../db/recno $?
 
 # Regular Expressions sources.
 RINC=	-I../regex
 regcomp.o: ../regex/regcomp.c
-	${CC} ${CFLAGS} ${RINC} $?
+	${CC} -D__REGEX_PRIVATE ${CFLAGS} ${RINC} $?
 regerror.o: ../regex/regerror.c
-	${CC} ${CFLAGS} ${RINC} $?
+	${CC} -D__REGEX_PRIVATE ${CFLAGS} ${RINC} $?
 regexec.o: ../regex/regexec.c
-	${CC} ${CFLAGS} ${RINC} $?
+	${CC} -D__REGEX_PRIVATE ${CFLAGS} ${RINC} $?
 regfree.o: ../regex/regfree.c
-	${CC} ${CFLAGS} ${RINC} $?
+	${CC} -D__REGEX_PRIVATE ${CFLAGS} ${RINC} $?
 
 # Random replacement and workaround sources.
 addnstr.o: ../clib/addnstr.c
