@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 9.2 1994/11/10 16:19:35 bostic Exp $ (Berkeley) $Date: 1994/11/10 16:19:35 $";
+static char sccsid[] = "$Id: ex_append.c,v 9.3 1994/11/10 16:22:34 bostic Exp $ (Berkeley) $Date: 1994/11/10 16:22:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -185,7 +185,7 @@ err:			rval = 1;
 		if (F_ISSET(sp->gp, G_STDIN_TTY)) {
 			if (SEX_NORAW(&t))
 				rval = 1;
-			F_SET(sp, S_SCR_REDRAW);
+			F_SET(sp, S_SCR_REFRESH);
 		}
 	}
 	return (rval);

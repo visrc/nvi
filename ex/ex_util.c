@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_util.c,v 9.2 1994/11/10 16:19:39 bostic Exp $ (Berkeley) $Date: 1994/11/10 16:19:39 $";
+static char sccsid[] = "$Id: ex_util.c,v 9.3 1994/11/10 16:22:36 bostic Exp $ (Berkeley) $Date: 1994/11/10 16:22:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -167,7 +167,7 @@ ex_rleave(sp)
 	/* If the terminal was used, refresh the screen. */
 	if (fstat(STDIN_FILENO, &sb) || exp->leave_atime == 0 ||
 	    exp->leave_atime != sb.st_atime || exp->leave_mtime != sb.st_mtime)
-		F_SET(sp, S_SCR_REDRAW);
+		F_SET(sp, S_SCR_REFRESH);
 }
 
 /*
