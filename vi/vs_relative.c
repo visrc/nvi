@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_relative.c,v 8.6 1993/11/29 14:15:46 bostic Exp $ (Berkeley) $Date: 1993/11/29 14:15:46 $";
+static char sccsid[] = "$Id: vs_relative.c,v 8.7 1993/12/29 16:27:20 bostic Exp $ (Berkeley) $Date: 1993/12/29 16:27:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -98,13 +98,10 @@ svi_lrelative(sp, ep, lno, off)
 	if (sp->rcmflags == RCM_LAST)
 		return (len - 1);
 
-	/* Set scno to the right initial value. */
-	scno = O_ISSET(sp, O_NUMBER) ? O_NUMBER_LENGTH : 0;
-
 	/* Discard logical lines. */
 	cname = sp->gp->cname;
 	listset = O_ISSET(sp, O_LIST);
-	for (p = lp, llen = len; --off;) {
+	for (scno = 0, p = lp, llen = len; --off;) {
 		for (; len && scno < sp->cols; --len)
 			SCNO_INCREMENT;
 		if (len == 0)
