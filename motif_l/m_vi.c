@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_vi.c,v 8.16 1996/12/03 18:39:06 bostic Exp $ (Berkeley) $Date: 1996/12/03 18:39:06 $";
+static const char sccsid[] = "$Id: m_vi.c,v 8.17 1996/12/04 10:15:51 bostic Exp $ (Berkeley) $Date: 1996/12/04 10:15:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1190,29 +1190,27 @@ Cardinal        *cardinal;
     XPointerMovedEvent	*ev = (XPointerMovedEvent *) event;
     static int		last_click;
 
-    /* NOTE:  when multiple panes are implemented, we need to find
-     * the correct screen.  For now, there is only one.
+    /*
+     * NOTE: when multiple panes are implemented, we need to find the correct
+     * screen.  For now, there is only one.
      */
     xpos = COLUMN( cur_screen, ev->x );
     ypos = ROW( cur_screen, ev->y );
 
-    /* remove the old one */
+    /* Remove the old one. */
     erase_selection( cur_screen, selection_start, selection_end );
 
-    /* left click should also move the caret for vi.
-     * we really want to send an r,c position, but for now
-     * the protocol is only existing vi commands.  Note that the |
-     * will get the correct column, but we can't take into account
-     * tabs or line wrappping
+    /* Send the new cursor position. */
+    ipb.code = IPO_MOUSE_MOVE;
+    ipb.val1 = ypos;
+    ipb.val2 = xpos;
+    (void)ip_send("12", &ipb);
+
+    /*
+     * RAZ: there is now a IPO_MOVE command waiting in the queue from the
+     * core editor.  It should probably be read and applied before doing
+     * anything else?
      */
-    if ( ypos == 0 )
-	sprintf( buffer, "H%d|", xpos+1 );
-    else
-	sprintf( buffer, "H%dj%d|", ypos, xpos+1 );
-    ipb.len = strlen( buffer );
-    ipb.code = IPO_STRING;
-    ipb.str = buffer;
-    ip_send("s", &ipb);
 
     /* click-click, and we go for words, lines, etc */
     if ( ev->time - last_click < multi_click_length )
