@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: getc.c,v 5.11 1993/02/25 17:51:18 bostic Exp $ (Berkeley) $Date: 1993/02/25 17:51:18 $";
+static char sccsid[] = "$Id: getc.c,v 5.12 1993/02/25 20:34:53 bostic Exp $ (Berkeley) $Date: 1993/02/25 20:34:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,9 +18,9 @@ static char sccsid[] = "$Id: getc.c,v 5.11 1993/02/25 17:51:18 bostic Exp $ (Ber
 #include "getc.h"
 #include "vcmd.h"
 
-static MARK m;
-static size_t len;
-static u_char *p;
+#define	GB	ep->getc_bp
+#define	GL	ep->getc_blen
+#define	GM	ep->getc_m
 
 /*
  * getc_init --
@@ -32,17 +32,15 @@ getc_init(ep, fm, chp)
 	MARK *fm;
 	int *chp;
 {
-	u_char *p;
-
-	m = *fm;
-	if ((p = file_gline(ep, fm->lno, &len)) == NULL) {
+	GM = *fm;
+	if ((GB = file_gline(ep, fm->lno, &GL)) == NULL) {
 		if (file_lline(ep) == 0)
 			v_eol(ep, NULL);
 		else
 			GETLINE_ERR(ep, fm->lno);
 		return (1);
 	}
-	*chp = len == 0 ? EMPTYLINE : p[m.cno];
+	*chp = GL == 0 ? EMPTYLINE : GB[GM.cno];
 	return (0);
 }
 
@@ -58,34 +56,34 @@ getc_next(ep, dir, chp)
 {
 	MARK save;
 
-	save = m;
+	save = GM;
 	if (dir == FORWARD)
-		if (len == 0 || m.cno == len - 1) {
-			m.cno = 0;		/* EOF; restore the cursor. */
-			if ((p = file_gline(ep, ++m.lno, &len)) == NULL) {
-				m = save;
+		if (GL == 0 || GM.cno == GL - 1) {
+			GM.cno = 0;		/* EOF; restore the cursor. */
+			if ((GB = file_gline(ep, ++GM.lno, &GL)) == NULL) {
+				GM = save;
 				return (0);
 			}
-			if (len == 0) {
+			if (GL == 0) {
 				*chp = EMPTYLINE;
 				return (1);
 			}
 		} else
-			++m.cno;
+			++GM.cno;
 	else /* if (dir == BACKWARD) */
-		if (m.cno == 0) {		/* EOF; restore the cursor. */
-			if ((p = file_gline(ep, --m.lno, &len)) == NULL) {
-				m = save;
+		if (GM.cno == 0) {		/* EOF; restore the cursor. */
+			if ((GB = file_gline(ep, --GM.lno, &GL)) == NULL) {
+				GM = save;
 				return (0);
 			}
-			if (len == 0) {
+			if (GL == 0) {
 				*chp = EMPTYLINE;
 				return (1);
 			}
-			m.cno = len - 1;
+			GM.cno = GL - 1;
 		} else
-			--m.cno;
-	*chp = p[m.cno];
+			--GM.cno;
+	*chp = GB[GM.cno];
 	return (1);
 }
 
@@ -98,5 +96,5 @@ getc_set(ep, rp)
 	EXF *ep;
 	MARK *rp;
 {
-	*rp = m;
+	*rp = GM;
 }

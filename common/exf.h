@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 5.36 1993/02/25 17:43:54 bostic Exp $ (Berkeley) $Date: 1993/02/25 17:43:54 $
+ *	$Id: exf.h,v 5.37 1993/02/25 20:34:40 bostic Exp $ (Berkeley) $Date: 1993/02/25 20:34:40 $
  */
 
 #ifndef _EXF_H_
@@ -49,7 +49,11 @@ typedef struct exf {
 	size_t nlen;			/* File name length. */
 
 	u_char *tmp_bp;			/* Temporary buffer. */
-	size_t tmp_blen;		/* Size of temp buffer. */
+	size_t tmp_blen;		/* Size of temporary buffer. */
+
+	MARK getc_m;			/* Getc mark. */
+	u_char *getc_bp;		/* Getc buffer. */
+	size_t getc_blen;		/* Getc buffer length. */
 
 #define	F_EXIT		0x000001	/* Exiting (forced). */
 #define	F_EXIT_FORCE	0x000002	/* Exiting (not forced). */
