@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.62 1994/06/25 12:12:46 bostic Exp $ (Berkeley) $Date: 1994/06/25 12:12:46 $";
+static char sccsid[] = "$Id: recover.c,v 8.63 1994/06/26 09:56:57 bostic Exp $ (Berkeley) $Date: 1994/06/26 09:56:57 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -491,14 +491,23 @@ rcv_list(sp)
 		}
 		*p = '\0';
 
-		/* Get the last modification time. */
-		if (fstat(fileno(fp), &sb)) {
-			(void)fprintf(stderr,
-			    "vi: %s: %s\n", dp->d_name, strerror(errno));
+		/*
+		 * If the file doesn't exist, it's an orphaned recovery file,
+		 * toss it.
+		 *
+		 * XXX
+		 * This can occur if the backup file was deleted and we crashed
+		 * before deleting the email file.
+		 */
+		errno = 0;
+		if (stat(file + sizeof(VI_FHEADER) - 1, &sb) &&
+		    errno == ENOENT) {
+			(void)unlink(dp->d_name);
 			goto next;
 		}
 
-		/* Display. */
+		/* Get the last modification time and display. */
+		(void)fstat(fileno(fp), &sb);
 		(void)printf("%s: %s",
 		    file + sizeof(VI_FHEADER) - 1, ctime(&sb.st_mtime));
 		found = 1;
@@ -587,10 +596,18 @@ rcv_read(sp, frp)
 		++found;
 		*t = *p = '\0';
 
-		/* Get the last modification time. */
-		if (fstat(fd, &sb)) {
-			msgq(sp, M_ERR,
-			    "vi: %s: %s", dp->d_name, strerror(errno));
+		/*
+		 * If the file doesn't exist, it's an orphaned recovery file,
+		 * toss it.
+		 *
+		 * XXX
+		 * This can occur if the backup file was deleted and we crashed
+		 * before deleting the email file.
+		 */
+		errno = 0;
+		if (stat(file + sizeof(VI_FHEADER) - 1, &sb) &&
+		    errno == ENOENT) {
+			(void)unlink(dp->d_name);
 			goto next;
 		}
 
@@ -608,6 +625,7 @@ rcv_read(sp, frp)
 		 * we only get a single second granularity, instead of
 		 * getting it right.
 		 */
+		(void)fstat(fd, &sb);
 		if (recp == NULL || rec_mtime < sb.st_mtime) {
 			p = recp;
 			t = pathp;
