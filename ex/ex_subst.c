@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.35 1994/03/03 17:39:38 bostic Exp $ (Berkeley) $Date: 1994/03/03 17:39:38 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.36 1994/03/06 13:44:11 bostic Exp $ (Berkeley) $Date: 1994/03/06 13:44:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -613,11 +613,12 @@ nextmatch:	sp->match[0].rm_so = 0;
 		 *
 		 * !!!
 		 * Historic vi just put the cursor on the first non-blank
-		 * of the last line changed.  This might be better.
+		 * of the last line changed.  We move to the beginning of
+		 * the next substitution.
 		 */
 		if (!cflag) {
 			sp->lno = lno;
-			sp->cno = sp->match[0].rm_so + offset;
+			sp->cno = lbclen;
 		}
 
 		/* Substitute the matching bytes. */
