@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 10.22 1996/02/20 21:05:40 bostic Exp $ (Berkeley) $Date: 1996/02/20 21:05:40 $";
+static char sccsid[] = "$Id: key.c,v 10.23 1996/02/25 18:21:50 bostic Exp $ (Berkeley) $Date: 1996/02/25 18:21:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,7 +32,6 @@ static int	v_event_append __P((SCR *, EVENT *));
 static int	v_event_grow __P((SCR *, int));
 static int	v_key_cmp __P((const void *, const void *));
 static void	v_keyval __P((SCR *, scr_keyval_t, int));
-static int	v_resize __P((SCR *, EVENT *));
 static void	v_sync __P((SCR *, int));
 
 /*
@@ -590,10 +589,6 @@ loop:		if (gp->scr_event(sp, argp,
 			if (LF_ISSET(EC_INTERRUPT))
 				return (0);
 			goto append;
-		case E_RESIZE:
-			if (v_resize(sp, argp))
-				return (1);
-			goto append;
 		default:
 append:			if (v_event_append(sp, argp))
 				return (1);
@@ -732,48 +727,6 @@ not_digit:	argp->e_c = CH_NOT_DIGIT;
 	goto nomap;
 }
 
-/* 
- * v_resize --
- *	Reset the options for a resize event.
- */
-static int
-v_resize(sp, evp)
-	SCR *sp;
-	EVENT *evp;
-{
-	ARGS *argv[2], a, b;
-	int rval;
-	char b1[1024];
-
-	a.bp = b1;
-	b.bp = NULL;
-	a.len = b.len = 0;
-	argv[0] = &a;
-	argv[1] = &b;
-
-	/*
-	 * XXX
-	 * Setting the lines/columns normally results in resize events.
-	 * Turn the screen off now, so that doesn't happen.
-	 */
-	F_CLR(sp, S_SCR_EX | S_SCR_VI);
-
-	(void)snprintf(b1, sizeof(b1), "lines=%lu", (u_long)evp->e_lno);
-	a.len = strlen(b1);
-	if (opts_set(sp, argv, NULL))
-		goto err;
-	(void)snprintf(b1, sizeof(b1), "columns=%lu", (u_long)evp->e_cno);
-	a.len = strlen(b1);
-	if (opts_set(sp, argv, NULL))
-		goto err;
-
-	rval = 0;
-	if (0)
-err:		rval = 1;
-
-	return (rval);
-}
-
 /*
  * v_sync --
  *	Walk the screen lists, sync'ing files to their backup copies.
@@ -818,9 +771,6 @@ v_event_err(sp, evp)
 		break;
 	case E_REPAINT:
 		msgq(sp, M_ERR, "281|Unexpected repaint event");
-		break;
-	case E_RESIZE:
-		msgq(sp, M_ERR, "282|Unexpected resize event");
 		break;
 	case E_STRING:
 		msgq(sp, M_ERR, "285|Unexpected string event");

@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 10.9 1995/11/06 19:26:35 bostic Exp $ (Berkeley) $Date: 1995/11/06 19:26:35 $
+ *	$Id: key.h,v 10.10 1996/02/25 18:22:04 bostic Exp $ (Berkeley) $Date: 1996/02/25 18:22:04 $
  */
 
 /*
@@ -44,7 +44,6 @@ typedef enum {
 	E_INTERRUPT,			/* Interrupt. */
 	E_QUIT,				/* Quit. */
 	E_REPAINT,			/* Repaint: e_flno, e_tlno set. */
-	E_RESIZE,			/* SIGWINCH: e_lno, e_cno set. */
 	E_SIGHUP,			/* SIGHUP. */
 	E_SIGTERM,			/* SIGTERM. */
 	E_STRING,			/* Input string: e_csp, e_len set. */
