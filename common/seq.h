@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: seq.h,v 9.3 1995/02/15 16:12:22 bostic Exp $ (Berkeley) $Date: 1995/02/15 16:12:22 $
+ *	$Id: seq.h,v 10.1 1995/04/13 17:18:37 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:18:37 $
  */
 
 /*
@@ -26,12 +26,9 @@
  * The fast-lookup bits are never turned off -- users don't usually unmap
  * things, though, so it's probably not a big deal.
  */
-					/* Sequence type. */
-enum seqtype { SEQ_ABBREV, SEQ_COMMAND, SEQ_INPUT };
-
 struct _seq {
 	LIST_ENTRY(_seq) q;		/* Linked list of all sequences. */
-	enum seqtype stype;		/* Sequence type. */
+	seq_t	 stype;			/* Sequence type. */
 	CHAR_T	*name;			/* Sequence name (if any). */
 	size_t	 nlen;			/* Name length. */
 	CHAR_T	*input;			/* Sequence input keys. */
@@ -47,11 +44,11 @@ struct _seq {
 };
 
 void	 seq_close __P((GS *));
-int	 seq_delete __P((SCR *, CHAR_T *, size_t, enum seqtype));
-int	 seq_dump __P((SCR *, enum seqtype, int));
-SEQ	*seq_find __P((SCR *, SEQ **, CHAR_T *, size_t, enum seqtype, int *));
+int	 seq_delete __P((SCR *, CHAR_T *, size_t, seq_t));
+int	 seq_dump __P((SCR *, seq_t, int));
+SEQ	*seq_find __P((SCR *, SEQ **, EVENT *, CHAR_T *, size_t, seq_t, int *));
 void	 seq_init __P((SCR *));
 int	 seq_mdel __P((SEQ *));
-int	 seq_save __P((SCR *, FILE *, char *, enum seqtype));
+int	 seq_save __P((SCR *, FILE *, char *, seq_t));
 int	 seq_set __P((SCR *, CHAR_T *, size_t,
-	    CHAR_T *, size_t, CHAR_T *, size_t, enum seqtype, int));
+	    CHAR_T *, size_t, CHAR_T *, size_t, seq_t, int));

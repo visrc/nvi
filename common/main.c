@@ -16,7 +16,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 9.24 1995/02/17 11:36:21 bostic Exp $ (Berkeley) $Date: 1995/02/17 11:36:21 $";
+static char sccsid[] = "$Id: main.c,v 10.1 1995/04/13 17:18:18 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:18:18 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -40,51 +40,30 @@ static char sccsid[] = "$Id: main.c,v 9.24 1995/02/17 11:36:21 bostic Exp $ (Ber
 #include <regex.h>
 #include <pathnames.h>
 
-#include "vi.h"
-#include "../cl/cl.h"
+#include "common.h"
+#include "../vi/vi.h"
 #include "../ex/tag.h"
-#include "../sex/sex_screen.h"
-#include "../svi/svi_screen.h"
 
-static void	 estr __P((char *, int, char *));
-static void	 gs_end __P((GS *));
-static GS	*gs_init __P((char *));
-static void	 gs_msgdisplay __P((MSG *));
-static int	 obsolete __P((char *, char *[]));
-static void	 usage __P((int));
+static void	 v_estr __P((char *, int, char *));
+static GS	*v_gs_init __P((char *));
+static int	 v_obsolete __P((char *, char *[]));
 
-GS *__global_list;			/* GLOBAL: List of screens. */
-
-#ifndef VI_LIBRARY
-int
-main(argc, argv)
+init_t
+v_init(argc, argv, rows, cols, gpp)
 	int argc;
 	char *argv[];
-{
-	static int reenter;
-
-	/* If loaded at 0 and indirecting through a NULL pointer, stop. */
-	if (reenter++)
-		abort();
-
-	exit (vi_main(argc, argv, cl_ssize));
-}
-#endif
-
-int
-vi_main(argc, argv, e_ssize)
-	int argc;
-	char *argv[];
-	int (*e_ssize) __P((SCR *, int));
+	recno_t rows;
+	size_t cols;
+	GS **gpp;
 {
 	extern int optind;
 	extern char *optarg;
-	GS *gp;
 	FREF *frp;
+	GS *gp;
 	SCR *sp;
-	u_int32_t saved_vi_mode;
+	init_t rval;
 	u_int flags;
-	int ch, eval, flagchk, lflag, readonly, silent, snapshot;
+	int ch, flagchk, lflag, readonly, silent, snapshot;
 	char *excmdarg, *myname, *tag_f, *trace_f, *wsizearg;
 	char path[MAXPATHLEN];
 
@@ -100,13 +79,12 @@ vi_main(argc, argv, e_ssize)
 		/* View is readonly. */
 		if (!strcmp(myname, "nview") || !strcmp(myname, "view"))
 			readonly = 1;
-		LF_INIT(S_VI_CURSES);
+		LF_INIT(S_VI);
 	}
-	saved_vi_mode = S_VI_CURSES;
 
 	/* Convert old-style arguments into new-style ones. */
-	if (obsolete(myname, argv))
-		return (1);
+	if (v_obsolete(myname, argv))
+		return (INIT_ERR);
 
 	/* Parse the arguments. */
 	flagchk = '\0';
@@ -114,9 +92,9 @@ vi_main(argc, argv, e_ssize)
 	lflag = silent = 0;
 	snapshot = 1;
 #ifdef DEBUG
-	while ((ch = getopt(argc, argv, "c:DeFlRrsT:t:vw:X:")) != EOF)
+	while ((ch = getopt(argc, argv, "c:DeFlRrsT:t:vw:")) != EOF)
 #else
-	while ((ch = getopt(argc, argv, "c:eFlRrsT:t:vw:X:")) != EOF)
+	while ((ch = getopt(argc, argv, "c:eFlRrst:vw:")) != EOF)
 #endif
 		switch (ch) {
 		case 'c':		/* Run the command. */
@@ -125,11 +103,11 @@ vi_main(argc, argv, e_ssize)
 #ifdef DEBUG
 		case 'D':
 			(void)printf("process %u waiting...\n", getpid());
-			(void)read(STDIN_FILENO, &eval, 1);
+			(void)read(STDIN_FILENO, &ch, 1);
 			break;
 #endif
 		case 'e':		/* Ex mode. */
-			LF_CLR(S_SCREENS);
+			LF_CLR(S_VI);
 			LF_SET(S_EX);
 			break;
 		case 'F':		/* No snapshot. */
@@ -143,60 +121,50 @@ vi_main(argc, argv, e_ssize)
 			break;
 		case 'r':		/* Recover. */
 			if (flagchk == 't') {
-				estr(myname, 0,
+				v_estr(myname, 0,
 				    "only one of -r and -t may be specified.");
-				return (1);
+				return (INIT_ERR);
 			}
 			flagchk = 'r';
 			break;
 		case 's':
 			silent = 1;
 			break;
+#ifdef DEBUG
 		case 'T':		/* Trace. */
 			trace_f = optarg;
 			break;
+#endif
 		case 't':		/* Tag. */
 			if (flagchk == 'r') {
-				estr(myname, 0,
+				v_estr(myname, 0,
 				    "only one of -r and -t may be specified.");
-				return (1);
+				return (INIT_ERR);
 			}
 			if (flagchk == 't') {
-				estr(myname, 0,
+				v_estr(myname, 0,
 				    "only one tag file may be specified.");
-				return (1);
+				return (INIT_ERR);
 			}
 			flagchk = 't';
 			tag_f = optarg;
 			break;
 		case 'v':		/* Vi mode. */
-			LF_CLR(S_SCREENS);
-			LF_SET(S_VI_CURSES);
-			saved_vi_mode = S_VI_CURSES;
+			LF_CLR(S_EX);
+			LF_SET(S_VI);
 			break;
 		case 'w':
 			wsizearg = optarg;
 			break;
-		case 'X':
-			if (!strcmp(optarg, "aw")) {
-				LF_CLR(S_SCREENS);
-				LF_SET(S_VI_XAW);
-				saved_vi_mode = S_VI_XAW;
-				break;
-			}
-			/* FALLTHROUGH */
 		case '?':
 		default:
-			usage(LF_ISSET(S_EX));
-			return (1);
+			return (INIT_USAGE);
 		}
 	argc -= optind;
 	argv += optind;
 
-	/* Build and initialize the GS structure. */
-	__global_list = gp = gs_init(myname);
-	if (gp == NULL)
-		return (1);
+	if ((gp = v_gs_init(myname)) == NULL)
+		return (INIT_ERR);
 
 	/* Set initial command string. */
 	gp->icommand = excmdarg;
@@ -207,9 +175,8 @@ vi_main(argc, argv, e_ssize)
 
 	/* Silent is only applicable to ex. */
 	if (silent && !LF_ISSET(S_EX)) {
-		estr(myname, 0,
-		    "-s option is only applicable to ex.");
-		return (1);
+		v_estr(myname, 0, "-s option is only applicable to ex.");
+		goto err;
 	}
 
 	/*
@@ -227,18 +194,16 @@ vi_main(argc, argv, e_ssize)
 		goto err;
 	}
 
-	if (trace_f != NULL) {		/* Trace file initialization. */
 #ifdef DEBUG
+	/* Trace file initialization. */
+	if (trace_f != NULL) {
 		if ((gp->tracefp = fopen(trace_f, "w")) == NULL) {
-			estr(gp->progname, errno, trace_f);
-			return (1);
+			v_estr(gp->progname, errno, trace_f);
+			goto err;
 		}
 		(void)fprintf(gp->tracefp, "\n===\ntrace: open %s\n", trace_f);
-#else
-		msgq(sp, M_ERR,
-		    "041|-T support not compiled into this version");
-#endif
 	}
+#endif
 
 	/*
 	 * Build and initialize the first/current screen.  This is a bit
@@ -247,25 +212,20 @@ vi_main(argc, argv, e_ssize)
 	 * display queue so that the error messages get displayed.
 	 *
 	 * !!!
-	 * Signals not turned on, don't block them for queue manipulation.
+	 * Signals not yet turned on, don't block them for queue manipulation.
 	 *
 	 * !!!
 	 * Everything we do until we go interactive is done in ex mode.
 	 */
-	if (screen_init(NULL, &sp)) {
+	if (screen_init(gp, NULL, &sp)) {
 		if (sp != NULL)
-			CIRCLEQ_INSERT_HEAD(&__global_list->dq, sp, q);
+			CIRCLEQ_INSERT_HEAD(&gp->dq, sp, q);
 		goto err;
 	}
 	F_SET(sp, S_EX);
-	sp->saved_vi_mode = saved_vi_mode;
-	CIRCLEQ_INSERT_HEAD(&__global_list->dq, sp, q);
+	CIRCLEQ_INSERT_HEAD(&gp->dq, sp, q);
 
-	/* Set the one screen function that we have to know about. */
-	sp->e_ssize = e_ssize;
-	if (e_ssize(sp, 0))		/* Base screen initialization. */
-		goto err;
-	if (term_init(sp))		/* Terminal initialization. */
+	if (v_key_init(sp))		/* Special key initialization. */
 		goto err;
 
 	{ int oargs[4], *oargp = oargs;
@@ -275,8 +235,8 @@ vi_main(argc, argv, e_ssize)
 		*oargp++ = O_LISP;
 		*oargp++ = O_SHOWMATCH;
 	}
-	*oargp = -1;
-	if (opts_init(sp, oargs))	/* Options initialization. */
+	*oargp = -1;			/* Options initialization. */
+	if (opts_init(sp, oargs, rows, cols))
 		goto err;
 	}
 	if (wsizearg != NULL) {
@@ -303,17 +263,14 @@ vi_main(argc, argv, e_ssize)
 		goto err;
 #endif
 
-	if (sig_init(sp))		/* Signal initialization. */
-		goto err;
-
 	if (!silent) {			/* Read EXINIT, exrc files. */
-		if (sex_screen_exrc(sp))
+		if (ex_exrc(sp))
 			goto err;
 		if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE))
 			goto done;
 	}
-	F_CLR(sp, S_SCREENS);
-	F_SET(sp, LF_ISSET(S_SCREENS));
+	F_CLR(sp, S_EX | S_VI);
+	F_SET(sp, LF_ISSET(S_EX | S_VI));
 
 	/*
 	 * List recovery files if -r specified without file arguments.
@@ -323,6 +280,7 @@ vi_main(argc, argv, e_ssize)
 	if (flagchk == 'r' && argv[0] == NULL) {
 		if (rcv_list(sp))
 			goto err;
+		F_SET(sp, S_EXIT);
 		goto done;
 	}
 
@@ -351,8 +309,8 @@ vi_main(argc, argv, e_ssize)
 			MALLOC_NOMSG(sp,
 			    *--argv, char *, strlen(sp->frp->name) + 1);
 			if (*argv == NULL) {
-				estr(gp->progname, errno, NULL);
-				return (1);
+				v_estr(gp->progname, errno, NULL);
+				goto err;
 			}
 			(void)strcpy(*argv, sp->frp->name);
 		}
@@ -378,51 +336,24 @@ vi_main(argc, argv, e_ssize)
 	}
 
 	/* Startup information may have exited. */
-	if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE))
-		goto done;
-
-	for (;;) {
-		/* Edit, ignoring errors -- other screens may succeed. */
-		if (F_ISSET(sp, S_EX))
-			(void)sex_screen_edit(sp);
-		else
-			(void)svi_screen_edit(sp);
-
-		/*
-		 * Edit the next screen on the display queue, or, move
-		 * a screen from the hidden queue to the display queue.
-		 */
-		if ((sp = __global_list->dq.cqh_first) ==
-		    (void *)&__global_list->dq)
-			if ((sp = __global_list->hq.cqh_first) !=
-			    (void *)&__global_list->hq) {
-				SIGBLOCK(__global_list);
-				CIRCLEQ_REMOVE(&sp->gp->hq, sp, q);
-				CIRCLEQ_INSERT_TAIL(&sp->gp->dq, sp, q);
-				SIGUNBLOCK(__global_list);
-			} else
-				break;
+	if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE)) {
+done:		rval = INIT_DONE;
+		if (0)
+err:			rval = INIT_ERR;
+		v_end(gp);
+		return (rval);
 	}
 
-done:	eval = 0;
-	if (0)
-err:		eval = 1;
-
-	/*
-	 * NOTE: sp may be GONE when the screen returns, so only
-	 * the gp can be trusted.
-	 */
-	gs_end(gp);
-
-	return (eval);
+	*gpp = gp;
+	return (INIT_OK);
 }
 
 /*
- * gs_init --
+ * v_gs_init --
  *	Build and initialize the GS structure.
  */
 static GS *
-gs_init(name)
+v_gs_init(name)
 	char *name;
 {
 	GS *gp;
@@ -430,9 +361,10 @@ gs_init(name)
 
 	CALLOC_NOMSG(NULL, gp, GS *, 1, sizeof(GS));
 	if (gp == NULL) {
-		estr(name, errno, NULL);
+		v_estr(name, errno, NULL);
 		return (NULL);
 	}
+	gp->progname = name;
 
 	/*
 	 * !!!
@@ -441,6 +373,7 @@ gs_init(name)
 	CIRCLEQ_INIT(&gp->dq);
 	CIRCLEQ_INIT(&gp->hq);
 	LIST_INIT(&gp->msgq);
+	gp->noprint = DEFAULT_NOPRINT;
 
 	/* Structures shared by screens so stored in the GS structure. */
 	CIRCLEQ_INIT(&gp->frefq);
@@ -467,35 +400,41 @@ gs_init(name)
 		F_SET(gp, G_TERMIOS_SET);
 	} else if ((fd = open(_PATH_TTY, O_RDONLY, 0)) != -1) {
 		if (tcgetattr(fd, &gp->original_termios) == -1) {
-tcfail:			estr(name, errno, "tcgetattr");
+tcfail:			v_estr(name, errno, "tcgetattr");
 			free(gp);
 			return (NULL);
 		}
 		F_SET(gp, G_TERMIOS_SET);
 		(void)close(fd);
 	}
-	gp->progname = name;
 	return (gp);
 }
 
 /*
- * gs_end --
- *	End the GS structure.
+ * v_end --
+ *	End the program, discarding screens and the global area.
  */
-static void
-gs_end(gp)
+void
+v_end(gp)
 	GS *gp;
 {
 	MSG *mp;
 	SCR *sp;
 	char *tty;
 
-	/* Turn off signals. */
-	sig_end(gp);
+	/* If there are any remaining screens, kill them off. */
+	while ((sp = gp->dq.cqh_first) != (void *)&gp->dq) {
+		sp->refcnt = 1;
+		(void)screen_end(sp);
+	}
+	while ((sp = gp->hq.cqh_first) != (void *)&gp->hq) {
+		sp->refcnt = 1;
+		(void)screen_end(sp);
+	}
 
-#if defined(PURIFY) || defined(VI_LIBRARY)
-	/* Free FREF's. */
+#if defined(DEBUG) || defined(PURIFY)
 	{ FREF *frp;
+		/* Free FREF's. */
 		while ((frp = gp->frefq.cqh_first) != (FREF *)&gp->frefq) {
 			CIRCLEQ_REMOVE(&gp->frefq, frp, q);
 			if (frp->name != NULL)
@@ -506,11 +445,9 @@ gs_end(gp)
 		}
 	}
 
-	/* Free key input queues. */
-	if (gp->i_ch != NULL)
-		free(gp->i_ch);
-	if (gp->i_chf != NULL)
-		free(gp->i_chf);
+	/* Free key input queue. */
+	if (gp->i_event != NULL)
+		free(gp->i_event);
 
 	/* Free cut buffers. */
 	cut_close(gp);
@@ -529,29 +466,27 @@ gs_end(gp)
 	if (F_ISSET(gp, G_BELLSCHED))
 		(void)fprintf(stderr, "\07");		/* \a */
 
-	/*
-	 * If there are any remaining screens, flush their messages,
-	 * then flush any messages on the global queue.
-	 */
-	for (sp = __global_list->dq.cqh_first;
-	    sp != (void *)&__global_list->dq; sp = sp->q.cqe_next)
-		while ((mp = sp->msgq.lh_first) != NULL)
-			gs_msgdisplay(mp);
-	for (sp = __global_list->hq.cqh_first;
-	    sp != (void *)&__global_list->hq; sp = sp->q.cqe_next)
-		while ((mp = sp->msgq.lh_first) != NULL)
-			gs_msgdisplay(mp);
-	while ((mp = gp->msgq.lh_first) != NULL)
-		gs_msgdisplay(mp);
+	/* Flush any remaining messages. */
+	while ((mp = gp->msgq.lh_first) != NULL) {
+		if (!F_ISSET(mp, M_EMPTY))
+			(void)fprintf(stderr,
+			    "%.*s.\n", (int)mp->len, mp->mbuf);
+		LIST_REMOVE(mp, q);
+#if defined(DEBUG) || defined(PURIFY)
+		if (mp->mbuf != NULL)
+			free(mp->mbuf);
+		free(mp);
+#endif
+	}
 
 	/* Reset anything that needs resetting. */
 	if (gp->flags & G_SETMODE)			/* O_MESG */
 		if ((tty = ttyname(STDERR_FILENO)) == NULL)
-			estr(gp->progname, errno, "ttyname");
+			v_estr(gp->progname, errno, "ttyname");
 		else if (chmod(tty, gp->origmode) < 0)
-			estr(gp->progname, errno, tty);
+			v_estr(gp->progname, errno, tty);
 
-#if defined(PURIFY) || defined(VI_LIBRARY)
+#if defined(DEBUG) || defined(PURIFY)
 	/* Free any temporary space. */
 	if (gp->tmp_bp != NULL)
 		free(gp->tmp_bp);
@@ -566,26 +501,11 @@ gs_end(gp)
 }
 
 /*
- * gs_msgdisplay --
- *	Display remaining messages when exiting vi.
+ * v_obsolete --
+ *	Convert historic arguments into something getopt(3) will like.
  */
-static void
-gs_msgdisplay(mp)
-	MSG *mp;
-{
-	
-	if (!F_ISSET(mp, M_EMPTY))
-		(void)fprintf(stderr, "%.*s.\n", (int)mp->len, mp->mbuf);
-	LIST_REMOVE(mp, q);
-#if defined(PURIFY) || defined(VI_LIBRARY)
-	if (mp->mbuf != NULL)
-		free(mp->mbuf);
-	free(mp);
-#endif
-}
-
 static int
-obsolete(name, argv)
+v_obsolete(name, argv)
 	char *name, *argv[];
 {
 	size_t len;
@@ -622,7 +542,7 @@ obsolete(name, argv)
 			if (argv[0][1] == '\0') {
 				MALLOC_NOMSG(NULL, argv[0], char *, 3);
 				if (argv[0] == NULL) {
-nomem:					estr(name, errno, NULL);
+nomem:					v_estr(name, errno, NULL);
 					return (1);
 				}
 				(void)strcpy(argv[0], "-s");
@@ -635,19 +555,7 @@ nomem:					estr(name, errno, NULL);
 }
 
 static void
-usage(is_ex)
-	int is_ex;
-{
-#define	EX_USAGE \
-    "ex [-eFRrsv] [-c command] [-t tag] [-w size] [files ...]"
-#define	VI_USAGE \
-    "vi [-eFlRrv] [-c command] [-t tag] [-w size] [files ...]"
-
-	(void)fprintf(stderr, "usage: %s\n", is_ex ? EX_USAGE : VI_USAGE);
-}
-
-static void
-estr(name, eno, msg)
+v_estr(name, eno, msg)
 	char *name, *msg;
 	int eno;
 {

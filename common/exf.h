@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 9.6 1995/02/08 12:49:15 bostic Exp $ (Berkeley) $Date: 1995/02/08 12:49:15 $
+ *	$Id: exf.h,v 10.1 1995/04/13 17:18:14 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:18:14 $
  */
 					/* Undo direction. */
 /*
@@ -29,7 +29,7 @@ struct _exf {
 	recno_t	 l_high;		/* Log last + 1 record number. */
 	recno_t	 l_cur;			/* Log current record number. */
 	MARK	 l_cursor;		/* Log cursor position. */
-	enum direction lundo;		/* Last undo direction. */
+	dir_t	 lundo;			/* Last undo direction. */
 
 	LIST_HEAD(_markh, _lmark) marks;/* Linked list of file MARK's. */
 
@@ -68,13 +68,10 @@ FREF	*file_add __P((SCR *, CHAR_T *));
 int	 file_aw __P((SCR *, int));
 void	 file_cinit __P((SCR *));
 int	 file_end __P((SCR *, EXF *, int));
+lock_t	 file_lock __P((SCR *, char *, int *, int, int));
 int	 file_m1 __P((SCR *, int, int));
 int	 file_m2 __P((SCR *, int));
 int	 file_m3 __P((SCR *, int));
-
-enum lockt { LOCK_FAILED, LOCK_SUCCESS, LOCK_UNAVAIL };
-enum lockt
-	 file_lock __P((SCR *, char *, int *, int, int));
 
 #define	FS_ALL		0x001	/* Write the entire file. */
 #define	FS_APPEND	0x002	/* Append to the file. */
@@ -113,3 +110,6 @@ int	 file_sline __P((SCR *, recno_t, char *, size_t));
 #define	FILE_LERR(sp, lno)						\
 	file_lerr(sp, __FILE__, __LINE__, lno);
 void	 file_lerr __P((SCR *, char *, recno_t, recno_t));
+
+/* Alternate file name (ex semantics). */
+void	 set_alt_name __P((SCR *, char *));

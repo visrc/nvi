@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 9.16 1995/02/22 16:01:28 bostic Exp $ (Berkeley) $Date: 1995/02/22 16:01:28 $";
+static char sccsid[] = "$Id: key.c,v 10.1 1995/04/13 17:18:38 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:18:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,21 +33,15 @@ static char sccsid[] = "$Id: key.c,v 9.16 1995/02/22 16:01:28 bostic Exp $ (Berk
 #include <db.h>
 #include <regex.h>
 
-#include "vi.h"
-#include "../sex/sex_screen.h"
+#include "common.h"
+#include "../vi/vi.h"
 
-/*
- * If we're reading less than 20 characters, up the size of the tty buffer.
- * This shouldn't ever happen, other than the first time through, but it's
- * possible if a map is large enough.
- */
-#define	term_read_grow(sp)						\
-	(sp)->gp->i_nelem - ((sp)->gp->i_cnt + (sp)->gp->i_next) >= 20 ?\
-	0 : __term_read_grow(sp, 64)
-
-static int	keycmp __P((const void *, const void *));
-static void	term_key_set __P((GS *, int, int));
-static int    __term_read_grow __P((SCR *, int));
+static int	v_event_append __P((SCR *, CHAR_T *, size_t, u_int));
+static int	v_event_grow __P((SCR *, int));
+static int	v_key_cmp __P((const void *, const void *));
+static void	v_key_termios __P((GS *, int, int));
+static void	v_sig_sync __P((SCR *, int));
+static void	v_sync __P((SCR *, int));
 
 /*
  * !!!
@@ -71,8 +65,8 @@ static int    __term_read_grow __P((SCR *, int));
  * deletion characters.  This implementation makes it all consistent, as
  * described above for vi.
  *
- * XXX
- * THIS REQUIRES THAT ALL SCREENS SHARE A SPECIAL KEY SET.
+ * !!!
+ * This requires that all screens share a special key set.
  */
 KEYLIST keylist[] = {
 	{K_BACKSLASH,	  '\\'},	/*  \ */
@@ -96,19 +90,22 @@ KEYLIST keylist[] = {
 	{K_VLNEXT,	'\026'},	/* ^V */
 	{K_VWERASE,	'\027'},	/* ^W */
 	{K_ZERO,	   '0'},	/*  0 */
+
+#define	ADDITIONAL_CHARACTERS	4
 	{K_NOTUSED, 0},			/* VEOF, VERASE, VKILL, VWERASE */
 	{K_NOTUSED, 0},
 	{K_NOTUSED, 0},
 	{K_NOTUSED, 0},
 };
-static int nkeylist = (sizeof(keylist) / sizeof(keylist[0])) - 4;
+static int nkeylist =
+    (sizeof(keylist) / sizeof(keylist[0])) - ADDITIONAL_CHARACTERS;
 
 /*
- * term_init --
+ * v_key_init --
  *	Initialize the special key lookup table.
  */
 int
-term_init(sp)
+v_key_init(sp)
 	SCR *sp;
 {
 	CHAR_T ch;
@@ -118,28 +115,28 @@ term_init(sp)
 
 	/*
 	 * XXX
-	 * 8-bit only, for now.  Recompilation should get you any
-	 * 8-bit character set, as long as nul isn't a character.
+	 * 8-bit only, for now.  Recompilation should get you any 8-bit
+	 * character set, as long as nul isn't a character.
 	 */
 	(void)setlocale(LC_ALL, "");
-	key_init(sp);
+	v_key_ilookup(sp);
 
 	gp = sp->gp;
 #ifdef VEOF
-	term_key_set(gp, VEOF, K_CNTRLD);
+	v_key_termios(gp, VEOF, K_CNTRLD);
 #endif
 #ifdef VERASE
-	term_key_set(gp, VERASE, K_VERASE);
+	v_key_termios(gp, VERASE, K_VERASE);
 #endif
 #ifdef VKILL
-	term_key_set(gp, VKILL, K_VKILL);
+	v_key_termios(gp, VKILL, K_VKILL);
 #endif
 #ifdef VWERASE
-	term_key_set(gp, VWERASE, K_VWERASE);
+	v_key_termios(gp, VWERASE, K_VWERASE);
 #endif
 
 	/* Sort the special key list. */
-	qsort(keylist, nkeylist, sizeof(keylist[0]), keycmp);
+	qsort(keylist, nkeylist, sizeof(keylist[0]), v_key_cmp);
 
 	/* Initialize the fast lookup table. */
 	for (gp->max_special = 0, kp = keylist, cnt = nkeylist; cnt--; ++kp) {
@@ -163,16 +160,16 @@ term_init(sp)
 }
 
 /*
- * term_key_set --
+ * v_key_termios --
  *	Set keys found in the termios structure.
  *
  * VEOF, VERASE and VKILL are required by POSIX 1003.1-1990, VWERASE is
- * a 4.4BSD extension.  We've left four open slots in the keylist table,
- * if these values exist, put them into place.  Note, they may reset (or
- * duplicate) values already in the table, so we check for that first.
+ * a 4BSD extension.  We've left some open slots in the keylist table,
+ * and if these values exist, we put them into place.  Note, they may reset
+ * (or duplicate) values already in the table, so we check for that first.
  */
 static void
-term_key_set(gp, name, val)
+v_key_termios(gp, name, val)
 	GS *gp;
 	int name, val;
 {
@@ -199,11 +196,11 @@ term_key_set(gp, name, val)
 }
 
 /*
- * key_init --
+ * v_key_ilookup --
  *	Build the fast-lookup key display array.
  */
 void
-key_init(sp)
+v_key_ilookup(sp)
 	SCR *sp;
 {
 	CHAR_T ch, *p, *t;
@@ -211,32 +208,32 @@ key_init(sp)
 	size_t len;
 
 	for (gp = sp->gp, ch = 0; ch <= MAX_FAST_KEY; ++ch)
-		for (p = gp->cname[ch].name, t = __key_name(sp, ch),
+		for (p = gp->cname[ch].name, t = __v_key_name(sp, ch),
 		    len = gp->cname[ch].len = sp->clen; len--;)
 			*p++ = *t++;
 }
 
 /*
- * __key_len --
+ * __v_key_len --
  *	Return the length of the string that will display the key.
  *	This routine is the backup for the KEY_LEN() macro.
  */
 size_t
-__key_len(sp, ch)
+__v_key_len(sp, ch)
 	SCR *sp;
 	ARG_CHAR_T ch;
 {
-	(void)__key_name(sp, ch);
+	(void)__v_key_name(sp, ch);
 	return (sp->clen);
 }
 
 /*
- * __key_name --
+ * __v_key_name --
  *	Return the string that will display the key.  This routine
  *	is the backup for the KEY_NAME() macro.
  */
 CHAR_T *
-__key_name(sp, ach)
+__v_key_name(sp, ach)
 	SCR *sp;
 	ARG_CHAR_T ach;
 {
@@ -312,10 +309,27 @@ done:	sp->cname[sp->clen = len] = '\0';
 }
 
 /*
- * term_push --
- *	Push keys onto the front of a buffer.
+ * __v_key_val --
+ *	Fill in the value for a key.  This routine is the backup
+ *	for the KEY_VAL() macro.
+ */
+int
+__v_key_val(sp, ch)
+	SCR *sp;
+	ARG_CHAR_T ch;
+{
+	KEYLIST k, *kp;
+
+	k.ch = ch;
+	kp = bsearch(&k, keylist, nkeylist, sizeof(keylist[0]), v_key_cmp);
+	return (kp == NULL ? K_NOTUSED : kp->value);
+}
+
+/*
+ * v_event_push --
+ *	Push keys onto the front of the buffer.
  *
- * There is a single input buffer in ex/vi.  Characters are read onto the
+ * There is a single input buffer in ex/vi.  Characters are read into the
  * end of the buffer by the terminal input routines, and pushed onto the
  * front of the buffer by various other functions in ex/vi.  Each key has
  * an associated flag value, which indicates if it has already been quoted,
@@ -323,84 +337,126 @@ done:	sp->cname[sp->clen = len] = '\0';
  * of the number of times it has been mapped.
  */
 int
-term_push(sp, s, nchars, flags)
+v_event_push(sp, s, nchars, flags)
 	SCR *sp;
 	CHAR_T *s;			/* Characters. */
 	size_t nchars;			/* Number of chars. */
 	u_int flags;			/* CH_* flags. */
 {
+	EVENT *evp;
 	GS *gp;
 	size_t total;
 
 	/* If we have room, stuff the keys into the buffer. */
 	gp = sp->gp;
 	if (nchars <= gp->i_next ||
-	    (gp->i_ch != NULL && gp->i_cnt == 0 && nchars <= gp->i_nelem)) {
+	    (gp->i_event != NULL && gp->i_cnt == 0 && nchars <= gp->i_nelem)) {
 		if (gp->i_cnt != 0)
 			gp->i_next -= nchars;
-		gp->i_cnt += nchars;
-		MEMMOVE(gp->i_ch + gp->i_next, s, nchars);
-		MEMSET(gp->i_chf + gp->i_next, flags, nchars);
-		return (0);
+		goto copy;
 	}
 
 	/*
-	 * If there are currently characters in the queue, shift them up,
-	 * leaving some extra room.  Get enough space plus a little extra.
+	 * If there are currently keys in the queue, shift them up, leaving
+	 * some extra room.  Get enough space plus a little extra.
 	 */
 #define	TERM_PUSH_SHIFT	30
 	total = gp->i_cnt + gp->i_next + nchars + TERM_PUSH_SHIFT;
-	if (total >= gp->i_nelem && __term_read_grow(sp, MAX(total, 64)))
+	if (total >= gp->i_nelem && v_event_grow(sp, MAX(total, 64)))
 		return (1);
-	if (gp->i_cnt) {
-		MEMMOVE(gp->i_ch + TERM_PUSH_SHIFT + nchars,
-		    gp->i_ch + gp->i_next, gp->i_cnt);
-		MEMMOVE(gp->i_chf + TERM_PUSH_SHIFT + nchars,
-		    gp->i_chf + gp->i_next, gp->i_cnt);
-	}
-
-	/* Put the new characters into the queue. */
+	if (gp->i_cnt)
+		MEMMOVE(gp->i_event + TERM_PUSH_SHIFT + nchars,
+		    gp->i_event + gp->i_next, gp->i_cnt);
 	gp->i_next = TERM_PUSH_SHIFT;
-	gp->i_cnt += nchars;
-	MEMMOVE(gp->i_ch + TERM_PUSH_SHIFT, s, nchars);
-	MEMSET(gp->i_chf + TERM_PUSH_SHIFT, flags, nchars);
+
+	/* Put the new keys into the queue. */
+copy:	gp->i_cnt += nchars;
+	for (evp = gp->i_event + gp->i_next; nchars--; ++evp) {
+		evp->e_event = E_CHARACTER;
+		evp->e_c = *s++;
+		evp->e_value = KEY_VAL(sp, evp->e_c);
+		F_INIT(&evp->e_ch, flags);
+	}
 	return (0);
 }
 
 /*
- * Remove characters from the queue, simultaneously clearing the flag
- * and map counts.
+ * v_event_append --
+ *	Append keys onto the tail of the buffer.
  */
-#define	QREM_HEAD(len) {						\
-	size_t __off = gp->i_next;					\
-	if (len == 1)							\
-		gp->i_chf[__off] = 0;					\
-	else								\
-		MEMSET(gp->i_chf + __off, 0, len);			\
+static int
+v_event_append(sp, s, nchars, flags)
+	SCR *sp;
+	CHAR_T *s;			/* Characters. */
+	size_t nchars;			/* Number of chars. */
+	u_int flags;			/* CH_* flags. */
+{
+	EVENT *evp;
+	GS *gp;
+
+	gp = sp->gp;
+
+	/* Grow the buffer if necessary. */
+	if (gp->i_event == NULL ||
+	    nchars > gp->i_nelem - (gp->i_next + gp->i_cnt))
+		v_event_grow(sp, MAX(nchars, 64));
+
+	evp = gp->i_event + gp->i_next + gp->i_cnt;
+	gp->i_cnt += nchars;
+	for (; nchars--; ++evp) {
+		evp->e_event = E_CHARACTER;
+		evp->e_c = *s++;
+		evp->e_value = KEY_VAL(sp, evp->e_c);
+		F_INIT(&evp->e_ch, flags);
+	}
+	return (0);
+}
+
+/* Remove characters from the queue. */
+#define	QREM(len) {							\
 	if ((gp->i_cnt -= len) == 0)					\
 		gp->i_next = 0;						\
 	else								\
 		gp->i_next += len;					\
 }
-#define	QREM_TAIL(len) {						\
-	size_t __off = gp->i_next + gp->i_cnt - 1;			\
-	if (len == 1)							\
-		gp->i_chf[__off] = 0;					\
-	else								\
-		MEMSET(gp->i_chf + __off, 0, len);			\
+
+/* Remove characters from the queue. */
+#define	QREM(len) {							\
 	if ((gp->i_cnt -= len) == 0)					\
 		gp->i_next = 0;						\
+	else								\
+		gp->i_next += len;					\
+}
+
+/* 
+ * v_event_pull --
+ *	Return the next character event, if it exists.
+ */
+int
+v_event_pull(sp, evpp)
+	SCR *sp;
+	EVENT **evpp;
+{
+	GS *gp;
+	size_t cnt;
+
+	gp = sp->gp;
+	if (gp->i_cnt == 0)
+		return (0);
+	*evpp = &gp->i_event[gp->i_next];
+	QREM(1);
+	return (1);
 }
 
 /*
- * term_key --
- *	Get the next key.
+ * v_event_handler --
+ *	Handle the next event.
  *
  * !!!
- * The flag TXT_MAPNODIGIT probably needs some explanation.  First, the idea
- * of mapping keys is that one or more keystrokes act like a function key.
+ * The flag EC_NODIGIT probably needs some explanation.  First, the idea of
+ * mapping keys is that one or more keystrokes act like a function key.
  * What's going on is that vi is reading a number, and the character following
- * the number may or may not be mapped (TXT_MAPCOMMAND).  For example, if the
+ * the number may or may not be mapped (EC_MAPCOMMAND).  For example, if the
  * user is entering the z command, a valid command is "z40+", and we don't want
  * to map the '+', i.e. if '+' is mapped to "xxx", we don't want to change it
  * into "z40xxx".  However, if the user enters "35x", we want to put all of the
@@ -413,7 +469,7 @@ term_push(sp, s, nchars, flags)
  * as the first character of the map, but then ignored those mappings.  While
  * it's probably stupid to map digits, vi isn't your mother.
  *
- * The way this works is that the TXT_MAPNODIGIT causes term_key to return the
+ * The way this works is that the EC_MAPNODIGIT causes term_key to return the
  * end-of-digit without "looking" at the next character, i.e. leaving it as the
  * user entered it.  Presumably, the next term_key call will tell us how the
  * user wants it handled.
@@ -465,213 +521,225 @@ term_push(sp, s, nchars, flags)
  * point.  Given that this might make the log grow unacceptably (consider that
  * cursor keys are done with maps), for now we leave any changes made in place.
  */
-input_t
-term_key(sp, chp, flags)
+int
+v_event_handler(sp, evp, tp)
 	SCR *sp;
-	CH *chp;
-	u_int flags;
+	EVENT *evp;
+	u_int32_t *tp;
 {
-	input_t rval;
-	struct timeval t, *tp;
-	CHAR_T ch;
+	EVENT re;
 	GS *gp;
 	SEQ *qp;
-	int init_nomap, ispartial, nr;
+	int init_nomap, ispartial, istimeout;
 
-	/* If we've been interrupted, return an error. */
-	if (INTERRUPTED(sp))
-		return (INP_INTR);
+	gp = sp->gp;
 
 	/*
-	 * If the queue is empty, read more keys in.  Since no timeout is
-	 * requested, sex_key_read will either return an error or will read
-	 * some number of characters.
+	 * Push character and string event(s) on the queue.  If a timeout
+	 * event arrives, it's because a map failed, so return the first
+	 * character unmapped.  All other events are handled by the editor
+	 * handlers.
+	 *
+	 * !!!
+	 * DO NOT push other types of events on the queue, other parts of
+	 * the editor won't like it.
 	 */
-	gp = sp->gp;
-loop:	if (gp->i_cnt == 0) {
-		if (term_read_grow(sp))
-			return (INP_ERR);
-		if ((rval = sex_key_read(sp, &nr, flags, NULL)) != INP_OK)
-			return (rval);
-#if defined(DEBUG) && 0
-		TRACE(sp, "read: {%.*s}\n", gp->i_cnt, &gp->i_ch[gp->i_next]);
-#endif
+	istimeout = 0;
+	switch (evp->e_event) {
+	case E_CHARACTER:
+		if (v_event_append(sp, &evp->e_c, 1, 0))
+			goto err;
+		break;
+	case E_STRING:
+		if (v_event_append(sp, evp->e_csp, evp->e_len, 0))
+			goto err;
+		break;
+	case E_EOF:
+	case E_ERR:
+		(void)(F_ISSET(sp, S_EX) ? ex(sp, evp) : vi(sp, evp));
+		goto err;
+	case E_SIGHUP:
+	case E_SIGTERM:
+		v_sig_sync(sp, evp->e_event == E_SIGHUP ? SIGHUP : SIGTERM);
+		/* NOTREACHED */
+	case E_TIMEOUT:
+		istimeout = 1;
+		break;
+	case E_RESIZE:
 		/*
-		 * If there's something on the mode line that we wanted
-		 * the user to see, presume they've seen it as they just
-		 * entered a character.
+		 * The actual changing of the row/column values is done by the
+		 * options code, which puts them into the environment, which is
+		 * used by curses.  Stupid, but ugly.
 		 */
-		F_CLR(sp, S_SCR_UMODE);
+		if (opts_init(sp, NULL, evp->e_lno, evp->e_cno))
+			goto err;
+		/* FALLTHROUGH */
+	case E_INTERRUPT:
+	case E_REPAINT:
+	case E_SIGCONT:
+	case E_START:
+	case E_STOP:
+		re = *evp;
+		if (F_ISSET(sp, S_EX) ? ex(sp, &re) : vi(sp, &re))
+			goto err;
+		goto ret;
+	default:
+		abort();
 	}
 
-	/* If the key is mappable and should be mapped, look it up. */
-	if (!(gp->i_chf[gp->i_next] & CH_NOMAP) &&
-	    LF_ISSET(TXT_MAPCOMMAND | TXT_MAPINPUT)) {
-		/* Get the next key. */
-newmap:		ch = gp->i_ch[gp->i_next];
-		if (ch < MAX_BIT_SEQ && !bit_test(gp->seqb, ch))
+	/*
+	 * If EC_INTERRUPT flag set, something was just checking for
+	 * interrupts.  Return a timeout event.
+	 */
+	if (FL_ISSET(gp->ec_flags, EC_INTERRUPT)) {
+		re.e_event = E_TIMEOUT;
+		if (F_ISSET(sp, S_EX) ? ex(sp, &re) : vi(sp, &re))
+			goto err;
+		if (FL_ISSET(gp->ec_flags, EC_INTERRUPT))
+			goto ret;
+	}
+
+	/* As long as there are events on the queue, handle them. */
+	while (gp->i_cnt != 0) {
+newmap:		evp = &gp->i_event[gp->i_next];
+
+		/*
+		 * If the key isn't mappable because
+		 *	+ ... already timed out
+		 *	+ ... it's not a mappable key
+		 *	+ ... neither the command or input map flags are set
+		 *	+ ... there are no maps that can apply to it
+		 * return it forthwith.
+		 */
+		if (istimeout || F_ISSET(&evp->e_ch, CH_NOMAP) ||
+		    !FL_ISSET(gp->ec_flags, EC_MAPCOMMAND | EC_MAPINPUT) ||
+		    evp->e_c < MAX_BIT_SEQ && !bit_test(gp->seqb, evp->e_c))
 			goto nomap;
 
 		/* Search the map. */
-remap:		qp = seq_find(sp, NULL, &gp->i_ch[gp->i_next], gp->i_cnt,
-		    LF_ISSET(TXT_MAPCOMMAND) ? SEQ_COMMAND : SEQ_INPUT,
-		    &ispartial);
-
-		/* If we've been interrupted, return an error. */
-		if (INTERRUPTED(sp))
-			return (INP_INTR);
+		qp = seq_find(sp, NULL, evp, NULL, gp->i_cnt,
+		    FL_ISSET(gp->ec_flags,
+		    EC_MAPCOMMAND) ? SEQ_COMMAND : SEQ_INPUT, &ispartial);
 
 		/*
-		 * If get a partial match, read more characters and retry
-		 * the map.  If no characters read, return the characters
-		 * unmapped.
+		 * If get a partial match, get more characters and retry the
+		 * map.  If time out without further characters, return the
+		 * characters unmapped.
 		 *
 		 * !!!
 		 * <escape> characters are a problem.  Input mode ends with an
 		 * <escape>, and cursor keys start with one, so there's an ugly
 		 * pause at the end of an input session.  If it's an <escape>,
-		 * check for followon characters, but timeout after a 10th of a
-		 * second.  This loses if users create maps that use <escape>
+		 * check for follow-on characters, but timeout after a 10th of
+		 * a second.  This loses if users create maps that use <escape>
 		 * as the first character, and that aren't entered fast enough.
 		 * Since such maps are generally function keys, we're probably
 		 * safe.
 		 */
 		if (ispartial) {
-			if (term_read_grow(sp))
-				return (INP_ERR);
-			if (O_ISSET(sp, O_TIMEOUT)) {
-				tp = &t;
-				if (KEY_VAL(sp,
-				    gp->i_ch[gp->i_next]) == K_ESCAPE) {
-					t.tv_sec = 0;
-					t.tv_usec = 100000L;
-				} else {
-					t.tv_sec = O_VAL(sp, O_KEYTIME) / 10;
-					t.tv_usec = (O_VAL(sp,
-					    O_KEYTIME) % 10) * 100000L;
-				}
-			} else
-				tp = NULL;
-
-			if ((rval =
-			    sex_key_read(sp, &nr, flags, tp)) != INP_OK)
-				return (rval);
-			if (nr)
-				goto remap;
-			goto nomap;
+			if (O_ISSET(sp, O_TIMEOUT))
+				if (evp->e_value == K_ESCAPE)
+					*tp = 100;	/* 1/10th of a sec. */
+				else
+					*tp = O_VAL(sp, O_KEYTIME) * 100;
+			return (0);
 		}
 
 		/* If no map, return the character. */
-		if (qp == NULL)
-			goto nomap;
+		if (qp == NULL) {
+nomap:			if (!isdigit(evp->e_c) &&
+			    FL_ISSET(gp->ec_flags, EC_MAPNODIGIT)) {
+not_digit:			re.e_c = CH_NOT_DIGIT;
+				re.e_value = K_NOTUSED;
+				F_INIT(&re.e_ch, 0);
+				if (F_ISSET(sp, S_EX) ?
+				    ex(sp, evp) : vi(sp, &re))
+					goto err;
+			}
+			re = *evp;
+			QREM(1);
+
+			if (F_ISSET(sp, S_EX) ?
+			    ex(sp, &re) : vi(sp, &re))
+				goto err;
+			continue;
+		}
 
 		/*
 		 * If looking for the end of a digit string, and the first
 		 * character of the map is it, pretend we haven't seen the
 		 * character.
 		 */
-		if (LF_ISSET(TXT_MAPNODIGIT) &&
+		if (FL_ISSET(gp->ec_flags, EC_MAPNODIGIT) &&
 		    qp->output != NULL && !isdigit(qp->output[0]))
-			goto not_digit_ch;
+			goto not_digit;
 
 		/* Find out if the initial segments are identical. */
 		init_nomap =
-		    !memcmp(&gp->i_ch[gp->i_next], qp->output, qp->ilen);
+		    !memcmp(&gp->i_event[gp->i_next], qp->output, qp->ilen);
 
 		/* Delete the mapped characters from the queue. */
-		QREM_HEAD(qp->ilen);
+		QREM(qp->ilen);
 
 		/* If keys mapped to nothing, go get more. */
 		if (qp->output == NULL)
-			goto loop;
+			continue;
 
 		/* If remapping characters, push the character on the queue. */
 		if (O_ISSET(sp, O_REMAP)) {
 			if (init_nomap) {
-				if (term_push(sp, qp->output + qp->ilen,
+				if (v_event_push(sp, qp->output + qp->ilen,
 				    qp->olen - qp->ilen, CH_MAPPED))
-					return (INP_ERR);
-				if (term_push(sp,
+					goto err;
+				if (v_event_push(sp,
 				    qp->output, qp->ilen, CH_NOMAP | CH_MAPPED))
-					return (INP_ERR);
+					goto err;
 				goto nomap;
 			} else
-				if (term_push(sp,
+				if (v_event_push(sp,
 				    qp->output, qp->olen, CH_MAPPED))
-					return (INP_ERR);
+					goto err;
 			goto newmap;
 		}
 
 		/* Else, push the characters on the queue and return one. */
-		if (term_push(sp, qp->output, qp->olen, CH_MAPPED | CH_NOMAP))
-			return (INP_ERR);
+		if (v_event_push(sp,
+		    qp->output, qp->olen, CH_MAPPED | CH_NOMAP))
+			goto err;
 	}
 
-nomap:	ch = gp->i_ch[gp->i_next];
-	if (LF_ISSET(TXT_MAPNODIGIT) && !isdigit(ch)) {
-not_digit_ch:	chp->ch = CH_NOT_DIGIT;
-		chp->value = 0;
-		chp->flags = 0;
-		return (INP_OK);
-	}
+ret:	if (FL_ISSET(gp->ec_flags, EC_INTERRUPT))
+		*tp = 1;
+	return (0);
 
-	/* Fill in the return information. */
-#if defined(DEBUG) && 0
-	TRACE(sp, "rtrn: {%s}\n", KEY_NAME(sp, ch));
-#endif
-	chp->ch = ch;
-	chp->flags = gp->i_chf[gp->i_next];
-	chp->value = KEY_VAL(sp, ch);
-
-	/* Delete the character from the queue. */
-	QREM_HEAD(1);
-	return (INP_OK);
-}
-
-/*
- * term_flush --
- *	Flush any flagged keys.
- */
-int
-term_flush(sp, flags)
-	SCR *sp;
-	u_int flags;
-{
-	GS *gp;
-
-	gp = sp->gp;
-	if (!gp->i_cnt || !(gp->i_chf[gp->i_next] & flags))
-		return (0);
-	do {
-		QREM_HEAD(1);
-	} while (gp->i_cnt && gp->i_chf[gp->i_next] & flags);
+err:	v_sync(sp, RCV_EMAIL | RCV_ENDSESSION | RCV_PRESERVE);
 	return (1);
 }
 
 /*
- * __key_val --
- *	Fill in the value for a key.  This routine is the backup
- *	for the KEY_VAL() macro.
+ * v_event_flush --
+ *	Flush any flagged keys, returning if any keys were flushed.
  */
 int
-__key_val(sp, ch)
+v_event_flush(sp, flags)
 	SCR *sp;
-	ARG_CHAR_T ch;
+	u_int flags;
 {
-	KEYLIST k, *kp;
+	GS *gp;
+	int rval;
 
-	k.ch = ch;
-	kp = bsearch(&k, keylist, nkeylist, sizeof(keylist[0]), keycmp);
-	return (kp == NULL ? K_NOTUSED : kp->value);
+	for (rval = 0, gp = sp->gp; gp->i_cnt != 0 &&
+	    F_ISSET(&gp->i_event[gp->i_next].e_ch, flags); rval = 1)
+		QREM(1);
+	return (rval);
 }
 
 /*
- * __term_read_grow --
- *	Grow the terminal queue.  This routine is the backup for
- *	the term_read_grow() macro.
+ * v_event_grow --
+ *	Grow the terminal queue.
  */
 static int
-__term_read_grow(sp, add)
+v_event_grow(sp, add)
 	SCR *sp;
 	int add;
 {
@@ -680,19 +748,60 @@ __term_read_grow(sp, add)
 
 	gp = sp->gp;
 	new_nelem = gp->i_nelem + add;
-	olen = gp->i_nelem * sizeof(gp->i_ch[0]);
-	BINC_RET(sp, gp->i_ch, olen, new_nelem * sizeof(gp->i_ch[0]));
-
-	olen = gp->i_nelem * sizeof(gp->i_chf[0]);
-	BINC_RET(sp, gp->i_chf, olen, new_nelem * sizeof(gp->i_chf[0]));
-
-	gp->i_nelem = olen / sizeof(gp->i_chf[0]);
+	olen = gp->i_nelem * sizeof(gp->i_event[0]);
+	BINC_RET(sp, gp->i_event, olen, new_nelem * sizeof(gp->i_event[0]));
+	gp->i_nelem = olen / sizeof(gp->i_event[0]);
 	return (0);
 }
 
+/*
+ * v_key_cmp --
+ *	Compare two keys for sorting.
+ */
 static int
-keycmp(ap, bp)
+v_key_cmp(ap, bp)
 	const void *ap, *bp;
 {
 	return (((KEYLIST *)ap)->ch - ((KEYLIST *)bp)->ch);
+}
+
+/*
+ * v_sig_sync --
+ *	Sync the files after a signal.
+ */
+static void
+v_sig_sync(sp, signo)
+	SCR *sp;
+	int signo;
+{
+	v_sync(sp,
+	    RCV_ENDSESSION | RCV_PRESERVE | (signo == SIGHUP ? RCV_EMAIL : 0));
+
+	/*
+	 * Die with the proper exit status.  Don't bother using sigaction(2)
+	 * 'cause we want the default behavior.
+	 */
+	(void)signal(signo, SIG_DFL);
+	(void)kill(getpid(), signo);
+
+	/* NOTREACHED */
+	exit(1);
+}
+
+/*
+ * v_sync --
+ *	Walk the screen lists, sync'ing files to their backup copies.
+ */
+static void
+v_sync(sp, flags)
+	SCR *sp;
+	int flags;
+{
+	GS *gp;
+
+	gp = sp->gp;
+	for (sp = gp->dq.cqh_first; sp != (void *)&gp->dq; sp = sp->q.cqe_next)
+		rcv_sync(sp, flags);
+	for (sp = gp->hq.cqh_first; sp != (void *)&gp->hq; sp = sp->q.cqe_next)
+		rcv_sync(sp, flags);
 }

@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: options.h,v 9.6 1995/01/11 18:45:05 bostic Exp $ (Berkeley) $Date: 1995/01/11 18:45:05 $
+ *	$Id: options.h,v 10.1 1995/04/13 17:18:25 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:18:25 $
  */
 
 struct _option {
@@ -57,7 +57,7 @@ u_long	 baud_from_bval __P((SCR *));
 
 int	opts_copy __P((SCR *, SCR *));
 void	opts_free __P((SCR *));
-int	opts_init __P((SCR *, int *));
+int	opts_init __P((SCR *, int *, recno_t, size_t));
 int	opts_save __P((SCR *, FILE *));
 int	opts_set __P((SCR *, ARGS *[], int, char *));
 

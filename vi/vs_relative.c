@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_relative.c,v 9.7 1995/01/24 09:32:25 bostic Exp $ (Berkeley) $Date: 1995/01/24 09:32:25 $";
+static char sccsid[] = "$Id: vs_relative.c,v 10.1 1995/04/13 17:19:23 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:19:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,33 +26,33 @@ static char sccsid[] = "$Id: vs_relative.c,v 9.7 1995/01/24 09:32:25 bostic Exp 
 #include <db.h>
 #include <regex.h>
 
+#include "common.h"
 #include "vi.h"
-#include "svi_screen.h"
 
-static size_t svi_screens __P((SCR *, char *, size_t, recno_t, size_t *));
+static size_t vs_screens __P((SCR *, char *, size_t, recno_t, size_t *));
 
 /*
- * svi_column --
+ * vs_column --
  *	Return the logical column of the cursor in the line.
  */
 int
-svi_column(sp, colp)
+vs_column(sp, colp)
 	SCR *sp;
 	size_t *colp;
 {
-	*colp = (SVP(sp)->sc_smap->off - 1) * sp->cols +
-	    SVP(sp)->sc_col - (O_ISSET(sp, O_NUMBER) ? O_NUMBER_LENGTH : 0);
+	*colp = (VIP(sp)->sc_smap->off - 1) * sp->cols +
+	    VIP(sp)->sc_col - (O_ISSET(sp, O_NUMBER) ? O_NUMBER_LENGTH : 0);
 	return (0);
 }
 
 /*
- * svi_opt_screens --
+ * vs_opt_screens --
  *	Return the screen columns necessary to display the line, or
  *	if specified, the physical character column within the line,
  *	including space required for the O_NUMBER and O_LIST options.
  */
 size_t
-svi_opt_screens(sp, lno, cnop)
+vs_opt_screens(sp, lno, cnop)
 	SCR *sp;
 	recno_t lno;
 	size_t *cnop;
@@ -66,13 +66,13 @@ svi_opt_screens(sp, lno, cnop)
 	 * one.
 	 */
 	if (cnop == NULL) {
-		if (SVP(sp)->ss_lno == lno)
-			return (SVP(sp)->ss_screens);
+		if (VIP(sp)->ss_lno == lno)
+			return (VIP(sp)->ss_screens);
 	} else if (*cnop == 0)
 		return (1);
 
 	/* Figure out how many columns the line/column needs. */
-	cols = svi_screens(sp, NULL, 0, lno, cnop);
+	cols = vs_screens(sp, NULL, 0, lno, cnop);
 
 	/* Leading number if O_NUMBER option set. */
 	if (O_ISSET(sp, O_NUMBER))
@@ -88,19 +88,19 @@ svi_opt_screens(sp, lno, cnop)
 
 	/* Cache the value. */
 	if (cnop == NULL) {
-		SVP(sp)->ss_lno = lno;
-		SVP(sp)->ss_screens = screens;
+		VIP(sp)->ss_lno = lno;
+		VIP(sp)->ss_screens = screens;
 	}
 	return (screens);
 }
 
 /*
- * svi_screens --
+ * vs_screens --
  *	Return the screen columns necessary to display the line, or,
  *	if specified, the physical character column within the line.
  */
 static size_t
-svi_screens(sp, lp, llen, lno, cnop)
+vs_screens(sp, lp, llen, lno, cnop)
 	SCR *sp;
 	char *lp;
 	size_t llen;
@@ -157,13 +157,13 @@ svi_screens(sp, lp, llen, lno, cnop)
 }
 
 /*
- * svi_rcm --
+ * vs_rcm --
  *	Return the physical column from the line that will display a
  *	character closest to the currently most attractive character
  *	position (which is stored as a screen column).
  */
 size_t
-svi_rcm(sp, lno, islast)
+vs_rcm(sp, lno, islast)
 	SCR *sp;
 	recno_t lno;
 	int islast;
@@ -179,16 +179,16 @@ svi_rcm(sp, lno, islast)
 	if (sp->rcm == 0)
 		return (0);
 
-	return (svi_colpos(sp, lno, sp->rcm));
+	return (vs_colpos(sp, lno, sp->rcm));
 }
 
 /*
- * svi_colpos --
+ * vs_colpos --
  *	Return the physical column from the line that will display a
  *	character closest to the specified screen column.
  */
 size_t
-svi_colpos(sp, lno, cno)
+vs_colpos(sp, lno, cno)
 	SCR *sp;
 	recno_t lno;
 	size_t cno;

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 9.14 1995/02/10 20:11:54 bostic Exp $ (Berkeley) $Date: 1995/02/10 20:11:54 $";
+static char sccsid[] = "$Id: v_search.c,v 10.1 1995/04/13 17:19:05 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:19:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,66 +29,79 @@ static char sccsid[] = "$Id: v_search.c,v 9.14 1995/02/10 20:11:54 bostic Exp $ 
 #include <db.h>
 #include <regex.h>
 
+#include "common.h"
 #include "vi.h"
-#include "vcmd.h"
-#include "excmd.h"
-#include "../svi/svi_screen.h"
 
-static int correct __P((SCR *, VICMDARG *, int));
-static int search __P((SCR *,
-    VICMDARG *, char *, size_t, u_int, enum direction));
-static int search_addr __P((SCR *, VICMDARG *, enum direction));
+static int v_a_setup __P((SCR *, VICMD *, dir_t));
+static int v_s_setup __P((SCR *, VICMD *, char *, u_int, dir_t));
 
 /*
- * v_searchb -- [count]?RE[? offset]
- *	Search backward.
+ * v_srch -- [count]?RE[? offset]
+ *	Ex address search backward.
  */
 int
 v_searchb(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
-	return (search_addr(sp, vp, BACKWARD));
+	return (v_a_setup(sp, vp, BACKWARD));
 }
 
 /*
  * v_searchf -- [count]/RE[/ offset]
- *	Search forward.
+ *	Ex address search forward.
  */
 int
 v_searchf(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
-	return (search_addr(sp, vp, FORWARD));
+	return (v_a_setup(sp, vp, FORWARD));
 }
 
+/*
+ * v_a_setup --
+ *	Set up text input for an ex address search.
+ */
 static int
-search_addr(sp, vp, dir)
+v_a_setup(sp, vp, dir)
 	SCR *sp;
-	VICMDARG *vp;
-	enum direction dir;
+	VICMD *vp;
+	dir_t dir;
 {
-	static EXCMDLIST fake = { "search" };
-	MARK save;
-	TEXT *tp;
-	size_t len, tlen;
-	int isdelta, nb, notused, type;
-	char *p, *t, buf[20];
-
 	/*
 	 * !!!
 	 * If using the search command as a motion, any addressing components
 	 * are lost, i.e. y/ptrn/+2, when repeated, is the same as y/ptrn/.
 	 */
 	if (F_ISSET(vp, VC_ISDOT))
-		return (search(sp, vp,
-		    NULL, len, SEARCH_PARSE | SEARCH_MSG | SEARCH_SET, dir));
+		return (v_s_setup(sp, vp,
+		    NULL, SEARCH_PARSE | SEARCH_MSG | SEARCH_SET, dir));
 
 	/* Get the search pattern. */
-	if (svi_get(sp, sp->tiqp,
-	    dir == BACKWARD ? CH_BSEARCH : CH_FSEARCH,
-	    TXT_BS | TXT_CR | TXT_ESCAPE | TXT_PROMPT) != INP_OK)
+	if (v_tcmd_setup(sp, vp, dir == BACKWARD ? CH_BSEARCH : CH_FSEARCH,
+	    TXT_BS | TXT_CR | TXT_ESCAPE | TXT_PROMPT))
+		return (1);
+
+	VIP(sp)->cm_next = VS_EX_SEARCH_TEARDOWN1;
+	return (0);
+}
+
+/*
+ * v_a_td1 --
+ *	Tear down the ex address search text input and start the search.
+ */
+int
+v_a_td1(sp, vp)
+	SCR *sp;
+	VICMD *vp;
+{
+	GS *gp;
+	TEXT *tp;
+	VI_PRIVATE *vip;
+
+	/* Tear down the v_txt_gsetup routine. */
+	if (v_tcmd_td(sp, vp))
 		return (1);
 
 	/*
@@ -97,13 +110,65 @@ search_addr(sp, vp, dir)
 	 * right thing will happen, i.e. the prompt will be used as a command
 	 * character.
 	 */
-	tp = sp->tiqp->cqh_first;
+	tp = sp->tiq.cqh_first;
 	if (tp->term == TERM_BS) {
 		F_SET(vp, VM_NOMOTION);
 		return (0);
 	}
-	p = tp->lb;
-	len = tp->len;
+
+	/* Build a fake ex command structure. */
+	gp = sp->gp;
+	gp->excmd.cp = tp->lb;
+	gp->excmd.cplen = tp->len;
+	gp->cm_state = ES_PARSE;
+	F_SET(&gp->excmd, E_VISEARCH);
+
+	vip = VIP(sp);
+	vip->s_lno = sp->lno;
+	vip->s_cno = sp->cno;
+
+	return (v_a_td2(sp, vp));
+}
+
+/*
+ * v_a_td2 --
+ *	 Start or continue an ex address search.
+ */
+int
+v_a_td2(sp, vp)
+	SCR *sp;
+	VICMD *vp;
+{
+	static EXCMDLIST fake = { "search" };
+	EXCMD *cmdp;
+	GS *gp;
+	VI_PRIVATE *vip;
+	size_t len, tlen;
+	int nb, type;
+	char *p, *t, buf[20];
+
+	gp = sp->gp;
+	vip = VIP(sp);
+
+	/*
+	 * Vi is in one of two states:
+	 *
+	 *	VS_EX_SEARCH_TEARDOWN1 -- haven't called the ex routine.
+	 *	VS_EX_SEARCH_TEARDOWN2 -- restarting the ex routine.
+	 *
+	 * If the latter, update the ex state, the running command has
+	 * finished.
+	 */
+	switch (vip->cm_state) {
+	case VS_EX_SEARCH_TEARDOWN1:
+		break;
+	case VS_EX_SEARCH_TEARDOWN2:
+		gp->cm_state = gp->cm_next;
+		break;
+	default:
+		abort();
+		/* NOTREACHED */
+	}
 
 	/*
 	 * !!!
@@ -129,104 +194,116 @@ search_addr(sp, vp, dir)
 	 * Historically, the command "/STRING/;   " failed, apparently it
 	 * confused the parser.  We're not that compatible.
 	 *
+	 * Call the ex line routine.  The ex machine will be in one
+	 * of three states when it returns:
+	 *
+	 *		
+	 *	ES_PARSE:	Done.
+	 *	ES_PARSE_ERROR:	Done, but the command had an error.
+	 *	ES_RUNNING:	Not done.
+	 *
+	 * The first two are easy, clean up and return.  The third means that
+	 * we have to set up teardown functions so that ex_range is correctly
+	 * called after whatever is currently running finishes.
+	 */
+	cmdp = &gp->excmd;
+	if (ex_range(sp, cmdp))
+		return (1);
+	switch (gp->cm_state) {
+	case ES_PARSE:
+		/* Copy out the new cursor position and make sure it's okay. */
+		vp->m_stop.lno = cmdp->caddr.lno;
+		vp->m_stop.cno = cmdp->caddr.cno;
+		if (vp->m_stop.lno == 0 || !file_eline(sp, vp->m_stop.lno)) {
+			ex_badaddr(sp, &fake,
+			    vp->m_stop.lno == 0 ? A_ZERO : A_EOF, NUM_OK);
+			goto err2;
+		}
+		break;
+	case ES_PARSE_ERROR:
+		gp->cm_state = ES_PARSE;
+		goto err2;
+	case ES_RUNNING:
+		vip->run_func = EXP(sp)->run_func;
+		vip->run_vp = vp;
+
+		vip->cm_state = VS_RUNNING;
+		vip->cm_next = VS_EX_SEARCH_TEARDOWN2;
+		return (0);
+	default:
+		abort();
+	}
+
+	/*
 	 * !!!
 	 * Historically, if it wasn't a motion command, a delta in the search
 	 * pattern turns it into a first nonblank movement.
 	 */
-	save.lno = sp->lno;
-	save.cno = sp->cno;
-	for (nb = 0;;) {
-		for (; len > 0 && isblank(*p); ++p, --len);
-		if (len == 0)
-			break;
+	nb = F_ISSET(cmdp, E_DELTA);
 
-		if (ex_line(sp, &vp->m_stop, &p, &len, &notused, &isdelta))
-			goto err2;
-		if (isdelta)
-			nb = 1;
-		sp->lno = vp->m_stop.lno;
-		sp->cno = vp->m_stop.cno;
-		if (sp->lno == 0 || !file_eline(sp, sp->lno)) {
-			ex_badaddr(sp,
-			    &fake, sp->lno == 0 ? A_ZERO : A_EOF, NUM_OK);
-			goto err2;
-		}
-
-		for (; len > 0 && isblank(*p); ++p, --len);
-		if (len == 0)
-			break;
-		switch (*p) {
-		case ';':	/* Ignore; the cursor is already udpated. */
-			++p;
-			--len;
-			break;
-		case 'z':	/* Execute a z command. */
-			if (ISMOTION(vp)) {
-				len = 0;
-				break;
-			}
-			/* No blanks, just like the z command. */
-			for (t = p + 1, tlen = len - 1; tlen > 0; ++t, --tlen)
-				if (!isdigit(*t))
-					break;
-			if (tlen && (*t == '-' ||
-			    *t == '.' || *t == '+' || *t == '^')) {
-				++t;
-				--tlen;
-				type = 1;
-			} else
-				type = 0;
-			if (tlen)
-				goto err1;
-
-			/* z command will do the nonblank for us. */
-			nb = 0;
-
-			/* Default to z+. */
-			if (!type &&
-			    term_push(sp, "+", 1, CH_NOMAP | CH_QUOTED))
-				return (1);
-
-			/* Push the user's command. */
-			if (term_push(sp, p, len, CH_NOMAP | CH_QUOTED))
-				return (1);
-
-			/* Push line number so get correct z display. */
-			tlen = snprintf(buf,
-			    sizeof(buf), "%lu", (u_long)sp->lno);
-			if (term_push(sp, buf, tlen, CH_NOMAP | CH_QUOTED))
-				return (1);
-			 
-			/* Don't refresh until after 'z' happens. */
-			F_SET(VIP(sp), VIP_SKIPREFRESH);
-
-			len = 0;
-			break;
-		default:
+	/*
+	 * !!!
+	 * Historic practice is that a trailing 'z' was ignored if
+	 * it was a motion command.  Should probably be an error,
+	 * but not worth the effort.
+	 */
+	if (ISMOTION(vp))
+		return (v_correct(sp, vp, F_ISSET(cmdp, E_DELTA)));
+		
+	/* Check for the 'z' command. */
+	if ((len = cmdp->cplen) != 0) {
+		p = cmdp->cp;
+		if (*p != 'z')
 			goto err1;
-		}
+
+		/* No blanks, just like the z command. */
+		for (t = p + 1, tlen = len - 1; tlen > 0; ++t, --tlen)
+			if (!isdigit(*t))
+				break;
+		if (tlen &&
+		    (*t == '-' || *t == '.' || *t == '+' || *t == '^')) {
+			++t;
+			--tlen;
+			type = 1;
+		} else
+			type = 0;
+		if (tlen)
+			goto err1;
+
+		/* The z command will do the nonblank for us. */
+		nb = 0;
+
+		/* Default to z+. */
+		if (!type && v_event_push(sp, "+", 1, CH_NOMAP | CH_QUOTED))
+			return (1);
+
+		/* Push the user's command. */
+		if (v_event_push(sp, p, len, CH_NOMAP | CH_QUOTED))
+			return (1);
+
+		/* Push line number so get correct z display. */
+		tlen = snprintf(buf,
+		    sizeof(buf), "%lu", (u_long)vp->m_stop.lno);
+		if (v_event_push(sp, buf, tlen, CH_NOMAP | CH_QUOTED))
+			return (1);
+		 
+		/* Don't refresh until after 'z' happens. */
+		F_SET(VIP(sp), VIP_SKIPREFRESH);
 	}
-	sp->lno = save.lno;
-	sp->cno = save.cno;
 
 	/* Non-motion commands move to the end of the range. */
-	if (ISMOTION(vp)) {
-		if (correct(sp, vp, isdelta))
-			return (1);
-	} else {
-		vp->m_final = vp->m_stop;
-		if (nb) {
-			F_CLR(vp, VM_RCM_MASK);
-			F_SET(vp, VM_RCM_SETFNB);
-		}
+	vp->m_final = vp->m_stop;
+	if (nb) {
+		F_CLR(vp, VM_RCM_MASK);
+		F_SET(vp, VM_RCM_SETFNB);
 	}
 	return (0);
 
 err1:	msgq(sp, M_ERR,
     "188|Characters after search string, line offset, and/or z command");
-err2:	sp->lno = save.lno;
-	sp->cno = save.cno;
-	return (1);
+err2:	sp->lno = vip->s_lno;
+	sp->cno = vip->s_cno;
+	return (0);
 }
 
 /*
@@ -236,9 +313,9 @@ err2:	sp->lno = save.lno;
 int
 v_searchN(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
-	enum direction dir;
+	dir_t dir;
 
 	switch (sp->searchdir) {
 	case BACKWARD:
@@ -251,7 +328,7 @@ v_searchN(sp, vp)
 		dir = sp->searchdir;
 		break;
 	}
-	return (search(sp, vp, NULL, 0, SEARCH_PARSE, dir));
+	return (v_s_setup(sp, vp, NULL, SEARCH_PARSE, dir));
 }
 
 /*
@@ -261,9 +338,9 @@ v_searchN(sp, vp)
 int
 v_searchn(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
-	return (search(sp, vp, NULL, 0, SEARCH_PARSE, sp->searchdir));
+	return (v_s_setup(sp, vp, NULL, SEARCH_PARSE, sp->searchdir));
 }
 
 /*
@@ -273,67 +350,62 @@ v_searchn(sp, vp)
 int
 v_searchw(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
 	size_t blen, len;
 	int rval;
 	char *bp;
 
-	len = vp->kbuflen + sizeof(RE_WSTART) + sizeof(RE_WSTOP);
+	len = VIP(sp)->klen + sizeof(RE_WSTART) + sizeof(RE_WSTOP);
 	GET_SPACE_RET(sp, bp, blen, len);
-	(void)snprintf(bp, blen, "%s%s%s", RE_WSTART, vp->keyword, RE_WSTOP);
+	(void)snprintf(bp, blen, "%s%s%s", RE_WSTART, VIP(sp)->keyw, RE_WSTOP);
 
-	rval = search(sp, vp, bp, 0, SEARCH_SET, FORWARD);
+	rval = v_s_setup(sp, vp, bp, SEARCH_SET, FORWARD);
 
 	FREE_SPACE(sp, bp, blen);
 	return (rval);
 }
 
+/*
+ * v_s_setup --
+ *	Set up the search commands.
+ */
 static int
-search(sp, vp, ptrn, len, flags, dir)
+v_s_setup(sp, vp, ptrn, flags, dir)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 	u_int flags;
 	char *ptrn;
-	size_t len;
-	enum direction dir;
+	dir_t dir;
 {
-	char *notused;
+	VI_PRIVATE *vip;
 
-	if (ISMOTION(vp))
-		LF_SET(SEARCH_EOL);
-	LF_SET(SEARCH_MSG);
-
-	switch (dir) {
-	case BACKWARD:
-		if (b_search(sp,
-		    &vp->m_start, &vp->m_stop, ptrn, &notused, flags))
-			return (1);
-		break;
-	case FORWARD:
-		if (f_search(sp,
-		    &vp->m_start, &vp->m_stop, ptrn, &notused, flags))
-			return (1);
-		break;
-	case NOTSET:
+	if (dir == NOTSET) {
 		msgq(sp, M_ERR, "187|No previous search pattern");
 		return (1);
-	default:
-		abort();
-		/* NOTREACHED */
 	}
 
-	/* Non-motion commands move to the end of the range. */
-	if (ISMOTION(vp)) {
-		if (correct(sp, vp, 0))
-			return (1);
-	} else
-		vp->m_final = vp->m_stop;
+	if (srch_setup(sp, dir, ptrn, NULL,
+	    flags | SEARCH_MSG | (ISMOTION(vp) ? SEARCH_EOL : 0)))
+		return (1);
+
+	/* Set up the search state. */
+	sp->srch_fm = &vp->m_start;
+	sp->srch_rm = &vp->m_stop;
+	FL_SET(sp->gp->ec_flags, EC_INTERRUPT);
+
+	/* Set up the running function. */
+	vip = VIP(sp);
+	vip->run_func = dir == BACKWARD ? bsrch : fsrch;
+	vip->run_vp = vp;
+
+	vip->cm_state = VS_RUNNING;
+	vip->cm_next = VS_SEARCH_TEARDOWN;
 	return (0);
 }
 
 /*
- * correct --
+ * v_correct --
  *	Handle command with a search as the motion.
  *
  * !!!
@@ -349,13 +421,13 @@ search(sp, vp, ptrn, len, flags, dir)
  * 'k' and put would no longer work correctly.  In any case, we try to do
  * the right thing, but it's not going to exactly match historic practice.
  */
-static int
-correct(sp, vp, isdelta)
+int
+v_correct(sp, vp, isdelta)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 	int isdelta;
 {
-	enum direction dir;
+	dir_t dir;
 	MARK m;
 	size_t len;
 

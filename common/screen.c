@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 9.13 1995/02/17 11:36:47 bostic Exp $ (Berkeley) $Date: 1995/02/17 11:36:47 $";
+static char sccsid[] = "$Id: screen.c,v 10.1 1995/04/13 17:18:30 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:18:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,21 +29,17 @@ static char sccsid[] = "$Id: screen.c,v 9.13 1995/02/17 11:36:47 bostic Exp $ (B
 #include <db.h>
 #include <regex.h>
 
-#include "vi.h"
-#include "excmd.h"
-#include "../cl/cl.h"
+#include "common.h"
+#include "../vi/vi.h"
 #include "../ex/tag.h"
-#include "../sex/sex_screen.h"
-#include "../svi/svi_screen.h"
-#include "../vi/vcmd.h"
-#include "../xaw/xaw.h"
 
 /*
  * screen_init --
  *	Do the default initialization of an SCR structure.
  */
 int
-screen_init(orig, spp)
+screen_init(gp, orig, spp)
+	GS *gp;
 	SCR *orig, **spp;
 {
 	SCR *sp;
@@ -56,13 +52,11 @@ screen_init(orig, spp)
 /* INITIALIZED AT SCREEN CREATE. */
 	sp->refcnt = 1;
 
-	sp->gp = __global_list;			/* All ref the GS structure. */
+	sp->gp = gp;				/* All ref the GS structure. */
 
 	LIST_INIT(&sp->msgq);
 
 	sp->ccnt = 2;				/* Anything > 1 */
-
-	sp->stdfp = stdout;			/* Start off at the terminal. */
 
 	FD_ZERO(&sp->rdfd);
 
@@ -72,8 +66,7 @@ screen_init(orig, spp)
 	 * we don't have the option information yet.
 	 */
 
-	sp->tiqp = &sp->__tiq;
-	CIRCLEQ_INIT(&sp->__tiq);
+	CIRCLEQ_INIT(&sp->tiq);
 
 /* PARTIALLY OR COMPLETELY COPIED FROM PREVIOUS SCREEN. */
 	if (orig == NULL) {
@@ -118,31 +111,15 @@ mem:				msgq(orig, M_SYSERR, NULL);
 			sp->at_lbuf = orig->at_lbuf;
 		}
 
-		sp->saved_vi_mode = orig->saved_vi_mode;
-
 		if (opts_copy(orig, sp))
 			goto err;
 
-		sp->e_bell = orig->e_bell;
-		sp->e_busy = orig->e_busy;
-		sp->e_change = orig->e_change;
-		sp->e_clrtoeos = orig->e_clrtoeos;
-		sp->e_confirm = orig->e_confirm;
-		sp->e_fmap = orig->e_fmap;
-		sp->e_refresh = orig->e_refresh;
-		sp->e_ssize = orig->e_ssize;
-		sp->e_suspend = orig->e_suspend;
-
-		F_SET(sp, F_ISSET(orig, S_SCREENS));
+		F_SET(sp, F_ISSET(orig, S_EX | S_VI));
 	}
 
 	if (ex_screen_copy(orig, sp))		/* Ex. */
 		goto err;
 	if (v_screen_copy(orig, sp))		/* Vi. */
-		goto err;
-	if (sex_screen_copy(orig, sp))		/* Ex screen. */
-		goto err;
-	if (svi_screen_copy(orig, sp))		/* Vi screen. */
 		goto err;
 
 	*spp = sp;
@@ -154,7 +131,8 @@ err:	screen_end(sp);
 
 /*
  * screen_end --
- *	Release a screen.
+ *	Release a screen, no matter what had (and had not) been
+ *	initialized.
  */
 int
 screen_end(sp)
@@ -179,10 +157,6 @@ screen_end(sp)
 	}
 
 	rval = 0;
-	if (svi_screen_end(sp))			/* End S_VI screen. */
-		rval = 1;
-	if (sex_screen_end(sp))			/* End S_EX screen. */
-		rval = 1;
 	if (v_screen_end(sp))			/* End vi. */
 		rval = 1;
 	if (ex_screen_end(sp))			/* End ex. */
@@ -197,8 +171,13 @@ screen_end(sp)
 		}
 	}
 
+	/* Free any saved input file name. */
+	if (sp->if_name != NULL)
+		free(sp->if_name);
+
 	/* Free any text input. */
-	text_lfree(&sp->__tiq);
+	if (sp->tiq.cqh_first != NULL)
+		text_lfree(&sp->tiq);
 
 	/* Free any script information. */
 	if (F_ISSET(sp, S_SCRIPT))
@@ -243,36 +222,4 @@ screen_end(sp)
 	FREE(sp, sizeof(SCR));
 
 	return (rval);
-}
-
-/*
- * screen_fcopy --
- *	Copy the screen functions.
- */
-void
-screen_fcopy(sp, save)
-	SCR *sp;
-	int save;
-{
-	if (save) {
-		sp->sv_func[0] = (void (*)())sp->e_bell;
-		sp->sv_func[1] = (void (*)())sp->e_busy;
-		sp->sv_func[2] = (void (*)())sp->e_change;
-		sp->sv_func[3] = (void (*)())sp->e_clrtoeos;
-		sp->sv_func[4] = (void (*)())sp->e_confirm;
-		sp->sv_func[5] = (void (*)())sp->e_fmap;
-		sp->sv_func[6] = (void (*)())sp->e_refresh;
-		sp->sv_func[7] = (void (*)())sp->e_ssize;
-		sp->sv_func[8] = (void (*)())sp->e_suspend;
-	} else {
-		sp->e_bell	=    (int (*)())sp->sv_func[0];
-		sp->e_busy	=    (int (*)())sp->sv_func[1];
-		sp->e_change	=    (int (*)())sp->sv_func[2];
-		sp->e_clrtoeos	=    (int (*)())sp->sv_func[3];
-		sp->e_confirm	= (conf_t (*)())sp->sv_func[4];
-		sp->e_fmap	=    (int (*)())sp->sv_func[5];
-		sp->e_refresh	=    (int (*)())sp->sv_func[6];
-		sp->e_ssize	=    (int (*)())sp->sv_func[7];
-		sp->e_suspend	=    (int (*)())sp->sv_func[8];
-	}
 }

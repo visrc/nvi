@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 9.13 1995/02/22 11:57:24 bostic Exp $ (Berkeley) $Date: 1995/02/22 11:57:24 $";
+static char sccsid[] = "$Id: options_f.c,v 10.1 1995/04/13 17:18:26 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:18:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,11 +31,10 @@ static char sccsid[] = "$Id: options_f.c,v 9.13 1995/02/22 11:57:24 bostic Exp $
 #include <db.h>
 #include <regex.h>
 
-#include "vi.h"
+#include "common.h"
 #include "../ex/tag.h"
 
 static int	opt_dup __P((SCR *, int, char *));
-static int	opt_putenv __P((char *));
 static int	prset __P((SCR *, CHAR_T *, int, int));
 
 #define	DECL(f)								\
@@ -68,8 +67,6 @@ DECL(f_cdpath)
 
 DECL(f_columns)
 {
-	char buf[25];
-
 	/* Validate the number. */
 	if (val < MINIMUM_SCREEN_COLS) {
 		msgq(sp, M_ERR, "060|Screen columns too small, less than %d",
@@ -92,19 +89,12 @@ DECL(f_columns)
 		return (1);
 	}
 
-	/* Set the columns value in the environment for curses. */
-	(void)snprintf(buf, sizeof(buf), "COLUMNS=%lu", val);
-	if (opt_putenv(buf))
-		return (1);
-
 	/* This is expensive, don't do it unless it's necessary. */
 	if (O_VAL(sp, O_COLUMNS) == val)
 		return (0);
 
 	/* Set the value. */
 	O_VAL(sp, O_COLUMNS) =  val;
-
-	F_SET(sp, S_SCR_RESIZE);
 	return (0);
 }
 
@@ -140,8 +130,6 @@ DECL(f_leftright)
 
 DECL(f_lines)
 {
-	char buf[25];
-
 	/* Validate the number. */
 	if (val < MINIMUM_SCREEN_ROWS) {
 		msgq(sp, M_ERR, "061|Screen lines too small, less than %d",
@@ -164,11 +152,6 @@ DECL(f_lines)
 		return (1);
 	}
 
-	/* Set the rows value in the environment for curses. */
-	(void)snprintf(buf, sizeof(buf), "LINES=%lu", val);
-	if (opt_putenv(buf))
-		return (1);
-
 	/* This is expensive, don't do it unless it's necessary. */
 	if (O_VAL(sp, O_LINES) == val)
 		return (0);
@@ -190,8 +173,6 @@ DECL(f_lines)
 		    O_VAL(sp, O_WINDOW) > val)
 			O_VAL(sp, O_WINDOW) = O_D_VAL(sp, O_WINDOW) = val - 1;
 	}
-
-	F_SET(sp, S_SCR_RESIZE);
 	return (0);
 }
 
@@ -291,7 +272,7 @@ DECL(f_octal)
 		O_SET(sp, O_OCTAL);
 
 	/* Reinitialize the key fast lookup table. */
-	key_init(sp);
+	v_key_ilookup(sp);
 
 	/* Reformat the screen. */
 	F_SET(sp, S_SCR_REFORMAT);
@@ -362,7 +343,7 @@ prset(sp, str, set_index, unset_index)
 	O_STR(sp, set_index) = p;
 
 	/* Reinitialize the key fast lookup table. */
-	key_init(sp);
+	v_key_ilookup(sp);
 
 	/* Reformat the screen. */
 	F_SET(sp, S_SCR_REFORMAT);
@@ -437,22 +418,7 @@ DECL(f_tags)
 
 DECL(f_term)
 {
-	char buf[256];
-
-	if (opt_dup(sp, O_TERM, str))
-		return (1);
-
-	/* Set the terminal value in the environment for curses. */
-	(void)snprintf(buf, sizeof(buf), "TERM=%s", str);
-	if (opt_putenv(buf))
-		return (1);
-
-	/* Reset the screen size. */
-	if (sp->e_ssize(sp, 0))
-		return (1);
-	F_SET(sp, S_SCR_RESIZE);
-
-	return (0);
+	return (opt_dup(sp, O_TERM, str));
 }
 
 DECL(f_ttywerase)
@@ -551,29 +517,6 @@ opt_dup(sp, opt, str)
 		free(O_STR(sp, opt));
 	O_STR(sp, opt) = p;
 	return (0);
-}
-
-/*
- * opt_putenv --
- *	Put a value into the environment.  We use putenv(3) because it's
- *	more portable.  The following hack is because some moron decided
- *	to keep a reference to the memory passed to putenv(3), instead of
- *	having it allocate its own.  Someone clearly needs to get promoted
- *	into management.
- */
-static int
-opt_putenv(s)
-	char *s;
-{
-	char *t;
-
-	/*
-	 * XXX
-	 * Memory leak.
-	 */
-	if ((t = strdup(s)) == NULL)
-		return (1);
-	return (putenv(t));
 }
 
 /*

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 9.4 1995/02/15 16:12:06 bostic Exp $ (Berkeley) $Date: 1995/02/15 16:12:06 $";
+static char sccsid[] = "$Id: seq.c,v 10.1 1995/04/13 17:18:36 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:18:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,8 +29,9 @@ static char sccsid[] = "$Id: seq.c,v 9.4 1995/02/15 16:12:06 bostic Exp $ (Berke
 #include <db.h>
 #include <regex.h>
 
-#include "vi.h"
-#include "excmd.h"
+#include "common.h"
+
+static int e_memcmp __P((CHAR_T *, EVENT *, size_t));
 
 /*
  * seq_set --
@@ -41,7 +42,7 @@ seq_set(sp, name, nlen, input, ilen, output, olen, stype, flags)
 	SCR *sp;
 	CHAR_T *name, *input, *output;
 	size_t nlen, ilen, olen;
-	enum seqtype stype;
+	seq_t stype;
 	int flags;
 {
 	CHAR_T *p;
@@ -55,7 +56,8 @@ seq_set(sp, name, nlen, input, ilen, output, olen, stype, flags)
 	 *
 	 * Just replace the output field if the string already set.
 	 */
-	if ((qp = seq_find(sp, &lastqp, input, ilen, stype, NULL)) != NULL) {
+	if ((qp =
+	    seq_find(sp, &lastqp, NULL, input, ilen, stype, NULL)) != NULL) {
 		if (LF_ISSET(SEQ_NOOVERWRITE))
 			return (0);
 		if (output == NULL || olen == 0) {
@@ -138,11 +140,11 @@ seq_delete(sp, input, ilen, stype)
 	SCR *sp;
 	CHAR_T *input;
 	size_t ilen;
-	enum seqtype stype;
+	seq_t stype;
 {
 	SEQ *qp;
 
-	if ((qp = seq_find(sp, NULL, input, ilen, stype, NULL)) == NULL)
+	if ((qp = seq_find(sp, NULL, NULL, input, ilen, stype, NULL)) == NULL)
 		return (1);
 	return (seq_mdel(qp));
 }
@@ -171,12 +173,13 @@ seq_mdel(qp)
  *	isn't NULL, partial matches count.
  */
 SEQ *
-seq_find(sp, lastqp, input, ilen, stype, ispartialp)
+seq_find(sp, lastqp, e_input, c_input, ilen, stype, ispartialp)
 	SCR *sp;
 	SEQ **lastqp;
-	CHAR_T *input;
+	EVENT *e_input;
+	CHAR_T *c_input;
 	size_t ilen;
-	enum seqtype stype;
+	seq_t stype;
 	int *ispartialp;
 {
 	SEQ *lqp, *qp;
@@ -196,15 +199,26 @@ seq_find(sp, lastqp, input, ilen, stype, ispartialp)
 		*ispartialp = 0;
 	for (lqp = NULL, qp = sp->gp->seqq.lh_first;
 	    qp != NULL; lqp = qp, qp = qp->q.le_next) {
-		/* Fast checks on the first character and type. */
-		if (qp->input[0] > input[0])
-			break;
-		if (qp->input[0] < input[0] ||
-		    qp->stype != stype || F_ISSET(qp, SEQ_FUNCMAP))
-			continue;
-
-		/* Check on the real comparison. */
-		diff = memcmp(qp->input, input, MIN(qp->ilen, ilen));
+		/*
+		 * Fast checks on the first character and type, and then
+		 * a real comparison.
+		 */
+		if (e_input == NULL) {
+			if (qp->input[0] > c_input[0])
+				break;
+			if (qp->input[0] < c_input[0] ||
+			    qp->stype != stype || F_ISSET(qp, SEQ_FUNCMAP))
+				continue;
+			diff = memcmp(qp->input, c_input, MIN(qp->ilen, ilen));
+		} else {
+			if (qp->input[0] > e_input->e_c)
+				break;
+			if (qp->input[0] < e_input->e_c ||
+			    qp->stype != stype || F_ISSET(qp, SEQ_FUNCMAP))
+				continue;
+			diff =
+			    e_memcmp(qp->input, e_input, MIN(qp->ilen, ilen));
+		}
 		if (diff > 0)
 			break;
 		if (diff < 0)
@@ -266,7 +280,7 @@ seq_close(gp)
 int
 seq_dump(sp, stype, isname)
 	SCR *sp;
-	enum seqtype stype;
+	seq_t stype;
 	int isname;
 {
 	CHAR_T *p;
@@ -300,7 +314,7 @@ seq_dump(sp, stype, isname)
 				(void)ex_printf(EXCOOKIE,
 				    "%s", KEY_NAME(sp, *p));
 		}
-		F_SET(sp, S_SCR_EXWROTE);
+		F_SET(sp, S_EX_WROTE);
 		(void)ex_printf(EXCOOKIE, "\n");
 	}
 	return (cnt);
@@ -315,7 +329,7 @@ seq_save(sp, fp, prefix, stype)
 	SCR *sp;
 	FILE *fp;
 	char *prefix;
-	enum seqtype stype;
+	seq_t stype;
 {
 	CHAR_T *p;
 	SEQ *qp;
@@ -348,4 +362,24 @@ seq_save(sp, fp, prefix, stype)
 		(void)putc('\n', fp);
 	}
 	return (0);
+}
+
+/*
+ * e_memcmp --
+ *	Compare a string of EVENT's to a string of CHAR_T's.
+ */
+static int
+e_memcmp(p1, ep, n)
+	CHAR_T *p1;
+	EVENT *ep;
+	size_t n;
+{
+	if (n != 0) {
+                do {
+                        if (*p1++ != ep->e_c)
+                                return (*--p1 - ep->e_c);
+			++ep;
+                } while (--n != 0);
+        }
+        return (0);
 }

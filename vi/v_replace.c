@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_replace.c,v 9.4 1995/01/23 17:33:20 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:33:20 $";
+static char sccsid[] = "$Id: v_replace.c,v 10.1 1995/04/13 17:19:04 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:19:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,55 +29,66 @@ static char sccsid[] = "$Id: v_replace.c,v 9.4 1995/01/23 17:33:20 bostic Exp $ 
 #include <db.h>
 #include <regex.h>
 
+#include "common.h"
 #include "vi.h"
-#include "vcmd.h"
+
+static int v_rcheck __P((SCR *, recno_t, char **, size_t *));
 
 /*
- * v_replace -- [count]rc
+ * v_replace -- [count]r<char>
  *
  * !!!
  * The r command in historic vi was almost beautiful in its badness.  For
  * example, "r<erase>" and "r<word erase>" beeped the terminal and deleted
  * a single character.  "Nr<carriage return>", where N was greater than 1,
- * inserted a single carriage return.  This may not be right, but at least
- * it's not insane.
+ * inserted a single carriage return.  "r<escape>" did cancel the command,
+ * but "r<literal><escape>" erased a single character.  To enter a literal
+ * <literal> character, it required three <literal> characters after the
+ * command.  This may not be right, but at least it's not insane.
  */
 int
 v_replace(sp, vp)
 	SCR *sp;
-	VICMDARG *vp;
+	VICMD *vp;
 {
-	CH ikey;
+	char *p;
+	size_t len;
+
+	/* If it's dot, just make the replacement. */
+	if (F_ISSET(vp, VC_ISDOT))
+		return (v_replace_td(sp, vp));
+		
+	/* Check for legality. */
+	if (v_rcheck(sp, vp->m_start.lno, &p, &len))
+		return (1);
+
+	/* Replace char has its own mode. */
+	sp->showmode = SM_REPLACE_CHAR;
+
+	/* Get the replacement character. */
+	VIP(sp)->cm_state = VS_REPLACE_CHAR1;
+	return (0);
+}
+
+/*
+ * v_replace_td --
+ *	Do the replacement.
+ */
+int
+v_replace_td(sp, vp)
+	SCR *sp;
+	VICMD *vp;
+{
+	VI_PRIVATE *vip;
 	TEXT *tp;
-	recno_t lno;
 	size_t blen, len;
 	u_long cnt;
 	int rval;
 	char *bp, *p;
 
-	/*
-	 * If the line doesn't exist, or it's empty, replacement isn't
-	 * allowed.  It's not hard to implement, but:
-	 *
-	 *	1: It's historic practice.
-	 *	2: For consistency, this change would require that the more
-	 *	   general case, "Nr", when the user is < N characters from
-	 *	   the end of the line, also work.
-	 *	3: Replacing a newline has somewhat odd semantics.
-	 */
-	if ((p = file_gline(sp, vp->m_start.lno, &len)) == NULL) {
-		if (file_lline(sp, &lno))
-			return (1);
-		if (lno != 0) {
-			FILE_LERR(sp, vp->m_start.lno);
-			return (1);
-		}
-		goto nochar;
-	}
-	if (len == 0) {
-nochar:		msgq(sp, M_BERR, "185|No characters to replace");
+	/* There's no way the line could have moved... yeah, right. */
+	if (v_rcheck(sp, vp->m_start.lno, &p, &len))
 		return (1);
-	}
 
 	/*
 	 * Figure out how many characters to be replace.  For no particular
@@ -94,36 +105,13 @@ nochar:		msgq(sp, M_BERR, "185|No characters to replace");
 		return (1);
 	}
 
-	/*
-	 * Get the character.  Literal escapes escape any character,
-	 * single escapes return.
-	 */
-	if (F_ISSET(vp, VC_ISDOT)) {
-		ikey.ch = VIP(sp)->rlast;
-		ikey.value = KEY_VAL(sp, ikey.ch);
-	} else {
-		sp->showmode = "Replace char";
-		(void)sp->e_refresh(sp);
-
-		if (term_key(sp, &ikey, 0) != INP_OK)
-			return (1);
-		switch (ikey.value) {
-		case K_ESCAPE:
-			return (0);
-		case K_VLNEXT:
-			if (term_key(sp, &ikey, 0) != INP_OK)
-				return (1);
-			break;
-		}
-		VIP(sp)->rlast = ikey.ch;
-	}
-
 	/* Copy the line. */
 	GET_SPACE_RET(sp, bp, blen, len);
 	memmove(bp, p, len);
 	p = bp;
 
-	if (ikey.value == K_CR || ikey.value == K_NL) {
+	vip = VIP(sp);
+	if (vip->rvalue == K_CR || vip->rvalue == K_NL) {
 		/* Set return line. */
 		vp->m_stop.lno = vp->m_start.lno + cnt;
 		vp->m_stop.cno = 0;
@@ -143,7 +131,7 @@ nochar:		msgq(sp, M_BERR, "185|No characters to replace");
 
 		if ((tp = text_init(sp, p, len, len)) == NULL)
 			goto err_ret;
-		if (txt_auto(sp, vp->m_start.lno, NULL, 0, tp))
+		if (v_txt_auto(sp, vp->m_start.lno, NULL, 0, tp))
 			goto err_ret;
 		vp->m_stop.cno = tp->ai ? tp->ai - 1 : 0;
 		if (file_aline(sp, 1, vp->m_start.lno, tp->lb, tp->len))
@@ -159,11 +147,44 @@ err_ret:			rval = 1;
 				break;
 			}
 	} else {
-		memset(bp + vp->m_start.cno, ikey.ch, cnt);
+		memset(bp + vp->m_start.cno, vip->rlast, cnt);
 		rval = file_sline(sp, vp->m_start.lno, bp, len);
 	}
 	FREE_SPACE(sp, bp, blen);
 
 	vp->m_final = vp->m_stop;
 	return (rval);
+}
+
+/*
+ * v_rcheck --
+ *	Check to see if we can do the replacement.
+ */
+static int
+v_rcheck(sp, lno, pp, lenp)
+	SCR *sp;
+	recno_t lno;
+	char **pp;
+	size_t *lenp;
+{
+	/*
+	 * If the line doesn't exist, or it's empty, replacement isn't
+	 * allowed.  It's not hard to implement, but:
+	 *
+	 *	1: It's historic practice (vi beeped before the replacement
+	 *	   character was even entered).
+	 *	2: For consistency, this change would require that the more
+	 *	   general case, "Nr", when the user is < N characters from
+	 *	   the end of the line, also work, which would be a bit odd.
+	 *	3: Replacing with a <newline> has somewhat odd semantics.
+	 */
+	if ((*pp = file_gline(sp, lno, lenp)) == NULL) {
+		FILE_LERR(sp, lno);
+		return (1);
+	}
+	if (*lenp == 0) {
+		msgq(sp, M_BERR, "185|No characters to replace");
+		return (1);
+	}
+	return (0);
 }

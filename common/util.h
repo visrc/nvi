@@ -6,13 +6,29 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: util.h,v 9.9 1995/01/31 18:39:38 bostic Exp $ (Berkeley) $Date: 1995/01/31 18:39:38 $
+ *	$Id: util.h,v 10.1 1995/04/13 17:18:44 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:18:44 $
  */
+
+/* Macros to init/set/clear/test flags. */
+#define	FL_INIT(l, f)	(l) = (f)		/* Specific flags location. */
+#define	FL_SET(l, f)	((l) |= (f))
+#define	FL_CLR(l, f)	((l) &= ~(f))
+#define	FL_ISSET(l, f)	((l) & (f))
+
+#define	LF_INIT(f)	FL_INIT(flags, f)	/* Local variable flags. */
+#define	LF_SET(f)	FL_SET(flags, f)
+#define	LF_CLR(f)	FL_CLR(flags, f)
+#define	LF_ISSET(f)	FL_ISSET(flags, f)
+
+#define	F_INIT(p, f)	FL_INIT((p)->flags, f)	/* Structure element flags. */
+#define	F_SET(p, f)	FL_SET((p)->flags, f)
+#define	F_CLR(p, f)	FL_CLR((p)->flags, f)
+#define	F_ISSET(p, f)	FL_ISSET((p)->flags, f)
 
 /*
  * XXX
- * MIN/MAX have traditionally been in <sys/param.h>.  Don't
- * try to get them from there, it's just not worth the effort.
+ * MIN/MAX have traditionally been in <sys/param.h>.  Don't try to get them
+ * from there, it's just not worth the effort.
  */
 #ifndef	MAX
 #define	MAX(_a,_b)	((_a)<(_b)?(_b):(_a))
@@ -47,20 +63,17 @@ enum nresult { NUM_ERR, NUM_OK, NUM_OVER, NUM_UNDER };
 	 NUM_OK)
 #define	NADD_USLONG(sp, v1, v2)						\
 	(NPFITS(ULONG_MAX, (v1), (v2)) ? NUM_OK : NUM_OVER)
-enum nresult nget_slong __P((SCR *, long *, const char *, char **, int));
-enum nresult nget_uslong __P((SCR *, u_long *, const char *, char **, int));
+enum nresult nget_slong __P((long *, const char *, char **, int));
+enum nresult nget_uslong __P((u_long *, const char *, char **, int));
+
+/* Function prototypes that don't seem to belong anywhere else. */
+int	 nonblank __P((SCR *, recno_t, size_t *));
+char	*tail __P((char *));
 
 /* Digraphs (not currently real). */
 int	digraph __P((SCR *, int, int));
 int	digraph_init __P((SCR *));
 void	digraph_save __P((SCR *, int));
-
-/* Function prototypes that don't seem to belong anywhere else. */
-int	 nonblank __P((SCR *, recno_t, size_t *));
-void	 set_alt_name __P((SCR *, char *));
-char	*tail __P((char *));
-int	 vi_main __P((int, char *[], int (*)(SCR *, int)));
-void	 vi_putchar __P((int));
 
 #ifdef DEBUG
 void	TRACE __P((SCR *, const char *, ...));

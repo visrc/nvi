@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 10.2 1995/03/17 12:40:33 bostic Exp $ (Berkeley) $Date: 1995/03/17 12:40:33 $";
+static char sccsid[] = "$Id: util.c,v 10.3 1995/04/13 17:18:42 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:18:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -121,51 +121,6 @@ tail(path)
 	if ((p = strrchr(path, '/')) == NULL)
 		return (path);
 	return (p + 1);
-}
-
-/*
- * set_alt_name --
- *	Set the alternate pathname.
- *
- * Set the alternate pathname.  It's a routine because I wanted some place
- * to hang this comment.  The alternate pathname (normally referenced using
- * the special character '#' during file expansion and in the vi ^^ command)
- * is set by almost all ex commands that take file names as arguments.  The
- * rules go something like this:
- *
- *    1: If any ex command takes a file name as an argument (except for the
- *	 :next command), the alternate pathname is set to that file name.
- *	 This excludes the command ":e" and ":w !command" as no file name
- *       was specified.  Note, historically, the :source command did not set
- *	 the alternate pathname.  It does in nvi, for consistency.
- *
- *    2: However, if any ex command sets the current pathname, e.g. the
- *	 ":e file" or ":rew" commands succeed, then the alternate pathname
- *	 is set to the previous file's current pathname, if it had one.
- *	 This includes the ":file" command and excludes the ":e" command.
- *	 So, by rule #1 and rule #2, if ":edit foo" fails, the alternate
- *	 pathname will be "foo", if it succeeds, the alternate pathname will
- *	 be the previous current pathname.  The ":e" command will not set
- *       the alternate or current pathnames regardless.
- *
- *    3: However, if it's a read or write command with a file argument and
- *	 the current pathname has not yet been set, the file name becomes
- *	 the current pathname, and the alternate pathname is unchanged.
- *
- * If the user edits a temporary file, there may be times when there is no
- * alternative file name.  A name argument of NULL turns it off.
- */
-void
-set_alt_name(sp, name)
-	SCR *sp;
-	char *name;
-{
-	if (sp->alt_name != NULL)
-		free(sp->alt_name);
-	if (name == NULL)
-		sp->alt_name = NULL;
-	else if ((sp->alt_name = strdup(name)) == NULL)
-		msgq(sp, M_SYSERR, NULL);
 }
 
 /*

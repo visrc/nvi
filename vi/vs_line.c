@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 9.7 1995/01/30 10:19:42 bostic Exp $ (Berkeley) $Date: 1995/01/30 10:19:42 $";
+static char sccsid[] = "$Id: vs_line.c,v 10.1 1995/04/13 17:19:19 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:19:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,8 +26,8 @@ static char sccsid[] = "$Id: vs_line.c,v 9.7 1995/01/30 10:19:42 bostic Exp $ (B
 #include <db.h>
 #include <regex.h>
 
+#include "common.h"
 #include "vi.h"
-#include "svi_screen.h"
 
 #if defined(DEBUG) && 0
 #define	TABCH	'-'
@@ -38,17 +38,17 @@ static char sccsid[] = "$Id: vs_line.c,v 9.7 1995/01/30 10:19:42 bostic Exp $ (B
 #endif
 
 /*
- * svi_line --
+ * vs_line --
  *	Update one line on the screen.
  */
 int
-svi_line(sp, smp, yp, xp)
+vs_line(sp, smp, yp, xp)
 	SCR *sp;
 	SMAP *smp;
 	size_t *xp, *yp;
 {
+	GS *gp;
 	SMAP *tsmp;
-	SVI_PRIVATE *svp;
 	size_t chlen, cols_per_screen, cno_cnt, len, scno, skip_screens;
 	size_t offset_in_char, offset_in_line, oldy, oldx;
 	int ch, is_cached, is_infoline, is_partial, is_tab;
@@ -56,7 +56,7 @@ svi_line(sp, smp, yp, xp)
 	char *p, nbuf[10];
 
 #if defined(DEBUG) && 0
-	TRACE(sp, "svi_line: row %u: line: %u off: %u\n",
+	TRACE(sp, "vs_line: row %u: line: %u off: %u\n",
 	    smp - HMAP, smp->lno, smp->off);
 #endif
 
@@ -75,14 +75,14 @@ svi_line(sp, smp, yp, xp)
 	 * position for the "current" character.  Not pretty, but this is the
 	 * only routine that really knows what's out there.
 	 *
-	 * Move to the line.  This routine can be called by svi_sm_position(),
+	 * Move to the line.  This routine can be called by vs_sm_position(),
 	 * which uses it to fill in the cache entry so it can figure out what
 	 * the real contents of the screen are.  Because of this, we have to
 	 * return to whereever we started from.
 	 */
-	svp = SVP(sp);
-	(void)svp->scr_cursor(sp, &oldy, &oldx);
-	(void)svp->scr_move(sp, RLNO(sp, smp - HMAP), 0);
+	gp = sp->gp;
+	(void)gp->scr_cursor(sp, &oldy, &oldx);
+	(void)gp->scr_move(sp, smp - HMAP, 0);
 
 	/* Get a copy of the line. */
 	p = file_gline(sp, smp->lno, &len);
@@ -104,7 +104,7 @@ svi_line(sp, smp, yp, xp)
 	 */
 	cols_per_screen = sp->cols;
 	list_tab = O_ISSET(sp, O_LIST);
-	if (is_infoline = F_ISSET(svp, SVI_INFOLINE)) {
+	if (is_infoline = F_ISSET(VIP(sp), VIP_INFOLINE)) {
 		list_dollar = 0;
 		if (O_ISSET(sp, O_LEFTRIGHT))
 			skip_screens = 0;
@@ -124,7 +124,7 @@ svi_line(sp, smp, yp, xp)
 			if ((smp->lno == 1 || p != NULL) && skip_screens == 0) {
 				(void)snprintf(nbuf,
 				    sizeof(nbuf), O_NUMBER_FMT, smp->lno);
-				(void)svp->scr_addstr(sp, nbuf);
+				(void)gp->scr_addstr(sp, nbuf);
 			}
 		}
 	}
@@ -164,11 +164,11 @@ svi_line(sp, smp, yp, xp)
 			} else
 				if (list_dollar) {
 					ch = '$';
-empty:					(void)ADDCH(sp, svp, ch);
+empty:					(void)ADDCH(sp, ch);
 				}
 
-		(void)svp->scr_clrtoeol(sp);
-		(void)svp->scr_move(sp, oldy, oldx);
+		(void)gp->scr_clrtoeol(sp);
+		(void)gp->scr_move(sp, oldy, oldx);
 		return (0);
 	}
 
@@ -258,7 +258,7 @@ empty:					(void)ADDCH(sp, svp, ch);
 
 	/*
 	 * Set the number of characters to skip before reaching the cursor
-	 * character.  Offset by 1 and use 0 as a flag value.  Svi_line is
+	 * character.  Offset by 1 and use 0 as a flag value.  Vs_line is
 	 * called repeatedly with a valid pointer to a cursor position.
 	 * Don't fill anything in unless it's the right line and the right
 	 * character, and the right part of the character...
@@ -339,12 +339,12 @@ empty:					(void)ADDCH(sp, svp, ch);
 		 */
 		if (is_tab) {
 			if (chlen <= sizeof(TABSTR) - 1) {
-				(void)svp->scr_addnstr(sp, TABSTR, chlen);
+				(void)gp->scr_addnstr(sp, TABSTR, chlen);
 			} else
 				while (chlen--)
-					(void)ADDCH(sp, svp, TABCH);
+					(void)ADDCH(sp, TABCH);
 		} else
-			(void)svp->scr_addnstr(sp,
+			(void)gp->scr_addnstr(sp,
 			    KEY_NAME(sp, ch) + offset_in_char, chlen);
 	}
 
@@ -360,28 +360,29 @@ empty:					(void)ADDCH(sp, svp, ch);
 		 */
 		if (list_dollar) {
 			++scno;
-			(void)ADDCH(sp, svp, '$');
+			(void)ADDCH(sp, '$');
 		}
 
 		/* If still didn't paint the whole line, clear the rest. */
 		if (scno < cols_per_screen)
-			(void)svp->scr_clrtoeol(sp);
+			(void)gp->scr_clrtoeol(sp);
 	}
 
-ret:	(void)svp->scr_move(sp, oldy, oldx);
+ret:	(void)gp->scr_move(sp, oldy, oldx);
 	return (0);
 }
 
 /*
- * svi_number --
+ * vs_number --
  *	Repaint the numbers on all the lines.
  */
 int
-svi_number(sp)
+vs_number(sp)
 	SCR *sp;
 {
+	GS *gp;
 	SMAP *smp;
-	SVI_PRIVATE *svp;
+	VI_PRIVATE *vip;
 	size_t oldy, oldx;
 	int exist;
 	char nbuf[10];
@@ -401,19 +402,21 @@ svi_number(sp)
 	 */
 	exist = file_eline(sp, TMAP->lno + 1);
 
-	svp = SVP(sp);
-	(void)svp->scr_cursor(sp, &oldy, &oldx);
+	gp = sp->gp;
+	vip = VIP(sp);
+	(void)gp->scr_cursor(sp, &oldy, &oldx);
+
 	for (smp = HMAP; smp <= TMAP; ++smp) {
 		if (smp->off != 1)
 			continue;
-		if (F_ISSET(svp, SVI_INFOLINE))
+		if (F_ISSET(vip, VIP_INFOLINE))
 			break;
 		if (smp->lno != 1 && !exist && file_eline(sp, smp->lno) == NULL)
 			break;
-		(void)svp->scr_move(sp, RLNO(sp, smp - HMAP), 0);
+		(void)gp->scr_move(sp, smp - HMAP, 0);
 		(void)snprintf(nbuf, sizeof(nbuf), O_NUMBER_FMT, smp->lno);
-		(void)svp->scr_addstr(sp, nbuf);
+		(void)gp->scr_addstr(sp, nbuf);
 	}
-	(void)svp->scr_move(sp, oldy, oldx);
+	(void)gp->scr_move(sp, oldy, oldx);
 	return (0);
 }

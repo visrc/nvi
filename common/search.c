@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 9.11 1995/02/17 11:36:12 bostic Exp $ (Berkeley) $Date: 1995/02/17 11:36:12 $";
+static char sccsid[] = "$Id: search.c,v 10.1 1995/04/13 17:18:33 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:18:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,30 +30,42 @@ static char sccsid[] = "$Id: search.c,v 9.11 1995/02/17 11:36:12 bostic Exp $ (B
 #include <db.h>
 #include <regex.h>
 
-#include "vi.h"
-#include "excmd.h"
+#include "common.h"
 
 static int	ctag_conv __P((SCR *, char **, int *));
-static int	resetup __P((SCR *,
-		    regex_t **, enum direction, char *, char **, u_int));
 
 enum smsgtype { S_EMPTY, S_EOF, S_NOPREV, S_NOTFOUND, S_SOF, S_WRAP };
-static void	smsg __P((SCR *, enum smsgtype));
+static void smsg __P((SCR *, enum smsgtype));
 
 /*
- * resetup --
- *	Set up a search for a regular expression.
+ * srch_setup --
+ *	Set up a search.
  */
-static int
-resetup(sp, rep, dir, ptrn, epp, flags)
+int
+srch_setup(sp, dir, ptrn, epp, flags)
 	SCR *sp;
-	regex_t **rep;
-	enum direction dir;
+	dir_t dir;
 	char *ptrn, **epp;
 	u_int flags;
 {
+	recno_t lno;
+	regex_t re;
 	int delim, eval, re_flags, replaced;
 	char *p, *t;
+
+	/* Copy the flags to the saved flags. */
+	FL_INIT(sp->srch_flags, SEARCH_FIRST | flags);
+
+	/* If the file is empty, it's a fast search. */
+	if (sp->lno <= 1) {
+		if (file_lline(sp, &lno))
+			return (1);
+		if (lno == 0) {
+			if (LF_ISSET(SEARCH_MSG))
+				smsg(sp, S_EMPTY);
+			return (1);
+		}
+	}
 
 	replaced = 0;
 	if (LF_ISSET(SEARCH_PARSE)) {		/* Parse the string. */
@@ -92,8 +104,6 @@ prev:			if (!F_ISSET(sp, S_RE_SEARCH)) {
 				ptrn = sp->re;
 				goto recomp;
 			}
-
-			*rep = &sp->sre;
 
 			if (LF_ISSET(SEARCH_SET))
 				sp->searchdir = dir;
@@ -141,13 +151,13 @@ recomp:	re_flags = 0;
 		if (O_ISSET(sp, O_IGNORECASE))
 			re_flags |= REG_ICASE;
 	}
-	if (eval = regcomp(*rep, ptrn, re_flags))
-		re_error(sp, eval, *rep);
+	if (eval = regcomp(&re, ptrn, re_flags))
+		re_error(sp, eval, &re);
 	else {
 		if (LF_ISSET(SEARCH_SET))
 			sp->searchdir = dir;
 		if (LF_ISSET(SEARCH_SET) || F_ISSET(sp, S_RE_RECOMPILE)) {
-			sp->sre = **rep;
+			sp->sre = re;
 			F_SET(sp, S_RE_SEARCH);
 		}
 		F_CLR(sp, S_RE_RECOMPILE);
@@ -157,6 +167,357 @@ recomp:	re_flags = 0;
 	if (replaced)
 		FREE_SPACE(sp, ptrn, 0);
 	return (eval);
+}
+
+/* __TK__ DELETE FSRCH_SET && BSRCH_SETUP */
+/*
+ * fsrch_setup --
+ *	Set up for a forward search.
+ */
+int
+fsrch_setup(sp, fm, rm, ptrn, eptrn, flags)
+	SCR *sp;
+	MARK *fm, *rm;
+	char *ptrn, **eptrn;
+	u_int flags;
+{
+	if (srch_setup(sp, FORWARD, ptrn, eptrn, flags))
+		return (1);
+
+	/* Set up the search state. */
+	FL_INIT(sp->srch_flags, SEARCH_FIRST | flags);
+	sp->srch_fm = fm;
+	sp->srch_rm = rm;
+	FL_SET(sp->gp->ec_flags, EC_INTERRUPT);
+	return (0);
+}
+
+/*
+ * fsrch --
+ *	Do a forward search.
+ */
+int
+fsrch(sp, evp, completep)
+	SCR *sp;
+	EVENT *evp;
+	int *completep;
+{
+	regmatch_t match[1];
+	size_t len;
+	int cnt, eval;
+	char *l;
+
+	if (evp != NULL && evp->e_event == E_INTERRUPT)
+		goto notfound;
+
+	/*
+	 * Start searching immediately after the cursor.  If at the end of the
+	 * line, start searching on the next line.  This is incompatible (read
+	 * bug fix) with the historic vi -- searches for the '$' pattern never
+	 * moved forward, and "-t foo" didn't work if "foo" was the first thing
+	 * in the file.
+	 */
+	if (FL_ISSET(sp->srch_flags, SEARCH_FIRST)) {
+		if (FL_ISSET(sp->srch_flags, SEARCH_FILE)) {
+			sp->srch_lno = 1;
+			sp->srch_coff = 0;
+		} else {
+			if ((l = file_gline(sp,
+			    sp->srch_fm->lno, &len)) == NULL) {
+				FILE_LERR(sp, sp->srch_fm->lno);
+				return (1);
+			}
+			if (sp->srch_fm->cno + 1 >= len) {
+				if (sp->srch_fm->lno == sp->srch_lno) {
+					if (!O_ISSET(sp, O_WRAPSCAN)) {
+						if (FL_ISSET(sp->srch_flags,
+						    SEARCH_MSG))
+							smsg(sp, S_EOF);
+						goto notfound;
+					}
+					sp->srch_lno = 1;
+				} else
+					sp->srch_lno = sp->srch_fm->lno + 1;
+				sp->srch_coff = 0;
+			} else {
+				sp->srch_lno = sp->srch_fm->lno;
+				sp->srch_coff = sp->srch_fm->cno + 1;
+			}
+		}
+
+		FL_CLR(sp->srch_flags, SEARCH_FIRST);
+	}
+
+	for (cnt = INTERRUPT_CHECK;; ++sp->srch_lno, sp->srch_coff = 0) {
+		if (cnt-- == 0) {
+			if (!F_ISSET(sp, S_BUSY))
+				srch_busy(sp, 1);
+			*completep = 0;
+			return (0);
+		}
+		if (FL_ISSET(sp->srch_flags, SEARCH_WRAPPED) &&
+		    sp->srch_lno > sp->srch_fm->lno ||
+		    (l = file_gline(sp, sp->srch_lno, &len)) == NULL) {
+			if (FL_ISSET(sp->srch_flags, SEARCH_WRAPPED)) {
+				if (FL_ISSET(sp->srch_flags, SEARCH_MSG))
+					smsg(sp, S_NOTFOUND);
+				goto notfound;
+			}
+			if (!O_ISSET(sp, O_WRAPSCAN)) {
+				if (FL_ISSET(sp->srch_flags, SEARCH_MSG))
+					smsg(sp, S_EOF);
+				goto notfound;
+			}
+			sp->srch_lno = 0;
+			FL_SET(sp->srch_flags, SEARCH_WRAPPED);
+			continue;
+		}
+
+		/* If already at EOL, just keep going. */
+		if (len != 0 && sp->srch_coff == len)
+			continue;
+
+		/* Set the termination. */
+		match[0].rm_so = sp->srch_coff;
+		match[0].rm_eo = len;
+
+#if defined(DEBUG) && 0
+		TRACE(sp, "F search: %lu from %u to %u\n",
+		    sp->srch_lno, sp->srch_coff, len != 0 ? len - 1 : len);
+#endif
+		/* Search the line. */
+		eval = regexec(&sp->sre, l, 1, match,
+		    (match[0].rm_so == 0 ? 0 : REG_NOTBOL) | REG_STARTEND);
+		if (eval == REG_NOMATCH)
+			continue;
+		if (eval != 0) {
+			re_error(sp, eval, &sp->sre);
+			goto notfound;
+		}
+
+
+		/* Warn if wrapped. */
+		if (O_ISSET(sp, O_WARN) &&
+		    FL_ISSET(sp->srch_flags, SEARCH_MSG) &&
+		    FL_ISSET(sp->srch_flags, SEARCH_WRAPPED))
+			smsg(sp, S_WRAP);
+
+#if defined(DEBUG) && 0
+		TRACE(sp, "fsrch: %qu to %qu\n",
+		    match[0].rm_so, match[0].rm_eo);
+#endif
+		sp->srch_rm->lno = sp->srch_lno;
+		sp->srch_rm->cno = match[0].rm_so;
+
+		/*
+		 * If a change command, it's possible to move beyond the end
+		 * of a line.  Historic vi generally got this wrong (e.g. try
+		 * "c?$<cr>").  Not all that sure this gets it right, there
+		 * are lots of strange cases.
+		 */
+		if (!FL_ISSET(sp->srch_flags, SEARCH_EOL) &&
+		    sp->srch_rm->cno >= len)
+			sp->srch_rm->cno = len != 0 ? len - 1 : 0;
+
+		*completep = 1;
+		FL_SET(sp->srch_flags, SEARCH_FOUND);
+		srch_busy(sp, 0);
+		return (0);
+	}
+
+notfound:
+	*completep = 1;
+	FL_CLR(sp->srch_flags, SEARCH_FOUND);
+	srch_busy(sp, 0);
+	return (0);
+}
+
+/*
+ * bsrch_setup --
+ *	Set up for a backward search.
+ */
+int
+bsrch_setup(sp, fm, rm, ptrn, eptrn, flags)
+	SCR *sp;
+	MARK *fm, *rm;
+	char *ptrn, **eptrn;
+	u_int flags;
+{
+	if (srch_setup(sp, BACKWARD, ptrn, eptrn, flags))
+		return (1);
+
+	/* Set up the search state. */
+	FL_SET(sp->srch_flags, SEARCH_FIRST | flags);
+	sp->srch_fm = fm;
+	sp->srch_rm = rm;
+	FL_SET(sp->gp->ec_flags, EC_INTERRUPT);
+	return (0);
+}
+
+/*
+ * bsrch --
+ *	Do a backward search.
+ */
+int
+bsrch(sp, evp, completep)
+	SCR *sp;
+	EVENT *evp;
+	int *completep;
+{
+	regmatch_t match[1];
+	size_t len, last;
+	int cnt, eval;
+	char *l;
+
+	if (evp != NULL && evp->e_event == E_INTERRUPT)
+		goto notfound;
+	
+	if (FL_ISSET(sp->srch_flags, SEARCH_FIRST)) {
+		/* If in the first column, start search on the previous line. */
+		if (sp->srch_fm->cno == 0) {
+			if (sp->srch_fm->lno == 1) {
+				if (!O_ISSET(sp, O_WRAPSCAN)) {
+					if (FL_ISSET(sp->srch_flags,
+					    SEARCH_MSG))
+						smsg(sp, S_SOF);
+					goto notfound;
+				}
+			} else
+				sp->srch_lno = sp->srch_fm->lno - 1;
+		} else
+			sp->srch_lno = sp->srch_fm->lno;
+		sp->srch_coff = sp->srch_fm->cno;
+
+		FL_CLR(sp->srch_flags, SEARCH_FIRST);
+	}
+
+	for (cnt = INTERRUPT_CHECK;; --sp->srch_lno, sp->srch_coff = 0) {
+		if (cnt-- == 0) {
+			if (!F_ISSET(sp, S_BUSY))
+				srch_busy(sp, 1);
+			*completep = 0;
+			return (0);
+		}
+		if (FL_ISSET(sp->srch_flags, SEARCH_WRAPPED) &&
+		    sp->srch_lno < sp->srch_fm->lno || sp->srch_lno == 0) {
+			if (FL_ISSET(sp->srch_flags, SEARCH_WRAPPED)) {
+				if (FL_ISSET(sp->srch_flags, SEARCH_MSG))
+					smsg(sp, S_NOTFOUND);
+				goto notfound;
+			}
+			if (!O_ISSET(sp, O_WRAPSCAN)) {
+				if (FL_ISSET(sp->srch_flags, SEARCH_MSG))
+					smsg(sp, S_SOF);
+				goto notfound;
+			}
+			if (file_lline(sp, &sp->srch_lno))
+				return (1);
+			if (sp->srch_lno == 0) {
+				if (FL_ISSET(sp->srch_flags, SEARCH_MSG))
+					smsg(sp, S_EMPTY);
+				break;
+			}
+			++sp->srch_lno;
+			FL_SET(sp->srch_flags, SEARCH_WRAPPED);
+			continue;
+		}
+
+		if ((l = file_gline(sp, sp->srch_lno, &len)) == NULL)
+			return (1);
+
+		/* Set the termination. */
+		match[0].rm_so = 0;
+		match[0].rm_eo = len;
+
+#if defined(DEBUG) && 0
+		TRACE(sp, "bsrch: %lu from 0 to %qu\n",
+		    sp->srch_lno, match[0].rm_eo);
+#endif
+		/* Search the line. */
+		eval = regexec(&sp->sre, l, 1, match,
+		    (match[0].rm_eo == len != 0 ?
+		        0 : REG_NOTEOL) | REG_STARTEND);
+		if (eval == REG_NOMATCH)
+			continue;
+		if (eval != 0) {
+			re_error(sp, eval, &sp->sre);
+			goto notfound;
+		}
+
+		/* Check for a match starting past the cursor. */
+		if (sp->srch_coff != 0 && match[0].rm_so >= sp->srch_coff)
+			continue;
+
+		/* Warn if wrapped. */
+		if (O_ISSET(sp, O_WARN) &&
+		    FL_ISSET(sp->srch_flags, SEARCH_MSG) &&
+		    FL_ISSET(sp->srch_flags, SEARCH_WRAPPED))
+			smsg(sp, S_WRAP);
+
+#if defined(DEBUG) && 0
+		TRACE(sp, "B found: %qu to %qu\n",
+		    match[0].rm_so, match[0].rm_eo);
+#endif
+		/*
+		 * We now have the first match on the line.  Step through the
+		 * line character by character until find the last acceptable
+		 * match.  This is painful, we need a better interface to regex
+		 * to make this work.
+		 */
+		for (;;) {
+			last = match[0].rm_so++;
+			if (match[0].rm_so >= len)
+				break;
+			match[0].rm_eo = len;
+			eval = regexec(&sp->sre, l, 1, match,
+			    (match[0].rm_so == 0 ? 0 : REG_NOTBOL) |
+			    REG_STARTEND);
+			if (eval == REG_NOMATCH)
+				break;
+			if (eval != 0) {
+				re_error(sp, eval, &sp->sre);
+				goto notfound;
+			}
+			if (sp->srch_coff && match[0].rm_so >= sp->srch_coff)
+				break;
+		}
+		sp->srch_rm->lno = sp->srch_lno;
+
+		/* See comment in fsrch(). */
+		if (!FL_ISSET(sp->srch_flags, SEARCH_EOL) && last >= len)
+			sp->srch_rm->cno = len != 0 ? len - 1 : 0;
+		else
+			sp->srch_rm->cno = last;
+
+		*completep = 1;
+		FL_SET(sp->srch_flags, SEARCH_FOUND);
+		srch_busy(sp, 0);
+		return (0);
+	}
+notfound:
+
+	*completep = 1;
+	FL_CLR(sp->srch_flags, SEARCH_FOUND);
+	srch_busy(sp, 0);
+	return (0);
+}
+
+/*
+ * srch_busy --
+ *	Put up a busy message for the searching routines.
+ */
+void
+srch_busy(sp, on)
+	SCR *sp;
+	int on;
+{
+	if (on) {
+		F_SET(sp, S_BUSY);
+		sp->gp->scr_busy(sp, msg_cat(sp, "280|Searching ...", NULL), 1);
+	} else if (F_ISSET(sp, S_BUSY)) {
+		F_CLR(sp, S_BUSY);
+		sp->gp->scr_busy(sp, NULL, 0);
+	}
 }
 
 /*
@@ -222,278 +583,6 @@ ctag_conv(sp, ptrnp, replacedp)
 	*ptrnp = bp;
 	*replacedp = 1;
 	return (0);
-}
-
-int
-f_search(sp, fm, rm, ptrn, eptrn, flags)
-	SCR *sp;
-	MARK *fm, *rm;
-	char *ptrn, **eptrn;
-	u_int flags;
-{
-	regmatch_t match[1];
-	regex_t *re, lre;
-	recno_t lno;
-	size_t coff, len;
-	int btear, eval, rval, wrapped;
-	char *l;
-
-	if (file_lline(sp, &lno))
-		return (1);
-	if (lno == 0) {
-		if (LF_ISSET(SEARCH_MSG))
-			smsg(sp, S_EMPTY);
-		return (1);
-	}
-
-	re = &lre;
-	if (resetup(sp, &re, FORWARD, ptrn, eptrn, flags))
-		return (1);
-
-	/*
-	 * Start searching immediately after the cursor.  If at the end of the
-	 * line, start searching on the next line.  This is incompatible (read
-	 * bug fix) with the historic vi -- searches for the '$' pattern never
-	 * moved forward, and "-t foo" didn't work if "foo" was the first thing
-	 * in the file.
-	 */
-	if (LF_ISSET(SEARCH_FILE)) {
-		lno = 1;
-		coff = 0;
-	} else {
-		if ((l = file_gline(sp, fm->lno, &len)) == NULL) {
-			FILE_LERR(sp, fm->lno);
-			return (1);
-		}
-		if (fm->cno + 1 >= len) {
-			if (fm->lno == lno) {
-				if (!O_ISSET(sp, O_WRAPSCAN)) {
-					if (LF_ISSET(SEARCH_MSG))
-						smsg(sp, S_EOF);
-					return (1);
-				}
-				lno = 1;
-			} else
-				lno = fm->lno + 1;
-			coff = 0;
-		} else {
-			lno = fm->lno;
-			coff = fm->cno + 1;
-		}
-	}
-
-	/* Turn on busy message. */
-	btear = F_ISSET(sp, S_EX_SILENT) ? 0 : !busy_on(sp, "Searching...");
-
-	for (rval = 1, wrapped = 0;; ++lno, coff = 0) {
-		if (INTERRUPTED(sp))
-			break;
-		if (wrapped && lno > fm->lno ||
-		    (l = file_gline(sp, lno, &len)) == NULL) {
-			if (wrapped) {
-				if (LF_ISSET(SEARCH_MSG))
-					smsg(sp, S_NOTFOUND);
-				break;
-			}
-			if (!O_ISSET(sp, O_WRAPSCAN)) {
-				if (LF_ISSET(SEARCH_MSG))
-					smsg(sp, S_EOF);
-				break;
-			}
-			lno = 0;
-			wrapped = 1;
-			continue;
-		}
-
-		/* If already at EOL, just keep going. */
-		if (len && coff == len)
-			continue;
-
-		/* Set the termination. */
-		match[0].rm_so = coff;
-		match[0].rm_eo = len;
-
-#if defined(DEBUG) && 0
-		TRACE(sp, "F search: %lu from %u to %u\n",
-		    lno, coff, len ? len - 1 : len);
-#endif
-		/* Search the line. */
-		eval = regexec(re, l, 1, match,
-		    (match[0].rm_so == 0 ? 0 : REG_NOTBOL) | REG_STARTEND);
-		if (eval == REG_NOMATCH)
-			continue;
-		if (eval != 0) {
-			re_error(sp, eval, re);
-			break;
-		}
-
-		/* Warn if wrapped. */
-		if (wrapped && O_ISSET(sp, O_WARN) && LF_ISSET(SEARCH_MSG))
-			smsg(sp, S_WRAP);
-
-#if defined(DEBUG) && 0
-		TRACE(sp, "F found: %qu to %qu\n",
-		    match[0].rm_so, match[0].rm_eo);
-#endif
-		rm->lno = lno;
-		rm->cno = match[0].rm_so;
-
-		/*
-		 * If a change command, it's possible to move beyond the end
-		 * of a line.  Historic vi generally got this wrong (try
-		 * "c?$<cr>").  Not all that sure this gets it right, there
-		 * are lots of strange cases.
-		 */
-		if (!LF_ISSET(SEARCH_EOL) && rm->cno >= len)
-			rm->cno = len ? len - 1 : 0;
-		rval = 0;
-		break;
-	}
-
-	/* Turn off busy message, interrupts. */
-	if (btear)
-		busy_off(sp);
-	return (rval);
-}
-
-int
-b_search(sp, fm, rm, ptrn, eptrn, flags)
-	SCR *sp;
-	MARK *fm, *rm;
-	char *ptrn, **eptrn;
-	u_int flags;
-{
-	regmatch_t match[1];
-	regex_t *re, lre;
-	recno_t lno;
-	size_t coff, len, last;
-	int btear, eval, rval, wrapped;
-	char *l;
-
-	if (file_lline(sp, &lno))
-		return (1);
-	if (lno == 0) {
-		if (LF_ISSET(SEARCH_MSG))
-			smsg(sp, S_EMPTY);
-		return (1);
-	}
-
-	re = &lre;
-	if (resetup(sp, &re, BACKWARD, ptrn, eptrn, flags))
-		return (1);
-
-	/* If in the first column, start searching on the previous line. */
-	if (fm->cno == 0) {
-		if (fm->lno == 1) {
-			if (!O_ISSET(sp, O_WRAPSCAN)) {
-				if (LF_ISSET(SEARCH_MSG))
-					smsg(sp, S_SOF);
-				return (1);
-			}
-		} else
-			lno = fm->lno - 1;
-	} else
-		lno = fm->lno;
-
-	/* Turn on busy message. */
-	btear = F_ISSET(sp, S_EX_SILENT) ? 0 : !busy_on(sp, "Searching...");
-
-	for (rval = 1, wrapped = 0, coff = fm->cno;; --lno, coff = 0) {
-		if (INTERRUPTED(sp))
-			break;
-		if (wrapped && lno < fm->lno || lno == 0) {
-			if (wrapped) {
-				if (LF_ISSET(SEARCH_MSG))
-					smsg(sp, S_NOTFOUND);
-				break;
-			}
-			if (!O_ISSET(sp, O_WRAPSCAN)) {
-				if (LF_ISSET(SEARCH_MSG))
-					smsg(sp, S_SOF);
-				break;
-			}
-			if (file_lline(sp, &lno))
-				goto err;
-			if (lno == 0) {
-				if (LF_ISSET(SEARCH_MSG))
-					smsg(sp, S_EMPTY);
-				break;
-			}
-			++lno;
-			wrapped = 1;
-			continue;
-		}
-
-		if ((l = file_gline(sp, lno, &len)) == NULL)
-			goto err;
-
-		/* Set the termination. */
-		match[0].rm_so = 0;
-		match[0].rm_eo = len;
-
-#if defined(DEBUG) && 0
-		TRACE(sp, "B search: %lu from 0 to %qu\n", lno, match[0].rm_eo);
-#endif
-		/* Search the line. */
-		eval = regexec(re, l, 1, match,
-		    (match[0].rm_eo == len ? 0 : REG_NOTEOL) | REG_STARTEND);
-		if (eval == REG_NOMATCH)
-			continue;
-		if (eval != 0) {
-			re_error(sp, eval, re);
-			break;
-		}
-
-		/* Check for a match starting past the cursor. */
-		if (coff != 0 && match[0].rm_so >= coff)
-			continue;
-
-		/* Warn if wrapped. */
-		if (wrapped && O_ISSET(sp, O_WARN) && LF_ISSET(SEARCH_MSG))
-			smsg(sp, S_WRAP);
-
-#if defined(DEBUG) && 0
-		TRACE(sp, "B found: %qu to %qu\n",
-		    match[0].rm_so, match[0].rm_eo);
-#endif
-		/*
-		 * We now have the first match on the line.  Step through the
-		 * line character by character until find the last acceptable
-		 * match.  This is painful, we need a better interface to regex
-		 * to make this work.
-		 */
-		for (;;) {
-			last = match[0].rm_so++;
-			if (match[0].rm_so >= len)
-				break;
-			match[0].rm_eo = len;
-			eval = regexec(re, l, 1, match,
-			    (match[0].rm_so == 0 ? 0 : REG_NOTBOL) |
-			    REG_STARTEND);
-			if (eval == REG_NOMATCH)
-				break;
-			if (eval != 0) {
-				re_error(sp, eval, re);
-				goto err;
-			}
-			if (coff && match[0].rm_so >= coff)
-				break;
-		}
-		rm->lno = lno;
-
-		/* See comment in f_search(). */
-		if (!LF_ISSET(SEARCH_EOL) && last >= len)
-			rm->cno = len ? len - 1 : 0;
-		else
-			rm->cno = last;
-		rval = 0;
-		break;
-	}
-
-	/* Turn off busy message, interrupts. */
-err:	if (btear)
-		busy_off(sp);
-	return (rval);
 }
 
 /*

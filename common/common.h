@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 9.2 1995/01/11 15:58:42 bostic Exp $ (Berkeley) $Date: 1995/01/11 15:58:42 $
+ *	$Id: common.h,v 10.1 1995/04/13 17:18:10 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:18:10 $
  */
 
 /*
@@ -14,8 +14,8 @@
  * are far too interrelated for a clean solution.
  */
 typedef struct _cb		CB;
-typedef struct _ch		CH;
-typedef struct _excmdarg	EXCMDARG;
+typedef struct _event		EVENT;
+typedef struct _excmd		EXCMD;
 typedef struct _exf		EXF;
 typedef struct _fref		FREF;
 typedef struct _gs		GS;
@@ -31,6 +31,30 @@ typedef struct _tag		TAG;
 typedef struct _tagf		TAGF;
 typedef struct _text		TEXT;
 
+/* Autoindent state. */
+typedef enum { C_NOTSET, C_CARATSET, C_NOCHANGE, C_ZEROSET } carat_t;
+
+/*
+ * Routines that return a confirmation return:
+ *
+ *	CONF_NO		User answered no.
+ *	CONF_QUIT	User answered quit, eof or an error.
+ *	CONF_YES	User answered yes.
+ */
+typedef enum { CONF_NO, CONF_QUIT, CONF_YES } conf_t;
+
+/* Directions. */
+typedef enum { NOTSET, FORWARD, BACKWARD } dir_t;
+
+/* Line operations. */
+typedef enum { LINE_APPEND, LINE_DELETE, LINE_INSERT, LINE_RESET } lnop_t;
+
+/* Lock return values. */
+typedef enum { LOCK_FAILED, LOCK_SUCCESS, LOCK_UNAVAIL } lock_t;
+
+/* Sequence types. */
+typedef enum { SEQ_ABBREV, SEQ_COMMAND, SEQ_INPUT } seq_t;
+
 /*
  * Local includes.
  */
@@ -42,23 +66,14 @@ typedef struct _text		TEXT;
 #include "msg.h"		/* Required by gs.h. */
 #include "cut.h"		/* Required by gs.h. */
 #include "seq.h"		/* Required by screen.h. */
+#include "util.h"		/* Required by excmd.h. */
+#include "mark.h"		/* Required by gs.h. */
+#include "excmd.h"		/* Required by gs.h. */
 #include "gs.h"			/* Required by screen.h. */
 #include "screen.h"		/* Required by exf.h. */
-#include "mark.h"		/* Required by exf.h. */
 #include "exf.h"
 #include "log.h"
 #include "mem.h"
-#include "util.h"
-
-/* Macros to set/clear/test flags. */
-#define	F_SET(p, f)	(p)->flags |= (f)
-#define	F_CLR(p, f)	(p)->flags &= ~(f)
-#define	F_ISSET(p, f)	((p)->flags & (f))
-
-#define	LF_INIT(f)	flags = (f)
-#define	LF_SET(f)	flags |= (f)
-#define	LF_CLR(f)	flags &= ~(f)
-#define	LF_ISSET(f)	(flags & (f))
 
 /*
  * !!!

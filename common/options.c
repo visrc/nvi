@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 9.15 1995/01/30 09:05:06 bostic Exp $ (Berkeley) $Date: 1995/01/30 09:05:06 $";
+static char sccsid[] = "$Id: options.c,v 10.1 1995/04/13 17:18:22 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:18:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,11 +32,9 @@ static char sccsid[] = "$Id: options.c,v 9.15 1995/01/30 09:05:06 bostic Exp $ (
 #include <regex.h>
 #include <pathnames.h>
 
-#include "vi.h"
-#include "excmd.h"
-#include "../sex/sex_screen.h"
-#include "../svi/svi_screen.h"
-#include "../vi/vcmd.h"
+#include "common.h"
+#include "../cl/cl.h"
+#include "../vi/vi.h"
 
 static int	 	 opts_abbcmp __P((const void *, const void *));
 static int	 	 opts_cmp __P((const void *, const void *));
@@ -262,22 +260,44 @@ static OABBREV const abbrev[] = {
  *	Initialize some of the options.
  */
 int
-opts_init(sp, oargs)
+opts_init(sp, oargs, rows, cols)
 	SCR *sp;
 	int *oargs;
+	recno_t rows;
+	size_t cols;
 {
 	ARGS *argv[2], a, b;
 	OPTLIST const *op;
 	u_long v;
-	int cnt;
+	int cnt, optindx;
 	char *s, b1[1024];
 
 	a.bp = b1;
-	a.len = 0;
 	b.bp = NULL;
-	b.len = 0;
+	a.len = b.len = 0;
 	argv[0] = &a;
 	argv[1] = &b;
+
+	/* Set numeric and string default values. */
+#define	OI(indx, str, setdef) {						\
+	if (str != b1)		/* GCC puts strings in text-space. */	\
+		(void)strcpy(b1, str);					\
+	a.len = strlen(b1);						\
+	if (opts_set(sp, argv, setdef, NULL)) {				\
+		 optindx = indx;					\
+		goto err;						\
+	}								\
+}
+
+	/* Set rows, cols first, used by other options. */
+	(void)snprintf(b1, sizeof(b1), "lines=%u", rows);
+	OI(O_LINES, b1, 1);
+	(void)snprintf(b1, sizeof(b1), "columns=%u", cols);
+	OI(O_COLUMNS, b1, 1);
+
+	/* If oargs NULL, then it's a window resize, return. */
+	if (oargs == NULL)
+		return (0);
 
 	/* Set boolean default values. */
 	for (op = optlist, cnt = 0; op->name != NULL; ++op, ++cnt)
@@ -297,18 +317,6 @@ opts_init(sp, oargs)
 			abort();
 		}
 
-	/* Set numeric and string default values. */
-#define	OI(opt, str, setdef) {						\
-	if (str != b1)		/* GCC puts strings in text-space. */	\
-		(void)strcpy(b1, str);					\
-	a.len = strlen(b1);						\
-	if (opts_set(sp, argv, setdef, NULL)) {				\
-		msgq(sp, M_ERR,						\
-		    "052|Unable to set default %s option",		\
-		    optlist[opt]);					\
-		return (1);						\
-	}								\
-}
 	OI(O_BACKUP, "backup=", 1);
 	(void)snprintf(b1, sizeof(b1), "cdpath=%s",
 	    (s = getenv("CDPATH")) == NULL ? ":" : s);
@@ -384,8 +392,11 @@ opts_init(sp, oargs)
 	for (; *oargs != -1; ++oargs)
 		OI(*oargs, optlist[*oargs].name, 0);
 #undef OI
-
 	return (0);
+
+err:	msgq(sp, M_ERR,
+	    "052|Unable to set default %s option", optlist[optindx].name);
+	return (1);
 }
 
 /*
@@ -557,8 +568,8 @@ found:		if (op == NULL) {
 
 			if (!isdigit(sep[0]))
 				goto badnum;
-			if ((nret = nget_uslong(sp,
-			    &value, sep, &endp, 10)) != NUM_OK) {
+			if ((nret =
+			    nget_uslong(&value, sep, &endp, 10)) != NUM_OK) {
 				p = msg_print(sp, name, &nf);
 				t = msg_print(sp, sep, &nf2);
 				switch (nret) {
@@ -570,9 +581,9 @@ found:		if (op == NULL) {
 					msgq(sp, M_ERR,
 			    "268|set: %s option: %s: value overflow", p, t);
 					break;
+				case NUM_OK:
 				case NUM_UNDER:
 					abort();
-					/* NOTREACHED */
 				}
 				if (nf)
 					FREE_SPACE(sp, p, 0);
@@ -642,9 +653,8 @@ badnum:				p = msg_print(sp, name, &nf);
 				O_D_STR(sp, offset) = O_STR(sp, offset);
 
 			/* Give underlying functions a chance. */
-change:			(void)ex_optchange(sp, offset);
-			(void)sex_optchange(sp, offset);
-			(void)svi_optchange(sp, offset);
+change:			(void)cl_optchange(sp, offset);
+			(void)ex_optchange(sp, offset);
 			(void)v_optchange(sp, offset);
 			break;
 		default:
@@ -731,7 +741,6 @@ opts_dump(sp, type)
 		default:
 		case NO_DISPLAY:
 			abort();
-			/* NOTREACHED */
 		}
 		F_CLR(&sp->opts[cnt], OPT_SELECTED);
 
@@ -789,7 +798,7 @@ opts_dump(sp, type)
 		if (++row < b_num)
 			(void)ex_printf(EXCOOKIE, "\n");
 	}
-	F_SET(sp, S_SCR_EXWROTE);
+	F_SET(sp, S_EX_WROTE);
 	(void)ex_printf(EXCOOKIE, "\n");
 }
 

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 9.11 1995/01/30 18:00:51 bostic Exp $ (Berkeley) $Date: 1995/01/30 18:00:51 $";
+static char sccsid[] = "$Id: db.c,v 10.1 1995/04/13 17:18:16 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:18:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,8 +27,8 @@ static char sccsid[] = "$Id: db.c,v 9.11 1995/01/30 18:00:51 bostic Exp $ (Berke
 #include <db.h>
 #include <regex.h>
 
-#include "vi.h"
-#include "excmd.h"
+#include "common.h"
+#include "../vi/vi.h"
 
 static __inline int scr_update __P((SCR *, recno_t, lnop_t, int));
 
@@ -59,10 +59,10 @@ file_gline(sp, lno, lenp)
 	 * is there.
 	 */
 	if (F_ISSET(sp, S_INPUT)) {
-		l1 = ((TEXT *)sp->tiqp->cqh_first)->lno;
-		l2 = ((TEXT *)sp->tiqp->cqh_last)->lno;
+		l1 = ((TEXT *)sp->tiq.cqh_first)->lno;
+		l2 = ((TEXT *)sp->tiq.cqh_last)->lno;
 		if (l1 <= lno && l2 >= lno) {
-			for (tp = sp->tiqp->cqh_first;
+			for (tp = sp->tiq.cqh_first;
 			    tp->lno != lno; tp = tp->q.cqe_next);
 			if (lenp != NULL)
 				*lenp = tp->len;
@@ -421,8 +421,8 @@ file_eline(sp, lno)
 	ep = sp->ep;
 	if (ep->c_nlines != OOBLNO)
 		return (lno <= (F_ISSET(sp, S_INPUT) &&
-		    ((TEXT *)sp->tiqp->cqh_last)->lno > ep->c_nlines ?
-		    ((TEXT *)sp->tiqp->cqh_last)->lno : ep->c_nlines));
+		    ((TEXT *)sp->tiq.cqh_last)->lno > ep->c_nlines ?
+		    ((TEXT *)sp->tiq.cqh_last)->lno : ep->c_nlines));
 
 	/* Go get the line. */
 	return (file_gline(sp, lno, NULL) != NULL);
@@ -445,8 +445,8 @@ file_lline(sp, lnop)
 	ep = sp->ep;
 	if (ep->c_nlines != OOBLNO) {
 		*lnop = (F_ISSET(sp, S_INPUT) &&
-		    ((TEXT *)sp->tiqp->cqh_last)->lno > ep->c_nlines ?
-		    ((TEXT *)sp->tiqp->cqh_last)->lno : ep->c_nlines);
+		    ((TEXT *)sp->tiq.cqh_last)->lno > ep->c_nlines ?
+		    ((TEXT *)sp->tiq.cqh_last)->lno : ep->c_nlines);
 		return (0);
 	}
 
@@ -474,8 +474,8 @@ file_lline(sp, lnop)
 
 	/* Return the value. */
 	*lnop = (F_ISSET(sp, S_INPUT) &&
-	    ((TEXT *)sp->tiqp->cqh_last)->lno > lno ?
-	    ((TEXT *)sp->tiqp->cqh_last)->lno : lno);
+	    ((TEXT *)sp->tiq.cqh_last)->lno > lno ?
+	    ((TEXT *)sp->tiq.cqh_last)->lno : lno);
 	return (0);
 }
 
@@ -508,11 +508,14 @@ scr_update(sp, lno, op, current)
 	EXF *ep;
 	SCR *tsp;
 
+	if (F_ISSET(sp, S_EX))
+		return (0);
+
 	ep = sp->ep;
 	if (ep->refcnt != 1)
 		for (tsp = sp->gp->dq.cqh_first;
 		    tsp != (void *)&sp->gp->dq; tsp = tsp->q.cqe_next)
 			if (sp != tsp && tsp->ep == ep)
-				(void)sp->e_change(tsp, lno, op);
-	return (current && sp->e_change(sp, lno, op));
+				(void)vs_change(tsp, lno, op);
+	return (current && vs_change(sp, lno, op));
 }

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 9.7 1995/02/17 11:36:03 bostic Exp $ (Berkeley) $Date: 1995/02/17 11:36:03 $";
+static char sccsid[] = "$Id: recover.c,v 10.1 1995/04/13 17:18:28 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:18:28 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -43,7 +43,7 @@ static char sccsid[] = "$Id: recover.c,v 9.7 1995/02/17 11:36:03 bostic Exp $ (B
 #include <regex.h>
 #include <pathnames.h>
 
-#include "vi.h"
+#include "common.h"
 
 /*
  * Recovery code.
@@ -119,6 +119,7 @@ static void	 rcv_email __P((SCR *, char *));
 static char	*rcv_gets __P((char *, size_t, int));
 static int	 rcv_mailfile __P((SCR *, int, char *));
 static int	 rcv_mktemp __P((SCR *, char *, char *, int));
+static void	 rcv_busy __P((SCR *, int));
 
 /*
  * rcv_tmp --
@@ -190,7 +191,7 @@ rcv_init(sp)
 {
 	EXF *ep;
 	recno_t lno;
-	int btear, nf;
+	int nf;
 	char *p;
 
 	ep = sp->ep;
@@ -216,26 +217,16 @@ rcv_init(sp)
 			goto err;
 
 		/* Turn on a busy message, and sync it to backing store. */
-		btear = F_ISSET(sp, S_EX_SILENT) ? 0 :
-		    !busy_on(sp, "Copying file for recovery...");
+		rcv_busy(sp, 1);
 		if (ep->db->sync(ep->db, R_RECNOSYNC)) {
 			p = msg_print(sp, ep->rcv_path, &nf);
 			msgq(sp, M_SYSERR, "077|Preservation failed: %s", p);
 			if (nf)
 				FREE_SPACE(sp, p, nf);
-			if (btear)
-				busy_off(sp);
+			rcv_busy(sp, 0);
 			goto err;
 		}
-		if (btear)
-			busy_off(sp);
-	}
-
-	/* Turn on the recovery timer, if it's not yet running. */
-	if (!F_ISSET(sp->gp, G_RECOVER_SET) && rcv_on(sp)) {
-err:		msgq(sp, M_ERR,
-		    "078|Modifications not recoverable if the session fails");
-		return (1);
+		rcv_busy(sp, 0);
 	}
 
 	/* Turn off the owner execute bit. */
@@ -244,6 +235,10 @@ err:		msgq(sp, M_ERR,
 	/* We believe the file is recoverable. */
 	F_SET(ep, F_RCV_ON);
 	return (0);
+
+err:	msgq(sp, M_ERR,
+	    "078|Modifications not recoverable if the session fails");
+	return (1);
 }
 
 /*
@@ -260,7 +255,7 @@ rcv_sync(sp, flags)
 	u_int flags;
 {
 	EXF *ep;
-	int btear, fd, nf, rval;
+	int fd, nf, rval;
 	char *dp, *p, buf[1024];
 
 	/* Make sure that there's something to recover/sync. */
@@ -304,8 +299,7 @@ rcv_sync(sp, flags)
 	 */
 	rval = 0;
 	if (LF_ISSET(RCV_SNAPSHOT)) {
-		btear = F_ISSET(sp, S_EX_SILENT) ? 0 :
-		    !busy_on(sp, "Copying file for recovery...");
+		rcv_busy(sp, 1);
 		dp = O_STR(sp, O_RECDIR);
 		(void)snprintf(buf, sizeof(buf), "%s/vi.XXXXXX", dp);
 		if ((fd = rcv_mktemp(sp, buf, dp, S_IRUSR | S_IWUSR)) == -1)
@@ -318,8 +312,7 @@ e1:			if (fd != -1)
 				(void)close(fd);
 			rval = 1;
 		}
-		if (btear)
-			busy_off(sp);
+		rcv_busy(sp, 0);
 	}
 
 	/* REQUEST: end the file session. */
@@ -883,4 +876,20 @@ rcv_email(sp, fname)
 		    "%s -t < %s", _PATH_SENDMAIL, fname);
 		(void)system(buf);
 	}
+}
+
+/*
+ * rcv_busy --
+ *	Display recovery busy message.
+ */
+static void
+rcv_busy(sp, on)
+	SCR *sp;
+	int on;
+{
+	if (on)
+		sp->gp->scr_busy(sp, msg_cat(sp,
+		    "287|Copying file for recovery... ...", NULL), 1);
+	else
+		sp->gp->scr_busy(sp, NULL, 0);
 }

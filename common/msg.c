@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 9.15 1995/02/17 11:35:52 bostic Exp $ (Berkeley) $Date: 1995/02/17 11:35:52 $";
+static char sccsid[] = "$Id: msg.c,v 10.1 1995/04/13 17:18:20 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:18:20 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -38,9 +38,7 @@ static char sccsid[] = "$Id: msg.c,v 9.15 1995/02/17 11:35:52 bostic Exp $ (Berk
 #include <db.h>
 #include <regex.h>
 
-#include "vi.h"
-
-static const char *msg_cat __P((GS *, const char *, size_t *));
+#include "common.h"
 
 /*
  * msgq --
@@ -82,20 +80,17 @@ msgq(sp, mt, fmt, va_alist)
         va_start(ap);
 #endif
 	/*
-	 * It's possible to enter msg when there's no screen to hold
-	 * the message.  If sp is NULL, ignore the special cases and
-	 * just build the message, using __global_list.
+	 * !!!
+	 * It's possible to enter msg when there's no screen to hold the
+	 * message.  If sp is NULL, ignore the special cases and put the
+	 * message out to stderr.
 	 */
 	if (sp == NULL) {
-		gp = __global_list;
-		switch (mt) {
-		case M_BERR:
+		gp = NULL;
+		if (mt == M_BERR)
 			mt = M_ERR;
-			break;
-		case M_VINFO:
+		else if (mt == M_VINFO)
 			mt = M_INFO;
-			break;
-		}
 	} else {
 		gp = sp->gp;
 		switch (mt) {
@@ -134,12 +129,15 @@ msgq(sp, mt, fmt, va_alist)
 	 * XXX
 	 * Yes, there's a race, but it should only be two instructions.
 	 */
-	SIGBLOCK(gp);
+	if (gp != NULL)
+		SIGBLOCK(gp);
 	if (reenter++) {
-		SIGUNBLOCK(gp);
+		if (gp != NULL)
+			SIGUNBLOCK(gp);
 		return;
 	}
-	SIGUNBLOCK(gp);
+	if (gp != NULL)
+		SIGUNBLOCK(gp);
 
 	/* Get space for the message. */
 	nlen = 1024;
@@ -162,7 +160,7 @@ retry:		FREE_SPACE(sp, bp, blen);
 	mp = bp;
 	mlen = 0;
 	if (mt == M_SYSERR) {
-		p = msg_cat(gp, "094|Error: ", &len);
+		p = msg_cat(sp, "094|Error: ", &len);
 		if (REM < len)
 			goto retry;
 		memmove(mp, p, len);
@@ -171,8 +169,8 @@ retry:		FREE_SPACE(sp, bp, blen);
 	}
 
 	/* File name, line number prefix for errors. */
-	if ((mt == M_ERR || mt == M_SYSERR) &&
-	    sp != NULL && sp->if_name != NULL) {
+	if (sp != NULL &&
+	    sp->if_name != NULL && (mt == M_ERR || mt == M_SYSERR)) {
 		for (p = sp->if_name; *p != '\0'; ++p) {
 			len = snprintf(mp, REM, "%s", KEY_NAME(sp, *p));
 			mp += len;
@@ -185,9 +183,10 @@ retry:		FREE_SPACE(sp, bp, blen);
 			goto retry;
 	}
 
+	/* If nothing to format, we're done. */
 	if (fmt == NULL)
 		goto nofmt;
-	fmt = msg_cat(gp, fmt, NULL);
+	fmt = msg_cat(sp, fmt, NULL);
 
 #ifndef NL_ARGMAX
 	/*
@@ -235,7 +234,7 @@ retry:		FREE_SPACE(sp, bp, blen);
 		str[soff].arg = atoi(u);
 		str[soff].skip = (p - u) + 1;
 		if (str[soff].arg >= __NL_ARGMAX)
-			goto err;
+			goto ret;
 
 		/* Up to, and including the conversion character. */
 		for (u = p; (ch = *++p) != '\0';)
@@ -254,7 +253,7 @@ retry:		FREE_SPACE(sp, bp, blen);
 
 	 /* Get space for the reordered strings. */
 	if ((rbp = malloc(nlen)) == NULL)
-		goto err;
+		goto ret;
 	s_rbp = rbp;
 
 	/*
@@ -279,7 +278,8 @@ retry:		FREE_SPACE(sp, bp, blen);
 				    str[cnt2].str + str[cnt2].prefix +
 				    str[cnt2].skip, str[cnt2].suffix);
 				s_rbp += str[cnt2].prefix + str[cnt2].suffix;
-				*s_rbp++ = gp->noprint;
+				*s_rbp++ =
+				    gp == NULL ? DEFAULT_NOPRINT : gp->noprint;
 				break;
 			}
 	*s_rbp = '\0';
@@ -300,7 +300,8 @@ format:	len = vsnprintf(mp, REM, fmt, ap);
 	 * separated string, enter its new starting position and length in the
 	 * array.
 	 */
-	for (p = t = mp, cnt1 = 1, ch = gp->noprint; *p != '\0'; ++p)
+	for (p = t = mp, cnt1 = 1,
+	    ch = gp == NULL ? DEFAULT_NOPRINT : gp->noprint; *p != '\0'; ++p)
 		if (*p == ch) {
 			for (cnt2 = 0; cnt2 < soff; ++cnt2)
 				if (str[cnt2].arg == cnt1)
@@ -341,23 +342,28 @@ nofmt:	mp += len;
 	}
 
 	/*
-	 * Find an empty structure, or allocate a new one.  Use the
-	 * screen structure if it exists, otherwise the global one.
+	 * Find an empty structure, or allocate a new one.  Use the screen
+	 * structure if it exists, otherwise the global one.  If neither
+	 * exists, we're screwed, dump it to stderr.
 	 */
-	if (sp != NULL) {
-		if ((mp_c = sp->msgq.lh_first) == NULL) {
-			CALLOC(sp, mp_c, MSG *, 1, sizeof(MSG));
+	if (gp == NULL) {
+		(void)fprintf(stderr, "%s\n", bp);
+		goto ret;
+	}
+	if (sp == NULL) {
+		if ((mp_c = gp->msgq.lh_first) == NULL) {
+			CALLOC(NULL, mp_c, MSG *, 1, sizeof(MSG));
 			if (mp_c == NULL)
-				goto err;
-			LIST_INSERT_HEAD(&sp->msgq, mp_c, q);
+				goto ret;
+			LIST_INSERT_HEAD(&gp->msgq, mp_c, q);
 			goto store;
 		}
 	} else
-		if ((mp_c = gp->msgq.lh_first) == NULL) {
+		if ((mp_c = sp->msgq.lh_first) == NULL) {
 			CALLOC(sp, mp_c, MSG *, 1, sizeof(MSG));
 			if (mp_c == NULL)
-				goto err;
-			LIST_INSERT_HEAD(&gp->msgq, mp_c, q);
+				goto ret;
+			LIST_INSERT_HEAD(&sp->msgq, mp_c, q);
 			goto store;
 		}
 
@@ -366,7 +372,7 @@ nofmt:	mp += len;
 	if (!F_ISSET(mp_c, M_EMPTY)) {
 		CALLOC(sp, mp_n, MSG *, 1, sizeof(MSG));
 		if (mp_n == NULL)
-			goto err;
+			goto ret;
 		LIST_INSERT_AFTER(mp_c, mp_n, q);
 		mp_c = mp_n;
 	}
@@ -374,7 +380,7 @@ nofmt:	mp += len;
 	/* Get enough memory for the message. */
 store:	if (mlen > mp_c->blen &&
 	    (mp_c->mbuf = binc(sp, mp_c->mbuf, &mp_c->blen, mlen)) == NULL)
-		goto err;
+		goto ret;
 
 	/* Store the message. */
 	memmove(mp_c->mbuf, bp, mlen);
@@ -382,7 +388,7 @@ store:	if (mlen > mp_c->blen &&
 	mp_c->flags = mt == M_ERR || mt == M_SYSERR ? M_INV_VIDEO : 0;
 
 	/* Cleanup. */
-err:	FREE_SPACE(sp, bp, blen);
+ret:	FREE_SPACE(sp, bp, blen);
 binc_err:
 	reenter = 0;
 }
@@ -471,7 +477,7 @@ msg_rpt(sp, is_message)
 	if (is_message)
 		msgq(sp, M_INFO, "%s", bp);
 	else {
-		F_SET(sp, S_SCR_EXWROTE);
+		F_SET(sp, S_EX_WROTE);
 		(void)ex_printf(EXCOOKIE, "%s\n", bp);
 	}
 	FREE_SPACE(sp, bp, blen);
@@ -485,60 +491,109 @@ msg_rpt(sp, is_message)
  *	Report on the file's status.
  */
 int
-msg_status(sp, lno, showlast)
+msg_status(sp, lno, showlast, is_message)
 	SCR *sp;
 	recno_t lno;
-	int showlast;
+	int showlast, is_message;
 {
 	recno_t last;
-	char *mo, *nc, *nf, *pid, *ro, *ul;
-#ifdef DEBUG
-	char pbuf[50];
+	const char *t;
+	char *bp, *p;
+	int needsep;
+	size_t blen, len;
 
-	(void)snprintf(pbuf, sizeof(pbuf), " (pid %u)", getpid());
-	pid = pbuf;
-#else
-	pid = "";
-#endif
+	len = strlen(sp->frp->name);
+	GET_SPACE_RET(sp, bp, blen, len + 128);
+	p = bp;
+
+	memmove(p, sp->frp->name, len);
+	p += len;
+	*p++ = ':';
+	*p++ = ' ';
+
 	/*
-	 * See nvi/exf.c:file_init() for a description of how and
-	 * when the read-only bit is set.
+	 * See nvi/exf.c:file_init() for a description of how and when the
+	 * read-only bit is set.
 	 *
 	 * !!!
 	 * The historic display for "name changed" was "[Not edited]".
 	 */
+	needsep = 0;
 	if (F_ISSET(sp->frp, FR_NEWFILE)) {
 		F_CLR(sp->frp, FR_NEWFILE);
-		nf = "new file";
-		mo = nc = "";
+		t = msg_cat(sp, "271|new file", &len);
+		memmove(p, t, len);
+		p += len;
+		needsep = 1;
 	} else {
-		nf = "";
 		if (F_ISSET(sp->frp, FR_NAMECHANGE)) {
-			nc = "name changed";
-			mo = F_ISSET(sp->ep, F_MODIFIED) ?
-			    ", modified" : ", unmodified";
-		} else {
-			nc = "";
-			mo = F_ISSET(sp->ep, F_MODIFIED) ?
-			    "modified" : "unmodified";
+			t = msg_cat(sp, "272|name changed", &len);
+			memmove(p, t, len);
+			p += len;
+			needsep = 1;
 		}
+		if (needsep) {
+			*p++ = ',';
+			*p++ = ' ';
+		}
+		if (F_ISSET(sp->ep, F_MODIFIED))
+			t = msg_cat(sp, "273|modified", &len);
+		else
+			t = msg_cat(sp, "274|unmodified", &len);
+		memmove(p, t, len);
+		p += len;
+		needsep = 1;
 	}
-	ro = F_ISSET(sp->frp, FR_RDONLY) ? ", readonly" : "";
-	ul = F_ISSET(sp->frp, FR_UNLOCKED) ? ", UNLOCKED" : "";
+	if (F_ISSET(sp->frp, FR_UNLOCKED)) {
+		if (needsep) {
+			*p++ = ',';
+			*p++ = ' ';
+		}
+		t = msg_cat(sp, "275|UNLOCKED", &len);
+		memmove(p, t, len);
+		p += len;
+		needsep = 1;
+	}
+	if (F_ISSET(sp->frp, FR_RDONLY)) {
+		if (needsep) {
+			*p++ = ',';
+			*p++ = ' ';
+		}
+		t = msg_cat(sp, "276|readonly", &len);
+		memmove(p, t, len);
+		p += len;
+		needsep = 1;
+	}
+	if (needsep) {
+		*p++ = ':';
+		*p++ = ' ';
+	}
 	if (showlast) {
 		if (file_lline(sp, &last))
 			return (1);
-		if (last >= 1)
-			msgq(sp, M_INFO,
-			    "%s: %s%s%s%s%s: line %lu of %lu [%ld%%]%s",
-			    sp->frp->name, nf, nc, mo, ul, ro, lno,
-			    last, (lno * 100) / last, pid);
-		else
-			msgq(sp, M_INFO, "%s: %s%s%s%s%s: empty file%s",
-			    sp->frp->name, nf, nc, mo, ul, ro, pid);
-	} else
-		msgq(sp, M_INFO, "%s: %s%s%s%s%s: line %lu%s",
-		    sp->frp->name, nf, nc, mo, ul, ro, lno, pid);
+		if (last > 1) {
+			t = msg_cat(sp, "277|line %lu of %lu [%ld%%]", &len);
+			p += sprintf(p, t, lno, last, (lno * 100) / last);
+		} else {
+			t = msg_cat(sp, "278|empty file", &len);
+			memmove(p, t, len);
+			p += len;
+		}
+	} else {
+		t = msg_cat(sp, "279|line %lu", &len);
+		p += sprintf(p, t, lno);
+	}
+#ifdef DEBUG
+	(void)sprintf(p, " (pid %u)", getpid());
+#endif
+
+	if (is_message)
+		msgq(sp, M_INFO, "%s", bp);
+	else {
+		F_SET(sp, S_EX_WROTE);
+		ex_printf(EXCOOKIE, "%s\n", bp);
+	}
+	FREE_SPACE(sp, bp, blen);
 	return (0);
 }
 
@@ -631,12 +686,13 @@ msg_close(gp)
  * Only a single catalog message can be accessed at a time, if multiple
  * ones are needed, they must be copied into local memory.
  */
-static const char *
-msg_cat(gp, str, lenp)
-	GS *gp;
+const char *
+msg_cat(sp, str, lenp)
+	SCR *sp;
 	const char *str;
 	size_t *lenp;
 {
+	GS *gp;
 	DBT data, key;
 	recno_t msgno;
 
@@ -658,7 +714,8 @@ msg_cat(gp, str, lenp)
 		 * a better way.  Once we can allocate multiple temporary
 		 * memory buffers, maybe we can use one of them instead.
 		 */
-		if (gp->msg != NULL &&
+		gp = sp->gp;
+		if (gp != NULL && gp->msg != NULL &&
 		    gp->msg->get(gp->msg, &key, &data, 0) == 0 &&
 		    data.size != 0) {
 			if (lenp != NULL)
@@ -688,6 +745,7 @@ msg_print(sp, s, needfree)
 	char *bp, *ep, *p, *t;
 
 	*needfree = 0;
+
 	for (cp = s; *cp != '\0'; ++cp)
 		if (!isprint(*cp))
 			break;
@@ -696,16 +754,25 @@ msg_print(sp, s, needfree)
 
 	nlen = 0;
 	if (0) {
-retry:		FREE_SPACE(sp, bp, blen);
+retry:		if (sp == NULL)
+			free(bp);
+		else
+			FREE_SPACE(sp, bp, blen);
+		needfree = 0;
 	}
 	nlen += 256;
-	GET_SPACE_GOTO(sp, bp, blen, nlen);
+	if (sp == NULL) {
+		if ((bp = malloc(nlen)) == NULL)
+			goto binc_err;
+	} else
+		GET_SPACE_GOTO(sp, bp, blen, nlen);
 	if (0) {
 binc_err:	return ("");
 	}
+	*needfree = 1;
 
-	for (p = bp, ep = (bp + blen) - 1; *s != '\0' && p < ep; ++s)
-		for (t = KEY_NAME(sp, *s); *t != '\0' && p < ep; *p++ = *t++);
+	for (p = bp, ep = (bp + blen) - 1, cp = s; *cp != '\0' && p < ep; ++cp)
+		for (t = KEY_NAME(sp, *cp); *t != '\0' && p < ep; *p++ = *t++);
 	if (p == ep)
 		goto retry;
 	*p = '\0';

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 9.28 1995/02/17 11:34:50 bostic Exp $ (Berkeley) $Date: 1995/02/17 11:34:50 $";
+static char sccsid[] = "$Id: exf.c,v 10.1 1995/04/13 17:18:11 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:18:11 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -40,9 +40,7 @@ static char sccsid[] = "$Id: exf.c,v 9.28 1995/02/17 11:34:50 bostic Exp $ (Berk
 #include <regex.h>
 #include <pathnames.h>
 
-#include "vi.h"
-#include "excmd.h"
-#include "../sex/sex_screen.h"
+#include "common.h"
 
 static int	file_backup __P((SCR *, char *, char *));
 static void	file_comment __P((SCR *));
@@ -382,10 +380,6 @@ file_init(sp, frp, rcv_name, flags)
 	sp->ep = ep;
 	sp->frp = frp;
 
-	/* If we were executing a global, discard further execution. */
-	if (F_ISSET(sp, S_EX_GLOBAL))
-		F_SET(sp, S_EX_CMDABORT);
-
 	/* Set the initial cursor position, execute initial command. */
 	file_cinit(sp);
 
@@ -394,7 +388,7 @@ file_init(sp, frp, rcv_name, flags)
 
 	/* Welcome message. */
 	if (LF_ISSET(FS_WELCOME))
-		(void)msg_status(sp, sp->lno, 0);
+		(void)msg_status(sp, sp->lno, 0, 1);
 
 	/* Display file statistics. */
 	return (0);
@@ -468,7 +462,7 @@ file_cinit(sp)
 		/* We can be reentered, turn off the global pointer first. */
 		ic = sp->gp->icommand;
 		sp->gp->icommand = NULL;
-		(void)sex_screen_icmd(sp, ic);
+		(void)ex_icmd(sp, ic);
 	} else if (F_ISSET(sp, S_EX)) {
 		/* XXX:  If this fails, we're toast. */
 		(void)file_lline(sp, &sp->lno);
@@ -671,7 +665,7 @@ file_write(sp, fm, tm, name, flags)
 	FREF *frp;
 	MARK from, to;
 	u_long nlno, nch;
-	int btear, fd, nf, noname, oflags, rval;
+	int fd, nf, noname, oflags, rval;
 	char *p;
 
 	/*
@@ -817,11 +811,9 @@ file_write(sp, fm, tm, name, flags)
 		tm = &to;
 	}
 
-	/* Turn on the busy message. */
-	btear = F_ISSET(sp, S_EX_SILENT) ? 0 : !busy_on(sp, "Writing...");
+	sp->gp->scr_busy(sp, msg_cat(sp, "284|Writing ...", NULL), 1);
 	rval = ex_writefp(sp, name, fp, fm, tm, &nlno, &nch);
-	if (btear)
-		busy_off(sp);
+	sp->gp->scr_busy(sp, NULL, 0);
 
 	/*
 	 * Save the new last modification time -- even if the write fails
@@ -915,7 +907,7 @@ file_backup(sp, name, bname)
 	struct stat sb;
 	ARGS *ap[2], a;
 	DIR *dirp;
-	EXCMDARG cmd;
+	EXCMD cmd;
 	off_t off;
 	size_t blen;
 	int flags, maxnum, nf, nr, num, nw, rfd, wfd, version;
@@ -1240,6 +1232,51 @@ file_aw(sp, flags)
 }
 
 /*
+ * set_alt_name --
+ *	Set the alternate pathname.
+ *
+ * Set the alternate pathname.  It's a routine because I wanted some place
+ * to hang this comment.  The alternate pathname (normally referenced using
+ * the special character '#' during file expansion and in the vi ^^ command)
+ * is set by almost all ex commands that take file names as arguments.  The
+ * rules go something like this:
+ *
+ *    1: If any ex command takes a file name as an argument (except for the
+ *	 :next command), the alternate pathname is set to that file name.
+ *	 This excludes the command ":e" and ":w !command" as no file name
+ *       was specified.  Note, historically, the :source command did not set
+ *	 the alternate pathname.  It does in nvi, for consistency.
+ *
+ *    2: However, if any ex command sets the current pathname, e.g. the
+ *	 ":e file" or ":rew" commands succeed, then the alternate pathname
+ *	 is set to the previous file's current pathname, if it had one.
+ *	 This includes the ":file" command and excludes the ":e" command.
+ *	 So, by rule #1 and rule #2, if ":edit foo" fails, the alternate
+ *	 pathname will be "foo", if it succeeds, the alternate pathname will
+ *	 be the previous current pathname.  The ":e" command will not set
+ *       the alternate or current pathnames regardless.
+ *
+ *    3: However, if it's a read or write command with a file argument and
+ *	 the current pathname has not yet been set, the file name becomes
+ *	 the current pathname, and the alternate pathname is unchanged.
+ *
+ * If the user edits a temporary file, there may be times when there is no
+ * alternative file name.  A name argument of NULL turns it off.
+ */
+void
+set_alt_name(sp, name)
+	SCR *sp;
+	char *name;
+{
+	if (sp->alt_name != NULL)
+		free(sp->alt_name);
+	if (name == NULL)
+		sp->alt_name = NULL;
+	else if ((sp->alt_name = strdup(name)) == NULL)
+		msgq(sp, M_SYSERR, NULL);
+}
+
+/*
  * file_lock --
  *	Get an exclusive lock on a file.
  *
@@ -1260,7 +1297,7 @@ file_aw(sp, flags)
  * files opened for writing are flushed back to disk when the DB session
  * is ended. So, in that case we have to acquire an extra file descriptor.
  */
-enum lockt
+lock_t
 file_lock(sp, name, fdp, fd, iswrite)
 	SCR *sp;
 	char *name;

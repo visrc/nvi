@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 9.18 1995/02/16 12:06:27 bostic Exp $ (Berkeley) $Date: 1995/02/16 12:06:27 $";
+static char sccsid[] = "$Id: vs_split.c,v 10.1 1995/04/13 17:19:28 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:19:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,15 +29,15 @@ static char sccsid[] = "$Id: vs_split.c,v 9.18 1995/02/16 12:06:27 bostic Exp $ 
 #include <db.h>
 #include <regex.h>
 
-#include "vi.h"
-#include "svi_screen.h"
+#include "common.h"
+#include "../vi/vi.h"
 
 /*
- * svi_split --
- *	Split the screen.
+ * vs_split --
+ *	Create a new screen.
  */
 int
-svi_split(sp, topp, botp)
+vs_split(sp, topp, botp)
 	SCR *sp, **topp, **botp;
 {
 	SCR *tsp;
@@ -46,8 +46,8 @@ svi_split(sp, topp, botp)
 	int issmallscreen, splitup;
 
 	/* Can be called from ex before we're ready. */
-	if (!SVI_SCRINIT(sp)) {
-		svi_message(sp, "screen split", SVIM_NOINIT);
+	if (!VI_SCRINIT(sp)) {
+		v_message(sp, "screen split", VIM_NOSINIT);
 		return (1);
 	}
 
@@ -60,18 +60,15 @@ svi_split(sp, topp, botp)
 	}
 
 	/* Get a new screen. */
-	if (screen_init(sp, &tsp))
+	if (screen_init(sp->gp, sp, &tsp))
 		return (1);
 	CALLOC(sp, _HMAP(tsp), SMAP *, SIZE_HMAP(sp), sizeof(SMAP));
 	if (_HMAP(tsp) == NULL)
 		return (1);
 
-/* INITIALIZED AT SCREEN CREATE. */
-
-/* PARTIALLY OR COMPLETELY COPIED FROM PREVIOUS SCREEN. */
 	/*
-	 * Small screens: see svi/svi_refresh.c:svi_refresh, section 7a.
-	 * Set a flag so we know to fix the screen up later.
+	 * Small screens: see vs_refresh.c section 6a.  Set a flag so
+	 * we know to fix the screen up later.
 	 */
 	issmallscreen = IS_SMALL(sp);
 
@@ -88,7 +85,7 @@ svi_split(sp, topp, botp)
 	 * Recalculate current cursor position based on sp->lno, we're called
 	 * with the cursor on the colon command line.
 	 */
-	cnt = svi_sm_cursor(sp, &smp) ? 0 : smp - HMAP;
+	cnt = vs_sm_cursor(sp, &smp) ? 0 : smp - HMAP;
 	if (cnt <= half) {			/* Parent is top half. */
 		/* Child. */
 		tsp->rows = sp->rows - half;
@@ -123,7 +120,7 @@ svi_split(sp, topp, botp)
 	}
 
 	/*
-	 * Small screens: see svi/svi_refresh.c:svi_refresh, section 7a.
+	 * Small screens: see vs_refresh.c, section 6a.
 	 *
 	 * The child may have different screen options sizes than the
 	 * parent, so use them.  Make sure that the text counts aren't
@@ -155,9 +152,8 @@ svi_split(sp, topp, botp)
 		 */
 		if (splitup)
 			for (cnt = tsp->t_rows; ++cnt <= tsp->t_maxrows;) {
-				(void)SVP(tsp)->scr_move(tsp,
-				    RLNO(tsp, cnt), 0);
-				(void)SVP(tsp)->scr_clrtoeol(tsp);
+				(void)sp->gp->scr_move(tsp, cnt, 0);
+				(void)sp->gp->scr_clrtoeol(tsp);
 			}
 	} else {
 		sp->t_minrows = sp->t_rows = IS_ONELINE(sp) ? 1 : sp->rows - 1;
@@ -175,9 +171,8 @@ svi_split(sp, topp, botp)
 			    IS_ONELINE(tsp) ? 1 : tsp->rows - 1;
 		else
 			for (cnt = tsp->t_rows; ++cnt <= tsp->t_maxrows;) {
-				(void)SVP(tsp)->scr_move(tsp,
-				    RLNO(tsp, cnt), 0);
-				(void)SVP(tsp)->scr_clrtoeol(tsp);
+				(void)sp->gp->scr_move(tsp, cnt, 0);
+				(void)sp->gp->scr_clrtoeol(tsp);
 			}
 	}
 
@@ -202,23 +197,23 @@ svi_split(sp, topp, botp)
 }
 
 /*
- * svi_bg --
+ * vs_bg --
  *	Background the screen, and switch to the next one.
  */
 int
-svi_bg(csp)
+vs_bg(csp)
 	SCR *csp;
 {
 	SCR *sp;
 
 	/* Can be called from ex before we're ready. */
-	if (!SVI_SCRINIT(csp)) {
-		svi_message(csp, "bg", SVIM_NOINIT);
+	if (!VI_SCRINIT(csp)) {
+		v_message(csp, "bg", VIM_NOSINIT);
 		return (1);
 	}
 
 	/* Try and join with another screen. */
-	if ((svi_join(csp, NULL, NULL, &sp)))
+	if ((vs_join(csp, NULL, NULL, &sp)))
 		return (1);
 	if (sp == NULL) {
 		msgq(csp, M_ERR,
@@ -244,17 +239,16 @@ svi_bg(csp)
 }
 
 /*
- * svi_join --
+ * vs_join --
  *	Join the screen into a related screen, if one exists,
  *	and return that screen.
  */
 int
-svi_join(csp, prev, next, nsp)
+vs_join(csp, prev, next, nsp)
 	SCR *csp, *prev, *next, **nsp;
 {
 	SCR *sp;
 	SMAP *p;
-	SVI_PRIVATE *svp;
 	size_t cnt;
 	int shift;
 
@@ -289,12 +283,11 @@ svi_join(csp, prev, next, nsp)
 
 found:	sp->rows += csp->rows;
 
-	svp = SVP(sp);
 	if (IS_SMALL(sp)) {
 		sp->t_maxrows += csp->rows;
 		for (cnt = sp->t_rows; ++cnt <= sp->t_maxrows;) {
-			(void)svp->scr_move(sp, RLNO(sp, cnt), 0);
-			(void)svp->scr_clrtoeol(sp);
+			(void)sp->gp->scr_move(sp, cnt, 0);
+			(void)sp->gp->scr_clrtoeol(sp);
 		}
 		TMAP = HMAP + (sp->t_rows - 1);
 	} else {
@@ -311,13 +304,13 @@ found:	sp->rows += csp->rows;
 			memmove(HMAP + csp->rows,
 			    HMAP, csp->rows * sizeof(SMAP));
 			for (p = HMAP + csp->rows; p > HMAP;) {
-				if (svi_sm_prev(sp, p, p - 1)) {
-					if (svi_sm_fill(sp, 1, P_TOP))
+				if (vs_sm_prev(sp, p, p - 1)) {
+					if (vs_sm_fill(sp, 1, P_TOP))
 						return (1);
 					break;
 				}
-				/* svi_sm_prev() flushed the cache. */
-				if (svi_line(sp, --p, NULL, NULL))
+				/* vs_sm_prev() flushed the cache. */
+				if (vs_line(sp, --p, NULL, NULL))
 					return (1);
 			}
 			TMAP = HMAP + (sp->t_rows - 1);
@@ -325,10 +318,10 @@ found:	sp->rows += csp->rows;
 			/* Fill in the end of the screen map. */
 			for (p = TMAP,
 			    TMAP = HMAP + (sp->t_rows - 1); p < TMAP;) {
-				if (svi_sm_next(sp, p, p + 1))
+				if (vs_sm_next(sp, p, p + 1))
 					return (1);
-				/* svi_sm_next() flushed the cache. */
-				if (svi_line(sp, ++p, NULL, NULL))
+				/* vs_sm_next() flushed the cache. */
+				if (vs_line(sp, ++p, NULL, NULL))
 					return (1);
 			}
 	}
@@ -355,11 +348,11 @@ found:	sp->rows += csp->rows;
 }
 
 /*
- * svi_fg --
+ * vs_fg --
  *	Background the current screen, and foreground a new one.
  */
 int
-svi_fg(csp, name)
+vs_fg(csp, name)
 	SCR *csp;
 	CHAR_T *name;
 {
@@ -368,12 +361,12 @@ svi_fg(csp, name)
 	char *p;
 
 	/* Can be called from ex before we're ready. */
-	if (!SVI_SCRINIT(csp)) {
-		svi_message(csp, "fg", SVIM_NOINIT);
+	if (!VI_SCRINIT(csp)) {
+		v_message(csp, "fg", VIM_NOSINIT);
 		return (1);
 	}
 
-	if (svi_swap(csp, &sp, name))
+	if (vs_swap(csp, &sp, name))
 		return (1);
 	if (sp == NULL) {
 		if (name == NULL)
@@ -399,11 +392,11 @@ svi_fg(csp, name)
 }
 
 /*
- * svi_swap --
+ * vs_swap --
  *	Swap the current screen with a hidden one.
  */
 int
-svi_swap(csp, nsp, name)
+vs_swap(csp, nsp, name)
 	SCR *csp, **nsp;
 	char *name;
 {
@@ -439,7 +432,7 @@ svi_swap(csp, nsp, name)
 	F_SET(csp, S_SSWITCH);
 
 	/* Initialize terminal information. */
-	SVP(sp)->srows = SVP(csp)->srows;
+	VIP(sp)->srows = VIP(csp)->srows;
 
 	issmallscreen = IS_SMALL(sp);
 
@@ -449,7 +442,7 @@ svi_swap(csp, nsp, name)
 	sp->woff = csp->woff;
 
 	/*
-	 * Small screens: see svi/svi_refresh.c:svi_refresh, section 7a.
+	 * Small screens: see vs_refresh.c, section 6a.
 	 *
 	 * The new screens may have different screen options sizes than the
 	 * old one, so use them.  Make sure that text counts aren't larger
@@ -472,7 +465,7 @@ svi_swap(csp, nsp, name)
 	TMAP = HMAP + (sp->t_rows - 1);
 
 	/* Fill the map. */
-	if (svi_sm_fill(sp, sp->lno, P_FILL))
+	if (vs_sm_fill(sp, sp->lno, P_FILL))
 		return (1);
 
 	/*
@@ -490,7 +483,7 @@ svi_swap(csp, nsp, name)
 	 * Don't change the screen's cursor information other than to
 	 * note that the cursor is wrong.
 	 */
-	F_SET(SVP(sp), SVI_CUR_INVALID);
+	F_SET(VIP(sp), VIP_CUR_INVALID);
 
 	/* Redraw from scratch. */
 	F_SET(sp, S_SCR_REDRAW);
@@ -498,11 +491,11 @@ svi_swap(csp, nsp, name)
 }
 
 /*
- * svi_resize --
+ * vs_resize --
  *	Change the absolute size of the current screen.
  */
 int
-svi_resize(sp, count, adj)
+vs_resize(sp, count, adj)
 	SCR *sp;
 	long count;
 	adj_t adj;
@@ -510,8 +503,8 @@ svi_resize(sp, count, adj)
 	SCR *g, *s;
 
 	/* Can be called from ex before we're ready. */
-	if (!SVI_SCRINIT(sp)) {
-		svi_message(sp, "resize", SVIM_NOINIT);
+	if (!VI_SCRINIT(sp)) {
+		v_message(sp, "resize", VIM_NOSINIT);
 		return (1);
 	}
 
@@ -581,7 +574,7 @@ toosmall:			msgq(sp, M_BERR,
 		g->t_minrows += count;
 	g->t_maxrows += count;
 	_TMAP(g) += count;
-	(void)msg_status(g, g->lno, 0);
+	(void)msg_status(g, g->lno, 0, 1);
 	F_SET(g, S_SCR_REFORMAT);
 
 	s->rows -= count;
@@ -590,7 +583,7 @@ toosmall:			msgq(sp, M_BERR,
 	if (s->t_minrows > s->t_maxrows)
 		s->t_minrows = s->t_maxrows;
 	_TMAP(s) -= count;
-	(void)msg_status(s, s->lno, 0);
+	(void)msg_status(s, s->lno, 0, 1);
 	F_SET(s, S_SCR_REFORMAT);
 
 	return (0);
