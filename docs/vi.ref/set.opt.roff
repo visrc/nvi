@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: set.opt.roff,v 8.30 1994/09/15 10:14:57 bostic Exp $ (Berkeley) $Date: 1994/09/15 10:14:57 $
+.\"     $Id: set.opt.roff,v 8.31 1994/09/16 12:43:33 bostic Exp $ (Berkeley) $Date: 1994/09/16 12:43:33 $
 .\"
 .SH 1 "Set Options"
 .pp
@@ -929,6 +929,21 @@ scrolled by the
 and
 .CO <control-U>
 commands.
+.KY wraplen
+.IP "wraplen, wl [0]"
+This option is identical to the
+.OP wrapmargin
+option, with the exception that it specifies the number of columns
+from the
+.i left
+margin before the line splits, not the right margin.
+If both
+.OP wraplen
+and
+.OP wrapmargin
+are set, the
+.OP wrapmargin
+value is used.
 .KY wrapmargin
 .IP "wrapmargin, wm [0]"
 .CO Vi
@@ -937,7 +952,7 @@ If the value of the
 .OP wrapmargin
 option is non-zero,
 .CO vi
-will split lines so that they end at least that number of characters
+will split lines so that they end at least that number of columns
 before the right-hand margin of the screen.
 (Note, the value of
 .OP wrapmargin
