@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.23 1993/11/14 16:58:28 bostic Exp $ (Berkeley) $Date: 1993/11/14 16:58:28 $";
+static char sccsid[] = "$Id: key.c,v 8.24 1993/11/22 10:01:25 bostic Exp $ (Berkeley) $Date: 1993/11/22 10:01:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -336,7 +336,7 @@ nomap:	ch = ttyp->buf[ttyp->next];
 	}
 	QREM(ttyp, 1);
 
-#define	MAX_KEYS_WITHOUT_READ	250
+#define	MAX_KEYS_WITHOUT_READ	1000
 ret:	if (++gp->key_cnt > MAX_KEYS_WITHOUT_READ) {
 rec_err:	gp->key_cnt = 0;
 		TERM_FLUSH(keyp);
