@@ -6,19 +6,18 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 5.7 1992/04/18 10:06:19 bostic Exp $ (Berkeley) $Date: 1992/04/18 10:06:19 $";
+static char sccsid[] = "$Id: util.c,v 5.8 1992/04/28 13:49:45 bostic Exp $ (Berkeley) $Date: 1992/04/28 13:49:45 $";
 #endif /* not lint */
 
 #include <sys/param.h>
 #include <sys/ioctl.h>
-
 #include <signal.h>
+#include <curses.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #include "vi.h"
-#include "curses.h"
 #include "options.h"
 #include "pathnames.h"
 #include "extern.h"
@@ -31,11 +30,22 @@ void
 bell()
 {
 	if (ISSET(O_VBELL)) {
-		do_VB();
-		refresh();
+		(void)tputs(VB, 1, __putchar);
+		(void)fflush(stdout);
 	}
 	else if (ISSET(O_ERRORBELLS))
 		(void)write(STDOUT_FILENO, "\007", 1);	/* '\a' */
+}
+
+/*
+ * __putchar --
+ *	Functional version of putchar, for tputs.
+ */
+void
+__putchar(ch)
+	int ch;
+{
+	(void)putchar(ch);
 }
 
 /*
@@ -63,32 +73,6 @@ parseptrn(ptrn)
 }
 
 /*
- * ex_refresh --
- *	This function calls refresh() if the option exrefresh is set.
- */
-void
-ex_refresh()
-{
-	register char *p;
-
-	/*
-	 * If this ex command wrote ANYTHING, set exwrote so vi's : command
-	 * can tell that it must wait for a user keystroke before redrawing.
-	 */
-	for (p = kbuf; p < stdscr; p++)
-		if (*p == '\n')
-			exwrote = 1;
-
-	/* Now we do the refresh thing. */
-	if (ISSET(O_EXREFRESH))
-		refresh();
-	else
-		wqrefresh();
-	if (mode != MODE_VI)
-		msgwaiting = 0;
-}
-
-/*
  * onhup --
  *	Handle SIGHUP, restoring sanity to the terminal, preserving the file.
  */
@@ -105,9 +89,11 @@ onhup(signo)
 	/* If we had a temp file going, then preserve it. */
 	if (tmpnum > 0 && tmpfd >= 0) {
 		(void)close(tmpfd);
+#ifdef RIP_THIS_OUT
 		(void)snprintf(buf, sizeof(buf),
 		    "%s %s", _PATH_PRESERVE, tmpname);
 		(void)system(tmpblk.c);
+#endif
 	}
 
 	/* Delete any old temp files. */
@@ -173,7 +159,6 @@ onstop(signo)
 	sigset_t set;
 
 	current = cursor;
-	endmsg();
 	move(LINES - 1, 0);
 	clrtoeol();
 	refresh();
@@ -192,7 +177,7 @@ onstop(signo)
 
 	cursor = current;
 	resume_curses(TRUE);
-	iredraw();
+	touchwin(stdscr);
 	redraw(cursor, FALSE);
 	refresh();
 }
