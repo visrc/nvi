@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_mkexrc.c,v 5.22 1993/05/15 11:25:35 bostic Exp $ (Berkeley) $Date: 1993/05/15 11:25:35 $";
+static char sccsid[] = "$Id: ex_mkexrc.c,v 5.23 1993/05/20 20:31:50 bostic Exp $ (Berkeley) $Date: 1993/05/20 20:31:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -42,8 +42,7 @@ ex_mkexrc(sp, ep, cmdp)
 		break;
 	case 1:
 		fname = (char *)cmdp->argv[0];
-		if (ex_set_altfname(sp, fname))
-			return (1);
+		set_altfname(sp, fname);
 		break;
 	default:
 		abort();

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 5.35 1993/05/20 12:03:42 bostic Exp $ (Berkeley) $Date: 1993/05/20 12:03:42 $";
+static char sccsid[] = "$Id: ex_edit.c,v 5.36 1993/05/20 20:31:47 bostic Exp $ (Berkeley) $Date: 1993/05/20 20:31:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -37,8 +37,7 @@ ex_edit(sp, ep, cmdp)
 	case 1:
 		if ((tep = file_get(sp, ep, (char *)cmdp->argv[0], 1)) == NULL)
 			return (1);
-		if (ex_set_altfname(sp, tep->name))
-			return (1);
+		set_altfname(sp, tep->name);
 		break;
 	default:
 		abort();
@@ -82,8 +81,7 @@ ex_visual(sp, ep, cmdp)
 	case 1:
 		if ((tep = file_get(sp, ep, (char *)cmdp->argv[0], 1)) == NULL)
 			return (1);
-		if (ex_set_altfname(sp, tep->name))
-			return (1);
+		set_altfname(sp, tep->name);
 		break;
 	default:
 		abort();

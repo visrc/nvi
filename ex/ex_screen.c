@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_screen.c,v 5.4 1993/05/11 17:14:12 bostic Exp $ (Berkeley) $Date: 1993/05/11 17:14:12 $";
+static char sccsid[] = "$Id: ex_screen.c,v 5.5 1993/05/20 20:31:53 bostic Exp $ (Berkeley) $Date: 1993/05/20 20:31:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,8 +28,7 @@ ex_split(sp, ep, cmdp)
 
 	if (cmdp->argc) {
 		fname = (char *)cmdp->argv[0];
-		if (ex_set_altfname(sp, fname))
-			return (1);
+		set_altfname(sp, fname);
 	} else
 		fname = NULL;
 
