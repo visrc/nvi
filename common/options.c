@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: options.c,v 10.35 1996/04/15 20:31:23 bostic Exp $ (Berkeley) $Date: 1996/04/15 20:31:23 $";
+static const char sccsid[] = "$Id: options.c,v 10.36 1996/04/26 08:14:57 bostic Exp $ (Berkeley) $Date: 1996/04/26 08:14:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -90,21 +90,19 @@ OPTLIST const optlist[] = {
 	{"leftright",	f_reformat,	OPT_0BOOL,	0},
 /* O_LINES	  4.4BSD */
 	{"lines",	f_lines,	OPT_NUM,	OPT_NOSAVE},
-/* O_LISP	    4BSD */
-/*
- * XXX
- * When the lisp option is implemented, delete the OPT_NOSAVE flag,
- * so that :mkexrc dumps it.
+/* O_LISP	    4BSD
+ *	XXX
+ *	When the lisp option is implemented, delete the OPT_NOSAVE flag,
+ *	so that :mkexrc dumps it.
  */
 	{"lisp",	f_lisp,		OPT_0BOOL,	OPT_NOSAVE},
 /* O_LIST	    4BSD */
 	{"list",	f_reformat,	OPT_0BOOL,	0},
-/*
- * XXX
- * Locking isn't reliable enough over NFS to require it, in addition,
- * it's a serious startup performance problem over some remote links.
+/* O_LOCK	  4.4BSD
+ *	XXX
+ *	Locking isn't reliable enough over NFS to require it, in addition,
+ *	it's a serious startup performance problem over some remote links.
  */
-/* O_LOCK	  4.4BSD */
 	{"lock",	NULL,		OPT_1BOOL,	0},
 /* O_MAGIC	    4BSD */
 	{"magic",	NULL,		OPT_1BOOL,	0},
@@ -114,8 +112,15 @@ OPTLIST const optlist[] = {
 	{"mic",		NULL,		OPT_0BOOL,	0},
 /* O_MESG	    4BSD */
 	{"mesg",	NULL,		OPT_1BOOL,	0},
-/* O_MODELINE	    4BSD */
-	{"modeline",	f_modeline,	OPT_0BOOL,	0},
+/* O_MODELINE	    4BSD
+ *	!!!
+ *	This has been documented in historical systems as both "modeline"
+ *	and as "modelines".  Regardless of the name, this option represents
+ *	a security problem of mammoth proportions, not to mention a stunning
+ *	example of what your intro CS professor referred to as the perils of
+ *	mixing code and data.  Don't add it, or I will kill you.
+ */
+	{"modeline",	NULL,		OPT_0BOOL,	OPT_NOSET},
 /* O_MSGCAT	  4.4BSD */
 	{"msgcat",	f_msgcat,	OPT_STR,	0},
 /* O_NOPRINT	  4.4BSD */
@@ -168,20 +173,26 @@ OPTLIST const optlist[] = {
 	{"sidescroll",	NULL,		OPT_NUM,	0},
 /* O_SLOWOPEN	    4BSD  */
 	{"slowopen",	NULL,		OPT_0BOOL,	0},
-/* O_SOURCEANY	    4BSD (undocumented) */
-	{"sourceany",	f_sourceany,	OPT_0BOOL,	0},
+/* O_SOURCEANY	    4BSD (undocumented)
+ *	!!!
+ *	Historic vi, on startup, source'd $HOME/.exrc and ./.exrc, if they
+ *	were owned by the user.  The sourceany option was an undocumented
+ *	feature of historic vi which permitted the startup source'ing of
+ *	.exrc files the user didn't own.  This is an obvious security problem,
+ *	and we ignore the option.
+ */
+	{"sourceany",	NULL,		OPT_0BOOL,	OPT_NOSET},
 /* O_TABSTOP	    4BSD */
 	{"tabstop",	f_tabstop,	OPT_NUM,	0},
 /* O_TAGLENGTH	    4BSD */
 	{"taglength",	NULL,		OPT_NUM,	0},
 /* O_TAGS	    4BSD */
 	{"tags",	NULL,		OPT_STR,	0},
-/*
- * !!!
- * By default, the historic vi always displayed information about two
- * options, redraw and term.  Term seems sufficient.
+/* O_TERM	    4BSD
+ *	!!!
+ *	By default, the historic vi always displayed information about two
+ *	options, redraw and term.  Term seems sufficient.
  */
-/* O_TERM	    4BSD */
 	{"term",	NULL,		OPT_STR,	OPT_ADISP|OPT_NOSAVE},
 /* O_TERSE	    4BSD */
 	{"terse",	NULL,		OPT_0BOOL,	0},
@@ -506,7 +517,15 @@ opts_set(sp, argv, usage)
 			/* Some options may not be reset. */
 			if (F_ISSET(op, OPT_NOUNSET) && turnoff) {
 				msgq_str(sp, M_ERR, name,
-				    "291|set: %s may not be turned off");
+			    "291|set: the %s option may not be turned off");
+				rval = 1;
+				break;
+			}
+
+			/* Some options may not be set. */
+			if (F_ISSET(op, OPT_NOSET) && !turnoff) {
+				msgq_str(sp, M_ERR, name,
+			    "304|set: the %s option may never be turned on");
 				rval = 1;
 				break;
 			}
@@ -532,11 +551,9 @@ opts_set(sp, argv, usage)
 				if (turnoff) {
 					if (!O_ISSET(sp, offset))
 						break;
-					O_CLR(sp, offset);
 				} else {
 					if (O_ISSET(sp, offset))
 						break;
-					O_SET(sp, offset);
 				}
 
 			/* Report to subsystems. */

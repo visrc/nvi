@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: options_f.c,v 10.20 1996/04/26 07:53:38 bostic Exp $ (Berkeley) $Date: 1996/04/26 07:53:38 $";
+static const char sccsid[] = "$Id: options_f.c,v 10.21 1996/04/26 08:14:58 bostic Exp $ (Berkeley) $Date: 1996/04/26 08:14:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -146,29 +146,6 @@ f_lisp(sp, op, str, valp)
 {
 	msgq(sp, M_ERR, "044|The lisp option is not implemented");
 	return (0);
-}
-
-/*
- * f_modeline --
- *	This has been documented in historical systems as both "modeline"
- *	and as "modelines".  Regardless of the name, this option represents
- *	a security problem of mammoth proportions, not to mention a stunning
- *	example of what your intro CS professor referred to as the perils of
- *	mixing code and data.  Don't add it, or I will kill you.
- *
- *
- * PUBLIC: int f_modeline __P((SCR *, OPTION *, char *, u_long *));
- */
-int
-f_modeline(sp, op, str, valp)
-	SCR *sp;
-	OPTION *op;
-	char *str;
-	u_long *valp;
-{
-	if (!*valp)
-		msgq(sp, M_ERR, "047|The modeline(s) option may never be set");
-	return (1);
 }
 
 /*
@@ -310,28 +287,6 @@ f_shiftwidth(sp, op, str, valp)
 		return (1);
 	}
 	return (0);
-}
-
-/*
- * f_sourceany --
- *	Historic vi, on startup, source'd $HOME/.exrc and ./.exrc, if they
- *	were owned by the user.  The sourceany option was an undocumented
- *	feature of historic vi which permitted the startup source'ing of
- *	.exrc files the user didn't own.  This is an obvious security problem,
- *	and we ignore the option.
- *
- * PUBLIC: int f_sourceany __P((SCR *, OPTION *, char *, u_long *));
- */
-int
-f_sourceany(sp, op, str, valp)
-	SCR *sp;
-	OPTION *op;
-	char *str;
-	u_long *valp;
-{
-	if (!*valp)
-		msgq(sp, M_ERR, "051|The sourceany option may never be set");
-	return (1);
 }
 
 /*
