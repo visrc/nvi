@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_zexit.c,v 5.16 1993/03/28 19:05:39 bostic Exp $ (Berkeley) $Date: 1993/03/28 19:05:39 $";
+static char sccsid[] = "$Id: v_zexit.c,v 5.17 1993/05/05 16:21:22 bostic Exp $ (Berkeley) $Date: 1993/05/05 16:21:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,8 +28,14 @@ v_exit(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	EXCMDARG cmd;
+	if (file_write(sp, ep, NULL, NULL, NULL, FS_ALL))
+		return (1);
+	if (ep->refcnt <= 1 && file_next(sp, ep, 0)) {
+		msgq(sp, M_ERR,
+		    "More files to edit; use \":n\" to go to the next file");
+		return (1);
+	}
 
-	SETCMDARG(cmd, C_WQ, 0, OOBLNO, OOBLNO, 0, NULL);
-	return (ex_wq(sp, ep, &cmd));
+	F_SET(sp, S_EXIT);
+	return (0);
 }
