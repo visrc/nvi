@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_ex.c,v 10.42 1996/06/28 15:28:12 bostic Exp $ (Berkeley) $Date: 1996/06/28 15:28:12 $";
+static const char sccsid[] = "$Id: v_ex.c,v 10.43 1996/12/04 09:48:21 bostic Exp $ (Berkeley) $Date: 1996/12/04 09:48:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,7 +31,6 @@ static int v_ecl __P((SCR *));
 static int v_ecl_init __P((SCR *));
 static int v_ecl_log __P((SCR *, TEXT *));
 static int v_ex_done __P((SCR *, VICMD *));
-static int v_exec_ex __P((SCR *, VICMD *, EXCMD *));
 
 /*
  * v_again -- &
@@ -327,36 +326,12 @@ v_filter(sp, vp)
 }
 
 /*
- * v_event_exec --
- *	Execute some command(s) based on an event.
- *
- * PUBLIC: int v_event_exec __P((SCR *, VICMD *));
- */
-int
-v_event_exec(sp, vp)
-	SCR *sp;
-	VICMD *vp;
-{
-	EXCMD cmd;
-
-	switch (vp->ev.e_event) {
-	case E_QUIT:
-		ex_cinit(&cmd, C_QUIT, 0, OOBLNO, OOBLNO, 0, NULL);
-		break;
-	case E_WRITE:
-		ex_cinit(&cmd, C_WRITE, 0, OOBLNO, OOBLNO, 0, NULL);
-		break;
-	default:
-		abort();
-	}
-	return (v_exec_ex(sp, vp, &cmd));
-}
-
-/*
  * v_exec_ex --
  *	Execute an ex command.
+ *
+ * PUBLIC: int v_exec_ex __P((SCR *, VICMD *, EXCMD *));
  */
-static int
+int
 v_exec_ex(sp, vp, exp)
 	SCR *sp;
 	VICMD *vp;
