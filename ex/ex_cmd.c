@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 8.50 1994/07/22 18:21:39 bostic Exp $ (Berkeley) $Date: 1994/07/22 18:21:39 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 8.51 1994/08/02 09:26:04 bostic Exp $ (Berkeley) $Date: 1994/08/02 09:26:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -64,7 +64,7 @@ EXCMDLIST const cmds[] = {
 	    "[line [,line]] ! command",
 	    "filter lines through commands or run commands"},
 /* C_HASH */
-	{"#",		ex_number,	E_ADDR2|E_F_PRCLEAR|E_NORC|E_SETLAST,
+	{"#",		ex_number,	E_ADDR2|E_F_PRCLEAR|E_NORC,
 	    "ca1",
 	    "[line [,line]] # [count] [l]",
 	    "display numbered lines"},
@@ -205,7 +205,7 @@ EXCMDLIST const cmds[] = {
 	    "[line] k key",
 	    "mark a line position"},
 /* C_LIST */
-	{"list",	ex_list,	E_ADDR2|E_F_PRCLEAR|E_NORC|E_SETLAST,
+	{"list",	ex_list,	E_ADDR2|E_F_PRCLEAR|E_NORC,
 	    "ca1",
 	    "[line [,line]] l[ist] [count] [#]",
 	    "display lines in an unambiguous form"},
@@ -235,7 +235,7 @@ EXCMDLIST const cmds[] = {
 	    "n[ext][!] [+cmd] [file ...]",
 	    "edit (and optionally specify) the next file"},
 /* C_NUMBER */
-	{"number",	ex_number,	E_ADDR2|E_F_PRCLEAR|E_NORC|E_SETLAST,
+	{"number",	ex_number,	E_ADDR2|E_F_PRCLEAR|E_NORC,
 	    "ca1",
 	    "[line [,line]] nu[mber] [count] [l]",
 	    "change display to number lines"},
@@ -245,7 +245,7 @@ EXCMDLIST const cmds[] = {
 	    "[line] o[pen] [/RE/] [flags]",
 	    "enter \"open\" mode (not implemented)"},
 /* C_PRINT */
-	{"print",	ex_pr,		E_ADDR2|E_F_PRCLEAR|E_NORC|E_SETLAST,
+	{"print",	ex_pr,		E_ADDR2|E_F_PRCLEAR|E_NORC,
 	    "ca1",
 	    "[line [,line]] p[rint] [count] [#l]",
 	    "display lines"},

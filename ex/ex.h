@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.66 1994/07/21 11:02:26 bostic Exp $ (Berkeley) $Date: 1994/07/21 11:02:26 $
+ *	$Id: ex.h,v 8.67 1994/08/02 09:26:06 bostic Exp $ (Berkeley) $Date: 1994/08/02 09:26:06 $
  */
 
 /* Ex command structure. */
@@ -39,9 +39,8 @@ typedef struct _excmdlist {
 #define	E_NOGLOBAL	0x0200000	/* Not in a global. */
 #define	E_NOPERM	0x0400000	/* Permission denied for now. */
 #define	E_NORC		0x0800000	/* Not from a .exrc or EXINIT. */
-#define	E_SETLAST	0x1000000	/* Reset last command. */
-#define	E_ZERO		0x2000000	/* 0 is a legal addr1. */
-#define	E_ZERODEF	0x4000000	/* 0 is default addr1 of empty files. */
+#define	E_ZERO		0x1000000	/* 0 is a legal addr1. */
+#define	E_ZERODEF	0x2000000	/* 0 is default addr1 of empty files. */
 	u_int32_t flags;
 	char	 *syntax;		/* Syntax script. */
 	char	*usage;			/* Usage line. */
@@ -94,7 +93,7 @@ typedef struct _ex_private {
 	char	*ibp;			/* Line input buffer. */
 	size_t	 ibp_len;		/* Line input buffer length. */
 
-	EXCMDLIST const *lastcmd;	/* Last command. */
+	u_int32_t fdef;			/* Default command flags. */
 
 	CHAR_T	*lastbcomm;		/* Last bang command. */
 

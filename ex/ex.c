@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.135 1994/08/02 08:38:10 bostic Exp $ (Berkeley) $Date: 1994/08/02 08:38:10 $";
+static char sccsid[] = "$Id: ex.c,v 8.136 1994/08/02 09:25:57 bostic Exp $ (Berkeley) $Date: 1994/08/02 09:25:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -433,10 +433,19 @@ loop:	if (nl) {
 		if (cp == &cmds[C_VISUAL_EX] && IN_VI_MODE(sp))
 			cp = &cmds[C_VISUAL_VI];
 
-		uselastcmd = 0;
+		/* Set the format style flags for the next command. */
+		if (cp == &cmds[C_HASH])
+			exp->fdef = E_F_HASH;
+		else if (cp == &cmds[C_LIST])
+			exp->fdef = E_F_LIST;
+		else if (cp == &cmds[C_PRINT])
+			exp->fdef = E_F_PRINT;
+		else
+			exp->fdef = 0;
 	} else {
-		cp = exp->lastcmd;
 		uselastcmd = 1;
+		cp = &cmds[C_PRINT];
+		F_SET(&exc, exp->fdef);
 	}
 
 	/* Initialize local flags to the command flags. */
@@ -828,12 +837,15 @@ two:		switch (exc.addrcnt) {
 					break;
 				case '#':
 					F_SET(&exc, E_F_HASH);
+					exp->fdef |= E_F_HASH;
 					break;
 				case 'l':
 					F_SET(&exc, E_F_LIST);
+					exp->fdef |= E_F_LIST;
 					break;
 				case 'p':
 					F_SET(&exc, E_F_PRINT);
+					exp->fdef |= E_F_PRINT;
 					break;
 				default:
 					goto end1;
@@ -1109,10 +1121,6 @@ addr2:	switch (exc.addrcnt) {
 		if (mark_set(sp, ep, ABSMARK1, &cur, 1))
 			goto err;
 	}
-
-	/* Reset "last" command. */
-	if (LF_ISSET(E_SETLAST))
-		exp->lastcmd = cp;
 
 	/* Final setup for the command. */
 	exc.cmd = cp;

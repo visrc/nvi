@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_init.c,v 8.14 1994/03/18 10:51:28 bostic Exp $ (Berkeley) $Date: 1994/03/18 10:51:28 $";
+static char sccsid[] = "$Id: ex_init.c,v 8.15 1994/08/02 09:26:03 bostic Exp $ (Berkeley) $Date: 1994/08/02 09:26:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -67,8 +67,6 @@ ex_screen_copy(orig, sp)
 		if (ex_tagcopy(orig, sp))
 			return (1);
 	}
-
-	nexp->lastcmd = &cmds[C_PRINT];
 	return (0);
 }
 
