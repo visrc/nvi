@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.16 1993/11/03 10:16:51 bostic Exp $ (Berkeley) $Date: 1993/11/03 10:16:51 $";
+static char sccsid[] = "$Id: key.c,v 8.17 1993/11/08 14:44:25 bostic Exp $ (Berkeley) $Date: 1993/11/08 14:44:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -37,7 +37,7 @@ typedef struct _klist {
 	char *name;				/* Name. */
 } KLIST;
 
-static KLIST klist[] = {
+static KLIST const klist[] = {
 	{"kA",    "O", "insert line"},
 	{"kD",    "x", "delete character"},
 	{"kd",    "j", "cursor down"},
@@ -67,7 +67,7 @@ int
 term_init(sp)
 	SCR *sp;
 {
-	KLIST *kp;
+	KLIST const *kp;
 	char *sbp, *t, buf[2 * 1024], sbuf[128];
 
 	/* Keys that are treated specially. */
