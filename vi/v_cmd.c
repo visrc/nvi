@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 5.54 1993/05/08 16:08:49 bostic Exp $ (Berkeley) $Date: 1993/05/08 16:08:49 $";
+static char sccsid[] = "$Id: v_cmd.c,v 5.55 1993/05/21 11:23:21 bostic Exp $ (Berkeley) $Date: 1993/05/21 11:23:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -129,10 +129,10 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	{v_gomark,	V_ABS|V_CHAR|V_LMODE|V_MOVE|V_RCM_SETFNB,
 	    "move to mark (first non-blank): '['a-z]"},
 /* 050   ( */
-	{v_sentenceb,	V_CNT|V_MOVE|V_RCM_SET,
+	{v_sentenceb,	V_CNT|V_LMODE|V_MOVE|V_RCM_SET,
 	    "move back sentence: [count]("},
 /* 051   ) */
-	{v_sentencef,	V_ABS|V_CNT|V_MOVE|V_RCM_SET,
+	{v_sentencef,	V_ABS|V_CNT|V_LMODE|V_MOVE|V_RCM_SET,
 	    "move forward sentence: [count])"},
 /* 052   * */
 	{v_errlist,	0,
@@ -270,12 +270,12 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	{v_exit,	0,
 	    "save file and exit: ZZ"},
 /* 133   [ */
-	{v_sectionb,	V_ABS|V_MOVE|V_RCM_SET,
+	{v_sectionb,	V_ABS|V_LMODE|V_MOVE|V_RCM_SET,
 	    "move back section: ]]"},
 /* 134   \ */
 	{NULL},
 /* 135   ] */
-	{v_sectionf,	V_ABS|V_MOVE|V_RCM_SET,
+	{v_sectionf,	V_ABS|V_LMODE|V_MOVE|V_RCM_SET,
 	    "move forward section: [["},
 /* 136   ^ */
 	{v_first,	V_MOVE|V_RCM_SETFNB,
@@ -366,7 +366,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	{v_z, 		V_CNT|V_RCM_SETFNB,
 	    "redraw window: [line]z[window_size][.-<CR>]"},
 /* 173   { */
-	{v_paragraphb,	V_ABS|V_CNT|V_MOVE|V_RCM_SET,
+	{v_paragraphb,	V_ABS|V_CNT|V_LMODE|V_MOVE|V_RCM_SET,
 	    "move back paragraph: [count]{"},
 /* 174   | */
 	/*
@@ -376,7 +376,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	{v_ncol,	V_ABS|V_CNT|V_MOVE|V_RCM_SET,
 	    "move to column: [count]|"},
 /* 175   } */
-	{v_paragraphf,	V_ABS|V_CNT|V_MOVE|V_RCM_SET,
+	{v_paragraphf,	V_ABS|V_CNT|V_LMODE|V_MOVE|V_RCM_SET,
 	    "move forward paragraph: [count]}"},
 /* 176   ~ */
 	{v_ulcase,	V_CNT|V_DOT|V_RCM_SET,
