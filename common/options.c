@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 9.14 1995/01/24 10:10:45 bostic Exp $ (Berkeley) $Date: 1995/01/24 10:10:45 $";
+static char sccsid[] = "$Id: options.c,v 9.15 1995/01/30 09:05:06 bostic Exp $ (Berkeley) $Date: 1995/01/30 09:05:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -351,8 +351,9 @@ opts_init(sp, oargs)
 	 * Initialize O_SCROLL here, after term; initializing term should
 	 * have created a LINES/COLUMNS value.
 	 */
-	(void)snprintf(b1, sizeof(b1),
-	    "scroll=%ld", (O_VAL(sp, O_LINES) - 1) / 2);
+	if ((v = (O_VAL(sp, O_LINES) - 1) / 2) == 0)
+		v = 1;
+	(void)snprintf(b1, sizeof(b1), "scroll=%ld", v);
 	OI(O_SCROLL, b1, 1);
 
 	/*
@@ -360,6 +361,9 @@ opts_init(sp, oargs)
 	 *		8 if baud rate <=  600
 	 *	       16 if baud rate <= 1200
 	 *	LINES - 1 if baud rate  > 1200
+	 *
+	 * Note, the windows option code will correct any too-large value
+	 * or when the O_LINES value is 1.
 	 */
 	v = baud_from_bval(sp);
 	if (v <= 600)
