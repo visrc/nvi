@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 10.1 1995/03/17 12:37:51 bostic Exp $ (Berkeley) $Date: 1995/03/17 12:37:51 $";
+static char sccsid[] = "$Id: util.c,v 10.2 1995/03/17 12:40:33 bostic Exp $ (Berkeley) $Date: 1995/03/17 12:40:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -186,17 +186,6 @@ v_strdup(sp, str, len)
 	memmove(copy, str, len * sizeof(CHAR_T));
 	copy[len] = '\0';
 	return (copy);
-}
-
-/*
- * vi_putchar --
- *	Functional version of putchar, for tputs.
- */
-void
-vi_putchar(ch)
-	int ch;
-{
-	(void)putchar(ch);
 }
 
 /*
