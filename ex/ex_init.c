@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_init.c,v 10.6 1995/09/21 12:07:15 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:07:15 $";
+static char sccsid[] = "$Id: ex_init.c,v 10.7 1995/11/05 10:29:38 bostic Exp $ (Berkeley) $Date: 1995/11/05 10:29:38 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -265,9 +265,13 @@ ex_run_str(sp, name, str, len, nocopy)
 		return (1);
 	ecp->clen = len;
 
-	if ((ecp->if_name = v_strdup(sp, name, strlen(name))) == NULL)
-		return (1);
-	ecp->if_lno = 1;
+	if (name == NULL)
+		ecp->if_name = NULL;
+	else {
+		if ((ecp->if_name = v_strdup(sp, name, strlen(name))) == NULL)
+			return (1);
+		ecp->if_lno = 1;
+	}
 
 	F_INIT(ecp, E_BLIGNORE | E_NOAUTO | E_NOPRDEF | E_VLITONLY);
 
