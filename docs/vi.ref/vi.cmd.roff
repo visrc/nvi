@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: vi.cmd.roff,v 8.7 1994/05/07 19:55:14 bostic Exp $ (Berkeley) $Date: 1994/05/07 19:55:14 $
+.\"	$Id: vi.cmd.roff,v 8.8 1994/05/21 10:33:16 bostic Exp $ (Berkeley) $Date: 1994/05/21 10:33:16 $
 .\"
 #ifdef REFERENCE
 .de SP
@@ -379,8 +379,14 @@ screens.
 #ifdef REFERENCE
 Two lines of overlap are maintained by displaying the window
 starting at line
-.Li "(top_line - count * window) + 2" .
-This is an error if the cursor is on the first line in the file.
+.Li "(top_line - count * window_size) + 2" ,
+where
+.Li window_size
+is the value of the
+.Sy window
+option.
+(This size is corrected in the case of split screens, however.)
+It is an error if the cursor is on the first line in the file.
 .Pp
 The
 .Sy <control-B>
@@ -450,8 +456,14 @@ screens.
 #ifdef REFERENCE
 Two lines of overlap are maintained by displaying the window
 starting at line
-.Li "top_line + count * window - 2" .
-This is an error if the cursor is on the last line in the file.
+.Li "top_line + count * window_size - 2" ,
+where
+.Li window_size
+is the value of the
+.Sy window
+option.
+(This size is corrected in the case of split screens, however.)
+It is an error if the cursor is on the last line in the file.
 .Pp
 The
 .Sy <control-F>
