@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.33 1993/11/14 17:03:55 bostic Exp $ (Berkeley) $Date: 1993/11/14 17:03:55 $";
+static char sccsid[] = "$Id: vi.c,v 8.34 1993/11/19 09:34:09 bostic Exp $ (Berkeley) $Date: 1993/11/19 09:34:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -391,8 +391,8 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 				if (getcount(sp, key, &vp->count2))
 					return (1);
 				F_SET(vp, VC_C2SET);
+				KEY(vp->character, 0);
 			}
-			KEY(vp->character, 0);
 		}
 	}
 
