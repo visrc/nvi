@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.67 1994/03/01 11:37:27 bostic Exp $ (Berkeley) $Date: 1994/03/01 11:37:27 $";
+static char sccsid[] = "$Id: main.c,v 8.68 1994/03/02 11:36:27 bostic Exp $ (Berkeley) $Date: 1994/03/02 11:36:27 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -38,7 +38,7 @@ static char sccsid[] = "$Id: main.c,v 8.67 1994/03/01 11:37:27 bostic Exp $ (Ber
 #include "pathnames.h"
 #include "tag.h"
 
-static int	 exrc_isok __P((SCR *, char *, int));
+static int	 exrc_isok __P((SCR *, struct stat *, char *, int));
 static void	 gs_end __P((GS *));
 static GS	*gs_init __P((void));
 static void	 h_hup __P((int));
@@ -58,6 +58,7 @@ main(argc, argv)
 	extern char *optarg;
 	static int reenter;		/* STATIC: Re-entrancy check. */
 	struct sigaction act;
+	struct stat hsb, lsb;
 	GS *gp;
 	FREF *frp;
 	SCR *sp;
@@ -237,8 +238,8 @@ main(argc, argv)
 #endif
 
 	/*
-	 * Source the system, environment, ~user and local .exrc values.
-	 * Vi historically didn't check ~user/.exrc if the environment
+	 * Source the system, environment, $HOME and local .exrc values.
+	 * Vi historically didn't check $HOME/.exrc if the environment
 	 * variable EXINIT was set.  This is all done before the file is
 	 * read in because things in the .exrc information can set, for
 	 * example, the recovery directory.
@@ -247,13 +248,33 @@ main(argc, argv)
 	 * While nvi can handle any of the options settings of historic vi,
 	 * the converse is not true.  Since users are going to have to have
 	 * files and environmental variables that work with both, we use nvi
-	 * versions if they exist, otherwise the historic ones.
+	 * versions of both the $HOME and local startup files if they exist,
+	 * otherwise the historic ones.
+	 *
+	 * !!!
+	 * According to O'Reilly ("Learning the VI Editor", Fifth Ed., May
+	 * 1992, page 106), System V release 3.2 and later, has an option
+	 * "[no]exrc", causing vi to not "read .exrc files in the current
+	 * directory unless the exrc option in the home directory's .exrc
+	 * file" was set.  The problem that this (hopefully) solves is that
+	 * on System V you can give away files, so there's no possible test
+	 * we can make to determine that the file is safe.
+	 *
+	 * We initialize the exrc variable to off.  If it's explicitly turned
+	 * off by the user, then we never read the local .exrc file.  If the
+	 * user didn't initialize it or initialized it to on, we make all of
+	 * the standard checks of the file before reading it.
+	 *
+	 * !!!
+	 * If the user started the historic of vi in $HOME, vi read the user's
+	 * .exrc file twice, as $HOME/.exrc and as ./.exrc.  We don't since
+	 * it's going to make some commands behave oddly, and I can't imagine
+	 * anyone depending on it.
 	 */
 	if (!silent) {
-		if (exrc_isok(sp, _PATH_SYSEXRC, 1))
+		if (exrc_isok(sp, &hsb, _PATH_SYSEXRC, 1))
 			(void)ex_cfile(sp, NULL, _PATH_SYSEXRC);
 
-		/* Source the {N,}EXINIT environment variable. */
 		if ((p = getenv("NEXINIT")) != NULL ||
 		    (p = getenv("EXINIT")) != NULL)
 			if ((p = strdup(p)) == NULL) {
@@ -266,33 +287,25 @@ main(argc, argv)
 		else if ((p = getenv("HOME")) != NULL && *p) {
 			(void)snprintf(path,
 			    sizeof(path), "%s/%s", p, _PATH_NEXRC);
-			if (exrc_isok(sp, path, 0))
+			if (exrc_isok(sp, &hsb, path, 0))
 				(void)ex_cfile(sp, NULL, path);
 			else {
 				(void)snprintf(path,
 				    sizeof(path), "%s/%s", p, _PATH_EXRC);
-				if (exrc_isok(sp, path, 0))
+				if (exrc_isok(sp, &hsb, path, 0))
 					(void)ex_cfile(sp, NULL, path);
 			}
 		}
-		/*
-		 * !!!
-		 * According to O'Reilly ("Learning the VI Editor", Fifth Ed.,
-		 * May 1992, page 106), System V release 3.2 and later, has an
-		 * option "[no]exrc", causing vi to not "read .exrc files in
-		 * the current directory unless you first set the exrc option
-		 * in your home directory's .exrc file".  The problem that this
-		 * (hopefully) solves is that on System V you can "give away"
-		 * files, so there's no possible test we can make to determine
-		 * if the file is safe.  The exrc variable is initialized to
-		 * off.  However, if it was explicitly turned off by the user,
-		 * then we never read the local .exrc file.  If the user didn't
-		 * initialize it or initialized it to on, we make all of the
-		 * standard checks of the file before reading it.
-		 */
-		if ((!F_ISSET(&sp->opts[O_EXRC], OPT_SET) ||
-		     O_ISSET(sp, O_EXRC)) && exrc_isok(sp, _PATH_EXRC, 0))
-			(void)ex_cfile(sp, NULL, _PATH_EXRC);
+
+		if (!F_ISSET(&sp->opts[O_EXRC], OPT_SET) || O_ISSET(sp, O_EXRC))
+			if (exrc_isok(sp, &lsb, _PATH_NEXRC, 0)) {
+				if (lsb.st_dev != hsb.st_dev ||
+				    lsb.st_ino != hsb.st_ino)
+					(void)ex_cfile(sp, NULL, _PATH_NEXRC);
+			} else if (exrc_isok(sp, &lsb, _PATH_EXRC, 0))
+				if (lsb.st_dev != hsb.st_dev ||
+				    lsb.st_ino != hsb.st_ino)
+					(void)ex_cfile(sp, NULL, _PATH_EXRC);
 	}
 
 	/* List recovery files if -l specified. */
@@ -608,8 +621,9 @@ h_winch(signo)
  *	Check a .exrc for source-ability.
  */
 static int
-exrc_isok(sp, path, rootok)
+exrc_isok(sp, sbp, path, rootok)
 	SCR *sp;
+	struct stat *sbp;
 	char *path;
 	int rootok;
 {
@@ -618,7 +632,7 @@ exrc_isok(sp, path, rootok)
 	char *emsg, buf[MAXPATHLEN];
 
 	/* Check for the file's existence. */
-	if (stat(path, &sb))
+	if (stat(path, sbp))
 		return (0);
 
 	/*
@@ -633,18 +647,18 @@ exrc_isok(sp, path, rootok)
 	/* Owned by the user or root. */
 	uid = getuid();
 	if (rootok) {
-		if (sb.st_uid != uid && sb.st_uid != 0) {
+		if (sbp->st_uid != uid && sbp->st_uid != 0) {
 			emsg = "not owned by you or root";
 			goto err;
 		}
 	} else
-		if (sb.st_uid != uid) {
+		if (sbp->st_uid != uid) {
 			emsg = "not owned by you";
 			goto err;
 		}
 
 	/* Not writeable by anyone but the owner. */
-	if (sb.st_mode & (S_IWGRP | S_IWOTH)) {
+	if (sbp->st_mode & (S_IWGRP | S_IWOTH)) {
 		emsg = "writeable by a user other than the owner";
 err:		if (strchr(path, '/') == NULL &&
 		    getcwd(buf, sizeof(buf)) != NULL)
