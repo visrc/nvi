@@ -4,27 +4,39 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: cut.h,v 5.1 1992/05/22 10:03:43 bostic Exp $ (Berkeley) $Date: 1992/05/22 10:03:43 $
+ *	$Id: cut.h,v 5.2 1992/05/27 10:33:11 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:33:11 $
  */
 
-typedef struct cbline {			/* Single line in a cut buffer. */
-	struct cbline *next;		/* Next buffer. */
+typedef struct text {			/* Text: a linked list of lines. */
+	struct text *next;		/* Next buffer. */
 	char *lp;			/* Line buffer. */
 	size_t len;			/* Line length. */
-} CBLINE;
+} TEXT;
 
 typedef struct {			/* Cut buffer. */
-	CBLINE *head;
-	u_long	len;
+	TEXT *head;
+	u_long len;
 
 #define	CB_LMODE	0x001		/* Line mode. */
-	u_char	flags;
+	u_char flags;
 } CB;
+extern CB cuts[UCHAR_MAX + 2];		/* Set of cut buffers. */
 		
+typedef struct {			/* Input buffer. */
+	TEXT *head;			/* Start of the input. */
+	MARK start;			/* Starting cursor position. */
+	MARK stop;			/* Ending cursor position. */
+	u_long len;			/* Total length (unused, for macro). */
+	size_t insert;			/* Characters to push. */
+	char *ilb;			/* Input line buffer. */
+	size_t ilblen;			/* Input buffer length. */
+	char *rep;			/* Replay buffer length. */
+	size_t replen;			/* Replay buffer. */
+} IB;
+extern IB ib;				/* Input buffer. */
+
 #define	OOBCB	-1			/* Out-of-band cut buffer name. */
 #define	DEFCB	UCHAR_MAX + 1		/* Default cut buffer. */
-
-extern CB cuts[UCHAR_MAX + 2];		/* Set of cut buffers. */
 
 /* Check a buffer name for validity. */
 #define	CBNAME(buffer, cb) {						\
@@ -47,5 +59,20 @@ extern CB cuts[UCHAR_MAX + 2];		/* Set of cut buffers. */
 	}								\
 }
 
+/* Append a new TEXT structure into a CB or IB chain. */
+#define	TEXTAPPEND(start, text) {					\
+	register TEXT *__cblp;						\
+	if ((__cblp = (start)->head) == NULL)				\
+		(start)->head = (text);					\
+	else {								\
+		for (; __cblp->next; __cblp = __cblp->next);		\
+		__cblp->next = (text);					\
+	}								\
+	(start)->len += (text)->len;					\
+}
+
+int	add __P((MARK *, char *, size_t));
+int	change __P((MARK *, MARK *, char *, size_t));
 int	cut __P((int, MARK *, MARK *, int));
+void	freetext __P((TEXT *));
 int	put __P((int, MARK *, MARK *, int));
