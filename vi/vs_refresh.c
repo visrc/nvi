@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 9.16 1995/01/30 10:21:48 bostic Exp $ (Berkeley) $Date: 1995/01/30 10:21:48 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 9.17 1995/01/30 15:08:12 bostic Exp $ (Berkeley) $Date: 1995/01/30 15:08:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -167,8 +167,11 @@ svi_paint(sp, flags)
 	 * pretty sure I don't care.
 	 */
 	if (IS_ONELINE(sp)) {
-		if (F_ISSET(sp, S_BELLSCHED))
+		if (F_ISSET(sp, S_BELLSCHED) || F_ISSET(sp->gp, G_BELLSCHED)) {
 			(void)sp->e_bell(sp);
+			F_CLR(sp, S_BELLSCHED);
+			F_CLR(sp->gp, G_BELLSCHED);
+		}
 		if (!KEYS_WAITING(sp) && MSGS_WAITING(sp))
 			svi_msgflush(sp, 1);
 	}
@@ -182,7 +185,7 @@ svi_paint(sp, flags)
 	 */
 	if (F_ISSET(sp, S_SCR_REFORMAT)) {
 		/* Invalidate the line size cache. */
-		SVI_SCR_CFLUSH(SVP(sp));
+		SVI_SCR_CFLUSH(svp);
 
 		/* Toss svi_line() cached information. */
 		if (F_ISSET(sp, S_SCR_TOP)) {
@@ -445,7 +448,7 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 	 */
 
 	/* If the line we're working with has changed, reparse. */
-	if (F_ISSET(SVP(sp), SVI_CUR_INVALID) || LNO != OLNO)
+	if (F_ISSET(svp, SVI_CUR_INVALID) || LNO != OLNO)
 		goto slow;
 
 	/* Otherwise, if nothing's changed, go fast. */
@@ -704,13 +707,17 @@ number:	if (O_ISSET(sp, O_NUMBER) &&
 	 *	If the bottom line isn't in use by anyone, put out the
 	 *	standard status line.
 	 */
-	if (F_ISSET(sp, S_BELLSCHED))
-		(void)sp->e_bell(sp);
-	if (!F_ISSET(SVP(sp), SVI_INFOLINE) && !KEYS_WAITING(sp))
+	if (!F_ISSET(svp, SVI_INFOLINE) && !KEYS_WAITING(sp)) {
+		if (F_ISSET(sp, S_BELLSCHED) || F_ISSET(sp->gp, G_BELLSCHED)) {
+			(void)sp->e_bell(sp);
+			F_CLR(sp, S_BELLSCHED);
+			F_CLR(sp->gp, G_BELLSCHED);
+		}
 		if (MSGS_WAITING(sp))
 			svi_msgflush(sp, 1);
 		else if (!IS_ONELINE(sp) && !F_ISSET(sp, S_SCR_UMODE))
 			svi_modeline(sp);
+	}
 
 	/* Clear the flags that are handled by this routine. */
 	F_CLR(sp, S_SCR_CENTER |
