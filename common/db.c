@@ -6,10 +6,10 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 5.25 1993/04/05 07:12:32 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:12:32 $";
+static char sccsid[] = "$Id: db.c,v 5.26 1993/04/12 14:27:42 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:27:42 $";
 #endif /* not lint */
 
-#include <sys/param.h>
+#include <sys/types.h>
 
 #include <errno.h>
 #include <string.h>
@@ -43,7 +43,6 @@ file_gline(sp, ep, lno, lenp)
 {
 	DBT data, key;
 	TEXT *tp;
-	recno_t cnt;
 
 	/*
 	 * The underlying recno stuff handles zero by returning NULL, but
@@ -57,18 +56,13 @@ file_gline(sp, ep, lno, lenp)
 	 * Look-aside into the input buffer and see if the line we want is
 	 * there.
 	 */
-	if (sp->ib.stop.lno >= lno && sp->ib.start.lno <= lno) {
-		if (sp->ib.stop.lno == lno) {
-			if (lenp)
-				*lenp = sp->ib.len;
-			return (sp->ib.ilb);
-		}
-		for (cnt = sp->ib.start.lno,
-		    tp = sp->ib.head; cnt < lno; ++cnt)
-			tp = tp->next;
+	if (F_ISSET(sp, S_INPUT) &&
+	    ((TEXT *)sp->txthdr.next)->lno <= lno &&
+	    ((TEXT *)sp->txthdr.prev)->lno >= lno) {
+		for (tp = sp->txthdr.next; tp->lno != lno; tp = tp->next);
 		if (lenp)
 			*lenp = tp->len;
-		return (tp->lp);
+		return (tp->lb);
 	}
 
 	/* Check the cache. */
@@ -84,7 +78,7 @@ file_gline(sp, ep, lno, lenp)
 	key.size = sizeof(lno);
 	switch((ep->db->get)(ep->db, &key, &data, 0)) {
         case -1:
-		msgq(sp, M_ERROR,
+		msgq(sp, M_ERR,
 		    "Error: %s/%d: unable to get line %u: %s.",
 		    tail(__FILE__), __LINE__, lno, strerror(errno));
 		/* FALLTHROUGH */
@@ -126,7 +120,7 @@ file_dline(sp, ep, lno)
 	key.data = &lno;
 	key.size = sizeof(lno);
 	if ((ep->db->del)(ep->db, &key, 0) == 1) {
-		msgq(sp, M_ERROR,
+		msgq(sp, M_ERR,
 		    "Error: %s/%d: unable to delete line %u: %s.",
 		    tail(__FILE__), __LINE__, lno, strerror(errno));
 		return (1);
@@ -169,7 +163,7 @@ file_aline(sp, ep, lno, p, len)
 	data.data = p;
 	data.size = len;
 	if ((ep->db->put)(ep->db, &key, &data, R_IAFTER) == -1) {
-		msgq(sp, M_ERROR,
+		msgq(sp, M_ERR,
 		    "Error: %s/%d: unable to append to line %u: %s.",
 		    tail(__FILE__), __LINE__, lno, strerror(errno));
 		return (1);
@@ -187,8 +181,19 @@ file_aline(sp, ep, lno, p, len)
 	/* Log change. */
 	log_line(sp, ep, lno + 1, LINE_APPEND);
 
-	/* Update screen. */
-	UPDATE_SCREENS(LINE_APPEND);
+	/*
+	 * Update screen.
+	 *
+	 * XXX
+	 * Nasty hack, that I'm not real happy with.  If multiple lines are
+	 * input by the user, they aren't committed until an <ESC> is entered.
+	 * The problem is that the screen was updated/scrolled as each line
+	 * was entered.  So, when this routine is called to copy the new lines
+	 * from the cut buffer into the file, it has to know not to update the
+	 * screen again.
+	 */ 
+	if (!F_ISSET(sp, S_INPUT))
+		UPDATE_SCREENS(LINE_APPEND);
 	return (0);
 }
 
@@ -216,7 +221,7 @@ file_iline(sp, ep, lno, p, len)
 	data.data = p;
 	data.size = len;
 	if ((ep->db->put)(ep->db, &key, &data, R_IBEFORE) == -1) {
-		msgq(sp, M_ERROR,
+		msgq(sp, M_ERR,
 		    "Error: %s/%d: unable to insert at line %u: %s.",
 		    tail(__FILE__), __LINE__, lno, strerror(errno));
 		return (1);
@@ -266,7 +271,7 @@ file_sline(sp, ep, lno, p, len)
 	data.data = p;
 	data.size = len;
 	if ((ep->db->put)(ep->db, &key, &data, 0) == -1) {
-		msgq(sp, M_ERROR,
+		msgq(sp, M_ERR,
 		    "Error: %s/%d: unable to store line %u: %s.",
 		    tail(__FILE__), __LINE__, lno, strerror(errno));
 		return (1);
@@ -288,56 +293,6 @@ file_sline(sp, ep, lno, p, len)
 }
 
 /*
- * file_ibresolv --
- *	Resolve the ib structure into the file.
- */
-int
-file_ibresolv(sp, ep, lno)
-	SCR *sp;
-	EXF *ep;
-	recno_t lno;
-{
-	DBT data, key;
-	TEXT *tp;
-
-	/* Setup. */
-	tp = sp->ib.head;
-	key.size = sizeof(lno);
-
-	/* Replace the original line. */
-	key.data = &lno;
-	data.data = tp->lp;
-	data.size = tp->len;
-	if ((ep->db->put)(ep->db, &key, &data, 0) == -1) {
-		msgq(sp, M_ERROR,
-		    "Error: %s/%d: unable to store line %u: %s.",
-		    tail(__FILE__), __LINE__, lno, strerror(errno));
-		return (1);
-	}
-
-	/* Add the new lines into the file. */
-	for (; tp = tp->next; ++lno) {
-		key.data = &lno;
-		data.data = tp->lp;
-		data.size = tp->len;
-		if ((ep->db->put)(ep->db, &key, &data, R_IAFTER) == -1) {
-			msgq(sp, M_ERROR,
-			    "Error: %s/%d: unable to store line %u: %s.",
-			    tail(__FILE__), __LINE__, lno, strerror(errno));
-			return (1);
-		}
-	}
-
-	/* Flush the cache, update line count. */
-	ep->c_lno = OOBLNO;
-	ep->c_nlines = OOBLNO;
-
-	/* File now dirty. */
-	F_SET(ep, F_MODIFIED);
-	return (0);
-}
-
-/*
  * file_lline --
  *	Return the number of lines in the file.
  */
@@ -351,15 +306,16 @@ file_lline(sp, ep)
 
 	/* Check the cache. */
 	if (ep->c_nlines != OOBLNO)
-		return (sp->ib.stop.lno > ep->c_nlines ?
-		    sp->ib.stop.lno : ep->c_nlines);
+		return (F_ISSET(sp, S_INPUT) &&
+		    ((TEXT *)sp->txthdr.prev)->lno > ep->c_nlines ?
+		    ((TEXT *)sp->txthdr.prev)->lno : ep->c_nlines);
 
 	key.data = &lno;
 	key.size = sizeof(lno);
 
 	switch((ep->db->seq)(ep->db, &key, &data, R_LAST)) {
         case -1:
-		msgq(sp, M_ERROR,
+		msgq(sp, M_ERR,
 		    "Error: %s/%d: unable to get last line: %s.",
 		    tail(__FILE__), __LINE__, strerror(errno));
 		/* FALLTHROUGH */
@@ -375,6 +331,8 @@ file_lline(sp, ep)
 	ep->c_nlines = ep->c_lno = lno;
 	ep->c_len = data.size;
 	ep->c_lp = data.data;
-
-	return (sp->ib.stop.lno > lno ? sp->ib.stop.lno : lno);
+ 
+	return (F_ISSET(sp, S_INPUT) &&
+	    ((TEXT *)sp->txthdr.prev)->lno > lno ?
+	    ((TEXT *)sp->txthdr.prev)->lno : lno);
 }
