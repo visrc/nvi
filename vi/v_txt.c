@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 9.11 1995/01/11 16:22:13 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:22:13 $";
+static char sccsid[] = "$Id: v_txt.c,v 9.12 1995/01/12 19:58:35 bostic Exp $ (Berkeley) $Date: 1995/01/12 19:58:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1333,7 +1333,7 @@ txt_ai_resolve(sp, tp)
 		if (*p == '\t') {
 			if (spaces)
 				tab_after_sp = 1;
-			scno += STOP_OFF(scno, ts);
+			scno += COL_OFF(scno, ts);
 		} else {
 			++spaces;
 			++scno;
@@ -1347,8 +1347,8 @@ txt_ai_resolve(sp, tp)
 		return;
 
 	/* Count up spaces/tabs needed to get to the target. */
-	for (cno = 0, tabs = 0; cno + STOP_OFF(cno, ts) <= scno; ++tabs)
-		cno += STOP_OFF(cno, ts);
+	for (cno = 0, tabs = 0; cno + COL_OFF(cno, ts) <= scno; ++tabs)
+		cno += COL_OFF(cno, ts);
 	spaces = scno - cno;
 
 	/*
@@ -1648,13 +1648,13 @@ txt_dent(sp, tp, isindent)
 	 */
 	for (current = cno = 0; cno < sp->cno; ++cno)
 		if (tp->lb[cno] == '\t')
-			current += STOP_OFF(current, ts);
+			current += COL_OFF(current, ts);
 		else
 			current += KEY_LEN(sp, tp->lb[cno]);
 
 	target = current;
 	if (isindent)
-		target += STOP_OFF(target, sw);
+		target += COL_OFF(target, sw);
 	else
 		target -= --target % sw;
 
@@ -1678,7 +1678,7 @@ txt_dent(sp, tp, isindent)
 		if (tp->lb[sp->cno - 1] == ' ')
 			--current;
 		else if (tp->lb[sp->cno - 1] == '\t')
-			current -= STOP_OFF(current, ts);
+			current -= COL_OFF(current, ts);
 		else
 			break;
 
@@ -1686,8 +1686,8 @@ txt_dent(sp, tp, isindent)
 	 * Count up the total spaces/tabs needed to get from the beginning of
 	 * the line (or the last non-<blank> character) to the target.
 	 */
-	for (cno = current, tabs = 0; cno + STOP_OFF(cno, ts) <= target; ++tabs)
-		cno += STOP_OFF(cno, ts);
+	for (cno = current, tabs = 0; cno + COL_OFF(cno, ts) <= target; ++tabs)
+		cno += COL_OFF(cno, ts);
 	spaces = target - cno;
 
 	/* If we overwrote ai characters, reset the ai count. */

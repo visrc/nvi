@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 9.7 1995/01/12 19:54:25 bostic Exp $ (Berkeley) $Date: 1995/01/12 19:54:25 $
+ *	$Id: vi.h,v 9.8 1995/01/12 19:58:11 bostic Exp $ (Berkeley) $Date: 1995/01/12 19:58:11 $
  */
 
 typedef struct _vikeys VIKEYS;
@@ -149,9 +149,6 @@ extern VIKEYS const tmotion;		/* XXX Hacked ~ command. */
 
 /* Definition of a vi "word". */
 #define	inword(ch)	(isalnum(ch) || (ch) == '_')
-
-/* Offset to next column of stop size. */
-#define	STOP_OFF(c, stop)	(stop - (c) % stop)
 
 /* Character stream structure, prototypes. */
 typedef struct _vcs {
