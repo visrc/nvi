@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_line.c,v 10.17 1996/05/12 16:43:32 bostic Exp $ (Berkeley) $Date: 1996/05/12 16:43:32 $";
+static const char sccsid[] = "$Id: vs_line.c,v 10.18 1996/05/13 10:22:34 bostic Exp $ (Berkeley) $Date: 1996/05/13 10:22:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -262,7 +262,8 @@ empty:					(void)gp->scr_addstr(sp,
 		/* Put starting info for this line in the cache. */
 		if (scno != skip_cols) {
 			smp->c_sboff = offset_in_line;
-			smp->c_scoff = offset_in_char = scno - skip_cols;
+			smp->c_scoff =
+			    offset_in_char = chlen - (scno - skip_cols);
 			--p;
 		} else {
 			smp->c_sboff = ++offset_in_line;
@@ -343,12 +344,19 @@ display:
 		 * match up in that case.
 		 */
 		if (scno >= cols_per_screen) {
-			smp->c_ecsize = chlen;
-			chlen -= scno - cols_per_screen;
-			smp->c_eclen = chlen;
+			if (is_tab == 1) {
+				chlen -= scno - cols_per_screen;
+				smp->c_ecsize = smp->c_eclen = chlen;
+				scno = cols_per_screen;
+			} else {
+				smp->c_ecsize = chlen;
+				chlen -= scno - cols_per_screen;
+				smp->c_eclen = chlen;
+
+				if (scno > cols_per_screen)
+					is_partial = 1;
+			}
 			smp->c_eboff = offset_in_line;
-			if (scno > cols_per_screen)
-				is_partial = 1;
 
 			/* Terminate the loop. */
 			offset_in_line = len;
@@ -375,7 +383,7 @@ display:
 
 			/* If the line is on the screen, quit. */
 			if (is_cached)
-				goto ret2;
+				goto ret1;
 		}
 
 		/* If the line is on the screen, don't display anything. */
@@ -433,7 +441,8 @@ display:
 			(void)gp->scr_clrtoeol(sp);
 	}
 
-ret2:	if (cbp > cbuf)
+	/* Flush any buffered characters. */
+	if (cbp > cbuf)
 		FLUSH;
 
 ret1:	(void)gp->scr_move(sp, oldy, oldx);
