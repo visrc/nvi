@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 5.9 1992/04/22 08:08:01 bostic Exp $ (Berkeley) $Date: 1992/04/22 08:08:01 $";
+static char sccsid[] = "$Id: ex_bang.c,v 5.10 1992/04/27 16:38:04 bostic Exp $ (Berkeley) $Date: 1992/04/27 16:38:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,7 +21,7 @@ static char sccsid[] = "$Id: ex_bang.c,v 5.9 1992/04/22 08:08:01 bostic Exp $ (B
 #include "extern.h"
 
 /*
- * ex_bang (:[line [,line]] ! command)
+ * ex_bang -- :[line [,line]] ! command
  *	Pass the rest of the line after the ! character to the
  *	program named by the SHELL environment variable.
  */
@@ -61,7 +61,7 @@ ex_bang(cmdp)
 			break;
 		case '#':
 			if (!*prevorig) {
-				msg("No filename to substitute for %%.");
+				msg("No filename to substitute for #.");
 				return (1);
 			}
 			len += l_alt ? l_alt : (l_alt = strlen(origname));
@@ -72,7 +72,7 @@ ex_bang(cmdp)
 			break;
 		}
 
-	/* Allocate it. */
+	/* Allocate space. */
 	if ((com = malloc(len)) == NULL) {
 		msg("Error: %s", strerror(errno));
 		return (1);
@@ -107,6 +107,12 @@ ex_bang(cmdp)
 		free(lastcom);
 	lastcom = com;
 
+	/* If modified, echo the new command. */
+	if (l_alt || l_cur || l_last) {
+		EX_VISTART;
+		(void)printf("%s\n", com);
+	}
+
 	/*
 	 * If autowrite set, write the file; otherwise warn the user if
 	 * the file has been modified but not written.
@@ -115,12 +121,9 @@ ex_bang(cmdp)
 		if (tmpsave(NULL, 0))
 			return (1);
 	} else if (ISSET(O_WARN) && tstflag(file, MODIFIED)) {
-		if (mode == MODE_VI)
-			mode = MODE_COLON;
 		msg("Warning: the file has been modified but not written.");
+		return (1);
 	}
-
-	suspend_curses();
 
 	/*
 	 * If no addresses were specified, just run the command, otherwise
@@ -132,8 +135,5 @@ ex_bang(cmdp)
 		filter(cmdp->addr1, cmdp->addr2, com, STANDARD);
 		autoprint = 1;
 	}
-
-	/* Resume curses quietly for MODE_EX, otherwise noisily. */
-	resume_curses(mode == MODE_EX);
 	return (0);
 }
