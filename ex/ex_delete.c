@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_delete.c,v 8.11 1994/07/23 14:23:02 bostic Exp $ (Berkeley) $Date: 1994/07/23 14:23:02 $";
+static char sccsid[] = "$Id: ex_delete.c,v 8.12 1994/08/05 07:54:43 bostic Exp $ (Berkeley) $Date: 1994/08/05 07:54:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,13 +38,6 @@ ex_delete(sp, ep, cmdp)
 	EXCMDARG *cmdp;
 {
 	recno_t lno;
-
-	/*
-	 * !!!
-	 * Historically, delete permitted an address of 0, i.e. an empty file.
-	 */
-	if (cmdp->addr1.lno == 0)
-		return (0);
 
 	/*
 	 * !!!
