@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 9.1 1994/11/09 18:41:27 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:41:27 $
+ *	$Id: ex.h,v 9.2 1994/11/13 13:49:46 bostic Exp $ (Berkeley) $Date: 1994/11/13 13:49:46 $
  */
 
 #define	PROMPTCHAR	':'		/* Prompt character. */
@@ -190,7 +190,7 @@ int	ex_getline __P((SCR *, FILE *, size_t *));
 int	ex_init __P((SCR *));
 int	ex_is_abbrev __P((char *, size_t));
 int	ex_is_unmap __P((char *, size_t));
-int	ex_ldisplay __P((SCR *, CHAR_T *, size_t, size_t, u_int));
+int	ex_ldisplay __P((SCR *, const char *, size_t, size_t, u_int));
 int	ex_ncheck __P((SCR *, int));
 int	ex_offset __P((SCR *, char **, size_t *, long *, char *, char *));
 int	ex_print __P((SCR *, MARK *, MARK *, int));
