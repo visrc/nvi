@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 8.11 1993/09/10 18:39:27 bostic Exp $ (Berkeley) $Date: 1993/09/10 18:39:27 $";
+static char sccsid[] = "$Id: vs_smap.c,v 8.12 1993/10/03 11:49:53 bostic Exp $ (Berkeley) $Date: 1993/10/03 11:49:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,6 +18,9 @@ static char sccsid[] = "$Id: vs_smap.c,v 8.11 1993/09/10 18:39:27 bostic Exp $ (
 #include "vi.h"
 #include "vcmd.h"
 #include "svi_screen.h"
+
+static int	svi_deleteln __P((SCR *, int));
+static int	svi_insertln __P((SCR *, int));
 
 /*
  * svi_change --
@@ -130,7 +133,7 @@ svi_sm_fill(sp, ep, lno, pos)
 
 		/* See if less than half a screen from the top. */
 		if (svi_sm_nlines(sp, ep,
-		    &tmp, lno, HALFSCREEN(sp)) <= HALFSCREEN(sp)) {
+		    &tmp, lno, HALFTEXT(sp)) <= HALFTEXT(sp)) {
 			lno = 1;
 			goto top;
 		}
@@ -140,7 +143,7 @@ svi_sm_fill(sp, ep, lno, pos)
 			return (1);
 		tmp.off = svi_screens(sp, ep, tmp.lno, NULL);
 		if (svi_sm_nlines(sp, ep,
-		    &tmp, lno, HALFSCREEN(sp)) <= HALFSCREEN(sp)) {
+		    &tmp, lno, HALFTEXT(sp)) <= HALFTEXT(sp)) {
 			TMAP->lno = tmp.lno;
 			TMAP->off = tmp.off;
 			goto bottom;
@@ -454,6 +457,32 @@ svi_sm_up(sp, ep, rp, count, cursor_move)
 		}
 	}
 
+	/*
+	 * Small screens: see svi/svi_refresh.c:svi_refresh, section 3b.
+	 *
+	 * If it's a small screen, and the movement is small, open up
+	 * the screen.  Otherwise, compress and repaint.
+	 */
+	if (ISSMALLSCREEN(sp))
+		if (count <= HALFTEXT(sp))
+			for (; count && sp->t_rows != sp->t_maxrows;
+			     --count, ++sp->t_rows) {
+				if (svi_sm_next(sp, ep, TMAP, TMAP + 1))
+					return (1);
+				++TMAP;
+				if (svi_line(sp, ep, TMAP, NULL, NULL))
+					return (1);
+			}
+		else {
+			MOVE(sp, INFOLINE(sp), 0);
+			clrtoeol();
+			for (; sp->t_rows > sp->t_minrows;
+			    --sp->t_rows, --TMAP) {
+				MOVE(sp, TMAP - HMAP, 0);
+				clrtoeol();
+			}
+		}
+
 	if (file_lline(sp, ep, &last))
 		return (1);
 	if (last == 0) {
@@ -569,7 +598,7 @@ svi_sm_1up(sp, ep)
  *	Delete a line a la curses, make sure to put the information
  *	line and other screens back.
  */
-int
+static int
 svi_deleteln(sp, cnt)
 	SCR *sp;
 	int cnt;
@@ -626,6 +655,29 @@ svi_sm_down(sp, ep, rp, count, cursor_move)
 			break;
 		}
 	}
+
+	/* Small screens: see svi/svi_refresh.c:svi_refresh, section 3b.
+	 *
+	 * If it's a small screen, and the movement is small, open up
+	 * the screen.  Otherwise, compress and repaint.
+	 */
+	if (ISSMALLSCREEN(sp))
+		if (count <= HALFTEXT(sp))
+			for (; count && sp->t_rows != sp->t_maxrows;
+			    --count, ++sp->t_rows) {
+				++TMAP;
+				if (svi_sm_1down(sp, ep))
+					return (1);
+			}
+		else {
+			MOVE(sp, INFOLINE(sp), 0);
+			clrtoeol();
+			for (; sp->t_rows > sp->t_minrows;
+			    --sp->t_rows, --TMAP) {
+				MOVE(sp, TMAP - HMAP, 0);
+				clrtoeol();
+			}
+		}
 
 	for (scrolled = 0;; scrolled = 1) {
 		if (count == 0)
@@ -724,7 +776,7 @@ svi_sm_1down(sp, ep)
  *	Insert a line a la curses, make sure to put the information
  *	line and other screens back.
  */
-int
+static int
 svi_insertln(sp, cnt)
 	SCR *sp;
 	int cnt;

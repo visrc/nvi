@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 8.9 1993/09/29 16:21:01 bostic Exp $ (Berkeley) $Date: 1993/09/29 16:21:01 $";
+static char sccsid[] = "$Id: vs_split.c,v 8.10 1993/10/03 11:50:41 bostic Exp $ (Berkeley) $Date: 1993/10/03 11:50:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,9 +21,7 @@ static char sccsid[] = "$Id: vs_split.c,v 8.9 1993/09/29 16:21:01 bostic Exp $ (
 
 /*
  * svi_split --
- *	Split the screen.  Keep the cursor line on the screen, and make
- *	reassembly easy by overallocating on the line maps and linking
- *	from top of the real screen to the bottom.
+ *	Split the screen.
  */
 int
 svi_split(sp, argv)
@@ -31,17 +29,23 @@ svi_split(sp, argv)
 	char *argv[];
 {
 	SCR *tsp;
-	size_t half;
-	int nochange;
+	size_t cnt, half;
+	int issmallscreen, nochange, splitup;
 
 	/* Check to see if it's possible. */
 	half = sp->rows / 2;
 	if (half < MINIMUM_SCREEN_ROWS) {
-		msgq(sp, M_ERR, "Screen not large enough to split");
+		msgq(sp, M_ERR, "Screen must be larger than %d to split",
+		     MINIMUM_SCREEN_ROWS);
 		return (1);
 	}
 
-	/* Get a new screen, initialize. */
+#define	_HMAP(sp)	(((SVI_PRIVATE *)((sp)->svi_private))->h_smap)
+#define	_TMAP(sp)	(((SVI_PRIVATE *)((sp)->svi_private))->t_smap)
+	/*
+	 * Malloc a new screen and initialize it.  Malloc a screen map
+	 * for the child that's large enough to hold the entire window.
+	 */
 	if ((tsp = malloc(sizeof(SCR))) == NULL) {
 		msgq(sp, M_ERR, "Error: %s", strerror(errno));
 		return (1);
@@ -52,84 +56,148 @@ svi_split(sp, argv)
 		msgq(sp, M_ERR, "Error: %s", strerror(errno));
 		goto mem2;
 	}
-/* INITIALIZED AT SCREEN CREATE. */
 	memset(SVP(tsp), 0, sizeof(SVI_PRIVATE));
-
-#undef	HMAP
-#undef	TMAP
-#define	HMAP(sp)	(((SVI_PRIVATE *)((sp)->svi_private))->h_smap)
-#define	TMAP(sp)	(((SVI_PRIVATE *)((sp)->svi_private))->t_smap)
-
-	/*
-	 * Build a screen map for the child -- large enough to accomodate
-	 * the entire window.
-	 */
-	if ((HMAP(tsp) = malloc(SIZE_HMAP * sizeof(SMAP))) == NULL) {
+	if ((_HMAP(tsp) = malloc(SIZE_HMAP * sizeof(SMAP))) == NULL) {
 		msgq(sp, M_ERR, "Error: %s", strerror(errno));
 		goto mem3;
 	}
+
+/* INITIALIZED AT SCREEN CREATE. */
 
 /* PARTIALLY OR COMPLETELY COPIED FROM PREVIOUS SCREEN. */
 	if (SVP(sp)->VB != NULL &&
 	    (SVP(tsp)->VB = strdup(SVP(sp)->VB)) == NULL)
 		goto mem4;
 
-	/* Split the screen, and link the screens together. */
+	/*
+	 * Small screens: see svi/svi_refresh.c:svi_refresh, section 3b.
+	 * Set a flag so we know to fix the screen up later.
+	 */
+	issmallscreen = ISSMALLSCREEN(sp);
+
+	/* Flag if we're changing screens. */
 	nochange = argv == NULL;
+
+	/*
+	 * Split the screen, and link the screens together.  If the cursor
+	 * is in the top half of the current screen, the new screen goes
+	 * under the current screen.  Else, it goes above the current screen.
+	 *
+	 * Columns and the number of rows in the screen and window don't
+	 * change.
+	 */
+	tsp->cols = sp->cols;
+	tsp->w_rows = sp->w_rows;
 	if (sp->sc_row <= half) {		/* Parent is top half. */
-		tsp->cols = sp->cols;		/* Stuff in common. */
-		tsp->w_rows = sp->w_rows;
-
-		tsp->rows = sp->rows - half;	/* Child. */
-		tsp->t_rows = tsp->rows - 1;
+		/* Child. */
+		tsp->rows = sp->rows - half;
 		tsp->s_off = sp->s_off + half;
-		TMAP(tsp) = HMAP(tsp) + (tsp->t_rows - 1);
-		if (nochange)			/* Both start the same place.*/
-			memmove(HMAP(tsp), HMAP(sp),
-			    tsp->t_rows * sizeof(SMAP));
+		tsp->t_maxrows = tsp->rows - 1;
 
-		sp->rows = half;		/* Parent. */
-		sp->t_rows = sp->rows - 1;
-		TMAP(sp) = HMAP(sp) + (sp->t_rows - 1);
+		/* Parent. */
+		sp->rows = half;
+		sp->t_maxrows = sp->rows - 1;
 
-		tsp->child = sp->child;
-		if (sp->child != NULL)
+		/* Link into place. */
+		if ((tsp->child = sp->child) != NULL)
 			sp->child->parent = tsp;
 		sp->child = tsp;
 		tsp->parent = sp;
+
+		splitup = 0;
 	} else {				/* Parent is bottom half. */
-		tsp->cols = sp->cols;		/* Stuff in common. */
-		tsp->w_rows = sp->w_rows;
-
-		tsp->rows = sp->rows - half;	/* Child. */
-		tsp->t_rows = tsp->rows - 1;
+		/* Child. */
+		tsp->rows = sp->rows - half;
 		tsp->s_off = sp->s_off;
-		TMAP(tsp) = HMAP(tsp) + (tsp->t_rows - 1);
-		if (nochange)			/* Both start the same place. */
-			memmove(HMAP(tsp), TMAP(sp) - (tsp->t_rows - 1),
-			    tsp->t_rows * sizeof(SMAP));
+		tsp->t_maxrows = tsp->rows - 1;
 
-		sp->rows = half;		/* Parent. */
-		sp->t_rows = sp->rows - 1;
-		sp->s_off = sp->s_off + tsp->rows;
-		memmove(HMAP(sp),		/* Copy the map down. */
-		    TMAP(sp) - (sp->t_rows - 1), sp->t_rows * sizeof(SMAP));
-		TMAP(sp) = HMAP(sp) + (sp->t_rows - 1);
+		/* Parent. */
+		sp->rows = half;
+		sp->s_off += tsp->rows;
+		sp->t_maxrows = sp->rows - 1;
 
-		tsp->parent = sp->parent;
-		if (sp->parent != NULL)
+		/* Shift the parent's map down. */
+		memmove(_HMAP(sp),
+		    _HMAP(sp) + tsp->rows, sp->t_maxrows * sizeof(SMAP));
+
+		/* Link into place. */
+		if ((tsp->parent = sp->parent) != NULL)
 			sp->parent->child = tsp;
 		sp->parent = tsp;
 		tsp->child = sp;
+
+		splitup = 1;
 	}
 
 	/*
-	 * If the size of the scrolling region hasn't been modified by
-	 * the user, reset it so it's reasonable for the split screen.
+	 * Small screens: see svi/svi_refresh.c:svi_refresh, section 3b.
+	 *
+	 * The child may have different window options sizes than the
+	 * parent, so use them.  Make sure that the minimum and current
+	 * text counts aren't larger than the new screen sizes.
+	 */
+	if (issmallscreen) {
+		/* Fix the text line count for the parent. */
+		if (splitup)
+			sp->t_rows -= tsp->rows;
+
+		/* Fix the parent screen. */
+		if (sp->t_rows > sp->t_maxrows)
+			sp->t_rows = sp->t_maxrows;
+		if (sp->t_minrows > sp->t_maxrows)
+			sp->t_minrows = sp->t_maxrows;
+
+		/* Fix the child screen. */
+		tsp->t_minrows = tsp->t_rows = O_VAL(sp, O_WINDOW);
+		if (tsp->t_rows > tsp->t_maxrows)
+			tsp->t_rows = tsp->t_maxrows;
+		if (tsp->t_minrows > tsp->t_maxrows)
+			tsp->t_rows = tsp->t_maxrows;
+
+		/*
+		 * If we split up, i.e. the child is on top, lines that
+		 * were painted in the parent may not be painted in the
+		 * child.  Clear any lines not being used in the child
+		 * screen.
+		 *
+		 */
+		if (splitup)
+			for (cnt = tsp->t_rows; ++cnt <= tsp->t_maxrows;) {
+				MOVE(tsp, cnt, 0)
+				clrtoeol();
+			}
+	} else {
+		sp->t_minrows = sp->t_rows = sp->rows - 1;
+
+		/*
+		 * The new screen may be a small screen, even though the
+		 * parent was not.  Don't complain if O_WINDOW is too large,
+		 * we're splitting the screen so the screen is much smaller
+		 * than normal.  Clear any lines not being used in the child
+		 * screen.
+		 */
+		tsp->t_minrows = tsp->t_rows = O_VAL(sp, O_WINDOW);
+		if (tsp->t_rows > tsp->rows - 1)
+			tsp->t_minrows = tsp->t_rows = tsp->rows - 1;
+		else
+			for (cnt = tsp->t_rows; ++cnt <= tsp->t_maxrows;) {
+				MOVE(tsp, cnt, 0)
+				clrtoeol();
+			}
+	}
+
+	/* Adjust the ends of both maps. */
+	_TMAP(sp) = _HMAP(sp) + (sp->t_rows - 1);
+	_TMAP(tsp) = _HMAP(tsp) + (tsp->t_rows - 1);
+
+	/*
+	 * In any case, if the size of the scrolling region hasn't been
+	 * modified by the user, reset it so it's reasonable for the split
+	 * screen.
 	 */
 	if (!F_ISSET(&sp->opts[O_SCROLL], OPT_SET)) {
-		O_VAL(sp, O_SCROLL) = sp->t_rows / 2;
-		O_VAL(tsp, O_SCROLL) = sp->t_rows / 2;
+		O_VAL(sp, O_SCROLL) = sp->t_maxrows / 2;
+		O_VAL(tsp, O_SCROLL) = sp->t_maxrows / 2;
 	}
 
 	/* Init support routines. */
@@ -142,15 +210,15 @@ svi_split(sp, argv)
 	if (argv != NULL && *argv != NULL) {
 		for (; *argv != NULL; ++argv)
 			if (file_add(tsp, NULL, *argv, 0) == NULL)
-				goto mem4;
+				goto mem5;
 	} else {
 		if (file_add(tsp, NULL, sp->frp->fname, 0) == NULL)
-			goto mem4;
+			goto mem5;
 	}
 
 	if ((tsp->frp = file_first(tsp, 0)) == NULL) {
 		msgq(sp, M_ERR, "No files in the file list.");
-		goto mem4;
+		goto mem5;
 	}
 
 	/*
@@ -166,10 +234,14 @@ svi_split(sp, argv)
 		tsp->frp->lno = sp->lno;
 		tsp->frp->cno = sp->cno;
 		F_SET(tsp->frp, FR_CURSORSET);
+
+		/* Copy the parent's map into the child's map. */
+		memmove(_HMAP(tsp), _HMAP(sp), tsp->t_rows * sizeof(SMAP));
+
 	} else {
 		if (file_init(tsp, tsp->frp, NULL, 0))
-			goto mem4;
-		(void)svi_sm_fill(tsp, tsp->ep, sp->lno, P_FILL);
+			goto mem5;
+		(void)svi_sm_fill(tsp, tsp->ep, 1, P_TOP);
 	}
 
 	/* Clear the information lines. */
@@ -182,6 +254,11 @@ svi_split(sp, argv)
 	(void)status(sp, sp->ep, sp->lno, 0);
 	(void)svi_refresh(sp, sp->ep);
 
+	/* Save the parent window's cursor information. */
+	sp->frp->lno = sp->lno;
+	sp->frp->cno = sp->cno;
+	F_SET(sp->frp, FR_CURSORSET);
+
 	/* Completely redraw the child screen. */
 	F_SET(tsp, S_REDRAW);
 
@@ -190,9 +267,61 @@ svi_split(sp, argv)
 	F_SET(sp, S_SSWITCH);
 	return (0);
 
-mem4:	FREE(HMAP(tsp), SIZE_HMAP * sizeof(SMAP));
+mem5:	if (SVP(tsp)->VB != NULL)
+		FREE(SVP(tsp)->VB, strlen(SVP(tsp)->VB));
+mem4:	FREE(_HMAP(tsp), SIZE_HMAP * sizeof(SMAP));
 mem3:	FREE(SVP(sp), sizeof(SVI_PRIVATE));
 mem2:	(void)scr_end(tsp);
 mem1:	FREE(tsp, sizeof(SCR));
 	return (1);
+}
+#undef	_HMAP
+#undef	_TMAP
+
+/*
+ * svi_join --
+ *	Join the dead screen into a related screen, if one exists, and
+ *	return that screen.
+ */
+int
+svi_join(dead, nsp)
+	SCR *dead, **nsp;
+{
+	SCR *sp;
+	size_t cnt;
+
+	/* If a split screen, add space to parent/child. */
+	if ((sp = dead->parent) == NULL) {
+		if ((sp = dead->child) == NULL) {
+			*nsp = NULL;
+			return (0);
+		}
+		sp->s_off = dead->s_off;
+	}
+	sp->rows += dead->rows;
+	if (ISSMALLSCREEN(sp)) {
+		sp->t_maxrows += dead->rows;
+		for (cnt = sp->t_rows; ++cnt <= sp->t_maxrows;) {
+			MOVE(sp, cnt, 0);
+			clrtoeol();
+		}
+		TMAP = HMAP + (sp->t_rows - 1);
+	} else {
+		sp->t_maxrows += dead->rows;
+		sp->t_rows = sp->t_minrows = sp->t_maxrows;
+		TMAP = HMAP + (sp->t_rows - 1);
+		if (svi_sm_fill(sp, sp->ep, sp->lno, P_FILL))
+			return (1);
+		F_SET(sp, S_REDRAW);
+	}
+
+	/*
+	 * If the size of the scrolling region hasn't been modified by
+	 * the user, reset it so it's reasonable for the new screen.
+	 */
+	if (!F_ISSET(&sp->opts[O_SCROLL], OPT_SET))
+		O_VAL(sp, O_SCROLL) = sp->t_maxrows / 2;
+
+	*nsp = sp;
+	return (0);
 }
