@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 8.14 1993/09/13 21:24:33 bostic Exp $ (Berkeley) $Date: 1993/09/13 21:24:33 $";
+static char sccsid[] = "$Id: ex_filter.c,v 8.15 1993/09/14 08:24:23 bostic Exp $ (Berkeley) $Date: 1993/09/14 08:24:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,7 +22,7 @@ static char sccsid[] = "$Id: ex_filter.c,v 8.14 1993/09/13 21:24:33 bostic Exp $
 #include "vi.h"
 #include "excmd.h"
 
-static int	filter_wait __P((SCR *, pid_t, char *, int));
+static int	filter_wait __P((SCR *, long, char *, int));
 static int	filter_ldisplay __P((SCR *, FILE *));
 
 /*
@@ -248,7 +248,8 @@ err:		if (input[0] != -1)
 		}
 
 		/* Wait for the parent-writer. */
-		rval |= filter_wait(sp, parent_writer_pid, "parent-writer", 1);
+		rval |= filter_wait(sp,
+		    (long)parent_writer_pid, "parent-writer", 1);
 
 		/* Delete any lines written to the utility. */
 		if (ftype == FILTER && rval == 0) {
@@ -265,7 +266,7 @@ err:		if (input[0] != -1)
 	}
 	F_CLR(ep, F_MULTILOCK);
 
-uwait:	rval |= filter_wait(sp, utility_pid, cmd, 0);
+uwait:	rval |= filter_wait(sp, (long)utility_pid, cmd, 0);
 
 	if (saveintr != (sig_ret_t)-1) {
 		if (signal(SIGINT, saveintr) == (sig_ret_t)-1)
@@ -279,11 +280,17 @@ uwait:	rval |= filter_wait(sp, utility_pid, cmd, 0);
 /*
  * filter_wait --
  *	Wait for one of the filter processes.
+ *
+ * !!!
+ * The pid_t type varies in size from a short to a long depending on the
+ * system.  It has to be cast into something or the standard promotion
+ * rules get you.  I'm using a long based on the belief that nobody is
+ * going to make it unsigned and it's unlikely to be a quad.
  */
 static int
 filter_wait(sp, pid, cmd, okpipe)
 	SCR *sp;
-	pid_t pid;
+	long pid;
 	char *cmd;
 	int okpipe;
 {
@@ -292,7 +299,7 @@ filter_wait(sp, pid, cmd, okpipe)
 	int pstat;
 
 	/* Wait for the utility to finish. */
-	(void)waitpid(pid, &pstat, 0);
+	(void)waitpid((pid_t)pid, &pstat, 0);
 
 	/*
 	 * Display the utility's exit status.  Ignore SIGPIPE from the
