@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_at.c,v 5.5 1992/05/21 12:57:25 bostic Exp $ (Berkeley) $Date: 1992/05/21 12:57:25 $";
+static char sccsid[] = "$Id: v_at.c,v 5.6 1992/05/27 10:35:04 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:35:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,13 +26,13 @@ u_long atkeybuflen;				/* Length of shared buffer. */
 char *atkeybuf, *atkeyp;			/* Shared at buffer. */
 
 int
-v_at(vp, cp, rp)
+v_at(vp, fm, tm, rp)
 	VICMDARG *vp;
-	MARK *cp, *rp;
+	MARK *fm, *tm, *rp;
 {
 	static char rstack[UCHAR_MAX];
 	CB *cb;
-	CBLINE *lp;
+	TEXT *tp;
 	size_t len, remain;
 	int key;
 	char *p, *start;
@@ -64,11 +64,11 @@ v_at(vp, cp, rp)
 	}
 
 	/* Copy into the new buffer. */
-	for (lp = cb->head;;) {
-		bcopy(lp->lp, p, lp->len);
-		p += lp->len;
+	for (tp = cb->head;;) {
+		bcopy(tp->lp, p, tp->len);
+		p += tp->len;
 		*p++ = '\n';
-		if ((lp = lp->next) == NULL)
+		if ((tp = tp->next) == NULL)
 			break;
 	}
 	
