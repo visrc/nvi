@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.96 1994/04/05 15:03:06 bostic Exp $ (Berkeley) $Date: 1994/04/05 15:03:06 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.97 1994/04/10 11:14:51 bostic Exp $ (Berkeley) $Date: 1994/04/10 11:14:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -681,15 +681,15 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 			/*
 			 * !!!
 			 * Historically, <interrupt> exited the user from
-			 * editing the infoline, and returned to the main
-			 * screen.  It also beeped the terminal, but that
-			 * seems excessive.
+			 * editing, and returned to command mode.  It also
+			 * beeped the terminal, but that seems excessive.
 			 */
+			msgq(sp, M_INFO, "Interrupted.");
 			if (LF_ISSET(TXT_INFOLINE)) {
 				tp->lb[tp->len = 0] = '\0';
 				goto ret;
 			}
-			goto ins_ch;
+			goto k_escape;
 		case K_VWERASE:			/* Skip back one word. */
 			/*
 			 * If at the beginning of the line, try and drop back
