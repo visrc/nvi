@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 8.29 1993/12/22 15:12:14 bostic Exp $ (Berkeley) $Date: 1993/12/22 15:12:14 $";
+static char sccsid[] = "$Id: vs_split.c,v 8.30 1994/03/02 15:56:00 bostic Exp $ (Berkeley) $Date: 1994/03/02 15:56:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -484,9 +484,10 @@ svi_swap(csp, nsp, name)
  *	Change the absolute size of the current screen.
  */
 int
-svi_rabs(sp, count)
+svi_rabs(sp, count, adj)
 	SCR *sp;
 	long count;
+	enum adjust adj;
 {
 	SCR *g, *s;
 
@@ -496,8 +497,17 @@ svi_rabs(sp, count)
 	 */
 	if (count == 0)
 		return (0);
-	if (count < 0) {
-		count = -count;
+	if (adj == A_SET)
+		if (sp->t_maxrows > count) {
+			adj = A_DECREASE;
+			count = sp->t_maxrows - count;
+		} else {
+			adj = A_INCREASE;
+			count = count - sp->t_maxrows;
+		}
+	if (adj == A_DECREASE) {
+		if (count < 0)
+			count = -count;
 		s = sp;
 		if (s->t_maxrows < MINIMUM_SCREEN_ROWS + count)
 			goto toosmall;

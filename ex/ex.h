@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.46 1994/03/01 11:35:36 bostic Exp $ (Berkeley) $Date: 1994/03/01 11:35:36 $
+ *	$Id: ex.h,v 8.47 1994/03/02 15:55:41 bostic Exp $ (Berkeley) $Date: 1994/03/02 15:55:41 $
  */
 
 /* Ex command structure. */
@@ -21,25 +21,27 @@ typedef struct _excmdlist {
 #define	E_AUTOPRINT	0x0000020	/* Command always sets autoprint. */
 #define	E_BUFFER	0x0000040	/* Buffer name supplied. */
 #define	E_COUNT		0x0000080	/* Count supplied. */
-#define	E_FORCE		0x0000100	/*  ! */
+#define	E_COUNT_NEG	0x0000100	/* Count was signed negative. */
+#define	E_COUNT_POS	0x0000200	/* Count was signed positive. */
+#define	E_FORCE		0x0000400	/*  ! */
 
-#define	E_F_CARAT	0x0000200	/*  ^ flag. */
-#define	E_F_DASH	0x0000400	/*  - flag. */
-#define	E_F_DOT		0x0000800	/*  . flag. */
-#define	E_F_EQUAL	0x0001000	/*  = flag. */
-#define	E_F_HASH	0x0002000	/*  # flag. */
-#define	E_F_LIST	0x0004000	/*  l flag. */
-#define	E_F_PLUS	0x0008000	/*  + flag. */
-#define	E_F_PRINT	0x0010000	/*  p flag. */
+#define	E_F_CARAT	0x0000800	/*  ^ flag. */
+#define	E_F_DASH	0x0001000	/*  - flag. */
+#define	E_F_DOT		0x0002000	/*  . flag. */
+#define	E_F_EQUAL	0x0004000	/*  = flag. */
+#define	E_F_HASH	0x0008000	/*  # flag. */
+#define	E_F_LIST	0x0010000	/*  l flag. */
+#define	E_F_PLUS	0x0020000	/*  + flag. */
+#define	E_F_PRINT	0x0040000	/*  p flag. */
 
-#define	E_F_PRCLEAR	0x0020000	/* Clear the print (#, l, p) flags. */
-#define	E_MODIFY	0x0040000	/* File name expansion modified arg. */
-#define	E_NOGLOBAL	0x0080000	/* Not in a global. */
-#define	E_NOPERM	0x0100000	/* Permission denied for now. */
-#define	E_NORC		0x0200000	/* Not from a .exrc or EXINIT. */
-#define	E_SETLAST	0x0400000	/* Reset last command. */
-#define	E_ZERO		0x0800000	/* 0 is a legal addr1. */
-#define	E_ZERODEF	0x1000000	/* 0 is default addr1 of empty files. */
+#define	E_F_PRCLEAR	0x0080000	/* Clear the print (#, l, p) flags. */
+#define	E_MODIFY	0x0100000	/* File name expansion modified arg. */
+#define	E_NOGLOBAL	0x0200000	/* Not in a global. */
+#define	E_NOPERM	0x0400000	/* Permission denied for now. */
+#define	E_NORC		0x0800000	/* Not from a .exrc or EXINIT. */
+#define	E_SETLAST	0x1000000	/* Reset last command. */
+#define	E_ZERO		0x2000000	/* 0 is a legal addr1. */
+#define	E_ZERODEF	0x4000000	/* 0 is default addr1 of empty files. */
 	u_long	 flags;
 	char	*syntax;		/* Syntax script. */
 	char	*usage;			/* Usage line. */

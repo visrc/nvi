@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 8.36 1994/01/22 13:45:44 bostic Exp $ (Berkeley) $Date: 1994/01/22 13:45:44 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 8.37 1994/03/02 15:55:39 bostic Exp $ (Berkeley) $Date: 1994/03/02 15:55:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -259,7 +259,7 @@ EXCMDLIST const cmds[] = {
 /* C_RESIZE */
 	{"resize",	ex_resize,	E_NOGLOBAL|E_NORC,
 	    "c+",
-	    "resize [change]",
+	    "resize [+-]rows",
 	    "grow or shrink the current screen"},
 /* C_REWIND */
 	{"rewind",	ex_rew,		E_NOGLOBAL|E_NORC,

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.93 1994/03/01 11:36:04 bostic Exp $ (Berkeley) $Date: 1994/03/01 11:36:04 $";
+static char sccsid[] = "$Id: ex.c,v 8.94 1994/03/02 15:55:34 bostic Exp $ (Berkeley) $Date: 1994/03/02 15:55:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -794,9 +794,15 @@ end2:			break;
 			break;
 		case 'c':				/* count [01+a] */
 			++p;
+			/* Validate any signed value. */
 			if (!isdigit(*cmd) &&
 			    (*p != '+' || (*cmd != '+' && *cmd != '-')))
 				break;
+			/* If a signed value, set appropriate flags. */
+			if (*cmd == '-')
+				F_SET(&exc, E_COUNT_NEG);
+			else if (*cmd == '+')
+				F_SET(&exc, E_COUNT_POS);
 /* 8-bit XXX */		if ((lno = strtol(cmd, &t, 10)) == 0 && *p != '0') {
 				msgq(sp, M_ERR, "Count may not be zero.");
 				goto err;

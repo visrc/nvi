@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_screen.c,v 8.10 1993/12/02 15:14:14 bostic Exp $ (Berkeley) $Date: 1993/12/02 15:14:14 $";
+static char sccsid[] = "$Id: ex_screen.c,v 8.11 1994/03/02 15:55:30 bostic Exp $ (Berkeley) $Date: 1994/03/02 15:55:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -57,7 +57,7 @@ ex_fg(sp, ep, cmdp)
 }
 
 /*
- * ex_resize --	:resize [change]
+ * ex_resize --	:resize [+-]rows
  *	Change the screen size.
  */
 int
@@ -66,9 +66,19 @@ ex_resize(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	if (!F_ISSET(cmdp, E_COUNT))
-		cmdp->count = 1;
-	return (sp->s_rabs(sp, cmdp->count));
+	enum adjust adj;
+
+	if (!F_ISSET(cmdp, E_COUNT)) {
+		msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
+		return (1);
+	}
+	if (F_ISSET(cmdp, E_COUNT_NEG))
+		adj = A_DECREASE;
+	else if (F_ISSET(cmdp, E_COUNT_POS))
+		adj = A_INCREASE;
+	else
+		adj = A_SET;
+	return (sp->s_rabs(sp, cmdp->count, adj));
 }
 
 /*
