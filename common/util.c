@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 5.35 1993/04/12 14:33:32 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:33:32 $";
+static char sccsid[] = "$Id: util.c,v 5.36 1993/04/17 11:54:06 bostic Exp $ (Berkeley) $Date: 1993/04/17 11:54:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -334,8 +334,5 @@ set_window_size(sp, set_row)
 		return (1);
 	if (isset)
 		F_CLR(&sp->opts[O_COLUMNS], OPT_SET);
-
-	/* Schedule a resize. */
-	F_SET(sp, S_RESIZE);
 	return (0);
 }
