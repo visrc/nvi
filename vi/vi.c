@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.94 1994/09/15 20:05:54 bostic Exp $ (Berkeley) $Date: 1994/09/15 20:05:54 $";
+static char sccsid[] = "$Id: vi.c,v 8.95 1994/09/15 20:13:18 bostic Exp $ (Berkeley) $Date: 1994/09/15 20:13:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -580,7 +580,7 @@ getmotion(sp, ep, dm, vp, mappedp)
 	VICMDARG motion;
 	size_t len;
 	u_long cnt;
-	int notused;
+	int notused, rval;
 
 	/*
 	 * If '.' command, use the dot motion, else get the motion command.
@@ -644,7 +644,7 @@ getmotion(sp, ep, dm, vp, mappedp)
 				m.lno = sp->lno;
 				m.cno = sp->cno;
 				v_eof(sp, ep, &m);
-				return (1);
+				goto err;
 			}
 			vp->m_stop.cno = 0;
 		} else
@@ -677,7 +677,7 @@ getmotion(sp, ep, dm, vp, mappedp)
 
 		/* Run the function. */
 		if ((motion.kp->func)(sp, ep, &motion))
-			return (1);
+			goto err;
 
 		/*
 		 * Copy cut buffer, line mode and cursor position information
@@ -715,7 +715,17 @@ getmotion(sp, ep, dm, vp, mappedp)
 		*dm = motion;
 		dm->count = cnt;
 	}
-	return (0);
+
+	rval = 0;
+	if (0) {
+err:		rval = 1;
+	}
+
+	/* Free allocated keyword memory. */
+	if (motion.keyword != NULL)
+		free(motion.keyword);
+
+	return (rval);
 }
 
 #define	innum(c)	(isdigit(c) || strchr("abcdefABCDEF", c))
