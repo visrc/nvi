@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 8.20 1993/12/09 19:43:19 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:43:19 $";
+static char sccsid[] = "$Id: v_itxt.c,v 8.21 1993/12/29 12:30:28 bostic Exp $ (Berkeley) $Date: 1993/12/29 12:30:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -20,6 +20,7 @@ static char sccsid[] = "$Id: v_itxt.c,v 8.20 1993/12/09 19:43:19 bostic Exp $ (B
 #include "vcmd.h"
 
 /*
+ * !!!
  * Repeated input in the historic vi is mostly wrong and this isn't very
  * backward compatible.  For example, if the user entered "3Aab\ncd" in
  * the historic vi, the "ab" was repeated 3 times, and the "\ncd" was then
@@ -46,6 +47,21 @@ static char sccsid[] = "$Id: v_itxt.c,v 8.20 1993/12/09 19:43:19 bostic Exp $ (B
 		LF_SET(TXT_TTYWERASE);					\
 }
 
+/* 
+ * !!!
+ * There's a problem with the way that we do logging for change commands with
+ * implied motions (e.g. A, I, O, cc, etc.).  Since the main vi loop logs the
+ * starting cursor position before the change command "moves" the cursor, the
+ * cursor position to which we return on undo will be where the user entered
+ * the change command, not the start of the change.  Several of the following
+ * routines re-log the cursor to make this work correctly.  Historic vi tried
+ * to do the same thing, and mostly got it right.  (The only spectacular way
+ * it fails is if the user entered 'o' from anywhere but the last character of
+ * the line, the undo returned the cursor to the start of the line.  If the
+ * user was on the last character of the line, the cursor returned to that
+ * position.)
+ */
+
 static int v_CS __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *, u_int));
 
 /*
@@ -63,13 +79,14 @@ v_iA(sp, ep, vp, fm, tm, rp)
 	u_long cnt;
 	size_t len;
 	u_int flags;
+	int first;
 	char *p;
 
 	SET_TXT_STD(sp, TXT_APPENDEOL);
 	if (F_ISSET(vp,  VC_ISDOT))
 		LF_SET(TXT_REPLAY);
-	lno = fm->lno;
-	for (cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
+	for (first = 1, lno = fm->lno,
+	    cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
 		/* Move the cursor to the end of the line + 1. */
 		if ((p = file_gline(sp, ep, lno, &len)) == NULL) {
 			if (file_lline(sp, ep, &lno))
@@ -80,8 +97,16 @@ v_iA(sp, ep, vp, fm, tm, rp)
 			}
 			lno = 1;
 			len = 0;
-		} else 
+		} else {
+			/* Correct logging for implied cursor motion. */
+			sp->cno = len == 0 ? 0 : len - 1;
+			if (first == 1) {
+				log_cursor(sp, ep);
+				first = 0;
+			}
+			/* Start the change after the line. */
 			sp->cno = len;
+		}
 
 		if (v_ntext(sp, ep,
 		    &sp->tiq, NULL, p, len, rp, 0, OOBLNO, flags))
@@ -114,8 +139,8 @@ v_ia(sp, ep, vp, fm, tm, rp)
 	SET_TXT_STD(sp, 0);
 	if (F_ISSET(vp,  VC_ISDOT))
 		LF_SET(TXT_REPLAY);
-	lno = fm->lno;
-	for (cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
+	for (lno = fm->lno,
+	    cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
 		/*
 		 * Move the cursor one column to the right and
 		 * repaint the screen.
@@ -163,15 +188,16 @@ v_iI(sp, ep, vp, fm, tm, rp)
 {
 	recno_t lno;
 	u_long cnt;
-	size_t len, wlen;
+	size_t len;
 	u_int flags;
+	int first;
 	char *p, *t;
 
 	SET_TXT_STD(sp, 0);
 	if (F_ISSET(vp,  VC_ISDOT))
 		LF_SET(TXT_REPLAY);
-	lno = fm->lno;
-	for (cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
+	for (first = 1, lno = fm->lno,
+	    cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
 		/*
 		 * Move the cursor to the start of the line and repaint
 		 * the screen.
@@ -186,8 +212,14 @@ v_iI(sp, ep, vp, fm, tm, rp)
 			lno = 1;
 			len = 0;
 		} else {
-			for (t = p, wlen = len; wlen-- && isblank(*t); ++t);
-			sp->cno = t - p;
+			sp->cno = 0;
+			if (nonblank(sp, ep, lno, &sp->cno))
+				return (1);
+			/* Correct logging for implied cursor motion. */
+			if (first == 1) {
+				log_cursor(sp, ep);
+				first = 0;
+			}
 		}
 		if (len == 0)
 			LF_SET(TXT_APPENDEOL);
@@ -223,8 +255,8 @@ v_ii(sp, ep, vp, fm, tm, rp)
 	SET_TXT_STD(sp, 0);
 	if (F_ISSET(vp,  VC_ISDOT))
 		LF_SET(TXT_REPLAY);
-	lno = fm->lno;
-	for (cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
+	for (lno = fm->lno,
+	    cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
 		if ((p = file_gline(sp, ep, lno, &len)) == NULL) {
 			if (file_lline(sp, ep, &lno))
 				return (1);
@@ -270,12 +302,13 @@ v_iO(sp, ep, vp, fm, tm, rp)
 	size_t len;
 	u_long cnt;
 	u_int flags;
+	int first;
 	char *p;
 
 	SET_TXT_STD(sp, TXT_APPENDEOL);
 	if (F_ISSET(vp, VC_ISDOT))
 		LF_SET(TXT_REPLAY);
-	for (cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
+	for (first = 1, cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
 		if (sp->lno == 1) {
 			if (file_lline(sp, ep, &lno))
 				return (1);
@@ -286,13 +319,18 @@ v_iO(sp, ep, vp, fm, tm, rp)
 			ai_line = OOBLNO;
 		} else {
 insert:			p = "";
+			sp->cno = 0;
+			/* Correct logging for implied cursor motion. */
+			if (first == 1) {
+				log_cursor(sp, ep);
+				first = 0;
+			}
 			if (file_iline(sp, ep, sp->lno, p, 0))
 				return (1);
 			if ((p = file_gline(sp, ep, sp->lno, &len)) == NULL) {
 				GETLINE_ERR(sp, sp->lno);
 				return (1);
 			}
-			sp->cno = 0;
 			ai_line = sp->lno + 1;
 		}
 
@@ -322,12 +360,14 @@ v_io(sp, ep, vp, fm, tm, rp)
 	size_t len;
 	u_long cnt;
 	u_int flags;
+	int first;
 	char *p;
 
 	SET_TXT_STD(sp, TXT_APPENDEOL);
 	if (F_ISSET(vp,  VC_ISDOT))
 		LF_SET(TXT_REPLAY);
-	for (cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
+	for (first = 1,
+	    cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
 		if (sp->lno == 1) {
 			if (file_lline(sp, ep, &lno))
 				return (1);
@@ -338,6 +378,12 @@ v_io(sp, ep, vp, fm, tm, rp)
 			ai_line = OOBLNO;
 		} else {
 insert:			p = "";
+			sp->cno = 0;
+			/* Correct logging for implied cursor motion. */
+			if (first == 1) {
+				log_cursor(sp, ep);
+				first = 0;
+			}
 			len = 0;
 			if (file_aline(sp, ep, 1, sp->lno, p, len))
 				return (1);
@@ -345,7 +391,6 @@ insert:			p = "";
 				GETLINE_ERR(sp, sp->lno);
 				return (1);
 			}
-			sp->cno = 0;
 			ai_line = sp->lno - 1;
 		}
 
@@ -488,6 +533,8 @@ v_CS(sp, ep, vp, fm, tm, rp, iflags)
 			LF_SET(TXT_EMARK | TXT_OVERWRITE);
 		}
 	}
+	/* Correct logging for implied cursor motion. */
+	log_cursor(sp, ep);
 	return (v_ntext(sp, ep,
 	    &sp->tiq, tm, p, len, rp, 0, OOBLNO, flags));
 }
@@ -530,6 +577,9 @@ v_change(sp, ep, vp, fm, tm, rp)
 	}
 	sp->lno = fm->lno;
 	sp->cno = fm->cno;
+
+	/* Correct logging for implied cursor motion. */
+	log_cursor(sp, ep);
 
 	/*
 	 * If changing within a single line, the line either currently has
