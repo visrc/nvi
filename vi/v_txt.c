@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 10.22 1995/11/07 08:40:35 bostic Exp $ (Berkeley) $Date: 1995/11/07 08:40:35 $";
+static char sccsid[] = "$Id: v_txt.c,v 10.23 1995/11/07 10:26:55 bostic Exp $ (Berkeley) $Date: 1995/11/07 10:26:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -121,7 +121,7 @@ v_tcmd(sp, vp, prompt, flags)
 	if (O_ISSET(sp, O_TTYWERASE))
 		LF_SET(TXT_TTYWERASE);
 
-	if (v_txt(sp, vp, NULL, NULL, 0, prompt, 0, flags))
+	if (v_txt(sp, vp, NULL, NULL, 0, prompt, 0, 1, flags))
 		return (1);
 
 	/* Reenable the modeline updates. */
@@ -195,11 +195,11 @@ v_tcmd(sp, vp, prompt, flags)
  * "iabcd<esc>0R<tab><esc>", the "bcd" disappears, and magically reappears
  * on the second <esc> key.
  *
- * PUBLIC: int v_txt __P((SCR *, VICMD *,
- * PUBLIC:    MARK *, const char *, size_t, ARG_CHAR_T, recno_t, u_int32_t));
+ * PUBLIC: int v_txt __P((SCR *, VICMD *, MARK *,
+ * PUBLIC:    const char *, size_t, ARG_CHAR_T, recno_t, u_long, u_int32_t));
  */
 int
-v_txt(sp, vp, tm, lp, len, prompt, ai_line, flags)
+v_txt(sp, vp, tm, lp, len, prompt, ai_line, rcount, flags)
 	SCR *sp;
 	VICMD *vp;
 	MARK *tm;		/* To MARK. */
@@ -207,6 +207,7 @@ v_txt(sp, vp, tm, lp, len, prompt, ai_line, flags)
 	size_t len;		/* Input line length. */
 	ARG_CHAR_T prompt;	/* Prompt to display. */
 	recno_t ai_line;	/* Line number to use for autoindent count. */
+	u_long rcount;		/* Replay count. */
 	u_int32_t flags;	/* TXT_* flags. */
 {
 	EVENT ev, *evp;		/* Current event. */
@@ -229,7 +230,6 @@ v_txt(sp, vp, tm, lp, len, prompt, ai_line, flags)
 	int filec_redraw;	/* Redraw after the file completion routine. */
 	int hexcnt;		/* Hex character count. */
 	int showmatch;		/* Showmatch set on this character. */
-	int rcount;		/* Replay count. */
 	int wm_set, wm_skip;	/* Wrapmargin happened, blank skip flags. */
 	int max, tmp;
 	char *p;
@@ -414,7 +414,7 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 	/* Other text input mode setup. */
 	quote = Q_NOTSET;
 	carat = C_NOTSET;
-	filec_redraw = hexcnt = rcount = showmatch = 0;
+	filec_redraw = hexcnt = showmatch = 0;
 
 	/* Initialize input flags. */
 	ec_flags = LF_ISSET(TXT_MAPINPUT) ? EC_MAPINPUT : 0;
@@ -754,7 +754,7 @@ k_cr:		if (LF_ISSET(TXT_CR)) {
 			goto ins_ch;
 
 		/* If we have a count, start replaying the input. */
-		if (F_ISSET(vp, VC_C1SET) && ++rcount < vp->count) {
+		if (--rcount) {
 			rcol = 0;
 			abb = AB_NOTSET;
 			LF_CLR(TXT_RECORD);
@@ -1120,7 +1120,7 @@ ins_ch:		/*
 		    evp->e_value != K_FORMFEED && evp->e_value != K_TAB) {
 			msgq(sp, M_BERR,
 			    "192|Illegal character; quote to enter");
-			if (LF_ISSET(TXT_REPLAY)
+			if (LF_ISSET(TXT_REPLAY))
 				goto done;
 			break;
 		}
@@ -1229,7 +1229,7 @@ ebuf_chk:	if (sp->cno >= tp->len) {
 		msgq(sp, M_ERR,
 		    "len %u != cno: %u ai: %u insert %u overwrite %u",
 		    tp->len, sp->cno, tp->ai, tp->insert, tp->owrite);
-		if (LF_ISSET(TXT_REPLAY)
+		if (LF_ISSET(TXT_REPLAY))
 			goto done;
 		tp->len = sp->cno + tp->insert + tp->owrite;
 	}
@@ -1253,6 +1253,7 @@ ret:	/* If replaying text, keep going. */
 		if (vs_change(sp, tp->lno, LINE_RESET))
 			return (1);
 		if (showmatch) {
+			showmatch = 0;
 			if (txt_showmatch(sp))
 				return (1);
 		} else if (vs_refresh(sp))
