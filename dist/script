@@ -19,7 +19,7 @@ cd $S/docs && vi changelog
 # build the distribution
 cd $S/build && sh ./distrib
 cd $S/catalog && make clean all check && rm dump && \
-    chmod 444 vi_english* *.check
+    chmod 444 english* *.check
 
 # build a version
 cd $S && rm -rf build.local && mkdir build.local && \
