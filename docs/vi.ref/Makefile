@@ -1,4 +1,4 @@
-#	$Id: Makefile,v 8.9 1994/05/27 01:20:27 bostic Exp $ (Berkeley) $Date: 1994/05/27 01:20:27 $
+#	$Id: Makefile,v 8.10 1994/06/02 11:49:34 bostic Exp $ (Berkeley) $Date: 1994/06/02 11:49:34 $
 
 DIR=	usd/13.viref
 SRCS=	vi.ref ex.cmd.roff set.opt.roff vi.cmd.roff ref.so
@@ -8,7 +8,7 @@ CLEANFILES+=vi.ref.txt vi.ref.ps vi.ref.roff index.so
 paper.ps: vi.ref.roff
 	soelim vi.ref.roff | ${TBL} | ${ROFF} ${PAGES} > ${.TARGET}
 	sed -e 's/MINUSSIGN/\\-/' \
-	    -e 's/DOUBLEQUOTE/"/' \
+	    -e 's/DOUBLEQUOTE/""/' \
 	    -e "s/SQUOTE/'/" \
 	    -e 's/ /__SPACE/g' < index | \
 	sort -u '-t	' +0 -1 +1n | awk -f merge.awk | \
