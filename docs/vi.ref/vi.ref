@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.75 1996/05/21 09:30:27 bostic Exp $ (Berkeley) $Date: 1996/05/21 09:30:27 $
+.\"     $Id: vi.ref,v 8.76 1996/06/28 17:12:39 bostic Exp $ (Berkeley) $Date: 1996/06/28 17:12:39 $
 .\"
 .\"
 .so ref.so
@@ -645,6 +645,7 @@ the set of screens that are currently displayed.
 The
 .CO Edit ,
 .CO Ex ,
+.CO Fg ,
 .CO Next ,
 .CO Previous ,
 .CO Tag
@@ -695,18 +696,22 @@ backgrounded screens in the window.
 .pp
 The
 .CO "fg [file]"
-command
-.QQ foregrounds
-the first screen in the list of backgrounded screens that is
-associated with its argument.
+command moves the specified screen from the list of backgrounded screens
+to the foreground.
 If no file argument is specified, the first screen on the list is
 foregrounded.
-Foregrounding consists of backgrounding the current screen,
+By default,
+foregrounding consists of backgrounding the current screen,
 and replacing its space in the window with the foregrounded screen.
 .pp
-If the last screen in the window is exited, and there are backgrounded
-screens, the first screen on the list of backgrounded screens takes over
-the window.
+Capitalizing the first letter of the command, i.e.
+.CO Fg ,
+will foreground the backgrounded screen in a new screen instead of
+swapping it with the current screen.
+.pp
+If the last foregrounded screen in the window is exited,
+and there are backgrounded screens,
+the first screen on the list of backgrounded screens takes over the window.
 .SH 1 "Tags, Tag Stacks, and Cscope"
 .pp
 .CO Nvi
