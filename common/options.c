@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.13 1993/10/03 17:32:28 bostic Exp $ (Berkeley) $Date: 1993/10/03 17:32:28 $";
+static char sccsid[] = "$Id: options.c,v 8.14 1993/10/04 10:14:24 bostic Exp $ (Berkeley) $Date: 1993/10/04 10:14:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -212,7 +212,7 @@ opts_init(sp)
 	SCR *sp;
 {
 	OPTLIST const *op;
-	speed_t baudrate;
+	speed_t speed;
 	u_long sval;
 	int cnt;
 	char *s, *argv[2], b1[1024];
@@ -267,10 +267,10 @@ opts_init(sp)
 	 *	       16 if baud rate == 1200
 	 *	LINES - 1 if baud rate  > 1200
 	 */
-	baudrate = cfgetospeed(&sp->gp->original_termios);
-	if (baudrate <= 600)
+	speed = cfgetospeed(&sp->gp->original_termios);
+	if (speed <= 600)
 		sval = 8;
-	else if (baudrate <= 1200)
+	else if (speed <= 1200)
 		sval = 16;
 	else
 		sval = O_VAL(sp, O_LINES) - 1;
