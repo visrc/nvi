@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: exf.c,v 10.39 1996/06/17 11:10:21 bostic Exp $ (Berkeley) $Date: 1996/06/17 11:10:21 $";
+static const char sccsid[] = "$Id: exf.c,v 10.40 1996/06/19 17:42:56 bostic Exp $ (Berkeley) $Date: 1996/06/19 17:42:56 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -669,6 +669,7 @@ file_write(sp, fm, tm, name, flags)
 	u_long nlno, nch;
 	int fd, nf, noname, oflags, rval;
 	char *p, *s, *t, buf[MAXPATHLEN + 64];
+	const char *msgstr;
 
 	/*
 	 * Writing '%', or naming the current file explicitly, has the
@@ -860,14 +861,15 @@ file_write(sp, fm, tm, name, flags)
 	p = msg_print(sp, name, &nf);
 	switch (mtype) {
 	case NEWFILE:
-		len = snprintf(buf, sizeof(buf),
-		    "256|%s: new file: %lu lines, %lu characters",
-		    p, nlno, nch);
+		msgstr = msg_cat(sp,
+		    "256|%s: new file: %lu lines, %lu characters", NULL);
+		len = snprintf(buf, sizeof(buf), msgstr, p, nlno, nch);
 		break;
 	case OLDFILE:
-		len = snprintf(buf, sizeof(buf),
-		    "257|%s: %s%lu lines, %lu characters",
-		    p, LF_ISSET(FS_APPEND) ? "appended: " : "", nlno, nch);
+		msgstr = msg_cat(sp,
+		    "257|%s: %s%lu lines, %lu characters", NULL);
+		len = snprintf(buf, sizeof(buf), msgstr, p,
+		    LF_ISSET(FS_APPEND) ? "appended: " : "", nlno, nch);
 		break;
 	default:
 		abort();
@@ -890,10 +892,6 @@ file_write(sp, fm, tm, name, flags)
 			*--s = '.';		/* Leading ellipses. */
 			*--s = '.';
 			*--s = '.';
-			*--s = buf[3];		/* Message catalog info. */
-			*--s = buf[2];
-			*--s = buf[1];
-			*--s = buf[0];
 		}
 	}
 	msgq(sp, M_INFO, s);
