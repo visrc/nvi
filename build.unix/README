@@ -1,4 +1,4 @@
-#	$Id: README,v 8.7 1996/03/03 16:30:21 bostic Exp $ (Berkeley) $Date: 1996/03/03 16:30:21 $
+#	$Id: README,v 8.8 1996/03/06 19:45:03 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:45:03 $
 
 Nvi uses the GNU autoconf program for configuration and compilation.  You
 should enter:
@@ -7,16 +7,18 @@ should enter:
 	make<carriage-return>
 
 and nvi should configure the system and build two binaries, named "nex"
-and "nvi" for you.  There are options that you can specify to the
-./configure command.  See the next section  for a description of these
-options.
+and "nvi" for you.  If Tcl/Tk libraries are available on your system,
+it should build tknvi as well.
+
+There are options that you can specify to the ./configure command.  See
+the next section  for a description of these options.
 
 If you want to rebuild nvi, for example, you change your mind about what
 curses library implementation that you want to use, enter:
 
 	make distclean<carriage-return>
 
-and then follow the above instructions.
+and then reconfigure using "./configure" and whatever options you choose.
 
 If you have trouble with this procedure, send email to the addresses
 listed in ../README.  In that email, please provide a complete script
@@ -28,21 +30,25 @@ follows:
 
 The most common of these are:
 
-  --enable-debug    	  Build a debugging version.
-  --enable-perlinterp	  Compile a Perl interpreter into vi.
-  --enable-tclinterp	  Compile a Tcl/Tk interpreter into vi.
+  --enable-debug          Build a debugging version.
+  --enable-perlinterp     Compile a Perl interpreter into vi.
+  --with-perl=ask|system  ask:     Prompt for the Perl library to use.
+                          system:  Use the system Perl library.
+  --enable-tclinterp      Compile a Tcl/Tk interpreter into vi.
+  --with-tcl=ask|system   ask:     Prompt for the tcl/tk library to use
+                          system:  Use the system tcl/tk library.
   --with-curses=ask|system|vi
                           ask:     Prompt for the curses library to use.
                           system:  Use the system curses library.
-                          vi:      Use the vi-provided curses library
-  --with-db=library|vi    library: Use the DB routines in the C library.
-                          vi:      Use the vi-provided DB routines
+                          vi:      Use the vi-provided curses library.
+  --with-db=library|vi    library: The C library or -ldb has the DB routines.
+                          vi:      Use the vi-provided DB routines.
   --with-re=library|vi    library: Use the RE routines in the C library.
-                          vi:      Use the vi-provided RE routines
+                          vi:      Use the vi-provided RE routines.
 
 enable-debug:
-	If you want to build nvi with symbol tables and the -DDEBUG
-	as a C preprocessor #define, enter:
+	If you want to build nvi with no optimization, -g as a compiler
+	flag, and have DEBUG defined in config.h, enter:
 
 	--enable-debug
 
@@ -56,6 +62,17 @@ enable-perlinterp:
 
 	as an argument to configure.
 
+with-perl:
+	If you want configure to prompt you for the paths for the
+	directories where the Perl include and library files live,
+	enter:
+
+	--with-perl=ask
+
+	ask an argument to configure.  (The "system" argument causes
+	configure to look in the usual directories for the Perl include
+	files and libraries, and is the default.)
+
 enable-tclinterp:
 	If you have the Tk/Tcl libraries and you want to compile in the
 	Tcl/Tk interpreter, enter:
@@ -63,6 +80,17 @@ enable-tclinterp:
 	--enable-tclinterp
 
 	as an argument to configure.
+
+with-tcl:
+	If you want configure to prompt you for the paths for the
+	directories where the Tk/Tcl include and library files live,
+	enter:
+
+	--with-tcl=ask
+
+	ask an argument to configure.  (The "system" argument causes
+	configure to look in the usual directories for the Tk/Tcl
+	include files and libraries, and is the default.)
 
 with-curses:
 	See the next section of this README for information about nvi and
@@ -76,7 +104,9 @@ with-db:
 
 	as an argument to configure, and the DB routines will be loaded
 	from the C library.  Make sure that you DB routines are at least
-	version 1.85 or later.
+	version 1.85 or later.  (The "vi" argument causes configure to
+	use the DB routines bundled with the vi distribution, and is the
+	default.)
 
 with-re:
 	If your C library contains an implementation of the POSIX 1003.2
@@ -87,6 +117,8 @@ with-re:
 	as an argument to configure, and the RE routines will be loaded
 	from the C library.  Please ensure that your RE routines have
 	Henry Spencer's extensions for doing vi-style "word" searches.
+	(The "vi" argument causes configure to use the DB routines bundled
+	with the vi distribution, and is the default.)
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 The major portability problem for nvi is selecting a curses library.
