@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_word.c,v 8.2 1993/06/28 13:23:54 bostic Exp $ (Berkeley) $Date: 1993/06/28 13:23:54 $";
+static char sccsid[] = "$Id: v_word.c,v 8.3 1993/07/21 09:14:27 bostic Exp $ (Berkeley) $Date: 1993/07/21 09:14:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -137,9 +137,12 @@ fword(sp, ep, vp, fm, rp, type)
 				if (cs.cs_flags == 0 && isspace(cs.cs_ch))
 					break;
 			}
-			/* See note below. */
-			if (F_ISSET(vp, VC_C | VC_D | VC_Y)
-			    && cnt == 0 && cs.cs_flags == CS_EOL)
+			/*
+			 * If a motion command and we're at the end of the
+			 * line or word, don't eat any trailing white space
+			 * and don't move off the line.
+			 */
+			if (cnt == 0 && F_ISSET(vp, VC_C | VC_D | VC_Y))
 				break;
 
 			/* Eat any space characters. */
@@ -166,9 +169,8 @@ fword(sp, ep, vp, fm, rp, type)
 					if (inword(cs.cs_ch))
 						break;
 			}
-			/* See note below. */
-			if (F_ISSET(vp, VC_C | VC_D | VC_Y)
-			    && cnt == 0 && cs.cs_flags == CS_EOL)
+			/* See comment above. */
+			if (cnt == 0 && F_ISSET(vp, VC_C | VC_D | VC_Y))
 				break;
 
 			/* Eat any space characters. */
