@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 5.8 1993/05/06 11:03:53 bostic Exp $ (Berkeley) $Date: 1993/05/06 11:03:53 $";
+static char sccsid[] = "$Id: ex_argv.c,v 5.9 1993/05/08 18:56:38 bostic Exp $ (Berkeley) $Date: 1993/05/08 18:56:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,7 +32,7 @@ buildargv(sp, ep, s, expand, argcp, argvp)
 	char *s, ***argvp;
 	int expand, *argcp;
 {
-	int ch, cnt, done, globoff, len, needslots, off;
+	int cnt, done, globoff, len, needslots, off;
 	char *ap, *p;
 
 	/* Break into argv vector. */
@@ -148,8 +148,8 @@ fileexpand(sp, ep, globp, word, wordlen)
 	int wordlen;
 {
 	GS *gp;
-	int len;
-	char *p, *tpath;
+	int ch, len;
+	char *p, *t, *gs, *tpath;
 
 	/* Discard any previous information. */
 	if (sp->g.gl_pathc)
@@ -158,6 +158,24 @@ fileexpand(sp, ep, globp, word, wordlen)
 	/* Figure out how much space we need for this argument. */
 	for (p = word, len = 0; *p; ++p)
 		switch (*p) {
+		case '$':
+			for (t = p + 1; *t && !isspace(*t); ++t);
+			ch = *t;
+			*t = '\0';
+			if ((gs = getenv(p + 1)) == NULL) {
+				if (p + 1 == t)
+					msgq(sp, M_ERR,
+	    "'$' indicates an environmental variable; use \\$ to escape it.");
+				else
+					msgq(sp, M_ERR,
+					    "No environmental variable %s.",
+					    p + 1);
+				    return (1);
+			}
+			*t = ch;
+			p = t;
+			len += strlen(gs);
+			break;
 		case '%':
 			if (F_ISSET(ep, F_NONAME)) {
 				msgq(sp, M_ERR,
@@ -203,6 +221,16 @@ fileexpand(sp, ep, globp, word, wordlen)
 
 		for (p = tpath; *word; ++word)
 			switch (*word) {
+			case '$':
+				for (t = word + 1; *t && !isspace(*t); ++t);
+				ch = *t;
+				*t = '\0';
+				len = strlen(gs = getenv(word + 1));
+				memmove(p, gs, len);
+				*t = ch;
+				word = t;
+				p += len;
+				break;
 			case '%':
 				memmove(p, ep->name, ep->nlen);
 				p += ep->nlen;
