@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 9.15 1995/02/08 19:38:54 bostic Exp $ (Berkeley) $Date: 1995/02/08 19:38:54 $
+ *	$Id: ex.h,v 9.16 1995/02/17 11:40:28 bostic Exp $ (Berkeley) $Date: 1995/02/17 11:40:28 $
  */
 
 #define	PROMPTCHAR	':'		/* Prompt character. */
@@ -18,7 +18,7 @@ typedef struct _excmdlist {
 	int (*fn) __P((SCR *, EXCMDARG *));
 
 #define	E_ADDR1		0x0000001	/* One address. */
-#define	E_ADDR2		0x0000002	/* Two address. */
+#define	E_ADDR2		0x0000002	/* Two addresses. */
 #define	E_ADDR2_ALL	0x0000004	/* Zero/two addresses; zero == all. */
 #define	E_ADDR2_NONE	0x0000008	/* Zero/two addresses; zero == none. */
 #define	E_ADDRDEF	0x0000010	/* Default addresses used. */
@@ -60,7 +60,7 @@ extern EXCMDLIST const cmds[];		/* List of ex commands. */
  */
 #define	NEEDFILE(sp, cmdp) {						\
 	if ((sp)->ep == NULL) {						\
-		ex_message(sp, cmdp, EXM_NORC);				\
+		ex_message(sp, (cmdp)->name, EXM_NORC);			\
 		return (1);						\
 	}								\
 }
@@ -105,9 +105,6 @@ typedef struct _ex_private {
 	ARGS   **args;			/* Arguments. */
 	int	 argscnt;		/* Argument count. */
 	int	 argsoff;		/* Offset into arguments. */
-
-	CHAR_T	 at_lbuf;		/* Last executed at buffer's name. */
-	int	 at_lbuf_set;		/* If at_lbuf is set. */
 
 	char	*ibp;			/* Line input buffer. */
 	size_t	 ibp_len;		/* Line input buffer length. */
@@ -174,8 +171,8 @@ int	argv_exp3 __P((SCR *, EXCMDARG *, char *, size_t));
 int	argv_free __P((SCR *));
 
 /* Ex common messages. */
-enum exmtype { EXM_NOPREVRE, EXM_NORC, EXM_USAGE };
-void	ex_message __P((SCR *, const EXCMDLIST *, enum exmtype));
+enum exmtype { EXM_EMPTYBUF, EXM_NOPREVBUF, EXM_NOPREVRE, EXM_NORC, EXM_USAGE };
+void	ex_message __P((SCR *, char *, enum exmtype));
 
 /* Ex parser function prototypes. */
 #define	EXPAR_BLIGNORE	0x01		/* Ignore blank lines. */
