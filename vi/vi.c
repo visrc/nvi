@@ -6,17 +6,18 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.19 1992/09/01 15:37:28 bostic Exp $ (Berkeley) $Date: 1992/09/01 15:37:28 $";
+static char sccsid[] = "$Id: vi.c,v 5.20 1992/10/10 14:06:08 bostic Exp $ (Berkeley) $Date: 1992/10/10 14:06:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
-#include <termios.h>
+
+#include <ctype.h>
+#include <curses.h>
 #include <errno.h>
 #include <limits.h>
-#include <curses.h>
-#include <stdlib.h>
 #include <stdio.h>
-#include <ctype.h>
+#include <stdlib.h>
+#include <termios.h>
 
 #include "vi.h"
 #include "vcmd.h"
@@ -47,7 +48,7 @@ vi()
 
 	scr_init();
 	scr_ref();
-	wrefresh(curscr);
+	refresh();
 	for (;;) {
 		/* Report any changes from the previous command. */
 		if (rptlines) {
@@ -71,7 +72,7 @@ err:		if (msgcnt) {
 			msg_vflush();
 			refresh();
 		} else if (!needexerase) {
-			scr_modeline();
+			scr_modeline(curf);
 			refresh();
 		}
 
@@ -119,8 +120,6 @@ err:		if (msgcnt) {
 		/* Call the function, update the cursor. */
 		if ((vp->kp->func)(vp, &fm, &tm, &m))
 			goto err;
-		curf->lno = m.lno;
-		curf->cno = m.cno;
 
 		/*
 		 * If that command took us out of vi mode, then exit
@@ -129,9 +128,33 @@ err:		if (msgcnt) {
 		if (mode != MODE_VI)
 			break;
 
+		/*
+		 * Some vi row movements are "attracted" to the last set
+		 * position, i.e. the V_RCM commands are moths to the
+		 * V_RCM_SET commands' candle.  Does this totally violate
+		 * the screen and editor layering?  You betcha.
+		 */
+		if (flags & V_RCM)
+			m.cno = scr_relative(curf, m.lno);
+		else if (flags & V_RCM_SETFNB) {
+			/* Hack -- do the movement here, too. */
+			if (nonblank(m.lno, &m.cno))
+				goto err;
+			curf->rcmflags = RCM_FNB;
+		}
+		else if (flags & V_RCM_SETLAST)
+			curf->rcmflags = RCM_LAST;
+			
+		curf->lno = m.lno;
+		curf->cno = m.cno;
+
 		/* Update the screen. */
-		scr_cchange();
-		refresh();
+		scr_cchange(curf);
+
+		if (flags & V_RCM_SET) {
+			curf->rcmflags = 0;
+			curf->rcm = curf->scno;
+		}
 
 		/* Set the dot command structure. */
 		if (flags & V_DOT) {
@@ -152,7 +175,7 @@ err:		if (msgcnt) {
 #define	KEY(k) {							\
 	(k) = getkey(WHEN_VICMD);					\
 	if (needexerase) {						\
-		scr_modeline();						\
+		scr_modeline(curf);					\
 		refresh();						\
 	}								\
 	if ((k) < 0 || (k) > MAXVIKEY) {				\
@@ -436,7 +459,7 @@ getkeyword(kp, flags)
 {
 	register size_t beg, end, key;
 	size_t len;
-	char *p;
+	u_char *p;
 
 	p = file_gline(curf, curf->lno, &len);
 	beg = curf->cno;
@@ -489,7 +512,7 @@ noword:		bell();
 	 */
 	if (beg != curf->cno) {
 		curf->cno = beg;
-		scr_cchange();
+		scr_cchange(curf);
 		refresh();
 	}
 
