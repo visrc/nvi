@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_status.c,v 8.7 1993/09/27 18:00:34 bostic Exp $ (Berkeley) $Date: 1993/09/27 18:00:34 $";
+static char sccsid[] = "$Id: v_status.c,v 8.8 1993/09/28 10:26:10 bostic Exp $ (Berkeley) $Date: 1993/09/28 10:26:10 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -45,7 +45,7 @@ status(sp, ep, lno, showlast)
 	int showlast;
 {
 	recno_t last;
-	char *mo, *ro, *pid;
+	char *mo, *nc, *nf, *ro, *pid;
 #ifdef DEBUG
 	char pbuf[50];
 
@@ -55,27 +55,49 @@ status(sp, ep, lno, showlast)
 	pid = "";
 #endif
 	/*
-	 * See nvi/exf.c:file_init() for a description of how and when
-	 * the read-only bit is set.
+	 * See nvi/exf.c:file_init() for a description of how and
+	 * when the read-only bit is set.  Possible displays are:
+	 *
+	 *	new file
+	 *	new file, readonly
+	 *	[un]modified
+	 *	[un]modified, readonly
+	 *	name changed, [un]modified
+	 *	name changed, [un]modified, readonly
+	 *
+	 * !!!
+	 * The historic display for "name changed" was "[Not edited]".
 	 */
-	ro = F_ISSET(sp->frp, FR_RDONLY) ? ", readonly" : "";
 	if (F_ISSET(sp->frp, FR_NEWFILE)) {
-		mo = "new file";
 		F_CLR(sp->frp, FR_NEWFILE);
-	} else
-		mo = F_ISSET(ep, F_MODIFIED) ? "modified" : "unmodified";
+		nf = "new file";
+		mo = "";
+	} else {
+		nf = "";
+		if (F_ISSET(sp->frp, FR_NAMECHANGED)) {
+			nc = "name changed";
+			mo = F_ISSET(ep, F_MODIFIED) ?
+			    ", modified" : ", unmodified";
+		} else {
+			nc = "";
+			mo = F_ISSET(ep, F_MODIFIED) ?
+			    "modified" : "unmodified";
+		}
+	}
+	ro = F_ISSET(sp->frp, FR_RDONLY) ? ", readonly" : "";
 	if (showlast) {
 		if (file_lline(sp, ep, &last))
 			return (1);
 		if (last >= 1)
-			msgq(sp, M_INFO, "%s: %s%s: line %lu of %lu [%ld%%]%s",
-			    sp->frp->fname, mo, ro, lno,
+			msgq(sp, M_INFO,
+			    "%s: %s%s%s%s: line %lu of %lu [%ld%%]%s",
+			    sp->frp->fname, nf, nc, mo, ro, lno,
 			    last, (lno * 100) / last, pid);
 		else
-			msgq(sp, M_INFO, "%s: %s%s: empty file%s",
-			    sp->frp->fname, mo, ro, pid);
+			msgq(sp, M_INFO, "%s: %s%s%s%s: empty file%s",
+			    sp->frp->fname, nf, nc, mo, ro, pid);
 	} else
-		msgq(sp, M_INFO, "%s: %s%s: line %lu%s", sp->frp->fname,
-		    mo, ro, lno, pid);
+		msgq(sp, M_INFO, "%s: %s%s%s%s: line %lu%s",
+		    sp->frp->fname, nf, nc, mo, ro, lno, pid);
 	return (0);
 }
