@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 5.5 1992/04/16 17:58:34 bostic Exp $ (Berkeley) $Date: 1992/04/16 17:58:34 $";
+static char sccsid[] = "$Id: seq.c,v 5.6 1992/04/17 09:39:18 bostic Exp $ (Berkeley) $Date: 1992/04/17 09:39:18 $";
 #endif /* not lint */
 
 #include <errno.h>
@@ -46,6 +46,10 @@ seq_set(name, input, output, stype, userdef)
 	int ilen;
 	char *s;
 
+#ifdef DEBUG
+	TRACE("seq_set: name {%s} input {%s} output {%s}\n",
+	    name ? name : "", input, output);
+#endif
 	/*
 	 * Find any previous occurrence, and replace the output field.
 	 * At the same time, decide where to insert a new structure if
