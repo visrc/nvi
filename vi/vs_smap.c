@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 10.2 1995/05/05 18:59:11 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:59:11 $";
+static char sccsid[] = "$Id: vs_smap.c,v 10.3 1995/05/05 19:06:13 bostic Exp $ (Berkeley) $Date: 1995/05/05 19:06:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -42,6 +42,8 @@ static int	vs_sm_up __P((SCR *, MARK *, recno_t, scroll_t, SMAP *));
 /*
  * vs_change --
  *	Make a change to the screen.
+ *
+ * PUBLIC: int vs_change __P((SCR *, recno_t, lnop_t));
  */
 int
 vs_change(sp, lno, op)
@@ -140,6 +142,8 @@ vs_change(sp, lno, op)
  * Unexported interface: if lno is OOBLNO, P_TOP means that the HMAP
  * slot is already filled in, P_BOTTOM means that the TMAP slot is
  * already filled in, and we just finish up the job.
+ *
+ * PUBLIC: int vs_sm_fill __P((SCR *, recno_t, pos_t));
  */
 int
 vs_sm_fill(sp, lno, pos)
@@ -467,6 +471,8 @@ vs_sm_reset(sp, lno)
  * vs_sm_scroll
  *	Scroll the SMAP up/down count logical lines.  Different
  *	semantics based on the vi command, *sigh*.
+ *
+ * PUBLIC: int vs_sm_scroll __P((SCR *, MARK *, recno_t, scroll_t));
  */
 int
 vs_sm_scroll(sp, rp, count, scmd)
@@ -705,6 +711,8 @@ vs_sm_up(sp, rp, count, scmd, smp)
 /*
  * vs_sm_1up --
  *	Scroll the SMAP up one.
+ *
+ * PUBLIC: int vs_sm_1up __P((SCR *));
  */
 int
 vs_sm_1up(sp)
@@ -930,6 +938,8 @@ vs_sm_erase(sp)
 /*
  * vs_sm_1down --
  *	Scroll the SMAP down one.
+ *
+ * PUBLIC: int vs_sm_1down __P((SCR *));
  */
 int
 vs_sm_1down(sp)
@@ -986,6 +996,8 @@ vs_insertln(sp, cnt)
 /*
  * vs_sm_next --
  *	Fill in the next entry in the SMAP.
+ *
+ * PUBLIC: int vs_sm_next __P((SCR *, SMAP *, SMAP *));
  */
 int
 vs_sm_next(sp, p, t)
@@ -1014,6 +1026,8 @@ vs_sm_next(sp, p, t)
 /*
  * vs_sm_prev --
  *	Fill in the previous entry in the SMAP.
+ *
+ * PUBLIC: int vs_sm_prev __P((SCR *, SMAP *, SMAP *));
  */
 int
 vs_sm_prev(sp, p, t)
@@ -1037,6 +1051,8 @@ vs_sm_prev(sp, p, t)
 /*
  * vs_sm_cursor --
  *	Return the SMAP entry referenced by the cursor.
+ *
+ * PUBLIC: int vs_sm_cursor __P((SCR *, SMAP **));
  */
 int
 vs_sm_cursor(sp, smpp)
@@ -1076,6 +1092,8 @@ vs_sm_cursor(sp, smpp)
  *	Return the line/column of the top, middle or last line on the screen.
  *	(The vi H, M and L commands.)  Here because only the screen routines
  *	know what's really out there.
+ *
+ * PUBLIC: int vs_sm_position __P((SCR *, MARK *, u_long, pos_t));
  */
 int
 vs_sm_position(sp, rp, cnt, pos)
