@@ -17,9 +17,9 @@ struct _conv {
 	void	*buffer;
 	size_t	size;
 
-	int	(*char2int) (struct _conv*, const char *, ssize_t, CHAR_T **, size_t *);
-	int	(*int2char) (struct _conv*, const CHAR_T *, ssize_t, char **, size_t *);
-	int	(*file2int) (struct _conv*, const char *, ssize_t, CHAR_T **, size_t *);
-	int	(*int2file) (struct _conv*, const CHAR_T *, ssize_t, char **, size_t *);
-	int	(*int2disp) (struct _conv*, const CHAR_T *, ssize_t, char **, size_t *);
+	int	(*char2int) (struct _conv*, const char *, ssize_t, CHAR_T **, size_t *, size_t *);
+	int	(*int2char) (struct _conv*, const CHAR_T *, ssize_t, char **, size_t *, size_t *);
+	int	(*file2int) (struct _conv*, const char *, ssize_t, CHAR_T **, size_t *, size_t *);
+	int	(*int2file) (struct _conv*, const CHAR_T *, ssize_t, char **, size_t *, size_t *);
+	int	(*int2disp) (struct _conv*, const CHAR_T *, ssize_t, char **, size_t *, size_t *);
 };

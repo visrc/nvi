@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: conv.c,v 1.5 2000/07/21 17:35:02 skimo Exp $ (Berkeley) $Date: 2000/07/21 17:35:02 $";
+static const char sccsid[] = "$Id: conv.c,v 1.6 2000/07/23 17:32:16 skimo Exp $ (Berkeley) $Date: 2000/07/23 17:32:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,12 +28,11 @@ static const char sccsid[] = "$Id: conv.c,v 1.5 2000/07/21 17:35:02 skimo Exp $ 
 #include "common.h"
 
 int 
-default_char2int(CONV *conv, const char * str, ssize_t len, CHAR_T **tostr, size_t *tolen)
+default_char2int(CONV *conv, const char * str, ssize_t len, CHAR_T **tostr, size_t *tolen, size_t *blen)
 {
     int i;
 
-    BINC_RETW(NULL, conv->buffer, conv->size, len);
-    *tostr = conv->buffer;
+    BINC_RETW(NULL, *tostr, *blen, len);
 
     *tolen = len;
     for (i = 0; i < len; ++i)
@@ -43,12 +42,11 @@ default_char2int(CONV *conv, const char * str, ssize_t len, CHAR_T **tostr, size
 }
 
 int 
-default_int2char(CONV *conv, const CHAR_T * str, ssize_t len, char **tostr, size_t *tolen)
+default_int2char(CONV *conv, const CHAR_T * str, ssize_t len, char **tostr, size_t *tolen, size_t *blen)
 {
     int i;
 
-    BINC_RET(NULL, conv->buffer, conv->size, len);
-    *tostr = conv->buffer;
+    BINC_RET(NULL, *tostr, *blen, len);
 
     *tolen = len;
     for (i = 0; i < len; ++i)
@@ -58,12 +56,11 @@ default_int2char(CONV *conv, const CHAR_T * str, ssize_t len, char **tostr, size
 }
 
 int 
-default_int2disp(CONV *conv, const CHAR_T * str, ssize_t len, char **tostr, size_t *tolen)
+default_int2disp(CONV *conv, const CHAR_T * str, ssize_t len, char **tostr, size_t *tolen, size_t *blen)
 {
     int i, j;
 
-    BINC_RET(NULL, conv->buffer, conv->size, len * 2);
-    *tostr = conv->buffer;
+    BINC_RET(NULL, *tostr, *blen, len * 2);
 
     for (i = 0, j = 0; i < len; ++i)
 	if (CHAR_WIDTH(NULL, str[i]) > 1) {
@@ -77,12 +74,11 @@ default_int2disp(CONV *conv, const CHAR_T * str, ssize_t len, char **tostr, size
 }
 
 int 
-gb2int(CONV *conv, const char * str, ssize_t len, CHAR_T **tostr, size_t *tolen)
+gb2int(CONV *conv, const char * str, ssize_t len, CHAR_T **tostr, size_t *tolen, size_t *blen)
 {
     int i, j;
 
-    BINC_RETW(NULL, conv->buffer, conv->size, len);
-    *tostr = conv->buffer;
+    BINC_RETW(NULL, *tostr, *blen, len);
 
     for (i = 0, j = 0; i < len; ++i) {
 	if (str[i] & 0x80) {
@@ -101,12 +97,11 @@ gb2int(CONV *conv, const char * str, ssize_t len, CHAR_T **tostr, size_t *tolen)
 }
 
 int
-int2gb(CONV *conv, const CHAR_T * str, ssize_t len, char **tostr, size_t *tolen)
+int2gb(CONV *conv, const CHAR_T * str, ssize_t len, char **tostr, size_t *tolen, size_t *blen)
 {
     int i, j;
 
-    BINC_RET(NULL, conv->buffer, conv->size, len * 2);
-    *tostr = conv->buffer;
+    BINC_RET(NULL, *tostr, *blen, len * 2);
 
     for (i = 0, j = 0; i < len; ++i) {
 	if (INTIS9494(str[i])) {

@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: key.h,v 10.32 2000/07/22 17:31:19 skimo Exp $ (Berkeley) $Date: 2000/07/22 17:31:19 $
+ *	$Id: key.h,v 10.33 2000/07/23 17:32:16 skimo Exp $ (Berkeley) $Date: 2000/07/23 17:32:16 $
  */
 
 #include "multibyte.h"
@@ -29,16 +29,26 @@ typedef	u_int		ARG_CHAR_T;
 #define ROOM_FOR(name,len)	CHAR_T	name[len]
 
 #ifdef USE_WIDECHAR
-#define FILE2INT(sp,n,nlen,w,wlen) \
-    sp->conv->file2int(sp->conv, n, nlen, &w, &wlen)
-#define INT2FILE(sp,w,wlen,n,nlen) \
-    sp->conv->int2file(sp->conv, w, wlen, &n, &nlen)
-#define CHAR2INT(sp,n,nlen,w,wlen) \
-    sp->conv->char2int(sp->conv, n, nlen, &w, &wlen)
-#define INT2CHAR(sp,w,wlen,n,nlen) \
-    sp->conv->int2char(sp->conv, w, wlen, &n, &nlen)
-#define INT2DISP(sp,w,wlen,n,nlen) \
-    sp->conv->int2disp(sp->conv, w, wlen, &n, &nlen)
+#define FILE2INT(sp,n,nlen,w,wlen) 					    \
+    sp->conv->file2int(sp->conv, n, nlen, 				    \
+	       (CHAR_T **)&sp->wp->conv_bp, &wlen, &sp->wp->conv_blen),     \
+    w = sp->wp->conv_bp
+#define INT2FILE(sp,w,wlen,n,nlen) 					    \
+    sp->conv->int2file(sp->conv, w, wlen, 				    \
+	       (char **)&sp->wp->conv_bp, &nlen, &sp->wp->conv_blen),	    \
+    n = sp->wp->conv_bp
+#define CHAR2INT(sp,n,nlen,w,wlen) 					    \
+    sp->conv->char2int(sp->conv, n, nlen, 				    \
+	       (CHAR_T **)&sp->wp->conv_bp, &wlen, &sp->wp->conv_blen),     \
+    w = sp->wp->conv_bp
+#define INT2CHAR(sp,w,wlen,n,nlen) 					    \
+    sp->conv->int2char(sp->conv, w, wlen, 				    \
+	       (char **)&sp->wp->conv_bp, &nlen, &sp->wp->conv_blen),	    \
+    n = sp->wp->conv_bp
+#define INT2DISP(sp,w,wlen,n,nlen) 					    \
+    sp->conv->int2disp(sp->conv, w, wlen, 				    \
+	       (char **)&sp->wp->conv_bp, &nlen, &sp->wp->conv_blen),	    \
+    n = sp->wp->conv_bp
 #define CONST
 #else
 #define FILE2INT(sp,n,nlen,w,wlen) \
