@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_msg.c,v 10.8 1995/09/25 08:32:37 bostic Exp $ (Berkeley) $Date: 1995/09/25 08:32:37 $";
+static char sccsid[] = "$Id: vs_msg.c,v 10.9 1995/09/27 11:31:22 bostic Exp $ (Berkeley) $Date: 1995/09/27 11:31:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -424,7 +424,8 @@ vs_ex_resolve(sp, continuep)
 	int in_ex;
 
 	/* Don't continue by default. */
-	*continuep = 0;
+	if (continuep != NULL)
+		*continuep = 0;
 
 	/* Report on line modifications. */
 	(void)msg_rpt(sp);
@@ -446,8 +447,8 @@ vs_ex_resolve(sp, continuep)
 	}
 
 	/* Put up the return-to-continue message and wait. */
-	vs_scroll(sp, &ch, SCROLL_EXWAIT);
-	if (ch == ':') {
+	vs_scroll(sp, &ch, continuep == NULL ? SCROLL_WAIT : SCROLL_EXWAIT);
+	if (continuep != NULL && ch == ':') {
 		*continuep = 1;
 		return (0);
 	}

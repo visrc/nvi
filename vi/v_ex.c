@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 10.11 1995/09/24 12:01:00 bostic Exp $ (Berkeley) $Date: 1995/09/24 12:01:00 $";
+static char sccsid[] = "$Id: v_ex.c,v 10.12 1995/09/27 11:31:05 bostic Exp $ (Berkeley) $Date: 1995/09/27 11:31:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -350,7 +350,7 @@ v_ex(sp, vp)
 {
 	GS *gp;
 	TEXT *tp;
-	int colon;
+	int colon, can_continue;
 
 	/*
 	 * !!!
@@ -398,12 +398,14 @@ v_ex(sp, vp)
 		if (ex_cmd(sp))
 			return (1);
 
+		/* Return regardless if we left the screen .*/
+		can_continue = !F_ISSET(sp, S_EXIT | S_EXIT_FORCE | S_SSWITCH);
+
 		/* Resolve messages. */
-		if (vs_ex_resolve(sp, &colon))
+		if (vs_ex_resolve(sp, can_continue ? &colon : NULL))
 			return (1);
 
-		/* Return regardless if we left the screen .*/
-		if (!colon || F_ISSET(sp, S_EXIT | S_EXIT_FORCE))
+		if (!colon || !can_continue)
 			break;
 	}
 	return (v_ex_done(sp, vp));
