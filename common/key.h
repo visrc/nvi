@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 5.28 1993/05/01 18:14:18 bostic Exp $ (Berkeley) $Date: 1993/05/01 18:14:18 $
+ *	$Id: key.h,v 5.29 1993/05/02 15:55:40 bostic Exp $ (Berkeley) $Date: 1993/05/02 15:55:40 $
  */
 
 /* Special character lookup values. */
@@ -50,14 +50,14 @@
 #define	TXT_VALID_VI							\
 	(TXT_APPENDEOL | TXT_AUTOINDENT | TXT_BEAUTIFY | TXT_CNTRLT |	\
 	 TXT_CR | TXT_EMARK | TXT_ESCAPE | TXT_MAPCOMMAND |		\
-	 TXT_MAPINPUT | TXT_OVERWRITE | TXT_PROMPT | TXT_RECORD |	\
-	 TXT_REPLACE | TXT_REPLAY | TXT_RESOLVE)
+	 TXT_OVERWRITE | TXT_PROMPT | TXT_RECORD | TXT_REPLACE |	\
+	 TXT_REPLAY | TXT_RESOLVE)
 
 #define	TXT_VALID_EX							\
-	(TXT_BEAUTIFY | TXT_CR | TXT_MAPINPUT |	TXT_NLECHO | TXT_PROMPT)
+	(TXT_BEAUTIFY | TXT_CR | TXT_NLECHO | TXT_PROMPT)
 
 #define	TXT_GETKEY_MASK							\
-	(TXT_BEAUTIFY | TXT_MAPCOMMAND | TXT_MAPINPUT)
+	(TXT_BEAUTIFY | TXT_MAPCOMMAND)
 
 /* Support keyboard routines. */
 void	flush_mappedkey __P((SCR *));

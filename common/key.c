@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.58 1993/05/01 18:05:56 bostic Exp $ (Berkeley) $Date: 1993/05/01 18:05:56 $";
+static char sccsid[] = "$Id: key.c,v 5.59 1993/05/02 15:55:39 bostic Exp $ (Berkeley) $Date: 1993/05/02 15:55:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -129,7 +129,7 @@ flush_mappedkey(sp)
 int
 getkey(sp, flags)
 	SCR *sp;
-	u_int flags;			/* TXT_MAPCOMMAND, TXT_MAPINPUT */
+	u_int flags;			/* TXT_MAPCOMMAND */
 {
 	int ch;
 	SEQ *qp;
@@ -176,7 +176,7 @@ getkey(sp, flags)
 	 * to read more keys to complete the map.  Max map is sizeof(keybuf)
 	 * and probably not worth fixing.
 	 */
-	if (LF_ISSET(TXT_MAPINPUT | TXT_MAPCOMMAND)) {
+	if (LF_ISSET(TXT_MAPCOMMAND)) {
 retry:		qp = seq_find(sp, &sp->keybuf[sp->nextkey], sp->nkeybuf,
 		    LF_ISSET(TXT_MAPCOMMAND) ? SEQ_COMMAND : SEQ_INPUT,
 		    &ispartial);
