@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 10.15 1995/10/17 08:24:07 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:24:07 $
+ *	$Id: gs.h,v 10.16 1995/11/05 09:50:42 bostic Exp $ (Berkeley) $Date: 1995/11/05 09:50:42 $
  */
 
 #define	TEMPORARY_FILE_STRING	"/tmp"	/* Default temporary file name. */
@@ -96,6 +96,11 @@ struct _gs {
 	size_t	 i_nelem;		/* Number of array elements. */
 	size_t	 i_cnt;			/* Count of events. */
 	size_t	 i_next;		/* Offset of next event. */
+
+#ifdef TCL_INTERP
+	void	*interp;		/* Tcl_Interp *: Tcl interpreter. */
+	SCR	*interpScr;		/* XXX: Tcl interpreter screen. */
+#endif
 
 	CB	*dcbp;			/* Default cut buffer pointer. */
 	CB	 dcb_store;		/* Default cut buffer storage. */
