@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_screen.c,v 5.2 1993/04/12 14:57:21 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:57:21 $";
+static char sccsid[] = "$Id: v_screen.c,v 5.3 1993/04/13 16:27:02 bostic Exp $ (Berkeley) $Date: 1993/04/13 16:27:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,7 +36,7 @@ v_window(sp, ep, vp, fm, tm, rp)
 	if (sp->child != NULL)
 		sp->snext = sp->child;
 	else if (sp->parent == NULL) {
-		msgq(sp, M_ERR, "No window to which to switch");
+		msgq(sp, M_ERR, "No other window to switch to");
 		return (1);
 	} else {
 		for (p = sp; p->parent != NULL; p = p->parent);
