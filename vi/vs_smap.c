@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 5.1 1993/02/19 11:18:56 bostic Exp $ (Berkeley) $Date: 1993/02/19 11:18:56 $";
+static char sccsid[] = "$Id: vs_smap.c,v 5.2 1993/02/20 16:07:58 bostic Exp $ (Berkeley) $Date: 1993/02/20 16:07:58 $";
 #endif /* not lint */
 
 #include <curses.h>
@@ -217,16 +217,15 @@ scr_sm_up(ep, lnop, count, cursor_move)
 	 * is small enough and the line length large enough, the cursor can
 	 * end up in very strange places.  Probably not worthing fixing.
 	 */
-	if (!cursor_move)
-		for (p = HMAP;; ++p) {
-			if (p > TMAP) {
-				msg(ep, M_ERROR,
-				    "Line %lu not on the screen.", ep->lno);
-				return (1);
-			}
-			if (p->lno == ep->lno)
-				break;
+	for (p = HMAP;; ++p) {
+		if (p > TMAP) {
+			msg(ep, M_ERROR,
+			    "Line %lu not on the screen.", ep->lno);
+			return (1);
 		}
+		if (p->lno == ep->lno)
+			break;
+	}
 
 	last = file_lline(ep);
 	for (scrolled = 0;; scrolled = 1) {
@@ -334,16 +333,15 @@ scr_sm_down(ep, lnop, count, cursor_move)
 	 * is small enough and the line length large enough, the cursor can
 	 * end up in very strange places.  Probably not worthing fixing.
 	 */
-	if (!cursor_move)
-		for (p = HMAP;; ++p) {
-			if (p > TMAP) {
-				msg(ep, M_ERROR,
-				    "Line %lu not on the screen.", ep->lno);
-				return (1);
-			}
-			if (p->lno == ep->lno)
-				break;
+	for (p = HMAP;; ++p) {
+		if (p > TMAP) {
+			msg(ep, M_ERROR,
+			    "Line %lu not on the screen.", ep->lno);
+			return (1);
 		}
+		if (p->lno == ep->lno)
+			break;
+	}
 
 	for (scrolled = 0;; scrolled = 1) {
 		if (count == 0)
