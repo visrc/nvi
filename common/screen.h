@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: screen.h,v 10.32 2000/07/02 20:31:59 skimo Exp $ (Berkeley) $Date: 2000/07/02 20:31:59 $
+ *	$Id: screen.h,v 10.33 2000/07/10 15:28:44 skimo Exp $ (Berkeley) $Date: 2000/07/10 15:28:44 $
  */
 
 /*
@@ -52,6 +52,7 @@ struct _win {
 	db_recno_t	if_lno;		/* Current associated line number. */
 
 };
+
 /*
  * SCR --
  *	The screen structure.  To the extent possible, all screen information

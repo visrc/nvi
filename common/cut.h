@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: cut.h,v 10.6 2000/04/21 19:00:33 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:33 $
+ *	$Id: cut.h,v 10.7 2000/07/10 15:28:44 skimo Exp $ (Berkeley) $Date: 2000/07/10 15:28:44 $
  */
 
 typedef struct _texth TEXTH;		/* TEXT list head structure. */
@@ -26,7 +26,7 @@ struct _cb {
 /* Lines/blocks of text. */
 struct _text {				/* Text: a linked list of lines. */
 	CIRCLEQ_ENTRY(_text) q;		/* Linked list of text structures. */
-	char	*lb;			/* Line buffer. */
+	CHAR_T	*lb;			/* Line buffer. */
 	size_t	 lb_len;		/* Line buffer length. */
 	size_t	 len;			/* Line length. */
 

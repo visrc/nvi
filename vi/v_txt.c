@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.94 2000/06/30 19:46:03 skimo Exp $ (Berkeley) $Date: 2000/06/30 19:46:03 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.95 2000/07/10 15:28:45 skimo Exp $ (Berkeley) $Date: 2000/07/10 15:28:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1689,7 +1689,7 @@ txt_ai_resolve(sp, tp, changedp)
 	u_long ts;
 	int del;
 	size_t cno, len, new, old, scno, spaces, tab_after_sp, tabs;
-	char *p;
+	CHAR_T *p;
 
 	*changedp = 0;
 
@@ -2017,7 +2017,7 @@ txt_fc(sp, tp, redrawp)
 	EXCMD cmd;
 	size_t indx, len, nlen, off;
 	int argc, trydir;
-	char *p, *t;
+	CHAR_T *p, *t;
 
 	trydir = 0;
 	*redrawp = 0;

@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: key.h,v 10.23 2000/07/05 11:33:15 skimo Exp $ (Berkeley) $Date: 2000/07/05 11:33:15 $
+ *	$Id: key.h,v 10.24 2000/07/10 15:28:44 skimo Exp $ (Berkeley) $Date: 2000/07/10 15:28:44 $
  */
 
 /*
@@ -24,6 +24,7 @@
 typedef	u_char		CHAR_T;
 typedef	u_int		ARG_CHAR_T;
 #define	MAX_CHAR_T	0xff
+#define CHAR_T_BLEN(sp,len)	len
 
 /* The maximum number of columns any character can take up on a screen. */
 #define	MAX_CHARACTER_COLUMNS	4

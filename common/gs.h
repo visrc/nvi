@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: gs.h,v 10.43 2000/07/02 20:31:59 skimo Exp $ (Berkeley) $Date: 2000/07/02 20:31:59 $
+ *	$Id: gs.h,v 10.44 2000/07/10 15:28:44 skimo Exp $ (Berkeley) $Date: 2000/07/10 15:28:44 $
  */
 
 #define	TEMPORARY_FILE_STRING	"/tmp"	/* Default temporary file name. */
@@ -85,7 +85,7 @@ struct _gs {
 #define	DEFAULT_NOPRINT	'\1'		/* Emergency non-printable character. */
 	CHAR_T	 noprint;		/* Cached, unprintable character. */
 
-	char	*tmp_bp;		/* Temporary buffer. */
+	CHAR_T	*tmp_bp;		/* Temporary buffer. */
 	size_t	 tmp_blen;		/* Temporary buffer size. */
 
 	char	*c_option;		/* Ex initial, command-line command. */
@@ -141,7 +141,7 @@ struct _gs {
 
 	/* Screen interface functions. */
 					/* Add a string to the screen. */
-	int	(*scr_addstr) __P((SCR *, const char *, size_t));
+	int	(*scr_addstr) __P((SCR *, const CHAR_T *, size_t));
 					/* Toggle a screen attribute. */
 	int	(*scr_attr) __P((SCR *, scr_attr_t, int));
 					/* Terminal baud rate. */

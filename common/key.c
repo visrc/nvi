@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: key.c,v 10.40 2000/06/25 17:34:37 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:37 $";
+static const char sccsid[] = "$Id: key.c,v 10.41 2000/07/10 15:28:44 skimo Exp $ (Berkeley) $Date: 2000/07/10 15:28:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -247,8 +247,8 @@ v_key_name(sp, ach)
 	SCR *sp;
 	ARG_CHAR_T ach;
 {
-	static const CHAR_T hexdigit[] = "0123456789abcdef";
-	static const CHAR_T octdigit[] = "01234567";
+	static const char hexdigit[] = "0123456789abcdef";
+	static const char octdigit[] = "01234567";
 	CHAR_T ch, *chp, mask;
 	size_t len;
 	int cnt, shift;

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cut.c,v 10.12 2000/06/27 17:19:04 skimo Exp $ (Berkeley) $Date: 2000/06/27 17:19:04 $";
+static const char sccsid[] = "$Id: cut.c,v 10.13 2000/07/10 15:28:43 skimo Exp $ (Berkeley) $Date: 2000/07/10 15:28:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -322,7 +322,7 @@ text_init(sp, p, len, total_len)
 		return (NULL);
 	/* ANSI C doesn't define a call to malloc(3) for 0 bytes. */
 	if ((tp->lb_len = total_len) != 0) {
-		MALLOC(sp, tp->lb, CHAR_T *, tp->lb_len);
+		MALLOC(sp, tp->lb, CHAR_T *, CHAR_T_BLEN(sp, tp->lb_len));
 		if (tp->lb == NULL) {
 			free(tp);
 			return (NULL);
