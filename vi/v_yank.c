@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_yank.c,v 5.11 1992/11/03 15:07:05 bostic Exp $ (Berkeley) $Date: 1992/11/03 15:07:05 $";
+static char sccsid[] = "$Id: v_yank.c,v 5.12 1992/11/06 18:34:54 bostic Exp $ (Berkeley) $Date: 1992/11/06 18:34:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,6 +28,8 @@ v_Yank(vp, fm, tm, rp)
 	MARK *fm, *tm, *rp;
 {
 	*rp = *fm;
+	curf->rptlines = tm->lno - fm->lno + 1;
+	curf->rptlabel = "yanked";
 	return (cut(VICB(vp), fm, tm, 1));
 }
 
@@ -41,5 +43,7 @@ v_yank(vp, fm, tm, rp)
 	MARK *fm, *tm, *rp;
 {
 	*rp = *fm;
+	curf->rptlines = tm->lno - fm->lno + 1;
+	curf->rptlabel = "yanked";
 	return (cut(VICB(vp), fm, tm, vp->flags & VC_LMODE));
 }
