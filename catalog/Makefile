@@ -1,4 +1,4 @@
-#	$Id: Makefile,v 8.1 1994/08/31 13:27:45 bostic Exp $ (Berkeley) $Date: 1994/08/31 13:27:45 $
+#	$Id: Makefile,v 8.2 1994/09/02 10:33:30 bostic Exp $ (Berkeley) $Date: 1994/09/02 10:33:30 $
 
 FILES=	../common/*.c ../ex/*.c ../sex/*.c ../vi/*.c ../svi/*.c ../xaw/*.c
 english: dump ${FILES}
@@ -10,6 +10,7 @@ english: dump ${FILES}
 
 catalog:
 	@for i in *.base; do						\
+		echo "... $$i";						\
 		awk '{							\
 			if (++nline > $$1) {				\
 				print "DUPLICATE MESSAGE NUMBERS";	\
@@ -25,13 +26,14 @@ catalog:
 
 check:
 	@for i in *.base; do						\
+		echo "... $$i";						\
 		f=`basename $$i .base`;					\
 		(echo "UNUSED MESSAGE NUMBERS (this is okay):";		\
 		awk '{while (++nline < $$1) print nline}' < $$i;	\
 		echo =========================;				\
 		echo "DUPLICATE MESSAGE NUMBERS (this is NOT okay):";	\
 		for j in						\
-		    `sed '/^$$/d' < vi_english.base | sort -u |		\
+		    `sed '/^$$/d' < $$i | sort -u |		\
 		    awk '{print $$1}' | uniq -d`; do			\
 			egrep $$j $$i;					\
 		done;							\
