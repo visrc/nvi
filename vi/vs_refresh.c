@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.1 1992/10/17 15:25:04 bostic Exp $ (Berkeley) $Date: 1992/10/17 15:25:04 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.2 1992/10/17 15:26:08 bostic Exp $ (Berkeley) $Date: 1992/10/17 15:26:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -80,7 +80,7 @@ scr_modeline(ep)
 	EXF *ep;
 {
 	size_t oldy, oldx;
-	int cnt, when;
+	int when;
 	char *p;
 
 #define	RULERSIZE	15
@@ -97,9 +97,9 @@ scr_modeline(ep)
 		static char buf[RULERSIZE];
 
 		memset(buf, ' ', sizeof(buf) - 1);
-		cnt = snprintf(buf,
+		(void)snprintf(buf,
 		    sizeof(buf) - 1, "%lu,%lu", ep->lno, ep->cno + 1);
-		buf[cnt] = ' ';
+		buf[strlen(buf)] = ' ';
 		move(LINES - 1, COLS / 2 - RULERSIZE / 2);
 		addstr(buf);
 	}
