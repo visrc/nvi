@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 8.26 1993/12/10 12:22:10 bostic Exp $ (Berkeley) $Date: 1993/12/10 12:22:10 $";
+static char sccsid[] = "$Id: vs_split.c,v 8.27 1993/12/16 15:41:39 bostic Exp $ (Berkeley) $Date: 1993/12/16 15:41:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -414,7 +414,7 @@ svi_swap(csp, nsp, name)
 		if (sp->t_minrows > csp->t_maxrows)
 			sp->t_minrows = sp->t_maxrows;
 	} else
-		sp->t_rows = sp->t_maxrows = sp->rows - 1;
+		sp->t_rows = sp->t_maxrows = sp->t_minrows = sp->rows - 1;
 
 	/*
 	 * If the size of the scrolling region hasn't been modified by
