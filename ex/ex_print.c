@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 10.7 1995/09/21 12:07:23 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:07:23 $";
+static char sccsid[] = "$Id: ex_print.c,v 10.8 1995/10/03 10:23:47 bostic Exp $ (Berkeley) $Date: 1995/10/03 10:23:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -205,14 +205,15 @@ ex_scprint(sp, fp, tp)
 
 	if (ex_prchars(sp, p, &col, fp->cno, 0, ' '))
 		return (1);
-	if (!INTERRUPTED(sp) &&
-	    ex_prchars(sp, p, &col, tp->cno - fp->cno, 0, '^'))
+	p += fp->cno;
+	if (ex_prchars(sp,
+	    p, &col, tp->cno == fp->cno ? 1 : tp->cno - fp->cno, 0, '^'))
 		return (1);
-	if (!INTERRUPTED(sp)) {
-		p = "[ynq]";		/* XXX: should be msg_cat. */
-		if (ex_prchars(sp, p, &col, 5, 0, 0))
-			return (1);
-	}
+	if (INTERRUPTED(sp))
+		return (1);
+	p = "[ynq]";		/* XXX: should be msg_cat. */
+	if (ex_prchars(sp, p, &col, 5, 0, 0))
+		return (1);
 	(void)ex_fflush(sp);
 	return (0);
 }
