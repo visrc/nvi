@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.128 1994/09/08 08:34:07 bostic Exp $ (Berkeley) $Date: 1994/09/08 08:34:07 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.129 1994/09/12 10:41:48 bostic Exp $ (Berkeley) $Date: 1994/09/12 10:41:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -392,17 +392,21 @@ next_ch:	tval = term_key(sp, &ikey, quoted == Q_VTHIS ?
 		 * replace the placeholder (a carat or a backslash) with the
 		 * new character.  Skip tests for abbreviations; ":ab xa XA"
 		 * followed by "ixa^V<space>" doesn't perform an abbreviation.
+		 * Special case, ^V^J is the same as ^J, historically.
 		 */
 		if (ikey.flags & CH_QUOTED)
 			goto insq_ch;
 		if (quoted != Q_NOTSET) {
-			if (quoted == Q_VTHIS || quoted == Q_BTHIS &&
+			if (quoted == Q_VTHIS && ikey.value != K_NL ||
+			    quoted == Q_BTHIS &&
 			    (ikey.value == K_VERASE || ikey.value == K_VKILL)) {
 				--sp->cno;
 				++tp->owrite;
 				quoted = Q_NOTSET;
 				goto insl_ch;
 			}
+			if (quoted == Q_VTHIS && ikey.value == K_NL)
+				--sp->cno;
 			quoted = Q_NOTSET;
 		}
 
