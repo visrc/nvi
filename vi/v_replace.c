@@ -6,11 +6,12 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_replace.c,v 5.22 1993/04/19 15:33:32 bostic Exp $ (Berkeley) $Date: 1993/04/19 15:33:32 $";
+static char sccsid[] = "$Id: v_replace.c,v 5.23 1993/05/08 13:58:17 bostic Exp $ (Berkeley) $Date: 1993/05/08 13:58:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
+#include <ctype.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
@@ -80,13 +81,14 @@ nochar:		msgq(sp, M_BERR, "No characters to replace");
 			return (1);
 
 		/*
-		 * The rest of the current line.  This one has autoindent
-		 * applied.  Historic vi put the cursor on the last indent
-		 * character.  There's almost certainly no reason to do
-		 * that, but I can't think of a reason not to, either.
+		 * The rest of the current line.  And, of course, now it gets
+		 * tricky.  Any white space after the replaced character is
+		 * stripped, and autoindent is applied.  Put the cursor on the
+		 * last indent character as did historic vi.
 		 */
-		p += fm->cno + cnt;
-		len -= fm->cno + cnt;
+		for (p += fm->cno + cnt, len -= fm->cno + cnt;
+		    len && isspace(*p); --len, ++p);
+
 		if ((tp = text_init(sp, p, len, len)) == NULL)
 			return (1);
 		if (txt_auto(sp, ep, fm->lno, tp))
