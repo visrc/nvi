@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: log.c,v 8.2 1993/08/16 17:17:11 bostic Exp $ (Berkeley) $Date: 1993/08/16 17:17:11 $";
+static char sccsid[] = "$Id: log.c,v 8.3 1993/09/27 16:19:54 bostic Exp $ (Berkeley) $Date: 1993/09/27 16:19:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,7 +30,7 @@ static char sccsid[] = "$Id: log.c,v 8.2 1993/08/16 17:17:11 bostic Exp $ (Berke
  *	LOG_LINE_INSERT		recno_t		char *
  *	LOG_LINE_RESET_F	recno_t		char *
  *	LOG_LINE_RESET_B	recno_t		char *
- *	LOG_MARK		key		MARK
+ *	LOG_MARK		MARK
  *
  * We do before image physical logging.  This means that the editor layer
  * cannot modify records in place, even if simply deleting or overwriting
@@ -286,10 +286,9 @@ log_line(sp, ep, lno, action)
  *	cause any other change.
  */
 int
-log_mark(sp, ep, kch, mp)
+log_mark(sp, ep, mp)
 	SCR *sp;
 	EXF *ep;
-	u_int kch;
 	MARK *mp;
 {
 	DBT data, key;
@@ -305,15 +304,14 @@ log_mark(sp, ep, kch, mp)
 	}
 
 	BINC(sp, ep->l_lp,
-	    ep->l_len, sizeof(u_char) + sizeof(u_char) + sizeof(MARK));
+	    ep->l_len, sizeof(u_char) + sizeof(MARK));
 	ep->l_lp[0] = LOG_MARK;
-	ep->l_lp[1] = kch;
-	memmove(ep->l_lp + sizeof(u_char) + sizeof(u_char), mp, sizeof(MARK));
+	memmove(ep->l_lp + sizeof(u_char), mp, sizeof(MARK));
 
 	key.data = &ep->l_cur;
 	key.size = sizeof(recno_t);
 	data.data = ep->l_lp;
-	data.size = sizeof(u_char) + sizeof(u_char) + sizeof(MARK);
+	data.size = sizeof(u_char) + sizeof(MARK);
 	if (ep->log->put(ep->log, &key, &data, 0) == -1)
 		LOG_ERR;
 
@@ -333,7 +331,7 @@ log_backward(sp, ep, rp)
 	MARK *rp;
 {
 	DBT key, data;
-	MARK m;
+	MARK m, *mp;
 	recno_t lno;
 	int didop;
 	u_char *p;
@@ -400,9 +398,8 @@ log_backward(sp, ep, rp)
 			break;
 		case LOG_MARK:
 			didop = 1;
-			memmove(&m,
-			    p + sizeof(u_char) + sizeof(u_char), sizeof(MARK));
-			if (mark_set(sp, ep, p[1], &m))
+			memmove(&m, p + sizeof(u_char), sizeof(MARK));
+			if (mark_set(sp, ep, m.name, &m, 0))
 				goto err;
 			break;
 		default:
@@ -495,9 +492,8 @@ log_setline(sp, ep, rp)
 				goto err;
 			++sp->rptlines[L_CHANGED];
 		case LOG_MARK:
-			memmove(&m,
-			    p + sizeof(u_char) + sizeof(u_char), sizeof(MARK));
-			if (mark_set(sp, ep, p[1], &m))
+			memmove(&m, p + sizeof(u_char), sizeof(MARK));
+			if (mark_set(sp, ep, m.name, &m, 0))
 				goto err;
 			break;
 		default:
@@ -588,9 +584,8 @@ log_forward(sp, ep, rp)
 			break;
 		case LOG_MARK:
 			didop = 1;
-			memmove(&m,
-			    p + sizeof(u_char) + sizeof(u_char), sizeof(MARK));
-			if (mark_set(sp, ep, p[1], &m))
+			memmove(&m, p + sizeof(u_char), sizeof(MARK));
+			if (mark_set(sp, ep, m.name, &m, 0))
 				goto err;
 			break;
 		default:
