@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 9.7 1995/01/30 09:29:33 bostic Exp $ (Berkeley) $Date: 1995/01/30 09:29:33 $";
+static char sccsid[] = "$Id: vs_smap.c,v 9.8 1995/01/30 10:24:47 bostic Exp $ (Berkeley) $Date: 1995/01/30 10:24:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -554,14 +554,14 @@ svi_sm_up(sp, rp, count, scmd, smp)
 	 */
 	if (svi_sm_next(sp, TMAP, &s1))
 		return (1);
-	if (s1.lno > TMAP->lno && !file_gline(sp, s1.lno, NULL)) {
+	if (s1.lno > TMAP->lno && !file_eline(sp, s1.lno)) {
 		if (scmd == CNTRL_E || scmd == Z_PLUS || smp == TMAP) {
 			v_eof(sp, NULL);
 			return (1);
 		}
 		if (svi_sm_next(sp, smp, &s1))
 			return (1);
-		if (s1.lno > smp->lno && !file_gline(sp, s1.lno, NULL)) {
+		if (s1.lno > smp->lno && !file_eline(sp, s1.lno)) {
 			v_eof(sp, NULL);
 			return (1);
 		}
@@ -587,8 +587,7 @@ svi_sm_up(sp, rp, count, scmd, smp)
 			for (; count--; s1 = s2) {
 				if (svi_sm_next(sp, &s1, &s2))
 					return (1);
-				if (s2.lno != s1.lno &&
-				    !file_gline(sp, s2.lno, NULL))
+				if (s2.lno != s1.lno && !file_eline(sp, s2.lno))
 					break;
 			}
 			TMAP[0] = s2;
@@ -601,8 +600,7 @@ svi_sm_up(sp, rp, count, scmd, smp)
 		    sp->t_rows != sp->t_maxrows; --count, ++sp->t_rows) {
 			if (svi_sm_next(sp, TMAP, &s1))
 				return (1);
-			if (TMAP->lno != s1.lno &&
-			    !file_gline(sp, s1.lno, NULL))
+			if (TMAP->lno != s1.lno && !file_eline(sp, s1.lno))
 				break;
 			*++TMAP = s1;
 			/* svi_sm_next() flushed the cache. */
@@ -626,7 +624,7 @@ svi_sm_up(sp, rp, count, scmd, smp)
 			return (1);
 
 		/* If the line doesn't exist, we're done. */
-		if (TMAP->lno != s1.lno && !file_gline(sp, s1.lno, NULL))
+		if (TMAP->lno != s1.lno && !file_eline(sp, s1.lno))
 			break;
 
 		/* Scroll the screen cursor up one logical line. */
@@ -688,8 +686,7 @@ svi_sm_up(sp, rp, count, scmd, smp)
 		 * file is smaller than the screen.)
 		 */
 		for (; count; --count, ++smp)
-			if (smp == TMAP ||
-			    !file_gline(sp, smp[1].lno, NULL))
+			if (smp == TMAP || !file_eline(sp, smp[1].lno))
 				break;
 		break;
 	case Z_PLUS:
@@ -871,7 +868,7 @@ svi_sm_down(sp, rp, count, scmd, smp)
 		 */
 		if (!count) {
 			for (smp = TMAP; smp > HMAP; --smp)
-				if (file_gline(sp, smp->lno, NULL))
+				if (file_eline(sp, smp->lno))
 					break;
 			break;
 		}
@@ -1112,7 +1109,7 @@ svi_sm_position(sp, rp, cnt, pos)
 		if (cnt > TMAP - HMAP)
 			goto sof;
 		smp = HMAP + cnt;
-		if (cnt && file_gline(sp, smp->lno, NULL) == NULL) {
+		if (cnt && !file_eline(sp, smp->lno)) {
 sof:			msgq(sp, M_BERR, "219|Movement past the end-of-screen");
 			return (1);
 		}
@@ -1124,7 +1121,7 @@ sof:			msgq(sp, M_BERR, "219|Movement past the end-of-screen");
 		 * If the screen isn't filled, find the middle of what's
 		 * real and move there.
 		 */
-		if (file_gline(sp, TMAP->lno, NULL) == NULL) {
+		if (!file_eline(sp, TMAP->lno)) {
 			if (file_lline(sp, &last))
 				return (1);
 			for (smp = TMAP; smp->lno > last && smp > HMAP; --smp);
@@ -1143,7 +1140,7 @@ sof:			msgq(sp, M_BERR, "219|Movement past the end-of-screen");
 		if (cnt > TMAP - HMAP)
 			goto eof;
 		smp = TMAP - cnt;
-		if (file_gline(sp, smp->lno, NULL) == NULL) {
+		if (!file_eline(sp, smp->lno)) {
 			if (file_lline(sp, &last))
 				return (1);
 			for (; smp->lno > last && smp > HMAP; --smp);
