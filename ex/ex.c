@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.26 1993/09/08 09:34:32 bostic Exp $ (Berkeley) $Date: 1993/09/08 09:34:32 $";
+static char sccsid[] = "$Id: ex.c,v 8.27 1993/09/08 14:39:29 bostic Exp $ (Berkeley) $Date: 1993/09/08 14:39:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -507,20 +507,21 @@ two:		switch (cmd.addrcnt) {
 				*p = esc;
 	}
 		
-	/*
-	 * If the entire string is parsed by the command itself, we don't
-	 * even skip leading white-space, it's significant for some commands.
-	 */
-	if (cp->syntax[0] == 's') {
-		sp->ex_argv[0] = exc;
-		sp->ex_argv[1] = NULL;
-		cmd.argc = 1;
-		cmd.argv = sp->ex_argv;
-		goto addr2;
-	}
-	for (lcount = 0, p = cp->syntax; *p; ++p) {
-		for (; isblank(*exc); ++exc);		/* Skip whitespace. */
-		if (!*exc)
+	for (lcount = 0, p = cp->syntax; *p != '\0'; ++p) {
+		/*
+		 * The read and write commands are sensitive to leading
+		 * whitespace, i.e. "write !" is different from "write!".
+		 * If not read or write, skip leading whitespace.
+		 */
+		if (cp != &cmds[C_READ] && cp != &cmds[C_WRITE])
+			for (; isblank(*exc); ++exc);
+
+		/*
+		 * When * reach the end of the command, quit, unless it's
+		 * a command that does its own parsing, in which case we
+		 * want to build a reasonable argv for it.
+		 */
+		if (*p != 's' && *exc == '\0')
 			break;
 
 		switch (*p) {
