@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 8.23 1994/03/14 10:37:59 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:37:59 $";
+static char sccsid[] = "$Id: ex_read.c,v 8.24 1994/03/22 21:01:22 bostic Exp $ (Berkeley) $Date: 1994/03/22 21:01:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -162,25 +162,36 @@ ex_readfp(sp, ep, name, fp, fm, nlinesp, success_msg)
 	int success_msg;
 {
 	EX_PRIVATE *exp;
-	u_long ccnt;
+	recno_t lcnt, lno;
 	size_t len;
-	recno_t lno, nlines;
-	int rval;
+	u_long ccnt;			/* XXX: can't print off_t portably. */
+	int rval, teardown;
+
+	rval = 0;
+	exp = EXP(sp);
 
 	/*
 	 * Add in the lines from the output.  Insertion starts at the line
 	 * following the address.
 	 */
 	ccnt = 0;
-	rval = 0;
-	exp = EXP(sp);
-	for (lno = fm->lno; !ex_getline(sp, fp, &len); ++lno) {
+	lcnt = 0;
+	busy_on(sp, 1, "Reading...");
+	teardown = !intr_init(sp);
+	for (lno = fm->lno; !ex_getline(sp, fp, &len); ++lno, ++lcnt) {
+		if (F_ISSET(sp, S_INTERRUPTED)) {
+			msgq(sp, M_INFO, "Interrupted.");
+			break;
+		}
 		if (file_aline(sp, ep, 1, lno, exp->ibp, len)) {
 			rval = 1;
 			break;
 		}
 		ccnt += len;
 	}
+	busy_off(sp);
+	if (teardown)
+		intr_end(sp);
 
 	if (ferror(fp)) {
 		msgq(sp, M_SYSERR, name);
@@ -196,13 +207,12 @@ ex_readfp(sp, ep, name, fp, fm, nlinesp, success_msg)
 		return (1);
 
 	/* Return the number of lines read in. */
-	nlines = lno - fm->lno;
 	if (nlinesp != NULL)
-		*nlinesp = nlines;
+		*nlinesp = lcnt;
 
 	if (success_msg)
 		msgq(sp, M_INFO, "%s: %lu line%s, %lu characters.",
-		    name, nlines, nlines == 1 ? "" : "s", ccnt);
+		    name, lcnt, lcnt == 1 ? "" : "s", ccnt);
 
 	return (0);
 }
