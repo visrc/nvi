@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 5.39 1993/04/17 12:04:35 bostic Exp $ (Berkeley) $Date: 1993/04/17 12:04:35 $";
+static char sccsid[] = "$Id: v_itxt.c,v 5.40 1993/05/05 16:18:18 bostic Exp $ (Berkeley) $Date: 1993/05/05 16:18:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -432,7 +432,6 @@ v_Replace(sp, ep, vp, fm, tm, rp)
 	u_long cnt;
 	size_t len;
 	u_int flags;
-	int notfirst;
 	char *p;
 
 	LF_INIT(TXT_INPUT_STD);
@@ -440,34 +439,49 @@ v_Replace(sp, ep, vp, fm, tm, rp)
 		LF_SET(TXT_REPLAY);
 
 	*rp = *fm;
-	notfirst = 0;
-	for (cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
-		if ((p = file_gline(sp, ep, rp->lno, &len)) == NULL) {
-			if (file_lline(sp, ep) != 0) {
-				GETLINE_ERR(sp, fm->lno);
-				return (1);
-			}
-			LF_SET(TXT_APPENDEOL);
-			len = 0;
-		} else
-			LF_SET(TXT_OVERWRITE | TXT_REPLACE);
-		/*
-		 * Special case.  The historic vi handled [count]R badly, in
-		 * that R would replace some number of characters, and then
-		 * the count would append count-1 copies of the replacing chars
-		 * to the replaced space.  This seems wrong, so this version
-		 * counts R commands.  Move back to where the user stopped
-		 * replacing after each R command.
-		 */
-		if (notfirst && len) {
-			++rp->cno;
-			sp->lno = rp->lno;
-			sp->cno = rp->cno;
-			LF_INIT(TXT_REPLAY | TXT_INPUT_STD);
+	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
+	if ((p = file_gline(sp, ep, rp->lno, &len)) == NULL) {
+		if (file_lline(sp, ep) != 0) {
+			GETLINE_ERR(sp, rp->lno);
+			return (1);
 		}
-		notfirst = 1;
-		tm->lno = rp->lno;
-		tm->cno = len ? len : 0;
+		LF_SET(TXT_APPENDEOL);
+		len = 0;
+	} else
+		LF_SET(TXT_OVERWRITE | TXT_REPLACE);
+	tm->lno = rp->lno;
+	tm->cno = len ? len : 0;
+	if (v_ntext(sp, ep, &sp->txthdr, tm, p, len, rp, 0, OOBLNO, flags))
+		return (1);
+
+	/*
+	 * Special case.  The historic vi handled [count]R badly, in that R
+	 * would replace some number of characters, and then the count would
+	 * append count-1 copies of the replacing chars to the replaced space.
+	 * This seems wrong, so this version counts R commands.  There is some
+	 * trickiness in moving back to where the user stopped replacing after
+	 * each R command.  Basically, if the user ended with a newline, we
+	 * want to use rp->cno (which will be 0).  Otherwise, use the column
+	 * after the returned cursor, unless it would be past the end of the
+	 * line, in which case we append to the line.
+	 */
+	while (--cnt) {
+		if ((p = file_gline(sp, ep, rp->lno, &len)) == NULL)
+			GETLINE_ERR(sp, rp->lno);
+		LF_INIT(TXT_REPLAY | TXT_INPUT_STD);
+
+		sp->lno = rp->lno;
+
+		if (len == 0 || rp->cno == len - 1) {
+			sp->cno = len;
+			LF_SET(TXT_APPENDEOL);
+		} else {
+			sp->cno = rp->cno;
+			if (rp->cno != 0)
+				++sp->cno;
+			LF_SET(TXT_OVERWRITE | TXT_REPLACE);
+		}
+
 		if (v_ntext(sp, ep,
 		    &sp->txthdr, tm, p, len, rp, 0, OOBLNO, flags))
 			return (1);
