@@ -6,13 +6,17 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 5.21 1993/04/06 11:43:48 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:43:48 $";
+static char sccsid[] = "$Id: v_init.c,v 5.22 1993/04/17 12:01:49 bostic Exp $ (Berkeley) $Date: 1993/04/17 12:01:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
+#include <stdlib.h>
+#include <string.h>
+
 #include "vi.h"
 #include "vcmd.h"
+#include "excmd.h"
 
 #ifdef	FWOPEN_NOT_AVAILABLE
 #include <sys/types.h>
@@ -63,6 +67,8 @@ v_init(sp, ep)
 	SCR *sp;
 	EXF *ep;
 {
+	size_t len;
+
 	/* Make ex display to a special function. */
 #ifdef FWOPEN_NOT_AVAILABLE
 	if ((sp->stdfp = fopen(_PATH_DEVNULL, "w")) == NULL)
@@ -71,11 +77,67 @@ v_init(sp, ep)
 #else
 	sp->stdfp = fwopen(sp, sp->exwrite);
 #endif
+	/*
+	 * If no starting location specified, vi starts at the beginning.
+	 * Otherwise, check to make sure that the location exists.
+	 */
+	if (F_ISSET(ep, F_NOSETPOS)) {
+		if (O_ISSET(sp, O_COMMENT)) {
+			if (v_comment(sp, ep))
+				return (1);
+		} else {
+			sp->lno = 1;
+			sp->cno = 0;
+		}
+		F_CLR(ep, F_NOSETPOS);
+	} else if (file_gline(sp, ep, ep->lno, &len) == NULL) {
+		if (sp->lno != 1 || sp->cno != 0) {
+			sp->lno = 1;
+			sp->cno = 0;
+			msgq(sp, M_INFO,
+			    "Cursor position changed since last edit");
+		}
+	} else {
+		sp->lno = ep->lno;
+		if (ep->cno >= len) {
+			sp->cno = 0;
+			msgq(sp, M_INFO,
+			    "Cursor position changed since last edit");
+		} else
+			sp->cno = ep->cno;
+	}
 
-	if (F_ISSET(ep, F_NEWSESSION) &&
-	    O_ISSET(sp, O_COMMENT) && v_comment(sp, ep))
+	/* Update the file's information. */
+	ep->lno = sp->lno;
+	ep->cno = sp->cno;
+
+	/*
+	 * After location established, run any initial command.  Failure
+	 * doesn't halt the session.  Don't worry about the cursor being
+	 * repositioned affecting the success of this command, it's
+	 * pretty unlikely.
+	 */
+	if (F_ISSET(ep, F_ICOMMAND)) {
+		(void)ex_cstring(sp, ep, ep->icommand, strlen(ep->icommand));
+		free(ep->icommand);
+		F_CLR(ep, F_ICOMMAND);
+		if (sp->lno != ep->lno || sp->cno != ep->cno) {
+			ep->lno = sp->lno;
+			ep->cno = sp->cno;
+		}
+	}
+
+	/*
+	 * Now have the real location the user wants.
+	 * Fill the screen map.
+	 */
+	if (sp->fill(sp, ep, sp->lno, P_FILL))
 		return (1);
-	sp->cno = 0;
+	F_SET(sp, S_REDRAW);
+
+	/* Display the status line. */
+	status(sp, ep, sp->lno);
+
 	return (0);
 }
 
@@ -87,9 +149,13 @@ int
 v_end(sp)
 	SCR *sp;
 {
+	/* Save cursor location. */
+	sp->ep->lno = sp->lno;
+	sp->ep->cno = sp->cno;
+
 #ifdef FWOPEN_NOT_AVAILABLE
-	(void)fclose(sp->stdfp);
 	sp->trapped_fd = -1;
 #endif
+	(void)fclose(sp->stdfp);
 	return (0);
 }
