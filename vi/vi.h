@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 5.26 1992/12/20 15:54:28 bostic Exp $ (Berkeley) $Date: 1992/12/20 15:54:28 $
+ *	$Id: vi.h,v 5.27 1992/12/21 13:45:25 bostic Exp $ (Berkeley) $Date: 1992/12/21 13:45:25 $
  */
 
 #include "exf.h"
@@ -124,7 +124,6 @@ int	v_init __P((EXF *));
 int	v_iO __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_io __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_join __P((VICMDARG *, MARK *, MARK *, MARK *));
-void	v_leaveex __P((void));
 int	v_left __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_lgoto __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_linedown __P((VICMDARG *, MARK *, MARK *, MARK *));
@@ -160,7 +159,6 @@ int	v_sentencef __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_shiftl __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_shiftr __P((VICMDARG *, MARK *, MARK *, MARK *));
 void	v_sof __P((MARK *));
-void	v_startex __P((void));
 int	v_status __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_stop __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_subst __P((VICMDARG *, MARK *, MARK *, MARK *));
