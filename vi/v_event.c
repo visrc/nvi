@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_event.c,v 8.10 1996/12/12 08:18:08 bostic Exp $ (Berkeley) $Date: 1996/12/12 08:18:08 $";
+static const char sccsid[] = "$Id: v_event.c,v 8.11 1996/12/13 12:23:33 bostic Exp $ (Berkeley) $Date: 1996/12/13 12:23:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -222,28 +222,28 @@ v_event(sp, vp)
 {
 	/* This array maps events to vi command functions. */
 	static VIKEYS const vievents[] = {
-#define	V_EEDIT		 0
-		{v_eedit,	0},			/* VI_EDIT */
-#define	V_EEDITSPLIT	 1
-		{v_eeditsplit,	0},			/* VI_EDITSPLIT */
-#define	V_EMARK		 2
-		{v_emark,	V_ABS_L|V_MOVE},	/* VI_MOUSE_MOVE */
-#define	V_EQUIT		 3
-		{v_equit,	0},			/* VI_QUIT */
-#define	V_ESEARCH	 4
-		{v_esearch,	V_ABS_L|V_MOVE},	/* VI_SEARCH */
-#define	V_ETAG		 5
-		{v_etag,	0},			/* VI_TAG */
-#define	V_ETAGAS	 6
-		{v_etagas,	0},			/* VI_TAGAS */
-#define	V_ETAGSPLIT	 7
-		{v_etagsplit,	0},			/* VI_TAGSPLIT */
-#define	V_EWQ		 8
-		{v_ewq,		0},			/* VI_WQ */
-#define	V_EWRITE	 9
-		{v_ewrite,	0},			/* VI_WRITE */
-#define	V_EWRITEAS	10
-		{v_ewriteas,	0},			/* VI_WRITEAS */
+#define	V_EEDIT		 0				/* VI_EDIT */
+		{v_eedit,	0},
+#define	V_EEDITSPLIT	 1				/* VI_EDITSPLIT */
+		{v_eeditsplit,	0},
+#define	V_EMARK		 2				/* VI_MOUSE_MOVE */
+		{v_emark,	V_ABS_L|V_MOVE},
+#define	V_EQUIT		 3				/* VI_QUIT */
+		{v_equit,	0},
+#define	V_ESEARCH	 4				/* VI_SEARCH */
+		{v_esearch,	V_ABS_L|V_MOVE},
+#define	V_ETAG		 5				/* VI_TAG */
+		{v_etag,	0},
+#define	V_ETAGAS	 6				/* VI_TAGAS */
+		{v_etagas,	0},
+#define	V_ETAGSPLIT	 7				/* VI_TAGSPLIT */
+		{v_etagsplit,	0},
+#define	V_EWQ		 8				/* VI_WQ */
+		{v_ewq,		0},
+#define	V_EWRITE	 9				/* VI_WRITE */
+		{v_ewrite,	0},
+#define	V_EWRITEAS	10				/* VI_WRITEAS */
+		{v_ewriteas,	0},
 	};
 
 	switch (vp->ev.e_ipcom) {
@@ -285,6 +285,12 @@ v_event(sp, vp)
 		break;
 	case VI_C_SEARCH:
 		vp->kp = &vievents[V_ESEARCH];
+		break;
+	case VI_C_SETTOP:
+		F_SET(vp, VC_C1SET);
+		vp->character = '\n';
+		vp->count = vp->ev.e_lno;
+		vp->kp = &vikeys['z'];
 		break;
 	case VI_C_TOP:
 		F_SET(vp, VC_C1SET);

@@ -4,7 +4,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: ip.h,v 8.12 1996/12/11 13:05:20 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:05:20 $
+ *	$Id: ip.h,v 8.13 1996/12/13 12:22:43 bostic Exp $ (Berkeley) $Date: 1996/12/13 12:22:43 $
  */
 
 extern int vi_ofd;		/* Output file descriptor. */
@@ -79,27 +79,28 @@ typedef struct _ip_buf {
 #define	VI_C_PGDOWN	 8	/* Cursor down N pages: IPO_INT. */
 #define	VI_C_PGUP	 9	/* Cursor up N lines: IPO_INT. */
 #define	VI_C_RIGHT	10	/* Cursor right. */
-#define	VI_C_SEARCH	11	/* Search: IPO_INT, IPO_STR. */
-#define	VI_C_TOP	12	/* Cursor to top. */
-#define	VI_C_UP		13	/* Cursor up N lines: IPO_INT. */
-#define	VI_EDIT		14	/* Edit a file: IPO_STR. */
-#define	VI_EDITSPLIT	15	/* Split to a file: IPO_STR. */
-#define	VI_EOF		16	/* End of input (NOT ^D). */
-#define	VI_ERR		17	/* Input error. */
-#define	VI_INTERRUPT	18	/* Interrupt. */
-#define	VI_MOUSE_MOVE	19	/* Mouse click move: IPO_INT, IPO_INT. */
-#define	VI_QUIT		20	/* Quit. */
-#define	VI_RESIZE	21	/* Screen resize: IPO_INT, IPO_INT. */
-#define	VI_SIGHUP	22	/* SIGHUP. */
-#define	VI_SIGTERM	23	/* SIGTERM. */
-#define	VI_STRING	24	/* Input string: IPO_STR. */
-#define	VI_TAG		25	/* Tag. */
-#define	VI_TAGAS	26	/* Tag to a string: IPO_STR. */
-#define	VI_TAGSPLIT	27	/* Split to a tag. */
-#define	VI_UNDO		28	/* Undo. */
-#define	VI_WQ		29	/* Write and quit. */
-#define	VI_WRITE	30	/* Write. */
-#define	VI_WRITEAS	31	/* Write as another file: IPO_STR. */
+#define	VI_C_SEARCH	11	/* Cursor: search: IPO_INT, IPO_STR. */
+#define	VI_C_SETTOP	12	/* Cursor: set screen top line: IPO_INT. */
+#define	VI_C_TOP	13	/* Cursor to top. */
+#define	VI_C_UP		14	/* Cursor up N lines: IPO_INT. */
+#define	VI_EDIT		15	/* Edit a file: IPO_STR. */
+#define	VI_EDITSPLIT	16	/* Split to a file: IPO_STR. */
+#define	VI_EOF		17	/* End of input (NOT ^D). */
+#define	VI_ERR		18	/* Input error. */
+#define	VI_INTERRUPT	19	/* Interrupt. */
+#define	VI_MOUSE_MOVE	20	/* Mouse click move: IPO_INT, IPO_INT. */
+#define	VI_QUIT		21	/* Quit. */
+#define	VI_RESIZE	22	/* Screen resize: IPO_INT, IPO_INT. */
+#define	VI_SIGHUP	23	/* SIGHUP. */
+#define	VI_SIGTERM	24	/* SIGTERM. */
+#define	VI_STRING	25	/* Input string: IPO_STR. */
+#define	VI_TAG		26	/* Tag. */
+#define	VI_TAGAS	27	/* Tag to a string: IPO_STR. */
+#define	VI_TAGSPLIT	28	/* Split to a tag. */
+#define	VI_UNDO		29	/* Undo. */
+#define	VI_WQ		30	/* Write and quit. */
+#define	VI_WRITE	31	/* Write. */
+#define	VI_WRITEAS	32	/* Write as another file: IPO_STR. */
 
 #define	VI_SEARCH_IC	0x001	/* VI_C_SEARCH: ignore case. */
 #define	VI_SEARCH_INCR	0x002	/* VI_C_SEARCH: incremental search. */

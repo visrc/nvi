@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_vi.c,v 8.28 1996/12/13 11:38:21 bostic Exp $ (Berkeley) $Date: 1996/12/13 11:38:21 $";
+static const char sccsid[] = "$Id: m_vi.c,v 8.29 1996/12/13 12:23:05 bostic Exp $ (Berkeley) $Date: 1996/12/13 12:23:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -770,7 +770,6 @@ static	void				scrollbar_moved( widget, ptr, cbs )
     /* Future:  Need to scroll the correct screen! */
     xvi_screen	*cur_screen = (xvi_screen *) ptr;
     IP_BUF	ipb;
-    char	bp[BufferSize];
 
     /* if we are still processing messages from core, skip this event
      * (see comments near __vi_set_scroll_block())
@@ -782,9 +781,6 @@ static	void				scrollbar_moved( widget, ptr, cbs )
 	return;
     }
     __vi_set_scroll_block();
-
-    /* Future: send an IPO command */
-    sprintf( bp, "%dGz\n", cbs->value );
 
 #ifdef TRACE
     switch ( cbs->reason ) {
@@ -801,10 +797,10 @@ static	void				scrollbar_moved( widget, ptr, cbs )
     trace("scrollto {%d}\n", cbs->value );
 #endif
 
-    ipb.len = strlen( bp );
-    ipb.code = VI_STRING;
-    ipb.str = bp;
-    __vi_send("s", &ipb);
+    /* Send the new cursor position. */
+    ipb.code = VI_C_SETTOP;
+    ipb.val1 = cbs->value;
+    (void)__vi_send("1", &ipb);
 }
 
 
