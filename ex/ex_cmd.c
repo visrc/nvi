@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 9.8 1995/02/08 19:38:49 bostic Exp $ (Berkeley) $Date: 1995/02/08 19:38:49 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 9.9 1995/02/14 14:38:21 bostic Exp $ (Berkeley) $Date: 1995/02/14 14:38:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -161,12 +161,12 @@ EXCMDLIST const cmds[] = {
 	    "digraph",
 	    "specify digraphs (not implemented)"},
 /* C_EDIT */
-	{"edit",	ex_edit,	E_NEWSCREEN|E_VIONLY,
+	{"edit",	ex_edit,	E_NEWSCREEN,
 	    "f1o",
 	    "e[dit][!] [+cmd] [file]",
 	    "begin editing another file"},
 /* C_EX */
-	{"ex",		ex_edit,	E_NEWSCREEN|E_VIONLY,
+	{"ex",		ex_edit,	E_NEWSCREEN,
 	    "f1o",
 	    "ex[!] [+cmd] [file]",
 	    "begin editing another file"},
@@ -236,7 +236,7 @@ EXCMDLIST const cmds[] = {
 	    "mkexrc[!] file",
 	    "write a .exrc file"},
 /* C_NEXT */
-	{"next",	ex_next,	E_NEWSCREEN|E_VIONLY,
+	{"next",	ex_next,	E_NEWSCREEN,
 	    "!fN",
 	    "n[ext][!] [+cmd] [file ...]",
 	    "edit (and optionally specify) the next file"},
@@ -342,7 +342,7 @@ EXCMDLIST const cmds[] = {
 	    "[line [,line]] t line [flags]",
 	    "copy lines elsewhere in the file"},
 /* C_TAG */
-	{"tag",		ex_tagpush,	E_NEWSCREEN|E_VIONLY,
+	{"tag",		ex_tagpush,	E_NEWSCREEN,
 	    "!w1o",
 	    "ta[g][!] [string]",
 	    "edit the file containing the tag"},
@@ -387,7 +387,7 @@ EXCMDLIST const cmds[] = {
 	    "[line] vi[sual] [-|.|+|^] [window_size] [flags]",
 	    "enter visual (vi) mode from ex mode"},
 /* C_VISUAL_VI */
-	{"visual",	ex_edit,	E_NEWSCREEN|E_VIONLY,
+	{"visual",	ex_edit,	E_NEWSCREEN,
 	    "f1o",
 	    "vi[sual][!] [+cmd] [file]",
 	    "edit another file (from vi mode only)"},

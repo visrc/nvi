@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 9.38 1995/02/09 09:55:30 bostic Exp $ (Berkeley) $Date: 1995/02/09 09:55:30 $";
+static char sccsid[] = "$Id: ex.c,v 9.39 1995/02/14 14:38:14 bostic Exp $ (Berkeley) $Date: 1995/02/14 14:38:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -614,7 +614,8 @@ skip_srch:	if (cp == &cmds[C_VISUAL_EX] && F_ISSET(sp, S_VI))
 		optnum = 0;
 
 	/* Check for ex mode legality. */
-	if (F_ISSET(sp, S_EX) && F_ISSET(cp, E_VIONLY)) {
+	if (F_ISSET(sp, S_EX) &&
+	    (F_ISSET(cp, E_VIONLY) || F_ISSET(&exc, E_NEWSCREEN))) {
 		msgq(sp, M_ERR, "095|Command not available in ex mode");
 		goto err;
 	}
