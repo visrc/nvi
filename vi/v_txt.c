@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 10.18 1995/10/17 21:18:22 bostic Exp $ (Berkeley) $Date: 1995/10/17 21:18:22 $";
+static char sccsid[] = "$Id: v_txt.c,v 10.19 1995/10/19 11:10:25 bostic Exp $ (Berkeley) $Date: 1995/10/19 11:10:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -408,13 +408,9 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 	}
 
 	/* Other text input mode setup. */
-	filec_redraw = 0;
-	hexcnt = 0;
 	quote = Q_NOTSET;
 	carat = C_NOTSET;
-
-	/* Initialize replay count, showmatch flag. */
-	rcount = showmatch = 0;
+	filec_redraw = hexcnt = rcount = showmatch = 0;
 
 	/* Initialize input flags. */
 	ec_flags = LF_ISSET(TXT_MAPINPUT) ? EC_MAPINPUT : 0;
@@ -754,11 +750,21 @@ k_cr:		if (LF_ISSET(TXT_CR)) {
 			LF_SET(TXT_REPLAY);
 
 			/*
-			 * A few commands (e.g. 'o') need a <newline> for
-			 * each repetition.
+			 * Some commands (e.g. 'o') need a <newline> for each
+			 * repetition.
 			 */
 			if (LF_ISSET(TXT_ADDNEWLINE))
 				goto k_cr;
+
+			/*
+			 * The R command turns into the 'a' command after the
+			 * first repetition.
+			 */
+			if (LF_ISSET(TXT_REPLACE)) {
+				tp->insert = tp->owrite;
+				tp->owrite = 0;
+				LF_CLR(TXT_REPLACE);
+			}
 			goto replay;
 		}
 

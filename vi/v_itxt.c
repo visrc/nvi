@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 10.7 1995/10/17 08:12:26 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:12:26 $";
+static char sccsid[] = "$Id: v_itxt.c,v 10.8 1995/10/19 11:11:13 bostic Exp $ (Berkeley) $Date: 1995/10/19 11:11:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -388,12 +388,6 @@ v_change(sp, vp)
 /*
  * v_Replace -- [count]R
  *	Overwrite multiple characters.
- *
- * !!!
- * Special case.  The historic vi handled [count]R badly, in that R would
- * replace some number of characters, and then the count appended count-1
- * copies of the replacing chars to the replaced space.  This seems wrong,
- * so this version counts R commands.
  *
  * PUBLIC: int v_Replace __P((SCR *, VICMD *));
  */
