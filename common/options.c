@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.3 1992/02/20 14:14:46 bostic Exp $ (Berkeley) $Date: 1992/02/20 14:14:46 $";
+static char sccsid[] = "$Id: options.c,v 5.4 1992/02/21 11:54:02 bostic Exp $ (Berkeley) $Date: 1992/02/21 11:54:02 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -74,85 +74,83 @@ OPTIONS opts[] = {
 	"exrefresh",	NULL,		OPT_1BOOL,
 #define	O_FLASH		15
 	"flash",	NULL,		OPT_1BOOL,
-#define	O_FLIPCASE	16
-	"flipcase",	NULL,		OPT_STR,
-#define	O_HIDEFORMAT	17
+#define	O_HIDEFORMAT	16
 	"hideformat",	NULL,		OPT_0BOOL|OPT_REDRAW,
-#define	O_IGNORECASE	18
+#define	O_IGNORECASE	17
 	"ignorecase",	NULL,		OPT_0BOOL,
-#define	O_INPUTMODE	19
+#define	O_INPUTMODE	18
 	"inputmode",	NULL,		OPT_0BOOL,
-#define	O_KEYTIME	20
+#define	O_KEYTIME	19
 	"keytime",	&keytime,	OPT_NUM,
-#define	O_KEYWORDPRG	21
+#define	O_KEYWORDPRG	20
 	"keywordprg",	"ref",		OPT_STR,
-#define	O_LINES		22
+#define	O_LINES		21
 	"lines",	&lines,		OPT_NOSAVE|OPT_NUM|OPT_REDRAW,
-#define	O_LIST		23
+#define	O_LIST		22
 	"list",		NULL,		OPT_0BOOL|OPT_REDRAW,
-#define	O_MAGIC		24
+#define	O_MAGIC		23
 	"magic",	NULL,		OPT_1BOOL,
-#define	O_MAKE		25
+#define	O_MAKE		24
 	"make",		"make",		OPT_STR,
-#define	O_MESG		26
+#define	O_MESG		25
 	"mesg",		NULL,		OPT_1BOOL,
-#define	O_MODELINE	27
+#define	O_MODELINE	26
 	"modeline",	NULL,		OPT_0BOOL,
-#define	O_MORE		28
+#define	O_MORE		27
 	"more",		NULL,		OPT_1BOOL,
-#define	O_NUMBER	29
+#define	O_NUMBER	28
 	"number",	NULL,		OPT_0BOOL|OPT_REDRAW,
-#define	O_PARAGRAPHS	30
+#define	O_PARAGRAPHS	29
 	"paragraphs",	"PPppIPLPQP",	OPT_STR,
-#define	O_PROMPT	31
+#define	O_PROMPT	30
 	"prompt",	NULL,		OPT_1BOOL,
-#define	O_READONLY	32
+#define	O_READONLY	31
 	"readonly",	NULL,		OPT_0BOOL,
-#define	O_REPORT	33
+#define	O_REPORT	32
 	"report",	&report,	OPT_NUM,
-#define	O_RULER		34
+#define	O_RULER		33
 	"ruler",	NULL,		OPT_0BOOL,
-#define	O_SCROLL	35
+#define	O_SCROLL	34
 	"scroll",	&scroll,	OPT_NUM,
-#define	O_SECTIONS	36
+#define	O_SECTIONS	35
 	"sections",	"NHSHSSSEse",	OPT_STR,
-#define	O_SHELL		37
+#define	O_SHELL		36
 	"shell",	_PATH_BSHELL,	OPT_STR,
-#define	O_SHIFTWIDTH	38
+#define	O_SHIFTWIDTH	37
 	"shiftwidth",	&shiftwidth,	OPT_NUM,
-#define	O_SHOWMATCH	39
+#define	O_SHOWMATCH	38
 	"showmatch",	NULL,		OPT_0BOOL,
-#define	O_SHOWMODE	40
+#define	O_SHOWMODE	39
 	"showmode",	NULL,		OPT_0BOOL,
-#define	O_SIDESCROLL	41
+#define	O_SIDESCROLL	40
 	"sidescroll",	&sidescroll,	OPT_NUM,
-#define	O_SYNC		42
+#define	O_SYNC		41
 	"sync",		NULL,		OPT_0BOOL,
-#define	O_TABSTOP	43
+#define	O_TABSTOP	42
 	"tabstop",	&tabstop,	OPT_NUM|OPT_REDRAW,
-#define	O_TAGLENGTH	44
+#define	O_TAGLENGTH	43
 	"taglength",	&taglength,	OPT_NUM,
-#define	O_TERM		45
+#define	O_TERM		44
 	"term",		"unknown",	OPT_NOSAVE|OPT_STR,
-#define	O_TERSE		46
+#define	O_TERSE		45
 	"terse",	NULL,		OPT_0BOOL,
-#define	O_TIMEOUT	47
+#define	O_TIMEOUT	46
 	"timeout",	NULL,		OPT_0BOOL,
-#define	O_VBELL		48
+#define	O_VBELL		47
 	"vbell",	NULL,		OPT_0BOOL,
-#define	O_WARN		49
+#define	O_WARN		48
 	"warn",		NULL,		OPT_1BOOL,
-#define	O_WINDOW	50
+#define	O_WINDOW	49
 	"window",	&window,	OPT_NUM|OPT_REDRAW,
-#define	O_WRAPMARGIN	51
+#define	O_WRAPMARGIN	50
 	"wrapmargin",	&wrapmargin,	OPT_NUM,
-#define	O_WRAPSCAN	52
+#define	O_WRAPSCAN	51
 	"wrapscan",	NULL,		OPT_1BOOL,
-#define	O_WRITEANY	53
+#define	O_WRITEANY	52
 	"writeany",	NULL,		OPT_0BOOL,
 	NULL,
 };
-#define	O_OPTIONCOUNT	54
+#define	O_OPTIONCOUNT	53
 /* END_OPTION_DEF */
 
 typedef struct abbrev {
@@ -175,7 +173,6 @@ static ABBREV abbrev[] = {
 	"ed",	O_EDCOMPATIBLE,
 	"ep",	O_EQUALPRG,
 	"er",	O_EXREFRESH,
-	"fc",	O_FLIPCASE,
 	"fl",	O_VBELL,
 	"hf",	O_HIDEFORMAT,
 	"ic",	O_IGNORECASE,
@@ -247,28 +244,6 @@ opts_init()
 		FSET(O_FLASH, OPT_NOSET);
 		FSET(O_VBELL, OPT_NOSET);
 	}
-
-/* XXX -- THIS CODE IS PROBABLY WRONG */
-#ifndef NO_DIGRAPH
-# ifdef CS_LATIN1
-	for (i = 0, val = PVAL(O_FLIPCASE); i < 32; i++)
-	{
-		/* leave out the multiply/divide symbols */
-		if (i == 23)
-			continue;
-
-		/* add lower/uppercase pair */
-		*val++ = i + 0xe0;
-		*val++ = i + 0xc0;
-	}
-	*val = '\0';
-# endif /* CS_LATIN1 */
-
-	/* initialize the ctype package */
-	_ct_init(PVAL(O_FLIPCASE));
-#else
-	_ct_init("");
-#endif /* not NO_DIGRAPH */
 }
 
 /*
@@ -426,11 +401,6 @@ found:		if (op == NULL || off && !ISFSETP(op, OPT_0BOOL|OPT_1BOOL)) {
 	if (ISSET(O_READONLY))
 		setflag(file, READONLY);
 
-/* XXX -- REMOVE THIS AT SOME POINT, I THINK ITS WRONG */
-#ifndef NO_DIGRAPH
-	/* re-initialize the ctype package */
-	_ct_init(PVAL(O_FLIPCASE));
-#endif
 	/*
 	 * XXX -- why, just use O_LINES/O_COLUMNS
 	 * Copy O_LINES and O_COLUMNS into LINES and COLS.

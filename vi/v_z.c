@@ -23,7 +23,7 @@ MARK m_row(m, cnt, key)
 	long	cnt;	/* the row we'll move to */
 	int	key;	/* the keystroke of this move - H/L/M */
 {
-	DEFAULT(1);
+	SETDEFCNT(1);
 
 	/* calculate destination line based on key */
 	cnt--;
@@ -142,14 +142,14 @@ MARK m_scroll(m, cnt, key)
 	{
 	  case ctrl('F'):
 	  case ctrl('B'):
-		DEFAULT(1);
+		SETDEFCNT(1);
 		redrawrange(0, INFINITY, INFINITY);
 		cnt = cnt * (LINES - 1) - 1; /* keeps one old line on screen */
 		break;
 
 	  case ctrl('E'):
 	  case ctrl('Y'):
-		DEFAULT(1);
+		SETDEFCNT(1);
 		break;
 
 	  case ctrl('U'):

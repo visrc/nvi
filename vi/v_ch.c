@@ -56,7 +56,7 @@ MARK	m_fch(m, cnt, key)
 {
 	REG char	*text;
 
-	DEFAULT(1);
+	SETDEFCNT(1);
 
 	prevfwdfn = m_fch;
 	prevrevfn = m_Fch;
@@ -87,7 +87,7 @@ MARK	m_Fch(m, cnt, key)
 {
 	REG char	*text;
 
-	DEFAULT(1);
+	SETDEFCNT(1);
 
 	prevfwdfn = m_Fch;
 	prevrevfn = m_fch;

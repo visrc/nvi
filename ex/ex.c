@@ -2,10 +2,10 @@
 
 #include <sys/types.h>
 #include <stdio.h>
+#include <ctype.h>
 
 #include "config.h"
 #include "options.h"
-#include "ctype.h"
 #include "vi.h"
 #include "pathnames.h"
 #include "extern.h"

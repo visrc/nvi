@@ -216,8 +216,11 @@ extern MARK	m_scroll();		/* ^B ^F ^E ^Y ^U ^D */
 
 extern MARK	adjmove();		/* a helper fn, used by move fns */
 
-/* This macro is used to set the default value of cnt */
-#define DEFAULT(val)	if (cnt < 1) cnt = (val)
+/* This macro is used to set the default value of cnt for an operation */
+#define SETDEFCNT(val) { \
+	if (cnt < 1) \
+		cnt = (val); \
+}
 
 /* These are used to minimize calls to fetchline() */
 extern int	plen;	/* length of the line */
@@ -359,7 +362,6 @@ extern MARK	v_1ex();	/* : */
 extern MARK	v_mark();	/* m */
 extern MARK	v_quit();	/* Q */
 extern MARK	v_redraw();	/* ^L ^R */
-extern MARK	v_ulcase();	/* ~ */
 extern MARK	v_undo();	/* u */
 extern MARK	v_xchar();	/* x X */
 extern MARK	v_replace();	/* r */
