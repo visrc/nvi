@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 10.7 1995/09/25 11:58:54 bostic Exp $ (Berkeley) $Date: 1995/09/25 11:58:54 $";
+static char sccsid[] = "$Id: vs_smap.c,v 10.8 1995/09/27 10:20:21 bostic Exp $ (Berkeley) $Date: 1995/09/27 10:20:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -118,13 +118,14 @@ vs_change(sp, lno, op)
 	F_SET(vip, VIP_SCR_DIRTY);
 
 	/*
-	 * Invalidate the line size cache, invalidate the cursor, if it's
+	 * Invalidate the line size cache, and invalidate the cursor if it's
 	 * on this line,
 	 */
 	VI_SCR_CFLUSH(vip);
 	if (sp->lno == lno)
 		F_SET(vip, VIP_CUR_INVALID);
 
+	/* Save and restore the cursor for these routines. */
 	(void)sp->gp->scr_cursor(sp, &oldy, &oldx);
 
 	switch (op) {
@@ -147,7 +148,6 @@ vs_change(sp, lno, op)
 	}
 
 	(void)sp->gp->scr_move(sp, oldy, oldx);
-
 	return (0);
 }
 
@@ -773,14 +773,16 @@ vs_deleteln(sp, cnt)
 	size_t oldy, oldx;
 
 	gp = sp->gp;
-	(void)gp->scr_cursor(sp, &oldy, &oldx);
 	if (IS_ONELINE(sp))
 		(void)gp->scr_clrtoeol(sp);
-	else while (cnt--) {
-		(void)gp->scr_deleteln(sp);
-		(void)gp->scr_move(sp, INFOLINE(sp) - 1, 0);
-		(void)gp->scr_insertln(sp);
-		(void)gp->scr_move(sp, oldy, oldx);
+	else {
+		(void)gp->scr_cursor(sp, &oldy, &oldx);
+		while (cnt--) {
+			(void)gp->scr_deleteln(sp);
+			(void)gp->scr_move(sp, INFOLINE(sp) - 1, 0);
+			(void)gp->scr_insertln(sp);
+			(void)gp->scr_move(sp, oldy, oldx);
+		}
 	}
 	return (0);
 }
@@ -1000,15 +1002,17 @@ vs_insertln(sp, cnt)
 	size_t oldy, oldx;
 
 	gp = sp->gp;
-	(void)gp->scr_cursor(sp, &oldy, &oldx);
 	if (IS_ONELINE(sp)) {
 		(void)gp->scr_move(sp, INFOLINE(sp), 0);
 		(void)gp->scr_clrtoeol(sp);
-	} else while (cnt--) {
-		(void)gp->scr_move(sp, INFOLINE(sp) - 1, 0);
-		(void)gp->scr_deleteln(sp);
-		(void)gp->scr_move(sp, oldy, oldx);
-		(void)gp->scr_insertln(sp);
+	} else {
+		(void)gp->scr_cursor(sp, &oldy, &oldx);
+		while (cnt--) {
+			(void)gp->scr_move(sp, INFOLINE(sp) - 1, 0);
+			(void)gp->scr_deleteln(sp);
+			(void)gp->scr_move(sp, oldy, oldx);
+			(void)gp->scr_insertln(sp);
+		}
 	}
 	return (0);
 }
