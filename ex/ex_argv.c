@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 10.9 1995/10/04 12:36:12 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:36:12 $";
+static char sccsid[] = "$Id: ex_argv.c,v 10.10 1995/10/17 08:58:52 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:58:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -579,7 +579,7 @@ err:		if (ifp != NULL)
 		goto ioerr;
 	if (fclose(ifp)) {
 ioerr:		msgq_str(sp, M_ERR, sh, "119|I/O error: %s");
-binc_err:	rval = 1;
+alloc_err:	rval = 1;
 	} else
 		rval = 0;
 

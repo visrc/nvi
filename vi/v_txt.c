@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 10.16 1995/10/16 15:34:07 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:34:07 $";
+static char sccsid[] = "$Id: v_txt.c,v 10.17 1995/10/17 08:59:32 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:59:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1247,7 +1247,7 @@ done:		/* Leave input mode. */
 	return (0);
 
 err:
-binc_err:
+alloc_err:
 	txt_err(sp, &sp->tiq);
 	return (1);
 }

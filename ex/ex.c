@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 10.20 1995/10/17 08:32:17 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:32:17 $";
+static char sccsid[] = "$Id: ex.c,v 10.21 1995/10/17 08:58:37 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:58:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -2068,8 +2068,7 @@ ex_unknown(sp, cmd, len)
 	msgq_str(sp, M_ERR, bp, "098|The %s command is unknown");
 	FREE_SPACE(sp, bp, blen);
 
-binc_err:
-	return;
+alloc_err:
 }
 
 /*

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_txt.c,v 10.7 1995/09/23 19:43:05 bostic Exp $ (Berkeley) $Date: 1995/09/23 19:43:05 $";
+static char sccsid[] = "$Id: ex_txt.c,v 10.8 1995/10/17 08:59:16 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:59:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -343,7 +343,7 @@ ins_ch:			if (LF_ISSET(TXT_BEAUTIFY) && iscntrl(ev.e_c) &&
 done:	return (rval);
 
 err:	
-binc_err:
+alloc_err:
 	return (1);
 }
 
