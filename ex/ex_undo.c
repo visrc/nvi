@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_undo.c,v 5.16 1993/05/10 11:35:05 bostic Exp $ (Berkeley) $Date: 1993/05/10 11:35:05 $";
+static char sccsid[] = "$Id: ex_undo.c,v 5.17 1993/05/17 16:49:49 bostic Exp $ (Berkeley) $Date: 1993/05/17 16:49:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,12 +25,19 @@ ex_undol(sp, ep, cmdp)
 	EXCMDARG *cmdp;
 {
 	MARK m;
+	int rval;
 
 	F_SET(sp, S_AUTOPRINT);
 
 	if (O_ISSET(sp, O_NUNDO))
-		return (log_forward(sp, ep, &m));
-	return (log_setline(sp, ep));
+		rval = log_forward(sp, ep, &m);
+	else
+		rval = log_setline(sp, ep, &m);
+	if (rval == 0) {
+		sp->lno = m.lno;
+		sp->cno = m.cno;
+	}
+	return (rval);
 }
 
 /*
@@ -44,8 +51,9 @@ ex_undo(sp, ep, cmdp)
 	EXCMDARG *cmdp;
 {
 	MARK m;
+	int rval;
 
-	if (O_ISSET(sp, O_NUNDO))
+	if (O_ISSET(sp, O_NUNDO)) {
 		return (log_backward(sp, ep, &m));
 
 	if (!F_ISSET(ep, F_UNDO)) {
