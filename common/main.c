@@ -18,7 +18,7 @@ static const char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static const char sccsid[] = "$Id: main.c,v 10.32 1996/03/28 21:04:52 bostic Exp $ (Berkeley) $Date: 1996/03/28 21:04:52 $";
+static const char sccsid[] = "$Id: main.c,v 10.33 1996/03/29 10:08:27 bostic Exp $ (Berkeley) $Date: 1996/03/29 10:08:27 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -441,7 +441,7 @@ v_end(gp)
 	 * Call perl_run and perl_destuct to call END blocks and DESTROY
 	 * method.
 	 */
-#ifdef HAVE_PERL_INTERP
+#ifdef XXX_HAVE_PERL_INTERP
 	if (gp->perl_interp) {
 		perl_run(gp->perl_interp);
 		perl_destruct(gp->perl_interp);
