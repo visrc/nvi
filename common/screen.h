@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 9.2 1994/11/10 10:21:45 bostic Exp $ (Berkeley) $Date: 1994/11/10 10:21:45 $
+ *	$Id: screen.h,v 9.3 1994/11/10 16:27:23 bostic Exp $ (Berkeley) $Date: 1994/11/10 16:27:23 $
  */
 
 /*
@@ -253,36 +253,39 @@ struct _scr {
  * S_SCR_REFORMAT
  *	The expected presentation of the lines on the screen have changed,
  *	requiring that the intended screen lines be recalculated, and ...
- * S_SCR_REFRESH
- *	The screen doesn't correctly represent the file; repaint it.  Also,
- *	setting S_SCR_REFRESH in the current window causes *all* windows to
+ * S_SCR_REDRAW
+ *	The screen doesn't correctly represent the file; repaint it.  Note,
+ *	setting S_SCR_REDRAW in the current window causes *all* windows to
  *	be repainted.
  *
- * In addition there are two additional flags:
- *
+ * There are three additional flags:
  * S_SCR_EXWROTE
  *	The ex part of the editor wrote to the screen.
+ * S_SCR_REFRESH
+ *	The screen has unknown contents.
  * S_SCR_UMODE
  *	Don't update the mode line until the user enters a character.
  */
 #define	S_SCR_RESIZE	0x0000040	/* Resize (reformat, refresh). */
 #define	S_SCR_REFORMAT	0x0000080	/* Reformat (refresh). */
-#define	S_SCR_REFRESH	0x0000100	/* Refresh. */
-#define	S_SCR_EXWROTE	0x0000200	/* Ex wrote the screen. */
-#define	S_SCR_UMODE	0x0000400	/* Don't repaint modeline. */
+#define	S_SCR_REDRAW	0x0000100	/* Refresh. */
 
-#define	S_ARGNOFREE	0x0000800	/* Argument list wasn't allocated. */
-#define	S_ARGRECOVER	0x0001000	/* Argument list is recovery files. */
-#define	S_BELLSCHED	0x0002000	/* Bell scheduled. */
-#define	S_CONTINUE	0x0004000	/* Need to ask the user to continue. */
-#define	S_EXSILENT	0x0008000	/* Ex batch script. */
-#define	S_GLOBAL	0x0010000	/* Doing a global command. */
-#define	S_INPUT		0x0020000	/* Doing text input. */
-#define	S_INTERRUPTED	0x0040000	/* If have been interrupted. */
-#define	S_INTERRUPTIBLE	0x0080000	/* If can be interrupted. */
-#define	S_SCRIPT	0x0100000	/* Window is a shell script. */
-#define	S_SRE_SET	0x0200000	/* The search RE has been set. */
-#define	S_SUBRE_SET	0x0400000	/* The substitute RE has been set. */
+#define	S_SCR_EXWROTE	0x0000200	/* Ex wrote the screen. */
+#define	S_SCR_REFRESH	0x0000400	/* Repaint. */
+#define	S_SCR_UMODE	0x0000800	/* Don't repaint modeline. */
+
+#define	S_ARGNOFREE	0x0001000	/* Argument list wasn't allocated. */
+#define	S_ARGRECOVER	0x0002000	/* Argument list is recovery files. */
+#define	S_BELLSCHED	0x0004000	/* Bell scheduled. */
+#define	S_CONTINUE	0x0008000	/* Need to ask the user to continue. */
+#define	S_EXSILENT	0x0010000	/* Ex batch script. */
+#define	S_GLOBAL	0x0020000	/* Doing a global command. */
+#define	S_INPUT		0x0040000	/* Doing text input. */
+#define	S_INTERRUPTED	0x0080000	/* If have been interrupted. */
+#define	S_INTERRUPTIBLE	0x0100000	/* If can be interrupted. */
+#define	S_SCRIPT	0x0200000	/* Window is a shell script. */
+#define	S_SRE_SET	0x0400000	/* The search RE has been set. */
+#define	S_SUBRE_SET	0x0800000	/* The substitute RE has been set. */
 	u_int32_t flags;
 };
 

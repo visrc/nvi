@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 9.3 1994/11/10 16:18:40 bostic Exp $ (Berkeley) $Date: 1994/11/10 16:18:40 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 9.4 1994/11/10 16:26:45 bostic Exp $ (Berkeley) $Date: 1994/11/10 16:26:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -613,11 +613,14 @@ paint:	for (smp = HMAP; smp <= TMAP; ++smp)
 	 * If it's a small screen and we're redrawing, clear the unused lines,
 	 * ex may have overwritten them.
 	 */
-	if (F_ISSET(sp, S_SCR_REDRAW) && ISSMALLSCREEN(sp))
-		for (cnt = sp->t_rows; cnt <= sp->t_maxrows; ++cnt) {
-			MOVE(sp, cnt, 0);
-			clrtoeol();
-		}
+	if (F_ISSET(sp, S_SCR_REDRAW)) {
+		if (ISSMALLSCREEN(sp))
+			for (cnt = sp->t_rows; cnt <= sp->t_maxrows; ++cnt) {
+				MOVE(sp, cnt, 0);
+				clrtoeol();
+			}
+		F_CLR(sp, S_SCR_REDRAW);
+	}
 
 	didpaint = 1;
 
@@ -639,9 +642,9 @@ number:	if (O_ISSET(sp, O_NUMBER) && F_ISSET(svp, SVI_SCR_NUMBER)) {
 	 *
 	 * If the screen was corrupted, refresh it.
 	 */
-	if (F_ISSET(sp, S_SCR_REDRAW)) {
+	if (F_ISSET(sp, S_SCR_REFRESH)) {
 		wrefresh(curscr);
-		F_CLR(sp, S_SCR_REDRAW);
+		F_CLR(sp, S_SCR_REFRESH);
 	}
 
 	if (F_ISSET(sp, S_BELLSCHED))
