@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 9.9 1995/01/30 18:09:54 bostic Exp $ (Berkeley) $Date: 1995/01/30 18:09:54 $";
+static char sccsid[] = "$Id: v_itxt.c,v 9.10 1995/01/31 12:02:16 bostic Exp $ (Berkeley) $Date: 1995/01/31 12:02:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -82,6 +82,9 @@ v_iA(sp, vp)
 
 	if (file_gline(sp, vp->m_start.lno, &len) != NULL)
 		sp->cno = len == 0 ? 0 : len - 1;
+
+	LOG_CORRECT;
+
 	return (v_ia(sp, vp));
 }
 
@@ -153,7 +156,12 @@ v_iI(sp, vp)
 	VICMDARG *vp;
 {
 	sp->cno = 0;
-	return (nonblank(sp, vp->m_start.lno, &sp->cno) ? 1 : v_ii(sp, vp));
+	if (nonblank(sp, vp->m_start.lno, &sp->cno))
+		return (1);
+
+	LOG_CORRECT;
+
+	return (v_ii(sp, vp));
 }
 
 /*
@@ -237,7 +245,6 @@ v_iO(sp, vp)
 insert:			p = "";
 			sp->cno = 0;
 
-			/* Correct logging for implied cursor motion. */
 			LOG_CORRECT_FIRST;
 
 			if (file_iline(sp, sp->lno, p, 0))
@@ -294,7 +301,6 @@ v_io(sp, vp)
 insert:			p = "";
 			sp->cno = 0;
 
-			/* Correct logging for implied cursor motion. */
 			LOG_CORRECT_FIRST;
 
 			len = 0;
@@ -375,7 +381,6 @@ v_change(sp, vp)
 	sp->lno = vp->m_start.lno;
 	sp->cno = vp->m_start.cno;
 
-	/* Correct logging for implied cursor motion. */
 	LOG_CORRECT;
 
 	/*
