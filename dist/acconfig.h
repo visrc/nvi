@@ -1,4 +1,4 @@
-/* $Id: acconfig.h,v 8.15 1996/04/15 22:02:27 bostic Exp $ (Berkeley) $Date: 1996/04/15 22:02:27 $ */
+/* $Id: acconfig.h,v 8.16 1996/06/18 15:00:06 bostic Exp $ (Berkeley) $Date: 1996/06/18 15:00:06 $ */
 
 /* Define to `int' if <sys/types.h> doesn't define.  */
 #undef ssize_t
@@ -71,6 +71,9 @@
 
 /* Define if you have <sys/select.h> */
 #undef HAVE_SYS_SELECT_H
+
+/* Define if you have <term.h> */
+#undef HAVE_TERM_H
 
 /* Define if you have the System V style pty calls. */
 #undef HAVE_SYS5_PTY
