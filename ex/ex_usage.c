@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_usage.c,v 10.10 1996/03/27 20:44:14 bostic Exp $ (Berkeley) $Date: 1996/03/27 20:44:14 $";
+static const char sccsid[] = "$Id: ex_usage.c,v 10.11 1996/03/30 10:45:04 bostic Exp $ (Berkeley) $Date: 1996/03/30 10:45:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -167,7 +167,7 @@ ex_viusage(sp, cmdp)
 		else
 			kp = &vikeys[key];
 
-		if (kp->func == NULL)
+		if (kp->usage == NULL)
 nokey:			(void)ex_printf(sp,
 			    "The %s key has no current meaning\n",
 			    KEY_NAME(sp, key));
