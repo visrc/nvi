@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 9.15 1994/12/01 18:11:01 bostic Exp $ (Berkeley) $Date: 1994/12/01 18:11:01 $";
+static char sccsid[] = "$Id: ex.c,v 9.16 1994/12/01 18:17:08 bostic Exp $ (Berkeley) $Date: 1994/12/01 18:17:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -443,12 +443,18 @@ done:		if (bp != NULL)
 		 * Permit further arguments for the few shreds of dignity
 		 * it offers.
 		 *
+		 * Adding commands that start with 'd', and match "delete"
+		 * up to a l, p, +, - or # character can break this code.
+		 *
 		 * !!!
-		 * Note, adding commands that start with 'd', and match
-		 * "delete" up to a l, p, +, - or # character can break
-		 * this code.
+		 * Historic vi permitted a capital 'P' at the beginning of
+		 * any command that started with 'p'.  Probably wanted the
+		 * P command for backward compatibility, and the code just
+		 * made Preserve and Put work by accident.
 		 */
-		if (p[0] == 'd') {
+		tmp = 0;
+		switch (p[0]) {
+		case 'd':
 			for (s = p,
 			    t = cmds[C_DELETE].name; *s == *t; ++s, ++t);
 			if (s[0] == 'l' || s[0] == 'p' || s[0] == '+' ||
@@ -459,20 +465,12 @@ done:		if (bp != NULL)
 				cp = &cmd_del2;
 				goto skip;
 			}
-		}
-
-		/*
-		 * !!!
-		 * Historic vi permitted a capital 'P' at the beginning of
-		 * any command that started with 'p'.  Probably wanted the
-		 * P command for backward compatibility, and the code just
-		 * made Preserve and Put work by accident.
-		 */
-		if (*p == 'P') {
+			break;
+		case 'P':
 			tmp = 1;
 			*p = 'p';
-		} else
-			tmp = 0;
+			break;
+		}
 
 		/*
 		 * Search the table for the command.
@@ -491,7 +489,6 @@ done:		if (bp != NULL)
 		 */
 		if ((cp = ex_comm_search(p, namelen)) == NULL)
 			switch (p[0]) {
-			case 'P':
 			case 's':
 				cmd -= namelen - 1;
 				cmdlen += namelen - 1;
