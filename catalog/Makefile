@@ -1,4 +1,4 @@
-#	$Id: Makefile,v 8.17 1995/06/09 11:27:50 bostic Exp $ (Berkeley) $Date: 1995/06/09 11:27:50 $
+#	$Id: Makefile,v 8.18 1995/06/09 12:41:43 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:41:43 $
 
 CAT=	vi_dutch vi_english vi_german vi_ru_SU.KOI8-R vi_swedish
 FILES=	../common/*.c ../ex/*.c ../vi/*.c ../cl/*.c
@@ -28,7 +28,10 @@ check: ${CAT}
 		echo "... $$i";						\
 		f=`basename $$i .base`;					\
 		(echo "UNUSED MESSAGE NUMBERS (this is okay):";		\
-		awk '{while (++nline < $$1) print nline}' < $$i;	\
+		awk '{							\
+			while (++nline < $$1)				\
+				printf "%03d\n", nline;			\
+		}' < $$i;						\
 		echo =========================;				\
 		echo "MISSING ERROR MESSAGES (this is NOT okay):";	\
 		awk '{print $$1}' < $$i > __ck1;			\
