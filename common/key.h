@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 8.20 1993/11/29 20:02:08 bostic Exp $ (Berkeley) $Date: 1993/11/29 20:02:08 $
+ *	$Id: key.h,v 8.21 1993/11/30 09:26:52 bostic Exp $ (Berkeley) $Date: 1993/11/30 09:26:52 $
  */
 
 /* Structure to return a character and associated information. */
@@ -140,9 +140,10 @@ enum confirm	{ CONF_NO, CONF_QUIT, CONF_YES };
 
 /* Support keyboard routines. */
 int		__term_key_val __P((SCR *, ARG_CHAR_T));
-enum input	term_key __P((SCR *, CH *, u_int));
-enum input	term_user_key __P((SCR *, CH *));
+void		term_ab_flush __P((SCR *, char *));
 int		term_init __P((SCR *));
+enum input	term_key __P((SCR *, CH *, u_int));
 void		term_map_flush __P((SCR *, char *));
 int		term_push __P((SCR *, CHAR_T *, size_t, u_int, u_int));
+enum input	term_user_key __P((SCR *, CH *));
 int		term_waiting __P((SCR *));
