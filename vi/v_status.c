@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_status.c,v 8.8 1993/09/28 10:26:10 bostic Exp $ (Berkeley) $Date: 1993/09/28 10:26:10 $";
+static char sccsid[] = "$Id: v_status.c,v 8.9 1993/09/29 15:23:26 bostic Exp $ (Berkeley) $Date: 1993/09/29 15:23:26 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -71,7 +71,7 @@ status(sp, ep, lno, showlast)
 	if (F_ISSET(sp->frp, FR_NEWFILE)) {
 		F_CLR(sp->frp, FR_NEWFILE);
 		nf = "new file";
-		mo = "";
+		mo = nc = "";
 	} else {
 		nf = "";
 		if (F_ISSET(sp->frp, FR_NAMECHANGED)) {
