@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: set.opt.roff,v 8.26 1994/08/11 12:48:43 bostic Exp $ (Berkeley) $Date: 1994/08/11 12:48:43 $
+.\"     $Id: set.opt.roff,v 8.27 1994/08/31 17:55:42 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:55:42 $
 .\"
 .SH 1 "Set Options"
 .pp
@@ -414,6 +414,20 @@ character.
 See the section entitled
 .QB "Regular Expressions and Replacement Strings"
 for more information.
+.KY meta
+.IP "meta [~{[*?$`'""\\]"
+The set of characters that
+.EV ex
+checks for when doing file name expansion.
+If any of the specified characters are found in the file name arguments
+to the
+.CO ex
+commands,
+the arguments are expanded using the program defined by the
+.OP shell
+option.
+The default set of characters is a union of the meta characters
+from the Version 7 and the Berkeley C shell.
 .KY matchtime
 .IP "matchtime [7]"
 .CO Vi
