@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 5.11 1992/04/28 13:28:28 bostic Exp $ (Berkeley) $Date: 1992/04/28 13:28:28 $";
+static char sccsid[] = "$Id: ex_bang.c,v 5.12 1992/04/28 17:41:25 bostic Exp $ (Berkeley) $Date: 1992/04/28 17:41:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -16,8 +16,9 @@ static char sccsid[] = "$Id: ex_bang.c,v 5.11 1992/04/28 13:28:28 bostic Exp $ (
 #include <string.h>
 
 #include "vi.h"
-#include "options.h"
 #include "excmd.h"
+#include "options.h"
+#include "tty.h"
 #include "extern.h"
 
 /*
@@ -115,22 +116,24 @@ ex_bang(cmdp)
 		if (tmpsave(NULL, 0))
 			return (1);
 	} else if (ISSET(O_WARN) && tstflag(file, MODIFIED)) {
-		msg("Warning: the file has been modified but not written.");
+		msg("%s has been modified but not written.", origname);
 		return (1);
 	}
 
 	EX_PRSTART(0);
 
 	/* If modified, echo the new command. */
-	if (l_alt || l_cur || l_last)
-		(void)printf("%s\n", com);
+	if (l_alt || l_cur || l_last) {
+		(void)printf("%s", com);
+		EX_PRNEWLINE;
+	}
 
 	/*
 	 * If no addresses were specified, just run the command, otherwise
 	 * pipe lines from the file through the command.
 	 */
 	if (cmdp->addrcnt == 0) {
-		if (system(com))
+		if (esystem(PVAL(O_SHELL), com))
 			return (1);
 	} else {
 		if (filter(cmdp->addr1, cmdp->addr2, com, STANDARD))
