@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.36 1994/03/01 11:37:29 bostic Exp $ (Berkeley) $Date: 1994/03/01 11:37:29 $";
+static char sccsid[] = "$Id: util.c,v 8.37 1994/03/06 11:24:47 bostic Exp $ (Berkeley) $Date: 1994/03/06 11:24:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -257,31 +257,41 @@ norpt:	memset(sp->rptlines, 0, sizeof(sp->rptlines));
  */
 int
 binc(sp, argp, bsizep, min)
-	SCR *sp;			/* MAY BE NULL */
+	SCR *sp;			/* sp MAY BE NULL!!! */
 	void *argp;
 	size_t *bsizep, min;
 {
-	void *bpp;
 	size_t csize;
+	void *bpp;
 
 	/* If already larger than the minimum, just return. */
-	csize = *bsizep;
-	if (min && csize >= min)
+	if (min && *bsizep >= min)
 		return (0);
 
-	csize += MAX(min, 256);
+	/*
+	 * If the initial pointer is null, use calloc (for non-ANSI
+	 * C realloc implementations).
+	 */
 	bpp = *(char **)argp;
-
-	/* For non-ANSI C realloc implementations. */
-	if (bpp == NULL)
-		bpp = malloc(csize * sizeof(CHAR_T));
-	else
-		bpp = realloc(bpp, csize * sizeof(CHAR_T));
+	csize = *bsizep + MAX(min, 256);
 	if (bpp == NULL) {
-		msgq(sp, M_SYSERR, NULL);
+		MALLOC(sp, bpp, void *, csize * sizeof(CHAR_T));
+	} else
+		REALLOC(sp, bpp, void *, csize * sizeof(CHAR_T));
+
+	if (bpp == NULL) {
+		/*
+		 * Theoretically, realloc is supposed to leave any already
+		 * held memory alone if it can't get more.  Don't trust it.
+		 */
 		*bsizep = 0;
 		return (1);
 	}
+	/*
+	 * Memory is guaranteed to be zero-filled, various parts of
+	 * nvi depend on this.
+	 */
+	memset(bpp + *bsizep, 0, csize - *bsizep);
 	*(char **)argp = bpp;
 	*bsizep = csize;
 	return (0);
