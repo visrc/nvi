@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.68 1994/03/22 19:53:20 bostic Exp $ (Berkeley) $Date: 1994/03/22 19:53:20 $";
+static char sccsid[] = "$Id: exf.c,v 8.69 1994/03/23 15:03:49 bostic Exp $ (Berkeley) $Date: 1994/03/23 15:03:49 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -508,6 +508,7 @@ file_write(sp, ep, fm, tm, name, flags)
 	FILE *fp;
 	FREF *frp;
 	MARK from, to;
+	TIMER *timerp;
 	u_long nlno, nch;
 	int fd, oflags, rval;
 	char *msg;
@@ -640,8 +641,12 @@ exists:			if (LF_ISSET(FS_POSSIBLE))
 		tm = &to;
 	}
 
-	/* Write the file. */
+	/* Write the file, allowing interrupts. */
+	timerp = F_ISSET(sp, S_EXSILENT) ?
+	    NULL : start_timer(sp, 8, sp->s_busy, "Writing...", 0);
 	rval = ex_writefp(sp, ep, name, fp, fm, tm, &nlno, &nch);
+	if (timerp != NULL)
+		stop_timer(sp, timerp);
 
 	/*
 	 * Save the new last modification time -- even if the write fails
