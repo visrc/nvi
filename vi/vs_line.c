@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 5.9 1993/05/01 17:02:33 bostic Exp $ (Berkeley) $Date: 1993/05/01 17:02:33 $";
+static char sccsid[] = "$Id: vs_line.c,v 5.10 1993/05/02 12:19:18 bostic Exp $ (Berkeley) $Date: 1993/05/02 12:19:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -215,7 +215,7 @@ svi_screens(sp, ep, lno, cnop)
 	size_t *cnop;
 {
 	CHNAME *cname;
-	size_t cno_cnt, cols, lcnt, len, scno;
+	size_t cno_cnt, cols, len, scno;
 	int ch;
 	char *p;
 
@@ -228,33 +228,29 @@ svi_screens(sp, ep, lno, cnop)
 	if (O_ISSET(sp, O_NUMBER))
 		cols -= O_NUMBER_LENGTH;
 
-	/*
-	 * If a column specified, note it, and set the counter to the
-	 * column plus one, so we can use 0 as a flag value.
-	 */
-	cno_cnt = cnop == NULL ? 0 : *cnop + 1;
+	/* Check for column count. */
+	if (cnop != NULL)
+		cno_cnt = *cnop;
 
 	/* Calculate the lines needed. */
 	cname = sp->cname;
-	for (lcnt = 1, scno = 0; len;) {
+	for (scno = 0; len; --len) {
 		if ((ch = *(u_char *)p++) == '\t' && !O_ISSET(sp, O_LIST))
 			scno += TAB_OFF(sp, scno);
 		else
 			scno += cname[ch].len;
 
-		if (--len && scno > cols) {
-			scno -= cols;
-			++lcnt;
+		if (cnop != NULL) {
+			if (cno_cnt == 0)
+				break;
+			--cno_cnt;
 		}
-		if (cno_cnt && --cno_cnt == 0)
-			break;
 	}
 
 	/* Trailing '$' on listed lines. */
-	if (len == 0 && O_ISSET(sp, O_LIST)) {
+	if (O_ISSET(sp, O_LIST) && len == 0 &&
+	    (cnop == NULL || cno_cnt != 0))
 		scno += cname['$'].len;
-		if (scno > cols)
-			++lcnt;
-	}
-	return (lcnt);
+
+	return (scno / cols + (scno % cols ? 1 : 0));
 }
