@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: options.c,v 10.52 1996/12/14 14:00:32 bostic Exp $ (Berkeley) $Date: 1996/12/14 14:00:32 $";
+static const char sccsid[] = "$Id: options.c,v 10.53 1996/12/16 09:39:15 bostic Exp $ (Berkeley) $Date: 1996/12/16 09:39:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -288,7 +288,7 @@ opts_init(sp, oargs)
 {
 	ARGS *argv[2], a, b;
 	OPTLIST const *op;
-	u_long v;
+	u_long isset, v;
 	int cnt, optindx;
 	char *s, b1[1024];
 
@@ -425,16 +425,17 @@ opts_init(sp, oargs)
 	 */
 	for (; *oargs != -1; ++oargs)
 		OI(*oargs, optlist[*oargs].name);
-	return (0);
 #undef OI
 
 	/*
 	 * Inform the underlying screen of the initial values of the
 	 * edit options.
 	 */
-	for (op = optlist, cnt = 0; op->name != NULL; ++op, ++cnt)
-		(void)sp->gp->scr_optchange(sp,
-		    cnt, O_STR(sp, cnt), &O_VAL(sp, cnt));
+	for (op = optlist, cnt = 0; op->name != NULL; ++op, ++cnt) {
+		isset = O_ISSET(sp, cnt);
+		(void)sp->gp->scr_optchange(sp, cnt, O_STR(sp, cnt), &isset);
+	}
+	return (0);
 
 err:	msgq(sp, M_ERR,
 	    "031|Unable to set default %s option", optlist[optindx].name);
@@ -457,7 +458,7 @@ opts_set(sp, argv, usage)
 	enum nresult nret;
 	OPTLIST const *op;
 	OPTION *spo;
-	u_long value, turnoff;
+	u_long isset, turnoff, value;
 	int ch, equals, nf, nf2, offset, qmark, rval;
 	char *endp, *name, *p, *sep, *t;
 
@@ -560,30 +561,30 @@ opts_set(sp, argv, usage)
 			 * Do nothing if the value is unchanged, the underlying
 			 * functions can be expensive.
 			 */
+			isset = !turnoff;
 			if (!F_ISSET(op, OPT_ALWAYS))
-				if (turnoff) {
-					if (!O_ISSET(sp, offset))
-						break;
-				} else {
+				if (isset) {
 					if (O_ISSET(sp, offset))
 						break;
-				}
+				} else
+					if (!O_ISSET(sp, offset))
+						break;
 
 			/* Report to subsystems. */
 			if (op->func != NULL &&
-			    op->func(sp, spo, NULL, &turnoff) ||
-			    ex_optchange(sp, offset, NULL, &turnoff) ||
-			    v_optchange(sp, offset, NULL, &turnoff) ||
-			    sp->gp->scr_optchange(sp, offset, NULL, &turnoff)) {
+			    op->func(sp, spo, NULL, &isset) ||
+			    ex_optchange(sp, offset, NULL, &isset) ||
+			    v_optchange(sp, offset, NULL, &isset) ||
+			    sp->gp->scr_optchange(sp, offset, NULL, &isset)) {
 				rval = 1;
 				break;
 			}
 
 			/* Set the value. */
-			if (turnoff)
-				O_CLR(sp, offset);
-			else
+			if (isset)
 				O_SET(sp, offset);
+			else
+				O_CLR(sp, offset);
 			break;
 		case OPT_NUM:
 			if (turnoff) {
