@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_tags.c,v 8.8 2001/06/25 15:19:28 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:28 $";
+static const char sccsid[] = "$Id: m_tags.c,v 8.9 2003/11/05 17:10:00 skimo Exp $ (Berkeley) $Date: 2003/11/05 17:10:00 $";
 #endif /* not lint */
 
 /*
@@ -61,6 +61,7 @@ static const char sccsid[] = "$Id: m_tags.c,v 8.8 2001/06/25 15:19:28 skimo Exp 
 #include <stdio.h>
 #include <string.h>
 
+#undef LOCK_SUCCESS
 #include "../common/common.h"
 #include "../ipc/ip.h"
 #include "m_motif.h"

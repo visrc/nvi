@@ -169,11 +169,8 @@ EXTRA_libvi_la_SOURCES = \
 	$(visrcdir)/common/vi_rec.c \
 	$(visrcdir)/perl_api/perl.xs \
 	$(visrcdir)/perl_api/perlsfio.c \
-	$(visrcdir)/tcl_api/tcl.c \
-	perl.c \
-	perlxsi.c
+	$(visrcdir)/tcl_api/tcl.c
 # Is this the way to do it ?
-REOBJS=	regcomp.lo regerror.lo regexec.lo regfree.lo
 libvi_la_DEPENDENCIES = @LTLIBOBJS@
 libvi_la_LIBADD = @LTLIBOBJS@
 

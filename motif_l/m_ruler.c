@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_ruler.c,v 8.5 2001/06/25 15:19:27 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:27 $";
+static const char sccsid[] = "$Id: m_ruler.c,v 8.6 2003/11/05 17:10:00 skimo Exp $ (Berkeley) $Date: 2003/11/05 17:10:00 $";
 #endif /* not lint */
 
 /* This module implements a dialog for the text ruler
@@ -40,6 +40,7 @@ static const char sccsid[] = "$Id: m_ruler.c,v 8.5 2001/06/25 15:19:27 skimo Exp
 #include <bitstring.h>
 #include <stdio.h>
 
+#undef LOCK_SUCCESS
 #include "../common/common.h"
 #include "../ipc/ip.h"
 #include "m_motif.h"

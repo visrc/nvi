@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_copypaste.c,v 8.9 2001/06/25 15:19:26 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:26 $";
+static const char sccsid[] = "$Id: m_copypaste.c,v 8.10 2003/11/05 17:09:59 skimo Exp $ (Berkeley) $Date: 2003/11/05 17:09:59 $";
 #endif /* not lint */
 
 /* ICCCM Cut and paste Utilities: */
@@ -25,6 +25,7 @@ static const char sccsid[] = "$Id: m_copypaste.c,v 8.9 2001/06/25 15:19:26 skimo
 #include	<bitstring.h>
 #include	<stdio.h>
 
+#undef LOCK_SUCCESS
 #include	"../common/common.h"
 #include	"../ipc/ip.h"
 #include	"m_motif.h"
