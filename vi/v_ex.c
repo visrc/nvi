@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 10.7 1995/07/04 12:45:56 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:45:56 $";
+static char sccsid[] = "$Id: v_ex.c,v 10.8 1995/07/06 11:51:41 bostic Exp $ (Berkeley) $Date: 1995/07/06 11:51:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -447,8 +447,6 @@ v_ex_td2(sp, vp)
 		 * different ways.
 		 */
 		F_SET(sp, S_COMPLETE_EX);
-		if (F_ISSET(sp, S_EX_CANON))
-			F_SET(vip, VIP_SKIPREFRESH);
 		return (v_ex_done(sp, vp));
 	case ES_RUNNING:
 		vip->run_func = EXP(sp)->run_func;
@@ -473,6 +471,8 @@ v_ex_done(sp, vp)
 {
 	recno_t lno;
 	size_t len;
+
+	ex_fflush(sp);
 
 	/*
 	 * The only cursor modifications are real, however, the underlying
