@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 5.27 1993/04/12 14:31:32 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:31:32 $
+ *	$Id: screen.h,v 5.28 1993/04/13 16:18:31 bostic Exp $ (Berkeley) $Date: 1993/04/13 16:18:31 $
  */
 
 /*
@@ -120,11 +120,6 @@ typedef struct _scr {
 #ifdef FWOPEN_NOT_AVAILABLE
 	int	 trapped_fd;		/* Ex/vi trapped file descriptor. */
 #endif
-					/* Ex/vi: terminal input. */
-	char	*gb_cb;			/* Input character buffer. */
-	char	*gb_qb;			/* Input character quote buffer. */
-	u_char	*gb_wb;			/* Input character widths buffer. */
-	size_t	 gb_len;		/* Input character buffer length. */
 
 	u_int	 nkeybuf;		/* # of keys in the input buffer. */
 	char	*mappedkey;		/* Mapped key return. */
@@ -133,6 +128,9 @@ typedef struct _scr {
 
 	fd_set	 rdfd;			/* Ex/vi: read fd select mask. */
 
+	struct _hdr	 bhdr;		/* Ex/vi: line input. */
+	struct _hdr	 txthdr;	/* Vi: text input TEXT header. */
+
 	char	*ibp;			/* Ex: line input buffer. */
 	size_t	 ibp_len;		/* Line input buffer length. */
 
@@ -140,8 +138,6 @@ typedef struct _scr {
 
 /* PARTIALLY OR COMPLETELY COPIED FROM PREVIOUS SCREEN. */
 	struct _gs	*gp;		/* Pointer to global area. */
-
-	struct _hdr	 txthdr;	/* Vi: text input TEXT header. */
 
 	char	*rep;			/* Vi: input replay buffer. */
 	size_t	 rep_len;		/* Vi: input replay buffer length. */
@@ -208,7 +204,8 @@ typedef struct _scr {
 	int	 (*exwrite) __P((void *, const char *, int));
 	int	 (*fill) __P((struct _scr *,
 		     struct _exf *, recno_t, enum position));
-	int	 (*gb) __P((struct _scr *, int, char **, size_t *, u_int));
+	int	 (*gb) __P((struct _scr *, struct _exf *, struct _hdr *,
+		     int, u_int));
 	int	 (*position) __P((struct _scr *,
 		     struct _exf *, recno_t *, u_long, enum position));
 	int	 (*refresh) __P((struct _scr *, struct _exf *));
