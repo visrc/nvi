@@ -40,4 +40,4 @@ L<VI>
 
 =head1 AUTHOR
 
-Sven Verdoolaege <skimo@dns.ufsia.ac.be>
+Sven Verdoolaege <skimo@kotnet.org>

@@ -8,10 +8,10 @@ VI - VI module within perl embedded nvi
       my $words;
       $i = $VI::StartLine;
       while ($i <= $VI::StopLine) {
-        $_ = VI::GetLine($VI::ScreenId, $i++);
+	$_ = $curscr->GetLine($i++);
         $words+=split;
       }
-      VI::Msg($VI::ScreenId,"$words words");
+      $curscr->Msg("$words words");
     }
 
 =head1 DESCRIPTION
@@ -28,9 +28,15 @@ These are set by nvi before starting each perl command.
 
 =over 8
 
-=item * $ScreenId
+=item * $curscr
 
-Screen id of the current screen.
+Object that represents the current screen.
+It can be used as the ScreenId parameter of the functions below,
+or you can use object oriented syntax.
+
+	# the following two are equivalent
+	$curscr->DelLine(57);
+	VI::DelLine($curscr, 57);
 
 =item * $StartLine
 
@@ -164,6 +170,14 @@ Set an option.
 
 Change the current focus to screen.
 
+=item * TagQ
+
+    $screen->TagQ("tag identification string")
+
+Creates a new tag queue object associated to $screen
+to which "tags" can be added.
+See further about methods you can use on tag queues.
+
 =item * UnmapKey
 
     VI::UnmmapKey(screenId,key);
@@ -174,6 +188,55 @@ Unmap a key.
 
 This is the default warning handler.
 It adds any warnings to the error string.
+
+=item * Opt
+
+    $screen->Opt;
+
+Returns a tied hash representing the options of the screen.
+Note that you can only retrieve and set hash elements.
+
+=item * Map
+
+    $screen->Map;
+
+Returns a tied hash representing the mappings of the screen.
+Note that you can only retrieve, set and delete hash elements.
+
+=item * Mark
+
+    $screen->Mark;
+
+Returns a tied hash representing the marks of the screen.
+
+=item * Line
+
+    $screen->Line;
+
+Returns a tied array representing the lines of the screen.
+
+=back
+
+=head2 Tag queue methods
+
+=item * Add
+
+    $tagq->Add($filename, $searchstring, $msg)
+
+Adds a tag to the tag queue. 
+The $searchstring argument is (line)number or
+a string representing a regular expression.
+
+=item * Push
+
+    $tagq->Push()
+
+Pushes the tag queue onto its associated screen.
+The result of the operation is as if the user had enter the
+tag command and nvi had found the locations that were added
+using the Add method.
+
+For an example, see the make.pl script.
 
 =back
 
@@ -215,4 +278,4 @@ L<nviperl>
 
 =head1 AUTHOR
 
-Sven Verdoolaege <skimo@dns.ufsia.ac.be>
+Sven Verdoolaege <skimo@kotnet.org>
