@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_left.c,v 8.7 1994/03/10 11:04:42 bostic Exp $ (Berkeley) $Date: 1994/03/10 11:04:42 $";
+static char sccsid[] = "$Id: v_left.c,v 8.8 1994/03/10 13:30:48 bostic Exp $ (Berkeley) $Date: 1994/03/10 13:30:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -214,15 +214,16 @@ v_ncol(sp, ep, vp)
 	 * start.  Ignore VC_C and VC_S.  Motion left commands adjust the
 	 * starting point to the character before the current one.
 	 */
-	if (vp->m_start.cno > vp->m_stop.cno) {
+	if (vp->m_start.cno < vp->m_stop.cno)
+		vp->m_final = ISMOTION(vp) ? vp->m_start : vp->m_stop;
+	else {
 		vp->m_final = vp->m_stop;
 		if (ISMOTION(vp)) {
 			if (F_ISSET(vp, VC_Y))
 				vp->m_final = vp->m_start;
 			--vp->m_start.cno;
 		}
-	} else
-		vp->m_final = ISMOTION(vp) ? vp->m_start : vp->m_stop;
+	}
 	return (0);
 }
 
