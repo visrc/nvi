@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.43 1996/03/27 21:14:27 bostic Exp $ (Berkeley) $Date: 1996/03/27 21:14:27 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.44 1996/03/28 17:22:19 bostic Exp $ (Berkeley) $Date: 1996/03/28 17:22:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -490,19 +490,32 @@ next:	if (v_event_get(sp, evp, 0, ec_flags))
 		}
 	}
 
-	/* File name completion. */
-	if (quote == Q_NOTSET && LF_ISSET(TXT_FILEC) &&
-	    O_STR(sp, O_FILEC) != NULL && O_STR(sp, O_FILEC)[0] == evp->e_c) {
-		if (txt_fc(sp, tp, &filec_redraw))
-			goto err;
-		goto ret;
-	}
+	/*
+	 * File name completion and colon command-line editing.   We don't
+	 * have enough meta characters, so we expect people to overload
+	 * them.  If the two characters are the same, then we do file name
+	 * completion if the cursor is past the first column, and do colon
+	 * command-line editing if it's not.
+	 */
+	if (quote == Q_NOTSET) {
+		int L__cedit, L__filec;
 
-	/* Colon command-line editing. */
-	if (LF_ISSET(TXT_CEDIT) &&
-	    O_STR(sp, O_CEDIT) != NULL && O_STR(sp, O_CEDIT)[0] == evp->e_c) {
-		tp->term = TERM_CEDIT;
-		goto k_escape;
+		L__cedit = L__filec = 0;
+		if (LF_ISSET(TXT_CEDIT) && O_STR(sp, O_CEDIT) != NULL &&
+		    O_STR(sp, O_CEDIT)[0] == evp->e_c)
+			L__cedit = 1;
+		if (LF_ISSET(TXT_FILEC) && O_STR(sp, O_FILEC) != NULL &&
+		    O_STR(sp, O_FILEC)[0] == evp->e_c)
+			L__filec = 1;
+		if (L__cedit == 1 && (L__filec == 0 || sp->cno == tp->offset)) {
+			tp->term = TERM_CEDIT;
+			goto k_escape;
+		}
+		if (L__filec == 1) {
+			if (txt_fc(sp, tp, &filec_redraw))
+				goto err;
+			goto ret;
+		}
 	}
 
 	/* Abbreviation overflow check.  See comment in txt_abbrev(). */
