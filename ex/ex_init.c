@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_init.c,v 10.15 1996/03/19 21:18:54 bostic Exp $ (Berkeley) $Date: 1996/03/19 21:18:54 $";
+static const char sccsid[] = "$Id: ex_init.c,v 10.16 1996/03/29 19:40:11 bostic Exp $ (Berkeley) $Date: 1996/03/29 19:40:11 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -279,6 +279,9 @@ ex_run_str(sp, name, str, len, ex_flags, nocopy)
 	} else
 		ecp = &gp->excmd;
 
+	F_INIT(ecp,
+	    ex_flags ? E_BLIGNORE | E_NOAUTO | E_NOPRDEF | E_VLITONLY : 0);
+
 	if (nocopy)
 		ecp->cp = str;
 	else if ((ecp->cp = v_strdup(sp, str, len)) == NULL)
@@ -291,10 +294,8 @@ ex_run_str(sp, name, str, len, ex_flags, nocopy)
 		if ((ecp->if_name = v_strdup(sp, name, strlen(name))) == NULL)
 			return (1);
 		ecp->if_lno = 1;
+		F_SET(ecp, E_NAMEDISCARD);
 	}
-
-	F_INIT(ecp,
-	    ex_flags ? E_BLIGNORE | E_NOAUTO | E_NOPRDEF | E_VLITONLY : 0);
 
 	return (0);
 }

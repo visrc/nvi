@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: ex.h,v 10.16 1996/03/28 20:57:43 bostic Exp $ (Berkeley) $Date: 1996/03/28 20:57:43 $
+ *	$Id: ex.h,v 10.17 1996/03/29 19:40:11 bostic Exp $ (Berkeley) $Date: 1996/03/29 19:40:11 $
  */
 
 #define	PROMPTCHAR	':'		/* Prompt using a colon. */
@@ -135,21 +135,22 @@ struct _excmd {
 
 #define	__INUSE2	0x000004ff	/* Same name space as EXCMDLIST. */
 #define	E_BLIGNORE	0x00000800	/* Ignore blank lines. */
-#define	E_NOAUTO	0x00001000	/* Don't do autoprint output. */
-#define	E_NOPRDEF	0x00002000	/* Don't print as default. */
-#define	E_NRSEP		0x00004000	/* Need to line adjust ex output. */
-#define	E_OPTNUM	0x00008000	/* Number edit option affected. */
-#define	E_VLITONLY	0x00010000	/* Use ^V quoting only. */
-#define	E_PRESERVE	0x0001f800	/* Bits to preserve across commands. */
+#define	E_NAMEDISCARD	0x00001000	/* Free/discard the name. */
+#define	E_NOAUTO	0x00002000	/* Don't do autoprint output. */
+#define	E_NOPRDEF	0x00004000	/* Don't print as default. */
+#define	E_NRSEP		0x00008000	/* Need to line adjust ex output. */
+#define	E_OPTNUM	0x00010000	/* Number edit option affected. */
+#define	E_VLITONLY	0x00020000	/* Use ^V quoting only. */
+#define	E_PRESERVE	0x0003f800	/* Bits to preserve across commands. */
 
-#define	E_ABSMARK	0x00020000	/* Set the absolute mark. */
-#define	E_ADDR_DEF	0x00040000	/* Default addresses used. */
-#define	E_DELTA		0x00080000	/* Search address with delta. */
-#define	E_MODIFY	0x00100000	/* File name expansion modified arg. */
-#define	E_MOVETOEND	0x00200000	/* Move to the end of the file first. */
-#define	E_NEWLINE	0x00400000	/* Found ending <newline>. */
-#define	E_USELASTCMD	0x00800000	/* Use the last command. */
-#define	E_VISEARCH	0x01000000	/* It's really a vi search command. */
+#define	E_ABSMARK	0x00040000	/* Set the absolute mark. */
+#define	E_ADDR_DEF	0x00080000	/* Default addresses used. */
+#define	E_DELTA		0x00100000	/* Search address with delta. */
+#define	E_MODIFY	0x00200000	/* File name expansion modified arg. */
+#define	E_MOVETOEND	0x00400000	/* Move to the end of the file first. */
+#define	E_NEWLINE	0x00800000	/* Found ending <newline>. */
+#define	E_USELASTCMD	0x01000000	/* Use the last command. */
+#define	E_VISEARCH	0x02000000	/* It's really a vi search command. */
 	u_int32_t flags;		/* Current flags. */
 };
 

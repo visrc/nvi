@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex.c,v 10.39 1996/03/06 19:51:54 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:51:54 $";
+static const char sccsid[] = "$Id: ex.c,v 10.40 1996/03/29 19:40:10 bostic Exp $ (Berkeley) $Date: 1996/03/29 19:40:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -77,7 +77,7 @@ ex(spp)
 	/* If reading from a file, errors should have name and line info. */
 	if (!F_ISSET(gp, G_STDIN_TTY)) {
 		gp->excmd.if_lno = 1;
-		gp->excmd.if_name = "input";
+		gp->excmd.if_name = "script";
 	}
 
 	/*
@@ -2058,8 +2058,13 @@ ex_load(sp)
 	 * can't be an AGV command, which makes things a bit easier.
 	 */
 	for (gp = sp->gp;;) {
-		if ((ecp = gp->ecq.lh_first) == &gp->excmd)
+		if ((ecp = gp->ecq.lh_first) == &gp->excmd) {
+			if (F_ISSET(ecp, E_NAMEDISCARD)) {
+				free(ecp->if_name);
+				ecp->if_name = NULL;
+			}
 			return (0);
+		}
 		if (FL_ISSET(ecp->agv_flags, AGV_ALL)) {
 			/* Discard any exhausted ranges. */
 			while ((rp = ecp->rq.cqh_first) != (void *)&ecp->rq)
