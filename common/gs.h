@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 10.2 1995/06/08 18:57:37 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:57:37 $
+ *	$Id: gs.h,v 10.3 1995/06/14 11:59:28 bostic Exp $ (Berkeley) $Date: 1995/06/14 11:59:28 $
  */
 
 #define	TEMPORARY_FILE_STRING	"/tmp"	/* Default temporary file name. */
@@ -43,7 +43,7 @@ struct _fref {
 typedef enum { EX_TERM_CE, EX_TERM_SCROLL } exadj_t;
 
 /* Screen attribute argument to scr_attr(). */
-typedef enum { SA_INVERSE } attr_t;
+typedef enum { SA_INVERSE } scr_attr_t;
  
 /*
  * GS:
@@ -165,7 +165,7 @@ struct _gs {
 					/* Add a string to the screen. */
 	int	(*scr_addstr) __P((SCR *, const char *));
 					/* Toggle a screen attribute. */
-	int	(*scr_attr) __P((SCR *, attr_t, int));
+	int	(*scr_attr) __P((SCR *, scr_attr_t, int));
 					/* Beep/bell/flash the terminal. */
 	int	(*scr_bell) __P((SCR *));
 					/* Display a busy message. */

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_funcs.c,v 10.2 1995/06/09 13:43:53 bostic Exp $ (Berkeley) $Date: 1995/06/09 13:43:53 $";
+static char sccsid[] = "$Id: cl_funcs.c,v 10.3 1995/06/14 11:59:53 bostic Exp $ (Berkeley) $Date: 1995/06/14 11:59:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -97,12 +97,12 @@ cl_addnstr(sp, str, len)
  * cl_attr --
  *	Toggle a screen attribute on/off.
  *
- * PUBLIC: int cl_attr __P((SCR *, attr_t, int));
+ * PUBLIC: int cl_attr __P((SCR *, scr_attr_t, int));
  */
 int
 cl_attr(sp, attribute, on)
 	SCR *sp;
-	attr_t attribute;
+	scr_attr_t attribute;
 	int on;
 {
 	CL_PRIVATE *clp;
