@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.18 1993/10/03 15:25:33 bostic Exp $ (Berkeley) $Date: 1993/10/03 15:25:33 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.19 1993/10/03 15:46:51 bostic Exp $ (Berkeley) $Date: 1993/10/03 15:46:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -53,6 +53,23 @@ static int	 txt_resolve __P((SCR *, EXF *, HDR *));
 /*
  * newtext --
  *	Read in text from the user.
+ *
+ * !!!
+ * Historic vi always used:
+ *
+ *	^D: autoindent deletion
+ *	^H: last character deletion
+ *	^W: last word deletion
+ *	^V: quote the next character
+ *
+ * regardless of the user's choices for these characters.  The user's erase
+ * and kill characters worked in addition to these characters.  Ex was not
+ * completely consistent with this, as it did map the scroll command to the
+ * user's EOF character.
+ *
+ * This implementation does not use fixed characters, but uses whatever the
+ * user specified as described by the termios structure.  I'm getting away
+ * with something here, but I think I'm unlikely to get caught.
  */
 int
 v_ntext(sp, ep, hp, tm, p, len, rp, prompt, ai_line, flags)
@@ -425,7 +442,7 @@ k_escape:		if (tp->insert && tp->overwrite)
 			if (LF_ISSET(TXT_AUTOINDENT) && sp->cno <= tp->ai)
 				carat_st = C_ZEROSET;
 			goto ins_ch;
-		case K_CNTRLD:			/* Delete autoindent char. */
+		case K_VEOF:			/* Delete autoindent char. */
 			/*
 			 * If not doing autoindent, in the first column, no
 			 * characters to erase, or already inserted non-ai
