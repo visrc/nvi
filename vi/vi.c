@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.41 1993/02/11 20:07:30 bostic Exp $ (Berkeley) $Date: 1993/02/11 20:07:30 $";
+static char sccsid[] = "$Id: vi.c,v 5.42 1993/02/13 13:07:53 bostic Exp $ (Berkeley) $Date: 1993/02/13 13:07:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -202,7 +202,7 @@ err:		if (msgcnt) {
 			curf->rcm = curf->scno;
 		}
 	}
-	return (rval);
+	return (v_end(curf) || rval);
 }
 
 #define	KEY(k, flags) {							\
