@@ -13,7 +13,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_tag.c,v 10.23 1996/04/10 12:49:40 bostic Exp $ (Berkeley) $Date: 1996/04/10 12:49:40 $";
+static const char sccsid[] = "$Id: ex_tag.c,v 10.24 1996/04/10 18:39:00 bostic Exp $ (Berkeley) $Date: 1996/04/10 18:39:00 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -600,9 +600,9 @@ ex_tag_display(sp)
 	EX_PRIVATE *exp;
 	TAG *tp;
 	TAGQ *tqp;
-	int cnt, nf;
+	int cnt;
 	size_t len;
-	char *p, *t;
+	char *p;
 
 	exp = EXP(sp);
 	if ((tqp = exp->tq.cqh_first) == (void *)&exp->tq) {
@@ -614,6 +614,11 @@ ex_tag_display(sp)
 	 * We give the file name 20 columns and the search string the rest.
 	 * If there's not enough room, we don't do anything special, it's
 	 * not worth the effort, it just makes the display more confusing.
+	 *
+	 * We also assume that characters in file names map 1-1 to printing
+	 * characters.  This might not be true, but I don't think it's worth
+	 * fixing.  (The obvious fix is to pass the filenames through the
+	 * msg_print function.)
 	 */
 #define	L_NAME	20
 #define	L_TAG	20
@@ -628,27 +633,21 @@ ex_tag_display(sp)
 			break;
 
 		tp = tqp->current;
-		len = strlen(p = msg_print(sp,
-		    tp->frp == NULL ? tp->fname : tp->frp->name, &nf));
-		if (len > L_NAME) {
-			t = p + (len - L_NAME);
-			t[0] = '.';
-			t[1] = '.';
-			t[2] = '.';
-			t[3] = ' ';
+		p = tp->frp == NULL ? tp->fname : tp->frp->name;
+		if ((len = strlen(p)) > L_NAME) {
+			len = len - (L_NAME - 4);
+			(void)ex_printf(sp, "%2d ... %*.*s",
+			    cnt, L_NAME - 4, L_NAME - 4, p + len);
 		} else
-			t = p;
-		(void)ex_printf(sp, "%2d %*.*s", cnt, L_NAME, L_NAME, t);
-		if (nf)
-			FREE_SPACE(sp, p, 0);
+			(void)ex_printf(sp,
+			    "%2d %*.*s", cnt, L_NAME, L_NAME, p);
+
 		if (tqp->tag != NULL &&
 		    (sp->cols - L_NAME) >= L_TAG + L_SPACE) {
-			len = strlen(p = msg_print(sp, tqp->tag, &nf));
+			len = strlen(tqp->tag);
 			if (len > sp->cols - (L_NAME + L_SPACE))
 				len = sp->cols - (L_NAME + L_SPACE);
 			(void)ex_printf(sp, "     %.*s", (int)len, tqp->tag);
-			if (nf)
-				FREE_SPACE(sp, p, 0);
 		}
 		(void)ex_printf(sp, "\n");
 
@@ -660,19 +659,14 @@ ex_tag_display(sp)
 		if (tp->q.cqe_next == (void *)&tqp->tagq)
 			continue;
 		for (; tp != (void *)&tqp->tagq; tp = tp->q.cqe_next) {
-			len = strlen(p = msg_print(sp,
-			    tp->frp == NULL ? tp->fname : tp->frp->name, &nf));
-			if (len > L_NAME) {
-				t = p + (len - L_NAME);
-				t[0] = '.';
-				t[1] = '.';
-				t[2] = '.';
-				t[3] = ' ';
+			p = tp->frp == NULL ? tp->fname : tp->frp->name;
+			if ((len = strlen(p)) > L_NAME) {
+				len = len - (L_NAME - 4);
+				(void)ex_printf(sp, "   ... %*.*s",
+				    L_NAME - 4, L_NAME - 4, p + len);
 			} else
-				t = p;
-			(void)ex_printf(sp, "   %*.*s", L_NAME, L_NAME, t);
-			if (nf)
-				FREE_SPACE(sp, p, 0);
+				(void)ex_printf(sp,
+				    "   %*.*s", L_NAME, L_NAME, p);
 			if (tqp->current == tp &&
 			    (sp->cols - L_NAME) >= L_TAG + L_SPACE)
 				ex_printf(sp, "     (current)");
