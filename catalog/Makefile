@@ -1,8 +1,7 @@
-#	$Id: Makefile,v 8.16 1995/01/25 10:06:21 bostic Exp $ (Berkeley) $Date: 1995/01/25 10:06:21 $
+#	$Id: Makefile,v 8.17 1995/06/09 11:27:50 bostic Exp $ (Berkeley) $Date: 1995/06/09 11:27:50 $
 
 CAT=	vi_dutch vi_english vi_german vi_ru_SU.KOI8-R vi_swedish
-FILES=	../common/*.c ../ex/*.c ../sex/*.c ../vi/*.c ../svi/*.c \
-	../cl/*.c ../xaw/*.c
+FILES=	../common/*.c ../ex/*.c ../vi/*.c ../cl/*.c
 
 all: dump ${CAT}
 
