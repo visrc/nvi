@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.126 1996/09/18 09:23:05 bostic Exp $ (Berkeley) $Date: 1996/09/18 09:23:05 $
+dnl	$Id: configure.in,v 8.127 1996/09/19 11:23:42 bostic Exp $ (Berkeley) $Date: 1996/09/19 11:23:42 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(../common/main.c)
@@ -179,6 +179,8 @@ if test "$no_x" != yes; then
 fi
 
 dnl If the user wants a Perl interpreter in nvi, load it.
+AC_SUBST(shrpenv)
+AC_SUBST(vi_cv_perllib)
 AC_MSG_CHECKING(if --enable-perlinterp option specified)
 AC_ARG_ENABLE(perlinterp,
 	[  --enable-perlinterp     Include a Perl interpreter in vi.],
@@ -200,9 +202,7 @@ if test "$vi_cv_perlinterp" = "yes"; then
 	if test "X$shrpenv" = "XUNKNOWN"; then # pre 5.003_04
 	    shrpenv=""
 	fi
-	AC_SUBST(shrpenv)
 	vi_cv_perllib=`$vi_cv_path_perl -MConfig -e 'print $Config{privlib}'`
-	AC_SUBST(vi_cv_perllib)
 	perlcppflags=`cd $srcdir;$vi_cv_path_perl -MExtUtils::Embed \
         	-e 'ccflags;perl_inc'`
 	if test "X$perlcppflags" != "X"; then
