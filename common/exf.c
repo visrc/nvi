@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 9.20 1995/01/23 16:58:32 bostic Exp $ (Berkeley) $Date: 1995/01/23 16:58:32 $";
+static char sccsid[] = "$Id: exf.c,v 9.21 1995/01/27 17:34:05 bostic Exp $ (Berkeley) $Date: 1995/01/27 17:34:05 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -278,12 +278,14 @@ file_init(sp, frp, rcv_name, flags)
 	 * !!!
 	 * Side-effect: after the call to file_end(), sp->frp may be NULL.
 	 */
-	F_SET(frp, FR_DONTDELETE);
-	if (sp->ep != NULL && file_end(sp, NULL, LF_ISSET(FS_FORCE))) {
-		(void)file_end(sp, ep, 1);
-		goto err;
+	if (sp->ep != NULL) {
+		F_SET(frp, FR_DONTDELETE);
+		if (file_end(sp, NULL, LF_ISSET(FS_FORCE))) {
+			(void)file_end(sp, ep, 1);
+			goto err;
+		}
+		F_CLR(frp, FR_DONTDELETE);
 	}
-	F_CLR(frp, FR_DONTDELETE);
 
 	/*
 	 * Lock the file; if it's a recovery file, it should already be
