@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_util.c,v 10.6 1995/06/23 19:21:26 bostic Exp $ (Berkeley) $Date: 1995/06/23 19:21:26 $";
+static char sccsid[] = "$Id: ex_util.c,v 10.7 1995/07/08 12:44:33 bostic Exp $ (Berkeley) $Date: 1995/07/08 12:44:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -163,9 +163,12 @@ ex_message(sp, p, which)
 		    p);
 		break;
 	case EXM_NOFILEYET:
-		msgq(sp, M_ERR,
-	"173|The %s command requires that a file have already been read in",
-		    p);
+		if (p == NULL)
+			msgq(sp, M_ERR,
+			    "281|Command failed, no file read in yet.");
+		else
+			msgq(sp, M_ERR,
+	"173|The %s command requires that a file have already been read in", p);
 		break;
 	case EXM_NOPREVBUF:
 		msgq(sp, M_ERR, "171|No previous buffer to execute");
