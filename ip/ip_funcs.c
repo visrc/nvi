@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_funcs.c,v 8.2 1996/09/20 20:30:49 bostic Exp $ (Berkeley) $Date: 1996/09/20 20:30:49 $";
+static const char sccsid[] = "$Id: ip_funcs.c,v 8.3 1996/09/24 20:52:43 bostic Exp $ (Berkeley) $Date: 1996/09/24 20:52:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -111,8 +111,13 @@ ip_busy(sp, str, bval)
 	IP_BUF ipb;
 
 	ipb.code = IPO_BUSY;
-	ipb.len = strlen(str);
-	ipb.str = str;
+	if (str == NULL) {
+		ipb.len = 0;
+		ipb.str = "";
+	} else {
+		ipb.len = strlen(str);
+		ipb.str = str;
+	}
 	ipb.val1 = bval;
 
 	(void)ip_send(sp, "s1", &ipb);
@@ -328,11 +333,10 @@ void
 ip_usage()
 {       
 #define USAGE "\
-usage: vi [-eFlRrv] [-c command] [-I ifd.ofd] [-t tag] [-w size] [file ...]\n"
+usage: vi [-eFlRrSv] [-c command] [-I ifd.ofd] [-t tag] [-w size] [file ...]\n"
         (void)fprintf(stderr, "%s", USAGE);
 #undef  USAGE
 }
-
 
 /*
  * ip_send --
@@ -356,8 +360,6 @@ ip_send(sp, fmt, ipbp)
 
 	p = bp;
 	nlen = 0;
-	*p++ = IPO_MARKER;
-	nlen += IPO_MARKER_LEN;
 	*p++ = ipbp->code;
 	nlen += IPO_CODE_LEN;
 
@@ -365,10 +367,10 @@ ip_send(sp, fmt, ipbp)
 		for (; *fmt != '\0'; ++fmt)
 			switch (*fmt) {
 			case '1':			/* Value 1. */
-				ilen = ntohl(ipbp->val1);
+				ilen = htonl(ipbp->val1);
 				goto value;
 			case '2':			/* Value 2. */
-				ilen = ntohl(ipbp->val2);
+				ilen = htonl(ipbp->val2);
 value:				nlen += IPO_INT_LEN;
 				off = p - bp;
 				ADD_SPACE_RET(sp, bp, blen, nlen);
@@ -378,7 +380,7 @@ value:				nlen += IPO_INT_LEN;
 				break;
 			case 's':			/* String. */
 				ilen = ipbp->len;	/* XXX: conversion. */
-				ilen = ntohl(ilen);
+				ilen = htonl(ilen);
 				nlen += IPO_INT_LEN + ipbp->len;
 				off = p - bp;
 				ADD_SPACE_RET(sp, bp, blen, nlen);

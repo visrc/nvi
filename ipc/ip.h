@@ -4,7 +4,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: ip.h,v 8.1 1996/09/20 19:35:49 bostic Exp $ (Berkeley) $Date: 1996/09/20 19:35:49 $
+ *	$Id: ip.h,v 8.2 1996/09/24 20:52:43 bostic Exp $ (Berkeley) $Date: 1996/09/24 20:52:43 $
  */
 
 typedef struct _ip_private {
@@ -31,15 +31,16 @@ typedef struct _ip_private {
 /*
  * The IP protocol consists of frames, each containing:
  *
- *	<IPO_MARKER><IPO_><object>
+ *	<IPO_><object>
+ *
+ * XXX
+ * We should have a marking byte, 0xaa to delimit frames.
  *
  */
-#define	IPO_MARKER	0xAA
 #define	IPO_CODE	1	/* An event specification. */
 #define	IPO_INT		2	/* 4-byte, network order integer. */
 #define	IPO_STR		3	/* IPO_INT: followed by N bytes. */
 
-#define	IPO_MARKER_LEN	1
 #define	IPO_CODE_LEN	1
 #define	IPO_INT_LEN	4
 
@@ -75,7 +76,7 @@ typedef struct _ip_buf {
 /*
  * IP events sent from vi to the screen.
  */
-#define	IPO_ADDSTR	 1	/* Add a string: IPO_INT, IPO_STR. */
+#define	IPO_ADDSTR	 1	/* Add a string: IPO_STR. */
 #define	IPO_ATTRIBUTE	 2	/* Set the screen attribute: IPO_INT. */
 #define	IPO_BELL	 3	/* Beep/bell/flash the terminal. */
 #define	IPO_BUSY	 4	/* Display a busy message: IPO_STR. */
@@ -86,6 +87,5 @@ typedef struct _ip_buf {
 #define	IPO_REDRAW	 9	/* Redraw the screen. */
 #define	IPO_REFRESH	10	/* Refresh the screen. */
 #define	IPO_RENAME	11	/* Rename the screen: IPO_STR. */
-#define	IPO_SCREEN	12	/* Reset the screen type: IPO_INT. */
 
 #include "ip_extern.h"

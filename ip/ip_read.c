@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_read.c,v 8.2 1996/09/20 20:32:14 bostic Exp $ (Berkeley) $Date: 1996/09/20 20:32:14 $";
+static const char sccsid[] = "$Id: ip_read.c,v 8.3 1996/09/24 20:52:44 bostic Exp $ (Berkeley) $Date: 1996/09/24 20:52:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,6 +46,11 @@ ip_event(sp, evp, flags, ms)
 {
 	IP_PRIVATE *ipp;
 	struct timeval t, *tp;
+
+	if (LF_ISSET(EC_INTERRUPT)) {		/* XXX */
+		evp->e_event = E_TIMEOUT;
+		return (0);
+	}
 
 	ipp = sp == NULL ? GIPP(__global_list) : IPP(sp);
 
@@ -139,7 +144,7 @@ ip_read(sp, ipp, tp)
 	 * It's ugly that we wait on scripting file descriptors here, but it's
 	 * the only way to keep from locking out scripting windows.
 	 */
-	if (sp != NULL && F_ISSET(gp, G_SCRIPT)) {
+	if (sp != NULL && F_ISSET(gp, G_SCRWIN)) {
 loop:		FD_ZERO(&rdfd);
 		FD_SET(ipp->i_fd, &rdfd);
 		maxfd = ipp->i_fd;
@@ -218,8 +223,10 @@ ip_trans(sp, ipp, evp)
 			return (0);
 		evp->e_event = E_WRESIZE;
 		memcpy(&val1, ipp->ibuf + IPO_CODE_LEN, IPO_INT_LEN);
+		val1 = ntohl(val1);
 		memcpy(&val2,
 		    ipp->ibuf + IPO_CODE_LEN + IPO_INT_LEN, IPO_INT_LEN);
+		val2 = ntohl(val2);
 		ip_resize(sp, val1, val2);
 		ipp->iskip = IPO_CODE_LEN + IPO_INT_LEN * 2;
 		return (1);
@@ -236,6 +243,7 @@ ip_trans(sp, ipp, evp)
 string:		if (ipp->iblen < IPO_CODE_LEN + IPO_INT_LEN)
 			return (0);
 		memcpy(&val1, ipp->ibuf + IPO_CODE_LEN, IPO_INT_LEN);
+		val1 = ntohl(val1);
 		if (ipp->iblen < IPO_CODE_LEN + IPO_INT_LEN + val1)
 			return (0);
 		ipp->iskip = IPO_CODE_LEN + IPO_INT_LEN + val1;
