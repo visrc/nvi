@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.63 1994/04/26 17:28:14 bostic Exp $ (Berkeley) $Date: 1994/04/26 17:28:14 $";
+static char sccsid[] = "$Id: vi.c,v 8.64 1994/04/29 11:41:57 bostic Exp $ (Berkeley) $Date: 1994/04/29 11:41:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -307,6 +307,11 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 
 	/* Pick up optional buffer. */
 	if (key == '"') {
+		if (ismotion != NULL) {
+			msgq(sp, M_BERR,
+			    "Buffers are specified before the command.");
+			return (1);
+		}
 		KEY(vp->buffer, 0);
 		F_SET(vp, VC_BUFFER);
 		KEY(key, TXT_MAPCOMMAND);
@@ -329,6 +334,11 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 	if (key == '"') {
 		if (F_ISSET(vp, VC_BUFFER)) {
 			msgq(sp, M_ERR, "Only one buffer can be specified.");
+			return (1);
+		}
+		if (ismotion != NULL) {
+			msgq(sp, M_BERR,
+			    "Buffers are specified before the command.");
 			return (1);
 		}
 		KEY(vp->buffer, 0);
