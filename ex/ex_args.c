@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 8.2 1993/08/05 18:10:38 bostic Exp $ (Berkeley) $Date: 1993/08/05 18:10:38 $";
+static char sccsid[] = "$Id: ex_args.c,v 8.3 1993/09/28 15:21:40 bostic Exp $ (Berkeley) $Date: 1993/09/28 15:21:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,6 +21,12 @@ static char sccsid[] = "$Id: ex_args.c,v 8.2 1993/08/05 18:10:38 bostic Exp $ (B
 /*
  * ex_next -- :next [files]
  *	Edit the next file, optionally setting the list of files.
+ *
+ * !!!
+ * The :next command behaved differently from the :rewind command in
+ * historic vi.  See nvi/docs/autowrite for details, but the basic
+ * idea was that it ignored the force flag if the autowrite flag was
+ * set.  This implementation handles them all identically.
  */
 int
 ex_next(sp, ep, cmdp)
@@ -100,9 +106,7 @@ ex_rew(sp, ep, cmdp)
 		return (1);
 	}
 
-	/* Historic practice -- rewind! doesn't do autowrite. */
-	if (!F_ISSET(cmdp, E_FORCE))
-		MODIFY_CHECK(sp, ep, 0);
+	MODIFY_CHECK(sp, ep, F_ISSET(cmdp, E_FORCE));
 
 	/* Turn off the edited bit. */
 	for (tfrp = sp->frefhdr.next;

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 8.1 1993/06/09 22:25:20 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:25:20 $";
+static char sccsid[] = "$Id: ex_shell.c,v 8.2 1993/09/28 15:21:44 bostic Exp $ (Berkeley) $Date: 1993/09/28 15:21:44 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -30,8 +30,6 @@ ex_shell(sp, ep, cmdp)
 	struct termios t;
 	int rval;
 	char buf[MAXPATHLEN];
-
-	MODIFY_WARN(sp, ep);
 
 #ifdef SHELL_PROCESS
 	if (ex_run_shell(sp))

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_quit.c,v 8.3 1993/08/06 12:17:27 bostic Exp $ (Berkeley) $Date: 1993/08/06 12:17:27 $";
+static char sccsid[] = "$Id: ex_quit.c,v 8.4 1993/09/28 15:21:44 bostic Exp $ (Berkeley) $Date: 1993/09/28 15:21:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -14,6 +14,10 @@ static char sccsid[] = "$Id: ex_quit.c,v 8.3 1993/08/06 12:17:27 bostic Exp $ (B
 #include "vi.h"
 #include "excmd.h"
 
+/*
+ * ex_quit -- :quit[!]
+ *	Quit.
+ */
 int
 ex_quit(sp, ep, cmdp)
 	SCR *sp;
@@ -24,9 +28,12 @@ ex_quit(sp, ep, cmdp)
 
 	force = F_ISSET(cmdp, E_FORCE);
 
-	/* Historic practice: quit! doesn't do autowrite. */
-	if (!force)
-		MODIFY_CHECK(sp, ep, 0);
+	/* Check for modifications. */
+	if (F_ISSET(ep, F_MODIFIED) && ep->refcnt <= 1 && !force) {
+		msgq(sp, M_ERR,
+		    "Modified since last write; write or use ! to override.");
+		return (1);
+	}
 
 	/*
 	 * Historic practice: quit! and two quit's done in succession
@@ -36,7 +43,7 @@ ex_quit(sp, ep, cmdp)
 	 * user will get the message on the last screen.
 	 */
 	if (!force && sp->ccnt != sp->q_ccnt + 1 &&
-	    ep->refcnt <= 1 && file_next(sp, 0)) {
+	    ep->refcnt <= 1 && file_next(sp, 0) != NULL) {
 		sp->q_ccnt = sp->ccnt;
 		msgq(sp, M_ERR,
 	"More files; use \":n\" to go to the next file, \":q!\" to quit.");

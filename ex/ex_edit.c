@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 8.7 1993/09/09 14:00:50 bostic Exp $ (Berkeley) $Date: 1993/09/09 14:00:50 $";
+static char sccsid[] = "$Id: ex_edit.c,v 8.8 1993/09/28 15:21:43 bostic Exp $ (Berkeley) $Date: 1993/09/28 15:21:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -48,7 +48,18 @@ ex_edit(sp, ep, cmdp)
 		abort();
 	}
 
-	MODIFY_CHECK(sp, ep, F_ISSET(cmdp, E_FORCE));
+	/*
+	 * Check for modifications.
+	 *
+	 * !!!
+	 * Contrary to POSIX 1003.2-1992, autowrite did not affect :edit.
+	 */
+	if (F_ISSET(ep, F_MODIFIED) &&
+	    ep->refcnt <= 1 && !F_ISSET(cmdp, E_FORCE)) {
+		msgq(sp, M_ERR,
+		    "Modified since last write; write or use ! to override.");
+		return (1);
+	}
 
 	/*
 	 * Users don't like "already locked" messages when they do ":e" to
