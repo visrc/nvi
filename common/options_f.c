@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 8.22 1993/11/13 18:00:42 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:00:42 $";
+static char sccsid[] = "$Id: options_f.c,v 8.23 1993/11/22 14:46:40 bostic Exp $ (Berkeley) $Date: 1993/11/22 14:46:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -196,7 +196,7 @@ DECL(f_mesg)
 
 	/* Find the tty. */
 	if ((tty = ttyname(STDERR_FILENO)) == NULL) {
-		msgq(sp, M_ERR, "ttyname: %s", strerror(errno));
+		msgq(sp, M_ERR, "ttyname: %s.", strerror(errno));
 		return (1);
 	}
 
@@ -204,7 +204,7 @@ DECL(f_mesg)
 	if (!F_ISSET(sp->gp, G_SETMODE)) {
 		F_SET(sp->gp, G_SETMODE);
 		if (stat(tty, &sb) < 0) {
-			msgq(sp, M_ERR, "%s: %s", tty, strerror(errno));
+			msgq(sp, M_ERR, "%s: %s.", tty, strerror(errno));
 			return (1);
 		}
 		sp->gp->origmode = sb.st_mode;
@@ -212,14 +212,14 @@ DECL(f_mesg)
 
 	if (turnoff) {
 		if (chmod(tty, sp->gp->origmode & ~S_IWGRP) < 0) {
-			msgq(sp, M_ERR, "messages not turned off: %s: %s",
+			msgq(sp, M_ERR, "messages not turned off: %s: %s.",
 			    tty, strerror(errno));
 			return (1);
 		}
 		O_CLR(sp, O_MESG);
 	} else {
 		if (chmod(tty, sp->gp->origmode | S_IWGRP) < 0) {
-			msgq(sp, M_ERR, "messages not turned on: %s: %s",
+			msgq(sp, M_ERR, "messages not turned on: %s: %s.",
 			    tty, strerror(errno));
 			return (1);
 		}
@@ -239,7 +239,7 @@ DECL(f_mesg)
 DECL(f_modelines)
 {
 	if (!turnoff)
-		msgq(sp, M_ERR, "The modelines option may never be set");
+		msgq(sp, M_ERR, "The modelines option may never be set.");
 	return (0);
 }
 
