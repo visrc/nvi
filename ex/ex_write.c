@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 10.7 1995/09/29 19:03:29 bostic Exp $ (Berkeley) $Date: 1995/09/29 19:03:29 $";
+static char sccsid[] = "$Id: ex_write.c,v 10.8 1995/09/30 10:39:49 bostic Exp $ (Berkeley) $Date: 1995/09/30 10:39:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -301,7 +301,7 @@ ex_writefp(sp, name, fp, fm, tm, nlno, nch)
 			if ((lcnt % INTERRUPT_CHECK) == 0) {
 				if (INTERRUPTED(sp))
 					break;
-				(void)sp->gp->scr_busy(sp, NULL, 1);
+				(void)sp->gp->scr_busy(sp, NULL, BUSY_UPDATE);
 			}
 			if ((p = file_gline(sp, fline, &len)) == NULL)
 				break;
