@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_subst.c,v 10.17 1996/03/06 19:52:43 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:52:43 $";
+static const char sccsid[] = "$Id: ex_subst.c,v 10.18 1996/03/20 09:23:33 bostic Exp $ (Berkeley) $Date: 1996/03/20 09:23:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -644,7 +644,7 @@ nextmatch:	match[0].rm_so = 0;
 
 				sp->lno = from.lno;
 				sp->cno = from.cno;
-				if (vs_refresh(sp))
+				if (vs_refresh(sp, 0))
 					return (1);
 				vs_update(sp, msg_cat(sp,
 				    "169|Confirm change? [n]", NULL), NULL);
