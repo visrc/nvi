@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.20 1993/12/02 10:57:50 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:57:50 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.21 1993/12/02 18:56:15 bostic Exp $ (Berkeley) $Date: 1993/12/02 18:56:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,10 +46,23 @@ ex_substitute(sp, ep, cmdp)
 	char *bp, *ptrn, *rep, *p, *t;
 
 	/*
-	 * Skip leading white space.  Historic vi allowed any non-
-	 * alphanumeric to serve as the substitution command delimiter.
+	 * Skip leading white space.
+	 *
+	 * !!!
+	 * Historic vi allowed any non-alphanumeric to serve as the
+	 * substitution command delimiter.
+	 *
+	 * !!!
+	 * If the arguments are empty, it's the same as &, i.e. we
+	 * repeat the last substitution.
 	 */
-	for (p = cmdp->argv[0]->bp; isblank(*p); ++p);
+	for (p = cmdp->argv[0]->bp,
+	    len = cmdp->argv[0]->len; len > 0; --len, ++p) {
+		if (!isblank(*p))
+			break;
+	}
+	if (len == 0)
+		return (ex_subagain(sp, ep, cmdp));
 	delim = *p++;
 	if (isalnum(delim))
 		return (substitute(sp, ep,
