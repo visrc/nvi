@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.38 1992/10/29 14:42:07 bostic Exp $ (Berkeley) $Date: 1992/10/29 14:42:07 $";
+static char sccsid[] = "$Id: ex.c,v 5.39 1992/11/01 13:50:13 bostic Exp $ (Berkeley) $Date: 1992/11/01 13:50:13 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -14,17 +14,19 @@ static char sccsid[] = "$Id: ex.c,v 5.38 1992/10/29 14:42:07 bostic Exp $ (Berke
 
 #include <ctype.h>
 #include <errno.h>
-#include <limits.h>
 #include <fcntl.h>
 #include <glob.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <termios.h>
+#include <unistd.h>
 
 #include "vi.h"
 #include "excmd.h"
 #include "options.h"
+#include "search.h"
 #include "term.h"
 #include "vcmd.h"
 #include "pathnames.h"
@@ -42,7 +44,7 @@ static u_char	*linespec __P((u_char *, EXCMDARG *));
  * ex --
  *	Read an ex command and execute it.
  */
-void
+int
 ex()
 {
 	size_t len;
@@ -50,7 +52,7 @@ ex()
 	char defcom[sizeof(DEFCOM)];
 
 	while (mode == MODE_EX) {
-		if (gb(ISSET(O_PROMPT) ? ':' : 0,
+		if (ex_gb(ISSET(O_PROMPT) ? ':' : 0,
 		    &p, &len, GB_MAPCOMMAND) || !p)
 			continue;
 		if (*p)
@@ -60,6 +62,7 @@ ex()
 			ex_cstring((u_char *)defcom, 3, 0);
 		}
 	}
+	return (0);
 }
 
 /*
@@ -122,7 +125,6 @@ ex_cstring(cmd, len, doquoting)
 {
 	register int cnt;
 	register u_char *p, *t;
-	u_char *start;
 
 	/*
 	 * Walk the string, checking for '^V' quotes and '|' or '\n'
@@ -133,7 +135,7 @@ ex_cstring(cmd, len, doquoting)
 	for (p = t = cmd, cnt = 0;; ++cnt, ++t, --len) {
 		if (len == 0)
 			goto cend;
-		if (doquoting && cnt == cblen)
+		if (doquoting && cnt == gb_blen)
 			gb_inc();
 		switch(*t) {
 		case '|':
@@ -240,6 +242,13 @@ ex_cmd(exc)
 			return (1);
 		}
 		uselastcmd = 0;
+
+		/* Some commands are turned off. */
+		if (cp->flags & E_NOPERM) {
+			msg("The %.*s command is not currently supported.",
+			    cmdlen, p);
+			return (1);
+		}
 	} else {
 		cp = lastcmd;
 		uselastcmd = 1;
@@ -248,13 +257,6 @@ ex_cmd(exc)
 	/* Some commands aren't permitted in .exrc files. */
 	if (reading_exrc && !(cp->flags & E_EXRCOK)) {
 		msg("Can't use the %s command in a .exrc file.", cp->name);
-		return (1);
-	}
-
-	/* Some commands are turned off. */
-	if (cp->flags & E_NOPERM) {
-		msg("This version doesn't support the %.*s command.",
-		    cmdlen, p);
 		return (1);
 	}
 
@@ -267,7 +269,7 @@ ex_cmd(exc)
 	 * (the `!' command, the E_ADDR2_NONE flag), 0 defaults to no lines.
 	 */
 	flagoff = 0;
-addr1:	switch(cp->flags & (E_ADDR1|E_ADDR2|E_ADDR2_ALL|E_ADDR2_NONE)) {
+	switch(cp->flags & (E_ADDR1|E_ADDR2|E_ADDR2_ALL|E_ADDR2_NONE)) {
 	case E_ADDR1:				/* One address: */
 		switch(cmd.addrcnt) {
 		case 0:				/* Default to cursor. */
@@ -586,7 +588,7 @@ addr2:	switch(cmd.addrcnt) {
 			break;
 		case E_F_PRINT:
 			parg.cmd = &cmds[C_PRINT];
-			ex_print(&parg);
+			ex_pr(&parg);
 			break;
 		}
 	}
@@ -603,8 +605,8 @@ linespec(cmd, cp)
 	EXCMDARG *cp;
 {
 	MARK cur, savecursor, sm, *mp;
-	long num, total;
-	int delimiter, savecursor_set;
+	recno_t num, total;
+	int savecursor_set;
 	u_char *ep;
 
 	/* Percent character is all lines in the file. */
@@ -620,12 +622,27 @@ linespec(cmd, cp)
 	/* Parse comma or semi-colon delimited line specs. */
 	savecursor_set = 0;
 	for (cp->addrcnt = 0;;) {
-		delimiter = 0;
 		switch(*cmd) {
-		case ';':		/* Delimiter. */
-		case ',':		/* Delimiter. */
-			delimiter = 1;
+		case ';':		/* Semi-colon delimiter. */
+			/*
+			 * Comma delimiters delimit; semi-colon delimiters
+			 * change the current address for the 2nd address
+			 * to be the first address.  Trailing or multiple
+			 * delimiters are discarded.
+			 */
+			if (cp->addrcnt == 0)
+				goto done;
+			if (!savecursor_set) {
+				savecursor.lno = curf->lno;
+				savecursor.cno = curf->cno;
+				curf->lno = cp->addr1.lno;
+				curf->cno = cp->addr1.cno;
+			}
+			savecursor_set = 1;
 			/* FALLTHROUGH */
+		case ',':		/* Comma delimiter. */
+			++cmd;
+			break;
 		case '.':		/* Current position. */
 			cur.lno = curf->lno;
 			cur.cno = curf->cno;
@@ -656,7 +673,8 @@ linespec(cmd, cp)
 		case '/':		/* Search forward. */
 			sm.lno = curf->lno;
 			sm.cno = curf->cno;
-			if ((mp = f_search(&sm, cmd, &ep, 0)) == NULL)
+			if ((mp =
+			    f_search(&sm, cmd, &ep, SEARCH_PARSE)) == NULL)
 				return (NULL);
 			curf->lno = mp->lno;
 			curf->cno = mp->cno;
@@ -665,7 +683,8 @@ linespec(cmd, cp)
 		case '?':		/* Search backward. */
 			sm.lno = curf->lno;
 			sm.cno = curf->cno;
-			if ((mp = b_search(&sm, cmd, &ep, 0)) == NULL)
+			if ((mp =
+			    b_search(&sm, cmd, &ep, SEARCH_PARSE)) == NULL)
 				return (NULL);
 			curf->lno = mp->lno;
 			curf->cno = mp->cno;
@@ -676,37 +695,24 @@ linespec(cmd, cp)
 		}
 
 		/*
-		 * Comma delimiters only delimit; semi-colon delimiters change
-		 * the current line address for the second address to be the
-		 * first address.  Trailing/multiple delimiters are discarded.
-		 */
-		if (delimiter && *cmd == ';') {
-			savecursor.lno = curf->lno;
-			savecursor.cno = curf->cno;
-			savecursor_set = 1;
-		}
-
-		/*
 		 * Evaluate any offset.  Offsets are +/- any number, or, any
 		 * number of +/- signs, or any combination thereof.
 		 */
-		else {
-			for (total = 0;
-			    *cmd == '-' || *cmd == '+'; total += num) {
-				num = *cmd == '-' ? -1 : 1;
-				if (isdigit(*++cmd)) {
-					num *= USTRTOL(cmd, &ep, 10);
-					cmd = ep;
-				}
+		for (total = 0;
+		    *cmd == '-' || *cmd == '+'; total += num) {
+			num = *cmd == '-' ? -1 : 1;
+			if (isdigit(*++cmd)) {
+				num *= USTRTOL(cmd, &ep, 10);
+				cmd = ep;
 			}
-			if (total < 0 && -total >= cur.lno) {
-				bell();
-				if (ISSET(O_VERBOSE))
-					msg("Line number less than 1.");
-				return (NULL);
-			}
-			cur.lno += total;
 		}
+		if (total < 0 && -total >= cur.lno) {
+			bell();
+			if (ISSET(O_VERBOSE))
+				msg("Line number less than 1.");
+			return (NULL);
+		}
+		cur.lno += total;
 
 		/* Extra addresses are discarded, starting with the first. */
 		switch(cp->addrcnt) {
