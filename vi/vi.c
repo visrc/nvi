@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.18 1993/10/07 13:38:20 bostic Exp $ (Berkeley) $Date: 1993/10/07 13:38:20 $";
+static char sccsid[] = "$Id: vi.c,v 8.19 1993/10/07 14:50:04 bostic Exp $ (Berkeley) $Date: 1993/10/07 14:50:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,7 +22,9 @@ static char sccsid[] = "$Id: vi.c,v 8.18 1993/10/07 13:38:20 bostic Exp $ (Berke
 static int getcmd __P((SCR *, EXF *,
 		VICMDARG *, VICMDARG *, VICMDARG *, int *));
 static inline int
-	   getkey __P((SCR *, CHAR_T *, int));
+	   getcount __P((SCR *, CHAR_T *, u_long *));
+static inline int
+	   getkey __P((SCR *, CHAR_T *, u_int));
 static int getkeyword __P((SCR *, EXF *, VICMDARG *, u_int));
 static int getmotion __P((SCR *, EXF *,
 		VICMDARG *, VICMDARG *, MARK *, MARK *));
@@ -252,27 +254,9 @@ err:				TERM_KEY_FLUSH(sp);
 	return (v_end(sp) || eval);
 }
 
-#define	KEY(k, esc_bell)						\
-	if (getkey(sp, &k, esc_bell))					\
-		return (1);
-
-#define	GETCOUNT(sp, count) {						\
-	u_long __tc;							\
-	count = 0;							\
-	do {								\
-		__tc = count * 10 + key - '0';				\
-		if (count > __tc) {					\
-			/* Toss the rest of the number. */		\
-			do {						\
-				KEY(key, 0);				\
-			} while (isdigit(key));				\
-			msgq(sp, M_ERR,					\
-			    "Number larger than %lu", ULONG_MAX);	\
-			return (1);					\
-		}							\
-		count = __tc;						\
-		KEY(key, 0);						\
-	} while (isdigit(key));						\
+#define	KEY(key) {							\
+	if (getkey(sp, &key, 0))					\
+		return (1);						\
 }
 
 /*
@@ -305,7 +289,14 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 	    (char *)&vp->vpendzero - (char *)&vp->vpstartzero);
 
 	/* An escape bells the user only if already in command mode. */
-	KEY(key, ismotion == NULL ? 1 : 0);
+	if (ismotion == NULL) {
+		if (getkey(sp, &key, TXT_MAPCOMMAND)) {
+			if (sp->special[key] == K_ESCAPE)
+				msgq(sp, M_BERR, "Already in command mode");
+			return (1);
+		}
+	} else
+		KEY(key);
 	if (key > MAXVIKEY) {
 		msgq(sp, M_BERR, "%s isn't a vi command", charname(sp, key));
 		return (1);
@@ -313,11 +304,11 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 
 	/* Pick up optional buffer. */
 	if (key == '"') {
-		KEY(key, 0);
+		KEY(key);
 		if (!isalnum(key))
 			goto ebuf;
 		vp->buffer = key;
-		KEY(key, 0);
+		KEY(key);
 	} else
 		vp->buffer = OOBCB;
 
@@ -326,7 +317,8 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 	 * it's a command.
 	 */
 	if (isdigit(key) && key != '0') {
-		GETCOUNT(sp, vp->count);
+		if (getcount(sp, &key, &vp->count))
+			return (1);
 		F_SET(vp, VC_C1SET);
 		*comcountp = 1;
 	} else
@@ -339,11 +331,11 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 			    "Only one buffer can be specified.");
 			return (1);
 		}
-		KEY(key, 0);
+		KEY(key);
 		if (!isalnum(key))
 			goto ebuf;
 		vp->buffer = key;
-		KEY(key, 0);
+		KEY(key);
 	}
 
 	/*
@@ -393,7 +385,7 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 
 		/* Required buffer. */
 		if (LF_ISSET(V_RBUF)) {
-			KEY(key, 0);
+			KEY(key);
 			if (key > UCHAR_MAX) {
 ebuf:				msgq(sp, M_ERR, "Invalid buffer name.");
 				return (1);
@@ -407,21 +399,22 @@ ebuf:				msgq(sp, M_ERR, "Invalid buffer name.");
 		 * the *doubled* characters do just frost your shorts?
 		 */
 		if (vp->key == '[' || vp->key == ']') {
-			KEY(key, 0);
+			KEY(key);
 			if (vp->key != key)
 				goto usage;
 		}
 		/* Special case: 'Z' command. */
 		if (vp->key == 'Z') {
-			KEY(key, 0);
+			KEY(key);
 			if (vp->key != key)
 				goto usage;
 		}
 		/* Special case: 'z' command. */
 		if (vp->key == 'z') {
-			KEY(key, 0);
+			KEY(key);
 			if (isdigit(key)) {
-				GETCOUNT(sp, vp->count2);
+				if (getcount(sp, &key, &vp->count2))
+					return (1);
 				F_SET(vp, VC_C2SET);
 			}
 			vp->character = key;
@@ -440,7 +433,7 @@ usage:		msgq(sp, M_ERR, "Usage: %s", ismotion != NULL ?
 
 	/* Required character. */
 	if (LF_ISSET(V_CHAR))
-		KEY(vp->character, 0);
+		KEY(vp->character);
 
 	return (0);
 }
@@ -685,15 +678,17 @@ noword:		msgq(sp, M_BERR, "Cursor not in a %s",
 	return (0);
 }
 
+/*
+ * getkey --
+ *	Return the next key.
+ */
 static inline int
-getkey(sp, keyp, esc_bell)
+getkey(sp, keyp, flags)
 	SCR *sp;
 	CHAR_T *keyp;
-	int esc_bell;
+	u_int flags;
 {
-	CHAR_T key;
-
-	switch (term_key(sp, &key, TXT_MAPCOMMAND)) {
+	switch (term_key(sp, keyp, flags)) {
 	case INP_OK:
 		break;
 	case INP_EOF:
@@ -702,21 +697,50 @@ getkey(sp, keyp, esc_bell)
 	case INP_ERR:
 		return (1);
 	}
-	if (sp->special[key] == K_VLNEXT)
-		switch (term_key(sp, &key, TXT_MAPCOMMAND)) {
-		case INP_OK:
-			break;
-		case INP_EOF:
-			F_SET(sp, S_EXIT_FORCE);
-			/* FALLTHROUGH */
-		case INP_ERR:
+	return (sp->special[*keyp] == K_ESCAPE);
+}
+
+/*
+ * getcount --
+ *	Return the next count.
+ *
+ * !!!
+ * Note that the TXT_MAPCOMMAND flag is set during this routine.  The reason
+ * is that we're going to the next non-digit, and we want that character to
+ * have been been mapped since we push it back on the stack.  The problem we
+ * could have is if a user has mapped a digit into something.  Historical vi
+ * was a bit odd in this area.  It permitted the mapping of 1-9 (the digit 0
+ * was a special case as it didn't (and doesn't) indicate the start of a count)
+ * but then ignored those mappings.  The result of all this, is that, in this
+ * implementation we don't ignore the mappings.
+ */
+static inline int
+getcount(sp, keyp, countp)
+	SCR *sp;
+	CHAR_T *keyp;
+	u_long *countp;
+{
+	u_long count, tc;
+
+	count = tc = 0;
+	do {
+		/* Assume that overflow results in a smaller number. */
+		tc = count * 10 + *keyp - '0';
+		if (count > tc) {
+			/* Toss to the next non-digit. */
+			do {
+				if (getkey(sp, &keyp, TXT_MAPCOMMAND))
+					return (1);
+			} while (isdigit(*keyp));
+			(void)term_push(sp, sp->gp->key, keyp, 1);
+			msgq(sp, M_ERR,
+			    "Number larger than %lu", ULONG_MAX);
 			return (1);
 		}
-	if (sp->special[key] == K_ESCAPE) {
-		if (esc_bell)
-		    msgq(sp, M_BERR, "Already in command mode");
-		return (1);
-	}
-	*keyp = key;
+		count = tc;
+		if (getkey(sp, keyp, TXT_MAPCOMMAND))
+			return (1);
+	} while (isdigit(*keyp));
+	*countp = count;
 	return (0);
 }
