@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.73 1993/02/28 11:52:46 bostic Exp $ (Berkeley) $Date: 1993/02/28 11:52:46 $";
+static char sccsid[] = "$Id: ex.c,v 5.74 1993/02/28 12:19:05 bostic Exp $ (Berkeley) $Date: 1993/02/28 12:19:05 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -316,7 +316,7 @@ ex_cmd(ep, exc)
 	switch(flags & (E_ADDR1|E_ADDR2|E_ADDR2_ALL|E_ADDR2_NONE)) {
 	case E_ADDR1:				/* One address: */
 		switch(cmd.addrcnt) {
-		case 0:				/* Default to cursor. */
+		case 0:				/* Default cursor/empty file. */
 			cmd.addrcnt = 1;
 			if (flags & E_ZERODEF && file_lline(ep) == 0) {
 				cmd.addr1.lno = 0;
@@ -337,7 +337,7 @@ ex_cmd(ep, exc)
 			break;
 		goto two;
 	case E_ADDR2_ALL:			/* Zero/two addresses: */
-		if (cmd.addrcnt == 0) {		/* Default to entire file. */
+		if (cmd.addrcnt == 0) {		/* Default entire/empty file. */
 			cmd.addrcnt = 2;
 			cmd.addr2.lno = file_lline(ep);
 			if (flags & E_ZERODEF && cmd.addr2.lno == 0) {
@@ -352,9 +352,14 @@ ex_cmd(ep, exc)
 		/* FALLTHROUGH */
 	case E_ADDR2:				/* Two addresses: */
 two:		switch(cmd.addrcnt) {
-		case 0:				/* Default to cursor. */
+		case 0:				/* Default cursor/empty file. */
 			cmd.addrcnt = 2;
-			cmd.addr1.lno = cmd.addr2.lno = SCRLNO(ep);
+			if (flags & E_ZERODEF && SCRLNO(ep) == 1 &&
+			    file_lline(ep) == 0) {
+				cmd.addr1.lno = cmd.addr2.lno = 0;
+				flags |= E_ZERO;
+			} else
+				cmd.addr1.lno = cmd.addr2.lno = SCRLNO(ep);
 			cmd.addr1.cno = cmd.addr2.cno = SCRCNO(ep);
 			break;
 		case 1:				/* Default to first address. */

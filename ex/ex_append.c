@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 5.23 1993/02/28 11:51:00 bostic Exp $ (Berkeley) $Date: 1993/02/28 11:51:00 $";
+static char sccsid[] = "$Id: ex_append.c,v 5.24 1993/02/28 12:19:08 bostic Exp $ (Berkeley) $Date: 1993/02/28 12:19:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -75,6 +75,8 @@ ac(ep, cmdp, cmd)
 	 * Then, append more lines, or delete remaining lines.
 	 */
 	m = cmdp->addr1;
+	if (m.lno == 0)
+		cmd = APPEND;
 	if (cmd == CHANGE)
 		for (;;) {
 			if (m.lno > cmdp->addr2.lno) {
@@ -124,8 +126,11 @@ done:	if (rval == 0) {
 		/*
 		 * XXX
 		 * Not sure historical ex set autoprint for change/append.
+		 * Hack for user giving us line zero and then never putting
+		 * anything in the file.
 		 */
-		FF_SET(ep, F_AUTOPRINT);
+		if (m.lno != 0)
+			FF_SET(ep, F_AUTOPRINT);
 
 		/* Set the cursor. */
 		SCRLNO(ep) = m.lno;
