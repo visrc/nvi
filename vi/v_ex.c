@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_ex.c,v 10.40 1996/06/17 10:42:02 bostic Exp $ (Berkeley) $Date: 1996/06/17 10:42:02 $";
+static const char sccsid[] = "$Id: v_ex.c,v 10.41 1996/06/17 20:38:27 bostic Exp $ (Berkeley) $Date: 1996/06/17 20:38:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -529,6 +529,14 @@ v_ex_done(sp, vp)
 
 	vp->m_final.lno = sp->lno;
 	vp->m_final.cno = sp->cno;
+
+	/*
+	 * Don't re-adjust the cursor after executing an ex command,
+	 * and ex movements are permanent.
+	 */
+	F_CLR(vp, VM_RCM_MASK);
+	F_SET(vp, VM_RCM_SET);
+
 	return (0);
 }
 
