@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_display.c,v 8.4 1993/08/26 18:58:33 bostic Exp $ (Berkeley) $Date: 1993/08/26 18:58:33 $";
+static char sccsid[] = "$Id: ex_display.c,v 8.5 1993/09/30 12:02:41 bostic Exp $ (Berkeley) $Date: 1993/09/30 12:02:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,12 +30,13 @@ ex_bdisplay(sp, ep, cmdp)
 	EXCMDARG *cmdp;
 {
 	CB *cb;
+	GS *gp;
 	int cnt, displayed;
 	char *p;
 
 #define	NUMERICBUFS	"987654321"
 	displayed = 0;
-	for (cb = sp->cuts, cnt = 0; cnt < UCHAR_MAX; ++cb, ++cnt) {
+	for (cb = (gp = sp->gp)->cuts, cnt = 0; cnt < UCHAR_MAX; ++cb, ++cnt) {
 		if (strchr(NUMERICBUFS, cnt))
 			continue;
 		if (cb->txthdr.next != NULL && cb->txthdr.next != &cb->txthdr) {
@@ -45,15 +46,15 @@ ex_bdisplay(sp, ep, cmdp)
 	}
 
 	for (p = NUMERICBUFS; *p; ++p)
-		if (sp->cuts[*p].txthdr.next != NULL &&
-		    sp->cuts[*p].txthdr.next != &sp->cuts[*p].txthdr) {
+		if (gp->cuts[*p].txthdr.next != NULL &&
+		    gp->cuts[*p].txthdr.next != &gp->cuts[*p].txthdr) {
 			displayed = 1;
-			db(sp, charname(sp, *p), &sp->cuts[*p]);
+			db(sp, charname(sp, *p), &gp->cuts[*p]);
 		}
-	if (sp->cuts[DEFCB].txthdr.next != NULL &&
-	    sp->cuts[DEFCB].txthdr.next != &sp->cuts[DEFCB].txthdr) {
+	if (gp->cuts[DEFCB].txthdr.next != NULL &&
+	    gp->cuts[DEFCB].txthdr.next != &gp->cuts[DEFCB].txthdr) {
 		displayed = 1;
-		db(sp, "default buffer", &sp->cuts[DEFCB]);
+		db(sp, "default buffer", &gp->cuts[DEFCB]);
 	}
 	if (!displayed)
 		msgq(sp, M_VINFO, "No buffers to display.");

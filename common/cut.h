@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: cut.h,v 8.2 1993/08/06 15:43:51 bostic Exp $ (Berkeley) $Date: 1993/08/06 15:43:51 $
+ *	$Id: cut.h,v 8.3 1993/09/30 12:01:42 bostic Exp $ (Berkeley) $Date: 1993/09/30 12:01:42 $
  */
 
 typedef struct _cb {			/* Cut buffer. */
@@ -64,7 +64,7 @@ typedef struct _text {			/* Text: a linked list of lines. */
 	}								\
 	if (isupper(bname))						\
 		(bname) = tolower(bname);				\
-	cb = &sp->cuts[bname];						\
+	cb = &sp->gp->cuts[bname];					\
 }
 
 /* Cut routines. */

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.9 1993/09/30 11:23:54 bostic Exp $ (Berkeley) $Date: 1993/09/30 11:23:54 $";
+static char sccsid[] = "$Id: key.c,v 8.10 1993/09/30 12:02:14 bostic Exp $ (Berkeley) $Date: 1993/09/30 12:02:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -167,6 +167,7 @@ term_key(sp, chp, flags)
 	u_int flags;
 {
 	enum input rval;
+	IBUF *keyp, *ttyp;
 	SEQ *qp;
 	int ch, ispartial, nr;
 
@@ -183,10 +184,12 @@ term_key(sp, chp, flags)
 	}
 
 	/* If we have expanded keys, return the next one. */
-kloop:	if (sp->key->cnt) {
-		ch = sp->key->buf[sp->key->next++];
-		if (--sp->key->cnt == 0)
-			sp->key->next = 0;
+	keyp = sp->gp->key;
+	ttyp = sp->gp->tty;
+kloop:	if (keyp->cnt) {
+		ch = keyp->buf[keyp->next++];
+		if (--keyp->cnt == 0)
+			keyp->next = 0;
 		goto beauty;
 	}
 
@@ -195,7 +198,7 @@ kloop:	if (sp->key->cnt) {
 	 * is requested, s_key_read will either return 1 or will read
 	 * some number of characters.
 	 */
-	if (sp->tty->cnt == 0) {
+	if (ttyp->cnt == 0) {
 		if (rval = sp->s_key_read(sp, &nr, 0))
 			return (rval);
 		/*
@@ -217,26 +220,24 @@ kloop:	if (sp->key->cnt) {
 	 * to read more keys to complete the map.
 	 */
 	if (LF_ISSET(TXT_MAPCOMMAND | TXT_MAPINPUT)) {
-mloop:		qp = seq_find(sp, &sp->tty->buf[sp->tty->next], sp->tty->cnt,
+mloop:		qp = seq_find(sp, &ttyp->buf[ttyp->next], ttyp->cnt,
 		    LF_ISSET(TXT_MAPCOMMAND) ? SEQ_COMMAND : SEQ_INPUT,
 		    &ispartial);
 		if (!ispartial) {
 			if (qp == NULL)
 				goto nomap;
-			sp->tty->cnt -= qp->ilen;
-			if (sp->tty->cnt == 0)
-				sp->tty->next = 0;
+			ttyp->cnt -= qp->ilen;
+			if (ttyp->cnt == 0)
+				ttyp->next = 0;
 			else
-				sp->tty->next += qp->ilen;
+				ttyp->next += qp->ilen;
 
 			if (O_ISSET(sp, O_REMAP)) {
-				if (term_push(sp,
-				    sp->tty, qp->output, qp->olen))
+				if (term_push(sp, ttyp, qp->output, qp->olen))
 					goto err;
 				goto mloop;
 			} else
-				if (term_push(sp,
-				    sp->key, qp->output, qp->olen)) {
+				if (term_push(sp, keyp, qp->output, qp->olen)) {
 err:					msgq(sp, M_ERR,
 					    "Error: keys flushed: %s.",
 					    strerror(errno));
@@ -250,9 +251,9 @@ err:					msgq(sp, M_ERR,
 			goto mloop;
 	}
 
-nomap:	ch = sp->tty->buf[sp->tty->next++];
-	if (--sp->tty->cnt == 0)
-		sp->tty->next = 0;
+nomap:	ch = ttyp->buf[ttyp->next++];
+	if (--ttyp->cnt == 0)
+		ttyp->next = 0;
 
 	/*
 	 * O_BEAUTIFY eliminates all control characters except

@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.19 1993/09/30 11:21:18 bostic Exp $ (Berkeley) $Date: 1993/09/30 11:21:18 $";
+static char sccsid[] = "$Id: main.c,v 8.20 1993/09/30 12:01:25 bostic Exp $ (Berkeley) $Date: 1993/09/30 12:01:25 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -84,6 +84,17 @@ main(argc, argv)
 		err(1, NULL);
 	__global_list = gp;
 	memset(gp, 0, sizeof(GS));
+
+	/* Structures shared by screens so stored in the GS structure. */
+	if ((gp->key = malloc(sizeof(IBUF))) == NULL)
+		err(1, NULL);
+	if ((gp->tty = malloc(sizeof(IBUF))) == NULL)
+		err(1, NULL);
+
+	if ((gp->cuts = malloc((UCHAR_MAX + 2) * sizeof(CB))) == NULL)
+		err(1, NULL);
+	memset(gp->cuts, 0, (UCHAR_MAX + 2) * sizeof(CB));
+
 	HDR_INIT(gp->scrhdr, next, prev);
 	HDR_INIT(gp->exfhdr, next, prev);
 
@@ -342,15 +353,17 @@ main(argc, argv)
 	if (excmdarg != NULL)
 		switch (F_ISSET(sp, S_MODE_EX | S_MODE_VI)) {
 		case S_MODE_EX:
-			if (term_push(sp, sp->tty, excmdarg, strlen(excmdarg)))
+			if (term_push(sp, sp->gp->tty,
+			    excmdarg, strlen(excmdarg)))
 				goto err1;
 			break;
 		case S_MODE_VI:
-			if (term_push(sp, sp->tty, "\n", 1))
+			if (term_push(sp, sp->gp->tty, "\n", 1))
 				goto err1;
-			if (term_push(sp, sp->tty, excmdarg, strlen(excmdarg)))
+			if (term_push(sp, sp->gp->tty,
+			    excmdarg, strlen(excmdarg)))
 				goto err1;
-			if (term_push(sp, sp->tty, ":", 1))
+			if (term_push(sp, sp->gp->tty, ":", 1))
 				goto err1;
 			break;
 		default:

@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 8.7 1993/09/30 11:24:08 bostic Exp $ (Berkeley) $Date: 1993/09/30 11:24:08 $
+ *	$Id: key.h,v 8.8 1993/09/30 12:02:19 bostic Exp $ (Berkeley) $Date: 1993/09/30 12:02:19 $
  */
 
 /* Structure for a key input buffer. */
@@ -15,9 +15,9 @@ typedef struct _ibuf {
 	int	 next;		/* Offset of next character. */
 } IBUF;
 				/* Flush keys from expansion buffer. */
-#define	TERM_KEY_FLUSH(sp)	((sp)->key->cnt = (sp)->key->next = 0)
+#define	TERM_KEY_FLUSH(sp)	((sp)->gp->key->cnt = (sp)->gp->key->next = 0)
 				/* Return if more keys in expansion buffer. */
-#define	TERM_KEY_MORE(sp)	((sp)->key->cnt)
+#define	TERM_KEY_MORE(sp)	((sp)->gp->key->cnt)
 
 /*
  * Structure to name a character.  Used both as an interface to the screen

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.12 1993/09/13 13:55:23 bostic Exp $ (Berkeley) $Date: 1993/09/13 13:55:23 $";
+static char sccsid[] = "$Id: screen.c,v 8.13 1993/09/30 12:02:03 bostic Exp $ (Berkeley) $Date: 1993/09/30 12:02:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -69,23 +69,6 @@ scr_init(orig, sp)
 
 	sp->lastcmd = &cmds[C_PRINT];
 
-/* SHARED BETWEEN SCREENS. */
-	if (orig != NULL) {
-		sp->key = orig->key;
-		sp->tty = orig->tty;
-
-		sp->cuts = orig->cuts;
-	} else {
-		if ((sp->key = malloc(sizeof(IBUF))) == NULL)
-			goto mem;
-		if ((sp->tty = malloc(sizeof(IBUF))) == NULL)
-			goto mem;
-
-		if ((sp->cuts = malloc((UCHAR_MAX + 2) * sizeof(CB))) == NULL)
-			goto mem;
-		memset(sp->cuts, 0, (UCHAR_MAX + 2) * sizeof(CB));
-	}
-
 /* PARTIALLY OR COMPLETELY COPIED FROM PREVIOUS SCREEN. */
 	if (orig != NULL) {
 		sp->gp = orig->gp;
@@ -109,11 +92,6 @@ scr_init(orig, sp)
 
 		sp->inc_lastch = orig->inc_lastch;
 		sp->inc_lastval = orig->inc_lastval;
-
-#ifdef UNSHARED_CUT_BUFFERS
-		if (cut_copy(orig, sp))
-			goto mem;
-#endif
 
 		/*
 		 * XXX
@@ -232,15 +210,6 @@ scr_end(sp)
 		}
 	}
 
-#ifdef UNSHARED_CUT_BUFFERS
-	/* Free cut buffers. */
-	{ CB *cb; int cnt;
-		for (cb = sp->cuts, cnt = 0; cnt < UCHAR_MAX; ++cb, ++cnt)
-			if (cb->txthdr.next != NULL)
-				hdr_text_free(&cb->txthdr);
-	}
-#endif
-
 	/* Free paragraph search list. */
 	if (sp->paragraph != NULL)
 		FREE(sp->paragraph, strlen(sp->paragraph) + 1);
@@ -351,47 +320,6 @@ scr_end(sp)
 
 	return (0);
 }
-
-#ifdef UNSHARED_CUT_BUFFERS
-static int	 cut_copy __P((SCR *, SCR *));
-
-/*
- * cut_copy --
- *	Copy a screen's cut buffers.
- */
-static int
-cut_copy(a, b)
-	SCR *a, *b;
-{
-	CB *acb, *bcb;
-	TEXT *atp, *tp;
-	int cnt;
-
-	for (acb = a->cuts, bcb = b->cuts, cnt = 0;
-	    cnt < UCHAR_MAX; ++acb, ++bcb, ++cnt) {
-		if (acb->txthdr.next == NULL ||
-		    acb->txthdr.next == &acb->txthdr)
-			continue;
-		HDR_INIT(bcb->txthdr, next, prev);
-		for (atp = acb->txthdr.next;
-		    atp != (TEXT *)&acb->txthdr; atp = atp->next) {
-			if ((tp = malloc(sizeof(TEXT))) == NULL)
-				return (1);
-			if ((tp->lb = malloc(atp->len)) == NULL) {
-				FREE(tp, sizeof(TEXT));
-				return (1);
-			}
-			tp->lb_len = tp->len = atp->len;
-			tp->wd = NULL;
-			memmove(tp->lb, atp->lb, atp->len);
-			HDR_INSERT(tp, &bcb->txthdr, next, prev, TEXT);
-		}
-		bcb->len = acb->len;
-		bcb->flags = acb->flags;
-	}
-	return (0);
-}
-#endif
 
 /*
  * opt_copy --

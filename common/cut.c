@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 8.5 1993/09/27 16:17:14 bostic Exp $ (Berkeley) $Date: 1993/09/27 16:17:14 $";
+static char sccsid[] = "$Id: cut.c,v 8.6 1993/09/30 12:01:14 bostic Exp $ (Berkeley) $Date: 1993/09/30 12:01:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,6 +33,7 @@ cut(sp, ep, buffer, fm, tm, lmode)
 	MARK *fm, *tm;
 {
 	CB *a, *cb;
+	GS *gp;
 	TEXT *tp;
 	size_t len;
 	recno_t lno;
@@ -55,31 +56,32 @@ cut(sp, ep, buffer, fm, tm, lmode)
 	 * rotated up one, the current default buffer gets placed in
 	 * slot #1, and slot #9 drops off the end.
 	 */
+	gp = sp->gp;
 	if (buffer == DEFCB) {
-		a = &sp->cuts['9'];
+		a = &gp->cuts['9'];
 		if (a->txthdr.next != NULL && a->txthdr.next != &a->txthdr)
 			hdr_text_free(&a->txthdr);
 		for (indx = '9'; indx > '1'; --indx) {
-			a = &sp->cuts[indx - 1];
+			a = &gp->cuts[indx - 1];
 			if (a->txthdr.next == NULL ||
 			    a->txthdr.next == &a->txthdr) {
-				HDR_INIT(sp->cuts[indx].txthdr, next, prev);
+				HDR_INIT(gp->cuts[indx].txthdr, next, prev);
 			} else {
-				sp->cuts[indx] = *a;
+				gp->cuts[indx] = *a;
 				((TEXT *)a->txthdr.next)->prev =
 				    ((TEXT *)a->txthdr.prev)->next = 
-				    (TEXT *)&sp->cuts[indx].txthdr;
+				    (TEXT *)&gp->cuts[indx].txthdr;
 			}
 		}
-		a = &sp->cuts[DEFCB];
+		a = &gp->cuts[DEFCB];
 		if (a->txthdr.next == NULL ||
 		    a->txthdr.next == &a->txthdr) {
-			HDR_INIT(sp->cuts['1'].txthdr, next, prev);
+			HDR_INIT(gp->cuts['1'].txthdr, next, prev);
 		} else {
-			sp->cuts['1'] = *a;
+			gp->cuts['1'] = *a;
 			((TEXT *)a->txthdr.next)->prev =
 			    ((TEXT *)a->txthdr.prev)->next =
-			    (TEXT *)&sp->cuts['1'].txthdr;
+			    (TEXT *)&gp->cuts['1'].txthdr;
 		}
 		HDR_INIT(cb->txthdr, next, prev);
 	}

@@ -4,14 +4,14 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 8.4 1993/09/29 16:42:08 bostic Exp $ (Berkeley) $Date: 1993/09/29 16:42:08 $
+ *	$Id: gs.h,v 8.5 1993/09/30 12:01:53 bostic Exp $ (Berkeley) $Date: 1993/09/30 12:01:53 $
  */
 
 struct _scr;
 typedef struct _gs {
 	struct _hdr	 exfhdr;	/* Linked list of EXF structures. */
 	struct _hdr	 scrhdr;	/* Linked list of SCR structures. */
-
+	
 	mode_t	 origmode;		/* Original terminal mode. */
 	struct termios
 		 original_termios;	/* Original terminal values. */
@@ -24,6 +24,12 @@ typedef struct _gs {
 #ifdef DEBUG
 	FILE	*tracefp;		/* Trace file pointer. */
 #endif
+
+/* INFORMATION SHARED BY ALL SCREENS. */
+	struct _ibuf	*key;		/* Key input buffer. */
+	struct _ibuf	*tty;		/* Tty input buffer. */
+
+	struct _cb	*cuts;		/* Cut buffers. */
 
 #define	G_ISFROMTTY	0x01		/* Reading from a tty. */
 #define	G_SETMODE	0x02		/* Tty mode changed. */

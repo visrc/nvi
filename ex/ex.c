@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.36 1993/09/30 11:27:17 bostic Exp $ (Berkeley) $Date: 1993/09/30 11:27:17 $";
+static char sccsid[] = "$Id: ex.c,v 8.37 1993/09/30 12:02:33 bostic Exp $ (Berkeley) $Date: 1993/09/30 12:02:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -268,19 +268,19 @@ cend:			if (p > cmd) {
 	 */
 	if (arg1 == NULL && len == 0)
 		return (0);
-	if (F_ISSET(sp, S_MODE_VI) && term_push(sp, sp->tty, "\n", 1))
+	if (F_ISSET(sp, S_MODE_VI) && term_push(sp, sp->gp->tty, "\n", 1))
 		goto err;
 	if (len != 0)
-		if (term_push(sp, sp->tty, t, len))
+		if (term_push(sp, sp->gp->tty, t, len))
 			goto err;
 	if (arg1 != NULL) {
 		if (F_ISSET(sp, S_MODE_VI) && len != 0 &&
-		    term_push(sp, sp->tty, "|", 1))
+		    term_push(sp, sp->gp->tty, "|", 1))
 			goto err;
-		if (term_push(sp, sp->tty, arg1, arg1_len))
+		if (term_push(sp, sp->gp->tty, arg1, arg1_len))
 			goto err;
 	}
-	if (F_ISSET(sp, S_MODE_VI) && term_push(sp, sp->tty, ":", 1)) {
+	if (F_ISSET(sp, S_MODE_VI) && term_push(sp, sp->gp->tty, ":", 1)) {
 err:		TERM_KEY_FLUSH(sp);
 		msgq(sp, M_ERR, "Error: %s: remaining command input discarded",
 		    strerror(errno));
