@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 5.7 1993/04/18 09:35:57 bostic Exp $ (Berkeley) $Date: 1993/04/18 09:35:57 $";
+static char sccsid[] = "$Id: vs_line.c,v 5.8 1993/04/19 15:39:17 bostic Exp $ (Berkeley) $Date: 1993/04/19 15:39:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -159,7 +159,7 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 		 * because curses doesn't have a way to set the tab length.)
 		 */
 #ifdef	DEBUG
-#define	BLANKS	"````````````````````"
+#define	BLANKS	"--------------------"
 #else
 #define	BLANKS	"                    "
 #endif
