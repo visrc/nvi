@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 9.2 1994/11/09 21:52:59 bostic Exp $ (Berkeley) $Date: 1994/11/09 21:52:59 $";
+static char sccsid[] = "$Id: v_txt.c,v 9.3 1994/11/09 22:27:19 bostic Exp $ (Berkeley) $Date: 1994/11/09 22:27:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -468,7 +468,7 @@ k_cr:			if (LF_ISSET(TXT_CR)) {
 					goto err;			\
 				if (tmp) {				\
 					if (LF_ISSET(TXT_RECORD))	\
-						rcol -= tmp;		\
+						rcol -= tmp + 1;	\
 					goto next_ch;			\
 				}					\
 			}						\
@@ -989,7 +989,7 @@ insq_ch:		/*
 						goto err;
 					if (tmp) {
 						if (LF_ISSET(TXT_RECORD))
-							rcol -= tmp;
+							rcol -= tmp + 1;
 						goto next_ch;
 					}
 				}
