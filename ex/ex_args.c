@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 5.38 1993/04/12 14:34:43 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:34:43 $";
+static char sccsid[] = "$Id: ex_args.c,v 5.39 1993/05/02 12:20:00 bostic Exp $ (Berkeley) $Date: 1993/05/02 12:20:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -71,7 +71,7 @@ ex_prev(sp, ep, cmdp)
 
 	MODIFY_CHECK(sp, ep, cmdp->flags & E_FORCE);
 
-	if ((tep = file_prev(sp, ep, 0)) == NULL) {
+	if ((tep = sp->eprev) == NULL) {
 		msgq(sp, M_ERR, "No previous files to edit.");
 		return (1);
 	}
