@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.48 1993/02/20 14:18:28 bostic Exp $ (Berkeley) $Date: 1993/02/20 14:18:28 $";
+static char sccsid[] = "$Id: vi.c,v 5.49 1993/02/24 13:01:37 bostic Exp $ (Berkeley) $Date: 1993/02/24 13:01:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -20,11 +20,11 @@ static char sccsid[] = "$Id: vi.c,v 5.48 1993/02/20 14:18:28 bostic Exp $ (Berke
 #include <string.h>
 
 #include "vi.h"
-#include "vcmd.h"
 #include "log.h"
 #include "options.h"
 #include "screen.h"
 #include "term.h"
+#include "vcmd.h"
 
 static int getcmd __P((EXF *, VICMDARG *, VICMDARG *));
 static int getkeyword __P((EXF *, VICMDARG *, u_int));
@@ -58,7 +58,7 @@ vi(ep)
 				rval = 1;
 				break;
 			}
-			status(ep, ep->lno);
+			status(ep, SCRLNO(ep));
 			FF_CLR(ep, F_NEWSESSION);
 			first = 0;
 		} else if (ep->rptlines) {
@@ -107,8 +107,8 @@ err:		if (!FF_ISSET(ep, F_MSGWAIT))
 
 		/* If a non-relative movement, set the '' mark. */
 		if (flags & V_ABS) {
-			m.lno = ep->lno;
-			m.cno = ep->cno;
+			m.lno = SCRLNO(ep);
+			m.cno = SCRCNO(ep);
 			SETABSMARK(ep, &m);
 		}
 
@@ -122,11 +122,11 @@ err:		if (!FF_ISSET(ep, F_MSGWAIT))
 			if (getmotion(ep, vp, &fm, &tm))
 				goto err;
 		} else {
-			fm.lno = ep->lno;
-			fm.cno = ep->cno;
+			fm.lno = SCRLNO(ep);
+			fm.cno = SCRCNO(ep);
 			if (vp->kp->flags & V_LMODE && vp->flags & VC_C1SET) {
-				tm.lno = ep->lno + vp->count - 1;
-				tm.cno = ep->cno;
+				tm.lno = SCRLNO(ep) + vp->count - 1;
+				tm.cno = SCRCNO(ep);
 			} else
 				tm = fm;
 		}
@@ -176,40 +176,36 @@ err:		if (!FF_ISSET(ep, F_MSGWAIT))
 			continue;
 
 		/*
-		 * Some vi row movements are "attracted" to the last set
-		 * position, i.e. the V_RCM commands are moths to the
-		 * V_RCM_SET commands' candle.  It's broken into two parts.
-		 * Here we deal with the command flags.  In scr_relative(),
-		 * we deal with the current file flags.
+		 * Some vi row movements are "attracted" to the last position
+		 * set, i.e. the V_RCM commands are moths to the V_RCM_SET
+		 * commands' candle.  It's broken into two parts.  Here we deal
+		 * with the command flags.  In scr_relative(), we deal with the
+		 * screen flags.  If the movement is to the EOL, the vi command
+		 * handles it.  If it's to the beginning, we handle it here.
 		 *
 		 * Does this totally violate the screen and editor layering?
-		 * You betcha.  To make it worse, note that the value of flags
-		 * may have changed.  As they say, if you think you understand
-		 * it, you don't.
+		 * You betcha.  As they say, if you think you understand it,
+		 * you don't.
 		 */
-		flags = vp->kp->flags;
 		if (flags & V_RCM)
 			m.cno = scr_relative(ep, m.lno);
 		else if (flags & V_RCM_SETFNB) {
-			/*
-			 * Hack -- instead of calling nonblank() in all of
-			 * the command routines, we do the movement here.
-			 */
 			if (nonblank(ep, m.lno, &m.cno))
 				goto err;
-			ep->rcmflags = RCM_FNB;
+			SCRP(ep)->rcmflags = RCM_FNB;
 		}
 		else if (flags & V_RCM_SETLAST)
-			ep->rcmflags = RCM_LAST;
+			SCRP(ep)->rcmflags = RCM_LAST;
 			
 		/* Update the cursor. */
-		ep->lno = m.lno;
-		ep->cno = m.cno;
+		SCRLNO(ep) = m.lno;
+		SCRCNO(ep) = m.cno;
 		(void)scr_update(ep);
 
+		/* Set the new favorite position. */
 		if (flags & V_RCM_SET) {
-			ep->rcmflags = 0;
-			ep->rcm = ep->scno;
+			SCRP(ep)->rcmflags = 0;
+			SCRP(ep)->rcm = SCRP(ep)->scno;
 		}
 	}
 	return (v_end(ep) || rval);
@@ -449,7 +445,7 @@ getmotion(ep, vp, fm, tm)
 		vp->flags |= VC_LMODE;
 
 		/* Set the end of the command. */
-		tm->lno = ep->lno + motion.count - 1;
+		tm->lno = SCRLNO(ep) + motion.count - 1;
 		tm->cno = 1;
 
 		/*
@@ -458,14 +454,14 @@ getmotion(ep, vp, fm, tm)
 		 */
 		if (!(vp->kp->flags & VC_C) &&
 		    file_gline(ep, tm->lno, NULL) == NULL) {
-			m.lno = ep->lno;
-			m.cno = ep->cno;
+			m.lno = SCRLNO(ep);
+			m.cno = SCRCNO(ep);
 			v_eof(ep, &m);
 			return (1);
 		}
 
 		/* Set the origin of the command. */
-		fm->lno = ep->lno;
+		fm->lno = SCRLNO(ep);
 		fm->cno = 0;
 	} else {
 		/*
@@ -475,8 +471,8 @@ getmotion(ep, vp, fm, tm)
 		 */
 		motion.flags |= vp->kp->flags & VC_COMMASK;
 
-		m.lno = ep->lno;
-		m.cno = ep->cno;
+		m.lno = SCRLNO(ep);
+		m.cno = SCRCNO(ep);
 		if ((motion.kp->func)(ep, &motion, &m, NULL, tm))
 			return (1);
 
@@ -491,14 +487,14 @@ getmotion(ep, vp, fm, tm)
 		 * If the motion is in a backward direction, switch the current
 		 * location so that we're always moving in the same direction.
 		 */
-		if (tm->lno < ep->lno ||
-		    tm->lno == ep->lno && tm->cno < ep->cno) {
+		if (tm->lno < SCRLNO(ep) ||
+		    tm->lno == SCRLNO(ep) && tm->cno < SCRCNO(ep)) {
 			*fm = *tm;
-			tm->lno = ep->lno;
-			tm->cno = ep->cno;
+			tm->lno = SCRLNO(ep);
+			tm->cno = SCRCNO(ep);
 		} else {
-			fm->lno = ep->lno;
-			fm->cno = ep->cno;
+			fm->lno = SCRLNO(ep);
+			fm->cno = SCRCNO(ep);
 		}
 	}
 
@@ -525,8 +521,8 @@ getkeyword(ep, kp, flags)
 	size_t len;
 	u_char *p;
 
-	p = file_gline(ep, ep->lno, &len);
-	beg = ep->cno;
+	p = file_gline(ep, SCRLNO(ep), &len);
+	beg = SCRCNO(ep);
 
 	/* May not be a keyword at all. */
 	if (!len ||
@@ -571,10 +567,10 @@ noword:		msg(ep, M_BELL, "Cursor not in a %s.",
 		}
 
 	if (flags & V_KEYW) {
-		for (end = ep->cno; ++end < len && inword(p[end]););
+		for (end = SCRCNO(ep); ++end < len && inword(p[end]););
 		--end;
 	} else {
-		for (end = ep->cno; ++end < len;) {
+		for (end = SCRCNO(ep); ++end < len;) {
 			if (p[end] == 'X' || p[end] == 'x') {
 				if (end != beg + 1 || p[beg] != '0')
 					break;
@@ -594,8 +590,8 @@ noword:		msg(ep, M_BELL, "Cursor not in a %s.",
 	 * Getting a keyword implies moving the cursor to its beginning.
 	 * Refresh now.
 	 */
-	if (beg != ep->cno) {
-		ep->cno = beg;
+	if (beg != SCRCNO(ep)) {
+		SCRCNO(ep) = beg;
 		scr_update(ep);
 		refresh();
 	}
