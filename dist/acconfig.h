@@ -1,4 +1,4 @@
-/* $Id: acconfig.h,v 8.32 2001/11/01 23:56:29 skimo Exp $ (Berkeley) $Date: 2001/11/01 23:56:29 $ */
+/* $Id: acconfig.h,v 8.33 2002/01/05 23:13:38 skimo Exp $ (Berkeley) $Date: 2002/01/05 23:13:38 $ */
 
 /* Define to `int' if <sys/types.h> doesn't define.  */
 #undef ssize_t
@@ -53,6 +53,9 @@
 
 /* Define if you have the ftruncate(2) system call. */
 #undef HAVE_FTRUNCATE_FTRUNCATE
+
+/* Define if you have gcc. */
+#undef HAVE_GCC
 
 /* Define if you have fcntl(2) style locking. */
 #undef HAVE_LOCK_FCNTL

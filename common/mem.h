@@ -6,17 +6,24 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: mem.h,v 10.12 2002/01/01 11:28:18 skimo Exp $ (Berkeley) $Date: 2002/01/01 11:28:18 $
+ *	$Id: mem.h,v 10.13 2002/01/05 23:13:37 skimo Exp $ (Berkeley) $Date: 2002/01/05 23:13:37 $
  */
+
+#ifdef HAVE_GCC
+#define CHECK_TYPE(type, var)						\
+	type L__lp __attribute__((unused)) = var;
+#else
+#define CHECK_TYPE(type, var)
+#endif
 
 /* Increase the size of a malloc'd buffer.  Two versions, one that
  * returns, one that jumps to an error label.
  */
 #define	BINC_GOTO(sp, lp, llen, nlen) {					\
-	char *L__p = lp;						\
+	CHECK_TYPE(char *, lp)						\
 	void *L__bincp;							\
 	if ((nlen) > llen) {						\
-		if ((L__bincp = binc(sp, L__p, &(llen), nlen)) == NULL)	\
+		if ((L__bincp = binc(sp, lp, &(llen), nlen)) == NULL)	\
 			goto alloc_err;					\
 		/*							\
 		 * !!!							\
@@ -26,14 +33,14 @@
 	}								\
 }
 #define	BINC_GOTOW(sp, lp, llen, nlen) {				\
-	CHAR_T *L__bp = lp;						\
-	BINC_GOTO(sp, (char *)L__bp, llen, (nlen) * sizeof(CHAR_T))    	\
+	CHECK_TYPE(CHAR_T *, lp)					\
+	BINC_GOTO(sp, (char *)lp, llen, (nlen) * sizeof(CHAR_T))    	\
 }
 #define	BINC_RET(sp, lp, llen, nlen) {					\
-	char *L__p = lp;						\
+	CHECK_TYPE(char *, lp)						\
 	void *L__bincp;							\
 	if ((nlen) > llen) {						\
-		if ((L__bincp = binc(sp, L__p, &(llen), nlen)) == NULL)	\
+		if ((L__bincp = binc(sp, lp, &(llen), nlen)) == NULL)	\
 			return (1);					\
 		/*							\
 		 * !!!							\
@@ -43,8 +50,8 @@
 	}								\
 }
 #define	BINC_RETW(sp, lp, llen, nlen) {					\
-	CHAR_T *L__bp = lp;						\
-	BINC_RET(sp, (char *)L__bp, llen, (nlen) * sizeof(CHAR_T))    	\
+	CHECK_TYPE(CHAR_T *, lp)					\
+	BINC_RET(sp, (char *)lp, llen, (nlen) * sizeof(CHAR_T))	    	\
 }
 
 /*
@@ -67,7 +74,7 @@
 }
 #define	GET_SPACE_GOTOW(sp, bp, blen, nlen) {				\
 	CHAR_T *L__bp = bp;						\
-	GET_SPACE_GOTO(sp, (char *)L__bp, blen, (nlen) * sizeof(CHAR_T))\
+	GET_SPACE_GOTO(sp, (char *)bp, blen, (nlen) * sizeof(CHAR_T))	\
 }
 #define	GET_SPACE_RET(sp, bp, blen, nlen) {				\
 	WIN *L__wp = (sp) == NULL ? NULL : (sp)->wp;			\
@@ -83,8 +90,8 @@
 	}								\
 }
 #define	GET_SPACE_RETW(sp, bp, blen, nlen) {				\
-	CHAR_T *L__bp = bp;						\
-	GET_SPACE_RET(sp, (char *)L__bp, blen, (nlen) * sizeof(CHAR_T))	\
+	CHECK_TYPE(CHAR_T *, bp)					\
+	GET_SPACE_RET(sp, (char *)bp, blen, (nlen) * sizeof(CHAR_T))	\
 }
 
 /*
@@ -103,8 +110,8 @@
 		BINC_GOTO(sp, bp, blen, nlen);				\
 }
 #define	ADD_SPACE_GOTOW(sp, bp, blen, nlen) {				\
-	CHAR_T *L__bp = bp;						\
-	ADD_SPACE_GOTO(sp, (char *)L__bp, blen, (nlen) * sizeof(CHAR_T))\
+	CHECK_TYPE(CHAR_T *, bp)					\
+	ADD_SPACE_GOTO(sp, (char *)bp, blen, (nlen) * sizeof(CHAR_T))	\
 }
 #define	ADD_SPACE_RET(sp, bp, blen, nlen) {				\
 	WIN *L__wp = (sp) == NULL ? NULL : (sp)->wp;			\
@@ -118,8 +125,8 @@
 		BINC_RET(sp, bp, blen, nlen);				\
 }
 #define	ADD_SPACE_RETW(sp, bp, blen, nlen) {				\
-	CHAR_T *L__bp = bp;						\
-	ADD_SPACE_RET(sp, (char *)L__bp, blen, (nlen) * sizeof(CHAR_T))	\
+	CHECK_TYPE(CHAR_T *, bp)					\
+	ADD_SPACE_RET(sp, (char *)bp, blen, (nlen) * sizeof(CHAR_T))	\
 }
 
 /* Free a GET_SPACE returned buffer. */
@@ -131,8 +138,8 @@
 		free(bp);						\
 }
 #define	FREE_SPACEW(sp, bp, blen) {					\
-	CHAR_T *L__bp = bp;						\
-	FREE_SPACE(sp, (char *)L__bp, blen);				\
+	CHECK_TYPE(CHAR_T *, bp)					\
+	FREE_SPACE(sp, (char *)bp, blen);				\
 }
 
 /*
