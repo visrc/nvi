@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_map.c,v 5.3 1992/04/05 09:23:40 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:23:40 $";
+static char sccsid[] = "$Id: ex_map.c,v 5.4 1992/04/05 11:01:43 bostic Exp $ (Berkeley) $Date: 1992/04/05 11:01:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,25 +46,25 @@ map_init()
 	 */
 	rval = 0;
 	if (has_KU)
-		rval |= map_set("up", has_KU, "k", COMMAND, 0);
+		rval |= map_set("up",		has_KU,    "k", COMMAND, 0);
 	if (has_KD)
-		rval |= map_set("down", has_KD, "j", COMMAND, 0);
+		rval |= map_set("down",		has_KD,    "j", COMMAND, 0);
 	if (has_KL)
-		rval |= map_set("left", has_KL, "h", COMMAND, 0);
+		rval |= map_set("left",		has_KL,    "h", COMMAND, 0);
 	if (has_KR)
-		rval |= map_set("right", has_KR, "l", COMMAND, 0);
+		rval |= map_set("right",	has_KR,    "l", COMMAND, 0);
 	if (has_HM)
-		rval |= map_set("home", has_HM, "^", COMMAND, 0);
+		rval |= map_set("home",		has_HM,    "^", COMMAND, 0);
 	if (has_EN)
-		rval |= map_set("end", has_EN, "$", COMMAND, 0);
+		rval |= map_set("end",		has_EN,    "$", COMMAND, 0);
 	if (has_PU)
-		rval |= map_set("page up", has_PU, "\002", COMMAND, 0);
+		rval |= map_set("page up",	has_PU, "\002", COMMAND, 0);
 	if (has_PD)
-		rval |= map_set("page down", has_PD, "\006", COMMAND, 0);
+		rval |= map_set("page down",	has_PD, "\006", COMMAND, 0);
 	if (has_KI)
-		rval |= map_set("insert", has_KI, "i", COMMAND, 0);
+		rval |= map_set("insert",	has_KI,    "i", COMMAND, 0);
 	if (ERASEKEY != '\177')
-		rval |= map_set("delete", "\177", "x", COMMAND, 0);
+		rval |= map_set("delete",	"\177",    "x", COMMAND, 0);
 	return (rval);
 }
 
@@ -128,37 +128,44 @@ int
 ex_unmap(cmdp)
 	CMDARG *cmdp;
 {
-	register MAP *p;
+	enum whenmapped when;
+	register MAP *mp;
 	register char *input;
 
 	input = cmdp->argv[0];
-	for (p = map[*input]; p; p = p->next)
-		if (!strcmp(p->input, input)) {
+	when = cmdp->flags & E_FORCE ? INPUT : COMMAND;
+	for (mp = map[*input]; mp; mp = mp->next) {
+		if (when != mp->when)
+			continue;
+		if (!strcmp(mp->input, input)) {
+
 			/* Unlink out of the map array. */
-			if (p->prev) {
-				if (p->next) {
-					p->next->prev = p->prev;
-					p->prev->next = p->next;
+			if (mp->prev) {
+				if (mp->next) {
+					mp->next->prev = mp->prev;
+					mp->prev->next = mp->next;
 				} else
-					p->prev->next = NULL;
-			} else if (p->next) {
-				map[*input] = p->next;
-				p->next->prev = NULL;
+					mp->prev->next = NULL;
+			} else if (mp->next) {
+				map[*input] = mp->next;
+				mp->next->prev = NULL;
 			} else
 				map[*input] = NULL;
-			
+
 			/* Unlink out of the map list. */
-			p->lprev->lnext = p->lnext;
-			p->lnext->lprev = p->lprev;
+			mp->lprev->lnext = mp->lnext;
+			mp->lnext->lprev = mp->lprev;
 
 			/* Free up the space. */
-			free(p->name);
-			free(p->input);
-			free(p->output);
-			free(p);
+			if (mp->name)
+				free(mp->name);
+			free(mp->input);
+			free(mp->output);
+			free(mp);
 			return (0);
 		}
-	msg("The key sequence \"%s\" was never mapped.", input);
+	}
+	msg("\"%s\" was never mapped.", input);
 	return (1);
 }
 
@@ -173,17 +180,38 @@ map_set(name, input, output, when, userdef)
 	int userdef;
 {
 	register MAP *mp;
-	register int cnt;
-	register char *ip, *p;
-	char *start;
+	int ilen;
+	char *s;
 
-	for (mp = map[*input]; mp; mp = mp->next)
+	ilen = strlen(input);
+	if (ilen == 1)
+		switch (input[0]) {	/* Some keys may not be remapped. */
+		case '\n':
+			s = "\\n";
+			goto nomap;
+		case '\r':
+			s = "\\r";
+			goto nomap;
+		case '\033':
+			s = "^[";
+			goto nomap;
+		case ':':
+			s = ":";
+nomap:			msg("The %s character may not be remapped.", s);
+			return (1);
+		}
+
+	/* Find any previous occurrence, and replace the output field. */
+	for (mp = map[*input]; mp; mp = mp->next) {
+		if (when != mp->when)
+			continue;
 		if (!strcmp(mp->input, input)) {
 			free(mp->output);
 			if ((mp->output = strdup(output)) == NULL)
 				goto mem1;
 			return (0);
 		}
+	}
 
 	/* Allocate space. */
 	if ((mp = malloc(sizeof(MAP))) == NULL) 
@@ -200,7 +228,7 @@ map_set(name, input, output, when, userdef)
 		goto mem4;
 
 	mp->when = when;
-	mp->ilen = strlen(mp->input);
+	mp->ilen = ilen;
 	mp->flags |= userdef ? M_USERDEF : 0;
 
 	/* Link into the map array. */
@@ -232,7 +260,7 @@ map_dump(when)
 	enum whenmapped when;
 {
 	register MAP *mp;
-	register int ch, cnt, len;
+	register int ch, len;
 	register char *p;
 
 	for (mp = mhead.lnext; mp != (MAP *)&mhead; mp = mp->lnext) {
@@ -245,7 +273,7 @@ map_dump(when)
 				qaddch(ch ^ '@');
 			} else
 				qaddch(ch);
-		for (cnt = TAB - len % TAB; cnt; --cnt)
+		for (len = TAB - len % TAB; len; --len)
 			qaddch(' ');
 		for (p = mp->input, len = 0; (ch = *p); ++p, ++len)
 			if (iscntrl(ch)) {
@@ -253,7 +281,7 @@ map_dump(when)
 				qaddch(ch ^ '@');
 			} else
 				qaddch(ch);
-		for (cnt = TAB - len % TAB; cnt; --cnt)
+		for (len = TAB - len % TAB; len; --len)
 			qaddch(' ');
 		for (p = mp->output; (ch = *p); ++p)
 			if (iscntrl(ch)) {
@@ -279,7 +307,6 @@ map_save(fp)
 	register MAP *mp;
 	register int ch;
 	register char *p;
-	char buf[1024];
 
 	/* Write a map command for all keys the user defined. */
 	for (mp = mhead.lnext; mp != (MAP *)&mhead; mp = mp->lnext) {
@@ -322,7 +349,7 @@ map_find(input, when, ispartialp)
 	*ispartialp = 0;
 	len = strlen((char *)input);
 	for (mp = map[*input]; mp; mp = mp->next) {
-		if (mp->when != when)
+		if (when != mp->when)
 			continue;
 		if (!strncmp(mp->input, (char *)input, len))
 			if (len == mp->ilen) {
