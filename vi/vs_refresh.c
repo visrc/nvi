@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.4 1992/10/24 14:22:46 bostic Exp $ (Berkeley) $Date: 1992/10/24 14:22:46 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.5 1992/10/26 09:07:45 bostic Exp $ (Berkeley) $Date: 1992/10/26 09:07:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -76,7 +76,7 @@ scr_ref(ep)
 	register recno_t cnt;
 
 	/* Repaint the screen. */
-	for (cnt = BOTLINE(ep); cnt >= ep->otop; --cnt)
+	for (cnt = BOTLINE(ep, ep->otop); cnt >= ep->otop; --cnt)
 		(void)scr_update(ep, cnt, NULL, 0, LINE_RESET);
 
 	/* Put up the cursor, row/column information. */
