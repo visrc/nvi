@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: screen.h,v 10.45 2001/08/28 13:29:15 skimo Exp $ (Berkeley) $Date: 2001/08/28 13:29:15 $
+ *	$Id: screen.h,v 10.46 2001/08/28 21:05:46 skimo Exp $ (Berkeley) $Date: 2001/08/28 21:05:46 $
  */
 
 /*
@@ -34,6 +34,8 @@ struct _win {
 	CIRCLEQ_HEAD(_scrh, _scr)   scrq;   /* Screens */
 
 	GS	*gp;			/* Pointer to global area. */
+
+	SCR	*ccl_sp;		/* Colon command-line screen. */
 
 	void	*perl_private;		/* Perl interpreter. */
 

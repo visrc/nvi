@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: gs.h,v 10.53 2001/07/29 19:07:28 skimo Exp $ (Berkeley) $Date: 2001/07/29 19:07:28 $
+ *	$Id: gs.h,v 10.54 2001/08/28 21:05:45 skimo Exp $ (Berkeley) $Date: 2001/08/28 21:05:45 $
  */
 
 #define	TEMPORARY_FILE_STRING	"/tmp"	/* Default temporary file name. */
@@ -58,8 +58,6 @@ struct _gs {
 	int	 id;			/* Last allocated screen id. */
 	CIRCLEQ_HEAD(_dqh, _win) dq;	/* Displayed windows. */
 	CIRCLEQ_HEAD(_hqh, _scr) hq;	/* Hidden screens. */
-
-	SCR	*ccl_sp;		/* Colon command-line screen. */
 
 	void	*perl_interp;		/* Perl interpreter. */
 	void	*tcl_interp;		/* Tcl_Interp *: Tcl interpreter. */

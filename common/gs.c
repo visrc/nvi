@@ -104,6 +104,10 @@ win_end(WIN *wp)
 
 	CIRCLEQ_REMOVE(&wp->gp->dq, wp, q);
 
+	if (wp->ccl_sp != NULL) {
+		(void)file_end(wp->ccl_sp, NULL, 1);
+		(void)screen_end(wp->ccl_sp);
+	}
 	while ((sp = wp->scrq.cqh_first) != (void *)&wp->scrq)
 		(void)screen_end(sp);
 
@@ -140,10 +144,6 @@ gs_end(GS *gp)
 	WIN *wp;
 
 	/* If there are any remaining screens, kill them off. */
-	if (gp->ccl_sp != NULL) {
-		(void)file_end(gp->ccl_sp, NULL, 1);
-		(void)screen_end(gp->ccl_sp);
-	}
 	while ((wp = gp->dq.cqh_first) != (void *)&gp->dq)
 		(void)win_end(wp);
 	while ((sp = gp->hq.cqh_first) != (void *)&gp->hq)

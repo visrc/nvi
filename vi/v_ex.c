@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_ex.c,v 10.55 2001/08/28 13:29:16 skimo Exp $ (Berkeley) $Date: 2001/08/28 13:29:16 $";
+static const char sccsid[] = "$Id: v_ex.c,v 10.56 2001/08/28 21:05:47 skimo Exp $ (Berkeley) $Date: 2001/08/28 21:05:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -497,11 +497,13 @@ static int
 v_ecl(SCR *sp)
 {
 	GS *gp;
+	WIN *wp;
 	SCR *new;
 
 	/* Initialize the screen, if necessary. */
 	gp = sp->gp;
-	if (gp->ccl_sp == NULL && v_ecl_init(sp))
+	wp = sp->wp;
+	if (wp->ccl_sp == NULL && v_ecl_init(sp))
 		return (1);
 
 	/* Get a new screen. */
@@ -513,11 +515,11 @@ v_ecl(SCR *sp)
 	}
 
 	/* Attach to the screen. */
-	new->ep = gp->ccl_sp->ep;
+	new->ep = wp->ccl_sp->ep;
 	++new->ep->refcnt;
 	CIRCLEQ_INSERT_HEAD(&new->ep->scrq, new, eq);
 
-	new->frp = gp->ccl_sp->frp;
+	new->frp = wp->ccl_sp->frp;
 	new->frp->flags = sp->frp->flags;
 
 	/* Move the cursor to the end. */
@@ -584,16 +586,19 @@ v_ecl_log(SCR *sp, TEXT *tp)
 	int rval;
 	CHAR_T *p;
 	size_t len;
+	SCR *ccl_sp;
 
 	/* Initialize the screen, if necessary. */
-	if (sp->gp->ccl_sp == NULL && v_ecl_init(sp))
+	if (sp->wp->ccl_sp == NULL && v_ecl_init(sp))
 		return (1);
+
+	ccl_sp = sp->wp->ccl_sp;
 
 	/*
 	 * Don't log colon command window commands into the colon command
 	 * window...
 	 */
-	if (sp->ep == sp->gp->ccl_sp->ep)
+	if (sp->ep == ccl_sp->ep)
 		return (0);
 
 	/*
@@ -606,7 +611,7 @@ v_ecl_log(SCR *sp, TEXT *tp)
 	 * Temporarily change fileencoding as well.
 	 */
 	save_ep = sp->ep;
-	sp->ep = sp->gp->ccl_sp->ep;
+	sp->ep = ccl_sp->ep;
 
 	save_enc = O_STR(sp, O_FILEENCODING);
 	o_set(sp, O_FILEENCODING, OS_STR | OS_NOFREE, "WCHAR_T", 0);
@@ -642,8 +647,10 @@ v_ecl_init(SCR *sp)
 {
 	FREF *frp;
 	GS *gp;
+	WIN *wp;
 
 	gp = sp->gp;
+	wp = sp->wp;
 
 	/* Get a temporary file. */
 	if ((frp = file_add(sp, NULL)) == NULL)
@@ -653,15 +660,16 @@ v_ecl_init(SCR *sp)
 	 * XXX
 	 * Create a screen -- the file initialization code wants one.
 	 */
-	if (screen_init(gp, sp, &gp->ccl_sp))
+	if (screen_init(gp, sp, &wp->ccl_sp))
 		return (1);
-	if (file_init(gp->ccl_sp, frp, NULL, 0)) {
-		(void)screen_end(gp->ccl_sp);
+	conv_enc(wp->ccl_sp, O_FILEENCODING, "WCHAR_T");
+	if (file_init(wp->ccl_sp, frp, NULL, 0)) {
+		(void)screen_end(wp->ccl_sp);
 		return (1);
 	}
 
 	/* The underlying file isn't recoverable. */
-	F_CLR(gp->ccl_sp->ep, F_RCV_ON);
+	F_CLR(wp->ccl_sp->ep, F_RCV_ON);
 
 	return (0);
 }
