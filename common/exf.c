@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 10.11 1995/10/02 16:34:36 bostic Exp $ (Berkeley) $Date: 1995/10/02 16:34:36 $";
+static char sccsid[] = "$Id: exf.c,v 10.12 1995/10/04 12:29:55 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:29:55 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -118,7 +118,7 @@ file_init(sp, frp, rcv_name, flags)
 	RECNOINFO oinfo;
 	struct stat sb;
 	size_t psize;
-	int fd, nf, open_err;
+	int fd, open_err;
 	char *p, *oname, tname[MAXPATHLEN];
 
 	open_err = 0;
@@ -199,13 +199,9 @@ file_init(sp, frp, rcv_name, flags)
 		ep->minode = sb.st_ino;
 		ep->mtime = sb.st_mtime;
 
-		if (!S_ISREG(sb.st_mode)) {
-			p = msg_print(sp, oname, &nf);
-			msgq(sp, M_ERR,
-			    "238|Warning: %s is not a regular file", p);
-			if (nf)
-				FREE_SPACE(sp, p, 0);
-		}
+		if (!S_ISREG(sb.st_mode))
+			msgq_str(sp, M_ERR, oname,
+			    "238|Warning: %s is not a regular file");
 	}
 
 	/* Set up recovery. */
@@ -228,10 +224,8 @@ file_init(sp, frp, rcv_name, flags)
 	/* Open a db structure. */
 	if ((ep->db = dbopen(rcv_name == NULL ? oname : NULL,
 	    O_NONBLOCK | O_RDONLY, DEFFILEMODE, DB_RECNO, &oinfo)) == NULL) {
-		p = msg_print(sp, rcv_name == NULL ? oname : rcv_name, &nf);
-		msgq(sp, M_SYSERR, "%s", p);
-		if (nf)
-			FREE_SPACE(sp, p, 0);
+		msgq_str(sp,
+		    M_SYSERR, rcv_name == NULL ? oname : rcv_name, "%s");
 		/*
 		 * !!!
 		 * Historically, vi permitted users to edit files that couldn't
@@ -313,11 +307,8 @@ file_init(sp, frp, rcv_name, flags)
 			F_SET(frp, FR_UNLOCKED);
 			break;
 		case LOCK_UNAVAIL:
-			p = msg_print(sp, oname, &nf);
-			msgq(sp, M_INFO,
-			    "239|%s already locked, session is read-only", p);
-			if (nf)
-				FREE_SPACE(sp, p, 0);
+			msgq_str(sp, M_INFO, oname,
+			    "239|%s already locked, session is read-only");
 			F_SET(frp, FR_RDONLY);
 			break;
 		case LOCK_SUCCESS:
@@ -525,7 +516,6 @@ file_end(sp, ep, force)
 	int force;
 {
 	FREF *frp;
-	int nf;
 	char *p;
 
 	/*
@@ -560,12 +550,8 @@ file_end(sp, ep, force)
 	 * Re: FR_DONTDELETE, see the comment above in file_init().
 	 */
 	if (!F_ISSET(frp, FR_DONTDELETE) && frp->tname != NULL) {
-		if (unlink(frp->tname)) {
-			p = msg_print(sp, frp->tname, &nf);
-			msgq(sp, M_SYSERR, "240|%s: remove", p);
-			if (nf)
-				FREE_SPACE(sp, p, 0);
-		}
+		if (unlink(frp->tname))
+			msgq_str(sp, M_SYSERR, frp->tname, "240|%s: remove");
 		free(frp->tname);
 		frp->tname = NULL;
 		if (F_ISSET(frp, FR_TMPFILE)) {
@@ -586,10 +572,7 @@ file_end(sp, ep, force)
 
 	/* Close the db structure. */
 	if (ep->db->close != NULL && ep->db->close(ep->db) && !force) {
-		p = msg_print(sp, frp->name, &nf);
-		msgq(sp, M_SYSERR, "241|%s: close", p);
-		if (nf)
-			FREE_SPACE(sp, p, 0);
+		msgq_str(sp, M_SYSERR, frp->name, "241|%s: close");
 		++ep->refcnt;
 		return (1);
 	}
@@ -612,18 +595,10 @@ file_end(sp, ep, force)
 	 * There's a race, here, obviously, but it's fairly small.
 	 */
 	if (!F_ISSET(ep, F_RCV_NORM)) {
-		if (ep->rcv_path != NULL && unlink(ep->rcv_path)) {
-			p = msg_print(sp, ep->rcv_path, &nf);
-			msgq(sp, M_SYSERR, "242|%s: remove", p);
-			if (nf)
-				FREE_SPACE(sp, p, 0);
-		}
-		if (ep->rcv_mpath != NULL && unlink(ep->rcv_mpath)) {
-			p = msg_print(sp, ep->rcv_mpath, &nf);
-			msgq(sp, M_SYSERR, "243|%s: remove", p);
-			if (nf)
-				FREE_SPACE(sp, p, 0);
-		}
+		if (ep->rcv_path != NULL && unlink(ep->rcv_path))
+			msgq_str(sp, M_SYSERR, ep->rcv_path, "242|%s: remove");
+		if (ep->rcv_mpath != NULL && unlink(ep->rcv_mpath))
+			msgq_str(sp, M_SYSERR, ep->rcv_mpath, "243|%s: remove");
 	}
 	if (ep->fcntl_fd != -1)
 		(void)close(ep->fcntl_fd);
@@ -653,7 +628,7 @@ file_write(sp, fm, tm, name, flags)
 	char *name;
 	int flags;
 {
-	enum { NEWFILE, NONE, EXISTING } mtype;
+	enum { NEWFILE, OLDFILE } mtype;
 	struct stat sb;
 	EXF *ep;
 	FILE *fp;
@@ -676,11 +651,9 @@ file_write(sp, fm, tm, name, flags)
 
 	/* Can't write files marked read-only, unless forced. */
 	if (!LF_ISSET(FS_FORCE) && noname && F_ISSET(frp, FR_RDONLY)) {
-		if (LF_ISSET(FS_POSSIBLE))
-			msgq(sp, M_ERR,
-		    "244|Read-only file, not written; use ! to override");
-		else
-			msgq(sp, M_ERR, "245|Read-only file, not written");
+		msgq(sp, M_ERR, LF_ISSET(FS_POSSIBLE) ?
+		    "244|Read-only file, not written; use ! to override" :
+		    "245|Read-only file, not written");
 		return (1);
 	}
 
@@ -689,15 +662,10 @@ file_write(sp, fm, tm, name, flags)
 		/* Don't overwrite anything but the original file. */
 		if ((!noname || F_ISSET(frp, FR_NAMECHANGE)) &&
 		    !stat(name, &sb)) {
-			p = msg_print(sp, name, &nf);
-			if (LF_ISSET(FS_POSSIBLE)) {
-				msgq(sp, M_ERR,
-		"246|%s exists, not written; use ! to override", p);
-			} else
-				msgq(sp, M_ERR,
-				    "247|%s exists, not written", p);
-			if (nf)
-				FREE_SPACE(sp, p, 0);
+			msgq_str(sp, M_ERR, name,
+			    LF_ISSET(FS_POSSIBLE) ?
+			    "246|%s exists, not written; use ! to override" :
+			    "247|%s exists, not written");
 			return (1);
 		}
 
@@ -706,12 +674,9 @@ file_write(sp, fm, tm, name, flags)
 		 * original file, the previous test catches anything else.
 		 */
 		if (!LF_ISSET(FS_ALL) && noname && !stat(name, &sb)) {
-			if (LF_ISSET(FS_POSSIBLE))
-				msgq(sp, M_ERR,
-				    "248|Use ! to write a partial file");
-			else
-				msgq(sp, M_ERR,
-				    "249|Partial file, not written");
+			msgq(sp, M_ERR, LF_ISSET(FS_POSSIBLE) ?
+			    "248|Partial file, not written; use ! to override" :
+			    "249|Partial file, not written");
 			return (1);
 		}
 	}
@@ -723,38 +688,26 @@ file_write(sp, fm, tm, name, flags)
 	 * The information is only used for the user message and modification
 	 * time test, so we can ignore the obvious race condition.
 	 *
-	 * If the user is overwriting a file other than the original file, and
-	 * O_WRITEANY was what got us here (neither force nor append was set),
-	 * display the "existing file" messsage.  Since the FR_NAMECHANGE flag
-	 * is cleared on a successful write, the message only appears once when
-	 * the user changes a file name.  This is historic practice.
-	 *
-	 * One final test.  If we're not forcing or appending, and we have a
-	 * saved modification time, object if the file was changed since we
-	 * last edited or wrote it, and make them force it.
+	 * One final test.  If we're not forcing or appending the current file,
+	 * and we have a saved modification time, object if the file changed
+	 * since we last edited or wrote it, and make them force it.
 	 */
 	if (stat(name, &sb))
 		mtype = NEWFILE;
 	else {
-		mtype = NONE;
+		mtype = OLDFILE;
 		if (!LF_ISSET(FS_FORCE | FS_APPEND)) {
 			ep = sp->ep;
-			if (ep->mtime != 0 &&
+			if (noname && ep->mtime != 0 &&
 			    (sb.st_dev != sp->ep->mdev ||
 			    sb.st_ino != ep->minode ||
 			    sb.st_mtime != ep->mtime)) {
-				p = msg_print(sp, name, &nf);
-				msgq(sp, M_ERR,
+				msgq_str(sp, M_ERR, name,
 				    LF_ISSET(FS_POSSIBLE) ?
 "250|%s: file modified more recently than this copy; use ! to override" :
-"251|%s: file modified more recently than this copy",
-				    p);
-				if (nf)
-					FREE_SPACE(sp, p, 0);
+"251|%s: file modified more recently than this copy");
 				return (1);
 			}
-			if (!noname || F_ISSET(frp, FR_NAMECHANGE))
-				mtype = EXISTING;
 		}
 	}
 
@@ -773,26 +726,21 @@ file_write(sp, fm, tm, name, flags)
 	/* Open the file. */
 	SIGBLOCK;
 	if ((fd = open(name, oflags, DEFFILEMODE)) < 0) {
+		msgq_str(sp, M_SYSERR, name, "%s");
 		SIGUNBLOCK;
-		p = msg_print(sp, name, &nf);
-		msgq(sp, M_SYSERR, "%s", p);
-		if (nf)
-			FREE_SPACE(sp, p, 0);
 		return (1);
 	}
 	SIGUNBLOCK;
 
 	/* Try and get a lock. */
 	if (!noname && file_lock(sp, NULL, NULL, fd, 0) == LOCK_UNAVAIL)
-		msgq(sp, M_ERR, "252|%s: write lock was unavailable", name);
+		msgq_str(sp, M_ERR, name,
+		    "252|%s: write lock was unavailable");
 
 	/* Use stdio for buffering. */
 	if ((fp = fdopen(fd, "w")) == NULL) {
+		msgq_str(sp, M_SYSERR, name, "%s");
 		(void)close(fd);
-		p = msg_print(sp, name, &nf);
-		msgq(sp, M_SYSERR, "%s", p);
-		if (nf)
-			FREE_SPACE(sp, p, 0);
 		return (1);
 	}
 
@@ -827,15 +775,14 @@ file_write(sp, fm, tm, name, flags)
 		}
 	}
 
-	/* If the write failed, complain loudly. */
+	/*
+	 * If the write failed, complain loudly.  ex_writefp() has already
+	 * complained about the actual error, reinforce it if data was lost.
+	 */
 	if (rval) {
-		if (!LF_ISSET(FS_APPEND)) {
-			p = msg_print(sp, name, &nf);
-			msgq(sp, M_ERR,
-			    "254|%s: WARNING: FILE TRUNCATED", p);
-			if (nf)
-				FREE_SPACE(sp, p, 0);
-		}
+		if (!LF_ISSET(FS_APPEND))
+			msgq_str(sp, M_ERR, name,
+			    "254|%s: WARNING: FILE TRUNCATED");
 		return (1);
 	}
 
@@ -863,18 +810,13 @@ file_write(sp, fm, tm, name, flags)
 
 	p = msg_print(sp, name, &nf);
 	switch (mtype) {
-	case EXISTING:
-		msgq(sp, M_INFO,
-		    "255|%s: existing file: %lu lines, %lu characters",
-		    p, nlno, nch);
-		break;
 	case NEWFILE:
 		msgq(sp, M_INFO, "256|%s: new file: %lu lines, %lu characters",
 		    p, nlno, nch);
 		break;
-	case NONE:
-		msgq(sp, M_INFO, "257|%s: %lu lines, %lu characters",
-		    p, nlno, nch);
+	case OLDFILE:
+		msgq(sp, M_INFO, "257|%s: %s%lu lines, %lu characters",
+		    p, LF_ISSET(FS_APPEND) ? "appended: " : "", nlno, nch);
 		break;
 	}
 	if (nf)
@@ -906,7 +848,7 @@ file_backup(sp, name, bname)
 	EXCMD cmd;
 	off_t off;
 	size_t blen;
-	int flags, maxnum, nf, nr, num, nw, rfd, wfd, version;
+	int flags, maxnum, nr, num, nw, rfd, wfd, version;
 	char *bp, *estr, *p, *pct, *slash, *t, *wfname, buf[8192];
 
 	rfd = wfd = -1;
@@ -953,12 +895,9 @@ file_backup(sp, name, bname)
 	 * >1 args: object, too many args.
 	 */
 	if (cmd.argc != 1) {
+		msgq_str(sp, M_ERR, bname,
+		    "258|%s expanded into too many file names");
 		(void)close(rfd);
-		p = msg_print(sp, bname, &nf);
-		msgq(sp, M_ERR,
-		    "258|%s expanded into too many file names", p);
-		if (nf)
-			FREE_SPACE(sp, p, 0);
 		return (1);
 	}
 
@@ -1014,19 +953,17 @@ file_backup(sp, name, bname)
 	/* Open the backup file, avoiding lurkers. */
 	if (stat(wfname, &sb) == 0) {
 		if (!S_ISREG(sb.st_mode)) {
-			t = "259|%s: not a regular file";
-			goto perm;
+			msgq_str(sp, M_ERR, bname,
+			    "259|%s: not a regular file");
+			goto err;
 		}
 		if (sb.st_uid != getuid()) {
-			t = "260|%s: not owned by you";
-			goto perm;
+			msgq_str(sp, M_ERR, bname, "260|%s: not owned by you");
+			goto err;
 		}
 		if (sb.st_mode & (S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)) {
-			t = "261|%s: accessible by a user other than the owner";
-perm:			p = msg_print(sp, bname, &nf);
-			msgq(sp, M_ERR, t, p);
-			if (nf)
-				FREE_SPACE(sp, p, 0);
+			msgq_str(sp, M_ERR, bname,
+			   "261|%s: accessible by a user other than the owner");
 			goto err;
 		}
 		flags = O_TRUNC;
@@ -1068,12 +1005,8 @@ err:	if (rfd != -1)
 		(void)unlink(wfname);
 		(void)close(wfd);
 	}
-	if (estr) {
-		p = msg_print(sp, estr, &nf);
-		msgq(sp, M_SYSERR, "%s", p);
-		if (nf)
-			FREE_SPACE(sp, p, 0);
-	}
+	if (estr)
+		msgq_str(sp, M_SYSERR, estr, "%s");
 	if (bp != NULL)
 		FREE_SPACE(sp, bp, blen);
 	return (1);
