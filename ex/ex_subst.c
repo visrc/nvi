@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 10.4 1995/06/09 12:51:53 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:51:53 $";
+static char sccsid[] = "$Id: ex_subst.c,v 10.5 1995/06/20 19:36:30 bostic Exp $ (Berkeley) $Date: 1995/06/20 19:36:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -375,7 +375,7 @@ s(sp, cmdp, s, re, flags)
 	int linechanged, matched, quit, rval;
 	char *bp, *lb;
 
-	NEEDFILE(sp, cmdp->cmd);
+	NEEDFILE(sp, cmdp);
 
 	/*
 	 * !!!
@@ -642,7 +642,7 @@ nextmatch:	match[0].rm_so = 0;
 				if (vs_refresh(sp))
 					goto quit;
 			} else
-				if (ex_print(sp, &from, &to, 0) ||
+				if (ex_print(sp, cmdp, &from, &to, 0) ||
 				    ex_scprint(sp, &from, &to))
 					goto quit;
 			if (v_getkey(sp, &ch))
@@ -807,11 +807,11 @@ endmatch:	if (!linechanged)
 			from.lno = to.lno = lno;
 			from.cno = to.cno = 0;
 			if (lflag)
-				(void)ex_print(sp, &from, &to, E_C_LIST);
+				(void)ex_print(sp, cmdp, &from, &to, E_C_LIST);
 			if (nflag)
-				(void)ex_print(sp, &from, &to, E_C_HASH);
+				(void)ex_print(sp, cmdp, &from, &to, E_C_HASH);
 			if (pflag)
-				(void)ex_print(sp, &from, &to, E_C_PRINT);
+				(void)ex_print(sp, cmdp, &from, &to, E_C_PRINT);
 		}
 
 		if (!sp->c_suffix)

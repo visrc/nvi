@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_version.c,v 10.4 1995/06/09 13:56:31 bostic Exp $ (Berkeley) $Date: 1995/06/09 13:56:31 $";
+static char sccsid[] = "$Id: ex_version.c,v 10.5 1995/06/20 19:35:47 bostic Exp $ (Berkeley) $Date: 1995/06/20 19:35:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -39,6 +39,8 @@ ex_version(sp, cmdp)
 	EXCMD *cmdp;
 {
 	static const time_t then = 802720593;
+
+	ENTERCANONICAL(sp, cmdp, 0);
 
 	(void)ex_printf(sp,
 "Version 1.50, %sThe CSRG, University of California, Berkeley.\n",

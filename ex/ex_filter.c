@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 10.3 1995/06/15 19:39:33 bostic Exp $ (Berkeley) $Date: 1995/06/15 19:39:33 $";
+static char sccsid[] = "$Id: ex_filter.c,v 10.4 1995/06/20 19:35:57 bostic Exp $ (Berkeley) $Date: 1995/06/20 19:35:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -42,12 +42,13 @@ static int	filter_ldisplay __P((SCR *, FILE *));
  *	replace the original text with the stdout/stderr output of
  *	the utility.
  *
- * PUBLIC: int filtercmd
- * PUBLIC:    __P((SCR *, MARK *, MARK *, MARK *, char *, enum filtertype));
+ * PUBLIC: int filtercmd __P((SCR *, 
+ * PUBLIC:    EXCMD *, MARK *, MARK *, MARK *, char *, enum filtertype));
  */
 int
-filtercmd(sp, fm, tm, rp, cmd, ftype)
+filtercmd(sp, cmdp, fm, tm, rp, cmd, ftype)
 	SCR *sp;
+	EXCMD *cmdp;
 	MARK *fm, *tm, *rp;
 	char *cmd;
 	enum filtertype ftype;
@@ -103,10 +104,8 @@ filtercmd(sp, fm, tm, rp, cmd, ftype)
 	 * necessary so that users can do things like ":r! cat /dev/tty".
 	 */
 	if (ftype != FILTER_WRITE) {
-		(void)ex_fflush(sp);
-		(void)vs_msgflush(sp, 1, NULL, NULL);
-		if (sp->gp->scr_canon(sp, 1))
-			return (1);
+		ENTERCANONICAL(sp, cmdp, 1);
+
 		F_SET(sp, S_EX_WROTE);
 		(void)write(STDOUT_FILENO, "\n", 1);
 	}

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_z.c,v 10.3 1995/06/08 18:53:59 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:53:59 $";
+static char sccsid[] = "$Id: ex_z.c,v 10.4 1995/06/20 19:36:37 bostic Exp $ (Berkeley) $Date: 1995/06/20 19:36:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -44,7 +44,7 @@ ex_z(sp, cmdp)
 	recno_t cnt, equals, lno;
 	int eofcheck;
 
-	NEEDFILE(sp, cmdp->cmd);
+	NEEDFILE(sp, cmdp);
 
 	/*
 	 * !!!
@@ -106,6 +106,8 @@ ex_z(sp, cmdp)
 		(void)mark_set(sp, ABSMARK1, &abs, 1);
 		break;
 	case E_C_EQUAL:		/* Center with hyphens. */
+		ENTERCANONICAL(sp, cmdp, 0);
+
 		/*
 		 * !!!
 		 * Strangeness.  The '=' flag is like the '.' flag (see the
@@ -120,11 +122,13 @@ ex_z(sp, cmdp)
 		cmdp->addr2.lno = lno - 1;
 		if (ex_pr(sp, cmdp))
 			return (1);
-		(void)ex_puts(sp, "----------------------------------------\n");
+		(void)ex_printf(sp, "%s",
+		    "----------------------------------------\n");
 		cmdp->addr2.lno = cmdp->addr1.lno = equals = lno;
 		if (ex_pr(sp, cmdp))
 			return (1);
-		(void)ex_puts(sp, "----------------------------------------\n");
+		(void)ex_printf(sp, "%s",
+		    "----------------------------------------\n");
 		cmdp->addr1.lno = lno + 1;
 		cmdp->addr2.lno = (lno + cnt) - 1;
 		break;
