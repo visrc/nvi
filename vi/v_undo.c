@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_undo.c,v 8.1 1993/06/09 22:28:33 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:28:33 $";
+static char sccsid[] = "$Id: v_undo.c,v 8.2 1993/12/28 16:43:03 bostic Exp $ (Berkeley) $Date: 1993/12/28 16:43:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -20,11 +20,7 @@ static char sccsid[] = "$Id: v_undo.c,v 8.1 1993/06/09 22:28:33 bostic Exp $ (Be
 
 /*
  * v_Undo -- U
- *	Undo changes to this line, or roll forward.
- *
- *	Historic vi moved the cursor to the first non-blank character
- *	of the line when this happened.  We do not, since we know where
- *	the cursor actually was when the changes began.
+ *	Undo changes to this line.
  */
 int
 v_Undo(sp, ep, vp, fm, tm, rp)
@@ -33,9 +29,16 @@ v_Undo(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	if (O_ISSET(sp, O_NUNDO))
-		return (log_forward(sp, ep, rp));
-	return (log_setline(sp, ep, rp));
+	/*
+	 * Historically, U reset the cursor to the first column in the line
+	 * (not the first non-blank).  This seems a bit non-intuitive, but,
+	 * considering that we may have undone multiple changes, anything
+	 * else (including the cursor position stored in the logging records)
+	 * is going to appear random.
+	 */
+	rp->lno = fm->lno;
+	rp->cno = 0;
+	return (log_setline(sp, ep));
 }
 	
 /*
@@ -49,28 +52,33 @@ v_undo(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	if (O_ISSET(sp, O_NUNDO))
-		return (log_backward(sp, ep, rp));
-
-	if (!F_ISSET(ep, F_UNDO)) {
-		ep->lundo = UFORWARD;
-		F_SET(ep, F_UNDO);
-	}
+	/*
+	 * !!!
+	 * In historic vi, 'u' toggled between "undo" and "redo", i.e. 'u'
+	 * undid the last undo.  To make this work when the user can undo
+	 * multiple operations, we leave the old semantic unchanged, but
+	 * make '.' do another operation (undo or redo) in the same direction
+	 * as the last 'u' command, unless there was a change since the last
+	 * undo, in which case we always undo the last operation.  Since
+	 * 'u' didn't set '.' in historic vi, the breakage should be limited.
+	 */
+	if (F_ISSET(ep, F_UNDO))
+		ep->lundo = BACKWARD;
+	else if (!F_ISSET(vp, VC_ISDOT))
+		ep->lundo = ep->lundo == BACKWARD ? FORWARD : BACKWARD;
 
 	switch (ep->lundo) {
-	case UBACKWARD:
-		if (log_forward(sp, ep, rp)) {
-			F_CLR(ep, F_UNDO);
-			return (1);
-		}
-		ep->lundo = UFORWARD;
-		break;
-	case UFORWARD:
+	case BACKWARD:
 		if (log_backward(sp, ep, rp)) {
 			F_CLR(ep, F_UNDO);
 			return (1);
 		}
-		ep->lundo = UBACKWARD;
+		break;
+	case FORWARD:
+		if (log_forward(sp, ep, rp)) {
+			F_CLR(ep, F_UNDO);
+			return (1);
+		}
 		break;
 	}
 	return (0);
