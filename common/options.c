@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 10.11 1995/09/28 13:02:52 bostic Exp $ (Berkeley) $Date: 1995/09/28 13:02:52 $";
+static char sccsid[] = "$Id: options.c,v 10.12 1995/09/28 23:29:31 bostic Exp $ (Berkeley) $Date: 1995/09/28 23:29:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -675,7 +675,6 @@ opts_dump(sp, type)
 	SCR *sp;
 	enum optdisp type;
 {
-	GS *gp;
 	OPTLIST const *op;
 	int base, b_num, cnt, col, colwidth, curlen, s_num;
 	int numcols, numrows, row;
@@ -691,7 +690,6 @@ opts_dump(sp, type)
 	 *
 	 * Find a column width we can live with.
 	 */
-	gp = sp->gp;
 	for (cnt = 6; cnt > 1; --cnt) {
 		colwidth = (sp->cols - 1) / cnt & ~(STANDARD_TAB - 1);
 		if (colwidth >= 10) {
