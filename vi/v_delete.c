@@ -6,10 +6,11 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_delete.c,v 5.8 1992/05/28 13:52:40 bostic Exp $ (Berkeley) $Date: 1992/05/28 13:52:40 $";
+static char sccsid[] = "$Id: v_delete.c,v 5.9 1992/10/10 13:59:43 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:59:43 $";
 #endif /* not lint */
 
 #include <sys/param.h>
+
 #include <limits.h>
 #include <stddef.h>
 
@@ -28,7 +29,7 @@ v_Delete(vp, fm, tm, rp)
 	MARK *fm, *tm, *rp;
 {
 	size_t len;
-	char *p;
+	u_char *p;
 
 	EGETLINE(p, fm->lno, len);
 
