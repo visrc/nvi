@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_source.c,v 10.8 1996/03/14 21:25:24 bostic Exp $ (Berkeley) $Date: 1996/03/14 21:25:24 $";
+static const char sccsid[] = "$Id: ex_source.c,v 10.9 1996/03/22 16:06:33 bostic Exp $ (Berkeley) $Date: 1996/03/22 16:06:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -73,10 +73,8 @@ ex_source(sp, cmdp)
 	if (len == -1 || len != sb.st_size) {
 		if (len != sb.st_size)
 			errno = EIO;
-
+		free(bp);
 err:		msgq_str(sp, M_SYSERR, name, "%s");
-		if (bp != NULL)
-			free(bp);
 		return (1);
 	}
 
