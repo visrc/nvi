@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.35 1993/11/08 11:10:28 bostic Exp $ (Berkeley) $Date: 1993/11/08 11:10:28 $";
+static char sccsid[] = "$Id: main.c,v 8.36 1993/11/11 19:35:22 bostic Exp $ (Berkeley) $Date: 1993/11/11 19:35:22 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -99,10 +99,9 @@ main(argc, argv)
 	/*
 	 * XXX
 	 * Set a flag and don't do terminal sets/resets if the input isn't
-	 * from a tty.  This should eventually be fixed so that users can
-	 * pipe input to nvi.  Note, under all circumstances put reasonable
-	 * things into the original_termios field, as seq.c:seq_save() and
-	 * term.c:term_init() want values for special characters.
+	 * from a tty.  Under all circumstances put reasonable things into
+	 * the original_termios field, as some routines (seq.c:seq_save()
+	 * and term.c:term_init()) want values for special characters.
 	 */
 	if (F_ISSET(gp, G_ISFROMTTY)) {
 		if (tcgetattr(STDIN_FILENO, &gp->original_termios))
