@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.7 1992/05/15 11:11:13 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:11:13 $";
+static char sccsid[] = "$Id: vi.c,v 5.8 1992/05/21 13:01:23 bostic Exp $ (Berkeley) $Date: 1992/05/21 13:01:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,11 +19,12 @@ static char sccsid[] = "$Id: vi.c,v 5.7 1992/05/15 11:11:13 bostic Exp $ (Berkel
 #include <ctype.h>
 
 #include "vi.h"
-#include "options.h"
 #include "vcmd.h"
+#include "cut.h"
+#include "options.h"
 #include "extern.h"
 
-static int getcmd __P((VICMDARG *, int));
+static int getcmd __P((VICMDARG *, VICMDARG *));
 static int getcount __P((int, u_long *, int *));
 static int getkeyword __P((VICMDARG *, u_int));
 
@@ -34,7 +35,8 @@ vi()
 	register VICMDARG *mp, *vp;
 	register int key;
 	VICMDARG cmd, motion;
-	u_long oldy, oldx;
+	MARK fm;
+	u_long cnt, oldy, oldx;
 	u_int flags;
 	int erase;
 
@@ -57,7 +59,7 @@ vi()
 		 * If key already waiting, and it's not a key requiring
 		 * a motion component, should skip repaint.
 		 */
-		if (msgcnt) {
+err:		if (msgcnt) {
 			erase = 1;
 			msg_vflush();
 		} else
@@ -68,70 +70,96 @@ vi()
 
 		/*
 		 * We get a command, which may or may not have an associated
-		 * motion.  If it does, we get it too calling its underlying
+		 * motion.  If it does, we get it too, calling its underlying
 		 * function to get the resulting mark.  We then call the
-		 * command, and reset the cursor to the resulting mark.
+		 * command setting the cursor to the resulting mark.
 		 */
-#ifdef DEBUG
-		bzero(&cmd, sizeof(cmd));
-#endif
 		vp = &cmd;
-		if (getcmd(vp, 0))
-			continue;
-
-		mp = NULL;
-		flags = vp->kp->flags;
+		if (getcmd(vp, NULL))
+			goto err;
 
 		/* If dot, set the cmd and motion structures. */
 		if (vp->key == '.') {
 			if (dot.key == '\0') {
 				bell();
 				msg("No commands executed.");
-				continue;
+				goto err;
 			}
 			vp = &dot;
 			mp = &dotmotion;
+			flags = dot.flags & ~V_MOTION;
+		} else {
+			mp = NULL;
+			flags = vp->kp->flags;
 		}
 
 		/* V/v commands require movement commands. */
 		if (V_from && !(flags & V_MOVE)) {
 			bell();
 			msg("%s: not a movement command", vp->key);
-			continue;
+			goto err;
 		}
 
-		/*
-		 * If require motion get the motion command and get
-		 * the resulting mark.
-		 */
+		/* If the command requires motion, get the motion command. */
 		if (flags & V_MOTION) {
-			if (getcmd(&motion, vp->key)) {
+			if (getcmd(&motion, vp)) {
 				bell();
-				continue;
+				goto err;
 			}
 			mp = &motion;
 		}
 
-		/* Get resulting motion mark. */
-		if (mp != NULL &&
-		    (mp->kp->func)(mp, &cursor, &vp->motion))
-			continue;
+		/*
+	 	 * Get resulting motion mark.  Motion commands can be doubled
+		 * to indicate the current line.  In this case, or if the
+		 * command is a "line command", set the flags to indicate
+		 * this.  If not a doubled command, run the function to get
+		 * the resulting mark.  Count may be provided both to the
+		 * command and to the motion, in which case the count is
+		 * multiplicative.  For example, "3y4y" is the same as "12yy".
+		 * This count is provided to the motion command, not to the
+		 * regular function.
+		 */
+		if (mp != NULL) {
+			mp->count = mp->flags & VC_C1SET ? mp->count : 1;
+			if (vp->flags & VC_C1SET) {
+				mp->count *= vp->count;
+				mp->flags |= VC_C1SET;
+				vp->flags &= ~VC_C1SET;
+			}
+			if (vp->key == mp->key) {
+				vp->flags |= VC_LMODE;
+				vp->motion.lno = cursor.lno + mp->count - 1;
+				vp->motion.cno = 1;
+				fm.lno = cursor.lno;
+				fm.cno = 0;
+				if (file_gline(curf,
+				    vp->motion.lno, NULL) == NULL) {
+					v_eof(&cursor);
+					goto err;
+				}
+			} else {
+				mp->flags |= VC_ISMOTION;
+				if ((mp->kp->func)(mp, &cursor, &vp->motion))
+					goto err;
+				if (mp->kp->flags & V_LMODE)
+					vp->flags |= VC_LMODE;
+				fm = cursor;
+			}
+		} else
+			fm = cursor;
 
 		/* Get any associated keyword. */
 		if (flags & V_KEYW && getkeyword(vp, flags))
-			continue;
-
-		/* Set the cut buffer. */
-		if (vp->buffer)
-			cutname(vp->buffer);
+			goto err;
 
 		/* If a non-relative movement, set the '' mark. */
 		if (flags & V_ABS)
-			mark_def(&cursor);
+			SETABSMARK(&cursor);
 
 		/* Call the function, get the resulting mark. */
-		if ((vp->kp->func)(vp, &cursor, &cursor))
-			continue;
+		if ((vp->kp->func)(vp, &fm, &cursor))
+			goto err;
 
 		/* Update the screen. */
 		scr_cchange();
@@ -196,7 +224,7 @@ vi()
 static int
 getcmd(vp, ismotion)
 	VICMDARG *vp;
-	int ismotion;		/* Previous key if getting motion component. */
+	VICMDARG *ismotion;	/* Previous key if getting motion component. */
 {
 	register VIKEYS *kp;
 	register u_long count;
@@ -204,13 +232,12 @@ getcmd(vp, ismotion)
 	u_long hold;
 	int key;
 
-	bzero(vp, sizeof(vp));
+	bzero(vp, sizeof(*vp));
 
-	if (ismotion) {
-		/* 'C' and 'D' imply motion to the end-of-line. */
-		if (ismotion == 'C' || ismotion == 'D')
-			key = '$';
-	} else {
+	/* 'C' and 'D' imply motion to the end-of-line. */
+	if (ismotion != NULL && (ismotion->key == 'C' || ismotion->key == 'D'))
+		key = '$';
+	else {
 		/* Pick up optional buffer. */
 		KEY(key);
 		if (key == '"') {
@@ -219,7 +246,8 @@ getcmd(vp, ismotion)
 				goto ebuf;
 			vp->buffer = key;
 			KEY(key);
-		}
+		} else
+			vp->buffer = OOBCB;
 	}
 
 	/*
@@ -233,30 +261,6 @@ getcmd(vp, ismotion)
 
 	/* Find the command. */
 	kp = vp->kp = &vikeys[vp->key = key];
-	if (ismotion) {
-		/*
-		 * Commands that have motion components can be doubled to
-		 * imply the current line, i.e. * "dd" is the same as "d_".
-		 */
-		if (ismotion == key)
-			kp = vp->kp = &vikeys[vp->key = '_'];
-
-		/*
-		 * Special case: c[wW] converted to c[eE].
-		 *
-		 * Wouldn't work right at the end of a word unless backspace
-		 * one character before doing the move.  This will fix most
-		 * cases.
-		 * XXX
-		 * But not all.
-		 */
-		if (ismotion == 'c' && key == 'W' || key == 'w') {
-			kp = vp->kp = &vikeys[vp->key = key == 'W' ? 'E' : 'e'];
-			if (cursor.cno && (key == 'e' || key == 'E'))
-				--cursor.cno;
-		}
-	}
-
 	if (kp->func == NULL) {
 		bell();
 		msg("%s isn't a command.", charname(key));
@@ -270,12 +274,9 @@ getcmd(vp, ismotion)
 		goto usage;
 
 	/* Illegal motion command. */
-	if (ismotion)
-		if (!(flags & V_MOVE))
-			goto usage;
-	else {
+	if (ismotion == NULL) {
 		/* Illegal buffer. */
-		if (!(flags & V_OBUF) && vp->buffer)
+		if (!(flags & V_OBUF) && vp->buffer != OOBCB)
 			goto usage;
 
 		/* Required buffer. */
@@ -301,8 +302,8 @@ ebuf:				bell();
 			KEY(key);
 			if (vp->key != key) {
 usage:				bell();
-				msg("Usage: %s", ismotion ?
-				    vikeys[ismotion].usage : kp->usage);
+				msg("Usage: %s", ismotion != NULL ?
+				    vikeys[ismotion->key].usage : kp->usage);
 				return (1);
 			}
 		}
@@ -315,12 +316,33 @@ usage:				bell();
 			}
 			vp->character = key;
 		}
+	} else {
+		/*
+		 * Commands that have motion components can be doubled to
+		 * imply the current line.
+		 */
+		if (ismotion->key != key && !(flags & V_MOVE))
+			goto usage;
+
+		/*
+		 * Special case: c[wW] converted to c[eE].
+		 *
+		 * Wouldn't work right at the end of a word unless backspace
+		 * one character before doing the move.  This will fix most
+		 * cases.
+		 * XXX
+		 * But not all.
+		 */
+		if (ismotion->key == 'c' && (key == 'W' || key == 'w')) {
+			kp = vp->kp = &vikeys[vp->key = key == 'W' ? 'E' : 'e'];
+			if (cursor.cno && (key == 'e' || key == 'E'))
+				--cursor.cno;
+		}
 	}
 
 	/* Required character. */
 	if (flags & V_CHAR)
 		KEY(vp->character);
-
 	return (0);
 }
 
