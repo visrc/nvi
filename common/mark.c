@@ -6,10 +6,11 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: mark.c,v 5.1 1992/05/15 11:10:40 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:10:40 $";
+static char sccsid[] = "$Id: mark.c,v 5.2 1992/05/17 15:32:49 bostic Exp $ (Berkeley) $Date: 1992/05/17 15:32:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
+#include <limits.h>
 #include <stdio.h>
 
 #include "vi.h"
@@ -17,34 +18,19 @@ static char sccsid[] = "$Id: mark.c,v 5.1 1992/05/15 11:10:40 bostic Exp $ (Berk
 #include "options.h"
 #include "extern.h"
 
-static MARK sq =		/* Initialize to the start of the file. */
-	{ 1 };
-static MARK marks[26] = {	/* Initialize to invalid. */
-	{ OOBLNO }, { OOBLNO }, { OOBLNO }, { OOBLNO }, { OOBLNO },
-	{ OOBLNO }, { OOBLNO }, { OOBLNO }, { OOBLNO }, { OOBLNO },
-	{ OOBLNO }, { OOBLNO }, { OOBLNO }, { OOBLNO }, { OOBLNO },
-	{ OOBLNO }, { OOBLNO }, { OOBLNO }, { OOBLNO }, { OOBLNO },
-	{ OOBLNO }, { OOBLNO }, { OOBLNO }, { OOBLNO }, { OOBLNO },
-	{ OOBLNO },
-};
-
-void
-mark_def(mp)
-	MARK *mp;
-{
-	sq = *mp;
-}
+static MARK marks[UCHAR_MAX + 1];
 
 int
 mark_set(key, mp)
 	int key;
 	MARK *mp;
 {
-	if (key < 'a' || key > 'z') {
-		msg("Invalid mark; use 'a' to 'z'.");
+	if (key > UCHAR_MAX) {
+		bell();
+		msg("Invalid mark name.");
 		return (1);
 	}
-	marks[key - 'a'] = *mp;
+	marks[key] = *mp;
 	return (0);
 }
 
@@ -54,17 +40,15 @@ mark_get(key)
 {
 	MARK *mp;
 
-	if (key == '\'')
-		return (&sq);
-	if (key < 'a' || key > 'z') {
-		msg("Invalid mark; use 'a' to 'z'.");
+	if (key > UCHAR_MAX) {
+		bell();
+		msg("Invalid mark name.");
 		return (NULL);
 	}
-	mp = &marks[key - 'a'];
+	mp = &marks[key];
 	if (mp->lno == OOBLNO) {
 		bell();
-		if (ISSET(O_VERBOSE))
-			msg("Mark '%c not set.", key);
+		msg("Mark '%c not set.", key);
                 return (NULL);
 	}
 	return (mp);
