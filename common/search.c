@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.7 1993/09/02 13:04:32 bostic Exp $ (Berkeley) $Date: 1993/09/02 13:04:32 $";
+static char sccsid[] = "$Id: search.c,v 8.8 1993/09/10 11:00:03 bostic Exp $ (Berkeley) $Date: 1993/09/10 11:00:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -23,6 +23,7 @@ static int	ctag_conv __P((SCR *, char **, int *));
 static int	get_delta __P((SCR *, char **, long *));
 static int	resetup __P((SCR *, regex_t **, enum direction,
 		    char *, char **, long *, u_int));
+static void	search_intr __P((int));
 
 /*
  * resetup --
@@ -153,6 +154,7 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 	char *ptrn, **eptrn;
 	u_int flags;
 {
+	struct termios term;
 	MARK m;
 	regmatch_t match[1];
 	regex_t *re, lre;
@@ -219,7 +221,12 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 		m.lno = OOBLNO;
 
 	wrapped = 0;
+	turn_interrupts_on(sp, &term, search_intr);
 	for (;; ++lno, coff = 0) {
+		if (F_ISSET(sp, S_INTERRUPTED)) {
+			msgq(sp, M_INFO, "Interrupted.");
+			break;
+		}
 		if (wrapped && lno > fm->lno ||
 		    (l = file_gline(sp, ep, lno, &len)) == NULL) {
 			if (wrapped) {
@@ -293,8 +300,10 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 			if (!LF_ISSET(SEARCH_EOL) && rm->cno >= len)
 				rm->cno = len ? len - 1 : 0;
 		}
+		(void)turn_interrupts_off(sp, &term);
 		return (0);
 	}
+	(void)turn_interrupts_off(sp, &term);
 	return (1);
 }
 
@@ -306,6 +315,7 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 	char *ptrn, **eptrn;
 	u_int flags;
 {
+	struct termios term;
 	MARK m;
 	regmatch_t match[1];
 	regex_t *re, lre;
@@ -345,7 +355,12 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 	(void)sp->s_busy_cursor(sp, NULL);
 
 	wrapped = 0;
+	turn_interrupts_on(sp, &term, search_intr);
 	for (coff = fm->cno;; --lno, coff = 0) {
+		if (F_ISSET(sp, S_INTERRUPTED)) {
+			msgq(sp, M_INFO, "Interrupted.");
+			break;
+		}
 		if (wrapped && lno < fm->lno || lno == 0) {
 			if (wrapped) {
 				if (LF_ISSET(SEARCH_MSG))
@@ -358,7 +373,7 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 				break;
 			}
 			if (file_lline(sp, ep, &lno))
-				return (1);
+				goto err;
 			if (lno == 0) {
 				if (LF_ISSET(SEARCH_MSG))
 					msgq(sp, M_INFO, EMPTYMSG);
@@ -370,7 +385,7 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 		}
 
 		if ((l = file_gline(sp, ep, lno, &len)) == NULL)
-			return (1);
+			goto err;
 
 		/* If it's going to be awhile, put up a message. */
 		if (lno == m.lno)
@@ -426,7 +441,7 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 					break;
 				if (eval != 0) {
 					re_error(sp, eval, re);
-					return (1);
+					goto err;
 				}
 			}
 			rm->lno = lno;
@@ -437,8 +452,10 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 			else
 				rm->cno = last;
 		}
+		(void)turn_interrupts_off(sp, &term);
 		return (0);
 	}
+err:	(void)turn_interrupts_off(sp, &term);
 	return (1);
 }
 
@@ -650,4 +667,26 @@ re_error(sp, errcode, preg)
 		msgq(sp, M_ERR, "RE error: %s", oe);
 	}
 	free(oe);
+}
+
+/*
+ * search_intr --
+ *	Set the interrupt bit in any screen that is interruptible.
+ *
+ * XXX
+ * In the future this may be a problem.  The user should be able to move to
+ * another screen and keep typing while this runs.  If so, and the user has
+ * more than one search/global (see ex/ex_global.c) running, it will be hard
+ * to decide which one to stop.
+ */
+static void
+search_intr(signo)
+	int signo;
+{
+	SCR *sp;
+
+	for (sp = __global_list->scrhdr.next;
+	     sp != (SCR *)&__global_list->scrhdr; sp = sp->next)
+		if (F_ISSET(sp, S_INTERRUPTIBLE))
+			F_SET(sp, S_INTERRUPTED);
 }
