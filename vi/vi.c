@@ -1,515 +1,382 @@
 /*-
- * Copyright (c) 1991 The Regents of the University of California.
+ * Copyright (c) 1992 The Regents of the University of California.
  * All rights reserved.
  *
  * %sccs.include.redist.c%
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.6 1992/05/07 12:50:00 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:50:00 $";
+static char sccsid[] = "$Id: vi.c,v 5.7 1992/05/15 11:11:13 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:11:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 #include <termios.h>
+#include <errno.h>
+#include <limits.h>
 #include <curses.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <ctype.h>
 
 #include "vi.h"
-#include "exf.h"
 #include "options.h"
-#include "term.h"
 #include "vcmd.h"
 #include "extern.h"
 
-static int keymodes[] = {0, WHEN_REP1, WHEN_CUT, WHEN_MARK, WHEN_CHAR};
+static int getcmd __P((VICMDARG *, int));
+static int getcount __P((int, u_long *, int *));
+static int getkeyword __P((VICMDARG *, u_int));
 
 void
 vi()
 {
-	REG int			key;	/* keystroke from user */
-	long			count;	/* numeric argument to some functions */
-	REG VIKEYS	*keyptr;/* pointer to vikeys[] element */
-	MARK			*tcurs;	/* temporary cursor */
-	int			prevkey;/* previous key, if d/c/y/</>/! */
-	MARK			*range;	/* start of range for d/c/y/</>/! */
-	char			text[132];
-	int			dotkey;	/* last "key" of a change */
-	int			dotpkey;/* last "prevkey" of a change */
-	int			dotkey2;/* last extra "getkey()" of a change */
-	int			dotcnt;	/* last "count" of a change */
-	REG int			i;
-	char *p;
-char *ptext;
-size_t plen;
-	size_t len;
-
-#ifdef lint
-	/* lint says that "range" might be used before it is set.  This
-	 * can't really happen due to the way "range" and "prevkey" are used,
-	 * but lint doesn't know that.  This line is here ONLY to keep lint
-	 * happy.
-	 */
-	range = NULL;
-#endif
+	static VICMDARG dot, dotmotion;
+	register VICMDARG *mp, *vp;
+	register int key;
+	VICMDARG cmd, motion;
+	u_long oldy, oldx;
+	u_int flags;
+	int erase;
 
 	scr_ref();
+	wrefresh(curscr);
+	for (;;) {
+		/* Report any changes from the previous command. */
+		if (rptlines) {
+			if (LVAL(O_REPORT) && rptlines >= LVAL(O_REPORT)) {
+				msg("%ld line%s %s", rptlines,
+				    (rptlines == 1 ? "" : "s"), rptlabel);
+			}
+			rptlines = 0;
+		}
 
-	/* safeguard against '.' with no previous command */
-	dotkey = 0;
-
-	/* Repeatedly handle VI commands */
-	for (count = 0, prevkey = '\0'; mode == MODE_VI; )
-	{
-		if (msgcnt)
+		/*
+		 * Flush any messages and repaint the screen.
+		 *
+		 * XXX
+		 * If key already waiting, and it's not a key requiring
+		 * a motion component, should skip repaint.
+		 */
+		if (msgcnt) {
+			erase = 1;
 			msg_vflush();
+		} else
+			erase = 0;
 		refresh();
+		if (erase)
+			scr_modeline();
 
-		/* report any changes from the previous command */
-		if (rptlines >= LVAL(O_REPORT))
-			msg("%ld line%s %s",
-			    rptlines, (rptlines==1?"":"s"), rptlabel);
-
-		rptlines = 0L;
-
-		do
-		{
-			key = getkey(WHEN_VICMD);
-		} while (key < 0 || key > 127);
-
-		/* Convert a doubled-up operator such as "dd" into "d_" */
-		if (prevkey && key == prevkey)
-		{
-			key = '_';
-		}
-
-		/* look up the structure describing this command */
-		keyptr = &vikeys[key];
-
-		/* '&' and uppercase operators always act like doubled */
-		if (!prevkey && keyptr->args == CURSOR_MOVED
-			&& (key == '&' || isupper(key)))
-		{
-			range = &cursor;
-			prevkey = key;
-			key = '_';
-			keyptr = &vikeys[key];
-		}
-
-		/* if we're in the middle of a v/V command, reject commands
-		 * that aren't operators or movement commands
+		/*
+		 * We get a command, which may or may not have an associated
+		 * motion.  If it does, we get it too calling its underlying
+		 * function to get the resulting mark.  We then call the
+		 * command, and reset the cursor to the resulting mark.
 		 */
-		if (V_from && !(keyptr->flags & VIZ))
-		{
-			bell();
-			prevkey = 0;
-			count = 0;
-			continue;
-		}
-
-		/* if we're in the middle of a d/c/y/</>/! command, reject
-		 * anything but movement.
-		 */
-		if (prevkey && !(keyptr->flags & (MVMT|PTMV)))
-		{
-			bell();
-			prevkey = 0;
-			count = 0;
-			continue;
-		}
-
-		/* set the "dot" variables, if we're supposed to */
-		if (((keyptr->flags & SDOT)
-			|| (prevkey && vikeys[prevkey].flags & SDOT))
-		    && !V_from
-		)
-		{
-			dotkey = key;
-			dotpkey = prevkey;
-			dotkey2 = '\0';
-			dotcnt = count;
-
-			v_undosave(&cursor);
-		}
-
-		/* if this is "." then set other vars from the "dot" vars */
-		if (key == '.')
-		{
-			key = dotkey;
-			keyptr = &vikeys[key];
-			prevkey = dotpkey;
-			if (prevkey)
-			{
-				range = &cursor;
-			}
-			if (count == 0)
-			{
-				count = dotcnt;
-			}
-			doingdot = TRUE;
-
-			v_undosave(&cursor);
-		}
-		else
-		{
-			doingdot = FALSE;
-		}
-
-		/* process the key as a command */
-		tcurs = &cursor;
-		switch (keyptr->args & ARGSMASK)
-		{
-		  case ZERO:
-			if (count == 0)
-			{
-				cursor.lno = 1;
-				break;
-			}
-			/* else fall through & treat like other digits... */
-
-		  case DIGIT:
-			count = count * 10 + key - '0';
-			break;
-
-		  case KEYWORD:
-			/* if not on a keyword, fail */
-			ptext = file_line(curf, cursor.lno, NULL);
-			key = cursor.cno;
-			if (!isalnum(ptext[key]))
-			{
-				tcurs = NULL;
-				break;
-			}
-
-			/* find the start of the keyword */
-			while (key > 0 && isalnum(ptext[key - 1]))
-			{
-				key--;
-				--cursor.cno;
-			}
-
-			/* copy it into a buffer, and NUL-terminate it */
-			i = 0;
-			do
-			{
-				text[i++] = ptext[key++];
-			} while (isalnum(ptext[key]));
-			text[i] = '\0';
-
-			/* call the function */
-			tcurs = (*keyptr->func)(text, tcurs, count);
-			count = 0L;
-			break;
-
-		  case 0:
-			if (keyptr->func)
-			{
-				(*keyptr->func)();
-			}
-			else
-			{
-				bell();
-			}
-			count = 0L;
-			break;
-	
-		  case CURSOR:
-
-			tcurs = (*keyptr->func)(&cursor, count, key, prevkey);
-			count = 0L;
-			break;
-
-		  case CURSOR_CNT_KEY:
-			if (doingdot)
-			{
-				tcurs = (*keyptr->func)(&cursor, count, dotkey2);
-			}
-			else
-			{
-				/* get a key */
-				i = getkey(KEYMODE(keyptr->args));
-				if (i == '\033') /* ESC */
-				{
-					count = 0;
-					tcurs = NULL;
-					break; /* exit from "case CURSOR_CNT_KEY" */
-				}
-				else if (i == ('V' & 0x1f))
-				{
-					i = getkey(0);
-				}
-
-				/* if part of an SDOT command, remember it */
-				 if (keyptr->flags & SDOT
-				 || (prevkey && vikeys[prevkey].flags & SDOT))
-				{
-					dotkey2 = i;
-				}
-
-				/* do it */
-				tcurs = (*keyptr->func)(&cursor, count, i);
-			}
-			count = 0L;
-			break;
-	
-		  case CURSOR_MOVED:
-			if (V_from)
-			{
-				range = &cursor;
-				tcurs = V_from;
-				count = 0L;
-				prevkey = key;
-				key = (V_linemd ? 'V' : 'v');
-				keyptr = &vikeys[key];
-			}
-			else
-			{
-				prevkey = key;
-				range = &cursor;
-#ifndef CRUNCH
-				force_lnmd = FALSE;
+#ifdef DEBUG
+		bzero(&cmd, sizeof(cmd));
 #endif
-			}
-			break;
+		vp = &cmd;
+		if (getcmd(vp, 0))
+			continue;
 
-		  case CURSOR_EOL:
-			prevkey = key;
-			/* a zero-length line needs special treatment */
-			ptext = file_line(curf, cursor.lno, &plen);
-			if (plen == 0)
-			{
-				/* act on a zero-length section of text */
-				range = tcurs = &cursor;
-				key = ' ';
-			}
-			else
-			{
-				/* act like CURSOR_MOVED with '$' movement */
-				range = &cursor;
-				tcurs = m_rear(&cursor, 1L);
-				key = '$';
-			}
-			count = 0L;
-			keyptr = &vikeys[key];
-			break;
+		mp = NULL;
+		flags = vp->kp->flags;
 
-		  case CURSOR_TEXT:
-			v_startex();
-		  	do
-		  	{	
-				if ((p = gb(key,
-				    NULL, GB_BS|GB_ESC|GB_OFF)) != NULL) {
-					/* reassure user that <CR> was hit */
-					addch('\r');
-					refresh();
-
-					/* call the function with the text */
-					p[0] = key;
-					tcurs = (*keyptr->func)(&cursor, p);
-				}
-				else
-				{
-					mode = MODE_VI;
-				}
-			} while (mode == MODE_EX);
-			v_leaveex();
-			count = 0L;
-			break;
-		}
-
-		/* if that command took us out of vi mode, then exit the loop
-		 * NOW, without tweaking the cursor or anything.  This is very
-		 * important when mode == MODE_QUIT.
-		 */
-		if (mode != MODE_VI)
-		{
-			break;
-		}
-
-		/* now move the cursor, as appropriate */
-		if (keyptr->args == CURSOR_MOVED)
-		{
-			/* the < and > keys have FRNT,
-			 * but it shouldn't be applied yet
-			 */
-			tcurs = adjmove(&cursor, tcurs, 0);
-		}
-		else
-		{
-			tcurs = adjmove(&cursor, tcurs, (int)keyptr->flags);
-		}
-
-		/* was that the end of a d/c/y/</>/! command? */
-		if (prevkey && ((keyptr->flags & MVMT)
-					       || V_from
-				) && count == 0L)
-		{
-			/* turn off the hilight */
-			V_from = 0L;
-
-			/* if the movement command failed, cancel operation */
-			if (tcurs == NULL)
-			{
-				prevkey = 0;
-				count = 0;
+		/* If dot, set the cmd and motion structures. */
+		if (vp->key == '.') {
+			if (dot.key == '\0') {
+				bell();
+				msg("No commands executed.");
 				continue;
 			}
-
-			/* make sure range=front and tcurs=rear.  Either way,
-			 * leave cursor=range since that's where we started.
-			 */
-			cursor = *range;
-			if (tcurs->lno < range->lno)
-			{
-				range = tcurs;
-				tcurs = &cursor;
-			}
-
-			/* The 'w' and 'W' destinations should never take us
-			 * to the front of a line.  Instead, they should take
-			 * us only to the end of the preceding line.
-			 */
-			if ((keyptr->flags & (MVMT|NREL|LNMD|FRNT|INCL)) == MVMT
-			  && range->lno < tcurs->lno
-			  && (tcurs->lno > nlines || tcurs == m_front(tcurs, 0L)))
-			{
-				(void)file_line(curf, --tcurs->lno, &len);
-				tcurs->cno = len;
-			}
-
-			/* adjust for line mode & inclusion of last char/line */
-			i = (keyptr->flags | vikeys[prevkey].flags);
-#ifndef CRUNCH
-			if (force_lnmd)
-			{
-				i |= (INCL|LNMD);
-			}
-#endif
-			switch (i & (INCL|LNMD))
-			{
-			  case INCL:
-				tcurs->cno++;
-				break;
-
-			  case INCL|LNMD:
-				tcurs->lno++;
-				/* fall through... */
-
-			  case LNMD:
-				tcurs->cno = range->cno = 1;
-				break;
-			}
-
-			/* run the function */
-			tcurs = (*vikeys[prevkey].func)(range, tcurs);
-			if (mode == MODE_VI)
-			{
-				(void)adjmove(&cursor, &cursor, 0);
-				cursor = *adjmove(&cursor, tcurs, (int)vikeys[prevkey].flags);
-				scr_cchange();
-			}
-
-			/* cleanup */
-			prevkey = 0;
+			vp = &dot;
+			mp = &dotmotion;
 		}
-		else if (!prevkey)
-		{
-			cursor = *tcurs;
-			scr_cchange();
+
+		/* V/v commands require movement commands. */
+		if (V_from && !(flags & V_MOVE)) {
+			bell();
+			msg("%s: not a movement command", vp->key);
+			continue;
+		}
+
+		/*
+		 * If require motion get the motion command and get
+		 * the resulting mark.
+		 */
+		if (flags & V_MOTION) {
+			if (getcmd(&motion, vp->key)) {
+				bell();
+				continue;
+			}
+			mp = &motion;
+		}
+
+		/* Get resulting motion mark. */
+		if (mp != NULL &&
+		    (mp->kp->func)(mp, &cursor, &vp->motion))
+			continue;
+
+		/* Get any associated keyword. */
+		if (flags & V_KEYW && getkeyword(vp, flags))
+			continue;
+
+		/* Set the cut buffer. */
+		if (vp->buffer)
+			cutname(vp->buffer);
+
+		/* If a non-relative movement, set the '' mark. */
+		if (flags & V_ABS)
+			mark_def(&cursor);
+
+		/* Call the function, get the resulting mark. */
+		if ((vp->kp->func)(vp, &cursor, &cursor))
+			continue;
+
+		/* Update the screen. */
+		scr_cchange();
+
+		/*
+		 * If that command took us out of vi mode, then exit
+		 * the loop without further action.
+		 */
+		if (mode != MODE_VI) {
+			move(LINES - 1, 0);
+			clrtoeol();
+			refresh();
+			break;
+		}
+
+		/* Set the dot variables, if necessary . */
+		if (flags & V_DOT) {
+			dot = cmd;
+			dotmotion = motion;
 		}
 	}
 }
 
-/* This function adjusts the MARK value that they return; here we make sure
- * it isn't past the end of the line, and that the column hasn't been
- * *accidentally* changed.
+#define	KEY(k) {							\
+	if (((k) = getkey(WHEN_VICMD)) < 0 || (k) > MAXVIKEY) {		\
+		bell();							\
+		return (NULL);						\
+	}								\
+	if ((k) == ESCAPE) {						\
+		if (!ismotion)						\
+			bell();						\
+		return (NULL);						\
+	}								\
+}
+
+#define	GETCOUNT(count) {						\
+	count = 0;							\
+	do {								\
+		hold = count * 10 + key - '0';				\
+		if (count > hold) {					\
+			msg("Number larger than %lu\n", ULONG_MAX);	\
+			return (NULL);					\
+		}							\
+		count = hold;						\
+		KEY(key);						\
+	} while (isdigit(key));						\
+}
+
+/*
+ * getcmd --
+ *
+ * The command structure for vi is less complex than ex (and don't think
+ * I'm not grateful!)  The command syntax is:
+ *
+ *	[buffer] [count] key [[motion] | [buffer] [character]]
+ *
+ * and there are several special cases.  The motion value is itself a vi
+ * command, with the syntax:
+ *
+ *	[count] key [character]
  */
-MARK *
-adjmove(old, new, flags)
-	MARK		*old;	/* the cursor position before the command */
-	REG MARK	*new;	/* the cursor position after the command */
-	int		flags;	/* various flags regarding cursor mvmt */
+static int
+getcmd(vp, ismotion)
+	VICMDARG *vp;
+	int ismotion;		/* Previous key if getting motion component. */
 {
-	int needclear;
-	static int	colno;	/* the column number that we want */
-	REG char	*stext, *text;	/* used to scan through the line's text */
-	size_t len;
-	REG int		i;
+	register VIKEYS *kp;
+	register u_long count;
+	register u_int flags;
+	u_long hold;
+	int key;
 
-	/* if the command failed, bag it! */
-	if (new == NULL)
-	{
+	bzero(vp, sizeof(vp));
+
+	if (ismotion) {
+		/* 'C' and 'D' imply motion to the end-of-line. */
+		if (ismotion == 'C' || ismotion == 'D')
+			key = '$';
+	} else {
+		/* Pick up optional buffer. */
+		KEY(key);
+		if (key == '"') {
+			KEY(key);
+			if (!isalnum(key))
+				goto ebuf;
+			vp->buffer = key;
+			KEY(key);
+		}
+	}
+
+	/*
+	 * Pick up optional count.  Special case, a leading 0 is not a count,
+	 * it's a command.
+	 */
+	if (isdigit(key) && key != '0') {
+		GETCOUNT(vp->count);
+		vp->flags |= VC_C1SET;
+	}
+
+	/* Find the command. */
+	kp = vp->kp = &vikeys[vp->key = key];
+	if (ismotion) {
+		/*
+		 * Commands that have motion components can be doubled to
+		 * imply the current line, i.e. * "dd" is the same as "d_".
+		 */
+		if (ismotion == key)
+			kp = vp->kp = &vikeys[vp->key = '_'];
+
+		/*
+		 * Special case: c[wW] converted to c[eE].
+		 *
+		 * Wouldn't work right at the end of a word unless backspace
+		 * one character before doing the move.  This will fix most
+		 * cases.
+		 * XXX
+		 * But not all.
+		 */
+		if (ismotion == 'c' && key == 'W' || key == 'w') {
+			kp = vp->kp = &vikeys[vp->key = key == 'W' ? 'E' : 'e'];
+			if (cursor.cno && (key == 'e' || key == 'E'))
+				--cursor.cno;
+		}
+	}
+
+	if (kp->func == NULL) {
 		bell();
-		return old;
+		msg("%s isn't a command.", charname(key));
+		return (1);
 	}
 
-	/* if this is a non-relative movement, set the '' mark */
-	if (flags & NREL)
-	{
-		mark[26] = *old;
-	}
+	flags = kp->flags;
 
-	/* make sure it isn't past the end of the file */
-	if (new->lno < 1)
-	{
-		new->lno = 1;
-	}
-	else if (new->lno > nlines)
-	{
-		new->lno = nlines;
-	}
+	/* Check for illegal count. */
+	if (vp->flags & VC_C1SET && !flags & V_CNT)
+		goto usage;
 
-	/* fetch the new line */
-	stext = text = file_line(curf, new->lno, &len);
+	/* Illegal motion command. */
+	if (ismotion)
+		if (!(flags & V_MOVE))
+			goto usage;
+	else {
+		/* Illegal buffer. */
+		if (!(flags & V_OBUF) && vp->buffer)
+			goto usage;
 
-	/* move to the front, if we're supposed to */
-	if (flags & FRNT)
-	{
-		new = m_front(new, 1L);
-	}
-
-	/* change the column#, or change the mark to suit the column# */
-	if (!(flags & NCOL))
-	{
-		/* change the column# */
-		i = new->cno;
-		if (len > 0)
-		{
-			if (i >= len)
-			{
-				new->cno = len;
+		/* Required buffer. */
+		if (flags & V_RBUF) {
+			KEY(key);
+			if (key != '"')
+				goto usage;
+			KEY(key);
+			if (!isalnum(vp->buffer)) {
+ebuf:				bell();
+				msg("Buffer names are [0-9A-Za-z].");
+				return (1);
 			}
-			colno = new->cno;
+			vp->buffer = key;
 		}
-		else
-		{
-			new->cno = 1;
-			colno = 0;
-		}
-	}
-	else
-	{
-		/* adjust the mark to get as close as possible to column# */
-		for (i = 0, text = stext; i <= colno && *text; text++)
-		{
-			if (*text == '\t' && !ISSET(O_LIST))
-			{
-				i += LVAL(O_TABSTOP) - (i % LVAL(O_TABSTOP));
-			}
-			else if ((u_char)(*text) < ' ' || *text == 127)
-			{
-				i += 2;
-			}
-			else
-			{
-				i++;
+
+		/*
+		 * Special case: '[' and ']' commands.  Doesn't the fact
+		 * that the *single* character doesn't mean anything but
+		 * the *doubled* character does just frost your shorts?
+		 */
+		if (vp->key == '[' || vp->key == ']') {
+			KEY(key);
+			if (vp->key != key) {
+usage:				bell();
+				msg("Usage: %s", ismotion ?
+				    vikeys[ismotion].usage : kp->usage);
+				return (1);
 			}
 		}
-		if (text > stext)
-		{
-			text--;
+		/* Special case: 'z' command. */
+		if (vp->key == 'z') {
+			KEY(key);
+			if (isdigit(key)) {
+				GETCOUNT(vp->count2);
+				vp->flags |= VC_C2SET;
+			}
+			vp->character = key;
 		}
-		new->cno = text - stext;
 	}
-	return (new);
+
+	/* Required character. */
+	if (flags & V_CHAR)
+		KEY(vp->character);
+
+	return (0);
+}
+
+static int
+getkeyword(kp, flags)
+	VICMDARG *kp;
+	u_int flags;
+{
+	register size_t beg, end, key;
+	size_t len;
+	char *p;
+
+	p = file_gline(curf, cursor.lno, &len);
+
+	/* May not be a keyword at all. */
+	if (!len || !inword(p[cursor.cno])) {
+		bell();
+		if (ISSET(O_VERBOSE))
+			msg("Cursor not in a word.");
+		return (1);
+	}
+
+	/* Find the beginning/end of the keyword. */
+	if (beg = cursor.cno) {
+		do {
+			--beg;
+		} while (inword(p[beg]) && beg > 0);
+		++beg;
+	}
+	for (end = cursor.cno; ++end < len && inword(p[end]););
+	--end;
+	
+	/*
+	 * Getting a keyword implies moving the cursor to its beginning.
+	 * Refresh now, even though not likely to be necessary.
+	 */
+	if (beg != cursor.cno) {
+		cursor.cno = beg;
+		scr_cchange();
+		refresh();
+	}
+
+	/* Note where the keyword starts and stops, so we can replace it. */
+	kp->kcstart = beg;
+	kp->kcstop = end;
+
+	len = end - beg + 1;
+	if (kp->klen <= len) {
+		kp->klen += len + 50;
+		if ((kp->keyword = realloc(kp->keyword, kp->klen)) == NULL) {
+			bell();
+			msg("Keyword too large: %s", strerror(errno));
+			return (1);
+		}
+	}
+	bcopy(p + beg, kp->keyword, len);
+	kp->keyword[len] = '\0';			/* XXX */
+	return (0);
 }
