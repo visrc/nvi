@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_run.c,v 8.13 1997/08/03 15:31:34 bostic Exp $ (Berkeley) $Date: 1997/08/03 15:31:34 $";
+static const char sccsid[] = "$Id: ip_run.c,v 8.14 2000/06/24 18:54:50 skimo Exp $ (Berkeley) $Date: 2000/06/24 18:54:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -141,8 +141,8 @@ vi_run(argc, argv, ip, op, pidp)
 		 * (debugging) nvi, run it, otherwise run the user's path,
 		 * if specified, else run the compiled in path.
 		 */
-		if (!pflag && stat("vi", &sb) == 0)
-			execv("vi", argv);
+		if (!pflag && stat("vi-ipc", &sb) == 0)
+			execv("vi-ipc", argv);
 		execv(execp, argv);
 		(void)fprintf(stderr,
 		    "%s: %s %s\n", vi_progname, execp, strerror(errno));

@@ -36,7 +36,7 @@ VIOBJS= api.o cut.o db.o delete.o ex.o ex_abbrev.o ex_append.o ex_args.o \
 	ex_put.o ex_quit.o ex_read.o ex_screen.o ex_script.o ex_set.o \
 	ex_shell.o ex_shift.o ex_source.o ex_stop.o ex_subst.o ex_tag.o \
 	ex_tcl.o ex_txt.o ex_undo.o ex_usage.o ex_util.o ex_version.o \
-	ex_visual.o ex_write.o ex_yank.o ex_z.o exf.o getc.o key.o \
+	ex_visual.o ex_write.o ex_yank.o ex_z.o exf.o getc.o gs.o key.o \
 	log.o main.o mark.o msg.o options.o options_f.o put.o recover.o \
 	screen.o search.o seq.o trace.o util.o v_at.o v_ch.o v_cmd.o \
 	v_delete.o v_event.o v_ex.o v_increment.o v_init.o v_itxt.o \
@@ -46,13 +46,17 @@ VIOBJS= api.o cut.o db.o delete.o ex.o ex_abbrev.o ex_append.o ex_args.o \
 	v_word.o v_xchar.o v_yank.o v_z.o v_zexit.o vi.o vs_line.o \
 	vs_msg.o vs_refresh.o vs_relative.o vs_smap.o vs_split.o
 
-all: vi @vi_motif@
+all: vi vi-ipc @vi_motif@
 
-VIALL=	$(CLOBJS) $(IPOBJS) $(VIOBJS) @cobjs@ @LIBOBJS@
+VIALL=	$(CLOBJS) $(VIOBJS) @cobjs@ @LIBOBJS@
 vi ex: $(VIALL)
 	$(SHRPENV) $(CC) $(LDFLAGS) -o $@ $(VIALL) @LIBS@
 	-$(rm) -f ex
 	$(ln) $@ ex
+
+IPALL=	$(IPOBJS) $(VIOBJS) @cobjs@ @LIBOBJS@
+vi-ipc:	$(IPALL)
+	$(SHRPENV) $(CC) $(LDFLAGS) -o $@ $(IPALL) @LIBS@
 
 MALL=	m_main.o m_cde.o trace.o libmvi.a
 vi_motif: $(MALL)
@@ -246,7 +250,7 @@ ip_term.o: $(srcdir)/ip/ip_term.c
 	$(CC) $(CFLAGS) $?
 
 # VI is the binary that the client programs run.
-VI=-DVI=\"$(bindir)/`echo vi | sed '$(transform)'`\"
+VI=-DVI=\"$(bindir)/`echo vi-ipc | sed '$(transform)'`\"
 
 # Shared IP client sources.
 ip_run.o: $(srcdir)/ipc/ip_run.c
@@ -316,6 +320,8 @@ dldb.o: $(srcdir)/common/dldb.c
 delete.o: $(srcdir)/common/delete.c
 	$(CC) $(CFLAGS) $?
 exf.o: $(srcdir)/common/exf.c
+	$(CC) $(CFLAGS) $?
+gs.o: $(srcdir)/common/gs.c
 	$(CC) $(CFLAGS) $?
 key.o: $(srcdir)/common/key.c
 	$(CC) $(CFLAGS) $?

@@ -4,7 +4,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: ip.h,v 8.20 2000/05/07 19:49:42 skimo Exp $ (Berkeley) $Date: 2000/05/07 19:49:42 $
+ *	$Id: ip.h,v 8.21 2000/06/24 18:54:50 skimo Exp $ (Berkeley) $Date: 2000/06/24 18:54:50 $
  */
 
 extern int vi_ifd;		/* Input file descriptor. */
@@ -12,6 +12,10 @@ extern int vi_ofd;		/* Output file descriptor. */
 
 typedef struct _ip_private {
 	int	 i_fd;		/* Input file descriptor. */
+ 	int 	 o_fd;		/* Output file descriptor. */
+
+ 	int	 argc;
+ 	char	**argv;
 
 	size_t	 row;		/* Current row. */
 	size_t	 col;		/* Current column. */

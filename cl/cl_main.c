@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_main.c,v 10.46 1997/08/02 16:48:14 bostic Exp $ (Berkeley) $Date: 1997/08/02 16:48:14 $";
+static const char sccsid[] = "$Id: cl_main.c,v 10.47 2000/06/24 18:54:49 skimo Exp $ (Berkeley) $Date: 2000/06/24 18:54:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,7 +38,6 @@ sigset_t __sigblockset;				/* GLOBAL: Blocked signals. */
 static void	   cl_func_std __P((GS *));
 static void	   cl_end __P((CL_PRIVATE *));
 static CL_PRIVATE *cl_init __P((GS *));
-static GS	  *gs_init __P((char *));
 static void	   perr __P((char *, char *));
 static int	   setsig __P((int, struct sigaction *, void (*)(int)));
 static void	   sig_end __P((GS *));
@@ -58,7 +57,7 @@ main(argc, argv)
 	GS *gp;
 	size_t rows, cols;
 	int rval;
-	char *ip_arg, **p_av, **t_av, *ttype;
+	char **p_av, **t_av, *ttype;
 
 	/* If loaded at 0 and jumping through a NULL pointer, stop. */
 	if (reenter++)
@@ -72,7 +71,6 @@ main(argc, argv)
 	 * no way to portably call getopt twice, so arguments parsed here must
 	 * be removed from the argument list.
 	 */
-	ip_arg = NULL;
 	for (p_av = t_av = argv;;) {
 		if (*t_av == NULL) {
 			*p_av = NULL;
@@ -82,29 +80,9 @@ main(argc, argv)
 			while ((*p_av++ = *t_av++) != NULL);
 			break;
 		}
-		if (!memcmp(*t_av, "-I", sizeof("-I") - 1)) {
-			if (t_av[0][2] != '\0') {
-				ip_arg = t_av[0] + 2;
-				++t_av;
-				--argc;
-				continue;
-			}
-			if (t_av[1] != NULL) {
-				ip_arg = t_av[1];
-				t_av += 2;
-				argc -= 2;
-				continue;
-			}
-		}
 		*p_av++ = *t_av++;
 	}
 
-	/*
-	 * If we're being called as an editor library, we're done here, we
-	 * get loaded with the curses screen, we don't share much code.
-	 */
-	if (ip_arg != NULL)
-		exit (ip_main(argc, argv, gp, ip_arg));
 		
 	/* Create and initialize the CL_PRIVATE structure. */
 	clp = cl_init(gp);
@@ -176,31 +154,6 @@ main(argc, argv)
 #endif
 
 	exit (rval);
-}
-
-/*
- * gs_init --
- *	Create and partially initialize the GS structure.
- */
-static GS *
-gs_init(name)
-	char *name;
-{
-	GS *gp;
-	char *p;
-
-	/* Figure out what our name is. */
-	if ((p = strrchr(name, '/')) != NULL)
-		name = p + 1;
-
-	/* Allocate the global structure. */
-	CALLOC_NOMSG(NULL, gp, GS *, 1, sizeof(GS));
-	if (gp == NULL)
-		perr(name, NULL);
-
-
-	gp->progname = name;
-	return (gp);
 }
 
 /*

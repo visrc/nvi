@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_main.c,v 8.10 1997/08/02 16:48:59 bostic Exp $ (Berkeley) $Date: 1997/08/02 16:48:59 $";
+static const char sccsid[] = "$Id: ip_main.c,v 8.11 2000/06/24 18:54:50 skimo Exp $ (Berkeley) $Date: 2000/06/24 18:54:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,15 +22,20 @@ static const char sccsid[] = "$Id: ip_main.c,v 8.10 1997/08/02 16:48:59 bostic E
 #include <string.h>
 #include <unistd.h>
 
+#include <sys/uio.h>
+#include <pthread.h>
+
 #include "../common/common.h"
 #include "../ipc/ip.h"
 #include "extern.h"
 
 int vi_ofd;				/* GLOBAL: known to vi_send(). */
+GS *__global_list;				/* GLOBAL: List of screens. */
 
 static void	   ip_func_std __P((GS *));
-static IP_PRIVATE *ip_init __P((GS *, char *));
+static IP_PRIVATE *ip_init __P((GS *gp, int i_fd, int o_fd, int argc, char *argv[]));
 static void	   perr __P((char *, char *));
+static void run_editor __P((void * vp));
 
 /*
  * ip_main --
@@ -39,19 +44,94 @@ static void	   perr __P((char *, char *));
  * PUBLIC: int ip_main __P((int, char *[], GS *, char *));
  */
 int
-ip_main(argc, argv, gp, ip_arg)
+main(argc, argv)
 	int argc;
-	char *argv[], *ip_arg;
-	GS *gp;
+	char *argv[];
 {
-	EVENT ev;
 	IP_PRIVATE *ipp;
-	IP_BUF ipb;
 	int rval;
+	char *ip_arg;
+	char **p_av, **t_av;
+	GS *gp;
+	int i_fd, o_fd, main_ifd, main_ofd;
+	char *ep;
+
+	/* Create and initialize the global structure. */
+	__global_list = gp = gs_init(argv[0]);
+
+	/*
+	 * Strip out any arguments that vi isn't going to understand.  There's
+	 * no way to portably call getopt twice, so arguments parsed here must
+	 * be removed from the argument list.
+	 */
+	ip_arg = NULL;
+	for (p_av = t_av = argv;;) {
+		if (*t_av == NULL) {
+			*p_av = NULL;
+			break;
+		}
+		if (!strcmp(*t_av, "--")) {
+			while ((*p_av++ = *t_av++) != NULL);
+			break;
+		}
+		if (!memcmp(*t_av, "-I", sizeof("-I") - 1)) {
+			if (t_av[0][2] != '\0') {
+				ip_arg = t_av[0] + 2;
+				++t_av;
+				--argc;
+				continue;
+			}
+			else if (t_av[1] != NULL) {
+				ip_arg = t_av[1];
+				t_av += 2;
+				argc -= 2;
+				continue;
+			}
+		}
+		*p_av++ = *t_av++;
+	}
+
+	/*
+	 * Crack ip_arg -- it's of the form #.#, where the first number is the
+	 * file descriptor from the screen, the second is the file descriptor
+	 * to the screen.
+	 */
+	if (!isdigit(ip_arg[0]))
+		goto usage;
+	i_fd = strtol(ip_arg, &ep, 10);
+	if (ep[0] != '.' || !isdigit(ep[1]))
+		goto usage;
+	o_fd = strtol(++ep, &ep, 10);
+	if (ep[0] != '\0') {
+usage:		ip_usage();
+		return (NULL);
+	}
 
 	/* Create and partially initialize the IP structure. */
-	if ((ipp = ip_init(gp, ip_arg)) == NULL)
+	if ((ipp = ip_init(gp, i_fd, o_fd, argc, argv)) == NULL)
 		return (1);
+
+	run_editor((void *)gp);
+
+	/* Free the global and IP private areas. */
+#if defined(DEBUG) || defined(PURIFY) || defined(LIBRARY)
+	free(gp);
+#endif
+	exit (rval);
+}
+
+static void 
+run_editor(void * vp)
+{
+	GS *gp;
+	IP_PRIVATE *ipp;
+	EVENT ev;
+	int rval;
+	IP_BUF ipb;
+
+	gp = (GS *)vp;
+
+	ipp = gp->ip_private;
 
 	/* Add the terminal type to the global structure. */
 	if ((OG_D_STR(gp, GO_TERM) =
@@ -64,18 +144,18 @@ ip_main(argc, argv, gp, ip_arg)
 	 */
 	for (;;) {
 		if (ip_event(NULL, &ev, 0, 0))
-			return (1);
+			return;
 		if (ev.e_event == E_WRESIZE)
 			break;
 		if (ev.e_event == E_EOF || ev.e_event == E_ERR ||
 		    ev.e_event == E_SIGHUP || ev.e_event == E_SIGTERM)
-			return (1);
+			return;
 		if (ev.e_event == E_IPCOMMAND && ev.e_ipcom == VI_QUIT)
-			return (1);
+			return;
 	}
 
 	/* Run ex/vi. */
-	rval = editor(gp, argc, argv);
+	rval = editor(gp, ipp->argc, ipp->argv);
 
 	/* Clean up the screen. */
 	(void)ip_quit(gp);
@@ -87,12 +167,9 @@ ip_main(argc, argv, gp, ip_arg)
 	/* Give the screen a couple of seconds to deal with it. */
 	sleep(2);
 
-	/* Free the global and IP private areas. */
 #if defined(DEBUG) || defined(PURIFY) || defined(LIBRARY)
 	free(ipp);
-	free(gp);
 #endif
-	return (rval);
 }
 
 /*
@@ -100,12 +177,9 @@ ip_main(argc, argv, gp, ip_arg)
  *	Create and partially initialize the GS structure.
  */
 static IP_PRIVATE *
-ip_init(gp, ip_arg)
-	GS *gp;
-	char *ip_arg;
+ip_init(GS *gp, int i_fd, int o_fd, int argc, char *argv[])
 {
 	IP_PRIVATE *ipp;
-	char *ep;
 
 	/* Allocate the IP private structure. */
 	CALLOC_NOMSG(NULL, ipp, IP_PRIVATE *, 1, sizeof(IP_PRIVATE));
@@ -113,22 +187,12 @@ ip_init(gp, ip_arg)
 		perr(gp->progname,  NULL);
 	gp->ip_private = ipp;
 
-	/*
-	 * Crack ip_arg -- it's of the form #.#, where the first number is the
-	 * file descriptor from the screen, the second is the file descriptor
-	 * to the screen.
-	 */
-	if (!isdigit(ip_arg[0]))
-		goto usage;
-	ipp->i_fd = strtol(ip_arg, &ep, 10);
-	if (ep[0] != '.' || !isdigit(ep[1]))
-		goto usage;
-	vi_ofd = strtol(++ep, &ep, 10);
-	if (ep[0] != '\0') {
-usage:		ip_usage();
-		return (NULL);
-	}
-
+	ipp->i_fd = i_fd;
+ 	vi_ofd = ipp->o_fd = o_fd;
+ 
+ 	ipp->argc = argc;
+ 	ipp->argv = argv;
+ 
 	/* Initialize the list of ip functions. */
 	ip_func_std(gp);
 
