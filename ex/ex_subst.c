@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.24 1993/12/09 19:42:46 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:42:46 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.25 1993/12/17 16:22:38 bostic Exp $ (Berkeley) $Date: 1993/12/17 16:22:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -327,7 +327,7 @@ substitute(sp, ep, cmdp, s, re, flags)
 	MARK from, to;
 	recno_t elno, lno, lastline;
 	size_t blen, cnt, last, lbclen, lblen, len, offset;
-	int do_eol_match, eflags, eval, linechanged, quit;
+	int do_eol_match, eflags, empty_ok, eval, linechanged, quit;
 	int cflag, gflag, lflag, nflag, pflag, rflag;
 	char *bp, *lb;
 
@@ -458,6 +458,9 @@ usage:		msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
 		/* Reset the buffer pointer. */
 		lbclen = 0;
 
+		/* Reset empty match flag. */
+		empty_ok = 1;
+
 		/*
 		 * We don't want to have to do a setline if the line didn't
 		 * change -- keep track of whether or not this line changed.
@@ -491,6 +494,55 @@ skipmatch:	eval = regexec(re,
 		if (eval != 0) {
 			re_error(sp, eval, re);
 			goto ret1;
+		}
+
+		/*
+		 * !!!
+		 * It's possible to match 0-length strings -- for example, the
+		 * command s;a*;X;, when matched against the string "aabb" will
+		 * result in "XbXbX", i.e. the matches are "aa", the space
+		 * between the b's and the space between the b's and the end of
+		 * the string.  There is a similar space between the beginning
+		 * of the string and the a's.  The rule that we use (because vi
+		 * historically used it) is that any 0-length match, occurring
+		 * immediately after a match, is ignored.  Otherwise, the above
+		 * example would have resulted in "XXbXbX".  Another example is
+		 * incorrectly using " *" to replace groups of spaces with one
+		 * space.
+		 *
+		 * The way we do this is that if we just had a successful match,
+		 * the starting offset does not skip characters, and the match
+		 * is empty, ignore the match and move forward.  If there's no
+		 * more characters in the string, we were attempting to match
+		 * after the last character, so quit.
+		 */
+		if (!empty_ok && sp->match[0].rm_so == sp->match[0].rm_eo) {
+			empty_ok = 1;
+
+			/*
+			 * Can't get here if !gflag or !linechanged, so just
+			 * test cflag.  Same logic also guarantees that offset
+			 * has been initialized.
+			 */
+			if (cflag) {
+				if (sp->match[0].rm_so == offset) {
+					if (len == offset)
+						goto endmatch;
+					BUILD(sp, s, 1)
+					++s;
+					--len;
+					sp->match[0].rm_eo = len;
+					goto skipmatch;
+				}
+			} else
+				if (sp->match[0].rm_so == 0) {
+					if (!len)
+						goto endmatch;
+					BUILD(sp, s, 1)
+					++s;
+					--len;
+					goto nextmatch;
+				}
 		}
 
 		/* Confirm change. */
@@ -564,21 +616,12 @@ skipmatch:	eval = regexec(re,
 		/* Set the change flag so we know this line was modified. */
 		linechanged = 1;
 
-		/*
-		 * Move the pointers past the matched bytes.  One very special
-		 * case is that it's possible to match strings of 0 length.
-		 * A common example is trying to use " *" to replace groups of
-		 * spaces with a single space.  Guarantee that we move forward,
-		 * but not if we're matching the 0 length string after the last
-		 * character in the line.
-		 */
+		/* Move the pointers past the matched bytes. */
 skip:		s += sp->match[0].rm_eo;
 		len -= sp->match[0].rm_eo;
-		if (len && sp->match[0].rm_so == sp->match[0].rm_eo) {
-			BUILD(sp, s, 1)
-			++s;
-			--len;
-		}
+
+		/* Got a match, turn off empty patterns. */
+		empty_ok = 0;
 
 		/* Only the first search matches anchored expression. */
 		eflags |= REG_NOTBOL;
@@ -634,36 +677,30 @@ skip:		s += sp->match[0].rm_eo;
 				lastline = lno;
 			}
 
+			/*
+			 * Do a test for the after the string match.  Set
+			 * REG_NOTEOL so the '$' pattern only matches once.
+			 */
+			if (!do_eol_match)
+				goto endmatch;
+
+			if (offset == len) {
+				do_eol_match = 0;
+				eflags |= REG_NOTEOL;
+			}
+
 			/* Start in the middle of the line. */
 			sp->match[0].rm_so = offset;
 			sp->match[0].rm_eo = len;
 
-			/*
-			 * If it's global, continue.
-			 *
-			 * NB: It's possible to match 0-length strings, and we
-			 * behave as if such a string matches the space before
-			 * the first character in the string and after the last
-			 * character in the string.  (This is how the historic
-			 * vi did it.)  So, do one more check after reaching
-			 * the end of the string.  Set REG_NOTEOL so the '$'
-			 * pattern only matches once.  One possible bug is that
-			 * the '$' pattern will match BEFORE the empty match
-			 * after the last character matches.  (The '^' matching
-			 * doesn't share the problem because the first match
-			 * will force you past the matching location.) I don't
-			 * see any reasonable way to fix this now.
-			 */
-			if (do_eol_match) {
-				if (offset == len) {
-					do_eol_match = 0;
-					eflags |= REG_NOTEOL;
-				}
-				goto skipmatch;
-			}
+			goto skipmatch;
 		}
 
-		/* If it's global ... (see comment immediately above). */
+		/*
+		 * If it's a global:
+		 * Do a test for the after the string match.  Set
+		 * REG_NOTEOL so the '$' pattern only matches once.
+		 */
 		if (gflag && do_eol_match) {
 			if (!len) {
 				do_eol_match = 0;
