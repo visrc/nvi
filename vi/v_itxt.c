@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 5.17 1992/11/03 17:49:00 bostic Exp $ (Berkeley) $Date: 1992/11/03 17:49:00 $";
+static char sccsid[] = "$Id: v_itxt.c,v 5.18 1992/11/03 19:31:43 bostic Exp $ (Berkeley) $Date: 1992/11/03 19:31:43 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -30,6 +30,8 @@ static char sccsid[] = "$Id: v_itxt.c,v 5.17 1992/11/03 17:49:00 bostic Exp $ (B
 #define	N_EMARK		0x02		/* End of replacement mark. */
 #define	N_OVERWRITE	0x04		/* Overwrite characters. */
 #define	N_REPLACE	0x08		/* Replace; don't delete overwrite. */
+
+#define	END_CH		'$'		/* End-of-change character. */
 
 #define	SCREEN_UPDATE {							\
 	scr_cchange(curf);						\
@@ -491,7 +493,7 @@ newtext(vp, tm, p, len, rp, flags)
 		 * Copy the current line into the buffer for editing.  Set
 		 * insert and overwrite marks.  Overwrite implies insert
 		 * after overwrite.  No overwrite implies insert.  If changing
-		 * to some mark, flag it with CHEND and refresh the screen.
+		 * to some mark, flag it with END_CH and refresh the screen.
 		 */
 		if (binc(&ib.ilb, &ib.ilblen, len)) {
 			eval = 1;
@@ -506,7 +508,7 @@ newtext(vp, tm, p, len, rp, flags)
 			insert = len - curf->cno;
 		}
 		if (flags & N_EMARK) {
-			ib.ilb[tm->cno - 1] = CHEND;
+			ib.ilb[tm->cno - 1] = END_CH;
 			scr_update(curf, ib.start.lno, ib.ilb, len, LINE_RESET);
 			refresh();
 		}
