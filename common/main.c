@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.79 1994/04/14 10:18:01 bostic Exp $ (Berkeley) $Date: 1994/04/14 10:18:01 $";
+static char sccsid[] = "$Id: main.c,v 8.80 1994/04/15 15:54:40 bostic Exp $ (Berkeley) $Date: 1994/04/15 15:54:40 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -267,7 +267,7 @@ main(argc, argv)
 	 * Source the system, environment, $HOME and local .exrc values.
 	 * Vi historically didn't check $HOME/.exrc if the environment
 	 * variable EXINIT was set.  This is all done before the file is
-	 * read in because things in the .exrc information can set, for
+	 * read in, because things in the .exrc information can set, for
 	 * example, the recovery directory.
 	 *
 	 * !!!
@@ -278,18 +278,8 @@ main(argc, argv)
 	 * otherwise the historic ones.
 	 *
 	 * !!!
-	 * According to O'Reilly ("Learning the VI Editor", Fifth Ed., May
-	 * 1992, page 106), System V release 3.2 and later, has an option
-	 * "[no]exrc", causing vi to not "read .exrc files in the current
-	 * directory unless the exrc option in the home directory's .exrc
-	 * file" was set.  The problem that this (hopefully) solves is that
-	 * on System V you can give away files, so there's no possible test
-	 * we can make to determine that the file is safe.
-	 *
-	 * We initialize the exrc variable to off.  If it's explicitly turned
-	 * off by the user, then we never read the local .exrc file.  If the
-	 * user didn't initialize it or initialized it to on, we make all of
-	 * the standard checks of the file before reading it.
+	 * For a discussion of permissions and when what .exrc files are
+	 * read, see the the comment above the exrc_isok() function below.
 	 *
 	 * !!!
 	 * If the user started the historic of vi in $HOME, vi read the user's
@@ -336,7 +326,7 @@ main(argc, argv)
 			}
 		}
 
-		if (!F_ISSET(&sp->opts[O_EXRC], OPT_SET) || O_ISSET(sp, O_EXRC))
+		if (O_ISSET(sp, O_EXRC))
 			switch (exrc_isok(sp, &lsb, _PATH_NEXRC, 0)) {
 			case NOEXIST:
 				if (exrc_isok(sp, &lsb, _PATH_EXRC, 0) == OK &&
@@ -650,7 +640,38 @@ h_winch(signo)
 
 /*
  * exrc_isok --
- *	Check a .exrc for source-ability.
+ *	Check a .exrc file for source-ability.
+ *
+ * !!!
+ * Historically, vi read both $HOME and local .exrc file if they were owned
+ * by the user's real ID, or the "sourceany" option was set, regardless of
+ * any other considerations.  We no longer support the sourceany option as
+ * it's a security problem of mammoth proportions.  We require that the file
+ * be owned by root (for the system .exrc files) or the user's effective ID
+ * (for any of the .exrc files), and require that it not be writeable by
+ * anyone other than the owner.
+ * 
+ * In O'Reilly ("Learning the VI Editor", Fifth Ed., May 1992, page 106),
+ * it notes that System V release 3.2 and later has an option "[no]exrc".
+ * The behavior is that local .exrc files are read only if the exrc option
+ * is set.  The default for the exrc option was off, so, by default, local
+ * .exrc files were not read.  The problem this was intended to solve was
+ * that System V permitted users to give away files, so there's no possible
+ * ownership/writeability test that the file is safe.
+ * 
+ * POSIX 1003.2-1992 standardized exrc as an option.  It required the exrc
+ * option to be off by default, thus local .exrc files are not to be read
+ * by default.  The Rationale noted (incorrectly) that this was a change
+ * to historic practice, but correctly noted that a default of off improves
+ * system security.  POSIX also required that vi check the effective user
+ * ID instead of the real user ID, which is why we've switched from historic
+ * practice.
+ * 
+ * We initialize the exrc variable to off.  If it's turned on by the system
+ * or $HOME .exrc files, and the local .exrc file passes the ownership and
+ * writeability tests, then we read it.  This breaks historic 4BSD practice,
+ * but it gives us a measure of security on systems where users can give away
+ * files.
  */
 static enum rc
 exrc_isok(sp, sbp, path, rootok)
@@ -666,17 +687,8 @@ exrc_isok(sp, sbp, path, rootok)
 	if (stat(path, sbp))
 		return (NOEXIST);
 
-	/*
-	 * !!!
-	 * Historically, vi did not read the .exrc files if they were owned
-	 * by someone other than the user, unless the undocumented option
-	 * sourceany was set.  We don't support the sourceany option.  We
-	 * check that the user (or root, for system files) owns the file and
-	 * require that it not be writeable by anyone other than the owner.
-	 */
-
 	/* Owned by the user or root. */
-	uid = getuid();
+	uid = geteuid();
 	if (rootok) {
 		if (sbp->st_uid != uid && sbp->st_uid != 0) {
 			emsg = "not owned by you or root";
