@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: options.c,v 10.28 1996/03/06 19:50:41 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:50:41 $";
+static const char sccsid[] = "$Id: options.c,v 10.29 1996/03/14 21:24:40 bostic Exp $ (Berkeley) $Date: 1996/03/14 21:24:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1045,7 +1045,7 @@ opts_copy(orig, sp)
 
 		/* Copy the default string. */
 		if (O_D_STR(sp, cnt) != NULL &&
-		    o_set(sp, cnt, OS_DEF | OS_STR, O_D_STR(sp, cnt), 0)) {
+		    o_set(sp, cnt, OS_DEF | OS_STRDUP, O_D_STR(sp, cnt), 0)) {
 nomem:			msgq(orig, M_SYSERR, NULL);
 			rval = 1;
 		}
