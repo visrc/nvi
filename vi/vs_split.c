@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_split.c,v 10.21 1996/03/30 13:47:25 bostic Exp $ (Berkeley) $Date: 1996/03/30 13:47:25 $";
+static const char sccsid[] = "$Id: vs_split.c,v 10.22 1996/04/26 09:21:28 bostic Exp $ (Berkeley) $Date: 1996/04/26 09:21:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -60,6 +60,7 @@ vs_split(sp, new, ccl)
 	if (_HMAP(new) == NULL)
 		return (1);
 	_HMAP(new)->lno = sp->lno;
+	_HMAP(new)->off = 1;
 
 	/*
 	 * Small screens: see vs_refresh.c section 6a.  Set a flag so
