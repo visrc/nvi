@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.23 1992/05/21 12:56:51 bostic Exp $ (Berkeley) $Date: 1992/05/21 12:56:51 $";
+static char sccsid[] = "$Id: key.c,v 5.24 1992/05/27 10:28:23 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:28:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,14 +28,7 @@ static char sccsid[] = "$Id: key.c,v 5.23 1992/05/21 12:56:51 bostic Exp $ (Berk
 #include "term.h"
 #include "extern.h"
 
-#define	K_CR		1
-#define	K_ESCAPE	2
-#define	K_NL		3
-#define	K_VERASE	4
-#define	K_VKILL		5
-#define	K_VLNEXT	6
-#define	K_VWERASE	7
-static char special[UCHAR_MAX];		/* Special characters. */
+char special[UCHAR_MAX];		/* Special characters. */
 
 u_long cblen;				/* Buffer lengths. */
 char *qb;				/* Quote buffer. */
@@ -177,8 +170,8 @@ gb(prompt, storep, lenp, flags)
 				}
 				break;
 			}
-			--len;
 			--p;
+			--len;
 #ifndef NO_DIGRAPH
 			erased = *p;
 #endif
