@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.8 1993/08/26 10:30:22 bostic Exp $ (Berkeley) $Date: 1993/08/26 10:30:22 $
+ *	$Id: ex.h,v 8.9 1993/08/29 11:28:28 bostic Exp $ (Berkeley) $Date: 1993/08/29 11:28:28 $
  */
 
 struct _excmdarg;
@@ -19,24 +19,25 @@ typedef struct _excmdlist {
 #define	E_ADDR2		0x00002		/* Two address. */
 #define	E_ADDR2_ALL	0x00004		/* Zero/two addresses; zero == all. */
 #define	E_ADDR2_NONE	0x00008		/* Zero/two addresses; zero == none. */
-#define	E_FORCE		0x00010		/*  ! */
+#define	E_COUNT		0x00010		/* Count supplied. */
+#define	E_FORCE		0x00020		/*  ! */
 
-#define	E_F_CARAT	0x00020		/*  ^ flag. */
-#define	E_F_DASH	0x00040		/*  - flag. */
-#define	E_F_DOT		0x00080		/*  . flag. */
-#define	E_F_HASH	0x00100		/*  # flag. */
-#define	E_F_LIST	0x00200		/*  l flag. */
-#define	E_F_PLUS	0x00400		/*  + flag. */
-#define	E_F_PRINT	0x00800		/*  p flag. */
-#define	E_F_MASK	0x00fe0		/* Flag mask. */
-#define	E_F_PRCLEAR	0x01000		/* Clear the print (#, l, p) flags. */
+#define	E_F_CARAT	0x00040		/*  ^ flag. */
+#define	E_F_DASH	0x00080		/*  - flag. */
+#define	E_F_DOT		0x00100		/*  . flag. */
+#define	E_F_HASH	0x00200		/*  # flag. */
+#define	E_F_LIST	0x00400		/*  l flag. */
+#define	E_F_PLUS	0x00800		/*  + flag. */
+#define	E_F_PRINT	0x01000		/*  p flag. */
+#define	E_F_MASK	0x01fc0		/* Flag mask. */
+#define	E_F_PRCLEAR	0x02000		/* Clear the print (#, l, p) flags. */
 
-#define	E_NOGLOBAL	0x02000		/* Not in a global. */
-#define	E_NOPERM	0x04000		/* Permission denied for now. */
-#define	E_NORC		0x08000		/* Not from a .exrc or EXINIT. */
-#define	E_SETLAST	0x10000		/* Reset last command. */
-#define	E_ZERO		0x20000		/* 0 is a legal addr1. */
-#define	E_ZERODEF	0x40000		/* 0 is default addr1 of empty files. */
+#define	E_NOGLOBAL	0x04000		/* Not in a global. */
+#define	E_NOPERM	0x08000		/* Permission denied for now. */
+#define	E_NORC		0x10000		/* Not from a .exrc or EXINIT. */
+#define	E_SETLAST	0x20000		/* Reset last command. */
+#define	E_ZERO		0x40000		/* 0 is a legal addr1. */
+#define	E_ZERODEF	0x80000		/* 0 is default addr1 of empty files. */
 	u_int	 flags;
 	char	*syntax;		/* Syntax script. */
 	char	*usage;			/* Usage line. */
