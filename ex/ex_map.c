@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_map.c,v 9.3 1995/01/23 17:03:10 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:03:10 $";
+static char sccsid[] = "$Id: ex_map.c,v 9.4 1995/02/12 18:27:13 bostic Exp $ (Berkeley) $Date: 1995/02/12 18:27:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -84,9 +84,9 @@ ex_map(sp, cmdp)
 		if (seq_set(sp, NULL, 0, input, cmdp->argv[0]->len,
 		    cmdp->argv[1]->bp, cmdp->argv[1]->len, stype, SEQ_FUNCMAP))
 			return (1);
-		if (sp->e_fmap != NULL)
-			return (sp->e_fmap(sp, stype, input, cmdp->argv[0]->len,
-			    cmdp->argv[1]->bp, cmdp->argv[1]->len));
+		return (sp->e_fmap == NULL ? 0 :
+		    sp->e_fmap(sp, stype, input, cmdp->argv[0]->len,
+		    cmdp->argv[1]->bp, cmdp->argv[1]->len));
 	}
 
 	/* Some single keys may not be remapped in command mode. */
