@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: vi.in,v 8.3 1994/05/23 14:30:48 ah Exp $ (Berkeley) $Date: 1994/05/23 14:30:48 $
+.\"	$Id: vi.in,v 8.4 1996/06/27 19:53:57 bostic Exp $ (Berkeley) $Date: 1996/06/27 19:53:57 $
 .\"
 .EH 'USD:11-%''An Introduction to Display Editing with Vi'
 .OH 'An Introduction to Display Editing with Vi''USD:11-%'
@@ -1465,7 +1465,7 @@ command from
 .I EXINIT )
 with a command of the form:
 .DS
-:map \fIlhs\fR \fIrhs\fR\s-2CR\f0
+:map \fIlhs\fR \fIrhs\fR\s-2CR
 .DE
 mapping
 .I lhs
@@ -1789,7 +1789,7 @@ of the string.  If you are using an operator such as \fBd\fR,
 \fBc\fR or \fBy\fR, then you may well wish to affect lines up to the
 line before the line containing the pattern.  You can give a search of
 the form \fB/\fR\fIpat\fR\fB/\-\fR\fIn\fR to refer to the \fIn\fR'th line
-before the next line containing \fIpat\fR, or you can use \fB\+\fR instead
+before the next line containing \fIpat\fR, or you can use \fB+\fR instead
 of \fB\-\fR to refer to the lines after the one containing \fIpat\fR.
 If you don't give a line offset, then the editor will affect characters
 up to the match place, rather than whole lines; thus use ``+0'' to affect
@@ -1816,7 +1816,7 @@ It is also necessary to use a \e before a
 The following table gives the extended forms when \fBmagic\fR is set.
 .DS
 .TS
-bl l.
+lb l.
 \(ua	at beginning of pattern, matches beginning of line
 $	at end of pattern, matches end of line
 \fB\&.\fR	matches any character
