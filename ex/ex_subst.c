@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 5.16 1992/11/01 15:03:48 bostic Exp $ (Berkeley) $Date: 1992/11/01 15:03:48 $";
+static char sccsid[] = "$Id: ex_subst.c,v 5.17 1992/11/01 21:53:55 bostic Exp $ (Berkeley) $Date: 1992/11/01 21:53:55 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -23,6 +23,7 @@ static char sccsid[] = "$Id: ex_subst.c,v 5.16 1992/11/01 15:03:48 bostic Exp $ 
 #include "vi.h"
 #include "excmd.h"
 #include "options.h"
+#include "screen.h"
 #include "search.h"
 #include "pathnames.h"
 #include "extern.h"
@@ -163,9 +164,9 @@ substitute(cmdp, s, re, cmd)
 	enum which cmd;
 {
 	MARK from, to;
-	recno_t elno, lno;
+	recno_t elno, lno, lastline;
 	size_t len, re_off;
-	int eval, cflag, gflag, lflag, nflag, pflag, rflag;
+	int eflags, eval, cflag, gflag, lflag, nflag, pflag, rflag;
 
 	/*
 	 * Historic vi permitted the '#', 'l' and 'p' options in vi mode,
@@ -229,6 +230,7 @@ usage:		msg("Usage: %s", cmdp->cmd->usage);
 	}
 
 	/* For each line... */
+	lastline = OOBLNO;
 	curf->rptlines = 0;
 	curf->rptlabel = "changed";
 	for (lno = cmdp->addr1.lno, elno = cmdp->addr2.lno;
@@ -240,92 +242,53 @@ usage:		msg("Usage: %s", cmdp->cmd->usage);
 			return (1);
 		}
 
-		/* Search the entire line. */
-		match[0].rm_so = 0;
+		/* Reset new line buffer. */
+		lbclen = 0;
+
+		eflags = REG_STARTEND;
+
+		/* Search for a match. */
+next:		match[0].rm_so = 0;
 		match[0].rm_eo = len;
-		eval = regexec(re,
-		    (char *)s, re->re_nsub + 1, match, REG_STARTEND);
-		if (eval == REG_NOMATCH)
+
+		eval = regexec(re, (char *)s, re->re_nsub + 1, match, eflags);
+		if (eval == REG_NOMATCH) {
+			if (lbclen != 0)
+				goto nomatch;
 			continue;
+		}
 		if (eval != 0) {
 			re_error(eval, re);
 			return (1);
 		}
 
-		/* Reset new line buffer. */
-		lbclen = 0;
+		/* Copy prefix. */
+		BUILD(s, match[0].rm_so);
 
-		/* Do replacement. */
+		/* Copy matching bytes. */
+		if (regsub(s, repl))
+			return (1);
+
+		s += match[0].rm_eo;
+		len -= match[0].rm_eo;
+
+		/* If global, continue. */
 		if (gflag) {
-			do {
-				if (cflag) {
-					from.lno = to.lno = lno;
-					from.cno = match[0].rm_so;
-					to.cno = match[0].rm_eo;
-					if (!curf->s_confirm(curf, &from, &to))
-						continue;
-				}
-
-				/* Locate start of replaced string. */
-				re_off = match[0].rm_so;
-
-				/* Copy leading retained string. */
-				BUILD(s, re_off);
-
-				/* Add in regular expression. */
-				if (regsub(s, repl))
-					return (1);
-
-				/* Move past this match. */
-				s += match[0].rm_eo;
-				len -= match[0].rm_eo;
-				match[0].rm_so = 0;
-				match[0].rm_eo = len;
-			} while (len &&
-			    (eval = regexec(re, (char *)s, re->re_nsub + 1,
-			    match, REG_NOTBOL | REG_STARTEND)) == 0);
-
-			/* Check for an error. */
-			if (len && eval != REG_NOMATCH) {
-				re_error(eval, re);
-				return (1);
-			}
-
-			/* Copy trailing retained string. */
-			if (len)
-				BUILD(s, len)
-		} else {
-			if (cflag) {
-				from.lno = to.lno = lno;
-				from.cno = match[0].rm_so;
-				to.cno = match[0].rm_eo;
-				if (!curf->s_confirm(curf, &from, &to))
-					continue;
-			}
-
-			/* Locate start of replaced string. */
-			re_off = match[0].rm_so;
-
-			/* Copy leading retained string. */
-			BUILD(s, re_off);
-
-			/* Add in regular expression. */
-			if (regsub(s, repl))
-				return (1);
-
-			/* Copy trailing retained string. */
-			s += match[0].rm_eo;
-			len -= match[0].rm_eo;
-			if (len)
-				BUILD(s, len);
+			eflags |= REG_NOTBOL;
+			goto next;
 		}
 
-		if (lbclen == 0)
-			continue;
+		/* Copy suffix. */
+nomatch:	if (len)
+			BUILD(s, len)
 
-		++curf->rptlines;
+		/* Update counters. */
+		if (lastline != lno) {
+			++curf->rptlines;
+			lastline = lno;
+		}
 
-		/* Reset the line. */
+		/* Store the line. */
 		if (file_sline(curf, lno, lb, lbclen))
 			return (1);
 
@@ -341,7 +304,7 @@ usage:		msg("Usage: %s", cmdp->cmd->usage);
 	}
 
 	/*
-	 * Note if nothing found.  Otherwise, if nothing displayed to the
+	 * Note if nothing found.  Else, if nothing displayed to the
 	 * screen, put something up.
 	 */
 	if (curf->rptlines == 0)
