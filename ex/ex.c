@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.54 1993/11/18 17:26:24 bostic Exp $ (Berkeley) $Date: 1993/11/18 17:26:24 $";
+static char sccsid[] = "$Id: ex.c,v 8.55 1993/11/18 17:29:12 bostic Exp $ (Berkeley) $Date: 1993/11/18 17:29:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -345,6 +345,8 @@ ex_cmd(sp, ep, exc, arg1_len)
 	 * !!!
 	 * Permit extra colons at the start of the line.  Historically,
 	 * ex/vi allowed a single extra one.  It's simpler not to count.
+	 * The stripping is done here because, historically, any command
+	 * could have preceding colons, e.g. ":g/pattern/:p" worked.
 	 */
 	for (; *exc == ':'; ++exc);
 
