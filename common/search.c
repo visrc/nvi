@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.27 1993/11/18 13:50:31 bostic Exp $ (Berkeley) $Date: 1993/11/18 13:50:31 $";
+static char sccsid[] = "$Id: search.c,v 8.28 1993/11/18 16:16:07 bostic Exp $ (Berkeley) $Date: 1993/11/18 16:16:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -51,12 +51,20 @@ resetup(sp, rep, dir, ptrn, epp, deltap, flagp)
 	 * character is supplied.  Only the pattern was saved, historic vi
 	 * did not reuse any delta supplied.
 	 */
+	flags = *flagp;
 	if (ptrn == NULL || ptrn[1] == '\0') {
 		if (!F_ISSET(sp, S_SRE_SET)) {
 noprev:			msgq(sp, M_INFO, "No previous search pattern.");
 			return (1);
 		}
 		*rep = &sp->sre;
+
+		/* Empty patterns set the direction. */
+		if (LF_ISSET(SEARCH_SET)) {
+			F_SET(sp, S_SRE_SET);
+			sp->searchdir = dir;
+			sp->sre = **rep;
+		}
 		return (0);
 	}
 
@@ -66,7 +74,6 @@ noprev:			msgq(sp, M_INFO, "No previous search pattern.");
 	if (O_ISSET(sp, O_IGNORECASE))
 		re_flags |= REG_ICASE;
 
-	flags = *flagp;
 	if (LF_ISSET(SEARCH_PARSE)) {		/* Parse the string. */
 		/* Set delimiter. */
 		delim = *ptrn++;
