@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 8.11 1993/09/11 11:09:57 bostic Exp $ (Berkeley) $Date: 1993/09/11 11:09:57 $";
+static char sccsid[] = "$Id: options_f.c,v 8.12 1993/09/11 11:32:06 bostic Exp $ (Berkeley) $Date: 1993/09/11 11:32:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -20,6 +20,8 @@ static char sccsid[] = "$Id: options_f.c,v 8.11 1993/09/11 11:09:57 bostic Exp $
 
 #include "vi.h"
 #include "tag.h"
+
+static int	opt_putenv __P((char *));
 
 #define	DECL(f)	int							\
 	f(sp, op, str, val)						\
@@ -71,16 +73,17 @@ DECL(f_columns)
 		return (1);
 	}
 #endif
+	/* Set the columns value in the environment for curses. */
+	(void)snprintf(buf, sizeof(buf), "COLUMNS=%lu", val);
+	if (opt_putenv(buf))
+		return (1);
+
 	/* This is expensive, don't do it unless it's necessary. */
 	if (O_VAL(sp, O_COLUMNS) == val)
 		return (0);
 
 	/* Set the value. */
 	O_VAL(sp, O_COLUMNS) =  val;
-
-	/* Set the columns value in the environment for curses. */
-	(void)snprintf(buf, sizeof(buf), "COLUMNS=%lu", val);
-	(void)putenv(buf);
 
 	F_SET(sp, S_RESIZE);
 	return (0);
@@ -117,16 +120,17 @@ DECL(f_lines)
 		return (1);
 	}
 
+	/* Set the rows value in the environment for curses. */
+	(void)snprintf(buf, sizeof(buf), "ROWS=%lu", val);
+	if (opt_putenv(buf))
+		return (1);
+
 	/* This is expensive, don't do it unless it's necessary. */
 	if (O_VAL(sp, O_LINES) == val)
 		return (0);
 
 	/* Set the value. */
 	O_VAL(sp, O_LINES) =  val;
-
-	/* Set the columns value in the environment for curses. */
-	(void)snprintf(buf, sizeof(buf), "ROWS=%lu", val);
-	(void)putenv(buf);
 
 	F_SET(sp, S_RESIZE);
 	return (0);
@@ -390,7 +394,8 @@ DECL(f_term)
 
 	/* Set the terminal value in the environment for curses. */
 	(void)snprintf(buf, sizeof(buf), "TERM=%s", str);
-	(void)putenv(buf);
+	if (opt_putenv(buf))
+		return (1);
 
 	if (sp->s_term != NULL && sp->s_term(sp))
 		return (1);
@@ -443,4 +448,24 @@ ps_list(sp)
 		memmove(p + p_len, s_p, s_len + 1);
 	sp->paragraph = p;
 	return (0);
+}
+
+/*
+ * opt_putenv --
+ *	Put a value into the environment.  We use putenv(3) because it's
+ *	more portable.  The following hack is because some moron decided
+ *	to keep a reference to the memory passed to putenv(3), instead of
+ *	having it allocate its own.  Someone clearly needs to get promoted
+ *	into management.
+ */
+static int
+opt_putenv(s)
+	char *s;
+{
+	char *t;
+
+	/* Memory leak. */
+	if ((t = strdup(s)) == NULL)
+		return (1);
+	return (putenv(t));
 }
