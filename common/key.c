@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: key.c,v 10.28 1996/03/27 19:58:03 bostic Exp $ (Berkeley) $Date: 1996/03/27 19:58:03 $";
+static const char sccsid[] = "$Id: key.c,v 10.29 1996/03/27 20:25:41 bostic Exp $ (Berkeley) $Date: 1996/03/27 20:25:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -697,21 +697,18 @@ not_digit:	argp->e_c = CH_NOT_DIGIT;
 	/* If remapping characters... */
 	if (O_ISSET(sp, O_REMAP)) {
 		/*
-		 * Periodically check for interrupts.  We always check the
-		 * first time through, because it's possible to set up a
-		 * map that will return a character every time, but will
-		 * expand to more, e.g. "map! a aaaa" will always return a
-		 * 'a', but we'll never get anywhere useful.
+		 * Periodically check for interrupts.  Always check the first
+		 * time through, because it's possible to set up a map that
+		 * will return a character every time, but will expand to more,
+		 * e.g. "map! a aaaa" will always return a 'a', but we'll never
+		 * get anywhere useful.
 		 */
-		if (++remap_cnt == 1 || remap_cnt % 10 == 0) {
-			if (gp->scr_event(sp, &ev, EC_INTERRUPT, 0))
-				return (1);
-			if (ev.e_event == E_INTERRUPT) {
-				(void)v_event_flush(sp, CH_MAPPED);
-				msgq(sp, M_ERR,
-				    "231|Interrupted: mapped keys discarded");
-				goto retry;
-			}
+		if ((++remap_cnt == 1 || remap_cnt % 10 == 0) &&
+		    (gp->scr_event(sp, &ev,
+		    EC_INTERRUPT, 0) || ev.e_event == E_INTERRUPT)) {
+			F_SET(sp->gp, G_INTERRUPTED);
+			argp->e_event = E_INTERRUPT;
+			return (0);
 		}
 
 		/*
