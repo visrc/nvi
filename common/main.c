@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.40 1993/11/15 11:00:26 bostic Exp $ (Berkeley) $Date: 1993/11/15 11:00:26 $";
+static char sccsid[] = "$Id: main.c,v 8.41 1993/11/16 21:59:33 bostic Exp $ (Berkeley) $Date: 1993/11/16 21:59:33 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -532,26 +532,17 @@ obsolete(argv)
 	 * Translate old style arguments into something getopt will like.
 	 * Make sure it's not text space memory, because ex changes the
 	 * strings.
-	 *	Change "+/command" into "-ccommand".
-	 *	Change "+" and "+$" into "-c$".
-	 *	Change "+[0-9]*" into "-c[0-9]".
+	 *	Change "+" into "-c$".
+	 *	Change "+<anything else>" into "-c<anything else>".
 	 *	Change "-r" into "-l"
 	 */
 	for (myname = argv[0]; *++argv;)
 		if (argv[0][0] == '+') {
-			if (argv[0][1] == '\0' || argv[0][1] == '$') {
+			if (argv[0][1] == '\0') {
 				if ((argv[0] = malloc(4)) == NULL)
 					err(1, NULL);
-				memmove(argv[0], "-c$", 4);
-			} else if (argv[0][1] == '/') {
-				p = argv[0];
-				len = strlen(argv[0]);
-				if ((argv[0] = malloc(len + 3)) == NULL)
-					err(1, NULL);
-				argv[0][0] = '-';
-				argv[0][1] = 'c';
-				(void)strcpy(argv[0] + 2, p + 1);
-			} else if (isdigit(argv[0][1])) {
+				(void)strcpy(argv[0], "-c$");
+			} else  {
 				p = argv[0];
 				len = strlen(argv[0]);
 				if ((argv[0] = malloc(len + 2)) == NULL)
