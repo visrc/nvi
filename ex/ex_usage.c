@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_usage.c,v 8.6 1993/11/02 18:46:51 bostic Exp $ (Berkeley) $Date: 1993/11/02 18:46:51 $";
+static char sccsid[] = "$Id: ex_usage.c,v 8.7 1993/11/22 14:37:17 bostic Exp $ (Berkeley) $Date: 1993/11/22 14:37:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -56,12 +56,12 @@ ex_usage(sp, ep, cmdp)
 	case 1:
 		for (cp = cmds, p = cmdp->argv[0], len = strlen(p);
 		    cp->name != NULL && memcmp(p, cp->name, len); ++cp);
-		if (cp->name == NULL) {
-			msgq(sp, M_ERR, "The %.*s command is unknown.", len, p);
-			return (1);
-		}
-		(void)ex_printf(EXCOOKIE,
-		    "Command: %s\n  Usage: %s\n", cp->help, cp->usage);
+		if (cp->name == NULL)
+			(void)ex_printf(EXCOOKIE,
+			    "The %.*s command is unknown.", len, p);
+		else
+			(void)ex_printf(EXCOOKIE,
+			    "Command: %s\n  Usage: %s\n", cp->help, cp->usage);
 		break;
 	case 0:
 		for (cp = cmds; cp->name != NULL; ++cp)
@@ -98,14 +98,14 @@ ex_viusage(sp, ep, cmdp)
 			goto nokey;
 
 		kp = &vikeys[key];
-		if (kp->func == NULL) {
-nokey:			msgq(sp, M_ERR, "The %s key has no current meaning",
+		if (kp->func == NULL)
+nokey:			(void)ex_printf(EXCOOKIE,
+			    "The %s key has no current meaning",
 			    charname(sp, key));
-			return (1);
-		}
-		(void)ex_printf(EXCOOKIE,
-		    "  Key:%s%s\nUsage: %s\n",
-		        isblank(*kp->help) ? "" : " ", kp->help, kp->usage);
+		else
+			(void)ex_printf(EXCOOKIE,
+			    "  Key:%s%s\nUsage: %s\n",
+			    isblank(*kp->help) ? "" : " ", kp->help, kp->usage);
 		break;
 	case 0:
 		for (key = 0; key <= MAXVIKEY; ++key) {
