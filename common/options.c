@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.6 1993/08/26 17:27:42 bostic Exp $ (Berkeley) $Date: 1993/08/26 17:27:42 $";
+static char sccsid[] = "$Id: options.c,v 8.7 1993/09/09 14:24:23 bostic Exp $ (Berkeley) $Date: 1993/09/09 14:24:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -128,6 +128,8 @@ static OPTLIST const optlist[] = {
 	{"verbose",	NULL,		OPT_0BOOL,	0},
 /* O_WARN */
 	{"warn",	NULL,		OPT_1BOOL,	0},
+/* O_WINDOW */
+	{"window",	NULL,		OPT_NUM,	0},
 /* O_WRAPMARGIN */
 	{"wrapmargin",	f_wrapmargin,	OPT_NUM,	0},
 /* O_WRAPSCAN */
@@ -242,6 +244,8 @@ opts_init(sp)
 	(void)snprintf(b1, sizeof(b1),
 	    "term=%s", (s = getenv("TERM")) == NULL ? "unknown" : s);
 	SET_DEF(O_TERM, b1);
+	(void)snprintf(b1, sizeof(b1), "window=%ld", O_VAL(sp, O_LINES));
+	SET_DEF(O_WINDOW, b1);
 	SET_DEF(O_WRAPMARGIN, "wrapmargin=0");
 
 	/*
