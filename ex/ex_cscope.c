@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_cscope.c,v 8.4 1996/04/10 20:31:49 bostic Exp $ (Berkeley) $Date: 1996/04/10 20:31:49 $";
+static const char sccsid[] = "$Id: ex_cscope.c,v 8.5 1996/04/12 09:57:51 bostic Exp $ (Berkeley) $Date: 1996/04/12 09:57:51 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -224,14 +224,19 @@ cscope_add(sp, cmdp, dname)
 	if (run_cscope(sp, csc))
 		goto err;
 
+	/*
+	 * Add the cscope connection to the screen's list.  From now on, 
+	 * on error, we have to call terminate, which expects the csc to
+	 * be on the chain.
+	 */
+	LIST_INSERT_HEAD(&exp->cscq, csc, q);
+
 	/* Read the initial prompt from the cscope to make sure it's okay. */
 	if (read_prompt(sp, csc)) {
 		terminate(sp, csc, 0);
 		return (1);
 	}
 
-	/* Add the cscope connection to the screen's list. */
-	LIST_INSERT_HEAD(&exp->cscq, csc, q);
 	return (0);
 
 err:	free(csc);
