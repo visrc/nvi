@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_display.c,v 5.12 1993/05/08 10:15:03 bostic Exp $ (Berkeley) $Date: 1993/05/08 10:15:03 $";
+static char sccsid[] = "$Id: ex_display.c,v 5.13 1993/05/08 13:41:04 bostic Exp $ (Berkeley) $Date: 1993/05/08 13:41:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,16 +28,21 @@ ex_bdisplay(sp, ep, cmdp)
 	EXCMDARG *cmdp;
 {
 	CB *cb;
-	int cnt;
+	int cnt, displayed;
 
-	for (cb = sp->cuts, cnt = 0; cnt < UCHAR_MAX; ++cb, ++cnt) {
-		if (cb->txthdr.next == NULL || cb->txthdr.next == &cb->txthdr)
-			continue;
-		db(sp, charname(sp, cnt), cb);
-	}
-	if (sp->cuts[DEFCB].txthdr.next != NULL ||
-	    sp->cuts[DEFCB].txthdr.next != &sp->cuts[DEFCB].txthdr)
+	displayed = 0;
+	for (cb = sp->cuts, cnt = 0; cnt < UCHAR_MAX; ++cb, ++cnt)
+		if (cb->txthdr.next != NULL && cb->txthdr.next != &cb->txthdr) {
+			displayed = 1;
+			db(sp, charname(sp, cnt), cb);
+		}
+	if (sp->cuts[DEFCB].txthdr.next != NULL &&
+	    sp->cuts[DEFCB].txthdr.next != &sp->cuts[DEFCB].txthdr) {
+		displayed = 1;
 		db(sp, "default buffer", &sp->cuts[DEFCB]);
+	}
+	if (!displayed)
+		msgq(sp, M_VINFO, "No buffers to display.");
 	return (0);
 }
 
