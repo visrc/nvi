@@ -1,3 +1,6 @@
+0. Introduction
+---------------
+
 This file describes how to build and install the Berkeley `nvi' editor for
 the LynxOS 2.4.0 operating system.
 
@@ -15,9 +18,22 @@ to 2.4.0.  (As I understand it, a good deal of work went into making the
 if any, you might run into if you try to build nvi on a pre-2.4.0 version
 of LynxOS.)
 
-Anyway, the most important consideration when building nvi on LynxOS is
-your selection of a C compiler.  DO NOT try to use either the /bin/cc or
-the /bin/gcc compiler (i.e. GCC version 1.42) to build nvi.  These two
+There are basically four steps to configuring, building, and installing nvi
+of your LynxOS, namely:
+
+	1.  Get setup to use the proper C compiler.
+	2.  Replace your installed `tr' program.
+	3.  Fix your system include files.
+	4.  Do a normal configure, build, and install of nvi.
+
+These steps are described in separate sections below.
+
+1.  Get Setup to Use the Proper C Compiler
+------------------------------------------
+
+The most important step when building nvi on LynxOS is your selection of a
+C compiler to use during the build.  DO NOT try to use either the /bin/cc
+or the /bin/gcc compiler (i.e. GCC version 1.42) to build nvi.  These two
 compilers are ancient, crusty, buggy, and should probably not be used for
 anything.  Rather than using either of these two C compilers, I strongly
 advise you to use the more up-to-date version of the GNU C compiler which
@@ -27,10 +43,13 @@ normally installed as:
 
 	/cygnus/94q4-lynxos-x86/bin/gcc
 
-In the case of LynxOS 2.4.0 for the RS/6000 and/or PowerPC processor families,
-the pathname of the most up-to-date version of GCC which is distributed with
-LynxOS 2.4.0 is actually /cygnus/95q2-lynxos-ppc/bin/gcc, so if you are on a
-PowerPC, use that pathname for GCC instead of the one shown above.
+In the case of LynxOS 2.4.0 for PowerPC processors, the pathname of the most
+up-to-date version of GCC which is distributed with LynxOS 2.4.0 is actually:
+
+	/cygnus/95q2-lynxos-ppc/bin/gcc
+
+so if you are on a PowerPC, use that pathname for GCC instead of the one shown
+above.
 
 You can probably just setup your $PATH (*before* you do the configure step
 for nvi) so that the more up-to-date version of the GNU C compiler will
@@ -59,6 +78,12 @@ ing steps instead:
 file, so in that case, you don't even have to bother trying to make a backup
 of the /bin/cc compiler, because it won't even be present on your system.)
 
+The bottom line is that when you get done setting things up, the most up-to-
+date version of gcc on your system should be available to you as the first
+`cc' program on your path.  (You should verify that this is the case just
+by type `cc -v'.  You should then see the proper version of of gcc print
+out, depending on your system type.  See above.)
+
 Performing the steps shown above will insure that anything you compile from
 now on will be compiled with the most up-to-date version of GCC which is
 shipped with your Lynx operating system.  (Note that the versions of GCC
@@ -70,20 +95,62 @@ LynxOS.)
 Anyway, that's the most important thing about building nvi on LynxOS 2.4.0.
 Just make sure that you use a decent C compiler.
 
-If you are building nvi on a PowerPC or RS/6000 system, it is also important
-that you apply the two small patches given at the end of this file to your
-/usr/include/stdarg.h file.  These patches fix two serious bugs in that file
-which you really want to have fixed anyway, because without these fixes,
-anything that you compile which uses <stdarg.h> and/or ANSI standard variable
-length argument lists will very likely malfunction at run-time.
+2.  Replace Your Installed `tr' Program
+---------------------------------------
+
+The `tr' program which comes bundled with LynxOS 2.4.0 (as /bin/tr) has a
+somewhat obscure bug which just happens to be tickled by almost all GNU
+`autoconf' generated `configure' scripts (including the one that nowadays
+comes bundled with nvi).  Using the stock /bin/tr program on LynxOS when
+executing such `configure' scripts can and will cause these scripts to
+malfunction in various ways.  It is therefore strongly suggested that you
+replace you LynxOS /bin/tr program with a working version of `tr' _before_
+you even try to configure nvi.
+
+You can obtain sources for a working version of the `tr' command as part of
+the GNU `textutils' package (the latest version of which, at the time of this
+writing, is 1.17).  The GNU textutils package is available for downloading
+from prep.ai.mit.edu in the pub/gnu directory.  Look for the file named
+textutils-1.17.tar.gz, or an even more recent version of textutils, if one
+is available.  Fetch it, gunzip it, untar it, and follow the directions in
+the INSTALL file included in the tar file to build and install the entire
+textutils set of utility programs (which includes a working `tr' program).
+Then just make sure that the GNU version of `tr' appears on your $PATH
+_before_ the LynxOS version of `tr' (i.e. /bin/tr).  Be sure to do this
+step _before_ you configure nvi.
+
+When building the textutils set of programs, I suggest that you use the most
+up-to-date C compiler available on your system (as described above).  Also,
+note that it will be important for you to AVOID using the -O (optimize)
+compiler option when building the GNU textutils package, even if you are
+using the most up-to-date version of gcc which shipped with your system.
+If you try to use -O when building the textutils package on an x86 with
+the Cygnus 94q4 C compiler, you will end up with a `tr' program which will
+malfunction even worse than the one you are trying to replace!  If you use
+-O when building the textutils package on LynxOS on the PowerPC (using the
+Cygnus 95q2 C compiler) you will just get yourself a compiler crash.  So
+just don't use -O when building textutils.  You can avoid using -O by in-
+voking make in the textutils directory as follows:
+
+	make CFLAGS="-g"
+
+3.  Fix Your System Include Files
+---------------------------------
+
+If you are building nvi on a PowerPC system, it is also important that you
+apply the patches given at the end of this file to your /usr/include files.
+(Note that you will have to be root in order to do this.)  Two of the patches
+included below fix a pair of serious bugs in the /usr/include/stdarg.h file
+on the PowerPC, and you really _do_ want to have these bugs fixed anyway,
+because without these fixes, anything that you compile which uses <stdarg.h>
+will very likely malfunction at run-time.
 
 Regardless of which LynxOS platform you are using (i.e. x86, PowerPC, Sparc,
-or m680x0) you may also want to apply the other small patches given below to
-your /usr/include/ioctl.h file and your /usr/include/wait.h file.  Doing so
-will prevent a few warnings during the build of nvi, and will also make your
-system include files a little more normal and a little more consistent with
-POSIX (in the case of the /usr/include/wait.h) and with other UNIX systems
-(in the case of /usr/include/ioctl.h).
+or m680x0) you may want to apply all of the system include files patches that
+are included below anyway.  Doing so will clean up a few minor problems with
+the relevant system include files (i.e. <stdarg.h>, <ioctl.h>, and <wait.h>)
+and this step will also prevent a few warnings which you would otherwise get
+during the build of nvi.
 
 You can apply all of the patches given at the end of this file simply by
 doing the following:
@@ -95,19 +162,23 @@ doing the following:
 Where `this-file' is the actual full pathname of the file you are now reading,
 wherever it may reside on your own system.
 
-I should mention also that LynxOS does not normally ship with any `sendmail'
-type mail transfer program installed, either under /usr/lib/ or anywhere else
-for that matter.  This isn't really a big problem, but nvi normally wants and
-expects to have a sendmail type mail transfer program available so that it
-can send users notifications (by mail) whenever a partially edited file is
-preserved by the editor in response to a sudden system crash, a sudden system
-shutdown, or an unexpected serial-line hangup.  You can configure and build
-nvi without any sendmail program installed on your system, but you will get
-warnings about its absence when you are doing the initial configure step
-prior to actually building nvi.  If you want to have a fully-functional nvi
-which does send users mail whenever partially edited files are preserved,
-then you should get the sendmail sources (via ftp from ftp.cs.berkeley.edu),
-build and install sendmail, and then reconfigure, rebuild, and reinstall nvi.
+4.  A Brief Note about Sendmail
+-------------------------------
+
+I should mention also that LynxOS does not normally ship with the `sendmail'
+mail transfer program installed, either under /usr/lib/ or anywhere else for
+that matter.  This isn't really a big problem, but nvi normally wants and
+expects to have a sendmail program available so that it can send users notifi-
+cations (by mail) whenever a partially edited file is preserved by the editor
+in response to a sudden system crash, a sudden system shutdown, or an unexpect-
+ed serial-line hangup.  You can configure and build nvi without any sendmail
+program installed on your system, but you will get warnings about its absence
+when you are doing the initial configure step prior to actually building nvi.
+If you want to have a fully-functional nvi which does send out notification
+messages (by mail) whenever partially edited files are preserved during a
+serial line hangup or system crash, then you should get the BSD sendmail
+sources (via ftp from ftp.cs.berkeley.edu), build and install sendmail, and
+then reconfigure, rebuild, and reinstall nvi.
 
 Please contact me at the address below if you find any bugs in the LynxOS
 port of NVI.  Thanks.
@@ -115,7 +186,7 @@ port of NVI.  Thanks.
 Ron Guilmette
 Roseville, California
 <rfg@monkeys.com>
-May 18, 1996
+June 10, 1996
 
 
 cut here for LynxOS 2.4.0 system include files patches
