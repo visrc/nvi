@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 10.9 1995/09/27 12:07:19 bostic Exp $ (Berkeley) $Date: 1995/09/27 12:07:19 $";
+static char sccsid[] = "$Id: vs_smap.c,v 10.10 1995/09/28 10:40:51 bostic Exp $ (Berkeley) $Date: 1995/09/28 10:40:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -788,7 +788,7 @@ vs_deleteln(sp, cnt)
 		(void)gp->scr_cursor(sp, &oldy, &oldx);
 		while (cnt--) {
 			(void)gp->scr_deleteln(sp);
-			(void)gp->scr_move(sp, INFOLINE(sp) - 1, 0);
+			(void)gp->scr_move(sp, LASTLINE(sp) - 1, 0);
 			(void)gp->scr_insertln(sp);
 			(void)gp->scr_move(sp, oldy, oldx);
 		}
@@ -957,7 +957,7 @@ vs_sm_erase(sp)
 	GS *gp;
 
 	gp = sp->gp;
-	(void)gp->scr_move(sp, INFOLINE(sp), 0);
+	(void)gp->scr_move(sp, LASTLINE(sp), 0);
 	(void)gp->scr_clrtoeol(sp);
 	for (; sp->t_rows > sp->t_minrows; --sp->t_rows, --TMAP) {
 		(void)gp->scr_move(sp, TMAP - HMAP, 0);
@@ -1012,12 +1012,12 @@ vs_insertln(sp, cnt)
 
 	gp = sp->gp;
 	if (IS_ONELINE(sp)) {
-		(void)gp->scr_move(sp, INFOLINE(sp), 0);
+		(void)gp->scr_move(sp, LASTLINE(sp), 0);
 		(void)gp->scr_clrtoeol(sp);
 	} else {
 		(void)gp->scr_cursor(sp, &oldy, &oldx);
 		while (cnt--) {
-			(void)gp->scr_move(sp, INFOLINE(sp) - 1, 0);
+			(void)gp->scr_move(sp, LASTLINE(sp) - 1, 0);
 			(void)gp->scr_deleteln(sp);
 			(void)gp->scr_move(sp, oldy, oldx);
 			(void)gp->scr_insertln(sp);

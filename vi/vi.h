@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 10.9 1995/09/27 12:05:10 bostic Exp $ (Berkeley) $Date: 1995/09/27 12:05:10 $
+ *	$Id: vi.h,v 10.10 1995/09/28 10:40:28 bostic Exp $ (Berkeley) $Date: 1995/09/28 10:40:28 $
  */
 
 /* Definition of a vi "word". */
@@ -309,8 +309,13 @@ typedef struct _vi_private {
 #define	SCREEN_COLS(sp)				/* Screen columns. */	\
 	((O_ISSET(sp, O_NUMBER) ? (sp)->cols - O_NUMBER_LENGTH : (sp)->cols))
 
-#define	INFOLINE(sp)				/* Info line offset. */	\
-	((sp)->rows == 1 ? 0 : (sp)->t_maxrows)
+/*
+ * LASTLINE is the zero-based, last line in the screen.  Note that it is correct
+ * regardless of the changes in the screen to permit text input on the last line
+ * of the screen, or the existence of small screens.
+ */
+#define LASTLINE(sp) \
+	((sp)->t_maxrows < (sp)->rows ? (sp)->t_maxrows : (sp)->rows - 1)
 
 /*
  * Small screen (see vs_refresh.c, section 6a) and one-line screen test.

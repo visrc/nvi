@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_msg.c,v 10.11 1995/09/27 12:34:12 bostic Exp $ (Berkeley) $Date: 1995/09/27 12:34:12 $";
+static char sccsid[] = "$Id: vs_msg.c,v 10.12 1995/09/28 10:41:12 bostic Exp $ (Berkeley) $Date: 1995/09/28 10:41:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -84,7 +84,7 @@ vs_busy(sp, msg, on)
 			 * info line.
 			 */
 			(void)gp->scr_cursor(sp, &vip->busy_y, &vip->busy_x);
-			(void)gp->scr_move(sp, INFOLINE(sp), 0);
+			(void)gp->scr_move(sp, LASTLINE(sp), 0);
 			(void)gp->scr_cursor(sp, &vip->busy_y, &vip->busy_fx);
 
 			/* If there's no message, just rest the cursor. */
@@ -99,7 +99,7 @@ vs_busy(sp, msg, on)
 			(void)gp->scr_addstr(sp, p, len);
 			(void)gp->scr_cursor(sp, &notused, &vip->busy_fx);
 			(void)gp->scr_clrtoeol(sp);
-			(void)gp->scr_move(sp, INFOLINE(sp), vip->busy_fx);
+			(void)gp->scr_move(sp, LASTLINE(sp), vip->busy_fx);
 
 			/* Initialize state for updates. */
 			vip->busy_ch = 0;
@@ -119,9 +119,9 @@ vs_busy(sp, msg, on)
 			/* Display the update. */
 			if (vip->busy_ch == sizeof(flagc))
 				vip->busy_ch = 0;
-			(void)gp->scr_move(sp, INFOLINE(sp), vip->busy_fx);
+			(void)gp->scr_move(sp, LASTLINE(sp), vip->busy_fx);
 			(void)gp->scr_addstr(sp, flagc + vip->busy_ch++, 1);
-			(void)gp->scr_move(sp, INFOLINE(sp), vip->busy_fx);
+			(void)gp->scr_move(sp, LASTLINE(sp), vip->busy_fx);
 
 			(void)gp->scr_refresh(sp, 0);
 			break;
@@ -135,7 +135,7 @@ vs_busy(sp, msg, on)
 		case BUSY_ON:
 			/* If the message line not in use, clear the line. */
 			if (vip->totalcount == 0) {
-				(void)gp->scr_move(sp, INFOLINE(sp), 0);
+				(void)gp->scr_move(sp, LASTLINE(sp), 0);
 				(void)gp->scr_clrtoeol(sp);
 			}
 			/* FALLTHROUGH */
@@ -343,7 +343,7 @@ vs_output(sp, mtype, line, llen)
 			if (!IS_ONELINE(sp)) {
 				if (vip->totalcount == 1) {
 					(void)gp->scr_move(sp,
-					    INFOLINE(sp) - 1, 0);
+					    LASTLINE(sp) - 1, 0);
 					(void)gp->scr_clrtoeol(sp);
 					(void)vs_divider(sp);
 					F_SET(vip, VIP_DIVIDER);
@@ -360,7 +360,7 @@ vs_output(sp, mtype, line, llen)
 			if (vip->totalcount != 0)
 				vs_scroll(sp, NULL, SCROLL_QUIT);
 
-			(void)gp->scr_move(sp, INFOLINE(sp), 0);
+			(void)gp->scr_move(sp, LASTLINE(sp), 0);
 			++vip->totalcount;
 			++vip->linecount;
 
@@ -370,7 +370,7 @@ vs_output(sp, mtype, line, llen)
 				break;
 			}
 		} else
-			(void)gp->scr_move(sp, INFOLINE(sp), vip->lcontinue);
+			(void)gp->scr_move(sp, LASTLINE(sp), vip->lcontinue);
 
 		/* Display the line, doing character translation. */
 		if (mtype == M_ERR)
@@ -572,12 +572,12 @@ vs_scroll(sp, chp, flags)
 		 * maximum amount of the screen.
 		 */
 		(void)gp->scr_move(sp, vip->totalcount <
-		    sp->rows ? INFOLINE(sp) - vip->totalcount : 0, 0);
+		    sp->rows ? LASTLINE(sp) - vip->totalcount : 0, 0);
 		(void)gp->scr_deleteln(sp);
 
 		/* If there are screens below us, push them back into place. */
 		if (sp->q.cqe_next != (void *)&sp->gp->dq) {
-			(void)gp->scr_move(sp, INFOLINE(sp), 0);
+			(void)gp->scr_move(sp, LASTLINE(sp), 0);
 			(void)gp->scr_insertln(sp);
 		}
 	}
@@ -588,7 +588,7 @@ vs_scroll(sp, chp, flags)
 		if (IS_ONELINE(sp))
 			p = msg_cmsg(sp, CMSG_CONT_S, &len);
 		else {
-			(void)gp->scr_move(sp, INFOLINE(sp), 0);
+			(void)gp->scr_move(sp, LASTLINE(sp), 0);
 			p = msg_cmsg(sp,
 			    LF_ISSET(SCROLL_QUIT) ? CMSG_CONT_Q :
 			    LF_ISSET(SCROLL_EXWAIT) ? CMSG_CONT_EX : CMSG_CONT,

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 10.11 1995/09/27 12:06:11 bostic Exp $ (Berkeley) $Date: 1995/09/27 12:06:11 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 10.12 1995/09/28 10:41:22 bostic Exp $ (Berkeley) $Date: 1995/09/28 10:41:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -243,7 +243,7 @@ vs_paint(sp, flags)
 						return (1);
 				}
 			else {
-small_fill:			(void)gp->scr_move(sp, INFOLINE(sp), 0);
+small_fill:			(void)gp->scr_move(sp, LASTLINE(sp), 0);
 				(void)gp->scr_clrtoeol(sp);
 				for (; sp->t_rows > sp->t_minrows;
 				    --sp->t_rows, --TMAP) {
@@ -734,7 +734,7 @@ vs_modeline(sp)
 	}
 
 	/* Display the file name and clear the rest of the line. */
-	(void)gp->scr_move(sp, INFOLINE(sp), 0);
+	(void)gp->scr_move(sp, LASTLINE(sp), 0);
 	for (; *p != '\0'; ++p)
 		(void)gp->scr_addstr(sp, KEY_NAME(sp, *p), KEY_LEN(sp, *p));
 	(void)gp->scr_clrtoeol(sp);
@@ -754,7 +754,7 @@ vs_modeline(sp)
 		    (O_ISSET(sp, O_NUMBER) ? O_NUMBER_LENGTH : 0) + 1);
 		midpoint = (cols - ((len + 1) / 2)) / 2;
 		if (curlen < midpoint) {
-			(void)gp->scr_move(sp, INFOLINE(sp), midpoint);
+			(void)gp->scr_move(sp, LASTLINE(sp), midpoint);
 			curlen += len;
 		} else if (curlen + 2 + len < cols) {
 			(void)gp->scr_addstr(sp, "  ", 2);
@@ -778,7 +778,7 @@ vs_modeline(sp)
 	}
 
 	if (endpoint > curlen + 2) {
-		(void)gp->scr_move(sp, INFOLINE(sp), endpoint);
+		(void)gp->scr_move(sp, LASTLINE(sp), endpoint);
 		if (O_ISSET(sp, O_SHOWMODE)) {
 			if (F_ISSET(sp->ep, F_MODIFIED))
 				(void)gp->scr_addstr(sp,
