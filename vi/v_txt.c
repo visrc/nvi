@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 5.20 1993/05/16 15:19:14 bostic Exp $ (Berkeley) $Date: 1993/05/16 15:19:14 $";
+static char sccsid[] = "$Id: v_txt.c,v 5.21 1993/05/27 19:20:18 bostic Exp $ (Berkeley) $Date: 1993/05/27 19:20:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -387,6 +387,8 @@ k_escape:		if (tp->insert && tp->overwrite)
 			if (rp != NULL) {
 				rp->lno = tp->lno;
 				rp->cno = sp->cno ? sp->cno - 1 : 0;
+				if (sp->s_change(sp, ep, rp->lno, LINE_RESET))
+					ERR;
 			}
 			goto ret;
 		case K_CARAT:			/* Delete autoindent chars. */
