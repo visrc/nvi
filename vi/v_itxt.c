@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 10.8 1995/10/19 11:11:13 bostic Exp $ (Berkeley) $Date: 1995/10/19 11:11:13 $";
+static char sccsid[] = "$Id: v_itxt.c,v 10.9 1995/11/05 14:44:04 bostic Exp $ (Berkeley) $Date: 1995/11/05 14:44:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -455,6 +455,9 @@ v_subst(sp, vp)
 	    vp->m_start.cno + (F_ISSET(vp, VC_C1SET) ? vp->count - 1 : 0);
 	if (vp->m_stop.cno > len - 1)
 		vp->m_stop.cno = len - 1;
+
+	/* We've used the count; reset so it's not used as a repeat count. */
+	vp->count = 1;
 
 	if (p != NULL && cut(sp,
 	    F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
