@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 8.18 1993/11/01 08:18:30 bostic Exp $ (Berkeley) $Date: 1993/11/01 08:18:30 $";
+static char sccsid[] = "$Id: vs_smap.c,v 8.19 1993/11/01 10:49:49 bostic Exp $ (Berkeley) $Date: 1993/11/01 10:49:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -468,13 +468,13 @@ svi_sm_up(sp, ep, rp, count, cursor_move)
 	}
 
 	/* Check to see if movement is possible. */
-	if (p == TMAP) {
-		if (svi_sm_next(sp, ep, p, &tmp))
-			return (1);
-		if (tmp.lno > p->lno && !file_gline(sp, ep, tmp.lno, NULL)) {
-			v_eof(sp, ep, NULL);
-			return (1);
-		}
+	if (svi_sm_next(sp, ep, TMAP, &tmp))
+		return (1);
+	if (tmp.lno > TMAP->lno &&
+	    !file_gline(sp, ep, tmp.lno, NULL) ||
+	    tmp.off > svi_screens(sp, ep, tmp.lno, NULL)) {
+		v_eof(sp, ep, NULL);
+		return (1);
 	}
 			
 	/*
@@ -661,7 +661,7 @@ svi_sm_down(sp, ep, rp, count, cursor_move)
 	}
 
 	/* Check to see if movement is possible. */
-	if (p == HMAP && p->lno == 1 && p->off == 1) {
+	if (HMAP->lno == 1 && HMAP->off == 1) {
 		v_sof(sp, NULL);
 		return (1);
 	}
