@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.70 1993/05/15 11:26:43 bostic Exp $ (Berkeley) $Date: 1993/05/15 11:26:43 $";
+static char sccsid[] = "$Id: main.c,v 5.71 1993/05/16 12:23:06 bostic Exp $ (Berkeley) $Date: 1993/05/16 12:23:06 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -35,7 +35,9 @@ static char sccsid[] = "$Id: main.c,v 5.70 1993/05/15 11:26:43 bostic Exp $ (Ber
 
 #include "vi.h"
 #include "excmd.h"
+#include "recover.h"
 #include "pathnames.h"
+#include "tag.h"
 
 static void msgflush __P((GS *));
 static void obsolete __P((char *[]));
@@ -55,8 +57,8 @@ main(argc, argv)
 	EXCMDARG cmd;
 	GS *gp;
 	SCR *sp;
-	int ch, eval;
-	char *excmdarg, *errf, *myname, *p, *tag;
+	int ch, flagchk, eval;
+	char *excmdarg, *errf, *myname, *p, *rfname, *tag;
 
 	/* Stop if indirecting through a NULL pointer. */
 	if (reenter++)
@@ -87,6 +89,7 @@ main(argc, argv)
 		err(1, NULL);
 	sp->gp = gp;		/* All screens point to the GS structure. */
 	HDR_INIT(sp->seqhdr, next, prev);
+				/* No need to block SIGALRM yet. */
 	HDR_APPEND(sp, &gp->scrhdr, next, prev, SCR);
 
 	if (set_window_size(sp, 0))	/* Set the window size. */
@@ -119,8 +122,9 @@ main(argc, argv)
 	obsolete(argv);
 
 	/* Parse the arguments. */
-	excmdarg = errf = tag = NULL;
-	while ((ch = getopt(argc, argv, "c:emRrT:t:v")) != EOF)
+	flagchk = 0;
+	excmdarg = errf = rfname = tag = NULL;
+	while ((ch = getopt(argc, argv, "c:elmRr:T:t:v")) != EOF)
 		switch(ch) {
 		case 'c':		/* Run the command. */
 			excmdarg = optarg;
@@ -128,8 +132,11 @@ main(argc, argv)
 		case 'e':		/* Ex mode. */
 			F_SET(sp, S_MODE_EX);
 			break;
+		case 'l':
+			exit(rcv_list());
 #ifndef NO_ERRLIST
 		case 'm':		/* Error list. */
+			++flagchk;
 			errf = optarg;
 			break;
 #endif
@@ -137,7 +144,9 @@ main(argc, argv)
 			O_SET(sp,O_READONLY);
 			break;
 		case 'r':		/* Recover. */
-			errx(1, "recover option not yet implemented");
+			++flagchk;
+			rfname = optarg;
+			break;
 #ifdef DEBUG
 		case 'T':		/* Trace. */
 			if ((gp->tracefp = fopen(optarg, "w")) == NULL)
@@ -147,6 +156,7 @@ main(argc, argv)
 			break;
 #endif
 		case 't':		/* Tag. */
+			++flagchk;
 			tag = optarg;
 			break;
 		case 'v':		/* Vi mode. */
@@ -159,6 +169,10 @@ main(argc, argv)
 	argc -= optind;
 	argv += optind;
 
+	/* Only permit one file specification. */
+	if (flagchk > 1)
+		err(1, "only one of -r and -t is permitted.");
+
 	/*
 	 * Source the system, environment, ~user and local .exrc values.
 	 * If the environment exists, vi historically doesn't check ~user.
@@ -167,9 +181,10 @@ main(argc, argv)
 
 	/* Source the EXINIT environment variable. */
 	if ((p = getenv("EXINIT")) != NULL)
-		if ((p = strdup(p)) == NULL)
+		if ((p = strdup(p)) == NULL) {
 			msgq(sp, M_ERR, "Error: %s", strerror(errno));
-		else {
+			goto err1;
+		} else {
 			(void)ex_cstring(sp, NULL, p, strlen(p));
 			free(p);
 		}
@@ -186,7 +201,7 @@ main(argc, argv)
 	if (argc)
 		file_set(sp, argc, argv);
 
-	/* Use an error list file if specified. */
+	/* Use an error list file, recovery file or tag file if specified. */
 #ifndef NO_ERRLIST
 	if (errf != NULL) {
 		SETCMDARG(cmd, C_ERRLIST, 0, OOBLNO, 0, 0, errf);
@@ -194,11 +209,13 @@ main(argc, argv)
 			goto err1;
 	} else
 #endif
-	/* Use a tag file if specified. */
 	if (tag != NULL) {
 		if (ex_tagfirst(sp, tag))
 			goto err1;
-	} else if ((sp->ep = file_start(sp, file_first(sp, 1))) == NULL)
+	} else if (rfname != NULL) {
+		if ((sp->ep = rcv_read(sp, rfname)) == NULL)
+			goto err1;
+	} else if ((sp->ep = file_start(sp, file_first(sp, 1), NULL)) == NULL)
 		goto err1;
 
 	/* Do commands from the command line. */
@@ -241,6 +258,9 @@ main(argc, argv)
 err1:		gp->msgp = sp->msgp;
 err2:		eval = 1;
 	}
+
+	/* Turn off the recovery timer. */
+	rcv_end();
 
 	/* Reset anything that needs resetting. */
 	reset(gp);
@@ -304,9 +324,10 @@ obsolete(argv)
 	 *	Change "+/command" into "-ccommand".
 	 *	Change "+" and "+$" into "-c$".
 	 *	Change "+[0-9]*" into "-c[0-9]".
+	 *	Change "-r" into "-l"
 	 */
 	for (myname = argv[0]; *++argv;)
-		if (argv[0][0] == '+')
+		if (argv[0][0] == '+') {
 			if (argv[0][1] == '\0' || argv[0][1] == '$') {
 				if ((argv[0] = malloc(4)) == NULL)
 					err(1, NULL);
@@ -328,7 +349,10 @@ obsolete(argv)
 				argv[0][1] = 'c';
 				(void)strcpy(argv[0] + 2, p + 1);
 			}
-			
+		}
+		else if (argv[0][0] == '-' &&
+		    argv[0][1] == 'r' && argv[1] == NULL)
+			argv[0][1] = 'l';
 }
 
 static void
