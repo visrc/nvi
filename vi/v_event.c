@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_event.c,v 8.7 1996/12/05 23:16:58 bostic Exp $ (Berkeley) $Date: 1996/12/05 23:16:58 $";
+static const char sccsid[] = "$Id: v_event.c,v 8.8 1996/12/10 20:43:04 bostic Exp $ (Berkeley) $Date: 1996/12/10 20:43:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -222,96 +222,96 @@ v_event(sp, vp)
 {
 	/* This array maps events to vi command functions. */
 	static VIKEYS const vievents[] = {
-		{v_eedit,	0},			/* IPO_EDIT */
-		{v_eeditsplit,	0},			/* IPO_EDITSPLIT */
-		{v_emark,	V_ABS_L|V_MOVE},	/* IPO_MOUSE_MOVE */
-		{v_equit,	0},			/* IPO_QUIT */
-		{v_etag,	0},			/* IPO_TAG */
-		{v_etagas,	0},			/* IPO_TAGAS */
-		{v_etagsplit,	0},			/* IPO_TAGSPLIT */
-		{v_ewq,		0},			/* IPO_WQ */
-		{v_ewrite,	0},			/* IPO_WRITE */
-		{v_ewriteas,	0},			/* IPO_WRITEAS */
+		{v_eedit,	0},			/* VI_EDIT */
+		{v_eeditsplit,	0},			/* VI_EDITSPLIT */
+		{v_emark,	V_ABS_L|V_MOVE},	/* VI_MOUSE_MOVE */
+		{v_equit,	0},			/* VI_QUIT */
+		{v_etag,	0},			/* VI_TAG */
+		{v_etagas,	0},			/* VI_TAGAS */
+		{v_etagsplit,	0},			/* VI_TAGSPLIT */
+		{v_ewq,		0},			/* VI_WQ */
+		{v_ewrite,	0},			/* VI_WRITE */
+		{v_ewriteas,	0},			/* VI_WRITEAS */
 	};
 
 	switch (vp->ev.e_ipcom) {
-	case IPO_EDIT:
+	case VI_EDIT:
 		vp->kp = &vievents[0];
 		break;
-	case IPO_EDITSPLIT:
+	case VI_EDITSPLIT:
 		vp->kp = &vievents[1];
 		break;
-	case IPO_MOUSE_MOVE:
+	case VI_MOUSE_MOVE:
 		vp->kp = &vievents[2];
 		break;
-	case IPO_QUIT:
+	case VI_QUIT:
 		vp->kp = &vievents[3];
 		break;
-	case IPO_C_BOL:
+	case VI_C_BOL:
 		vp->kp = &vikeys['0'];
 		break;
-	case IPO_C_BOTTOM:
+	case VI_C_BOTTOM:
 		vp->kp = &vikeys['G'];
 		break;
-	case IPO_C_DEL:
+	case VI_C_DEL:
 		vp->kp = &vikeys['x'];
 		break;
-	case IPO_C_DOWN:
+	case VI_C_DOWN:
 		F_SET(vp, VC_C1SET);
 		vp->count = vp->ev.e_lno;
 		vp->kp = &vikeys['\012'];
 		break;
-	case IPO_C_EOL:
+	case VI_C_EOL:
 		vp->kp = &vikeys['$'];
 		break;
-	case IPO_C_INSERT:
+	case VI_C_INSERT:
 		vp->kp = &vikeys['i'];
 		break;
-	case IPO_C_LEFT:
+	case VI_C_LEFT:
 		vp->kp = &vikeys['\010'];
 		break;
-	case IPO_C_PGDOWN:
+	case VI_C_PGDOWN:
 		F_SET(vp, VC_C1SET);
 		vp->count = vp->ev.e_lno;
 		vp->kp = &vikeys['\006'];
 		break;
-	case IPO_C_PGUP:
+	case VI_C_PGUP:
 		F_SET(vp, VC_C1SET);
 		vp->count = vp->ev.e_lno;
 		vp->kp = &vikeys['\002'];
 		break;
-	case IPO_C_RIGHT:
+	case VI_C_RIGHT:
 		vp->kp = &vikeys['\040'];
 		break;
-	case IPO_C_TOP:
+	case VI_C_TOP:
 		F_SET(vp, VC_C1SET);
 		vp->count = 1;
 		vp->kp = &vikeys['G'];
 		break;
-	case IPO_C_UP:
+	case VI_C_UP:
 		F_SET(vp, VC_C1SET);
 		vp->count = vp->ev.e_lno;
 		vp->kp = &vikeys['\020'];
 		break;
-	case IPO_TAG:
+	case VI_TAG:
 		vp->kp = &vievents[4];
 		break;
-	case IPO_TAGAS:
+	case VI_TAGAS:
 		vp->kp = &vievents[5];
 		break;
-	case IPO_TAGSPLIT:
+	case VI_TAGSPLIT:
 		vp->kp = &vievents[6];
 		break;
-	case IPO_UNDO:
+	case VI_UNDO:
 		vp->kp = &vikeys['u'];
 		break;
-	case IPO_WQ:
+	case VI_WQ:
 		vp->kp = &vievents[7];
 		break;
-	case IPO_WRITE:
+	case VI_WRITE:
 		vp->kp = &vievents[8];
 		break;
-	case IPO_WRITEAS:
+	case VI_WRITEAS:
 		vp->kp = &vievents[9];
 		break;
 	default:
