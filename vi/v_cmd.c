@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 5.15 1992/04/19 10:54:11 bostic Exp $ (Berkeley) $Date: 1992/04/19 10:54:11 $";
+static char sccsid[] = "$Id: v_cmd.c,v 5.16 1992/04/22 08:09:14 bostic Exp $ (Berkeley) $Date: 1992/04/22 08:09:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,260 +19,260 @@ static char sccsid[] = "$Id: v_cmd.c,v 5.15 1992/04/19 10:54:11 bostic Exp $ (Be
  * This array maps keystrokes to vi command functions.
  */
 VIKEYS vikeys[] = {
-/* 0000 NUL */
+/* 000 NUL */
 	{},
-/* 0001  ^A find cursor word */
+/* 001  ^A find cursor word */
 	{m_wsrch,	KEYWORD,	MVMT|NREL|VIZ},
-/* 0002  ^B page backward 1 page */
+/* 002  ^B page backward 1 page */
 	{m_scroll,	CURSOR,		FRNT|VIZ},
-/* 0003  ^C */
+/* 003  ^C */
 	{},
-/* 0004  ^D scroll down 1/2 page */
+/* 004  ^D scroll down 1/2 page */
 	{m_scroll,	CURSOR,		NCOL|VIZ},
-/* 0005  ^E scroll up 1 line */
+/* 005  ^E scroll up 1 line */
 	{m_scroll,	CURSOR,		NCOL|VIZ},
-/* 0006  ^F page forward 1 page */
+/* 006  ^F page forward 1 page */
 	{m_scroll,	CURSOR,		FRNT|VIZ},
-/* 0007  ^G show file status */
+/* 007  ^G show file status */
 	{v_status,	0, 	0},
-/* 0010  ^H move left 1 column */
+/* 010  ^H move left 1 column */
 	{m_left,	CURSOR,		MVMT|VIZ},
-/* 0011  ^I */
+/* 011  ^I */
 	{},
-/* 0012  ^J move down 1 line */
+/* 012  ^J move down 1 line */
 	{m_updnto,	CURSOR,		MVMT|LNMD|VIZ},
-/* 0013  ^K */
+/* 013  ^K */
 	{},
-/* 0014  ^L redraw screen */
+/* 014  ^L redraw screen */
 	{v_redraw,	0,	0|VIZ},
-/* 0015  ^M move to column 1 of next line */
+/* 015  ^M move to column 1 of next line */
 	{m_updnto,	CURSOR,		MVMT|FRNT|LNMD|VIZ},
-/* 0016  ^N move down 1 line */
+/* 016  ^N move down 1 line */
 	{m_updnto,	CURSOR,		MVMT|LNMD|VIZ},
-/* 0017  ^O */
+/* 017  ^O */
 	{},
-/* 0020  ^P move up 1 line */
+/* 020  ^P move up 1 line */
 	{m_updnto,	CURSOR,		MVMT|LNMD|VIZ},
-/* 0021  ^Q */
+/* 021  ^Q */
 	{},
-/* 0022  ^R redraw screen */
+/* 022  ^R redraw screen */
 	{v_redraw,	0,	0|VIZ},
-/* 0023  ^S */
+/* 023  ^S */
 	{},
-/* 0024  ^T */
+/* 024  ^T */
 	{},
-/* 0025  ^U scroll up 1/2 page */
+/* 025  ^U scroll up 1/2 page */
 	{m_scroll,	CURSOR,		NCOL|VIZ},
-/* 0026  ^V */
+/* 026  ^V */
 	{},
-/* 0027  ^W */
+/* 027  ^W */
 	{},
-/* 0030  ^X move to physical column */
+/* 030  ^X move to physical column */
 	{m_tocol,	CURSOR,		NREL|VIZ},
-/* 0031  ^Y */
+/* 031  ^Y */
 	{},
-/* 0032  ^Z */
+/* 032  ^Z */
 	{},
-/* 0033  ^[ */
+/* 033  ^[ */
 	{},
-/* 0034  ^\ */
+/* 034  ^\ */
 	{},
-/* 0035  ^] tag cursor word */
+/* 035  ^] tag cursor word */
 	{v_tag,		KEYWORD,	0},
-/* 0036  ^^ previous file */
+/* 036  ^^ previous file */
 	{v_switch,	CURSOR,		0},
-/* 0037  ^_ */
+/* 037  ^_ */
 	{},
-/* 0040 ' ' move right 1 column */
+/* 040 ' ' move right 1 column */
 	{m_right,	CURSOR,		MVMT|VIZ},
-/* 0041   ! run through filter */
+/* 041   ! run through filter */
 	{v_filter,	CURSOR_MOVED,	FRNT|LNMD|INCL|VIZ},
-/* 0042   " select cut buffer */
+/* 042   " select cut buffer */
 	{v_selcut,	C_C_K_CUT,	PTMV|VIZ},
-/* 0043   # increment number */
+/* 043   # increment number */
 	{v_increment,	KEYWORD,	SDOT},
-/* 0044   $ move to last column */
+/* 044   $ move to last column */
 	{m_rear,	CURSOR,		MVMT|INCL|VIZ},
-/* 0045   % move to match */
+/* 045   % move to match */
 	{m_match,	CURSOR,		MVMT|INCL|VIZ},
-/* 0046   & repeat substitution */
+/* 046   & repeat substitution */
 	{v_again,	CURSOR_MOVED,	SDOT|NCOL|LNMD|INCL},
-/* 0047   ' move to mark */
+/* 047   ' move to mark */
 	{m_tomark,	C_C_K_MARK,	MVMT|FRNT|NREL|LNMD|INCL|VIZ},
-/* 0050   ( move back sentence */
+/* 050   ( move back sentence */
 	{m_bsentence,	CURSOR,		MVMT|VIZ},
-/* 0051   ) move forward sentence */
+/* 051   ) move forward sentence */
 	{m_fsentence,	CURSOR,		MVMT|VIZ},
-/* 0052   * errlist  */
+/* 052   * errlist  */
 	{v_errlist,	CURSOR,		FRNT|NREL},
-/* 0053   + move to column 1 of next line */
+/* 053   + move to column 1 of next line */
 	{m_updnto,	CURSOR,		MVMT|FRNT|LNMD|VIZ},
-/* 0054   , reverse [fFtT] cmd */
+/* 054   , reverse [fFtT] cmd */
 	{m__ch,		CURSOR,		MVMT|INCL|VIZ},
-/* 0055   - move to column 1 of previous line */
+/* 055   - move to column 1 of previous line */
 	{m_updnto,	CURSOR,		MVMT|FRNT|LNMD|VIZ},
-/* 0056   . special. */
+/* 056   . special. */
 	{},
-/* 0057   / forward search */
+/* 057   / forward search */
 	{m_fsrch,	CURSOR_TEXT,	MVMT|NREL|VIZ},
-/* 0060   0 part of count? */
+/* 060   0 part of count? */
 	{NULL,	ZERO,		MVMT|PTMV|VIZ},
-/* 0061   1 part of count */
+/* 061   1 part of count */
 	{NULL,	DIGIT,		PTMV|VIZ},
-/* 0062   2 part of count */
+/* 062   2 part of count */
 	{NULL,	DIGIT,		PTMV|VIZ},
-/* 0063   3 part of count */
+/* 063   3 part of count */
 	{NULL,	DIGIT,		PTMV|VIZ},
-/* 0064   4 part of count */
+/* 064   4 part of count */
 	{NULL,	DIGIT,		PTMV|VIZ},
-/* 0065   5 part of count */
+/* 065   5 part of count */
 	{NULL,	DIGIT,		PTMV|VIZ},
-/* 0066   6 part of count */
+/* 066   6 part of count */
 	{NULL,	DIGIT,		PTMV|VIZ},
-/* 0067   7 part of count */
+/* 067   7 part of count */
 	{NULL,	DIGIT,		PTMV|VIZ},
-/* 0070   8 part of count */
+/* 070   8 part of count */
 	{NULL,	DIGIT,		PTMV|VIZ},
-/* 0071   9 part of count */
+/* 071   9 part of count */
 	{NULL,	DIGIT,		PTMV|VIZ},
-/* 0072   : run single ex command */
+/* 072   : run single ex command */
 	{v_ex,		CURSOR_TEXT,	0},
-/* 0073   ; repeat [fFtT] command */
+/* 073   ; repeat [fFtT] command */
 	{m__ch,		CURSOR,		MVMT|INCL|VIZ},
-/* 0074   < shift text left */
-	{v_lshift,	CURSOR_MOVED,	SDOT|FRNT|LNMD|INCL|VIZ},
-/* 0075   = */
+/* 074   < shift text left */
+	{v_shiftl,	CURSOR_MOVED,	SDOT|FRNT|LNMD|INCL|VIZ},
+/* 075   = */
 	{},
-/* 0076   > shift text right */
-	{v_rshift,	CURSOR_MOVED,	SDOT|FRNT|LNMD|INCL|VIZ},
-/* 0077   ? backward search */
+/* 076   > shift text right */
+	{v_shiftr,	CURSOR_MOVED,	SDOT|FRNT|LNMD|INCL|VIZ},
+/* 077   ? backward search */
 	{m_bsrch,	CURSOR_TEXT,	MVMT|NREL|VIZ},
-/* 0100   @ execute a cut buffer */
+/* 100   @ execute a cut buffer */
 	{v_at,		C_C_K_CUT,	0},
-/* 0101   A append at EOL */
+/* 101   A append at EOL */
 	{v_insert,	CURSOR,		SDOT},
-/* 0102   B move back word */
+/* 102   B move back word */
 	{m_bword,	CURSOR,		MVMT|VIZ},
-/* 0103   C change to EOL */
+/* 103   C change to EOL */
 	{v_change,	CURSOR_EOL,	SDOT},
-/* 0104   D delete to EOL */
+/* 104   D delete to EOL */
 	{v_delete,	CURSOR_EOL,	SDOT},
-/* 0105   E move to end of word */
+/* 105   E move to end of word */
 	{m_eword,	CURSOR,		MVMT|INCL|VIZ},
-/* 0106   F move back to char */
+/* 106   F move back to char */
 	{m_Fch,		C_C_K_CHAR,	MVMT|INCL|VIZ},
-/* 0107   G move to line # */
+/* 107   G move to line # */
 	{m_updnto,	CURSOR,		MVMT|NREL|LNMD|FRNT|INCL|VIZ},
-/* 0110   H move to row */
+/* 110   H move to row */
 	{m_row,		CURSOR,		MVMT|FRNT|VIZ},
-/* 0111   I insert at front */
+/* 111   I insert at front */
 	{v_insert,	CURSOR,		SDOT},
-/* 0112   J join lines */
+/* 112   J join lines */
 	{v_join,	CURSOR,		SDOT},
-/* 0113   K */
+/* 113   K */
 	{},
-/* 0114   L move to last row */
+/* 114   L move to last row */
 	{m_row,		CURSOR,		MVMT|FRNT|VIZ},
-/* 0115   M move to middle row */
+/* 115   M move to middle row */
 	{m_row,		CURSOR,		MVMT|FRNT|VIZ},
-/* 0116   N reverse previous search */
+/* 116   N reverse previous search */
 	{m_Nsrch,	CURSOR,		MVMT|NREL|VIZ},
-/* 0117   O insert above line */
+/* 117   O insert above line */
 	{v_insert,	CURSOR,		SDOT},
-/* 0120   P paste before */
+/* 120   P paste before */
 	{v_paste,	CURSOR,		SDOT},
-/* 0121   Q quit to ex mode */
+/* 121   Q quit to ex mode */
 	{v_quit,	0,	0},
-/* 0122   R overtype	 */
+/* 122   R overtype	 */
 	{v_overtype,	CURSOR,		SDOT},
-/* 0123   S change line */
+/* 123   S change line */
 	{v_change,	CURSOR_MOVED,	SDOT},
-/* 0124   T move back to char */
+/* 124   T move back to char */
 	{m_Tch,		C_C_K_CHAR,	MVMT|INCL|VIZ},
-/* 0125   U undo line */
+/* 125   U undo line */
 	{v_undoline,	CURSOR,		FRNT},
-/* 0126   V start visible */
+/* 126   V start visible */
 	{v_start,	CURSOR,		INCL|LNMD|VIZ},
-/* 0127   W move forward word */
+/* 127   W move forward word */
 	{m_fword,	CURSOR,		MVMT|INCL|VIZ},
-/* 0130   X delete to left */
+/* 130   X delete to left */
 	{v_xchar,	CURSOR,		SDOT},
-/* 0131   Y yank text */
+/* 131   Y yank text */
 	{v_yank,	CURSOR_MOVED,	NCOL},
-/* 0132   Z save file and exit */
+/* 132   Z save file and exit */
 	{v_xit,		CURSOR_CNT_KEY,	0},
-/* 0133   [ move back section */
+/* 133   [ move back section */
 	{m_paragraph,	CURSOR,		MVMT|LNMD|NREL|VIZ},
-/* 0134   \ */
+/* 134   \ */
 	{},
-/* 0135   ] move forward section */
+/* 135   ] move forward section */
 	{m_paragraph,	CURSOR,		MVMT|LNMD|NREL|VIZ},
-/* 0136   ^ move to front */
+/* 136   ^ move to front */
 	{m_front,	CURSOR,		MVMT|VIZ},
-/* 0137   _ current line */
+/* 137   _ current line */
 	{m_updnto,	CURSOR,		MVMT|LNMD|FRNT|INCL},
-/* 0140   ` move to mark */
+/* 140   ` move to mark */
 	{m_tomark,	C_C_K_MARK,	MVMT|NREL|VIZ},
-/* 0141   a append at cursor */
+/* 141   a append at cursor */
 	{v_insert,	CURSOR,		SDOT},
-/* 0142   b move back word */
+/* 142   b move back word */
 	{m_bword,	CURSOR,		MVMT|VIZ},
-/* 0143   c change text */
+/* 143   c change text */
 	{v_change,	CURSOR_MOVED,	SDOT|VIZ},
-/* 0144   d delete operation */
+/* 144   d delete operation */
 	{v_delete,	CURSOR_MOVED,	SDOT|VIZ},
-/* 0145   e move to word end */
+/* 145   e move to word end */
 	{m_eword,	CURSOR,		MVMT|INCL|VIZ},
-/* 0146   f move forward to char */
+/* 146   f move forward to char */
 	{m_fch,		C_C_K_CHAR,	MVMT|INCL|VIZ},
-/* 0147   g */
+/* 147   g */
 	{},
-/* 0150   h move left 1 column */
+/* 150   h move left 1 column */
 	{m_left,	CURSOR,		MVMT|VIZ},
-/* 0151   i insert at cursor */
+/* 151   i insert at cursor */
 	{v_insert,	CURSOR,		SDOT},
-/* 0152   j move down 1 line */
+/* 152   j move down 1 line */
 	{m_updnto,	CURSOR,		MVMT|NCOL|LNMD|VIZ},
-/* 0153   k move up 1 line */
+/* 153   k move up 1 line */
 	{m_updnto,	CURSOR,		MVMT|NCOL|LNMD|VIZ},
-/* 0154   l move right 1 column */
+/* 154   l move right 1 column */
 	{m_right,	CURSOR,		MVMT|VIZ},
-/* 0155   m define a mark */
+/* 155   m define a mark */
 	{v_mark,	C_C_K_MARK,	0},
-/* 0156   n repeat previous search */
+/* 156   n repeat previous search */
 	{m_nsrch,	CURSOR, 	MVMT|NREL|VIZ},
-/* 0157   o insert below line */
+/* 157   o insert below line */
 	{v_insert,	CURSOR,		SDOT},
-/* 0160   p paste after */
+/* 160   p paste after */
 	{v_paste,	CURSOR,		SDOT},
-/* 0161   q */
+/* 161   q */
 	{},
-/* 0162   r replace chars */
+/* 162   r replace chars */
 	{v_replace,	C_C_K_REP1,	SDOT},
-/* 0163   s substitute N chars */
+/* 163   s substitute N chars */
 	{v_subst,	CURSOR,		SDOT},
-/* 0164   t move forward to char */
+/* 164   t move forward to char */
 	{m_tch,		C_C_K_CHAR,	MVMT|INCL|VIZ},
-/* 0165   u undo	 */
+/* 165   u undo	 */
 	{v_undo,	CURSOR,		0},
-/* 0166   v start visible */
+/* 166   v start visible */
 	{v_start,	CURSOR,		INCL|VIZ},
-/* 0167   w move forward word */
+/* 167   w move forward word */
 	{m_fword,	CURSOR,		MVMT|INCL|VIZ},
-/* 0170   x delete character */
+/* 170   x delete character */
 	{v_xchar,	CURSOR,		SDOT},
-/* 0171   y yank text */
+/* 171   y yank text */
 	{v_yank,	CURSOR_MOVED,	NCOL|VIZ},
-/* 0172   z adjust screen row */
+/* 172   z adjust screen row */
 	{m_z, 		CURSOR_CNT_KEY,	NCOL|VIZ},
-/* 0173   { back paragraph */
+/* 173   { back paragraph */
 	{m_paragraph,	CURSOR,		MVMT|LNMD|VIZ},
-/* 0174   | move to column */
+/* 174   | move to column */
 	{m_tocol,	CURSOR,		MVMT|NREL|VIZ},
-/* 0175   } forward paragraph */
+/* 175   } forward paragraph */
 	{m_paragraph,	CURSOR,		MVMT|LNMD|VIZ},
-/* 0176   ~ upper/lowercase */
+/* 176   ~ upper/lowercase */
 	{v_ulcase,	CURSOR,		SDOT},
-/* 0177  ^? */
+/* 177  ^? */
 	{},
 };
