@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.56 1993/04/18 09:37:02 bostic Exp $ (Berkeley) $Date: 1993/04/18 09:37:02 $";
+static char sccsid[] = "$Id: options.c,v 5.57 1993/05/04 16:45:09 bostic Exp $ (Berkeley) $Date: 1993/05/04 16:45:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,8 +33,6 @@ static OPTLIST const optlist[] = {
 	{"autoindent",	NULL,		OPT_0BOOL,	0},
 /* O_AUTOPRINT */
 	{"autoprint",	NULL,		OPT_1BOOL,	0},
-/* O_AUTOTAB */
-	{"autotab",	NULL,		OPT_1BOOL,	0},
 /* O_AUTOWRITE */
 	{"autowrite",	NULL,		OPT_0BOOL,	0},
 /* O_BEAUTIFY */
@@ -55,8 +53,6 @@ static OPTLIST const optlist[] = {
 	{"errorbells",	NULL,		OPT_0BOOL,	0},
 /* O_EXRC */
 	{"exrc",	NULL,		OPT_0BOOL,	0},
-/* O_EXREFRESH */
-	{"exrefresh",	NULL,		OPT_1BOOL,	0},
 /* O_EXTENDED */
 	{"extended",	NULL,		OPT_0BOOL,	0},
 /* O_FLASH */
@@ -113,10 +109,10 @@ static OPTLIST const optlist[] = {
 	{"showmode",	NULL,		OPT_0BOOL,	0},
 /* O_SIDESCROLL */
 	{"sidescroll",	f_sidescroll,	OPT_NUM,	0},
-/* O_SYNCCMD */
-	{"sync",	NULL,		OPT_0BOOL,	0},
 /* O_TABSTOP */
 	{"tabstop",	f_tabstop,	OPT_NUM,	0},
+/* O_TAGLENGTH */
+	{"taglength",	NULL,		OPT_NUM,	0},
 /* O_TAGS */
 	{"tags",	f_tags,		OPT_STR,	0},
 /* O_TERM */
@@ -146,7 +142,6 @@ typedef struct abbrev {
 static OABBREV const abbrev[] = {
 	{"ai",		O_AUTOINDENT},
 	{"ap",		O_AUTOPRINT},
-	{"at",		O_AUTOTAB},
 	{"aw",		O_AUTOWRITE},
 	{"bf",		O_BEAUTIFY},
 	{"cc",		O_CC},
@@ -155,7 +150,6 @@ static OABBREV const abbrev[] = {
 	{"dir",		O_DIRECTORY},
 	{"eb",		O_ERRORBELLS},
 	{"ed",		O_EDCOMPATIBLE},
-	{"er",		O_EXREFRESH},
 	{"fl",		O_FLASH},
 	{"ic",		O_IGNORECASE},
 	{"kt",		O_KEYTIME},
@@ -178,7 +172,6 @@ static OABBREV const abbrev[] = {
 	{"sm",		O_SHOWMATCH},
 	{"ss",		O_SIDESCROLL},
 	{"sw",		O_SHIFTWIDTH},
-	{"sy",		O_SYNCCMD},
 	{"te",		O_TERM},
 	{"to",		O_KEYTIME},
 	{"tr",		O_TERSE},
