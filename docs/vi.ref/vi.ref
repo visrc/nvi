@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.62 1995/02/15 17:41:26 bostic Exp $ (Berkeley) $Date: 1995/02/15 17:41:26 $
+.\"     $Id: vi.ref,v 8.63 1995/10/03 20:52:33 bostic Exp $ (Berkeley) $Date: 1995/10/03 20:52:33 $
 .\"
 .\"
 .so ref.so
@@ -691,7 +691,7 @@ replaces the string
 .LI abc
 with
 .LI ABC ).
-The strings
+The string
 .QT \eL
 causes characters up to the end of the string or the next occurrence
 of the strings
@@ -1022,7 +1022,7 @@ The unnamed buffer is a text storage area which is used by commands
 that use or operate on a buffer when no buffer is specified by the user.
 If the command stores text into a buffer,
 the text is stored into the unnamed buffer even if a buffer is also
-specified by the user,
+specified by the user.
 It is not possible to append text to the unnamed buffer.
 If text is appended to a named buffer,
 the named buffer contains both the old and new text,

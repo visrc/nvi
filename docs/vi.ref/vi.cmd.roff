@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: vi.cmd.roff,v 8.47 1995/09/29 12:22:02 bostic Exp $ (Berkeley) $Date: 1995/09/29 12:22:02 $
+.\"	$Id: vi.cmd.roff,v 8.48 1995/10/03 20:52:27 bostic Exp $ (Berkeley) $Date: 1995/10/03 20:52:27 $
 .\"
 .SH 1 "Vi Description"
 .pp
@@ -515,7 +515,7 @@ Unchanged.
 None.
 .SE
 .KY <control-H>
-.IP "<control-H>"
+.IP "[count] <control-H>"
 .Ip "[count] h"
 Move the cursor back
 .LI count
@@ -1611,12 +1611,10 @@ then the last buffer executed shall be used.
 It is an error to specify
 .QT @@
 or
-.QT **
+.QT @*
 if there were no previous buffer executions.
-The text of a buffer may contain an
+The text of a buffer may contain a
 .CO @
-or
-.CO *
 command,
 and it is possible to create infinite loops in this manner.
 (The
@@ -2455,8 +2453,8 @@ The line is referred to by
 .sp
 Historically,
 .LI <character>
-was restricted to lower-case letters only,
-.CO nvi
+was restricted to lower-case letters.
+.CO Nvi
 permits the use of any character.
 .SS
 .SP Line:

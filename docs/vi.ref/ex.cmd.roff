@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: ex.cmd.roff,v 8.36 1995/02/15 17:41:23 bostic Exp $ (Berkeley) $Date: 1995/02/15 17:41:23 $
+.\"	$Id: ex.cmd.roff,v 8.37 1995/10/03 20:52:20 bostic Exp $ (Berkeley) $Date: 1995/10/03 20:52:20 $
 .\"
 .SH 1 "Ex Description"
 .pp
@@ -18,8 +18,8 @@ The end-of-file character is used to scroll the screen in the
 .CO ex
 editor.
 This character is normally
-.LI <control-D> ,
-however, whatever character is set for the current terminal is used
+.LI <control-D> .
+However, whatever character is set for the current terminal is supported
 as well as
 .LI <control-D> .
 .KY "line"
@@ -161,8 +161,13 @@ Each
 .CO ex
 command described below notes the new current line after it
 is executed, as well as any options that affect the command.
+.\" I cannot get a double quote to print to save my life.  The ONLY way
+.\" I've been able to get this to work is with the .tr command.
+.tr Q"
+.ds ms Q
 .KY DOUBLEQUOTE
-.IP """"
+.IP "\*(ms"
+.tr QQ
 A comment.
 Command lines beginning with the double-quote character
 .PQ """"
