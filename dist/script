@@ -8,7 +8,8 @@ cd $S/ex && sco $X && echo "go to $VERSION" | sccs delget $X
 #setenv X README
 #cd $S && sco $X && vi $X && echo "go to $VERSION" | sccs delget $X
 setenv X changelog
-cd $S/docs && sco $X && vi $X && echo "go to $VERSION" | sccs delget $X
+cd $S/docs && sco $X
+vi $X && echo "go to $VERSION" | sccs delget $X
 
 # build the distribution
 cd $S/build && sh ./distrib
@@ -38,3 +39,4 @@ cd $S/.. && mv -i nvi nvi-$VERSION
 tar cFFf - nvi-$VERSION | gzip --best > /tmp/nvi-$VERSION.tar.gz
 chmod 444 /tmp/nvi-$VERSION.tar.gz && mv -i nvi-$VERSION nvi
 cd $S && mv RCS/build.local RCS/ip RCS/ip_cl .
+cd $S/docs && sco changelog
