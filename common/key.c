@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.48 1993/02/28 17:47:58 bostic Exp $ (Berkeley) $Date: 1993/02/28 17:47:58 $";
+static char sccsid[] = "$Id: key.c,v 5.49 1993/03/25 15:00:31 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:00:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -15,12 +15,10 @@ static char sccsid[] = "$Id: key.c,v 5.48 1993/02/28 17:47:58 bostic Exp $ (Berk
 #include <ctype.h>
 #include <curses.h>
 #include <errno.h>
-#include <limits.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <termios.h>
 #include <unistd.h>
 
 #include "vi.h"
@@ -30,52 +28,40 @@ static char sccsid[] = "$Id: key.c,v 5.48 1993/02/28 17:47:58 bostic Exp $ (Berk
 #include "screen.h"
 #include "term.h"
 
-u_char special[UCHAR_MAX];		/* Special characters. */
-
-u_char *gb_cb;				/* Return buffer. */
-u_char *gb_qb;				/* Quote buffer. */
-u_char *gb_wb;				/* Widths buffer. */
-u_long gb_blen;				/* Buffer lengths. */
-
-static void	check_sigwinch __P((EXF *));
-static int	ttyread __P((EXF *, u_char *, int, int));
+static void	check_sigwinch __P((SCR *));
+static int	ttyread __P((SCR *, u_char *, int, int));
 
 /*
  * gb_init --
- *	Initialize the special array.  Basically, this array has a value for
- *	each special character that we can use in a switch statement.  This
- *	speeds up lookup and normal insertion tremendously.
+ *	Initialize the special array and input buffers.  The special array
+ *	has a value for each special character that we can use in a switch
+ *	statement.
  */
-void
-gb_init(ep)
-	EXF *ep;
+int
+gb_init(sp)
+	SCR *sp;
 {
-	struct termios t;
-
-	memset(special, 0, sizeof(special));
-
-	if (tcgetattr(STDIN_FILENO, &t))
-		return;
+	/* Zero out the special characters array. */
+	memset(sp->special, 0, sizeof(sp->special));
 
 	/* Keys that are treated specially. */
-	special['^'] = K_CARAT;
-	special['\004'] = K_CNTRLD;
-	special['\022'] = K_CNTRLR;
-	special['\032'] = K_CNTRLZ;
-	special['\r'] = K_CR;
-	special['\033'] = K_ESCAPE;
-	special['\f'] = K_FORMFEED;
-	special['\n'] = K_NL;
-	special['\t'] = K_TAB;
-	special['\t'] = K_TAB;
-	special[t.c_cc[VERASE]] = K_VERASE;
-	special[t.c_cc[VKILL]] = K_VKILL;
-	special[t.c_cc[VLNEXT]] = K_VLNEXT;
-	special[t.c_cc[VWERASE]] = K_VWERASE;
-	special['0'] = K_ZERO;
+	sp->special['^'] = K_CARAT;
+	sp->special['\004'] = K_CNTRLD;
+	sp->special['\022'] = K_CNTRLR;
+	sp->special['\032'] = K_CNTRLZ;
+	sp->special['\r'] = K_CR;
+	sp->special['\033'] = K_ESCAPE;
+	sp->special['\f'] = K_FORMFEED;
+	sp->special['\n'] = K_NL;
+	sp->special['\t'] = K_TAB;
+	sp->special['\t'] = K_TAB;
+	sp->special[sp->gp->original_termios.c_cc[VERASE]] = K_VERASE;
+	sp->special[sp->gp->original_termios.c_cc[VKILL]] = K_VKILL;
+	sp->special[sp->gp->original_termios.c_cc[VLNEXT]] = K_VLNEXT;
+	sp->special[sp->gp->original_termios.c_cc[VWERASE]] = K_VWERASE;
+	sp->special['0'] = K_ZERO;
 
-	/* Start off with some memory. */
-	(void)gb_inc(ep);
+	return (0);
 }
 
 /*
@@ -83,23 +69,25 @@ gb_init(ep)
  *	Increase the size of the gb buffers.
  */
 int
-gb_inc(ep)
-	EXF *ep;
+gb_inc(sp)
+	SCR *sp;
 {
-	gb_blen += 256;
-	if ((gb_cb = realloc(gb_cb, gb_blen)) == NULL ||
-	    (gb_qb = realloc(gb_qb, gb_blen)) == NULL ||
-	    (gb_wb = realloc(gb_wb, gb_blen)) == NULL) {
-			ep->msg(ep, M_ERROR,
+	sp->gb_len += 256;
+	if ((sp->gb_cb = realloc(sp->gb_cb, sp->gb_len)) == NULL ||
+	    (sp->gb_qb = realloc(sp->gb_qb, sp->gb_len)) == NULL ||
+	    (sp->gb_wb = realloc(sp->gb_wb, sp->gb_len)) == NULL) {
+			msgq(sp, M_ERROR,
 			    "Input too long: %s.", strerror(errno));
-			if (gb_cb)
-				free(gb_cb);
-			if (gb_qb)
-				free(gb_qb);
-			if (gb_wb)
-				free(gb_wb);
-			gb_cb = gb_qb = gb_wb = NULL;
-			gb_blen = 0;
+			if (sp->gb_cb != NULL)
+				free(sp->gb_cb);
+			if (sp->gb_qb != NULL)
+				free(sp->gb_qb);
+			if (sp->gb_wb != NULL)
+				free(sp->gb_wb);
+			sp->gb_cb = NULL;
+			sp->gb_qb = NULL;
+			sp->gb_wb = NULL;
+			sp->gb_len = 0;
 			return (1);
 		}
 	return (0);
@@ -111,49 +99,45 @@ gb_inc(ep)
  *	and executed cut buffers.
  */
 int
-getkey(ep, flags)
-	EXF *ep;
+getkey(sp, flags)
+	SCR *sp;
 	u_int flags;			/* GB_MAPCOMMAND, GB_MAPINPUT */
 {
-	static int nkeybuf;		/* # of keys in the buffer. */
-	static int nextkey;		/* Index of next key in the buffer. */
-	static u_char keybuf[256];	/* Key buffer. */
-	static u_char *mapoutput;	/* Mapped key return. */
 	int ch;
-	SEQ *sp;
+	SEQ *qp;
 	int ispartial, nr;
 
 	/* If in the middle of an @ macro, return the next char. */
-	if (atkeybuflen) {
-		ch = *atkeyp++;
-		if (--atkeybuflen == 0)
-			free(atkeybuf);
+	if (sp->atkey_len) {
+		ch = *sp->atkey_cur++;
+		if (--sp->atkey_len == 0)
+			free(sp->atkey_buf);
 		goto ret;
 	}
 
 	/* If returning a mapped key, return the next char. */
-	if (mapoutput) {
-		ch = *mapoutput;
-		if (*++mapoutput == '\0') {
-			FF_CLR(ep, F_MSGWAIT);
-			mapoutput = NULL;
+	if (sp->mapoutput) {
+		ch = *sp->mapoutput;
+		if (*++sp->mapoutput == '\0') {
+			F_CLR(sp, S_MSGWAIT);
+			sp->mapoutput = NULL;
 		}
 		goto ret;
 	}
 
 	/* Read in more keys if necessary. */
-	if (nkeybuf == 0) {
+	if (sp->nkeybuf == 0) {
 		/* Read the keystrokes. */
-		nkeybuf = ttyread(ep, keybuf, sizeof(keybuf), 0);
-		nextkey = 0;
+		sp->nkeybuf = ttyread(sp, sp->keybuf, sizeof(sp->keybuf), 0);
+		sp->nextkey = 0;
 		
 		/*
 		 * If no keys read, then we've reached EOF of an ex script.
 		 * XXX
 		 * This is just wrong...
 		 */
-		if (nkeybuf == 0) {
-			FF_SET(ep, F_EXIT_FORCE);
+		if (sp->nkeybuf == 0) {
+			F_SET(sp, S_EXIT_FORCE);
 			return(0);
 		}
 	}
@@ -165,36 +149,37 @@ getkey(ep, flags)
 	 * and probably not worth fixing.
 	 */
 	if (flags & (GB_MAPINPUT | GB_MAPCOMMAND) &&
-	    seqstart(keybuf[nextkey])) {
-retry:		sp = seq_find(&keybuf[nextkey], nkeybuf,
-		    flags & GB_MAPCOMMAND ? COMMAND : INPUT, &ispartial);
+	    sp->seq[sp->keybuf[sp->nextkey]]) {
+retry:		qp = seq_find(sp, &sp->keybuf[sp->nextkey], sp->nkeybuf,
+		    flags & GB_MAPCOMMAND ? SEQ_COMMAND : SEQ_INPUT,
+		    &ispartial);
 		if (ispartial) {
-			if (sizeof(keybuf) == nkeybuf)
-				ep->msg(ep, M_ERROR,
-				    "Partial map is too long.");
+			if (sizeof(sp->keybuf) == sp->nkeybuf)
+				msgq(sp, M_ERROR, "Partial map is too long.");
 			else {
-				memmove(&keybuf[nextkey], keybuf, nkeybuf);
-				nextkey = 0;
-				nr = ttyread(ep, keybuf + nkeybuf,
-				    sizeof(keybuf) - nkeybuf,
+				memmove(&sp->keybuf[sp->nextkey],
+				    sp->keybuf, sp->nkeybuf);
+				sp->nextkey = 0;
+				nr = ttyread(sp, sp->keybuf + sp->nkeybuf,
+				    sizeof(sp->keybuf) - sp->nkeybuf,
 				    (int)LVAL(O_KEYTIME));
 				if (nr) {
-					nkeybuf += nr;
+					sp->nkeybuf += nr;
 					goto retry;
 				}
 			}
-		} else if (sp != NULL) {
-			nkeybuf -= sp->ilen;
-			nextkey += sp->ilen;
-			mapoutput = sp->output;
-			FF_SET(ep, F_MSGWAIT);
-			ch = *mapoutput++;
+		} else if (qp != NULL) {
+			sp->nkeybuf -= qp->ilen;
+			sp->nextkey += qp->ilen;
+			sp->mapoutput = qp->output;
+			F_SET(sp, S_MSGWAIT);
+			ch = *sp->mapoutput++;
 			goto ret;
 		}
 	}
 
-	--nkeybuf;
-	ch = keybuf[nextkey++];
+	--sp->nkeybuf;
+	ch = sp->keybuf[sp->nextkey++];
 
 	/*
 	 * XXX
@@ -208,12 +193,12 @@ retry:		sp = seq_find(&keybuf[nextkey], nkeybuf,
 	 * newline, form-feed and escape.
 	 */
 ret:	if (flags & GB_BEAUTIFY && ISSET(O_BEAUTIFY)) {
-		if (isprint(ch) || special[ch] == K_ESCAPE ||
-		    special[ch] == K_FORMFEED || special[ch] == K_NL ||
-		    special[ch] == K_TAB)
+		if (isprint(ch) || sp->special[ch] == K_ESCAPE ||
+		    sp->special[ch] == K_FORMFEED || sp->special[ch] == K_NL ||
+		    sp->special[ch] == K_TAB)
 			return (ch);
-		bell(ep);
-		return (getkey(ep, flags));
+		bell(sp);
+		return (getkey(sp, flags));
 	}
 	return (ch);
 }
@@ -223,8 +208,8 @@ static int __set_sig_winch;				/* GLOBAL */
 static void onwinch __P((int));
 
 static int
-ttyread(ep, buf, len, time)
-	EXF *ep;
+ttyread(sp, buf, len, time)
+	SCR *sp;
 	u_char *buf;		/* where to store the characters */
 	int len;		/* max characters to read */
 	int time;		/* max tenth seconds to read */
@@ -255,7 +240,7 @@ ttyread(ep, buf, len, time)
 	 */
 	if (isfromtty == NO) {
 		if ((nr = read(STDIN_FILENO, buf, len)) == 0)
-			FF_SET(ep, F_EXIT_FORCE);
+			F_SET(sp, S_EXIT_FORCE);
 		return (0);
 	}
 
@@ -276,17 +261,17 @@ ttyread(ep, buf, len, time)
 		case -1:			/* Error. */
 			/* It's okay to be interrupted. */
 			if (errno == EINTR) {
-				check_sigwinch(ep);
+				check_sigwinch(sp);
 				break;
 			}
-			ep->msg(ep, M_ERROR,
+			msgq(sp, M_ERROR,
 			    "Terminal read error: %s", strerror(errno));
 			return (0);
 		case 0:				/* Timeout. */
 			return (0);
 		default:			/* Read or EOF. */
 			if ((nr = read(STDIN_FILENO, buf, len)) == 0)
-				FF_SET(ep, F_EXIT_FORCE);
+				F_SET(sp, S_EXIT_FORCE);
 			return (nr);
 		}
 	}
@@ -310,8 +295,8 @@ onwinch(signo)
  *	the only place we block.
  */
 static void
-check_sigwinch(ep)
-	EXF *ep;
+check_sigwinch(sp)
+	SCR *sp;
 {
 	sigset_t bmask, omask;
 
@@ -320,10 +305,14 @@ check_sigwinch(ep)
 		sigaddset(&bmask, SIGWINCH);
 		(void)sigprocmask(SIG_BLOCK, &bmask, &omask);
 
-		set_window_size(ep, 0);
-		SF_SET(ep, S_RESIZE);
-		if (FF_ISSET(ep, F_MODE_VI)) {
-			(void)scr_update(ep);
+		set_window_size(sp, 0);
+		F_SET(sp, S_RESIZE);
+		if (F_ISSET(sp, S_MODE_VI)) {
+			/*
+			 * XXX
+			 * This code needs an EXF structure!!
+			 * (void)scr_update(sp);
+			 */
 			refresh();
 		}
 		__check_sig_winch = 0;

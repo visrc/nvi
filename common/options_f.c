@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 5.1 1993/03/25 14:16:03 bostic Exp $ (Berkeley) $Date: 1993/03/25 14:16:03 $";
+static char sccsid[] = "$Id: options_f.c,v 5.2 1993/03/25 15:00:25 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:00:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,8 +22,8 @@ static char sccsid[] = "$Id: options_f.c,v 5.1 1993/03/25 14:16:03 bostic Exp $ 
 #include "screen.h"
 
 int
-f_columns(ep, valp, eqp)
-	EXF *ep; 
+f_columns(sp, valp, eqp)
+	SCR *sp; 
 	void *valp;
 	char *eqp;
 {
@@ -33,32 +33,32 @@ f_columns(ep, valp, eqp)
 	val = *(u_long *)valp;
 
 	if (val < MINIMUM_SCREEN_COLS) {
-		ep->msg(ep, M_ERROR, "Screen columns too small, less than %d.",
+		msgq(sp, M_ERROR, "Screen columns too small, less than %d.",
 		    MINIMUM_SCREEN_COLS);
 		return (1);
 	}
 	if (val < LVAL(O_SHIFTWIDTH)) {
-		ep->msg(ep, M_ERROR,
+		msgq(sp, M_ERROR,
 		    "Screen columns too small, less than shiftwidth.");
 		return (1);
 	}
 	if (val < LVAL(O_SIDESCROLL)) {
-		ep->msg(ep, M_ERROR,
+		msgq(sp, M_ERROR,
 		    "Screen columns too small, less than sidescroll.");
 		return (1);
 	}
 	if (val < LVAL(O_TABSTOP)) {
-		ep->msg(ep, M_ERROR,
+		msgq(sp, M_ERROR,
 		    "Screen columns too small, less than tabstop.");
 		return (1);
 	}
 	if (val < LVAL(O_WRAPMARGIN)) {
-		ep->msg(ep, M_ERROR,
+		msgq(sp, M_ERROR,
 		    "Screen columns too small, less than wrapmargin.");
 		return (1);
 	}
 	if (val < O_NUMBER_LENGTH) {
-		ep->msg(ep, M_ERROR,
+		msgq(sp, M_ERROR,
 		    "Screen columns too small, less than number option.");
 		return (1);
 	}
@@ -66,28 +66,28 @@ f_columns(ep, valp, eqp)
 	(void)putenv(buf);
 
 	/* Set resize bit. */
-	SF_SET(ep, S_RESIZE);
+	F_SET(sp, S_RESIZE);
 	return (0);
 }
 
 int
-f_flash(ep, valp, eqp)
-	EXF *ep;
+f_flash(sp, valp, eqp)
+	SCR *sp;
 	void *valp;
 	char *eqp;
 {
 	size_t len;
-	char *s, b1[1024], b2[1024];
+	char *s, *t, b1[2048], b2[2048];
 	
 	if ((s = getenv("TERM")) == NULL) {
-		ep->msg(ep, M_ERROR,
+		msgq(sp, M_ERROR,
 		    "No \"TERM\" value set in the environment.");
 		return (1);
 	}
 
 	/* Get the termcap information. */
 	if (tgetent(b1, s) != 1) {
-		ep->msg(ep, M_ERROR, "No termcap entry for %s.", s);
+		msgq(sp, M_ERROR, "No termcap entry for %s.", s);
 		return (1);
 	}
 
@@ -95,6 +95,7 @@ f_flash(ep, valp, eqp)
 	 * Get the visual bell string.  If one doesn't exist, then
 	 * set O_ERRORBELLS.
 	 */
+	s = b2;
 	if (tgetstr("vb", &s) == NULL) {
 		SET(O_ERRORBELLS);
 		UNSET(O_FLASH);
@@ -102,59 +103,57 @@ f_flash(ep, valp, eqp)
 	}
 
 	len = s - b2;
-	if ((VB = malloc(len)) == NULL) {
-		ep->msg(ep, M_ERROR, "Error: %s", strerror(errno));
+	if ((t = malloc(len)) == NULL) {
+		msgq(sp, M_ERROR, "Error: %s", strerror(errno));
 		return (1);
 	}
 
-	memmove(s, b2, len);
+	memmove(t, b2, len);
 
-	if (VB != NULL)
-		free(VB);
-	VB = s;
+	if (sp->VB != NULL)
+		free(sp->VB);
+	sp->VB = t;
 
 	return (0);
 }
 
 int
-f_mesg(ep, valp, eqp)
-	EXF *ep;
+f_mesg(sp, valp, eqp)
+	SCR *sp;
 	void *valp;
 	char *eqp;
 {
-	extern mode_t __orig_mode;		/* GLOBAL */
-	extern int __set_orig_mode;		/* GLOBAL */
 	struct stat sb;
 	char *tty;
 
 	if ((tty = ttyname(STDERR_FILENO)) == NULL) {
-		ep->msg(ep, M_ERROR, "ttyname: %s", strerror(errno));
+		msgq(sp, M_ERROR, "ttyname: %s", strerror(errno));
 		return (1);
 	}
 	if (stat(tty, &sb) < 0) {
-		ep->msg(ep, M_ERROR, "%s: %s", strerror(errno));
+		msgq(sp, M_ERROR, "%s: %s", strerror(errno));
 		return (1);
 	}
 
-	__set_orig_mode = 1;
-	__orig_mode = sb.st_mode;
+	F_SET(sp->gp, G_SETMODE);
+	sp->gp->origmode = sb.st_mode;
 
 	if (ISSET(O_MESG)) {
 		if (chmod(tty, sb.st_mode | S_IWGRP) < 0) {
-			ep->msg(ep, M_ERROR, "%s: %s", strerror(errno));
+			msgq(sp, M_ERROR, "%s: %s", strerror(errno));
 			return (1);
 		}
 	} else
 		if (chmod(tty, sb.st_mode & ~S_IWGRP) < 0) {
-			ep->msg(ep, M_ERROR, "%s: %s", strerror(errno));
+			msgq(sp, M_ERROR, "%s: %s", strerror(errno));
 			return (1);
 		}
 	return (0);
 }
 
 int
-f_keytime(ep, valp, eqp)
-	EXF *ep; 
+f_keytime(sp, valp, eqp)
+	SCR *sp; 
 	void *valp;
 	char *eqp;
 {
@@ -164,7 +163,7 @@ f_keytime(ep, valp, eqp)
 
 #define	MAXKEYTIME	20
 	if (val > MAXKEYTIME) {
-		ep->msg(ep, M_ERROR,
+		msgq(sp, M_ERROR,
 		    "Keytime too large, more than %d.", MAXKEYTIME);
 		return (1);
 	}
@@ -172,17 +171,17 @@ f_keytime(ep, valp, eqp)
 }
 
 int
-f_leftright(ep, valp, eqp)
-	EXF *ep;
+f_leftright(sp, valp, eqp)
+	SCR *sp;
 	void *valp;
 	char *eqp;
 {
-	return (scr_end(ep) || scr_begin(ep));
+	F_SET(sp, S_REDRAW);
 }
 
 int
-f_lines(ep, valp, eqp)
-	EXF *ep; 
+f_lines(sp, valp, eqp)
+	SCR *sp; 
 	void *valp;
 	char *eqp;
 {
@@ -192,7 +191,7 @@ f_lines(ep, valp, eqp)
 	val = *(u_long *)valp;
 
 	if (val < MINIMUM_SCREEN_ROWS) {
-		ep->msg(ep, M_ERROR, "Screen lines too small, less than %d.",
+		msgq(sp, M_ERROR, "Screen lines too small, less than %d.",
 		    MINIMUM_SCREEN_ROWS);
 		return (1);
 	}
@@ -200,46 +199,50 @@ f_lines(ep, valp, eqp)
 	(void)putenv(buf);
 
 	/* Set resize bit. */
-	SF_SET(ep, S_RESIZE);
+	F_SET(sp, S_RESIZE);
 	return (0);
 }
 
 int
-f_list(ep, valp, eqp)
-	EXF *ep; 
+f_list(sp, valp, eqp)
+	SCR *sp; 
 	void *valp;
 	char *eqp;
 {
-	SF_SET(ep, S_REFORMAT);
+	F_SET(sp, S_REFORMAT);
 	return (0);
 }
 
 int
-f_modelines(ep, valp, eqp)
-	EXF *ep;
+f_modelines(sp, valp, eqp)
+	SCR *sp;
 	void *valp;
 	char *eqp;
 {
 	if (ISSET(O_MODELINES)) {
-		ep->msg(ep, M_ERROR, "The modelines option may not be set.");
+		msgq(sp, M_ERROR, "The modelines option may not be set.");
 		UNSET(O_MODELINES);
 	}
 	return (0);
 }
 
 int
-f_ruler(ep, valp, eqp)
-	EXF *ep; 
+f_ruler(sp, valp, eqp)
+	SCR *sp; 
 	void *valp;
 	char *eqp;
 {
-	scr_modeline(ep, 0);
+	/*
+	 * XXX
+	 * Fix this when the options code gets reworked.
+	 * scr_modeline(sp, 0);
+	 */
 	return (0);
 }
 
 int
-f_shiftwidth(ep, valp, eqp)
-	EXF *ep; 
+f_shiftwidth(sp, valp, eqp)
+	SCR *sp; 
 	void *valp;
 	char *eqp;
 {
@@ -248,7 +251,7 @@ f_shiftwidth(ep, valp, eqp)
 	val = *(u_long *)valp;
 
 	if (val > LVAL(O_COLUMNS)) {
-		ep->msg(ep, M_ERROR,
+		msgq(sp, M_ERROR,
 		    "Shiftwidth can't be larger than screen size.");
 		return (1);
 	}
@@ -256,8 +259,8 @@ f_shiftwidth(ep, valp, eqp)
 }
 
 int
-f_sidescroll(ep, valp, eqp)
-	EXF *ep; 
+f_sidescroll(sp, valp, eqp)
+	SCR *sp; 
 	void *valp;
 	char *eqp;
 {
@@ -266,7 +269,7 @@ f_sidescroll(ep, valp, eqp)
 	val = *(u_long *)valp;
 
 	if (val > LVAL(O_COLUMNS)) {
-		ep->msg(ep, M_ERROR,
+		msgq(sp, M_ERROR,
 		    "Sidescroll can't be larger than screen size.");
 		return (1);
 	}
@@ -274,8 +277,8 @@ f_sidescroll(ep, valp, eqp)
 }
 
 int
-f_tabstop(ep, valp, eqp)
-	EXF *ep; 
+f_tabstop(sp, valp, eqp)
+	SCR *sp; 
 	void *valp;
 	char *eqp;
 {
@@ -284,17 +287,17 @@ f_tabstop(ep, valp, eqp)
 	val = *(u_long *)valp;
 
 	if (val == 0) {
-		ep->msg(ep, M_ERROR, "Tab stops can't be set to 0.");
+		msgq(sp, M_ERROR, "Tab stops can't be set to 0.");
 		return (1);
 	}
 #define	MAXTABSTOP	20
 	if (val > MAXTABSTOP) {
-		ep->msg(ep, M_ERROR,
+		msgq(sp, M_ERROR,
 		    "Tab stops can't be larger than %d.", MAXTABSTOP);
 		return (1);
 	}
 	if (val > LVAL(O_COLUMNS)) {
-		ep->msg(ep, M_ERROR,
+		msgq(sp, M_ERROR,
 		    "Tab stops can't be larger than screen size.",
 		    MAXTABSTOP);
 		return (1);
@@ -309,8 +312,8 @@ f_tabstop(ep, valp, eqp)
  *	care.
  */
 int
-f_tags(ep, valp, eqp)
-	EXF *ep;
+f_tags(sp, valp, eqp)
+	SCR *sp;
 	void *valp;
 	char *eqp;
 {
@@ -319,10 +322,10 @@ f_tags(ep, valp, eqp)
 	int cnt;
 	char *p, *t;
 
-	if (ep->tfhead != NULL) {		/* Free up previous array. */
-		for (cnt = 0; ep->tfhead[cnt] != NULL; ++cnt)
-			free(ep->tfhead[cnt]->fname);
-		free(ep->tfhead);
+	if (sp->tfhead != NULL) {		/* Free up previous array. */
+		for (cnt = 0; sp->tfhead[cnt] != NULL; ++cnt)
+			free(sp->tfhead[cnt]->fname);
+		free(sp->tfhead);
 	}
 	for (p = t = eqp, cnt = 0;; ++p) {	/* Count new entries. */
 		if (*p == '\0' || isspace(*p)) {
@@ -334,25 +337,25 @@ f_tags(ep, valp, eqp)
 			break;
 	}
 						/* Allocate new array. */
-	if ((ep->tfhead = malloc((cnt + 1) * sizeof(TAGF))) == NULL)
+	if ((sp->tfhead = malloc((cnt + 1) * sizeof(TAGF))) == NULL)
 		goto mem2;
-	ep->tfhead[cnt] = NULL;
+	sp->tfhead[cnt] = NULL;
 	for (p = t = eqp, cnt = 0;; ++p) {	/* Fill in new array. */
 		if (*p == '\0' || isspace(*p)) {
 			if ((len = p - t) > 1) {
-				if ((ep->tfhead[cnt] =
+				if ((sp->tfhead[cnt] =
 				    malloc(sizeof(TAGF))) == NULL)
 					goto mem1;
-				if ((ep->tfhead[cnt]->fname =
+				if ((sp->tfhead[cnt]->fname =
 				    malloc(len + 1)) == NULL) {
-mem1:					ep->tfhead[cnt] = NULL;
-mem2:					ep->msg(ep, M_ERROR,
+mem1:					sp->tfhead[cnt] = NULL;
+mem2:					msgq(sp, M_ERROR,
 					    "Error: %s", strerror(errno));
 					return (1);
 				}
-				memmove(ep->tfhead[cnt]->fname, t, len);
-				ep->tfhead[cnt]->fname[len] = '\0';
-				ep->tfhead[cnt]->flags = 0;
+				memmove(sp->tfhead[cnt]->fname, t, len);
+				sp->tfhead[cnt]->fname[len] = '\0';
+				sp->tfhead[cnt]->flags = 0;
 				++cnt;
 			}
 			t = p + 1;
@@ -364,17 +367,17 @@ mem2:					ep->msg(ep, M_ERROR,
 }
 
 int
-f_term(ep, valp, eqp)
-	EXF *ep;
+f_term(sp, valp, eqp)
+	SCR *sp;
 	void *valp;
 	char *eqp;
 {
-	return (f_flash(ep, NULL, NULL));
+	return (f_flash(sp, NULL, NULL));
 }
 
 int
-f_wrapmargin(ep, valp, eqp)
-	EXF *ep; 
+f_wrapmargin(sp, valp, eqp)
+	SCR *sp; 
 	void *valp;
 	char *eqp;
 {
@@ -383,7 +386,7 @@ f_wrapmargin(ep, valp, eqp)
 	val = *(u_long *)valp;
 
 	if (val > LVAL(O_COLUMNS)) {
-		ep->msg(ep, M_ERROR,
+		msgq(sp, M_ERROR,
 		    "Wrapmargin value can't be larger than screen size.");
 		return (1);
 	}

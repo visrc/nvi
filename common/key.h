@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 5.18 1993/02/28 11:54:19 bostic Exp $ (Berkeley) $Date: 1993/02/28 11:54:19 $
+ *	$Id: key.h,v 5.19 1993/03/25 15:00:35 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:00:35 $
  */
 
 #define	K_CARAT		1
@@ -21,7 +21,6 @@
 #define	K_VLNEXT	12
 #define	K_VWERASE	13
 #define	K_ZERO		14
-extern u_char special[];		/* Special characters. */
 
 #define	GB_BEAUTIFY	0x001		/* Only printable characters. */
 #define	GB_BS		0x002		/* Backspace erases past command. */
@@ -37,30 +36,14 @@ extern u_char special[];		/* Special characters. */
 	(GB_BEAUTIFY | GB_BS | GB_ESC | GB_MAPCOMMAND | GB_MAPINPUT | \
 	    GB_NLECHO | GB_OFF)
 
-#define	ISQ(off)	gb_qb[(off)]
-#define	QINIT		memset(gb_qb, 0, gb_blen);
-#define	QSET(off)	gb_qb[(off)] = 1
-
-extern u_char *atkeybuf;		/* Base of shared at buffer. */
-extern u_char *atkeyp;			/* Next char of shared at buffer. */
-extern u_long atkeybuflen;		/* Remaining keys in shared @ buffer. */
-
-/*
- * The routines that fill a buffer from the terminal share these three data
- * structures.  They are a buffer to hold the return value, a quote buffer
- * so we know which characters are quoted, and a widths buffer.  The last is
- * used internally to hold the widths of each character.  Any new routines
- * will need to support these too.
- */
-extern u_char *gb_cb;			/* Return buffer. */
-extern u_char *gb_qb;			/* Quote buffer. */
-extern u_char *gb_wb;			/* Widths buffer. */
-extern u_long gb_blen;			/* Buffer lengths. */
+#define	ISQ(off)	sp->gb_qb[(off)]
+#define	QINIT		memset(sp->gb_qb, 0, sp->gb_len);
+#define	QSET(off)	sp->gb_qb[(off)] = 1
 
 					/* Real routines. */
-int	ex_gb __P((EXF *, int, u_char **, size_t *, u_int));
-int	v_gb __P((EXF *, int, u_char **, size_t *, u_int));
+int	ex_gb __P((SCR *, int, u_char **, size_t *, u_int));
+int	v_gb __P((SCR *, int, u_char **, size_t *, u_int));
 
-int	gb_inc __P((EXF *));		/* Support routines. */
-void	gb_init __P((EXF *));
-int	getkey __P((EXF *, u_int));
+int	gb_inc __P((SCR *));		/* Support routines. */
+int	gb_init __P((SCR *));
+int	getkey __P((SCR *, u_int));

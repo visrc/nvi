@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.51 1993/03/01 12:49:00 bostic Exp $ (Berkeley) $Date: 1993/03/01 12:49:00 $";
+static char sccsid[] = "$Id: options.c,v 5.52 1993/03/25 15:00:20 bostic Exp $ (Berkeley) $Date: 1993/03/25 15:00:20 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -16,11 +16,9 @@ static char sccsid[] = "$Id: options.c,v 5.51 1993/03/01 12:49:00 bostic Exp $ (
 #include <ctype.h>
 #include <curses.h>
 #include <errno.h>
-#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <termios.h>
 #include <unistd.h>
 
 #include "vi.h"
@@ -33,7 +31,7 @@ static char sccsid[] = "$Id: options.c,v 5.51 1993/03/01 12:49:00 bostic Exp $ (
 static int	 opts_abbcmp __P((const void *, const void *));
 static int	 opts_cmp __P((const void *, const void *));
 static OPTIONS	*opts_prefix __P((char *));
-static int	 opts_print __P((EXF *, OPTIONS *));
+static int	 opts_print __P((SCR *, OPTIONS *));
 
 static long	s_columns	= 80;
 static long	s_keytime	=  2;
@@ -163,9 +161,9 @@ OPTIONS opts[] = {
 typedef struct abbrev {
         char *name;
         int offset;
-} ABBREV;
+} OABBREV;
 
-static ABBREV abbrev[] = {
+static OABBREV abbrev[] = {
 	"ai",		O_AUTOINDENT,
 	"ap",		O_AUTOPRINT,
 	"at",		O_AUTOTAB,
@@ -220,28 +218,28 @@ static ABBREV abbrev[] = {
  *	"setting" these variables, we don't set their OPT_SET bits.
  */
 int
-opts_init(ep)
-	EXF *ep;
+opts_init(sp)
+	SCR *sp;
 {
 	char *s, *argv[2], b1[1024];
 
-	(void)set_window_size(ep, 0);
+	(void)set_window_size(sp, 0);
 
 	argv[0] = b1;
 	argv[1] = NULL;
 							/* O_SCROLL */
 	(void)snprintf(b1, sizeof(b1), "sc=%ld", LVAL(O_LINES));
-	(void)opts_set(ep, argv);
+	(void)opts_set(sp, argv);
 	FUNSET(O_SCROLL, OPT_SET);
 
 	if (s = getenv("SHELL")) {			/* O_SHELL */
 		(void)snprintf(b1, sizeof(b1), "shell=%s", s);
-		(void)opts_set(ep, argv);
+		(void)opts_set(sp, argv);
 	}
 	FUNSET(O_SHELL, OPT_SET);
 							/* O_TAGS */
 	(void)snprintf(b1, sizeof(b1), "tags=%s", _PATH_TAGS);
-	(void)opts_set(ep, argv);
+	(void)opts_set(sp, argv);
 	FUNSET(O_TAGS, OPT_SET);
 
 	(void)f_flash(NULL, NULL, NULL);		/* O_FLASH */
@@ -249,38 +247,17 @@ opts_init(ep)
 	return (0);
 }
 
-mode_t	__orig_mode;					/* GLOBAL */
-int	__set_orig_mode;				/* GLOBAL */
-	
-/*
- * opts_end --
- *	Reset anything that the options changed.
- */
-void
-opts_end(ep)
-	EXF *ep;
-{
-	char *tty;
-
-	if (__set_orig_mode) {			/* O_MESG */
-		if ((tty = ttyname(STDERR_FILENO)) == NULL)
-			ep->msg(ep, M_ERROR, "ttyname: %s", strerror(errno));
-		else if (chmod(tty, __orig_mode) < 0)
-			ep->msg(ep, M_ERROR, "%s: %s", strerror(errno));
-	}
-}
-
 /*
  * opts_set --
  *	Change the values of one or more options.
  */
 int
-opts_set(ep, argv)
-	EXF *ep;
+opts_set(sp, argv)
+	SCR *sp;
 	char **argv;
 {
 	register char *p;
-	ABBREV atmp, *ap;
+	OABBREV atmp, *ap;
 	OPTIONS otmp, *op;
 	long value;
 	int all, ch, off, rval;
@@ -318,8 +295,8 @@ opts_set(ep, argv)
 		/* Check list of abbreviations. */
 		atmp.name = name;
 		if ((ap = bsearch(&atmp, abbrev,
-		    sizeof(abbrev) / sizeof(ABBREV) - 1,
-		    sizeof(ABBREV), opts_abbcmp)) != NULL) {
+		    sizeof(abbrev) / sizeof(OABBREV) - 1,
+		    sizeof(OABBREV), opts_abbcmp)) != NULL) {
 			op = opts + ap->offset;
 			goto found;
 		}
@@ -341,8 +318,8 @@ opts_set(ep, argv)
 		/* Check list of abbreviations. */
 		atmp.name = name;
 		if ((ap = bsearch(&atmp, abbrev,
-		    sizeof(abbrev) / sizeof(ABBREV) - 1,
-		    sizeof(ABBREV), opts_abbcmp)) != NULL) {
+		    sizeof(abbrev) / sizeof(OABBREV) - 1,
+		    sizeof(OABBREV), opts_abbcmp)) != NULL) {
 			op = opts + ap->offset;
 			goto found;
 		}
@@ -358,7 +335,7 @@ opts_set(ep, argv)
 prefix:		op = opts_prefix(name);
 
 found:		if (op == NULL || off && !ISFSETP(op, OPT_0BOOL|OPT_1BOOL)) {
-			ep->msg(ep, M_ERROR,
+			msgq(sp, M_ERROR,
 			    "no option %s: 'set all' gives all option values",
 			    name);
 			continue;
@@ -366,7 +343,7 @@ found:		if (op == NULL || off && !ISFSETP(op, OPT_0BOOL|OPT_1BOOL)) {
 
 		/* Set name, value. */
 		if (ISFSETP(op, OPT_NOSET)) {
-			ep->msg(ep, M_ERROR, "%s: may not be set", name);
+			msgq(sp, M_ERROR, "%s: may not be set", name);
 			continue;
 		}
 
@@ -374,31 +351,31 @@ found:		if (op == NULL || off && !ISFSETP(op, OPT_0BOOL|OPT_1BOOL)) {
 		case OPT_0BOOL:
 		case OPT_1BOOL:
 			if (equals) {
-				ep->msg(ep, M_ERROR,
+				msgq(sp, M_ERROR,
 				    "set: option [no]%s is a boolean", name);
 				break;
 			}
 			FUNSETP(op, OPT_0BOOL | OPT_1BOOL);
 			FSETP(op, (off ? OPT_0BOOL : OPT_1BOOL) | OPT_SET);
-			if (op->func && op->func(ep, &off, NULL)) {
+			if (op->func && op->func(sp, &off, NULL)) {
 				rval = 1;
 				break;
 			}
 			goto draw;
 		case OPT_NUM:
 			if (!equals) {
-				ep->msg(ep, M_ERROR,
+				msgq(sp, M_ERROR,
 				    "set: option %s requires a value",
 				    name);
 				break;
 			}
 			value = strtol(equals, &endp, 10);
 			if (*endp && !isspace(*endp)) {
-				ep->msg(ep, M_ERROR,
+				msgq(sp, M_ERROR,
 				    "set %s: illegal number %s", name, equals);
 				break;
 			}
-			if (op->func && op->func(ep, &value, equals)) {
+			if (op->func && op->func(sp, &value, equals)) {
 				rval = 1;
 				break;
 			}
@@ -407,33 +384,33 @@ found:		if (op == NULL || off && !ISFSETP(op, OPT_0BOOL|OPT_1BOOL)) {
 			goto draw;
 		case OPT_STR:
 			if (!equals) {
-				ep->msg(ep, M_ERROR,
+				msgq(sp, M_ERROR,
 				    "set: option %s requires a value",
 				    name);
 				break;
 			}
-			if (op->func && op->func(ep, &value, equals)) {
+			if (op->func && op->func(sp, &value, equals)) {
 				rval = 1;
 				break;
 			}
 			if (ISFSETP(op, OPT_ALLOCATED))
 				free(op->value);
 			if ((op->value = strdup(equals)) == NULL) {
-				ep->msg(ep, M_ERROR,
+				msgq(sp, M_ERROR,
 				    "Error: %s", strerror(errno));
 				rval = 1;
 				break;
 			}
 			FSETP(op, OPT_ALLOCATED | OPT_SET);
 draw:			if (ISFSETP(op, OPT_REDRAW))
-				SF_SET(ep, S_REDRAW);
+				F_SET(sp, S_REDRAW);
 			break;
 		default:
 			abort();
 		}
 	}
 	if (all)
-		opts_dump(ep, 1);
+		opts_dump(sp, 1);
 	return (rval);
 }
 
@@ -442,8 +419,8 @@ draw:			if (ISFSETP(op, OPT_REDRAW))
  *	List the current values of selected options.
  */
 void
-opts_dump(ep, all)
-	EXF *ep;
+opts_dump(sp, all)
+	SCR *sp;
 	int all;
 {
 	OPTIONS *op;
@@ -463,7 +440,7 @@ opts_dump(ep, all)
 	 */
 	colwidth = -1;
 	tablen = LVAL(O_TABSTOP);
-	termwidth = (SCRP(ep)->cols - 1) / 2 & ~(tablen - 1);
+	termwidth = (sp->cols - 1) / 2 & ~(tablen - 1);
 	for (b_num = s_num = 0, op = opts; op->name; ++op) {
 		if (!all && !ISFSETP(op, OPT_SET))
 			continue;
@@ -492,7 +469,7 @@ opts_dump(ep, all)
 	}
 
 	colwidth = (colwidth + tablen) & ~(tablen - 1);
-	termwidth = SCRP(ep)->cols - 1;
+	termwidth = sp->cols - 1;
 	numcols = termwidth / colwidth;
 	if (s_num > numcols) {
 		numrows = s_num / numcols;
@@ -504,34 +481,35 @@ opts_dump(ep, all)
 	for (row = 0; row < numrows;) {
 		endcol = colwidth;
 		for (base = row, chcnt = col = 0; col < numcols; ++col) {
-			chcnt += opts_print(ep, &opts[s_op[base]]);
+			chcnt += opts_print(sp, &opts[s_op[base]]);
 			if ((base += numrows) >= s_num)
 				break;
 			while ((cnt =
 			    (chcnt + tablen & ~(tablen - 1))) <= endcol) {
-				(void)putc('\t', ep->stdfp);
+				(void)putc('\t', sp->stdfp);
 				chcnt = cnt;
 			}
 			endcol += colwidth;
 		}
 		if (++row < numrows || b_num)
-			(void)putc('\n', ep->stdfp);
+			(void)putc('\n', sp->stdfp);
 	}
 
 	for (row = 0; row < b_num;) {
-		(void)opts_print(ep, &opts[b_op[row]]);
+		(void)opts_print(sp, &opts[b_op[row]]);
 		if (++row < b_num)
-			(void)putc('\n', ep->stdfp);
+			(void)putc('\n', sp->stdfp);
 	}
-	(void)putc('\n', ep->stdfp);
+	(void)putc('\n', sp->stdfp);
 }
 
 /*
  * opts_save --
  *	Write the current configuration to a file.
  */
-void
-opts_save(fp)
+int
+opts_save(sp, fp)
+	SCR *sp;
 	FILE *fp;
 {
 	OPTIONS *op;
@@ -556,6 +534,7 @@ opts_save(fp)
 			break;
 		}
 	}
+	return (ferror(fp));
 }
 
 /*
@@ -563,8 +542,8 @@ opts_save(fp)
  *	Print out an option.
  */
 static int
-opts_print(ep, op)
-	EXF *ep;
+opts_print(sp, op)
+	SCR *sp;
 	OPTIONS *op;
 {
 	int curlen;
@@ -573,27 +552,27 @@ opts_print(ep, op)
 	switch (op->flags & OPT_TYPE) {
 	case OPT_0BOOL:
 		curlen += 2;
-		(void)putc('n', ep->stdfp);
-		(void)putc('o', ep->stdfp);
+		(void)putc('n', sp->stdfp);
+		(void)putc('o', sp->stdfp);
 		/* FALLTHROUGH */
 	case OPT_1BOOL:
-		curlen += fprintf(ep->stdfp, "%s", op->name);
+		curlen += fprintf(sp->stdfp, "%s", op->name);
 		break;
 	case OPT_NUM:
-		curlen += fprintf(ep->stdfp, "%s", op->name);
+		curlen += fprintf(sp->stdfp, "%s", op->name);
 		curlen += 1;
-		(void)putc('=', ep->stdfp);
-		curlen += fprintf(ep->stdfp, "%ld", LVALP(op));
+		(void)putc('=', sp->stdfp);
+		curlen += fprintf(sp->stdfp, "%ld", LVALP(op));
 		break;
 	case OPT_STR:
-		curlen += fprintf(ep->stdfp, "%s", op->name);
+		curlen += fprintf(sp->stdfp, "%s", op->name);
 		curlen += 1;
-		(void)putc('=', ep->stdfp);
+		(void)putc('=', sp->stdfp);
 		curlen += 1;
-		(void)putc('"', ep->stdfp);
-		curlen += fprintf(ep->stdfp, "%s", op->value);
+		(void)putc('"', sp->stdfp);
+		curlen += fprintf(sp->stdfp, "%s", op->value);
 		curlen += 1;
-		(void)putc('"', ep->stdfp);
+		(void)putc('"', sp->stdfp);
 		break;
 	}
 	return (curlen);
@@ -626,7 +605,7 @@ static int
 opts_abbcmp(a, b)
         const void *a, *b;
 {
-        return(strcmp(((ABBREV *)a)->name, ((ABBREV *)b)->name));
+        return(strcmp(((OABBREV *)a)->name, ((OABBREV *)b)->name));
 }
 
 static int
