@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.42 1994/03/01 11:37:33 bostic Exp $ (Berkeley) $Date: 1994/03/01 11:37:33 $";
+static char sccsid[] = "$Id: key.c,v 8.43 1994/03/07 16:54:30 bostic Exp $ (Berkeley) $Date: 1994/03/07 16:54:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,27 +38,38 @@ static int __term_read_grow __P((SCR *, IBUF *));
  * THIS REQUIRES THAT ALL SCREENS SHARE A TERMINAL TYPE.
  */
 typedef struct _tklist {
-	char *ts;			/* Key's termcap string. */
-	char *output;			/* Corresponding vi command. */
-	char *name;			/* Name. */
+	char	*ts;			/* Key's termcap string. */
+	char	*output;		/* Corresponding vi command. */
+	char	*name;			/* Name. */
+	u_char	 value;			/* Special value (for lookup). */
 } TKLIST;
-static TKLIST const tklist[] = {
-	{"kA",    "O", "insert line"},
-	{"kD",    "x", "delete character"},
-	{"kd",    "j", "cursor down"},
-	{"kE",    "D", "delete to eol"},
-	{"kF", "\004", "scroll down"},
-	{"kH",    "$", "go to eol"},
-	{"kh",    "^", "go to sol"},
-	{"kI",    "i", "insert at cursor"},
-	{"kL",   "dd", "delete line"},
-	{"kl",    "h", "cursor left"},
-	{"kN", "\006", "page down"},
-	{"kP", "\002", "page up"},
-	{"kR", "\025", "scroll up"},
-	{"kS",	 "dG", "delete to end of screen"},
-	{"kr",    "l", "cursor right"},
-	{"ku",    "k", "cursor up"},
+static TKLIST const c_tklist[] = {	/* Command mappings. */
+	{"kA",    "O",	"insert line"},
+	{"kD",    "x",	"delete character"},
+	{"kd",    "j",	"cursor down"},
+	{"kE",    "D",	"delete to eol"},
+	{"kF", "\004",	"scroll down"},
+	{"kH",    "$",	"go to eol"},
+	{"kh",    "^",	"go to sol"},
+	{"kI",    "i",	"insert at cursor"},
+	{"kL",   "dd",	"delete line"},
+	{"kl",    "h",	"cursor left"},
+	{"kN", "\006",	"page down"},
+	{"kP", "\002",	"page up"},
+	{"kR", "\025",	"scroll up"},
+	{"kS",	 "dG",	"delete to end of screen"},
+	{"kr",    "l",	"cursor right"},
+	{"ku",    "k",	"cursor up"},
+	{NULL},
+};
+static TKLIST const m1_tklist[] = {	/* Input mappings (lookup). */
+	{"kl",   NULL,	"cursor erase", K_VERASE},
+	{NULL},
+};
+static TKLIST const m2_tklist[] = {	/* Input mappings (set or delete). */
+	{"kd",   NULL,	"cursor down"},
+	{"ku",   NULL,	"cursor up"},
+	{"kr",    " ",	"cursor space"},
 	{NULL},
 };
 
@@ -106,8 +117,9 @@ term_init(sp)
 	KEYLIST *kp;
 	TKLIST const *tkp;
 	cc_t ch;
+	size_t olen;
 	int cnt;
-	char *sbp, *t, buf[2 * 1024], sbuf[128];
+	char *sbp, *p, *t, buf[2 * 1024], kbuf[2], sbuf[128];
 
 	/*
 	 * XXX
@@ -174,13 +186,43 @@ term_init(sp)
 		return (0);
 	}
 
-	for (tkp = tklist; tkp->name != NULL; ++tkp) {
+	/* Command mappings. */
+	for (tkp = c_tklist; tkp->name != NULL; ++tkp) {
 		sbp = sbuf;
 		if ((t = tgetstr(tkp->ts, &sbp)) == NULL)
 			continue;
 		if (seq_set(sp, tkp->name, strlen(tkp->name), t, strlen(t),
 		    tkp->output, strlen(tkp->output), SEQ_COMMAND, 0))
 			return (1);
+	}
+	/* Input mappings needing to be looked up. */
+	for (tkp = m1_tklist; tkp->name != NULL; ++tkp) {
+		sbp = sbuf;
+		if ((t = tgetstr(tkp->ts, &sbp)) == NULL)
+			continue;
+		for (kp = keylist;; ++kp)
+			if (kp->value == tkp->value)
+				break;
+		if (kp == NULL)
+			continue;
+		if (seq_set(sp, tkp->name, strlen(tkp->name),
+		    t, strlen(t), &kp->ch, 1, SEQ_INPUT, 0))
+			return (1);
+	}
+	/* Input mappings that are already set or are text deletions. */
+	for (tkp = m2_tklist; tkp->name != NULL; ++tkp) {
+		sbp = sbuf;
+		if ((t = tgetstr(tkp->ts, &sbp)) == NULL)
+			continue;
+		if (tkp->output == NULL) {
+			if (seq_set(sp, tkp->name, strlen(tkp->name),
+			    t, strlen(t), NULL, 0, SEQ_INPUT, 0))
+				return (1);
+		} else
+			if (seq_set(sp, tkp->name, strlen(tkp->name),
+			    t, strlen(t), tkp->output, strlen(tkp->output),
+			    SEQ_INPUT, 0))
+				return (1);
 	}
 	return (0);
 }
@@ -430,7 +472,8 @@ remap:		qp = seq_find(sp, NULL, &tty->ch[tty->next], tty->cnt,
 		 * character of the map is it, pretend we haven't seen the
 		 * character.
 		 */
-		if (LF_ISSET(TXT_MAPNODIGIT) && !isdigit(qp->output[0]))
+		if (LF_ISSET(TXT_MAPNODIGIT) &&
+		    qp->output != NULL && !isdigit(qp->output[0]))
 			goto not_digit_ch;
 
 		/*
@@ -444,6 +487,10 @@ remap:		qp = seq_find(sp, NULL, &tty->ch[tty->next], tty->cnt,
 
 		/* Delete the mapped characters from the queue. */
 		QREM_HEAD(tty, qp->ilen);
+
+		/* If keys mapped to nothing, go get more. */
+		if (qp->output == NULL)
+			goto loop;
 
 		/* If remapping characters, push the character on the queue. */
 		if (O_ISSET(sp, O_REMAP)) {

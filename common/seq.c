@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 8.22 1994/03/07 16:19:35 bostic Exp $ (Berkeley) $Date: 1994/03/07 16:19:35 $";
+static char sccsid[] = "$Id: seq.c,v 8.23 1994/03/07 16:54:29 bostic Exp $ (Berkeley) $Date: 1994/03/07 16:54:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,32 +25,29 @@ static char sccsid[] = "$Id: seq.c,v 8.22 1994/03/07 16:19:35 bostic Exp $ (Berk
  *	Internal version to enter a sequence.
  */
 int
-seq_set(sp, name, nlen, input, ilen, output, olen, stype, userdef)
+seq_set(sp, name, nlen, input, ilen, output, olen, stype, flags)
 	SCR *sp;
 	char *name, *input, *output;
 	size_t nlen, ilen, olen;
 	enum seqtype stype;
-	int userdef;
+	int flags;
 {
 	SEQ *lastqp, *qp;
 	CHAR_T *p;
 	int sv_errno;
 
-#ifdef DEBUG
 	/*
 	 * An input string must always be present.  The output string
 	 * can be NULL, when set internally, that's how we throw away
 	 * input.
+	 *
+	 * Just replace the output field if the string already set.
 	 */
-	if (input == NULL || ilen == 0 ||
-	    (userdef && (output == NULL || olen == 0)))
-		abort();
-#endif
-	/* Just replace the output field if the string already set. */
 	if ((qp = seq_find(sp, &lastqp, input, ilen, stype, NULL)) != NULL) {
-		if (output == NULL || olen == 0)
+		if (output == NULL || olen == 0) {
 			p = NULL;
-		else if ((p = v_strdup(sp, output, olen)) == NULL) {
+			olen = 0;
+		} else if ((p = v_strdup(sp, output, olen)) == NULL) {
 			sv_errno = errno;
 			goto mem1;
 		}
@@ -85,11 +82,11 @@ seq_set(sp, name, nlen, input, ilen, output, olen, stype, userdef)
 	qp->ilen = ilen;
 
 	/* Output. */
-	if (output == NULL || olen == 0)
+	if (output == NULL) {
 		qp->output = NULL;
-	else if ((qp->output = v_strdup(sp, output, olen)) == NULL) {
-		if (qp->input != NULL)
-			free(qp->input);
+		olen = 0;
+	} else if ((qp->output = v_strdup(sp, output, olen)) == NULL) {
+		free(qp->input);
 mem3:		if (qp->name != NULL)
 			free(qp->name);
 mem2:		FREE(qp, sizeof(SEQ));
@@ -101,7 +98,7 @@ mem1:		errno = sv_errno;
 
 	/* Type, flags. */
 	qp->stype = stype;
-	qp->flags = userdef ? S_USERDEF : 0;
+	qp->flags = flags;
 
 	/* Link into the chain. */
 	if (lastqp == NULL) {
@@ -136,7 +133,7 @@ seq_delete(sp, input, ilen, stype)
 	if (qp->name != NULL)
 		free(qp->name);
 	free(qp->input);
-	if (qp->output == NULL)
+	if (qp->output != NULL)
 		free(qp->output);
 	FREE(qp, sizeof(SEQ));
 	return (0);
@@ -233,12 +230,6 @@ seq_dump(sp, stype, isname)
 	for (qp = sp->gp->seqq.lh_first; qp != NULL; qp = qp->q.le_next) {
 		if (stype != qp->stype)
 			continue;
-		/*
-		 * If qp->output is NULL, we're discarding characters
-		 * internally.   Don't bother to display it.
-		 */
-		if (qp->output == NULL)
-			continue;
 		++cnt;
 		for (p = qp->input,
 		    olen = qp->ilen, len = 0; olen > 0; --olen)
@@ -246,9 +237,13 @@ seq_dump(sp, stype, isname)
 		for (len = STANDARD_TAB - len % STANDARD_TAB; len > 0;)
 			len -= ex_printf(EXCOOKIE, " ");
 
-		for (p = qp->output,
-		    olen = qp->olen, len = 0; olen > 0; --olen)
-			len += ex_printf(EXCOOKIE, "%s", cname[*p++].name);
+		if (qp->output != NULL)
+			for (p = qp->output,
+			    olen = qp->olen, len = 0; olen > 0; --olen)
+				len +=
+				    ex_printf(EXCOOKIE, "%s", cname[*p++].name);
+		else
+			len = 0;
 
 		if (isname && qp->name != NULL) {
 			for (len = STANDARD_TAB - len % STANDARD_TAB; len > 0;)
@@ -282,9 +277,7 @@ seq_save(sp, fp, prefix, stype)
 	/* Write a sequence command for all keys the user defined. */
 	(void)term_key_ch(sp, K_VLNEXT, &esc);
 	for (qp = sp->gp->seqq.lh_first; qp != NULL; qp = qp->q.le_next) {
-		if (!F_ISSET(qp, S_USERDEF))
-			continue;
-		if (stype != qp->stype)
+		if (!F_ISSET(qp, S_USERDEF) || stype != qp->stype)
 			continue;
 		if (prefix)
 			(void)fprintf(fp, "%s", prefix);
@@ -296,13 +289,15 @@ seq_save(sp, fp, prefix, stype)
 			(void)putc(ch, fp);
 		}
 		(void)putc(' ', fp);
-		for (p = qp->output, olen = qp->olen; olen > 0; --olen) {
-			ch = *p++;
-			if (ch == esc || ch == '|' ||
-			    term_key_val(sp, ch) == K_NL)
-				(void)putc(esc, fp);
-			(void)putc(ch, fp);
-		}
+		if (qp->output != NULL)
+			for (p = qp->output,
+			    olen = qp->olen; olen > 0; --olen) {
+				ch = *p++;
+				if (ch == esc || ch == '|' ||
+				    term_key_val(sp, ch) == K_NL)
+					(void)putc(esc, fp);
+				(void)putc(ch, fp);
+			}
 		(void)putc('\n', fp);
 	}
 	return (0);
