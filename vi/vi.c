@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.44 1994/01/08 16:40:34 bostic Exp $ (Berkeley) $Date: 1994/01/08 16:40:34 $";
+static char sccsid[] = "$Id: vi.c,v 8.45 1994/01/22 13:13:21 bostic Exp $ (Berkeley) $Date: 1994/01/22 13:13:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -584,9 +584,8 @@ getkeyword(sp, ep, kp, flags)
 	VICMDARG *kp;
 	u_int flags;
 {
-	register size_t beg, end;
 	recno_t lno;
-	size_t len;
+	size_t beg, end, len;
 	char *p;
 
 	if ((p = file_gline(sp, ep, sp->lno, &len)) == NULL) {
@@ -610,9 +609,18 @@ noword:		msgq(sp, M_BERR, "Cursor not in a %s",
 		return (1);
 	}
 
-	/* Find the beginning/end of the keyword. */
+	/*
+	 * !!!
+	 * Find the beginning/end of the keyword.  Keywords (V_KEYW) are
+	 * used for cursor-word searching and for tags.  Historical vi
+	 * only used the word in a tag search from the cursor to the end
+	 * of the word, i.e. if the cursor was on the 'b' in " abc ", the
+	 * tag was "bc".  For no particular reason, we make cursor word
+	 * searches follow the same rule.
+	 */
 	if (beg != 0)
 		if (LF_ISSET(V_KEYW)) {
+#ifdef	MOVE_TO_KEYWORD_BEGINNING
 			for (;;) {
 				--beg;
 				if (!inword(p[beg])) {
@@ -622,6 +630,7 @@ noword:		msgq(sp, M_BERR, "Cursor not in a %s",
 				if (beg == 0)
 					break;
 			}
+#endif
 		} else {
 			for (;;) {
 				--beg;
