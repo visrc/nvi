@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 5.40 1993/05/12 23:25:17 bostic Exp $ (Berkeley) $Date: 1993/05/12 23:25:17 $";
+static char sccsid[] = "$Id: ex_bang.c,v 5.41 1993/05/13 10:01:07 bostic Exp $ (Berkeley) $Date: 1993/05/13 10:01:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -140,7 +140,7 @@ ex_bang(sp, ep, cmdp)
 	}
 
 	/* Run the command. */
-	if (ex_run_process(sp, com))
+	if (ex_run_process(sp, com, NULL, 0))
 		return (1);
 
 	/* Ex terminates with a bang. */
