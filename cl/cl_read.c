@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_read.c,v 10.13 1996/05/03 08:53:49 bostic Exp $ (Berkeley) $Date: 1996/05/03 08:53:49 $";
+static const char sccsid[] = "$Id: cl_read.c,v 10.14 1996/06/30 17:49:08 bostic Exp $ (Berkeley) $Date: 1996/06/30 17:49:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -85,7 +85,7 @@ retest:	if (LF_ISSET(EC_INTERRUPT) || F_ISSET(clp, CL_SIGINT)) {
 				return (1);
 			if (changed) {
 				(void)cl_resize(sp, lines, columns);
-				evp->e_event = E_INTERRUPT;
+				evp->e_event = E_WRESIZE;
 				return (0);
 			}
 			/* No real change, ignore the signal. */
