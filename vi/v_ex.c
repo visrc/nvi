@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 5.29 1993/01/17 16:58:04 bostic Exp $ (Berkeley) $Date: 1993/01/17 16:58:04 $";
+static char sccsid[] = "$Id: v_ex.c,v 5.30 1993/01/24 18:33:59 bostic Exp $ (Berkeley) $Date: 1993/01/24 18:33:59 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -171,9 +171,12 @@ v_exwrite(cookie, line, llen)
 			tlen = len + lcont;
 			continueline = NOTSET;
 			break;
+		default:
+			abort();
 		}
 		addbytes(line, len);
 
+		/* GCC: tlen cannot be uninitialized here, see switch above. */
 		if (tlen < ep->cols)
 			clrtoeol();
 
