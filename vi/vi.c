@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.43 1993/02/13 13:34:41 bostic Exp $ (Berkeley) $Date: 1993/02/13 13:34:41 $";
+static char sccsid[] = "$Id: vi.c,v 5.44 1993/02/14 14:34:36 bostic Exp $ (Berkeley) $Date: 1993/02/14 14:34:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -42,16 +42,15 @@ vi()
 	register VICMDARG *vp;
 	MARK fm, tm, m;
 	u_int flags;
-	int rval;
+	int first, rval;
 
-	FF_SET(curf, F_NEWSESSION);
-	for (rval = 0;;) {
+	for (rval = 0, first = 1;;) {
 		/*
 		 * If the file has changed, init the file structure and
 		 * refresh the screen.  Otherwise, report any status info
 		 * from the last command.
 		 */
-		if (FF_ISSET(curf, F_NEWSESSION)) {
+		if (first || FF_ISSET(curf, F_NEWSESSION)) {
 			if (v_init(curf))
 				return (1);
 			if (curf->scr_update(curf)) {
@@ -60,6 +59,7 @@ vi()
 			}
 			status(curf, curf->lno);
 			FF_CLR(curf, F_NEWSESSION);
+			first = 0;
 		} else if (curf->rptlines) {
 			if (LVAL(O_REPORT) &&
 			    curf->rptlines >= LVAL(O_REPORT)) {
