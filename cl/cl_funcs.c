@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_funcs.c,v 10.63 2001/04/21 06:36:24 skimo Exp $ (Berkeley) $Date: 2001/04/21 06:36:24 $";
+static const char sccsid[] = "$Id: cl_funcs.c,v 10.64 2001/04/22 19:55:52 skimo Exp $ (Berkeley) $Date: 2001/04/22 19:55:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -396,13 +396,13 @@ cl_discard(discardp, acquirep)
 	SCR*	tsp;
 
 	if (discardp) {
-	clp = CLP(discardp);
-	F_SET(clp, CL_LAYOUT);
+	    clp = CLP(discardp);
+	    F_SET(clp, CL_LAYOUT);
 
-		if (CLSP(discardp)) {
-			delwin(CLSP(discardp));
-			CLSP(discardp) = NULL;
-		}
+	    if (CLSP(discardp)) {
+		    delwin(CLSP(discardp));
+		    CLSP(discardp) = NULL;
+	    }
 	}
 
 	/* no screens got a piece; we're done */

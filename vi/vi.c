@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vi.c,v 10.70 2000/07/15 20:26:36 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:36 $";
+static const char sccsid[] = "$Id: vi.c,v 10.71 2001/04/22 19:55:52 skimo Exp $ (Berkeley) $Date: 2001/04/22 19:55:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -402,6 +402,7 @@ intr:			CLR_INTERRUPT(sp);
 		if (F_ISSET(gp, G_SRESTART) || F_ISSET(sp, SC_EX)) {
 			*spp = sp;
 			v_dtoh(sp);
+			gp->scr_discard(sp, NULL);
 			break;
 		}
 	}
@@ -1038,6 +1039,7 @@ v_dtoh(sp)
 		CIRCLEQ_INSERT_TAIL(&gp->hq, tsp, q);
 		/* XXXX Change if hidden screens per window */
 		tsp->wp = 0;
+		gp->scr_discard(tsp, NULL);
 	}
 
 	/* Move current screen back to the display queue. */
