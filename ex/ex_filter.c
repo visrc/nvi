@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 5.31 1993/04/12 14:11:55 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:11:55 $";
+static char sccsid[] = "$Id: ex_filter.c,v 5.32 1993/04/13 16:13:19 bostic Exp $ (Berkeley) $Date: 1993/04/13 16:13:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,11 +35,12 @@ filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
 	char *cmd;
 	enum filtertype ftype;
 {
-	FILE *ifp, *ofp;			/* Can't be uninitialized. */
+	FILE *ifp, *ofp;		/* GCC: can't be uninitialized. */
 	pid_t pid;
 	sig_ret_t intsave, quitsave;
 	sigset_t bmask, omask;
 	recno_t dlines, ilines, lno;
+	size_t len;
 	int input[2], output[2], pstat, rval;
 	char *name;
 
@@ -193,14 +194,16 @@ err:		if (input[0] != -1)
 	(void)signal(SIGQUIT, quitsave);
 
 	if (WIFSIGNALED(pstat)) {
+		len = strlen(cmd);
 		msgq(sp, M_ERR,
-		    "%s: exited with signal %d%s.", tail(name),
+		    "%.*s%s: exited with signal %d%s.",
+		    MIN(len, 10), len > 10 ? "..." : "",
 		    WTERMSIG(pstat), WCOREDUMP(pstat) ? "; core dumped" : "");
 		return (1);
-	}
-	else if (WIFEXITED(pstat) && WEXITSTATUS(pstat)) {
-		msgq(sp, M_ERR, "%s: exited with status %d",
-		    tail(name), WEXITSTATUS(pstat));
+	} else if (WIFEXITED(pstat) && WEXITSTATUS(pstat)) {
+		len = strlen(cmd);
+		msgq(sp, M_ERR, "%.*s%s: exited with status %d",
+		    MIN(len, 10), len > 10 ? "..." : "", WEXITSTATUS(pstat));
 		return (1);
 	}
 	return (0);
