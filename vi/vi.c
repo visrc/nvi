@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.3 1992/04/28 13:53:10 bostic Exp $ (Berkeley) $Date: 1992/04/28 13:53:10 $";
+static char sccsid[] = "$Id: vi.c,v 5.4 1992/04/28 17:39:28 bostic Exp $ (Berkeley) $Date: 1992/04/28 17:39:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -56,7 +56,7 @@ vi()
 	for (count = 0, prevkey = '\0'; mode == MODE_VI; )
 	{
 		if (msgcnt)
-			msg_flush();
+			msg_vflush();
 
 		scr_redraw(0);
 
@@ -295,8 +295,8 @@ TRACE("{%c}\n", key);
 			v_startex();
 		  	do
 		  	{	
-				if ((p =
-				    gb(key, GB_BS|GB_ESC|GB_OFF)) != NULL) {
+				if ((p = gb(key,
+				    NULL, GB_BS|GB_ESC|GB_OFF)) != NULL) {
 					/* reassure user that <CR> was hit */
 					addch('\r');
 					refresh();
@@ -433,10 +433,6 @@ adjmove(old, new, flags)
 	static int	colno;	/* the column number that we want */
 	REG char	*text;	/* used to scan through the line's text */
 	REG int		i;
-
-#ifdef DEBUG
-	watch();
-#endif
 
 	/* if the command failed, bag it! */
 	if (new == MARK_UNSET)
