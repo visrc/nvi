@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.70 1994/08/07 12:30:39 bostic Exp $ (Berkeley) $Date: 1994/08/07 12:30:39 $
+ *	$Id: ex.h,v 8.71 1994/08/07 13:25:31 bostic Exp $ (Berkeley) $Date: 1994/08/07 13:25:31 $
  */
 
 #define	PROMPTCHAR	':'		/* Prompt character. */
@@ -61,6 +61,7 @@ struct _excmdarg {
 	CHAR_T	  buffer;	/* Named buffer. */
 	recno_t	  lineno;	/* Line number. */
 	long	  count;	/* Signed, specified count. */
+	long	  flagoff;	/* Signed, flag offset parsed by command. */
 	int	  addrcnt;	/* Number of addresses (0, 1 or 2). */
 	MARK	  addr1;	/* 1st address. */
 	MARK	  addr2;	/* 2nd address. */
