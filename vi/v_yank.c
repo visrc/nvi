@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_yank.c,v 10.4 1995/09/21 12:08:53 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:08:53 $";
+static char sccsid[] = "$Id: v_yank.c,v 10.5 1995/09/25 10:43:00 bostic Exp $ (Berkeley) $Date: 1995/09/25 10:43:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -44,20 +44,9 @@ v_yank(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	int lmode;
-
-	/* The line may not exist in line mode cuts, check to be sure. */
-	if (F_ISSET(vp, VM_LMODE)) {
-		if (!file_eline(sp, vp->m_stop.lno)) {
-			v_eof(sp, &vp->m_start);
-			return (1);
-		}
-		lmode = CUT_LINEMODE;
-	} else
-		lmode = 0;
 	if (cut(sp,
-	    F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
-	    &vp->m_start, &vp->m_stop, lmode))
+	    F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL, &vp->m_start,
+	    &vp->m_stop, F_ISSET(vp, VM_LMODE) ? CUT_LINEMODE : 0))
 		return (1);
 
 	sp->rptlines[L_YANKED] += (vp->m_stop.lno - vp->m_start.lno) + 1;
