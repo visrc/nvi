@@ -1,4 +1,4 @@
-#	$Id: README,v 8.2 1994/08/31 19:50:49 bostic Exp $ (Berkeley) $Date: 1994/08/31 19:50:49 $
+#	$Id: README,v 8.3 1994/09/02 10:33:07 bostic Exp $ (Berkeley) $Date: 1994/09/02 10:33:07 $
 
 Generally, all non-system error and informational messages in nvi are
 catalog messages, i.e. they can be tailored to a specific langauge.
@@ -68,9 +68,9 @@ routine.
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
-The message catalogs themselves are maintained in two files.  The
-first is the "base file" which contains two fields, a record number
-and the message itself.  All base files are named using the convention
+The message catalogs themselves are maintained in two files.  The first
+is the "base file" which contains two fields, a record number and the
+message itself.  All base files are named using the convention
 "vi_<language>.base", e.g. the English one is "vi_english.base".  For
 example:
 
@@ -91,31 +91,39 @@ and is simply a list of the messages, one per line:
 	%s already locked, session is read-only
 	%s: remove
 
-These files are named for their language, e.g. "english".  The second
+These files are named for their language, e.g. "vi_english".  The second
 files are automatically created from the first files, obviously.
 
 To create a new catalog for nvi:
 
-Run the command "make english" in this directory.  This will create
-the file "english.base".   For each of the messages in the file,
-replace the message with the string that you want to use.  To find
-out what the arguments to a message are, I'm afraid you'll have to
-search the source code for the message number.  You can usually find
-them quickly by doing:
+Copy the file vi_english.base to a file that you can modify , e.g.  "cp
+vi_english.base vi_german.base".  For each of the messages in the file,
+replace the message with the string that you want to use.  To find out
+what the arguments to a message are, I'm afraid you'll have to search
+the source code for the message number.  You can find them fairly quickly
+by doing:
 
 	cd ..; egrep '123\|' */*.[chys]
 
 I'm sorry that there's not an easier way, but I couldn't think of
 anything that wasn't a lot of work.
 
+If, for some reason, you don't have the file vi_english.base, or you
+have new sources for which you want to create a new base catalog, you
+can create it by running the command "make english" in the catalog
+directory.
+
 Once you've translated all of the strings, then run the command
 "make catalog".  This will create the second, corresponding, file
 for each file named <language>.base.
 
+Note, don't change message 1!  It's a special string nvi uses to
+keep users from accidentally specifying incorrect message files.
+
 Don't worry about missing line numbers, i.e. base files that look like:
 
-	001	Message number 1.
-	003	Message number 3.
+	005	Message number 5.
+	007	Message number 7.
 
 This simply means that a message was deleted during the course of nvi's
 development, and it will be taken care of automatically when you create
