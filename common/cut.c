@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 8.4 1993/09/01 12:16:03 bostic Exp $ (Berkeley) $Date: 1993/09/01 12:16:03 $";
+static char sccsid[] = "$Id: cut.c,v 8.5 1993/09/27 16:17:14 bostic Exp $ (Berkeley) $Date: 1993/09/27 16:17:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -357,11 +357,8 @@ mem:			FREE_SPACE(sp, bp, blen);
 	}
 	FREE_SPACE(sp, bp, blen);
 
-	/* Shift any marks in the range. */
-ret:	mark_insert(sp, ep, cp, rp);
-
 	/* Reporting... */
-	sp->rptlines[L_PUT] += lno - cp->lno;
+ret:	sp->rptlines[L_PUT] += lno - cp->lno;
 
 	return (0);
 }
