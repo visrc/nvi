@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.84 1996/12/10 20:58:23 bostic Exp $ (Berkeley) $Date: 1996/12/10 20:58:23 $
+#	$Id: Makefile.in,v 8.85 1996/12/11 13:01:54 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:01:54 $
 
 srcdir=	@srcdir@/..
 CC=	@CC@
@@ -25,7 +25,7 @@ DBOBJS=	db.o mpool.o \
 	rec_search.o rec_seq.o rec_utils.o
 IPOBJS=	ip_funcs.o ip_main.o ip_read.o ip_screen.o ip_send.o ip_term.o
 REOBJS=	regcomp.o regerror.o regexec.o regfree.o
-VIOBJS=	api.o cut.o delete.o ex.o ex_abbrev.o ex_append.o ex_args.o \
+VIOBJS= api.o cut.o delete.o ex.o ex_abbrev.o ex_append.o ex_args.o \
 	ex_argv.o ex_at.o ex_bang.o ex_cd.o ex_cmd.o ex_cscope.o \
 	ex_delete.o ex_display.o ex_edit.o ex_equal.o ex_file.o \
 	ex_filter.o ex_global.o ex_init.o ex_join.o ex_map.o ex_mark.o \
@@ -35,13 +35,13 @@ VIOBJS=	api.o cut.o delete.o ex.o ex_abbrev.o ex_append.o ex_args.o \
 	ex_tcl.o ex_txt.o ex_undo.o ex_usage.o ex_util.o ex_version.o \
 	ex_visual.o ex_write.o ex_yank.o ex_z.o exf.o getc.o key.o line.o \
 	log.o main.o mark.o msg.o options.o options_f.o put.o recover.o \
-	screen.o search.o seq.o util.o v_at.o v_ch.o v_cmd.o v_delete.o \
-	v_event.o v_ex.o v_increment.o v_init.o v_itxt.o v_left.o v_mark.o \
-	v_match.o v_paragraph.o v_put.o v_redraw.o v_replace.o v_right.o \
-	v_screen.o v_scroll.o v_search.o v_section.o v_sentence.o \
-	v_status.o v_txt.o v_ulcase.o v_undo.o v_util.o v_word.o v_xchar.o \
-	v_yank.o v_z.o v_zexit.o vi.o vs_line.o vs_msg.o vs_refresh.o \
-	vs_relative.o vs_smap.o vs_split.o
+	screen.o search.o seq.o trace.o util.o v_at.o v_ch.o v_cmd.o \
+	v_delete.o v_event.o v_ex.o v_increment.o v_init.o v_itxt.o \
+	v_left.o v_mark.o v_match.o v_paragraph.o v_put.o v_redraw.o \
+	v_replace.o v_right.o v_screen.o v_scroll.o v_search.o v_section.o \
+	v_sentence.o v_status.o v_txt.o v_ulcase.o v_undo.o v_util.o \
+	v_word.o v_xchar.o v_yank.o v_z.o v_zexit.o vi.o vs_line.o \
+	vs_msg.o vs_refresh.o vs_relative.o vs_smap.o vs_split.o
 
 all: nvi @nvi_motif@
 
@@ -53,7 +53,8 @@ nvi nex: $(VIALL)
 
 M_IPC=	ipc_mcde.o ipc_mcopypaste.o ipc_mfunc.o ipc_mmain.o ipc_mmenu.o \
 	ipc_moptions.o ipc_mprompt.o ipc_msearch.o ipc_mutil.o ipc_mvi.o \
-	ip_run.o ip_send.o ip_trans.o @LIBOBJS@
+	ip_run.o ip_send.o ip_trans.o \
+	trace.o @LIBOBJS@
 nvi_motif: $(M_IPC)
 	$(SHRPENV) $(CC) $(LDFLAGS) -o $@ $(M_IPC) @MOTIFLIBS@
 
@@ -238,40 +239,36 @@ ip_term.o: $(srcdir)/ip_vi/ip_term.c
 # VI is the binary that the client programs run.
 VI=-DVI=\"$(bindir)/`echo vi | sed '$(transform)'`\"
 
-# TR turns on IP tracing and defines the trace file.
-#TR=-DTR=\"__log\"
-#TR=-DTR=\"/dev/ttyp8\"
-
 # Shared IP client sources.
 $(srcdir)/ipc/ip_run.c: Makefile
 ip_run.o: $(srcdir)/ipc/ip_run.c
-	$(CC) $(TR) $(VI) $(CFLAGS) $?
+	$(CC) $(VI) $(CFLAGS) $?
 ip_send.o: $(srcdir)/ipc/ip_send.c
-	$(CC) $(TR) $(CFLAGS) $?
+	$(CC) $(CFLAGS) $?
 ip_trans.o: $(srcdir)/ipc/ip_trans.c
-	$(CC) $(TR) $(CFLAGS) $?
+	$(CC) $(CFLAGS) $?
 
 # Motif IP client sources.
 ipc_mcde.o: $(srcdir)/ipc_motif/ipc_mcde.c
-	$(CC) $(TR) $(CFLAGS) @XINCS@ $?
+	$(CC) $(CFLAGS) @XINCS@ $?
 ipc_mcopypaste.o: $(srcdir)/ipc_motif/ipc_mcopypaste.c
-	$(CC) $(TR) $(CFLAGS) @XINCS@ $?
+	$(CC) $(CFLAGS) @XINCS@ $?
 ipc_mfunc.o: $(srcdir)/ipc_motif/ipc_mfunc.c
-	$(CC) $(TR) $(CFLAGS) @XINCS@ $?
+	$(CC) $(CFLAGS) @XINCS@ $?
 ipc_mmain.o: $(srcdir)/ipc_motif/ipc_mmain.c
-	$(CC) $(TR) $(CFLAGS) @XINCS@ $?
+	$(CC) $(CFLAGS) @XINCS@ $?
 ipc_moptions.o: $(srcdir)/ipc_motif/ipc_moptions.c
-	$(CC) $(TR) $(CFLAGS) @XINCS@ $?
+	$(CC) $(CFLAGS) @XINCS@ $?
 ipc_mmenu.o: $(srcdir)/ipc_motif/ipc_mmenu.c
-	$(CC) $(TR) $(CFLAGS) @XINCS@ $?
+	$(CC) $(CFLAGS) @XINCS@ $?
 ipc_mprompt.o: $(srcdir)/ipc_motif/ipc_mprompt.c
-	$(CC) $(TR) $(CFLAGS) @XINCS@ $?
+	$(CC) $(CFLAGS) @XINCS@ $?
 ipc_msearch.o: $(srcdir)/ipc_motif/ipc_msearch.c
-	$(CC) $(TR) $(CFLAGS) @XINCS@ $?
+	$(CC) $(CFLAGS) @XINCS@ $?
 ipc_mutil.o: $(srcdir)/ipc_motif/ipc_mutil.c
-	$(CC) $(TR) $(CFLAGS) @XINCS@ $?
+	$(CC) $(CFLAGS) @XINCS@ $?
 ipc_mvi.o: $(srcdir)/ipc_motif/ipc_mvi.c
-	$(CC) $(TR) $(CFLAGS) @XINCS@ $?
+	$(CC) $(CFLAGS) @XINCS@ $?
 
 # Vi Tcl/Perl interpreter sources.
 perl.c: $(srcdir)/perl_api/perl.xs $(srcdir)/perl_api/typemap
@@ -314,13 +311,15 @@ options_f.o: $(srcdir)/common/options_f.c
 	$(CC) $(CFLAGS) $?
 put.o: $(srcdir)/common/put.c
 	$(CC) $(CFLAGS) $?
+recover.o: $(srcdir)/common/recover.c
+	$(CC) $(CFLAGS) $?
 screen.o: $(srcdir)/common/screen.c
 	$(CC) $(CFLAGS) $?
 search.o: $(srcdir)/common/search.c
 	$(CC) $(CFLAGS) $?
 seq.o: $(srcdir)/common/seq.c
 	$(CC) $(CFLAGS) $?
-recover.o: $(srcdir)/common/recover.c
+trace.o: $(srcdir)/common/trace.c
 	$(CC) $(CFLAGS) $?
 util.o: $(srcdir)/common/util.c
 	$(CC) $(CFLAGS) $?
