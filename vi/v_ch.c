@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ch.c,v 8.10 1994/05/04 17:08:15 bostic Exp $ (Berkeley) $Date: 1994/05/04 17:08:15 $";
+static char sccsid[] = "$Id: v_ch.c,v 8.11 1994/05/04 21:18:54 bostic Exp $ (Berkeley) $Date: 1994/05/04 21:18:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -174,7 +174,7 @@ v_chf(sp, ep, vp)
 		return (1);
 	}
 
-	endp = (startp = p) + len - 1;
+	endp = (startp = p) + len;
 	p += vp->m_start.cno;
 	for (cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
 		while (++p < endp && *p != key);
