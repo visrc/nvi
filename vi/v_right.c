@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_right.c,v 9.1 1994/11/09 18:36:16 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:36:16 $";
+static char sccsid[] = "$Id: v_right.c,v 9.2 1994/11/11 18:37:32 bostic Exp $ (Berkeley) $Date: 1994/11/11 18:37:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -114,13 +114,23 @@ v_dollar(sp, vp)
 			return (1);
 	}
 
+	/* It's illegal to use $ as a motion command on an empty line. */
 	if (file_gline(sp, vp->m_stop.lno, &len) == NULL) {
 		if (file_lline(sp, &lno))
 			return (1);
-		if (lno == 0)
-			v_eol(sp, NULL);
-		else
-			GETLINE_ERR(sp, vp->m_start.lno);
+		if (lno == 0) {
+			if (ISMOTION(vp)) {
+				v_eol(sp, NULL);
+				return (1);
+			}
+			return (0);
+		}
+		GETLINE_ERR(sp, vp->m_start.lno);
+		return (1);
+	}
+
+	if (len == 0 && ISMOTION(vp)) {
+		v_eol(sp, NULL);
 		return (1);
 	}
 
