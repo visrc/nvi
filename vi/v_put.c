@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_put.c,v 8.8 1994/03/08 19:41:24 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:41:24 $";
+static char sccsid[] = "$Id: v_put.c,v 8.9 1994/05/02 16:43:24 bostic Exp $ (Berkeley) $Date: 1994/05/02 16:43:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,11 +38,24 @@ v_Put(sp, ep, vp)
 	EXF *ep;
 	VICMDARG *vp;
 {
+	u_long cnt;
+
 	if (F_ISSET(vp, VC_ISDOT))
 		inc_buf(sp, vp);
 
-	return (put(sp, ep, NULL, F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
-	    &vp->m_start, &vp->m_final, 0));
+	/*
+	 * !!!
+	 * Historic vi did not support a count with the 'p' and 'P'
+	 * commands.  It's useful, so we do.
+	 */
+	for (cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
+		if (put(sp, ep, NULL,
+		    F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
+		    &vp->m_start, &vp->m_final, 0))
+			return (1);
+		vp->m_start = vp->m_final;
+	}
+	return (0);
 }
 
 /*
@@ -55,11 +68,24 @@ v_put(sp, ep, vp)
 	EXF *ep;
 	VICMDARG *vp;
 {
+	u_long cnt;
+
 	if (F_ISSET(vp, VC_ISDOT))
 		inc_buf(sp, vp);
 
-	return (put(sp, ep, NULL, F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
-	    &vp->m_start, &vp->m_final, 1));
+	/*
+	 * !!!
+	 * Historic vi did not support a count with the 'p' and 'P'
+	 * commands.  It's useful, so we do.
+	 */
+	for (cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
+		if (put(sp, ep, NULL,
+		    F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
+		    &vp->m_start, &vp->m_final, 1))
+			return (1);
+		vp->m_start = vp->m_final;
+	}
+	return (0);
 }
 
 /*
