@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 8.9 1993/09/01 12:18:37 bostic Exp $ (Berkeley) $Date: 1993/09/01 12:18:37 $";
+static char sccsid[] = "$Id: v_cmd.c,v 8.10 1993/09/02 11:12:02 bostic Exp $ (Berkeley) $Date: 1993/09/02 11:12:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,7 +21,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 /* 000 NUL -- The code in vi.c expects key 0 to be undefined. */
 	{NULL},
 /* 001  ^A */
-	{v_searchw,	V_ABS|V_CNT|V_KEYW|V_RCM_SET,
+	{v_searchw,	V_ABS|V_CNT|V_MOVE|V_KEYW|V_RCM_SET,
 	    "search forward for cursor word: [count]^A"},
 /* 002  ^B */
 	{v_pageup,	V_ABS|V_CNT|V_RCM_SETLFNB,
@@ -180,12 +180,12 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	{v_chrepeat,	V_CNT|V_MOVE|V_RCM_SET,
 	    "repeat last F, f, T or t search: [count];"},
 /* 074   < */
-	{v_shiftl,	V_CNT|V_DOT|V_MOTION|V_RCM_SET,
+	{v_shiftl,	V_CNT|V_DOT|V_MOTION|V_RCM_SET|VC_SH,
 	    "shift lines left: [count]<[count]motion"},
 /* 075   = */
 	{NULL},
 /* 076   > */
-	{v_shiftr,	V_CNT|V_DOT|V_MOTION|V_RCM_SET,
+	{v_shiftr,	V_CNT|V_DOT|V_MOTION|V_RCM_SET|VC_SH,
 	    "shift lines right: [count]>[count]motion"},
 /* 077   ? */
 	{v_searchb,	V_ABS|V_MOVE|V_RCM_SET,
