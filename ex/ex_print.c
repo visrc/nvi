@@ -6,15 +6,15 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 5.7 1992/04/19 08:53:57 bostic Exp $ (Berkeley) $Date: 1992/04/19 08:53:57 $";
+static char sccsid[] = "$Id: ex_print.c,v 5.8 1992/04/28 13:44:15 bostic Exp $ (Berkeley) $Date: 1992/04/28 13:44:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 #include <stdio.h>
+#include <curses.h>
 #include <ctype.h>
 
 #include "vi.h"
-#include "curses.h"
 #include "excmd.h"
 #include "options.h"
 #include "extern.h"
@@ -94,24 +94,23 @@ print(cmdp, flags)
 	u_char *p;
 	char buf[10];
 
+	EX_PRSTART(0);
 	for (cur = markline(cmdp->addr1), end = markline(cmdp->addr2);
 	    cur <= end; ++cur) {
 
 		/* Display the line number. */
 		if (flags & E_F_HASH) {
-			(void)snprintf(buf, sizeof(buf), "%7ld ", cur);
-			qaddstr(buf);
+			(void)printf("%7ld ", cur);
 			col = 8;
 		} else
 			col = 0;
 	
 #define	WCHECK(ch) { \
-	if (!has_AM && col == COLS) { \
-		qaddch('\n'); \
-		qaddch('\r'); \
+	if (col == COLS) { \
+		EX_PRNEWLINE; \
 		col = 0; \
 	} \
-	qaddch(ch); \
+	(void)putchar(ch); \
 	++col; \
 }
 		/*
@@ -139,18 +138,16 @@ print(cmdp, flags)
 				if (ch == '\t') {
 					while (col < COLS &&
 					    ++col % LVAL(O_TABSTOP))
-						qaddch(' ');
+						(void)putchar(' ');
 					if (col == COLS) {
-						qaddch('\n');
-						qaddch('\r');
 						col = 0;
+						EX_PRNEWLINE;
 					}
 				} else if (isprint(ch)) {
 					WCHECK(ch);
 				} else if (ch == '\n') {
-					qaddch('\n');
-					qaddch('\r');
 					col = 0;
+					EX_PRNEWLINE;
 				} else {
 					WCHECK('^');
 					WCHECK(ch + 0x40);
@@ -159,10 +156,11 @@ print(cmdp, flags)
 		}
 		if (flags & E_F_LIST)
 			WCHECK('$');
-		qaddch('\n');
-		qaddch('\r');
+
+		/* The print commands require a keystroke to continue. */
+		EX_PRNEWLINE;
 	}
-	ex_refresh();
 	cursor = cmdp->addr2;
+	
 	return (0);
 }
