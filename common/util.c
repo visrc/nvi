@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.50 1994/04/17 16:51:23 bostic Exp $ (Berkeley) $Date: 1994/04/17 16:51:23 $";
+static char sccsid[] = "$Id: util.c,v 8.51 1994/04/24 14:16:48 bostic Exp $ (Berkeley) $Date: 1994/04/24 14:16:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -378,10 +378,10 @@ tail(path)
  *	Set the window size, the row may be provided as an argument.
  */
 int
-set_window_size(sp, set_row, ign_env)
+set_window_size(sp, set_row, sigwinch)
 	SCR *sp;
 	u_int set_row;
-	int ign_env;
+	int sigwinch;
 {
 	struct winsize win;
 	size_t col, row;
@@ -404,6 +404,14 @@ set_window_size(sp, set_row, ign_env)
 		col = win.ws_col;
 	}
 #endif
+	/* If here because of a signal, TIOCGWINSZ is all we trust. */
+	if (sigwinch) {
+		if (row == 0 || col == 0) {
+			msgq(sp, M_SYSERR, "TIOCGWINSZ");
+			return (1);
+		}
+		goto sigw;
+	}
 
 	/* If TIOCGWINSZ failed, or had entries of 0, try termcap. */
 	if (row == 0 || col == 0) {
@@ -448,23 +456,17 @@ set_window_size(sp, set_row, ign_env)
 	if (col == 0)
 		col = 80;
 
-	/*
-	 * POSIX 1003.2 requires the environment to override, however,
-	 * if we're here because of a signal, we don't want to use the
-	 * old values.
-	 */
-	if (!ign_env) {
-		if ((s = getenv("LINES")) != NULL)
-			row = strtol(s, NULL, 10);
-		if ((s = getenv("COLUMNS")) != NULL)
-			col = strtol(s, NULL, 10);
-	}
+	/* POSIX 1003.2 requires the environment to override. */
+	if ((s = getenv("LINES")) != NULL)
+		row = strtol(s, NULL, 10);
+	if ((s = getenv("COLUMNS")) != NULL)
+		col = strtol(s, NULL, 10);
 
 	/* But, if we got an argument for the rows, use it. */
 	if (set_row)
 		row = set_row;
 
-	a.bp = buf;
+sigw:	a.bp = buf;
 	b.bp = NULL;
 	b.len = 0;
 	argv[0] = &a;
