@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.53 1993/11/08 11:06:15 bostic Exp $ (Berkeley) $Date: 1993/11/08 11:06:15 $
+ *	$Id: screen.h,v 8.54 1993/11/12 16:41:16 bostic Exp $ (Berkeley) $Date: 1993/11/12 16:41:16 $
  */
 
 /*
@@ -206,6 +206,7 @@ typedef struct _scr {
 	int	 (*s_busy) __P((struct _scr *, char const *));
 	int	 (*s_change) __P((struct _scr *,
 		     struct _exf *, recno_t, enum operation));
+	int	 (*s_clear) __P((struct _scr *));
 	size_t	 (*s_chposition) __P((struct _scr *,
 		     struct _exf *, recno_t, size_t));
 	enum confirm
@@ -251,19 +252,20 @@ typedef struct _scr {
 #define	S_ABBREV	0x0000040	/* If have abbreviations. */
 #define	S_AUTOPRINT	0x0000080	/* Autoprint flag. */
 #define	S_BELLSCHED	0x0000100	/* Bell scheduled. */
-#define	S_GLOBAL	0x0000200	/* Doing a global command. */
-#define	S_INPUT		0x0000400	/* Doing text input. */
-#define	S_INTERRUPTED	0x0000800	/* If have been interrupted. */
-#define	S_INTERRUPTIBLE	0x0001000	/* If can be interrupted. */
-#define	S_REDRAW	0x0002000	/* Redraw the screen. */
-#define	S_REFORMAT	0x0004000	/* Reformat the screen. */
-#define	S_REFRESH	0x0008000	/* Refresh the screen. */
-#define	S_RESIZE	0x0010000	/* Resize the screen. */
-#define	S_SCRIPT	0x0020000	/* Window is a shell script. */
-#define	S_SRE_SET	0x0040000	/* The search RE has been set. */
-#define	S_SUBRE_SET	0x0080000	/* The substitute RE has been set. */
-#define	S_TIMER_SET	0x0100000	/* If a busy timer is running. */
-#define	S_UPDATE_MODE	0x0200000	/* Don't repaint modeline. */
+#define	S_CONTINUE	0x0000200	/* Need to ask the user to continue. */
+#define	S_GLOBAL	0x0000400	/* Doing a global command. */
+#define	S_INPUT		0x0000800	/* Doing text input. */
+#define	S_INTERRUPTED	0x0001000	/* If have been interrupted. */
+#define	S_INTERRUPTIBLE	0x0002000	/* If can be interrupted. */
+#define	S_REDRAW	0x0004000	/* Redraw the screen. */
+#define	S_REFORMAT	0x0008000	/* Reformat the screen. */
+#define	S_REFRESH	0x0010000	/* Refresh the screen. */
+#define	S_RESIZE	0x0020000	/* Resize the screen. */
+#define	S_SCRIPT	0x0040000	/* Window is a shell script. */
+#define	S_SRE_SET	0x0080000	/* The search RE has been set. */
+#define	S_SUBRE_SET	0x0100000	/* The substitute RE has been set. */
+#define	S_TIMER_SET	0x0200000	/* If a busy timer is running. */
+#define	S_UPDATE_MODE	0x0400000	/* Don't repaint modeline. */
 	u_int flags;
 } SCR;
 
