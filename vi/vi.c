@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.62 1994/04/26 11:30:50 bostic Exp $ (Berkeley) $Date: 1994/04/26 11:30:50 $";
+static char sccsid[] = "$Id: vi.c,v 8.63 1994/04/26 17:28:14 bostic Exp $ (Berkeley) $Date: 1994/04/26 17:28:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -178,6 +178,7 @@ vi(sp, ep)
 		if (F_ISSET(vp, V_DOT)) {
 			*DOT = cmd;
 			F_SET(DOT, VC_ISDOT);
+
 			/*
 			 * If a count was supplied for both the command and
 			 * its motion, the count was used only for the motion.
@@ -185,6 +186,9 @@ vi(sp, ep)
 			 */
 			if (F_ISSET(vp, VC_C1RESET))
 				F_SET(DOT, VC_C1SET);
+
+			/* RCM flags aren't retained. */
+			F_CLR(DOT, VM_RCM_MASK);
 		}
 
 		/*
@@ -223,7 +227,6 @@ vi(sp, ep)
 		case VM_RCM_SETNNB:
 			if (nonblank(sp, ep, vp->m_final.lno, &vp->m_final.cno))
 				goto err;
-			F_SET(vp, VM_RCM_SET);
 			break;
 		default:
 			abort();
@@ -247,7 +250,7 @@ err:				term_map_flush(sp, "Vi error");
 		}
 
 		/* Set the new favorite position. */
-		if (F_ISSET(vp, VM_RCM_SET)) {
+		if (F_ISSET(vp, VM_RCM_SET | VM_RCM_SETFNB | VM_RCM_SETNNB)) {
 			sp->rcm_last = 0;
 			(void)sp->s_column(sp, ep, &sp->rcm);
 		}
