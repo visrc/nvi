@@ -6,12 +6,19 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.32 1993/11/08 11:10:30 bostic Exp $ (Berkeley) $Date: 1993/11/08 11:10:30 $";
+static char sccsid[] = "$Id: recover.c,v 8.33 1993/11/08 14:00:05 bostic Exp $ (Berkeley) $Date: 1993/11/08 14:00:05 $";
 #endif /* not lint */
 
 #include <sys/param.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+
+/*
+ * We include <sys/file.h>, because the flock(2) #defines were
+ * found there on historical systems.  We also include <fcntl.h>
+ * because the open(2) #defines are found there on newer systems.
+ */
+#include <sys/file.h>
 
 #include <netdb.h>			/* MAXHOSTNAMELEN on some systems. */
 
