@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.91 1994/02/25 19:00:06 bostic Exp $ (Berkeley) $Date: 1994/02/25 19:00:06 $";
+static char sccsid[] = "$Id: ex.c,v 8.92 1994/02/28 17:12:13 bostic Exp $ (Berkeley) $Date: 1994/02/28 17:12:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1317,7 +1317,7 @@ ep_line(sp, ep, cur, cmdp, cmdlenp, addr_found)
 	size_t *cmdlenp;
 	int *addr_found;
 {
-	MARK m, *mp;
+	MARK m;
 	long total;
 	u_int flags;
 	size_t cmdlen;
