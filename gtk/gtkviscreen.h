@@ -26,12 +26,13 @@ struct _GtkViScreen
   GdkGC *reverse_gc;
 
   CHAR_T  *chars;
+  guchar  *endcol;	    
   guchar  *reverse;
   guchar  color;
 
   gint	cols, rows;
   gint	ch_width, ch_height, ch_ascent;
-  gint  curx, cury;
+  gint  curx, cury;			 /* character position */
   gint  lastx, lasty;
   gint	marked_x, marked_y, marked_maxx, marked_maxy;
 };
