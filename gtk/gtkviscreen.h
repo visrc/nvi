@@ -6,13 +6,8 @@
 #include "port.h"
 #include "../common/multibyte.h"
 
-#ifdef HAVE_PANGO
 #include <pango/pango.h>
 #include <pango/pangox.h>
-#else
-typedef void PangoContext;
-typedef void PangoAttrList;
-#endif
 
 #define GTK_TYPE_VI_SCREEN                  (gtk_vi_screen_get_type ())
 #define GTK_VI_SCREEN(obj)                  (GTK_CHECK_CAST ((obj), GTK_TYPE_VI_SCREEN, GtkViScreen))
