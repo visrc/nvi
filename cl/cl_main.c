@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_main.c,v 10.18 1995/11/12 17:47:19 bostic Exp $ (Berkeley) $Date: 1995/11/12 17:47:19 $";
+static char sccsid[] = "$Id: cl_main.c,v 10.19 1995/11/25 16:41:10 bostic Exp $ (Berkeley) $Date: 1995/11/25 16:41:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -289,7 +289,7 @@ sig_init(gp, sp)
 		    setsig(SIGTERM, &clp->oact[INDX_TERM], h_term) ||
 		    sigaddset(&__sigblockset, SIGWINCH) ||
 		    setsig(SIGWINCH, &clp->oact[INDX_WINCH], h_winch)) {
-err:			(void)fprintf(stderr,
+			(void)fprintf(stderr,
 			    "%s: %s\n", gp->progname, strerror(errno));
 			return (1);
 		}
