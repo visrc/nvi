@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 8.11 1993/09/08 18:06:59 bostic Exp $ (Berkeley) $Date: 1993/09/08 18:06:59 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 8.12 1993/09/09 14:28:07 bostic Exp $ (Berkeley) $Date: 1993/09/09 14:28:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,9 +31,10 @@ static char sccsid[] = "$Id: ex_cmd.c,v 8.11 1993/09/08 18:06:59 bostic Exp $ (B
  *	+		-- +cmd
  *	1		-- flags: [+-]*[pl#][+-]*
  *	2		-- flags: [-.+^]
- *	>		-- >> string
+ *	3		-- flags: [-.+^=]
  *	b		-- buffer
- *	c		-- count
+ *	C		-- count
+ *	c		-- count as an address offset
  *	f[N#][or]	-- file (a number or N, optional or required)
  *	l		-- line
  *	s		-- string
@@ -222,8 +223,8 @@ EXCMDLIST const cmds[] = {
 	{"version",	ex_version,	E_NOGLOBAL|E_NORC,
 	    "", 	"version"},
 /* C_VISUAL_EX */
-	{"visual",	ex_visual,	E_ADDR1|E_NOGLOBAL|E_NORC,
-	    "2c1", 	"[line] vi[sual] [-|.|+|^] [window_size] [flags]"},
+	{"visual",	ex_visual,	E_ADDR1|E_NOGLOBAL|E_NORC|E_ZERODEF,
+	    "2C1", 	"[line] vi[sual] [-|.|+|^] [window_size] [flags]"},
 /* C_VISUAL_VI */
 	{"visual",	ex_edit,	E_NOGLOBAL|E_NORC,
 	    "!+f1o",	"vi[sual][!] [+cmd] [file]"},
@@ -242,5 +243,8 @@ EXCMDLIST const cmds[] = {
 /* C_YANK */
 	{"yank",	ex_yank,	E_ADDR2|E_NORC,
 	    "bc",	"[line [,line]] ya[nk] [buffer] [count]"},
+/* C_Z */
+	{"z",		ex_z,		E_ADDR1|E_NOGLOBAL|E_NORC,
+	    "3C1",	"[line] z [-|.|+|^|=] [count] [flags]"},
 	{NULL},
 };
