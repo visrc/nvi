@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 8.25 1993/12/19 13:00:07 bostic Exp $ (Berkeley) $Date: 1993/12/19 13:00:07 $";
+static char sccsid[] = "$Id: ex_filter.c,v 8.26 1994/01/02 17:41:30 bostic Exp $ (Berkeley) $Date: 1994/01/02 17:41:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -15,12 +15,12 @@ static char sccsid[] = "$Id: ex_filter.c,v 8.25 1993/12/19 13:00:07 bostic Exp $
 
 #include <errno.h>
 #include <fcntl.h>
-#include <paths.h>
 #include <string.h>
 #include <unistd.h>
 
 #include "vi.h"
 #include "excmd.h"
+#include "pathnames.h"
 
 static int	filter_ldisplay __P((SCR *, FILE *));
 
