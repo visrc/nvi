@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 5.29 1993/04/06 11:43:51 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:43:51 $";
+static char sccsid[] = "$Id: v_scroll.c,v 5.30 1993/04/12 14:54:30 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:54:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,7 +29,7 @@ v_lgoto(sp, ep, vp, fm, tm, rp)
 	recno_t last;
 
 	last = file_lline(sp, ep);
-	if (vp->flags & VC_C1SET) {
+	if (F_ISSET(vp, VC_C1SET)) {
 		if (last < vp->count) {
 			v_eof(sp, ep, fm);
 			return (1);
@@ -52,8 +52,8 @@ v_home(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	return (sp->position(sp, ep,
-	    &rp->lno, vp->flags & VC_C1SET ? vp->count : 1, P_TOP));
+	return (sp->position(sp, ep, &rp->lno,
+	    F_ISSET(vp, VC_C1SET) ? vp->count : 1, P_TOP));
 }
 
 /*
@@ -83,8 +83,8 @@ v_bottom(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	return (sp->position(sp, ep,
-	    &rp->lno, vp->flags & VC_C1SET ? vp->count : 1, P_BOTTOM));
+	return (sp->position(sp, ep, &rp->lno,
+	    F_ISSET(vp, VC_C1SET) ? vp->count : 1, P_BOTTOM));
 }
 
 /*
@@ -100,7 +100,7 @@ v_up(sp, ep, vp, fm, tm, rp)
 {
 	recno_t lno;
 
-	lno = vp->flags & VC_C1SET ? vp->count : 1;
+	lno = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
 
 	if (fm->lno <= lno) {
 		v_sof(sp, fm);
@@ -124,7 +124,7 @@ v_down(sp, ep, vp, fm, tm, rp)
 	recno_t lno;
 	size_t len;
 
-	lno = fm->lno + (vp->flags & VC_C1SET ? vp->count : 1);
+	lno = fm->lno + (F_ISSET(vp, VC_C1SET) ? vp->count : 1);
 
 	if (file_gline(sp, ep, lno, &len) == NULL) {
 		v_eof(sp, ep, fm);
@@ -165,7 +165,7 @@ v_hpageup(sp, ep, vp, fm, tm, rp)
 	 * set the scroll value, even if the command ultimately failed, in
 	 * historic vi.  It's probably a don't care.
 	 */
-	if (vp->flags & VC_C1SET)
+	if (F_ISSET(vp, VC_C1SET))
 		O_VAL(sp, O_SCROLL) = vp->count;
 	else
 		vp->count = O_VAL(sp, O_SCROLL);
@@ -189,7 +189,7 @@ v_hpagedown(sp, ep, vp, fm, tm, rp)
 	 * set the scroll value, even if the command ultimately failed, in
 	 * historic vi.  It's probably a don't care.
 	 */
-	if (vp->flags & VC_C1SET)
+	if (F_ISSET(vp, VC_C1SET))
 		O_VAL(sp, O_SCROLL) = vp->count;
 	else
 		vp->count = O_VAL(sp, O_SCROLL);
@@ -211,8 +211,7 @@ v_pageup(sp, ep, vp, fm, tm, rp)
 	recno_t count;
 
 	/* Calculation from POSIX 1003.2/D8. */
-	count =
-	    (vp->flags & VC_C1SET ? vp->count : 1) * (sp->t_rows - 1);
+	count = (F_ISSET(vp, VC_C1SET) ? vp->count : 1) * (sp->t_rows - 1);
 	return (sp->down(sp, ep, rp, count, 1));
 }
 
@@ -230,8 +229,7 @@ v_pagedown(sp, ep, vp, fm, tm, rp)
 	recno_t count;
 
 	/* Calculation from POSIX 1003.2/D8. */
-	count =
-	    (vp->flags & VC_C1SET ? vp->count : 1) * (sp->t_rows - 1);
+	count = (F_ISSET(vp, VC_C1SET) ? vp->count : 1) * (sp->t_rows - 1);
 	return (sp->up(sp, ep, rp, count, 1));
 }
 
@@ -251,7 +249,7 @@ v_lineup(sp, ep, vp, fm, tm, rp)
 	 * reaches the bottom of the screen.
 	 */
 	return (sp->down(sp, ep,
-	    rp, vp->flags & VC_C1SET ? vp->count : 1, 0));
+	    rp, F_ISSET(vp, VC_C1SET) ? vp->count : 1, 0));
 }
 
 /*
@@ -270,5 +268,5 @@ v_linedown(sp, ep, vp, fm, tm, rp)
 	 * reaches the top of the screen.
 	 */
 	return (sp->up(sp, ep,
-	    rp, vp->flags & VC_C1SET ? vp->count : 1, 0));
+	    rp, F_ISSET(vp, VC_C1SET) ? vp->count : 1, 0));
 }

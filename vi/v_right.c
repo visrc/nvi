@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_right.c,v 5.14 1993/03/26 13:40:40 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:40:40 $";
+static char sccsid[] = "$Id: v_right.c,v 5.15 1993/04/12 14:54:16 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:54:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,7 +40,7 @@ v_right(sp, ep, vp, fm, tm, rp)
 		
 	rp->lno = fm->lno;
 	if (len == 0 || fm->cno == len - 1) {
-		if (vp->flags & (VC_C|VC_D)) {
+		if (F_ISSET(vp, VC_C | VC_D)) {
 			rp->cno = len;
 			return (0);
 		}
@@ -48,10 +48,10 @@ v_right(sp, ep, vp, fm, tm, rp)
 		return (1);
 	}
 
-	cnt = vp->flags & VC_C1SET ? vp->count : 1;
+	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
 	rp->cno = fm->cno + cnt;
 	if (rp->cno > len - 1)
-		if (vp->flags & (VC_C|VC_D))
+		if (F_ISSET(vp, VC_C | VC_D))
 			rp->cno = len;
 		else
 			rp->cno = len - 1;
@@ -88,6 +88,6 @@ v_dollar(sp, ep, vp, fm, tm, rp)
 	}
 
 	rp->lno = fm->lno;
-	rp->cno = vp->flags & (VC_C | VC_D) ? len : len - 1;
+	rp->cno = F_ISSET(vp, VC_C | VC_D) ? len : len - 1;
 	return (0);
 }
