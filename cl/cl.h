@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: cl.h,v 8.2 1995/01/24 10:51:40 bostic Exp $ (Berkeley) $Date: 1995/01/24 10:51:40 $
+ *	$Id: cl.h,v 8.3 1995/01/30 15:14:21 bostic Exp $ (Berkeley) $Date: 1995/01/30 15:14:21 $
  */
 
 typedef struct _cl_private {
@@ -34,6 +34,7 @@ int	cl_end __P((SCR *));
 int	cl_fmap __P((SCR *, enum seqtype, CHAR_T *, size_t, CHAR_T *, size_t));
 int	cl_insertln __P((SCR *));
 int	cl_inverse __P((SCR *, int));
+int	cl_linverse __P((SCR *, size_t));
 int	cl_keypad __P((SCR *, int));
 int	cl_move __P((SCR *, size_t, size_t));
 int	cl_refresh __P((SCR *));
@@ -42,4 +43,3 @@ int	cl_ssize __P((SCR *, int));
 int	cl_suspend __P((SCR *));
 int	cl_term_end __P((SCR *));
 int	cl_term_init __P((SCR *));
-int	cl_winch __P((SCR *, CHAR_T *));
