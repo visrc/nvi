@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.48 1993/04/18 09:35:38 bostic Exp $ (Berkeley) $Date: 1993/04/18 09:35:38 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.49 1993/05/05 16:48:33 bostic Exp $ (Berkeley) $Date: 1993/05/05 16:48:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -438,14 +438,16 @@ static int
 svi_msgflush(sp)
 	SCR *sp;
 {
+	CHNAME *cname;
 	MSG *mp;
-	size_t len;
+	size_t chlen, len;
 	int ch;
 	char *p;
 
 #define	MCONTMSG	" [More ...]"
 
 	/* Display the messages. */
+	cname = sp->cname;
 	for (mp = sp->msgp, p = NULL;
 	    mp != NULL && !F_ISSET(mp, M_EMPTY); mp = mp->next) {
 
@@ -462,18 +464,18 @@ lcont:		/* Move to the message line and clear it. */
 		if (F_ISSET(mp, M_INV_VIDEO) || sp->child != NULL)
 			standout();
 
-		/*
-		 * Figure out how much to print, and print it.
-		 * Adjust for the next line.
-		 */
-		len = sp->cols;
-		if (mp->next != NULL && !F_ISSET(mp->next, M_EMPTY))
-			len -= sizeof(MCONTMSG);
-		if (mp->len < len)
-			len = mp->len;
-		addnstr(p, len);
-		p += len;
-		mp->len -= len;
+		/* Print up to the "more" message. */
+		for (len = sp->cols - (sizeof(MCONTMSG) /* - 1 */);; ++p) {
+			if (!mp->len)
+				break;
+			ch = *p;
+			chlen = cname[ch].len;
+			if (chlen >= len)
+				break;
+			len -= chlen;
+			--mp->len;
+			addnstr(cname[ch].name, chlen);
+		}
 
 		/* If more, print continue message. */
 		if (mp->len ||
