@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_bsd.c,v 8.8 1995/10/31 20:22:07 bostic Exp $ (Berkeley) $Date: 1995/10/31 20:22:07 $";
+static char sccsid[] = "$Id: cl_bsd.c,v 8.9 1995/11/06 10:14:27 bostic Exp $ (Berkeley) $Date: 1995/11/06 10:14:27 $";
 #endif /* not lint */
 
 #ifdef BSD_CURSES_INTERFACE
@@ -30,14 +30,6 @@ static char sccsid[] = "$Id: cl_bsd.c,v 8.8 1995/10/31 20:22:07 bostic Exp $ (Be
 static char	*ke;				/* Keypad on. */
 static char	*ks;				/* Keypad off. */
 static char	*vb;				/* Visible bell string. */
-
-/*
- * We want const if we can get it, there are large, read-only structures in
- * here.
- */
-#ifndef	__STDC__
-#define	const
-#endif
 
 /*
  * HP's support the entire System V curses package except for the tigetstr
