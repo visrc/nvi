@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 8.24 1994/03/22 21:01:22 bostic Exp $ (Berkeley) $Date: 1994/03/22 21:01:22 $";
+static char sccsid[] = "$Id: ex_read.c,v 8.25 1994/03/23 15:04:38 bostic Exp $ (Berkeley) $Date: 1994/03/23 15:04:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -45,9 +45,10 @@ ex_read(sp, ep, cmdp)
 	struct stat sb;
 	FILE *fp;
 	MARK rm;
+	TIMER *timerp;
 	recno_t nlines;
 	size_t blen, len;
-	int rval;
+	int rval, teardown;
 	char *bp, *name;
 
 	/*
@@ -131,7 +132,19 @@ ex_read(sp, ep, cmdp)
 		return (1);
 	}
 
+	/*
+	 * Nvi handles the interrupt when reading from a file, but not
+	 * when reading from a filter, since the terminal settings have
+	 * been reset.
+	 */
+	timerp = F_ISSET(sp, S_EXSILENT) ?
+	    NULL : start_timer(sp, 8, sp->s_busy, "Reading...", 0);
+	teardown = !intr_init(sp);
 	rval = ex_readfp(sp, ep, name, fp, &cmdp->addr1, &nlines, 1);
+	if (timerp != NULL)
+		stop_timer(sp, timerp);
+	if (teardown)
+		intr_end(sp);
 
 	/*
 	 * Set the cursor to the first line read in, if anything read
@@ -165,7 +178,7 @@ ex_readfp(sp, ep, name, fp, fm, nlinesp, success_msg)
 	recno_t lcnt, lno;
 	size_t len;
 	u_long ccnt;			/* XXX: can't print off_t portably. */
-	int rval, teardown;
+	int rval;
 
 	rval = 0;
 	exp = EXP(sp);
@@ -176,8 +189,6 @@ ex_readfp(sp, ep, name, fp, fm, nlinesp, success_msg)
 	 */
 	ccnt = 0;
 	lcnt = 0;
-	busy_on(sp, 1, "Reading...");
-	teardown = !intr_init(sp);
 	for (lno = fm->lno; !ex_getline(sp, fp, &len); ++lno, ++lcnt) {
 		if (F_ISSET(sp, S_INTERRUPTED)) {
 			msgq(sp, M_INFO, "Interrupted.");
@@ -189,9 +200,6 @@ ex_readfp(sp, ep, name, fp, fm, nlinesp, success_msg)
 		}
 		ccnt += len;
 	}
-	busy_off(sp);
-	if (teardown)
-		intr_end(sp);
 
 	if (ferror(fp)) {
 		msgq(sp, M_SYSERR, name);
