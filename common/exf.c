@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.78 1994/05/21 09:42:26 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:42:26 $";
+static char sccsid[] = "$Id: exf.c,v 8.79 1994/06/25 12:05:41 bostic Exp $ (Berkeley) $Date: 1994/06/25 12:05:41 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -471,8 +471,8 @@ file_end(sp, ep, force)
 	mark_end(sp, ep);
 
 	/*
-	 * Delete the recovery files, close the open descriptor,
-	 * free recovery memory.
+	 * Delete recovery files, close the open descriptor, free recovery
+	 * memory.  See recover.c for a description of the protocol.
 	 */
 	if (!F_ISSET(ep, F_RCV_NORM)) {
 		if (ep->rcv_path != NULL && unlink(ep->rcv_path))
