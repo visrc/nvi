@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.45 1993/02/25 19:37:30 bostic Exp $ (Berkeley) $Date: 1993/02/25 19:37:30 $";
+static char sccsid[] = "$Id: key.c,v 5.46 1993/02/28 11:53:02 bostic Exp $ (Berkeley) $Date: 1993/02/28 11:53:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -60,6 +60,8 @@ gb_init(ep)
 	/* Keys that are treated specially. */
 	special['^'] = K_CARAT;
 	special['\004'] = K_CNTRLD;
+	special['\022'] = K_CNTRLR;
+	special['\032'] = K_CNTRLZ;
 	special['\r'] = K_CR;
 	special['\033'] = K_ESCAPE;
 	special['\f'] = K_FORMFEED;
