@@ -405,9 +405,6 @@ static void readcutblk(cb, blkno)
 {
 	char		cutfname[50];/* name of an old temp file */
 	int		fd;	/* either tmpfd or the result of open() */
-#if MSDOS || TOS
-	int		i;
-#endif
 
 	/* decide which fd to use */
 	if (cb->tmpnum == tmpnum)
@@ -597,72 +594,50 @@ MARK paste(at, after, retend)
 	return at;
 }
 
-/* This function copies characters from a cut buffer into a string.
- * It returns the number of characters in the cut buffer.  If the cut
- * buffer is too large to fit in the string (i.e. if cb2str() returns
- * a number >= size) then the characters will not have been copied.
- * It returns 0 if the cut buffer is empty, and -1 for invalid cut buffers.
+/*
+ * cb2str --
+ *	Copy a cut buffer into an allocated buffer, and return a pointer
+ *	to the buffer and the length.
  */
-int cb2str(name, buf, size)
-	int	name;	/* the name of a cut-buffer to get: a-z only! */
-	char	*buf;	/* where to put the string */
-	unsigned size;	/* size of buf */
+u_char *
+cb2str(name, lenp)
+	int name;
+	size_t *lenp;
 {
-	REG struct cutbuf	*cb;
-	REG char		*src;
-	REG char		*dest;
+	register struct cutbuf *cb;
+	register u_char *p;
+	size_t len;
 
-	/* decide which cut buffer to use */
-	if (name >= 'a' && name <= 'z')
-	{
-		cb = &named[name - 'a'];
+	if (!islower(name)) {
+		msg("Illegal buffer name; only a-z are supported.");
+		return (NULL);
 	}
-	else
-	{
-		return -1;
-	}
+	cb = &named[name - 'a'];
 
-	/* if the buffer is empty, return 0 */
-	if (cb->nblks == 0)
-	{
-		return 0;
+	/* Fail if the buffer is empty. */
+	if (cb->nblks == 0) {
+		msg("Buffer %c is empty.", name);
+		return (NULL);
 	}
 
-	/* !!! if not a single-block cut, then fail */
+	/* Fail if not a single-block cut. */
 	if (cb->nblks != 1)
-	{
-		return size;
+		return (NULL);
+
+	/* Allocate space to hold the copy. */
+	len = cb->end - cb->start + 1;
+	if ((p = malloc(len)) == NULL) {
+		msg("Error: %s", strerror(errno));
+		return (NULL);
 	}
 
-	/* if too big, return the size now, without doing anything */
-	if (cb->end - cb->start >= size)
-	{
-		return cb->end - cb->start;
-	}
-
-	/* get the block */
+	/* Get the containing block into memory. */
 	readcutblk(cb, 0);
 
-	/* isolate the string within that blk */
-	if (cb->start == 0)
-	{
-		tmpblk.c[cb->end] = '\0';
-	}
-	else
-	{
-		for (dest = tmpblk.c, src = dest + cb->start; src < tmpblk.c + cb->end; )
-		{
-			*dest++ = *src++;
-		}
-		*dest = '\0';
-	}
+	/* Copy into the buffer. */
+	bcopy(tmpblk.c + cb->start, p, len);
 
-	/* copy the string into the buffer */
-	if (buf != tmpblk.c)
-	{
-		strcpy(buf, tmpblk.c);
-	}
-
-	/* return the length */
-	return cb->end - cb->start;
+	if (lenp)
+		*lenp = len;
+	return (p);
 }
