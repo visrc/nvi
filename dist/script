@@ -1,7 +1,6 @@
 # setup
 setenv VERSION 
 setenv S /usr/src/nvi
-setenv PRINTER ps
 
 # build the docs
 cd $S/docs/USD.doc/vi.ref && \
