@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 8.7 1993/11/01 10:50:49 bostic Exp $ (Berkeley) $Date: 1993/11/01 10:50:49 $";
+static char sccsid[] = "$Id: vs_line.c,v 8.8 1993/11/04 12:19:42 bostic Exp $ (Berkeley) $Date: 1993/11/04 12:19:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,10 +27,7 @@ static char sccsid[] = "$Id: vs_line.c,v 8.7 1993/11/01 10:50:49 bostic Exp $ (B
 
 /*
  * svi_line --
- *	Update one line on the screen.  One nasty little side effect is
- *	that it returns the screen position for the current character.
- *	Not pretty, but this is the only routine that really knows what's
- *	out there.
+ *	Update one line on the screen.
  */
 int
 svi_line(sp, ep, smp, yp, xp)
@@ -45,14 +42,30 @@ svi_line(sp, ep, smp, yp, xp)
 	size_t chlen, cols_per_screen, cno_cnt, count_cols;
 	size_t len, offset_in_line, offset_in_char, skip_screens;
 	size_t oldy, oldx;
-	int ch, is_tab, listset, is_infoline, is_partial, reverse_video;
+	int ch, is_cached, is_infoline, is_partial, is_tab, listset;
+	int reverse_video;
 	char *p, nbuf[10];
 
 #if defined(DEBUG) && 0
 	TRACE(sp, "svi_line: row %u: line: %u off: %u\n",
 	    smp - HMAP, smp->lno, smp->off);
 #endif
+
 	/*
+	 * Assume that, if the cache entry for the line is filled in, the
+	 * line is already on the screen, and all we need to do is return
+	 * the cursor position.  If the calling routine doesn't need the
+	 * cursor position, we can just return.
+	 */
+	is_cached = SMAP_CACHE(smp);
+	if (yp == NULL && is_cached)
+		return (0);
+
+	/*
+	 * A nasty side effect of this routine is that it returns the screen
+	 * position for the "current" character.  Not pretty, but this is the
+	 * only routine that really knows what's out there.
+	 *
 	 * Move to the line.  This routine can be called by svi_sm_position(),
 	 * which uses it to fill in the cache entry so it can figure out what
 	 * the real contents of the screen are.  Because of this, we have to
@@ -111,14 +124,20 @@ svi_line(sp, ep, smp, yp, xp)
 	 * is 0.
 	 */
 	if ((p = file_gline(sp, ep, smp->lno, &len)) == NULL || len == 0) {
-		/* Set line cacheing information. */
-		smp->c_sboff = smp->c_eboff = 0;
-		smp->c_scoff = smp->c_eclen = 0;
-
+		/* Fill in the cursor. */
 		if (yp != NULL && smp->lno == sp->lno) {
 			*yp = smp - HMAP;
 			*xp = O_ISSET(sp, O_NUMBER) ? O_NUMBER_LENGTH : 0;
 		}
+
+		/* If the line is on the screen, quit. */
+		if (is_cached)
+			goto ret;
+
+		/* Set line cacheing information. */
+		smp->c_sboff = smp->c_eboff = 0;
+		smp->c_scoff = smp->c_eclen = 0;
+
 		if (file_lline(sp, ep, &lno))
 			goto err;
 		if (smp->lno > lno) {
@@ -155,7 +174,7 @@ err:			MOVEA(sp, oldy, oldx);
 		smp->c_sboff = offset_in_line = 0;
 		smp->c_scoff = offset_in_char = 0;
 		p = &p[offset_in_line];
-	} else if (SMAP_CACHE(smp)) {
+	} else if (is_cached) {
 		offset_in_line = smp->c_sboff;
 		offset_in_char = smp->c_scoff;
 		p = &p[offset_in_line];
@@ -219,19 +238,19 @@ err:			MOVEA(sp, oldy, oldx);
 	 * Don't fill anything in unless it's the right line and the right
 	 * character, and the right part of the character...
 	 */
-	if (yp == NULL || smp->lno != sp->lno || sp->cno < offset_in_line ||
-	    offset_in_line + cols_per_screen < sp->cno)
+	if (yp == NULL ||
+	    smp->lno != sp->lno || sp->cno < offset_in_line ||
+	    offset_in_line + cols_per_screen < sp->cno) {
 		cno_cnt = 0;
-	else
+		/* If the line is on the screen, quit. */
+		if (is_cached)
+			goto ret;
+	} else
 		cno_cnt = (sp->cno - offset_in_line) + 1;
-
-	/* Default ending values (if the entire line is displayed). */
-	smp->c_eboff = len - 1;
-	smp->c_eclen = cname[p[len - 1]].len;
 
 	/* This is the loop that actually displays characters. */
 	for (is_partial = 0, count_cols = 0;
-	    offset_in_line < len; ++offset_in_line) {
+	    offset_in_line < len; ++offset_in_line, offset_in_char = 0) {
 		if ((ch = *(u_char *)p++) == '\t' && !listset) {
 			chlen = TAB_OFF(sp, count_cols) - offset_in_char;
 			is_tab = 1;
@@ -269,8 +288,8 @@ err:			MOVEA(sp, oldy, oldx);
 		 * it's input mode, it goes on the first.  In normal mode,
 		 * set the cursor only if the entire character was displayed.
 		 */
-		if (cno_cnt && --cno_cnt == 0 &&
-		    (F_ISSET(sp, S_INPUT) || !is_partial)) {
+		if (cno_cnt &&
+		    --cno_cnt == 0 && (F_ISSET(sp, S_INPUT) || !is_partial)) {
 			*yp = smp - HMAP;
 			if (F_ISSET(sp, S_INPUT))
 				*xp = count_cols - chlen;
@@ -279,7 +298,15 @@ err:			MOVEA(sp, oldy, oldx);
 			if (O_ISSET(sp, O_NUMBER) &&
 			    !is_infoline && smp->off == 1)
 				*xp += O_NUMBER_LENGTH;
+
+			/* If the line is on the screen, quit. */
+			if (is_cached)
+				goto ret;
 		}
+
+		/* If the line is on the screen, don't display anything. */
+		if (is_cached)
+			continue;
 
 		/*
 		 * Display the character.  If it's a tab and tabs aren't some
@@ -294,12 +321,11 @@ err:			MOVEA(sp, oldy, oldx);
 					ADDCH(TABCH);
 		} else
 			ADDNSTR(cname[ch].name + offset_in_char, chlen);
-		offset_in_char = 0;
 	}
 
 	if (count_cols < cols_per_screen) {
 		/* If didn't paint the whole line, update the cache. */
-		smp->c_ecsize = smp->c_eclen =  cname[ch].len;
+		smp->c_ecsize = smp->c_eclen = cname[ch].len;
 		smp->c_eboff = len - 1;
 
 		/*
@@ -317,7 +343,7 @@ err:			MOVEA(sp, oldy, oldx);
 			clrtoeol();
 	}
 
-	if (reverse_video)
+ret:	if (reverse_video)
 		standend();
 	MOVEA(sp, oldy, oldx);
 	return (0);
