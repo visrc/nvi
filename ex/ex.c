@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.93 1993/05/11 16:10:44 bostic Exp $ (Berkeley) $Date: 1993/05/11 16:10:44 $";
+static char sccsid[] = "$Id: ex.c,v 5.94 1993/05/13 08:26:01 bostic Exp $ (Berkeley) $Date: 1993/05/13 08:26:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -286,7 +286,8 @@ ex_cmd(sp, ep, exc)
 		 * Another "special" feature.
 		 * NOTE: cmd.string is NOT nul terminated in this case.
 		 */
-		if (*exc == '>' || *exc == '<') {
+		if (cp == &cmds[C_SHIFTL] && *exc == '<' ||
+		    cp == &cmds[C_SHIFTR] && *exc == '>') {
 			ch = *exc;
 			for (cmd.string = exc; *++exc == ch;);
 		}
