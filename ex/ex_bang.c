@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 8.4 1993/08/05 18:10:08 bostic Exp $ (Berkeley) $Date: 1993/08/05 18:10:08 $";
+static char sccsid[] = "$Id: ex_bang.c,v 8.5 1993/08/18 16:21:36 bostic Exp $ (Berkeley) $Date: 1993/08/18 16:21:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,15 +38,15 @@ ex_bang(sp, ep, cmdp)
 	char *com;
 
 	/* Make sure we got something. */
-	if (cmdp->string == NULL) {
+	if (cmdp->argv[0] == NULL) {
 		msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
 		return (1);
 	}
 
 	/* Figure out how much space we could possibly need. */
 	modified = 0;
-	len = strlen(cmdp->string) + 1;
-	for (p = cmdp->string; (p = strpbrk(p, "!%#\\")) != NULL; ++p)
+	len = strlen(cmdp->argv[0]) + 1;
+	for (p = cmdp->argv[0]; (p = strpbrk(p, "!%#\\")) != NULL; ++p)
 		switch (*p) {
 		case '!':
 			if (sp->lastbcomm == NULL) {
@@ -89,7 +89,7 @@ ex_bang(sp, ep, cmdp)
 
 	/* Fill it in. */
 	if (modified) {
-		for (p = cmdp->string, t = com; (ch = *p) != '\0'; ++p)
+		for (p = cmdp->argv[0], t = com; (ch = *p) != '\0'; ++p)
 			switch (ch) {
 			case '!':
 				len = strlen(sp->lastbcomm);
@@ -113,7 +113,7 @@ ex_bang(sp, ep, cmdp)
 			}
 		*t = '\0';
 	} else
-		memmove(com, cmdp->string, len);
+		memmove(com, cmdp->argv[0], len);
 
 	/* Swap commands. */
 	if (sp->lastbcomm != NULL)
