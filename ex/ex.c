@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.1 1993/06/09 22:23:13 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:23:13 $";
+static char sccsid[] = "$Id: ex.c,v 8.2 1993/07/06 07:53:19 bostic Exp $ (Berkeley) $Date: 1993/07/06 07:53:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -579,8 +579,11 @@ addr2:	switch(cmd.addrcnt) {
 		if (file_lline(sp, ep, &lcount))
 			return (1);
 		if (num > lcount) {
-			msgq(sp, M_ERR, "Only %lu line%s in the file",
-			    lcount, lcount > 1 ? "s" : "");
+			if (lcount == 0)
+				msgq(sp, M_ERR, "The file is empty.");
+			else
+				msgq(sp, M_ERR, "Only %lu line%s in the file",
+				    lcount, lcount > 1 ? "s" : "");
 			return (1);
 		}
 		break;
