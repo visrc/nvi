@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_main.c,v 10.1 1995/06/08 19:01:40 bostic Exp $ (Berkeley) $Date: 1995/06/08 19:01:40 $";
+static char sccsid[] = "$Id: cl_main.c,v 10.2 1995/06/09 13:45:37 bostic Exp $ (Berkeley) $Date: 1995/06/09 13:45:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,7 +46,7 @@ main(argc, argv)
 	struct timeval t, *tp;
 	CHAR_T ch;
 	CL_PRIVATE *clp;
-	EVENT ev, *evp;
+	EVENT ev;
 	GS *gp;
 	SCR *next, *sp;
 	recno_t rows;
@@ -75,7 +75,7 @@ main(argc, argv)
 	"usage: ex [-eFRrsv] [-c command] [-t tag] [-w size] [files ...]\n");
 		(void)fprintf(stderr,
 	"usage: vi [-eFlRrv] [-c command] [-t tag] [-w size] [files ...]\n");
-		goto err;
+		exit (1);
 	}
 
 	/* Edit the first screen. */
