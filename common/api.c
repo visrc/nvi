@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: api.c,v 8.6 1995/11/22 10:16:53 bostic Exp $ (Berkeley) $Date: 1995/11/22 10:16:53 $";
+static char sccsid[] = "$Id: api.c,v 8.7 1995/11/22 19:43:14 bostic Exp $ (Berkeley) $Date: 1995/11/22 19:43:14 $";
 #endif /* not lint */
 
 #ifdef TCL_INTERP
@@ -320,6 +320,7 @@ api_map(sp, name, map, len)
 	b.bp = (CHAR_T *)map;
 	b.len = len;
 	ap[1] = &b;
+	cmd.argc = 2;
 	return (cmd.cmd->fn(sp, &cmd));
 }
 
