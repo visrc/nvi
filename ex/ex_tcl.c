@@ -12,7 +12,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_tcl.c,v 8.8 1996/03/21 19:00:39 bostic Exp $ (Berkeley) $Date: 1996/03/21 19:00:39 $";
+static const char sccsid[] = "$Id: ex_tcl.c,v 8.9 1996/04/28 14:12:51 bostic Exp $ (Berkeley) $Date: 1996/04/28 14:12:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -47,7 +47,7 @@ ex_tcl(sp, cmdp)
 	CHAR_T *p;
 	GS *gp;
 	size_t len;
-	char buf[64];
+	char buf[128];
 
 	/* Initialize the interpreter. */
 	gp = sp->gp;
