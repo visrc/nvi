@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 10.20 1995/11/08 08:33:12 bostic Exp $ (Berkeley) $Date: 1995/11/08 08:33:12 $";
+static char sccsid[] = "$Id: options.c,v 10.21 1995/11/18 13:01:16 bostic Exp $ (Berkeley) $Date: 1995/11/18 13:01:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,7 +32,6 @@ static char sccsid[] = "$Id: options.c,v 10.20 1995/11/08 08:33:12 bostic Exp $ 
 static int	 	 opts_abbcmp __P((const void *, const void *));
 static int	 	 opts_cmp __P((const void *, const void *));
 static int	 	 opts_print __P((SCR *, OPTLIST const *));
-static OPTLIST const	*opts_search __P((char *));
 
 /*
  * O'Reilly noted options and abbreviations are from "Learning the VI Editor",
@@ -398,49 +397,6 @@ opts_init(sp, oargs, ttype, rows, cols)
 err:	msgq(sp, M_ERR,
 	    "031|Unable to set default %s option", optlist[optindx].name);
 	return (1);
-}
-
-/* 
- * opts_get --
- *	Given an option, return its value as a string.
- *
- * XXX
- * Currently only used by the Tcl interpreter.
- */
-int opts_get(sp, target, value)
-	SCR *sp;
-	CHAR_T *target, **value;
-{
-	int offset;
-	OPTLIST const *op;
-
-	if ((op = opts_search(target)) == NULL)
-		return (1);
-
-	offset = op - optlist;
-	switch (op->type) {
-	case OPT_0BOOL:
-	case OPT_1BOOL:
-		MALLOC_RET(sp, *value, CHAR_T *, strlen(op->name) + 2);
-		(void)sprintf(*value,
-		    "%s%s", O_ISSET(sp, offset) ? "" : "no", op->name);
-		break;
-	case OPT_NUM:
-		MALLOC_RET(sp, *value, CHAR_T *, 20);
-		(void)sprintf(*value, "%ld", (u_long)O_VAL(sp, offset));
-		break;
-	case OPT_STR:
-		if (O_STR(sp, offset) == NULL) {
-			MALLOC_RET(sp, *value, CHAR_T *, 2);
-			value[0] = '\0';
-		} else {
-			MALLOC_RET(sp,
-			    *value, CHAR_T *, strlen(O_STR(sp, offset)));
-			(void)sprintf(*value, "%s", O_STR(sp, offset));
-		}
-		break;
-	}
-	return (0);
 }
 
 /*
@@ -905,8 +861,10 @@ opts_save(sp, fp)
 /* 
  * opts_search --
  *	Search for an option.
+ *
+ * PUBLIC: OPTLIST const *opts_search __P((char *));
  */
-static OPTLIST const *
+OPTLIST const *
 opts_search(name)
 	char *name;
 {
