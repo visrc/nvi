@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.60 1996/03/16 14:46:17 bostic Exp $ (Berkeley) $Date: 1996/03/16 14:46:17 $
+dnl	$Id: configure.in,v 8.61 1996/03/18 15:35:04 bostic Exp $ (Berkeley) $Date: 1996/03/18 15:35:04 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(configure)
@@ -126,7 +126,7 @@ AC_ARG_ENABLE(perlinterp,
 AC_MSG_RESULT($vi_cv_perlinterp)
 if test "$vi_cv_perlinterp" = "yes"; then
 	if test "$vi_cv_path_perl" = no; then
-		echo "Fatal error: no perl utility found."
+		echo "Fatal error: no perl5 utility found."
 		exit 1
 	fi
 	perlcppflags=`$vi_cv_path_perl -e 'use Config;print $Config{ccflags}'`
@@ -143,6 +143,9 @@ if test "$vi_cv_perlinterp" = "yes"; then
 	    $Config{shrpdir} : ($Config{installarchlib}."/CORE"))'`
 	if test "X$perllib" != "X"; then
 		LIBS="$LIBS -L$perllib"
+	else
+		echo "Fatal error: no perl5 library."
+		exit 1
 	fi
 	LIBOBJS="perl.o $LIBOBJS"
 	LIBS="$LIBS -lperl -lm"
