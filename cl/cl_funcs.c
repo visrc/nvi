@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_funcs.c,v 10.21 1995/10/17 10:13:52 bostic Exp $ (Berkeley) $Date: 1995/10/17 10:13:52 $";
+static char sccsid[] = "$Id: cl_funcs.c,v 10.22 1995/10/29 15:24:53 bostic Exp $ (Berkeley) $Date: 1995/10/29 15:24:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,7 +22,6 @@ static char sccsid[] = "$Id: cl_funcs.c,v 10.21 1995/10/17 10:13:52 bostic Exp $
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <termcap.h>
 #include <termios.h>
 #include <unistd.h>
 
@@ -527,80 +526,58 @@ cl_suspend(sp, allowedp)
 
 	*allowedp = 1;
 
-	switch (F_ISSET(sp, S_EX | S_VI)) {
-	case S_EX:
-		/*
-		 * This part of the function isn't needed by any screen not
-		 * supporting ex commands that require full terminal canonical
-		 * mode (e.g. :suspend).  Returning 1 for failure will cause
-		 * the editor to reject the command.
-		 *
-		 * Save the terminal settings, and restore the original ones.
-		 */
-		gp = sp->gp;
-		if (F_ISSET(gp, G_STDIN_TTY)) {
-			if (tcgetattr(STDIN_FILENO, &t)) {
-				msgq(sp, M_SYSERR, "suspend: tcgetattr");
-				return (1);
-			}
-			clp = CLP(sp);
-			if (tcsetattr(STDIN_FILENO,
-			    TCSASOFT | TCSADRAIN, &clp->orig)) {
-				msgq(sp, M_SYSERR,
-				    "suspend: tcsetattr original");
-				return (1);
-			}
-		}
-
-		/* Stop the process group. */
-		if (kill(0, SIGTSTP)) {
-			msgq(sp, M_SYSERR, "suspend: kill");
+	/*
+	 * XXX
+	 * All of this is done completely behind curses back.  You can't
+	 * portably stop and restart curses screens, and even hope to get
+	 * it right.  End of story.
+	 *
+	 * Save the terminal settings, and restore the original ones.
+	 */
+	gp = sp->gp;
+	if (F_ISSET(gp, G_STDIN_TTY)) {
+		if (tcgetattr(STDIN_FILENO, &t)) {
+			msgq(sp, M_SYSERR, "suspend: tcgetattr");
 			return (1);
 		}
-
-		/* Time passes ... */
-
-		/* Restore terminal settings. */
-		if (F_ISSET(gp, G_STDIN_TTY) &&
-		    tcsetattr(STDIN_FILENO, TCSASOFT | TCSADRAIN, &t)) {
-			msgq(sp, M_SYSERR, "suspend: tcsetattr current");
+		clp = CLP(sp);
+		if (tcsetattr(STDIN_FILENO, TCSASOFT | TCSADRAIN, &clp->orig)) {
+			msgq(sp, M_SYSERR, "suspend: tcsetattr original");
 			return (1);
 		}
-		break;
-	case S_VI:
-		/*
-		 * This part of the function isn't needed by any screen not
-		 * supporting vi process suspension, i.e. any screen that isn't
-		 * backed by a UNIX shell.  Returning 1 for failure will cause
-		 * the editor to reject the command.
-		 */
+	}
+
+	/* Move to the lower left-hand corner of the screen. */
+	if (F_ISSET(sp, S_VI)) {
 		getyx(stdscr, oldy, oldx);
 		(void)move(LINES - 1, 0);
 		(void)refresh();
+	}
 
-		/* Temporarily end the screen. */
-		(void)endwin();
+	/* Stop the process group. */
+	if (kill(0, SIGTSTP)) {
+		msgq(sp, M_SYSERR, "suspend: kill");
+		return (1);
+	}
 
-		/* Stop the process group. */
-		if (kill(0, SIGTSTP)) {
-			msgq(sp, M_SYSERR, "suspend: kill");
-			return (1);
-		}
+	/* Time passes ... */
 
-		/* Time passes ... */
+	/* Restore terminal settings. */
+	if (F_ISSET(gp, G_STDIN_TTY) &&
+	    tcsetattr(STDIN_FILENO, TCSASOFT | TCSADRAIN, &t)) {
+		msgq(sp, M_SYSERR, "suspend: tcsetattr current");
+		return (1);
+	}
 
-		/* Refresh the screen. */
+	/* Refresh the screen; if it changed size, set the SIGWINCH bit. */
+	if (F_ISSET(sp, S_VI)) {
 		(void)move(oldy, oldx);
 		(void)cl_refresh(sp, 1);
 
-		/* If the screen changed size, set the SIGWINCH bit. */
 		if (cl_ssize(sp, 1, NULL, NULL, &changed))
 			return (1);
 		if (changed)
 			F_SET(CLP(sp), CL_SIGWINCH);
-		break;
-	default:
-		abort();
 	}
 	return (0);
 }
