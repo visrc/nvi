@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: db.c,v 10.20 1996/04/27 11:41:09 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:41:09 $";
+static const char sccsid[] = "$Id: db.c,v 10.21 1996/09/15 15:57:24 bostic Exp $ (Berkeley) $Date: 1996/09/15 15:57:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -20,7 +20,6 @@ static const char sccsid[] = "$Id: db.c,v 10.20 1996/04/27 11:41:09 bostic Exp $
 #include <bitstring.h>
 #include <errno.h>
 #include <limits.h>
-#include <signal.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -521,7 +520,7 @@ db_last(sp, lnop)
 	}
 
 	/* Fill the cache. */
-	memmove(&lno, key.data, sizeof(lno));
+	memcpy(&lno, key.data, sizeof(lno));
 	ep->c_nlines = ep->c_lno = lno;
 	ep->c_len = data.size;
 	ep->c_lp = data.data;
