@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 9.8 1995/01/31 09:45:49 bostic Exp $ (Berkeley) $Date: 1995/01/31 09:45:49 $";
+static char sccsid[] = "$Id: search.c,v 9.9 1995/02/01 20:47:22 bostic Exp $ (Berkeley) $Date: 1995/02/01 20:47:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -67,7 +67,7 @@ resetup(sp, rep, dir, ptrn, epp, flags)
 			*epp = ptrn + 1;
 		goto prev;
 	}
-	if (ptrn[0] == ptrn[1] && ptrn[2] == '\0') {
+	if (ptrn[0] == ptrn[1]) {
 		if (epp != NULL)
 			*epp = ptrn + 2;
 prev:		if (!F_ISSET(sp, S_RE_SEARCH)) {
@@ -105,7 +105,7 @@ prev:		if (!F_ISSET(sp, S_RE_SEARCH)) {
 		 * QUOTING NOTE:
 		 * Only toss an escape character if it escapes a delimiter.
 		 */
-		for (delim = *ptrn++, p = t = ptrn;; *t++ = *p++) {
+		for (delim = *ptrn, p = t = ++ptrn;; *t++ = *p++) {
 			if (p[0] == '\0' || p[0] == delim) {
 				if (p[0] == delim)
 					++p;
@@ -115,9 +115,6 @@ prev:		if (!F_ISSET(sp, S_RE_SEARCH)) {
 			if (p[1] == delim && p[0] == '\\')
 				++p;
 		}
-		/* Check for "//". */
-		if (*ptrn == '\0')
-			goto prev;
 		if (epp != NULL)
 			*epp = p;
 		if (re_conv(sp, &ptrn, &replaced))
