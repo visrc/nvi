@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_screen.c,v 10.16 1995/10/28 11:01:16 bostic Exp $ (Berkeley) $Date: 1995/10/28 11:01:16 $";
+static char sccsid[] = "$Id: cl_screen.c,v 10.17 1995/10/29 15:23:02 bostic Exp $ (Berkeley) $Date: 1995/10/29 15:23:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,7 +22,6 @@ static char sccsid[] = "$Id: cl_screen.c,v 10.16 1995/10/28 11:01:16 bostic Exp 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <termcap.h>
 #include <termios.h>
 #include <unistd.h>
 
@@ -366,10 +365,10 @@ cl_ex_init(sp)
 	switch (err) {
 	case -1:
 		msgq(sp, M_ERR, "No terminal database found");
-		break;
+		return (1);
 	case 0:
 		msgq(sp, M_ERR, "%s: unknown terminal type", O_STR(sp, O_TERM));
-		break;
+		return (1);
 	case 1:
 		GETCAP("cup", cup);
 		GETCAP("smso", smso);
