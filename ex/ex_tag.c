@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 10.13 1995/11/30 21:05:29 bostic Exp $ (Berkeley) $Date: 1995/11/30 21:05:29 $";
+static char sccsid[] = "$Id: ex_tag.c,v 10.14 1996/02/20 21:14:27 bostic Exp $ (Berkeley) $Date: 1996/02/20 21:14:27 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -786,6 +786,14 @@ search(sp, tfp, tname, tag)
 
 	/*
 	 * XXX
+	 * Some old BSD systems require MAP_FILE as an argument when mapping
+	 * regular files.
+	 */
+#ifndef MAP_FILE
+#define	MAP_FILE	0
+#endif
+	/*
+	 * XXX
 	 * We'd like to test if the file is too big to mmap.  Since we don't
 	 * know what size or type off_t's or size_t's are, what the largest
 	 * unsigned integral type is, or what random insanity the local C
@@ -794,7 +802,7 @@ search(sp, tfp, tname, tag)
 	 * large.
 	 */
 	if (fstat(fd, &sb) || (map = mmap(NULL, (size_t)sb.st_size,
-	    PROT_READ, MAP_PRIVATE, fd, (off_t)0)) == (caddr_t)-1) {
+	    PROT_READ, MAP_FILE | MAP_PRIVATE, fd, (off_t)0)) == (caddr_t)-1) {
 		tfp->errno = errno;
 		(void)close(fd);
 		return (1);
