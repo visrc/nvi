@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 8.18 1993/11/29 14:15:16 bostic Exp $ (Berkeley) $Date: 1993/11/29 14:15:16 $";
+static char sccsid[] = "$Id: ex_argv.c,v 8.19 1993/12/02 15:53:18 bostic Exp $ (Berkeley) $Date: 1993/12/02 15:53:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -23,32 +23,73 @@ static char sccsid[] = "$Id: ex_argv.c,v 8.18 1993/11/29 14:15:16 bostic Exp $ (
 
 static int argv_allocate __P((SCR *, int));
 static int argv_fexp __P((SCR *, EXCMDARG *,
-	       char *, char *, size_t *, char **, size_t *, int));
+	       char *, size_t, char *, size_t *, char **, size_t *, int));
 static int argv_sexp __P((SCR *, char *, size_t, size_t *));
 
-#define	ARGALLOC(off, len)						\
-	if (exp->args[off].len < len) {					\
-		if ((exp->args[off].bp =				\
-		   realloc(exp->args[off].bp, len)) == NULL) {		\
-			exp->args[off].bp = NULL;			\
-			exp->args[off].len = 0;				\
-			msgq(sp, M_SYSERR, NULL);			\
+/*
+ * Allocate room for another argument, always leaving enough
+ * room for a NULL pointer.
+ */
+#define	ARGALLOC(l) {							\
+	ARGS *__ap;							\
+	size_t __off = exp->argsoff;					\
+	if ((exp->argscnt == 0 ||					\
+	    __off + 2 >= exp->argscnt - 1) && argv_allocate(sp, __off))	\
+		return (1);						\
+	if (exp->args[__off] == NULL &&					\
+	    (exp->args[__off] = calloc(1, sizeof(ARGS))) == NULL) {	\
+		exp->args[__off] = NULL;				\
+		goto mem;						\
+	}								\
+	__ap = exp->args[__off];					\
+	if (__ap->blen < (l) + 1) {					\
+		__ap->blen = (l) + 1;					\
+		if ((__ap->bp = realloc(__ap->bp,			\
+		    __ap->blen * sizeof(CHAR_T))) == NULL) {		\
+			__ap->bp = NULL;				\
+			__ap->blen = 0;					\
+			F_CLR(__ap, A_ALLOCATED);			\
+mem:			msgq(sp, M_SYSERR, NULL);			\
 			return (1);					\
 		}							\
-		exp->args[off].len = len;				\
-		exp->args[off].flags |= A_ALLOCATED;			\
-	}
+		F_SET(__ap, A_ALLOCATED);				\
+	}								\
+}
+
+/*
+ * argv_exp0 --
+ *	Put a string into an argv.
+ */
+int
+argv_exp0(sp, ep, excp, cmd, cmdlen)
+	SCR *sp;
+	EXF *ep;
+	EXCMDARG *excp;
+	char *cmd;
+	size_t cmdlen;
+{
+	EX_PRIVATE *exp;
+
+	exp = EXP(sp);
+	ARGALLOC(cmdlen);
+	memmove(exp->args[exp->argsoff]->bp, cmd, cmdlen);
+	exp->args[exp->argsoff]->bp[cmdlen] = '\0';
+	exp->args[exp->argsoff]->len = cmdlen;
+	++exp->argsoff;
+	return (0);
+}
 
 /*
  * argv_exp1 --
  *	Do file name expansion on a string, and leave it in a string.
  */
 int
-argv_exp1(sp, ep, cmdp, s, is_bang)
+argv_exp1(sp, ep, excp, cmd, cmdlen, is_bang)
 	SCR *sp;
 	EXF *ep;
-	EXCMDARG *cmdp;
-	char *s;
+	EXCMDARG *excp;
+	char *cmd;
+	size_t cmdlen;
 	int is_bang;
 {
 	EX_PRIVATE *exp;
@@ -59,21 +100,19 @@ argv_exp1(sp, ep, cmdp, s, is_bang)
 
 	len = 0;
 	exp = EXP(sp);
-	if (argv_fexp(sp, cmdp, s, bp, &len, &bp, &blen, is_bang) ||
+	if (argv_fexp(sp, excp, cmd, cmdlen, bp, &len, &bp, &blen, is_bang) ||
 	    exp->argscnt < 2 && argv_allocate(sp, 0)) {
 		FREE_SPACE(sp, bp, blen);
 		return (1);
 	}
 
-	ARGALLOC(0, len);
-	memmove(exp->args[0].bp, bp, len);
-	exp->argv[0] = exp->args[0].bp;
-	exp->argv[1] = NULL;
+	ARGALLOC(len);
+	memmove(exp->args[exp->argsoff]->bp, bp, len);
+	exp->args[exp->argsoff]->bp[len] = '\0';
+	exp->args[exp->argsoff]->len = len;
+	++exp->argsoff;
 
 	FREE_SPACE(sp, bp, blen);
-
-	cmdp->argv = exp->argv;
-	cmdp->argc = 1;
 	return (0);
 }
 
@@ -83,14 +122,15 @@ argv_exp1(sp, ep, cmdp, s, is_bang)
  *	it up into an argv.
  */
 int
-argv_exp2(sp, ep, cmdp, s, is_bang)
+argv_exp2(sp, ep, excp, cmd, cmdlen, is_bang)
 	SCR *sp;
 	EXF *ep;
-	EXCMDARG *cmdp;
-	char *s;
+	EXCMDARG *excp;
+	char *cmd;
+	size_t cmdlen;
 	int is_bang;
 {
-	size_t len, blen;
+	size_t blen, len, n;
 	int rval;
 	char *bp, *p;
 
@@ -103,10 +143,10 @@ argv_exp2(sp, ep, cmdp, s, is_bang)
 	len = SHELLOFFSET;
 
 #if defined(DEBUG) && 0
-	TRACE(sp, "file_argv: {%s}\n", s);
+	TRACE(sp, "file_argv: {%.*s}\n", (int)cmdlen, cmd);
 #endif
 
-	if (argv_fexp(sp, cmdp, s, p, &len, &bp, &blen, is_bang)) {
+	if (argv_fexp(sp, excp, cmd, cmdlen, p, &len, &bp, &blen, is_bang)) {
 		rval = 1;
 		goto err;
 	}
@@ -120,23 +160,25 @@ argv_exp2(sp, ep, cmdp, s, is_bang)
 	 * what magic characters the user's shell expects.  If it's not
 	 * pure vanilla, don't even try.
 	 */
-	for (p = bp; *p; ++p)
+	for (p = bp, n = len; n > 0; --n, ++p)
 		if (!isalnum(*p) && !isblank(*p) && *p != '/' && *p != '.')
 			break;
-	if (*p) {
+	if (n > 0) {
 		if (argv_sexp(sp, bp, blen, &len)) {
 			rval = 1;
 			goto err;
 		}
 		p = bp;
-	} else
+	} else {
 		p = bp + SHELLOFFSET;
+		len -= SHELLOFFSET;
+	}
 
 #if defined(DEBUG) && 0
 	TRACE(sp, "after shell: %d: {%s}\n", len, bp);
 #endif
 
-	rval = argv_exp3(sp, ep, cmdp, p);
+	rval = argv_exp3(sp, ep, excp, p, len);
 
 err:	FREE_SPACE(sp, bp, blen);
 	return (rval);
@@ -147,74 +189,66 @@ err:	FREE_SPACE(sp, bp, blen);
  *	Take a string and break it up into an argv.
  */
 int
-argv_exp3(sp, ep, cmdp, p)
+argv_exp3(sp, ep, excp, cmd, cmdlen)
 	SCR *sp;
 	EXF *ep;
-	EXCMDARG *cmdp;
-	char *p;
+	EXCMDARG *excp;
+	char *cmd;
+	size_t cmdlen;
 {
+	CHAR_T vlit;
 	EX_PRIVATE *exp;
 	size_t len;
-	int done, off;
-	char *ap, *t;
+	int ch, off;
+	char *ap, *p;
 
-	exp = EXP(sp);
-	for (done = off = 0;; ++p) {
+	(void)term_key_ch(sp, K_VLNEXT, &vlit);
+	for (exp = EXP(sp); cmdlen > 0; ++exp->argsoff) {
 		/* Skip any leading whitespace. */
-		for (; isblank(p[0]); ++p);
-		if (*p == '\0')
-			break;
-
-		/*
-		 * QUOTING NOTE:
-		 *
-		 * New argument; NULL terminate, skipping anything
-		 * that's preceded by the user's quoting character.
-		 */
-		for (ap = p; p[0] != '\0'; ++p) {
-			if (term_key_val(sp, p[0]) == K_VLNEXT && p[1])
-				p += 2;
-			if (isblank(p[0]))
+		for (; cmdlen > 0; --cmdlen, ++cmd) {
+			ch = *cmd;
+			if (!isblank(ch))
 				break;
 		}
-		if (*p)
-			*p = '\0';
-		else
-			done = 1;
+		if (cmdlen == 0)
+			break;
 
 		/*
-		 * Allocate more pointer space if necessary, making
-		 * sure there's space for a trailing NULL pointer.
-		 */
-		if (off + 2 >= exp->argscnt - 1 && argv_allocate(sp, off))
-			return (1);
-
-		/* Allocate more argument space if necessary. */
-		len = (p - ap) + 1;
-		ARGALLOC(off, len);
-		exp->argv[off] = exp->args[off].bp;
-
-		/*
+		 * Determine the length of this whitespace delimited
+		 * argument.  
+		 *
 		 * QUOTING NOTE:
 		 *
-		 * Copy the argument into place, losing quote chars.
+		 * Skip any character preceded by the user's quoting
+		 * character.
 		 */
-		for (t = exp->args[off].bp; len; *t++ = *ap++, --len)
-			if (term_key_val(sp, *ap) == K_VLNEXT) {
+		for (ap = cmd, len = 0; cmdlen > 0; --cmdlen, ++cmd, ++len)
+			if ((ch = *cmd) == vlit && cmdlen > 1)
+				++cmd;
+			else if (isblank(ch))
+				break;
+				
+		/*
+		 * Copy the argument into place.
+		 *
+		 * QUOTING NOTE:
+		 *
+		 * Lose quote chars.
+		 */
+		ARGALLOC(len);
+		off = exp->argsoff;
+		exp->args[off]->len = len;
+		for (p = exp->args[off]->bp; len > 0; --len, *p++ = *ap++)
+			if (*ap == vlit) {
 				++ap;
 				--len;
+				--exp->args[off]->len;
 			}
-		++off;
-
-		if (done)
-			break;
+		*p = '\0';
 	}
-	exp->argv[off] = NULL;
-	cmdp->argv = exp->argv;
-	cmdp->argc = off;
 
 #if defined(DEBUG) && 0
-	for (cnt = 0; cnt < off; ++cnt)
+	for (cnt = 0; cnt < exp->argsoff; ++cnt)
 		TRACE(sp, "arg %d: {%s}\n", cnt, exp->argv[cnt]);
 #endif
 	return (0);
@@ -225,11 +259,11 @@ argv_exp3(sp, ep, cmdp, p)
  *	Do file name and bang command expansion.
  */
 static int
-argv_fexp(sp, cmdp, s, p, lenp, bpp, blenp, is_bang)
+argv_fexp(sp, excp, cmd, cmdlen, p, lenp, bpp, blenp, is_bang)
 	SCR *sp;
-	EXCMDARG *cmdp;
-	char *s, *p, **bpp;
-	size_t *lenp, *blenp;
+	EXCMDARG *excp;
+	char *cmd, *p, **bpp;
+	size_t cmdlen, *lenp, *blenp;
 	int is_bang;
 {
 	EX_PRIVATE *exp;
@@ -237,8 +271,8 @@ argv_fexp(sp, cmdp, s, p, lenp, bpp, blenp, is_bang)
 	size_t blen, len, tlen;
 
 	/* Replace file name characters. */
-	for (bp = *bpp, blen = *blenp, len = *lenp; *s; ++s)
-		switch (*s) {
+	for (bp = *bpp, blen = *blenp, len = *lenp; cmdlen > 0; --cmdlen, ++cmd)
+		switch (*cmd) {
 		case '!':
 			if (!is_bang)
 				goto ins_ch;
@@ -252,7 +286,7 @@ argv_fexp(sp, cmdp, s, p, lenp, bpp, blenp, is_bang)
 			ADD_SPACE(sp, bp, blen, len);
 			memmove(p, exp->lastbcomm, tlen);
 			p += tlen;
-			F_SET(cmdp, E_MODIFY);
+			F_SET(excp, E_MODIFY);
 			break;
 		case '%':
 			if (sp->frp->cname == NULL && sp->frp->name == NULL) {
@@ -260,22 +294,12 @@ argv_fexp(sp, cmdp, s, p, lenp, bpp, blenp, is_bang)
 				    "No filename to substitute for %%.");
 				return (1);
 			}
-			/*
-			 * In other words:
-			 *	t = FILENAME(sp->frp);
-			 */
-			if (sp->frp->cname != NULL) {
-				t = sp->frp->cname;
-				tlen = sp->frp->clen;
-			} else {
-				t = sp->frp->name;
-				tlen =  sp->frp->nlen;
-			}
+			tlen = strlen(t = FILENAME(sp->frp));
 			len += tlen;
 			ADD_SPACE(sp, bp, blen, len);
 			memmove(p, t, tlen);
 			p += tlen;
-			F_SET(cmdp, E_MODIFY);
+			F_SET(excp, E_MODIFY);
 			break;
 		case '#':
 			/*
@@ -288,26 +312,15 @@ argv_fexp(sp, cmdp, s, p, lenp, bpp, blenp, is_bang)
 				    "No filename to substitute for #.");
 				return (1);
 			}
-			/*
-			 * In other words:
-			 *	t = sp->alt_name == NULL ?
-			 *	    FILENAME(sp->frp): sp->alt_name;
-			 */
-			if (sp->alt_name != NULL) {
+			if (sp->alt_name != NULL)
 				t = sp->alt_name;
-				tlen = strlen(t);
-			} else if (sp->frp->cname != NULL) {
-				t = sp->frp->cname;
-				tlen = sp->frp->clen;
-			} else {
-				t = sp->frp->name;
-				tlen =  sp->frp->nlen;
-			}
-			len += tlen;
+			else
+				t = FILENAME(sp->frp);
+			len += tlen = strlen(t);
 			ADD_SPACE(sp, bp, blen, len);
 			memmove(p, t, tlen);
 			p += tlen;
-			F_SET(cmdp, E_MODIFY);
+			F_SET(excp, E_MODIFY);
 			break;
 		case '\\':
 			/*
@@ -316,13 +329,13 @@ argv_fexp(sp, cmdp, s, p, lenp, bpp, blenp, is_bang)
 			 * Strip any backslashes that protected the file
 			 * expansion characters.
 			 */
-			if (s[1] == '%' || s[1] == '#')
-				++s;
+			if (cmdlen > 1 && cmd[1] == '%' || cmd[1] == '#')
+				++cmd;
 			/* FALLTHROUGH */
 		default:
 ins_ch:			++len;
 			ADD_SPACE(sp, bp, blen, len);
-			*p++ = *s;
+			*p++ = *cmd;
 		}
 
 	/* Nul termination. */
@@ -352,17 +365,12 @@ argv_allocate(sp, off)
 #define	INCREMENT	20
 	exp = EXP(sp);
 	cnt = exp->argscnt + INCREMENT;
-	if ((exp->args = realloc(exp->args, cnt * sizeof(ARGS))) == NULL) {
+	if ((exp->args = realloc(exp->args, cnt * sizeof(ARGS *))) == NULL) {
 		(void)argv_free(sp);
-		goto mem;
-	}
-	if ((exp->argv =
-	    realloc(exp->argv, cnt * sizeof(char *))) == NULL) {
-		(void)argv_free(sp);
-mem:		msgq(sp, M_SYSERR, NULL);
+		msgq(sp, M_SYSERR, NULL);
 		return (1);
 	}
-	memset(&exp->args[off], 0, INCREMENT * sizeof(ARGS));
+	memset(&exp->args[off], 0, INCREMENT * sizeof(ARGS *));
 	exp->argscnt = cnt;
 	return (0);
 }
@@ -380,14 +388,18 @@ argv_free(sp)
 
 	exp = EXP(sp);
 	if (exp->args != NULL) {
-		for (off = 0; off < exp->argscnt; ++off)
-			if (F_ISSET(&exp->args[off], A_ALLOCATED))
-				FREE(exp->args[off].bp, exp->args[off].len);
+		for (off = 0; off < exp->argscnt; ++off) {
+			if (exp->args[off] == NULL)
+				continue;
+			if (F_ISSET(exp->args[off], A_ALLOCATED))
+				free(exp->args[off]->bp);
+			FREE(exp->args[off], sizeof(ARGS));
+		}
 		FREE(exp->args, exp->argscnt * sizeof(ARGS *));
 	}
-	if (exp->argv != NULL)
-		FREE(exp->argv, exp->argscnt * sizeof(char *));
+	exp->args = NULL;
 	exp->argscnt = 0;
+	exp->argsoff = 0;
 	return (0);
 }
 
