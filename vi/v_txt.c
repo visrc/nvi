@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.17 1993/10/03 13:38:50 bostic Exp $ (Berkeley) $Date: 1993/10/03 13:38:50 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.18 1993/10/03 15:25:33 bostic Exp $ (Berkeley) $Date: 1993/10/03 15:25:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -138,11 +138,11 @@ newtp:		if ((tp = text_init(sp, p, len, len + 32)) == NULL)
 
 	/*
 	 * Many of the special cases in this routine are to handle autoindent
-	 * support.  Some utter fool decided that it would be a good idea if
-	 * "^^D" and "0^D" deleted all of the autoindented characters.  In an
-	 * editor that takes single character input from the user, this is so
-	 * stupid as to be unbelievable.  Note also that "^^D" resets the next
-	 * lines' autoindent, but "0^D" doesn't.
+	 * support.  Somebody decided that it would be a good idea if "^^D"
+	 * and "0^D" deleted all of the autoindented characters.  In an editor
+	 * that takes single character input from the user, this wasn't a very
+	 * good idea.  Note also that "^^D" resets the next lines' autoindent,
+	 * but "0^D" doesn't.
 	 *
 	 * We assume that autoindent only happens on empty lines, so insert
 	 * and overwrite will be zero.  If doing autoindent, figure out how
@@ -1060,8 +1060,8 @@ txt_resolve(sp, ep, hp)
  *	Show a character match.
  *
  * !!!
- * Historic vi tried to display matches even in the :colon command
- * line.  I, for lack of a better phrase, would rather die.
+ * Historic vi tried to display matches even in the :colon command line.
+ * I think not.
  */
 static void
 txt_showmatch(sp, ep)
@@ -1120,8 +1120,8 @@ txt_showmatch(sp, ep)
 	 * I don't want to wait an entire second.
 	 */
 	FD_ZERO(&zero);
-	second.tv_sec = 0;
-	second.tv_usec = 750000;
+	second.tv_sec = O_VAL(sp, O_MATCHTIME) / 10;
+	second.tv_usec = (O_VAL(sp, O_MATCHTIME) % 10) * 100000L;
 	(void)select(0, &zero, &zero, &zero, &second);
 
 	/* Return to the current location. */
