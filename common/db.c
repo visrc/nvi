@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: db.c,v 10.42 2001/10/11 19:19:03 skimo Exp $ (Berkeley) $Date: 2001/10/11 19:19:03 $";
+static const char sccsid[] = "$Id: db.c,v 10.43 2002/02/09 22:10:06 skimo Exp $ (Berkeley) $Date: 2002/02/09 22:10:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,7 +27,7 @@ static const char sccsid[] = "$Id: db.c,v 10.42 2001/10/11 19:19:03 skimo Exp $ 
 #include "../vi/vi.h"
 
 static int scr_update __P((SCR *, db_recno_t, lnop_t, int));
-static int append __P((SCR*, db_recno_t, CHAR_T*, size_t));
+static int append __P((SCR*, db_recno_t, CHAR_T*, size_t, lnop_t, int));
 
 /*
  * db_eget --
@@ -287,16 +287,27 @@ db_delete(SCR *sp, db_recno_t lno)
  *				line
  */
 static int
-append(SCR *sp, db_recno_t lno, CHAR_T *p, size_t len)
+append(SCR *sp, db_recno_t lno, CHAR_T *p, size_t len, lnop_t op, int update)
 {
 	DBT data, key;
 	DBC *dbcp_put;
 	EXF *ep;
 	char *fp;
 	size_t flen;
+	SCR* scrp;
+	int rval;
 
-	ep = sp->ep;
+	/* Check for no underlying file. */
+	if ((ep = sp->ep) == NULL) {
+		ex_emsg(sp, NULL, EXM_NOFILEYET);
+		return (1);
+	}
+	if (ep->l_win && ep->l_win != sp->wp) {
+		ex_emsg(sp, NULL, EXM_LOCKED);
+		return 1;
+	}
 
+	/* Update file. */
 	memset(&key, 0, sizeof(key));
 	key.data = &lno;
 	key.size = sizeof(lno);
@@ -316,6 +327,11 @@ append(SCR *sp, db_recno_t lno, CHAR_T *p, size_t len)
 	    if ((sp->db_error = dbcp_put->c_put(dbcp_put, &key, &data, DB_AFTER)) != 0) {
 err2:
 		(void)dbcp_put->c_close(dbcp_put);
+		msgq(sp, M_DBERR, 
+			(op == LINE_APPEND) 
+			    ? "004|unable to append to line %lu" 
+			    : "005|unable to insert at line %lu", 
+			(u_long)lno);
 		return (1);
 	    }
 	} else {
@@ -341,43 +357,11 @@ err2:
 
 	(void)dbcp_put->c_close(dbcp_put);
 
-	return 0;
-}
-
-/*
- * db_append --
- *	Append a line into the file.
- *
- * PUBLIC: int db_append __P((SCR *, int, db_recno_t, CHAR_T *, size_t));
- */
-int
-db_append(SCR *sp, int update, db_recno_t lno, CHAR_T *p, size_t len)
-{
-	EXF *ep;
-	int rval;
-	SCR* scrp;
-
-#if defined(DEBUG) && 0
-	vtrace(sp, "append to %lu: len %u {%.*s}\n", lno, len, MIN(len, 20), p);
-#endif
-	/* Check for no underlying file. */
-	if ((ep = sp->ep) == NULL) {
-		ex_emsg(sp, NULL, EXM_NOFILEYET);
-		return (1);
-	}
-	if (ep->l_win && ep->l_win != sp->wp) {
-		ex_emsg(sp, NULL, EXM_LOCKED);
-		return 1;
-	}
-		
-	/* Update file. */
-	if (append(sp, lno, p, len) != 0) {
-		msgq(sp, M_DBERR, "004|unable to append to line %lu", 
-			(u_long)lno);
-		return (1);
-	}
-
 	/* Flush the cache, update line count, before screen update. */
+	/* The flushing is probably not needed, since it was incorrect
+	 * for db_insert.  It might be better to adjust it, like
+	 * marks, @ and global
+	 */
 	for (scrp = ep->scrq.cqh_first; scrp != (void *)&ep->scrq; 
 	    scrp = scrp->eq.cqe_next)
 		if (lno < scrp->c_lno)
@@ -403,6 +387,7 @@ db_append(SCR *sp, int update, db_recno_t lno, CHAR_T *p, size_t len)
 	/*
 	 * Update screen.
 	 *
+	 * comment copied from db_append
 	 * XXX
 	 * Nasty hack.  If multiple lines are input by the user, they aren't
 	 * committed until an <ESC> is entered.  The problem is the screen was
@@ -414,6 +399,23 @@ db_append(SCR *sp, int update, db_recno_t lno, CHAR_T *p, size_t len)
 }
 
 /*
+ * db_append --
+ *	Append a line into the file.
+ *
+ * PUBLIC: int db_append __P((SCR *, int, db_recno_t, CHAR_T *, size_t));
+ */
+int
+db_append(SCR *sp, int update, db_recno_t lno, CHAR_T *p, size_t len)
+{
+#if defined(DEBUG) && 0
+	vtrace(sp, "append to %lu: len %u {%.*s}\n", lno, len, MIN(len, 20), p);
+#endif
+		
+	/* Update file. */
+	return append(sp, lno, p, len, LINE_APPEND, update);
+}
+
+/*
  * db_insert --
  *	Insert a line into the file.
  *
@@ -422,58 +424,11 @@ db_append(SCR *sp, int update, db_recno_t lno, CHAR_T *p, size_t len)
 int
 db_insert(SCR *sp, db_recno_t lno, CHAR_T *p, size_t len)
 {
-	DBT data, key;
-	DBC *dbcp_put;
-	EXF *ep;
-	int rval;
-	SCR* scrp;
-
 #if defined(DEBUG) && 0
 	vtrace(sp, "insert before %lu: len %lu {%.*s}\n",
 	    (u_long)lno, (u_long)len, MIN(len, 20), p);
 #endif
-	/* Check for no underlying file. */
-	if ((ep = sp->ep) == NULL) {
-		ex_emsg(sp, NULL, EXM_NOFILEYET);
-		return (1);
-	}
-	if (ep->l_win && ep->l_win != sp->wp) {
-		ex_emsg(sp, NULL, EXM_LOCKED);
-		return 1;
-	}
-		
-	/* Update file. */
-	if (append(sp, lno - 1, p, len) != 0) {
-		msgq(sp, M_DBERR, "005|unable to insert at line %lu", 
-			(u_long)lno);
-		return (1);
-	}
-
-	/* Flush the cache, update line count, before screen update. */
-	for (scrp = ep->scrq.cqh_first; scrp != (void *)&ep->scrq; 
-	    scrp = scrp->eq.cqe_next)
-		if (lno >= scrp->c_lno)
-			scrp->c_lno = OOBLNO;
-	if (ep->c_nlines != OOBLNO)
-		++ep->c_nlines;
-
-	/* File now dirty. */
-	if (F_ISSET(ep, F_FIRSTMODIFY))
-		(void)rcv_init(sp);
-	F_SET(ep, F_MODIFIED);
-
-	/* Log change. */
-	log_line(sp, lno, LOG_LINE_INSERT);
-
-	/* Update marks, @ and global commands. */
-	rval = 0;
-	if (mark_insdel(sp, LINE_INSERT, lno))
-		rval = 1;
-	if (ex_g_insdel(sp, LINE_INSERT, lno))
-		rval = 1;
-
-	/* Update screen. */
-	return (scr_update(sp, lno, LINE_INSERT, 1) || rval);
+	return append(sp, lno - 1, p, len, LINE_INSERT, 1);
 }
 
 /*
