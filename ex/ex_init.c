@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_init.c,v 10.7 1995/11/05 10:29:38 bostic Exp $ (Berkeley) $Date: 1995/11/05 10:29:38 $";
+static char sccsid[] = "$Id: ex_init.c,v 10.8 1995/11/22 20:32:10 bostic Exp $ (Berkeley) $Date: 1995/11/22 20:32:10 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -237,7 +237,8 @@ ex_run_file(sp, name)
 	ARGS *ap[2], a;
 	EXCMD cmd;
 
-	ex_cbuild(&cmd, C_SOURCE, 0, OOBLNO, OOBLNO, 0, ap, &a, name);
+	ex_cinit(&cmd, C_SOURCE, 0, OOBLNO, OOBLNO, 0, ap);
+	ex_cadd(&cmd, &a, name, strlen(name));
 	return (ex_source(sp, &cmd));
 }
 

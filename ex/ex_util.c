@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_util.c,v 10.16 1995/11/13 08:26:35 bostic Exp $ (Berkeley) $Date: 1995/11/13 08:26:35 $";
+static char sccsid[] = "$Id: ex_util.c,v 10.17 1995/11/22 20:32:11 bostic Exp $ (Berkeley) $Date: 1995/11/22 20:32:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,19 +27,18 @@ static char sccsid[] = "$Id: ex_util.c,v 10.16 1995/11/13 08:26:35 bostic Exp $ 
 #include "../common/common.h"
 
 /*
- * ex_cbuild --
- *	Build an EX command structure.
+ * ex_cinit --
+ *	Create an EX command structure.
  *
- * PUBLIC: void ex_cbuild __P((EXCMD *,
- * PUBLIC:   int, int, recno_t, recno_t, int, ARGS **, ARGS *a, char *));
+ * PUBLIC: void ex_cinit __P((EXCMD *,
+ * PUBLIC:    int, int, recno_t, recno_t, int, ARGS **));
  */
 void
-ex_cbuild(cmdp, cmd_id, naddr, lno1, lno2, force, ap, a, arg)
+ex_cinit(cmdp, cmd_id, naddr, lno1, lno2, force, ap)
 	EXCMD *cmdp;
 	int cmd_id, force, naddr;
 	recno_t lno1, lno2;
-	ARGS **ap, *a;
-	char *arg;
+	ARGS **ap;
 {
 	memset(cmdp, 0, sizeof(EXCMD));
 	cmdp->cmd = &cmds[cmd_id];
@@ -49,16 +48,28 @@ ex_cbuild(cmdp, cmd_id, naddr, lno1, lno2, force, ap, a, arg)
 	cmdp->addr1.cno = cmdp->addr2.cno = 1;
 	if (force)
 		cmdp->iflags |= E_C_FORCE;
-	if ((a->bp = arg) == NULL) {
-		cmdp->argc = 0;
-		a->len = 0;
-	} else {
-		cmdp->argc = 1;
-		a->len = strlen(arg);
-	}
-	ap[0] = a;
-	ap[1] = NULL;
-	cmdp->argv = ap;
+	cmdp->argc = 0;
+	if ((cmdp->argv = ap) != NULL)
+		cmdp->argv[0] = NULL;
+}
+
+/*
+ * ex_cadd --
+ *	Add an argument to an EX command structure.
+ *
+ * PUBLIC: void ex_cadd __P((EXCMD *, ARGS *, char *, size_t));
+ */
+void
+ex_cadd(cmdp, ap, arg, len)
+	EXCMD *cmdp;
+	ARGS *ap;
+	char *arg;
+	size_t len;
+{
+	cmdp->argv[cmdp->argc] = ap;
+	ap->bp = arg;
+	ap->len = len;
+	cmdp->argv[++cmdp->argc] = NULL;
 }
 
 /*

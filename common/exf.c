@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 10.17 1995/10/31 23:02:41 bostic Exp $ (Berkeley) $Date: 1995/10/31 23:02:41 $";
+static char sccsid[] = "$Id: exf.c,v 10.18 1995/11/22 20:32:25 bostic Exp $ (Berkeley) $Date: 1995/11/22 20:32:25 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -844,7 +844,6 @@ file_backup(sp, name, bname)
 {
 	struct dirent *dp;
 	struct stat sb;
-	ARGS *ap[2], a;
 	DIR *dirp;
 	EXCMD cmd;
 	off_t off;
@@ -881,7 +880,7 @@ file_backup(sp, name, bname)
 	 * Shell and file name expand the option's value.
 	 */
 	argv_init(sp, &cmd);
-	ex_cbuild(&cmd, 0, 0, 0, 0, 0, ap, &a, NULL);
+	ex_cinit(&cmd, 0, 0, 0, 0, 0, NULL);
 	if (bname[0] == 'N') {
 		version = 1;
 		++bname;

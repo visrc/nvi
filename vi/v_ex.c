@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 10.23 1995/11/10 10:26:02 bostic Exp $ (Berkeley) $Date: 1995/11/10 10:26:02 $";
+static char sccsid[] = "$Id: v_ex.c,v 10.24 1995/11/22 20:31:46 bostic Exp $ (Berkeley) $Date: 1995/11/22 20:31:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -42,8 +42,9 @@ v_again(sp, vp)
 	ARGS *ap[2], a;
 	EXCMD cmd;
 
-	ex_cbuild(&cmd, C_SUBAGAIN,
-	    2, vp->m_start.lno, vp->m_start.lno, 1, ap, &a, "");
+	ex_cinit(&cmd, C_SUBAGAIN, 2, vp->m_start.lno, vp->m_start.lno, 1, ap);
+	ex_cadd(&cmd, &a, "", 1);
+
 	return (v_exec_ex(sp, vp, &cmd));
 }
 
@@ -91,7 +92,6 @@ v_join(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	ARGS *ap[2], a;
 	EXCMD cmd;
 	int lno;
 
@@ -108,7 +108,7 @@ v_join(sp, vp)
 	if (F_ISSET(vp, VC_C1SET) && vp->count > 2)
 		lno = vp->m_start.lno + (vp->count - 1);
 
-	ex_cbuild(&cmd, C_JOIN, 2, vp->m_start.lno, lno, 0, ap, &a, NULL);
+	ex_cinit(&cmd, C_JOIN, 2, vp->m_start.lno, lno, 0, NULL);
 	return (v_exec_ex(sp, vp, &cmd));
 }
 
@@ -126,8 +126,8 @@ v_shiftl(sp, vp)
 	ARGS *ap[2], a;
 	EXCMD cmd;
 
-	ex_cbuild(&cmd, C_SHIFTL,
-	    2, vp->m_start.lno, vp->m_stop.lno, 0, ap, &a, "<");
+	ex_cinit(&cmd, C_SHIFTL, 2, vp->m_start.lno, vp->m_stop.lno, 0, ap);
+	ex_cadd(&cmd, &a, "<", 1);
 	return (v_exec_ex(sp, vp, &cmd));
 }
 
@@ -145,8 +145,8 @@ v_shiftr(sp, vp)
 	ARGS *ap[2], a;
 	EXCMD cmd;
 
-	ex_cbuild(&cmd, C_SHIFTR,
-	    2, vp->m_start.lno, vp->m_stop.lno, 0, ap, &a, ">");
+	ex_cinit(&cmd, C_SHIFTR, 2, vp->m_start.lno, vp->m_stop.lno, 0, ap);
+	ex_cadd(&cmd, &a, ">", 1);
 	return (v_exec_ex(sp, vp, &cmd));
 }
 
@@ -164,7 +164,8 @@ v_suspend(sp, vp)
 	ARGS *ap[2], a;
 	EXCMD cmd;
 
-	ex_cbuild(&cmd, C_STOP, 0, OOBLNO, OOBLNO, 0, ap, &a, "suspend");
+	ex_cinit(&cmd, C_STOP, 0, OOBLNO, OOBLNO, 0, ap);
+	ex_cadd(&cmd, &a, "suspend", sizeof("suspend") - 1);
 	return (v_exec_ex(sp, vp, &cmd));
 }
 
@@ -196,7 +197,8 @@ v_switch(sp, vp)
 	if (file_m1(sp, 0, FS_ALL))
 		return (1);
 
-	ex_cbuild(&cmd, C_EDIT, 0, OOBLNO, OOBLNO, 0, ap, &a, name);
+	ex_cinit(&cmd, C_EDIT, 0, OOBLNO, OOBLNO, 0, ap);
+	ex_cadd(&cmd, &a, name, strlen(name));
 	return (v_exec_ex(sp, vp, &cmd));
 }
 
@@ -214,7 +216,8 @@ v_tagpush(sp, vp)
 	ARGS *ap[2], a;
 	EXCMD cmd;
 
-	ex_cbuild(&cmd, C_TAG, 0, OOBLNO, 0, 0, ap, &a, VIP(sp)->keyw);
+	ex_cinit(&cmd, C_TAG, 0, OOBLNO, 0, 0, ap);
+	ex_cadd(&cmd, &a, VIP(sp)->keyw, strlen(VIP(sp)->keyw));
 	return (v_exec_ex(sp, vp, &cmd));
 }
 
@@ -229,10 +232,9 @@ v_tagpop(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	ARGS *ap[2], a;
 	EXCMD cmd;
 
-	ex_cbuild(&cmd, C_TAGPOP, 0, OOBLNO, 0, 0, ap, &a, NULL);
+	ex_cinit(&cmd, C_TAGPOP, 0, OOBLNO, 0, 0, NULL);
 	return (v_exec_ex(sp, vp, &cmd));
 }
 
@@ -247,7 +249,6 @@ v_filter(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	ARGS *ap[2], a;
 	EXCMD cmd;
 	TEXT *tp;
 
@@ -272,8 +273,8 @@ v_filter(sp, vp)
 	 */
 	if (F_ISSET(vp, VC_ISDOT) ||
 	    ISCMD(vp->rkp, 'N') || ISCMD(vp->rkp, 'n')) {
-		ex_cbuild(&cmd, C_BANG,
-		    2, vp->m_start.lno, vp->m_stop.lno, 0, ap, &a, NULL);
+		ex_cinit(&cmd, C_BANG,
+		    2, vp->m_start.lno, vp->m_stop.lno, 0, NULL);
 		EXP(sp)->argsoff = 0;			/* XXX */
 
 		if (argv_exp1(sp, &cmd, "!", 1, 1))
@@ -302,8 +303,7 @@ v_filter(sp, vp)
 		return (0);
 	}
 
-	ex_cbuild(&cmd, C_BANG,
-	    2, vp->m_start.lno, vp->m_stop.lno, 0, ap, &a, NULL);
+	ex_cinit(&cmd, C_BANG, 2, vp->m_start.lno, vp->m_stop.lno, 0, NULL);
 	EXP(sp)->argsoff = 0;			/* XXX */
 
 	if (argv_exp1(sp, &cmd, tp->lb + 1, tp->len - 1, 1))
@@ -324,18 +324,17 @@ v_event_exec(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	ARGS *ap[2], a;
 	EXCMD cmd;
 
 	switch (vp->ev.e_event) {
 	case E_QUIT:
-		ex_cbuild(&cmd, C_QUIT, 0, OOBLNO, OOBLNO, 0, ap, &a, NULL);
+		ex_cinit(&cmd, C_QUIT, 0, OOBLNO, OOBLNO, 0, NULL);
 		break;
 	case E_WRITE:
-		ex_cbuild(&cmd, C_WRITE, 0, OOBLNO, OOBLNO, 0, ap, &a, NULL);
+		ex_cinit(&cmd, C_WRITE, 0, OOBLNO, OOBLNO, 0, NULL);
 		break;
 	case E_WRITEQUIT:
-		ex_cbuild(&cmd, C_WQ, 0, OOBLNO, OOBLNO, 0, ap, &a, NULL);
+		ex_cinit(&cmd, C_WQ, 0, OOBLNO, OOBLNO, 0, NULL);
 		break;
 	default:
 		abort();

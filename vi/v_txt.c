@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 10.27 1995/11/10 17:19:13 bostic Exp $ (Berkeley) $Date: 1995/11/10 17:19:13 $";
+static char sccsid[] = "$Id: v_txt.c,v 10.28 1995/11/22 20:31:48 bostic Exp $ (Berkeley) $Date: 1995/11/22 20:31:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1849,7 +1849,7 @@ txt_fc(sp, tp, redrawp)
 	int *redrawp;
 {
 	struct stat sb;
-	ARGS **argv, *ap[2], a;
+	ARGS **argv;
 	CHAR_T s_ch;
 	EXCMD cmd;
 	size_t indx, len, nlen, off;
@@ -1889,7 +1889,7 @@ retry:	for (off = sp->cno - 1, p = tp->lb + off, len = 0;; --p, --off) {
 	p[len] = '*';
 
 	/* Build an ex command, and call the ex expansion routines. */
-	ex_cbuild(&cmd, 0, 0, OOBLNO, OOBLNO, 0, ap, &a, NULL);
+	ex_cinit(&cmd, 0, 0, OOBLNO, OOBLNO, 0, NULL);
 	if (argv_init(sp, &cmd))
 		return (1);
 	(void)argv_exp2(sp, &cmd, p, len + 1);
