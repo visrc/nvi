@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 8.26 1993/11/21 15:26:06 bostic Exp $ (Berkeley) $Date: 1993/11/21 15:26:06 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 8.27 1993/11/22 08:56:04 bostic Exp $ (Berkeley) $Date: 1993/11/22 08:56:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -212,8 +212,8 @@ EXCMDLIST const cmds[] = {
 /* C_MAP */
 	{"map",		ex_map,		0,
 	    "!W",
-	    "map[!] [key replace]",
-	    "map input or command(s) to a key"},
+	    "map[!] [keys replace]",
+	    "map input or commands to one or more keys"},
 /* C_MKEXRC */
 	{"mkexrc",	ex_mkexrc,	E_NOGLOBAL|E_NORC,
 	    "!f1r",
