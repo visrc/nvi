@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.42 1993/02/13 13:07:53 bostic Exp $ (Berkeley) $Date: 1993/02/13 13:07:53 $";
+static char sccsid[] = "$Id: vi.c,v 5.43 1993/02/13 13:34:41 bostic Exp $ (Berkeley) $Date: 1993/02/13 13:34:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -44,6 +44,7 @@ vi()
 	u_int flags;
 	int rval;
 
+	FF_SET(curf, F_NEWSESSION);
 	for (rval = 0;;) {
 		/*
 		 * If the file has changed, init the file structure and
