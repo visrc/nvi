@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_util.c,v 8.16 1994/09/02 12:40:46 bostic Exp $ (Berkeley) $Date: 1994/09/02 12:40:46 $";
+static char sccsid[] = "$Id: ex_util.c,v 8.17 1994/10/23 10:21:34 bostic Exp $ (Berkeley) $Date: 1994/10/23 10:21:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,6 +30,38 @@ static char sccsid[] = "$Id: ex_util.c,v 8.16 1994/09/02 12:40:46 bostic Exp $ (
 
 #include "vi.h"
 #include "excmd.h"
+
+/*
+ * ex_cbuild --
+ *	Build an EX command structure.
+ */
+void
+ex_cbuild(cmdp, cmd_id, naddr, lno1, lno2, force, ap, a, arg)
+	EXCMDARG *cmdp;
+	int cmd_id, force, naddr;
+	recno_t lno1, lno2;
+	ARGS *ap[2], *a;
+	char *arg;
+{
+	memset(cmdp, 0, sizeof(EXCMDARG));
+	cmdp->cmd = &cmds[cmd_id];
+	cmdp->addrcnt = naddr;
+	cmdp->addr1.lno = lno1;
+	cmdp->addr2.lno = lno2;
+	cmdp->addr1.cno = cmdp->addr2.cno = 1;
+	if (force)
+		cmdp->flags |= E_FORCE;
+	if ((a->bp = arg) == NULL) {
+		cmdp->argc = 0;
+		a->len = 0;
+	} else {
+		cmdp->argc = 1;
+		a->len = strlen(arg);
+	}
+	ap[0] = a;
+	ap[1] = NULL;
+	cmdp->argv = ap;
+}
 
 /*
  * ex_getline --
