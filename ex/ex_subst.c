@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.22 1993/12/02 19:08:43 bostic Exp $ (Berkeley) $Date: 1993/12/02 19:08:43 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.23 1993/12/02 19:10:54 bostic Exp $ (Berkeley) $Date: 1993/12/02 19:10:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -826,7 +826,7 @@ regsub(sp, ip, lbp, lbclenp, lblenp)
 			if (rpl == 0)
 				break;
 			--rpl;
-			switch (*rp) {
+			switch (ch = *rp) {
 			case '&':
 				if (!O_ISSET(sp, O_MAGIC)) {
 					++rp;
