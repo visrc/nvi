@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_funcs.c,v 10.16 1995/09/22 12:54:34 bostic Exp $ (Berkeley) $Date: 1995/09/22 12:54:34 $";
+static char sccsid[] = "$Id: cl_funcs.c,v 10.17 1995/09/24 12:21:44 bostic Exp $ (Berkeley) $Date: 1995/09/24 12:21:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -382,7 +382,7 @@ cl_ex_adjust(sp, action)
 			(void)tputs(clp->cuu1, 1, cl_putchar);
 		else if (clp->cup != NULL)
 			(void)tputs(tgoto(clp->cup,
-			    0, LINES - 2, 1), cl_putchar);
+			    0, LINES - 2), 1, cl_putchar);
 		else
 			return (0);
 		/* FALLTHROUGH */
@@ -708,7 +708,6 @@ cl_usage()
 #define	USAGE "\
 usage: ex [-eFRrsv] [-c command] [-t tag] [-w size] [file ...]\n\
 usage: vi [-eFlRrv] [-c command] [-t tag] [-w size] [file ...]\n"
-
 	(void)fprintf(stderr, "%s", USAGE);
 #undef	USAGE
 }
