@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 8.4 1993/07/06 08:55:56 bostic Exp $ (Berkeley) $Date: 1993/07/06 08:55:56 $";
+static char sccsid[] = "$Id: v_itxt.c,v 8.5 1993/08/06 09:44:18 bostic Exp $ (Berkeley) $Date: 1993/08/06 09:44:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -416,6 +416,25 @@ v_Change(sp, ep, vp, fm, tm, rp)
 	}
 	return (v_ntext(sp, ep,
 	    &sp->txthdr, tm, p, len, rp, 0, OOBLNO, flags));
+}
+
+/*
+ * v_Subst -- [buffer][count]S
+ *	Line substitute command.
+ */
+int
+v_Subst(sp, ep, vp, fm, tm, rp)
+	SCR *sp;
+	EXF *ep;
+	VICMDARG *vp;
+	MARK *fm, *tm, *rp;
+{
+	/*
+	 * The S command is the same as the 'cc' command.  This is
+	 * hard to do in the parser, so catch it here.
+	 */
+	(void)file_gline(sp, ep, fm->lno, &tm->cno);
+	return (v_change(sp, ep, vp, fm, tm, rp));
 }
 
 /*
