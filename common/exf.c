@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 10.13 1995/10/16 15:24:35 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:24:35 $";
+static char sccsid[] = "$Id: exf.c,v 10.14 1995/10/17 08:03:02 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:03:02 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -119,7 +119,7 @@ file_init(sp, frp, rcv_name, flags)
 	struct stat sb;
 	size_t psize;
 	int fd, open_err;
-	char *p, *oname, tname[MAXPATHLEN];
+	char *oname, tname[MAXPATHLEN];
 
 	open_err = 0;
 
@@ -516,7 +516,6 @@ file_end(sp, ep, force)
 	int force;
 {
 	FREF *frp;
-	char *p;
 
 	/*
 	 * !!!

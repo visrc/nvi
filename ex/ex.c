@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 10.17 1995/10/16 15:25:26 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:25:26 $";
+static char sccsid[] = "$Id: ex.c,v 10.18 1995/10/17 08:03:46 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:03:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -201,7 +201,7 @@ ex_cmd(sp)
 	long ltmp;
 	int at_found, gv_found;
 	int ch, cnt, delim, isaddr, namelen;
-	int newscreen, nf, notempty, tmp, vi_address;
+	int newscreen, notempty, tmp, vi_address;
 	char *arg1, *p, *s, *t;
 
 	gp = sp->gp;
