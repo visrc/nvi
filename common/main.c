@@ -16,7 +16,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 10.22 1996/02/06 10:45:27 bostic Exp $ (Berkeley) $Date: 1996/02/06 10:45:27 $";
+static char sccsid[] = "$Id: main.c,v 10.23 1996/02/06 11:55:28 bostic Exp $ (Berkeley) $Date: 1996/02/06 11:55:28 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -262,7 +262,7 @@ editor(gp, argc, argv)
 		b.len = 0;
 		av[0] = &a;
 		av[1] = &b;
-		(void)opts_set(sp, av, 0, NULL);
+		(void)opts_set(sp, av, NULL);
 	}
 	if (silent) {			/* Ex batch mode option values. */
 		O_CLR(sp, O_AUTOPRINT);
