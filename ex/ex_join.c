@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_join.c,v 5.4 1992/04/15 09:13:22 bostic Exp $ (Berkeley) $Date: 1992/04/15 09:13:22 $";
+static char sccsid[] = "$Id: ex_join.c,v 5.5 1992/04/18 09:54:12 bostic Exp $ (Berkeley) $Date: 1992/04/18 09:54:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -91,5 +91,7 @@ ex_join(cmdp)
 	/* Reporting... */
 	rptlines = markline(tomark) - markline(frommark) - 1L;
 	rptlabel = "joined";
+
+	autoprint = 1;
 	return (0);
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_delete.c,v 5.3 1992/04/05 09:23:32 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:23:32 $";
+static char sccsid[] = "$Id: ex_delete.c,v 5.4 1992/04/18 09:54:10 bostic Exp $ (Berkeley) $Date: 1992/04/18 09:54:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -82,4 +82,5 @@ Xdelete(cmdp, cmd)
 			cursor = frommark;
 		}
 	}
+	autoprint = 1;
 }

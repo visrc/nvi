@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 5.4 1992/04/16 13:46:59 bostic Exp $ (Berkeley) $Date: 1992/04/16 13:46:59 $";
+static char sccsid[] = "$Id: ex_read.c,v 5.5 1992/04/18 09:54:19 bostic Exp $ (Berkeley) $Date: 1992/04/18 09:54:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -99,14 +99,17 @@ noargs:	if ((fp = fopen(fname, "r")) == NULL || fstat(fileno(fp), &sb)) {
 	if (rval)
 		return (1);
 	
+	autoprint = 1;
+
 	rptlabel = "read";
 	return (0);
 }
 
 /*
  * ex_readfp --
- *	Read lines into the file.  One nasty side effect is that it sets the
- *	cursor position.
+ *	Read lines into the file.
+ *	Two side effects:
+ *		The cursor position gets set, and autoprint gets set.
  */
 int
 ex_readfp(fname, fp, addr, cntp)

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shift.c,v 5.4 1992/04/15 09:13:57 bostic Exp $ (Berkeley) $Date: 1992/04/15 09:13:57 $";
+static char sccsid[] = "$Id: ex_shift.c,v 5.5 1992/04/18 09:54:21 bostic Exp $ (Berkeley) $Date: 1992/04/18 09:54:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -112,4 +112,6 @@ shift(cmdp, rl)
 	/* Reporting... */
 	rptlines = markline(cmdp->addr2) - markline(cmdp->addr1) + 1L;
 	rptlabel = rl == RIGHT ? ">ed" : "<ed";
+
+	autoprint = 1;
 }

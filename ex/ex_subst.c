@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 5.5 1992/04/16 17:57:38 bostic Exp $ (Berkeley) $Date: 1992/04/16 17:57:38 $";
+static char sccsid[] = "$Id: ex_subst.c,v 5.6 1992/04/18 09:54:25 bostic Exp $ (Berkeley) $Date: 1992/04/18 09:54:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -278,4 +278,6 @@ Continue:
 		msg("%ld substitutions on %ld lines", chsub, chline);
 	}
 	rptlines = 0L;
+
+	autoprint = 1;
 }

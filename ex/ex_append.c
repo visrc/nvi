@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 5.5 1992/04/16 17:57:31 bostic Exp $ (Berkeley) $Date: 1992/04/16 17:57:31 $";
+static char sccsid[] = "$Id: ex_append.c,v 5.6 1992/04/18 09:54:05 bostic Exp $ (Berkeley) $Date: 1992/04/18 09:54:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -87,6 +87,9 @@ ca(cmdp, cmd)
 
 	/* This can be called from vi mode. */
 	redraw(MARK_UNSET, FALSE);
+
+	/* Turn on autoprint. */
+	autoprint = 1;
 
 	if (set)
 		SET(O_AUTOINDENT);

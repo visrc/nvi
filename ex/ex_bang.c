@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 5.6 1992/04/16 13:44:32 bostic Exp $ (Berkeley) $Date: 1992/04/16 13:44:32 $";
+static char sccsid[] = "$Id: ex_bang.c,v 5.7 1992/04/18 09:54:08 bostic Exp $ (Berkeley) $Date: 1992/04/18 09:54:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -127,8 +127,10 @@ ex_bang(cmdp)
 	 */
 	if (cmdp->addrcnt == 0)
 		system(com);
-	else
+	else {
 		filter(cmdp->addr1, cmdp->addr2, com, STANDARD);
+		autoprint = 1;
+	}
 
 	/* Resume curses quietly for MODE_EX, otherwise noisily. */
 	resume_curses(mode == MODE_EX);
