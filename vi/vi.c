@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.36 1992/12/27 19:19:36 bostic Exp $ (Berkeley) $Date: 1992/12/27 19:19:36 $";
+static char sccsid[] = "$Id: vi.c,v 5.37 1993/01/17 16:58:50 bostic Exp $ (Berkeley) $Date: 1993/01/17 16:58:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -44,8 +44,6 @@ vi()
 	u_int flags;
 	int rval;
 
-	if (scr_init(curf))
-		return (1);
 	for (rval = 0;;) {
 		/*
 		 * If the file has changed, init the file structure and
@@ -204,7 +202,6 @@ err:		if (msgcnt) {
 			curf->rcm = curf->scno;
 		}
 	}
-	(void)scr_end(curf);
 	return (rval);
 }
 
@@ -226,7 +223,7 @@ err:		if (msgcnt) {
 	do {								\
 		hold = count * 10 + key - '0';				\
 		if (count > hold) {					\
-			msg("Number larger than %lu\n", ULONG_MAX);	\
+			msg("Number larger than %lu", ULONG_MAX);	\
 			return (NULL);					\
 		}							\
 		count = hold;						\
