@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 8.26 1994/07/27 09:54:36 bostic Exp $ (Berkeley) $Date: 1994/07/27 09:54:36 $";
+static char sccsid[] = "$Id: ex_bang.c,v 8.27 1994/07/27 11:02:17 bostic Exp $ (Berkeley) $Date: 1994/07/27 11:02:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -136,7 +136,24 @@ ex_bang(sp, ep, cmdp)
 		if (filtercmd(sp, ep,
 		    &cmdp->addr1, &cmdp->addr2, &rm, ap->bp, ftype))
 			return (1);
+
+		/*
+		 * If in vi mode, move to the first nonblank.
+		 *
+		 * !!!
+		 * Historic vi wasn't consistent in this area -- if you used
+		 * a forward motion it moved to the first nonblank, but if you
+		 * did a backward motion it didn't.  And, if you followed a
+		 * backward motion with a forward motion, it wouldn't move to
+		 * the nonblank for either.  Going to the nonblank generally
+		 * seems more useful, so we do it.
+		 */
 		sp->lno = rm.lno;
+		if (IN_VI_MODE(sp)) {
+			sp->cno = 0;
+			(void)nonblank(sp, ep, sp->lno, &sp->cno);
+		}
+
 		F_SET(exp, EX_AUTOPRINT);
 		return (0);
 	}
