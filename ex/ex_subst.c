@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 5.39 1993/05/08 17:40:20 bostic Exp $ (Berkeley) $Date: 1993/05/08 17:40:20 $";
+static char sccsid[] = "$Id: ex_subst.c,v 5.40 1993/05/08 21:30:48 bostic Exp $ (Berkeley) $Date: 1993/05/08 21:30:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,7 +40,7 @@ ex_substitute(sp, ep, cmdp)
 	/*
 	 * Historic vi only permitted '/' to begin the substitution command.
 	 * We permit ';' as well, since users often want to operate on UNIX
-	 * pathnames.  We don't allow just anything because the flag chars
+	 * pathnames.  We don't just allow anything because the flag chars
 	 * wouldn't work.
 	 */
 	if (*cmdp->string == '/' || *cmdp->string == ';') {
@@ -53,7 +53,7 @@ ex_substitute(sp, ep, cmdp)
 		sub = strsep(&endp, delim);
 
 		/* Get the replacement string, save it off. */
-		if (*endp == NULL) {
+		if (endp == NULL || *endp == NULL) {
 			msgq(sp, M_ERR, "No replacement string specified.");
 			return (1);
 		}
@@ -73,7 +73,7 @@ ex_substitute(sp, ep, cmdp)
 			if (checkmatchsize(sp, &sp->sre))
 				return (1);
 			return (substitute(sp, ep,
-			    cmdp, endp, &sp->sre, AGAIN));
+			    cmdp, endp ? endp : "", &sp->sre, AGAIN));
 		}
 
 		/* Set RE flags. */
@@ -100,7 +100,7 @@ ex_substitute(sp, ep, cmdp)
 
 		if (checkmatchsize(sp, &sp->sre))
 			return (1);
-		return (substitute(sp, ep, cmdp, endp, re, FIRST));
+		return (substitute(sp, ep, cmdp, endp ? endp : "", re, FIRST));
 	}
 	return (substitute(sp, ep, cmdp, cmdp->string, &sp->sre, MUSTSETR));
 }
