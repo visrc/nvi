@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 5.14 1992/10/29 14:36:18 bostic Exp $ (Berkeley) $Date: 1992/10/29 14:36:18 $
+ *	$Id: exf.h,v 5.15 1992/11/01 22:46:46 bostic Exp $ (Berkeley) $Date: 1992/11/01 22:46:46 $
  */
 
 #ifndef _EXF_H_
@@ -34,6 +34,7 @@ typedef struct exf {
 #define	RCM_FNB		0x01		/* Column suck: first non-blank. */
 #define	RCM_LAST	0x02		/* Column suck: last. */
 	u_char rcmflags;
+	int (*s_confirm) __P((struct exf *, MARK *, MARK *));
 					/* Underlying database state. */
 	DB *db;				/* File db structure. */
 	u_char *c_lp;			/* Cached line. */
