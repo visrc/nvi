@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 10.12 1995/09/28 13:03:03 bostic Exp $ (Berkeley) $Date: 1995/09/28 13:03:03 $";
+static char sccsid[] = "$Id: key.c,v 10.13 1995/10/03 21:54:33 bostic Exp $ (Berkeley) $Date: 1995/10/03 21:54:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -496,6 +496,18 @@ v_event_append(sp, argp)
  * ":map! { {^M^T" and ":map n nz." were known to work.  The initial, matching
  * characters were returned instead of being remapped.
  *
+ * !!!
+ * It is also historic practice that the macro "map ] ]]^" caused a single ]
+ * keypress to behave as the command ]] (the ^ got the map past the vi check
+ * for "tail recursion").  Conversely, the mapping "map n nn^" went recursive.
+ * What happened was that, in the historic vi, maps were expanded as the keys
+ * were retrieved, but not all at once and not centrally.  So, the keypress ]
+ * pushed ]]^ on the stack, and then the first ] from the stack was passed to
+ * the ]] command code.  The ]] command then retrieved a key without entering
+ * the mapping code.  This could bite us anytime a user has a map that depends
+ * on secondary keys NOT being mapped.  I can't see any possible way to make
+ * this work in here without the complete abandonment of Rationality Itself.
+ *
  * XXX
  * The final issue is recovery.  It would be possible to undo all of the work
  * that was done by the macro if we entered a record into the log so that we
@@ -514,7 +526,7 @@ v_event_get(sp, argp, flags)
 	EVENT *evp, ev;
 	GS *gp;
 	SEQ *qp;
-	int init_nomap, ispartial, istimeout, timeout;
+	int init_nomap, ispartial, istimeout, remap_cnt, timeout;
 
 	gp = sp->gp;
 
@@ -522,7 +534,7 @@ v_event_get(sp, argp, flags)
 	if (argp == NULL)
 		argp = &ev;
 
-retry:	istimeout = timeout = 0;
+retry:	istimeout = remap_cnt = timeout = 0;
 
 	/*
 	 * If the queue is empty or we're checking for interrupts, get more
@@ -671,7 +683,7 @@ not_digit:	argp->e_c = CH_NOT_DIGIT;
 	if (qp->output == NULL)
 		goto retry;
 
-	/* If remapping characters, push the character on the queue. */
+	/* If remapping characters, push the character back on the queue. */
 	if (O_ISSET(sp, O_REMAP)) {
 		if (init_nomap) {
 			if (v_event_push(sp, NULL, qp->output + qp->ilen,
@@ -684,6 +696,18 @@ not_digit:	argp->e_c = CH_NOT_DIGIT;
 		}
 		if (v_event_push(sp, NULL, qp->output, qp->olen, CH_MAPPED))
 			return (1);
+
+		/* Periodically check for interrupts. */
+		if (++remap_cnt % 10 == 0) {
+			if (gp->scr_event(sp, &ev, EC_INTERRUPT, 0))
+				return (1);
+			if (ev.e_event == E_INTERRUPT) {
+				(void)v_event_flush(sp, CH_MAPPED);
+				msgq(sp, M_ERR,
+				    "231|Interrupted: mapped keys discarded");
+				goto retry;
+			}
+		}
 		goto newmap;
 	}
 
