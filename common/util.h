@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: util.h,v 9.5 1995/01/11 15:58:41 bostic Exp $ (Berkeley) $Date: 1995/01/11 15:58:41 $
+ *	$Id: util.h,v 9.6 1995/01/12 20:06:21 bostic Exp $ (Berkeley) $Date: 1995/01/12 20:06:21 $
  */
 
 /*
@@ -20,6 +20,9 @@
 #ifndef	MIN
 #define	MIN(_a,_b)	((_a)<(_b)?(_a):(_b))
 #endif
+
+/* Offset to next column of stop size, e.g. tab offsets. */
+#define	COL_OFF(c, stop)	((stop) - ((c) % (stop)))
 
 /*
  * Number handling defines and protoypes.

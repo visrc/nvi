@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 9.3 1995/01/12 18:18:00 bostic Exp $ (Berkeley) $Date: 1995/01/12 18:18:00 $";
+static char sccsid[] = "$Id: vs_line.c,v 9.4 1995/01/12 20:05:59 bostic Exp $ (Berkeley) $Date: 1995/01/12 20:05:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -224,7 +224,7 @@ empty:					ADDCH(ch);
 		} else for (scno = 0; offset_in_line < len; ++offset_in_line) {
 			scno += chlen =
 			    (ch = *(u_char *)p++) == '\t' && !list_tab ?
-			    TAB_OFF(sp, scno) : KEY_LEN(sp, ch);
+			    TAB_OFF(scno) : KEY_LEN(sp, ch);
 			if (scno < cols_per_screen)
 				continue;
 			scno -= cols_per_screen;
@@ -276,7 +276,7 @@ empty:					ADDCH(ch);
 	for (is_partial = 0, scno = 0;
 	    offset_in_line < len; ++offset_in_line, offset_in_char = 0) {
 		if ((ch = *(u_char *)p++) == '\t' && !list_tab) {
-			scno += chlen = TAB_OFF(sp, scno) - offset_in_char;
+			scno += chlen = TAB_OFF(scno) - offset_in_char;
 			is_tab = 1;
 		} else {
 			scno += chlen = KEY_LEN(sp, ch) - offset_in_char;

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_relative.c,v 9.4 1995/01/12 19:54:03 bostic Exp $ (Berkeley) $Date: 1995/01/12 19:54:03 $";
+static char sccsid[] = "$Id: vs_relative.c,v 9.5 1995/01/12 20:06:01 bostic Exp $ (Berkeley) $Date: 1995/01/12 20:06:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -120,7 +120,7 @@ svi_screens(sp, lp, llen, lno, cnop)
 	listset = O_ISSET(sp, O_LIST);
 
 #define	CHLEN(val) (ch = *(u_char *)p++) == '\t' &&			\
-	    !listset ? TAB_OFF(sp, val) : KEY_LEN(sp, ch);
+	    !listset ? TAB_OFF(val) : KEY_LEN(sp, ch);
 #define	TAB_RESET {							\
 	/*								\
 	 * If past the end of the screen, and the character was a tab,	\
