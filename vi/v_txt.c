@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 9.4 1994/11/10 16:19:08 bostic Exp $ (Berkeley) $Date: 1994/11/10 16:19:08 $";
+static char sccsid[] = "$Id: v_txt.c,v 9.5 1994/11/10 16:21:14 bostic Exp $ (Berkeley) $Date: 1994/11/10 16:21:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -893,7 +893,7 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 #endif
 #ifdef	HISTORIC_PRACTICE_IS_TO_INSERT_NOT_REPAINT
 		case K_FORMFEED:
-			F_SET(sp, S_SCR_REDRAW);
+			F_SET(sp, S_SCR_REFRESH);
 			break;
 #endif
 		case K_RIGHTBRACE:
