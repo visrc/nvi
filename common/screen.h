@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.82 1994/02/25 18:58:07 bostic Exp $ (Berkeley) $Date: 1994/02/25 18:58:07 $
+ *	$Id: screen.h,v 8.83 1994/03/02 15:57:11 bostic Exp $ (Berkeley) $Date: 1994/03/02 15:57:11 $
  */
 
 /*
@@ -25,6 +25,8 @@
 enum operation { LINE_APPEND, LINE_DELETE, LINE_INSERT, LINE_RESET };
 					/* Position values. */
 enum position { P_BOTTOM, P_FILL, P_MIDDLE, P_TOP };
+					/* Screen adjustment operations. */
+enum adjust { A_DECREASE, A_INCREASE, A_SET };
 
 /*
  * Structure for holding file references.  Each SCR structure contains a
@@ -210,7 +212,7 @@ struct _scr {
 	int	 (*s_position) __P((SCR *, EXF *,
 		    MARK *, u_long, enum position));
 					/* Change the absolute screen size. */
-	int	 (*s_rabs) __P((SCR *, long));
+	int	 (*s_rabs) __P((SCR *, long, enum adjust));
 					/* Refresh the screen. */
 	int	 (*s_refresh) __P((SCR *, EXF *));
 					/* Return column close to last char. */
