@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_term.c,v 10.2 1995/06/09 12:47:09 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:47:09 $";
+static char sccsid[] = "$Id: cl_term.c,v 10.3 1995/06/26 11:05:44 bostic Exp $ (Berkeley) $Date: 1995/06/26 11:05:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -23,6 +23,7 @@ static char sccsid[] = "$Id: cl_term.c,v 10.2 1995/06/09 12:47:09 bostic Exp $ (
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <term.h>
 #include <termios.h>
 #include <unistd.h>
 
@@ -47,7 +48,6 @@ typedef struct _tklist {
 	u_char	 value;			/* Special value (for lookup). */
 } TKLIST;
 static TKLIST const c_tklist[] = {	/* Command mappings. */
-#ifdef SYSV_CURSES
 	{"kil1",	"O",	"insert line"},
 	{"kdch1",	"x",	"delete character"},
 	{"kcud1",	"j",	"cursor down"},
@@ -64,41 +64,16 @@ static TKLIST const c_tklist[] = {	/* Command mappings. */
 	{"ked",	       "dG",	"delete to end of screen"},
 	{"kcuf1",	"l",	"cursor right"},
 	{"kcuu1",	"k",	"cursor up"},
-#else
-	{"kA",		"O",	"insert line"},
-	{"kD",		"x",	"delete character"},
-	{"kd",		"j",	"cursor down"},
-	{"kE",		"D",	"delete to eol"},
-	{"kF",	     "\004",	"scroll down"},
-	{"kH",		"$",	"go to eol"},
-	{"kh",		"^",	"go to sol"},
-	{"kI",		"i",	"insert at cursor"},
-	{"kL",	       "dd",	"delete line"},
-	{"kl",		"h",	"cursor left"},
-	{"kN",	     "\006",	"page down"},
-	{"kP",	     "\002",	"page up"},
-	{"kR",	     "\025",	"scroll up"},
-	{"kS",	       "dG",	"delete to end of screen"},
-	{"kr",		"l",	"cursor right"},
-	{"ku",		"k",	"cursor up"},
-#endif
 	{NULL},
 };
 static TKLIST const m1_tklist[] = {	/* Input mappings (lookup). */
 	{NULL},
 };
 static TKLIST const m2_tklist[] = {	/* Input mappings (set or delete). */
-#ifdef SYSV_CURSES
 	{"kcud1",  "\033ja",	"cursor down"},
 	{"kcub1",  "\033ha",	"cursor left"},
 	{"kcuu1",  "\033ka",	"cursor up"},
 	{"kcuf1",  "\033la",	"cursor right"},
-#else
-	{"kd",	   "\033ja",	"cursor down"},
-	{"kl",	   "\033ha",	"cursor left"},
-	{"ku",	   "\033ka",	"cursor up"},
-	{"kr",	   "\033la",	"cursor right"},
-#endif
 	{NULL},
 };
 
@@ -115,19 +90,12 @@ cl_term_init(sp)
 	KEYLIST *kp;
 	SEQ *qp;
 	TKLIST const *tkp;
-	size_t len;
-	char *sbp, *s, *t, sbuf[1024];
+	char *t;
 
 	/* Command mappings. */
 	for (tkp = c_tklist; tkp->name != NULL; ++tkp) {
-#ifdef SYSV_CURSES
 		if ((t = tigetstr(tkp->ts)) == NULL || t == (char *)-1)
 			continue;
-#else
-		sbp = sbuf;
-		if ((t = tgetstr(tkp->ts, &sbp)) == NULL)
-			continue;
-#endif
 		if (seq_set(sp, tkp->name, strlen(tkp->name), t, strlen(t),
 		    tkp->output, strlen(tkp->output), SEQ_COMMAND,
 		    SEQ_NOOVERWRITE | SEQ_SCREEN))
@@ -136,14 +104,8 @@ cl_term_init(sp)
 
 	/* Input mappings needing to be looked up. */
 	for (tkp = m1_tklist; tkp->name != NULL; ++tkp) {
-#ifdef SYSV_CURSES
 		if ((t = tigetstr(tkp->ts)) == NULL || t == (char *)-1)
 			continue;
-#else
-		sbp = sbuf;
-		if ((t = tgetstr(tkp->ts, &sbp)) == NULL)
-			continue;
-#endif
 		for (kp = keylist;; ++kp)
 			if (kp->value == tkp->value)
 				break;
@@ -156,14 +118,8 @@ cl_term_init(sp)
 
 	/* Input mappings that are already set or are text deletions. */
 	for (tkp = m2_tklist; tkp->name != NULL; ++tkp) {
-#ifdef SYSV_CURSES
 		if ((t = tigetstr(tkp->ts)) == NULL || t == (char *)-1)
 			continue;
-#else
-		sbp = sbuf;
-		if ((t = tgetstr(tkp->ts, &sbp)) == NULL)
-			continue;
-#endif
 		/*
 		 * !!!
 		 * Some terminals' <cursor_left> keys send single <backspace>
@@ -193,16 +149,6 @@ cl_term_init(sp)
 		if (F_ISSET(qp, SEQ_FUNCMAP))
 			(void)cl_fmap(sp, qp->stype,
 			    qp->input, qp->ilen, qp->output, qp->olen);
-
-	/* Set up the visual bell information. */
-	t = sbuf;
-	if (tgetstr("vb", &t) != NULL && (len = t - sbuf) != 0) {
-		MALLOC_RET(sp, s, char *, len);
-		memmove(s, sbuf, len);
-		if (CLP(sp)->VB != NULL)
-			free(CLP(sp)->VB);
-		CLP(sp)->VB = s;
-	}
 	return (0);
 }
 
@@ -217,10 +163,6 @@ cl_term_end(sp)
 	SCR *sp;
 {
 	SEQ *qp, *nqp;
-
-	/* Free visual bell information. */
-	if (CLP(sp)->VB != NULL)
-		free(CLP(sp)->VB);
 
 	/* Delete screen specific mappings. */
 	for (qp = sp->gp->seqq.lh_first; qp != NULL; qp = nqp) {
@@ -250,43 +192,9 @@ cl_fmap(sp, stype, from, flen, to, tlen)
 
 	VI_INIT_IGNORE(sp);
 
-#ifdef SYSV_CURSES
 	(void)snprintf(keyname, sizeof(keyname), "kf%d", atoi(from + 1));
 	if ((t = tigetstr(keyname)) == NULL || t == (char *)-1)
 		t = NULL;
-#else
-	/*
-	 * !!!
-	 * Historically, the 4BSD termcap code didn't support functions keys
-	 * greater than 9.  This was silently enforced -- asking for key k12
-	 * returned the value for k1.  We try and get around this by using
-	 * the tables specified in the terminfo(TI_ENV) man page from the 3rd
-	 * Edition SVID.  This assumes that the implementors of any System V
-	 * compatibility code or an extended termcap used those codes.
-	 */
-	{ int n; char *sbp, sbuf[1024];
-	  static const char codes[] = {
-/*  0-10 */	'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ';',
-/* 11-19 */	'1', '2', '3', '4', '5', '6', '7', '8', '9',
-/* 20-63 */	'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
-		'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-		'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
-		'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-	  };
-		if ((n = atoi(from + 1)) > 63) {
-			p = msg_print(sp, from, &nf);
-			msgq(sp, M_ERR,
-		     "232|Termcap has no code for the %s function key", p);
-			if (nf)
-				FREE_SPACE(sp, p, 0);
-			return (1);
-		}
-		(void)snprintf(keyname, sizeof(keyname),
-		    "%c%c", n <= 10 ? 'k' : 'F', codes[n]);
-		sbp = sbuf;
-		t = tgetstr(keyname, &sbp);
-	}
-#endif
 	if (t == NULL) {
 		p = msg_print(sp, from, &nf);
 		msgq(sp, M_ERR, "233|This terminal has no %s key", p);
@@ -299,30 +207,6 @@ cl_fmap(sp, stype, from, flen, to, tlen)
 	    sizeof(keyname), "function key %d", atoi(from + 1));
 	return (seq_set(sp, keyname, nlen,
 	    t, strlen(t), to, tlen, stype, SEQ_NOOVERWRITE | SEQ_SCREEN));
-}
-
-/*
- * cl_keypad --
- *	Put the keypad/cursor arrows into or out of application mode.
- *
- * PUBLIC: int cl_keypad __P((int));
- */
-int
-cl_keypad(on)
-	int on;
-{
-#ifdef SYSV_CURSES
-	keypad(stdscr, on ? TRUE : FALSE);
-#else
-	char *sbp, *t, sbuf[128];
-
-	sbp = sbuf;
-	if ((t = tgetstr(on ? "ks" : "ke", &sbp)) != NULL) {
-		(void)tputs(t, 0, cl_putchar);
-		(void)fflush(stdout);
-	}
-#endif
-	return (0);
 }
 
 /*
@@ -385,12 +269,6 @@ cl_optchange(sp, opt)
 			return (1);
 		
 		VI_INIT_IGNORE(sp);
-
-		/* Toss any saved visual bell information. */
-		if (clp->VB != NULL) {
-			free(clp->VB);
-			clp->VB = NULL;
-		}
 
 		/* Restart curses.  If this fails, we're done. */
 		if (F_ISSET(sp, S_EX)) {
@@ -490,7 +368,6 @@ cl_ssize(sp, sigwinch, rowp, colp)
 	if (row == 0 || col == 0) {
 		if ((s = getenv("TERM")) == NULL)
 			goto noterm;
-#ifdef SYSV_CURSES
 		if (row == 0)
 			if ((rval = tigetnum("lines")) < 0)
 				msgq(sp, M_SYSERR, "tigetnum: lines");
@@ -501,37 +378,6 @@ cl_ssize(sp, sigwinch, rowp, colp)
 				msgq(sp, M_SYSERR, "tigetnum: cols");
 			else
 				col = rval;
-#else
-		switch (tgetent(buf, s)) {
-		case -1:
-			msgq(sp, M_SYSERR, "tgetent: %s", s);
-			return (1);
-		case 0:
-			p = msg_print(sp, s, &nf);
-			msgq(sp, M_ERR, "234|%s: unknown terminal type", p);
-			if (nf)
-				FREE_SPACE(sp, p, 0);
-			return (1);
-		}
-		if (row == 0)
-			if ((rval = tgetnum("li")) < 0) {
-				p = msg_print(sp, s, &nf);
-				msgq(sp, M_ERR,
-			    "235|no \"li\" terminal capability for %s", p);
-				if (nf)
-					FREE_SPACE(sp, p, 0);
-			} else
-				row = rval;
-		if (col == 0)
-			if ((rval = tgetnum("co")) < 0) {
-				p = msg_print(sp, s, &nf);
-				msgq(sp, M_ERR,
-			    "236|no \"co\" terminal capability for %s", p);
-				if (nf)
-					FREE_SPACE(sp, p, 0);
-			} else
-				col = rval;
-#endif
 	}
 
 	/* If nothing else, well, it's probably a VT100. */
@@ -579,11 +425,11 @@ cl_putenv(s)
  * cl_putchar --
  *	Function version of putchar, for tputs.
  *
- * PUBLIC: void cl_putchar __P((int));
+ * PUBLIC: int cl_putchar __P((int));
  */
-void
+int
 cl_putchar(ch)
 	int ch;
 {
-	(void)putchar(ch);
+	return (putchar(ch));
 }

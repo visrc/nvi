@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_funcs.c,v 10.6 1995/06/22 19:23:39 bostic Exp $ (Berkeley) $Date: 1995/06/22 19:23:39 $";
+static char sccsid[] = "$Id: cl_funcs.c,v 10.7 1995/06/26 11:06:20 bostic Exp $ (Berkeley) $Date: 1995/06/26 11:06:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -114,12 +114,12 @@ cl_attr(sp, attribute, on)
 	switch (attribute) {
 	case SA_INVERSE:
 		if (F_ISSET(sp, S_EX)) {
-			if (clp->SO == NULL)
+			if (clp->smso == NULL)
 				return (1);
 			if (on)
-				(void)tputs(clp->SO, 1, cl_putchar);
+				(void)tputs(clp->smso, 1, cl_putchar);
 			else
-				(void)tputs(clp->SE, 1, cl_putchar);
+				(void)tputs(clp->rmso, 1, cl_putchar);
 		} else
 			return (on ? standout() == ERR : standend() == ERR);
 		break;
@@ -146,18 +146,10 @@ cl_bell(sp)
 
 	VI_INIT_IGNORE(sp);
 
-#ifdef SYSV_CURSES
 	if (O_ISSET(sp, O_FLASH))
 		flash();
 	else
 		beep();
-#else
-	if (O_ISSET(sp, O_FLASH) && CLP(sp)->VB != NULL) {
-		(void)tputs(CLP(sp)->VB, 1, cl_putchar);
-		(void)fflush(stdout);
-	} else
-		(void)write(STDOUT_FILENO, "\07", 1);		/* \a */
-#endif
 	return (0);
 }
 
@@ -468,18 +460,18 @@ cl_ex_adjust(sp, action)
 	switch (action) {
 	case EX_TERM_SCROLL:
 		/* Move the cursor up one line if that's possible. */
-		if (clp->UP != NULL)
-			(void)tputs(clp->UP, 1, cl_putchar);
-		else if (clp->CM != NULL)
-			(void)tputs(tgoto(clp->CM,
+		if (clp->cuu1 != NULL)
+			(void)tputs(clp->cuu1, 1, cl_putchar);
+		else if (clp->cup != NULL)
+			(void)tputs(tgoto(clp->cup,
 			    0, O_VAL(sp, O_LINES) - 2), 1, cl_putchar);
 		else
 			return (0);
 		/* FALLTHROUGH */
 	case EX_TERM_CE:
-		if (clp->CE != NULL) {
+		if (clp->el != NULL) {
 			(void)putchar('\r');
-			(void)tputs(clp->CE, 1, cl_putchar);
+			(void)tputs(clp->el, 1, cl_putchar);
 		} else {
 			/*
 			 * !!!
@@ -491,7 +483,7 @@ cl_ex_adjust(sp, action)
 			 * this won't help if the user entered extra prompt
 			 * or <blank> characters before the command character.
 			 * We'd have to do a lot of work to make that work, and
-			 * it's not worth the effort.
+			 * it's almost certainly not worth the effort.
 			 */
 			for (cnt = 0; cnt < MAX_CHARACTER_COLUMNS; ++cnt)
 				(void)putchar('\b');
@@ -686,6 +678,89 @@ cl_split(old, new, to_up)
 		old->rows = half;		/* Old. */
 	}
 	return (0);
+}
+
+/*
+ * cl_suspend --
+ *	Suspend a screen.
+ *
+ *
+ * PUBLIC: int cl_suspend __P((SCR *));
+ */
+int
+cl_suspend(sp)
+	SCR *sp;
+{
+	struct termios t;
+	GS *gp;
+	int rval;
+
+	rval = 0;
+	switch (F_ISSET(sp, S_EX | S_VI)) {
+	case S_EX:
+		/*
+		 * XXX
+		 * This need not be supported by any screen model not supporting
+		 * full ex canonical mode.
+		 *
+		 * Save the terminal settings, and restore the original ones.
+		 */
+		gp = sp->gp;
+		if (F_ISSET(gp, G_STDIN_TTY)) {
+			if (tcgetattr(STDIN_FILENO, &t)) {
+				msgq(sp, M_SYSERR, "suspend: tcgetattr");
+				return (1);
+			}
+			if (F_ISSET(gp, G_TERMIOS_SET) &&
+			    tcsetattr(STDIN_FILENO,
+			    TCSASOFT | TCSADRAIN, &gp->original_termios)) {
+				msgq(sp, M_SYSERR,
+				    "suspend: tcsetattr original");
+				return (1);
+			}
+		}
+
+		/* Stop the process group. */
+		if (rval = kill(0, SIGTSTP))
+			msgq(sp, M_SYSERR, "suspend: kill");
+
+		/* Time passes ... */
+
+		/* Restore terminal settings. */
+		if (F_ISSET(gp, G_STDIN_TTY) &&
+		    tcsetattr(STDIN_FILENO, TCSASOFT | TCSADRAIN, &t)) {
+			msgq(sp, M_SYSERR, "suspend: tcsetattr current");
+			rval = 1;
+		}
+		break;
+	case S_VI:
+		/*
+		 * XXX
+		 * This need not be supported by any screen model not supporting
+		 * process suspension.
+		 *
+		 * Temporarily end the screen.
+		 */
+		(void)endwin();
+
+		/* Stop the process group. */
+		if (rval = kill(0, SIGTSTP))
+			msgq(sp, M_SYSERR, "suspend: kill");
+
+		/* Time passes ... */
+
+		/* Refresh the screen. */
+		clearok(stdscr, 1);
+		refresh();
+
+		/* If the screen changed size, set the SIGWINCH bit. */
+		if (!cl_ssize(sp, 1, NULL, NULL))
+			F_SET(CLP(sp), CL_SIGWINCH);
+		break;
+	default:
+		abort();
+	}
+	return (rval);
 }
 
 /*

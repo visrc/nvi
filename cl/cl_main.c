@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_main.c,v 10.4 1995/06/22 19:24:51 bostic Exp $ (Berkeley) $Date: 1995/06/22 19:24:51 $";
+static char sccsid[] = "$Id: cl_main.c,v 10.5 1995/06/26 11:06:28 bostic Exp $ (Berkeley) $Date: 1995/06/26 11:06:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -16,6 +16,7 @@ static char sccsid[] = "$Id: cl_main.c,v 10.4 1995/06/22 19:24:51 bostic Exp $ (
 #include <sys/time.h>
 
 #include <bitstring.h>
+#include <curses.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -133,9 +134,16 @@ main(argc, argv)
 	if (v_event_handler(sp, &ev, &timeout))
 		goto err;
 
+#ifdef NCURSES_DEBUG
+	trace(TRACE_UPDATE | TRACE_MOVE | TRACE_CALLS);
+#endif
 	for (killset = 0;;) {				/* Edit loop. */
 		for (;;) {				/* Event loop. */
-			/* Queue signal based events. */
+			/*
+			 * Queue signal based events.  Deliver SIGCONT before
+			 * SIGWINCH, so editor can terminate actions before
+			 * dealing with the screen size changing.
+			 */
 			if (F_ISSET(clp, CL_SIGCONT |
 			    CL_SIGHUP | CL_SIGINT | CL_SIGTERM | CL_SIGWINCH)) {
 				if (F_ISSET(clp, CL_SIGCONT)) {

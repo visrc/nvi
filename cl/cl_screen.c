@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_screen.c,v 10.7 1995/06/22 19:22:22 bostic Exp $ (Berkeley) $Date: 1995/06/22 19:22:22 $";
+static char sccsid[] = "$Id: cl_screen.c,v 10.8 1995/06/26 11:06:03 bostic Exp $ (Berkeley) $Date: 1995/06/26 11:06:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,6 +22,7 @@ static char sccsid[] = "$Id: cl_screen.c,v 10.7 1995/06/22 19:22:22 bostic Exp $
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <term.h>
 #include <termios.h>
 #include <unistd.h>
 
@@ -33,6 +34,8 @@ static char sccsid[] = "$Id: cl_screen.c,v 10.7 1995/06/22 19:22:22 bostic Exp $
 #include "cl.h"
 
 static int	cl_common __P((SCR *));
+static void	cl_sig_end __P((SCR *));
+static int	cl_sig_init __P((SCR *));
 
 /*
  * cl_vi_init --
@@ -47,7 +50,6 @@ cl_vi_init(sp)
 	GS *gp;
 	struct termios t;
 	int nf;
-	char *p;
 
 	/* Curses vi always reads from (and writes to) a terminal. */
 	gp = sp->gp;
@@ -60,7 +62,6 @@ cl_vi_init(sp)
 	if (gp->cl_private == NULL && cl_common(sp))
 		return (1);
 
-#ifdef SYSV_CURSES
 	/*
 	 * The SunOS/System V initscr() isn't reentrant.  Don't even think
 	 * about trying to use it.  It fails in subtle ways (e.g. select(2)
@@ -71,44 +72,13 @@ cl_vi_init(sp)
 	errno = 0;
 	if (newterm(O_STR(sp, O_TERM), stdout, stdin) == NULL) {
 		if (errno)
-			msgq(sp, M_SYSERR, "newterm");
+			msgq(sp, M_SYSERR, "%s", O_STR(sp, O_TERM));
 		else
-			msgq(sp, M_ERR, "Error: newterm");
+			msgq(sp, M_ERR,
+			    "%s: unknown terminal type", O_STR(sp, O_TERM));
 		return (1);
 	}
-#else
-	/*
-	 * Initscr() doesn't provide useful error values or messages.  The
-	 * reasonable guess is that either malloc failed or the terminal was
-	 * unknown or lacking some essential feature.  Try and guess so the
-	 * user isn't even more pissed off because of the error message.
-	 */
-	errno = 0;
-	if (initscr() == NULL) {
-		char kbuf[2048];
-		if (errno)
-			msgq(sp, M_SYSERR, "initscr");
-		else
-			msgq(sp, M_ERR, "Error: initscr");
-		if ((p = getenv("TERM")) == NULL || !strcmp(p, "unknown"))
-			msgq(sp, M_ERR,
-	"229|No TERM environment variable set, or TERM set to \"unknown\"");
-		else if (tgetent(kbuf, p) != 1) {
-			p = msg_print(sp, p, &nf);
-			msgq(sp, M_ERR,
-"230|%s: unknown terminal type, or terminal lacks necessary features", p);
-			if (nf)
-				FREE_SPACE(sp, p, 0);
-		} else {
-			p = msg_print(sp, p, &nf);
-			msgq(sp, M_ERR,
-		    "231|%s: terminal type lacks necessary features", p);
-			if (nf)
-				FREE_SPACE(sp, p, 0);
-		}
-		return (1);
-	}
-#endif
+
 	/*
 	 * We use raw mode.  What we want is 8-bit clean, however, signals
 	 * and flow control should continue to work.  Admittedly, it sounds
@@ -124,6 +94,9 @@ cl_vi_init(sp)
 	raw();				/* 8-bit clean. */
 	idlok(stdscr, 1);		/* Use hardware insert/delete line. */
 
+	/* Put the cursor keys into application mode. */
+	(void)keypad(stdscr, TRUE);
+
 	/*
 	 * XXX
 	 * Historic implementations of curses handled SIGTSTP signals
@@ -134,8 +107,9 @@ cl_vi_init(sp)
 	 *	3: Set their own handler, but then called any previously set
 	 *	   handler after completing their own cleanup.
 	 *
-	 * We don't try and figure out which behavior is in place, we
-	 * set it to SIG_DFL after initializing the curses interface.
+	 * We don't try and figure out which behavior is in place, we force
+	 * it to SIG_DFL after initializing the curses interface, which means
+	 * that curses isn't going to take the signal.
 	 */
 	(void)signal(SIGTSTP, SIG_DFL);
 
@@ -182,24 +156,13 @@ cl_vi_init(sp)
 		goto err;
 	}
 
-	/* Things are now initialized -- set the bit. */
-	F_SET(CLP(sp), CL_INIT_VI);
-
-	/*
-	 * The historic 4BSD curses had an uneasy relationship with termcap.
-	 * Termcap used a static buffer to hold the terminal information,
-	 * which was was then used by the curses functions.  We want to use
-	 * it too, for lots of random things, but we've put it off until after
-	 * initscr() was called and the CL_INIT_VI bit was set.  Do it now.
-	 */
+	/* Initialize terminal based information. */
 	if (cl_term_init(sp)) {
 err:		(void)cl_vi_end(sp);
 		return (1);
 	}
 
-	/* Put the cursor keys into application mode. */
-	(void)cl_keypad(1);
-
+	F_SET(CLP(sp), CL_INIT_VI);
 	return (0);
 }
 
@@ -216,33 +179,20 @@ cl_vi_end(sp)
 	CL_PRIVATE *clp;
 
 	clp = CLP(sp);
-	if (!F_ISSET(CLP(sp), CL_INIT_VI))
+	if (clp == NULL || !F_ISSET(clp, CL_INIT_VI))
 		return (0);
 
-	/* Restore signals. */
-	cl_sig_end(sp);
-
 	/* Restore the cursor keys to normal mode. */
-	(void)cl_keypad(0);
+	(void)keypad(stdscr, FALSE);
+
+	/* End curses window. */
+	(void)endwin();
 
 	/* Restore the terminal, and map sequences. */
 	cl_term_end(sp);
 
-	/* Move to the bottom of the screen. */
-	if (move(sp->t_maxrows, 0) == OK) {		/* XXX */
-		clrtoeol();
-		refresh();
-	}
-
-	/* End curses window. */
-	errno = 0;
-	if (endwin() == ERR) {
-		if (errno)
-			msgq(sp, M_SYSERR, "endwin");
-		else
-			msgq(sp, M_ERR, "Error: endwin");
-		return (1);
-	}
+	/* Restore signals. */
+	cl_sig_end(sp);
 
 #if defined(DEBUG) || defined(PURIFY) || !defined(STANDALONE)
 	if (clp->lline != NULL)
@@ -265,98 +215,67 @@ cl_ex_init(sp)
 	SCR *sp;
 {
 	CL_PRIVATE *clp;
-	size_t len;
-	char *s, *t, buf[128], tbuf[2048];
+	int err;
+	char *t;
 
-	clp = CLP(sp);
-	if (clp == NULL) {
+	if ((clp = CLP(sp)) == NULL) {
 		if (cl_common(sp))
 			return (1);
 		clp = CLP(sp);
 	}
 
-	/* Get the termcap entry. */
-	if (tgetent(tbuf, O_STR(sp, O_TERM)) != 1)
-		return (1);
+#define	GETCAP(name, element) {						\
+	size_t __len;							\
+	if ((t = tigetstr(name)) != NULL &&				\
+	    t != (char *)-1 && (__len = strlen(t)) != 0) {		\
+		MALLOC_RET(sp, clp->element, char *, __len + 1);	\
+		memmove(clp->element, t, __len + 1);			\
+	}								\
+}
+	/* Set up the terminal database information. */
+	setupterm(O_STR(sp, O_TERM), STDOUT_FILENO, &err);
+	switch (err) {
+	case -1:
+		msgq(sp, M_ERR, "No terminal database found");
+		break;
+	case 0:
+		msgq(sp, M_ERR, "%s: unknown terminal type", O_STR(sp, O_TERM));
+		break;
+	case 1:
+		/*
+		 * Get cursor_address, enter_standout_mode, exit_standout_mode,
+		 * cursor_up, clr_eol.
+		 */
+		GETCAP("cup", cup);
+		GETCAP("smso", smso);
+		GETCAP("rmso", rmso);
+		GETCAP("el", el);
+		GETCAP("cuu1", cuu1);
 
-	/* Get CE. */
-	t = buf;
-	if ((t = tgetstr("ce", &t)) != NULL && (len = strlen(t)) != 0) {
-		MALLOC_NOMSG(sp, s, char *, len + 1);
-		if (s != NULL) {
-			memmove(s, buf, len);
-			s[len] = '\0';
-			clp->CE = s;
+		/* Enter_standout_mode and exit_standout_mode are paired. */
+		if (clp->smso == NULL || clp->rmso == NULL) {
+			if (clp->smso != NULL) {
+				free(clp->smso);
+				clp->smso = NULL;
+			}
+			if (clp->rmso != NULL) {
+				free(clp->rmso);
+				clp->rmso = NULL;
+			}
 		}
-	}
-
-	/* Get CM. */
-	t = buf;
-	if ((t = tgetstr("cm", &t)) != NULL && (len = strlen(t)) != 0) {
-		MALLOC_NOMSG(sp, s, char *, len + 1);
-		if (s != NULL) {
-			memmove(s, buf, len);
-			s[len] = '\0';
-			clp->CM = s;
-		}
-	}
-
-	/* Get SE. */
-	t = buf;
-	if ((t = tgetstr("se", &t)) != NULL && (len = strlen(t)) != 0) {
-		MALLOC_NOMSG(sp, s, char *, len + 1);
-		if (s != NULL) {
-			memmove(s, buf, len);
-			s[len] = '\0';
-			clp->SE = s;
-		}
-	}
-
-	/* Get SO. */
-	t = buf;
-	if ((t = tgetstr("so", &t)) != NULL && (len = strlen(t)) != 0) {
-		MALLOC_NOMSG(sp, s, char *, len + 1);
-		if (s != NULL) {
-			memmove(s, buf, len);
-			s[len] = '\0';
-			clp->SO = s;
-		}
-	}
-
-	/* SE and SO are paired. */
-	if (clp->SE == NULL || clp->SO == NULL) {
-		if (clp->SE != NULL) {
-			free(clp->SE);
-			clp->SE = NULL;
-		}
-		if (clp->SO != NULL) {
-			free(clp->SO);
-			clp->SO = NULL;
-		}
-	}
-
-	/* Get UP. */
-	t = buf;
-	if ((t = tgetstr("up", &t)) != NULL && (len = strlen(t)) != 0) {
-		MALLOC_NOMSG(sp, s, char *, len + 1);
-		if (s != NULL) {
-			memmove(s, buf, len);
-			s[len] = '\0';
-			clp->UP = s;
-		}
+		break;
 	}
 
 	/* Initialize the tty. */
 	if (cl_ex_tinit(sp))
 		return (1);
 
-	/* Things are now initialized -- set the bit. */
-	F_SET(clp, CL_INIT_EX);
-
 	/* Move to the last line on the screen. */
-	if (clp->UP != NULL && clp->CM != NULL)
-		tputs(tgoto(clp->CM, 0, O_VAL(sp, O_LINES) - 1), 1, cl_putchar);
+	if (clp->cup != NULL)
+		tputs(tgoto(clp->cup,
+		    0, O_VAL(sp, O_LINES) - 1), 1, cl_putchar);
 
+	F_SET(clp, CL_INIT_EX);
 	return (0);
 }
 
@@ -373,7 +292,7 @@ cl_ex_end(sp)
 	CL_PRIVATE *clp;
 
 	clp = CLP(sp);
-	if (!F_ISSET(CLP(sp), CL_INIT_EX))
+	if (clp == NULL || !F_ISSET(CLP(sp), CL_INIT_EX))
 		return (0);
 
 	/* Restore signals. */
@@ -385,16 +304,16 @@ cl_ex_end(sp)
 
 #if defined(DEBUG) || defined(PURIFY) || !defined(STANDALONE)
 	clp = CLP(sp);
-	if (clp->CE != NULL)
-		free(clp->CE);
-	if (clp->CM != NULL)
-		free(clp->CM);
-	if (clp->UP != NULL)
-		free(clp->UP);
-	if (clp->SE != NULL)
-		free(clp->SE);
-	if (clp->SO != NULL)
-		free(clp->SO);
+	if (clp->el != NULL)
+		free(clp->el);
+	if (clp->cup != NULL)
+		free(clp->cup);
+	if (clp->cuu1 != NULL)
+		free(clp->cuu1);
+	if (clp->rmso != NULL)
+		free(clp->rmso);
+	if (clp->smso != NULL)
+		free(clp->smso);
 
 	if (clp->lline != NULL)
 		free(clp->lline);
@@ -534,4 +453,83 @@ cl_common(sp)
 	gp->scr_suspend = cl_suspend;
 
 	return (0);
+}
+
+#define	HANDLER(name, flag)						\
+static void name(signo)	int signo; {					\
+	F_SET(((CL_PRIVATE *)__global_list->cl_private), flag);		\
+}
+HANDLER(h_cont, CL_SIGCONT)
+HANDLER(h_hup, CL_SIGHUP)
+HANDLER(h_int, CL_SIGINT)
+HANDLER(h_term, CL_SIGTERM)
+HANDLER(h_winch, CL_SIGWINCH)
+
+/*
+ * cl_sig_init --
+ *	Initialize signals.
+ */
+static int
+cl_sig_init(sp)
+	SCR *sp;
+{
+	CL_PRIVATE *clp;
+	GS *gp;
+	struct sigaction act;
+
+	/* Initialize the signals. */
+	gp = sp->gp;
+	(void)sigemptyset(&gp->blockset);
+
+	/*
+	 * Use sigaction(2), not signal(3), since we don't always want to
+	 * restart system calls.  The example is when waiting for a command
+	 * mode keystroke and SIGWINCH arrives.  Besides, you can't portably
+	 * restart system calls.
+	 */
+	clp = CLP(sp);
+#define	SETSIG(signal, handler, off) {					\
+	if (sigaddset(&gp->blockset, signal))				\
+		goto err;						\
+	act.sa_handler = handler;					\
+	sigemptyset(&act.sa_mask);					\
+	act.sa_flags = 0;						\
+	if (sigaction(signal, &act, &clp->oact[off]))			\
+		goto err;						\
+}
+	SETSIG(SIGCONT, h_cont, INDX_CONT);
+	SETSIG(SIGHUP, h_hup, INDX_HUP);
+	SETSIG(SIGINT, h_int, INDX_INT);
+	SETSIG(SIGTERM, h_term, INDX_TERM);
+	SETSIG(SIGWINCH, h_winch, INDX_WINCH);
+#undef SETSIG
+
+	/* Notify generic code that signals need to be blocked. */
+	F_SET(sp->gp, G_SIGBLOCK);
+	return (0);
+
+err:	msgq(sp, M_SYSERR, "signal init");
+	return (1);
+}
+
+/*
+ * cl_sig_end --
+ *	End signal setup.
+ */
+static void
+cl_sig_end(sp)
+	SCR *sp;
+{
+	CL_PRIVATE *clp;
+
+	/* If never initialized, don't reset. */
+	if (!F_ISSET(sp->gp, G_SIGBLOCK))
+		return;
+
+	clp = CLP(sp);
+	(void)sigaction(SIGCONT, NULL, &clp->oact[INDX_CONT]);
+	(void)sigaction(SIGHUP, NULL, &clp->oact[INDX_HUP]);
+	(void)sigaction(SIGINT, NULL, &clp->oact[INDX_INT]);
+	(void)sigaction(SIGTERM, NULL, &clp->oact[INDX_TERM]);
+	(void)sigaction(SIGWINCH, NULL, &clp->oact[INDX_WINCH]);
 }
