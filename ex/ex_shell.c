@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 8.21 1994/03/23 20:25:05 bostic Exp $ (Berkeley) $Date: 1994/03/23 20:25:05 $";
+static char sccsid[] = "$Id: ex_shell.c,v 8.22 1994/05/01 15:19:08 bostic Exp $ (Berkeley) $Date: 1994/05/01 15:19:08 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -80,12 +80,8 @@ ex_exec_proc(sp, cmd, p1, p2)
 		rval = 1;
 		goto err;
 	case 0:				/* Utility. */
-		/*
-		 * The utility has default signal behavior.  Don't bother
-		 * using sigaction(2) 'cause we want the default behavior.
-		 */
-		(void)signal(SIGINT, SIG_DFL);
-		(void)signal(SIGQUIT, SIG_DFL);
+		/* The utility has default signal behavior. */
+		sig_end();
 
 		if ((name = strrchr(O_STR(sp, O_SHELL), '/')) == NULL)
 			name = O_STR(sp, O_SHELL);
