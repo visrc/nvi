@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.53 1994/07/16 12:25:03 bostic Exp $ (Berkeley) $Date: 1994/07/16 12:25:03 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.54 1994/07/16 17:42:04 bostic Exp $ (Berkeley) $Date: 1994/07/16 17:42:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -491,7 +491,7 @@ usage:		msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
 		/* Get the line. */
 		if ((s = file_gline(sp, ep, lno, &llen)) == NULL) {
 			GETLINE_ERR(sp, lno);
-			return (1);
+			goto ret1;
 		}
 
 		/*
@@ -820,7 +820,9 @@ ret1:		rval = 1;
 	}
 
 	if (bp != NULL)
-		FREE_SPACE(sp, bp, blen);
+		free(bp);
+	if (lb != NULL)
+		free(lb);
 	return (rval);
 }
 
