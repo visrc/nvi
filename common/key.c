@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.42 1993/02/21 19:44:02 bostic Exp $ (Berkeley) $Date: 1993/02/21 19:44:02 $";
+static char sccsid[] = "$Id: key.c,v 5.43 1993/02/24 12:57:24 bostic Exp $ (Berkeley) $Date: 1993/02/24 12:57:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -200,7 +200,8 @@ retry:		sp = seq_find(&keybuf[nextkey], nkeybuf,
 	 * XXX
 	 * No NULL's for now.
 	 */
-	ch == '\0' ? 'A' & 0x1f : ch;
+	if (ch == '\0')
+		ch = 'A' & 0x1f;
 
 	/*
 	 * O_BEAUTIFY eliminates all control characters except tab,
@@ -262,7 +263,7 @@ ttyread(ep, buf, len, time)
 		 * before selecting.
 		 */
 		FF_SET(ep, F_READING);
-		if (FF_ISSET(ep, F_RESIZE) && mode == MODE_VI) {
+		if (SF_ISSET(ep, S_RESIZE) && mode == MODE_VI) {
 			(void)scr_update(ep);
 			refresh();
 		}
