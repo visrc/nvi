@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 10.4 1995/06/09 12:51:32 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:51:32 $";
+static char sccsid[] = "$Id: ex_args.c,v 10.5 1995/06/20 19:37:30 bostic Exp $ (Berkeley) $Date: 1995/06/20 19:37:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -261,6 +261,8 @@ ex_args(sp, cmdp)
 	int cnt, col, len, sep;
 	char **ap;
 
+	ENTERCANONICAL(sp, cmdp, 0);
+
 	if (sp->argv == NULL) {
 		(void)msgq(sp, M_ERR, "114|No file list to display");
 		return (0);
@@ -272,21 +274,21 @@ ex_args(sp, cmdp)
 		if (col >= sp->cols - 1) {
 			col = len;
 			sep = 0;
-			(void)ex_puts(sp, "\n");
+			(void)ex_printf(sp, "\n");
 		} else if (cnt != 1) {
 			sep = 1;
-			(void)ex_puts(sp, " ");
+			(void)ex_printf(sp, " ");
 		}
 		++cnt;
 
 		if (ap == sp->cargv)
 			(void)ex_printf(sp, "[%s]", *ap);
 		else
-			(void)ex_puts(sp, *ap);
+			(void)ex_printf(sp, "%s", *ap);
 		if (INTERRUPTED(sp))
 			break;
 	}
 	if (!INTERRUPTED(sp))
-		(void)ex_puts(sp, "\n");
+		(void)ex_printf(sp, "\n");
 	return (0);
 }
