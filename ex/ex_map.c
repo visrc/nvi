@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_map.c,v 5.15 1992/12/05 11:08:40 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:08:40 $";
+static char sccsid[] = "$Id: ex_map.c,v 5.16 1993/02/11 20:39:16 bostic Exp $ (Berkeley) $Date: 1993/02/11 20:39:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -128,7 +128,7 @@ map_save(fp)
 	FILE *fp;
 {
 	
-	if (seq_save(fp, (u_char *)"map ", COMMAND));
+	if (seq_save(fp, (u_char *)"map ", COMMAND))
 		return (1);
 	return (seq_save(fp, (u_char *)"map! ", INPUT));
 }
