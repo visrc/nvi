@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_increment.c,v 5.8 1992/10/10 14:00:47 bostic Exp $ (Berkeley) $Date: 1992/10/10 14:00:47 $";
+static char sccsid[] = "$Id: v_increment.c,v 5.9 1992/10/17 15:23:37 bostic Exp $ (Berkeley) $Date: 1992/10/17 15:23:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -84,7 +84,7 @@ v_increment(vp, fm, tm, rp)
 				ntype = fmt[HEXC];
 			else if (p[1] == 'x')
 				ntype = fmt[HEXL];
-		len = snprintf(nbuf, sizeof(nbuf), ntype, len, ulval);
+		(void)snprintf(nbuf, sizeof(nbuf), ntype, len, ulval);
 	} else {
 		if (vp->character == '+') {
 			lval = strtol(vp->keyword, NULL, 0);
@@ -105,8 +105,9 @@ underflow:			bell();
 		}
 		ntype = *vp->keyword == '+' || *vp->keyword == '-' ?
 			fmt[SDEC] : fmt[DEC];
-		len = snprintf(nbuf, sizeof(nbuf), ntype, len, lval);
+		(void)snprintf(nbuf, sizeof(nbuf), ntype, len, lval);
 	}
+	len = strlen(nbuf);
 
 	*rp = *fm;
 	ecursor = *fm;

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 5.14 1992/10/10 14:02:37 bostic Exp $ (Berkeley) $Date: 1992/10/10 14:02:37 $";
+static char sccsid[] = "$Id: v_search.c,v 5.15 1992/10/17 15:24:34 bostic Exp $ (Berkeley) $Date: 1992/10/17 15:24:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -82,12 +82,11 @@ v_searchw(vp, fm, tm, rp)
 	MARK *fm, *tm, *rp;
 {
 	MARK *mp;
-	size_t len;
 	char buf[1024];
 
 	/* Build a "word" pattern. */
-	len = snprintf(buf, sizeof(buf), "\\<%s\\>", vp->keyword);
-	if (len >= sizeof(buf)) {
+	if (snprintf(buf, sizeof(buf), "\\<%s\\>", vp->keyword) >=
+	    sizeof(buf)) {
 		msg("Word too long to search for.");
 		return (1);
 	}
