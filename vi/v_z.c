@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_z.c,v 8.7 1993/12/02 15:17:59 bostic Exp $ (Berkeley) $Date: 1993/12/02 15:17:59 $";
+static char sccsid[] = "$Id: v_z.c,v 8.8 1993/12/02 15:19:30 bostic Exp $ (Berkeley) $Date: 1993/12/02 15:19:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -41,6 +41,10 @@ v_z(sp, ep, vp, fm, tm, rp)
 	} else
 		lno = fm->lno;
 
+	/* Set return cursor values. */
+	rp->lno = lno;
+	rp->cno = fm->cno;
+
 	/*
 	 * The second count is the displayed window size, i.e. the 'z'
 	 * command is another way to get artificially small windows.
@@ -53,10 +57,6 @@ v_z(sp, ep, vp, fm, tm, rp)
 	if (F_ISSET(vp, VC_C2SET) &&
 	    vp->count2 != 0 && sp->s_rrel(sp, vp->count2))
 		return (1);
-
-	/* Set default cursor values. */
-	rp->lno = lno;
-	rp->cno = fm->cno;
 
 	switch (vp->character) {
 	case '-':		/* Put the line at the bottom. */
