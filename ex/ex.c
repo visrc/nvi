@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.40 1993/10/28 14:14:49 bostic Exp $ (Berkeley) $Date: 1993/10/28 14:14:49 $";
+static char sccsid[] = "$Id: ex.c,v 8.41 1993/10/28 16:47:34 bostic Exp $ (Berkeley) $Date: 1993/10/28 16:47:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -349,7 +349,7 @@ ex_cmd(sp, ep, exc, arg1_len)
 	 * is.  There are a few commands that aren't alphabetic, but they
 	 * are all single character commands.
 	 */
-#define	SINGLE_CHAR_COMMANDS	"!#&<=>@"
+#define	SINGLE_CHAR_COMMANDS	"!#&<=>@~"
 	if (*exc) {
 		if (strchr(SINGLE_CHAR_COMMANDS, *exc)) {
 			p = exc;
