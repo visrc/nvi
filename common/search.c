@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.37 1994/03/22 18:41:32 bostic Exp $ (Berkeley) $Date: 1994/03/22 18:41:32 $";
+static char sccsid[] = "$Id: search.c,v 8.38 1994/03/22 19:47:36 bostic Exp $ (Berkeley) $Date: 1994/03/22 19:47:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -456,7 +456,7 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 
 		/* Set the termination. */
 		match[0].rm_so = 0;
-		match[0].rm_eo = coff ? coff : len;
+		match[0].rm_eo = len;
 
 #if defined(DEBUG) && 0
 		TRACE(sp, "B search: %lu from 0 to %qu\n", lno, match[0].rm_eo);
@@ -470,6 +470,10 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 			re_error(sp, eval, re);
 			break;
 		}
+
+		/* Check for a match starting past the cursor. */
+		if (coff != 0 && match[0].rm_so >= coff)
+			continue;
 
 		/* Warn if wrapped. */
 		if (wrapped && O_ISSET(sp, O_WARN) && LF_ISSET(SEARCH_MSG))
@@ -486,17 +490,17 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 			    match[0].rm_so, match[0].rm_eo);
 #endif
 			/*
-			 * Find the last acceptable one in this line.  This
-			 * is really painful, we need a cleaner interface to
-			 * regexec to make this possible.
+			 * We now have the first match on the line.  Step
+			 * through the line character by character until we
+			 * find the last acceptable match.  This is painful,
+			 * we need a better interface to regex to make this
+			 * work.
 			 */
 			for (;;) {
-				last = match[0].rm_so;
-				match[0].rm_so = match[0].rm_eo + 1;
-				if (match[0].rm_so >= len ||
-				    coff && match[0].rm_so >= coff)
+				last = match[0].rm_so++;
+				if (match[0].rm_so >= len)
 					break;
-				match[0].rm_eo = coff ? coff : len;
+				match[0].rm_eo = len;
 				eval = regexec(re, l, 1, match,
 				    (match[0].rm_so == 0 ? 0 : REG_NOTBOL) |
 				    REG_STARTEND);
@@ -506,6 +510,8 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 					re_error(sp, eval, re);
 					goto err;
 				}
+				if (coff && match[0].rm_so >= coff)
+					break;
 			}
 			rm->lno = lno;
 
