@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ch.c,v 8.9 1994/04/26 18:53:57 bostic Exp $ (Berkeley) $Date: 1994/04/26 18:53:57 $";
+static char sccsid[] = "$Id: v_ch.c,v 8.10 1994/05/04 17:08:15 bostic Exp $ (Berkeley) $Date: 1994/05/04 17:08:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -101,8 +101,8 @@ v_chrrepeat(sp, ep, vp)
 
 /*
  * v_cht -- [count]tc
- *	Search forward in the line for the next occurrence of the character.
- *	Place the cursor on it if it's a motion command, to its left if not.
+ *	Search forward in the line for the character before the next
+ *	occurrence of the specified character.
  */
 int
 v_cht(sp, ep, vp)
@@ -114,12 +114,18 @@ v_cht(sp, ep, vp)
 		return (1);
 
 	/*
-	 * v_chf places the cursor on the character, and the 't' command
-	 * wants it to its left.  We know this is safe since we had to
-	 * have moved right for v_chf() to have succeeded.
+	 * v_chf places the cursor on the character, where the 't'
+	 * command wants it to its left.  We know this is safe since
+	 * we had to move right for v_chf() to have succeeded.
 	 */
 	--vp->m_stop.cno;
-	--vp->m_final.cno;
+
+	/*
+	 * Make any necessary correction to the motion decision made
+	 * by the v_chf routine.
+	 */
+	if (!ISMOTION(vp))
+		vp->m_final = vp->m_stop;
 
 	VIP(sp)->csearchdir = tSEARCH;
 	return (0);
@@ -127,7 +133,8 @@ v_cht(sp, ep, vp)
 
 /*
  * v_chf -- [count]fc
- *	Search forward in the line for the next occurrence of the character.
+ *	Search forward in the line for the next occurrence of the
+ *	specified character.
  */
 int
 v_chf(sp, ep, vp)
@@ -167,7 +174,7 @@ v_chf(sp, ep, vp)
 		return (1);
 	}
 
-	endp = (startp = p) + len;
+	endp = (startp = p) + len - 1;
 	p += vp->m_start.cno;
 	for (cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
 		while (++p < endp && *p != key);
@@ -189,8 +196,8 @@ v_chf(sp, ep, vp)
 
 /*
  * v_chT -- [count]Tc
- *	Search backward in the line for the next occurrence of the character.
- *	Place the cursor to its right.
+ *	Search backward in the line for the character after the next
+ *	occurrence of the specified character.
  */
 int
 v_chT(sp, ep, vp)
@@ -202,12 +209,22 @@ v_chT(sp, ep, vp)
 		return (1);
 
 	/*
-	 * v_chF places the cursor on the character, and the 'T' command
-	 * wants it to its right.  We know this is safe since we had to
-	 * have moved left for v_chF() to have succeeded.
+	 * v_chF places the cursor on the character, where the 'T'
+	 * command wants it to its right.  We know this is safe since
+	 * we had to move left for v_chF() to have succeeded.
 	 */
 	++vp->m_stop.cno;
-	++vp->m_final.cno;
+
+	/*
+	 * Make any necessary correction to the motion decision made
+	 * by the v_chF routine.
+	 *
+	 * XXX
+	 * If you change this, notice that v_chF changes vp->m_start
+	 * AFTER setting vp->m_final.
+	 */
+	if (!F_ISSET(vp, VC_Y))
+		vp->m_final = vp->m_stop;
 
 	VIP(sp)->csearchdir = TSEARCH;
 	return (0);
@@ -215,8 +232,8 @@ v_chT(sp, ep, vp)
 
 /*
  * v_chF -- [count]Fc
- *	Search backward in the line for the next occurrence of the character.
- *	Place the cursor on it.
+ *	Search backward in the line for the next occurrence of the
+ *	specified character.
  */
 int
 v_chF(sp, ep, vp)
