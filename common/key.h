@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: key.h,v 10.37 2001/04/25 23:42:44 skimo Exp $ (Berkeley) $Date: 2001/04/25 23:42:44 $
+ *	$Id: key.h,v 10.38 2001/04/26 11:07:01 skimo Exp $ (Berkeley) $Date: 2001/04/26 11:07:01 $
  */
 
 #include "multibyte.h"
@@ -42,6 +42,14 @@ typedef	u_int		ARG_CHAR_T;
     sp->conv->int2disp(sp, w, wlen, &sp->wp->cw, &nlen),	    \
     n = sp->wp->cw.bp1
 #define CONST
+#define ISCNTRL(ch) \
+    iswcntrl((ch))
+#define ISDIGIT(ch) \
+    iswdigit((ch))
+#define ISPRINT(ch) \
+    iswprint((ch))
+#define CHAR_WIDTH(sp, ch)  wcwidth(ch)
+#define INTISWIDE(c)	(!!(c >> 8))	    /* XXX wrong name */
 #else
 #define FILE2INT(sp,n,nlen,w,wlen) \
     w = n, wlen = nlen
@@ -54,16 +62,18 @@ typedef	u_int		ARG_CHAR_T;
 #define INT2DISP(sp,w,wlen,n,nlen) \
     n = w, nlen = wlen
 #define CONST const
+#define ISCNTRL(ch) \
+    iscntrl((ch))
+#define ISDIGIT(ch) \
+    isdigit((ch))
+#define ISPRINT(ch) \
+    isprint((ch))
+#define INTISWIDE(c)	    0
+#define CHAR_WIDTH(sp, ch)  1
 #endif
 #define CHAR2INT(sp,n,nlen,w,wlen)					    \
     CHAR2INTB(sp,n,nlen,w,wlen,sp->wp->cw)
 
-#define ISCNTRL(ch) \
-    iscntrl((u_char)(ch))
-#define ISDIGIT(ch) \
-    isdigit((u_char)(ch))
-#define ISPRINT(ch) \
-    isprint((u_char)(ch))
 #define MEMCPYW(to, from, n) \
     memcpy(to, from, (n) * sizeof(CHAR_T))
 #define MEMMOVEW(to, from, n) \
@@ -157,7 +167,7 @@ struct _event {
 
 typedef struct _keylist {
 	e_key_t value;			/* Special value. */
-	UCHAR_T	ch;			/* Key. */
+	CHAR_T	ch;			/* Key. */
 } KEYLIST;
 extern KEYLIST keylist[];
 

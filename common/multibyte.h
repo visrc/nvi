@@ -2,6 +2,7 @@
 #define MULTIBYTE_H
 
 #include <wchar.h>
+#include <wctype.h>
 
 #ifdef USE_WIDECHAR
 typedef	int		RCHAR_T;
