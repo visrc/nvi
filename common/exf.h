@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 5.20 1992/12/05 11:05:19 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:05:19 $
+ *	$Id: exf.h,v 5.21 1992/12/20 15:12:05 bostic Exp $ (Berkeley) $Date: 1992/12/20 15:12:05 $
  */
 
 #ifndef _EXF_H_
@@ -54,21 +54,20 @@ typedef struct exf {
 	recno_t	rptlines;		/* Lines modified by command. */
 	char *rptlabel;			/* How lines modified. */
 
-#define	F_FORGET	-1		/* Forgotten. */
-#define	F_UNDO		 1		/* Undo command. */
-	int remember;			/* Last command value. */
-
 	char *name;			/* File name. */
 	size_t nlen;			/* File name length. */
 
-#define	F_IGNORE	0x001		/* File inserted later. */
-#define	F_IN_GLOBAL	0x002		/* In global command. */
-#define	F_MODIFIED	0x004		/* File was modified. */
-#define	F_NAMECHANGED	0x008		/* File name changed. */
-#define	F_NEWSESSION	0x010		/* File newly edited. */
-#define	F_NONAME	0x020		/* File has no name. */
-#define	F_RDONLY	0x040		/* File is read-only. */
-#define	F_RE_SET	0x080		/* RE has been set. */
+#define	F_IGNORE	0x0001		/* File not on the command line. */
+#define	F_IN_GLOBAL	0x0002		/* Doing a global command. */
+#define	F_MODIFIED	0x0004		/* File has been modified. */
+#define	F_NAMECHANGED	0x0008		/* File name was changed. */
+#define	F_NEWSESSION	0x0010		/* File has just been edited. */
+#define	F_NONAME	0x0020		/* File has no name. */
+#define	F_RDONLY	0x0040		/* File is read-only. */
+#define	F_RE_SET	0x0080		/* The file's RE has been set. */
+#define	F_REDRAW	0x0100		/* Repaint the screen. */
+#define	F_RESIZE	0x0200		/* Resize the screen. */
+#define	F_UNDO		0x0400		/* No change since last undo. */
 
 #define	FF_SET(ep, f)	(ep)->flags |= (f)
 #define	FF_CLR(ep, f)	(ep)->flags &= ~(f)
