@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 5.13 1993/02/16 20:08:33 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:08:33 $";
+static char sccsid[] = "$Id: v_init.c,v 5.14 1993/02/24 13:00:34 bostic Exp $ (Berkeley) $Date: 1993/02/24 13:00:34 $";
 #endif /* not lint */
 
 #include <curses.h>
@@ -14,10 +14,10 @@ static char sccsid[] = "$Id: v_init.c,v 5.13 1993/02/16 20:08:33 bostic Exp $ (B
 #include <stdio.h>
 
 #include "vi.h"
-#include "vcmd.h"
 #include "options.h"
 #include "screen.h"
 #include "term.h"
+#include "vcmd.h"
 
 #ifdef	FWOPEN_NOT_AVAILABLE
 #include <sys/types.h>
@@ -74,20 +74,13 @@ v_init(ep)
 	ep->stdfp = fwopen(ep, v_exwrite);
 #endif
 
-	if (ISSET(O_COMMENT) && v_comment(ep))
+	if (scr_begin(ep))
 		return (1);
 
-	ep->lines = LINES;		/* XXX: Way ugly. */
-	ep->cols = COLS;
-
-	if (!FF_ISSET(ep, F_NEWSESSION)) {
-		ep->otop = ep->top = ep->lno;
-		ep->cno = 0;
-	}
-	FF_SET(ep, F_REDRAW);
-
-	scr_begin(ep);
-
+	if (FF_ISSET(ep, F_NEWSESSION) &&
+	    ISSET(O_COMMENT) && v_comment(ep))
+		return (1);
+	SCRCNO(ep) = 0;
 	return (0);
 }
 
