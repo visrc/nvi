@@ -28,16 +28,17 @@ cd $S/build.local && make cleandocs docs
 
 # cleanup
 cd $S && allout
-cd $S && mv build.local RCS/
+cd $S && mv build.local SCCS/
 find . -type d \! -perm 775
 find . \( -name '*.rej' -o -name '*.orig' \)
-find . -name RCS -prune -o -name SCCS -prune -o \
+find . -name ARCHIVE -prune -o -name SCCS -prune -o \
     -type f \( -perm -200 -o -perm -2 -o -perm -20 \)
 chown -R bin.wsrc .
 
 # create
+cd $S && mv -i ARCHIVE SCCS/ARCHIVE
 cd $S/.. && mv -i nvi nvi-$VERSION
 tar cFFf - nvi-$VERSION | gzip --best > /tmp/nvi-$VERSION.tar.gz
 chmod 444 /tmp/nvi-$VERSION.tar.gz && mv -i nvi-$VERSION nvi
-cd $S && mv RCS/build.local .
+cd $S && mv SCCS/build.local SCCS/ARCHIVE .
 cd $S/docs && sco changelog
