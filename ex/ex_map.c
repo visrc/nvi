@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_map.c,v 8.1 1993/06/09 22:24:37 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:24:37 $";
+static char sccsid[] = "$Id: ex_map.c,v 8.2 1993/08/19 15:05:19 bostic Exp $ (Berkeley) $Date: 1993/08/19 15:05:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,8 +19,8 @@ static char sccsid[] = "$Id: ex_map.c,v 8.1 1993/06/09 22:24:37 bostic Exp $ (Be
 #include "excmd.h"
 
 /*
- * ex_map -- :map[!] [key replacement]
- *	Map a key or display mapped keys.
+ * ex_map -- :map[!] [input] [replacement]
+ *	Map a key/string or display mapped keys.
  */
 int
 ex_map(sp, ep, cmdp)
@@ -28,37 +28,30 @@ ex_map(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	register int ch;
-	register char *input, *output;
+	char *input, *output;
 	enum seqtype stype;
 	int key;
-	char *name, *s, buf[10];
+	char *name, buf[10];
 
 	stype = F_ISSET(cmdp, E_FORCE) ? SEQ_INPUT : SEQ_COMMAND;
 
-	if (cmdp->string == NULL) {
+	switch (cmdp->argc) {
+	case 0:
 		if (seq_dump(sp, stype, 1) == 0)
-			msgq(sp, M_ERR, "No map entries.");
+			msgq(sp, M_INFO, "No %s map entries.",
+			    stype == SEQ_INPUT ? "input" : "command");
 		return (0);
+	case 2:
+		input = cmdp->argv[0];
+		output = cmdp->argv[1];
+		break;
+	default:
+		abort();
 	}
 
 	/*
-	 * Input is the first word, output is everything else, i.e. any space
-	 * characters are included.  This is why we can't parse this command
-	 * in the main parser.
-	 */
-	for (input = cmdp->string; isspace(*input); ++input);
-	for (output = input; (ch = *output) && !isspace(ch); ++output);
-	if (*output != '\0')
-		for (*output++ = '\0'; isspace(*output); ++output);
-	if (*output == '\0') {
-		msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
-		return (1);
-	}
-	
-	/*
-	 * If the mapped string is #[0-9], then map to a function
-	 * key.
+	 * If the mapped string is #[0-9] (and wasn't quoted in any
+	 * way, then map to a function key.
 	 */
 	if (input[0] == '#' && isdigit(input[1]) && !input[2]) {
 		key = atoi(input + 1);
@@ -81,18 +74,12 @@ ex_map(sp, ep, cmdp)
 		if (stype == SEQ_COMMAND && input[1] == '\0')
 			switch (sp->special[input[0]]) {
 			case K_COLON:
-				s = ":";
-				goto noremap;
 			case K_CR:
-				s = "\\r";
-				goto noremap;
 			case K_ESCAPE:
-				s = "^[";
-				goto noremap;
 			case K_NL:
-				s = "\\n";
-noremap:			msgq(sp, M_ERR,
-				    "The %s character may not be remapped.", s);
+				msgq(sp, M_ERR,
+				    "The %s character may not be remapped.",
+				    charname(sp, input[0]));
 				return (1);
 			}
 	}
@@ -114,7 +101,7 @@ ex_unmap(sp, ep, cmdp)
 	input = cmdp->argv[0];
 	if (seq_delete(sp,
 	    input, F_ISSET(cmdp, E_FORCE) ? SEQ_INPUT : SEQ_COMMAND)) {
-		msgq(sp, M_ERR, "\"%s\" isn't mapped.", input);
+		msgq(sp, M_INFO, "\"%s\" isn't mapped.", input);
 		return (1);
 	}
 	return (0);
