@@ -11,39 +11,6 @@
 
 static MARK rval;
 
-/* This moves the cursor to a particular row on the screen */
-/*ARGSUSED*/
-MARK *m_row(m, cnt, key)
-	MARK	*m;	/* the cursor position */
-	long	cnt;	/* the row we'll move to */
-	int	key;	/* the keystroke of this move - H/L/M */
-{
-	SETDEFCNT(1);
-
-	/* calculate destination line based on key */
-	cnt--;
-	switch (key)
-	{
-	  case 'H':
-		cnt = topline + cnt;
-		break;
-
-	  case 'M':
-		cnt = topline + (LINES - 1) / 2;
-		break;
-
-	  case 'L':
-		cnt = BOTLINE - cnt;
-		break;
-	}
-
-	/* return the mark of the destination line */
-	m->lno = cnt;
-	rval = *m;
-	return (&rval);
-}
-
-
 /* This function repositions the current line to show on a given row */
 /*ARGSUSED*/
 MARK *m_z(m, cnt, key)
