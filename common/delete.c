@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: delete.c,v 5.5 1992/05/21 13:02:33 bostic Exp $ (Berkeley) $Date: 1992/05/21 13:02:33 $";
+static char sccsid[] = "$Id: delete.c,v 5.6 1992/05/27 10:31:05 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:31:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,13 +33,6 @@ delete(fm, tm, lmode)
 	size_t len, tlen;
 	char *bp, *p;
 
-	/* Make cut from fm and to tm, swapping pointers if necessary. */
-	if (fm->lno > tm->lno || fm->lno == tm->lno && fm->cno > tm->cno) {
-		m = *fm;
-		*fm = *tm;
-		*tm = m;
-	}
-
 #if DEBUG && 1
 	TRACE("delete: from {%lu, %d}, to {%lu, %d}\n",
 	    fm->lno, fm->cno, tm->lno, tm->cno);
@@ -59,8 +52,7 @@ delete(fm, tm, lmode)
 		 * line number and reset the count to max column + 1.
 		 */
 		if (tm->cno == 0) {
-			--tm->lno;
-			EGETLINE(p, tm->lno, len);
+			EGETLINE(p, --tm->lno, len);
 			tm->cno = len;
 		}
 		/* If deleting within a single line, it's easy. */
