@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 8.30 1994/07/23 13:32:02 bostic Exp $ (Berkeley) $Date: 1994/07/23 13:32:02 $";
+static char sccsid[] = "$Id: cut.c,v 8.31 1994/07/28 12:36:25 bostic Exp $ (Berkeley) $Date: 1994/07/28 12:36:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -84,14 +84,25 @@ cut(sp, ep, namep, fm, tm, flags)
 	 * like appends to buffers that are used multiple times.)
 	 *
 	 * Otherwise, if it's supposed to be put in a numeric buffer (usually
-	 * a delete) put it there.
+	 * a delete) put it there.  The rules for putting things in numeric
+	 * buffers were historically a little strange.  There were three cases.
+	 *
+	 *	1: Some motions are always line mode motions, which means
+	 *	   that the cut always goes into the numeric buffers.
+	 *	2: Some motions aren't line mode motions, e.g. d10w, but
+	 *	   can cross line boundaries.  For these commands, if the
+	 *	   cut crosses a line boundary, it goes into the numeric
+	 *	   buffers.  This includes most of the commands.
+	 *	3: Some motions aren't line mode motions, e.g. d`<char>,
+	 *	   but always go into the numeric buffers, regardless.  This
+	 *	   was the commands: % ` / ? ( ) N n { -- and nvi adds ^A.
 	 *
 	 * Otherwise, put it in the unnamed buffer.
 	 */
 	append = copy_one = copy_def = 0;
 	if (namep != NULL) {
 		name = *namep;
-		if (LF_ISSET(CUT_NBUFFER) &&
+		if (LF_ISSET(CUT_NUMREQ) || LF_ISSET(CUT_NUMOPT) && 
 		    (LF_ISSET(CUT_LINEMODE) || fm->lno != tm->lno)) {
 			copy_one = 1;
 			cb_rotate(sp);
@@ -102,7 +113,7 @@ cut(sp, ep, namep, fm, tm, flags)
 			name = tolower(name);
 		}
 namecb:		CBNAME(sp, cbp, name);
-	} else if (LF_ISSET(CUT_NBUFFER) &&
+	} else if (LF_ISSET(CUT_NUMREQ) || LF_ISSET(CUT_NUMOPT) &&
 	    (LF_ISSET(CUT_LINEMODE) || fm->lno != tm->lno)) {
 		name = '1';
 		cb_rotate(sp);

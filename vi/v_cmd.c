@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 8.37 1994/07/27 11:07:12 bostic Exp $ (Berkeley) $Date: 1994/07/27 11:07:12 $";
+static char sccsid[] = "$Id: v_cmd.c,v 8.38 1994/07/28 12:36:37 bostic Exp $ (Berkeley) $Date: 1994/07/28 12:36:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,7 +34,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 /* 000 NUL -- The code in vi.c expects key 0 to be undefined. */
 	{NULL},
 /* 001  ^A */
-	{v_searchw,	V_ABS|V_CNT|V_MOVE|V_KEYW|VM_RCM_SET,
+	{v_searchw,	V_ABS|V_CNT|V_MOVE|V_KEYW|VM_CUTREQ|VM_RCM_SET,
 	    "[count]^A",
 	    "^A search forward for cursor word"},
 /* 002  ^B */
@@ -162,7 +162,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    " [count]$",
 	    " $ move to last column"},
 /* 045   % */
-	{v_match,	V_ABS|V_CNT|V_MOVE|VM_RCM_SET,
+	{v_match,	V_ABS|V_CNT|V_MOVE|VM_CUTREQ|VM_RCM_SET,
 	    "%",
 	    " % move to match"},
 /* 046   & */
@@ -174,11 +174,11 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    "'['a-z]",
 	    " ' move to mark (to first non-blank)"},
 /* 050   ( */
-	{v_sentenceb,	V_ABS|V_CNT|V_MOVE|VM_RCM_SET,
+	{v_sentenceb,	V_ABS|V_CNT|V_MOVE|VM_CUTREQ|VM_RCM_SET,
 	    "[count](",
 	    " ( move back sentence"},
 /* 051   ) */
-	{v_sentencef,	V_ABS|V_CNT|V_MOVE|VM_RCM_SET,
+	{v_sentencef,	V_ABS|V_CNT|V_MOVE|VM_CUTREQ|VM_RCM_SET,
 	    "[count])",
 	    " ) move forward sentence"},
 /* 052   * */
@@ -200,7 +200,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    ".",
 	    " . repeat the last command"},
 /* 057   / */
-	{v_searchf,	V_ABS_C|V_MOVE|VM_RCM_SET,
+	{v_searchf,	V_ABS_C|V_MOVE|VM_CUTREQ|VM_RCM_SET,
 	    "/RE[/ offset]",
 	    " / search forward"},
 /* 060   0 */
@@ -244,7 +244,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    "[count]>[count]motion",
 	    " > shift lines right to motion"},
 /* 077   ? */
-	{v_searchb,	V_ABS_C|V_MOVE|VM_RCM_SET,
+	{v_searchb,	V_ABS_C|V_MOVE|VM_CUTREQ|VM_RCM_SET,
 	    "?RE[? offset]",
 	    " ? search backward"},
 /* 100   @ */
@@ -302,7 +302,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    "M",
 	    " M move to screen middle"},
 /* 116   N */
-	{v_searchN,	V_ABS_C|V_MOVE|VM_RCM_SET,
+	{v_searchN,	V_ABS_C|V_MOVE|VM_CUTREQ|VM_RCM_SET,
 	    "n",
 	    " N reverse last search"},
 /* 117   O */
@@ -379,7 +379,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    "_",
 	    " _ move to first non-blank"},
 /* 140   ` */
-	{v_bmark,	V_ABS_C|V_CHAR|V_MOVE|VM_RCM_SET,
+	{v_bmark,	V_ABS_C|V_CHAR|V_MOVE|VM_CUTREQ|VM_RCM_SET,
 	    "`[`a-z]",
 	    " ` move to mark"},
 /* 141   a */
@@ -433,7 +433,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    "m[a-z]",
 	    " m set mark"},
 /* 156   n */
-	{v_searchn,	V_ABS_C|V_MOVE|VM_RCM_SET,
+	{v_searchn,	V_ABS_C|V_MOVE|VM_CUTREQ|VM_RCM_SET,
 	    "n",
 	    " n repeat last search"},
 /* 157   o */
@@ -489,7 +489,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    "[line]z[window_size][-|.|+|^|<CR>]",
 	    " z redraw window"},
 /* 173   { */
-	{v_paragraphb,	V_ABS|V_CNT|V_MOVE|VM_RCM_SET,
+	{v_paragraphb,	V_ABS|V_CNT|V_MOVE|VM_CUTREQ|VM_RCM_SET,
 	    "[count]{",
 	    " { move back paragraph"},
 /* 174   | */

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 8.37 1994/07/20 16:28:10 bostic Exp $ (Berkeley) $Date: 1994/07/20 16:28:10 $";
+static char sccsid[] = "$Id: v_itxt.c,v 8.38 1994/07/28 12:37:34 bostic Exp $ (Berkeley) $Date: 1994/07/28 12:37:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -612,7 +612,7 @@ v_change(sp, ep, vp)
 			 */
 			if (cut(sp, ep,
 			    F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
-			    &vp->m_start, &vp->m_stop, lmode | CUT_NBUFFER))
+			    &vp->m_start, &vp->m_stop, lmode | CUT_NUMOPT))
 				return (1);
 			if (len == 0)
 				LF_SET(TXT_APPENDEOL);
@@ -638,7 +638,7 @@ v_change(sp, ep, vp)
 	 */
 	if (cut(sp, ep,
 	    F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
-	    &vp->m_start, &vp->m_stop, lmode | CUT_NBUFFER))
+	    &vp->m_start, &vp->m_stop, lmode | CUT_NUMOPT))
 		return (1);
 
 	/* If replacing entire lines and there's leading text. */
