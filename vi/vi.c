@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.3 1993/07/06 07:31:56 bostic Exp $ (Berkeley) $Date: 1993/07/06 07:31:56 $";
+static char sccsid[] = "$Id: vi.c,v 8.4 1993/07/06 07:33:04 bostic Exp $ (Berkeley) $Date: 1993/07/06 07:33:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -302,8 +302,7 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 				*vp = *dp;
 				return (0);
 			}
-			msgq(sp, M_ERR,
-			    "No commands which set dot executed yet.");
+			msgq(sp, M_ERR, "No command to repeat.");
 		} else
 			msgq(sp, M_ERR,
 			    "%s isn't a command", charname(sp, key));
