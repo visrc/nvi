@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.5 1993/07/06 15:16:26 bostic Exp $ (Berkeley) $Date: 1993/07/06 15:16:26 $";
+static char sccsid[] = "$Id: vi.c,v 8.6 1993/08/06 09:45:23 bostic Exp $ (Berkeley) $Date: 1993/08/06 09:45:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -49,8 +49,27 @@ vi(sp, ep)
 
 	/* Command initialization. */
 	memset(&cmd, 0, sizeof(VICMDARG));
-	memset(&dot, 0, sizeof(VICMDARG));
-	memset(&dotmotion, 0, sizeof(VICMDARG));
+
+	/*
+	 * XXX
+	 * Declaring these correctly in screen.h would mean that screen.h
+	 * would require vcmd.h, which I wanted to avoid.  The solution is
+	 * probably to have a vi private area in the SCR structure, but
+	 * that will require more reorganization than I want right now.
+	 */
+	if (sp->sdot == NULL) {
+		sp->sdot = malloc(sizeof(VICMDARG));
+		sp->sdotmotion = malloc(sizeof(VICMDARG));
+		if (sp->sdot == NULL || sp->sdotmotion == NULL) {
+			msgq(sp, M_ERR, "Error: %s", strerror(errno));
+			return (1);
+		}
+	}
+	dot = *(VICMDARG *)sp->sdot;
+	dotmotion = *(VICMDARG *)sp->sdotmotion;
+
+	/* Edited as it can be. */
+	F_SET(sp->frp, FR_EDITED);
 
 	for (eval = 0;;) {
 		if (!term_more_pseudo(sp) && log_cursor(sp, ep))
@@ -101,10 +120,12 @@ vi(sp, ep)
 		} else {
 			fm.lno = sp->lno;
 			fm.cno = sp->cno;
-			if (F_ISSET(vp->kp, V_LMODE) &&
-			    F_ISSET(vp, VC_C1SET)) {
-				tm.lno = sp->lno + vp->count - 1;
-				tm.cno = sp->cno;
+			if (F_ISSET(vp->kp, V_LMODE)) {
+				F_SET(vp, VC_LMODE);
+				if (F_ISSET(vp, VC_C1SET)) {
+					tm.lno = sp->lno + vp->count - 1;
+					tm.cno = sp->cno;
+				}
 			} else
 				tm = fm;
 		}
@@ -183,6 +204,9 @@ err:				term_flush_pseudo(sp);
 			sp->rcm = sp->sc_col;
 		}
 	}
+	*(VICMDARG *)sp->sdot = dot;
+	*(VICMDARG *)sp->sdotmotion = dotmotion;
+
 	return (v_end(sp) || eval);
 }
 
