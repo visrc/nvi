@@ -6,11 +6,11 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: vi.h,v 10.24 2000/04/21 19:00:41 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:41 $
+ *	$Id: vi.h,v 10.25 2000/07/19 19:01:59 skimo Exp $ (Berkeley) $Date: 2000/07/19 19:01:59 $
  */
 
 /* Definition of a vi "word". */
-#define	inword(ch)	(isalnum(ch) || (ch) == '_')
+#define	inword(ch)	(ch <= 255 && (isalnum(ch) || (ch) == '_'))
 
 typedef struct _vikeys VIKEYS;
 
