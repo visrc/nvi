@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 8.27 1994/05/17 10:44:04 bostic Exp $ (Berkeley) $Date: 1994/05/17 10:44:04 $";
+static char sccsid[] = "$Id: cut.c,v 8.28 1994/05/26 09:03:43 bostic Exp $ (Berkeley) $Date: 1994/05/26 09:03:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -96,8 +96,9 @@ cut(sp, ep, namep, fm, tm, flags)
 			cb_rotate(sp);
 			copy = NEEDCOPY;
 		}
+		if ((append = isupper(name)) == 1)
+			name = tolower(name);
 namecb:		CBNAME(sp, cbp, name);
-		append = isupper(name);
 		namedbuffer = 1;
 	} else if (LF_ISSET(CUT_DELETE) &&
 	    (LF_ISSET(CUT_LINEMODE) || fm->lno != tm->lno)) {
