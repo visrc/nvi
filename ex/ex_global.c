@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 5.7 1992/05/07 12:46:49 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:46:49 $";
+static char sccsid[] = "$Id: ex_global.c,v 5.8 1992/05/15 11:08:48 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:08:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -93,6 +93,7 @@ global(cmdp, cmd)
 	/* for each line in the range */
 	doingglobal = 1;
 	isv = cmd == VGLOBAL;
+#ifdef notdef
 	ChangeText
 	{
 		/* NOTE: we have to go through the lines in a forward order,
@@ -126,6 +127,7 @@ global(cmdp, cmd)
 			}
 		}
 	}
+#endif
 	doingglobal = 0;
 
 	/* free the regexp */
