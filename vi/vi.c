@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.70 1994/05/21 09:50:56 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:50:56 $";
+static char sccsid[] = "$Id: vi.c,v 8.71 1994/06/29 18:37:08 bostic Exp $ (Berkeley) $Date: 1994/06/29 18:37:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -203,6 +203,9 @@ vi(sp, ep)
 			 */
 			if (F_ISSET(vp, VC_C1RESET))
 				F_SET(DOT, VC_C1SET);
+
+			/* Motion flags aren't retained. */
+			F_CLR(DOT, VM_LDOUBLE | VM_LMODE | VM_NOMOTION);
 
 			/* RCM flags aren't retained. */
 			F_CLR(DOT, VM_RCM_MASK);
@@ -504,10 +507,15 @@ getmotion(sp, ep, dm, vp)
 	u_long cnt;
 	int notused;
 
-	/* If '.' command, use the dot motion, else get the motion command. */
+	/*
+	 * If '.' command, use the dot motion, else get the motion command.
+	 * Clear any line motion flags, the subsequent motion isn't always
+	 * the same, i.e. "/aaa" may or may not be a line motion.
+	 */
 	if (F_ISSET(vp, VC_ISDOT)) {
 		motion = *dm;
 		F_SET(&motion, VC_ISDOT);
+		F_CLR(&motion, VM_LDOUBLE | VM_LMODE | VM_NOMOTION);
 	} else if (getcmd(sp, ep, NULL, &motion, vp, &notused))
 		return (1);
 
