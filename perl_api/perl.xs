@@ -14,7 +14,7 @@
 #undef VI
 
 #ifndef lint
-static const char sccsid[] = "$Id: perl.xs,v 8.44 2001/07/29 19:39:35 skimo Exp $ (Berkeley) $Date: 2001/07/29 19:39:35 $";
+static const char sccsid[] = "$Id: perl.xs,v 8.45 2001/07/29 19:51:21 skimo Exp $ (Berkeley) $Date: 2001/07/29 19:51:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1172,6 +1172,26 @@ DESTROY(screen)
 	CODE:
 	# typemap did all the checking
 	SvREFCNT_dec((SV*)SvIV((SV*)SvRV(ST(0))));
+
+int
+EXISTS(screen, mark)
+	VI::MARK screen
+	char mark
+
+	PREINIT:
+	struct _mark cursor;
+	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
+	int rval = 0; /* never croak */
+	int missing;
+
+	CODE:
+	INITMESSAGE(screen);
+	missing = api_getmark(screen, (int)mark, &cursor);
+	ENDMESSAGE(screen);
+	RETVAL = !missing;
+
+	OUTPUT:
+	RETVAL
 
 AV *
 FETCH(screen, mark)
