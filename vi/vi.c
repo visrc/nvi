@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.87 1994/08/14 10:49:37 bostic Exp $ (Berkeley) $Date: 1994/08/14 10:49:37 $";
+static char sccsid[] = "$Id: vi.c,v 8.88 1994/08/14 11:00:11 bostic Exp $ (Berkeley) $Date: 1994/08/14 11:00:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -275,6 +275,13 @@ vi(sp, ep)
 		 * but it's not worth cleaning up.  This is done after the
 		 * err: lable, so that if the "error" was an interupt it gets
 		 * cleaned up.
+		 *
+		 * !!!
+		 * Previous versions of nvi cleared mapped characters on error,
+		 * even if it wasn't an interrupt.  This feature was removed as
+		 * users complained that it wasn't historic practice and that
+		 * they used leading (illegal) <escape> characters in the map
+		 * to clean up vi state before the map was interpreted.
 		 */
 err:		if (INTERRUPTED(sp))
 			term_flush(sp, "Interrupted", CH_MAPPED);
