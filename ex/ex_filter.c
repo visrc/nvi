@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 8.11 1993/09/13 13:57:04 bostic Exp $ (Berkeley) $Date: 1993/09/13 13:57:04 $";
+static char sccsid[] = "$Id: ex_filter.c,v 8.12 1993/09/13 19:35:35 bostic Exp $ (Berkeley) $Date: 1993/09/13 19:35:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -335,7 +335,7 @@ filter_ldisplay(sp, fp)
 	size_t len;
 
 	while (!ex_getline(sp, fp, &len)) {
-		(void)fprintf(sp->stdfp, "%.*s\n", len, sp->ibp);
+		(void)fprintf(sp->stdfp, "%.*s\n", (int)len, sp->ibp);
 		if (ferror(sp->stdfp)) {
 			msgq(sp, M_ERR, "I/O error: %s", strerror(errno));
 			(void)fclose(fp);
