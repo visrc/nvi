@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.105 1994/05/04 09:37:04 bostic Exp $ (Berkeley) $Date: 1994/05/04 09:37:04 $
+ *	$Id: screen.h,v 8.106 1994/05/04 13:39:25 bostic Exp $ (Berkeley) $Date: 1994/05/04 13:39:25 $
  */
 
 /*
@@ -277,15 +277,12 @@ struct _scr {
 };
 
 /* Signals/timers have no structure, so the routines are here. */
+void	 busy_off __P((SCR *));
+int	 busy_on __P((SCR *, char const *));
+void	 h_tstp __P((int));
+int	 rcv_on __P((SCR *, EXF *));
 void	 sig_end __P((void));
 int	 sig_init __P((SCR *));
-int	 busy_on __P((SCR *, char const *));
-void	 busy_off __P((SCR *));
-int	 rcv_on __P((SCR *, EXF *));
-
-/* Interrupts have no structure, so routines are here. */
-void	 intr_end __P((SCR *));
-int	 intr_init __P((SCR *));
 
 /* Generic routines to start/stop a screen. */
 int	 screen_end __P((SCR *));
