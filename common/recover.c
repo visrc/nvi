@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.9 1993/08/22 12:09:05 bostic Exp $ (Berkeley) $Date: 1993/08/22 12:09:05 $";
+static char sccsid[] = "$Id: recover.c,v 8.10 1993/08/23 09:57:04 bostic Exp $ (Berkeley) $Date: 1993/08/23 09:57:04 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -94,6 +94,7 @@ rcv_tmp(sp, ep, fname)
 		msgq(sp, M_ERR, "Error: %s", strerror(errno));
 		return (1);
 	}
+	F_SET(ep, F_RCV_ON);
 	return (0);
 }
 
@@ -131,7 +132,7 @@ rcv_init(sp, ep)
 
 	if (!F_ISSET(sp->gp, G_RECOVER_SET)) {
 		/* Start the recovery timer. */
-		(void)signal(SIGALRM, SIG_IGN);
+		(void)signal(SIGALRM, rcv_alrm);
 		value.it_interval.tv_sec = value.it_interval.tv_usec = 0;
 		value.it_value.tv_sec = RCV_PERIOD;
 		value.it_value.tv_usec = 0;
@@ -140,11 +141,6 @@ rcv_init(sp, ep)
 			    "Error: setitimer: %s", strerror(errno));
 			goto err2;
 		}
-		(void)signal(SIGALRM, rcv_alrm);
-
-		/* Initialize the about-to-die handler. */
-		(void)signal(SIGHUP, rcv_hup);
-		(void)signal(SIGTERM, rcv_term);
 	}
 
 	F_SET(ep, F_RCV_ON);
@@ -306,9 +302,11 @@ rcv_hup(signo)
 	 * saved.
 	 */
 	for (sp = __global_list->scrhdr.next;
-	    sp != (SCR *)&__global_list->scrhdr; sp = sp->next)
-		if (sp->ep != NULL)
-			if (F_ISSET(sp->ep, F_RCV_ON)) {
+	    sp != (SCR *)&__global_list->scrhdr; sp = sp->next) {
+		F_SET(sp, S_TERMSIGNAL);
+		if (sp->ep != NULL) {
+			if (F_ISSET(sp->ep, F_MODIFIED) &&
+			    F_ISSET(sp->ep, F_RCV_ON)) {
 				(void)sp->ep->db->sync(sp->ep->db, R_RECNOSYNC);
 				F_CLR(sp->ep, F_RCV_ON);
 				F_SET(sp->ep, F_RCV_NORM);
@@ -318,8 +316,10 @@ rcv_hup(signo)
 					    sp->ep->rcv_mpath);
 					(void)system(comm);
 				}
-			} else if (!F_ISSET(sp->ep, F_RCV_NORM))
-				(void)unlink(sp->ep->rcv_path);
+			}
+			(void)file_end(sp, sp->ep, 1);
+		}
+	}
 
 	/* Die with the proper exit status. */
 	(void)signal(SIGHUP, SIG_DFL);
@@ -349,14 +349,18 @@ rcv_term(signo)
 	 * each file once.
 	 */
 	for (sp = __global_list->scrhdr.next;
-	    sp != (SCR *)&__global_list->scrhdr; sp = sp->next)
-		if (sp->ep != NULL)
-			if (F_ISSET(sp->ep, F_RCV_ON)) {
+	    sp != (SCR *)&__global_list->scrhdr; sp = sp->next) {
+		F_SET(sp, S_TERMSIGNAL);
+		if (sp->ep != NULL) {
+			if (F_ISSET(sp->ep, F_MODIFIED) &&
+			    F_ISSET(sp->ep, F_RCV_ON)) {
 				(void)sp->ep->db->sync(sp->ep->db, R_RECNOSYNC);
 				F_CLR(sp->ep, F_RCV_ON);
 				F_SET(sp->ep, F_RCV_NORM);
-			} else if (!F_ISSET(sp->ep, F_RCV_NORM))
-				(void)unlink(sp->ep->rcv_path);
+			}
+			(void)file_end(sp, sp->ep, 1);
+		}
+	}
 
 	/* Die with the proper exit status. */
 	(void)signal(SIGTERM, SIG_DFL);
