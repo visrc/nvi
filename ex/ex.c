@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.16 1992/04/17 08:53:56 bostic Exp $ (Berkeley) $Date: 1992/04/17 08:53:56 $";
+static char sccsid[] = "$Id: ex.c,v 5.17 1992/04/17 09:39:38 bostic Exp $ (Berkeley) $Date: 1992/04/17 09:39:38 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -516,6 +516,7 @@ addr2:	switch(cmd.addrcnt) {
 		TRACE("\tbuffer %c", cmd.buffer);
 	for (__cnt = 0; __cnt < cmd.argc; ++__cnt)
 		TRACE("\targ %d: {%s}", __cnt, cmd.argv[__cnt]);
+	TRACE("\n");
 }
 #endif
 	/* Do the command. */
