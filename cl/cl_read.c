@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_read.c,v 10.12 1996/04/27 11:41:18 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:41:18 $";
+static const char sccsid[] = "$Id: cl_read.c,v 10.13 1996/05/03 08:53:49 bostic Exp $ (Berkeley) $Date: 1996/05/03 08:53:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -314,7 +314,6 @@ cl_resize(sp, lines, columns)
 	size_t lines, columns;
 {
 	ARGS *argv[2], a, b;
-	int rval;
 	char b1[1024];
 
 	a.bp = b1;
