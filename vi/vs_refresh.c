@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.18 1993/01/30 17:29:03 bostic Exp $ (Berkeley) $Date: 1993/01/30 17:29:03 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.19 1993/01/31 10:30:14 bostic Exp $ (Berkeley) $Date: 1993/01/31 10:30:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -578,6 +578,12 @@ paint:	if (FF_ISSET(ep, F_REDRAW))
 	FF_CLR(ep, F_REDRAW);
 		
 update:	MOVE(y, ep->scno);
+
+	/* If the screen has been trashed, refresh it all. */
+	if (FF_ISSET(ep, F_REFRESH)) {
+		wrefresh(curscr);
+		FF_CLR(ep, F_REFRESH);
+	}
 
 	/*
 	 * Update the screen information.
