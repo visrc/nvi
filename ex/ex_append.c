@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 9.4 1994/11/12 13:10:04 bostic Exp $ (Berkeley) $Date: 1994/11/12 13:10:04 $";
+static char sccsid[] = "$Id: ex_append.c,v 9.5 1994/12/01 19:36:25 bostic Exp $ (Berkeley) $Date: 1994/12/01 19:36:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -153,7 +153,8 @@ aci(sp, cmdp, cmd)
 			sp->lno = 1;
 		break;
 	case CHANGE:
-		--m.lno;
+		if (m.lno != 0)
+			--m.lno;
 		if (sp->lno != 1)
 			--sp->lno;
 		break;
@@ -161,9 +162,9 @@ aci(sp, cmdp, cmd)
 
 	/*
 	 * !!!
-	 * Cut into the unnamed buffer.
+	 * Cut into the unnamed buffer, if the file isn't empty.
 	 */
-	if (cmd == CHANGE &&
+	if (cmd == CHANGE && cmdp->addr1.lno != 0 &&
 	    (cut(sp, NULL, &cmdp->addr1, &cmdp->addr2, CUT_LINEMODE) ||
 	    delete(sp, &cmdp->addr1, &cmdp->addr2, 1)))
 		goto err;
