@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: recover.c,v 10.15 1996/03/06 19:50:50 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:50:50 $";
+static const char sccsid[] = "$Id: recover.c,v 10.16 1996/03/30 09:28:16 bostic Exp $ (Berkeley) $Date: 1996/03/30 09:28:16 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -23,8 +23,6 @@ static const char sccsid[] = "$Id: recover.c,v 10.15 1996/03/06 19:50:50 bostic 
  * #defines are found there on newer systems.
  */
 #include <sys/file.h>
-
-#include <netdb.h>		/* MAXHOSTNAMELEN on some systems. */
 
 #include <bitstring.h>
 #include <dirent.h>
@@ -339,8 +337,18 @@ rcv_mailfile(sp, issync, cp_path)
 	time_t now;
 	uid_t uid;
 	int fd;
-	char *dp, *p, *t, buf[4096], host[MAXHOSTNAMELEN], mpath[MAXPATHLEN];
+	char *dp, *p, *t, buf[4096], mpath[MAXPATHLEN];
 	char *t1, *t2, *t3;
+
+	/*
+	 * XXX
+	 * MAXHOSTNAMELEN is in various places on various systems, including
+	 * <netdb.h> and <sys/socket.h>.  If not found, use a large default.
+	 */
+#ifndef MAXHOSTNAMELEN
+#define	MAXHOSTNAMELEN	1024
+#endif
+	char host[MAXHOSTNAMELEN];
 
 	if ((pw = getpwuid(uid = getuid())) == NULL) {
 		msgq(sp, M_ERR,
