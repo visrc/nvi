@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.32 1992/11/06 12:23:18 bostic Exp $ (Berkeley) $Date: 1992/11/06 12:23:18 $";
+static char sccsid[] = "$Id: main.c,v 5.33 1992/11/07 18:50:07 bostic Exp $ (Berkeley) $Date: 1992/11/07 18:50:07 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -39,7 +39,6 @@ FILE *tracefp;
 #endif
 
 static jmp_buf jmpenv;
-int reading_exrc;
 
 static void obsolete __P((char *[]));
 static void usage __P((void));
@@ -132,7 +131,6 @@ main(argc, argv)
 	 * XXX
 	 * Check the correct order for these.
 	 */
-	reading_exrc = 1;
 	(void)ex_cfile(_PATH_SYSEXRC, 0);
 	if ((p = getenv("HOME")) != NULL && *p) {
 		(void)snprintf(path, sizeof(path), "%s/.exrc", p);
@@ -149,7 +147,6 @@ main(argc, argv)
 			(void)ex_cstring((u_char *)p, strlen(p), 1);
 			free(p);
 		}
-	reading_exrc = 0;
 
 	/* Initialize file list. */
 	file_init();
