@@ -6,12 +6,14 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.17 1992/05/23 09:34:47 bostic Exp $ (Berkeley) $Date: 1992/05/23 09:34:47 $";
+static char sccsid[] = "$Id: options.c,v 5.18 1992/06/07 13:50:18 bostic Exp $ (Berkeley) $Date: 1992/06/07 13:50:18 $";
 #endif /* not lint */
 
 #include <sys/param.h>
+#include <sys/ioctl.h>
 #include <errno.h>
 #include <curses.h>
+#include <unistd.h>
 #include <stdlib.h>
 #include <strings.h>
 #include <paths.h>
@@ -20,6 +22,7 @@ static char sccsid[] = "$Id: options.c,v 5.17 1992/05/23 09:34:47 bostic Exp $ (
 #include "vi.h"
 #include "excmd.h"
 #include "options.h"
+#include "screen.h"
 #include "term.h"
 #include "extern.h"
 
@@ -61,7 +64,7 @@ OPTIONS opts[] = {
 /* O_CC */
 	"cc",		"cc -c",	OPT_STR,
 /* O_COLUMNS */
-	"columns",	&o_columns,	OPT_NOSAVE|OPT_NUM|OPT_REDRAW,
+	"columns",	&o_columns,	OPT_NOSAVE|OPT_NUM|OPT_REDRAW|OPT_SIZE,
 /* O_DIGRAPH */
 	"digraph",	NULL,		OPT_0BOOL,
 /* O_DIRECTORY */
@@ -83,7 +86,7 @@ OPTIONS opts[] = {
 /* O_KEYTIME */
 	"keytime",	&o_keytime,	OPT_NUM,
 /* O_LINES */
-	"lines",	&o_lines,	OPT_NOSAVE|OPT_NUM|OPT_REDRAW,
+	"lines",	&o_lines,	OPT_NOSAVE|OPT_NUM|OPT_REDRAW|OPT_SIZE,
 /* O_LIST */
 	"list",		NULL,		OPT_0BOOL|OPT_REDRAW,
 /* O_MAGIC */
@@ -207,23 +210,47 @@ static ABBREV abbrev[] = {
  *	Initialize some of the options.  Since the user isn't really "setting"
  *	these variables, we don't set their OPT_SET bits.
  */
-void
+int
 opts_init()
 {
-	char *val;
+	struct  winsize win;
+	u_short row, col;
+	char *s;
 
-	if (val = getenv("COLUMNS"))
-		COLS = atoi(val);
-	LVAL(O_COLUMNS) = COLS;
+	/*
+	 * Get the screen rows and columns.  The idea is to duplicate what
+	 * curses will do to figure out the rows and columns.  If the values
+	 * are wrong, it's not a big deal -- as soon as the user sets them
+	 * explicitly the environment will be set and curses will use the new
+	 * values.
+	 *
+	 * Try TIOCGWINSZ.
+	 */
+	if (ioctl(STDERR_FILENO, TIOCGWINSZ, &win) != -1 &&
+	    win.ws_row != 0 && win.ws_col != 0) {
+		row = win.ws_row;
+		col = win.ws_col;
+	}
 
-	if (val = getenv("LINES"))
-		LINES = atoi(val);
-	LVAL(O_LINES) = LINES;
-	LVAL(O_SCROLL) = LINES / 2 - 1;
-	LVAL(O_WINDOW) = LINES - 1;
+	/* POSIX 1003.2 requires the environment to override. */
+	if ((s = getenv("ROWS")) != NULL)
+		row = strtol(s, NULL, 10);
+	if ((s = getenv("COLUMNS")) != NULL)
+		col = strtol(s, NULL, 10);
 
-	if (val = getenv("SHELL")) {
-		PVAL(O_SHELL) = strdup(val);
+	/* Make sure we got values that we can live with. */
+	if (row < 2 || col < 40) {
+		msg("Screen rows %d cols %d: too small.\n", row, col);
+		return (1);
+	}
+
+	LVAL(O_LINES) = row;
+	LVAL(O_SCROLL) = row / 2 - 1;
+	LVAL(O_WINDOW) = row - 1;
+	LVAL(O_COLUMNS) = col;
+
+	if (s = getenv("SHELL")) {
+		PVAL(O_SHELL) = strdup(s);
 		FSET(O_SHELL, OPT_ALLOCATED);
 	}
 
@@ -232,6 +259,7 @@ opts_init()
 		FSET(O_FLASH, OPT_NOSET);
 		FSET(O_VBELL, OPT_NOSET);
 	}
+	return (0);
 }
 
 /*
@@ -246,16 +274,10 @@ opts_set(argv)
 	ABBREV atmp, *ap;
 	OPTIONS otmp, *op;
 	long value;
-	int all, ch, needredraw, off;
-	char *ep, *equals, *name;
+	int all, ch, needredraw, off, resize;
+	char *ep, *equals, *name, sbuf[50];
 	
-	/*
-	 * Reset the upper limit of "window" option to lines - 1.
-	 * XXX -- Why are we doing this?
-	 */
-	LVAL(O_WINDOW) = LINES - 1;
-
-	for (all = needredraw = 0; *argv; ++argv) {
+	for (all = needredraw = resize = 0; *argv; ++argv) {
 		/*
 		 * The historic vi dumped the options for each occurrence of
 		 * "all" in the set list.  Stupid.
@@ -343,6 +365,7 @@ found:		if (op == NULL || off && !ISFSETP(op, OPT_0BOOL|OPT_1BOOL)) {
 				FUNSETP(op, OPT_0BOOL | OPT_1BOOL);
 				FSETP(op,
 				    (off ? OPT_0BOOL : OPT_1BOOL) | OPT_SET);
+				resize |= ISFSETP(op, OPT_SIZE);
 				needredraw |= ISFSETP(op, OPT_REDRAW);
 			}
 			break;
@@ -369,6 +392,7 @@ found:		if (op == NULL || off && !ISFSETP(op, OPT_0BOOL|OPT_1BOOL)) {
 			}
 			LVALP(op) = value;
 			FSETP(op, OPT_SET);
+			resize |= ISFSETP(op, OPT_SIZE);
 			needredraw |= ISFSETP(op, OPT_REDRAW);
 			break;
 		case OPT_STR:
@@ -381,35 +405,28 @@ found:		if (op == NULL || off && !ISFSETP(op, OPT_0BOOL|OPT_1BOOL)) {
 				free(PVALP(op));
 			PVALP(op) = strdup(equals);
 			FSETP(op, OPT_ALLOCATED | OPT_SET);
+			resize |= ISFSETP(op, OPT_SIZE);
 			needredraw |= ISFSETP(op, OPT_REDRAW);
 			break;
 		}
 	}
 
-	/* Special processing. */
-
-	/*
-	 * Copy O_LINES and O_COLUMNS into LINES and COLS.
-	 * XXX
-	 * This isn't going to work if the screen is already in place.
-	 * Need a window call to shut it down and restart it, but that
-	 * means that we'll have to put these in the environment.
-	 */
-	LINES = LVAL(O_LINES);
-	COLS = LVAL(O_COLUMNS);
-
 	if (all)
 		opts_dump(1);
 
-	if (needredraw)
-		touchwin(stdscr);
-
 	/*
-	 * That option may have affected the appearance of text.
-	 * XXX
-	 * Why isn't this set per variable, like redraw?
+	 * Rows and columns must be put in the environment so they override
+	 * curses default actions.
 	 */
-	++changes;
+	if (resize) {
+		scr_end();
+		(void)snprintf(sbuf, sizeof(sbuf), "%ld", LVAL(O_LINES));
+		(void)setenv("ROWS", sbuf, 1);
+		(void)snprintf(sbuf, sizeof(sbuf), "%ld", LVAL(O_COLUMNS));
+		(void)setenv("COLUMNS", sbuf, 1);
+		scr_init();
+	} else if (needredraw)
+		scr_ref();
 }
 
 /*
