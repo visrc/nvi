@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: mark.c,v 10.5 1995/09/21 12:06:06 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:06:06 $";
+static char sccsid[] = "$Id: mark.c,v 10.6 1995/09/25 11:58:42 bostic Exp $ (Berkeley) $Date: 1995/09/25 11:58:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -226,6 +226,28 @@ mark_insdel(sp, op, lno)
 	recno_t lno;
 {
 	LMARK *lmp;
+	recno_t lline;
+
+	/*
+	 * XXX
+	 * Very nasty special case.  If the file was empty, then we're adding
+	 * the first line, which is a replacement.  So, we don't modify the
+	 * marks.  This is a hack to make:
+	 *
+	 *	mz:r!echo foo<carriage-return>'z
+	 *
+	 * work, i.e. historically you could mark the "line" in an empty file
+	 * and replace it, and continue to use the mark.  Insane, well, yes,
+	 * I know, but someone complained.
+	 *
+	 * Check for line #2 before going to the end of the file.
+	 */
+	if ((op == LINE_APPEND || op == LINE_INSERT) && !file_eline(sp, 2)) {
+		if (file_lline(sp, &lline))
+			return (1);
+		if (lline == 1)
+			return (0);
+	}
 
 	switch (op) {
 	case LINE_APPEND:

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 10.8 1995/09/21 12:05:58 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:05:58 $";
+static char sccsid[] = "$Id: db.c,v 10.9 1995/09/25 11:58:40 bostic Exp $ (Berkeley) $Date: 1995/09/25 11:58:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -146,11 +146,7 @@ file_dline(sp, lno)
 #if defined(DEBUG) && 0
 	TRACE(sp, "delete line %lu\n", lno);
 #endif
-	/*
-	 * XXX
-	 * Marks and global commands have to know when lines are
-	 * inserted or deleted.
-	 */
+	/* Update marks and @ and global commands. */
 	mark_insdel(sp, LINE_DELETE, lno);
 	ex_g_insdel(sp, LINE_DELETE, lno);
 
@@ -200,35 +196,10 @@ file_aline(sp, update, lno, p, len)
 {
 	DBT data, key;
 	EXF *ep;
-	int isempty;
-	recno_t lline;
 
 #if defined(DEBUG) && 0
 	TRACE(sp, "append to %lu: len %u {%.*s}\n", lno, len, MIN(len, 20), p);
 #endif
-	/*
-	 * XXX
-	 * Very nasty special case.  The historic vi code displays a single
-	 * space (or a '$' if the list option is set) for the first line in
-	 * an "empty" file.  If we "insert" a line, that line gets scrolled
-	 * down, not repainted, so it's incorrect when we refresh the the
-	 * screen.  This is really hard to find and fix in the vi code -- the
-	 * text input functions detect it explicitly and don't insert a new
-	 * line.  The hack here is to repaint the screen if we're appending
-	 * to an empty file.  The reason that the test is in file_aline, and
-	 * not in file_iline or file_sline, is that all of the ex commands
-	 * that work in empty files end up here.
-	 */
-	isempty = 0;
-	if (lno == 0) {
-		if (file_lline(sp, &lline))
-			return (1);
-		if (lline == 0) {
-			isempty = 1;
-			F_SET(sp, S_SCR_REDRAW);
-		}
-	}
-
 	/* Update file. */
 	ep = sp->ep;
 	key.data = &lno;
@@ -257,24 +228,8 @@ file_aline(sp, update, lno, p, len)
 	/* Log change. */
 	log_line(sp, lno + 1, LOG_LINE_APPEND);
 
-	/*
-	 * XXX
-	 * Marks and global commands have to know when lines are
-	 * inserted or deleted.
-	 *
-	 * XXX
-	 * See comment above about empty files.  If the file was empty, then
-	 * we're adding the first line, which is a replacement, not an append.
-	 * So, we shouldn't whack the marks.  This is a hack to make:
-	 *
-	 *	mz:r!echo foo<carriage-return>'z
-	 *
-	 * work, i.e. historically you could mark the "line" in an empty file
-	 * and replace it, and continue to use the mark.  Insane, well, yes,
-	 * I know, but someone complained.
-	 */
-	if (!isempty)
-		mark_insdel(sp, LINE_INSERT, lno + 1);
+	/* Update marks and @ and global commands. */
+	mark_insdel(sp, LINE_INSERT, lno + 1);
 	ex_g_insdel(sp, LINE_INSERT, lno + 1);
 
 	/*
@@ -305,20 +260,11 @@ file_iline(sp, lno, p, len)
 {
 	DBT data, key;
 	EXF *ep;
-	recno_t lline;
 
 #if defined(DEBUG) && 0
 	TRACE(sp,
 	    "insert before %lu: len %u {%.*s}\n", lno, len, MIN(len, 20), p);
 #endif
-
-	/* Very nasty special case.  See comment in file_aline(). */
-	if (lno == 1) {
-		if (file_lline(sp, &lline))
-			return (1);
-		if (lline == 0)
-			F_SET(sp, S_SCR_REDRAW);
-	}
 
 	/* Update file. */
 	ep = sp->ep;
@@ -348,11 +294,7 @@ file_iline(sp, lno, p, len)
 	/* Log change. */
 	log_line(sp, lno, LOG_LINE_INSERT);
 
-	/*
-	 * XXX
-	 * Marks and global commands have to know when lines are
-	 * inserted or deleted.
-	 */
+	/* Update marks and @ and global commands. */
 	mark_insdel(sp, LINE_INSERT, lno);
 	ex_g_insdel(sp, LINE_INSERT, lno);
 

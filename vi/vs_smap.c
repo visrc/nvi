@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 10.6 1995/09/21 12:09:06 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:09:06 $";
+static char sccsid[] = "$Id: vs_smap.c,v 10.7 1995/09/25 11:58:54 bostic Exp $ (Berkeley) $Date: 1995/09/25 11:58:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -47,7 +47,33 @@ vs_change(sp, lno, op)
 {
 	VI_PRIVATE *vip;
 	SMAP *p;
+	recno_t lline;
 	size_t cnt, oldy, oldx;
+
+	vip = VIP(sp);
+
+	/*
+	 * XXX
+	 * Very nasty special case.  The historic vi code displays a single
+	 * space (or a '$' if the list option is set) for the first line in
+	 * an "empty" file.  If we "insert" a line, that line gets scrolled
+	 * down, not repainted, so it's incorrect when we refresh the screen.
+	 * The vi text input functions detect it explicitly and don't insert
+	 * a new line.
+	 *
+	 * Check for line #2 before going to the end of the file.
+	 */
+	if ((op == LINE_APPEND && lno == 0 ||
+	    op == LINE_INSERT && lno == 1) && !file_eline(sp, 2)) {
+		if (file_lline(sp, &lline))
+			return (1);
+		if (lline == 1) {
+			SMAP_FLUSH(HMAP);
+			VI_SCR_CFLUSH(vip);
+			F_SET(vip, VIP_CUR_INVALID);
+			return (0);
+		}
+	}
 
 	/* Appending is the same as inserting, if the line is incremented. */
 	if (op == LINE_APPEND) {
@@ -64,7 +90,6 @@ vs_change(sp, lno, op)
 	 * the map.  If it's an increment, increment the map.  Otherwise,
 	 * ignore it.
 	 */
-	vip = VIP(sp);
 	if (lno < HMAP->lno) {
 		switch (op) {
 		case LINE_APPEND:
@@ -92,12 +117,13 @@ vs_change(sp, lno, op)
 
 	F_SET(vip, VIP_SCR_DIRTY);
 
-	/* Invalidate the cursor, if it's on this line. */
+	/*
+	 * Invalidate the line size cache, invalidate the cursor, if it's
+	 * on this line,
+	 */
+	VI_SCR_CFLUSH(vip);
 	if (sp->lno == lno)
 		F_SET(vip, VIP_CUR_INVALID);
-
-	/* Invalidate the line size cache. */
-	VI_SCR_CFLUSH(vip);
 
 	(void)sp->gp->scr_cursor(sp, &oldy, &oldx);
 
