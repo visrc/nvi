@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.50 1993/02/25 17:42:22 bostic Exp $ (Berkeley) $Date: 1993/02/25 17:42:22 $";
+static char sccsid[] = "$Id: main.c,v 5.51 1993/02/25 18:54:19 bostic Exp $ (Berkeley) $Date: 1993/02/25 18:54:19 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -280,7 +280,8 @@ static void
 obsolete(argv)
 	char *argv[];
 {
-	char *pname;
+	size_t len;
+	char *p, *pname;
 
 	/*
 	 * Translate old style arguments into something getopt will like.
@@ -288,6 +289,7 @@ obsolete(argv)
 	 * strings.
 	 *	Change "+/command" into "-ccommand".
 	 *	Change "+" into "-c$".
+	 *	Change "+[0-9]*" into "-c:[0-9]".
 	 */
 	for (pname = argv[0]; *++argv;)
 		if (argv[0][0] == '+')
@@ -298,6 +300,15 @@ obsolete(argv)
 			} else if (argv[0][1] == '/') {
 				argv[0][0] = '-';
 				argv[0][1] = 'c';
+			} else if (isdigit(argv[0][1])) {
+				p = argv[0];
+				len = strlen(argv[0]);
+				if ((argv[0] = malloc(len + 3)) == NULL)
+					err("%s: %s", pname, strerror(errno));
+				argv[0][0] = '-';
+				argv[0][1] = 'c';
+				argv[0][2] = ':';
+				(void)strcpy(argv[0] + 3, p + 1);
 			}
 			
 }
