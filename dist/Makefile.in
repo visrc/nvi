@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.54 1996/05/14 11:22:41 bostic Exp $ (Berkeley) $Date: 1996/05/14 11:22:41 $
+#	$Id: Makefile.in,v 8.55 1996/05/15 16:55:14 bostic Exp $ (Berkeley) $Date: 1996/05/15 16:55:14 $
 
 srcdir=	@srcdir@/..
 CC=	@CC@
@@ -82,6 +82,8 @@ transform=@program_transform_name@
 
 install: all install_common
 	@echo "Installing vi, ex, view: $(bindir) ..."
+	[ -d $(bindir) ] || \
+	    $(mkdir) $(bindir) && $(chmod) $(dmode) $(bindir)
 	cd $(bindir) && $(rm) -f `echo vi | sed '$(transform)'`
 	$(cp) nvi $(bindir)/`echo vi | sed '$(transform)'`
 	cd $(bindir) && [ -f $(strip) ] && \
@@ -93,6 +95,10 @@ install: all install_common
 		`echo vi | sed '$(transform)'` `echo ex | sed '$(transform)'`
 	cd $(bindir) && $(ln) \
 		`echo vi | sed '$(transform)'` `echo view | sed '$(transform)'`
+	[ -d $(mandir) ] || \
+	    $(mkdir) $(mandir) && $(chmod) $(dmode) $(mandir)
+	[ -d $(mandir)/cat1 ] || \
+	    $(mkdir) $(mandir)/cat1 && $(chmod) $(dmode) $(mandir)/cat1
 	@echo "Installing man pages: $(mandir)/cat1 ..."
 	cd $(mandir)/cat1 && $(rm) -f `echo vi.0 | sed '$(transform)'`
 	$(cp) $(srcdir)/docs/USD.doc/vi.man/vi.0 \
@@ -112,6 +118,12 @@ install_common:
 	[ -f $(ln) ]
 	[ -f $(mkdir) ]
 	[ -f $(rm) ]
+	[ -d $(prefix) ] || \
+	    $(mkdir) $(prefix) && $(chmod) $(dmode) $(prefix)
+	[ -d $(exec_prefix) ] || \
+	    $(mkdir) $(exec_prefix) && $(chmod) $(dmode) $(exec_prefix)
+	[ -d $(datadir) ] || \
+	    $(mkdir) $(datadir) && $(chmod) $(dmode) $(datadir)
 	$(rm) -rf $(datadir)/vi
 	$(mkdir) $(datadir)/vi && $(chmod) $(dmode) $(datadir)/vi
 	@echo "Installing message catalogs: $(datadir)/vi/catalog ..."
