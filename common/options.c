@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 9.6 1994/11/20 12:50:59 bostic Exp $ (Berkeley) $Date: 1994/11/20 12:50:59 $";
+static char sccsid[] = "$Id: options.c,v 9.7 1994/12/01 23:04:42 bostic Exp $ (Berkeley) $Date: 1994/12/01 23:04:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -394,7 +394,7 @@ opts_set(sp, argv, setdef, usage)
 	OPTION *spo;
 	u_long value, turnoff;
 	int ch, equals, nf, offset, qmark, rval;
-	char *endp, *name, *omsg, *p, *sep;
+	char *endp, *name, *p, *sep;
 
 	disp = NO_DISPLAY;
 	for (rval = 0; argv[0]->len != 0; ++argv) {

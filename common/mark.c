@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: mark.c,v 9.2 1994/11/25 12:04:42 bostic Exp $ (Berkeley) $Date: 1994/11/25 12:04:42 $";
+static char sccsid[] = "$Id: mark.c,v 9.3 1994/12/01 23:04:19 bostic Exp $ (Berkeley) $Date: 1994/12/01 23:04:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -70,8 +70,6 @@ mark_init(sp, ep)
 	SCR *sp;
 	EXF *ep;
 {
-	LMARK *lmp;
-
 	/*
 	 * !!!
 	 * ep MAY NOT BE THE SAME AS sp->ep, DON'T USE THE LATTER.
