@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: log.c,v 8.4 1993/09/29 16:22:24 bostic Exp $ (Berkeley) $Date: 1993/09/29 16:22:24 $";
+static char sccsid[] = "$Id: log.c,v 8.5 1993/10/04 09:30:28 bostic Exp $ (Berkeley) $Date: 1993/10/04 09:30:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -92,7 +92,7 @@ log_init(sp, ep)
 	ep->l_cursor.cno = 0;
 	ep->l_high = ep->l_cur = 1;
 
-	ep->log = dbopen(NULL, O_CREAT | O_EXLOCK | O_NONBLOCK | O_RDWR,
+	ep->log = dbopen(NULL, O_CREAT | O_NONBLOCK | O_RDWR,
 	    S_IRUSR | S_IWUSR, DB_RECNO, NULL);
 	if (ep->log == NULL) {
 		msgq(sp, M_ERR, "log db: %s", strerror(errno));
