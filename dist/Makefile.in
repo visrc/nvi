@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.45 1996/04/22 18:10:42 bostic Exp $ (Berkeley) $Date: 1996/04/22 18:10:42 $
+#	$Id: Makefile.in,v 8.46 1996/04/26 08:12:46 bostic Exp $ (Berkeley) $Date: 1996/04/26 08:12:46 $
 
 srcdir=	@srcdir@/..
 CC=	@CC@
@@ -62,45 +62,6 @@ distclean: clean
 	rm -f Makefile pathnames.h port.h
 	rm -f config.cache config.h config.log config.status
 
-distrib: distclean
-	rm -f configure config.h.in
-	autoheader
-	chmod 444 config.h.in
-	autoconf
-	chmod 555 configure
-	f=../include/cl_extern.h && rm -f $$f && \
-	    sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../cl/*.c > $$f && \
-	    chmod 444 $$f
-	f=../include/common_extern.h && rm -f $$f && \
-	    sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" \
-	    ../clib/*.c ../common/*.c > $$f && \
-	    chmod 444 $$f
-	f=../include/ex_define.h && rm -f $$f && \
-	    awk -f ../ex/ex.awk ../ex/ex_cmd.c > $$f && \
-	    chmod 444 $$f
-	f=../include/ex_extern.h && rm -f $$f && \
-	    sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../ex/*.c > $$f && \
-	    chmod 444 $$f
-	f=../include/options_define.h && rm -f $$f && \
-	    awk -f ../common/options.awk ../common/options.c > $$f && \
-	    chmod 444 $$f
-	f=../include/perl_extern.h && rm -f $$f && \
-	    sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../perl_api/*.c > $$f && \
-	    chmod 444 $$f
-	f=../include/tcl_extern.h && rm -f $$f && \
-	    sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../tcl_api/*.c > $$f && \
-	    chmod 444 $$f
-	f=../include/tk_extern.h && rm -f $$f && \
-	    sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../tk/*.c > $$f && \
-	    chmod 444 $$f
-	f=../include/vi_extern.h && rm -f $$f && \
-	    sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../vi/*.c > $$f && \
-	    chmod 444 $$f
-	-(cd ../common && rm -f tags && \
-	    ctags ../cl/*.[ch] ../common/*.[ch] ../ex/*.[ch] \
-	    ../perl_api/*.[ch] ../tcl_api/*.[ch] ../tk/*.[ch] \
-	    ../vi/*.[ch] && chmod 444 tags)
-	
 # Vi curses sources.
 cl_bsd.o: $(srcdir)/cl/cl_bsd.c
 	$(CC) $(CFLAGS) $?
