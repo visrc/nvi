@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.47 1993/11/10 09:45:01 bostic Exp $ (Berkeley) $Date: 1993/11/10 09:45:01 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.48 1993/11/11 11:03:45 bostic Exp $ (Berkeley) $Date: 1993/11/11 11:03:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -252,7 +252,7 @@ newtp:		if ((tp = text_init(sp, p, len, len + 32)) == NULL)
 		 * the cursor really is.
 		 */
 		if (showmatch || margin ||
-		    gp->key->cnt == 0 && gp->tty->cnt == 0) {
+		    !TERM_MORE(gp->key) && !TERM_MORE(gp->tty)) {
 			if (sp->s_change(sp, ep, tp->lno, LINE_RESET))
 				ERR;
 			if (showmatch) {
@@ -431,7 +431,7 @@ next_ch:	if (replay)
 
 			/* Refresh if nothing waiting. */
 			if ((margin ||
-			    gp->key->cnt == 0 && gp->tty->cnt == 0) &&
+			    !TERM_MORE(gp->key) && !TERM_MORE(gp->tty)) &&
 			    sp->s_refresh(sp, ep))
 				ERR;
 			goto next_ch;

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.48 1993/11/04 16:16:49 bostic Exp $ (Berkeley) $Date: 1993/11/04 16:16:49 $";
+static char sccsid[] = "$Id: ex.c,v 8.49 1993/11/11 11:03:31 bostic Exp $ (Berkeley) $Date: 1993/11/11 11:03:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -247,8 +247,8 @@ ex_cstring(sp, ep, cmd, len)
 cend:			if (p > cmd) {
 				*p = '\0';	/* XXX: 8BIT */
 				if (ex_cmd(sp, ep, cmd, arg1_len)) {
-					if (len || TERM_KEY_MORE(sp)) {
-						TERM_KEY_FLUSH(sp);
+					if (len || TERM_MORE(sp->gp->key)) {
+						TERM_FLUSH(sp->gp->key);
 						msgq(sp, M_ERR,
 		    "Ex command failed, remaining command input discarded.");
 					}
@@ -302,7 +302,7 @@ cend:			if (p > cmd) {
 			goto err;
 	}
 	if (F_ISSET(sp, S_MODE_VI) && term_push(sp, sp->gp->tty, ":", 1)) {
-err:		TERM_KEY_FLUSH(sp);
+err:		TERM_FLUSH(sp->gp->key);
 		msgq(sp, M_ERR, "Error: %s: remaining command input discarded",
 		    strerror(errno));
 	}
