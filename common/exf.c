@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 10.15 1995/10/17 09:04:35 bostic Exp $ (Berkeley) $Date: 1995/10/17 09:04:35 $";
+static char sccsid[] = "$Id: exf.c,v 10.16 1995/10/19 18:53:42 bostic Exp $ (Berkeley) $Date: 1995/10/19 18:53:42 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -180,20 +180,22 @@ file_init(sp, frp, rcv_name, flags)
 			goto err;
 		}
 		oname = frp->tname;
-		psize = 4 * 1024;
+		psize = 1024;
 		if (!LF_ISSET(FS_OPENERR))
 			F_SET(frp, FR_NEWFILE);
 	} else {
 		/*
-		 * Try to keep it at 10 pages or less per file.  This
-		 * isn't friendly on a loaded machine, btw.
+		 * XXX
+		 * A seat of the pants calculation: try to keep the file in
+		 * 15 pages or less.  Don't use a page size larger than 10K
+		 * (vi should have good locality) or smaller than 1K.
 		 */
-		if (sb.st_size < 40 * 1024)
-			psize = 4 * 1024;
-		else if (sb.st_size < 320 * 1024)
-			psize = 32 * 1024;
-		else
-			psize = 64 * 1024;
+		psize = ((sb.st_size / 15) + 1023) / 1024;
+		if (psize > 10)
+			psize = 10;
+		if (psize == 0)
+			psize = 1;
+		psize *= 1024;
 
 		ep->mdev = sb.st_dev;
 		ep->minode = sb.st_ino;
