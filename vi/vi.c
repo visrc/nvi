@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.33 1992/12/05 11:11:15 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:11:15 $";
+static char sccsid[] = "$Id: vi.c,v 5.34 1992/12/20 15:09:59 bostic Exp $ (Berkeley) $Date: 1992/12/20 15:09:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -54,7 +54,7 @@ vi()
 		if (FF_ISSET(curf, F_NEWSESSION)) {
 			if (v_init(curf))
 				return (1);
-			scr_ref(curf);
+			scr_cchange(curf);
 			status(curf, curf->lno);
 			FF_CLR(curf, F_NEWSESSION);
 		} else if (curf->rptlines) {
@@ -137,13 +137,6 @@ err:		if (msgcnt) {
 		if ((vp->kp->func)(vp, &fm, &tm, &m))
 			goto err;
 
-		/*
-		 * Some commands need to remember if they were the last command
-		 * executed.  Forget the command if necessary.
-		 */
-		if (!(flags & V_REMEMBER))
-			curf->remember = F_FORGET;
-		
 		/*
 		 * If that command took us out of vi mode, then exit
 		 * the loop without further action.
