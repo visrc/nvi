@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 9.13 1995/01/11 16:22:43 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:22:43 $";
+static char sccsid[] = "$Id: vi.c,v 9.14 1995/01/12 19:54:26 bostic Exp $ (Berkeley) $Date: 1995/01/12 19:54:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -93,7 +93,7 @@ vi(sp)
 
 		/* Set the new favorite position. */
 		if (F_ISSET(vp, VM_RCM_SET | VM_RCM_SETFNB | VM_RCM_SETNNB)) {
-			sp->rcm_last = 0;
+			F_CLR(vp, VIP_RCM_LAST);
 			(void)sp->s_column(sp, &sp->rcm);
 		}
 
@@ -269,10 +269,11 @@ vi(sp)
 		case VM_RCM_SET:
 			break;
 		case VM_RCM:
-			vp->m_final.cno = sp->s_rcm(sp, vp->m_final.lno);
+			vp->m_final.cno = sp->s_rcm(sp,
+			    vp->m_final.lno, F_ISSET(vp, VIP_RCM_LAST));
 			break;
 		case VM_RCM_SETLAST:
-			sp->rcm_last = 1;
+			F_SET(vp, VIP_RCM_LAST);
 			break;
 		case VM_RCM_SETFNB:
 			vp->m_final.cno = 0;

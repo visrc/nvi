@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 9.6 1995/01/11 16:22:42 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:22:42 $
+ *	$Id: vi.h,v 9.7 1995/01/12 19:54:25 bostic Exp $ (Berkeley) $Date: 1995/01/12 19:54:25 $
  */
 
 typedef struct _vikeys VIKEYS;
@@ -195,7 +195,8 @@ typedef struct _vi_private {
 	CHAR_T	 lastckey;		/* Last search character. */
 	enum cdirection	csearchdir;	/* Character search direction. */
 
-#define	VIP_SKIPREFRESH	0x01		/* Skip next refresh. */
+#define	VIP_RCM_LAST	0x01		/* Cursor drawn to the last column. */
+#define	VIP_SKIPREFRESH	0x02		/* Skip next refresh. */
 	u_int8_t flags;
 } VI_PRIVATE;
 

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_relative.c,v 9.3 1995/01/12 19:28:52 bostic Exp $ (Berkeley) $Date: 1995/01/12 19:28:52 $";
+static char sccsid[] = "$Id: vs_relative.c,v 9.4 1995/01/12 19:54:03 bostic Exp $ (Berkeley) $Date: 1995/01/12 19:54:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -161,20 +161,21 @@ svi_screens(sp, lp, llen, lno, cnop)
  *	position (which is stored as a screen column).
  */
 size_t
-svi_rcm(sp, lno)
+svi_rcm(sp, lno, islast)
 	SCR *sp;
 	recno_t lno;
+	int islast;
 {
 	size_t len;
+
+	/* Last character is easy, and common. */
+	if (islast)
+		return (file_gline(sp,
+		    lno, &len) == NULL || len == 0 ? 0 : len - 1);
 
 	/* First character is easy, and common. */
 	if (sp->rcm == 0)
 		return (0);
-
-	/* Last character is easy, and common. */
-	if (sp->rcm_last)
-		return (file_gline(sp,
-		    lno, &len) == NULL || len == 0 ? 0 : len - 1);
 
 	return (svi_colpos(sp, lno, sp->rcm));
 }

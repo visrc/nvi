@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 9.11 1995/01/11 19:45:52 bostic Exp $ (Berkeley) $Date: 1995/01/11 19:45:52 $
+ *	$Id: screen.h,v 9.12 1995/01/12 19:53:43 bostic Exp $ (Berkeley) $Date: 1995/01/12 19:53:43 $
  */
 
 /*
@@ -105,7 +105,6 @@ struct _scr {
 	size_t	 cno;			/* 0-N: file character in line. */
 
 	size_t	 rcm;			/* Vi: 0-N: Most attractive column. */
-	int	 rcm_last;		/* Cursor drawn to the last column. */
 
 #define	L_ADDED		0		/* Added lines. */
 #define	L_CHANGED	1		/* Changed lines. */
@@ -217,7 +216,7 @@ struct _scr {
 					/* Change the absolute screen size. */
 	int	(*s_rabs) __P((SCR *, long, enum adjust));
 					/* Return column close to selection. */
-	size_t	(*s_rcm) __P((SCR *, recno_t));
+	size_t	(*s_rcm) __P((SCR *, recno_t, int));
 					/* Refresh the screen. */
 	int	(*s_refresh) __P((SCR *));
 					/* Move down the screen. */
