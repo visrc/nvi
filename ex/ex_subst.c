@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.59 1994/08/17 14:31:17 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:31:17 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.60 1994/08/31 17:17:25 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:17:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -132,7 +132,7 @@ ex_substitute(sp, ep, cmdp)
 	 */
 	if (*ptrn == '\0') {
 		if (!F_ISSET(sp, S_SRE_SET)) {
-			msgq(sp, M_ERR, "No previous regular expression");
+			ex_message(sp, NULL, EXM_NOPREVRE);
 			return (1);
 		}
 		re = &sp->sre;
@@ -272,7 +272,7 @@ ex_subagain(sp, ep, cmdp)
 	EXCMDARG *cmdp;
 {
 	if (!F_ISSET(sp, S_SUBRE_SET)) {
-		msgq(sp, M_ERR, "No previous regular expression");
+		ex_message(sp, NULL, EXM_NOPREVRE);
 		return (1);
 	}
 	return (substitute(sp, ep, cmdp, cmdp->argv[0]->bp, &sp->subre, 0));
@@ -291,7 +291,7 @@ ex_subtilde(sp, ep, cmdp)
 	EXCMDARG *cmdp;
 {
 	if (!F_ISSET(sp, S_SRE_SET)) {
-		msgq(sp, M_ERR, "No previous regular expression");
+		ex_message(sp, NULL, EXM_NOPREVRE);
 		return (1);
 	}
 	return (substitute(sp, ep, cmdp, cmdp->argv[0]->bp, &sp->sre, 0));
@@ -415,9 +415,9 @@ substitute(sp, ep, cmdp, s, re, flags)
 				--s;
 			if (errno == ERANGE) {
 				if (lno == LONG_MAX)
-					msgq(sp, M_ERR, "Count overflow");
+					msgq(sp, M_ERR, "156|Count overflow");
 				else if (lno == LONG_MIN)
-					msgq(sp, M_ERR, "Count underflow");
+					msgq(sp, M_ERR, "157|Count underflow");
 				else
 					msgq(sp, M_SYSERR, NULL);
 				return (1);
@@ -447,12 +447,11 @@ substitute(sp, ep, cmdp, s, re, flags)
 		case 'r':
 			if (LF_ISSET(SUB_FIRST)) {
 				msgq(sp, M_ERR,
-		    "Regular expression specified; r flag meaningless");
+		    "158|Regular expression specified; r flag meaningless");
 				return (1);
 			}
 			if (!F_ISSET(sp, S_SRE_SET)) {
-				msgq(sp, M_ERR,
-				    "No previous regular expression");
+				ex_message(sp, NULL, EXM_NOPREVRE);
 				return (1);
 			}
 			rflag = 1;
@@ -463,13 +462,13 @@ substitute(sp, ep, cmdp, s, re, flags)
 		}
 
 	if (*s != '\0' || !rflag && LF_ISSET(SUB_MUSTSETR)) {
-usage:		msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
+usage:		ex_message(sp, cmdp, EXM_USAGE);
 		return (1);
 	}
 
 	if (IN_VI_MODE(sp) && sp->c_suffix && (lflag || nflag || pflag)) {
 		msgq(sp, M_ERR,
-	"The #, l and p flags may not be combined with the c flag in vi mode");
+"159|The #, l and p flags may not be combined with the c flag in vi mode");
 		return (1);
 	}
 
@@ -490,7 +489,7 @@ usage:		msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
 		/* Someone's unhappy, time to stop. */
 		if (INTERRUPTED(sp)) {
 			if (!F_ISSET(sp, S_GLOBAL))
-				msgq(sp, M_INFO, "Interrupted");
+				ex_message(sp, NULL, EXM_INTERRUPTED);
 			break;
 		}
 
@@ -819,7 +818,7 @@ endmatch:	if (!linechanged)
 	 */
 	if (!matched) {
 		if (!F_ISSET(sp, S_GLOBAL))
-			msgq(sp, M_INFO, "No match found");
+			msgq(sp, M_INFO, "160|No match found");
 	} else if (!lflag && !nflag && !pflag)
 		F_SET(EXP(sp), EX_AUTOPRINT);
 

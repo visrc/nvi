@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cd.c,v 8.18 1994/08/17 14:30:40 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:30:40 $";
+static char sccsid[] = "$Id: ex_cd.c,v 8.19 1994/08/31 17:17:05 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:17:05 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -44,7 +44,8 @@ ex_cd(sp, ep, cmdp)
 	struct passwd *pw;
 	ARGS *ap;
 	CDPATH *cdp;
-	char *dir;		/* XXX END OF THE STACK, DON'T TRUST GETCWD. */
+	int nf;
+	char *dir, *p;		/* XXX END OF THE STACK, DON'T TRUST GETCWD. */
 	char buf[MAXPATHLEN * 2];
 
 	/*
@@ -56,7 +57,7 @@ ex_cd(sp, ep, cmdp)
 	if (F_ISSET(ep, F_MODIFIED) &&
 	    !F_ISSET(cmdp, E_FORCE) && sp->frp->name[0] != '/') {
 		msgq(sp, M_ERR,
-    "File modified since last complete write; write or use ! to override");
+    "131|File modified since last complete write; write or use ! to override");
 		return (1);
 	}
 
@@ -67,7 +68,7 @@ ex_cd(sp, ep, cmdp)
 			if ((pw = getpwuid(getuid())) == NULL ||
 			    pw->pw_dir == NULL || pw->pw_dir[0] == '\0') {
 				msgq(sp, M_ERR,
-			   "Unable to find home directory location");
+			   "132|Unable to find home directory location");
 				return (1);
 			}
 			dir = pw->pw_dir;
@@ -100,11 +101,18 @@ ex_cd(sp, ep, cmdp)
 		(void)snprintf(buf, sizeof(buf), "%s/%s", cdp->path, dir);
 		if (!chdir(buf)) {
 ret:			if (getcwd(buf, sizeof(buf)) != NULL)
-				msgq(sp, M_INFO, "New directory: %s", buf);
+				p = msg_print(sp, buf, &nf);
+				msgq(sp, M_INFO,
+				    "133|New current directory: %s", p);
+				if (nf)
+					FREE_SPACE(sp, p, 0);
 			return (0);
 		}
 	}
-err:	msgq(sp, M_SYSERR, "%s", dir);
+err:	p = msg_print(sp, dir, &nf);
+	msgq(sp, M_SYSERR, "%s", p);
+	if (nf)
+		FREE_SPACE(sp, p, 0);
 	return (1);
 }
 

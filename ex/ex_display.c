@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_display.c,v 8.23 1994/08/17 14:30:45 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:30:45 $";
+static char sccsid[] = "$Id: ex_display.c,v 8.24 1994/08/31 17:17:06 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:17:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -66,7 +66,7 @@ ex_display(sp, ep, cmdp)
 			break;
 		return (ex_tagdisplay(sp, ep));
 	}
-	msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
+	ex_message(sp, cmdp, EXM_USAGE);
 	return (1);
 }
 

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 8.44 1994/08/29 10:26:46 bostic Exp $ (Berkeley) $Date: 1994/08/29 10:26:46 $";
+static char sccsid[] = "$Id: ex_global.c,v 8.45 1994/08/31 17:17:07 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:17:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -85,7 +85,7 @@ global(sp, ep, cmdp, cmd)
 	 */
 	for (p = cmdp->argv[0]->bp; isblank(*p); ++p);
 	if (*p == '\0' || isalnum(*p)) {
-		msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
+		ex_message(sp, cmdp, EXM_USAGE);
 		return (1);
 	}
 	delim = *p++;
@@ -119,7 +119,7 @@ global(sp, ep, cmdp, cmd)
 	/* If the pattern string is empty, use the last one. */
 	if (*ptrn == '\0') {
 		if (!F_ISSET(sp, S_SRE_SET)) {
-			msgq(sp, M_ERR, "No previous regular expression");
+			ex_message(sp, NULL, EXM_NOPREVRE);
 			return (1);
 		}
 		re = &sp->sre;
@@ -267,7 +267,7 @@ global(sp, ep, cmdp, cmd)
 
 		/* Someone's unhappy, time to stop. */
 		if (INTERRUPTED(sp)) {
-interrupted:		msgq(sp, M_INFO, "Interrupted");
+interrupted:		ex_message(sp, NULL, EXM_INTERRUPTED);
 			break;
 		}
 	}

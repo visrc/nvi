@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.157 1994/08/17 14:30:27 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:30:27 $";
+static char sccsid[] = "$Id: ex.c,v 8.158 1994/08/31 17:16:54 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:16:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,6 +38,7 @@ static __inline EXCMDLIST const *
 		ex_comm_search __P((char *, size_t));
 static int	ep_line __P((SCR *, EXF *, MARK *, char **, size_t *, int *));
 static int	ep_range __P((SCR *, EXF *, EXCMDARG *, char **, size_t *));
+static void	ex_unknown __P((SCR *, char *, size_t));
 
 /*
  * ex --
@@ -149,8 +150,8 @@ ex_cfile(sp, ep, filename, needsep)
 	int needsep;
 {
 	struct stat sb;
-	int fd, len, rval;
-	char *bp;
+	int fd, len, nf, rval;
+	char *bp, *p;
 
 	bp = NULL;
 	if ((fd = open(filename, O_RDONLY, 0)) < 0 || fstat(fd, &sb))
@@ -174,7 +175,10 @@ ex_cfile(sp, ep, filename, needsep)
 		if (len != sb.st_size)
 			errno = EIO;
 err:		rval = 1;
-		msgq(sp, M_SYSERR, filename);
+		p = msg_print(sp, filename, &nf);
+		msgq(sp, M_SYSERR, "%s", p);
+		if (nf)
+			FREE_SPACE(sp, p, 0);
 	} else {
 		bp[sb.st_size] = '\0';		/* XXX */
 
@@ -264,7 +268,7 @@ ex_cmd(sp, ep, cmd, cmdlen, needsep)
 	size_t arg1_len, len, save_cmdlen;
 	long flagoff;
 	u_int saved_mode;
-	int blank, ch, cnt, delim, flags, namelen, nl;
+	int blank, ch, cnt, delim, flags, namelen, nf, nl;
 	int optnum, uselastcmd, tmp, vi_address;
 	char *arg1, *save_cmd, *p, *s, *t;
 
@@ -408,7 +412,7 @@ loop:	if (nl) {
 				if (!isalpha(*cmd))
 					break;
 			if ((namelen = cmd - p) == 0) {
-				msgq(sp, M_ERR, "Unknown command name");
+				msgq(sp, M_ERR, "099|Unknown command name");
 				goto err;
 			}
 		}
@@ -467,15 +471,14 @@ loop:	if (nl) {
 				}
 				/* FALLTHROUGH */
 			default:
-				msgq(sp, M_ERR,
-				    "The %.*s command is unknown", namelen, p);
+				ex_unknown(sp, p, namelen);
 				goto err;
 			}
 
 		/* Some commands are either not implemented or turned off. */
 skip:		if (F_ISSET(cp, E_NOPERM)) {
 			msgq(sp, M_ERR,
-			    "The %s command is not currently supported",
+			    "101|The %s command is not currently supported",
 			    cp->name);
 			goto err;
 		}
@@ -483,7 +486,7 @@ skip:		if (F_ISSET(cp, E_NOPERM)) {
 		/* Some commands aren't okay in globals. */
 		if (F_ISSET(sp, S_GLOBAL) && F_ISSET(cp, E_NOGLOBAL)) {
 			msgq(sp, M_ERR,
-		"The %s command can't be used as part of a global command",
+		"102|The %s command can't be used as part of a global command",
 			    cp->name);
 			goto err;
 		}
@@ -567,7 +570,7 @@ skip:		if (F_ISSET(cp, E_NOPERM)) {
  	 */
 	if (LF_ISSET(E_NORC) && ep == NULL) {
 		msgq(sp, M_ERR,
-	"The %s command requires that a file have already been read in",
+	"103|The %s command requires that a file have already been read in",
 		    cp->name);
 		goto err;
 	}
@@ -1019,7 +1022,7 @@ end2:			break;
 			else if (*cmd == '+')
 				F_SET(&exc, E_COUNT_POS);
 /* 8-bit XXX */		if ((lno = strtol(cmd, &t, 10)) == 0 && *p != '0') {
-				msgq(sp, M_ERR, "Count may not be zero");
+				msgq(sp, M_ERR, "104|Count may not be zero");
 				goto err;
 			}
 			cmdlen -= (t - cmd);
@@ -1050,8 +1053,11 @@ end2:			break;
 				goto err;
 			/* Line specifications are always required. */
 			if (!tmp) {
+				p = msg_print(sp, cmd, &nf);
 				msgq(sp, M_ERR,
-				     "%s: bad line specification", cmd);
+				     "105|%s: bad line specification", p);
+				if (nf)
+					FREE_SPACE(sp, p, 0);
 				goto err;
 			}
 			/* The line must exist for these commands. */
@@ -1135,8 +1141,8 @@ countchk:		if (*++p != 'N') {		/* N */
 			goto addr2;
 		default:
 			msgq(sp, M_ERR,
-			    "Internal syntax table error (%s: %c)",
-			    cp->name, *p);
+			    "106|Internal syntax table error (%s: %s)",
+			    cp->name, KEY_NAME(sp, *p));
 		}
 	}
 
@@ -1152,7 +1158,7 @@ countchk:		if (*++p != 'N') {		/* N */
 	 * fields, i.e neither 'l' or 'r' in the syntax string.
 	 */
 	if (cmdlen || strpbrk(p, "lr")) {
-usage:		msgq(sp, M_ERR, "Usage: %s", cp->usage);
+usage:		msgq(sp, M_ERR, "107|Usage: %s", cp->usage);
 		goto err;
 	}
 
@@ -1187,7 +1193,7 @@ addr2:	switch (exc.addrcnt) {
 		if (num == 0 && (IN_EX_MODE(sp) || uselastcmd != 1) &&
 		    !LF_ISSET(E_ZERO)) {
 			msgq(sp, M_ERR,
-			    "The %s command doesn't permit an address of 0",
+			    "108|The %s command doesn't permit an address of 0",
 			    cp->name);
 			goto err;
 		}
@@ -1327,7 +1333,7 @@ addr2:	switch (exc.addrcnt) {
 	/* Make sure no function left the temporary space locked. */
 	if (F_ISSET(sp->gp, G_TMP_INUSE)) {
 		F_CLR(sp->gp, G_TMP_INUSE);
-		msgq(sp, M_ERR, "Error: ex: temporary buffer not released");
+		msgq(sp, M_ERR, "109|ex: temporary buffer not released");
 		goto err;
 	}
 #endif
@@ -1393,14 +1399,16 @@ addr2:	switch (exc.addrcnt) {
 	if (ep != NULL && (flagoff += exc.flagoff)) {
 		if (flagoff < 0) {
 			if (sp->lno <= -flagoff) {
-				msgq(sp, M_ERR, "Flag offset before line 1");
+				msgq(sp, M_ERR,
+				    "110|Flag offset before line 1");
 				goto err;
 			}
 		} else {
 			if (file_lline(sp, ep, &lno))
 				goto err;
 			if (sp->lno + flagoff > lno) {
-				msgq(sp, M_ERR, "Flag offset past end-of-file");
+				msgq(sp, M_ERR,
+				    "111|Flag offset past end-of-file");
 				goto err;
 			}
 		}
@@ -1478,7 +1486,7 @@ err:	if (sep != NONE &&
 		}
 	if (save_cmdlen != 0)
 		msgq(sp, M_ERR,
-		    "Ex command failed: remaining command input discarded");
+		    "112|Ex command failed: remaining command input discarded");
 	/*
 	 * !!!
 	 * Previous versions of nvi cleared mapped characters on error.  This
@@ -1598,7 +1606,7 @@ done:	if (savecursor_set) {
 	}
 	if (excp->addrcnt == 2 && excp->addr2.lno < excp->addr1.lno) {
 		msgq(sp, M_ERR,
-		    "The second address is smaller than the first");
+		    "113|The second address is smaller than the first");
 		return (1);
 	}
 	*cmdp = cmd;
@@ -1668,7 +1676,7 @@ ep_line(sp, ep, cur, cmdp, cmdlenp, addr_found)
 		F_SET(exp, EX_ABSMARK);
 
 		if (cmdlen == 1) {
-			msgq(sp, M_ERR, "No mark name supplied");
+			msgq(sp, M_ERR, "114|No mark name supplied");
 			return (1);
 		}
 		if (mark_get(sp, ep, cmd[1], cur))
@@ -1684,7 +1692,7 @@ ep_line(sp, ep, cur, cmdp, cmdlenp, addr_found)
 		 * difference.  C'est la vie.
 		 */
 		if (cmdlen < 2 || cmd[1] != '/' && cmd[1] != '?') {
-			msgq(sp, M_ERR, "\\ not followed by / or ?");
+			msgq(sp, M_ERR, "115|\\ not followed by / or ?");
 			return (1);
 		}
 		++cmd;
@@ -1700,7 +1708,7 @@ search:		F_SET(exp, EX_ABSMARK);
 
 		if (ep == NULL) {
 			msgq(sp, M_ERR,
-	"A search address requires that a file have already been read in");
+	"116|A search address requires that a file have already been read in");
 			return (1);
 		}
 		*addr_found = 1;
@@ -1757,7 +1765,7 @@ search:		F_SET(exp, EX_ABSMARK);
 	if (*addr_found) {
 		if (total < 0 && -total > cur->lno) {
 			msgq(sp, M_ERR,
-			    "Reference to a line number less than 0");
+			    "117|Reference to a line number less than 0");
 			return (1);
 		}
 		cur->lno += total;
@@ -1766,6 +1774,33 @@ search:		F_SET(exp, EX_ABSMARK);
 		*cmdlenp = cmdlen;
 	}
 	return (0);
+}
+				
+/*
+ * ex_unknown --
+ *	Display an unknown command name.
+ */
+static void
+ex_unknown(sp, cmd, len)
+	SCR *sp;
+	char *cmd;
+	size_t len;
+{
+	size_t blen;
+	int nf;
+	char *bp, *p;
+
+	GET_SPACE_GOTO(sp, bp, blen, len + 1);
+	if (0) {
+binc_err:	return;
+	}
+	memmove(bp, cmd, len);
+	bp[len] = '\0';
+	p = msg_print(sp, bp, &nf);
+	msgq(sp, M_ERR, "100|The %s command is unknown", p);
+	if (nf)
+		FREE_SPACE(sp, p, 0);
+	FREE_SPACE(sp, bp, blen);
 }
 
 /*
@@ -1833,8 +1868,9 @@ badlno(sp, lno)
 	recno_t lno;
 {
 	if (lno == 0)
-		msgq(sp, M_ERR, "Illegal address: the file is empty");
+		msgq(sp, M_ERR, "118|Illegal address: the file is empty");
 	else
-		msgq(sp, M_ERR, "Illegal address: only %lu line%s in the file",
+		msgq(sp, M_ERR,
+		    "119|Illegal address: only %lu line%s in the file",
 		    lno, lno > 1 ? "s" : "");
 }

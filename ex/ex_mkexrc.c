@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_mkexrc.c,v 8.14 1994/08/17 14:30:57 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:30:57 $";
+static char sccsid[] = "$Id: ex_mkexrc.c,v 8.15 1994/08/31 17:17:14 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:17:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,8 +46,8 @@ ex_mkexrc(sp, ep, cmdp)
 {
 	struct stat sb;
 	FILE *fp;
-	int fd, sverrno;
-	char *fname;
+	int fd, nf, sverrno;
+	char *fname, *p;
 
 	switch (cmdp->argc) {
 	case 0:
@@ -62,22 +62,27 @@ ex_mkexrc(sp, ep, cmdp)
 	}
 
 	if (!F_ISSET(cmdp, E_FORCE) && !stat(fname, &sb)) {
+		p = msg_print(sp, fname, &nf);
 		msgq(sp, M_ERR,
-		    "%s exists, not written; use ! to override", fname);
+		    "141|%s exists, not written; use ! to override", p);
+		if (nf)
+			FREE_SPACE(sp, p, 0);
 		return (1);
 	}
 
 	/* Create with max permissions of rw-r--r--. */
 	if ((fd = open(fname, O_CREAT | O_TRUNC | O_WRONLY,
 	    S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) < 0) {
-		msgq(sp, M_SYSERR, fname);
+		p = msg_print(sp, fname, &nf);
+		msgq(sp, M_SYSERR, "%s", p);
+		if (nf)
+			FREE_SPACE(sp, p, 0);
 		return (1);
 	}
 
 	if ((fp = fdopen(fd, "w")) == NULL) {
 		sverrno = errno;
 		(void)close(fd);
-		errno = sverrno;
 		goto e2;
 	}
 
@@ -90,15 +95,23 @@ ex_mkexrc(sp, ep, cmdp)
 #ifndef NO_DIGRAPH
 	digraph_save(sp, fd);
 #endif
-	if (fclose(fp))
+	if (fclose(fp)) {
+		sverrno = errno;
 		goto e2;
+	}
 
-	msgq(sp, M_INFO, "New .exrc file: %s. ", fname);
+	p = msg_print(sp, fname, &nf);
+	msgq(sp, M_INFO, "142|New .exrc file: %s. ", p);
+	if (nf)
+		FREE_SPACE(sp, p, 0);
 	return (0);
 
 e1:	sverrno = errno;
 	(void)fclose(fp);
+e2:	p = msg_print(sp, fname, &nf);
 	errno = sverrno;
-e2:	msgq(sp, M_ERR, "%s: incomplete: %s", fname, strerror(errno));
+	msgq(sp, M_SYSERR, "143|%s", p);
+	if (nf)
+		FREE_SPACE(sp, p, 0);
 	return (1);
 }

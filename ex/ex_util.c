@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_util.c,v 8.14 1994/08/17 14:31:24 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:31:24 $";
+static char sccsid[] = "$Id: ex_util.c,v 8.15 1994/08/31 17:17:31 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:17:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -156,8 +156,31 @@ ex_ncheck(sp, force)
 	    sp->cargv != NULL && sp->cargv[1] != NULL) {
 		sp->q_ccnt = sp->ccnt;
 		msgq(sp, M_ERR,
-    "More files to edit; use n[ext] to go to the next file, q[uit]! to quit");
+"170|More files to edit; use n[ext] to go to the next file, q[uit]! to quit");
 		return (1);
 	}
 	return (0);
+}
+
+/*
+ * ex_message --
+ *	Display a few common messages.
+ */
+void
+ex_message(sp, cmdp, which)
+	SCR *sp;
+	EXCMDARG *cmdp;
+	enum exmtype which;
+{
+	switch (which) {
+	case EXM_INTERRUPTED:
+		msgq(sp, M_INFO, "134|Interrupted");
+		break;
+	case EXM_NOPREVRE:
+		msgq(sp, M_ERR, "230|No previous regular expression");
+		break;
+	case EXM_USAGE:
+		msgq(sp, M_ERR, "130|Usage: %s", cmdp->cmd->usage);
+		break;
+	}
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 8.38 1994/08/17 14:30:35 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:30:35 $";
+static char sccsid[] = "$Id: ex_argv.c,v 8.39 1994/08/31 17:17:01 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:17:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -307,7 +307,7 @@ argv_fexp(sp, excp, cmd, cmdlen, p, lenp, bpp, blenp, is_bang)
 			exp = EXP(sp);
 			if (exp->lastbcomm == NULL) {
 				msgq(sp, M_ERR,
-				    "No previous command to replace \"!\"");
+				    "123|No previous command to replace \"!\"");
 				return (1);
 			}
 			len += tlen = strlen(exp->lastbcomm);
@@ -319,7 +319,7 @@ argv_fexp(sp, excp, cmd, cmdlen, p, lenp, bpp, blenp, is_bang)
 		case '%':
 			if ((t = sp->frp->name) == NULL) {
 				msgq(sp, M_ERR,
-				    "No filename to substitute for %%");
+				    "124|No filename to substitute for %%");
 				return (1);
 			}
 			tlen = strlen(t);
@@ -332,7 +332,7 @@ argv_fexp(sp, excp, cmd, cmdlen, p, lenp, bpp, blenp, is_bang)
 		case '#':
 			if ((t = sp->alt_name) == NULL) {
 				msgq(sp, M_ERR,
-				    "No filename to substitute for #");
+				    "125|No filename to substitute for #");
 				return (1);
 			}
 			len += tlen = strlen(t);
@@ -478,7 +478,7 @@ argv_sexp(sp, bpp, blenp, lenp)
 	FILE *ifp;
 	pid_t pid;
 	size_t blen, len;
-	int ch, rval, output[2];
+	int ch, nf, rval, output[2];
 	char *bp, *p, *sh, *sh_path;
 
 	bp = *bpp;
@@ -533,8 +533,10 @@ err:		(void)close(output[0]);
 
 		/* Assumes that all shells have -c. */
 		execl(sh_path, sh, "-c", bp, NULL);
-		msgq(sp, M_ERR,
-		    "Error: execl: %s: %s", sh_path, strerror(errno));
+		p = msg_print(sp, sh_path, &nf);
+		msgq(sp, M_SYSERR, "126|Error: execl: %s", p);
+		if (nf)
+			FREE_SPACE(sp, p, 0);
 		_exit(127);
 	default:			/* Parent. */
 		SIGUNBLOCK(sp->gp);
@@ -571,7 +573,10 @@ err:		(void)close(output[0]);
 	*lenp = len;
 
 	if (ferror(ifp)) {
-		msgq(sp, M_ERR, "I/O error: %s", sh);
+		p = msg_print(sp, sh, &nf);
+		msgq(sp, M_ERR, "127|I/O error: %s", sh);
+		if (nf)
+			FREE_SPACE(sp, p, 0);
 binc_err:	rval = 1;
 	}
 	(void)fclose(ifp);

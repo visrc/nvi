@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_usage.c,v 8.21 1994/08/17 14:31:23 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:31:23 $";
+static char sccsid[] = "$Id: ex_usage.c,v 8.22 1994/08/31 17:17:30 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:17:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -126,7 +126,7 @@ ex_viusage(sp, ep, cmdp)
 	switch (cmdp->argc) {
 	case 1:
 		if (cmdp->argv[0]->len != 1) {
-			msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
+			ex_message(sp, cmdp, EXM_USAGE);
 			return (1);
 		}
 		key = cmdp->argv[0]->bp[0];

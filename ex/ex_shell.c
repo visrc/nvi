@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 8.27 1994/08/31 10:40:29 bostic Exp $ (Berkeley) $Date: 1994/08/31 10:40:29 $";
+static char sccsid[] = "$Id: ex_shell.c,v 8.28 1994/08/31 17:17:22 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:17:22 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -59,7 +59,8 @@ ex_exec_proc(sp, cmd, p1, p2)
 {
 	const char *name;
 	pid_t pid;
-	int rval, teardown;
+	int nf, rval, teardown;
+	char *p;
 
 	/* Clear the rest of the screen. */
 	if (sp->s_clear(sp))
@@ -97,8 +98,10 @@ ex_exec_proc(sp, cmd, p1, p2)
 		else
 			++name;
 		execl(O_STR(sp, O_SHELL), name, "-c", cmd, NULL);
-		msgq(sp, M_ERR, "Error: execl: %s: %s",
-		    O_STR(sp, O_SHELL), strerror(errno));
+		p = msg_print(sp, O_STR(sp, O_SHELL), &nf);
+		msgq(sp, M_SYSERR, "execl: %s", p);
+		if (nf)
+			FREE_SPACE(sp, p, 0);
 		_exit(127);
 		/* NOTREACHED */
 	default:			/* Parent. */

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_screen.c,v 8.15 1994/08/17 14:31:06 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:31:06 $";
+static char sccsid[] = "$Id: ex_screen.c,v 8.16 1994/08/31 17:17:20 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:17:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -80,7 +80,7 @@ ex_resize(sp, ep, cmdp)
 	enum adjust adj;
 
 	if (!F_ISSET(cmdp, E_COUNT)) {
-		msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
+		ex_message(sp, cmdp, EXM_USAGE);
 		return (1);
 	}
 	if (F_ISSET(cmdp, E_COUNT_NEG))

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 8.41 1994/08/17 14:31:05 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:31:05 $";
+static char sccsid[] = "$Id: ex_read.c,v 8.42 1994/08/31 17:17:18 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:17:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -52,7 +52,7 @@ ex_read(sp, ep, cmdp)
 	MARK rm;
 	recno_t nlines;
 	size_t arglen, blen, len;
-	int btear, farg, rval;
+	int btear, farg, nf, rval;
 	char *p;
 
 	/*
@@ -165,9 +165,12 @@ ex_read(sp, ep, cmdp)
 			set_alt_name(sp, name);
 		break;
 	default:
+		p = msg_print(sp, cmdp->argv[0]->bp, &nf);
 badarg:		msgq(sp, M_ERR,
-		    "%s expanded into too many file names", cmdp->argv[0]->bp);
-usage:		msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
+		    "149|%s expanded into too many file names", p);
+		if (nf)
+			FREE_SPACE(sp, p, 0);
+usage:		ex_message(sp, cmdp, EXM_USAGE);
 		return (1);
 	}
 
@@ -178,12 +181,15 @@ usage:		msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
 	 * was no way to "force" it.
 	 */
 	if ((fp = fopen(name, "r")) == NULL || fstat(fileno(fp), &sb)) {
-		msgq(sp, M_SYSERR, "%s", name);
+		p = msg_print(sp, name, &nf);
+		msgq(sp, M_SYSERR, "%s", p);
+		if (nf)
+			FREE_SPACE(sp, p, 0);
 		return (1);
 	}
 	if (!S_ISREG(sb.st_mode)) {
 		(void)fclose(fp);
-		msgq(sp, M_ERR, "Only regular files may be read");
+		msgq(sp, M_ERR, "150|Only regular files may be read");
 		return (1);
 	}
 
@@ -224,7 +230,8 @@ ex_readfp(sp, ep, name, fp, fm, nlinesp, success_msg)
 	recno_t lcnt, lno;
 	size_t len;
 	u_long ccnt;			/* XXX: can't print off_t portably. */
-	int rval;
+	int nf, rval;
+	char *p;
 
 	rval = 0;
 	exp = EXP(sp);
@@ -238,7 +245,7 @@ ex_readfp(sp, ep, name, fp, fm, nlinesp, success_msg)
 	for (lno = fm->lno; !ex_getline(sp, fp, &len); ++lno, ++lcnt) {
 		if (INTERRUPTED(sp)) {
 			if (!success_msg)
-				msgq(sp, M_INFO, "Interrupted");
+				ex_message(sp, NULL, EXM_INTERRUPTED);
 			break;
 		}
 		if (file_aline(sp, ep, 1, lno, exp->ibp, len)) {
@@ -249,12 +256,18 @@ ex_readfp(sp, ep, name, fp, fm, nlinesp, success_msg)
 	}
 
 	if (ferror(fp)) {
-		msgq(sp, M_SYSERR, "%s", name);
+		p = msg_print(sp, name, &nf);
+		msgq(sp, M_SYSERR, "%s", p);
+		if (nf)
+			FREE_SPACE(sp, p, 0);
 		rval = 1;
 	}
 
 	if (fclose(fp)) {
-		msgq(sp, M_SYSERR, "%s", name);
+		p = msg_print(sp, name, &nf);
+		msgq(sp, M_SYSERR, "%s", p);
+		if (nf)
+			FREE_SPACE(sp, p, 0);
 		return (1);
 	}
 
@@ -265,10 +278,18 @@ ex_readfp(sp, ep, name, fp, fm, nlinesp, success_msg)
 	if (nlinesp != NULL)
 		*nlinesp = lcnt;
 
-	if (success_msg)
-		msgq(sp, M_INFO, "%s%s: %lu line%s, %lu characters",
-		    INTERRUPTED(sp) ? "Interrupted read: " : "",
-		    name, lcnt, lcnt == 1 ? "" : "s", ccnt);
-
+	if (success_msg) {
+		p = msg_print(sp, name, &nf);
+		if (INTERRUPTED(sp))
+			msgq(sp, M_INFO,
+		    "151|Interrupted read: %s: %lu line%s, %lu characters",
+			    p, lcnt, lcnt == 1 ? "" : "s", ccnt);
+		else
+			msgq(sp, M_INFO,
+			    "152|%s: %lu line%s, %lu characters",
+			    p, lcnt, lcnt == 1 ? "" : "s", ccnt);
+		if (nf)
+			FREE_SPACE(sp, p, 0);
+	}
 	return (0);
 }

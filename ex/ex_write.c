@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 8.38 1994/08/17 14:31:28 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:31:28 $";
+static char sccsid[] = "$Id: ex_write.c,v 8.39 1994/08/31 17:17:33 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:17:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -138,7 +138,7 @@ exwr(sp, ep, cmdp, cmd)
 {
 	EX_PRIVATE *exp;
 	MARK rm;
-	int flags;
+	int flags, nf;
 	char *name, *p;
 
 	/* All write commands can have an associated '!'. */
@@ -163,7 +163,7 @@ exwr(sp, ep, cmdp, cmd)
 	if (cmd == WRITE && *p == '!') {
 		for (++p; *p && isblank(*p); ++p);
 		if (*p == '\0') {
-			msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
+			ex_message(sp, cmdp, EXM_USAGE);
 			return (1);
 		}
 		/* Expand the argument. */
@@ -204,9 +204,11 @@ exwr(sp, ep, cmdp, cmd)
 		break;
 	default:
 		/* If expanded to more than one argument, object. */
-		msgq(sp, M_ERR, "%s expanded into too many file names",
-		    cmdp->argv[0]->bp);
-		msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
+		p = msg_print(sp, cmdp->argv[0]->bp, &nf);
+		msgq(sp, M_ERR, "172|%s expanded into too many file names", p);
+		if (nf)
+			FREE_SPACE(sp, p, 0);
+		ex_message(sp, cmdp, EXM_USAGE);
 		return (1);
 	}
 
@@ -232,7 +234,7 @@ ex_writefp(sp, ep, name, fp, fm, tm, nlno, nch)
 	u_long ccnt;			/* XXX: can't print off_t portably. */
 	recno_t fline, tline, lcnt;
 	size_t len;
-	int sv_errno;
+	int nf, sv_errno;
 	char *p;
 
 	fline = fm->lno;
@@ -268,7 +270,10 @@ ex_writefp(sp, ep, name, fp, fm, tm, nlno, nch)
 			if ((p = file_gline(sp, ep, fline, &len)) == NULL)
 				break;
 			if (fwrite(p, 1, len, fp) != len) {
-				msgq(sp, M_SYSERR, name);
+				p = msg_print(sp, name, &nf);
+				msgq(sp, M_SYSERR, "%s", p);
+				if (nf)
+					FREE_SPACE(sp, p, 0);
 				(void)fclose(fp);
 				return (1);
 			}
@@ -295,7 +300,11 @@ ex_writefp(sp, ep, name, fp, fm, tm, nlno, nch)
 	}
 	return (0);
 
-err:	if (!F_ISSET(ep, F_MULTILOCK))
-		msgq(sp, M_SYSERR, name);
+err:	if (!F_ISSET(ep, F_MULTILOCK)) {
+		p = msg_print(sp, name, &nf);
+		msgq(sp, M_SYSERR, "%s", p);
+		if (nf)
+			FREE_SPACE(sp, p, 0);
+	}
 	return (1);
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_script.c,v 8.19 1994/08/17 14:31:07 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:31:07 $";
+static char sccsid[] = "$Id: ex_script.c,v 8.20 1994/08/31 17:17:21 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:17:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -57,7 +57,7 @@ ex_script(sp, ep, cmdp)
 	/* Vi only command. */
 	if (!IN_VI_MODE(sp)) {
 		msgq(sp, M_ERR,
-		    "The script command is only available in vi mode");
+		    "153|The script command is only available in vi mode");
 		return (1);
 	}
 
@@ -87,7 +87,8 @@ sscr_init(sp, ep)
 	EXF *ep;
 {
 	SCRIPT *sc;
-	char *sh, *sh_path;
+	int nf;
+	char *p, *sh, *sh_path;
 
 	MALLOC_RET(sp, sc, SCRIPT *, sizeof(SCRIPT));
 	sp->script = sc;
@@ -172,8 +173,10 @@ err:		if (sc->sh_master != -1)
 		else
 			++sh;
 		execl(sh_path, sh, "-i", NULL);
-		msgq(sp, M_ERR,
-		    "Error: execl: %s: %s", sh_path, strerror(errno));
+		p = msg_print(sp, sh_path, &nf);
+		msgq(sp, M_SYSERR, "execl: %s", p);
+		if (nf)
+			FREE_SPACE(sp, p, 0);
 		_exit(127);
 	default:			/* Parent. */
 		SIGUNBLOCK(sp->gp);
@@ -333,7 +336,7 @@ sscr_exec(sp, ep, lno)
 	/* Delete any prompt. */
 	if (sscr_matchprompt(sp, p, len, &tlen)) {
 		if (tlen == len) {
-empty:			msgq(sp, M_BERR, "Nothing to execute");
+empty:			msgq(sp, M_BERR, "154|No command to execute");
 			goto err1;
 		}
 		p += (len - tlen);

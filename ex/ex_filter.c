@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 8.45 1994/08/17 14:31:35 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:31:35 $";
+static char sccsid[] = "$Id: ex_filter.c,v 8.46 1994/08/31 17:17:36 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:17:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -51,8 +51,8 @@ filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
 	FILE *ifp, *ofp;
 	pid_t parent_writer_pid, utility_pid;
 	recno_t nread;
-	int input[2], output[2], rval, teardown;
-	char *name;
+	int input[2], output[2], nf, rval, teardown;
+	char *name, *p;
 
 	/* Set return cursor position; guard against a line number of zero. */
 	*rp = *fm;
@@ -80,8 +80,10 @@ filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
 	input[0] = input[1] = output[0] = output[1] = -1;
 	if (ftype == FILTER_READ) {
 		if ((input[0] = open(_PATH_DEVNULL, O_RDONLY, 0)) < 0) {
-			msgq(sp, M_ERR,
-			    "filter: %s: %s", _PATH_DEVNULL, strerror(errno));
+			p = msg_print(sp, _PATH_DEVNULL, &nf);
+			msgq(sp, M_SYSERR, "open: %s", p);
+			if (nf)
+				FREE_SPACE(sp, p, 0);
 			return (1);
 		}
 	} else
@@ -155,8 +157,10 @@ err:		if (input[0] != -1)
 			++name;
 
 		execl(O_STR(sp, O_SHELL), name, "-c", cmd, NULL);
-		msgq(sp, M_ERR, "Error: execl: %s: %s",
-		    O_STR(sp, O_SHELL), strerror(errno));
+		p = msg_print(sp, O_STR(sp, O_SHELL), &nf);
+		msgq(sp, M_SYSERR, "execl: %s", p);
+		if (nf)
+			FREE_SPACE(sp, p, 0);
 		_exit (127);
 		/* NOTREACHED */
 	default:			/* Parent-reader, parent-writer. */
@@ -316,7 +320,8 @@ proc_wait(sp, pid, cmd, okpipe)
 {
 	extern const char *const sys_siglist[];
 	size_t len;
-	int pstat;
+	int nf, pstat;
+	char *p;
 
 	/*
 	 * Wait for the utility to finish.  We can get interrupted
@@ -327,7 +332,7 @@ proc_wait(sp, pid, cmd, okpipe)
 		if (waitpid((pid_t)pid, &pstat, 0) != -1)
 			break;
 		if (errno != EINTR) {
-			msgq(sp, M_SYSERR, "wait error");
+			msgq(sp, M_SYSERR, "waitpid");
 			return (1);
 		}
 	}
@@ -339,19 +344,25 @@ proc_wait(sp, pid, cmd, okpipe)
 	 */
 	if (WIFSIGNALED(pstat) && (!okpipe || WTERMSIG(pstat) != SIGPIPE)) {
 		for (; isblank(*cmd); ++cmd);
-		len = strlen(cmd);
+		p = msg_print(sp, cmd, &nf);
+		len = strlen(p);
 		msgq(sp, M_ERR, "%.*s%s: received signal: %s%s",
-		    MIN(len, 20), cmd, len > 20 ? "..." : "",
+		    MIN(len, 20), p, len > 20 ? "..." : "",
 		    sys_siglist[WTERMSIG(pstat)],
 		    WCOREDUMP(pstat) ? "; core dumped" : "");
+		if (nf)
+			FREE_SPACE(sp, p, 0);
 		return (1);
 	}
 	if (WIFEXITED(pstat) && WEXITSTATUS(pstat)) {
 		for (; isblank(*cmd); ++cmd);
-		len = strlen(cmd);
+		p = msg_print(sp, cmd, &nf);
+		len = strlen(p);
 		msgq(sp, M_ERR, "%.*s%s: exited with status %d",
-		    MIN(len, 20), cmd, len > 20 ? "..." : "",
+		    MIN(len, 20), p, len > 20 ? "..." : "",
 		    WEXITSTATUS(pstat));
+		if (nf)
+			FREE_SPACE(sp, p, 0);
 		return (1);
 	}
 	return (0);
@@ -382,7 +393,7 @@ filter_ldisplay(sp, fp)
 			break;
 	}
 	if (ferror(fp))
-		msgq(sp, M_SYSERR, "filter input");
+		msgq(sp, M_SYSERR, "filter read");
 	(void)fclose(fp);
 	return (0);
 }

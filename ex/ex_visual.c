@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_visual.c,v 8.15 1994/08/17 14:31:27 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:31:27 $";
+static char sccsid[] = "$Id: ex_visual.c,v 8.16 1994/08/31 17:17:32 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:17:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,7 +46,7 @@ ex_visual(sp, ep, cmdp)
 	/* If open option off, disallow visual command. */
 	if (!O_ISSET(sp, O_OPEN)) {
 		msgq(sp, M_ERR,
-		    "The visual command requires that the open option be set");
+	    "171|The visual command requires that the open option be set");
 		return (1);
 	}
 

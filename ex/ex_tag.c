@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 8.45 1994/08/17 14:31:19 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:31:19 $";
+static char sccsid[] = "$Id: ex_tag.c,v 8.46 1994/08/31 17:17:27 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:17:27 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -58,7 +58,7 @@ ex_tagfirst(sp, tagarg)
 	MARK m;
 	long tl;
 	u_int flags;
-	int sval;
+	int nf, sval;
 	char *p, *tag, *name, *search;
 
 	/* Taglength may limit the number of characters. */
@@ -98,8 +98,12 @@ ex_tagfirst(sp, tagarg)
 			sval = f_search(sp, sp->ep,
 			    &m, &m, search, NULL, &flags);
 		}
-		if (sval)
-			msgq(sp, M_ERR, "%s: search pattern not found", tag);
+		if (sval) {
+			p = msg_print(sp, tag, &nf);
+			msgq(sp, M_ERR, "161|%s: search pattern not found", p);
+			if (nf)
+				FREE_SPACE(sp, p, 0);
+		}
 	}
 
 	/* Set up the screen. */
@@ -153,7 +157,7 @@ ex_tagpush(sp, ep, cmdp)
 	MARK m;
 	TAG *tp;
 	u_int flags;
-	int sval;
+	int nf, sval;
 	long tl;
 	char *name, *p, *search, *tag;
 
@@ -169,7 +173,7 @@ ex_tagpush(sp, ep, cmdp)
 		break;
 	case 0:
 		if (exp->tlast == NULL) {
-			msgq(sp, M_ERR, "No previous tag entered");
+			msgq(sp, M_ERR, "162|No previous tag entered");
 			return (1);
 		}
 		break;
@@ -260,8 +264,12 @@ err:		free(tag);
 			     &m, &m, search, NULL, &flags);
 			p[1] = '(';
 		}
-		if (sval)
-			msgq(sp, M_ERR, "%s: search pattern not found", tag);
+		if (sval) {
+			p = msg_print(sp, tag, &nf);
+			msgq(sp, M_ERR, "163|%s: search pattern not found", p);
+			if (nf)
+				FREE_SPACE(sp, p, 0);
+		}
 	}
 	free(tag);
 
@@ -294,14 +302,15 @@ ex_tagpop(sp, ep, cmdp)
 {
 	EX_PRIVATE *exp;
 	TAG *ntp, *tp;
-	long off;
 	size_t arglen;
+	long off;
+	int nf;
 	char *arg, *p, *t;
 
 	/* Check for an empty stack. */
 	exp = EXP(sp);
 	if (exp->tagq.tqh_first == NULL) {
-		msgq(sp, M_INFO, "The tags stack is empty");
+		msgq(sp, M_INFO, "164|The tags stack is empty");
 		return (1);
 	}
 
@@ -319,7 +328,7 @@ ex_tagpop(sp, ep, cmdp)
 			    tp != NULL && --off > 1; tp = tp->q.tqe_next);
 			if (tp == NULL) {
 				msgq(sp, M_ERR,
-"Less than %s entries on the tags stack; use :display to see the tags stack",
+"165|Less than %s entries on the tags stack; use :display t[ags]",
 				    arg);
 				return (1);
 			}
@@ -338,9 +347,12 @@ ex_tagpop(sp, ep, cmdp)
 					break;
 			}
 			if (tp == NULL) {
+				p = msg_print(sp, arg, &nf);
 				msgq(sp, M_ERR,
-"No file named %s on the tags stack; use :display to see the tags stack",
-				    arg);
+"166|No file named %s on the tags stack; use :display t[ags]",
+				    p);
+				if (nf)
+					FREE_SPACE(sp, p, 0);
 				return (1);
 			}
 		}
@@ -400,7 +412,7 @@ ex_tagtop(sp, ep, cmdp)
 	for (tp = exp->tagq.tqh_first;
 	    tp != NULL && tp->q.tqe_next != NULL; tp = tp->q.tqe_next);
 	if (tp == NULL) {
-		msgq(sp, M_INFO, "The tags stack is empty");
+		msgq(sp, M_INFO, "167|The tags stack is empty");
 		return (1);
 	}
 
@@ -609,8 +621,8 @@ tag_get(sp, tag, tagp, filep, searchp)
 	EX_PRIVATE *exp;
 	TAGF *tfp;
 	size_t plen, slen, tlen;
-	int dne;
-	char *p, pbuf[MAXPATHLEN];
+	int dne, nf1, nf2;
+	char *p, *t, pbuf[MAXPATHLEN];
 
 	/*
 	 * Find the tag, only display missing file messages once, and
@@ -628,21 +640,31 @@ tag_get(sp, tag, tagp, filep, searchp)
 					dne = 1;
 					F_SET(tfp, TAGF_DNE);
 				}
-			} else
-				msgq(sp, M_SYSERR, tfp->name);
+			} else {
+				p = msg_print(sp, tfp->name, &nf1);
+				msgq(sp, M_SYSERR, "%s", p);
+				if (nf1)
+					FREE_SPACE(sp, p, 0);
+			}
 		else
 			if (p != NULL)
 				break;
 	}
 
 	if (p == NULL) {
-		msgq(sp, M_ERR, "%s: tag not found", tag);
+		p = msg_print(sp, tag, &nf1);
+		msgq(sp, M_ERR, "168|%s: tag not found", p);
+		if (nf1)
+			FREE_SPACE(sp, p, 0);
 		if (dne)
 			for (tfp = exp->tagfq.tqh_first;
 			    tfp != NULL; tfp = tfp->q.tqe_next)
 				if (F_ISSET(tfp, TAGF_DNE)) {
+					p = msg_print(sp, tfp->name, &nf1);
 					errno = ENOENT;
-					msgq(sp, M_SYSERR, tfp->name);
+					msgq(sp, M_SYSERR, "%s", p);
+					if (nf1)
+						FREE_SPACE(sp, p, 0);
 					F_SET(tfp, TAGF_DNE_WARN);
 				}
 		return (1);
@@ -664,7 +686,13 @@ tag_get(sp, tag, tagp, filep, searchp)
 	*searchp = p;
 	if (*p == '\0') {
 malformed:	free(*tagp);
-		msgq(sp, M_ERR, "%s: corrupted tag in %s", tag, tfp->name);
+		p = msg_print(sp, tag, &nf1);
+		t = msg_print(sp, tfp->name, &nf2);
+		msgq(sp, M_ERR, "169|%s: corrupted tag in %s", p, t);
+		if (nf1)
+			FREE_SPACE(sp, p, 0);
+		if (nf2)
+			FREE_SPACE(sp, t, 0);
 		return (1);
 	}
 
