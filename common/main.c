@@ -1,7 +1,7 @@
 /*-
  * Copyright (c) 1992, 1993, 1994
  *	The Regents of the University of California.  All rights reserved.
- * Copyright (c) 1994, 1995
+ * Copyright (c) 1994, 1995, 1996
  *	Keith Bostic.  All rights reserved.
  *
  * %sccs.include.redist.c%
@@ -11,12 +11,12 @@
 static char copyright[] =
 "%Z% Copyright (c) 1992, 1993, 1994\n\
 	The Regents of the University of California.  All rights reserved.\n\
-%Z% Copyright (c) 1994, 1995\n\
+%Z% Copyright (c) 1994, 1995, 1996\n\
 	Keith Bostic.  All rights reserved.\n";
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 10.21 1996/02/04 19:00:20 bostic Exp $ (Berkeley) $Date: 1996/02/04 19:00:20 $";
+static char sccsid[] = "$Id: main.c,v 10.22 1996/02/06 10:45:27 bostic Exp $ (Berkeley) $Date: 1996/02/06 10:45:27 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -489,13 +489,6 @@ v_end(gp)
 		free(mp);
 #endif
 	}
-
-	/* Reset anything that needs resetting. */
-	if (gp->flags & G_SETMODE)			/* O_MESG */
-		if ((tty = ttyname(STDERR_FILENO)) == NULL)
-			v_estr(gp->progname, errno, "ttyname");
-		else if (chmod(tty, gp->origmode) < 0)
-			v_estr(gp->progname, errno, tty);
 
 #if defined(DEBUG) || defined(PURIFY) || defined(LIBRARY)
 	/* Free any temporary space. */

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 10.24 1995/11/08 08:32:53 bostic Exp $ (Berkeley) $Date: 1995/11/08 08:32:53 $";
+static char sccsid[] = "$Id: msg.c,v 10.25 1996/02/06 10:45:17 bostic Exp $ (Berkeley) $Date: 1996/02/06 10:45:17 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -625,11 +625,6 @@ msg_open(sp, file)
 	SCR *sp;
 	char *file;
 {
-	DB *db;
-	DBT data, key;
-	recno_t msgno;
-	char *p, *t, buf[MAXPATHLEN];
-
 	/*
 	 * !!!
 	 * Assume that the first file opened is the system default, and that
@@ -639,6 +634,12 @@ msg_open(sp, file)
 	 * installed system, the file will be there, if it's not, then the
 	 * message will be repeated every time nvi is started up.
 	 */
+	static int first = 1;
+	DB *db;
+	DBT data, key;
+	recno_t msgno;
+	char *p, *t, buf[MAXPATHLEN];
+
 	if ((p = strrchr(file, '/')) != NULL && p[1] == '\0' &&
 	    ((t = getenv("LANG")) != NULL && t[0] != '\0' ||
 	    (t = getenv("LC_MESSAGES")) != NULL && t[0] != '\0')) {
@@ -648,15 +649,17 @@ msg_open(sp, file)
 		p = file;
 	if ((db = dbopen(p,
 	    O_NONBLOCK | O_RDONLY, 0, DB_RECNO, NULL)) == NULL) {
-		if (O_STR(sp, O_MSGCAT) == NULL)
+		if (first) {
+			first = 0;
 			return (1);
+		}
 		msgq_str(sp, M_SYSERR, p, "%s");
 		return (1);
 	}
 
 	/*
-	 * Test record 1 for the magic string.  The msgq call
-	 * is here so the message catalog build finds it.
+	 * Test record 1 for the magic string.  The msgq call is here so
+	 * the message catalog build finds it.
 	 */
 #define	VMC	"VI_MESSAGE_CATALOG"
 	key.data = &msgno;
@@ -666,12 +669,15 @@ msg_open(sp, file)
 	    data.size != sizeof(VMC) - 1 ||
 	    memcmp(data.data, VMC, sizeof(VMC) - 1)) {
 		(void)db->close(db);
-		if (O_STR(sp, O_MSGCAT) == NULL)
+		if (first) {
+			first = 0;
 			return (1);
+		}
 		msgq_str(sp, M_ERR, p,
 		    "030|The file %s is not a message catalog");
 		return (1);
 	}
+	first = 0;
 
 	if (sp->gp->msg != NULL)
 		(void)sp->gp->msg->close(sp->gp->msg);

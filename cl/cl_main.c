@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_main.c,v 10.20 1996/02/04 18:58:51 bostic Exp $ (Berkeley) $Date: 1996/02/04 18:58:51 $";
+static char sccsid[] = "$Id: cl_main.c,v 10.21 1996/02/06 10:44:28 bostic Exp $ (Berkeley) $Date: 1996/02/06 10:44:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -115,6 +115,13 @@ main(argc, argv)
 
 	/* Clean up the terminal. */
 	(void)cl_quit(gp);
+
+	/*
+	 * XXX
+	 * Reset the O_MESG option.
+	 */
+	if (clp->tgw != TGW_UNKNOWN)
+		(void)cl_omesg(NULL, clp, clp->tgw == TGW_SET);
 
 	/* If a killer signal arrived, pretend we just got it. */
 	if (clp->killersig) {

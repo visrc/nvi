@@ -8,12 +8,13 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_term.c,v 10.12 1996/02/04 18:59:37 bostic Exp $ (Berkeley) $Date: 1996/02/04 18:59:37 $";
+static char sccsid[] = "$Id: cl_term.c,v 10.13 1996/02/06 10:44:48 bostic Exp $ (Berkeley) $Date: 1996/02/06 10:44:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 #include <sys/ioctl.h>
 #include <sys/queue.h>
+#include <sys/stat.h>
 #include <sys/time.h>
 
 #include <bitstring.h>
@@ -206,12 +207,14 @@ cl_fmap(sp, stype, from, flen, to, tlen)
  * cl_optchange --
  *	Curses screen specific "option changed" routine.
  *
- * PUBLIC: int cl_optchange __P((SCR *, int));
+ * PUBLIC: int cl_optchange __P((SCR *, int, char *, u_long *));
  */
 int
-cl_optchange(sp, opt)
+cl_optchange(sp, opt, str, valp)
 	SCR *sp;
 	int opt;
+	char *str;
+	u_long *valp;
 {
 	char buf[64];
 
@@ -231,15 +234,16 @@ cl_optchange(sp, opt)
 	 */
 	switch (opt) {
 	case O_COLUMNS:
-		(void)snprintf(buf, sizeof(buf),
-		    "COLUMNS=%lu", O_VAL(sp, O_COLUMNS));
+		(void)snprintf(buf, sizeof(buf), "COLUMNS=%lu", *valp);
 		goto env;
 	case O_LINES:
-		(void)snprintf(buf, sizeof(buf),
-		    "LINES=%lu", O_VAL(sp, O_LINES));
+		(void)snprintf(buf, sizeof(buf), "LINES=%lu", *valp);
 		goto env;
+	case O_MESG:
+		cl_omesg(sp, CLP(sp), !*valp);
+		break;
 	case O_TERM:
-		(void)snprintf(buf, sizeof(buf), "TERM=%s", O_VAL(sp, O_TERM));
+		(void)snprintf(buf, sizeof(buf), "TERM=%s", str);
 
 		/* Insert the new value into the environment. */
 env:		if (cl_putenv(buf))
@@ -251,6 +255,54 @@ env:		if (cl_putenv(buf))
 		break;
 	}
 	return (0);
+}
+
+/*
+ * cl_omesg --
+ *	Turn the tty write permission on or off.
+ *
+ * PUBLIC: int cl_omesg __P((SCR *, CL_PRIVATE *, int));
+ */
+int
+cl_omesg(sp, clp, on)
+	SCR *sp;
+	CL_PRIVATE *clp;
+	int on;
+{
+	struct stat sb;
+	char *tty;
+
+	/* Find the tty, get the current permissions. */
+	if ((tty = ttyname(STDERR_FILENO)) == NULL) {
+		if (sp != NULL)
+			msgq(sp, M_SYSERR, "stderr");
+		return (1);
+	}
+	if (stat(tty, &sb) < 0) {
+		if (sp != NULL)
+			msgq(sp, M_SYSERR, "%s", tty);
+		return (1);
+	}
+
+	/* Save the original status if it's unknown. */
+	if (clp->tgw == TGW_UNKNOWN)
+		clp->tgw = sb.st_mode & S_IWGRP ? TGW_SET : TGW_UNSET;
+
+	/* Toggle the permissions. */
+	if (on) {
+		if (chmod(tty, sb.st_mode | S_IWGRP) < 0) {
+			if (sp != NULL)
+				msgq(sp, M_SYSERR,
+				    "046|messages not turned on: %s", tty);
+			return (1);
+		}
+	} else
+		if (chmod(tty, sb.st_mode & ~S_IWGRP) < 0) {
+			if (sp != NULL)
+				msgq(sp, M_SYSERR,
+				    "045|messages not turned off: %s", tty);
+			return (1);
+		}
 }
 
 /*

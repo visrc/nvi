@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: cl.h,v 10.8 1995/11/11 11:53:50 bostic Exp $ (Berkeley) $Date: 1995/11/11 11:53:50 $
+ *	$Id: cl.h,v 10.9 1996/02/06 10:44:05 bostic Exp $ (Berkeley) $Date: 1996/02/06 10:44:05 $
  */
 
 typedef struct _cl_private {
@@ -33,14 +33,17 @@ typedef struct _cl_private {
 #define	INDX_MAX	4	/* Original signal information. */
 	struct sigaction oact[INDX_MAX];
 
-#define	CL_LLINE_IV	0x0001	/* Last line is in inverse video. */
-#define	CL_SCR_EX_INIT	0x0002	/* Ex screen initialized. */
-#define	CL_SCR_VI_INIT	0x0004	/* Vi screen initialized. */
-#define	CL_SIGHUP	0x0008	/* SIGHUP arrived. */
-#define	CL_SIGINT	0x0010	/* SIGINT arrived. */
-#define	CL_SIGTERM	0x0020	/* SIGTERM arrived. */
-#define	CL_SIGWINCH	0x0040	/* SIGWINCH arrived. */
-	u_int16_t flags;
+	enum {			/* Tty group write mode. */
+	    TGW_UNKNOWN, TGW_SET, TGW_UNSET } tgw;
+
+#define	CL_LLINE_IV	0x001	/* Last line is in inverse video. */
+#define	CL_SCR_EX_INIT	0x002	/* Ex screen initialized. */
+#define	CL_SCR_VI_INIT	0x004	/* Vi screen initialized. */
+#define	CL_SIGHUP	0x008	/* SIGHUP arrived. */
+#define	CL_SIGINT	0x010	/* SIGINT arrived. */
+#define	CL_SIGTERM	0x020	/* SIGTERM arrived. */
+#define	CL_SIGWINCH	0x040	/* SIGWINCH arrived. */
+	u_int32_t flags;
 } CL_PRIVATE;
 
 #define	CLP(sp)		((CL_PRIVATE *)((sp)->gp->cl_private))
