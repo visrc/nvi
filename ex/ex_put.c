@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_put.c,v 5.5 1992/04/19 08:53:58 bostic Exp $ (Berkeley) $Date: 1992/04/19 08:53:58 $";
+static char sccsid[] = "$Id: ex_put.c,v 5.6 1992/04/28 13:44:03 bostic Exp $ (Berkeley) $Date: 1992/04/28 13:44:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,7 +36,7 @@ ex_put(cmdp)
 	/* paste it */
 	ChangeText
 	{
-		cursor = paste(cmdp->addr1, TRUE, FALSE);
+		cursor = paste(cmdp->addr1, 1, 0);
 	}
 
 	autoprint = 1;
