@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_match.c,v 5.1 1992/05/15 11:15:06 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:15:06 $";
+static char sccsid[] = "$Id: v_match.c,v 5.2 1992/05/27 10:40:18 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:40:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,9 +22,9 @@ static char sccsid[] = "$Id: v_match.c,v 5.1 1992/05/15 11:15:06 bostic Exp $ (B
  *	Search to matching character.
  */
 int
-v_match(vp, cp, rp)
+v_match(vp, fm, tm, rp)
 	VICMDARG *vp;
-	MARK *cp, *rp;
+	MARK *fm, *tm, *rp;
 {
 	MARK *fmp;
 	regexp *re;
@@ -32,9 +32,9 @@ v_match(vp, cp, rp)
 	char *p, *ptrn;
 	int cnt, found, startc;
 
-	EGETLINE(p, cp->lno, len);
+	EGETLINE(p, fm->lno, len);
 
-	switch(startc = p[cp->cno]) {
+	switch(startc = p[fm->cno]) {
 	case '(':
 		cnt = 1;
 		ptrn = "[()]";
@@ -67,27 +67,27 @@ v_match(vp, cp, rp)
 		if (regcomp("[()\\[\\]{}]") == NULL)
 			goto nomatch;
 		found = 0;
-		if (regexec(re, p + cp->cno, 0) == 1) {
+		if (regexec(re, p + fm->cno, 0) == 1) {
 			found = 1;
 			rp->cno = re->startp[0] - p;
 		}
-		if (regexec(re, p, 1) == 1 && re->startp[0] - p < cp->cno) {
+		if (regexec(re, p, 1) == 1 && re->startp[0] - p < fm->cno) {
 			if (!found ||
-			    rp->cno < re->startp[0] - p - cp->cno) {
+			    rp->cno < re->startp[0] - p - fm->cno) {
 				found = 1;
 				rp->cno = re->startp[0] - p;
 			}
 		}
 		if (found == 0) {
 nomatch:		bell();
-			msg("No match character on line %lu.", cp->lno);
+			msg("No match character on line %lu.", fm->lno);
 			return (1);
 		}
-		rp->lno = cp->lno;
+		rp->lno = fm->lno;
 		return (0);
 	}
 
-	fmp = cp;
+	fmp = fm;
 	if (cnt > 0)
 		while ((fmp = f_search(fmp, ptrn, NULL, 0)) != NULL) {
 			EGETLINE(p, fmp->lno, len);
