@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 9.30 1995/02/01 12:29:10 bostic Exp $ (Berkeley) $Date: 1995/02/01 12:29:10 $";
+static char sccsid[] = "$Id: ex.c,v 9.31 1995/02/02 11:28:56 bostic Exp $ (Berkeley) $Date: 1995/02/02 11:28:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -621,9 +621,6 @@ skip:		if (F_ISSET(cp, E_NOPERM)) {
 	 *    commands as their first arguments.
 	 * 3: The s command takes an RE as its first argument, and wants it
 	 *    to be specially delimited.
-	 * 4: The append, change and insert commands can (or, if in a global
-	 *    command, always will) have their input passed with them in the
-	 *    command line, and the entire line is then passed to the function.
 	 *
 	 * Historically, '|' characters in the first argument of the ex, edit,
 	 * next, vi visual, and s commands didn't delimit the command.  And,
@@ -787,17 +784,6 @@ skip:		if (F_ISSET(cp, E_NOPERM)) {
 			if (ch == '\n')
 				nl = 1;
 			--cmdlen;
-			break;
-		} else if (ch == '\\' && cmdlen > 1 && cmd[1] == '\n' &&
-		    (cp == &cmds[C_APPEND] || cp == &cmds[C_CHANGE] ||
-		    cp == &cmds[C_INSERT])) {
-			--cmd;
-			/*
-			 * -1 is right.  In this case, there isn't a separation
-			 * character to discard, the underlying functions need
-			 * both the <backslash> and the <newline>.
-			 */
-			cnt = -1;
 			break;
 		}
 		*p++ = ch;
@@ -1237,12 +1223,13 @@ usage:		msgq(sp, M_ERR, "107|Usage: %s", cp->usage);
 	 *
 	 * i.e. mixing and matching the forms confused the historic vi, and,
 	 * not only did it take two terminating lines to terminate text input
-	 * mode, but the trailing backslashes were retained on the input.
+	 * mode, but the trailing backslashes were retained on the input.  We
+	 * match historic practice except that we discard the backslashes.
 	 */
 	if (save_cmdlen && (cp == &cmds[C_APPEND] ||
 	    cp == &cmds[C_CHANGE] || cp == &cmds[C_INSERT])) {
-		if (argv_exp0(sp, &exc, save_cmd, save_cmdlen))
-			goto err;
+		exc.aci_text = save_cmd;
+		exc.aci_len = save_cmdlen;
 		save_cmdlen = 0;
 	}
 
@@ -1400,6 +1387,16 @@ addr2:	switch (exc.addrcnt) {
 	/* Call the underlying function for the ex command. */
 	if (cp->fn(sp, &exc))
 		goto err;
+
+	/*
+	 * If executing a global command that contains text input commands,
+	 * the underlying function may not have eaten the entire command.
+	 */
+	if (exc.aci_text != NULL) {
+		save_cmd = exc.aci_text;
+		save_cmdlen = exc.aci_len;
+		exc.aci_text = NULL;
+	}
 
 	/*
 	 * XXX
