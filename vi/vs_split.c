@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 8.41 1994/06/27 12:15:57 bostic Exp $ (Berkeley) $Date: 1994/06/27 12:15:57 $";
+static char sccsid[] = "$Id: vs_split.c,v 8.42 1994/07/02 14:52:08 bostic Exp $ (Berkeley) $Date: 1994/07/02 14:52:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -192,8 +192,7 @@ svi_split(sp, argv, argc)
 			goto err;
 	} else {
 		/* Create a new argument list. */
-		CALLOC(sp,
-		    tsp->argv, char **, argc + 1, sizeof(char *));
+		CALLOC(sp, tsp->argv, char **, argc + 1, sizeof(char *));
 		if (tsp->argv == NULL)
 			goto err;
 		for (ap = tsp->argv, argv; argv[0]->len != 0; ++ap, ++argv)
@@ -204,7 +203,7 @@ svi_split(sp, argv, argc)
 
 		/* Switch to the first one. */
 		tsp->cargv = tsp->argv;
-		if ((tsp->frp = file_add(sp, *tsp->cargv)) == NULL)
+		if ((tsp->frp = file_add(tsp, *tsp->cargv)) == NULL)
 			goto err;
 	}
 
