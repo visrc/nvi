@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 10.29 1996/02/26 14:22:24 bostic Exp $ (Berkeley) $Date: 1996/02/26 14:22:24 $";
+static char sccsid[] = "$Id: ex_filter.c,v 10.30 1996/02/28 15:24:17 bostic Exp $ (Berkeley) $Date: 1996/02/28 15:24:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -52,8 +52,10 @@ ex_filter(sp, cmdp, fm, tm, rp, cmd, ftype)
 
 	rval = 0;
 
-	/* Set return cursor position. */
+	/* Set return cursor position, which is never less than line 1. */
 	*rp = *fm;
+	if (rp->lno == 0)
+		rp->lno = 1;
 
 	/* We're going to need a shell. */
 	if (opts_empty(sp, O_SHELL, 0))
