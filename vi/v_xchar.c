@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_xchar.c,v 5.10 1992/10/26 17:48:55 bostic Exp $ (Berkeley) $Date: 1992/10/26 17:48:55 $";
+static char sccsid[] = "$Id: v_xchar.c,v 5.11 1992/11/02 22:51:06 bostic Exp $ (Berkeley) $Date: 1992/11/02 22:51:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -86,10 +86,7 @@ v_Xchar(vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	MARK m;
 	u_long cnt;
-	size_t len;
-	u_char *p;
 
 	if (fm->cno == 0) {
 		bell();
