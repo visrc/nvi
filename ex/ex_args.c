@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 9.4 1995/01/11 16:15:16 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:15:16 $";
+static char sccsid[] = "$Id: ex_args.c,v 9.5 1995/02/08 12:47:42 bostic Exp $ (Berkeley) $Date: 1995/02/08 12:47:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -93,9 +93,8 @@ ex_next(sp, cmdp)
 	}
 
 	if (file_init(sp, frp, NULL,
-	    FS_SETALT | (F_ISSET(cmdp, E_FORCE) ? FS_FORCE : 0)))
+	    FS_SETALT | FS_WELCOME | (F_ISSET(cmdp, E_FORCE) ? FS_FORCE : 0)))
 		return (1);
-	(void)msg_status(sp, sp->lno, 0);
 	if (noargs)
 		++sp->cargv;
 	return (0);
@@ -123,9 +122,8 @@ ex_prev(sp, cmdp)
 		return (1);
 
 	if (file_init(sp, frp, NULL,
-	    FS_SETALT | (F_ISSET(cmdp, E_FORCE) ? FS_FORCE : 0)))
+	    FS_SETALT | FS_WELCOME | (F_ISSET(cmdp, E_FORCE) ? FS_FORCE : 0)))
 		return (1);
-	(void)msg_status(sp, sp->lno, 0);
 	--sp->cargv;
 
 	return (0);
@@ -168,9 +166,8 @@ ex_rew(sp, cmdp)
 	if ((frp = file_add(sp, *sp->cargv)) == NULL)
 		return (1);
 	if (file_init(sp, frp, NULL,
-	    FS_SETALT | (F_ISSET(cmdp, E_FORCE) ? FS_FORCE : 0)))
+	    FS_SETALT | FS_WELCOME | (F_ISSET(cmdp, E_FORCE) ? FS_FORCE : 0)))
 		return (1);
-	(void)msg_status(sp, sp->lno, 0);
 	return (0);
 }
 
