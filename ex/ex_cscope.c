@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_cscope.c,v 8.3 1996/04/10 16:24:52 bostic Exp $ (Berkeley) $Date: 1996/04/10 16:24:52 $";
+static const char sccsid[] = "$Id: ex_cscope.c,v 8.4 1996/04/10 20:31:49 bostic Exp $ (Berkeley) $Date: 1996/04/10 20:31:49 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -470,7 +470,7 @@ cscope_find(sp, cmdp, pattern)
 	}
 
 	if (matches == 0) {
-		msgq(sp, M_INFO, "311|No matches for query");
+		msgq(sp, M_INFO, "278|No matches for query");
 		return (0);
 	}
 

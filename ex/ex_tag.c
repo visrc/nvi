@@ -13,7 +13,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_tag.c,v 10.25 1996/04/10 20:26:07 bostic Exp $ (Berkeley) $Date: 1996/04/10 20:26:07 $";
+static const char sccsid[] = "$Id: ex_tag.c,v 10.26 1996/04/10 20:31:49 bostic Exp $ (Berkeley) $Date: 1996/04/10 20:31:49 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -286,7 +286,7 @@ ex_tag_next(sp, cmdp)
 		return (1);
 	}
 	if ((tp = tqp->current->q.cqe_next) == (void *)&tqp->tagq) {
-		msgq(sp, M_ERR, "310|Already at the last tag of this group");
+		msgq(sp, M_ERR, "282|Already at the last tag of this group");
 		return (1);
 	}
 	if (ex_tag_nswitch(sp, tp, FL_ISSET(cmdp->iflags, E_C_FORCE)))
@@ -321,7 +321,7 @@ ex_tag_prev(sp, cmdp)
 		return (0);
 	}
 	if ((tp = tqp->current->q.cqe_prev) == (void *)&tqp->tagq) {
-		msgq(sp, M_ERR, "312|Already at the first tag of this group");
+		msgq(sp, M_ERR, "255|Already at the first tag of this group");
 		return (1);
 	}
 	if (ex_tag_nswitch(sp, tp, FL_ISSET(cmdp->iflags, E_C_FORCE)))
@@ -624,7 +624,7 @@ ex_tag_display(sp)
 #define	L_TAG	20
 #define	L_SPACE	 5
 	if (sp->cols <= L_NAME) {
-		msgq(sp, M_ERR, "309|Display too small.");
+		msgq(sp, M_ERR, "292|Display too small.");
 		return (0);
 	}
 	for (cnt = 1, tqp = exp->tq.cqh_first;
