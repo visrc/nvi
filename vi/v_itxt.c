@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 8.15 1993/10/11 22:02:49 bostic Exp $ (Berkeley) $Date: 1993/10/11 22:02:49 $";
+static char sccsid[] = "$Id: v_itxt.c,v 8.16 1993/10/27 17:05:20 bostic Exp $ (Berkeley) $Date: 1993/10/27 17:05:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -534,14 +534,14 @@ v_change(sp, ep, vp, fm, tm, rp)
 	if (cut(sp, ep, VICB(vp), fm, tm, lmode))
 		return (1);
 
-	/* If replacing entire lines and there's leading whitespace. */
+	/* If replacing entire lines and there's leading text. */
 	if (lmode && fm->cno) {
 		/* Get a copy of the first line changed. */
 		if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
 			GETLINE_ERR(sp, fm->lno);
 			return (1);
 		}
-		/* Copy the leading whitespace elsewhere. */
+		/* Copy the leading text elsewhere. */
 		GET_SPACE(sp, bp, blen, fm->cno);
 		memmove(bp, p, fm->cno);
 	} else
@@ -555,6 +555,7 @@ v_change(sp, ep, vp, fm, tm, rp)
 	if (lmode) {
 		if (file_iline(sp, ep, fm->lno, bp, fm->cno))
 			return (1);
+		sp->lno = fm->lno;
 		len = sp->cno = fm->cno;
 	}
 
