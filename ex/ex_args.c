@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 8.10 1993/12/02 10:46:36 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:46:36 $";
+static char sccsid[] = "$Id: ex_args.c,v 8.11 1993/12/09 19:34:35 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:34:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,7 +46,7 @@ ex_next(sp, ep, cmdp)
 			F_SET(frp, FR_IGNORE);
 
 		/* Add the new files into the file list. */
-		for (argv = cmdp->argv; *argv != NULL; ++argv)
+		for (argv = cmdp->argv; argv[0]->len != 0; ++argv)
 			if (file_add(sp, NULL, argv[0]->bp, 0) == NULL)
 				return (1);
 		
