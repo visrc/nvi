@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 5.45 1993/04/06 11:36:37 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:36:37 $
+ *	$Id: common.h,v 5.46 1993/04/12 14:33:52 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:33:52 $
  */
 
 #include <db.h>				/* Ordered before local includes. */
@@ -57,10 +57,14 @@ struct _text;
 #define	F_CLR(p, f)	(p)->flags &= ~(f)
 #define	F_ISSET(p, f)	((p)->flags & (f))
 
+#define	LF_INIT(f)	flags = (f)
+#define	LF_SET(f)	flags |= (f)
+#define	LF_CLR(f)	flags &= ~(f)
+#define	LF_ISSET(f)	(flags & (f))
+
 /* Buffer allocation. */
 #define	BINC(sp, lp, llen, nlen) {					\
-	if ((nlen) > llen &&						\
-	    binc(sp, &(lp), &(llen), nlen))				\
+	if ((nlen) > llen && binc(sp, &(lp), &(llen), nlen))		\
 		return (1);						\
 }
 int	binc __P((struct _scr *, void *, size_t *, size_t));
@@ -75,5 +79,9 @@ int	filtercmd __P((struct _scr *, struct _exf *, struct _mark *,
 #define	DEFFILEMODE	(S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)
 #endif
 
-/* Portability stuff. */
 typedef void (*sig_ret_t) __P((int));	/* Type of signal function. */
+
+#ifndef MIN
+#define	MIN(a, b) (((a) < (b)) ? (a) : (b))
+#define	MAX(a, b) (((a) > (b)) ? (a) : (b))
+#endif
