@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: key.c,v 10.27 1996/03/27 18:58:00 bostic Exp $ (Berkeley) $Date: 1996/03/27 18:58:00 $";
+static const char sccsid[] = "$Id: key.c,v 10.28 1996/03/27 19:58:03 bostic Exp $ (Berkeley) $Date: 1996/03/27 19:58:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -685,7 +685,7 @@ not_digit:	argp->e_c = CH_NOT_DIGIT;
 	}
 
 	/* Find out if the initial segments are identical. */
-	init_nomap = !memcmp(&gp->i_event[gp->i_next], qp->output, qp->ilen);
+	init_nomap = !e_memcmp(qp->output, &gp->i_event[gp->i_next], qp->ilen);
 
 	/* Delete the mapped characters from the queue. */
 	QREM(qp->ilen);
@@ -694,22 +694,16 @@ not_digit:	argp->e_c = CH_NOT_DIGIT;
 	if (qp->output == NULL)
 		goto retry;
 
-	/* If remapping characters, push the character back on the queue. */
+	/* If remapping characters... */
 	if (O_ISSET(sp, O_REMAP)) {
-		if (init_nomap) {
-			if (v_event_push(sp, NULL, qp->output + qp->ilen,
-			    qp->olen - qp->ilen, CH_MAPPED))
-				return (1);
-			if (v_event_push(sp, NULL,
-			    qp->output, qp->ilen, CH_NOMAP | CH_MAPPED))
-				return (1);
-			goto nomap;
-		}
-		if (v_event_push(sp, NULL, qp->output, qp->olen, CH_MAPPED))
-			return (1);
-
-		/* Periodically check for interrupts. */
-		if (++remap_cnt % 10 == 0) {
+		/*
+		 * Periodically check for interrupts.  We always check the
+		 * first time through, because it's possible to set up a
+		 * map that will return a character every time, but will
+		 * expand to more, e.g. "map! a aaaa" will always return a
+		 * 'a', but we'll never get anywhere useful.
+		 */
+		if (++remap_cnt == 1 || remap_cnt % 10 == 0) {
 			if (gp->scr_event(sp, &ev, EC_INTERRUPT, 0))
 				return (1);
 			if (ev.e_event == E_INTERRUPT) {
@@ -719,6 +713,25 @@ not_digit:	argp->e_c = CH_NOT_DIGIT;
 				goto retry;
 			}
 		}
+
+		/*
+		 * If an initial part of the characters mapped, they are not
+		 * further remapped -- return the first one.  Push the rest
+		 * of the characters, or all of the characters if no initial
+		 * part mapped, back on the queue.
+		 */
+		if (init_nomap) {
+			if (v_event_push(sp, NULL, qp->output + qp->ilen,
+			    qp->olen - qp->ilen, CH_MAPPED))
+				return (1);
+			if (v_event_push(sp, NULL,
+			    qp->output, qp->ilen, CH_NOMAP | CH_MAPPED))
+				return (1);
+			evp = &gp->i_event[gp->i_next];
+			goto nomap;
+		}
+		if (v_event_push(sp, NULL, qp->output, qp->olen, CH_MAPPED))
+			return (1);
 		goto newmap;
 	}
 
