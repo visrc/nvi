@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: log.c,v 9.3 1995/01/11 15:58:08 bostic Exp $ (Berkeley) $Date: 1995/01/11 15:58:08 $";
+static char sccsid[] = "$Id: log.c,v 9.4 1995/02/15 10:14:03 bostic Exp $ (Berkeley) $Date: 1995/02/15 10:14:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -154,11 +154,14 @@ log_cursor(sp)
 {
 	EXF *ep;
 
+	ep = sp->ep;
+	if (F_ISSET(ep, F_NOLOG))
+		return (0);
+
 	/*
 	 * If any changes were made since the last cursor init,
 	 * put out the ending cursor record.
 	 */
-	ep = sp->ep;
 	if (ep->l_cursor.lno == OOBLNO) {
 		ep->l_cursor.lno = sp->lno;
 		ep->l_cursor.cno = sp->cno;
