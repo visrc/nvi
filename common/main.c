@@ -16,7 +16,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 9.22 1995/02/15 16:13:35 bostic Exp $ (Berkeley) $Date: 1995/02/15 16:13:35 $";
+static char sccsid[] = "$Id: main.c,v 9.23 1995/02/15 16:19:43 bostic Exp $ (Berkeley) $Date: 1995/02/15 16:19:43 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -486,7 +486,6 @@ static void
 gs_end(gp)
 	GS *gp;
 {
-	FREF *frp;
 	MSG *mp;
 	SCR *sp;
 	char *tty;
@@ -496,13 +495,15 @@ gs_end(gp)
 
 #if defined(PURIFY) || defined(VI_LIBRARY)
 	/* Free FREF's. */
-	while ((frp = gp->frefq.cqh_first) != (FREF *)&gp->frefq) {
-		CIRCLEQ_REMOVE(&gp->frefq, frp, q);
-		if (frp->name != NULL)
-			free(frp->name);
-		if (frp->tname != NULL)
-			free(frp->tname);
-		free(frp);
+	{ FREF *frp;
+		while ((frp = gp->frefq.cqh_first) != (FREF *)&gp->frefq) {
+			CIRCLEQ_REMOVE(&gp->frefq, frp, q);
+			if (frp->name != NULL)
+				free(frp->name);
+			if (frp->tname != NULL)
+				free(frp->tname);
+			free(frp);
+		}
 	}
 
 	/* Free key input queues. */
