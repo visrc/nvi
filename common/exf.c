@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.13 1992/06/15 09:47:22 bostic Exp $ (Berkeley) $Date: 1992/06/15 09:47:22 $";
+static char sccsid[] = "$Id: exf.c,v 5.14 1992/08/22 19:16:10 bostic Exp $ (Berkeley) $Date: 1992/08/22 19:16:10 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -380,8 +380,8 @@ file_start(ep)
 	int fd, flags;
 	char tname[sizeof(_PATH_TMPNAME) + 1];
 
-	if (ep == NULL) {
-		(void)strcpy(_PATH_TMPNAME, tname);
+	if (ep->name == NULL) {
+		(void)strcpy(tname, _PATH_TMPNAME);
 		if ((fd = mkstemp(tname)) == -1) {
 			msg("Temporary file: %s", strerror(errno));
 			return (1);
