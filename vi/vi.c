@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.27 1993/11/04 16:17:31 bostic Exp $ (Berkeley) $Date: 1993/11/04 16:17:31 $";
+static char sccsid[] = "$Id: vi.c,v 8.28 1993/11/07 15:19:17 bostic Exp $ (Berkeley) $Date: 1993/11/07 15:19:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -518,12 +518,12 @@ getmotion(sp, ep, dm, vp, fm, tm)
 		/*
 		 * Everything starts at the current position.  This permits
 		 * commands like 'j' and 'k', that are line oriented motions
-		 * and have special cursor suck semantics when are used as
-		 * standalone commands, to ignore column positioning.
+		 * and have special cursor suck semantics when they are used
+		 * as standalone commands, to ignore column positioning.
 		 */
-		fm->lno = tm->lno = m.lno = sp->lno;
-		fm->cno = tm->cno = m.cno = sp->cno;
-		if ((motion.kp->func)(sp, ep, &motion, &m, NULL, tm))
+		fm->lno = tm->lno = sp->lno;
+		fm->cno = tm->cno = sp->cno;
+		if ((motion.kp->func)(sp, ep, &motion, fm, NULL, tm))
 			return (1);
 
 		/*
@@ -535,29 +535,23 @@ getmotion(sp, ep, dm, vp, fm, tm)
 			F_SET(vp, VC_LMODE);
 
 		/*
-		 * If the motion is in a backward direction, switch the current
-		 * location so that we're always moving in the same direction.
+		 * If the motion is in the reverse direction, switch the from
+		 * and to MARK's so that it's always in a forward direction.
+		 * Because the motion is always from the from MARK to, but not
+		 * including, the to MARK, the function may have modified the
+		 * from MARK, so that it gets the one-past-the-place semantics
+		 * we use; see v_match() for an example.
 		 *
-		 * This is also the reason for the fact that "yj" doesn't move
-		 * the cursor but "yk" does -- when the from MARK is changed,
-		 * it's the same as changing the underlying cursor position.
-		 *
-		 * XXX
-		 * I'm not sure that using the cursor here is correct, it might
-		 * be cleaner to use the from MARK.  Whichever is used, it has
-		 * to be reevaluated.  Some routines (see v_match) modify the
-		 * cursor as well as the return MARK, so that if a movement is
-		 * in the reverse direction they can get the one-past-the-place
-		 * semantics.
+		 * !!!
+		 * Historic vi changed the cursor as part of this which made
+		 * no sense.  For example, "yj" would move the cursor but "yk"
+		 * would not.
 		 */
-		if (tm->lno < sp->lno ||
-		    tm->lno == sp->lno && tm->cno < sp->cno) {
+		if (tm->lno < fm->lno ||
+		    tm->lno == fm->lno && tm->cno < fm->cno) {
+			m = *fm;
 			*fm = *tm;
-			tm->lno = sp->lno;
-			tm->cno = sp->cno;
-		} else {
-			fm->lno = sp->lno;
-			fm->cno = sp->cno;
+			*tm = m;
 		}
 	}
 
@@ -586,7 +580,10 @@ getkeyword(sp, ep, kp, flags)
 	size_t len;
 	char *p;
 
-	p = file_gline(sp, ep, sp->lno, &len);
+	if ((p = file_gline(sp, ep, sp->lno, &len)) == NULL) {
+		GETLINE_ERR(sp, sp->lno);
+		return (1);
+	}
 	beg = sp->cno;
 
 	/* May not be a keyword at all. */
