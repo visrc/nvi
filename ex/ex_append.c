@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 8.13 1994/04/10 14:32:27 bostic Exp $ (Berkeley) $Date: 1994/04/10 14:32:27 $";
+static char sccsid[] = "$Id: ex_append.c,v 8.14 1994/04/10 14:50:50 bostic Exp $ (Berkeley) $Date: 1994/04/10 14:50:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -81,7 +81,7 @@ aci(sp, ep, cmdp, cmd)
 	MARK m;
 	TEXTH *sv_tiqp, tiq;
 	TEXT *tp;
-	recno_t cnt;
+	recno_t cnt, lastlno;
 	u_int flags;
 	int rval, aiset;
 
@@ -127,7 +127,7 @@ aci(sp, ep, cmdp, cmd)
 	sp->tiqp = &tiq;
 
 	if (cmd == CHANGE)
-		for (;; ++m.lno) {
+		for (;;) {
 			if (m.lno > cmdp->addr2.lno) {
 				cmd = APPEND;
 				--m.lno;
@@ -150,6 +150,7 @@ aci(sp, ep, cmdp, cmd)
 			}
 			if (file_sline(sp, ep, m.lno, tp->lb, tp->len))
 				goto err;
+			lastlno = m.lno++;
 			if (F_ISSET(sp, S_INTERRUPTED))
 				goto done;
 			if (sp->s_refresh(sp, ep))
@@ -157,7 +158,7 @@ aci(sp, ep, cmdp, cmd)
 		}
 
 	if (cmd == APPEND)
-		for (;; ++m.lno) {
+		for (;;) {
 			switch (sp->s_get(sp, ep, &tiq, 0, flags)) {
 			case INP_OK:
 				break;
@@ -170,6 +171,7 @@ aci(sp, ep, cmdp, cmd)
 				break;
 			if (file_aline(sp, ep, 1, m.lno, tp->lb, tp->len))
 				goto err;
+			lastlno = ++m.lno;
 			if (F_ISSET(sp, S_INTERRUPTED))
 				goto done;
 			if (sp->s_refresh(sp, ep))
@@ -182,7 +184,7 @@ done:	if (aiset)
 		O_SET(sp, O_AUTOINDENT);
 
 	/* Set the line number to the last line successfully modified. */
-	sp->lno = rval ? m.lno : m.lno + 1;
+	sp->lno = lastlno;
 
 	sp->tiqp = sv_tiqp;
 	text_lfree(&tiq);
