@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_at.c,v 8.21 1994/05/02 13:51:40 bostic Exp $ (Berkeley) $Date: 1994/05/02 13:51:40 $";
+static char sccsid[] = "$Id: ex_at.c,v 8.22 1994/05/04 10:51:46 bostic Exp $ (Berkeley) $Date: 1994/05/04 10:51:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -69,10 +69,11 @@ ex_at(sp, ep, cmdp)
 	exp->at_lbuf_set = 1;
 
 	/*
-	 * If the buffer was cut in line mode <newlines> are appended to
-	 * each line as it is pushed onto the stack.  If the buffer was
-	 * cut in character mode, <newlines> are appended to all lines
-	 * but the last one.
+	 * !!!
+	 * Historic practice is that if the buffer was cut in line mode,
+	 * <newlines> were appended to each line as it was pushed onto
+	 * the stack.  If the buffer was cut in character mode, <newlines>
+	 * were appended to all lines but the last one.
 	 */
 	for (tp = cbp->textq.cqh_last;
 	    tp != (void *)&cbp->textq; tp = tp->q.cqe_prev)
