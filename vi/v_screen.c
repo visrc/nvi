@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_screen.c,v 10.8 1996/03/15 20:17:14 bostic Exp $ (Berkeley) $Date: 1996/03/15 20:17:14 $";
+static const char sccsid[] = "$Id: v_screen.c,v 10.9 1996/03/18 09:37:38 bostic Exp $ (Berkeley) $Date: 1996/03/18 09:37:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -43,7 +43,7 @@ v_screen(sp, vp)
 	 */
 	if (F_ISSET(sp, S_COMEDIT)) {
 		msgq(sp, M_ERR,
-		    "306|Enter <CR> to execute a command, :q to exit");
+		    "308|Enter <CR> to execute a command, :q to exit");
 		return (1);
 	}
 		
