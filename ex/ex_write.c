@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_write.c,v 10.26 1996/06/19 20:21:52 bostic Exp $ (Berkeley) $Date: 1996/06/19 20:21:52 $";
+static const char sccsid[] = "$Id: ex_write.c,v 10.27 1996/06/26 10:44:27 bostic Exp $ (Berkeley) $Date: 1996/06/26 10:44:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -167,6 +167,14 @@ exwr(sp, cmdp, cmd)
 		/* Expand the argument. */
 		if (argv_exp1(sp, cmdp, p, strlen(p), 1))
 			return (1);
+
+		/*
+		 * Historically, vi waited after a write filter even if there
+		 * wasn't any output.  People complained when nvi waited only
+		 * if there was output, wanting the visual cue that the program
+		 * hadn't written anything.
+		 */
+		F_SET(sp, SC_SCR_EXWROTE);
 
 		/*
 		 * !!!
