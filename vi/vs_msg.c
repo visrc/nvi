@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_msg.c,v 10.9 1995/09/27 11:31:22 bostic Exp $ (Berkeley) $Date: 1995/09/27 11:31:22 $";
+static char sccsid[] = "$Id: vs_msg.c,v 10.10 1995/09/27 12:06:01 bostic Exp $ (Berkeley) $Date: 1995/09/27 12:06:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -453,8 +453,9 @@ vs_ex_resolve(sp, continuep)
 		return (0);
 	}
 
-	/* If we were in ex, and we're done, redraw from scratch. */
-	F_SET(sp, S_SCR_REDRAW);
+	/* If we were in ex, and we're done, may need to redraw from scratch. */
+	if (F_ISSET(vip, VIP_N_REDRAW))
+		F_SET(sp, S_SCR_REDRAW);
 
 	/* Redraw the screen. */
 	ev.e_event = E_REPAINT;
@@ -533,7 +534,7 @@ vs_resolve(sp)
 
 	/* Put up the modeline if 0 lines in use or had to wait. */
 	if (vip->totalcount == 1)
-		F_SET(vip, VIP_SKIPMODE);
+		F_SET(vip, VIP_S_MODELINE);
 
 	/* Reset the count of overwriting lines. */
 	vip->linecount = vip->lcontinue = vip->totalcount = 0;
