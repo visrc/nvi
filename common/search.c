@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.41 1994/04/06 09:36:55 bostic Exp $ (Berkeley) $Date: 1994/04/06 09:36:55 $";
+static char sccsid[] = "$Id: search.c,v 8.42 1994/05/02 13:51:09 bostic Exp $ (Berkeley) $Date: 1994/05/02 13:51:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -239,7 +239,7 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 	size_t coff, len;
 	long delta;
 	u_int flags;
-	int btear, eval, itear, rval, wrapped;
+	int btear, eval, rval, wrapped;
 	char *l;
 
 	if (file_lline(sp, ep, &lno))
@@ -287,9 +287,8 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 		}
 	}
 
-	/* Set up busy message, interrupts. */
+	/* Turn on busy message. */
 	btear = F_ISSET(sp, S_EXSILENT) ? 0 : !busy_on(sp, "Searching...");
-	itear = !intr_init(sp);
 
 	for (rval = 1, wrapped = 0;; ++lno, coff = 0) {
 		if (F_ISSET(sp, S_INTERRUPTED)) {
@@ -372,8 +371,6 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 	/* Turn off busy message, interrupts. */
 	if (btear)
 		busy_off(sp);
-	if (itear)
-		intr_end(sp);
 	return (rval);
 }
 
@@ -391,7 +388,7 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 	size_t coff, len, last;
 	long delta;
 	u_int flags;
-	int btear, eval, itear, rval, wrapped;
+	int btear, eval, rval, wrapped;
 	char *l;
 
 	if (file_lline(sp, ep, &lno))
@@ -420,9 +417,8 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 	} else
 		lno = fm->lno;
 
-	/* Turn on busy message, interrupts. */
+	/* Turn on busy message. */
 	btear = F_ISSET(sp, S_EXSILENT) ? 0 : !busy_on(sp, "Searching...");
-	itear = !intr_init(sp);
 
 	for (rval = 1, wrapped = 0, coff = fm->cno;; --lno, coff = 0) {
 		if (F_ISSET(sp, S_INTERRUPTED)) {
@@ -529,9 +525,6 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 	/* Turn off busy message, interrupts. */
 err:	if (btear)
 		busy_off(sp);
-	if (itear)
-		intr_end(sp);
-
 	return (rval);
 }
 

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.74 1994/05/01 13:06:29 bostic Exp $ (Berkeley) $Date: 1994/05/01 13:06:29 $";
+static char sccsid[] = "$Id: exf.c,v 8.75 1994/05/02 13:50:02 bostic Exp $ (Berkeley) $Date: 1994/05/02 13:50:02 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -526,7 +526,7 @@ file_write(sp, ep, fm, tm, name, flags)
 	FREF *frp;
 	MARK from, to;
 	u_long nlno, nch;
-	int btear, fd, itear, oflags, rval;
+	int btear, fd, oflags, rval;
 	char *msg;
 
 	/*
@@ -657,14 +657,11 @@ exists:			if (LF_ISSET(FS_POSSIBLE))
 		tm = &to;
 	}
 
-	/* Write the file, allowing interrupts. */
+	/* Turn on the busy message. */
 	btear = F_ISSET(sp, S_EXSILENT) ? 0 : !busy_on(sp, "Writing...");
-	itear = !intr_init(sp);
 	rval = ex_writefp(sp, ep, name, fp, fm, tm, &nlno, &nch);
 	if (btear)
 		busy_off(sp);
-	if (itear)
-		intr_end(sp);
 
 	/*
 	 * Save the new last modification time -- even if the write fails
@@ -690,7 +687,8 @@ exists:			if (LF_ISSET(FS_POSSIBLE))
 	if (LF_ISSET(FS_ALL))
 		F_CLR(ep, F_MODIFIED);
 
-	msgq(sp, M_INFO, "%s%s: %lu line%s, %lu characters.",
+	msgq(sp, M_INFO, "%s%s%s: %lu line%s, %lu characters.",
+	    F_ISSET(sp, S_INTERRUPTED) ? "Interrupted write: " : "",
 	    name, msg, nlno, nlno == 1 ? "" : "s", nch);
 
 	return (0);

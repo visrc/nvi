@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 8.45 1994/05/01 23:19:03 bostic Exp $ (Berkeley) $Date: 1994/05/01 23:19:03 $
+ *	$Id: key.h,v 8.46 1994/05/02 13:50:29 bostic Exp $ (Berkeley) $Date: 1994/05/02 13:50:29 $
  */
 
 /*
@@ -46,16 +46,16 @@ struct _ch {
 #define	K_RIGHTPAREN	13
 #define	K_TAB		14
 #define	K_VERASE	15
-#define	K_VINTR		16
-#define	K_VKILL		17
-#define	K_VLNEXT	18
-#define	K_VWERASE	19
-#define	K_ZERO		20
+#define	K_VKILL		16
+#define	K_VLNEXT	17
+#define	K_VWERASE	18
+#define	K_ZERO		19
 	u_int8_t value;		/* Special character flag values. */
 
 #define	CH_ABBREVIATED	0x01	/* Character from an abbreviation. */
-#define	CH_NOMAP	0x02	/* Do not attempt to map the character. */
-#define	CH_QUOTED	0x04	/* Character is already quoted. */
+#define	CH_MAPPED	0x02	/* Character from a map. */
+#define	CH_NOMAP	0x04	/* Do not map the character. */
+#define	CH_QUOTED	0x08	/* Character is already quoted. */
 	u_int8_t flags;
 };
 
@@ -63,7 +63,6 @@ struct _ch {
 struct _ibuf {
 	CHAR_T	 *ch;		/* Array of characters. */
 	u_int8_t *chf;		/* Array of character flags (CH_*). */
-	u_int8_t *cmap;		/* Number of times character has been mapped. */
 
 	size_t	 cnt;		/* Count of remaining characters. */
 	size_t	 nelem;		/* Numer of array elements. */
@@ -72,7 +71,7 @@ struct _ibuf {
 				/* Return if more keys in queue. */
 #define	KEYS_WAITING(sp)	((sp)->gp->tty->cnt)
 #define	MAPPED_KEYS_WAITING(sp)						\
-	(KEYS_WAITING(sp) && sp->gp->tty->cmap[sp->gp->tty->next])
+	(KEYS_WAITING(sp) && sp->gp->tty->chf[sp->gp->tty->next] & CH_MAPPED)
 
 /*
  * Routines that return a key as a side-effect return:
@@ -80,13 +79,14 @@ struct _ibuf {
  *	INP_OK		Returning a character; must be 0.
  *	INP_EOF		EOF.
  *	INP_ERR		Error.
+ *	INP_INTR	Interrupted.
  *
  * The vi structure depends on the key routines being able to return INP_EOF
  * multiple times without failing -- eventually enough things will end due to
  * INP_EOF that vi will reach the command level for the screen, at which point
  * the exit flags will be set and vi will exit.
  */
-enum input	{ INP_OK=0, INP_EOF, INP_ERR };
+enum input	{ INP_OK=0, INP_EOF, INP_ERR, INP_INTR };
 
 /*
  * Routines that return a confirmation return:
@@ -164,11 +164,10 @@ size_t		 __key_len __P((SCR *, ARG_CHAR_T));
 CHAR_T		*__key_name __P((SCR *, ARG_CHAR_T));
 int		 __key_val __P((SCR *, ARG_CHAR_T));
 void		 key_init __P((SCR *));
+void		 term_flush __P((SCR *, char *, u_int));
 enum input	 term_key __P((SCR *, CH *, u_int));
 enum input	 term_user_key __P((SCR *, CH *));
-void		 term_ab_flush __P((SCR *, char *));
 int		 term_init __P((SCR *));
-void		 term_map_flush __P((SCR *, char *));
-int		 term_push __P((SCR *, CHAR_T *, size_t, u_int, u_int));
+int		 term_push __P((SCR *, CHAR_T *, size_t, u_int));
 int		 term_tgetent __P((SCR *, char *, char *));
 int		 term_waiting __P((SCR *));

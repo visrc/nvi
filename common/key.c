@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.66 1994/05/02 07:42:25 bostic Exp $ (Berkeley) $Date: 1994/05/02 07:42:25 $";
+static char sccsid[] = "$Id: key.c,v 8.67 1994/05/02 13:50:59 bostic Exp $ (Berkeley) $Date: 1994/05/02 13:50:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -43,7 +43,8 @@ static void	 term_key_set __P((GS *, int, int));
  * possible if a map is large enough.
  */
 #define	term_read_grow(sp, tty)					\
-	(tty)->nelem - (tty)->cnt >= 20 ? 0 : __term_read_grow(sp, tty, 64)
+	(tty)->nelem - ((tty)->cnt + (tty)->next) >= 20 ?	\
+	0 : __term_read_grow(sp, tty, 64)
 static int __term_read_grow __P((SCR *, IBUF *, int));
 
 /*
@@ -99,8 +100,8 @@ static TKLIST const m2_tklist[] = {	/* Input mappings (set or delete). */
  * regardless of the user's choices for these characters.  The user's
  * erase and kill characters worked in addition to these characters.
  * This implementation wires down the above characters, but in addition
- * permits the VERASE, VINTR, VKILL and VWERASE characters described by
- * the user's termios structure.
+ * permits the VERASE, VKILL and VWERASE characters described by the
+ * user's termios structure.
  *
  * Ex was not consistent with this scheme, as it historically ran in tty
  * cooked mode.  This meant that the scroll command and autoindent erase
@@ -133,14 +134,12 @@ static KEYLIST keylist[] = {
 	{K_RIGHTPAREN,	   ')'},	/*  ) */
 	{K_TAB,		  '\t'},	/* \t */
 	{K_VERASE,	  '\b'},	/* \b */
-	{K_VINTR,	'\003'},	/* ^C */
 	{K_VKILL,	'\025'},	/* ^U */
 	{K_VLNEXT,	'\021'},	/* ^Q */
 	{K_VLNEXT,	'\026'},	/* ^V */
 	{K_VWERASE,	'\027'},	/* ^W */
 	{K_ZERO,	   '0'},	/*  0 */
-	{K_NOTUSED, 0},			/* VERASE, VINTR, VKILL, VWERASE */
-	{K_NOTUSED, 0},
+	{K_NOTUSED, 0},			/* VERASE, VKILL, VWERASE */
 	{K_NOTUSED, 0},
 	{K_NOTUSED, 0},
 };
@@ -172,9 +171,6 @@ term_init(sp)
 	gp = sp->gp;
 #ifdef VERASE
 	term_key_set(gp, VERASE, K_VERASE);
-#endif
-#ifdef VINTR
-	term_key_set(gp, VINTR, K_VINTR);
 #endif
 #ifdef VKILL
 	term_key_set(gp, VKILL, K_VKILL);
@@ -284,11 +280,11 @@ term_tgetent(sp, buf, term)
 
 /*
  * term_key_set --
- *	Set keys found in the termios structure.  VERASE, VINTR and VKILL are
- *	required by POSIX 1003.1-1990, VWERASE is a 4.4BSD extension.  We've
- *	left four open slots in the keylist table, if these values exist, put
- *	them into place.  Note, they may reset (or duplicate) values already
- *	in the table, so we check for that first.
+ *	Set keys found in the termios structure.  VERASE and VKILL are required
+ *	by POSIX 1003.1-1990, VWERASE is a 4.4BSD extension.  We've left three
+ *	open slots in the keylist table, if these values exist, put them into
+ *	place.  Note, they may reset (or duplicate) values already in the table,
+ *	so we check for that first.
  */
 static void
 term_key_set(gp, name, val)
@@ -432,19 +428,15 @@ __key_name(sp, ach)
  * of the number of times it has been mapped.
  */
 int
-term_push(sp, s, nchars, cmap, flags)
+term_push(sp, s, nchars, flags)
 	SCR *sp;
 	CHAR_T *s;			/* Characters. */
 	size_t nchars;			/* Number of chars. */
-	u_int cmap;			/* Map count. */
 	u_int flags;			/* CH_* flags. */
 {
 	IBUF *tty;
-
-	/* Cap the cmap value. */
-	if (cmap > 255)
-		cmap = 255;
-
+	size_t total;
+	
 	/* If we have room, stuff the keys into the buffer. */
 	tty = sp->gp->tty;
 	if (nchars <= tty->next ||
@@ -454,27 +446,22 @@ term_push(sp, s, nchars, cmap, flags)
 		tty->cnt += nchars;
 		MEMMOVE(tty->ch + tty->next, s, nchars);
 		MEMSET(tty->chf + tty->next, flags, nchars);
-		MEMSET(tty->cmap + tty->next, cmap, nchars);
 		return (0);
 	}
 
-	/* Get enough space plus a little extra. */
-	if (tty->cnt + nchars >= tty->nelem &&
-	    __term_read_grow(sp, tty, MAX(nchars, 64)))
-		return (1);
-
 	/*
 	 * If there are currently characters in the queue, shift them up,
-	 * leaving some extra room.
+	 * leaving some extra room.  Get enough space plus a little extra.
 	 */
 #define	TERM_PUSH_SHIFT	30
+	total = tty->cnt + tty->next + nchars + TERM_PUSH_SHIFT;
+	if (total >= tty->nelem && __term_read_grow(sp, tty, MAX(total, 64)))
+		return (1);
 	if (tty->cnt) {
 		MEMMOVE(tty->ch + TERM_PUSH_SHIFT + nchars,
 		    tty->ch + tty->next, tty->cnt);
 		MEMMOVE(tty->chf + TERM_PUSH_SHIFT + nchars,
 		    tty->chf + tty->next, tty->cnt);
-		MEMMOVE(tty->cmap + TERM_PUSH_SHIFT + nchars,
-		    tty->cmap + tty->next, tty->cnt);
 	}
 
 	/* Put the new characters into the queue. */
@@ -482,7 +469,6 @@ term_push(sp, s, nchars, cmap, flags)
 	tty->cnt += nchars;
 	MEMMOVE(tty->ch + TERM_PUSH_SHIFT, s, nchars);
 	MEMSET(tty->chf + TERM_PUSH_SHIFT, flags, nchars);
-	MEMSET(tty->cmap + TERM_PUSH_SHIFT, cmap, nchars);
 	return (0);
 }
 
@@ -492,13 +478,10 @@ term_push(sp, s, nchars, cmap, flags)
  */
 #define	QREM_HEAD(q, len) {						\
 	size_t __off = (q)->next;					\
-	if (len == 1) {							\
+	if (len == 1)							\
 		tty->chf[__off] = 0;					\
-		tty->cmap[__off] = 0;					\
-	} else {							\
+	else								\
 		MEMSET(tty->chf + __off, 0, len);			\
-		MEMSET(tty->cmap + __off, 0, len);			\
-	}								\
 	if (((q)->cnt -= len) == 0)					\
 		(q)->next = 0;						\
 	else								\
@@ -506,13 +489,10 @@ term_push(sp, s, nchars, cmap, flags)
 }
 #define	QREM_TAIL(q, len) {						\
 	size_t __off = (q)->next + (q)->cnt - 1;			\
-	if (len == 1) {							\
+	if (len == 1)							\
 		tty->chf[__off] = 0;					\
-		tty->cmap[__off] = 0;					\
-	} else {							\
+	else								\
 		MEMSET(tty->chf + __off, 0, len);			\
-		MEMSET(tty->cmap + __off, 0, len);			\
-	}								\
 	if (((q)->cnt -= len) == 0)					\
 		(q)->next = 0;						\
 }
@@ -569,11 +549,8 @@ term_push(sp, s, nchars, cmap, flags)
  * possible to create macros that ran forever.  And, even if it did figure out
  * what was going on, the user was usually tossed into ex mode.  Finally, any
  * changes made before vi realized that the macro was recursing were left in
- * place.  This implementation counts how many times each input character has
- * been mapped.  If it reaches some arbitrary value, we turn on interrupts so
- * the user can stop it.  (We don't always turn on interrupts because it's an
- * expensive operation per character.)  When interrupted, we flush the mapped
- * keys and return an error.
+ * place.  We recover gracefully, but the only recourse the user has in an
+ * infinite macro loop is to interrupt.
  *
  * XXX
  * The final issue is recovery.  It would be possible to undo all of the work
@@ -594,9 +571,12 @@ term_key(sp, chp, flags)
 	GS *gp;
 	IBUF *tty;
 	SEQ *qp;
-	int cmap, ispartial, nr, itear;
+	int ispartial, nr;
 
-	itear = 0;
+	/* If we've been interrupted, return an error. */
+	if (F_ISSET(sp, S_INTERRUPTED))
+		return (INP_INTR);
+
 	gp = sp->gp;
 	tty = gp->tty;
 
@@ -640,18 +620,20 @@ remap:		qp = seq_find(sp, NULL, &tty->ch[tty->next], tty->cnt,
 		    LF_ISSET(TXT_MAPCOMMAND) ? SEQ_COMMAND : SEQ_INPUT,
 		    &ispartial);
 
+		/* If we've been interrupted, return an error. */
+		if (F_ISSET(sp, S_INTERRUPTED))
+			return (INP_INTR);
+
 		/*
 		 * If get a partial match, read more characters and retry
 		 * the map.  If no characters read, return the characters
 		 * unmapped.
 		 */
 		if (ispartial) {
-			if (term_read_grow(sp, tty)) {
-				rval = INP_ERR;
-				goto ret;
-			}
+			if (term_read_grow(sp, tty))
+				return (INP_ERR);
 			if (rval = sp->s_key_read(sp, &nr, tp))
-				goto ret;
+				return (rval);
 			if (nr)
 				goto remap;
 			goto nomap;
@@ -670,21 +652,6 @@ remap:		qp = seq_find(sp, NULL, &tty->ch[tty->next], tty->cnt,
 		    qp->output != NULL && !isdigit(qp->output[0]))
 			goto not_digit_ch;
 
-		/*
-		 * Once a character has been remapped a sufficient number
-		 * of times, turn on interrupts so that the user can stop
-		 * it if they choose.
-		 */
-		if (!itear) {
-			if ((cmap = tty->cmap[tty->next]) > 100)
-				itear = !intr_init(sp);
-		} else if (F_ISSET(sp, S_INTERRUPTED)) {
-flush:			term_map_flush(sp, "Interrupted");
-			rval = INP_ERR;
-			goto ret;
-		} else
-			cmap = 0;
-
 		/* Delete the mapped characters from the queue. */
 		QREM_HEAD(tty, qp->ilen);
 
@@ -694,18 +661,14 @@ flush:			term_map_flush(sp, "Interrupted");
 
 		/* If remapping characters, push the character on the queue. */
 		if (O_ISSET(sp, O_REMAP)) {
-			if (term_push(sp, qp->output, qp->olen, cmap + 1, 0)) {
-				rval = INP_ERR;
-				goto ret;
-			}
+			if (term_push(sp, qp->output, qp->olen, CH_MAPPED))
+				return (INP_ERR);
 			goto newmap;
 		}
 
 		/* Else, push the characters on the queue and return one. */
-		if (term_push(sp, qp->output, qp->olen, 0, CH_NOMAP)) {
-			rval = INP_ERR;
-			goto ret;
-		}
+		if (term_push(sp, qp->output, qp->olen, CH_MAPPED | CH_NOMAP))
+			return (INP_ERR);
 	}
 
 nomap:	ch = tty->ch[tty->next];
@@ -713,8 +676,7 @@ nomap:	ch = tty->ch[tty->next];
 not_digit_ch:	chp->ch = CH_NOT_DIGIT;
 		chp->value = 0;
 		chp->flags = 0;
-		rval = INP_OK;
-		goto ret;
+		return (INP_OK);
 	}
 
 	/* Fill in the return information. */
@@ -724,50 +686,27 @@ not_digit_ch:	chp->ch = CH_NOT_DIGIT;
 
 	/* Delete the character from the queue. */
 	QREM_HEAD(tty, 1);
-	rval = INP_OK;
-
-ret:	if (itear)
-		intr_end(sp);
-	return (rval);
+	return (INP_OK);
 }
 
 /*
- * term_ab_flush --
- *	Flush any abbreviated keys.
+ * term_flush --
+ *	Flush any flagged keys.
  */
 void
-term_ab_flush(sp, msg)
+term_flush(sp, msg, flags)
 	SCR *sp;
 	char *msg;
+	u_int flags;
 {
 	IBUF *tty;
 
 	tty = sp->gp->tty;
-	if (!tty->cnt || !(tty->chf[tty->next] & CH_ABBREVIATED))
+	if (!tty->cnt || !(tty->chf[tty->next] & flags))
 		return;
 	do {
 		QREM_HEAD(tty, 1);
-	} while (tty->cnt && tty->chf[tty->next] & CH_ABBREVIATED);
-	msgq(sp, M_ERR, "%s: keys flushed.", msg);
-}
-
-/*
- * term_map_flush --
- *	Flush any mapped keys.
- */
-void
-term_map_flush(sp, msg)
-	SCR *sp;
-	char *msg;
-{
-	IBUF *tty;
-
-	tty = sp->gp->tty;
-	if (!tty->cnt || !tty->cmap[tty->next])
-		return;
-	do {
-		QREM_HEAD(tty, 1);
-	} while (tty->cnt && tty->cmap[tty->next]);
+	} while (tty->cnt && tty->chf[tty->next] & flags);
 	msgq(sp, M_ERR, "%s: keys flushed.", msg);
 }
 
@@ -868,10 +807,7 @@ __term_read_grow(sp, tty, add)
 	olen = tty->nelem * sizeof(tty->chf[0]);
 	BINC_RET(sp, tty->chf, olen, new_nelem * sizeof(tty->chf[0]));
 
-	olen = tty->nelem * sizeof(tty->cmap[0]);
-	BINC_RET(sp, tty->cmap, olen, new_nelem * sizeof(tty->cmap[0]));
-
-	tty->nelem = new_nelem;
+	tty->nelem = olen / sizeof(tty->chf[0]);
 	return (0);
 }
 

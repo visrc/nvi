@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 8.32 1994/03/22 18:42:25 bostic Exp $ (Berkeley) $Date: 1994/03/22 18:42:25 $";
+static char sccsid[] = "$Id: ex_global.c,v 8.33 1994/05/02 13:51:47 bostic Exp $ (Berkeley) $Date: 1994/05/02 13:51:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -75,7 +75,7 @@ global(sp, ep, cmdp, cmd)
 	regmatch_t match[1];
 	regex_t *re, lre;
 	size_t clen, len;
-	int delim, eval, reflags, replaced, rval, teardown;
+	int delim, eval, reflags, replaced, rval;
 	char *cb, *ptrn, *p, *t;
 
 	/*
@@ -168,9 +168,8 @@ global(sp, ep, cmdp, cmd)
 	sp->subre = sp->sre;
 	F_SET(sp, S_SUBRE_SET);
 
-	/* Set the global flag, and set up interrupts. */
+	/* Set the global flag. */
 	F_SET(sp, S_GLOBAL);
-	teardown = !intr_init(sp);
 
 	/*
 	 * For each line...  The semantics of global matching are that we first
@@ -271,8 +270,6 @@ err:		rval = 1;
 	}
 
 	F_CLR(sp, S_GLOBAL);
-	if (teardown)
-		intr_end(sp);
 
 	/* Free any remaining ranges and the command buffer. */
 	while ((rp = exp->rangeq.cqh_first) != (void *)&exp->rangeq) {

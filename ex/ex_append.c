@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 8.16 1994/04/25 09:03:08 bostic Exp $ (Berkeley) $Date: 1994/04/25 09:03:08 $";
+static char sccsid[] = "$Id: ex_append.c,v 8.17 1994/05/02 13:51:33 bostic Exp $ (Berkeley) $Date: 1994/05/02 13:51:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -128,13 +128,8 @@ aci(sp, ep, cmdp, cmd)
 
 	}
 
-	switch (sex_get(sp, ep, sp->tiqp, 0, flags)) {
-	case INP_OK:
-		break;
-	case INP_EOF:
-	case INP_ERR:
+	if (sex_get(sp, ep, sp->tiqp, 0, flags) != INP_OK)
 		goto err;
-	}
 	
 	/*
 	 * If doing a change, replace lines for as long as possible.

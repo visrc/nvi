@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 8.26 1994/03/23 16:38:37 bostic Exp $ (Berkeley) $Date: 1994/03/23 16:38:37 $";
+static char sccsid[] = "$Id: ex_read.c,v 8.27 1994/05/02 13:52:08 bostic Exp $ (Berkeley) $Date: 1994/05/02 13:52:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -47,7 +47,7 @@ ex_read(sp, ep, cmdp)
 	MARK rm;
 	recno_t nlines;
 	size_t blen, len;
-	int btear, itear, rval;
+	int btear, rval;
 	char *bp, *name;
 
 	/*
@@ -131,18 +131,11 @@ ex_read(sp, ep, cmdp)
 		return (1);
 	}
 
-	/*
-	 * Nvi handles the interrupt when reading from a file, but not
-	 * when reading from a filter, since the terminal settings have
-	 * been reset.
-	 */
+	/* Turn on busy message. */
 	btear = F_ISSET(sp, S_EXSILENT) ? 0 : !busy_on(sp, "Reading...");
-	itear = !intr_init(sp);
 	rval = ex_readfp(sp, ep, name, fp, &cmdp->addr1, &nlines, 1);
 	if (btear)
 		busy_off(sp);
-	if (itear)
-		intr_end(sp);
 
 	/*
 	 * Set the cursor to the first line read in, if anything read
@@ -189,7 +182,8 @@ ex_readfp(sp, ep, name, fp, fm, nlinesp, success_msg)
 	lcnt = 0;
 	for (lno = fm->lno; !ex_getline(sp, fp, &len); ++lno, ++lcnt) {
 		if (F_ISSET(sp, S_INTERRUPTED)) {
-			msgq(sp, M_INFO, "Interrupted.");
+			if (!success_msg)
+				msgq(sp, M_INFO, "Interrupted.");
 			break;
 		}
 		if (file_aline(sp, ep, 1, lno, exp->ibp, len)) {
@@ -217,7 +211,8 @@ ex_readfp(sp, ep, name, fp, fm, nlinesp, success_msg)
 		*nlinesp = lcnt;
 
 	if (success_msg)
-		msgq(sp, M_INFO, "%s: %lu line%s, %lu characters.",
+		msgq(sp, M_INFO, "%s%s: %lu line%s, %lu characters.",
+		    F_ISSET(sp, S_INTERRUPTED) ? "Interrupted read: " : "",
 		    name, lcnt, lcnt == 1 ? "" : "s", ccnt);
 
 	return (0);
