@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 5.3 1992/04/05 09:23:34 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:23:34 $";
+static char sccsid[] = "$Id: ex_edit.c,v 5.4 1992/04/14 09:27:08 bostic Exp $ (Berkeley) $Date: 1992/04/14 09:27:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,76 +18,71 @@ static char sccsid[] = "$Id: ex_edit.c,v 5.3 1992/04/05 09:23:34 bostic Exp $ (B
 #include "extern.h"
 
 enum which {EDIT, VISUAL};
-static void edit __P((CMDARG *, enum which));
+
+static int edit __P((CMDARG *, enum which));
 
 int
 ex_edit(cmdp)
 	CMDARG *cmdp;
 {
-	edit(cmdp, EDIT);
-	return (0);
+	return (edit(cmdp, EDIT));
 }
 
 int
 ex_visual(cmdp)
 	CMDARG *cmdp;
 {
-	edit(cmdp, VISUAL);
-	return (0);
+	return (edit(cmdp, VISUAL));
 }
 
-static void
+static int
 edit(cmdp, cmd)
 	CMDARG *cmdp;
 	enum which cmd;
 {
 	long line;
-	char **argv, *fname, *start;
+	char *fname;
 
-	start = fname = NULL;
-	argv = cmdp->argv;
 	switch(cmdp->argc) {
-	case 2:
-		start = *argv++;
-		if (*start++ != '+')
-			goto usage;
-		/* FALLTHROUGH */
 	case 1:
-		fname = *argv;
+		fname = cmdp->argv[0];
 		break;
 	case 0:
 		fname = origname;
 		break;
-	default:
-usage:		msg("Usage: edit [+cmd] file.");
-		return;
 	}
 
 	/*
-	 * If ":vi", then switch to visual mode, and if no file is named
-	 * then don't switch files.
+	 * If ":vi", then switch to visual mode, and if no file is
+	 * named, don't switch files.
 	 */
 	if (cmd == VISUAL) {
 		mode = MODE_VI;
 		msg("");
 		if (cmdp->argc == 0)
-			return;
+			return (0);
 	}
 
-	/* Switch files. */
+	/*
+	 * Switch files.  Historic practice is that ex always starts at the
+	 * end of the file and vi starts at the beginning, unless a command
+	 * is specified.
+	 */
 	if (tmpabort(cmdp->flags & E_FORCE)) {
 		tmpstart(fname);
-		if (start)
-			excmd(start);
+		if (cmdp->plus)
+			(void)excmd(cmdp->plus);
 		else {
-			/*
-			 * If editing the previous file, take up where left
-			 * off, otherwise start at line 1.
-			 */
-			line = !strcmp(fname, prevorig) ? prevline : 1;
+			if (mode == MODE_VI)
+				line = !strcmp(fname, prevorig) ? prevline : 1;
+			else
+				line = 1;
 			if (line <= nlines && line >= 1)
 				cursor = MARK_AT_LINE(line);
 		}
-	} else
-		msg("Use edit! to abort changes, or w to save changes.");
+		refresh();
+		return (0);
+	}
+	msg("The file has been modified but not written.");
+	return (1);
 }
