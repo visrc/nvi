@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.40 1993/12/21 11:58:53 bostic Exp $ (Berkeley) $Date: 1993/12/21 11:58:53 $";
+static char sccsid[] = "$Id: recover.c,v 8.41 1994/03/07 12:19:22 bostic Exp $ (Berkeley) $Date: 1994/03/07 12:19:22 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -281,6 +281,7 @@ rcv_mailfile(sp, ep)
 		(void)fclose(fp);
 		return (1);
 	}
+	(void)fclose(fp);
 	return (0);
 }
 
