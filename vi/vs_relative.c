@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_relative.c,v 8.4 1993/11/13 09:53:03 bostic Exp $ (Berkeley) $Date: 1993/11/13 09:53:03 $";
+static char sccsid[] = "$Id: vs_relative.c,v 8.5 1993/11/22 17:31:27 bostic Exp $ (Berkeley) $Date: 1993/11/22 17:31:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -15,6 +15,25 @@ static char sccsid[] = "$Id: vs_relative.c,v 8.4 1993/11/13 09:53:03 bostic Exp 
 
 #include "vi.h"
 #include "svi_screen.h"
+
+/*
+ * svi_column --
+ *	Return the logical column of the cursor.
+ */
+int
+svi_column(sp, ep, cp)
+	SCR *sp;
+	EXF *ep;
+	size_t *cp;
+{
+	size_t col;
+
+	col = SVP(sp)->sc_col;
+	if (O_ISSET(sp, O_NUMBER))
+		col -= O_NUMBER_LENGTH;
+	*cp = col;
+	return (0);
+}
 
 /*
  * svi_relative --
