@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 8.40 1994/07/27 11:05:08 bostic Exp $ (Berkeley) $Date: 1994/07/27 11:05:08 $";
+static char sccsid[] = "$Id: ex_filter.c,v 8.41 1994/08/01 14:57:33 bostic Exp $ (Berkeley) $Date: 1994/08/01 14:57:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -266,16 +266,13 @@ err:		if (input[0] != -1)
 		    (long)parent_writer_pid, "parent-writer", 1);
 
 		/* Delete any lines written to the utility. */
-		if (ftype == FILTER && rval == 0) {
-			if (cut(sp, ep, NULL, fm, tm, CUT_LINEMODE) ||
-			    delete(sp, ep, fm, tm, 1)) {
-				rval = 1;
-				break;
-			}
-			if (rval == 0)
-				sp->rptlines[L_DELETED] +=
-				    (tm->lno - fm->lno) + 1;
+		if (rval == 0 && ftype == FILTER &&
+		    cut(sp, ep, NULL, fm, tm, CUT_LINEMODE) ||
+		    delete(sp, ep, fm, tm, 1)) {
+			rval = 1;
+			break;
 		}
+
 		/*
 		 * If the filter had no output, we may have just deleted
 		 * the cursor.  Don't do any real error correction, we'll
