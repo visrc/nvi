@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 10.23 1995/11/10 10:21:10 bostic Exp $ (Berkeley) $Date: 1995/11/10 10:21:10 $";
+static char sccsid[] = "$Id: ex_bang.c,v 10.24 1995/11/10 10:22:47 bostic Exp $ (Berkeley) $Date: 1995/11/10 10:22:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -54,7 +54,7 @@ ex_bang(sp, cmdp)
 	EX_PRIVATE *exp;
 	MARK rm;
 	recno_t lno;
-	int in_vi, rval;
+	int rval;
 	char *msg;
 
 	ap = cmdp->argv[0];
@@ -97,7 +97,6 @@ ex_bang(sp, cmdp)
 	 * file has been modified, autowrite is not set and the warn option is
 	 * set, tell the user about the file.
 	 */
-	in_vi = F_ISSET(sp, S_VI) ? 1 : 0;
 	if (cmdp->addrcnt == 0) {
 		msg = NULL;
 		if (F_ISSET(sp->ep, F_MODIFIED))
@@ -110,7 +109,7 @@ ex_bang(sp, cmdp)
 				    "303|File modified since last write.\n",
 				    NULL);
 
-		(void)ex_exec_proc(sp, cmdp, ap->bp, msg, in_vi);
+		(void)ex_exec_proc(sp, cmdp, ap->bp, msg, F_ISSET(sp, S_VI));
 	}
 
 	/*
@@ -175,7 +174,7 @@ ex_bang(sp, cmdp)
 	 * historically.  May have had to switch into ex mode, so we saved
 	 * the original S_VI flags value.
 	 */
-	if (!in_vi) {
+	if (!F_ISSET(sp, S_VI)) {
 		if (!F_ISSET(sp, S_EX_SILENT))
 			(void)ex_puts(sp, "!\n");
 
