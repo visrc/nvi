@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: options.h,v 10.1 1995/04/13 17:18:25 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:18:25 $
+ *	$Id: options.h,v 10.2 1995/05/18 15:36:51 bostic Exp $ (Berkeley) $Date: 1995/05/18 15:36:51 $
  */
 
 struct _option {
@@ -52,45 +52,7 @@ struct _optlist {
 #define	O_D_STR(sp, o)		(sp)->opts[(o)].o_def.str
 #define	O_D_VAL(sp, o)		(sp)->opts[(o)].o_def.val
 
-/* Option routines. */
-u_long	 baud_from_bval __P((SCR *));
-
-int	opts_copy __P((SCR *, SCR *));
-void	opts_free __P((SCR *));
-int	opts_init __P((SCR *, int *, recno_t, size_t));
-int	opts_save __P((SCR *, FILE *));
-int	opts_set __P((SCR *, ARGS *[], int, char *));
-
+/* Option argument to opts_dump(). */
 enum optdisp { NO_DISPLAY, ALL_DISPLAY, CHANGED_DISPLAY, SELECT_DISPLAY };
-void	opts_dump __P((SCR *, enum optdisp));
 
-/* Per-option change routines. */
-int	f_altwerase __P((SCR *, OPTION *, char *, u_long));
-int	f_cdpath __P((SCR *, OPTION *, char *, u_long));
-int	f_columns __P((SCR *, OPTION *, char *, u_long));
-int	f_extended __P((SCR *, OPTION *, char *, u_long));
-int	f_ignorecase __P((SCR *, OPTION *, char *, u_long));
-int	f_leftright __P((SCR *, OPTION *, char *, u_long));
-int	f_lines __P((SCR *, OPTION *, char *, u_long));
-int	f_lisp __P((SCR *, OPTION *, char *, u_long));
-int	f_list __P((SCR *, OPTION *, char *, u_long));
-int	f_mesg __P((SCR *, OPTION *, char *, u_long));
-int	f_modeline __P((SCR *, OPTION *, char *, u_long));
-int	f_msgcat __P((SCR *, OPTION *, char *, u_long));
-int	f_noprint __P((SCR *, OPTION *, char *, u_long));
-int	f_number __P((SCR *, OPTION *, char *, u_long));
-int	f_octal __P((SCR *, OPTION *, char *, u_long));
-int	f_paragraph __P((SCR *, OPTION *, char *, u_long));
-int	f_print __P((SCR *, OPTION *, char *, u_long));
-int	f_readonly __P((SCR *, OPTION *, char *, u_long));
-int	f_section __P((SCR *, OPTION *, char *, u_long));
-int	f_shiftwidth __P((SCR *, OPTION *, char *, u_long));
-int	f_sourceany __P((SCR *, OPTION *, char *, u_long));
-int	f_tabstop __P((SCR *, OPTION *, char *, u_long));
-int	f_tags __P((SCR *, OPTION *, char *, u_long));
-int	f_term __P((SCR *, OPTION *, char *, u_long));
-int	f_ttywerase __P((SCR *, OPTION *, char *, u_long));
-int	f_w1200 __P((SCR *, OPTION *, char *, u_long));
-int	f_w300 __P((SCR *, OPTION *, char *, u_long));
-int	f_w9600 __P((SCR *, OPTION *, char *, u_long));
-int	f_window __P((SCR *, OPTION *, char *, u_long));
+#include "options_define.h"
