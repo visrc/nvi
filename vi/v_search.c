@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_search.c,v 10.13 1996/04/03 14:33:21 bostic Exp $ (Berkeley) $Date: 1996/04/03 14:33:21 $";
+static const char sccsid[] = "$Id: v_search.c,v 10.14 1996/04/15 18:52:02 bostic Exp $ (Berkeley) $Date: 1996/04/15 18:52:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -93,22 +93,33 @@ v_exaddr(sp, vp, dir)
 	    (O_ISSET(sp, O_SEARCHINCR) ? TXT_SEARCHINCR : 0)))
 		return (1);
 
+	tp = sp->tiq.cqh_first;
+
+	/* If the user backspaced over the prompt, do nothing. */
+	if (tp->term == TERM_BS)
+		return (1);
+
 	/*
-	 * If the user backspaced over the prompt, do nothing.
-	 *
-	 * If the user was doing an incremental search, do nothing.
-	 *
+	 * If the user was doing an incremental search, then we've already
+	 * updated the cursor and moved to the right location.  Return the
+	 * correct values, we're done.
+	 */
+	if (tp->term == TERM_SEARCH) {
+		vp->m_stop.lno = sp->lno;
+		vp->m_stop.cno = sp->cno;
+		if (ISMOTION(vp))
+			return (v_correct(sp, vp, 0));
+		vp->m_final = vp->m_stop;
+		return (0);
+	}
+
+	/*
 	 * If the user entered <escape> or <carriage-return>, the length is
 	 * 1 and the right thing will happen, i.e. the prompt will be used
 	 * as a command character.
+	 *
+	 * Build a fake ex command structure.
 	 */
-	tp = sp->tiq.cqh_first;
-	if (tp->term == TERM_BS)
-		return (1);
-	if (tp->term == TERM_SEARCH)
-		return (0);
-
-	/* Build a fake ex command structure. */
 	gp = sp->gp;
 	gp->excmd.cp = tp->lb;
 	gp->excmd.clen = tp->len;
