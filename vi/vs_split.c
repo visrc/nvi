@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 8.43 1994/07/19 12:55:40 bostic Exp $ (Berkeley) $Date: 1994/07/19 12:55:40 $";
+static char sccsid[] = "$Id: vs_split.c,v 8.44 1994/08/07 09:26:30 bostic Exp $ (Berkeley) $Date: 1994/08/07 09:26:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -360,6 +360,11 @@ svi_join(csp, nsp)
 
 	/* Reset the length of the default scroll. */
 	sp->defscroll = sp->t_maxrows / 2;
+
+	/* Save old screen information. */
+	csp->frp->lno = csp->lno;
+	csp->frp->cno = csp->cno;
+	F_SET(csp->frp, FR_CURSORSET);
 
 	*nsp = sp;
 	return (0);
