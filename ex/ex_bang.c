@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 8.17 1993/11/13 18:02:20 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:02:20 $";
+static char sccsid[] = "$Id: ex_bang.c,v 8.18 1993/12/02 15:52:21 bostic Exp $ (Berkeley) $Date: 1993/12/02 15:52:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -42,24 +42,27 @@ ex_bang(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	EX_PRIVATE *exp;
 	enum filtertype ftype;
-	recno_t lno;
+	ARGS *ap;
+	EX_PRIVATE *exp;
 	MARK rm;
-	size_t blen, len;
+	recno_t lno;
+	size_t blen;
 	int rval;
 	char *bp, *msg;
 
-	if (cmdp->argv[0][0] == '\0') {
+	
+	if (cmdp->argc == 0) {
 		msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
 		return (1);
 	}
+	ap = cmdp->argv[0];
 
 	/* Swap commands. */
 	exp = EXP(sp);
 	if (exp->lastbcomm != NULL)
 		FREE(exp->lastbcomm, strlen(exp->lastbcomm) + 1);
-	if ((exp->lastbcomm = strdup(cmdp->argv[0])) == NULL) {
+	if ((exp->lastbcomm = strdup(ap->bp)) == NULL) {
 		msgq(sp, M_SYSERR, NULL);
 		return (1);
 	}
@@ -73,7 +76,7 @@ ex_bang(sp, ep, cmdp)
 	bp = NULL;
 	if (F_ISSET(cmdp, E_MODIFY)) {
 		if (IN_EX_MODE(sp)) {
-			(void)ex_printf(EXCOOKIE, "!%s\n", cmdp->argv[0]);
+			(void)ex_printf(EXCOOKIE, "!%s\n", ap->bp);
 			(void)ex_fflush(EXCOOKIE);
 		}
 		/*
@@ -87,10 +90,9 @@ ex_bang(sp, ep, cmdp)
 		 * cleaned up.
 		 */
 		if (IN_VI_MODE(sp)) {
-			len = strlen(cmdp->argv[0]);
-			GET_SPACE(sp, bp, blen, len + 2);
+			GET_SPACE(sp, bp, blen, ap->len + 2);
 			bp[0] = '!';
-			memmove(bp + 1, cmdp->argv[0], len + 1);
+			memmove(bp + 1, ap->bp, ap->len + 1);
 		}
 	}
 
@@ -119,7 +121,7 @@ ex_bang(sp, ep, cmdp)
 			}
 		}
 		if (filtercmd(sp, ep,
-		    &cmdp->addr1, &cmdp->addr2, &rm, cmdp->argv[0], ftype))
+		    &cmdp->addr1, &cmdp->addr2, &rm, ap->bp, ftype))
 			return (1);
 		sp->lno = rm.lno;
 		F_SET(sp, S_AUTOPRINT);
@@ -146,7 +148,7 @@ ex_bang(sp, ep, cmdp)
 				msg = "File modified since last write.\n";
 
 	/* Run the command. */
-	rval = ex_exec_proc(sp, O_STR(sp, O_SHELL), cmdp->argv[0], bp, msg);
+	rval = ex_exec_proc(sp, ap->bp, bp, msg);
 
 	/* Ex terminates with a bang. */
 	if (IN_EX_MODE(sp))
