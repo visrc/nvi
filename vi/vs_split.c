@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 8.30 1994/03/02 15:56:00 bostic Exp $ (Berkeley) $Date: 1994/03/02 15:56:00 $";
+static char sccsid[] = "$Id: vs_split.c,v 8.31 1994/03/02 15:57:02 bostic Exp $ (Berkeley) $Date: 1994/03/02 15:57:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -497,7 +497,9 @@ svi_rabs(sp, count, adj)
 	 */
 	if (count == 0)
 		return (0);
-	if (adj == A_SET)
+	if (adj == A_SET) {
+		if (sp->t_maxrows == count)
+			return (0);
 		if (sp->t_maxrows > count) {
 			adj = A_DECREASE;
 			count = sp->t_maxrows - count;
@@ -505,6 +507,7 @@ svi_rabs(sp, count, adj)
 			adj = A_INCREASE;
 			count = count - sp->t_maxrows;
 		}
+	}
 	if (adj == A_DECREASE) {
 		if (count < 0)
 			count = -count;
