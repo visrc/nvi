@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.21 1994/04/11 19:22:28 bostic Exp $ (Berkeley) $Date: 1994/04/11 19:22:28 $
+.\"     $Id: vi.ref,v 8.22 1994/04/13 15:25:35 bostic Exp $ (Berkeley) $Date: 1994/04/13 15:25:35 $
 .\"
 .Dd "%Q%"
 .Dt "EX/VI REFERENCE MANUAL" 1
@@ -74,9 +74,8 @@ will edit any format file.
 Line lengths are limited by available memory,
 and file sizes are limited by available disk space.
 The command
-.Dq "^Vx[0-9A-Fa-f]* ,"
-in input mode, will insert any
-legal character value into the text.
+.Dq "^X[0-9A-Fa-f]* ,"
+in input mode, will insert any legal character value into the text.
 .It "Split screens"
 The command
 .Dq ":sp[lit] [file ...]"
