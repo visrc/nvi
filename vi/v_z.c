@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_z.c,v 9.6 1995/01/23 17:33:31 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:33:31 $";
+static char sccsid[] = "$Id: v_z.c,v 9.7 1995/01/30 10:16:13 bostic Exp $ (Berkeley) $Date: 1995/01/30 10:16:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -48,7 +48,7 @@ v_z(sp, vp)
 	 */
 	if (F_ISSET(vp, VC_C1SET)) {
 		lno = vp->count;
-		if ((file_gline(sp, lno, &len)) == NULL && file_lline(sp, &lno))
+		if (!file_eline(sp, lno) && file_lline(sp, &lno))
 			return (1);
 	} else
 		lno = vp->m_start.lno;
