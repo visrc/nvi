@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.61 1993/04/13 16:15:22 bostic Exp $ (Berkeley) $Date: 1993/04/13 16:15:22 $";
+static char sccsid[] = "$Id: main.c,v 5.62 1993/04/17 11:49:23 bostic Exp $ (Berkeley) $Date: 1993/04/17 11:49:23 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -22,7 +22,6 @@ static char sccsid[] = "$Id: main.c,v 5.61 1993/04/13 16:15:22 bostic Exp $ (Ber
 #include <err.h>
 #include <errno.h>
 #include <setjmp.h>
-#include <signal.h>
 #include <stdlib.h>
 #include <string.h>
 #include <termios.h>
@@ -54,8 +53,8 @@ main(argc, argv)
 	static int reenter;		/* STATIC: Re-entrancy check. */
 	EXCMDARG cmd;
 	GS *gp;
-	SCR *nextsp, *sp;
-	int ch, eval, mode;
+	SCR *sp;
+	int ch, eval;
 	char *excmdarg, *errf, *myname, *p, *tag;
 
 	/* Stop if indirecting through a NULL pointer. */
@@ -206,104 +205,24 @@ main(argc, argv)
 	if (excmdarg != NULL)
 		(void)ex_cstring(sp, sp->ep, excmdarg, strlen(excmdarg));
 
-	/*
-	 * XXX
-	 * Turn on signal handling.
-	 */
-	(void)signal(SIGHUP, onhup);
-	(void)signal(SIGINT, SIG_IGN);
-
-	do {
-		/* Initialize the screen. */
-		switch(sp->flags & (S_MODE_EX | S_MODE_VI)) {
-		case S_MODE_EX:
-			if (sex_init(sp, sp->ep))
-				goto err1;
-			break;
-		case S_MODE_VI:
-			if (svi_init(sp, sp->ep))
-				goto err1;
-			break;
-		default:
-			abort();
-		}
-
-		/* While the screen stays the same, edit files. */
-		mode = sp->flags & (S_MODE_EX | S_MODE_VI);
-		do {
-			switch(sp->flags & (S_MODE_EX | S_MODE_VI)) {
-			case S_MODE_EX:
-				if (ex(sp, sp->ep))
-					F_SET(sp, S_EXIT_FORCE);
-				break;
-			case S_MODE_VI:
-				if (vi(sp, sp->ep))
-					F_SET(sp, S_EXIT_FORCE);
-				break;
-			default:
-				abort();
-			}
-
-			switch (sp->flags & S_FILE_CHANGED) {
-			case S_EXIT:
-				if (file_stop(sp, sp->ep, 0))
-					F_CLR(sp, S_EXIT);
-				break;
-			case S_EXIT_FORCE:
-				if (file_stop(sp, sp->ep, 1))
-					F_CLR(sp, S_EXIT_FORCE);
-				break;
-			case S_FSWITCH_FORCE:
-				F_CLR(sp, S_FSWITCH_FORCE);
-				if (file_start(sp, sp->enext) != NULL)
-					if (file_stop(sp, sp->ep, 1))
-						(void)file_stop(sp,
-						    sp->enext, 1);
-					else {
-						sp->eprev = sp->ep;
-						sp->ep = sp->enext;
-					}
-				break;
-			case S_FSWITCH:
-				F_CLR(sp, S_FSWITCH);
-				if (file_start(sp, sp->enext) != NULL)
-					if (file_stop(sp, sp->ep, 0))
-						(void)file_stop(sp,
-						    sp->enext, 1);
-					else {
-						sp->eprev = sp->ep;
-						sp->ep = sp->enext;
-					}
-				break;
-			case S_SSWITCH:
-				F_CLR(sp, S_SSWITCH);
-				sp = sp->snext;
-				break;
-			}
-			/*
-			 * If not just changing the mode, see if there are
-			 * any related screens to edit.
-			 */
-			nextsp = NULL;
-			if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE))
-				if (sp->parent != NULL)
-					nextsp = sp->parent;
-				else if (sp->child != NULL)
-					nextsp = sp->child;
-			if (nextsp != NULL) {
-				if (sp->end(sp) || scr_end(sp))
-					goto err1;
-				sp = nextsp;
-				F_CLR(sp, S_EXIT | S_EXIT_FORCE);
-			}
-		} while (!F_ISSET(sp, S_EXIT | S_EXIT_FORCE) &&
-		    mode == (sp->flags & (S_MODE_EX | S_MODE_VI)));
-
-		/* End the screen. */
-		if (sp->end(sp) || scr_end(sp))
+	/* Call a screen. */
+	switch(F_ISSET(sp, S_MODE_EX | S_MODE_VI)) {
+	case S_MODE_EX:
+		if (sex(sp, sp->ep))
 			goto err1;
+		break;
+	case S_MODE_VI:
+		if (svi(sp, sp->ep))
+			goto err1;
+		break;
+	default:
+		abort();
+	}
 
-	} while (!F_ISSET(sp, S_EXIT | S_EXIT_FORCE));
+	/*
+	 * NOTE: sp may be GONE by now.
+	 * Only gp can be trusted.
+	 */
 
 	/* Yeah, I don't like it either. */
 	if (0)
