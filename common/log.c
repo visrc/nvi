@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: log.c,v 10.16 2000/07/22 10:20:31 skimo Exp $ (Berkeley) $Date: 2000/07/22 10:20:31 $";
+static const char sccsid[] = "$Id: log.c,v 10.17 2000/07/22 10:32:59 skimo Exp $ (Berkeley) $Date: 2000/07/22 10:32:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -224,6 +224,7 @@ log_line(sp, lno, action)
 	EXF *ep;
 	size_t len;
 	CHAR_T *lp;
+	db_recno_t lcur;
 
 	ep = sp->ep;
 	if (F_ISSET(ep, F_NOLOG))
@@ -270,8 +271,9 @@ log_line(sp, lno, action)
 	memmove(sp->wp->l_lp + sizeof(u_char), &lno, sizeof(db_recno_t));
 	MEMMOVEW(sp->wp->l_lp + sizeof(u_char) + sizeof(db_recno_t), lp, len);
 
+	lcur = ep->l_cur;
 	memset(&key, 0, sizeof(key));
-	key.data = &ep->l_cur;
+	key.data = &lcur;
 	key.size = sizeof(db_recno_t);
 	memset(&data, 0, sizeof(data));
 	data.data = sp->wp->l_lp;
