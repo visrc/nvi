@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.54 1993/11/22 14:29:18 bostic Exp $ (Berkeley) $Date: 1993/11/22 14:29:18 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.55 1993/11/22 17:29:27 bostic Exp $ (Berkeley) $Date: 1993/11/22 17:29:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -97,6 +97,7 @@ v_ntext(sp, ep, tiqh, tm, lp, len, rp, prompt, ai_line, flags)
 	GS *gp;			/* Global pointer. */
 	TEXT *tp, *ntp, ait;	/* Input and autoindent text structures. */
 	size_t rcol;		/* 0-N: insert offset in the replay buffer. */
+	size_t col;		/* Current column. */
 	u_long margin;		/* Wrapmargin value. */
 	int eval;		/* Routine return value. */
 	int replay;		/* If replaying a set of input. */
@@ -217,8 +218,9 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 	 *
 	 * XXX
 	 * Setting margin causes a significant performance hit.  Normally
-	 * we don't update the screen if there are keys waiting, but, if
-	 * margin is set we have to or we don't know where the cursor is.
+	 * we don't update the screen if there are keys waiting, but we
+	 * have to if margin is set, otherwise the screen routines don't
+	 * know where the cursor is.
 	 */
 	if (!LF_ISSET(TXT_WRAPMARGIN))
 		margin = 0;
@@ -445,6 +447,9 @@ next_ch:	if (term_key(sp, &ch, flags & TXT_GETKEY_MASK) != INP_OK)
 			/* Update the new line. */
 			if (sp->s_change(sp, ep, tp->lno, LINE_INSERT))
 				ERR;
+
+			/* Set the renumber bit. */
+			F_SET(sp, S_RENUMBER);
 
 			/* Refresh if nothing waiting. */
 			if ((margin ||
@@ -783,11 +788,15 @@ ins_ch:			/*
 				}
 			}
 			/* Check to see if we've crossed the margin. */
-			if (margin && sp->sc_col >= margin) {
-				if (txt_margin(sp, tp, &tmp, ch))
+			if (margin) {
+				if (sp->s_column(sp, ep, &col))
 					ERR;
-				if (tmp)
-					goto next_ch;
+				if (col >= margin) {
+					if (txt_margin(sp, tp, &tmp, ch))
+						ERR;
+					if (tmp)
+						goto next_ch;
+				}
 			}
 			if (abb != A_NOTSET)
 				abb = isblank(ch) ? A_SPACE : A_NOTSPACE;
