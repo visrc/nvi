@@ -14,7 +14,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: perl.xs,v 8.20 1996/09/18 09:22:25 bostic Exp $ (Berkeley) $Date: 1996/09/18 09:22:25 $";
+static const char sccsid[] = "$Id: perl.xs,v 8.21 1996/09/19 09:25:42 bostic Exp $ (Berkeley) $Date: 1996/09/19 09:25:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -524,24 +524,6 @@ GetLine(screen, linenumber)
 
 	EXTEND(sp,1);
         PUSHs(sv_2mortal(newSVpv(p, len)));
-
-# bg --
-#	background screen
-#
-# Usage: $screen->bg;
-
-void
-bg(screen)
-	VI screen
-
-	PREINIT:
-	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
-	int rval;
-
-	CODE:
-	INITMESSAGE;
-	rval = api_bg(screen);
-	ENDMESSAGE;
 
 # XS_VI_sline --
 #	Set lineNumber to the text supplied.
