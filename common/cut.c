@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 5.22 1992/11/11 13:22:18 bostic Exp $ (Berkeley) $Date: 1992/11/11 13:22:18 $";
+static char sccsid[] = "$Id: cut.c,v 5.23 1992/12/05 11:04:06 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:04:06 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -23,9 +23,8 @@ static char sccsid[] = "$Id: cut.c,v 5.22 1992/11/11 13:22:18 bostic Exp $ (Berk
 #include "exf.h"
 #include "options.h"
 #include "pathnames.h"
-#include "extern.h"
 
-static int	cutline __P((recno_t, size_t, size_t, TEXT **));
+static int	cutline __P((EXF *, recno_t, size_t, size_t, TEXT **));
 
 CB cuts[UCHAR_MAX + 2];		/* Set of cut buffers. */
 
@@ -38,7 +37,8 @@ CB cuts[UCHAR_MAX + 2];		/* Set of cut buffers. */
  * back and use ex_write to dump the cut into a temporary file.
  */
 int
-cut(buffer, fm, tm, lmode)
+cut(ep, buffer, fm, tm, lmode)
+	EXF *ep;
 	int buffer, lmode;
 	MARK *fm, *tm;
 {
@@ -58,7 +58,7 @@ cut(buffer, fm, tm, lmode)
 	if (append = isupper(buffer))
 		if (!lmode && cb->flags & CB_LMODE)
 			msg("Buffer %s changed to line mode.",
-			    charname(buffer));
+			    CHARNAME(buffer));
 
 	/* Free old buffer. */
 	if (cb->head != NULL && !append) {
@@ -74,7 +74,7 @@ cut(buffer, fm, tm, lmode)
 #endif
 	if (lmode) {
 		for (lno = fm->lno; lno <= tm->lno; ++lno) {
-			if (cutline(lno, 0, 0, &tp))
+			if (cutline(ep, lno, 0, 0, &tp))
 				goto mem;
 			TEXTAPPEND(cb, tp);
 		}
@@ -84,22 +84,22 @@ cut(buffer, fm, tm, lmode)
 		
 	/* Get the first line. */
 	len = fm->lno < tm->lno ? 0 : tm->cno - fm->cno;
-	if (cutline(fm->lno, fm->cno, len, &tp))
+	if (cutline(ep, fm->lno, fm->cno, len, &tp))
 		goto mem;
 
 	TEXTAPPEND(cb, tp);
 
 	for (lno = fm->lno; ++lno < tm->lno;) {
-		if (cutline(lno, 0, 0, &tp))
+		if (cutline(ep, lno, 0, 0, &tp))
 			goto mem;
 		TEXTAPPEND(cb, tp);
 	}
 
 	if (tm->lno > fm->lno && tm->cno > 0) {
-		if (cutline(lno, 0, tm->cno, &tp)) {
+		if (cutline(ep, lno, 0, tm->cno, &tp)) {
 mem:			if (append)
 				msg("Contents of %s buffer lost.",
-				    charname(buffer));
+				    CHARNAME(buffer));
 			freetext(cb->head);
 			cb->head = NULL;
 			return (1);
@@ -115,7 +115,8 @@ mem:			if (append)
  * 	from the MARK to the end of the line.
  */
 static int
-cutline(lno, fcno, len, newp)
+cutline(ep, lno, fcno, len, newp)
+	EXF *ep;
 	recno_t lno;
 	size_t fcno, len;
 	TEXT **newp;
@@ -124,7 +125,7 @@ cutline(lno, fcno, len, newp)
 	size_t llen;
 	u_char *lp, *p;
 
-	if ((p = file_gline(curf, lno, &llen)) == NULL) {
+	if ((p = file_gline(ep, lno, &llen)) == NULL) {
 		GETLINE_ERR(lno);
 		return (1);
 	}
@@ -175,7 +176,8 @@ mem:			bell();
  *	Put text buffer contents into the file.
  */	
 int
-put(buffer, cp, rp, append)
+put(ep, buffer, cp, rp, append)
+	EXF *ep;
 	int buffer, append;
 	MARK *cp, *rp;
 {
@@ -201,19 +203,19 @@ put(buffer, cp, rp, append)
 	if (lmode) {
 		if (append) {
 			for (lno = cp->lno; tp; ++lno, tp = tp->next)
-				if (file_aline(curf, lno, tp->lp, tp->len))
+				if (file_aline(ep, lno, tp->lp, tp->len))
 					return (1);
 			rp->lno = cp->lno + 1;
 		} else if ((lno = cp->lno) != 1) {
 			for (--lno; tp; tp = tp->next, ++lno)
-				if (file_aline(curf, lno, tp->lp, tp->len))
+				if (file_aline(ep, lno, tp->lp, tp->len))
 					return (1);
 			rp->lno = cp->lno;
 		} else {
-			if (file_iline(curf, (recno_t)1, tp->lp, tp->len))
+			if (file_iline(ep, (recno_t)1, tp->lp, tp->len))
 				return (1);
 			for (lno = 1; tp = tp->next; ++lno)
-				if (file_aline(curf, lno, tp->lp, tp->len))
+				if (file_aline(ep, lno, tp->lp, tp->len))
 					return (1);
 			rp->lno = 1;
 		}
@@ -229,7 +231,7 @@ put(buffer, cp, rp, append)
 	else {
 		/* Get the first line. */
 		lno = cp->lno;
-		if ((p = file_gline(curf, lno, &len)) == NULL) {
+		if ((p = file_gline(ep, lno, &len)) == NULL) {
 			GETLINE_ERR(lno);
 			return (1);
 		}
@@ -261,14 +263,14 @@ put(buffer, cp, rp, append)
 				bcopy(p, t, clen);
 				t += clen;
 			}
-			if (file_sline(curf, lno, bp, t - bp))
+			if (file_sline(ep, lno, bp, t - bp))
 				return (1);
 
 			rp->lno = lno;
 			rp->cno = t - bp;
 		} else {
 			/* Output the line replacing the original line. */
-			if (file_sline(curf, lno, bp, t - bp))
+			if (file_sline(ep, lno, bp, t - bp))
 				return (1);
 
 			/* Output any intermediate lines in the CB alone. */
@@ -276,7 +278,7 @@ put(buffer, cp, rp, append)
 				tp = tp->next;
 				if (tp->next == NULL)
 					break;
-				if (file_aline(curf, lno, tp->lp, tp->len))
+				if (file_aline(ep, lno, tp->lp, tp->len))
 					return (1);
 				++lno;
 			}
@@ -303,7 +305,7 @@ put(buffer, cp, rp, append)
 				bcopy(p, t, clen);
 				t += clen;
 			}
-			if (file_aline(curf, lno, bp, t - bp))
+			if (file_aline(ep, lno, bp, t - bp))
 				return (1);
 		}
 	}
@@ -312,8 +314,8 @@ put(buffer, cp, rp, append)
 	mark_insert(cp, rp);
 
 	/* Reporting... */
-	curf->rptlabel = "put";
-	curf->rptlines = lno - cp->lno;
+	ep->rptlabel = "put";
+	ep->rptlines = lno - cp->lno;
 
 	return (0);
 }

@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: cut.h,v 5.6 1992/10/26 17:45:17 bostic Exp $ (Berkeley) $Date: 1992/10/26 17:45:17 $
+ *	$Id: cut.h,v 5.7 1992/12/05 11:04:33 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:04:33 $
  */
 
 typedef struct text {			/* Text: a linked list of lines. */
@@ -55,7 +55,7 @@ extern IB ib;				/* Input buffer. */
 		if (buffer == DEFCB)					\
 			msg("The default buffer is empty.");		\
 		else							\
-			msg("Buffer %s is empty.", charname(buffer));	\
+			msg("Buffer %s is empty.", CHARNAME(buffer));	\
 		return (1);						\
 	}								\
 }
@@ -72,8 +72,11 @@ extern IB ib;				/* Input buffer. */
 	(start)->len += (text)->len;					\
 }
 
-int	add __P((MARK *, u_char *, size_t));
-int	change __P((MARK *, MARK *, u_char *, size_t));
-int	cut __P((int, MARK *, MARK *, int));
+enum filtertype { STANDARD, NOINPUT, NOOUTPUT };
+int	filter __P((MARK *, MARK *, u_char *, enum filtertype));
+
+int	add __P((EXF *, MARK *, u_char *, size_t));
+int	cut __P((EXF *, int, MARK *, MARK *, int));
+int	delete __P((EXF *, MARK *, MARK *, int));
 void	freetext __P((TEXT *));
-int	put __P((int, MARK *, MARK *, int));
+int	put __P((EXF *, int, MARK *, MARK *, int));
