@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 5.35 1993/04/17 11:43:17 bostic Exp $ (Berkeley) $Date: 1993/04/17 11:43:17 $";
+static char sccsid[] = "$Id: cut.c,v 5.36 1993/04/19 15:22:29 bostic Exp $ (Berkeley) $Date: 1993/04/19 15:22:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -54,7 +54,7 @@ cut(sp, ep, buffer, fm, tm, lmode)
 	if (cb->txthdr.next == NULL) {
 		HDR_INIT(cb->txthdr, next, prev);
 	} else if (!append) {
-		text_free(&cb->txthdr);
+		hdr_text_free(&cb->txthdr);
 		cb->len = 0;
 		cb->flags = 0;
 	}
@@ -95,7 +95,7 @@ mem:			if (append)
 				msgq(sp, M_ERR,
 				    "Contents of %s buffer lost.",
 				    charname(sp, buffer));
-			text_free(&cb->txthdr);
+			hdr_text_free(&cb->txthdr);
 			cb->len = 0;
 			cb->flags = 0;
 			return (1);
@@ -121,32 +121,25 @@ cutline(sp, ep, lno, fcno, len, newp)
 {
 	TEXT *tp;
 	size_t llen;
-	char *lp, *p;
+	char *p;
 
 	if ((p = file_gline(sp, ep, lno, &llen)) == NULL) {
 		GETLINE_ERR(sp, lno);
 		return (1);
 	}
 
-	if ((*newp = tp = malloc(sizeof(TEXT))) == NULL)
-		goto mem;
+	if ((*newp = tp = text_init(sp, NULL, 0, llen)) == NULL)
+		return (1);
+
 	if (llen == 0) {
-		tp->lb = NULL;
-		tp->len = tp->lb_len = 0;
 #if DEBUG && 0
 		TRACE(ep, "{}\n");
 #endif
 	} else {
 		if (len == 0)
 			len = llen - fcno;
-		if ((lp = malloc(len)) == NULL) {
-			FREE(tp, sizeof(TEXT));
-mem:			msgq(sp, M_ERR, "Error: %s", strerror(errno));
-			return (1);
-		}
-		memmove(lp, p + fcno, len);
-		tp->lb = lp;
-		tp->len = tp->lb_len = len;
+		memmove(tp->lb, p + fcno, len);
+		tp->len = len;
 #if DEBUG && 0
 		TRACE(ep, "\t{%.*s}\n", MIN(len, 20), p + fcno);
 #endif
@@ -186,19 +179,22 @@ put(sp, ep, buffer, cp, rp, append)
 	 */
 	if (lmode) {
 		if (append) {
-			for (lno = cp->lno; tp; ++lno, tp = tp->next)
+			for (lno = cp->lno;
+			    tp != (TEXT *)&cb->txthdr; ++lno, tp = tp->next)
 				if (file_aline(sp, ep, lno, tp->lb, tp->len))
 					return (1);
 			rp->lno = cp->lno + 1;
 		} else if ((lno = cp->lno) != 1) {
-			for (--lno; tp; tp = tp->next, ++lno)
+			for (--lno;
+			    tp != (TEXT *)&cb->txthdr; tp = tp->next, ++lno)
 				if (file_aline(sp, ep, lno, tp->lb, tp->len))
 					return (1);
 			rp->lno = cp->lno;
 		} else {
 			if (file_iline(sp, ep, (recno_t)1, tp->lb, tp->len))
 				return (1);
-			for (lno = 1; tp = tp->next; ++lno)
+			for (lno = 1;
+			    (tp = tp->next) != (TEXT *)&cb->txthdr; ++lno)
 				if (file_aline(sp, ep, lno, tp->lb, tp->len))
 					return (1);
 			rp->lno = 1;
@@ -251,16 +247,17 @@ put(sp, ep, buffer, cp, rp, append)
 		 * If no more lines in the CB, append the rest of the original
 		 * line and quit.
 		 */
-		if (tp->next == NULL) {
+		if (tp->next == (TEXT *)&cb->txthdr) {
+			/* Set cursor to end of inserted text. */
+			rp->lno = lno;
+			rp->cno = (t - bp) - 1;
+
 			if (clen > 0) {
 				memmove(t, p, clen);
 				t += clen;
 			}
 			if (file_sline(sp, ep, lno, bp, t - bp))
 				goto mem;
-
-			rp->lno = lno;
-			rp->cno = t - bp;
 		} else {
 			/* Output the line replacing the original line. */
 			if (file_sline(sp, ep, lno, bp, t - bp))
@@ -268,8 +265,7 @@ put(sp, ep, buffer, cp, rp, append)
 
 			/* Output any intermediate lines in the CB alone. */
 			for (;;) {
-				tp = tp->next;
-				if (tp->next == NULL)
+				if ((tp = tp->next) == (TEXT *)&cb->txthdr)
 					break;
 				if (file_aline(sp, ep, lno, tp->lb, tp->len))
 					goto mem;
@@ -292,14 +288,11 @@ put(sp, ep, buffer, cp, rp, append)
 			}
 
 			/*
-			 * This is the end of the added text; set cursor.
-			 *
-			 * XXX
-			 * Historic vi put the cursor at the beginning of
-			 * the put.
+			 * This is the end of the added text; set cursor to
+			 * the last character inserted.
 			 */
 			rp->lno = lno + 1;
-			rp->cno = t - bp - 1;
+			rp->cno = (t - bp) - 1;
 
 			if (clen) {
 				memmove(t, p, clen);
@@ -350,23 +343,26 @@ mem:		msgq(sp, M_ERR, "Error: %s", strerror(errno));
 		return (NULL);
 	}
 #ifdef DEBUG
-	memset(tp->lb, 0, total_len - 1);
+	if (total_len)
+		memset(tp->lb, 0, total_len - 1);
 #endif
 
 	if (p != NULL && len != 0)
 		memmove(tp->lb, p, len);
 	tp->len = len;
 	tp->ai = tp->insert = tp->offset = tp->overwrite = 0;
+	tp->wd = NULL;
+	tp->wd_len = 0;
 
 	return (tp);
 }
 
 /*
- * text_free --
+ * hdr_text_free --
  *	Free a chain of text structures.
  */
 void
-text_free(hp)
+hdr_text_free(hp)
 	HDR *hp;
 {
 	TEXT *tp;
@@ -374,8 +370,21 @@ text_free(hp)
 	while (hp->next != hp) {
 		tp = hp->next;
 		HDR_DELETE(tp, next, prev, TEXT);
-		if (tp->lb != NULL)
-			FREE(tp->lb, tp->lb_len);
-		FREE(tp, sizeof(TEXT));
+		text_free(tp);
 	}
+}
+
+/*
+ * text_free --
+ *	Free a text structure.
+ */
+void
+text_free(tp)
+	TEXT *tp;
+{
+	if (tp->lb != NULL)
+		FREE(tp->lb, tp->lb_len);
+	if (tp->wd != NULL)
+		FREE(tp->wd, tp->wd_len);
+	FREE(tp, sizeof(TEXT));
 }
