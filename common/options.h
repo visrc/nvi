@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: options.h,v 5.9 1993/02/16 20:10:38 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:38 $
+ *	$Id: options.h,v 5.10 1993/03/01 12:49:38 bostic Exp $ (Berkeley) $Date: 1993/03/01 12:49:38 $
  */
 
 /* Offset macros. */
@@ -37,7 +37,7 @@ typedef struct _option {
 	char	*name;			/* Name. */
 	void	*value;			/* Value. */
 					/* Initialization function. */
-	int	(*func) __P((EXF *, void *));
+	int	(*func) __P((EXF *, void *, char *));
 
 #define	OPT_0BOOL	0x001		/* Boolean (off). */
 #define	OPT_1BOOL	0x002		/* Boolean (on). */
@@ -55,8 +55,26 @@ typedef struct _option {
 
 extern OPTIONS opts[];
 
+/* Option routines. */
 void	opts_dump __P((EXF *, int));
 void	opts_end __P((EXF *));
 int	opts_init __P((EXF *));
 void	opts_save __P((FILE *));
 int	opts_set __P((EXF *, char **));
+
+/* Per-option routines. */
+int	f_columns __P((EXF *, void *, char *));
+int	f_flash __P((EXF *, void *, char *));
+int	f_keytime __P((EXF *, void *, char *));
+int	f_leftright __P((EXF *, void *, char *));
+int	f_lines __P((EXF *, void *, char *));
+int	f_list __P((EXF *, void *, char *));
+int	f_mesg __P((EXF *, void *, char *));
+int	f_modelines __P((EXF *, void *, char *));
+int	f_ruler __P((EXF *, void *, char *));
+int	f_shiftwidth __P((EXF *, void *, char *));
+int	f_sidescroll __P((EXF *, void *, char *));
+int	f_tabstop __P((EXF *, void *, char *));
+int	f_tags __P((EXF *, void *, char *));
+int	f_term __P((EXF *, void *, char *));
+int	f_wrapmargin __P((EXF *, void *, char *));
