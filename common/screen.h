@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: screen.h,v 10.28 2000/04/21 19:00:34 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:34 $
+ *	$Id: screen.h,v 10.29 2000/04/21 21:29:52 skimo Exp $ (Berkeley) $Date: 2000/04/21 21:29:52 $
  */
 
 /*
@@ -203,4 +203,6 @@ struct _scr {
 #define	SC_TINPUT	0x08000000	/* Doing text input. */
 #define	SC_TINPUT_INFO	0x10000000	/* Doing text input on info line. */
 	u_int32_t flags;
+
+	int	    db_error;		/* Return code from db function. */
 };
