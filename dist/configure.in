@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.66 1996/03/19 16:25:13 bostic Exp $ (Berkeley) $Date: 1996/03/19 16:25:13 $
+dnl	$Id: configure.in,v 8.67 1996/03/20 19:30:08 bostic Exp $ (Berkeley) $Date: 1996/03/20 19:30:08 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(configure)
@@ -57,6 +57,8 @@ nextstep3) CFLAGS=${CFLAGS-"-O9"}
 osf*)	   CPPFLAGS="-Olimit 1000 $CPPFLAGS";;
 ptx*)	   LIBS="$LIBS -lseq -linet -lsocket";;
 sinix*)	   LIBS="$LIBS -lelf -lc";;
+solaris*)  LIBS="$LIBS -lsocket -lnsl -ldl";
+	   RLIBS=yes;;
 wgs*)	   LIBS="$LIBS -lnsl";;
 esac
 
@@ -110,10 +112,14 @@ dnl Checks for libraries.
 dnl Find the X libraries and includes.
 AC_PATH_X
 if test "$no_x" != yes; then
-	XLIBS="-lX11"
 	if test "X$x_libraries" != "X"; then
-		XLIBS="-L$x_libraries $XLIBS"
+		if test "X$RLIBS" = "Xyes"; then
+			XLIBS="-R$x_libraries -L$x_libraries $XLIBS"
+		else
+			XLIBS="-L$x_libraries $XLIBS"
+		fi
 	fi
+	XLIBS="$XLIBS -lX11"
 	if test "X$x_includes" != "X"; then
 		XINCS="-I$x_includes"
 	fi
@@ -144,7 +150,11 @@ if test "$vi_cv_perlinterp" = "yes"; then
 	    'use Config;print (($Config{d_shrplib} eq "define") ? \
 	    $Config{shrpdir} : ($Config{installarchlib}."/CORE"))'`
 	if test "X$perllib" != "X"; then
-		LIBS="$LIBS -L$perllib"
+		if test "X$RLIBS" = "Xyes"; then
+			LIBS="$LIBS -R$perllib -L$perllib"
+		else
+			LIBS="$LIBS -L$perllib"
+		fi
 	else
 		echo "Fatal error: no perl5 library; see the section"
 		echo "ADDING LIBRARIES AND INCLUDE FILES in the README file."
