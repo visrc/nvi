@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 5.9 1992/04/28 17:40:31 bostic Exp $ (Berkeley) $Date: 1992/04/28 17:40:31 $";
+static char sccsid[] = "$Id: util.c,v 5.10 1992/05/02 09:10:46 bostic Exp $ (Berkeley) $Date: 1992/05/02 09:10:46 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -163,8 +163,6 @@ onstop(signo)
 	clrtoeol();
 	refresh();
 
-	suspend_curses();
-
 	(void)sigemptyset(&set);
 	(void)sigaddset(&set, SIGTSTP);
 	(void)sigprocmask(SIG_UNBLOCK, &set, NULL);
@@ -176,8 +174,5 @@ onstop(signo)
 	(void)signal(SIGTSTP, onstop);
 
 	cursor = current;
-	resume_curses(TRUE);
-	touchwin(stdscr);
-	redraw(cursor, FALSE);
-	refresh();
+	wrefresh(curscr);
 }
