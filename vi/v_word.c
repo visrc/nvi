@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_word.c,v 8.5 1993/08/16 18:01:59 bostic Exp $ (Berkeley) $Date: 1993/08/16 18:01:59 $";
+static char sccsid[] = "$Id: v_word.c,v 8.6 1993/08/21 18:24:29 bostic Exp $ (Berkeley) $Date: 1993/08/21 18:24:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -142,7 +142,7 @@ fword(sp, ep, vp, fm, rp, type)
 					return (1);
 				if (cs.cs_flags == CS_EOF)
 					goto ret1;
-				if (cs.cs_flags == 0 && isspace(cs.cs_ch))
+				if (cs.cs_flags != 0 || isspace(cs.cs_ch))
 					break;
 			}
 			/*
