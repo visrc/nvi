@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 8.5 1993/09/02 11:33:38 bostic Exp $ (Berkeley) $Date: 1993/09/02 11:33:38 $";
+static char sccsid[] = "$Id: v_search.c,v 8.6 1993/09/02 12:07:49 bostic Exp $ (Berkeley) $Date: 1993/09/02 12:07:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,9 +18,9 @@ static char sccsid[] = "$Id: v_search.c,v 8.5 1993/09/02 11:33:38 bostic Exp $ (
 #include "vi.h"
 #include "vcmd.h"
 
+static int bcorrect __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *));
+static int fcorrect __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *));
 static int getptrn __P((SCR *, EXF *, int, char **));
-static int shift_b __P((SCR *, EXF *, MARK *));
-static int shift_f __P((SCR *, EXF *, MARK *));
 
 /*
  * v_searchn -- n
@@ -42,13 +42,15 @@ v_searchn(sp, ep, vp, fm, tm, rp)
 	case BACKWARD:
 		if (b_search(sp, ep, fm, rp, NULL, NULL, flags))
 			return (1);
-		if (F_ISSET(vp, VC_SH) && shift_b(sp, ep, rp))
+		if (F_ISSET(vp, VC_C | VC_D | VC_Y | VC_SH) &&
+		    bcorrect(sp, ep, vp, fm, rp))
 			return (1);
 		break;
 	case FORWARD:
 		if (f_search(sp, ep, fm, rp, NULL, NULL, flags))
 			return (1);
-		if (F_ISSET(vp, VC_SH) && shift_f(sp, ep, rp))
+		if (F_ISSET(vp, VC_C | VC_D | VC_Y| VC_SH) &&
+		    fcorrect(sp, ep, vp, fm, rp))
 			return (1);
 		break;
 	case NOTSET:
@@ -80,13 +82,15 @@ v_searchN(sp, ep, vp, fm, tm, rp)
 	case BACKWARD:
 		if (f_search(sp, ep, fm, rp, NULL, NULL, flags))
 			return (1);
-		if (F_ISSET(vp, VC_SH) && shift_f(sp, ep, rp))
+		if (F_ISSET(vp, VC_C | VC_D | VC_Y | VC_SH) &&
+		    fcorrect(sp, ep, vp, fm, rp))
 			return (1);
 		break;
 	case FORWARD:
 		if (b_search(sp, ep, fm, rp, NULL, NULL, flags))
 			return (1);
-		if (F_ISSET(vp, VC_SH) && shift_b(sp, ep, rp))
+		if (F_ISSET(vp, VC_C | VC_D | VC_Y | VC_SH) &&
+		    bcorrect(sp, ep, vp, fm, rp))
 			return (1);
 		break;
 	case NOTSET:
@@ -122,7 +126,8 @@ v_searchw(sp, ep, vp, fm, tm, rp)
 	FREE_SPACE(sp, bp, blen);
 	if (rval)
 		return (1);
-	if (F_ISSET(vp, VC_SH) && shift_f(sp, ep, rp))
+	if (F_ISSET(vp, VC_C | VC_D | VC_Y | VC_SH) &&
+	    fcorrect(sp, ep, vp, fm, rp))
 		return (1);
 	return (0);
 }
@@ -149,7 +154,8 @@ v_searchb(sp, ep, vp, fm, tm, rp)
 		flags |= SEARCH_EOL;
 	if (b_search(sp, ep, fm, rp, ptrn, NULL, flags))
 		return (1);
-	if (F_ISSET(vp, VC_SH) && shift_b(sp, ep, rp))
+	if (F_ISSET(vp, VC_C | VC_D | VC_Y | VC_SH) &&
+	    bcorrect(sp, ep, vp, fm, rp))
 		return (1);
 	return (0);
 }
@@ -176,7 +182,8 @@ v_searchf(sp, ep, vp, fm, tm, rp)
 		flags |= SEARCH_EOL;
 	if (f_search(sp, ep, fm, rp, ptrn, NULL, flags))
 		return (1);
-	if (F_ISSET(vp, VC_SH) && shift_f(sp, ep, rp))
+	if (F_ISSET(vp, VC_C | VC_D | VC_Y | VC_SH) &&
+	    fcorrect(sp, ep, vp, fm, rp))
 		return (1);
 	return (0);
 }
@@ -207,19 +214,20 @@ getptrn(sp, ep, prompt, storep)
 }
 
 /*
- * shift_b --
- *	Handle shift command with a backward search as the motion.
+ * bcorrect --
+ *	Handle command with a backward search as the motion.
  *
- * Historically, shift commands don't shift the line searched to if the
- * pattern matched was the start or end of the line.  It seems like this
- * could be handled elsewhere in a general fashion, but I've so far been
- * unable to figure out any pattern.
+ * Historically, commands didn't affect the line searched to if the pattern
+ * match was the start or end of the line.  It did, however, become a line
+ * mode operation, even if it ended up affecting only a single line, if the
+ * cursor started at the beginning of the line.
  */
 static int
-shift_b(sp, ep, rp)
+bcorrect(sp, ep, vp, fm, rp)
 	SCR *sp;
 	EXF *ep;
-	MARK *rp;
+	VICMDARG *vp;
+	MARK *fm, *rp;
 {
 	size_t len;
 	char *p;
@@ -229,6 +237,8 @@ shift_b(sp, ep, rp)
 		return (1);
 	}
 	if (len == 0 || rp->cno >= len) {
+		if (fm->cno == 0)
+			F_SET(vp, VC_LMODE);
 		++rp->lno;
 		rp->cno = 0;
 	}
@@ -236,24 +246,28 @@ shift_b(sp, ep, rp)
 }
 
 /*
- * shift_f --
+ * fcorrect --
  *	Handle shift command with a forward search as the motion.
  */
 static int
-shift_f(sp, ep, rp)
+fcorrect(sp, ep, vp, fm, rp)
 	SCR *sp;
 	EXF *ep;
-	MARK *rp;
+	VICMDARG *vp;
+	MARK *fm, *rp;
 {
 	size_t len;
 	char *p;
 
 	if (rp->cno != 0)
 		return (0);
+
 	if ((p = file_gline(sp, ep, --rp->lno, &len)) == NULL) {
 		GETLINE_ERR(sp, rp->lno);
 		return (1);
 	}
+	if (fm->cno == 0)
+		F_SET(vp, VC_LMODE);
 	rp->cno = len;
 	return (0);
 }
