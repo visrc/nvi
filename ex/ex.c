@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.27 1993/09/08 14:39:29 bostic Exp $ (Berkeley) $Date: 1993/09/08 14:39:29 $";
+static char sccsid[] = "$Id: ex.c,v 8.28 1993/09/08 17:20:49 bostic Exp $ (Berkeley) $Date: 1993/09/08 17:20:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -385,6 +385,13 @@ ex_cmd(sp, ep, exc, arg1_len)
 			cmd.argv = sp->ex_argv;
 			for (ch = *p, exc = p; *++exc == ch;);
 		}
+
+		/*
+		 * The visual command has a different syntax when called
+		 * from ex than when called from a vi colon command.  FMH.
+		 */
+		if (cp == &cmds[C_VISUAL_EX] && F_ISSET(sp, S_MODE_VI))
+			cp = &cmds[C_VISUAL_VI];
 	} else {
 		cp = sp->lastcmd;
 		uselastcmd = 1;
@@ -602,10 +609,10 @@ end2:			break;
 				}
 				exc = endp;
 				/*
-				 * Fix the addresses.  Count's only occur with
-				 * commands taking two addresses.  Historic vi
-				 * practice was to use the count as an offset
-				 * from the *second* address.
+				 * Count's (with one exception, :visual) only
+				 * occur in commands taking two addresses.
+				 * Historic vi practice was to use the count as
+				 * an offset from the *second* address.
 				 */
 				cmd.addr1 = cmd.addr2;
 				cmd.addr2.lno = cmd.addr1.lno + lcount - 1;
@@ -614,6 +621,7 @@ end2:			break;
 				 * (see join) do different things with counts
 				 * than with line addresses.
 				 */
+				cmd.count = lcount;
 				F_SET(&cmd, E_COUNT);
 			}
 			break;
