@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: screen.h,v 10.12 1996/03/18 09:27:27 bostic Exp $ (Berkeley) $Date: 1996/03/18 09:27:27 $
+ *	$Id: screen.h,v 10.13 1996/03/30 13:46:56 bostic Exp $ (Berkeley) $Date: 1996/03/30 13:46:56 $
  */
 
 /*
@@ -96,12 +96,29 @@ struct _scr {
 
 	CHAR_T	 at_lbuf;		/* Ex/vi: Last executed at buffer. */
 
-					/* Ex/vi: search/substitute info. */
+					/* Ex/vi: re_compile flags. */
+#define	RE_C_SEARCH	0x0001		/* Compile search replacement. */
+#define	RE_C_SUBST	0x0002		/* Compile substitute replacement. */
+#define	RE_C_TAG	0x0004		/* Compile tag. */
+
+#define	RE_WSTART	"[[:<:]]"	/* Ex/vi: not-in-word search pattern. */
+#define	RE_WSTOP	"[[:>:]]"
+					/* Ex/vi: flags to search routines. */
+#define	SEARCH_EOL	0x0001		/* Offset past EOL is okay. */
+#define	SEARCH_FILE	0x0002		/* Search the entire file. */
+#define	SEARCH_MSG	0x0004		/* Display search warning messages. */
+#define	SEARCH_PARSE	0x0008		/* Parse the search pattern. */
+#define	SEARCH_SET	0x0010		/* Set search direction. */
+#define	SEARCH_TAG	0x0020		/* Search pattern is a tag pattern. */
+
+					/* Ex/vi: RE information. */
 	dir_t	 searchdir;		/* Last file search direction. */
-	regex_t	 subre;			/* Last subst. RE (compiled form). */
-	regex_t	 sre;			/* Last search RE (compiled form). */
-	char	*re;			/* Last search RE (uncompiled form). */
-	size_t	 re_len;		/* Last search RE length. */
+	char	*re;			/* Search RE (uncompiled form). */
+	regex_t	 re_c;			/* Search RE (compiled form). */
+	size_t	 re_len;		/* Search RE length. */
+	char	*subre;			/* Substitute RE (uncompiled form.) */
+	regex_t	 subre_c;		/* Substitute RE (compiled form.) */
+	size_t	 subre_len;		/* Substitute RE length. */
 	char	*repl;			/* Substitute replacement. */
 	size_t	 repl_len;		/* Substitute replacement length.*/
 	size_t	*newl;			/* Newline offset array. */
@@ -110,17 +127,7 @@ struct _scr {
 	u_int8_t c_suffix;		/* Edcompatible 'c' suffix value. */
 	u_int8_t g_suffix;		/* Edcompatible 'g' suffix value. */
 
-#define	RE_WSTART	"[[:<:]]"	/* Not-in-word search patterns. */
-#define	RE_WSTOP	"[[:>:]]"
-
-#define	SEARCH_EOL	0x0001		/* Offset past EOL is okay. */
-#define	SEARCH_FILE	0x0002		/* Search the entire file. */
-#define	SEARCH_MSG	0x0004		/* Display search warning messages. */
-#define	SEARCH_PARSE	0x0008		/* Parse the search pattern. */
-#define	SEARCH_SET	0x0010		/* Set search direction. */
-#define	SEARCH_TAG	0x0020		/* Search pattern is a tag pattern. */
-
-	OPTION	 opts[O_OPTIONCOUNT];	/* Options. */
+	OPTION	 opts[O_OPTIONCOUNT];	/* Ex/vi: Options. */
 
 /*
  * Screen flags.
@@ -154,7 +161,7 @@ struct _scr {
  * S_SCR_CENTER
  *	If the current line isn't already on the screen, center it.
  * S_SCR_TOP
- *	If the current line isn't already on the screen, put it at the top.
+ *	If the current line isn't already on the screen, put it at the to@.
  */
 #define	S_SCR_EX	0x00000004	/* Screen is in ex mode. */
 #define	S_SCR_VI	0x00000008	/* Screen is in vi mode. */
@@ -180,9 +187,8 @@ struct _scr {
 #define	S_EX_SILENT	0x00080000	/* Ex: batch script. */
 #define	S_INPUT		0x00100000	/* Doing text input. */
 #define	S_INPUT_INFO	0x00200000	/* Doing text input on info line. */
-#define	S_RE_RECOMPILE	0x00400000	/* The search RE needs recompiling. */
-#define	S_RE_SEARCH	0x00800000	/* The search RE has been set. */
-#define	S_RE_SUBST	0x01000000	/* The substitute RE has been set. */
+#define	S_RE_SEARCH	0x00800000	/* Search RE has been compiled. */
+#define	S_RE_SUBST	0x01000000	/* Substitute RE has been compiled. */
 #define	S_SCRIPT	0x02000000	/* Shell script window. */
 #define	S_STATUS	0x04000000	/* Schedule welcome message. */
 	u_int32_t flags;

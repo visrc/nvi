@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: recover.c,v 10.16 1996/03/30 09:28:16 bostic Exp $ (Berkeley) $Date: 1996/03/30 09:28:16 $";
+static const char sccsid[] = "$Id: recover.c,v 10.17 1996/03/30 13:46:55 bostic Exp $ (Berkeley) $Date: 1996/03/30 13:46:55 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -707,14 +707,14 @@ rcv_read(sp, frp)
 			}
 			if ((pathp = strdup(path)) == NULL) {
 				msgq(sp, M_SYSERR, NULL);
-				FREE(recp, strlen(recp) + 1);
+				free(recp);
 				recp = p;
 				pathp = t;
 				goto next;
 			}
 			if (p != NULL) {
-				FREE(p, strlen(p) + 1);
-				FREE(t, strlen(t) + 1);
+				free(p);
+				free(t);
 			}
 			rec_mtime = sb.st_mtime;
 			if (sv_fd != -1)

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: screen.c,v 10.8 1996/03/29 21:22:13 bostic Exp $ (Berkeley) $Date: 1996/03/29 21:22:13 $";
+static const char sccsid[] = "$Id: screen.c,v 10.9 1996/03/30 13:46:55 bostic Exp $ (Berkeley) $Date: 1996/03/30 13:46:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -67,28 +67,31 @@ screen_init(gp, orig, spp)
 	if (orig == NULL) {
 		sp->searchdir = NOTSET;
 	} else {
+		/* Alternate file name. */
 		if (orig->alt_name != NULL &&
 		    (sp->alt_name = strdup(orig->alt_name)) == NULL)
 			goto mem;
 
-		/* Retain all searching/substitution information. */
-		if (F_ISSET(orig, S_RE_SEARCH)) {
-			F_SET(sp, S_RE_SEARCH);
-			sp->sre = orig->sre;
+		/* Last executed at buffer. */
+		if (F_ISSET(orig, S_AT_SET)) {
+			F_SET(sp, S_AT_SET);
+			sp->at_lbuf = orig->at_lbuf;
 		}
-		if (F_ISSET(orig, S_RE_SUBST)) {
-			F_SET(sp, S_RE_SUBST);
-			sp->subre = orig->subre;
-		}
-		sp->searchdir = orig->searchdir == NOTSET ? NOTSET : FORWARD;
 
-		if (orig->repl_len) {
-			MALLOC(sp, sp->repl, char *, orig->repl_len);
-			if (sp->repl == NULL)
-				goto mem;
-			sp->repl_len = orig->repl_len;
-			memmove(sp->repl, orig->repl, orig->repl_len);
-		}
+		/* Retain searching/substitution information. */
+		sp->searchdir = orig->searchdir == NOTSET ? NOTSET : FORWARD;
+		if (orig->re != NULL && (sp->re =
+		    v_strdup(sp, orig->re, orig->re_len)) == NULL)
+			goto mem;
+		sp->re_len = orig->re_len;
+		if (orig->subre != NULL && (sp->subre =
+		    v_strdup(sp, orig->subre, orig->subre_len)) == NULL)
+			goto mem;
+		sp->subre_len = orig->subre_len;
+		if (orig->repl != NULL && (sp->repl =
+		    v_strdup(sp, orig->repl, orig->repl_len)) == NULL)
+			goto mem;
+		sp->repl_len = orig->repl_len;
 		if (orig->newl_len) {
 			len = orig->newl_len * sizeof(size_t);
 			MALLOC(sp, sp->newl, size_t *, len);
@@ -99,11 +102,6 @@ mem:				msgq(orig, M_SYSERR, NULL);
 			sp->newl_len = orig->newl_len;
 			sp->newl_cnt = orig->newl_cnt;
 			memmove(sp->newl, orig->newl, len);
-		}
-
-		if (F_ISSET(orig, S_AT_SET)) {
-			F_SET(sp, S_AT_SET);
-			sp->at_lbuf = orig->at_lbuf;
 		}
 
 		if (opts_copy(orig, sp))
@@ -181,20 +179,24 @@ screen_end(sp)
 		free(sp->alt_name);
 
 	/* Free up search information. */
-	if (F_ISSET(sp, S_RE_SUBST))
-		regfree(&sp->subre);
+	if (sp->re != NULL)
+		free(sp->re);
 	if (F_ISSET(sp, S_RE_SEARCH))
-		regfree(&sp->sre);
+		regfree(&sp->re_c);
+	if (sp->subre != NULL)
+		free(sp->subre);
+	if (F_ISSET(sp, S_RE_SUBST))
+		regfree(&sp->subre_c);
 	if (sp->repl != NULL)
-		FREE(sp->repl, sp->repl_len);
+		free(sp->repl);
 	if (sp->newl != NULL)
-		FREE(sp->newl, sp->newl_len);
+		free(sp->newl);
 
 	/* Free all the options */
 	opts_free(sp);
 
 	/* Free the screen itself. */
-	FREE(sp, sizeof(SCR));
+	free(sp);
 
 	return (rval);
 }

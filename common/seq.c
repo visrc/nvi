@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: seq.c,v 10.9 1996/03/27 20:25:00 bostic Exp $ (Berkeley) $Date: 1996/03/27 20:25:00 $";
+static const char sccsid[] = "$Id: seq.c,v 10.10 1996/03/30 13:46:57 bostic Exp $ (Berkeley) $Date: 1996/03/30 13:46:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -102,7 +102,7 @@ seq_set(sp, name, nlen, input, ilen, output, olen, stype, flags)
 		free(qp->input);
 mem3:		if (qp->name != NULL)
 			free(qp->name);
-mem2:		FREE(qp, sizeof(SEQ));
+mem2:		free(qp);
 mem1:		errno = sv_errno;
 		msgq(sp, M_SYSERR, NULL);
 		return (1);
@@ -163,7 +163,7 @@ seq_mdel(qp)
 	free(qp->input);
 	if (qp->output != NULL)
 		free(qp->output);
-	FREE(qp, sizeof(SEQ));
+	free(qp);
 	return (0);
 }
 

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cut.c,v 10.8 1996/03/06 19:50:09 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:50:09 $";
+static const char sccsid[] = "$Id: cut.c,v 10.9 1996/03/30 13:46:52 bostic Exp $ (Berkeley) $Date: 1996/03/30 13:46:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -230,7 +230,7 @@ cb_rotate(sp)
 	if (del_cbp != NULL) {
 		LIST_REMOVE(del_cbp, q);
 		text_lfree(&del_cbp->textq);
-		FREE(del_cbp, sizeof(CB));
+		free(del_cbp);
 	}
 }
 
@@ -364,5 +364,5 @@ text_free(tp)
 {
 	if (tp->lb != NULL)
 		free(tp->lb);
-	FREE(tp, sizeof(TEXT));
+	free(tp);
 }

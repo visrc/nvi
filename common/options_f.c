@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: options_f.c,v 10.16 1996/03/06 19:50:47 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:50:47 $";
+static const char sccsid[] = "$Id: options_f.c,v 10.17 1996/03/30 13:46:54 bostic Exp $ (Berkeley) $Date: 1996/03/30 13:46:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -251,7 +251,14 @@ f_recompile(sp, op, str, valp)
 	char *str;
 	u_long *valp;
 {
-	F_SET(sp, S_RE_RECOMPILE);
+	if (F_ISSET(sp, S_RE_SEARCH)) {
+		regfree(&sp->re_c);
+		F_CLR(sp, S_RE_SEARCH);
+	}
+	if (F_ISSET(sp, S_RE_SUBST)) {
+		regfree(&sp->subre_c);
+		F_CLR(sp, S_RE_SUBST);
+	}
 	return (0);
 }
 

@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: mem.h,v 10.6 1996/03/27 18:50:10 bostic Exp $ (Berkeley) $Date: 1996/03/27 18:50:10 $
+ *	$Id: mem.h,v 10.7 1996/03/30 13:46:54 bostic Exp $ (Berkeley) $Date: 1996/03/30 13:46:54 $
  */
 
 /* Increase the size of a malloc'd buffer.  Two versions, one that
@@ -96,23 +96,13 @@
 		BINC_RET(sp, bp, blen, nlen);				\
 }
 
-/* Free memory, optionally making pointers unusable. */
-#ifdef DEBUG
-#define	FREE(p, sz) {							\
-	memset(p, 0xff, sz);						\
-	free(p);							\
-}
-#else
-#define	FREE(p, sz)	free(p);
-#endif
-
 /* Free a GET_SPACE returned buffer. */
 #define	FREE_SPACE(sp, bp, blen) {					\
 	GS *L__gp = (sp) == NULL ? NULL : (sp)->gp;			\
 	if (L__gp != NULL && bp == L__gp->tmp_bp)			\
 		F_CLR(L__gp, G_TMP_INUSE);				\
 	else								\
-		FREE(bp, blen);						\
+		free(bp);						\
 }
 
 /*

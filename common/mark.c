@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: mark.c,v 10.11 1996/03/06 19:50:35 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:50:35 $";
+static const char sccsid[] = "$Id: mark.c,v 10.12 1996/03/30 13:46:54 bostic Exp $ (Berkeley) $Date: 1996/03/30 13:46:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -98,7 +98,7 @@ mark_end(sp, ep)
 	 */
 	while ((lmp = ep->marks.lh_first) != NULL) {
 		LIST_REMOVE(lmp, q);
-		FREE(lmp, sizeof(LMARK));
+		free(lmp);
 	}
 	return (0);
 }

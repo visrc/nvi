@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: exf.c,v 10.28 1996/03/29 09:48:38 bostic Exp $ (Berkeley) $Date: 1996/03/29 09:48:38 $";
+static const char sccsid[] = "$Id: exf.c,v 10.29 1996/03/30 13:46:53 bostic Exp $ (Berkeley) $Date: 1996/03/30 13:46:53 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -102,7 +102,7 @@ file_add(sp, name)
 	 */
 	if (name != NULL && strcmp(name, TEMPORARY_FILE_STRING) &&
 	    (frp->name = strdup(name)) == NULL) {
-		FREE(frp, sizeof(FREF));
+		free(frp);
 		msgq(sp, M_SYSERR, NULL);
 		return (NULL);
 	}
@@ -410,7 +410,7 @@ oerr:	if (F_ISSET(ep, F_RCV_ON))
 	}
 	if (ep->db != NULL)
 		(void)ep->db->close(ep->db);
-	FREE(ep, sizeof(EXF));
+	free(ep);
 
 	return (open_err ?
 	    file_init(sp, frp, rcv_name, flags | FS_OPENERR) : 1);
@@ -629,7 +629,7 @@ file_end(sp, ep, force)
 	if (ep->rcv_mpath != NULL)
 		free(ep->rcv_mpath);
 
-	FREE(ep, sizeof(EXF));
+	free(ep);
 	return (0);
 }
 
