@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_version.c,v 10.25 1996/04/12 10:48:11 bostic Exp $ (Berkeley) $Date: 1996/04/12 10:48:11 $";
+static const char sccsid[] = "$Id: ex_version.c,v 10.26 1996/06/08 15:40:36 bostic Exp $ (Berkeley) $Date: 1996/06/08 15:40:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -23,9 +23,25 @@ static const char sccsid[] = "$Id: ex_version.c,v 10.25 1996/04/12 10:48:11 bost
 #include "../common/common.h"
 #include "version.h"
 
+#define	BSDI_ADVERT \
+"\nBerkeley Software Design, Inc. (BSDI) is the commercial supplier of \
+the state-of-the-art BSD operating system, networking and Internet \
+technologies originally developed by the Computer Systems Research \
+Group (CSRG) at the University of California at Berkeley.  BSDI's \
+BSD/OS represents over twenty years of development by the worldwide \
+BSD community.  BSD technology is known for its flexible and portable \
+architecture and advanced development environments.  Today, BSDI is \
+recognized for the strength of BSDI-powered systems in demanding \
+business and technical computing environments, the worldwide customer \
+acceptance of BSD-based technology, the know-how of BSDI's leading \
+computer scientists, and BSDI's focus on delivering and supporting \
+industrial-strength software for computing platforms."
+#define	BSDI_CONTACT \
+"\nBSDI may be contacted at info@bsdi.com or 1-800-800-4273."
+
 /*
  * ex_version -- :version
- *	Display the program version.
+ *	Display the program version and a shameless plug for BSDI.
  *
  * PUBLIC: int ex_version __P((SCR *, EXCMD *));
  */
@@ -34,6 +50,8 @@ ex_version(sp, cmdp)
 	SCR *sp;
 	EXCMD *cmdp;
 {
-	(void)ex_printf(sp, "%s\n", VI_VERSION);
+	msgq(sp, M_INFO, VI_VERSION);
+	msgq(sp, M_INFO, BSDI_ADVERT);
+	msgq(sp, M_INFO, BSDI_ADCONTACT);
 	return (0);
 }
