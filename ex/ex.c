@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex.c,v 10.55 1996/09/24 20:51:10 bostic Exp $ (Berkeley) $Date: 1996/09/24 20:51:10 $";
+static const char sccsid[] = "$Id: ex.c,v 10.56 1996/10/10 17:31:55 bostic Exp $ (Berkeley) $Date: 1996/10/10 17:31:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -454,7 +454,7 @@ loop:	ecp = gp->ecq.lh_first;
 		if ((ecp->cmd = ex_comm_search(p, namelen)) == NULL)
 			switch (p[0]) {
 			case 'k':
-				if (p[1] && !p[2]) {
+				if (namelen == 2) {
 					ecp->cp -= namelen - 1;
 					ecp->clen += namelen - 1;
 					ecp->cmd = &cmds[C_K];
