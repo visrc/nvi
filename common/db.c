@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 10.11 1995/10/16 15:47:02 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:47:02 $";
+static char sccsid[] = "$Id: db.c,v 10.12 1995/10/17 08:03:12 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:03:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -191,7 +191,7 @@ db_delete(sp, lno)
 #if defined(DEBUG) && 0
 	TRACE(sp, "delete line %lu\n", (u_long)lno);
 #endif
-	/* Update marks, @ and global commands.
+	/* Update marks, @ and global commands. */
 	if (mark_insdel(sp, LINE_DELETE, lno))
 		return (1);
 	if (ex_g_insdel(sp, LINE_DELETE, lno))
