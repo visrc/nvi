@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 5.36 1993/04/17 11:54:06 bostic Exp $ (Berkeley) $Date: 1993/04/17 11:54:06 $";
+static char sccsid[] = "$Id: util.c,v 5.37 1993/05/02 09:34:55 bostic Exp $ (Berkeley) $Date: 1993/05/02 09:34:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -87,8 +87,6 @@ msgq(sp, mt, fmt, va_alist)
 	len = vsnprintf(msgbuf, sizeof(msgbuf), fmt, ap);
 	if (len > sizeof(msgbuf))
 		len = sizeof(msgbuf);
-	else
-		++len;
 
 	msga(NULL, sp, mt == M_ERR ? 1 : 0, msgbuf, len);
 
