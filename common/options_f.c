@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 8.1 1993/06/09 22:21:42 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:21:42 $";
+static char sccsid[] = "$Id: options_f.c,v 8.2 1993/07/20 11:17:13 bostic Exp $ (Berkeley) $Date: 1993/07/20 11:17:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -472,7 +472,7 @@ ps_list(sp)
 		FREE(sp->paragraph, strlen(sp->paragraph) + 1);
 
 	if (p_p != NULL)
-		memmove(p, p_p, p_len);
+		memmove(p, p_p, p_len + 1);
 	if (s_p != NULL)
 		memmove(p + p_len, s_p, s_len + 1);
 	sp->paragraph = p;
