@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.39 1993/01/23 16:36:56 bostic Exp $ (Berkeley) $Date: 1993/01/23 16:36:56 $";
+static char sccsid[] = "$Id: main.c,v 5.40 1993/02/11 12:11:21 bostic Exp $ (Berkeley) $Date: 1993/02/11 12:11:21 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -61,7 +61,7 @@ main(argc, argv)
 		abort();
 
 	/* Set mode based on the program name. */
-	if ((p = rindex(*argv, '/')) == NULL)
+	if ((p = strrchr(*argv, '/')) == NULL)
 		p = *argv;
 	else
 		++p;
