@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 5.40 1993/05/08 21:30:48 bostic Exp $ (Berkeley) $Date: 1993/05/08 21:30:48 $";
+static char sccsid[] = "$Id: ex_subst.c,v 5.41 1993/05/11 16:10:50 bostic Exp $ (Berkeley) $Date: 1993/05/11 16:10:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -192,7 +192,7 @@ substitute(sp, ep, cmdp, s, re, cmd)
 	 */
 	cflag = gflag = lflag = nflag = pflag = rflag = 0;
 	for (; *s; ++s)
-		switch(*s) {
+		switch (*s) {
 		case ' ':
 		case '\t':
 			break;
@@ -289,7 +289,7 @@ skipmatch:	eval = regexec(re,
 			to.lno = lno;
 			to.cno = sp->match[0].rm_eo;
 
-			switch(sp->confirm(sp, ep, &from, &to)) {
+			switch (sp->s_confirm(sp, ep, &from, &to)) {
 			case YES:
 				break;
 			case NO:

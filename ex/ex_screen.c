@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_screen.c,v 5.2 1993/04/06 11:37:22 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:37:22 $";
+static char sccsid[] = "$Id: ex_screen.c,v 5.3 1993/05/11 16:10:48 bostic Exp $ (Berkeley) $Date: 1993/05/11 16:10:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,5 +30,5 @@ ex_split(sp, ep, cmdp)
 	    cmdp->argc ? (char *)cmdp->argv[0] : NULL, 1)) == NULL)
 		return (1);
 	
-	return (sp->split(sp, tep));
+	return (sp->s_split(sp, tep));
 }

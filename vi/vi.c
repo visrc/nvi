@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.67 1993/05/10 11:36:44 bostic Exp $ (Berkeley) $Date: 1993/05/10 11:36:44 $";
+static char sccsid[] = "$Id: vi.c,v 5.68 1993/05/11 16:11:30 bostic Exp $ (Berkeley) $Date: 1993/05/11 16:11:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -44,7 +44,7 @@ vi(sp, ep)
 		return (1);
 
 	/* Paint the screen. */
-	if (sp->srefresh(sp, ep))
+	if (sp->s_refresh(sp, ep))
 		return (v_end(sp));
 
 	/* Command initialization. */
@@ -144,7 +144,7 @@ vi(sp, ep)
 		 * you don't.
 		 */
 		if (LF_ISSET(V_RCM))
-			m.cno = sp->relative(sp, ep, m.lno);
+			m.cno = sp->s_relative(sp, ep, m.lno);
 		else if (LF_ISSET(V_RCM_SETFNB)) {
 			if (nonblank(sp, ep, m.lno, &m.cno))
 				goto err;
@@ -174,7 +174,7 @@ vi(sp, ep)
 err:				term_flush_pseudo(sp);
 
 			/* Refresh the screen. */
-			if (sp->srefresh(sp, ep)) {
+			if (sp->s_refresh(sp, ep)) {
 				eval = 1;
 				break;
 			}
@@ -193,7 +193,7 @@ err:				term_flush_pseudo(sp);
 	(k) = term_key(sp, TXT_MAPCOMMAND);				\
 	if (F_ISSET(sp, S_UPDATE_MODE)) {				\
 		F_CLR(sp, S_UPDATE_MODE);				\
-		sp->srefresh(sp, ep);					\
+		sp->s_refresh(sp, ep);					\
 	}								\
 	if (sp->special[(k)] == K_VLNEXT)				\
 		(k) = term_key(sp, TXT_MAPCOMMAND);			\
@@ -584,7 +584,7 @@ noword:		msgq(sp, M_BERR, "Cursor not in a %s",
 	 */
 	if (beg != sp->cno) {
 		sp->cno = beg;
-		sp->srefresh(sp, ep);
+		sp->s_refresh(sp, ep);
 	}
 
 	/*

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 5.33 1993/05/07 16:24:58 bostic Exp $ (Berkeley) $Date: 1993/05/07 16:24:58 $";
+static char sccsid[] = "$Id: v_scroll.c,v 5.34 1993/05/11 16:11:23 bostic Exp $ (Berkeley) $Date: 1993/05/11 16:11:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -52,7 +52,7 @@ v_home(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	return (sp->position(sp, ep, &rp->lno,
+	return (sp->s_position(sp, ep, &rp->lno,
 	    F_ISSET(vp, VC_C1SET) ? vp->count : 1, P_TOP));
 }
 
@@ -68,7 +68,7 @@ v_middle(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	return (sp->position(sp, ep, &rp->lno, 0, P_MIDDLE));
+	return (sp->s_position(sp, ep, &rp->lno, 0, P_MIDDLE));
 }
 
 /*
@@ -83,7 +83,7 @@ v_bottom(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	return (sp->position(sp, ep, &rp->lno,
+	return (sp->s_position(sp, ep, &rp->lno,
 	    F_ISSET(vp, VC_C1SET) ? vp->count : 1, P_BOTTOM));
 }
 
@@ -177,7 +177,7 @@ v_hpageup(sp, ep, vp, fm, tm, rp)
 	else
 		vp->count = O_VAL(sp, O_SCROLL);
 
-	if (sp->down(sp, ep, rp, (recno_t)O_VAL(sp, O_SCROLL), 1))
+	if (sp->s_down(sp, ep, rp, (recno_t)O_VAL(sp, O_SCROLL), 1))
 		return (1);
 
 	if (rp->lno != fm->lno && nonblank(sp, ep, rp->lno, &rp->cno))
@@ -206,7 +206,7 @@ v_hpagedown(sp, ep, vp, fm, tm, rp)
 	else
 		vp->count = O_VAL(sp, O_SCROLL);
 
-	if (sp->up(sp, ep, rp, (recno_t)O_VAL(sp, O_SCROLL), 1))
+	if (sp->s_up(sp, ep, rp, (recno_t)O_VAL(sp, O_SCROLL), 1))
 		return (1);
 
 	if (rp->lno != fm->lno && nonblank(sp, ep, rp->lno, &rp->cno))
@@ -230,7 +230,7 @@ v_pageup(sp, ep, vp, fm, tm, rp)
 	/* Calculation from POSIX 1003.2/D8. */
 	count = (F_ISSET(vp, VC_C1SET) ? vp->count : 1) * (sp->t_rows - 1);
 
-	if (sp->down(sp, ep, rp, count, 1))
+	if (sp->s_down(sp, ep, rp, count, 1))
 		return (1);
 
 	if (rp->lno != fm->lno && nonblank(sp, ep, rp->lno, &rp->cno))
@@ -254,7 +254,7 @@ v_pagedown(sp, ep, vp, fm, tm, rp)
 	/* Calculation from POSIX 1003.2/D8. */
 	count = (F_ISSET(vp, VC_C1SET) ? vp->count : 1) * (sp->t_rows - 1);
 
-	if (sp->up(sp, ep, rp, count, 1))
+	if (sp->s_up(sp, ep, rp, count, 1))
 		return (1);
 
 	if (rp->lno != fm->lno && nonblank(sp, ep, rp->lno, &rp->cno))
@@ -277,7 +277,7 @@ v_lineup(sp, ep, vp, fm, tm, rp)
 	 * The cursor moves down, staying with its original line, unless it
 	 * reaches the bottom of the screen.
 	 */
-	return (sp->down(sp, ep,
+	return (sp->s_down(sp, ep,
 	    rp, F_ISSET(vp, VC_C1SET) ? vp->count : 1, 0));
 }
 
@@ -296,6 +296,6 @@ v_linedown(sp, ep, vp, fm, tm, rp)
 	 * The cursor moves up, staying with its original line, unless it
 	 * reaches the top of the screen.
 	 */
-	return (sp->up(sp, ep,
+	return (sp->s_up(sp, ep,
 	    rp, F_ISSET(vp, VC_C1SET) ? vp->count : 1, 0));
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_stop.c,v 5.8 1993/05/04 20:24:26 bostic Exp $ (Berkeley) $Date: 1993/05/04 20:24:26 $";
+static char sccsid[] = "$Id: ex_stop.c,v 5.9 1993/05/11 16:10:49 bostic Exp $ (Berkeley) $Date: 1993/05/11 16:10:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,32 +33,5 @@ ex_stop(sp, ep, cmdp)
 	if (!F_ISSET(cmdp, E_FORCE))
 		AUTOWRITE(sp, ep);
 
-	return (ex_suspend(sp));
-}
-
-/*
- * ex_suspend --
- *	Suspend execution.
- */
-int
-ex_suspend(sp)
-	SCR *sp;
-{
-	struct termios t;
-
-	/* Save ex/vi terminal settings, and restore the original ones. */
-	(void)tcgetattr(STDIN_FILENO, &t);
-	(void)tcsetattr(STDIN_FILENO, TCSADRAIN, &sp->gp->original_termios);
-
-	if (kill(0, SIGTSTP)) {
-		msgq(sp, M_ERR, "Error: SIGTSTP: %s", strerror(errno));
-		return (1);
-	}
-
-	/* Restore ex/vi terminal settings. */
-	(void)tcsetattr(STDIN_FILENO, TCSAFLUSH, &t);
-
-	/* Repaint the screen. */
-	F_SET(sp, S_REFRESH);
-	return (0);
+	return (sp->s_suspend(sp));
 }

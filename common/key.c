@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.65 1993/05/10 22:37:25 bostic Exp $ (Berkeley) $Date: 1993/05/10 22:37:25 $";
+static char sccsid[] = "$Id: key.c,v 5.66 1993/05/11 16:09:53 bostic Exp $ (Berkeley) $Date: 1993/05/11 16:09:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -254,7 +254,7 @@ ret:	if (LF_ISSET(TXT_BEAUTIFY) && O_ISSET(sp, O_BEAUTIFY)) {
 		    sp->special[ch] == K_FORMFEED || sp->special[ch] == K_NL ||
 		    sp->special[ch] == K_TAB)
 			return (ch);
-		sp->bell(sp);
+		sp->s_bell(sp);
 		return (term_key(sp, flags));
 	}
 	return (ch);

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 5.27 1993/05/06 12:20:52 bostic Exp $ (Berkeley) $Date: 1993/05/06 12:20:52 $";
+static char sccsid[] = "$Id: v_init.c,v 5.28 1993/05/11 16:11:21 bostic Exp $ (Berkeley) $Date: 1993/05/11 16:11:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -53,7 +53,7 @@ write(fd, buf, n)
 	for (sp = __global_list->scrhdr.next;
 	    sp != (SCR *)&__global_list->scrhdr; sp = sp->next)
 		if (fd == sp->trapped_fd)
-			return (svi_exwrite(sp, buf, n));
+			return (sp->s_ex_write(sp, buf, n));
 
 #ifdef SYS_write
 	return (syscall(SYS_write, fd, buf, n));
@@ -80,7 +80,8 @@ v_init(sp, ep)
 		return (1);
 	sp->trapped_fd = fileno(sp->stdfp);
 #else
-	sp->stdfp = fwopen(sp, sp->exwrite);
+	if ((sp->stdfp = fwopen(sp, sp->s_ex_write)) == NULL)
+		return (1);
 #endif
 	/*
 	 * If no starting location specified, vi starts at the beginning.
@@ -125,7 +126,7 @@ v_init(sp, ep)
 	 * Now have the real location the user wants.
 	 * Fill the screen map.
 	 */
-	if (sp->fill(sp, ep, sp->lno, P_FILL))
+	if (sp->s_fill(sp, ep, sp->lno, P_FILL))
 		return (1);
 	F_SET(sp, S_REDRAW);
 

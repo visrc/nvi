@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 5.5 1993/05/06 01:21:14 bostic Exp $ (Berkeley) $Date: 1993/05/06 01:21:14 $";
+static char sccsid[] = "$Id: vs_split.c,v 5.6 1993/05/11 16:11:41 bostic Exp $ (Berkeley) $Date: 1993/05/11 16:11:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -105,20 +105,8 @@ svi_split(sp, ep)
 		tsp->child = sp;
 	}
 
-	/* Initialize support routines. */
-	tsp->bell	= svi_bell;
-	tsp->change	= svi_change;
-	tsp->confirm	= svi_confirm;
-	tsp->down	= svi_sm_down;
-	tsp->exwrite	= svi_exwrite;
-	tsp->fill	= svi_sm_fill;
-	tsp->gb		= svi_gb;
-	tsp->position	= svi_sm_position;
-	tsp->srefresh	= svi_refresh;
-	tsp->relative	= svi_relative;
-	tsp->split	= svi_split;
-	tsp->up		= svi_sm_up;
-	tsp->vex	= svi_vex;
+	/* Init support routines. */
+	svi_init(tsp);
 
 	/* Fill the child's screen map. */
 	(void)svi_sm_fill(tsp, tsp->ep, sp->lno, P_FILL);

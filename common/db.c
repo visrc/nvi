@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 5.30 1993/05/10 11:15:10 bostic Exp $ (Berkeley) $Date: 1993/05/10 11:15:10 $";
+static char sccsid[] = "$Id: db.c,v 5.31 1993/05/11 16:09:51 bostic Exp $ (Berkeley) $Date: 1993/05/11 16:09:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,16 +18,17 @@ static char sccsid[] = "$Id: db.c,v 5.30 1993/05/10 11:15:10 bostic Exp $ (Berke
 
 #define	UPDATE_SCREENS(op) {						\
 	if (ep->refcnt == 1) {						\
-		if (sp->change != NULL)					\
-			sp->change(sp, ep, lno, op);			\
+		if (sp->s_change != NULL)				\
+			sp->s_change(sp, ep, lno, op);			\
 	} else {							\
 		SCR *__tsp;						\
 		for (__tsp = sp->gp->scrhdr.next;			\
 		    __tsp != (SCR *)&sp->gp->scrhdr;			\
 		    __tsp = __tsp->next)				\
-			if (__tsp->ep == ep && __tsp->change != NULL) {	\
-				sp->change(__tsp, ep, lno, op);		\
-				sp->srefresh(__tsp, ep);		\
+			if (__tsp->ep == ep &&				\
+			    __tsp->s_change != NULL) {			\
+				sp->s_change(__tsp, ep, lno, op);	\
+				sp->s_refresh(__tsp, ep);		\
 			}						\
 	}								\
 }

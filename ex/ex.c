@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.92 1993/05/09 13:20:08 bostic Exp $ (Berkeley) $Date: 1993/05/09 13:20:08 $";
+static char sccsid[] = "$Id: ex.c,v 5.93 1993/05/11 16:10:44 bostic Exp $ (Berkeley) $Date: 1993/05/11 16:10:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -45,7 +45,7 @@ ex(sp, ep)
 	if (ex_init(sp, ep))
 		return (1);
 
-	if (sp->srefresh(sp, ep))
+	if (sp->s_refresh(sp, ep))
 		return (ex_end(sp));
 
 	/*
@@ -56,7 +56,7 @@ ex(sp, ep)
 	(void)signal(SIGINT, SIG_IGN);
 
 	for (eval = 0;;) {
-		if (sp->gb(sp, ep,
+		if (sp->s_get(sp, ep,
 		    &sp->bhdr, ':', TXT_CR | TXT_PROMPT))
 			continue;
 		tp = sp->bhdr.next;
@@ -73,7 +73,7 @@ ex(sp, ep)
 		if (!F_ISSET(sp, S_MODE_EX) || F_ISSET(sp, S_MAJOR_CHANGE))
 			break;
 
-		if (sp->srefresh(sp, ep)) {
+		if (sp->s_refresh(sp, ep)) {
 			eval = 1;
 			break;
 		}

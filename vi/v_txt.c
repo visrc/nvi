@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 5.15 1993/05/11 12:59:59 bostic Exp $ (Berkeley) $Date: 1993/05/11 12:59:59 $";
+static char sccsid[] = "$Id: v_txt.c,v 5.16 1993/05/11 16:11:22 bostic Exp $ (Berkeley) $Date: 1993/05/11 16:11:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -195,12 +195,12 @@ newtp:		if ((tp = text_init(sp, p, len, len + 32)) == NULL)
 	for (carat_st = C_NOTSET, quoted = Q_NOTSET, tty_cwait = 0;;) {
 
 		/* Reset the line and update the screen. */
-		if (sp->change(sp, ep, tp->lno, LINE_RESET))
+		if (sp->s_change(sp, ep, tp->lno, LINE_RESET))
 			ERR;
 		/* Three chosen by random selection. */
 		if (tty_cwait > 3 || !term_waiting(sp)) {
 			tty_cwait = 0;
-			if (sp->srefresh(sp, ep))
+			if (sp->s_refresh(sp, ep))
 				ERR;
 		} else
 			++tty_cwait;
@@ -321,7 +321,7 @@ next_ch:	if (replay)
 			}
 
 			/* Update the old line. */
-			if (sp->change(sp, ep, tp->lno, LINE_RESET))
+			if (sp->s_change(sp, ep, tp->lno, LINE_RESET))
 				ERR;
 
 			/* Swap old and new TEXT's. */
@@ -331,8 +331,8 @@ next_ch:	if (replay)
 			sp->lno = tp->lno;
 
 			/* Update the new line. */
-			if (sp->change(sp, ep, tp->lno, LINE_INSERT) ||
-			    sp->srefresh(sp, ep))
+			if (sp->s_change(sp, ep, tp->lno, LINE_INSERT) ||
+			    sp->s_refresh(sp, ep))
 				ERR;
 
 			goto next_ch;
@@ -529,10 +529,8 @@ k_escape:		if (tp->insert && tp->overwrite)
 			sp->cno = max;
 			break;
 		case K_CNTRLZ:
-			if (kill(getpid(), SIGTSTP))
-				msgq(sp, M_ERR,
-				    "Error: SIGTSTP: %s", strerror(errno));
-			/* FALLTHROUGH */
+			(void)sp->s_suspend(sp);
+			break;
 		case K_FORMFEED:
 			F_SET(sp, S_REFRESH);
 			break;
@@ -711,7 +709,7 @@ txt_backup(sp, ep, hp, tp, flags)
 	}
 
 	/* Update the old line on the screen. */
-	if (sp->change(sp, ep, tp->lno, LINE_DELETE))
+	if (sp->s_change(sp, ep, tp->lno, LINE_DELETE))
 		return (NULL);
 
 	/* Get a handle on the previous TEXT structure. */

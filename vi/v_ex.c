@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 5.50 1993/03/28 19:05:38 bostic Exp $ (Berkeley) $Date: 1993/03/28 19:05:38 $";
+static char sccsid[] = "$Id: v_ex.c,v 5.51 1993/05/11 16:11:19 bostic Exp $ (Berkeley) $Date: 1993/05/11 16:11:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -16,7 +16,7 @@ static char sccsid[] = "$Id: v_ex.c,v 5.50 1993/03/28 19:05:38 bostic Exp $ (Ber
 
 /*
  * v_ex --
- *	Redraw the screen.
+ *	Run ex.
  */
 int
 v_ex(sp, ep, vp, fm, tm, rp)
@@ -25,5 +25,5 @@ v_ex(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	return (sp->vex(sp, ep, fm, tm, rp));
+	return (sp->s_ex_run(sp, ep, fm, tm, rp));
 }

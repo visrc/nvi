@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 5.37 1993/05/02 12:20:32 bostic Exp $ (Berkeley) $Date: 1993/05/02 12:20:32 $";
+static char sccsid[] = "$Id: v_search.c,v 5.38 1993/05/11 16:11:27 bostic Exp $ (Berkeley) $Date: 1993/05/11 16:11:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -187,7 +187,7 @@ getptrn(sp, ep, prompt, storep)
 {
 	TEXT *tp;
 
-	if (sp->gb(sp, ep, &sp->bhdr, prompt,
+	if (sp->s_get(sp, ep, &sp->bhdr, prompt,
 	    TXT_BS | TXT_CR | TXT_ESCAPE | TXT_PROMPT))
 		return (1);
 

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 5.35 1993/05/09 11:56:20 bostic Exp $ (Berkeley) $Date: 1993/05/09 11:56:20 $";
+static char sccsid[] = "$Id: ex_append.c,v 5.36 1993/05/11 16:10:47 bostic Exp $ (Berkeley) $Date: 1993/05/11 16:10:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -80,7 +80,7 @@ ac(sp, ep, cmdp, cmd)
 				--m.lno;
 				break;
 			}
-			if (sp->gb(sp, ep,
+			if (sp->s_get(sp, ep,
 			    &sp->bhdr, 0, TXT_BEAUTIFY | TXT_CR | TXT_NLECHO)) {
 				rval = 1;
 				goto done;
@@ -103,7 +103,7 @@ ac(sp, ep, cmdp, cmd)
 
 	if (cmd == APPEND)
 		for (;; ++m.lno) {
-			if (sp->gb(sp, ep,
+			if (sp->s_get(sp, ep,
 			    &sp->bhdr, 0, TXT_BEAUTIFY | TXT_CR | TXT_NLECHO)) {
 				rval = 1;
 				goto done;

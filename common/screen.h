@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 5.37 1993/05/09 15:57:33 bostic Exp $ (Berkeley) $Date: 1993/05/09 15:57:33 $
+ *	$Id: screen.h,v 5.38 1993/05/11 16:09:52 bostic Exp $ (Berkeley) $Date: 1993/05/11 16:09:52 $
  */
 
 /*
@@ -198,28 +198,29 @@ typedef struct _scr {
  * SCREEN SUPPORT ROUTINES.
  * This is the set of routines that have to be written to add a screen.
  */
-	void	 (*bell) __P((struct _scr *));
-	int	 (*change) __P((struct _scr *,
+	void	 (*s_bell) __P((struct _scr *));
+	int	 (*s_change) __P((struct _scr *,
 		     struct _exf *, recno_t, enum operation));
 	enum confirmation
-		 (*confirm) __P((struct _scr *,
+		 (*s_confirm) __P((struct _scr *,
 		     struct _exf *, struct _mark *, struct _mark *));
-	int	 (*down) __P((struct _scr *,
+	int	 (*s_down) __P((struct _scr *,
 		     struct _exf *, struct _mark *, recno_t, int));
-	int	 (*exwrite) __P((void *, const char *, int));
-	int	 (*fill) __P((struct _scr *,
-		     struct _exf *, recno_t, enum position));
-	int	 (*gb) __P((struct _scr *, struct _exf *, struct _hdr *,
-		     int, u_int));
-	int	 (*position) __P((struct _scr *,
-		     struct _exf *, recno_t *, u_long, enum position));
-	int	 (*srefresh) __P((struct _scr *, struct _exf *));
-	size_t	 (*relative) __P((struct _scr *, struct _exf *, recno_t));
-	int	 (*split) __P((struct _scr *, struct _exf *));
-	int	 (*up) __P((struct _scr *,
-		     struct _exf *, struct _mark *, recno_t, int));
-	int	 (*vex) __P((struct _scr *, struct _exf *,
+	int	 (*s_ex_run) __P((struct _scr *, struct _exf *,
 		     struct _mark *, struct _mark *, struct _mark *));
+	int	 (*s_ex_write) __P((void *, const char *, int));
+	int	 (*s_fill) __P((struct _scr *,
+		     struct _exf *, recno_t, enum position));
+	int	 (*s_get) __P((struct _scr *, struct _exf *, struct _hdr *,
+		     int, u_int));
+	int	 (*s_position) __P((struct _scr *,
+		     struct _exf *, recno_t *, u_long, enum position));
+	int	 (*s_refresh) __P((struct _scr *, struct _exf *));
+	size_t	 (*s_relative) __P((struct _scr *, struct _exf *, recno_t));
+	int	 (*s_split) __P((struct _scr *, struct _exf *));
+	int	 (*s_suspend) __P((struct _scr *));
+	int	 (*s_up) __P((struct _scr *,
+		     struct _exf *, struct _mark *, recno_t, int));
 
 /* Editor screens (implies edit mode, as well). */
 #define	S_MODE_EX	0x0000001	/* Ex mode. */
