@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 5.6 1993/05/01 23:25:17 bostic Exp $ (Berkeley) $Date: 1993/05/01 23:25:17 $";
+static char sccsid[] = "$Id: ex_argv.c,v 5.7 1993/05/05 22:43:54 bostic Exp $ (Berkeley) $Date: 1993/05/05 22:43:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,12 +33,20 @@ buildargv(sp, ep, s, expand, argcp, argvp)
 	int expand, *argcp;
 {
 	int ch, cnt, done, globoff, len, needslots, off;
-	char *ap;
+	char *ap, *p;
 
 	/* Break into argv vector. */
 	for (done = globoff = off = 0;; ) {
-		/* New argument; NULL terminate. */
-		for (ap = s; *s && !isspace(*s); ++s);
+		/*
+		 * New argument; NULL terminate, skipping anything that's
+		 * preceded by a quoting character.
+		 */
+		for (ap = s; s[0]; ++s) {
+			if (s[0] == '\\' && s[1])
+				s += 2;
+			if (isspace(s[0]))
+				break;
+		}
 		if (*s)
 			*s = '\0';
 		else
@@ -107,8 +115,13 @@ mem1:				sp->argscnt = 0;
 				return (1);
 			}
 			sp->argv[off] = sp->args[off].bp;
-			memmove(sp->args[off].bp, ap, len);
 			sp->args[off].flags |= A_ALLOCATED;
+			/* Copy the argument into place, losing quote chars. */
+			for (p = sp->args[off].bp; len; *p++ = *ap++, --len)
+				if (*ap == '\\' && len) {
+					++ap;
+					--len;
+				}
 			++off;
 		}
 
@@ -116,12 +129,7 @@ mem1:				sp->argscnt = 0;
 			break;
 
 		/* Skip whitespace. */
-		while (ch = *++s) {
-			if (ch == '\\' && s[1])
-				++s;
-			if (!isspace(ch))
-				break;
-		}
+		while (!isspace(*++s));
 		if (!*s)
 			break;
 	}

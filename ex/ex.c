@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.88 1993/05/05 10:55:57 bostic Exp $ (Berkeley) $Date: 1993/05/05 10:55:57 $";
+static char sccsid[] = "$Id: ex.c,v 5.89 1993/05/05 22:43:52 bostic Exp $ (Berkeley) $Date: 1993/05/05 22:43:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -138,9 +138,9 @@ e1:	msgq(sp, M_ERR, "%s: %s.", filename, strerror(errno));
 /*
  * ex_cstring --
  *	Execute EX commands from a string.  The commands may be separated
- *	by newlines or by | characters, and may be quoted.  This is the
- *	last time we'll look at quoting, btw.  Everything below this layer
- *	is the character that it is, without special intepretation.
+ *	by newlines or by | characters, and may be quoted.  Quotes are
+ *	either the user's literal next character or a backslash.  Literal
+ *	next characters are translated into backslashes.
  */
 int
 ex_cstring(sp, ep, cmd, len)
@@ -150,19 +150,15 @@ ex_cstring(sp, ep, cmd, len)
 	int len;
 {
 	u_int saved_mode;
-	int cnt, rval;
+	int ch, cnt, rval;
 	char *p, *t;
 
-	/*
-	 * Walk the string, checking for '\' or '^V' quotes and '|' or
-	 * '\n' separated commands.  The string "^V\n" is a single '^V'.
-	 */
 	rval = 0;
 	saved_mode = F_ISSET(sp, S_MODE_EX | S_MODE_VI | S_MAJOR_CHANGE);
-	for (p = t = cmd, cnt = 0;; ++cnt, ++t, --len) {
+	for (p = t = cmd, cnt = 0;; ++cnt, --len) {
 		if (len == 0)
 			goto cend;
-		switch(*t) {
+		switch (ch = *t++) {
 		case '|':
 		case '\n':
 cend:			if (p > cmd) {
@@ -184,15 +180,15 @@ cend:			if (p > cmd) {
 				return (1);
 			}
 			break;
-		case '\\':
-		case ctrl('V'):
-			if (t[1] != '\n') {
-				++t;
-				--len;
-			}
-			/* FALLTHROUGH */
 		default:
-			*p++ = *t;
+			if (ch == '\\' || sp->special[ch] == K_VLNEXT) {
+				*p++ = '\\';
+				if (len == 1)
+					break;
+				--len;
+				ch = *t++;
+			}
+			*p++ = ch;
 			break;
 		}
 	}
@@ -700,6 +696,9 @@ addr2:	switch(cmd.addrcnt) {
 /*
  * linespec --
  *	Parse a line specifier for ex commands.
+ *
+ * XXX
+ *	Currently ignores any character quoting.  Not sure that's right.
  */
 static char *
 linespec(sp, ep, cmd, cp)
