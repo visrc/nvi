@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.29 1993/11/13 18:02:34 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:02:34 $
+ *	$Id: ex.h,v 8.30 1993/11/17 10:21:59 bostic Exp $ (Berkeley) $Date: 1993/11/17 10:21:59 $
  */
 
 struct _excmdarg;
@@ -54,7 +54,7 @@ typedef struct _excmdarg {
 	EXCMDLIST const *cmd;	/* Command entry in command table. */
 	CHAR_T	buffer;		/* Named buffer. */
 	recno_t	lineno;		/* Line number. */
-	u_long	count;		/* Specified count. */
+	long	count;		/* Signed, specified count. */
 	int	addrcnt;	/* Number of addresses (0, 1 or 2). */
 	MARK	addr1;		/* 1st address. */
 	MARK	addr2;		/* 2nd address. */
@@ -181,6 +181,7 @@ EXPROTO(int, ex_args);
 EXPROTO(int, ex_at);
 EXPROTO(int, ex_bang);
 EXPROTO(int, ex_bdisplay);
+EXPROTO(int, ex_bg);
 EXPROTO(int, ex_cd);
 EXPROTO(int, ex_change);
 EXPROTO(int, ex_color);
@@ -190,6 +191,7 @@ EXPROTO(int, ex_delete);
 EXPROTO(int, ex_digraph);
 EXPROTO(int, ex_edit);
 EXPROTO(int, ex_equal);
+EXPROTO(int, ex_fg);
 EXPROTO(int, ex_file);
 EXPROTO(int, ex_global);
 EXPROTO(int, ex_help);
@@ -208,7 +210,9 @@ EXPROTO(int, ex_prev);
 EXPROTO(int, ex_put);
 EXPROTO(int, ex_quit);
 EXPROTO(int, ex_read);
+EXPROTO(int, ex_resize);
 EXPROTO(int, ex_rew);
+EXPROTO(int, ex_sargs);
 EXPROTO(int, ex_script);
 EXPROTO(int, ex_set);
 EXPROTO(int, ex_shell);

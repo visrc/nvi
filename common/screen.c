@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.33 1993/11/13 18:00:44 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:00:44 $";
+static char sccsid[] = "$Id: screen.c,v 8.34 1993/11/17 10:21:05 bostic Exp $ (Berkeley) $Date: 1993/11/17 10:21:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -48,8 +48,6 @@ screen_init(orig, spp, flags)
 	queue_init(&sp->frefq);
 
 	sp->ccnt = 2;				/* Anything > 1 */
-
-	sp->lno = sp->olno = OOBLNO;
 
 	FD_ZERO(&sp->rdfd);
 
@@ -133,6 +131,7 @@ mem:			msgq(orig, M_SYSERR, "new screen attributes");
 		}
 
 		sp->s_bell		= orig->s_bell;
+		sp->s_bg		= orig->s_bg;
 		sp->s_busy		= orig->s_busy;
 		sp->s_change		= orig->s_change;
 		sp->s_chposition	= orig->s_chposition;
@@ -145,6 +144,7 @@ mem:			msgq(orig, M_SYSERR, "new screen attributes");
 		sp->s_ex_cmd		= orig->s_ex_cmd;
 		sp->s_ex_run		= orig->s_ex_run;
 		sp->s_ex_write		= orig->s_ex_write;
+		sp->s_fg		= orig->s_fg;
 		sp->s_fill		= orig->s_fill;
 		sp->s_get		= orig->s_get;
 		sp->s_key_read		= orig->s_key_read;
@@ -152,6 +152,7 @@ mem:			msgq(orig, M_SYSERR, "new screen attributes");
 		sp->s_position		= orig->s_position;
 		sp->s_refresh		= orig->s_refresh;
 		sp->s_relative		= orig->s_relative;
+		sp->s_resize		= orig->s_resize;
 		sp->s_split		= orig->s_split;
 		sp->s_suspend		= orig->s_suspend;
 		sp->s_up		= orig->s_up;

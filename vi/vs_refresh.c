@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.29 1993/11/15 10:23:46 bostic Exp $ (Berkeley) $Date: 1993/11/15 10:23:46 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.30 1993/11/17 10:23:15 bostic Exp $ (Berkeley) $Date: 1993/11/17 10:23:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,21 +30,56 @@ svi_refresh(sp, ep)
 {
 	SCR *tsp;
 
-#define	PAINTBITS	S_REDRAW | S_REFORMAT | S_REFRESH | S_RESIZE
-	/* Paint any related screens that have changed. */
+	/*
+	 * 1: Resize the screen.
+	 *
+	 * Notice that a resize is requested, and set up everything so that
+	 * the file gets reinitialized.  Done here, instead of in the vi loop
+	 * because there may be other initialization that other screens need
+	 * to do.  The actual changing of the row/column values was done by
+	 * calling the ex options code which put them into the environment,
+	 * which is used by curses.  Stupid, but ugly.
+	 */
+	if (F_ISSET(sp, S_RESIZE)) {
+		/* Reinitialize curses. */
+		if (svi_curses_end(sp) || svi_curses_init(sp))
+			return (1);
+
+		/* Lose any svi_screens() cached information. */
+		SVP(sp)->ss_lno = OOBLNO;
+
+		/*
+		 * Fill the map, incidentally losing any svi_line()
+		 * cached information.
+		 */
+		if (sp->s_fill(sp, ep, sp->lno, P_FILL))
+			return (1);
+		F_CLR(sp, S_RESIZE | S_REFORMAT);
+		F_SET(sp, S_REDRAW);
+	}
+
+	/*
+	 * 2: Refresh related screens.
+	 *
+	 * If related screens share a view into a file, they may have been
+	 * modified as well.  Refresh them if the dirty bit is set.
+	 */
+#define	PAINTBITS	S_REDRAW | S_REFORMAT | S_REFRESH
 	for (tsp = sp->child; tsp != NULL; tsp = tsp->child)
 		if (F_ISSET(tsp, PAINTBITS) ||
 		    tsp->ep == ep && F_ISSET(SVP(tsp), SVI_SCREENDIRTY)) {
-			(void)svi_paint(tsp, ep);
+			(void)svi_paint(tsp, tsp->ep);
 			F_CLR(SVP(tsp), SVI_SCREENDIRTY);
 		}
 	for (tsp = sp->parent; tsp != NULL; tsp = tsp->parent)
 		if (F_ISSET(tsp, PAINTBITS) ||
 		    tsp->ep == ep && F_ISSET(SVP(tsp), SVI_SCREENDIRTY)) {
-			(void)svi_paint(tsp, ep);
+			(void)svi_paint(tsp, tsp->ep);
 			F_CLR(SVP(tsp), SVI_SCREENDIRTY);
 		}
 	/*
+	 * 3: Refresh the current screen.
+	 *
 	 * Always refresh the current screen, it may be a cursor movement.
 	 * Also, always do it last -- that way, S_REFRESH can be set in
 	 * the current screen only, and the screen won't flash.
@@ -82,32 +117,7 @@ svi_paint(sp, ep)
 #define	SCNO	sp->sc_col
 
 	/*
-	 * 1: Resize the window.
-	 *
-	 * Notice that a resize is requested, and set up everything so that
-	 * the file gets reinitialized.  Done here, instead of in the vi
-	 * loop because there may be other initialization that other screens
-	 * need to do.  The actual changing of the row/column values was done
-	 * by calling the ex options code which put them into the environment,
-	 * which is used by curses.  Stupid, but ugly.
-	 */
-	if (F_ISSET(sp, S_RESIZE)) {
-		/* Reinitialize curses. */
-		if (svi_curses_end(sp) || svi_curses_init(sp))
-			return (1);
-
-		/* Toss svi_screens() cached information. */
-		SVP(sp)->ss_lno = OOBLNO;
-
-		/* Toss svi_line() cached information. */
-		if (sp->s_fill(sp, ep, sp->lno, P_FILL))
-			return (1);
-		F_CLR(sp, S_RESIZE | S_REFORMAT);
-		F_SET(sp, S_REDRAW);
-	}
-
-	/*
-	 * 2: Reformat the lines.
+	 * 1: Reformat the lines.
 	 *
 	 * If the lines themselves have changed (:set list, for example),
 	 * fill in the map from scratch.  Adjust the screen that's being
@@ -129,12 +139,12 @@ svi_paint(sp, ep)
 	}
 
 	/*
-	 * 3: Line movement.
+	 * 2: Line movement.
 	 *
 	 * Line changes can cause the top line to change as well.  As
 	 * before, if the movement is large, the screen is repainted.
 	 *
-	 * 3a: Tiny screens.
+	 * 2a: Tiny screens.
 	 *
 	 * Tiny screens cannot be permitted into the "scrolling" parts of
 	 * the smap code for two reasons.  If the screen size is 1 line,
@@ -161,7 +171,7 @@ svi_paint(sp, ep)
 	}
 
 	/*
-	 * 3b: Small screens.
+	 * 2b: Small screens.
 	 *
 	 * Users can use the window, w300, w1200 and w9600 options to make
 	 * the screen artificially small.  The behavior of these options
@@ -174,7 +184,7 @@ svi_paint(sp, ep)
 	 *		repaint.
 	 * In general, scrolling didn't cause compression (200^D was handled
 	 * the same as ^D), movement to a specific line would (:N where N
-	 * was 1 line below the screen caused a window compress), and cursor
+	 * was 1 line below the screen caused a screen compress), and cursor
 	 * movement would scroll if it was 11 lines or less, and compress if
 	 * it was more than 11 lines.  (And, no, I have no idea where the 11
 	 * comes from.)
@@ -191,7 +201,7 @@ svi_paint(sp, ep)
 	 * XXX
 	 * If the line a really long one, i.e. part of the line is on the
 	 * screen but the column offset is not, we'll end up in the adjust
-	 * code, when we should probably have compressed the window.
+	 * code, when we should probably have compressed the screen.
 	 */
 	if (ISSMALLSCREEN(sp))
 		if (LNO < HMAP->lno) {
@@ -232,7 +242,7 @@ small_fill:			MOVE(sp, INFOLINE(sp), 0);
 		}
 
 	/*
-	 * 3c: Line down.
+	 * 3a: Line down.
 	 */
 	if (LNO >= HMAP->lno) {
 		if (LNO <= TMAP->lno)
@@ -276,7 +286,7 @@ small_fill:			MOVE(sp, INFOLINE(sp), 0);
 	}
 
 	/*
-	 * 3d: Line up.
+	 * 3b: Line up.
 	 *
 	 * If less than half a screen away, scroll up until the line is
 	 * the first line on the screen.
@@ -506,7 +516,7 @@ lscreen:		if (O_ISSET(sp, O_LEFTRIGHT)) {
 	}
 
 fast:	getyx(stdscr, y, x);		/* Just move the cursor. */
-	y -= sp->s_off;			/* Correct for split screens. */
+	y -= sp->woff;			/* Correct for split screens. */
 	goto update;
 
 slow:	/* Find the current line in the map. */

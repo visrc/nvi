@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 8.24 1993/11/13 16:15:42 bostic Exp $ (Berkeley) $Date: 1993/11/13 16:15:42 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 8.25 1993/11/17 10:22:38 bostic Exp $ (Berkeley) $Date: 1993/11/17 10:22:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -37,6 +37,7 @@ static char sccsid[] = "$Id: ex_cmd.c,v 8.24 1993/11/13 16:15:42 bostic Exp $ (B
  *	c		-- count as an address offset
  *	f[N#][or]	-- file (a number or N, optional or required)
  *	l		-- line
+ *	n		-- signed count
  *	S		-- string with file name expansion
  *	s		-- string
  *	W		-- word string
@@ -88,7 +89,6 @@ EXCMDLIST const cmds[] = {
 	    "s",
 	    "[line [,line]] ~ [cgr] [count] [#lp]",
 	    "replace previous RE with previous replacement string,"},
-
 /* C_APPEND */
 	{"append",	ex_append,	E_ADDR1|E_NORC|E_ZERO|E_ZERODEF,
 	    "!",
@@ -109,6 +109,11 @@ EXCMDLIST const cmds[] = {
 	    "",	
 	    "[b]display",
 	    "display cut buffers"},
+/* C_BG */
+	{"bg",		ex_bg,		E_NOGLOBAL|E_NORC,
+	    "",
+	    "bg",
+	    "background the current screen"},
 /* C_CHANGE */
 	{"change",	ex_change,	E_ADDR2|E_NORC|E_ZERODEF,
 	    "!c",
@@ -159,6 +164,11 @@ EXCMDLIST const cmds[] = {
 	    "f1o",
 	    "f[ile] [name]",
 	    "display (and optionally set) file name"},
+/* C_FG */
+	{"fg",		ex_fg,		E_NOGLOBAL|E_NORC,
+	    "f1o",
+	    "fg [file]",
+	    "switch the current screen and a backgrounded screen"},
 /* C_GLOBAL */
 	{"global",	ex_global,	E_ADDR2_ALL|E_NOGLOBAL|E_NORC,
 	    "!s",
@@ -254,6 +264,11 @@ EXCMDLIST const cmds[] = {
 	    "!s",
 	    "[line] r[ead] [!cmd | [file]]",
 	    "append input from a command or file to the line"},
+/* C_RESIZE */
+	{"resize",	ex_resize,	E_NOGLOBAL|E_NORC,
+	    "n",
+	    "resize [change]",
+	    "grow or shrink the current screen"},
 /* C_REWIND */
 	{"rewind",	ex_rew,		E_NOGLOBAL|E_NORC,
 	    "!",
@@ -264,6 +279,11 @@ EXCMDLIST const cmds[] = {
 	    "s",
 "[line [,line]] s[ubstitute] [[/;]pat[/;]/repl[/;] [cgr] [count] [#lp]]",
 	    "substitute on lines matching a pattern"},
+/* C_SARGS */
+	{"sargs",	ex_sargs,	E_NOGLOBAL|E_NORC,
+	    "",	
+	    "sar[gs]",
+	    "display screen list"},
 /* C_SCRIPT */
 	{"script",	ex_script,	E_NOGLOBAL|E_NORC,
 	    "!f1o",
@@ -279,16 +299,16 @@ EXCMDLIST const cmds[] = {
 	    "", 
 	    "sh[ell]",
 	    "suspend editing and run a shell"},
-/* C_SPLIT */
-	{"split",	ex_split,	E_NOGLOBAL|E_NORC,
-	    "fNo",
-	    "sp[lit] [file ...]",
-	    "split the screen into two screens"},
 /* C_SOURCE */
 	{"source",	ex_source,	E_NOGLOBAL,
 	    "f1r", 
 	    "so[urce] file",
 	    "read a file of ex commands"},
+/* C_SPLIT */
+	{"split",	ex_split,	E_NOGLOBAL|E_NORC,
+	    "fNo",
+	    "s[plit] [file ...]",
+	    "split the current screen into two screens"},
 /* C_STOP */
 	{"stop",	ex_stop,	E_NOGLOBAL|E_NORC,
 	    "!",

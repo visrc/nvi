@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.57 1993/11/13 18:00:46 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:00:46 $
+ *	$Id: screen.h,v 8.58 1993/11/17 10:20:53 bostic Exp $ (Berkeley) $Date: 1993/11/17 10:20:53 $
  */
 
 /*
@@ -84,21 +84,22 @@ typedef struct _scr {
 	FREF	*frp;			/* Current FREF. */
 	FREF	*p_frp;			/* Previous FREF. */
 
-	u_long	ccnt;			/* Command count. */
+	u_long	 ccnt;			/* Command count. */
 
-	recno_t	 lno;			/* 1-N:     cursor file line. */
+					/* Screen's: */
+	size_t	 rows;			/* 1-N: number of rows. */
+	size_t	 cols;			/* 1-N: number of columns. */
+	size_t	 woff;			/* 0-N: row offset in screen. */
+	size_t	 t_rows;		/* 1-N: cur number of text rows. */
+	size_t	 t_maxrows;		/* 1-N: max number of text rows. */
+	size_t	 t_minrows;		/* 1-N: min number of text rows. */
+
+					/* Cursor's: */
+	recno_t	 lno;			/* 1-N: file line. */
 	recno_t	 olno;			/* 1-N: old cursor file line. */
-	size_t	 cno;			/* 0-N:     file cursor column. */
+	size_t	 cno;			/* 0-N: file character in line. */
 	size_t	 ocno;			/* 0-N: old file cursor column. */
-	size_t	 sc_col;		/* 0-N: logical screen cursor column. */
-
-	size_t	 rows;			/* 1-N:      rows per screen. */
-	size_t	 cols;			/* 1-N:   columns per screen. */
-	size_t	 t_rows;		/* 1-N:     text rows per screen. */
-	size_t	 t_maxrows;		/* 1-N: max text rows per screen. */
-	size_t	 t_minrows;		/* 1-N: min text rows per screen. */
-	size_t	 w_rows;		/* 1-N:      rows per window. */
-	size_t	 s_off;			/* 0-N: row offset in window. */
+	size_t	 sc_col;		/* 0-N: LOGICAL screen column. */
 
 	size_t	 rcm;			/* Vi: 0-N: Column suck. */
 #define	RCM_FNB		0x01		/* Column suck: first non-blank. */
@@ -164,9 +165,13 @@ typedef struct _scr {
 
 /*
  * SCREEN SUPPORT ROUTINES.
+ *
+ * A struct _scr * MUST be the first argument to these routines.
  */
 					/* Ring the screen bell. */
 	void	 (*s_bell) __P((struct _scr *));
+					/* Background the screen. */
+	int	 (*s_bg) __P((struct _scr *));
 					/* Put up a busy message. */
 	int	 (*s_busy) __P((struct _scr *, char const *));
 					/* Change a screen line. */
@@ -197,6 +202,8 @@ typedef struct _scr {
 		     struct _mark *));
 					/* Screen's ex write function. */
 	int	 (*s_ex_write) __P((void *, const char *, int));
+					/* Foreground the screen. */
+	int	 (*s_fg) __P((struct _scr *, char *));
 					/* Fill the screen's map. */
 	int	 (*s_fill) __P((struct _scr *,
 		     struct _exf *, recno_t, enum position));
@@ -214,6 +221,8 @@ typedef struct _scr {
 	int	 (*s_refresh) __P((struct _scr *, struct _exf *));
 					/* Return column close to last char. */
 	size_t	 (*s_relative) __P((struct _scr *, struct _exf *, recno_t));
+					/* Change the screen size. */
+	int	 (*s_resize) __P((struct _scr *, long));
 					/* Split the screen. */
 	int	 (*s_split) __P((struct _scr *, char *[]));
 					/* Suspend the screen. */
@@ -246,19 +255,20 @@ typedef struct _scr {
 #define	S_AUTOPRINT	0x0000100	/* Autoprint flag. */
 #define	S_BELLSCHED	0x0000200	/* Bell scheduled. */
 #define	S_CONTINUE	0x0000400	/* Need to ask the user to continue. */
-#define	S_GLOBAL	0x0000800	/* Doing a global command. */
-#define	S_INPUT		0x0001000	/* Doing text input. */
-#define	S_INTERRUPTED	0x0002000	/* If have been interrupted. */
-#define	S_INTERRUPTIBLE	0x0004000	/* If can be interrupted. */
-#define	S_REDRAW	0x0008000	/* Redraw the screen. */
-#define	S_REFORMAT	0x0010000	/* Reformat the screen. */
-#define	S_REFRESH	0x0020000	/* Refresh the screen. */
-#define	S_RESIZE	0x0040000	/* Resize the screen. */
-#define	S_SCRIPT	0x0080000	/* Window is a shell script. */
-#define	S_SRE_SET	0x0100000	/* The search RE has been set. */
-#define	S_SUBRE_SET	0x0200000	/* The substitute RE has been set. */
-#define	S_TIMER_SET	0x0400000	/* If a busy timer is running. */
-#define	S_UPDATE_MODE	0x0800000	/* Don't repaint modeline. */
+#define	S_DISPLAYED	0x0000800	/* If screen is currently displayed. */
+#define	S_GLOBAL	0x0001000	/* Doing a global command. */
+#define	S_INPUT		0x0002000	/* Doing text input. */
+#define	S_INTERRUPTED	0x0004000	/* If have been interrupted. */
+#define	S_INTERRUPTIBLE	0x0008000	/* If can be interrupted. */
+#define	S_REDRAW	0x0010000	/* Redraw the screen. */
+#define	S_REFORMAT	0x0020000	/* Reformat the screen. */
+#define	S_REFRESH	0x0040000	/* Refresh the screen. */
+#define	S_RESIZE	0x0080000	/* Resize the screen. */
+#define	S_SCRIPT	0x0100000	/* Window is a shell script. */
+#define	S_SRE_SET	0x0200000	/* The search RE has been set. */
+#define	S_SUBRE_SET	0x0400000	/* The substitute RE has been set. */
+#define	S_TIMER_SET	0x0800000	/* If a busy timer is running. */
+#define	S_UPDATE_MODE	0x1000000	/* Don't repaint modeline. */
 	u_int flags;
 } SCR;
 
