@@ -1,5 +1,6 @@
-#	$Id: Makefile.in,v 8.10 1996/02/22 10:39:57 bostic Exp $ (Berkeley) $Date: 1996/02/22 10:39:57 $
+#	$Id: Makefile.in,v 8.11 1996/02/25 12:22:44 bostic Exp $ (Berkeley) $Date: 1996/02/25 12:22:44 $
 
+CC=	@CC@
 #GCCF=	-Wall
 #DEBUG=	-DDEBUG
 LFLAGS=	@lflags@
@@ -51,7 +52,7 @@ nvi: $(NVIALL)
 
 TKALL=	$(TKOBJS) $(VIOBJS) @dbobjs@ @reobjs@ @LIBOBJS@
 tknvi: $(TKALL)
-	$(CC) -o $@ $(TKALL) @LIBS@ -L/usr/X11/lib -lX11
+	$(CC) -o $@ $(TKALL) @LIBS@
 
 clean:
 	rm -f nex nvi tknvi @LIBOBJS@ \
