@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.49 1996/04/03 17:28:52 bostic Exp $ (Berkeley) $Date: 1996/04/03 17:28:52 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.50 1996/04/10 19:36:07 bostic Exp $ (Berkeley) $Date: 1996/04/10 19:36:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1307,37 +1307,41 @@ ret:	/* If replaying text, keep going. */
 		goto replay;
 
 	/*
-	 * If not working on the colon command line, and not doing file
-	 * completion, and there have been messages, resolve them.
+	 * If there aren't keys waiting, display the matching character.
+	 * This needs to happen before the call to vs_resolve, otherwise
+	 * the error message from a missing match won't behave correctly.
 	 */
-	if (!F_ISSET(sp, S_INPUT_INFO) &&
-	    vip->totalcount != 0 && !filec_redraw && vs_resolve(sp))
+	if (showmatch) {
+		if (!KEYS_WAITING(sp) && txt_showmatch(sp, tp))
+			return (1);
+		showmatch = 0;
+	}
+
+	/*
+	 * If there have been messages, and not working on the colon command
+	 * line, and not doing file completion, resolve them.
+	 */
+	if ((vip->totalcount != 0 || F_ISSET(gp, G_BELLSCHED)) &&
+	    !F_ISSET(sp, S_INPUT_INFO) && !filec_redraw && vs_resolve(sp))
 		return (1);
 
 	/*
-	 * Reset the line and update the screen.  (The txt_showmatch() code
-	 * refreshes the screen for us.)  Don't refresh unless we're about
-	 * to wait on a character or we need to know where the cursor really
-	 * is.
+	 * Reset the line and update the screen.  Don't refresh unless we're
+	 * about to wait on a character or we need to know where the cursor
+	 * really is.
 	 */
 	if (margin != 0 || !KEYS_WAITING(sp)) {
 		if (vs_change(sp, tp->lno, LINE_RESET))
 			return (1);
-		if (showmatch) {
-			if (txt_showmatch(sp, tp))
-				return (1);
-		} else {
-			extern int FOO;
 
-			UPDATE_POSITION(sp, tp);
-			if (vs_refresh(sp, margin != 0))
-				return (1);
-			if (FL_ISSET(is_flags, IS_RUNNING) &&
-			    txt_isrch(sp, vp, tp, &is_flags))
-				return (1);
-		}
+		UPDATE_POSITION(sp, tp);
+		if (vs_refresh(sp, margin != 0))
+			return (1);
+
+		if (FL_ISSET(is_flags, IS_RUNNING) &&
+		    txt_isrch(sp, vp, tp, &is_flags))
+			return (1);
 	}
-	showmatch = 0;
 
 	/* Keep going. */
 	goto next;
@@ -2648,7 +2652,7 @@ txt_showmatch(sp, tp)
 			if (cs.cs_flags == CS_EOF || cs.cs_flags == CS_SOF) {
 				msgq(sp, M_BERR,
 				    "Unmatched %s", KEY_NAME(sp, endc));
-				return (vs_refresh(sp, 1));
+				return (0);
 			}
 			continue;
 		}
@@ -2667,12 +2671,8 @@ txt_showmatch(sp, tp)
 		return (1);
 
 	/* Wait for timeout or character arrival. */
-	if (v_event_get(sp, NULL, O_VAL(sp, O_MATCHTIME) * 100, EC_TIMEOUT))
-		return (1);
-
-	/* Return to the current location. */
-	UPDATE_POSITION(sp, tp);
-	return (vs_refresh(sp, 1));
+	return (v_event_get(sp,
+	    NULL, O_VAL(sp, O_MATCHTIME) * 100, EC_TIMEOUT));
 }
 
 /*
