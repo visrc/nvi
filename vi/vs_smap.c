@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 8.21 1993/11/02 10:12:48 bostic Exp $ (Berkeley) $Date: 1993/11/02 10:12:48 $";
+static char sccsid[] = "$Id: vs_smap.c,v 8.22 1993/11/02 19:44:01 bostic Exp $ (Berkeley) $Date: 1993/11/02 19:44:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -467,8 +467,10 @@ svi_sm_up(sp, ep, rp, count, cursor_move)
 	if (tmp.lno > TMAP->lno &&
 	    !file_gline(sp, ep, tmp.lno, NULL) ||
 	    tmp.off > svi_screens(sp, ep, tmp.lno, NULL)) {
-		v_eof(sp, ep, NULL);
-		return (1);
+		if (!cursor_move || ignore_cursor || p == TMAP) {
+			v_eof(sp, ep, NULL);
+			return (1);
+		}
 	}
 			
 	/*
@@ -525,14 +527,10 @@ svi_sm_up(sp, ep, rp, count, cursor_move)
 		return (0);
 
 	if (cursor_move) {
-		/* If we didn't move enough, move to SOF. */
-		if (count) {
-			if (file_lline(sp, ep, &lno))
-				return (1);
-			for (p = HMAP;; ++p)
-				if (p->lno == lno)
-					break;
-		}
+		/* If we didn't move enough, head toward EOF. */
+		for (; count; --count, ++p)
+			if (p == TMAP)
+				break;
 	} else {
 		/*
 		 * If the line itself moved, invalidate the cursor, because
@@ -556,7 +554,7 @@ svi_sm_up(sp, ep, rp, count, cursor_move)
 	 * next "real" movement will return the cursor to the closest position
 	 * to the last real movement.
 	 */
-	if (p->lno != svmap.lno || p->off != svmap.off) {
+ret:	if (p->lno != svmap.lno || p->off != svmap.off) {
 		rp->lno = p->lno;
 		rp->cno = svi_lrelative(sp, ep, p->lno, p->off);
 	}
@@ -655,7 +653,8 @@ svi_sm_down(sp, ep, rp, count, cursor_move)
 	}
 
 	/* Check to see if movement is possible. */
-	if (HMAP->lno == 1 && HMAP->off == 1) {
+	if (HMAP->lno == 1 && HMAP->off == 1 &&
+	    !cursor_move || ignore_cursor || p == HMAP) {
 		v_sof(sp, NULL);
 		return (1);
 	}
