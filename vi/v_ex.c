@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 5.24 1992/12/21 11:54:26 bostic Exp $ (Berkeley) $Date: 1992/12/21 11:54:26 $";
+static char sccsid[] = "$Id: v_ex.c,v 5.25 1992/12/21 13:45:10 bostic Exp $ (Berkeley) $Date: 1992/12/21 13:45:10 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -27,7 +27,9 @@ static char sccsid[] = "$Id: v_ex.c,v 5.24 1992/12/21 11:54:26 bostic Exp $ (Ber
 static size_t exlinecount, extotalcount;
 static enum { NOTSET, NEXTLINE, THISLINE } continueline;
 
-static int moveup __P((EXF *, int, int, int *));
+static int	moveup __P((EXF *, int, int, int *));
+static void	v_leaveex __P((EXF *));
+static void	v_startex __P((void));
 
 /*
  * v_ex --
@@ -76,7 +78,7 @@ v_ex(vp, fm, tm, rp)
 	 * Don't trust ANYTHING.
 	 */
 	if (!FF_ISSET(curf, F_NEWSESSION)) {
-		v_leaveex();
+		v_leaveex(curf);
 		curf->olno = OOBLNO;
 		rp->lno = curf->lno;
 		if (file_gline(curf, curf->lno, &len) == NULL &&
@@ -92,7 +94,7 @@ v_ex(vp, fm, tm, rp)
  * v_startex --
  *	Vi calls ex.
  */
-void
+static void
 v_startex()
 {
 	exlinecount = extotalcount = 0;
@@ -103,18 +105,21 @@ v_startex()
  * v_leaveex --
  *	Ex returns to vi.
  */
-void
-v_leaveex()
+static void
+v_leaveex(ep)
+	EXF *ep;
 {
 	if (extotalcount == 0)
 		return;
-	if (extotalcount >= SCREENSIZE(curf)) { 
-		FF_SET(curf, F_REDRAW);
+	if (extotalcount >= SCREENSIZE(ep)) { 
+		FF_SET(ep, F_REDRAW);
 		return;
 	}
-	for (; extotalcount; --extotalcount)
-		(void)scr_update(curf,
-		    curf->lines - extotalcount, NULL, 0, LINE_RESET);
+	do {
+		--extotalcount;
+		(void)scr_update(ep,
+		    BOTLINE(ep, ep->otop) - extotalcount, NULL, 0, LINE_RESET);
+	} while (extotalcount);
 }
 
 /*
