@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: log.c,v 5.14 1993/05/10 11:22:22 bostic Exp $ (Berkeley) $Date: 1993/05/10 11:22:22 $";
+static char sccsid[] = "$Id: log.c,v 5.15 1993/05/10 15:36:51 bostic Exp $ (Berkeley) $Date: 1993/05/10 15:36:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -216,11 +216,26 @@ log_line(sp, ep, lno, action)
 		ep->l_cursor.lno = OOBLNO;
 	}
 		
-	/* Put out the changes. */
-	if ((lp = file_rline(sp, ep, lno, &len)) == NULL) {
-		GETLINE_ERR(sp, lno);
-		return (1);
-	}
+	/*
+	 * Put out the changes.  If it's a LOG_LINE_RESET_B call, it's a
+	 * special case, avoid the caches.  Also, if it fails and it's
+	 * line 1, it just means that the user started with an empty file,
+	 * so fake an empty length line.
+	 */
+	if (action == LOG_LINE_RESET_B) {
+		if ((lp = file_rline(sp, ep, lno, &len)) == NULL) {
+			if (lno != 1) {
+				GETLINE_ERR(sp, lno);
+				return (1);
+			}
+			len = 0;
+			lp = "";
+		}
+	} else
+		if ((lp = file_gline(sp, ep, lno, &len)) == NULL) {
+			GETLINE_ERR(sp, lno);
+			return (1);
+		}
 	BINC(sp, ep->l_lp, ep->l_len, len + sizeof(u_char) + sizeof(recno_t));
 	ep->l_lp[0] = action;
 	memmove(ep->l_lp + sizeof(u_char), &lno, sizeof(recno_t));
@@ -235,6 +250,26 @@ log_line(sp, ep, lno, action)
 
 	/* Reset high water mark. */
 	ep->l_high = ++ep->l_cur;
+
+#if DEBUG && 1
+	switch (action) {
+	case LOG_LINE_APPEND:
+		TRACE(sp, "log_line: append: %lu {%u}\n", lno, len);
+		break;
+	case LOG_LINE_DELETE:
+		TRACE(sp, "log_line: delete: %lu {%u}\n", lno, len);
+		break;
+	case LOG_LINE_INSERT:
+		TRACE(sp, "log_line: insert: %lu {%u}\n", lno, len);
+		break;
+	case LOG_LINE_RESET_F:
+		TRACE(sp, "log_line: reset_f: %lu {%u}\n", lno, len);
+		break;
+	case LOG_LINE_RESET_B:
+		TRACE(sp, "log_line: reset_b: %lu {%u}\n", lno, len);
+		break;
+	}
+#endif
 	return (0);
 }
 
