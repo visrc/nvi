@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.63 1993/12/09 19:43:14 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:43:14 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.64 1993/12/16 14:19:27 bostic Exp $ (Berkeley) $Date: 1993/12/16 14:19:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -65,6 +65,17 @@ static int	 txt_resolve __P((SCR *, EXF *, TEXTH *));
  * This implementation does not use fixed characters, but uses whatever the
  * user specified as described by the termios structure.  I'm getting away
  * with something here, but I think I'm unlikely to get caught.
+ *
+ * !!!
+ * Historic vi did a special screen optimization for tab characters.  For
+ * the keystrokes "iabcd<esc>0C<tab>", the tab would overwrite the rest of
+ * the string when it was displayed.  Because this implementation redisplays
+ * the entire line on each keystroke, the "bcd" gets pushed to the right as
+ * we ignore that the user has "promised" to change the rest of the characters.
+ * Users have noticed, but this isn't worth fixing, and, the way that the
+ * historic vi did it results in an even worse bug.  Given the keystrokes
+ * "iabcd<esc>0R<tab><esc>", the "bcd" disappears, and magically reappears
+ * on the second <esc> key.
  */
 int
 v_ntext(sp, ep, tiqh, tm, lp, len, rp, prompt, ai_line, flags)
