@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 8.20 1993/11/02 18:44:05 bostic Exp $ (Berkeley) $Date: 1993/11/02 18:44:05 $
+ *	$Id: common.h,v 8.21 1993/11/04 13:47:17 bostic Exp $ (Berkeley) $Date: 1993/11/04 13:47:17 $
  */
 
 /* System includes. */
@@ -45,13 +45,16 @@ struct _tagf;
 struct _text;
 
 /*
- * Integral type that can hold a single character, the type of that
- * type when passed as an argument using traditional promotion rules,
- * and the maximum value that a character can have.
+ * Fundamental character types.
+ *
+ * CHAR_T	An integral type that can hold any character.
+ * ARG_CHAR_T	The type of a CHAR_T when passed as an argument using
+ *		traditional promotion rules.
+ * MAX_CHAR_T	The maximum value of any character.
  *
  * If no integral type can hold a character, don't even try the port.
  */
-typedef	u_char		CHAR_T;
+typedef	u_char		CHAR_T;	
 typedef	u_int		ARG_CHAR_T;
 #define	MAX_CHAR_T	0xff
 
