@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 8.51 1994/09/12 11:28:23 bostic Exp $ (Berkeley) $Date: 1994/09/12 11:28:23 $";
+static char sccsid[] = "$Id: vs_smap.c,v 8.52 1994/10/24 11:16:14 bostic Exp $ (Berkeley) $Date: 1994/10/24 11:16:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -685,8 +685,8 @@ svi_sm_up(sp, ep, rp, count, scmd, smp)
 		return (0);
 	case CNTRL_F:
 		/*
-		 * If there are more lines, the ^F command is always
-		 * positioned at the first line of the screen.
+		 * If there are more lines, the ^F command is positioned at
+		 * the first line of the screen.
 		 */
 		if (!count) {
 			smp = HMAP;
@@ -876,11 +876,14 @@ svi_sm_down(sp, ep, rp, count, scmd, smp)
 	switch (scmd) {
 	case CNTRL_B:
 		/*
-		 * If there are more lines, the ^B command is always
-		 * positioned at the last line of the screen.
+		 * If there are more lines, the ^B command is positioned at
+		 * the last line of the screen.  However, the line may not
+		 * exist.
 		 */
 		if (!count) {
-			smp = TMAP;
+			for (smp = TMAP; smp > HMAP; --smp)
+				if (file_gline(sp, ep, smp->lno, NULL))
+					break;
 			break;
 		}
 		/* FALLTHROUGH */
