@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_replace.c,v 10.7 1995/09/23 19:42:52 bostic Exp $ (Berkeley) $Date: 1995/09/23 19:42:52 $";
+static char sccsid[] = "$Id: v_replace.c,v 10.8 1995/09/25 08:32:17 bostic Exp $ (Berkeley) $Date: 1995/09/25 08:32:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -52,6 +52,8 @@ v_replace(sp, vp)
 	u_long cnt;
 	int quote, rval;
 	char *bp, *p;
+
+	vip = VIP(sp);
 
 	/*
 	 * If the line doesn't exist, or it's empty, replacement isn't
@@ -99,6 +101,8 @@ next:		if (v_event_get(sp, &ev, 0))
 				if (ev.e_value == K_ESCAPE)
 					return (0);
 			}
+			vip->rlast = ev.e_c;
+			vip->rvalue = ev.e_value;
 			break;
 		case E_ERR:
 		case E_EOF:
@@ -140,7 +144,6 @@ next:		if (v_event_get(sp, &ev, 0))
 	memmove(bp, p, len);
 	p = bp;
 
-	vip = VIP(sp);
 	if (!quote && vip->rvalue == K_CR || vip->rvalue == K_NL) {
 		/* Set return line. */
 		vp->m_stop.lno = vp->m_start.lno + cnt;
