@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: cut.h,v 5.4 1992/10/10 13:36:39 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:36:39 $
+ *	$Id: cut.h,v 5.5 1992/10/18 13:02:23 bostic Exp $ (Berkeley) $Date: 1992/10/18 13:02:23 $
  */
 
 typedef struct text {			/* Text: a linked list of lines. */
@@ -73,8 +73,8 @@ extern IB ib;				/* Input buffer. */
 	(start)->len += (text)->len;					\
 }
 
-int	add __P((MARK *, char *, size_t));
-int	change __P((MARK *, MARK *, char *, size_t));
+int	add __P((MARK *, u_char *, size_t));
+int	change __P((MARK *, MARK *, u_char *, size_t));
 int	cut __P((int, MARK *, MARK *, int));
 void	freetext __P((TEXT *));
 int	put __P((int, MARK *, MARK *, int));
