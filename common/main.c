@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.64 1993/04/19 15:24:19 bostic Exp $ (Berkeley) $Date: 1993/04/19 15:24:19 $";
+static char sccsid[] = "$Id: main.c,v 5.65 1993/04/20 18:39:47 bostic Exp $ (Berkeley) $Date: 1993/04/20 18:39:47 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -200,11 +200,7 @@ main(argc, argv)
 		SETCMDARG(cmd, C_TAG, 0, OOBLNO, 0, 0, tag);
 		if (ex_tagpush(sp, NULL, &cmd))
 			goto err1;
-	} else
-		sp->enext = file_first(sp, 1);
-
-	/* Get a real EXF structure. */
-	if ((sp->ep = file_start(sp, sp->enext)) == NULL)
+	} else if ((sp->ep = file_start(sp, file_first(sp, 1))) == NULL)
 		goto err1;
 
 	/* Do commands from the command line. */
