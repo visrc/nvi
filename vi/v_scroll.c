@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 5.7 1992/10/10 14:00:10 bostic Exp $ (Berkeley) $Date: 1992/10/10 14:00:10 $";
+static char sccsid[] = "$Id: v_scroll.c,v 5.8 1992/10/10 16:05:39 bostic Exp $ (Berkeley) $Date: 1992/10/10 16:05:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -238,9 +238,18 @@ v_linedown(vp, fm, tm, rp)
 	curf->uwindow = off;
 
 	/*
-	 * The cursor moves up, staying with its original line,
-	 * unless it reaches the top of the screen.
+	 * The cursor moves up, staying with its original line, unless it
+	 * reaches the top of the screen.  If the line number changes,
+         * we have to do screen relative movement (as if V_RCM was set),
+         * otherwise, we set the relative movement (as if V_RCM_SET was set).
+         * It's enough to make you cry.
 	 */
-	rp->lno = fm->lno == curf->top ? fm->lno + off : fm->lno;
+	if (fm->lno <= curf->top + off) {
+		rp->lno = curf->top + off;
+		vp->kp->flags |= V_RCM;
+	} else {
+		rp->lno = fm->lno;
+		vp->kp->flags |= V_RCM_SET;
+	}
 	return (0);
 }
