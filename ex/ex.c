@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.69 1993/12/02 15:53:51 bostic Exp $ (Berkeley) $Date: 1993/12/02 15:53:51 $";
+static char sccsid[] = "$Id: ex.c,v 8.70 1993/12/02 16:28:22 bostic Exp $ (Berkeley) $Date: 1993/12/02 16:28:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -383,8 +383,8 @@ loop:	if (nl) {
 	 * look for all the possible terminations.  There are three exciting
 	 * special cases:
 	 *
-	 * 1: The filter versions of the read/write commands are delimited
-	 *    by newlines (the filter command can contain shell pipes).
+	 * 1: The bang the filter versions of the read and write commands are
+	 *    delimited by newlines (they can contain shell pipes).
 	 * 2: The ex/edit and visual in vi mode commands take ex commands
 	 *    as arguments.
 	 * 3: The global/vglobal/substitute commands take RE's as their
@@ -409,6 +409,11 @@ loop:	if (nl) {
 	 * since "parser" implies some regularity of syntax) delimited the RE's
 	 * based on its delimiter and not anything so irretrievably vulgar as a
 	 * command syntax.
+	 *
+	 * One thing that makes this easier is that we can ignore most of the
+	 * command termination conditions for the commands that want to take
+	 * the command up to the next newline.  None of them are legal in .exrc
+	 * files, so if we're here, we only dealing with a single line.
 	 *
 	 * Anyhow, the following code makes this all work.  First, for the
 	 * special cases we move past their special argument.  Then, we do
@@ -463,6 +468,9 @@ loop:	if (nl) {
 			/* Reset, so the first argument isn't reparsed. */
 			save_cmd = cmd;
 		}
+	} else if (cp == &cmds[C_BANG]) {
+		cmd += cmdlen;
+		cmdlen = 0;
 	} else if (cp == &cmds[C_READ] || cp == &cmds[C_WRITE]) {
 		/*
 		 * Move to the next character.  If it's a '!', it's a filter
