@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 5.11 1992/10/29 14:43:42 bostic Exp $ (Berkeley) $Date: 1992/10/29 14:43:42 $";
+static char sccsid[] = "$Id: v_scroll.c,v 5.12 1992/11/02 22:35:38 bostic Exp $ (Berkeley) $Date: 1992/11/02 22:35:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -224,7 +224,6 @@ v_pagedown(vp, fm, tm, rp)
 	MARK *fm, *tm, *rp;
 {
 	recno_t cnt, last, lno, top;
-	size_t len;
 
 	/* Check for EOF. */
 	last = file_lline(curf);
