@@ -1,39 +1,41 @@
-#	$Id: recover.in,v 8.6 1994/08/16 16:42:16 bostic Exp $ (Berkeley) $Date: 1994/08/16 16:42:16 $
+#	$Id: recover.in,v 8.7 1994/08/16 16:42:55 bostic Exp $ (Berkeley) $Date: 1994/08/16 16:42:55 $
 #
-# Recover nvi editor files:
+# Script to recover nvi edit sessions.
+#
 RECDIR=/var/tmp/vi.recover
 SENDMAIL=/usr/lib/sendmail
 echo 'Recovering nvi editor sessions.'
 
-# Unmodified nvi editor backup files are either zero length or
-# have the execute bit set.  Delete both cases. Only examine
-# files which are readable.
+# Check editor backup files.
 vibackup=`echo $RECDIR/vi.*`
 if [ "$vibackup" != "$RECDIR/vi.*" ]; then
 	for i in $vibackup; do
+		# Only test files that are readable.
 		if test ! -r $i; then
 			continue
 		fi
+
+		# Unmodified nvi editor backup files either have the
+		# execute bit set or are zero length.  Delete them.
 		if test -x $i -o ! -s $i; then
 			rm $i
 		fi
 	done
 fi
 
-# It is possible to get incomplete recovery files, if the editor
-# crashes at the right time.  Delete any recovery files without
-# corresponding backup files, otherwise send mail to the user.
-# Only examine files which are readable.
+# It is possible to get incomplete recovery files, if the editor crashes
+# at the right time.
 virecovery=`echo $RECDIR/recover.*`
 if [ "$virecovery" != "$RECDIR/recover.*" ]; then
 	for i in $virecovery; do
+		# Only test files that are readable.
 		if test ! -r $i; then
 			continue
 		fi
-		if test ! -s $i; then
-			rm $i
-			continue
-		fi
+
+		# Delete any recovery files that are zero length, corrupted,
+		# or that have no corresponding backup file.  Else send mail
+		# to the user.
 		recfile=`awk '/^X-vi-recover-path:/{print $2}' < $i`
 		if test -n "$recfile" -a -s "$recfile"; then
 			$SENDMAIL -t < $i
