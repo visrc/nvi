@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.1,v 8.26 1995/12/01 10:48:15 bostic Exp $ (Berkeley) $Date: 1995/12/01 10:48:15 $
+.\"     $Id: vi.1,v 8.27 1996/03/22 11:31:16 bostic Exp $ (Berkeley) $Date: 1996/03/22 11:31:16 $
 .\"
 .Dd "%Q%"
 .Dt EX/VI 1
@@ -882,8 +882,8 @@ Never read startup files in the local directory.
 Regular expressions are extended (i.e.
 .Xr egrep 1
 style) expressions.
-.It Sy "filec [off]"
-Cause the <tab> character to perform file path completion on the colon
+.It Sy "filec [no default]"
+Set the character to perform file path completion on the colon
 command line.
 .It Sy "flash [on]"
 Flash the screen instead of beeping the keyboard on error.
