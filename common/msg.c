@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 8.1 1994/05/16 16:08:50 bostic Exp $ (Berkeley) $Date: 1994/05/16 16:08:50 $";
+static char sccsid[] = "$Id: msg.c,v 8.2 1994/05/18 18:41:43 bostic Exp $ (Berkeley) $Date: 1994/05/18 18:41:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -50,7 +50,7 @@ msgq(sp, mt, fmt, va_alist)
 #endif
 {
         va_list ap;
-	int len;
+	size_t len;
 	char msgbuf[1024];
 
 #ifdef __STDC__
@@ -63,13 +63,8 @@ msgq(sp, mt, fmt, va_alist)
 	 * the message.  If sp is NULL, ignore the special cases and
 	 * just build the message, using __global_list.
 	 */
-	if (sp == NULL) {
-		len = 0;
-		if (mt == M_SYSERR)
-			goto nullsp1;
-		else
-			goto nullsp2;
-	}
+	if (sp == NULL)
+		goto nullsp;
 
 	switch (mt) {
 	case M_BERR:
@@ -96,30 +91,39 @@ msgq(sp, mt, fmt, va_alist)
 		abort();
 	}
 
-	/* Length is the minimum length of the message or the buffer. */
-	if (mt == M_SYSERR)
-		if (sp->if_name != NULL)
-			len = snprintf(msgbuf, sizeof(msgbuf),
-			    "Error: %s, %d: %s%s%s.",
-			    sp->if_name, sp->if_lno,
-			    fmt == NULL ? "" : fmt, fmt == NULL ? "" : ": ",
-			    strerror(errno));
-		else
-nullsp1:		len = snprintf(msgbuf, sizeof(msgbuf),
-			    "Error: %s%s%s.",
-			    fmt == NULL ? "" : fmt, fmt == NULL ? "" : ": ",
-			    strerror(errno));
-	else {
-		len = sp->if_name == NULL ? 0 : snprintf(msgbuf,
-		    sizeof(msgbuf), "%s, %d: ", sp->if_name, sp->if_lno);
-nullsp2:	len += vsnprintf(msgbuf + len, sizeof(msgbuf) - len, fmt, ap);
+nullsp:	len = 0;
+
+#define	EPREFIX	"Error: "
+	if (mt == M_SYSERR) {
+		memmove(msgbuf, EPREFIX, sizeof(EPREFIX) - 1);
+		len += sizeof(EPREFIX) - 1;
+	}
+
+	if (sp != NULL && sp->if_name != NULL) {
+		len += snprintf(msgbuf + len, sizeof(msgbuf) - len,
+		    "%s, %d: ", sp->if_name, sp->if_lno);
+		if (len >= sizeof(msgbuf))
+			goto err;
+	}
+
+	if (fmt != NULL) {
+		len += vsnprintf(msgbuf + len, sizeof(msgbuf) - len, fmt, ap);
+		if (len >= sizeof(msgbuf))
+			goto err;
+	}
+
+	if (mt == M_SYSERR) {
+		len += snprintf(msgbuf + len,
+		    sizeof(msgbuf) - len, ": %s", strerror(errno));
+		if (len >= sizeof(msgbuf))
+			goto err;
 	}
 
 	/*
 	 * If len >= the size, some characters were discarded.
 	 * Ignore trailing nul.
 	 */
-	if (len >= sizeof(msgbuf))
+err:	if (len >= sizeof(msgbuf))
 		len = sizeof(msgbuf) - 1;
 
 #ifdef DEBUG
