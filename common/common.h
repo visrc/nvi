@@ -4,12 +4,8 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 5.17 1992/04/19 10:53:11 bostic Exp $ (Berkeley) $Date: 1992/04/19 10:53:11 $
+ *	$Id: common.h,v 5.18 1992/04/22 08:11:13 bostic Exp $ (Berkeley) $Date: 1992/04/22 08:11:13 $
  */
-
-#include <sys/types.h>
-#include <errno.h>
-#include <fcntl.h>
 
 #define TRUE	1
 #define FALSE	0
@@ -23,13 +19,7 @@
 
 #define	inword(ch)	(isalnum(ch) || (ch) == '_')
 
-/*------------------------------------------------------------------------*/
-/* Miscellaneous constants.						  */
-
 #define INFINITY	2000000001L	/* a very large integer */
-#ifndef MAXRCLEN
-# define MAXRCLEN	1000		/* longest possible .exrc file */
-#endif
 
 /*------------------------------------------------------------------------*/
 /* These describe how temporary files are divided into blocks             */
@@ -72,12 +62,6 @@ extern struct _viflags
 #define tstflag(x,y)	(viflags.x & y)
 #define initflags()	viflags.file = 0;
 
-/*------------------------------------------------------------------------*/
-/* These help support the single-line multi-change "undo" -- shift-U      */
-
-extern char	U_text[BLKSIZE];
-extern long	U_line;
-
 typedef long MARK;
 
 #define markline(x)	(long)((x) / BLKSIZE)
@@ -116,9 +100,7 @@ extern BLK	tmpblk;		/* a block used to accumulate changes */
 extern int	exwrote;	/* used to detect verbose ex commands */
 extern int	doingdot;	/* boolean: are we doing the "." command? */
 extern int	doingglobal;	/* boolean: are doing a ":g" command? */
-#ifndef CRUNCH
 extern int	force_lnmd;	/* boolean: force a command to work in line mode? */
-#endif
 extern long	rptlines;	/* number of lines affected by a command */
 extern char	*rptlabel;	/* description of how lines were affected */
 #define		ctrl(ch) ((ch)&037)
@@ -130,52 +112,6 @@ extern char	*rptlabel;	/* description of how lines were affected */
 #define ChangeText	BeforeAfter(beforedo(FALSE),afterdo())
 
 extern int	bavar;		/* used only in BeforeAfter macros */
-
-/*------------------------------------------------------------------------*/
-/* These are the movement commands.  Each accepts a mark for the starting */
-/* location & number and returns a mark for the destination.		  */
-
-extern MARK	m_updnto();		/* k j G */
-extern MARK	m_right();		/* h */
-extern MARK	m_left();		/* l */
-extern MARK	m_tocol();		/* | */
-extern MARK	m_front();		/* ^ */
-extern MARK	m_rear();		/* $ */
-extern MARK	m_fword();		/* w */
-extern MARK	m_bword();		/* b */
-extern MARK	m_eword();		/* e */
-extern MARK	m_paragraph();		/* { } [[ ]] */
-extern MARK	m_match();		/* % */
- extern MARK	m_fsentence();		/* ) */
- extern MARK	m_bsentence();		/* ( */
-extern MARK	m_tomark();		/* 'm */
-#ifndef NO_EXTENSIONS
-extern MARK	m_wsrch();		/* ^A */
-#endif
-extern MARK	m_nsrch();		/* n */
-extern MARK	m_Nsrch();		/* N */
-extern MARK	m_fsrch();		/* /regexp */
-extern MARK	m_bsrch();		/* ?regexp */
-#ifndef NO_CHARSEARCH
- extern MARK	m__ch();		/* ; , */
- extern MARK	m_fch();		/* f */
- extern MARK	m_tch();		/* t */
- extern MARK	m_Fch();		/* F */
- extern MARK	m_Tch();		/* T */
-#endif
-extern MARK	m_row();		/* H L M */
-extern MARK	m_z();			/* z */
-extern MARK	m_scroll();		/* ^B ^F ^E ^Y ^U ^D */
-
-/* Some stuff that is used by movement functions... */
-
-extern MARK	adjmove();		/* a helper fn, used by move fns */
-
-/* This macro is used to set the default value of cnt for an operation */
-#define SETDEFCNT(val) { \
-	if (cnt < 1) \
-		cnt = (val); \
-}
 
 /* These are used to minimize calls to fetchline() */
 extern int	plen;	/* length of the line */
@@ -189,52 +125,6 @@ extern char	digraph();
  * line that was most recently pfetch'ed.
  */
 #define buildmark(text)	(MARK)(BLKSIZE * pline + (int)((text) - ptext))
-
-
-/*------------------------------------------------------------------------*/
-
-extern void	ex();
-extern void	vi();
-
-/*----------------------------------------------------------------------*/
-/* These are used to handle VI commands 				*/
-
-extern MARK	v_ex();		/* : */
-extern MARK	v_mark();	/* m */
-extern MARK	v_quit();	/* Q */
-extern MARK	v_redraw();	/* ^L ^R */
-extern MARK	v_undo();	/* u */
-extern MARK	v_xchar();	/* x X */
-extern MARK	v_replace();	/* r */
-extern MARK	v_overtype();	/* R */
-extern MARK	v_selcut();	/* " */
-extern MARK	v_paste();	/* p P */
-extern MARK	v_yank();	/* y Y */
-extern MARK	v_delete();	/* d D */
-extern MARK	v_join();	/* J */
-extern MARK	v_insert();	/* a A i I o O */
-extern MARK	v_change();	/* c C */
-extern MARK	v_subst();	/* s */
-extern MARK	v_lshift();	/* < */
-extern MARK	v_rshift();	/* > */
-extern MARK	v_reformat();	/* = */
-extern MARK	v_filter();	/* ! */
-extern MARK	v_status();	/* ^G */
-extern MARK	v_switch();	/* ^^ */
-extern MARK	v_tag();	/* ^] */
-extern MARK	v_xit();	/* ZZ */
-extern MARK	v_undoline();	/* U */
-extern MARK	v_again();	/* & */
-#ifndef NO_EXTENSIONS
- extern MARK	v_keyword();	/* ^K */
- extern MARK	v_increment();	/* * */
-#endif
-#ifndef NO_ERRLIST
- extern MARK	v_errlist();	/* * */
-#endif
-#ifndef NO_AT
- extern MARK	v_at();		/* @ */
-#endif
 
 /* Describe the current mode. */
 #define MODE_EX		1	/* executing ex commands */
@@ -257,4 +147,3 @@ extern int	mode;
 
 extern MARK	V_from;
 extern int	V_linemd;
-extern MARK	v_start();
