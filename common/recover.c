@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: recover.c,v 10.25 2001/08/19 22:15:13 skimo Exp $ (Berkeley) $Date: 2001/08/19 22:15:13 $";
+static const char sccsid[] = "$Id: recover.c,v 10.26 2001/08/21 09:16:37 skimo Exp $ (Berkeley) $Date: 2001/08/21 09:16:37 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -221,7 +221,7 @@ rcv_init(SCR *sp)
 		   recno database, so we just tell it that it's
 		   not a recno database
 		*/
-		ep->db->type = DB_BTREE;
+		ep->db->type = DB_UNKNOWN;
 		if (ep->db->sync(ep->db, 0)) {
 			msgq_str(sp, M_SYSERR, ep->rcv_path,
 			    "058|Preservation failed: %s");
@@ -275,7 +275,7 @@ rcv_sync(SCR *sp, u_int flags)
 		   recno database, so we just tell it that it's
 		   not a recno database
 		*/
-		ep->db->type = DB_BTREE;
+		ep->db->type = DB_UNKNOWN;
 		if (ep->db->sync(ep->db, 0)) {
 			F_CLR(ep, F_RCV_ON | F_RCV_NORM);
 			msgq_str(sp, M_SYSERR,
