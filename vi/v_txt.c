@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.13 1993/09/13 17:23:08 bostic Exp $ (Berkeley) $Date: 1993/09/13 17:23:08 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.14 1993/09/13 19:38:11 bostic Exp $ (Berkeley) $Date: 1993/09/13 19:38:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -17,6 +17,7 @@ static char sccsid[] = "$Id: v_txt.c,v 8.13 1993/09/13 17:23:08 bostic Exp $ (Be
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "vi.h"
 #include "vcmd.h"
@@ -1076,7 +1077,7 @@ txt_showmatch(sp, ep)
 	 * We don't display the match if it's not on the screen.
 	 * Find out what the first character on the screen is.
 	 */
-	if (svi_sm_position(sp, ep, &m, 0, P_TOP))
+	if (sp->s_position(sp, ep, &m, 0, P_TOP))
 		return;
 
 	/* Initialize the getc() interface. */
