@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 10.3 1995/05/05 19:01:17 bostic Exp $ (Berkeley) $Date: 1995/05/05 19:01:17 $";
+static char sccsid[] = "$Id: vs_split.c,v 10.4 1995/05/26 11:06:50 bostic Exp $ (Berkeley) $Date: 1995/05/26 11:06:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -586,7 +586,7 @@ toosmall:			msgq(sp, M_BERR,
 		g->t_minrows += count;
 	g->t_maxrows += count;
 	_TMAP(g) += count;
-	(void)msg_status(g, g->lno, 0, 1);
+	(void)msg_status(g, g->lno, 0);
 	F_SET(g, S_SCR_REFORMAT);
 
 	s->rows -= count;
@@ -595,7 +595,7 @@ toosmall:			msgq(sp, M_BERR,
 	if (s->t_minrows > s->t_maxrows)
 		s->t_minrows = s->t_maxrows;
 	_TMAP(s) -= count;
-	(void)msg_status(s, s->lno, 0, 1);
+	(void)msg_status(s, s->lno, 0);
 	F_SET(s, S_SCR_REFORMAT);
 
 	return (0);
