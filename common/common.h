@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 8.32 1993/12/27 16:49:14 bostic Exp $ (Berkeley) $Date: 1993/12/27 16:49:14 $
+ *	$Id: common.h,v 8.33 1994/01/09 14:19:29 bostic Exp $ (Berkeley) $Date: 1994/01/09 14:19:29 $
  */
 
 /* System includes. */
@@ -76,8 +76,8 @@ typedef	u_int		ARG_CHAR_T;
 #include "term.h"		/* Required by screen.h. */
 
 #include "msg.h"		/* Required by gs.h. */
+#include "cut.h"		/* Required by gs.h. */
 #include "gs.h"			/* Required by screen.h. */
-#include "cut.h"		/* Required by screen.h. */
 #include "screen.h"		/* Required by exf.h. */
 #include "mark.h"		/* Required by exf.h. */
 #include "exf.h"		
