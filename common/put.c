@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: put.c,v 9.1 1994/11/09 18:38:02 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:38:02 $";
+static char sccsid[] = "$Id: put.c,v 9.2 1994/11/13 14:55:17 bostic Exp $ (Berkeley) $Date: 1994/11/13 14:55:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -149,12 +149,18 @@ put(sp, cbp, namep, cp, rp, append)
 	rval = 0;
 	if (tp->q.cqe_next == (void *)&cbp->textq) {
 		/*
-		 * Historical practice is that if a non-line mode put
-		 * is inside a single line, the cursor ends up on the
-		 * last character inserted.
+		 * !!!
+		 * Unbelievable.  Historically, if a non-line mode put is
+		 * inside a single line, and the put is from the unnamed
+		 * buffer, the cursor ends up on the last character inserted.
+		 * If the put is from a named buffer, the cursor ends up on
+		 * the first character inserted.
 		 */
 		rp->lno = lno;
-		rp->cno = (t - bp) - 1;
+		if (namep == NULL)
+			rp->cno = (t - bp) - 1;
+		else
+			rp->cno = sp->cno + (append ? 1 : 0);
 
 		if (clen > 0) {
 			memmove(t, p, clen);
