@@ -19,6 +19,7 @@ typedef	u_int		UCHAR_T;
 #define STRCMP		wcscmp
 #define STRPBRK		wcspbrk
 #define TOUPPER		towupper
+#define STRSET		wmemset
 
 #define L(ch)		L ## ch
 
@@ -37,6 +38,7 @@ typedef	u_char		UCHAR_T;
 #define STRCMP		strcmp
 #define STRPBRK		strpbrk
 #define TOUPPER		toupper
+#define STRSET		memset
 
 #define L(ch)		ch
 
@@ -46,8 +48,6 @@ typedef	u_char		UCHAR_T;
 	memcmp(to, from, (n) * sizeof(*(to)))
 #define	MEMMOVE(p, t, len)	memmove(p, t, (len) * sizeof(*(p)))
 #define	MEMCPY(p, t, len)	memcpy(p, t, (len) * sizeof(*(p)))
-#define STRSET(s,c,n)							    \
-	sizeof(char) == sizeof(CHAR_T) ? memset(s,c,n) : v_strset(s,c,n)
 #define SIZE(w)		(sizeof(w)/sizeof(*w))
 
 #endif

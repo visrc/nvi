@@ -626,7 +626,7 @@ recompute_geometry (GtkViScreen* vi)
 
     g_free(vi->chars);
     vi->chars = (CHAR_T*)g_new(gchar, (vi->rows+1)*vi->cols * sizeof(CHAR_T));
-    STRSET(vi->chars, ' ', (vi->rows+1)*vi->cols);
+    STRSET(vi->chars, L(' '), (vi->rows+1)*vi->cols);
     g_free(vi->endcol);
     vi->endcol = g_new(guchar, vi->rows*vi->cols);
     g_free(vi->reverse);

@@ -14,18 +14,6 @@
 
 #include "multibyte.h"
 
-/*
- * PUBLIC: void * v_strset __P((CHAR_T *s, CHAR_T c, size_t n));
- */
-void *
-v_strset(CHAR_T *s, CHAR_T c, size_t n)
-{
-	CHAR_T *ss = s;
-
-	while (n--) *s++ = c;
-	return ss;
-}
-
 int
 ucs2utf8(const CHAR_T *src, size_t len, char *dst)
 {
