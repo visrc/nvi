@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.113 1994/05/08 10:33:42 bostic Exp $ (Berkeley) $Date: 1994/05/08 10:33:42 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.114 1994/05/16 19:18:01 bostic Exp $ (Berkeley) $Date: 1994/05/16 19:18:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -888,7 +888,7 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 				(void)tcsetattr(STDIN_FILENO,
 				    TCSASOFT | TCSADRAIN, &t);
 			}
-			goto insq_ch;
+			goto insl_ch;
 		case K_HEXCHAR:
 			hex = H_NEXTCHAR;
 			goto insq_ch;
@@ -936,7 +936,7 @@ insq_ch:		/*
 			if (abb != A_NOTSET)
 				abb = inword(ch) ? A_INWORD : A_NOTWORD;
 
-			if (tp->owrite)		/* Overwrite a character. */
+insl_ch:		if (tp->owrite)		/* Overwrite a character. */
 				--tp->owrite;
 			else if (tp->insert) {	/* Insert a character. */
 				++tp->len;
@@ -1062,10 +1062,10 @@ txt_abbrev(sp, tp, pushcp, isinfoline, didsubp, turnoffp)
 	 *	:ab foo1 bar
 	 *	:ab foo2 bar
 	 *	:unab foo2
-	 * unabbreviates "foo1", and the commands:
+	 * unabbreviate "foo1", and the commands:
 	 *	:ab foo bar
 	 *	:ab bar baz
-	 * unabbreviates "foo"!
+	 * unabbreviate "foo"!
 	 *
 	 * Anyway, people neglected to first ask my opinion before they wrote
 	 * macros that depend on this stuff, so, we make this work as follows.
