@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_util.c,v 9.6 1995/01/11 21:33:45 bostic Exp $ (Berkeley) $Date: 1995/01/11 21:33:45 $";
+static char sccsid[] = "$Id: ex_util.c,v 9.7 1995/01/31 09:47:33 bostic Exp $ (Berkeley) $Date: 1995/01/31 09:47:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -207,9 +207,6 @@ ex_message(sp, cmdp, which)
 	enum exmtype which;
 {
 	switch (which) {
-	case EXM_INTERRUPTED:
-		msgq(sp, M_INFO, "134|Interrupted");
-		break;
 	case EXM_NOPREVRE:
 		msgq(sp, M_ERR, "230|No previous regular expression");
 		break;
