@@ -12,7 +12,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_tcl.c,v 8.7 1996/03/06 19:52:48 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:52:48 $";
+static const char sccsid[] = "$Id: ex_tcl.c,v 8.8 1996/03/21 19:00:39 bostic Exp $ (Berkeley) $Date: 1996/03/21 19:00:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -50,6 +50,7 @@ ex_tcl(sp, cmdp)
 	char buf[64];
 
 	/* Initialize the interpreter. */
+	gp = sp->gp;
 	if (gp->tcl_interp == NULL && tcl_init(gp))
 		return (1);
 
@@ -64,7 +65,6 @@ ex_tcl(sp, cmdp)
 		return (1);
 	}
 
-	gp = sp->gp;
 	(void)snprintf(buf, sizeof(buf),
 	    "set viScreenId %d\nset viStartLine %lu\nset viStopLine %lu",
 	    sp->id, cmdp->addr1.lno, cmdp->addr2.lno);
