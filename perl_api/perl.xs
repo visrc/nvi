@@ -14,7 +14,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: perl.xs,v 8.21 1996/09/19 09:25:42 bostic Exp $ (Berkeley) $Date: 1996/09/19 09:25:42 $";
+static const char sccsid[] = "$Id: perl.xs,v 8.22 1996/09/19 09:27:25 bostic Exp $ (Berkeley) $Date: 1996/09/19 09:27:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -844,8 +844,8 @@ Warn(warning)
 	sv_catpv(GvSV(errgv),warning);
 
 #define TIED(package) \
-	sv_magic((SV *) hv = \
-	    sv_2mortal((SV *)newHV()), \
+	sv_magic((SV *) (hv = \
+	    sv_2mortal((SV *)newHV())), \
 		sv_setref_pv(sv_newmortal(), package, \
 			newVIrv(newSV(0), screen)),\
 		'P', Nullch, 0);\
