@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.122 1994/08/17 14:35:58 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:35:58 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.123 1994/08/29 09:56:15 bostic Exp $ (Berkeley) $Date: 1994/08/29 09:56:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1043,13 +1043,18 @@ txt_abbrev(sp, tp, pushcp, isinfoline, didsubp, turnoffp)
 	char *p;
 
 	/*
-	 * Find the start of the "word".  Historically, abbreviations
-	 * could be preceded by any non-word character or the beginning
-	 * of the entry, .e.g inserting an abbreviated string in the
-	 * middle of another string triggered the replacement.
+	 * Find the start of the "word".  Historically, abbreviations could
+	 * be preceded by any whitespace character or the beginning of the
+	 * insert, e.g. inserting an abbreviated string in the middle of a
+	 * string triggered the replacement.
+	 *
+	 * XXX
+	 * Note, we check for abbreviations using a non-word character to
+	 * end the abbreviation, but a whitespace character to start it.
+	 * This is historic practice.
 	 */
 	for (off = sp->cno - 1, p = tp->lb + off, len = 0;; --p, --off) {
-		if (!inword(*p)) {
+		if (isblank(*p)) {
 			++p;
 			break;
 		}
