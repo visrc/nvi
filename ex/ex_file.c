@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_file.c,v 8.6 1993/11/26 16:22:42 bostic Exp $ (Berkeley) $Date: 1993/11/26 16:22:42 $";
+static char sccsid[] = "$Id: ex_file.c,v 8.7 1993/12/02 10:47:41 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:47:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,21 +38,19 @@ ex_file(sp, ep, cmdp)
 		frp = sp->frp;
 
 		/* Make sure can allocate enough space. */
-		if ((p = strdup((char *)cmdp->argv[0])) == NULL) {
+		if ((p = strdup(cmdp->argv[0]->bp)) == NULL) {
 			msgq(sp, M_SYSERR, NULL);
 			return (1);
 		}
 
 		/* If already have a file name, it becomes the alternate. */
-		t = FILENAME(frp);
-		if (t != NULL)
+		if ((t = FILENAME(frp)) != NULL)
 			set_alt_name(sp, t);
 
 		/* Free any previously changed name. */
 		if (frp->cname != NULL)
-			FREE(frp->cname, frp->clen);
+			free(frp->cname);
 		frp->cname = p;
-		frp->clen = strlen(p);
 
 		/* The read-only bit follows the file name; clear it. */
 		F_CLR(frp, FR_RDONLY);
