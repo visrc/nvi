@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 5.11 1993/05/07 12:48:55 bostic Exp $ (Berkeley) $Date: 1993/05/07 12:48:55 $";
+static char sccsid[] = "$Id: v_txt.c,v 5.12 1993/05/07 17:29:59 bostic Exp $ (Berkeley) $Date: 1993/05/07 17:29:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -157,7 +157,7 @@ newtp:		if ((tp = text_init(sp, p, len, len + 32)) == NULL)
 	 * much indentation we need, and fill it in.  Update input column and
 	 * screen cursor as necessary.
 	 */
-	if (LF_ISSET(TXT_AUTOINDENT)) {
+	if (LF_ISSET(TXT_AUTOINDENT) && ai_line != OOBLNO) {
 		if (txt_auto(sp, ep, ai_line, tp))
 			return (1);
 		sp->cno = tp->ai;
@@ -302,18 +302,20 @@ next_ch:	if (replay)
 			tp->len = sp->cno;
 			tp->ai = tp->insert = tp->overwrite = 0;
 
-			/* New lines are always TXT_AUTOINDENT. */
-			if (!LF_ISSET(TXT_AUTOINDENT)) {
-				ai_line = tp->lno;
-				LF_SET(TXT_AUTOINDENT);
-			}
+			/*
+			 * Reset the autoindent line.  0^D keeps the ai
+			 * line from changing.
+			 */
+			if (LF_ISSET(TXT_AUTOINDENT)) {
+				if (ai_line == OOBLNO || carat_st == C_NOCHANGE)
+					ai_line = tp->lno;
+				else
+					++ai_line;
 
-			/* 0^D stops the ai line from changing. */
-			if (carat_st == C_NOCHANGE)
-				ai_line = tp->lno;
-			carat_st = C_NOTSET;
-			if (txt_auto(sp, ep, ai_line, ntp))
-				ERR;
+				if (txt_auto(sp, ep, ai_line, ntp))
+					ERR;
+				carat_st = C_NOTSET;
+			}
 			sp->cno = ntp->ai;
 			
 			/* New lines are TXT_APPENDEOL if nothing to insert. */
@@ -398,7 +400,7 @@ k_escape:		if (tp->insert && tp->overwrite)
 				    "Already at the beginning of the line");
 				break;
 			}
-			switch(carat_st) {
+			switch (carat_st) {
 			case C_CARATSET:	/* ^^D */
 				carat_st = C_NOTSET;
 				tp->overwrite += sp->cno;
