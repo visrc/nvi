@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_match.c,v 8.5 1993/09/01 14:05:09 bostic Exp $ (Berkeley) $Date: 1993/09/01 14:05:09 $";
+static char sccsid[] = "$Id: v_match.c,v 8.6 1993/11/07 15:19:32 bostic Exp $ (Berkeley) $Date: 1993/11/07 15:19:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -113,26 +113,19 @@ nomatch:		msgq(sp, M_BERR, "No match character on this line.");
 
 	/*
 	 * Movement commands go one space further.  Increment the return
-	 * position or THE CURSOR depending on the direction of the search.
-	 * Changing the cursor isn't very nice -- mea culpa.
-	 *
+	 * MARK or from MARK depending on the direction of the search.
 	 */
-	if (F_ISSET(vp, VC_C | VC_D | VC_Y))
-		if (gc == cs_next) {
-			if (file_gline(sp, ep, rp->lno, &len) == NULL) {
-				GETLINE_ERR(sp, rp->lno);
-				return (1);
-			}
-			if (len)
-				++rp->cno;
-		} else {
-			if (file_gline(sp, ep, rp->lno, &len) == NULL) {
-				GETLINE_ERR(sp, rp->lno);
-				return (1);
-			}
-			if (len)
-				++sp->cno;
+	if (F_ISSET(vp, VC_C | VC_D | VC_Y)) {
+		if (file_gline(sp, ep, rp->lno, &len) == NULL) {
+			GETLINE_ERR(sp, rp->lno);
+			return (1);
 		}
+		if (len)
+			if (gc == cs_next)
+				++rp->cno;
+			else
+				++fm->cno;
+	}
 	return (0);
 }
 
