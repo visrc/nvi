@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.35 1993/12/16 14:42:53 bostic Exp $ (Berkeley) $Date: 1993/12/16 14:42:53 $";
+static char sccsid[] = "$Id: key.c,v 8.36 1993/12/20 18:17:14 bostic Exp $ (Berkeley) $Date: 1993/12/20 18:17:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -351,7 +351,7 @@ term_key(sp, chp, flags)
 	u_int flags;
 {
 	enum input rval;
-	struct timeval t;
+	struct timeval t, *tp;
 	CHAR_T ch;
 	GS *gp;
 	IBUF *tty;
@@ -384,8 +384,12 @@ loop:	if (tty->cnt == 0) {
 	if (!(tty->chf[tty->next] & CH_NOMAP) &&
 	    LF_ISSET(TXT_MAPCOMMAND | TXT_MAPINPUT)) {
 		/* Set up timeout value. */
-		t.tv_sec = O_VAL(sp, O_KEYTIME) / 10;
-		t.tv_usec = (O_VAL(sp, O_KEYTIME) % 10) * 100000L;
+		if (O_ISSET(sp, O_TIMEOUT)) {
+			tp = &t;
+			t.tv_sec = O_VAL(sp, O_KEYTIME) / 10;
+			t.tv_usec = (O_VAL(sp, O_KEYTIME) % 10) * 100000L;
+		} else
+			tp = NULL;
 
 		/* Get the next key. */
 newmap:		ch = tty->ch[tty->next];
@@ -533,20 +537,21 @@ term_user_key(sp, chp)
 	int nr;
 
 	/*
-	 * Read any keys the user has waiting.  Make the race condition
-	 * as short as possible.
+	 * Read any keys the user has waiting.  Make the race
+	 * condition as short as possible.
 	 */
 	t.tv_sec = 0;
-	t.tv_usec = 1;
-	tty = sp->gp->tty;
-	if (term_read_grow(sp, tty))
-		return (INP_ERR);
-	if (rval = sp->s_key_read(sp, &nr, &t))
-		return (rval);
+	t.tv_usec = 0;
+	for (tty = sp->gp->tty;;) {
+		if (term_read_grow(sp, tty))
+			return (INP_ERR);
+		if (rval = sp->s_key_read(sp, &nr, &t))
+			return (rval);
+		if (nr == 0)
+			break;
+	}
 
 	/* Read another key. */
-	if (term_read_grow(sp, tty))
-		return (INP_ERR);
 	if (rval = sp->s_key_read(sp, &nr, NULL))
 		return (rval);
 			
