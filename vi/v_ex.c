@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 5.46 1993/02/28 16:41:36 bostic Exp $ (Berkeley) $Date: 1993/02/28 16:41:36 $";
+static char sccsid[] = "$Id: v_ex.c,v 5.47 1993/03/01 12:50:57 bostic Exp $ (Berkeley) $Date: 1993/03/01 12:50:57 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -54,13 +54,14 @@ v_ex(ep, vp, fm, tm, rp)
 	vex_start(ep);			/* Reset. */
 	for (;;) {
 		/* Get an ex command. */
-		if (v_gb(ep, ISSET(O_PROMPT) ? ':' : 0, &p, &len, GB_BS))
+		if (v_gb(ep, ISSET(O_PROMPT) ? ':' : 0, &p, &len, GB_BS) ||
+		    p == NULL)
 			break;
 
 		if (len == 0)
 			break;
 
-		(void)ex_cstring(ep, p, len, 0);
+		(void)ex_cstring(ep, p, len, 1);
 
 		(void)fflush(ep->stdfp);
 
