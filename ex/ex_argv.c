@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_argv.c,v 10.24 1996/08/12 15:30:35 bostic Exp $ (Berkeley) $Date: 1996/08/12 15:30:35 $";
+static const char sccsid[] = "$Id: ex_argv.c,v 10.25 1996/08/13 11:36:48 bostic Exp $ (Berkeley) $Date: 1996/08/13 11:36:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -544,14 +544,15 @@ argv_lexp(sp, excp, path)
 		return (1);
 	}
 	for (off = exp->argsoff; (dp = readdir(dirp)) != NULL;) {
-		len = strlen(dp->d_name);
 		if (nlen == 0) {
-			if (dp->d_name[0] == '.' && (dp->d_name[0] == '\0' ||
-			    dp->d_name[1] == '.' && dp->d_name[2] == '\0'))
+			if (dp->d_name[0] == '.')
 				continue;
-		} else
+			len = strlen(dp->d_name);
+		} else {
+			len = strlen(dp->d_name);
 			if (len < nlen || memcmp(dp->d_name, name, nlen))
 				continue;
+		}
 
 		/* Directory + name + slash + null. */
 		argv_alloc(sp, dlen + len + 2);
