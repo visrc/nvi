@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.98 1994/10/23 20:28:56 bostic Exp $ (Berkeley) $Date: 1994/10/23 20:28:56 $";
+static char sccsid[] = "$Id: vi.c,v 8.99 1994/10/24 10:59:59 bostic Exp $ (Berkeley) $Date: 1994/10/24 10:59:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -602,7 +602,8 @@ getmotion(sp, ep, dm, vp, mappedp)
 		F_CLR(&motion, VM_COMMASK);
 	} else {
 		memset(&motion, 0, sizeof(VICMDARG));
-		if (getcmd(sp, ep, NULL, &motion, vp, &notused, mappedp))
+		if (getcmd(sp, ep,
+		    NULL, &motion, vp, &notused, mappedp) != GC_OK)
 			return (1);
 	}
 
