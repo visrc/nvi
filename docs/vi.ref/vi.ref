@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.16 1994/03/14 09:06:29 bostic Exp $ (Berkeley) $Date: 1994/03/14 09:06:29 $
+.\"     $Id: vi.ref,v 8.17 1994/03/16 15:42:32 bostic Exp $ (Berkeley) $Date: 1994/03/16 15:42:32 $
 .\"
 .Dd "%Q%"
 .Dt EX/VI 1
@@ -12,27 +12,30 @@
 .Nm ex, vi, view
 .Nd text editors
 .Sh SYNOPSIS
-.Nm \&vi
-.Op Fl eFlRv
-.Op Fl c Ar command
-.Op Fl r Ar file
-.Op Fl t Ar tag
-.Op Fl w Ar size
-.Op Fl x Ar \&aw
-.Nm view
-.Op Fl eFlRv
-.Op Fl c Ar command
-.Op Fl r Ar file
-.Op Fl t Ar tag
-.Op Fl w Ar size
-.Op Fl x Ar \&aw
 .Nm \&ex
 .Op Fl eFlRsv
-.Op Fl c Ar command
+.Op Fl c Ar cmd
 .Op Fl r Ar file
 .Op Fl t Ar tag
 .Op Fl w Ar size
 .Op Fl x Ar \&aw
+.Op Ar "file ..."
+.Nm \&vi
+.Op Fl eFlRv
+.Op Fl c Ar cmd
+.Op Fl r Ar file
+.Op Fl t Ar tag
+.Op Fl w Ar size
+.Op Fl x Ar \&aw
+.Op Ar "file ..."
+.Nm view
+.Op Fl eFlRv
+.Op Fl c Ar cmd
+.Op Fl r Ar file
+.Op Fl t Ar tag
+.Op Fl w Ar size
+.Op Fl x Ar \&aw
+.Op Ar "file ..."
 .Sh DESCRIPTION
 .Nm \&Vi
 is a screen oriented text editor.
@@ -47,7 +50,7 @@ is the same as using the
 and
 .Nm \&vi
 are different interfaces to the same program,
-and it is possible to switch back and forth during the same edit session.
+and it is possible to switch back and forth during an edit session.
 .Pp
 This manual page is the one provided with the
 .Nm nex
@@ -76,13 +79,13 @@ The following options are available:
 .Bl -tag -width indent
 .It Fl c
 Execute
-.Ar command
+.Ar cmd
 immediately after starting the edit session.
 Particularly useful for initial positioning in the file, however
-.Ar command
+.Ar cmd
 is not limited to positioning commands.
 This is the POSIX 1003.2 interface for the historic
-.Dq "+command"
+.Dq "+cmd"
 syntax.
 .Nm Nex/nvi
 supports both the old and new syntax.
@@ -116,8 +119,9 @@ edit sessions.
 Batch mode is useful when running
 .Nm \&ex
 scripts.
-Prompts, informative messages and other user oriented things are
-turned off.
+Prompts, informative messages and other user oriented message
+are turned off,
+and no startup files or environmental variables are read.
 This is the POSIX 1003.2 interface for the historic
 .Dq \&\-
 argument.
