@@ -14,7 +14,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: perl.xs,v 8.18 1996/08/10 13:46:18 bostic Exp $ (Berkeley) $Date: 1996/08/10 13:46:18 $";
+static const char sccsid[] = "$Id: perl.xs,v 8.19 1996/08/14 09:39:20 bostic Exp $ (Berkeley) $Date: 1996/08/14 09:39:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -129,7 +129,7 @@ perl_init(gp)
         perl_call_argv("VI::bootstrap", G_DISCARD, bootargs);
 	perl_eval("$SIG{__WARN__}='VI::Warn'");
 
-	av_unshift(av = perl_get_av("INC", TRUE), 1);
+	av_unshift(av = GvAVn(incgv), 1);
 	av_store(av, 0, newSVpv(_PATH_PERLSCRIPTS,
 				sizeof(_PATH_PERLSCRIPTS)-1));
 
@@ -159,6 +159,15 @@ my_sighandler(i)
 	croak("Perl command interrupted by SIGINT");
 }
 
+/* Create a new reference to an SV pointing to the SCR structure
+ * The perl_private part of the SCR structure points to the SV,
+ * so there can only be one such SV for a particular SCR structure.
+ * When the last reference has gone (DESTROY is called),
+ * perl_private is reset; When the screen goes away before
+ * all references are gone, the value of the SV is reset;
+ * any subsequent use of any of those reference will produce
+ * a warning. (see typemap)
+ */
 static void
 newVIrv(rv, screen)
 	SV *rv;
@@ -205,9 +214,9 @@ perl_ex_perl(scrp, cmdp, cmdlen, f_lno, t_lno)
 		SvREADONLY_on(svstart = perl_get_sv("VI::StartLine", TRUE));
 		SvREADONLY_on(svstop = perl_get_sv("VI::StopLine", TRUE));
 		SvREADONLY_on(svid = perl_get_sv("VI::ScreenId", TRUE));
-		sv_magic(gv_fetchpv("STDOUT",TRUE, SVt_PVIO), svcurscr,
+		sv_magic((SV *)gv_fetchpv("STDOUT",TRUE, SVt_PVIO), svcurscr,
 		 	'q', Nullch, 0);
-		sv_magic(gv_fetchpv("STDERR",TRUE, SVt_PVIO), svcurscr,
+		sv_magic((SV *)gv_fetchpv("STDERR",TRUE, SVt_PVIO), svcurscr,
 		 	'q', Nullch, 0);
 	}
 
@@ -232,6 +241,7 @@ perl_ex_perl(scrp, cmdp, cmdlen, f_lno, t_lno)
 
 	err[length - 1] = '\0';
 	msgq(scrp, M_ERR, "perl: %s", err);
+	sv_setpv(GvSV(errgv),"");
 	return (1);
 }
 
@@ -309,6 +319,7 @@ perl_ex_perldo(scrp, cmdp, cmdlen, f_lno, t_lno)
 
 err:	str[length - 1] = '\0';
 	msgq(scrp, M_ERR, "perl: %s", str);
+	sv_setpv(GvSV(errgv),"");
 	return (1);
 }
 
