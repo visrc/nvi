@@ -1,4 +1,4 @@
-#	$Id: Makefile,v 8.20 1995/11/11 12:35:02 bostic Exp $ (Berkeley) $Date: 1995/11/11 12:35:02 $
+#	$Id: Makefile,v 8.21 1995/11/14 11:02:02 bostic Exp $ (Berkeley) $Date: 1995/11/14 11:02:02 $
 
 CAT=	vi_dutch vi_english vi_german vi_ru_SU.KOI8-R vi_swedish
 FILES=	../cl/*.c ../common/*.c ../ex/*.c ../tclapi/*.c ../tk/*.c \
@@ -9,53 +9,69 @@ all: dump ${CAT}
 ${CAT}: vi_english.base
 	@echo "... $@";							\
 	rm -f $@;							\
+	sort -u $@.base |						\
 	awk '{								\
+		if ($$1 == 1) {						\
+			print "\nMESSAGE NUMBER 1 IS NOT LEGAL";	\
+			exit 1;						\
+		}							\
 		if (++nline > $$1) {					\
-			print "DUPLICATE MESSAGE NUMBERS";		\
-			exit;						\
+			print "DUPLICATE MESSAGE NUMBER " $$1;		\
+			exit 1;						\
 		}							\
 		for (; nline < $$1; ++nline)				\
 			print "";					\
 		print $0;						\
-	}' < $@.base |							\
-	(echo VI_MESSAGE_CATALOG &&					\
-	sed -e '/"/s/^[^"]*"//'						\
-	    -e '/^001/!s/"$$/X/') > $@;					\
+	}' |								\
+	sed -e '1s/^/VI_MESSAGE_CATALOG/'				\
+	    -e '/"/s/^[^"]*"//'						\
+	    -e '1!s/"$$/X/' > $@;					\
 	chmod 444 $@;							\
+	if grep DUPLICATE $@ > /dev/null; then				\
+		grep DUPLICATE $@;					\
+	fi;								\
+	if grep 'NOT LEGAL' $@ > /dev/null; then			\
+		grep 'NOT LEGAL' $@;					\
+	fi
 
-check: ${CAT}
-	@for i in *.base; do						\
-		echo "... $$i";						\
-		f=`basename $$i .base`;					\
-		(echo "UNUSED MESSAGE NUMBERS (this is okay):";		\
-		awk '{							\
-			while (++nline < $$1)				\
-				printf "%03d\n", nline;			\
-		}' < $$i;						\
-		echo =========================;				\
-		echo "MISSING ERROR MESSAGES (this is NOT okay):";	\
-		awk '{print $$1}' < $$i > __ck1;			\
-		awk '{print $$1}' < vi_english.base > __ck2;		\
-		join -v 2 __ck1 __ck2;					\
-		echo =========================;				\
-		echo "EXTRA ERROR MESSAGES (delete them):";		\
-		join -v 1 __ck1 __ck2;					\
-		rm -f __ck1 __ck2;					\
-		echo =========================;				\
-		echo "DUPLICATE MESSAGE NUMBERS (this is NOT okay):";	\
-		for j in						\
-		    `sed '/^$$/d' < $$i | sort -u |			\
-		    awk '{print $$1}' | uniq -d`; do			\
-			egrep $$j $$i;					\
-		done;							\
-		echo =========================;				\
-		echo "DUPLICATE MESSAGES (this is okay):";		\
-		sed '/^$$/d' < $$f | sort | uniq -c |			\
-		awk '$$1 != 1 { print $$0 }' | sort -n;			\
-		echo =========================) > $$f.check;		\
-	done
+CHK=	vi_dutch.check vi_english.check vi_german.check \
+	vi_ru_SU.KOI8-R.check vi_swedish.check
+check: ${CHK}
+${CHK}: ${CAT}
+	@echo "... $@";							\
+	f=`basename $@ .check`;						\
+	(echo "Unused message id's (this is okay):";			\
+	awk '{								\
+		while (++nline < $$1)					\
+			printf "%03d\n", nline;				\
+	}' < $$f.base;							\
+	echo =========================;					\
+	echo "MISSING ERROR MESSAGES (FIX!!!):";			\
+	awk '{print $$1}' < $$f.base > __ck1;				\
+	awk '{print $$1}' < vi_english.base > __ck2;			\
+	join -v 2 __ck1 __ck2;						\
+	echo =========================;					\
+	echo "Extra error messages (just delete them):";		\
+	join -v 1 __ck1 __ck2;						\
+	rm -f __ck1 __ck2;						\
+	echo =========================;					\
+	echo "MESSAGES WITH THE SAME MESSAGE ID's (FIX!!!):";		\
+	for j in							\
+	    `sed '/^$$/d' < $$f.base | sort -u |			\
+	    awk '{print $$1}' | uniq -d`; do				\
+		egrep $$j $$f.base;					\
+	done;								\
+	echo =========================;					\
+	echo "Duplicate messages, both id and message (this is okay):";	\
+	sed '/^$$/d' < $$f.base | sort | uniq -c |			\
+	awk '$$1 != 1 { print $$0 }' | sort -n;				\
+	echo =========================;					\
+	echo "Duplicate messages, just message (this is okay):";	\
+	sed '/^$$/d' < $$f | sort | uniq -c |				\
+	awk '$$1 != 1 { print $$0 }' | sort -n;				\
+	echo =========================) > $@
 
-vi_english.base: dump ${FILES} Makefile
+vi_english.base: dump ${FILES} #Makefile
 	./dump ${FILES} |\
 	sed -e '/|/!d' \
 	    -e 's/|/ "/' \
