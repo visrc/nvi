@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_delete.c,v 5.6 1992/05/27 10:35:25 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:35:25 $";
+static char sccsid[] = "$Id: v_delete.c,v 5.7 1992/05/27 11:50:21 bostic Exp $ (Berkeley) $Date: 1992/05/27 11:50:21 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -19,7 +19,37 @@ static char sccsid[] = "$Id: v_delete.c,v 5.6 1992/05/27 10:35:25 bostic Exp $ (
 #include "extern.h"
 
 /*
- * v_delete --
+ * v_Delete -- [buffer][count]D
+ *	Delete line command.
+ */
+int
+v_Delete(vp, fm, tm, rp)
+	VICMDARG *vp;
+	MARK *fm, *tm, *rp;
+{
+	size_t len;
+	int buffer;
+	char *p;
+
+	EGETLINE(p, fm->lno, len);
+
+	if (len == 0)
+		return (0);
+
+	tm->lno = fm->lno;
+	tm->cno = len;
+
+	buffer = vp->buffer == OOBCB ? DEFCB : vp->buffer;
+	if (cut(buffer, fm, tm, 0) || delete(fm, tm, 0))
+		return (1);
+
+	rp->lno = fm->lno;
+	rp->cno = fm->cno ? fm->cno - 1 : 0;
+	return (0);
+}
+
+/*
+ * v_delete -- [buffer][count]d[count]motion
  *	Delete a range of text.
  */
 int
@@ -31,7 +61,6 @@ v_delete(vp, fm, tm, rp)
 	
 	lmode = vp->flags & VC_LMODE;
 	buffer = vp->buffer == OOBCB ? DEFCB : vp->buffer;
-
 	if (cut(buffer, fm, tm, lmode) || delete(fm, tm, lmode))
 		return (1);
 
