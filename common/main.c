@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.23 1993/10/05 13:48:45 bostic Exp $ (Berkeley) $Date: 1993/10/05 13:48:45 $";
+static char sccsid[] = "$Id: main.c,v 8.24 1993/10/09 12:39:15 bostic Exp $ (Berkeley) $Date: 1993/10/09 12:39:15 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -184,19 +184,6 @@ main(argc, argv)
 				    flagchk);
 			flagchk = 'l';
 			break;
-#ifndef NO_ERRLIST
-		case 'm':		/* Error list. */
-			if (flagchk == 'm')
-				errx(1,
-				  "only one error list file may be specified.");
-			if (flagchk != '\0')
-				errx(1,
-				    "only one of -%c and -m may be specified.",
-				    flagchk);
-			flagchk = 'm';
-			errf = optarg;
-			break;
-#endif
 		case 'R':		/* Readonly. */
 			O_SET(sp,O_READONLY);
 			break;
@@ -298,14 +285,7 @@ main(argc, argv)
 	if (flagchk == 'l')
 		exit(rcv_list(sp));
 
-	/* Use an error list file, tag file or recovery file if specified. */
-#ifndef NO_ERRLIST
-	if (errf != NULL) {
-		SETCMDARG(cmd, C_ERRLIST, 0, OOBLNO, 0, 0, errf);
-		if (ex_errlist(sp, NULL, &cmd))
-			goto err1;
-	} else
-#endif
+	/* Use a tag file or recovery file if specified. */
 	if (tfname != NULL && ex_tagfirst(sp, tfname))
 		goto err1;
 	else if (rfname != NULL && rcv_read(sp, rfname))

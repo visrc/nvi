@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.16 1993/10/05 12:05:03 bostic Exp $ (Berkeley) $Date: 1993/10/05 12:05:03 $";
+static char sccsid[] = "$Id: util.c,v 8.17 1993/10/09 12:39:17 bostic Exp $ (Berkeley) $Date: 1993/10/09 12:39:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -412,9 +412,6 @@ set_window_size(sp, set_row, ign_env)
  * reason, like the current file is modified but as yet unwritten), it is
  * set to the file name that the user was unable to edit.  If the edit
  * succeeds, it is set to the last file name that was edited.  Good fun.
- *
- * XXX
- * Add errlist if it doesn't get ripped out.
  */
 void
 set_alt_fname(sp, fname)

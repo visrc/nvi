@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 8.9 1993/10/09 12:15:10 bostic Exp $ (Berkeley) $Date: 1993/10/09 12:15:10 $
+ *	$Id: vi.h,v 8.10 1993/10/09 12:39:53 bostic Exp $ (Berkeley) $Date: 1993/10/09 12:39:53 $
  */
 
 /* Structure passed around to functions implementing vi commands. */
@@ -150,7 +150,6 @@ VIPROTO(int, v_Delete);
 VIPROTO(int, v_delete);
 VIPROTO(int, v_dollar);
 VIPROTO(int, v_down);
-VIPROTO(int, v_errlist);
 VIPROTO(int, v_ex);
 VIPROTO(int, v_exit);
 VIPROTO(int, v_exmode);

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 8.15 1993/10/09 12:13:52 bostic Exp $ (Berkeley) $Date: 1993/10/09 12:13:52 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 8.16 1993/10/09 12:39:41 bostic Exp $ (Berkeley) $Date: 1993/10/09 12:39:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -81,9 +81,6 @@ EXCMDLIST const cmds[] = {
 /* C_CHANGE */
 	{"change",	ex_change,	E_ADDR2|E_NORC|E_ZERODEF,
 	    "!c",	"[line [,line]] c[hange][!] [count]"},
-/* C_CC */
-	{"cc",		ex_cc,		E_NOGLOBAL|E_NORC,
-	    "s",	"cc [argument ...]"},
 /* C_CD */
 	{"cd",		ex_cd,		E_NOGLOBAL,
 	    "!f1o",	"cd[!] [directory]"},
@@ -102,9 +99,6 @@ EXCMDLIST const cmds[] = {
 /* C_EDIT */
 	{"edit",	ex_edit,	E_NOGLOBAL|E_NORC,
 	    "!+f1o",	"e[dit][!] [+cmd] [file]"},
-/* C_ERRLIST */
-	{"errlist",	ex_errlist,	E_NOGLOBAL|E_NORC,
-	    "f1o",	"errlist [file]"},
 /* C_EX */
 	{"ex",		ex_edit,	E_NOGLOBAL|E_NORC,
 	    "!+f1o",	"ex[!] [+cmd] [file]"},
@@ -136,9 +130,6 @@ EXCMDLIST const cmds[] = {
 /* C_MARK */
 	{"mark",	ex_mark,	E_ADDR1|E_NORC,
 	    "w1r",	"[line] ma[rk] key"},
-/* C_MAKE */
-	{"make",	ex_make,	E_NOGLOBAL|E_NORC|E_NOPERM,
-	    "s",	"make [argument ...]"},
 /* C_MAP */
 	{"map",		ex_map,		0,
 	    "!W",	"map[!] [key replace]"},
