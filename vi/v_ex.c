@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 5.43 1993/02/24 12:57:40 bostic Exp $ (Berkeley) $Date: 1993/02/24 12:57:40 $";
+static char sccsid[] = "$Id: v_ex.c,v 5.44 1993/02/25 17:50:10 bostic Exp $ (Berkeley) $Date: 1993/02/25 17:50:10 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -60,13 +60,13 @@ v_ex(ep, vp, fm, tm, rp)
 			break;
 
 		(void)ex_cstring(ep, p, len, 0);
-		/*
-		 * XXX
-		 * THE UNDERLYING EXF MAY HAVE CHANGED.
-		 */
-		ep = curf;
-
 		(void)fflush(ep->stdfp);
+
+		/* We may be exiting, now. */
+		if (FF_ISSET(ep, F_FILE_RESET))
+			break;
+		
+		/* If only one line, don't wait. */
 		if (extotalcount <= 1) {
 			FF_SET(ep, F_NEEDMERASE);
 			break;
@@ -86,7 +86,7 @@ v_ex(ep, vp, fm, tm, rp)
 	 * cursor is set to the first non-blank character by the main vi loop.
 	 * Don't trust ANYTHING.
 	 */
-	if (!FF_ISSET(ep, F_NEWSESSION)) {
+	if (!FF_ISSET(ep, F_FILE_RESET)) {
 		(void)v_leaveex(ep);
 		/*
 		 * XXX

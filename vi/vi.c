@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.49 1993/02/24 13:01:37 bostic Exp $ (Berkeley) $Date: 1993/02/24 13:01:37 $";
+static char sccsid[] = "$Id: vi.c,v 5.50 1993/02/25 17:50:27 bostic Exp $ (Berkeley) $Date: 1993/02/25 17:50:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -43,27 +43,15 @@ vi(ep)
 	register VICMDARG *vp;
 	MARK fm, tm, m;
 	u_int flags;
-	int first, rval;
 
-	for (rval = 0, first = 1;;) {
-		/*
-		 * If the file has changed, init the file structure and
-		 * refresh the screen.  Otherwise, report any status info
-		 * from the last command.
-		 */
-		if (first || FF_ISSET(ep, F_NEWSESSION)) {
-			if (v_init(ep))
-				return (1);
-			if (scr_update(ep)) {
-				rval = 1;
-				break;
-			}
-			status(ep, SCRLNO(ep));
-			FF_CLR(ep, F_NEWSESSION);
-			first = 0;
-		} else if (ep->rptlines) {
-			if (LVAL(O_REPORT) &&
-			    ep->rptlines >= LVAL(O_REPORT)) {
+	if (v_init(ep) || scr_update(ep))
+		return (1);
+	status(ep, SCRLNO(ep));
+
+	for (;;) {
+		/* Report on the status of the last command. */
+		if (ep->rptlines) {
+			if (LVAL(O_REPORT) && ep->rptlines >= LVAL(O_REPORT)) {
 				msg(ep, M_DISPLAY,
 				    "%ld line%s %s", ep->rptlines,
 				    ep->rptlines == 1 ? "" : "s", ep->rptlabel);
@@ -144,16 +132,10 @@ err:		if (!FF_ISSET(ep, F_MSGWAIT))
 			goto err;
 		
 		/*
-		 * XXX
-		 * THE UNDERLYING EXF MAY HAVE CHANGED.
-		 */
-		 ep = curf;
-
-		/*
-		 * If that command took us out of vi mode, then exit
+		 * If that command took us out of vi, then exit
 		 * the loop without further action.
 		 */
-		if (mode != MODE_VI)
+		if (!FF_ISSET(ep, F_MODE_VI) || FF_ISSET(ep, F_FILE_RESET))
 			break;
 
 		/* Set the dot command structure. */
@@ -168,12 +150,6 @@ err:		if (!FF_ISSET(ep, F_MSGWAIT))
 			if (vp->flags & VC_C1RESET)
 				dot.flags |= VC_C1SET;
 		}
-		/*
-		 * If the underlying file has changed, don't bother with
-		 * cursor positioning.
-		 */
-		if (FF_ISSET(ep, F_NEWSESSION))
-			continue;
 
 		/*
 		 * Some vi row movements are "attracted" to the last position
@@ -208,7 +184,7 @@ err:		if (!FF_ISSET(ep, F_MSGWAIT))
 			SCRP(ep)->rcm = SCRP(ep)->scno;
 		}
 	}
-	return (v_end(ep) || rval);
+	return (v_end(ep));
 }
 
 #define	KEY(ep, k, flags) {						\
