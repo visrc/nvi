@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.40 1994/01/08 12:45:58 bostic Exp $ (Berkeley) $Date: 1994/01/08 12:45:58 $";
+static char sccsid[] = "$Id: key.c,v 8.41 1994/01/23 20:18:27 bostic Exp $ (Berkeley) $Date: 1994/01/23 20:18:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -603,7 +603,7 @@ term_key_ch(sp, val, chp)
 			*chp = kp->ch;
 			return (0);
 		}
-	return (1);
+	/* NOTREACHED */
 }
 
 /*
