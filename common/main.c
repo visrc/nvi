@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.48 1993/11/29 20:02:02 bostic Exp $ (Berkeley) $Date: 1993/11/29 20:02:02 $";
+static char sccsid[] = "$Id: main.c,v 8.49 1993/11/30 12:19:17 bostic Exp $ (Berkeley) $Date: 1993/11/30 12:19:17 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -44,7 +44,7 @@ static void	 h_hup __P((int));
 static void	 h_term __P((int));
 static void	 h_winch __P((int));
 static void	 obsolete __P((char *[]));
-static void	 usage __P((void));
+static void	 usage __P((int));
 
 GS *__global_list;			/* GLOBAL: List of screens. */
 
@@ -62,7 +62,7 @@ main(argc, argv)
 	FREF *frp;
 	SCR *sp;
 	u_int flags;
-	int ch, eval, flagchk, readonly, snapshot;
+	int ch, eval, flagchk, readonly, silent, snapshot;
 	char *excmdarg, *myname, *p, *rec_f, *tag_f, *trace_f, *wsizearg;
 	char *av[2], path[MAXPATHLEN];
 
@@ -91,8 +91,9 @@ main(argc, argv)
 	/* Parse the arguments. */
 	flagchk = '\0';
 	excmdarg = rec_f = tag_f = trace_f = wsizearg = NULL;
+	silent = 0;
 	snapshot = 1;
-	while ((ch = getopt(argc, argv, "c:elmRr:sT:t:vw:x:")) != EOF)
+	while ((ch = getopt(argc, argv, "c:eFlRr:sT:t:vw:x:")) != EOF)
 		switch (ch) {
 		case 'c':		/* Run the command. */
 			excmdarg = optarg;
@@ -100,6 +101,9 @@ main(argc, argv)
 		case 'e':		/* Ex mode. */
 			LF_CLR(S_SCREENS);
 			LF_SET(S_EX);
+			break;
+		case 'F':		/* No snapshot. */
+			snapshot = 0;
 			break;
 		case 'l':
 			if (flagchk != '\0' && flagchk != 'l')
@@ -122,8 +126,10 @@ main(argc, argv)
 			flagchk = 'r';
 			rec_f = optarg;
 			break;
-		case 's':		/* No snapshot. */
-			snapshot = 0;
+		case 's':
+			if (!LF_ISSET(S_EX))
+				errx(1, "-s only applicable to ex.");
+			silent = 1;
 			break;
 		case 'T':		/* Trace. */
 			trace_f = optarg;
@@ -155,7 +161,7 @@ main(argc, argv)
 			/* FALLTHROUGH */
 		case '?':
 		default:
-			usage();
+			usage(LF_ISSET(S_EX));
 		}
 	argc -= optind;
 	argv += optind;
@@ -188,6 +194,12 @@ main(argc, argv)
 		goto err1;
 	if (readonly)
 		O_SET(sp, O_READONLY);
+	if (silent) {
+		O_CLR(sp, O_PROMPT);
+		O_CLR(sp, O_WARN);
+		O_CLR(sp, O_VERBOSE);
+		F_SET(sp, S_EXSILENT);
+	}
 	if (wsizearg != NULL) {
 		av[0] = path;
 		av[1] = NULL;
@@ -214,31 +226,34 @@ main(argc, argv)
 	 * This is done before the file is read in because things in the
 	 * .exrc information can set, for example, the recovery directory.
 	 */
-	if (!stat(_PATH_SYSEXRC, &sb))
-		(void)ex_cfile(sp, NULL, _PATH_SYSEXRC);
+	if (!silent) {
+		if (!stat(_PATH_SYSEXRC, &sb))
+			(void)ex_cfile(sp, NULL, _PATH_SYSEXRC);
 
-	/* Source the EXINIT environment variable. */
-	if ((p = getenv("EXINIT")) != NULL)
-		if ((p = strdup(p)) == NULL) {
-			msgq(sp, M_SYSERR, NULL);
-			goto err1;
-		} else {
-			(void)ex_cstring(sp, NULL, p, strlen(p));
-			free(p);
-		}
-	else if ((p = getenv("HOME")) != NULL && *p) {
-		(void)snprintf(path, sizeof(path), "%s/%s", p, _PATH_NEXRC);
-		if (!stat(path, &sb))
-			(void)ex_cfile(sp, NULL, path);
-		else {
+		/* Source the EXINIT environment variable. */
+		if ((p = getenv("EXINIT")) != NULL)
+			if ((p = strdup(p)) == NULL) {
+				msgq(sp, M_SYSERR, NULL);
+				goto err1;
+			} else {
+				(void)ex_cstring(sp, NULL, p, strlen(p));
+				free(p);
+			}
+		else if ((p = getenv("HOME")) != NULL && *p) {
 			(void)snprintf(path,
-			    sizeof(path), "%s/%s", p, _PATH_EXRC);
+			    sizeof(path), "%s/%s", p, _PATH_NEXRC);
 			if (!stat(path, &sb))
 				(void)ex_cfile(sp, NULL, path);
+			else {
+				(void)snprintf(path,
+				    sizeof(path), "%s/%s", p, _PATH_EXRC);
+				if (!stat(path, &sb))
+					(void)ex_cfile(sp, NULL, path);
+			}
 		}
+		if (O_ISSET(sp, O_EXRC) && !stat(_PATH_EXRC, &sb))
+			(void)ex_cfile(sp, NULL, _PATH_EXRC);
 	}
-	if (O_ISSET(sp, O_EXRC) && !stat(_PATH_EXRC, &sb))
-		(void)ex_cfile(sp, NULL, _PATH_EXRC);
 
 	/* List recovery files if -l specified. */
 	if (flagchk == 'l')
@@ -533,6 +548,7 @@ obsolete(argv)
 	 * strings.
 	 *	Change "+" into "-c$".
 	 *	Change "+<anything else>" into "-c<anything else>".
+	 *	Change "-" into "-s"
 	 *	Change "-r" into "-l"
 	 */
 	for (myname = argv[0]; *++argv;)
@@ -550,17 +566,27 @@ obsolete(argv)
 				argv[0][1] = 'c';
 				(void)strcpy(argv[0] + 2, p + 1);
 			}
+		} else if (argv[0][0] == '-') {
+			if (argv[0][1] == 'r') {
+				if (argv[0][2] == '\0' && argv[1] == NULL)
+					argv[0][1] = 'l';
+			} else if (argv[0][1] == '\0') {
+				if ((argv[0] = malloc(3)) == NULL)
+					err(1, NULL);
+				(void)strcpy(argv[0], "-s");
+			}
 		}
-		else if (argv[0][0] == '-' &&
-		    argv[0][1] == 'r' && argv[0][2] == '\0' && argv[1] == NULL)
-			argv[0][1] = 'l';
 }
 
 static void
-usage()
+usage(is_ex)
+	int is_ex;
 {
-	(void)fprintf(stderr, "%s%s\n", 
-	    "usage: vi [-eRsv] [-c command] [-m file] [-r file] ",
-	    "[-t tag] [-w size] [-x aw]");
+#define	EX_USAGE \
+	"usage: ex [-eFlRsv] [-c command] [-r file] [-t tag] [-w size] [-x aw]"
+#define	VI_USAGE \
+	"usage: vi [-eFlRv] [-c command] [-r file] [-t tag] [-w size] [-x aw]"
+
+	(void)fprintf(stderr, "%s\n", is_ex ? EX_USAGE : VI_USAGE);
 	exit(1);
 }
