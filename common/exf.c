@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.91 1994/08/03 11:30:00 bostic Exp $ (Berkeley) $Date: 1994/08/03 11:30:00 $";
+static char sccsid[] = "$Id: exf.c,v 8.92 1994/08/03 23:10:55 bostic Exp $ (Berkeley) $Date: 1994/08/03 23:10:55 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -125,6 +125,9 @@ file_init(sp, frp, rcv_name, force)
 		F_CLR(frp, FR_RECOVER);
 		return (rcv_read(sp, frp));
 	}
+
+	/* Required FRP initialization. */
+	F_CLR(frp, FR_FNONBLANK | FR_RDONLY | FR_UNLOCKED);
 
 	/*
 	 * Required EXF initialization:
@@ -315,8 +318,6 @@ file_init(sp, frp, rcv_name, force)
 	    (!(sb.st_mode & (S_IWUSR | S_IWGRP | S_IWOTH)) ||
 	    access(frp->name, W_OK)))
 		F_SET(frp, FR_RDONLY);
-	else
-		F_CLR(frp, FR_RDONLY);
 
 	/*
 	 * Set the alternate file name to be the file we've just discarded.
@@ -381,7 +382,6 @@ file_end(sp, ep, force)
 	frp->lno = sp->lno;
 	frp->cno = sp->cno;
 	F_SET(frp, FR_CURSORSET);
-	F_CLR(frp, FR_FNONBLANK);
 
 	/*
 	 * We may no longer need the temporary backing file, so clean it
