@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 9.6 1995/01/30 09:19:10 bostic Exp $ (Berkeley) $Date: 1995/01/30 09:19:10 $";
+static char sccsid[] = "$Id: vs_split.c,v 9.7 1995/01/30 09:29:37 bostic Exp $ (Berkeley) $Date: 1995/01/30 09:29:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -76,7 +76,7 @@ svi_split(sp, argv, argc)
 
 /* PARTIALLY OR COMPLETELY COPIED FROM PREVIOUS SCREEN. */
 	/*
-	 * Small screens: see svi/svi_refresh.c:svi_refresh, section 3b.
+	 * Small screens: see svi/svi_refresh.c:svi_refresh, section 7a.
 	 * Set a flag so we know to fix the screen up later.
 	 */
 	issmallscreen = IS_SMALL(sp);
@@ -121,7 +121,7 @@ svi_split(sp, argv, argc)
 	}
 
 	/*
-	 * Small screens: see svi/svi_refresh.c:svi_refresh, section 3b.
+	 * Small screens: see svi/svi_refresh.c:svi_refresh, section 7a.
 	 *
 	 * The child may have different screen options sizes than the
 	 * parent, so use them.  Make sure that the text counts aren't
@@ -479,7 +479,7 @@ svi_swap(csp, nsp, name)
 	sp->woff = csp->woff;
 
 	/*
-	 * Small screens: see svi/svi_refresh.c:svi_refresh, section 3b.
+	 * Small screens: see svi/svi_refresh.c:svi_refresh, section 7a.
 	 *
 	 * The new screens may have different screen options sizes than the
 	 * old one, so use them.  Make sure that text counts aren't larger

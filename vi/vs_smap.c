@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 9.6 1995/01/30 09:18:48 bostic Exp $ (Berkeley) $Date: 1995/01/30 09:18:48 $";
+static char sccsid[] = "$Id: vs_smap.c,v 9.7 1995/01/30 09:29:33 bostic Exp $ (Berkeley) $Date: 1995/01/30 09:29:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -568,7 +568,7 @@ svi_sm_up(sp, rp, count, scmd, smp)
 	}
 
 	/*
-	 * Small screens: see svi/svi_refresh.c:svi_refresh, section 2b.
+	 * Small screens: see svi/svi_refresh.c:svi_refresh, section 7a.
 	 *
 	 * If it's a small screen, and the movement isn't larger than a
 	 * screen, i.e some context will remain, open up the screen and
@@ -786,7 +786,7 @@ svi_sm_down(sp, rp, count, scmd, smp)
 	}
 
 	/*
-	 * Small screens: see svi/svi_refresh.c:svi_refresh, section 2b.
+	 * Small screens: see svi/svi_refresh.c:svi_refresh, section 7a.
 	 *
 	 * If it's a small screen, and the movement isn't larger than a
 	 * screen, i.e some context will remain, open up the screen and
