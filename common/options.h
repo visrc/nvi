@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: options.h,v 5.5 1992/12/20 15:08:55 bostic Exp $ (Berkeley) $Date: 1992/12/20 15:08:55 $
+ *	$Id: options.h,v 5.6 1992/12/23 11:25:54 bostic Exp $ (Berkeley) $Date: 1992/12/23 11:25:54 $
  */
 
 /* Offset macros. */
@@ -37,7 +37,8 @@
 typedef struct _option {
 	char	*name;			/* Name. */
 	void	*value;			/* Value. */
-	int	(*func) __P((void *));	/* Initialization function. */
+					/* Initialization function. */
+	int	(*func) __P((EXF *, void *));
 
 #define	OPT_0BOOL	0x001		/* Boolean (off). */
 #define	OPT_1BOOL	0x002		/* Boolean (on). */
@@ -50,7 +51,6 @@ typedef struct _option {
 #define	OPT_NOSET	0x040		/* Option can't be set. */
 #define	OPT_REDRAW	0x080		/* Option requires a redraw. */
 #define	OPT_SET		0x100		/* Set (display for the user). */
-#define	OPT_SIZE	0x200		/* Screen resized. */
 	u_int	flags;
 } OPTIONS;
 
