@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.3 1993/07/06 14:26:43 bostic Exp $ (Berkeley) $Date: 1993/07/06 14:26:43 $";
+static char sccsid[] = "$Id: recover.c,v 8.4 1993/07/21 11:08:22 bostic Exp $ (Berkeley) $Date: 1993/07/21 11:08:22 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -42,14 +42,20 @@ static char sccsid[] = "$Id: recover.c,v 8.3 1993/07/06 14:26:43 bostic Exp $ (B
  * Not likely.
  *
  * When a file is first modified, a file which can be handed off to the mailer
- * is created.  The file contains normal headers, with one addition:
+ * is created.  The file contains normal headers, with two additions, which
+ * occur in THIS order, as the FIRST TWO headers:
  *
- *	Vi-recover-line: file_name/recover_path
+ *	Vi-recover-file: file_name
+ *	Vi-recover-path: recover_path
+ *
+ * Since newlines delimit the headers, this means that file names cannot
+ * have newlines in them, but that's probably okay.
  *
  * Btree files are named "vi.XXXX" and recovery files are named "recover.XXXX".
  */
 
-#define	VIHEADER	"Vi-recover-line: "
+#define	VI_FHEADER	"Vi-recover-file: "
+#define	VI_PHEADER	"Vi-recover-path: "
 
 static rcv_mailfile __P((SCR *, EXF *));
 
@@ -63,7 +69,15 @@ rcv_tmp(sp, ep)
 	EXF *ep;
 {
 	int fd;
-	char path[MAXPATHLEN];
+	char *p, path[MAXPATHLEN];
+
+	/* Newlines delimit the mail messages. */
+	for (p = ep->name; *p; ++p)
+		if (*p == '\n') {
+			msgq(sp, M_ERR,
+		    "Files with newlines in the name are unrecoverable.");
+			return (1);
+		}
 
 	(void)snprintf(path, sizeof(path), "%s/vi.XXXXXX", _PATH_PRESERVE);
 	if ((fd = mkstemp(path)) == -1) {
@@ -153,7 +167,7 @@ rcv_mailfile(sp, ep)
 	char *p, host[MAXHOSTNAMELEN], path[MAXPATHLEN];
 
 	if ((pw = getpwuid(getuid())) == NULL) {
-		msgq(sp, M_ERR, "Error: getpwuid: %s", strerror(errno));
+		msgq(sp, M_ERR, "Information on user id %u not found.");
 		return (1);
 	}
 
@@ -177,8 +191,9 @@ rcv_mailfile(sp, ep)
 		++p;
 	(void)time(&now);
 	(void)gethostname(host, sizeof(host));
-	(void)fprintf(fp, "%s%s/%s\n%s\n%s\n%s%s\n%s%s\n%s\n\n",
-	    VIHEADER, p, ep->rcv_path,			/* Non-standard. */
+	(void)fprintf(fp, "%s%s\n%s%s\n%s\n%s\n%s%s\n%s%s\n%s\n\n",
+	    VI_FHEADER, p,			/* Non-standard. */
+	    VI_PHEADER, ep->rcv_path,		/* Non-standard. */
 	    "Reply-To: root",
 	    "From: root (Nvi recovery program)",
 	    "To: ", pw->pw_name,
@@ -304,7 +319,7 @@ rcv_list()
 	DIR *dirp;
 	FILE *fp;
 	int found;
-	char *p, buf[1024];
+	char *p, file[1024];
 
 	if (chdir(_PATH_PRESERVE) || (dirp = opendir(".")) == NULL) {
 		(void)fprintf(stderr,
@@ -320,29 +335,26 @@ rcv_list()
 		if ((fp = fopen(dp->d_name, "r")) == NULL)
 			continue;
 
-		/* Check the header. */
-		if (fgets(buf, sizeof(buf), fp) == NULL ||
-		    strncmp(buf, VIHEADER, sizeof(VIHEADER) - 1)) {
+		/* Check the header, get the file name. */
+		if (fgets(file, sizeof(file), fp) == NULL ||
+		    strncmp(file, VI_FHEADER, sizeof(VI_FHEADER) - 1) ||
+		    (p = strchr(file, '\n')) == NULL) {
 			(void)fprintf(stderr,
-			    "vi: %s: malformed recovery file.", dp->d_name);
+			    "vi: %s: malformed recovery file.\n", dp->d_name);
 			goto next;
 		}
+		*p = '\0';
 
 		/* Get the last modification time. */
 		if (fstat(fileno(fp), &sb)) {
 			(void)fprintf(stderr,
-			    "vi: %s: %s", dp->d_name, strerror(errno));
+			    "vi: %s: %s\n", dp->d_name, strerror(errno));
 			goto next;
 		}
 
-		/* Get the file name. */
-		if ((p = strchr(buf, '/')) == NULL)
-			goto next;
-		*p = '\0';
-
 		/* Display. */
 		(void)printf("%s: %s",
-		    buf + sizeof(VIHEADER) - 1, ctime(&sb.st_mtime));
+		    file + sizeof(VI_FHEADER) - 1, ctime(&sb.st_mtime));
 		found = 1;
 
 next:		(void)fclose(fp);
@@ -367,7 +379,8 @@ rcv_read(sp, name)
 	EXF *ep;
 	FILE *fp;
 	int found;
-	char *p, *t, buf[1024], path[MAXPATHLEN];
+	char *p, *t;
+	char recpath[MAXPATHLEN], file[MAXPATHLEN], path[MAXPATHLEN];
 		
 	if ((dirp = opendir(_PATH_PRESERVE)) == NULL) {
 		msgq(sp, M_ERR, "%s: %s", _PATH_PRESERVE, strerror(errno));
@@ -379,24 +392,28 @@ rcv_read(sp, name)
 			continue;
 
 		/* If it's readable, it's recoverable. */
-		(void)snprintf(path, sizeof(path),
+		(void)snprintf(recpath, sizeof(recpath),
 		    "%s/%s", _PATH_PRESERVE, dp->d_name);
-		if ((fp = fopen(path, "r")) == NULL)
+		if ((fp = fopen(recpath, "r")) == NULL)
 			continue;
 
-		/* Check the header. */
-		if (fgets(buf, sizeof(buf), fp) == NULL ||
-		    strncmp(buf, VIHEADER, sizeof(VIHEADER) - 1) ||
-		    (p = strchr(buf, '/')) == NULL) {
-			msgq(sp, M_ERR, "%s: malformed recovery file.", path);
+		/* Check the headers. */
+		if (fgets(file, sizeof(path), fp) == NULL ||
+		    strncmp(file, VI_FHEADER, sizeof(VI_FHEADER) - 1) ||
+		    (p = strchr(file, '\n')) == NULL ||
+		    fgets(path, sizeof(path), fp) == NULL ||
+		    strncmp(path, VI_PHEADER, sizeof(VI_PHEADER) - 1) ||
+		    (t = strchr(path, '\n')) == NULL) {
+			msgq(sp, M_ERR,
+			    "%s: malformed recovery file.", recpath);
 			(void)fclose(fp);
 			continue;
 		}
-		*p = '\0';
+		*t = *p = '\0';
 		(void)fclose(fp);
 
 		/* Check the file name. */
-		if (!strcmp(buf + sizeof(VIHEADER) - 1, name)) {
+		if (!strcmp(file + sizeof(VI_FHEADER) - 1, name)) {
 			found = 1;
 			break;
 		}
@@ -409,23 +426,17 @@ rcv_read(sp, name)
 		return (NULL);
 	}
 
-	/*
-	 * Get the btree file name.
-	 *
-	 * 'p' was left pointing to the '/' slot.
-	 */
-	t = p + 1;
-	if ((p = strchr(t, '\n')) == NULL) {
-		msgq(sp, M_ERR, "%s: malformed recovery file.", path);
-		return (NULL);
-	}
-	*p = '\0';
-	if ((p = strdup(path)) == NULL) {
+	/* Copy the recovery file name. */
+	if ((p = strdup(recpath)) == NULL) {
 		msgq(sp, M_ERR, "Error: %s", strerror(errno));
 		return (NULL);
 	}
-	if ((ep = file_start(sp, NULL, t)) == NULL)
+	/* Start the btree file. */
+	if ((ep =
+	    file_start(sp, NULL, path + sizeof(VI_PHEADER) - 1)) == NULL) {
+		FREE(p, strlen(p));
 		return (NULL);
+	}
 	ep->rcv_mpath = p;
 	return (ep);
 }
