@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 8.25 1993/12/09 19:42:40 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:42:40 $";
+static char sccsid[] = "$Id: ex_global.c,v 8.26 1993/12/23 10:46:49 bostic Exp $ (Berkeley) $Date: 1993/12/23 10:46:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -228,31 +228,37 @@ global(sp, ep, cmdp, cmd)
 			goto err;
 
 		sp->lno = lno;
+
+		/*
+		 * The cursor moves to last line sent to the command, by
+		 * default.  If the command created new lines, it moves
+		 * to the last of the new lines, if it deleted lines, it
+		 * moves to the line after the deleted line.
+		 */
 		if (ex_cmd(sp, ep, cb, clen))
 			goto err;
+		if (file_lline(sp, ep, &last2)) {
+err:			rval = 1;
+			break;
+		}
+		if (last2 > last1) {		/* Created lines. */
+			last2 -= last1;
+			sp->lno = lno += last2;
+			elno += last2;
+		} else if (last1 > last2) {	/* Deleted lines. */
+			last1 -= last2;
+			sp->lno = lno -= last1;
+			if (sp->lno == 0)
+				sp->lno = 1;
+			elno -= last1;
+		} else
+			sp->lno = lno;
 
 		/* Someone's unhappy, time to stop. */
 		if (F_ISSET(sp, S_INTERRUPTED)) {
 			msgq(sp, M_INFO, "Interrupted.");
 			break;
 		}
-
-		if (file_lline(sp, ep, &last2)) {
-err:			rval = 1;
-			break;
-		}
-		if (last2 > last1) {
-			last2 -= last1;
-			lno += last2;
-			elno += last2;
-		} else if (last1 > last2) {
-			last1 -= last2;
-			lno -= last1;
-			elno -= last1;
-		}
-
-		/* Cursor moves to last line sent to command. */
-		sp->lno = lno;
 	}
 	F_CLR(sp, S_GLOBAL);
 
