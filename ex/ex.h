@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.39 1993/12/19 12:36:45 bostic Exp $ (Berkeley) $Date: 1993/12/19 12:36:45 $
+ *	$Id: ex.h,v 8.40 1993/12/19 12:59:47 bostic Exp $ (Berkeley) $Date: 1993/12/19 12:59:47 $
  */
 
 /* Ex command structure. */
@@ -125,40 +125,61 @@ typedef struct _ex_private {
 }
 
 /*
- * Macros to set and restore the terminal values.
+ * Macros to set and restore the terminal values, and note if the screen
+ * was modified.  Specific to their uses in ex/filter.c and ex/ex_shell.c.
  *
  * The old terminal values almost certainly turn on VINTR, VQUIT and VSUSP.
  * We don't want to interrupt the parent(s), so we ignore VINTR.  VQUIT is
  * ignored by main() because nvi never wants to catch it.  A VSUSP handler
  * have been installed by the screen code.
  */
-#define	EX_RESTORE_TERM(sp, isig, act, oact, term) {			\
-	(act).sa_handler = SIG_IGN;					\
-	sigemptyset(&(act).sa_mask);					\
-	(act).sa_flags = 0;						\
-	if ((isig) = !sigaction(SIGINT, &(act), &(oact))) {		\
-		if (tcgetattr(STDIN_FILENO, &(term))) {			\
-			msgq(sp, M_SYSERR, "tcgetattr");		\
-			goto err;					\
+#define	EX_LEAVE(sp, isig, act, oact, sb, osb, term)			\
+	if (F_ISSET(sp->gp, G_ISFROMTTY)) {				\
+		(act).sa_handler = SIG_IGN;				\
+		sigemptyset(&(act).sa_mask);				\
+		(act).sa_flags = 0;					\
+		if ((isig) = !sigaction(SIGINT, &(act), &(oact))) {	\
+			if (tcgetattr(STDIN_FILENO, &(term))) {		\
+				msgq(sp, M_SYSERR, "tcgetattr");	\
+				rval = 1;				\
+				goto err;				\
+			}						\
+			if (tcsetattr(STDIN_FILENO, TCSANOW | TCSASOFT,	\
+			    &sp->gp->original_termios)) {		\
+				msgq(sp, M_SYSERR, "tcsetattr");	\
+				rval = 1;				\
+				goto err;				\
+			}						\
+		}							\
+		/*							\
+		 * The process may write to the terminal.  Save the	\
+		 * access time (read) and modification time (write)	\
+		 * of the tty; if they have changed when we restore	\
+		 * the modes, will have to refresh the screen.		\
+		 */							\
+		sb.st_mtime = 1;					\
+		osb.st_mtime = 0;					\
+		(void)fstat(STDIN_FILENO, &osb);			\
+	}
+
+#define	EX_RETURN(sp, isig, act, oact, sb, osb, term)			\
+	if (F_ISSET(sp->gp, G_ISFROMTTY) && (isig)) {			\
+		if (sigaction(SIGINT, &(oact), NULL)) {			\
+			msgq(sp, M_SYSERR, "signal");			\
+			rval = 1;					\
 		}							\
 		if (tcsetattr(STDIN_FILENO,				\
-		    TCSANOW | TCSASOFT, &sp->gp->original_termios)) {	\
+		    TCSANOW | TCSASOFT, &(term))) {			\
 			msgq(sp, M_SYSERR, "tcsetattr");		\
-			goto err;					\
+			rval = 1;					\
 		}							\
-	}								\
-}
+		/* If the terminal was used, refresh the screen. */	\
+		(void)fstat(STDIN_FILENO, &(sb));			\
+		if ((sb).st_mtime != (osb).st_mtime ||			\
+		    (sb).st_atime != (osb).st_atime)			\
+			F_SET(sp, S_REFRESH);				\
+	}
 
-#define	EX_SET_TERM(sp, oact, term) {					\
-	if (sigaction(SIGINT, &(oact), NULL)) {				\
-		msgq(sp, M_SYSERR, "signal");				\
-		rval = 1;						\
-	}								\
-	if (tcsetattr(STDIN_FILENO, TCSANOW | TCSASOFT, &(term))) {	\
-		msgq(sp, M_SYSERR, "tcsetattr");			\
-		rval = 1;						\
-	}								\
-}
 /*
  * Filter actions:
  *

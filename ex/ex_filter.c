@@ -6,10 +6,11 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 8.24 1993/11/28 12:36:30 bostic Exp $ (Berkeley) $Date: 1993/11/28 12:36:30 $";
+static char sccsid[] = "$Id: ex_filter.c,v 8.25 1993/12/19 13:00:07 bostic Exp $ (Berkeley) $Date: 1993/12/19 13:00:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/wait.h>
 
 #include <errno.h>
@@ -38,7 +39,8 @@ filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
 	enum filtertype ftype;
 {
 	struct sigaction act, oact;
-	struct termios nterm, term;
+	struct stat osb, sb;
+	struct termios term;
 	FILE *ifp, *ofp;		/* GCC: can't be uninitialized. */
 	pid_t parent_writer_pid, utility_pid;
 	recno_t lno, nread;
@@ -96,31 +98,10 @@ filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
 	}
 
 	/*
-	 * Save ex/vi terminal settings, and set new ones.
-	 *
-	 * ISIG turns on VINTR, VQUIT and VSUSP.  We don't want to interrupt
-	 * the parent(s), so we ignore VINTR.  VQUIT is ignored by main()
-	 * because nvi never wants to catch it.  A handler for VSUSP should
-	 * have been installed by the screen code.
+	 * Save ex/vi terminal settings, and restore the original ones.
+	 * Restoration so that users can do things like ":r! cat /dev/tty".
 	 */
-	if (F_ISSET(sp->gp, G_ISFROMTTY)) {
-		act.sa_handler = SIG_IGN;
-		sigemptyset(&act.sa_mask);
-		act.sa_flags = 0;
-		if (isig = !sigaction(SIGINT, &act, &oact)) {
-			if (tcgetattr(STDIN_FILENO, &term)) {
-				msgq(sp, M_SYSERR, "tcgetattr");
-				goto err;
-			}
-			nterm = term;
-			nterm.c_lflag |= ISIG;
-			if (tcsetattr(STDIN_FILENO,
-			    TCSANOW | TCSASOFT, &nterm)) {
-				msgq(sp, M_SYSERR, "tcsetattr");
-				goto err;
-			}
-		}
-	}
+	EX_LEAVE(sp, isig, act, oact, sb, osb, term);
 
 	/* Fork off the utility process. */
 	switch (utility_pid = vfork()) {
@@ -298,16 +279,9 @@ err:		if (input[0] != -1)
 
 uwait:	rval |= proc_wait(sp, (long)utility_pid, cmd, 0);
 
-ret:	if (F_ISSET(sp->gp, G_ISFROMTTY) && isig) {
-		if (sigaction(SIGINT, &oact, NULL)) {
-			msgq(sp, M_SYSERR, "signal");
-			rval = 1;
-		}
-		if (tcsetattr(STDIN_FILENO, TCSANOW | TCSASOFT, &term)) {
-			msgq(sp, M_SYSERR, "tcsetattr");
-			rval = 1;
-		}
-	}
+	/* Restore ex/vi terminal settings. */
+ret:	EX_RETURN(sp, isig, act, oact, sb, osb, term);
+
 	return (rval);
 }
 

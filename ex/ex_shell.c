@@ -6,10 +6,11 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 8.15 1993/12/19 12:32:12 bostic Exp $ (Berkeley) $Date: 1993/12/19 12:32:12 $";
+static char sccsid[] = "$Id: ex_shell.c,v 8.16 1993/12/19 12:59:05 bostic Exp $ (Berkeley) $Date: 1993/12/19 12:59:05 $";
 #endif /* not lint */
 
 #include <sys/param.h>
+#include <sys/stat.h>
 
 #include <curses.h>
 #include <errno.h>
@@ -47,6 +48,7 @@ ex_exec_proc(sp, cmd, p1, p2)
 	char *cmd, *p1, *p2;
 {
 	struct sigaction act, oact;
+	struct stat osb, sb;
 	struct termios term;
 	const char *name;
 	pid_t pid;
@@ -56,33 +58,8 @@ ex_exec_proc(sp, cmd, p1, p2)
 	if (sp->s_clear(sp))
 		return (1);
 
-	/*
-	 * Save ex/vi terminal settings, and restore the original ones.
-	 *
-	 * The old terminal values almost certainly turn on VINTR, VQUIT and
-	 * VSUSP.  We don't want to interrupt the parent(s), so we ignore
-	 * VINTR.  VQUIT is ignored by main() because nvi never wants to catch
-	 * it.  A handler for VSUSP should have been installed by the screen
-	 * code.
-	 */
-	if (F_ISSET(sp->gp, G_ISFROMTTY)) {
-		act.sa_handler = SIG_IGN;
-		sigemptyset(&act.sa_mask);
-		act.sa_flags = 0;
-		if (isig = !sigaction(SIGINT, &act, &oact)) {
-			if (tcgetattr(STDIN_FILENO, &term)) {
-				msgq(sp, M_SYSERR, "tcgetattr");
-				rval = 1;
-				goto ret;
-			}
-			if (tcsetattr(STDIN_FILENO,
-			    TCSADRAIN, &sp->gp->original_termios)) {
-				msgq(sp, M_SYSERR, "tcsetattr");
-				rval = 1;
-				goto ret;
-			}
-		}
-	}
+	/* Save ex/vi terminal settings, and restore the original ones. */
+	EX_LEAVE(sp, isig, act, oact, sb, osb, term);
 
 	/* Put out various messages. */
 	if (p1 != NULL)
@@ -95,7 +72,7 @@ ex_exec_proc(sp, cmd, p1, p2)
 	case -1:			/* Error. */
 		msgq(sp, M_SYSERR, "vfork");
 		rval = 1;
-		goto ret;
+		goto err;
 	case 0:				/* Utility. */
 		/*
 		 * The utility has default signal behavior.  Don't bother
@@ -118,19 +95,7 @@ ex_exec_proc(sp, cmd, p1, p2)
 	rval = proc_wait(sp, (long)pid, cmd, 0);
 
 	/* Restore ex/vi terminal settings. */
-ret:	if (F_ISSET(sp->gp, G_ISFROMTTY) && isig) {
-		if (sigaction(SIGINT, &oact, NULL)) {
-			msgq(sp, M_SYSERR, "signal");
-			rval = 1;
-		}
-		if (tcsetattr(STDIN_FILENO, TCSANOW | TCSASOFT, &term)) {
-			msgq(sp, M_SYSERR, "tcgetattr");
-			rval = 1;
-		}
-	}
-
-	/* Refresh the screen. */
-	F_SET(sp, S_REFRESH);
+err:	EX_RETURN(sp, isig, act, oact, sb, osb, term);
 
 	return (rval);
 }
