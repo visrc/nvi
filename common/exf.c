@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.29 1992/11/07 18:31:25 bostic Exp $ (Berkeley) $Date: 1992/11/07 18:31:25 $";
+static char sccsid[] = "$Id: exf.c,v 5.30 1992/11/11 13:22:28 bostic Exp $ (Berkeley) $Date: 1992/11/11 13:22:28 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -39,6 +39,7 @@ static EXF defexf = {
 	NULL, NULL,				/* s_confirm, s_end */
 	NULL,					/* db */
 	NULL, 0, OOBLNO, OOBLNO,		/* c_{lp,len,lno,nlines} */
+	NULL, NULL, 0,				/* log, l_lp, l_len */
 	stdout, 				/* stdfp */
 	NULL,					/* sre */
 	0, NULL,				/* rptlines, rptlabel */
@@ -266,19 +267,8 @@ file_start(ep)
 	/* Flush the line caches. */
 	ep->c_lno = ep->c_nlines = OOBLNO;
 
-	/* Open a shadow db structure. */
-	(void)strcpy(tname, _PATH_TMPNAME);
-	if ((fd = mkstemp(tname)) == -1) {
-		msg("Temporary file: %s", strerror(errno));
-		return (1);
-	}
-	ep->sdb = dbopen(tname, O_CREAT | O_EXLOCK | O_NONBLOCK | O_RDWR,
-	    DEFFILEMODE, DB_RECNO, NULL);
-	(void)close(fd);
-	if (ep->sdb == NULL) {
-		msg("shadow db: %s", strerror(errno));
-		return (1);
-	}
+	/* Start logging. */
+	log_init(ep);
 
 	if (ISSET(O_COPYRIGHT))			/* Skip leading comment. */
 		file_copyright(ep);
@@ -317,9 +307,8 @@ file_stop(ep, force)
 		return (1);
 	}
 
-	/* Close the shadow structure. */
-	if ((ep->sdb->close)(ep->sdb))
-		msg("%s: shadow close: %s", ep->name, strerror(errno));
+	/* Stop logging. */
+	log_end(ep);
 
 	/* Only retain the ignore bit. */
 	ep->flags &= F_IGNORE;
