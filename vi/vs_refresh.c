@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 9.7 1994/11/12 18:48:04 bostic Exp $ (Berkeley) $Date: 1994/11/12 18:48:04 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 9.8 1994/11/13 17:26:22 bostic Exp $ (Berkeley) $Date: 1994/11/13 17:26:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,7 +32,10 @@ static char sccsid[] = "$Id: vs_refresh.c,v 9.7 1994/11/12 18:48:04 bostic Exp $
 #include "../sex/sex_screen.h"
 
 static int	svi_modeline __P((SCR *));
-static int	svi_paint __P((SCR *, int));
+
+#define	PAINT_CURSOR	0x01			/* Update cursor. */
+#define	PAINT_FLUSH	0x02			/* Flush to screen. */
+static int	svi_paint __P((SCR *, u_int));
 
 int
 svi_refresh(sp)
@@ -114,7 +117,7 @@ svi_refresh(sp)
 	 * in the current screen only, and the screen won't flash.
 	 */
 	F_CLR(sp, SVI_SCR_DIRTY);
-	return (svi_paint(sp, 1));
+	return (svi_paint(sp, PAINT_CURSOR | PAINT_FLUSH));
 }
 
 /*
@@ -128,9 +131,9 @@ svi_refresh(sp)
  *	what you're doing.  It's subtle and quick to anger.
  */
 int
-svi_paint(sp, doflush)
+svi_paint(sp, flags)
 	SCR *sp;
-	int doflush;
+	u_int flags;
 {
 	SMAP *smp, tmp;
 	SVI_PRIVATE *svp;
@@ -419,8 +422,12 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 	}
 
 	/*
-	 * 4: Cursor movements.
-	 *
+	 * 4: Cursor movements (current screen only).
+	 */
+	if (!LF_ISSET(PAINT_CURSOR))
+		goto number;
+
+	/*
 	 * Decide cursor position.  If the line has changed, the cursor has
 	 * moved over a tab, or don't know where the cursor was, reparse the
 	 * line.  Otherwise, we've just moved over fixed-width characters,
@@ -634,7 +641,7 @@ slow:	for (smp = HMAP; smp->lno != LNO; ++smp);
 	 * refresh() time, we don't have to do the operations separately,
 	 * avoiding a screen flash.
 	 */
-paint:	if (doflush &&
+paint:	if (LF_ISSET(PAINT_FLUSH) &&
 	    sp->q.cqe_prev == (void *)&sp->gp->dq &&
 	    sp->q.cqe_next == (void *)&sp->gp->dq) {
 		clear();
@@ -680,7 +687,7 @@ number:	if (O_ISSET(sp, O_NUMBER) && F_ISSET(svp, SVI_SCR_NUMBER)) {
 	 * If the screen was corrupted, clear/refresh it, unless we painted
 	 * it from scratch, which will do it for us.
 	 */
-	if (doflush && F_ISSET(sp, S_SCR_REFRESH)) {
+	if (LF_ISSET(PAINT_FLUSH) && F_ISSET(sp, S_SCR_REFRESH)) {
 		if (!didclear)
 			wrefresh(curscr);
 		F_CLR(sp, S_SCR_REFRESH);
@@ -707,7 +714,7 @@ number:	if (O_ISSET(sp, O_NUMBER) && F_ISSET(svp, SVI_SCR_NUMBER)) {
 			svi_modeline(sp);
 
 	/* If not flushing to the screen, we're done. */
-	if (!doflush)
+	if (!LF_ISSET(PAINT_FLUSH))
 		return (0);
 
 	/* Update saved information. */
