@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 8.21 1994/01/08 16:40:31 bostic Exp $ (Berkeley) $Date: 1994/01/08 16:40:31 $";
+static char sccsid[] = "$Id: v_cmd.c,v 8.22 1994/01/08 17:07:27 bostic Exp $ (Berkeley) $Date: 1994/01/08 17:07:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -350,17 +350,21 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 /* 136   ^ */
 	/*
 	 * DON'T set the V_RCM_SETFNB flag, the function has to do
-	 * the work anyway, in case it's a motion component.
+	 * the work anyway, in case it's a motion component.  DO set
+	 * V_RCM_SET, so that any motion that's part of a command is
+	 * preserved.
 	 */
-	{v_first,	V_CNT|V_MOVE,
+	{v_first,	V_CNT|V_MOVE|V_RCM_SET,
 	    "^",
 	    " ^ move to first non-blank"},
 /* 137   _ */
 	/*
 	 * DON'T set the V_RCM_SETFNB flag, the function has to do
-	 * the work anyway, in case it's a motion component.
+	 * the work anyway, in case it's a motion component.  DO set
+	 * V_RCM_SET, so that any motion that's part of a command is
+	 * preserved.
 	 */
-	{v_cfirst,	V_CNT|V_MOVE,
+	{v_cfirst,	V_CNT|V_MOVE|V_RCM_SET,
 	    "_",
 	    " _ move to first non-blank"},
 /* 140   ` */
