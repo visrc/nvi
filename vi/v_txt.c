@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.48 1996/04/03 14:34:11 bostic Exp $ (Berkeley) $Date: 1996/04/03 14:34:11 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.49 1996/04/03 17:28:52 bostic Exp $ (Berkeley) $Date: 1996/04/03 17:28:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1849,9 +1849,7 @@ txt_dent(sp, tp, isindent)
 
 	/*
 	 * Back up over any previous <blank> characters, changing them into
-	 * overwrite characters (including any ai characters).  For ^D, we
-	 * will move up to or past the target by definition, otherwise, the
-	 * command wouldn't have gotten this far.
+	 * overwrite characters (including any ai characters).
 	 */
 	for (; tp->cno > tp->offset; --tp->cno, ++tp->owrite)
 		if (tp->lb[tp->cno - 1] == ' ')
@@ -1862,12 +1860,25 @@ txt_dent(sp, tp, isindent)
 			break;
 
 	/*
-	 * Count up the total spaces/tabs needed to get from the beginning of
-	 * the line (or the last non-<blank> character) to the target.
+	 * If we didn't move up to or past the target, it's because there
+	 * weren't enough characters to delete, e.g. the first character
+	 * of the line was an tp->offset character, and the user entered
+	 * ^D to move to the beginning of a line.  An example of this is:
+	 *
+	 *	:set ai sw=4<cr>i<space>a<esc>i^T^D
+	 *
+	 * Otherwise, count up the total spaces/tabs needed to get from the
+	 * beginning of the line (or the last non-<blank> character) to the
+	 * target.
 	 */
-	for (cno = current, tabs = 0; cno + COL_OFF(cno, ts) <= target; ++tabs)
-		cno += COL_OFF(cno, ts);
-	spaces = target - cno;
+	if (current >= target)
+		spaces = tabs = 0;
+	else {
+		for (cno = current,
+		    tabs = 0; cno + COL_OFF(cno, ts) <= target; ++tabs)
+			cno += COL_OFF(cno, ts);
+		spaces = target - cno;
+	}
 
 	/* If we overwrote ai characters, reset the ai count. */
 	if (ai_reset)
