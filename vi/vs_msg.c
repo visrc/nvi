@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_msg.c,v 10.43 1995/11/17 12:54:06 bostic Exp $ (Berkeley) $Date: 1995/11/17 12:54:06 $";
+static char sccsid[] = "$Id: vs_msg.c,v 10.44 1996/02/11 12:33:33 bostic Exp $ (Berkeley) $Date: 1996/02/11 12:33:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -223,10 +223,18 @@ vs_msg(sp, mtype, line, len)
 	 * XXX
 	 * Shouldn't we save this, too?
 	 */
-	if (F_ISSET(gp, G_BELLSCHED)) {
+	if (F_ISSET(sp, S_INPUT_INFO) || F_ISSET(gp, G_BELLSCHED)) {
 		F_CLR(gp, G_BELLSCHED);
 		(void)gp->scr_bell(sp);
 	}
+
+	/*
+	 * If vi is using the error line for text input, there's no screen
+	 * real-estate for the error message.  Nothing to do without some
+	 * information as to how important the error message is.
+	 */
+	if (F_ISSET(sp, S_INPUT_INFO))
+		return;
 
 	/*
 	 * Ex or ex controlled screen output.
