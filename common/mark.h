@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: mark.h,v 8.4 1993/11/18 08:17:09 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:17:09 $
+ *	$Id: mark.h,v 8.5 1993/12/27 16:49:34 bostic Exp $ (Berkeley) $Date: 1993/12/27 16:49:34 $
  */
 
 /*
@@ -31,9 +31,8 @@ struct _mark {
 #define	ABSMARK2	'`'		/* Absolute mark name. */
 
 /* Mark routines. */
-void	 mark_delete __P((SCR *, EXF *, recno_t));
 int	 mark_end __P((SCR *, EXF *));
 MARK	*mark_get __P((SCR *, EXF *, ARG_CHAR_T));
 int	 mark_init __P((SCR *, EXF *));
-void	 mark_insert __P((SCR *, EXF *, recno_t));
+void	 mark_insdel __P((SCR *, EXF *, enum operation, recno_t));
 int	 mark_set __P((SCR *, EXF *, ARG_CHAR_T, MARK *, int));
