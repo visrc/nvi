@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 8.40 1994/08/05 07:36:59 bostic Exp $ (Berkeley) $Date: 1994/08/05 07:36:59 $
+ *	$Id: vi.h,v 8.41 1994/09/16 12:37:13 bostic Exp $ (Berkeley) $Date: 1994/09/16 12:37:13 $
  */
 
 typedef struct _vikeys VIKEYS;
@@ -191,7 +191,7 @@ typedef struct _vi_private {
 
 	CHAR_T	 rlast;			/* Last 'r' command character. */
 
-	char	*rep;			/* Input replay buffer. */
+	CH	*rep;			/* Input replay buffer. */
 	size_t	 rep_len;		/* Input replay buffer length. */
 	size_t	 rep_cnt;		/* Input replay buffer characters. */
 
