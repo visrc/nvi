@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.98 1994/03/09 14:16:53 bostic Exp $ (Berkeley) $Date: 1994/03/09 14:16:53 $";
+static char sccsid[] = "$Id: ex.c,v 8.99 1994/03/11 11:12:46 bostic Exp $ (Berkeley) $Date: 1994/03/11 11:12:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -50,7 +50,7 @@ ex(sp, ep)
 	EXF *ep;
 {
 	TEXT *tp;
-	u_int saved_mode;
+	u_int flags, saved_mode;
 	int eval;
 	char defcom[sizeof(DEFCOM)];
 
@@ -60,14 +60,23 @@ ex(sp, ep)
 	if (sp->s_refresh(sp, ep))
 		return (ex_end(sp));
 
-	/* If reading from a file, messages should have line info. */
+	LF_INIT(TXT_CR | TXT_PROMPT);
+	/*
+	 * If reading from a file, messages should have line info.
+	 *
+	 * !!!
+	 * Historically, the beautify option applies to ex command input
+	 * read from a file.
+	 */
 	if (!F_ISSET(sp->gp, G_STDIN_TTY)) {
 		sp->if_lno = 1;
 		sp->if_name = strdup("input");
+		if (O_ISSET(O_BEAUTIFY))
+			LF_SET(TXT_BEAUTIFY);
 	}
 	for (eval = 0;; ++sp->if_lno) {
 		/* Get the next command. */
-		switch (sp->s_get(sp, ep, &sp->tiq, ':', TXT_CR | TXT_PROMPT)) {
+		switch (sp->s_get(sp, ep, &sp->tiq, ':', flags)) {
 		case INP_OK:
 			break;
 		case INP_EOF:
