@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: search.c,v 10.21 1996/05/12 17:28:40 bostic Exp $ (Berkeley) $Date: 1996/05/12 17:28:40 $";
+static const char sccsid[] = "$Id: search.c,v 10.22 1996/05/12 17:31:40 bostic Exp $ (Berkeley) $Date: 1996/05/12 17:31:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -424,7 +424,10 @@ b_search(sp, fm, rm, ptrn, eptrn, flags)
 			if (eval == REG_NOMATCH)
 				break;
 			if (eval != 0) {
-				re_error(sp, eval, &sp->re_c);
+				if (LF_ISSET(SEARCH_MSG))
+					re_error(sp, eval, &sp->re_c);
+				else
+					(void)sp->gp->scr_bell(sp);
 				goto err;
 			}
 			if (coff && match[0].rm_so >= coff)
