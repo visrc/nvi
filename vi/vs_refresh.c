@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.39 1993/11/29 14:15:44 bostic Exp $ (Berkeley) $Date: 1993/11/29 14:15:44 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.40 1993/12/02 16:24:13 bostic Exp $ (Berkeley) $Date: 1993/12/02 16:24:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -60,7 +60,18 @@ svi_refresh(sp, ep)
 	}
 
 	/*
-	 * 2: Refresh related screens.
+	 * 2: S_REFRESH
+	 *
+	 * If S_REFRESH is set in the current screen, repaint everything
+	 * that we can find.
+	 */
+	if (F_ISSET(sp, S_REFRESH))
+		for (tsp = sp->gp->dq.cqh_first;
+		    tsp != (void *)&sp->gp->dq; tsp = tsp->q.cqe_next)
+			if (tsp != sp)
+				F_SET(tsp, S_REDRAW);
+	/*
+	 * 3: Related or dirtied screens, or screens with messages.
 	 *
 	 * If related screens share a view into a file, they may have been
 	 * modified as well.  Refresh any screens with paint or dirty bits
@@ -81,7 +92,7 @@ svi_refresh(sp, ep)
 		}
 
 	/*
-	 * 3: Refresh the current screen.
+	 * 4: Refresh the current screen.
 	 *
 	 * Always refresh the current screen, it may be a cursor movement.
 	 * Also, always do it last -- that way, S_REFRESH can be set in
