@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.47 1994/03/19 16:56:55 bostic Exp $ (Berkeley) $Date: 1994/03/19 16:56:55 $";
+static char sccsid[] = "$Id: options.c,v 8.48 1994/03/22 15:18:09 bostic Exp $ (Berkeley) $Date: 1994/03/22 15:18:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -117,6 +117,8 @@ static OPTLIST const optlist[] = {
 	{"redraw",	NULL,		OPT_0BOOL,	0},
 /* O_REMAP	    4BSD */
 	{"remap",	NULL,		OPT_1BOOL,	0},
+/* O_REMAPMAX	  4.4BSD */
+	{"remapmax",	NULL,		OPT_1BOOL,	0},
 /* O_REPORT	    4BSD */
 	{"report",	NULL,		OPT_NUM,	OPT_NOSTR},
 /* O_RULER	  4.4BSD */
