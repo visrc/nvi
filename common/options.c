@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.31 1993/12/20 16:51:51 bostic Exp $ (Berkeley) $Date: 1993/12/20 16:51:51 $";
+static char sccsid[] = "$Id: options.c,v 8.32 1993/12/20 18:16:37 bostic Exp $ (Berkeley) $Date: 1993/12/20 18:16:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -99,7 +99,7 @@ static OPTLIST const optlist[] = {
 	{"paragraphs",	f_paragraph,	OPT_STR,	0},
 /* O_PROMPT	    4BSD */
 	{"prompt",	NULL,		OPT_1BOOL,	0},
-/* O_READONLY	    4BSD */
+/* O_READONLY	    4BSD (undocumented) */
 	{"readonly",	f_readonly,	OPT_0BOOL,	0},
 /* O_REDRAW	    4BSD */
 	{"redraw",	NULL,		OPT_0BOOL,	0},
@@ -139,8 +139,8 @@ static OPTLIST const optlist[] = {
 	{"term",	f_term,		OPT_STR,	OPT_NOSAVE},
 /* O_TERSE	    4BSD */
 	{"terse",	NULL,		OPT_0BOOL,	0},
-/* O_TIMEOUT	    4BSD */
-	{"timeout",	NULL,		OPT_0BOOL,	0},
+/* O_TIMEOUT	    4BSD (undocumented) */
+	{"timeout",	NULL,		OPT_1BOOL,	0},
 /* O_TTYWERASE	  4.4BSD */
 	{"ttywerase",	f_ttywerase,	OPT_0BOOL,	0},
 /* O_VERBOSE	  4.4BSD */
