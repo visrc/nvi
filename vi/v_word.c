@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_word.c,v 5.6 1992/10/18 13:11:11 bostic Exp $ (Berkeley) $Date: 1992/10/18 13:11:11 $";
+static char sccsid[] = "$Id: v_word.c,v 5.7 1992/10/26 17:48:38 bostic Exp $ (Berkeley) $Date: 1992/10/26 17:48:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -120,7 +120,7 @@ fword(vp, fm, rp, spaceonly)
 			/* If we hit EOF, stay there (historic practice). */
 			if ((p = file_gline(curf, ++lno, &len)) == NULL) {
 				/* If already at eof, complain. */
-				if (empty && !(vp->flags & VC_ISMOTION)) {
+				if (empty && !(vp->flags & (VC_C | VC_D))) {
 					v_eof(NULL);
 					return (1);
 				}
@@ -130,8 +130,8 @@ fword(vp, fm, rp, spaceonly)
 					return (1);
 				}
 				rp->lno = lno;
-				rp->cno = len ?
-				    vp->flags & VC_ISMOTION ? len : len - 1 : 0;
+				rp->cno = len ? vp->flags & (VC_C | VC_D) ?
+				    len : len - 1 : 0;
 				return (0);
 			}
 			cno = 0;
