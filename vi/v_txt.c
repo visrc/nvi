@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.66 1996/05/18 12:18:59 bostic Exp $ (Berkeley) $Date: 1996/05/18 12:18:59 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.67 1996/06/08 13:13:49 bostic Exp $ (Berkeley) $Date: 1996/06/08 13:13:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -45,8 +45,7 @@ static int	 txt_map_end __P((SCR *));
 static int	 txt_map_init __P((SCR *));
 static int	 txt_margin __P((SCR *, TEXT *, TEXT *, int *, u_int32_t));
 static void	 txt_nomorech __P((SCR *));
-static void	 txt_Rcleanup __P((SCR *,
-		    TEXTH *, TEXT *, const char *, const size_t));
+static void	 txt_Rcleanup __P((SCR *, TEXTH *, TEXT *, const size_t));
 static int	 txt_resolve __P((SCR *, TEXTH *, u_int32_t));
 static int	 txt_showmatch __P((SCR *, TEXT *));
 static void	 txt_unmap __P((SCR *, TEXT *, u_int32_t *));
@@ -880,7 +879,7 @@ k_escape:	LINE_RESOLVE;
 		 * characters, and making them into insert characters.
 		 */
 		if (LF_ISSET(TXT_REPLACE))
-			txt_Rcleanup(sp, &sp->tiq, tp, lp, len);
+			txt_Rcleanup(sp, &sp->tiq, tp, len);
 
 		/*
 		 * If there are any overwrite characters, copy down
@@ -2810,15 +2809,15 @@ txt_margin(sp, tp, wmtp, didbreak, flags)
  *	Resolve the input line for the 'R' command.
  */
 static void
-txt_Rcleanup(sp, tiqh, tp, lp, olen)
+txt_Rcleanup(sp, tiqh, tp, olen)
 	SCR *sp;
 	TEXTH *tiqh;
 	TEXT *tp;
-	const char *lp;
 	const size_t olen;
 {
 	TEXT *ttp;
 	size_t ilen, tmp;
+	char *p;
 
 	/*
 	 * Check to make sure that the cursor hasn't moved beyond
@@ -2849,7 +2848,9 @@ txt_Rcleanup(sp, tiqh, tp, lp, olen)
 	 */
 	if (ilen < olen) {
 		tmp = MIN(tp->owrite, olen - ilen);
-		memmove(tp->lb + tp->cno, lp + ilen, tmp);
+		if (db_get(sp, tp->lno, DBG_FATAL | DBG_NOCACHE, &p, NULL))
+			return;
+		memmove(tp->lb + tp->cno, p + ilen, tmp);
 		tp->len -= tp->owrite - tmp;
 		tp->owrite = 0;
 		tp->insert += tmp;
