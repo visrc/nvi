@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 10.4 1995/06/09 13:39:58 bostic Exp $ (Berkeley) $Date: 1995/06/09 13:39:58 $";
+static char sccsid[] = "$Id: msg.c,v 10.5 1995/06/12 19:35:30 bostic Exp $ (Berkeley) $Date: 1995/06/12 19:35:30 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -560,7 +560,8 @@ msg_status(sp, lno, showlast)
 			return (1);
 		if (last > 1) {
 			t = msg_cat(sp, "027|line %lu of %lu [%ld%%]", &len);
-			p += sprintf(p, t, lno, last, (lno * 100) / last);
+			(void)sprintf(p, t, lno, last, (lno * 100) / last);
+			p += strlen(p);
 		} else {
 			t = msg_cat(sp, "028|empty file", &len);
 			memmove(p, t, len);
@@ -568,10 +569,12 @@ msg_status(sp, lno, showlast)
 		}
 	} else {
 		t = msg_cat(sp, "029|line %lu", &len);
-		p += sprintf(p, t, lno);
+		(void)sprintf(p, t, lno);
+		p += strlen(p);
 	}
 #ifdef DEBUG
-	p += sprintf(p, " (pid %lu)", (u_long)getpid());
+	(void)sprintf(p, " (pid %lu)", (u_long)getpid());
+	p += strlen(p);
 #endif
 	if (sp->gp->scr_attr == NULL)
 		msg_save(sp, M_INFO, bp, p - bp);
