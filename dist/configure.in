@@ -398,7 +398,18 @@ fi
 AC_SUBST(cobjs)
 
 # XXX actually check for curses !
-LIBS="-lcurses $LIBS"
+AC_ARG_WITH(curses,
+	[  --with-curses=DIR       Path to curses installation. ])
+if test "x$with_curses" != "x"; then
+	LDFLAGS="-L$with_curses/lib $LDFLAGS"
+	CFLAGS="-I$with_curses/include $CFLAGS"
+fi;
+
+AC_CHECK_LIB(curses, initscr,
+	[vi_cv_cursesfatal="no"], [vi_cv_cursesfatal="yes"])
+if test "$vi_cv_cursesfatal" = "yes"; then
+	AC_MSG_ERROR([Need curses.])
+fi
 
 dnl Checks for header files.
 AC_MSG_CHECKING(for sys/mman.h)
