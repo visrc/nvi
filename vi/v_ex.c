@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 5.12 1992/10/24 14:23:17 bostic Exp $ (Berkeley) $Date: 1992/10/24 14:23:17 $";
+static char sccsid[] = "$Id: v_ex.c,v 5.13 1992/10/24 15:25:51 bostic Exp $ (Berkeley) $Date: 1992/10/24 15:25:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,6 +18,7 @@ static char sccsid[] = "$Id: v_ex.c,v 5.12 1992/10/24 14:23:17 bostic Exp $ (Ber
 #include "vi.h"
 #include "excmd.h"
 #include "options.h"
+#include "screen.h"
 #include "term.h"
 #include "vcmd.h"
 #include "extern.h"
@@ -84,7 +85,7 @@ v_ex(vp, fm, tm, rp)
 
 	/* The file may have changed. */
 	if (scurf != curf) {
-		scr_ref();
+		scr_ref(curf);
 		refresh();
 	}
 
