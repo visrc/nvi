@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.70 1996/03/21 18:31:41 bostic Exp $ (Berkeley) $Date: 1996/03/21 18:31:41 $
+dnl	$Id: configure.in,v 8.71 1996/03/21 18:44:01 bostic Exp $ (Berkeley) $Date: 1996/03/21 18:44:01 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(configure)
@@ -460,6 +460,17 @@ if test "$vi_cv_have_curses_setupterm" = yes; then
 	AC_DEFINE(HAVE_CURSES_SETUPTERM)
 fi
 AC_MSG_RESULT($vi_cv_have_curses_setupterm)
+
+dnl Some moron decided to drop off an argument from the gettimeofday call,
+dnl without changing the name.
+AC_MSG_CHECKING(for broken gettimeofday system call)
+AC_CACHE_VAL(vi_cv_gettimeofday, [dnl
+AC_TRY_LINK(, [gettimeofday(0, 0);],
+	[vi_cv_gettimeofday=double], [vi_cv_gettimeofday=no])])
+if test "$vi_cv_gettimeofday" = single; then
+	AC_DEFINE(HAVE_BROKEN_GETTIMEOFDAY)
+fi
+AC_MSG_RESULT($vi_cv_gettimeofday)
 
 dnl Check for which version of openpty to use, System V or Berkeley.
 AC_MSG_CHECKING(for System V pty calls)

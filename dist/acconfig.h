@@ -1,4 +1,4 @@
-/* $Id: acconfig.h,v 8.12 1996/03/21 18:12:19 bostic Exp $ (Berkeley) $Date: 1996/03/21 18:12:19 $ */
+/* $Id: acconfig.h,v 8.13 1996/03/21 18:44:00 bostic Exp $ (Berkeley) $Date: 1996/03/21 18:44:00 $ */
 
 /* Define to `int' if <sys/types.h> doesn't define.  */
 #undef ssize_t
@@ -6,7 +6,10 @@
 /* Define if you want a debugging version. */
 #undef DEBUG
 
-/* Define if you have a Ultrix-style broken vdisable. */
+/* Define if you have a System V-style (broken) gettimeofday. */
+#undef HAVE_BROKEN_GETTIMEOFDAY
+
+/* Define if you have a Ultrix-style (broken) vdisable. */
 #undef HAVE_BROKEN_VDISABLE
 
 /* Define if you have a BSD version of curses. */

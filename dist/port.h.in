@@ -1,4 +1,4 @@
-/* $Id: port.h.in,v 8.9 1996/03/21 18:12:20 bostic Exp $ (Berkeley) $Date: 1996/03/21 18:12:20 $ */
+/* $Id: port.h.in,v 8.10 1996/03/21 18:44:01 bostic Exp $ (Berkeley) $Date: 1996/03/21 18:44:01 $ */
 
 /*
  * Declare the basic types, if they aren't already declared.  Named and
@@ -26,13 +26,12 @@
 #endif
 
 /*
- * Hack _POSIX_VDISABLE to \377 since Ultrix doesn't honor _POSIX_VDISABLE
- * (treats it as ^@).  The symptom is that the ^@ keystroke immediately
- * drops core.
+ * XXX
+ * Some versions of System V changed the number of arguments to gettimeofday
+ * without changing the name.
  */
-#ifdef HAVE_BROKEN_VDISABLE
-#undef	_POSIX_VDISABLE
-#define	_POSIX_VDISABLE	((unsigned char)'\377')
+#ifdef HAVE_BROKEN_GETTIMEOFDAY
+#define	gettimeofday(tv, tz)	gettimeofday(tv)
 #endif
 
 /* 
@@ -66,6 +65,16 @@
 #define	SEEK_SET	0		/* POSIX 1003.1 seek values */
 #define	SEEK_CUR	1
 #define	SEEK_END	2
+#endif
+
+/*
+ * Hack _POSIX_VDISABLE to \377 since Ultrix doesn't honor _POSIX_VDISABLE
+ * (treats it as ^@).  The symptom is that the ^@ keystroke immediately
+ * drops core.
+ */
+#ifdef HAVE_BROKEN_VDISABLE
+#undef	_POSIX_VDISABLE
+#define	_POSIX_VDISABLE	((unsigned char)'\377')
 #endif
 
 /*
