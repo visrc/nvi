@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tcl.c,v 8.5 1996/02/26 14:22:42 bostic Exp $ (Berkeley) $Date: 1996/02/26 14:22:42 $";
+static char sccsid[] = "$Id: ex_tcl.c,v 8.6 1996/03/03 16:16:24 bostic Exp $ (Berkeley) $Date: 1996/03/03 16:16:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -47,6 +47,10 @@ ex_tcl(sp, cmdp)
 	size_t len;
 	char buf[64];
 
+	/* Initialize the interpreter. */
+	if (gp->tcl_interp == NULL && tcl_init(gp))
+		return (1);
+
 	/* Skip leading white space. */
 	if (cmdp->argc != 0)
 		for (p = cmdp->argv[0]->bp,
@@ -62,11 +66,11 @@ ex_tcl(sp, cmdp)
 	(void)snprintf(buf, sizeof(buf),
 	    "set viScreenId %d\nset viStartLine %lu\nset viStopLine %lu",
 	    sp->id, cmdp->addr1.lno, cmdp->addr2.lno);
-	if (Tcl_Eval(gp->interp, buf) == TCL_OK &&
-	    Tcl_Eval(gp->interp, cmdp->argv[0]->bp) == TCL_OK)
+	if (Tcl_Eval(gp->tcl_interp, buf) == TCL_OK &&
+	    Tcl_Eval(gp->tcl_interp, cmdp->argv[0]->bp) == TCL_OK)
 		return (0);
 
-	msgq(sp, M_ERR, "Tcl: %s", ((Tcl_Interp *)gp->interp)->result);
+	msgq(sp, M_ERR, "Tcl: %s", ((Tcl_Interp *)gp->tcl_interp)->result);
 	return (1);
 #else
 	msgq(sp, M_ERR, "302|Vi was not loaded with a Tcl interpreter");
