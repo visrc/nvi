@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.6 1993/09/01 15:58:32 bostic Exp $ (Berkeley) $Date: 1993/09/01 15:58:32 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.7 1993/09/11 11:45:10 bostic Exp $ (Berkeley) $Date: 1993/09/11 11:45:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -218,7 +218,7 @@ newtp:		if ((tp = text_init(sp, p, len, len + 32)) == NULL)
 
 #define	CHARS_TO_WAIT	4
 		if (showmatch ||
-		    tty_cwait++ > CHARS_TO_WAIT || !term_waiting(sp)) {
+		    tty_cwait++ > CHARS_TO_WAIT || !sp->s_key_wait(sp)) {
 			tty_cwait = 0;
 			if (sp->s_refresh(sp, ep))
 				ERR;
