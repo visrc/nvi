@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.16 1993/09/10 10:03:45 bostic Exp $ (Berkeley) $Date: 1993/09/10 10:03:45 $";
+static char sccsid[] = "$Id: exf.c,v 8.17 1993/09/11 13:48:48 bostic Exp $ (Berkeley) $Date: 1993/09/11 13:48:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -427,7 +427,7 @@ file_write(sp, ep, fm, tm, fname, flags)
 	struct stat sb;
 	FILE *fp;
 	MARK from, to;
-	int fd, oflags;
+	int fd, oflags, val;
 
 	/*
 	 * Don't permit writing to temporary files.  The problem is that
@@ -440,9 +440,9 @@ file_write(sp, ep, fm, tm, fname, flags)
 		return (1);
 	}
 
-	/* Can't write read-only files, unless forced. */
-	if (fname == NULL &&
-	    !LF_ISSET(FS_FORCE) && F_ISSET(sp->frp, FR_RDONLY)) {
+	/* Can't write files marked read-only, unless forced. */
+	if (!LF_ISSET(FS_FORCE) &&
+	    fname == NULL && F_ISSET(sp->frp, FR_RDONLY)) {
 		if (LF_ISSET(FS_POSSIBLE))
 			msgq(sp, M_ERR,
 			    "Read-only file, not written; use ! to override.");
@@ -452,41 +452,47 @@ file_write(sp, ep, fm, tm, fname, flags)
 		return (1);
 	}
 
-	/*
-	 * If the name was changed, or we're writing to a new file, don't
-	 * overwrite anything unless forced, the "writeany" option is set,
-	 * or appending.
-	 */
-	if (!LF_ISSET(FS_FORCE | FS_APPEND) && !O_ISSET(sp, O_WRITEANY) &&
-	    (fname != NULL && !stat(fname, &sb) ||
-	    F_ISSET(sp->frp, FR_NAMECHANGED) && !stat(sp->frp->fname, &sb))) {
-		if (fname == NULL)
-			fname = sp->frp->fname;
-		if (LF_ISSET(FS_POSSIBLE))
-			msgq(sp, M_ERR,
-			    "%s exists, not written; use ! to override.",
-			    fname);
-		else
-			msgq(sp, M_ERR, "%s exists, not written.", fname);
-		return (1);
+	/* If not forced and not appending ... */
+	if (!LF_ISSET(FS_FORCE | FS_APPEND)) {
+		/*
+		 * Don't overwrite anything but the original file or a
+		 * nonexistent file unless the "writeany" option is set.
+		 */
+		if (!O_ISSET(sp, O_WRITEANY) &&
+		    (fname != NULL && !stat(fname, &sb) ||
+		    F_ISSET(sp->frp, FR_NAMECHANGED) &&
+		    !stat(sp->frp->fname, &sb))) {
+			if (fname == NULL)
+				fname = sp->frp->fname;
+			if (LF_ISSET(FS_POSSIBLE))
+				msgq(sp, M_ERR,
+		"%s exists, not written; use ! to override.", fname);
+			else
+				msgq(sp, M_ERR,
+				    "%s exists, not written.", fname);
+			return (1);
+		}
+
+		/* Don't overwrite anything with a partial file. */
+		if (!LF_ISSET(FS_ALL) &&
+		    (fname != NULL && !stat(fname, &sb) ||
+		    !stat(sp->frp->fname, &sb))) {
+			if (LF_ISSET(FS_POSSIBLE))
+				msgq(sp, M_ERR,
+				    "Use ! to write a partial file.");
+			else
+				msgq(sp, M_ERR, "Partial file, not written.");
+			return (1);
+		}
 	}
 
 	if (fname == NULL)
 		fname = sp->frp->fname;
 
-	/* Don't do partial writes, unless forced. */
-	if (!LF_ISSET(FS_ALL | FS_FORCE) && !stat(fname, &sb)) {
-		if (LF_ISSET(FS_POSSIBLE))
-			msgq(sp, M_ERR, "Use ! to write a partial file.");
-		else
-			msgq(sp, M_ERR, "Partial file, not written.");
-		return (1);
-	}
-
 	/*
-	 * Once we've decided that we can actually write the file,
-	 * it doesn't matter that the file name was changed -- if
-	 * it was, we created the file.
+	 * Once we've decided that we can actually write the file, it
+	 * doesn't matter that the file name was changed -- if it was,
+	 * we created the file.
 	 */
 	F_CLR(sp->frp, FR_NAMECHANGED);
 
