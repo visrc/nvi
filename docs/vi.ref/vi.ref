@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.10 1994/02/21 23:57:03 bostic Exp $ (Berkeley) $Date: 1994/02/21 23:57:03 $
+.\"     $Id: vi.ref,v 8.11 1994/03/02 13:00:21 bostic Exp $ (Berkeley) $Date: 1994/03/02 13:00:21 $
 .\"
 .Dd "%Q%"
 .Dt EX/VI 1
@@ -240,7 +240,9 @@ do left-right screen scrolling, instead of the traditional
 .Nm \&vi
 line wrapping.
 .Sh RECOVERY
-There is no recovery program for nvi, nor does it run setuid.
+There is no recovery program for
+.Nm nvi ,
+nor does it run setuid.
 Users may recover any file which they may read, and the superuser
 may recover any edit session.
 .Pp
@@ -310,6 +312,129 @@ information to the user itself.
 If you don't have the sendmail program on your system, the source file
 .Pa nvi/recover.c
 will have to be modified to use your mail delivery programs.
+.Sh STARTUP INFORMATION
+.Nm Nvi/nex
+interprets one of two environmental variables and reads up to three of
+five possible files during startup.
+The variables and files are expected to contain
+.Nm ex
+commands, not
+.Nm vi
+commands.
+In addition, they are interpreted
+.Em before
+the file to be edited is read, and therefore many
+.Nm ex
+commands may not be used.
+Generally, any command that requires output to the screen or that
+needs a file on which to operate, will cause an error if included
+in a startup file.
+.Pp
+First, the file
+.Pa /etc/vi.exrc
+is read.
+Second, the environmental variable
+.Ev NEXINIT
+(or the variable
+.Ev EXINIT ,
+if
+.Ev NEXINIT
+isn't set) is interpreted.
+Third, if neither
+.Ev NEXINIT
+or
+.Ev EXINIT
+was set, the file
+.Pa $HOME/.nexrc
+(or the file
+.Pa $HOME/.exrc ,
+if
+.Pa $HOME/.nexrc
+doesn't exist) is read.
+Fourth, the file
+.Pa ./.nexrc
+(or the file
+.Pa ./.exrc ,
+if
+.Pa ./.nexrc
+doesn't exist) is read.
+.Pp
+Startup files will not be read if they are owned by anyone other than
+the user running
+.Nm nvi ,
+or by
+.Dq root
+in the case of the file
+.Pa /etc/vi.exrc .
+Startup files will not be read if they are writable by anyone other
+than the owner.
+Home directory startup files (i.e.
+.Pa $HOME/.nexrc
+and
+.Pa $HOME/.exrc )
+will not be read if the
+.Dq HOME
+environmental variable is not set.
+Local startup files (i.e.
+.Pa ./.nexrc
+and
+.Pa ./.exrc )
+will not be read if the
+.Dq exrc
+option is turned off in the
+.Pa /etc/vi.exrc ,
+.Pa $HOME/.nexrc ,
+or
+.Pa $HOME/.exrc
+files, or in the
+.Ev NEXINIT
+or
+.Ev EXINIT
+environmental variables.
+It is not an error for any of the startup environmental variables
+or files not to exist.
+.Sh ENVIRONMENTAL VARIABLES
+.Bl -tag -width COLUMNS
+.It Ev COLUMNS
+The number of columns on the screen.
+This value overrides any system or terminal specific values.
+.It Ev EXINIT
+A list of
+.Nm ex
+startup commands, read if the variable
+.Ev NEXINIT
+is not set.
+.It Ev HOME
+The user's home directory, used as the initial directory path
+for the startup
+.Pa .nexrc
+and
+.Pa .exrc
+files.
+This value is also used as the default directory for the
+.Nm vi
+.Dq cd
+command.
+.It Ev LINES
+The number of rows on the screen.
+This value overrides any system or terminal specific values.
+.It Ev NEXINIT
+A list of
+.Nm ex
+startup commands.
+.It Ev SHELL
+The user's shell of choice (see also the
+.Dq shell
+option).
+.It Ev TERM
+The user's terminal type.
+The default is the type
+.Dq unknown .
+.It Ev TMPDIR
+The location used to stored temporary files (see also the
+.Dq directory
+option).
+.El
 .Sh BUGS
 This man page is woefully incomplete.
 .Pp
@@ -318,11 +443,23 @@ See the file
 .Pa nvi/docs/bugs.current
 for a list of the known bugs in this version.
 .Sh FILES
-.Bl -tag -width XXXX/var/tmp/vi.recover -compact
+.Bl -tag -width /var/tmp/vi.recover -compact
+.It Pa /bin/sh
+The default user shell.
+.It Pa /etc/vi.exrc
+System-wide vi startup file.
 .It Pa /tmp
-Storage for temporary files.
+Temporary file directory.
 .It Pa /var/tmp/vi.recover
-Storage for recovery files.
+Recovery file directory.
+.It Pa $HOME/.nexrc
+1st choice for user's home directory startup file.
+.It Pa $HOME/.exrc
+2nd choice for user's home directory startup file.
+.It Pa ./.nexrc
+1st choice for local directory startup file.
+.It Pa ./.exrc
+2nd choice for local directory startup file.
 .El
 .Sh SEE ALSO
 .Xr ctags 1 ,
