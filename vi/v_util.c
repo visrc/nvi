@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_util.c,v 8.1 1993/06/09 22:28:36 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:28:36 $";
+static char sccsid[] = "$Id: v_util.c,v 8.2 1993/06/28 13:19:47 bostic Exp $ (Berkeley) $Date: 1993/06/28 13:19:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -85,4 +85,19 @@ v_sof(sp, mp)
 		msgq(sp, M_BERR, "Already at the beginning of the file.");
 	else
 		msgq(sp, M_BERR, "Movement past the beginning of the file.");
+}
+
+/*
+ * v_isempty --
+ *	Return if the line contains nothing but white-space characters.
+ */
+int 
+v_isempty(p, len)
+	char *p;
+	size_t len;
+{
+	for (; len--; ++p)
+		if (!isspace(*p))
+			return (0);
+	return (1);
 }
