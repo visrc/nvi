@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: key.c,v 10.29 1996/03/27 20:25:41 bostic Exp $ (Berkeley) $Date: 1996/03/27 20:25:41 $";
+static const char sccsid[] = "$Id: key.c,v 10.30 1996/04/03 17:56:09 bostic Exp $ (Berkeley) $Date: 1996/04/03 17:56:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -653,13 +653,13 @@ newmap:	evp = &gp->i_event[gp->i_next];
 	 * loses over PPP links where the latency is greater than 100Ms.
 	 */
 	if (ispartial) {
-		if (O_ISSET(sp, O_TIMEOUT)) {
+		if (O_ISSET(sp, O_TIMEOUT))
 			timeout = (evp->e_value == K_ESCAPE ?
 			    O_VAL(sp, O_ESCAPETIME) :
 			    O_VAL(sp, O_KEYTIME)) * 100;
-			goto loop;
-		}
-		timeout = 0;
+		else
+			timeout = 0;
+		goto loop;
 	}
 
 	/* If no map, return the character. */
