@@ -4,23 +4,24 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 5.21 1993/04/05 07:12:48 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:12:48 $
+ *	$Id: key.h,v 5.22 1993/04/12 14:32:49 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:32:49 $
  */
 
 #define	K_CARAT		1
 #define	K_CNTRLD	2
 #define	K_CNTRLR	3
-#define	K_CNTRLZ	4
-#define	K_CR		5
-#define	K_ESCAPE	6
-#define	K_FORMFEED	7
-#define	K_NL		8
-#define	K_TAB		9
-#define	K_VERASE	10
-#define	K_VKILL		11
-#define	K_VLNEXT	12
-#define	K_VWERASE	13
-#define	K_ZERO		14
+#define	K_CNTRLT	4
+#define	K_CNTRLZ	5
+#define	K_CR		6
+#define	K_ESCAPE	7
+#define	K_FORMFEED	8
+#define	K_NL		9
+#define	K_TAB		10
+#define	K_VERASE	11
+#define	K_VKILL		12
+#define	K_VLNEXT	13
+#define	K_VWERASE	14
+#define	K_ZERO		15
 
 #define	GB_BEAUTIFY	0x001		/* Only printable characters. */
 #define	GB_BS		0x002		/* Backspace erases past command. */
