@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 8.15 1993/11/27 16:44:12 bostic Exp $ (Berkeley) $Date: 1993/11/27 16:44:12 $";
+static char sccsid[] = "$Id: seq.c,v 8.16 1993/11/28 19:30:03 bostic Exp $ (Berkeley) $Date: 1993/11/28 19:30:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -96,7 +96,6 @@ seq_delete(sp, input, stype)
 	char *input;
 	enum seqtype stype;
 {
-	int ilen;
 	SEQ *qp;
 
 	if ((qp =
