@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_options.c,v 8.10 1996/12/16 17:25:34 bostic Exp $ (Berkeley) $Date: 1996/12/16 17:25:34 $";
+static const char sccsid[] = "$Id: m_options.c,v 8.11 1996/12/16 18:36:57 bostic Exp $ (Berkeley) $Date: 1996/12/16 18:36:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -177,6 +177,20 @@ static	void destroyed()
     preferences = NULL;
 }
 
+
+static	void	window_unmapped( w, ptr, ev, cont )
+Widget		w;
+XtPointer	ptr;
+XEvent		*ev;
+Boolean		*cont;
+{
+    if ( ev->type == UnmapNotify ) {
+#if defined(SelfTest)
+	puts( "unmapped" );
+#endif
+	XtPopdown( XtParent( preferences ) );
+    }
+}
 
 /*
  * __vi_editopt --
@@ -405,29 +419,42 @@ static	Widget		create_sheet( parent, sheet )
 			      0
 			      );
 
+    /* in this scheme, we will only have one class of options
+     * on a sheet.  That greatly simplifies the geometry management
+     */
+
     /* Add any toggles. */
-    inner = sheet->toggles == NULL ?
-	outer : create_toggles( outer, sheet->toggles );
+    if ( sheet->toggles != NULL ) {
+	inner = create_toggles( outer, sheet->toggles );
+    }
 
-    inner = XtVaCreateWidget( "otherOptions",
-			      xmRowColumnWidgetClass,
-			      outer,
-			      XmNpacking,		XmPACK_COLUMN,
-			      XmNtopAttachment,		XmATTACH_WIDGET,
-			      XmNtopWidget,		inner,
-			      XmNrightAttachment,	XmATTACH_FORM,
-			      XmNbottomAttachment,	XmATTACH_FORM,
-			      XmNleftAttachment,	XmATTACH_FORM,
-			      0
-			      );
-
-    /* then the ints */
+    /* or the ints */
     if ( sheet->ints != NULL ) {
+	inner = XtVaCreateWidget( "otherOptions",
+				  xmRowColumnWidgetClass,
+				  outer,
+				  XmNpacking,		XmPACK_COLUMN,
+				  XmNtopAttachment,	XmATTACH_FORM,
+				  XmNrightAttachment,	XmATTACH_FORM,
+				  XmNbottomAttachment,	XmATTACH_FORM,
+				  XmNleftAttachment,	XmATTACH_FORM,
+				  0
+				  );
 	add_string_options( inner, sheet->ints );
     }
 
-    /* then the rest */
+    /* or the rest */
     if ( sheet->others != NULL ) {
+	inner = XtVaCreateWidget( "otherOptions",
+				  xmRowColumnWidgetClass,
+				  outer,
+				  XmNpacking,		XmPACK_COLUMN,
+				  XmNtopAttachment,	XmATTACH_FORM,
+				  XmNrightAttachment,	XmATTACH_FORM,
+				  XmNbottomAttachment,	XmATTACH_FORM,
+				  XmNleftAttachment,	XmATTACH_FORM,
+				  0
+				  );
 	add_string_options( inner, sheet->others );
     }
     XtManageChild( inner );
@@ -488,6 +515,12 @@ static	Widget	create_options_dialog( parent, title )
 				);
     XtAddCallback( box, XmNpopdownCallback, __vi_cancel_cb, 0 );
     XtAddCallback( box, XmNdestroyCallback, destroyed, 0 );
+    XtAddEventHandler( box,
+		       SubstructureNotifyMask,
+		       False,
+		       window_unmapped,
+		       NULL
+		       );
 
     form = XtVaCreateWidget( "options", 
 			     xmFormWidgetClass,
