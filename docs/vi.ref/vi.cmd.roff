@@ -1,0 +1,2162 @@
+.\" Copyright (c) 1994
+.\"	The Regents of the University of California.  All rights reserved.
+.\"
+.\" %sccs.include.redist.roff%
+.\"
+.\"	$Id: vi.cmd.roff,v 8.1 1994/04/21 14:49:33 bostic Exp $ (Berkeley) $Date: 1994/04/21 14:49:33 $
+.\"
+.Sh VI DESCRIPTION
+#ifdef REFERENCE
+When
+.Nm \&vi
+is executed,
+the text of a file is read (or a temporary file is created),
+and then all editing changes happen to a copy of the file.
+No changes effect the file until the file is written out,
+either by using an explicit command or based on the value of the
+.Sy autowrite
+option.
+.Pp
+.Nm \&Vi
+is a modeful editor, i.e. it has two modes,
+.Dq command
+and
+.Dq "text input" .
+When
+.Nm \&vi
+first starts, it is in command mode.
+.Pp
+There are several commands that change
+.Nm \&vi
+into text input mode.
+Generally, in input mode, the <escape> character is used to exit
+back into command mode.
+.Pp
+The bottom line of the screen is used to enter
+.Nm \&ex
+commands, and for
+.Nm \&vi
+error and informational messages.
+.Pp
+Lines on the screen that come after the end of the file are displayed
+as containing a single <tilde> (``~'') character.
+Empty lines do not have any special representation.
+To differentiate between empty lines and lines consisting of only
+whitespace characters, use the
+.Sy list
+option.
+Historically, implementations of
+.Nm \&vi
+have also displayed some lines as single <asterisk> (``@'') characters.
+These were lines that were not correctly displayed, i.e. lines on the
+screen that did not correspond to lines in the file.
+.Nm \&Nvi
+does not display lines in this fashion.
+In
+.Nm \&vi
+command mode, the cursor is always positioned on the last column of
+characters which take up more than one column on the screen.
+In
+.Nm \&vi
+text insert mode, the cursor is positioned on the first column of
+characters which take up more than one column on the screen.
+.Pp
+Each
+.Nm \&vi
+command described below notes where the cursor ends up when it is
+executed.
+Generally, if the cursor line and cursor column are not on the screen,
+then the screen is scrolled (if the target cursor is close) or repainted
+(if the target cursor is far away) so that the cursor is on the screen.
+If the screen is scrolled, it is moved a minimal amount, and the cursor
+line will usually appear at the top or bottom of the screen.
+In the screen is repainted, the cursor line will appear in the center of
+the screen, unless the cursor is sufficiently close to the beginning or
+end of the file that this isn't possible.
+If the
+.Sy leftright
+option is set, the screen may be scrolled or repainted in a horizontal
+direction as well as in a vertical one.
+.Pp
+.Nm \&Vi
+keeps track of the currently
+.Dq most attractive
+cursor position.
+Each command description (for commands that can change the current
+cursor position),
+specifies if the cursor is set to a specific location in the line,
+or if it is moved to the most attractive cursor position.
+The latter means that the cursor is moved to the cursor position that
+is vertically as close as possible to the last cursor position.
+If the current line is shorter than than the cursor position
+.Nm \&vi
+would select, the cursor is positioned on the last character in the line.
+In all cases, if the line is empty, the cursor is positioned on the first
+column of the line.
+If a command moves the cursor to the most attractive position, it does
+not alter that position.
+Therefore, although a movement to a line shorter than the currently
+most attractive position will cause the cursor to move to the end of
+that line, a subsequent movement to a longer line will cause the
+cursor to move back to the most attractive position.
+.Pp
+The following words have special meaning in this description.
+.Bl -tag -width "XXXX" -compact
+.It Li "current pathname"
+The pathname of the file currently being edited by vi.
+When the character
+.Dq Li \&%
+appears in a pathname entered as part of an
+.Nm \&ex
+command argument, it's replaced by the current pathname.
+The
+.Dq Li \&%
+character can be escaped by preceding it with a backslash.
+.It Li "alternate pathname"
+The name of the last file mentioned in an
+.Nm \&ex
+command, or, the previous current pathname if the last file mentioned
+becomes the current file.
+When the character
+.Dq Li \&#
+appears in a pathname entered as part of an
+.Nm \&ex
+command argument, it's replaced by the alternate pathname.
+The
+.Dq Li \&#
+character can be escaped by preceding it with a backslash.
+.It "bigword"
+A set of non-whitespace characters preceded and followed by whitespace
+characters or the beginning or end of the file or line.
+.It "buffer"
+One of a number of named areas for saving copies of text.
+Commands that change or delete text can save the changed or deleted
+text into a specific buffer, for later use.
+Buffers are named with a single character, preceded by a double quote,
+e.g.
+.Dq Li "<character> .
+Historic implementations of
+.Nm \&vi
+have limited <character> to one of the lower-case alphabetic characters
+or a number.
+.Nm \&Nvi
+permits the use of any character.
+.Pp
+The buffers named by uppercase characters are the same as buffers
+named by the lowercase characters, e.g. using the buffer named by
+the English character
+.Dq Li \&A
+is the same as using the buffer named
+.Dq Li \&a ,
+with the single exception that, if the buffer contents are being
+changed (as with a text deletion or copying command), the text is
+.Em appended
+to the buffer, instead of replacing the current contents.
+.Pp
+The buffers named by the numeric characters (in English,
+.Dq \&1
+through
+.Dq \&9 ),
+are special, in that if at least one line is changed or deleted in
+the file,
+(or the change or delete crossed a line boundary) a copy of the text
+is always placed into the numeric buffer
+.Dq \&1 ,
+regardless of the user also specifying another buffer in which to
+store it.
+The previous contents of buffer
+.Dq \&1
+are moved into buffer
+.Dq \&2 ,
+and so on.
+Text may be explicitly entered into the numeric buffers.
+In this case, the rotation described above occurs before the replacement
+of (or appending to) the buffer's contents.
+.Pp
+When a
+.Nm \&vi
+command synopsis shows both a
+.Dq Li [buffer]
+and
+.Dq Li [count] ,
+they may be presented in any order.
+.It "unnamed buffer"
+The unnamed buffer is a text storage area which is used by commands
+that take a buffer as an argument when no specific buffer is specified.
+.It "count"
+A positive number used as an optional argument to most commands,
+either to give a size or a position (for display or movement commands),
+or as a repeat count (for commands that modify text).
+The count argument is always optional and defaults to 1 unless otherwise
+noted in the command description.
+.Pp
+When a
+.Nm \&vi
+command synopsis shows both a
+.Dq Li [buffer]
+and
+.Dq Li [count] ,
+they may be presented in any order.
+.It "motion"
+A
+.Nm \&vi
+motion command used as an optional trailing argument to some commands,
+indicating the extent of the text that's affected by the command.
+The motion argument can be either the command character repeated (in
+which case it means the current line) or a cursor movement command.
+In the latter case, the region affected by the command is from the
+starting or stopping cursor position which comes first in the file,
+to just before the starting or stopping cursor position which comes
+later in the file.
+Commands that operate on lines instead of beginning and ending cursor
+positions operate on all of the lines that are wholly or partially
+in the region.
+.Pp
+The following are all possible motion commands:
+.Sy $ ,
+.Sy % ,
+.Sy '<character> ,
+.Sy ( ,
+.Sy ) ,
+.Sy , ,
+.Sy - ,
+.Sy / ,
+.Sy 0 ,
+.Sy ; ,
+.Sy <space> ,,
+.Sy ? ,
+.Sy B ,
+.Sy E ,
+.Sy F ,
+.Sy G ,
+.Sy L ,
+.Sy M ,
+.Sy N ,
+.Sy T ,
+.Sy W ,
+.Sy [[ ,
+.Sy ]] ,
+.Sy ^ ,
+.Sy <control-B> ,
+.Sy <control-D> ,
+.Sy <control-F> ,
+.Sy <control-H> ,
+.Sy <control-J> ,
+.Sy <control-M> ,
+.Sy <control-N> ,
+.Sy <control-P> ,
+.Sy <control-U> ,
+.Sy `<character> ,
+.Sy b ,
+.Sy e ,
+.Sy f ,
+.Sy j ,
+.Sy k ,
+.Sy l ,
+.Sy n ,
+.Sy t ,
+.Sy w ,
+.Sy { ,
+.Sy | ,
+and
+.Sy } .
+.Pp
+The optional count prefix available for some of the
+.Nm \&vi
+commands that take motion commands, or for the
+.Nm \&vi
+commands being used as motion commands,
+can be included and is
+.Em always
+considered part of the motion argument.
+For example, the commands
+.Dq Li c2w
+and
+.Dq Li 2cw
+are equivalent, and the region affected by the
+.Sy c
+command is two words of text.
+In addition, if the optional count prefix is speicified for both the
+.Nm \&vi
+command and its motion component, the effect is multiplicative and
+is considered part of the motion argument.
+For example, the commands
+.Dq Li 4cw
+and
+.Dq Li 2c2w
+are equivalent, and the region affected by the
+.Sy c
+command is four words of text.
+.It "previous context"
+The position of the cursor before the last non-relative motion was
+executed.
+.It "paragraph"
+An area of text that begins with either the beginning of a file,
+an empty line, or a section boundary, and continues until either
+an empty line, section boundary, or the end of the file.
+Additional paragraph boundaries can be defined using the
+.Sy paragraph
+option.
+.It "section"
+An area of text that starts with the beginning of the file or a line
+whose first character is either a <form-feed> or an open brace (``{'')
+and continues until the next section or the end of the file.
+Additional section boundaries can be defined using the
+.Sy sections
+option.
+.It "sentence"
+An area of text that begins with either the beginning of the file or the
+first nonblank character following the previous sentence, paragraph, or
+section boundary and continues until the end of the file or a or a period,
+exclamation point, or question mark (``.'', ``!'', ``?'') character,
+followed by either an end-of-line or two whitespace characters.
+Any number of closing parentheses, brackets, or double-quote (``)'',
+``]'', ``"'') characters can appear between the period, exclamation point,
+or question mark and the whitespace characters or end-of-line.
+.It "<literal next>"
+The literal next character is used to escape the subsequent character
+from any special meaning.
+This character is normally <control-V>.
+If the terminal is not set up to do XON/XOFF flow control,
+then <control-Q> may be used as well.
+.It "word"
+Generally, in languages where it is applicable,
+.Nm \&vi
+recognizes two kinds of words.
+First, a sequence of letters, digits and underscores, delimited at both
+ends by: characters other than letters, digits, or underscores; the
+beginning or end of a line; the beginning or end of the file.
+Second, a sequence of characters other than letters, digits, underscores,
+or whitespace characters, delimited at both ends by: a letter, digit,
+underscore, or whitespace character;
+the beginning or end of a line; the beginning or end of the file.
+.El
+.Pp
+#endif /* REFERENCE */
+The following section describes the commands available in the command
+mode of the
+.Nm \&vi
+editor.
+.Pp
+In each entry below, the tag line is a usage synopsis for the command
+character.
+A leading word count, in square brackets, indicates that the command
+takes an optional
+.Dq Li count ,
+causing it to repeat the command's effect
+.Li count
+times.
+#ifdef REFERENCE
+In addition, the current line, currentcolumn, any options which effect
+the command, and if the command may be used as the motion component of a
+.Nm \&vi
+command are noted.
+#endif
+.Bl -tag -width "XXXX" -compact
+.It Li "[count] <control-A>"
+Search forward for the
+.Li count
+occurrence of the word upon which the cursor is positioned.
+#ifdef REFERENCE
+.br
+.Em Current line:
+The line where the word is found.
+.br
+.Em Current column:
+The first character of the word.
+.br
+.Em Options:
+Affected by the
+.Sy extended
+and
+.Sy wrapscan
+options.
+#endif
+.It Li "[count] <control-B>"
+#ifdef MANUAL
+Scroll up
+.Li count
+screens.
+#endif
+#ifdef REFERENCE
+Page backwards in the file, allowing two lines of overlap, by displaying
+the window starting at line
+.Li "line - (count * (window - 2))" .
+.br
+.Em Current line:
+The last line of text displayed on the screen.
+This is an error if the cursor is on the first line in the file.
+.br
+.Em Current column:
+The first nonblank character of the current line.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It Li "[count] <control-D>"
+Scroll forwards count (or by default, the number of lines specifed by
+the
+.Sy scroll
+option) lines in the file.
+#ifdef REFERENCE
+If
+.Li count
+is specified, the
+.Sy scroll
+option is reset to that value.
+.br
+.Em Current line:
+The current line plus the number of lines scrolled.
+This is an error if the current line is the last line of the file.
+.br
+.Em Current column:
+The first nonblank character of the current line.
+.br
+.Em Options:
+Affected by the
+.Sy scroll
+option
+.br
+#endif
+.It "[count] <control-E>"
+Scroll forward count lines,
+leaving the current line and column as is if possible.
+#ifdef REFERENCE
+.br
+.Em Current line:
+Unchanged unless the current line scrolls off the screen, in which
+case it's the first line on the screen.
+This is an error if the last line in the file is already displayed.
+.br
+.Em Current column:
+Unchanged unless the current line scrolls off the screen, in which
+case it's the most attractive character position.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "[count] <control-F>"
+#ifdef MANUAL
+Page down count screens.
+#endif
+#ifdef REFERENCE
+Page forward in the file, allowing two lines of overlap, by displaying
+the window starting at line
+.Li "line + (count * (window - 2))" .
+.br
+.Em Current line:
+The first line on the screen.
+This is an error if the cursor is on the last line in the file.
+.br
+.Em Current column:
+The first nonblank character of the current line.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "<control-G>"
+Display an informational message listing the current pathname, current
+line, number of total lines in the file, if the file has been modified,
+if the file's name has been changed, and if the edit session is read-only.
+.br
+.Em Current line:
+Unchanged.
+.br
+.Em Current column:
+Unchanged.
+.br
+.Em Options:
+Affected by the
+.Sy showdirty
+option.
+.br
+#endif
+.It "<control-H>"
+.de AA
+Move the cursor back count characters in the current line.
+#ifdef REFERENCE
+.br
+.Em Current line:
+Unchanged.
+.br
+.Em Current column:
+Set to (the current column - the number of columns occupied by
+count characters ending with the previous current column) or
+the beginning of the line if count is greater than the number of
+characters preceding the current character in the current line.
+This is an error if the current cursor is on the first character
+in the line.
+.br
+.Em Options:
+None.
+.br
+#endif
+..
+.It "<control-J>"
+.de BB
+Move the cursor down count lines without changing the current column.
+#ifdef REFERENCE
+.br
+.Em Current line:
+The current line plus count.
+This is an error if the cursor is on the last line in the file.
+.br
+.Em Current column:
+Unchanged.
+.br
+.Em Options:
+None.
+.br
+#endif
+..
+.It "<control-L>"
+.de EE
+Clear and redisplay the screen.
+#ifdef REFERENCE
+.br
+.Em Current line:
+Unchanged.
+.br
+.Em Current column:
+Unchanged.
+.br
+.Em Options:
+None.
+.br
+#endif
+..
+.It "<control-M>, <carriage-return>"
+.de CC
+Move the cursor down count lines to the first nonblank character of
+that line.
+#ifdef REFERENCE
+.br
+.Em Current line:
+The current line plus count.
+This is an error if the movement is past the end-of-file.
+.br
+.Em Current column:
+The first nonblank character of the new line.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "[count] ^N"
+.BB
+.It "<control-P>"
+.de DD
+Move the cursor up count lines without changing the current column.
+#ifdef REFERENCE
+.br
+.Em Current line:
+The current line minus count.
+This is an error if the movement is past the start-of-file.
+.br
+.Em Current column:
+Unchanged.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "<control-R>"
+.EE
+.It "<control-U>"
+Scroll backwards count (or by default, the number of lines specifed by
+the
+.Sy scroll
+option) lines in the file.
+#ifdef REFERENCE
+.br
+.Em Current line:
+The current line minus the amount scrolled.
+This is an error if the current line is the first line of the file.
+.br
+.Em Current column:
+The first nonblank character of the current line.
+.br
+.Em Options:
+Affected by the
+.Sy scroll
+option.
+.br
+#endif
+.It "<control-Y>"
+Scroll backwards count lines, leaving the current line and column as is,
+if possible.
+#ifdef REFERENCE
+.br
+.Em Current line:
+Unchanged unless the current line scrolls off the screen, in which case
+it is the last line of text displayed on the screen.
+This is an error if the first line in the file is already displayed.
+.br
+.Em Current column:
+Unchanged unless the current line scrolls off the screen, in which case
+it's the most attractive character position.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "<escape>"
+Execute
+.Nm \&ex
+commands, and cancel partial commands.
+#ifdef REFERENCE
+If an
+.Nm \&ex
+command is being entered (e.g.
+.Sy / ,
+.Sy ? ,
+.Sy :
+or
+.Sy ! )
+the command is executed.
+f a partial command has been entered, e.g.
+.Dq Li "[0-9]*" ,
+or
+.Dq Li "[0-9]*[!<>cdy]" ,
+the command is cancelled.
+Otherwise, it is considered an error.
+.br
+.Em Current line:
+When an
+.Nm \&ex
+command is being executed, the current line is set as described for
+that command.
+Otherwise, unchanged.
+.br
+.Em Current column:
+When an
+.Nm \&ex
+command is being executed, the current column is set as described for
+that command.
+Otherwise, unchanged.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "[count] <space>"
+.de FF
+Move the cursor forwards count characters without changing the current line.
+#ifdef REFERENCE
+.br
+.Em Current line:
+Unchanged.
+.br
+.Em Current column:
+The current column plus the width of the next count characters, or the end
+of the line if count is greater than the number of characters in the line
+following the current column.
+This is an error if the cursor is already on the last character in the line.
+.br
+.Em Options:
+None.
+.br
+#endif
+..
+.It "[count] ! motion shell-command(s) <newline>"
+Replace text with results from shell command.
+#ifdef REFERENCE
+Pass the lines specified by the count and motion as standard input to
+the program named by the
+.Sy shell
+option, and replace those lines with the output (both standard error
+and standard output) of that command.
+.Pp
+After the motion is entered,
+.Nm \&vi
+prompts for arguments to the command.
+Within the arguments of the command,
+.Dq Li \&%
+and
+.Dq Li \&#
+are expanded to the current and alternate pathnames, respectively.
+The character
+.Dq Li \&!
+is expanded with the shell command text of the previous
+.Sy \&!
+or
+.Sy \&:!
+command.
+(Therefore, the command
+.Sy \&!!
+repeats the previous
+.Sy \&!
+command.)
+The special meanings of
+.Dq Li % ,
+.Dq Li # ,
+and
+.Dq Li !
+can be overridden by escaping them with a backslash.
+If no
+.Sy !
+or
+.Sy :!
+command has yet been executed, it is an error to use an unescaped
+.Dq Li !
+character.
+.Pp
+.Nm \&Vi
+then executes the program named by the
+.Sy shell
+option, with a
+.Fl c
+flag followed by the arguments (bundled into a single argument).
+.Pp
+If the file has been modified since it was last written, the
+.Sy !
+command will warn you.
+.br
+.Em Current line:
+The first line of the replaced text.
+.br
+.Em Current column:
+The first column of the replaced text.
+.br
+.Em Options:
+Affected by the
+.Sy autowrite ,
+.Sy editor ,
+.Sy shell ,
+and
+.Sy warn 
+options.
+.br
+#endif
+.It "[count] $"
+Move the cursor to the end of the line.
+#ifdef REFERENCE
+If a count is specified, the cursor moves down
+.Li "count - 1"
+lines as well.
+.br
+.Em Current line:
+The current line plus count minus 1.
+.br
+.Em Current column:
+The last character in the line.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "%"
+Move the cursor to the parenthesis or curly brace which
+.Em matches
+the parenthesis or curly brace found at the current cursor position or
+which is the closest one to the right of the cursor on the line.
+#ifdef REFERENCE
+It is an error to execute the
+.Sy %
+command on a line without a parenthesis or curly brace.
+.Pp
+Historically, a count may be specified to the
+.Sy %
+command, but it was ignored.
+.br
+.Em Current line:
+The line containing the matching character.
+.br
+.Em Current column:
+The column containing the matching character.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "&"
+Repeat the previous substitution command on the current line.
+#ifdef REFERENCE
+.Pp
+Historically, a count may be specified to the
+.Sy &
+command, but it was ignored.
+.br
+.Em Current line:
+Unchanged.
+.br
+.Em Current column:
+Unchanged if the cursor was at the end-of-line; otherwise, the first
+nonblank character of the line.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "'<character>"
+Return to a previous context, marked by the character <character>.
+#ifdef REFERENCE
+If <character> is the
+.Dq Li '
+or
+.Dq Li `
+character, return to the previous context.
+If <character> is any other character,
+return to the context marked by that character (see the
+.Sy m
+command).
+If the context does not still exist, the
+.Sy '
+command has no effect.
+.Pp
+When used as a motion component of another command,
+the operation affects complete lines.
+.br
+.Em Current line:
+The line from the context.
+.br
+.Em Current column:
+The first nonblank character in the line.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "`<character>"
+Return to a previous context, marked by the character <character>.
+#ifdef REFERENCE
+If <character> is the
+.Dq Li '
+or
+.Dq Li `
+character, return to the previous context.
+If <character> is any other character,
+return to the context marked by that character (see the
+.Sy m
+command).
+If the context does not still exist, the
+.Sy `
+command has no effect.
+.Pp
+When used as a motion component of another command,
+the operation does not affect complete lines, but affects only the
+marked region of text.
+.br
+.Em Current line:
+The line from the context.
+.br
+.Em Current column:
+The column from the context.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "[count] [["
+Back up count section boundaries.
+#ifdef REFERENCE
+.br
+.Em Current line:
+Move to the previous line that is count section boundaries back,
+or the first line of the file if no more section boundaries
+exist preceding the current line.
+.br
+.Em Current column:
+The first nonblank character of the line.
+.br
+.Em Options:
+Affected by the
+.Sy sections
+option.
+.br
+#endif
+.It "[count] ]]"
+Move forward count section boundaries.
+#ifdef REFERENCE
+.br
+.Em Current line:
+Move to the line that is count section boundaries or to the last
+line of the file if no more section boundaries exist following
+the current line.
+.br
+.Em Current column:
+The first nonblank character of the line.
+.br
+.Em Options:
+Affected by the
+.Sy sections
+option.
+.br
+#endif
+.It "^"
+Move to first nonblank character on the current line.
+#ifdef REFERENCE
+.br
+.Em Current line:
+Unchanged.
+.br
+.Em Current column:
+The first nonblank character of the current line.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "[count] ("
+Back up count sentences.
+#ifdef REFERENCE
+.br
+.Em Current line:
+The line containing the beginning of the sentence.
+.br
+.Em Current column:
+The first nonblank character of the sentence.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "[count] )"
+Move forward count sentences.
+#ifdef REFERENCE
+.br
+.Em Current line:
+The line containing the beginning of the sentence.
+.br
+.Em Current column:
+The first nonblank character of the sentence.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "[count] +]
+.CC
+.It "[count] {"
+Move backward count paragraphs.
+#ifdef REFERENCE
+.br
+.Em Current line:
+The line containing the beginning of the previous paragraph.
+.br
+.Em Current column:
+The first nonblank character of the line.
+.br
+.Em Options:
+Affected by the
+.Sy paragraph
+option.
+.br
+#endif
+.It "[count] }"
+Move forwards count paragraphs.
+#ifdef REFERENCE
+.br
+.Em Current line:
+The line containing the beginning of the next paragraph.
+.br
+.Em Current column:
+The first nonblank character of the line.
+.br
+.Em Options:
+Affected by the
+.Sy paragraph
+option.
+.br
+#endif
+.It "[count] |"
+Move to a specific column position.
+#ifdef REFERENCE
+.br
+.Em Current line:
+Unchanged.
+.br
+.Em Current column:
+The cursor is moved to the character on the column position identified by
+count, if that position exists in the line.
+If the length of the current line is less than count, the cursor is moved
+to the last character in the line.
+The default column, if count is not specified, is 1.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "[count] ,"
+Reverse find character.
+#ifdef REFERENCE
+Reverse the last
+.Sy F ,
+.Sy f ,
+.Sy T
+or
+.Sy t
+command, searching the other way in the line.
+A count repeats the search
+.Li count
+times.
+.br
+.Em Current line:
+Unchanged.
+.br
+.Em Current column:
+The searched-for character.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "[count] -"
+Move to first nonblank of previous line.
+#ifdef REFERENCE
+.br
+.Em Current line:
+The current line minus count.
+.br
+.Em Current column:
+The first nonblank character of the line.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "[count] ."
+Repeat the last command that modified text.
+#ifdef REFERENCE
+The repeated command may be a command and motion component combination.
+If a count is specified, it replaces
+.Em both
+the count specified for the repeated command, and, if applicable, for
+the repeated motion component.
+If no count is specified, the counts specified to the repeated command
+are used again.
+.br
+.Em Current line:
+As described for the repeated command.
+.br
+.Em Current column:
+As described for the repeated command.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "/RE<carriage-return>"
+.It "/RE/ [offset]<carriage-return>"
+Search forward for a regular expression.
+#ifdef REFERENCE
+.Nm \&Vi
+prompts for a string on the last line on the screen and searches
+forward for the next occurrence of the string, which is interpreted
+as a Basic Regular Expression.
+.Pp
+When used as a motion component of another command,
+the region is from the current cursor position to the beginning of
+the matched string.
+If an offset from the matched line is specified (i.e. a trailing
+.Dq Li /
+character followed by a signed offset), the command will affect
+entire lines instead of the specific region.
+.Pp
+Searches may be interrupted using the terminal interrupt character.
+.br
+.Em Current line:
+The line in which the match occurred.
+.br
+.Em Current column:
+The first character of the matched string.
+.br
+.Em Options:
+Affected by the
+.Sy extended ,
+.Sy ignorecase ,
+.Sy magic ,
+and
+.Sy wrapscan
+options.
+.br
+#endif
+.It "0"
+Move to the first character in the current line.
+#ifdef REFERENCE
+.br
+.Em Current line:
+Unchanged.
+.br
+.Em Current column:
+The first character in the line.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It ":"
+Execute an ex command.
+#ifdef REFERENCE
+.Nm \&Vi
+prompts for an ex command, which is then executed.
+The command is terminated by a <carriage-return>, <newline> or
+<escape> character; all of these characters may be escaped by
+using a <literal next> character.
+.Pp
+If the
+.Nm \&ex
+command writes to the screen,
+.Nm \&vi
+will prompt for a <carriage-return> before continuing when the
+.Nm \&ex
+command returns.
+It is also permissable to enter another
+.Dq Li :
+character followed by another
+.Nm \&ex
+command at this prompt.
+.br
+.Em Current line:
+The current line is set as described for the
+.Nm \&ex
+command.
+.br
+.Em Current column:
+The current column is set as described for the
+.Nm \&ex
+command.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "[count] ;"
+Repeat find.
+#ifdef REFERENCE
+Repeat the last character find using
+.Sy F ,
+.Sy f ,
+.Sy T
+or
+.Sy t .
+A count repeats the find that many times.
+.br
+.Em Current line:
+Unchanged.
+.br
+.Em Current column:
+The column containing the character being searched for.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "[count] < motion"
+Shift lines left.
+#ifdef REFERENCE
+Shift the number lines in the region specified by the motion component,
+times count, left the value of the
+.Sy shiftwidth
+option.
+.br
+.Em Current line:
+Unchanged.
+.br
+.Em Current column:
+The first nonblank character of the line.
+.br
+.Em Options:
+Affected by the
+.Sy shiftwidth
+option.
+.br
+#endif
+.It "[count] > motion"
+Shift lines right.
+#ifdef REFERENCE
+Shift the number lines in the region specified by the motion component,
+times count, right the value of the
+.Sy shiftwidth
+option.
+.br
+.Em Current line:
+Unchanged.
+.br
+.Em Current column:
+The first nonblank character of the line.
+.br
+.Em Options:
+Affected by the
+.Sy shiftwidth
+option.
+.br
+#endif
+.It "?RE<carriage-return>"
+.It "?RE? [offset]<carriage-return>"
+Search backward for a regular expression.
+#ifdef REFERENCE
+.Nm \&Vi
+prompts for a string on the last line on the screen and searches
+backward for the next occurrence of the string, which is interpreted
+as a Basic Regular Expression.
+.Pp
+When used as a motion component of another command,
+the region is from the current cursor position to the beginning of
+the matched string.
+If an offset from the matched line is specified (i.e. a trailing
+.Dq Li ?
+character followed by a signed offset), the command will affect
+entire lines instead of the specific region.
+.Pp
+Searches may be interrupted using the terminal interrupt character.
+.br
+.Em Current line:
+The line in which the match occurred.
+.br
+.Em Current column:
+The first character of the matched string.
+.br
+.Em Options:
+Affected by the
+.Sy extended ,
+.Sy ignorecase ,
+.Sy magic ,
+and
+.Sy wrapscan
+options.
+.br
+#endif
+.It "@buffer"
+Execute a named buffer.
+#ifdef REFERENCE
+Execute each line of the named buffer as one or more
+.Nm \&vi
+commands
+(including
+.Nm \&ex
+commands).
+If the buffer name is
+.Dq Li @ ,
+then the last buffer executed shall be used.
+It's an error to specify
+.Dq Li @@
+if there is no last buffer execution.
+The text of a macro may contain an
+.Sy @
+command, and it is possible to create infinite loops in this manner.
+.br
+.Em Current line:
+Dependent on the results of the execution of the command(s).
+.br
+.Em Current column:
+Dependent on the results of the execution of the command(s).
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "[count] ~"
+Reverse character case.
+#ifdef REFERENCE
+Reverse the case of the count character(s) beginning at the current
+cursor position.
+Lowercase alphabetic characters shall be changed to uppercase and
+uppercase characters changed to lowercase.
+Other characters are unaffected.
+.br
+.Em Current line:
+If the cursor is on the last character of a line, and there are more
+lines in the file, the cursor moves to the next line.
+.br
+.Em Current column:
+The next character, unless the cursor changes lines, in which case the
+cursor moves to the first character of the line.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "[count] a"
+Enter input mode, appending the text after the cursor.
+#ifdef REFERENCE
+The command is repeated count times.
+.br
+.Em Current line:
+The last line upon which characters were entered.
+.br
+.Em Current column:
+The last character entered.
+.br
+.Em Options:
+Affected by the
+.Sy altwerase ,
+.Sy autoindent ,
+.Sy beautify ,
+.Sy showmatch ,
+.Sy ttywerase
+and
+.Sy wrapmargin
+options.
+.br
+#endif
+.It "[count] A"
+Enter input mode, appending the text after the end of the line.
+#ifdef REFERENCE
+The command is repeated count times.
+.br
+.Em Current line:
+The last line upon which characters were entered.
+.br
+.Em Current column:
+The last character entered.
+.br
+.Em Options:
+Affected by the
+.Sy altwerase ,
+.Sy autoindent ,
+.Sy beautify ,
+.Sy showmatch ,
+.Sy ttywerase
+and
+.Sy wrapmargin
+options.
+.br
+#endif
+.It "[count] b"
+Move backwards count words.
+#ifdef REFERENCE
+Move the cursor backward to the beginning of a word by repeating the
+following algorithm count times: if the current position is at the
+beginning of a word, move to the first character of the preceding word.
+Otherwise, the current position moves to the first character of the word
+at the current position.
+If no preceding word exists on the current line, move to the first
+character of the last word on the first preceding line that contains
+a word.
+Empty or blank lines are handled as if they contain exactly one word.
+.br
+.Em Current line:
+The line containing the word selected.
+.br
+.Em Current column:
+The first character of the word selected.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "[count] B"
+Move backwards count bigwords.
+#ifdef REFERENCE
+Move the cursor backwards to the beginning of a bigword by repeating the
+following algorithm count times: if the current position is at the
+beginning of a bigword or the character at the current position cannot be
+part of a bigword, move to the first character of the preceding bigword.
+Otherwise, move to the first character of the bigword at the current position.
+If no preceding bigword exists on the current line, omve to the first
+character of the last bigword on the first preceding line that contains a
+bigword.
+Empty or blank lines are handled as if they contain exactly one word.
+.br
+.Em Current line:
+The line containing the word selected.
+.br
+.Em Current column:
+The first character of the word selected.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "[buffer] [count] c motion"
+Change a region of text.
+#ifdef REFERENCE
+Delete the region of text and enter input mode to replace it with the
+entered text.
+If only part of a single line is affected,
+then the last character to be changed is marked with a
+.Dq Li $ .
+.br
+.Em Current line:
+The last line upon which characters were entered.
+.br
+.Em Current column:
+The last character entered.
+.br
+.Em Options:
+Affected by the
+.Sy altwerase ,
+.Sy autoindent ,
+.Sy beautify ,
+.Sy showmatch ,
+.Sy ttywerase
+and
+.Sy wrapmargin
+options.
+.br
+#endif
+.It "[buffer] [count] C"
+Change text from the current position to the end-of-line.
+#ifdef REFERENCE
+.br
+.Em Current line:
+The last line upon which characters were entered.
+.br
+.Em Current column:
+The last character entered.
+.br
+.Em Options:
+Affected by the
+.Sy altwerase ,
+.Sy autoindent ,
+.Sy beautify ,
+.Sy showmatch ,
+.Sy ttywerase
+and
+.Sy wrapmargin
+options.
+.br
+#endif
+.It "[buffer] [count] d motion"
+Delete a region of text.
+#ifdef REFERENCE
+.br
+.Em Current line:
+The line where the region starts.
+.br
+.Em Current column:
+The character after where the region starts.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "[buffer] D"
+Delete text from the current position to the end-of-line.
+#ifdef REFERENCE
+.br
+.Em Current line:
+Unchanged.
+.br
+.Em Current column:
+The character before the current character, or, column 1 if
+the cursor was on column 1.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "[count] e"
+Move forward count end-of-words.
+#ifdef REFERENCE
+Move the cursor forward to the end of a word by repeating the following
+algorithm count times: if the current position is the end of a word,
+move to the last character of the following word.
+Otherwise, move to the last character of the word at the current position.
+If no succeeding word exists on the current line, move to the last character
+of the first word on the next following line that contains a word.
+Empty or blank lines are handled as if they contain exactly one word.
+.br
+.Em Current line:
+The line containing the word selected.
+.br
+.Em Current column:
+The last character of the word selected.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "[count] E"
+Move forward count end-of-bigwords.
+#ifdef REFERENCE
+Move the cursor forwards to the end of a bigword by repeating the
+following algorithm count times: if the current position is the end of a
+bigword or the character at that position cannot be part of a bigword,
+move to the last character of the following bigword.
+Otherwise, move to the last character of the bigword at the current
+position.
+If no succeeding bigword exists on the current line,
+move to the last character of the first bigword on the next following
+line that contains a bigword.
+Empty or blank lines are handled as if they contain exactly one word.
+.br
+.Em Current line:
+The line containing the word selected.
+.br
+.Em Current column:
+The last character of the word selected.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "[count] f<character>"
+Search forward through the rest of the current line for <character>.
+#ifdef REFERENCE
+Scan the rest of the current line for <character> and move the
+cursor to it.
+A count repeats the command count times.
+.br
+.Em Current line:
+Unchanged.
+.br
+.Em Current column:
+The character searched for.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "[count] F<character>"
+Search backward through the rest of the current line for <character>.
+A count repeats the command count times.
+.br
+.Em Current line:
+Unchanged.
+.br
+.Em Current column:
+The character searched for.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "[count] G"
+Move to line count.
+.Li count .
+If no count is specified, move to the last line of the file.
+#ifdef REFERENCE
+.br
+.Em Current line:
+Count, if specified, otherwise, the last line.
+.br
+.Em Current column:
+The first nonblank character of the line.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "[count] H"
+Move to the line (count - 1) lines below the top of the screen.
+#ifdef REFERENCE
+When used as the motion component of another
+.Nm \&vi
+command, entire lines are affected.
+.br
+.Em Current line:
+The line (count - 1) lines below the top of the screen.
+.br
+.Em Current column:
+The first nonblank character of the line.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "[count] h"
+.AA
+.It "[count] i"
+Enter input mode, inserting the text before the cursor.
+#ifdef REFERENCE
+The command is repeated count times.
+.br
+.Em Current line:
+The last line upon which characters were entered.
+.br
+.Em Current column:
+The last character entered.
+.br
+.Em Options:
+Affected by the
+.Sy altwerase ,
+.Sy autoindent ,
+.Sy beautify ,
+.Sy showmatch ,
+.Sy ttywerase
+and
+.Sy wrapmargin
+options.
+.br
+#endif
+.It "[count] I"
+Enter input mode, inserting the text at the beginning of the line.
+#ifdef REFERENCE
+The command is repeated count times.
+.br
+.Em Current line:
+The last line upon which characters were entered.
+.br
+.Em Current column:
+The last character entered.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "[count] J"
+Join lines.
+#ifdef REFERENCE
+Join the current line with the next line.
+If the current line ends with al whitespace character, all whitespace
+is stripped from the next line.
+Otherwise, if the next line starts with a open parenthesis (``(''),
+do nothing.
+Otherwise, if the current line ends with a question mark, period or
+exclamation point (``?'', ``.'', ``!''), insert two spaces.
+Otherwise, insert a single space.
+A count joins that many lines, and a minimum of two lines are always
+joined.
+.br
+.Em Current line:
+Unchanged.
+.br
+.Em Current column:
+The character after the last character of the next-to-last joined line.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "[count] j"
+.BB
+.It "[count] k"
+.DD
+.It "[count] L"
+Move to the line (count - 1) lines above the bottom of the screen.
+#ifdef REFERENCE
+When used as the motion component of another
+.Nm \&vi
+command, entire lines are affected.
+.br
+.Em Current line:
+The line (count - 1) lines below the top of the screen.
+.br
+.Em Current column:
+The first nonblank character of the line.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "[count] l"
+.FF
+.It "m <character>"
+Save the current context (line and column) as <character>.
+#ifdef REFERENCE
+The exact position is referred to by
+.Dq Li `<character> .
+The line is referred to by
+.Dq Li '<character> .
+.Pp
+Historically, <character> was restricted to lower-case letters only.
+.br
+.Em Current line:
+Unchanged.
+.br
+.Em Current column:
+Unchanged.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It " M"
+Move to the line in the middle of the screen.
+#ifdef REFERENCE
+When used as the motion component of another
+.Nm \&vi
+command, entire lines are affected.
+Historically, the
+.Sy M
+command took a count but ignored it.
+.br
+.Em Current line:
+The line (count - 1) lines below the top of the screen.
+.br
+.Em Current column:
+The first nonblank character of the line.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "N"
+Repeat search for a regular expression.
+#ifdef REFERENCE
+Repeat the last
+.Sy /
+or
+.Sy ?
+command, in the reverse direction.
+.br
+.Em Current line:
+The line in which the match occurred.
+.br
+.Em Current column:
+The first character of the matched string.
+.br
+.Em Options:
+Affected by the
+.Sy extended ,
+.Sy ignorecase ,
+.Sy magic ,
+and
+.Sy wrapscan
+options.
+.br
+#endif
+.It "n"
+Repeat search for a regular expression.
+#ifdef REFERENCE
+Repeat the last
+.Sy /
+or
+.Sy ?
+command.
+.br
+.Em Current line:
+The line in which the match occurred.
+.br
+.Em Current column:
+The first character of the matched string.
+.br
+.Em Options:
+Affected by the
+.Sy extended ,
+.Sy ignorecase ,
+.Sy magic ,
+and
+.Sy wrapscan
+options.
+.br
+#endif
+.It "[count] O"
+Enter input mode, appending text in a new line above the current line.
+#ifdef REFERENCE
+The command is repeated count times.
+Historically, the count was ignored.
+.br
+.Em Current line:
+The last line upon which characters were entered.
+.br
+.Em Current column:
+The last character entered.
+.br
+.Em Options:
+Affected by the
+.Sy altwerase ,
+.Sy autoindent ,
+.Sy beautify ,
+.Sy showmatch ,
+.Sy ttywerase
+and
+.Sy wrapmargin
+options.
+.br
+#endif
+.It "[count] o"
+Enter input mode, appending text in a new line under the current line.
+#ifdef REFERENCE
+The command is repeated count times.
+Historically, the count was ignored.
+.br
+.Em Current line:
+The last line upon which characters were entered.
+.br
+.Em Current column:
+The last character entered.
+.br
+.Em Options:
+Affected by the
+.Sy altwerase ,
+.Sy autoindent ,
+.Sy beautify ,
+.Sy showmatch ,
+.Sy ttywerase
+and
+.Sy wrapmargin
+options.
+.br
+#endif
+.It "[buffer] p"
+Append text from a buffer.
+#ifdef REFERENCE
+Append text from the specified buffer (the unnamed buffer by default)
+after the current column or, if the buffer contains complete lines,
+the current line.
+.br
+.Em Current line:
+The first line appended, if the buffer contains complete lines,
+otherwise unchanged.
+.br
+.Em Current column:
+The first nonblank character of the appended text if the buffer contained
+complete lines, otherwise, the last character of the appended text.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "[buffer] P"
+Insert text from a buffer.
+#ifdef REFERENCE
+Insert text from the specified buffer (the unnamed buffer by default)
+before the current column or, if the buffer contains complete lines,
+the current line.
+.br
+.Em Current line:
+The lowest numbered line insert, if the buffer contains complete lines,
+otherwise unchanged.
+.br
+.Em Current column:
+The first nonblank character of the appended text if the buffer contained
+complete lines, otherwise, the last character of the appended text.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "Q"
+Exit
+.Nm \&vi
+mode and enter
+.Nm \&ex
+mode.
+#ifdef REFERENCE
+.br
+.Em Current line:
+Unchanged.
+.br
+.Em Current column:
+No longer relevant.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "[count] r <character>
+Replace count characters with <character>.
+#ifdef REFERENCE
+Replace the current character with <character>.
+If count is specified, the next count characters in the line are
+replaced with <character>.
+Replacing characters with <newline> characters results in appending
+new, empty lines into the file.
+If <character> is <escape>, the command is cancelled.
+.br
+.Em Current line:
+Unchanged unless the replacement character is a <newline>,
+in which case it is the current line plus count - 1.
+.br
+.Em Current column:
+Set to the last character replaced,
+unless the replacement character is a <newline>,
+in which case the current column position is 1.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "[count] R"
+Enter input mode, replacing the characters in the current line.
+#ifdef REFERENCE
+The command is repeated count times.
+.Pp
+If the end of the current line is reach, no more characters are replaced
+and further characters are appended to the line.
+.br
+.Em Current line:
+The last line upon which characters were entered.
+.br
+.Em Current column:
+The last character entered.
+.br
+.Em Options:
+Affected by the
+.Sy altwerase ,
+.Sy autoindent ,
+.Sy beautify ,
+.Sy showmatch ,
+.Sy ttywerase
+and
+.Sy wrapmargin
+options.
+.br
+#endif
+.It "[buffer] [count] s"
+Substitute count characters in the current line starting with the
+current character.
+#ifdef REFERENCE
+.br
+.Em Current line:
+The last line upon which characters were entered.
+.br
+.Em Current column:
+The last character entered.
+.br
+.Em Options:
+Affected by the
+.Sy altwerase ,
+.Sy autoindent ,
+.Sy beautify ,
+.Sy showmatch ,
+.Sy ttywerase
+and
+.Sy wrapmargin
+options.
+.br
+#endif
+.It "[buffer] [count] S"
+Substitute count complete lines.
+#ifdef REFERENCE
+.br
+.Em Current line:
+The last line upon which characters were entered.
+.br
+.Em Current column:
+The last character entered.
+.br
+.Em Options:
+Affected by the
+.Sy altwerase ,
+.Sy autoindent ,
+.Sy beautify ,
+.Sy showmatch ,
+.Sy ttywerase
+and
+.Sy wrapmargin
+options.
+.br
+#endif
+.It "[count] t <character>"
+Search forward through the current line for the character
+preceding <character>.
+#ifdef REFERENCE
+A count repeats the command count times.
+.Pp
+Move the cursor forward within the current line to the character
+position just before a subsequent occurrence of <charactrer>.
+.br
+.Em Current line:
+Unchanged.
+.br
+.Em Current column:
+The character before the character searched for.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "[count] T <character>"
+Search backwards through the current line for the character
+after <character>.
+#ifdef REFERENCE
+A count repeats the command count times.
+.Pp
+Move the cursor backward within the current line to the character
+position just after a previous occurrence of <charactrer>.
+.br
+.Em Current line:
+Unchanged.
+.br
+.Em Current column:
+The character after the character searched for.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "u"
+Undo the last change made to the file.
+#ifdef REFERENCE
+If repeated, the
+.Sy u
+command alternates between these two states, and is its own inverse.
+When used after an insert that inserted text on more than one line,
+the lines are saved in the numeric buffers.
+.br
+.Em Current line:
+The position of the first line changed, if the reversal affects only
+one line or represents an addition or change; otherwise, the line
+preceding the deleted text.
+.br
+.Em Current column:
+The first nonblank character on line.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "U"
+Restore the current line to its state before the cursor last
+moved to it.
+#ifdef REFERENCE
+.br
+.Em Current line:
+Unchanged.
+.br
+.Em Current column:
+The first character.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "[count] w"
+Move forward count words.
+#ifdef REFERENCE
+Move the cursor forwards to the beginning of a word by repeating the
+following algorithm count times: If the current position is at the
+beginning of a word, move to the first character of the next word.
+If no subsequent word exists on the current line, move to the first
+character of the first word on the first following line that contains
+a word.
+Empty or blank lines are handled as if they contain exactly one word.
+.br
+.Em Current line:
+The line containing the word selected.
+.br
+.Em Current column:
+The last character of the word selected.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "[count] W"
+Move forward count bigwords.
+#ifdef REFERENCE
+Move the cursor forwards to the beginning of a bigword by repeating the
+following algorithm count times: if the current position is within a
+bigword or the character at that position cannot be part of a bigword,
+move to the first character of the next bigword.
+If no subsequent bigword exists on the current line,
+move to the first character of the first bigword on the first following
+line that contains a bigword.
+Empty or blank lines are handled as if they contain exactly one word.
+.br
+.Em Current line:
+The line containing the word selected.
+.br
+.Em Current column:
+The last character of the word selected.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "[buffer] [count] x"
+Delete count characters at the cursor.
+#ifdef REFERENCE
+Delete count characters in the current line starting with the current
+column position.
+If the number of characters to be deleted is greater than or equal to
+the number of characters to the end of the line, all of the characters
+from the current cursor position to the end of the line are deleted.
+.br
+.Em Current line:
+Unchanged.
+.br
+.Em Current column:
+Unchanged unless the last character in the line is deleted and the cursor
+is not already on the first character in the line.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "[buffer] [count] X"
+Delete count characters before the cursor.
+#ifdef REFERENCE
+Delete count characters in the current line before the current
+cursor position.
+If the number of characters to be deleted is greater than or equal to
+the number of characters to the beginning of the line, all of the
+characters before the current cursor position to the beginning of the line
+are deleted.
+.br
+.Em Current line:
+Unchanged.
+.br
+.Em Current column:
+The current character minus count, or 1 if count is greater than the
+current character.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "[buffer] [count] y motion"
+Copy (or
+.Dq yank )
+a text region specified by the count and motion into a buffer.
+#ifdef REFERENCE
+.br
+.Em Current line:
+Unchanged, unless the region covers more than a single line,
+in which case it moves to the line where the region starts.
+.br
+.Em Current column:
+Unchanged, unless the region covers more than a single line,
+in which case it moves to the column were the region starts.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "[buffer] [count] Y"
+Copy (or
+.Dq yank )
+count lines into the specified buffer.
+#ifdef REFERENCE
+.br
+.Em Current line:
+Unchanged.
+.br
+.Em Current column:
+Unchanged.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "[count1] z [count2] [-|.|+|^|<carriage-return>"
+Redraw, optionally repositioning, the screen.
+#ifdef REFERENCE
+Redraw the screen with a window count2 lines long, containing line count1
+placed as specified by character:
+.Dq Li +
+or <carriage-return> specifies the top of the screen,
+.Dq Li .
+specifies the center of the screen, and
+.Dq Li -
+or
+.Dq Li ^
+specifies the bottom of the screen.
+If count1 is not specified, it defaults to the current line.
+If count2 is not specified, it default to the current window size.
+.br
+.Em Current line:
+count1 if specified, otherwise unchanged.
+.br
+.Em Current column:
+The first nonblank character of the line.
+.br
+.Em Options:
+None.
+.br
+#endif
+.It "ZZ"
+Save the file and exit
+.Nm \&vi .
+#ifdef REFERENCE
+The file is only saved if it has been modified since the last write
+of the entire file to any file.
+.br
+.Em Current line:
+XXXX
+.br
+.Em Current column:
+XXXX
+.br
+.Em Options:
+None.
+.br
+#endif
+.El
