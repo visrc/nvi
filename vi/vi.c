@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.75 1994/07/16 17:34:14 bostic Exp $ (Berkeley) $Date: 1994/07/16 17:34:14 $";
+static char sccsid[] = "$Id: vi.c,v 8.76 1994/07/16 17:47:49 bostic Exp $ (Berkeley) $Date: 1994/07/16 17:47:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -266,6 +266,11 @@ err:				term_flush(sp, "Vi error", CH_MAPPED);
 			}
 		}
 	}
+
+	/* Free allocated keyword memory. */
+	if (cmd.keyword != NULL)
+		free(cmd.keyword);
+
 	return (v_end(sp) || eval);
 }
 
