@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: screen.h,v 10.11 1996/03/15 20:15:42 bostic Exp $ (Berkeley) $Date: 1996/03/15 20:15:42 $
+ *	$Id: screen.h,v 10.12 1996/03/18 09:27:27 bostic Exp $ (Berkeley) $Date: 1996/03/18 09:27:27 $
  */
 
 /*
@@ -39,6 +39,7 @@ struct _scr {
 
 	GS	*gp;			/* Pointer to global area. */
 	SCR	*nextdisp;		/* Next display screen. */
+	SCR	*ccl_parent;		/* Colon command-line parent screen. */
 	EXF	*ep;			/* Screen's current EXF structure. */
 
 	FREF	*frp;			/* FREF being edited. */
