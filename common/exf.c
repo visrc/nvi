@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 10.16 1995/10/19 18:53:42 bostic Exp $ (Berkeley) $Date: 1995/10/19 18:53:42 $";
+static char sccsid[] = "$Id: exf.c,v 10.17 1995/10/31 23:02:41 bostic Exp $ (Berkeley) $Date: 1995/10/31 23:02:41 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -1025,8 +1025,7 @@ file_comment(sp)
 	size_t len;
 	char *p;
 
-	for (lno = 1;
-	    db_get(sp, lno, 0, &p, &len) && len == 0; ++lno);
+	for (lno = 1; !db_get(sp, lno, 0, &p, &len) && len == 0; ++lno);
 	if (p == NULL || len <= 1 || p[0] != '/' || p[1] != '*')
 		return;
 	F_SET(sp, S_SCR_TOP);
