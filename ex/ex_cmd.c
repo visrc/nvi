@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 8.33 1993/12/22 16:59:37 bostic Exp $ (Berkeley) $Date: 1993/12/22 16:59:37 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 8.34 1993/12/22 18:38:40 bostic Exp $ (Berkeley) $Date: 1993/12/22 18:38:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -81,17 +81,6 @@ EXCMDLIST const cmds[] = {
 	    "b",
 	    "@ [buffer]",
 	    "execute a buffer"},
-/* C_SUBTILDE */
-	{"~",		ex_subtilde,	E_ADDR2|E_NORC,
-	    "s",
-	    "[line [,line]] ~ [cgr] [count] [#lp]",
-	    "replace previous RE with previous replacement string,"},
-/*
- * NB:
- * If you enter any multiple letter commands that sort before "append",
- * you'll have to modify ex.c:ex_comm_search routine to start searching
- * at that command instead of at C_APPEND.
- */
 /* C_APPEND */
 	{"append",	ex_append,	E_ADDR1|E_NORC|E_ZERO|E_ZERODEF,
 	    "!",
@@ -407,5 +396,10 @@ EXCMDLIST const cmds[] = {
 	    "3c01",
 	    "[line] z [-|.|+|^|=] [count] [flags]",
 	    "display different screens of the file"},
+/* C_SUBTILDE */
+	{"~",		ex_subtilde,	E_ADDR2|E_NORC,
+	    "s",
+	    "[line [,line]] ~ [cgr] [count] [#lp]",
+	    "replace previous RE with previous replacement string,"},
 	{NULL},
 };
