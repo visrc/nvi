@@ -6,19 +6,20 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.9 1992/04/15 11:54:14 bostic Exp $ (Berkeley) $Date: 1992/04/15 11:54:14 $";
+static char sccsid[] = "$Id: options.c,v 5.10 1992/04/28 13:40:51 bostic Exp $ (Berkeley) $Date: 1992/04/28 13:40:51 $";
 #endif /* not lint */
 
 #include <sys/param.h>
 #include <errno.h>
+#include <curses.h>
 #include <stdlib.h>
 #include <strings.h>
 #include <paths.h>
 #include <stdio.h>
 
-#include "options.h"
 #include "vi.h"
-#include "curses.h"
+#include "excmd.h"
+#include "options.h"
 #include "extern.h"
 
 static int opts_abbcmp __P((const void *, const void *));
@@ -33,19 +34,19 @@ static int opts_print __P((struct _option *));
  * Some of the limiting values are clearly randomly chosen, and have no
  * meaning.  How set O_REPORT to just shut up?
  */
-static long columns[3] = {80, 32, 255};
-static long keytime[3] = {2, 0, 50};
-static long lines[3] =	{25, 2, 66};
-static long report[3] = {5, 1, 127};
-static long scroll[3] = {12, 1, 127};
-static long shiftwidth[3] = {8, 1, 255};
-static long sidescroll[3] = {8, 1, 40};
-static long tabstop[3] = {8, 1, 40};
-static long taglength[3] = {0, 0, 30};
-static long window[3] = {24, 1, 24};
-static long wrapmargin[3] = {0, 0, 255};
+static long o_columns[3] = {80, 32, 255};
+static long o_keytime[3] = {2, 0, 50};
+static long o_lines[3] = {25, 2, 66};
+static long o_report[3] = {5, 1, 127};
+static long o_scroll[3] = {12, 1, 127};
+static long o_shiftwidth[3] = {8, 1, 255};
+static long o_sidescroll[3] = {8, 1, 40};
+static long o_tabstop[3] = {8, 1, 40};
+static long o_taglength[3] = {0, 0, 30};
+static long o_window[3] = {24, 1, 24};
+static long o_wrapmargin[3] = {0, 0, 255};
 
-/* START_OPTION_DEF */
+/* START_SED_INCLUDE */
 OPTIONS opts[] = {
 #define	O_AUTOINDENT	0
 	"autoindent",	NULL,		OPT_0BOOL,
@@ -60,7 +61,7 @@ OPTIONS opts[] = {
 #define	O_CC		5
 	"cc",		"cc -c",	OPT_STR,
 #define	O_COLUMNS	6
-	"columns",	&columns,	OPT_NOSAVE|OPT_NUM|OPT_REDRAW,
+	"columns",	&o_columns,	OPT_NOSAVE|OPT_NUM|OPT_REDRAW,
 #define	O_DIGRAPH	7
 	"digraph",	NULL,		OPT_0BOOL,
 #define	O_DIRECTORY	8
@@ -80,75 +81,73 @@ OPTIONS opts[] = {
 #define	O_IGNORECASE	15
 	"ignorecase",	NULL,		OPT_0BOOL,
 #define	O_KEYTIME	16
-	"keytime",	&keytime,	OPT_NUM,
-#define	O_KEYWORDPRG	17
-	"keywordprg",	"ref",		OPT_STR,
-#define	O_LINES		18
-	"lines",	&lines,		OPT_NOSAVE|OPT_NUM|OPT_REDRAW,
-#define	O_LIST		19
+	"keytime",	&o_keytime,	OPT_NUM,
+#define	O_LINES		17
+	"lines",	&o_lines,	OPT_NOSAVE|OPT_NUM|OPT_REDRAW,
+#define	O_LIST		18
 	"list",		NULL,		OPT_0BOOL|OPT_REDRAW,
-#define	O_MAGIC		20
+#define	O_MAGIC		19
 	"magic",	NULL,		OPT_1BOOL,
-#define	O_MAKE		21
+#define	O_MAKE		20
 	"make",		"make",		OPT_STR,
-#define	O_MESG		22
+#define	O_MESG		21
 	"mesg",		NULL,		OPT_1BOOL,
-#define	O_MODELINE	23
+#define	O_MODELINE	22
 	"modeline",	NULL,		OPT_0BOOL,
-#define	O_NUMBER	24
+#define	O_NUMBER	23
 	"number",	NULL,		OPT_0BOOL|OPT_REDRAW,
-#define	O_PARAGRAPHS	25
+#define	O_PARAGRAPHS	24
 	"paragraphs",	"PPppIPLPQP",	OPT_STR,
-#define	O_PROMPT	26
+#define	O_PROMPT	25
 	"prompt",	NULL,		OPT_1BOOL,
-#define	O_READONLY	27
+#define	O_READONLY	26
 	"readonly",	NULL,		OPT_0BOOL,
-#define	O_REPORT	28
-	"report",	&report,	OPT_NUM,
-#define	O_RULER		29
+#define	O_REPORT	27
+	"report",	&o_report,	OPT_NUM,
+#define	O_RULER		28
 	"ruler",	NULL,		OPT_0BOOL,
-#define	O_SCROLL	30
-	"scroll",	&scroll,	OPT_NUM,
-#define	O_SECTIONS	31
+#define	O_SCROLL	29
+	"scroll",	&o_scroll,	OPT_NUM,
+#define	O_SECTIONS	30
 	"sections",	"NHSHSSSEse",	OPT_STR,
-#define	O_SHELL		32
+#define	O_SHELL		31
 	"shell",	_PATH_BSHELL,	OPT_STR,
-#define	O_SHIFTWIDTH	33
-	"shiftwidth",	&shiftwidth,	OPT_NUM,
-#define	O_SHOWMATCH	34
+#define	O_SHIFTWIDTH	32
+	"shiftwidth",	&o_shiftwidth,	OPT_NUM,
+#define	O_SHOWMATCH	33
 	"showmatch",	NULL,		OPT_0BOOL,
-#define	O_SHOWMODE	35
+#define	O_SHOWMODE	34
 	"showmode",	NULL,		OPT_0BOOL,
-#define	O_SIDESCROLL	36
-	"sidescroll",	&sidescroll,	OPT_NUM,
-#define	O_SYNC		37
+#define	O_SIDESCROLL	35
+	"sidescroll",	&o_sidescroll,	OPT_NUM,
+#define	O_SYNC		36
 	"sync",		NULL,		OPT_0BOOL,
-#define	O_TABSTOP	38
-	"tabstop",	&tabstop,	OPT_NUM|OPT_REDRAW,
-#define	O_TAGLENGTH	39
-	"taglength",	&taglength,	OPT_NUM,
-#define	O_TERM		40
+#define	O_TABSTOP	37
+	"tabstop",	&o_tabstop,	OPT_NUM|OPT_REDRAW,
+#define	O_TAGLENGTH	38
+	"taglength",	&o_taglength,	OPT_NUM,
+#define	O_TERM		39
 	"term",		"unknown",	OPT_NOSAVE|OPT_STR,
-#define	O_TERSE		41
+#define	O_TERSE		40
 	"terse",	NULL,		OPT_0BOOL,
-#define	O_TIMEOUT	42
+#define	O_TIMEOUT	41
 	"timeout",	NULL,		OPT_0BOOL,
-#define	O_VBELL		43
+#define	O_VBELL		42
 	"vbell",	NULL,		OPT_0BOOL,
-#define	O_WARN		44
+#define	O_WARN		43
 	"warn",		NULL,		OPT_1BOOL,
-#define	O_WINDOW	45
-	"window",	&window,	OPT_NUM|OPT_REDRAW,
-#define	O_WRAPMARGIN	46
-	"wrapmargin",	&wrapmargin,	OPT_NUM,
-#define	O_WRAPSCAN	47
+#define	O_WINDOW	44
+	"window",	&o_window,	OPT_NUM|OPT_REDRAW,
+#define	O_WRAPMARGIN	45
+	"wrapmargin",	&o_wrapmargin,	OPT_NUM,
+#define	O_WRAPSCAN	46
 	"wrapscan",	NULL,		OPT_1BOOL,
-#define	O_WRITEANY	48
+#define	O_WRITEANY	47
 	"writeany",	NULL,		OPT_0BOOL,
 	NULL,
 };
-#define	O_OPTIONCOUNT	49
-/* END_OPTION_DEF */
+#define	O_OPTIONCOUNT	48
+/* END_SED_INCLUDE */
 
 typedef struct abbrev {
         char *name;
@@ -171,7 +170,6 @@ static ABBREV abbrev[] = {
 	"er",	O_EXREFRESH,
 	"fl",	O_VBELL,
 	"ic",	O_IGNORECASE,
-	"kp",	O_KEYWORDPRG,
 	"kt",	O_KEYTIME,
 	"li",	O_LIST,
 	"ls",	O_LINES,
@@ -233,7 +231,7 @@ opts_init()
 	}
 
 	/* Disable the vbell option if we don't know how to do a vbell. */
-	if (!has_VB) {
+	if (!VB) {
 		FSET(O_FLASH, OPT_NOSET);
 		FSET(O_VBELL, OPT_NOSET);
 	}
@@ -408,7 +406,7 @@ found:		if (op == NULL || off && !ISFSETP(op, OPT_0BOOL|OPT_1BOOL)) {
 		opts_dump(1);
 
 	if (needredraw)
-		iredraw();
+		touchwin(stdscr);
 
 	/*
 	 * That option may have affected the appearance of text.
@@ -480,32 +478,30 @@ opts_dump(all)
 	} else
 		numrows = 1;
 
-	for (row = 0; row < numrows; ++row) {
+	EX_PRSTART(1);
+	for (row = 0; row < numrows;) {
 		endcol = colwidth;
 		for (base = row, chcnt = col = 0; col < numcols; ++col) {
 			chcnt += opts_print(&opts[s_op[base]]);
 			if ((base += numrows) >= s_num)
 				break;
 			while ((cnt = (chcnt + TAB & ~(TAB - 1))) <= endcol) {
-				qaddch('\t');
+				(void)putchar('\t');
 				chcnt = cnt;
 			}
 			endcol += colwidth;
 		}
-		/*
-		 * Need a newline if in ex mode.
-		 * XXX
-		 * This should be handled elsewhere.
-		 */
-		if (numrows > 1 || b_num || mode == MODE_EX)
-			addch('\n');
+		if (++row < numrows)
+			EX_PRNEWLINE;
 	}
 
-	for (row = 0; row < b_num; ++row) {
+	for (row = 0; row < b_num;) {
 		(void)opts_print(&opts[b_op[row]]);
-		addch('\n');
+		++row;
+		if (numrows || row < b_num)
+			EX_PRNEWLINE;
 	}
-	ex_refresh();
+	EX_PRTRAIL;
 }
 
 /*
@@ -555,32 +551,27 @@ opts_print(op)
 	switch (op->flags & OPT_TYPE) {
 	case OPT_0BOOL:
 		curlen += 2;
-		qaddch('n');
-		qaddch('o');
+		(void)putchar('n');
+		(void)putchar('o');
 		/* FALLTHROUGH */
 	case OPT_1BOOL:
-		curlen += strlen(op->name);
-		qaddstr(op->name);
+		curlen += printf("%s", op->name);
 		break;
 	case OPT_NUM:
-		curlen += strlen(op->name);
-		qaddstr(op->name);
+		curlen += printf("%s", op->name);
 		curlen += 1;
-		qaddch('=');
-		curlen += snprintf(nbuf, sizeof(nbuf), "%ld", LVALP(op));
-		qaddstr(nbuf);
+		(void)putchar('=');
+		curlen += printf("%ld", LVALP(op));
 		break;
 	case OPT_STR:
-		curlen += strlen(op->name);
-		qaddstr(op->name);
+		curlen += printf("%s", op->name);
 		curlen += 1;
-		qaddch('=');
+		(void)putchar('=');
 		curlen += 1;
-		qaddch('"');
-		curlen += strlen(PVALP(op));
-		qaddstr(PVALP(op));
+		(void)putchar('"');
+		curlen += printf("%s", PVALP(op));
 		curlen += 1;
-		qaddch('"');
+		(void)putchar('"');
 		break;
 	}
 	return (curlen);
