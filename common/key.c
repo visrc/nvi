@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: key.c,v 10.43 2000/07/15 20:26:34 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:34 $";
+static const char sccsid[] = "$Id: key.c,v 10.44 2000/07/17 21:17:52 skimo Exp $ (Berkeley) $Date: 2000/07/17 21:17:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -206,7 +206,7 @@ void
 v_key_ilookup(sp)
 	SCR *sp;
 {
-	CHAR_T ch;
+	UCHAR_T ch;
 	char *p, *t;
 	GS *gp;
 	size_t len;

@@ -165,6 +165,7 @@ regatoi(preg, localbuf)
 const regex_t *preg;
 char *localbuf;
 {
+#if 0 /* we don't seem to use this and it gives a warning. */
 	register struct rerr *r;
 	register size_t siz;
 	register char *p;
@@ -176,5 +177,8 @@ char *localbuf;
 		return("0");
 
 	sprintf(localbuf, "%d", r->code);
+#else
+	*localbuf = '\0';
+#endif
 	return(localbuf);
 }

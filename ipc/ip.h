@@ -4,7 +4,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: ip.h,v 8.28 2000/07/14 14:29:23 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:23 $
+ *	$Id: ip.h,v 8.29 2000/07/17 21:17:54 skimo Exp $ (Berkeley) $Date: 2000/07/17 21:17:54 $
  */
 
 #include <sys/socket.h>
@@ -108,11 +108,7 @@ typedef struct ip_si_operations {
     IPFunc_123  scrollbar;
     IPFunc_a    select;
     IPFunc      split;
-    IPFunc      ex_init;
-    IPFunc      vi_init;
-/*
-    IPFunc      fork;
-*/
+    IPFunc_a	waddstr;
 } IPSIOPS;
 
 struct _ip_vi;	

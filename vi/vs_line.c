@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_line.c,v 10.23 2000/07/14 14:29:25 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:25 $";
+static const char sccsid[] = "$Id: vs_line.c,v 10.24 2000/07/17 21:17:55 skimo Exp $ (Berkeley) $Date: 2000/07/17 21:17:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -52,7 +52,7 @@ vs_line(sp, smp, yp, xp)
 	int ch, dne, is_cached, is_partial, is_tab;
 	int list_tab, list_dollar;
 	CHAR_T *p;
-	char *cbp, *ecbp, cbuf[128];
+	CHAR_T *cbp, *ecbp, cbuf[128];
 
 #if defined(DEBUG) && 0
 	vtrace(sp, "vs_line: row %u: line: %u off: %u\n",
@@ -139,9 +139,9 @@ vs_line(sp, smp, yp, xp)
 		if (O_ISSET(sp, O_NUMBER)) {
 			cols_per_screen -= O_NUMBER_LENGTH;
 			if ((!dne || smp->lno == 1) && skip_cols == 0) {
-				nlen = snprintf(cbuf,
+				nlen = snprintf((char*)cbuf,
 				    sizeof(cbuf), O_NUMBER_FMT, smp->lno);
-				(void)gp->scr_addstr(sp, cbuf, nlen);
+				(void)gp->scr_addstr(sp, (char*)cbuf, nlen);
 			}
 		}
 	}
@@ -332,7 +332,7 @@ display:
 	ecbp = (cbp = cbuf) + sizeof(cbuf) - 1;
 	for (is_partial = 0, scno = 0;
 	    offset_in_line < len; ++offset_in_line, offset_in_char = 0) {
-		if ((ch = *(u_char *)p++) == '\t' && !list_tab) {
+		if ((ch = *(UCHAR_T *)p++) == '\t' && !list_tab) {
 			scno += chlen = TAB_OFF(scno) - offset_in_char;
 			is_tab = 1;
 		} else {
@@ -397,7 +397,7 @@ display:
 
 #define	FLUSH {								\
 	*cbp = '\0';							\
-	(void)gp->scr_addstr(sp, cbuf, cbp - cbuf);			\
+	(void)gp->scr_waddstr(sp, cbuf, cbp - cbuf);			\
 	cbp = cbuf;							\
 }
 		/*

@@ -35,6 +35,7 @@ static void vi_input_func __P((gpointer , gint , GdkInputCondition));
 static void vi_init_window __P((GtkViWindow *window, int));
 
 static int vi_addstr __P((IPVIWIN*, const char *, u_int32_t));
+static int vi_waddstr __P((IPVIWIN*, const CHAR_T *, u_int32_t));
 static int vi_attribute __P((IPVIWIN*,u_int32_t  ,u_int32_t   ));
 static int vi_bell __P((IPVIWIN*));
 static int vi_busyon __P((IPVIWIN*, const char *, u_int32_t));
@@ -395,11 +396,7 @@ vi_init_window (GtkViWindow *window, int fd)
 	vi_scrollbar,
 	vi_select,
 	vi_split,
-	vi_ex_init,
-	vi_vi_init,
-/*
-	vi_fork,
-*/
+	(IPFunc_a)vi_waddstr,
     };
     GtkVi *vi = window->vi;
 
@@ -421,6 +418,18 @@ vi_addstr(ipviwin, str, len)
 	GtkViWindow* vi = (GtkViWindow*)(ipviwin->private_data);
 
 	gtk_vi_screen_addstr(GTK_VI_SCREEN(vi->vi_screen), str, len);
+	return (0);
+}
+
+static int
+vi_waddstr(ipviwin, str, len)
+	IPVIWIN	*ipviwin;
+	const CHAR_T *str;
+	u_int32_t len;
+{
+	GtkViWindow* vi = (GtkViWindow*)(ipviwin->private_data);
+
+	gtk_vi_screen_waddstr(GTK_VI_SCREEN(vi->vi_screen), str, len/sizeof(CHAR_T));
 	return (0);
 }
 

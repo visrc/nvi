@@ -1,6 +1,10 @@
 #ifndef __GTK_VI_SCREEN_H__
 #define __GTK_VI_SCREEN_H__
 
+#include "config.h"
+#include "port.h"
+#include "../common/multibyte.h"
+
 #define GTK_TYPE_VI_SCREEN                  (gtk_vi_screen_get_type ())
 #define GTK_VI_SCREEN(obj)                  (GTK_CHECK_CAST ((obj), GTK_TYPE_VI_SCREEN, GtkViScreen))
 #define GTK_VI_SCREEN_CLASS(klass)          (GTK_CHECK_CLASS_CAST ((klass), GTK_TYPE_VI_SCREEN, GtkViScreenClass))
@@ -21,7 +25,7 @@ struct _GtkViScreen
   GdkGC *gc;
   GdkGC *reverse_gc;
 
-  gchar  *chars;
+  CHAR_T  *chars;
   guchar  *reverse;
   guchar  color;
 

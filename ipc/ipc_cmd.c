@@ -62,10 +62,8 @@ IPFUNLIST const ipfuns[] = {
     {"a",   ipc_unmarshall_a,	OFFSET(IPSIOPS, select)},
 /* SI_SPLIT */
     {"",    ipc_unmarshall,	OFFSET(IPSIOPS, split)},
-/* SI_EX_INIT */
-    {"",    ipc_unmarshall,	OFFSET(IPSIOPS, ex_init)},
-/* SI_VI_INIT */
-    {"",    ipc_unmarshall,	OFFSET(IPSIOPS, vi_init)},
+/* SI_WADDSTR */
+    {"a",   ipc_unmarshall_a,	OFFSET(IPSIOPS, waddstr)},
 /* SI_EVENT_SUP */
 };
 

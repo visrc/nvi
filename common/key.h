@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: key.h,v 10.27 2000/07/17 18:53:34 skimo Exp $ (Berkeley) $Date: 2000/07/17 18:53:34 $
+ *	$Id: key.h,v 10.28 2000/07/17 21:17:52 skimo Exp $ (Berkeley) $Date: 2000/07/17 21:17:52 $
  */
 
 #include "multibyte.h"
@@ -149,7 +149,7 @@ struct _event {
 
 typedef struct _keylist {
 	e_key_t value;			/* Special value. */
-	CHAR_T	ch;			/* Key. */
+	UCHAR_T	ch;			/* Key. */
 } KEYLIST;
 extern KEYLIST keylist[];
 

@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_funcs.c,v 8.20 2000/07/14 14:29:22 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:22 $";
+static const char sccsid[] = "$Id: ip_funcs.c,v 8.21 2000/07/17 21:17:54 skimo Exp $ (Berkeley) $Date: 2000/07/17 21:17:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -37,11 +37,20 @@ ip_waddstr(sp, str, len)
 	const CHAR_T *str;
 	size_t len;
 {
-	CONST char *np;
-	size_t nlen;
+	IP_BUF ipb;
+	IP_PRIVATE *ipp;
+	int iv, rval;
 
-	INT2CHAR(sp, str, len, np, nlen);
-	ip_addstr(sp, np, nlen);
+	ipp = IPP(sp);
+
+	ipb.code = SI_WADDSTR;
+	ipb.len1 = len * sizeof(CHAR_T);
+	ipb.str1 = (char *)str;
+	rval = vi_send(ipp->o_fd, "a", &ipb);
+	/* XXXX */
+	ipp->col += len;
+
+	return (rval);
 }
 
 /*
