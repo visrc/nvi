@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 8.24 1994/03/08 19:38:16 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:38:16 $";
+static char sccsid[] = "$Id: seq.c,v 8.25 1994/03/10 13:04:22 bostic Exp $ (Berkeley) $Date: 1994/03/10 13:04:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -97,6 +97,7 @@ seq_set(sp, name, nlen, input, ilen, output, olen, stype, flags)
 		qp->output = NULL;
 		olen = 0;
 	} else if ((qp->output = v_strdup(sp, output, olen)) == NULL) {
+		sv_errno = errno;
 		free(qp->input);
 mem3:		if (qp->name != NULL)
 			free(qp->name);
