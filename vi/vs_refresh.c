@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.21 1993/10/07 13:53:38 bostic Exp $ (Berkeley) $Date: 1993/10/07 13:53:38 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.22 1993/10/10 17:51:03 bostic Exp $ (Berkeley) $Date: 1993/10/10 17:51:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -549,11 +549,16 @@ update:	OCNO = CNO;
 	OLNO = LNO;
 	sp->sc_row = y;
 
+	/* Refresh the screen. */
+	if (F_ISSET(sp, S_REFRESH)) {
+		wrefresh(curscr);
+		F_CLR(sp, S_REFRESH);
+	}
+
 	/*
-	 * If there are any keys waiting, we keep on going.  The reason is
-	 * that there may be messages that we want to display, and, if there
-	 * are multiple ones, we're going to get the wrong key as a message
-	 * delimiter.
+	 * If there are any keys waiting, we don't ring the bell or update
+	 * the messages.  The reason is that there may be multiple messages,
+	 * and we're going to get the wrong key as a message delimiter.
 	 *
 	 * XXX
 	 * This is wrong.  If you type quickly enough, the status message
@@ -561,33 +566,24 @@ update:	OCNO = CNO;
 	 * there were keys waiting so we switched screens without ever
 	 * displaying it.  Maybe the split code should flush messages?
 	 */
-	if (sex_key_wait(sp))
-		return (0);
-
-	/* Ring the bell if scheduled. */
-	if (F_ISSET(sp, S_BELLSCHED))
-		svi_bell(sp);
-
-	/*
-	 * If the bottom line isn't in use by the colon command:
-	 *
-	 *	Display any messages.  Don't test S_UPDATE_MODE.  The
-	 *	message printing routine set it to avoid anyone else
-	 *	destroying the message we're about to display.
-	 *
-	 *	If the bottom line isn't in use by anyone, put out the
-	 *	standard status line.
-	 */
-	if (!F_ISSET(SVP(sp), SVI_INFOLINE))
-		if (sp->msgp != NULL && !F_ISSET(sp->msgp, M_EMPTY))
-			svi_msgflush(sp);
-		else if (!F_ISSET(sp, S_UPDATE_MODE))
-			svi_modeline(sp, ep);
-
-	/* Refresh the screen. */
-	if (F_ISSET(sp, S_REFRESH)) {
-		wrefresh(curscr);
-		F_CLR(sp, S_REFRESH);
+	if (!sex_key_wait(sp)) {
+		if (F_ISSET(sp, S_BELLSCHED))
+			svi_bell(sp);
+		/*
+		 * If the bottom line isn't in use by the colon command:
+		 *
+		 *	Display any messages.  Don't test S_UPDATE_MODE.  The
+		 *	message printing routine set it to avoid anyone else
+		 *	destroying the message we're about to display.
+		 *
+		 *	If the bottom line isn't in use by anyone, put out the
+		 *	standard status line.
+		 */
+		if (!F_ISSET(SVP(sp), SVI_INFOLINE))
+			if (sp->msgp != NULL && !F_ISSET(sp->msgp, M_EMPTY))
+				svi_msgflush(sp);
+			else if (!F_ISSET(sp, S_UPDATE_MODE))
+				svi_modeline(sp, ep);
 	}
 
 	/* Place the cursor. */
