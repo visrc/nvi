@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 9.1 1994/11/09 18:38:06 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:38:06 $
+ *	$Id: screen.h,v 9.2 1994/11/10 10:21:45 bostic Exp $ (Berkeley) $Date: 1994/11/10 10:21:45 $
  */
 
 /*
@@ -110,9 +110,8 @@ struct _scr {
 #define	L_DELETED	2		/* Deleted lines. */
 #define	L_JOINED	3		/* Joined lines. */
 #define	L_MOVED		4		/* Moved lines. */
-#define	L_LSHIFT	5		/* Left shift lines. */
-#define	L_RSHIFT	6		/* Right shift lines. */
-#define	L_YANKED	7		/* Yanked lines. */
+#define	L_SHIFT		5		/* Shift lines. */
+#define	L_YANKED	6		/* Yanked lines. */
 	recno_t	 rptlchange;		/* Ex/vi: last L_CHANGED lno. */
 	recno_t	 rptlines[L_YANKED + 1];/* Ex/vi: lines changed by last op. */
 
