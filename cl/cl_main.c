@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_main.c,v 10.31 1996/06/22 12:19:48 bostic Exp $ (Berkeley) $Date: 1996/06/22 12:19:48 $";
+static const char sccsid[] = "$Id: cl_main.c,v 10.32 1996/07/01 10:03:17 bostic Exp $ (Berkeley) $Date: 1996/07/01 10:03:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -24,9 +24,6 @@ static const char sccsid[] = "$Id: cl_main.c,v 10.31 1996/06/22 12:19:48 bostic 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef HAVE_TERM_H
-#include <term.h>
-#endif
 #include <termios.h>
 #include <unistd.h>
 
@@ -110,7 +107,7 @@ main(argc, argv)
 	if (ip_arg != NULL)
 		exit (ip_main(argc, argv, gp, ip_arg));
 #else
-	ip_arg = ip_arg;
+	ip_arg = argv[0];
 #endif
 		
 	/* Create and initialize the CL_PRIVATE structure. */

@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_bsd.c,v 8.28 1996/06/18 14:59:45 bostic Exp $ (Berkeley) $Date: 1996/06/18 14:59:45 $";
+static const char sccsid[] = "$Id: cl_bsd.c,v 8.29 1996/07/01 10:03:17 bostic Exp $ (Berkeley) $Date: 1996/07/01 10:03:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,9 +22,6 @@ static const char sccsid[] = "$Id: cl_bsd.c,v 8.28 1996/06/18 14:59:45 bostic Ex
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#ifdef HAVE_TERM_H
-#include <term.h>
-#endif
 #include <termios.h>
 #include <unistd.h>
 
@@ -277,7 +274,13 @@ lcmp(a, b)
 /*
  * tigetstr --
  *
- * PUBLIC: #ifndef HAVE_CURSES_TIGETSTR
+ * Vendors put the prototype for tigetstr into random include files, including
+ * <term.h>, which we can't include because it makes other systems unhappy.
+ * Try and work around the problem, since we only care about the return value.
+ *
+ * PUBLIC: #ifdef HAVE_CURSES_TIGETSTR
+ * PUBLIC: char *tigetstr();
+ * PUBLIC: #else
  * PUBLIC: char *tigetstr __P((char *));
  * PUBLIC: #endif
  */
