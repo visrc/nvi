@@ -1,7 +1,10 @@
-/* $Id: acconfig.h,v 8.4 1996/02/20 19:15:48 bostic Exp $ (Berkeley) $Date: 1996/02/20 19:15:48 $ */
+/* $Id: acconfig.h,v 8.5 1996/02/25 12:14:16 bostic Exp $ (Berkeley) $Date: 1996/02/25 12:14:16 $ */
 
 /* Define to `int' if <sys/types.h> doesn't define.  */
 #undef ssize_t
+
+/* Define if you have a BSD version of curses. */
+#undef HAVE_BSD_CURSES
 
 /* Define if you have the curses(3) addnstr function. */
 #undef HAVE_CURSES_ADDNSTR
