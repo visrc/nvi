@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 8.8 1994/07/27 10:29:25 bostic Exp $ (Berkeley) $Date: 1994/07/27 10:29:25 $";
+static char sccsid[] = "$Id: v_ex.c,v 8.9 1994/08/01 16:15:33 bostic Exp $ (Berkeley) $Date: 1994/08/01 16:15:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -63,7 +63,10 @@ v_at(sp, ep, vp)
 	EXCMDARG cmd;
 
         excmd(&cmd, C_AT, 0, OOBLNO, OOBLNO, 0, ap, &a, NULL);
-	cmd.buffer = vp->buffer;
+	if (F_ISSET(vp, VC_BUFFER)) {
+		F_SET(&cmd, E_BUFFER);
+		cmd.buffer = vp->buffer;
+	}
         return (sp->s_ex_cmd(sp, ep, &cmd, &vp->m_final));
 }
 
