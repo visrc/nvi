@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 5.17 1992/06/07 13:47:23 bostic Exp $ (Berkeley) $Date: 1992/06/07 13:47:23 $
+ *	$Id: ex.h,v 5.18 1992/08/22 19:14:15 bostic Exp $ (Berkeley) $Date: 1992/08/22 19:14:15 $
  */
 
 #include "exf.h"
@@ -51,7 +51,7 @@ typedef struct excmdarg {
 	int addrcnt;		/* Number of addresses (0, 1 or 2). */
 	MARK addr1;		/* 1st address. */
 	MARK addr2;		/* 2nd address. */
-	u_long lineno;		/* Line number. */
+	recno_t lineno;		/* Line number. */
 	u_int flags;		/* E_F_* flags from EXCMDLIST. */
 	int argc;		/* Count of file/word arguments. */
 	char **argv;		/* List of file/word arguments. */
@@ -136,7 +136,7 @@ int	ex_print __P((EXCMDARG *));
 int	ex_put __P((EXCMDARG *));
 int	ex_quit __P((EXCMDARG *));
 int	ex_read __P((EXCMDARG *));
-int	ex_readfp __P((char *, FILE *, MARK *, long *));
+int	ex_readfp __P((char *, FILE *, MARK *, recno_t *));
 void	ex_refresh __P((void));
 int	ex_rew __P((EXCMDARG *));
 int	ex_set __P((EXCMDARG *));
