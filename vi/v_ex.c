@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 5.37 1993/02/20 12:58:58 bostic Exp $ (Berkeley) $Date: 1993/02/20 12:58:58 $";
+static char sccsid[] = "$Id: v_ex.c,v 5.38 1993/02/20 16:11:44 bostic Exp $ (Berkeley) $Date: 1993/02/20 16:11:44 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -88,7 +88,12 @@ v_ex(ep, vp, fm, tm, rp)
 	 */
 	if (!FF_ISSET(ep, F_NEWSESSION)) {
 		(void)v_leaveex(ep);
-		ep->olno = OOBLNO;
+		/*
+		 * XXX
+		 * I don't this is useful anymore...
+		 *
+		 * ep->olno = OOBLNO;
+		 */
 		rp->lno = ep->lno;
 		if (file_gline(ep, ep->lno, &len) == NULL &&
 		    file_lline(ep) != 0) {
