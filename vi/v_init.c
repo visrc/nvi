@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 9.11 1995/01/23 17:33:15 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:33:15 $";
+static char sccsid[] = "$Id: v_init.c,v 9.12 1995/02/02 16:51:05 bostic Exp $ (Berkeley) $Date: 1995/02/02 16:51:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -94,37 +94,6 @@ v_screen_end(sp)
 	/* Free private memory. */
 	FREE(vip, sizeof(VI_PRIVATE));
 	sp->vi_private = NULL;
-
-	return (0);
-}
-
-/*
- * v_init --
- *	Initialize vi.
- */
-int
-v_init(sp)
-	SCR *sp;
-{
-	/* Make ex display to a vi scrolling function. */
-	if ((sp->stdfp = fwopen(sp, svi_ex_write)) == NULL) {
-		msgq(sp, M_SYSERR, "ex output");
-		return (1);
-	}
-
-	return (0);
-}
-
-/*
- * v_end --
- *	End vi session.
- */
-int
-v_end(sp)
-	SCR *sp;
-{
-	/* Reset ex output file descriptor. */
-	(void)fclose(sp->stdfp);
 
 	return (0);
 }

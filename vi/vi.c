@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 9.21 1995/01/31 11:43:37 bostic Exp $ (Berkeley) $Date: 1995/01/31 11:43:37 $";
+static char sccsid[] = "$Id: vi.c,v 9.22 1995/02/02 16:51:06 bostic Exp $ (Berkeley) $Date: 1995/02/02 16:51:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -72,10 +72,6 @@ vi(sp)
 	VI_PRIVATE *vip;
 	u_int flags, saved_mode;
 	int comcount, eval, mapped;
-
-	/* Start vi and paint the screen. */
-	if (v_init(sp))
-		return (1);
 
 	/* Initialize the command structure. */
 	vp = &cmd;
@@ -341,7 +337,7 @@ intr:				if (term_flush(sp, CH_MAPPED))
 	if (cmd.keyword != NULL)
 		free(cmd.keyword);
 
-	return (v_end(sp) || eval);
+	return (eval);
 }
 
 #define	KEY(key, map) {							\
