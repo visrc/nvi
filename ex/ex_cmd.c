@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 10.2 1995/05/05 18:53:44 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:53:44 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 10.3 1995/06/14 11:39:03 bostic Exp $ (Berkeley) $Date: 1995/06/14 11:39:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -154,11 +154,6 @@ EXCMDLIST const cmds[] = {
 	    "w1r",
 	    "display b[uffers] | s[creens] | t[ags]",
 	    "display buffers, screens or tags"},
-/* C_DIGRAPH */
-	{"digraph",	ex_digraph,	E_NOPERM,
-	    "",
-	    "digraph",
-	    "specify digraphs (not implemented)"},
 /* C_EDIT */
 	{"edit",	ex_edit,	E_NEWSCREEN,
 	    "f1o",
