@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 5.37 1993/05/08 20:32:13 bostic Exp $ (Berkeley) $Date: 1993/05/08 20:32:13 $";
+static char sccsid[] = "$Id: ex_tag.c,v 5.38 1993/05/15 21:22:31 bostic Exp $ (Berkeley) $Date: 1993/05/15 21:22:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -63,7 +63,7 @@ ex_tagfirst(sp, tagarg)
 	argv[1] = NULL;
 	if (file_set(sp, 1, argv) ||
 	    (tep = file_first(sp, 0)) == NULL ||
-	    (tep = file_start(sp, tep)) == NULL)
+	    (tep = file_start(sp, tep, NULL)) == NULL)
 		return (1);
 
 	/*
@@ -252,7 +252,7 @@ tag_change(sp, ep, tag, fname, search, force)
 		which = TC_CURRENT;
 	else {
 		MODIFY_CHECK(sp, ep, force);
-		if ((tep = file_start(sp, tep)) == NULL)
+		if ((tep = file_start(sp, tep, NULL)) == NULL)
 			return (1);
 		which = TC_CHANGE;
 	}
