@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.44 1994/03/15 09:27:06 bostic Exp $ (Berkeley) $Date: 1994/03/15 09:27:06 $";
+static char sccsid[] = "$Id: recover.c,v 8.45 1994/03/17 14:00:20 bostic Exp $ (Berkeley) $Date: 1994/03/17 14:00:20 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -159,8 +159,11 @@ rcv_init(sp, ep)
 
 	F_CLR(ep, F_FIRSTMODIFY | F_RCV_ON);
 
-	/* Build file to mail to the user. */
-	if (rcv_mailfile(sp, ep))
+	/*
+	 * If not already recoverying a file, build a file to mail
+	 * to the user.
+	 */
+	if (ep->rcv_mpath == NULL && rcv_mailfile(sp, ep))
 		goto err;
 
 	/* Force read of entire file. */
@@ -249,8 +252,9 @@ rcv_mailfile(sp, ep)
 	 * be recovered.  There's an obvious window between the mkstemp call
 	 * and the lock, but it's pretty small.
 	 */
-	if ((ep->rcv_fd = dup(fd)) != -1)
-		(void)flock(ep->rcv_fd, LOCK_EX | LOCK_NB);
+	if ((ep->rcv_fd = dup(fd)) == -1 ||
+	    flock(ep->rcv_fd, LOCK_EX | LOCK_NB))
+		msgq(sp, M_SYSERR, "Unable to lock recovery file");
 
 	if ((ep->rcv_mpath = strdup(path)) == NULL) {
 		msgq(sp, M_SYSERR, NULL);
@@ -496,7 +500,7 @@ rcv_read(sp, name)
 	struct stat sb;
 	DIR *dirp;
 	FREF *frp;
-	FILE *fp;
+	FILE *fp, *sv_fp;
 	time_t rec_mtime;
 	int found, requested;
 	char *p, *t, *recp, *pathp;
@@ -508,6 +512,7 @@ rcv_read(sp, name)
 		return (1);
 	}
 
+	sv_fp = NULL;
 	rec_mtime = 0;
 	recp = pathp = NULL;
 	for (found = requested = 0; (dp = readdir(dirp)) != NULL;) {
@@ -576,9 +581,11 @@ rcv_read(sp, name)
 				FREE(t, strlen(t) + 1);
 			}
 			rec_mtime = sb.st_mtime;
-		}
-
-next:		(void)fclose(fp);
+			if (sv_fp != NULL)
+				(void)fclose(sv_fp);
+			sv_fp = fp;
+		} else
+next:			(void)fclose(fp);
 	}
 	(void)closedir(dirp);
 
@@ -593,7 +600,7 @@ next:		(void)fclose(fp);
 		   "There are older versions of this file for you to recover.");
 		if (found > requested)
 			msgq(sp, M_INFO,
-			    "There are other files that you can recover.");
+			    "There are other files for you to recover.");
 	}
 
 	/* Create the FREF structure, start the btree file. */
@@ -601,8 +608,18 @@ next:		(void)fclose(fp);
 	    file_init(sp, frp, pathp + sizeof(VI_PHEADER) - 1, 0)) {
 		FREE(recp, strlen(recp) + 1);
 		FREE(pathp, strlen(pathp) + 1);
+		(void)fclose(sv_fp);
 		return (1);
 	}
+
+	/*
+	 * We keep an open lock on the file so that the recover option can
+	 * distinguish between files that are live and those that need to
+	 * be recovered.  The lock is already acquired, so just get a copy.
+	 */
+	if ((sp->ep->rcv_fd = dup(fileno(sv_fp))) != -1)
+		(void)fclose(sv_fp);
+
 	sp->ep->rcv_mpath = recp;
 	return (0);
 }
