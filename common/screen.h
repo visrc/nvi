@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.44 1993/10/31 14:22:09 bostic Exp $ (Berkeley) $Date: 1993/10/31 14:22:09 $
+ *	$Id: screen.h,v 8.45 1993/11/01 11:59:02 bostic Exp $ (Berkeley) $Date: 1993/11/01 11:59:02 $
  */
 
 /*
@@ -71,7 +71,7 @@ typedef struct _fref {
  */
 typedef struct _scr {
 /* INITIALIZED AT SCREEN CREATE. */
-	struct _scr	*next, *prev;	/* Linked list of screens. */
+	struct queue_entry screenq;	/* Linked list of screens. */
 
 	struct _scr	*child;		/* split screen: child screen. */
 	struct _scr	*parent;	/* split screen: parent screen. */

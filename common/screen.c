@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.24 1993/11/01 08:17:02 bostic Exp $ (Berkeley) $Date: 1993/11/01 08:17:02 $";
+static char sccsid[] = "$Id: screen.c,v 8.25 1993/11/01 11:59:01 bostic Exp $ (Berkeley) $Date: 1993/11/01 11:59:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,8 +38,10 @@ screen_init(orig, sp)
 
 /* INITIALIZED AT SCREEN CREATE. */
 	memset(sp, 0, sizeof(SCR));
-	if (orig != NULL)
-		HDR_APPEND(sp, orig, next, prev, SCR);
+	if (orig == NULL)
+		list_enter_head(&gp->screens, sp, SCR *, screenq);
+	else
+		list_insert_after(&orig->screenq, sp, SCR *, screenq);
 
 	queue_init(&sp->frefq);
 
@@ -264,8 +266,8 @@ screen_end(sp)
 			c_mp = c_sp->msgp;
 			if (F_ISSET(sp, S_BELLSCHED))
 				F_SET(c_sp, S_BELLSCHED);
-		} else if (sp->next != (SCR *)&sp->gp->scrhdr) {
-			c_sp = sp->next;
+		} else if (sp->screenq.qe_next != NULL) {
+			c_sp = sp->screenq.qe_next;
 			c_mp = c_sp->msgp;
 			if (F_ISSET(sp, S_BELLSCHED))
 				F_SET(c_sp, S_BELLSCHED);
@@ -290,7 +292,7 @@ screen_end(sp)
 	}
 
 	/* Remove the screen from the global screen chain. */
-	HDR_DELETE(sp, next, prev, SCR);
+	list_remove(sp, SCR *, screenq);
 
 	/* Remove the screen from the chain of related screens. */
 	if (sp->parent != NULL) {

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 8.16 1993/10/30 13:47:26 bostic Exp $ (Berkeley) $Date: 1993/10/30 13:47:26 $";
+static char sccsid[] = "$Id: ex_global.c,v 8.17 1993/11/01 11:59:11 bostic Exp $ (Berkeley) $Date: 1993/11/01 11:59:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -275,8 +275,8 @@ global_intr(signo)
 {
 	SCR *sp;
 
-	for (sp = __global_list->scrhdr.next;
-	     sp != (SCR *)&__global_list->scrhdr; sp = sp->next)
+	for (sp = __global_list->screens.le_next;
+	    sp != NULL; sp = sp->screenq.qe_next)
 		if (F_ISSET(sp, S_GLOBAL) && F_ISSET(sp, S_INTERRUPTIBLE))
 			F_SET(sp, S_INTERRUPTED);
 }

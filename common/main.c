@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.28 1993/11/01 11:33:08 bostic Exp $ (Berkeley) $Date: 1993/11/01 11:33:08 $";
+static char sccsid[] = "$Id: main.c,v 8.29 1993/11/01 11:58:58 bostic Exp $ (Berkeley) $Date: 1993/11/01 11:58:58 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -97,8 +97,6 @@ main(argc, argv)
 		err(1, NULL);
 	memset(gp->cuts, 0, (UCHAR_MAX + 2) * sizeof(CB));
 
-	HDR_INIT(gp->scrhdr, next, prev);
-
 	/* Set a flag if we're reading from the tty. */
 	if (isatty(STDIN_FILENO))
 		F_SET(gp, G_ISFROMTTY);
@@ -127,10 +125,9 @@ main(argc, argv)
 		err(1, NULL);
 	if (screen_init(NULL, sp))
 		err(1, NULL);
-	sp->gp = gp;		/* All screens point to the GS structure. */
 	HDR_INIT(sp->seqhdr, next, prev);
-				/* No need to block SIGALRM yet. */
-	HDR_APPEND(sp, &gp->scrhdr, next, prev, SCR);
+
+	sp->gp = gp;		/* All screens point to the GS structure. */
 
 	if (set_window_size(sp, 0, 0))	/* Set the window size. */
 		goto err1;

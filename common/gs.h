@@ -4,12 +4,12 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 8.9 1993/11/01 11:33:17 bostic Exp $ (Berkeley) $Date: 1993/11/01 11:33:17 $
+ *	$Id: gs.h,v 8.10 1993/11/01 11:58:57 bostic Exp $ (Berkeley) $Date: 1993/11/01 11:58:57 $
  */
 
 struct _scr;
 typedef struct _gs {
-	struct _hdr	 scrhdr;	/* Linked list of SCR structures. */
+	struct list_entry screens;	/* Linked list of SCR structures. */
 	
 	mode_t	 origmode;		/* Original terminal mode. */
 	struct termios
