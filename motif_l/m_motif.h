@@ -6,14 +6,8 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	"$Id: m_motif.h,v 8.6 1996/12/11 20:58:24 bostic Exp $ (Berkeley) $Date: 1996/12/11 20:58:24 $";
+ *	"$Id: m_motif.h,v 8.7 1996/12/13 11:38:21 bostic Exp $ (Berkeley) $Date: 1996/12/13 11:38:21 $";
  */
-
-#if XtSpecificationRelease == 4
-#define	ArgcType	Cardinal *
-#else
-#define	ArgcType	int *
-#endif
 
 /* Describes a single 'screen' implemented in X widgetry. */
 typedef	struct {

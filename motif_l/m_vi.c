@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_vi.c,v 8.27 1996/12/11 20:58:26 bostic Exp $ (Berkeley) $Date: 1996/12/11 20:58:26 $";
+static const char sccsid[] = "$Id: m_vi.c,v 8.28 1996/12/13 11:38:21 bostic Exp $ (Berkeley) $Date: 1996/12/13 11:38:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -70,6 +70,31 @@ void (*__vi_exitp)();				/* Exit function. */
 
 static	char	bp[ BufferSize ];		/* input buffer from pipe */
 static	size_t	len, blen = sizeof(bp);
+
+
+/* hack for drag scrolling...
+ * I'm not sure why, but the current protocol gets out of sync when
+ * a lot of drag messages get passed around.  Likely, we need to wait
+ * for core to finish repainting the screen before sending more drag
+ * messages.
+ * To that end, we set scroll_block when we receive input from the scrollbar,
+ * and we clear it when we process the IPO_REFRESH message from core.
+ * A specific SCROLL_COMPLETED message would be better, but this seems to work.
+ */
+
+static Boolean scroll_block = False;
+
+void
+__vi_set_scroll_block()
+{
+	scroll_block = True;
+}
+
+void
+__vi_clear_scroll_block()
+{
+	scroll_block = False;
+}
 
 
 #if defined(__STDC__)
@@ -622,7 +647,7 @@ Widget	w;
  * command --
  *	Translate simple keyboard input into vi protocol commands.
  */
-void
+static	void
 command(widget, event, str, cardinal)
 	Widget widget; 
 	XKeyEvent *event; 
@@ -731,6 +756,59 @@ Cardinal        *cardinal;
 
 
 #if defined(__STDC__)
+static	void	scrollbar_moved( Widget widget,
+				 XtPointer ptr,
+				 XmScrollBarCallbackStruct *cbs
+				 )
+#else
+static	void				scrollbar_moved( widget, ptr, cbs )
+	Widget				widget;
+	XtPointer			ptr;
+	XmScrollBarCallbackStruct	*cbs;
+#endif
+{
+    /* Future:  Need to scroll the correct screen! */
+    xvi_screen	*cur_screen = (xvi_screen *) ptr;
+    IP_BUF	ipb;
+    char	bp[BufferSize];
+
+    /* if we are still processing messages from core, skip this event
+     * (see comments near __vi_set_scroll_block())
+     */
+    if ( scroll_block ) {
+#ifdef TRACE
+	trace( "punting scroll request with %d in buffer\n", len );
+#endif
+	return;
+    }
+    __vi_set_scroll_block();
+
+    /* Future: send an IPO command */
+    sprintf( bp, "%dGz\n", cbs->value );
+
+#ifdef TRACE
+    switch ( cbs->reason ) {
+	case XmCR_VALUE_CHANGED:
+	    trace( "scrollbar VALUE_CHANGED %d\n", cbs->value );
+	    break;
+	case XmCR_DRAG:
+	    trace( "scrollbar DRAG %d\n", cbs->value );
+	    break;
+	default:
+	    trace( "scrollbar <default> %d\n", cbs->value );
+	    break;
+    }
+    trace("scrollto {%d}\n", cbs->value );
+#endif
+
+    ipb.len = strlen( bp );
+    ipb.code = VI_STRING;
+    ipb.str = bp;
+    __vi_send("s", &ipb);
+}
+
+
+#if defined(__STDC__)
 static	xvi_screen	*create_screen( Widget parent, int rows, int cols )
 #else
 static	xvi_screen	*create_screen( parent, rows, cols )
@@ -774,18 +852,28 @@ static	xvi_screen	*create_screen( parent, rows, cols )
 	    NULL
 	    );
 
-    /* create a scroolbar.
-     * Future, connect new Protocol messages to position the scrollbar
-     * Future, connect scrollbar messages to new Protocol messages 
-     */
+    /* create a scrollbar. */
     new_screen->scroll = XtVaCreateManagedWidget( "scroll",
 	    xmScrollBarWidgetClass,
 	    new_screen->form,
 	    XmNtopAttachment,		XmATTACH_FORM,
 	    XmNbottomAttachment,	XmATTACH_FORM,
 	    XmNrightAttachment,		XmATTACH_FORM,
+	    XmNminimum,			1,
+	    XmNmaximum,			2,
+	    XmNsliderSize,		1,
 	    NULL
 	    );
+    XtAddCallback( new_screen->scroll,
+		   XmNvalueChangedCallback,
+		   scrollbar_moved,
+		   new_screen
+		   );
+    XtAddCallback( new_screen->scroll,
+		   XmNdragCallback,
+		   scrollbar_moved,
+		   new_screen
+		   );
 
     /* create a frame because they look nice */
     frame = XtVaCreateManagedWidget( "frame",
@@ -1343,8 +1431,9 @@ __vi_set_cursor(cur_screen, is_busy)
 
 static	String	cur_word = NULL;
 
-static	void	set_word_at_caret( this_screen )
-		xvi_screen *this_screen;
+void
+__vi_set_word_at_caret( this_screen )
+	xvi_screen *this_screen;
 {
     char	*start, *end, save;
     int		newx, newy;
@@ -1366,7 +1455,7 @@ static	void	set_word_at_caret( this_screen )
     /* if the tag stack widget is active, set the text field there
      * to agree with the current caret position.
      */
-    __vi_set_tag_text( start );
+    __vi_set_tag_text( cur_word );
 }
 
 
@@ -1418,10 +1507,4 @@ __vi_move_caret(this_screen, newy, newx)
     this_screen->curx = newx;
     this_screen->cury = newy;
     draw_caret( this_screen );
-
-    /* if the tag stack widget is active, set the text field there
-     * to agree with the current caret position.
-     * Note that this really ought to be done by core due to wrapping issues
-     */
-    set_word_at_caret( this_screen );
 }

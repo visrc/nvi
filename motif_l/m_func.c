@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_func.c,v 8.14 1996/12/11 20:58:23 bostic Exp $ (Berkeley) $Date: 1996/12/11 20:58:23 $";
+static const char sccsid[] = "$Id: m_func.c,v 8.15 1996/12/13 11:38:20 bostic Exp $ (Berkeley) $Date: 1996/12/13 11:38:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,6 +29,7 @@ static const char sccsid[] = "$Id: m_func.c,v 8.14 1996/12/11 20:58:23 bostic Ex
 #include "m_extern.h"
 #include "ipc_extern.h"
 
+
 static int
 vi_addstr(ipbp)
 	IP_BUF *ipbp;
@@ -230,10 +231,15 @@ static int
 vi_refresh(ipbp)
 	IP_BUF *ipbp;
 {
-#if 0
-	/* Force synchronous update of the widget. */
-	XmUpdateDisplay(__vi_screen->area);
-#endif
+	/* probably ok to scroll again */
+	__vi_clear_scroll_block();
+
+	/* if the tag stack widget is active, set the text field there
+	 * to agree with the current caret position.
+	 * Note that this really ought to be done by core due to wrapping issues
+	 */
+	__vi_set_word_at_caret( __vi_screen );
+
 	return (0);
 }
 
@@ -270,7 +276,8 @@ vi_rename(ipbp)
 	XtVaSetValues(shell,
 		      XmNiconName,	tail,
 		      XmNtitle,		ipbp->str,
-		      0);
+		      0
+		      );
 	return (0);
 }
 
@@ -282,11 +289,69 @@ vi_rewrite(ipbp)
 	return (0);
 }
 
+
 static int
 vi_scrollbar(ipbp)
 	IP_BUF *ipbp;
 {
-	/* XXX: Nothing. */
+	int top, size, maximum, old_max;
+
+	/* in the buffer,
+	 *	val1 contains the top visible line number
+	 *	val2 contains the number of visible lines
+	 *	val3 contains the number of lines in the file
+	 */
+	top	= ipbp->val1;
+	size	= ipbp->val2;
+	maximum	= ipbp->val3;
+
+#if 0
+	fprintf( stderr, "Setting scrollbar\n" );
+	fprintf( stderr, "\tvalue\t\t%d\n",	top );
+	fprintf( stderr, "\tsize\t\t%d\n",	size );
+	fprintf( stderr, "\tmaximum\t\t%d\n",	maximum );
+#endif
+
+	/* armor plating.  core thinks there are no lines in an
+	 * empty file, but says we are on line 1
+	 */
+	if ( top > maximum ) {
+#if 0
+	    fprintf( stderr, "Correcting for top > maximum\n" );
+#endif
+	    maximum	= top + 1;
+	    size	= 1;
+	}
+
+	/* armor plating.  core may think there are more
+	 * lines visible than remain in the file
+	 */
+	if ( top+size >= maximum ) {
+#if 0
+	    fprintf( stderr, "Correcting for top+size >= maximum\n" );
+#endif
+	    size	= maximum - top;
+	}
+
+	/* need to increase the maximum before changing the values */
+	XtVaGetValues( __vi_screen->scroll, XmNmaximum, &old_max, 0 );
+	if ( maximum > old_max )
+	    XtVaSetValues( __vi_screen->scroll, XmNmaximum, maximum, 0 );
+
+	/* change the rest of the values without generating a callback */
+	XmScrollBarSetValues( __vi_screen->scroll,
+			      top,
+			      size,
+			      1,	/* increment */
+			      size,	/* page_increment */
+			      False	/* do not notify me */
+			      );
+
+	/* need to decrease the maximum after changing the values */
+	if ( maximum < old_max )
+	    XtVaSetValues( __vi_screen->scroll, XmNmaximum, maximum, 0 );
+
+	/* done */
 	return (0);
 }
 
