@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 8.3 1993/11/01 17:12:19 bostic Exp $ (Berkeley) $Date: 1993/11/01 17:12:19 $";
+static char sccsid[] = "$Id: ex_append.c,v 8.4 1993/11/05 11:08:33 bostic Exp $ (Berkeley) $Date: 1993/11/05 11:08:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -55,14 +55,14 @@ ac(sp, ep, cmdp, cmd)
 	MARK m;
 	TEXT *tp;
 	recno_t cnt;
-	int rval, set;
+	int rval, aiset;
 
 	/* The ! flag turns off autoindent for change and append. */
 	if (F_ISSET(cmdp, E_FORCE)) {
-		set = O_ISSET(sp, O_AUTOINDENT);
+		aiset = O_ISSET(sp, O_AUTOINDENT);
 		O_CLR(sp, O_AUTOINDENT);
 	} else
-		set = 0;
+		aiset = 0;
 
 	rval = 0;
 
@@ -125,21 +125,10 @@ ac(sp, ep, cmdp, cmd)
 			}
 		}
 
-done:	if (rval == 0) {
-		/*
-		 * XXX
-		 * Not sure historical ex set autoprint for change/append.
-		 * Hack for user giving us line zero and then never putting
-		 * anything in the file.
-		 */
-		if (m.lno != 0)
-			F_SET(sp, S_AUTOPRINT);
-
-		/* Set the cursor. */
+done:	if (rval == 0)
 		sp->lno = m.lno;
-	}
 
-	if (set)
+	if (aiset)
 		O_SET(sp, O_AUTOINDENT);
 
 	return (rval);
