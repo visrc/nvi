@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 9.2 1994/11/10 10:23:54 bostic Exp $ (Berkeley) $Date: 1994/11/10 10:23:54 $";
+static char sccsid[] = "$Id: msg.c,v 9.3 1994/11/10 10:54:21 bostic Exp $ (Berkeley) $Date: 1994/11/10 10:54:21 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -439,17 +439,15 @@ msg_rpt(sp, is_message)
 	char * const *ap;
 	char *bp, *p, number[40];
 
+	/* Change reports are turned off in batch mode. */
 	if (F_ISSET(sp, S_EXSILENT))
 		return (0);
-
-	if ((rptval = O_VAL(sp, O_REPORT)) == 0)
-		goto norpt;
 
 	GET_SPACE_RET(sp, bp, blen, 512);
 	p = bp;
 
-	total = 0;
-	for (ap = action, cnt = 0, first = 1; *ap != NULL; ++ap, ++cnt)
+	for (ap = action,
+	    cnt = 0, first = 1, total = 0; *ap != NULL; ++ap, ++cnt)
 		if (sp->rptlines[cnt] != 0) {
 			total += sp->rptlines[cnt];
 			len = snprintf(number, sizeof(number),
@@ -465,11 +463,11 @@ msg_rpt(sp, is_message)
 	 *
 	 * !!!
 	 * And now, a special vi clone test.  Historically, vi reported if
-	 * the number of changed lines was > than the value, not >=.  Which
-	 * means that users can't report on single line changes, btw.)  In
-	 * any case, if it was a yank command, it was >=, not >.  No lie.  I
-	 * got complaints, so we do it right.
+	 * the number of changed lines was > than the value, not >=, unless
+	 * it was a yank command, which used >=.  No lie.  I got complaints,
+	 * so this code conforms to historic practice.
 	 */
+	rptval = O_VAL(sp, O_REPORT);
 	if (total > rptval || sp->rptlines[L_YANKED] >= rptval) {
 		*p = '\0';
 		if (is_message)
