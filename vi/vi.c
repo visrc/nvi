@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.61 1993/05/01 18:15:08 bostic Exp $ (Berkeley) $Date: 1993/05/01 18:15:08 $";
+static char sccsid[] = "$Id: vi.c,v 5.62 1993/05/02 11:01:14 bostic Exp $ (Berkeley) $Date: 1993/05/02 11:01:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -39,11 +39,18 @@ vi(sp, ep)
 	int eval;
 	u_int flags;
 
+	/* Start vi. */
 	if (v_init(sp, ep))
 		return (1);
 
+	/* Paint the screen. */
 	if (sp->refresh(sp, ep))
 		return (v_end(sp));
+
+	/* Command initialization. */
+	cmd.keyword = dot.keyword = dotmotion.keyword = NULL;
+	cmd.kbuflen = dot.kbuflen = dotmotion.kbuflen = 0;
+
 	/*
 	 * XXX
 	 * Turn on signal handling.
