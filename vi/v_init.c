@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 8.16 1993/12/09 19:43:13 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:43:13 $";
+static char sccsid[] = "$Id: v_init.c,v 8.17 1993/12/27 17:56:51 bostic Exp $ (Berkeley) $Date: 1993/12/27 17:56:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,6 +18,8 @@ static char sccsid[] = "$Id: v_init.c,v 8.16 1993/12/09 19:43:13 bostic Exp $ (B
 #include "vi.h"
 #include "vcmd.h"
 #include "excmd.h"
+
+static int v_comment __P((SCR *, EXF *));
 
 /*
  * v_screen_copy --
@@ -166,5 +168,32 @@ v_optchange(sp, opt)
 	case O_SECTIONS:
 		return (v_buildparagraph(sp));
 	}
+	return (0);
+}
+
+/*
+ * v_comment --
+ *	Skip the first comment.
+ */
+static int
+v_comment(sp, ep)
+	SCR *sp;
+	EXF *ep;
+{
+	recno_t lno;
+	size_t len;
+	char *p;
+
+	for (lno = 1;
+	    (p = file_gline(sp, ep, lno, &len)) != NULL && len == 0; ++lno);
+	if (p == NULL || len <= 1 || memcmp(p, "/*", 2))
+		return (0);
+	do {
+		for (; len; --len, ++p)
+			if (p[0] == '*' && len > 1 && p[1] == '/') {
+				sp->lno = lno;
+				return (0);
+			}
+	} while ((p = file_gline(sp, ep, ++lno, &len)) != NULL);
 	return (0);
 }
