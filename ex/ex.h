@@ -1,10 +1,10 @@
 /*-
- * Copyright (c) 1992, 1993
+ * Copyright (c) 1992, 1993, 1994
  *	The Regents of the University of California.  All rights reserved.
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.56 1994/04/12 09:53:43 bostic Exp $ (Berkeley) $Date: 1994/04/12 09:53:43 $
+ *	$Id: ex.h,v 8.57 1994/04/12 09:56:55 bostic Exp $ (Berkeley) $Date: 1994/04/12 09:56:55 $
  */
 
 /* Ex command structure. */
@@ -50,7 +50,11 @@ typedef struct _excmdlist {
 #define	MAXCMDNAMELEN	12		/* Longest command name. */
 extern EXCMDLIST const cmds[];		/* List of ex commands. */
 
-/* Structure passed around to functions implementing ex commands. */
+/*
+ * Structure passed around to functions implementing ex commands.
+ * There are several commands in vi that build one of these and
+ * call ex directly.  See vi/v_ex.c for details.
+ */
 struct _excmdarg {
 	EXCMDLIST const *cmd;	/* Command entry in command table. */
 	CHAR_T	buffer;		/* Named buffer. */
