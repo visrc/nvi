@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 8.31 1994/03/09 10:56:57 bostic Exp $ (Berkeley) $Date: 1994/03/09 10:56:57 $";
+static char sccsid[] = "$Id: vs_smap.c,v 8.32 1994/03/10 11:20:46 bostic Exp $ (Berkeley) $Date: 1994/03/10 11:20:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -92,7 +92,7 @@ svi_change(sp, ep, lno, op)
 
 	F_SET(SVP(sp), SVI_SCREENDIRTY);
 
-	/* Flush cached information from svi_screens(). */
+	/* Flush cached information from svi_opt_screens(). */
 	SVP(sp)->ss_lno = OOBLNO;
 
 	/* Invalidate the cursor, if it's on this line. */
@@ -165,7 +165,7 @@ svi_sm_fill(sp, ep, lno, pos)
 		/* See if less than half a screen from the bottom. */
 		if (file_lline(sp, ep, &tmp.lno))
 			return (1);
-		tmp.off = svi_screens(sp, ep, tmp.lno, NULL);
+		tmp.off = svi_opt_screens(sp, ep, tmp.lno, NULL);
 		if (svi_sm_nlines(sp, ep,
 		    &tmp, lno, HALFTEXT(sp)) <= HALFTEXT(sp)) {
 			TMAP->lno = tmp.lno;
@@ -201,7 +201,7 @@ middle:		p = HMAP + (TMAP - HMAP) / 2;
 	case P_BOTTOM:
 		if (lno != OOBLNO) {
 			TMAP->lno = lno;
-			TMAP->off = svi_screens(sp, ep, lno, NULL);
+			TMAP->off = svi_opt_screens(sp, ep, lno, NULL);
 		}
 		/* If we fail, guess that the file is too small. */
 bottom:		for (p = TMAP; p > HMAP; --p)
@@ -318,7 +318,7 @@ svi_sm_insert(sp, ep, lno)
 	if (O_ISSET(sp, O_LEFTRIGHT))
 		cnt_orig = 1;
 	else
-		cnt_orig = svi_screens(sp, ep, lno, NULL);
+		cnt_orig = svi_opt_screens(sp, ep, lno, NULL);
 
 	TOO_WEIRD;
 
@@ -377,7 +377,7 @@ svi_sm_reset(sp, ep, lno)
 	else {
 		for (cnt_orig = 0,
 		    t = p; t <= TMAP && t->lno == lno; ++cnt_orig, ++t);
-		cnt_new = svi_screens(sp, ep, lno, NULL);
+		cnt_new = svi_opt_screens(sp, ep, lno, NULL);
 	}
 
 	TOO_WEIRD;
@@ -510,7 +510,7 @@ svi_sm_up(sp, ep, rp, count, cursor_move)
 		return (1);
 	if (tmp.lno > TMAP->lno &&
 	    !file_gline(sp, ep, tmp.lno, NULL) ||
-	    tmp.off > svi_screens(sp, ep, tmp.lno, NULL)) {
+	    tmp.off > svi_opt_screens(sp, ep, tmp.lno, NULL)) {
 		if (!cursor_move || ignore_cursor || p == TMAP) {
 			v_eof(sp, ep, NULL);
 			return (1);
@@ -518,7 +518,7 @@ svi_sm_up(sp, ep, rp, count, cursor_move)
 		if (svi_sm_next(sp, ep, p, &tmp))
 			return (1);
 		if (!file_gline(sp, ep, tmp.lno, NULL) ||
-		    tmp.off > svi_screens(sp, ep, tmp.lno, NULL)) {
+		    tmp.off > svi_opt_screens(sp, ep, tmp.lno, NULL)) {
 			v_eof(sp, ep, NULL);
 			return (1);
 		}
@@ -612,7 +612,7 @@ svi_sm_up(sp, ep, rp, count, cursor_move)
 	 */
 	if (p->lno != svmap.lno || p->off != svmap.off) {
 		rp->lno = p->lno;
-		rp->cno = svi_lrelative(sp, ep, p->lno, p->off);
+		rp->cno = svi_rcm_private(sp, ep, p->lno, p->off);
 	}
 	return (0);
 }
@@ -800,7 +800,7 @@ svi_sm_down(sp, ep, rp, count, cursor_move)
 	 */
 	if (p->lno != svmap.lno || p->off != svmap.off) {
 		rp->lno = p->lno;
-		rp->cno = svi_lrelative(sp, ep, p->lno, p->off);
+		rp->cno = svi_rcm_private(sp, ep, p->lno, p->off);
 	}
 	return (0);
 }
@@ -872,7 +872,7 @@ svi_sm_next(sp, ep, p, t)
 		t->lno = p->lno + 1;
 		t->off = p->off;
 	} else {
-		lcnt = svi_screens(sp, ep, p->lno, NULL);
+		lcnt = svi_opt_screens(sp, ep, p->lno, NULL);
 		if (lcnt == p->off) {
 			t->lno = p->lno + 1;
 			t->off = 1;
@@ -903,7 +903,7 @@ svi_sm_prev(sp, ep, p, t)
 		t->off = p->off - 1;
 	} else {
 		t->lno = p->lno - 1;
-		t->off = svi_screens(sp, ep, t->lno, NULL);
+		t->off = svi_opt_screens(sp, ep, t->lno, NULL);
 	}
 	return (t->lno == 0);
 }
@@ -1026,12 +1026,12 @@ svi_sm_nlines(sp, ep, from_sp, to_lno, max)
 	if (from_sp->lno > to_lno) {
 		lcnt = from_sp->off - 1;	/* Correct for off-by-one. */
 		for (lno = from_sp->lno; --lno >= to_lno && lcnt <= max;)
-			lcnt += svi_screens(sp, ep, lno, NULL);
+			lcnt += svi_opt_screens(sp, ep, lno, NULL);
 	} else {
 		lno = from_sp->lno;
-		lcnt = (svi_screens(sp, ep, lno, NULL) - from_sp->off) + 1;
+		lcnt = (svi_opt_screens(sp, ep, lno, NULL) - from_sp->off) + 1;
 		for (; ++lno < to_lno && lcnt <= max;)
-			lcnt += svi_screens(sp, ep, lno, NULL);
+			lcnt += svi_opt_screens(sp, ep, lno, NULL);
 	}
 	return (lcnt);
 }
