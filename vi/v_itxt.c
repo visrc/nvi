@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 8.7 1993/08/16 20:58:15 bostic Exp $ (Berkeley) $Date: 1993/08/16 20:58:15 $";
+static char sccsid[] = "$Id: v_itxt.c,v 8.8 1993/08/20 09:30:12 bostic Exp $ (Berkeley) $Date: 1993/08/20 09:30:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -221,8 +221,8 @@ v_ii(sp, ep, vp, fm, tm, rp)
 				GETLINE_ERR(sp, fm->lno);
 				return (1);
 			}
-			len = 0;
 			lno = 1;
+			len = 0;
 		}
 		/* If len == sp->cno, it's a replay caused by a count. */
 		if (len == 0 || len == sp->cno)
@@ -232,10 +232,14 @@ v_ii(sp, ep, vp, fm, tm, rp)
 		    &sp->txthdr, NULL, p, len, rp, 0, OOBLNO, flags))
 			return (1);
 
-		/* On replay, advance the insert by one (make it an append). */
+		/*
+		 * On replay, if the line isn't empty, advance the insert
+		 * by one (make it an append).
+		 */
 		SET_TXT_STD(sp, TXT_REPLAY);
 		sp->lno = lno = rp->lno;
-		sp->cno = rp->cno + 1;
+		if ((sp->cno = rp->cno) != 0)
+			++sp->cno;
 	}
 	return (0);
 }
