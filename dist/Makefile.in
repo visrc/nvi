@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.2 1996/02/18 15:41:50 bostic Exp $ (Berkeley) $Date: 1996/02/18 15:41:50 $
+#	$Id: Makefile.in,v 8.3 1996/02/18 17:39:28 bostic Exp $ (Berkeley) $Date: 1996/02/18 17:39:28 $
 
 #GCCF=	-Wall
 #DEBUG=	-DDEBUG
@@ -50,7 +50,7 @@ NVIALL=	${CLOBJS} ${VIOBJS} @cobjs@ @dbobjs@ @reobjs@ @LIBOBJS@
 nvi: ${NVIALL}
 	${CC} -o $@ ${NVIALL} @LIBS@
 
-TKALL=	${OBJS} @dbobjs@ @reobjs@ @LIBOBJS@
+TKALL=	${TKOBJS} ${VIOBJS} @dbobjs@ @reobjs@ @LIBOBJS@
 tknvi: ${TKALL}
 	${CC} -o $@ ${TKALL} -L/usr/X11/lib -ltk -ltcl -lm -lX11
 
