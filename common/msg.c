@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 8.12 1994/08/17 14:28:12 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:28:12 $";
+static char sccsid[] = "$Id: msg.c,v 8.13 1994/08/29 17:03:09 bostic Exp $ (Berkeley) $Date: 1994/08/29 17:03:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,6 +36,8 @@ static char sccsid[] = "$Id: msg.c,v 8.12 1994/08/17 14:28:12 bostic Exp $ (Berk
 
 #include "vi.h"
 
+static const char *msg_cat __P((GS *, const char *, size_t *));
+
 /*
  * msgq --
  *	Display a message.
@@ -51,9 +53,22 @@ msgq(sp, mt, fmt, va_alist)
         va_dcl
 #endif
 {
+#ifndef NL_ARGMAX
+#define	__NL_ARGMAX	20		/* Set to 9 by System V. */
+	struct {
+		const char *str;	/* String pointer. */
+		size_t	 arg;		/* Argument number. */
+		size_t	 prefix;	/* Prefix string length. */
+		size_t	 skip;		/* Skipped string length. */
+		size_t	 suffix;	/* Suffix string length. */
+	} str[__NL_ARGMAX];
+#endif
+	GS *gp;
+	size_t blen, cnt1, cnt2, len, mlen, nlen, soff;
+	int ch;
+	const char *p, *t, *u;
+	char *bp, *mp, *v, *rbp, *s_rbp;
         va_list ap;
-	size_t len;
-	char msgbuf[1024];
 
 #ifdef __STDC__
         va_start(ap, fmt);
@@ -66,73 +81,243 @@ msgq(sp, mt, fmt, va_alist)
 	 * just build the message, using __global_list.
 	 */
 	if (sp == NULL)
-		goto nullsp;
-
-	switch (mt) {
-	case M_BERR:
-		if (!F_ISSET(sp, S_EXSILENT) &&
-		    F_ISSET(sp->gp, G_STDIN_TTY) && !O_ISSET(sp, O_VERBOSE)) {
-			F_SET(sp, S_BELLSCHED);
-			return;
+		gp = __global_list;
+	else {
+		gp = sp->gp;
+		switch (mt) {
+		case M_BERR:
+			if (!F_ISSET(sp, S_EXSILENT) &&
+			    F_ISSET(gp, G_STDIN_TTY) &&
+			    !O_ISSET(sp, O_VERBOSE)) {
+				F_SET(sp, S_BELLSCHED);
+				return;
+			}
+			mt = M_ERR;
+			break;
+		case M_VINFO:
+			if (!O_ISSET(sp, O_VERBOSE))
+				return;
+			mt = M_INFO;
+			/* FALLTHROUGH */
+		case M_INFO:
+			if (F_ISSET(sp, S_EXSILENT))
+				return;
+			break;
+		case M_ERR:
+		case M_SYSERR:
+			break;
+		default:
+			abort();
 		}
-		mt = M_ERR;
-		break;
-	case M_VINFO:
-		if (!O_ISSET(sp, O_VERBOSE))
-			return;
-		mt = M_INFO;
-		/* FALLTHROUGH */
-	case M_INFO:
-		if (F_ISSET(sp, S_EXSILENT))
-			return;
-		break;
-	case M_ERR:
-	case M_SYSERR:
-		break;
-	default:
-		abort();
 	}
 
-nullsp:	len = 0;
-
-#define	EPREFIX	"Error: "
-	if (mt == M_SYSERR) {
-		memmove(msgbuf, EPREFIX, sizeof(EPREFIX) - 1);
-		len += sizeof(EPREFIX) - 1;
+	/* Get space for the message. */
+	nlen = 1024;
+	if (0) {
+retry:		FREE_SPACE(sp, bp, blen);
+		nlen *= 2;
 	}
-
-	if (sp != NULL && sp->if_name != NULL) {
-		len += snprintf(msgbuf + len, sizeof(msgbuf) - len,
-		    "%s, %d: ", sp->if_name, sp->if_lno);
-		if (len >= sizeof(msgbuf))
-			goto err;
-	}
-
-	if (fmt != NULL) {
-		len += vsnprintf(msgbuf + len, sizeof(msgbuf) - len, fmt, ap);
-		if (len >= sizeof(msgbuf))
-			goto err;
-	}
-
-	if (mt == M_SYSERR) {
-		len += snprintf(msgbuf + len,
-		    sizeof(msgbuf) - len, ": %s", strerror(errno));
-		if (len >= sizeof(msgbuf))
-			goto err;
+	bp = NULL;
+	blen = 0;
+	GET_SPACE_GOTO(sp, bp, blen, nlen);
+	if (0) {
+binc_err:	return;
 	}
 
 	/*
-	 * If len >= the size, some characters were discarded.
-	 * Ignore trailing nul.
+	 * Error prefix.
+	 *
+	 * mp:	 pointer to the current next character to be written
+	 * mlen: length of the already written characters
+	 * blen: total length of the buffer
 	 */
-err:	if (len >= sizeof(msgbuf))
-		len = sizeof(msgbuf) - 1;
+#define	REM	(blen - mlen)
+	mp = bp;
+	mlen = 0;
+	if (mt == M_SYSERR) {
+		p = msg_cat(gp, M("0001", "Error: "), &len);
+		if (REM < len)
+			goto retry;
+		memmove(mp, p, len);
+		mp += len;
+		mlen += len;
+	}
+
+	/* File name, line number prefix. */
+	if (sp != NULL && sp->if_name != NULL) {
+		for (p = sp->if_name; *p != '\0'; ++p) {
+			len = snprintf(mp, REM, "%s", KEY_NAME(sp, *p));
+			mp += len;
+			if ((mlen += len) > blen)
+				goto retry;
+		}
+		len = snprintf(mp, REM, ", %d: ", sp->if_lno);
+		mp += len;
+		if ((mlen += len) > blen)
+			goto retry;
+	}
+
+	if (fmt == NULL)
+		goto nofmt;
+	fmt = msg_cat(gp, fmt, NULL);
+
+#ifndef NL_ARGMAX
+	/*
+	 * Nvi needs to run on machines that do not support the %[digit]*$
+	 * conventions.  To do this, we reformat the string into something
+	 * that we can hand to vsprintf(3) and which will take the arguments
+	 * in the right order.  Then, when vsprintf is done, we put the parts
+	 * of the string back into the right order.  To do that, we have to
+	 * have a separator character that is known not to occur in any vi
+	 * message.  We're using <newline> here.  If that fails for some
+	 * reason, change it to search the string, selecting the separator
+	 * character on a case-by-case basis.  This is expensive, but it's
+	 * the only portable solution.
+	 *
+	 * The result of this loop is an array of pointers into the message
+	 * string, with associated lengths and argument numbers.  The array
+	 * is in the "correct" order, and the arg field contains the argument
+	 * order.
+	 */
+#define	SEPARATOR_CHAR	'\n'
+	for (p = fmt, soff = 0; soff < __NL_ARGMAX;) {
+		for (t = p; *p != '\0' && *p != '%'; ++p);
+		if (*p == '\0')
+			break;
+		++p;
+		if (!isdigit(*p)) {
+			if (*p == '%')
+				++p;
+			continue;
+		}
+		for (u = p; *++p != '\0' && isdigit(*p););
+		if (*p != '$')
+			continue;
+
+		/* Up to, and including the % character. */
+		str[soff].str = t;
+		str[soff].prefix = u - t;
+
+		/* Up to, and including the $ character. */
+		str[soff].arg = atoi(u);
+		str[soff].skip = (p - u) + 1;
+		if (str[soff].arg >= __NL_ARGMAX)
+			goto err;
+
+		/* Up to, and including the conversion character. */
+		for (u = p; (ch = *++p) != '\0';)
+			if (isalpha(ch) &&
+			    strchr("diouxXfeEgGcspn", ch) != NULL)
+				break;
+		str[soff].suffix = p - u;
+		++p;
+		++soff;
+	}
+
+	/* If no magic strings, we're done. */
+	if (soff == 0)
+		goto format;
+
+	 /*
+	  * Get space for the reordered strings.  Need a <newline> separator
+	  * for each reordered string, and a '\0' for the EOS.  We throw in
+	  * extra so the buffer can (hopefully) be reused when the message is
+	  * reordered the second time.
+	  */
+	if ((rbp = malloc(nlen)) == NULL)
+		goto err;
+	s_rbp = rbp;
+
+	/*
+	 * Reorder the strings into the message string based on argument
+	 * order.
+	 *
+	 * !!!
+	 * We ignore arguments that are out of order, i.e. if we don't find
+	 * an argument, we continue.  Assume (almost certainly incorrectly)
+	 * that whoever created the string knew what they were doing.
+	 *
+	 * !!!
+	 * Brute force "sort", but since we don't expect more than one or two
+	 * arguments in a string, the setup cost of a fast sort will be more
+	 * expensive than the loop.
+	 */
+	for (cnt1 = 1; cnt1 <= soff; ++cnt1)
+		for (cnt2 = 0; cnt2 < soff; ++cnt2)
+			if (cnt1 == str[cnt2].arg) {
+				memmove(s_rbp, str[cnt2].str, str[cnt2].prefix);
+				memmove(s_rbp + str[cnt2].prefix,
+				    str[cnt2].str + str[cnt2].prefix +
+				    str[cnt2].skip, str[cnt2].suffix);
+				s_rbp += str[cnt2].prefix + str[cnt2].suffix;
+				*s_rbp++ = SEPARATOR_CHAR;
+				break;
+			}
+	*s_rbp = '\0';
+	fmt = rbp;
+#endif
+
+	/* Format the arguments into the string. */
+format:	len = vsnprintf(mp, REM, fmt, ap);
+	if (len >= nlen)
+		goto retry;
+
+#ifndef NL_ARGMAX
+	if (soff == 0)
+		goto nofmt;
+
+	/*
+	 * Go through the resulting string, and, for each SEPARATOR_CHAR
+	 * separated string, enter its new starting position and length
+	 * in the array.
+	 */
+	for (p = t = bp, cnt1 = 1; *p != '\0'; ++p)
+		if (*p == '\n') {
+			for (cnt2 = 0; cnt2 < soff; ++cnt2)
+				if (str[cnt2].arg == cnt1)
+					break;
+			str[cnt2].str = t;
+			str[cnt2].prefix = p - t;
+			t = p + 1;
+			++cnt1;
+		}
+
+	/*
+	 * Reorder the strings once again, putting them back into the
+	 * message buffer.
+	 *
+	 * !!!
+	 * Note, the length of the message gets decremented once for
+	 * each string, because we're discarding the <newline>.
+	 */
+	for (s_rbp = rbp, cnt1 = 0; cnt1 < soff; ++cnt1) {
+		memmove(rbp, str[cnt1].str, str[cnt1].prefix);
+		rbp += str[cnt1].prefix;
+		--len;
+	}
+	memmove(mp, s_rbp, rbp - s_rbp);
+		
+	/* Free the reordered string memory. */
+	free(s_rbp);
+#endif
+
+nofmt:	mp += len;
+	if ((mlen += len) > blen)
+		goto retry;
+	if (mt == M_SYSERR) {
+		len = snprintf(mp, REM, ": %s", strerror(errno));
+		mp += len;
+		if ((mlen += len) > blen)
+			goto retry;
+	}
 
 #ifdef DEBUG
 	if (sp != NULL)
-		TRACE(sp, "%.*s\n", len, msgbuf);
+		TRACE(sp, "%.*s\n", mlen, bp);
 #endif
-	msg_app(__global_list, sp, mt == M_ERR ? 1 : 0, msgbuf, len);
+	msg_app(__global_list, sp, mt == M_ERR ? 1 : 0, bp, mlen);
+
+err:	FREE_SPACE(sp, bp, blen);
 }
 
 /*
@@ -354,49 +539,90 @@ msg_status(sp, ep, lno, showlast)
 	return (0);
 }
 
-#ifdef MSG_CATALOG
 /*
- * get_msg --
- *	Return a format based on a message number.
+ * msg_open --
+ *	Open the message catalogs.
  */
-char *
-get_msg(sp, msgno)
+int
+msg_open(sp, file)
 	SCR *sp;
-	char *s_msgno;
+	char *file;
+{
+	DB *db;
+#ifdef MSG_CATALOG
+	if ((db = dbopen(file,
+	    O_NONBLOCK | O_RDONLY, 0, DB_RECNO, NULL)) == NULL) {
+		msgq(sp, M_ERR, 
+		    "Unable to open %s: %s", file, strerror(errno));
+		return (1);
+	}
+
+	/*
+	 * !!!
+	 * Assume that the first file opened is the default/fallback one,
+	 * and that all subsequent ones user defined.
+	 */
+	if (sp->gp->msg_bck == NULL)
+		sp->gp->msg_bck = db;
+	else {
+		if (sp->gp->msg != NULL)
+			(void)sp->gp->msg->close(sp->gp->msg);
+		sp->gp->msg = db;
+	}
+#endif
+	return (0);
+}
+
+/*
+ * msg_close --
+ *	Close the message catalogs.
+ */
+void
+msg_close(gp)
+	GS *gp;
+{
+	if (gp->msg_bck != NULL)
+		(void)gp->msg_bck->close(gp->msg_bck);
+	if (gp->msg != NULL)
+		(void)gp->msg->close(gp->msg);
+}
+
+/*
+ * msg_cat --
+ *	Return a single message from the catalog, plus its length.
+ */
+static const char *
+msg_cat(gp, str, lenp)
+	GS *gp;
+	const char *str;
+	size_t *lenp;
 {
 	DBT data, key;
-	GS *gp;
 	recno_t msgno;
-	char *msg, *p;
+	const char *p;
 
-	gp = sp == NULL ? __global_list : sp->gp;
-	if (gp->msgdb == NULL) {
-		p = sp == NULL ? _PATH_MSGDEF : O_STR(sp, O_CATALOG);
-		if ((gp->msgdb = dbopen(p,
-		    O_NONBLOCK | O_RDONLY, 444, DB_RECNO, NULL)) == NULL) {
-			if ((fmt = malloc(256)) == NULL)
-				return ("");
-			(void)snprintf(fmt,
-			    "unable to open %s: %s", p, strerror(errno));
-			return (fmt);
-		}
-	}
-	msgno = atoi(s_msgno);
+	/*
+	 * If it's a catalog message, i.e. a number and nothing else,
+	 * get the string from the catalog.
+	 */
+	for (p = str; *p != '\0'; ++p)
+		if (!isdigit(*p))
+			goto nocat;
+
 	key.data = &msgno;
 	key.size = sizeof(recno_t);
-	switch (gp->msgdb->get(gp->msgdb, &key, &data, 0)) {
-	case 0:
+	msgno = atoi(str);
+
+	if (gp->msg != NULL &&
+	    gp->msg->get(gp->msg, &key, &data, 0) == 0 ||
+	    gp->msg_bck != NULL &&
+	    gp->msg_bck->get(gp->msg_bck, &key, &data, 0) == 0) {
+		if (lenp != NULL)
+			*lenp = data.size;
 		return (data.data);
-	case 1:
-		p = "no catalog record %ls";
-		break;
-	case -1:
-		p = "catalog record %s: %s";
-		break;
 	}
-	if ((fmt = malloc(256)) == NULL)
-		return ("");
-	(void)snprintf(fmt, p, msgno, strerror(errno));
-	return (fmt);
+
+nocat:	if (lenp != NULL)
+		*lenp = strlen(str);
+	return (str);
 }
-#endif
