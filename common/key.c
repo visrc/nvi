@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 10.20 1996/02/03 15:08:18 bostic Exp $ (Berkeley) $Date: 1996/02/03 15:08:18 $";
+static char sccsid[] = "$Id: key.c,v 10.21 1996/02/06 11:55:11 bostic Exp $ (Berkeley) $Date: 1996/02/06 11:55:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -750,11 +750,11 @@ v_resize(sp, evp)
 
 	(void)snprintf(b1, sizeof(b1), "lines=%lu", (u_long)evp->e_lno);
 	a.len = strlen(b1);
-	if (opts_set(sp, argv, 1, NULL))
+	if (opts_set(sp, argv, NULL))
 		goto err;
 	(void)snprintf(b1, sizeof(b1), "columns=%lu", (u_long)evp->e_cno);
 	a.len = strlen(b1);
-	if (opts_set(sp, argv, 1, NULL))
+	if (opts_set(sp, argv, NULL))
 		goto err;
 
 	rval = 0;
