@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_vi.c,v 8.24 1996/12/11 13:09:15 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:09:15 $";
+static const char sccsid[] = "$Id: m_vi.c,v 8.25 1996/12/11 13:35:01 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:35:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -64,6 +64,8 @@ static	Cursor		std_cursor;
 static	Cursor		busy_cursor;
 static	XtTranslations	area_trans;
 static	int		multi_click_length;
+
+void (*__vi_exitp)();				/* Exit function. */
 
 static	char	bp[ BufferSize ];		/* input buffer from pipe */
 static	size_t	len, blen = sizeof(bp);
@@ -917,17 +919,22 @@ static	Cardinal	insert_here( wid )
 }
 
 
-/* create the necessary widgetry */
-#if defined(__STDC__)
-Widget	vi_create_editor( String name, Widget parent )
-#else
-Widget	vi_create_editor( name, parent )
-String	name;
-Widget	parent;
-#endif
+/*
+ * vi_create_editor --
+ *	Create the necessary widgetry.
+ *
+ * PUBLIC: Widget vi_create_editor __P((String, Widget, void (*)(void)));
+ */
+Widget
+vi_create_editor(name, parent, exitp)
+	String name;
+	Widget parent;
+	void (*exitp) __P((void));
 {
     Widget	pane_w;
     Display	*display = XtDisplay( parent );
+
+    __vi_exitp = exitp;
 
     /* first time through? */
     if ( ctx == NULL ) {
