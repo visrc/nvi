@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.88 1996/12/13 11:59:42 bostic Exp $ (Berkeley) $Date: 1996/12/13 11:59:42 $
+#	$Id: Makefile.in,v 8.89 1996/12/14 13:57:56 bostic Exp $ (Berkeley) $Date: 1996/12/14 13:57:56 $
 
 srcdir=	@srcdir@/..
 CC=	@CC@
@@ -65,7 +65,8 @@ vi_motif: $(MALL)
 	$(SHRPENV) $(CC) $(LDFLAGS) -o $@ $(MALL) @MOTIFLIBS@
 
 MLIB=	ip_run.o ip_send.o ip_trans.o m_copypaste.o m_func.o m_menu.o \
-	m_options.o m_prompt.o m_search.o m_tags.o m_util.o m_vi.o xtabbed.o
+	m_options.o m_prompt.o m_ruler.o m_search.o m_tags.o m_util.o \
+	m_vi.o xtabbed.o
 libmvi.a: $(MLIB)
 	$(rm) -f $@
 	$(ar) cq $@ $(MLIB)
@@ -208,8 +209,9 @@ docs:
 	cd $(srcdir)/docs/USD.doc/vitut && $(MAKE)
 
 clean:
-	-rm -f $(CLOBJS) $(COBJS) $(DBOBJS) $(IPOBJS)
-	-rm -f $(REOBJS) $(VIOBJS) $(MLIB)
+	-rm -f $(CLOBJS) $(COBJS) $(DBOBJS)
+	-rm -f $(IPOBJS) $(MLIB) $(REOBJS)
+	-rm -f $(VIOBJS)
 	-rm -f *.o memcpy.c perl.c *.core core vi ex vi_motif libmvi.a
 
 cleandocs:
@@ -276,6 +278,8 @@ m_options.o: $(srcdir)/motif_l/m_options.c
 m_menu.o: $(srcdir)/motif_l/m_menu.c
 	$(CC) $(CFLAGS) @XINCS@ $?
 m_prompt.o: $(srcdir)/motif_l/m_prompt.c
+	$(CC) $(CFLAGS) @XINCS@ $?
+m_ruler.o: $(srcdir)/motif_l/m_ruler.c
 	$(CC) $(CFLAGS) @XINCS@ $?
 m_search.o: $(srcdir)/motif_l/m_search.c
 	$(CC) $(CFLAGS) @XINCS@ $?
