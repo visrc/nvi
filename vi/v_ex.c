@@ -6,11 +6,13 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 5.9 1992/06/05 11:04:17 bostic Exp $ (Berkeley) $Date: 1992/06/05 11:04:17 $";
+static char sccsid[] = "$Id: v_ex.c,v 5.10 1992/10/10 14:00:27 bostic Exp $ (Berkeley) $Date: 1992/10/10 14:00:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
+
 #include <curses.h>
+#include <limits.h>
 #include <stdio.h>
 
 #include "vi.h"
@@ -31,7 +33,7 @@ v_ex(vp, fm, tm, rp)
 {
 	EXF *scurf;
 	int flags, key;
-	char *p;
+	u_char *p;
 
 	scurf = curf;
 	v_startex();
