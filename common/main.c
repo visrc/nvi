@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.56 1993/12/20 17:29:51 bostic Exp $ (Berkeley) $Date: 1993/12/20 17:29:51 $";
+static char sccsid[] = "$Id: main.c,v 8.57 1993/12/22 17:57:42 bostic Exp $ (Berkeley) $Date: 1993/12/22 17:57:42 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -263,15 +263,19 @@ main(argc, argv)
 		}
 		/*
 		 * !!!
-		 * According to O'Reilly ("Learning the VI Editor", Fifth
-		 * Edition, May 1992), System V has an option, "[no]exrc"
-		 * which "allows the execution of .exrc files that reside
-		 * outside the user's home directory.  My expectation is
-		 * that this is intended to make sourcing "local" .exrc files
-		 * a bit more secure.  This isn't a reasonable fix, and it
-		 * leaves the trojan horse door widely open.  Instead we apply
-		 * the same tests to local .exrc files that we apply to the
-		 * other .exrc files.
+		 * According to O'Reilly ("Learning the VI Editor", Fifth Ed.,
+		 * May 1992, page 106), System V release 3.2 and later, has an
+		 * option "[no]exrc", causing vi to not "read .exrc files in
+		 * the current directory unless you first set the exrc option
+		 * in your home directory's .exrc file".  Yeah, right.  Did
+		 * someone actually believe that users would change their home
+		 * .exrc file based on whether or not they wanted to source the
+		 * current local .exrc?  Or that users would want ALL the local
+		 * .exrc files on some systems, and none of them on others?
+		 * I think not.
+		 *
+		 * Apply the same tests to local .exrc files that are applied
+		 * to any other .exrc file.
 		 */
 		if (exrc_isok(sp, _PATH_EXRC, 0))
 			(void)ex_cfile(sp, NULL, _PATH_EXRC);
@@ -586,6 +590,7 @@ exrc_isok(sp, path, rootok)
 {
 	struct stat sb;
 	uid_t uid;
+	char *emsg, buf[MAXPATHLEN];
 
 	/* Check for the file's existence. */
 	if (stat(path, &sb))
@@ -597,29 +602,32 @@ exrc_isok(sp, path, rootok)
 	 * by someone other than the user, unless the undocumented option
 	 * sourceany was set.  We don't support the sourceany option.  We
 	 * check that the user (or root, for system files) owns the file and
-	 * require that it be unwriteable by anyone other than the owner.
+	 * require that it not be writeable by anyone other than the owner.
 	 */
 
 	/* Owned by the user or root. */
 	uid = getuid();
 	if (rootok) {
 		if (sb.st_uid != uid && sb.st_uid != 0) {
-			msgq(sp, M_ERR,
-			    "%s not sourced: not owned by you or root.", path);
-			return (0);
+			emsg = "not owned by you or root";
+			goto err;
 		}
 	} else
 		if (sb.st_uid != uid) {
-			msgq(sp, M_ERR,
-			    "%s not sourced: not owned by you.", path);
-			return (0);
+			emsg = "not owned by you";
+			goto err;
 		}
 
 	/* Not writeable by anyone but the owner. */
 	if (sb.st_mode & (S_IWGRP | S_IWOTH)) {
-		msgq(sp, M_ERR,
-		    "%s not sourced: writeable by a user other than the owner.",
-		    path);
+		emsg = "writeable by a user other than the owner";
+err:		if (strchr(path, '/') == NULL &&
+		    getcwd(buf, sizeof(buf)) != NULL)
+			msgq(sp, M_ERR,
+			    "%s/%s: not sourced: %s.", buf, path, emsg);
+		else
+			msgq(sp, M_ERR,
+			    "%s: not sourced: %s.", path, emsg);
 		return (0);
 	}
 	return (1);
