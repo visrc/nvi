@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 8.21 1994/08/05 07:56:38 bostic Exp $ (Berkeley) $Date: 1994/08/05 07:56:38 $";
+static char sccsid[] = "$Id: ex_append.c,v 8.22 1994/08/07 08:58:22 bostic Exp $ (Berkeley) $Date: 1994/08/07 08:58:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -85,7 +85,6 @@ aci(sp, ep, cmdp, cmd)
 	TEXTH *sv_tiqp, tiq;
 	TEXT *tp;
 	struct termios t;
-	recno_t cnt;
 	u_int flags;
 	int rval;
 
@@ -142,55 +141,45 @@ aci(sp, ep, cmdp, cmd)
 	 *
 	 * !!!
 	 * Adjust the current line number for the commands to match historic
-	 * practice if the user doesn't enter anything.  This is safe because
-	 * an address of 0 is illegal for change and insert.
+	 * practice if the user doesn't enter anything, and set the address
+	 * to which we'll append.  This is safe because an address of 0 is
+	 * illegal for change and insert.
 	 */
 	m = cmdp->addr1;
 	switch (cmd) {
 	case INSERT:
 		--m.lno;
-		cmd = APPEND;
 		/* FALLTHROUGH */
 	case APPEND:
 		if (sp->lno == 0)
 			sp->lno = 1;
 		break;
 	case CHANGE:
+		--m.lno;
 		if (sp->lno != 1)
 			--sp->lno;
 		break;
 	}
 
-	tp = sp->tiqp->cqh_first;
-	if (cmd == CHANGE)
-		for (;; tp = tp->q.cqe_next) {
-			if (m.lno > cmdp->addr2.lno) {
-				cmd = APPEND;
-				--m.lno;
-				break;
-			}
-			if (tp == (TEXT *)sp->tiqp) {
-				for (cnt =
-				    (cmdp->addr2.lno - m.lno) + 1; cnt--;)
-					if (file_dline(sp, ep, m.lno))
-						goto err;
-				goto done;
-			}
-			if (file_sline(sp, ep, m.lno, tp->lb, tp->len))
-				goto err;
-			sp->lno = m.lno++;
-		}
+	/*
+	 * !!!
+	 * Cut into the unnamed buffer.
+	 */
+	if (cmd == CHANGE &&
+	    (cut(sp, ep, NULL, &cmdp->addr1, &cmdp->addr2, CUT_LINEMODE) ||
+	    delete(sp, ep, &cmdp->addr1, &cmdp->addr2, 1)))
+		goto err;
 
-	if (cmd == APPEND)
-		for (; tp != (TEXT *)sp->tiqp; tp = tp->q.cqe_next) {
-			if (file_aline(sp, ep, 1, m.lno, tp->lb, tp->len)) {
-err:				rval = 1;
-				goto done;
-			}
-			sp->lno = ++m.lno;
+	for (tp = sp->tiqp->cqh_first;
+	    tp != (TEXT *)sp->tiqp; tp = tp->q.cqe_next) {
+		if (file_aline(sp, ep, 1, m.lno, tp->lb, tp->len)) {
+err:			rval = 1;
+			break;
 		}
+		sp->lno = ++m.lno;
+	}
 
-done:	if (IN_VI_MODE(sp)) {
+	if (IN_VI_MODE(sp)) {
 		sp->tiqp = sv_tiqp;
 		text_lfree(&tiq);
 
