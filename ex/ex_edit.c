@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 8.10 1993/11/20 10:05:37 bostic Exp $ (Berkeley) $Date: 1993/11/20 10:05:37 $";
+static char sccsid[] = "$Id: ex_edit.c,v 8.11 1993/12/01 10:03:08 bostic Exp $ (Berkeley) $Date: 1993/12/01 10:03:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,9 +22,13 @@ static char sccsid[] = "$Id: ex_edit.c,v 8.10 1993/11/20 10:05:37 bostic Exp $ (
  * ex_edit --	:e[dit][!] [+cmd] [file]
  *		:vi[sual][!] [+cmd] [file]
  *
- *	Edit a file; if none specified, re-edit the current file.
- *	The second form of the command can only be executed while
- *	in vi mode.  See the hack in ex.c:ex_cmd().
+ * Edit a file; if none specified, re-edit the current file.  The second
+ * form of the command can only be executed while in vi mode.  See the
+ * hack in ex.c:ex_cmd().
+ *
+ * !!!
+ * Historic vi didn't permit the '+' command form without specifying
+ * a file name as well.
  */
 int
 ex_edit(sp, ep, cmdp)
