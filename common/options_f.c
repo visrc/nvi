@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 9.4 1994/11/21 10:30:57 bostic Exp $ (Berkeley) $Date: 1994/11/21 10:30:57 $";
+static char sccsid[] = "$Id: options_f.c,v 9.5 1994/11/21 19:43:54 bostic Exp $ (Berkeley) $Date: 1994/11/21 19:43:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -325,12 +325,6 @@ DECL(f_tabstop)
 {
 	if (val == 0) {
 		msgq(sp, M_ERR, "070|Tab stops may not be set to 0");
-		return (1);
-	}
-#define	MAXTABSTOP	20
-	if (val > MAXTABSTOP) {
-		msgq(sp, M_ERR,
-		    "071|Tab stops may not be larger than %d", MAXTABSTOP);
 		return (1);
 	}
 	O_VAL(sp, O_TABSTOP) = val;
