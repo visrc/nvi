@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 10.8 1995/09/27 10:20:21 bostic Exp $ (Berkeley) $Date: 1995/09/27 10:20:21 $";
+static char sccsid[] = "$Id: vs_smap.c,v 10.9 1995/09/27 12:07:19 bostic Exp $ (Berkeley) $Date: 1995/09/27 12:07:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -100,14 +100,14 @@ vs_change(sp, lno, op)
 				--p->lno;
 			if (sp->lno >= lno)
 				--sp->lno;
-			F_SET(vip, VIP_SCR_NUMBER);
+			F_SET(vip, VIP_N_RENUMBER);
 			break;
 		case LINE_INSERT:
 			for (p = HMAP, cnt = sp->t_rows; cnt--; ++p)
 				++p->lno;
 			if (sp->lno >= lno)
 				++sp->lno;
-			F_SET(vip, VIP_SCR_NUMBER);
+			F_SET(vip, VIP_N_RENUMBER);
 			break;
 		case LINE_RESET:
 			break;
@@ -115,7 +115,7 @@ vs_change(sp, lno, op)
 		return (0);
 	}
 
-	F_SET(vip, VIP_SCR_DIRTY);
+	F_SET(vip, VIP_N_REFRESH);
 
 	/*
 	 * Invalidate the line size cache, and invalidate the cursor if it's
@@ -125,6 +125,15 @@ vs_change(sp, lno, op)
 	if (sp->lno == lno)
 		F_SET(vip, VIP_CUR_INVALID);
 
+	/*
+	 * If ex modifies the screen after ex output is already on the
+	 * screen, don't touch it -- we'll get scrolling wrong, at best.
+	 */
+	if (!F_ISSET(sp, S_INPUT_INFO) && VIP(sp)->totalcount > 1) {
+		F_SET(vip, VIP_N_REDRAW);
+		return (0);
+	}
+
 	/* Save and restore the cursor for these routines. */
 	(void)sp->gp->scr_cursor(sp, &oldy, &oldx);
 
@@ -132,12 +141,12 @@ vs_change(sp, lno, op)
 	case LINE_DELETE:
 		if (vs_sm_delete(sp, lno))
 			return (1);
-		F_SET(vip, VIP_SCR_NUMBER);
+		F_SET(vip, VIP_N_RENUMBER);
 		break;
 	case LINE_INSERT:
 		if (vs_sm_insert(sp, lno))
 			return (1);
-		F_SET(vip, VIP_SCR_NUMBER);
+		F_SET(vip, VIP_N_RENUMBER);
 		break;
 	case LINE_RESET:
 		if (vs_sm_reset(sp, lno))
