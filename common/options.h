@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: options.h,v 10.7 1996/02/06 11:55:47 bostic Exp $ (Berkeley) $Date: 1996/02/06 11:55:47 $
+ *	$Id: options.h,v 10.8 1996/02/20 09:31:47 bostic Exp $ (Berkeley) $Date: 1996/02/20 09:31:47 $
  */
 
 /*
@@ -30,7 +30,7 @@
 	    (sp)->opts[(o)].fld)
 
 /* Global option macros. */
-#define	OG_CLR(gp, o)		((gp)->opts[(o)].o_cur.val) = 1
+#define	OG_CLR(gp, o)		((gp)->opts[(o)].o_cur.val) = 0
 #define	OG_SET(gp, o)		((gp)->opts[(o)].o_cur.val) = 1
 #define	OG_ISSET(gp, o)		((gp)->opts[(o)].o_cur.val)
 #define	OG_STR(gp, o)		((gp)->opts[(o)].o_cur.str)
