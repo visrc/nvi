@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 5.7 1993/04/19 15:33:16 bostic Exp $ (Berkeley) $Date: 1993/04/19 15:33:16 $";
+static char sccsid[] = "$Id: v_txt.c,v 5.8 1993/05/02 15:54:36 bostic Exp $ (Berkeley) $Date: 1993/05/02 15:54:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -20,6 +20,7 @@ static char sccsid[] = "$Id: v_txt.c,v 5.7 1993/04/19 15:33:16 bostic Exp $ (Ber
 #include "vi.h"
 #include "vcmd.h"
 
+static int	 txt_abbrev __P((SCR *, TEXT *));
 static TEXT	*txt_backup __P((SCR *, EXF *, HDR *, TEXT *, u_int));
 static void	 txt_err __P((SCR *, EXF *, HDR *));
 static int	 txt_indent __P((SCR *, TEXT *));
@@ -80,6 +81,8 @@ v_ntext(sp, ep, hp, tm, p, len, rp, prompt, ai_line, flags)
 	enum { C_CARATSET, C_NOCHANGE, C_NOTSET, C_ZEROSET } carat_st;
 				/* State of quotation. */
 	enum { Q_NOTSET, Q_NEXTCHAR, Q_THISCHAR } quoted;
+				/* State of abbreviation checks. */
+	enum { L_NOCHECK, L_SPACE, L_NOTSPACE } lch;
 	TEXT *tp, *ntp;		/* Input text structures. */
 	size_t rcol;		/* 0-N: insert offset in the replay buffer. */
 	int ch;			/* Input character. */
@@ -197,6 +200,10 @@ newtp:		if ((tp = text_init(sp, p, len, len + 32)) == NULL)
 	rcol = 0;
 	replay = LF_ISSET(TXT_REPLAY);
 
+	/* Initialize abbreviations check. */
+	lch = F_ISSET(sp, S_ABBREV) &&
+	    LF_ISSET(TXT_MAPINPUT) ? L_NOTSPACE : L_NOCHECK;
+
 	for (carat_st = C_NOTSET, quoted = Q_NOTSET;;) {
 
 		/* Reset the line and update the screen. */
@@ -239,6 +246,11 @@ next_ch:	if (replay)
 		case K_CR:
 		case K_NL:				/* New line. */
 #define	LINE_RESOLVE {							\
+			/* Handle abbreviations. */			\
+			if (lch == L_NOTSPACE && txt_abbrev(sp, tp))	\
+				ERR;					\
+			if (lch != L_NOCHECK)				\
+				lch = L_SPACE;				\
 			/*						\
 			 * The "R" command doesn't delete characters	\
 			 * that it could have overwritten.  Other input	\
@@ -267,10 +279,10 @@ next_ch:	if (replay)
 				F_SET(sp, S_CUR_INVALID);		\
 			}						\
 }
+			LINE_RESOLVE;
+
 			if (LF_ISSET(TXT_CR))
 				goto k_escape;
-
-			LINE_RESOLVE;
 
 			/*
 			 * Move any remaining insert characters into
@@ -329,10 +341,10 @@ next_ch:	if (replay)
 			if (!LF_ISSET(TXT_ESCAPE))
 				goto ins_ch;
 
-k_escape:		LINE_RESOLVE;
+			LINE_RESOLVE;
 
 			/* If there are insert characters, copy them down. */
-			if (tp->insert && tp->overwrite)
+k_escape:		if (tp->insert && tp->overwrite)
 				memmove(tp->lb + sp->cno,
 				    tp->lb + sp->cno + tp->overwrite,
 				    tp->insert);
@@ -527,7 +539,17 @@ k_escape:		LINE_RESOLVE;
 			quoted = Q_NEXTCHAR;
 			/* FALLTHROUGH */
 		default:			/* Insert the character. */
-ins_ch:			if (tp->overwrite) {	/* Overwrite a character. */
+			/*
+			 * If entering a space character after a word, check
+			 * for abbreviations.
+			 */
+ins_ch:			if (isspace(ch) &&
+			    lch == L_NOTSPACE && txt_abbrev(sp, tp))
+				ERR;
+			if (lch != L_NOCHECK)
+				lch = isspace(ch) ? L_SPACE : L_NOTSPACE;
+
+			if (tp->overwrite) {	/* Overwrite a character. */
 				--tp->overwrite;
 				F_SET(sp, S_CUR_INVALID);
 			} else {		/* Insert a character. */
@@ -549,6 +571,7 @@ ins_ch:			if (tp->overwrite) {	/* Overwrite a character. */
 				}
 				++tp->len;
 			}
+
 			tp->lb[sp->cno++] = ch;
 
 			/*
@@ -587,6 +610,52 @@ ret:	F_CLR(sp, S_INPUT);
 }
 
 /*
+ * txt_abbrev --
+ *	Handle abbreviations.
+ */
+static int
+txt_abbrev(sp, tp)
+	SCR *sp;
+	TEXT *tp;
+{
+	SEQ *qp;
+	size_t diff, len, off;
+	char *p;	
+
+	/* Find the beginning of this "word". */
+	for (off = sp->cno - 1, p = tp->lb + off, len = 0;; --p, --off) {
+		if (isspace(*p)) {
+			++p;
+			break;
+		}
+		++len;
+		if (off == tp->ai || off == tp->offset)
+			break;
+	}
+
+	/* Check for any abbreviations. */
+	if ((qp = seq_find(sp, p, len, SEQ_ABBREV, NULL)) == NULL)
+		return (0);
+
+	/* Copy up or down, depending on the lengths. */
+	if (len < qp->olen) {
+		diff = qp->olen - len;
+		BINC(sp, tp->lb, tp->lb_len, tp->len + diff);
+		memmove(tp->lb + sp->cno + diff, tp->lb + sp->cno, tp->insert);
+		sp->cno += diff;
+		tp->len += diff;
+	} else if (len > qp->olen) {
+		diff = len - qp->olen;
+		memmove(tp->lb + sp->cno - diff, tp->lb + sp->cno, tp->insert);
+		sp->cno -= diff;
+		tp->len -= diff;
+	}
+	memmove(p, qp->output, qp->olen);
+	F_SET(sp, S_CUR_INVALID);
+	return (0);
+}
+
+/*
  * txt_auto --
  *	Handle autoindent.
  */
@@ -620,7 +689,7 @@ txt_auto(sp, ep, lno, tp)
 	nlen = p - t;
 
 	/* Make sure the buffer's big enough. */
-	BINC(sp, tp->lb, tp->lb_len, nlen + tp->len);
+	BINC(sp, tp->lb, tp->lb_len, tp->len + nlen);
 
 	/* Copy the indentation into the new buffer. */
 	memmove(tp->lb + nlen, tp->lb, tp->len);
