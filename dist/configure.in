@@ -552,6 +552,8 @@ if test "$vi_cv_ftruncate" = no; then
 fi
 AC_MSG_RESULT($vi_cv_ftruncate)
 
+CSAVELIBS="$LIBS"
+LIBS="$CURSLIBS $LIBS"
 dnl Check for the tigetstr/tigetnum functions.
 AC_MSG_CHECKING(for tigetstr/tigetnum)
 AC_CACHE_VAL(vi_cv_have_curses_tigetstr, [dnl
@@ -655,6 +657,7 @@ if test "$vi_cv_have_curses_setupterm" = yes; then
 	AC_DEFINE(HAVE_CURSES_SETUPTERM)
 fi
 AC_MSG_RESULT($vi_cv_have_curses_setupterm)
+LIBS="$CSAVELIBS"
 
 dnl Some moron decided to drop off an argument from the gettimeofday call,
 dnl without changing the name.
