@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.51 1994/09/25 09:32:03 bostic Exp $ (Berkeley) $Date: 1994/09/25 09:32:03 $";
+static char sccsid[] = "$Id: search.c,v 8.52 1994/10/09 15:21:02 bostic Exp $ (Berkeley) $Date: 1994/10/09 15:21:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,10 +29,10 @@ static char sccsid[] = "$Id: search.c,v 8.51 1994/09/25 09:32:03 bostic Exp $ (B
 #include <regex.h>
 
 #include "vi.h"
+#include "excmd.h"
 
 static int	check_delta __P((SCR *, EXF *, long, recno_t));
 static int	ctag_conv __P((SCR *, char **, int *));
-static int	get_delta __P((SCR *, char **, long *, u_int *));
 static int	resetup __P((SCR *, regex_t **, enum direction,
 		    char *, char **, long *, u_int *));
 
@@ -53,8 +53,9 @@ resetup(sp, rep, dir, ptrn, epp, deltap, flagp)
 	u_int *flagp;
 {
 	u_int flags;
+	size_t len;
 	int delim, eval, re_flags, replaced;
-	char *p, *t;
+	char *p, *t, *omsg, *umsg;
 
 	/* Set return information the default. */
 	*deltap = 0;
@@ -115,14 +116,32 @@ prev:		if (!F_ISSET(sp, S_SRE_SET)) {
 		}
 
 		/*
-		 * If characters after the terminating delimiter, it may
-		 * be an error, or may be an offset.  In either case, we
-		 * return the end of the string, whatever it may be.
+		 * If non-<blank> characters after the terminating delimiter,
+		 * it may be an error or may be a line delta (an ex address
+		 * offset, actually).  In either case, we return the end of
+		 * the string, whatever it may be.
+		 *
+		 * !!!
+		 * Historically, a delta on a search pattern used as a motion
+		 * command caused the command to became a line mode command
+		 * regardless of the cursor positions.  A common trick is to
+		 * use a delta of "+0", just to make this happen.
 		 */
-		if (*p) {
-			if (get_delta(sp, &p, deltap, flagp))
+		for (; *p != '\0'; ++p) {
+			if (isblank(p[0]))
+				continue;
+			if (isdigit(p[0] ||
+			    p[0] == '+' || p[0] == '-' || p[0] == '^'))
+				*flagp |= SEARCH_DELTA;
+			break;
+		}
+		if (*p != '\0') {
+			omsg = "247|Search delta value overflow";
+			umsg = "248|Search delta value underflow";
+			len = strlen(p);		/* XXX: 8-bit */
+			if (ex_offset(sp, &p, &len, deltap, omsg, umsg))
 				return (1);
-			if (*p && LF_ISSET(SEARCH_TERM)) {
+			if (*p != '\0' && LF_ISSET(SEARCH_TERM)) {
 				msgq(sp, M_ERR,
 		"244|Characters after search string and/or line offset");
 				return (1);
@@ -684,75 +703,6 @@ re_conv(sp, ptrnp, replacedp)
 }
 
 /*
- * get_delta --
- *	Get a line delta.  The trickiness is that the delta can be pretty
- *	complicated, i.e. "+3-2+3++- ++" is allowed.
- *
- * !!!
- * In historic vi, if you had a delta on a search pattern which was used as
- * a motion command, the command became a line mode command regardless of the
- * cursor positions.  A fairly common trick is to use a delta of "+0" to make
- * the command a line mode command.  This is the only place that knows about
- * delta's, so we set the return flag information here.
- */
-static int
-get_delta(sp, dp, valp, flagp)
-	SCR *sp;
-	char **dp;
-	long *valp;
-	u_int *flagp;
-{
-	char *p;
-	long val, tval;
-
-	for (tval = 0, p = *dp; *p != '\0'; *flagp |= SEARCH_DELTA) {
-		if (isblank(*p)) {
-			++p;
-			continue;
-		}
-		if (*p == '+' || *p == '-') {
-			if (!isdigit(*(p + 1))) {
-				if (*p == '+') {
-					if (tval == LONG_MAX)
-						goto overflow;
-					++tval;
-				} else {
-					if (tval == LONG_MIN)
-						goto underflow;
-					--tval;
-				}
-				++p;
-				continue;
-			}
-		} else
-			if (!isdigit(*p))
-				break;
-
-		errno = 0;
-		val = strtol(p, &p, 10);
-		if (errno == ERANGE) {
-			if (val == LONG_MAX)
-overflow:			msgq(sp, M_ERR, "247|Delta value overflow");
-			else if (val == LONG_MIN)
-underflow:			msgq(sp, M_ERR, "248|Delta value underflow");
-			else
-				msgq(sp, M_SYSERR, NULL);
-			return (1);
-		}
-		if (val >= 0) {
-			if (LONG_MAX - val < tval)
-				goto overflow;
-		} else
-			if (-(LONG_MIN - tval) > val)
-				goto underflow;
-		tval += val;
-	}
-	*dp = p;
-	*valp = tval;
-	return (0);
-}
-
-/*
  * check_delta --
  *	Check a line delta to see if it's legal.
  */
@@ -763,17 +713,28 @@ check_delta(sp, ep, delta, lno)
 	long delta;
 	recno_t lno;
 {
-	/* A delta can overflow a record number. */
+	char *omsg;
+
+	/*
+	 * A delta can overflow a record number.  We don't check for
+	 * underflow, a value less than 1 is bad enough.
+	 */
 	if (delta < 0) {
-		if (lno < LONG_MAX && delta >= (long)lno) {
+		if (-delta >= lno) {
 			msgq(sp, M_ERR, "249|Search offset before line 1");
 			return (1);
 		}
 	} else {
-		if (ULONG_MAX - lno < delta) {
-			msgq(sp, M_ERR, "250|Delta value overflow");
+		/*
+		 * XXX
+		 * This code incorrectly assumes that a recno_t will fit
+		 * into an unsigned long.  Since it's the largest integral
+		 * type we can depend on having, there aren't many other
+		 * choices.
+		 */
+		omsg = "250|Delta value overflow";
+		if (add_uslong(sp, (u_long)lno, (u_long)delta, omsg))
 			return (1);
-		}
 		if (file_gline(sp, ep, lno + delta, NULL) == NULL) {
 			msgq(sp, M_ERR, "251|Search offset past end-of-file");
 			return (1);
