@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 8.23 1993/12/09 19:42:37 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:42:37 $";
+static char sccsid[] = "$Id: ex_argv.c,v 8.24 1993/12/16 13:01:15 bostic Exp $ (Berkeley) $Date: 1993/12/16 13:01:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -216,10 +216,11 @@ argv_exp3(sp, ep, excp, cmd, cmdlen)
 		 * Skip any character preceded by the user's quoting
 		 * character.
 		 */
-		for (ap = cmd, len = 0; cmdlen > 0; --cmdlen, ++cmd, ++len)
-			if ((ch = *cmd) == vlit && cmdlen > 1)
-				++cmd;
-			else if (isblank(ch))
+		for (ap = cmd, len = 0; cmdlen > 0; ++cmd, --cmdlen, ++len)
+			if ((ch = *cmd) == vlit && cmdlen > 1) {
+				++cmd; 
+				--cmdlen;
+			} else if (isblank(ch))
 				break;
 				
 		/*
@@ -235,7 +236,6 @@ argv_exp3(sp, ep, excp, cmd, cmdlen)
 		for (p = exp->args[off]->bp; len > 0; --len, *p++ = *ap++)
 			if (*ap == vlit) {
 				++ap;
-				--len;
 				--exp->args[off]->len;
 			}
 		*p = '\0';
