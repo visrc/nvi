@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.9 1992/12/05 11:10:56 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:10:56 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.10 1992/12/20 15:11:11 bostic Exp $ (Berkeley) $Date: 1992/12/20 15:11:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -60,26 +60,6 @@ scr_end(ep)
 }
 
 /*
- * scr_ref --
- *	Repaint the screen.
- */
-int
-scr_ref(ep)
-	EXF *ep;
-{
-	register recno_t cnt;
-
-	/* Repaint the screen. */
-	for (cnt = BOTLINE(ep, ep->otop); cnt >= ep->otop; --cnt)
-		(void)scr_update(ep, cnt, NULL, 0, LINE_RESET);
-
-	/* Put up the cursor, row/column information. */
-	(void)scr_cchange(ep);
-	(void)scr_modeline(ep, 0);
-	return (0);
-} 
-
-/*
  * scr_modeline --
  *	Change the screen as necessary for a mode change, with refresh.
  */
@@ -131,26 +111,31 @@ onwinch(signo)
 	int signo;
 {
 	struct winsize win;
-	char sbuf[40];
+	char *argv[2], sbuf[100];
 
 	/*
 	 * Try TIOCGWINSZ.  If it fails, ignore the signal.  Otherwise,
 	 * reset any environmental values, so curses uses the new values.
 	 */
-	if (ioctl(STDERR_FILENO, TIOCGWINSZ, &win) != -1 &&
-	    win.ws_row != 0 && win.ws_col != 0) {
-		if (getenv("ROWS") != NULL) {
-			(void)snprintf(sbuf, sizeof(sbuf), "%u", win.ws_row);
-			(void)setenv("ROWS", sbuf, 1);
-		}
-		if (getenv("COLUMNS") != NULL) {
-			(void)snprintf(sbuf, sizeof(sbuf), "%u", win.ws_col);
-			(void)setenv("COLUMNS", sbuf, 1);
-		}
-	}
-	(void)scr_end(curf);
-	(void)scr_init(curf);
-	(void)v_init(curf);
-	(void)scr_ref(curf);
+	if (ioctl(STDERR_FILENO, TIOCGWINSZ, &win) == -1)
+		return;
+
+	(void)unsetenv("ROWS");
+	(void)unsetenv("COLUMNS");
+
+	argv[0] = sbuf;
+	argv[1] = NULL;
+
+	(void)snprintf(sbuf, sizeof(sbuf), "ls=%u", win.ws_row);
+	if (opts_set(argv))
+		return;
+	(void)snprintf(sbuf, sizeof(sbuf), "co=%u", win.ws_col);
+	if (opts_set(argv))
+		return;
+
+	curf->lines = win.ws_row;
+	curf->cols = win.ws_col;
+	FF_SET(curf, F_RESIZE);
+	scr_cchange(curf);
 	refresh();
 }
