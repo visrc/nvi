@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 10.13 1995/10/18 10:36:01 bostic Exp $ (Berkeley) $Date: 1995/10/18 10:36:01 $";
+static char sccsid[] = "$Id: ex_global.c,v 10.14 1995/10/19 13:41:51 bostic Exp $ (Berkeley) $Date: 1995/10/19 13:41:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -169,13 +169,6 @@ usage:		ex_emsg(sp, cmdp->cmd->usage, EXM_USAGE);
 		sp->searchdir = FORWARD;
 		F_SET(sp, S_RE_SEARCH);
 	}
-
-	/*
-	 * The global commands sets the substitute RE as well as the
-	 * everything-else RE.
-	 */
-	sp->subre = sp->sre;
-	F_SET(sp, S_RE_SUBST);
 
 	/* The global commands always set the previous context mark. */
 	abs.lno = sp->lno;
