@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 10.9 1995/09/25 07:59:49 bostic Exp $ (Berkeley) $Date: 1995/09/25 07:59:49 $";
+static char sccsid[] = "$Id: v_txt.c,v 10.10 1995/09/25 09:46:34 bostic Exp $ (Berkeley) $Date: 1995/09/25 09:46:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -798,11 +798,11 @@ k_escape:	LINE_RESOLVE;
 		goto ins_ch;
 	case K_CNTRLD:			/* Delete autoindent char. */
 		/*
-		 * If in the first column or no characters to erase,
-		 * ignore the ^D (this matches historic practice).  If
-		 * not doing autoindent or already inserted non-ai
-		 * characters, it's a literal.  The latter test is done
-		 * in the switch, as the CARAT forms are N + 1, not N.
+		 * If in the first column or no characters to erase, ignore
+		 * the ^D (this matches historic practice).  If not doing
+		 * autoindent or already inserted non-ai characters, it's a
+		 * literal.  The latter test is done in the switch, as the
+		 * CARAT forms are N + 1, not N.
 		 */
 		if (!LF_ISSET(TXT_AUTOINDENT))
 			goto ins_ch;
@@ -811,7 +811,7 @@ k_escape:	LINE_RESOLVE;
 
 		switch (carat) {
 		case C_CARATSET:	/* ^^D */
-			if (sp->cno > tp->ai + tp->offset + 1)
+			if (tp->ai == 0 || sp->cno > tp->ai + tp->offset + 1)
 				goto ins_ch;
 
 			/* Save the ai string for later. */
@@ -824,7 +824,7 @@ k_escape:	LINE_RESOLVE;
 			carat = C_NOCHANGE;
 			goto leftmargin;
 		case C_ZEROSET:		/* 0^D */
-			if (sp->cno > tp->ai + tp->offset + 1)
+			if (tp->ai == 0 || sp->cno > tp->ai + tp->offset + 1)
 				goto ins_ch;
 
 			carat = C_NOTSET;
@@ -834,7 +834,7 @@ leftmargin:		tp->lb[sp->cno - 1] = ' ';
 			sp->cno = tp->offset;
 			break;
 		case C_NOTSET:		/* ^D */
-			if (sp->cno > tp->ai + tp->offset)
+			if (tp->ai == 0 || sp->cno > tp->ai + tp->offset)
 				goto ins_ch;
 
 			(void)txt_dent(sp, tp, 0);
