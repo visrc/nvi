@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 10.12 1995/10/03 09:16:51 bostic Exp $ (Berkeley) $Date: 1995/10/03 09:16:51 $";
+static char sccsid[] = "$Id: ex_read.c,v 10.13 1995/10/04 12:33:52 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:33:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -181,12 +181,9 @@ ex_read(sp, cmdp)
 				set_alt_name(sp, name);
 			break;
 		default:
-			p = msg_print(sp, cmdp->argv[0]->bp, &nf);
-			msgq(sp, M_ERR,
-			    "144|%s expanded into too many file names", p);
-			if (nf)
-				FREE_SPACE(sp, p, 0);
-usage:			ex_message(sp, cmdp->cmd->usage, EXM_USAGE);
+			msgq_str(sp, M_ERR, cmdp->argv[0]->bp,
+			    "144|%s expanded into too many file names");
+usage:			ex_emsg(sp, cmdp->cmd->usage, EXM_USAGE);
 			return (1);
 		
 		}
@@ -200,10 +197,7 @@ usage:			ex_message(sp, cmdp->cmd->usage, EXM_USAGE);
 	 * was no way to "force" it.
 	 */
 	if ((fp = fopen(name, "r")) == NULL || fstat(fileno(fp), &sb)) {
-		p = msg_print(sp, name, &nf);
-		msgq(sp, M_SYSERR, "%s", p);
-		if (nf)
-			FREE_SPACE(sp, p, 0);
+		msgq_str(sp, M_SYSERR, name, "%s");
 		return (1);
 	}
 	if (!S_ISREG(sb.st_mode)) {
@@ -291,12 +285,7 @@ ex_readfp(sp, name, fp, fm, nlinesp, success_msg)
 	}
 	return (0);
 
-err:	sv_errno = errno;
-	p = msg_print(sp, name, &nf);
-	errno = sv_errno;
-	msgq(sp, M_SYSERR, "%s", p);
-	if (nf)
-		FREE_SPACE(sp, p, 0);
+err:	msgq_str(sp, M_SYSERR, name, "%s");
 	(void)fclose(fp);
 	return (1);
 }

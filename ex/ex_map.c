@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_map.c,v 10.6 1995/09/21 12:07:17 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:07:17 $";
+static char sccsid[] = "$Id: ex_map.c,v 10.7 1995/10/04 12:32:58 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:32:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -110,15 +110,10 @@ ex_unmap(sp, cmdp)
 	SCR *sp;
 	EXCMD *cmdp;
 {
-	int nf;
-	char *p;
-
 	if (seq_delete(sp, cmdp->argv[0]->bp, cmdp->argv[0]->len,
 	    FL_ISSET(cmdp->iflags, E_C_FORCE) ? SEQ_INPUT : SEQ_COMMAND)) {
-		p = msg_print(sp, cmdp->argv[0]->bp, &nf);
-		msgq(sp, M_INFO, "135|\"%s\" isn't currently mapped", p);
-		if (nf)
-			FREE_SPACE(sp, p, 0);
+		msgq_str(sp, M_INFO,
+		    cmdp->argv[0]->bp, "135|\"%s\" isn't currently mapped");
 		return (1);
 	}
 	return (0);

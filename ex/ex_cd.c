@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cd.c,v 10.5 1995/09/21 12:07:02 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:07:02 $";
+static char sccsid[] = "$Id: ex_cd.c,v 10.6 1995/10/04 12:32:26 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:32:26 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -40,8 +40,7 @@ ex_cd(sp, cmdp)
 	struct passwd *pw;
 	ARGS *ap;
 	CDPATH *cdp;
-	int nf;
-	char *dir, *p;		/* XXX END OF THE STACK, DON'T TRUST GETCWD. */
+	char *dir;		/* XXX END OF THE STACK, DON'T TRUST GETCWD. */
 	char buf[MAXPATHLEN * 2];
 
 	/*
@@ -101,18 +100,12 @@ ex_cd(sp, cmdp)
 		(void)snprintf(buf, sizeof(buf), "%s/%s", cdp->path, dir);
 		if (!chdir(buf)) {
 			if (getcwd(buf, sizeof(buf)) != NULL)
-				p = msg_print(sp, buf, &nf);
-				msgq(sp, M_INFO,
-				    "122|New current directory: %s", p);
-				if (nf)
-					FREE_SPACE(sp, p, 0);
+				msgq_str(sp, M_INFO, buf,
+				    "122|New current directory: %s");
 			return (0);
 		}
 	}
-err:	p = msg_print(sp, dir, &nf);
-	msgq(sp, M_SYSERR, "%s", p);
-	if (nf)
-		FREE_SPACE(sp, p, 0);
+err:	msgq_str(sp, M_SYSERR, dir, "%s");
 	return (1);
 }
 

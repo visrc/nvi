@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_mkexrc.c,v 10.6 1995/09/21 12:07:19 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:07:19 $";
+static char sccsid[] = "$Id: ex_mkexrc.c,v 10.7 1995/10/04 12:33:42 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:33:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -42,7 +42,7 @@ ex_mkexrc(sp, cmdp)
 {
 	struct stat sb;
 	FILE *fp;
-	int fd, nf, sverrno;
+	int fd, sverrno;
 	char *fname, *p;
 
 	switch (cmdp->argc) {
@@ -58,21 +58,15 @@ ex_mkexrc(sp, cmdp)
 	}
 
 	if (!FL_ISSET(cmdp->iflags, E_C_FORCE) && !stat(fname, &sb)) {
-		p = msg_print(sp, fname, &nf);
-		msgq(sp, M_ERR,
-		    "137|%s exists, not written; use ! to override", p);
-		if (nf)
-			FREE_SPACE(sp, p, 0);
+		msgq_str(sp, M_ERR, fname,
+		    "137|%s exists, not written; use ! to override");
 		return (1);
 	}
 
 	/* Create with max permissions of rw-r--r--. */
 	if ((fd = open(fname, O_CREAT | O_TRUNC | O_WRONLY,
 	    S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) < 0) {
-		p = msg_print(sp, fname, &nf);
-		msgq(sp, M_SYSERR, "%s", p);
-		if (nf)
-			FREE_SPACE(sp, p, 0);
+		msgq_str(sp, M_SYSERR, fname, "%s");
 		return (1);
 	}
 
@@ -95,18 +89,12 @@ ex_mkexrc(sp, cmdp)
 		goto e2;
 	}
 
-	p = msg_print(sp, fname, &nf);
-	msgq(sp, M_INFO, "138|New exrc file: %s", p);
-	if (nf)
-		FREE_SPACE(sp, p, 0);
+	msgq_str(sp, M_INFO, fname, "138|New exrc file: %s");
 	return (0);
 
 e1:	sverrno = errno;
 	(void)fclose(fp);
-e2:	p = msg_print(sp, fname, &nf);
-	errno = sverrno;
-	msgq(sp, M_SYSERR, "%s", p);
-	if (nf)
-		FREE_SPACE(sp, p, 0);
+e2:	errno = sverrno;
+	msgq_str(sp, M_SYSERR, fname, "%s");
 	return (1);
 }

@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 10.8 1995/09/21 12:07:38 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:07:38 $";
+static char sccsid[] = "$Id: ex_tag.c,v 10.9 1995/10/04 12:34:07 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:34:07 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -333,12 +333,8 @@ ex_tagpop(sp, cmdp)
 					break;
 			}
 			if (tp == NULL) {
-				p = msg_print(sp, arg, &nf);
-				msgq(sp, M_ERR,
-"160|No file named %s on the tags stack; use :display t[ags]",
-				    p);
-				if (nf)
-					FREE_SPACE(sp, p, 0);
+				msgq_str(sp, M_ERR, arg,
+"160|No file named %s on the tags stack; use :display t[ags]");
 				return (1);
 			}
 		}
@@ -689,20 +685,14 @@ tag_get(sp, tag, tagp, filep, searchp)
 		}
 
 	if (p == NULL) {
-		p = msg_print(sp, tag, &nf1);
-		msgq(sp, M_ERR, "162|%s: tag not found", p);
-		if (nf1)
-			FREE_SPACE(sp, p, 0);
+		msgq_str(sp, M_ERR, tag, "162|%s: tag not found");
 		if (echk)
 			for (tfp = exp->tagfq.tqh_first;
 			    tfp != NULL; tfp = tfp->q.tqe_next)
 				if (F_ISSET(tfp, TAGF_ERR) &&
 				    !F_ISSET(tfp, TAGF_ERR_WARN)) {
-					p = msg_print(sp, tfp->name, &nf1);
 					errno = tfp->errno;
-					msgq(sp, M_SYSERR, "%s", p);
-					if (nf1)
-						FREE_SPACE(sp, p, 0);
+					msgq_str(sp, M_SYSERR, tfp->name, "%s");
 					F_SET(tfp, TAGF_ERR_WARN);
 				}
 		return (1);
@@ -958,25 +948,17 @@ tag_msg(sp, msg, tag)
 	enum tagmsg msg;
 	char *tag;
 {
-	int nf;
-	char *p;
-
-	nf = 0;
 	switch (msg) {
 	case TAG_BADLNO:
-		p = msg_print(sp, tag, &nf);
-		msgq(sp, M_ERR, "164|%s: the tag line doesn't exist", p);
+		msgq_str(sp, M_ERR, tag, "164|%s: the tag line doesn't exist");
 		break;
 	case TAG_EMPTY:
 		msgq(sp, M_INFO, "165|The tags stack is empty");
 		break;
 	case TAG_SEARCH:
-		p = msg_print(sp, tag, &nf);
-		msgq(sp, M_ERR, "166|%s: search pattern not found", p);
+		msgq_str(sp, M_ERR, tag, "166|%s: search pattern not found");
 		break;
 	default:
 		abort();
 	}
-	if (nf)
-		FREE_SPACE(sp, p, 0);
 }
