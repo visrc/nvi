@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.37 1993/02/11 11:51:44 bostic Exp $ (Berkeley) $Date: 1993/02/11 11:51:44 $";
+static char sccsid[] = "$Id: options.c,v 5.38 1993/02/11 19:53:09 bostic Exp $ (Berkeley) $Date: 1993/02/11 19:53:09 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -436,8 +436,8 @@ found:		if (op == NULL || off && !ISFSETP(op, OPT_0BOOL|OPT_1BOOL)) {
 				break;
 			}
 			if (ISFSETP(op, OPT_ALLOCATED))
-				free(PVALP(op));
-			PVALP(op) = strdup(equals);
+				free(op->value);
+			op->value = strdup(equals);
 			FSETP(op, OPT_ALLOCATED | OPT_SET);
 draw:			if (curf != NULL && ISFSETP(op, OPT_REDRAW))
 				FF_SET(curf, F_REDRAW);
@@ -844,7 +844,7 @@ opts_save(fp)
 			break;
 		case OPT_STR:
 			(void)fprintf(fp,
-			    "set %s=\"%s\"\n", op->name, PVALP(op));
+			    "set %s=\"%s\"\n", op->name, op->value);
 			break;
 		}
 	}
@@ -882,7 +882,7 @@ opts_print(op)
 		(void)putc('=', curf->stdfp);
 		curlen += 1;
 		(void)putc('"', curf->stdfp);
-		curlen += fprintf(curf->stdfp, "%s", PVALP(op));
+		curlen += fprintf(curf->stdfp, "%s", op->value);
 		curlen += 1;
 		(void)putc('"', curf->stdfp);
 		break;
