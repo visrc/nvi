@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.60 1993/11/27 14:11:57 bostic Exp $ (Berkeley) $Date: 1993/11/27 14:11:57 $";
+static char sccsid[] = "$Id: ex.c,v 8.61 1993/11/27 14:24:02 bostic Exp $ (Berkeley) $Date: 1993/11/27 14:24:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -91,8 +91,10 @@ ex(sp, ep)
 			break;
 		}
 	}
-ret:	if (sp->if_name != NULL)
+ret:	if (sp->if_name != NULL) {
 		FREE(sp->if_name, strlen(sp->if_name) + 1);
+		sp->if_name = NULL;
+	}
 	return (ex_end(sp) || eval);
 }
 
@@ -110,14 +112,9 @@ ex_cfile(sp, ep, filename)
 	int fd, len, rval;
 	char *bp;
 
-	/* Messages should include file/line information. */
-	sp->if_lno = 0;
-	sp->if_name = strdup(filename);
-
-	if ((fd = open(filename, O_RDONLY, 0)) < 0)
-		goto e1;
-	if (fstat(fd, &sb))
-		goto e2;
+	bp = NULL;
+	if ((fd = open(filename, O_RDONLY, 0)) < 0 || fstat(fd, &sb))
+		goto err;
 
 	/*
 	 * XXX
@@ -129,33 +126,34 @@ ex_cfile(sp, ep, filename)
 	 * large.
 	 */
 	if ((bp = malloc((size_t)sb.st_size)) == NULL)
-		goto e2;
+		goto err;
 
 	len = read(fd, bp, (int)sb.st_size);
 	if (len == -1 || len != sb.st_size) {
 		if (len != sb.st_size)
 			errno = EIO;
-		goto e3;
-	}
-	bp[sb.st_size] = '\0';
+err:		rval = 1;
+		msgq(sp, M_SYSERR, filename);
+	} else {
+		bp[sb.st_size] = '\0';		/* XXX */
 
-	rval = ex_cstring(sp, ep, bp, len);
+		/* Run the command.  Messages include file/line information. */
+		sp->if_lno = 0;
+		sp->if_name = strdup(filename);
+		rval = ex_cstring(sp, ep, bp, len);
+		FREE(sp->if_name, strlen(sp->if_name) + 1);
+		sp->if_name = NULL;
+	}
+
 	/*
-	 * XXX
+	 * !!!
 	 * THE UNDERLYING EXF MAY HAVE CHANGED (but we don't care).
 	 */
-	free(bp);
-	(void)close(fd);
-	if (sp->if_name != NULL)
-		FREE(sp->if_name, strlen(sp->if_name) + 1);
+	if (bp != NULL)
+		FREE(bp, sb.st_size);
+	if (fd >= 0)
+		(void)close(fd);
 	return (rval);
-
-e3:	free(bp);
-e2:	(void)close(fd);
-e1:	msgq(sp, M_SYSERR, filename);
-	if (sp->if_name != NULL)
-		FREE(sp->if_name, strlen(sp->if_name) + 1);
-	return (1);
 }
 
 /*
