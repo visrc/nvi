@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 5.19 1992/10/26 17:49:43 bostic Exp $ (Berkeley) $Date: 1992/10/26 17:49:43 $
+ *	$Id: vi.h,v 5.20 1992/10/29 14:45:45 bostic Exp $ (Berkeley) $Date: 1992/10/29 14:45:45 $
  */
 
 #include "exf.h"
@@ -81,6 +81,8 @@ typedef struct _vikeys {	/* Underlying function. */
 #define	MAXVIKEY	126	/* List of vi commands. */
 extern VIKEYS vikeys[MAXVIKEY + 1];
 
+extern size_t exlinecount;	/* Count of output lines while in ex. */
+
 /*
  * This macro is used to set the default count value for an operation.
  * XXX
@@ -113,6 +115,7 @@ void	v_eof __P((MARK *));
 void	v_eol __P((MARK *));
 int	v_errlist __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_ex __P((VICMDARG *, MARK *, MARK *, MARK *));
+int	v_exwrite __P((void *, const char *, int));
 int	v_exit __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_filter __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_first __P((VICMDARG *, MARK *, MARK *, MARK *));
@@ -127,7 +130,7 @@ int	v_increment __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_iO __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_io __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_join __P((VICMDARG *, MARK *, MARK *, MARK *));
-int	v_leaveex __P((void));
+void	v_leaveex __P((void));
 int	v_left __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_lgoto __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_linedown __P((VICMDARG *, MARK *, MARK *, MARK *));
@@ -163,7 +166,7 @@ int	v_sentencef __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_shiftl __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_shiftr __P((VICMDARG *, MARK *, MARK *, MARK *));
 void	v_sof __P((MARK *));
-int	v_startex __P((void));
+void	v_startex __P((void));
 int	v_status __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_stop __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_subst __P((VICMDARG *, MARK *, MARK *, MARK *));
