@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 9.10 1995/02/08 12:48:56 bostic Exp $ (Berkeley) $Date: 1995/02/08 12:48:56 $";
+static char sccsid[] = "$Id: ex_read.c,v 9.11 1995/02/17 11:40:50 bostic Exp $ (Berkeley) $Date: 1995/02/17 11:40:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -186,7 +186,7 @@ ex_read(sp, cmdp)
 			    "149|%s expanded into too many file names", p);
 			if (nf)
 				FREE_SPACE(sp, p, 0);
-usage:			ex_message(sp, cmdp->cmd, EXM_USAGE);
+usage:			ex_message(sp, cmdp->cmd->usage, EXM_USAGE);
 			return (1);
 		
 		}
@@ -217,7 +217,7 @@ usage:			ex_message(sp, cmdp->cmd, EXM_USAGE);
 		msgq(sp, M_ERR, "264|%s: read lock was unavailable", name);
 
 	/* Turn on busy message. */
-	btear = F_ISSET(sp, S_EXSILENT) ? 0 : !busy_on(sp, "Reading...");
+	btear = F_ISSET(sp, S_EX_SILENT) ? 0 : !busy_on(sp, "Reading...");
 	rval = ex_readfp(sp, name, fp, &cmdp->addr1, &nlines, 1);
 	if (btear)
 		busy_off(sp);
