@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 5.13 1993/05/10 15:36:14 bostic Exp $ (Berkeley) $Date: 1993/05/10 15:36:14 $";
+static char sccsid[] = "$Id: v_txt.c,v 5.14 1993/05/10 17:03:37 bostic Exp $ (Berkeley) $Date: 1993/05/10 17:03:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -256,21 +256,20 @@ next_ch:	if (replay)
 				tp->insert += tp->overwrite;		\
 				tp->overwrite = 0;			\
 			}						\
-			/*						\
-			 * If the user has not inserted any characters,	\
-			 * delete any autoindent characters.  We can	\
-			 * safely ignore most everything else here, as	\
-			 * autoindent only applies to empty lines.	\
-			 * Otherwise, delete any appended cursor.	\
-			 */						\
-			if (LF_ISSET(TXT_AUTOINDENT) && tp->ai &&	\
-			    sp->cno <= tp->ai) {			\
-				tp->insert = tp->len =			\
-				    tp->overwrite = 0;			\
-				sp->cno = 0;				\
-			} else if (LF_ISSET(TXT_APPENDEOL)) {		\
+			/* Delete any appended cursor. */		\
+			if (LF_ISSET(TXT_APPENDEOL)) {			\
 				--tp->len;				\
 				--tp->insert;				\
+			}						\
+			/*						\
+			 * If the user has not inserted any characters	\
+			 * and there aren't any other characters in the	\
+			 * line, delete the autoindent characters.	\
+			 */						\
+			if (LF_ISSET(TXT_AUTOINDENT) && tp->ai &&	\
+			    !tp->insert && sp->cno <= tp->ai) {		\
+				tp->len = tp->overwrite = 0;		\
+				sp->cno = 0;				\
 			}						\
 }
 			LINE_RESOLVE;
