@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: mark.h,v 5.1 1992/05/22 10:04:05 bostic Exp $ (Berkeley) $Date: 1992/05/22 10:04:05 $
+ *	$Id: mark.h,v 5.2 1992/06/07 13:53:40 bostic Exp $ (Berkeley) $Date: 1992/06/07 13:53:40 $
  */
 
 #ifndef	_MARK_H_
@@ -28,8 +28,6 @@ typedef struct {
 
 /* Set absolute movement mark. */
 #define	SETABSMARK(mp)	(mark_set('\'', mp))
-
-extern MARK cursor;				/* Cursor MARK. */
 
 /* Marks. */
 void	 mark_delete __P((MARK *, MARK *, int));

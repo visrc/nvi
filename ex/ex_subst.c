@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 5.11 1992/05/21 12:56:01 bostic Exp $ (Berkeley) $Date: 1992/05/21 12:56:01 $";
+static char sccsid[] = "$Id: ex_subst.c,v 5.12 1992/06/07 13:52:41 bostic Exp $ (Berkeley) $Date: 1992/06/07 13:52:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -244,7 +244,7 @@ Continue:
 			}
 
 			/* move the cursor to that line */
-			cursor.lno = l;
+			curf->lno = 1;
 		}
 	}
 
