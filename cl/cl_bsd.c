@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_bsd.c,v 8.17 1996/02/21 13:44:19 bostic Exp $ (Berkeley) $Date: 1996/02/21 13:44:19 $";
+static char sccsid[] = "$Id: cl_bsd.c,v 8.18 1996/02/21 16:56:28 bostic Exp $ (Berkeley) $Date: 1996/02/21 16:56:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -37,6 +37,27 @@ static char	*vb;				/* Visible bell string. */
  * for the idlok function.  Cthulu only knows why.  Break things up into a
  * minimal set of functions.
  */
+
+#ifndef HAVE_CURSES_ADDNSTR
+/*
+ * addnstr --
+ *
+ * PUBLIC: #ifndef HAVE_CURSES_ADDNSTR
+ * PUBLIC: int addnstr __P((char *, int));
+ * PUBLIC: #endif
+ */
+int
+addnstr(s, n)
+	char *s;
+	int n;
+{
+	int ch;
+
+	while (n-- && (ch = *s++))
+		addch(ch);
+	return (OK);
+}
+#endif
 
 #ifndef	HAVE_CURSES_BEEP
 /*
