@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.47 1996/04/02 08:12:59 bostic Exp $ (Berkeley) $Date: 1996/04/02 08:12:59 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.48 1996/04/03 14:34:11 bostic Exp $ (Berkeley) $Date: 1996/04/03 14:34:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,7 +31,7 @@ static const char sccsid[] = "$Id: v_txt.c,v 10.47 1996/04/02 08:12:59 bostic Ex
 #include "vi.h"
 
 static int	 txt_abbrev __P((SCR *, TEXT *, CHAR_T *, int, int *, int *));
-static void	 txt_ai_resolve __P((SCR *, TEXT *));
+static void	 txt_ai_resolve __P((SCR *, TEXT *, int));
 static TEXT	*txt_backup __P((SCR *, TEXTH *, TEXT *, u_int32_t *));
 static int	 txt_dent __P((SCR *, TEXT *, int));
 static int	 txt_emark __P((SCR *, TEXT *, size_t));
@@ -40,13 +40,13 @@ static int	 txt_fc __P((SCR *, TEXT *, int *));
 static int	 txt_fc_col __P((SCR *, int, ARGS **));
 static int	 txt_hex __P((SCR *, TEXT *));
 static int	 txt_insch __P((SCR *, TEXT *, CHAR_T *, u_int));
-static int	 txt_isrch __P((SCR *, TEXT *, u_int32_t *));
+static int	 txt_isrch __P((SCR *, VICMD *, TEXT *, u_int8_t *));
 static int	 txt_margin __P((SCR *, TEXT *, TEXT *, int *, u_int32_t));
 static void	 txt_nomorech __P((SCR *));
 static void	 txt_Rcleanup __P((SCR *,
 		    TEXTH *, TEXT *, const char *, const size_t));
 static int	 txt_resolve __P((SCR *, TEXTH *, u_int32_t));
-static int	 txt_showmatch __P((SCR *));
+static int	 txt_showmatch __P((SCR *, TEXT *));
 static void	 txt_unmap __P((SCR *, TEXT *, u_int32_t *));
 
 /* Cursor character (space is hard to track on the screen). */
@@ -70,9 +70,17 @@ v_tcmd(sp, vp, prompt, flags)
 {
 	VI_PRIVATE *vip;
 
+	/* Normally, we end up where we started. */
+	vp->m_final.lno = sp->lno;
+	vp->m_final.cno = sp->cno;
+
 	/* Initialize the map. */
 	if (txt_map_init(sp))
 		return (1);
+
+	/* Move to the last line. */
+	sp->lno = TMAP[0].lno;
+	sp->cno = 0;
 
 	/* Don't update the modeline for now. */
 	F_SET(sp, S_INPUT_INFO);
@@ -109,22 +117,21 @@ v_tcmd(sp, vp, prompt, flags)
 	VI_SCR_CFLUSH(vip);
 	F_SET(vip, VIP_CUR_INVALID);
 
+	/* Set the cursor to the resulting position. */
+	sp->lno = vp->m_final.lno;
+	sp->cno = vp->m_final.cno;
+
 	return (0);
 }
-
-recno_t sv_lno, sv_tm_lno;
-size_t sv_cno, sv_t_maxrows, sv_t_minrows, sv_t_rows, sv_tm_off;
 
 int
 txt_map_init(sp)
 	SCR *sp;
 {
 	SMAP *esmp;
+	VI_PRIVATE *vip;
 
-	/* Save current cursor. */
-	sv_lno = sp->lno;
-	sv_cno = sp->cno;
-
+	vip = VIP(sp);
 	if (!IS_ONELINE(sp)) {
 		/*
 		 * Fake like the user is doing input on the last line of the
@@ -134,11 +141,11 @@ txt_map_init(sp)
 		 *
 		 * Save the current location.
 		 */
-		sv_tm_lno = TMAP->lno;
-		sv_tm_off = TMAP->off;
-		sv_t_rows = sp->t_rows;
-		sv_t_minrows = sp->t_minrows;
-		sv_t_maxrows = sp->t_maxrows;
+		vip->sv_tm_lno = TMAP->lno;
+		vip->sv_tm_off = TMAP->off;
+		vip->sv_t_rows = sp->t_rows;
+		vip->sv_t_minrows = sp->t_minrows;
+		vip->sv_t_maxrows = sp->t_maxrows;
 
 		/*
 		 * If it's a small screen, TMAP may be small for the screen.
@@ -160,10 +167,6 @@ txt_map_init(sp)
 		/* Reset the screen information. */
 		sp->t_rows = sp->t_minrows = ++sp->t_maxrows;
 	}
-
-	/* Move to the last line. */
-	sp->lno = TMAP[0].lno;
-	sp->cno = 0;
 	return (0);
 }
 
@@ -171,13 +174,15 @@ int
 txt_map_end(sp)
 	SCR *sp;
 {
+	VI_PRIVATE *vip;
 	size_t cnt;
 
+	vip = VIP(sp);
 	if (!IS_ONELINE(sp)) {
 		/* Restore the screen information. */
-		sp->t_rows = sv_t_rows;
-		sp->t_minrows = sv_t_minrows;
-		sp->t_maxrows = sv_t_maxrows;
+		sp->t_rows = vip->sv_t_rows;
+		sp->t_minrows = vip->sv_t_minrows;
+		sp->t_maxrows = vip->sv_t_maxrows;
 
 		/*
 		 * If it's a small screen, TMAP may be wrong.  Clear any
@@ -197,14 +202,11 @@ txt_map_end(sp)
 		 * (logical) line.  Fix it.  If the user entered a whole
 		 * screen, this will be slow, but we probably don't care.
 		 */
-		while (sv_tm_lno != TMAP->lno || sv_tm_off != TMAP->off)
+		while (vip->sv_tm_lno != TMAP->lno ||
+		    vip->sv_tm_off != TMAP->off)
 			if (vs_sm_1down(sp))
 				return (1);
 	}
-
-	/* Restore the original cursor. */
-	sp->lno = sv_lno;
-	sp->cno = sv_cno;
 	return (0);
 }
 
@@ -214,6 +216,15 @@ txt_map_end(sp)
  */
 #define	UNMAP_TST							\
 	FL_ISSET(ec_flags, EC_MAPINPUT) && LF_ISSET(TXT_INFOLINE)
+
+/* 
+ * Internally, we maintain tp->lno and tp->cno, externally, everyone uses
+ * sp->lno and sp->cno.  Make them consistent as necessary.
+ */
+#define	UPDATE_POSITION(sp, tp) {					\
+	(sp)->lno = (tp)->lno;						\
+	(sp)->cno = (tp)->cno;						\
+}
 
 /*
  * v_txt --
@@ -250,6 +261,10 @@ v_txt(sp, vp, tm, lp, len, prompt, ai_line, rcount, flags)
 	size_t rcol;		/* 0-N: insert offset in the replay buffer. */
 	size_t tcol;		/* Temporary column. */
 	u_int32_t ec_flags;	/* Input mapping flags. */
+#define	IS_FAILED	0x01	/* Incremental search failed. */
+#define	IS_RESET	0x02	/* Reset the incremental search. */
+#define	IS_RUNNING	0x04	/* Incremental search turned on. */
+	u_int8_t is_flags;
 	int abcnt, ab_turnoff;	/* Abbreviation character count, switch. */
 	int filec_redraw;	/* Redraw after the file completion routine. */
 	int hexcnt;		/* Hex character count. */
@@ -295,8 +310,9 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 	/* Set default termination condition. */
 	tp->term = TERM_OK;
 
-	/* Set the starting line number. */
+	/* Set the starting line, column. */
 	tp->lno = sp->lno;
+	tp->cno = sp->cno;
 
 	/*
 	 * Set the insert and overwrite counts.  If overwriting characters,
@@ -306,10 +322,10 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 	 */
 	if (len) {
 		if (LF_ISSET(TXT_OVERWRITE)) {
-			tp->owrite = (tm->cno - sp->cno) + 1;
+			tp->owrite = (tm->cno - tp->cno) + 1;
 			tp->insert = (len - tm->cno) - 1;
 		} else
-			tp->insert = len - sp->cno;
+			tp->insert = len - tp->cno;
 
 		if (LF_ISSET(TXT_EMARK) && txt_emark(sp, tp, tm->cno))
 			return (1);
@@ -331,7 +347,7 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 	if (LF_ISSET(TXT_AUTOINDENT) && ai_line != OOBLNO) {
 		if (v_txt_auto(sp, ai_line, NULL, 0, tp))
 			return (1);
-		sp->cno = tp->ai;
+		tp->cno = tp->ai;
 	} else {
 		/*
 		 * The cc and S commands have a special feature -- leading
@@ -340,14 +356,14 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 		 */
 		if (LF_ISSET(TXT_AICHARS)) {
 			tp->offset = 0;
-			tp->ai = sp->cno;
+			tp->ai = tp->cno;
 		} else
-			tp->offset = sp->cno;
+			tp->offset = tp->cno;
 	}
 
 	/* If getting a command buffer from the user, there may be a prompt. */
 	if (LF_ISSET(TXT_PROMPT)) {
-		tp->lb[sp->cno++] = prompt;
+		tp->lb[tp->cno++] = prompt;
 		++tp->len;
 		++tp->offset;
 	}
@@ -363,7 +379,7 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 	 * strictly necessary.  Not a big deal.
 	 */
 	if (LF_ISSET(TXT_APPENDEOL)) {
-		tp->lb[sp->cno] = CH_CURSOR;
+		tp->lb[tp->cno] = CH_CURSOR;
 		++tp->len;
 		++tp->insert;
 		(void)vs_change(sp, tp->lno, LINE_RESET);
@@ -437,12 +453,14 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 	/* Other text input mode setup. */
 	quote = Q_NOTSET;
 	carat = C_NOTSET;
+	FL_INIT(is_flags, LF_ISSET(TXT_SEARCHINCR) ? IS_RUNNING : 0);
 	filec_redraw = hexcnt = showmatch = 0;
 
 	/* Initialize input flags. */
 	ec_flags = LF_ISSET(TXT_MAPINPUT) ? EC_MAPINPUT : 0;
 
 	/* Refresh the screen. */
+	UPDATE_POSITION(sp, tp);
 	if (vs_refresh(sp, 1))
 		return (1);
 
@@ -537,7 +555,7 @@ next:	if (v_event_get(sp, evp, 0, ec_flags))
 		if (LF_ISSET(TXT_FILEC) && O_STR(sp, O_FILEC) != NULL &&
 		    O_STR(sp, O_FILEC)[0] == evp->e_c)
 			L__filec = 1;
-		if (L__cedit == 1 && (L__filec == 0 || sp->cno == tp->offset)) {
+		if (L__cedit == 1 && (L__filec == 0 || tp->cno == tp->offset)) {
 			tp->term = TERM_CEDIT;
 			goto k_escape;
 		}
@@ -596,14 +614,14 @@ replay:	if (LF_ISSET(TXT_REPLAY))
 		if (quote == Q_VTHIS && evp->e_value != K_NL ||
 		    quote == Q_BTHIS &&
 		    (evp->e_value == K_VERASE || evp->e_value == K_VKILL)) {
-			--sp->cno;
+			--tp->cno;
 			++tp->owrite;
 			FL_CLR(ec_flags, EC_QUOTED);
 			quote = Q_NOTSET;
 			goto insl_ch;
 		}
 		if (quote == Q_VTHIS && evp->e_value == K_NL)
-			--sp->cno;
+			--tp->cno;
 		FL_CLR(ec_flags, EC_QUOTED);
 		quote = Q_NOTSET;
 	}
@@ -638,9 +656,14 @@ k_cr:		if (LF_ISSET(TXT_CR)) {
 			} else if (F_ISSET(sp, S_SCRIPT))
 				(void)v_event_push(sp, NULL, "\r", 1, CH_NOMAP);
 
-			/* If empty, set termination condition. */
-			if (sp->cno <= tp->offset)
+			/* Set term condition: if empty. */
+			if (tp->cno <= tp->offset)
 				tp->term = TERM_CR;
+			/* Set term condition: if incrementally searching. */
+			if (FL_ISSET(is_flags, IS_RUNNING) &&
+			    !FL_ISSET(is_flags, IS_FAILED))
+				tp->term = TERM_SEARCH;
+
 			goto k_escape;
 		}
 
@@ -678,8 +701,8 @@ k_cr:		if (LF_ISSET(TXT_CR)) {
 		 * txt_backup().  Set the new line length.
 		 */
 		tp->sv_len = tp->len;
-		tp->sv_cno = sp->cno;
-		tp->len = sp->cno;
+		tp->sv_cno = tp->cno;
+		tp->len = tp->cno;
 
 		/* Update the old line. */
 		if (vs_change(sp, tp->lno, LINE_RESET))
@@ -698,13 +721,13 @@ k_cr:		if (LF_ISSET(TXT_CR)) {
 		owrite = tp->owrite;
 		insert = tp->insert;
 		if (LF_ISSET(TXT_REPLACE) && owrite != 0) {
-			for (p = tp->lb + sp->cno; owrite > 0 && isblank(*p);
+			for (p = tp->lb + tp->cno; owrite > 0 && isblank(*p);
 			    ++p, --owrite, ++tp->R_erase);
 			if (owrite == 0)
 				for (; insert > 0 && isblank(*p);
 				    ++p, ++tp->R_erase, --insert);
 		} else {
-			p = tp->lb + sp->cno + owrite;
+			p = tp->lb + tp->cno + owrite;
 			if (O_ISSET(sp, O_AUTOINDENT))
 				for (; insert > 0 &&
 				    isblank(*p); ++p, --insert);
@@ -732,14 +755,13 @@ k_cr:		if (LF_ISSET(TXT_CR)) {
 					goto err;
 				FREE_SPACE(sp, ait.lb, ait.lb_len);
 			} else
-				if (v_txt_auto(sp, OOBLNO, tp, sp->cno, ntp))
+				if (v_txt_auto(sp, OOBLNO, tp, tp->cno, ntp))
 					goto err;
 			carat = C_NOTSET;
 		}
 
 		/* Reset the cursor. */
-		sp->lno = ntp->lno;
-		sp->cno = ntp->ai;
+		ntp->cno = ntp->ai;
 
 		/*
 		 * If we're here because wrapmargin was set and we've broken a
@@ -752,9 +774,9 @@ k_cr:		if (LF_ISSET(TXT_CR)) {
 #define	WMTSPACE	wmt.offset + wmt.owrite + wmt.insert
 				BINC_GOTO(sp, ntp->lb,
 				    ntp->lb_len, ntp->len + WMTSPACE + 32);
-				memmove(ntp->lb + sp->cno, wmt.lb, WMTSPACE);
+				memmove(ntp->lb + ntp->cno, wmt.lb, WMTSPACE);
 				ntp->len += WMTSPACE;
-				sp->cno += wmt.offset;
+				ntp->cno += wmt.offset;
 				ntp->owrite = wmt.owrite;
 				ntp->insert = wmt.insert;
 			}
@@ -765,7 +787,7 @@ k_cr:		if (LF_ISSET(TXT_CR)) {
 		if (ntp->owrite == 0 && ntp->insert == 0) {
 			BINC_GOTO(sp, ntp->lb, ntp->lb_len, ntp->len + 1);
 			LF_SET(TXT_APPENDEOL);
-			ntp->lb[sp->cno] = CH_CURSOR;
+			ntp->lb[ntp->cno] = CH_CURSOR;
 			++ntp->insert;
 			++ntp->len;
 		}
@@ -818,9 +840,13 @@ k_cr:		if (LF_ISSET(TXT_CR)) {
 			goto replay;
 		}
 
-		/* If empty, set termination condition. */
-		if (sp->cno <= tp->offset)
+		/* Set term condition: if empty. */
+		if (tp->cno <= tp->offset)
 			tp->term = TERM_ESC;
+		/* Set term condition: if incrementally searching. */
+		if (FL_ISSET(is_flags, IS_RUNNING) &&
+		    !FL_ISSET(is_flags, IS_FAILED))
+			tp->term = TERM_SEARCH;
 
 k_escape:	LINE_RESOLVE;
 
@@ -837,8 +863,8 @@ k_escape:	LINE_RESOLVE;
 		 */
 		if (tp->owrite) {
 			if (tp->insert)
-				memmove(tp->lb + sp->cno,
-				    tp->lb + sp->cno + tp->owrite, tp->insert);
+				memmove(tp->lb + tp->cno,
+				    tp->lb + tp->cno + tp->owrite, tp->insert);
 			tp->len -= tp->owrite;
 		}
 
@@ -863,20 +889,19 @@ k_escape:	LINE_RESOLVE;
 		 * Set the return cursor position to rest on the last
 		 * inserted character.
 		 */
-		sp->lno = tp->lno;
-		if (sp->cno != 0)
-			--sp->cno;
+		if (tp->cno != 0)
+			--tp->cno;
 
 		/* Update the last line. */
-		if (vs_change(sp, sp->lno, LINE_RESET))
+		if (vs_change(sp, tp->lno, LINE_RESET))
 			return (1);
 		goto done;
 	case K_CARAT:			/* Delete autoindent chars. */
-		if (sp->cno <= tp->ai && LF_ISSET(TXT_AUTOINDENT))
+		if (tp->cno <= tp->ai && LF_ISSET(TXT_AUTOINDENT))
 			carat = C_CARATSET;
 		goto ins_ch;
 	case K_ZERO:			/* Delete autoindent chars. */
-		if (sp->cno <= tp->ai && LF_ISSET(TXT_AUTOINDENT))
+		if (tp->cno <= tp->ai && LF_ISSET(TXT_AUTOINDENT))
 			carat = C_ZEROSET;
 		goto ins_ch;
 	case K_CNTRLD:			/* Delete autoindent char. */
@@ -889,12 +914,12 @@ k_escape:	LINE_RESOLVE;
 		 */
 		if (!LF_ISSET(TXT_AUTOINDENT))
 			goto ins_ch;
-		if (sp->cno == 0)
+		if (tp->cno == 0)
 			goto ret;
 
 		switch (carat) {
 		case C_CARATSET:	/* ^^D */
-			if (tp->ai == 0 || sp->cno > tp->ai + tp->offset + 1)
+			if (tp->ai == 0 || tp->cno > tp->ai + tp->offset + 1)
 				goto ins_ch;
 
 			/* Save the ai string for later. */
@@ -907,17 +932,17 @@ k_escape:	LINE_RESOLVE;
 			carat = C_NOCHANGE;
 			goto leftmargin;
 		case C_ZEROSET:		/* 0^D */
-			if (tp->ai == 0 || sp->cno > tp->ai + tp->offset + 1)
+			if (tp->ai == 0 || tp->cno > tp->ai + tp->offset + 1)
 				goto ins_ch;
 
 			carat = C_NOTSET;
-leftmargin:		tp->lb[sp->cno - 1] = ' ';
-			tp->owrite += sp->cno - tp->offset;
+leftmargin:		tp->lb[tp->cno - 1] = ' ';
+			tp->owrite += tp->cno - tp->offset;
 			tp->ai = 0;
-			sp->cno = tp->offset;
+			tp->cno = tp->offset;
 			break;
 		case C_NOTSET:		/* ^D */
-			if (tp->ai == 0 || sp->cno > tp->ai + tp->offset)
+			if (tp->ai == 0 || tp->cno > tp->ai + tp->offset)
 				goto ins_ch;
 
 			(void)txt_dent(sp, tp, 0);
@@ -928,7 +953,7 @@ leftmargin:		tp->lb[sp->cno - 1] = ' ';
 		break;
 	case K_VERASE:			/* Erase the last character. */
 		/* If can erase over the prompt, return. */
-		if (sp->cno <= tp->offset && LF_ISSET(TXT_BS)) {
+		if (tp->cno <= tp->offset && LF_ISSET(TXT_BS)) {
 			tp->term = TERM_BS;
 			goto done;
 		}
@@ -937,7 +962,7 @@ leftmargin:		tp->lb[sp->cno - 1] = ' ';
 		 * If at the beginning of the line, try and drop back to a
 		 * previously inserted line.
 		 */
-		if (sp->cno == 0) {
+		if (tp->cno == 0) {
 			if ((ntp =
 			    txt_backup(sp, &sp->tiq, tp, &flags)) == NULL)
 				goto err;
@@ -946,14 +971,14 @@ leftmargin:		tp->lb[sp->cno - 1] = ' ';
 		}
 
 		/* If nothing to erase, bell the user. */
-		if (sp->cno <= tp->offset) {
+		if (tp->cno <= tp->offset) {
 			if (!LF_ISSET(TXT_REPLAY))
 				txt_nomorech(sp);
 			break;
 		}
 
 		/* Drop back one character. */
-		--sp->cno;
+		--tp->cno;
 
 		/*
 		 * Increment overwrite, decrement ai if deleted.
@@ -964,15 +989,19 @@ leftmargin:		tp->lb[sp->cno - 1] = ' ';
 		 * POSIX.
 		 */
 		++tp->owrite;
-		if (sp->cno < tp->ai)
+		if (tp->cno < tp->ai)
 			--tp->ai;
+
+		/* Reset if we deleted an incremental search character. */
+		if (FL_ISSET(is_flags, IS_RUNNING))
+			FL_SET(is_flags, IS_RESET);
 		break;
 	case K_VWERASE:			/* Skip back one word. */
 		/*
 		 * If at the beginning of the line, try and drop back to a
 		 * previously inserted line.
 		 */
-		if (sp->cno == 0) {
+		if (tp->cno == 0) {
 			if ((ntp =
 			    txt_backup(sp, &sp->tiq, tp, &flags)) == NULL)
 				goto err;
@@ -982,7 +1011,7 @@ leftmargin:		tp->lb[sp->cno - 1] = ' ';
 		/*
 		 * If at offset, nothing to erase so bell the user.
 		 */
-		if (sp->cno <= tp->offset) {
+		if (tp->cno <= tp->offset) {
 			if (!LF_ISSET(TXT_REPLAY))
 				txt_nomorech(sp);
 			break;
@@ -996,7 +1025,7 @@ leftmargin:		tp->lb[sp->cno - 1] = ' ';
 		 * Historic vi did not permit users to use erase characters to
 		 * delete autoindent characters.
 		 */
-		if (tp->ai && sp->cno > tp->ai)
+		if (tp->ai && tp->cno > tp->ai)
 			max = tp->ai;
 		else {
 			tp->ai = 0;
@@ -1004,11 +1033,11 @@ leftmargin:		tp->lb[sp->cno - 1] = ' ';
 		}
 
 		/* Skip over trailing space characters. */
-		while (sp->cno > max && isblank(tp->lb[sp->cno - 1])) {
-			--sp->cno;
+		while (tp->cno > max && isblank(tp->lb[tp->cno - 1])) {
+			--tp->cno;
 			++tp->owrite;
 		}
-		if (sp->cno == max)
+		if (tp->cno == max)
 			break;
 		/*
 		 * There are three types of word erase found on UNIX systems.
@@ -1029,29 +1058,33 @@ leftmargin:		tp->lb[sp->cno - 1] = ' ';
 		 * vi behavior.
 		 */
 		if (LF_ISSET(TXT_TTYWERASE))
-			while (sp->cno > max) {
-				--sp->cno;
+			while (tp->cno > max) {
+				--tp->cno;
 				++tp->owrite;
-				if (isblank(tp->lb[sp->cno - 1]))
+				if (isblank(tp->lb[tp->cno - 1]))
 					break;
 			}
 		else {
 			if (LF_ISSET(TXT_ALTWERASE)) {
-				--sp->cno;
+				--tp->cno;
 				++tp->owrite;
-				if (isblank(tp->lb[sp->cno - 1]))
+				if (isblank(tp->lb[tp->cno - 1]))
 					break;
 			}
-			if (sp->cno > max)
-				tmp = inword(tp->lb[sp->cno - 1]);
-			while (sp->cno > max) {
-				--sp->cno;
+			if (tp->cno > max)
+				tmp = inword(tp->lb[tp->cno - 1]);
+			while (tp->cno > max) {
+				--tp->cno;
 				++tp->owrite;
-				if (tmp != inword(tp->lb[sp->cno - 1])
-				    || isblank(tp->lb[sp->cno - 1]))
+				if (tmp != inword(tp->lb[tp->cno - 1])
+				    || isblank(tp->lb[tp->cno - 1]))
 					break;
 			}
 		}
+
+		/* Reset if we deleted an incremental search character. */
+		if (FL_ISSET(is_flags, IS_RUNNING))
+			FL_SET(is_flags, IS_RESET);
 		break;
 	case K_VKILL:			/* Restart this line. */
 		/*
@@ -1060,7 +1093,7 @@ leftmargin:		tp->lb[sp->cno - 1] = ' ';
 		 * previously inserted line.  Historic vi did not permit
 		 * users to go back to previous lines.
 		 */
-		if (sp->cno == 0) {
+		if (tp->cno == 0) {
 			if ((ntp =
 			    txt_backup(sp, &sp->tiq, tp, &flags)) == NULL)
 				goto err;
@@ -1068,7 +1101,7 @@ leftmargin:		tp->lb[sp->cno - 1] = ' ';
 		}
 
 		/* If at offset, nothing to erase so bell the user. */
-		if (sp->cno <= tp->offset) {
+		if (tp->cno <= tp->offset) {
 			if (!LF_ISSET(TXT_REPLAY))
 				txt_nomorech(sp);
 			break;
@@ -1082,14 +1115,18 @@ leftmargin:		tp->lb[sp->cno - 1] = ' ';
 		 * Historic vi did not permit users to use erase characters to
 		 * delete autoindent characters.
 		 */
-		if (tp->ai && sp->cno > tp->ai)
+		if (tp->ai && tp->cno > tp->ai)
 			max = tp->ai;
 		else {
 			tp->ai = 0;
 			max = tp->offset;
 		}
-		tp->owrite += sp->cno - max;
-		sp->cno = max;
+		tp->owrite += tp->cno - max;
+		tp->cno = max;
+
+		/* Reset if we deleted an incremental search character. */
+		if (FL_ISSET(is_flags, IS_RUNNING))
+			FL_SET(is_flags, IS_RESET);
 		break;
 	case K_CNTRLT:			/* Add autoindent characters. */
 		if (!LF_ISSET(TXT_CNTRLT))
@@ -1236,11 +1273,11 @@ insl_ch:	if (txt_insch(sp, tp, &evp->e_c, flags))
 		 * change to a mark and the user puts in more characters than
 		 * the length of the motion.
 		 */
-ebuf_chk:	if (sp->cno >= tp->len) {
+ebuf_chk:	if (tp->cno >= tp->len) {
 			BINC_GOTO(sp, tp->lb, tp->lb_len, tp->len + 1);
 			LF_SET(TXT_APPENDEOL);
 
-			tp->lb[sp->cno] = CH_CURSOR;
+			tp->lb[tp->cno] = CH_CURSOR;
 			++tp->insert;
 			++tp->len;
 		}
@@ -1255,13 +1292,13 @@ ebuf_chk:	if (sp->cno >= tp->len) {
 	}
 
 #if defined(DEBUG) && 1
-	if (sp->cno + tp->insert + tp->owrite != tp->len) {
+	if (tp->cno + tp->insert + tp->owrite != tp->len) {
 		msgq(sp, M_ERR,
 		    "len %u != cno: %u ai: %u insert %u overwrite %u",
-		    tp->len, sp->cno, tp->ai, tp->insert, tp->owrite);
+		    tp->len, tp->cno, tp->ai, tp->insert, tp->owrite);
 		if (LF_ISSET(TXT_REPLAY))
 			goto done;
-		tp->len = sp->cno + tp->insert + tp->owrite;
+		tp->len = tp->cno + tp->insert + tp->owrite;
 	}
 #endif
 
@@ -1287,18 +1324,20 @@ ret:	/* If replaying text, keep going. */
 		if (vs_change(sp, tp->lno, LINE_RESET))
 			return (1);
 		if (showmatch) {
-			showmatch = 0;
-			if (txt_showmatch(sp))
+			if (txt_showmatch(sp, tp))
 				return (1);
 		} else {
 			extern int FOO;
+
+			UPDATE_POSITION(sp, tp);
 			if (vs_refresh(sp, margin != 0))
 				return (1);
-			if (LF_ISSET(TXT_SEARCHINCR) &&
-			    txt_isrch(sp, tp, &flags))
+			if (FL_ISSET(is_flags, IS_RUNNING) &&
+			    txt_isrch(sp, vp, tp, &is_flags))
 				return (1);
 		}
 	}
+	showmatch = 0;
 
 	/* Keep going. */
 	goto next;
@@ -1310,9 +1349,14 @@ done:	/* Leave input mode. */
 	if (LF_ISSET(TXT_RECORD))
 		vip->rep_cnt = rcol;
 
-	/* Set the final cursor position. */
-	vp->m_final.lno = sp->lno;
-	vp->m_final.cno = sp->cno;
+	/*
+	 * If not working on the colon command line, set the final cursor
+	 * position.
+	 */
+	if (!F_ISSET(sp, S_INPUT_INFO)) {
+		vp->m_final.lno = tp->lno;
+		vp->m_final.cno = tp->cno;
+	}
 	return (0);
 
 err:
@@ -1339,7 +1383,7 @@ txt_abbrev(sp, tp, pushcp, isinfoline, didsubp, turnoffp)
 
 	/* Check to make sure we're not at the start of an append. */
 	*didsubp = 0;
-	if (sp->cno == tp->offset)
+	if (tp->cno == tp->offset)
 		return (0);
 
 	vip = VIP(sp);
@@ -1364,7 +1408,7 @@ txt_abbrev(sp, tp, pushcp, isinfoline, didsubp, turnoffp)
 	 * Terminate at the beginning of the insert or the character after the
 	 * offset character -- both can be tested for using tp->offset.
 	 */
-	off = sp->cno - 1;			/* Previous character. */
+	off = tp->cno - 1;			/* Previous character. */
 	p = tp->lb + off;
 	len = 1;				/* One character test. */
 	if (off == tp->offset || isblank(p[-1]))
@@ -1461,13 +1505,13 @@ search:	if (isinfoline)
 		return (1);
 
 	/* Move to the start of the abbreviation, adjust the length. */
-	sp->cno -= len;
+	tp->cno -= len;
 	tp->len -= len;
 
 	/* Copy any insert characters back. */
 	if (tp->insert)
-		memmove(tp->lb + sp->cno + tp->owrite,
-		    tp->lb + sp->cno + tp->owrite + len, tp->insert);
+		memmove(tp->lb + tp->cno + tp->owrite,
+		    tp->lb + tp->cno + tp->owrite + len, tp->insert);
 
 	/*
 	 * We return the length of the abbreviated characters.  This is so
@@ -1494,7 +1538,7 @@ txt_unmap(sp, tp, ec_flagsp)
 	char *p;
 
 	/* Find the beginning of this "word". */
-	for (off = sp->cno - 1, p = tp->lb + off, len = 0;; --p, --off) {
+	for (off = tp->cno - 1, p = tp->lb + off, len = 0;; --p, --off) {
 		if (isblank(*p)) {
 			++p;
 			break;
@@ -1529,9 +1573,10 @@ txt_unmap(sp, tp, ec_flagsp)
  *	characters.
  */
 static void
-txt_ai_resolve(sp, tp)
+txt_ai_resolve(sp, tp, iscurrent)
 	SCR *sp;
 	TEXT *tp;
+	int iscurrent;
 {
 	u_long ts;
 	int del;
@@ -1551,8 +1596,8 @@ txt_ai_resolve(sp, tp)
 	 */
 	if (tp->len <= tp->ai) {
 		tp->len = tp->ai = 0;
-		if (tp->lno == sp->lno)
-			sp->cno = 0;
+		if (iscurrent)
+			tp->cno = 0;
 		return;
 	}
 
@@ -1602,8 +1647,8 @@ txt_ai_resolve(sp, tp)
 	tp->len -= del;
 
 	/* If the cursor was on this line, adjust it as well. */
-	if (sp->lno == tp->lno)
-		sp->cno -= del;
+	if (iscurrent)
+		tp->cno -= del;
 
 	/* Fill in space/tab characters. */
 	for (p = tp->lb; tabs--;)
@@ -1691,9 +1736,7 @@ txt_backup(sp, tiqh, tp, flagsp)
 		return (tp);
 	}
 
-	/* Reset the cursor, bookkeeping. */
-	sp->lno = ntp->lno;
-	sp->cno = ntp->sv_cno;
+	/* Bookkeeping. */
 	ntp->len = ntp->sv_len;
 
 	/* Handle appending to the line. */
@@ -1784,7 +1827,7 @@ txt_dent(sp, tp, isindent)
 	 * This is slow, but it's normally only on the first few characters of
 	 * a line.
 	 */
-	for (current = cno = 0; cno < sp->cno; ++cno)
+	for (current = cno = 0; cno < tp->cno; ++cno)
 		current += tp->lb[cno] == '\t' ?
 		    COL_OFF(current, ts) : KEY_LEN(sp, tp->lb[cno]);
 
@@ -1802,7 +1845,7 @@ txt_dent(sp, tp, isindent)
 	 * is always true for ^D, the cursor can be in more than one place, as
 	 * "0^D" and "^D" are different.)
 	 */
-	ai_reset = !isindent || sp->cno == tp->ai + tp->offset;
+	ai_reset = !isindent || tp->cno == tp->ai + tp->offset;
 
 	/*
 	 * Back up over any previous <blank> characters, changing them into
@@ -1810,10 +1853,10 @@ txt_dent(sp, tp, isindent)
 	 * will move up to or past the target by definition, otherwise, the
 	 * command wouldn't have gotten this far.
 	 */
-	for (; sp->cno > tp->offset; --sp->cno, ++tp->owrite)
-		if (tp->lb[sp->cno - 1] == ' ')
+	for (; tp->cno > tp->offset; --tp->cno, ++tp->owrite)
+		if (tp->lb[tp->cno - 1] == ' ')
 			--current;
-		else if (tp->lb[sp->cno - 1] == '\t')
+		else if (tp->lb[tp->cno - 1] == '\t')
 			current -= COL_OFF(current, ts);
 		else
 			break;
@@ -1866,12 +1909,12 @@ txt_fc(sp, tp, redrawp)
 	 * Find the beginning of this "word" -- if we're at the beginning
 	 * of the line, it's a special case.
 	 */
-	if (sp->cno == 1) {
+	if (tp->cno == 1) {
 		len = 0;
 		p = tp->lb;
 	} else
 retry:		for (len = 0,
-		    off = sp->cno - 1, p = tp->lb + off;; --off, --p) {
+		    off = tp->cno - 1, p = tp->lb + off;; --off, --p) {
 			if (isblank(*p)) {
 				++p;
 				break;
@@ -1953,12 +1996,12 @@ retry:		for (len = 0,
 
 	/* If lost text, make the remaining old text overwrite characters. */
 	if (len) {
-		sp->cno -= len;
+		tp->cno -= len;
 		tp->owrite += len;
 	}
 
 	/* Overwrite any overwrite characters next. */
-	for (; nlen && tp->owrite; --nlen, --tp->owrite, ++sp->cno)
+	for (; nlen && tp->owrite; --nlen, --tp->owrite, ++tp->cno)
 		*p++ = *t++;
 
 	/* Shift remaining text up, and move the cursor to the end. */
@@ -1968,7 +2011,7 @@ retry:		for (len = 0,
 		BINC_RET(sp, tp->lb, tp->lb_len, tp->len + nlen);
 		p = tp->lb + off;
 
-		sp->cno += nlen;
+		tp->cno += nlen;
 		tp->len += nlen;
 
 		if (tp->insert)
@@ -1986,7 +2029,7 @@ isdir:		off = p - tp->lb;
 		if (!tp->owrite && tp->insert)
 			(void)memmove(p + 1, p, tp->insert);
 
-		++sp->cno;
+		++tp->cno;
 		++tp->len;
 		*p++ = '/';
 
@@ -2130,7 +2173,7 @@ txt_emark(sp, tp, cno)
 	 */
 	nlen = KEY_LEN(sp, ch);
 	if (tp->lb[cno] == '\t')
-		(void)vs_screens(sp, tp->lb, sp->lno, &cno, &olen);
+		(void)vs_screens(sp, tp->lb, tp->lno, &cno, &olen);
 	else
 		olen = KEY_LEN(sp, tp->lb[cno]);
 
@@ -2215,11 +2258,11 @@ txt_hex(sp, tp)
 	 * this should be okay, and lets us use a local routine, which
 	 * presumably understands the character set, to convert the value.
 	 */
-	savec = tp->lb[sp->cno];
-	tp->lb[sp->cno] = 0;
+	savec = tp->lb[tp->cno];
+	tp->lb[tp->cno] = 0;
 
 	/* Find the previous CH_HEX character. */
-	for (off = sp->cno - 1, p = tp->lb + off, len = 0;; --p, --off, ++len) {
+	for (off = tp->cno - 1, p = tp->lb + off, len = 0;; --p, --off, ++len) {
 		if (*p == CH_HEX) {
 			wp = p + 1;
 			break;
@@ -2237,27 +2280,26 @@ txt_hex(sp, tp)
 	errno = 0;
 	value = strtol(wp, NULL, 16);
 	if (errno || value > MAX_CHAR_T) {
-nothex:		tp->lb[sp->cno] = savec;
+nothex:		tp->lb[tp->cno] = savec;
 		return (0);
 	}
 
 	/* Restore the original character. */
-	tp->lb[sp->cno] = savec;
+	tp->lb[tp->cno] = savec;
 
 	/* Adjust the bookkeeping. */
-	sp->cno -= len;
+	tp->cno -= len;
 	tp->len -= len;
-	tp->lb[sp->cno - 1] = value;
+	tp->lb[tp->cno - 1] = value;
 
 	/* Copy down any overwrite characters. */
 	if (tp->owrite)
-		memmove(tp->lb + sp->cno,
-		    tp->lb + sp->cno + len, tp->owrite);
+		memmove(tp->lb + tp->cno, tp->lb + tp->cno + len, tp->owrite);
 
 	/* Copy down any insert characters. */
 	if (tp->insert)
-		memmove(tp->lb + sp->cno + tp->owrite,
-		    tp->lb + sp->cno + tp->owrite + len, tp->insert);
+		memmove(tp->lb + tp->cno + tp->owrite,
+		    tp->lb + tp->cno + tp->owrite + len, tp->insert);
 
 	return (0);
 }
@@ -2299,11 +2341,11 @@ txt_insch(sp, tp, chp, flags)
 	if (LF_ISSET(TXT_REPLACE)) {
 		if (tp->owrite) {
 			--tp->owrite;
-			tp->lb[sp->cno++] = *chp;
+			tp->lb[tp->cno++] = *chp;
 			return (0);
 		}
 	} else if (tp->owrite) {		/* Overwrite a character. */
-		cno = sp->cno;
+		cno = tp->cno;
 
 		/*
 		 * If the old or new characters are tabs, then the length of the
@@ -2313,7 +2355,7 @@ txt_insch(sp, tp, chp, flags)
 		if (*chp == '\t') {
 			savech = tp->lb[cno];
 			tp->lb[cno] = '\t';
-			(void)vs_screens(sp, tp->lb, sp->lno, &cno, &nlen);
+			(void)vs_screens(sp, tp->lb, tp->lno, &cno, &nlen);
 			tp->lb[cno] = savech;
 		} else
 			nlen = KEY_LEN(sp, *chp);
@@ -2329,7 +2371,7 @@ txt_insch(sp, tp, chp, flags)
 
 			if (tp->lb[cno] == '\t')
 				(void)vs_screens(sp,
-				    tp->lb, sp->lno, &cno, &olen);
+				    tp->lb, tp->lno, &cno, &olen);
 			else
 				olen = KEY_LEN(sp, tp->lb[cno]);
 
@@ -2373,7 +2415,7 @@ txt_insch(sp, tp, chp, flags)
 
 		/* If we had enough overwrite characters, we're done. */
 		if (nlen == 0) {
-			tp->lb[sp->cno++] = *chp;
+			tp->lb[tp->cno++] = *chp;
 			return (0);
 		}
 	}
@@ -2384,68 +2426,98 @@ txt_insch(sp, tp, chp, flags)
 	++tp->len;
 	if (tp->insert) {			/* Insert a character. */
 		if (tp->insert == 1)
-			tp->lb[sp->cno + 1] = tp->lb[sp->cno];
+			tp->lb[tp->cno + 1] = tp->lb[tp->cno];
 		else
-			memmove(tp->lb + sp->cno + 1,
-			    tp->lb + sp->cno, tp->owrite + tp->insert);
+			memmove(tp->lb + tp->cno + 1,
+			    tp->lb + tp->cno, tp->owrite + tp->insert);
 	}
-	tp->lb[sp->cno++] = *chp;
+	tp->lb[tp->cno++] = *chp;
 	return (0);
 }
 
 /*
  * txt_isrch --
- *	Do an incremental search forward.
+ *	Do an incremental search.
  */
 static int
-txt_isrch(sp, tp, flagsp)
+txt_isrch(sp, vp, tp, is_flagsp)
 	SCR *sp;
+	VICMD *vp;
 	TEXT *tp;
-	u_int32_t *flagsp;
+	u_int8_t *is_flagsp;
 {
 	CHAR_T savech;
-	MARK fm, rm;
-	size_t savecno, savelno;
+	recno_t lno;
 
-	/* If it's a one-line screen, we're screwed. */
+	/* If it's a one-line screen, we don't do incrementals. */
 	if (IS_ONELINE(sp)) {
-		FL_CLR(*flagsp, TXT_SEARCHINCR);
+		FL_CLR(*is_flagsp, IS_RUNNING);
 		return (0);
 	}
 
 	/*
-	 * If we see the search pattern termination character, then quit
-	 * doing any kind of incremental search.  There may be more input,
-	 * e.g. ":/foo/;/bar/", but we can't handle that incrementally.
+	 * If the user erases back to the beginning of the buffer, there's
+	 * nothing to search for.
+	 *
+	 * If it's an RE quote character, ignore it for now, but don't let
+	 * the user return with the string successfully found.
 	 */
-	if (sp->cno > 1 &&
-	    tp->lb[0] == tp->lb[sp->cno] && tp->lb[sp->cno -1] != '\\') {
-		FL_CLR(*flagsp, TXT_SEARCHINCR);
+	if (tp->cno <= 1 || tp->lb[tp->cno - 1] == '\\') {
+		vp->m_final.lno = vp->m_start.lno;
+		vp->m_final.cno = vp->m_start.cno;
+		FL_SET(*is_flagsp, IS_FAILED);
+		return (0);
+	}
+
+	/*
+	 * If we see the search pattern termination character, then quit doing
+	 * an incremental search.  There may be more, e.g., ":/foo/;/bar/",
+	 * and we can't handle that incrementally.  Also, reset the cursor to
+	 * the original location, the ex search routines don't know anything
+	 * about incremental searches.
+	 */
+	if (tp->lb[0] == tp->lb[tp->cno - 1] && tp->lb[tp->cno - 2] != '\\') {
+		vp->m_final.lno = vp->m_start.lno;
+		vp->m_final.cno = vp->m_start.cno;
+		FL_CLR(*is_flagsp, IS_RUNNING);
 		return (0);
 	}
 		
-	/* Save the current position and discard the special input map. */
-	savecno = sp->cno;
-	savech = tp->lb[sp->cno];
-	tp->lb[sp->cno] = '\0';
+	/* Nul terminate the search string. */
+	savech = tp->lb[tp->cno];
+	tp->lb[tp->cno] = '\0';
+
+	/* Remember the input line and discard the special input map. */
+	lno = tp->lno;
 	F_CLR(sp, S_INPUT);
 	if (txt_map_end(sp))
 		return (1);
 
 	/*
-	 * Specify where we'll start searching, and search.  If we find
-	 * a match, move to it and refresh the screen.  If we didn't find
-	 * the match, then we beep the screen.
+	 * Specify a starting point and search.  If we find a match, move to
+	 * it and refresh the screen.  If we didn't find the match, then we
+	 * beep the screen.
 	 */
-	fm.lno = sp->lno;
-	fm.cno = sp->cno;
+	if (FL_ISSET(*is_flagsp, IS_RESET)) {
+		vp->m_final.lno = vp->m_start.lno;
+		vp->m_final.cno = vp->m_start.cno;
+	}
 	if (tp->lb[0] == '/' ?
-	    !f_search(sp, &fm, &rm, tp->lb + 1, NULL, 0) :
-	    !b_search(sp, &fm, &rm, tp->lb + 1, NULL, 0)) {
-		sp->lno = rm.lno;
-		sp->cno = rm.cno;
-		vs_refresh(sp, 0);
+	    !f_search(sp,
+	    &vp->m_final, &vp->m_final, tp->lb + 1, NULL, SEARCH_INCR) :
+	    !b_search(sp,
+	    &vp->m_final, &vp->m_final, tp->lb + 1, NULL, SEARCH_INCR)) {
+		sp->lno = vp->m_final.lno;
+		sp->cno = vp->m_final.cno;
+		FL_CLR(*is_flagsp, IS_FAILED | IS_RESET);
+
+		if (vs_refresh(sp, 0))
+			return (1);
 	} else {
+		vp->m_final.lno = vp->m_start.lno;
+		vp->m_final.cno = vp->m_start.cno;
+		FL_SET(*is_flagsp, IS_FAILED | IS_RESET);
+
 		(void)sp->gp->scr_bell(sp);
 	}
 
@@ -2454,10 +2526,24 @@ txt_isrch(sp, tp, flagsp)
 		return (1);
 	F_SET(sp, S_INPUT);
 
-	/* Reset the input line. */
-	tp->lno = sp->lno;
-	sp->cno = savecno;
-	tp->lb[sp->cno] = savech;
+	/* Reset the line number of the input line. */
+	tp->lno = TMAP[0].lno; 
+	tp->lb[tp->cno] = savech;
+
+	/*
+	 * If the colon command-line moved, i.e. the screen scrolled,
+	 * refresh the input line.
+	 *
+	 * XXX
+	 * We shouldn't be calling vs_line, here -- we need dirty bits
+	 * on entries in the SMAP array.
+	 */
+	if (lno != TMAP[0].lno) {
+		if (vs_line(sp, &TMAP[0], NULL, NULL))
+			return (1);
+		(void)sp->gp->scr_refresh(sp, 0);
+	}
+	return (0);
 }
 
 /*
@@ -2482,13 +2568,13 @@ txt_resolve(sp, tiqh, flags)
 	vip = VIP(sp);
 	tp = tiqh->cqh_first;
 	if (LF_ISSET(TXT_AUTOINDENT))
-		txt_ai_resolve(sp, tp);
+		txt_ai_resolve(sp, tp, 1);
 	if (db_set(sp, tp->lno, tp->lb, tp->len))
 		return (1);
 
 	for (lno = tp->lno; (tp = tp->q.cqe_next) != (void *)&sp->tiq; ++lno) {
 		if (LF_ISSET(TXT_AUTOINDENT))
-			txt_ai_resolve(sp, tp);
+			txt_ai_resolve(sp, tp, 0);
 		if (db_append(sp, 0, lno, tp->lb, tp->len))
 			return (1);
 	}
@@ -2512,8 +2598,9 @@ txt_resolve(sp, tiqh, flags)
  * I think not.
  */
 static int
-txt_showmatch(sp)
+txt_showmatch(sp, tp)
 	SCR *sp;
+	TEXT *tp;
 {
 	GS *gp;
 	VCS cs;
@@ -2536,8 +2623,8 @@ txt_showmatch(sp)
 		return (1);
 
 	/* Initialize the getc() interface. */
-	cs.cs_lno = sp->lno;
-	cs.cs_cno = sp->cno - 1;
+	cs.cs_lno = tp->lno;
+	cs.cs_cno = tp->cno - 1;
 	if (cs_init(sp, &cs))
 		return (1);
 	startc = (endc = cs.cs_ch)  == ')' ? '(' : '{';
@@ -2561,11 +2648,8 @@ txt_showmatch(sp)
 	}
 
 	/* If the match is on the screen, move to it. */
-	if (cs.cs_lno < m.lno ||
-	    cs.cs_lno == m.lno && cs.cs_cno < m.cno)
+	if (cs.cs_lno < m.lno || cs.cs_lno == m.lno && cs.cs_cno < m.cno)
 		return (0);
-	m.lno = sp->lno;
-	m.cno = sp->cno;
 	sp->lno = cs.cs_lno;
 	sp->cno = cs.cs_cno;
 	if (vs_refresh(sp, 1))
@@ -2576,8 +2660,7 @@ txt_showmatch(sp)
 		return (1);
 
 	/* Return to the current location. */
-	sp->lno = m.lno;
-	sp->cno = m.cno;
+	UPDATE_POSITION(sp, tp);
 	return (vs_refresh(sp, 1));
 }
 
@@ -2597,7 +2680,7 @@ txt_margin(sp, tp, wmtp, didbreak, flags)
 	char *p, *wp;
 
 	/* Find the nearest previous blank. */
-	for (off = sp->cno - 1, p = tp->lb + off, len = 0;; --off, --p, ++len) {
+	for (off = tp->cno - 1, p = tp->lb + off, len = 0;; --off, --p, ++len) {
 		if (isblank(*p)) {
 			wp = p + 1;
 			break;
@@ -2635,7 +2718,7 @@ txt_margin(sp, tp, wmtp, didbreak, flags)
 	wmtp->owrite = tp->owrite;
 
 	/* Correct current bookkeeping information. */
-	sp->cno -= len;
+	tp->cno -= len;
 	if (LF_ISSET(TXT_APPENDEOL)) {
 		tp->len -= len + tp->owrite + (tp->insert - 1);
 		tp->insert = 1;
@@ -2652,7 +2735,7 @@ txt_margin(sp, tp, wmtp, didbreak, flags)
 	for (;; --p, --off) {
 		if (!isblank(*p))
 			break;
-		--sp->cno;
+		--tp->cno;
 		--tp->len;
 		if (off == tp->ai || off == tp->offset)
 			break;
@@ -2688,7 +2771,7 @@ txt_Rcleanup(sp, tiqh, tp, lp, olen)
 	 * plus the blanks erased by <carriage-return>/<newline>s.
 	 */
 	for (ttp = tiqh->cqh_first, ilen = 0;;) {
-		ilen += ttp == tp ? sp->cno : ttp->len + ttp->R_erase;
+		ilen += ttp == tp ? tp->cno : ttp->len + ttp->R_erase;
 		if ((ttp = ttp->q.cqe_next) == (void *)&sp->tiq)
 			break;
 	}
@@ -2705,7 +2788,7 @@ txt_Rcleanup(sp, tiqh, tp, lp, olen)
 	 */
 	if (ilen < olen) {
 		tmp = MIN(tp->owrite, olen - ilen);
-		memmove(tp->lb + sp->cno, lp + ilen, tmp);
+		memmove(tp->lb + tp->cno, lp + ilen, tmp);
 		tp->len -= tp->owrite - tmp;
 		tp->owrite = 0;
 		tp->insert += tmp;
