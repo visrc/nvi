@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: mem.h,v 10.3 1995/10/17 09:06:18 bostic Exp $ (Berkeley) $Date: 1995/10/17 09:06:18 $
+ *	$Id: mem.h,v 10.4 1995/10/17 11:42:13 bostic Exp $ (Berkeley) $Date: 1995/10/17 11:42:13 $
  */
 
 /* Increase the size of a malloc'd buffer.  Two versions, one that
@@ -125,12 +125,16 @@
  * a million warnings.  After awhile, it seemed easier to put the casts
  * in instead of explaining it all the time.
  */
-#define	CALLOC_NOMSG(sp, p, cast, nmemb, size) {			\
-	p = (cast)calloc(nmemb, size);					\
-}
 #define	CALLOC(sp, p, cast, nmemb, size) {				\
 	if ((p = (cast)calloc(nmemb, size)) == NULL)			\
 		msgq(sp, M_SYSERR, NULL);				\
+}
+#define	CALLOC_GOTO(sp, p, cast, nmemb, size) {				\
+	if ((p = (cast)calloc(nmemb, size)) == NULL)			\
+		goto alloc_err;						\
+}
+#define	CALLOC_NOMSG(sp, p, cast, nmemb, size) {			\
+	p = (cast)calloc(nmemb, size);					\
 }
 #define	CALLOC_RET(sp, p, cast, nmemb, size) {				\
 	if ((p = (cast)calloc(nmemb, size)) == NULL) {			\
@@ -138,12 +142,17 @@
 		return (1);						\
 	}								\
 }
-#define	MALLOC_NOMSG(sp, p, cast, size) {				\
-	p = (cast)malloc(size);						\
-}
+
 #define	MALLOC(sp, p, cast, size) {					\
 	if ((p = (cast)malloc(size)) == NULL)				\
 		msgq(sp, M_SYSERR, NULL);				\
+}
+#define	MALLOC_GOTO(sp, p, cast, size) {				\
+	if ((p = (cast)malloc(size)) == NULL)				\
+		goto alloc_err;						\
+}
+#define	MALLOC_NOMSG(sp, p, cast, size) {				\
+	p = (cast)malloc(size);						\
 }
 #define	MALLOC_RET(sp, p, cast, size) {					\
 	if ((p = (cast)malloc(size)) == NULL) {				\
