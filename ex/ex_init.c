@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_init.c,v 8.2 1993/06/21 10:11:23 bostic Exp $ (Berkeley) $Date: 1993/06/21 10:11:23 $";
+static char sccsid[] = "$Id: ex_init.c,v 8.3 1993/07/06 09:03:51 bostic Exp $ (Berkeley) $Date: 1993/07/06 09:03:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -41,7 +41,7 @@ ex_init(sp, ep)
 			if (sp->lno == 0)
 				sp->lno = 1;
 			sp->cno = 0;
-			F_CLR(sp, F_EADDR_LOAD | F_EADDR_NONE);
+			F_CLR(ep, F_EADDR_LOAD | F_EADDR_NONE);
 		} else {
 			sp->lno = ep->lno;
 			sp->cno = ep->cno;
