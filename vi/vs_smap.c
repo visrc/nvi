@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 8.28 1993/11/22 17:30:13 bostic Exp $ (Berkeley) $Date: 1993/11/22 17:30:13 $";
+static char sccsid[] = "$Id: vs_smap.c,v 8.29 1993/11/30 09:27:44 bostic Exp $ (Berkeley) $Date: 1993/11/30 09:27:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -274,6 +274,7 @@ svi_sm_delete(sp, ep, lno)
 	for (p = TMAP - cnt_orig;;) {
 		if (p < TMAP && svi_sm_next(sp, ep, p, p + 1))
 			return (1);
+		/* svi_sm_next() flushed the cache. */
 		if (svi_line(sp, ep, ++p, NULL, NULL))
 			return (1);
 		if (p == TMAP)
@@ -354,15 +355,14 @@ svi_sm_reset(sp, ep, lno)
 	 * If so, repaint, otherwise do it the hard way.
 	 */
         for (p = HMAP; p->lno != lno; ++p);
-	for (cnt_orig = 0, t = p;
-	    t <= TMAP && t->lno == lno; ++cnt_orig, ++t)
-		SMAP_FLUSH(t);
+	for (cnt_orig = 0, t = p; t <= TMAP && t->lno == lno; ++cnt_orig, ++t);
 	cnt_new = svi_screens(sp, ep, lno, NULL);
 
 	TOO_WEIRD;
 
 	if (cnt_orig == cnt_new) {
 		do {
+			SMAP_FLUSH(p);
 			if (svi_line(sp, ep, p, NULL, NULL))
 				return (1);
 		} while (++p < t);
@@ -393,6 +393,7 @@ svi_sm_reset(sp, ep, lno)
 		for (cnt = 1, t = p; cnt_new-- && t <= TMAP; ++t, ++cnt) {
 			t->lno = lno;
 			t->off = cnt;
+			SMAP_FLUSH(t);
 			if (svi_line(sp, ep, t, NULL, NULL))
 				return (1);
 		}
@@ -412,6 +413,7 @@ svi_sm_reset(sp, ep, lno)
 		for (cnt = 1, t = p; cnt_new--; ++t, ++cnt) {
 			t->lno = lno;
 			t->off = cnt;
+			SMAP_FLUSH(t);
 			if (svi_line(sp, ep, t, NULL, NULL))
 				return (1);
 		}
@@ -420,6 +422,7 @@ svi_sm_reset(sp, ep, lno)
 		for (t = TMAP - diff;;) {
 			if (t < TMAP && svi_sm_next(sp, ep, t, t + 1))
 				return (1);
+			/* svi_sm_next() flushed the cache. */
 			if (svi_line(sp, ep, ++t, NULL, NULL))
 				return (1);
 			if (t == TMAP)
@@ -516,6 +519,7 @@ svi_sm_up(sp, ep, rp, count, cursor_move)
 				    !file_gline(sp, ep, tmp.lno, NULL))
 					break;
 				*++TMAP = tmp;
+				/* svi_sm_next() flushed the cache. */
 				if (svi_line(sp, ep, TMAP, NULL, NULL))
 					return (1);
 			}
@@ -617,6 +621,7 @@ svi_sm_1up(sp, ep)
 		if (svi_sm_next(sp, ep, TMAP - 1, TMAP))
 			return (1);
 	}
+	/* svi_sm_next() flushed the cache. */
 	if (svi_line(sp, ep, TMAP, NULL, NULL))
 		return (1);
 	return (0);
@@ -800,6 +805,7 @@ svi_sm_1down(sp, ep)
 	memmove(HMAP + 1, HMAP, (sp->rows - 1) * sizeof(SMAP));
 	if (svi_sm_prev(sp, ep, HMAP + 1, HMAP))
 		return (1);
+	/* svi_sm_prev() flushed the cache. */
 	if (svi_line(sp, ep, HMAP, NULL, NULL))
 		return (1);
 	return (0);
