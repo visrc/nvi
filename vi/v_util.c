@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_util.c,v 5.20 1993/02/19 13:54:10 bostic Exp $ (Berkeley) $Date: 1993/02/19 13:54:10 $";
+static char sccsid[] = "$Id: v_util.c,v 5.21 1993/02/19 18:41:01 bostic Exp $ (Berkeley) $Date: 1993/02/19 18:41:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -60,12 +60,11 @@ v_eol(ep, mp)
 	MARK *mp;	
 {
 	size_t len;
-	u_char *p;
 
 	if (mp == NULL)
 		msg(ep, M_BELL, "Already at end-of-line.");
 	else {
-		if ((p = file_gline(ep, mp->lno, &len)) == NULL) {
+		if (file_gline(ep, mp->lno, &len) == NULL) {
 			GETLINE_ERR(ep, mp->lno);
 			return;
 		}
