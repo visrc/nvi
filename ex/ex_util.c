@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_util.c,v 10.10 1995/09/28 12:00:35 bostic Exp $ (Berkeley) $Date: 1995/09/28 12:00:35 $";
+static char sccsid[] = "$Id: ex_util.c,v 10.11 1995/10/02 16:35:16 bostic Exp $ (Berkeley) $Date: 1995/10/02 16:35:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -159,11 +159,6 @@ ex_message(sp, p, which)
 	switch (which) {
 	case EXM_EMPTYBUF:
 		msgq(sp, M_ERR, "168|Buffer %s is empty", p);
-		break;
-	case EXM_INTERRUPT:
-		msgq(sp, M_ERR, v_event_flush(sp, CH_MAPPED) ?
-		    "169|Interrupted: mapped keys discarded" :
-		    "170|Interrupted");
 		break;
 	case EXM_NOCANON:
 		msgq(sp, M_ERR,
