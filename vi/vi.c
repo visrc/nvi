@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.19 1993/10/07 14:50:04 bostic Exp $ (Berkeley) $Date: 1993/10/07 14:50:04 $";
+static char sccsid[] = "$Id: vi.c,v 8.20 1993/10/07 15:18:34 bostic Exp $ (Berkeley) $Date: 1993/10/07 15:18:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -729,7 +729,7 @@ getcount(sp, keyp, countp)
 		if (count > tc) {
 			/* Toss to the next non-digit. */
 			do {
-				if (getkey(sp, &keyp, TXT_MAPCOMMAND))
+				if (getkey(sp, keyp, TXT_MAPCOMMAND))
 					return (1);
 			} while (isdigit(*keyp));
 			(void)term_push(sp, sp->gp->key, keyp, 1);
