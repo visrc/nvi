@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.37 1993/12/20 18:25:50 bostic Exp $ (Berkeley) $Date: 1993/12/20 18:25:50 $";
+static char sccsid[] = "$Id: key.c,v 8.38 1993/12/29 17:26:44 bostic Exp $ (Berkeley) $Date: 1993/12/29 17:26:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -85,6 +85,7 @@ static KEYLIST keylist[] = {
 	{K_TAB,		  '\t'},
 	{K_VEOF,	'\004'},
 	{K_VERASE,	  '\b'},
+	{K_VINTR,	'\003'},
 	{K_VKILL,	'\025'},
 	{K_VLNEXT,	'\026'},
 	{K_VWERASE,	'\027'},
@@ -134,6 +135,9 @@ term_init(sp)
 #endif
 #ifdef VERASE
 	TERMSET(VERASE, K_VERASE);
+#endif
+#ifdef VINTR
+	TERMSET(VINTR, K_VINTR);
 #endif
 #ifdef VKILL
 	TERMSET(VKILL, K_VKILL);
