@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.10 1992/06/07 13:58:37 bostic Exp $ (Berkeley) $Date: 1992/06/07 13:58:37 $";
+static char sccsid[] = "$Id: exf.c,v 5.11 1992/06/07 16:46:48 bostic Exp $ (Berkeley) $Date: 1992/06/07 16:46:48 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -234,6 +234,8 @@ file_dline(ep, lno)
 		msg("%s: line %lu: not found", ep->name, lno);
 		return (1);
 	}
+	if (mode == MODE_VI)
+		scr_lchange(lno, NULL, 0);
 	ep->flags |= F_MODIFIED;
 	return (0);
 }
@@ -263,6 +265,8 @@ file_aline(ep, lno, p, len)
 		msg("%s: line %lu: %s", ep->name, lno, strerror(errno));
 		return (1);
 	}
+	if (mode == MODE_VI)
+		scr_lchange(lno + 1, p, len);
 	ep->flags |= F_MODIFIED;
 	return (0);
 }
@@ -292,6 +296,8 @@ file_iline(ep, lno, p, len)
 		msg("%s: line %lu: %s", ep->name, lno, strerror(errno));
 		return (1);
 	}
+	if (mode == MODE_VI)
+		scr_lchange(lno - 1, p, len);
 	ep->flags |= F_MODIFIED;
 	return (0);
 }
@@ -321,6 +327,8 @@ file_sline(ep, lno, p, len)
 		msg("%s: line %lu: %s", ep->name, lno, strerror(errno));
 		return (1);
 	}
+	if (mode == MODE_VI)
+		scr_lchange(lno, p, len);
 	ep->flags |= F_MODIFIED;
 	return (0);
 }
