@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_init.c,v 10.23 1996/06/26 19:47:34 bostic Exp $ (Berkeley) $Date: 1996/06/26 19:47:34 $";
+static const char sccsid[] = "$Id: ex_init.c,v 10.24 1996/06/30 16:13:58 bostic Exp $ (Berkeley) $Date: 1996/06/30 16:13:58 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -290,11 +290,9 @@ ex_run_str(sp, name, str, len, ex_flags, nocopy)
 
 	if (nocopy)
 		ecp->cp = str;
-	else {
-		/* See ex.h for a discussion of SEARCH_TERMINATION. */
+	else
 		if ((ecp->cp = v_strdup(sp, str, len)) == NULL)
 			return (1);
-	}
 	ecp->clen = len;
 
 	if (name == NULL)
