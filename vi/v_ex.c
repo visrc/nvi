@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_ex.c,v 10.33 1996/03/28 16:57:44 bostic Exp $ (Berkeley) $Date: 1996/03/28 16:57:44 $";
+static const char sccsid[] = "$Id: v_ex.c,v 10.34 1996/03/28 20:57:31 bostic Exp $ (Berkeley) $Date: 1996/03/28 20:57:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -378,6 +378,8 @@ v_ex(sp, vp)
 	TEXT *tp;
 	int ifcontinue;
 
+	gp = sp->gp;
+
 	/*
 	 * !!!
 	 * If we put out more than a single line of messages, or ex trashes
@@ -393,7 +395,7 @@ v_ex(sp, vp)
 		 * There may already be an ex command waiting.  If so, we
 		 * continue with it.
 		 */
-		if (!EXCMD_RUNNING(sp->gp)) {
+		if (!EXCMD_RUNNING(gp)) {
 			/* Get a command. */
 			if (v_tcmd(sp, vp, ':',
 			    TXT_BS | TXT_CEDIT | TXT_FILEC | TXT_PROMPT))
@@ -617,6 +619,8 @@ v_ecl_init(sp)
 	FREF *frp;
 	GS *gp;
 
+	gp = sp->gp;
+
 	/* Get a temporary file. */
 	if ((frp = file_add(sp, NULL)) == NULL)
 		return (1);
@@ -625,7 +629,6 @@ v_ecl_init(sp)
 	 * XXX
 	 * Create a screen -- the file initialization code wants one.
 	 */
-	gp = sp->gp;
 	if (screen_init(gp, sp, &gp->ccl_sp))
 		return (1);
 	if (file_init(gp->ccl_sp, frp, NULL, 0)) {
