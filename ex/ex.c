@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.151 1994/08/09 09:03:31 bostic Exp $ (Berkeley) $Date: 1994/08/09 09:03:31 $";
+static char sccsid[] = "$Id: ex.c,v 8.152 1994/08/09 09:29:39 bostic Exp $ (Berkeley) $Date: 1994/08/09 09:29:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -719,8 +719,8 @@ skip:		if (F_ISSET(cp, E_NOPERM)) {
 		}
 	}
 	/*
-	 * Use normal quoting and termination rules to find the end
-	 * of this command.
+	 * Use normal quoting and termination rules to find the end of this
+	 * command.
 	 *
 	 * QUOTING NOTE:
 	 *
@@ -731,7 +731,7 @@ skip:		if (F_ISSET(cp, E_NOPERM)) {
 	 * '|' characters or literal next characters are stripped as as they're
 	 * no longer useful.
 	 */
-	vi_address = cmdlen > 0;
+	vi_address = cmdlen != 0 && cmd[0] != '\n';
 	for (p = cmd, cnt = 0; cmdlen > 0; --cmdlen, ++cmd) {
 		ch = cmd[0];
 		if (IS_ESCAPE(sp, ch) && cmdlen > 1) {
