@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 5.44 1993/05/16 15:18:35 bostic Exp $ (Berkeley) $Date: 1993/05/16 15:18:35 $";
+static char sccsid[] = "$Id: cut.c,v 5.45 1993/05/20 20:06:31 bostic Exp $ (Berkeley) $Date: 1993/05/20 20:06:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,6 +38,7 @@ cut(sp, ep, buffer, fm, tm, lmode)
 	recno_t lno;
 	int append, indx;
 
+	append = isupper(buffer);
 	CBNAME(sp, buffer, cb);
 
 	/*
@@ -45,7 +46,6 @@ cut(sp, ep, buffer, fm, tm, lmode)
 	 * append mode set so the buffer is appended to, not overwritten.
 	 * Also note if the buffer has changed modes.
 	 */
-	append = isupper(buffer);
 	if (append && !lmode && cb->flags & CB_LMODE)
 		msgq(sp, M_INFO, "Buffer %s changed to line mode",
 		    charname(sp, buffer));
