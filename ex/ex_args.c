@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 8.9 1993/11/22 08:50:01 bostic Exp $ (Berkeley) $Date: 1993/11/22 08:50:01 $";
+static char sccsid[] = "$Id: ex_args.c,v 8.10 1993/12/02 10:46:36 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:46:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,8 +34,8 @@ ex_next(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
+	ARGS **argv;
 	FREF *frp;
-	char **argv;
 
 	MODIFY_CHECK(sp, ep, F_ISSET(cmdp, E_FORCE));
 
@@ -47,7 +47,7 @@ ex_next(sp, ep, cmdp)
 
 		/* Add the new files into the file list. */
 		for (argv = cmdp->argv; *argv != NULL; ++argv)
-			if (file_add(sp, NULL, *argv, 0) == NULL)
+			if (file_add(sp, NULL, argv[0]->bp, 0) == NULL)
 				return (1);
 		
 		if ((frp = file_first(sp, 0)) == NULL)
@@ -116,7 +116,7 @@ ex_rew(sp, ep, cmdp)
 	    tfrp != NULL; tfrp = tfrp->q.tqe_next) {
 		F_CLR(tfrp, FR_CHANGEWRITE | FR_CURSORSET | FR_EDITED);
 		if (tfrp->cname != NULL) {
-			FREE(tfrp->cname, tfrp->clen);
+			free(tfrp->cname);
 			tfrp->cname = NULL;
 		}
 	}
@@ -154,13 +154,7 @@ ex_args(sp, ep, cmdp)
 		 */
 		if (F_ISSET(frp, FR_IGNORE) && frp != sp->frp)
 			continue;
-		if (frp->name == NULL) {
-			name = frp->tname;
-			nlen = frp->tlen;
-		} else {
-			name = frp->name;
-			nlen = frp->nlen;
-		}
+		nlen = strlen(name = FILENAME(frp));
 		iscur = frp == sp->frp && frp->cname == NULL;
 extra:		col += len = nlen + sep + (iscur ? 2 : 0);
 		if (col >= sp->cols - 1) {
@@ -186,8 +180,7 @@ extra:		col += len = nlen + sep + (iscur ? 2 : 0);
 		else {
 			(void)ex_printf(EXCOOKIE, "%s", name);
 			if (frp == sp->frp) {
-				name = frp->cname;
-				nlen = frp->clen;
+				nlen = strlen(name = frp->cname);
 				iscur = 1;
 				goto extra;
 			}
