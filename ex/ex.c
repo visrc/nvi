@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.102 1994/03/11 13:56:59 bostic Exp $ (Berkeley) $Date: 1994/03/11 13:56:59 $";
+static char sccsid[] = "$Id: ex.c,v 8.103 1994/03/13 15:43:01 bostic Exp $ (Berkeley) $Date: 1994/03/13 15:43:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -72,7 +72,7 @@ ex(sp, ep)
 	 * from a file.  In addition, the first time a ^H was discarded from
 	 * the input, a message "^H discarded" was displayed.  We don't bother.
 	 */
-	LF_INIT(TXT_CR | TXT_PROMPT);
+	LF_INIT(TXT_CNTRLD | TXT_CR | TXT_PROMPT);
 	if (O_ISSET(sp, O_BEAUTIFY))
 		LF_SET(TXT_BEAUTIFY);
 
@@ -91,6 +91,7 @@ ex(sp, ep)
 		tp = sp->tiq.cqh_first;
 		if (tp->len == 0) {
 			if (F_ISSET(sp->gp, G_STDIN_TTY)) {
+				/* Special case \r command. */
 				(void)fputc('\r', stdout);
 				(void)fflush(stdout);
 			}
@@ -100,7 +101,12 @@ ex(sp, ep)
 				F_SET(sp, S_EXIT_FORCE);
 		} else {
 			if (F_ISSET(sp->gp, G_STDIN_TTY))
-				(void)fputc('\n', stdout);
+				/* Special case ^D command. */
+				if (tp->len == 1 && tp->lb[0] == '\004') {
+					(void)fputc('\r', stdout);
+					(void)fflush(stdout);
+				} else
+					(void)fputc('\n', stdout);
 			if (ex_icmd(sp, ep, tp->lb, tp->len) &&
 			    !F_ISSET(sp->gp, G_STDIN_TTY))
 				F_SET(sp, S_EXIT_FORCE);
@@ -316,7 +322,7 @@ loop:	if (nl) {
 	 * the command "cut" wasn't known.  However, it makes ":e+35 file" work
 	 * correctly.
 	 */
-#define	SINGLE_CHAR_COMMANDS	"!#&<=>@~"
+#define	SINGLE_CHAR_COMMANDS	"\004!#&<=>@~"
 	if (cmdlen != 0 && cmd[0] != '|' && cmd[0] != '\n') {
 		if (strchr(SINGLE_CHAR_COMMANDS, *cmd)) {
 			p = cmd;
@@ -344,8 +350,6 @@ loop:	if (nl) {
 		 * Historic vi permitted pretty much anything to follow the
 		 * substitute command, e.g. "s/e/E/|s|sgc3p" was fine.  Make
 		 * it work.
-		 *
-		 * Use of msgq below is safe, command names are all alphabetics.
 		 */
 		if ((cp = ex_comm_search(p, namelen)) == NULL)
 			if (p[0] == 'k' && p[1] && !p[2]) {
@@ -710,6 +714,24 @@ two:		switch (exc.addrcnt) {
 	default:
 		if (exc.addrcnt)		/* Error. */
 			goto usage;
+	}
+
+	/*
+	 * !!!
+	 * The ^D scroll command historically scrolled half the screen size
+	 * rows down, rounded down, or to EOF.  It was an error if the cursor
+	 * was already at EOF.  (Leading addresses were permitted, but were
+	 * then ignored.)
+	 */
+	if (cp == &cmds[C_SCROLL]) {
+		exc.addrcnt = 2;
+		exc.addr1.lno = sp->lno + 1;
+		exc.addr2.lno = sp->lno + 1 + (O_VAL(sp, O_LINES) + 1) / 2;
+		exc.addr1.cno = exc.addr2.cno = sp->cno;
+		if (file_lline(sp, ep, &lno))
+			goto err;
+		if (lno != 0 && lno > sp->lno && exc.addr2.lno > lno)
+			exc.addr2.lno = lno;
 	}
 
 	flagoff = 0;
