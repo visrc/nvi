@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.120 1994/07/15 16:00:55 bostic Exp $ (Berkeley) $Date: 1994/07/15 16:00:55 $
+ *	$Id: screen.h,v 8.121 1994/07/15 16:13:46 bostic Exp $ (Berkeley) $Date: 1994/07/15 16:13:46 $
  */
 
 /*
@@ -228,7 +228,7 @@ struct _scr {
 					/* Suspend the screen. */
 	int	(*s_suspend) __P((SCR *));
 					/* Set the window size. */
-	int	(*s_window) __P((SCR *, size_t, int));
+	int	(*s_window) __P((SCR *, int));
 
 /* Editor screens. */
 #define	S_EX		0x0000001	/* Ex screen. */
