@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 5.22 1992/05/22 09:57:22 bostic Exp $ (Berkeley) $Date: 1992/05/22 09:57:22 $";
+static char sccsid[] = "$Id: v_cmd.c,v 5.23 1992/05/28 13:49:33 bostic Exp $ (Berkeley) $Date: 1992/05/28 13:49:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -198,9 +198,10 @@ VIKEYS vikeys[MAXVIKEY + 1] = {
 	v_wordB,	V_CNT|V_MOVE,
 	    "move back bigword: [count]B",
 /* 103   C */
-	v_change,	V_CNT|V_DOT|V_MOTION|V_OBUF,	"change to end-of-line: [buffer][count]C",
+	v_Change,	V_CNT|V_DOT|V_OBUF,
+	    "change to end-of-line: [buffer][count]C",
 /* 104   D */
-	v_delete,	V_CNT|V_DOT|V_MOTION|V_OBUF,
+	v_Delete,	V_CNT|V_DOT|V_OBUF,
 	    "delete to end-of-line: [buffer][count]D",
 /* 105   E */
 	v_wordE,	V_CNT|V_MOVE,
@@ -237,9 +238,11 @@ VIKEYS vikeys[MAXVIKEY + 1] = {
 	v_Put,		V_CNT|V_DOT|V_OBUF,
 	    "insert before cursor from buffer: [buffer]P",
 /* 121   Q */
-	v_quit,		0,		"switch to ex mode: Q",
+	v_quit,		0,
+	    "switch to ex mode: Q",
 /* 122   R */
-	v_overtype,	V_DOT,		"replace characters: R",
+	v_Replace,	V_DOT,
+	    "replace characters: [count]R",
 /* 123   S */
 	v_change,	V_CNT|V_DOT|V_OBUF,	"substitute lines: [buffer][count]S",
 /* 124   T */
@@ -281,9 +284,10 @@ VIKEYS vikeys[MAXVIKEY + 1] = {
 	v_wordb,	V_CNT|V_MOVE,
 	    "move back word: [count]b",
 /* 143   c */
-	v_change,	V_CNT|V_DOT|V_MOTION|V_OBUF,	"change: [buffer][count]c[count]motion",
+	v_change,	V_CNT|V_DOT|V_MOTION|V_OBUF|VC_C,
+	    "change: [buffer][count]c[count]motion",
 /* 144   d */
-	v_delete,	V_CNT|V_DOT|V_MOTION|V_OBUF,
+	v_delete,	V_CNT|V_DOT|V_MOTION|V_OBUF|VC_D,
 	    "delete: [buffer][count]d[count]motion",
 /* 145   e */
 	v_worde,	V_CNT|V_MOVE,
@@ -325,7 +329,8 @@ VIKEYS vikeys[MAXVIKEY + 1] = {
 /* 162   r */
 	v_replace,	V_CHAR|V_CNT,		"replace character: [count]r character",
 /* 163   s */
-	v_subst,	V_CNT|V_DOT|V_OBUF,		"substitute character: [buffer][count]s",
+	v_subst,	V_CNT|V_DOT|V_OBUF,
+	    "substitute character: [buffer][count]s",
 /* 164   t */
 	v_tch,		V_CHAR|V_CNT|V_MOVE,
 	    "before character in line forward search: [count]t character",
