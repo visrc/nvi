@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.28 1993/11/29 20:02:05 bostic Exp $ (Berkeley) $Date: 1993/11/29 20:02:05 $";
+static char sccsid[] = "$Id: key.c,v 8.29 1993/11/30 09:27:17 bostic Exp $ (Berkeley) $Date: 1993/11/30 09:27:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -466,6 +466,26 @@ not_digit_ch:	chp->ch = NOT_DIGIT_CH;
 }
 
 /*
+ * term_ab_flush --
+ *	Flush any abbreviated keys.
+ */
+void
+term_ab_flush(sp, msg)
+	SCR *sp;
+	char *msg;
+{
+	IBUF *tty;
+
+	tty = sp->gp->tty;
+	if (!tty->cnt || !(tty->chf[tty->next] & CH_ABBREVIATED))
+		return;
+	do {
+		QREM_HEAD(tty, 1);
+	} while (tty->cnt && tty->chf[tty->next] & CH_ABBREVIATED);
+	msgq(sp, M_ERR, "%s: keys flushed.", msg);
+	
+}
+/*
  * term_map_flush --
  *	Flush any mapped keys.
  */
@@ -482,7 +502,7 @@ term_map_flush(sp, msg)
 	do {
 		QREM_HEAD(tty, 1);
 	} while (tty->cnt && tty->cmap[tty->next]);
-	msgq(sp, M_ERR, "%s: mapped keys flushed.", msg);
+	msgq(sp, M_ERR, "%s: keys flushed.", msg);
 	
 }
 
@@ -497,7 +517,6 @@ term_user_key(sp, chp)
 {
 	enum input rval;
 	struct timeval t;
-	CHAR_T ch;
 	IBUF *tty;
 	int nr;
 
@@ -507,6 +526,7 @@ term_user_key(sp, chp)
 	 */
 	t.tv_sec = 0;
 	t.tv_usec = 1;
+	tty = sp->gp->tty;
 	if (term_read_grow(sp, tty))
 		return (INP_ERR);
 	if (rval = sp->s_key_read(sp, &nr, &t))
@@ -519,7 +539,6 @@ term_user_key(sp, chp)
 		return (rval);
 			
 	/* Fill in the return information. */
-	tty = sp->gp->tty;
 	chp->ch = tty->ch[tty->next + (tty->cnt - 1)];
 	chp->flags = 0;
 	chp->value = term_key_val(sp, chp->ch);
