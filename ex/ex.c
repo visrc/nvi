@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.81 1993/12/22 17:00:35 bostic Exp $ (Berkeley) $Date: 1993/12/22 17:00:35 $";
+static char sccsid[] = "$Id: ex.c,v 8.82 1993/12/22 17:01:57 bostic Exp $ (Berkeley) $Date: 1993/12/22 17:01:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -295,17 +295,16 @@ loop:	if (nl) {
 			}
 		}
 
-		/* Search the table for the command. */
-		cp = ex_comm_search(p, namelen);
-
 		/*
+		 * Search the table for the command.
+		 *
 		 * !!!
 		 * Historic vi permitted the mark to immediately follow the
 		 * 'k' in the 'k' command.  Make it work.
 		 *
 		 * Use of msgq below is safe, command names are all alphabetics.
 		 */
-		if (cp == NULL)
+		if ((cp = ex_comm_search(p, namelen)) == NULL)
 			if (p[0] == 'k' && p[1] && !p[2]) {
 				cmd -= namelen - 1;
 				cmdlen += namelen - 1;
@@ -1449,11 +1448,9 @@ ex_comm_search(name, len)
 {
 	EXCMDLIST const *cp;
 
-	for (cp = &cmds[C_APPEND]; cp->name != NULL; ++cp) {
+	for (cp = cmds; cp->name != NULL; ++cp) {
 		if (cp->name[0] > name[0])
 			return (NULL);
-		if (cp->name[0] != name[0])
-			continue;
 		if (!memcmp(name, cp->name, len))
 			return (cp);
 	}
