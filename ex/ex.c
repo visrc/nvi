@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.55 1993/02/11 19:54:11 bostic Exp $ (Berkeley) $Date: 1993/02/11 19:54:11 $";
+static char sccsid[] = "$Id: ex.c,v 5.56 1993/02/11 20:06:39 bostic Exp $ (Berkeley) $Date: 1993/02/11 20:06:39 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -212,7 +212,7 @@ ex_cmd(exc)
 	for (; isspace(*exc); ++exc);
 
 	/* Initialize the argument structure. */
-	bzero(&cmd, sizeof(EXCMDARG));
+	memset(&cmd, 0, sizeof(EXCMDARG));
 	cmd.buffer = OOBCB;
 
 	/*
@@ -860,7 +860,7 @@ mem1:				argscnt = 0;
 				msg("Error: %s.", strerror(errno));
 				return (1);
 			}
-			bzero(&args[off], cnt * sizeof(ARGS));
+			memset(&args[off], 0, cnt * sizeof(ARGS));
 		}
 
 		/*

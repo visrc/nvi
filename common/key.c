@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.37 1993/01/30 17:26:46 bostic Exp $ (Berkeley) $Date: 1993/01/30 17:26:46 $";
+static char sccsid[] = "$Id: key.c,v 5.38 1993/02/11 20:06:43 bostic Exp $ (Berkeley) $Date: 1993/02/11 20:06:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -49,7 +49,7 @@ gb_init()
 {
 	struct termios t;
 
-	bzero(special, sizeof(special));
+	memset(special, 0, sizeof(special));
 
 	if (tcgetattr(STDIN_FILENO, &t))
 		return;

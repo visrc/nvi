@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_at.c,v 5.16 1992/12/05 11:08:26 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:08:26 $";
+static char sccsid[] = "$Id: ex_at.c,v 5.17 1993/02/11 20:06:43 bostic Exp $ (Berkeley) $Date: 1993/02/11 20:06:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -47,7 +47,7 @@ ex_at(cmdp)
 	CBEMPTY(buffer, cb);
 		
 	if (recurse == 0)
-		bzero(rstack, sizeof(rstack));
+		memset(rstack, 0, sizeof(rstack));
 	else if (rstack[buffer]) {
 		msg("Buffer %c already occurs in this command.", buffer);
 		return (1);
