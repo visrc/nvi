@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 8.3 1993/08/21 14:34:11 bostic Exp $ (Berkeley) $Date: 1993/08/21 14:34:11 $";
+static char sccsid[] = "$Id: ex_print.c,v 8.4 1993/09/08 17:49:31 bostic Exp $ (Berkeley) $Date: 1993/09/08 17:49:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,7 +35,9 @@ ex_list(sp, ep, cmdp)
 		msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
 		return (1);
 	}
-	if (ex_print(sp, ep, &cmdp->addr1, &cmdp->addr2, LF_ISSET(E_F_LIST)))
+	LF_SET(E_F_LIST);
+		
+	if (ex_print(sp, ep, &cmdp->addr1, &cmdp->addr2, flags))
 		return (1);
 	sp->lno = cmdp->addr2.lno;
 	sp->cno = cmdp->addr2.cno;
@@ -60,7 +62,9 @@ ex_number(sp, ep, cmdp)
 		msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
 		return (1);
 	}
-	if (ex_print(sp, ep, &cmdp->addr1, &cmdp->addr2, LF_ISSET(E_F_HASH)))
+	LF_SET(E_F_HASH);
+
+	if (ex_print(sp, ep, &cmdp->addr1, &cmdp->addr2, flags))
 		return (1);
 	sp->lno = cmdp->addr2.lno;
 	sp->cno = cmdp->addr2.cno;
@@ -85,7 +89,7 @@ ex_pr(sp, ep, cmdp)
 		msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
 		return (1);
 	}
-	if (ex_print(sp, ep, &cmdp->addr1, &cmdp->addr2, LF_ISSET(E_F_PRINT)))
+	if (ex_print(sp, ep, &cmdp->addr1, &cmdp->addr2, flags))
 		return (1);
 	sp->lno = cmdp->addr2.lno;
 	sp->cno = cmdp->addr2.cno;
