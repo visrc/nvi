@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 9.6 1994/11/12 16:58:09 bostic Exp $ (Berkeley) $Date: 1994/11/12 16:58:09 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 9.7 1994/11/12 18:48:04 bostic Exp $ (Berkeley) $Date: 1994/11/12 18:48:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,6 +32,7 @@ static char sccsid[] = "$Id: vs_refresh.c,v 9.6 1994/11/12 16:58:09 bostic Exp $
 #include "../sex/sex_screen.h"
 
 static int	svi_modeline __P((SCR *));
+static int	svi_paint __P((SCR *, int));
 
 int
 svi_refresh(sp)
@@ -80,6 +81,7 @@ svi_refresh(sp)
 		    tsp != (void *)&sp->gp->dq; tsp = tsp->q.cqe_next)
 			if (tsp != sp)
 				F_SET(tsp, S_SCR_REDRAW);
+
 	/*
 	 * 3: Related or dirtied screens, or screens with messages.
 	 *
@@ -99,7 +101,7 @@ svi_refresh(sp)
 		    F_ISSET(SVP(tsp), priv_paint) ||
 		    tsp->msgq.lh_first != NULL &&
 		    !F_ISSET(tsp->msgq.lh_first, M_EMPTY))) {
-			(void)svi_paint(tsp);
+			(void)svi_paint(tsp, 0);
 			F_CLR(SVP(tsp), SVI_SCR_DIRTY);
 			F_SET(SVP(sp), SVI_CUR_INVALID);
 		}
@@ -112,7 +114,7 @@ svi_refresh(sp)
 	 * in the current screen only, and the screen won't flash.
 	 */
 	F_CLR(sp, SVI_SCR_DIRTY);
-	return (svi_paint(sp));
+	return (svi_paint(sp, 1));
 }
 
 /*
@@ -126,14 +128,15 @@ svi_refresh(sp)
  *	what you're doing.  It's subtle and quick to anger.
  */
 int
-svi_paint(sp)
+svi_paint(sp, doflush)
 	SCR *sp;
+	int doflush;
 {
 	SMAP *smp, tmp;
 	SVI_PRIVATE *svp;
 	recno_t lastline, lcnt;
 	size_t cwtotal, cnt, len, x, y;
-	int ch, didpaint, leftright_warp;
+	int ch, didclear, didpaint, leftright_warp;
 	char *p;
 
 #define	 LNO	sp->lno
@@ -142,7 +145,7 @@ svi_paint(sp)
 #define	OCNO	svp->ocno
 #define	SCNO	svp->sc_col
 
-	didpaint = leftright_warp = 0;
+	didclear = didpaint = leftright_warp = 0;
 	svp = SVP(sp);
 
 	/*
@@ -622,16 +625,21 @@ slow:	for (smp = HMAP; smp->lno != LNO; ++smp);
 	 * think we know about it.
 	 *
 	 * The clear() call causes the screen itself to be cleared when the
-	 * next refresh() is done.  If painting the window from scratch, we
-	 * might as well clear the screen, it will gives the user a cleaner
-	 * visual image.  In addition, there are times where both the screen
-	 * is trashed and the current screen map doesn't match the file.  We
-	 * have to repaint, but we also have to clear the screen.  Since the
-	 * clear() causes the screen to be cleared and repainted at refresh()
-	 * time, we don't have to do the operations separately, avoiding a
-	 * screen flash.
+	 * next refresh() is done.  If painting the entire window, we might
+	 * as well clear the screen, it will gives the user a cleaner visual
+	 * image.  In addition, there are times where both the screen has
+	 * been trashed and the current screen map doesn't match the file.
+	 * We have to repaint, but we also have to clear the screen.  Since
+	 * the clear() causes the screen to be cleared and repainted at
+	 * refresh() time, we don't have to do the operations separately,
+	 * avoiding a screen flash.
 	 */
-paint:	clear();
+paint:	if (doflush &&
+	    sp->q.cqe_prev == (void *)&sp->gp->dq &&
+	    sp->q.cqe_next == (void *)&sp->gp->dq) {
+		clear();
+		didclear = 1;
+	}
 	for (smp = HMAP; smp <= TMAP; ++smp)
 		SMAP_FLUSH(smp);
 	for (smp = HMAP; smp <= TMAP; ++smp)
@@ -672,8 +680,8 @@ number:	if (O_ISSET(sp, O_NUMBER) && F_ISSET(svp, SVI_SCR_NUMBER)) {
 	 * If the screen was corrupted, clear/refresh it, unless we painted
 	 * it from scratch, which will do it for us.
 	 */
-	if (F_ISSET(sp, S_SCR_REFRESH)) {
-		if (!didpaint)
+	if (doflush && F_ISSET(sp, S_SCR_REFRESH)) {
+		if (!didclear)
 			wrefresh(curscr);
 		F_CLR(sp, S_SCR_REFRESH);
 	}
@@ -697,6 +705,10 @@ number:	if (O_ISSET(sp, O_NUMBER) && F_ISSET(svp, SVI_SCR_NUMBER)) {
 			svi_msgflush(sp);
 		else if (!F_ISSET(sp, S_SCR_UMODE))
 			svi_modeline(sp);
+
+	/* If not flushing to the screen, we're done. */
+	if (!doflush)
+		return (0);
 
 	/* Update saved information. */
 	OCNO = CNO;
