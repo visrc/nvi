@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: screen.h,v 10.10 1996/03/06 19:50:54 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:50:54 $
+ *	$Id: screen.h,v 10.11 1996/03/15 20:15:42 bostic Exp $ (Berkeley) $Date: 1996/03/15 20:15:42 $
  */
 
 /*
@@ -173,15 +173,16 @@ struct _scr {
 #define	S_ARGNOFREE	0x00002000	/* Argument list wasn't allocated. */
 #define	S_ARGRECOVER	0x00004000	/* Argument list is recovery files. */
 #define	S_AT_SET	0x00008000	/* Last at buffer set. */
-#define	S_EX_DONTWAIT	0x00010000	/* Ex: don't wait for the user. */
-#define	S_EX_GLOBAL	0x00020000	/* Ex: executing a global command. */
-#define	S_EX_SILENT	0x00040000	/* Ex: batch script. */
-#define	S_INPUT		0x00080000	/* Doing text input. */
-#define	S_INPUT_INFO	0x00100000	/* Doing text input on info line. */
-#define	S_RE_RECOMPILE	0x00200000	/* The search RE needs recompiling. */
-#define	S_RE_SEARCH	0x00400000	/* The search RE has been set. */
-#define	S_RE_SUBST	0x00800000	/* The substitute RE has been set. */
-#define	S_SCRIPT	0x01000000	/* Window is a shell script. */
-#define	S_STATUS	0x02000000	/* Schedule welcome message. */
+#define	S_COMEDIT	0x00010000	/* Colon command-line edit window. */
+#define	S_EX_DONTWAIT	0x00020000	/* Ex: don't wait for the user. */
+#define	S_EX_GLOBAL	0x00040000	/* Ex: executing a global command. */
+#define	S_EX_SILENT	0x00080000	/* Ex: batch script. */
+#define	S_INPUT		0x00100000	/* Doing text input. */
+#define	S_INPUT_INFO	0x00200000	/* Doing text input on info line. */
+#define	S_RE_RECOMPILE	0x00400000	/* The search RE needs recompiling. */
+#define	S_RE_SEARCH	0x00800000	/* The search RE has been set. */
+#define	S_RE_SUBST	0x01000000	/* The substitute RE has been set. */
+#define	S_SCRIPT	0x02000000	/* Shell script window. */
+#define	S_STATUS	0x04000000	/* Schedule welcome message. */
 	u_int32_t flags;
 };
