@@ -1,4 +1,4 @@
-#	$Id: README,v 8.1 1996/02/18 15:36:49 bostic Exp $ (Berkeley) $Date: 1996/02/18 15:36:49 $
+#	$Id: README,v 8.2 1996/02/20 20:48:41 bostic Exp $ (Berkeley) $Date: 1996/02/20 20:48:41 $
 
 Vi uses the GNU autoconf program for configuration and compilation.
 You should enter:
@@ -31,7 +31,30 @@ that can't handle vi include:
 	+ Displaying inverse video in the wrong places.
 
 If you see any of the above symptoms, then you should find another curses
-library to use.  There are three alternatives:
+library to use.  Unfortunately, it is not at all uncommon to find broken
+versions of curses -- the original System V curses was broken, resulting
+in all vendors with implementations deriving from System V having broken
+implementations.
+
+Systems known to have broken curses implementations:
+
+	AIX:	  versions 3.2.4 and 4.1 (3.2 and 3.2.5 reportedly work)
+	AUX:	  version 3.1
+	BSDI:	  BSD/OS, versions 1.0, 1.1 and 2.0
+	DGUX:	  version 5.4
+	FreeBSD:  version 1.1, 2.0
+	HP:	  HP/UX, versions 8.07, 9.01, 9.03
+	Linux:	  all versions
+	Machten:  version 2.1.1
+	OSF/1:	  reference releases 1.0, 1.02, 1.04, 1.2, 1.3
+	SGI:	  IRIX, versions 4.05F, 5.2, 5.3
+	Solaris:  some, but not all, versions of Solaris.
+	SunOS:	  all versions
+	Ultrix:	  version 4.2, 4.3, 4.4
+	Unixware: version 1.1
+	WGS6386:  all versions
+
+There are three alternative curses libraries:
 
     #1: Compile the 4BSD curses library from any of the recent BSD
 	releases: FreeBSD, NetBSD or 4.4BSD-Lite release 2.  These
