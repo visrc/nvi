@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_msg.c,v 10.71 1996/06/17 10:42:03 bostic Exp $ (Berkeley) $Date: 1996/06/17 10:42:03 $";
+static const char sccsid[] = "$Id: vs_msg.c,v 10.72 1996/06/26 19:27:49 bostic Exp $ (Berkeley) $Date: 1996/06/26 19:27:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -539,9 +539,6 @@ vs_ex_resolve(sp, continuep)
 
 	/* If we ran an ex command, we don't trust the cursor. */
 	F_SET(vip, VIP_CUR_INVALID);
-
-	/* Output the line modifications report. */
-	mod_rpt(sp);
 
 	/* Terminate any partially written message. */
 	if (vip->lcontinue != 0) {
