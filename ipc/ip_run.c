@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_run.c,v 8.12 1997/08/02 16:49:33 bostic Exp $ (Berkeley) $Date: 1997/08/02 16:49:33 $";
+static const char sccsid[] = "$Id: ip_run.c,v 8.13 1997/08/03 15:31:34 bostic Exp $ (Berkeley) $Date: 1997/08/03 15:31:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -79,7 +79,7 @@ vi_run(argc, argv, ip, op, pidp)
 #endif
 #ifdef TRACE
 		if (!memcmp(*t_av, "-T", sizeof("-T") - 1)) {
-			p = &t_av[0][sizeof("-T") - 1];
+			char *p = &t_av[0][sizeof("-T") - 1];
 			if (*p == '\0') {
 				--argc;
 				p = *++t_av;
