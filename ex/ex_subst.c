@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 9.11 1995/02/02 17:47:06 bostic Exp $ (Berkeley) $Date: 1995/02/02 17:47:06 $";
+static char sccsid[] = "$Id: ex_subst.c,v 9.12 1995/02/03 10:07:58 bostic Exp $ (Berkeley) $Date: 1995/02/03 10:07:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -434,6 +434,9 @@ s(sp, cmdp, s, re, flags)
 			 */
 			cmdp->addr1.lno = cmdp->addr2.lno;
 			cmdp->addr2.lno += lno - 1;
+			if (!file_eline(sp, cmdp->addr2.lno) &&
+			    file_lline(sp, &cmdp->addr2.lno))
+				return (1);
 			break;
 		case '#':
 			nflag = 1;
