@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: search.c,v 10.12 1996/03/06 19:50:59 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:50:59 $";
+static const char sccsid[] = "$Id: search.c,v 10.13 1996/03/19 14:04:27 bostic Exp $ (Berkeley) $Date: 1996/03/19 14:04:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -313,14 +313,12 @@ b_search(sp, fm, rm, ptrn, eptrn, flags)
 
 	/* If in the first column, start search on the previous line. */
 	if (fm->cno == 0) {
-		if (fm->lno == 1) {
-			if (!O_ISSET(sp, O_WRAPSCAN)) {
-				if (LF_ISSET(SEARCH_MSG))
-					search_msg(sp, S_SOF);
-				return (1);
-			}
-		} else
-			lno = fm->lno - 1;
+		if (fm->lno == 1 && !O_ISSET(sp, O_WRAPSCAN)) {
+			if (LF_ISSET(SEARCH_MSG))
+				search_msg(sp, S_SOF);
+			return (1);
+		}
+		lno = fm->lno - 1;
 	} else
 		lno = fm->lno;
 	coff = fm->cno;
