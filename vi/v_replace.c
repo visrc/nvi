@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_replace.c,v 8.2 1993/08/16 11:03:19 bostic Exp $ (Berkeley) $Date: 1993/08/16 11:03:19 $";
+static char sccsid[] = "$Id: v_replace.c,v 8.3 1993/08/25 16:49:20 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:49:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -80,7 +80,10 @@ nochar:		msgq(sp, M_BERR, "No characters to replace");
 	}
 
 	/* Get the character. */
-	ch = term_key(sp, 0);
+	if (F_ISSET(vp, VC_ISDOT))
+		ch = sp->rlast;
+	else
+		ch = sp->rlast = term_key(sp, 0);
 
 	/* Copy the line. */
 	GET_SPACE(sp, bp, blen, len);
@@ -102,7 +105,7 @@ nochar:		msgq(sp, M_BERR, "No characters to replace");
 		 * last indent character as did historic vi.
 		 */
 		for (p += fm->cno + cnt, len -= fm->cno + cnt;
-		    len && isspace(*p); --len, ++p);
+		    len && isblank(*p); --len, ++p);
 
 		if ((tp = text_init(sp, p, len, len)) == NULL)
 			return (1);
