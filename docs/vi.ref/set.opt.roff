@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: set.opt.roff,v 8.37 1994/12/02 19:46:00 bostic Exp $ (Berkeley) $Date: 1994/12/02 19:46:00 $
+.\"     $Id: set.opt.roff,v 8.38 1994/12/17 17:15:48 bostic Exp $ (Berkeley) $Date: 1994/12/17 17:15:48 $
 .\"
 .SH 1 "Set Options"
 .pp
@@ -537,6 +537,30 @@ This option is a security problem of immense proportions,
 and should not be used under any circumstances.
 .sp
 .i "This option will never be implemented."
+.\" I cannot get a double quote to print between the square brackets
+.\" to save my life.  The ONLY way I've been able to get this to work
+.\" is with the .tr command.
+.tr Q"
+.ds ms noprint [QQ]
+.KY noprint
+.IP "\*(ms"
+.tr QQ
+Characters that are never handled as printable characters.
+By default, the C library function
+.XR isprint 3
+is used to determine if a character is printable or not.
+This edit option overrides that decision.
+.sp
+The current value of the
+.OP noprint
+edit option is the superset of all of the characters ever specified
+using it, i.e. setting it to a string
+.b adds
+the characters in the string to the list of characters that are not
+printable, and removes them from the list of characters that are
+printable (see the
+.OP print
+edit option).
 .KY number
 .IP "number, nu [off]"
 Precede each line displayed with its current line number.
@@ -591,6 +615,30 @@ recognized:
 <newline>.A<space>
 <newline>.##
 .)l
+.\" I cannot get a double quote to print between the square brackets
+.\" to save my life.  The ONLY way I've been able to get this to work
+.\" is with the .tr command.
+.tr Q"
+.ds ms print [QQ]
+.KY print
+.IP "\*(ms"
+.tr QQ
+Characters that are always handled as printable characters.
+By default, the C library function
+.XR isprint 3
+is used to determine if a character is printable or not.
+This edit option overrides that decision.
+.sp
+The current value of the
+.OP print
+edit option is the superset of all of the characters ever specified
+using it, i.e. setting it to a string
+.b adds
+the characters in the string to the list of characters that are
+printable, and removes them from the list of characters that are
+not printable (see the
+.OP noprint
+edit option).
 .KY prompt
 .IP "prompt [on]"
 .CO Ex

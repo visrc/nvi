@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.1,v 8.19 1994/11/20 13:09:38 bostic Exp $ (Berkeley) $Date: 1994/11/20 13:09:38 $
+.\"     $Id: vi.1,v 8.20 1994/12/17 17:16:02 bostic Exp $ (Berkeley) $Date: 1994/12/17 17:16:02 $
 .\"
 .Dd "%Q%"
 .Dt EX/VI 1
@@ -930,6 +930,14 @@ Read the first and last few lines of each file for
 commands.
 .Pp
 .Em "This option will never be implemented."
+.\" I cannot get a double quote to print between the square brackets
+.\" to save my life.  The ONLY way I've been able to get this to work
+.\" is with the .tr command.
+.tr Q"
+.ds ms noprint [QQ]
+.It Sy "\*(ms"
+.tr QQ
+Characters that are never handled as printable characters.
 .It Sy "number, nu [off]"
 Precede each line displayed with its current line number.
 .It Sy "octal [off]"
@@ -957,6 +965,14 @@ Define additional paragraph boundaries for the
 and
 .Sy \&}
 commands.
+.\" I cannot get a double quote to print between the square brackets
+.\" to save my life.  The ONLY way I've been able to get this to work
+.\" is with the .tr command.
+.tr Q"
+.ds ms print [QQ]
+.It Sy "\*(ms"
+.tr QQ
+Characters that are always handled as printable characters.
 .It Sy "prompt [on]"
 .Nm \&Ex
 only.
