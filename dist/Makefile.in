@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.68 1996/08/14 10:16:29 bostic Exp $ (Berkeley) $Date: 1996/08/14 10:16:29 $
+#	$Id: Makefile.in,v 8.69 1996/08/18 10:43:26 bostic Exp $ (Berkeley) $Date: 1996/08/18 10:43:26 $
 
 srcdir=	@srcdir@/..
 CC=	@CC@
@@ -53,16 +53,6 @@ nvi nex: $(NVIALL)
 TKALL=	$(TKOBJS) $(VIOBJS) @LIBOBJS@
 tknvi: $(TKALL)
 	$(CC) $(LDFLAGS) -o $@ $(TKALL) @TKLIBS@
-
-clean:
-	-rm -f *.core *.o memcpy.c perl.c
-	-rm -f nex nvi tknvi core
-	-rm -f $(COBJS) $(CLOBJS) $(DBOBJS) $(REOBJS)
-	-rm -f $(TKOBJS) $(VIOBJS)
-
-distclean maintainer-clean realclean: clean
-	-rm -f Makefile config.cache config.h config.log config.status
-	-rm -f pathnames.h port.h
 
 chmod=	@vi_cv_path_chmod@
 cp=	@vi_cv_path_cp@
@@ -154,6 +144,30 @@ install_common:
 	$(mkdir) $(datadir)/vi/tcl && $(chmod) $(dmode) $(datadir)/vi/tcl
 	(cd $(srcdir)/tcl_scripts && $(cp) *.tcl $(datadir)/vi/tcl && \
 	    cd $(datadir)/vi/tcl && $(chmod) $(fmode) *.tcl)
+
+docs:
+	cd $(srcdir)/docs/USD.doc/vi.ref && $(MAKE)
+	cd $(srcdir)/docs/USD.doc/vi.man && $(MAKE)
+	cd $(srcdir)/docs/USD.doc/edit && $(MAKE)
+	cd $(srcdir)/docs/USD.doc/exref && $(MAKE)
+	cd $(srcdir)/docs/USD.doc/vitut && $(MAKE)
+
+clean:
+	-rm -f *.core *.o memcpy.c perl.c
+	-rm -f nex nvi tknvi core
+	-rm -f $(COBJS) $(CLOBJS) $(DBOBJS) $(REOBJS)
+	-rm -f $(TKOBJS) $(VIOBJS)
+
+cleandocs:
+	cd $(srcdir)/docs/USD.doc/vi.ref && $(MAKE) clean
+	cd $(srcdir)/docs/USD.doc/vi.man && $(MAKE) clean
+	cd $(srcdir)/docs/USD.doc/edit && $(MAKE) clean
+	cd $(srcdir)/docs/USD.doc/exref && $(MAKE) clean
+	cd $(srcdir)/docs/USD.doc/vitut && $(MAKE) clean
+
+distclean maintainer-clean realclean: clean cleandocs
+	-rm -f Makefile config.cache config.h config.log config.status
+	-rm -f pathnames.h port.h
 
 # Vi curses sources.
 cl_bsd.o: $(srcdir)/cl/cl_bsd.c
