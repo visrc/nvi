@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.26 1996/02/25 20:09:36 bostic Exp $ (Berkeley) $Date: 1996/02/25 20:09:36 $
+dnl	$Id: configure.in,v 8.27 1996/02/26 10:42:43 bostic Exp $ (Berkeley) $Date: 1996/02/26 10:42:43 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(configure)
@@ -13,7 +13,7 @@ AC_CANONICAL_HOST
 dnl Compilers, compiler flags and libraries per architecture.
 AC_SUBST(CFLAGS)
 case "$host_os" in
-aix4\.1	  CFLAGS="$CFLAGS -O3 -qstrict";;
+aix4\.1)  CFLAGS="$CFLAGS -O3 -qstrict";;
 aix*)	  LIBS="$LIBS -lbsd";;
 aux*)	  CFLAGS="$CFLAGS -O2 -ZP";;
 bsd4\.4)  CFLAGS="$CFLAGS -O2" LIBS="$LIBS -lutil";;
