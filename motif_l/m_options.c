@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_options.c,v 8.14 1996/12/18 10:26:24 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:26:24 $";
+static const char sccsid[] = "$Id: m_options.c,v 8.15 1996/12/20 10:26:59 bostic Exp $ (Berkeley) $Date: 1996/12/20 10:26:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -20,6 +20,7 @@ static const char sccsid[] = "$Id: m_options.c,v 8.14 1996/12/18 10:26:24 bostic
 #include <X11/Intrinsic.h>
 #include <Xm/DialogS.h>
 #include <Xm/Form.h>
+#include <Xm/Frame.h>
 #include <Xm/LabelG.h>
 #include <Xm/PushBG.h>
 #include <Xm/TextF.h>
@@ -47,8 +48,6 @@ static void set_opt __P((Widget, XtPointer, XtPointer));
 #define	toggleColumns	6
 
 #endif
-
-#define	LargestSheet	0	/* file */
 
 
 /*
@@ -144,36 +143,51 @@ static optData display[] = {
 	{ optTerminator,		},
 };
 
+/* ********* NOTE ***********
+ * Sheet 0 will always be shown first.
+ * It does not matter to the Xt code which sheet that is, so it
+ * ought to be the one users interact with most.
+ * Best guess is that's general editor options, but it might be
+ * search/re
+ * ********* NOTE ***********
+ */
+
 static	optSheet sheets[] = {
-	{	"Display",	/* Must be first because it's the largest. */
+	{	"Editor",
+		"These options control the general configuration\n\
+and the editor as a whole",
+		NULL,
+		general,
+		general_int,
+		general_str,
+	},
+	{	"Display",
+		"These options control the way things are displayed on the screen, and the line of text is really long",
 		NULL,
 		display,
 		display_int,
 		display_str,
 	},
 	{	"Files",
+		"These options globally modify how the editor treates files",
 		NULL,
 		files,
 		NULL,
 		files_str,
 	},
 	{	"Input",
+		"These options modify how input characters works",
 		NULL,
 		input,
 		input_int,
 		input_str,
 	},
 	{	"Search/RE",
+		"These options modify searches and regular expression",
 		NULL,
 		search,
 		NULL,
 		search_str,
-	},
-	{	"Editor",
-		NULL,
-		general,
-		general_int,
-		general_str,
 	},
 };
 
@@ -438,8 +452,9 @@ static	Widget		create_sheet( parent, sheet )
 	optSheet	*sheet;
 #endif
 {
-    Widget	outer, inner;
+    Widget	outer, inner, frame;
     Dimension	height;
+    XmString	str;
 
     outer = XtVaCreateWidget( sheet->name,
 			      xmFormWidgetClass,
@@ -455,8 +470,33 @@ static	Widget		create_sheet( parent, sheet )
 			      0
 			      );
 
+    /* add descriptive text */
+    frame = XtVaCreateManagedWidget( "frame",
+				    xmFrameWidgetClass,
+				    outer,
+				    XmNtopAttachment,		XmATTACH_FORM,
+				    XmNrightAttachment,		XmATTACH_FORM,
+				    XmNleftAttachment,		XmATTACH_FORM,
+				    0
+				    );
+    str = XmStringCreateLtoR( sheet->description, XmSTRING_DEFAULT_CHARSET );
+    XtVaCreateManagedWidget( "description",
+			     xmLabelGadgetClass,
+			     frame,
+			     XmNlabelString,		str,
+			     0
+			     );
+    XmStringFree( str );
+
     /* Add the toggles. */
     inner = create_toggles( outer, sheet->toggles );
+    XtVaSetValues( inner,
+		   XmNtopAttachment,	XmATTACH_WIDGET,
+		   XmNtopWidget,	frame,
+		   0
+		   );
+
+    /* the string options go here */
     inner = XtVaCreateWidget( "otherOptions",
 			      xmRowColumnWidgetClass,
 			      outer,
@@ -565,7 +605,16 @@ static	Widget	create_options_dialog( parent, title )
     /* build the property sheets early */
     for ( i=0; i<XtNumber(sheets); i++ )
 	change_sheet( inner, i );
-    change_sheet( inner, LargestSheet );
+
+    /* manage all of the sheets right now */
+    for ( i=0; i<XtNumber(sheets); i++ )
+	XtManageChild( sheets[i].holder );
+    XtManageChild( form );
+
+    /* remove all but the first one */
+    for ( i=0; i<XtNumber(sheets); i++ )
+	XtUnmanageChild( sheets[i].holder );
+    change_sheet( inner, 0 );	/* show first sheet first */
 
     /* keep this global, we might destroy it later */
     preferences = form;

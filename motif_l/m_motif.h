@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	"$Id: m_motif.h,v 8.10 1996/12/18 10:26:38 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:26:38 $";
+ *	"$Id: m_motif.h,v 8.11 1996/12/20 10:26:59 bostic Exp $ (Berkeley) $Date: 1996/12/20 10:26:59 $";
  */
 
 /*
@@ -87,6 +87,7 @@ typedef struct {
 /* Option page. */
 typedef	struct {
 	String	name;
+	String	description;
 	Widget	holder;
 	optData	*toggles;
 	optData	*ints;
