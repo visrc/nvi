@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.35 1993/01/11 18:09:49 bostic Exp $ (Berkeley) $Date: 1993/01/11 18:09:49 $";
+static char sccsid[] = "$Id: key.c,v 5.36 1993/01/24 18:28:17 bostic Exp $ (Berkeley) $Date: 1993/01/24 18:28:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -60,10 +60,12 @@ gb_init()
 	special[t.c_cc[VLNEXT]] = K_VLNEXT;
 	special[t.c_cc[VWERASE]] = K_VWERASE;
 
-	/* Standard keys. */
-	special['\n'] = K_NL;
+	/* Standard keys that are treated specially. */
+	special['^'] = K_CARAT;
+	special['\004'] = K_CNTRLD;
 	special['\r'] = K_CR;
 	special['\033'] = K_ESCAPE;
+	special['\n'] = K_NL;
 
 	/* Start off with some memory. */
 	(void)gb_inc();
@@ -163,7 +165,7 @@ retry:		sp = seq_find(&keybuf[nextkey], nkeybuf,
 			if (sizeof(keybuf) == nkeybuf)
 				msg("Partial map is too long.");
 			else {
-				bcopy(keybuf, &keybuf[nextkey], nkeybuf);
+				memmove(&keybuf[nextkey], keybuf, nkeybuf);
 				nextkey = 0;
 				nr = ttyread(keybuf + nkeybuf,
 				    sizeof(keybuf) - nkeybuf,
