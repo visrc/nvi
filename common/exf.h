@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 9.4 1995/01/11 15:58:04 bostic Exp $ (Berkeley) $Date: 1995/01/11 15:58:04 $
+ *	$Id: exf.h,v 9.5 1995/01/30 09:39:27 bostic Exp $ (Berkeley) $Date: 1995/01/30 09:39:27 $
  */
 					/* Undo direction. */
 /*
@@ -101,6 +101,7 @@ int	 rcv_tmp __P((SCR *, EXF *, char *));
 /* DB interface routines */
 int	 file_aline __P((SCR *, int, recno_t, char *, size_t));
 int	 file_dline __P((SCR *, recno_t));
+int	 file_eline __P((SCR *, recno_t));
 char	*file_gline __P((SCR *, recno_t, size_t *));
 int	 file_iline __P((SCR *, recno_t, char *, size_t));
 int	 file_lline __P((SCR *, recno_t *));

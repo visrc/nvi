@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 9.8 1995/01/25 09:57:51 bostic Exp $ (Berkeley) $Date: 1995/01/25 09:57:51 $";
+static char sccsid[] = "$Id: db.c,v 9.9 1995/01/30 09:39:13 bostic Exp $ (Berkeley) $Date: 1995/01/30 09:39:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -64,7 +64,7 @@ file_gline(sp, lno, lenp)
 		if (l1 <= lno && l2 >= lno) {
 			for (tp = sp->tiqp->cqh_first;
 			    tp->lno != lno; tp = tp->q.cqe_next);
-			if (lenp)
+			if (lenp != NULL)
 				*lenp = tp->len;
 			return (tp->lb);
 		}
@@ -98,7 +98,7 @@ file_rline(sp, lno, lenp)
 #if defined(DEBUG) && 0
 	TRACE(sp, "get cached line %lu\n", lno);
 #endif
-		if (lenp)
+		if (lenp != NULL)
 			*lenp = ep->c_len;
 		return (ep->c_lp);
 	}
@@ -119,7 +119,7 @@ file_rline(sp, lno, lenp)
 		return (NULL);
 		/* NOTREACHED */
 	}
-	if (lenp)
+	if (lenp != NULL)
 		*lenp = data.size;
 
 	/* Fill the cache. */
@@ -404,6 +404,28 @@ file_sline(sp, lno, p, len)
 
 	/* Update screen. */
 	return (scr_update(sp, lno, LINE_RESET, 1));
+}
+
+/*
+ * file_eline --
+ *	Return if a line exists.
+ */
+int
+file_eline(sp, lno)
+	SCR *sp;
+	recno_t lno;
+{
+	EXF *ep;
+
+	/* Check the cache. */
+	ep = sp->ep;
+	if (ep->c_nlines != OOBLNO)
+		return (lno <= (F_ISSET(sp, S_INPUT) &&
+		    ((TEXT *)sp->tiqp->cqh_last)->lno > ep->c_nlines ?
+		    ((TEXT *)sp->tiqp->cqh_last)->lno : ep->c_nlines));
+
+	/* Go get the line. */
+	return (file_gline(sp, lno, NULL) != NULL);
 }
 
 /*
