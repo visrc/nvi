@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.81 1996/12/04 18:08:08 bostic Exp $ (Berkeley) $Date: 1996/12/04 18:08:08 $
+#	$Id: Makefile.in,v 8.82 1996/12/04 19:07:17 bostic Exp $ (Berkeley) $Date: 1996/12/04 19:07:17 $
 
 srcdir=	@srcdir@/..
 CC=	@CC@
@@ -25,23 +25,23 @@ DBOBJS=	db.o mpool.o \
 	rec_search.o rec_seq.o rec_utils.o
 IPOBJS=	ip_funcs.o ip_main.o ip_read.o ip_screen.o ip_term.o
 REOBJS=	regcomp.o regerror.o regexec.o regfree.o
-VIOBJS= cut.o delete.o ex.o ex_abbrev.o ex_append.o ex_args.o ex_argv.o \
-	ex_at.o ex_bang.o ex_cd.o ex_cmd.o ex_cscope.o ex_delete.o \
-	ex_display.o ex_edit.o ex_equal.o ex_file.o ex_filter.o \
-	ex_global.o ex_init.o ex_join.o ex_map.o ex_mark.o ex_mkexrc.o \
-	ex_move.o ex_open.o ex_perl.o ex_preserve.o ex_print.o ex_put.o \
-	ex_quit.o ex_read.o ex_screen.o ex_script.o ex_set.o ex_shell.o \
-	ex_shift.o ex_source.o ex_stop.o ex_subst.o ex_tag.o ex_tcl.o \
-	ex_txt.o ex_undo.o ex_usage.o ex_util.o ex_version.o ex_visual.o \
-	ex_write.o ex_yank.o ex_z.o exf.o getc.o key.o line.o log.o main.o \
-	mark.o msg.o options.o options_f.o put.o recover.o screen.o \
-	search.o seq.o util.o v_at.o v_ch.o v_cmd.o v_delete.o v_event.o \
-	v_ex.o v_increment.o v_init.o v_itxt.o v_left.o v_mark.o v_match.o \
-	v_paragraph.o v_put.o v_redraw.o v_replace.o v_right.o v_screen.o \
-	v_scroll.o v_search.o v_section.o v_sentence.o v_status.o v_txt.o \
-	v_ulcase.o v_undo.o v_util.o v_word.o v_xchar.o v_yank.o v_z.o \
-	v_zexit.o vi.o vs_line.o vs_msg.o vs_refresh.o vs_relative.o \
-	vs_smap.o vs_split.o
+VIOBJS=	api.o cut.o delete.o ex.o ex_abbrev.o ex_append.o ex_args.o \
+	ex_argv.o ex_at.o ex_bang.o ex_cd.o ex_cmd.o ex_cscope.o \
+	ex_delete.o ex_display.o ex_edit.o ex_equal.o ex_file.o \
+	ex_filter.o ex_global.o ex_init.o ex_join.o ex_map.o ex_mark.o \
+	ex_mkexrc.o ex_move.o ex_open.o ex_perl.o ex_preserve.o ex_print.o \
+	ex_put.o ex_quit.o ex_read.o ex_screen.o ex_script.o ex_set.o \
+	ex_shell.o ex_shift.o ex_source.o ex_stop.o ex_subst.o ex_tag.o \
+	ex_tcl.o ex_txt.o ex_undo.o ex_usage.o ex_util.o ex_version.o \
+	ex_visual.o ex_write.o ex_yank.o ex_z.o exf.o getc.o key.o line.o \
+	log.o main.o mark.o msg.o options.o options_f.o put.o recover.o \
+	screen.o search.o seq.o util.o v_at.o v_ch.o v_cmd.o v_delete.o \
+	v_event.o v_ex.o v_increment.o v_init.o v_itxt.o v_left.o v_mark.o \
+	v_match.o v_paragraph.o v_put.o v_redraw.o v_replace.o v_right.o \
+	v_screen.o v_scroll.o v_search.o v_section.o v_sentence.o \
+	v_status.o v_txt.o v_ulcase.o v_undo.o v_util.o v_word.o v_xchar.o \
+	v_yank.o v_z.o v_zexit.o vi.o vs_line.o vs_msg.o vs_refresh.o \
+	vs_relative.o vs_smap.o vs_split.o
 
 all: nvi @nvi_curses@ @nvi_motif@
 
@@ -291,8 +291,6 @@ ipc_mutil.o: $(srcdir)/ipc_motif/ipc_mutil.c
 	$(CC) $(TR) $(CFLAGS) @XINCS@ $?
 
 # Vi Tcl/Perl interpreter sources.
-api.o: $(srcdir)/common/api.c
-	$(CC) $(CFLAGS) $?
 perl.c: $(srcdir)/perl_api/perl.xs $(srcdir)/perl_api/typemap
 	echo "#define _PATH_PERLSCRIPTS \"$(datadir)/vi/perl\"" > $@
 	$(PERL) $(PERLLIB)/ExtUtils/xsubpp -typemap \
@@ -307,6 +305,8 @@ tcl.o: $(srcdir)/tcl_api/tcl.c
 	$(CC) $(CFLAGS) $?
 
 # Vi sources.
+api.o: $(srcdir)/common/api.c
+	$(CC) $(CFLAGS) $?
 cut.o: $(srcdir)/common/cut.c
 	$(CC) $(CFLAGS) $?
 delete.o: $(srcdir)/common/delete.c
