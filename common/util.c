@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 9.1 1994/11/09 18:38:18 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:38:18 $";
+static char sccsid[] = "$Id: util.c,v 9.2 1994/11/17 20:35:38 bostic Exp $ (Berkeley) $Date: 1994/11/17 20:35:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -198,97 +198,46 @@ vi_putchar(ch)
 	(void)putchar(ch);
 }
 
-#ifdef NOT_CURRENTLY_USED
 /*
  * get_uslong --
- *      Convert an unsigned long, checking for overflow and underflow.
+ *      Get an unsigned long, checking for overflow.
  */
-int
-get_uslong(sp, addval, rval, p, endp, omsg, umsg)
+enum nresult
+nget_uslong(sp, valp, p, endp)
 	SCR *sp;
-	u_long addval, *rval;
-	char *p, **endp, *omsg;
+	u_long *valp;
+	char *p, **endp;
 {
-	u_long val;
-
 	errno = 0;
-	val = strtoul(p, endp, 10);
-	if (errno == ERANGE) {
-		msgq(sp, M_ERR, omsg);
-		return (1);
-	}
-
-	*rval = val;
-	return (add_uslong(sp, addval, val, omsg));
+	*valp = strtoul(p, endp, 10);
+	if (errno == 0)
+		return (NUM_OK);
+	if (errno == ERANGE && *valp == ULONG_MAX)
+		return (NUM_OVER);
+	return (NUM_ERR);
 }
-#endif
 
 /*
  * get_slong --
  *      Convert a signed long, checking for overflow and underflow.
  */
-int
-get_slong(sp, addval, rval, isnegative, p, endp, omsg, umsg)
+enum nresult
+nget_slong(sp, valp, p, endp)
 	SCR *sp;
-	long addval, *rval;
-	int isnegative;
-	char *p, **endp, *omsg, *umsg;
+	long *valp;
+	char *p, **endp;
 {
-	long val;
-
 	errno = 0;
-	val = strtol(p, endp, 10);
+	*valp = strtol(p, endp, 10);
+	if (errno == 0)
+		return (NUM_OK);
 	if (errno == ERANGE) {
-		if (val == LONG_MAX)
-			msgq(sp, M_ERR, omsg);
-		else if (val == LONG_MIN)
-			msgq(sp, M_ERR, umsg);
-		else
-			msgq(sp, M_SYSERR, NULL);
-		return (1);
+		if (*valp == LONG_MAX)
+			return (NUM_OVER);
+		if (*valp == LONG_MIN)
+			return (NUM_UNDER);
 	}
-	*rval = isnegative ? -val : val;
-	return (add_slong(sp, addval, *rval, omsg, umsg));
-}
-
-/*
- * add_uslong --
- *	Check to see if two unsigned longs can be added.
- */
-int
-add_uslong(sp, val1, val2, omsg)
-	SCR *sp;
-	u_long val1, val2;
-	char *omsg;
-{
-	if (ULONG_MAX - val1 < val2) {
-		msgq(sp, M_ERR, omsg);
-		return (1);
-	}
-	return (0);
-}
-
-/*
- * add_slong --
- *	Check to see if two signed longs can be added.
- */
-int
-add_slong(sp, val1, val2, omsg, umsg)
-	SCR *sp;
-	long val1, val2;
-	char *omsg, *umsg;
-{
-	if (val1 < 0) {
-		if (val2 < 0 && (LONG_MIN - val1) > val2) {
-			msgq(sp, M_ERR, umsg);
-			return (1);
-		}
-	} else if (val1 > 0)
-		if (val2 > 0 && (LONG_MAX - val1 < val2)) {
-			msgq(sp, M_ERR, omsg);
-			return (1);
-		}
-	return (0);
+	return (NUM_ERR);
 }
 
 #ifdef DEBUG
