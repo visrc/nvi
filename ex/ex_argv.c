@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 10.14 1996/02/06 17:53:53 bostic Exp $ (Berkeley) $Date: 1996/02/06 17:53:53 $";
+static char sccsid[] = "$Id: ex_argv.c,v 10.15 1996/02/22 19:55:27 bostic Exp $ (Berkeley) $Date: 1996/02/22 19:55:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -174,20 +174,24 @@ argv_exp2(sp, excp, cmd, cmdlen)
 	 *
 	 * To avoid a function call per character, we do a first pass through
 	 * the meta characters looking for characters that aren't expected
-	 * to be there.
+	 * to be there, and then we can ignore them in the user's argument.
 	 */
-	for (p = mp = O_STR(sp, O_SHELLMETA); *p != '\0'; ++p)
-		if (isblank(*p) || isalnum(*p))
-			break;
-	if (*p != '\0') {
-		for (p = bp, n = len; n > 0; --n, ++p)
-			if (strchr(mp, *p) != NULL)
+	if (opts_empty(sp, O_SHELL, 1) || opts_empty(sp, O_SHELLMETA, 1))
+		n = 0;
+	else {
+		for (p = mp = O_STR(sp, O_SHELLMETA); *p != '\0'; ++p)
+			if (isblank(*p) || isalnum(*p))
 				break;
-	} else
-		for (p = bp, n = len; n > 0; --n, ++p)
-			if (!isblank(*p) &&
-			    !isalnum(*p) && strchr(mp, *p) != NULL)
-				break;
+		if (*p != '\0') {
+			for (p = bp, n = len; n > 0; --n, ++p)
+				if (strchr(mp, *p) != NULL)
+					break;
+		} else
+			for (p = bp, n = len; n > 0; --n, ++p)
+				if (!isblank(*p) &&
+				    !isalnum(*p) && strchr(mp, *p) != NULL)
+					break;
+	}
 	if (n > 0) {
 		if (argv_sexp(sp, &bp, &blen, &len)) {
 			rval = 1;
@@ -491,14 +495,14 @@ argv_sexp(sp, bpp, blenp, lenp)
 		return (1);
 	}
 
-	bp = *bpp;
-	blen = *blenp;
-
 	sh_path = O_STR(sp, O_SHELL);
 	if ((sh = strrchr(sh_path, '/')) == NULL)
 		sh = sh_path;
 	else
 		++sh;
+
+	bp = *bpp;
+	blen = *blenp;
 
 	/*
 	 * There are two different processes running through this code, named

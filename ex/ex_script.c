@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_script.c,v 10.13 1996/02/20 21:15:07 bostic Exp $ (Berkeley) $Date: 1996/02/20 21:15:07 $";
+static char sccsid[] = "$Id: ex_script.c,v 10.14 1996/02/22 19:55:30 bostic Exp $ (Berkeley) $Date: 1996/02/22 19:55:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -87,6 +87,10 @@ sscr_init(sp)
 {
 	SCRIPT *sc;
 	char *sh, *sh_path;
+
+	/* We're going to need a shell. */
+	if (opts_empty(sp, O_SHELL, 0))
+		return (1);
 
 	MALLOC_RET(sp, sc, SCRIPT *, sizeof(SCRIPT));
 	sp->script = sc;

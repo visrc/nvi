@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 10.12 1996/02/20 21:05:07 bostic Exp $ (Berkeley) $Date: 1996/02/20 21:05:07 $";
+static char sccsid[] = "$Id: recover.c,v 10.13 1996/02/22 19:55:06 bostic Exp $ (Berkeley) $Date: 1996/02/22 19:55:06 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -141,6 +141,8 @@ rcv_tmp(sp, ep, name)
 	 * would have permission to remove other user's recovery files.  If
 	 * the sticky bit has the BSD semantics, that too will be impossible.
 	 */
+	if (opts_empty(sp, O_RECDIR, 0))
+		goto err;
 	dp = O_STR(sp, O_RECDIR);
 	if (stat(dp, &sb)) {
 		if (errno != ENOENT || mkdir(dp, 0)) {
@@ -292,21 +294,24 @@ rcv_sync(sp, flags)
 	 */
 	rval = 0;
 	if (LF_ISSET(RCV_SNAPSHOT)) {
-		sp->gp->scr_busy(sp,
-		    "061|Copying file for recovery...", BUSY_ON);
+		if (opts_empty(sp, O_RECDIR, 0))
+			goto err;
 		dp = O_STR(sp, O_RECDIR);
 		(void)snprintf(buf, sizeof(buf), "%s/vi.XXXXXX", dp);
 		if ((fd = rcv_mktemp(sp, buf, dp, S_IRUSR | S_IWUSR)) == -1)
-			goto e1;
-		if (rcv_copy(sp, fd, ep->rcv_path) || close(fd))
-			goto e2;
-		if (rcv_mailfile(sp, 1, buf)) {
-e2:			(void)unlink(buf);
-e1:			if (fd != -1)
-				(void)close(fd);
+			goto err;
+		sp->gp->scr_busy(sp,
+		    "061|Copying file for recovery...", BUSY_ON);
+		if (rcv_copy(sp, fd, ep->rcv_path) ||
+		    close(fd) || rcv_mailfile(sp, 1, buf)) {
+			(void)unlink(buf);
+			(void)close(fd);
 			rval = 1;
 		}
 		sp->gp->scr_busy(sp, NULL, BUSY_OFF);
+	}
+	if (0) {
+err:		rval = 1;
 	}
 
 	/* REQUEST: end the file session. */
@@ -341,6 +346,8 @@ rcv_mailfile(sp, issync, cp_path)
 		return (1);
 	}
 
+	if (opts_empty(sp, O_RECDIR, 0))
+		return (1);
 	dp = O_STR(sp, O_RECDIR);
 	(void)snprintf(mpath, sizeof(mpath), "%s/recover.XXXXXX", dp);
 	if ((fd = rcv_mktemp(sp, mpath, dp, S_IRUSR | S_IWUSR)) == -1)
@@ -478,8 +485,11 @@ rcv_list(sp)
 	char *p, *t, file[MAXPATHLEN], path[MAXPATHLEN];
 
 	/* Open the recovery directory for reading. */
-	if (chdir(O_STR(sp, O_RECDIR)) || (dirp = opendir(".")) == NULL) {
-		msgq_str(sp, M_SYSERR, O_STR(sp, O_RECDIR), "recdir: %s");
+	if (opts_empty(sp, O_RECDIR, 0))
+		return (1);
+	p = O_STR(sp, O_RECDIR);
+	if (chdir(p) || (dirp = opendir(".")) == NULL) {
+		msgq_str(sp, M_SYSERR, p, "recdir: %s");
 		return (1);
 	}
 
@@ -577,11 +587,14 @@ rcv_read(sp, frp)
 	EXF *ep;
 	time_t rec_mtime;
 	int fd, found, locked, requested, sv_fd;
-	char *name, *p, *t, *recp, *pathp;
+	char *name, *p, *t, *rp, *recp, *pathp;
 	char file[MAXPATHLEN], path[MAXPATHLEN], recpath[MAXPATHLEN];
 
-	if ((dirp = opendir(O_STR(sp, O_RECDIR))) == NULL) {
-		msgq_str(sp, M_ERR, O_STR(sp, O_RECDIR), "%s");
+	if (opts_empty(sp, O_RECDIR, 0))
+		return (1);
+	rp = O_STR(sp, O_RECDIR);
+	if ((dirp = opendir(rp)) == NULL) {
+		msgq_str(sp, M_ERR, rp, "%s");
 		return (1);
 	}
 
@@ -592,8 +605,8 @@ rcv_read(sp, frp)
 	for (found = requested = 0; (dp = readdir(dirp)) != NULL;) {
 		if (strncmp(dp->d_name, "recover.", 8))
 			continue;
-		(void)snprintf(recpath, sizeof(recpath),
-		    "%s/%s", O_STR(sp, O_RECDIR), dp->d_name);
+		(void)snprintf(recpath,
+		    sizeof(recpath), "%s/%s", rp, dp->d_name);
 
 		/*
 		 * If it's readable, it's recoverable.  It would be very

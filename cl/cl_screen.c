@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_screen.c,v 10.32 1996/02/20 20:55:40 bostic Exp $ (Berkeley) $Date: 1996/02/20 20:55:40 $";
+static char sccsid[] = "$Id: cl_screen.c,v 10.33 1996/02/22 19:55:47 bostic Exp $ (Berkeley) $Date: 1996/02/22 19:55:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -218,6 +218,8 @@ cl_vi_init(sp)
 	 * have to specify the terminal type.
 	 */
 	errno = 0;
+	if (opts_empty(sp, O_TERM, 0))
+		return (1);
 	ttype = O_STR(sp, O_TERM);
 	if (newterm(ttype, stdout, stdin) == NULL) {
 		if (errno)

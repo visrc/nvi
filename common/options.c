@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 10.25 1996/02/20 21:06:59 bostic Exp $ (Berkeley) $Date: 1996/02/20 21:06:59 $";
+static char sccsid[] = "$Id: options.c,v 10.26 1996/02/22 19:55:04 bostic Exp $ (Berkeley) $Date: 1996/02/22 19:55:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -690,6 +690,28 @@ o_set(sp, opt, flags, str, val)
 			op->o_cur.str = str;
 		else
 			op->o_cur.val = val;
+	}
+	return (0);
+}
+
+/*
+ * opts_empty --
+ *	Return 1 if the string option is invalid, 0 if it's OK.
+ *
+ * PUBLIC: int opts_empty __P((SCR *, int, int));
+ */
+int
+opts_empty(sp, off, silent)
+	SCR *sp;
+	int off, silent;
+{
+	char *p;
+
+	if ((p = O_STR(sp, off)) == NULL || p[0] == '\0') {
+		if (!silent)
+			msgq_str(sp, M_ERR, optlist[off].name,
+			    "305|No %s edit option specified");
+		return (1);
 	}
 	return (0);
 }

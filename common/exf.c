@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 10.21 1996/02/20 21:04:49 bostic Exp $ (Berkeley) $Date: 1996/02/20 21:04:49 $";
+static char sccsid[] = "$Id: exf.c,v 10.22 1996/02/22 19:55:01 bostic Exp $ (Berkeley) $Date: 1996/02/22 19:55:01 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -173,6 +173,8 @@ file_init(sp, frp, rcv_name, flags)
 	 */
 	oname = frp->name;
 	if (LF_ISSET(FS_OPENERR) || oname == NULL || stat(oname, &sb)) {
+		if (opts_empty(sp, O_DIRECTORY, 0))
+			goto err;
 		(void)snprintf(tname, sizeof(tname),
 		    "%s/vi.XXXXXX", O_STR(sp, O_DIRECTORY));
 		if ((fd = mkstemp(tname)) == -1) {
@@ -736,8 +738,8 @@ file_write(sp, fm, tm, name, flags)
 		oflags |= O_TRUNC;
 
 	/* Backup the file if requested. */
-	p = O_STR(sp, O_BACKUP);
-	if (p[0] != '\0' && file_backup(sp, name, p) && !LF_ISSET(FS_FORCE))
+	if (!opts_empty(sp, O_BACKUP, 1) &&
+	    file_backup(sp, name, O_STR(sp, O_BACKUP)) && !LF_ISSET(FS_FORCE))
 		return (1);
 
 	/* Open the file. */
