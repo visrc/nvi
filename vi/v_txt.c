@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 10.28 1995/11/22 20:31:48 bostic Exp $ (Berkeley) $Date: 1995/11/22 20:31:48 $";
+static char sccsid[] = "$Id: v_txt.c,v 10.29 1995/11/25 09:50:47 bostic Exp $ (Berkeley) $Date: 1995/11/25 09:50:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -440,8 +440,7 @@ next:	if (v_event_get(sp, evp, 0, ec_flags))
 	 * message resolution because we know the user is on the colon command
 	 * line and there's no reason to enter explicit characters to continue.
 	 */
-	if (filec_redraw &&
-	    !F_ISSET(sp, S_SCR_EXWROTE) && vip->totalcount == 0 ) {
+	if (filec_redraw && !F_ISSET(sp, S_SCR_EXWROTE)) {
 		filec_redraw = 0;
 
 		fc.e_event = E_REPAINT;
