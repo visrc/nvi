@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 8.33 1994/08/31 17:12:02 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:12:02 $";
+static char sccsid[] = "$Id: db.c,v 8.34 1994/10/13 17:30:06 bostic Exp $ (Berkeley) $Date: 1994/10/13 17:30:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -189,6 +189,7 @@ file_aline(sp, ep, update, lno, p, len)
 	size_t len;
 {
 	DBT data, key;
+	int isempty;
 	recno_t lline;
 
 #if defined(DEBUG) && 0
@@ -207,11 +208,14 @@ file_aline(sp, ep, update, lno, p, len)
 	 * not in file_iline or file_sline, is that all of the ex commands
 	 * that work in empty files end up here.
 	 */
+	isempty = 0;
 	if (lno == 0) {
 		if (file_lline(sp, ep, &lline))
 			return (1);
-		if (lline == 0)
+		if (lline == 0) {
+			isempty = 1;
 			F_SET(sp, S_REDRAW);
+		}
 	}
 
 	/* Update file. */
@@ -247,14 +251,19 @@ file_aline(sp, ep, update, lno, p, len)
 	 * inserted or deleted.
 	 *
 	 * XXX
-	 * See comment above about empty files.  If the file was empty,
-	 * then we're adding the first line, which is a replacement, not
-	 * an append.  So, we shouldn't whack the marks.
+	 * See comment above about empty files.  If the file was empty, then
+	 * we're adding the first line, which is a replacement, not an append.
+	 * So, we shouldn't whack the marks.  This is a hack to make:
+	 *
+	 *	mz:r!echo foo<carriage-return>'z
+	 *
+	 * work, i.e. historically you could mark the "line" in an empty file
+	 * and replace it, and continue to use the mark.  Insane, well, yes,
+	 * I know, but someone complained.
 	 */
-	if (lno != 0) {
+	if (!isempty)
 		mark_insdel(sp, ep, LINE_INSERT, lno + 1);
-		global_insdel(sp, ep, LINE_INSERT, lno + 1);
-	}
+	global_insdel(sp, ep, LINE_INSERT, lno + 1);
 
 	/*
 	 * Update screen.
