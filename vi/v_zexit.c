@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_zexit.c,v 8.1 1993/06/09 22:27:01 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:27:01 $";
+static char sccsid[] = "$Id: v_zexit.c,v 8.2 1993/08/05 18:03:10 bostic Exp $ (Berkeley) $Date: 1993/08/05 18:03:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,7 +31,7 @@ v_exit(sp, ep, vp, fm, tm, rp)
 	if (F_ISSET(ep, F_MODIFIED) &&
 	    file_write(sp, ep, NULL, NULL, NULL, FS_ALL))
 		return (1);
-	if (ep->refcnt <= 1 && file_next(sp, ep, 0)) {
+	if (ep->refcnt <= 1 && file_next(sp, 0) != NULL) {
 		msgq(sp, M_ERR,
 		    "More files to edit; use \":n\" to go to the next file");
 		return (1);
