@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.60 1994/05/21 09:44:34 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:44:34 $";
+static char sccsid[] = "$Id: recover.c,v 8.61 1994/05/21 19:01:28 bostic Exp $ (Berkeley) $Date: 1994/05/21 19:01:28 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -342,7 +342,7 @@ nolock:			msgq(sp, M_SYSERR, "Unable to lock recovery file");
 	(void)time(&now);
 	(void)gethostname(host, sizeof(host));
 	(void)fprintf(fp, "%s%s\n%s%s\n%s\n%s\n%s%s\n%s%s\n%s\n\n",
-	    VI_FHEADER, p,			/* Non-standard. */
+	    VI_FHEADER, t,			/* Non-standard. */
 	    VI_PHEADER, cp_path,		/* Non-standard. */
 	    "Reply-To: root",
 	    "From: root (Nvi recovery program)",
