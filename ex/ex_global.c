@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 8.15 1993/10/28 16:47:21 bostic Exp $ (Berkeley) $Date: 1993/10/28 16:47:21 $";
+static char sccsid[] = "$Id: ex_global.c,v 8.16 1993/10/30 13:47:26 bostic Exp $ (Berkeley) $Date: 1993/10/30 13:47:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -68,9 +68,8 @@ global(sp, ep, cmdp, cmd)
 	char *ptrn, *p, *t, cbuf[1024];
 
 	/*
-	 * Skip leading white space.  Historic vi allowed any
-	 * non-alphanumeric to serve as the substitution command
-	 * delimiter.
+	 * Skip leading white space.  Historic vi allowed any non-
+	 * alphanumeric to serve as the global command delimiter.
 	 */
 	for (p = cmdp->argv[0]; isblank(*p); ++p);
 	delim = *p++;
@@ -89,6 +88,11 @@ global(sp, ep, cmdp, cmd)
 		if (p[0] == '\0' || p[0] == delim) {
 			if (p[0] == delim)
 				++p;
+			/*
+			 * !!!
+			 * Nul terminate the pattern string -- it's passed
+			 * to regcomp which doesn't understand anything else.
+			 */
 			*t = '\0';
 			break;
 		}
@@ -103,7 +107,7 @@ global(sp, ep, cmdp, cmd)
 		return (1);
 	}
 
-	/* If the substitute string is empty, use the last one. */
+	/* If the pattern string is empty, use the last one. */
 	if (*ptrn == '\0') {
 		if (!F_ISSET(sp, S_SRE_SET)) {
 			msgq(sp, M_ERR, "No previous regular expression.");
@@ -118,15 +122,15 @@ global(sp, ep, cmdp, cmd)
 		if (O_ISSET(sp, O_IGNORECASE))
 			reflags |= REG_ICASE;
 
-		/* Replace any word search pattern. */
-		if (search_word(sp, &ptrn, &replaced))
+		/* Convert vi-style RE's to POSIX 1003.2 RE's. */
+		if (re_conv(sp, &ptrn, &replaced))
 			return (1);
 
 		/* Compile the RE. */
 		re = &lre;
 		eval = regcomp(re, ptrn, reflags);
 
-		/* Free up any extra memory. */
+		/* Free up any allocated memory. */
 		if (replaced)
 			FREE_SPACE(sp, ptrn, 0);
 
@@ -136,8 +140,8 @@ global(sp, ep, cmdp, cmd)
 		}
 
 		/*
-		 * Set saved RE.  Historic practice is that global set
-		 * direction as well as the RE.
+		 * Set saved RE.  Historic practice is that
+		 * globals set direction as well as the RE.
 		 */
 		sp->sre = lre;
 		sp->searchdir = FORWARD;
