@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: delete.c,v 10.6 1995/10/16 15:24:34 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:24:34 $";
+static char sccsid[] = "$Id: delete.c,v 10.7 1995/10/18 19:38:02 bostic Exp $ (Berkeley) $Date: 1995/10/18 19:38:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -39,16 +39,20 @@ delete(sp, fm, tm, lmode)
 	recno_t lno;
 	size_t blen, len, nlen, tlen;
 	char *bp, *p;
-	int eof;
+	int eof, rval;
 
 	bp = NULL;
 
 	/* Case 1 -- delete in line mode. */
 	if (lmode) {
-		for (lno = tm->lno; lno >= fm->lno; --lno)
+		for (lno = tm->lno; lno >= fm->lno; --lno) {
 			if (db_delete(sp, lno))
 				return (1);
-		goto vdone;
+			++sp->rptlines[L_DELETED];
+			if (lno % INTERRUPT_CHECK == 0 && INTERRUPTED(sp))
+				break;
+		}
+		goto done;
 	}
 
 	/*
@@ -69,6 +73,9 @@ delete(sp, fm, tm, lmode)
 				if (db_delete(sp, lno))
 					return (1);
 				++sp->rptlines[L_DELETED];
+				if (lno %
+				    INTERRUPT_CHECK == 0 && INTERRUPTED(sp))
+					break;
 			}
 			if (db_get(sp, fm->lno, DBG_FATAL, &p, &len))
 				return (1);
@@ -135,20 +142,18 @@ delete(sp, fm, tm, lmode)
 		goto err;
 
 	/* Delete the last and intermediate lines. */
-	for (lno = tm->lno; lno > fm->lno; --lno)
+	for (lno = tm->lno; lno > fm->lno; --lno) {
 		if (db_delete(sp, lno))
 			goto err;
+		++sp->rptlines[L_DELETED];
+		if (lno % INTERRUPT_CHECK == 0 && INTERRUPTED(sp))
+			break;
+	}
 
-	/* Reporting. */
-vdone:	sp->rptlines[L_DELETED] += tm->lno - fm->lno + 1;
-
-done:	if (bp != NULL)
+done:	rval = 0;
+	if (0)
+err:		rval = 1;
+	if (bp != NULL)
 		FREE_SPACE(sp, bp, blen);
-
-	return (0);
-
-	/* Free memory. */
-err:	if (bp != NULL)
-		FREE_SPACE(sp, bp, blen);
-	return (1);
+	return (rval);
 }
