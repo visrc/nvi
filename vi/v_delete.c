@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_delete.c,v 8.10 1994/03/14 10:42:50 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:42:50 $";
+static char sccsid[] = "$Id: v_delete.c,v 8.11 1994/04/06 11:38:26 bostic Exp $ (Berkeley) $Date: 1994/04/06 11:38:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -116,5 +116,14 @@ v_delete(sp, ep, vp)
 	}
 	if (vp->m_final.cno >= len)
 		vp->m_final.cno = len ? len - 1 : 0;
+
+	/*
+	 * !!!
+	 * The "dd" command moved to the first non-blank; "d<motion>" didn't.
+	 */
+	if (F_ISSET(vp, VM_LDOUBLE)) {
+		F_CLR(vp, VM_RCM_MASK);
+		F_SET(vp, VM_RCM_SETFNB);
+	}
 	return (0);
 }
