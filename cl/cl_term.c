@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_term.c,v 10.1 1995/06/08 19:01:41 bostic Exp $ (Berkeley) $Date: 1995/06/08 19:01:41 $";
+static char sccsid[] = "$Id: cl_term.c,v 10.2 1995/06/09 12:47:09 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:47:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -276,7 +276,7 @@ cl_fmap(sp, stype, from, flen, to, tlen)
 		if ((n = atoi(from + 1)) > 63) {
 			p = msg_print(sp, from, &nf);
 			msgq(sp, M_ERR,
-		     "228|Termcap has no code for the %s function key", p);
+		     "232|Termcap has no code for the %s function key", p);
 			if (nf)
 				FREE_SPACE(sp, p, 0);
 			return (1);
@@ -289,7 +289,7 @@ cl_fmap(sp, stype, from, flen, to, tlen)
 #endif
 	if (t == NULL) {
 		p = msg_print(sp, from, &nf);
-		msgq(sp, M_ERR, "229|This terminal has no %s key", p);
+		msgq(sp, M_ERR, "233|This terminal has no %s key", p);
 		if (nf)
 			FREE_SPACE(sp, p, 0);
 		return (1);
@@ -508,7 +508,7 @@ cl_ssize(sp, sigwinch, rowp, colp)
 			return (1);
 		case 0:
 			p = msg_print(sp, s, &nf);
-			msgq(sp, M_ERR, "096|%s: unknown terminal type", p);
+			msgq(sp, M_ERR, "234|%s: unknown terminal type", p);
 			if (nf)
 				FREE_SPACE(sp, p, 0);
 			return (1);
@@ -517,7 +517,7 @@ cl_ssize(sp, sigwinch, rowp, colp)
 			if ((rval = tgetnum("li")) < 0) {
 				p = msg_print(sp, s, &nf);
 				msgq(sp, M_ERR,
-			    "097|no \"li\" terminal capability for %s", p);
+			    "235|no \"li\" terminal capability for %s", p);
 				if (nf)
 					FREE_SPACE(sp, p, 0);
 			} else
@@ -526,7 +526,7 @@ cl_ssize(sp, sigwinch, rowp, colp)
 			if ((rval = tgetnum("co")) < 0) {
 				p = msg_print(sp, s, &nf);
 				msgq(sp, M_ERR,
-			    "098|no \"co\" terminal capability for %s", p);
+			    "236|no \"co\" terminal capability for %s", p);
 				if (nf)
 					FREE_SPACE(sp, p, 0);
 			} else

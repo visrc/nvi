@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 10.2 1995/06/08 18:57:43 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:57:43 $";
+static char sccsid[] = "$Id: msg.c,v 10.3 1995/06/09 12:47:50 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:47:50 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -166,7 +166,7 @@ retry:		FREE_SPACE(sp, bp, blen);
 	mp = bp;
 	mlen = 0;
 	if (mt == M_SYSERR) {
-		p = msg_cat(sp, "094|Error: ", &len);
+		p = msg_cat(sp, "020|Error: ", &len);
 		if (REM < len)
 			goto retry;
 		memmove(mp, p, len);
@@ -508,13 +508,13 @@ msg_status(sp, lno, showlast)
 	needsep = 0;
 	if (F_ISSET(sp->frp, FR_NEWFILE)) {
 		F_CLR(sp->frp, FR_NEWFILE);
-		t = msg_cat(sp, "271|new file", &len);
+		t = msg_cat(sp, "021|new file", &len);
 		memmove(p, t, len);
 		p += len;
 		needsep = 1;
 	} else {
 		if (F_ISSET(sp->frp, FR_NAMECHANGE)) {
-			t = msg_cat(sp, "272|name changed", &len);
+			t = msg_cat(sp, "022|name changed", &len);
 			memmove(p, t, len);
 			p += len;
 			needsep = 1;
@@ -524,9 +524,9 @@ msg_status(sp, lno, showlast)
 			*p++ = ' ';
 		}
 		if (F_ISSET(sp->ep, F_MODIFIED))
-			t = msg_cat(sp, "273|modified", &len);
+			t = msg_cat(sp, "023|modified", &len);
 		else
-			t = msg_cat(sp, "274|unmodified", &len);
+			t = msg_cat(sp, "024|unmodified", &len);
 		memmove(p, t, len);
 		p += len;
 		needsep = 1;
@@ -536,7 +536,7 @@ msg_status(sp, lno, showlast)
 			*p++ = ',';
 			*p++ = ' ';
 		}
-		t = msg_cat(sp, "275|UNLOCKED", &len);
+		t = msg_cat(sp, "025|UNLOCKED", &len);
 		memmove(p, t, len);
 		p += len;
 		needsep = 1;
@@ -546,7 +546,7 @@ msg_status(sp, lno, showlast)
 			*p++ = ',';
 			*p++ = ' ';
 		}
-		t = msg_cat(sp, "276|readonly", &len);
+		t = msg_cat(sp, "026|readonly", &len);
 		memmove(p, t, len);
 		p += len;
 		needsep = 1;
@@ -559,15 +559,15 @@ msg_status(sp, lno, showlast)
 		if (file_lline(sp, &last))
 			return (1);
 		if (last > 1) {
-			t = msg_cat(sp, "277|line %lu of %lu [%ld%%]", &len);
+			t = msg_cat(sp, "027|line %lu of %lu [%ld%%]", &len);
 			p += sprintf(p, t, lno, last, (lno * 100) / last);
 		} else {
-			t = msg_cat(sp, "278|empty file", &len);
+			t = msg_cat(sp, "028|empty file", &len);
 			memmove(p, t, len);
 			p += len;
 		}
 	} else {
-		t = msg_cat(sp, "279|line %lu", &len);
+		t = msg_cat(sp, "029|line %lu", &len);
 		p += sprintf(p, t, lno);
 	}
 #ifdef DEBUG
@@ -645,7 +645,7 @@ msg_open(sp, file)
 		if (O_STR(sp, O_MSGCAT) == NULL)
 			return (1);
 		p = msg_print(sp, p, &nf);
-		msgq(sp, M_ERR, "232|The file %s is not a message catalog", p);
+		msgq(sp, M_ERR, "030|The file %s is not a message catalog", p);
 		if (nf)
 			FREE_SPACE(sp, p, 0);
 		return (1);

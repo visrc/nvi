@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 10.3 1995/06/08 18:57:55 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:57:55 $";
+static char sccsid[] = "$Id: search.c,v 10.4 1995/06/09 12:47:59 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:47:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -692,24 +692,24 @@ search_msg(sp, msg)
 {
 	switch (msg) {
 	case S_EMPTY:
-		msgq(sp, M_INFO, "238|File empty; nothing to search");
+		msgq(sp, M_INFO, "072|File empty; nothing to search");
 		break;
 	case S_EOF:
 		msgq(sp, M_INFO,
-		    "239|Reached end-of-file without finding the pattern");
+		    "073|Reached end-of-file without finding the pattern");
 		break;
 	case S_NOPREV:
-		msgq(sp, M_ERR, "243|No previous search pattern");
+		msgq(sp, M_ERR, "074|No previous search pattern");
 		break;
 	case S_NOTFOUND:
-		msgq(sp, M_INFO, "240|Pattern not found");
+		msgq(sp, M_INFO, "075|Pattern not found");
 		break;
 	case S_SOF:
 		msgq(sp, M_INFO,
-		    "241|Reached top-of-file without finding the pattern");
+		    "076|Reached top-of-file without finding the pattern");
 		break;
 	case S_WRAP:
-		msgq(sp, M_VINFO, "242|Search wrapped");
+		msgq(sp, M_VINFO, "077|Search wrapped");
 		break;
 	default:
 		abort();
@@ -727,5 +727,5 @@ search_busy(sp, on)
 	SCR *sp;
 	int on;
 {
-	sp->gp->scr_busy(sp, "280|Searching...", on);
+	sp->gp->scr_busy(sp, "078|Searching...", on);
 }

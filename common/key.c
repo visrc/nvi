@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 10.3 1995/06/08 18:57:58 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:57:58 $";
+static char sccsid[] = "$Id: key.c,v 10.4 1995/06/09 12:48:02 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:48:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -154,7 +154,7 @@ v_key_init(sp)
 			break;
 		}
 	if (ch != gp->noprint) {
-		msgq(sp, M_ERR, "090|No non-printable character found");
+		msgq(sp, M_ERR, "079|No non-printable character found");
 		return (1);
 	}
 	return (0);

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: log.c,v 10.2 1995/05/05 18:42:18 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:42:18 $";
+static char sccsid[] = "$Id: log.c,v 10.3 1995/06/09 12:47:43 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:47:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -68,17 +68,14 @@ static char sccsid[] = "$Id: log.c,v 10.2 1995/05/05 18:42:18 bostic Exp $ (Berk
  */
 
 static int	log_cursor1 __P((SCR *, int));
+static void	log_err __P((SCR *, char *, int));
 #if defined(DEBUG) && 0
 static void	log_trace __P((SCR *, char *, recno_t, u_char *));
 #endif
 
 /* Try and restart the log on failure, i.e. if we run out of memory. */
 #define	LOG_ERR {							\
-	msgq(sp, M_SYSERR, "032|%s/%d: log put error",			\
-	    tail(__FILE__), __LINE__);					\
-	(void)ep->log->close(ep->log);					\
-	if (!log_init(sp, ep))						\
-		msgq(sp, M_ERR, "033|Log restarted");			\
+	log_err(sp, __FILE__, __LINE__);				\
 	return (1);							\
 }
 
@@ -110,7 +107,7 @@ log_init(sp, ep)
 	ep->log = dbopen(NULL, O_CREAT | O_NONBLOCK | O_RDWR,
 	    S_IRUSR | S_IWUSR, DB_RECNO, NULL);
 	if (ep->log == NULL) {
-		msgq(sp, M_SYSERR, "034|log file");
+		msgq(sp, M_SYSERR, "009|Log file");
 		F_SET(ep, F_NOLOG);
 		return (1);
 	}
@@ -383,12 +380,12 @@ log_backward(sp, rp)
 	ep = sp->ep;
 	if (F_ISSET(ep, F_NOLOG)) {
 		msgq(sp, M_ERR,
-		    "035|Logging not being performed, undo not possible");
+		    "010|Logging not being performed, undo not possible");
 		return (1);
 	}
 
 	if (ep->l_cur == 1) {
-		msgq(sp, M_BERR, "036|No changes to undo");
+		msgq(sp, M_BERR, "011|No changes to undo");
 		return (1);
 	}
 
@@ -487,7 +484,7 @@ log_setline(sp)
 	ep = sp->ep;
 	if (F_ISSET(ep, F_NOLOG)) {
 		msgq(sp, M_ERR,
-		    "037|Logging not being performed, undo not possible");
+		    "012|Logging not being performed, undo not possible");
 		return (1);
 	}
 
@@ -576,12 +573,12 @@ log_forward(sp, rp)
 	ep = sp->ep;
 	if (F_ISSET(ep, F_NOLOG)) {
 		msgq(sp, M_ERR,
-	    "038|Logging not being performed, roll-forward not possible");
+	    "013|Logging not being performed, roll-forward not possible");
 		return (1);
 	}
 
 	if (ep->l_cur == ep->l_high) {
-		msgq(sp, M_BERR, "039|No changes to re-do");
+		msgq(sp, M_BERR, "014|No changes to re-do");
 		return (1);
 	}
 
@@ -653,6 +650,25 @@ log_forward(sp, rp)
 
 err:	F_CLR(ep, F_NOLOG);
 	return (1);
+}
+
+/*
+ * log_err --
+ *	Try and restart the log on failure, i.e. if we run out of memory.
+ */
+static void
+log_err(sp, file, line)
+	SCR *sp;
+	char *file;
+	int line;
+{
+	EXF *ep;
+
+	msgq(sp, M_SYSERR, "015|%s/%d: log put error", tail(file), line);
+	ep = sp->ep;
+	(void)ep->log->close(ep->log);
+	if (!log_init(sp, ep))
+		msgq(sp, M_ERR, "267|Log restarted");
 }
 
 #if defined(DEBUG) && 0

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 10.4 1995/06/08 18:57:38 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:57:38 $";
+static char sccsid[] = "$Id: db.c,v 10.5 1995/06/09 12:47:41 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:47:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -116,7 +116,7 @@ file_rline(sp, lno, lenp)
 	key.size = sizeof(lno);
 	switch (ep->db->get(ep->db, &key, &data, 0)) {
         case -1:
-		msgq(sp, M_SYSERR, "026|%s/%d: unable to get line %u",
+		msgq(sp, M_SYSERR, "002|%s/%d: unable to get line %u",
 		    tail(__FILE__), __LINE__, lno);
 		/* FALLTHROUGH */
         case 1:
@@ -168,7 +168,7 @@ file_dline(sp, lno)
 	key.size = sizeof(lno);
 	SIGBLOCK(sp->gp);
 	if (ep->db->del(ep->db, &key, 0) == 1) {
-		msgq(sp, M_SYSERR, "027|%s/%d: unable to delete line %u",
+		msgq(sp, M_SYSERR, "003|%s/%d: unable to delete line %u",
 		    tail(__FILE__), __LINE__, lno);
 		return (1);
 	}
@@ -242,7 +242,7 @@ file_aline(sp, update, lno, p, len)
 	data.size = len;
 	SIGBLOCK(sp->gp);
 	if (ep->db->put(ep->db, &key, &data, R_IAFTER) == -1) {
-		msgq(sp, M_SYSERR, "028|%s/%d: unable to append to line %u",
+		msgq(sp, M_SYSERR, "004|%s/%d: unable to append to line %u",
 		    tail(__FILE__), __LINE__, lno);
 		return (1);
 	}
@@ -333,7 +333,7 @@ file_iline(sp, lno, p, len)
 	data.size = len;
 	SIGBLOCK(sp->gp);
 	if (ep->db->put(ep->db, &key, &data, R_IBEFORE) == -1) {
-		msgq(sp, M_SYSERR, "029|%s/%d: unable to insert at line %u",
+		msgq(sp, M_SYSERR, "005|%s/%d: unable to insert at line %u",
 		    tail(__FILE__), __LINE__, lno);
 		return (1);
 	}
@@ -396,7 +396,7 @@ file_sline(sp, lno, p, len)
 	data.size = len;
 	SIGBLOCK(sp->gp);
 	if (ep->db->put(ep->db, &key, &data, 0) == -1) {
-		msgq(sp, M_SYSERR, "030|%s/%d: unable to store line %u",
+		msgq(sp, M_SYSERR, "006|%s/%d: unable to store line %u",
 		    tail(__FILE__), __LINE__, lno);
 		return (1);
 	}
@@ -471,7 +471,7 @@ file_lline(sp, lnop)
 
 	switch (ep->db->seq(ep->db, &key, &data, R_LAST)) {
         case -1:
-		msgq(sp, M_SYSERR, "031|%s/%d: unable to get last line",
+		msgq(sp, M_SYSERR, "007|%s/%d: unable to get last line",
 		    tail(__FILE__), __LINE__);
 		*lnop = 0;
 		return (1);
@@ -507,7 +507,7 @@ file_lerr(sp, fname, fline, lno)
 	char *fname;
 	recno_t fline, lno;
 {
-	msgq(sp, M_ERR, "042|Error: %s/%d: unable to retrieve line %u",
+	msgq(sp, M_ERR, "008|Error: %s/%d: unable to retrieve line %u",
 	    tail(fname), fline, lno);
 }
 

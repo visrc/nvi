@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 10.2 1995/06/08 18:57:46 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:57:46 $";
+static char sccsid[] = "$Id: options.c,v 10.3 1995/06/09 12:47:51 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:47:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -397,7 +397,7 @@ opts_init(sp, oargs, rows, cols)
 	return (0);
 
 err:	msgq(sp, M_ERR,
-	    "052|Unable to set default %s option", optlist[optindx].name);
+	    "031|Unable to set default %s option", optlist[optindx].name);
 	return (1);
 }
 
@@ -442,7 +442,7 @@ opts_set(sp, argv, setdef, usage)
 				if (p == name) {
 					if (usage != NULL)
 						msgq(sp, M_ERR,
-						    "053|Usage: %s", usage);
+						    "032|Usage: %s", usage);
 					return (1);
 				}
 				sep = p;
@@ -499,7 +499,7 @@ prefix:		op = opts_prefix(name);
 found:		if (op == NULL) {
 			p = msg_print(sp, name, &nf);
 			msgq(sp, M_ERR,
-		    "054|set: no %s option: 'set all' gives all option values",
+		    "033|set: no %s option: 'set all' gives all option values",
 			    p);
 			if (nf)
 				FREE_SPACE(sp, p, 0);
@@ -529,7 +529,7 @@ found:		if (op == NULL) {
 			if (equals) {
 				p = msg_print(sp, name, &nf);
 				msgq(sp, M_ERR,
-			    "055|set: [no]%s option doesn't take a value", p);
+			    "034|set: [no]%s option doesn't take a value", p);
 				if (nf)
 					FREE_SPACE(sp, p, 0);
 				rval = 1;
@@ -557,7 +557,7 @@ found:		if (op == NULL) {
 			if (turnoff) {
 				p = msg_print(sp, name, &nf);
 				msgq(sp, M_ERR,
-				    "056|set: %s option isn't a boolean", p);
+				    "035|set: %s option isn't a boolean", p);
 				if (nf)
 					FREE_SPACE(sp, p, 0);
 				rval = 1;
@@ -579,11 +579,11 @@ found:		if (op == NULL) {
 				switch (nret) {
 				case NUM_ERR:
 					msgq(sp, M_SYSERR,
-					    "269|set: %s option: %s", p, t);
+					    "036|set: %s option: %s", p, t);
 					break;
 				case NUM_OVER:
 					msgq(sp, M_ERR,
-			    "268|set: %s option: %s: value overflow", p, t);
+			    "037|set: %s option: %s: value overflow", p, t);
 					break;
 				case NUM_OK:
 				case NUM_UNDER:
@@ -600,7 +600,7 @@ found:		if (op == NULL) {
 badnum:				p = msg_print(sp, name, &nf);
 				t = msg_print(sp, sep, &nf2);
 				msgq(sp, M_ERR,
-		    "057|set: %s option: %s is an illegal number", p, t);
+		    "038|set: %s option: %s is an illegal number", p, t);
 				if (nf)
 					FREE_SPACE(sp, p, 0);
 				if (nf2)
@@ -622,7 +622,7 @@ badnum:				p = msg_print(sp, name, &nf);
 			if (turnoff) {
 				p = msg_print(sp, name, &nf);
 				msgq(sp, M_ERR,
-				    "058|set: %s option isn't a boolean", p);
+				    "039|set: %s option isn't a boolean", p);
 				if (nf)
 					FREE_SPACE(sp, p, 0);
 				rval = 1;

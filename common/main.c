@@ -16,7 +16,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 10.2 1995/06/08 18:57:39 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:57:39 $";
+static char sccsid[] = "$Id: main.c,v 10.3 1995/06/09 12:47:46 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:47:46 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -200,7 +200,7 @@ v_init(argc, argv, rows, cols, gpp)
 	} else if (flagchk != 'r' &&
 	    (!F_ISSET(gp, G_STDIN_TTY) || !isatty(STDOUT_FILENO))) {
 		msgq(NULL, M_ERR,
-		    "040|Vi's standard input and output must be a terminal");
+		    "016|Vi's standard input and output must be a terminal");
 		goto err;
 	}
 

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_screen.c,v 10.1 1995/06/08 19:00:33 bostic Exp $ (Berkeley) $Date: 1995/06/08 19:00:33 $";
+static char sccsid[] = "$Id: cl_screen.c,v 10.2 1995/06/09 12:47:09 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:47:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -84,17 +84,17 @@ cl_vi_init(sp)
 			msgq(sp, M_ERR, "Error: initscr");
 		if ((p = getenv("TERM")) == NULL || !strcmp(p, "unknown"))
 			msgq(sp, M_ERR,
-	"215|No TERM environment variable set, or TERM set to \"unknown\"");
+	"229|No TERM environment variable set, or TERM set to \"unknown\"");
 		else if (tgetent(kbuf, p) != 1) {
 			p = msg_print(sp, p, &nf);
 			msgq(sp, M_ERR,
-"216|%s: unknown terminal type, or terminal lacks necessary features", p);
+"230|%s: unknown terminal type, or terminal lacks necessary features", p);
 			if (nf)
 				FREE_SPACE(sp, p, 0);
 		} else {
 			p = msg_print(sp, p, &nf);
 			msgq(sp, M_ERR,
-		    "217|%s: terminal type lacks necessary features", p);
+		    "231|%s: terminal type lacks necessary features", p);
 			if (nf)
 				FREE_SPACE(sp, p, 0);
 		}

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 10.2 1995/05/05 18:43:19 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:43:19 $";
+static char sccsid[] = "$Id: options_f.c,v 10.3 1995/06/09 12:47:54 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:47:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -78,7 +78,7 @@ DECL(f_columns)
 {
 	/* Validate the number. */
 	if (val < MINIMUM_SCREEN_COLS) {
-		msgq(sp, M_ERR, "060|Screen columns too small, less than %d",
+		msgq(sp, M_ERR, "040|Screen columns too small, less than %d",
 		    MINIMUM_SCREEN_COLS);
 		return (1);
 	}
@@ -93,7 +93,7 @@ DECL(f_columns)
 	 */
 #define	MAXIMUM_SCREEN_COLS	500
 	if (val > MAXIMUM_SCREEN_COLS) {
-		msgq(sp, M_ERR, "266|Screen columns too large, greater than %d",
+		msgq(sp, M_ERR, "041|Screen columns too large, greater than %d",
 		    MAXIMUM_SCREEN_COLS);
 		return (1);
 	}
@@ -153,7 +153,7 @@ DECL(f_lines)
 {
 	/* Validate the number. */
 	if (val < MINIMUM_SCREEN_ROWS) {
-		msgq(sp, M_ERR, "061|Screen lines too small, less than %d",
+		msgq(sp, M_ERR, "042|Screen lines too small, less than %d",
 		    MINIMUM_SCREEN_ROWS);
 		return (1);
 	}
@@ -168,7 +168,7 @@ DECL(f_lines)
 	 */
 #define	MAXIMUM_SCREEN_ROWS	500
 	if (val > MAXIMUM_SCREEN_ROWS) {
-		msgq(sp, M_ERR, "267|Screen lines too large, greater than %d",
+		msgq(sp, M_ERR, "043|Screen lines too large, greater than %d",
 		    MAXIMUM_SCREEN_ROWS);
 		return (1);
 	}
@@ -202,7 +202,7 @@ DECL(f_lines)
  */
 DECL(f_lisp)
 {
-	msgq(sp, M_ERR, "062|The lisp option is not implemented");
+	msgq(sp, M_ERR, "044|The lisp option is not implemented");
 	return (0);
 }
 
@@ -247,14 +247,14 @@ DECL(f_mesg)
 	if (turnoff) {
 		if (chmod(tty, sp->gp->origmode & ~S_IWGRP) < 0) {
 			msgq(sp, M_SYSERR,
-			    "063|messages not turned off: %s", tty);
+			    "045|messages not turned off: %s", tty);
 			return (1);
 		}
 		O_CLR(sp, O_MESG);
 	} else {
 		if (chmod(tty, sp->gp->origmode | S_IWGRP) < 0) {
 			msgq(sp, M_SYSERR,
-			    "064|messages not turned on: %s", tty);
+			    "046|messages not turned on: %s", tty);
 			return (1);
 		}
 		O_SET(sp, O_MESG);
@@ -276,7 +276,7 @@ DECL(f_mesg)
 DECL(f_modeline)
 {
 	if (!turnoff)
-		msgq(sp, M_ERR, "065|The modeline(s) option may never be set");
+		msgq(sp, M_ERR, "047|The modeline(s) option may never be set");
 	return (0);
 }
 
@@ -328,7 +328,7 @@ DECL(f_paragraph)
 {
 	if (strlen(str) & 1) {
 		msgq(sp, M_ERR,
-		    "066|The paragraph option must be in two character groups");
+		    "048|The paragraph option must be in two character groups");
 		return (1);
 	}
 	return (opt_dup(sp, O_PARAGRAPHS, str));
@@ -425,7 +425,7 @@ DECL(f_section)
 {
 	if (strlen(str) & 1) {
 		msgq(sp, M_ERR,
-		    "067|The section option must be in two character groups");
+		    "049|The section option must be in two character groups");
 		return (1);
 	}
 	return (opt_dup(sp, O_SECTIONS, str));
@@ -437,7 +437,7 @@ DECL(f_section)
 DECL(f_shiftwidth)
 {
 	if (val == 0) {
-		msgq(sp, M_ERR, "068|The shiftwidth may not be set to 0");
+		msgq(sp, M_ERR, "050|The shiftwidth may not be set to 0");
 		return (1);
 	}
 	O_VAL(sp, O_SHIFTWIDTH) = val;
@@ -457,7 +457,7 @@ DECL(f_shiftwidth)
 DECL(f_sourceany)
 {
 	if (!turnoff)
-		msgq(sp, M_ERR, "069|The sourceany option may never be set");
+		msgq(sp, M_ERR, "051|The sourceany option may never be set");
 	return (0);
 }
 
@@ -467,7 +467,7 @@ DECL(f_sourceany)
 DECL(f_tabstop)
 {
 	if (val == 0) {
-		msgq(sp, M_ERR, "070|Tab stops may not be set to 0");
+		msgq(sp, M_ERR, "052|Tab stops may not be set to 0");
 		return (1);
 	}
 	O_VAL(sp, O_TABSTOP) = val;
