@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_screen.c,v 10.26 1995/11/10 10:13:02 bostic Exp $ (Berkeley) $Date: 1995/11/10 10:13:02 $";
+static char sccsid[] = "$Id: cl_screen.c,v 10.27 1995/11/11 11:54:05 bostic Exp $ (Berkeley) $Date: 1995/11/11 11:54:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -216,9 +216,6 @@ cl_vi_init(sp)
 	raw();				/* 8-bit clean. */
 	idlok(stdscr, 1);		/* Use hardware insert/delete line. */
 
-#ifndef TRUE
-#define	TRUE	1
-#endif
 	/* Put the cursor keys into application mode. */
 	(void)keypad(stdscr, TRUE);
 
@@ -301,9 +298,6 @@ cl_vi_end(gp)
 
 	clp = GCLP(gp);
 
-#ifndef FALSE
-#define	FALSE	0
-#endif
 	/* Restore the cursor keys to normal mode. */
 	(void)keypad(stdscr, FALSE);
 

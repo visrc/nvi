@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: cl.h,v 10.7 1995/11/10 10:11:54 bostic Exp $ (Berkeley) $Date: 1995/11/10 10:11:54 $
+ *	$Id: cl.h,v 10.8 1995/11/11 11:53:50 bostic Exp $ (Berkeley) $Date: 1995/11/11 11:53:50 $
  */
 
 typedef struct _cl_private {
@@ -59,5 +59,17 @@ typedef enum { INP_OK=0, INP_EOF, INP_ERR, INP_INTR, INP_TIMEOUT } input_t;
 #define	EX_INIT_IGNORE(sp)						\
 	if (F_ISSET(sp, S_EX) && !F_ISSET(sp, S_SCR_EX))		\
 		return (0);
+
+/*
+ * XXX
+ * Some implementations of curses.h don't define these for us.  Used for
+ * compatibility only.
+ */
+#ifndef TRUE
+#define	TRUE	1
+#endif
+#ifndef FALSE
+#define	FALSE	0
+#endif
 
 #include "cl_extern.h"
