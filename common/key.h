@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 5.12 1993/01/24 18:28:53 bostic Exp $ (Berkeley) $Date: 1993/01/24 18:28:53 $
+ *	$Id: key.h,v 5.13 1993/01/30 17:26:47 bostic Exp $ (Berkeley) $Date: 1993/01/30 17:26:47 $
  */
 
 #define	K_CARAT		1
@@ -16,6 +16,7 @@
 #define	K_VKILL		7
 #define	K_VLNEXT	8
 #define	K_VWERASE	9
+#define	K_ZERO		10
 extern u_char special[];		/* Special characters. */
 
 #define	GB_BS		0x001		/* Backspace erases past command. */

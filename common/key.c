@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.36 1993/01/24 18:28:17 bostic Exp $ (Berkeley) $Date: 1993/01/24 18:28:17 $";
+static char sccsid[] = "$Id: key.c,v 5.37 1993/01/30 17:26:46 bostic Exp $ (Berkeley) $Date: 1993/01/30 17:26:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -66,6 +66,7 @@ gb_init()
 	special['\r'] = K_CR;
 	special['\033'] = K_ESCAPE;
 	special['\n'] = K_NL;
+	special['0'] = K_ZERO;
 
 	/* Start off with some memory. */
 	(void)gb_inc();
