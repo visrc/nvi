@@ -29,9 +29,7 @@
  *		anywhere in the widget heirarchy.
  */
 
-#if ! defined(__STDC__)
-#define	const
-#endif
+#include "config.h"
 
 #ifndef lint
 static const char sccsid[] = "";
