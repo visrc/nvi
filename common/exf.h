@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 5.52 1993/05/10 11:13:10 bostic Exp $ (Berkeley) $Date: 1993/05/10 11:13:10 $
+ *	$Id: exf.h,v 5.53 1993/05/12 23:13:18 bostic Exp $ (Berkeley) $Date: 1993/05/12 23:13:18 $
  */
 
 					/* Undo direction. */
@@ -99,6 +99,11 @@ typedef struct _exf {
 #define	MODIFY_WARN(sp, ep) {						\
 	if (F_ISSET(ep, F_MODIFIED) && O_ISSET(sp, O_WARN))		\
 		msgq(sp, M_ERR, "Modified since last write.");		\
+}
+#define	EX_MODIFY_WARN(sp, ep) {					\
+	if (F_ISSET(ep, F_MODIFIED) && O_ISSET(sp, O_WARN))		\
+		fprintf(sp->stdfp, "Modified since last write.\n");	\
+	(void)fflush(sp->stdfp);					\
 }
 
 /* File routines. */
