@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 5.39 1993/04/17 12:07:10 bostic Exp $ (Berkeley) $Date: 1993/04/17 12:07:10 $
+ *	$Id: vi.h,v 5.40 1993/04/19 15:35:09 bostic Exp $ (Berkeley) $Date: 1993/04/19 15:35:09 $
  */
 
 /* Structure passed around to functions implementing vi commands. */
@@ -33,19 +33,20 @@ typedef struct _vicmdarg {
  * be fixed.  This is implemented by setting special flags per command so that
  * the motion routines know what's really going on.
  *
- * Note, the VC_C flags and VC_D flags are set per command, and therefore
+ * Note, the VC_C, VC_D and VC_Y flags are set per command, and therefore
  * must have values not used the set of flags used by the VIKEYS structure
  * below.
  */
 #define	VC_C		0x001	/* The 'c' command. */
 #define	VC_D		0x002	/* The 'd' command. */
-#define	VC_COMMASK	0x003	/* Mask for special flags VC_C and VC_D. */
+#define	VC_Y		0x004	/* The 'y' command. */
+#define	VC_COMMASK	0x007	/* Mask for special flags VC_C, VC_D, VC_Y. */
 
-#define	VC_C1SET	0x004	/* Count 1 set. */
-#define	VC_C1RESET	0x008	/* Reset the C1SET flag for dot commands. */
-#define	VC_C2SET	0x010	/* Count 2 set. */
-#define	VC_LMODE	0x020	/* Motion is line oriented. */
-#define	VC_ISDOT	0x040	/* Command was the dot command. */
+#define	VC_C1SET	0x008	/* Count 1 set. */
+#define	VC_C1RESET	0x010	/* Reset the C1SET flag for dot commands. */
+#define	VC_C2SET	0x020	/* Count 2 set. */
+#define	VC_LMODE	0x040	/* Motion is line oriented. */
+#define	VC_ISDOT	0x080	/* Command was the dot command. */
 
 	u_int flags;
 				/* DO NOT ZERO OUT. */
@@ -64,21 +65,22 @@ typedef struct _vikeys {	/* Underlying function. */
 /* XXX Check to see if these are all needed. */
 #define	V_DONTUSE1	0x00001	/* VC_C */
 #define	V_DONTUSE2	0x00002	/* VC_D */
-#define	V_ABS		0x00004	/* Absolute movement, sets the '' mark. */
-#define	V_CHAR		0x00008	/* Character (required, trailing). */
-#define	V_CNT		0x00010	/* Count (optional, leading). */
-#define	V_DOT		0x00020	/* Successful command sets dot command. */
-#define	V_KEYNUM	0x00040	/* Cursor referenced number. */
-#define	V_KEYW		0x00080	/* Cursor referenced word. */
-#define	V_LMODE		0x00100	/* Motion is line oriented. */
-#define	V_MOTION	0x00200	/* Motion (required, trailing). */
-#define	V_MOVE		0x00400	/* Command defines movement. */
-#define	V_OBUF		0x00800	/* Buffer (optional, leading). */
-#define	V_RBUF		0x01000	/* Buffer (required, trailing). */
-#define	V_RCM		0x02000	/* Use relative cursor movment (RCM). */
-#define	V_RCM_SET	0x04000	/* Set RCM absolutely. */
-#define	V_RCM_SETFNB	0x08000	/* Set RCM to first non-blank character. */
-#define	V_RCM_SETLAST	0x10000	/* Set RCM to last character. */
+#define	V_DONTUSE3	0x00004	/* VC_Y */
+#define	V_ABS		0x00008	/* Absolute movement, sets the '' mark. */
+#define	V_CHAR		0x00010	/* Character (required, trailing). */
+#define	V_CNT		0x00020	/* Count (optional, leading). */
+#define	V_DOT		0x00040	/* Successful command sets dot command. */
+#define	V_KEYNUM	0x00080	/* Cursor referenced number. */
+#define	V_KEYW		0x00100	/* Cursor referenced word. */
+#define	V_LMODE		0x00200	/* Motion is line oriented. */
+#define	V_MOTION	0x00400	/* Motion (required, trailing). */
+#define	V_MOVE		0x00800	/* Command defines movement. */
+#define	V_OBUF		0x01000	/* Buffer (optional, leading). */
+#define	V_RBUF		0x02000	/* Buffer (required, trailing). */
+#define	V_RCM		0x04000	/* Use relative cursor movment (RCM). */
+#define	V_RCM_SET	0x08000	/* Set RCM absolutely. */
+#define	V_RCM_SETFNB	0x10000	/* Set RCM to first non-blank character. */
+#define	V_RCM_SETLAST	0x20000	/* Set RCM to last character. */
 	u_long flags;
 	char *usage;		/* Usage line. */
 } VIKEYS;
@@ -96,6 +98,7 @@ int	getc_init __P((SCR *, EXF *, MARK *, int *));
 int	getc_next __P((SCR *, EXF *, enum direction, int *));
 void	getc_set __P((SCR *, EXF *, MARK *));
 int	txt_auto __P((SCR *, EXF *, recno_t, TEXT *));
+int	vi __P((struct _scr *, struct _exf *));
 int	v_comment __P((SCR *, EXF *));
 int	v_end __P((SCR *));
 void	v_eof __P((SCR *, EXF *, MARK *));
