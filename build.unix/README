@@ -1,4 +1,4 @@
-#	$Id: README,v 8.11 1996/03/11 09:20:25 bostic Exp $ (Berkeley) $Date: 1996/03/11 09:20:25 $
+#	$Id: README,v 8.12 1996/03/18 16:58:05 bostic Exp $ (Berkeley) $Date: 1996/03/18 16:58:05 $
 
 Nvi uses the GNU autoconf program for configuration and compilation.  You
 should enter:
@@ -114,7 +114,7 @@ enable-tknvi:
 	see the next section of this README file for more information.
 
 =-=-=-=-=-=-=
-ADDIING LIBRARIES AND INCLUDE FILES
+ADDING LIBRARIES AND INCLUDE FILES
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
 If the Tk/Tcl or any other include files or libraries are in non-standard
