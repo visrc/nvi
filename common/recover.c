@@ -6,12 +6,14 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.29 1993/11/04 18:21:44 bostic Exp $ (Berkeley) $Date: 1993/11/04 18:21:44 $";
+static char sccsid[] = "$Id: recover.c,v 8.30 1993/11/07 14:07:14 bostic Exp $ (Berkeley) $Date: 1993/11/07 14:07:14 $";
 #endif /* not lint */
 
 #include <sys/param.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+
+#include <netdb.h>			/* MAXHOSTNAMELEN on some systems. */
 
 #include <dirent.h>
 #include <errno.h>
