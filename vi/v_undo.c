@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_undo.c,v 8.4 1993/12/28 17:07:20 bostic Exp $ (Berkeley) $Date: 1993/12/28 17:07:20 $";
+static char sccsid[] = "$Id: v_undo.c,v 8.5 1993/12/29 11:22:40 bostic Exp $ (Berkeley) $Date: 1993/12/29 11:22:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,6 +38,20 @@ v_Undo(sp, ep, vp, fm, tm, rp)
 	 */
 	rp->lno = fm->lno;
 	rp->cno = 0;
+
+	/*
+	 * !!!
+	 * Set up the flags so that an immediately subsequent 'u' will roll
+	 * forward, instead of backward.  In historic vi, a 'u' following a
+	 * 'U' redid all of the changes to the line.  Given that the user has
+	 * explicitly discarded those changes by entering 'U', it seems likely
+	 * that the user wants something between the original and end forms of
+	 * the line, so starting to replay the changes seems the best way to
+	 * get to there.
+	 */
+	F_SET(ep, F_UNDO);
+	ep->lundo = BACKWARD;
+
 	return (log_setline(sp, ep));
 }
 	
