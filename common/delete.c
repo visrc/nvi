@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: delete.c,v 5.23 1993/04/12 14:22:49 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:22:49 $";
+static char sccsid[] = "$Id: delete.c,v 5.24 1993/05/02 17:59:18 bostic Exp $ (Berkeley) $Date: 1993/05/02 17:59:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -65,11 +65,6 @@ delete(sp, ep, fm, tm, lmode)
 			for (lno = tm->lno; lno > fm->lno; --lno)
 				if (file_dline(sp, ep, lno))
 					return (1);
-			if (fm->cno == 0) {
-				if (file_dline(sp, ep, fm->lno))
-					return (1);
-				goto done;
-			}
 			if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
 				GETLINE_ERR(sp, fm->lno);
 				return (1);
