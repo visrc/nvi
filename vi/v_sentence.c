@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_sentence.c,v 5.3 1992/06/08 09:27:24 bostic Exp $ (Berkeley) $Date: 1992/06/08 09:27:24 $";
+static char sccsid[] = "$Id: v_sentence.c,v 5.4 1992/06/15 10:51:55 bostic Exp $ (Berkeley) $Date: 1992/06/15 10:51:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,11 +36,11 @@ static char sccsid[] = "$Id: v_sentence.c,v 5.3 1992/06/08 09:27:24 bostic Exp $
 	(ch == EMPTYLINE || ch == ' ' || ch == '\t')
 
 /*
- * v_fsentence -- [count])
+ * v_sentencef -- [count])
  *	Move forward count sentences.
  */
 int
-v_fsentence(vp, fm, tm, rp)
+v_sentencef(vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
@@ -79,6 +79,8 @@ v_fsentence(vp, fm, tm, rp)
 			state = NONE;
 			break;
 		case '.':
+		case '?':
+		case '!':
 			state = PERIOD;
 			break;
 		case ' ':
@@ -113,11 +115,11 @@ v_fsentence(vp, fm, tm, rp)
 	    (ch == EMPTYLINE || ch == ' ' || ch == '\t'))
 
 /*
- * v_bsentence -- [count])
+ * v_sentenceb -- [count])
  *	Move forward count sentences.
  */
 int
-v_bsentence(vp, fm, tm, rp)
+v_sentenceb(vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
@@ -142,7 +144,7 @@ v_bsentence(vp, fm, tm, rp)
 		EATBLANK;
 
 	for (last1 = last2 = 'a'; getc_next(BACKWARD, &ch);) {
-		if (ch == '.' &&
+		if ((ch == '.' || ch == '?' || ch == '!') &&
 		    ISSPACE(last1) && ISSPACE(last2) && --cnt == 0) {
 			while (getc_next(FORWARD, &ch) && ISSPACE(ch));
 			getc_set(rp);
