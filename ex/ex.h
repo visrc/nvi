@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 10.11 1995/10/17 11:42:56 bostic Exp $ (Berkeley) $Date: 1995/10/17 11:42:56 $
+ *	$Id: ex.h,v 10.12 1995/11/01 19:12:06 bostic Exp $ (Berkeley) $Date: 1995/11/01 19:12:06 $
  */
 
 #define	PROMPTCHAR	':'		/* Prompt using a colon. */
@@ -202,7 +202,7 @@ typedef enum {
 	EXM_NOSUSPEND,			/* No suspension. */
 	EXM_SECURE,			/* Illegal if secure edit option set. */
 	EXM_SECURE_F,			/* EXM_SECURE: filter version */
-	EXM_USAGE,			/* Standard usage message. */
+	EXM_USAGE			/* Standard usage message. */
 } exm_t;
 
 /* Ex address error types. */

@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 10.7 1995/10/19 13:14:44 bostic Exp $ (Berkeley) $Date: 1995/10/19 13:14:44 $
+ *	$Id: key.h,v 10.8 1995/11/01 19:10:59 bostic Exp $ (Berkeley) $Date: 1995/11/01 19:10:59 $
  */
 
 /*
@@ -50,7 +50,7 @@ typedef enum {
 	E_STRING,			/* Input string: e_csp, e_len set. */
 	E_TIMEOUT,			/* Timeout. */
 	E_WRITE,			/* Write. */
-	E_WRITEQUIT,			/* Write and quit. */
+	E_WRITEQUIT			/* Write and quit. */
 } e_event_t;
 
 /*
@@ -77,7 +77,7 @@ typedef enum {
 	K_VKILL,			/* set from tty: default ^U */
 	K_VLNEXT,			/* set from tty: default ^V */
 	K_VWERASE,			/* set from tty: default ^W */
-	K_ZERO,				/*  0 */
+	K_ZERO				/*  0 */
 } e_key_t;
 
 struct _event {

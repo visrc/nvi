@@ -6,15 +6,14 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: msg.h,v 10.4 1995/09/21 10:56:11 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:56:11 $
+ *	$Id: msg.h,v 10.5 1995/11/01 19:11:29 bostic Exp $ (Berkeley) $Date: 1995/11/01 19:11:29 $
  */
 
 /*
  * Common messages (continuation or confirmation).
  */
 typedef enum {
-	CMSG_CONF, CMSG_CONT, CMSG_CONT_EX, CMSG_CONT_S, CMSG_CONT_Q,
-} cmsg_t;
+	CMSG_CONF, CMSG_CONT, CMSG_CONT_EX, CMSG_CONT_S, CMSG_CONT_Q } cmsg_t;
 
 /*
  * Message types.
