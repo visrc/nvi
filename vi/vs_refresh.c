@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 10.15 1995/11/01 19:10:18 bostic Exp $ (Berkeley) $Date: 1995/11/01 19:10:18 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 10.16 1995/11/10 10:24:18 bostic Exp $ (Berkeley) $Date: 1995/11/10 10:24:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -112,10 +112,10 @@ vs_refresh(sp)
 		return (1);
 
 	/*
-	 * A side-effect of refreshing the screen is that we can now display
-	 * messages in it.
+	 * A side-effect of refreshing the screen is that it's now ready
+	 * for everything else, i.e. messages.
 	 */
-	F_SET(sp, S_SCREEN_READY);
+	F_SET(sp, S_SCR_VI);
 	return (0);
 }
 
@@ -654,7 +654,7 @@ number:	if (O_ISSET(sp, O_NUMBER) &&
 		OCNO = CNO;
 		OLNO = LNO;
 		(void)gp->scr_move(sp, y, SCNO);
-		(void)gp->scr_refresh(sp, 0);
+		(void)gp->scr_refresh(sp, F_ISSET(sp, S_SCR_REDRAW));
 
 		/*
 		 * XXX

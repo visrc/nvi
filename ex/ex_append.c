@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 10.20 1995/11/07 20:25:42 bostic Exp $ (Berkeley) $Date: 1995/11/07 20:25:42 $";
+static char sccsid[] = "$Id: ex_append.c,v 10.21 1995/11/10 10:23:51 bostic Exp $ (Berkeley) $Date: 1995/11/10 10:23:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -212,11 +212,10 @@ ex_aci(sp, cmdp, cmd)
 			ex_emsg(sp, cmdp->cmd->name, EXM_NOCANON);
 			return (1);
 		}
-		F_SET(sp, S_EX_CANON | S_SCREEN_READY);
+		F_SET(sp, S_SCR_EX | S_SCR_EXWROTE);
 
 		/* Move out of the vi screen. */
-		(void)write(STDOUT_FILENO, "\n", 1);
-		F_SET(sp, S_EX_WROTE);
+		(void)ex_puts(sp, "\n");
 
 		/*
 		 * !!!
