@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.13 1993/08/21 14:34:23 bostic Exp $ (Berkeley) $Date: 1993/08/21 14:34:23 $";
+static char sccsid[] = "$Id: ex.c,v 8.14 1993/08/23 18:30:47 bostic Exp $ (Berkeley) $Date: 1993/08/23 18:30:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -249,8 +249,6 @@ cend:			if (p > cmd) {
 	 *	echo 'foo|bar' > file1; echo 'foo/bar' > file2;
 	 *	vi
 	 *	:edit +1|s/|/PIPE/|w file1| e file2|1 | s/\//SLASH/|wq
-
-	 *	date > file1; date > file2
 	 */
 	if (len == 0 && arg1_len == 0) {
 		sp->comm_len = 0;
