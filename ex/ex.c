@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.49 1992/12/20 15:07:45 bostic Exp $ (Berkeley) $Date: 1992/12/20 15:07:45 $";
+static char sccsid[] = "$Id: ex.c,v 5.50 1992/12/23 10:33:52 bostic Exp $ (Berkeley) $Date: 1992/12/23 10:33:52 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -269,7 +269,7 @@ msg("The %.*s command can't be used as part of a global command.",
 	 * first, we can't allow any command that requires file state.
 	 * Historic vi generally took the easy way out, by dropping core.
  	 */
-	if (ep == NULL &&
+	if (curf == NULL &&
 	    cp->flags & (E_ADDR1|E_ADDR2|E_ADDR2_ALL|E_ADDR2_NONE)) {
 	msg("The %s command requires a file to already have been read in.",
 		    cp->name);
