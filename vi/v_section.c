@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_section.c,v 5.14 1993/04/06 11:43:53 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:43:53 $";
+static char sccsid[] = "$Id: v_section.c,v 5.15 1993/04/12 14:55:00 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:55:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,13 +46,13 @@ v_sectionf(sp, ep, vp, fm, tm, rp)
 	if ((list = O_STR(sp, O_SECTIONS)) == NULL)
 		return (1);
 	if (strlen(list) & 1) {
-		msgq(sp, M_ERROR,
+		msgq(sp, M_ERR,
 		    "Section options must be in groups of two characters.");
 		return (1);
 	}
 
 	rp->cno = 0;
-	cnt = vp->flags & VC_C1SET ? vp->count : 1;
+	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
 	for (lno = fm->lno; p = file_gline(sp, ep, ++lno, &len);)
 		switch(len) {
 		case 0:
@@ -110,13 +110,13 @@ v_sectionb(sp, ep, vp, fm, tm, rp)
 	if ((list = O_STR(sp, O_SECTIONS)) == NULL)
 		return (1);
 	if (strlen(list) & 1) {
-		msgq(sp, M_ERROR,
+		msgq(sp, M_ERR,
 		    "Section options must be in groups of two characters.");
 		return (1);
 	}
 
 	rp->cno = 0;
-	cnt = vp->flags & VC_C1SET ? vp->count : 1;
+	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
 	for (lno = fm->lno; p = file_gline(sp, ep, --lno, &len);)
 		switch(len) {
 		case 0:

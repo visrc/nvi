@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_paragraph.c,v 5.13 1993/04/06 11:43:50 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:43:50 $";
+static char sccsid[] = "$Id: v_paragraph.c,v 5.14 1993/04/12 14:53:51 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:53:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -56,7 +56,7 @@ v_paragraphf(sp, ep, vp, fm, tm, rp)
 			break;
 	}
 
-	cnt = vp->flags & VC_C1SET ? vp->count : 1;
+	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
 	for (; p = file_gline(sp, ep, lno, &len); ++lno) {
 		if (len == 0) {
 			if (!--cnt)
@@ -145,7 +145,7 @@ v_paragraphb(sp, ep, vp, fm, tm, rp)
 			break;
 	}
 
-	cnt = vp->flags & VC_C1SET ? vp->count : 1;
+	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
 	for (; p = file_gline(sp, ep, lno, &len); --lno) {
 		if (len == 0) {
 			if (!--cnt)
@@ -187,18 +187,18 @@ makelist(sp)
 	/* Search for either a paragraph or section option macro. */
 	s1 = strlen(O_STR(sp, O_PARAGRAPHS));
 	if (s1 & 1) {
-		msgq(sp, M_ERROR,
+		msgq(sp, M_ERR,
 		    "Paragraph options must be in groups of two characters.");
 		return (NULL);
 	}
 	s2 = strlen(O_STR(sp, O_SECTIONS));
 	if (s2 & 1) {
-		msgq(sp, M_ERROR,
+		msgq(sp, M_ERR,
 		    "Section options must be in groups of two characters.");
 		return (NULL);
 	}
 	if ((list = malloc(s1 + s2 + 1)) == NULL) {
-		msgq(sp, M_ERROR, "%s", strerror(errno));
+		msgq(sp, M_ERR, "%s", strerror(errno));
 		return (NULL);
 	}
 	memmove(list, O_STR(sp, O_PARAGRAPHS), s1);

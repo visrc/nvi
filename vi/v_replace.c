@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_replace.c,v 5.18 1993/04/05 07:10:16 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:10:16 $";
+static char sccsid[] = "$Id: v_replace.c,v 5.19 1993/04/12 14:54:01 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:54:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -42,7 +42,7 @@ v_replace(sp, ep, vp, fm, tm, rp)
 		len = 1;
 	}
 
-	cnt = vp->flags & VC_C1SET ? vp->count : 1;
+	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
 
 	rp->cno = fm->cno + cnt - 1;
 	if (rp->cno > len - 1) {
@@ -70,7 +70,7 @@ v_replace(sp, ep, vp, fm, tm, rp)
 
 		if (p != emptybuf) {
 			if ((np = malloc(len)) == NULL) {
-				msgq(sp, M_ERROR,
+				msgq(sp, M_ERR,
 				    "Error: %s", strerror(errno));
 				return (1);
 			}
@@ -91,7 +91,7 @@ err:				if (p != emptybuf)
 		break;
 	default:
 		if ((np = malloc(len)) == NULL) {
-			msgq(sp, M_ERROR, "Error: %s", strerror(errno));
+			msgq(sp, M_ERR, "Error: %s", strerror(errno));
 			return (1);
 		}
 		memmove(np, p, len);
