@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 8.33 1994/04/26 16:18:10 bostic Exp $ (Berkeley) $Date: 1994/04/26 16:18:10 $";
+static char sccsid[] = "$Id: ex_filter.c,v 8.34 1994/05/01 15:19:37 bostic Exp $ (Berkeley) $Date: 1994/05/01 15:19:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -123,12 +123,8 @@ err:		if (input[0] != -1)
 		rval = 1;
 		goto ret;
 	case 0:				/* Utility. */
-		/*
-		 * The utility has default signal behavior.  Don't bother
-		 * using sigaction(2) 'cause we want the default behavior.
-		 */
-		(void)signal(SIGINT, SIG_DFL);
-		(void)signal(SIGQUIT, SIG_DFL);
+		/* The utility has default signal behavior. */
+		sig_end();
 
 		/*
 		 * Redirect stdin from the read end of the input pipe,
@@ -309,8 +305,17 @@ proc_wait(sp, pid, cmd, okpipe)
 	size_t len;
 	int pstat;
 
-	/* Wait for the utility to finish. */
-	(void)waitpid((pid_t)pid, &pstat, 0);
+	/*
+	 * Wait for the utility to finish.  We can get interrupted
+	 * by SIGALRM, just ignore it.
+	 */
+	for (;;) {
+		errno = 0;
+		if (waitpid((pid_t)pid, &pstat, 0) != -1)
+			break;
+		if (errno != EINTR)
+			break;
+	}
 
 	/*
 	 * Display the utility's exit status.  Ignore SIGPIPE from the
