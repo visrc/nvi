@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 5.19 1992/11/06 18:06:38 bostic Exp $ (Berkeley) $Date: 1992/11/06 18:06:38 $";
+static char sccsid[] = "$Id: v_search.c,v 5.20 1992/11/07 19:01:00 bostic Exp $ (Berkeley) $Date: 1992/11/07 19:01:00 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -178,10 +178,8 @@ getptrn(prompt, storep)
 	int prompt;
 	u_char **storep;
 {
-	v_startex();
 	if (v_gb(prompt, storep, NULL, GB_BS|GB_ESC|GB_OFF))
 		return (1);
-	v_leaveex();
 
 	if (*storep != NULL)
 		**storep = prompt;
