@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 5.61 1993/05/16 11:47:37 bostic Exp $ (Berkeley) $Date: 1993/05/16 11:47:37 $
+ *	$Id: common.h,v 5.62 1993/05/20 20:28:59 bostic Exp $ (Berkeley) $Date: 1993/05/20 20:28:59 $
  */
 
 					/* Ordered before local includes. */
@@ -66,7 +66,7 @@ struct _text;
 	if ((nlen) > llen && binc(sp, &(lp), &(llen), nlen))		\
 		return (1);						\
 }
-int	binc __P((struct _scr *, void *, size_t *, size_t));
+int	binc __P((SCR *, void *, size_t *, size_t));
 
 #define	GET_SPACE(sp, bp, blen, nlen) {					\
 	GS *__gp = (sp)->gp;						\
@@ -112,8 +112,8 @@ int	binc __P((struct _scr *, void *, size_t *, size_t));
 
 /* Filter type. */
 enum filtertype { STANDARD, NOINPUT, NOOUTPUT };
-int	filtercmd __P((struct _scr *, struct _exf *, struct _mark *,
-	    struct _mark *, struct _mark *, char *, enum filtertype));
+int	filtercmd __P((SCR *, EXF *, MARK *,
+	    MARK *, MARK *, char *, enum filtertype));
 
 /* Portability stuff. */
 #ifndef DEFFILEMODE			/* Default file permissions. */
@@ -130,15 +130,16 @@ typedef void (*sig_ret_t) __P((int));	/* Type of signal function. */
 /* Function prototypes that don't seem to belong anywhere else. */
 char	*charname __P((SCR *, int));
 int	 nonblank __P((SCR *, EXF *, recno_t, size_t *));
+void	 set_altfname __P((SCR *, char *));
 int	 set_window_size __P((SCR *, u_int));
 int	 status __P((SCR *, EXF *, recno_t, int));
 char	*tail __P((char *));
 
 #ifdef DEBUG
-void	TRACE __P((struct _scr *, const char *, ...));
+void	TRACE __P((SCR *, const char *, ...));
 #endif
 
 /* Digraphs (not currently real). */
-int	digraph __P((struct _scr *, int, int));
-int	digraph_init __P((struct _scr *));
-void	digraph_save __P((struct _scr *, int));
+int	digraph __P((SCR *, int, int));
+int	digraph_init __P((SCR *));
+void	digraph_save __P((SCR *, int));
