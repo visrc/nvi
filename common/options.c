@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.9 1993/09/30 18:39:31 bostic Exp $ (Berkeley) $Date: 1993/09/30 18:39:31 $";
+static char sccsid[] = "$Id: options.c,v 8.10 1993/10/03 10:43:43 bostic Exp $ (Berkeley) $Date: 1993/10/03 10:43:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -126,10 +126,16 @@ static OPTLIST const optlist[] = {
 	{"timeout",	NULL,		OPT_0BOOL,	0},
 /* O_VERBOSE */
 	{"verbose",	NULL,		OPT_0BOOL,	0},
+/* O_W300 */
+	{"w300",	f_w300,		OPT_NUM,	OPT_NODISPLAY},
+/* O_W1200 */
+	{"w1200",	f_w1200,	OPT_NUM,	OPT_NODISPLAY},
+/* O_W9600 */
+	{"w9600",	f_w9600,	OPT_NUM,	OPT_NODISPLAY},
 /* O_WARN */
 	{"warn",	NULL,		OPT_1BOOL,	0},
 /* O_WINDOW */
-	{"window",	NULL,		OPT_NUM,	0},
+	{"window",	f_window,	OPT_NUM,	0},
 /* O_WRAPMARGIN */
 	{"wrapmargin",	f_wrapmargin,	OPT_NUM,	0},
 /* O_WRAPSCAN */
@@ -199,6 +205,8 @@ opts_init(sp)
 	SCR *sp;
 {
 	OPTLIST const *op;
+	speed_t baudrate;
+	u_long sval;
 	int cnt;
 	char *s, *argv[2], b1[1024];
 
@@ -244,7 +252,21 @@ opts_init(sp)
 	(void)snprintf(b1, sizeof(b1),
 	    "term=%s", (s = getenv("TERM")) == NULL ? "unknown" : s);
 	SET_DEF(O_TERM, b1);
-	(void)snprintf(b1, sizeof(b1), "window=%ld", O_VAL(sp, O_LINES) - 1);
+
+	/*
+	 * The default window option value is:
+	 *		8 if baud rate <=  600
+	 *	       16 if baud rate == 1200
+	 *	LINES - 1 if baud rate  > 1200
+	 */
+	baudrate = cfgetospeed(&sp->gp->original_termios);
+	if (baudrate <= 600)
+		sval = 8;
+	else if (baudrate <= 1200)
+		sval = 16;
+	else
+		sval = O_VAL(sp, O_LINES) - 1;
+	(void)snprintf(b1, sizeof(b1), "window=%lu", sval);
 	SET_DEF(O_WINDOW, b1);
 	SET_DEF(O_WRAPMARGIN, "wrapmargin=0");
 
@@ -471,7 +493,8 @@ opts_dump(sp, all)
 	termwidth = (sp->cols - 1) / 2 & ~(tablen - 1);
 	for (b_num = s_num = 0, op = optlist; op->name; ++op) {
 		cnt = op - optlist;
-		if (!all && !F_ISSET(&sp->opts[cnt], OPT_SET))
+		if (F_ISSET(&sp->opts[cnt], OPT_NODISPLAY) ||
+		    !all && !F_ISSET(&sp->opts[cnt], OPT_SET))
 			continue;
 		curlen = strlen(op->name);
 		switch (op->type) {
