@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 8.10 1993/11/01 11:58:57 bostic Exp $ (Berkeley) $Date: 1993/11/01 11:58:57 $
+ *	$Id: gs.h,v 8.11 1993/11/02 11:04:01 bostic Exp $ (Berkeley) $Date: 1993/11/02 11:04:01 $
  */
 
 struct _scr;
@@ -37,8 +37,9 @@ typedef struct _gs {
 #define	G_SIGHUP	0x0010		/* SIGHUP arrived. */
 #define	G_SIGTERM	0x0020		/* SIGTERM arrived. */
 #define	G_SIGWINCH	0x0040		/* SIGWINCH arrived. */
-#define	G_SNAPSHOT	0x0080		/* Always snapshot files. */
-#define	G_TMP_INUSE	0x0100		/* Temporary buffer in use. */
+#define	G_SLEEPING	0x0080		/* Asleep (die on signal). */
+#define	G_SNAPSHOT	0x0100		/* Always snapshot files. */
+#define	G_TMP_INUSE	0x0200		/* Temporary buffer in use. */
 	u_int	 flags;
 } GS;
 
