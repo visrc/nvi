@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 9.8 1995/02/09 15:22:50 bostic Exp $ (Berkeley) $Date: 1995/02/09 15:22:50 $";
+static char sccsid[] = "$Id: ex_args.c,v 9.9 1995/02/09 18:21:01 bostic Exp $ (Berkeley) $Date: 1995/02/09 18:21:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -54,10 +54,6 @@ ex_next(sp, cmdp)
 	int noargs;
 	char **ap;
 
-	/* Check modification. */
-	if (file_m1(sp, F_ISSET(cmdp, E_FORCE), FS_ALL | FS_POSSIBLE))
-		return (1);
-
 	/* Check for file to move to. */
 	if (cmdp->argc == 0 && (sp->cargv == NULL || sp->cargv[1] == NULL)) {
 		msgq(sp, M_ERR, "120|No more files to edit");
@@ -74,6 +70,10 @@ ex_next(sp, cmdp)
 		}
 		return (ex_N_next(sp, cmdp));
 	}
+
+	/* Check modification. */
+	if (file_m1(sp, F_ISSET(cmdp, E_FORCE), FS_ALL | FS_POSSIBLE))
+		return (1);
 
 	/* Any arguments are a replacement file list. */
 	if (cmdp->argc) {

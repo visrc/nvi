@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 9.7 1995/02/09 12:13:01 bostic Exp $ (Berkeley) $Date: 1995/02/09 12:13:01 $";
+static char sccsid[] = "$Id: ex_edit.c,v 9.8 1995/02/09 18:21:03 bostic Exp $ (Berkeley) $Date: 1995/02/09 18:21:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -55,15 +55,6 @@ ex_edit(sp, cmdp)
 	FREF *frp;
 	int attach, setalt;
 
-	/*
-	 * Check for modifications.
-	 *
-	 * !!!
-	 * Contrary to POSIX 1003.2-1992, autowrite did not affect :edit.
-	 */
-	if (file_m2(sp, F_ISSET(cmdp, E_FORCE)))
-		return (1);
-
 	switch (cmdp->argc) {
 	case 0:
 		/*
@@ -95,6 +86,15 @@ ex_edit(sp, cmdp)
 
 	if (F_ISSET(cmdp, E_NEWSCREEN))
 		return (ex_N_edit(sp, cmdp, frp, attach));
+
+	/*
+	 * Check for modifications.
+	 *
+	 * !!!
+	 * Contrary to POSIX 1003.2-1992, autowrite did not affect :edit.
+	 */
+	if (file_m2(sp, F_ISSET(cmdp, E_FORCE)))
+		return (1);
 
 	/* Switch files. */
 	if (file_init(sp, frp, NULL, (setalt ? FS_SETALT : 0) |
