@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.47 1994/03/02 15:55:41 bostic Exp $ (Berkeley) $Date: 1994/03/02 15:55:41 $
+ *	$Id: ex.h,v 8.48 1994/03/03 10:05:25 bostic Exp $ (Berkeley) $Date: 1994/03/03 10:05:25 $
  */
 
 /* Ex command structure. */
@@ -127,18 +127,24 @@ typedef struct _ex_private {
  * :next, :prev, :rewind, :tag, :tagpush, :tagpop modifications check.
  * If force is set, the autowrite is skipped.
  */
-#define	MODIFY_CHECK(sp, ep, force) {					\
+#define	MODIFY_GOTO(sp, ep, force) {					\
 	if (F_ISSET((ep), F_MODIFIED))					\
 		if (O_ISSET((sp), O_AUTOWRITE)) {			\
 			if (!(force) &&					\
 			    file_write((sp), (ep), NULL, NULL, NULL,	\
 			    FS_ALL | FS_POSSIBLE))			\
-				return (1);				\
+				goto modify_err;			\
 		} else if (ep->refcnt <= 1 && !(force)) {		\
 			msgq(sp, M_ERR,					\
 	"Modified since last write; write or use ! to override.");	\
-			return (1);					\
+			goto modify_err;				\
 		}							\
+}
+#define	MODIFY_RET(sp, ep, force) {					\
+	MODIFY_GOTO(sp, ep, force);					\
+	if (0) {							\
+modify_err:	return (1);						\
+	}								\
 }
 
 /*
