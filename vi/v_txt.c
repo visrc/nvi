@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.42 1996/03/27 09:18:54 bostic Exp $ (Berkeley) $Date: 1996/03/27 09:18:54 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.43 1996/03/27 21:14:27 bostic Exp $ (Berkeley) $Date: 1996/03/27 21:14:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -2072,7 +2072,8 @@ txt_emark(sp, tp, cno)
 		BINC_RET(sp, tp->lb, tp->lb_len, tp->len + olen);
 		chlen = olen - nlen;
 		if (tp->insert != 0)
-			memmove(tp->lb + cno + chlen, tp->lb + cno, tp->insert);
+			memmove(tp->lb + cno + 1 + chlen,
+			    tp->lb + cno + 1, tp->insert);
 
 		tp->len += chlen;
 		tp->owrite += chlen;
