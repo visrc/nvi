@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.12 1993/10/27 14:43:23 bostic Exp $ (Berkeley) $Date: 1993/10/27 14:43:23 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.13 1993/10/27 17:52:13 bostic Exp $ (Berkeley) $Date: 1993/10/27 17:52:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -236,12 +236,12 @@ substitute(sp, ep, cmdp, s, re, cmd)
 	char *bp, *lb;
 
 	/*
-	 * Historic vi permitted the '#', 'l' and 'p' options in vi mode,
-	 * but it only displayed the last change and they really don't
-	 * make any sense.  In the current model the problem is combining
-	 * them with the 'c' flag -- the screen would have to flip back
-	 * and forth between the confirm screen and the ex print screen,
-	 * which would be pretty awful.  Not worth the effort.
+	 * Historic vi permitted the '#', 'l' and 'p' options in vi mode, but
+	 * it only displayed the last change.  I'd disallow them, but they are
+	 * useful in combination with the [v]global commands.  In the current
+	 * model the problem is combining them with the 'c' flag -- the screen
+	 * would have to flip back and forth between the confirm screen and the
+	 * ex print screen, which would be pretty awful.
 	 */
 	cflag = gflag = lflag = nflag = pflag = rflag = 0;
 	for (; *s; ++s)
@@ -250,11 +250,6 @@ substitute(sp, ep, cmdp, s, re, cmd)
 		case '\t':
 			break;
 		case '#':
-			if (F_ISSET(sp, S_MODE_VI)) {
-				msgq(sp, M_ERR,
-				    "'#' flag not supported in vi mode.");
-				return (1);
-			}
 			nflag = 1;
 			break;
 		case 'c':
@@ -264,19 +259,9 @@ substitute(sp, ep, cmdp, s, re, cmd)
 			gflag = 1;
 			break;
 		case 'l':
-			if (F_ISSET(sp, S_MODE_VI)) {
-				msgq(sp, M_ERR,
-				    "'l' flag not supported in vi mode.");
-				return (1);
-			}
 			lflag = 1;
 			break;
 		case 'p':
-			if (F_ISSET(sp, S_MODE_VI)) {
-				msgq(sp, M_ERR,
-				    "'p' flag not supported in vi mode.");
-				return (1);
-			}
 			pflag = 1;
 			break;
 		case 'r':
@@ -298,6 +283,12 @@ substitute(sp, ep, cmdp, s, re, cmd)
 
 	if (rflag == 0 && cmd == MUSTSETR) {
 usage:		msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
+		return (1);
+	}
+
+	if (F_ISSET(sp, S_MODE_VI) && cflag && (lflag || nflag || pflag)) {
+		msgq(sp, M_ERR,
+	"The #, l and p flags may not be combined with the c flag in vi mode.");
 		return (1);
 	}
 
