@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 8.30 1994/03/11 12:11:27 bostic Exp $ (Berkeley) $Date: 1994/03/11 12:11:27 $
+ *	$Id: key.h,v 8.31 1994/03/13 12:35:36 bostic Exp $ (Berkeley) $Date: 1994/03/13 12:35:36 $
  */
 
 /* Structure to return a character and associated information. */
@@ -13,18 +13,18 @@ struct _ch {
 
 #define K_NOTUSED	 0
 #define	K_CARAT		 1
-#define	K_CNTRLR	 2
-#define	K_CNTRLT	 3
-#define	K_CNTRLZ	 4
-#define	K_COLON	 	 5
-#define	K_CR		 6
-#define	K_ESCAPE	 7
-#define	K_FORMFEED	 8
-#define	K_NL		 9
-#define	K_RIGHTBRACE	10
-#define	K_RIGHTPAREN	11
-#define	K_TAB		12
-#define	K_VEOF	 	13
+#define	K_CNTRLD	 2
+#define	K_CNTRLR	 3
+#define	K_CNTRLT	 4
+#define	K_CNTRLZ	 5
+#define	K_COLON	 	 6
+#define	K_CR		 7
+#define	K_ESCAPE	 8
+#define	K_FORMFEED	 9
+#define	K_NL		10
+#define	K_RIGHTBRACE	11
+#define	K_RIGHTPAREN	12
+#define	K_TAB		13
 #define	K_VERASE	14
 #define	K_VINTR		15
 #define	K_VKILL		16
