@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.100 1994/03/11 11:15:09 bostic Exp $ (Berkeley) $Date: 1994/03/11 11:15:09 $";
+static char sccsid[] = "$Id: ex.c,v 8.101 1994/03/11 12:06:44 bostic Exp $ (Berkeley) $Date: 1994/03/11 12:06:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -60,21 +60,22 @@ ex(sp, ep)
 	if (sp->s_refresh(sp, ep))
 		return (ex_end(sp));
 
-	LF_INIT(TXT_CR | TXT_PROMPT);
+	/* If reading from a file, messages should have line info. */
+	if (!F_ISSET(sp->gp, G_STDIN_TTY)) {
+		sp->if_lno = 1;
+		sp->if_name = strdup("input");
+	}
+
 	/*
-	 * If reading from a file, messages should have line info.
-	 *
 	 * !!!
 	 * Historically, the beautify option applies to ex command input read
 	 * from a file.  In addition, the first time a ^H was discarded from
 	 * the input, a message "^H discarded" was displayed.  We don't bother.
 	 */
-	if (!F_ISSET(sp->gp, G_STDIN_TTY)) {
-		sp->if_lno = 1;
-		sp->if_name = strdup("input");
-		if (O_ISSET(sp, O_BEAUTIFY))
-			LF_SET(TXT_BEAUTIFY);
-	}
+	LF_INIT(TXT_CR | TXT_PROMPT);
+	if (O_ISSET(sp, O_BEAUTIFY))
+		LF_SET(TXT_BEAUTIFY);
+
 	for (eval = 0;; ++sp->if_lno) {
 		/* Get the next command. */
 		switch (sp->s_get(sp, ep, &sp->tiq, ':', flags)) {
