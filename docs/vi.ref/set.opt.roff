@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: set.opt.roff,v 8.48 1996/03/20 19:45:47 bostic Exp $ (Berkeley) $Date: 1996/03/20 19:45:47 $
+.\"     $Id: set.opt.roff,v 8.49 1996/03/27 09:15:27 bostic Exp $ (Berkeley) $Date: 1996/03/27 09:15:27 $
 .\"
 .SH 1 "Set Options"
 .pp
@@ -299,6 +299,38 @@ It may be so specified by entering an empty string or a
 character into the
 .LI CDPATH
 variable or the option value.
+.KY cedit
+.IP "cedit [no default]"
+This option adds the ability to edit the colon command-line history.
+This option is set to a string.
+Whenever the first character of that string is entered on the colon
+command line,
+you will enter a normal editing window on the collected commands that
+you've entered on the
+.CO vi
+colon command-line.
+You may then modify and/or execute the commands.
+All normal text editing is available,
+except that you cannot use
+.CO <control-W>
+to switch to an alternate screen.
+Entering a
+.CO <carriage-return>
+will execute the current line of the screen window as an ex command in
+the context of the screen from which you created the colon command-line
+screen,
+and you will then return to that screen.
+.sp
+Because of
+.CO vi \&'s
+parsing rules, it can be difficult to set the colon command-line edit
+character to the
+.LI <escape>
+character.
+To set it to
+.LI <escape> ,
+use
+.QT "set filec=<literal-next><escape>" .
 .KY columns
 .IP "columns, co [80]"
 The number of columns in the screen.

@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.65 1996/03/16 17:49:20 bostic Exp $ (Berkeley) $Date: 1996/03/16 17:49:20 $
+.\"     $Id: vi.ref,v 8.66 1996/03/27 09:14:59 bostic Exp $ (Berkeley) $Date: 1996/03/27 09:14:59 $
 .\"
 .\"
 .so ref.so
@@ -192,20 +192,9 @@ you've entered on the
 .CO vi
 colon command-line,
 and then modify and/or execute the commands.
-If you enter <escape> as the first character of a vi colon command-line,
-the screen will split and a new window will be created.
-This will be a normal vi screen,
-the contents of which will be the commands that you have previously
-entered on the colon command-lines of all of your vi screens.
-All normal text editing is available,
-except that you cannot use
-.CO <control-W>
-to switch to an alternate screen.
-Entering a
-.CO <carriage-return>
-will execute the current line of the screen window as an ex command in
-the context of the screen from which you created the colon command-line
-screen.
+See the
+.OP cedit
+edit option for more information.
 .IP "Displays"
 The
 .CO display
@@ -220,7 +209,7 @@ Regular Expressions, (i.e. \fIegrep\fP(1) style Regular Expressions).
 It is possible to do file name completion and file name displays when
 entering commands on the
 .CO vi
-colon command line.
+colon command-line.
 See the
 .OP filec
 option for more information.
