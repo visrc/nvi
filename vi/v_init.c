@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 5.25 1993/05/06 01:27:37 bostic Exp $ (Berkeley) $Date: 1993/05/06 01:27:37 $";
+static char sccsid[] = "$Id: v_init.c,v 5.26 1993/05/06 01:30:39 bostic Exp $ (Berkeley) $Date: 1993/05/06 01:30:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -53,7 +53,7 @@ write(fd, buf, n)
 	for (sp = __global_list.scrhdr.next;
 	    sp != (SCR *)&__global_list.scrhdr; sp = sp->next)
 		if (fd == sp->trapped_fd)
-			return (v_exwrite(sp, buf, n));
+			return (svi_exwrite(sp, buf, n));
 
 #ifdef SYS_write
 	return (syscall(SYS_write, fd, buf, n));
