@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.34 1994/03/08 19:38:14 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:38:14 $";
+static char sccsid[] = "$Id: search.c,v 8.35 1994/03/10 13:58:16 bostic Exp $ (Berkeley) $Date: 1994/03/10 13:58:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -312,15 +312,8 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 		}
 	}
 
-	/*
-	 * Set up busy message, interrupts.
-	 *
-	 * F_search is called from the ex_tagfirst() routine, which runs
-	 * before the screen really exists.  Make sure we don't step on
-	 * anything.
-	 */
-	if (sp->s_position != NULL)
-		busy_on(sp, 1, "Searching...");
+	/* Set up busy message, interrupts. */
+	busy_on(sp, 1, "Searching...");
 	SET_UP_INTERRUPTS(search_intr);
 
 	for (rval = 1, wrapped = 0;; ++lno, coff = 0) {
@@ -404,8 +397,7 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 interrupt_err:
 
 	/* Turn off busy message, interrupts. */
-	if (sp->s_position != NULL)
-		busy_off(sp);
+	busy_off(sp);
 	TEAR_DOWN_INTERRUPTS;
 
 	return (rval);
