@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 5.26 1993/02/24 13:03:09 bostic Exp $ (Berkeley) $Date: 1993/02/24 13:03:09 $";
+static char sccsid[] = "$Id: v_search.c,v 5.27 1993/02/25 17:51:02 bostic Exp $ (Berkeley) $Date: 1993/02/25 17:51:02 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -17,7 +17,6 @@ static char sccsid[] = "$Id: v_search.c,v 5.26 1993/02/24 13:03:09 bostic Exp $ 
 #include <stdlib.h>
 
 #include "vi.h"
-#include "search.h"
 #include "term.h"
 #include "vcmd.h"
 
@@ -35,7 +34,7 @@ v_searchn(ep, vp, fm, tm, rp)
 {
 	MARK *m;
 
-	switch(searchdir) {
+	switch(ep->searchdir) {
 	case BACKWARD:
 		if ((m = b_search(ep, fm, NULL, NULL,
 		    SEARCH_MSG | SEARCH_PARSE | SEARCH_TERM)) == NULL)
@@ -68,7 +67,7 @@ v_searchN(ep, vp, fm, tm, rp)
 {
 	MARK *m;
 
-	switch(searchdir) {
+	switch(ep->searchdir) {
 	case BACKWARD:
 		if ((m = f_search(ep, fm, NULL, NULL,
 		    SEARCH_MSG | SEARCH_PARSE | SEARCH_TERM)) == NULL)
