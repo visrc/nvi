@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.30 1993/11/01 13:19:08 bostic Exp $ (Berkeley) $Date: 1993/11/01 13:19:08 $";
+static char sccsid[] = "$Id: main.c,v 8.31 1993/11/02 11:03:37 bostic Exp $ (Berkeley) $Date: 1993/11/02 11:03:37 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -470,6 +470,15 @@ h_hup(signo)
 	int signo;
 {
 	F_SET(__global_list, G_SIGHUP);
+
+	/*
+	 * If we're asleep, just die.
+	 *
+	 * XXX
+	 * This isn't right if the windows are independent.
+	 */
+	if (F_ISSET(__global_list, G_SLEEPING))
+		rcv_hup();
 }
 
 /*
@@ -481,6 +490,15 @@ h_term(signo)
 	int signo;
 {
 	F_SET(__global_list, G_SIGTERM);
+
+	/*
+	 * If we're asleep, just die.
+	 *
+	 * XXX
+	 * This isn't right if the windows are independent.
+	 */
+	if (F_ISSET(__global_list, G_SLEEPING))
+		rcv_term();
 }
 
 /*
