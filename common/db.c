@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 8.22 1994/03/14 10:31:26 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:31:26 $";
+static char sccsid[] = "$Id: db.c,v 8.23 1994/03/15 12:28:16 bostic Exp $ (Berkeley) $Date: 1994/03/15 12:28:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -407,18 +407,19 @@ file_lline(sp, ep, lnop)
 		*lnop = 0;
 		return (1);
         case 1:
-		lno = 0;
-		break;
+		*lnop = 0;
+		return (0);
 	default:
-		memmove(&lno, key.data, sizeof(lno));
 		break;
 	}
 
 	/* Fill the cache. */
+	memmove(&lno, key.data, sizeof(lno));
 	ep->c_nlines = ep->c_lno = lno;
 	ep->c_len = data.size;
 	ep->c_lp = data.data;
 
+	/* Return the value. */
 	*lnop = (F_ISSET(sp, S_INPUT) &&
 	    ((TEXT *)sp->tiq.cqh_last)->lno > lno ?
 	    ((TEXT *)sp->tiq.cqh_last)->lno : lno);

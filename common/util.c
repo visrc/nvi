@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.43 1994/03/14 10:34:48 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:34:48 $";
+static char sccsid[] = "$Id: util.c,v 8.44 1994/03/15 12:28:27 bostic Exp $ (Berkeley) $Date: 1994/03/15 12:28:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -287,9 +287,9 @@ binc(sp, argp, bsizep, min)
 	bpp = *(char **)argp;
 	csize = *bsizep + MAX(min, 256);
 	if (bpp == NULL) {
-		MALLOC(sp, bpp, void *, csize * sizeof(CHAR_T));
+		MALLOC(sp, bpp, void *, csize);
 	} else
-		REALLOC(sp, bpp, void *, csize * sizeof(CHAR_T));
+		REALLOC(sp, bpp, void *, csize);
 
 	if (bpp == NULL) {
 		/*
@@ -308,7 +308,6 @@ binc(sp, argp, bsizep, min)
 	*bsizep = csize;
 	return (0);
 }
-
 /*
  * nonblank --
  *	Set the column number of the first non-blank character
