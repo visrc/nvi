@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_map.c,v 5.5 1992/04/05 15:48:04 bostic Exp $ (Berkeley) $Date: 1992/04/05 15:48:04 $";
+static char sccsid[] = "$Id: ex_map.c,v 5.6 1992/04/05 17:01:03 bostic Exp $ (Berkeley) $Date: 1992/04/05 17:01:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -75,7 +75,7 @@ ex_map(cmdp)
 	stype = cmdp->flags & E_FORCE ? INPUT : COMMAND;
 
 	if (cmdp->string == NULL) {
-		seq_dump(stype);
+		seq_dump(stype, 1);
 		return (0);
 	}
 

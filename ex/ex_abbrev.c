@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_abbrev.c,v 5.5 1992/04/05 15:49:39 bostic Exp $ (Berkeley) $Date: 1992/04/05 15:49:39 $";
+static char sccsid[] = "$Id: ex_abbrev.c,v 5.6 1992/04/05 17:01:02 bostic Exp $ (Berkeley) $Date: 1992/04/05 17:01:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,7 +31,7 @@ ex_abbr(cmdp)
 	register char *input, *output;
 
 	if (cmdp->string == NULL) {
-		seq_dump(ABBREV);
+		seq_dump(ABBREV, 0);
 		return (0);
 	}
 
