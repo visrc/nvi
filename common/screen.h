@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 5.43 1993/05/16 12:34:22 bostic Exp $ (Berkeley) $Date: 1993/05/16 12:34:22 $
+ *	$Id: screen.h,v 5.44 1993/05/16 19:49:27 bostic Exp $ (Berkeley) $Date: 1993/05/16 19:49:27 $
  */
 
 /*
@@ -210,7 +210,7 @@ typedef struct _scr {
  * This is the set of routines that have to be written to add a screen.
  */
 	void	 (*s_bell) __P((struct _scr *));
-	int	 (*s_busy_cursor) __P((struct _scr *, int, char *));
+	int	 (*s_busy_cursor) __P((struct _scr *, char *));
 	int	 (*s_change) __P((struct _scr *,
 		     struct _exf *, recno_t, enum operation));
 	enum confirmation
