@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.36 1993/11/11 19:35:22 bostic Exp $ (Berkeley) $Date: 1993/11/11 19:35:22 $";
+static char sccsid[] = "$Id: main.c,v 8.37 1993/11/12 07:56:55 bostic Exp $ (Berkeley) $Date: 1993/11/12 07:56:55 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -38,13 +38,14 @@ static char sccsid[] = "$Id: main.c,v 8.36 1993/11/11 19:35:22 bostic Exp $ (Ber
 #include "pathnames.h"
 #include "tag.h"
 
-static void h_hup __P((int));
-static void h_term __P((int));
-static void h_winch __P((int));
-static void msgflush __P((GS *));
-static void obsolete __P((char *[]));
-static void reset __P((GS *));
-static void usage __P((void));
+static GS	*gs_init __P((void));
+static void	 h_hup __P((int));
+static void	 h_term __P((int));
+static void	 h_winch __P((int));
+static void	 msgflush __P((GS *));
+static void	 obsolete __P((char *[]));
+static void	 reset __P((GS *));
+static void	 usage __P((void));
 
 GS *__global_list;			/* GLOBAL: List of screens. */
 
@@ -62,7 +63,7 @@ main(argc, argv)
 	GS *gp;
 	FREF *frp;
 	SCR *nsp, *sp;
-	int ch, fd, flagchk, eval;
+	int ch, flagchk, eval;
 	char *excmdarg, *errf, *myname, *p, *rfname, *tfname;
 	char *av[2], path[MAXPATHLEN];
 
@@ -79,40 +80,7 @@ main(argc, argv)
 		++myname;
 
 	/* Build and initialize the GS structure. */
-	if ((gp = malloc(sizeof(GS))) == NULL)
-		err(1, NULL);
-	__global_list = gp;
-	memset(gp, 0, sizeof(GS));
-
-	/* Structures shared by screens so stored in the GS structure. */
-	if ((gp->key = malloc(sizeof(IBUF))) == NULL)
-		err(1, NULL);
-	memset(gp->key, 0, sizeof(IBUF));
-	if ((gp->tty = malloc(sizeof(IBUF))) == NULL)
-		err(1, NULL);
-	memset(gp->tty, 0, sizeof(IBUF));
-
-	/* Set a flag if we're reading from the tty. */
-	if (isatty(STDIN_FILENO))
-		F_SET(gp, G_ISFROMTTY);
-
-	/*
-	 * XXX
-	 * Set a flag and don't do terminal sets/resets if the input isn't
-	 * from a tty.  Under all circumstances put reasonable things into
-	 * the original_termios field, as some routines (seq.c:seq_save()
-	 * and term.c:term_init()) want values for special characters.
-	 */
-	if (F_ISSET(gp, G_ISFROMTTY)) {
-		if (tcgetattr(STDIN_FILENO, &gp->original_termios))
-			err(1, "tcgetattr");
-	} else {
-		if ((fd = open(_PATH_TTY, O_RDONLY, 0)) == -1)
-			err(1, "%s", _PATH_TTY);
-		if (tcgetattr(fd, &gp->original_termios))
-			err(1, "tcgetattr");
-		(void)close(fd);
-	}
+	__global_list = gp = gs_init();
 		
 	/* Build and initialize the first/current screen. */
 	if ((sp = malloc(sizeof(SCR))) == NULL)
@@ -419,6 +387,53 @@ err2:		eval = 1;
 	    tcsetattr(STDIN_FILENO, TCSADRAIN, &gp->original_termios))
 		err(1, "tcsetattr");
 	exit(eval);
+}
+
+/*
+ * gs_init --
+ *	Build and initialize the GS structure.
+ */
+static GS *
+gs_init()
+{
+	GS *gp;
+	int fd;
+
+	if ((gp = malloc(sizeof(GS))) == NULL)
+		err(1, NULL);
+	memset(gp, 0, sizeof(GS));
+
+	/* Structures shared by screens so stored in the GS structure. */
+	if ((gp->key = malloc(sizeof(IBUF))) == NULL)
+		err(1, NULL);
+	memset(gp->key, 0, sizeof(IBUF));
+	if ((gp->tty = malloc(sizeof(IBUF))) == NULL)
+		err(1, NULL);
+	memset(gp->tty, 0, sizeof(IBUF));
+
+	/* Set a flag if we're reading from the tty. */
+	if (isatty(STDIN_FILENO))
+		F_SET(gp, G_ISFROMTTY);
+
+	/*
+	 * XXX
+	 * Set a flag and don't do terminal sets/resets if the input isn't
+	 * from a tty.  Under all circumstances put reasonable things into
+	 * the original_termios field, as some routines (seq.c:seq_save()
+	 * and term.c:term_init()) want values for special characters.
+	 */
+	if (F_ISSET(gp, G_ISFROMTTY)) {
+		if (tcgetattr(STDIN_FILENO, &gp->original_termios))
+			err(1, "tcgetattr");
+	} else {
+		if ((fd = open(_PATH_TTY, O_RDONLY, 0)) == -1)
+			err(1, "%s", _PATH_TTY);
+		if (tcgetattr(fd, &gp->original_termios))
+			err(1, "tcgetattr");
+		(void)close(fd);
+	}
+
+	return (gp);
 }
 
 /*
