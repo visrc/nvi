@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: vi.cmd.roff,v 8.25 1994/07/01 10:17:45 bostic Exp $ (Berkeley) $Date: 1994/07/01 10:17:45 $
+.\"	$Id: vi.cmd.roff,v 8.26 1994/07/05 14:58:19 bostic Exp $ (Berkeley) $Date: 1994/07/05 14:58:19 $
 .\"
 #ifdef REFERENCE
 .SH 1 "Vi Description"
@@ -659,6 +659,9 @@ None.
 .IP "<control-T>"
 Return to the most recent tag context.
 #ifdef REFERENCE
+The
+.CO <control-T>
+command is an absolute movement.
 .SS
 .SP Line:
 Set to the context of the previous tag command.
@@ -812,6 +815,9 @@ file containing the tag reference is edited.
 .sp
 If the current file has been modified since it was last completely
 written, the command will fail.
+The
+.CO <control-]>
+command is an absolute movement.
 .SS
 .SP Line:
 Set to the line containing the matching tag string.
