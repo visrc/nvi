@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_status.c,v 10.5 1995/09/21 12:08:42 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:08:42 $";
+static char sccsid[] = "$Id: v_status.c,v 10.6 1995/10/17 08:49:10 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:49:10 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -34,5 +34,6 @@ v_status(sp, vp)
 	SCR *sp;
 	VICMD *vp;
 {
-	return (msg_status(sp, vp->m_start.lno, 1));
+	(void)msgq_status(sp, vp->m_start.lno, 1);
+	return (0);
 }
