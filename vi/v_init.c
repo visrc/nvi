@@ -6,13 +6,14 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 5.30 1993/05/15 11:02:08 bostic Exp $ (Berkeley) $Date: 1993/05/15 11:02:08 $";
+static char sccsid[] = "$Id: v_init.c,v 5.31 1993/05/15 11:24:05 bostic Exp $ (Berkeley) $Date: 1993/05/15 11:24:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
 #include <stdlib.h>
 #include <string.h>
+#include <paths.h>
 
 /*
  * Uncomment the following for FWOPEN_NOT_AVAILABLE.
