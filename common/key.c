@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.62 1993/05/06 01:07:54 bostic Exp $ (Berkeley) $Date: 1993/05/06 01:07:54 $";
+static char sccsid[] = "$Id: key.c,v 5.63 1993/05/10 11:16:13 bostic Exp $ (Berkeley) $Date: 1993/05/10 11:16:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -24,7 +24,7 @@ static char sccsid[] = "$Id: key.c,v 5.62 1993/05/06 01:07:54 bostic Exp $ (Berk
 
 static void	check_sigwinch __P((SCR *));
 static void	onwinch __P((int));
-static int	ttyread __P((SCR *, char *, int, int));
+static int	term_read __P((SCR *, char *, int, int));
 
 typedef struct _klist {
 	char *ts;				/* Key's termcap string. */
@@ -110,24 +110,38 @@ term_init(sp)
 }
 
 /*
- * flush_mappedkey --
- *	Flush the mapped keys if an error occurred during the map.
+ * term_flush_pseudo --
+ *	Flush the pseudo keys if an error occurred during the map.
  */
 void
-flush_mappedkey(sp)
+term_flush_pseudo(sp)
 	SCR *sp;
 {
-	F_CLR(sp, S_UPDATE_SCREEN);
+	if (sp->atkey_len != 0) {
+		free(sp->atkey_buf);
+		sp->atkey_len = 0;
+	}
 	sp->mappedkey = NULL;
 }
 
 /*
- * getkey --
+ * term_more_pseudo --
+ *	Return if there are more pseudo keys.
+ */
+int
+term_more_pseudo(sp)
+	SCR *sp;
+{
+	return (sp->atkey_len || sp->mappedkey != NULL);
+}
+
+/*
+ * term_key --
  *	This function reads in a keystroke, as well as handling
  *	mapped keys and executed cut buffers.
  */
 int
-getkey(sp, flags)
+term_key(sp, flags)
 	SCR *sp;
 	u_int flags;			/* TXT_MAPCOMMAND */
 {
@@ -146,17 +160,15 @@ getkey(sp, flags)
 	/* If returning a mapped key, return the next char. */
 	if (sp->mappedkey) {
 		ch = *sp->mappedkey;
-		if (*++sp->mappedkey == '\0') {
-			F_CLR(sp, S_UPDATE_SCREEN);
+		if (*++sp->mappedkey == '\0')
 			sp->mappedkey = NULL;
-		}
 		goto ret;
 	}
 
 	/* Read in more keys if necessary. */
 	if (sp->nkeybuf == 0) {
 		/* Read the keystrokes. */
-		sp->nkeybuf = ttyread(sp, sp->keybuf, sizeof(sp->keybuf), 0);
+		sp->nkeybuf = term_read(sp, sp->keybuf, sizeof(sp->keybuf), 0);
 		sp->nextkey = 0;
 		
 		/*
@@ -191,7 +203,7 @@ retry:		qp = seq_find(sp, &sp->keybuf[sp->nextkey], sp->nkeybuf,
 				memmove(&sp->keybuf[sp->nextkey],
 				    sp->keybuf, sp->nkeybuf);
 				sp->nextkey = 0;
-				nr = ttyread(sp, sp->keybuf + sp->nkeybuf,
+				nr = term_read(sp, sp->keybuf + sp->nkeybuf,
 				    sizeof(sp->keybuf) - sp->nkeybuf, 1);
 				if (nr) {
 					sp->nkeybuf += nr;
@@ -205,7 +217,6 @@ retry:		qp = seq_find(sp, &sp->keybuf[sp->nextkey], sp->nkeybuf,
 				ch = *qp->output;
 			else {
 				sp->mappedkey = qp->output;
-				F_SET(sp, S_UPDATE_SCREEN);
 				ch = *sp->mappedkey++;
 			}
 			goto ret;
@@ -225,7 +236,7 @@ ret:	if (LF_ISSET(TXT_BEAUTIFY) && O_ISSET(sp, O_BEAUTIFY)) {
 		    sp->special[ch] == K_TAB)
 			return (ch);
 		sp->bell(sp);
-		return (getkey(sp, flags));
+		return (term_key(sp, flags));
 	}
 	return (ch);
 }
@@ -234,7 +245,7 @@ static int __check_sig_winch;				/* XXX GLOBAL */
 static int __set_sig_winch;				/* XXX GLOBAL */
 
 static int
-ttyread(sp, buf, len, timeout)
+term_read(sp, buf, len, timeout)
 	SCR *sp;
 	char *buf;		/* Where to store the characters. */
 	int len;		/* Max characters to read. */
