@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.45 1993/12/02 15:13:58 bostic Exp $ (Berkeley) $Date: 1993/12/02 15:13:58 $";
+static char sccsid[] = "$Id: screen.c,v 8.46 1993/12/02 22:49:39 bostic Exp $ (Berkeley) $Date: 1993/12/02 22:49:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -55,8 +55,6 @@ screen_init(orig, spp, flags)
 	if (orig == NULL) {
 		sp->searchdir = NOTSET;
 		sp->csearchdir = CNOTSET;
-
-		sp->saved_vi_mode = LF_ISSET(S_VI_CURSES | S_VI_XAW);
 
 		switch (flags & S_SCREENS) {
 		case S_EX:
@@ -115,6 +113,8 @@ screen_init(orig, spp, flags)
 			sp->newl_cnt = orig->newl_cnt;
 			memmove(sp->newl, orig->newl, len);
 		}
+
+		sp->saved_vi_mode = orig->saved_vi_mode;
 
 		if (opts_copy(orig, sp)) {
 mem:			msgq(orig, M_SYSERR, "new screen attributes");
