@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.60 1993/05/07 11:26:34 bostic Exp $ (Berkeley) $Date: 1993/05/07 11:26:34 $";
+static char sccsid[] = "$Id: exf.c,v 5.61 1993/05/07 11:59:19 bostic Exp $ (Berkeley) $Date: 1993/05/07 11:59:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -47,7 +47,7 @@ file_get(sp, ep, name, append)
 	if (name != NULL)
 		for (tep = sp->gp->exfhdr.next;
 		    tep != (EXF *)&sp->gp->exfhdr; tep = tep->next)
-			if (!memcmp(tep->name, name, tep->nlen)) {
+			if (!strcmp(tep->name, name)) {
 				if (tep->refcnt != 0)
 					return (tep);
 				break;
