@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: getc.c,v 10.5 1995/09/21 12:08:14 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:08:14 $";
+static char sccsid[] = "$Id: getc.c,v 10.6 1995/10/03 20:07:44 bostic Exp $ (Berkeley) $Date: 1995/10/03 20:07:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -203,6 +203,7 @@ cs_prev(sp, csp)
 			csp->cs_ch = csp->cs_bp[csp->cs_cno];
 		}
 		break;
+	case CS_EOF:				/* EOF: get previous char. */
 	case 0:
 		if (csp->cs_cno == 0)
 			if (csp->cs_lno == 1)
