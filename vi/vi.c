@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vi.c,v 10.60 1996/12/04 19:09:38 bostic Exp $ (Berkeley) $Date: 1996/12/04 19:09:38 $";
+static const char sccsid[] = "$Id: vi.c,v 10.61 1996/12/05 12:28:28 bostic Exp $ (Berkeley) $Date: 1996/12/05 12:28:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1050,8 +1050,10 @@ v_dtoh(sp)
 /*
  * v_curword --
  *	Get the word (or non-word) the cursor is on.
+ *
+ * PUBLIC: int v_curword __P((SCR *));
  */
-static int
+int
 v_curword(sp)
 	SCR *sp;
 {
@@ -1196,15 +1198,6 @@ v_key(sp, vp, events_ok, ec_flags)
 			return (GC_FATAL);
 		quote = 0;
 
-		/*
-		 * There are really two classes of "events" that we can see.
-		 * There are the ones that we deal with immediately, because
-		 * they aren't part of the vi command stream, e.g., E_ERR,
-		 * E_WRESIZE and E_INTERRUPT.  The others are part of the vi
-		 * command stream, and we return them in the normal course
-		 * of events (no pun intended), e.g., E_CHARACTER, E_MOVE and
-		 * E_QUIT.
-		 */
 		switch (evp->e_event) {
 		case E_CHARACTER:
 			/*
@@ -1247,9 +1240,11 @@ v_key(sp, vp, events_ok, ec_flags)
 			 * the world and will call the vi loop again.
 			 */
 			return (GC_ERR);
-		default:
+		case E_IPCOMMAND:
 			if (events_ok)
 				return (GC_EVENT);
+			/* FALLTHROUGH */
+		default:
 			v_event_err(sp, evp);
 			return (GC_ERR);
 		}

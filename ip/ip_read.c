@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_read.c,v 8.6 1996/12/04 19:08:06 bostic Exp $ (Berkeley) $Date: 1996/12/04 19:08:06 $";
+static const char sccsid[] = "$Id: ip_read.c,v 8.7 1996/12/05 12:29:57 bostic Exp $ (Berkeley) $Date: 1996/12/05 12:29:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -203,6 +203,26 @@ ip_trans(sp, ipp, evp)
 	u_int32_t val1, val2;
 
 	switch (ipp->ibuf[0]) {
+	case IPO_APPEND:
+	case IPO_EINSERT:
+	case IPO_INSERT:
+	case IPO_QUIT:
+	case IPO_TAG:
+	case IPO_TAGSPLIT:
+	case IPO_UNDO:
+	case IPO_WQ:
+	case IPO_WRITE:
+		evp->e_event = E_IPCOMMAND;
+		evp->e_ipcom = ipp->ibuf[0];
+		ipp->iskip = IPO_CODE_LEN;
+		return (1);
+	case IPO_EDIT:
+	case IPO_EDITSPLIT:
+	case IPO_TAGAS:
+	case IPO_WRITEAS:
+		evp->e_event = E_IPCOMMAND;
+		evp->e_ipcom = ipp->ibuf[0];
+		goto string;
 	case IPO_EOF:
 		evp->e_event = E_EOF;
 		ipp->iskip = IPO_CODE_LEN;
@@ -218,17 +238,14 @@ ip_trans(sp, ipp, evp)
 	case IPO_MOUSE_MOVE:
 		if (ipp->iblen < IPO_CODE_LEN + IPO_INT_LEN * 2)
 			return (0);
-		evp->e_event = E_MOVE;
+		evp->e_event = E_IPCOMMAND;
+		evp->e_ipcom = IPO_MOUSE_MOVE;
 		memcpy(&val1, ipp->ibuf + IPO_CODE_LEN, IPO_INT_LEN);
 		evp->e_lno = ntohl(val1);
 		memcpy(&val2,
 		    ipp->ibuf + IPO_CODE_LEN + IPO_INT_LEN, IPO_INT_LEN);
 		evp->e_cno = ntohl(val2);
 		ipp->iskip = IPO_CODE_LEN + IPO_INT_LEN * 2;
-		return (1);
-	case IPO_QUIT:
-		evp->e_event = E_QUIT;
-		ipp->iskip = IPO_CODE_LEN;
 		return (1);
 	case IPO_RESIZE:
 		if (ipp->iblen < IPO_CODE_LEN + IPO_INT_LEN * 2)
@@ -261,10 +278,6 @@ string:		if (ipp->iblen < IPO_CODE_LEN + IPO_INT_LEN)
 		ipp->iskip = IPO_CODE_LEN + IPO_INT_LEN + val1;
 		evp->e_csp = ipp->ibuf + IPO_CODE_LEN + IPO_INT_LEN;
 		evp->e_len = val1;
-		return (1);
-	case IPO_WRITE:
-		evp->e_event = E_WRITE;
-		ipp->iskip = IPO_CODE_LEN;
 		return (1);
 	default:
 		/*

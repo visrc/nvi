@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_main.c,v 8.4 1996/11/27 12:00:23 bostic Exp $ (Berkeley) $Date: 1996/11/27 12:00:23 $";
+static const char sccsid[] = "$Id: ip_main.c,v 8.5 1996/12/05 12:29:49 bostic Exp $ (Berkeley) $Date: 1996/12/05 12:29:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -54,14 +54,17 @@ ip_main(argc, argv, gp, ip_arg)
 	 * Figure out how big the screen is -- read events until we get
 	 * the rows and columns.
 	 */
-	do {
+	for (;;) {
 		if (ip_event(NULL, &ev, 0, 0))
 			return (1);
-	} while (ev.e_event != E_EOF && ev.e_event != E_ERR &&
-	    ev.e_event != E_QUIT && ev.e_event != E_WRESIZE &&
-	    ev.e_event != E_SIGHUP && ev.e_event != E_SIGTERM);
-	if (ev.e_event != E_WRESIZE)
-		return (1);
+		if (ev.e_event == E_WRESIZE)
+			break;
+		if (ev.e_event == E_EOF || ev.e_event == E_ERR ||
+		    ev.e_event == E_SIGHUP || ev.e_event == E_SIGTERM)
+			return (1);
+		if (ev.e_event == E_IPCOMMAND && ev.e_ipcom == IPO_QUIT)
+			return (1);
+	}
 
 	/* Run ex/vi. */
 	rval = editor(gp, argc, argv);

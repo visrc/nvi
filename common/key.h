@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: key.h,v 10.19 1996/12/04 09:44:28 bostic Exp $ (Berkeley) $Date: 1996/12/04 09:44:28 $
+ *	$Id: key.h,v 10.20 1996/12/05 12:29:19 bostic Exp $ (Berkeley) $Date: 1996/12/05 12:29:19 $
  */
 
 /*
@@ -42,17 +42,13 @@ typedef enum {
 	E_EOF,				/* End of input (NOT ^D). */
 	E_ERR,				/* Input error. */
 	E_INTERRUPT,			/* Interrupt. */
-	E_MOVE,				/* Move, e_lno, e_cno set. */
-	E_QUIT,				/* Quit. */
+	E_IPCOMMAND,			/* IP command: e_ipcom set. */
 	E_REPAINT,			/* Repaint: e_flno, e_tlno set. */
 	E_SIGHUP,			/* SIGHUP. */
 	E_SIGTERM,			/* SIGTERM. */
 	E_STRING,			/* Input string: e_csp, e_len set. */
 	E_TIMEOUT,			/* Timeout. */
-	E_WQ,				/* Write and quit. */
-	E_WRESIZE,			/* Window resize. */
-	E_WRITE,			/* Write. */
-	E_WRITEAS			/* Write to a file: e_csp, e_len set. */
+	E_WRESIZE			/* Window resize. */
 } e_event_t;
 
 /*
@@ -85,6 +81,7 @@ typedef enum {
 struct _event {
 	TAILQ_ENTRY(_event) q;		/* Linked list of events. */
 	e_event_t e_event;		/* Event type. */
+	int	  e_ipcom;		/* IP command. */
 	union {
 		struct {		/* Input character. */
 			CHAR_T c;	/* Character. */

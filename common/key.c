@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: key.c,v 10.36 1996/12/04 09:44:05 bostic Exp $ (Berkeley) $Date: 1996/12/04 09:44:05 $";
+static const char sccsid[] = "$Id: key.c,v 10.37 1996/12/05 12:29:18 bostic Exp $ (Berkeley) $Date: 1996/12/05 12:29:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -781,11 +781,8 @@ v_event_err(sp, evp)
 	case E_INTERRUPT:
 		msgq(sp, M_ERR, "279|Unexpected interrupt event");
 		break;
-	case E_MOVE:
-		msgq(sp, M_ERR, "318|Unexpected cursor move event");
-		break;
-	case E_QUIT:
-		msgq(sp, M_ERR, "280|Unexpected quit event");
+	case E_IPCOMMAND:
+		msgq(sp, M_ERR, "318|Unexpected screen command");
 		break;
 	case E_REPAINT:
 		msgq(sp, M_ERR, "281|Unexpected repaint event");
@@ -798,11 +795,6 @@ v_event_err(sp, evp)
 		break;
 	case E_WRESIZE:
 		msgq(sp, M_ERR, "316|Unexpected resize event");
-		break;
-	case E_WQ:
-	case E_WRITE:
-	case E_WRITEAS:
-		msgq(sp, M_ERR, "287|Unexpected write event");
 		break;
 
 	/*
