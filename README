@@ -1,4 +1,4 @@
-#	$Id: README,v 8.49 1994/03/16 08:31:16 bostic Exp $ (Berkeley) $Date: 1994/03/16 08:31:16 $
+#	$Id: README,v 8.50 1994/03/16 16:40:14 bostic Exp $ (Berkeley) $Date: 1994/03/16 16:40:14 $
 
 This is the README for version 1.08 of nex/nvi, a freely redistributable
 replacement for the Berkeley ex and vi text editors.  The compressed tar
@@ -101,7 +101,7 @@ you might like.  See the "ADDITIONAL FEATURES" section of the manual page
 =-=-=-=-=-=-=-=-=-=-=
 o Porting information:
 
-The directory PORT has directories per machine/OS combination, with
+The directory PORT has directories per OS/machine combination, with
 V7-style Makefiles which build nex/nvi.  See the file PORT/README for
 detailed information.
 
@@ -121,30 +121,32 @@ variable (EXINIT, NEXINIT) values.
 =-=-=-=-=-=-=-=-=-=-=
 o Layout:
 
-The main directory, nvi, contains source files for pieces of code that
-are shared by all the editors, like searching and logging code or code
-translating line numbers into requests to the dbopen(3) database code.
-It also has the code for adding, deleting, and changing "records" in
-the underlying database.
+nvi:
+	Source files for pieces of code that are shared by all the
+	editors, like searching and logging code or code translating
+	line numbers into requests to the dbopen(3) database code.
+	It also has the code for adding, deleting, and changing "records"
+	in the underlying database.
 
 nvi/PORT:
-	Porting directories.
+	Porting directories, one per OS/architecture combination.  See
+	nvi/PORT/README for porting information.
 
 nvi/docs:
-	The nvi/docs directory has all of the documentation and other
-	information about the nvi:
+	The nvi/docs directory has all of the nvi documentation:
 
 	README		-- Nvi main README file.
 	USD.doc		-- Historic vi documentation (in roff source form).
-	autowrite	-- Vi autowrite option discussion.
-	bugs.current	-- Bugs in current nvi implementation.
+	bugs.current	-- Known bugs in the current nvi implementation.
 	changelog	-- Log of changes from version to version.
 	features	-- Todo list, suggested features list.
-	gdb.script	-- Debugging gdb scripts.
-	input		-- Vi maps, executable buffers, and input discussion.
-	quoting		-- Vi quoting discussion.
+	internals/
+	    autowrite	-- Vi autowrite option discussion.
+	    gdb.script	-- GDB debugging scripts.
+	    input	-- Vi maps, executable buffers, and input discussion.
+	    quoting	-- Vi quoting discussion.
+	    structures	-- Nvi internal structure description.
 	spell.ok	-- Misspellings list for README, vi.1.
-	structures	-- Nvi structures discussion.
 	tutorial	-- Historic vi tutorial
 	vi.0.ps		-- PostScript of vi.1.
 	vi.0.txt	-- Flat text of vi.1.
