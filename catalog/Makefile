@@ -1,4 +1,4 @@
-#	$Id: Makefile,v 8.25 1996/07/02 21:24:11 bostic Exp $ (Berkeley) $Date: 1996/07/02 21:24:11 $
+#	$Id: Makefile,v 8.26 1996/08/20 21:39:57 bostic Exp $ (Berkeley) $Date: 1996/08/20 21:39:57 $
 
 CAT=	dutch english german ru_SU.KOI8-R swedish
 FILES=	../cl/*.c ../common/*.c ../ex/*.c ../tk/*.c ../vi/*.c
@@ -73,7 +73,8 @@ english.base: dump ${FILES} #Makefile
 	./dump ${FILES} |\
 	sed -e '/|/!d' \
 	    -e 's/|/ "/' \
-	    -e 's/^"//' |\
+	    -e 's/^"//' \
+	    -e 's/\\"/"/g' |\
 	sort -n > $@
 
 dump: dump.c
