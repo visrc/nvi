@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 8.41 1994/08/17 14:36:26 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:36:26 $";
+static char sccsid[] = "$Id: v_cmd.c,v 8.42 1994/08/31 19:36:00 bostic Exp $ (Berkeley) $Date: 1994/08/31 19:36:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -91,7 +91,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	{v_up,		V_CNT|V_MOVE|VM_LMODE|VM_RCM,
 	    "[count]^P",
 	    "^P move up by lines"},
-/* 021  ^Q -- not available, used for hardware flow control. */
+/* 021  ^Q -- same as ^V if not used for hardware flow control. */
 	{NULL},
 /* 022  ^R */
 	{v_redraw,	0,
