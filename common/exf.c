@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.27 1992/11/07 12:50:21 bostic Exp $ (Berkeley) $Date: 1992/11/07 12:50:21 $";
+static char sccsid[] = "$Id: exf.c,v 5.28 1992/11/07 13:45:32 bostic Exp $ (Berkeley) $Date: 1992/11/07 13:45:32 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -136,7 +136,7 @@ file_first(all)
 	for (ep = exfhdr.next;;) {
 		if (ep == (EXF *)&exfhdr)
 			return (NULL);
-		if (!all && ep->flags & F_IGNORE)
+		if (!all && FF_ISSET(ep, F_IGNORE))
 			continue;
 		return (ep);
 	}
@@ -156,7 +156,7 @@ file_next(ep, all)
 		ep = ep->next;
 		if (ep == (EXF *)&exfhdr)
 			return (NULL);
-		if (!all && ep->flags & F_IGNORE)
+		if (!all && FF_ISSET(ep, F_IGNORE))
 			continue;
 		return (ep);
 	}
@@ -176,7 +176,7 @@ file_prev(ep, all)
 		ep = ep->prev;
 		if (ep == (EXF *)&exfhdr)
 			return (NULL);
-		if (!all && ep->flags & F_IGNORE)
+		if (!all && FF_ISSET(ep, F_IGNORE))
 			continue;
 		return (ep);
 	}
@@ -218,30 +218,38 @@ file_start(ep)
 	EXF *ep;
 {
 	struct stat sb;
-	int fd;
-	char tname[sizeof(_PATH_TMPNAME) + 1];
+	int fd, noname;
+	char *openname, tname[sizeof(_PATH_TMPNAME) + 1];
 
 	fd = -1;
-	if (ep == NULL) { 
+	if (ep == NULL || stat(ep->name, &sb)) { 
 		(void)strcpy(tname, _PATH_TMPNAME);
 		if ((fd = mkstemp(tname)) == -1) {
 			msg("Temporary file: %s", strerror(errno));
 			return (1);
 		}
+
 		if (file_ins((EXF *)&exfhdr, tname, 1))
 			return (1);
-		ep = file_first(1);
-		ep->flags |= F_CREATED | F_NONAME;
-	} else if (stat(ep->name, &sb))
-		ep->flags |= F_CREATED;
-	ep->flags |= F_NEWSESSION;
+
+		noname = ep == NULL;
+		if ((ep = file_first(1)) == NULL)
+			PANIC;
+		if (noname)
+			FF_SET(ep, F_NONAME);
+		else
+			FF_SET(ep, F_NAMECHANGED);
+		openname = tname;
+	} else
+		openname = ep->name;
+	FF_SET(ep, F_NEWSESSION);
 
 	/* Open a db structure. */
-	ep->db = dbopen(ep->name, O_CREAT | O_EXLOCK | O_NONBLOCK| O_RDONLY,
+	ep->db = dbopen(openname, O_CREAT | O_EXLOCK | O_NONBLOCK| O_RDONLY,
 	    DEFFILEMODE, DB_RECNO, NULL);
 	if (ep->db == NULL && errno == EAGAIN) {
-		ep->flags |= F_RDONLY;
-		ep->db = dbopen(ep->name, O_CREAT | O_NONBLOCK | O_RDONLY,
+		FF_SET(ep, F_RDONLY);
+		ep->db = dbopen(openname, O_CREAT | O_NONBLOCK | O_RDONLY,
 		    DEFFILEMODE, DB_RECNO, NULL);
 		if (ep->db != NULL)
 			msg("%s already locked, session is read-only.",
@@ -298,8 +306,6 @@ file_stop(ep, force)
 	EXF *ep;
 	int force;
 {
-	struct stat sb;
-
 	/* Clean up the session, if necessary. */
 	if (ep->s_end && ep->s_end(ep))
 		return (1);
@@ -313,21 +319,6 @@ file_stop(ep, force)
 	/* Close the shadow structure. */
 	if ((ep->sdb->close)(ep->sdb))
 		msg("%s: shadow close: %s", ep->name, strerror(errno));
-
-	/*
-	 * Delete any created, empty file that was never written.
-	 *
-	 * XXX
-	 * This is not quite right; a user writing an empty file explicitly
-	 * with the ":w file" command could lose their write when we delete
-	 * the file.  Probably not a big deal.
-	 */
-	if ((ep->flags & F_NONAME || ep->flags & F_CREATED &&
-	    !(ep->flags & F_WRITTEN) &&
-	    !stat(ep->name, &sb) && sb.st_size == 0) && unlink(ep->name)) {
-		msg("Created file %s not removed.", ep->name);
-		return (1);
-	}
 
 	/* Only retain the ignore bit. */
 	ep->flags &= F_IGNORE;
@@ -349,13 +340,13 @@ file_sync(ep, force)
 	int fd;
 
 	/* Can't write if read-only. */
-	if ((ISSET(O_READONLY) || ep->flags & F_RDONLY) && !force) {
+	if ((ISSET(O_READONLY) || FF_ISSET(ep, F_RDONLY)) && !force) {
 		msg("Read-only file, not written; use ! to override.");
 		return (1);
 	}
 
 	/* Can't write if no name ever specified. */
-	if (ep->flags & F_NONAME) {
+	if (FF_ISSET(ep, F_NONAME)) {
 		msg("Temporary file; not written.");
 		return (1);
 	}
@@ -364,7 +355,7 @@ file_sync(ep, force)
 	 * If the name was changed, normal rules apply, i.e. don't overwrite 
 	 * unless forced.
 	 */
-	if (ep->flags & F_NAMECHANGED && !force && !stat(ep->name, &sb)) {
+	if (FF_ISSET(ep, F_NAMECHANGED) && !force && !stat(ep->name, &sb)) {
 		msg("%s exists, not written; use ! to override.", ep->name);
 		return (1);
 	}
@@ -386,8 +377,7 @@ err:		msg("%s: %s", ep->name, strerror(errno));
 	if (ex_writefp(ep->name, fp, &from, &to, 1))
 		return (1);
 
-	ep->flags |= F_WRITTEN;
-	ep->flags &= ~F_MODIFIED;
+	FF_CLR(ep, F_MODIFIED);
 	return (0);
 }
 
