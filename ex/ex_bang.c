@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 8.13 1993/11/08 14:13:08 bostic Exp $ (Berkeley) $Date: 1993/11/08 14:13:08 $";
+static char sccsid[] = "$Id: ex_bang.c,v 8.14 1993/11/11 12:19:20 bostic Exp $ (Berkeley) $Date: 1993/11/11 12:19:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -89,15 +89,14 @@ ex_bang(sp, ep, cmdp)
 	 * the command.
 	 */
 	if (cmdp->addrcnt != 0) {
-
 		/*
 		 * !!!
-		 * Historical vi permitted "!!" in an empty file, for no
-		 * immediately apparent reason.  When it happens, we end
-		 * up here with line addresses of 0,1 and a bad attitude.
+		 * Historical vi permitted "!!" in an empty file.  When it
+		 * happens, we get called with two addresses of 1,1 and a
+		 * bad attitude.
 		 */
 		ftype = FILTER;
-		if (cmdp->addr1.lno == 0 && cmdp->addr2.lno == 1) {
+		if (cmdp->addr1.lno == 1 && cmdp->addr2.lno == 1) {
 			if (file_lline(sp, ep, &lno))
 				return (1);
 			if (lno == 0) {
