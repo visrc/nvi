@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.90 1994/05/17 18:32:19 bostic Exp $ (Berkeley) $Date: 1994/05/17 18:32:19 $";
+static char sccsid[] = "$Id: main.c,v 8.91 1994/05/18 18:51:22 bostic Exp $ (Berkeley) $Date: 1994/05/18 18:51:22 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -78,6 +78,11 @@ main(argc, argv)
 	/* Stop if indirecting through a NULL pointer. */
 	if (reenter++)
 		abort();
+
+#ifdef GDBATTACH
+	(void)printf("%u waiting...\n", getpid());
+	(void)read(0, &eval, 1);
+#endif
 
 	/* Set screen type and mode based on the program name. */
 	readonly = 0;
