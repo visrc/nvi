@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.25 1992/04/28 13:42:49 bostic Exp $ (Berkeley) $Date: 1992/04/28 13:42:49 $";
+static char sccsid[] = "$Id: ex.c,v 5.26 1992/04/28 17:41:54 bostic Exp $ (Berkeley) $Date: 1992/04/28 17:41:54 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -40,12 +40,13 @@ static int fileexpand __P((glob_t *, char *, int));
 void
 ex()
 {
+	size_t len;
 	char *p;
 
 	while (mode == MODE_EX) 
-		if ((p = gb(ISSET(O_PROMPT) ? ':' : 0, 0)) != NULL)
+		if ((p = gb(ISSET(O_PROMPT) ? ':' : 0, &len, 0)) != NULL)
 			if (*p)
-				ex_cstring(p, strlen(p), 0);
+				ex_cstring(p, len, 0);
 			else
 				ex_cstring(".+1", 3, 0);
 }
