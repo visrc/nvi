@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 9.14 1995/02/09 12:11:51 bostic Exp $ (Berkeley) $Date: 1995/02/09 12:11:51 $";
+static char sccsid[] = "$Id: vs_split.c,v 9.15 1995/02/15 11:57:44 bostic Exp $ (Berkeley) $Date: 1995/02/15 11:57:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -44,6 +44,12 @@ svi_split(sp, topp, botp)
 	SMAP *smp;
 	size_t cnt, half;
 	int issmallscreen, splitup;
+
+	/* Can be called from ex before we're ready. */
+	if (!F_ISSET(SVP(sp), SVI_SCR_INIT)) {
+		svi_message(sp, "split", SVIM_NOINIT);
+		return (1);
+	}
 
 	/* Check to see if it's possible. */
 	half = sp->rows / 2;
@@ -206,6 +212,12 @@ svi_bg(csp)
 {
 	SCR *sp;
 
+	/* Can be called from ex before we're ready. */
+	if (!F_ISSET(SVP(csp), SVI_SCR_INIT)) {
+		svi_message(csp, "bg", SVIM_NOINIT);
+		return (1);
+	}
+
 	/* Try and join with another screen. */
 	if ((svi_join(csp, NULL, NULL, &sp)))
 		return (1);
@@ -352,6 +364,12 @@ svi_fg(csp, name)
 	int nf;
 	char *p;
 
+	/* Can be called from ex before we're ready. */
+	if (!F_ISSET(SVP(csp), SVI_SCR_INIT)) {
+		svi_message(csp, "fg", SVIM_NOINIT);
+		return (1);
+	}
+
 	if (svi_swap(csp, &sp, name))
 		return (1);
 	if (sp == NULL) {
@@ -480,16 +498,22 @@ svi_swap(csp, nsp, name)
 }
 
 /*
- * svi_rabs --
+ * svi_resize --
  *	Change the absolute size of the current screen.
  */
 int
-svi_rabs(sp, count, adj)
+svi_resize(sp, count, adj)
 	SCR *sp;
 	long count;
 	adj_t adj;
 {
 	SCR *g, *s;
+
+	/* Can be called from ex before we're ready. */
+	if (!F_ISSET(SVP(sp), SVI_SCR_INIT)) {
+		svi_message(sp, "resize", SVIM_NOINIT);
+		return (1);
+	}
 
 	/*
 	 * Figure out which screens will grow, which will shrink, and
