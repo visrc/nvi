@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.43 1993/02/24 12:57:24 bostic Exp $ (Berkeley) $Date: 1993/02/24 12:57:24 $";
+static char sccsid[] = "$Id: key.c,v 5.44 1993/02/25 17:49:32 bostic Exp $ (Berkeley) $Date: 1993/02/25 17:49:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -16,6 +16,7 @@ static char sccsid[] = "$Id: key.c,v 5.43 1993/02/24 12:57:24 bostic Exp $ (Berk
 #include <curses.h>
 #include <errno.h>
 #include <limits.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -36,6 +37,7 @@ u_char *gb_qb;				/* Quote buffer. */
 u_char *gb_wb;				/* Widths buffer. */
 u_long gb_blen;				/* Buffer lengths. */
 
+static void	check_sigwinch __P((EXF *));
 static int	ttyread __P((EXF *, u_char *, int, int));
 
 /*
@@ -146,16 +148,11 @@ getkey(ep, flags)
 		/*
 		 * If no keys read, then we've reached EOF of an ex script.
 		 * XXX
-		 * This should return to somewhere else.
+		 * This is just wrong...
 		 */
 		if (nkeybuf == 0) {
-			(void)file_stop(ep, 0);
-			if (move(LINES - 1, 0) != ERR) {
-				clrtoeol();
-				refresh();
-			}
-			endwin();
-			exit(1);
+			FF_SET(ep, F_EXIT_FORCE);
+			return(0);
 		}
 	}
 
@@ -218,6 +215,10 @@ ret:	if (flags & GB_BEAUTIFY && ISSET(O_BEAUTIFY)) {
 	return (ch);
 }
 
+static int __check_sig_winch;
+static int __set_sig_winch;
+static void onwinch __P((int));
+
 static int
 ttyread(ep, buf, len, time)
 	EXF *ep;
@@ -228,7 +229,13 @@ ttyread(ep, buf, len, time)
 	static enum { NOTSET, YES, NO } isfromtty = NOTSET;
 	static fd_set rd;
 	struct timeval t, *tp;
-	int sval;
+	int nr, sval;
+
+	/* Set up SIGWINCH handler. */
+	if (__set_sig_winch == 0) {
+		(void)signal(SIGWINCH, onwinch);
+		__set_sig_winch = 1;
+	}
 
 	/*
 	 * Set if reading from a tty or not on the first entry.  Zero out
@@ -240,11 +247,14 @@ ttyread(ep, buf, len, time)
 	}
 
 	/*
-	 * If reading from a file or pipe, never timeout.  (This also affects
-	 * the way that EOF is detected.)
+	 * If reading from a file or pipe, never timeout.  This
+	 * also affects the way that EOF is detected.
 	 */
-	if (isfromtty == NO)
-		return (read(STDIN_FILENO, buf, len));
+	if (isfromtty == NO) {
+		if ((nr = read(STDIN_FILENO, buf, len)) == 0)
+			FF_SET(ep, F_EXIT_FORCE);
+		return (0);
+	}
 
 	/* Compute the timeout value. */
 	if (time) {
@@ -256,31 +266,64 @@ ttyread(ep, buf, len, time)
 
 	/* Select until characters become available, and then read them. */
 	FD_SET(STDIN_FILENO, &rd);
+
 	for (;;) {
-		/*
-		 * This is the only place we actually wait, so have to handle
-		 * asynchronous resizing here.  If resize is scheduled, do it
-		 * before selecting.
-		 */
-		FF_SET(ep, F_READING);
-		if (SF_ISSET(ep, S_RESIZE) && mode == MODE_VI) {
-			(void)scr_update(ep);
-			refresh();
-		}
 		sval = select(1, &rd, NULL, NULL, tp);
-		FF_CLR(ep, F_READING);
 		switch (sval) {
 		case -1:			/* Error. */
 			/* It's okay to be interrupted. */
-			if (errno == EINTR)
+			if (errno == EINTR) {
+				check_sigwinch(ep);
 				break;
+			}
 			msg(ep, M_ERROR,
 			    "Terminal read error: %s", strerror(errno));
 			return (0);
-		case 0:
-			return (0);		/* Timeout. */
-		default:
-			return (read(STDIN_FILENO, buf, len));
+		case 0:				/* Timeout. */
+			return (0);
+		default:			/* Read or EOF. */
+			if ((nr = read(STDIN_FILENO, buf, len)) == 0)
+				FF_SET(ep, F_EXIT_FORCE);
+			return (nr);
 		}
+	}
+	/* NOTREACHED */
+}
+
+/*
+ * onwinch --
+ *	Handle SIGWINCH.
+ */
+void
+onwinch(signo)
+	int signo;
+{
+	__check_sig_winch = 1;
+}
+
+/*
+ * check_sigwinch --
+ *	Check for window size change event.   Done here because it's
+ *	the only place we block.
+ */
+static void
+check_sigwinch(ep)
+	EXF *ep;
+{
+	sigset_t bmask, omask;
+
+	while (__check_sig_winch == 1) {
+		sigemptyset(&bmask);
+		sigaddset(&bmask, SIGWINCH);
+		(void)sigprocmask(SIG_BLOCK, &bmask, &omask);
+
+		set_window_size(ep, 0);
+		if (FF_ISSET(ep, F_MODE_VI)) {
+			(void)scr_update(ep);
+			refresh();
+		}
+		__check_sig_winch = 0;
+
+		(void)sigprocmask(SIG_SETMASK, &omask, NULL);
 	}
 }
