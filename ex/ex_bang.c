@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_bang.c,v 10.32 1996/05/18 12:40:02 bostic Exp $ (Berkeley) $Date: 1996/05/18 12:40:02 $";
+static const char sccsid[] = "$Id: ex_bang.c,v 10.33 1996/09/23 18:57:17 bostic Exp $ (Berkeley) $Date: 1996/09/23 18:57:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -94,14 +94,14 @@ ex_bang(sp, cmdp)
 	}
 
 	/*
-	 * If no addresses were specified, run the command.  If the file has
-	 * been modified and autowrite is set, write the file back.  If the
-	 * file has been modified, autowrite is not set and the warn option is
-	 * set, tell the user about the file.
+	 * If no addresses were specified, run the command.  If there's an
+	 * underlying file, it's been modified and autowrite is set, write
+	 * the file back.  If the file has been modified, autowrite is not
+	 * set and the warn option is set, tell the user about the file.
 	 */
 	if (cmdp->addrcnt == 0) {
 		msg = NULL;
-		if (F_ISSET(sp->ep, F_MODIFIED))
+		if (sp->ep != NULL && F_ISSET(sp->ep, F_MODIFIED))
 			if (O_ISSET(sp, O_AUTOWRITE)) {
 				if (file_aw(sp, FS_ALL))
 					return (0);
