@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 5.31 1993/02/19 13:39:38 bostic Exp $ (Berkeley) $Date: 1993/02/19 13:39:38 $
+ *	$Id: exf.h,v 5.32 1993/02/20 12:56:07 bostic Exp $ (Berkeley) $Date: 1993/02/20 12:56:07 $
  */
 
 #ifndef _EXF_H_
@@ -67,20 +67,21 @@ typedef struct exf {
 #define	F_AUTOPRINT	0x00001		/* Autoprint flag. */
 #define	F_BELLSCHED	0x00002		/* Bell scheduled. */
 #define	F_CHARDELETED	0x00004		/* Character deleted. */
-#define	F_IGNORE	0x00008		/* File not on the command line. */
-#define	F_IN_GLOBAL	0x00010		/* Doing a global command. */
-#define	F_MODIFIED	0x00020		/* File has been modified. */
-#define	F_NAMECHANGED	0x00040		/* File name was changed. */
-#define	F_NEEDMERASE	0x00080		/* Erase modeline after keystroke. */
-#define	F_NEWSESSION	0x00100		/* File has just been edited. */
-#define	F_NONAME	0x00200		/* File has no name. */
-#define	F_RDONLY	0x00400		/* File is read-only. */
-#define	F_READING	0x00800		/* Waiting on a read. */
-#define	F_REDRAW	0x01000		/* Repaint the screen. */
-#define	F_REFRESH	0x02000		/* Refresh the screen. */
-#define	F_RESIZE	0x04000		/* Resize the screen. */
-#define	F_RE_SET	0x08000		/* The file's RE has been set. */
-#define	F_UNDO		0x10000		/* No change since last undo. */
+#define	F_DUMMY		0x00008		/* Character deleted. */
+#define	F_IGNORE	0x00010		/* File not on the command line. */
+#define	F_IN_GLOBAL	0x00020		/* Doing a global command. */
+#define	F_MODIFIED	0x00040		/* File has been modified. */
+#define	F_NAMECHANGED	0x00080		/* File name was changed. */
+#define	F_NEEDMERASE	0x00100		/* Erase modeline after keystroke. */
+#define	F_NEWSESSION	0x00200		/* File has just been edited. */
+#define	F_NONAME	0x00400		/* File has no name. */
+#define	F_RDONLY	0x00800		/* File is read-only. */
+#define	F_READING	0x01000		/* Waiting on a read. */
+#define	F_REDRAW	0x02000		/* Repaint the screen. */
+#define	F_REFRESH	0x04000		/* Refresh the screen. */
+#define	F_RESIZE	0x08000		/* Resize the screen. */
+#define	F_RE_SET	0x10000		/* The file's RE has been set. */
+#define	F_UNDO		0x20000		/* No change since last undo. */
 
 #define	F_RETAINMASK	(F_IGNORE)	/* Flags to retain. */
 
