@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_msg.c,v 10.21 1995/10/17 08:25:17 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:25:17 $";
+static char sccsid[] = "$Id: vs_msg.c,v 10.22 1995/10/17 08:30:17 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:30:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -583,7 +583,7 @@ vs_resolve(sp)
 	/* Flush any saved messages. */
 	if (gp->msgq.lh_first != NULL && F_ISSET(sp, S_SCREEN_READY))
 		while ((mp = gp->msgq.lh_first) != NULL) {
-			(void)gp->scr_msg(sp, mp->mtype, mp->buf, mp->len);
+			gp->scr_msg(sp, mp->mtype, mp->buf, mp->len);
 			LIST_REMOVE(mp, q);
 			free(mp->buf);
 			free(mp);
