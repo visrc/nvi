@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_refresh.c,v 10.26 1996/03/29 07:48:06 bostic Exp $ (Berkeley) $Date: 1996/03/29 07:48:06 $";
+static const char sccsid[] = "$Id: vs_refresh.c,v 10.27 1996/04/17 09:48:24 bostic Exp $ (Berkeley) $Date: 1996/04/17 09:48:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -86,8 +86,9 @@ vs_refresh(sp, forcepaint)
 	 *
 	 * If related screens share a view into a file, they may have been
 	 * modified as well.  Refresh any screens that aren't exiting that
-	 * have paint or dirty bits set.  Finally, if we refresh any screens
-	 * other than the current one, the cursor will be trashed.
+	 * have paint or dirty bits set.  Always update their screens, we
+	 * are not likely to get another chance.  Finally, if we refresh any
+	 * screens other than the current one, the cursor will be trashed.
 	 */
 	pub_paint = S_SCR_REFORMAT | S_SCR_REDRAW;
 	priv_paint = VIP_N_REFRESH;
@@ -98,7 +99,7 @@ vs_refresh(sp, forcepaint)
 		if (tsp != sp && !F_ISSET(tsp, S_EXIT | S_EXIT_FORCE) &&
 		    (F_ISSET(tsp, pub_paint) ||
 		    F_ISSET(VIP(tsp), priv_paint))) {
-			(void)vs_paint(tsp, forcepaint ? UPDATE_SCREEN : 0);
+			(void)vs_paint(tsp, UPDATE_SCREEN);
 			F_SET(VIP(sp), VIP_CUR_INVALID);
 		}
 
