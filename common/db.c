@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 5.17 1993/02/16 20:16:18 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:16:18 $";
+static char sccsid[] = "$Id: db.c,v 5.18 1993/02/19 11:11:44 bostic Exp $ (Berkeley) $Date: 1993/02/19 11:11:44 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -124,8 +124,8 @@ file_dline(ep, lno)
 		--ep->c_nlines;
 
 	/* Update screen. */
-	if (ep->scr_change != NULL)
-		ep->scr_change(ep, lno, LINE_DELETE);
+	if (mode == MODE_VI)
+		scr_change(ep, lno, LINE_DELETE);
 
 	/* File now dirty. */
 	FF_SET(ep, F_MODIFIED);
@@ -170,8 +170,8 @@ file_aline(ep, lno, p, len)
 	log_line(ep, lno + 1, LINE_APPEND);
 
 	/* Update screen. */
-	if (ep->scr_change != NULL)
-		ep->scr_change(ep, lno, LINE_APPEND);
+	if (mode == MODE_VI)
+		scr_change(ep, lno, LINE_APPEND);
 
 	/* File now dirty. */
 	FF_SET(ep, F_MODIFIED);
@@ -216,8 +216,8 @@ file_iline(ep, lno, p, len)
 	log_line(ep, lno, LINE_INSERT);
 
 	/* Update screen. */
-	if (ep->scr_change != NULL)
-		ep->scr_change(ep, lno, LINE_INSERT);
+	if (mode == MODE_VI)
+		scr_change(ep, lno, LINE_INSERT);
 
 	/* File now dirty. */
 	FF_SET(ep, F_MODIFIED);
@@ -262,8 +262,8 @@ file_sline(ep, lno, p, len)
 	log_line(ep, lno, LINE_RESET);
 
 	/* Update screen. */
-	if (ep->scr_change != NULL)
-		ep->scr_change(ep, lno, LINE_RESET);
+	if (mode == MODE_VI)
+		scr_change(ep, lno, LINE_RESET);
 	
 	/* File now dirty. */
 	FF_SET(ep, F_MODIFIED);
