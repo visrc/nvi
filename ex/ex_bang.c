@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 8.24 1994/03/14 10:36:44 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:36:44 $";
+static char sccsid[] = "$Id: ex_bang.c,v 8.25 1994/05/04 17:46:50 bostic Exp $ (Berkeley) $Date: 1994/05/04 17:46:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -71,7 +71,7 @@ ex_bang(sp, ep, cmdp)
 	/* Swap commands. */
 	exp = EXP(sp);
 	if (exp->lastbcomm != NULL)
-		FREE(exp->lastbcomm, strlen(exp->lastbcomm) + 1);
+		free(exp->lastbcomm);
 	if ((exp->lastbcomm = strdup(ap->bp)) == NULL) {
 		msgq(sp, M_SYSERR, NULL);
 		return (1);
