@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.64 1994/07/15 16:15:14 bostic Exp $ (Berkeley) $Date: 1994/07/15 16:15:14 $
+ *	$Id: ex.h,v 8.65 1994/07/17 00:26:46 bostic Exp $ (Berkeley) $Date: 1994/07/17 00:26:46 $
  */
 
 /* Ex command structure. */
@@ -42,8 +42,8 @@ typedef struct _excmdlist {
 #define	E_SETLAST	0x1000000	/* Reset last command. */
 #define	E_ZERO		0x2000000	/* 0 is a legal addr1. */
 #define	E_ZERODEF	0x4000000	/* 0 is default addr1 of empty files. */
-	u_long	 flags;
-	char	*syntax;		/* Syntax script. */
+	u_int32_t flags;
+	char	 *syntax;		/* Syntax script. */
 	char	*usage;			/* Usage line. */
 	char	*help;			/* Help line. */
 } EXCMDLIST;
@@ -57,15 +57,15 @@ extern EXCMDLIST const cmds[];		/* List of ex commands. */
  */
 struct _excmdarg {
 	EXCMDLIST const *cmd;	/* Command entry in command table. */
-	CHAR_T	buffer;		/* Named buffer. */
-	recno_t	lineno;		/* Line number. */
-	long	count;		/* Signed, specified count. */
-	int	addrcnt;	/* Number of addresses (0, 1 or 2). */
-	MARK	addr1;		/* 1st address. */
-	MARK	addr2;		/* 2nd address. */
-	ARGS  **argv;		/* Array of arguments. */
-	int	argc;		/* Count of arguments. */
-	u_int	flags;		/* Selected flags from EXCMDLIST. */
+	CHAR_T	  buffer;	/* Named buffer. */
+	recno_t	  lineno;	/* Line number. */
+	long	  count;	/* Signed, specified count. */
+	int	  addrcnt;	/* Number of addresses (0, 1 or 2). */
+	MARK	  addr1;	/* 1st address. */
+	MARK	  addr2;	/* 2nd address. */
+	ARGS	**argv;		/* Array of arguments. */
+	int	  argc;		/* Count of arguments. */
+	u_int32_t flags;	/* Selected flags from EXCMDLIST. */
 };
 
 /* Global ranges. */
@@ -111,10 +111,10 @@ typedef struct _ex_private {
 
 					/* Linked list of ranges. */
 	CIRCLEQ_HEAD(_rangeh, _range) rangeq;
-	recno_t range_lno;		/* Range set line number. */
+	recno_t  range_lno;		/* Range set line number. */
 
 #define	EX_AUTOPRINT	0x01		/* Autoprint flag. */
-	u_int	flags;
+	u_int8_t flags;
 } EX_PRIVATE;
 #define	EXP(sp)	((EX_PRIVATE *)((sp)->ex_private))
 

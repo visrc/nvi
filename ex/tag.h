@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: tag.h,v 8.12 1994/04/17 16:48:52 bostic Exp $ (Berkeley) $Date: 1994/04/17 16:48:52 $
+ *	$Id: tag.h,v 8.13 1994/07/17 00:26:49 bostic Exp $ (Berkeley) $Date: 1994/07/17 00:26:49 $
  */
 
 struct _tagf {				/* Tag file. */
@@ -13,7 +13,7 @@ struct _tagf {				/* Tag file. */
 
 #define	TAGF_DNE	0x01		/* Didn't exist. */
 #define	TAGF_DNE_WARN	0x02		/* DNE error reported. */
-	u_char	 flags;
+	u_int8_t flags;
 };
 
 struct _tag {				/* Tag stack. */
