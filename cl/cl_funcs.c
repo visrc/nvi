@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_funcs.c,v 10.5 1995/06/15 19:41:22 bostic Exp $ (Berkeley) $Date: 1995/06/15 19:41:22 $";
+static char sccsid[] = "$Id: cl_funcs.c,v 10.6 1995/06/22 19:23:39 bostic Exp $ (Berkeley) $Date: 1995/06/22 19:23:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -179,53 +179,11 @@ cl_busy(sp, msg, on)
 	size_t len, lno, notused;
 	const char *p;
 
+	/* Check for ex modes. */
+	if (F_ISSET(sp, S_EX | S_EX_CANON | S_EX_SILENT))
+		return (0);
+
 	clp = CLP(sp);
-
-	/* Check for ex batch mode. */
-	if (F_ISSET(sp, S_EX_SILENT))
-		return (0);
-
-	/*
-	 * If on is set:
-	 *	If no busy message is currently displayed, put one up.
-	 *	If a busy message already displayed, update it.
-	 * If on is not set:
-	 *	Close down any displayed busy message.  It's okay to clear
-	 *	a non-existent busy message, as it makes the calling code
-	 *	simpler.
-	 */
-	if (F_ISSET(sp, S_EX | S_EX_CANON)) {
-		if (on)
-			switch (clp->busy_state) {
-			case BUSY_OFF:
-				if (msg == NULL)
-					clp->busy_state = BUSY_SILENT;
-				else {
-					clp->busy_state = BUSY_ON;
-					p = msg_cat(sp, msg, &len);
-					(void)write(STDOUT_FILENO, p, len);
-				}
-				break;
-			case BUSY_ON:
-			case BUSY_SILENT:
-				break;
-			default:
-				abort();
-			}
-		else
-			switch(clp->busy_state) {
-			case BUSY_OFF:
-			case BUSY_ON:
-				(void)write(STDOUT_FILENO, "\n", 1);
-				/* FALLTHROUGH */
-			case BUSY_SILENT:
-				clp->busy_state = BUSY_OFF;
-				break;
-
-			}
-		return (0);
-	}
-
 	VI_INIT_IGNORE(sp);
 
 	lno = RLNO(sp, INFOLINE(sp));
@@ -487,17 +445,17 @@ cl_discard(sp, addp)
 }
 
 /* 
- * cl_exadjust --
+ * cl_ex_adjust --
  *	Adjust the screen for ex.  All special purpose, all special case.
  *
  * XXX
  * This need not be supported by any screen model not supporting full ex
  * canonical mode.
  *
- * PUBLIC: int cl_exadjust __P((SCR *, exadj_t));
+ * PUBLIC: int cl_ex_adjust __P((SCR *, exadj_t));
  */
 int
-cl_exadjust(sp, action)
+cl_ex_adjust(sp, action)
 	SCR *sp;
 	exadj_t action;
 {
@@ -672,7 +630,7 @@ cl_refresh(sp, trashed)
 	 * supporting full ex canonical mode.
 	 */
 	if (trashed)
-		touchwin(stdscr);
+		clearok(curscr, 1);
 	return (refresh() == ERR);
 }
 
