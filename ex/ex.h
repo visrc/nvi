@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 9.9 1995/01/23 17:03:22 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:03:22 $
+ *	$Id: ex.h,v 9.10 1995/01/30 12:03:23 bostic Exp $ (Berkeley) $Date: 1995/01/30 12:03:23 $
  */
 
 #define	PROMPTCHAR	':'		/* Prompt character. */
@@ -219,7 +219,7 @@ int	ex_tdisplay __P((SCR *));
 int	ex_tload __P((SCR *));
 int	ex_writefp __P((SCR *,
 	    char *, FILE *, MARK *, MARK *, u_long *, u_long *));
-void	global_insdel __P((SCR *, enum operation, recno_t));
+void	global_insdel __P((SCR *, lnop_t, recno_t));
 int	proc_wait __P((SCR *, long, const char *, int));
 int	sscr_end __P((SCR *));
 int	sscr_exec __P((SCR *, recno_t));
