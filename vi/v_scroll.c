@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 8.1 1993/06/09 22:27:50 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:27:50 $";
+static char sccsid[] = "$Id: v_scroll.c,v 8.2 1993/08/19 16:25:47 bostic Exp $ (Berkeley) $Date: 1993/08/19 16:25:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -69,6 +69,11 @@ v_middle(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
+	/*
+	 * Yielding to none in our quest for compatibility with every
+	 * historical blemish of vi, no matter how strange it might be,
+	 * we permit the user to enter a count and then ignore it.
+	 */
 	return (sp->s_position(sp, ep, &rp->lno, 0, P_MIDDLE));
 }
 
