@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_run.c,v 8.3 1996/12/10 18:01:51 bostic Exp $ (Berkeley) $Date: 1996/12/10 18:01:51 $";
+static const char sccsid[] = "$Id: ip_run.c,v 8.4 1996/12/10 21:03:13 bostic Exp $ (Berkeley) $Date: 1996/12/10 21:03:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -23,6 +23,7 @@ static const char sccsid[] = "$Id: ip_run.c,v 8.3 1996/12/10 18:01:51 bostic Exp
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #ifdef __STDC__
 #include <stdarg.h>
@@ -39,23 +40,24 @@ static void arg_format __P((char *, int *, char **[], int, int));
 #ifdef DEBUG
 static void attach __P((void));
 #endif
+static void fatal __P((void));
 
 char *vi_progname = "vi";			/* Default program name. */
 
 /*
- * run_vi --
+ * vi_run --
  *	Run the vi program.
  *
- * PUBLIC: int run_vi __P((int, char *[], int *, int *));
+ * PUBLIC: int vi_run __P((int, char *[], int *, int *, pid_t *));
  */
 int
-run_vi(argc, argv, ip, op)
+vi_run(argc, argv, ip, op, pidp)
 	int argc, *ip, *op;
 	char *argv[];
+	pid_t *pidp;
 {
 	struct stat sb;
-	pid_t pid;
-	int ch, pflag, rpipe[2], wpipe[2];
+	int pflag, rpipe[2], wpipe[2];
 	char *execp, **p_av, **t_av;
 
 	pflag = 0;
@@ -105,10 +107,8 @@ run_vi(argc, argv, ip, op)
 	 * wpipe[1].  The vi process reads from wpipe[0], and it writes to
 	 * rpipe[1].
 	 */
-	if (pipe(rpipe) == -1 || pipe(wpipe) == -1) {
-		(void)fprintf(stderr, "%s: %s\n", vi_progname, strerror(errno));
-		exit (1);
-	}
+	if (pipe(rpipe) == -1 || pipe(wpipe) == -1)
+		fatal();
 	*ip = rpipe[0];
 	*op = wpipe[1];
 
@@ -120,11 +120,11 @@ run_vi(argc, argv, ip, op)
 	arg_format(execp, &argc, &argv, wpipe[0], rpipe[1]);
 
 	/* Run vi. */
-	switch (pid = fork()) {
+	switch (*pidp = fork()) {
 	case -1:				/* Error. */
-		(void)fprintf(stderr, "%s: %s\n", vi_progname, strerror(errno));
-		exit (1);
-	case 0:					/* Vi. */
+		fatal();
+		/* NOTREACHED */
+	case 0:					/* Child: Vi. */
 		/*
 		 * If the user didn't override the path and there's a local
 		 * (debugging) nvi, run it, otherwise run the user's path,
@@ -135,11 +135,29 @@ run_vi(argc, argv, ip, op)
 		execv(execp, argv);
 		(void)fprintf(stderr,
 		    "%s: %s %s\n", vi_progname, execp, strerror(errno));
-		exit (1);
-	default:				/* Ip_cl. */
+		(void)fprintf(stderr,
+#ifdef DEBUG
+		    "usage: %s [-D] [-P vi_program] [vi arguments]\n",
+#else
+		    "usage: %s [-P vi_program] [vi arguments]\n",
+#endif
+		    vi_progname);
+		_exit (1);
+	default:				/* Parent: Screen. */
 		break;
 	}
 	return (0);
+}
+
+/*
+ * fatal --
+ *	Fatal error.
+ */
+static void
+fatal()
+{
+	(void)fprintf(stderr, "%s: %s\n", vi_progname, strerror(errno));
+	exit (1);
 }
 
 /*
@@ -155,10 +173,8 @@ arg_format(execp, argcp, argvp, i_fd, o_fd)
 
 	/* Get space for the argument array and the -I argument. */
 	if ((iarg = malloc(64)) == NULL ||
-	    (largv = malloc((*argcp + 3) * sizeof(char *))) == NULL) {
-		(void)fprintf(stderr, "%s: %s\n", vi_progname, strerror(errno));
-		exit (1);
-	}
+	    (largv = malloc((*argcp + 3) * sizeof(char *))) == NULL)
+		fatal();
 	memcpy(largv + 2, *argvp, *argcp * sizeof(char *) + 1);
 
 	/* Reset argv[0] to be the exec'd program. */
