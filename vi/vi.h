@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 5.27 1992/12/21 13:45:25 bostic Exp $ (Berkeley) $Date: 1992/12/21 13:45:25 $
+ *	$Id: vi.h,v 5.28 1992/12/27 19:18:38 bostic Exp $ (Berkeley) $Date: 1992/12/27 19:18:38 $
  */
 
 #include "exf.h"
@@ -98,7 +98,7 @@ int	v_chrrepeat __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_chT __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_cht __P((VICMDARG *, MARK *, MARK *, MARK *));
 enum confirmation v_confirm __P((EXF *, MARK *, MARK *));
-void	v_comment __P((EXF *));
+int	v_comment __P((EXF *));
 int	v_Delete __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_delete __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_dollar __P((VICMDARG *, MARK *, MARK *, MARK *));
