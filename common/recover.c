@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.5 1993/07/22 13:52:17 bostic Exp $ (Berkeley) $Date: 1993/07/22 13:52:17 $";
+static char sccsid[] = "$Id: recover.c,v 8.6 1993/08/05 21:06:10 bostic Exp $ (Berkeley) $Date: 1993/08/05 21:06:10 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -17,6 +17,8 @@ static char sccsid[] = "$Id: recover.c,v 8.5 1993/07/22 13:52:17 bostic Exp $ (B
 #include <errno.h>
 #include <fcntl.h>
 #include <pwd.h>
+#include <signal.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -64,15 +66,16 @@ static rcv_mailfile __P((SCR *, EXF *));
  *	Build a file name that will be used as the recovery file.
  */
 int
-rcv_tmp(sp, ep)
+rcv_tmp(sp, ep, fname)
 	SCR *sp;
 	EXF *ep;
+	char *fname;
 {
 	int fd;
 	char *p, path[MAXPATHLEN];
 
 	/* Newlines delimit the mail messages. */
-	for (p = ep->name; *p; ++p)
+	for (p = fname; *p; ++p)
 		if (*p == '\n') {
 			msgq(sp, M_ERR,
 		    "Files with newlines in the name are unrecoverable.");
@@ -186,8 +189,8 @@ rcv_mailfile(sp, ep)
 		return (1);
 	}
 	
-	if ((p = strrchr(ep->name, '/')) == NULL)
-		p = ep->name;
+	if ((p = strrchr(sp->frp->fname, '/')) == NULL)
+		p = sp->frp->fname;
 	else
 		++p;
 	(void)time(&now);
@@ -203,7 +206,7 @@ rcv_mailfile(sp, ep)
 	(void)fprintf(fp, "%s%.24s%s%s\n%s%s%s\n",
 	    "On ", ctime(&now),
 	    ", the user ", pw->pw_name,
-	    "was editing a file named ", ep->name,
+	    "was editing a file named ", sp->frp->fname,
 	    " on the machine ");
 	(void)fprintf(fp, "%s%s\n",
 	    host, ", when it was saved for\nrecovery.");
@@ -422,7 +425,7 @@ next:		(void)fclose(fp);
  * rcv_read --
  *	Start a recovered file as the file to edit.
  */
-EXF *
+int
 rcv_read(sp, name)
 	SCR *sp;
 	char *name;
@@ -430,6 +433,7 @@ rcv_read(sp, name)
 	struct dirent *dp;
 	DIR *dirp;
 	EXF *ep;
+	FREF *frp;
 	FILE *fp;
 	int found;
 	char *p, *t;
@@ -437,7 +441,7 @@ rcv_read(sp, name)
 		
 	if ((dirp = opendir(_PATH_PRESERVE)) == NULL) {
 		msgq(sp, M_ERR, "%s: %s", _PATH_PRESERVE, strerror(errno));
-		return (NULL);
+		return (1);
 	}
 
 	for (found = 0; (dp = readdir(dirp)) != NULL;) {
@@ -476,20 +480,29 @@ rcv_read(sp, name)
 	if (!found) {
 		msgq(sp, M_INFO,
 		    "No files named %s, owned by you, to edit.", name);
-		return (NULL);
+		return (1);
+	}
+
+	/* Create the FREF structure. */
+	if ((frp = file_add(sp, NULL, name, 0)) == NULL) {
+		FREE(p, strlen(p));
+		return (1);
 	}
 
 	/* Copy the recovery file name. */
 	if ((p = strdup(recpath)) == NULL) {
 		msgq(sp, M_ERR, "Error: %s", strerror(errno));
-		return (NULL);
+		return (1);
 	}
+
 	/* Start the btree file. */
-	if ((ep =
-	    file_start(sp, NULL, path + sizeof(VI_PHEADER) - 1)) == NULL) {
+	if ((ep = file_init(sp,
+	    NULL, frp, path + sizeof(VI_PHEADER) - 1)) == NULL) {
 		FREE(p, strlen(p));
-		return (NULL);
+		return (1);
 	}
 	ep->rcv_mpath = p;
-	return (ep);
+	sp->ep = ep;
+	sp->frp = frp;
+	return (0);
 }
