@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 10.17 1995/11/05 13:12:27 bostic Exp $ (Berkeley) $Date: 1995/11/05 13:12:27 $
+ *	$Id: gs.h,v 10.18 1995/11/18 13:00:54 bostic Exp $ (Berkeley) $Date: 1995/11/18 13:00:54 $
  */
 
 #define	TEMPORARY_FILE_STRING	"/tmp"	/* Default temporary file name. */
@@ -54,13 +54,14 @@ typedef enum { KEY_VEOF, KEY_VERASE, KEY_VKILL, KEY_VWERASE } scr_keyval_t;
  * Structure that describes global state of the running program.
  */
 struct _gs {
+	char	*progname;		/* Programe name. */
+
+	int	 id;			/* Last allocated screen id. */
 	CIRCLEQ_HEAD(_dqh, _scr) dq;	/* Displayed screens. */
 	CIRCLEQ_HEAD(_hqh, _scr) hq;	/* Hidden screens. */
 
 					/* File references. */
 	CIRCLEQ_HEAD(_frefh, _fref) frefq;
-
-	char	*progname;		/* Programe name. */
 
 	mode_t	 origmode;		/* Original terminal mode. */
 

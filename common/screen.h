@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 10.8 1995/11/10 10:19:19 bostic Exp $ (Berkeley) $Date: 1995/11/10 10:19:19 $
+ *	$Id: screen.h,v 10.9 1995/11/18 13:01:28 bostic Exp $ (Berkeley) $Date: 1995/11/18 13:01:28 $
  */
 
 /*
@@ -34,6 +34,7 @@ struct _scr {
 /* INITIALIZED AT SCREEN CREATE. */
 	CIRCLEQ_ENTRY(_scr) q;		/* Screens. */
 
+	int	 id;			/* Screen id #. */
 	int	 refcnt;		/* Reference count. */
 
 	GS	*gp;			/* Pointer to global area. */
