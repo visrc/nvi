@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.133 1994/10/13 19:16:57 bostic Exp $ (Berkeley) $Date: 1994/10/13 19:16:57 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.134 1994/10/13 19:25:08 bostic Exp $ (Berkeley) $Date: 1994/10/13 19:25:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -565,18 +565,17 @@ k_cr:			if (LF_ISSET(TXT_CR)) {
 			 * (i.e. the start of a line) in the wmt structure.
 			 */
 			if (wmset) {
-				if (wmt.len != 0 ||
-				     wmt.insert != 0 || wmt.owrite != 0) {
+				if (wmt.offset != 0 ||
+				    wmt.owrite != 0 || wmt.insert != 0) {
+#define	WMTSPACE	wmt.offset + wmt.owrite + wmt.insert
 					BINC_GOTO(sp, ntp->lb, ntp->lb_len,
-					    ntp->len + wmt.len + wmt.insert +
-					    wmt.owrite + 32);
-					memmove(ntp->lb + sp->cno, wmt.lb,
-					    wmt.len + wmt.insert + wmt.owrite);
-					ntp->len +=
-					    wmt.len + wmt.insert + wmt.owrite;
-					ntp->insert = wmt.insert;
+					    ntp->len + WMTSPACE + 32);
+					memmove(ntp->lb +
+					    sp->cno, wmt.lb, WMTSPACE);
+					ntp->len += WMTSPACE;
+					sp->cno += wmt.offset;
 					ntp->owrite = wmt.owrite;
-					sp->cno += wmt.len;
+					ntp->insert = wmt.insert;
 				}
 				wmset = 0;
 			}
@@ -1894,13 +1893,13 @@ txt_margin(sp, tp, chp, wmtp, flags, didbreak)
 	 * wrapmargin TEXT structure.
 	 *
 	 * !!!
-	 * The len field holds the length of the current characters that
-	 * the user entered, but which are getting split to the new line
-	 * -- it's going to be used to set the cursor value when we move
-	 * to the new line.
+	 * The offset field holds the length of the current characters
+	 * that the user entered, but which are getting split to the new
+	 * line -- it's going to be used to set the cursor value when we
+	 * move to the new line.
 	 */
 	wmtp->lb = p + 1;
-	wmtp->len = len;
+	wmtp->offset = len;
 	wmtp->insert = LF_ISSET(TXT_APPENDEOL) ? tp->insert - 1 : tp->insert;
 	wmtp->owrite = tp->owrite;
 
