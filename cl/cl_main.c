@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_main.c,v 10.17 1995/10/31 11:03:54 bostic Exp $ (Berkeley) $Date: 1995/10/31 11:03:54 $";
+static char sccsid[] = "$Id: cl_main.c,v 10.18 1995/11/12 17:47:19 bostic Exp $ (Berkeley) $Date: 1995/11/12 17:47:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,7 +34,7 @@ GS *__global_list;				/* GLOBAL: List of screens. */
 sigset_t __sigblockset;				/* GLOBAL: Blocked signals. */
 
 static GS	*gs_init __P((char *));
-static int	 sig_init __P((GS *));
+static int	 setsig __P((int, struct sigaction *, void (*)(int)));
 static void	 sig_end __P((GS *));
 static void	 term_init __P((char *));
 
@@ -94,7 +94,7 @@ main(argc, argv)
 	(void)setvbuf(stdout, NULL, _IOFBF, 0);
 
 	/* Start catching signals. */
-	if (sig_init(gp))
+	if (sig_init(gp, NULL))
 		exit (1);
 
 	/* Run ex/vi. */
@@ -267,17 +267,53 @@ h_winch(signo)
 /*
  * sig_init --
  *	Initialize signals.
+ *
+ * PUBLIC: int sig_init __P((GS *, SCR *));
  */
-static int
-sig_init(gp)
+int
+sig_init(gp, sp)
 	GS *gp;
+	SCR *sp;
 {
 	CL_PRIVATE *clp;
-	struct sigaction act;
 
 	clp = GCLP(gp);
 
-	(void)sigemptyset(&__sigblockset);
+	if (sp == NULL) {
+		(void)sigemptyset(&__sigblockset);
+		if (sigaddset(&__sigblockset, SIGHUP) ||
+		    setsig(SIGHUP, &clp->oact[INDX_HUP], h_hup) ||
+		    sigaddset(&__sigblockset, SIGINT) ||
+		    setsig(SIGINT, &clp->oact[INDX_INT], h_int) ||
+		    sigaddset(&__sigblockset, SIGTERM) ||
+		    setsig(SIGTERM, &clp->oact[INDX_TERM], h_term) ||
+		    sigaddset(&__sigblockset, SIGWINCH) ||
+		    setsig(SIGWINCH, &clp->oact[INDX_WINCH], h_winch)) {
+err:			(void)fprintf(stderr,
+			    "%s: %s\n", gp->progname, strerror(errno));
+			return (1);
+		}
+	} else
+		if (setsig(SIGHUP, NULL, h_hup) ||
+		    setsig(SIGINT, NULL, h_int) ||
+		    setsig(SIGTERM, NULL, h_term) ||
+		    setsig(SIGWINCH, NULL, h_winch)) {
+			msgq(sp, M_SYSERR, "signal-reset");
+		}
+	return (0);
+}
+
+/*
+ * setsig --
+ *	Set a signal handler.
+ */
+static int
+setsig(signo, oactp, handler)
+	int signo;
+	struct sigaction *oactp;
+	void (*handler) __P((int));
+{
+	struct sigaction act;
 
 	/*
 	 * Use sigaction(2), not signal(3), since we don't always want to
@@ -285,24 +321,10 @@ sig_init(gp)
 	 * mode keystroke and SIGWINCH arrives.  Besides, you can't portably
 	 * restart system calls (thanks, POSIX!).
 	 */
-#define	SETSIG(signal, handler, off) {					\
-	if (sigaddset(&__sigblockset, signal))				\
-		goto err;						\
-	act.sa_handler = handler;					\
-	sigemptyset(&act.sa_mask);					\
-	act.sa_flags = 0;						\
-	if (sigaction(signal, &act, &clp->oact[off]))			\
-		goto err;						\
-}
-	SETSIG(SIGHUP, h_hup, INDX_HUP);
-	SETSIG(SIGINT, h_int, INDX_INT);
-	SETSIG(SIGTERM, h_term, INDX_TERM);
-	SETSIG(SIGWINCH, h_winch, INDX_WINCH);
-#undef SETSIG
-	return (0);
-
-err:	(void)fprintf(stderr, "%s: %s\n", gp->progname, strerror(errno));
-	return (1);
+	act.sa_handler = handler;
+	sigemptyset(&act.sa_mask);
+	act.sa_flags = 0;
+	return (sigaction(signo, &act, oactp));
 }
 
 /*

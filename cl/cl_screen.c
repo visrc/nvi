@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_screen.c,v 10.27 1995/11/11 11:54:05 bostic Exp $ (Berkeley) $Date: 1995/11/11 11:54:05 $";
+static char sccsid[] = "$Id: cl_screen.c,v 10.28 1995/11/12 17:47:18 bostic Exp $ (Berkeley) $Date: 1995/11/12 17:47:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -200,6 +200,13 @@ cl_vi_init(sp)
 			msgq(sp, M_ERR, "%s: unknown terminal type", ttype);
 		return (1);
 	}
+	/*
+	 * XXX
+	 * Someone got let out alone without adult supervision -- the SunOS
+	 * newterm resets the signal handlers.  There's a race, but it's not
+	 * worth closing.
+	 */
+	(void)sig_init(sp->gp, sp);
 
 	/*
 	 * We use raw mode.  What we want is 8-bit clean, however, signals
