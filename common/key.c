@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.11 1993/10/03 15:31:14 bostic Exp $ (Berkeley) $Date: 1993/10/03 15:31:14 $";
+static char sccsid[] = "$Id: key.c,v 8.12 1993/10/27 16:10:52 bostic Exp $ (Berkeley) $Date: 1993/10/27 16:10:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -168,6 +168,7 @@ term_key(sp, chp, flags)
 {
 	enum input rval;
 	IBUF *keyp, *ttyp;
+	SCR *tsp;
 	SEQ *qp;
 	int ch, ispartial, nr;
 
@@ -176,8 +177,17 @@ term_key(sp, chp, flags)
 	 * with input keys, but it's something that can't be done via
 	 * a signal mechanism because of race conditions, and which needs
 	 * to be done periodically.  I feel confident that this routine
-	 * will be executed, ah, periodically.
+	 * will be executed, ah, periodically.  The signal recipient sets
+	 * the global flag.  If that is set, we set the local flags and
+	 * reset the global flag.
 	 */
+	if (F_ISSET(__global_list, G_SIGALRM)) {
+		for (tsp = __global_list->scrhdr.next;
+		    tsp != (SCR *)&__global_list->scrhdr; tsp = tsp->next)
+			if (tsp->ep != NULL && F_ISSET(tsp->ep, F_RCV_ON))
+				F_SET(tsp->ep, F_RCV_ALRM);
+		F_CLR(__global_list, G_SIGALRM);
+	}
 	if (F_ISSET(sp->ep, F_RCV_ALRM)) {
 		F_CLR(sp->ep, F_RCV_ALRM);
 		(void)rcv_sync(sp, sp->ep);
