@@ -14,7 +14,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: perl.xs,v 8.2 1996/03/06 19:53:42 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:53:42 $";
+static const char sccsid[] = "$Id: perl.xs,v 8.3 1996/03/06 20:30:33 bostic Exp $ (Berkeley) $Date: 1996/03/06 20:30:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -657,9 +657,9 @@ perl_init(gp)
 	STRLEN length;
 	char* file = __FILE__;
 
-	gp->perl = perl_alloc();
-  	perl_construct(gp->perl);
-	perl_parse(gp->perl, NULL, 3, embedding, 0);
+	gp->perl_interp = perl_alloc();
+  	perl_construct(gp->perl_interp);
+	perl_parse(gp->perl_interp, NULL, 3, embedding, 0);
 	newXS("VI::AppendLine", XS_VI_aline, file);
 	newXS("VI::DelLine", XS_VI_dline, file);
 	newXS("VI::EndScreen", XS_VI_escreen, file);
