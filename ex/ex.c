@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.13 1992/04/16 09:55:54 bostic Exp $ (Berkeley) $Date: 1992/04/16 09:55:54 $";
+static char sccsid[] = "$Id: ex.c,v 5.14 1992/04/16 13:45:58 bostic Exp $ (Berkeley) $Date: 1992/04/16 13:45:58 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -25,7 +25,6 @@ static char sccsid[] = "$Id: ex.c,v 5.13 1992/04/16 09:55:54 bostic Exp $ (Berke
 
 char *defcmdarg[2];
 
-static int buildargv __P((char *, int, CMDARG *));
 static int fileexpand __P((glob_t *, char *, int));
 
 /*
@@ -309,7 +308,18 @@ addr1:	switch(cp->flags & (E_ADDR1|E_ADDR2|E_ADDR2_OR_0)) {
 			goto usage;
 	}
 		
-	for (count = 0, p = cp->syntax; *p; ++p) {
+	/*
+	 * If the rest of the string is parsed by the command itself, we
+	 * don't even skip leading white-space, it's significant for some
+	 * commands.  However, require that there be *something*.
+	 */
+	p = cp->syntax;
+	if (*p == 's') {
+		for (p = exc; *p && isspace(*p); ++p);
+		cmd.string = *p ? exc : NULL;
+		goto addr2;
+	}
+	for (count = 0; *p; ++p) {
 		for (; isspace(*exc); ++exc);		/* Skip whitespace. */
 		if (!*exc)
 			break;
@@ -404,9 +414,6 @@ end2:			break;
 				exc = ep;
 			}
 			break;
-		case 's':				/* string */
-			cmd.string = exc;
-			goto addr2;
 		case 'f':				/* file */
 			if (buildargv(exc, 1, &cmd))
 				return (1);
@@ -644,7 +651,7 @@ typedef struct {
  * buildargv --
  *	Build an argv from the rest of the command line.
  */
-static int
+int
 buildargv(exc, expand, cp)
 	char *exc;
 	int expand;
@@ -654,6 +661,7 @@ buildargv(exc, expand, cp)
 	static int argscnt;
 	static char **argv;
 	static glob_t g;
+	register int ch;
 	int cnt, done, globoff, len, needslots, off;
 	char *ap;
 
@@ -742,7 +750,12 @@ mem1:				argscnt = 0;
 			break;
 
 		/* Skip whitespace. */
-		while (*++exc && isspace(*exc));
+		while (ch = *++exc) {
+			if (ch == '\\' && exc[1])
+				++exc;
+			if (!isspace(ch))
+				break;
+		}
 		if (!*exc)
 			break;
 	}
@@ -814,6 +827,9 @@ fileexpand(gp, word, wordlen)
 				bcopy(prevorig, p, plen);
 				p += plen;
 				break;
+			case '\\':
+				if (p[1] != '\0')
+					++p;
 			default:
 				*p++ = ch;
 			}
