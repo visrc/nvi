@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.105 1996/05/14 09:23:04 bostic Exp $ (Berkeley) $Date: 1996/05/14 09:23:04 $
+dnl	$Id: configure.in,v 8.106 1996/05/15 17:31:35 bostic Exp $ (Berkeley) $Date: 1996/05/15 17:31:35 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(../common/main.c)
@@ -103,7 +103,8 @@ fi
 dnl Check for the sendmail path.
 AC_PATH_PROG(vi_cv_path_sendmail, sendmail, no)
 if test "$vi_cv_path_sendmail" = no; then
-	echo "Fatal error: the sendmail utility not found."
+	echo "WARNING: The sendmail utility was not found!"
+	echo "WARNING: Users will not be told of saved files."
 	exit 1
 fi
 
