@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_refresh.c,v 10.25 1996/03/28 17:21:58 bostic Exp $ (Berkeley) $Date: 1996/03/28 17:21:58 $";
+static const char sccsid[] = "$Id: vs_refresh.c,v 10.26 1996/03/29 07:48:06 bostic Exp $ (Berkeley) $Date: 1996/03/29 07:48:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -140,15 +140,15 @@ vs_paint(sp, flags)
 	SMAP *smp, tmp;
 	VI_PRIVATE *vip;
 	recno_t lastline, lcnt;
-	size_t cwtotal, cnt, len, x, y;
+	size_t cwtotal, cnt, len, notused, y;
 	int ch, didpaint, isempty, leftright_warp;
 	char *p;
 
-#define	 LNO	sp->lno
-#define	OLNO	vip->olno
-#define	 CNO	sp->cno
-#define	OCNO	vip->ocno
-#define	SCNO	vip->sc_col
+#define	 LNO	sp->lno			/* Current file line. */
+#define	OLNO	vip->olno		/* Remembered file line. */
+#define	 CNO	sp->cno			/* Current file column. */
+#define	OCNO	vip->ocno		/* Remembered file column. */
+#define	SCNO	vip->sc_col		/* Current screen column. */
 
 	gp = sp->gp;
 	vip = VIP(sp);
@@ -427,7 +427,7 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 	if (F_ISSET(vip, VIP_CUR_INVALID) || LNO != OLNO)
 		goto slow;
 
-	/* Otherwise, if nothing's changed, go fast. */
+	/* Otherwise, if nothing's changed, ignore the cursor. */
 	if (CNO == OCNO)
 		goto fast;
 
@@ -562,11 +562,10 @@ lscreen:		if (O_ISSET(sp, O_LEFTRIGHT)) {
 	/*
 	 * 6c: Fast cursor update.
 	 *
-	 * Retrieve the current cursor position, and correct it
-	 * for split screens.
+	 * We have the current column, retrieve the current row.
 	 */
-fast:	(void)gp->scr_cursor(sp, &y, &x);
-	goto number;
+fast:	(void)gp->scr_cursor(sp, &y, &notused);
+	goto done_cursor;
 
 	/*
 	 * 6d: Slow cursor update.
@@ -599,7 +598,7 @@ slow:	for (smp = HMAP; smp->lno != LNO; ++smp);
 			break;
 		}
 	}
-	goto number;
+	goto done_cursor;
 
 	/*
 	 * 7: Repaint the entire screen.
@@ -611,8 +610,7 @@ slow:	for (smp = HMAP; smp->lno != LNO; ++smp);
 	 */
 paint:	for (smp = HMAP; smp <= TMAP; ++smp)
 		SMAP_FLUSH(smp);
-	for (y = -1,
-	    vip->sc_smap = NULL, smp = HMAP; smp <= TMAP; ++smp) {
+	for (y = -1, vip->sc_smap = NULL, smp = HMAP; smp <= TMAP; ++smp) {
 		if (vs_line(sp, smp, &y, &SCNO))
 			return (1);
 		if (y != -1 && vip->sc_smap == NULL)
@@ -631,8 +629,15 @@ paint:	for (smp = HMAP; smp <= TMAP; ++smp)
 
 	didpaint = 1;
 
+done_cursor:
 	/*
-	 * 8: Repaint the line numbers.
+	 * 8: Set the remembered cursor values.
+	 */
+	OCNO = CNO;
+	OLNO = LNO;
+
+	/*
+	 * 9: Repaint the line numbers.
 	 *
 	 * If O_NUMBER is set and the VIP_N_RENUMBER bit is set, and we
 	 * didn't repaint the screen, repaint all of the line numbers,
@@ -643,7 +648,7 @@ number:	if (O_ISSET(sp, O_NUMBER) &&
 		return (1);
 
 	/*
-	 * 9: Update the mode line, position the cursor, and flush changes.
+	 * 10: Update the mode line, position the cursor, and flush changes.
 	 */
 	if (leftright_warp || LF_ISSET(UPDATE_SCREEN)) {
 		if (!F_ISSET(sp, S_INPUT_INFO) &&
@@ -651,8 +656,6 @@ number:	if (O_ISSET(sp, O_NUMBER) &&
 			vs_modeline(sp);
 
 		if (LF_ISSET(UPDATE_CURSOR)) {
-			OCNO = CNO;
-			OLNO = LNO;
 			(void)gp->scr_move(sp, y, SCNO);
 
 			/*
@@ -671,7 +674,7 @@ number:	if (O_ISSET(sp, O_NUMBER) &&
 		(void)gp->scr_refresh(sp, F_ISSET(vip, VIP_N_EX_PAINT));
 	}
 
-	/* 10: Clear the flags that are handled by this routine. */
+	/* 11: Clear the flags that are handled by this routine. */
 	F_CLR(sp, S_SCR_CENTER | S_SCR_REDRAW | S_SCR_REFORMAT | S_SCR_TOP);
 	F_CLR(vip, VIP_CUR_INVALID |
 	    VIP_N_EX_PAINT | VIP_N_REFRESH | VIP_N_RENUMBER | VIP_S_MODELINE);
