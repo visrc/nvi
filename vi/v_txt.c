@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.101 1994/04/11 09:48:39 bostic Exp $ (Berkeley) $Date: 1994/04/11 09:48:39 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.102 1994/04/13 10:34:53 bostic Exp $ (Berkeley) $Date: 1994/04/13 10:34:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -49,8 +49,8 @@ static void	 txt_unmap __P((SCR *, TEXT *, u_int *));
 
 /* Cursor character (space is hard to track on the screen). */
 #if defined(DEBUG) && 0
-#undef	CURSOR_CH
-#define	CURSOR_CH	'+'
+#undef	CH_CURSOR
+#define	CH_CURSOR	'+'
 #endif
 
 /*
@@ -77,7 +77,7 @@ v_ntext(sp, ep, tiqh, tm, lp, len, rp, prompt, ai_line, flags)
 	const char *lp;		/* Input line. */
 	const size_t len;	/* Input line length. */
 	MARK *rp;		/* Return MARK. */
-	int prompt;		/* Prompt to display. */
+	ARG_CHAR_T prompt;	/* Prompt to display. */
 	recno_t ai_line;	/* Line number to use for autoindent count. */
 	u_int flags;		/* TXT_ flags. */
 {
@@ -146,7 +146,7 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 	 * Set the insert and overwrite counts.  If overwriting characters,
 	 * do insertion afterward.  If not overwriting characters, assume
 	 * doing insertion.  If change is to a mark, emphasize it with an
-	 * END_CH.
+	 * CH_ENDMARK
 	 */
 	if (len) {
 		if (LF_ISSET(TXT_OVERWRITE)) {
@@ -156,7 +156,7 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 			tp->insert = len - sp->cno;
 
 		if (LF_ISSET(TXT_EMARK))
-			tp->lb[tm->cno] = END_CH;
+			tp->lb[tm->cno] = CH_ENDMARK;
 	}
 
 	/*
@@ -207,7 +207,7 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 	 * strictly necessary.  Not a big deal.
 	 */
 	if (LF_ISSET(TXT_APPENDEOL)) {
-		tp->lb[sp->cno] = CURSOR_CH;
+		tp->lb[sp->cno] = CH_CURSOR;
 		++tp->len;
 		++tp->insert;
 	}
@@ -348,8 +348,8 @@ next_ch:	if (term_key(sp, &ikey, quoted == Q_THISCHAR ?
 		 * by someone else, simply insert the character.
 		 *
 		 * !!!
-		 * Extension -- if the quoted character is HEX_CH, enter hex
-		 * mode.  If the user enters "<HEX_CH>[isxdigit()]*" we will
+		 * Extension -- if the quoted character is CH_HEX, enter hex
+		 * mode.  If the user enters "<CH_HEX>[isxdigit()]*" we will
 		 * try to use the value as a character.  Anything else resets
 		 * hex mode.
 		 */
@@ -360,7 +360,7 @@ next_ch:	if (term_key(sp, &ikey, quoted == Q_THISCHAR ?
 			++tp->owrite;
 			quoted = Q_NOTSET;
 
-			if (ch == HEX_CH)
+			if (ch == CH_HEX)
 				hex = H_NEXTCHAR;
 			goto insq_ch;
 		}
@@ -491,7 +491,7 @@ next_ch:	if (term_key(sp, &ikey, quoted == Q_THISCHAR ?
 				BINC_GOTO(sp,
 				    ntp->lb, ntp->lb_len, ntp->len + 1);
 				LF_SET(TXT_APPENDEOL);
-				ntp->lb[ntp->ai] = CURSOR_CH;
+				ntp->lb[ntp->ai] = CH_CURSOR;
 				++ntp->insert;
 				++ntp->len;
 			}
@@ -925,7 +925,7 @@ insq_ch:		/*
 ebuf_chk:		if (sp->cno >= tp->len) {
 				BINC_GOTO(sp, tp->lb, tp->lb_len, tp->len + 1);
 				LF_SET(TXT_APPENDEOL);
-				tp->lb[sp->cno] = CURSOR_CH;
+				tp->lb[sp->cno] = CH_CURSOR;
 				++tp->insert;
 				++tp->len;
 			}
@@ -1293,7 +1293,7 @@ txt_backup(sp, ep, tiqh, tp, flagsp)
 	/* Handle appending to the line. */
 	flags = *flagsp;
 	if (ntp->owrite == 0 && ntp->insert == 0) {
-		ntp->lb[ntp->len] = CURSOR_CH;
+		ntp->lb[ntp->len] = CH_CURSOR;
 		++ntp->insert;
 		++ntp->len;
 		LF_SET(TXT_APPENDEOL);
@@ -1374,9 +1374,9 @@ txt_hex(sp, tp, was_hex, pushcp)
 	savec = tp->lb[sp->cno];
 	tp->lb[sp->cno] = 0;
 
-	/* Find the previous HEX_CH. */
+	/* Find the previous CH_HEX. */
 	for (off = sp->cno - 1, p = tp->lb + off, len = 0;; --p, --off) {
-		if (*p == HEX_CH) {
+		if (*p == CH_HEX) {
 			wp = p + 1;
 			break;
 		}

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 8.24 1994/04/10 14:32:44 bostic Exp $ (Berkeley) $Date: 1994/04/10 14:32:44 $";
+static char sccsid[] = "$Id: v_search.c,v 8.25 1994/04/13 10:34:39 bostic Exp $ (Berkeley) $Date: 1994/04/13 10:34:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,7 +30,7 @@ static char sccsid[] = "$Id: v_search.c,v 8.24 1994/04/10 14:32:44 bostic Exp $ 
 #include "vcmd.h"
 
 static int correct __P((SCR *, EXF *, VICMDARG *, u_int));
-static int getptrn __P((SCR *, EXF *, int, char **));
+static int getptrn __P((SCR *, EXF *, ARG_CHAR_T, char **));
 static int search __P((SCR *, EXF *, VICMDARG *, char *, int, enum direction));
 
 /*
@@ -87,7 +87,7 @@ v_searchb(sp, ep, vp)
 	if (F_ISSET(vp, VC_ISDOT))
 		ptrn = NULL;
 	else {
-		if (getptrn(sp, ep, '?', &ptrn))
+		if (getptrn(sp, ep, CH_BSEARCH, &ptrn))
 			return (1);
 		if (ptrn == NULL) {
 			F_SET(vp, VM_NOMOTION);
@@ -113,7 +113,7 @@ v_searchf(sp, ep, vp)
 	if (F_ISSET(vp, VC_ISDOT))
 		ptrn = NULL;
 	else {
-		if (getptrn(sp, ep, '/', &ptrn))
+		if (getptrn(sp, ep, CH_FSEARCH, &ptrn))
 			return (1);
 		if (ptrn == NULL) {
 			F_SET(vp, VM_NOMOTION);
@@ -197,7 +197,7 @@ static int
 getptrn(sp, ep, prompt, storep)
 	SCR *sp;
 	EXF *ep;
-	int prompt;
+	ARG_CHAR_T prompt;
 	char **storep;
 {
 	TEXT *tp;
