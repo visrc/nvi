@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 8.19 1993/12/02 15:53:18 bostic Exp $ (Berkeley) $Date: 1993/12/02 15:53:18 $";
+static char sccsid[] = "$Id: ex_argv.c,v 8.20 1993/12/02 18:47:51 bostic Exp $ (Berkeley) $Date: 1993/12/02 18:47:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -344,7 +344,7 @@ ins_ch:			++len;
 	*p = '\0';
 
 	/* Return the new string length, buffer, buffer length. */
-	*lenp = len;
+	*lenp = len - 1;
 	*bpp = bp;
 	*blenp = blen;
 	return (0);
