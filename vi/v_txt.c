@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.52 1996/04/15 19:12:50 bostic Exp $ (Berkeley) $Date: 1996/04/15 19:12:50 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.53 1996/04/17 09:14:08 bostic Exp $ (Berkeley) $Date: 1996/04/17 09:14:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -68,8 +68,6 @@ v_tcmd(sp, vp, prompt, flags)
 	ARG_CHAR_T prompt;
 	u_int flags;
 {
-	VI_PRIVATE *vip;
-
 	/* Normally, we end up where we started. */
 	vp->m_final.lno = sp->lno;
 	vp->m_final.cno = sp->cno;
@@ -106,16 +104,6 @@ v_tcmd(sp, vp, prompt, flags)
 
 	if (IS_ONELINE(sp))
 		F_SET(sp, S_SCR_REDRAW);	/* XXX */
-
-	/*
-	 * Invalidate the cursor and the line size cache, the line never
-	 * really existed.  This fixes bugs where the user searches for
-	 * the last line on the screen + 1 and the refresh routine thinks
-	 * that's where we just were.
-	 */
-	vip = VIP(sp);
-	VI_SCR_CFLUSH(vip);
-	F_SET(vip, VIP_CUR_INVALID);
 
 	/* Set the cursor to the resulting position. */
 	sp->lno = vp->m_final.lno;
@@ -207,6 +195,16 @@ txt_map_end(sp)
 			if (vs_sm_1down(sp))
 				return (1);
 	}
+
+	/*
+	 * Invalidate the cursor and the line size cache, the line never
+	 * really existed.  This fixes bugs where the user searches for
+	 * the last line on the screen + 1 and the refresh routine thinks
+	 * that's where we just were.
+	 */
+	VI_SCR_CFLUSH(vip);
+	F_SET(vip, VIP_CUR_INVALID);
+
 	return (0);
 }
 
