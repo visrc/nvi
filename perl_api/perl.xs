@@ -14,7 +14,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: perl.xs,v 8.10 1996/04/10 19:59:34 bostic Exp $ (Berkeley) $Date: 1996/04/10 19:59:34 $";
+static const char sccsid[] = "$Id: perl.xs,v 8.11 1996/04/10 20:00:44 bostic Exp $ (Berkeley) $Date: 1996/04/10 20:00:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -760,7 +760,6 @@ extern void boot_DynaLoader _((CV* cv));
 static void
 xs_init()
 {
-  dXSUB_SYS;
     char *file = __FILE__;
     {
         newXS("DynaLoader::boot_DynaLoader", boot_DynaLoader, file);
