@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.14 1993/08/23 09:56:17 bostic Exp $ (Berkeley) $Date: 1993/08/23 09:56:17 $";
+static char sccsid[] = "$Id: exf.c,v 8.15 1993/09/09 19:45:49 bostic Exp $ (Berkeley) $Date: 1993/09/09 19:45:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,12 +46,19 @@ file_add(sp, frp_append, fname, ignore)
 {
 	FREF *frp;
 
-	/* Ignore if it already exists. */
+	/*
+	 * Ignore if it already exists, with the exception that we turn off
+	 * the ignore bit.  (The sequence is that the file was already part
+	 * of an argument list, and had the ignore bit set as part of adding
+	 * a new argument list.
+	 */
 	if (fname != NULL) {
 		for (frp = sp->frefhdr.next;
 		    frp != (FREF *)&sp->frefhdr; frp = frp->next)
-			if (!strcmp(frp->fname, fname))
+			if (!strcmp(frp->fname, fname)) {
+				F_CLR(frp, FR_IGNORE);
 				return (frp);
+			}
 	}
 
 	/* Allocate and initialize the FREF structure. */
