@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_read.c,v 10.33 1996/06/17 20:10:29 bostic Exp $ (Berkeley) $Date: 1996/06/17 20:10:29 $";
+static const char sccsid[] = "$Id: ex_read.c,v 10.34 1996/06/26 19:24:31 bostic Exp $ (Berkeley) $Date: 1996/06/26 19:24:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -163,8 +163,8 @@ ex_read(sp, cmdp)
 			/*
 			 * !!!
 			 * Historically, the read command doesn't switch to
-			 * the alternate X11 xterm screen, if when doing a
-			 * filter read.
+			 * the alternate X11 xterm screen, if doing a filter
+			 * read -- don't set SA_ALTERNATE.
 			 */
 			F_SET(sp, SC_SCR_EX | SC_SCR_EXWROTE);
 		}
