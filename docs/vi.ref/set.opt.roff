@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: set.opt.roff,v 8.50 1996/03/28 16:01:48 bostic Exp $ (Berkeley) $Date: 1996/03/28 16:01:48 $
+.\"     $Id: set.opt.roff,v 8.51 1996/03/30 15:34:57 bostic Exp $ (Berkeley) $Date: 1996/03/30 15:34:57 $
 .\"
 .SH 1 "Set Options"
 .pp
@@ -846,6 +846,10 @@ Historically, the
 command, when specified without a count, used two times the size of the
 scroll value; the POSIX 1003.2 standard specified the window size, which
 is a better choice.
+.KY searchci
+.IP "searchci [off]"
+All Regular Expression searches are case-insensitive
+if an upper-case letter does not appear in the search string.
 .KY secure
 .IP "secure [off]"
 The

@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.1,v 8.28 1996/03/27 09:16:24 bostic Exp $ (Berkeley) $Date: 1996/03/27 09:16:24 $
+.\"     $Id: vi.1,v 8.29 1996/03/30 15:35:08 bostic Exp $ (Berkeley) $Date: 1996/03/30 15:35:08 $
 .\"
 .Dd "%Q%"
 .Dt EX/VI 1
@@ -1002,6 +1002,9 @@ only.
 Display a row/column ruler on the colon command line.
 .It Sy "scroll, scr [window / 2]"
 Set the number of lines scrolled.
+.It Sy "searchci [off]"
+All Regular Expression searches are case-insensitive 
+if an upper-case letter does not appear in the search string.
 .It Sy "sections, sect [NHSHH HUnhsh]"
 .Nm \&Vi
 only.
