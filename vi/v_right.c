@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_right.c,v 9.5 1995/01/11 16:22:20 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:22:20 $";
+static char sccsid[] = "$Id: v_right.c,v 9.6 1995/01/31 12:11:06 bostic Exp $ (Berkeley) $Date: 1995/01/31 12:11:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -120,28 +120,27 @@ v_dollar(sp, vp)
 	 * !!!
 	 * Historically, it was illegal to use $ as a motion command on
 	 * an empty line.  Unfortunately, even though C was historically
-	 * aliased to c$, it was special cased to work on empty lines.
-	 * Since we alias C to c$ too, we have a problem.  To fix it, we
-	 * let c$ go through, on the assumption that it's not a problem
-	 * to let it work.
+	 * aliased to c$, it (and not c$) was special cased to work on
+	 * empty lines.  Since we alias C to c$ too, we have a problem.
+	 * To fix it, we let c$ go through, on the assumption that it's
+	 * not a problem for it to work.
 	 */
 	if (file_gline(sp, vp->m_stop.lno, &len) == NULL) {
 		if (file_lline(sp, &lno))
 			return (1);
-		if (lno == 0) {
-			if (!ISCMD(vp->rkp, 'c')) {
-				v_eol(sp, NULL);
-				return (1);
-			}
-			return (0);
+		if (lno != 0) {
+			FILE_LERR(sp, vp->m_start.lno);
+			return (1);
 		}
-		FILE_LERR(sp, vp->m_start.lno);
-		return (1);
+		len = 0;
 	}
 
-	if (len == 0 && !ISCMD(vp->rkp, 'c')) {
-		v_eol(sp, NULL);
-		return (1);
+	if (len == 0) {
+		if (ISMOTION(vp) && !ISCMD(vp->rkp, 'c')) {
+			v_eol(sp, NULL);
+			return (1);
+		}
+		return (0);
 	}
 
 	/*
