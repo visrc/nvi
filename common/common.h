@@ -9,6 +9,8 @@
 #define	REG	register
 #define	UCHAR(c)	((u_char)(c))
 
+#define	inword(ch)	(isalnum(ch) || (ch) == '_')
+
 /*------------------------------------------------------------------------*/
 /* Miscellaneous constants.						  */
 
@@ -58,10 +60,6 @@ extern struct _viflags
 #define tstflag(x,y)	(viflags.x & y)
 #define initflags()	viflags.file = 0;
 
-#ifndef MAXPATHLEN			/* XXX */
-#define	MAXPATHLEN	1024
-#endif
-
 /*------------------------------------------------------------------------*/
 /* These help support the single-line multi-change "undo" -- shift-U      */
 
@@ -94,6 +92,7 @@ void blkdirty();
 MARK paste();
 char *parseptrn();
 char *fetchline();
+void do_digraph();
 /*------------------------------------------------------------------------*/
 /* misc housekeeping variables & functions				  */
 
