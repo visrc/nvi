@@ -1,5 +1,7 @@
 #define KEY_COL(sp, ch)							\
-	(INTISWIDE(ch) ? CHAR_WIDTH(sp, ch) : KEY_LEN(sp,ch))
+	(INTISWIDE(ch) ? CHAR_WIDTH(sp, ch) ? CHAR_WIDTH(sp, ch) : 	\
+					      1 : /* extra space */	\
+			 KEY_LEN(sp,ch))
 
 struct _conv_win {
     void    *bp1;

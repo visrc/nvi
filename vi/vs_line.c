@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_line.c,v 10.34 2001/06/25 15:19:37 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:37 $";
+static const char sccsid[] = "$Id: vs_line.c,v 10.35 2001/07/01 20:22:57 skimo Exp $ (Berkeley) $Date: 2001/07/01 20:22:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -425,9 +425,13 @@ display:
 				break;
 			}
 
-			if (INTISWIDE(ch))
+			/* XXXX this needs some rethinking */
+			if (INTISWIDE(ch)) {
+				/* Put a space before non-spacing char. */
+				if (!CHAR_WIDTH(sp, ch))
+					*cbp++ = L(' ');
 				*cbp++ = ch;
-			else
+			} else
 				for (kp = KEY_NAME(sp, ch) + offset_in_char; 
 				     chlen--;)
 					*cbp++ = (u_char)*kp++;
