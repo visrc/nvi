@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 5.33 1993/05/08 21:30:38 bostic Exp $ (Berkeley) $Date: 1993/05/08 21:30:38 $";
+static char sccsid[] = "$Id: search.c,v 5.34 1993/05/10 16:36:22 bostic Exp $ (Berkeley) $Date: 1993/05/10 16:36:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -466,7 +466,7 @@ ctag_conv(sp, ptrnp, replacedp)
 	GS *gp;
 	size_t blen, len;
 	int lastdollar;
-	char *bp, *p, *t;
+	char *bp, *magic, *p, *t;
 
 	*replacedp = 0;
 
@@ -510,11 +510,12 @@ ctag_conv(sp, ptrnp, replacedp)
 	 * backslashes ctags inserts to escape the search delimiter
 	 * characters.
 	 */
+	magic = O_ISSET(sp, O_EXTENDED) ? "^.[$|*+?{\\()" : "^.[$|*+?{\\";
 	while (p[0]) {
 		/* Ctags escapes the search delimiter characters. */
 		if (p[0] == '\\' && (p[1] == '/' || p[1] == '?'))
 			++p;
-		else if (strchr("^.[$()|*+?{\\", p[0]))
+		else if (strchr(magic, p[0]))
 			*t++ = '\\';
 		*t++ = *p++;
 	}
