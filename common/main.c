@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.18 1993/09/29 15:49:18 bostic Exp $ (Berkeley) $Date: 1993/09/29 15:49:18 $";
+static char sccsid[] = "$Id: main.c,v 8.19 1993/09/30 11:21:18 bostic Exp $ (Berkeley) $Date: 1993/09/30 11:21:18 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -21,6 +21,7 @@ static char sccsid[] = "$Id: main.c,v 8.18 1993/09/29 15:49:18 bostic Exp $ (Ber
 #include <ctype.h>
 #include <err.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
@@ -62,7 +63,7 @@ main(argc, argv)
 	GS *gp;
 	FREF *frp;
 	SCR *nsp, *sp;
-	int ch, flagchk, eval;
+	int ch, fd, flagchk, eval;
 	char *excmdarg, *errf, *myname, *p, *rfname, *tfname;
 	char *av[2], path[MAXPATHLEN];
 
@@ -85,8 +86,29 @@ main(argc, argv)
 	memset(gp, 0, sizeof(GS));
 	HDR_INIT(gp->scrhdr, next, prev);
 	HDR_INIT(gp->exfhdr, next, prev);
-	if (tcgetattr(STDIN_FILENO, &gp->original_termios))
-		err(1, "tcgetattr");
+
+	/* Set a flag if we're reading from the tty. */
+	if (isatty(STDIN_FILENO))
+		F_SET(gp, G_ISFROMTTY);
+
+	/*
+	 * XXX
+	 * Set a flag and don't do terminal sets/resets if the input isn't
+	 * from a tty.  This should eventually be fixed so that users can
+	 * pipe input to nvi.  Note, under all circumstances put reasonable
+	 * things into the original_termios field, as seq.c:seq_save() and
+	 * term.c:term_init() want values for special characters.
+	 */
+	if (F_ISSET(gp, G_ISFROMTTY)) {
+		if (tcgetattr(STDIN_FILENO, &gp->original_termios))
+			err(1, "tcgetattr");
+	} else {
+		if ((fd = open(_PATH_TTY, O_RDONLY, 0)) == -1)
+			err(1, "%s", _PATH_TTY);
+		if (tcgetattr(fd, &gp->original_termios))
+			err(1, "tcgetattr");
+		(void)close(fd);
+	}
 		
 	/* Build and initialize the first/current screen. */
 	if ((sp = malloc(sizeof(SCR))) == NULL)
@@ -336,6 +358,12 @@ main(argc, argv)
 			/* NOTREACHED */
 		}
 		
+	/* Vi reads from the terminal. */
+	if (!F_ISSET(gp, G_ISFROMTTY) && !F_ISSET(sp, S_MODE_EX)) {
+		msgq(sp, M_ERR, "Vi's standard input must be a terminal.");
+		goto err1;
+	}
+
 	/*
 	 * Call a screen.  There's two things that we look at.  In the
 	 * screen flags word there's a bit if it's a vi or ex screen.
@@ -385,7 +413,8 @@ err2:		eval = 1;
 	msgflush(gp);
 
 	/* Make absolutely sure that the modes are restored correctly. */
-	if (tcsetattr(STDIN_FILENO, TCSADRAIN, &gp->original_termios))
+	if (F_ISSET(gp, G_ISFROMTTY) &&
+	    tcsetattr(STDIN_FILENO, TCSADRAIN, &gp->original_termios))
 		err(1, "tcsetattr");
 	exit(eval);
 }
