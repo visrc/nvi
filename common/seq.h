@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: seq.h,v 5.4 1992/04/05 17:00:32 bostic Exp $ (Berkeley) $Date: 1992/04/05 17:00:32 $
+ *	$Id: seq.h,v 5.5 1992/04/16 17:58:52 bostic Exp $ (Berkeley) $Date: 1992/04/16 17:58:52 $
  */
 
 /*
@@ -70,7 +70,6 @@ extern int have_abbr;			/* If any abbreviations. */
 MARK	 abbr_expand __P((MARK, MARK *));
 int	 abbr_save __P((FILE *));
 
-int	 map_init __P((void));
 int	 map_save __P((FILE *));
 
 int	 seq_delete __P((char *, enum seqtype));
