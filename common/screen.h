@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.9 1993/08/18 16:17:41 bostic Exp $ (Berkeley) $Date: 1993/08/18 16:17:41 $
+ *	$Id: screen.h,v 8.10 1993/08/19 15:11:57 bostic Exp $ (Berkeley) $Date: 1993/08/19 15:11:57 $
  */
 
 /*
@@ -183,6 +183,9 @@ typedef struct _scr {
 
 	char	*ibp;			/* Ex: line input buffer. */
 	size_t	 ibp_len;		/* Line input buffer length. */
+
+	char	*comm;			/* Ex: saved/initial command. */
+	size_t	 comm_len;		/* Saved/initial command length. */
 
 	struct _excmdlist *lastcmd;	/* Ex: last command. */
 
