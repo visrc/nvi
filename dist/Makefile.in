@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.44 1996/04/15 22:02:27 bostic Exp $ (Berkeley) $Date: 1996/04/15 22:02:27 $
+#	$Id: Makefile.in,v 8.45 1996/04/22 18:10:42 bostic Exp $ (Berkeley) $Date: 1996/04/22 18:10:42 $
 
 srcdir=	@srcdir@/..
 CC=	@CC@
@@ -116,19 +116,18 @@ cl_term.o: $(srcdir)/cl/cl_term.c
 	$(CC) $(CFLAGS) $?
 
 # Vi Tk sources.
-XINC=	-I/usr/X11/include
 tk_funcs.o: $(srcdir)/tk/tk_funcs.c
-	$(CC) $(CFLAGS) $(XINC) $?
+	$(CC) $(CFLAGS) @XINCS@ $?
 tk_main.o: $(srcdir)/tk/tk_main.c
-	$(CC) $(CFLAGS) $(XINC) $?
+	$(CC) $(CFLAGS) @XINCS@ $?
 tk_read.o: $(srcdir)/tk/tk_read.c
-	$(CC) $(CFLAGS) $(XINC) $?
+	$(CC) $(CFLAGS) @XINCS@ $?
 tk_screen.o: $(srcdir)/tk/tk_screen.c
-	$(CC) $(CFLAGS) $(XINC) $?
+	$(CC) $(CFLAGS) @XINCS@ $?
 tk_term.o: $(srcdir)/tk/tk_term.c
-	$(CC) $(CFLAGS) $(XINC) $?
+	$(CC) $(CFLAGS) @XINCS@ $?
 tk_util.o: $(srcdir)/tk/tk_util.c
-	$(CC) $(CFLAGS) $(XINC) $?
+	$(CC) $(CFLAGS) @XINCS@ $?
 
 # Vi Tcl/Perl interpreter sources.
 api.o: $(srcdir)/common/api.c

@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.90 1996/04/15 22:02:27 bostic Exp $ (Berkeley) $Date: 1996/04/15 22:02:27 $
+dnl	$Id: configure.in,v 8.91 1996/04/22 18:10:43 bostic Exp $ (Berkeley) $Date: 1996/04/22 18:10:43 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(../common/main.c)
@@ -120,6 +120,7 @@ AC_MSG_RESULT($vi_cv_path_preserve)
 dnl Checks for libraries.
 dnl Find the X libraries and includes.
 AC_PATH_X
+AC_SUBST(XINCS)
 if test "$no_x" != yes; then
 	if test "X$x_libraries" != "X"; then
 		if test "X$RLIBS" = "Xyes"; then
