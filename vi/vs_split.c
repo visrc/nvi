@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 10.2 1995/05/05 18:59:21 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:59:21 $";
+static char sccsid[] = "$Id: vs_split.c,v 10.3 1995/05/05 19:01:17 bostic Exp $ (Berkeley) $Date: 1995/05/05 19:01:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,6 +35,8 @@ static char sccsid[] = "$Id: vs_split.c,v 10.2 1995/05/05 18:59:21 bostic Exp $ 
 /*
  * vs_split --
  *	Create a new screen.
+ *
+ * PUBLIC: int vs_split __P((SCR *, SCR **, SCR **));
  */
 int
 vs_split(sp, topp, botp)
@@ -199,6 +201,8 @@ vs_split(sp, topp, botp)
 /*
  * vs_bg --
  *	Background the screen, and switch to the next one.
+ *
+ * PUBLIC: int vs_bg __P((SCR *));
  */
 int
 vs_bg(csp)
@@ -242,6 +246,8 @@ vs_bg(csp)
  * vs_join --
  *	Join the screen into a related screen, if one exists,
  *	and return that screen.
+ *
+ * PUBLIC: int vs_join __P((SCR *, SCR *, SCR *, SCR **));
  */
 int
 vs_join(csp, prev, next, nsp)
@@ -350,6 +356,8 @@ found:	sp->rows += csp->rows;
 /*
  * vs_fg --
  *	Background the current screen, and foreground a new one.
+ *
+ * PUBLIC: int vs_fg __P((SCR *, CHAR_T *));
  */
 int
 vs_fg(csp, name)
@@ -394,6 +402,8 @@ vs_fg(csp, name)
 /*
  * vs_swap --
  *	Swap the current screen with a hidden one.
+ *
+ * PUBLIC: int vs_swap __P((SCR *, SCR **, char *));
  */
 int
 vs_swap(csp, nsp, name)
@@ -493,6 +503,8 @@ vs_swap(csp, nsp, name)
 /*
  * vs_resize --
  *	Change the absolute size of the current screen.
+ *
+ * PUBLIC: int vs_resize __P((SCR *, long, adj_t));
  */
 int
 vs_resize(sp, count, adj)
