@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 8.11 1993/10/05 13:48:07 bostic Exp $ (Berkeley) $Date: 1993/10/05 13:48:07 $";
+static char sccsid[] = "$Id: vs_split.c,v 8.12 1993/11/01 19:00:34 bostic Exp $ (Berkeley) $Date: 1993/11/01 19:00:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -237,7 +237,6 @@ svi_split(sp, argv)
 
 		/* Copy the parent's map into the child's map. */
 		memmove(_HMAP(tsp), _HMAP(sp), tsp->t_rows * sizeof(SMAP));
-
 	} else {
 		if (file_init(tsp, tsp->frp, NULL, 0))
 			goto mem5;
@@ -250,9 +249,9 @@ svi_split(sp, argv)
 	MOVE(tsp, INFOLINE(tsp), 0);
 	clrtoeol();
 
-	/* Refresh the parent screens, displaying the status line. */
-	(void)status(sp, sp->ep, sp->lno, 0);
-	(void)svi_refresh(sp, sp->ep);
+	/* Redraw the status line for the parent screen, if it's on top. */
+	if (splitup == 0)
+		(void)status(sp, sp->ep, sp->lno, 0);
 
 	/* Save the parent window's cursor information. */
 	sp->frp->lno = sp->lno;
