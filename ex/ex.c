@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.146 1994/08/07 13:45:59 bostic Exp $ (Berkeley) $Date: 1994/08/07 13:45:59 $";
+static char sccsid[] = "$Id: ex.c,v 8.147 1994/08/08 06:48:58 bostic Exp $ (Berkeley) $Date: 1994/08/08 06:48:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1345,7 +1345,7 @@ addr2:	switch (exc.addrcnt) {
 		 */
 		if (arg1_len == 0 && save_cmdlen == 0)
 			return (0);
-		if (IN_VI_MODE(sp) && term_push(sp, "\n", 1, 0))
+		if (term_push(sp, "\n", 1, 0))
 			goto err;
 		if (save_cmdlen != 0)
 			if (term_push(sp, save_cmd, save_cmdlen, 0))
