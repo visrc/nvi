@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: msg.h,v 8.3 1993/11/02 18:44:23 bostic Exp $ (Berkeley) $Date: 1993/11/02 18:44:23 $
+ *	$Id: msg.h,v 8.4 1993/11/09 09:53:48 bostic Exp $ (Berkeley) $Date: 1993/11/09 09:53:48 $
  */
 
 /*
@@ -33,7 +33,6 @@ typedef struct _msg {
 } MSG;
 
 /* Messages. */
-void	bell __P((SCR *));
 void	msg_app __P((GS *, SCR *, int, char *, size_t));
 int	msg_rpt __P((SCR *, int));
 void	msgq __P((SCR *, enum msgtype, const char *, ...));
