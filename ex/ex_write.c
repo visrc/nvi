@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_write.c,v 10.22 1996/04/27 11:40:27 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:27 $";
+static const char sccsid[] = "$Id: ex_write.c,v 10.23 1996/05/01 15:06:11 bostic Exp $ (Berkeley) $Date: 1996/05/01 15:06:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -168,10 +168,14 @@ exwr(sp, cmdp, cmd)
 		if (argv_exp1(sp, cmdp, p, strlen(p), 1))
 			return (1);
 
+		/*
+		 * !!!
+		 * Ignore the return cursor position, the cursor doesn't
+		 * move.
+		 */
 		if (ex_filter(sp, cmdp, &cmdp->addr1,
 		    &cmdp->addr2, &rm, cmdp->argv[1]->bp, FILTER_WRITE))
 			return (1);
-		sp->lno = rm.lno;
 
 		/* Ex terminates with a bang, even if the command fails. */
 		if (!F_ISSET(sp, SC_VI) && !F_ISSET(sp, SC_EX_SILENT))
