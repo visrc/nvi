@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: set.opt.roff,v 8.53 1996/04/15 12:33:48 bostic Exp $ (Berkeley) $Date: 1996/04/15 12:33:48 $
+.\"     $Id: set.opt.roff,v 8.54 1996/04/15 20:42:26 bostic Exp $ (Berkeley) $Date: 1996/04/15 20:42:26 $
 .\"
 .SH 1 "Set Options"
 .pp
@@ -753,11 +753,41 @@ to prompt for command input with a
 character; when it is not set, no prompt is displayed.
 .KY readonly
 .IP "readonly, ro [off]"
-This option causes a force flag to be required to attempt to write
-the file back to the original file name.
+This option causes a force flag to be required to attempt to write the file.
 Setting this option is equivalent to using the
 .b \-R
-command line option, or editing a file which lacks write permission.
+command line option,
+or executing the
+.CO vi
+program using the name
+.CO view .
+.sp
+The
+.OP readonly
+edit option is not usually persistent, like other edit options.
+If the
+.b \-R
+command line option is set,
+.CO vi
+is executed as
+.CO view ,
+or the
+.OP readonly
+edit option is explicitly set,
+all files edited in the screen will be marked readonly,
+and the force flag will be required to write them.
+However, if none of these conditions are true,
+or the
+.OP readonly
+edit option is explicitly unset,
+then the
+.OP readonly
+edit option will toggle based on the write permissions of the file currently
+being edited as of when it is loaded into the edit buffer.
+In other words, the
+.OP readonly
+edit option will be set if the current file lacks write permissions,
+and will not be set if the user has write permissions for the file.
 .KY recdir
 .IP "recdir [/var/tmp/vi.recover]"
 The directory where recovery files are stored.
