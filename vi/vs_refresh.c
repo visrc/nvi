@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.13 1992/12/25 16:24:15 bostic Exp $ (Berkeley) $Date: 1992/12/25 16:24:15 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.14 1992/12/27 19:20:26 bostic Exp $ (Berkeley) $Date: 1992/12/27 19:20:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,6 +26,23 @@ static char sccsid[] = "$Id: vs_refresh.c,v 5.13 1992/12/25 16:24:15 bostic Exp 
 #include "screen.h"
 
 /*
+ * This code is the screen interface to the vi editor.  It's commented
+ * extremely heavily because it's downright nasty.  Changing this code
+ * can be hazardous to your health.
+ *
+ * We use a single curses window for vi.  The model would be simpler with
+ * two windows (one for the text, and one for the modeline) because
+ * scrolling the text window down would work correctly then, not affecting
+ * the mode line.  As it is we have to play games to make it look right.
+ * The reason is that it would be difficult for curses to optimize the
+ * movement, i.e.  detect that the downward scroll isn't going to change
+ * the modeline, set the scrolling region on the terminal and only scroll
+ * the first part of the text window.  (Even if curses did detect it, the
+ * set-scrolling-region terminal commands can't be used by curses because
+ * it's indeterminate where the cursor ends up after they are sent.)
+ */
+
+/*
  * screen_init --
  *	Initialize curses, and draw the screen.
  */
@@ -41,6 +58,9 @@ scr_init(ep)
 	nonl();
 	raw();
 	scrollok(stdscr, 1);
+
+	ep->lines = LINES;		/* XXX: Way ugly. */
+	ep->cols = COLS;
 
 	return (0);
 }
@@ -135,7 +155,7 @@ onwinch(signo)
 	/* Do the resize if waiting, otherwise just schedule it. */
 	FF_SET(curf, F_RESIZE);
 	if (FF_ISSET(curf, F_READING)) {
-		scr_cchange(curf);
+		curf->scr_update(curf);
 		refresh();
 	}
 }
