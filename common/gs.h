@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 8.37 1994/07/15 15:59:44 bostic Exp $ (Berkeley) $Date: 1994/07/15 15:59:44 $
+ *	$Id: gs.h,v 8.38 1994/07/17 00:28:42 bostic Exp $ (Berkeley) $Date: 1994/07/17 00:28:42 $
  */
 
 struct _gs {
@@ -75,8 +75,7 @@ struct _gs {
 #define	G_STDIN_TTY	0x0100		/* Standard input is a tty. */
 #define	G_TERMIOS_SET	0x0200		/* Termios structure is valid. */
 #define	G_TMP_INUSE	0x0400		/* Temporary buffer in use. */
-
-	u_int	 flags;
+	u_int16_t flags;
 };
 
 extern GS *__global_list;		/* List of screens. */
