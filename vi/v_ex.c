@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 5.18 1992/11/03 19:31:28 bostic Exp $ (Berkeley) $Date: 1992/11/03 19:31:28 $";
+static char sccsid[] = "$Id: v_ex.c,v 5.19 1992/11/04 10:42:38 bostic Exp $ (Berkeley) $Date: 1992/11/04 10:42:38 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -35,12 +35,10 @@ v_ex(vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	EXF *scurf;
 	size_t len;
 	int flags, key;
 	u_char *p;
 
-	scurf = curf;
 	v_startex();
 	for (flags = GB_BS;; flags |= GB_NLECHO) {
 		/*
@@ -74,27 +72,26 @@ v_ex(vp, fm, tm, rp)
 		exlinecount = 0;
 	}
 
-	/* The file may have changed. */
-	if (scurf != curf)
-		scr_ref(curf);
-	else
-		v_leaveex();
-
 	/*
-	 * The only cursor modifications will have been real.  However,
-	 * the underlying line may have changed; don't trust anything.
+	 * The file may have changed, if so, the main vi loop will take
+	 * care of it.  Otherwise, the only cursor modifications will be
+	 * real, however, the underlying line may have changed; don't
+	 * trust anything.  This section of code has been a remarkably
+	 * fertile place for bugs.  Don't trust ANYTHING.
 	 */
-	curf->olno = OOBLNO;
-	rp->lno = curf->lno;
-	if (file_gline(curf, curf->lno, &len) == NULL) {
-		rp->cno = 0;
-		if (file_lline(curf) != 0) {
-			GETLINE_ERR(curf->lno);
-			return (1);
-		}
-	} else
-		rp->cno = MIN(curf->cno, len ? len - 1 : 0);
-
+	if (!(curf->flags & F_NEWSESSION)) {
+		v_leaveex();
+		curf->olno = OOBLNO;
+		rp->lno = curf->lno;
+		if (file_gline(curf, curf->lno, &len) == NULL) {
+			rp->cno = 0;
+			if (file_lline(curf) != 0) {
+				GETLINE_ERR(curf->lno);
+				return (1);
+			}
+		} else
+			rp->cno = MIN(curf->cno, len ? len - 1 : 0);
+	}
 	return (0);
 }
 		
