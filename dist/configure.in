@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.15 1996/02/25 12:08:07 bostic Exp $ (Berkeley) $Date: 1996/02/25 12:08:07 $
+dnl	$Id: configure.in,v 8.16 1996/02/25 12:16:44 bostic Exp $ (Berkeley) $Date: 1996/02/25 12:16:44 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(configure)
@@ -46,6 +46,12 @@ fi
 AC_MSG_RESULT($vi_cv_path_preserve)
 
 dnl Checks for libraries.
+dnl Find the X libraries and includes.
+AC_PATH_X
+if test "$no_x" = yes; then
+	x_libraries=""
+fi
+
 dnl Check to see what curses library the user wants.
 AC_SUBST(cinc)
 AC_SUBST(cobjs)
@@ -56,10 +62,10 @@ AC_ARG_WITH(curses,
                           ask:    Prompt for the curses library to use.
                           system: Use the system curses library.
                           vi:     Use the vi-provided curses library],
-	[if test $withval = ask; then
+	[if test "$withval" = ask; then
 		vi_cv_curses="user specified"
 	else
-	if test $withval = system; then
+	if test "$withval" = system; then
 		vi_cv_curses="system curses"
 	else
 		vi_cv_curses="vi curses"
@@ -99,7 +105,7 @@ fi
 dnl Check to see if we can load a Tcl interpreter and Tk vi front-end.
 AC_SUBST(tknvi)
 SAVED_LIBS=$LIBS
-LIBS="$LIBS -ltk -ltcl -lm"
+LIBS="$LIBS -ltk -ltcl -lm $x_libraries"
 AC_MSG_CHECKING(for Tcl interpreter)
 AC_CACHE_VAL(vi_cv_tcltk, [dnl
 AC_TRY_LINK([#include <tcl.h>], [Tcl_Eval(0, 0);],
@@ -363,10 +369,10 @@ AC_CACHE_VAL(vi_cv_db_lib, [dnl
 AC_ARG_WITH(db,
 	[  --with-db=library|vi    library: Use the DB routines in the C library.
                           vi:      Use the vi-provided DB routines],
-	[if test $withval = "library"; then
+	[if test "$withval" = "library"; then
 		vi_cv_db_lib="C library DB routines"
 	else
-	if test $withval = "vi"; then
+	if test "$withval" = "vi"; then
 		vi_cv_db_lib="vi DB routines"
 	else
 		echo
@@ -392,10 +398,10 @@ AC_CACHE_VAL(vi_cv_re_lib, [dnl
 AC_ARG_WITH(re, 
 	[  --with-re=library|vi    library: Use the RE routines in the C library.
                           vi:      Use the vi-provided RE routines],
-	[if test $withval = "library"; then
+	[if test "$withval" = "library"; then
 		vi_cv_re_lib="C library RE routines"
 	else
-	if test $withval = "vi"; then
+	if test "$withval" = "vi"; then
 		vi_cv_re_lib="vi RE routines"
 	else
 		echo
