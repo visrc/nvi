@@ -14,7 +14,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_perl.c,v 8.8 1996/07/12 20:24:58 bostic Exp $ (Berkeley) $Date: 1996/07/12 20:24:58 $";
+static const char sccsid[] = "$Id: ex_perl.c,v 8.9 1996/07/19 19:47:29 bostic Exp $ (Berkeley) $Date: 1996/07/19 19:47:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -47,7 +47,7 @@ ex_perl(sp, cmdp)
 	EXCMD *cmdp;
 {
 #ifdef HAVE_PERL_INTERP
-	char **p;
+	CHAR_T *p;
 	size_t len;
 
 	/* Skip leading white space. */
@@ -57,10 +57,10 @@ ex_perl(sp, cmdp)
 			if (!isblank(*p))
 				break;
 	if (cmdp->argc == 0 || len == 0) {
-		ex_emsg(scrp, cmdp->cmd->usage, EXM_USAGE);
+		ex_emsg(sp, cmdp->cmd->usage, EXM_USAGE);
 		return (1);
 	}
-	return (cmdp->cmd == &cmds[C_PERL] ?
+	return (cmdp->cmd == &cmds[C_PERLCMD] ?
 	    perl_ex_perl(sp, p, len, cmdp->addr1.lno, cmdp->addr2.lno) :
 	    perl_ex_perldo(sp, p, len, cmdp->addr1.lno, cmdp->addr2.lno));
 #else
