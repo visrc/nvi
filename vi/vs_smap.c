@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 8.43 1994/07/17 13:16:59 bostic Exp $ (Berkeley) $Date: 1994/07/17 13:16:59 $";
+static char sccsid[] = "$Id: vs_smap.c,v 8.44 1994/07/17 14:26:51 bostic Exp $ (Berkeley) $Date: 1994/07/17 14:26:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -651,6 +651,8 @@ svi_sm_up(sp, ep, rp, count, scmd, smp)
 				smp = TMAP;
 				zset = 1;
 			}
+			/* FALLTHROUGH */
+		default:
 			break;
 		}
 	}
@@ -853,6 +855,8 @@ svi_sm_down(sp, ep, rp, count, scmd, smp)
 				smp = HMAP;
 				zset = 1;
 			}
+			/* FALLTHROUGH */
+		default:
 			break;
 		}
 	}
