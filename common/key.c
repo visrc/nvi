@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.58 1994/04/09 18:09:53 bostic Exp $ (Berkeley) $Date: 1994/04/09 18:09:53 $";
+static char sccsid[] = "$Id: key.c,v 8.59 1994/04/10 10:10:43 bostic Exp $ (Berkeley) $Date: 1994/04/10 10:10:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -340,6 +340,10 @@ __key_name(sp, ach)
 	 * XXX
 	 * This code will only work with CHAR_T's that are multiples of 8-bit
 	 * bytes.
+	 *
+	 * XXX
+	 * NB: There's an assumption here that all printable characters take
+	 * up a single column on the screen.  This is not always correct.
 	 */
 	ch = ach;
 	if (isprint(ch)) {
