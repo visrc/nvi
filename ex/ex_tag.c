@@ -13,7 +13,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_tag.c,v 10.29 1996/05/08 20:33:06 bostic Exp $ (Berkeley) $Date: 1996/05/08 20:33:06 $";
+static const char sccsid[] = "$Id: ex_tag.c,v 10.30 1996/05/08 21:03:58 bostic Exp $ (Berkeley) $Date: 1996/05/08 21:03:58 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -623,10 +623,11 @@ ex_tag_display(sp)
 	 * fixing.  (The obvious fix is to pass the filenames through the
 	 * msg_print function.)
 	 */
-#define	L_NAME	20
-#define	L_TAG	20
-#define	L_SPACE	 5
-	if (sp->cols <= L_NAME) {
+#define	L_NAME	30		/* Name. */
+#define	L_SLOP	 4		/* Leading number plus trailing *. */
+#define	L_SPACE	 5		/* Spaces after name, before tag. */
+#define	L_TAG	20		/* Tag. */
+	if (sp->cols <= L_NAME + L_SLOP) {
 		msgq(sp, M_ERR, "292|Display too small.");
 		return (0);
 	}
@@ -651,8 +652,7 @@ ex_tag_display(sp)
 			} else
 				(void)ex_printf(sp,
 				    "   %*.*s", L_NAME, L_NAME, p);
-			if (tqp->current == tp &&
-			    (sp->cols - L_NAME) >= L_TAG + L_SPACE)
+			if (tqp->current == tp)
 				ex_printf(sp, "*");
 
 			if (tp == tqp->tagq.cqh_first && tqp->tag != NULL &&
