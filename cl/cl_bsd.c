@@ -6,13 +6,9 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_bsd.c,v 8.15 1996/02/06 10:44:13 bostic Exp $ (Berkeley) $Date: 1996/02/06 10:44:13 $";
+static char sccsid[] = "$Id: cl_bsd.c,v 8.16 1996/02/20 20:54:06 bostic Exp $ (Berkeley) $Date: 1996/02/20 20:54:06 $";
 #endif /* not lint */
 
-/*
- * PUBLIC: #if defined(BSD_CURSES_INTERFACE) && !defined(TIGETONLY)
- */
-#ifdef BSD_CURSES_INTERFACE
 #include <sys/types.h>
 #include <sys/queue.h>
 #include <sys/time.h>
@@ -37,25 +33,34 @@ static char	*vb;				/* Visible bell string. */
 
 /*
  * HP's support the entire System V curses package except for the tigetstr
- * and tigetnum functions.  Cthulu only knows why.
+ * and tigetnum functions.  Ultrix supports the BSD curses package except
+ * for the idlok function.  Cthulu only knows why.  Break things up into a
+ * minimal set of functions.
  */
-#ifndef TIGETONLY
+
+#ifndef	HAVE_CURSES_BEEP
 /*
  * beep --
  *
+ * PUBLIC: #ifndef HAVE_CURSES_BEEP
  * PUBLIC: void beep __P((void));
+ * PUBLIC: #endif
  */
 void
 beep()
 {
 	(void)write(1, "\007", 1);	/* '\a' */
 }
+#endif /* !HAVE_CURSES_BEEP */
 
+#ifndef	HAVE_CURSES_FLASH
 /*
  * flash --
  *	Flash the screen.
  *
+ * PUBLIC: #ifndef HAVE_CURSES_FLASH
  * PUBLIC: void flash __P((void));
+ * PUBLIC: #endif
  */
 void
 flash()
@@ -66,15 +71,16 @@ flash()
 	} else
 		beep();
 }
+#endif /* !HAVE_CURSES_FLASH */
 
-#ifdef IDLOK_MISSING
+#ifndef	HAVE_CURSES_IDLOK
 /*
- * Ultrix supports the BSD curses package except for the idlok function.
- *
  * idlok --
  *	Turn on/off hardware line insert/delete.
  *
+ * PUBLIC: #ifndef HAVE_CURSES_IDLOK
  * PUBLIC: void idlok __P((WINDOW *, int));
+ * PUBLIC: #endif
  */
 void
 idlok(win, bf)
@@ -83,34 +89,40 @@ idlok(win, bf)
 {
 	return;
 }
-#endif
+#endif /* !HAVE_CURSES_IDLOK */
 
+#ifndef	HAVE_CURSES_KEYPAD
 /*
  * keypad --
  *	Put the keypad/cursor arrows into or out of application mode.
  *
+ * PUBLIC: #ifndef HAVE_CURSES_KEYPAD
  * PUBLIC: int keypad __P((void *, int));
+ * PUBLIC: #endif
  */
 int
 keypad(a, on)
 	void *a;
 	int on;
 {
-	char *p, *sbp, sbuf[128];
+	char *p;
 
-	sbp = sbuf;
-	if ((p = tgetstr(on ? "ks" : "ke", &sbp)) != NULL) {
+	if ((p = tigetstr(on ? "smkx" : "rmkx")) != (char *)-1) {
 		(void)tputs(p, 0, cl_putchar);
 		(void)fflush(stdout);
 	}
 	return (0);
 }
+#endif /* !HAVE_CURSES_KEYPAD */
 
+#ifndef	HAVE_CURSES_NEWTERM
 /*
  * newterm --
  *	Create a new curses screen.
  *
+ * PUBLIC: #ifndef HAVE_CURSES_NEWTERM
  * PUBLIC: void *newterm __P((const char *, FILE *, FILE *));
+ * PUBLIC: #endif
  */
 void *
 newterm(a, b, c)
@@ -119,17 +131,21 @@ newterm(a, b, c)
 {
 	return (initscr());
 }
+#endif /* !HAVE_CURSES_NEWTERM */
 
+#ifndef	HAVE_CURSES_SETUPTERM
 /*
  * setupterm --
  *	Set up terminal.
  *
+ * PUBLIC: #ifndef HAVE_CURSES_SETUPTERM
  * PUBLIC: void setupterm __P((char *, int, int *));
+ * PUBLIC: #endif
  */
 void
-setupterm(ttype, fileno, errp)
+setupterm(ttype, fno, errp)
 	char *ttype;
-	int fileno, *errp;
+	int fno, *errp;
 {
 	static char buf[2048];
 	char *p;
@@ -137,17 +153,18 @@ setupterm(ttype, fileno, errp)
 	if ((*errp = tgetent(buf, ttype)) > 0) {
 		if (ke != NULL)
 			free(ke);
-		ke = ((p = tigetstr("ke")) == NULL) ? NULL : strdup(p);
+		ke = ((p = tigetstr("rmkx")) == (char *)-1) ? NULL : strdup(p);
 		if (ks != NULL)
 			free(ks);
-		ks = ((p = tigetstr("ks")) == NULL) ? NULL : strdup(p);
+		ks = ((p = tigetstr("smkx")) == (char *)-1) ? NULL : strdup(p);
 		if (vb != NULL)
 			free(vb);
-		vb = ((p = tigetstr("vb")) == NULL) ? NULL : strdup(p);
+		vb = ((p = tigetstr("flash")) == (char *)-1) ? NULL : strdup(p);
 	}
 }
-#endif /* TIGETONLY */
+#endif /* !HAVE_CURSES_SETUPTERM */
 
+#ifndef	HAVE_CURSES_TIGETSTR
 /* Terminfo-to-termcap translation table. */
 typedef struct _tl {
 	char *terminfo;			/* Terminfo name. */
@@ -158,6 +175,7 @@ static const TL list[] = {
 	"cup",		"cm",		/* Cursor up. */
 	"cuu1",		"up",		/* Cursor up. */
 	"el",		"ce",		/* Clear to end-of-line. */
+	"flash",	"vb",		/* Visible bell. */
 	"kcub1",  	"kl",		/* Cursor left. */
 	"kcud1",	"kd",		/* Cursor down. */
 	"kcuf1",	"kr",		/* Cursor right. */
@@ -175,7 +193,9 @@ static const TL list[] = {
 	"kpp",		"kP",		/* Page up. */
 	"kri",		"kR",		/* Scroll up. */
 	"lines",	"li",		/* Terminal lines. */
+	"rmkx",		"ke",		/* Exit "keypad-transmit" mode. */
 	"rmso",		"se",		/* Standout end. */
+	"smkx",		"se",		/* Enter "keypad-transmit" mode. */
 	"smso",		"so",		/* Standout begin. */
 };
 
@@ -211,9 +231,11 @@ lcmp(a, b)
 /*
  * tigetstr --
  *
+ * PUBLIC: #ifndef HAVE_CURSES_TIGETSTR
  * PUBLIC: char *tigetstr __P((char *));
+ * PUBLIC: #endif
  */
-char *
+int
 tigetstr(name)
 	char *name;
 {
@@ -235,28 +257,28 @@ tigetstr(name)
 		name = tlp->termcap;
 
 	p = sbuf;
-	return (tgetstr(name, &p));
+	return (tgetstr(name, &p) == NULL ? (char *)-1 : sbuf);
 }
 
 /*
  * tigetnum --
  *
+ * PUBLIC: #ifndef HAVE_CURSES_TIGETSTR
  * PUBLIC: int tigetnum __P((char *));
+ * PUBLIC: #endif
  */
 int
 tigetnum(name)
 	char *name;
 {
 	TL *tlp;
+	int val;
 
 	if ((tlp = bsearch(name,
 	    list, sizeof(list) / sizeof(TL), sizeof(TL), lcmp)) != NULL) {
 		name = tlp->termcap;
 	}
 
-	return (tgetnum(name));
+	return ((val = tgetnum(name)) == -1 ? -2 : val);
 }
-/*
- * PUBLIC: #endif
- */
-#endif /* BSD_CURSES_INTERFACE */
+#endif /* !HAVE_CURSES_TIGETSTR */
