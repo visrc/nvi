@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.76 1993/02/28 16:28:38 bostic Exp $ (Berkeley) $Date: 1993/02/28 16:28:38 $";
+static char sccsid[] = "$Id: ex.c,v 5.77 1993/03/01 12:47:48 bostic Exp $ (Berkeley) $Date: 1993/03/01 12:47:48 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -137,12 +137,12 @@ ex_cstring(ep, cmd, len, doquoting)
 	int cnt, rval;
 	u_char *p, *t;
 
-	/*
-	 * Walk the string, checking for '^V' quotes and '|' or '\n'
-	 * separated commands.  The string "^V\n" is a single '^V'.
-	 */
 	if (doquoting)
 		QINIT;
+	/*
+	 * Walk the string, checking for '\' or '^V' quotes and '|' or
+	 * '\n' separated commands.  The string "^V\n" is a single '^V'.
+	 */
 	rval = 0;
 	saved_mode = FF_ISSET(ep, F_MODE_EX | F_MODE_VI | F_FILE_RESET);
 	for (p = t = cmd, cnt = 0;; ++cnt, ++t, --len) {
@@ -174,6 +174,7 @@ cend:			if (p > cmd) {
 			if (doquoting)
 				QINIT;
 			break;
+		case '\\':
 		case ctrl('V'):
 			if (doquoting && len > 1 && t[1] != '\n') {
 				QSET(cnt);
@@ -209,7 +210,7 @@ ex_cmd(ep, exc)
 	int cmdlen, flags, uselastcmd;
 	u_char *p, *endp;
 
-#if DEBUG && 0
+#if DEBUG && 1
 	TRACE("ex: {%s}\n", exc);
 #endif
 	/*
