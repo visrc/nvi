@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 8.14 1993/11/04 16:14:59 bostic Exp $ (Berkeley) $Date: 1993/11/04 16:14:59 $
+ *	$Id: gs.h,v 8.15 1993/11/05 14:47:36 bostic Exp $ (Berkeley) $Date: 1993/11/05 14:47:36 $
  */
 
 typedef struct _gs {
@@ -13,6 +13,8 @@ typedef struct _gs {
 	mode_t	 origmode;		/* Original terminal mode. */
 	struct termios
 		 original_termios;	/* Original terminal values. */
+	struct termios
+		 s5_curses_botch;	/* System V curses workaround. */
 
 	struct _msg	*msgp;		/* User message list. */
 
@@ -34,16 +36,17 @@ typedef struct _gs {
 	bitstr_t bit_decl(seqb, MAX_BIT_SEQ);
 
 #define	G_BELLSCHED	0x0001		/* Bell scheduled. */
-#define	G_ISFROMTTY	0x0002		/* Reading from a tty. */
-#define	G_RECOVER_SET	0x0004		/* Recover system initialized. */
-#define	G_SETMODE	0x0008		/* Tty mode changed. */
-#define	G_SIGALRM	0x0010		/* SIGALRM arrived. */
-#define	G_SIGHUP	0x0020		/* SIGHUP arrived. */
-#define	G_SIGTERM	0x0040		/* SIGTERM arrived. */
-#define	G_SIGWINCH	0x0080		/* SIGWINCH arrived. */
-#define	G_SLEEPING	0x0100		/* Asleep (die on signal). */
-#define	G_SNAPSHOT	0x0200		/* Always snapshot files. */
-#define	G_TMP_INUSE	0x0400		/* Temporary buffer in use. */
+#define	G_INITSCR	0x0002		/* Curses initscr() called. */
+#define	G_ISFROMTTY	0x0004		/* Reading from a tty. */
+#define	G_RECOVER_SET	0x0008		/* Recover system initialized. */
+#define	G_SETMODE	0x0010		/* Tty mode changed. */
+#define	G_SIGALRM	0x0020		/* SIGALRM arrived. */
+#define	G_SIGHUP	0x0040		/* SIGHUP arrived. */
+#define	G_SIGTERM	0x0080		/* SIGTERM arrived. */
+#define	G_SIGWINCH	0x0100		/* SIGWINCH arrived. */
+#define	G_SLEEPING	0x0200		/* Asleep (die on signal). */
+#define	G_SNAPSHOT	0x0400		/* Always snapshot files. */
+#define	G_TMP_INUSE	0x0800		/* Temporary buffer in use. */
 	u_int	 flags;
 } GS;
 
