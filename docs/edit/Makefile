@@ -1,29 +1,11 @@
-#
-# Copyright (c) 1986 Regents of the University of California.
-# All rights reserved.  The Berkeley software License Agreement
-# specifies the terms and conditions for redistribution.
-#
-#	$Id: Makefile,v 6.1 1986/05/27 20:21:38 mckusick Exp $ (Berkeley) $Date: 1986/05/27 20:21:38 $
-#
+#	$Id: Makefile,v 6.2 1990/06/30 15:09:20 bostic Exp $ (Berkeley) $Date: 1990/06/30 15:09:20 $
+
+DIR=	usd/14.edit
 SRCS=	edittut.ms
 MACROS=	-msU
-PRINTER=Pdp
-TBL=	dtbl -${PRINTER}
-TROFF=	ditroff -${PRINTER}
-
-paper:	paper.${PRINTER}
-	lpr -${PRINTER} -n paper.${PRINTER}
 
 paper.${PRINTER}: ${SRCS}
-	${TBL} ${SRCS} | ${TROFF} ${MACROS} -t > paper.${PRINTER}
-
-clean:
-	rm -f paper.[PT]* *.spell errs Errs make.out
-
-spell:	${SRCS}
-	@for i in ${SRCS}; do \
-		echo $$i; spell $$i | sort | comm -23 - spell.ok > $$i.spell; \
-	done
+	${TBL} ${SRCS} | ${ROFF} > ${.TARGET}
 
 # index for versatec is different from the one in edit.tut
 # because the fonts are different and entries reference page
@@ -32,3 +14,5 @@ spell:	${SRCS}
 
 editvindex:
 	${TROFF} ${MACROS} -n22 edit.vindex
+
+.include <bsd.doc.mk>
