@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.69 1996/08/18 10:43:26 bostic Exp $ (Berkeley) $Date: 1996/08/18 10:43:26 $
+#	$Id: Makefile.in,v 8.70 1996/08/19 13:00:17 bostic Exp $ (Berkeley) $Date: 1996/08/19 13:00:17 $
 
 srcdir=	@srcdir@/..
 CC=	@CC@
@@ -144,6 +144,18 @@ install_common:
 	$(mkdir) $(datadir)/vi/tcl && $(chmod) $(dmode) $(datadir)/vi/tcl
 	(cd $(srcdir)/tcl_scripts && $(cp) *.tcl $(datadir)/vi/tcl && \
 	    cd $(datadir)/vi/tcl && $(chmod) $(fmode) *.tcl)
+
+uninstall:
+	$(rm) -rf $(datadir)/vi
+	cd $(bindir) && $(rm) -f `echo ex | sed '$(transform)'`
+	cd $(bindir) && $(rm) -f `echo vi | sed '$(transform)'`
+	cd $(bindir) && $(rm) -f `echo view | sed '$(transform)'`
+	cd $(mandir)/cat1 && $(rm) -f `echo ex.0 | sed '$(transform)'`
+	cd $(mandir)/cat1 && $(rm) -f `echo vi.0 | sed '$(transform)'`
+	cd $(mandir)/cat1 && $(rm) -f `echo view.0 | sed '$(transform)'`
+	cd $(mandir)/man1 && $(rm) -f `echo ex.1 | sed '$(transform)'`
+	cd $(mandir)/man1 && $(rm) -f `echo vi.1 | sed '$(transform)'`
+	cd $(mandir)/man1 && $(rm) -f `echo view.1 | sed '$(transform)'`
 
 docs:
 	cd $(srcdir)/docs/USD.doc/vi.ref && $(MAKE)
