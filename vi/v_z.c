@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_z.c,v 8.14 1994/05/21 09:50:55 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:50:55 $";
+static char sccsid[] = "$Id: v_z.c,v 8.15 1994/07/17 12:26:29 bostic Exp $ (Berkeley) $Date: 1994/07/17 12:26:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -87,16 +87,15 @@ v_z(sp, ep, vp)
 		if (F_ISSET(vp, VC_C1SET)) {
 			if (sp->s_fill(sp, ep, lno, P_TOP))
 				return (1);
+			if (sp->s_position(sp, ep, &vp->m_final, 0, P_TOP))
+				return (1);
 		} else {
 			if (sp->s_position(sp, ep, &vp->m_final, 0, P_TOP))
 				return (1);
-			sp->lno = vp->m_final.lno;
 			if (sp->s_scroll(sp, ep,
 			    &vp->m_final, sp->t_rows, Z_PLUS))
 				return (1);
 		}
-		if (sp->s_position(sp, ep, &vp->m_final, 0, P_TOP))
-			return (1);
 		break;
 	case '^':
 		/*
