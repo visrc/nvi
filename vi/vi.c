@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.32 1993/11/13 18:01:45 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:01:45 $";
+static char sccsid[] = "$Id: vi.c,v 8.33 1993/11/14 17:03:55 bostic Exp $ (Berkeley) $Date: 1993/11/14 17:03:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -282,15 +282,13 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 	memset(&vp->vp_startzero, 0,
 	    (char *)&vp->vp_endzero - (char *)&vp->vp_startzero);
 
-	if (getkey(sp, &key, TXT_MAPCOMMAND))
-		return (1);
-
-	/* An escape bells the user only if already in command mode. */
-	if (sp->special[key] == K_ESCAPE) {
-		if (ismotion == NULL)
+	/* An escape bells the user if in command mode. */
+	if (getkey(sp, &key, TXT_MAPCOMMAND)) {
+		if (sp->special[key] == K_ESCAPE && ismotion == NULL)
 			msgq(sp, M_BERR, "Already in command mode");
 		return (1);
 	}
+
 	if (key > MAXVIKEY) {
 		msgq(sp, M_BERR, "%s isn't a vi command", charname(sp, key));
 		return (1);
@@ -714,6 +712,8 @@ getkey(sp, keyp, map)
 	CHAR_T *keyp;
 	u_int map;
 {
+	*keyp = '\0';
+
 	switch (term_key(sp, keyp, map)) {
 	case INP_OK:
 		break;
