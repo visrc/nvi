@@ -12,7 +12,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: api.c,v 8.14 1996/03/06 19:50:06 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:50:06 $";
+static const char sccsid[] = "$Id: api.c,v 8.15 1996/04/10 19:39:06 bostic Exp $ (Berkeley) $Date: 1996/04/10 19:39:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -288,7 +288,7 @@ api_iscreen(sp, file, idp)
 	cmd.flags |= E_NEWSCREEN;			/* XXX */
 	if (cmd.cmd->fn(sp, &cmd))
 		return (1);
-	*idp = sp->id;
+	*idp = sp->nextdisp->id;
 	return (0);
 }
 
