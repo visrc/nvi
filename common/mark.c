@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: mark.c,v 9.5 1994/12/03 11:28:32 bostic Exp $ (Berkeley) $Date: 1994/12/03 11:28:32 $";
+static char sccsid[] = "$Id: mark.c,v 9.6 1994/12/16 12:20:46 bostic Exp $ (Berkeley) $Date: 1994/12/16 12:20:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -135,8 +135,7 @@ mark_get(sp, key, mp)
 	 * you could use it in an empty file.  Make such a mark always work.
 	 */
 	if ((lmp->lno != 1 || lmp->cno != 0) &&
-	    (file_gline(sp, lmp->lno, &len) == NULL ||
-	    lmp->cno > len || lmp->cno == len && len != 0)) {
+	    file_gline(sp, lmp->lno, &len) == NULL) {
 		msgq(sp, M_BERR,
 		    "051|Mark %s: cursor position no longer exists",
 		    KEY_NAME(sp, key));
