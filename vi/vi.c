@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.76 1994/07/16 17:47:49 bostic Exp $ (Berkeley) $Date: 1994/07/16 17:47:49 $";
+static char sccsid[] = "$Id: vi.c,v 8.77 1994/07/23 11:01:40 bostic Exp $ (Berkeley) $Date: 1994/07/23 11:01:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -119,8 +119,8 @@ vi(sp, ep)
 		    getkeyword(sp, ep, vp, vp->flags))
 			goto err;
 
-		/* If a non-relative movement, copy the future absolute mark. */
-		if (F_ISSET(vp, V_ABS)) {
+		/* Prepare to set the previous context. */
+		if (F_ISSET(vp, V_ABS | V_ABS_C | V_ABS_L)) {
 			abs.lno = sp->lno;
 			abs.cno = sp->cno;
 		}
@@ -187,13 +187,6 @@ vi(sp, ep)
 		 if (saved_mode != F_ISSET(sp, S_SCREENS | S_MAJOR_CHANGE))
 			break;
 
-		/*
-		 * Set the absolute mark -- set even if a tags or similar
-		 * command, since the tag may be moving to the same file.
-		 */
-		if (F_ISSET(vp, V_ABS) && mark_set(sp, ep, ABSMARK1, &abs, 1))
-			goto err;
-
 		/* Set the dot command structure. */
 		if (F_ISSET(vp, V_DOT)) {
 			*DOT = cmd;
@@ -258,6 +251,17 @@ vi(sp, ep)
 		/* Update the cursor. */
 		sp->lno = vp->m_final.lno;
 		sp->cno = vp->m_final.cno;
+
+		/*
+		 * Set the absolute mark -- set even if a tags or similar
+		 * command, since the tag may be moving to the same file.
+		 */
+		if ((F_ISSET(vp, V_ABS) ||
+		    F_ISSET(vp, V_ABS_L) && sp->lno != abs.lno ||
+		    F_ISSET(vp, V_ABS_C) &&
+		    (sp->lno != abs.lno || sp->cno != abs.cno)) &&
+		    mark_set(sp, ep, ABSMARK1, &abs, 1))
+			goto err;
 
 		if (!MAPPED_KEYS_WAITING(sp)) {
 			(void)msg_rpt(sp, 1);

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 8.35 1994/07/01 20:45:18 bostic Exp $ (Berkeley) $Date: 1994/07/01 20:45:18 $";
+static char sccsid[] = "$Id: v_cmd.c,v 8.36 1994/07/23 11:01:36 bostic Exp $ (Berkeley) $Date: 1994/07/23 11:01:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,7 +38,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    "[count]^A",
 	    "^A search forward for cursor word"},
 /* 002  ^B */
-	{v_pageup,	V_ABS|V_CNT|VM_RCM_SET,
+	{v_pageup,	V_CNT|VM_RCM_SET,
 	    "[count]^B",
 	    "^B scroll up by screens"},
 /* 003  ^C */
@@ -46,7 +46,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    "^C",
 	    "^C interrupt an operation (e.g. read, write, search)"},
 /* 004  ^D */
-	{v_hpagedown,	V_ABS|V_CNT|VM_RCM_SET,
+	{v_hpagedown,	V_CNT|VM_RCM_SET,
 	    "[count]^D",
 	    "^D scroll down by half screens (setting count)"},
 /* 005  ^E */
@@ -54,7 +54,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    "[count]^E",
 	    "^E scroll down by lines"},
 /* 006  ^F */
-	{v_pagedown,	V_ABS|V_CNT|VM_RCM_SET,
+	{v_pagedown,	V_CNT|VM_RCM_SET,
 	    "[count]^F",
 	    "^F scroll down by screens"},
 /* 007  ^G */
@@ -104,7 +104,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    "^T",
 	    "^T tag pop"},
 /* 025  ^U */
-	{v_hpageup,	V_ABS|V_CNT|VM_RCM_SET,
+	{v_hpageup,	V_CNT|VM_RCM_SET,
 	    "[count]^U",
 	    "^U half page up (set count)"},
 /* 026  ^V */
@@ -170,7 +170,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    "&",
 	    " & repeat substitution"},
 /* 047   ' */
-	{v_fmark,	V_ABS|V_CHAR|V_MOVE|VM_LMODE,
+	{v_fmark,	V_ABS_L|V_CHAR|V_MOVE|VM_LMODE,
 	    "'['a-z]",
 	    " ' move to mark (to first non-blank)"},
 /* 050   ( */
@@ -200,7 +200,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    ".",
 	    " . repeat the last command"},
 /* 057   / */
-	{v_searchf,	V_ABS|V_MOVE|VM_RCM_SET,
+	{v_searchf,	V_ABS_C|V_MOVE|VM_RCM_SET,
 	    "/RE[/ offset]",
 	    " / search forward"},
 /* 060   0 */
@@ -244,7 +244,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    "[count]>[count]motion",
 	    " > shift lines right to motion"},
 /* 077   ? */
-	{v_searchb,	V_ABS|V_MOVE|VM_RCM_SET,
+	{v_searchb,	V_ABS_C|V_MOVE|VM_RCM_SET,
 	    "?RE[? offset]",
 	    " ? search backward"},
 /* 100   @ */
@@ -276,11 +276,11 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    "[count]F character",
 	    " F character in line backward search"},
 /* 107   G */
-	{v_lgoto,	V_ABS|V_CNT|V_MOVE|VM_LMODE|VM_RCM_SETFNB,
+	{v_lgoto,	V_ABS_L|V_CNT|V_MOVE|VM_LMODE|VM_RCM_SETFNB,
 	    "[count]G",
 	    " G move to line"},
 /* 110   H */
-	{v_home,	V_ABS|V_CNT|V_MOVE|VM_LMODE|VM_RCM_SETNNB,
+	{v_home,	V_ABS_L|V_CNT|V_MOVE|VM_LMODE|VM_RCM_SETNNB,
 	    "[count]H",
 	    " H move to count lines from screen top"},
 /* 111   I */
@@ -294,15 +294,15 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 /* 113   K */
 	{NULL},
 /* 114   L */
-	{v_bottom,	V_ABS|V_CNT|V_MOVE|VM_LMODE|VM_RCM_SETNNB,
+	{v_bottom,	V_ABS_L|V_CNT|V_MOVE|VM_LMODE|VM_RCM_SETNNB,
 	    "[count]L",
 	    " L move to screen bottom"},
 /* 115   M */
-	{v_middle,	V_ABS|V_CNT|V_MOVE|VM_LMODE|VM_RCM_SETNNB,
+	{v_middle,	V_ABS_L|V_CNT|V_MOVE|VM_LMODE|VM_RCM_SETNNB,
 	    "M",
 	    " M move to screen middle"},
 /* 116   N */
-	{v_searchN,	V_ABS|V_MOVE|VM_RCM_SET,
+	{v_searchN,	V_ABS_C|V_MOVE|VM_RCM_SET,
 	    "n",
 	    " N reverse last search"},
 /* 117   O */
@@ -379,7 +379,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    "_",
 	    " _ move to first non-blank"},
 /* 140   ` */
-	{v_bmark,	V_ABS|V_CHAR|V_MOVE|VM_RCM_SET,
+	{v_bmark,	V_ABS_C|V_CHAR|V_MOVE|VM_RCM_SET,
 	    "`[`a-z]",
 	    " ` move to mark"},
 /* 141   a */
@@ -433,7 +433,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    "m[a-z]",
 	    " m set mark"},
 /* 156   n */
-	{v_searchn,	V_ABS|V_MOVE|VM_RCM_SET,
+	{v_searchn,	V_ABS_C|V_MOVE|VM_RCM_SET,
 	    "n",
 	    " n repeat last search"},
 /* 157   o */
@@ -485,7 +485,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	 * DON'T set the V_CHAR flag, the char isn't required,
 	 * so it's handled specially in getcmd().
 	 */
-	{v_z, 		V_CNT|VM_RCM_SET,
+	{v_z, 		V_ABS_L|V_CNT|VM_RCM_SET,
 	    "[line]z[window_size][-|.|+|^|<CR>]",
 	    " z redraw window"},
 /* 173   { */

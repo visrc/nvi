@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 8.33 1994/05/08 10:08:14 bostic Exp $ (Berkeley) $Date: 1994/05/08 10:08:14 $
+ *	$Id: vi.h,v 8.34 1994/07/23 11:01:38 bostic Exp $ (Berkeley) $Date: 1994/07/23 11:01:38 $
  */
 
 typedef struct _vikeys VIKEYS;
@@ -125,15 +125,17 @@ typedef struct _vicmdarg {
 struct _vikeys {			/* Underlying function. */
 	int	 (*func) __P((SCR *, EXF *, VICMDARG *));
 #define	V_ABS		0x00020000	/* Absolute movement, set '' mark. */
-#define	V_CHAR		0x00040000	/* Character (required, trailing). */
-#define	V_CNT		0x00080000	/* Count (optional, leading). */
-#define	V_DOT		0x00100000	/* On success, sets dot command. */
-#define	V_KEYNUM	0x00200000	/* Cursor referenced number. */
-#define	V_KEYW		0x00400000	/* Cursor referenced word. */
-#define	V_MOTION	0x00800000	/* Motion (required, trailing). */
-#define	V_MOVE		0x01000000	/* Command defines movement. */
-#define	V_OBUF		0x02000000	/* Buffer (optional, leading). */
-#define	V_RBUF		0x04000000	/* Buffer (required, trailing). */
+#define	V_ABS_C		0x00040000	/* V_ABS: if the line/column changed. */
+#define	V_ABS_L		0x00080000	/* V_ABS: if the line changed. */
+#define	V_CHAR		0x00100000	/* Character (required, trailing). */
+#define	V_CNT		0x00200000	/* Count (optional, leading). */
+#define	V_DOT		0x00400000	/* On success, sets dot command. */
+#define	V_KEYNUM	0x00800000	/* Cursor referenced number. */
+#define	V_KEYW		0x01000000	/* Cursor referenced word. */
+#define	V_MOTION	0x02000000	/* Motion (required, trailing). */
+#define	V_MOVE		0x04000000	/* Command defines movement. */
+#define	V_OBUF		0x08000000	/* Buffer (optional, leading). */
+#define	V_RBUF		0x10000000	/* Buffer (required, trailing). */
 	u_int32_t flags;
 	char	*usage;			/* Usage line. */
 	char	*help;			/* Help line. */
