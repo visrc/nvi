@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.71 1993/02/25 17:48:30 bostic Exp $ (Berkeley) $Date: 1993/02/25 17:48:30 $";
+static char sccsid[] = "$Id: ex.c,v 5.72 1993/02/26 10:09:08 bostic Exp $ (Berkeley) $Date: 1993/02/26 10:09:08 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -623,7 +623,7 @@ addr2:	switch(cmd.addrcnt) {
 		return (1);
 
 	/* We may be editing a new file. */
-	if (FF_ISSET(ep, F_FILE_RESET))
+	if (FF_ISSET(ep, F_DUMMY | F_FILE_RESET))
 		return (0);
 
 	/*
