@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.12 1992/12/22 16:10:34 bostic Exp $ (Berkeley) $Date: 1992/12/22 16:10:34 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.13 1992/12/25 16:24:15 bostic Exp $ (Berkeley) $Date: 1992/12/25 16:24:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -37,10 +37,11 @@ scr_init(ep)
 		msg("Error: initscr failed: %s", strerror(errno));
 		return (1);
 	}
-	raw();
-	nonl();
 	noecho();
+	nonl();
+	raw();
 	scrollok(stdscr, 1);
+
 	return (0);
 }
 
