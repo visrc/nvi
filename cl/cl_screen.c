@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_screen.c,v 10.24 1995/11/06 09:58:02 bostic Exp $ (Berkeley) $Date: 1995/11/06 09:58:02 $";
+static char sccsid[] = "$Id: cl_screen.c,v 10.25 1995/11/07 20:25:21 bostic Exp $ (Berkeley) $Date: 1995/11/07 20:25:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -45,10 +45,8 @@ cl_screen(sp, flags)
 	u_int32_t flags;
 {
 	CL_PRIVATE *clp;
-	int need_nl;
 
 	clp = CLP(sp);
-	need_nl = 0;
 
 	/* See if we're already in the right mode. */
 	if (LF_ISSET(S_EX) && F_ISSET(clp, CL_SCR_EX) ||
@@ -75,14 +73,14 @@ cl_screen(sp, flags)
 	 *
 	 * All screens should move to the bottom of the screen, even in the
 	 * presence of split screens.  This makes terminal scrolling happen
-	 * naturally and without overwriting editor text.  Don't clear the
-	 * info line, its contents may be valid, e.g. :file|append.
+	 * naturally.  Note: we *don't* move past the end of the screen, as
+	 * there are ex commands (e.g., :read ! cat file) that don't want to
+	 * go past it.  Don't clear the info line, its contents may be valid,
+	 * e.g. :file|append.
 	 */
 	if (F_ISSET(clp, CL_SCR_VI)) {
 		(void)move(LINES - 1, 0);
 		(void)refresh();
-		need_nl = 1;
-
 		F_CLR(clp, CL_SCR_VI);
 	}
 
@@ -90,8 +88,6 @@ cl_screen(sp, flags)
 	if (LF_ISSET(S_EX)) {
 		if (cl_ex_init(sp))
 			return (1);
-		if (need_nl)
-			(void)write(STDOUT_FILENO, "\n", 1);
 	} else {
 		if (cl_vi_init(sp))
 			return (1);
