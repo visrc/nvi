@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 9.10 1995/02/09 15:22:21 bostic Exp $ (Berkeley) $Date: 1995/02/09 15:22:21 $";
+static char sccsid[] = "$Id: screen.c,v 9.11 1995/02/10 14:44:25 bostic Exp $ (Berkeley) $Date: 1995/02/10 14:44:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -217,21 +217,24 @@ screen_end(sp)
 	opts_free(sp);
 
 	/*
-	 * Free the message chain last, so previous failures have a place
-	 * to put messages.  Copy messages to the global area.
+	 * Clean up the message chain last, so previous failures have a
+	 * place to put messages.  Don't free space containing messages,
+	 * just move the structures onto the global list.
 	 */
 	{ MSG *mp, *next;
 		if (F_ISSET(sp, S_BELLSCHED))
 			F_SET(sp->gp, G_BELLSCHED);
 
 		for (mp = sp->msgq.lh_first; mp != NULL; mp = next) {
-			if (!F_ISSET(mp, M_EMPTY))
-				msg_app(sp->gp, NULL,
-				    mp->flags & M_INV_VIDEO, mp->mbuf, mp->len);
 			next = mp->q.le_next;
-			if (mp->mbuf != NULL)
-				FREE(mp->mbuf, mp->blen);
-			FREE(mp, sizeof(MSG));
+			if (!F_ISSET(mp, M_EMPTY)) {
+				LIST_REMOVE(mp, q);
+				LIST_INSERT_HEAD(&sp->gp->msgq, mp, q);
+			} else {
+				if (mp->mbuf != NULL)
+					free(mp->mbuf);
+				free(mp);
+			}
 		}
 	}
 
