@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 9.6 1994/11/12 15:43:37 bostic Exp $ (Berkeley) $Date: 1994/11/12 15:43:37 $";
+static char sccsid[] = "$Id: msg.c,v 9.7 1994/11/16 16:18:21 bostic Exp $ (Berkeley) $Date: 1994/11/16 16:18:21 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -317,7 +317,7 @@ nofmt:	mp += len;
 
 #ifdef DEBUG
 	if (sp != NULL)
-		TRACE(sp, "%.*s\n", mlen, bp);
+		TRACE(sp, "mesg: {%.*s}\n", mlen, bp);
 #endif
 	msg_app(__global_list, sp,
 	    mt == M_ERR || mt == M_SYSERR ? 1 : 0, bp, mlen);
