@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.87 1994/05/02 13:49:34 bostic Exp $ (Berkeley) $Date: 1994/05/02 13:49:34 $";
+static char sccsid[] = "$Id: main.c,v 8.88 1994/05/02 15:11:02 bostic Exp $ (Berkeley) $Date: 1994/05/02 15:11:02 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -53,12 +53,7 @@ enum rc { NOEXIST, NOPERM, OK };
 static enum rc	 exrc_isok __P((SCR *, struct stat *, char *, int));
 static void	 gs_end __P((GS *));
 static GS	*gs_init __P((void));
-static void	 h_hup __P((int));
-static void	 h_int __P((int));
-static void	 h_term __P((int));
-static void	 h_winch __P((int));
 static void	 obsolete __P((char *[]));
-static int	 sig_init __P((SCR *));
 static void	 usage __P((int));
 
 GS *__global_list;			/* GLOBAL: List of screens. */
@@ -547,142 +542,6 @@ gs_end(gp)
 	 * DON'T FREE THE GLOBAL STRUCTURE -- WE DIDN'T TURN
 	 * OFF SIGNALS/TIMERS, SO IT MAY STILL BE REFERENCED.
 	 */
-}
-
-/*
- * sig_init --
- *	Initialize signals.
- */
-static int
-sig_init(sp)
-	SCR *sp;
-{
-	struct sigaction act;
-
-	/*
-	 * Initialize the signals.  Use sigaction(2), not signal(3), because
-	 * we don't always want to restart system calls on 4BSD systems -- 
-	 * the example is when waiting for a command mode keystroke and a
-	 * SIGWINCH arrives.  Try and set the resetart bit (SA_RESTART) on
-	 * SIGALRM, anyway, it's just that many fewer interruptions to deal
-	 * with.
-	 *
-	 * SIGALRM:
-	 *	Walk structures and call handling routines.
-	 * SIGHUP, SIGTERM, SIGWINCH:
-	 *	Catch and set a global bit.
-	 * SIGINT:
-	 *	Walk structures and set a bit.
-	 * SIGQUIT:
-	 *	Always ignore.
-	 */
-#ifndef	SA_RESTART
-#define	SA_RESTART	0
-#endif
-#define	SETSIG(signal, flags, handler) {				\
-	act.sa_handler = handler;					\
-	sigemptyset(&act.sa_mask);					\
-	act.sa_flags = flags;						\
-	if (sigaction(signal, &act, NULL))				\
-		goto err;						\
-}
-	SETSIG(SIGALRM, SA_RESTART, h_alrm);
-	SETSIG(SIGHUP, 0, h_hup);
-	SETSIG(SIGINT, 0, h_int);
-	SETSIG(SIGQUIT, 0, SIG_IGN);
-	SETSIG(SIGTERM, 0, h_term);
-	SETSIG(SIGWINCH, 0, h_winch);
-	return (0);
-
-err:	msgq(sp, M_SYSERR, "sigaction");
-	return (1);
-}
-
-/*
- * sig_end --
- *	End signal setup.
- */
-void
-sig_end()
-{
-	/*
-	 * POSIX 1003.1-1990 requires that fork (and, presumably, vfork) clear
-	 * pending alarms, and that the exec functions clear pending signals.
-	 * In addition, after an exec, the child continues to ignore signals
-	 * ignored in the parent, and the child's action for signals caught in
-	 * the parent is set to the default action.  So, the only thing to
-	 * clean up after the fork and before the exec is the one signal that
-	 * we ignore by default.
-	 *
-	 * Don't bother using sigaction(2) 'cause we want the default behavior.
-	 */
-	(void)signal(SIGQUIT, SIG_DFL);
-}
-
-/*
- * h_int --
- *	Handle SIGINT.
- */
-static void
-h_int(signo)
-	int signo;
-{
-	SCR *sp;
-
-	for (sp = __global_list->dq.cqh_first;
-	    sp != (void *)&__global_list->dq; sp = sp->q.cqe_next)
-		F_SET(sp, S_INTERRUPTED);
-}
-
-/*
- * h_hup --
- *	Handle SIGHUP.
- */
-static void
-h_hup(signo)
-	int signo;
-{
-	F_SET(__global_list, G_SIGHUP);
-
-	/*
-	 * If we're asleep, just die.
-	 *
-	 * XXX
-	 * This isn't right if the windows are independent.
-	 */
-	if (F_ISSET(__global_list, G_SLEEPING))
-		rcv_hup();
-}
-
-/*
- * h_term --
- *	Handle SIGTERM.
- */
-static void
-h_term(signo)
-	int signo;
-{
-	F_SET(__global_list, G_SIGTERM);
-
-	/*
-	 * If we're asleep, just die.
-	 *
-	 * XXX
-	 * This isn't right if the windows are independent.
-	 */
-	if (F_ISSET(__global_list, G_SLEEPING))
-		rcv_term();
-}
-
-/*
- * h_winch --
- *	Handle SIGWINCH.
- */
-static void
-h_winch(signo)
-	int signo;
-{
-	F_SET(__global_list, G_SIGWINCH);
 }
 
 /*
