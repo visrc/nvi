@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 5.38 1993/02/20 16:11:44 bostic Exp $ (Berkeley) $Date: 1993/02/20 16:11:44 $";
+static char sccsid[] = "$Id: v_ex.c,v 5.39 1993/02/20 16:36:08 bostic Exp $ (Berkeley) $Date: 1993/02/20 16:36:08 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -126,18 +126,18 @@ v_leaveex(ep)
 
 	/* Don't erase if only a single line. */
 	if (extotalcount <= 1)
-		return;
+		return (0);
 
 	/* Repaint if at least half the screen trashed. */
 	if (extotalcount >= SCREENSIZE(ep) / 2) { 
 		FF_SET(ep, F_REDRAW);
-		return;
+		return (0);
 	}
 
 	for (loff = TEXTSIZE(ep); extotalcount--; --loff)
 		if (scr_refresh(ep, loff))
 			return (1);
-	return (1);
+	return (0);
 }
 
 /*
