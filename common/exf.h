@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 9.5 1995/01/30 09:39:27 bostic Exp $ (Berkeley) $Date: 1995/01/30 09:39:27 $
+ *	$Id: exf.h,v 9.6 1995/02/08 12:49:15 bostic Exp $ (Berkeley) $Date: 1995/02/08 12:49:15 $
  */
 					/* Undo direction. */
 /*
@@ -82,6 +82,7 @@ enum lockt
 #define	FS_OPENERR	0x008	/* Open failed, try it again. */
 #define	FS_POSSIBLE	0x010	/* Force could have been set. */
 #define	FS_SETALT	0x020	/* Set alternate file name. */
+#define	FS_WELCOME	0x040	/* Display welcoming message. */
 int	 file_init __P((SCR *, FREF *, char *, int));
 int	 file_write __P((SCR *, MARK *, MARK *, char *, int));
 
