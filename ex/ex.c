@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.15 1992/04/16 17:57:30 bostic Exp $ (Berkeley) $Date: 1992/04/16 17:57:30 $";
+static char sccsid[] = "$Id: ex.c,v 5.16 1992/04/17 08:53:56 bostic Exp $ (Berkeley) $Date: 1992/04/17 08:53:56 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -171,6 +171,8 @@ ex_cstring(cmd, len)
 	return (0);
 }
 
+static CMDLIST *lastcmd = &cmds[C_PRINT];
+
 /*
  * ex_cmd --
  *    Parse and execute an ex command.
@@ -180,7 +182,6 @@ ex_cmd(exc)
 	register char *exc;
 {
 	extern int reading_exrc;
-	static CMDLIST *lastcmd = &cmds[C_PRINT];
 	register int cmdlen;
 	register char *p;
 	CMDARG	cmd;
@@ -222,7 +223,10 @@ ex_cmd(exc)
 	/* Skip whitespace. */
 	for (; isspace(*exc); ++exc);
 
-	/* If no command, then do the last specified of p, l, or #. */
+	/*
+	 * If no command, ex does the last specified of p, l, or #, and
+	 * vi moves to the line.
+	 */
 	if (!*exc) {
 		cp = lastcmd;
 		goto addr1;
@@ -457,7 +461,7 @@ addr2:	switch(cmd.addrcnt) {
 			return (1);
 		}
 		if (num > nlines) {
-			msg("Less than %lu lines in the file.", num);
+			msg("Only $lu lines in the file.", nlines);
 			return (1);
 		}
 		/* FALLTHROUGH */
@@ -473,10 +477,16 @@ addr2:	switch(cmd.addrcnt) {
 			return (1);
 		}
 		if (num > nlines) {
-			msg("Less than %lu lines in the file.", num);
+			msg("Only $lu lines in the file.", nlines);
 			return (1);
 		}
 		break;
+	}
+
+	/* If doing a default command, vi just moves to the line. */
+	if (mode == MODE_VI && cp == lastcmd) {
+		cursor = cmd.addr1;
+		return;
 	}
 
 	/* Write a newline if called from visual mode. */
