@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 5.36 1993/05/02 11:01:48 bostic Exp $ (Berkeley) $Date: 1993/05/02 11:01:48 $";
+static char sccsid[] = "$Id: v_search.c,v 5.37 1993/05/02 12:20:32 bostic Exp $ (Berkeley) $Date: 1993/05/02 12:20:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -125,7 +125,7 @@ v_searchw(sp, ep, vp, fm, tm, rp)
 }
 
 /*
- * v_searchb -- [count]?RE
+ * v_searchb -- [count]?RE?offset
  *	Search backward.
  */
 int
@@ -144,13 +144,13 @@ v_searchb(sp, ep, vp, fm, tm, rp)
 		return (0);
 	}
 	if (b_search(sp, ep, fm, rp, ptrn, NULL,
-	    SEARCH_MSG | SEARCH_PARSE | SEARCH_SET | SEARCH_TERM))
+	    SEARCH_MSG | SEARCH_PARSE | SEARCH_SET))
 		return (1);
 	return (0);
 }
 
 /*
- * v_searchf -- [count]/RE
+ * v_searchf -- [count]/RE/offset
  *	Search forward.
  */
 int
@@ -169,7 +169,7 @@ v_searchf(sp, ep, vp, fm, tm, rp)
 		return (0);
 	}
 	if (f_search(sp, ep, fm, rp, ptrn, NULL,
-	    SEARCH_MSG | SEARCH_PARSE | SEARCH_SET | SEARCH_TERM))
+	    SEARCH_MSG | SEARCH_PARSE | SEARCH_SET))
 		return (1);
 	return (0);
 }
