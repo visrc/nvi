@@ -10,15 +10,24 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_copypaste.c,v 8.7 1996/12/16 17:27:29 bostic Exp $ (Berkeley) $Date: 1996/12/16 17:27:29 $";
+static const char sccsid[] = "$Id: m_copypaste.c,v 8.8 1996/12/18 10:25:23 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:25:23 $";
 #endif /* not lint */
 
 /* ICCCM Cut and paste Utilities: */
 
-#include	<stdio.h>
+#include	<sys/types.h>
+#include	<sys/queue.h>
+
 #include	<X11/X.h>
 #include	<X11/Intrinsic.h>
 #include	<X11/Xatom.h>
+
+#include	<bitstring.h>
+#include	<stdio.h>
+
+#include	"../common/common.h"
+#include	"../ipc/ip.h"
+#include	"m_motif.h"
 
 typedef	int	(*PFI)();
 
