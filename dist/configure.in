@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.146 1997/08/03 13:31:30 bostic Exp $ (Berkeley) $Date: 1997/08/03 13:31:30 $
+dnl	$Id: configure.in,v 8.147 1997/08/03 15:59:17 bostic Exp $ (Berkeley) $Date: 1997/08/03 15:59:17 $
 dnl Process this file with autoconf to produce a configure script.
 
 AC_INIT(../common/main.c)
@@ -52,9 +52,8 @@ lynxos*)   AC_PROG_CC()
 		AC_MSG_RESULT(yes)
 	   else
 		AC_MSG_RESULT(no)
-		echo "Fatal error: Nvi requires gcc 2.x to build on LynxOS."
-		echo "See build/README.LynxOS for more information."
-		exit 1
+		AC_MSG_WARN([Nvi requires gcc 2.x to build on LynxOS.])
+		AC_MSG_ERROR([See build/README.LynxOS for more information.])
 	   fi;;
 nextstep3) CPPFLAGS=${CPPFLAGS-"-w -pipe -posix"}
 	   LDFLAGS=${LDFLAGS-"-posix"}
@@ -134,15 +133,14 @@ PATH="$PATH:/usr/bin:/usr/sbin:/sbin:/etc:/usr/etc:/usr/lib:/usr/ucblib"
 dnl Check for the shell path.
 AC_PATH_PROG(vi_cv_path_shell, sh, no)
 if test "$vi_cv_path_shell" = no; then
-	echo "Fatal error: the shell utility not found."
-	exit 1
+	AC_MSG_ERROR([No shell utility found.])
 fi
 
 dnl Check for the sendmail path.
 AC_PATH_PROG(vi_cv_path_sendmail, sendmail, no)
 if test "$vi_cv_path_sendmail" = no; then
-	echo "WARNING: The sendmail utility was not found!"
-	echo "WARNING: Users will not be told of saved files."
+	AC_MSG_WARN([No sendmail utility found;])
+	AC_MSG_WARN([    users will not be told of saved files.])
 fi
 
 dnl Check for the perl5/perl path.
@@ -176,8 +174,7 @@ AC_CACHE_VAL(vi_cv_path_preserve, [dnl
 
 	fi])
 if test "$vi_cv_path_preserve" = no; then
-	echo "Fatal error: no writeable preserve directory found."
-	exit 1
+	AC_MSG_ERROR([No writeable preserve directory found.])
 fi
 AC_MSG_RESULT($vi_cv_path_preserve)
 
@@ -269,12 +266,15 @@ AC_ARG_ENABLE(perlinterp,
 AC_MSG_RESULT($vi_cv_perlinterp)
 if test "$vi_cv_perlinterp" = "yes"; then
 	if test "$vi_cv_path_perl" = no; then
-		echo "Fatal error: no perl5 utility found."
-		exit 1
+		AC_MSG_ERROR([No perl5 utility found.])
 	fi
+	$vi_cv_path_perl -e 'close(STDERR);require 5.004' || {
+		AC_MSG_WARN([Please upgrade your perl to at least 5.004;])
+		AC_MSG_WARN([    Older versions are no longer supported and])
+		AC_MSG_WARN([    future versions of nvi won't even compile with them.])
+	}
 	$vi_cv_path_perl -e 'require 5.002' || {
-		echo "Fatal error: perl5 must be version 5.002 or later."
-		exit 1
+		AC_MSG_ERROR([perl5 must be version 5.002 or later.])
 	}
 	$vi_cv_path_perl -e 'close(STDERR);require 5.003_01' &&
 	    AC_DEFINE(HAVE_PERL_5_003_01)
@@ -318,9 +318,8 @@ if test "$vi_cv_tclinterp" = "yes"; then
 	AC_CHECK_LIB(tcl, main,
 		[vi_cv_tkfatal="no"], [vi_cv_tkfatal="yes"], -ltk -lm)
 	if test "$vi_cv_tkfatal" = "yes"; then
-		echo "Fatal error: no Tk/Tcl library; see the section"
-		echo "ADDING LIBRARIES AND INCLUDE FILES in the README file."
-		exit 1
+		AC_MSG_WARN([No Tk/Tcl library found;])
+		AC_MSG_ERROR([    see the section ADDING LIBRARIES AND INCLUDE FILES in the README file.])
 	fi
 fi
 
@@ -449,9 +448,7 @@ if test "$vi_cv_ftruncate" = chsize; then
 	AC_DEFINE(HAVE_FTRUNCATE_CHSIZE)
 fi
 if test "$vi_cv_ftruncate" = no; then
-	echo
-	echo "Fatal error: no file truncation system call."
-	exit 1
+	AC_MSG_ERROR([No file truncation system call.])
 fi
 AC_MSG_RESULT($vi_cv_ftruncate)
 
@@ -633,134 +630,106 @@ esac
 
 dnl Check for the standard shorthand types.
 AC_SUBST(u_char_decl)
-AC_MSG_CHECKING(for u_char)
-AC_CACHE_VAL(vi_cv_uchar, [dnl
+AC_CACHE_CHECK([for u_char], vi_cv_uchar, [dnl
 AC_TRY_COMPILE([#include <sys/types.h>], u_char foo;,
 	[vi_cv_uchar=yes], [vi_cv_uchar=no])])
-AC_MSG_RESULT($vi_cv_uchar)
 if test "$vi_cv_uchar" = no; then
 	u_char_decl="typedef unsigned char u_char;"
 fi
 
 AC_SUBST(u_short_decl)
-AC_MSG_CHECKING(for u_short)
-AC_CACHE_VAL(vi_cv_ushort, [dnl
+AC_CACHE_CHECK([for u_short], vi_cv_ushort, [dnl
 AC_TRY_COMPILE([#include <sys/types.h>], u_short foo;,
 	[vi_cv_ushort=yes], [vi_cv_ushort=no])])
-AC_MSG_RESULT($vi_cv_ushort)
 if test "$vi_cv_ushort" = no; then
 	u_short_decl="typedef unsigned short u_short;"
 fi
 
 AC_SUBST(u_int_decl)
-AC_MSG_CHECKING(for u_int)
-AC_CACHE_VAL(vi_cv_uint, [dnl
+AC_CACHE_CHECK([for u_int], vi_cv_uint, [dnl
 AC_TRY_COMPILE([#include <sys/types.h>], u_int foo;,
 	[vi_cv_uint=yes], [vi_cv_uint=no])])
-AC_MSG_RESULT($vi_cv_uint)
 if test "$vi_cv_uint" = no; then
 	u_int_decl="typedef unsigned int u_int;"
 fi
 
 AC_SUBST(u_long_decl)
-AC_MSG_CHECKING(for u_long)
-AC_CACHE_VAL(vi_cv_ulong, [dnl
+AC_CACHE_CHECK([for u_long], vi_cv_ulong, [dnl
 AC_TRY_COMPILE([#include <sys/types.h>], u_long foo;,
 	[vi_cv_ulong=yes], [vi_cv_ulong=no])])
-AC_MSG_RESULT($vi_cv_ulong)
 if test "$vi_cv_ulong" = no; then
 	u_long_decl="typedef unsigned long u_long;"
 fi
 
 dnl DB/Vi use specific integer sizes.
 AC_SUBST(u_int8_decl)
-AC_MSG_CHECKING(for u_int8_t)
-AC_CACHE_VAL(vi_cv_uint8, [dnl
+AC_CACHE_CHECK([for u_int8_t], vi_cv_uint8, [dnl
 AC_TRY_COMPILE([#include <sys/types.h>], u_int8_t foo;,
 	[vi_cv_uint8=yes],
-AC_TRY_RUN([main(){exit(sizeof(unsigned char) != 1);}],
-	[vi_cv_uint8="unsigned char"], [vi_cv_uint8=no]))])
-AC_MSG_RESULT($vi_cv_uint8)
+	AC_TRY_RUN([main(){exit(sizeof(unsigned char) != 1);}],
+	    [vi_cv_uint8="unsigned char"], [vi_cv_uint8=no]))])
 if test "$vi_cv_uint8" = no; then
-	echo
-	echo "Fatal error: no unsigned, 8-bit integral type."
-	exit 1
+	AC_MSG_ERROR(No unsigned 8-bit integral type.)
 fi
 if test "$vi_cv_uint8" != yes; then
 	u_int8_decl="typedef $vi_cv_uint8 u_int8_t;"
 fi
 
 AC_SUBST(u_int16_decl)
-AC_MSG_CHECKING(for u_int16_t)
-AC_CACHE_VAL(vi_cv_uint16, [dnl
+AC_CACHE_CHECK([for u_int16_t], vi_cv_uint16, [dnl
 AC_TRY_COMPILE([#include <sys/types.h>], u_int16_t foo;,
 	[vi_cv_uint16=yes],
 AC_TRY_RUN([main(){exit(sizeof(unsigned short) != 2);}],
 	[vi_cv_uint16="unsigned short"],
 AC_TRY_RUN([main(){exit(sizeof(unsigned int) != 2);}],
 	[vi_cv_uint16="unsigned int"], [vi_cv_uint16=no])))])
-AC_MSG_RESULT($vi_cv_uint16)
 if test "$vi_cv_uint16" = no; then
-	echo
-	echo "Fatal error: no unsigned, 16-bit integral type."
-	exit 1
+	AC_MSG_ERROR([No unsigned 16-bit integral type.])
 fi
 if test "$vi_cv_uint16" != yes; then
 	u_int16_decl="typedef $vi_cv_uint16 u_int16_t;"
 fi
 
 AC_SUBST(int16_decl)
-AC_MSG_CHECKING(for int16_t)
-AC_CACHE_VAL(vi_cv_int16, [dnl
+AC_CACHE_CHECK([for int16_t], vi_cv_int16, [dnl
 AC_TRY_COMPILE([#include <sys/types.h>], int16_t foo;,
 	[vi_cv_int16=yes],
 AC_TRY_RUN([main(){exit(sizeof(short) != 2);}],
 	[vi_cv_int16="short"],
 AC_TRY_RUN([main(){exit(sizeof(int) != 2);}],
 	[vi_cv_int16="int"], [vi_cv_int16=no])))])
-AC_MSG_RESULT($vi_cv_int16)
 if test "$vi_cv_int16" = no; then
-	echo
-	echo "Fatal error: no signed, 16-bit integral type."
-	exit 1
+	AC_MSG_ERROR([No signed 16-bit integral type.])
 fi
 if test "$vi_cv_int16" != yes; then
 	int16_decl="typedef $vi_cv_int16 int16_t;"
 fi
 
 AC_SUBST(u_int32_decl)
-AC_MSG_CHECKING(for u_int32_t)
-AC_CACHE_VAL(vi_cv_uint32, [dnl
+AC_CACHE_CHECK([for u_int32_t], vi_cv_uint32, [dnl
 AC_TRY_COMPILE([#include <sys/types.h>], u_int32_t foo;,
 	[vi_cv_uint32=yes],
 AC_TRY_RUN([main(){exit(sizeof(unsigned int) != 4);}],
 	[vi_cv_uint32="unsigned int"],
 AC_TRY_RUN([main(){exit(sizeof(unsigned long) != 4);}],
 	[vi_cv_uint32="unsigned long"], [vi_cv_uint32=no])))])
-AC_MSG_RESULT($vi_cv_uint32)
 if test "$vi_cv_uint32" = no; then
-	echo
-	echo "Fatal error: no unsigned, 32-bit integral type."
-	exit 1
+	AC_MSG_ERROR([No unsigned 32-bit integral type.])
 fi
 if test "$vi_cv_uint32" != yes; then
 	u_int32_decl="typedef $vi_cv_uint32 u_int32_t;"
 fi
 
 AC_SUBST(int32_decl)
-AC_MSG_CHECKING(for int32_t)
-AC_CACHE_VAL(vi_cv_int32, [dnl
+AC_CACHE_CHECK([for int32_t], vi_cv_int32, [dnl
 AC_TRY_COMPILE([#include <sys/types.h>], int32_t foo;,
 	[vi_cv_int32=yes],
 AC_TRY_RUN([main(){exit(sizeof(int) != 4);}],
 	[vi_cv_int32="int"],
 AC_TRY_RUN([main(){exit(sizeof(long) != 4);}],
 	[vi_cv_int32="long"], [vi_cv_int32=no])))])
-AC_MSG_RESULT($vi_cv_int32)
 if test "$vi_cv_int32" = no; then
-	echo
-	echo "Fatal error: no signed, 32-bit integral type."
-	exit 1
+	AC_MSG_ERROR([No signed 32-bit integral type.])
 fi
 if test "$vi_cv_int32" != yes; then
 	int32_decl="typedef $vi_cv_int32 int32_t;"
