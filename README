@@ -1,4 +1,4 @@
-#	$Id: README,v 8.54 1994/03/24 16:07:26 bostic Exp $ (Berkeley) $Date: 1994/03/24 16:07:26 $
+#	$Id: README,v 8.55 1994/03/27 08:26:18 bostic Exp $ (Berkeley) $Date: 1994/03/27 08:26:18 $
 
 This is the README for version 1.11 of nex/nvi, a freely redistributable
 replacement for the Berkeley ex and vi text editors.  The compressed tar
@@ -113,10 +113,16 @@ please email me as much information as you can as to how to reproduce
 the bug, and I'll try to fix it locally.  In particular, the screen
 routines are nasty stuff, and you probably don't want to mess with them.
 Stack traces of core dumps are sometimes helpful, but an example file
-with a set of keystrokes that causes the problem is far better.  Also,
-make sure that you include the dimensions of the screen on which the
-problem occurred, your startup files (.exrc, .nexrc), and the environment
-variable (EXINIT, NEXINIT) values.
+with a set of keystrokes that causes the problem is far better.
+
+Please include the following in the bug report;
+
+	o The version of nvi you're running (use :version to get it).
+	o The dimensions of the screen (80 x 32).
+	o Unless you're confident that they're not a problem, your
+	  startup files (.exrc, .nexrc) and the environment variable
+	  (EXININT, NEXINIT) values.  (Cutting and pasting the output
+	  of ":set all" is also fine.)
 
 =-=-=-=-=-=-=-=-=-=-=
 o Layout:
