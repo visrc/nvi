@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 10.18 1995/11/07 20:26:16 bostic Exp $ (Berkeley) $Date: 1995/11/07 20:26:16 $";
+static char sccsid[] = "$Id: ex_shell.c,v 10.19 1995/11/08 08:53:16 bostic Exp $ (Berkeley) $Date: 1995/11/08 08:53:16 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -41,7 +41,7 @@ ex_shell(sp, cmdp)
 	char buf[MAXPATHLEN];
 
 	(void)snprintf(buf, sizeof(buf), "%s -i", O_STR(sp, O_SHELL));
-	rval = ex_exec_proc(sp, cmdp, buf, "\n");
+	rval = ex_exec_proc(sp, cmdp, buf, NULL, 1);
 
 	/*
 	 * !!!
@@ -57,13 +57,14 @@ ex_shell(sp, cmdp)
  * ex_exec_proc --
  *	Run a separate process.
  *
- * PUBLIC: int ex_exec_proc __P((SCR *, EXCMD *, char *, char *));
+ * PUBLIC: int ex_exec_proc __P((SCR *, EXCMD *, char *, char *, int));
  */
 int
-ex_exec_proc(sp, cmdp, cmd, msg)
+ex_exec_proc(sp, cmdp, cmd, msg, need_newline)
 	SCR *sp;
 	EXCMD *cmdp;
 	char *cmd, *msg;
+	int need_newline;
 {
 	const char *name;
 	pid_t pid;
@@ -83,7 +84,9 @@ ex_exec_proc(sp, cmdp, cmd, msg)
 		F_SET(sp, S_EX_CANON | S_SCREEN_READY);
 	}
 
-	/* Put out additional message. */
+	/* Put out additional newline, message. */
+	if (need_newline)
+		(void)ex_puts(sp, "\n");
 	if (msg != NULL)
 		(void)ex_puts(sp, msg);
 	(void)ex_fflush(sp);

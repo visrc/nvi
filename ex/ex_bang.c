@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 10.20 1995/11/07 20:25:58 bostic Exp $ (Berkeley) $Date: 1995/11/07 20:25:58 $";
+static char sccsid[] = "$Id: ex_bang.c,v 10.21 1995/11/08 08:53:08 bostic Exp $ (Berkeley) $Date: 1995/11/08 08:53:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -99,16 +99,18 @@ ex_bang(sp, cmdp)
 	 */
 	in_vi = F_ISSET(sp, S_VI);
 	if (cmdp->addrcnt == 0) {
-		msg = "\n";
+		msg = NULL;
 		if (F_ISSET(sp->ep, F_MODIFIED))
 			if (O_ISSET(sp, O_AUTOWRITE)) {
 				if (file_aw(sp, FS_ALL))
 					return (0);
 			} else if (O_ISSET(sp, O_WARN) &&
 			    !F_ISSET(sp, S_EX_SILENT))
-				msg = "\nFile modified since last write.\n";
+				msg = msg_cat(sp,
+				    "303|File modified since last write.\n",
+				    NULL);
 
-		(void)ex_exec_proc(sp, cmdp, ap->bp, msg);
+		(void)ex_exec_proc(sp, cmdp, ap->bp, msg, in_vi);
 		F_SET(sp, S_EX_WROTE);
 	}
 
