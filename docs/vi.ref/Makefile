@@ -1,4 +1,4 @@
-#	$Id: Makefile,v 8.22 2001/01/28 15:50:07 skimo Exp $ (Berkeley) $Date: 2001/01/28 15:50:07 $
+#	$Id: Makefile,v 8.23 2001/08/18 20:43:47 skimo Exp $ (Berkeley) $Date: 2001/08/18 20:43:47 $
 
 MACROS=	-me
 ROFF=	groff
@@ -6,32 +6,18 @@ TBL=	tbl
 
 all: vi.ref.txt vi.ref.ps ../html/vi.ref.html
 
-vi.ref.txt: vi.ref index.so
-	soelim vi.ref | ${TBL} | groff ${MACROS} -Tascii > $@
-	rm -f index
+vi.ref.txt: vi.texi
+	makeinfo --no-headers vi.ref > $@ 2>/dev/null
 	chmod 444 $@
 
-vi.ref.ps: vi.ref index.so
-	soelim vi.ref | ${TBL} | ${ROFF} ${MACROS} > $@
-	rm -f index
+vi.ref.ps: vi.texi
+	texi2dvi vi.texi
+	dvips -o $@ vi.dvi
+	rm -f vi.dvi
 	chmod 444 $@
 
-../html/vi.ref.html: vi.ref index.so
-	soelim $< | ${TBL} | ${ROFF} ${MACROS} -Thtml | \
-	    sed 's/<img src="$<.*png">//' > $@
-	rm -f "$<"*png
-	chmod 444 $@
-
-index.so: vi.ref
-	# Build index.so, side-effect of building the paper.
-	soelim vi.ref | ${TBL} | ${ROFF} ${MACROS} > /dev/null
-	sed -e 's/MINUSSIGN/\\-/' \
-	    -e 's/DOUBLEQUOTE/""/' \
-	    -e "s/SQUOTE/'/" \
-	    -e 's/ /__SPACE/g' < index | \
-	sort -u '-t	' +0 -1 +1n | awk -f merge.awk | \
-	sed -e 's/__SPACE/ /g' > $@
-	rm -f index
+../html/vi.ref.html: vi.texi
+	makeinfo --html vi.ref --output=$@ 2>/dev/null
 	chmod 444 $@
 
 clean:
