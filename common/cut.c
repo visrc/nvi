@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 5.34 1993/04/13 16:14:03 bostic Exp $ (Berkeley) $Date: 1993/04/13 16:14:03 $";
+static char sccsid[] = "$Id: cut.c,v 5.35 1993/04/17 11:43:17 bostic Exp $ (Berkeley) $Date: 1993/04/17 11:43:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -132,7 +132,7 @@ cutline(sp, ep, lno, fcno, len, newp)
 		goto mem;
 	if (llen == 0) {
 		tp->lb = NULL;
-		tp->len = 0;
+		tp->len = tp->lb_len = 0;
 #if DEBUG && 0
 		TRACE(ep, "{}\n");
 #endif
@@ -140,13 +140,13 @@ cutline(sp, ep, lno, fcno, len, newp)
 		if (len == 0)
 			len = llen - fcno;
 		if ((lp = malloc(len)) == NULL) {
-			free(tp);
+			FREE(tp, sizeof(TEXT));
 mem:			msgq(sp, M_ERR, "Error: %s", strerror(errno));
 			return (1);
 		}
 		memmove(lp, p + fcno, len);
 		tp->lb = lp;
-		tp->len = len;
+		tp->len = tp->lb_len = len;
 #if DEBUG && 0
 		TRACE(ep, "\t{%.*s}\n", MIN(len, 20), p + fcno);
 #endif
@@ -309,7 +309,7 @@ put(sp, ep, buffer, cp, rp, append)
 mem:				if (bp == gp->tmp_bp)
 					F_CLR(gp, G_TMP_INUSE);
 				else
-					free(bp);
+					FREE(bp, blen);
 				return (1);
 			}
 		}
@@ -317,7 +317,7 @@ mem:				if (bp == gp->tmp_bp)
 		if (bp == gp->tmp_bp)
 			F_CLR(gp, G_TMP_INUSE);
 		else
-			free(bp);
+			FREE(bp, blen);
 	}
 
 	/* Shift any marks in the range. */
@@ -328,6 +328,37 @@ mem:				if (bp == gp->tmp_bp)
 	sp->rptlines = lno - cp->lno;
 
 	return (0);
+}
+
+/*
+ * text_init --
+ *	Allocate a new TEXT structure.
+ */
+TEXT *
+text_init(sp, p, len, total_len)
+	SCR *sp;
+	char *p;
+	size_t len, total_len;
+{
+	TEXT *tp;
+
+	if ((tp = malloc(sizeof(TEXT))) == NULL)
+		goto mem;
+	if ((tp->lb = malloc(tp->lb_len = total_len)) == NULL) {
+		free(tp);
+mem:		msgq(sp, M_ERR, "Error: %s", strerror(errno));
+		return (NULL);
+	}
+#ifdef DEBUG
+	memset(tp->lb, 0, total_len - 1);
+#endif
+
+	if (p != NULL && len != 0)
+		memmove(tp->lb, p, len);
+	tp->len = len;
+	tp->ai = tp->insert = tp->offset = tp->overwrite = 0;
+
+	return (tp);
 }
 
 /*
@@ -343,7 +374,8 @@ text_free(hp)
 	while (hp->next != hp) {
 		tp = hp->next;
 		HDR_DELETE(tp, next, prev, TEXT);
-		free(tp->lb);
-		free(tp);
+		if (tp->lb != NULL)
+			FREE(tp->lb, tp->lb_len);
+		FREE(tp, sizeof(TEXT));
 	}
 }
