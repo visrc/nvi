@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.40 1994/03/23 16:37:29 bostic Exp $ (Berkeley) $Date: 1994/03/23 16:37:29 $";
+static char sccsid[] = "$Id: search.c,v 8.41 1994/04/06 09:36:55 bostic Exp $ (Berkeley) $Date: 1994/04/06 09:36:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -337,7 +337,7 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 
 		/* Warn if wrapped. */
 		if (wrapped && O_ISSET(sp, O_WARN) && LF_ISSET(SEARCH_MSG))
-			msgq(sp, M_INFO, WRAPMSG);
+			msgq(sp, M_VINFO, WRAPMSG);
 
 		/*
 		 * If an offset, see if it's legal.  It's possible to match
@@ -478,7 +478,7 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 
 		/* Warn if wrapped. */
 		if (wrapped && O_ISSET(sp, O_WARN) && LF_ISSET(SEARCH_MSG))
-			msgq(sp, M_INFO, WRAPMSG);
+			msgq(sp, M_VINFO, WRAPMSG);
 
 		if (delta) {
 			if (check_delta(sp, ep, delta, lno))
