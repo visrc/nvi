@@ -1,6 +1,4 @@
-/* $Id: acconfig.h,v 8.1 1996/02/18 15:36:59 bostic Exp $ (Berkeley) $Date: 1996/02/18 15:36:59 $ */
-
-/* @BOTTOM@ */
+/* $Id: acconfig.h,v 8.2 1996/02/19 10:46:11 bostic Exp $ (Berkeley) $Date: 1996/02/19 10:46:11 $ */
 
 /* Define to `int' if <sys/types.h> doesn't define.  */
 #undef ssize_t
@@ -49,5 +47,7 @@
 
 /* Define if your sprintf returns a pointer, not a length. */
 #undef SPRINTF_RET_CHARPNT
+
+/* @BOTTOM@ */
 
 #include "port.h"
