@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_msg.c,v 10.55 1996/04/10 11:29:04 bostic Exp $ (Berkeley) $Date: 1996/04/10 11:29:04 $";
+static const char sccsid[] = "$Id: vs_msg.c,v 10.56 1996/04/11 20:12:15 bostic Exp $ (Berkeley) $Date: 1996/04/11 20:12:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -531,6 +531,9 @@ vs_ex_resolve(sp, continuep)
 	vip = VIP(sp);
 	*continuep = 0;
 
+	/* If we ran an ex command, we don't trust the cursor. */
+	F_SET(vip, VIP_CUR_INVALID);
+
 	/*
 	 * If we didn't switch into ex and only 0 or 1 lines of output, we may
 	 * be able to continue w/o making the user wait.  First, if no lines of
@@ -601,9 +604,6 @@ vs_ex_resolve(sp, continuep)
 	 * Kiss the ground.
 	 */
 	F_CLR(sp, S_SCR_EXWROTE | S_EX_DONTWAIT);
-
-	/* Regardless, we don't trust the cursor. */
-	F_SET(vip, VIP_CUR_INVALID);
 
 	/*
 	 * We may need to repaint some of the screen, e.g.:
