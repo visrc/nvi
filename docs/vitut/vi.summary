@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: vi.summary,v 8.1 1993/06/08 12:50:00 bostic Exp $ (Berkeley) $Date: 1993/06/08 12:50:00 $
+.\"	$Id: vi.summary,v 8.2 1996/06/27 19:53:38 bostic Exp $ (Berkeley) $Date: 1996/06/27 19:53:38 $
 .\"
 .ds CH
 .ds CF
@@ -408,7 +408,7 @@ c	change
 <	left shift
 >	right shift
 !	filter through command
-\&\=	indent for \s-2LISP\s0
+\&=	indent for \s-2LISP\s0
 y	yank lines to buffer
 .TE
 .h "Miscellaneous operations"
