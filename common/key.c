@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 9.9 1995/01/11 15:58:36 bostic Exp $ (Berkeley) $Date: 1995/01/11 15:58:36 $";
+static char sccsid[] = "$Id: key.c,v 9.10 1995/01/12 16:37:25 bostic Exp $ (Berkeley) $Date: 1995/01/12 16:37:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -529,13 +529,14 @@ remap:		qp = seq_find(sp, NULL, &gp->i_ch[gp->i_next], gp->i_cnt,
 		 * unmapped.
 		 *
 		 * !!!
-		 * <escape> characters are a problem.  Input mode ends with
-		 * an <escape>, and cursor keys start with one, so there's
-		 * an ugly pause at the end of an input session.  If it's an
-		 * <escape>, check for followon characters, but timeout after
-		 * a 20th of a second.  This will lose if users create maps
-		 * that use <escape> as the first character, and that aren't
-		 * entered as a single keystroke.
+		 * <escape> characters are a problem.  Input mode ends with an
+		 * <escape>, and cursor keys start with one, so there's an ugly
+		 * pause at the end of an input session.  If it's an <escape>,
+		 * check for followon characters, but timeout after a 10th of a
+		 * second.  This loses if users create maps that use <escape>
+		 * as the first character, and that aren't entered fast enough.
+		 * Since such maps are generally function keys, we're probably
+		 * safe.
 		 */
 		if (ispartial) {
 			if (term_read_grow(sp))
@@ -545,7 +546,7 @@ remap:		qp = seq_find(sp, NULL, &gp->i_ch[gp->i_next], gp->i_cnt,
 				if (KEY_VAL(sp,
 				    gp->i_ch[gp->i_next]) == K_ESCAPE) {
 					t.tv_sec = 0;
-					t.tv_usec = 50000L;
+					t.tv_usec = 100000L;
 				} else {
 					t.tv_sec = O_VAL(sp, O_KEYTIME) / 10;
 					t.tv_usec = (O_VAL(sp,
