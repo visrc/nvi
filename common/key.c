@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.8 1993/09/13 13:55:33 bostic Exp $ (Berkeley) $Date: 1993/09/13 13:55:33 $";
+static char sccsid[] = "$Id: key.c,v 8.9 1993/09/30 11:23:54 bostic Exp $ (Berkeley) $Date: 1993/09/30 11:23:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -158,16 +158,17 @@ term_push(sp, ibp, push, len)
 
 /*
  * term_key --
- *	This function returns the next key to the calling function.
+ *	Get the next key.
  */
-int
-term_key(sp, flags)
+enum input
+term_key(sp, chp, flags)
 	SCR *sp;
+	CHAR_T *chp;
 	u_int flags;
 {
-	int ch;
+	enum input rval;
 	SEQ *qp;
-	int ispartial, nr;
+	int ch, ispartial, nr;
 
 	/*
 	 * Sync the recovery file if necessary.  This has nothing to do
@@ -195,8 +196,8 @@ kloop:	if (sp->key->cnt) {
 	 * some number of characters.
 	 */
 	if (sp->tty->cnt == 0) {
-		if (sp->s_key_read(sp, &nr, 0))
-			return (1);
+		if (rval = sp->s_key_read(sp, &nr, 0))
+			return (rval);
 		/*
 		 * If there's something on the mode line that we wanted
 		 * the user to see, they just entered a character so we
@@ -205,7 +206,8 @@ kloop:	if (sp->key->cnt) {
 		 */
 		if (F_ISSET(sp, S_UPDATE_MODE)) {
 			F_CLR(sp, S_UPDATE_MODE);
-			sp->s_refresh(sp, sp->ep);
+			if (sp->s_refresh(sp, sp->ep))
+				return (INP_ERR);
 		}
 	}
 
@@ -242,8 +244,8 @@ err:					msgq(sp, M_ERR,
 				}
 			goto kloop;
 		}
-		if (sp->s_key_read(sp, &nr, 1))
-			return (1);
+		if (rval = sp->s_key_read(sp, &nr, 1))
+			return (rval);
 		if (nr)
 			goto mloop;
 	}
@@ -261,9 +263,12 @@ beauty:	if (LF_ISSET(TXT_BEAUTIFY) && O_ISSET(sp, O_BEAUTIFY)) {
 		    sp->special[ch] == K_ESCAPE ||
 		    sp->special[ch] == K_FORMFEED ||
 		    sp->special[ch] == K_NL ||
-		    sp->special[ch] == K_TAB)
-			return (ch);
+		    sp->special[ch] == K_TAB) {
+			*chp = ch;
+			return (INP_OK);
+		}
 		goto kloop;
 	}
-	return (ch);
+	*chp = ch;
+	return (INP_OK);
 }

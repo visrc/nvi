@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.26 1993/09/29 16:43:34 bostic Exp $ (Berkeley) $Date: 1993/09/29 16:43:34 $
+ *	$Id: screen.h,v 8.27 1993/09/30 11:23:12 bostic Exp $ (Berkeley) $Date: 1993/09/30 11:23:12 $
  */
 
 /*
@@ -21,14 +21,9 @@
  */
 #define	MINIMUM_SCREEN_ROWS	 2
 #define	MINIMUM_SCREEN_COLS	20
-
-enum confirmation { YES, NO, QUIT };	/* Confirmation routine interface. */
 					/* Line operations. */
 enum operation { LINE_APPEND, LINE_DELETE, LINE_INSERT, LINE_RESET };
 					/* Standard continue message. */
-#define	CONTMSG		"Enter return to continue: "
-#define	CONTMSG_I	"Enter return to continue [q to quit]: "
-
 enum position { P_BOTTOM, P_FILL, P_MIDDLE, P_TOP };
 
 /*
@@ -214,7 +209,7 @@ typedef struct _scr {
 		     struct _exf *, recno_t, enum operation));
 	size_t	 (*s_chposition) __P((struct _scr *,
 		     struct _exf *, recno_t, size_t));
-	enum confirmation
+	enum confirm
 		 (*s_confirm) __P((struct _scr *,
 		     struct _exf *, struct _mark *, struct _mark *));
 	int	 (*s_down) __P((struct _scr *,
@@ -226,9 +221,11 @@ typedef struct _scr {
 	int	 (*s_ex_write) __P((void *, const char *, int));
 	int	 (*s_fill) __P((struct _scr *,
 		     struct _exf *, recno_t, enum position));
-	int	 (*s_get) __P((struct _scr *, struct _exf *, HDR *,
-		     int, u_int));
-	int	 (*s_key_read) __P((struct _scr *, int *, int));
+	enum input
+		 (*s_get) __P((struct _scr *,
+		     struct _exf *, HDR *, int, u_int));
+	enum input
+		 (*s_key_read) __P((struct _scr *, int *, int));
 	int	 (*s_key_wait) __P((struct _scr *));
 	int	 (*s_position) __P((struct _scr *,
 		     struct _exf *, MARK *, u_long, enum position));

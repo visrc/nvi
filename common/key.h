@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 8.6 1993/09/13 13:55:41 bostic Exp $ (Berkeley) $Date: 1993/09/13 13:55:41 $
+ *	$Id: key.h,v 8.7 1993/09/30 11:24:08 bostic Exp $ (Berkeley) $Date: 1993/09/30 11:24:08 $
  */
 
 /* Structure for a key input buffer. */
@@ -30,6 +30,27 @@ typedef struct _chname {
 
 /* The maximum number of columns any character can take up on a screen. */
 #define	MAX_CHARACTER_COLUMNS	4
+
+/*
+ * Routines that return a key as a side-effect return:
+ *
+ *	INP_OK		Returning a character; must be 0.
+ *	INP_EOF		EOF.
+ *	INP_ERR		Error.
+ *
+ * Routines that return a confirmation return:
+ *
+ *	CONF_NO		User answered no.
+ *	CONF_QUIT	User answered quit, eof or an error.
+ *	CONF_YES	User answered yes.
+ *
+ * The vi structure depends on the key routines being able to return INP_EOF
+ * multiple times without failing -- eventually enough things will end due to
+ * INP_EOF that vi will reach the command level for the screen, at which point
+ * the exit flags will be set and vi will exit.
+ */
+enum confirm	{ CONF_NO, CONF_QUIT, CONF_YES };
+enum input	{ INP_OK=0, INP_EOF, INP_ERR };
 
 /*
  * Ex/vi commands are generally separated by whitespace characters.  We
@@ -64,8 +85,14 @@ typedef struct _chname {
 #define	K_VWERASE	17
 #define	K_ZERO		18
 
-/* The mark at the end of a range. */
-#define	END_CH		'$'
+/* Various special characters. */
+#define	END_CH		'$'			/* End of a range. */
+#define	YES_CH		'y'			/* Yes. */
+#define	QUIT_CH		'q'			/* Quit. */
+#define	NO_CH		'n'			/* No. */
+#define	CONFSTRING	"confirm? [ynq]"
+#define	CONTMSG		"Enter return to continue: "
+#define	CONTMSG_I	"Enter return to continue [q to quit]: "
 
 /* Flags describing how input is handled. */
 #define	TXT_AICHARS	0x000001	/* Leading autoindent chars. */
@@ -97,6 +124,7 @@ typedef struct _chname {
 
 /* Support keyboard routines. */
 int	term_init __P((struct _scr *));
-int	term_key __P((struct _scr *, u_int));
+enum input
+	term_key __P((struct _scr *, CHAR_T *, u_int));
 int	term_push __P((struct _scr *, IBUF *, char *, size_t));
 int	term_waiting __P((struct _scr *));
