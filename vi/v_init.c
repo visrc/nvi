@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 8.13 1993/11/11 12:34:00 bostic Exp $ (Berkeley) $Date: 1993/11/11 12:34:00 $";
+static char sccsid[] = "$Id: v_init.c,v 8.14 1993/11/12 17:00:15 bostic Exp $ (Berkeley) $Date: 1993/11/12 17:00:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -93,7 +93,6 @@ v_end(sp)
 	SCR *sp;
 {
 	/* Close down ex output file descriptor. */
-	sp->trapped_fd = -1;
 	(void)fclose(sp->stdfp);
 
 	/*
