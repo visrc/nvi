@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 10.10 1995/10/03 10:24:08 bostic Exp $ (Berkeley) $Date: 1995/10/03 10:24:08 $";
+static char sccsid[] = "$Id: ex_subst.c,v 10.11 1995/10/04 12:37:19 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:37:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -131,7 +131,7 @@ subagain:	return (ex_subagain(sp, cmdp));
 	 */
 	if (*ptrn == '\0') {
 		if (!F_ISSET(sp, S_RE_SEARCH)) {
-			ex_message(sp, NULL, EXM_NOPREVRE);
+			ex_emsg(sp, NULL, EXM_NOPREVRE);
 			return (1);
 		}
 		re = &sp->sre;
@@ -272,7 +272,7 @@ ex_subagain(sp, cmdp)
 	EXCMD *cmdp;
 {
 	if (!F_ISSET(sp, S_RE_SUBST)) {
-		ex_message(sp, NULL, EXM_NOPREVRE);
+		ex_emsg(sp, NULL, EXM_NOPREVRE);
 		return (1);
 	}
 	return (s(sp,
@@ -293,7 +293,7 @@ ex_subtilde(sp, cmdp)
 	EXCMD *cmdp;
 {
 	if (!F_ISSET(sp, S_RE_SEARCH)) {
-		ex_message(sp, NULL, EXM_NOPREVRE);
+		ex_emsg(sp, NULL, EXM_NOPREVRE);
 		return (1);
 	}
 	return (s(sp,
@@ -469,7 +469,7 @@ s(sp, cmdp, s, re, flags)
 				return (1);
 			}
 			if (!F_ISSET(sp, S_RE_SEARCH)) {
-				ex_message(sp, NULL, EXM_NOPREVRE);
+				ex_emsg(sp, NULL, EXM_NOPREVRE);
 				return (1);
 			}
 			rflag = 1;
@@ -480,7 +480,7 @@ s(sp, cmdp, s, re, flags)
 		}
 
 	if (*s != '\0' || !rflag && LF_ISSET(SUB_MUSTSETR)) {
-usage:		ex_message(sp, cmdp->cmd->usage, EXM_USAGE);
+usage:		ex_emsg(sp, cmdp->cmd->usage, EXM_USAGE);
 		return (1);
 	}
 

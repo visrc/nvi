@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 10.9 1995/10/02 16:32:27 bostic Exp $ (Berkeley) $Date: 1995/10/02 16:32:27 $
+ *	$Id: ex.h,v 10.10 1995/10/04 12:35:47 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:35:47 $
  */
 
 #define	PROMPTCHAR	':'		/* Prompt using a colon. */
@@ -56,7 +56,7 @@ extern EXCMDLIST const cmds[];		/* Table of ex commands. */
  */
 #define	NEEDFILE(sp, cmdp) {						\
 	if ((sp)->ep == NULL) {						\
-		ex_message(sp, (cmdp)->cmd->name, EXM_NOFILEYET);	\
+		ex_emsg(sp, (cmdp)->cmd->name, EXM_NOFILEYET);		\
 		return (1);						\
 	}								\
 }

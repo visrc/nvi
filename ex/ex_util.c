@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_util.c,v 10.11 1995/10/02 16:35:16 bostic Exp $ (Berkeley) $Date: 1995/10/02 16:35:16 $";
+static char sccsid[] = "$Id: ex_util.c,v 10.12 1995/10/04 12:35:58 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:35:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -145,13 +145,13 @@ ex_e_resize(sp)
 }
 
 /*
- * ex_message --
- *	Display a few common messages.
+ * ex_emsg --
+ *	Display a few common ex and vi error messages.
  *
- * PUBLIC: void ex_message __P((SCR *, char *, exm_t));
+ * PUBLIC: void ex_emsg __P((SCR *, char *, exm_t));
  */
 void
-ex_message(sp, p, which)
+ex_emsg(sp, p, which)
 	SCR *sp;
 	char *p;
 	exm_t which;

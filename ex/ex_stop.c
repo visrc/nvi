@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_stop.c,v 10.5 1995/09/28 13:03:23 bostic Exp $ (Berkeley) $Date: 1995/09/28 13:03:23 $";
+static char sccsid[] = "$Id: ex_stop.c,v 10.6 1995/10/04 12:36:42 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:36:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -45,6 +45,6 @@ ex_stop(sp, cmdp)
 	if (sp->gp->scr_suspend(sp, &allowed))
 		return (1);
 	if (!allowed)
-		ex_message(sp, NULL, EXM_NOSUSPEND);
+		ex_emsg(sp, NULL, EXM_NOSUSPEND);
 	return (0);
 }
