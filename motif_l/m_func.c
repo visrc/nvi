@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_func.c,v 8.26 2001/06/25 15:19:27 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:27 $";
+static const char sccsid[] = "$Id: m_func.c,v 8.27 2001/06/28 19:48:32 skimo Exp $ (Berkeley) $Date: 2001/06/28 19:48:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -140,7 +140,7 @@ vi_deleteln(int ipvi)
 	/* Need to let X take over. */
 	XmUpdateDisplay(__vi_screen->area);
 
-	return (1);
+	return (0);
 }
 
 static int
@@ -198,7 +198,7 @@ vi_insertln(int ipvi)
 	/* Need to let X take over. */
 	XmUpdateDisplay(__vi_screen->area);
 
-	return (1);
+	return (0);
 }
 
 static int
