@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_print.c,v 10.13 1996/03/06 19:52:32 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:52:32 $";
+static const char sccsid[] = "$Id: ex_print.c,v 10.14 1996/03/06 20:51:17 bostic Exp $ (Berkeley) $Date: 1996/03/06 20:51:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -105,10 +105,9 @@ ex_print(sp, cmdp, fp, tp, flags)
 	u_int32_t flags;
 {
 	GS *gp;
-	const char *p;
 	recno_t from, to;
 	size_t col, len;
-	char buf[10];
+	char *p, buf[10];
 
 	NEEDFILE(sp, cmdp);
 
