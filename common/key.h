@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 8.2 1993/06/28 18:38:16 bostic Exp $ (Berkeley) $Date: 1993/06/28 18:38:16 $
+ *	$Id: key.h,v 8.3 1993/08/07 10:01:40 bostic Exp $ (Berkeley) $Date: 1993/08/07 10:01:40 $
  */
 
 /* Special character lookup values. */
@@ -56,7 +56,7 @@
 	(TXT_BEAUTIFY | TXT_CR | TXT_NLECHO | TXT_PROMPT)
 
 #define	TXT_GETKEY_MASK							\
-	(TXT_BEAUTIFY | TXT_MAPCOMMAND)
+	(TXT_BEAUTIFY | TXT_MAPCOMMAND | TXT_MAPINPUT)
 
 /* Support keyboard routines. */
 void	term_flush_pseudo __P((SCR *));
