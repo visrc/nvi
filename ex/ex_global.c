@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 9.11 1995/02/02 17:47:51 bostic Exp $ (Berkeley) $Date: 1995/02/02 17:47:51 $";
+static char sccsid[] = "$Id: ex_global.c,v 9.12 1995/02/02 17:53:30 bostic Exp $ (Berkeley) $Date: 1995/02/02 17:53:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -93,7 +93,8 @@ global(sp, cmdp, cmd)
 	if (cmdp->argc == 0)
 		goto usage;
 	for (p = cmdp->argv[0]->bp; isblank(*p); ++p);
-	if (*p == '\0' || isalnum(*p) || *p == '|' || *p == '\n') {
+	if (*p == '\0' || isalnum(*p) ||
+	    *p == '\\' || *p == '|' || *p == '\n') {
 usage:		ex_message(sp, cmdp->cmd, EXM_USAGE);
 		return (1);
 	}
