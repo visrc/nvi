@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: options.c,v 10.53 1996/12/16 09:39:15 bostic Exp $ (Berkeley) $Date: 1996/12/16 09:39:15 $";
+static const char sccsid[] = "$Id: options.c,v 10.54 1997/08/03 15:45:34 bostic Exp $ (Berkeley) $Date: 1997/08/03 15:45:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -388,8 +388,9 @@ opts_init(sp, oargs)
 		v = 8;
 	else if (v <= 1200)
 		v = 16;
-	else
-		v = O_VAL(sp, O_LINES) - 1;
+	else if ((v = O_VAL(sp, O_LINES) - 1) == 0)
+		v = 1;
+
 	(void)snprintf(b1, sizeof(b1), "window=%lu", v);
 	OI(O_WINDOW, b1);
 
