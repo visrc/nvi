@@ -13,7 +13,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_tag.c,v 10.28 1996/04/27 11:40:25 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:25 $";
+static const char sccsid[] = "$Id: ex_tag.c,v 10.29 1996/05/08 20:33:06 bostic Exp $ (Berkeley) $Date: 1996/05/08 20:33:06 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -630,38 +630,19 @@ ex_tag_display(sp)
 		msgq(sp, M_ERR, "292|Display too small.");
 		return (0);
 	}
-	for (cnt = 1, tqp = exp->tq.cqh_first;
-	    tqp != (void *)&exp->tq; ++cnt, tqp = tqp->q.cqe_next) {
-		if (INTERRUPTED(sp))
-			break;
 
-		tp = tqp->current;
-		p = tp->frp == NULL ? tp->fname : tp->frp->name;
-		if ((len = strlen(p)) > L_NAME) {
-			len = len - (L_NAME - 4);
-			(void)ex_printf(sp, "%2d ... %*.*s",
-			    cnt, L_NAME - 4, L_NAME - 4, p + len);
-		} else
-			(void)ex_printf(sp,
-			    "%2d %*.*s", cnt, L_NAME, L_NAME, p);
-
-		if (tqp->tag != NULL &&
-		    (sp->cols - L_NAME) >= L_TAG + L_SPACE) {
-			len = strlen(tqp->tag);
-			if (len > sp->cols - (L_NAME + L_SPACE))
-				len = sp->cols - (L_NAME + L_SPACE);
-			(void)ex_printf(sp, "     %.*s", (int)len, tqp->tag);
-		}
-		(void)ex_printf(sp, "\n");
-
-		/*
-		 * If there is more than one TAG structure with the TAGQ,
-		 * display them as well.
-		 */
-		tp = tqp->tagq.cqh_first;
-		if (tp->q.cqe_next == (void *)&tqp->tagq)
-			continue;
-		for (; tp != (void *)&tqp->tagq; tp = tp->q.cqe_next) {
+	/*
+	 * Display the list of tags for each queue entry.  The first entry
+	 * is numbered, and the current tag entry has an asterisk appended.
+	 */
+	for (cnt = 1, tqp = exp->tq.cqh_first; !INTERRUPTED(sp) &&
+	    tqp != (void *)&exp->tq; ++cnt, tqp = tqp->q.cqe_next)
+		for (tp = tqp->tagq.cqh_first;
+		    tp != (void *)&tqp->tagq; tp = tp->q.cqe_next) {
+			if (tp == tqp->tagq.cqh_first)
+				(void)ex_printf(sp, "%2d ", cnt);
+			else
+				(void)ex_printf(sp, "   ");
 			p = tp->frp == NULL ? tp->fname : tp->frp->name;
 			if ((len = strlen(p)) > L_NAME) {
 				len = len - (L_NAME - 4);
@@ -672,10 +653,18 @@ ex_tag_display(sp)
 				    "   %*.*s", L_NAME, L_NAME, p);
 			if (tqp->current == tp &&
 			    (sp->cols - L_NAME) >= L_TAG + L_SPACE)
-				ex_printf(sp, "     (current)");
+				ex_printf(sp, "*");
+
+			if (tp == tqp->tagq.cqh_first && tqp->tag != NULL &&
+			    (sp->cols - L_NAME) >= L_TAG + L_SPACE) {
+				len = strlen(tqp->tag);
+				if (len > sp->cols - (L_NAME + L_SPACE))
+					len = sp->cols - (L_NAME + L_SPACE);
+				(void)ex_printf(sp,
+				    "     %.*s", (int)len, tqp->tag);
+			}
 			(void)ex_printf(sp, "\n");
 		}
-	}
 	return (0);
 }
 
