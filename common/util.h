@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: util.h,v 9.7 1995/01/23 16:58:49 bostic Exp $ (Berkeley) $Date: 1995/01/23 16:58:49 $
+ *	$Id: util.h,v 9.8 1995/01/30 12:05:00 bostic Exp $ (Berkeley) $Date: 1995/01/30 12:05:00 $
  */
 
 /*
@@ -59,7 +59,6 @@ void	digraph_save __P((SCR *, int));
 int	 nonblank __P((SCR *, recno_t, size_t *));
 void	 set_alt_name __P((SCR *, char *));
 char	*tail __P((char *));
-CHAR_T	*v_strdup __P((SCR *, const CHAR_T *, size_t));
 int	 vi_main __P((int, char *[], int (*)(SCR *, int)));
 void	 vi_putchar __P((int));
 
