@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.15 1993/01/17 16:59:33 bostic Exp $ (Berkeley) $Date: 1993/01/17 16:59:33 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.16 1993/01/24 18:45:50 bostic Exp $ (Berkeley) $Date: 1993/01/24 18:45:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -56,7 +56,7 @@ static char sccsid[] = "$Id: vs_refresh.c,v 5.15 1993/01/17 16:59:33 bostic Exp 
  * you can just move the head and tail pointers instead of copying the array.
  * This loses when you're deleting three lines out of the middle of the map,
  * though, because you have to increment through the structures instead of just
- * doing a bcopy.  Not particularly clear which choice is better.
+ * doing a memmove.  Not particularly clear which choice is better.
  */
 typedef struct smap {
 	recno_t lno;			/* File line number. */
@@ -75,9 +75,10 @@ static int	scr_line __P((EXF *, SMAP *, u_char *, size_t,
 		    size_t *, size_t *));
 static recno_t	scr_nlines __P((EXF *, SMAP *, recno_t, size_t));
 static size_t	scr_relative __P((EXF *, recno_t));
-static size_t	scr_screens __P((EXF *, recno_t));
+static size_t	scr_screens __P((EXF *, recno_t, size_t *));
 static int	scr_smdelete __P((EXF *, recno_t, int));
 static int	scr_smdown __P((EXF *));
+static int	scr_smfill __P((EXF *));
 static int	scr_sminit __P((EXF *));
 static int	scr_sminsert __P((EXF *, recno_t, int));
 static int	scr_smnext __P((EXF *, SMAP *));
@@ -332,7 +333,7 @@ win_redraw:		HMAP->lno = ep->top;
 		lcnt = scr_nlines(ep, HMAP, lastline, BOTLINE(ep, 0));
 		if (lcnt < BOTLINE(ep, 0)) {
 			TMAP->lno = lastline;
-			TMAP->off = scr_screens(ep, lastline);
+			TMAP->off = scr_screens(ep, lastline, NULL);
 			for (sp = TMAP; sp > HMAP; --sp)
 				if (scr_smprev(ep, sp))
 					return (1);
@@ -443,32 +444,23 @@ cursor:	/* If line has changed. */
 	 * screen, and therefore, how many screen positions to move.
 	 */
 	if (ep->cno < ep->ocno) {
-		/*
-		 * Point to the old character.  The old cursor position can
-		 * be past EOL if were doing an insert.  In this case, then
-		 * the character past EOL is by definition one space in width
-		 * and we traverse one less character.
-		 */
+		/* Point to the old character. */
 		p += ep->ocno;
-		cnt = ep->ocno - ep->cno;
+		cnt = (ep->ocno - ep->cno) + 1;
+#ifdef DEBUG
 		if (ep->ocno >= len) {
-			cwtotal = 1;
-			--p;
-		} else {
-			cwtotal = 0;
-			++cnt;
+			msg("Error: %s/%d: ep->ocno (%u) >= len (%u)",
+			     tail(__FILE__), __LINE__, ep->ocno, len);
+			return (1);
 		}
-
+#endif
 		/*
 		 * Count up the widths of the characters.  If it's a tab
 		 * character, just do it the the slow way.
 		 */
-		while (cnt--) {
-			ch = *p--;
-			if (ch == '\t')
+		for (cwtotal = 0; cnt--; cwtotal += asciilen[ch])
+			if ((ch = *p--) == '\t')
 				goto slow;
-			cwtotal += asciilen[ch];
-		}
 
 		/*
 		 * Decrement the screen cursor by the total width of the
@@ -482,8 +474,6 @@ cursor:	/* If line has changed. */
 		 */
 		if (asciilen[ch] > 1)
 			cwtotal -= asciilen[ch] - 1;
-
-		/* Set the new screen cursor position. */
 
 		/*
 		 * If the new column moved us out of the current screen,
@@ -502,30 +492,24 @@ cursor:	/* If line has changed. */
 		/*
 		 * 4b: Cursor moved right.
 		 *
-		 * Point to the old character.  It's possible, if we're doing
-		 * an insert, for the new character position to be past EOL.
-		 * In this case, then the character past EOL is by definition
-		 * one space in width and we traverse one less character.
+		 * Point to the old character.
 		 */
 		p += ep->ocno;
-		cnt = ep->cno - ep->ocno;
-		if (ep->cno >= len)
-			cwtotal = 1;
-		else {
-			cwtotal = 0;
-			++cnt;
+		cnt = (ep->cno - ep->ocno) + 1;
+#ifdef DEBUG
+		if (ep->cno >= len) {
+			msg("Error: %s/%d: ep->cno (%u) >= len (%u)",
+			     tail(__FILE__), __LINE__, ep->cno, len);
+			return (1);
 		}
-
+#endif
 		/*
 		 * Count up the widths of the characters.  If it's a tab
 		 * character, just do it the the slow way.
 		 */
-		while (cnt--) {
-			ch = *p++;
-			if (ch == '\t')
+		for (cwtotal = 0; cnt--; cwtotal += asciilen[ch])
+			if ((ch = *p++) == '\t')
 				goto slow;
-			cwtotal += asciilen[ch];
-		}
 
 		/*
 		 * Decrement the screen cursor by the total width of the
@@ -555,6 +539,19 @@ cursor:	/* If line has changed. */
 slow:	/* Find the line. */
 	for (sp = HMAP; sp->lno != ep->lno; ++sp);
 
+	/*
+	 * If doing left-right scrolling and the cursor movement has
+	 * changed the screen being displayed, fix it.
+	 */
+	if (ISSET(O_LEFTRIGHT)) {
+		cnt = scr_screens(ep, ep->lno, &ep->cno) % SCREEN_COLS(ep);
+		if (cnt != HMAP->off) {
+			for (sp = HMAP; sp <= TMAP; ++sp)
+				sp->off = cnt;
+			goto paint;
+		}
+	}
+
 	/* Update all of the screen lines for this file line. */
 	for (; sp <= TMAP && sp->lno == ep->lno; ++sp)
 		if (scr_line(ep, sp, NULL, 0, &y, &ep->scno))
@@ -563,7 +560,9 @@ slow:	/* Find the line. */
 	/* Not too bad, just move the cursor. */
 	goto update;
 
-paint:	/* Lost big, do what you have to do. */
+	/* Lost big, do what you have to do. */
+paint:	if (FF_ISSET(ep, F_REDRAW))
+		scr_smfill(ep);
 	for (sp = HMAP; sp <= TMAP; ++sp)
 		if (scr_line(ep, sp, NULL, 0, &y, &ep->scno))
 			return (1);
@@ -653,7 +652,7 @@ scr_line(ep, sp, p, len, yp, xp)
 {
 	size_t chlen, cols_per_screen, cno_cnt, count_cols;
 	size_t offset_in_char, skip_cols;
-	int ch, didmove;
+	int ch;
 	char nbuf[10];
 
 	/* Move to the line. */
@@ -684,7 +683,7 @@ scr_line(ep, sp, p, len, yp, xp)
 			*yp = sp - HMAP;
 		}
 		if (sp->lno > file_lline(ep))
-			addch(sp->lno == 1 ? ' ' : '~');
+			addch(sp->lno == 1 ? ISSET(O_LIST) ? '$' : ' ' : '~');
 		else if (p == NULL) {
 			GETLINE_ERR(sp->lno);
 			return (1);
@@ -702,15 +701,14 @@ scr_line(ep, sp, p, len, yp, xp)
 
 	/*
 	 * Set the number of characters to skip before reach the cursor
-	 * character.  Offset it by one so that we can use 0 as a flag
-	 * value.  Note, we may get called lots of times with a reasonable
-	 * pointer to a cursor address -- don't fill it in unless it's
-	 * the right line.
+	 * character.  Offset by 1 and use 0 as a flag value.  We may be
+	 * called repeatedly with a valid pointer to a cursor position.
+	 * Don't fill it in unless it's the right line.
 	 */
 	cno_cnt = yp == NULL || sp->lno != ep->lno ? 0 : ep->cno + 1;
 
 	/* This is the loop that actually displays lines. */
-	while (len--) {
+	for (; len; --len) {
 		/* Get the next character and figure out its length. */
 		if ((ch = *p++) == '\t' && !ISSET(O_LIST))
 			chlen = LVAL(O_TABSTOP) - count_cols % LVAL(O_TABSTOP);
@@ -740,15 +738,15 @@ scr_line(ep, sp, p, len, yp, xp)
 			offset_in_char = 0;
 
 		/*
-		 * Only display up to to the right-hand column.  If reach it,
-		 * we're done.  Set a cursor value if the entire character is
-		 * displayed.
+		 * Only display up to the right-hand column.  If reach it,
+		 * we're done.  Only set the cursor value if the entire
+		 * character is displayed.
 		 */
 		if (count_cols >= cols_per_screen) {
 			chlen -= count_cols - cols_per_screen;
 			if (count_cols > cols_per_screen)
 				cno_cnt = 0;
-			len = 0;
+			len = 1;		/* XXX 1, not 0, for loop. */
 		}
 
 		/*
@@ -777,19 +775,18 @@ scr_line(ep, sp, p, len, yp, xp)
 		}
 	}
 
-	/* If we didn't paint the whole line, clear the rest of it. */
-	if (count_cols < cols_per_screen) {
-		clrtoeol();
-
-		/*
-		 * If in insert mode, the cursor may be one character past
-		 * the EOL.  If so, set the value now.
-		 */
-		if (cno_cnt && --cno_cnt == 0) {
-			*xp = count_cols + 1;
-			*yp = sp - HMAP;
-		}
+	/*
+	 * If O_LIST set, at the end of the line and didn't paint the whole
+	 * line, add a trailing $.
+	 */
+	if (ISSET(O_LIST) && len == 0 && count_cols < cols_per_screen) {
+		++count_cols;
+		addch('$');
 	}
+
+	/* If didn't paint the whole line, clear the rest of it. */
+	if (count_cols < cols_per_screen)
+		clrtoeol();
 	return (0);
 }
 
@@ -812,13 +809,26 @@ scr_sminit(ep)
 	TMAP = p + BOTLINE(ep, 0);
 
 	/* Fill in the map. */
-	for (p->lno = ep->otop, p->off = 1; p < TMAP; ++p)
-		if (scr_smnext(ep, p)) {
-			free(HMAP);
-			HMAP = NULL;
-			return (1);
-		}
+	if (scr_smfill(ep)) {
+		free(p);
+		return (1);
+	}
+	return (0);
+}
 
+/*
+ * scr_smfill --
+ *	Fill in the screen map, based on the current "top" line.
+ */
+static int
+scr_smfill(ep)
+	EXF *ep;
+{
+	SMAP *p;
+	
+	for (p = HMAP, p->lno = ep->otop, p->off = 1; p < TMAP; ++p)
+		if (scr_smnext(ep, p))
+			return (1);
 	return (0);
 }
 
@@ -892,7 +902,7 @@ scr_sminsert(ep, lno, islogical)
 	 * Figure out how many lines needed to display the line.
 	 * The lines left on the screen overrides that number.
 	 */
-	cnt1 = scr_screens(ep, lno);
+	cnt1 = scr_screens(ep, lno, NULL);
 	cnt2 = (TMAP - p) + 1;
 	if (cnt1 > cnt2)
 		cnt1 = cnt2;
@@ -1012,7 +1022,7 @@ scr_smnext(ep, p)
 		t->lno = p->lno + 1;
 		t->off = p->off;
 	} else {
-		lcnt = scr_screens(ep, p->lno);
+		lcnt = scr_screens(ep, p->lno, NULL);
 		if (lcnt == p->off) {
 			t->lno = p->lno + 1;
 			t->off = 1;
@@ -1044,7 +1054,7 @@ scr_smprev(ep, p)
 		t->off = p->off - 1;
 	} else {
 		t->lno = p->lno - 1;
-		t->off = scr_screens(ep, t->lno);
+		t->off = scr_screens(ep, t->lno, NULL);
 	}
 	return (0);
 }
@@ -1075,57 +1085,47 @@ scr_nlines(ep, from_sp, to_lno, max)
 	if (from_sp->lno > to_lno) {
 		lcnt = from_sp->off - 1;	/* Correct for off-by-one. */
 		for (lno = from_sp->lno; --lno >= to_lno && lcnt <= max;)
-			lcnt += scr_screens(ep, lno);
+			lcnt += scr_screens(ep, lno, NULL);
 	} else {
 		lno = from_sp->lno;
-		lcnt = (scr_screens(ep, lno) - from_sp->off) + 1;
+		lcnt = (scr_screens(ep, lno, NULL) - from_sp->off) + 1;
 		for (; ++lno < to_lno && lcnt <= max; ++lno)
-			lcnt += scr_screens(ep, lno);
+			lcnt += scr_screens(ep, lno, NULL);
 	}
 	return (lcnt);
 }
 
 /*
  * scr_screens --
- *	Return the number of screens required by the line.
+ *	Return the number of screens required by the line, or, if a column
+ *	is specified, by the column within the line.
  */
 static size_t
-scr_screens(ep, lno)
+scr_screens(ep, lno, cnop)
 	EXF *ep;
 	recno_t lno;
+	size_t *cnop;
 {
-	static size_t last_lcnt;
-	static recno_t last_lno = OOBLNO;
-	static EXF *last_ep;
-	size_t cols, lcnt, len, scno;
+	size_t cno_cnt, cols, lcnt, len, scno;
 	int ch;
 	u_char *p;
 
-	if (ISSET(O_LEFTRIGHT))
-		return (1);
-
-	/*
-	 * One-element cache, since we get asked the same question repeatedly
-	 * if folding lines.
-	 */
-	if (last_ep == ep && last_lno == lno)
-		return (last_lcnt);
-
-	last_ep = ep;
-	last_lno = lno;
-
 	/* Get a copy of the line. */
-	if ((p = file_gline(ep, lno, &len)) == NULL || len == 0) {
-		last_lcnt = 1;
+	if ((p = file_gline(ep, lno, &len)) == NULL || len == 0)
 		return (1);
-	}
 
 	/* If a line number is being displayed, there's fewer columns. */
 	cols = ep->cols;
 	if (ISSET(O_NUMBER))
 		cols -= O_NUMBER_LENGTH;
 
-	/* Calculate the screen columns needed. */
+	/*
+	 * If a column specified, note it, and set the counter to the
+	 * column plus one, so we can use 0 as a flag value.
+	 */
+	cno_cnt = cnop == NULL ? 0 : *cnop + 1;
+
+	/* Calculate the lines needed. */
 	for (lcnt = 1, scno = 0; len--;) {
 		if ((ch = *p++) == '\t' && !ISSET(O_LIST))
 			scno += LVAL(O_TABSTOP) - scno % LVAL(O_TABSTOP);
@@ -1136,8 +1136,16 @@ scr_screens(ep, lno)
 			scno -= cols;
 			++lcnt;
 		}
+		if (cno_cnt && --cno_cnt == 0)
+			break;
 	}
-	last_lcnt = lcnt;
+
+	/* Trailing '$' on listed lines. */
+	if (len == 0 && ISSET(O_LIST)) {
+		scno += asciilen['$'];
+		if (scno > cols)
+			++lcnt;
+	}
 	return (lcnt);
 }
 
@@ -1183,7 +1191,7 @@ scr_relative(ep, lno)
 	scno = ISSET(O_NUMBER) ? O_NUMBER_LENGTH : 0;
 
 	/* Step through the line until reach the right character. */
-	for (p = lp, llen = len; len--;) {
+	for (p = lp, llen = len; --len;) {
 		ch = *p++;
 		if (ch == '\t' && !ISSET(O_LIST))
 			scno += LVAL(O_TABSTOP) - scno % LVAL(O_TABSTOP);
