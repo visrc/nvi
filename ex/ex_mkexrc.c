@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_mkexrc.c,v 5.2 1992/04/03 08:22:33 bostic Exp $ (Berkeley) $Date: 1992/04/03 08:22:33 $";
+static char sccsid[] = "$Id: ex_mkexrc.c,v 5.3 1992/04/03 09:16:44 bostic Exp $ (Berkeley) $Date: 1992/04/03 09:16:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -17,6 +17,10 @@ static char sccsid[] = "$Id: ex_mkexrc.c,v 5.2 1992/04/03 08:22:33 bostic Exp $ 
 #include "pathnames.h"
 #include "extern.h"
 
+/*
+ * ex_mkexrc -- (:mkexrc[!] [file])
+ *	Create (or overwrite) a .exrc file with the current info.
+ */
 void
 ex_mkexrc(cmdp)
 	CMDARG *cmdp;
@@ -35,12 +39,13 @@ ex_mkexrc(cmdp)
 
 	/* Create with max permissions of rw-r--r--. */
 	if ((fd = open(name,
-	    O_CREAT|O_TRUNC|O_WRONLY, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) < 0) {
+	    (cmdp->flags & E_FORCE ? 0 : O_EXCL)|O_CREAT|O_TRUNC|O_WRONLY,
+	    S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) < 0) {
 		msg("%s: %s", name, strerror(errno));
 		return;
 	}
 
-	/* And just in case it already existed... */
+	/* In case it already existed, set the permissions. */
 	(void)fchmod(fd, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
 
 	map_save(fd);
