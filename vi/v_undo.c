@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_undo.c,v 5.21 1993/04/06 11:43:56 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:43:56 $";
+static char sccsid[] = "$Id: v_undo.c,v 5.22 1993/05/10 11:37:15 bostic Exp $ (Berkeley) $Date: 1993/05/10 11:37:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,6 +21,10 @@ static char sccsid[] = "$Id: v_undo.c,v 5.21 1993/04/06 11:43:56 bostic Exp $ (B
 /*
  * v_Undo -- U
  *	Undo changes to this line, or roll forward.
+ *
+ *	Historic vi moved the cursor to the first non-blank character
+ *	of the line when this happened.  We do not, since we know where
+ *	the cursor actually was when the changes began.
  */
 int
 v_Undo(sp, ep, vp, fm, tm, rp)
@@ -29,8 +33,9 @@ v_Undo(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	return (O_ISSET(sp, O_NUNDO) ?
-	    log_forward(sp, ep, rp) : log_backward(sp, ep, rp, sp->lno));
+	if (O_ISSET(sp, O_NUNDO))
+		return (log_forward(sp, ep, rp));
+	return (log_setline(sp, ep));
 }
 	
 /*
@@ -45,14 +50,14 @@ v_undo(sp, ep, vp, fm, tm, rp)
 	MARK *fm, *tm, *rp;
 {
 	if (O_ISSET(sp, O_NUNDO))
-		return (log_backward(sp, ep, rp, OOBLNO));
+		return (log_backward(sp, ep, rp));
 
 	if (!F_ISSET(ep, F_UNDO)) {
 		ep->lundo = UFORWARD;
 		F_SET(ep, F_UNDO);
 	}
 
-	switch(ep->lundo) {
+	switch (ep->lundo) {
 	case UBACKWARD:
 		if (log_forward(sp, ep, rp)) {
 			F_CLR(ep, F_UNDO);
@@ -61,7 +66,7 @@ v_undo(sp, ep, vp, fm, tm, rp)
 		ep->lundo = UFORWARD;
 		break;
 	case UFORWARD:
-		if (log_backward(sp, ep, rp, OOBLNO)) {
+		if (log_backward(sp, ep, rp)) {
 			F_CLR(ep, F_UNDO);
 			return (1);
 		}
