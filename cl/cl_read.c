@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_read.c,v 10.20 2000/07/23 11:14:44 skimo Exp $ (Berkeley) $Date: 2000/07/23 11:14:44 $";
+static const char sccsid[] = "$Id: cl_read.c,v 10.21 2001/05/13 19:41:54 skimo Exp $ (Berkeley) $Date: 2001/05/13 19:41:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,6 +33,10 @@ static const char sccsid[] = "$Id: cl_read.c,v 10.20 2000/07/23 11:14:44 skimo E
 #include "../common/common.h"
 #include "../ex/script.h"
 #include "cl.h"
+
+/* Pollution by Solaris curses. */
+#undef columns
+#undef lines  
 
 static input_t	cl_read __P((SCR *,
     u_int32_t, char *, size_t, int *, struct timeval *));
