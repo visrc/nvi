@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_main.c,v 10.33 1996/08/11 14:31:34 bostic Exp $ (Berkeley) $Date: 1996/08/11 14:31:34 $";
+static const char sccsid[] = "$Id: cl_main.c,v 10.34 1996/09/20 20:32:42 bostic Exp $ (Berkeley) $Date: 1996/09/20 20:32:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,7 +28,7 @@ static const char sccsid[] = "$Id: cl_main.c,v 10.33 1996/08/11 14:31:34 bostic 
 #include <unistd.h>
 
 #include "../common/common.h"
-#ifdef notyet
+#ifdef RUNNING_IP
 #include "../ip/ip.h"
 #endif
 #include "cl.h"
@@ -73,7 +73,7 @@ main(argc, argv)
 	 * no way to portably call getopt twice, so arguments parsed here must
 	 * be removed from the argument list.
 	 */
-#ifdef notyet
+#ifdef RUNNING_IP
 	ip_arg = NULL;
 	for (p_av = t_av = argv;;) {
 		if (*t_av == NULL) {
