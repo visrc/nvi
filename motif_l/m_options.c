@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_options.c,v 8.12 1996/12/17 10:46:36 bostic Exp $ (Berkeley) $Date: 1996/12/17 10:46:36 $";
+static const char sccsid[] = "$Id: m_options.c,v 8.13 1996/12/17 19:13:21 bostic Exp $ (Berkeley) $Date: 1996/12/17 19:13:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -58,98 +58,123 @@ static void set_opt __P((Widget, XtPointer, XtPointer));
 
 static Widget	preferences = NULL;
 
-static optData	toggles[] = {
-	{ optToggle,	"altwerase",	},
-	{ optToggle,	"autoindent",	},
-	{ optToggle,	"autoprint",	},
-	{ optToggle,	"autowrite",	},
-	{ optToggle,	"beautify",	},
+static optData display[] = {
 	{ optToggle,	"comment",	},
-	{ optToggle,	"edcompatible",	},
-	{ optToggle,	"errorbells",	},
-	{ optToggle,	"exrc",		},
-	{ optToggle,	"extended",	},
 	{ optToggle,	"flash",	},
-	{ optToggle,	"iclower",	},
-	{ optToggle,	"ignorecase",	},
 	{ optToggle,	"leftright",	},
-	{ optToggle,	"lisp",		},
 	{ optToggle,	"list",		},
-	{ optToggle,	"lock",		},
-	{ optToggle,	"magic",	},
 	{ optToggle,	"number",	},
 	{ optToggle,	"octal",	},
-	{ optToggle,	"prompt",	},
-	{ optToggle,	"readonly",	},
-	{ optToggle,	"remap",	},
 	{ optToggle,	"ruler",	},
-	{ optToggle,	"searchincr",	},
-	{ optToggle,	"secure",	},
-	{ optToggle,	"showmatch",	},
 	{ optToggle,	"showmode",	},
-	{ optToggle,	"tildeop",	},
-	{ optToggle,	"timeout",	},
-	{ optToggle,	"ttywerase",	},
+	{ optToggle,	"slowopen",	},
 	{ optToggle,	"verbose",	},
-	{ optToggle,	"warn",		},
+	{ optToggle,	"window",	},
 	{ optToggle,	"windowname",	},
-	{ optToggle,	"wrapscan",	},
+	{ optTerminator,		},
+}, display_int[] = {
+	{ optInteger,	"report",	},
+	{ optInteger,	"scroll",	},
+	{ optInteger,	"shiftwidth",	},
+	{ optInteger,	"sidescroll",	},
+	{ optInteger,	"tabstop",	},
+	{ optTerminator,		},
+}, display_str[] = {
+	{ optString,	"noprint",	},
+	{ optString,	"print",	},
+	{ optTerminator,		},
+}, files[] = {
+	{ optToggle,	"autowrite",	},
+	{ optToggle,	"lock",		},
+	{ optToggle,	"readonly",	},
 	{ optToggle,	"writeany",	},
 	{ optTerminator,		},
-}, values[] = {
-	{ optInteger,	"escapetime",	},
-	{ optInteger,	"matchtime",	},
-	{ optInteger,	"report",	},
-	{ optInteger,	"shiftwidth",	},
-	{ optInteger,	"tabstop",	},
+}, files_str[] = {
+	{ optString,	"backup",	},
+	{ optString,	"path",		},
+	{ optTerminator,		},
+}, general[] = {
+	{ optToggle,	"exrc",		},
+	{ optToggle,	"lisp",		},
+	{ optToggle,	"modeline",	},
+	{ optToggle,	"sourceany",	},
+	{ optToggle,	"tildeop",	},
+	{ optTerminator,		},
+}, general_int[] = {
 	{ optInteger,	"taglength",	},
+	{ optTerminator,		},
+}, general_str[] = {
+	{ optString,	"cdpath",	},
+	{ optString,	"directory",	},
+	{ optString,	"msgcat",	},
+	{ optString,	"recdir",	},
+	{ optString,	"shell",	},
+	{ optString,	"shellmeta",	},
+	{ optString,	"tags",		},
+	{ optTerminator,		},
+}, input[] = {
+	{ optToggle,	"altwerase",	},
+	{ optToggle,	"autoindent",	},
+	{ optToggle,	"remap",	},
+	{ optToggle,	"showmatch",	},
+	{ optToggle,	"ttywerase",	},
+	{ optTerminator,		},
+}, input_int[] = {
+	{ optInteger,	"escapetime",	},
+	{ optInteger,	"keytime",	},
+	{ optInteger,	"matchtime",	},
+	{ optInteger,	"timeout",	},
 	{ optInteger,	"wraplen",	},
 	{ optInteger,	"wrapmargin",	},
 	{ optTerminator,		},
-}, strings[] = {
+}, input_str[] = {
+	{ optString,	"cedit",	},
 	{ optString,	"filec",	},
-	{ optString,	"msgcat",	},
-	{ optString,	"paragraphs",	},
-	{ optString,	"print",	},
-	{ optString,	"noprint",	},
-	{ optString,	"sections",	},
-	{ optString,	"shellmeta",	},
 	{ optTerminator,		},
-}, files[] = {
-	{ optFile,	"directory",	},
-	{ optFile,	"recdir",	},
-	{ optFile,	"shell",	},
-	{ optString,	"backup",	},
-	{ optString,	"cdpath",	},
-	{ optString,	"path",		},
-	{ optString,	"tags",		},
+}, search[] = {
+	{ optToggle,	"extended",	},
+	{ optToggle,	"iclower",	},
+	{ optToggle,	"ignorecase",	},
+	{ optToggle,	"magic",	},
+	{ optToggle,	"searchincr",	},
+	{ optToggle,	"wrapscan",	},
+	{ optTerminator,		},
+}, search_str[] = {
+	{ optString,	"paragraphs",	},
+	{ optString,	"sections",	},
 	{ optTerminator,		},
 };
 
 static	optSheet sheets[] = {
-	{	"Toggles",	/* Must be first because it's the largest. */
+	{	"Display",	/* Must be first because it's the largest. */
 		NULL,
-		toggles,
-		NULL,
-		NULL
-	},
-	{	"Strings",
-		NULL,
-		NULL,
-		NULL,
-		strings,
-	},
-	{	"Values",
-		NULL,
-		NULL,
-		values,
-		NULL,
+		display,
+		display_int,
+		display_str,
 	},
 	{	"Files",
 		NULL,
+		files,
 		NULL,
+		files_str,
+	},
+	{	"Input",
 		NULL,
-		files
+		input,
+		input_int,
+		input_str,
+	},
+	{	"Search/RE",
+		NULL,
+		search,
+		NULL,
+		search_str,
+	},
+	{	"Editor",
+		NULL,
+		general,
+		general_int,
+		general_str,
 	},
 };
 
@@ -211,10 +236,19 @@ __vi_editopt(ipbp)
 			goto found;					\
 }
 
-	NSEARCH(toggles);
-	NSEARCH(values);
-	NSEARCH(strings);
+	NSEARCH(display);
+	NSEARCH(display_int);
+	NSEARCH(display_str);
 	NSEARCH(files);
+	NSEARCH(files_str);
+	NSEARCH(general);
+	NSEARCH(general_int);
+	NSEARCH(general_str);
+	NSEARCH(input);
+	NSEARCH(input_int);
+	NSEARCH(input_str);
+	NSEARCH(search);
+	NSEARCH(search_str);
 
 	return (0);
 
@@ -236,6 +270,8 @@ found:	switch (opt->kind) {
 		if ((opt->value = malloc(ipbp->len2)) != NULL)
 			memcpy(opt->value, ipbp->str2, ipbp->len2);
 		break;
+	case optTerminator:
+		abort();
 	}
 	return (0);
 }
@@ -283,6 +319,8 @@ set_opt(w, closure, call_data)
 		ipb.str2 = XmTextFieldGetString(w);
 		ipb.len2 = strlen(ipb.str2);
 		break;
+	case optTerminator:
+		abort();
 	}
 	vi_send("ab1", &ipb);
 }
@@ -351,7 +389,7 @@ static	void	add_string_options( parent, options )
 #endif
 {
     int		i;
-    Widget	f, w, l;
+    Widget	f, w;
 
     for ( i=0; options[i].kind != optTerminator; i++ ) {
 
@@ -402,7 +440,6 @@ static	Widget		create_sheet( parent, sheet )
 #endif
 {
     Widget	outer, inner;
-    int		i;
     Dimension	height;
 
     outer = XtVaCreateWidget( sheet->name,
@@ -419,44 +456,28 @@ static	Widget		create_sheet( parent, sheet )
 			      0
 			      );
 
-    /* in this scheme, we will only have one class of options
-     * on a sheet.  That greatly simplifies the geometry management
-     */
+    /* Add the toggles. */
+    inner = create_toggles( outer, sheet->toggles );
+    inner = XtVaCreateWidget( "otherOptions",
+			      xmRowColumnWidgetClass,
+			      outer,
+			      XmNpacking,		XmPACK_COLUMN,
+			      XmNtopAttachment,		XmATTACH_WIDGET,
+			      XmNtopWidget,		inner,
+			      XmNrightAttachment,	XmATTACH_FORM,
+			      XmNbottomAttachment,	XmATTACH_FORM,
+			      XmNleftAttachment,	XmATTACH_FORM,
+			      0
+			      );
 
-    /* Add any toggles. */
-    if ( sheet->toggles != NULL ) {
-	inner = create_toggles( outer, sheet->toggles );
-    }
-
-    /* or the ints */
-    if ( sheet->ints != NULL ) {
-	inner = XtVaCreateWidget( "otherOptions",
-				  xmRowColumnWidgetClass,
-				  outer,
-				  XmNpacking,		XmPACK_COLUMN,
-				  XmNtopAttachment,	XmATTACH_FORM,
-				  XmNrightAttachment,	XmATTACH_FORM,
-				  XmNbottomAttachment,	XmATTACH_FORM,
-				  XmNleftAttachment,	XmATTACH_FORM,
-				  0
-				  );
+    /* Optionally, the ints. */
+    if ( sheet->ints != NULL )
 	add_string_options( inner, sheet->ints );
-    }
 
-    /* or the rest */
-    if ( sheet->others != NULL ) {
-	inner = XtVaCreateWidget( "otherOptions",
-				  xmRowColumnWidgetClass,
-				  outer,
-				  XmNpacking,		XmPACK_COLUMN,
-				  XmNtopAttachment,	XmATTACH_FORM,
-				  XmNrightAttachment,	XmATTACH_FORM,
-				  XmNbottomAttachment,	XmATTACH_FORM,
-				  XmNleftAttachment,	XmATTACH_FORM,
-				  0
-				  );
+     /* Optionally, the rest. */
+    if ( sheet->others != NULL )
 	add_string_options( inner, sheet->others );
-    }
+
     XtManageChild( inner );
 
     /* finally, force resize of the parent */
@@ -489,7 +510,7 @@ static	void	change_sheet( parent, current )
 }
 
 
-/* Draw and display a dialog the describes nvi options */
+/* Draw and display a dialog the describes vi options */
 
 #if defined(__STDC__)
 static	Widget	create_options_dialog( Widget parent, String title )
@@ -569,8 +590,10 @@ __vi_show_options_dialog(parent, title)
 	Widget parent;
 	String title;
 {
-    Widget 	db = create_options_dialog( parent, title ),
-		shell = XtParent(db);
+    Widget 	db = create_options_dialog( parent, title );
+#if defined(SelfTest)
+    Widget	shell = XtParent( db );
+#endif
 
     XtManageChild( db );
 
@@ -599,9 +622,18 @@ __vi_toggle(name)
 {
 	optData *opt;
 
-	for (opt = toggles; opt->kind != optTerminator; ++opt)
-		if (!strcmp(opt->name, name))
-			return ((int)opt->value);
+#undef	NSEARCH
+#define	NSEARCH(list) {							\
+	for (opt = list; opt->kind != optTerminator; ++opt)		\
+		if (!strcmp(opt->name, name))				\
+			return ((int)opt->value);			\
+}
+	NSEARCH(display);
+	NSEARCH(files);
+	NSEARCH(general);
+	NSEARCH(input);
+	NSEARCH(search);
+
 	return (0);
 }
 
