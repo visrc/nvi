@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_screen.c,v 10.10 1996/03/06 19:52:36 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:52:36 $";
+static const char sccsid[] = "$Id: ex_screen.c,v 10.11 1996/06/29 12:27:15 bostic Exp $ (Berkeley) $Date: 1996/06/29 12:27:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -51,7 +51,19 @@ ex_fg(sp, cmdp)
 	SCR *sp;
 	EXCMD *cmdp;
 {
-	return (vs_fg(sp, cmdp->argc ? cmdp->argv[0]->bp : NULL));
+	SCR *nsp;
+	int newscreen;
+
+	newscreen = F_ISSET(cmdp, E_NEWSCREEN);
+	if (vs_fg(sp, &nsp, cmdp->argc ? cmdp->argv[0]->bp : NULL, newscreen))
+		return (1);
+
+	/* Set up the switch. */
+	if (newscreen) {
+		sp->nextdisp = nsp;
+		F_SET(sp, SC_SSWITCH);
+	}
+	return (0);
 }
 
 /*
