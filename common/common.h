@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 5.33 1993/02/11 12:34:37 bostic Exp $ (Berkeley) $Date: 1993/02/11 12:34:37 $
+ *	$Id: common.h,v 5.34 1993/02/14 18:00:27 bostic Exp $ (Berkeley) $Date: 1993/02/14 18:00:27 $
  */
 
 #include <db.h>
@@ -80,7 +80,7 @@ void	trapint __P((int));
 /* Random stuff. */
 void	 __putchar __P((int));
 void	 bell __P((void));
-int	 nonblank(recno_t, size_t *);
+int	 nonblank __P((recno_t, size_t *));
 char	*tail __P((char *));
 
 /* Display characters. */
