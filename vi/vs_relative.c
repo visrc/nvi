@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_relative.c,v 8.8 1994/03/08 19:40:41 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:40:41 $";
+static char sccsid[] = "$Id: vs_relative.c,v 8.9 1994/03/09 10:37:34 bostic Exp $ (Berkeley) $Date: 1994/03/09 10:37:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -71,10 +71,10 @@ svi_relative(sp, ep, lno)
 	}
 
 	/* First character is easy, and common. */
-	if (sp->rcmflags != RCM_LAST && sp->rcm == 0)
+	if (sp->rcmflags != RCM_LAST && HMAP->off == 1 && sp->rcm == 0)
 		return (0);
 
-	return (svi_lrelative(sp, ep, lno, 1));
+	return (svi_lrelative(sp, ep, lno, HMAP->off));
 }
 
 /*
