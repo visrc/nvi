@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: db.c,v 10.41 2001/09/11 20:01:03 skimo Exp $ (Berkeley) $Date: 2001/09/11 20:01:03 $";
+static const char sccsid[] = "$Id: db.c,v 10.42 2001/10/11 19:19:03 skimo Exp $ (Berkeley) $Date: 2001/10/11 19:19:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -226,6 +226,7 @@ db_delete(SCR *sp, db_recno_t lno)
 {
 	DBT key;
 	EXF *ep;
+	SCR* scrp;
 
 #if defined(DEBUG) && 0
 	vtrace(sp, "delete line %lu\n", (u_long)lno);
@@ -260,8 +261,10 @@ db_delete(SCR *sp, db_recno_t lno)
 	}
 
 	/* Flush the cache, update line count, before screen update. */
-	if (lno <= sp->c_lno)
-		sp->c_lno = OOBLNO;
+	for (scrp = ep->scrq.cqh_first; scrp != (void *)&ep->scrq; 
+	    scrp = scrp->eq.cqe_next)
+		if (lno <= scrp->c_lno)
+			scrp->c_lno = OOBLNO;
 	if (ep->c_nlines != OOBLNO)
 		--ep->c_nlines;
 
@@ -352,6 +355,7 @@ db_append(SCR *sp, int update, db_recno_t lno, CHAR_T *p, size_t len)
 {
 	EXF *ep;
 	int rval;
+	SCR* scrp;
 
 #if defined(DEBUG) && 0
 	vtrace(sp, "append to %lu: len %u {%.*s}\n", lno, len, MIN(len, 20), p);
@@ -374,8 +378,10 @@ db_append(SCR *sp, int update, db_recno_t lno, CHAR_T *p, size_t len)
 	}
 
 	/* Flush the cache, update line count, before screen update. */
-	if (lno < sp->c_lno)
-		sp->c_lno = OOBLNO;
+	for (scrp = ep->scrq.cqh_first; scrp != (void *)&ep->scrq; 
+	    scrp = scrp->eq.cqe_next)
+		if (lno < scrp->c_lno)
+			scrp->c_lno = OOBLNO;
 	if (ep->c_nlines != OOBLNO)
 		++ep->c_nlines;
 
@@ -420,6 +426,7 @@ db_insert(SCR *sp, db_recno_t lno, CHAR_T *p, size_t len)
 	DBC *dbcp_put;
 	EXF *ep;
 	int rval;
+	SCR* scrp;
 
 #if defined(DEBUG) && 0
 	vtrace(sp, "insert before %lu: len %lu {%.*s}\n",
@@ -443,8 +450,10 @@ db_insert(SCR *sp, db_recno_t lno, CHAR_T *p, size_t len)
 	}
 
 	/* Flush the cache, update line count, before screen update. */
-	if (lno >= sp->c_lno)
-		sp->c_lno = OOBLNO;
+	for (scrp = ep->scrq.cqh_first; scrp != (void *)&ep->scrq; 
+	    scrp = scrp->eq.cqe_next)
+		if (lno >= scrp->c_lno)
+			scrp->c_lno = OOBLNO;
 	if (ep->c_nlines != OOBLNO)
 		++ep->c_nlines;
 
