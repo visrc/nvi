@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.53 1996/05/10 11:59:27 bostic Exp $ (Berkeley) $Date: 1996/05/10 11:59:27 $
+#	$Id: Makefile.in,v 8.54 1996/05/14 11:22:41 bostic Exp $ (Berkeley) $Date: 1996/05/14 11:22:41 $
 
 srcdir=	@srcdir@/..
 CC=	@CC@
@@ -82,6 +82,7 @@ transform=@program_transform_name@
 
 install: all install_common
 	@echo "Installing vi, ex, view: $(bindir) ..."
+	cd $(bindir) && $(rm) -f `echo vi | sed '$(transform)'`
 	$(cp) nvi $(bindir)/`echo vi | sed '$(transform)'`
 	cd $(bindir) && [ -f $(strip) ] && \
 	    $(strip) `echo vi | sed '$(transform)'`
@@ -93,6 +94,7 @@ install: all install_common
 	cd $(bindir) && $(ln) \
 		`echo vi | sed '$(transform)'` `echo view | sed '$(transform)'`
 	@echo "Installing man pages: $(mandir)/cat1 ..."
+	cd $(mandir)/cat1 && $(rm) -f `echo vi.0 | sed '$(transform)'`
 	$(cp) $(srcdir)/docs/USD.doc/vi.man/vi.0 \
 	    $(mandir)/cat1/`echo vi.0 | sed '$(transform)'`
 	cd $(mandir)/cat1 && $(chmod) $(fmode) `echo vi.0 | sed '$(transform)'`
