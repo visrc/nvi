@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: msg.c,v 10.36 1996/05/15 17:39:52 bostic Exp $ (Berkeley) $Date: 1996/05/15 17:39:52 $";
+static const char sccsid[] = "$Id: msg.c,v 10.37 1996/05/21 15:00:19 bostic Exp $ (Berkeley) $Date: 1996/05/21 15:00:19 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -381,7 +381,7 @@ msgq_str(sp, mtype, str, fmt)
 }
 
 /*
- * msgq_rpt --
+ * mod_rpt --
  *	Report on the lines that changed.
  *
  * !!!
@@ -398,10 +398,10 @@ msgq_str(sp, mtype, str, fmt)
  * the command 2d}, from the 'b' would report that two lines were deleted,
  * not one.
  *
- * PUBLIC: void msgq_rpt __P((SCR *));
+ * PUBLIC: void mod_rpt __P((SCR *));
  */
 void
-msgq_rpt(sp)
+mod_rpt(sp)
 	SCR *sp;
 {
 	static char * const action[] = {

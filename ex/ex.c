@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex.c,v 10.46 1996/05/15 18:50:01 bostic Exp $ (Berkeley) $Date: 1996/05/15 18:50:01 $";
+static const char sccsid[] = "$Id: ex.c,v 10.47 1996/05/21 14:59:54 bostic Exp $ (Berkeley) $Date: 1996/05/21 14:59:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1372,7 +1372,7 @@ addr_verify:
 	 * lines message -- that's wrong enough that we don't match it.
 	 */
 	if (F_ISSET(sp, SC_EX))
-		msgq_rpt(sp);
+		mod_rpt(sp);
 
 	/*
 	 * Integrate any offset parsed by the underlying command, and make
