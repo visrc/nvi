@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 5.15 1992/11/01 22:46:46 bostic Exp $ (Berkeley) $Date: 1992/11/01 22:46:46 $
+ *	$Id: exf.h,v 5.16 1992/11/06 18:08:21 bostic Exp $ (Berkeley) $Date: 1992/11/06 18:08:21 $
  */
 
 #ifndef _EXF_H_
@@ -34,7 +34,9 @@ typedef struct exf {
 #define	RCM_FNB		0x01		/* Column suck: first non-blank. */
 #define	RCM_LAST	0x02		/* Column suck: last. */
 	u_char rcmflags;
-	int (*s_confirm) __P((struct exf *, MARK *, MARK *));
+	enum confirmation (*s_confirm) __P((struct exf *, MARK *, MARK *));
+	int (*s_end) __P((struct exf *));
+
 					/* Underlying database state. */
 	DB *db;				/* File db structure. */
 	u_char *c_lp;			/* Cached line. */
@@ -55,9 +57,10 @@ typedef struct exf {
 #define	F_IGNORE	0x002		/* File inserted later. */
 #define	F_MODIFIED	0x004		/* File was modified. */
 #define	F_NAMECHANGED	0x008		/* File name changed. */
-#define	F_NONAME	0x010		/* File has no name. */
-#define	F_RDONLY	0x020		/* File is read-only. */
-#define	F_WRITTEN	0x040		/* File has been written. */
+#define	F_NEWSESSION	0x010		/* File newly edited. */
+#define	F_NONAME	0x020		/* File has no name. */
+#define	F_RDONLY	0x040		/* File is read-only. */
+#define	F_WRITTEN	0x080		/* File has been written. */
 	u_int flags;
 } EXF;
 
@@ -95,14 +98,37 @@ typedef struct {
 	    tail(__FILE__), __LINE__, lno);				\
 }
 
+#define	MODIFY_CHECK(ep, force) {					\
+	if ((ep)->flags & F_MODIFIED && !force) {			\
+		if (ISSET(O_AUTOWRITE)) {				\
+			if (file_sync((ep), force))			\
+				return (1);				\
+		} else {						\
+	msg("Modified since last write; write or use ! to override.");	\
+			return (1);					\
+		}							\
+	}								\
+}
+
+#define	MODIFY_WARN(ep) {						\
+	if ((ep)->flags & F_MODIFIED && ISSET(O_WARN))			\
+		msg("Modified since last write.");			\
+}
+
+#define	PANIC {								\
+	msg("No file state!");						\
+	mode = MODE_QUIT;						\
+	return (1);							\
+}
+
 /* File routines. */
-EXF	*file_first __P((void));
+EXF	*file_first __P((int));
 void	 file_init __P((void));
 int	 file_ins __P((EXF *, char *, int));
+EXF	*file_last __P((void));
 EXF	*file_locate __P((char *));
-int	 file_modify __P((EXF *, int));
-EXF	*file_next __P((EXF *));
-EXF	*file_prev __P((EXF *));
+EXF	*file_next __P((EXF *, int));
+EXF	*file_prev __P((EXF *, int));
 int	 file_set __P((int, char *[]));
 int	 file_start __P((EXF *));
 int	 file_stop __P((EXF *, int));
