@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 8.9 1993/09/10 14:44:24 bostic Exp $ (Berkeley) $Date: 1993/09/10 14:44:24 $
+ *	$Id: common.h,v 8.10 1993/09/12 12:21:11 bostic Exp $ (Berkeley) $Date: 1993/09/12 12:21:11 $
  */
 
 /* System includes. */
@@ -152,8 +152,6 @@ int	 nonblank __P((SCR *, EXF *, recno_t, size_t *));
 void	 set_alt_fname __P((SCR *, char *));
 int	 set_window_size __P((SCR *, u_int, int));
 int	 status __P((SCR *, EXF *, recno_t, int));
-int	 turn_interrupts_off __P((SCR *, struct termios *));
-int	 turn_interrupts_on __P((SCR *, struct termios *, void (*)(int)));
 char	*tail __P((char *));
 
 #ifdef DEBUG

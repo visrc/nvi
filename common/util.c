@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.10 1993/09/11 14:40:49 bostic Exp $ (Berkeley) $Date: 1993/09/11 14:40:49 $";
+static char sccsid[] = "$Id: util.c,v 8.11 1993/09/12 12:21:50 bostic Exp $ (Berkeley) $Date: 1993/09/12 12:21:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -15,7 +15,6 @@ static char sccsid[] = "$Id: util.c,v 8.10 1993/09/11 14:40:49 bostic Exp $ (Ber
 #include <ctype.h>
 #include <curses.h>
 #include <errno.h>
-#include <signal.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -417,58 +416,4 @@ set_alt_fname(sp, fname)
 		FREE(sp->alt_fname, strlen(sp->alt_fname));
 	if ((sp->alt_fname = strdup(fname)) == NULL)
 		msgq(sp, M_ERR, "Error: %s", strerror(errno));
-}
-
-/*
- * turn_interrupts_on --
- *	Turn on interrupts.
- */
-int
-turn_interrupts_on(sp, tp, handler)
-	SCR *sp;
-	struct termios *tp;
-	void (*handler) __P((int));
-{
-	struct termios n;
-
-	/* Install the interrupt catcher. */
-	(void)signal(SIGINT, handler);
-
-	/* Set interrupt bits. */
-	F_CLR(sp, S_INTERRUPTED);
-	F_SET(sp, S_INTERRUPTIBLE);
-
-	/*
-	 * ISIG activates VINTR, VQUIT and VSUSP.  We
-	 * don't drop core if the utility does, however.
-	 */
-	if (tcgetattr(STDIN_FILENO, tp)) {
-		msgq(sp, M_ERR, "tcgetattr: %s", strerror(errno));
-		return (1);
-	}
-	n = *tp;
-	n.c_lflag |= ISIG;
-	n.c_cc[VQUIT] = _POSIX_VDISABLE;
-	if (tcsetattr(STDIN_FILENO, TCSANOW | TCSASOFT, &n)) {
-		msgq(sp, M_ERR, "global: tcsetattr: %s", strerror(errno));
-		return (1);
-	}
-
-	return (0);
-}
-
-/*
- * turn_interrupts_off
- *	Turn off interrupts.
- */
-int
-turn_interrupts_off(sp, tp)
-	SCR *sp;
-	struct termios *tp;
-{
-	/* Restore terminal settings. */
-	if (tcsetattr(STDIN_FILENO, TCSANOW | TCSASOFT, tp))
-		msgq(sp, M_ERR, "tcsetattr: %s", strerror(errno));
-
-	return (0);
 }
