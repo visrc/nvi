@@ -1,12 +1,12 @@
-#	$Id: README,v 8.39 1994/01/09 23:30:15 bostic Exp $ (Berkeley) $Date: 1994/01/09 23:30:15 $
+#	$Id: README,v 8.40 1994/01/12 10:40:22 bostic Exp $ (Berkeley) $Date: 1994/01/12 10:40:22 $
 
-This is the README for version 1.00 of nvi, a freely redistributable
+This is the README for version 1.01 of nvi, a freely redistributable
 replacement for the vi and ex text editors.  It can be retrieved via
-anonymous ftp from ftp.cs.berkeley.edu:ucb/4bsd/nvi.tar.Z, or from
-ftp.uu.net.
+anonymous ftp from ftp.uu.net, or from ftp.cs.berkeley.edu.  In the
+latter, it is in the directory ucb/4bsd, and is named nvi.tar.Z.
 
 If you have any questions or problems with nvi, please send them to
-me by email at one of the following email addresses:
+me by electronic mail at one of the following addresses:
 
 	uunet!bostic
 	bostic@cs.berkeley.edu
