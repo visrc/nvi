@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.43 1993/11/18 08:22:11 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:22:11 $";
+static char sccsid[] = "$Id: exf.c,v 8.44 1993/11/18 16:34:28 bostic Exp $ (Berkeley) $Date: 1993/11/18 16:34:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -337,7 +337,9 @@ file_init(sp, frp, rcv_fname, force)
 	sp->frp = frp;
 	return (0);
 
-err:	if (ep->rcv_path != NULL) {
+err:	if (F_ISSET(frp, FR_UNLINK_TFILE))
+		(void)unlink(frp->tname);
+	if (ep->rcv_path != NULL) {
 		FREE(ep->rcv_path, strlen(ep->rcv_path));
 		ep->rcv_path = NULL;
 	}
