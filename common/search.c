@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 5.37 1993/05/13 11:43:28 bostic Exp $ (Berkeley) $Date: 1993/05/13 11:43:28 $";
+static char sccsid[] = "$Id: search.c,v 5.38 1993/05/13 18:59:04 bostic Exp $ (Berkeley) $Date: 1993/05/13 18:59:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -76,7 +76,8 @@ noprev:			msgq(sp, M_INFO, "No previous search pattern.");
 				*t++ = *p++;
 			} else if (p[0] == '\0' || p[0] == delim) {
 				*t = '\0';
-				++p;
+				if (p[0] == delim)
+					++p;
 				break;
 			} else
 				*t++ = *p++;
