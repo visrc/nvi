@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.15 1993/10/28 16:49:24 bostic Exp $ (Berkeley) $Date: 1993/10/28 16:49:24 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.16 1993/10/30 13:47:46 bostic Exp $ (Berkeley) $Date: 1993/10/30 13:47:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -41,25 +41,22 @@ ex_substitute(sp, ep, cmdp)
 {
 	regex_t *re, lre;
 	size_t blen, len;
+	u_int flags;
 	int delim, eval, reflags, replaced;
-	char *arg, *bp, *sub, *rep, *p, *t;
-
-	/* Skip leading white space. */
-	for (arg = cmdp->argv[0]; isblank(*arg); ++arg);
+	char *bp, *ptrn, *rep, *p, *t;
 
 	/*
-	 * Historic vi allowed any non-alphanumeric to serve as
-	 * the substitution command delimiter.
+	 * Skip leading white space.  Historic vi allowed any non-
+	 * alphanumeric to serve as the substitution command delimiter.
 	 */
-	if (isalnum(*arg))
+	for (p = cmdp->argv[0]; isblank(*p); ++p);
+	delim = *p++;
+	if (isalnum(delim))
 		return (substitute(sp, ep,
-		    cmdp, arg, &sp->subre, SUB_MUSTSETR));
-
-	/* Delimiter is the first character. */
-	delim = *arg;
+		    cmdp, p, &sp->subre, SUB_MUSTSETR));
 
 	/*
-	 * Get the substitute string, toss escaped characters.
+	 * Get the pattern string, toss escaped characters.
 	 *
 	 * !!!
 	 * Historic vi accepted any of the following forms:
@@ -77,13 +74,13 @@ ex_substitute(sp, ep, cmdp)
 	 * escaping a single escape character is removed, but that's
 	 * not how the historic vi worked.
 	 */
-	for (sub = p = t = ++arg;;) {
+	for (ptrn = t = p;;) {
 		if (p[0] == '\0' || p[0] == delim) {
 			if (p[0] == delim)
 				++p;
 			/*
 			 * !!!
-			 * Nul terminate the substitute string -- it's passed
+			 * Nul terminate the pattern string -- it's passed
 			 * to regcomp which doesn't understand anything else.
 			 */
 			*t = '\0';
@@ -94,17 +91,65 @@ ex_substitute(sp, ep, cmdp)
 		*t++ = *p++;
 	}
 
+	/* If the pattern string is empty, use the last one. */
+	if (*ptrn == NULL) {
+		if (!F_ISSET(sp, S_SUBRE_SET)) {
+			msgq(sp, M_ERR,
+			    "No previous regular expression.");
+			return (1);
+		}
+		re = &sp->subre;
+		flags = 0;
+	} else {
+		/* Set RE flags. */
+		reflags = 0;
+		if (O_ISSET(sp, O_EXTENDED))
+			reflags |= REG_EXTENDED;
+		if (O_ISSET(sp, O_IGNORECASE))
+			reflags |= REG_ICASE;
+
+		/* Convert vi-style RE's to POSIX 1003.2 RE's. */
+		if (re_conv(sp, &ptrn, &replaced))
+			return (1);
+
+		/* Compile the RE. */
+		eval = regcomp(&lre, (char *)ptrn, reflags);
+
+		/* Free up any allocated memory. */
+		if (replaced)
+			FREE_SPACE(sp, ptrn, 0);
+
+		if (eval) {
+			re_error(sp, eval, &lre);
+			return (1);
+		}
+
+		/*
+		 * Set saved RE.  Historic practice is that
+		 * substitutes set direction as well as the RE.
+		 */
+		sp->subre = lre;
+		sp->searchdir = FORWARD;
+		F_SET(sp, S_SUBRE_SET);
+
+		re = &lre;
+		flags = SUB_FIRST;
+	}
+
 	/*
 	 * Get the replacement string.
 	 *
-	 * The special character ~ (\~ if nomagic set) inserts the
-	 * previous replacement string into the current replacement
-	 * string.
+	 * The special character ~ (\~ if O_MAGIC not set) inserts the
+	 * previous replacement string into this replacement string.
+	 *
+	 * The special character & (\& if O_MAGIC not set) matches the
+	 * entire RE.  No handling of & is required here, it's done by
+	 * regsub().
 	 *
 	 * QUOTING NOTE:
 	 *
-	 * Only toss an escape character if it escapes a delimiter
-	 * or if O_MAGIC is set and it escapes a tilde.
+	 * Only toss an escape character if it escapes a delimiter or
+	 * if O_MAGIC is set and it escapes a tilde.
 	 */
 	if (*p == '\0') {
 		if (sp->repl != NULL)
@@ -158,53 +203,9 @@ tilde:				++p;
 		FREE_SPACE(sp, bp, blen);
 	}
 
-	/* If the substitute string is empty, use the last one. */
-	if (*sub == NULL) {
-		if (!F_ISSET(sp, S_SUBRE_SET)) {
-			msgq(sp, M_ERR,
-			    "No previous regular expression.");
-			return (1);
-		}
-		if (checkmatchsize(sp, &sp->subre))
-			return (1);
-		return (substitute(sp, ep, cmdp, p, &sp->subre, 0));
-	}
-
-	/* Set RE flags. */
-	reflags = 0;
-	if (O_ISSET(sp, O_EXTENDED))
-		reflags |= REG_EXTENDED;
-	if (O_ISSET(sp, O_IGNORECASE))
-		reflags |= REG_ICASE;
-
-	/* Replace any word search pattern. */
-	if (search_word(sp, &sub, &replaced))
-		return (1);
-
-	/* Compile the RE. */
-	re = &lre;
-	eval = regcomp(re, (char *)sub, reflags);
-
-	/* Free up any extra memory. */
-	if (replaced)
-		FREE_SPACE(sp, sub, 0);
-
-	if (eval) {
-		re_error(sp, eval, re);
-		return (1);
-	}
-
-	/*
-	 * Set saved RE.  Historic practice is that substitutes set
-	 * direction as well as the RE.
-	 */
-	sp->subre = lre;
-	sp->searchdir = FORWARD;
-	F_SET(sp, S_SUBRE_SET);
-
 	if (checkmatchsize(sp, &sp->subre))
 		return (1);
-	return (substitute(sp, ep, cmdp, p, re, SUB_FIRST));
+	return (substitute(sp, ep, cmdp, p, re, flags));
 }
 
 /*

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.22 1993/10/28 16:46:48 bostic Exp $ (Berkeley) $Date: 1993/10/28 16:46:48 $";
+static char sccsid[] = "$Id: search.c,v 8.23 1993/10/30 13:48:04 bostic Exp $ (Berkeley) $Date: 1993/10/30 13:48:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -119,8 +119,7 @@ noprev:			msgq(sp, M_INFO, "No previous search pattern.");
 			return (0);
 		}
 
-		/* Replace any word search pattern. */
-		if (search_word(sp, &ptrn, &replaced))
+		if (re_conv(sp, &ptrn, &replaced))
 			return (1);
 	} else if (LF_ISSET(SEARCH_TAG)) {
 		if (ctag_conv(sp, &ptrn, &replaced))
@@ -141,6 +140,71 @@ noprev:			msgq(sp, M_INFO, "No previous search pattern.");
 	if (replaced)
 		FREE_SPACE(sp, ptrn, 0);
 	return (eval);
+}
+
+/*
+ * ctag_conv --
+ *	Convert a tags search path into something that the POSIX
+ *	1003.2 RE functions can handle.
+ */
+static int
+ctag_conv(sp, ptrnp, replacedp)
+	SCR *sp;
+	char **ptrnp;
+	int *replacedp;
+{
+	size_t blen, len;
+	int lastdollar;
+	char *bp, *p, *t;
+
+	*replacedp = 0;
+
+	len = strlen(p = *ptrnp);
+
+	/* Max memory usage is 2 times the length of the string. */
+	GET_SPACE(sp, bp, blen, len * 2);
+
+	t = bp;
+
+	/* The last charcter is a '/' or '?', we just strip it. */
+	if (p[len - 1] == '/' || p[len - 1] == '?')
+		p[len - 1] = '\0';
+
+	/* The next-to-last character is a '$', and it's magic. */
+	if (p[len - 2] == '$') {
+		lastdollar = 1;
+		p[len - 2] = '\0';
+	} else
+		lastdollar = 0;
+
+	/* The first character is a '/' or '?', we just strip it. */
+	if (p[0] == '/' || p[0] == '?')
+		++p;
+
+	/* The second character is a '^', and it's magic. */
+	if (p[0] == '^')
+		*t++ = *p++;
+		
+	/*
+	 * Escape every other magic character we can find, stripping the
+	 * backslashes ctags inserts to escape the search delimiter
+	 * characters.
+	 */
+	while (p[0]) {
+		/* Ctags escapes the search delimiter characters. */
+		if (p[0] == '\\' && (p[1] == '/' || p[1] == '?'))
+			++p;
+		else if (strchr("^.[]$*", p[0]))
+			*t++ = '\\';
+		*t++ = *p++;
+	}
+	if (lastdollar)
+		*t++ = '$';
+	*t++ = '\0';
+
+	*ptrnp = bp;
+	*replacedp = 1;
+	return (0);
 }
 
 /*
@@ -189,6 +253,27 @@ noprev:			msgq(sp, M_INFO, "No previous search pattern.");
 	}								\
 }
 
+/*
+ * search_intr --
+ *	Set the interrupt bit in any screen that is interruptible.
+ *
+ * XXX
+ * In the future this may be a problem.  The user should be able to move to
+ * another screen and keep typing while this runs.  If so, and the user has
+ * more than one search/global (see ex/ex_global.c) running, it will be hard
+ * to decide which one to stop.
+ */
+static void
+search_intr(signo)
+	int signo;
+{
+	SCR *sp;
+
+	for (sp = __global_list->scrhdr.next;
+	     sp != (SCR *)&__global_list->scrhdr; sp = sp->next)
+		if (F_ISSET(sp, S_INTERRUPTIBLE))
+			F_SET(sp, S_INTERRUPTED);
+}
 
 #define	EMPTYMSG	"File empty; nothing to search."
 #define	EOFMSG		"Reached end-of-file without finding the pattern."
@@ -518,109 +603,154 @@ err:	busy_off(sp);
 }
 
 /*
- * search_word --
- *	Vi special cases the pattern "\<ptrn\>", doing "word" searches.
+ * re_conv --
+ *	Convert vi's regular expressions into something that the
+ *	the POSIX 1003.2 RE functions can handle.
+ *
+ * There are three conversions we make to make vi's RE's (specifically
+ * the global, search, and substitute patterns) work with POSIX RE's.
+ *
+ * 1: If O_MAGIC is not set, strip backslashes from the magic character
+ *    set (.[]*~) that have them, and add them to the ones that don't. 
+ * 2: If O_MAGIC is not set, the string "\~" is replaced with the text
+ *    from the last substitute command's replacement string.  If O_MAGIC
+ *    is set, it's the string "~".
+ * 3: The pattern \<ptrn\> does "word" searches, convert it to use the
+ *    new RE escapes.
  */
 int
-search_word(sp, ptrnp, replacedp)
+re_conv(sp, ptrnp, replacedp)
 	SCR *sp;
 	char **ptrnp;
 	int *replacedp;
 {
-	size_t blen, needspace;
-	int cnt;
+	size_t blen, needlen;
+	int magic;
 	char *bp, *p, *t;
 
-	/* Count up the "word" patterns. */
-	*replacedp = 0;
-	for (p = *ptrnp, cnt = 0; *p; ++p)
-		if (p[0] == '\\' && p[1] && (p[1] == '<' || p[1] == '>'))
-			++cnt;
-	if (cnt == 0)
+	/*
+	 * First pass through, we figure out how much space we'll need.
+	 * We do it in two passes, on the grounds that most of the time
+	 * the user is doing a search and won't have magic characters.
+	 * That way we can skip the malloc and memmove's.
+	 */
+	for (p = *ptrnp, magic = 0, needlen = 0; *p != '\0'; ++p)
+		switch (*p) {
+		case '\\':
+			switch (*++p) {
+			case '<':
+				magic = 1;
+				needlen += sizeof(RE_WSTART);
+				break;
+			case '>':
+				magic = 1;
+				needlen += sizeof(RE_WSTOP);
+				break;
+			case '~':
+				if (!O_ISSET(sp, O_MAGIC)) {
+					magic = 1;
+					needlen += sp->repl_len;
+				}
+				break;
+			case '.':
+			case '[':
+			case ']':
+			case '*':
+				if (!O_ISSET(sp, O_MAGIC)) {
+					magic = 1;
+					needlen += 1;
+				}
+				break;
+			default:
+				needlen += 2;
+			}
+			break;
+		case '~':
+			if (O_ISSET(sp, O_MAGIC)) {
+				magic = 1;
+				needlen += sp->repl_len;
+			}
+			break;
+		case '.':
+		case '[':
+		case ']':
+		case '*':
+			if (!O_ISSET(sp, O_MAGIC)) {
+				magic = 1;
+				needlen += 2;
+			}
+			break;
+		default:
+			needlen += 1;
+			break;
+		}
+
+	if (!magic) {
+		*replacedp = 0;
 		return (0);
+	}
 
-	/* Get enough memory to hold the final pattern. */
-	needspace =
-	    strlen(*ptrnp) + cnt * (sizeof(RE_WSTART) + sizeof(RE_WSTOP));
-	GET_SPACE(sp, bp, blen, needspace);
+	/*
+	 * Get enough memory to hold the final pattern.
+	 *
+	 * XXX
+	 * It's nul-terminated, for now.
+	 */
+	GET_SPACE(sp, bp, blen, needlen + 1);
 
-	for (p = *ptrnp, t = bp; *p;)
-		if (p[0] == '\\' && p[1] && (p[1] == '<' || p[1] == '>')) {
-			if (p[1] == '<') {
+	for (p = *ptrnp, t = bp; *p != '\0'; ++p)
+		switch (*p) {
+		case '\\':
+			switch (*++p) {
+			case '<':
 				memmove(t, RE_WSTART, sizeof(RE_WSTART) - 1);
 				t += sizeof(RE_WSTART) - 1;
-			} else {
+				break;
+			case '>':
 				memmove(t, RE_WSTOP, sizeof(RE_WSTOP) - 1);
 				t += sizeof(RE_WSTOP) - 1;
+				break;
+			case '~':
+				if (O_ISSET(sp, O_MAGIC))
+					*t++ = '~';
+				else {
+					memmove(t, sp->repl, sp->repl_len);
+					t += sp->repl_len;
+				}
+				break;
+			case '.':
+			case '[':
+			case ']':
+			case '*':
+				if (O_ISSET(sp, O_MAGIC))
+					*t++ = '\\';
+				*t++ = *p;
+				break;
+			default:
+				*t++ = '\\';
+				*t++ = *p;
 			}
-			p += 2;
-		} else
-			*t++ = *p++;
+			break;
+		case '~':
+			if (O_ISSET(sp, O_MAGIC)) {
+				memmove(t, sp->repl, sp->repl_len);
+				t += sp->repl_len;
+			} else
+				*t++ = '~';
+			break;
+		case '.':
+		case '[':
+		case ']':
+		case '*':
+			if (!O_ISSET(sp, O_MAGIC))
+				*t++ = '\\';
+			*t++ = *p;
+			break;
+		default:
+			*t++ = *p;
+			break;
+		}
 	*t = '\0';
-
-	*ptrnp = bp;
-	*replacedp = 1;
-	return (0);
-}
-
-/*
- * ctag_conv --
- *	Convert a tags search path into something that regex can handle.
- */
-static int
-ctag_conv(sp, ptrnp, replacedp)
-	SCR *sp;
-	char **ptrnp;
-	int *replacedp;
-{
-	size_t blen, len;
-	int lastdollar;
-	char *bp, *p, *t;
-
-	*replacedp = 0;
-
-	len = strlen(p = *ptrnp);
-
-	/* Max memory usage is 2 times the length of the string. */
-	GET_SPACE(sp, bp, blen, len * 2);
-
-	t = bp;
-
-	/* The last charcter is a '/' or '?', we just strip it. */
-	if (p[len - 1] == '/' || p[len - 1] == '?')
-		p[len - 1] = '\0';
-
-	/* The next-to-last character is a '$', and it's magic. */
-	if (p[len - 2] == '$') {
-		lastdollar = 1;
-		p[len - 2] = '\0';
-	} else
-		lastdollar = 0;
-
-	/* The first character is a '/' or '?', we just strip it. */
-	if (p[0] == '/' || p[0] == '?')
-		++p;
-
-	/* The second character is a '^', and it's magic. */
-	if (p[0] == '^')
-		*t++ = *p++;
-		
-	/*
-	 * Escape every other magic character we can find, stripping the
-	 * backslashes ctags inserts to escape the search delimiter
-	 * characters.
-	 */
-	while (p[0]) {
-		/* Ctags escapes the search delimiter characters. */
-		if (p[0] == '\\' && (p[1] == '/' || p[1] == '?'))
-			++p;
-		else if (strchr("^.[$*", p[0]))
-			*t++ = '\\';
-		*t++ = *p++;
-	}
-	if (lastdollar)
-		*t++ = '$';
-	*t++ = '\0';
 
 	*ptrnp = bp;
 	*replacedp = 1;
@@ -747,26 +877,4 @@ re_error(sp, errcode, preg)
 		msgq(sp, M_ERR, "RE error: %s", oe);
 	}
 	free(oe);
-}
-
-/*
- * search_intr --
- *	Set the interrupt bit in any screen that is interruptible.
- *
- * XXX
- * In the future this may be a problem.  The user should be able to move to
- * another screen and keep typing while this runs.  If so, and the user has
- * more than one search/global (see ex/ex_global.c) running, it will be hard
- * to decide which one to stop.
- */
-static void
-search_intr(signo)
-	int signo;
-{
-	SCR *sp;
-
-	for (sp = __global_list->scrhdr.next;
-	     sp != (SCR *)&__global_list->scrhdr; sp = sp->next)
-		if (F_ISSET(sp, S_INTERRUPTIBLE))
-			F_SET(sp, S_INTERRUPTED);
 }
