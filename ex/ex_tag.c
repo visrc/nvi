@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 9.8 1994/12/16 11:08:58 bostic Exp $ (Berkeley) $Date: 1994/12/16 11:08:58 $";
+static char sccsid[] = "$Id: ex_tag.c,v 9.9 1994/12/16 11:20:09 bostic Exp $ (Berkeley) $Date: 1994/12/16 11:20:09 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -91,6 +91,7 @@ ex_tagfirst(sp, tagarg)
 			tag_msg(sp, TAG_BADLNO, tag);
 		}
 		m.cno = 0;
+		(void)nonblank(sp, m.lno, &m.cno);
 	} else {
 		/*
 		 * Search for the tag; cheap fallback for C functions if
@@ -254,6 +255,7 @@ err:		free(tag);
 			tag_msg(sp, TAG_BADLNO, tag);
 		}
 		m.cno = 0;
+		(void)nonblank(sp, m.lno, &m.cno);
 		sval = 0;
 	} else {
 		/*
