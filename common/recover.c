@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.28 1993/11/02 13:13:11 bostic Exp $ (Berkeley) $Date: 1993/11/02 13:13:11 $";
+static char sccsid[] = "$Id: recover.c,v 8.29 1993/11/04 18:21:44 bostic Exp $ (Berkeley) $Date: 1993/11/04 18:21:44 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -294,7 +294,7 @@ rcv_sync(sp, ep)
  * rcv_alrm --
  *	Recovery timer interrupt handler.
  */
-void
+static void
 rcv_alrm(signo)
 	int signo;
 {
