@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_util.c,v 8.6 1994/03/23 14:50:19 bostic Exp $ (Berkeley) $Date: 1994/03/23 14:50:19 $";
+static char sccsid[] = "$Id: ex_util.c,v 8.7 1994/04/26 16:02:10 bostic Exp $ (Berkeley) $Date: 1994/04/26 16:02:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -47,19 +47,27 @@ ex_getline(sp, fp, lenp)
 	char *p;
 
 	exp = EXP(sp);
-	for (off = 0, p = exp->ibp;; ++off) {
-		ch = getc(fp);
+	for (errno = 0, off = 0, p = exp->ibp;;) {
 		if (off >= exp->ibp_len) {
 			BINC_RET(sp, exp->ibp, exp->ibp_len, off + 1);
 			p = exp->ibp + off;
 		}
+		if ((ch = getc(fp)) == EOF && !feof(fp)) {
+			if (errno == EINTR) {
+				errno = 0;
+				clearerr(fp);
+				continue;
+			}
+			return (1);
+		}
 		if (ch == EOF || ch == '\n') {
-			if (ch == EOF && !off)
+			if (off == 0)
 				return (1);
 			*lenp = off;
 			return (0);
 		}
 		*p++ = ch;
+		++off;
 	}
 	/* NOTREACHED */
 }
