@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 8.33 1994/08/08 12:02:44 bostic Exp $ (Berkeley) $Date: 1994/08/08 12:02:44 $";
+static char sccsid[] = "$Id: options_f.c,v 8.34 1994/08/14 14:25:58 bostic Exp $ (Berkeley) $Date: 1994/08/14 14:25:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,7 +30,7 @@ static char sccsid[] = "$Id: options_f.c,v 8.33 1994/08/08 12:02:44 bostic Exp $
 #include <regex.h>
 
 #include "vi.h"
-#include "tag.h"
+#include "../ex/tag.h"
 
 static int	opt_dup __P((SCR *, int, char *));
 static int	opt_putenv __P((char *));
