@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shift.c,v 5.22 1993/04/12 14:37:48 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:37:48 $";
+static char sccsid[] = "$Id: ex_shift.c,v 5.23 1993/05/04 16:36:20 bostic Exp $ (Berkeley) $Date: 1993/05/04 16:36:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -93,12 +93,10 @@ shift(sp, ep, cmdp, rl)
 
 		/* Build a new indent string. */
 		bp = buf;
-		if (O_ISSET(sp, O_AUTOTAB))
-			while (newcol >= O_VAL(sp, O_TABSTOP)) {
-				*bp++ = '\t';
-				newcol -= O_VAL(sp, O_TABSTOP);
-			}
-
+		while (newcol >= O_VAL(sp, O_TABSTOP)) {
+			*bp++ = '\t';
+			newcol -= O_VAL(sp, O_TABSTOP);
+		}
 		for (; newcol > 0; --newcol)
 			*bp++ = ' ';
 
