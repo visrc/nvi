@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.129 1994/07/16 12:12:23 bostic Exp $ (Berkeley) $Date: 1994/07/16 12:12:23 $";
+static char sccsid[] = "$Id: ex.c,v 8.130 1994/07/18 21:30:58 bostic Exp $ (Berkeley) $Date: 1994/07/18 21:30:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -536,7 +536,7 @@ loop:	if (nl) {
 		 * next character.  The literal next characters are stripped
 		 * as they're no longer useful.
 		 */
-		if (cmdlen > 0 && ch == '+') {
+		if (cmdlen > 0 && *cmd == '+') {
 			++cmd;
 			--cmdlen;
 			for (arg1 = p = cmd; cmdlen > 0; --cmdlen, ++cmd) {
