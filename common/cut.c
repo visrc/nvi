@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 5.36 1993/04/19 15:22:29 bostic Exp $ (Berkeley) $Date: 1993/04/19 15:22:29 $";
+static char sccsid[] = "$Id: cut.c,v 5.37 1993/04/20 18:38:55 bostic Exp $ (Berkeley) $Date: 1993/04/20 18:38:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,11 +32,11 @@ cut(sp, ep, buffer, fm, tm, lmode)
 	int buffer, lmode;
 	MARK *fm, *tm;
 {
-	CB *cb;
+	CB *a, *cb;
 	TEXT *tp;
 	size_t len;
 	recno_t lno;
-	int append;
+	int append, indx;
 
 	CBNAME(sp, buffer, cb);
 
@@ -45,10 +45,44 @@ cut(sp, ep, buffer, fm, tm, lmode)
 	 * append mode set so the buffer is appended to, not overwritten.
 	 * Also note if the buffer has changed modes.
 	 */
-	if (append = isupper(buffer))
-		if (!lmode && cb->flags & CB_LMODE)
-			msgq(sp, M_INFO, "Buffer %s changed to line mode",
-			    charname(sp, buffer));
+	append = isupper(buffer);
+	if (append && !lmode && cb->flags & CB_LMODE)
+		msgq(sp, M_INFO, "Buffer %s changed to line mode",
+		    charname(sp, buffer));
+
+	/*
+	 * If changing the default buffer, buffers #1 through #8 get
+	 * rotated up one, the current default buffer gets placed in
+	 * slot #1, and slot #9 drops off the end.
+	 */
+	if (buffer == DEFCB) {
+		a = &sp->cuts['9'];
+		if (a->txthdr.next != NULL && a->txthdr.next != &a->txthdr)
+			hdr_text_free(&a->txthdr);
+		for (indx = '9'; indx > '1'; --indx) {
+			a = &sp->cuts[indx - 1];
+			if (a->txthdr.next == NULL ||
+			    a->txthdr.next == &a->txthdr) {
+				HDR_INIT(sp->cuts[indx].txthdr, next, prev);
+			} else {
+				sp->cuts[indx] = *a;
+				((TEXT *)a->txthdr.next)->prev =
+				    ((TEXT *)a->txthdr.prev)->next = 
+				    (TEXT *)&sp->cuts[indx].txthdr;
+			}
+		}
+		a = &sp->cuts[DEFCB];
+		if (a->txthdr.next == NULL ||
+		    a->txthdr.next == &a->txthdr) {
+			HDR_INIT(sp->cuts['1'].txthdr, next, prev);
+		} else {
+			sp->cuts['1'] = *a;
+			((TEXT *)a->txthdr.next)->prev =
+			    ((TEXT *)a->txthdr.prev)->next =
+			    (TEXT *)&sp->cuts['1'].txthdr;
+		}
+		HDR_INIT(cb->txthdr, next, prev);
+	}
 
 	/* Initialize buffer. */
 	if (cb->txthdr.next == NULL) {
