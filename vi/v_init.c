@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 8.1 1993/06/09 22:27:13 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:27:13 $";
+static char sccsid[] = "$Id: v_init.c,v 8.2 1993/06/21 10:12:08 bostic Exp $ (Berkeley) $Date: 1993/06/21 10:12:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -74,7 +74,6 @@ v_init(sp, ep)
 	EXF *ep;
 {
 	size_t len;
-	int needfill;
 
 	/* Make ex display to a special function. */
 #ifdef FWOPEN_NOT_AVAILABLE
@@ -88,49 +87,57 @@ v_init(sp, ep)
 	(void)setvbuf(sp->stdfp, NULL, _IOLBF, 0);
 
 	/*
-	 * If no starting location specified, vi starts at the beginning.
-	 * Otherwise, check to make sure that the location exists.
+	 * This has been a problem area.  There are six ways to enter
+	 * a file.
+	 *					F_EADDR_LOAD	F_EADDR_NONE
+	 *	+ new file, no starting addr	SET		SET
+	 *	+ new file, starting addr	SET		NS
+	 *	+ screen switch			NS		NS
+	 *	+ old file, no starting addr	SET		NS
+	 *	+ old file, starting addr	SET		NS
+	 *	+ old file, already in use	SET		SET
+	 *
+	 * The default address is line 1, column 0.  If the address is
+	 * loaded, ensure that it exists.
 	 */
-	needfill = 0;
-	if (F_ISSET(ep, F_NOSETPOS)) {
-		sp->lno = 1;
-		sp->cno = 0;
-		if (O_ISSET(sp, O_COMMENT) && v_comment(sp, ep))
-			return (1);
-		needfill = 1;
-		F_CLR(ep, F_NOSETPOS);
-	} else if (file_gline(sp, ep, sp->lno, &len) == NULL) {
-		if (sp->lno != 1 || sp->cno != 0) {
-			if (file_lline(sp, ep, &sp->lno))
-				return (1);
-			if (sp->lno == 0)
-				sp->lno = 1;
+	if (F_ISSET(ep, F_EADDR_LOAD)) {
+		if (F_ISSET(ep, F_EADDR_NONE)) {
+			sp->lno = 1;
 			sp->cno = 0;
+			if (O_ISSET(sp, O_COMMENT) && v_comment(sp, ep))
+				return (1);
+			F_CLR(ep, F_EADDR_LOAD | F_EADDR_NONE);
+		} else {
+			sp->lno = ep->lno;
+			sp->cno = ep->cno;
+			F_CLR(ep, F_EADDR_LOAD);
 		}
-		needfill = 1;
-	} else if (sp->cno >= len) {
-		needfill = 1;
-		sp->cno = 0;
-	}
+		if (file_gline(sp, ep, sp->lno, &len) == NULL) {
+			if (sp->lno != 1 || sp->cno != 0) {
+				if (file_lline(sp, ep, &sp->lno))
+					return (1);
+				if (sp->lno == 0)
+					sp->lno = 1;
+				sp->cno = 0;
+			}
+		} else if (sp->cno >= len)
+			sp->cno = 0;
+		/*
+		 * After address set, run any initial command; failure doesn't
+		 * halt the session.  Hopefully changing the cursor position
+		 * won't affect the success of the command.
+		 */
+		if (F_ISSET(ep, F_ICOMMAND)) {
+			(void)ex_cstring(sp, ep,
+			    ep->icommand, strlen(ep->icommand));
+			free(ep->icommand);
+			F_CLR(ep, F_ICOMMAND);
+		}
 
-	/*
-	 * After location established, run any initial command.  Failure
-	 * doesn't halt the session.  Don't worry about the cursor being
-	 * repositioned affecting the success of this command, it's
-	 * pretty unlikely.
-	 */
-	if (F_ISSET(ep, F_ICOMMAND)) {
-		(void)ex_cstring(sp, ep, ep->icommand, strlen(ep->icommand));
-		free(ep->icommand);
-		needfill = 1;
-		F_CLR(ep, F_ICOMMAND);
-	}
-
-	/*
-	 * Now have the real location the user wants.
-	 * Fill the screen map.
-	 */
-	if (needfill) {
+		/*
+		 * Now have the real address the user wants.
+		 * Fill the screen map.
+		 */
 		if (sp->s_fill(sp, ep, sp->lno, P_FILL))
 			return (1);
 		F_SET(sp, S_REDRAW);
@@ -148,6 +155,10 @@ int
 v_end(sp)
 	SCR *sp;
 {
+	/* Save the cursor location. */
+	sp->ep->lno = sp->lno;
+	sp->ep->cno = sp->cno;
+
 #ifdef FWOPEN_NOT_AVAILABLE
 	sp->trapped_fd = -1;
 #endif
