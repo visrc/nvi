@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_vi.c,v 8.37 2000/06/28 20:20:40 skimo Exp $ (Berkeley) $Date: 2000/06/28 20:20:40 $";
+static const char sccsid[] = "$Id: m_vi.c,v 8.38 2000/07/05 11:33:19 skimo Exp $ (Berkeley) $Date: 2000/07/05 11:33:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -249,7 +249,7 @@ vi_input_func(client_data, source, id)
 	XtInputId *id;
 {
 	/* Parse and dispatch on commands in the queue. */
-	(void)vi_input(ipvi_motif, *source);
+	(void)ipvi_motif->input(ipvi_motif, *source);
 
 #ifdef notdef
 	/* Check the pipe for unused events when not busy. */

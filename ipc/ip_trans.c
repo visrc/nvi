@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_trans.c,v 8.16 2000/06/28 20:20:39 skimo Exp $ (Berkeley) $Date: 2000/06/28 20:20:39 $";
+static const char sccsid[] = "$Id: ip_trans.c,v 8.17 2000/07/05 11:33:17 skimo Exp $ (Berkeley) $Date: 2000/07/05 11:33:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -20,6 +20,8 @@ static const char sccsid[] = "$Id: ip_trans.c,v 8.16 2000/06/28 20:20:39 skimo E
 #include <bitstring.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
+#include <netinet/in.h>
 
 #ifdef __STDC__
 #include <stdarg.h>
@@ -29,9 +31,12 @@ static const char sccsid[] = "$Id: ip_trans.c,v 8.16 2000/06/28 20:20:39 skimo E
 
 #include "../common/common.h"
 #include "ip.h"
+#include "ipc_def.h"
 
 static char ibuf[2048];				/* Input buffer. */
 static size_t ibuf_len;				/* Length of current input. */
+
+extern IPFUNLIST const ipfuns[];
 
 /*
  * vi_input --
@@ -123,40 +128,15 @@ vi_translate(ipviwin, bp, lenp, ipbp)
 	size_t *lenp;
 	IP_BUF *ipbp;
 {
-	extern int (*__vi_iplist[SI_EVENT_MAX - 1]) __P((IP_BUF *));
 	IP_BUF ipb;
 	size_t len, needlen;
 	u_int32_t *vp;
 	char *fmt, *p, *s_bp;
 	const char **vsp;
+	IPFunc fun;
 
 	for (s_bp = bp, len = *lenp; len > 0;) {
-		switch (ipb.code = bp[0]) {
-		case SI_ADDSTR:
-		case SI_BUSY_ON:
-		case SI_RENAME:
-		case SI_SELECT:
-			fmt = "a";
-			break;
-		case SI_ATTRIBUTE:
-		case SI_MOVE:
-			fmt = "12";
-			break;
-		case SI_EDITOPT:
-			fmt = "ab1";
-			break;
-		case SI_REPLY:
-			fmt = "1a";
-			break;
-		case SI_REWRITE:
-			fmt = "1";
-			break;
-		case SI_SCROLLBAR:
-			fmt = "123";
-			break;
-		default:
-			fmt = "";
-		}
+		fmt = ipfuns[(ipb.code = bp[0])-1].format;
 
 		p = bp + IPO_CODE_LEN;
 		needlen = IPO_CODE_LEN;
@@ -204,7 +184,7 @@ string:				needlen += IPO_INT_LEN;
 		 * XXX
 		 * Protocol error!?!?
 		 */
-		if (ipb.code > SI_EVENT_MAX) {
+		if (ipb.code >= SI_EVENT_SUP) {
 			len = 0;
 			break;
 		}
@@ -223,7 +203,10 @@ string:				needlen += IPO_INT_LEN;
 		}
 
 		/* Call the underlying routine. */
-		if (__vi_iplist[ipb.code - 1](&ipb))
+		fun = *(IPFunc *)
+		    (((char *)ipviwin->si_ops)+ipfuns[ipb.code - 1].offset);
+		if (fun != NULL &&
+		    ipfuns[ipb.code - 1].unmarshall(ipviwin, &ipb, fun))
 			break;
 	}
 partial:

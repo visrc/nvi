@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_func.c,v 8.23 1997/08/02 16:50:10 bostic Exp $ (Berkeley) $Date: 1997/08/02 16:50:10 $";
+static const char sccsid[] = "$Id: m_func.c,v 8.24 2000/07/05 11:33:18 skimo Exp $ (Berkeley) $Date: 2000/07/05 11:33:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,46 +30,47 @@ static const char sccsid[] = "$Id: m_func.c,v 8.23 1997/08/02 16:50:10 bostic Ex
 
 
 static int
-vi_addstr(ipbp)
-	IP_BUF *ipbp;
+vi_addstr(ipvi, str1, len1)
+   	char *str1;
+	u_int32_t len1;
 {
 #ifdef TRACE
 	vtrace("addstr() {%.*s}\n", ipbp->len1, ipbp->str1);
 #endif
 	/* Add to backing store. */
 	memcpy(CharAt(__vi_screen, __vi_screen->cury, __vi_screen->curx),
-	    ipbp->str1, ipbp->len1);
+	    str1, len1);
 	memset(FlagAt(__vi_screen, __vi_screen->cury, __vi_screen->curx),
-	    __vi_screen->color, ipbp->len1);
+	    __vi_screen->color, len1);
 
 	/* Draw from backing store. */
 	__vi_draw_text(__vi_screen,
-	    __vi_screen->cury, __vi_screen->curx, ipbp->len1);
+	    __vi_screen->cury, __vi_screen->curx, len1);
 
 	/* Advance the caret. */
 	__vi_move_caret(__vi_screen,
-	    __vi_screen->cury, __vi_screen->curx + ipbp->len1);
+	    __vi_screen->cury, __vi_screen->curx + len1);
 	return (0);
 }
 
 static int
-vi_attribute(ipbp)
-	IP_BUF *ipbp;
+vi_attribute(ipvi, val1, val2)
+	u_int32_t val1;
+	u_int32_t val2;
 {
-	switch (ipbp->val1) {
+	switch (val1) {
 	case SA_ALTERNATE:
 		/* XXX: Nothing. */
 		break;
 	case SA_INVERSE:
-		__vi_screen->color = ipbp->val2;
+		__vi_screen->color = val2;
 		break;
 	}
 	return (0);
 }
 
 static int
-vi_bell(ipbp)
-	IP_BUF *ipbp;
+vi_bell(ipvi)
 {
 	/*
 	 * XXX
@@ -80,24 +81,23 @@ vi_bell(ipbp)
 }
 
 static int
-vi_busyon(ipbp)
-	IP_BUF *ipbp;
+vi_busyon(ipvi, str1, len1)
+	char *str1;
+	u_int32_t len1;
 {
 	__vi_set_cursor(__vi_screen, 1);
 	return (0);
 }
 
 static int
-vi_busyoff(ipbp)
-	IP_BUF *ipbp;
+vi_busyoff(ipvi)
 {
 	__vi_set_cursor(__vi_screen, 0);
 	return (0);
 }
 
 static int
-vi_clrtoeol(ipbp)
-	IP_BUF *ipbp;
+vi_clrtoeol(ipvi)
 {
 	int len;
 	char *ptr;
@@ -117,8 +117,7 @@ vi_clrtoeol(ipbp)
 }
 
 static int
-vi_deleteln(ipbp)
-	IP_BUF *ipbp;
+vi_deleteln(ipvi)
 {
 	int y, rows, len, height, width;
 
@@ -151,16 +150,14 @@ vi_deleteln(ipbp)
 }
 
 static int
-vi_discard(ipbp)
-	IP_BUF *ipbp;
+vi_discard(ipvi)
 {
 	/* XXX: Nothing. */
 	return (0);
 }
 
 static int
-vi_insertln(ipbp)
-	IP_BUF *ipbp;
+vi_insertln(ipvi)
 {
 	int y, rows, height, width;
 	char *from, *to;
@@ -211,24 +208,23 @@ vi_insertln(ipbp)
 }
 
 static int
-vi_move(ipbp)
-	IP_BUF *ipbp;
+vi_move(ipvi, val1, val2)
+	u_int32_t val1;
+	u_int32_t val2;
 {
-	__vi_move_caret(__vi_screen, ipbp->val1, ipbp->val2);
+	__vi_move_caret(__vi_screen, val1, val2);
 	return (0);
 }
 
 static int
-vi_redraw(ipbp)
-	IP_BUF *ipbp;
+vi_redraw(ipvi)
 {
 	__vi_expose_func(0, __vi_screen, 0);
 	return (0);
 }
 
 static int
-vi_refresh(ipbp)
-	IP_BUF *ipbp;
+vi_refresh(ipvi)
 {
 	/* probably ok to scroll again */
 	__vi_clear_scroll_block();
@@ -246,8 +242,7 @@ vi_refresh(ipbp)
 }
 
 static int
-vi_quit(ipbp)
-	IP_BUF *ipbp;
+vi_quit(ipvi)
 {
 	if (__vi_exitp != NULL)
 		__vi_exitp();
@@ -256,15 +251,16 @@ vi_quit(ipbp)
 }
 
 static int
-vi_rename(ipbp)
-	IP_BUF *ipbp;
+vi_rename(ipvi, str1, len1)
+	char *str1;
+	u_int32_t len1;
 {
 	Widget shell;
 	size_t len;
 	const char *tail, *p;
 
 	/* For the icon, use the tail. */
-	for (p = ipbp->str1, len = ipbp->len1; len > 1; ++p, --len)
+	for (p = str1, len = len1; len > 1; ++p, --len)
 		if (p[0] == '/')
 			tail = p + 1;
 	/*
@@ -276,15 +272,15 @@ vi_rename(ipbp)
 	while ( ! XtIsShell(shell) ) shell = XtParent(shell);
 	XtVaSetValues(shell,
 		      XmNiconName,	tail,
-		      XmNtitle,		ipbp->str1,
+		      XmNtitle,		str1,
 		      0
 		      );
 	return (0);
 }
 
 static int
-vi_rewrite(ipbp)
-	IP_BUF *ipbp;
+vi_rewrite(ipvi, val1)
+	u_int32_t val1;
 {
 	/* XXX: Nothing. */
 	return (0);
@@ -292,8 +288,10 @@ vi_rewrite(ipbp)
 
 
 static int
-vi_scrollbar(ipbp)
-	IP_BUF *ipbp;
+vi_scrollbar(ipvi, val1, val2, val3)
+	u_int32_t val1;
+	u_int32_t val2;
+	u_int32_t val3;
 {
 	int top, size, maximum, old_max;
 
@@ -302,9 +300,9 @@ vi_scrollbar(ipbp)
 	 *	val2 contains the number of visible lines
 	 *	val3 contains the number of lines in the file
 	 */
-	top	= ipbp->val1;
-	size	= ipbp->val2;
-	maximum	= ipbp->val3;
+	top	= val1;
+	size	= val2;
+	maximum	= val3;
 
 #if 0
 	fprintf( stderr, "Setting scrollbar\n" );
@@ -357,22 +355,22 @@ vi_scrollbar(ipbp)
 }
 
 static int
-vi_select(ipbp)
-	IP_BUF *ipbp;
+vi_select(ipvi, str1, len1)
+	char *str1;
+	u_int32_t len1;
 {
 	/* XXX: Nothing. */
 	return (0);
 }
 
 static int
-vi_split(ipbp)
-	IP_BUF *ipbp;
+vi_split(ipvi)
 {
 	/* XXX: Nothing. */
 	return (0);
 }
 
-int (*__vi_iplist[SI_EVENT_MAX]) __P((IP_BUF *)) = {
+IPSIOPS ipsi_ops_motif = {
 	vi_addstr,
 	vi_attribute,
 	vi_bell,
@@ -388,9 +386,8 @@ int (*__vi_iplist[SI_EVENT_MAX]) __P((IP_BUF *)) = {
 	vi_redraw,
 	vi_refresh,
 	vi_rename,
-	NULL,
 	vi_rewrite,
 	vi_scrollbar,
 	vi_select,
-	vi_split
+	vi_split,
 };

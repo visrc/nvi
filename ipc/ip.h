@@ -4,10 +4,11 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: ip.h,v 8.24 2000/07/01 14:09:34 skimo Exp $ (Berkeley) $Date: 2000/07/01 14:09:34 $
+ *	$Id: ip.h,v 8.25 2000/07/05 11:33:17 skimo Exp $ (Berkeley) $Date: 2000/07/05 11:33:17 $
  */
 
 #include <sys/socket.h>
+#include "ipc_def.h"
 
 typedef struct ipcmsghdr {
 	struct	cmsghdr	header;
@@ -60,6 +61,55 @@ typedef struct _ip_buf {
 	u_int32_t val3;		/* Value #3. */
 } IP_BUF;
 
+typedef int (*IPFunc) (struct _ip_vi_win *);
+typedef int (*IPFunc_1) (struct _ip_vi_win *, u_int32_t);
+typedef int (*IPFunc_1a) (struct _ip_vi_win *, u_int32_t, const char *, u_int32_t);
+typedef int (*IPFunc_a) (struct _ip_vi_win *, const char *, u_int32_t);
+typedef int (*IPFunc_ab1) (struct _ip_vi_win *, const char *, u_int32_t, 
+			    const char *, u_int32_t, u_int32_t);
+typedef int (*IPFunc_12) (struct _ip_vi_win *, u_int32_t, u_int32_t);
+typedef int (*IPFunc_123) (struct _ip_vi_win *, u_int32_t, u_int32_t, u_int32_t);
+
+typedef int (*IPUnmarshall) (struct _ip_vi_win *, IP_BUF *, IPFunc);
+
+typedef struct _ipfunlist {
+    char       	   *format;
+    IPUnmarshall    unmarshall;
+    size_t	    offset;
+} IPFUNLIST;
+
+typedef struct _vipfunlist {
+    char       	   *format;
+    e_event_t	    e_event;
+} VIPFUNLIST;
+
+typedef struct ip_si_operations {
+    IPFunc_a	addstr;
+    IPFunc_12	attribute;
+    IPFunc      bell;
+    IPFunc      busy_off;
+    IPFunc_a    busy_on;
+    IPFunc      clrtoeol;
+    IPFunc      deleteln;
+    IPFunc      discard;
+    IPFunc_ab1  editopt;
+    IPFunc      insertln;
+    IPFunc_12   move;
+    IPFunc      quit;
+    IPFunc      redraw;
+    IPFunc      refresh;
+    IPFunc_a    rename;
+    IPFunc_1    rewrite;
+    IPFunc_123  scrollbar;
+    IPFunc_a    select;
+    IPFunc      split;
+    IPFunc      ex_init;
+    IPFunc      vi_init;
+/*
+    IPFunc      fork;
+*/
+} IPSIOPS;
+
 struct _ip_vi;	
 typedef struct _ip_vi IPVI;
 
@@ -85,6 +135,28 @@ struct _ip_vi_win {
     int		ofd;		/* Output file descriptor. */
 
     void	*private_data;
+
+    IPSIOPS	 *si_ops;
+
+    int		(*c_bol) __P((IPVIWIN*));
+    int		(*c_bottom) __P((IPVIWIN*));
+    int		(*c_del) __P((IPVIWIN*));
+    int		(*c_eol) __P((IPVIWIN*));
+    int		(*c_insert) __P((IPVIWIN*));
+    int		(*c_left) __P((IPVIWIN*));
+    int		(*c_right) __P((IPVIWIN*));
+    int		(*c_top) __P((IPVIWIN*));
+    int		(*c_settop) __P((IPVIWIN*, u_int32_t));
+
+    int		(*string) __P((IPVIWIN*, const char*, u_int32_t));
+    int		(*wq) __P((IPVIWIN*));
+    int		(*quit) __P((IPVIWIN*));
+    int		(*resize) __P((IPVIWIN*, u_int32_t, u_int32_t));
+
+    int		(*input) __P((IPVIWIN*, int));
+    int		(*close) __P((IPVIWIN*));
+
+    int		(*set_ops) __P((IPVIWIN*, IPSIOPS*));
 };
 
 /*
@@ -98,6 +170,7 @@ struct _ip_vi_win {
  * IP events sent from the screen to vi.
  */
 #define	CODE_OOB	 0	/* Illegal code. */
+#if 0
 #define	VI_C_BOL	 1	/* Cursor to start of line. */
 #define	VI_C_BOTTOM	 2	/* Cursor to bottom. */
 #define	VI_C_DEL	 3	/* Cursor delete. */
@@ -133,6 +206,8 @@ struct _ip_vi_win {
 #define	VI_WQ		33	/* Write and quit. */
 #define	VI_WRITE	34	/* Write. */
 #define	VI_WRITEAS	35	/* Write as another file: IPO_STR. */
+#define VI_FLAGS	36	/* Flags passed to nvi_create */
+#endif
 
 #define	VI_SEARCH_EXT	0x001	/* VI_C_SEARCH: ignore case. */
 #define	VI_SEARCH_IC	0x002	/* VI_C_SEARCH: ignore case. */
@@ -145,6 +220,7 @@ struct _ip_vi_win {
 /*
  * IP events sent from vi to the screen.
  */
+#if 0
 #define	SI_ADDSTR	 1	/* Add a string: IPO_STR. */
 #define	SI_ATTRIBUTE	 2	/* Set screen attribute: 2 * IPO_INT. */
 #define	SI_BELL		 3	/* Beep/bell/flash the terminal. */
@@ -166,5 +242,6 @@ struct _ip_vi_win {
 #define	SI_SELECT	19	/* Select area: IPO_STR. */
 #define	SI_SPLIT	20	/* Split the screen. */
 #define	SI_EVENT_MAX	20
+#endif
 
 #include "extern.h"

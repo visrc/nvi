@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_options.c,v 8.19 2000/06/28 20:20:39 skimo Exp $ (Berkeley) $Date: 2000/06/28 20:20:39 $";
+static const char sccsid[] = "$Id: m_options.c,v 8.20 2000/07/05 11:33:19 skimo Exp $ (Berkeley) $Date: 2000/07/05 11:33:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -232,18 +232,23 @@ Boolean		*cont;
  * __vi_editopt --
  *	Set an edit option based on a core message.
  *
- * PUBLIC: int __vi_editopt __P((IP_BUF *));
+ * PUBLIC: int __vi_editopt __P((IPVI *, const char *, u_int32_t, const char *, u_int32_t, u_int32_t));
  */
 int
-__vi_editopt(ipbp)
-	IP_BUF *ipbp;
+__vi_editopt(ipvi, str1, len1, str2, len2, val1)
+	IPVI *ipvi;
+	const char *str1;
+	u_int32_t len1;
+	const char *str2;
+	u_int32_t len2;
+	u_int32_t val1;
 {
 	optData *opt;
 
 #undef	NSEARCH
 #define	NSEARCH(list) {							\
 	for (opt = list; opt->kind != optTerminator; ++opt)		\
-		if (!strcmp(opt->name, ipbp->str1))			\
+		if (!strcmp(opt->name, str1))			\
 			goto found;					\
 }
 
@@ -265,21 +270,21 @@ __vi_editopt(ipbp)
 
 found:	switch (opt->kind) {
 	case optToggle:
-		opt->value = (void *)ipbp->val1;
+		opt->value = (void *)val1;
 		break;
 	case optInteger:
 		if (opt->value != NULL)
 			free(opt->value);
 		if ((opt->value = malloc(8)) != NULL)
 			(void)snprintf(opt->value,
-			    8, "%lu", (u_long)ipbp->val1);
+			    8, "%lu", (u_long)val1);
 		break;
 	case optString:
 	case optFile:
 		if (opt->value != NULL)
 			free(opt->value);
-		if ((opt->value = malloc(ipbp->len2)) != NULL)
-			memcpy(opt->value, ipbp->str2, ipbp->len2);
+		if ((opt->value = malloc(len2)) != NULL)
+			memcpy(opt->value, str2, len2);
 		break;
 	case optTerminator:
 		abort();

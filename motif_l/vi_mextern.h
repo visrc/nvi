@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	"$Id: vi_mextern.h,v 8.5 2000/06/28 20:20:40 skimo Exp $ (Berkeley) $Date: 2000/06/28 20:20:40 $";
+ *	"$Id: vi_mextern.h,v 8.6 2000/07/05 11:33:19 skimo Exp $ (Berkeley) $Date: 2000/07/05 11:33:19 $";
  */
 
 /*
@@ -19,6 +19,7 @@
 extern char *vi_progname;			/* Program name. */
 extern int   vi_ofd;				/* Output file descriptor. */
 extern IPVIWIN *ipvi_motif;
+extern IPSIOPS ipsi_ops_motif;
 
 
 /*

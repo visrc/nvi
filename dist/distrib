@@ -1,16 +1,32 @@
 #! /bin/sh
-# $Id: distrib,v 8.18 1997/08/03 16:17:59 bostic Exp $ (Berkeley) $Date: 1997/08/03 16:17:59 $
+# $Id: distrib,v 8.19 2000/07/05 11:33:16 skimo Exp $ (Berkeley) $Date: 2000/07/05 11:33:16 $
 
 # Build autoconf structure.
 echo "Running autoheader"
 autoheader 2>&1 | sed '/warning: AC_TRY_RUN called without default/d'
 chmod 444 config.h.in
+rm -f configure
 echo "Running autoconf"
 autoconf 2>&1 | sed '/warning: AC_TRY_RUN called without default/d'
 chmod 555 configure config.guess config.sub install-sh
 
 msg="/* Do not edit: automatically built by build/distrib. */"
 # Build automatically generated header files.
+f=../ipc/ipc_def.h
+echo "Building $f"
+rm -f $f
+(echo "$msg" && \
+    awk -f ../ipc/ipc.awk ../ipc/ipc_cmd.c &&
+    awk -f ../ipc/vipc.awk ../ip/ip_read.c) > $f
+chmod 444 $f
+
+f=../ipc/ipc_gen.c
+echo "Building $f"
+rm -f $f
+(echo "$msg" && \
+    perl -n ../ip/vipc.pl ../ip/ip_read.c) > $f
+chmod 444 $f
+
 f=../ex/ex_def.h
 echo "Building $f"
 rm -f $f
@@ -28,6 +44,7 @@ chmod 444 $f
 # Build the automatically generated function prototype files.
 for i in cl common ex ip ipc motif motif_l perl_api tcl_api vi; do
 	f=../$i/extern.h
+	rm -f $f
 	echo "Building $f"
 	(echo "$msg" && \
 	    sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../$i/*.c) > $f
@@ -38,7 +55,8 @@ done
 echo "Building tags files"
 f=tags
 rm -f $f
-ctags -d -w \
+if test $USER = 'bostic'; then ctagsopt = '-d'; fi
+ctags $ctagsopt -w \
 	../cl/*.[ch] ../common/*.[ch] ../ex/*.[ch] ../ip/*.[ch] \
 	../ipc/*.[ch] ../motif/*.[ch] ../motif_l/*.[ch] ../perl_api/*.[ch] \
 	../tcl_api/*.[ch] ../vi/*.[ch]

@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_read.c,v 8.18 2000/06/25 17:34:40 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:40 $";
+static const char sccsid[] = "$Id: ip_read.c,v 8.19 2000/07/05 11:33:17 skimo Exp $ (Berkeley) $Date: 2000/07/05 11:33:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,6 +22,7 @@ static const char sccsid[] = "$Id: ip_read.c,v 8.18 2000/06/25 17:34:40 skimo Ex
 #include <termios.h>
 #include <time.h>
 #include <unistd.h>
+#include <netinet/in.h>
  
 #include "../common/common.h"
 #include "../ex/script.h"
@@ -29,6 +30,82 @@ static const char sccsid[] = "$Id: ip_read.c,v 8.18 2000/06/25 17:34:40 skimo Ex
 #include "extern.h"
 
 extern GS *__global_list;
+
+VIPFUNLIST const vipfuns[] = {
+/* VI_C_BOL	    Cursor to start of line. */
+    {"",    E_IPCOMMAND},
+/* VI_C_BOTTOM	 2	/* Cursor to bottom. */
+    {"",    E_IPCOMMAND},
+/* VI_C_DEL	 3	/* Cursor delete. */
+    {"",    E_IPCOMMAND},
+/* VI_C_DOWN	    Cursor down N lines: IPO_INT. */
+    {"1",   E_IPCOMMAND},
+/* VI_C_EOL	 5	/* Cursor to end of line. */
+    {"",    E_IPCOMMAND},
+/* VI_C_INSERT	 6	/* Cursor: enter insert mode. */
+    {"",    E_IPCOMMAND},
+/* VI_C_LEFT	 7	/* Cursor left. */
+    {"",    E_IPCOMMAND},
+/* VI_C_PGDOWN	 8	/* Cursor down N pages: IPO_INT. */
+    {"1",   E_IPCOMMAND},
+/* VI_C_PGUP	 9	/* Cursor up N lines: IPO_INT. */
+    {"1",   E_IPCOMMAND},
+/* VI_C_RIGHT	10	/* Cursor right. */
+    {"",    E_IPCOMMAND},
+/* VI_C_SEARCH	11	/* Cursor: search: IPO_INT, IPO_STR. */
+    {"a1",  E_IPCOMMAND},
+/* VI_C_SETTOP	12	/* Cursor: set screen top line: IPO_INT. */
+    {"1",   E_IPCOMMAND},
+/* VI_C_TOP	13	/* Cursor to top. */
+    {"",    E_IPCOMMAND},
+/* VI_C_UP		14	/* Cursor up N lines: IPO_INT. */
+    {"1",   E_IPCOMMAND},
+/* VI_EDIT		15	/* Edit a file: IPO_STR. */
+    {"a",   E_IPCOMMAND},
+/* VI_EDITOPT	16	/* Edit option: 2 * IPO_STR, IPO_INT. */
+    {"ab1", E_IPCOMMAND},
+/* VI_EDITSPLIT	17	/* Split to a file: IPO_STR. */
+    {"a",   E_IPCOMMAND},
+/* VI_EOF		18	/* End of input (NOT ^D). */
+    {"",    E_EOF},
+/* VI_ERR		19	/* Input error. */
+    {"",    E_ERR},
+/* VI_FLAGS	    Flags */
+    {"1",   E_FLAGS},
+/* VI_INTERRUPT	20	/* Interrupt. */
+    {"",    E_INTERRUPT},
+/* VI_MOUSE_MOVE	21	/* Mouse click move: IPO_INT, IPO_INT. */
+    {"12",  E_IPCOMMAND},
+/* VI_QUIT		22	/* Quit. */
+    {"",    E_IPCOMMAND},
+/* VI_RESIZE	    Screen resize: IPO_INT, IPO_INT. */
+    {"12",  E_WRESIZE},
+/* VI_SEL_END	24	/* Select end: IPO_INT, IPO_INT. */
+    {"12",  E_IPCOMMAND},
+/* VI_SEL_START	25	/* Select start: IPO_INT, IPO_INT. */
+    {"12",  E_IPCOMMAND},
+/* VI_SIGHUP	26	/* SIGHUP. */
+    {"",    E_SIGHUP},
+/* VI_SIGTERM	27	/* SIGTERM. */
+    {"",    E_SIGTERM},
+/* VI_STRING	    Input string: IPO_STR. */
+    {"a",   E_STRING},
+/* VI_TAG		29	/* Tag. */
+    {"",    E_IPCOMMAND},
+/* VI_TAGAS	30	/* Tag to a string: IPO_STR. */
+    {"a",   E_IPCOMMAND},
+/* VI_TAGSPLIT	31	/* Split to a tag. */
+    {"",    E_IPCOMMAND},
+/* VI_UNDO		32	/* Undo. */
+    {"",    E_IPCOMMAND},
+/* VI_WQ		33	/* Write and quit. */
+    {"",    E_IPCOMMAND},
+/* VI_WRITE	34	/* Write. */
+    {"",    E_IPCOMMAND},
+/* VI_WRITEAS	35	/* Write as another file: IPO_STR. */
+    {"a",   E_IPCOMMAND},
+/* VI_EVENT_SUP */
+};
 
 typedef enum { INP_OK=0, INP_EOF, INP_ERR, INP_TIMEOUT } input_t;
 
@@ -232,93 +309,17 @@ ip_trans(sp, ipp, evp)
 	u_int32_t skip, val;
 	char *fmt;
 
-	switch (ipp->ibuf[0]) {
-	case VI_C_BOL:
-	case VI_C_BOTTOM:
-	case VI_C_DEL:
-	case VI_C_EOL:
-	case VI_C_INSERT:
-	case VI_C_LEFT:
-	case VI_C_RIGHT:
-	case VI_C_TOP:
-	case VI_QUIT:
-	case VI_TAG:
-	case VI_TAGSPLIT:
-	case VI_UNDO:
-	case VI_WQ:
-	case VI_WRITE:
-		evp->e_event = E_IPCOMMAND;
-		evp->e_ipcom = ipp->ibuf[0];
-		ipp->iskip = IPO_CODE_LEN;
-		return (1);
-	case VI_C_DOWN:
-	case VI_C_PGDOWN:
-	case VI_C_PGUP:
-	case VI_C_UP:
-	case VI_C_SETTOP:
-		evp->e_event = E_IPCOMMAND;
-		evp->e_ipcom = ipp->ibuf[0];
-		fmt = "1";
-		break;
-	case VI_C_SEARCH:
-		evp->e_event = E_IPCOMMAND;
-		evp->e_ipcom = ipp->ibuf[0];
-		fmt = "a1";
-		break;
-	case VI_EDIT:
-	case VI_EDITSPLIT:
-	case VI_TAGAS:
-	case VI_WRITEAS:
-		evp->e_event = E_IPCOMMAND;
-		evp->e_ipcom = ipp->ibuf[0];
-		fmt = "a";
-		break;
-	case VI_EDITOPT:
-		evp->e_event = E_IPCOMMAND;
-		evp->e_ipcom = ipp->ibuf[0];
-		fmt = "ab1";
-		break;
-	case VI_EOF:
-		evp->e_event = E_EOF;
-		ipp->iskip = IPO_CODE_LEN;
-		return (1);
-	case VI_ERR:
-		evp->e_event = E_ERR;
-		ipp->iskip = IPO_CODE_LEN;
-		return (1);
-	case VI_INTERRUPT:
-		evp->e_event = E_INTERRUPT;
-		ipp->iskip = IPO_CODE_LEN;
-		return (1);
-	case VI_MOUSE_MOVE:
-	case VI_SEL_END:
-	case VI_SEL_START:
-		evp->e_event = E_IPCOMMAND;
-		evp->e_ipcom = ipp->ibuf[0];
-		fmt = "12";
-		break;
-	case VI_RESIZE:
-		evp->e_event = E_WRESIZE;
-		fmt = "12";
-		break;
-	case VI_SIGHUP:
-		evp->e_event = E_SIGHUP;
-		ipp->iskip = IPO_CODE_LEN;
-		return (1);
-	case VI_SIGTERM:
-		evp->e_event = E_SIGTERM;
-		ipp->iskip = IPO_CODE_LEN;
-		return (1);
-	case VI_STRING:
-		 evp->e_event = E_STRING;
-		 fmt = "a";
-		 break;
-	default:
+	if (ipp->ibuf[0] == CODE_OOB ||
+	    ipp->ibuf[0] >= VI_EVENT_SUP)
+	{
 		/*
 		 * XXX: Protocol is out of sync?
 		 */
 		abort();
 	}
+	fmt = vipfuns[ipp->ibuf[0]-1].format;
+	evp->e_event = vipfuns[ipp->ibuf[0]-1].e_event;
+	evp->e_ipcom = ipp->ibuf[0];
 
 	for (skip = IPO_CODE_LEN; *fmt != '\0'; ++fmt)
 		switch (*fmt) {

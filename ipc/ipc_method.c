@@ -26,6 +26,21 @@
 #include "../common/common.h"
 #include "ip.h"
 
+static int vi_send_ __P((IPVIWIN   *, int));
+static int vi_send_1 __P((IPVIWIN   *, int, u_int32_t  ));
+static int vi_send_12 __P((IPVIWIN *ipvi, int code, u_int32_t val1, u_int32_t val2));
+static int vi_send_ab1 __P((IPVIWIN *ipvi, int code, 
+	    const char *str1, u_int32_t len1, 
+	    const char *str2, u_int32_t len2, u_int32_t val));
+static int vi_send_a1 __P((IPVIWIN *ipvi, int code, const char *str, u_int32_t len, 
+	   u_int32_t val));
+static int vi_send_a __P((IPVIWIN *ipvi, int code, const char *str, u_int32_t len));
+
+#include "ipc_gen.c"
+
+static int vi_set_ops __P((IPVIWIN *, IPSIOPS *));
+static int vi_win_close __P((IPVIWIN *));
+
 static int vi_close __P((IPVI *));
 static int vi_new_window __P((IPVI *, IPVIWIN **));
 
@@ -101,6 +116,30 @@ vi_new_window (IPVI *ipvi, IPVIWIN **ipviwinp)
 	ipviwin->ofd = sockets[0];
 	}
 
+#define IPVISET(func) \
+	ipviwin->func = vi_##func;
+
+	IPVISET(c_bol);
+	IPVISET(c_bottom);
+	IPVISET(c_del);
+	IPVISET(c_eol);
+	IPVISET(c_insert);
+	IPVISET(c_left);
+	IPVISET(c_right);
+	IPVISET(c_top);
+	IPVISET(c_settop);
+	IPVISET(resize);
+	IPVISET(string);
+	IPVISET(quit);
+	IPVISET(wq);
+
+	IPVISET(input);
+	/*
+	IPVISET(close);
+	*/
+	ipviwin->close = vi_win_close;
+	IPVISET(set_ops);
+
 	*ipviwinp = ipviwin;
 
 	return 0;
@@ -109,11 +148,101 @@ alloc_err:
 	return 1;
 }
 
+static int 
+vi_set_ops(ipvi, ops)
+	IPVIWIN *ipvi;
+	IPSIOPS *ops;
+{
+	ipvi->si_ops = ops;
+	return 0;
+}
+
 static int  vi_close(ipvi)
 	IPVI *ipvi;
 {
 	memset(ipvi, 6, sizeof(IPVI));
 	free(ipvi);
 	return 0;
+}
+
+static int  vi_win_close(ipviwin)
+	IPVIWIN *ipviwin;
+{
+	memset(ipviwin, 6, sizeof(IPVIWIN));
+	free(ipviwin);
+	return 0;
+}
+
+
+static int
+vi_send_(ipvi, code)
+	IPVIWIN    *ipvi;
+	int	code;
+{
+	IP_BUF	ipb;
+	ipb.code = code;
+	return vi_send(ipvi->ofd, NULL, &ipb);
+}
+
+static int
+vi_send_1(ipvi, code, val)
+	IPVIWIN    *ipvi;
+	int	code;
+	u_int32_t   val;
+{
+	IP_BUF	ipb;
+	ipb.code = code;
+	ipb.val1 = val;
+	return vi_send(ipvi->ofd, "1", &ipb);
+}
+
+static int
+vi_send_12(IPVIWIN *ipvi, int code, u_int32_t val1, u_int32_t val2)
+{
+	IP_BUF	ipb;
+
+	ipb.val1 = val1;
+	ipb.val2 = val2;
+	ipb.code = code;
+	return vi_send(ipvi->ofd, "12", &ipb);
+}
+
+static int
+vi_send_a(IPVIWIN *ipvi, int code, const char *str, u_int32_t len)
+{
+	IP_BUF	ipb;
+
+	ipb.str1 = str;
+	ipb.len1 = len;
+	ipb.code = code;
+	return vi_send(ipvi->ofd, "a", &ipb);
+}
+
+static int
+vi_send_a1(IPVIWIN *ipvi, int code, const char *str, u_int32_t len, 
+	   u_int32_t val)
+{
+	IP_BUF	ipb;
+
+	ipb.str1 = str;
+	ipb.len1 = len;
+	ipb.val1 = val;
+	ipb.code = code;
+	return vi_send(ipvi->ofd, "a1", &ipb);
+}
+
+static int
+vi_send_ab1(IPVIWIN *ipvi, int code, const char *str1, u_int32_t len1, 
+	    const char *str2, u_int32_t len2, u_int32_t val)
+{
+	IP_BUF	ipb;
+
+	ipb.str1 = str1;
+	ipb.len1 = len1;
+	ipb.str2 = str2;
+	ipb.len2 = len2;
+	ipb.val1 = val;
+	ipb.code = code;
+	return vi_send(ipvi->ofd, "ab1", &ipb);
 }
 
