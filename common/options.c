@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: options.c,v 10.51 1996/10/14 14:56:28 bostic Exp $ (Berkeley) $Date: 1996/10/14 14:56:28 $";
+static const char sccsid[] = "$Id: options.c,v 10.52 1996/12/14 14:00:32 bostic Exp $ (Berkeley) $Date: 1996/12/14 14:00:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -427,6 +427,14 @@ opts_init(sp, oargs)
 		OI(*oargs, optlist[*oargs].name);
 	return (0);
 #undef OI
+
+	/*
+	 * Inform the underlying screen of the initial values of the
+	 * edit options.
+	 */
+	for (op = optlist, cnt = 0; op->name != NULL; ++op, ++cnt)
+		(void)sp->gp->scr_optchange(sp,
+		    cnt, O_STR(sp, cnt), &O_VAL(sp, cnt));
 
 err:	msgq(sp, M_ERR,
 	    "031|Unable to set default %s option", optlist[optindx].name);
