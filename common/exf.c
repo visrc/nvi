@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.89 1994/07/23 13:39:15 bostic Exp $ (Berkeley) $Date: 1994/07/23 13:39:15 $";
+static char sccsid[] = "$Id: exf.c,v 8.90 1994/08/03 11:07:32 bostic Exp $ (Berkeley) $Date: 1994/08/03 11:07:32 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -636,8 +636,13 @@ exists:			if (LF_ISSET(FS_POSSIBLE))
 	 */
 	F_CLR(frp, FR_NAMECHANGE);
 
-	/* If wrote the entire file, clear the modified bit. */
-	if (LF_ISSET(FS_ALL))
+	/*
+	 * If wrote the entire file and it's not a temporary file, clear the
+	 * modified bit.  This permits the user to write the file and run a
+	 * command on it in the file system, but still keeps them from losing
+	 * their changes by exiting.
+	 */
+	if (!F_ISSET(frp, FR_TMPFILE) && LF_ISSET(FS_ALL))
 		F_CLR(ep, F_MODIFIED);
 
 	msgq(sp, M_INFO, "%s%s%s: %lu line%s, %lu characters",
