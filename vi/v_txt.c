@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.45 1996/03/29 20:09:13 bostic Exp $ (Berkeley) $Date: 1996/03/29 20:09:13 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.46 1996/03/29 20:27:28 bostic Exp $ (Berkeley) $Date: 1996/03/29 20:27:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1972,8 +1972,11 @@ txt_fc_col(sp, argc, argv)
 {
 	ARGS **av;
 	CHAR_T *p;
+	GS *gp;
 	size_t base, cnt, col, colwidth, numrows, numcols, prefix, row;
 	int ac, nf, reset;
+
+	gp = sp->gp;
 
 	/* Trim any directory prefix common to all of the files. */
 	if ((p = strrchr(argv[0]->bp, '/')) == NULL)
@@ -2013,13 +2016,21 @@ txt_fc_col(sp, argc, argv)
 	} else
 		reset = 0;
 
+#define	CHK_INTR							\
+	if (F_ISSET(gp, G_INTERRUPTED))					\
+		goto intr;
+
 	/* If the largest file name is too large, just print them. */
 	if (colwidth > sp->cols) {
 		p = msg_print(sp, av[0]->bp + prefix, &nf);
-		for (ac = argc, av = argv; ac > 0; --ac, ++av)
+		for (ac = argc, av = argv; ac > 0; --ac, ++av) {
 			(void)ex_printf(sp, "%s\n", p);
+			if (F_ISSET(gp, G_INTERRUPTED))
+				break;
+		}
 		if (nf)
 			FREE_SPACE(sp, p, 0);
+		CHK_INTR;
 	} else {
 		/* Figure out the number of columns. */
 		numcols = (sp->cols - 1) / colwidth;
@@ -2037,17 +2048,24 @@ txt_fc_col(sp, argc, argv)
 				cnt = ex_printf(sp, "%s", p);
 				if (nf)
 					FREE_SPACE(sp, p, 0);
+				CHK_INTR;
 				if ((base += numrows) >= argc)
 					break;
 				(void)ex_printf(sp,
 				    "%*s", (int)(colwidth - cnt), "");
+				CHK_INTR;
 			}
 			(void)ex_puts(sp, "\n");
+			CHK_INTR;
 		}
 		(void)ex_puts(sp, "\n");
+		CHK_INTR;
 	}
 	(void)ex_fflush(sp);
 
+	if (0) {
+intr:		F_CLR(gp, G_INTERRUPTED);
+	}
 	if (reset)
 		F_SET(sp, S_INPUT_INFO);
 
