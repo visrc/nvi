@@ -6,35 +6,14 @@
  * Copyright (c) 1995
  *	George V. Neville-Neil. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- * 3. All advertising materials mentioning features or use of this software
- *    must display the following acknowledgement:
- *	This product includes software developed by the University of
- *	California, Berkeley and its contributors.
- * 4. Neither the name of the University nor the names of its contributors
- *    may be used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
+ * %sccs.include.redist.c%
  */
-#include <stdlib.h>
+
+#ifndef lint
+static char sccsid[] = "$Id: tcl.c,v 8.2 1995/11/18 12:59:10 bostic Exp $ (Berkeley) $Date: 1995/11/18 12:59:10 $";
+#endif /* not lint */
+
+#ifdef TCL_INTERP
 #include <sys/types.h>
 #include <sys/queue.h>
 #include <sys/time.h>
@@ -43,94 +22,223 @@
 #include <limits.h>
 #include <signal.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <tcl.h>
 #include <termios.h>
 #include <unistd.h>
-#include "compat.h"
-#include <db.h>
-#include <regex.h>
 
-#if 0
-#include <malloc.h>
-#endif
+#include "../common/common.h"
+#include "tcl_extern.h"
 
-#include "common.h"
+static void msghandler __P((SCR *, mtype_t, char *, size_t));
+static void noscreen __P((Tcl_Interp *, int, char *));
 
-#include "../api/api.h"
-
-#include <tcl.h>
-/* This file contains the TCL commands that are implemented in the api.c */
-/* for use by the interpreter.  */
+extern GS *__global_list;			/* XXX */
 
 /*
- * Tcl Command: viDelLine
- * Usage: viDelLine [screen] lineNum
- *
- * Deletes the line in lineNum in the current screen, unless another
- * screen is first.
+ * INITMESSAGE --
+ *	Macros to point messages at the Tcl message handler.
  */
+#define	INITMESSAGE							\
+	scr_msg = __global_list->scr_msg;				\
+	__global_list->scr_msg = msghandler;
+#define	ENDMESSAGE							\
+	__global_list->scr_msg = scr_msg;
 
-int 
+/*
+ * GETSCREENID --
+ *	Macro to get the specified screen pointer.
+ *
+ * XXX
+ * This is fatal.  We can't post a message into vi that we're unable to find
+ * the screen without first finding the screen... So, this must be the first
+ * thing a Tcl routine does, and, if it fails, the last as well.
+ */
+#define	GETSCREENID(sp, id, name) {					\
+	int __id = id;							\
+	char *__name = name;						\
+	if (((sp) = api_fscreen(__id, __name)) == NULL) {		\
+		noscreen(interp, __id, __name);				\
+		return (TCL_ERROR);					\
+	}								\
+}
+
+/*
+ * tcl_fscreen --
+ *	Return the screen id associated with file name.
+ *
+ * Tcl Command: viFindScreen
+ * Usage: viFindScreen file
+ */
+static int
+tcl_fscreen(clientData, interp, argc, argv)
+	ClientData clientData;
+	Tcl_Interp *interp;
+	int argc;
+	char **argv;
+{
+	SCR *sp;
+
+	if (argc != 2) {
+		Tcl_SetResult(interp, "Usage: viFindScreen file", TCL_STATIC);
+		return (TCL_ERROR);
+	}
+
+	GETSCREENID(sp, 0, argv[1]);
+
+	(void)sprintf(interp->result, "%d", sp->id);
+	return (TCL_OK);
+}
+
+/*
+ * tcl_aline --
+ *	-- Append the string text after the line in lineNumber.
+ *
+ * Tcl Command: viAppendLine
+ * Usage: viAppendLine screenId lineNumber text
+ */
+static int
+tcl_aline(clientData, interp, argc, argv)
+	ClientData clientData;
+	Tcl_Interp *interp;
+	int argc;
+	char **argv;
+{
+	SCR *sp;
+	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
+	int rval;
+
+	if (argc != 4) {
+		Tcl_SetResult(interp,
+		    "Usage: viAppendLine screenId lineNumber text", TCL_STATIC);
+		return (TCL_ERROR);
+	}
+
+	GETSCREENID(sp, atoi(argv[1]), NULL);
+	INITMESSAGE;
+	rval = api_aline(sp,
+	    (recno_t)strtoul(argv[2], NULL, 10), argv[3], strlen(argv[3]));
+	ENDMESSAGE;
+
+	return (rval ? TCL_ERROR : TCL_OK);
+}
+
+/*
+ * tcl_dline --
+ *	Delete lineNum.
+ *
+ * Tcl Command: viDelLine
+ * Usage: viDelLine screenId lineNum
+ */
+static int
 tcl_dline(clientData, interp, argc, argv)
 	ClientData clientData;
 	Tcl_Interp *interp;
 	int argc;
 	char **argv;
 {
-
 	SCR *sp;
-	int lineNum, last; 
+	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
+	int rval;
 
-	if (argc < 2 || argc > 3) {
-		Tcl_SetResult(interp, "Usage: viDelLine [screen] lineNumber",
-				TCL_STATIC);
-		return TCL_ERROR;
-	}
-
-	if (argc == 2) {
-	    lineNum = atoi(argv[1]);
-	    sp = api_gscr();
-	} else {
-	    lineNum = atoi(argv[2]);
-	    sp = (SCR *)atol(argv[1]);
-	}
-
-	if (api_lline(sp, &last)) {
-		Tcl_SetResult(interp, "NVI internal error.", TCL_STATIC);
-		return TCL_ERROR;
-	}
-
-	if (lineNum < 1) {
-		Tcl_SetResult(interp, "Error: lineNum must be > 0",
-				TCL_STATIC);
-		return TCL_ERROR;
-	}
-	if (lineNum > last) {	
-		Tcl_SetResult(interp, 
-			    "Error: lineNum must be less than the number of lines in the screen.",
-				TCL_STATIC);
-		return TCL_ERROR;
-	}
-
-	if (api_dline(sp, lineNum)) {
+	if (argc != 3) {
 		Tcl_SetResult(interp,
-			"Error: line could not be deleted.",
-			TCL_STATIC);
+		    "Usage: viDelLine screenId lineNumber", TCL_STATIC);
 		return (TCL_ERROR);
 	}
 
+	GETSCREENID(sp, atoi(argv[1]), NULL);
+	INITMESSAGE;
+	rval = api_dline(sp, (recno_t)strtoul(argv[2], NULL, 10));
+	ENDMESSAGE;
+
+	return (rval ? TCL_ERROR : TCL_OK);
+}
+
+/*
+ * tcl_gline --
+ *	Return lineNumber.
+ *
+ * Tcl Command: viGetLine
+ * Usage: viGetLine screenId lineNumber
+ */
+static int
+tcl_gline(clientData, interp, argc, argv)
+	ClientData clientData;
+	Tcl_Interp *interp;
+	int argc;
+	char **argv;
+{
+	SCR *sp;
+	size_t len;
+	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
+	int rval;
+	char *line, *p;
+
+	if (argc != 3) {
+		Tcl_SetResult(interp,
+		    "Usage: viGetLine screenId lineNumber", TCL_STATIC);
+		return (TCL_ERROR);
+	}
+	GETSCREENID(sp, atoi(argv[1]), NULL);
+	INITMESSAGE;
+	rval = api_gline(sp, (recno_t)strtoul(argv[2], NULL, 10), &p, &len);
+	ENDMESSAGE;
+
+	if (rval)
+		return (TCL_ERROR);
+
+	if ((line = malloc(len + 1)) == NULL)
+		exit(1);				/* XXX */
+	memmove(line, p, len);
+	line[len] = NULL;
+	Tcl_SetResult(interp, line, TCL_DYNAMIC);
+	free(line);
 	return (TCL_OK);
 }
 
 /*
- * Tcl Command: viLastLine
- * Usage: viLastLine [screen]
+ * tcl_iline --
+ *	Insert the string text after the line in lineNumber.
  *
- * Returns the last line in a screen.  If no scren is specified then the
- * default screen is used.
+ * Tcl Command: viInsertLine
+ * Usage: viInsertLine screenId lineNumber text
  */
+static int
+tcl_iline(clientData, interp, argc, argv)
+	ClientData clientData;
+	Tcl_Interp *interp;
+	int argc;
+	char **argv;
+{
+	SCR *sp;
+	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
+	int rval;
 
-int 
+	if (argc != 4) {
+		Tcl_SetResult(interp,
+		    "Usage: viInsertLine screenId lineNumber text", TCL_STATIC);
+		return (TCL_ERROR);
+	}
+
+	GETSCREENID(sp, atoi(argv[1]), NULL);
+	INITMESSAGE;
+	rval = api_iline(sp,
+	    (recno_t)strtoul(argv[2], NULL, 10), argv[3], strlen(argv[3]));
+	ENDMESSAGE;
+
+	return (rval ? TCL_ERROR : TCL_OK);
+}
+
+/*
+ * tcl_lline --
+ *	Return the last line in the screen.
+ *
+ * Tcl Command: viLastLine
+ * Usage: viLastLine screenId
+ */
+static int
 tcl_lline(clientData, interp, argc, argv)
 	ClientData clientData;
 	Tcl_Interp *interp;
@@ -139,355 +247,68 @@ tcl_lline(clientData, interp, argc, argv)
 {
 	SCR *sp;
 	recno_t last;
+	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
+	int rval;
 
-	if (argc > 2) {
-		Tcl_SetResult(interp, "Usage: viLastLine [screen]", TCL_STATIC);
-		return TCL_ERROR;
+	if (argc != 2) {
+		Tcl_SetResult(interp, "Usage: viLastLine screenId", TCL_STATIC);
+		return (TCL_ERROR);
 	}
 
-	if (argc == 1) {
-	    sp = api_gscr();
-	} else {
-	    sp = (SCR *)atol(argv[1]);
-	}
+	GETSCREENID(sp, atoi(argv[1]), NULL);
+	INITMESSAGE;
+	rval = api_lline(sp, &last);
+	ENDMESSAGE;
+	if (rval)
+		return (TCL_ERROR);
 
-	if (api_lline(sp, &last)) {
-		Tcl_SetResult(interp, "NVI internal error.", TCL_STATIC);
-		return TCL_ERROR;
-	} else {
-		sprintf(interp->result, "%d", last);
-		return TCL_OK;
-	}
-
+	(void)sprintf(interp->result, "%lu", (unsigned long)last);
+	return (TCL_OK);
 }
 
 /*
- * Tcl Command: viAppendLine
- * Usage: viAppendLine [screen] lineNumber text
+ * tcl_sline --
+ *	Set lineNumber to the text supplied.
  *
- * Append the string text after the line in lineNumber.  If no screen
- * is supplied then the default one is used.
- *
- */
-
-int 
-tcl_aline(clientData, interp, argc, argv)
-	ClientData clientData;
-	Tcl_Interp *interp;
-	int argc;
-	char **argv;
-{
-
-	SCR *sp;
-	CHAR_T *text;
-	int line;
-	recno_t last;
-
-
-	if (argc < 3 || argc > 4) {
-		Tcl_SetResult(interp, 
-				"Usage: viAppendLine [screen] lineNumber text",
-				TCL_STATIC);
-		return TCL_ERROR;
-	}
-
-	if (argc == 3) {
-		sp = api_gscr();
-		line = atoi(argv[1]);
-		text = argv[2];
-	} else {
-		sp = (SCR *)atol(argv[1]);
-		line = atoi(argv[2]);
-		text = argv[3];
-	}
-
-	if (api_lline(sp, &last)) {
-		Tcl_SetResult(interp, "could not get last line", TCL_STATIC);
-		return TCL_ERROR;
-	}
-
-	if (last < line) {
-		Tcl_SetResult(interp, "Last line past the end of screen.", 
-				TCL_STATIC);
-		return TCL_ERROR;
-	}
-
-	if (api_aline(sp, line, text, strlen(text))) {
-		Tcl_SetResult(interp, "could not append line", TCL_STATIC);
-		return TCL_ERROR;
-	}
-
-	return TCL_OK;
-}
-
-/*
- * Tcl Command: viInsertLine
- * Usage: viInsertLine [screen] lineNumber text
- *
- * Insert the string text after the line in lineNumber.  If no screen is
- * specified then use the default.
- *
- */
-
-int 
-tcl_iline(clientData, interp, argc, argv)
-	ClientData clientData;
-	Tcl_Interp *interp;
-	int argc;
-	char **argv;
-{
-
-	SCR *sp;
-	CHAR_T *text;
-	recno_t last;
-	int line;
-
-	if (argc < 3 || argc > 4) {
-		Tcl_SetResult(interp, 
-				"Usage: viInsertLine [screen] lineNumber text",
-				TCL_STATIC);
-		return TCL_ERROR;
-	}
-
-	if (argc == 3) {
-		sp = api_gscr();
-		line = atoi(argv[1]);
-		text = argv[2];
-	} else {
-		sp = (SCR *)atol(argv[1]);
-		line = atoi(argv[2]);
-		text = argv[3];
-	}
-
-	if (api_lline(sp, &last)) {
-		Tcl_SetResult(interp, "could not get last line", TCL_STATIC);
-		return (TCL_ERROR);
-	}
-
-	if (line > last) {
-		Tcl_SetResult(interp, "Error: line out of range.",
-		    TCL_STATIC);
-		return (TCL_ERROR);
-	}
-
-	if (api_iline(sp, line, text, strlen(text))) {
-		Tcl_SetResult(interp, "could not insert line", TCL_STATIC);
-		return TCL_ERROR;
-	}
-
-	return TCL_OK;
-}
-
-/*
- * Tcl Command: viGetLine
- * Usage: viGetLine [screen] lineNumber 
- *
- * Return the line in lineNumber.  If no screen is specified use the 
- * default.
- *
- */
-
-int 
-tcl_gline(clientData, interp, argc, argv)
-	ClientData clientData;
-	Tcl_Interp *interp;
-	int argc;
-	char **argv;
-{
-	SCR *sp;
-	char *tmp, *line;
-	size_t lenp;
-	recno_t last;
-	int lineNum;
-
-	if (argc < 2 || argc > 3) {
-		Tcl_SetResult(interp, "Usage: viGetLine [screen] lineNumber",
-				TCL_STATIC);
-		return TCL_ERROR;
-	}
-
-	if (argc == 2) {
-		sp = api_gscr();
-		lineNum = atoi(argv[1]);
-	} else {
-		sp = (SCR *)atol(argv[1]);
-		lineNum = atoi(argv[2]);
-	}
-
-	if (api_lline(sp, &last)) {
-		Tcl_SetResult(interp, "could not get last line", TCL_STATIC);
-		return (TCL_ERROR);
-	}
-
-	if (lineNum > last) {
-		Tcl_SetResult(interp, "Error: line out of range.",
-		    TCL_STATIC);
-		return (TCL_ERROR);
-	}
-
-	if (api_gline(sp, lineNum, &tmp, &lenp)) {
-		Tcl_SetResult(interp, "could not get line", TCL_STATIC);
-		return (TCL_ERROR);
-	} else {
-		line = malloc(lenp + 1);
-		if (line == NULL)
-			exit(1);
-		memmove(line, tmp, lenp);
-		line[lenp]=NULL;
-		Tcl_SetResult(interp, line, TCL_DYNAMIC);
-		free(line);
-		return (TCL_OK);
-	}
-}
-
-
-/*
  * Tcl Command: viSetLine
- * Usage: viSetLine [screen] lineNumber text
- *
- * Set the line in lineNumber to the text supplied.  If no screen is 
- * specified use the default.
- *
- *
+ * Usage: viSetLine screenId lineNumber text
  */
-
-int 
+static int
 tcl_sline(clientData, interp, argc, argv)
 	ClientData clientData;
 	Tcl_Interp *interp;
 	int argc;
 	char **argv;
-{ 
+{
 	SCR *sp;
-	CHAR_T *text;
-	recno_t last;
-	int line;
+	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
+	int rval;
 
-	if (argc < 3 || argc > 4) {
-		Tcl_SetResult(interp, 
-				"Usage: viSetLine [screen] lineNumber text",
-				TCL_STATIC);
-		return TCL_ERROR;
-	}
-
-	if (argc == 3) {
-		sp = api_gscr();
-		line = atoi(argv[1]);
-		text = argv[2];
-	} else {
-		sp = (SCR *)atol(argv[1]);
-		line = atoi(argv[2]);
-		text = argv[3];
-	}
-
-	if (api_lline(sp, &last)) {
-		Tcl_SetResult(interp, "could not get last line", TCL_STATIC);
+	if (argc != 4) {
+		Tcl_SetResult(interp,
+		    "Usage: viSetLine screenId lineNumber text", TCL_STATIC);
 		return (TCL_ERROR);
 	}
 
-	if (line > last) {
-		Tcl_SetResult(interp, "Error: line out of range.",
-		    TCL_STATIC);
-		return (TCL_ERROR);
-	}
+	GETSCREENID(sp, atoi(argv[1]), NULL);
+	INITMESSAGE;
+	rval = api_sline(sp,
+	    (recno_t)strtoul(argv[2], NULL, 10), argv[3], strlen(argv[3]));
+	ENDMESSAGE;
 
-	if (api_sline(sp, line, text, strlen(text))) {
-		Tcl_SetResult(interp, "could not set line", TCL_STATIC);
-		return TCL_ERROR;
-	}
-
-	return TCL_OK;
+	return (rval ? TCL_ERROR : TCL_OK);
 }
 
 /*
- * Tcl Command: viExCmd
- * Usage: viExCmd 
+ * tcl_getcursor --
+ *	Return the current cursor position as a list with two elements.
+ *	{line, column}.
  *
- * Execute an ex command.
- *
- */
-
-int 
-tcl_ex_exec(clientData, interp, argc, argv)
-	ClientData clientData;
-	Tcl_Interp *interp;
-	int argc;
-	char **argv;
-{
-	int i;
-	SCR *sp;
-	Tcl_DString command;	
-
-	sp = api_gscr();
-	Tcl_DStringInit(&command);
-
-	for (i = 1; i < argc; i++) {
-		Tcl_DStringAppend(&command, argv[i], strlen(argv[i]));		
-		Tcl_DStringAppend(&command, " ", 1);
-	}
-
-	if (api_ex_exec(sp, Tcl_DStringValue(&command), 
-			Tcl_DStringLength(&command))) {
-
-		Tcl_SetResult(interp, "Could not execute your command.",
-				TCL_STATIC);
-		Tcl_DStringFree(&command);
-		return TCL_ERROR;
-	}
-	Tcl_DStringFree(&command);
-	return TCL_OK;
-}
-
-/*
- * Tcl Command: viViCmd
- * Usage: viViCmd
- *
- * Execute a vi command.
- *
- */
-
-int 
-tcl_vi_exec(clientData, interp, argc, argv)
-	ClientData clientData;
-	Tcl_Interp *interp;
-	int argc;
-	char **argv;
-{
-
-	int i;
-	SCR *sp;
-	Tcl_DString command;	
-
-	sp = api_gscr();
-	Tcl_DStringInit(&command);
-
-	for (i = 1; i < argc; i++)
-		Tcl_DStringAppend(&command, argv[i], strlen(argv[i]));		
-
-	if (api_vi_exec(sp, Tcl_DStringValue(&command), 
-			Tcl_DStringLength(&command))) {
-
-		Tcl_SetResult(interp, "Could not execute your command.",
-				TCL_STATIC);
-		Tcl_DStringFree(&command);
-		return TCL_ERROR;
-	}
-	Tcl_DStringFree(&command);
-	return TCL_OK;
-
-}
-
-/*
  * Tcl Command: viGetCursor
- * Usage: viGetCursor [screen]
- *
- * Return the current cursor position as a list with two elements.
- * {line, column}.  If no scren is specified use the default.
- *
+ * Usage: viGetCursor screenId
  */
-
-int 
-tcl_getcur(clientData, interp, argc, argv)
+static int
+tcl_getcursor(clientData, interp, argc, argv)
 	ClientData clientData;
 	Tcl_Interp *interp;
 	int argc;
@@ -495,377 +316,204 @@ tcl_getcur(clientData, interp, argc, argv)
 {
 	MARK cursor;
 	SCR *sp;
-	char line[32], column[4];
+	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
+	int rval;
+	char buf[20];
 
-	if (argc < 1 || argc > 2) {
-		Tcl_SetResult(interp, "Usage: viGetCursor [screen]",
-			TCL_STATIC);
-		return TCL_ERROR;
+	if (argc != 2) {
+		Tcl_SetResult(interp,
+		    "Usage: viGetCursor screenId", TCL_STATIC);
+		return (TCL_ERROR);
 	}
 
-	if (argc == 1) {
-		sp = api_gscr();
-	} else {
-		sp = (SCR *)atol(argv[1]);
-	}
+	GETSCREENID(sp, atoi(argv[1]), NULL);
+	INITMESSAGE;
+	rval = api_getcursor(sp, &cursor);
+	ENDMESSAGE;
 
-	if (api_getcur(sp, &cursor)) {
-		Tcl_SetResult(interp, "Could not get cursor.",
-			TCL_STATIC);
-		return TCL_ERROR;
-	}
+	if (rval)
+		return (TCL_ERROR);
 
-	sprintf(line, "%d", cursor.lno);
-	sprintf(column, "%d", cursor.cno);
-	Tcl_AppendElement(interp, line);
-	Tcl_AppendElement(interp, column);
-
-	return TCL_OK;
+	(void)snprintf(buf, sizeof(buf), "%d", cursor.lno);
+	Tcl_AppendElement(interp, buf);
+	(void)snprintf(buf, sizeof(buf), "%d", cursor.cno);
+	Tcl_AppendElement(interp, buf);
+	return (TCL_OK);
 }
 
 /*
- * Tcl Command: viMsg
- * Usage: viMsg text
- * 
- * Set the message line to text.
+ * tcl_setcursor --
+ *	Set the cursor to the line and column numbers supplied.
  *
+ * Tcl Command: viSetCursor
+ * Usage: viSetCursor screenId line column
  */
+static int
+tcl_setcursor(clientData, interp, argc, argv)
+	ClientData clientData;
+	Tcl_Interp *interp;
+	int argc;
+	char **argv;
+{
+	MARK cursor;
+	SCR *sp;
+	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
+	int rval;
 
-int 
+	if (argc != 4) {
+		Tcl_SetResult(interp,
+		    "Usage: viSetCursor screenId line column", TCL_STATIC);
+		return (TCL_ERROR);
+	}
+
+	GETSCREENID(sp, atoi(argv[1]), NULL);
+	INITMESSAGE;
+	cursor.lno = atoi(argv[2]);
+	cursor.cno = atoi(argv[3]);
+	rval = api_setcursor(sp, &cursor);
+	ENDMESSAGE;
+
+	return (rval ? TCL_ERROR : TCL_OK);
+}
+
+/*
+ * tcl_msg --
+ *	Set the message line to text.
+ *
+ * Tcl Command: viMsg
+ * Usage: viMsg screenId text
+ */
+static int
 tcl_msg(clientData, interp, argc, argv)
 	ClientData clientData;
 	Tcl_Interp *interp;
 	int argc;
 	char **argv;
 {
-
 	SCR *sp;
 
-	sp = api_gscr();
-
-	if (argc != 2) {
+	if (argc != 3) {
 		Tcl_SetResult(interp, "Usage: viMsg text", TCL_STATIC);
-		return TCL_ERROR;
-	}
-
-	api_msgq(sp, M_INFO, argv[1]);
-
-	return TCL_OK;
-}
-
-/*
- * Tcl Command: viSetCursor
- * Usage: viSetCursor [screen] line column
- *
- * Set the cursor to the line and column numbers supplied.  If only one
- * argument is supplied take it as a line number.  If no screen is 
- * supplied then use the default.
- *
- *
- */
-
-int 
-tcl_setcur(clientData, interp, argc, argv)
-	ClientData clientData;
-	Tcl_Interp *interp;
-	int argc;
-	char **argv;
-{
-	MARK cursor;
-	SCR *sp;
-	recno_t last;
-
-	if ((argc < 3) || (argc > 4)) {
-		Tcl_SetResult(interp, "Usage: viSetCursor line column",
-				TCL_STATIC);
-		return TCL_ERROR;
-	}
-
-	if (argc == 3) {
-		sp = api_gscr();
-		cursor.lno = atoi(argv[1]);
-		cursor.cno = atoi(argv[2]);
-	} else {
-		sp = (SCR *)atol(argv[1]);
-		cursor.lno = atoi(argv[2]);
-		cursor.cno = atoi(argv[3]);
-	}
-
-	if (api_lline(sp, &last)) {
-		Tcl_SetResult(interp, "could not get last line", TCL_STATIC);
 		return (TCL_ERROR);
 	}
 
-	if (cursor.lno <= 0 || cursor.lno > last) {
-		Tcl_SetResult(interp, "Error: line out of range.", TCL_STATIC);
-		return (TCL_ERROR);
-	}
+	GETSCREENID(sp, atoi(argv[1]), NULL);
+	api_imessage(sp, argv[2]);
 
-	if (cursor.cno < 0) {
-		Tcl_SetResult(interp, "Error: column out of range.", 
-				TCL_STATIC);
-		return (TCL_ERROR);
-	}
-
-	if (api_setcur(sp, cursor)) {
-		Tcl_SetResult(interp, "Could not set cursor.",
-				TCL_STATIC);
-		return TCL_ERROR;
-	}
-
-	return TCL_OK;
-}
-		
-
-/*
- * Tcl Command: viGetMark
- * Usage: viGetMark [screen] name
- *
- * Get the named mark.
- *
- */
-
-int 
-tcl_getmark(clientData, interp, argc, argv)
-	ClientData clientData;
-	Tcl_Interp *interp;
-	int argc;
-	char **argv;
-{
-	SCR *sp;
-	MARK mp;
-	char line[32], column[4], markName;
-
-	if (argc < 2 || argc > 3) {
-		Tcl_SetResult(interp, "Usage: viGetMark [screen] name",
-				TCL_STATIC);
-		return TCL_ERROR;
-	}
-
-	if (argc == 2) {
-		sp = api_gscr();
-		markName = argv[1][0];
-	} else {
-		sp = (SCR *)atol(argv[1]);
-		markName = argv[2][0];
-	}
-
-	if (api_getmark(sp, markName, &mp)) {
-		Tcl_SetResult(interp, "Cannot get mark.", TCL_STATIC);
-		return TCL_ERROR;
-	}
-
-	sprintf(line, "%d", mp.lno);
-	sprintf(column, "%d", mp.cno);
-
-	Tcl_AppendElement(interp, line);
-	Tcl_AppendElement(interp, column);
-
-	return TCL_OK;
+	return (TCL_OK);
 }
 
 /*
- * Tcl Command: viSetMark
- * Usage: viSetMark [screen] name line column
+ * tcl_iscreen --
+ *	Create a new screen.  If a filename is specified then the screen
+ *	is opened with that file.
  *
- * Set a named mark at the line and column supplied.  If no screen is 
- * supplied the default is used.
- *
- */
-
-int 
-tcl_setmark(clientData, interp, argc, argv)
-	ClientData clientData;
-	Tcl_Interp *interp;
-	int argc;
-	char **argv;
-{
-	SCR *sp;
-	MARK mp;
-	CHAR_T markName;
-
-	/* Make sure that the name of the mark is only one character. */
-	if ((argc < 3) || (argc > 4)) {
-		Tcl_SetResult(interp, 
-				"Usage: viSetMark [scren] name line column", 
-				TCL_STATIC);
-		return TCL_ERROR;
-	}
-
-	if (argc == 3) {
-		sp = api_gscr();
-		markName = argv[1][0];
-		mp.lno = atoi(argv[2]);
-		mp.cno = atoi(argv[3]);
-	} else {
-		sp = (SCR *)atol(argv[1]);
-		markName = argv[2][0];
-		mp.lno = atoi(argv[3]);
-		mp.cno = atoi(argv[4]);
-	}
-
-	if (api_setmark(sp, markName, &mp)) {
-		Tcl_SetResult(interp, "Could not set mark.",
-				TCL_STATIC);
-		return TCL_ERROR;
-	}
-
-	return TCL_OK;
-
-}
-
-/*
  * Tcl Command: viNewScreen
- * Usage: viNewScreen [file]
- *
- * Create a new screen.  If a filename is specified then the screen
- * is opened with that file.
+ * Usage: viNewScreen screenId [file]
  */
-
-int 
+static int
 tcl_iscreen(clientData, interp, argc, argv)
 	ClientData clientData;
 	Tcl_Interp *interp;
 	int argc;
 	char **argv;
 {
+	SCR *sp;
+	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
+	int id, rval;
 
-	SCR *sp, *new;
-	char screen[32], *file;
-
-	if (argc < 1 || argc > 2) {
-		Tcl_SetResult(interp, "Usage: viNewScreen [file]", TCL_STATIC);
-		return TCL_ERROR;
+	if (argc != 2 && argc != 3) {
+		Tcl_SetResult(interp,
+		    "Usage: viNewScreen screenId [file]", TCL_STATIC);
+		return (TCL_ERROR);
 	}
 
-	sp = api_gscr();
+	GETSCREENID(sp, atoi(argv[1]), NULL);
+	INITMESSAGE;
+	rval = api_iscreen(sp, argv[2], &id);
+	ENDMESSAGE;
 
-	if (argc == 2)
-		file = argv[1];
-	else
-		file = NULL;
+	if (rval)
+		return (TCL_ERROR);
 
-	if (api_iscreen(sp, &screen, file)) {
-		Tcl_SetResult(interp, "Could not create new screen.",
-			TCL_STATIC);
-		return TCL_ERROR;
-	}
-
-	Tcl_SetResult(interp, screen, TCL_VOLATILE);
+	(void)sprintf(interp->result, "%d", id);
 	return (TCL_OK);
 }
 
 /*
- * Tcl Command: viEndScreen 
- * Usage: viEndScreen screenObject
+ * tcl_escreen --
+ *	End a screen.
  *
- * End a screen.
+ * Tcl Command: viEndScreen
+ * Usage: viEndScreen screenId
  */
-
-int 
+static int
 tcl_escreen(clientData, interp, argc, argv)
 	ClientData clientData;
 	Tcl_Interp *interp;
 	int argc;
 	char **argv;
 {
-	int i;
-	SCR *new, *scr;
+	SCR *sp;
+	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
+	int rval;
 
 	if (argc != 2) {
-		Tcl_SetResult(interp, "Usage: viEndScreen screenObj",
-				TCL_STATIC);
-		return TCL_ERROR;
+		Tcl_SetResult(interp,
+		     "Usage: viEndScreen screenId", TCL_STATIC);
+		return (TCL_ERROR);
 	}
 
-	scr = (SCR *)atol(argv[1]);
+	GETSCREENID(sp, atoi(argv[1]), NULL);
+	INITMESSAGE;
+	rval = api_escreen(sp);
+	ENDMESSAGE;
 
-	if (api_escreen(scr)) {
-		Tcl_SetResult(interp, "Could not delete screen.", 
-				TCL_STATIC);
-		return TCL_ERROR;
-	}
-
-	return TCL_OK;
+	return (rval ? TCL_ERROR : TCL_OK);
 }
 
 /*
+ * tcl_swscreen --
+ *	Change the current focus to screen.
+ *
  * Tcl Command: viSwitchScreen
- *
- * Usage: viSwitchScreen screen
- *
- * Change the current focus to the screen passed as an argument.
- *
+ * Usage: viSwitchScreen screenId screenId
  */
-int
+static int
 tcl_swscreen(clientData, interp, argc, argv)
 	ClientData clientData;
 	Tcl_Interp *interp;
 	int argc;
 	char **argv;
 {
-	SCR *current, *new;
+	SCR *sp, *new;
+	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
+	int rval;
 
-	if (argc != 2) {
-		Tcl_SetResult(interp, "Usage: viSwitchScreen screen", 
-			TCL_STATIC);
-		return (TCL_ERROR);
-	}
-
-	current = (SCR *)api_gscr();
-
-	new = (SCR *)atol(argv[1]);
-
-	if (api_swscreen(current, new)) {
-		Tcl_SetResult(interp, "Error: Could not switch screens.",
-			TCL_STATIC);
-		return (TCL_ERROR);
-	}
-
-	return (TCL_OK);
-}
-
-/*
- * Tcl Command: viFindScreen
- *
- * Usage: viFindScreen file
- *
- * Return the screen associated with a file.
- *
- */
-
-int
-tcl_fscreen(clientData, interp, argc, argv)
-	ClientData clientData;
-	Tcl_Interp *interp;
-	int argc;
-	char **argv;
-{
-	char screen[32];
-
-	if (argc != 2) {
-		Tcl_SetResult(interp, "Usage: viFindScreen file", TCL_STATIC);
-		return TCL_ERROR;
-	}
-
-	if (api_fscreen(api_gscr(), argv[1], &screen)) {
-		Tcl_SetResult(interp, "Could not find screen.",
+	if (argc != 3) {
+		Tcl_SetResult(interp,
+		    "Usage: viSwitchScreen cur_screenId new_screenId",
 		    TCL_STATIC);
 		return (TCL_ERROR);
 	}
 
-	Tcl_SetResult(interp, screen, TCL_VOLATILE);
-	return (TCL_OK);
+	GETSCREENID(sp, atoi(argv[1]), NULL);
+	INITMESSAGE;
+	GETSCREENID(new, atoi(argv[2]), NULL);
+	rval = api_swscreen(sp, new);
+	ENDMESSAGE;
+
+	return (rval ? TCL_ERROR : TCL_OK);
 }
 
 /*
- * Tcl Command: viMapKey
- * Usage: viMapKey key tclproc
+ * tcl_map --
+ *	Associate a key with a tcl procedure.
  *
- * Associate a key with a tcl procedure.
+ * Tcl Command: viMapKey
+ * Usage: viMapKey screenId key tclproc
  */
-
-int 
+static int
 tcl_map(clientData, interp, argc, argv)
 	ClientData clientData;
 	Tcl_Interp *interp;
@@ -873,38 +521,33 @@ tcl_map(clientData, interp, argc, argv)
 	char **argv;
 {
 	SCR *sp;
+	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
+	int rval;
 	char command[256];
 
-	if (argc != 3) {
-		Tcl_SetResult(interp, "Usage: viMapKey key tclproc",
-				TCL_STATIC);
-		return TCL_ERROR;
+	if (argc != 4) {
+		Tcl_SetResult(interp,
+		    "Usage: viMapKey screenId key tclproc", TCL_STATIC);
+		return (TCL_ERROR);
 	}
 
-	sp = api_gscr();
+	GETSCREENID(sp, atoi(argv[1]), NULL);
+	INITMESSAGE;
+	(void)snprintf(command, sizeof(command), ":tcl %s\n", argv[3]);
+	rval = api_map(sp, argv[2], command, strlen(command));
+	ENDMESSAGE;
 
-	strcpy(command, ":tcl ");
-	strcat(command, argv[2]);
-	strcat(command, "\n");
-
-	if (api_map(sp, argv[1], command)) {
-		Tcl_SetResult(interp, "Could not remap key",
-				TCL_STATIC);
-		return TCL_ERROR;
-	}
-
-	return TCL_OK;
-
+	return (rval ? TCL_ERROR : TCL_OK);
 }
 
 /*
- * Tcl Command: viUnmapKey
- * Usage: viUnmMapKey key 
+ * tcl_unmap --
+ *	Unmap a key.
  *
- * Dissociate a key from a tcl procedure.
+ * Tcl Command: viUnmapKey
+ * Usage: viUnmMapKey screenId key
  */
-
-int 
+static int
 tcl_unmap(clientData, interp, argc, argv)
 	ClientData clientData;
 	Tcl_Interp *interp;
@@ -912,33 +555,30 @@ tcl_unmap(clientData, interp, argc, argv)
 	char **argv;
 {
 	SCR *sp;
+	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
+	int rval;
 
-	if (argc != 2) {
-		Tcl_SetResult(interp, "Usage: viUnmapKey key",
-				TCL_STATIC);
-		return TCL_ERROR;
+	if (argc != 3) {
+		Tcl_SetResult(interp, "Usage: viUnmapKey key", TCL_STATIC);
+		return (TCL_ERROR);
 	}
 
-	sp = api_gscr();
+	GETSCREENID(sp, atoi(argv[1]), NULL);
+	INITMESSAGE;
+	rval = api_unmap(sp, argv[2]);
+	ENDMESSAGE;
 
-	if (api_unmap(sp, argv[1])) {
-		Tcl_SetResult(interp, "Could not unmap key",
-				TCL_STATIC);
-		return TCL_ERROR;
-	}
-
-	return TCL_OK;
-
+	return (rval ? TCL_ERROR : TCL_OK);
 }
 
 /*
- * Tcl Command: viSetOpt
- * Usage: viSetOpt value
+ * tcl_opts_set --
+ *	Set an option.
  *
- * Set an option.
+ * Tcl Command: viSetOpt
+ * Usage: viSetOpt screenId command
  */
-
-int 
+static int
 tcl_opts_set(clientData, interp, argc, argv)
 	ClientData clientData;
 	Tcl_Interp *interp;
@@ -946,112 +586,131 @@ tcl_opts_set(clientData, interp, argc, argv)
 	char **argv;
 {
 	SCR *sp;
+	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
+	int rval;
 
-	if (argc != 2) {
-		Tcl_SetResult(interp, "Usage: viSetOpt value",
-				TCL_STATIC);
-		return TCL_ERROR;
+	if (argc != 3) {
+		Tcl_SetResult(interp, "Usage: viSetOpt command", TCL_STATIC);
+		return (TCL_ERROR);
 	}
 
-	sp = api_gscr();
+	GETSCREENID(sp, atoi(argv[1]), NULL);
+	INITMESSAGE;
+	rval = api_opts_set(sp, argv[2]);
+	ENDMESSAGE;
 
-	if (api_opts_set(sp, argv[1])) {
-		Tcl_SetResult(interp, "Could not set option.",
-				TCL_STATIC);
-		return TCL_ERROR;
-	}
-
-	return TCL_OK;
-
+	return (rval ? TCL_ERROR : TCL_OK);
 }
 
 /*
+ * tcl_opts_get --
+ 	Return the value of an option.
+ *	
  * Tcl Command: viGetOpt
- * Usage: viGetOpt name 
- *
- * Return the value of an option.
+ * Usage: viGetOpt screenId option
  */
-
-int 
-tcl_opt_get(clientData, interp, argc, argv)
+static int
+tcl_opts_get(clientData, interp, argc, argv)
 	ClientData clientData;
 	Tcl_Interp *interp;
 	int argc;
 	char **argv;
 {
 	SCR *sp;
-	CHAR_T *value;
+	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
+	int rval;
+	char *value;
 
-	if (argc != 2) {
-		Tcl_SetResult(interp, "Usage: viGetOpt name",
-				TCL_STATIC);
-		return TCL_ERROR;
+	if (argc != 3) {
+		Tcl_SetResult(interp, "Usage: viGetOpt option", TCL_STATIC);
+		return (TCL_ERROR);
 	}
 
-	sp = api_gscr();
+	GETSCREENID(sp, atoi(argv[1]), NULL);
+	INITMESSAGE;
+	rval = api_opts_get(sp, argv[2], &value);
+	ENDMESSAGE;
+	if (rval)
+		return (TCL_ERROR);
 
-	if (api_opt_get(sp, argv[1], &value)) {
-		Tcl_SetResult(interp, "Option not found.",
-				TCL_STATIC);
-		return TCL_ERROR;
-	} else {
-		Tcl_SetResult(interp, value, TCL_DYNAMIC);
-		free(value);
-		return TCL_OK;
-	}
-
+	Tcl_SetResult(interp, value, TCL_DYNAMIC);
+	free(value);
+	return (TCL_OK);
 }
 
-/* The following is the generic routine that creates the TCL */
-/* commands used by nvi. */
-
-int 
-Tcl_AppInit(interp) 
-	Tcl_Interp *interp;	
+/*
+ * tcl_init --
+ *	Create the TCL commands used by nvi.
+ *
+ * PUBLIC: int tcl_init __P((GS *));
+ */
+int
+tcl_init(gp)
+	GS *gp;
 {
-	if (Tcl_Init(interp) == TCL_ERROR) 
-		return TCL_ERROR;
+	gp->interp = Tcl_CreateInterp();
+	if (Tcl_Init(gp->interp) == TCL_ERROR)
+		return (1);
 
-	Tcl_CreateCommand(interp, "viDelLine", tcl_dline,
-			    (ClientData) NULL, (Tcl_CmdDeleteProc *)NULL);
-	Tcl_CreateCommand(interp, "viLastLine", tcl_lline,
-			    (ClientData) NULL, (Tcl_CmdDeleteProc *)NULL);
-	Tcl_CreateCommand(interp, "viAppendLine", tcl_aline,
-			    (ClientData) NULL, (Tcl_CmdDeleteProc *)NULL);
-	Tcl_CreateCommand(interp, "viInsertLine", tcl_iline,
-			    (ClientData) NULL, (Tcl_CmdDeleteProc *)NULL);
-	Tcl_CreateCommand(interp, "viGetLine", tcl_gline,
-			(ClientData) NULL, (Tcl_CmdDeleteProc *)NULL);
-	Tcl_CreateCommand(interp, "viSetLine", tcl_sline,
-			(ClientData) NULL, (Tcl_CmdDeleteProc *)NULL);
-	Tcl_CreateCommand(interp, "viSetCursor", tcl_setcur,
-			(ClientData) NULL, (Tcl_CmdDeleteProc *)NULL);
-	Tcl_CreateCommand(interp, "viGetCursor", tcl_getcur,
-			(ClientData) NULL, (Tcl_CmdDeleteProc *)NULL);
-	Tcl_CreateCommand(interp, "viExCmd", tcl_ex_exec,
-			(ClientData) NULL, (Tcl_CmdDeleteProc *)NULL);
-	Tcl_CreateCommand(interp, "viGetMark", tcl_getmark,
-			(ClientData) NULL, (Tcl_CmdDeleteProc *)NULL);
-	Tcl_CreateCommand(interp, "viSetMark", tcl_setmark,
-			(ClientData) NULL, (Tcl_CmdDeleteProc *)NULL);
-	Tcl_CreateCommand(interp, "viMsg", tcl_msg,
-			(ClientData) NULL, (Tcl_CmdDeleteProc *)NULL);
-	Tcl_CreateCommand(interp, "viNewScreen", tcl_iscreen,
-			(ClientData) NULL, (Tcl_CmdDeleteProc *)NULL);
-	Tcl_CreateCommand(interp, "viEndScreen", tcl_escreen,
-			(ClientData) NULL, (Tcl_CmdDeleteProc *)NULL);
-	Tcl_CreateCommand(interp, "viFindScreen", tcl_fscreen,
-			(ClientData) NULL, (Tcl_CmdDeleteProc *)NULL);
-	Tcl_CreateCommand(interp, "viSwitchScreen", tcl_swscreen,
-			(ClientData) NULL, (Tcl_CmdDeleteProc *)NULL);
-	Tcl_CreateCommand(interp, "viMapKey", tcl_map,
-			(ClientData) NULL, (Tcl_CmdDeleteProc *)NULL);
-	Tcl_CreateCommand(interp, "viUnmapKey", tcl_unmap,
-			(ClientData) NULL, (Tcl_CmdDeleteProc *)NULL);
-	Tcl_CreateCommand(interp, "viSetOpt", tcl_opts_set,
-			(ClientData) NULL, (Tcl_CmdDeleteProc *)NULL);
-	Tcl_CreateCommand(interp, "viGetOpt", tcl_opt_get,
-			(ClientData) NULL, (Tcl_CmdDeleteProc *)NULL);
-
-	return TCL_OK;
+#define	TCC(name, function) {						\
+	Tcl_CreateCommand(gp->interp, name, function,			\
+	    (ClientData)NULL, (Tcl_CmdDeleteProc *)NULL);		\
 }
+	TCC("viAppendLine", tcl_aline);
+	TCC("viDelLine", tcl_dline);
+	TCC("viEndScreen", tcl_escreen);
+	TCC("viFindScreen", tcl_fscreen);
+	TCC("viGetCursor", tcl_getcursor);
+	TCC("viGetLine", tcl_gline);
+	TCC("viGetOpt", tcl_opts_get);
+	TCC("viInsertLine", tcl_iline);
+	TCC("viLastLine", tcl_lline);
+	TCC("viMapKey", tcl_map);
+	TCC("viMsg", tcl_msg);
+	TCC("viNewScreen", tcl_iscreen);
+	TCC("viSetCursor", tcl_setcursor);
+	TCC("viSetLine", tcl_sline);
+	TCC("viSetOpt", tcl_opts_set);
+	TCC("viSwitchScreen", tcl_swscreen);
+	TCC("viUnmapKey", tcl_unmap);
+
+	return (0);
+}
+
+/*
+ * msghandler --
+ *	Tcl message routine so that error messages are processed in
+ *	Tcl, not in nvi.
+ */
+static void
+msghandler(sp, mtype, msg, len)
+	SCR *sp;
+	mtype_t mtype;
+	char *msg;
+	size_t len;
+{
+	/* Replace the trailing <newline> with an EOS. */
+	msg[len - 1] = '\0';
+
+	Tcl_SetResult(sp->gp->interp, msg, TCL_VOLATILE);
+}
+
+/*
+ * noscreen --
+ *	Tcl message if can't find the requested screen.
+ */
+static void
+noscreen(interp, id, name)
+	Tcl_Interp *interp;
+	int id;
+	char *name;
+{
+	char buf[256];
+
+	if (name == NULL)
+		(void)snprintf(buf, sizeof(buf), "unknown screen id: %d", id);
+	else
+		(void)snprintf(buf, sizeof(buf), "unknown screen: %s", name);
+	Tcl_SetResult(interp, buf, TCL_VOLATILE);
+}
+#endif /* TCL_INTERP */

@@ -1,4 +1,4 @@
-#	$Id: errors.tcl,v 8.1 1995/11/05 10:33:29 bostic Exp $ (Berkeley) $Date: 1995/11/05 10:33:29 $
+#	$Id: errors.tcl,v 8.2 1995/11/18 12:59:07 bostic Exp $ (Berkeley) $Date: 1995/11/18 12:59:07 $
 #
 # File: errors.tcl
 #
@@ -14,9 +14,9 @@ proc findErr {} {
 	set errLine [lindex [viGetCursor $errScreen] 0]
 	set currLine [split [viGetLine $errScreen $errLine] :]
 	set currFile [lindex $currLine 0]
-	set fileScreen [viNewScreen $currFile]
+	set fileScreen [viNewScreen $errScreen $currFile]
 	viSetCursor $fileScreen [lindex $currLine 1] 1
-	viMapKey  nextErr
+	viMapKey $viScreenId  nextErr
 }
 
 proc nextErr {} {
@@ -31,14 +31,14 @@ proc nextErr {} {
 	} else {
 		viEndScreen $fileScreen
 		set currFile [lindex $currLine 0]
-		set fileScreen[viNewScreen $currFile]
+		set fileScreen[viNewScreen $errScreen $currFile]
 		viSetCursor $fileScreen [lindex $currLine 1] 0
 	}
 }
 
 proc initErr {} {
+	global viScreenId
 	global errScreen
-	set errScreen [viNewScreen make.out]
-	viMapKey  findErr
+	set errScreen [viNewScreen $viScreenId make.out]
+	viMapKey $viScreenId  findErr
 }
-

@@ -1,7 +1,8 @@
-#	$Id: mailprocs.tcl,v 8.1 1995/11/05 10:33:36 bostic Exp $ (Berkeley) $Date: 1995/11/05 10:33:36 $
+#	$Id: mailprocs.tcl,v 8.2 1995/11/18 12:59:08 bostic Exp $ (Berkeley) $Date: 1995/11/18 12:59:08 $
 #
 proc validLine {} {
-	set line [viGetLine [lindex [viGetCursor] 0]]
+	global viScreenId
+	set line [viGetLine $viScreenId [lindex [viGetCursor $viScreenId] 0]]
 	if {[string compare [lindex [split $line :] 0]	"To"] == 0} {
 		set addrs [lindex [split $line :] 1]
 		foreach name [split $addrs ,] {
@@ -30,16 +31,18 @@ proc valid {target} {
 }
 
 proc isValid {target} {
+	global viScreenId
 	set address [valid $target]
 	if {$address != 0} {
-		viMsg "$target is [string trim $address]"
+		viMsg $viScreenId "$target is [string trim $address]"
 	} else {
-		viMsg "$target not found"
+		viMsg $viScreenId "$target not found"
 	}
 }
 
 proc isAliasedLine {} {
-	set line [viGetLine [lindex [viGetCursor] 0]]
+	global viScreenId
+	set line [viGetLine $viScreenId [lindex [viGetCursor $viScreenId] 0]]
 	if {[string match [lindex [split $line :] 0] "*To"] == 0} {
 		set addrs [lindex [split $line :] 1]
 		foreach name [split $addrs ,] {
@@ -65,12 +68,13 @@ proc aliased {target} {
 }
 
 proc isAliased {target} {
+	global viScreenId
 	set found [aliased $target]
 
 	if {$found} {
-		viMsg "$target is aliased to [string trim $name]"
+		viMsg $viScreenId "$target is aliased to [string trim $name]"
 	} else {
-		viMsg "$target not aliased"
+		viMsg $viScreenId "$target not aliased"
 	}
 }
 
@@ -83,9 +87,10 @@ proc appendAlias {target address} {
 }
 
 proc expand {} {
-	set row [lindex [viGetCursor] 0]]
-	set column [lindex [viGetCursor] 1]]
-	set line [viGetLine $row]
+	global viScreenId
+	set row [lindex [viGetCursor $viScreenId] 0]]
+	set column [lindex [viGetCursor $viScreenId] 1]]
+	set line [viGetLine $viScreenId $row]
 	while {$column < [string length $line] && \
 		[string index $line $column] != ' '} {
 		append $target [string index $line $column]
@@ -94,5 +99,6 @@ proc expand {} {
 	set found [isValid $target]
 }
 
-viMapKey  isAliasedLine
-viMapKey  validLine
+global viScreenId
+viMapKey $viScreenId  isAliasedLine
+viMapKey $viScreenId  validLine

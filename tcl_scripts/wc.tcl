@@ -1,12 +1,16 @@
-#	$Id: wc.tcl,v 8.1 1995/11/05 10:33:41 bostic Exp $ (Berkeley) $Date: 1995/11/05 10:33:41 $
+#	$Id: wc.tcl,v 8.2 1995/11/18 12:59:12 bostic Exp $ (Berkeley) $Date: 1995/11/18 12:59:12 $
 #
 proc wc {} {
-	set lines [viLastLine]
+	global viScreenId
+	global viStartLine
+	global viStopLine
+
+	set lines [viLastLine $viScreenId]
 	set output ""
 	set words 0
-	for {set i 1} {$i <= $lines} {incr i} {
-		set outLine [split [string trim [viGetLine $i]]]
+	for {set i $viStartLine} {$i <= $viStopLine} {incr i} {
+		set outLine [split [string trim [viGetLine $viScreenId $i]]]
 		set words [expr $words + [llength $outLine]]
 	}
-	viMsg "$words words"
+	viMsg $viScreenId "$words words"
 }
