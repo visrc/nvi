@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 5.4 1992/05/27 10:35:56 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:35:56 $";
+static char sccsid[] = "$Id: v_scroll.c,v 5.5 1992/06/05 11:06:52 bostic Exp $ (Berkeley) $Date: 1992/06/05 11:06:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -16,6 +16,7 @@ static char sccsid[] = "$Id: v_scroll.c,v 5.4 1992/05/27 10:35:56 bostic Exp $ (
 #include "vi.h"
 #include "options.h"
 #include "vcmd.h"
+#include "screen.h"
 #include "extern.h"
 
 #define	DOWN(lno) {							\
@@ -63,7 +64,7 @@ v_home(vp, fm, tm, rp)
 	size_t len;
 	u_long lno;
 
-	lno = topline + (vp->flags & VC_C1SET ? vp->count : 0);
+	lno = curf->top + (vp->flags & VC_C1SET ? vp->count : 0);
 
 	DOWN(lno);
 	return (v_nonblank(rp));
@@ -87,7 +88,7 @@ v_middle(vp, fm, tm, rp)
 			lno = 1;
 		rp->lno = lno;
 	} else
-		rp->lno = topline + LINES / 2;
+		rp->lno = curf->top + LINES / 2;
 	return (v_nonblank(rp));
 }
 
@@ -222,27 +223,23 @@ v_linedown(vp, fm, tm, rp)
 
 	off = vp->flags & VC_C1SET ? vp->count : 1;
 
-	/* If the line exists, move to it. */
+	/* Can't go past the end of the file. */
 	if (file_gline(curf, BOTLINE + off, NULL) == NULL) {
-		v_eof(fm);
-		return (1);
+		off = file_lline(curf) - BOTLINE;
+		if (off == 0) {
+			v_eof(fm);
+			return (1);
+		}
 	}
 
-	/*
-	 * Alter the topline.
-	 * XXX
-	 * This is really sleazy; the problem is that the cursor doesn't
-	 * move based on the command movement, instead it moves relative
-	 * to the top line of the screen.  *snarl*
-	 */
-	topline += vp->count;
+	/* Set the number of lines to scroll. */
+	curf->scrollup = off;
 
 	/*
-	 * The cursor moves up, staying with its original line, unless it
-	 * reaches the top of the screen.
+	 * The cursor moves up, staying with its original line,
+	 * unless it reaches the top of the screen.
 	 */
-	rp->lno =
-	    vp->count >= fm->lno - topline ? 1 : fm->lno - vp->count;
+	rp->lno = fm->lno == curf->top ? fm->lno + off : fm->lno;
 	rp->cno = fm->cno;
 	return (0);
 }
