@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 8.13 1993/11/20 10:05:40 bostic Exp $ (Berkeley) $Date: 1993/11/20 10:05:40 $";
+static char sccsid[] = "$Id: ex_read.c,v 8.14 1993/11/28 12:37:18 bostic Exp $ (Berkeley) $Date: 1993/11/28 12:37:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -39,7 +39,13 @@ ex_read(sp, ep, cmdp)
 	int rval;
 	char *bp, *name;
 
-	/* If "read !", it's a pipe from a utility. */
+	/*
+	 * If "read !", it's a pipe from a utility.
+	 *
+	 * !!!
+	 * Historical vi wouldn't undo a filter read, for no apparent
+	 * reason.
+	 */
 	if (F_ISSET(cmdp, E_FORCE)) {
 		if (cmdp->argv[0][0] == '\0') {
 			msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
