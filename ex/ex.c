@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.59 1993/02/13 13:36:35 bostic Exp $ (Berkeley) $Date: 1993/02/13 13:36:35 $";
+static char sccsid[] = "$Id: ex.c,v 5.60 1993/02/14 12:33:15 bostic Exp $ (Berkeley) $Date: 1993/02/14 12:33:15 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -659,7 +659,7 @@ linespec(cmd, cp)
 	EXCMDARG *cp;
 {
 	MARK cur, savecursor, sm, *mp;
-	recno_t num, total;
+	long num, total;
 	int savecursor_set;
 	u_char *ep;
 
@@ -730,8 +730,8 @@ linespec(cmd, cp)
 			if ((mp = f_search(curf,
 			    &sm, cmd, &ep, SEARCH_MSG | SEARCH_PARSE)) == NULL)
 				return (NULL);
-			curf->lno = mp->lno;
-			curf->cno = mp->cno;
+			cur.lno = curf->lno = mp->lno;
+			cur.cno = curf->cno = mp->cno;
 			cmd = ep;
 			break;
 		case '?':		/* Search backward. */
@@ -740,30 +740,33 @@ linespec(cmd, cp)
 			if ((mp = b_search(curf,
 			    &sm, cmd, &ep, SEARCH_MSG | SEARCH_PARSE)) == NULL)
 				return (NULL);
-			curf->lno = mp->lno;
-			curf->cno = mp->cno;
+			cur.lno = curf->lno = mp->lno;
+			cur.cno = curf->cno = mp->cno;
 			cmd = ep;
+			break;
+		case '+':
+		case '-':
+			cur.lno = curf->lno;
+			cur.cno = curf->cno;
 			break;
 		default:
 			goto done;
 		}
 
 		/*
-		 * Evaluate any offset.  Offsets are +/- any number, or, any
-		 * number of +/- signs, or any combination thereof.
+		 * Evaluate any offset.  Offsets are +/- any number, or,
+		 * any number of +/- signs, or any combination thereof.
 		 */
-		for (total = 0;
-		    *cmd == '-' || *cmd == '+'; total += num) {
+		for (total = 0; *cmd == '-' || *cmd == '+'; total += num) {
 			num = *cmd == '-' ? -1 : 1;
 			if (isdigit(*++cmd)) {
 				num *= USTRTOL(cmd, &ep, 10);
 				cmd = ep;
 			}
 		}
-		if (total < 0 && -total >= cur.lno) {
+		if (total < 0 && -total > cur.lno) {
 			bell();
-			if (ISSET(O_VERBOSE))
-				msg("Line number less than 1.");
+			msg("Reference to a line number less than 0.");
 			return (NULL);
 		}
 		cur.lno += total;
