@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.3 1993/08/07 10:02:41 bostic Exp $ (Berkeley) $Date: 1993/08/07 10:02:41 $";
+static char sccsid[] = "$Id: key.c,v 8.4 1993/08/25 16:42:31 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:42:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -23,9 +23,19 @@ static char sccsid[] = "$Id: key.c,v 8.3 1993/08/07 10:02:41 bostic Exp $ (Berke
 #include "vi.h"
 #include "recover.h"
 
+/*
+ * There are two sets of input buffers used by ex/vi.  The first is the input
+ * from the user, either via the tty or an initial command supplied with the
+ * ex or edit commands or similar mechanism.  The second is the the keys from
+ * the first after mapping has been done.  Also, executable buffer expansions
+ * are pushed into this second buffer.  The reason that there are two is that
+ * we only want to flush the latter buffer if a command fails, i.e. if the user
+ * enters "@a1G", we don't want to flush the "1G" keys because "@a" failed.
+ */ 
+
 static void	check_sigwinch __P((SCR *));
 static void	onwinch __P((int));
-static int	term_read __P((SCR *, char *, int, int));
+static int	term_read __P((SCR *, int *, int));
 
 typedef struct _klist {
 	char *ts;				/* Key's termcap string. */
@@ -112,34 +122,47 @@ term_init(sp)
 }
 
 /*
- * term_flush_pseudo --
- *	Flush the pseudo keys if an error occurred during the map.
- */
-void
-term_flush_pseudo(sp)
-	SCR *sp;
-{
-	if (sp->atkey_len != 0) {
-		free(sp->atkey_buf);
-		sp->atkey_len = 0;
-	}
-	sp->mappedkey = NULL;
-}
-
-/*
- * term_more_pseudo --
- *	Return if there are more pseudo keys.
+ * term_push --
+ *	Push keys onto the front of a buffer.
  */
 int
-term_more_pseudo(sp)
+term_push(sp, ibp, push, len)
 	SCR *sp;
+	IBUF *ibp;
+	char *push;
+	size_t len;
 {
-	return (sp->atkey_len || sp->mappedkey != NULL);
+	size_t nlen;
+
+	/* If we have room, stuff the keys into the buffer. */
+	if (len <= ibp->next) {
+		ibp->next -= len;
+		ibp->cnt += len;
+		memmove(ibp->buf + ibp->next, push, len);
+		return (0);
+	}
+
+	/* Get enough space plus a little extra. */
+	nlen = ibp->cnt + len;
+	BINC(sp, ibp->buf, ibp->len, nlen + 64);
+
+	/*
+	 * If there is currently characters in the buffer,
+	 * shift them up, and leave a little extra room.
+	 */
+#define	TERM_PUSH_SHIFT	20
+	if (ibp->cnt)
+		memmove(ibp->buf + len + TERM_PUSH_SHIFT,
+		    ibp->buf + ibp->next, ibp->cnt);
+	memmove(ibp->buf + TERM_PUSH_SHIFT, push, len);
+	ibp->next = TERM_PUSH_SHIFT;
+	ibp->cnt += len;
+	return (0);
 }
 
 /*
  * term_waiting --
- *	Return keys waiting.
+ *	Return if keys waiting.
  */
 int
 term_waiting(sp)
@@ -147,7 +170,7 @@ term_waiting(sp)
 {
 	struct timeval t;
 
-	if (sp->atkey_len || sp->mappedkey != NULL)
+	if (sp->key.cnt != 0 || sp->tty.cnt != 0)
 		return (1);
 
 	t.tv_sec = t.tv_usec = 0;
@@ -157,8 +180,7 @@ term_waiting(sp)
 
 /*
  * term_key --
- *	This function reads in a keystroke, as well as handling
- *	mapped keys and executed cut buffers.
+ *	This function returns the next key to the calling function.
  */
 int
 term_key(sp, flags)
@@ -169,99 +191,89 @@ term_key(sp, flags)
 	SEQ *qp;
 	int ispartial, nr;
 
-	/* Sync the recovery file if necessary. */
+	/*
+	 * Sync the recovery file if necessary.  This has nothing to do
+	 * with input keys, but it's something that can't be done via
+	 * a signal mechanism because of race conditions, and which needs
+	 * to be done periodically.  I feel confident that this routine
+	 * will be executed, ah, periodically.
+	 */
 	if (F_ISSET(sp->ep, F_RCV_ALRM)) {
-		(void)rcv_sync(sp, sp->ep);
 		F_CLR(sp->ep, F_RCV_ALRM);
+		(void)rcv_sync(sp, sp->ep);
 	}
 
-	/* If in the middle of an @ macro, return the next char. */
-	if (sp->atkey_len) {
-		ch = *sp->atkey_cur++;
-		if (--sp->atkey_len == 0)
-			free(sp->atkey_buf);
-		goto ret;
+	/* If we have expanded keys, return the next one. */
+kloop:	if (sp->key.cnt) {
+		ch = sp->key.buf[sp->key.next++];
+		if (--sp->key.cnt == 0)
+			sp->key.next = 0;
+		goto beauty;
 	}
 
-	/* If returning a mapped key, return the next char. */
-	if (sp->mappedkey) {
-		ch = *sp->mappedkey;
-		if (*++sp->mappedkey == '\0')
-			sp->mappedkey = NULL;
-		goto ret;
-	}
-
-	/* Read in more keys if necessary. */
-	if (sp->nkeybuf == 0) {
-		/* Read the keystrokes. */
-		sp->nkeybuf = term_read(sp, sp->keybuf, sizeof(sp->keybuf), 0);
-		sp->nextkey = 0;
-		
-		/*
-		 * If no keys read, then we've reached EOF of an ex script.
-		 * XXX
-		 * This is just wrong...
-		 */
-		if (sp->nkeybuf == 0) {
-			F_SET(sp, S_EXIT_FORCE);
-			return(0);
-		}
-	}
+	/*
+	 * Read in more keys if none in the queue.  Since no timeout
+	 * is requested, term_read will either return 1 or will read
+	 * some number of characters.
+	 */
+	if (sp->tty.cnt == 0 && term_read(sp, &nr, 0))
+		return (1);
 
 	/*
 	 * Check for mapped keys. If get a partial match, copy the current
 	 * keys down in memory to maximize the space for new keys, and try
-	 * to read more keys to complete the map.  Max map is sizeof(keybuf)
-	 * and probably not worth fixing.
+	 * to read more keys to complete the map.
 	 */
 	if (LF_ISSET(TXT_MAPCOMMAND | TXT_MAPINPUT)) {
-retry:		qp = seq_find(sp, &sp->keybuf[sp->nextkey], sp->nkeybuf,
+mloop:		qp = seq_find(sp, &sp->tty.buf[sp->tty.next], sp->tty.cnt,
 		    LF_ISSET(TXT_MAPCOMMAND) ? SEQ_COMMAND : SEQ_INPUT,
 		    &ispartial);
 		if (!ispartial) {
 			if (qp == NULL)
 				goto nomap;
-			sp->nkeybuf -= qp->ilen;
-			sp->nextkey += qp->ilen;
-			if (qp->output[1] == '\0')
-				ch = *qp->output;
-			else {
-				sp->mappedkey = qp->output;
-				ch = *sp->mappedkey++;
-			}
-			goto ret;
+			sp->tty.cnt -= qp->ilen;
+			if (sp->tty.cnt == 0)
+				sp->tty.next = 0;
+			else
+				sp->tty.next += qp->ilen;
+
+			if (O_ISSET(sp, O_REMAP)) {
+				if (term_push(sp,
+				    &sp->tty, qp->output, qp->olen))
+					goto err;
+				goto mloop;
+			} else
+				if (term_push(sp,
+				    &sp->key, qp->output, qp->olen)) {
+err:					msgq(sp, M_ERR,
+					    "Error: keys flushed: %s.",
+					    strerror(errno));
+					TERM_KEY_FLUSH(sp);
+				}
+			goto kloop;
 		}
-		if (sizeof(sp->keybuf) == sp->nkeybuf) {
-			msgq(sp, M_ERR,
-			    "Partial map is too long; keys corrupted.");
-			goto nomap;
-		} else {
-			memmove(&sp->keybuf[sp->nextkey],
-			    sp->keybuf, sp->nkeybuf);
-			sp->nextkey = 0;
-			nr = term_read(sp, sp->keybuf + sp->nkeybuf,
-			    sizeof(sp->keybuf) - sp->nkeybuf, 1);
-			if (nr) {
-				sp->nkeybuf += nr;
-				goto retry;
-			}
-		}
+		if (term_read(sp, &nr, 1))
+			return (1);
+		if (nr)
+			goto mloop;
 	}
 
-nomap:	--sp->nkeybuf;
-	ch = sp->keybuf[sp->nextkey++];
+nomap:	ch = sp->tty.buf[sp->tty.next++];
+	if (--sp->tty.cnt == 0)
+		sp->tty.next = 0;
 
 	/*
-	 * O_BEAUTIFY eliminates all control characters except tab,
-	 * newline, form-feed and escape.
+	 * O_BEAUTIFY eliminates all control characters except
+	 * escape, form-feed, newline and tab.
 	 */
-ret:	if (LF_ISSET(TXT_BEAUTIFY) && O_ISSET(sp, O_BEAUTIFY)) {
-		if (isprint(ch) || sp->special[ch] == K_ESCAPE ||
-		    sp->special[ch] == K_FORMFEED || sp->special[ch] == K_NL ||
+beauty:	if (LF_ISSET(TXT_BEAUTIFY) && O_ISSET(sp, O_BEAUTIFY)) {
+		if (isprint(ch) ||
+		    sp->special[ch] == K_ESCAPE ||
+		    sp->special[ch] == K_FORMFEED ||
+		    sp->special[ch] == K_NL ||
 		    sp->special[ch] == K_TAB)
 			return (ch);
-		sp->s_bell(sp);
-		return (term_key(sp, flags));
+		goto kloop;
 	}
 	return (ch);
 }
@@ -269,12 +281,18 @@ ret:	if (LF_ISSET(TXT_BEAUTIFY) && O_ISSET(sp, O_BEAUTIFY)) {
 static int __check_sig_winch;				/* XXX GLOBAL */
 static int __set_sig_winch;				/* XXX GLOBAL */
 
+/*
+ * term_read --
+ *	Read characters from the input.
+ *
+ * XXX
+ * If we ever fail to read any characters, we set the forced exit flag
+ * and leave.  This is almost certainly wrong.
+ */
 static int
-term_read(sp, buf, len, timeout)
+term_read(sp, nrp, timeout)
 	SCR *sp;
-	char *buf;		/* Where to store the characters. */
-	int len;		/* Max characters to read. */
-	int timeout;		/* If timeout set. */
+	int *nrp, timeout;
 {
 	struct timeval t, *tp;
 	int nr;
@@ -286,16 +304,30 @@ term_read(sp, buf, len, timeout)
 	}
 
 	/*
-	 * If reading from a file or pipe, never timeout.  This
-	 * also affects the way that EOF is detected.
+	 * If we're reading less than 20 characters, up the size of the
+	 * tty buffer.  This shouldn't ever happen, other than the first
+	 * time through, but it's possible if a map were large enough.
+	 */
+	if (sp->tty.len - sp->tty.cnt < 20)
+		BINC(sp, sp->tty.buf, sp->tty.len, sp->tty.len + 64);
+
+	*nrp = 0;
+
+	/*
+	 * If reading from a file or pipe, never timeout.
+	 * This affects the way that EOF is detected.
 	 */
 	if (!F_ISSET(sp, S_ISFROMTTY)) {
-		if ((nr = read(STDIN_FILENO, buf, len)) == 0)
-			F_SET(sp, S_EXIT_FORCE);
-		return (0);
+		if ((nr = read(STDIN_FILENO, sp->tty.buf + sp->tty.cnt,
+		    sp->tty.len - sp->tty.cnt)) > 0) {
+			sp->tty.cnt += *nrp = nr;
+			return (0);
+		}
+		F_SET(sp, S_EXIT_FORCE);
+		return (1);
 	}
 
-	/* Compute the timeout value. */
+	/* If there's a time limit on the read, compute the timeout value. */
 	if (timeout) {
 		t.tv_sec = O_VAL(sp, O_KEYTIME) / 10;
 		t.tv_usec = (O_VAL(sp, O_KEYTIME) % 10) * 100000L;
@@ -313,27 +345,26 @@ term_read(sp, buf, len, timeout)
 					check_sigwinch(sp);
 					continue;
 				}
-				msgq(sp, M_ERR,
-				    "Terminal read error: %s", strerror(errno));
-				return (0);
+				goto err;
 			case 0:			/* Timeout. */
 				return (0);
-		}
-		switch (nr = read(STDIN_FILENO, buf, len)) {
+			}
+		switch (nr = read(STDIN_FILENO,
+		    sp->tty.buf + sp->tty.cnt, sp->tty.len - sp->tty.cnt)) {
+		case 0:				/* EOF. */
+			goto eof;
 		case -1:			/* Error or interrupt. */
 			if (errno == EINTR) {
 				check_sigwinch(sp);
 				continue;
 			}
-			F_SET(sp, S_EXIT_FORCE);
-			msgq(sp, M_ERR,
+err:			msgq(sp, M_ERR,
 			    "Terminal read error: %s", strerror(errno));
-			return (0);
-		case 0:				/* EOF. */
-			F_SET(sp, S_EXIT_FORCE);
-			return (0);
+eof:			F_SET(sp, S_EXIT_FORCE);
+			return (1);
 		default:
-			return (nr);
+			sp->tty.cnt += *nrp = nr;
+			return (0);
 		}
 	}
 	/* NOTREACHED */
