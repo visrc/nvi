@@ -1,14 +1,15 @@
-#	$Id: Makefile,v 8.4 1994/05/23 14:19:13 mckusick Exp $ (Berkeley) $Date: 1994/05/23 14:19:13 $
+# $Id: Makefile,v 8.5 1996/06/27 19:33:50 bostic Exp $ (Berkeley) $Date: 1996/06/27 19:33:50 $
 
-DIR=	usd/12.exref
-SRCS=	ex.rm
-MACROS=	-ms
-CLEANFILES=summary.*
+ROFF=	groff
+TBL=	tbl
 
-paper.ps: ${SRCS} summary.ps
-	${TBL} ${SRCS} | ${ROFF} > ${.TARGET}
+all: exref.ps summary.ps
+
+exref.ps: ex.rm
+	${TBL} ex.rm | ${ROFF} -ms > $@
 
 summary.ps: ex.summary
-	${TBL} ex.summary | ${ROFF} > ${.TARGET}
+	${TBL} ex.summary | ${ROFF} > $@
 
-.include <bsd.doc.mk>
+clean:
+	rm -f exref.ps summary.ps
