@@ -4,10 +4,8 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 5.4 1992/04/28 17:42:25 bostic Exp $ (Berkeley) $Date: 1992/04/28 17:42:25 $
+ *	$Id: key.h,v 5.5 1992/05/15 11:06:08 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:06:08 $
  */
-
-#define	ESCAPE		'\033'		/* Escape character. */
 
 #define	GB_BS		0x01		/* Backspace erases past command. */
 #define	GB_ESC		0x02		/* Escape executes command. */
@@ -26,10 +24,9 @@ extern u_char *atkeybuf;		/* Base of shared at buffer. */
 extern u_char *atkeyp;			/* Next char of shared at buffer. */
 extern u_long atkeybuflen;		/* Remaining keys in shared @ buffer. */
 
-char	*gb __P((int, size_t *, u_int));
-int	 gb_inc __P((void));
-void	 gb_init __P((void));
-
+int	gb __P((int, char **, size_t *, u_int));
+int	gb_inc __P((void));
+void	gb_init __P((void));
 
 /*
  * Vi makes the screen ready for ex to print, but there are special ways that
@@ -41,42 +38,42 @@ void	 gb_init __P((void));
  *
  * XXX
  * Currently, there's a bug.  The msg line isn't getting erased when the line
- * is used again without an intervening repaint, so there can be garabage on
+ * is used again without an intervening repaint, so there can be garbage on
  * the end of the line.  The fix is to change curses to support a "force this
  * line to be written" semantic.
  */
 /* Start the sequence. */
-#define	EX_PRSTART(overwrite) { \
-	if (mode == MODE_VI) { \
-		if (ex_prstate == PR_NONE) { \
-			if (overwrite) { \
-				while (ex_prerase--) { \
-					(void)putchar('\b'); \
-					(void)putchar(' '); \
-					(void)putchar('\b'); \
-				} \
-				(void)putchar('\r'); \
-				ex_prstate = PR_STARTED; \
-			} else { \
-				(void)putchar('\n'); \
-				ex_prstate = PR_PRINTED; \
-			} \
-		}  else if (ex_prstate == PR_STARTED) { \
-			(void)putchar('\n'); \
-			ex_prstate = PR_PRINTED; \
-		} \
-	} else \
-		(void)putchar('\n'); \
+#define	EX_PRSTART(overwrite) {						\
+	if (mode == MODE_VI) {						\
+		if (ex_prstate == PR_NONE) {				\
+			if (overwrite) {				\
+				while (ex_prerase--) {			\
+					(void)putchar('\b');		\
+					(void)putchar(' ');		\
+					(void)putchar('\b');		\
+				}					\
+				(void)putchar('\r');			\
+				ex_prstate = PR_STARTED;		\
+			} else {					\
+				(void)putchar('\n');			\
+				ex_prstate = PR_PRINTED;		\
+			}						\
+		}  else if (ex_prstate == PR_STARTED) {			\
+			(void)putchar('\n');				\
+			ex_prstate = PR_PRINTED;			\
+		}							\
+	} else								\
+		(void)putchar('\n');					\
 }
 
 /* Print a newline. */
-#define	EX_PRNEWLINE { \
-	(void)putchar('\n'); \
-	ex_prstate = PR_PRINTED; \
+#define	EX_PRNEWLINE {							\
+	(void)putchar('\n');						\
+	ex_prstate = PR_PRINTED;					\
 }
 
 /* Print a trailing newline, if necessary. */
-#define	EX_PRTRAIL { \
-	if (mode != MODE_VI || ex_prstate == PR_PRINTED) \
-		(void)putchar('\n'); \
+#define	EX_PRTRAIL {							\
+	if (mode != MODE_VI || ex_prstate == PR_PRINTED)		\
+		(void)putchar('\n');					\
 }
