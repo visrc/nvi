@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 10.12 1995/09/27 11:31:05 bostic Exp $ (Berkeley) $Date: 1995/09/27 11:31:05 $";
+static char sccsid[] = "$Id: v_ex.c,v 10.13 1995/09/28 10:42:53 bostic Exp $ (Berkeley) $Date: 1995/09/28 10:42:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -263,7 +263,7 @@ v_filter(sp, vp)
 
 	/* Get the command from the user. */
 	if (v_tcmd(sp, vp,
-	    '!', TXT_BS | TXT_CR | TXT_ESCAPE | TXT_PROMPT))
+	    '!', TXT_BS | TXT_CR | TXT_ESCAPE | TXT_FILEC | TXT_PROMPT))
 		return (1);
 
 	/*
@@ -369,7 +369,8 @@ v_ex(sp, vp)
 		 */
 		if (!EXCMD_RUNNING(sp->gp)) {
 			/* Get a command. */
-			if (v_tcmd(sp, vp, ':', TXT_BS | TXT_PROMPT))
+			if (v_tcmd(sp,
+			    vp, ':', TXT_BS | TXT_FILEC | TXT_PROMPT))
 				return (1);
 
 			/* If the user didn't enter anything, we're done. */
@@ -395,8 +396,7 @@ v_ex(sp, vp)
 		}
 
 		/* Call the ex parser. */
-		if (ex_cmd(sp))
-			return (1);
+		(void)ex_cmd(sp);
 
 		/* Return regardless if we left the screen .*/
 		can_continue = !F_ISSET(sp, S_EXIT | S_EXIT_FORCE | S_SSWITCH);
