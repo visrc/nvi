@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 10.3 1995/06/09 12:52:23 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:52:23 $";
+static char sccsid[] = "$Id: v_ex.c,v 10.4 1995/06/15 14:48:45 bostic Exp $ (Berkeley) $Date: 1995/06/15 14:48:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -450,7 +450,7 @@ v_ex_td2(sp, vp)
 		 * or <newline>, but this broke historic users badly.
 		 */
 		isc = 1;
-		if (vs_msgflush(sp, &isc, NULL))
+		if (vs_msgflush(sp, 0, &isc, NULL))
 			return (1);
 		return (isc ? v_ex(sp, vp) : 0);
 	case ES_RUNNING:
@@ -511,15 +511,13 @@ v_ex_done(sp, vp)
 
 
 	/*
-	 * If ex entered canonical mode for some reason, we have to wait to
-	 * ensure that the user saw any messages and reset the terminal.  The
-	 * entire screen will need repainting.
+	 * If ex entered canonical mode for some reason, wait to ensure that
+	 * the user saw any output and reset the terminal.  The entire screen
+	 * will need to be redrawn (there may have been vi messages at the
+	 * bottom of the screen when we entered canonical mode) and repainted
+	 * (ex may have trashed the screen).
 	 */
 	if (F_ISSET(sp, S_EX_CANON)) {
-		if (sp->gp->scr_canon(sp, 0))
-			return (1);
-		F_CLR(sp, S_EX_CANON);
-
 		if (F_ISSET(sp, S_EX_WROTE)) {
 			F_CLR(sp, S_EX_WROTE);
 			(void)write(STDOUT_FILENO,
@@ -535,9 +533,11 @@ v_ex_done(sp, vp)
 			vip->lcontinue = vip->linecount = vip->totalcount = 0;
 		}
 
-		F_SET(sp, S_SCR_REDRAW);
+		if (sp->gp->scr_canon(sp, 0))
+			return (1);
+
+		F_SET(sp, S_SCR_REDRAW | S_SCR_REFRESH);
 		(void)vs_refresh(sp);
 	}
-
 	return (0);
 }
