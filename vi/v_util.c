@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_util.c,v 10.7 1995/09/25 10:43:11 bostic Exp $ (Berkeley) $Date: 1995/09/25 10:43:11 $";
+static char sccsid[] = "$Id: v_util.c,v 10.8 1995/10/04 12:38:43 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:38:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,12 +40,12 @@ v_eof(sp, mp)
 	recno_t lno;
 
 	if (mp == NULL)
-		v_message(sp, NULL, VIM_EOF);
+		v_emsg(sp, NULL, VIM_EOF);
 	else {
 		if (file_lline(sp, &lno))
 			return;
 		if (mp->lno >= lno)
-			v_message(sp, NULL, VIM_EOF);
+			v_emsg(sp, NULL, VIM_EOF);
 		else
 			msgq(sp, M_BERR, "195|Movement past the end-of-file");
 	}
@@ -65,14 +65,14 @@ v_eol(sp, mp)
 	size_t len;
 
 	if (mp == NULL)
-		v_message(sp, NULL, VIM_EOL);
+		v_emsg(sp, NULL, VIM_EOL);
 	else {
 		if (file_gline(sp, mp->lno, &len) == NULL) {
 			FILE_LERR(sp, mp->lno);
 			return;
 		}
 		if (mp->cno == len - 1)
-			v_message(sp, NULL, VIM_EOL);
+			v_emsg(sp, NULL, VIM_EOL);
 		else
 			msgq(sp, M_BERR, "196|Movement past the end-of-line");
 	}
@@ -139,13 +139,13 @@ v_isempty(p, len)
 }
 
 /*
- * v_message --
- *	Display a few common messages.
+ * v_emsg --
+ *	Display a few common vi messages.
  *
- * PUBLIC: void v_message __P((SCR *, char *, vim_t));
+ * PUBLIC: void v_emsg __P((SCR *, char *, vim_t));
  */
 void
-v_message(sp, p, which)
+v_emsg(sp, p, which)
 	SCR *sp;
 	char *p;
 	vim_t which;

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 10.16 1995/10/03 13:38:17 bostic Exp $ (Berkeley) $Date: 1995/10/03 13:38:17 $";
+static char sccsid[] = "$Id: vi.c,v 10.17 1995/10/04 12:38:23 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:38:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -476,7 +476,7 @@ v_cmd(sp, dp, vp, ismotion, comcountp, mappedp)
 	if (key == '"') {
 		cpart = ISPARTIAL;
 		if (ismotion != NULL) {
-			v_message(sp, NULL, VIM_COMBUF);
+			v_emsg(sp, NULL, VIM_COMBUF);
 			return (GC_ERR);
 		}
 		KEY(vp->buffer, 0);
@@ -507,7 +507,7 @@ v_cmd(sp, dp, vp, ismotion, comcountp, mappedp)
 			return (GC_ERR);
 		}
 		if (ismotion != NULL) {
-			v_message(sp, NULL, VIM_COMBUF);
+			v_emsg(sp, NULL, VIM_COMBUF);
 			return (GC_ERR);
 		}
 		KEY(vp->buffer, 0);
@@ -519,7 +519,7 @@ v_cmd(sp, dp, vp, ismotion, comcountp, mappedp)
 	/* Check for an OOB command key. */
 	cpart = ISPARTIAL;
 	if (key > MAXVIKEY) {
-		v_message(sp, KEY_NAME(sp, key), VIM_NOCOM);
+		v_emsg(sp, KEY_NAME(sp, key), VIM_NOCOM);
 		return (GC_ERR);
 	}
 	kp = &vikeys[vp->key = key];
@@ -543,7 +543,7 @@ v_cmd(sp, dp, vp, ismotion, comcountp, mappedp)
 	 */
 	if (kp->func == NULL) {
 		if (key != '.') {
-			v_message(sp, KEY_NAME(sp, key),
+			v_emsg(sp, KEY_NAME(sp, key),
 			    ev.e_value == K_ESCAPE ? VIM_NOCOM_B : VIM_NOCOM);
 			return (GC_ERR);
 		}
@@ -624,7 +624,7 @@ usage:			if (ismotion == NULL)
 				s = tmotion.usage;
 			else
 				s = vikeys[ismotion->key].usage;
-			v_message(sp, s, VIM_USAGE);
+			v_emsg(sp, s, VIM_USAGE);
 			return (GC_ERR);
 		}
 	}
@@ -747,7 +747,7 @@ v_motion(sp, dm, vp, mappedp)
 		if (file_gline(sp, vp->m_stop.lno, &len) == NULL) {
 			if (vp->m_stop.lno != 1 ||
 			   vp->key != 'c' && vp->key != '!') {
-				v_message(sp, NULL, VIM_EMPTY);
+				v_emsg(sp, NULL, VIM_EMPTY);
 				return (1);
 			}
 			vp->m_stop.cno = 0;
@@ -803,7 +803,7 @@ v_motion(sp, dm, vp, mappedp)
 		if (!file_eline(sp, vp->m_stop.lno)) {
 			if (vp->m_stop.lno != 1 ||
 			   vp->key != 'c' && vp->key != '!') {
-				v_message(sp, NULL, VIM_EMPTY);
+				v_emsg(sp, NULL, VIM_EMPTY);
 				return (1);
 			}
 			vp->m_stop.cno = 0;
