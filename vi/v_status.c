@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_status.c,v 5.25 1993/05/15 21:25:20 bostic Exp $ (Berkeley) $Date: 1993/05/15 21:25:20 $";
+static char sccsid[] = "$Id: v_status.c,v 5.26 1993/05/21 10:33:53 bostic Exp $ (Berkeley) $Date: 1993/05/21 10:33:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -54,7 +54,7 @@ status(sp, ep, lno, showlast)
 #else
 	pid = "";
 #endif
-	ro = F_ISSET(sp, F_RDONLY) ||
+	ro = F_ISSET(ep, F_RDONLY) ||
 	    O_ISSET(sp, O_READONLY) ? ", readonly" : "";
 	if (showlast) {
 		if (file_lline(sp, ep, &last))
