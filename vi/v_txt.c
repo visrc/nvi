@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.23 1993/10/04 19:57:49 bostic Exp $ (Berkeley) $Date: 1993/10/04 19:57:49 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.24 1993/10/05 10:46:12 bostic Exp $ (Berkeley) $Date: 1993/10/05 10:46:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -484,12 +484,6 @@ k_escape:		if (tp->insert && tp->overwrite)
 				abort();
 			}
 			break;
-		case K_CNTRLT:			/* Add autoindent char. */
-			if (!LF_ISSET(TXT_CNTRLT))
-				goto ins_ch;
-			if (txt_indent(sp, tp))
-				break;
-			break;
 		case K_VERASE:			/* Erase the last character. */
 			/*
 			 * If can erase over the prompt, return.  Len is 0
@@ -636,6 +630,12 @@ k_escape:		if (tp->insert && tp->overwrite)
 			tp->overwrite += sp->cno - max;
 			sp->cno = max;
 			break;
+		case K_CNTRLT:			/* Add autoindent char. */
+			if (!LF_ISSET(TXT_CNTRLT))
+				goto ins_ch;
+			if (txt_indent(sp, tp))
+				ERR;
+			goto ebuf_chk;
 		case K_CNTRLZ:
 			(void)sp->s_suspend(sp);
 			break;
@@ -690,7 +690,7 @@ ins_ch:			if (isblank(ch) && lch == L_NOTSPACE && !replay) {
 			 * when there's a change to a mark and the user puts
 			 * in more characters than the length of the motion.
 			 */
-			if (sp->cno >= tp->len) {
+ebuf_chk:		if (sp->cno >= tp->len) {
 				TBINC(sp, tp->lb, tp->lb_len, tp->len + 1);
 				LF_SET(TXT_APPENDEOL);
 				tp->lb[sp->cno] = CURSOR_CHAR;
