@@ -4,6 +4,7 @@
 
 #include "curses.h"
 
+#define	TAB	8				/* XXX */
 #define	BLKSIZE	2048
 #define	REG	register
 #define	UCHAR(c)	((u_char)(c))
@@ -47,7 +48,7 @@ extern struct _viflags
 #define READONLY	0x0002	/* the file is read-only */
 #define HADNUL		0x0004	/* the file contained NUL characters */
 #define MODIFIED	0x0008	/* the file has been modified */
-#define NOFILE		0x0010	/* no name is known for the current text */
+#define NONAME		0x0010	/* no name is known for the current text */
 #define ADDEDNL		0x0020	/* newlines were added to the file */
 #define HADBS		0x0040	/* backspace chars were lost from the file */
 
@@ -276,9 +277,6 @@ extern MARK	v_again();	/* & */
 #ifndef NO_AT
  extern MARK	v_at();		/* @ */
 #endif
-#ifndef NO_POPUP
- extern MARK	v_popup();	/* \ */
-#endif
 
 /*----------------------------------------------------------------------*/
 /* These describe what mode we're in */
@@ -289,18 +287,16 @@ extern MARK	v_again();	/* & */
 #define	MODE_QUIT	4
 extern int	mode;
 
-#define WHEN_VICMD	1	/* getkey: we're reading a VI command */
-#define WHEN_VIINP	2	/* getkey: we're in VI's INPUT mode */
-#define WHEN_VIREP	4	/* getkey: we're in VI's REPLACE mode */
-#define WHEN_EX		8	/* getkey: we're in EX mode */
-#define WHEN_MSG	16	/* getkey: we're at a "more" prompt */
-#define WHEN_POPUP	32	/* getkey: we're in the pop-up menu */
-#define WHEN_REP1	64	/* getkey: we're getting a single char for 'r' */
-#define WHEN_CUT	128	/* getkey: we're getting a cut buffer name */
-#define WHEN_MARK	256	/* getkey: we're getting a mark name */
-#define WHEN_CHAR	512	/* getkey: we're getting a destination for f/F/t/T */
-#define WHEN_INMV	4096	/* in input mode, interpret the key in VICMD mode */
-#define WHEN_FREE	8192	/* free the keymap after doing it once */
+#define WHEN_VICMD	0x0001	/* getkey: reading a VI command */
+#define WHEN_VIINP	0x0002	/* getkey: in VI's INPUT mode */
+#define WHEN_VIREP	0x0004	/* getkey: in VI's REPLACE mode */
+#define WHEN_EX		0x0008	/* getkey: in EX mode */
+#define WHEN_MSG	0x0010	/* getkey: at a "more" prompt */
+#define WHEN_REP1	0x0040	/* getkey: getting a single char for 'r' */
+#define WHEN_CUT	0x0080	/* getkey: getting a cut buffer name */
+#define WHEN_MARK	0x0100	/* getkey: getting a mark name */
+#define WHEN_CHAR	0x0200	/* getkey: getting a destination for f/F/t/T */
+#define WHEN_FREE	0x2000	/* free the keymap after doing it once */
 #define WHENMASK	(WHEN_VICMD|WHEN_VIINP|WHEN_VIREP|WHEN_REP1|WHEN_CUT|WHEN_MARK|WHEN_CHAR)
 
 #ifndef NO_VISIBLE
