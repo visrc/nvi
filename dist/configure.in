@@ -950,7 +950,9 @@ if test "$vi_cv_dl" = yes; then
 	LIBS="-ldl $LIBS"
 else
 	LIBS="-ldb $LIBS"
-	LDFLAGS="`echo $with_db3/lib | sed "$LRscript"` $LDFLAGS"
+	if test "X$with_db3" != "X"; then
+		LDFLAGS="`echo $with_db3/lib | sed "$LRscript"` $LDFLAGS"
+	fi
 fi
 
 
