@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.110 1996/06/11 20:16:44 bostic Exp $ (Berkeley) $Date: 1996/06/11 20:16:44 $
+dnl	$Id: configure.in,v 8.111 1996/06/12 11:54:58 bostic Exp $ (Berkeley) $Date: 1996/06/12 11:54:58 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(../common/main.c)
@@ -313,28 +313,20 @@ AC_TYPE_SIZE_T
 AC_STRUCT_TM
 
 dnl Checks for library functions.
-AC_REPLACE_FUNCS(bsearch)
-AC_REPLACE_FUNCS(gethostname)
-AC_REPLACE_FUNCS(getopt)
-AC_REPLACE_FUNCS(memchr)
-AC_REPLACE_FUNCS(memmove)
-AC_REPLACE_FUNCS(memset)
-AC_REPLACE_FUNCS(mkstemp)
-AC_FUNC_MMAP
-AC_REPLACE_FUNCS(mmap)
-AC_REPLACE_FUNCS(realloc)
+  AC_CHECK_FUNCS(bsearch gethostname getopt memchr memcpy memmove memset)
+AC_REPLACE_FUNCS(bsearch gethostname getopt memchr memcpy memmove memset)
+  AC_CHECK_FUNCS(mkstemp mmap realloc snprintf strdup strerror strpbrk strtol)
+AC_REPLACE_FUNCS(mkstemp mmap realloc snprintf strdup strerror strpbrk strtol)
+  AC_CHECK_FUNCS(strtoul vsnprintf)
+AC_REPLACE_FUNCS(strtoul vsnprintf)
+
 AC_CHECK_FUNCS(select)
 AC_CHECK_FUNCS(setenv, [need_env=no], [need_env=yes])
-AC_REPLACE_FUNCS(snprintf)
-AC_REPLACE_FUNCS(strdup)
-AC_REPLACE_FUNCS(strerror)
-AC_REPLACE_FUNCS(strpbrk)
 AC_CHECK_FUNCS(strsep, [need_strsep=no], [need_strsep=yes])
-AC_REPLACE_FUNCS(strtol)
-AC_REPLACE_FUNCS(strtoul)
 AC_CHECK_FUNCS(unsetenv,, [need_env=yes])
+
+AC_FUNC_MMAP
 AC_FUNC_VFORK
-AC_REPLACE_FUNCS(vsnprintf)
 
 dnl If we needed setenv or unsetenv, add in the clib/env.c replacement file.
 if test "$need_env" = yes; then
