@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 8.29 1993/12/02 10:54:51 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:54:51 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 8.30 1993/12/02 13:54:08 bostic Exp $ (Berkeley) $Date: 1993/12/02 13:54:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,7 +32,7 @@ static char sccsid[] = "$Id: ex_cmd.c,v 8.29 1993/12/02 10:54:51 bostic Exp $ (B
  *	2		-- flags: [-.+^]
  *	3		-- flags: [-.+^=]
  *	b		-- buffer
- *	C		-- count
+ *	C		-- count (zero disallowed).
  *	c		-- count as an address offset
  *	f[N#][or]	-- file (a number or N, optional or required)
  *	l		-- line
@@ -41,6 +41,7 @@ static char sccsid[] = "$Id: ex_cmd.c,v 8.29 1993/12/02 10:54:51 bostic Exp $ (B
  *	s		-- string
  *	W		-- word string
  *	w[N#][or]	-- word (a number or N, optional or required)
+ *	z		-- count (zero allowed).
  */
 EXCMDLIST const cmds[] = {
 /* C_BANG */
@@ -400,7 +401,7 @@ EXCMDLIST const cmds[] = {
 	    "copy lines to a cut buffer"},
 /* C_Z */
 	{"z",		ex_z,		E_ADDR1|E_NOGLOBAL|E_NORC,
-	    "3C1",
+	    "3z1",
 	    "[line] z [-|.|+|^|=] [count] [flags]",
 	    "display different screens of the file"},
 	{NULL},
