@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_line.c,v 10.19 1996/09/26 22:55:46 bostic Exp $ (Berkeley) $Date: 1996/09/26 22:55:46 $";
+static const char sccsid[] = "$Id: vs_line.c,v 10.20 1996/12/11 13:06:57 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:06:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -54,7 +54,7 @@ vs_line(sp, smp, yp, xp)
 	char *p, *cbp, *ecbp, cbuf[128];
 
 #if defined(DEBUG) && 0
-	TRACE(sp, "vs_line: row %u: line: %u off: %u\n",
+	trace(sp, "vs_line: row %u: line: %u off: %u\n",
 	    smp - HMAP, smp->lno, smp->off);
 #endif
 	/*
