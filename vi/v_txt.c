@@ -8,11 +8,12 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 10.12 1995/09/28 10:41:59 bostic Exp $ (Berkeley) $Date: 1995/09/28 10:41:59 $";
+static char sccsid[] = "$Id: v_txt.c,v 10.13 1995/09/29 09:19:30 bostic Exp $ (Berkeley) $Date: 1995/09/29 09:19:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 #include <sys/queue.h>
+#include <sys/stat.h>
 #include <sys/time.h>
 
 #include <bitstring.h>
@@ -31,7 +32,8 @@ static int	 txt_abbrev __P((SCR *, TEXT *, CHAR_T *, int, int *, int *));
 static void	 txt_ai_resolve __P((SCR *, TEXT *));
 static TEXT	*txt_backup __P((SCR *, TEXTH *, TEXT *, u_int32_t *));
 static void	 txt_err __P((SCR *, TEXTH *));
-static int	 txt_filec __P((SCR *, TEXT *));
+static int	 txt_fc __P((SCR *, TEXT *, int *));
+static int	 txt_fc_col __P((SCR *, int, ARGS **));
 static int	 txt_hex __P((SCR *, TEXT *));
 static int	 txt_margin __P((SCR *, TEXT *, TEXT *, int *, u_int32_t));
 static void	 txt_nomorech __P((SCR *));
@@ -208,6 +210,7 @@ v_txt(sp, vp, tm, lp, len, prompt, ai_line, flags)
 	u_int32_t flags;	/* TXT_* flags. */
 {
 	EVENT ev, *evp;		/* Current event. */
+	EVENT fc;		/* File name completion event. */
 	GS *gp;
 	TEXT *ntp, *tp;		/* Input text structures. */
 	TEXT ait;		/* Autoindent text structure. */
@@ -223,6 +226,7 @@ v_txt(sp, vp, tm, lp, len, prompt, ai_line, flags)
 	size_t tcol;		/* Temporary column. */
 	u_int32_t ec_flags;	/* Input mapping flags. */
 	int abcnt, ab_turnoff;	/* Abbreviation character count, switch. */
+	int filec_redraw;	/* Redraw after the file completion routine. */
 	int hexcnt;		/* Hex character count. */
 	int showmatch;		/* Showmatch set on this character. */
 	int rcount;		/* Replay count. */
@@ -404,6 +408,7 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 	}
 
 	/* Other text input mode setup. */
+	filec_redraw = 0;
 	hexcnt = 0;
 	quote = Q_NOTSET;
 	carat = C_NOTSET;
@@ -427,6 +432,19 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 next:	if (v_event_get(sp, evp, ec_flags))
 		return (1);
 
+	/* If file completion overwrote part of the screen, clean up. */
+	if (filec_redraw) {
+		filec_redraw = 0;
+
+		fc.e_event = E_REPAINT;
+		fc.e_flno = vip->totalcount >=
+		    sp->rows ? 1 : sp->rows - vip->totalcount;
+		fc.e_tlno = sp->rows;
+		vip->linecount = vip->lcontinue = vip->totalcount = 0;
+		(void)vs_repaint(sp, &fc);
+		(void)vs_refresh(sp);
+	}
+		
 	/* Deal with all non-character events. */
 	switch (evp->e_event) {
 	case E_CHARACTER:
@@ -720,7 +738,7 @@ k_cr:		if (LF_ISSET(TXT_CR)) {
 		goto ret;
 	case K_ESCAPE:				/* Escape. */
 		if (LF_ISSET(TXT_FILEC) && O_ISSET(sp, O_FILEC)) {
-			if (txt_filec(sp, tp))
+			if (txt_fc(sp, tp, &filec_redraw))
 				goto err;
 			goto ret;
 		}
@@ -1783,20 +1801,24 @@ txt_dent(sp, tp, isindent)
 }
 
 /*
- * txt_filec --
- *	File/user name completion.
+ * txt_fc --
+ *	File name completion.
  */
 static int
-txt_filec(sp, tp)
+txt_fc(sp, tp, redrawp)
 	SCR *sp;
 	TEXT *tp;
+	int *redrawp;
 {
+	struct stat sb;
 	ARGS **argv, *ap[2], a;
-	CHAR_T s_ch;
+	CHAR_T s1, s2;
 	EXCMD cmd;
 	size_t indx, len, nlen, off;
-	int argc;
+	int argc, trydir;
 	char *p, *t;
+
+	*redrawp = 0;
 
 	/* Find the beginning of this "word". */
 	for (off = sp->cno - 1, p = tp->lb + off, len = 0;; --p, --off) {
@@ -1814,38 +1836,63 @@ txt_filec(sp, tp)
 	}
 
 	/*
-	 * Get space for a wildcard character.
+	 * Get space for a slash and a wildcard character.
 	 *
 	 * XXX
 	 * This won't work for "foo\", since the \ will escape the expansion
 	 * character.  I'm not sure if that's a bug or not...
 	 */
-	BINC_RET(sp, tp->lb, tp->lb_len, tp->len + 1);
-	s_ch = p[len];
+	BINC_RET(sp, tp->lb, tp->lb_len, tp->len + 2);
+	s1 = p[len];
+	s2 = p[len + 1];
 	p[len] = '*';
+	trydir = 0;
 
 	/* Build an ex command, and call the ex expansion routines. */
-	ex_cbuild(&cmd, 0, 0, OOBLNO, OOBLNO, 0, ap, &a, NULL);
+dir:	ex_cbuild(&cmd, 0, 0, OOBLNO, OOBLNO, 0, ap, &a, NULL);
 	if (argv_init(sp, &cmd))
 		return (1);
-	(void)argv_exp2(sp, &cmd, p, len + 1);
+	(void)argv_exp2(sp, &cmd, p, len + (trydir ? 2 : 1));
 	argc = cmd.argc;
 	argv = cmd.argv;
 
-	p[len] = s_ch;
+	p[len] = s1;
+	p[len + 1] = s2;
+
 	switch (argc) {
 	case 0:				/* No matches. */
 		(void)sp->gp->scr_bell(sp);
 		return (0);
 	case 1:				/* One match. */
 		nlen = strlen(cmd.argv[0]->bp);
-		break;
-	default:			/* Multiple matches. */
+
+		/*
+		 * If we just found what the user specified, ring the bell so
+		 * they know nothing is changing.  However, if they specified
+		 * a directory, put a slash on it and retry.
+		 */
+		if (trydir || len != nlen || memcmp(cmd.argv[0]->bp, p, len))
+			break;
+		if (!stat(cmd.argv[0]->bp, &sb) && S_ISDIR(sb.st_mode)) {
+			p[len] = '/';
+			p[len + 1] = '*';
+			trydir = 1;
+			goto dir;
+		}
+				
 		(void)sp->gp->scr_bell(sp);
+		return (0);
+	default:			/* Multiple matches. */
+		*redrawp = 1;
+		if (txt_fc_col(sp, argc, argv))
+			return (1);
 
 		/* Find the length of the shortest match. */
-		nlen = strlen(cmd.argv[0]->bp);
-		while (--argc > 0) {
+		for (nlen = cmd.argv[0]->len; --argc > 0;) {
+			if (cmd.argv[argc]->len < nlen) {
+				nlen = cmd.argv[argc]->len;
+				continue;
+			}
 			for (indx = 0; indx < nlen &&
 			    cmd.argv[argc]->bp[indx] == cmd.argv[0]->bp[indx];
 			    ++indx);
@@ -1855,8 +1902,16 @@ txt_filec(sp, tp)
 	}
 
 	/* Overwrite the expanded text first. */
-	for (p = tp->lb + off + 1, t = cmd.argv[0]->bp; len--; --nlen)
+	for (p = tp->lb + off + 1,
+	    t = cmd.argv[0]->bp; len &&  nlen; --len, --nlen)
 		*p++ = *t++;
+
+	/* If lost text, make the remaining old text overwrite characters. */
+	if (len) {
+		sp->cno -= len;
+		tp->owrite += len;
+		return (0);
+	}
 
 	/* Overwrite any overwrite characters next. */
 	for (; nlen && tp->owrite; --nlen, --tp->owrite, ++sp->cno)
@@ -1865,7 +1920,9 @@ txt_filec(sp, tp)
 	/* Shift remaining text up, and move the cursor to the end. */
 	if (nlen) {
 		/* Make sure the buffer's big enough. */
+		off = p - tp->lb;
 		BINC_RET(sp, tp->lb, tp->lb_len, tp->len + nlen);
+		p = tp->lb + off;
 
 		sp->cno += nlen;
 		tp->len += nlen;
@@ -1874,6 +1931,86 @@ txt_filec(sp, tp)
 		while (nlen--)
 			*p++ = *t++;
 	}
+	return (0);
+}
+
+/*
+ * txt_fc_col --
+ *	Display file names for file name completion.
+ */
+static int
+txt_fc_col(sp, argc, argv)
+	SCR *sp;
+	int argc;
+	ARGS **argv;
+{
+	ARGS **av;
+	CHAR_T *p;
+	size_t base, cnt, col, colwidth, numrows, numcols, prefix, row;
+	int ac, nf;
+
+	/* Trim any directory prefix common to all of the files. */
+	if ((p = strrchr(argv[0]->bp, '/')) == NULL)
+		prefix = 0;
+	else {
+		prefix = (p - argv[0]->bp) + 1;
+		for (ac = argc - 1, av = argv + 1; ac > 0; --ac, ++av)
+			if (av[0]->len < prefix ||
+			    memcmp(av[0]->bp, argv[0]->bp, prefix)) {
+				prefix = 0;
+				break;
+			}
+	}
+
+	/*
+	 * Figure out the column width for the longest name.  Output is done on
+	 * 6 character "tab" boundaries for no particular reason.  (Since we
+	 * don't output tab characters, we ignore the terminal's tab settings.)
+	 * Ignore the user's tab setting because we have no idea how reasonable
+	 * it is.
+	 */
+	for (ac = argc, av = argv, colwidth = 0; ac > 0; --ac, ++av) {
+		for (col = 0, p = av[0]->bp + prefix; *p != '\0'; ++p)
+			col += KEY_LEN(sp, *p);
+		if (col > colwidth)
+			colwidth = col;
+	}
+	colwidth += COL_OFF(colwidth, 6);
+
+	/* If the largest file name is too large, just print them. */
+	if (colwidth > sp->cols) {
+		p = msg_print(sp, av[0]->bp + prefix, &nf);
+		for (ac = argc, av = argv; ac > 0; --ac, ++av)
+			(void)ex_printf(sp, "%s\n", p);
+		if (nf)
+			FREE_SPACE(sp, p, 0);
+	} else {
+		/* Figure out the number of columns. */
+		numcols = (sp->cols - 1) / colwidth;
+		if (argc > numcols) {
+			numrows = argc / numcols;
+			if (argc % numcols)
+				++numrows;
+		} else
+			numrows = 1;
+
+		/* Display the files in sorted order. */
+		for (row = 0; row < numrows; ++row) {
+			for (base = row, col = 0; col < numcols; ++col) {
+				p = msg_print(sp, argv[base]->bp + prefix, &nf);
+				cnt = ex_printf(sp, "%s", p);
+				if (nf)
+					FREE_SPACE(sp, p, 0);
+				if ((base += numrows) >= argc)
+					break;
+				(void)ex_printf(sp,
+				    "%*s", (int)(colwidth - cnt), "");
+			}
+			(void)ex_puts(sp, "\n");
+		}
+		(void)ex_puts(sp, "\n");
+	}
+	(void)ex_fflush(sp);
 	return (0);
 }
 
