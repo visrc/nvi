@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_visual.c,v 10.15 2001/06/25 15:19:22 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:22 $";
+static const char sccsid[] = "$Id: ex_visual.c,v 10.16 2001/08/29 11:04:13 skimo Exp $ (Berkeley) $Date: 2001/08/29 11:04:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -130,6 +130,7 @@ nopush:	/*
 		 */
 		++sp->refcnt;
 		++sp->ep->refcnt;
+		/* XXXX where is this decremented ? */
 
 		/*
 		 * Fake up a screen pointer -- vi doesn't get to change our
