@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 9.9 1994/11/16 18:11:15 bostic Exp $ (Berkeley) $Date: 1994/11/16 18:11:15 $";
+static char sccsid[] = "$Id: exf.c,v 9.10 1994/11/25 12:04:38 bostic Exp $ (Berkeley) $Date: 1994/11/25 12:04:38 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -146,7 +146,6 @@ file_init(sp, frp, rcv_name, flags)
 	CALLOC_RET(sp, ep, EXF *, 1, sizeof(EXF));
 	ep->c_lno = ep->c_nlines = OOBLNO;
 	ep->rcv_fd = ep->fcntl_fd = -1;
-	LIST_INIT(&ep->marks);
 	F_SET(ep, F_FIRSTMODIFY);
 
 	/*
@@ -416,6 +415,7 @@ void
 file_cinit(sp)
 	SCR *sp;
 {
+	MARK m;
 	size_t len;
 	int nb;
 
@@ -432,8 +432,11 @@ file_cinit(sp)
 	if (IN_EX_MODE(sp)) {
 		/* XXX:  If this fails, we're toast. */
 		(void)file_lline(sp, &sp->lno);
-		if (sp->lno == 0)
+		if (sp->lno == 0) {
 			sp->lno = 1;
+			sp->cno = 0;
+			return;
+		}
 		nb = 1;
 	} else {
 		if (F_ISSET(sp->frp, FR_CURSORSET)) {
@@ -461,6 +464,18 @@ file_cinit(sp)
 		sp->cno = 0;
 		(void)nonblank(sp, sp->lno, &sp->cno);
 	}
+	/*
+	 * !!!
+	 * Historically, vi initialized the absolute mark, but ex did not.
+	 * Which meant, that if the first command in ex mode was "visual",
+	 * or if an ex command was executed first (e.g. vi +10 file) vi was
+	 * entered without the mark being initialized.  For consistency, if
+	 * the file isn't empty, we initialize it for everyone, believing
+	 * that it can't hurt, and is generally useful.
+	 */
+	m.lno = sp->lno;
+	m.cno = sp->cno;
+	(void)mark_set(sp, ABSMARK1, &m, 0);
 }
 
 /*

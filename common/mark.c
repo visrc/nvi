@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: mark.c,v 9.1 1994/11/09 18:37:53 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:37:53 $";
+static char sccsid[] = "$Id: mark.c,v 9.2 1994/11/25 12:04:42 bostic Exp $ (Berkeley) $Date: 1994/11/25 12:04:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -76,16 +76,9 @@ mark_init(sp, ep)
 	 * !!!
 	 * ep MAY NOT BE THE SAME AS sp->ep, DON'T USE THE LATTER.
 	 *
-	 *
-	 * Make sure the marks have been set up.  If they haven't,
-	 * do so, and create the absolute mark.
+	 * Set up the marks.
 	 */
-	MALLOC_RET(sp, lmp, LMARK *, sizeof(LMARK));
-	lmp->lno = 1;
-	lmp->cno = 0;
-	lmp->name = ABSMARK1;
-	lmp->flags = 0;
-	LIST_INSERT_HEAD(&ep->marks, lmp, q);
+	LIST_INIT(&ep->marks);
 	return (0);
 }
 
