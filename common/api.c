@@ -12,7 +12,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: api.c,v 8.32 2000/07/16 20:49:28 skimo Exp $ (Berkeley) $Date: 2000/07/16 20:49:28 $";
+static const char sccsid[] = "$Id: api.c,v 8.33 2000/09/03 18:58:25 skimo Exp $ (Berkeley) $Date: 2000/09/03 18:58:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -556,6 +556,7 @@ api_opts_set(sp, name, str_value, num_value, bool_value)
 
 	CHAR2INT(sp, bp, a.len, wbp, wblen);
 	a.len = wblen;
+	wbp = v_wstrdup(sp, wbp, wblen);
 
 	a.bp = wbp;
 	b.len = 0;
@@ -564,6 +565,7 @@ api_opts_set(sp, name, str_value, num_value, bool_value)
 	ap[1] = &b;
 	rval = opts_set(sp, ap, NULL);
 
+	free(wbp);
 	FREE_SPACE(sp, bp, blen);
 
 	return (rval);
