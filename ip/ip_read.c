@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_read.c,v 8.10 1996/12/10 21:02:04 bostic Exp $ (Berkeley) $Date: 1996/12/10 21:02:04 $";
+static const char sccsid[] = "$Id: ip_read.c,v 8.11 1996/12/11 13:05:24 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:05:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -235,6 +235,22 @@ ip_trans(sp, ipp, evp)
 		evp->e_event = E_IPCOMMAND;
 		evp->e_ipcom = ipp->ibuf[0];
 		ipp->iskip = IPO_CODE_LEN;
+		return (1);
+	case VI_C_SEARCH:
+		evp->e_event = E_IPCOMMAND;
+		evp->e_ipcom = ipp->ibuf[0];
+		if (ipp->iblen < IPO_CODE_LEN + IPO_INT_LEN * 2)
+			return (0);
+		memcpy(&val1, ipp->ibuf + IPO_CODE_LEN, IPO_INT_LEN);
+		evp->e_flags = ntohl(val1);
+		memcpy(&val1,
+		    ipp->ibuf + IPO_CODE_LEN + IPO_INT_LEN, IPO_INT_LEN);
+		val1 = ntohl(val1);
+		if (ipp->iblen < IPO_CODE_LEN + IPO_INT_LEN * 2 + val1)
+			return (0);
+		ipp->iskip = IPO_CODE_LEN + IPO_INT_LEN * 2 + val1;
+		evp->e_csp = ipp->ibuf + IPO_CODE_LEN + IPO_INT_LEN * 2;
+		evp->e_len = val1;
 		return (1);
 	case VI_EDIT:
 	case VI_EDITSPLIT:
