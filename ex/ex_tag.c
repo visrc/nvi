@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 10.10 1995/10/16 15:25:50 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:25:50 $";
+static char sccsid[] = "$Id: ex_tag.c,v 10.11 1995/10/17 08:07:41 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:07:41 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -290,7 +290,6 @@ ex_tagpop(sp, cmdp)
 	TAG *ntp, *tp;
 	size_t arglen;
 	long off;
-	int nf;
 	char *arg, *p, *t;
 
 	/* Check for an empty stack. */

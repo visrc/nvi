@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 10.12 1995/10/16 15:25:48 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:25:48 $";
+static char sccsid[] = "$Id: ex_subst.c,v 10.13 1995/10/17 08:07:23 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:07:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -361,7 +361,6 @@ s(sp, cmdp, s, re, flags)
 {
 	EVENT ev;
 	MARK from, to;
-	TEXT *tp;
 	TEXTH tiq;
 	recno_t elno, lno;
 	regmatch_t match[10];
