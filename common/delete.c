@@ -6,163 +6,127 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: delete.c,v 5.4 1992/05/15 10:58:27 bostic Exp $ (Berkeley) $Date: 1992/05/15 10:58:27 $";
+static char sccsid[] = "$Id: delete.c,v 5.5 1992/05/21 13:02:33 bostic Exp $ (Berkeley) $Date: 1992/05/21 13:02:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <stddef.h>
 
 #include "vi.h"
 #include "exf.h"
+#include "mark.h"
 #include "extern.h"
 
-#ifdef NOTDEF
-/* delete a range of text from the file */
-void delete(frommark, tomark)
-	MARK		frommark;	/* first char to be deleted */
-	MARK		tomark;		/* AFTER last char to be deleted */
+/*
+ * delete --
+ *	Delete a range of text.
+ */
+int
+delete(fm, tm, lmode)
+	MARK *fm, *tm;
+	int lmode;
 {
-	int		i;		/* used to move thru logical blocks */
-	REG char	*scan;		/* used to scan thru text of the blk */
-	REG char	*cpy;		/* used when copying chars */
-	BLK		*blk;		/* a text block */
-	long		l;		/* a line number */
-	MARK		m;		/* a traveling version of frommark */
+	MARK m;
+	recno_t lno;
+	size_t len, tlen;
+	char *bp, *p;
 
-#ifdef DEBUG
-	TRACE("delete (%ld.%d, %ld.%d)\n", markline(frommark),
-	    markidx(frommark), markline(tomark), markidx(tomark));
+	/* Make cut from fm and to tm, swapping pointers if necessary. */
+	if (fm->lno > tm->lno || fm->lno == tm->lno && fm->cno > tm->cno) {
+		m = *fm;
+		*fm = *tm;
+		*tm = m;
+	}
+
+#if DEBUG && 1
+	TRACE("delete: from {%lu, %d}, to {%lu, %d}\n",
+	    fm->lno, fm->cno, tm->lno, tm->cno);
 #endif
 
-	/* if not deleting anything, quit now */
-	if (frommark == tomark)
-	{
-		return;
-	}
-
-	/* This is a change */
-	changes++;
-	setflag(file, MODIFIED);
-
-	/* adjust marks 'a through 'z and '' as needed */
-	l = markline(tomark);
-	for (i = 0; i < NMARKS; i++)
-	{
-		if (mark[i] < frommark)
-		{
-			continue;
+	/*
+	 * Delete in reverse order.  There are three cases: line mode, a
+	 * delete inside a line, and a delete over multiple lines.
+	 */
+	if (lmode) {
+		for (lno = tm->lno; lno >= fm->lno; --lno)
+			if (file_dline(curf, lno))
+				return (1);
+	} else {
+		/*
+		 * If deleting to the start of a line, decrement the
+		 * line number and reset the count to max column + 1.
+		 */
+		if (tm->cno == 0) {
+			--tm->lno;
+			EGETLINE(p, tm->lno, len);
+			tm->cno = len;
 		}
-		else if (mark[i] < tomark)
-		{
-			mark[i] = MARK_UNSET;
-		}
-		else if (markline(mark[i]) == l)
-		{
-			if (markline(frommark) == l)
-			{
-				mark[i] -= markidx(tomark) - markidx(frommark);
+		/* If deleting within a single line, it's easy. */
+		if (tm->lno == fm->lno) {
+			EGETLINE(p, fm->lno, len);
+			bcopy(p + tm->cno, p + fm->cno,
+			    len - fm->cno - (tm->cno - fm->cno));
+			len -= tm->cno - fm->cno;
+			if (file_sline(curf, fm->lno, p, len))
+				return (1);
+		} else {
+			/* Delete all the intermediate lines. */
+			for (lno = tm->lno - 1; lno > fm->lno; --lno)
+				if (file_dline(curf, lno))
+					return (1);
+
+			/* Figure out how big a buffer we need. */
+			EGETLINE(p, fm->lno, len);
+			tlen = len;
+			EGETLINE(p, tm->lno, len);
+			tlen += len;		/* XXX Possible overflow! */
+			if ((bp = malloc(tlen)) == NULL) {
+				msg("Error: %s", strerror(errno));
+				return (1);
 			}
-			else
-			{
-				mark[i] -= markidx(tomark);
+
+			/* Copy the start partial line into place. */
+			EGETLINE(p, fm->lno, len);
+			bcopy(p, bp, fm->cno);
+			tlen = fm->cno;
+
+			/* Copy the end partial line into place. */
+			EGETLINE(p, tm->lno, len);
+			bcopy(p + tm->cno, bp + tlen, len - tm->cno);
+			tlen += len - tm->cno;
+
+			/* Set the current line. */
+			if (file_sline(curf, fm->lno, bp, tlen)) {
+				free(bp);
+				return (1);
 			}
-		}
-		else
-		{
-			mark[i] -= MARK_AT_LINE(l - markline(frommark));
-		}
-	}
 
-	/* Reporting... */
-	if (markidx(frommark) == 0 && markidx(tomark) == 0)
-	{
-		rptlines = markline(tomark) - markline(frommark);
-		rptlabel = "deleted";
-	}
-
-	/* find the block containing frommark */
-	l = markline(frommark);
-	for (i = 1; lnum[i] < l; i++)
-	{
-	}
-
-	/* process each affected block... */
-	for (m = frommark;
-	     m < tomark && lnum[i] < INFINITY;
-	     m = MARK_AT_LINE(lnum[i - 1] + 1))
-	{
-		/* fetch the block */
-		blk = blkget(i);
-
-		/* find the mark in the block */
-		scan = blk->c;
-		for (l = markline(m) - lnum[i - 1] - 1; l > 0; l--)
-		{
-			while (*scan++ != '\n')
-			{
+			/* Delete the new number of the old last line. */
+			if (file_dline(curf, fm->lno + 1)) {
+				free(bp);
+				return (1);
 			}
 		}
-		scan += markidx(m);
-
-		/* figure out where the changes to this block end */
-		if (markline(tomark) > lnum[i])
-		{
-			cpy = blk->c + BLKSIZE;
-		}
-		else if (markline(tomark) == markline(m))
-		{
-			cpy = scan - markidx(m) + markidx(tomark);
-		}
-		else
-		{
-			cpy = scan;
-			for (l = markline(tomark) - markline(m);
-			     l > 0;
-			     l--)
-			{
-				while (*cpy++ != '\n')
-				{
-				}
-			}
-			cpy += markidx(tomark);
-		}
-
-		/* delete the stuff by moving chars within this block */
-		while (cpy < blk->c + BLKSIZE)
-		{
-			*scan++ = *cpy++;
-		}
-		while (scan < blk->c + BLKSIZE)
-		{
-			*scan++ = '\0';
-		}
-
-		/* adjust tomark to allow for lines deleted from this block */
-		tomark -= MARK_AT_LINE(lnum[i] + 1 - markline(m));
-
-		/* if this block isn't empty now, then advance i */
-		if (*blk->c)
-		{
-			i++;
-		}
-
-		/* the buffer has changed.  Update hdr and lnum. */
-		blkdirty(blk);
 	}
 
-	/* must have at least 1 line */
-	if (nlines == 0)
-	{
-		blk = blkadd(1);
-		blk->c[0] = '\n';
-		blkdirty(blk);
-		cursor = MARK_FIRST;
-	}
-}
-#else
-int
-delete(fm, tm)
-	MARK *fm, *tm;
-{
+	/* Ping the screen. */
+	scr_ref();
+
+	/* Update the marks. */
+	mark_delete(fm, tm, lmode);
+
+	/* Mark the file as modified. */
+	curf->flags |= F_MODIFIED;
+
+	/*
+	 * Reporting.
+ 	 * XXX
+	 * Wrong, if deleting characters.
+	 */
+	rptlines = tm->lno - fm->lno + 1;
+	rptlabel = "deleted";
+
 	return (0);
 }
-#endif
