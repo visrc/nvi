@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.29 1993/10/11 22:02:58 bostic Exp $ (Berkeley) $Date: 1993/10/11 22:02:58 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.30 1993/10/26 16:39:22 bostic Exp $ (Berkeley) $Date: 1993/10/26 16:39:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -463,25 +463,32 @@ k_escape:		if (tp->insert && tp->overwrite)
 			/*
 			 * If not doing autoindent, in the first column, no
 			 * characters to erase, or already inserted non-ai
-			 * characters, it's a literal.
+			 * characters, it's a literal.  The last test is done
+			 * in the switch, as the CARAT forms are N + 1, not N.
 			 */
-			if (!LF_ISSET(TXT_AUTOINDENT) || sp->cno == 0 ||
-			    tp->ai == 0 || sp->cno > tp->ai + tp->offset)
+			if (!LF_ISSET(TXT_AUTOINDENT) ||
+			    sp->cno == 0 || tp->ai == 0)
 				goto ins_ch;
 			switch (carat_st) {
 			case C_CARATSET:	/* ^^D */
+				if (sp->cno > tp->ai + tp->offset + 1)
+					goto ins_ch;
 				carat_st = C_NOTSET;
 				tp->lb[sp->cno - 1] = ' ';
 				tp->overwrite += sp->cno - tp->offset;
 				tp->ai = sp->cno = tp->offset;
 				break;
 			case C_ZEROSET:		/* 0^D */
+				if (sp->cno > tp->ai + tp->offset + 1)
+					goto ins_ch;
 				carat_st = C_NOCHANGE;
 				tp->lb[sp->cno - 1] = ' ';
 				tp->overwrite += sp->cno - tp->offset;
 				tp->ai = sp->cno = tp->offset;
 				break;
 			case C_NOTSET:		/* ^D */
+				if (sp->cno > tp->ai + tp->offset)
+					goto ins_ch;
 				(void)txt_outdent(sp, tp);
 				break;
 			default:
