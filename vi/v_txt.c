@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.115 1994/05/16 19:24:53 bostic Exp $ (Berkeley) $Date: 1994/05/16 19:24:53 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.116 1994/05/21 09:50:47 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:50:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -711,7 +711,7 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 			/* If nothing to erase, bell the user. */
 			if (sp->cno <= tp->offset) {
 				msgq(sp, M_BERR,
-				    "No more characters to erase.");
+				    "No more characters to erase");
 				break;
 			}
 
@@ -746,7 +746,7 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 			 */
 			if (sp->cno <= tp->offset) {
 				msgq(sp, M_BERR,
-				    "No more characters to erase.");
+				    "No more characters to erase");
 				break;
 			}
 
@@ -831,7 +831,7 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 			/* If at offset, nothing to erase so bell the user. */
 			if (sp->cno <= tp->offset) {
 				msgq(sp, M_BERR,
-				    "No more characters to erase.");
+				    "No more characters to erase");
 				break;
 			}
 
@@ -917,7 +917,7 @@ ins_ch:			/*
 			if (LF_ISSET(TXT_BEAUTIFY) && iscntrl(ch) &&
 			    ikey.value != K_FORMFEED && ikey.value != K_TAB) {
 				msgq(sp, M_BERR,
-				    "Illegal character; quote to enter.");
+				    "Illegal character; quote to enter");
 				break;
 			}
 insq_ch:		/*

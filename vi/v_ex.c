@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 8.4 1994/04/12 10:14:43 bostic Exp $ (Berkeley) $Date: 1994/04/12 10:14:43 $";
+static char sccsid[] = "$Id: v_ex.c,v 8.5 1994/05/21 09:50:44 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:50:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -235,7 +235,7 @@ v_switch(sp, ep, vp)
 	else if (sp->p_frp != NULL)
 		name = sp->p_frp->name;
 	else {
-		msgq(sp, M_ERR, "No previous file to edit.");
+		msgq(sp, M_ERR, "No previous file to edit");
 		return (1);
 	}
 
@@ -246,7 +246,7 @@ v_switch(sp, ep, vp)
 				return (1);
 		} else {
 			msgq(sp, M_ERR,
-		"Modified since last write; write or use :edit! to override.");
+		"Modified since last write; write or use :edit! to override");
 			return (1);
 		}
 

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_util.c,v 8.8 1994/03/14 10:45:52 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:45:52 $";
+static char sccsid[] = "$Id: v_util.c,v 8.9 1994/05/21 09:50:53 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:50:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -43,15 +43,14 @@ v_eof(sp, ep, mp)
 	u_long lno;
 
 	if (mp == NULL)
-		msgq(sp, M_BERR, "Already at end-of-file.");
+		msgq(sp, M_BERR, "Already at end-of-file");
 	else {
 		if (file_lline(sp, ep, &lno))
 			return;
 		if (mp->lno >= lno)
-			msgq(sp, M_BERR, "Already at end-of-file.");
+			msgq(sp, M_BERR, "Already at end-of-file");
 		else
-			msgq(sp, M_BERR,
-			    "Movement past the end-of-file.");
+			msgq(sp, M_BERR, "Movement past the end-of-file");
 	}
 }
 
@@ -68,16 +67,16 @@ v_eol(sp, ep, mp)
 	size_t len;
 
 	if (mp == NULL)
-		msgq(sp, M_BERR, "Already at end-of-line.");
+		msgq(sp, M_BERR, "Already at end-of-line");
 	else {
 		if (file_gline(sp, ep, mp->lno, &len) == NULL) {
 			GETLINE_ERR(sp, mp->lno);
 			return;
 		}
 		if (mp->cno == len - 1)
-			msgq(sp, M_BERR, "Already at end-of-line.");
+			msgq(sp, M_BERR, "Already at end-of-line");
 		else
-			msgq(sp, M_BERR, "Movement past the end-of-line.");
+			msgq(sp, M_BERR, "Movement past the end-of-line");
 	}
 }
 
@@ -89,7 +88,7 @@ void
 v_nomove(sp)
 	SCR *sp;
 {
-	msgq(sp, M_BERR, "No cursor movement made.");
+	msgq(sp, M_BERR, "No cursor movement made");
 }
 
 /*
@@ -102,9 +101,9 @@ v_sof(sp, mp)
 	MARK *mp;
 {
 	if (mp == NULL || mp->lno == 1)
-		msgq(sp, M_BERR, "Already at the beginning of the file.");
+		msgq(sp, M_BERR, "Already at the beginning of the file");
 	else
-		msgq(sp, M_BERR, "Movement past the beginning of the file.");
+		msgq(sp, M_BERR, "Movement past the beginning of the file");
 }
 
 /*
@@ -115,7 +114,7 @@ void
 v_sol(sp)
 	SCR *sp;
 {
-	msgq(sp, M_BERR, "Already in the first column.");
+	msgq(sp, M_BERR, "Already in the first column");
 }
 
 /*

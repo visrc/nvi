@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 8.26 1994/05/16 19:57:24 bostic Exp $ (Berkeley) $Date: 1994/05/16 19:57:24 $";
+static char sccsid[] = "$Id: v_search.c,v 8.27 1994/05/21 09:50:52 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:50:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -182,7 +182,7 @@ search(sp, ep, vp, ptrn, flags, dir)
 			return (1);
 		break;
 	case NOTSET:
-		msgq(sp, M_ERR, "No previous search pattern.");
+		msgq(sp, M_ERR, "No previous search pattern");
 		return (1);
 	default:
 		abort();

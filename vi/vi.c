@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.69 1994/05/09 09:42:39 bostic Exp $ (Berkeley) $Date: 1994/05/09 09:42:39 $";
+static char sccsid[] = "$Id: vi.c,v 8.70 1994/05/21 09:50:56 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:50:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -176,7 +176,7 @@ vi(sp, ep)
 		/* Make sure no function left the temporary space locked. */
 		if (F_ISSET(sp->gp, G_TMP_INUSE)) {
 			msgq(sp, M_ERR,
-			    "Error: vi: temporary buffer not released.");
+			    "Error: vi: temporary buffer not released");
 			return (1);
 		}
 #endif
@@ -329,7 +329,7 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 	if (key == '"') {
 		if (ismotion != NULL) {
 			msgq(sp, M_BERR,
-			    "Buffers are specified before the command.");
+			    "Buffers are specified before the command");
 			return (1);
 		}
 		KEY(vp->buffer, 0);
@@ -353,12 +353,12 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 	/* Pick up optional buffer. */
 	if (key == '"') {
 		if (F_ISSET(vp, VC_BUFFER)) {
-			msgq(sp, M_ERR, "Only one buffer can be specified.");
+			msgq(sp, M_ERR, "Only one buffer can be specified");
 			return (1);
 		}
 		if (ismotion != NULL) {
 			msgq(sp, M_BERR,
-			    "Buffers are specified before the command.");
+			    "Buffers are specified before the command");
 			return (1);
 		}
 		KEY(vp->buffer, 0);
@@ -396,7 +396,7 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 
 		/* A repeatable command must have been executed. */
 		if (!F_ISSET(dp, VC_ISDOT)) {
-			msgq(sp, M_ERR, "No command to repeat.");
+			msgq(sp, M_ERR, "No command to repeat");
 			return (1);
 		}
 
@@ -475,7 +475,7 @@ usage:			if (ismotion == NULL)
 	 * imply the current line.
 	 */
 	if (ismotion != NULL && ismotion->key != key && !LF_ISSET(V_MOVE)) {
-		msgq(sp, M_ERR, "%s may not be used as a motion command.",
+		msgq(sp, M_ERR, "%s may not be used as a motion command",
 		    KEY_NAME(sp, key));
 		return (1);
 	}

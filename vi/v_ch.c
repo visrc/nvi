@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ch.c,v 8.11 1994/05/04 21:18:54 bostic Exp $ (Berkeley) $Date: 1994/05/04 21:18:54 $";
+static char sccsid[] = "$Id: v_ch.c,v 8.12 1994/05/21 09:50:43 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:50:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -302,7 +302,7 @@ static void
 noprev(sp)
 	SCR *sp;
 {
-	msgq(sp, M_BERR, "No previous F, f, T or t search.");
+	msgq(sp, M_BERR, "No previous F, f, T or t search");
 }
 
 static void
@@ -310,5 +310,5 @@ notfound(sp, ch)
 	SCR *sp;
 	ARG_CHAR_T ch;
 {
-	msgq(sp, M_BERR, "%s not found.", KEY_NAME(sp, ch));
+	msgq(sp, M_BERR, "%s not found", KEY_NAME(sp, ch));
 }

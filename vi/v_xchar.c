@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_xchar.c,v 8.7 1994/05/17 10:44:34 bostic Exp $ (Berkeley) $Date: 1994/05/17 10:44:34 $";
+static char sccsid[] = "$Id: v_xchar.c,v 8.8 1994/05/21 09:50:54 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:50:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -48,7 +48,7 @@ v_xchar(sp, ep, vp)
 		return (1);
 	}
 	if (len == 0) {
-nodel:		msgq(sp, M_BERR, "No characters to delete.");
+nodel:		msgq(sp, M_BERR, "No characters to delete");
 		return (1);
 	}
 

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_screen.c,v 8.10 1994/03/08 19:41:27 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:41:27 $";
+static char sccsid[] = "$Id: v_screen.c,v 8.11 1994/05/21 09:50:51 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:50:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -43,7 +43,7 @@ v_screen(sp, ep, vp)
 	if (sp->q.cqe_next != (void *)&sp->gp->dq)
 		sp->nextdisp = sp->q.cqe_next;
 	else if (sp->gp->dq.cqh_first == sp) {
-		msgq(sp, M_ERR, "No other screen to switch to.");
+		msgq(sp, M_ERR, "No other screen to switch to");
 		return (1);
 	} else
 		sp->nextdisp = sp->gp->dq.cqh_first;
