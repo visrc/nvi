@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.18 1993/11/11 11:16:27 bostic Exp $ (Berkeley) $Date: 1993/11/11 11:16:27 $";
+static char sccsid[] = "$Id: key.c,v 8.19 1993/11/12 08:27:01 bostic Exp $ (Berkeley) $Date: 1993/11/12 08:27:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -68,6 +68,7 @@ term_init(sp)
 	SCR *sp;
 {
 	KLIST const *kp;
+	cc_t ch;
 	char *sbp, *t, buf[2 * 1024], sbuf[128];
 
 	/* Keys that are treated specially. */
@@ -83,11 +84,21 @@ term_init(sp)
 	sp->special[')'] = K_RIGHTPAREN;
 	sp->special['}'] = K_RIGHTBRACE;
 	sp->special['\t'] = K_TAB;
-	sp->special[sp->gp->original_termios.c_cc[VEOF]] = K_VEOF;
-	sp->special[sp->gp->original_termios.c_cc[VERASE]] = K_VERASE;
-	sp->special[sp->gp->original_termios.c_cc[VKILL]] = K_VKILL;
-	sp->special[sp->gp->original_termios.c_cc[VLNEXT]] = K_VLNEXT;
-	sp->special[sp->gp->original_termios.c_cc[VWERASE]] = K_VWERASE;
+	if ((ch = sp->gp->original_termios.c_cc[VEOF]) == _POSIX_VDISABLE)
+		ch = '\004';
+	sp->special[ch] = K_VEOF;
+	if ((ch = sp->gp->original_termios.c_cc[VERASE]) == _POSIX_VDISABLE)
+		ch = '\b';
+	sp->special[ch] = K_VERASE;
+	if ((ch = sp->gp->original_termios.c_cc[VKILL]) == _POSIX_VDISABLE)
+		ch = '\025';
+	sp->special[ch] = K_VKILL;
+	if ((ch = sp->gp->original_termios.c_cc[VLNEXT]) == _POSIX_VDISABLE)
+		ch = '\026';
+	sp->special[ch] = K_VLNEXT;
+	if ((ch = sp->gp->original_termios.c_cc[VWERASE]) == _POSIX_VDISABLE)
+		ch = '\027';
+	sp->special[ch] = K_VWERASE;
 	sp->special['0'] = K_ZERO;
 
 	/*
