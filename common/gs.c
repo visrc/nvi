@@ -81,6 +81,98 @@ gs_new_win(GS *gp)
 	return wp;
 }
 
+/*
+ * gs_end --
+ *	End the program, discarding screens and most of the global area.
+ *
+ * PUBLIC: void gs_end __P((GS *));
+ */
+void
+gs_end(gp)
+	GS *gp;
+{
+	MSGS *mp;
+	SCR *sp;
+	WIN *wp;
+
+	/* If there are any remaining screens, kill them off. */
+	if (gp->ccl_sp != NULL) {
+		(void)file_end(gp->ccl_sp, NULL, 1);
+		(void)screen_end(gp->ccl_sp);
+	}
+	for (wp = gp->dq.cqh_first; wp != (void *)&gp->dq; 
+	    wp = wp->q.cqe_next)
+		while ((sp = wp->scrq.cqh_first) != (void *)&wp->scrq)
+		(void)screen_end(sp);
+	while ((sp = gp->hq.cqh_first) != (void *)&gp->hq)
+		(void)screen_end(sp);
+
+#ifdef HAVE_PERL_INTERP
+	perl_end(gp);
+#endif
+
+#if defined(DEBUG) || defined(PURIFY) || defined(LIBRARY)
+	{ FREF *frp;
+		/* Free FREF's. */
+		while ((frp = gp->frefq.cqh_first) != (FREF *)&gp->frefq) {
+			CIRCLEQ_REMOVE(&gp->frefq, frp, q);
+			if (frp->name != NULL)
+				free(frp->name);
+			if (frp->tname != NULL)
+				free(frp->tname);
+			free(frp);
+		}
+	}
+
+	/* Free key input queue. */
+	if (gp->i_event != NULL)
+		free(gp->i_event);
+
+	/* Free cut buffers. */
+	cut_close(gp);
+
+	/* Free map sequences. */
+	seq_close(gp);
+
+	/* Free default buffer storage. */
+	(void)text_lfree(&gp->dcb_store.textq);
+
+	/* Close message catalogs. */
+	msg_close(gp);
+#endif
+
+	/* Ring the bell if scheduled. */
+	if (F_ISSET(gp, G_BELLSCHED))
+		(void)fprintf(stderr, "\07");		/* \a */
+
+	/*
+	 * Flush any remaining messages.  If a message is here, it's almost
+	 * certainly the message about the event that killed us (although
+	 * it's possible that the user is sourcing a file that exits from the
+	 * editor).
+	 */
+	while ((mp = gp->msgq.lh_first) != NULL) {
+		(void)fprintf(stderr, "%s%.*s",
+		    mp->mtype == M_ERR ? "ex/vi: " : "", (int)mp->len, mp->buf);
+		LIST_REMOVE(mp, q);
+#if defined(DEBUG) || defined(PURIFY) || defined(LIBRARY)
+		free(mp->buf);
+		free(mp);
+#endif
+	}
+
+#if defined(DEBUG) || defined(PURIFY) || defined(LIBRARY)
+	/* Free any temporary space. */
+	if (gp->tmp_bp != NULL)
+		free(gp->tmp_bp);
+
+#if defined(TRACE)
+	/* Close tracing file descriptor. */
+	vtrace_end();
+#endif
+#endif
+}
+
 
 /*
  * perr --

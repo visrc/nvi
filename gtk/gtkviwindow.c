@@ -169,7 +169,7 @@ gtk_vi_window_destroy (GtkObject *object)
   vi_window = (GtkViWindow*) object;
 
   gtk_signal_disconnect_by_data(GTK_OBJECT(vi_window->table), vi_window->vi_screen);
-  gtk_signal_disconnect_by_data(GTK_OBJECT(vi_window->vi), vi_window->ipviwin);
+  gtk_signal_disconnect_by_data(GTK_OBJECT(vi_window->vi_screen), vi_window->ipviwin);
   gtk_signal_disconnect(GTK_OBJECT(GTK_VI_SCREEN(vi_window->vi_screen)->vadj), 
 	vi_window->value_changed);
 
@@ -536,7 +536,7 @@ vi_quit(ipviwin)
 	GtkViWindow* vi = (GtkViWindow*)(ipviwin->private_data);
 
 	gtk_input_remove(vi->input_func);
-	gtk_widget_destroy(GTK_WIDGET(vi->vi_screen));
+	gtk_widget_destroy(GTK_WIDGET(vi));
 	return (0);
 }
 

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_main.c,v 10.48 2000/06/25 17:34:36 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:36 $";
+static const char sccsid[] = "$Id: cl_main.c,v 10.49 2000/07/07 22:29:12 skimo Exp $ (Berkeley) $Date: 2000/07/07 22:29:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -122,6 +122,9 @@ main(argc, argv)
 
 	/* Run ex/vi. */
 	rval = editor(wp, argc, argv);
+
+	/* Clean out the global structure. */
+	gs_end(gp);
 
 	/* Clean up signals. */
 	sig_end(gp);

@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_main.c,v 8.16 2000/07/02 20:32:00 skimo Exp $ (Berkeley) $Date: 2000/07/02 20:32:00 $";
+static const char sccsid[] = "$Id: ip_main.c,v 8.17 2000/07/07 22:29:13 skimo Exp $ (Berkeley) $Date: 2000/07/07 22:29:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -99,12 +99,15 @@ main(argc, argv)
 		/* Create new window */
 		wp = gs_new_win(gp);
 
-	/* Create and partially initialize the IP structure. */
-	if ((ipp = ip_init(wp, i_fd, o_fd, argc, argv)) == NULL)
-		return (1);
+		/* Create and partially initialize the IP structure. */
+		if ((ipp = ip_init(wp, i_fd, o_fd, argc, argv)) == NULL)
+			return (1);
 
 		gp->run(wp, run_editor, (void *)wp);
 	}
+
+	/* Clean out the global structure. */
+	gs_end(gp);
 
 	/* Free the global and IP private areas. */
 #if defined(DEBUG) || defined(PURIFY) || defined(LIBRARY)

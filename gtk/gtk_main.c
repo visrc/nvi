@@ -25,7 +25,7 @@
 #include "gtkviscreen.h"
 #include "../gtk/extern.h"
 
-static void vi_destroyed __P((GtkWidget*));
+static void vi_destroyed __P((GtkWidget*,GtkWidget*));
 static void vi_rename __P((GtkWidget*,gchar*,GtkWidget*));
 static void vi_quit __P((GtkViWindow*, int));
 
@@ -43,6 +43,8 @@ static GtkItemFactoryEntry menu_items[] = {
     { "/Window/Show Vi",	NULL,    gtk_vi_show_term,    0,  NULL },
 #endif
 };
+
+static int n_toplevel = 0;
 
 int
 main(argc, argv)
@@ -79,6 +81,7 @@ void create_toplevel(GtkVi *vi)
 	GtkAccelGroup *accel;
 
 	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+	++n_toplevel;
 
 	box = gtk_vbox_new(FALSE, 0);
 	gtk_container_add(GTK_CONTAINER(window), box);
@@ -102,7 +105,7 @@ void create_toplevel(GtkVi *vi)
 			   window);
 	gtk_signal_connect(GTK_OBJECT(GTK_VI_WINDOW(vi_window)->vi_screen), "destroy",
 			   GTK_SIGNAL_FUNC(vi_destroyed),
-			   NULL);
+			   window);
 	gtk_box_pack_start(GTK_BOX(box), vi_window, TRUE, TRUE, 0);
 
 	/*
@@ -121,10 +124,11 @@ vi_quit(vi, write)
 }
 
 static void
-vi_destroyed(vi)
-	GtkWidget *vi;
+vi_destroyed(GtkWidget *vi, GtkWidget *window)
 {
-	gtk_main_quit();
+	gtk_widget_destroy(window);
+	if (!--n_toplevel)
+		gtk_main_quit();
 }
 
 static void
