@@ -2,8 +2,10 @@
 #include <errno.h>
 #include <fcntl.h>
 
-#define TRUE		1
-#define FALSE		0
+#define TRUE	1
+#define FALSE	0
+
+#define	ESCAPE	'\033'
 
 #define	TAB	8				/* XXX */
 #define	BLKSIZE	2048
@@ -249,27 +251,3 @@ extern int	mode;
 extern MARK	V_from;
 extern int	V_linemd;
 extern MARK	v_start();
-
-/*----------------------------------------------------------------------*/
-/* These are used to pass info about ^V quoting */
-#ifdef NO_QUOTE
-# define QSTART(base)
-# define QEND()
-# define QSET(addr)
-# define QCLR(addr)
-# define QCHK(addr)	FALSE
-#else
-  extern char	Qflags[132];
-  extern char	*Qbase;
-  extern int	Qlen;
-# define QSTART(base)	(Qbase = base, bzero(Qflags, sizeof(Qflags)))
-# define QEND()		(Qlen = strlen(Qbase))
-# define QSET(addr)	(Qflags[(int)((addr) - Qbase)] = TRUE)
-# define QCLR(addr)	(Qflags[(int)((addr) - Qbase)] = FALSE)
-# define QCHK(addr)	(Qflags[(int)((addr) - Qbase)])
-#endif
-#ifdef DEBUG
-# define QTST(addr)	(((int)((addr) - Qbase) < Qlen && (int)((addr) - Qbase) > 0) ? QCHK(addr) : (abort(), 0))
-#else
-# define QTST(addr)	QCHK(addr)
-#endif
