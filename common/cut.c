@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 5.39 1993/05/08 11:09:09 bostic Exp $ (Berkeley) $Date: 1993/05/08 11:09:09 $";
+static char sccsid[] = "$Id: cut.c,v 5.40 1993/05/09 13:14:51 bostic Exp $ (Berkeley) $Date: 1993/05/09 13:14:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -94,7 +94,7 @@ cut(sp, ep, buffer, fm, tm, lmode)
 	}
 
 #if DEBUG && 0
-	TRACE(sp->gp, "cut: from {%lu, %d}, to {%lu, %d}%s\n",
+	TRACE(sp, "cut: from {%lu, %d}, to {%lu, %d}%s\n",
 	    fm->lno, fm->cno, tm->lno, tm->cno, lmode ? " LINE MODE" : "");
 #endif
 	if (lmode) {
@@ -167,7 +167,7 @@ cutline(sp, ep, lno, fcno, len, newp)
 
 	if (llen == 0) {
 #if DEBUG && 0
-		TRACE(ep, "{}\n");
+		TRACE(sp, "{}\n");
 #endif
 	} else {
 		if (len == 0)
@@ -175,7 +175,7 @@ cutline(sp, ep, lno, fcno, len, newp)
 		memmove(tp->lb, p + fcno, len);
 		tp->len = len;
 #if DEBUG && 0
-		TRACE(ep, "\t{%.*s}\n", MIN(len, 20), p + fcno);
+		TRACE(sp, "\t{%.*s}\n", MIN(len, 20), p + fcno);
 #endif
 	}
 	return (0);

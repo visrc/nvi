@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: delete.c,v 5.25 1993/05/08 13:19:04 bostic Exp $ (Berkeley) $Date: 1993/05/08 13:19:04 $";
+static char sccsid[] = "$Id: delete.c,v 5.26 1993/05/09 13:15:26 bostic Exp $ (Berkeley) $Date: 1993/05/09 13:15:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,7 +35,7 @@ delete(sp, ep, fm, tm, lmode)
 	int eof;
 
 #if DEBUG && 0
-	TRACE(sp->gp, "delete: from %lu/%d to %lu/%d%s\n",
+	TRACE(sp, "delete: from %lu/%d to %lu/%d%s\n",
 	    fm->lno, fm->cno, tm->lno, tm->cno, lmode ? " (LINE MODE)" : "");
 #endif
 	bp = NULL;

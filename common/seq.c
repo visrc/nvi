@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 5.29 1993/05/02 15:55:06 bostic Exp $ (Berkeley) $Date: 1993/05/02 15:55:06 $";
+static char sccsid[] = "$Id: seq.c,v 5.30 1993/05/09 13:15:24 bostic Exp $ (Berkeley) $Date: 1993/05/09 13:15:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,7 +35,7 @@ seq_set(sp, name, input, output, stype, userdef)
 	int ilen;
 
 #if DEBUG && 0
-	TRACE(ep, "seq_set: name {%s} input {%s} output {%s}\n",
+	TRACE(sp, "seq_set: name {%s} input {%s} output {%s}\n",
 	    name ? name : "", input, output);
 #endif
 	/* Find any previous occurrence, and replace the output field. */
