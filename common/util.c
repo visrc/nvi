@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 5.16 1992/05/27 10:29:36 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:29:36 $";
+static char sccsid[] = "$Id: util.c,v 5.17 1992/06/07 13:54:17 bostic Exp $ (Berkeley) $Date: 1992/06/07 13:54:17 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -138,45 +138,6 @@ onhup(signo)
 
 	/* NOTREACHED */
 	exit (1);
-}
-
-/*
- * onwinch --
- *	Handle SIGWINCH.
- */
-/* ARGSUSED */
-void
-onwinch(signo)
-	int signo;
-{
-	struct winsize win;
-	int len;
-	char *p, buf[100];
-
-	/* Try TIOCGWINSZ, and, if it fails, the termcap entry. */
-	if (ioctl(STDERR_FILENO, TIOCGWINSZ, &win) != -1 &&
-	    win.ws_row != 0 && win.ws_col != 0) {
-		LINES = win.ws_row;
-		COLS = win.ws_col;
-	}  else {
-		LINES = tgetnum("li");
-		COLS = tgetnum("co");
-	}
-
-	/* POSIX 1003.2 requires the environment to override. */
-	if ((p = getenv("ROWS")) != NULL)
-		LINES = strtol(p, NULL, 10);
-	if ((p = getenv("COLUMNS")) != NULL)
-		COLS = strtol(p, NULL, 10);
-
-	/* Make sure we got values that we can live with. */
-	if (LINES < 2 || COLS < 40) {
-		endwin();
-		len = snprintf(buf, sizeof(buf),
-		    "vi: screen rows %d cols %d: too small\n", LINES, COLS);
-		(void)write(STDERR_FILENO, buf, len);
-		exit(1);
-	}
 }
 
 /*
