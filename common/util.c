@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 5.39 1993/05/07 10:59:18 bostic Exp $ (Berkeley) $Date: 1993/05/07 10:59:18 $";
+static char sccsid[] = "$Id: util.c,v 5.40 1993/05/07 16:49:21 bostic Exp $ (Berkeley) $Date: 1993/05/07 16:49:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -189,6 +189,42 @@ binc(sp, argp, bsizep, min)
 	*(char **)argp = bpp;
 	*bsizep = csize;
 	return (0);
+}
+
+/*
+ * cursor_check --
+ *	Do a reality check on a cursor value, and make sure it's okay.
+ *	If necessary, change it, but keep it as close as possible to
+ *	the claimed value.  Used for sanity checking in some places,
+ *	but the main reason is to make sure that we haven't lost because
+ *	ex doesn't care about the column and it's disappeared.
+ */
+void
+cursor_check(sp, ep, lnop, cnop)
+	SCR *sp;
+	EXF *ep;
+	recno_t *lnop;
+	size_t *cnop;
+{
+	recno_t lno;
+	size_t len;
+
+	lno = *lnop;
+	if (file_gline(sp, ep, lno, &len) == NULL) {
+		lno = file_lline(sp, ep);
+		if (lno == 0) {
+			*lnop = 1;
+			*cnop = 0;
+		} else {
+			GETLINE_ERR(sp, *lnop);
+			if (file_gline(sp, ep, lno, &len) == NULL) {
+				*lnop = 1;
+				*cnop = 0;
+			} else
+				*cnop = sp->relative(sp, ep, *lnop);
+		}
+	} else if (*cnop >= len)
+		*cnop = len ? len - 1 : 0;
 }
 
 /*
