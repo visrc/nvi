@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_vi.c,v 8.25 1996/12/11 13:35:01 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:35:01 $";
+static const char sccsid[] = "$Id: m_vi.c,v 8.26 1996/12/11 15:04:40 bostic Exp $ (Berkeley) $Date: 1996/12/11 15:04:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1338,6 +1338,44 @@ __vi_set_cursor(cur_screen, is_busy)
 
 
 
+/* hooks for the tags widget */
+
+static	String	cur_word = NULL;
+
+static	void	set_word_at_caret( this_screen )
+		xvi_screen *this_screen;
+{
+    char	*start, *end, save;
+    int		newx, newy;
+
+    newx = this_screen->curx;
+    newy = this_screen->cury;
+
+    /* Note that this really ought to be done by core due to wrapping issues */
+    for ( end = start = CharAt( this_screen, newy, newx );
+	  (isalnum( *end ) || *end == '_') && (newx < this_screen->cols);
+	  end++, newx++
+	  );
+    save = *end;
+    *end = '\0';
+    if ( cur_word != NULL ) free( cur_word );
+    cur_word = strdup( start );
+    *end = save;
+
+    /* if the tag stack widget is active, set the text field there
+     * to agree with the current caret position.
+     */
+    __vi_set_tag_text( start );
+}
+
+
+String	__vi_get_word_at_caret( this_screen )
+	xvi_screen *this_screen;
+{
+    return (cur_word) ? cur_word : "";
+}
+
+
 /*
  * These routines deal with the caret.
  *
@@ -1372,9 +1410,17 @@ __vi_move_caret(this_screen, newy, newx)
 	xvi_screen *this_screen;
 	int newy, newx;
 {
-    /* caret is now here */
+    /* remove the old caret */
     __vi_erase_caret( this_screen );
+
+    /* caret is now here */
     this_screen->curx = newx;
     this_screen->cury = newy;
     draw_caret( this_screen );
+
+    /* if the tag stack widget is active, set the text field there
+     * to agree with the current caret position.
+     * Note that this really ought to be done by core due to wrapping issues
+     */
+    set_word_at_caret( this_screen );
 }

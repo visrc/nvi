@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_menu.c,v 8.17 1996/12/11 13:08:45 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:08:45 $";
+static const char sccsid[] = "$Id: m_menu.c,v 8.18 1996/12/11 15:04:38 bostic Exp $ (Berkeley) $Date: 1996/12/11 15:04:38 $";
 #endif /* not lint */
 
 #include <sys/queue.h>
@@ -30,6 +30,9 @@ static const char sccsid[] = "$Id: m_menu.c,v 8.17 1996/12/11 13:08:45 bostic Ex
 #include "../common/common.h"
 #include "../ip_vi/ip.h"
 #include "ipc_extern.h"
+
+/* save this for creation of children */
+static	Widget	main_widget = NULL;
 
 /* This module defines the menu structure for vi.  Each menu
  * item has an action routine associated with it.  For the most
@@ -192,7 +195,7 @@ static	String	get_file( w, prompt )
 
     /* create one? */
     if ( db == NULL ){ 
-	db = XmCreateFileSelectionDialog( w, "file", NULL, 0 );
+	db = XmCreateFileSelectionDialog( main_widget, "file", NULL, 0 );
 	XtAddCallback( db, XmNokCallback, ok_file_name, NULL );
 	XtAddCallback( db, XmNcancelCallback, __vi_cancel_cb, NULL );
     }
@@ -205,104 +208,6 @@ static	String	get_file( w, prompt )
 
     /* done */
     return file_name;
-}
-
-
-/* Utility:  Get a string (using standard File Selection Dialog Box) */
-
-static	String	string_name;
-
-
-#if defined(__STDC__)
-static	void	ok_string( Widget w,
-			   XtPointer client_data,
-			   XtPointer call_data
-			   )
-#else
-static	void		ok_string( w, client_data, call_data )
-	Widget		w;
-	XtPointer	client_data;
-	XtPointer	call_data;
-#endif
-{
-    XmSelectionBoxCallbackStruct	*cbs;
-
-    cbs = (XmSelectionBoxCallbackStruct *) call_data;
-    XmStringGetLtoR( cbs->value, XmSTRING_DEFAULT_CHARSET, &string_name );
-
-    have_answer = True;
-}
-
-
-#if defined(__STDC__)
-static	String	get_string( Widget w, String prompt, String title )
-#else
-static	String	get_string( w, prompt, title )
-	Widget	w;
-	String	prompt;
-	String	title;
-#endif
-{
-    /* make it static so we can reuse it */
-    static	Widget		db;
-		XmString	xmstr;
-
-    /* our return parameter */
-    if ( string_name != NULL ) {
-	XtFree( string_name );
-	string_name = NULL;
-    }
-
-    /* create one? */
-    if ( db == NULL ){ 
-	db = XmCreatePromptDialog( w, "string", NULL, 0 );
-	XtAddCallback( db, XmNokCallback, ok_string, NULL );
-	XtAddCallback( db, XmNcancelCallback, __vi_cancel_cb, NULL );
-    }
-
-    /* this one has space for a prompt... */
-    xmstr = XmStringCreateSimple( prompt );
-    XtVaSetValues( db, XmNselectionLabelString, xmstr, 0 );
-    XmStringFree( xmstr );
-
-    /* set the title as well */
-    XtVaSetValues( XtParent(db), XmNtitle, title, 0 );
-
-    /* wait for a response */
-    __vi_modal_dialog( db );
-
-    /* done */
-    return string_name;
-}
-
-
-/*
- * string_command --
- *	Get a string and send it with the command to the core.
- */
-static void
-string_command(w, code, prompt, title)
-	Widget w;
-	int code;
-	String prompt;
-	String title;
-{
-	IP_BUF ipb;
-	char *str;
-
-	if ((str = get_string(w, prompt, title)) != NULL ) {
-		ipb.code = code;
-		ipb.str = str;
-		/*
-		 * XXX
-		 * This is REALLY sleazy.  We pass the nul along with the
-		 * string so that the core editor doesn't have to copy the
-		 * string to get a nul termination.  This should be fixed
-		 * as part of making the editor fully 8-bit clean.
-		 */
-		ipb.len = strlen(str) + 1;
-		__vi_send("s", &ipb);
-	}
 }
 
 
@@ -456,7 +361,7 @@ ma_find(w, call_data, client_data)
 	Widget w;
 	XtPointer call_data, client_data;
 {
-	__vi_show_search_dialog( w, "Find" );
+	__vi_show_search_dialog( main_widget, "Find" );
 }
 
 static void
@@ -468,25 +373,11 @@ ma_find_next(w, call_data, client_data)
 }
 
 static void
-ma_tag(w, call_data, client_data)
+ma_tags(w, call_data, client_data)
 	Widget w;
 	XtPointer call_data, client_data;
 {
-	IP_BUF ipb;
-
-	ipb.code = VI_TAG;
-	(void)__vi_send(NULL, &ipb);
-}
-
-static void
-ma_tagsplit(w, call_data, client_data)
-	Widget w;
-	XtPointer call_data, client_data;
-{
-	IP_BUF ipb;
-
-	ipb.code = VI_TAGSPLIT;
-	(void)__vi_send(NULL, &ipb);
+	__vi_show_tags_dialog( main_widget, "Tag Stack" );
 }
 
 static void
@@ -498,11 +389,11 @@ ma_tagpop(w, call_data, client_data)
 }
 
 static void
-ma_tagas(w, call_data, client_data)
+ma_tagtop(w, call_data, client_data)
 	Widget w;
 	XtPointer call_data, client_data;
 {
-	string_command(w, VI_TAGAS, "Enter Tag Name:", "Tag");
+	__vi_send_command_string( ":tagtop" );
 }
 
 #if defined(__STDC__)
@@ -517,7 +408,7 @@ static	void		ma_preferences( w, call_data, client_data )
 	XtPointer	client_data;
 #endif
 {
-    __vi_show_options_dialog( w, "Preferences" );
+	__vi_show_options_dialog( main_widget, "Preferences" );
 }
 
 
@@ -526,6 +417,8 @@ static	void		ma_preferences( w, call_data, client_data )
 typedef	struct {
     String	title;
     void	(*action)();
+    String	accel;		/* for Motif */
+    String	accel_text;	/* for the user */
 } pull_down;
 
 typedef	struct {
@@ -535,48 +428,47 @@ typedef	struct {
 } menu_bar;
 
 static	pull_down	file_menu[] = {
-    { "Edit File...",		ma_edit_file },
-    { "",			NULL },
-    { "Split Window...",	ma_split },
-    { "",			NULL },
-    { "Save ",			ma_save },
-    { "Save As...",		ma_save_as },
-    { "",			NULL },
-    { "Write and Quit",		ma_wq },
-    { "Quit",			ma_quit },
-    { NULL,			NULL },
+    { "Edit File...",		ma_edit_file,	"Alt<Key>e",	"Alt+E"	},
+    { "",			NULL,		NULL,	NULL	},
+    { "Split Window...",	ma_split,	NULL,	NULL	},
+    { "",			NULL,		NULL,	NULL	},
+    { "Save ",			ma_save,	"Alt<Key>s",	"Alt+S"	},
+    { "Save As...",		ma_save_as,	"Shift Alt<Key>s",	"Shift+Alt+S"	},
+    { "",			NULL,		NULL,	NULL	},
+    { "Write and Quit",		ma_wq,		"Shift Alt<Key>q",	"Shift+Alt+Q"	},
+    { "Quit",			ma_quit,	"Alt<Key>q",	"Alt+Q"	},
+    { NULL,			NULL,		NULL,	NULL	},
 };
 
 static	pull_down	edit_menu[] = {
-    { "Undo",			ma_undo },
-    { "",			NULL },
-    { "Cut",			ma_cut },
-    { "Copy",			ma_copy },
-    { "Paste",			ma_paste },
-    { "",			NULL },
-    { "Find",			ma_find },
-    { "Find Next",		ma_find_next },
-    { NULL,			NULL },
+    { "Undo",			ma_undo,	NULL,	NULL	},
+    { "",			NULL,		NULL,	NULL	},
+    { "Cut",			ma_cut,		"Alt<Key>x",	"Alt+X"	},
+    { "Copy",			ma_copy,	"Alt<Key>c",	"Alt+C"	},
+    { "Paste",			ma_paste,	"Alt<Key>v",	"Alt+V"	},
+    { "",			NULL,		NULL,	NULL	},
+    { "Find",			ma_find,	"Alt<Key>f",	"Alt+F"	},
+    { "Find Next",		ma_find_next,	"Alt<Key>g",	"Alt+G"	},
+    { NULL,			NULL,		NULL,	NULL	},
 };
 
 static	pull_down	options_menu[] = {
-    { "Preferences",		ma_preferences },
-    { "Command Mode Maps",	NULL },
-    { "Insert Mode Maps",	NULL },
-    { NULL,			NULL },
+    { "Preferences",		ma_preferences,	NULL,	NULL	},
+    { "Command Mode Maps",	NULL,		NULL,	NULL	},
+    { "Insert Mode Maps",	NULL,		NULL,	NULL	},
+    { NULL,			NULL,		NULL,	NULL	},
 };
 
 static	pull_down	tag_menu[] = {
-    { "Go To Tag",		ma_tag },
-    { "Split To Tag",		ma_tagsplit },
-    { "Tag As...",		ma_tagas },
-    { "",			NULL },
-    { "Pop",			ma_tagpop },
-    { NULL,			NULL },
+    { "Show Tag Stack",		ma_tags,	"Alt<Key>t",	"Alt+T"	},
+    { "",			NULL,		NULL,	NULL	},
+    { "Pop Tag",		ma_tagpop,	NULL,	NULL	},
+    { "Clear Stack",		ma_tagtop,	NULL,	NULL	},
+    { NULL,			NULL,		NULL,	NULL	},
 };
 
 static	pull_down	help_menu[] = {
-    { NULL,			NULL },
+    { NULL,			NULL,		NULL,	NULL	},
 };
 
 static	menu_bar	main_menu[] = {
@@ -598,18 +490,30 @@ static	void		add_entries( parent, actions )
 #endif
 {
     Widget	w;
+    XmString	str;
 
     for ( ; actions->title != NULL; actions++ ) {
 
 	/* a separator? */
 	if ( *actions->title != '\0' ) {
 	    w = XmCreatePushButton( parent, actions->title, NULL, 0 );
-	    if ( actions->action != NULL )
+	    if ( actions->action == NULL )
+		XtSetSensitive( w, False );
+	    else
 		XtAddCallback(  w,
 				XmNactivateCallback,
 				(XtCallbackProc) actions->action,
 				actions
 				);
+	    if ( actions->accel != NULL ) {
+		str = XmStringCreateSimple( actions->accel_text );
+		XtVaSetValues(	w,
+				XmNaccelerator,		actions->accel,
+				XmNacceleratorText,	str,
+				0
+				);
+		XmStringFree( str );
+	    }
 	}
 	else {
 	    w = XmCreateSeparator( parent, "separator", NULL, 0 );
@@ -632,7 +536,10 @@ vi_create_menubar(parent)
     Widget	menu, pull, button;
     menu_bar	*ptr;
 
-    menu = XmCreateMenuBar( parent, "menu", NULL, 0 );
+    /* save this for creation of children */
+    main_widget = parent;
+
+    menu = XmCreateMenuBar( parent, "Menu", NULL, 0 );
 
     for ( ptr=main_menu; ptr->title != NULL; ptr++ ) {
 
@@ -644,8 +551,11 @@ vi_create_menubar(parent)
 	if ( strcmp( ptr->title, "Help" ) == 0 )
 	    XtVaSetValues( menu, XmNmenuHelpWidget, button, 0 );
 
+#if 0
+	/* These screw up accelerator processing.  Punt for now */
 	if ( ptr->mnemonic )
 	    XtVaSetValues( button, XmNmnemonic, ptr->mnemonic, 0 );
+#endif
 
 	XtManageChild( button );
     }

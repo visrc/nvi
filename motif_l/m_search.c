@@ -10,11 +10,12 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_search.c,v 8.4 1996/12/11 13:09:58 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:09:58 $";
+static const char sccsid[] = "$Id: m_search.c,v 8.5 1996/12/11 15:04:40 bostic Exp $ (Berkeley) $Date: 1996/12/11 15:04:40 $";
 #endif /* not lint */
 
 #include <sys/queue.h>
 
+/* context */
 #include <X11/X.h>
 #include <X11/Intrinsic.h>
 #include <Xm/DialogS.h>
@@ -49,36 +50,28 @@ typedef struct	{
     void	(*cb)();
 } ButtonData;
 
+
+#if defined(SelfTest)
+
 typedef struct	{
     String	name;
-    Boolean	value;
+    Boolean	*value;
     int		flag;
 } ToggleData;
 
-typedef enum {
-    ExprStandard,
-    ExprExtended,
-    ExprNone
-} ExpressionKind;
-
-static	String	expr_image[] = {
-    "Standard",
-    "Extended",
-    "None"
+static	ToggleData	toggle_data[] = {
+    { "Ignore Case",		0, VI_SEARCH_IC		},
+    { "Incremental", 		0, VI_SEARCH_INCR	}
+    { "Literal", 		0, VI_SEARCH_LIT	},
+    { "Wrap End Of File", 	0, VI_SEARCH_WR		},
 };
+
+#endif
 
 
 /* globals and constants */
 
-static	String	ExpressionWidget = "option",
-		PatternWidget	 = "text";
-
-static	ToggleData	toggle_data[] = {
-    { "Ignore Case",		0, VI_SEARCH_IC		},
-    { "Incremental",		0, VI_SEARCH_INCR	},
-    { "Literal",		0, VI_SEARCH_LIT	},
-    { "Wrap End Of File", 	0, VI_SEARCH_WR		},
-};
+static	String	PatternWidget	 = "text";
 
 static void done_func __P((Widget));
 static void next_func __P((Widget));
@@ -87,13 +80,11 @@ static void search __P((Widget, int));
 
 static	ButtonData button_data[] = {
     { "Next",		True,	next_func	},
-    { "Previous",	True,   prev_func	},
+    { "Previous", 	False,	prev_func	},
     { "Cancel", 	False,	done_func	}
 };
 
-ExpressionKind	expr_kind;
-
-static String pattern = NULL;
+static	String		pattern = NULL;
 
 
 /* Xt utilities */
@@ -149,25 +140,14 @@ static	void	get_state( w )
     /* get all the data from the root of the widget tree */
     while ( ! XtIsShell(shell) ) shell = XtParent(shell);
 
-    /* which regular expression kind? */
-    if (( w = get_child_widget( shell, ExpressionWidget )) != NULL ) {
-	w   = XmOptionButtonGadget( w );
-	str = get_widget_string( w, XmNlabelString );
-	for (i=0; i<XtNumber(expr_image); i++) {
-	    if ( strcmp( str, expr_image[i] ) == 0 ) {
-		expr_kind = (ExpressionKind) i;
-		break;
-	    }
-	}
-	XtFree( str );
-    }
-
+#if defined(SelfTest)
     /* which flags? */
     for (i=0; i<XtNumber(toggle_data); i++) {
 	if (( w = get_child_widget( shell, toggle_data[i].name )) != NULL ) {
 	    XtVaGetValues( w, XmNset, &toggle_data[i].value, 0 );
 	}
     }
+#endif
 
     /* what's the pattern? */
     if (( w = get_child_widget( shell, PatternWidget )) != NULL ) {
@@ -176,6 +156,8 @@ static	void	get_state( w )
     }
 }
 
+
+/* Translate the user's actions into nvi commands */
 /*
  * next_func --
  *	Action for next button.
@@ -216,17 +198,18 @@ search(w, flags)
     ipb.str = pattern;
     ipb.len = strlen(pattern);
 
+#if defined(SelfTest)
     /* initialize the search flags based on the buttons. */
     ipb.val1 = flags;
     for (i=0; i<XtNumber(toggle_data); i++) {
 	if (toggle_data[i].value)
 	    ipb.val1 |= toggle_data[i].flag;
     }
+#endif
 
     ipb.code = VI_C_SEARCH;
     __vi_send("1s", &ipb);
 }
-
 
 #if defined(__STDC__)
 static	void	done_func( Widget w )
@@ -311,6 +294,8 @@ static	Widget	create_push_buttons( parent, data, count )
 
 /* create a set of check boxes */
 
+#if defined(SelfTest)
+
 #if defined(__STDC__)
 static	Widget	create_check_boxes( Widget parent,
 				    ToggleData *toggles,
@@ -356,6 +341,8 @@ static	Widget	create_check_boxes( parent, toggles, count )
     return form;
 }
 
+#endif
+
 
 /* Routines to handle the text field widget */
 
@@ -375,14 +362,14 @@ static	void	text_cr( w, ptr, ptr2 )
 
 #ifdef notdef
 /*
- * When the user hits any other character, if we are doing incremental
- * search, send the updated string to vi.
+ * when the user hits any other character, if we are doing incremental
+ * search, send the updated string to nvi
  *
  * XXX
  * I don't currently see any way to make this work -- incremental search
  * is going to be really nasty.  What makes it worse is that the dialog
  * box almost certainly obscured a chunk of the text file, so there's no
- * way to use it even if it works.
+ * way to use it even if it works.  
  */
 #if defined(__STDC__)
 static	void	value_changed( Widget w, void *ptr, void *ptr2 )
@@ -397,7 +384,11 @@ static	void	value_changed( w, ptr, ptr2 )
     get_state( w );
 
     /* send it along? */
+#if defined(SelfTest)
     if ( incremental_search ) send_command( w );
+#else
+    if ( __vi_incremental_search() ) send_command( w );
+#endif
 }
 #endif /* notdef */
 
@@ -412,8 +403,7 @@ static	Widget	create_search_dialog( parent, title )
 	String	title;
 #endif
 {
-    Widget	box, form, label, text, checks, options, buttons, form2;
-    XmString	opt_str, reg_str, xtd_str, non_str;
+    Widget	box, form, label, text, checks, buttons, form2;
     save_dialog	*ptr;
 
     /* use an existing one? */
@@ -453,11 +443,9 @@ static	Widget	create_search_dialog( parent, title )
     label = XtVaCreateManagedWidget( "Pattern:", 
 				    xmLabelWidgetClass,
 				    form2,
-				    XmNalignment,	XmALIGNMENT_END,
 				    XmNtopAttachment,	XmATTACH_FORM,
 				    XmNbottomAttachment,XmATTACH_FORM,
-				    XmNrightAttachment,	XmATTACH_POSITION,
-				    XmNrightPosition,	25,
+				    XmNleftAttachment,	XmATTACH_FORM,
 				    0
 				    );
 
@@ -466,8 +454,8 @@ static	Widget	create_search_dialog( parent, title )
 				    form2,
 				    XmNtopAttachment,	XmATTACH_FORM,
 				    XmNbottomAttachment,XmATTACH_FORM,
-				    XmNleftAttachment,	XmATTACH_POSITION,
-				    XmNleftPosition,	25,
+				    XmNleftAttachment,	XmATTACH_WIDGET,
+				    XmNleftWidget,	label,
 				    XmNrightAttachment,	XmATTACH_FORM,
 				    0
 				    );
@@ -476,42 +464,20 @@ static	Widget	create_search_dialog( parent, title )
 #endif
     XtAddCallback( text, XmNactivateCallback, text_cr, 0 );
 
-    opt_str = XmStringCreateSimple( "Regular Expression Type" );
-    reg_str = XmStringCreateSimple( expr_image[(int)ExprStandard] );
-    xtd_str = XmStringCreateSimple( expr_image[(int)ExprExtended] );
-    non_str = XmStringCreateSimple( expr_image[(int)ExprNone] );
-    options = XmVaCreateSimpleOptionMenu( form,
-				    ExpressionWidget,
-				    opt_str,
-				    0,
-				    0,
-				    NULL,
-				    XmVaPUSHBUTTON, reg_str, 0, 0, 0,
-				    XmVaPUSHBUTTON, xtd_str, 0, 0, 0,
-				    XmVaPUSHBUTTON, non_str, 0, 0, 0,
-				    XmNtopAttachment,	XmATTACH_WIDGET,
-				    XmNtopWidget,	form2,
-				    XmNleftAttachment,	XmATTACH_POSITION,
-				    XmNleftPosition,	25,
-				    XmNrightAttachment,	XmATTACH_FORM,
-				    0
-				    );
-    XmStringFree( opt_str );
-    XmStringFree( reg_str );
-    XmStringFree( xtd_str );
-    XmStringFree( non_str );
-    XtManageChild( options );
-
     buttons = create_push_buttons( form, button_data, XtNumber(button_data) );
     XtVaSetValues( buttons,
 		   XmNbottomAttachment,	XmATTACH_FORM,
 		   0
 		   );
 
+#if defined(SelfTest)
     checks = create_check_boxes( form, toggle_data, XtNumber(toggle_data) );
+#else
+    checks = (Widget) __vi_create_search_toggles( form );
+#endif
     XtVaSetValues( checks,
 		   XmNtopAttachment,	XmATTACH_WIDGET,
-		   XmNtopWidget,	options,
+		   XmNtopWidget,	form2,
 		   XmNbottomAttachment,	XmATTACH_WIDGET,
 		   XmNbottomWidget,	buttons,
 		   0
@@ -544,7 +510,7 @@ String	title;
 
     /* we can handle getting taller and wider or narrower, but not shorter */
     XtVaGetValues( db, XmNheight, &height, 0 );
-    XtVaSetValues( db, XmNminHeight, height, 0 );
+    XtVaSetValues( db, XmNmaxHeight, height, XmNminHeight, height, 0 );
 
     /* post the dialog */
     XtPopup( db, XtGrabNone );
@@ -555,18 +521,17 @@ String	title;
 			);
 }
 
+
 /*
- * __vi_next_search --
- *	Top level search routine.
+ * __vi_search --
  *
- * PUBLIC: void __vi_next_search __P((void));
+ * PUBLIC: void __vi_search __P((void));
  */
 void
 __vi_search()
 {
     next_func( NULL );
 }
-
 
 
 #if defined(SelfTest)

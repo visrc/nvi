@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_main.c,v 8.24 1996/12/11 13:34:34 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:34:34 $";
+static const char sccsid[] = "$Id: m_main.c,v 8.25 1996/12/11 15:04:38 bostic Exp $ (Berkeley) $Date: 1996/12/11 15:04:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -55,6 +55,9 @@ static void onexit __P((void));
 String	fallback_rsrcs[] = {
 
     "*font:			-*-*-*-r-*--14-*-*-*-m-*-*-*",
+    "*text*fontList:		-*-*-*-r-*--14-*-*-*-m-*-*-*",
+    "*Menu*fontList:		-*-helvetica-bold-r-normal--14-*-*-*-*-*-*-*",
+    "*fontList:			-*-helvetica-medium-r-normal--14-*-*-*-*-*-*-*",
     "*pointerShape:		xterm",
     "*busyShape:		watch",
     "*iconName:			vi",
@@ -63,12 +66,14 @@ String	fallback_rsrcs[] = {
     "*iconForeground:	XtDefaultForeground",
     "*iconBackground:	XtDefaultBackground",
 
-    /* layout for the temporary preferences page */
-    "*toggleOptions.numColumns: 6",
-    "*intOptions.numColumns:    4",
-    "*otherOptions.numColumns:  3",
-    "*intOptions*columns:       10",
-    "*otherOptions*columns:     18",
+    /* layout for the tag stack dialog */
+    "*Tags*visibleItemCount:			5",
+
+    /* layout for the new, temporary preferences page */
+    "*toggleOptions.numColumns:			6",	/* also used by Find */
+    "*Preferences*tabWidthPercentage:		0",
+    "*Preferences*tabs.shadowThickness:		2",
+    "*Preferences*tabs.font:	-*-helvetica-bold-r-normal--14-*-*-*-*-*-*-*",
 
     /* --------------------------------------------------------------------- *
      * anything below this point is only defined when we are not running CDE *
@@ -78,10 +83,11 @@ String	fallback_rsrcs[] = {
      * (e.g. VUE on HPUX). The result is that you don't look
      * like a normal desktop application
      */
-    "?highlightColor:		red",
-    "?background:		gray75",
-    "?screen.background:	wheat",
-    "?highlightColor:		red"
+    "?highlightColor:			red",
+    "?background:			gray75",
+    "?screen.background:		wheat",
+    "?highlightColor:			red",
+    "?Preferences*options.background:	gray90",
 };
 
 static XutResource resource[] = {
