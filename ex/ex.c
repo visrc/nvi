@@ -1,205 +1,44 @@
-/* This file contains the code for reading ex commands. */
+/*-
+ * Copyright (c) 1992 The Regents of the University of California.
+ * All rights reserved.
+ *
+ * %sccs.include.redist.c%
+ */
 
-#include <sys/types.h>
+#ifndef lint
+static char sccsid[] = "$Id: ex.c,v 5.7 1992/04/04 16:27:35 bostic Exp $ (Berkeley) $Date: 1992/04/04 16:27:35 $";
+#endif /* not lint */
+
+#include <sys/param.h>
 #include <sys/stat.h>
+#include <glob.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
 
-#include "config.h"
-#include "options.h"
 #include "vi.h"
+#include "excmd.h"
+#include "options.h"
 #include "pathnames.h"
 #include "extern.h"
 
-static char **buildargv __P((char *, int *));
+char *defcmdarg[2];
 
-/* The flags are used to describe the command syntax. */
-#define	E_DFLALL	0x0001	/* Default file range is 1,$. */
-#define	E_TO		0x0002	/* Allow two line specifications. */
-#define E_DFLNONE	0x0004	/* No default file range. */
-#define E_EXRCOK	0x0008	/* Can be in a .exrc file. */
-#define E_EXTRA		0x0010	/* Allow extra args after command name. */
-#define E_FORCE		0x0020	/* Allow a ! after the command name. */
-#define E_FROM		0x0040	/* Allow one line specification. */
-#define E_NL		0x0080	/* If not MODE_EX mode, write newline first. */
-#define E_NODFILE	0x0100	/* Do not default to the current file name. */
-#define E_NOSPC		0x0200	/* No spaces allowed in the extra part. */
-#define E_PLUS		0x0400	/* Allow a line number, as in ":e +32 foo". */
-#define E_XFILE		0x0800	/* Expand wildcards in extra part. */
-#define E_ZERO		0x1000	/* Allow 0 to be given as a line number. */
+static int buildargv __P((char *, int, CMDARG *));
+static int fileexpand __P((glob_t *, char *, int));
 
 /*
- * This array maps ex command names to command codes.  The order in which
- * command names are listed below is significant -- ambiguous abbreviations
- * are always resolved to be the first possible match.  (e.g. "r" is taken
- * to mean "read", not "rewind", because "read" comes before "rewind").
+ * ex --
+ *	Read an ex command and execute it.
  */
-typedef struct _cmdlist {
-	char *name;			/* Command name. */
-	enum CMD code;			/* Command identifier. */
-	void (*fn) __P((CMDARG *));	/* Underlying function. */
-	u_short syntax;			/* Command syntax. */
-} CMDLIST;
-
-static CMDLIST cmds[] =  {
-	{"append",	CMD_APPEND,	cmd_append,
-	    E_FROM|E_ZERO},
-#ifdef DEBUG
-	{"bug",		CMD_DEBUG,	cmd_debug,
-	    E_FROM|E_TO|E_FORCE|E_EXTRA|E_NL},
-#endif
-	{"change",	CMD_CHANGE,	cmd_append, 
-	    E_FROM|E_TO},
-	{"delete",	CMD_DELETE,	cmd_delete, 
-	    E_FROM|E_TO|E_EXTRA|E_NOSPC},
-	{"edit",	CMD_EDIT,	cmd_edit, 
-	    E_FORCE|E_XFILE|E_EXTRA|E_NOSPC|E_PLUS},
-	{"file",	CMD_FILE,	cmd_file, 
-	    E_XFILE|E_EXTRA|E_NOSPC|E_NODFILE},
-	{"global",	CMD_GLOBAL,	cmd_global, 
-	    E_FROM|E_TO|E_FORCE|E_EXTRA|E_DFLALL},
-	{"insert",	CMD_INSERT,	cmd_append,
-	    E_FROM},
-	{"join",	CMD_INSERT,	cmd_join, 
-	    E_FROM|E_TO},
-	{"k",	CMD_MARK,	cmd_mark, 
-	    E_FROM|E_EXTRA|E_NOSPC},
-	{"list",	CMD_LIST,	cmd_print, 
-	    E_FROM|E_TO|E_NL},
-	{"move",	CMD_MOVE,	cmd_move, 
-	    E_FROM|E_TO|E_EXTRA},
-	{"next",	CMD_NEXT,	file_next, 
-	    E_FORCE|E_XFILE|E_EXTRA|E_NODFILE},
-	{"print",	CMD_PRINT,	cmd_print, 
-	    E_FROM|E_TO|E_NL},
-	{"quit",	CMD_QUIT,	cmd_xit, 
-	    E_FORCE		},
-	{"read",	CMD_READ,	cmd_read, 
-	    E_FROM|E_ZERO|E_XFILE|E_EXTRA|E_NOSPC|E_NODFILE},
-	{"substitute",	CMD_SUBSTITUTE,	cmd_substitute, 
-	    E_FROM|E_TO|E_EXTRA},
-	{"to",	CMD_COPY,	cmd_move, 
-	    E_FROM|E_TO|E_EXTRA},
-	{"undo",	CMD_UNDO,	cmd_undo, 0},
-	{"vglobal",	CMD_VGLOBAL,	cmd_global, 
-	    E_FROM|E_TO|E_EXTRA|E_DFLALL},
-	{"write",	CMD_WRITE,	cmd_write, 
-	    E_FROM|E_TO|E_FORCE|E_XFILE|E_EXTRA|E_NOSPC|E_DFLALL},
-	{"xit",	CMD_XIT,	cmd_xit, 
-	    E_FORCE|E_NL},
-	{"yank",	CMD_YANK,	cmd_delete, 
-	    E_FROM|E_TO|E_EXTRA|E_NOSPC},
-
-	{"!",	CMD_BANG,	cmd_shell, 
-	    E_EXRCOK|E_FROM|E_TO|E_XFILE|E_EXTRA|E_NODFILE|E_DFLNONE|E_NL},
-	{"<",	CMD_SHIFTL,	cmd_shift, 
-	    E_FROM|E_TO},
-	{">",	CMD_SHIFTR,	cmd_shift, 
-	    E_FROM|E_TO},
-	{"=",	CMD_EQUAL,	cmd_file, 
-	    E_FROM|E_TO},
-	{"&",	CMD_SUBAGAIN,	cmd_substitute, 
-	    E_FROM|E_TO},
-#ifndef	NO_AT
-	{"@",	CMD_AT,	cmd_at, 
-	    E_EXTRA},
-#endif
-
-#ifndef	NO_ABBR
-	{"abbreviate",	CMD_ABBR,	cmd_abbr, 
-	    E_EXRCOK|E_EXTRA},
-#endif
-	{"args",	CMD_ARGS,	file_args, 
-	    E_EXRCOK},
-#ifndef	NO_ERRLIST
-	{"cc",	CMD_CC,	cmd_make, 
-	    E_FORCE|E_XFILE|E_EXTRA},
-#endif
-	{"cd",	CMD_CD,	cmd_cd, 
-	    E_EXRCOK|E_XFILE|E_EXTRA|E_NOSPC|E_NODFILE},
-	{"copy",	CMD_COPY,	cmd_move, 
-	    E_FROM|E_TO|E_EXTRA},
-#ifndef	NO_DIGRAPH
-	{"digraph",	CMD_DIGRAPH,	cmd_digraph, 
-	    E_EXRCOK|E_FORCE|E_EXTRA},
-#endif
-#ifndef	NO_ERRLIST
-	{"errlist",	CMD_ERRLIST,	cmd_errlist, 
-	    E_FORCE|E_XFILE|E_EXTRA|E_NOSPC|E_NODFILE},
-#endif
-	{"ex",	CMD_EDIT,	cmd_edit, 
-	    E_FORCE|E_XFILE|E_EXTRA|E_NOSPC},
-#ifdef	SYSV_COMPAT
-	{"mark",	CMD_MARK,	cmd_mark, 
-	    E_FROM|E_EXTRA|E_NOSPC},
-#endif
-	{"map",	CMD_MAP,	cmd_map, 
-	    E_EXRCOK|E_FORCE|E_EXTRA},
-#ifndef	NO_MKEXRC
-	{"mkexrc",	CMD_MKEXRC,	cmd_mkexrc, 
-	    E_XFILE|E_EXTRA|E_NOSPC|E_NODFILE},
-#endif
-	{"number",	CMD_NUMBER,	cmd_print, 
-	    E_FROM|E_TO|E_NL},
-	{"put",	CMD_PUT,	cmd_put, 
-	    E_FROM|E_ZERO|E_EXTRA|E_NOSPC},
-	{"set",	CMD_SET,	cmd_set, 
-	    E_EXRCOK|E_EXTRA},
-	{"shell",	CMD_SHELL,	cmd_shell, 
-	    E_NL},
-	{"source",	CMD_SOURCE,	cmd_source, 
-	    E_EXRCOK|E_XFILE|E_EXTRA|E_NOSPC|E_NODFILE},
-	{"tag",	CMD_TAG,	cmd_tag, 
-	    E_FORCE|E_EXTRA|E_NOSPC},
-	{"version",	CMD_VERSION,	cmd_version, 
-	    E_EXRCOK},
-	{"visual",	CMD_VISUAL,	cmd_edit, 
-	    E_FORCE|E_XFILE|E_EXTRA|E_NOSPC|E_NODFILE},
-	{"wq",	CMD_WQUIT,	cmd_xit, 
-	    E_NL},
-
-#ifdef	DEBUG
-	{"debug",	CMD_DEBUG,	cmd_debug, 
-	    E_FROM|E_TO|E_FORCE|E_EXTRA|E_NL},
-	{"validate",	CMD_VALIDATE,	cmd_validate, 
-	    E_FORCE|E_NL},
-#endif
-	{"chdir",	CMD_CD,	cmd_cd, 
-	    E_EXRCOK|E_XFILE|E_EXTRA|E_NOSPC|E_NODFILE},
-#ifndef	NO_COLOR
-	{"color",	CMD_COLOR,	cmd_color, 
-	    E_EXRCOK|E_EXTRA},
-#endif
-#ifndef	NO_ERRLIST
-	{"make",	CMD_MAKE,	cmd_make, 
-	    E_FORCE|E_XFILE|E_EXTRA|E_NODFILE},
-#endif
-#ifndef	SYSV_COMPAT
-	{"mark",	CMD_MARK,	cmd_mark, 
-	    E_FROM|E_EXTRA|E_NOSPC},
-#endif
-	{"previous",	CMD_PREVIOUS,	file_prev, 
-	    E_FORCE},
-	{"rewind",	CMD_REWIND,	file_rew,
-	    E_FORCE},
-	{"unmap",	CMD_UNMAP,	cmd_map,
-	    E_EXRCOK|E_FORCE|E_EXTRA},
-#ifndef	NO_ABBR
-	{"unabbreviate",CMD_UNABBR,	cmd_abbr,
-	    E_EXRCOK|E_EXTRA|E_NOSPC},
-#endif
-	{NULL},
-};
-
-/* This function reads an ex command and executes it. */
 void
 ex()
 {
 	static long oldline;
 	register int cmdlen;
 	CMDARG cmd;
-	char cmdbuf[150];
+	char cmdbuf[512];
 
 	significant = FALSE;
 	oldline = markline(cursor);
@@ -220,46 +59,145 @@ ex()
 		refresh();
 
 		/* Parse & execute the command. */
-		doexcmd(cmdbuf);
+		excmd(cmdbuf);
 
 		/* Handle autoprint. */
 		if (significant || markline(cursor) != oldline) {
 			significant = FALSE;
 			oldline = markline(cursor);
 			if (ISSET(O_AUTOPRINT) && mode == MODE_EX) {
-				cmd.frommark = cmd.tomark = cursor;
-				cmd.cmd = CMD_PRINT;
-				cmd.force = 0;
-				cmd.extra = "";
-				cmd_print(&cmd);
+				SETCMDARG(cmd,
+				    NULL, 2, cursor, cursor, 0, NULL);
+				ex_print(&cmd);
 			}
 		}
 	}
 }
 
 /*
- * doexcmd --
- *    Parse and execute an ex command.  The format of an ex command is:
- *            :line_address command[!] parameters count flags
- *    Most everything is optional.
+ * exfile --
+ *	Execute EX commands from a file.
  */
 void
-doexcmd(cmdbuf)
-	char *cmdbuf;		/* String containing an ex command. */
+exfile(filename, noexisterr)
+	char *filename;
+	int noexisterr;
 {
-	register int cmdidx;	/* Command index. */
-	register int cmdlen;	/* Length of command name. */
-	register char *build;	/* Used while copying filenames. */
-	CMDARG	cmdarg;
+	struct stat sb;
+	int fd, len;
+	char *bp;
+
+	if ((fd = open(filename, O_RDONLY, 0)) < 0) {
+		if (noexisterr)
+			goto e1;
+		return;
+	}
+	if (fstat(fd, &sb))
+		goto e2;
+	/* Add in +1 so can have a trailing EOS. */
+	if ((bp = malloc(sb.st_size + 1)) == NULL)
+		goto e2;
+
+	len = read(fd, bp, sb.st_size);
+	if (len == -1 || len != sb.st_size) {
+		if (len != sb.st_size)
+			errno = EIO;
+		goto e3;
+	}
+	bp[sb.st_size] = '\0';
+
+	exstring(bp, len, 0);
+	free(bp);
+	(void)close(fd);
+	return;
+
+e3:	free(bp);
+e2:	(void)close(fd);
+e1:	msg("%s: %s.", filename, strerror(errno));
+}
+
+/*
+ * exstring --
+ *	Execute EX commands from a string.  The commands may be separated
+ *	by newlines or by | characters, and may be quoted.  The string is
+ *	expected to be EOS terminated.
+ */
+void
+exstring(cmd, len, copy)
+	register char *cmd;
+	register int len;
+	int copy;
+{
+	register char *p, *t;
+	char *start;
+
+	/* Maybe an empty string. */
+	if (len == 0)
+		return;
+
+	/* Make a copy if necessary. */
+	if (copy) {
+		if ((start = malloc(len)) == NULL) {
+			msg("Error: %s.", strerror(errno));
+			return;
+		}
+		bcopy(cmd, start, len);
+		cmd = start;
+	}
+
+	/*
+	 * Walk the command, checking for ^V quotes.  The string "^V\n" is
+	 * treated as a single ^V.  Len is artificially incremented by one
+	 * so that we find the trailing EOS and do the last command,
+	 */
+	QSTART(cmd);
+	for (p = t = cmd, ++len; len--;)
+		switch(*p) {
+		case '|':
+		case '\n':
+			*p = '\0';
+			/* FALLTHROUGH */
+		case '\0':
+			if (p > cmd) {
+				QEND();
+				excmd(cmd);
+			}
+			cmd = t = ++p;
+			QSTART(cmd);
+			break;
+		case 'V' & 0x1f:
+			if (len > 1 && p[1] != '\n') {
+				QSET(t);
+				++p;
+				--len;
+			}
+			/* FALLTHROUGH */
+		default:
+			*p++ = *t++;
+			break;
+		}
+
+	if (copy)
+		free(start);
+}
+
+/*
+ * excmd --
+ *    Parse and execute an ex command.
+ */
+void
+excmd(exc)
+	register char *exc;
+{
+	extern int reading_exrc;
+	static CMDLIST *lastcmd = &cmds[C_PRINT];
+	register int cmdlen;
+	register char *p;
+	CMDARG	cmd;
 	CMDLIST *cp;
-	MARK addr1, addr2;
-	enum CMD cmd;		/* Command. */
-	u_short syntax;		/* Argument types for this command. */
-	short forceit;		/* `!' character specified. */
-	int iswild;		/* Boolean: filenames use wildcards. */
-	int isdfl;		/* Using default line ranges. */
-	int didsub;		/* Substitute file names for % or #. */
-	int lineset;		/* If line range set by user. */
+	u_long count, num;
+	u_short flags;
+	char *ep;
 
 	/*
 	 * Ex commands can't be undone via the shift-U command.
@@ -267,196 +205,308 @@ doexcmd(cmdbuf)
 	 */
 	U_line = 0L;
 
-	/* Permit extra colons at the start of the line. */
-	while (*cmdbuf == ':')
-		++cmdbuf;
+	/*
+	 * Permit a single extra colon at the start of the line, for
+	 * historical reasons.
+	 */
+	if (*exc == ':')
+		++exc;
 
 	/* Ignore command lines that start with a double-quote. */
-	if (*cmdbuf == '"')
+	if (*exc == '"')
 		return;
 
 	/* Skip whitespace. */
-	for (; isspace(*cmdbuf); ++cmdbuf);
+	for (; isspace(*exc); ++exc);
+
+	/* Initialize the argument structure. */
+	bzero(&cmd, sizeof(CMDARG));
 
 	/*
-	 * Parse any line specifiers.  New command position is returned,
+	 * Parse line specifiers.  New command line position is returned,
 	 * or NULL on error.
 	 */
-TRACE("====\ncmdbuf {%s}", cmdbuf);
-	if ((cmdbuf = linespec(cmdbuf, &addr1, &addr2, &lineset)) == NULL)
+	if ((exc = linespec(exc, &cmd)) == NULL)
 		return;
-TRACE("addr1 %ld", addr1);
-TRACE("addr2 %ld", addr2);
-TRACE("lineset %d", lineset);
-TRACE("cmdbuf {%s}", cmdbuf);
 
 	/* Skip whitespace. */
-	for (; isspace(*cmdbuf); ++cmdbuf);
+	for (; isspace(*exc); ++exc);
 
-	/* If no command, then just move the cursor to the last address. */
-	if (!*cmdbuf) {
-		cursor = addr2 == MARK_UNSET ? addr1 : addr2;
-		return;
+	/* If no command, then do the last specified of p, l, or #. */
+	if (!*exc) {
+		cp = lastcmd;
+		goto address;
 	}
 
-	/* Figure out how long the command name is. */
-	if (!isalpha(*cmdbuf))
+	/*
+	 * Figure out how long the command name is.  There are a few
+	 * commands that aren't alphabetic, but they are all single
+	 * character commands.
+	 */
+	if (index("!&<=>@", *exc)) {
+		p = exc;
+		exc++;
 		cmdlen = 1;
-	else
-		for (cmdlen = 1; isalpha(cmdbuf[cmdlen]); cmdlen++);
-
-	/* Lookup the command code. */
-	for (cp = &cmds[0];
-	    cp->name && strncmp(cmdbuf, cp->name, cmdlen); ++cp);
-
+	} else {
+		for (p = exc; isalpha(*exc); ++exc);
+		cmdlen = exc - p;
+	}
+	for (cp = cmds; cp->name && strncmp(p, cp->name, cmdlen); ++cp);
 	if (cp->name == NULL) {
-		msg("Unknown command \"%.*s\".", cmdlen, cmdbuf);
+		msg("The %.*s command is unknown.", cmdlen, p);
+		return;
+	}
+	cmd.cmd = cp;
+
+	/* Some commands aren't permitted in .exrc files. */
+	if (reading_exrc && !(cp->flags & E_EXRCOK)) {
+		msg("Can't use the %s command in a .exrc file.", cp->name);
 		return;
 	}
 
-	cmd = cp->code;
-	syntax = cp->syntax;
+	/* Some commands are turned off. */
+	if (cp->flags & E_NOPERM) {
+		msg("This version doesn't support the %.*s command.",
+		    cmdlen, p);
+		return;
+	}
 
-	/* If the command ended with a bang, set the forceit flag. */
-	cmdbuf += cmdlen;
-	if ((syntax & E_FORCE) && *cmdbuf == '!') {
-		++cmdbuf;
-		forceit = 1;
-	} else
-		forceit = 0;
+	/* Some commands have a syntax so twisted we can't handle it. */
+	if (*cp->syntax == 'X')
+		goto address;
 
-	/* Skip any unquoted whitespace, leave cmdbuf pointing to arguments. */
-	while (isspace(*cmdbuf) && !QTST(cmdbuf))
-		++cmdbuf;
+	for (count = 0, p = cp->syntax; *p; ++p) {
+		for (; isspace(*exc); ++exc);		/* Skip whitespace. */
+		if (!*exc)
+			break;
 
-	/* A couple of special cases for filenames. */
-	if (syntax & E_XFILE) {
-		/* If names were given, process them. */
-		if (*cmdbuf) {
-			for (build = tmpblk.c, iswild = didsub = FALSE;
-			    *cmdbuf; ++cmdbuf)
-				switch (QTST(cmdbuf) ? '\0' : *cmdbuf) {
-				case '%':
-					if (!*origname) {
-					msg("No filename to substitute for %%");
-						return;
-					}
-					(void)strcpy(build, origname);
-					while (*build)
-						++build;
-					didsub = TRUE;
-					break;
+		switch (*p) {
+		case '!':				/* ! */
+			if (*exc == '!') {
+				++exc;
+				cmd.flags |= E_FORCE;
+			}
+			break;
+		case '+':				/* +cmd */
+			if (*exc != '+')
+				break;
+				for (cmd.plus = ++exc; isalpha(*exc); ++exc);
+			*exc++ = '\0';
+			break;
+		case '1':				/* #, l, p */
+			for (;; ++exc)
+				switch (*exc) {
 				case '#':
-					if (!*prevorig) {
-					msg("No filename to substitute for #");
-						return;
-					}
-					(void)strcpy(build, prevorig);
-					while (*build)
-						++build;
-					didsub = TRUE;
+					cmd.flags |= E_F_HASH;
 					break;
-				case '*':
-				case '?':
-				case '[':
-				case '`':
-				case '{': /* } */
-				case '$':
-				case '~':
-					*build++ = *cmdbuf;
-					iswild = TRUE;
+				case 'l':
+					cmd.flags |= E_F_LIST;
+					break;
+				case 'p':
+					cmd.flags |= E_F_PRINT;
 					break;
 				default:
-					*build++ = *cmdbuf;
+					goto end1;
 				}
-			*build = '\0';
-
-			if (cmd == CMD_BANG ||
-			    cmd == CMD_READ && tmpblk.c[0] == '!' ||
-			    cmd == CMD_WRITE && tmpblk.c[0] == '!') {
-				if (didsub) {
-					if (mode != MODE_EX)
-						addch('\n');
-					addstr(tmpblk.c);
-					addch('\n');
-					exrefresh();
+end1:			break;
+		case '2':				/* -, ., +, ^ */
+			for (;; ++exc)
+				switch (*exc) {
+				case '-':
+					cmd.flags |= E_F_DASH;
+					break;
+				case '.':
+					cmd.flags |= E_F_DOT;
+					break;
+				case '+':
+					cmd.flags |= E_F_PLUS;
+					break;
+				case '^':
+					cmd.flags |= E_F_CARAT;
+					break;
+				default:
+					goto end2;
 				}
-			} else if (iswild && tmpblk.c[0] != '>')
-				cmdbuf = wildcard(tmpblk.c);
-
-		/* No names given, maybe assume origname. */
-		} else if (!(syntax & E_NODFILE))
-			(void)strcpy(tmpblk.c, origname);
-		else
-			*tmpblk.c = '\0';
-
-		cmdbuf = tmpblk.c;
-	}
-
-	/* Bad arguments. */
-	if (!(syntax & E_EXRCOK) && nlines < 1L) {
-		msg("Can't use the \"%s\" command in a %s file",
-		    cmds[cmdidx].name, _NAME_EXRC);
-		return;
-	}
-	if (!(syntax & (E_ZERO | E_EXRCOK)) && addr1 == MARK_UNSET) {
-		msg("Can't use address 0 with \"%s\" command.",
-		    cmds[cmdidx].name);
-		return;
-	}
-	if (!(syntax & E_FROM) && addr1 != cursor && nlines >= 1L) {
-		msg("Can't use address with \"%s\" command.",
-		    cmds[cmdidx].name);
-		return;
-	}
-	if (!(syntax & E_TO) && addr2 != addr1 && nlines >= 1L) {
-		msg("Can't use a range with \"%s\" command.",
-		    cmds[cmdidx].name);
-		return;
-	}
-	if (!(syntax & E_EXTRA) && *cmdbuf) {
-		msg("Extra characters after \"%s\" command.",
-		    cmds[cmdidx].name);
-		return;
-	}
-	if ((syntax & E_NOSPC) &&
-	    !(cmd == CMD_READ && (forceit || *cmdbuf == '!'))) {
-		build = cmdbuf;
-		if ((syntax & E_PLUS) && *build == '+') {
-			while (*build && !isspace(*build))
-				++build;
-			while (*build && isspace(*build))
-				++build;
-		}
-		for (; *build; build++)
-			if (isspace(*build)) {
-				msg("Too many %s to \"%s\" command.",
-				    (syntax & E_XFILE) ? "filenames" :
-				    "arguments", cmds[cmdidx].name);
+end2:			break;
+		case '>':				/*  >> */
+			if (exc[0] == '>' && exc[1] == '>') {
+				cmd.flags |= E_F_RIGHT;
+				exc += 2;
+			}
+			break;
+		case 'b':				/* buffer */
+			if (isalpha(*exc))
+				cmd.buffer = *exc++;
+			break;
+		case 'c':				/* count */
+			if (isdigit(*exc)) {
+				count = strtol(exc, &ep, 10);
+				if (count == 0) {
+					msg("Count may not be zero.");
+					return;
+				}
+				exc = ep;
+			}
+			break;
+		case 'l':				/* line */
+			/*
+			 * XXX
+			 * Check for illegal line numbers.
+			 */
+			if (isdigit(*exc)) {
+				cmd.lineno = strtol(exc, &ep, 10);
+				if (cmd.lineno == 0) {
+					msg("Line number may not be zero.");
+					return;
+				}
+				exc = ep;
+			}
+			break;
+		case 's':				/* string */
+			cmd.string = exc;
+			goto address;
+		case 'f':				/* file */
+			if (buildargv(exc, 1, &cmd))
 				return;
+			goto countchk;
+		case 'w':				/* word */
+			if (buildargv(exc, 0, &cmd))
+				return;
+countchk:		if (*++p != 'N') {		/* N */
+				/*
+				 * If a number is specified, must either be
+				 * 0 or that number, if optional, and that
+				 * number, if required.
+				 */
+				num = *p - '0';
+				if ((*++p != 'o' || cmd.argc != 0) &&
+				    cmd.argc != num)
+					goto usage;
+			}
+			goto address;
+		default:
+			msg("Internal syntax table error (%s).", cp->name);
+		}
+	}
+
+	/* Shouldn't be anything left. */
+	if (*exc)
+		goto usage;
+
+	/*
+	 * Fix up the addresses.
+	 *
+	 * It's an error if an address is specified for a command that doesn't
+	 * take an address.  If two addresses are specified and the command
+	 * only needs one, lose the first one.
+	 */
+address:
+	switch(cp->flags & (E_ADDR1|E_ADDR2)) {
+	case 0:
+		if (cmd.addrcnt) {
+			msg("Illegal address; usage: %s.", cp->usage);
+			return;
+		}
+		if (count) {
+usage:			msg("Usage: %s.", cp->usage);
+			return;
+		}
+		break;
+	case E_ADDR1:
+		if (cmd.addrcnt == 2) {
+			cmd.addrcnt = 1;
+			cmd.addr1 = cmd.addr2;
+		}
+		break;
+	case E_ADDR2:
+		break;
+	}
+
+	/*
+	 * Set the default address if none provided.  If count specified,
+	 * it overrides any addresses.
+	 */
+	if (cp->flags & (E_ADDR1|E_ADDR2)) {
+		if (cmd.addrcnt == 0) {
+			cmd.addrcnt = 1;
+			cmd.addr1 = cursor;
+		}
+		if (count)
+			switch(cmd.addrcnt) {
+			case 1:
+				if (count) {
+					cmd.addrcnt = 2;
+					cmd.addr1 = cursor + count;
+				}
+				break;
+			case 2:
+				cmd.addr2 = cmd.addr1 + count;
+				break;
 			}
 	}
-
-	/* Some commands have special default ranges. */
-	if (isdfl && (syntax & E_DFLALL)) {
-		addr1 = MARK_FIRST;
-		addr2 = MARK_LAST;
-	} else if (isdfl && (syntax & E_DFLNONE))
-		addr1 = addr2 = 0L;
+			
+	/* Verify that the addresses are legal. */
+	switch(cmd.addrcnt) {
+	case 2:
+		num = markline(cmd.addr2);
+		if (num < 0) {
+			msg("%lu is an invalid address.", num);
+			return;
+		}
+		if (num > nlines) {
+			msg("Less than %lu lines in the file.", num);
+			return;
+		}
+		/* FALLTHROUGH */
+	case 1:
+oneaddr:	num = markline(cmd.addr1);
+		if (num == 0 && !(flags & E_ZERO)) {
+			msg("The %s command doesn't permit an address of 0.",
+			    cp->name);
+			return;
+		}
+		if (num < 0) {
+			msg("%lu is an invalid address.", num);
+			return;
+		}
+		if (num > nlines) {
+			msg("Less than %lu lines in the file.", num);
+			return;
+		}
+		break;
+	}
 
 	/* Write a newline if called from visual mode. */
-	if ((syntax & E_NL) && mode != MODE_EX && !exwrote) {
+	if (flags & E_NL && mode != MODE_EX && !exwrote) {
 		addch('\n');
 		exrefresh();
 	}
+#if defined(DEBUG) && 1
+{
+	int __cnt;
 
+	TRACE("excmd: %s", cmd.cmd->name);
+	if (cmd.addrcnt > 0) {
+		TRACE("address 1: %d", cmd.addr1);
+		if (cmd.addrcnt > 1)
+			TRACE("address 2: %d", cmd.addr2);
+	}
+	if (cmd.lineno)
+		TRACE("\tlineno %d", cmd.lineno);
+	if (cmd.flags)
+		TRACE("\tflags %0x", cmd.flags);
+	if (cmd.command)
+		TRACE("\tcommand %s", cmd.command);
+	if (cmd.plus)
+		TRACE("\tplus %s", cmd.plus);
+	if (cmd.buffer)
+		TRACE("\tbuffer %c", cmd.buffer);
+	for (__cnt = 0; __cnt < cmd.argc; ++__cnt)
+		TRACE("\targ %d: {%s}", __cnt, cmd.argv[__cnt]);
+}
+#endif
 	/* Do the command. */
-	cmdarg.frommark = addr1;
-	cmdarg.tomark = addr2;
-	cmdarg.cmd = cmd;
-	cmdarg.force = forceit;
-	cmdarg.extra = cmdbuf && *cmdbuf ? cmdbuf : NULL;
-	(*cmds[cmdidx].fn)(&cmdarg);
+	(*cp->fn)(&cmd);
 }
 
 /*
@@ -464,28 +514,26 @@ TRACE("cmdbuf {%s}", cmdbuf);
  *	Parse a line specifier for ex commands.
  */
 char *
-linespec(cmd, addr1p, addr2p, linesetp)
+linespec(cmd, cp)
 	char *cmd;
-	MARK *addr1p, *addr2p;
-	int *linesetp;
+	CMDARG *cp;
 {
-	enum SET { NOTSET, ONESET, TWOSET } set;
 	MARK cur, savecursor;
-	long num, total;
+	u_long num, total;
 	int delimiter;
 	char ch, *ep;
 
 	/* Percent character is all lines in the file. */
 	if (*cmd == '%') {
-		*addr1p = *addr2p = MARK_LAST;
-		*linesetp = 2;
+		cp->addr1 = MARK_FIRST;
+		cp->addr2 = MARK_LAST;
+		cp->addrcnt = 2;
 		return (++cmd);
 	}
 
 	/* Parse comma or semi-colon delimited line specs. */
-	*linesetp = 0;
-	*addr1p = *addr2p = savecursor = MARK_UNSET;
-	for (set = NOTSET;;) {
+	savecursor = MARK_UNSET;
+	for (cp->addrcnt = 0;;) {
 		delimiter = 0;
 		switch(*cmd) {
 		case ';':		/* Delimiter. */
@@ -562,167 +610,222 @@ linespec(cmd, addr1p, addr2p, linesetp)
 				cur = m_updnto(cur, num, ch);
 		}
 
-		/* Multiple addresses are discarded, starting with the first. */
-		switch(set) {
-		case NOTSET:
-			set = ONESET;
-			*addr1p = cur;
+		/* Extra addresses are discarded, starting with the first. */
+		switch(cp->addrcnt) {
+		case 0:
+			cp->addr1 = cur;
+			cp->addrcnt = 1;
 			break;
-		case ONESET:
-			set = TWOSET;
-			*addr2p = cur;
+		case 1:
+			cp->addr2 = cur;
+			cp->addrcnt = 2;
 			break;
-		case TWOSET:
-			*addr1p = *addr2p;
-			*addr2p = cur;
+		case 2:
+			cp->addr1 = cp->addr2;
+			cp->addr2 = cur;
 			break;
 		}
 	}
 
 	/*
+	 * This is probably not right for treatment of savecursor -- figure
+	 * out what the historical ex did for ";,;,;5p" or similar stupidity.
 	 * XXX
-	 * This is probably not right for treatment of savecursor -- need to
-	 * figure out what the historical ex did for ";,;,;5p" or similar
-	 * stupidity.
 	 */
 done:	if (savecursor != MARK_UNSET)
 		cursor = savecursor;
 
-	switch(set) {
-	case TWOSET:
-		++*linesetp;
-		num = markline(*addr2p);
-		if (num < 1L || num > nlines) {
-			msg("Invalid second address (1 to %ld)", nlines);
-			return (NULL);
-		}
-		/* FALLTHROUGH */
-	case ONESET:
-		++*linesetp;
-		num = markline(*addr1p);
-		if (num < 1L || num > nlines) {
-			msg("Invalid first address (1 to %ld)", nlines);
-			return (NULL);
-		}
-		break;
-	}
 	return (cmd);
 }
 
-
-/*
- * exfile --
- *	Execute EX commands from a file.
- */
-void
-exfile(filename)
-	char *filename;
-{
-	struct stat sb;
-	int fd, len;
-	char *bp;
-
-	if ((fd = open(filename, O_RDONLY, 0)) < 0)
-		goto e1;
-	if (fstat(fd, &sb))
-		goto e2;
-	if ((bp = malloc(sb.st_size)) == NULL)
-		goto e2;
-
-	len = read(fd, bp, sb.st_size);
-	if (len == -1 || len != sb.st_size) {
-		if (len != sb.st_size)
-			errno = EIO;
-		goto e3;
-	}
-
-	exstring(bp, len, 0);
-	free(bp);
-	(void)close(fd);
-	return;
-
-e3:	free(bp);
-e2:	(void)close(fd);
-e1:	msg("%s: %s", filename, strerror(errno));
-}
-
-/*
- * exstring --
- *	Execute EX commands from a string.  The commands may be separated
- *	by newlines or by | characters, and may be quoted.
- */
-void
-exstring(cmd, len, copy)
-	register char *cmd;
-	register int len;
-	int copy;
-{
-	register char *p, *t;
-	char *start;
-
-	/* Maybe an empty string. */
-	if (len == 0)
-		return;
-
-	/* Make a copy if necessary. */
-	if (copy) {
-		if ((start = malloc(len)) == NULL) {
-			msg("%s", strerror(errno));
-			return;
-		}
-		bcopy(cmd, start, len);
-		cmd = start;
-	}
-
-	/*
-	 * Walk the command, checking for ^V quotes.  The string "^V\n" is
-	 * treated as a single ^V.
-	 */
-	do {
-		QSTART(cmd);
-		for (p = t = cmd; len-- && p[0] != '|' && p[0] != '\n'; ++p) {
-			if (p[0] == ('V' & 0x1f) && p[1] != '\n') {
-				QSET(t);
-				++p;
-				--len;
-			}
-			*p++ = *t++;
-		}
-		*p = '\0';
-		QEND();
-
-		doexcmd(cmd);
-		cmd = p + 1;
-	} while (len);
-
-	if (copy)
-		free(start);
-}
+typedef struct {
+	int len;		/* Buffer length. */
+	char *bp;		/* Buffer. */
+#define	A_ALLOCATED	0x01	/* If allocated space. */
+	u_char flags;
+} ARGS;
 
 /*
  * buildargv --
- *	Turn the command into an argc/argv pair.
+ *	Build an argv from the rest of the command line.
  */
-static char **
-buildargv(cmd, argcp)
-	char *cmd;
-	int *argcp;
+static int
+buildargv(exc, expand, cp)
+	char *exc;
+	int expand;
+	CMDARG	*cp;
 {
-#define	MAXARGS	100
-	static char *argv[MAXARGS + 1];
-	int cnt;
-	char **ap;
+	static ARGS *args;
+	static int argscnt;
+	static char **argv;
+	static glob_t g;
+	int cnt, done, globoff, len, needslots, off;
+	char *ap;
 
-	for (ap = argv, cnt = 0; (*ap = strsep(&cmd, " \t")) != NULL;) {
-		if (**ap != '\0') {
-			++ap;
-			++cnt;
-		}
-		if (cnt == MAXARGS) {
-			msg("Too many arguments, maximum is %d.", MAXARGS);
-			return (NULL);
-		}
+	/* Discard any previous information. */
+	if (g.gl_pathc) {
+		globfree(&g);
+		g.gl_pathc = 0;
+		g.gl_offs = 0;
+		g.gl_pathv = NULL;
 	}
-	*argcp = cnt;
-	return (argv);
+
+	/* Break into argv vector. */
+	for (done = globoff = off = 0;; ) {
+		/* New argument; NULL terminate. */
+		for (ap = exc; *exc && !isspace(*exc); ++exc);
+		if (*exc)
+			*exc = '\0';
+		else
+			done = 1;
+
+		/*
+		 * Expand and count up the necessary slots.  Add +1 to
+		 * include the trailing NULL.
+		 */
+		len = exc - ap +1;
+
+		if (expand) {
+			if (fileexpand(&g, ap, len))
+				return (1);
+			needslots = g.gl_pathc - globoff + 1;
+		} else
+			needslots = 2;
+
+		/*
+		 * Allocate more pointer space if necessary; leave a space
+		 * for a trailing NULL.
+		 */
+#define	INCREMENT	20
+		if (off + needslots >= argscnt - 1) {
+			argscnt += cnt = MAX(INCREMENT, needslots);
+			if ((args =
+			    realloc(args, argscnt * sizeof(ARGS))) == NULL) {
+				free(argv);
+				goto mem1;
+			}
+			if ((argv =
+			    realloc(argv, argscnt * sizeof(char *))) == NULL) {
+				free(args);
+mem1:				argscnt = 0;
+				args = NULL;
+				argv = NULL;
+				msg("Error: %s.", strerror(errno));
+				return (1);
+			}
+			bzero(&args[off], cnt * sizeof(ARGS));
+		}
+
+		/*
+		 * Copy the argument(s) into place, allocating space if
+		 * necessary.
+		 */
+		if (expand) {
+			for (cnt = globoff; cnt < g.gl_pathc; ++cnt, ++off) {
+				if (args[off].flags & A_ALLOCATED) {
+					free(args[off].bp);
+					args[off].flags &= ~A_ALLOCATED;
+				}
+				argv[off] = args[off].bp = g.gl_pathv[cnt];
+			}
+			globoff = g.gl_pathc;
+		} else {
+			if (args[off].len < len && (args[off].bp =
+			    realloc(args[off].bp, len)) == NULL) {
+				args[off].bp = NULL;
+				args[off].len = 0;
+				msg("Error: %s.", strerror(errno));
+				return (1);
+			}
+			argv[off] = args[off].bp;
+			bcopy(ap, args[off].bp, len);
+			args[off].flags |= A_ALLOCATED;
+			++off;
+		}
+
+		if (done)
+			break;
+
+		/* Skip whitespace. */
+		while (*++exc && isspace(*exc));
+		if (!*exc)
+			break;
+	}
+	argv[off] = NULL;
+	cp->argv = argv;
+	cp->argc = off;
+	return (0);
+}
+
+static int
+fileexpand(gp, word, wordlen)
+	glob_t *gp;
+	char *word;
+	int wordlen;
+{
+	static int tpathlen;
+	static char *tpath;
+	int cnt, len, olen, plen;
+	char ch, *p;
+
+	/*
+	 * Check for escaped %, # characters.
+	 * XXX
+	 */
+	/* Figure out how much space we need for this argument. */
+	len = wordlen;
+	for (p = word, olen = plen = 0; p = strpbrk(p, "%#"); ++p)
+		if (*p == '%') {
+			if (!*origname) {
+			    msg("No filename to substitute for %%.");
+			    return (1);
+			}
+			if (!olen)
+				olen = strlen(origname);
+			len += olen;
+		} else {
+			if (!*prevorig) {
+			    msg("No filename to substitute for #.");
+			    return (1);
+			}
+			if (!plen)
+				plen = strlen(prevorig);
+			len += cnt * plen;
+		}
+
+	if (olen || plen) {
+		/*
+		 * Copy argument into temporary space, replacing file
+		 * names.  Allocate temporary space if necessary.
+		 */
+		if (tpathlen < len) {
+			len = MAX(len, 64);
+			if ((tpath = realloc(tpath, len)) == NULL) {
+				tpathlen = 0;
+				tpath = NULL;
+				msg("Error: %s.", strerror(errno));
+				return (1);
+			}
+			tpathlen = len;
+		}
+
+		for (p = tpath; ch = *word; ++word)
+			switch(ch) {
+			case '%':
+				bcopy(origname, p, olen);
+				p += olen;
+				break;
+			case '#':
+				bcopy(prevorig, p, plen);
+				p += plen;
+				break;
+			default:
+				*p++ = ch;
+			}
+		p = tpath;
+	} else
+		p = word;
+
+	glob(p, GLOB_APPEND|GLOB_NOSORT|GLOB_NOCHECK|GLOB_QUOTE, NULL, gp);
+	return (0);
 }
