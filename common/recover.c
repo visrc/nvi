@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: recover.c,v 10.19 1996/06/14 09:09:54 bostic Exp $ (Berkeley) $Date: 1996/06/14 09:09:54 $";
+static const char sccsid[] = "$Id: recover.c,v 10.20 1996/06/20 15:16:34 bostic Exp $ (Berkeley) $Date: 1996/06/20 15:16:34 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -334,6 +334,7 @@ rcv_mailfile(sp, issync, cp_path)
 	char *cp_path;
 {
 	EXF *ep;
+	GS *gp;
 	struct passwd *pw;
 	size_t len;
 	time_t now;
@@ -352,6 +353,7 @@ rcv_mailfile(sp, issync, cp_path)
 #endif
 	char host[MAXHOSTNAMELEN];
 
+	gp = sp->gp;
 	if ((pw = getpwuid(uid = getuid())) == NULL) {
 		msgq(sp, M_ERR,
 		    "062|Information on user id %u not found", uid);
@@ -413,13 +415,14 @@ rcv_mailfile(sp, issync, cp_path)
 	if (write(fd, buf, len) != len)
 		goto werr;
 
-	len = snprintf(buf, sizeof(buf), "%s%.24s%s%s%s%s%s%s%s%s%s%s%s\n\n",
+	len = snprintf(buf, sizeof(buf),
+	    "%s%.24s%s%s%s%s%s%s%s%s%s%s%s%s%s%s\n\n",
 	    "On ", ctime(&now), ", the user ", pw->pw_name,
 	    " was editing a file named ", t, " on the machine ",
 	    host, ", when it was saved for recovery. ",
 	    "You can recover most, if not all, of the changes ",
-	    "to this file using the -r option to nex or nvi:\n\n",
-	    "\tnvi -r ", t);
+	    "to this file using the -r option to ", gp->progname, ":\n\n\t",
+	    gp->progname, " -r ", t);
 	if (len > sizeof(buf) - 1) {
 lerr:		msgq(sp, M_ERR, "064|Recovery file buffer overrun");
 		goto err;
