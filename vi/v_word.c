@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_word.c,v 5.17 1993/05/02 18:50:38 bostic Exp $ (Berkeley) $Date: 1993/05/02 18:50:38 $";
+static char sccsid[] = "$Id: v_word.c,v 5.18 1993/05/02 19:05:17 bostic Exp $ (Berkeley) $Date: 1993/05/02 19:05:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -111,7 +111,7 @@ fword(sp, ep, vp, fm, rp, spaceonly)
 	 * BSD's ugliest city."
 	 */
 	len = llen - cno;
-	empty = len == 0;
+	empty = llen == 0 || llen == cno + 1;
 	for (startp = p += cno; cnt--; empty = 0) {
 		if (len != 0)
 			if (spaceonly) {
@@ -366,7 +366,7 @@ eword(sp, ep, vp, fm, rp, spaceonly)
 	int spaceonly;
 {
 	register char *p;
-	size_t len;
+	size_t len, llen;
 	u_long cno, cnt, lno;
 	int empty;
 	char *startp;
@@ -374,7 +374,7 @@ eword(sp, ep, vp, fm, rp, spaceonly)
 	lno = fm->lno;
 	cno = fm->cno;
 
-	if ((p = file_gline(sp, ep, lno, &len)) == NULL) {
+	if ((p = file_gline(sp, ep, lno, &llen)) == NULL) {
 		if (file_lline(sp, ep) == 0)
 			v_eof(sp, ep, NULL);
 		else
@@ -389,8 +389,8 @@ eword(sp, ep, vp, fm, rp, spaceonly)
 	 * position.  If no more characters in this line, may already
 	 * be at EOF.
 	 */
-	len -= cno;
-	if (empty = len == 1)
+	len = llen - cno;
+	if (empty = llen == 0 || llen == cno + 1)
 		goto line;
 
 	for (startp = p += cno; cnt--; empty = 0) {
@@ -425,21 +425,22 @@ eword(sp, ep, vp, fm, rp, spaceonly)
 
 		if (cnt && len == 0) {
 			/* If we hit EOF, stay there (historic practice). */
-line:			if ((p = file_gline(sp, ep, ++lno, &len)) == NULL) {
+line:			if ((p = file_gline(sp, ep, ++lno, &llen)) == NULL) {
 				/* If already at eof, complain. */
 				if (empty) {
 					v_eof(sp, ep, NULL);
 					return (1);
 				}
 				if ((p =
-				    file_gline(sp, ep, --lno, &len)) == NULL) {
+				    file_gline(sp, ep, --lno, &llen)) == NULL) {
 					GETLINE_ERR(sp, lno);
 					return (1);
 				}
 				rp->lno = lno;
-				rp->cno = len ? len - 1 : 0;
+				rp->cno = llen ? llen - 1 : 0;
 				return (0);
 			}
+			len = llen;
 			cno = 0;
 			startp = p;
 		} else {
