@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 8.31 1994/04/25 16:28:57 bostic Exp $ (Berkeley) $Date: 1994/04/25 16:28:57 $";
+static char sccsid[] = "$Id: v_cmd.c,v 8.32 1994/04/26 11:30:29 bostic Exp $ (Berkeley) $Date: 1994/04/26 11:30:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,7 +38,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    "[count]^A",
 	    "^A search forward for cursor word"},
 /* 002  ^B */
-	{v_pageup,	V_ABS|V_CNT|VM_RCM_SETLFNB,
+	{v_pageup,	V_ABS|V_CNT|VM_RCM_SET,
 	    "[count]^B",
 	    "^B scroll up by screens"},
 /* 003  ^C */
@@ -46,7 +46,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    "^C",
 	    "^C interrupt an operation (e.g. read, write, search)"},
 /* 004  ^D */
-	{v_hpagedown,	V_ABS|V_CNT|VM_RCM_SETLFNB,
+	{v_hpagedown,	V_ABS|V_CNT|VM_RCM_SET,
 	    "[count]^D",
 	    "^D scroll down by half screens (setting count)"},
 /* 005  ^E */
@@ -54,7 +54,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    "[count]^E",
 	    "^E scroll down by lines"},
 /* 006  ^F */
-	{v_pagedown,	V_ABS|V_CNT|VM_RCM_SETLFNB,
+	{v_pagedown,	V_ABS|V_CNT|VM_RCM_SET,
 	    "[count]^F",
 	    "^F scroll down by screens"},
 /* 007  ^G */
@@ -104,7 +104,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    "^T",
 	    "^T tag pop"},
 /* 025  ^U */
-	{v_hpageup,	V_ABS|V_CNT|VM_RCM_SETLFNB,
+	{v_hpageup,	V_ABS|V_CNT|VM_RCM_SET,
 	    "[count]^U",
 	    "^U half page up (set count)"},
 /* 026  ^V */
@@ -274,7 +274,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    "[count]F character",
 	    " F character in line backward search"},
 /* 107   G */
-	{v_lgoto,	V_ABS|V_CNT|V_MOVE|VM_LMODE,
+	{v_lgoto,	V_ABS|V_CNT|V_MOVE|VM_LMODE|VM_RCM_SETFNB,
 	    "[count]G",
 	    " G move to line"},
 /* 110   H */
@@ -483,7 +483,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	 * DON'T set the V_CHAR flag, the char isn't required,
 	 * so it's handled specially in getcmd().
 	 */
-	{v_z, 		V_CNT|VM_RCM_SETLFNB,
+	{v_z, 		V_CNT|VM_RCM_SET,
 	    "[line]z[window_size][-|.|+|^|<CR>]",
 	    " z redraw window"},
 /* 173   { */
