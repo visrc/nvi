@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.34 1996/02/26 16:47:50 bostic Exp $ (Berkeley) $Date: 1996/02/26 16:47:50 $
+dnl	$Id: configure.in,v 8.35 1996/02/27 16:40:14 bostic Exp $ (Berkeley) $Date: 1996/02/27 16:40:14 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(configure)
@@ -14,28 +14,32 @@ dnl Compilers, compiler flags and libraries per architecture.
 dnl XXX
 dnl A/UX	has broken getopt(3), strpbrk(3).
 dnl		-ZP disables _BSD_SOURCE et al, but enables POSIX at link time.
-AC_SUBST(CFLAGS)
+AC_SUBST(CPPFLAGS)
 case "$host_os" in
-aix4\.1)  CFLAGS="$CFLAGS -O3 -qstrict";;
-aix*)	  LIBS="$LIBS -lbsd";;
-aux*)	  CFLAGS="$CFLAGS -O -ZP -D_BSD_SOURCE -D_SYSV_SOURCE -D_AUX_SOURCE"
+aix4\.1)  CFLAGS="-O3 $CFLAGS"
+	  CPPFLAGS="-qstrict $CPPFLAGS";;
+aix*)	  LIBS="-lbsd $LIBS";;
+aux*)	  CFLAGS="-O $CFLAGS"
+	  CPPFLAGS="-ZP -D_BSD_SOURCE -D_SYSV_SOURCE -D_AUX_SOURCE $CPPFLAGS"
 	  LDFLAGS="-ZP"
-	  LIBOBJS="$LIBOBJS getopt.o strpbrk.o";;
-bsd4\.4)  CFLAGS="$CFLAGS -O2"
-	  LIBS="$LIBS -lutil";;
-bsdi2\.1) CC=shlicc CFLAGS="$CFLAGS -O2"
-	  LIBS="$LIBS -lipc";;
-bsdi*)	  CFLAGS="$CFLAGS -O2";;
-dgux*)	  LIBS="$LIBS -ldgc";;
-hpux*)	  CFLAGS="$CFLAGS -O1";;
-irix*)	  CFLAGS="$CFLAGS -cckr -O2"
-	  LIBS="$LIBS -lc_s -lbsd";;
-isc*)	  LIBS="$LIBS -lcposix -linet";;
-netbsd*)  LIBS="$LIBS -lutil";;
-ptx*)	  LIBS="$LIBS -lseq -linet -lsocket";;
-sinix*)	  LIBS="$LIBS -lelf -lc";;
-wgs*)	  LIBS="$LIBS -lnsl";;
-*)	  CFLAGS="$CFLAGS -O";;
+	  LIBOBJS="getopt.o strpbrk.o $LIBOBJS";;
+bsd4\.4)  CFLAGS="-O2 $CFLAGS"
+	  LIBS="-lutil $LIBS";;
+bsdi2\.1) CC=shlicc
+	  CFLAGS="-O2 $CFLAGS"
+	  LIBS="-lipc $LIBS";;
+bsdi*)	  CFLAGS="-O2 $CFLAGS";;
+dgux*)	  LIBS="-ldgc $LIBS";;
+hpux*)	  CFLAGS="-O1 $CFLAGS";;
+irix*)	  CFLAGS="-O2 $CFLAGS"
+	  CPPFLAGS="-cckr $CPPFLAGS"
+	  LIBS="-lc_s -lbsd $LIBS";;
+isc*)	  LIBS="-lcposix -linet $LIBS";;
+netbsd*)  LIBS="-lutil $LIBS";;
+ptx*)	  LIBS="-lseq -linet -lsocket $LIBS";;
+sinix*)	  LIBS="-lelf -lc $LIBS";;
+wgs*)	  LIBS="-lnsl $LIBS";;
+*)	  CFLAGS="-O $CFLAGS";;
 esac
 
 dnl The default compiler is cc.
@@ -97,8 +101,8 @@ dnl If we can't, then nvi doesn't want to load the X libraries, and we
 dnl don't care about tknvi.
 AC_SUBST(tknvi)
 AC_SUBST(TKLIBS)
-SAVED_CFLAGS="$CFLAGS"
-CFLAGS="-I/usr/local/include $XINCS $CFLAGS"
+SAVED_CPPFLAGS="$CPPFLAGS"
+CPPFLAGS="-I/usr/local/include $XINCS $CPPFLAGS"
 SAVED_LIBS="$LIBS"
 LIBS="-L/usr/local/lib -ltk -ltcl -lm $XLIBS $LIBS"
 
@@ -111,7 +115,7 @@ if test "$vi_cv_tcltk" = yes; then
 	TKLIBS=$LIBS
 	AC_DEFINE(HAVE_TCL_INTERP)
 else
-	CFLAGS=$SAVED_CFLAGS
+	CPPFLAGS=$SAVED_CPPFLAGS
 	LIBS=$SAVED_LIBS
 fi
 AC_MSG_RESULT($vi_cv_tcltk)
@@ -167,21 +171,30 @@ if test "$vi_cv_curses" = "system curses"; then
 	LIBS="-lcurses $LIBS"
 fi
 if test "$vi_cv_curses" = "vi curses"; then
-	CFLAGS="$CFLAGS -I../curses"
+	CPPFLAGS="$CPPFLAGS -I../curses"
 	cobjs="\$(COBJS)"
 fi
 if test "$vi_cv_curses" = "user specified"; then
-	CFLAGS="$CFLAGS -I`cat curses_include_path`"
+	CPPFLAGS="$CPPFLAGS -I`cat curses_include_path`"
 	LIBS="`cat curses_library_path` $LIBS"
 fi
 
 dnl Checks for header files.
+AC_MSG_CHECKING(for sys/mman.h)
+AC_CACHE_VAL(vi_cv_include_sys_mman, [dnl
+AC_TRY_CPP([#include <sys/mman.h>], 
+	[vi_cv_include_sys_mman=yes], [vi_cv_include_sys_mman=no])])
+if test "$vi_cv_include_sys_mman" = yes; then
+	CPPFLAGS="-DHAVE_SYS_MMAN_H $CPPFLAGS"
+fi
+
+AC_MSG_RESULT($vi_cv_include_sys_select)
 AC_MSG_CHECKING(for sys/select.h)
 AC_CACHE_VAL(vi_cv_include_sys_select, [dnl
 AC_TRY_CPP([#include <sys/select.h>], 
 	[vi_cv_include_sys_select=yes], [vi_cv_include_sys_select=no])])
 if test "$vi_cv_include_sys_select" = yes; then
-	AC_DEFINE(HAVE_SYS_SELECT_H)
+	CPPFLAGS="-DHAVE_SYS_SELECT_H $CPPFLAGS"
 fi
 AC_MSG_RESULT($vi_cv_include_sys_select)
 
@@ -417,7 +430,7 @@ AC_ARG_WITH(db,
 	fi
 	fi], [vi_cv_db_lib="vi DB routines"])])
 if test "$vi_cv_db_lib" = "vi DB routines"; then
-	CFLAGS="$CFLAGS -I../db/include"
+	CPPFLAGS="$CPPFLAGS -I../db/include"
 	LIBOBJS="\$(DBOBJS) $LIBOBJS"
 fi
 AC_MSG_RESULT($vi_cv_db_lib)
@@ -452,7 +465,7 @@ AC_ARG_WITH(re,
 	fi
 	fi], [vi_cv_re_lib="vi RE routines"])])
 if test "$vi_cv_re_lib" = "vi RE routines"; then
-	CFLAGS="$CFLAGS -I../regex"
+	CPPFLAGS="$CPPFLAGS -I../regex"
 	LIBOBJS="\$(REOBJS) $LIBOBJS"
 fi
 AC_MSG_RESULT($vi_cv_re_lib)
