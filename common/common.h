@@ -2,7 +2,8 @@
 #include <errno.h>
 #include <fcntl.h>
 
-#include "curses.h"
+#define TRUE		1
+#define FALSE		0
 
 #define	TAB	8				/* XXX */
 #define	BLKSIZE	2048
