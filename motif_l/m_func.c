@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_func.c,v 8.18 1996/12/17 14:53:06 bostic Exp $ (Berkeley) $Date: 1996/12/17 14:53:06 $";
+static const char sccsid[] = "$Id: m_func.c,v 8.19 1996/12/17 16:51:43 bostic Exp $ (Berkeley) $Date: 1996/12/17 16:51:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -318,7 +318,7 @@ vi_scrollbar(ipbp)
 	/* armor plating.  core thinks there are no lines in an
 	 * empty file, but says we are on line 1
 	 */
-	if ( top > maximum ) {
+	if ( top >= maximum ) {
 #if 0
 	    fprintf( stderr, "Correcting for top > maximum\n" );
 #endif
