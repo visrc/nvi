@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 5.32 1993/05/08 20:31:47 bostic Exp $ (Berkeley) $Date: 1993/05/08 20:31:47 $";
+static char sccsid[] = "$Id: search.c,v 5.33 1993/05/08 21:30:38 bostic Exp $ (Berkeley) $Date: 1993/05/08 21:30:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -102,10 +102,11 @@ noprev:			msgq(sp, M_INFO, "No previous search pattern.");
 		}
 
 		/* If the pattern was empty, use the previous pattern. */
-		if (*ptrn == '\0') {
+		if (ptrn == NULL || *ptrn == '\0') {
 			if (!F_ISSET(sp, S_RE_SET))
 				goto noprev;
 			*rep = &sp->sre;
+			return (0);
 		}
 
 		/* Replace any word search pattern. */
