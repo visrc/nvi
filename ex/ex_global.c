@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 8.43 1994/08/17 14:30:51 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:30:51 $";
+static char sccsid[] = "$Id: ex_global.c,v 8.44 1994/08/29 10:26:46 bostic Exp $ (Berkeley) $Date: 1994/08/29 10:26:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -108,8 +108,11 @@ global(sp, ep, cmdp, cmd)
 			*t = '\0';
 			break;
 		}
-		if (p[0] == '\\' && p[1] == delim)
-			++p;
+		if (p[0] == '\\')
+			if (p[1] == delim)
+				++p;
+			else if (p[1] == '\\')
+				*t++ = *p++;
 		*t++ = *p++;
 	}
 
