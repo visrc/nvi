@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 8.36 1994/08/31 17:12:00 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:12:00 $
+ *	$Id: exf.h,v 8.37 1994/09/12 12:54:11 bostic Exp $ (Berkeley) $Date: 1994/09/12 12:54:11 $
  */
 					/* Undo direction. */
 /*
@@ -31,6 +31,12 @@ struct _exf {
 
 	LIST_HEAD(_markh, _lmark) marks;/* Linked list of file MARK's. */
 
+	/*
+	 * XXX
+	 * Mtime should be a struct timespec, but time_t is more portable.
+	 */
+	dev_t	 mdev;			/* Device. */
+	ino_t	 minode;		/* Inode. */
 	time_t	 mtime;			/* Last modification time. */
 
 	int	 fcntl_fd;		/* Fcntl locking fd; see exf.c. */

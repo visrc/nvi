@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.102 1994/09/12 09:48:42 bostic Exp $ (Berkeley) $Date: 1994/09/12 09:48:42 $";
+static char sccsid[] = "$Id: exf.c,v 8.103 1994/09/12 12:54:06 bostic Exp $ (Berkeley) $Date: 1994/09/12 12:54:06 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -185,6 +185,8 @@ file_init(sp, frp, rcv_name, force)
 		else
 			psize = 64 * 1024;
 
+		ep->mdev = sb.st_dev;
+		ep->minode = sb.st_ino;
 		ep->mtime = sb.st_mtime;
 
 		if (!S_ISREG(sb.st_mode)) {
@@ -580,15 +582,18 @@ file_write(sp, ep, fm, tm, name, flags)
 	 * the user changes a file name.  This is historic practice.
 	 *
 	 * One final test.  If we're not forcing or appending, and we have a
-	 * saved modification time, stop the user if it's been written since
-	 * we last edited or wrote it, and make them force it.
+	 * saved modification time, object if the file was changed since we
+	 * last edited or wrote it, and make them force it.
 	 */
 	if (stat(name, &sb))
 		mtype = NEWFILE;
 	else {
 		mtype = NONE;
 		if (!LF_ISSET(FS_FORCE | FS_APPEND)) {
-			if (ep->mtime && sb.st_mtime > ep->mtime) {
+			if (ep->mtime != 0 &&
+			    (sb.st_dev != ep->mdev ||
+			    sb.st_ino != ep->minode ||
+			    sb.st_mtime != ep->mtime)) {
 				p = msg_print(sp, name, &nf);
 				msgq(sp, M_ERR,
 				    LF_ISSET(FS_POSSIBLE) ?
@@ -652,7 +657,13 @@ file_write(sp, ep, fm, tm, name, flags)
 	 * we re-init the time.  That way the user can clean up the disk
 	 * and rewrite without having to force it.
 	 */
-	ep->mtime = stat(name, &sb) ? 0 : sb.st_mtime;
+	if (stat(name, &sb))
+		ep->mtime = 0;
+	else {
+		ep->mdev = sb.st_dev;
+		ep->minode = sb.st_ino;
+		ep->mtime = sb.st_mtime;
+	}
 
 	/* If the write failed, complain loudly. */
 	if (rval) {
