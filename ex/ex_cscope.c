@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_cscope.c,v 10.2 1996/05/08 20:48:49 bostic Exp $ (Berkeley) $Date: 1996/05/08 20:48:49 $";
+static const char sccsid[] = "$Id: ex_cscope.c,v 10.3 1996/05/13 17:23:06 bostic Exp $ (Berkeley) $Date: 1996/05/13 17:23:06 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -648,7 +648,7 @@ parse(sp, csc, tqp, matchesp)
 	recno_t slno;
 	size_t dlen, nlen, slen;
 	int ch, i, isnewer, nlines;
-	char *dname, *name, *search, *p, dummy[2], buf[2048];
+	char *dname, *name, *search, *p, *t, dummy[2], buf[2048];
 
 	for (;;) {
 		if (!fgets(buf, sizeof(buf), csc->from_fp))
@@ -688,25 +688,25 @@ parse(sp, csc, tqp, matchesp)
 		 * swell foop, but discard anything that looks wrong.
 		 */
 		for (p = buf, i = 0;
-		    i < 4 && (p = strtok(p, "\t ")) != NULL; p = NULL, ++i)
+		    i < 3 && (t = strsep(&p, "\t ")) != NULL; ++i)
 			switch (i) {
 			case 0:			/* Filename. */
-				name = p;
+				name = t;
 				nlen = strlen(name);
 				break;
 			case 1:			/* Context. */
 				break;
 			case 2:			/* Line number. */
-				slno = (recno_t)atol(p);
+				slno = (recno_t)atol(t);
 				break;
-			case 3:			/* Pattern. */
-				search = p;
-				slen = strlen(p);
-				goto done;
 			}
-		if (i != 3)
+		if (i != 3 || p == NULL || t == NULL)
 			continue;
-done:
+
+done:		/* The rest of the string is the search pattern. */
+		search = p;
+		slen = strlen(p);
+
 		/* Resolve the file name. */
 		find_file(sp, csc, name, &dname, &dlen, &isnewer);
 
