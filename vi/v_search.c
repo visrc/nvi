@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_search.c,v 10.20 1996/12/12 08:18:10 bostic Exp $ (Berkeley) $Date: 1996/12/12 08:18:10 $";
+static const char sccsid[] = "$Id: v_search.c,v 10.21 1996/12/16 09:42:06 bostic Exp $ (Berkeley) $Date: 1996/12/16 09:42:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -362,8 +362,12 @@ v_esearch(sp, vp)
 	m.cno = sp->cno;
 
 	LF_INIT(SEARCH_NOOPT);
+	if (FL_ISSET(vp->ev.e_flags, VI_SEARCH_EXT))
+		LF_SET(SEARCH_EXTEND);
 	if (FL_ISSET(vp->ev.e_flags, VI_SEARCH_IC))
 		LF_SET(SEARCH_IC);
+	if (FL_ISSET(vp->ev.e_flags, VI_SEARCH_ICL))
+		LF_SET(SEARCH_ICL);
 	if (FL_ISSET(vp->ev.e_flags, VI_SEARCH_INCR))
 		LF_SET(SEARCH_INCR);
 	if (FL_ISSET(vp->ev.e_flags, VI_SEARCH_LIT))
