@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 8.35 1994/08/04 14:59:25 bostic Exp $ (Berkeley) $Date: 1994/08/04 14:59:25 $";
+static char sccsid[] = "$Id: ex_write.c,v 8.36 1994/08/04 15:08:50 bostic Exp $ (Berkeley) $Date: 1994/08/04 15:08:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,9 +46,9 @@ ex_wn(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	if (file_m3(sp, ep, 0))
-		return (1);
 	if (exwr(sp, ep, cmdp, WN))
+		return (1);
+	if (file_m3(sp, ep, 0))
 		return (1);
 
 	/* The file name isn't a new file to edit. */
@@ -69,9 +69,9 @@ ex_wq(sp, ep, cmdp)
 {
 	int force;
 
-	if (file_m3(sp, ep, 0))
-		return (1);
 	if (exwr(sp, ep, cmdp, WQ))
+		return (1);
+	if (file_m3(sp, ep, 0))
 		return (1);
 
 	force = F_ISSET(cmdp, E_FORCE);
@@ -111,9 +111,9 @@ ex_xit(sp, ep, cmdp)
 {
 	int force;
 
-	if (file_m3(sp, ep, 0))
-		return (1);
 	if (F_ISSET((ep), F_MODIFIED) && exwr(sp, ep, cmdp, XIT))
+		return (1);
+	if (file_m3(sp, ep, 0))
 		return (1);
 
 	force = F_ISSET(cmdp, E_FORCE);
