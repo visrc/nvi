@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_join.c,v 9.1 1994/11/09 18:40:47 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:40:47 $";
+static char sccsid[] = "$Id: ex_join.c,v 9.2 1994/11/25 12:22:14 bostic Exp $ (Berkeley) $Date: 1994/11/25 12:22:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -102,8 +102,12 @@ ex_join(sp, cmdp)
 		 * If the current line ends with whitespace, strip leading
 		 *    whitespace from the joined line.
 		 * If the next line starts with a ), do nothing.
-		 * If the current line ends with ., ? or !, insert two spaces.
+		 * If the current line ends with ., insert two spaces.
 		 * Else, insert one space.
+		 *
+		 * One change -- add ? and ! to the list of characters for
+		 * which we insert two spaces.  I expect that POSIX 1003.2
+		 * will require this as well.
 		 *
 		 * Echar is the last character in the last line joined.
 		 */
