@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.1,v 8.13 1994/08/31 19:17:50 bostic Exp $ (Berkeley) $Date: 1994/08/31 19:17:50 $
+.\"     $Id: vi.1,v 8.14 1994/09/16 12:41:38 bostic Exp $ (Berkeley) $Date: 1994/09/16 12:41:38 $
 .\"
 .Dd "%Q%"
 .Dt EX/VI 1
@@ -1061,10 +1061,16 @@ been modified, since it was last written, before a
 command.
 .It Sy "window, w, wi [environment variable LINES]"
 Set the window size for the screen.
+.It Sy "wraplen, wl [0]"
+.Nm \&Vi
+only.
+Break lines automatically, the specified number of columns from the
+left-hand margin.
 .It Sy "wrapmargin, wm [0]"
 .Nm \&Vi
 only.
-Break lines automatically when they reach the right-hand margin.
+Break lines automatically, the specified number of columns from the
+right-hand margin.
 .It Sy "wrapscan, ws [on]"
 Set searches to wrap around the end or beginning of the file.
 .It Sy "writeany, wa [off]"
