@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.58 1996/03/11 14:31:33 bostic Exp $ (Berkeley) $Date: 1996/03/11 14:31:33 $
+dnl	$Id: configure.in,v 8.59 1996/03/12 08:49:06 bostic Exp $ (Berkeley) $Date: 1996/03/12 08:49:06 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(configure)
@@ -84,10 +84,7 @@ if test "$vi_cv_path_sendmail" = no; then
 fi
 
 dnl Check for the perl5/perl path.
-AC_PATH_PROG(vi_cv_path_perl, perl5, no)
-if test "$vi_cv_path_perl" = no; then
-	AC_PATH_PROG(vi_cv_path_perl, perl, no)
-fi
+AC_PATH_PROGS(vi_cv_path_perl, perl5 perl, no)
 
 dnl Check for the "preserve" path.
 AC_SUBST(vi_cv_path_preserve)
