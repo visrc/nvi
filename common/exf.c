@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.20 1992/10/24 14:20:46 bostic Exp $ (Berkeley) $Date: 1992/10/24 14:20:46 $";
+static char sccsid[] = "$Id: exf.c,v 5.21 1992/10/24 15:25:30 bostic Exp $ (Berkeley) $Date: 1992/10/24 15:25:30 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -250,6 +250,23 @@ file_start(ep)
 }
 
 /*
+ * file_modify --
+ *	Check for modification.
+ */
+int
+file_modify(ep, force)
+	EXF *ep;
+	int force;
+{
+	/* If modified, must force. */
+	if (ep->flags & F_MODIFIED && !force) {
+		msg("Modified since last write; use ! to override.");
+		return (1);
+	}
+	return (0);
+}
+
+/*
  * file_stop --
  *	Stop editing a file.
  */
@@ -259,12 +276,6 @@ file_stop(ep, force)
 	int force;
 {
 	struct stat sb;
-
-	/* If modified, must force. */
-	if (ep->flags & F_MODIFIED && !force) {
-		msg("Modified since last write; use ! to override.");
-		return (1);
-	}
 
 	/* Close the db structure. */
 	if ((ep->db->close)(ep->db) && !force) {
