@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 5.11 1992/04/28 13:39:17 bostic Exp $ (Berkeley) $Date: 1992/04/28 13:39:17 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 5.12 1992/04/28 16:48:29 bostic Exp $ (Berkeley) $Date: 1992/04/28 16:48:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -88,7 +88,7 @@ EXCMDLIST cmds[] = {
 #endif
 #define	C_CC		12
 	"cc",		ex_cc,		E_PERM,
-	    "",		"cc XXX",
+	    "s",	"cc [argument ...]",
 #define	C_CD		13
 	"cd",		ex_cd,		E_EXRCOK,
 	    "!f1o",	"cd[!] [directory]",
@@ -131,7 +131,7 @@ EXCMDLIST cmds[] = {
 #endif
 #define	C_ERRLIST	20
 	"errlist",	ex_errlist,	E_PERM,
-	    "",		"errlist XXX",
+	    "f1o",	"errlist [file]",
 #define	C_EX		21
 	"ex",		ex_edit,	0,
 	    "!+f1o",	"ex[!] [+cmd] [file]",
@@ -167,7 +167,7 @@ EXCMDLIST cmds[] = {
 #endif
 #define	C_MAKE		30
 	"make",		ex_make,	E_PERM,
-	    "",		"make XXX",
+	    "s",	"make [argument ...]",
 #define	C_MAP		31
 	"map",		ex_map,		E_EXRCOK,
 	    "s",	"map[!] [key replace]",
