@@ -12,18 +12,21 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.7 1992/02/28 12:34:29 bostic Exp $ (Berkeley) $Date: 1992/02/28 12:34:29 $";
+static char sccsid[] = "$Id: main.c,v 5.8 1992/04/04 16:25:06 bostic Exp $ (Berkeley) $Date: 1992/04/04 16:25:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 #include <signal.h>
 #include <setjmp.h>
+#include <limits.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
-#include "config.h"
-#include "options.h"
 #include "vi.h"
+#include "excmd.h"
+#include "map.h"
+#include "options.h"
 #include "pathnames.h"
 #include "extern.h"
 
@@ -32,6 +35,7 @@ FILE *tracefp;
 #endif
 
 static jmp_buf jmpenv;
+int reading_exrc;
 
 #ifndef NO_DIGRAPH
 static init_digraphs();
@@ -46,23 +50,29 @@ main(argc, argv)
 	int argc;
 	char *argv[];
 {
+	CMDARG cmd;
 	int ch, i;
-	char *cmd, *err, *str, *tag;
-
+	char *excmdarg, *err, *p, *tag, path[MAXPATHLEN];
 
 	/* Set mode based on the program name. */
-	mode = MODE_VI;
-	if (!strcmp(*argv, "view"))
-		SET(O_READONLY)
-	else if (!strcmp(argv, "ex"))
+	if ((p = rindex(*argv, '/')) == NULL)
+		p = *argv;
+	else
+		++p;
+	if (!strcmp(p, "ex"))
 		mode = MODE_EX;
+	else if (!strcmp(p, "view")) {
+		SET(O_READONLY)
+		mode = MODE_VI;
+	} else
+		mode = MODE_VI;
 
 	obsolete(argv);
-	cmd = err = str = tag = NULL;
+	excmdarg = err = tag = NULL;
 	while ((ch = getopt(argc, argv, "c:emRrT:t:v")) != EOF)
 		switch(ch) {
 		case 'c':		/* Run the command. */
-			cmd = optarg;
+			excmdarg = optarg;
 			break;
 		case 'e':		/* Ex mode. */
 			mode = MODE_EX;
@@ -77,7 +87,7 @@ main(argc, argv)
 			break;
 		case 'r':		/* Recover. */
 			msg("use the `elvrec` program to recover lost files");
-			endmsgs();
+			endmsg();
 			refresh();
 			endwin();
 			exit(0);
@@ -85,7 +95,7 @@ main(argc, argv)
 		case 'T':		/* Trace. */
 			if ((tracefp = fopen(optarg, "w")) == NULL) {
 				msg("%s: %s", optarg, strerror(errno));
-				endmsgs();
+				endmsg();
 			}
 			(void)fprintf(tracefp, "trace: open %s\n", optarg);
 			break;
@@ -105,11 +115,7 @@ main(argc, argv)
 
 	/* The remaining arguments are file names. */
 	if (argc)
-		set_file(argc, argv);
-	else {
-		static char def[] = "", *defav[] = { def, NULL };
-		set_file(1, defav);
-	}
+		file_set(argc, argv, 0);
 
 	/* Temporarily ignore interrupts. */
 	(void)signal(SIGINT, SIG_IGN);
@@ -130,67 +136,53 @@ main(argc, argv)
 	 */
 	opts_init();
 
-	/*
-	 * Map the arrow keys.  The KU, KD, KL,and KR variables correspond to
-	 * the :ku=: (etc.) termcap capabilities.  The variables are defined
-	 * as part of the curses package.
-	 */
-	if (has_KU)
-		mapkey(has_KU, "k",	WHEN_VICMD|WHEN_INMV, "<Up>");
-	if (has_KD)
-		mapkey(has_KD, "j",	WHEN_VICMD|WHEN_INMV, "<Down>");
-	if (has_KL)
-		mapkey(has_KL, "h",	WHEN_VICMD|WHEN_INMV, "<Left>");
-	if (has_KR)
-		mapkey(has_KR, "l",	WHEN_VICMD|WHEN_INMV, "<Right>");
-	if (has_HM)
-		mapkey(has_HM, "^",	WHEN_VICMD|WHEN_INMV, "<Home>");
-	if (has_EN)
-		mapkey(has_EN, "$",	WHEN_VICMD|WHEN_INMV, "<End>");
-	if (has_PU)
-		mapkey(has_PU, "\002",	WHEN_VICMD|WHEN_INMV, "<PageUp>");
-	if (has_PD)
-		mapkey(has_PD, "\006",	WHEN_VICMD|WHEN_INMV, "<PageDn>");
-	if (has_KI)
-		mapkey(has_KI, "i",	WHEN_VICMD|WHEN_INMV, "<Insert>");
-	if (ERASEKEY != '\177')
-		mapkey("\177", "x",	WHEN_VICMD|WHEN_INMV, "<Del>");
+	/* Map certain special keys. */
+	map_init();
 
 #ifndef NO_DIGRAPH
 	init_digraphs();
 #endif
 
-	/* Read the .exrc files and EXINIT environment variable. */
-	doexrc(_PATH_SYSEXRC);
-#ifdef HMEXRC
-	str = getenv("HOME");
-	if (str && *str)
-	{
-		strcpy(tmpblk.c, str);
-		str = tmpblk.c + strlen(tmpblk.c);
-		if (str[-1] != '/')
-			*str++ = '/';
-		strcpy(str, HMEXRC);
-		doexrc(tmpblk.c);
+	/*
+	 * Source the system, ~user and local .exrc files.
+	 * XXX
+	 * Check the correct order for these.
+	 */
+	reading_exrc = 1;
+	exfile(_PATH_SYSEXRC, 0);
+	if ((p = getenv("HOME")) != NULL && *p) {
+		(void)snprintf(path, sizeof(path), "%s/.exrc", p);
+		exfile(path, 0);
 	}
-#endif
 	if (ISSET(O_EXRC))
-		doexrc(_NAME_EXRC);
-	if ((str = getenv("EXINIT")) != NULL)
-		exstring(str, strlen(str));
+		exfile(_NAME_EXRC, 0);
+	reading_exrc = 0;
 
-	/* search for a tag (or an error) now, if desired */
+	/* Source the EXINIT environment variable. */
+	if ((p = getenv("EXINIT")) != NULL)
+		exstring(p, strlen(p), 1);
+
+	/* Search for a tag (or an error) now, if desired. */
 	blkinit();
-	if (tag)
-		cmd_tag(MARK_FIRST, MARK_FIRST, CMD_TAG, 0, tag);
+	if (tag) {
+		SETCMDARG(cmd, C_TAG, 2, MARK_FIRST, MARK_FIRST, 0, tag);
+		ex_tag(&cmd);
+	}
 #ifndef NO_ERRLIST
-	else if (err)
-		cmd_errlist(MARK_FIRST, MARK_FIRST, CMD_ERRLIST, 0, err);
+	else if (err) {
+		SETCMDARG(cmd, C_ERRLIST, 2, MARK_FIRST, MARK_FIRST, 0, err);
+		ex_errlist(&cmd);
+	}
 #endif
 
 	/* If no tag/err, or tag failed, start with first file. */
 	if (tmpfd < 0) {
-		next_file(MARK_UNSET, MARK_UNSET, 0, FALSE, NULL);
+		if (file_cnt()) {
+			SETCMDARG(cmd,
+			    C_NEXT, 0, MARK_UNSET, MARK_UNSET, 0, NULL);
+			ex_next(&cmd);
+		} else
+			tmpstart("");
 
 		/* pretend to do something, just to force a recoverable
 		 * version of the file out to disk
@@ -201,12 +193,13 @@ main(argc, argv)
 		clrflag(file, MODIFIED);
 	}
 
-	/* now we do the immediate ex command that we noticed before */
-	if (cmd)
-		doexcmd(cmd);
+	/* Now we do the immediate ex command that we noticed before. */
+	if (excmdarg)
+		excmd(excmdarg);
 
-	/* repeatedly call ex() or vi() (depending on the mode) until the
-	 * mode is set to MODE_QUIT
+	/*
+	 * Repeatedly call ex() or vi() (depending on the mode) until the
+	 * mode is set to MODE_QUIT.
 	 */
 	while (mode != MODE_QUIT) {
 		if (setjmp(jmpenv))
@@ -234,11 +227,7 @@ main(argc, argv)
 	cutend();
 
 	/* end curses */
-#ifndef	NO_CURSORSHAPE
-	if (has_CQ)
-		do_CQ();
-#endif
-	endmsgs();
+	endmsg();
 	move(LINES - 1, 0);
 	clrtoeol();
 	refresh();
