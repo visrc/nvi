@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.74 1993/05/27 21:01:02 bostic Exp $ (Berkeley) $Date: 1993/05/27 21:01:02 $";
+static char sccsid[] = "$Id: vi.c,v 5.75 1993/06/07 01:17:44 bostic Exp $ (Berkeley) $Date: 1993/06/07 01:17:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,7 +19,8 @@ static char sccsid[] = "$Id: vi.c,v 5.74 1993/05/27 21:01:02 bostic Exp $ (Berke
 #include "vi.h"
 #include "vcmd.h"
 
-static int getcmd __P((SCR *, EXF *, VICMDARG *, VICMDARG *, VICMDARG *));
+static int getcmd
+	    __P((SCR *, EXF *, VICMDARG *, VICMDARG *, VICMDARG *, int *));
 static int getkeyword __P((SCR *, EXF *, VICMDARG *, u_int));
 static int getmotion
 	    __P((SCR *, EXF *, VICMDARG *, VICMDARG *, MARK *, MARK *));
@@ -35,7 +36,7 @@ vi(sp, ep)
 {
 	MARK fm, tm, m;
 	VICMDARG cmd, dot, dotmotion, *vp;
-	int eval;
+	int comcount, eval;
 	u_int flags;
 
 	/* Start vi. */
@@ -61,8 +62,16 @@ vi(sp, ep)
 		 * command setting the cursor to the resulting mark.
 		 */
 		vp = &cmd;
-		if (getcmd(sp, ep, &dot, vp, NULL))
+		if (getcmd(sp, ep, &dot, vp, NULL, &comcount))
 			goto err;
+
+		/*
+		 * Historical practice: if a dot command gets a new count,
+		 * any motion component goes away, i.e. "d3w2." deletes a
+		 * total of 5 words.
+		 */
+		if (F_ISSET(vp, VC_ISDOT) && comcount)
+			dotmotion.count = 1;
 
 		flags = vp->kp->flags;
 
@@ -120,9 +129,9 @@ vi(sp, ep)
 			dot = cmd;
 			F_SET(&dot, VC_ISDOT);
 			/*
-			 * If a count supplied for both the motion and the
-			 * command, the count applies only to the motion.
-			 * Reset the command count in the dot structure.
+			 * If a count was supplied for both the command and
+			 * its motion, the count was used only for the motion.
+			 * Turn the count back on for the dot structure.
 			 */
 			if (F_ISSET(vp, VC_C1RESET))
 				F_SET(&dot, VC_C1SET);
@@ -219,11 +228,12 @@ err:				term_flush_pseudo(sp);
  *	[count] key [character]
  */
 static int
-getcmd(sp, ep, dp, vp, ismotion)
+getcmd(sp, ep, dp, vp, ismotion, comcountp)
 	SCR *sp;
 	EXF *ep;
 	VICMDARG *dp, *vp;
 	VICMDARG *ismotion;	/* Previous key if getting motion component. */
+	int *comcountp;
 {
 	register VIKEYS const *kp;
 	register u_int flags;
@@ -253,13 +263,15 @@ getcmd(sp, ep, dp, vp, ismotion)
 		vp->buffer = OOBCB;
 
 	/*
-	 * Pick up optional count.  Special case, a leading 0 is not
-	 * a count, it's a command.
+	 * Pick up optional count, where a leading 0 is not a count,
+	 * it's a command.
 	 */
 	if (isdigit(key) && key != '0') {
 		GETCOUNT(sp, vp->count);
 		F_SET(vp, VC_C1SET);
-	}
+		*comcountp = 1;
+	} else
+		*comcountp = 0;
 
 	/* Pick up optional buffer. */
 	if (key == '"') {
@@ -383,11 +395,12 @@ getmotion(sp, ep, dm, vp, fm, tm)
 	VICMDARG motion;
 	size_t len;
 	u_long cnt;
+	int notused;
 
 	/* If '.' command, use the dot motion, else get the motion command. */
 	if (F_ISSET(vp, VC_ISDOT))
 		motion = *dm;
-	else if (getcmd(sp, ep, NULL, &motion, vp))
+	else if (getcmd(sp, ep, NULL, &motion, vp, &notused))
 		return (1);
 
 	/*
