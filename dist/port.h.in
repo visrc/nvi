@@ -1,11 +1,17 @@
-/* $Id: port.h.in,v 8.6 1996/02/27 16:39:27 bostic Exp $ (Berkeley) $Date: 1996/02/27 16:39:27 $ */
+/* $Id: port.h.in,v 8.7 1996/02/28 10:49:50 bostic Exp $ (Berkeley) $Date: 1996/02/28 10:49:50 $ */
 
-/* Declare the basic types, if they aren't already declared. */
+/*
+ * Declare the basic types, if they aren't already declared.  Named and
+ * some system's db.h files protect them with __BIT_TYPES_DEFINED__.
+ */
+#ifndef __BIT_TYPES_DEFINED__
+#define __BIT_TYPES_DEFINED__
 @u_int8_decl@
 @int16_decl@
 @u_int16_decl@
 @int32_decl@
 @u_int32_decl@
+#endif
 
 /*
  * XXX
