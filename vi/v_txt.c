@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.73 1996/06/30 17:51:05 bostic Exp $ (Berkeley) $Date: 1996/06/30 17:51:05 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.74 1996/07/09 18:52:09 bostic Exp $ (Berkeley) $Date: 1996/07/09 18:52:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -2690,8 +2690,10 @@ txt_showmatch(sp, tp)
 	 * Do a refresh first, in case we haven't done one in awhile,
 	 * so the user can see what we're complaining about.
 	 */
+	UPDATE_POSITION(sp, tp);
 	if (vs_refresh(sp, 1))
 		return (1);
+
 	/*
 	 * We don't display the match if it's not on the screen.  Find
 	 * out what the first character on the screen is.
