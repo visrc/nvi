@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 8.6 1993/09/09 18:26:35 bostic Exp $ (Berkeley) $Date: 1993/09/09 18:26:35 $";
+static char sccsid[] = "$Id: ex_filter.c,v 8.7 1993/09/10 10:26:56 bostic Exp $ (Berkeley) $Date: 1993/09/10 10:26:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -88,7 +88,8 @@ filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
 		goto err;
 
 	/* Install an interrupt catcher so that only the utility dies. */
-	(void)tcgetattr(STDIN_FILENO, &t);
+	if (tcgetattr(STDIN_FILENO, &t))
+		goto err;
 	(void)signal(SIGINT, filter_intr);
 
 	/* Fork off the utility process. */
@@ -116,7 +117,7 @@ err:		if (input[0] != -1)
 		 */
 		n = t;
 		n.c_lflag |= ISIG;
-		(void)tcsetattr(STDIN_FILENO, TCSANOW, &n);
+		(void)tcsetattr(STDIN_FILENO, TCSANOW | TCSASOFT, &n);
 
 		/*
 		 * Redirect stdin from the read end of the input pipe,
@@ -257,7 +258,7 @@ err:		if (input[0] != -1)
 uwait:	rval |= filter_wait(sp, utility_pid, cmd, 0);
 
 	/* Restore ex/vi terminal settings. */
-	if (tcsetattr(STDIN_FILENO, TCSANOW, &t))
+	if (tcsetattr(STDIN_FILENO, TCSANOW | TCSASOFT, &t))
 		msgq(sp, M_ERR, "tcsetattr: %s", strerror(errno));
 
 	return (rval);
