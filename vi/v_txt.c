@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.8 1993/09/12 10:13:56 bostic Exp $ (Berkeley) $Date: 1993/09/12 10:13:56 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.9 1993/09/12 10:45:37 bostic Exp $ (Berkeley) $Date: 1993/09/12 10:45:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -450,7 +450,7 @@ k_escape:		if (tp->insert && tp->overwrite)
 			}
 			break;
 		case K_CNTRLT:			/* Add autoindent char. */
-			if (!LF_ISSET(TXT_CNTRLT) || sp->cno > tp->ai)
+			if (!LF_ISSET(TXT_CNTRLT))
 				goto ins_ch;
 			if (txt_indent(sp, tp))
 				break;
@@ -484,7 +484,13 @@ k_escape:		if (tp->insert && tp->overwrite)
 			/* Drop back one character. */
 			--sp->cno;
 
-			/* Increment overwrite, decrement ai if deleted. */
+			/*
+			 * Increment overwrite, decrement ai if deleted.
+			 *
+			 * !!!
+			 * Historic vi did not permit users to use erase
+			 * characters to delete autoindent characters.
+			 */
 			++tp->overwrite;
 			if (sp->cno < tp->ai)
 				--tp->ai;
@@ -513,6 +519,10 @@ k_escape:		if (tp->insert && tp->overwrite)
 			/*
 			 * First werase goes back to any autoindent
 			 * and second werase goes back to the offset.
+			 *
+			 * !!!
+			 * Historic vi did not permit users to use erase
+			 * characters to delete autoindent characters.
 			 */
 			if (tp->ai && sp->cno > tp->ai)
 				max = tp->ai;
@@ -576,6 +586,10 @@ k_escape:		if (tp->insert && tp->overwrite)
 			/*
 			 * First kill goes back to any autoindent
 			 * and second kill goes back to the offset.
+			 *
+			 * !!!
+			 * Historic vi did not permit users to use erase
+			 * characters to delete autoindent characters.
 			 */
 			if (tp->ai && sp->cno > tp->ai)
 				max = tp->ai;
@@ -862,10 +876,20 @@ txt_err(sp, ep, hp)
 }
 
 /*
- * Txt_indent and txt_outdent are truly strange.  ^T and ^D do movements to
- * the next or previous shiftwidth value, i.e. for a 1-based numbering, with
- * shiftwidth=3, ^T moves a cursor on the 7th, 8th or 9th column to the 10th
- * column, and ^D  moves it back.
+ * Txt_indent and txt_outdent are truly strange.  ^T and ^D do movements
+ * to the next or previous shiftwidth value, i.e. for a 1-based numbering,
+ * with shiftwidth=3, ^T moves a cursor on the 7th, 8th or 9th column to
+ * the 10th column, and ^D moves it back.
+ *
+ * !!!
+ * The ^T and ^D characters in historical vi only had special meaning when
+ * they were the first characters typed after entering text input mode.
+ * Since normal erase characters couldn't erase autoindent (in this case
+ * ^T) characters, this mean that inserting text into previously existing
+ * text was quite strange, ^T only worked if it was the first keystroke,
+ * and then it could only be erased by using ^D.  This implementation treats
+ * ^T specially anywhere it occurs in the input, and permits the standard
+ * erase characters to erase the characters it inserts.
  *
  * XXX
  * Technically, txt_indent, txt_outdent should part of the screen interface,
