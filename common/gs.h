@@ -4,11 +4,11 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 8.17 1993/11/11 11:13:21 bostic Exp $ (Berkeley) $Date: 1993/11/11 11:13:21 $
+ *	$Id: gs.h,v 8.18 1993/11/18 08:17:04 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:17:04 $
  */
 
-typedef struct _gs {
-	struct list_entry screens;	/* Linked list of SCR structures. */
+struct _gs {
+	LIST_HEAD(_scrh, _scr) scrq;	/* Linked list of SCR structures. */
 	
 	mode_t	 origmode;		/* Original terminal mode. */
 	struct termios
@@ -16,7 +16,7 @@ typedef struct _gs {
 	struct termios
 		 s5_curses_botch;	/* System V curses workaround. */
 
-	struct _msg	*msgp;		/* User message list. */
+	MSG	*msgp;			/* User message list. */
 
 	char	*tmp_bp;		/* Temporary buffer. */
 	size_t	 tmp_blen;		/* Size of temporary buffer. */
@@ -26,13 +26,13 @@ typedef struct _gs {
 #endif
 
 /* INFORMATION SHARED BY ALL SCREENS. */
-	struct _ibuf	*key;		/* Key input buffer. */
-	struct _ibuf	*tty;		/* Tty input buffer. */
+	IBUF	*key;			/* Key input buffer. */
+	IBUF	*tty;			/* Tty input buffer. */
 
-	struct list_entry cutq;		/* Cut buffers. */
+	LIST_HEAD(_cuth, _cb) cutq;	/* Linked list of cut buffers. */
 
 #define	MAX_BIT_SEQ	128		/* Max + 1 fast check character. */
-	struct list_entry seqq;		/* Linked list of maps, abbrevs. */
+	LIST_HEAD(_seqh, _seq) seqq;	/* Linked list of maps, abbrevs. */
 	bitstr_t bit_decl(seqb, MAX_BIT_SEQ);
 	int	key_cnt;		/* Map expansion count. */
 
@@ -48,6 +48,6 @@ typedef struct _gs {
 #define	G_SNAPSHOT	0x0200		/* Always snapshot files. */
 #define	G_TMP_INUSE	0x0400		/* Temporary buffer in use. */
 	u_int	 flags;
-} GS;
+};
 
 extern GS *__global_list;		/* List of screens. */

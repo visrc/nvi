@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.35 1993/11/13 18:00:43 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:00:43 $";
+static char sccsid[] = "$Id: recover.c,v 8.36 1993/11/18 08:17:13 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:17:13 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -325,8 +325,7 @@ rcv_hup()
 	 * the -t flag being used causes sendmail to read the message for
 	 * the recipients instead of us specifying them some other way.
 	 */
-	for (sp = __global_list->screens.le_next;
-	    sp != NULL; sp = sp->screenq.qe_next)
+	for (sp = __global_list->scrq.lh_first; sp != NULL; sp = sp->q.le_next)
 		if (sp->ep != NULL) {
 			if (F_ISSET(sp->ep, F_MODIFIED) &&
 			    F_ISSET(sp->ep, F_RCV_ON)) {
@@ -365,8 +364,7 @@ rcv_term()
 	 * Walk the list of screens, sync'ing the files; only sync
 	 * each file once.
 	 */
-	for (sp = __global_list->screens.le_next;
-	    sp != NULL; sp = sp->screenq.qe_next)
+	for (sp = __global_list->scrq.lh_first; sp != NULL; sp = sp->q.le_next)
 		if (sp->ep != NULL) {
 			if (F_ISSET(sp->ep, F_MODIFIED) &&
 			    F_ISSET(sp->ep, F_RCV_ON)) {

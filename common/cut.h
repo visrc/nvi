@@ -4,22 +4,22 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: cut.h,v 8.5 1993/11/09 10:00:37 bostic Exp $ (Berkeley) $Date: 1993/11/09 10:00:37 $
+ *	$Id: cut.h,v 8.6 1993/11/18 08:16:59 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:16:59 $
  */
 
 /* Cut buffers. */
-typedef struct _cb {
-	struct queue_entry q;		/* Linked list of all cut buffers. */
+struct _cb {
+	LIST_ENTRY(_cb) q;		/* Linked list of cut buffers. */
 	CHAR_T	name;			/* Cut buffer name. */
-	struct _hdr	txthdr;		/* Linked list of TEXT structures. */
+	HDR	txthdr;			/* Linked list of TEXT structures. */
 	size_t	len;			/* Total length of cut text. */
 
 #define	CB_LMODE	0x01		/* Cut was in line mode. */
 	u_char	 flags;
-} CB;
+};
 		
-typedef struct _text {			/* Text: a linked list of lines. */
-	struct _text *next, *prev;	/* Linked list of text structures. */
+struct _text {				/* Text: a linked list of lines. */
+	TEXT *next, *prev;		/* Linked list of text structures. */
 	char	*lb;			/* Line buffer. */
 	size_t	 lb_len;		/* Line buffer length. */
 	size_t	 len;			/* Line length. */
@@ -34,7 +34,7 @@ typedef struct _text {			/* Text: a linked list of lines. */
 	/* These fields are used by the ex text input routine. */
 	u_char	*wd;			/* Width buffer. */
 	size_t	 wd_len;		/* Width buffer length. */
-} TEXT;
+};
 
 #define	DEFCB	'1'			/* Buffer '1' is the default buffer. */
 
@@ -44,8 +44,8 @@ typedef struct _text {			/* Text: a linked list of lines. */
  */
 #define	CBNAME(sp, cbp, name) {						\
 	name = isupper(name) ? tolower(name) : (name);			\
-	for (cbp = sp->gp->cutq.le_next;				\
-	    cbp != NULL; cbp = cbp->q.qe_next)				\
+	for (cbp = sp->gp->cutq.lh_first;				\
+	    cbp != NULL; cbp = cbp->q.le_next)				\
 		if (cbp->name == name)					\
 			break;						\
 }

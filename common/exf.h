@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 8.16 1993/11/08 11:10:25 bostic Exp $ (Berkeley) $Date: 1993/11/08 11:10:25 $
+ *	$Id: exf.h,v 8.17 1993/11/18 08:17:02 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:17:02 $
  */
 					/* Undo direction. */
 enum udirection { UBACKWARD, UFORWARD };
@@ -13,7 +13,7 @@ enum udirection { UBACKWARD, UFORWARD };
  * exf --
  *	The file structure.
  */
-typedef struct _exf {
+struct _exf {
 	int	 refcnt;		/* Reference count. */
 
 					/* Underlying database state. */
@@ -31,7 +31,7 @@ typedef struct _exf {
 	MARK	 l_cursor;		/* Log cursor position. */
 	enum udirection lundo;		/* Last undo direction. */
 
-	struct list_entry marks;	/* Linked list of file MARK's. */
+	LIST_HEAD(_markh, _mark) marks;	/* Linked list of file MARK's. */
 
 	/*
 	 * Paths for the recovery mail file and the vi recovery file and
@@ -60,7 +60,7 @@ typedef struct _exf {
 #define	F_RCV_ON	0x040		/* Recovery is possible. */
 #define	F_UNDO		0x080		/* No change since last undo. */
 	u_int	 flags;
-} EXF;
+};
 
 /* Flags to file_write(). */
 #define	FS_ALL		0x01		/* Write the entire file. */

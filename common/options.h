@@ -4,10 +4,10 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: options.h,v 8.10 1993/11/13 18:00:41 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:00:41 $
+ *	$Id: options.h,v 8.11 1993/11/18 08:17:11 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:17:11 $
  */
 
-typedef struct _option {
+struct _option {
 	union {
 		u_long	 val;		/* Value, boolean. */
 		char	*str;		/* String. */
@@ -17,12 +17,12 @@ typedef struct _option {
 #define	OPT_SELECTED	0x02		/* Selected for display. */
 #define	OPT_SET		0x04		/* Set (display for the user). */
 	u_int	flags;
-} OPTION;
+};
 
-typedef struct _optlist {
+struct _optlist {
 	char	*name;			/* Name. */
 					/* Change function. */
-	int	(*func) __P((struct _scr *, struct _option *, char *, u_long));
+	int	(*func) __P((SCR *, OPTION *, char *, u_long));
 					/* Type of object. */	
 	enum { OPT_0BOOL, OPT_1BOOL, OPT_NUM, OPT_STR } type;
 
@@ -30,7 +30,7 @@ typedef struct _optlist {
 #define	OPT_NOSAVE	0x02		/* Mkexrc command doesn't save. */
 #define	OPT_NOSTR	0x04		/* String that takes a "no". */
 	u_int	 flags;
-} OPTLIST;
+};
 
 /* Clear, set, test boolean options. */
 #define	O_SET(sp, o)		(sp)->opts[(o)].o_u.val = 1
@@ -44,38 +44,38 @@ typedef struct _optlist {
 /* Option routines. */
 enum optdisp { NO_DISPLAY, ALL_DISPLAY, CHANGED_DISPLAY, SELECT_DISPLAY };
 
-int	opts_copy __P((struct _scr *, struct _scr *));
-void	opts_dump __P((struct _scr *, enum optdisp));
-void	opts_free __P((struct _scr *));
-int	opts_init __P((struct _scr *));
-int	opts_save __P((struct _scr *, FILE *));
-int	opts_set __P((struct _scr *, char **));
+int	opts_copy __P((SCR *, SCR *));
+void	opts_dump __P((SCR *, enum optdisp));
+void	opts_free __P((SCR *));
+int	opts_init __P((SCR *));
+int	opts_save __P((SCR *, FILE *));
+int	opts_set __P((SCR *, char **));
 
 /* Per-option change routines. */
-int	f_altwerase __P((struct _scr *, struct _option *, char *, u_long));
-int	f_columns __P((struct _scr *, struct _option *, char *, u_long));
-int	f_keytime __P((struct _scr *, struct _option *, char *, u_long));
-int	f_leftright __P((struct _scr *, struct _option *, char *, u_long));
-int	f_lines __P((struct _scr *, struct _option *, char *, u_long));
-int	f_lisp __P((struct _scr *, struct _option *, char *, u_long));
-int	f_list __P((struct _scr *, struct _option *, char *, u_long));
-int	f_matchtime __P((struct _scr *, struct _option *, char *, u_long));
-int	f_mesg __P((struct _scr *, struct _option *, char *, u_long));
-int	f_modelines __P((struct _scr *, struct _option *, char *, u_long));
-int	f_number __P((struct _scr *, struct _option *, char *, u_long));
-int	f_optimize __P((struct _scr *, struct _option *, char *, u_long));
-int	f_paragraph __P((struct _scr *, struct _option *, char *, u_long));
-int	f_readonly __P((struct _scr *, struct _option *, char *, u_long));
-int	f_ruler __P((struct _scr *, struct _option *, char *, u_long));
-int	f_section __P((struct _scr *, struct _option *, char *, u_long));
-int	f_shiftwidth __P((struct _scr *, struct _option *, char *, u_long));
-int	f_sidescroll __P((struct _scr *, struct _option *, char *, u_long));
-int	f_tabstop __P((struct _scr *, struct _option *, char *, u_long));
-int	f_tags __P((struct _scr *, struct _option *, char *, u_long));
-int	f_term __P((struct _scr *, struct _option *, char *, u_long));
-int	f_ttywerase __P((struct _scr *, struct _option *, char *, u_long));
-int	f_w1200 __P((struct _scr *, struct _option *, char *, u_long));
-int	f_w300 __P((struct _scr *, struct _option *, char *, u_long));
-int	f_w9600 __P((struct _scr *, struct _option *, char *, u_long));
-int	f_window __P((struct _scr *, struct _option *, char *, u_long));
-int	f_wrapmargin __P((struct _scr *, struct _option *, char *, u_long));
+int	f_altwerase __P((SCR *, OPTION *, char *, u_long));
+int	f_columns __P((SCR *, OPTION *, char *, u_long));
+int	f_keytime __P((SCR *, OPTION *, char *, u_long));
+int	f_leftright __P((SCR *, OPTION *, char *, u_long));
+int	f_lines __P((SCR *, OPTION *, char *, u_long));
+int	f_lisp __P((SCR *, OPTION *, char *, u_long));
+int	f_list __P((SCR *, OPTION *, char *, u_long));
+int	f_matchtime __P((SCR *, OPTION *, char *, u_long));
+int	f_mesg __P((SCR *, OPTION *, char *, u_long));
+int	f_modelines __P((SCR *, OPTION *, char *, u_long));
+int	f_number __P((SCR *, OPTION *, char *, u_long));
+int	f_optimize __P((SCR *, OPTION *, char *, u_long));
+int	f_paragraph __P((SCR *, OPTION *, char *, u_long));
+int	f_readonly __P((SCR *, OPTION *, char *, u_long));
+int	f_ruler __P((SCR *, OPTION *, char *, u_long));
+int	f_section __P((SCR *, OPTION *, char *, u_long));
+int	f_shiftwidth __P((SCR *, OPTION *, char *, u_long));
+int	f_sidescroll __P((SCR *, OPTION *, char *, u_long));
+int	f_tabstop __P((SCR *, OPTION *, char *, u_long));
+int	f_tags __P((SCR *, OPTION *, char *, u_long));
+int	f_term __P((SCR *, OPTION *, char *, u_long));
+int	f_ttywerase __P((SCR *, OPTION *, char *, u_long));
+int	f_w1200 __P((SCR *, OPTION *, char *, u_long));
+int	f_w300 __P((SCR *, OPTION *, char *, u_long));
+int	f_w9600 __P((SCR *, OPTION *, char *, u_long));
+int	f_window __P((SCR *, OPTION *, char *, u_long));
+int	f_wrapmargin __P((SCR *, OPTION *, char *, u_long));

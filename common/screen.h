@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.58 1993/11/17 10:20:53 bostic Exp $ (Berkeley) $Date: 1993/11/17 10:20:53 $
+ *	$Id: screen.h,v 8.59 1993/11/18 08:17:16 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:17:16 $
  */
 
 /*
@@ -38,8 +38,8 @@ enum position { P_BOTTOM, P_FILL, P_MIDDLE, P_TOP };
  * XXX
  * The mtime field should be a struct timespec, but time_t is more portable.
  */
-typedef struct _fref {
-	struct queue_entry q;		/* Linked list of file references. */
+struct _fref {
+	TAILQ_ENTRY(_fref) q;		/* Linked list of file references. */
 	char	*tname;			/* Temporary file name. */
 	char	*fname;			/* File name. */
 	size_t	 nlen;			/* File name length. */
@@ -57,7 +57,7 @@ typedef struct _fref {
 #define	FR_RDONLY	0x080		/* File is read-only. */
 #define	FR_UNLINK_TFILE	0x100		/* Unlink the temporary file. */
 	u_int	 flags;
-} FREF;
+};
 
 /*
  * SCR --
@@ -65,22 +65,21 @@ typedef struct _fref {
  *	is stored in the various private areas.  The only information here
  *	is used by global routines or is shared by too many screens.
  */
-typedef struct _scr {
+struct _scr {
 /* INITIALIZED AT SCREEN CREATE. */
-	struct queue_entry screenq;	/* Linked list of screens. */
+	LIST_ENTRY(_scr) q;		/* Linked list of screens. */
 
-	struct _gs	*gp;		/* Pointer to global area. */
+	GS	*gp;			/* Pointer to global area. */
 
-	struct _scr	*child;		/* split screen: child screen. */
-	struct _scr	*parent;	/* split screen: parent screen. */
-	struct _scr	*snext;		/* split screen: next display screen. */
+	SCR	*child;			/* split screen: child screen. */
+	SCR	*parent;		/* split screen: parent screen. */
+	SCR	*snext;			/* split screen: next display screen. */
 
-	struct _exf	*ep;		/* Screen's current EXF structure. */
+	EXF	*ep;			/* Screen's current EXF structure. */
 
-	struct _msg	*msgp;		/* Message list. */
+	MSG	*msgp;			/* Message list. */
 
-					/* File name oriented state. */
-	struct queue_entry frefq;	/* Linked list of FREF structures. */
+	TAILQ_HEAD(_frefh, _fref) frefq;/* Linked list of FREF structures. */
 	FREF	*frp;			/* Current FREF. */
 	FREF	*p_frp;			/* Previous FREF. */
 
@@ -166,70 +165,63 @@ typedef struct _scr {
 /*
  * SCREEN SUPPORT ROUTINES.
  *
- * A struct _scr * MUST be the first argument to these routines.
+ * A SCR * MUST be the first argument to these routines.
  */
 					/* Ring the screen bell. */
-	void	 (*s_bell) __P((struct _scr *));
+	void	 (*s_bell) __P((SCR *));
 					/* Background the screen. */
-	int	 (*s_bg) __P((struct _scr *));
+	int	 (*s_bg) __P((SCR *));
 					/* Put up a busy message. */
-	int	 (*s_busy) __P((struct _scr *, char const *));
+	int	 (*s_busy) __P((SCR *, char const *));
 					/* Change a screen line. */
-	int	 (*s_change) __P((struct _scr *,
-		     struct _exf *, recno_t, enum operation));
+	int	 (*s_change) __P((SCR *,
+		     EXF *, recno_t, enum operation));
 					/* Return column close to specified. */
-	size_t	 (*s_chposition) __P((struct _scr *,
-		     struct _exf *, recno_t, size_t));
+	size_t	 (*s_chposition) __P((SCR *,
+		     EXF *, recno_t, size_t));
 					/* Clear the screen. */
-	int	 (*s_clear) __P((struct _scr *));
+	int	 (*s_clear) __P((SCR *));
 	enum confirm			/* Confirm an action with the user. */
-		 (*s_confirm) __P((struct _scr *,
-		     struct _exf *, struct _mark *, struct _mark *));
+		 (*s_confirm) __P((SCR *, EXF *, MARK *, MARK *));
 					/* Copy to a new screen. */
-	int	 (*s_copy) __P((struct _scr *, struct _scr *));
+	int	 (*s_copy) __P((SCR *, SCR *));
 					/* Move down the screen. */
-	int	 (*s_down) __P((struct _scr *,
-		     struct _exf *, struct _mark *, recno_t, int));
+	int	 (*s_down) __P((SCR *, EXF *, MARK *, recno_t, int));
 					/* Edit a file. */
-	int	 (*s_edit) __P((struct _scr *, struct _exf *, struct _scr **));
+	int	 (*s_edit) __P((SCR *, EXF *, SCR **));
 					/* End a screen. */
-	int	 (*s_end) __P((struct _scr *));
+	int	 (*s_end) __P((SCR *));
 					/* Run a single ex command. */
-	int	 (*s_ex_cmd) __P((struct _scr *, struct _exf *,
-		     struct _excmdarg *, struct _mark *));
+	int	 (*s_ex_cmd) __P((SCR *, EXF *, EXCMDARG *, MARK *));
 					/* Run user's ex commands. */
-	int	 (*s_ex_run) __P((struct _scr *, struct _exf *,
-		     struct _mark *));
+	int	 (*s_ex_run) __P((SCR *, EXF *, MARK *));
 					/* Screen's ex write function. */
 	int	 (*s_ex_write) __P((void *, const char *, int));
 					/* Foreground the screen. */
-	int	 (*s_fg) __P((struct _scr *, char *));
+	int	 (*s_fg) __P((SCR *, char *));
 					/* Fill the screen's map. */
-	int	 (*s_fill) __P((struct _scr *,
-		     struct _exf *, recno_t, enum position));
+	int	 (*s_fill) __P((SCR *, EXF *, recno_t, enum position));
 	enum input			/* Get a line from the user. */
-		 (*s_get) __P((struct _scr *,
-		     struct _exf *, HDR *, int, u_int));
+		 (*s_get) __P((SCR *, EXF *, HDR *, int, u_int));
 	enum input			/* Get a key from the user. */
-		 (*s_key_read) __P((struct _scr *, int *, int));
+		 (*s_key_read) __P((SCR *, int *, int));
 					/* Tell the screen an option changed. */
-	int	 (*s_optchange) __P((struct _scr *, int));
+	int	 (*s_optchange) __P((SCR *, int));
 					/* Return column at screen position. */
-	int	 (*s_position) __P((struct _scr *,
-		     struct _exf *, MARK *, u_long, enum position));
+	int	 (*s_position) __P((SCR *, EXF *,
+		    MARK *, u_long, enum position));
 					/* Refresh the screen. */
-	int	 (*s_refresh) __P((struct _scr *, struct _exf *));
+	int	 (*s_refresh) __P((SCR *, EXF *));
 					/* Return column close to last char. */
-	size_t	 (*s_relative) __P((struct _scr *, struct _exf *, recno_t));
+	size_t	 (*s_relative) __P((SCR *, EXF *, recno_t));
 					/* Change the screen size. */
-	int	 (*s_resize) __P((struct _scr *, long));
+	int	 (*s_resize) __P((SCR *, long));
 					/* Split the screen. */
-	int	 (*s_split) __P((struct _scr *, char *[]));
+	int	 (*s_split) __P((SCR *, char *[]));
 					/* Suspend the screen. */
-	int	 (*s_suspend) __P((struct _scr *));
+	int	 (*s_suspend) __P((SCR *));
 					/* Move up the screen. */
-	int	 (*s_up) __P((struct _scr *,
-		     struct _exf *, struct _mark *, recno_t, int));
+	int	 (*s_up) __P((SCR *, EXF *, MARK *, recno_t, int));
 
 /* Editor screens. */
 #define	S_EX		0x0000001	/* Ex screen. */
@@ -270,7 +262,7 @@ typedef struct _scr {
 #define	S_TIMER_SET	0x0800000	/* If a busy timer is running. */
 #define	S_UPDATE_MODE	0x1000000	/* Don't repaint modeline. */
 	u_int flags;
-} SCR;
+};
 
 /* Generic routines to start/stop a screen. */
 int	screen_end __P((SCR *));

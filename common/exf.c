@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.41 1993/11/13 18:00:28 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:00:28 $";
+static char sccsid[] = "$Id: exf.c,v 8.42 1993/11/18 08:17:00 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:17:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -58,8 +58,8 @@ file_add(sp, frp_append, fname, ignore)
 	 * a new argument list.
 	 */
 	if (fname != NULL)
-		for (frp = sp->frefq.qe_next;
-		    frp != NULL; frp = frp->q.qe_next)
+		for (frp = sp->frefq.tqh_first;
+		    frp != NULL; frp = frp->q.tqe_next)
 			if (!strcmp(frp->fname, fname)) {
 				F_CLR(frp, FR_IGNORE);
 				return (frp);
@@ -92,9 +92,9 @@ mem:		msgq(sp, M_SYSERR, NULL);
 
 	/* Append into the chain of file names. */
 	if (frp_append != NULL) {
-		queue_insert_after(&sp->frefq, &frp_append->q, frp, FREF *, q);
+		TAILQ_INSERT_AFTER(&sp->frefq, frp_append, frp, q);
 	} else
-		queue_enter_tail(&sp->frefq, frp, FREF *, q);
+		TAILQ_INSERT_TAIL(&sp->frefq, frp, q);
 
 	return (frp);
 }
@@ -111,7 +111,7 @@ file_first(sp, all)
 	FREF *frp;
 
 	/* Return the first file name. */
-	for (frp = sp->frefq.qe_next; frp != NULL; frp = frp->q.qe_next)
+	for (frp = sp->frefq.tqh_first; frp != NULL; frp = frp->q.tqe_next)
 		if (all || !F_ISSET(frp, FR_IGNORE))
 			return (frp);
 	return (NULL);
@@ -129,7 +129,7 @@ file_next(sp, all)
 	FREF *frp;
 
 	/* Return the next file name. */
-	for (frp = sp->frefq.qe_next; frp != NULL; frp = frp->q.qe_next)
+	for (frp = sp->frefq.tqh_first; frp != NULL; frp = frp->q.tqe_next)
 		if (all || !F_ISSET(frp, FR_EDITED | FR_IGNORE))
 			return (frp);
 	return (NULL);

@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.41 1993/11/16 21:59:33 bostic Exp $ (Berkeley) $Date: 1993/11/16 21:59:33 $";
+static char sccsid[] = "$Id: main.c,v 8.42 1993/11/18 08:17:05 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:17:05 $";
 #endif /* not lint */
 
 #include <sys/param.h>

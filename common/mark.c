@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: mark.c,v 8.7 1993/11/13 18:00:35 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:00:35 $";
+static char sccsid[] = "$Id: mark.c,v 8.8 1993/11/18 08:17:07 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:17:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -73,7 +73,7 @@ mark_init(sp, ep)
 	mp->cno = 0;
 	mp->name = ABSMARK1;
 	mp->flags = 0;
-	list_enter_head(&ep->marks, mp, MARK *, q);
+	LIST_INSERT_HEAD(&ep->marks, mp, q);
 	return (0);
 }
 
@@ -88,8 +88,8 @@ mark_end(sp, ep)
 {
 	MARK *mp;
 
-	while ((mp = ep->marks.le_next) != NULL) {
-		list_remove(mp, MARK *, q);
+	while ((mp = ep->marks.lh_first) != NULL) {
+		LIST_REMOVE(mp, q);
 		FREE(mp, sizeof(MARK));
 	}
 	return (0);
@@ -162,7 +162,7 @@ mark_set(sp, ep, key, value, userset)
 			msgq(sp, M_SYSERR, NULL);
 			return (1);
 		}
-		list_insert_after(&mp->q, mt, MARK *, q);
+		LIST_INSERT_AFTER(mp, mt, q);
 		mp = mt;
 	} else if (!userset &&
 	    !F_ISSET(mp, MARK_DELETED) && F_ISSET(mp, MARK_USERSET))
@@ -192,8 +192,8 @@ mark_find(sp, ep, key)
 	 * Return the requested mark or the slot immediately before
 	 * where it should go.
 	 */
-	for (lastmp = NULL, mp = ep->marks.le_next;
-	    mp != NULL; lastmp = mp, mp = mp->q.qe_next)
+	for (lastmp = NULL,
+	    mp = ep->marks.lh_first; mp != NULL; mp = mp->q.le_next)
 		if (mp->name >= key)
 			return (mp->name == key ? mp : lastmp);
 	return (lastmp);
@@ -211,7 +211,7 @@ mark_delete(sp, ep, lno)
 {
 	MARK *mp;
 
-	for (mp = ep->marks.le_next; mp != NULL; mp = mp->q.qe_next)
+	for (mp = ep->marks.lh_first; mp != NULL; mp = mp->q.le_next)
 		if (mp->lno >= lno)
 			if (mp->lno == lno) {
 				F_SET(mp, MARK_DELETED);
@@ -232,7 +232,7 @@ mark_insert(sp, ep, lno)
 {
 	MARK *mp;
 
-	for (mp = ep->marks.le_next; mp != NULL; mp = mp->q.qe_next)
+	for (mp = ep->marks.lh_first; mp != NULL; mp = mp->q.le_next)
 		if (mp->lno >= lno)
 			++mp->lno;
 }

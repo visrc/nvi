@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 8.11 1993/11/13 18:00:25 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:00:25 $";
+static char sccsid[] = "$Id: cut.c,v 8.12 1993/11/18 08:16:57 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:16:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -79,7 +79,7 @@ cut(sp, ep, name, fm, tm, lmode)
 		}
 		memset(cbp, 0, sizeof(CB));
 		cbp->name = name;
-		list_enter_head(&sp->gp->cutq, cbp, CB *, q);
+		LIST_INSERT_HEAD(&sp->gp->cutq, cbp, q);
 		HDR_INIT(cbp->txthdr, next, prev);
 	} else if (!append) {
 		hdr_text_free(&cbp->txthdr);
@@ -141,7 +141,7 @@ cb_rotate(sp)
 	CB *cbp, *del_cbp;
 
 	del_cbp = NULL;
-	for (cbp = sp->gp->cutq.le_next; cbp != NULL; cbp = cbp->q.qe_next)
+	for (cbp = sp->gp->cutq.lh_first; cbp != NULL; cbp = cbp->q.le_next)
 		switch(cbp->name) {
 		case '1':
 			cbp->name = '2';
@@ -172,7 +172,7 @@ cb_rotate(sp)
 			break;
 		}
 	if (del_cbp != NULL) {
-		list_remove(del_cbp, CB *, q);
+		LIST_REMOVE(del_cbp, q);
 		hdr_text_free(&del_cbp->txthdr);
 		FREE(del_cbp, sizeof(CB));
 	}

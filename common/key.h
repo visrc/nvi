@@ -4,16 +4,16 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 8.16 1993/11/10 13:42:16 bostic Exp $ (Berkeley) $Date: 1993/11/10 13:42:16 $
+ *	$Id: key.h,v 8.17 1993/11/18 08:17:22 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:17:22 $
  */
 
 /* Structure for a key input buffer. */
-typedef struct _ibuf {
+struct _ibuf {
 	char	*buf;		/* Buffer itself. */
 	int	 cnt;		/* Count of characters. */
 	int	 len;		/* Buffer length. */
 	int	 next;		/* Offset of next character. */
-} IBUF;
+};
 				/* Flush keys from expansion buffer. */
 #define	TERM_FLUSH(ibp)		(ibp)->cnt = (ibp)->next = 0
 				/* Return if more keys in expansion buffer. */
@@ -23,10 +23,10 @@ typedef struct _ibuf {
  * Structure to name a character.  Used both as an interface to the screen
  * and to name objects referenced by characters in error messages.
  */
-typedef struct _chname {
+struct _chname {
 	char	*name;		/* Character name. */
 	u_char	 len;		/* Length of the character name. */
-} CHNAME;
+};
 
 /* The maximum number of columns any character can take up on a screen. */
 #define	MAX_CHARACTER_COLUMNS	4
@@ -129,8 +129,8 @@ enum input	{ INP_OK=0, INP_EOF, INP_ERR };
 	(TXT_MAPCOMMAND | TXT_MAPINPUT)
 
 /* Support keyboard routines. */
-int	term_init __P((struct _scr *));
+int	term_init __P((SCR *));
 enum input
-	term_key __P((struct _scr *, CHAR_T *, u_int));
-int	term_push __P((struct _scr *, IBUF *, char *, size_t));
-int	term_waiting __P((struct _scr *));
+	term_key __P((SCR *, CHAR_T *, u_int));
+int	term_push __P((SCR *, IBUF *, char *, size_t));
+int	term_waiting __P((SCR *));

@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: msg.h,v 8.5 1993/11/13 18:00:36 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:00:36 $
+ *	$Id: msg.h,v 8.6 1993/11/18 08:17:10 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:17:10 $
  */
 
 /*
@@ -22,8 +22,8 @@
  */
 enum msgtype { M_BERR, M_ERR, M_INFO, M_SYSERR, M_VINFO };
 
-typedef struct _msg {
-	struct _msg *next;	/* Linked list of messages. */
+struct _msg {
+	MSG *next;		/* Linked list of messages. */
 	char *mbuf;		/* Message. */
 	size_t blen;		/* Message buffer length. */
 	size_t len;		/* Message length. */
@@ -31,7 +31,7 @@ typedef struct _msg {
 #define	M_EMPTY		0x01	/* No message. */
 #define	M_INV_VIDEO	0x02	/* Inverse video. */
 	u_int flags;		/* Flags. */
-} MSG;
+};
 
 /* Messages. */
 void	msg_app __P((GS *, SCR *, int, char *, size_t));

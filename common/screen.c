@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.34 1993/11/17 10:21:05 bostic Exp $ (Berkeley) $Date: 1993/11/17 10:21:05 $";
+static char sccsid[] = "$Id: screen.c,v 8.35 1993/11/18 08:17:14 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:17:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -41,11 +41,9 @@ screen_init(orig, spp, flags)
 	memset(sp, 0, sizeof(SCR));
 
 /* INITIALIZED AT SCREEN CREATE. */
-	queue_init(&sp->screenq);
-
 	sp->gp = __global_list;			/* All ref the GS structure. */
 
-	queue_init(&sp->frefq);
+	TAILQ_INIT(&sp->frefq);
 
 	sp->ccnt = 2;				/* Anything > 1 */
 
@@ -80,7 +78,7 @@ screen_init(orig, spp, flags)
 		}
 
 		sp->flags = flags;
-		list_enter_head(&__global_list->screens, sp, SCR *, screenq);
+		LIST_INSERT_HEAD(&__global_list->scrq, sp, q);
 	} else {
 		if (orig->alt_fname != NULL &&
 		    (sp->alt_fname = strdup(orig->alt_fname)) == NULL)
@@ -158,7 +156,7 @@ mem:			msgq(orig, M_SYSERR, "new screen attributes");
 		sp->s_up		= orig->s_up;
 
 		F_SET(sp, F_ISSET(orig, S_SCREENS));
-		list_insert_after(&orig->screenq, sp, SCR *, screenq);
+		LIST_INSERT_AFTER(orig, sp, q);
 	}
 
 	/* Copy screen private information. */
@@ -182,8 +180,8 @@ screen_end(sp)
 
 	/* Free remembered file names. */
 	{ FREF *frp;
-		while ((frp = sp->frefq.qe_next) != NULL) {
-			queue_remove(&sp->frefq, frp, FREF *, q);
+		while ((frp = sp->frefq.tqh_first) != NULL) {
+			TAILQ_REMOVE(&sp->frefq, frp, q);
 			FREE(frp->fname, frp->nlen);
 			FREE(frp, sizeof(FREF));
 		}
@@ -227,8 +225,8 @@ screen_end(sp)
 			c_mp = c_sp->msgp;
 			if (F_ISSET(sp, S_BELLSCHED))
 				F_SET(c_sp, S_BELLSCHED);
-		} else if (sp->screenq.qe_next != NULL) {
-			c_sp = sp->screenq.qe_next;
+		} else if (sp->q.le_next != NULL) {
+			c_sp = sp->q.le_next;
 			c_mp = c_sp->msgp;
 			if (F_ISSET(sp, S_BELLSCHED))
 				F_SET(c_sp, S_BELLSCHED);
@@ -253,7 +251,7 @@ screen_end(sp)
 	}
 
 	/* Remove the screen from the global screen chain. */
-	list_remove(sp, SCR *, screenq);
+	LIST_REMOVE(sp, q);
 
 	/* Remove the screen from the chain of related screens. */
 	if (sp->parent != NULL) {
