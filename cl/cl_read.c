@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_read.c,v 10.25 2001/06/24 19:48:05 skimo Exp $ (Berkeley) $Date: 2001/06/24 19:48:05 $";
+static const char sccsid[] = "$Id: cl_read.c,v 10.26 2001/06/25 10:39:55 skimo Exp $ (Berkeley) $Date: 2001/06/25 10:39:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -108,6 +108,7 @@ retest:	if (LF_ISSET(EC_INTERRUPT) || F_ISSET(clp, CL_SIGINT)) {
 	}
 
 	/* Read input characters. */
+read:
 	switch (cl_read(sp, LF_ISSET(EC_QUOTED | EC_RAW),
 	    clp->ibuf + clp->skip, SIZE(clp->ibuf) - clp->skip, &nr, tp)) {
 	case INP_OK:
@@ -120,6 +121,8 @@ retest:	if (LF_ISSET(EC_INTERRUPT) || F_ISSET(clp, CL_SIGINT)) {
 		    int n = -rc;
 		    memmove(clp->ibuf, clp->ibuf + nr + clp->skip - n, n);
 		    clp->skip = n;
+		    if (wlen == 0)
+			goto read;
 		    break;
 		} else if (rc == 0) {
 		    clp->skip = 0;
