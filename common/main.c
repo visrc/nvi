@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.51 1993/02/25 18:54:19 bostic Exp $ (Berkeley) $Date: 1993/02/25 18:54:19 $";
+static char sccsid[] = "$Id: main.c,v 5.52 1993/02/25 20:55:55 bostic Exp $ (Berkeley) $Date: 1993/02/25 20:55:55 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -298,8 +298,13 @@ obsolete(argv)
 					err("%s: %s", pname, strerror(errno));
 				memmove(argv[0], "-c$", 4);
 			} else if (argv[0][1] == '/') {
+				p = argv[0];
+				len = strlen(argv[0]);
+				if ((argv[0] = malloc(len + 3)) == NULL)
+					err("%s: %s", pname, strerror(errno));
 				argv[0][0] = '-';
 				argv[0][1] = 'c';
+				(void)strcpy(argv[0] + 2, p + 1);
 			} else if (isdigit(argv[0][1])) {
 				p = argv[0];
 				len = strlen(argv[0]);
