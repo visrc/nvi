@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.53 1994/04/26 11:56:49 bostic Exp $ (Berkeley) $Date: 1994/04/26 11:56:49 $";
+static char sccsid[] = "$Id: util.c,v 8.54 1994/04/28 12:16:33 bostic Exp $ (Berkeley) $Date: 1994/04/28 12:16:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -622,7 +622,7 @@ baud_from_bval(sp)
 		if (v == EXTB)
 			return (38400);
 #endif
-		msgq(sp, M_ERR, "Unknown terminal baud rate %u.\n", v);
+		msgq(sp, M_ERR, "Unknown terminal baud rate %u.", (u_int)v);
 		return (9600);
 	}
 }
