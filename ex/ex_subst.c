@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.9 1993/08/25 16:45:17 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:45:17 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.10 1993/09/08 08:38:40 bostic Exp $ (Berkeley) $Date: 1993/09/08 08:38:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -53,6 +53,14 @@ ex_substitute(sp, ep, cmdp)
 	/*
 	 * Get the substitute string, toss escaped characters.
 	 *
+	 * !!!
+	 * Historic vi accepted any of the following forms:
+	 *
+	 *	:s/abc/def/		change "abc" to "def"
+	 *	:s/abc/def		change "abc" to "def"
+	 *	:s/abc/			delete "abc"
+	 *	:s/abc			delete "abc"
+	 *
 	 * QUOTING NOTE:
 	 *
 	 * Only toss an escaped character if it escapes a delimiter.
@@ -74,25 +82,26 @@ ex_substitute(sp, ep, cmdp)
 	}
 
 	/* Get the replacement string, toss escaped characters. */
-	if (*p == '\0') {
-		msgq(sp, M_ERR, "No replacement string specified.");
-		return (1);
-	}
-	for (rep = t = p;;) {
-		if (p[0] == '\0' || p[0] == delim) {
-			if (p[0] == delim)
-				++p;
-			*t = '\0';
-			break;
-		}
-		if (p[0] == '\\' && p[1] == delim)
-			++p;
-		*t++ = *p++;
-	}
 	if (sp->repl != NULL)
 		free(sp->repl);
-	sp->repl = strdup(rep);
-	sp->repl_len = strlen(rep);
+	if (*p == '\0') {
+		sp->repl = NULL;
+		sp->repl_len = 0;
+	} else {
+		for (rep = t = p;;) {
+			if (p[0] == '\0' || p[0] == delim) {
+				if (p[0] == delim)
+					++p;
+				*t = '\0';
+				break;
+			}
+			if (p[0] == '\\' && p[1] == delim)
+				++p;
+			*t++ = *p++;
+		}
+		sp->repl = strdup(rep);
+		sp->repl_len = strlen(rep);
+	}
 
 	/* If the substitute string is empty, use the last one. */
 	if (*sub == NULL) {
