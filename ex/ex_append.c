@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 8.10 1994/04/10 11:26:34 bostic Exp $ (Berkeley) $Date: 1994/04/10 11:26:34 $";
+static char sccsid[] = "$Id: ex_append.c,v 8.11 1994/04/10 13:06:45 bostic Exp $ (Berkeley) $Date: 1994/04/10 13:06:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -115,7 +115,7 @@ aci(sp, ep, cmdp, cmd)
 	F_SET(sp, S_INTERRUPTIBLE);
 
 	if (cmd == CHANGE)
-		for (;; sp->lno = m.lno) {
+		for (;; ++m.lno) {
 			if (m.lno > cmdp->addr2.lno) {
 				cmd = APPEND;
 				--m.lno;
@@ -143,14 +143,12 @@ aci(sp, ep, cmdp, cmd)
 				rval = 1;
 				goto done;
 			}
-			if (F_ISSET(sp, S_INTERRUPTED)) {
-				msgq(sp, M_ERR, "Interrupted.");
+			if (F_ISSET(sp, S_INTERRUPTED))
 				goto done;
-			}
 		}
 
 	if (cmd == APPEND)
-		for (;; sp->lno = m.lno++) {
+		for (;; ++m.lno) {
 			switch (sp->s_get(sp, ep, &sp->tiq, 0, flags)) {
 			case INP_OK:
 				break;
@@ -166,14 +164,15 @@ aci(sp, ep, cmdp, cmd)
 				rval = 1;
 				goto done;
 			}
-			if (F_ISSET(sp, S_INTERRUPTED)) {
-				msgq(sp, M_ERR, "Interrupted.");
+			if (F_ISSET(sp, S_INTERRUPTED))
 				goto done;
-			}
 		}
 
 done:	if (aiset)
 		O_SET(sp, O_AUTOINDENT);
+
+	/* Set the line number to the last line successfully modified. */
+	sp->lno = rval ? m.lno : m.lno + 1;
 
 	return (rval);
 }
