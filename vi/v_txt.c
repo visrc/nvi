@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.78 1993/12/30 10:06:19 bostic Exp $ (Berkeley) $Date: 1993/12/30 10:06:19 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.79 1994/01/09 16:29:21 bostic Exp $ (Berkeley) $Date: 1994/01/09 16:29:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1231,20 +1231,41 @@ txt_backup(sp, ep, tiqh, tp, flags)
 {
 	TEXT *ntp;
 	recno_t lno;
-	size_t col;
+	size_t total;
 
-	if (tp->q.cqe_prev == (void *)tiqh) {
+	/* Get a handle on the previous TEXT structure. */
+	if ((ntp = tp->q.cqe_prev) == (void *)tiqh) {
 		msgq(sp, M_BERR, "Already at the beginning of the insert");
 		return (tp);
 	}
 
-	/* Get a handle on the previous TEXT structure. */
-	ntp = tp->q.cqe_prev;
-
-	/* Make sure that we can get enough space. */
-	if (LF_ISSET(TXT_APPENDEOL) && ntp->len + 1 > ntp->lb_len &&
-	    binc(sp, &ntp->lb, &ntp->lb_len, ntp->len + 1))
+	/* Make sure that we have enough space. */
+	total = ntp->len + tp->insert;
+	if (LF_ISSET(TXT_APPENDEOL))
+		++total;
+	if (total > ntp->lb_len &&
+	    binc(sp, &ntp->lb, &ntp->lb_len, total))
 		return (NULL);
+
+	/*
+	 * Append a cursor or copy inserted bytes to the end of the old line.
+	 * Test for appending a cursor first, because the TEXT insert field
+	 * will be 1 if we're appending a cursor.  I don't think there's a
+	 * third case, so abort() if there is.
+	 */
+	if (LF_ISSET(TXT_APPENDEOL)) {
+		ntp->lb[ntp->len] = CURSOR_CH;
+		ntp->insert = 1;
+	} else if (tp->insert) {
+		memmove(ntp->lb + ntp->len, tp->lb + tp->owrite, tp->insert);
+		ntp->insert = tp->insert;
+	} else
+		abort();
+
+	/* Set bookkeeping information. */
+	sp->lno = ntp->lno;
+	sp->cno = ntp->len;
+	ntp->len += ntp->insert;
 
 	/* Release the current TEXT. */
 	lno = tp->lno;
@@ -1255,15 +1276,7 @@ txt_backup(sp, ep, tiqh, tp, flags)
 	if (sp->s_change(sp, ep, lno, LINE_DELETE))
 		return (NULL);
 
-	/* Set bookkeeping information. */
-	col = ntp->len;
-	if (LF_ISSET(TXT_APPENDEOL)) {
-		ntp->lb[col] = CURSOR_CH;
-		++ntp->insert;
-		++ntp->len;
-	}
-	sp->lno = ntp->lno;
-	sp->cno = col;
+	/* Return the old line. */
 	return (ntp);
 }
 
