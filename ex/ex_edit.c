@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 5.5 1992/04/14 10:51:18 bostic Exp $ (Berkeley) $Date: 1992/04/14 10:51:18 $";
+static char sccsid[] = "$Id: ex_edit.c,v 5.6 1992/04/15 09:13:03 bostic Exp $ (Berkeley) $Date: 1992/04/15 09:13:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -71,7 +71,7 @@ edit(cmdp, cmd)
 	if (tmpabort(cmdp->flags & E_FORCE)) {
 		tmpstart(fname);
 		if (cmdp->plus)
-			(void)excmd(cmdp->plus);
+			(void)ex_cmd(cmdp->plus);
 		else {
 			if (mode == MODE_VI)
 				line = !strcmp(fname, prevorig) ? prevline : 1;
