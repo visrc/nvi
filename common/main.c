@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.17 1992/04/18 15:38:56 bostic Exp $ (Berkeley) $Date: 1992/04/18 15:38:56 $";
+static char sccsid[] = "$Id: main.c,v 5.18 1992/04/19 10:53:02 bostic Exp $ (Berkeley) $Date: 1992/04/19 10:53:02 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -45,7 +45,7 @@ main(argc, argv)
 	int argc;
 	char *argv[];
 {
-	CMDARG cmd;
+	EXCMDARG cmd;
 	int ch, i;
 	char *excmdarg, *err, *p, *tag, path[MAXPATHLEN];
 
