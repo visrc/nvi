@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.152 1994/08/09 09:29:39 bostic Exp $ (Berkeley) $Date: 1994/08/09 09:29:39 $";
+static char sccsid[] = "$Id: ex.c,v 8.153 1994/08/14 10:50:14 bostic Exp $ (Berkeley) $Date: 1994/08/14 10:50:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -224,8 +224,6 @@ ex_icmd(sp, ep, cmd, len, needsep)
 	 */
 	CLR_INTERRUPT(sp);
 	rval = ex_cmd(sp, ep, cmd, len, needsep);
-	if (INTERRUPTED(sp))
-		term_flush(sp, "Interrupted", CH_MAPPED);
 	return (rval);
 }
 
@@ -1479,7 +1477,6 @@ err:	if (sep != NONE &&
 	if (save_cmdlen != 0)
 		msgq(sp, M_ERR,
 		    "Ex command failed: remaining command input discarded");
-	term_flush(sp, "Ex command failed", CH_MAPPED);
 	return (1);
 }
 
