@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 10.5 1995/09/23 19:18:24 bostic Exp $ (Berkeley) $Date: 1995/09/23 19:18:24 $
+ *	$Id: vi.h,v 10.6 1995/09/24 11:59:58 bostic Exp $ (Berkeley) $Date: 1995/09/24 11:59:58 $
  */
 
 /* Definition of a vi "word". */
@@ -21,6 +21,7 @@ typedef struct _vicmd {
 	CHAR_T	character;		/* Character. */
 	u_long	count;			/* Count. */
 	u_long	count2;			/* Second count (only used by z). */
+	EVENT	ev;			/* Associated event. */
 
 #define	ISCMD(p, key)	((p) == &vikeys[key])
 	VIKEYS const *kp;		/* Command/Motion VIKEYS entry. */
@@ -332,10 +333,6 @@ typedef struct _vi_private {
  * but there are some historical incompatibilities.
  */
 #define	TAB_OFF(c)	COL_OFF((c), O_VAL(sp, O_TABSTOP))
-
-/* Add a character into the text. */
-#define	ADDCH(sp, ch)							\
-    (sp)->gp->scr_addstr(sp, KEY_NAME(sp, ch), KEY_LEN(sp, ch));
 
 /* If more than one screen being shown. */
 #define	IS_SPLIT(sp)							\
