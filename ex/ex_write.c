@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 9.1 1994/11/09 18:41:20 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:41:20 $";
+static char sccsid[] = "$Id: ex_write.c,v 9.2 1994/12/01 20:11:52 bostic Exp $ (Berkeley) $Date: 1994/12/01 20:11:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -212,6 +212,18 @@ exwr(sp, cmdp, cmd)
 				free(sp->frp->name);
 				sp->frp->name = p;
 			}
+			/*
+			 * The file has a real name, it's no longer a
+			 * temporary, clear the temporary file flags.
+			 * The read-only flag follows the file name,
+			 * clear it as well.
+			 *
+			 * !!!
+			 * If we're writing the whole file, FR_NAMECHANGE
+			 * will be cleared by the write routine -- this is
+			 * historic practice.
+			 */
+			F_CLR(sp->frp, FR_RDONLY | FR_TMPEXIT | FR_TMPFILE);
 			F_SET(sp->frp, FR_NAMECHANGE | FR_EXNAMED);
 		} else
 			set_alt_name(sp, name);

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 9.4 1994/11/09 21:50:47 bostic Exp $ (Berkeley) $Date: 1994/11/09 21:50:47 $";
+static char sccsid[] = "$Id: ex_read.c,v 9.5 1994/12/01 20:11:51 bostic Exp $ (Berkeley) $Date: 1994/12/01 20:11:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -166,6 +166,14 @@ ex_read(sp, cmdp)
 					free(sp->frp->name);
 					sp->frp->name = p;
 				}
+				/*
+				 * The file has a real name, it's no longer a
+				 * temporary, clear the temporary file flags.
+				 * The read-only flag follows the file name,
+				 * clear it as well.
+				 */
+				F_CLR(sp->frp,
+				    FR_RDONLY | FR_TMPEXIT | FR_TMPFILE);
 				F_SET(sp->frp, FR_NAMECHANGE | FR_EXNAMED);
 			} else
 				set_alt_name(sp, name);
