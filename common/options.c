@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 10.5 1995/06/14 11:39:39 bostic Exp $ (Berkeley) $Date: 1995/06/14 11:39:39 $";
+static char sccsid[] = "$Id: options.c,v 10.6 1995/06/19 19:56:38 bostic Exp $ (Berkeley) $Date: 1995/06/19 19:56:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -793,17 +793,17 @@ opts_dump(sp, type)
 				    "%*s", (int)(colwidth - cnt), "");
 			}
 			if (++row < numrows || b_num)
-				(void)ex_puts(sp, "\n");
+				(void)ex_printf(sp, "\n");
 		}
 	}
 
 	for (row = 0; row < b_num;) {
 		(void)opts_print(sp, &optlist[b_op[row]]);
 		if (++row < b_num)
-			(void)ex_puts(sp, "\n");
+			(void)ex_printf(sp, "\n");
 	}
 	F_SET(sp, S_EX_WROTE);
-	(void)ex_puts(sp, "\n");
+	(void)ex_printf(sp, "\n");
 }
 
 /*
