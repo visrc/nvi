@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 5.27 1993/04/13 16:14:56 bostic Exp $ (Berkeley) $Date: 1993/04/13 16:14:56 $";
+static char sccsid[] = "$Id: db.c,v 5.28 1993/04/17 11:48:44 bostic Exp $ (Berkeley) $Date: 1993/04/17 11:48:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,8 +25,10 @@ static char sccsid[] = "$Id: db.c,v 5.27 1993/04/13 16:14:56 bostic Exp $ (Berke
 		for (__tsp = sp->gp->scrhdr.next;			\
 		    __tsp != (SCR *)&sp->gp->scrhdr;			\
 		    __tsp = __tsp->next)				\
-			if (__tsp->ep == ep && __tsp->change != NULL)	\
+			if (__tsp->ep == ep && __tsp->change != NULL) {	\
 				sp->change(__tsp, ep, lno, op);		\
+				sp->refresh(__tsp, ep);			\
+			}						\
 	}								\
 }
 
@@ -178,7 +180,7 @@ file_aline(sp, ep, lno, p, len)
 	}
 
 	/* Flush the cache, update line count, before screen update. */
-	if (lno >= ep->c_lno)
+	if (lno < ep->c_lno)
 		ep->c_lno = OOBLNO;
 	if (ep->c_nlines != OOBLNO)
 		++ep->c_nlines;
