@@ -1,4 +1,4 @@
-#	$Id: README,v 8.109 1995/02/13 13:42:16 bostic Exp $ (Berkeley) $Date: 1995/02/13 13:42:16 $
+#	$Id: README,v 8.110 1995/02/15 17:14:54 bostic Exp $ (Berkeley) $Date: 1995/02/15 17:14:54 $
 
 This is the README for nex/nvi, a freely redistributable replacement for
 the ex/vi text editors originally distributed as part of the Fourth
@@ -94,10 +94,10 @@ Please include the following in the bug report;
 	  (EXININT, NEXINIT) values.  (Cutting and pasting the output
 	  of ":set all" is usually sufficient.)
 
-If you're running a memory checker (e.g. Purify) on nvi, you will want
-to  recompile everything with "-DPURIFY" in the CFLAGS, first.  By
-default, allocated pages are not initialized by the DB code, and they
-will show up as reads of uninitialized memory in the buffer write routines.
+If you're running a memory checker (e.g. Purify) on nvi, you will first
+want to  recompile everything with "-DPURIFY" set in the CFLAGS.  This
+initializes allocated pages in the DB code, and free's allocated memory
+at the end of the nvi execution.
 
 =-=-=-=-=-=-=-=-=-=-=
 o Directory layout:
