@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 5.44 1993/02/25 17:50:10 bostic Exp $ (Berkeley) $Date: 1993/02/25 17:50:10 $";
+static char sccsid[] = "$Id: v_ex.c,v 5.45 1993/02/28 14:37:56 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:37:56 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -25,11 +25,16 @@ static char sccsid[] = "$Id: v_ex.c,v 5.44 1993/02/25 17:50:10 bostic Exp $ (Ber
 #include "term.h"
 #include "vcmd.h"
 
-static size_t exlinecount, extotalcount;
+#ifdef __STDC__
+#include <stdarg.h>
+#else
+#include <varargs.h>
+#endif
 
-static int	moveup __P((EXF *, int, int, int *));
-static int	v_leaveex __P((EXF *));
-static void	v_startex __P((void));
+static int	vex_leave __P((EXF *));
+static void	vex_msg __P((EXF *, u_int, const char *, ...));
+static int	vex_scroll __P((EXF *, int, int, int *));
+static void	vex_start __P((EXF *));
 
 /*
  * v_ex --
@@ -42,24 +47,21 @@ v_ex(ep, vp, fm, tm, rp)
 	MARK *fm, *tm, *rp;
 {
 	size_t len;
-	int flags, key;
+	u_int flags;
+	int key;
 	u_char *p;
 
-	v_startex();			/* Reset. */
-	for (flags = GB_BS;;) {
-		/*
-		 * Get an ex command; echo the newline on any prompts after
-		 * the first.
-		 */
-		if (v_gb(ep, ISSET(O_PROMPT) ? ':' : 0, &p, &len, flags) ||
-		    p == NULL)
+	vex_start(ep);			/* Reset. */
+	for (;;) {
+		/* Get an ex command. */
+		if (v_gb(ep, ISSET(O_PROMPT) ? ':' : 0, &p, &len, GB_BS))
 			break;
-		flags |= GB_NLECHO;
 
 		if (len == 0)
 			break;
 
 		(void)ex_cstring(ep, p, len, 0);
+
 		(void)fflush(ep->stdfp);
 
 		/* We may be exiting, now. */
@@ -67,15 +69,18 @@ v_ex(ep, vp, fm, tm, rp)
 			break;
 		
 		/* If only one line, don't wait. */
-		if (extotalcount <= 1) {
+		if (ep->extotalcount <= 1) {
 			FF_SET(ep, F_NEEDMERASE);
 			break;
 		}
 
 		/* The user may continue in ex mode by entering a ':'. */
-		(void)moveup(ep, 1, 1, &key);
+		(void)vex_scroll(ep, 1, 1, &key);
 		if (key != ':')
                         break;
+
+		++ep->extotalcount;
+		++ep->exlinecount;
 	}
 
 	/*
@@ -87,7 +92,7 @@ v_ex(ep, vp, fm, tm, rp)
 	 * Don't trust ANYTHING.
 	 */
 	if (!FF_ISSET(ep, F_FILE_RESET)) {
-		(void)v_leaveex(ep);
+		(void)vex_leave(ep);
 		/*
 		 * XXX
 		 * I don't this is useful anymore...
@@ -105,36 +110,42 @@ v_ex(ep, vp, fm, tm, rp)
 }
 		
 /*
- * v_startex --
+ * vex_start --
  *	Vi calls ex.
  */
+void *saveit;
 static void
-v_startex()
+vex_start(ep)
+	EXF *ep;
 {
-	exlinecount = extotalcount = 0;
+	ep->s_msg = ep->msg;		/* Save/set message routine. */
+	ep->msg = vex_msg;
+
+	ep->exlinecount = ep->extotalcount = 0;
 }
 
 /*
- * v_leaveex --
+ * vex_leave --
  *	Ex returns to vi.
  */
 static int
-v_leaveex(ep)
+vex_leave(ep)
 	EXF *ep;
 {
 	size_t loff;
 
-	/* Don't erase if only a single line. */
-	if (extotalcount <= 1)
+	ep->msg = ep->s_msg;		/* Restore message routine. */
+
+	if (ep->extotalcount <= 1)	/* Don't erase if a single line. */
 		return (0);
 
 	/* Repaint if at least half the screen trashed. */
-	if (extotalcount >= SCREENSIZE(ep) / 2) { 
+	if (ep->extotalcount >= SCREENSIZE(ep) / 2) { 
 		SF_SET(ep, S_REDRAW);
 		return (0);
 	}
 
-	for (loff = TEXTSIZE(ep); extotalcount--; --loff)
+	for (loff = TEXTSIZE(ep); ep->extotalcount--; --loff)
 		if (scr_refresh(ep, loff))
 			return (1);
 	return (0);
@@ -180,11 +191,11 @@ v_exwrite(cookie, line, llen)
 		 * point.
 		 */
 		if (lcont == 0) {
-			if (extotalcount != 0)
-				(void)moveup(ep, 0, 0, NULL);
+			if (ep->extotalcount != 0)
+				(void)vex_scroll(ep, 0, 0, NULL);
 			MOVE(ep, SCREENSIZE(ep), 0);
-			++extotalcount;
-			++exlinecount;
+			++ep->extotalcount;
+			++ep->exlinecount;
 		} else
 			MOVE(ep, SCREENSIZE(ep), lcont);
 
@@ -216,7 +227,7 @@ v_exwrite(cookie, line, llen)
 }
 
 static int
-moveup(ep, mustwait, colon_ok, chp)
+vex_scroll(ep, mustwait, colon_ok, chp)
 	EXF *ep;
 	int mustwait, colon_ok, *chp;
 {
@@ -227,14 +238,14 @@ moveup(ep, mustwait, colon_ok, chp)
 	 * the line above the first line output so preserve the maximum amount
 	 * of the screen.
 	 */
-	if (extotalcount >= SCREENSIZE(ep)) {
+	if (ep->extotalcount >= SCREENSIZE(ep)) {
 		MOVE(ep, 0, 0);
 	} else
-		MOVE(ep, SCREENSIZE(ep) - extotalcount, 0);
+		MOVE(ep, SCREENSIZE(ep) - ep->extotalcount, 0);
 	deleteln();
 
 	/* If just displayed a full screen, wait. */
-	if (mustwait || exlinecount == SCREENSIZE(ep)) {
+	if (mustwait || ep->exlinecount == SCREENSIZE(ep)) {
 		MOVE(ep, SCREENSIZE(ep), 0);
 		addnstr(CONTMSG, (int)sizeof(CONTMSG) - 1);
 		clrtoeol();
@@ -244,7 +255,43 @@ moveup(ep, mustwait, colon_ok, chp)
 			bell(ep);
 		if (chp != NULL)
 			*chp = ch;
-		exlinecount = 0;
+		ep->exlinecount = 0;
 	}
 	return (0);
+}
+
+/*
+ * vex_msg --
+ *	Display an ex message in vi.
+ */
+static void
+#ifdef __STDC__
+vex_msg(EXF *ep, u_int flags, const char *fmt, ...)
+#else
+vex_msg(ep, flags, fmt, va_alist)
+	EXF *ep;
+	u_int flags;
+        char *fmt;
+        va_dcl
+#endif
+{
+        va_list ap;
+	size_t len;
+	char buf[1024];
+#ifdef __STDC__
+        va_start(ap, fmt);
+#else
+        va_start(ap);
+#endif
+
+	/* If extra information message, check user's wishes. */
+	if (!(flags & (M_DISPLAY | M_ERROR)) && !ISSET(O_VERBOSE))
+		return;
+
+	/* Don't bother with allocation, sizeof(buf) should be big enough. */
+	len = vsnprintf(buf, sizeof(buf), fmt, ap);
+	if (len >= sizeof(buf))
+		len = sizeof(buf) - 1;
+	buf[len++] = '\n';
+	v_exwrite(ep, buf, len);
 }
