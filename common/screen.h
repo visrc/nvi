@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 5.11 1993/01/17 16:59:12 bostic Exp $ (Berkeley) $Date: 1993/01/17 16:59:12 $
+ *	$Id: screen.h,v 5.12 1993/01/24 18:37:30 bostic Exp $ (Berkeley) $Date: 1993/01/24 18:37:30 $
  */
 
 /*
@@ -58,3 +58,4 @@
 
 int	scr_end __P((EXF *));
 int	scr_init __P((EXF *));
+int	scr_modeline __P((EXF *, int));
