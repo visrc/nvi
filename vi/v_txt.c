@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.79 1994/01/09 16:29:21 bostic Exp $ (Berkeley) $Date: 1994/01/09 16:29:21 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.80 1994/01/13 10:24:27 bostic Exp $ (Berkeley) $Date: 1994/01/13 10:24:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -452,7 +452,6 @@ next_ch:	if (term_key(sp, &ikey, iflags) != INP_OK)
 			    tp->lb + sp->cno + tp->owrite,
 			    tp->insert, tp->insert + 32)) == NULL)
 				goto err;
-			CIRCLEQ_INSERT_TAIL(tiqh, ntp, q);
 
 			/* Set bookkeeping for the new line. */
 			ntp->lno = tp->lno + 1;
@@ -522,8 +521,14 @@ next_ch:	if (term_key(sp, &ikey, iflags) != INP_OK)
 			if (sp->s_change(sp, ep, tp->lno, LINE_RESET))
 				goto err;
 
-			/* Swap old and new TEXT's. */
+			/*
+			 * Swap old and new TEXT's, and insert the new TEXT
+			 * into the queue.  (DON'T insert until the old line
+			 * has been updated, or the inserted line count in
+			 * line.c:file_gline() will be wrong.)
+			 */
 			tp = ntp;
+			CIRCLEQ_INSERT_TAIL(tiqh, tp, q);
 
 			/* Reset the cursor. */
 			sp->lno = tp->lno;
