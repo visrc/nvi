@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: exf.c,v 10.31 1996/04/27 11:41:09 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:41:09 $";
+static const char sccsid[] = "$Id: exf.c,v 10.32 1996/05/07 19:38:20 bostic Exp $ (Berkeley) $Date: 1996/05/07 19:38:20 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -1205,7 +1205,7 @@ file_aw(sp, flags)
 	if (O_ISSET(sp, O_READONLY)) {
 		msgq(sp, M_INFO,
 		    "266|File readonly, modifications not auto-written");
-		return (0);
+		return (1);
 	}
 	return (file_write(sp, NULL, NULL, NULL, flags));
 }
