@@ -1,4 +1,4 @@
-#	$Id: README,v 8.4 1993/08/07 11:07:59 bostic Exp $ (Berkeley) $Date: 1993/08/07 11:07:59 $
+#	$Id: README,v 8.5 1993/08/16 10:01:42 bostic Exp $ (Berkeley) $Date: 1993/08/16 10:01:42 $
 
 This is the README for version 0.6 of nex/nvi, a (soon to be) freely
 redistributable replacement for the vi/ex text editors.
@@ -93,86 +93,60 @@ The directory PORT has a old-style Makefile which builds the entire nvi
 distribution.  See it and the file PORT/README for more information.
 
 =-=-=-=-=-=-=-=-=-=-=
-o Temporary files and recovery:
-
-There is no "recovery" program with nvi, nor does not run setuid.  Users
-may "recover" any file which they may read, i.e. the superuser can recover
-any edit session.
-
-Edit sessions are backed by files in /var/tmp/vi.recover, and are named
-"vi.XXX", where "XXX" is a number usually associated with the process id.
-When the file is first modified, a second file, which contains an email
-message for the user, is created, and is named "recover.XXX", where,
-again, "XXX" is associated with the process id.  Both files are removed
-at the end of a normal edit session, but will remain if the edit session
-is abnormally terminated or the user uses the ex/vi ":preserve" command.
-
-The recover file has all of the necessary information in it to enable the
-user to recover the edit session.  In addition, it has all of the
-necessary email headers for sendmail.  When the system is rebooted, all
-of the files in /var/tmp/vi.recover named "recover.XXX" should be sent
-by email, using the -t flag of sendmail (or a similar mechanism with other
-mailers).  A simple way to do this is to insert the following script into
-your rc.local file:
-
-	for i in /var/tmp/vi.recover/recover.*; do
-		sendmail -t < $i
-	done
-
-If nex/nvi receives a hangup (SIGHUP) signal, it mails the recovery
-information to the user itself.
-
-=-=-=-=-=-=-=-=-=-=-=
-o A quick tour:
+o Directories:
 
 The main directory, nvi, contains some source files for various pieces
-of code that are shared by both ex and vi, mostly logging code or code
+of code that are shared by all the editors, mostly logging code or code
 translating line numbers into requests to the dbopen(3) database code.
 It also has the code for adding, deleting, and changing "records" in
 the underlying database.
 
-The nvi/ex directory is the ex source code.  Lots of this code is used by
-vi, however.  Generally, if the functionality is shared by both ex and
-vi, it's in nvi/ex, if it's vi only, it's in nvi/vi.  Files are generally
-named by the command(s) they support, but occasionally with a name that
-describes their functionality.
+The nvi/ex directory is the ex source code.  Because vi has the colon
+command, lots of this code is used by vi.  Generally, if functionality
+is shared by both ex and vi, it's in nvi/ex, if it's vi only, it's in
+nvi/vi.  Files are generally named by the command(s) they support, but
+occasionally with a name that describes their functionality.
+
+The nvi/sex directory is the screen support for the ex editor.
 
 The nvi/vi directory is the vi source code.
 
-There are a small set of functions that comprise the interface between
-the editor (ex and/or vi) and their screens.  This is intended to make
-it easy to add new screens in the future.  The nvi/sex directory is the
-screen code for ex.  The nvi/svi directory is the curses screen code for
-vi.
+The nvi/svi directory is the screen support for a curses based vi editor.
 
 =-=-=-=-=-=-=-=-=-=-=
 o Data structures:
 
-There are three basic data structures in this editor.  The first is a
-single global structure (GS) which contains information common to all
-files and screens.  It's really pretty tiny, and functions more as a
+There are three major data structures in this package.  The first is a
+single global structure (named GS) which contains information common to
+all files and screens.  It's really pretty tiny, and functions more as a
 single place to hang things than anything else.
 
-The second and third structures are the file structures (EXF) and the
-screen structures (SCR).  They contain information theoretically unique
-to a screen or file, respectively.  The GS structure contains linked
-lists of EXF and SCR structures.  The structures can also be classed by
-persistence.  The GS structure never goes away and the SCR structure
-persists over instances of files.  File names have different properties
-than files themselves, so the name information is held in an FREF structure
-which is chained from the SCR structure.
+The second and third structures are the file structures (named EXF) and
+the screen structures (named SCR).  They contain information theoretically
+unique to a screen or file, respectively.  Each SCR structure has a set
+of functions which update the screen and/or return information about the
+screen from the underlying screen package.
 
-In general, we pass an SCR structure and an EXF structure around to editor
-functions.  The SCR structure is necessary for any routine that wishes to
-talk to the screen, the EXF structure is necessary for any routine that
-wants to modify the file.  The relationship between an SCR structure and
-its underlying EXF structure is not fixed, and although you can translate
-from an SCR to the underlying EXF, it is discouraged.  If this becomes
-too onerous, I suspect I'll just stop passing around the EXF in the future.
+The GS structure contains linked lists of EXF and SCR structures.  The
+structures can also be classed by persistence.  The GS structure never
+goes away and the SCR structure persists over instances of files.
 
-The naming is consistent across the program.  (Macros even depend on it,
-so don't try and change it!)  The global structure is "gp", the screen
-structure is "sp", and the file structure is "ep".
+File names have different properties than files themselves, so the name
+information for a file is held in an FREF structure which is chained from
+the SCR structure.
+
+In general, functions are always passed an SCR structure and often an EXF
+structure as well.  The SCR structure is necessary for any routine that
+wishes to talk to the screen, the EXF structure is necessary for any
+routine that wants to modify the file.  The relationship between an SCR
+structure and its underlying EXF structure is not fixed, and although you
+can translate from an SCR to the underlying EXF, it is discouraged.  If
+this becomes too onerous, I suspect I'll just stop passing around the EXF
+in the future.
+
+The naming of the structures is consistent across the program.  (Macros
+even depend on it, so don't try and change it!)  The global structure is
+"gp", the screen structure is "sp", and the file structure is "ep".
 
 A few other data structures:
 
@@ -201,3 +175,33 @@ VICMDARG
 	functions that implement the vi commands.  (The main vi command
 	loop (see nvi/vi/vi.c) builds this up and then passes it to the
 	vi functions.)
+
+=-=-=-=-=-=-=-=-=-=-=
+o Temporary files and recovery:
+
+There is no "recovery" program with nvi, nor does not run setuid.  Users
+may "recover" any file which they may read, i.e. the superuser can recover
+any edit session.
+
+Edit sessions are backed by files in /var/tmp/vi.recover, and are named
+"vi.XXX", where "XXX" is a number usually associated with the process id.
+When the file is first modified, a second file, which contains an email
+message for the user, is created, and is named "recover.XXX", where,
+again, "XXX" is associated with the process id.  Both files are removed
+at the end of a normal edit session, but will remain if the edit session
+is abnormally terminated or the user uses the ex/vi ":preserve" command.
+
+The recover file has all of the necessary information in it to enable the
+user to recover the edit session.  In addition, it has all of the
+necessary email headers for sendmail.  When the system is rebooted, all
+of the files in /var/tmp/vi.recover named "recover.XXX" should be sent
+by email, using the -t flag of sendmail (or a similar mechanism with other
+mailers).  A simple way to do this is to insert the following script into
+your rc.local file:
+
+	for i in /var/tmp/vi.recover/recover.*; do
+		sendmail -t < $i
+	done
+
+If nex/nvi receives a hangup (SIGHUP) signal, it mails the recovery
+information to the user itself.
