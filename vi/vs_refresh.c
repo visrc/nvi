@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.45 1993/04/12 14:44:47 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:44:47 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.46 1993/04/13 16:30:46 bostic Exp $ (Berkeley) $Date: 1993/04/13 16:30:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -269,7 +269,7 @@ adjust:	if (LNO == HMAP->lno) {
 		 * character, just do it the the slow way.
 		 */
 		for (cwtotal = 0; cnt--; cwtotal += cname[ch].len)
-			if ((ch = *p--) == '\t')
+			if ((ch = *(u_char *)p--) == '\t')
 				goto slow;
 
 		/*
@@ -322,7 +322,7 @@ adjust:	if (LNO == HMAP->lno) {
 		 * character, just do it the the slow way.
 		 */
 		for (cwtotal = 0; cnt--; cwtotal += cname[ch].len)
-			if ((ch = *p++) == '\t')
+			if ((ch = *(u_char *)p++) == '\t')
 				goto slow;
 
 		/*
@@ -384,12 +384,16 @@ update:	/* Ring the bell if scheduled. */
 	if (F_ISSET(sp, S_BELLSCHED))
 		svi_bell(sp);
 
-	/* Display any messages or paint the mode line. */
-	if (sp->msgp != NULL && !F_ISSET(sp->msgp, M_EMPTY))
-		svi_msgflush(sp);
-	else if (!F_ISSET(sp, S_UPDATE_MODE)) {
-		svi_modeline(sp, ep);
-	}
+	/*
+	 * If the bottom line isn't in use by vi, display any
+	 * messages or paint the mode line.
+	 */
+	if (!F_ISSET(&sp->bhdr, HDR_INUSE))
+		if (sp->msgp != NULL && !F_ISSET(sp->msgp, M_EMPTY))
+			svi_msgflush(sp);
+		else if (!F_ISSET(sp, S_UPDATE_MODE)) {
+			svi_modeline(sp, ep);
+		}
 
 	/* Place the cursor. */
 	MOVE(sp, y, SCNO);
