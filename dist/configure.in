@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.57 1996/03/11 14:19:24 bostic Exp $ (Berkeley) $Date: 1996/03/11 14:19:24 $
+dnl	$Id: configure.in,v 8.58 1996/03/11 14:31:33 bostic Exp $ (Berkeley) $Date: 1996/03/11 14:31:33 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(configure)
@@ -39,24 +39,24 @@ aux*)	   CFLAGS=${CFLAGS-"-O"}
 	   LDFLAGS="-ZP $LDFLAGS"
 	   LIBOBJS="getopt.o strpbrk.o $LIBOBJS";;
 bsd4.4)    CFLAGS=${CFLAGS-"-O2"}
-	   LIBS="-lutil $LIBS";;
+	   LIBS="$LIBS -lutil";;
 bsdi2.1)   CC=${CC-"shlicc"}
 	   CFLAGS=${CFLAGS-"-O2"}
-	   LIBS="-lipc $LIBS";;
+	   LIBS="$LIBS -lipc";;
 bsdi*)	   CFLAGS=${CFLAGS-"-O2"};;
-dgux*)	   LIBS="-ldgc $LIBS";;
+dgux*)	   LIBS="$LIBS -ldgc";;
 hpux*)	   CFLAGS=${CFLAGS-"-O1"};;
 irix*)	   CFLAGS=${CFLAGS-"-O2"}
-	   LIBS="-lc_s -lbsd $LIBS";;
-isc*)	   LIBS="-lcposix -linet $LIBS";;
-netbsd*)   LIBS="-lutil $LIBS";;
+	   LIBS="$LIBS -lc_s -lbsd";;
+isc*)	   LIBS="$LIBS -lcposix -linet";;
+netbsd*)   LIBS="$LIBS -lutil";;
 nextstep3) CFLAGS=${CFLAGS-"-O9"}
 	   CPPFLAGS="-w -pipe -posix $CPPFLAGS"
 	   LDFLAGS="-posix $LDFLAGS";;
 osf*)	   CPPFLAGS="-Olimit 1000 $CPPFLAGS";;
-ptx*)	   LIBS="-lseq -linet -lsocket $LIBS";;
-sinix*)	   LIBS="-lelf -lc $LIBS";;
-wgs*)	   LIBS="-lnsl $LIBS";;
+ptx*)	   LIBS="$LIBS -lseq -linet -lsocket";;
+sinix*)	   LIBS="$LIBS -lelf -lc";;
+wgs*)	   LIBS="$LIBS -lnsl";;
 esac
 
 dnl The default compiler is cc.
@@ -146,10 +146,10 @@ if test "$vi_cv_perlinterp" = "yes"; then
 	    'use Config;print (($Config{d_shrplib} eq "define") ? \
 	    $Config{shrpdir} : ($Config{installarchlib}."/CORE"))'`
 	if test "X$perllib" != "X"; then
-		LIBS="-L$perllib $LIBS"
+		LIBS="$LIBS -L$perllib"
 	fi
 	LIBOBJS="perl.o $LIBOBJS"
-	LIBS="-lperl -lm $LIBS"
+	LIBS="$LIBS -lperl -lm"
 	AC_DEFINE(HAVE_PERL_INTERP)
 fi
 
@@ -164,7 +164,7 @@ AC_ARG_ENABLE(tknvi,
 AC_MSG_RESULT($vi_cv_tknvi)
 if test "$vi_cv_tknvi" = "yes"; then
 	tknvi=tknvi
-	TKLIBS="-ltk -ltcl -lm $XLIBS $LIBS"
+	TKLIBS="$LIBS -ltk -ltcl -lm $XLIBS"
 fi
 
 dnl If the user wants a Tk/Tcl interpreter in nvi, load it.
@@ -176,7 +176,7 @@ AC_ARG_ENABLE(tclinterp,
 AC_MSG_RESULT($vi_cv_tclinterp)
 if test "$vi_cv_tclinterp" = "yes"; then
 	LIBOBJS="tcl.o $LIBOBJS"
-	LIBS="-ltk -ltcl -lm $XLIBS $LIBS"
+	LIBS="$LIBS -ltk -ltcl -lm $XLIBS"
 	AC_DEFINE(HAVE_TCL_INTERP)
 fi
 
@@ -187,7 +187,7 @@ fi
 
 dnl Check for the termcap/termlib library.  Compile in nvi's curses routines
 dnl unless the user specifies otherwise.  These two checks must occur in the
-dnl current order.
+dnl current order, and -lcurses must be loaded before -ltermcap/-ltermlib.
 AC_CHECK_LIB(termlib, tgetent,
 	[vi_cv_termlib=-ltermlib], [vi_cv_termlib=no])
 if test "$vi_cv_termlib" = no; then
