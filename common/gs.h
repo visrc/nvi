@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 8.39 1994/07/23 13:29:13 bostic Exp $ (Berkeley) $Date: 1994/07/23 13:29:13 $
+ *	$Id: gs.h,v 8.40 1994/08/31 17:12:01 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:12:01 $
  */
 
 struct _gs {
@@ -15,10 +15,12 @@ struct _gs {
 	struct termios
 		 original_termios;	/* Original terminal values. */
 
+	DB	*msg;			/* Messages DB. */
 	MSGH	 msgq;			/* User message list. */
+	CHAR_T	 noprint;		/* Cached, unprintable character. */
 
 	char	*tmp_bp;		/* Temporary buffer. */
-	size_t	 tmp_blen;		/* Size of temporary buffer. */
+	size_t	 tmp_blen;		/* Temporary buffer size. */
 
 	sigset_t blockset;		/* Signal mask. */
 

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: mark.c,v 8.21 1994/08/17 14:28:11 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:28:11 $";
+static char sccsid[] = "$Id: mark.c,v 8.22 1994/08/31 17:12:07 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:12:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -122,17 +122,18 @@ mark_get(sp, ep, key, mp)
 
 	lmp = mark_find(sp, ep, key);
 	if (lmp == NULL || lmp->name != key) {
-		msgq(sp, M_BERR, "Mark %s: not set", KEY_NAME(sp, key));
+		msgq(sp, M_BERR, "049|Mark %s: not set", KEY_NAME(sp, key));
                 return (1);
 	}
 	if (F_ISSET(lmp, MARK_DELETED)) {
 		msgq(sp, M_BERR,
-		    "Mark %s: the line was deleted", KEY_NAME(sp, key));
+		    "050|Mark %s: the line was deleted", KEY_NAME(sp, key));
                 return (1);
 	}
 	if (file_gline(sp, ep, lmp->lno, &len) == NULL ||
 	    lmp->cno > len || lmp->cno == len && len != 0) {
-		msgq(sp, M_BERR, "Mark %s: cursor position no longer exists",
+		msgq(sp, M_BERR,
+		    "051|Mark %s: cursor position no longer exists",
 		    KEY_NAME(sp, key));
 		return (1);
 	}

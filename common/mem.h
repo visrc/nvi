@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: mem.h,v 8.8 1994/08/16 10:03:57 bostic Exp $ (Berkeley) $Date: 1994/08/16 10:03:57 $
+ *	$Id: mem.h,v 8.9 1994/08/31 17:12:09 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:12:09 $
  */
 
 /* Increase the size of a malloc'd buffer.  Two versions, one that
@@ -41,7 +41,7 @@
  * that jumps to an error label.
  */
 #define	GET_SPACE_GOTO(sp, bp, blen, nlen) {				\
-	GS *__gp = (sp)->gp;						\
+	GS *__gp = (sp) == NULL ? __global_list : (sp)->gp;		\
 	if (F_ISSET(__gp, G_TMP_INUSE)) {				\
 		bp = NULL;						\
 		blen = 0;						\
@@ -54,7 +54,7 @@
 	}								\
 }
 #define	GET_SPACE_RET(sp, bp, blen, nlen) {				\
-	GS *__gp = (sp)->gp;						\
+	GS *__gp = (sp) == NULL ? __global_list : (sp)->gp;		\
 	if (F_ISSET(__gp, G_TMP_INUSE)) {				\
 		bp = NULL;						\
 		blen = 0;						\
@@ -72,7 +72,7 @@
  * returns, one that jumps to an error label.
  */
 #define	ADD_SPACE_GOTO(sp, bp, blen, nlen) {				\
-	GS *__gp = (sp)->gp;						\
+	GS *__gp = (sp) == NULL ? __global_list : (sp)->gp;		\
 	if (bp == __gp->tmp_bp) {					\
 		F_CLR(__gp, G_TMP_INUSE);				\
 		BINC_GOTO(sp, __gp->tmp_bp, __gp->tmp_blen, nlen);	\
@@ -83,7 +83,7 @@
 		BINC_GOTO(sp, bp, blen, nlen);				\
 }
 #define	ADD_SPACE_RET(sp, bp, blen, nlen) {				\
-	GS *__gp = (sp)->gp;						\
+	GS *__gp = (sp) == NULL ? __global_list : (sp)->gp;		\
 	if (bp == __gp->tmp_bp) {					\
 		F_CLR(__gp, G_TMP_INUSE);				\
 		BINC_RET(sp, __gp->tmp_bp, __gp->tmp_blen, nlen);	\
@@ -106,8 +106,9 @@
 
 /* Free a GET_SPACE returned buffer. */
 #define	FREE_SPACE(sp, bp, blen) {					\
-	if (bp == sp->gp->tmp_bp)					\
-		F_CLR(sp->gp, G_TMP_INUSE);				\
+	GS *__gp = (sp) == NULL ? __global_list : (sp)->gp;		\
+	if (bp == __gp->tmp_bp)						\
+		F_CLR(__gp, G_TMP_INUSE);				\
 	else								\
 		FREE(bp, blen);						\
 }

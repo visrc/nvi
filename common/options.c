@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.66 1994/08/17 14:28:15 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:28:15 $";
+static char sccsid[] = "$Id: options.c,v 8.67 1994/08/31 17:12:13 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:12:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -106,6 +106,8 @@ static OPTLIST const optlist[] = {
 	{"meta",	NULL,		OPT_STR,	0},
 /* O_MODELINE	    4BSD */
 	{"modeline",	f_modeline,	OPT_0BOOL,	0},
+/* O_MSGCAT	  4.4BSD */
+	{"msgcat",	f_msgcat,	OPT_STR,	0},
 /* O_NUMBER	    4BSD */
 	{"number",	f_number,	OPT_0BOOL,	0},
 /* O_OCTAL	  4.4BSD */
@@ -259,7 +261,8 @@ opts_init(sp)
 	a.len = strlen(b1);						\
 	if (opts_set(sp, NULL, argv)) {					\
 		msgq(sp, M_ERR,						\
-		    "Unable to set default %s option", optlist[opt]);	\
+		    "052|Unable to set default %s option",		\
+		    optlist[opt]);					\
 		return (1);						\
 	}								\
 	F_CLR(&sp->opts[opt], OPT_SET);					\
@@ -288,6 +291,8 @@ opts_init(sp)
 	SET_DEF(O_KEYTIME, "keytime=6");
 	SET_DEF(O_MATCHTIME, "matchtime=7");
 	SET_DEF(O_META, "meta=~{[*?$`'\"\\");
+	(void)snprintf(b1, sizeof(b1), "msgcat=%s", _PATH_MSGCAT);
+	SET_DEF(O_MSGCAT, b1);
 	SET_DEF(O_REPORT, "report=5");
 	SET_DEF(O_PARAGRAPHS, "paragraphs=IPLPPPQPP LIpplpipbp");
 	(void)snprintf(b1, sizeof(b1), "recdir=%s", _PATH_PRESERVE);
@@ -357,7 +362,7 @@ opts_set(sp, usage, argv)
 	OPTLIST otmp;
 	OPTION *spo;
 	u_long value, turnoff;
-	int ch, equals, offset, qmark, rval;
+	int ch, equals, nf, offset, qmark, rval;
 	char *endp, *name, *p, *sep; 
 
 	disp = NO_DISPLAY;
@@ -377,8 +382,8 @@ opts_set(sp, usage, argv)
 			if (ch == '=' || ch == '?') {
 				if (p == name) {
 					if (usage != NULL)
-						msgq(sp,
-						    M_ERR, "Usage: %s", usage);
+						msgq(sp, M_ERR,
+						    "053|Usage: %s", usage);
 					return (1);
 				}
 				sep = p;
@@ -437,9 +442,12 @@ opts_set(sp, usage, argv)
 prefix:		op = opts_prefix(name);
 
 found:		if (op == NULL) {
+			p = msg_print(sp, name, &nf);
 			msgq(sp, M_ERR,
-			    "no %s option: 'set all' gives all option values",
-			    name);
+		    "054|no %s option: 'set all' gives all option values",
+			    p);
+			if (nf)
+				FREE_SPACE(sp, p, 0);
 			continue;
 		}
 
@@ -463,9 +471,11 @@ found:		if (op == NULL) {
 		case OPT_0BOOL:
 		case OPT_1BOOL:
 			if (equals) {
+				p = msg_print(sp, name, &nf);
 				msgq(sp, M_ERR,
-				    "set: [no]%s option doesn't take a value",
-				    name);
+			    "055|set: [no]%s option doesn't take a value", p);
+				if (nf)
+					FREE_SPACE(sp, p, 0);
 				break;
 			}
 			if (qmark) {
@@ -497,8 +507,11 @@ found:		if (op == NULL) {
 					value = 0;
 					goto nostr;
 				}
+				p = msg_print(sp, name, &nf);
 				msgq(sp, M_ERR,
-				    "set: %s option isn't a boolean", name);
+				    "056|set: %s option isn't a boolean", p);
+				if (nf)
+					FREE_SPACE(sp, p, 0);
 				break;
 			}
 			if (qmark || !equals) {
@@ -509,8 +522,11 @@ found:		if (op == NULL) {
 			}
 			value = strtol(sep, &endp, 10);
 			if (*endp && !isblank(*endp)) {
+				p = msg_print(sp, sep, &nf);
 				msgq(sp, M_ERR,
-				    "set %s: illegal number %s", name, sep);
+				    "057|set: illegal number %s", p);
+				if (nf)
+					FREE_SPACE(sp, p, 0);
 				break;
 			}
 nostr:			if (op->func != NULL) {
@@ -523,8 +539,11 @@ nostr:			if (op->func != NULL) {
 			goto change;
 		case OPT_STR:
 			if (turnoff) {
+				p = msg_print(sp, name, &nf);
 				msgq(sp, M_ERR,
-				    "set: %s option isn't a boolean", name);
+				    "058|set: %s option isn't a boolean", p);
+				if (nf)
+					FREE_SPACE(sp, p, 0);
 				break;
 			}
 			if (qmark || !equals) {
@@ -584,7 +603,7 @@ opts_dump(sp, type)
 	 */
 	if (sp->stdfp == NULL) {
 		msgq(sp, M_ERR,
-		    "Option display requires that the screen be initialized");
+	    "059|Option display requires that the screen be initialized");
 		return;
 	}
 
@@ -768,7 +787,7 @@ opts_save(sp, fp)
 			break;
 		}
 		if (ferror(fp)) {
-			msgq(sp, M_ERR, "I/O error: %s", strerror(errno));
+			msgq(sp, M_SYSERR, NULL);
 			return (1);
 		}
 	}

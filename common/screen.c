@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.67 1994/08/17 14:28:23 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:28:23 $";
+static char sccsid[] = "$Id: screen.c,v 8.68 1994/08/31 17:12:21 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:12:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -115,8 +115,10 @@ screen_init(orig, spp, flags)
 		if (orig->newl_len) {
 			len = orig->newl_len * sizeof(size_t);
 			MALLOC(sp, sp->newl, size_t *, len);
-			if (sp->newl == NULL)
-				goto mem;
+			if (sp->newl == NULL) {
+mem:				msgq(orig, M_SYSERR, NULL);
+				goto err;
+			}
 			sp->newl_len = orig->newl_len;
 			sp->newl_cnt = orig->newl_cnt;
 			memmove(sp->newl, orig->newl, len);
@@ -124,11 +126,8 @@ screen_init(orig, spp, flags)
 
 		sp->saved_vi_mode = orig->saved_vi_mode;
 
-		if (opts_copy(orig, sp)) {
-mem:			msgq(orig, M_SYSERR, "new screen attributes");
-			(void)screen_end(sp);
-			return (1);
-		}
+		if (opts_copy(orig, sp))
+			goto err;
 
 		sp->s_bell		= orig->s_bell;
 		sp->s_bg		= orig->s_bg;
@@ -163,18 +162,21 @@ mem:			msgq(orig, M_SYSERR, "new screen attributes");
 	}
 
 	if (xaw_screen_copy(orig, sp))		/* Init S_VI_XAW screen. */
-		return (1);
+		goto err;
 	if (svi_screen_copy(orig, sp))		/* Init S_VI_CURSES screen. */
-		return (1);
+		goto err;
 	if (sex_screen_copy(orig, sp))		/* Init S_EX screen. */
-		return (1);
+		goto err;
 	if (v_screen_copy(orig, sp))		/* Init vi. */
-		return (1);
+		goto err;
 	if (ex_screen_copy(orig, sp))		/* Init ex. */
-		return (1);
+		goto err;
 
 	*spp = sp;
 	return (0);
+
+err:	screen_end(sp);
+	return (1);
 }
 
 /*

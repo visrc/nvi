@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 8.36 1994/08/17 14:28:18 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:28:18 $";
+static char sccsid[] = "$Id: options_f.c,v 8.37 1994/08/31 17:12:16 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:12:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -69,7 +69,7 @@ DECL(f_columns)
 
 	/* Validate the number. */
 	if (val < MINIMUM_SCREEN_COLS) {
-		msgq(sp, M_ERR, "Screen columns too small, less than %d",
+		msgq(sp, M_ERR, "060|Screen columns too small, less than %d",
 		    MINIMUM_SCREEN_COLS);
 		return (1);
 	}
@@ -105,7 +105,8 @@ DECL(f_lines)
 
 	/* Validate the number. */
 	if (val < MINIMUM_SCREEN_ROWS) {
-		msgq(sp, M_ERR, "Screen lines too small, less than %d",
+		msgq(sp, M_ERR,
+		    "061|Screen lines too small, less than %d",
 		    MINIMUM_SCREEN_ROWS);
 		return (1);
 	}
@@ -138,7 +139,7 @@ DECL(f_lines)
 
 DECL(f_lisp)
 {
-	msgq(sp, M_ERR, "The lisp option is not implemented");
+	msgq(sp, M_ERR, "062|The lisp option is not implemented");
 	return (0);
 }
 
@@ -160,7 +161,7 @@ DECL(f_mesg)
 
 	/* Find the tty. */
 	if ((tty = ttyname(STDERR_FILENO)) == NULL) {
-		msgq(sp, M_ERR, "ttyname: %s", strerror(errno));
+		msgq(sp, M_SYSERR, "stderr");
 		return (1);
 	}
 
@@ -168,7 +169,7 @@ DECL(f_mesg)
 	if (!F_ISSET(sp->gp, G_SETMODE)) {
 		F_SET(sp->gp, G_SETMODE);
 		if (stat(tty, &sb) < 0) {
-			msgq(sp, M_ERR, "%s: %s", tty, strerror(errno));
+			msgq(sp, M_SYSERR, "%s", tty);
 			return (1);
 		}
 		sp->gp->origmode = sb.st_mode;
@@ -176,15 +177,15 @@ DECL(f_mesg)
 
 	if (turnoff) {
 		if (chmod(tty, sp->gp->origmode & ~S_IWGRP) < 0) {
-			msgq(sp, M_ERR, "messages not turned off: %s: %s",
-			    tty, strerror(errno));
+			msgq(sp, M_SYSERR,
+			    "063|messages not turned off: %s", tty);
 			return (1);
 		}
 		O_CLR(sp, O_MESG);
 	} else {
 		if (chmod(tty, sp->gp->origmode | S_IWGRP) < 0) {
-			msgq(sp, M_ERR, "messages not turned on: %s: %s",
-			    tty, strerror(errno));
+			msgq(sp, M_SYSERR,
+			    "064|messages not turned on: %s", tty);
 			return (1);
 		}
 		O_SET(sp, O_MESG);
@@ -203,8 +204,14 @@ DECL(f_mesg)
 DECL(f_modeline)
 {
 	if (!turnoff)
-		msgq(sp, M_ERR, "The modeline(s) option may never be set");
+		msgq(sp, M_ERR, "065|The modeline(s) option may never be set");
 	return (0);
+}
+
+DECL(f_msgcat)
+{
+	(void)msg_open(sp, str);
+	return (opt_dup(sp, O_MSGCAT, str));
 }
 
 DECL(f_number)
@@ -234,7 +241,7 @@ DECL(f_paragraph)
 {
 	if (strlen(str) & 1) {
 		msgq(sp, M_ERR,
-		    "Paragraph options must be in sets of two characters");
+		    "066|The paragraph option must be in two character groups");
 		return (1);
 	}
 	return (opt_dup(sp, O_PARAGRAPHS, str));
@@ -258,7 +265,7 @@ DECL(f_section)
 {
 	if (strlen(str) & 1) {
 		msgq(sp, M_ERR,
-		    "Section options must be in sets of two characters");
+		    "067|The section option must be in two character groups");
 		return (1);
 	}
 	return (opt_dup(sp, O_SECTIONS, str));
@@ -267,7 +274,7 @@ DECL(f_section)
 DECL(f_shiftwidth)
 {
 	if (val == 0) {
-		msgq(sp, M_ERR, "The shiftwidth can't be set to 0");
+		msgq(sp, M_ERR, "068|The shiftwidth may not be set to 0");
 		return (1);
 	}
 	O_VAL(sp, O_SHIFTWIDTH) = val;
@@ -285,20 +292,20 @@ DECL(f_shiftwidth)
 DECL(f_sourceany)
 {
 	if (!turnoff)
-		msgq(sp, M_ERR, "The sourceany option may never be set");
+		msgq(sp, M_ERR, "069|The sourceany option may never be set");
 	return (0);
 }
 
 DECL(f_tabstop)
 {
 	if (val == 0) {
-		msgq(sp, M_ERR, "Tab stops can't be set to 0");
+		msgq(sp, M_ERR, "070|Tab stops may not be set to 0");
 		return (1);
 	}
 #define	MAXTABSTOP	20
 	if (val > MAXTABSTOP) {
 		msgq(sp, M_ERR,
-		    "Tab stops can't be larger than %d", MAXTABSTOP);
+		    "071|Tab stops may not be larger than %d", MAXTABSTOP);
 		return (1);
 	}
 	O_VAL(sp, O_TABSTOP) = val;
@@ -391,8 +398,8 @@ DECL(f_w9600)
 DECL(f_window)
 {
 	if (val < MINIMUM_SCREEN_ROWS) {
-		msgq(sp, M_ERR, "Window too small, less than %d",
-		    MINIMUM_SCREEN_ROWS);
+		msgq(sp, M_ERR,
+		    "072|Window too small, less than %d", MINIMUM_SCREEN_ROWS);
 		return (1);
 	}
 	if (val > O_VAL(sp, O_LINES) - 1)

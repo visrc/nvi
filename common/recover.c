@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.75 1994/08/17 15:24:52 bostic Exp $ (Berkeley) $Date: 1994/08/17 15:24:52 $";
+static char sccsid[] = "$Id: recover.c,v 8.76 1994/08/31 17:12:19 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:12:19 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -152,7 +152,7 @@ rcv_tmp(sp, ep, name)
 	for (p = name; *p; ++p)
 		if (*p == '\n') {
 			msgq(sp, M_ERR,
-		    "Files with newlines in the name are unrecoverable");
+		    "075|Files with newlines in the name are unrecoverable");
 			goto err;
 		}
 
@@ -165,7 +165,7 @@ rcv_tmp(sp, ep, name)
 		msgq(sp, M_SYSERR, NULL);
 		(void)unlink(path);
 err:		msgq(sp, M_ERR,
-		    "Modifications not recoverable if the session fails");
+		    "076|Modifications not recoverable if the session fails");
 		return (1);
 	}
 
@@ -184,7 +184,8 @@ rcv_init(sp, ep)
 	EXF *ep;
 {
 	recno_t lno;
-	int btear;
+	int btear, nf;
+	char *p;
 
 	/* Only do this once. */
 	F_CLR(ep, F_FIRSTMODIFY);
@@ -210,8 +211,10 @@ rcv_init(sp, ep)
 		btear = F_ISSET(sp, S_EXSILENT) ? 0 :
 		    !busy_on(sp, "Copying file for recovery...");
 		if (ep->db->sync(ep->db, R_RECNOSYNC)) {
-			msgq(sp, M_ERR, "Preservation failed: %s: %s",
-			    ep->rcv_path, strerror(errno));
+			p = msg_print(sp, ep->rcv_path, &nf);
+			msgq(sp, M_SYSERR, "077|Preservation failed: %s", p);
+			if (nf)
+				FREE_SPACE(sp, p, nf);
 			if (btear)
 				busy_off(sp);
 			goto err;
@@ -223,7 +226,7 @@ rcv_init(sp, ep)
 	/* Turn on the recovery timer, if it's not yet running. */
 	if (!F_ISSET(sp->gp, G_RECOVER_SET) && rcv_on(sp, ep)) {
 err:		msgq(sp, M_ERR,
-		    "Modifications not recoverable if the session fails");
+		    "078|Modifications not recoverable if the session fails");
 		return (1);
 	}
 
@@ -249,8 +252,8 @@ rcv_sync(sp, ep, flags)
 	EXF *ep;
 	u_int flags;
 {
-	int btear, fd, rval;
-	char *dp, buf[1024];
+	int btear, fd, nf, rval;
+	char *dp, *p, buf[1024];
 
 	/* Make sure that there's something to recover/sync. */
 	if (ep == NULL || !F_ISSET(ep, F_RCV_ON))
@@ -263,8 +266,10 @@ rcv_sync(sp, ep, flags)
 	if (F_ISSET(ep, F_MODIFIED)) {
 		if (ep->db->sync(ep->db, R_RECNOSYNC)) {
 			F_CLR(ep, F_RCV_ON | F_RCV_NORM);
-			msgq(sp, M_SYSERR,
-			    "File backup failed: %s", ep->rcv_path);
+			p = msg_print(sp, ep->rcv_path, &nf);
+			msgq(sp, M_SYSERR, "079|File backup failed: %s", p);
+			if (nf)
+				FREE_SPACE(sp, p, 0);
 			rval = 1;
 			goto ret;
 		}
@@ -338,7 +343,8 @@ rcv_mailfile(sp, ep, issync, cp_path)
 	char *t1, *t2, *t3;
 
 	if ((pw = getpwuid(uid = getuid())) == NULL) {
-		msgq(sp, M_ERR, "Information on user id %u not found", uid);
+		msgq(sp, M_ERR,
+		    "080|Information on user id %u not found", uid);
 		return (1);
 	}
 
@@ -355,7 +361,7 @@ rcv_mailfile(sp, ep, issync, cp_path)
 	 * and the lock, but it's pretty small.
 	 */
 	if (file_lock(NULL, NULL, fd, 1) != LOCK_SUCCESS)
-		msgq(sp, M_SYSERR, "Unable to lock recovery file");
+		msgq(sp, M_SYSERR, "081|Unable to lock recovery file");
 	if (!issync) {
 		/* Save the recover file descriptor, and mail path. */
 		ep->rcv_fd = fd;
@@ -402,7 +408,7 @@ rcv_mailfile(sp, ep, issync, cp_path)
 	    "to this file using the -r option to nex or nvi:\n\n",
 	    "\tnvi -r ", t);
 	if (len > sizeof(buf) - 1) {
-lerr:		msgq(sp, M_ERR, "recovery file buffer overrun");
+lerr:		msgq(sp, M_ERR, "082|Recovery file buffer overrun");
 		goto err;
 	}
 
@@ -437,7 +443,7 @@ wout:		*t2++ = '\n';
 
 		/* t2 points one after the last character to display. */
 		if (write(fd, t1, t2 - t1) != t2 - t1) {
-werr:			msgq(sp, M_SYSERR, "recovery file");
+werr:			msgq(sp, M_SYSERR, "083|Recovery file");
 			goto err;
 		}
 	}
@@ -470,7 +476,7 @@ rcv_list(sp)
 	struct stat sb;
 	DIR *dirp;
 	FILE *fp;
-	int found;
+	int found, nf;
 	char *p, *t, file[MAXPATHLEN], path[MAXPATHLEN];
 
 	/*
@@ -523,8 +529,10 @@ rcv_list(sp)
 		    fgets(path, sizeof(path), fp) == NULL ||
 		    strncmp(path, VI_PHEADER, sizeof(VI_PHEADER) - 1) ||
 		    (t = strchr(path, '\n')) == NULL) {
-			msgq(sp, M_ERR,
-			    "%s: malformed recovery file", dp->d_name);
+			p = msg_print(sp, dp->d_name, &nf);
+			msgq(sp, M_ERR, "084|%s: malformed recovery file", p);
+			if (nf)
+				FREE_SPACE(sp, p, 0);
 			goto next;
 		}
 		*p = *t = '\0';
@@ -573,13 +581,15 @@ rcv_read(sp, frp)
 	DIR *dirp;
 	EXF *ep;
 	time_t rec_mtime;
-	int fd, found, locked, requested, sv_fd;
+	int fd, found, locked, nf, requested, sv_fd;
 	char *name, *p, *t, *recp, *pathp;
 	char file[MAXPATHLEN], path[MAXPATHLEN], recpath[MAXPATHLEN];
 
 	if ((dirp = opendir(O_STR(sp, O_RECDIR))) == NULL) {
-		msgq(sp, M_ERR,
-		    "%s: %s", O_STR(sp, O_RECDIR), strerror(errno));
+		p = msg_print(sp, O_STR(sp, O_RECDIR), &nf);
+		msgq(sp, M_ERR, "%s", p);
+		if (nf)
+			FREE_SPACE(sp, p, 0);
 		return (1);
 	}
 
@@ -635,8 +645,10 @@ rcv_read(sp, frp)
 		    rcv_gets(path, sizeof(path), fd) == NULL ||
 		    strncmp(path, VI_PHEADER, sizeof(VI_PHEADER) - 1) ||
 		    (t = strchr(path, '\n')) == NULL) {
-			msgq(sp, M_ERR,
-			    "%s: malformed recovery file", recpath);
+			p = msg_print(sp, recpath, &nf);
+			msgq(sp, M_ERR, "085|%s: malformed recovery file", p);
+			if (nf)
+				FREE_SPACE(sp, p, 0);
 			goto next;
 		}
 		*p = *t = '\0';
@@ -676,14 +688,12 @@ rcv_read(sp, frp)
 			p = recp;
 			t = pathp;
 			if ((recp = strdup(recpath)) == NULL) {
-				msgq(sp, M_ERR,
-				    "vi: Error: %s.\n", strerror(errno));
+				msgq(sp, M_SYSERR, NULL);
 				recp = p;
 				goto next;
 			}
 			if ((pathp = strdup(path)) == NULL) {
-				msgq(sp, M_ERR,
-				    "vi: Error: %s.\n", strerror(errno));
+				msgq(sp, M_SYSERR, NULL);
 				FREE(recp, strlen(recp) + 1);
 				recp = p;
 				pathp = t;
@@ -703,17 +713,20 @@ next:			(void)close(fd);
 	(void)closedir(dirp);
 
 	if (recp == NULL) {
+		p = msg_print(sp, name, &nf);
 		msgq(sp, M_INFO,
-		    "No files named %s, readable by you, to recover", name);
+		    "086|No files named %s, readable by you, to recover", p);
+		if (nf)
+			FREE_SPACE(sp, p, 0);
 		return (1);
 	}
 	if (found) {
 		if (requested > 1)
 			msgq(sp, M_INFO,
-		   "There are older versions of this file for you to recover");
+	    "087|There are older versions of this file for you to recover");
 		if (found > requested)
 			msgq(sp, M_INFO,
-			    "There are other files for you to recover");
+			    "088|There are other files for you to recover");
 	}
 
 	/*
@@ -755,8 +768,8 @@ rcv_copy(sp, wfd, fname)
 	int wfd;
 	char *fname;
 {
-	int nr, nw, off, rfd;
-	char buf[8 * 1024];
+	int nf, nr, nw, off, rfd;
+	char *p, buf[8 * 1024];
 
 	if ((rfd = open(fname, O_RDONLY, 0)) == -1)
 		goto err;
@@ -767,7 +780,10 @@ rcv_copy(sp, wfd, fname)
 	if (nr == 0)
 		return (0);
 
-err:	msgq(sp, M_SYSERR, "%s", fname);
+err:	p = msg_print(sp, fname, &nf);
+	msgq(sp, M_SYSERR, "%s", p);
+	if (nf)
+		FREE_SPACE(sp, p, 0);
 	return (1);
 }
 
@@ -802,7 +818,8 @@ rcv_mktemp(sp, path, dname, perms)
 	char *path, *dname;
 	int perms;
 {
-	int fd;
+	int fd, nf;
+	char *p;
 
 	/*
 	 * !!!
@@ -814,9 +831,12 @@ rcv_mktemp(sp, path, dname, perms)
 	 * The variable perms should really be a mode_t, and it would
 	 * be nice to use fchmod(2) instead of chmod(2), here.
 	 */
-	if ((fd = mkstemp(path)) == -1)
-		msgq(sp, M_SYSERR, "%s", dname);
-	else
+	if ((fd = mkstemp(path)) == -1) {
+		p = msg_print(sp, dname, &nf);
+		msgq(sp, M_SYSERR, "%s", p);
+		if (nf)
+			FREE_SPACE(sp, p, 0);
+	} else
 		(void)chmod(path, perms);
 	return (fd);
 }
@@ -831,11 +851,15 @@ rcv_email(sp, fname)
 	char *fname;
 {
 	struct stat sb;
-	char buf[MAXPATHLEN * 2 + 20];
+	int nf;
+	char *p, buf[MAXPATHLEN * 2 + 20];
 
-	if (stat(_PATH_SENDMAIL, &sb))
-		msgq(sp, M_SYSERR, "not sending email: %s", _PATH_SENDMAIL);
-	else {
+	if (stat(_PATH_SENDMAIL, &sb)) {
+		p = msg_print(sp, _PATH_SENDMAIL, &nf);
+		msgq(sp, M_SYSERR, "089|not sending email: %s", p);
+		if (nf)
+			FREE_SPACE(sp, p, 0);
+	} else {
 		/*
 		 * !!!
 		 * If you need to port this to a system that doesn't have

@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: options.h,v 8.22 1994/08/08 10:59:07 bostic Exp $ (Berkeley) $Date: 1994/08/08 10:59:07 $
+ *	$Id: options.h,v 8.23 1994/08/31 17:12:15 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:12:15 $
  */
 
 struct _option {
@@ -64,6 +64,7 @@ int	f_lines __P((SCR *, OPTION *, char *, u_long));
 int	f_lisp __P((SCR *, OPTION *, char *, u_long));
 int	f_list __P((SCR *, OPTION *, char *, u_long));
 int	f_mesg __P((SCR *, OPTION *, char *, u_long));
+int	f_msgcat __P((SCR *, OPTION *, char *, u_long));
 int	f_modeline __P((SCR *, OPTION *, char *, u_long));
 int	f_number __P((SCR *, OPTION *, char *, u_long));
 int	f_octal __P((SCR *, OPTION *, char *, u_long));

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.97 1994/08/17 14:28:03 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:28:03 $";
+static char sccsid[] = "$Id: exf.c,v 8.98 1994/08/31 17:11:57 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:11:57 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -111,8 +111,8 @@ file_init(sp, frp, rcv_name, force)
 	RECNOINFO oinfo;
 	struct stat sb;
 	size_t psize;
-	int fd;
-	char *oname, tname[MAXPATHLEN];
+	int fd, nf;
+	char *p, *oname, tname[MAXPATHLEN];
 
 	/*
 	 * If the file is a recovery file, let the recovery code handle it.
@@ -154,7 +154,8 @@ file_init(sp, frp, rcv_name, force)
 		(void)snprintf(tname,
 		    sizeof(tname), "%s/vi.XXXXXX", O_STR(sp, O_DIRECTORY));
 		if ((fd = mkstemp(tname)) == -1) {
-			msgq(sp, M_SYSERR, "Temporary file");
+			msgq(sp, M_SYSERR,
+			    "002|Unable to create temporary file");
 			goto err;
 		}
 		(void)close(fd);
@@ -186,9 +187,13 @@ file_init(sp, frp, rcv_name, force)
 
 		ep->mtime = sb.st_mtime;
 
-		if (!S_ISREG(sb.st_mode))
+		if (!S_ISREG(sb.st_mode)) {
+			p = msg_print(sp, oname, &nf);
 			msgq(sp, M_ERR,
-			    "Warning: %s is not a regular file", oname);
+			    "003|Warning: %s is not a regular file", p);
+			if (nf)
+				FREE_SPACE(sp, p, 0);
+		}
 	}
 
 	/* Set up recovery. */
@@ -211,7 +216,10 @@ file_init(sp, frp, rcv_name, force)
 	/* Open a db structure. */
 	if ((ep->db = dbopen(rcv_name == NULL ? oname : NULL,
 	    O_NONBLOCK | O_RDONLY, DEFFILEMODE, DB_RECNO, &oinfo)) == NULL) {
-		msgq(sp, M_SYSERR, rcv_name == NULL ? oname : rcv_name);
+		p = msg_print(sp, rcv_name == NULL ? oname : rcv_name, &nf);
+		msgq(sp, M_SYSERR, "%s", p);
+		if (nf)
+			FREE_SPACE(sp, p, 0);
 		goto err;
 	}
 
@@ -270,8 +278,11 @@ file_init(sp, frp, rcv_name, force)
 			F_SET(frp, FR_UNLOCKED);
 			break;
 		case LOCK_UNAVAIL:
+			p = msg_print(sp, oname, &nf);
 			msgq(sp, M_INFO,
-			    "%s already locked, session is read-only", oname);
+			    "004|%s already locked, session is read-only", p);
+			if (nf)
+				FREE_SPACE(sp, p, 0);
 			F_SET(frp, FR_RDONLY);
 			break;
 		case LOCK_SUCCESS:
@@ -378,6 +389,8 @@ file_end(sp, ep, force)
 	int force;
 {
 	FREF *frp;
+	int nf;
+	char *p;
 
 	/*
 	 * Clean up the FREF structure.
@@ -402,8 +415,12 @@ file_end(sp, ep, force)
 	 * Re: FR_DONTDELETE, see the comment above in file_init().
 	 */
 	if (!F_ISSET(frp, FR_DONTDELETE) && frp->tname != NULL) {
-		if (unlink(frp->tname))
-			msgq(sp, M_SYSERR, "%s: remove", frp->tname);
+		if (unlink(frp->tname)) {
+			p = msg_print(sp, frp->tname, &nf);
+			msgq(sp, M_SYSERR, "005|%s: remove", p);
+			if (nf)
+				FREE_SPACE(sp, p, 0);
+		}
 		free(frp->tname);
 		frp->tname = NULL;
 		if (F_ISSET(frp, FR_TMPFILE)) {
@@ -426,7 +443,10 @@ file_end(sp, ep, force)
 
 	/* Close the db structure. */
 	if (ep->db->close != NULL && ep->db->close(ep->db) && !force) {
-		msgq(sp, M_ERR, "%s: close: %s", frp->name, strerror(errno));
+		p = msg_print(sp, frp->name, &nf);
+		msgq(sp, M_SYSERR, "006|%s: close", p);
+		if (nf)
+			FREE_SPACE(sp, p, 0);
 		++ep->refcnt;
 		return (1);
 	}
@@ -449,12 +469,18 @@ file_end(sp, ep, force)
 	 * There's a race, here, obviously, but it's fairly small.
 	 */
 	if (!F_ISSET(ep, F_RCV_NORM)) {
-		if (ep->rcv_path != NULL && unlink(ep->rcv_path))
-			msgq(sp, M_ERR,
-			    "%s: remove: %s", ep->rcv_path, strerror(errno));
-		if (ep->rcv_mpath != NULL && unlink(ep->rcv_mpath))
-			msgq(sp, M_ERR,
-			    "%s: remove: %s", ep->rcv_mpath, strerror(errno));
+		if (ep->rcv_path != NULL && unlink(ep->rcv_path)) {
+			p = msg_print(sp, ep->rcv_path, &nf);
+			msgq(sp, M_SYSERR, "007|%s: remove", p);
+			if (nf)
+				FREE_SPACE(sp, p, 0);
+		}
+		if (ep->rcv_mpath != NULL && unlink(ep->rcv_mpath)) {
+			p = msg_print(sp, ep->rcv_mpath, &nf);
+			msgq(sp, M_SYSERR, "008|%s: remove", p);
+			if (nf)
+				FREE_SPACE(sp, p, 0);
+		}
 	}
 	if (ep->fcntl_fd != -1)
 		(void)close(ep->fcntl_fd);
@@ -483,13 +509,14 @@ file_write(sp, ep, fm, tm, name, flags)
 	char *name;
 	int flags;
 {
+	enum { NEWFILE, NONE, EXISTING } mtype;
 	struct stat sb;
 	FILE *fp;
 	FREF *frp;
 	MARK from, to;
 	u_long nlno, nch;
-	int btear, fd, noname, oflags, rval;
-	char *msg;
+	int btear, fd, nf, noname, oflags, rval;
+	char *p;
 
 	frp = sp->frp;
 	if (name == NULL) {
@@ -502,9 +529,9 @@ file_write(sp, ep, fm, tm, name, flags)
 	if (!LF_ISSET(FS_FORCE) && noname && F_ISSET(frp, FR_RDONLY)) {
 		if (LF_ISSET(FS_POSSIBLE))
 			msgq(sp, M_ERR,
-			    "Read-only file, not written; use ! to override");
+		    "009|Read-only file, not written; use ! to override");
 		else
-			msgq(sp, M_ERR, "Read-only file, not written");
+			msgq(sp, M_ERR, "010|Read-only file, not written");
 		return (1);
 	}
 
@@ -513,11 +540,15 @@ file_write(sp, ep, fm, tm, name, flags)
 		/* Don't overwrite anything but the original file. */
 		if ((!noname || F_ISSET(frp, FR_NAMECHANGE)) &&
 		    !stat(name, &sb)) {
-			if (LF_ISSET(FS_POSSIBLE))
+			p = msg_print(sp, name, &nf);
+			if (LF_ISSET(FS_POSSIBLE)) {
 				msgq(sp, M_ERR,
-		"%s exists, not written; use ! to override", name);
-			else
-				msgq(sp, M_ERR, "%s exists, not written", name);
+		"011|%s exists, not written; use ! to override", p);
+			} else
+				msgq(sp, M_ERR,
+				    "012|%s exists, not written", p);
+			if (nf)
+				FREE_SPACE(sp, p, 0);
 			return (1);
 		}
 
@@ -528,9 +559,10 @@ file_write(sp, ep, fm, tm, name, flags)
 		if (!LF_ISSET(FS_ALL) && noname && !stat(name, &sb)) {
 			if (LF_ISSET(FS_POSSIBLE))
 				msgq(sp, M_ERR,
-				    "Use ! to write a partial file");
+				    "013|Use ! to write a partial file");
 			else
-				msgq(sp, M_ERR, "Partial file, not written");
+				msgq(sp, M_ERR,
+				    "014|Partial file, not written");
 			return (1);
 		}
 	}
@@ -553,19 +585,23 @@ file_write(sp, ep, fm, tm, name, flags)
 	 * we last edited or wrote it, and make them force it.
 	 */
 	if (stat(name, &sb))
-		msg = ": new file";
+		mtype = NEWFILE;
 	else {
-		msg = "";
+		mtype = NONE;
 		if (!LF_ISSET(FS_FORCE | FS_APPEND)) {
 			if (ep->mtime && sb.st_mtime > ep->mtime) {
+				p = msg_print(sp, name, &nf);
 				msgq(sp, M_ERR,
-			"%s: file modified more recently than this copy%s",
-				    name, LF_ISSET(FS_POSSIBLE) ?
-				    "; use ! to override" : "");
+				    LF_ISSET(FS_POSSIBLE) ?
+"016|%s: file modified more recently than this copy; use ! to override" :
+"017|%s: file modified more recently than this copy",
+				    p);
+				if (nf)
+					FREE_SPACE(sp, p, 0);
 				return (1);
 			}
 			if (!noname || F_ISSET(frp, FR_NAMECHANGE))
-				msg = ": existing file";
+				mtype = EXISTING;
 		}
 	}
 
@@ -578,14 +614,20 @@ file_write(sp, ep, fm, tm, name, flags)
 
 	/* Open the file. */
 	if ((fd = open(name, oflags, DEFFILEMODE)) < 0) {
-		msgq(sp, M_SYSERR, name);
+		p = msg_print(sp, name, &nf);
+		msgq(sp, M_SYSERR, "%s", p);
+		if (nf)
+			FREE_SPACE(sp, p, 0);
 		return (1);
 	}
 
 	/* Use stdio for buffering. */
 	if ((fp = fdopen(fd, "w")) == NULL) {
 		(void)close(fd);
-		msgq(sp, M_SYSERR, name);
+		p = msg_print(sp, name, &nf);
+		msgq(sp, M_SYSERR, "%s", p);
+		if (nf)
+			FREE_SPACE(sp, p, 0);
 		return (1);
 	}
 
@@ -615,8 +657,13 @@ file_write(sp, ep, fm, tm, name, flags)
 
 	/* If the write failed, complain loudly. */
 	if (rval) {
-		if (!LF_ISSET(FS_APPEND))
-			msgq(sp, M_ERR, "%s: WARNING: file truncated!", name);
+		if (!LF_ISSET(FS_APPEND)) {
+			p = msg_print(sp, name, &nf);
+			msgq(sp, M_ERR,
+			    "019|%s: WARNING: FILE TRUNCATED", p);
+			if (nf)
+				FREE_SPACE(sp, p, 0);
+		}
 		return (1);
 	}
 
@@ -642,10 +689,46 @@ file_write(sp, ep, fm, tm, name, flags)
 				F_CLR(frp, FR_TMPEXIT);
 	}
 
-	msgq(sp, M_INFO, "%s%s%s: %lu line%s, %lu characters",
-	    INTERRUPTED(sp) ? "Interrupted write: " : "",
-	    name, msg, nlno, nlno == 1 ? "" : "s", nch);
+	p = msg_print(sp, name, &nf);
+	if (INTERRUPTED(sp))
+		switch (mtype) {
+		case EXISTING:
+			msgq(sp, M_INFO,
+    "015|Interrupted write: %s: existing file: %lu line%s, %lu characters",
+			    p, nlno, nlno == 1 ? "" : "s", nch);
+			break;
+		case NEWFILE:
+			msgq(sp, M_INFO,
+    "018|Interrupted write: %s: new file: %lu line%s, %lu characters",
+			    p, nlno, nlno == 1 ? "" : "s", nch);
+			break;
+		case NONE:
+			msgq(sp, M_INFO,
+    "020|Interrupted write: %s: %lu line%s, %lu characters",
+			    p, nlno, nlno == 1 ? "" : "s", nch);
+			break;
+		}
+	else
+		switch (mtype) {
+		case EXISTING:
+			msgq(sp, M_INFO,
+			    "025|%s: existing file: %lu line%s, %lu characters",
+			    p, nlno, nlno == 1 ? "" : "s", nch);
+			break;
+		case NEWFILE:
+			msgq(sp, M_INFO,
+			    "092|%s: new file: %lu line%s, %lu characters",
+			    p, nlno, nlno == 1 ? "" : "s", nch);
+			break;
+		case NONE:
+			msgq(sp, M_INFO,
+			    "093|%s: %lu line%s, %lu characters",
+			    p, nlno, nlno == 1 ? "" : "s", nch);
+			break;
+		}
 
+	if (nf)
+		FREE_SPACE(sp, p, 0);
 	return (0);
 }
 
@@ -672,9 +755,9 @@ file_m1(sp, ep, force, flags)
 			    file_write(sp, ep, NULL, NULL, NULL, flags))
 				return (1);
 		} else if (ep->refcnt <= 1 && !force) {
-			msgq(sp, M_ERR,
-	"File modified since last complete write; write or use %s to override",
-			    LF_ISSET(FS_POSSIBLE) ? "!" : ":edit!");
+			msgq(sp, M_ERR, LF_ISSET(FS_POSSIBLE) ?
+"021|File modified since last complete write; write or use ! to override" :
+"022|File modified since last complete write; write or use :edit! to override");
 			return (1);
 		}
 
@@ -698,7 +781,7 @@ file_m2(sp, ep, force)
 	 */
 	if (F_ISSET(ep, F_MODIFIED) && ep->refcnt <= 1 && !force) {
 		msgq(sp, M_ERR,
-    "File modified since last complete write; write or use ! to override");
+"023|File modified since last complete write; write or use ! to override");
 		return (1);
 	}
 
@@ -724,7 +807,7 @@ file_m3(sp, ep, force)
 	 */
 	if (F_ISSET(sp->frp, FR_TMPEXIT) && ep->refcnt <= 1 && !force) {
 		msgq(sp, M_ERR,
-		    "File is a temporary; exit will discard modifications");
+		    "024|File is a temporary; exit will discard modifications");
 		return (1);
 	}
 	return (0);

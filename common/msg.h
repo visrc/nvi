@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: msg.h,v 8.13 1994/08/08 12:02:43 bostic Exp $ (Berkeley) $Date: 1994/08/08 12:02:43 $
+ *	$Id: msg.h,v 8.14 1994/08/31 17:12:12 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:12:12 $
  */
 
 /*
@@ -38,19 +38,11 @@ struct _msg {
 	u_int8_t flags;
 };
 
-/*
- * Define MSG_CATALOG for the Makefile compile command
- * line to enable message catalogs.
- */
-#ifdef MSG_CATALOG
-#define	M(number, fmt)	number
-char	*get_msg __P((SCR *, char *));
-#else
-#define	M(number, fmt)	fmt
-#endif
-
 /* Messages. */
-void	msg_app __P((GS *, SCR *, int, char *, size_t));
-int	msg_rpt __P((SCR *, int));
-int	msg_status __P((SCR *, EXF *, recno_t, int));
-void	msgq __P((SCR *, enum msgtype, const char *, ...));
+void 	 msg_app __P((GS *, SCR *, int, char *, size_t));
+void 	 msg_close __P((GS *));
+int 	 msg_open __P((SCR *, char *));
+char	*msg_print __P((SCR *, char *, int *));
+int 	 msg_rpt __P((SCR *, int));
+int 	 msg_status __P((SCR *, EXF *, recno_t, int));
+void 	 msgq __P((SCR *, enum msgtype, const char *, ...));

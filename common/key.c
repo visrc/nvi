@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.81 1994/08/17 14:28:30 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:28:30 $";
+static char sccsid[] = "$Id: key.c,v 8.82 1994/08/31 17:12:22 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:12:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -111,6 +111,7 @@ int
 term_init(sp)
 	SCR *sp;
 {
+	CHAR_T ch;
 	GS *gp;
 	KEYLIST *kp;
 	int cnt;
@@ -146,6 +147,17 @@ term_init(sp)
 			gp->max_special = kp->value;
 		if (kp->ch <= MAX_FAST_KEY)
 			gp->special_key[kp->ch] = kp->value;
+	}
+
+	/* Find a non-printable character to use as a message separator. */
+	for (ch = 1; ch <= MAX_CHAR_T; ++ch)
+		if (!isprint(ch)) {
+			gp->noprint = ch;
+			break;
+		}
+	if (ch != gp->noprint) {
+		msgq(sp, M_ERR, "090|No non-printable character found");
+		return (1);
 	}
 	return (0);
 }
@@ -594,7 +606,7 @@ term_flush(sp, msg, flags)
 	do {
 		QREM_HEAD(tty, 1);
 	} while (tty->cnt && tty->chf[tty->next] & flags);
-	msgq(sp, M_ERR, "%s: keys flushed", msg);
+	msgq(sp, M_ERR, "091|%s: keys flushed", msg);
 }
 
 /*

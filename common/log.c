@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: log.c,v 8.18 1994/08/17 14:28:07 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:28:07 $";
+static char sccsid[] = "$Id: log.c,v 8.19 1994/08/31 17:12:03 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:12:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -72,11 +72,11 @@ static void	log_trace __P((SCR *, char *, recno_t, u_char *));
 
 /* Try and restart the log on failure, i.e. if we run out of memory. */
 #define	LOG_ERR {							\
-	msgq(sp, M_ERR, "Error: %s/%d: put log error: %s",		\
-	    tail(__FILE__), __LINE__, strerror(errno));			\
+	msgq(sp, M_SYSERR, "032|%s/%d: log put error",			\
+	    tail(__FILE__), __LINE__);					\
 	(void)ep->log->close(ep->log);					\
 	if (!log_init(sp, ep))						\
-		msgq(sp, M_ERR, "Log restarted");			\
+		msgq(sp, M_ERR, "033|Log restarted");			\
 	return (1);							\
 }
 
@@ -103,7 +103,7 @@ log_init(sp, ep)
 	ep->log = dbopen(NULL, O_CREAT | O_NONBLOCK | O_RDWR,
 	    S_IRUSR | S_IWUSR, DB_RECNO, NULL);
 	if (ep->log == NULL) {
-		msgq(sp, M_ERR, "log db: %s", strerror(errno));
+		msgq(sp, M_SYSERR, "034|log file");
 		F_SET(ep, F_NOLOG);
 		return (1);
 	}
@@ -353,12 +353,12 @@ log_backward(sp, ep, rp)
 
 	if (F_ISSET(ep, F_NOLOG)) {
 		msgq(sp, M_ERR,
-		    "Logging not being performed, undo not possible");
+		    "035|Logging not being performed, undo not possible");
 		return (1);
 	}
 
 	if (ep->l_cur == 1) {
-		msgq(sp, M_BERR, "No changes to undo");
+		msgq(sp, M_BERR, "036|No changes to undo");
 		return (1);
 	}
 
@@ -454,7 +454,7 @@ log_setline(sp, ep)
 
 	if (F_ISSET(ep, F_NOLOG)) {
 		msgq(sp, M_ERR,
-		    "Logging not being performed, undo not possible");
+		    "037|Logging not being performed, undo not possible");
 		return (1);
 	}
 
@@ -540,12 +540,12 @@ log_forward(sp, ep, rp)
 
 	if (F_ISSET(ep, F_NOLOG)) {
 		msgq(sp, M_ERR,
-		    "Logging not being performed, roll-forward not possible");
+	    "038|Logging not being performed, roll-forward not possible");
 		return (1);
 	}
 
 	if (ep->l_cur == ep->l_high) {
-		msgq(sp, M_BERR, "No changes to re-do");
+		msgq(sp, M_BERR, "039|No changes to re-do");
 		return (1);
 	}
 

@@ -6,14 +6,15 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 8.14 1994/08/29 18:02:51 bostic Exp $ (Berkeley) $Date: 1994/08/29 18:02:51 $";
+static char sccsid[] = "$Id: msg.c,v 8.15 1994/08/31 17:12:10 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:12:10 $";
 #endif /* not lint */
 
-#include <sys/types.h>
+#include <sys/param.h>
 #include <sys/queue.h>
 #include <sys/time.h>
 
 #include <bitstring.h>
+#include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
@@ -63,11 +64,11 @@ msgq(sp, mt, fmt, va_alist)
 		size_t	 suffix;	/* Suffix string length. */
 	} str[__NL_ARGMAX];
 #endif
+	CHAR_T ch;
 	GS *gp;
 	size_t blen, cnt1, cnt2, len, mlen, nlen, soff;
-	int ch;
 	const char *p, *t, *u;
-	char *bp, *mp, *v, *rbp, *s_rbp;
+	char *bp, *mp, *rbp, *s_rbp;
         va_list ap;
 
 #ifdef __STDC__
@@ -135,7 +136,7 @@ binc_err:	return;
 	mp = bp;
 	mlen = 0;
 	if (mt == M_SYSERR) {
-		p = msg_cat(gp, M("0001", "Error: "), &len);
+		p = msg_cat(gp, "094|Error: ", &len);
 		if (REM < len)
 			goto retry;
 		memmove(mp, p, len);
@@ -163,23 +164,28 @@ binc_err:	return;
 
 #ifndef NL_ARGMAX
 	/*
-	 * Nvi needs to run on machines that do not support the %[digit]*$
-	 * conventions.  To do this, we reformat the string into something
-	 * that we can hand to vsprintf(3) and which will take the arguments
-	 * in the right order.  Then, when vsprintf is done, we put the parts
-	 * of the string back into the right order.  To do that, we have to
-	 * have a separator character that is known not to occur in any vi
-	 * message.  We're using <newline> here.  If that fails for some
-	 * reason, change it to search the string, selecting the separator
-	 * character on a case-by-case basis.  This is expensive, but it's
-	 * the only portable solution.
+	 * Nvi should run on machines that don't support the numbered argument
+	 * specifications (%[digit]*$).  We do this by reformatting the string
+	 * so that we can hand it to vsprintf(3) and it will use the arguments
+	 * in the right order.  When vsprintf returns, we put the string back
+	 * into the right order.  It's undefined, according to SVID III, to mix
+	 * numbered argument specifications with the standard style arguments,
+	 * so this should be safe.
+	 *
+	 * In addition, we also need a character that is known to not occur in
+	 * any vi message, for separating the parts of the string.  As callers
+	 * of msgq are responsible for making sure that all the non-printable
+	 * characters are formatted for printing before calling msgq, we use a
+	 * random non-printable character selected at terminal initialization
+	 * time.  This code isn't fast by any means, but since as messages are
+	 * relatively short and normally have only a few arguments, it won't be
+	 * too bad.  Regardless, nobody has come up with any other solution.
 	 *
 	 * The result of this loop is an array of pointers into the message
 	 * string, with associated lengths and argument numbers.  The array
 	 * is in the "correct" order, and the arg field contains the argument
 	 * order.
 	 */
-#define	SEPARATOR_CHAR	'\n'
 	for (p = fmt, soff = 0; soff < __NL_ARGMAX;) {
 		for (t = p; *p != '\0' && *p != '%'; ++p);
 		if (*p == '\0')
@@ -210,7 +216,7 @@ binc_err:	return;
 			    strchr("diouxXfeEgGcspn", ch) != NULL)
 				break;
 		str[soff].suffix = p - u;
-		if (ch != '\0)
+		if (ch != '\0')
 			++p;
 		++soff;
 	}
@@ -219,12 +225,7 @@ binc_err:	return;
 	if (soff == 0)
 		goto format;
 
-	 /*
-	  * Get space for the reordered strings.  Need a <newline> separator
-	  * for each reordered string, and a '\0' for the EOS.  We throw in
-	  * extra so the buffer can (hopefully) be reused when the message is
-	  * reordered the second time.
-	  */
+	 /* Get space for the reordered strings. */
 	if ((rbp = malloc(nlen)) == NULL)
 		goto err;
 	s_rbp = rbp;
@@ -251,7 +252,7 @@ binc_err:	return;
 				    str[cnt2].str + str[cnt2].prefix +
 				    str[cnt2].skip, str[cnt2].suffix);
 				s_rbp += str[cnt2].prefix + str[cnt2].suffix;
-				*s_rbp++ = SEPARATOR_CHAR;
+				*s_rbp++ = gp->noprint;
 				break;
 			}
 	*s_rbp = '\0';
@@ -268,12 +269,12 @@ format:	len = vsnprintf(mp, REM, fmt, ap);
 		goto nofmt;
 
 	/*
-	 * Go through the resulting string, and, for each SEPARATOR_CHAR
-	 * separated string, enter its new starting position and length
-	 * in the array.
+	 * Go through the resulting string, and, for each separator character
+	 * separated string, enter its new starting position and length in the
+	 * array.
 	 */
-	for (p = t = bp, cnt1 = 1; *p != '\0'; ++p)
-		if (*p == '\n') {
+	for (p = t = mp, cnt1 = 1, ch = gp->noprint; *p != '\0'; ++p)
+		if (*p == ch) {
 			for (cnt2 = 0; cnt2 < soff; ++cnt2)
 				if (str[cnt2].arg == cnt1)
 					break;
@@ -289,7 +290,7 @@ format:	len = vsnprintf(mp, REM, fmt, ap);
 	 *
 	 * !!!
 	 * Note, the length of the message gets decremented once for
-	 * each string, because we're discarding the <newline>.
+	 * each substring, when we discard the separator character.
 	 */
 	for (s_rbp = rbp, cnt1 = 0; cnt1 < soff; ++cnt1) {
 		memmove(rbp, str[cnt1].str, str[cnt1].prefix);
@@ -316,7 +317,8 @@ nofmt:	mp += len;
 	if (sp != NULL)
 		TRACE(sp, "%.*s\n", mlen, bp);
 #endif
-	msg_app(__global_list, sp, mt == M_ERR ? 1 : 0, bp, mlen);
+	msg_app(__global_list, sp,
+	    mt == M_ERR || mt == M_SYSERR ? 1 : 0, bp, mlen);
 
 err:	FREE_SPACE(sp, bp, blen);
 }
@@ -550,27 +552,39 @@ msg_open(sp, file)
 	char *file;
 {
 	DB *db;
-#ifdef MSG_CATALOG
-	if ((db = dbopen(file,
-	    O_NONBLOCK | O_RDONLY, 0, DB_RECNO, NULL)) == NULL) {
-		msgq(sp, M_ERR, 
-		    "Unable to open %s: %s", file, strerror(errno));
-		return (1);
-	}
+	int nf;
+	char *p, *t, buf[MAXPATHLEN];
 
 	/*
 	 * !!!
-	 * Assume that the first file opened is the default/fallback one,
-	 * and that all subsequent ones user defined.
+	 * Assume that the first file opened is the system default, and that
+	 * all subsequent ones user defined.  Only display error messages
+	 * if we can't open the user defined ones -- it's useful to know if
+	 * the system one wasn't there, but if nvi is being shipped with an
+	 * installed system, the file will be there, if it's not, then the
+	 * message will be repeated every time nvi is started up.
 	 */
-	if (sp->gp->msg_bck == NULL)
-		sp->gp->msg_bck = db;
-	else {
-		if (sp->gp->msg != NULL)
-			(void)sp->gp->msg->close(sp->gp->msg);
-		sp->gp->msg = db;
+	if ((p = strrchr(file, '/')) != NULL && p[1] == '\0' &&
+	    ((t = getenv("LANG")) != NULL ||
+	    (t = getenv("LC_MESSAGES")) != NULL)) {
+		(void)snprintf(buf, sizeof(buf), "%svi_%s", file, t);
+		p = buf;
+	} else
+		p = file;
+	if ((db = dbopen(p,
+	    O_NONBLOCK | O_RDONLY, 0, DB_RECNO, NULL)) == NULL) {
+		if (O_STR(sp, O_MSGCAT) != NULL) {
+			p = msg_print(sp, buf, &nf);
+			msgq(sp, M_SYSERR, "%s", p);
+			if (nf)
+				FREE_SPACE(sp, p, 0);
+		}
+		return (1);
 	}
-#endif
+
+	if (sp->gp->msg != NULL)
+		(void)sp->gp->msg->close(sp->gp->msg);
+	sp->gp->msg = db;
 	return (0);
 }
 
@@ -582,8 +596,6 @@ void
 msg_close(gp)
 	GS *gp;
 {
-	if (gp->msg_bck != NULL)
-		(void)gp->msg_bck->close(gp->msg_bck);
 	if (gp->msg != NULL)
 		(void)gp->msg->close(gp->msg);
 }
@@ -591,6 +603,10 @@ msg_close(gp)
 /*
  * msg_cat --
  *	Return a single message from the catalog, plus its length.
+ *
+ * !!!
+ * Only a single catalog message can be accessed at a time, if multiple
+ * ones are needed, they must be copied into local memory.
  */
 static const char *
 msg_cat(gp, str, lenp)
@@ -600,30 +616,65 @@ msg_cat(gp, str, lenp)
 {
 	DBT data, key;
 	recno_t msgno;
-	const char *p;
 
 	/*
-	 * If it's a catalog message, i.e. a number and nothing else,
-	 * get the string from the catalog.
+	 * If it's not a catalog message, i.e. has doesn't have a leading
+	 * number and '|' symbol, we're done.
 	 */
-	for (p = str; *p != '\0'; ++p)
-		if (!isdigit(*p))
-			goto nocat;
+	if (isdigit(str[0]) &&
+	    isdigit(str[1]) && isdigit(str[2]) && str[3] == '|') {
+		key.data = &msgno;
+		key.size = sizeof(recno_t);
+		msgno = atoi(str);
 
-	key.data = &msgno;
-	key.size = sizeof(recno_t);
-	msgno = atoi(str);
-
-	if (gp->msg != NULL &&
-	    gp->msg->get(gp->msg, &key, &data, 0) == 0 ||
-	    gp->msg_bck != NULL &&
-	    gp->msg_bck->get(gp->msg_bck, &key, &data, 0) == 0) {
-		if (lenp != NULL)
-			*lenp = data.size;
-		return (data.data);
+		if (gp->msg != NULL &&
+		    gp->msg->get(gp->msg, &key, &data, 0) == 0 &&
+		    data.size != 0) {
+			if (lenp != NULL)
+				*lenp = data.size;
+			return (data.data);
+		}
+		str = &str[4];
 	}
-
-nocat:	if (lenp != NULL)
+	if (lenp != NULL)
 		*lenp = strlen(str);
 	return (str);
+}
+
+/*
+ * msg_print --
+ *	Return a printable version of a string, in allocated memory.
+ */
+char *
+msg_print(sp, s, needfree)
+	SCR *sp;
+	char *s;
+	int *needfree;
+{
+	size_t blen, nlen;
+	char *bp, *ep, *p, *t;
+
+	*needfree = 0;
+	for (p = s; *p != '\0'; ++p)
+		if (!isprint(*p))
+			break;
+	if (*p == '\0')
+		return (s);
+
+	nlen = 0;
+	if (0) {
+retry:		FREE_SPACE(sp, bp, blen);
+	}
+	nlen += 256;
+	GET_SPACE_GOTO(sp, bp, blen, nlen);
+	if (0) {
+binc_err:	return ("");
+	}
+
+	for (p = bp, ep = (bp + blen) - 1; *s != '\0' && p < ep; ++s)
+		for (t = KEY_NAME(sp, *s); *t != '\0' && p < ep; *p++ = *t++);
+	if (p == ep)
+		goto retry;
+	*p = '\0';
+	return (bp);
 }

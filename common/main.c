@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.106 1994/08/17 14:28:09 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:28:09 $";
+static char sccsid[] = "$Id: main.c,v 8.107 1994/08/31 17:12:05 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:12:05 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -75,7 +75,7 @@ main(argc, argv)
 	char *excmdarg, *myname, *p, *tag_f, *trace_f, *wsizearg;
 	char path[MAXPATHLEN];
 
-	/* Stop if indirecting through a NULL pointer. */
+	/* If loaded at 0 and indirecting through a NULL pointer, stop. */
 	if (reenter++)
 		abort();
 
@@ -183,7 +183,7 @@ main(argc, argv)
 		silent = 1;
 		if (!LF_ISSET(S_EX)) {
 			msgq(NULL, M_ERR,
-			    "Vi's standard input must be a terminal");
+			    "040|Vi's standard input must be a terminal");
 			goto err;
 		}
 	}
@@ -211,10 +211,12 @@ main(argc, argv)
 			err(1, "%s", trace_f);
 		(void)fprintf(gp->tracefp, "\n===\ntrace: open %s\n", trace_f);
 #else
-		msgq(sp, M_ERR, "-T support not compiled into this version");
+		msgq(sp, M_ERR,
+		    "041|-T support not compiled into this version");
 #endif
 	}
-
+	if (term_init(sp))		/* Terminal initialization. */
+		goto err;
 	if (opts_init(sp))		/* Options initialization. */
 		goto err;
 	if (readonly)			/* Global read-only bit. */
@@ -240,12 +242,8 @@ main(argc, argv)
 		av[1] = &b;
 		if (opts_set(sp, NULL, av))
 			 msgq(sp, M_ERR,
-			     "Unable to set command line window size option");
+		     "042|Unable to set command line window size option");
 	}
-
-	/* Keymaps, special keys, must follow option initializations. */
-	if (term_init(sp))
-		goto err;
 
 #ifdef	DIGRAPHS
 	if (digraph_init(sp))		/* Digraph initialization. */
@@ -538,6 +536,9 @@ gs_end(gp)
 		else if (chmod(tty, gp->origmode) < 0)
 			warn("%s", tty);
 
+	/* Close message catalogs. */
+	msg_close(gp);
+
 	/* Ring the bell if scheduled. */
 	if (F_ISSET(gp, G_BELLSCHED))
 		(void)fprintf(stderr, "\07");		/* \a */
@@ -609,8 +610,10 @@ exrc_isok(sp, sbp, path, rootown, rootid)
 	char *path;
 	int rootown, rootid;
 {
+	enum { ROOTOWN, OWN, WRITER } etype;
 	uid_t euid;
-	char *emsg, buf[MAXPATHLEN];
+	int nf1, nf2;
+	char *a, *b, buf[MAXPATHLEN];
 
 	/* Check for the file's existence. */
 	if (stat(path, sbp))
@@ -620,24 +623,56 @@ exrc_isok(sp, sbp, path, rootown, rootid)
 	euid = geteuid();
 	if (!(rootown && sbp->st_uid == 0) && 
 	    !(rootid && euid == 0) && sbp->st_uid != euid) {
-		emsg = rootown ?
-		    "not owned by you or root" : "not owned by you";
+		etype = rootown ? ROOTOWN : OWN;
 		goto denied;
 	}
 
 	/* Check writeability. */
 	if (sbp->st_mode & (S_IWGRP | S_IWOTH)) {
-		emsg = "writeable by a user other than the owner";
-denied:		if (strchr(path, '/') == NULL &&
-		    getcwd(buf, sizeof(buf)) != NULL)
-			msgq(sp, M_ERR,
-			    "%s/%s: not sourced: %s", buf, path, emsg);
-		else
-			msgq(sp, M_ERR,
-			    "%s: not sourced: %s", path, emsg);
-		return (NOPERM);
+		etype = WRITER;
+		goto denied;
 	}
 	return (OK);
+
+denied:	a = msg_print(sp, path, &nf1);
+	if (strchr(path, '/') == NULL && getcwd(buf, sizeof(buf)) != NULL) {
+		b = msg_print(sp, buf, &nf2);
+		switch (etype) {
+		case ROOTOWN:
+			msgq(sp, M_ERR,
+			    "043|%s/%s: not sourced: not owned by you or root",
+			    b, a);
+			break;
+		case OWN:
+			msgq(sp, M_ERR,
+			    "044|%s/%s: not sourced: not owned by you", b, a);
+			break;
+		case WRITER:
+			msgq(sp, M_ERR,
+    "045|%s/%s: not sourced: writeable by a user other than the owner", b, a);
+			break;
+		}
+		if (nf2)
+			FREE_SPACE(sp, b, 0);
+	} else
+		switch (etype) {
+		case ROOTOWN:
+			msgq(sp, M_ERR,
+			    "046|%s: not sourced: not owned by you or root", a);
+			break;
+		case OWN:
+			msgq(sp, M_ERR,
+			    "047|%s: not sourced: not owned by you", a);
+			break;
+		case WRITER:
+			msgq(sp, M_ERR,
+	    "048|%s: not sourced: writeable by a user other than the owner", a);
+			break;
+		}
+
+	if (nf1)
+		FREE_SPACE(sp, a, 0);
+	return (NOPERM);
 }
 
 static void
@@ -649,7 +684,7 @@ obsolete(argv)
 
 	/*
 	 * Translate old style arguments into something getopt will like.
-	 * Make sure it's not text space memory, because ex changes the
+	 * Make sure it's not text space memory, because ex modifies the
 	 * strings.
 	 *	Change "+" into "-c$".
 	 *	Change "+<anything else>" into "-c<anything else>".

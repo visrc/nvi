@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 8.32 1994/08/17 14:28:06 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:28:06 $";
+static char sccsid[] = "$Id: db.c,v 8.33 1994/08/31 17:12:02 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:12:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -105,9 +105,8 @@ file_rline(sp, ep, lno, lenp)
 	key.size = sizeof(lno);
 	switch (ep->db->get(ep->db, &key, &data, 0)) {
         case -1:
-		msgq(sp, M_ERR,
-		    "Error: %s/%d: unable to get line %u: %s",
-		    tail(__FILE__), __LINE__, lno, strerror(errno));
+		msgq(sp, M_SYSERR, "026|%s/%d: unable to get line %u",
+		    tail(__FILE__), __LINE__, lno);
 		/* FALLTHROUGH */
         case 1:
 		return (NULL);
@@ -155,9 +154,8 @@ file_dline(sp, ep, lno)
 	key.size = sizeof(lno);
 	SIGBLOCK(sp->gp);
 	if (ep->db->del(ep->db, &key, 0) == 1) {
-		msgq(sp, M_ERR,
-		    "Error: %s/%d: unable to delete line %u: %s",
-		    tail(__FILE__), __LINE__, lno, strerror(errno));
+		msgq(sp, M_SYSERR, "027|%s/%d: unable to delete line %u",
+		    tail(__FILE__), __LINE__, lno);
 		return (1);
 	}
 	SIGUNBLOCK(sp->gp);
@@ -223,9 +221,8 @@ file_aline(sp, ep, update, lno, p, len)
 	data.size = len;
 	SIGBLOCK(sp->gp);
 	if (ep->db->put(ep->db, &key, &data, R_IAFTER) == -1) {
-		msgq(sp, M_ERR,
-		    "Error: %s/%d: unable to append to line %u: %s",
-		    tail(__FILE__), __LINE__, lno, strerror(errno));
+		msgq(sp, M_SYSERR, "028|%s/%d: unable to append to line %u",
+		    tail(__FILE__), __LINE__, lno);
 		return (1);
 	}
 	SIGUNBLOCK(sp->gp);
@@ -307,9 +304,8 @@ file_iline(sp, ep, lno, p, len)
 	data.size = len;
 	SIGBLOCK(sp->gp);
 	if (ep->db->put(ep->db, &key, &data, R_IBEFORE) == -1) {
-		msgq(sp, M_ERR,
-		    "Error: %s/%d: unable to insert at line %u: %s",
-		    tail(__FILE__), __LINE__, lno, strerror(errno));
+		msgq(sp, M_SYSERR, "029|%s/%d: unable to insert at line %u",
+		    tail(__FILE__), __LINE__, lno);
 		return (1);
 	}
 	SIGUNBLOCK(sp->gp);
@@ -368,9 +364,8 @@ file_sline(sp, ep, lno, p, len)
 	data.size = len;
 	SIGBLOCK(sp->gp);
 	if (ep->db->put(ep->db, &key, &data, 0) == -1) {
-		msgq(sp, M_ERR,
-		    "Error: %s/%d: unable to store line %u: %s",
-		    tail(__FILE__), __LINE__, lno, strerror(errno));
+		msgq(sp, M_SYSERR, "030|%s/%d: unable to store line %u",
+		    tail(__FILE__), __LINE__, lno);
 		return (1);
 	}
 	SIGUNBLOCK(sp->gp);
@@ -417,9 +412,8 @@ file_lline(sp, ep, lnop)
 
 	switch (ep->db->seq(ep->db, &key, &data, R_LAST)) {
         case -1:
-		msgq(sp, M_ERR,
-		    "Error: %s/%d: unable to get last line: %s",
-		    tail(__FILE__), __LINE__, strerror(errno));
+		msgq(sp, M_SYSERR, "031|%s/%d: unable to get last line",
+		    tail(__FILE__), __LINE__);
 		*lnop = 0;
 		return (1);
         case 1:

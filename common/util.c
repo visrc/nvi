@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.74 1994/08/17 14:28:33 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:28:33 $";
+static char sccsid[] = "$Id: util.c,v 8.75 1994/08/31 17:12:24 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:12:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -162,7 +162,7 @@ set_alt_name(sp, name)
 CHAR_T *
 v_strdup(sp, str, len)
 	SCR *sp;
-	CHAR_T *str;
+	const CHAR_T *str;
 	size_t len;
 {
 	CHAR_T *copy;

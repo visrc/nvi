@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 8.46 1994/08/08 12:02:41 bostic Exp $ (Berkeley) $Date: 1994/08/08 12:02:41 $
+ *	$Id: common.h,v 8.47 1994/08/31 17:12:26 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:12:26 $
  */
 
 /*
@@ -85,7 +85,7 @@ FILE	*fwopen __P((SCR *, void *));
 int	 nonblank __P((SCR *, EXF *, recno_t, size_t *));
 void	 set_alt_name __P((SCR *, char *));
 char	*tail __P((char *));
-CHAR_T	*v_strdup __P((SCR *, CHAR_T *, size_t));
+CHAR_T	*v_strdup __P((SCR *, const CHAR_T *, size_t));
 void	 vi_putchar __P((int));
 
 #ifdef DEBUG
