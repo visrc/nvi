@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 8.37 1994/05/21 09:38:34 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:38:34 $";
+static char sccsid[] = "$Id: ex_filter.c,v 8.38 1994/07/16 13:01:25 bostic Exp $ (Berkeley) $Date: 1994/07/16 13:01:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -313,8 +313,10 @@ proc_wait(sp, pid, cmd, okpipe)
 		errno = 0;
 		if (waitpid((pid_t)pid, &pstat, 0) != -1)
 			break;
-		if (errno != EINTR)
-			break;
+		if (errno != EINTR) {
+			msgq(sp, M_SYSERR, "wait error");
+			return (1);
+		}
 	}
 
 	/*
