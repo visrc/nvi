@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: db.c,v 10.39 2001/08/18 21:52:00 skimo Exp $ (Berkeley) $Date: 2001/08/18 21:52:00 $";
+static const char sccsid[] = "$Id: db.c,v 10.40 2001/08/29 12:25:13 skimo Exp $ (Berkeley) $Date: 2001/08/29 12:25:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -81,11 +81,7 @@ db_eget(SCR *sp, db_recno_t lno, CHAR_T **pp, size_t *lenp, int *isemptyp)
  */
 int
 db_get(SCR *sp, db_recno_t lno, u_int32_t flags, CHAR_T **pp, size_t *lenp)
-	        
-	               				/* Line number. */
-	                
-	            				/* Pointer store. */
-	             				/* Length store. */
+		/* Line number. */ /* Pointer store. */ /* Length store. */
 {
 	DBT data, key;
 	EXF *ep;
@@ -148,31 +144,31 @@ db_get(SCR *sp, db_recno_t lno, u_int32_t flags, CHAR_T **pp, size_t *lenp)
 	 * well.
 	 * So, line cache is (temporarily) disabled.
 	 */
-	if (0 && lno == ep->c_lno) {
+	if (lno == sp->c_lno) {
 #if defined(DEBUG) && 0
 		vtrace(sp, "retrieve cached line %lu\n", (u_long)lno);
 #endif
 		if (lenp != NULL)
-			*lenp = ep->c_len;
+			*lenp = sp->c_len;
 		if (pp != NULL)
-			*pp = ep->c_lp;
+			*pp = sp->c_lp;
 		return (0);
 	}
-	ep->c_lno = OOBLNO;
+	sp->c_lno = OOBLNO;
 
 nocache:
 	nlen = 1024;
 retry:
 	/* data.size contains length in bytes */
-	BINC_GOTO(sp, (char *)ep->c_lp, ep->c_blen, nlen);
+	BINC_GOTO(sp, (char *)sp->c_lp, sp->c_blen, nlen);
 
 	/* Get the line from the underlying database. */
 	memset(&key, 0, sizeof(key));
 	key.data = &lno;
 	key.size = sizeof(lno);
 	memset(&data, 0, sizeof(data));
-	data.data = ep->c_lp;
-	data.ulen = ep->c_blen;
+	data.data = sp->c_lp;
+	data.ulen = sp->c_blen;
 	data.flags = DB_DBT_USERMEM;
 	switch (ep->db->get(ep->db, NULL, &key, &data, 0)) {
 	case ENOMEM:
@@ -203,11 +199,11 @@ err3:		if (lenp != NULL)
 
 	/* Reset the cache. */
 	if (wp != data.data) {
-	    BINC_GOTOW(sp, ep->c_lp, ep->c_blen, wlen);
-	    MEMCPYW(ep->c_lp, wp, wlen);
+	    BINC_GOTOW(sp, sp->c_lp, sp->c_blen, wlen);
+	    MEMCPYW(sp->c_lp, wp, wlen);
 	}
-	ep->c_lno = lno;
-	ep->c_len = wlen;
+	sp->c_lno = lno;
+	sp->c_len = wlen;
 
 #if defined(DEBUG) && 0
 	vtrace(sp, "retrieve DB line %lu\n", (u_long)lno);
@@ -215,7 +211,7 @@ err3:		if (lenp != NULL)
 	if (lenp != NULL)
 		*lenp = wlen;
 	if (pp != NULL)
-		*pp = ep->c_lp;
+		*pp = sp->c_lp;
 	return (0);
 }
 
@@ -264,8 +260,8 @@ db_delete(SCR *sp, db_recno_t lno)
 	}
 
 	/* Flush the cache, update line count, before screen update. */
-	if (lno <= ep->c_lno)
-		ep->c_lno = OOBLNO;
+	if (lno <= sp->c_lno)
+		sp->c_lno = OOBLNO;
 	if (ep->c_nlines != OOBLNO)
 		--ep->c_nlines;
 
@@ -378,8 +374,8 @@ db_append(SCR *sp, int update, db_recno_t lno, CHAR_T *p, size_t len)
 	}
 
 	/* Flush the cache, update line count, before screen update. */
-	if (lno < ep->c_lno)
-		ep->c_lno = OOBLNO;
+	if (lno < sp->c_lno)
+		sp->c_lno = OOBLNO;
 	if (ep->c_nlines != OOBLNO)
 		++ep->c_nlines;
 
@@ -447,8 +443,8 @@ db_insert(SCR *sp, db_recno_t lno, CHAR_T *p, size_t len)
 	}
 
 	/* Flush the cache, update line count, before screen update. */
-	if (lno >= ep->c_lno)
-		ep->c_lno = OOBLNO;
+	if (lno >= sp->c_lno)
+		sp->c_lno = OOBLNO;
 	if (ep->c_nlines != OOBLNO)
 		++ep->c_nlines;
 
@@ -484,6 +480,7 @@ db_set(SCR *sp, db_recno_t lno, CHAR_T *p, size_t len)
 	EXF *ep;
 	char *fp;
 	size_t flen;
+	SCR* scrp;
 
 #if defined(DEBUG) && 0
 	vtrace(sp, "replace line %lu: len %lu {%.*s}\n",
@@ -517,8 +514,10 @@ db_set(SCR *sp, db_recno_t lno, CHAR_T *p, size_t len)
 	}
 
 	/* Flush the cache, before logging or screen update. */
-	if (lno == ep->c_lno)
-		ep->c_lno = OOBLNO;
+	for (scrp = ep->scrq.cqh_first; scrp != (void *)&ep->scrq; 
+	    scrp = scrp->eq.cqe_next)
+		if (lno == scrp->c_lno)
+			scrp->c_lno = OOBLNO;
 
 	/* File now dirty. */
 	if (F_ISSET(ep, F_FIRSTMODIFY))
@@ -623,16 +622,16 @@ err1:
 
 	memcpy(&lno, key.data, sizeof(lno));
 
-	if (lno != ep->c_lno) {
+	if (lno != sp->c_lno) {
 	    FILE2INT(sp, data.data, data.size, wp, wlen);
 
 	    /* Fill the cache. */
 	    if (wp != data.data) {
-		BINC_GOTOW(sp, ep->c_lp, ep->c_blen, wlen);
-		MEMCPYW(ep->c_lp, wp, wlen);
+		BINC_GOTOW(sp, sp->c_lp, sp->c_blen, wlen);
+		MEMCPYW(sp->c_lp, wp, wlen);
 	    }
-	    ep->c_lno = lno;
-	    ep->c_len = wlen;
+	    sp->c_lno = lno;
+	    sp->c_len = wlen;
 	}
 	ep->c_nlines = lno;
 

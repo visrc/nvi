@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: exf.h,v 10.15 2001/08/28 13:29:15 skimo Exp $ (Berkeley) $Date: 2001/08/28 13:29:15 $
+ *	$Id: exf.h,v 10.16 2001/08/29 12:25:13 skimo Exp $ (Berkeley) $Date: 2001/08/29 12:25:13 $
  */
 					/* Undo direction. */
 /*
@@ -20,13 +20,6 @@ struct _exf {
 	CIRCLEQ_HEAD(_escrh, _scr)   scrq;   /* Attached screens */
 					/* Underlying database state. */
 	DB	*db;			/* File db structure. */
-	CHAR_T	*c_lp;			/* Cached line. */
-	size_t	 c_len;			/* Cached line length. */
-	/* May move out again once we use DB 
-	 * to cache internal representation
-	 */
-	size_t	 c_blen;		/* Cached line buffer length. */
-	db_recno_t	 c_lno;		/* Cached line number. */
 	db_recno_t	 c_nlines;	/* Cached lines in the file. */
 
 	DB	*log;			/* Log db structure. */

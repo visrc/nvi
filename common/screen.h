@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: screen.h,v 10.46 2001/08/28 21:05:46 skimo Exp $ (Berkeley) $Date: 2001/08/28 21:05:46 $
+ *	$Id: screen.h,v 10.47 2001/08/29 12:25:13 skimo Exp $ (Berkeley) $Date: 2001/08/29 12:25:13 $
  */
 
 /*
@@ -98,6 +98,14 @@ struct _scr {
 	SCR	*nextdisp;		/* Next display screen. */
 	SCR	*ccl_parent;		/* Colon command-line parent screen. */
 	EXF	*ep;			/* Screen's current EXF structure. */
+
+	CHAR_T	*c_lp;			/* Cached line. */
+	size_t	 c_len;			/* Cached line length. */
+	/* May move out again once we use DB 
+	 * to cache internal representation
+	 */
+	size_t	 c_blen;		/* Cached line buffer length. */
+	db_recno_t	 c_lno;		/* Cached line number. */
 
 	FREF	*frp;			/* FREF being edited. */
 	char	**argv;			/* NULL terminated file name array. */

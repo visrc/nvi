@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: exf.c,v 10.65 2001/08/28 13:29:15 skimo Exp $ (Berkeley) $Date: 2001/08/28 13:29:15 $";
+static const char sccsid[] = "$Id: exf.c,v 10.66 2001/08/29 12:25:13 skimo Exp $ (Berkeley) $Date: 2001/08/29 12:25:13 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -182,7 +182,7 @@ file_init(SCR *sp, FREF *frp, char *rcv_name, int flags)
 	 */
 	CALLOC_RET(sp, ep, EXF *, 1, sizeof(EXF));
 	CIRCLEQ_INIT(&ep->scrq);
-	ep->c_lno = ep->c_nlines = OOBLNO;
+	sp->c_lno = ep->c_nlines = OOBLNO;
 	ep->rcv_fd = ep->fcntl_fd = -1;
 	F_SET(ep, F_FIRSTMODIFY);
 
