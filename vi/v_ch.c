@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ch.c,v 8.5 1994/03/08 19:41:11 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:41:11 $";
+static char sccsid[] = "$Id: v_ch.c,v 8.6 1994/03/14 08:59:26 bostic Exp $ (Berkeley) $Date: 1994/03/14 08:59:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -119,7 +119,6 @@ v_cht(sp, ep, vp)
 	 * have moved right for v_chf() to have succeeded.
 	 */
 	--vp->m_stop.cno;
-	--vp->m_final.cno;
 
 	VIP(sp)->csearchdir = tSEARCH;
 	return (0);
