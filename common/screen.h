@@ -4,10 +4,12 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 5.2 1992/09/01 15:34:37 bostic Exp $ (Berkeley) $Date: 1992/09/01 15:34:37 $
+ *	$Id: screen.h,v 5.3 1992/10/01 17:30:39 bostic Exp $ (Berkeley) $Date: 1992/10/01 17:30:39 $
  */
 
-#define	BOTLINE	(curf->top + LINES - 2)
+#define	BOTLINE		(curf->top + LINES - 2)
+#define	HALFSCREEN	((LINES - 1) / 2)
+#define	SCREENSIZE	(LINES - 1)
 
 /* 
  * The interface to the screen is defined by the following functions:
