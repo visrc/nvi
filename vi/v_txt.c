@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.81 1994/02/26 17:19:51 bostic Exp $ (Berkeley) $Date: 1994/02/26 17:19:51 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.82 1994/03/03 15:03:57 bostic Exp $ (Berkeley) $Date: 1994/03/03 15:03:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -47,7 +47,7 @@ static int	 txt_resolve __P((SCR *, EXF *, TEXTH *));
 }
 
 /*
- * newtext --
+ * v_ntext --
  *	Read in text from the user.
  *
  * !!!
