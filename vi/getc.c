@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: getc.c,v 5.14 1993/03/26 13:40:17 bostic Exp $ (Berkeley) $Date: 1993/03/26 13:40:17 $";
+static char sccsid[] = "$Id: getc.c,v 5.15 1993/05/08 09:54:25 bostic Exp $ (Berkeley) $Date: 1993/05/08 09:54:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -55,7 +55,8 @@ getc_next(sp, ep, dir, chp)
 	MARK save;
 
 	save = GM;
-	if (dir == FORWARD)
+	switch (dir) {
+	case FORWARD:
 		if (GL == 0 || GM.cno == GL - 1) {
 			GM.cno = 0;		/* EOF; restore the cursor. */
 			if ((GB = file_gline(sp, ep, ++GM.lno, &GL)) == NULL) {
@@ -68,7 +69,8 @@ getc_next(sp, ep, dir, chp)
 			}
 		} else
 			++GM.cno;
-	else /* if (dir == BACKWARD) */
+		break;
+	case BACKWARD:
 		if (GM.cno == 0) {		/* EOF; restore the cursor. */
 			if ((GB = file_gline(sp, ep, --GM.lno, &GL)) == NULL) {
 				GM = save;
@@ -81,6 +83,10 @@ getc_next(sp, ep, dir, chp)
 			GM.cno = GL - 1;
 		} else
 			--GM.cno;
+		break;
+	default:
+		abort();
+	}
 	*chp = GB[GM.cno];
 	return (1);
 }
