@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 5.3 1993/04/12 14:34:52 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:34:52 $";
+static char sccsid[] = "$Id: ex_argv.c,v 5.4 1993/04/17 11:55:51 bostic Exp $ (Berkeley) $Date: 1993/04/17 11:55:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -170,12 +170,14 @@ fileexpand(sp, ep, globp, word, wordlen)
 			len += ep->nlen;
 			break;
 		case '#':
-			if (prev_ep == NULL)
-				prev_ep = file_prev(sp, ep, 0);
-			if (prev_ep == NULL || F_ISSET(prev_ep, F_NONAME)) {
-				msgq(sp, M_ERR,
-				    "No filename to substitute for #.");
-				return (1);
+			if (prev_ep == NULL) {
+				if (sp->eprev == NULL ||
+				    F_ISSET(sp->eprev, F_NONAME)) {
+					msgq(sp, M_ERR,
+					    "No filename to substitute for #.");
+					return (1);
+				}
+				prev_ep = sp->eprev;
 			}
 			len += prev_ep->nlen;
 			break;
