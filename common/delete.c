@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: delete.c,v 5.9 1992/10/17 16:07:08 bostic Exp $ (Berkeley) $Date: 1992/10/17 16:07:08 $";
+static char sccsid[] = "$Id: delete.c,v 5.10 1992/10/18 13:02:30 bostic Exp $ (Berkeley) $Date: 1992/10/18 13:02:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -52,12 +52,18 @@ delete(fm, tm, lmode)
 		 * line number and reset the count to max column + 1.
 		 */
 		if (tm->cno == 0) {
-			EGETLINE(p, --tm->lno, len);
+			if ((p = file_gline(curf, --tm->lno, &len)) == NULL) {
+				GETLINE_ERR(tm->lno);
+				return (1);
+			}
 			tm->cno = len;
 		}
 		/* If deleting within a single line, it's easy. */
 		if (tm->lno == fm->lno) {
-			EGETLINE(p, fm->lno, len);
+			if ((p = file_gline(curf, fm->lno, &len)) == NULL) {
+				GETLINE_ERR(fm->lno);
+				return (1);
+			}
 			bcopy(p + tm->cno, p + fm->cno,
 			    len - fm->cno - (tm->cno - fm->cno));
 			len -= tm->cno - fm->cno;
@@ -70,9 +76,15 @@ delete(fm, tm, lmode)
 					return (1);
 
 			/* Figure out how big a buffer we need. */
-			EGETLINE(p, fm->lno, len);
+			if ((p = file_gline(curf, fm->lno, &len)) == NULL) {
+				GETLINE_ERR(fm->lno);
+				return (1);
+			}
 			tlen = len;
-			EGETLINE(p, tm->lno, len);
+			if ((p = file_gline(curf, tm->lno, &len)) == NULL) {
+				GETLINE_ERR(tm->lno);
+				return (1);
+			}
 			tlen += len;		/* XXX Possible overflow! */
 			if ((bp = malloc(tlen)) == NULL) {
 				msg("Error: %s", strerror(errno));
@@ -80,12 +92,18 @@ delete(fm, tm, lmode)
 			}
 
 			/* Copy the start partial line into place. */
-			EGETLINE(p, fm->lno, len);
+			if ((p = file_gline(curf, fm->lno, &len)) == NULL) {
+				GETLINE_ERR(fm->lno);
+				return (1);
+			}
 			bcopy(p, bp, fm->cno);
 			tlen = fm->cno;
 
 			/* Copy the end partial line into place. */
-			EGETLINE(p, tm->lno, len);
+			if ((p = file_gline(curf, tm->lno, &len)) == NULL) {
+				GETLINE_ERR(tm->lno);
+				return (1);
+			}
 			bcopy(p + tm->cno, bp + tlen, len - tm->cno);
 			tlen += len - tm->cno;
 

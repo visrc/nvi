@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 5.16 1992/10/17 16:06:27 bostic Exp $ (Berkeley) $Date: 1992/10/17 16:06:27 $";
+static char sccsid[] = "$Id: cut.c,v 5.17 1992/10/18 13:02:13 bostic Exp $ (Berkeley) $Date: 1992/10/18 13:02:13 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -124,7 +124,11 @@ cutline(lno, fcno, len, newp)
 	size_t llen;
 	u_char *lp, *p;
 
-	EGETLINE(p, lno, llen);
+	if ((p = file_gline(curf, lno, &llen)) == NULL) {
+		GETLINE_ERR(lno);
+		return (1);
+	}
+
 	if ((tp = malloc(sizeof(TEXT))) == NULL)
 		goto mem;
 	if (llen == 0) {
@@ -230,7 +234,10 @@ put(buffer, cp, rp, append)
 	else {
 		/* Get the first line. */
 		lno = cp->lno;
-		EGETLINE(p, lno, len);
+		if ((p = file_gline(curf, lno, &len)) == NULL) {
+			GETLINE_ERR(lno);
+			return (1);
+		}
 
 		/* Check for space. */
 		BFCHECK(tp);
