@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.75 1994/08/31 17:12:24 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:12:24 $";
+static char sccsid[] = "$Id: util.c,v 8.76 1994/09/03 09:20:59 bostic Exp $ (Berkeley) $Date: 1994/09/03 09:20:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -185,3 +185,37 @@ vi_putchar(ch)
 {
 	(void)putchar(ch);
 }
+
+#ifdef DEBUG
+#ifdef __STDC__
+#include <stdarg.h>
+#else
+#include <varargs.h>
+#endif
+
+void
+#ifdef __STDC__
+TRACE(SCR *sp, const char *fmt, ...)
+#else
+TRACE(sp, fmt, va_alist)
+	SCR *sp;
+	char *fmt;
+	va_dcl
+#endif
+{
+	FILE *tfp;
+	va_list ap;
+
+	if ((tfp = sp->gp->tracefp) == NULL)
+		return;
+#ifdef __STDC__
+	va_start(ap, fmt);
+#else
+	va_start(ap);
+#endif
+	(void)vfprintf(tfp, fmt, ap);
+	va_end(ap);
+
+	(void)fflush(tfp);
+}
+#endif
