@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 5.21 1992/11/01 22:49:00 bostic Exp $ (Berkeley) $Date: 1992/11/01 22:49:00 $";
+static char sccsid[] = "$Id: util.c,v 5.22 1992/11/07 18:50:17 bostic Exp $ (Berkeley) $Date: 1992/11/07 18:50:17 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -137,7 +137,7 @@ onhup(signo)
 	/* Restore the terminal's sanity. */
 	endwin();
 
-#ifdef RIP_THIS_OUT
+#ifdef XXX_RIP_THIS_OUT
 	/* If we had a temp file going, then preserve it. */
 	if (tmpnum > 0 && tmpfd >= 0) {
 		(void)close(tmpfd);
@@ -156,15 +156,4 @@ onhup(signo)
 
 	/* NOTREACHED */
 	exit (1);
-}
-
-/*
- * regerror --
- *	Error message from the regexp code.
- */
-void
-regerror(errmsg)
-	char *errmsg;
-{
-	msg("RE error: %s", errmsg);
 }
