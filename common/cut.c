@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 5.17 1992/10/18 13:02:13 bostic Exp $ (Berkeley) $Date: 1992/10/18 13:02:13 $";
+static char sccsid[] = "$Id: cut.c,v 5.18 1992/10/26 09:06:44 bostic Exp $ (Berkeley) $Date: 1992/10/26 09:06:44 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -71,7 +71,6 @@ cut(buffer, fm, tm, lmode)
 	TRACE("cut: from {%lu, %d}, to {%lu, %d}%s\n",
 	    fm->lno, fm->cno, tm->lno, tm->cno, lmode ? " LINE MODE" : "");
 #endif
-
 	if (lmode) {
 		for (lno = fm->lno; lno <= tm->lno; ++lno) {
 			if (cutline(lno, 0, 0, &tp))
@@ -98,7 +97,7 @@ cut(buffer, fm, tm, lmode)
 	if (tm->lno > fm->lno && tm->cno > 0) {
 		if (cutline(lno, 0, tm->cno, &tp)) {
 mem:			if (append)
-				msg("Contents of buffer %s lost.",
+				msg("Contents of %s buffer lost.",
 				    charname(buffer));
 			freetext(cb->head);
 			cb->head = NULL;
@@ -197,11 +196,6 @@ put(buffer, cp, rp, append)
 	 * If buffer was created in line mode, append each new line into the
 	 * file.  Otherwise, insert the first line into place, append each
 	 * new line into the file, and insert the last line into place.
-	 *
-	 * XXX
-	 * We have to do some fairly interesting stuff to make this work
-	 * for inserting above the first line.  This might be better done
-	 * in db(3) by allowing record 0.
 	 */
 	if (lmode) {
 		if (append) {
@@ -295,7 +289,12 @@ put(buffer, cp, rp, append)
 				t += tp->len;
 			}
 
-			/* This is the end of the added text; set cursor. */
+			/*
+			 * This is the end of the added text; set cursor.
+			 * XXX
+			 * Historic vi put the cursor at the beginning of
+			 * the put.
+			 */
 			rp->lno = lno + 1;
 			rp->cno = t - bp - 1;
 
