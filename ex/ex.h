@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: ex.h,v 10.19 1996/04/22 21:32:07 bostic Exp $ (Berkeley) $Date: 1996/04/22 21:32:07 $
+ *	$Id: ex.h,v 10.20 1996/04/23 10:02:28 bostic Exp $ (Berkeley) $Date: 1996/04/23 10:02:28 $
  */
 
 #define	PROMPTCHAR	':'		/* Prompt using a colon. */
@@ -63,12 +63,12 @@ extern EXCMDLIST const cmds[];		/* Table of ex commands. */
 
 /*
  * XXX
- * There's a chance that the last command in the string, the source file or
- * the @ buffer or v or g commands is a search command.  All search commands
- * have to be nul-terminated -- the supporting RE routines require it for
- * historic reasons, and we don't want our mid-level routines to copy all
- * the strings before performing searches.  So, we allocate an extra character
- * in various places, and make it a nul.
+ * There's a chance that the last command in the string, source file or the @
+ * buffer or global or v commands is a search command.  All search commands
+ * must be nul-terminated -- the supporting RE routines require it for historic
+ * reasons, and we don't want our mid-level routines to copy the strings before
+ * performing searches.  So, we allocate an extra character in various places,
+ * and make it a nul.
  */
 #define	SEARCH_TERMINATION	1
 
