@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_main.c,v 8.31 1996/12/17 10:45:46 bostic Exp $ (Berkeley) $Date: 1996/12/17 10:45:46 $";
+static const char sccsid[] = "$Id: m_main.c,v 8.32 1996/12/17 17:03:36 bostic Exp $ (Berkeley) $Date: 1996/12/17 17:03:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -37,7 +37,12 @@ static const char sccsid[] = "$Id: m_main.c,v 8.31 1996/12/17 10:45:46 bostic Ex
 #define	ArgcType	int *
 #endif
 
+#if defined(ColorIcon)
+#include <X11/xpm.h>
+#include "nvi.xpm"		/* Icon pixmap. */
+#else
 #include "nvi.xbm"		/* Icon bitmap. */
+#endif
 
 static	pid_t		pid;
 static	Pixel		icon_fg,
@@ -51,10 +56,12 @@ static void XutSetIcon __P((Widget, int, int, Pixmap));
 static void onchld __P((int));
 static void onexit __P((void));
 
+#if ! defined(ColorIcon)
 static  XutResource resource[] = {
     { "iconForeground",	XutRKpixel,	&icon_fg	},
     { "iconBackground",	XutRKpixel,	&icon_bg	},
 };
+#endif
 
 
 /* resources for the vi widgets unless the user overrides them */
@@ -68,9 +75,11 @@ String	fallback_rsrcs[] = {
     "*busyShape:		watch",
     "*iconName:			vi",
 
+#if ! defined(ColorIcon)
     /* coloring for the icons */
     "*iconForeground:	XtDefaultForeground",
     "*iconBackground:	XtDefaultBackground",
+#endif
 
     /* layout for the tag stack dialog */
     "*Tags*visibleItemCount:			5",
@@ -166,6 +175,26 @@ static	void	create_top_level_shell( argc, argv )
     /* might need to go technicolor... */
     XutInstallColormap( argv[0], top_level );
 
+    /* create our icon
+     * do this *before* realizing the shell widget in case the -iconic
+     * option was specified.
+     */
+    {
+#if defined(ColorIcon)
+    int			nvi_width, nvi_height;
+    XpmAttributes	attr;
+
+    attr.valuemask = 0;
+    XpmCreatePixmapFromData( display,
+			     DefaultRootWindow(display),
+			     nvi_xpm,
+			     &icon_pm,
+			     NULL,
+			     &attr
+			     );
+    nvi_width = attr.width;
+    nvi_height = attr.height;
+#else
     /* check the resource database for interesting resources */
     __XutConvertResources( top_level,
 			 vi_progname,
@@ -173,10 +202,6 @@ static	void	create_top_level_shell( argc, argv )
 			 XtNumber(resource)
 			 );
 
-    /* create our icon
-     * do this *before* realizing the shell widget in case the -iconic
-     * option was specified.
-     */
     icon_pm = XCreatePixmapFromBitmapData(
 			display,
 		        DefaultRootWindow(display),
@@ -187,7 +212,9 @@ static	void	create_top_level_shell( argc, argv )
 			icon_bg,
 			DefaultDepth( display, DefaultScreen(display) )
 			);
+#endif
     XutSetIcon( top_level, nvi_height, nvi_width, icon_pm );
+    }
 
     /* in the shell, we will stack a menubar an editor */
     main_w = XtVaCreateManagedWidget( "main",
