@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_line.c,v 10.16 1996/05/04 18:50:52 bostic Exp $ (Berkeley) $Date: 1996/05/04 18:50:52 $";
+static const char sccsid[] = "$Id: vs_line.c,v 10.17 1996/05/12 16:43:32 bostic Exp $ (Berkeley) $Date: 1996/05/12 16:43:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -127,13 +127,21 @@ vs_line(sp, smp, yp, xp)
 		 * If O_NUMBER is set, the line exists and the first character
 		 * on the screen is the first character in the line, display
 		 * the line number.
+		 *
+		 * !!!
+		 * If O_NUMBER set, decrement the number of columns in the
+		 * first screen.  DO NOT CHANGE THIS -- IT'S RIGHT!  The
+		 * rest of the code expects this to reflect the number of
+		 * columns in the first screen, regardless of the number of
+		 * columns we're going to skip.
 		 */
-		if (O_ISSET(sp, O_NUMBER) &&
-		    (!dne || smp->lno == 1) && skip_cols == 0) {
+		if (O_ISSET(sp, O_NUMBER)) {
 			cols_per_screen -= O_NUMBER_LENGTH;
-			nlen = snprintf(cbuf,
-			    sizeof(cbuf), O_NUMBER_FMT, smp->lno);
-			(void)gp->scr_addstr(sp, cbuf, nlen);
+			if ((!dne || smp->lno == 1) && skip_cols == 0) {
+				nlen = snprintf(cbuf,
+				    sizeof(cbuf), O_NUMBER_FMT, smp->lno);
+				(void)gp->scr_addstr(sp, cbuf, nlen);
+			}
 		}
 	}
 
