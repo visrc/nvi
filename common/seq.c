@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 8.14 1993/11/18 08:17:20 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:17:20 $";
+static char sccsid[] = "$Id: seq.c,v 8.15 1993/11/27 16:44:12 bostic Exp $ (Berkeley) $Date: 1993/11/27 16:44:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -17,6 +17,7 @@ static char sccsid[] = "$Id: seq.c,v 8.14 1993/11/18 08:17:20 bostic Exp $ (Berk
 #include <string.h>
 
 #include "vi.h"
+#include "seq.h"
 #include "excmd.h"
 
 /*
@@ -38,26 +39,15 @@ seq_set(sp, name, input, output, stype, userdef)
 	TRACE(sp, "seq_set: name {%s} input {%s} output {%s}\n",
 	    name ? name : "", input, output);
 #endif
-	/*
-	 * Find any previous occurrence, and replace the output field.
-	 * Q's are sorted by character and length within that character.
-	 */
+	/* Just replace the output field in any previous occurrence. */
 	ilen = strlen(input);
-	for (lastqp = NULL, qp = sp->gp->seqq.lh_first;
-	    qp != NULL; lastqp = qp, qp = qp->q.le_next) {
-		if (qp->input[0] < input[0])
-			continue;
-		if (qp->input[0] > input[0] || qp->ilen > ilen)
-			break;
-		if (qp->ilen == ilen &&
-		    stype == qp->stype && !strcmp(qp->input, input)) {
-			if ((p = strdup(output)) == NULL)
-				goto mem1;
-			FREE(qp->output, qp->olen);
-			qp->olen = strlen(output);
-			qp->output = p;
-			return (0);
-		}
+	if ((qp = seq_find(sp, &lastqp, input, ilen, stype, NULL)) != NULL) {
+		if ((p = strdup(output)) == NULL)
+			goto mem1;
+		FREE(qp->output, qp->olen);
+		qp->olen = strlen(output);
+		qp->output = p;
+		return (0);
 	}
 
 	/* Allocate and initialize space. */
@@ -106,9 +96,11 @@ seq_delete(sp, input, stype)
 	char *input;
 	enum seqtype stype;
 {
+	int ilen;
 	SEQ *qp;
 
-	if ((qp = seq_find(sp, input, strlen(input), stype, NULL)) == NULL)
+	if ((qp =
+	    seq_find(sp, NULL, input, strlen(input), stype, NULL)) == NULL)
 		return (1);
 
 	LIST_REMOVE(qp, q);
@@ -126,51 +118,68 @@ seq_delete(sp, input, stype)
  *	isn't NULL, partial matches count.
  */
 SEQ *
-seq_find(sp, input, ilen, stype, ispartialp)
+seq_find(sp, lastqp, input, ilen, stype, ispartialp)
 	SCR *sp;
+	SEQ **lastqp;
 	char *input;
 	size_t ilen;
 	enum seqtype stype;
 	int *ispartialp;
 {
-	SEQ *qp;
+	SEQ *lqp, *qp;
+	int diff;
 
-	if (ispartialp)
+	/*
+	 * Ispartialp is a location where we return if there was a
+	 * partial match, i.e. if the string were extended it might
+	 * match something.
+	 * 
+	 * XXX
+	 * Overload the meaning of ispartialp; only the terminal key
+	 * search doesn't want the search limited to complete matches,
+	 * i.e. ilen may be longer than the match.
+	 */
+	if (ispartialp != NULL)
 		*ispartialp = 0;
+	for (lqp = NULL, qp = sp->gp->seqq.lh_first;
+	    qp != NULL; lqp = qp, qp = qp->q.le_next) {
+		/* Fast checks on the first character and type. */
+		if (qp->input[0] > input[0])
+			break;
+		if (qp->input[0] < input[0] || qp->stype != stype)
+			continue;
 
-	if (ispartialp)
-		for (qp = sp->gp->seqq.lh_first;
-		    qp != NULL; qp = qp->q.le_next) {
-			if (qp->input[0] < input[0])
-				continue;
-			if (qp->input[0] > input[0])
-				break;
-			if (stype != qp->stype)
-				continue;
-			/*
-			 * If sequence is shorter or the same length as the
-			 * input, can only find an exact match.  If input is
-			 * shorter than the sequence, can only find a partial.
-			 */
-			if (qp->ilen <= ilen) {
-				if (!strncmp(qp->input, input, qp->ilen))
-					return (qp);
-			} else {
-				if (!strncmp(qp->input, input, ilen))
-					*ispartialp = 1;
-			}
-		}
-	else
-		for (qp = sp->gp->seqq.lh_first;
-		    qp != NULL; qp = qp->q.le_next) {
-			if (qp->input[0] < input[0])
-				continue;
-			if (qp->input[0] > input[0] || qp->ilen > ilen)
-				break;
-			if (stype == qp->stype && qp->ilen == ilen &&
-			    !strncmp(qp->input, input, ilen))
+		/* Check on the real comparison. */
+		diff = memcmp(qp->input, input, MIN(qp->ilen, ilen));
+		if (diff > 0)
+			break;
+		if (diff < 0)
+			continue;
+		/*
+		 * If the entry is the same length as the string, return a
+		 * match.  If the entry is shorter than the string, return a
+		 * match if called from the terminal key routine.  Otherwise,
+		 * keep searching for a complete match.
+		 */
+		if (qp->ilen <= ilen) {
+			if (qp->ilen == ilen || ispartialp != NULL) {
+				if (lastqp != NULL)
+					*lastqp = lqp;
 				return (qp);
+			}
+			continue;
 		}
+		/*
+		 * If the entry longer than the string, return partial match
+		 * if called from the terminal key routine.  Otherwise, no
+		 * match.
+		 */
+		if (ispartialp != NULL)
+			*ispartialp = 1;
+		break;
+	}
+	if (lastqp != NULL)
+		*lastqp = lqp;
 	return (NULL);
 }
 
