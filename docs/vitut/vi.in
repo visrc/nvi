@@ -3,10 +3,10 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: vi.in,v 6.3 1991/04/17 12:42:20 bostic Exp $ (Berkeley) $Date: 1991/04/17 12:42:20 $
+.\"	$Id: vi.in,v 6.4 1993/06/05 16:51:36 bostic Exp $ (Berkeley) $Date: 1993/06/05 16:51:36 $
 .\"
-.EH 'USD:15-%''An Introduction to Display Editing with Vi'
-.OH 'An Introduction to Display Editing with Vi''USD:15-%'
+.EH 'USD:12-%''An Introduction to Display Editing with Vi'
+.OH 'An Introduction to Display Editing with Vi''USD:12-%'
 .bd S 3
 .if t .ds dg \(dg
 .if n .ds dg +
