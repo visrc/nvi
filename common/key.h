@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 5.13 1993/01/30 17:26:47 bostic Exp $ (Berkeley) $Date: 1993/01/30 17:26:47 $
+ *	$Id: key.h,v 5.14 1993/02/11 20:08:02 bostic Exp $ (Berkeley) $Date: 1993/02/11 20:08:02 $
  */
 
 #define	K_CARAT		1
@@ -28,7 +28,7 @@ extern u_char special[];		/* Special characters. */
 #define	GB_OFF		0x040		/* Leave first buffer char empty. */
 
 #define	ISQ(off)	gb_qb[(off)]
-#define	QINIT		bzero(gb_qb, gb_blen);
+#define	QINIT		memset(gb_qb, 0, gb_blen);
 #define	QSET(off)	gb_qb[(off)] = 1
 
 extern u_char *atkeybuf;		/* Base of shared at buffer. */

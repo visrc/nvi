@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 5.26 1993/02/11 19:42:44 bostic Exp $ (Berkeley) $Date: 1993/02/11 19:42:44 $
+ *	$Id: ex.h,v 5.27 1993/02/11 20:08:22 bostic Exp $ (Berkeley) $Date: 1993/02/11 20:08:22 $
  */
 
 #include "exf.h"
@@ -62,7 +62,7 @@ extern u_char *defcmdarg[2];	/* Default array. */
 
 /* Macro to set up the structure. */
 #define	SETCMDARG(s, _cmd, _addrcnt, _lno1, _lno2, _force, _arg) {	\
-	bzero(&s, sizeof(EXCMDARG));					\
+	memset(&s, 0, sizeof(EXCMDARG));				\
 	s.cmd = &cmds[_cmd];						\
 	s.addrcnt = (_addrcnt);						\
 	s.addr1.lno = (_lno1);						\

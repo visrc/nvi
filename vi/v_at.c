@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_at.c,v 5.12 1993/01/18 11:29:20 bostic Exp $ (Berkeley) $Date: 1993/01/18 11:29:20 $";
+static char sccsid[] = "$Id: v_at.c,v 5.13 1993/02/11 20:07:29 bostic Exp $ (Berkeley) $Date: 1993/02/11 20:07:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -42,7 +42,7 @@ v_at(vp, fm, tm, rp)
 	CBEMPTY(key, cb);
 
 	if (atkeybuflen == 0)
-		bzero(rstack, sizeof(rstack));
+		memset(rstack, 0, sizeof(rstack));
 	else if (rstack[key]) {
 		msg("Buffer %c already occurs in this command.", key);
 		return (1);
