@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 8.31 1994/03/02 15:57:02 bostic Exp $ (Berkeley) $Date: 1994/03/02 15:57:02 $";
+static char sccsid[] = "$Id: vs_split.c,v 8.32 1994/03/02 19:14:25 bostic Exp $ (Berkeley) $Date: 1994/03/02 19:14:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,7 +46,7 @@ svi_split(sp, argv)
 	/* Get a new screen. */
 	if (screen_init(sp, &tsp, 0))
 		return (1);
-	MALLOC(sp, _HMAP(tsp), SMAP *, SIZE_HMAP(sp) * sizeof(SMAP));
+	CALLOC(sp, _HMAP(tsp), SMAP *, SIZE_HMAP(sp), sizeof(SMAP));
 	if (_HMAP(tsp) == NULL)
 		return (1);
 
@@ -459,7 +459,7 @@ svi_swap(csp, nsp, name)
 	 * a bunch of screens had to be hidden.
 	 */
 	if (HMAP == NULL)
-		MALLOC_RET(sp, HMAP, SMAP *, SIZE_HMAP(sp) * sizeof(SMAP));
+		CALLOC_RET(sp, HMAP, SMAP *, SIZE_HMAP(sp), sizeof(SMAP));
 	TMAP = HMAP + (sp->t_rows - 1);
 
 	/* Fill the map. */
