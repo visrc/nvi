@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 9.1 1994/11/09 18:41:00 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:41:00 $";
+static char sccsid[] = "$Id: ex_read.c,v 9.2 1994/11/09 19:22:02 bostic Exp $ (Berkeley) $Date: 1994/11/09 19:22:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -201,6 +201,10 @@ usage:		ex_message(sp, cmdp->cmd, EXM_USAGE);
 		msgq(sp, M_ERR, "150|Only regular files may be read");
 		return (1);
 	}
+
+	/* Try and get a lock. */
+	if (file_lock(sp, NULL, NULL, fileno(fp), 0) == LOCK_UNAVAIL)
+		msgq(sp, M_ERR, "%s: read lock was unavailable", name);
 
 	/* Turn on busy message. */
 	btear = F_ISSET(sp, S_EXSILENT) ? 0 : !busy_on(sp, "Reading...");
