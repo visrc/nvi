@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 9.10 1995/01/31 09:34:32 bostic Exp $ (Berkeley) $Date: 1995/01/31 09:34:32 $";
+static char sccsid[] = "$Id: ex_subst.c,v 9.11 1995/02/02 17:47:06 bostic Exp $ (Berkeley) $Date: 1995/02/02 17:47:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -499,7 +499,7 @@ noargs:	if (F_ISSET(sp, S_VI) && sp->c_suffix && (lflag || nflag || pflag)) {
 		/* Get the line. */
 		if ((s = file_gline(sp, lno, &llen)) == NULL) {
 			FILE_LERR(sp, lno);
-			goto ret1;
+			goto err;
 		}
 
 		/*
@@ -561,7 +561,7 @@ nextmatch:	match[0].rm_so = 0;
 			goto endmatch;
 		if (eval != 0) {
 			re_error(sp, eval, re);
-			goto ret1;
+			goto err;
 		}
 		matched = 1;
 
@@ -647,7 +647,7 @@ nextmatch:	match[0].rm_so = 0;
 		/* Substitute the matching bytes. */
 		didsub = 1;
 		if (regsub(sp, s + offset, &lb, &lbclen, &lblen, match))
-			goto ret1;
+			goto err;
 
 		/* Set the change flag so we know this line was modified. */
 		linechanged = 1;
@@ -685,7 +685,7 @@ skip:		offset += match[0].rm_eo;
 				    cnt < sp->newl_cnt; ++cnt, ++lno, ++elno) {
 					if (file_iline(sp, lno,
 					    lb + last, sp->newl[cnt] - last))
-						goto ret1;
+						goto err;
 					last = sp->newl[cnt] + 1;
 					++sp->rptlines[L_ADDED];
 				}
@@ -696,10 +696,10 @@ skip:		offset += match[0].rm_eo;
 
 			/* Store and retrieve the line. */
 			if (file_sline(sp, lno, lb + last, lbclen))
-				goto ret1;
+				goto err;
 			if ((s = file_gline(sp, lno, &llen)) == NULL) {
 				FILE_LERR(sp, lno);
-				goto ret1;
+				goto err;
 			}
 			ADD_SPACE_RET(sp, bp, blen, llen)
 			memmove(bp, s, llen);
@@ -753,7 +753,7 @@ endmatch:	if (!linechanged)
 			    cnt < sp->newl_cnt; ++cnt, ++lno, ++elno) {
 				if (file_iline(sp,
 				    lno, lb + last, sp->newl[cnt] - last))
-					goto ret1;
+					goto err;
 				last = sp->newl[cnt] + 1;
 				++sp->rptlines[L_ADDED];
 			}
@@ -763,7 +763,7 @@ endmatch:	if (!linechanged)
 
 		/* Store the changed line. */
 		if (file_sline(sp, lno, lb + last, lbclen))
-			goto ret1;
+			goto err;
 
 		/* Update changed line counter. */
 		if (sp->rptlchange != lno) {
@@ -816,15 +816,17 @@ endmatch:	if (!linechanged)
 	 * If not in a global command, and nothing matched, say so.
 	 * Else, if none of the lines displayed, put something up.
 	 */
+	rval = 0;
 	if (!matched) {
-		if (!F_ISSET(sp, S_GLOBAL))
-			msgq(sp, M_INFO, "160|No match found");
+		if (!F_ISSET(sp, S_GLOBAL)) {
+			msgq(sp, M_ERR, "160|No match found");
+			goto err;
+		}
 	} else if (!lflag && !nflag && !pflag)
 		F_SET(EXP(sp), EX_AUTOPRINT);
 
-	rval = 0;
 	if (0) {
-ret1:		rval = 1;
+err:		rval = 1;
 	}
 
 	if (bp != NULL)
