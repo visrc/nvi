@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 10.21 1995/11/06 20:30:03 bostic Exp $ (Berkeley) $Date: 1995/11/06 20:30:03 $";
+static char sccsid[] = "$Id: v_ex.c,v 10.22 1995/11/07 20:28:40 bostic Exp $ (Berkeley) $Date: 1995/11/07 20:28:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -73,6 +73,9 @@ v_exmode(sp, vp)
 	/* Switch to ex mode. */
 	F_CLR(sp, S_EX_CANON | S_SCREEN_READY | S_VI);
 	F_SET(sp, S_EX);
+
+	/* Move out of the vi screen. */
+	(void)write(STDOUT_FILENO, "\n", 1);
 	return (0);
 }
 
