@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.44 1993/11/18 16:34:28 bostic Exp $ (Berkeley) $Date: 1993/11/18 16:34:28 $";
+static char sccsid[] = "$Id: exf.c,v 8.45 1993/11/18 16:43:17 bostic Exp $ (Berkeley) $Date: 1993/11/18 16:43:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -241,7 +241,7 @@ file_init(sp, frp, rcv_fname, force)
 	/* Open a db structure. */
 	if ((ep->db = dbopen(rcv_fname == NULL ? oname : NULL,
 	    O_NONBLOCK | O_RDONLY, DEFFILEMODE, DB_RECNO, &oinfo)) == NULL) {
-		msgq(sp, M_SYSERR, oname);
+		msgq(sp, M_SYSERR, rcv_fname == NULL ? oname : rcv_fname);
 		goto err;
 	}
 
