@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.30 1993/12/29 09:50:56 bostic Exp $ (Berkeley) $Date: 1993/12/29 09:50:56 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.31 1994/01/02 17:54:08 bostic Exp $ (Berkeley) $Date: 1994/01/02 17:54:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -302,7 +302,6 @@ ex_subtilde(sp, ep, cmdp)
 #define	NEEDSP(sp, len, pnt) {						\
 	if (lbclen + (len) > lblen) {					\
 		lblen += MAX(lbclen + (len), 256);			\
-TRACE(sp, "lblen = %u\n", lblen); \
 		REALLOC(sp, lb, char *, lblen);				\
 		if (lb == NULL) {					\
 			lbclen = 0;					\
