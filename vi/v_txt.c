@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.44 1996/03/28 17:22:19 bostic Exp $ (Berkeley) $Date: 1996/03/28 17:22:19 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.45 1996/03/29 20:09:13 bostic Exp $ (Berkeley) $Date: 1996/03/29 20:09:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1826,20 +1826,24 @@ txt_fc(sp, tp, redrawp)
 	trydir = 0;
 	*redrawp = 0;
 
-	/* Find the beginning of this "word". */
-retry:	for (off = sp->cno - 1, p = tp->lb + off, len = 0;; --p, --off) {
-		if (isblank(*p)) {
-			++p;
-			break;
+	/*
+	 * Find the beginning of this "word" -- if we're at the beginning
+	 * of the line, it's a special case.
+	 */
+	if (sp->cno == 1) {
+		len = 0;
+		p = tp->lb;
+	} else
+retry:		for (len = 0,
+		    off = sp->cno - 1, p = tp->lb + off;; --off, --p) {
+			if (isblank(*p)) {
+				++p;
+				break;
+			}
+			++len;
+			if (off == tp->ai || off == tp->offset)
+				break;
 		}
-		++len;
-		if (off == tp->ai || off == tp->offset)
-			break;
-	}
-	if (len == 0) {
-		(void)sp->gp->scr_bell(sp);
-		return (0);
-	}
 
 	/*
 	 * Get enough space for a wildcard character.
