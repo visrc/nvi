@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 5.23 1993/05/13 16:47:36 bostic Exp $ (Berkeley) $Date: 1993/05/13 16:47:36 $";
+static char sccsid[] = "$Id: vs_smap.c,v 5.24 1993/05/14 13:52:33 bostic Exp $ (Berkeley) $Date: 1993/05/14 13:52:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,15 +30,23 @@ svi_change(sp, ep, lno, op)
 	recno_t lno;
 	enum operation op;
 {
+	SMAP *p;
 	size_t oldy, oldx;
 
 	/* Appending is the same as inserting, if the line is incremented. */
 	if (op == LINE_APPEND)
 		++lno;
 
-	/* Ignore the change if the line is not on the screen. */
-	if (lno < HMAP->lno || lno > TMAP->lno)
+	/* Ignore the change if the line is after the screen. */
+	if (lno > TMAP->lno)
 		return (0);
+
+	/* Decrement the map if the line is before the screen. */
+	if (lno < HMAP->lno) {
+		for (p = HMAP; p <= TMAP; ++p)
+			--p->lno;
+		return (0);
+	}
 
 	/* Invalidate the cursor, if it's on this line. */
 	if (sp->lno == lno)
