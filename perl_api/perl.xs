@@ -14,7 +14,7 @@
 #undef VI
 
 #ifndef lint
-static const char sccsid[] = "$Id: perl.xs,v 8.35 2000/07/06 19:32:00 skimo Exp $ (Berkeley) $Date: 2000/07/06 19:32:00 $";
+static const char sccsid[] = "$Id: perl.xs,v 8.36 2000/07/07 22:28:18 skimo Exp $ (Berkeley) $Date: 2000/07/07 22:28:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -186,6 +186,7 @@ perl_init(scrp)
 	}
 	MALLOC(scrp, pp, perl_data_t *, sizeof(perl_data_t));
 	wp->perl_private = pp;
+#ifdef USE_ITHREADS
 	pp->interp = perl_clone(gp->perl_interp, 0);
         if (1) { /* hack for bug fixed in perl-current (5.6.1) */
             dTHXa(pp->interp);
@@ -193,6 +194,9 @@ perl_init(scrp)
                 ENTER;
             }
         }
+#else
+	pp->interp = gp->perl_interp;
+#endif
 	{
 		dTHXs
 

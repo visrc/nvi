@@ -153,7 +153,8 @@ vi_SOURCES = \
 	$(visrcdir)/cl/cl_main.c \
 	$(visrcdir)/cl/cl_read.c \
 	$(visrcdir)/cl/cl_screen.c \
-	$(visrcdir)/cl/cl_term.c
+	$(visrcdir)/cl/cl_term.c \
+	$(visrcdir)/common/nothread.c
 vi_LDADD = libvi.la @perllibs@
 vi_LDFLAGS = @perlldflags@
 
@@ -164,8 +165,9 @@ vi_ipc_SOURCES = \
 	$(visrcdir)/ip/ip_screen.c \
 	$(visrcdir)/ipc/ip_send.c \
 	$(visrcdir)/ip/ip_term.c 
-vi_ipc_LDADD = libvi.la @perllibs@
+vi_ipc_LDADD = libvi.la @perllibs@ @IPCOBJS@
 vi_ipc_LDFLAGS = @perlldflags@
+vi_ipc_DEPENDENCIES = @IPCOBJS@
 
 vi_gtk_SOURCES = \
 	$(visrcdir)/ipc/ip_run.c \

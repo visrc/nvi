@@ -221,7 +221,7 @@ if test "$vi_cv_gtk" = "yes"; then
 	AM_PATH_GTK(1.2.0)
 	GTKINCS="$GTK_CFLAGS"
 	GTKLIBS="$GTK_LIBS $LIBS"
-	AC_PATH_PROG(vi_cv_gnome_config, gnome-config, bo)
+	AC_PATH_PROG(vi_cv_gnome_config, gnome-config, no)
 	if test "$vi_cv_gnome_config" != "no"; then
 		ZVTLIBS=`$vi_cv_gnome_config zvt --libs`
 		GTKLIBS="$ZVTLIBS $GTKLIBS"
@@ -278,6 +278,7 @@ if test "$vi_cv_motif" = "yes"; then
 	MOTIFLIBS="$MOTIFLIBS $XLIBS -lm $LIBS"
 fi
 
+AC_SUBST(IPCOBJS)
 dnl Check for threads
 AC_MSG_CHECKING(if --enable-threads option specified)
 AC_ARG_ENABLE(threads,
@@ -294,8 +295,10 @@ if test "$vi_cv_threads" = "yes"; then
 	if test "$vi_cv_have_pthreads" = "no"; then
 		AC_MSG_ERROR(No threading library found)
 	fi
-	LTLIBOBJS="pthread.lo $LTLIBOBJS"
+	IPCOBJS="pthread.o $IPCOBJS"
 	AC_DEFINE(HAVE_PTHREAD)
+else
+	IPCOBJS="nothread.o $IPCOBJS"
 fi
 
 dnl If the user wants a Perl interpreter in nvi, load it.
@@ -316,6 +319,12 @@ if test "$vi_cv_perlinterp" = "yes"; then
 	$vi_cv_path_perl -e 'require 5.004' || {
 		AC_MSG_ERROR([perl5 must be version 5.004 or later.])
 	}
+	if test "$vi_cv_threads" = "yes"; then
+		useithreads=`$vi_cv_path_perl -MConfig -e 'print $Config{useithreads}'`
+		if test "X$useithreads" != "Xdefine"; then
+			AC_MSG_ERROR([vi threading only compatible with perl's ithreads.])
+		fi
+	fi
 
 	eval `$vi_cv_path_perl -V:shrpenv`
 	vi_cv_perllib=`$vi_cv_path_perl -MConfig -e 'print $Config{privlib}'`
