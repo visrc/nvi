@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 8.38 1994/03/22 18:40:44 bostic Exp $ (Berkeley) $Date: 1994/03/22 18:40:44 $
+ *	$Id: common.h,v 8.39 1994/03/23 12:25:04 bostic Exp $ (Berkeley) $Date: 1994/03/23 12:25:04 $
  */
 
 /*
@@ -84,10 +84,6 @@ FILE	*fwopen __P((SCR *, void *));
 /* Function prototypes that don't seem to belong anywhere else. */
 u_long	 baud_from_bval __P((SCR *));
 char	*charname __P((SCR *, ARG_CHAR_T));
-void	 busy_off __P((SCR *));
-void	 busy_on __P((SCR *, int, char const *));
-void	 intr_end __P((SCR *));
-int	 intr_init __P((SCR *));
 int	 nonblank __P((SCR *, EXF *, recno_t, size_t *));
 void	 set_alt_name __P((SCR *, char *));
 int	 set_window_size __P((SCR *, u_int, int));
