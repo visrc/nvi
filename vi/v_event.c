@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_event.c,v 8.16 2000/06/30 20:29:04 skimo Exp $ (Berkeley) $Date: 2000/06/30 20:29:04 $";
+static const char sccsid[] = "$Id: v_event.c,v 8.17 2000/07/04 21:48:54 skimo Exp $ (Berkeley) $Date: 2000/07/04 21:48:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -326,7 +326,7 @@ v_writeas(sp, vp)
 
 /*
  * v_event --
- *	Find the event associated with a fucntion.
+ *	Find the event associated with a function.
  *
  * PUBLIC: int v_event __P((SCR *, VICMD *));
  */

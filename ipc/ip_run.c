@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_run.c,v 8.16 2000/07/01 09:27:56 skimo Exp $ (Berkeley) $Date: 2000/07/01 09:27:56 $";
+static const char sccsid[] = "$Id: ip_run.c,v 8.17 2000/07/04 21:48:54 skimo Exp $ (Berkeley) $Date: 2000/07/04 21:48:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,6 +36,7 @@ static void fatal __P((void));
 #ifdef DEBUG
 static void attach __P((void));
 #endif
+static int channel(int rpipe[2], int wpipe[2]);
 
 char	*vi_progname = "vi";			/* Global: program name. */
 

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_screen.c,v 10.51 2000/06/25 17:34:36 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:36 $";
+static const char sccsid[] = "$Id: cl_screen.c,v 10.52 2000/07/04 21:48:53 skimo Exp $ (Berkeley) $Date: 2000/07/04 21:48:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -57,6 +57,10 @@ cl_screen(sp, flags)
 
 	/* See if the current information is incorrect. */
 	if (F_ISSET(gp, G_SRESTART)) {
+		if (CLSP(sp)) {
+		    delwin(CLSP(sp));
+		    CLSP(sp) = NULL;
+		}
 		if (cl_quit(gp))
 			return (1);
 		F_CLR(gp, G_SRESTART);

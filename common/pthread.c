@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: pthread.c,v 1.1 2000/07/02 20:36:27 skimo Exp $ (Berkeley) $Date: 2000/07/02 20:36:27 $";
+static const char sccsid[] = "$Id: pthread.c,v 1.2 2000/07/04 21:48:54 skimo Exp $ (Berkeley) $Date: 2000/07/04 21:48:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,7 +31,7 @@ static void vi_pthread_run __P((WIN *wp, void (*fun)(void*), void *data));
 /*
  * thread_init
  *
- * PUBLIC: void thread_init __P((WIN *wp));
+ * PUBLIC: void thread_init __P((GS *gp));
  */
 void 
 thread_init(GS *gp)
