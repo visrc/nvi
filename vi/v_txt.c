@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.77 1996/07/12 21:33:05 bostic Exp $ (Berkeley) $Date: 1996/07/12 21:33:05 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.78 1996/08/10 15:15:45 bostic Exp $ (Berkeley) $Date: 1996/08/10 15:15:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1005,6 +1005,19 @@ leftmargin:		tp->lb[tp->cno - 1] = ' ';
 		--tp->cno;
 
 		/*
+		 * Historically, vi didn't replace the erased characters with
+		 * <blank>s, presumably because it's easier to fix a minor
+		 * typing mistake and continue on if the previous letters are
+		 * already there.  This is a problem for incremental searching,
+		 * because the user can no longer tell where they are in the
+		 * colon command line because the cursor is at the last search
+		 * point in the screen.  So, if incrementally searching, erase
+		 * the erased characters from the screen.
+		 */
+		if (FL_ISSET(is_flags, IS_RUNNING))
+			tp->lb[tp->cno] = ' ';
+
+		/*
 		 * Increment overwrite, decrement ai if deleted.
 		 *
 		 * !!!
@@ -1080,11 +1093,16 @@ leftmargin:		tp->lb[tp->cno - 1] = ' ';
 		 * interface and the historic tty driver behavior,
 		 * respectively, and the default is the same as the historic
 		 * vi behavior.
+		 *
+		 * Overwrite erased characters if doing incremental search;
+		 * see comment above.
 		 */
 		if (LF_ISSET(TXT_TTYWERASE))
 			while (tp->cno > max) {
 				--tp->cno;
 				++tp->owrite;
+				if (FL_ISSET(is_flags, IS_RUNNING))
+					tp->lb[tp->cno] = ' ';
 				if (isblank(tp->lb[tp->cno - 1]))
 					break;
 			}
@@ -1092,6 +1110,8 @@ leftmargin:		tp->lb[tp->cno - 1] = ' ';
 			if (LF_ISSET(TXT_ALTWERASE)) {
 				--tp->cno;
 				++tp->owrite;
+				if (FL_ISSET(is_flags, IS_RUNNING))
+					tp->lb[tp->cno] = ' ';
 				if (isblank(tp->lb[tp->cno - 1]))
 					break;
 			}
@@ -1100,6 +1120,8 @@ leftmargin:		tp->lb[tp->cno - 1] = ' ';
 			while (tp->cno > max) {
 				--tp->cno;
 				++tp->owrite;
+				if (FL_ISSET(is_flags, IS_RUNNING))
+					tp->lb[tp->cno] = ' ';
 				if (tmp != inword(tp->lb[tp->cno - 1])
 				    || isblank(tp->lb[tp->cno - 1]))
 					break;
@@ -1146,7 +1168,17 @@ leftmargin:		tp->lb[tp->cno - 1] = ' ';
 			max = tp->offset;
 		}
 		tp->owrite += tp->cno - max;
-		tp->cno = max;
+
+		/*
+		 * Overwrite erased characters if doing incremental search;
+		 * see comment above.
+		 */
+		if (FL_ISSET(is_flags, IS_RUNNING))
+			do {
+				tp->lb[--tp->cno] = ' ';
+			} while (tp->cno > max);
+		else
+			tp->cno = max;
 
 		/* Reset if we deleted an incremental search character. */
 		if (FL_ISSET(is_flags, IS_RUNNING))
@@ -2530,12 +2562,20 @@ txt_isrch(sp, vp, tp, is_flagsp)
 	}
 
 	/*
-	 * If it's an RE quote character, and not a quoted RE quote character,
-	 * ignore it for now.
+	 * If it's an RE quote character, and not quoted, ignore it until
+	 * we get another character.
 	 */
 	if (tp->lb[tp->cno - 1] == '\\' &&
 	    (tp->cno == 2 || tp->lb[tp->cno - 2] != '\\'))
 		return (0);
+
+	/*
+	 * If it's a magic shell character, and not quoted, reset the cursor
+	 * to the starting point.
+	 */
+	if (strchr(O_STR(sp, O_SHELLMETA), tp->lb[tp->cno - 1]) != NULL &&
+	    (tp->cno == 2 || tp->lb[tp->cno - 2] != '\\'))
+		vp->m_final = vp->m_start;
 
 	/*
 	 * If we see the search pattern termination character, then quit doing
