@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_at.c,v 8.4 1993/08/25 17:38:00 bostic Exp $ (Berkeley) $Date: 1993/08/25 17:38:00 $";
+static char sccsid[] = "$Id: ex_at.c,v 8.5 1993/08/26 13:48:58 bostic Exp $ (Berkeley) $Date: 1993/08/26 13:48:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -49,12 +49,13 @@ ex_at(sp, ep, cmdp)
 	sp->at_lbuf = buffer;
 		
 	/*
-	 * Historic vi had a special semantic.  If a buffer was cut in
-	 * line mode, executing it had the same effect as if it had a
-	 * trailing <newline> character.
+	 * If the buffer was cut in line mode or had portions of more
+	 * than one line, <newlines> are appended to each line as it
+	 * is executed.
 	 */
-	lmode = F_ISSET(cb, CB_LMODE);
-	for (tp = cb->txthdr.prev; tp != (TEXT *)&cb->txthdr; tp = tp->prev)
+	tp = cb->txthdr.prev;
+	lmode = F_ISSET(cb, CB_LMODE) || tp->prev != (TEXT *)&cb->txthdr;
+	for (; tp != (TEXT *)&cb->txthdr; tp = tp->prev)
 		if ((lmode || tp->prev != (TEXT *)&cb->txthdr) &&
 		    term_push(sp, &sp->key, "\n", 1) ||
 		    term_push(sp, &sp->key, tp->lb, tp->len))
