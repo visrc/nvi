@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 5.1 1992/10/17 16:16:54 bostic Exp $ (Berkeley) $Date: 1992/10/17 16:16:54 $";
+static char sccsid[] = "$Id: db.c,v 5.2 1992/10/18 13:03:22 bostic Exp $ (Berkeley) $Date: 1992/10/18 13:03:22 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -261,7 +261,9 @@ file_ibresolv(ep, ibp)
 
 /*
  * file_lline --
- *	Figure out the line number of the last line in the file.
+ *	Return the number of lines in the file.
+ * XXX
+ * This may need to be cached.
  */
 recno_t
 file_lline(ep)
@@ -282,7 +284,7 @@ file_lline(ep)
 		break;
 	default:
 		bcopy(key.data, &lno, sizeof(lno));
+		break;
 	}
 	return (lno);
 }
-
