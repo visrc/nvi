@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.77 1994/07/17 17:33:42 bostic Exp $ (Berkeley) $Date: 1994/07/17 17:33:42 $";
+static char sccsid[] = "$Id: key.c,v 8.78 1994/07/19 11:48:07 bostic Exp $ (Berkeley) $Date: 1994/07/19 11:48:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -192,14 +192,10 @@ key_init(sp)
 {
 	CHAR_T ch;
 
-	/*
-	 * XXX
-	 * Assume that nul is not a legal character.
-	 */
 	for (ch = 0; ch <= MAX_FAST_KEY; ++ch) {
 		(void)__key_name(sp, ch);
-		(void)memmove(sp->gp->cname[ch].name,
-		    sp->cname, sp->gp->cname[ch].len = sp->clen);
+		(void)memmove(sp->gp->cname[ch].name, sp->cname, sp->clen);
+		sp->gp->cname[ch].len = sp->clen;
 	}
 }
 
@@ -234,10 +230,10 @@ __key_name(sp, ach)
 	int cnt, shift;
 
 	/*
-	 * Historical mappings.  Printable characters are left alone.  Control
-	 * characters less than '\177' are represented as '^' followed by the
-	 * character offset from the '@' character in the ASCII map.  '\177' is
-	 * represented as '^' followed by '?'.
+	 * Historical (ARPA standard) mappings.  Printable characters are left
+	 * alone.  Control characters less than '\177' are represented as '^'
+	 * followed by the character offset from the '@' character in the ASCII
+	 * map.  '\177' is represented as '^' followed by '?'.
 	 *
 	 * XXX
 	 * The following code depends on the current locale being identical to
