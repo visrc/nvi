@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: vi.h,v 10.15 1996/03/06 19:55:00 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:55:00 $
+ *	$Id: vi.h,v 10.16 1996/04/03 14:33:13 bostic Exp $ (Berkeley) $Date: 1996/04/03 14:33:13 $
  */
 
 /* Definition of a vi "word". */
@@ -261,12 +261,17 @@ typedef struct _vi_private {
 	CHAR_T	lastckey;	/* Last search character. */
 	cdir_t	csearchdir;	/* Character search direction. */
 
-	SMAP   *h_smap;	/* First slot of the line map. */
-	SMAP   *t_smap;	/*  Last slot of the line map. */
+	SMAP   *h_smap;		/* First slot of the line map. */
+	SMAP   *t_smap;		/* Last slot of the line map. */
 	/*
 	 * One extra slot is always allocated for the map so that we can use
-	 * it to do vi :colon command input; see v_tcmd_setup().
+	 * it to do vi :colon command input; see v_tcmd().
 	 */
+	recno_t	sv_tm_lno;	/* tcmd: saved TMAP line number. */
+	size_t	sv_tm_off;	/* tcmd: saved TMAP offset. */
+	size_t	sv_t_maxrows;	/* tcmd: saved t_maxrows. */
+	size_t	sv_t_minrows;	/* tcmd: saved t_minrows. */
+	size_t	sv_t_rows;	/* tcmd: saved t_rows. */
 #define	SIZE_HMAP(sp)	(VIP(sp)->srows + 1)
 
 	/*
@@ -288,7 +293,7 @@ typedef struct _vi_private {
 	size_t	srows;		/* 1-N: rows in the terminal/window. */
 	recno_t	olno;		/* 1-N: old cursor file line. */
 	size_t	ocno;		/* 0-N: old file cursor column. */
-	size_t	sc_col;	/* 0-N: LOGICAL screen column. */
+	size_t	sc_col;		/* 0-N: LOGICAL screen column. */
 	SMAP   *sc_smap;	/* SMAP entry where sc_col occurs. */
 
 #define	VIP_CUR_INVALID	0x0001	/* Cursor position is unknown. */
