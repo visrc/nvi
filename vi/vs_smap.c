@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 8.49 1994/08/31 17:14:23 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:14:23 $";
+static char sccsid[] = "$Id: vs_smap.c,v 8.50 1994/09/02 20:17:01 bostic Exp $ (Berkeley) $Date: 1994/09/02 20:17:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -545,7 +545,7 @@ svi_sm_up(sp, ep, rp, count, scmd, smp)
 	SMAP *smp;
 {
 	int cursor_set, echanged, zset;
-	SMAP s1, s2;
+	SMAP *ssmp, s1, s2;
 
 	/*
 	 * Check to see if movement is possible.
@@ -578,10 +578,10 @@ svi_sm_up(sp, ep, rp, count, scmd, smp)
 	 *
 	 * If it's a small screen, and the movement isn't larger than a
 	 * screen, i.e some context will remain, open up the screen and
-	 * display by scrolling.  In this case, the cursor moves to the
-	 * first line displayed.  Otherwise, erase/compress and repaint,
-	 * and move the cursor to the first line in the screen.  Note,
-	 * the ^F command is always in the latter case, for historical
+	 * display by scrolling.  In this case, the cursor moves down one
+	 * line for each line displayed.  Otherwise, erase/compress and
+	 * repaint, and move the cursor to the first line in the screen.
+	 * Note, the ^F command is always in the latter case, for historical
 	 * reasons.
 	 */
 	cursor_set = 0;
@@ -602,6 +602,7 @@ svi_sm_up(sp, ep, rp, count, scmd, smp)
 				return (1);
 			return (svi_sm_position(sp, ep, rp, 0, P_TOP));
 		}
+		cursor_set = scmd == CNTRL_E || svi_sm_cursor(sp, ep, &ssmp);
 		for (; count &&
 		    sp->t_rows != sp->t_maxrows; --count, ++sp->t_rows) {
 			if (svi_sm_next(sp, ep, TMAP, &s1))
@@ -614,11 +615,12 @@ svi_sm_up(sp, ep, rp, count, scmd, smp)
 			if (svi_line(sp, ep, TMAP, NULL, NULL))
 				return (1);
 
-			if (scmd != CNTRL_E && !cursor_set) {
-				cursor_set = 1;
-				rp->lno = TMAP->lno;
-				rp->cno = TMAP->c_sboff;
-			}
+			if (!cursor_set)
+				++ssmp;
+		}
+		if (!cursor_set) {
+			rp->lno = ssmp->lno;
+			rp->cno = ssmp->c_sboff;
 		}
 		if (count == 0)
 			return (0);
@@ -777,7 +779,7 @@ svi_sm_down(sp, ep, rp, count, scmd, smp)
 	SMAP *smp;
 	enum sctype scmd;
 {
-	SMAP s1, s2;
+	SMAP *ssmp, s1, s2;
 	int cursor_set, ychanged, zset;
 
 	/* Check to see if movement is possible. */
@@ -792,10 +794,10 @@ svi_sm_down(sp, ep, rp, count, scmd, smp)
 	 *
 	 * If it's a small screen, and the movement isn't larger than a
 	 * screen, i.e some context will remain, open up the screen and
-	 * display by scrolling.  In this case, the cursor moves to the
-	 * first line displayed.  Otherwise, erase/compress and repaint,
-	 * and move the cursor to the first line in the screen.  Note,
-	 * the ^B command is always in the latter case, for historical
+	 * display by scrolling.  In this case, the cursor moves up one
+	 * line for each line displayed.  Otherwise, erase/compress and
+	 * repaint, and move the cursor to the first line in the screen.
+	 * Note, the ^B command is always in the latter case, for historical
 	 * reasons.
 	 */
 	cursor_set = scmd == CNTRL_Y;
@@ -815,18 +817,18 @@ svi_sm_down(sp, ep, rp, count, scmd, smp)
 				return (1);
 			return (svi_sm_position(sp, ep, rp, 0, P_BOTTOM));
 		}
+		cursor_set = scmd == CNTRL_Y || svi_sm_cursor(sp, ep, &ssmp);
 		for (; count &&
 		    sp->t_rows != sp->t_maxrows; --count, ++sp->t_rows) {
-			if (HMAP->lno == 1 || HMAP->off == 1)
+			if (HMAP->lno == 1 && HMAP->off == 1)
 				break;
 			++TMAP;
 			if (svi_sm_1down(sp, ep))
 				return (1);
-			if (scmd != CNTRL_Y && !cursor_set) {
-				cursor_set = 1;
-				if (svi_sm_position(sp, ep, rp, 0, P_BOTTOM))
-					return (1);
-			}
+		}
+		if (!cursor_set) {
+			rp->lno = ssmp->lno;
+			rp->cno = ssmp->c_sboff;
 		}
 		if (count == 0)
 			return (0);
