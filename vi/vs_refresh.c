@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.14 1993/09/30 11:29:49 bostic Exp $ (Berkeley) $Date: 1993/09/30 11:29:49 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.15 1993/10/03 11:48:23 bostic Exp $ (Berkeley) $Date: 1993/10/03 11:48:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -124,7 +124,7 @@ svi_refresh(sp, ep)
 	 * HMAP == TMAP and the code will quickly drop core.  If the screen
 	 * size is 2, none of the divisions by 2 will work, and scrolling
 	 * won't work.  In fact, because no line change will be less than
-	 * HALFSCREEN(sp), we always ending up "filling" the map, with a
+	 * HALFTEXT(sp), we always ending up "filling" the map, with a
 	 * P_MIDDLE flag, which isn't what the user wanted.  Tiny screens
 	 * can go into the "fill" portions of the smap code, however.
 	 */
@@ -144,7 +144,78 @@ svi_refresh(sp, ep)
 	}
 
 	/*
-	 * 3b: Line down.
+	 * 3b: Small screens.
+	 *
+	 * Users can use the window, w300, w1200 and w9600 options to make
+	 * the screen artificially small.  The behavior of these options
+	 * in the historic vi wasn't all that consistent, and, in fact, it
+	 * was never documented how various screen movements affected the
+	 * screen size.  Generally, one of three things would happen:
+	 *	1: The screen would expand in size, showing the line
+	 *	2: The screen would scroll, showing the line
+	 *	3: The screen would compress to its smallest size and
+	 *		repaint.
+	 * In general, scrolling didn't cause compression (200^D was handled
+	 * the same as ^D), movement to a specific line would (:N where N
+	 * was 1 line below the screen caused a window compress), and cursor
+	 * movement would scroll if it was 11 lines or less, and compress if
+	 * it was more than 11 lines.  (And, no, I have no idea where the 11
+	 * comes from.)
+	 *
+	 * What we do is try and figure out if the line is less than half of
+	 * a full screen away.  If it is, we expand the screen if there's
+	 * room, and then scroll as necessary.  The alternative is to compress
+	 * and repaint.
+	 *
+	 * !!!
+	 * This code is a special case from beginning to end.  Unfortunately,
+	 * home modems are still slow enough that it's worth having.
+	 *
+	 * XXX
+	 * If the line a really long one, i.e. part of the line is on the
+	 * screen but the column offset is not, we'll end up in the adjust
+	 * code, when we should probably have compressed the window.
+	 */
+	if (ISSMALLSCREEN(sp))
+		if (LNO < HMAP->lno) {
+			lcnt = svi_sm_nlines(sp, ep, HMAP, LNO, sp->t_maxrows);
+			if (lcnt <= HALFSCREEN(sp))
+				for (; lcnt && sp->t_rows != sp->t_maxrows;
+				     --lcnt, ++sp->t_rows) {
+					++TMAP;
+					if (svi_sm_1down(sp, ep))
+						return (1);
+				}
+			else
+				goto small_fill;
+		} else if (LNO > TMAP->lno) {
+			lcnt = svi_sm_nlines(sp, ep, TMAP, LNO, sp->t_maxrows);
+			if (lcnt <= HALFSCREEN(sp))
+				for (; lcnt && sp->t_rows != sp->t_maxrows;
+				     --lcnt, ++sp->t_rows) {
+					if (svi_sm_next(sp, ep, TMAP, TMAP + 1))
+						return (1);
+					++TMAP;
+					if (svi_line(sp, ep, TMAP, NULL, NULL))
+						return (1);
+				}
+			else {
+small_fill:			MOVE(sp, INFOLINE(sp), 0);
+				clrtoeol();
+				for (; sp->t_rows > sp->t_minrows;
+				    --sp->t_rows, --TMAP) {
+					MOVE(sp, TMAP - HMAP, 0);
+					clrtoeol();
+				}
+				if (svi_sm_fill(sp, ep, LNO, P_FILL))
+					return (1);
+				F_SET(sp, S_REDRAW);
+				goto adjust;
+			}
+		}
+
+	/*
+	 * 3c: Line down.
 	 */
 	if (LNO >= HMAP->lno) {
 		if (LNO <= TMAP->lno)
@@ -154,8 +225,8 @@ svi_refresh(sp, ep)
 		 * If less than half a screen away, scroll down until the
 		 * line is on the screen.
 		 */
-		lcnt = svi_sm_nlines(sp, ep, TMAP, LNO, HALFSCREEN(sp));
-		if (lcnt < HALFSCREEN(sp)) {
+		lcnt = svi_sm_nlines(sp, ep, TMAP, LNO, HALFTEXT(sp));
+		if (lcnt < HALFTEXT(sp)) {
 			while (lcnt--)
 				if (svi_sm_1up(sp, ep))
 					return (1);
@@ -188,13 +259,13 @@ svi_refresh(sp, ep)
 	}
 
 	/*
-	 * 3c: Line up.
+	 * 3d: Line up.
 	 *
 	 * If less than half a screen away, scroll up until the line is
 	 * the first line on the screen.
 	 */
-	lcnt = svi_sm_nlines(sp, ep, HMAP, LNO, HALFSCREEN(sp));
-	if (lcnt < HALFSCREEN(sp)) {
+	lcnt = svi_sm_nlines(sp, ep, HMAP, LNO, HALFTEXT(sp));
+	if (lcnt < HALFTEXT(sp)) {
 		while (lcnt--)
 			if (svi_sm_1down(sp, ep))
 				return (1);
@@ -208,8 +279,8 @@ svi_refresh(sp, ep)
 	 */
 	tmp.lno = 1;
 	tmp.off = 1;
-	lcnt = svi_sm_nlines(sp, ep, &tmp, LNO, HALFSCREEN(sp));
-	if (lcnt < HALFSCREEN(sp)) {
+	lcnt = svi_sm_nlines(sp, ep, &tmp, LNO, HALFTEXT(sp));
+	if (lcnt < HALFTEXT(sp)) {
 		if (svi_sm_fill(sp, ep, 1, P_TOP))
 			return (1);
 	} else
@@ -236,7 +307,7 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 	    (LNO == HMAP->lno || LNO == TMAP->lno)) {
 		cnt = svi_screens(sp, ep, LNO, &CNO);
 		if (LNO == HMAP->lno && cnt < HMAP->off)
-			if ((HMAP->off - cnt) > HALFSCREEN(sp)) {
+			if ((HMAP->off - cnt) > HALFTEXT(sp)) {
 				HMAP->off = cnt;
 				svi_sm_fill(sp, ep, OOBLNO, P_TOP);
 				F_SET(sp, S_REDRAW);
@@ -245,7 +316,7 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 					if (svi_sm_1down(sp, ep))
 						return (1);
 		if (LNO == TMAP->lno && cnt > TMAP->off)
-			if ((cnt - TMAP->off) > HALFSCREEN(sp)) {
+			if ((cnt - TMAP->off) > HALFTEXT(sp)) {
 				TMAP->off = cnt;
 				svi_sm_fill(sp, ep, OOBLNO, P_BOTTOM);
 				F_SET(sp, S_REDRAW);
@@ -304,8 +375,8 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 		return (1);
 	}
 
-	/* This is just a test. */
 #ifdef DEBUG
+	/* This is just a test. */
 	if (CNO >= len && len != 0) {
 		msgq(sp, M_ERR, "Error: %s/%d: cno (%u) >= len (%u)",
 		     tail(__FILE__), __LINE__, CNO, len);
@@ -418,7 +489,7 @@ lscreen:		if (O_ISSET(sp, O_LEFTRIGHT)) {
 	}
 
 fast:	getyx(stdscr, y, x);		/* Just move the cursor. */
-	y -= sp->s_off;			/* Correct for split screen. */
+	y -= sp->s_off;			/* Correct for split screens. */
 	goto update;
 
 slow:	/* Find the current line in the map. */
@@ -455,7 +526,19 @@ slow:	/* Find the current line in the map. */
 paint:	for (smp = HMAP; smp <= TMAP; ++smp)
 		if (svi_line(sp, ep, smp, &y, &SCNO))
 			return (1);
-	F_CLR(sp, S_REDRAW);
+
+	/*
+	 * If it's a small screen and we're redrawing, clear the unused
+	 * lines, ex may have overwritten them.
+	 */
+	if (F_ISSET(sp, S_REDRAW)) {
+		if (ISSMALLSCREEN(sp))
+			for (cnt = sp->t_rows; cnt <= sp->t_maxrows; ++cnt) {
+				MOVE(sp, cnt, 0);
+				clrtoeol();
+			}
+		F_CLR(sp, S_REDRAW);
+	}
 
 	/* Update saved information. */
 update:	OCNO = CNO;
@@ -463,11 +546,16 @@ update:	OCNO = CNO;
 	sp->sc_row = y;
 
 	/*
+	 * If there are any keys waiting, we keep on going.  The reason is
+	 * that there may be messages that we want to display, and, if there
+	 * are multiple ones, we're going to get the wrong key as a message
+	 * delimiter.
+	 *
 	 * XXX
-	 * This isn't pretty -- if there are any keys waiting, we keep on
-	 * going.  The reason is that there may be messages that we want
-	 * to display, and, if there are multiple ones, we're going to get
-	 * the wrong key as a message delimiter.
+	 * This is wrong.  If you type quickly enough, the status message
+	 * for a screen may not be displayed during a split command because
+	 * there were keys waiting so we switched screens without ever
+	 * displaying it.  Maybe the split code should flush messages?
 	 */
 	if (sex_key_wait(sp))
 		return (0);
