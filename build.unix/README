@@ -1,4 +1,4 @@
-#	$Id: README,v 8.9 1996/03/10 12:26:05 bostic Exp $ (Berkeley) $Date: 1996/03/10 12:26:05 $
+#	$Id: README,v 8.10 1996/03/10 13:26:58 bostic Exp $ (Berkeley) $Date: 1996/03/10 13:26:58 $
 
 Nvi uses the GNU autoconf program for configuration and compilation.  You
 should enter:
@@ -91,9 +91,7 @@ enable-perlinterp:
 	--enable-perlinterp
 
 	as an argument to configure.  Note: this is NOT possible to do
-	with Perl 4.  If your Perl include files and libraries aren't in
-	the standard library and include locations, see the next section
-	of this README file for more information.
+	with Perl 4.
 
 enable-tclinterp:
 	If you have the Tk/Tcl libraries and you want to compile in the
@@ -119,9 +117,9 @@ enable-tknvi:
 ADDIING LIBRARIES AND INCLUDE FILES
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
-If the Tk/Tcl, Perl 5 or any other include files or libraries reside in
-non-standard places on your system, you will need to specify the path at
-which they reside.
+If the Tk/Tcl or any other include files or libraries are in non-standard
+places on your system, you will need to specify the directory path where
+they can be found.
 
 If you want to specify additional library paths or additional libraries,
 specify the LDFLAGS environment variable before running configure.  For
@@ -137,8 +135,8 @@ environment variable before running configure.  For example:
 
 	env CPPFLAGS="-I/usr/local/include" LDFLAGS="-ldb" ./configure
 
-would search /usr/local/perl5/include for include files, as well as
-load the db library as described above.
+would search /usr/local/include for include files, as well as load the db
+library as described above.
 
 As a final example, let's say that you've downloaded ncurses from the net
 and you've built it in a directory named ncurses which is at the same
@@ -158,12 +156,20 @@ Notes:
 	CPPFLAGS and LDFLAGS.
 
 	=-=-=-=-=-=
-	You do not need to specify additional libraries to load Perl,
-	Tk/Tcl or curses, as the nvi configuration script adds the
+	You should NOT need to add any libraries or include files to load
+	the Perl5 interpreter.  The configure script will obtain that
+	information directly from the Perl5 program.  This means that the
+	configure script must be able to find perl in its path.  It looks
+	for "perl5" first, and then "perl".  If you're building a Perl
+	interpreter and neither is found, it's a fatal error.
+
+	=-=-=-=-=-=
+	You do not need to specify additional libraries to load Tk/Tcl,
+	Perl or curses, as the nvi configuration script adds the
 	appropriate libraries to the load line whenever you specify
 	--enable-tknvi or other Perl or Tk/Tcl related option, or build
-	the Tk/Tcl or curses version of nvi.  The library names that
-	are automatically loaded are as follows:
+	the Tk/Tcl or curses version of nvi.  The library names that are
+	automatically loaded are as follows:
 
 	for Perl:	-lperl
 	for Tk/Tcl:	-ltk -ltcl -lm
