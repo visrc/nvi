@@ -4,14 +4,16 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 5.9 1992/04/19 08:54:09 bostic Exp $ (Berkeley) $Date: 1992/04/19 08:54:09 $
+ *	$Id: ex.h,v 5.10 1992/04/19 10:53:38 bostic Exp $ (Berkeley) $Date: 1992/04/19 10:53:38 $
  */
+
+struct excmdarg;
 
 /* Ex command structure. */
 typedef struct {
 	char *name;			/* Command name. */
 					/* Underlying function. */
-	int (*fn) __P((struct _cmdarg *));
+	int (*fn) __P((struct excmdarg *));
 
 #define	E_ADDR1		0x00001		/* One address. */
 #define	E_ADDR2		0x00002		/* Two address. */
@@ -40,8 +42,8 @@ typedef struct {
 extern EXCMDLIST cmds[];		/* List of ex commands. */
 
 /* Structure passed around to functions implementing ex commands. */
-typedef struct {
-	struct EXCMDLIST *cmd;	/* Command entry in command table. */
+typedef struct excmdarg {
+	EXCMDLIST *cmd;		/* Command entry in command table. */
 	int addrcnt;		/* Number of addresses (0, 1 or 2). */
 	MARK addr1;		/* 1st address. */
 	MARK addr2;		/* 2nd address. */
