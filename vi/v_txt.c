@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.102 1994/04/13 10:34:53 bostic Exp $ (Berkeley) $Date: 1994/04/13 10:34:53 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.103 1994/04/13 15:22:37 bostic Exp $ (Berkeley) $Date: 1994/04/13 15:22:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -37,7 +37,7 @@ static int	 txt_abbrev __P((SCR *, TEXT *, CHAR_T *, int, int *, int *));
 static void	 txt_ai_resolve __P((SCR *, TEXT *));
 static TEXT	*txt_backup __P((SCR *, EXF *, TEXTH *, TEXT *, u_int *));
 static void	 txt_err __P((SCR *, EXF *, TEXTH *));
-static int	 txt_hex __P((SCR *, TEXT *, int *, CHAR_T *));
+static int	 txt_hex __P((SCR *, TEXT *));
 static int	 txt_indent __P((SCR *, TEXT *));
 static int	 txt_margin __P((SCR *, TEXT *, int *, CHAR_T *));
 static int	 txt_outdent __P((SCR *, TEXT *));
@@ -346,12 +346,6 @@ next_ch:	if (term_key(sp, &ikey, quoted == Q_THISCHAR ?
 		 * If the character was quoted, replace the last character
 		 * (the literal mark) with the new character.  If quoted
 		 * by someone else, simply insert the character.
-		 *
-		 * !!!
-		 * Extension -- if the quoted character is CH_HEX, enter hex
-		 * mode.  If the user enters "<CH_HEX>[isxdigit()]*" we will
-		 * try to use the value as a character.  Anything else resets
-		 * hex mode.
 		 */
 		if (ikey.flags & CH_QUOTED)
 			goto insq_ch;
@@ -359,10 +353,18 @@ next_ch:	if (term_key(sp, &ikey, quoted == Q_THISCHAR ?
 			--sp->cno;
 			++tp->owrite;
 			quoted = Q_NOTSET;
-
-			if (ch == CH_HEX)
-				hex = H_NEXTCHAR;
 			goto insq_ch;
+		}
+		/*
+		 * !!!
+		 * Extension.  If the user enters "<CH_HEX>[isxdigit()]*" we
+		 * will try to use the value as a character.  Anything else
+		 * inserts the <CH_HEX> character, and resets hex mode.
+		 */
+		if (hex == H_INHEX && !isxdigit(ch)) {
+			if (txt_hex(sp, tp))
+				goto err;
+			hex = H_NOTSET;
 		}
 
 		switch (ikey.value) {
@@ -401,15 +403,6 @@ next_ch:	if (term_key(sp, &ikey, quoted == Q_THISCHAR ?
 				abb = A_NOTWORD;			\
 			if (unmap_tst)					\
 				txt_unmap(sp, tp, &iflags);		\
-			/* Handle hex numbers. */			\
-			if (hex == H_INHEX) {				\
-				if (txt_hex(sp, tp, &tmp, &ch))		\
-					goto err;			\
-				if (tmp) {				\
-					hex = H_NOTSET;			\
-					goto next_ch;			\
-				}					\
-			}						\
 			/* Delete any appended cursor. */		\
 			if (LF_ISSET(TXT_APPENDEOL)) {			\
 				--tp->len;				\
@@ -827,17 +820,11 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 			showmatch = LF_ISSET(TXT_SHOWMATCH);
 			goto ins_ch;
 		case K_VLNEXT:			/* Quote the next character. */
-			/* If in hex mode, see if we've entered a hex value. */
-			if (hex == H_INHEX) {
-				if (txt_hex(sp, tp, &tmp, &ch))
-					goto err;
-				if (tmp) {
-					hex = H_NOTSET;
-					goto next_ch;
-				}
-			}
 			ch = '^';
 			quoted = Q_NEXTCHAR;
+			goto insq_ch;
+		case K_HEXCHAR:
+			hex = H_NEXTCHAR;
 			goto insq_ch;
 		default:			/* Insert the character. */
 ins_ch:			/*
@@ -879,15 +866,6 @@ insq_ch:		/*
 				}
 				if (isblank(ch) && unmap_tst)
 					txt_unmap(sp, tp, &iflags);
-			}
-			/* If in hex mode, see if we've entered a hex value. */
-			if (hex == H_INHEX && !isxdigit(ch)) {
-				if (txt_hex(sp, tp, &tmp, &ch))
-					goto err;
-				if (tmp) {
-					hex = H_NOTSET;
-					goto next_ch;
-				}
 			}
 			/* Check to see if we've crossed the margin. */
 			if (margin) {
@@ -1355,11 +1333,9 @@ txt_err(sp, ep, tiqh)
  * may not be able to enter.
  */
 static int
-txt_hex(sp, tp, was_hex, pushcp)
+txt_hex(sp, tp)
 	SCR *sp;
 	TEXT *tp;
-	int *was_hex;
-	CHAR_T *pushcp;
 {
 	CHAR_T ch, savec;
 	size_t len, off;
@@ -1374,49 +1350,47 @@ txt_hex(sp, tp, was_hex, pushcp)
 	savec = tp->lb[sp->cno];
 	tp->lb[sp->cno] = 0;
 
-	/* Find the previous CH_HEX. */
-	for (off = sp->cno - 1, p = tp->lb + off, len = 0;; --p, --off) {
+	/* Find the previous CH_HEX character. */
+	for (off = sp->cno - 1, p = tp->lb + off, len = 0;; --p, --off, ++len) {
 		if (*p == CH_HEX) {
 			wp = p + 1;
 			break;
 		}
-		++len;
-		/* If not on this line, there's nothing to do. */
+		/* Not on this line?  Shouldn't happen. */
 		if (off == tp->ai || off == tp->offset)
 			goto nothex;
 	}
 
-	/* If no length, then it wasn't a hex value. */
+	/* If length of 0, then it wasn't a hex value. */
 	if (len == 0)
 		goto nothex;
 
 	/* Get the value. */
+	errno = 0;
 	value = strtol(wp, NULL, 16);
-	if (value == LONG_MIN || value == LONG_MAX || value > MAX_CHAR_T) {
+	if (errno || value > MAX_CHAR_T) {
 nothex:		tp->lb[sp->cno] = savec;
-		*was_hex = 0;
 		return (0);
 	}
 
-	ch = *pushcp;
-	if (term_push(sp, &ch, 1, 0, CH_NOMAP | CH_QUOTED))
-		return (1);
-	ch = value;
-	if (term_push(sp, &ch, 1, 0, CH_NOMAP | CH_QUOTED))
-		return (1);
-
+	/* Restore the original character. */
 	tp->lb[sp->cno] = savec;
 
-	/* Move the cursor to the start of the hex value, adjust the length. */
-	sp->cno -= len + 1;
-	tp->len -= len + 1;
+	/* Adjust the bookkeeping. */
+	sp->cno -= len;
+	tp->len -= len;
+	tp->lb[sp->cno - 1] = value;
 
-	/* Copy any insert characters back. */
+	/* Copy down any overwrite characters. */
+	if (tp->owrite)
+		memmove(tp->lb + sp->cno,
+		    tp->lb + sp->cno + len, tp->owrite);
+
+	/* Copy down any insert characters. */
 	if (tp->insert)
 		memmove(tp->lb + sp->cno + tp->owrite,
-		    tp->lb + sp->cno + tp->owrite + len + 1, tp->insert);
+		    tp->lb + sp->cno + tp->owrite + len, tp->insert);
 
-	*was_hex = 1;
 	return (0);
 }
 
