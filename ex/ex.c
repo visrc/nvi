@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 9.28 1995/01/31 13:09:49 bostic Exp $ (Berkeley) $Date: 1995/01/31 13:09:49 $";
+static char sccsid[] = "$Id: ex.c,v 9.29 1995/01/31 18:32:12 bostic Exp $ (Berkeley) $Date: 1995/01/31 18:32:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -254,14 +254,22 @@ static EXCMDLIST const cmd_del2 =
 /*
  * ex_cmd --
  *	The guts of the ex parser: parse and execute a string containing
- *	ex commands.  For the fun of it, if you want to see if a vi clone
- *	got the ex argument parsing right, try:
+ *	ex commands.
+ *
+ * !!!
+ * This code MODIFIES the string that gets passed in, to delete quoting
+ * characters, etc.  The string cannot be in text space, nor should you
+ * expect to use it again after ex_cmd() returns.
+ *
+ * !!!
+ * For the fun of it, if you want to see if a vi clone got the ex argument
+ * parsing right, try:
  *
  *	echo 'foo|bar' > file1; echo 'foo/bar' > file2;
  *	vi
  *	:edit +1|s/|/PIPE/|w file1| e file2|1 | s/\//SLASH/|wq
  *
- *	For extra credit, try it in a startup .exrc file.
+ * For extra credit, try it in a startup .exrc file.
  */
 int
 ex_cmd(sp, cmd, cmdlen, pflags)
