@@ -1,6 +1,6 @@
-#	$Id: README,v 8.15 1993/10/04 16:46:30 bostic Exp $ (Berkeley) $Date: 1993/10/04 16:46:30 $
+#	$Id: README,v 8.16 1993/10/04 20:05:35 bostic Exp $ (Berkeley) $Date: 1993/10/04 20:05:35 $
 
-This is the README for version 0.75 of nex/nvi, a (soon to be) freely
+This is the README for version 0.76 of nex/nvi, a (soon to be) freely
 redistributable replacement for the vi/ex text editors.
 
 This is still ALPHA software, please do not redistribute it without
