@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cd.c,v 8.5 1994/03/18 11:01:25 bostic Exp $ (Berkeley) $Date: 1994/03/18 11:01:25 $";
+static char sccsid[] = "$Id: ex_cd.c,v 8.6 1994/03/18 20:02:48 bostic Exp $ (Berkeley) $Date: 1994/03/18 20:02:48 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -59,7 +59,20 @@ ex_cd(sp, ep, cmdp)
 		abort();
 	}
 
-	if (chdir(dir) < 0) {
+	/*
+	 * If the user has a CDPATH variable, we use it, otherwise
+	 * we use the current directory.
+	 *
+	 * !!!
+	 * This violates historic practice.  Historic vi didn't consider
+	 * CDPATH, and therefore always used the current directory. This
+	 * is probably correct; if user's have set CDPATH to not include
+	 * the current directory, they probably had a reason.
+	 */
+	if (dir[0] == '/' || exp->cdq.tqh_first == NULL) {
+		if (chdir(dir) < 0)
+			goto err;
+	} else {
 		exp = EXP(sp);
 		for (cdp = exp->cdq.tqh_first;
 		    cdp != NULL; cdp = cdp->q.tqe_next) {
@@ -69,7 +82,7 @@ ex_cd(sp, ep, cmdp)
 				break;
 		}
 		if (cdp == NULL) {
-			msgq(sp, M_SYSERR, dir);
+err:			msgq(sp, M_SYSERR, dir);
 			return (1);
 		}
 	}
@@ -111,17 +124,20 @@ ex_cdalloc(sp, str)
 	 */
 	for (p = t = str;; ++p) {
 		if (*p == '\0' || *p == ':' || isblank(*p)) {
-			if ((len = p - t) > 1) {
-				MALLOC_RET(sp, cdp, CDPATH *, sizeof(CDPATH));
-				MALLOC(sp, cdp->path, char *, len + 1);
-				if (cdp->path == NULL) {
-					free(cdp);
-					return (1);
-				}
-				memmove(cdp->path, t, len);
-				cdp->path[len] = '\0';
-				TAILQ_INSERT_TAIL(&exp->cdq, cdp, q);
+			/* Empty strings specify ".". */
+			if ((len = p - t) < 1) {
+				len = 1;
+				t = ".";
 			}
+			MALLOC_RET(sp, cdp, CDPATH *, sizeof(CDPATH));
+			MALLOC(sp, cdp->path, char *, len + 1);
+			if (cdp->path == NULL) {
+				free(cdp);
+				return (1);
+			}
+			memmove(cdp->path, t, len);
+			cdp->path[len] = '\0';
+			TAILQ_INSERT_TAIL(&exp->cdq, cdp, q);
 			t = p + 1;
 		}
 		if (*p == '\0')
