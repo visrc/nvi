@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 8.15 1994/04/24 14:18:57 bostic Exp $ (Berkeley) $Date: 1994/04/24 14:18:57 $";
+static char sccsid[] = "$Id: v_scroll.c,v 8.16 1994/04/25 10:09:38 bostic Exp $ (Berkeley) $Date: 1994/04/25 10:09:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -298,6 +298,52 @@ v_hpagedown(sp, ep, vp)
 }
 
 /*
+ * v_pagedown -- [count]^F
+ *	Page down full screens.
+ * !!!
+ * Historic vi did not move to the EOF if the screen couldn't move, i.e.
+ * if EOF was already displayed on the screen.  This implementation does
+ * move to EOF in that case, making ^F more like the the historic ^D.
+ */
+int
+v_pagedown(sp, ep, vp)
+	SCR *sp;
+	EXF *ep;
+	VICMDARG *vp;
+{
+	recno_t offset;
+
+	/*
+	 * !!!
+	 * The calculation in IEEE Std 1003.2-1992 (POSIX) is:
+	 *
+	 *	top_line = top_line + count * (window - 2);
+	 *
+	 * which was historically wrong.  The correct one is:
+	 *
+	 *	top_line = top_line + count * window - 2;
+	 *
+	 * i.e. the two line "overlap" was only subtracted once.  Which
+	 * makes no sense, but then again, an overlap makes no sense for
+	 * any screen but the "next" one anyway.  We do it the historical
+	 * was as there's no good reason to change it.
+	 *
+	 * Given a one-line screen with the cursor on line 1, it would be
+	 * possible for this to fail, i.e. "1 + 1 * 1 - 2 = 0".  Move at
+	 * least one line.
+	 */
+	offset = (F_ISSET(vp, VC_C1SET) ? vp->count : 1) * sp->t_rows - 2;
+	if (offset == 0)
+		offset = 1;
+	if (sp->s_up(sp, ep, &vp->m_stop, offset, 0))
+		return (1);
+	if (sp->s_position(sp, ep, &vp->m_stop, 0, P_TOP))
+		return (1);
+	vp->m_final = vp->m_stop;
+	return (0);
+}
+
+/*
  * v_pageup -- [count]^B
  *	Page up full screens.
  *
@@ -312,31 +358,38 @@ v_pageup(sp, ep, vp)
 	EXF *ep;
 	VICMDARG *vp;
 {
-	/* Calculation from POSIX 1003.2/D8. */
-	if (sp->s_down(sp, ep, &vp->m_stop,
-	    (F_ISSET(vp, VC_C1SET) ? vp->count : 1) * (sp->t_rows - 1), 1))
-		return (1);
-	vp->m_final = vp->m_stop;
-	return (0);
-}
+	recno_t offset;
 
-/*
- * v_pagedown -- [count]^F
- *	Page down full screens.
- * !!!
- * Historic vi did not move to the EOF if the screen couldn't move, i.e.
- * if EOF was already displayed on the screen.  This implementation does
- * move to EOF in that case, making ^F more like the the historic ^D.
- */
-int
-v_pagedown(sp, ep, vp)
-	SCR *sp;
-	EXF *ep;
-	VICMDARG *vp;
-{
-	/* Calculation from POSIX 1003.2/D8. */
-	if (sp->s_up(sp, ep, &vp->m_stop,
-	    (F_ISSET(vp, VC_C1SET) ? vp->count : 1) * (sp->t_rows - 1), 1))
+	/*
+	 * !!!
+	 * The calculation in IEEE Std 1003.2-1992 (POSIX) is:
+	 *
+	 *	top_line = top_line - count * (window - 2);
+	 *
+	 * which was historically wrong.  The correct one is:
+	 *
+	 *	top_line = (top_line - count * window) + 2;
+	 *
+	 * A simpler expression is that, as with ^F, we scroll exactly:
+	 *
+	 *	count * window - 2
+	 *
+	 * lines.
+	 *
+	 * Bizarre.  As with ^F, an overlap makes no sense for anything
+	 * but the first screen.  We do it the historical way as there's
+	 * no good reason to change it.
+	 *
+	 * Given a one-line screen with the cursor on line 1, it would be
+	 * possible for this to fail, i.e. "1 + 1 * 1 - 2 = 0".  Move at
+	 * least one line.
+	 */
+	offset = (F_ISSET(vp, VC_C1SET) ? vp->count : 1) * sp->t_rows - 2;
+	if (offset == 0)
+		offset = 1;
+	if (sp->s_down(sp, ep, &vp->m_stop, offset, 0))
+		return (1);
+	if (sp->s_position(sp, ep, &vp->m_stop, 0, P_BOTTOM))
 		return (1);
 	vp->m_final = vp->m_stop;
 	return (0);
