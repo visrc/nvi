@@ -10,10 +10,11 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_search.c,v 8.3 1996/12/10 21:07:46 bostic Exp $ (Berkeley) $Date: 1996/12/10 21:07:46 $";
+static const char sccsid[] = "$Id: m_search.c,v 8.4 1996/12/11 13:09:58 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:09:58 $";
 #endif /* not lint */
 
-/* context */
+#include <sys/queue.h>
+
 #include <X11/X.h>
 #include <X11/Intrinsic.h>
 #include <Xm/DialogS.h>
@@ -23,6 +24,14 @@ static const char sccsid[] = "$Id: m_search.c,v 8.3 1996/12/10 21:07:46 bostic E
 #include <Xm/TextF.h>
 #include <Xm/ToggleB.h>
 #include <Xm/RowColumn.h>
+
+#include <bitstring.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "../common/common.h"
+#include "../ip_vi/ip.h"
+#include "ipc_extern.h"
 
 
 /* types */
@@ -42,7 +51,8 @@ typedef struct	{
 
 typedef struct	{
     String	name;
-    Boolean	*value;
+    Boolean	value;
+    int		flag;
 } ToggleData;
 
 typedef enum {
@@ -63,29 +73,27 @@ static	String	expr_image[] = {
 static	String	ExpressionWidget = "option",
 		PatternWidget	 = "text";
 
-static	Boolean ignore_case,
-		wrap_search,
-		incremental_search;
-
 static	ToggleData	toggle_data[] = {
-    { "Ignore Case",		&ignore_case		},
-    { "Wrap End Of File", 	&wrap_search		},
-    { "Incremental", 		&incremental_search	}
+    { "Ignore Case",		0, VI_SEARCH_IC		},
+    { "Incremental",		0, VI_SEARCH_INCR	},
+    { "Literal",		0, VI_SEARCH_LIT	},
+    { "Wrap End Of File", 	0, VI_SEARCH_WR		},
 };
 
-static	void	next_func(),
-		prev_func(),
-		done_func();
+static void done_func __P((Widget));
+static void next_func __P((Widget));
+static void prev_func __P((Widget));
+static void search __P((Widget, int));
 
 static	ButtonData button_data[] = {
     { "Next",		True,	next_func	},
-    { "Previous", 	False,	prev_func	},
+    { "Previous",	True,   prev_func	},
     { "Cancel", 	False,	done_func	}
 };
 
 ExpressionKind	expr_kind;
 
-String		pattern = NULL;
+static String pattern = NULL;
 
 
 /* Xt utilities */
@@ -157,7 +165,7 @@ static	void	get_state( w )
     /* which flags? */
     for (i=0; i<XtNumber(toggle_data); i++) {
 	if (( w = get_child_widget( shell, toggle_data[i].name )) != NULL ) {
-	    XtVaGetValues( w, XmNset, toggle_data[i].value, 0 );
+	    XtVaGetValues( w, XmNset, &toggle_data[i].value, 0 );
 	}
     }
 
@@ -168,65 +176,55 @@ static	void	get_state( w )
     }
 }
 
-
-/* Translate the user's actions into nvi commands */
-
-#if defined(__STDC__)
-static	void	send_command( Widget w )
-#else
-static	void	send_command( w )
-	Widget	w;
-#endif
+/*
+ * next_func --
+ *	Action for next button.
+ */
+static void
+next_func(w)
+	Widget w;
 {
-    String	safe_pattern = (pattern) ? pattern : "";
-    int		i;
-
-#if defined(SelfTest)
-    printf( "%s [\n", (w == NULL) ? "Find Next" : XtName(w) );
-    printf( "\tPattern\t\t%s\n", safe_pattern );
-    printf( "\tExpression Kind\t%s\n", expr_image[(int)expr_kind] );
-    for( i=0; i<XtNumber(toggle_data); i++ )
-	printf( "\t%s\t%d\n", toggle_data[i].name, *toggle_data[i].value );
-    printf( "]\n" );
-#else
-    {
-    char buffer[1024];
-
-    strcpy( buffer, "/" );
-    strcat( buffer, pattern );
-    __vi_send_command_string( buffer );
-    }
-#endif
+	search(w, 0);
 }
 
-
-#if defined(__STDC__)
-static	void	next_func( Widget w )
-#else
-static	void	next_func( w )
-	Widget	w;
-#endif
+/*
+ * prev_func --
+ *	Action for previous button.
+ */
+static void
+prev_func(w)
+	Widget w;
 {
+	search(w, VI_SEARCH_REV);
+}
+
+/*
+ * search --
+ *	Perform the search.
+ */
+static void
+search(w, flags)
+	Widget w;
+	int flags;
+{
+    IP_BUF ipb;
+    int i;
+
     /* get current data from the root of the widget tree? */
     if ( w != NULL ) get_state( w );
 
-    /* format it */
-    send_command( w );
-}
+    ipb.str = pattern;
+    ipb.len = strlen(pattern);
 
+    /* initialize the search flags based on the buttons. */
+    ipb.val1 = flags;
+    for (i=0; i<XtNumber(toggle_data); i++) {
+	if (toggle_data[i].value)
+	    ipb.val1 |= toggle_data[i].flag;
+    }
 
-#if defined(__STDC__)
-static	void	prev_func( Widget w )
-#else
-static	void	prev_func( w )
-	Widget	w;
-#endif
-{
-    /* get current data from the root of the widget tree */
-    get_state( w );
-
-    /* format it */
-    send_command( w );
+    ipb.code = VI_C_SEARCH;
+    __vi_send("1s", &ipb);
 }
 
 
@@ -375,8 +373,16 @@ static	void	text_cr( w, ptr, ptr2 )
 }
 
 
-/* when the user hits any other character, if we are doing incremental
- * search, send the updated string to nvi
+#ifdef notdef
+/*
+ * When the user hits any other character, if we are doing incremental
+ * search, send the updated string to vi.
+ *
+ * XXX
+ * I don't currently see any way to make this work -- incremental search
+ * is going to be really nasty.  What makes it worse is that the dialog
+ * box almost certainly obscured a chunk of the text file, so there's no
+ * way to use it even if it works.
  */
 #if defined(__STDC__)
 static	void	value_changed( Widget w, void *ptr, void *ptr2 )
@@ -393,6 +399,7 @@ static	void	value_changed( w, ptr, ptr2 )
     /* send it along? */
     if ( incremental_search ) send_command( w );
 }
+#endif /* notdef */
 
 
 /* Draw and display a dialog the describes nvi search capability */
@@ -464,7 +471,9 @@ static	Widget	create_search_dialog( parent, title )
 				    XmNrightAttachment,	XmATTACH_FORM,
 				    0
 				    );
+#ifdef notdef
     XtAddCallback( text, XmNvalueChangedCallback, value_changed, 0 );
+#endif
     XtAddCallback( text, XmNactivateCallback, text_cr, 0 );
 
     opt_str = XmStringCreateSimple( "Regular Expression Type" );
@@ -546,11 +555,18 @@ String	title;
 			);
 }
 
-
-void	__vi_next_search()
+/*
+ * __vi_next_search --
+ *	Top level search routine.
+ *
+ * PUBLIC: void __vi_next_search __P((void));
+ */
+void
+__vi_search()
 {
     next_func( NULL );
 }
+
 
 
 #if defined(SelfTest)
