@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_main.c,v 8.11 1996/12/03 10:12:47 bostic Exp $ (Berkeley) $Date: 1996/12/03 10:12:47 $";
+static const char sccsid[] = "$Id: m_main.c,v 8.12 1996/12/03 10:33:21 bostic Exp $ (Berkeley) $Date: 1996/12/03 10:33:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -60,54 +60,6 @@ void	onintr __P((int));
 static	void	f_copy();
 static	void	f_paste();
 static	void	f_clear();
-
-
-/*
- * debug trace routines
- */
-
-#ifdef TR
-
-static	FILE	*trace_fp;
-
-#ifdef __STDC__
-#include <stdarg.h>
-#else
-#include <varargs.h>
-#endif
-
-void
-#ifdef __STDC__
-trace(const char *fmt, ...)
-#else
-trace(fmt, va_alist)
-	char *fmt;
-	va_dcl
-#endif
-{
-	static FILE *tfp;
-	va_list ap;
-
-	if (tfp == NULL && (tfp = fopen(TR, "w")) == NULL)
-	tfp = stderr;
-
-#ifdef __STDC__
-	va_start(ap, fmt);
-#else
-	va_start(ap);
-#endif
-	(void)vfprintf(tfp, fmt, ap);
-	va_end(ap);
-
-	(void)fflush(tfp);
-}
-
-
-void	trace_init()
-{
-	trace_fp = fopen( TR, "w" );
-}
-#endif
 
 
 /*
@@ -1538,12 +1490,6 @@ main(argc, argv)
 	int argc;
 	char *argv[];
 {
-#ifdef TR
-	/*
-	 * init debug print
-	 */
-	trace_init();
-#endif
 	/*
 	 * Initialize the X widgetry.  We must do this before picking off
 	 * arguments as well-behaved X programs have common argument lists
