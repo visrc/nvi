@@ -1,6 +1,6 @@
-#	$Id: README,v 5.10 1993/05/16 12:41:31 bostic Exp $ (Berkeley) $Date: 1993/05/16 12:41:31 $
+#	$Id: README,v 5.11 1993/05/16 20:26:23 bostic Exp $ (Berkeley) $Date: 1993/05/16 20:26:23 $
 
-This is the README for version 0.2.1 of nex/nvi.  It's retrievable by
+This is the README for version 0.3 of nex/nvi.  It's retrievable by
 anonymous ftp from vangogh.cs.berkeley.edu, in ~ftp/hidden/nvi.tar.Z.
 It is an ALPHA version of the nvi which will be distributed in 4.4BSD.
 
@@ -36,17 +36,18 @@ will be integrated at the same time it is made fully 8-bit clean.
 + Major known bugs:
 
 	o Characters input using the 'R' command cannot be erased.
-	o The wrapmargin option has not been implemented.
+	o Several options have not been implemented: wrapmargin,
+	  showmatch, remap, and a few others.
 	o Word search (\<\> patterns aren't right).
 	o Nvi uses POSIX 1003.2 basic and extended RE's.  The historic
 	  hacks will be put in soon.
 
-	And, lots and lots of other stuff.
+	And, fairly random other stuff.
 
 + Some of the cool stuff:
 
 	o Split screens; try :split, and ^W to move around.
-	o Practically infinite lines/files; try nvi /bin/ls.
+	o Practically infinite lines/files; try nvi /vmunix.
 	o Tag stacks; try ^T to return from tagged positions.
 
 + Porting information:
@@ -95,7 +96,8 @@ functions.  The SCR structure is necessary for any routine that wishes to
 talk to the screen, the EXF structure is necessary for any routine that
 wants to modify the file.  The relationship between an SCR structure and
 its underlying EXF structure is not fixed, and although you can translate
-from an SCR to the underlying EXF, it is discouraged.
+from an SCR to the underlying EXF, it is discouraged.  If this becomes
+too onerous, I suspect I'll just stop passing around the EXF in the future.
 
 The naming is consistent across the program.  (Macros even depend on it,
 so don't try and change it!)  The global structure is "gp", the screen
@@ -104,7 +106,7 @@ structure is "sp", and the file structure is "ep".
 A few others data structures:
 
 TEXT	In nvi/cut.h.  This structure describes a portion of a line,
-	and is used by the input routines and as the line part of a
+	and is used by the input routines and as the "line" part of a
 	cut buffer.
 
 CB	In nvi/cut.h.	A cut buffer.  A cut buffer is a place to
@@ -112,6 +114,10 @@ CB	In nvi/cut.h.	A cut buffer.  A cut buffer is a place to
 
 MARK	In nvi/mark.h.  A cursor position, consisting of a line number
 	and a column number.
+
+MSG	In nvi/msg.h.  A chain of messages for the user.
+
+SEQ	In nvi/seq.h.  An abbreviation or a map entry.
 
 EXCMDARG
 	In nvi/ex/excmd.h.stub.  The structure that gets passed around
