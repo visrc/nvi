@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_mark.c,v 10.5 1995/10/16 15:33:48 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:33:48 $";
+static char sccsid[] = "$Id: v_mark.c,v 10.6 1995/10/18 19:25:10 bostic Exp $ (Berkeley) $Date: 1995/10/18 19:25:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -82,7 +82,7 @@ v_fmark(sp, vp)
 
 /*
  * mark --
- *	Mark corrections.
+ *	Mark commands.
  */
 static int
 mark(sp, vp, cmd)
@@ -133,9 +133,10 @@ mark(sp, vp, cmd)
 
 	/*
 	 * !!!
-	 * If a motion component, the cursor has to move.
+	 * If a motion component to a BQMARK, the cursor has to move.
 	 */
-	if (vp->m_stop.lno == vp->m_start.lno &&
+	if (cmd == BQMARK &&
+	    vp->m_stop.lno == vp->m_start.lno &&
 	    vp->m_stop.cno == vp->m_start.cno) {
 		v_nomove(sp);
 		return (1);
@@ -146,8 +147,7 @@ mark(sp, vp, cmd)
 	 * stop MARK's so that it's in a forward direction.  (There's no
 	 * reason for this other than to make the tests below easier.  The
 	 * code in vi.c:vi() would have done the switch.)  Both forward
-	 * and backward motions can happen for any kind of search command
-	 * because of the wrapscan option.
+	 * and backward motions can happen for any kind of search command.
 	 */
 	if (vp->m_start.lno > vp->m_stop.lno ||
 	    vp->m_start.lno == vp->m_stop.lno &&
