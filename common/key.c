@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: key.c,v 10.26 1996/03/27 18:50:09 bostic Exp $ (Berkeley) $Date: 1996/03/27 18:50:09 $";
+static const char sccsid[] = "$Id: key.c,v 10.27 1996/03/27 18:58:00 bostic Exp $ (Berkeley) $Date: 1996/03/27 18:58:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -211,33 +211,33 @@ v_key_ilookup(sp)
 	size_t len;
 
 	for (gp = sp->gp, ch = 0; ch <= MAX_FAST_KEY; ++ch)
-		for (p = gp->cname[ch].name, t = __v_key_name(sp, ch),
+		for (p = gp->cname[ch].name, t = v_key_name(sp, ch),
 		    len = gp->cname[ch].len = sp->clen; len--;)
 			*p++ = *t++;
 }
 
 /*
- * __v_key_len --
+ * v_key_len --
  *	Return the length of the string that will display the key.
  *	This routine is the backup for the KEY_LEN() macro.
  *
- * PUBLIC: size_t __v_key_len __P((SCR *, ARG_CHAR_T));
+ * PUBLIC: size_t v_key_len __P((SCR *, ARG_CHAR_T));
  */
 size_t
 v_key_len(sp, ch)
 	SCR *sp;
 	ARG_CHAR_T ch;
 {
-	(void)__v_key_name(sp, ch);
+	(void)v_key_name(sp, ch);
 	return (sp->clen);
 }
 
 /*
- * __v_key_name --
+ * v_key_name --
  *	Return the string that will display the key.  This routine
  *	is the backup for the KEY_NAME() macro.
  *
- * PUBLIC: CHAR_T *__v_key_name __P((SCR *, ARG_CHAR_T));
+ * PUBLIC: CHAR_T *v_key_name __P((SCR *, ARG_CHAR_T));
  */
 CHAR_T *
 v_key_name(sp, ach)
@@ -314,11 +314,11 @@ done:	sp->cname[sp->clen = len] = '\0';
 }
 
 /*
- * __v_key_val --
+ * v_key_val --
  *	Fill in the value for a key.  This routine is the backup
  *	for the KEY_VAL() macro.
  *
- * PUBLIC: int __v_key_val __P((SCR *, ARG_CHAR_T));
+ * PUBLIC: int v_key_val __P((SCR *, ARG_CHAR_T));
  */
 int
 v_key_val(sp, ch)
