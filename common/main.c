@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.15 1992/04/16 18:01:49 bostic Exp $ (Berkeley) $Date: 1992/04/16 18:01:49 $";
+static char sccsid[] = "$Id: main.c,v 5.16 1992/04/16 18:17:58 bostic Exp $ (Berkeley) $Date: 1992/04/16 18:17:58 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -118,6 +118,7 @@ main(argc, argv)
 
 	/* Start curses; after seq_init so we can map keys. */
 	initscr();
+	resume_curses(1);
 
 	/* Catch HUP, TSTP, WINCH */
 	(void)signal(SIGHUP, onhup);
@@ -230,7 +231,7 @@ main(argc, argv)
 }
 
 /* ARGSUSED */
-static void
+void
 trapint(signo)
 	int signo;
 {
