@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 8.25 1993/11/22 20:29:47 bostic Exp $ (Berkeley) $Date: 1993/11/22 20:29:47 $";
+static char sccsid[] = "$Id: ex_tag.c,v 8.26 1993/11/23 12:51:26 bostic Exp $ (Berkeley) $Date: 1993/11/23 12:51:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -117,7 +117,7 @@ ex_tagpush(sp, ep, cmdp)
 	EX_PRIVATE *exp;
 	FREF *frp;
 	MARK m;
-	TAG *tp, ttag;
+	TAG *tp;
 	u_int flags;
 	int sval;
 	long tl;
@@ -151,15 +151,42 @@ ex_tagpush(sp, ep, cmdp)
 	if (tag_get(sp, exp->tlast, &tag, &name, &search))
 		return (1);
 
-	/* Save enough information that we can get back. */
-	ttag.frp = sp->frp;
-	ttag.lno = sp->lno;
-	ttag.cno = sp->cno;
-
-	/* Get an FREF structure. */
+	/* Get a new FREF structure. */
 	if ((frp = file_add(sp, sp->frp, name, 1)) == NULL) {
 		FREE(tag, strlen(tag));
 		return (1);
+	}
+
+	/*
+	 * The tags stacks in nvi are a bit tricky.  The first record on the
+	 * stack is the place where we first did a tag, so it has no search
+	 * string.  The second record is the first tag, and so on.  This means
+	 * that the "current" tag is always on the stack.  Each tag contains
+	 * a file name, search string, and line/column numbers.  The search
+	 * string is only used for the first access and to display to the user.
+	 * we use the saved line/column number when returning to a file.
+	 */
+	if ((tp = calloc(1, sizeof(TAG))) == NULL)
+		msgq(sp, M_SYSERR, NULL);
+	if (exp->tagq.tqh_first == NULL) {
+		tp->frp = sp->frp;
+		tp->lno = sp->lno;
+		tp->cno = sp->cno;
+		TAILQ_INSERT_HEAD(&exp->tagq, tp, q);
+
+		if ((tp = calloc(1, sizeof(TAG))) == NULL)
+			msgq(sp, M_SYSERR, NULL);
+	}
+
+	if (tp != NULL) {
+		/* Copy the search pattern. */
+		if ((tp->search = strdup(search)) == NULL)
+			msgq(sp, M_SYSERR, NULL);
+		else
+			tp->slen = strlen(search);
+
+		/* Save the file. */
+		tp->frp = frp;
 	}
 
 	/* Switch to the new file. */
@@ -169,17 +196,13 @@ ex_tagpush(sp, ep, cmdp)
 		MODIFY_CHECK(sp, sp->ep, F_ISSET(cmdp, E_FORCE));
 
 		if (file_init(sp, frp, NULL, 0)) {
+			if (tp != NULL)
+				FREE(tp, sizeof(TAG));
 			FREE(tag, strlen(tag));
 			return (1);
 		}
 		which = TC_CHANGE;
 	}
-
-	/* Save the search pattern. */
-	if ((ttag.search = strdup(search)) == NULL)
-		msgq(sp, M_SYSERR, NULL);
-	else
-		ttag.slen = strlen(search);
 
 	/*
 	 * !!!
@@ -211,11 +234,9 @@ ex_tagpush(sp, ep, cmdp)
 
 	switch (which) {
 	case TC_CHANGE:
-		if (!sval) {
-			frp->lno = m.lno;
-			frp->cno = m.cno;
-			F_SET(frp, FR_CURSORSET);
-		}
+		frp->lno = m.lno;
+		frp->cno = m.cno;
+		F_SET(frp, FR_CURSORSET);
 		F_SET(sp, S_FSWITCH);
 		break;
 	case TC_CURRENT:
@@ -226,19 +247,19 @@ ex_tagpush(sp, ep, cmdp)
 		break;
 	}
 
-	/* If the malloc fails, no big deal, just can't return. */
-	if ((tp = malloc(sizeof(TAG))) == NULL)
-		msgq(sp, M_SYSERR, NULL);
-	else {
-		*tp = ttag;
-		TAILQ_INSERT_HEAD(&EXP(sp)->tagq, tp, q);
+	/* Push the tag onto the stack. */
+	if (tp != NULL) {
+		tp->lno = m.lno;
+		tp->cno = m.cno;
+		TAILQ_INSERT_HEAD(&exp->tagq, tp, q);
 	}
+
 	return (0);
 }
 
 /* Free a tag or tagf structure from a queue. */
 #define	FREETAG(tp) {							\
-	TAILQ_REMOVE(&EXP(sp)->tagq, (tp), q);				\
+	TAILQ_REMOVE(&exp->tagq, (tp), q);				\
 	if ((tp)->search != NULL)					\
 		FREE((tp)->search, (tp)->slen);				\
 	FREE((tp), sizeof(TAGF));					\
@@ -259,34 +280,41 @@ ex_tagpop(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
+	EX_PRIVATE *exp;
 	TAG *ntp, *tp;
 	long off;
 	size_t arglen;
 	char *arg, *p, *t;
 
-	/* Pop newest saved information. */
-	if ((tp = EXP(sp)->tagq.tqh_first) == NULL) {
+	/* Check for an empty stack. */
+	exp = EXP(sp);
+	if (exp->tagq.tqh_first == NULL) {
 		msgq(sp, M_INFO, "The tags stack is empty.");
 		return (1);
 	}
 
 	switch (cmdp->argc) {
 	case 0:
+		/* Toss the current record. */
+		tp = exp->tagq.tqh_first;
+		FREETAG(tp);
 		break;
 	case 1:
 		arg = cmdp->argv[0];
 		off = strtol(arg, &p, 10);
 		if (*p == '\0') {
-			if (off <= 1)
+			if (off < 1)
 				return (0);
-			while (--off > 1) {
-				tp = EXP(sp)->tagq.tqh_first;
+			while (off-- > 1) {
+				tp = exp->tagq.tqh_first;
 				FREETAG(tp);
 			}
 		} else {
 			arglen = strlen(arg);
-			for (; tp != NULL; tp = tp->q.tqe_next) {
-				p = FILENAME(tp->frp);
+			for (tp = exp->tagq.tqh_first;
+			    tp != NULL; tp = tp->q.tqe_next) {
+				/* Use the user's original file name. */
+				p = tp->frp->name;
 				if ((t = strrchr(p, '/')) == NULL)
 					t = p;
 				else
@@ -303,7 +331,7 @@ ex_tagpop(sp, ep, cmdp)
 				return (1);
 			}
 			for (;;) {
-				tp = EXP(sp)->tagq.tqh_first;
+				tp = exp->tagq.tqh_first;
 				if (tp == ntp)
 					break;
 				FREETAG(tp);
@@ -315,6 +343,7 @@ ex_tagpop(sp, ep, cmdp)
 	}
 
 	/* If not switching files, it's easy; else do the work. */
+	tp = exp->tagq.tqh_first;
 	if (tp->frp == sp->frp) {
 		sp->lno = tp->lno;
 		sp->cno = tp->cno;
@@ -331,8 +360,9 @@ ex_tagpop(sp, ep, cmdp)
 		F_SET(sp, S_FSWITCH);
 	}
 
-	/* Delete the saved information from the stack. */
-	FREETAG(tp);
+	/* If returning to the first tag, the stack is now empty. */
+	if (tp->q.tqe_next == NULL)
+		FREETAG(tp);
 	return (0);
 }
 
@@ -392,47 +422,37 @@ ex_tagdisplay(sp, ep)
 	SCR *sp;
 	EXF *ep;
 {
-	int cnt;
+	EX_PRIVATE *exp;
 	FREF *frp;
 	TAG *tp;
 	size_t len, maxlen;
+	int cnt;
 	char *name;
 
-	if ((tp = EXP(sp)->tagq.tqh_first) == NULL) {
+	exp = EXP(sp);
+	if ((tp = exp->tagq.tqh_first) == NULL) {
 		(void)ex_printf(EXCOOKIE, "No tags to display.\n");
 		return (0);
 	}
 
-	/* Use the name the user is currently using. */
-#define	GETNAME(frp) {							\
-	if (frp->cname != NULL) {					\
-		len = frp->clen;					\
-		name = frp->cname;					\
-	} else {							\
-		len = frp->nlen;					\
-		name = frp->name;					\
-	}								\
-}
 	/*
 	 * Figure out the formatting.  MNOC is the maximum
 	 * number of file name columns before we split the line.
 	 */
 #define	MNOC	15
-	for (maxlen = 0, frp = sp->frp, tp = EXP(sp)->tagq.tqh_first;
-	    tp != NULL; frp = tp->frp, tp = tp->q.tqe_next) {
-		GETNAME(frp);
+	for (maxlen = 0,
+	    tp = exp->tagq.tqh_first; tp != NULL; tp = tp->q.tqe_next) {
+		len = tp->frp->nlen;		/* The original name. */
+		name = tp->frp->name;
 		if (maxlen < len && len < MNOC)
 			maxlen = len;
 	}
 
-	/* 
-	 * The tags list is built off-by-one, i.e. the first tag structure
-	 * on the stack has the search string that got us to the current
-	 * file and the file information for the previous file.
-	 */
-	for (cnt = 1, frp = sp->frp, tp = EXP(sp)->tagq.tqh_first;
-	    tp != NULL; ++cnt, frp = tp->frp, tp = tp->q.tqe_next) {
-		GETNAME(frp);
+	for (cnt = 1,
+	    tp = exp->tagq.tqh_first; tp != NULL;
+	    ++cnt, tp = tp->q.tqe_next) {
+		len = tp->frp->nlen;		/* The original name. */
+		name = tp->frp->name;
 		if (len > maxlen || len + tp->slen > sp->cols)
 			if (tp == NULL || tp->search == NULL)
 				(void)ex_printf(EXCOOKIE,
@@ -446,7 +466,7 @@ ex_tagdisplay(sp, ep)
 				(void)ex_printf(EXCOOKIE, "%2d %*.*s\n",
 				    cnt, (int)maxlen, (int)len, name);
 			else
-				(void)ex_printf(EXCOOKIE, "%2d %-*.*s %s\n",
+				(void)ex_printf(EXCOOKIE, "%2d %*.*s %s\n",
 				    cnt, (int)maxlen, (int)len, name,
 				    tp->search);
 	}
