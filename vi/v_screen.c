@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_screen.c,v 5.3 1993/04/13 16:27:02 bostic Exp $ (Berkeley) $Date: 1993/04/13 16:27:02 $";
+static char sccsid[] = "$Id: v_screen.c,v 5.4 1993/05/10 11:37:35 bostic Exp $ (Berkeley) $Date: 1993/05/10 11:37:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -44,6 +44,5 @@ v_window(sp, ep, vp, fm, tm, rp)
 	}
 	
 	F_SET(sp, S_SSWITCH);
-	F_SET(sp->snext, S_CUR_INVALID);
 	return (0);
 }

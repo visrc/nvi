@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 5.21 1993/05/08 18:18:33 bostic Exp $ (Berkeley) $Date: 1993/05/08 18:18:33 $";
+static char sccsid[] = "$Id: vs_smap.c,v 5.22 1993/05/10 11:38:19 bostic Exp $ (Berkeley) $Date: 1993/05/10 11:38:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,10 +22,6 @@ static char sccsid[] = "$Id: vs_smap.c,v 5.21 1993/05/08 18:18:33 bostic Exp $ (
 /*
  * svi_change --
  *	Make a change to the screen.
- * XXX
- *	I'm not sure that the lines which `invalidate the cursor position'
- *	are right.  It seems like they could be changed to figure out what
- *	the new cursor position has to be.
  */
 int
 svi_change(sp, ep, lno, op)
@@ -44,23 +40,21 @@ svi_change(sp, ep, lno, op)
 	if (lno < HMAP->lno || lno > TMAP->lno)
 		return (0);
 
+	/* Invalidate the cursor, if it's on this line. */
+	if (sp->lno == lno)
+		F_SET(sp, S_CUR_INVALID);
+
 	getyx(stdscr, oldy, oldx);
 
 	switch (op) {
 	case LINE_DELETE:
 		if (svi_sm_delete(sp, ep, lno, NULL))
 			return (1);
-
-		/* Invalidate the cursor. */
-		F_SET(sp, S_CUR_INVALID);
 		break;
 	case LINE_APPEND:
 	case LINE_INSERT:
 		if (svi_sm_insert(sp, ep, lno))
 			return (1);
-
-		/* Invalidate the cursor. */
-		F_SET(sp, S_CUR_INVALID);
 		break;
 	case LINE_RESET:
 		if (svi_sm_reset(sp, ep, lno))
