@@ -1,4 +1,4 @@
-#	$Id: README,v 5.3 1993/01/31 11:43:14 bostic Exp $ (Berkeley) $Date: 1993/01/31 11:43:14 $
+#	$Id: README,v 5.4 1993/02/14 14:35:51 bostic Exp $ (Berkeley) $Date: 1993/02/14 14:35:51 $
 
 An ALPHA version of the new ex/vi, which will be distributed as nvi in
 4.4BSD, can be retrieved by anonymous ftp from vangogh.cs.berkeley.edu,
@@ -58,16 +58,6 @@ subdirectory has files that should make it work.  Change the db.h header
 file in db/port to include compat.h and you're mostly done.  The header
 file "cdefs.h", from db/port, will also be necessary to make nvi compile.
 
-Included in the directory nvi/stdio is a copy of the 4.4BSD version of
-the stdio(3) routines.  This is necessary to get one bit of functionality,
-the ability to replace the underlying read/write routines in a stdio
-stream with your own.  The way this works is that when vi wants to use
-an ex routine, it sets it up so that the output of ex goes to its own
-function which knows how to display the stuff on the screen.  This way
-vi never has to leave curses (resulting in much nicer screen displays)
-and ex can simply use printf and friends without regard for what's really
-going on.
-
 + Other code you may need:
 
 Included in the directory nvi/curses is a copy of the 4.4BSD version of
@@ -82,11 +72,23 @@ System V versions of curses don't do this right, either.)
 
 + Porting status:
 
-The curses, stdio and nvi code have NOT been ported to other systems, yet.
-The dbopen code is running on lots of systems and is pretty portable.
-Please send me back whatever fixes you have to make to nvi and curses to
-make them run, and I'll integrate them into the package so that you don't
-have to do it twice!
+The curses and nvi code have NOT been ported to other systems, yet.  The
+dbopen code is running on lots of systems and is pretty portable.  Please
+send me back whatever fixes you have to make to nvi and curses to make
+them run, and I'll integrate them into the package so that you don't have
+to do it twice!
+
+One interesting bit of functionality that nvi needs is the ability to
+replace the underlying read/write routines in a stdio stream with its own.
+The way this works is that when vi wants to use an ex routine, it sets it
+up so that the output of ex goes to an nvi function which knows how to
+display the stuff on the screen.  This way vi never has to leave curses
+(resulting in much nicer screen displays) and ex can simply use printf
+and friends without regard for what's really going on.  4.4BSD has a stdio
+function (fwopen(3)) which provides this functionality.  If you don't have
+fwopen or similar functionality, read the comment in vi/v_init.c and
+#define FWOPEN_NOT_AVAILABLE.  Note, you have to select one of two ways
+to do the write(2) system calls in the vi/v_init.c:v_init() function.
 
 I will be porting this software to SunOS in about two weeks, which will
 limit the amount of software that is included in the package as well as
