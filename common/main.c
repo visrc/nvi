@@ -18,7 +18,7 @@ static const char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static const char sccsid[] = "$Id: main.c,v 10.40 1996/05/15 17:14:07 bostic Exp $ (Berkeley) $Date: 1996/05/15 17:14:07 $";
+static const char sccsid[] = "$Id: main.c,v 10.41 1996/05/15 18:07:56 bostic Exp $ (Berkeley) $Date: 1996/05/15 18:07:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -62,7 +62,7 @@ editor(gp, argc, argv)
 	SCR *sp;
 	size_t len;
 	u_int flags;
-	int ch, fd, flagchk, lflag, readonly, rval, silent;
+	int ch, fd, flagchk, lflag, startup, readonly, rval, silent;
 	char *tag_f, *wsizearg;
 	char path[256];
 
@@ -108,12 +108,13 @@ editor(gp, argc, argv)
 	flagchk = '\0';
 	tag_f = wsizearg = NULL;
 	lflag = silent = 0;
+	startup = 1;
 
 	/* Set the file snapshot flag. */
 	F_SET(gp, G_SNAPSHOT);
 
 #ifdef DEBUG
-	while ((ch = getopt(argc, argv, "c:DeFlRrsT:t:vw:")) != EOF)
+	while ((ch = getopt(argc, argv, "c:D:eFlRrsT:t:vw:")) != EOF)
 #else
 	while ((ch = getopt(argc, argv, "c:eFlRrst:vw:")) != EOF)
 #endif
@@ -132,14 +133,26 @@ editor(gp, argc, argv)
 			break;
 #ifdef DEBUG
 		case 'D':
-			if ((fd = open(_PATH_TTY, O_RDONLY, 0)) < 0) {
-				v_estr(gp->progname, errno, _PATH_TTY);
+			switch (optarg[0]) {
+			case 's':
+				startup = 0;
 				break;
+			case 'w':
+				if ((fd = open(_PATH_TTY, O_RDONLY, 0)) < 0) {
+					v_estr(gp->progname, errno, _PATH_TTY);
+					return (1);
+				}
+				(void)printf("%lu waiting... ",
+				    (u_long)getpid());
+				(void)fflush(stdout);
+				(void)read(fd, &ch, 1);
+				(void)close(fd);
+				break;
+			default:
+				v_estr(gp->progname, 0,
+				    "usage: -D requires s or w argument.");
+				return (1);
 			}
-			(void)printf("%lu waiting... ", (u_long)getpid());
-			(void)fflush(stdout);
-			(void)read(fd, &ch, 1);
-			(void)close(fd);
 			break;
 #endif
 		case 'e':		/* Ex mode. */
@@ -270,7 +283,7 @@ editor(gp, argc, argv)
 	sp->rows = O_VAL(sp, O_LINES);	/* Make ex formatting work. */
 	sp->cols = O_VAL(sp, O_COLUMNS);
 
-	if (!silent) {			/* Read EXINIT, exrc files. */
+	if (!silent && startup) {	/* Read EXINIT, exrc files. */
 		if (ex_exrc(sp))
 			goto err;
 		if (F_ISSET(sp, SC_EXIT | SC_EXIT_FORCE)) {
