@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 5.20 1993/01/11 17:06:45 bostic Exp $ (Berkeley) $Date: 1993/01/11 17:06:45 $";
+static char sccsid[] = "$Id: ex_read.c,v 5.21 1993/02/11 12:29:02 bostic Exp $ (Berkeley) $Date: 1993/02/11 12:29:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -65,7 +65,7 @@ ex_read(cmdp)
 			msg("Usage: %s.", cmdp->cmd->usage);
 			return (1);
 		}
-		return (filter(&cmdp->addr1, NULL, ++p, NOINPUT));
+		return (filtercmd(&cmdp->addr1, NULL, ++p, NOINPUT));
 	}
 
 	/* Build an argv. */

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 5.24 1993/01/31 10:27:28 bostic Exp $ (Berkeley) $Date: 1993/01/31 10:27:28 $";
+static char sccsid[] = "$Id: ex_bang.c,v 5.25 1993/02/11 12:29:01 bostic Exp $ (Berkeley) $Date: 1993/02/11 12:29:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -133,7 +133,7 @@ ex_bang(cmdp)
 	 * pipe lines from the file through the command.
 	 */
 	if (cmdp->addrcnt != 0) {
-		if (filter(&cmdp->addr1, &cmdp->addr2, com, STANDARD))
+		if (filtercmd(&cmdp->addr1, &cmdp->addr2, com, STANDARD))
 			return (1);
 		FF_SET(curf, F_AUTOPRINT);
 		return (0);

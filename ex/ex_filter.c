@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 5.22 1993/02/11 12:26:04 bostic Exp $ (Berkeley) $Date: 1993/02/11 12:26:04 $";
+static char sccsid[] = "$Id: ex_filter.c,v 5.23 1993/02/11 12:29:47 bostic Exp $ (Berkeley) $Date: 1993/02/11 12:29:47 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -26,12 +26,12 @@ static char sccsid[] = "$Id: ex_filter.c,v 5.22 1993/02/11 12:26:04 bostic Exp $
 #include "options.h"
 
 /*
- * filter --
- *	Run a range of lines through a filter program and replace the original
- *	text with the stdout/stderr output of the filter.
+ * filtercmd --
+ *	Run a range of lines through a filter program and replace the
+ *	original text with the stdout/stderr output of the filter.
  */
 int
-filter(fm, tm, cmd, ftype)
+filtercmd(fm, tm, cmd, ftype)
 	MARK *fm, *tm;
 	u_char *cmd;
 	enum filtertype ftype;

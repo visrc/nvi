@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 5.16 1992/12/05 11:09:01 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:09:01 $";
+static char sccsid[] = "$Id: ex_write.c,v 5.17 1993/02/11 12:29:03 bostic Exp $ (Berkeley) $Date: 1993/02/11 12:29:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -70,7 +70,7 @@ ex_write(cmdp)
 			msg("Usage: %s.", cmdp->cmd->usage);
 			return (1);
 		}
-		return (filter(&cmdp->addr1, &cmdp->addr2, ++p, NOOUTPUT));
+		return (filtercmd(&cmdp->addr1, &cmdp->addr2, ++p, NOOUTPUT));
 	}
 
 	/* If "write >>" it's an append to a file. */
