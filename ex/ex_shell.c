@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 10.3 1995/06/08 18:53:49 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:53:49 $";
+static char sccsid[] = "$Id: ex_shell.c,v 10.4 1995/06/15 14:47:58 bostic Exp $ (Berkeley) $Date: 1995/06/15 14:47:58 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -61,26 +61,19 @@ ex_exec_proc(sp, cmd, p1, p2)
 	char *cmd, *p1, *p2;
 {
 	const char *name;
+	GS *gp;
 	pid_t pid;
-	int nf, rval, teardown;
+	int nf, rval;
 	char *p;
 
-	/* Clear the rest of the screen. */
-	(void)sp->gp->scr_clrtoeos(sp);
-	(void)sp->gp->scr_refresh(sp);
+	/* Flush messages and enter canonical mode. */
+	(void)vs_msgflush(sp, 1, NULL, NULL);
+	(void)ex_fflush(sp);
+	gp = sp->gp;
+	if (gp->scr_canon(sp, 1))
+		return;
 
-	/* Save ex/vi terminal settings, and restore the original ones. */
-	teardown = !ex_sleave(sp);
-
-#ifdef __TK__
-	/*
-	 * Flush waiting messages (autowrite, for example) so the output
-	 * matches historic practice.
-	 */
-	(void)sp->gp->scr_msgflush(sp, NULL, NULL);
-#endif
-
-	/* Put out various messages. */
+	/* Put out special messages. */
 	if (p1 != NULL)
 		(void)write(STDOUT_FILENO, p1, strlen(p1));
 	if (p2 != NULL)
@@ -109,18 +102,18 @@ ex_exec_proc(sp, cmd, p1, p2)
 	}
 
 	/* Restore ex/vi terminal settings. */
-	if (teardown)
-		ex_rleave(sp);
+	(void)gp->scr_canon(sp, 0);
 
 	/*
 	 * XXX
-	 * Stat of the tty structures (see ex_sleave, ex_rleave) only give
-	 * us 1-second resolution on the tty changes.  A fast '!' command,
-	 * e.g. ":!pwd" can beat us to the refresh.  When there's better
-	 * resolution from the stat(2) timers, this can and should go away,
-	 * we're repainting the screen unnecessarily.
+	 * It would be nice to stat(2) the tty structures to figure out if
+	 * anything on the screen changed, so we could decide if we need to
+	 * repaint anything.  However, a stat only gives us a 1-second
+	 * resolution.  A fast '!' command, e.g. ":!pwd" can beat us to the
+	 * refresh.  When there's better resolution from the stat(2) timers,
+	 * this should be deleted, as we may be unnecessarily repainting the
+	 * screen.
 	 */
 	F_SET(sp, S_SCR_REFRESH);
-
 	return (rval);
 }
