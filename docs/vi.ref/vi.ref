@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.54 1994/09/02 20:53:16 bostic Exp $ (Berkeley) $Date: 1994/09/02 20:53:16 $
+.\"     $Id: vi.ref,v 8.55 1994/09/03 11:21:40 bostic Exp $ (Berkeley) $Date: 1994/09/03 11:21:40 $
 .\"
 .\"
 .so ref.so
@@ -1210,9 +1210,11 @@ of the file.
 .oh 'Nvi/Nex Reference (Ex Commands)''USD:13-%'
 .eh 'USD:13-%''Nvi/Nex Reference (Ex Commands)'
 .so ex.cmd.roff
+.oh 'Nvi/Nex Reference (Options)''USD:13-%'
+.eh 'USD:13-%''Nvi/Nex Reference (Options)'
+.so set.opt.roff
 .oh 'Nvi/Nex Reference''USD:13-%'
 .eh 'USD:13-%''Nvi/Nex Reference'
-.so set.opt.roff
 .SH 1 "Additional Features in Nex/Nvi"
 .pp
 There are a few features in
