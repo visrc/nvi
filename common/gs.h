@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 10.14 1995/10/02 16:34:05 bostic Exp $ (Berkeley) $Date: 1995/10/02 16:34:05 $
+ *	$Id: gs.h,v 10.15 1995/10/17 08:24:07 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:24:07 $
  */
 
 #define	TEMPORARY_FILE_STRING	"/tmp"	/* Default temporary file name. */
@@ -146,7 +146,7 @@ struct _gs {
 					/* Beep/bell/flash the terminal. */
 	int	(*scr_bell) __P((SCR *));
 					/* Display a busy message. */
-	int	(*scr_busy) __P((SCR *, char const *, busy_t));
+	void	(*scr_busy) __P((SCR *, char const *, busy_t));
 					/* Clear to the end of the line. */
 	int	(*scr_clrtoeol) __P((SCR *));
 					/* Return the cursor location. */
@@ -168,7 +168,7 @@ struct _gs {
 					/* Move the cursor. */
 	int	(*scr_move) __P((SCR *, size_t, size_t));
 					/* Message or ex output. */
-	int	(*scr_msg) __P((SCR *, mtype_t, const char *, size_t));
+	void	(*scr_msg) __P((SCR *, mtype_t, const char *, size_t));
 					/* Refresh the screen. */
 	int	(*scr_refresh) __P((SCR *, int));
 					/* Rename the file. */
