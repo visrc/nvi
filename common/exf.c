@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: exf.c,v 10.27 1996/03/20 19:54:42 bostic Exp $ (Berkeley) $Date: 1996/03/20 19:54:42 $";
+static const char sccsid[] = "$Id: exf.c,v 10.28 1996/03/29 09:48:38 bostic Exp $ (Berkeley) $Date: 1996/03/29 09:48:38 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -731,12 +731,9 @@ file_write(sp, fm, tm, name, flags)
 		}
 	}
 
-	/* Set flags to either append or truncate. */
-	oflags = O_CREAT | O_WRONLY;
-	if (LF_ISSET(FS_APPEND))
-		oflags |= O_APPEND;
-	else
-		oflags |= O_TRUNC;
+	/* Set flags to create, write, and either append or truncate. */
+	oflags = O_CREAT | O_WRONLY |
+	    (LF_ISSET(FS_APPEND) ? O_APPEND : O_TRUNC);
 
 	/* Backup the file if requested. */
 	if (!opts_empty(sp, O_BACKUP, 1) &&
@@ -773,8 +770,14 @@ file_write(sp, fm, tm, name, flags)
 	}
 #endif
 
-	/* Use stdio for buffering. */
-	if ((fp = fdopen(fd, "w")) == NULL) {
+	/*
+	 * Use stdio for buffering.
+	 *
+	 * XXX
+	 * SVR4.2 requires the fdopen mode exactly match the original open
+	 * mode, i.e. you have to open with "a" if appending.
+	 */
+	if ((fp = fdopen(fd, LF_ISSET(FS_APPEND) ? "a" : "w")) == NULL) {
 		msgq_str(sp, M_SYSERR, name, "%s");
 		(void)close(fd);
 		return (1);
