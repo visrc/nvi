@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.71 1993/11/30 12:18:09 bostic Exp $ (Berkeley) $Date: 1993/11/30 12:18:09 $
+ *	$Id: screen.h,v 8.72 1993/12/02 10:29:43 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:29:43 $
  */
 
 /*
@@ -44,11 +44,8 @@ enum position { P_BOTTOM, P_FILL, P_MIDDLE, P_TOP };
 struct _fref {
 	TAILQ_ENTRY(_fref) q;		/* Linked list of file references. */
 	char	*cname;			/* Changed file name. */
-	size_t	 clen;			/* Changed file name length. */
 	char	*name;			/* File name. */
-	size_t	 nlen;			/* File name length. */
 	char	*tname;			/* Temporary file name. */
-	size_t	 tlen;			/* Temporary file name length. */
 
 	recno_t	 lno;			/* 1-N: file cursor line. */
 	size_t	 cno;			/* 0-N: file cursor column. */
@@ -226,7 +223,7 @@ struct _scr {
 					/* Change the screen size. */
 	int	 (*s_resize) __P((SCR *, long));
 					/* Split the screen. */
-	int	 (*s_split) __P((SCR *, char *[]));
+	int	 (*s_split) __P((SCR *, ARGS *[]));
 					/* Suspend the screen. */
 	int	 (*s_suspend) __P((SCR *));
 					/* Move up the screen. */
