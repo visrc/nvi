@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: msg.c,v 10.54 2000/07/19 18:31:52 skimo Exp $ (Berkeley) $Date: 2000/07/19 18:31:52 $";
+static const char sccsid[] = "$Id: msg.c,v 10.55 2000/09/03 18:35:47 skimo Exp $ (Berkeley) $Date: 2000/09/03 18:35:47 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -909,7 +909,7 @@ retry:		if (sp == NULL)
 			free(bp);
 		else
 			FREE_SPACE(sp, bp, blen);
-		needfree = 0;
+		*needfree = 0;
 	}
 	nlen += 256;
 	if (sp == NULL) {
