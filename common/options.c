@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.5 1993/08/25 16:38:45 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:38:45 $";
+static char sccsid[] = "$Id: options.c,v 8.6 1993/08/26 17:27:42 bostic Exp $ (Berkeley) $Date: 1993/08/26 17:27:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -224,7 +224,7 @@ opts_init(sp)
 	(void)snprintf(b1, sizeof(b1), "directory=%s",
 	    (s = getenv("TMPDIR")) == NULL ? _PATH_PRESERVE : s);
 	SET_DEF(O_DIRECTORY, b1);
-	SET_DEF(O_KEYTIME, "keytime=2");
+	SET_DEF(O_KEYTIME, "keytime=6");
 	SET_DEF(O_MAKE, "make=make");
 	SET_DEF(O_REPORT, "report=5");
 	SET_DEF(O_PARAGRAPHS, "paragraphs=IPLPPPQPP LIpplpipbp");
