@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_delete.c,v 9.1 1994/11/09 18:36:00 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:36:00 $";
+static char sccsid[] = "$Id: v_delete.c,v 9.2 1994/11/12 11:22:15 bostic Exp $ (Berkeley) $Date: 1994/11/12 11:22:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,47 +27,8 @@ static char sccsid[] = "$Id: v_delete.c,v 9.1 1994/11/09 18:36:00 bostic Exp $ (
 #include "vcmd.h"
 
 /*
- * v_Delete -- [buffer][count]D
- *	Delete line command.
- */
-int
-v_Delete(sp, vp)
-	SCR *sp;
-	VICMDARG *vp;
-{
-	recno_t lno;
-	size_t len;
-
-	if (file_gline(sp, vp->m_start.lno, &len) == NULL) {
-		if (file_lline(sp, &lno))
-			return (1);
-		if (lno == 0)
-			return (0);
-		GETLINE_ERR(sp, vp->m_start.lno);
-		return (1);
-	}
-
-	if (len == 0)
-		return (0);
-
-	vp->m_stop.lno = vp->m_start.lno;
-	vp->m_stop.cno = len - 1;
-
-	/* Yank the lines. */
-	if (cut(sp,
-	    F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
-	    &vp->m_start, &vp->m_stop, CUT_NUMOPT))
-		return (1);
-	if (delete(sp, &vp->m_start, &vp->m_stop, 0))
-		return (1);
-
-	vp->m_final.lno = vp->m_start.lno;
-	vp->m_final.cno = vp->m_start.cno ? vp->m_start.cno - 1 : 0;
-	return (0);
-}
-
-/*
  * v_delete -- [buffer][count]d[count]motion
+ *	       [buffer][count]D
  *	Delete a range of text.
  */
 int
