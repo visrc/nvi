@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.173 1994/10/23 20:44:15 bostic Exp $ (Berkeley) $Date: 1994/10/23 20:44:15 $";
+static char sccsid[] = "$Id: ex.c,v 8.174 1994/10/27 13:05:37 bostic Exp $ (Berkeley) $Date: 1994/10/27 13:05:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -451,13 +451,12 @@ loop:	if (nl) {
 		 * 'k' in the 'k' command.  Make it work.
 		 *
 		 * !!!
-		 * Historic vi permitted pretty much anything to follow the
-		 * substitute command, e.g. "s/e/E/|s|sgc3p" was fine.  Make
-		 * the command "sgc" work.  Since the following characters
-		 * all have to be flags, i.e. alphabetics, we can let the
-		 * substitute command routine return errors if it was some
-		 * illegal command string.  This code will break if an "sg"
-		 * or similar command is ever added.
+		 * Historic vi permitted any flag to follow the s command, e.g.
+		 * "s/e/E/|s|sgc3p" was legal.  Make the command "sgc" work.
+		 * Since the following characters all have to be flags, i.e.
+		 * alphabetics, we can let the s command routine return errors
+		 * if it was some illegal command string.  This code will break
+		 * if an "sg" or similar command is ever added.
 		 */
 		if ((cp = ex_comm_search(p, namelen)) == NULL)
 			switch (p[0]) {
@@ -595,24 +594,24 @@ skip:		if (F_ISSET(cp, E_NOPERM)) {
 	 *    pipes).
 	 * 2: The ex, edit, next and visual in vi mode commands all take ex
 	 *    commands as their first arguments.
-	 * 3: The substitute command takes an RE as its first argument, and
-	 *    wants it to be specially delimited.
+	 * 3: The s command takes an RE as its first argument, and wants it
+	 *    to be specially delimited.
 	 *
 	 * Historically, '|' characters in the first argument of the ex, edit,
-	 * next, vi visual, and substitute commands didn't delimit the command.
-	 * And, in the filter cases for read and write, and the bang, global
-	 * and v commands, they did not delimit the command at all.
+	 * next, vi visual, and s commands didn't delimit the command.  And,
+	 * in the filter cases for read and write, and the bang, global and v
+	 * commands, they did not delimit the command at all.
 	 *
 	 * For example, the following commands were legal:
 	 *
 	 *	:edit +25|s/abc/ABC/ file.c
-	 *	:substitute s/|/PIPE/
+	 *	:s/|/PIPE/
 	 *	:read !spell % | columnate
 	 *	:global/pattern/p|l
 	 *
 	 * It's not quite as simple as it sounds, however.  The command:
 	 *
-	 *	:substitute s/a/b/|s/c/d|set
+	 *	:s/a/b/|s/c/d|set
 	 *
 	 * was also legal, i.e. the historic ex parser (using the word loosely,
 	 * since "parser" implies some regularity) delimited the RE's based on
@@ -699,8 +698,7 @@ skip:		if (F_ISSET(cp, E_NOPERM)) {
 		 * Move to the next non-whitespace character, we'll use it as
 		 * the delimiter.  If the character isn't an alphanumeric or
 		 * a '|', it's the delimiter, so parse it.  Otherwise, we're
-		 * into something like ":s g", so use the special substitute
-		 * command.
+		 * into something like ":s g", so use the special s command.
 		 */
 		for (; cmdlen > 0; --cmdlen, ++cmd)
 			if (!isblank(cmd[0]))
