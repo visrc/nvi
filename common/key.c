@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.40 1993/02/19 11:13:01 bostic Exp $ (Berkeley) $Date: 1993/02/19 11:13:01 $";
+static char sccsid[] = "$Id: key.c,v 5.41 1993/02/20 15:16:42 bostic Exp $ (Berkeley) $Date: 1993/02/20 15:16:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -128,9 +128,12 @@ getkey(ep, flags)
 
 	/* If returning a mapped key, return the next char. */
 	if (mapoutput) {
-		if (*mapoutput)
-			return (*mapoutput++);
-		mapoutput = NULL;
+		ch = *mapoutput;
+		if (*++mapoutput == '\0') {
+			FF_CLR(ep, F_MSGWAIT);
+			mapoutput = NULL;
+		}
+		return (ch);
 	}
 
 	/* Read in more keys if necessary. */
@@ -183,6 +186,7 @@ retry:		sp = seq_find(&keybuf[nextkey], nkeybuf,
 			nkeybuf -= sp->ilen;
 			nextkey += sp->ilen;
 			mapoutput = sp->output;
+			FF_SET(ep, F_MSGWAIT);
 			return (*mapoutput++);
 		}
 	}
