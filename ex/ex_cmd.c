@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 8.57 1994/08/07 16:40:47 bostic Exp $ (Berkeley) $Date: 1994/08/07 16:40:47 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 8.58 1994/08/09 14:54:38 bostic Exp $ (Berkeley) $Date: 1994/08/09 14:54:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -353,11 +353,6 @@ EXCMDLIST const cmds[] = {
 	    "!",
 	    "tagt[op][!]",
 	    "return to the first tag"},
-/* C_UNDOL */
-	{"Undo",	ex_undol,	E_AUTOPRINT|E_NOGLOBAL|E_NORC,
-	    "",
-	    "U[ndo]",
-	    "undo all the changes to this line"},
 /* C_UNDO */
 	{"undo",	ex_undo,	E_AUTOPRINT|E_NOGLOBAL|E_NORC,
 	    "",
