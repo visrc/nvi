@@ -11,7 +11,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 9.15 1995/01/11 18:59:01 bostic Exp $ (Berkeley) $Date: 1995/01/11 18:59:01 $";
+static char sccsid[] = "$Id: ex_tag.c,v 9.16 1995/01/30 10:03:08 bostic Exp $ (Berkeley) $Date: 1995/01/30 10:03:08 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -87,7 +87,7 @@ ex_tagfirst(sp, tagarg)
 	 */
 	if (isdigit(search[0])) {
 		m.lno = atoi(search);
-		if (file_gline(sp, m.lno, NULL) == NULL)
+		if (!file_eline(sp, m.lno))
 			tag_msg(sp, TAG_BADLNO, tag);
 		else {
 			sp->lno = m.lno;
@@ -252,7 +252,7 @@ err:		free(tag);
 	 */
 	if (isdigit(search[0])) {
 		m.lno = atoi(search);
-		if (file_gline(sp, m.lno, NULL) == NULL)
+		if (!file_eline(sp, m.lno))
 			tag_msg(sp, TAG_BADLNO, tag);
 		else {
 			sp->lno = m.lno;
