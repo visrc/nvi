@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.188 2002/01/05 23:13:38 skimo Exp $
+dnl	$Id: configure.in,v 8.189 2002/01/19 23:01:35 skimo Exp $
 dnl Process this file with autoconf to produce a configure script.
 
 AC_INIT(../common/main.c)
@@ -944,29 +944,43 @@ if test "$vi_cv_proto_fprintf" = yes; then
 	AC_DEFINE(NEED_FPRINTF_PROTO)
 fi
 
+AC_ARG_WITH(db_type,
+	[  --with-db=bundled|system Which db to use. ])
+case "$with_db_type" in
+"db1")
+	AC_MSG_WARN([Use of db1 is not officially supported.])
+	AC_DEFINE(USE_DB1)
+	;;
+"system")
+	;;
+*)
+	with_db_type="bundled"
+	;;
+esac
 
 dnl Check for DB 3
-AC_ARG_WITH(db3,
-	[  --with-db3=db3prefix    Path to db3 installation. ])
-if test "$with_db3" = "no"; then
-	AC_MSG_ERROR([Need DB 3.])
+AC_ARG_WITH(db_prefix,
+	[  --with-db-prefix=PFX    Path to db installation. ])
+
+SAVELDFLAGS="$LDFLAGS"
+if test "x$with_db_prefix" != "x"; then
+	LDFLAGS="-L$with_db_prefix/lib $LDFLAGS"
+	CPPFLAGS="-I$with_db_prefix/include $CPPFLAGS"
 fi
+if test "$with_db_type" != db1; then
+	SAVELIBS="$LIBS"
 
-saveLDFLAGS="$LDFLAGS"
-if test "x$with_db3" != "x"; then
-	LDFLAGS="-L$with_db3/lib $LDFLAGS"
-	CPPFLAGS="-I$with_db3/include $CPPFLAGS"
-fi;
+	LIBS="$LIBS -ldb"
+	AC_TRY_LINK([#include <db.h>],
+		[db_create(NULL,NULL,0)],
+		[vi_cv_dbfatal="no"], [vi_cv_dbfatal="yes"])
+	if test "$vi_cv_dbfatal" = "yes"; then
+		AC_MSG_ERROR([Need DB 3.])
+	fi
 
-LIBS="$LIBS -ldb"
-AC_TRY_LINK([#include <db.h>],
-	[db_create(NULL,NULL,0)],
-	[vi_cv_dbfatal="no"], [vi_cv_dbfatal="yes"])
-if test "$vi_cv_dbfatal" = "yes"; then
-	AC_MSG_ERROR([Need DB 3.])
+	LIBS="$SAVELIBS"
 fi
-
-LDFLAGS="$saveLDFLAGS"
+LDFLAGS="$SAVELDFLAGS"
 
 AC_SUBST(dl_src)
 AC_MSG_CHECKING(if --enable-dynamic-loading option specified)
@@ -982,7 +996,7 @@ if test "$vi_cv_dl" = yes; then
 	fi
 	OLDPATH="$PATH"
 
-	PATH="$with_db3/lib:/usr/lib:/lib"
+	PATH="$with_db_prefix/lib:/usr/lib:/lib"
 	AC_PATH_PROG(vi_cv_path_db3, libdb-3.so, no)
 	if test "$vi_cv_path_db3" = no; then
 		AC_MSG_ERROR([Path of libdb-3.so not found.])
@@ -995,13 +1009,13 @@ if test "$vi_cv_dl" = yes; then
 	LIBS="-ldl $LIBS"
 else
 	LIBS="-ldb $LIBS"
-	if test "X$with_db3" != "X"; then
-		LDFLAGS="`echo $with_db3/lib | sed "$LRscript"` $LDFLAGS"
+	if test "X$with_db_prefix" != "X"; then
+		LDFLAGS="`echo $with_db_prefix/lib | sed "$LRscript"` $LDFLAGS"
 	fi
 fi
 
 AC_ARG_WITH(db_build,
-	[  --with-db-build=prefix    Path to db build. ])
+	[  --with-db-build=prefix  Path to db build. ])
 if test "x$with_db_build" != "x"; then
 	vi_cv_dbsrc=`$AWK '/^srcdir/ {gsub("srcdir[[ \t]]*=","");print $1}' \
 		     $with_db_build/Makefile`

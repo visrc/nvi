@@ -1,4 +1,4 @@
-/* $Id: acconfig.h,v 8.33 2002/01/05 23:13:38 skimo Exp $ (Berkeley) $Date: 2002/01/05 23:13:38 $ */
+/* $Id: acconfig.h,v 8.34 2002/01/19 23:01:35 skimo Exp $ (Berkeley) $Date: 2002/01/19 23:01:35 $ */
 
 /* Define to `int' if <sys/types.h> doesn't define.  */
 #undef ssize_t
@@ -95,6 +95,9 @@
 
 /* Define if your sprintf returns a pointer, not a length. */
 #undef SPRINTF_RET_CHARPNT
+
+/* Define when using db1 */
+#undef USE_DB1
 
 /* Define when using db4 logging */
 #undef USE_DB4_LOGGING
