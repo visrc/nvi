@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.2 1993/08/05 21:07:49 bostic Exp $ (Berkeley) $Date: 1993/08/05 21:07:49 $";
+static char sccsid[] = "$Id: screen.c,v 8.3 1993/08/06 12:16:10 bostic Exp $ (Berkeley) $Date: 1993/08/06 12:16:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,7 +36,6 @@ scr_init(orig, sp)
 {
 	extern CHNAME asciiname[];		/* XXX */
 	sigset_t bmask, omask;
-	int nore;
 
 /* INITIALIZED AT SCREEN CREATE. */
 
@@ -54,12 +53,15 @@ scr_init(orig, sp)
 		(void)sigprocmask(SIG_SETMASK, &omask, NULL);
 	}
 
+	HDR_INIT(sp->frefhdr, next, prev);
+
 	sp->lno = sp->olno = OOBLNO;
 	sp->cno = sp->ocno = 0;
 
-#ifdef FWOPEN_NOT_AVAILABLE
+	sp->ccnt = 2;				/* Anything > 1 */
+
 	sp->trapped_fd = -1;
-#endif
+
 	FD_ZERO(&sp->rdfd);
 
 	HDR_INIT(sp->bhdr, next, prev);
@@ -87,8 +89,6 @@ scr_init(orig, sp)
 		    (sp->lastbcomm = strdup(orig->lastbcomm)) == NULL)
 			goto mem;
 
-		HDR_INIT(sp->frefhdr, next, prev);
-
 		if (orig->alt_fname != NULL &&
 		    (sp->alt_fname = strdup(orig->alt_fname)) == NULL)
 			goto mem;
@@ -96,13 +96,18 @@ scr_init(orig, sp)
 		sp->inc_lastch = orig->inc_lastch;
 		sp->inc_lastval = orig->inc_lastval;
 
+		if (cut_copy(orig, sp))
+			goto mem;
+
+		/*
+		 * XXX
+		 * dot, dotmotion not copied.
+		 */
+
 		if (orig->paragraph != NULL &&
 		    (sp->paragraph = strdup(orig->paragraph)) == NULL)
 			goto mem;
 	
-		if (cut_copy(orig, sp))
-			goto mem;
-
 		if (tag_copy(orig, sp))
 			goto mem;
 			
@@ -116,7 +121,6 @@ scr_init(orig, sp)
 		sp->csearchdir = CNOTSET;
 		sp->lastckey = orig->lastckey;
 
-		nore = 0;
 		if (orig->matchsize && (sp->match =
 		    malloc(orig->matchsize * sizeof(regmatch_t))) == NULL)
 			goto mem;
@@ -141,8 +145,6 @@ scr_init(orig, sp)
 				memmove(sp->newl, orig->newl,
 				    orig->newl_len * sizeof(size_t));
 		}
-		if (!nore && F_ISSET(orig, S_RE_SET))
-			F_SET(sp, S_RE_SET);
 
 		sp->cname = orig->cname;
 		memmove(sp->special, orig->special, sizeof(sp->special));
@@ -157,13 +159,10 @@ mem:			msgq(orig, M_ERR,
 			return (1);
 		}
 
-		sp->flags = orig->flags & S_SCREEN_RETAIN;
-		F_SET(sp, S_REFORMAT);
+		F_SET(sp, (orig->flags & S_SCREEN_RETAIN) | S_REFORMAT);
 	} else {
 		if (isatty(STDIN_FILENO))
 			F_SET(sp, S_ISFROMTTY);
-
-		HDR_INIT(sp->frefhdr, next, prev);
 
 		sp->inc_lastch = '+';
 		sp->inc_lastval = 1;
