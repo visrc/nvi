@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 8.6 1993/08/25 16:45:33 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:45:33 $";
+static char sccsid[] = "$Id: ex_argv.c,v 8.7 1993/08/28 10:30:04 bostic Exp $ (Berkeley) $Date: 1993/08/28 10:30:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -164,7 +164,7 @@ word_argv(sp, ep, p, argcp, argvp)
 		 * Allocate more pointer space if necessary; leave a space
 		 * for a trailing NULL.
 		 */
-		len = (p - ap) + 1;
+		len = (p - ap);
 #define	INCREMENT	20
 		if (off + 2 >= sp->argscnt - 1) {
 			sp->argscnt += cnt = MAX(INCREMENT, 2);
@@ -215,7 +215,7 @@ mem1:				sp->argscnt = 0;
 			break;
 
 		/* Skip whitespace. */
-		while (isblank(*++p));
+		for (++p; isblank(p[0]); ++p);
 		if (!*p)
 			break;
 	}
