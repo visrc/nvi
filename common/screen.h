@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.111 1994/05/09 09:42:00 bostic Exp $ (Berkeley) $Date: 1994/05/09 09:42:00 $
+ *	$Id: screen.h,v 8.112 1994/05/21 18:18:12 bostic Exp $ (Berkeley) $Date: 1994/05/21 18:18:12 $
  */
 
 /*
@@ -282,18 +282,14 @@ struct _scr {
 /*
  * Signals/timers have no structure, so it's all here.
  *
- * Block signals that could cause consistency problems, either in
- * the underlying DB routines, or in the msgq routines.
+ * Block all signals that are being handled.  The reason is that we don't
+ * underlying system calls in the DB package interrupted and not restarted,
+ * it could theoretically cause consistency problems.
  */
-#define	SIGBLOCK {							\
-	(void)sigemptyset(&set);					\
-	(void)sigaddset(&set, SIGALRM);					\
-	(void)sigaddset(&set, SIGHUP);					\
-	(void)sigaddset(&set, SIGTERM);					\
-	(void)sigprocmask(SIG_BLOCK, &set, NULL);			\
-}
-#define	SIGUNBLOCK							\
-	(void)sigprocmask(SIG_UNBLOCK, &set, NULL);
+#define	SIGBLOCK \
+	(void)sigprocmask(SIG_BLOCK, &sp->gp->blockset, NULL);
+#define	SIGUNBLOCK \
+	(void)sigprocmask(SIG_UNBLOCK, &sp->gp->blockset, NULL);
 
 void	 busy_off __P((SCR *));
 int	 busy_on __P((SCR *, char const *));

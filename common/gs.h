@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 8.35 1994/05/20 19:40:16 bostic Exp $ (Berkeley) $Date: 1994/05/20 19:40:16 $
+ *	$Id: gs.h,v 8.36 1994/05/21 18:18:14 bostic Exp $ (Berkeley) $Date: 1994/05/21 18:18:14 $
  */
 
 struct _gs {
@@ -19,6 +19,8 @@ struct _gs {
 
 	char	*tmp_bp;		/* Temporary buffer. */
 	size_t	 tmp_blen;		/* Size of temporary buffer. */
+
+	sigset_t blockset;		/* Signal mask. */
 
 #ifdef DEBUG
 	FILE	*tracefp;		/* Trace file pointer. */
