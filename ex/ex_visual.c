@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_visual.c,v 9.4 1995/01/11 16:16:07 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:16:07 $";
+static char sccsid[] = "$Id: ex_visual.c,v 9.5 1995/02/02 15:14:41 bostic Exp $ (Berkeley) $Date: 1995/02/02 15:14:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -41,7 +41,7 @@ ex_visual(sp, cmdp)
 	EXCMDARG *cmdp;
 {
 	size_t len;
-	int pos;
+	int pos, rval;
 	char buf[256];
 
 	/* If open option off, disallow visual command. */
@@ -103,9 +103,35 @@ ex_visual(sp, cmdp)
 		break;
 	}
 
-	/* Switch modes. */
-nopush:	F_CLR(sp, S_SCREENS);
+	/*
+	 * !!!
+	 * You can call the visual part of the editor from within an ex
+	 * global command.
+	 */
+nopush:	rval = 0;
+	F_CLR(sp, S_SCREENS);
 	F_SET(sp, sp->saved_vi_mode);
 
-	return (0);
+	if (F_ISSET(sp, S_GLOBAL)) {
+		/*
+		 * When the vi screen(s) exit, we don't want to lose our hold
+		 * on this screen or this file, otherwise we're going to fail
+		 * fairly spectacularly.
+		 */
+		++sp->refcnt;
+		++sp->ep->refcnt;
+
+		/*
+		 * !!!
+		 * Historically, if the user exited the vi screen(s) using an
+		 * ex quit command (e.g. :wq, :q) ex/vi exited, it was only if
+		 * they exited vi using the Q command that ex continued.  We
+		 * continue in ex regardless, based on the belief that Q isn't
+		 * that intuitive for most users and the intent is clear.
+		 */
+		rval = svi_screen_edit(sp);
+		F_CLR(sp, S_SCREENS);
+		F_SET(sp, S_EX);
+	}
+	return (rval);
 }
