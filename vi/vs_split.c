@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_split.c,v 10.18 1996/03/15 20:19:19 bostic Exp $ (Berkeley) $Date: 1996/03/15 20:19:19 $";
+static const char sccsid[] = "$Id: vs_split.c,v 10.19 1996/03/18 09:09:04 bostic Exp $ (Berkeley) $Date: 1996/03/18 09:09:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,11 +31,12 @@ static const char sccsid[] = "$Id: vs_split.c,v 10.18 1996/03/15 20:19:19 bostic
  * vs_split --
  *	Create a new screen.
  *
- * PUBLIC: int vs_split __P((SCR *, SCR *));
+ * PUBLIC: int vs_split __P((SCR *, SCR *, int));
  */
 int
-vs_split(sp, new)
+vs_split(sp, new, ccl)
 	SCR *sp, *new;
+	int ccl;		/* Colon-command line split. */
 {
 	GS *gp;
 	SMAP *smp;
@@ -45,12 +46,14 @@ vs_split(sp, new)
 	gp = sp->gp;
 
 	/* Check to see if it's possible. */
-	if (sp->rows <= 3) {
+	if (sp->rows < 4) {
 		msgq(sp, M_ERR,
-		    "222|The screen must be larger than 3 lines to split");
+		    "222|Screen must be larger than %d lines to split", 4 - 1);
 		return (1);
 	}
 	half = sp->rows / 2;
+	if (ccl && half > 6)
+		half = 6;
 
 	/* Get a new screen map. */
 	CALLOC(sp, _HMAP(new), SMAP *, SIZE_HMAP(sp), sizeof(SMAP));
@@ -64,21 +67,20 @@ vs_split(sp, new)
 	 */
 	issmallscreen = IS_SMALL(sp);
 
-	/*
-	 * Split the screen, and link the screens together.  If the cursor
-	 * is in the top half of the current screen, the new screen goes
-	 * under the current screen.  Else, it goes above the current screen.
-	 *
-	 * The columns in the screen don't change.
-	 */
+	/* The columns in the screen don't change. */
 	new->cols = sp->cols;
 
 	/*
+	 * Split the screen, and link the screens together.  If creating a
+	 * screen to edit the colon command line or the cursor is in the top
+	 * half of the current screen, the new screen goes under the current
+	 * screen.  Else, it goes above the current screen.
+	 *
 	 * Recalculate current cursor position based on sp->lno, we're called
 	 * with the cursor on the colon command line.  Then split the screen
 	 * in half and update the shared information.
 	 */
-	splitup = (vs_sm_cursor(sp, &smp) ? 0 : smp - HMAP) > half;
+	splitup = !ccl && (vs_sm_cursor(sp, &smp) ? 0 : smp - HMAP) > half;
 	if (splitup) {				/* Old is bottom half. */
 		new->rows = sp->rows - half;	/* New. */
 		new->woff = sp->woff;
@@ -94,9 +96,9 @@ vs_split(sp, new)
 		memmove(_HMAP(sp), _HMAP(sp) + new->rows,
 		    (sp->t_maxrows - new->rows) * sizeof(SMAP));
 	} else {				/* Old is top half. */
-		new->rows = sp->rows - half;	/* New. */
-		new->woff = sp->woff + half;
-		sp->rows = half;		/* Old. */
+		new->rows = half;		/* New. */
+		sp->rows -= half;		/* Old. */
+		new->woff = sp->woff + sp->rows;
 						/* Link in after old. */
 		CIRCLEQ_INSERT_AFTER(&gp->dq, sp, new, q);
 	}
