@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_split.c,v 10.25 1996/06/08 14:38:10 bostic Exp $ (Berkeley) $Date: 1996/06/08 14:38:10 $";
+static const char sccsid[] = "$Id: vs_split.c,v 10.26 1996/06/28 16:14:57 bostic Exp $ (Berkeley) $Date: 1996/06/28 16:14:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -262,20 +262,23 @@ vs_discard(sp, spp)
  * vs_fg --
  *	Background the current screen, and foreground a new one.
  *
- * PUBLIC: int vs_fg __P((SCR *, CHAR_T *));
+ * PUBLIC: int vs_fg __P((SCR *, CHAR_T *, int));
  */
 int
-vs_fg(csp, name)
-	SCR *csp;
+vs_fg(sp, name, newscreen)
+	SCR *sp;
 	CHAR_T *name;
+	int newscreen;
 {
 	GS *gp;
-	SCR *sp;
+	SCR *nsp;
 
-	if (vs_swap(csp, &sp, name))
+	gp = sp->gp;
+
+	if (vs_swap(sp, &nsp, name))
 		return (1);
-	if (sp == NULL) {
-		msgq_str(csp, M_ERR, name,
+	if (nsp == NULL) {
+		msgq_str(sp, M_ERR, name,
 		    name == NULL ?
 		    "223|There are no background screens" :
 		    "224|There's no background screen editing a file named %s");
@@ -283,9 +286,8 @@ vs_fg(csp, name)
 	}
 
 	/* Move the old screen to the hidden queue. */
-	gp = csp->gp;
-	CIRCLEQ_REMOVE(&gp->dq, csp, q);
-	CIRCLEQ_INSERT_TAIL(&gp->hq, csp, q);
+	CIRCLEQ_REMOVE(&gp->dq, sp, q);
+	CIRCLEQ_INSERT_TAIL(&gp->hq, sp, q);
 
 	return (0);
 }
@@ -297,33 +299,34 @@ vs_fg(csp, name)
  * PUBLIC: int vs_bg __P((SCR *));
  */
 int
-vs_bg(csp)
-	SCR *csp;
+vs_bg(sp)
+	SCR *sp;
 {
 	GS *gp;
-	SCR *sp;
+	SCR *nsp;
+
+	gp = sp->gp;
 
 	/* Try and join with another screen. */
-	if (vs_discard(csp, &sp))
+	if (vs_discard(sp, &nsp))
 		return (1);
-	if (sp == NULL) {
-		msgq(csp, M_ERR,
+	if (nsp == NULL) {
+		msgq(sp, M_ERR,
 		    "225|You may not background your only displayed screen");
 		return (1);
 	}
 
 	/* Move the old screen to the hidden queue. */
-	gp = csp->gp;
-	CIRCLEQ_REMOVE(&gp->dq, csp, q);
-	CIRCLEQ_INSERT_TAIL(&gp->hq, csp, q);
+	CIRCLEQ_REMOVE(&gp->dq, sp, q);
+	CIRCLEQ_INSERT_TAIL(&gp->hq, sp, q);
 
 	/* Toss the screen map. */
-	free(_HMAP(csp));
-	_HMAP(csp) = NULL;
+	free(_HMAP(sp));
+	_HMAP(sp) = NULL;
 
 	/* Switch screens. */
-	csp->nextdisp = sp;
-	F_SET(csp, SC_SSWITCH);
+	sp->nextdisp = nsp;
+	F_SET(sp, SC_SSWITCH);
 
 	return (0);
 }
@@ -335,25 +338,24 @@ vs_bg(csp)
  * PUBLIC: int vs_swap __P((SCR *, SCR **, char *));
  */
 int
-vs_swap(csp, nsp, name)
-	SCR *csp, **nsp;
+vs_swap(sp, nspp, name)
+	SCR *sp, **nspp;
 	char *name;
 {
 	GS *gp;
-	SCR *sp;
-	int issmallscreen;
+	SCR *nsp;
 
 	/* Find the screen, or, if name is NULL, the first screen. */
-	gp = csp->gp;
-	for (sp = gp->hq.cqh_first;
-	    sp != (void *)&gp->hq; sp = sp->q.cqe_next)
-		if (name == NULL || !strcmp(sp->frp->name, name))
+	gp = sp->gp;
+	for (nsp = gp->hq.cqh_first;
+	    nsp != (void *)&gp->hq; nsp = nsp->q.cqe_next)
+		if (name == NULL || !strcmp(nsp->frp->name, name))
 			break;
-	if (sp == (void *)&gp->hq) {
-		*nsp = NULL;
+	if (nsp == (void *)&gp->hq) {
+		*nspp = NULL;
 		return (0);
 	}
-	*nsp = sp;
+	*nspp = nsp;
 
 	/*
 	 * Save the old screen's cursor information.
@@ -362,25 +364,23 @@ vs_swap(csp, nsp, name)
 	 * If called after file_end(), and the underlying file was a tmp
 	 * file, it may have gone away.
 	 */
-	if (csp->frp != NULL) {
-		csp->frp->lno = csp->lno;
-		csp->frp->cno = csp->cno;
-		F_SET(csp->frp, FR_CURSORSET);
+	if (sp->frp != NULL) {
+		sp->frp->lno = sp->lno;
+		sp->frp->cno = sp->cno;
+		F_SET(sp->frp, FR_CURSORSET);
 	}
 
 	/* Switch screens. */
-	csp->nextdisp = sp;
-	F_SET(csp, SC_SSWITCH);
+	sp->nextdisp = nsp;
+	F_SET(sp, SC_SSWITCH);
 
 	/* Initialize terminal information. */
-	VIP(sp)->srows = VIP(csp)->srows;
-
-	issmallscreen = IS_SMALL(sp);
+	VIP(nsp)->srows = VIP(sp)->srows;
 
 	/* Initialize screen information. */
-	sp->cols = csp->cols;
-	sp->rows = csp->rows;	/* XXX: Only place in vi that sets rows. */
-	sp->woff = csp->woff;
+	nsp->cols = sp->cols;
+	nsp->rows = sp->rows;	/* XXX: Only place in vi that sets rows. */
+	nsp->woff = sp->woff;
 
 	/*
 	 * Small screens: see vs_refresh.c, section 6a.
@@ -389,24 +389,24 @@ vs_swap(csp, nsp, name)
 	 * old one, so use them.  Make sure that text counts aren't larger
 	 * than the new screen sizes.
 	 */
-	if (issmallscreen) {
-		sp->t_minrows = sp->t_rows = O_VAL(sp, O_WINDOW);
-		if (sp->t_rows > csp->t_maxrows)
-			sp->t_rows = sp->t_maxrows;
-		if (sp->t_minrows > csp->t_maxrows)
-			sp->t_minrows = sp->t_maxrows;
+	if (IS_SMALL(nsp)) {
+		nsp->t_minrows = nsp->t_rows = O_VAL(nsp, O_WINDOW);
+		if (nsp->t_rows > sp->t_maxrows)
+			nsp->t_rows = nsp->t_maxrows;
+		if (nsp->t_minrows > sp->t_maxrows)
+			nsp->t_minrows = nsp->t_maxrows;
 	} else
-		sp->t_rows = sp->t_maxrows = sp->t_minrows = sp->rows - 1;
+		nsp->t_rows = nsp->t_maxrows = nsp->t_minrows = nsp->rows - 1;
 
 	/* Reset the length of the default scroll. */
-	sp->defscroll = sp->t_maxrows / 2;
+	nsp->defscroll = nsp->t_maxrows / 2;
 
 	/* Allocate a new screen map. */
-	CALLOC_RET(sp, HMAP, SMAP *, SIZE_HMAP(sp), sizeof(SMAP));
-	TMAP = HMAP + (sp->t_rows - 1);
+	CALLOC_RET(nsp, HMAP, SMAP *, SIZE_HMAP(nsp), sizeof(SMAP));
+	TMAP = HMAP + (nsp->t_rows - 1);
 
 	/* Fill the map. */
-	if (vs_sm_fill(sp, sp->lno, P_FILL))
+	if (vs_sm_fill(nsp, nsp->lno, P_FILL))
 		return (1);
 
 	/*
@@ -415,17 +415,17 @@ vs_swap(csp, nsp, name)
 	 * the exit will delete the old one, if we're foregrounding, the fg
 	 * code will move the old one to the hidden queue.
 	 */
-	CIRCLEQ_REMOVE(&gp->hq, sp, q);
-	CIRCLEQ_INSERT_AFTER(&gp->dq, csp, sp, q);
+	CIRCLEQ_REMOVE(&gp->hq, nsp, q);
+	CIRCLEQ_INSERT_AFTER(&gp->dq, sp, nsp, q);
 
 	/*
 	 * Don't change the screen's cursor information other than to
 	 * note that the cursor is wrong.
 	 */
-	F_SET(VIP(sp), VIP_CUR_INVALID);
+	F_SET(VIP(nsp), VIP_CUR_INVALID);
 
 	/* Draw the new screen from scratch, and add a status line. */
-	F_SET(sp, SC_SCR_REDRAW | SC_STATUS);
+	F_SET(nsp, SC_SCR_REDRAW | SC_STATUS);
 	return (0);
 }
 
