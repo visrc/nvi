@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.6 1993/08/15 13:11:14 bostic Exp $ (Berkeley) $Date: 1993/08/15 13:11:14 $";
+static char sccsid[] = "$Id: ex.c,v 8.7 1993/08/16 11:38:11 bostic Exp $ (Berkeley) $Date: 1993/08/16 11:38:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -103,12 +103,16 @@ ex_cfile(sp, ep, filename, noexisterr)
 	if (fstat(fd, &sb))
 		goto e2;
 
-	if (sb.st_size > SIZE_T_MAX) {
-		errno = E2BIG;
-		goto e2;
-	}
-
-	if ((bp = malloc(sb.st_size)) == NULL)
+	/*
+	 * XXX
+	 * We'd like to test if the file is too big to malloc.  Since we don't
+	 * know what size or type off_t's or size_t's are, what the largest
+	 * unsigned integral type is, or what random insanity the local C
+	 * compiler will perpetrate, doing the comparison in a portable way
+	 * is flatly impossible.  Hope that malloc fails if the file is too
+	 * large.
+	 */
+	if ((bp = malloc((size_t)sb.st_size)) == NULL)
 		goto e2;
 
 	len = read(fd, bp, (int)sb.st_size);
@@ -480,14 +484,6 @@ two:		switch (cmd.addrcnt) {
 					goto end2;
 				}
 end2:			break;
-#ifdef XXX_THIS_NO_LONGER_USED
-		case '>':				/*  >> */
-			if (exc[0] == '>' && exc[1] == '>') {
-				cmd.flags |= E_APPEND;
-				exc += 2;
-			}
-			break;
-#endif
 		case 'b':				/* buffer */
 			cmd.buffer = *exc++;
 			break;
