@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 9.6 1994/12/15 19:27:22 bostic Exp $ (Berkeley) $Date: 1994/12/15 19:27:22 $";
+static char sccsid[] = "$Id: ex_tag.c,v 9.7 1994/12/16 09:58:15 bostic Exp $ (Berkeley) $Date: 1994/12/16 09:58:15 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -910,7 +910,7 @@ tag_msg(sp, msg, tag)
 	switch (msg) {
 	case TAG_BADLNO:
 		p = msg_print(sp, tag, &nf);
-		msgq(sp, M_ERR, "269|%s: the tag line doesn't exist", p);
+		msgq(sp, M_ERR, "071|%s: the tag line doesn't exist", p);
 		break;
 	case TAG_EMPTY:
 		msgq(sp, M_INFO, "164|The tags stack is empty");
