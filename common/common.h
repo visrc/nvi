@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 8.42 1994/04/09 18:22:32 bostic Exp $ (Berkeley) $Date: 1994/04/09 18:22:32 $
+ *	$Id: common.h,v 8.43 1994/05/01 15:17:59 bostic Exp $ (Berkeley) $Date: 1994/05/01 15:17:59 $
  */
 
 /*
@@ -85,6 +85,7 @@ u_long	 baud_from_bval __P((SCR *));
 int	 nonblank __P((SCR *, EXF *, recno_t, size_t *));
 void	 set_alt_name __P((SCR *, char *));
 int	 set_window_size __P((SCR *, u_int, int));
+void	 sig_end __P((void));
 int	 status __P((SCR *, EXF *, recno_t, int));
 char	*tail __P((char *));
 CHAR_T	*v_strdup __P((SCR *, CHAR_T *, size_t));
