@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_match.c,v 8.6 1993/11/07 15:19:32 bostic Exp $ (Berkeley) $Date: 1993/11/07 15:19:32 $";
+static char sccsid[] = "$Id: v_match.c,v 8.7 1993/12/09 17:05:51 bostic Exp $ (Berkeley) $Date: 1993/12/09 17:05:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -15,8 +15,6 @@ static char sccsid[] = "$Id: v_match.c,v 8.6 1993/11/07 15:19:32 bostic Exp $ (B
 
 #include "vi.h"
 #include "vcmd.h"
-
-static int	findmatchc __P((MARK *, char *, size_t, MARK *));
 
 /*
  * v_match -- %
@@ -32,7 +30,7 @@ v_match(sp, ep, vp, fm, tm, rp)
 	register int cnt, matchc, startc;
 	VCS cs;
 	recno_t lno;
-	size_t len;
+	size_t len, off;
 	int (*gc)__P((SCR *, EXF *, VCS *));
 	char *p;
 
@@ -45,50 +43,48 @@ v_match(sp, ep, vp, fm, tm, rp)
 		return (1);
 	}
 
-	if (len == 0)
-		goto nomatch;
-
-retry:	switch (startc = p[fm->cno]) {
-	case '(':
-		matchc = ')';
-		gc = cs_next;
-		break;
-	case ')':
-		matchc = '(';
-		gc = cs_prev;
-		break;
-	case '[':
-		matchc = ']';
-		gc = cs_next;
-		break;
-	case ']':
-		matchc = '[';
-		gc = cs_prev;
-		break;
-	case '{':
-		matchc = '}';
-		gc = cs_next;
-		break;
-	case '}':
-		matchc = '{';
-		gc = cs_prev;
-		break;
-	default:
-		if (F_ISSET(vp, VC_C | VC_D | VC_Y)) {
-			msgq(sp, M_BERR,
-			    "No proximity match for motion commands.");
-			return (1);
-		}
-		if (len == 0 || findmatchc(fm, p, len, rp)) {
+	/*
+	 * !!!
+	 * Historical practice was to search in the forward direction only.
+	 */
+	for (off = fm->cno;; ++off) {
+		if (off >= len) {
 nomatch:		msgq(sp, M_BERR, "No match character on this line.");
 			return (1);
 		}
-		fm->cno = rp->cno;
-		goto retry;
+		switch (startc = p[off]) {
+		case '(':
+			matchc = ')';
+			gc = cs_next;
+			break;
+		case ')':
+			matchc = '(';
+			gc = cs_prev;
+			break;
+		case '[':
+			matchc = ']';
+			gc = cs_next;
+			break;
+		case ']':
+			matchc = '[';
+			gc = cs_prev;
+			break;
+		case '{':
+			matchc = '}';
+			gc = cs_next;
+			break;
+		case '}':
+			matchc = '{';
+			gc = cs_prev;
+			break;
+		default:
+			continue;
+		}
+		break;
 	}
 
 	cs.cs_lno = fm->lno;
-	cs.cs_cno = fm->cno;
+	cs.cs_cno = off;
 	if (cs_init(sp, ep, &cs))
 		return (1);
 	for (cnt = 1;;) {
@@ -126,56 +122,5 @@ nomatch:		msgq(sp, M_BERR, "No match character on this line.");
 			else
 				++fm->cno;
 	}
-	return (0);
-}
-
-/*
- * findmatchc --
- *	If we're not on a character we know how to match, try and find the
- *	closest character from the set "{}[]()".  The historic vi did this
- *	as well, but it only searched forward from the cursor.  This seems
- *	wrong, so we search both forward and backward on the line, going
- *	to the closest hit.  Ties go left because differently handed people
- *	have been traditionally discriminated against by our society.
- */
-static int
-findmatchc(fm, p, len, rp)
-	MARK *fm, *rp;
-	char *p;
-	size_t len;
-{
-	register size_t off;
-	size_t left, right;			/* Can't be uninitialized. */
-	int leftfound, rightfound;
-	char *t;
-
-	leftfound = rightfound = 0;
-	for (off = 0, t = &p[off]; off++ < fm->cno;)
-		if (strchr("{}[]()", *t++)) {
-			left = off - 1;
-			leftfound = 1;
-			break;
-		}
-
-	for (off = fm->cno + 1, t = &p[off]; off++ < len;)
-		if (strchr("{}[]()", *t++)) {
-			right = off - 1;
-			rightfound = 1;
-			break;
-		}
-
-	rp->lno = fm->lno;
-	if (leftfound)
-		if (rightfound)
-			if (fm->cno - left > right - fm->cno)
-				rp->cno = right;
-			else
-				rp->cno = left;
-		else
-			rp->cno = left;
-	else if (rightfound)
-		rp->cno = right;
-	else
-		return (1);
 	return (0);
 }
