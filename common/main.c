@@ -6,13 +6,13 @@
  */
 
 #ifndef lint
-static char copyright[] =
+static const char copyright[] =
 "%Z% Copyright (c) 1992, 1993, 1994\n\
 	The Regents of the University of California.  All rights reserved.\n";
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.104 1994/08/15 18:48:39 bostic Exp $ (Berkeley) $Date: 1994/08/15 18:48:39 $";
+static const char sccsid[] = "$Id: main.c,v 8.105 1994/08/17 09:43:36 bostic Exp $ (Berkeley) $Date: 1994/08/17 09:43:36 $";
 #endif /* not lint */
 
 #include <sys/param.h>
