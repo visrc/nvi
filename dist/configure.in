@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.184 2001/10/11 19:22:30 skimo Exp $
+dnl	$Id: configure.in,v 8.185 2001/11/01 10:27:55 skimo Exp $
 dnl Process this file with autoconf to produce a configure script.
 
 AC_INIT(../common/main.c)
@@ -239,7 +239,7 @@ dnl Check whether we can use iconv
 AC_CHECK_HEADER(langinfo.h, [
 	AC_CHECK_HEADER(iconv.h, [
 		AC_DEFINE(USE_ICONV)
-		AC_REPLACE_FUNCS(iswchar)
+		AC_REPLACE_FUNCS(iswblank)
 	])
 ])
 

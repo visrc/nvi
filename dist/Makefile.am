@@ -151,6 +151,7 @@ EXTRA_libvi_la_SOURCES = \
 	$(visrcdir)/clib/bsearch.c \
 	$(visrcdir)/clib/env.c \
 	$(visrcdir)/clib/gethostname.c \
+	$(visrcdir)/clib/iswblank.c \
 	$(visrcdir)/clib/memchr.c \
 	$(visrcdir)/clib/memset.c \
 	$(visrcdir)/clib/mkstemp.c \
