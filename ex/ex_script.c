@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_script.c,v 10.18 1996/03/20 20:17:41 bostic Exp $ (Berkeley) $Date: 1996/03/20 20:17:41 $";
+static const char sccsid[] = "$Id: ex_script.c,v 10.19 1996/03/28 08:57:10 bostic Exp $ (Berkeley) $Date: 1996/03/28 08:57:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,15 +33,6 @@ static const char sccsid[] = "$Id: ex_script.c,v 10.18 1996/03/20 20:17:41 bosti
 
 #include "../common/common.h"
 #include "script.h"
-
-/*
- * XXX
- */
-#ifdef TIOCGWINSZ
-int openpty __P((int *, int *, char *, struct termios *, struct winsize *));
-#else
-int openpty __P((int *, int *, char *, struct termios *, NULL));
-#endif
 
 static void	sscr_check __P((SCR *));
 static int	sscr_getprompt __P((SCR *));
@@ -122,13 +113,13 @@ sscr_init(sp)
 		goto err;
 	}
 
-	if (openpty(&sc->sh_master,
+	if (ex_openpty(&sc->sh_master,
 	    &sc->sh_slave, sc->sh_name, &sc->sh_term, &sc->sh_win) == -1) {
 		msgq(sp, M_SYSERR, "openpty");
 		goto err;
 	}
 #else
-	if (openpty(&sc->sh_master,
+	if (ex_openpty(&sc->sh_master,
 	    &sc->sh_slave, sc->sh_name, &sc->sh_term, NULL) == -1) {
 		msgq(sp, M_SYSERR, "openpty");
 		goto err;
@@ -281,8 +272,7 @@ more:	len = sizeof(buf) - (endp - buf);
 	endp = buf;
 
 	/* Append the line into the file. */
-	if (db_last(sp, &lline) ||
-	    db_append(sp, 0, lline, buf, llen)) {
+	if (db_last(sp, &lline) || db_append(sp, 0, lline, buf, llen)) {
 prompterr:	sscr_end(sp);
 		return (1);
 	}
@@ -509,7 +499,7 @@ ret:	FREE_SPACE(sp, bp, blen);
 static int
 sscr_setprompt(sp, buf, len)
 	SCR *sp;
-	char* buf;
+	char *buf;
 	size_t len;
 {
 	SCRIPT *sc;
