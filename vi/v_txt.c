@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.64 1996/05/10 17:13:56 bostic Exp $ (Berkeley) $Date: 1996/05/10 17:13:56 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.65 1996/05/15 19:58:24 bostic Exp $ (Berkeley) $Date: 1996/05/15 19:58:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -2582,11 +2582,8 @@ txt_isrch(sp, vp, tp, is_flagsp)
 
 		if (!KEYS_WAITING(sp) && vs_refresh(sp, 0))
 			return (1);
-	} else {
+	} else
 		FL_SET(*is_flagsp, IS_RESTART);
-
-		(void)sp->gp->scr_bell(sp);
-	}
 
 	/* Reinstantiate the special input map. */
 	if (txt_map_init(sp))
