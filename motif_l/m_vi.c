@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_vi.c,v 8.21 1996/12/10 17:07:23 bostic Exp $ (Berkeley) $Date: 1996/12/10 17:07:23 $";
+static const char sccsid[] = "$Id: m_vi.c,v 8.22 1996/12/10 17:40:29 bostic Exp $ (Berkeley) $Date: 1996/12/10 17:40:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1375,40 +1375,3 @@ _vi_move_caret(this_screen, newy, newx)
     this_screen->cury = newy;
     draw_caret( this_screen );
 }
-
-#if 0
-
-int
-main(argc, argv)
-	int argc;
-	char *argv[];
-{
-	/*
-	 * Initialize the X widgetry.  We must do this before picking off
-	 * arguments as well-behaved X programs have common argument lists
-	 * (e.g. -rv for reverse video).
-	 */
-	ip_x_init(&argc, argv );
-
-	/* Run vi: the child returns. */
-	(void)run_vi(argc, argv, &i_fd, &o_fd);
-
-	/* Initialize signals. */
-	ip_siginit();
-
-	/* tell X that we are interested in input on the pipe */
-	XtAppAddInput( ctx, i_fd, XtInputReadMask, pipe_input_func, NULL );
-
-	/* what does the user want to see? */
-	_vi_set_cursor( cur_screen, False );
-
-	/* vi wants a resize as the first event */
-	send_resize( cur_screen );
-
-	/* Main loop. */
-	XtAppMainLoop( ctx );
-
-	/* NOTREACHED */
-	abort();
-}
-#endif
