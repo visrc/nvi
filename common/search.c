@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 5.9 1992/11/06 18:07:19 bostic Exp $ (Berkeley) $Date: 1992/11/06 18:07:19 $";
+static char sccsid[] = "$Id: search.c,v 5.10 1992/11/07 18:50:26 bostic Exp $ (Berkeley) $Date: 1992/11/07 18:50:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,7 +27,6 @@ static char sccsid[] = "$Id: search.c,v 5.9 1992/11/06 18:07:19 bostic Exp $ (Be
 enum direction searchdir = NOTSET;	/* Search direction. */
 
 static regex_t sre;			/* Saved RE. */
-static regmatch_t match[1];		/* Match table. */
 
 static int	checkdelta __P((EXF *, recno_t, recno_t));
 static int	resetup __P((regex_t **, enum direction,
@@ -107,6 +106,7 @@ f_search(ep, fm, ptrn, eptrn, flags)
 	u_int flags;
 {
 	static MARK rval;
+	regmatch_t match[1];
 	regex_t *re, lre;
 	recno_t delta, lno;
 	size_t coff, len;
@@ -216,6 +216,7 @@ b_search(ep, fm, ptrn, eptrn, flags)
 	u_int flags;
 {
 	static MARK rval;
+	regmatch_t match[1];
 	regex_t *re, lre;
 	size_t coff, len, last;
 	recno_t delta, lno;
