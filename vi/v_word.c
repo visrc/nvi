@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_word.c,v 5.14 1993/04/12 14:58:02 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:58:02 $";
+static char sccsid[] = "$Id: v_word.c,v 5.15 1993/04/19 15:34:02 bostic Exp $ (Berkeley) $Date: 1993/04/19 15:34:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -116,7 +116,7 @@ fword(sp, ep, vp, fm, rp, spaceonly)
 		if (len != 0)
 			if (spaceonly) {
 				FW(!isspace(*p));
-				if (cnt == 0 && F_ISSET(vp, VC_C))
+				if (cnt == 0 && F_ISSET(vp, VC_C | VC_Y))
 					break;
 				FW(isspace(*p));
 			} else {
@@ -124,17 +124,17 @@ fword(sp, ep, vp, fm, rp, spaceonly)
 					FW(inword(*p));
 				else
 					FW(!isspace(*p) && !inword(*p));
-				if (cnt == 0 && F_ISSET(vp, VC_C))
+				if (cnt == 0 && F_ISSET(vp, VC_C | VC_Y))
 					break;
 				FW(isspace(*p));
 			}
-		if (cnt == 0 && F_ISSET(vp, VC_C))
+		if (cnt == 0 && F_ISSET(vp, VC_C | VC_Y))
 			break;
 		if (len == 0) {
 			/* If we hit EOF, stay there (historic practice). */
 			if ((p = file_gline(sp, ep, ++lno, &len)) == NULL) {
 				/* If already at eof, complain. */
-				if (empty && !F_ISSET(vp, VC_C | VC_D)) {
+				if (empty && !F_ISSET(vp, VC_C | VC_D | VC_Y)) {
 					v_eof(sp, ep, NULL);
 					return (1);
 				}
@@ -144,7 +144,8 @@ fword(sp, ep, vp, fm, rp, spaceonly)
 					return (1);
 				}
 				rp->lno = lno;
-				rp->cno = len ? F_ISSET(vp, VC_C | VC_D) ? 
+				rp->cno = len ?
+				    F_ISSET(vp, VC_C | VC_D | VC_Y) ? 
 				    len : len - 1 : 0;
 				return (0);
 			}
