@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: exf.c,v 10.34 1996/05/15 17:39:48 bostic Exp $ (Berkeley) $Date: 1996/05/15 17:39:48 $";
+static const char sccsid[] = "$Id: exf.c,v 10.35 1996/05/16 08:12:23 bostic Exp $ (Berkeley) $Date: 1996/05/16 08:12:23 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -1299,9 +1299,11 @@ file_lock(sp, name, fdp, fd, iswrite)
 	 * they are the former.  There's no portable way to do this.
 	 */
 	errno = 0;
-	return (flock(fd, LOCK_EX | LOCK_NB) ?
-	    errno == EAGAIN || errno == EWOULDBLOCK ?
-	        LOCK_UNAVAIL : LOCK_FAILED : LOCK_SUCCESS);
+	return (flock(fd, LOCK_EX | LOCK_NB) ? errno == EAGAIN
+#ifdef EWOULDBLOCK
+	    || errno == EWOULDBLOCK
+#endif
+	    ? LOCK_UNAVAIL : LOCK_FAILED : LOCK_SUCCESS);
 #endif
 #ifdef HAVE_LOCK_FCNTL			/* Gag me.  We've got fcntl(2). */
 {
