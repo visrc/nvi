@@ -1,4 +1,4 @@
-#	$Id: README,v 8.106 1995/02/09 17:27:47 bostic Exp $ (Berkeley) $Date: 1995/02/09 17:27:47 $
+#	$Id: README,v 8.107 1995/02/09 18:03:41 bostic Exp $ (Berkeley) $Date: 1995/02/09 18:03:41 $
 
 This is the README for nex/nvi, a freely redistributable replacement for
 the ex/vi text editors originally distributed as part of the Fourth
@@ -37,8 +37,9 @@ Keith Bostic
 o Redistribution:
 
 This software is copyrighted by The Regents of the University of California
-and Keith Bostic, but may be freely redistributed (or sold, or used to line
-your birdcage) under the following conditions:
+and Keith Bostic.  It may be freely redistributed (or sold, or used to line
+your birdcage) until eighteen months after the release of a subsequent version
+of nvi, under the following conditions:
 
 /*-
  * Copyright (c) 1991, 1992, 1993, 1994
