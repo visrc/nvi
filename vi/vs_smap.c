@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 8.32 1994/03/10 11:20:46 bostic Exp $ (Berkeley) $Date: 1994/03/10 11:20:46 $";
+static char sccsid[] = "$Id: vs_smap.c,v 8.33 1994/03/10 12:08:51 bostic Exp $ (Berkeley) $Date: 1994/03/10 12:08:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -968,31 +968,63 @@ svi_sm_position(sp, ep, rp, cnt, pos)
 	
 	switch (pos) {
 	case P_TOP:
+		/*
+		 * !!!
+		 * Historically, an invalid count to the H command failed.
+		 * We do nothing special here, just making sure that H in
+		 * an empty screen works.
+		 */
 		if (cnt > TMAP - HMAP)
-			goto err;
+			goto sof;
 		smp = HMAP + cnt;
-		break;
-	case P_MIDDLE:
-		if (cnt > (TMAP - HMAP) / 2)
-			goto err;
-		smp = (HMAP + (TMAP - HMAP) / 2) + cnt;
-		goto eof;
-	case P_BOTTOM:
-		if (cnt > TMAP - HMAP) {
-err:			msgq(sp, M_BERR, "Movement past the end-of-screen.");
+		if (cnt && file_gline(sp, ep, smp->lno, NULL) == NULL) {
+sof:			msgq(sp, M_BERR, "Movement past the end-of-screen.");
 			return (1);
 		}
+		break;
+	case P_MIDDLE:
+		/*
+		 * !!!
+		 * Historically, a count to the M command was ignored.
+		 * If the screen isn't filled, find the middle of what's
+		 * real and move there.
+		 */
+		if (file_gline(sp, ep, TMAP->lno, NULL) == NULL) {
+			if (file_lline(sp, ep, &last))
+				return (1);
+			for (smp = TMAP; smp->lno > last && smp > HMAP; --smp);
+			if (smp > HMAP)
+				smp -= (smp - HMAP) / 2;
+		} else
+			smp = (HMAP + (TMAP - HMAP) / 2) + cnt;
+		break;
+	case P_BOTTOM:
+		/*
+		 * !!!
+		 * Historically, an invalid count to the L command failed.
+		 * If the screen isn't filled, find the bottom of what's
+		 * real and try to offset from there.
+		 */
+		if (cnt > TMAP - HMAP)
+			goto eof;
 		smp = TMAP - cnt;
-eof:		if (file_gline(sp, ep, smp->lno, NULL) == NULL) {
+		if (file_gline(sp, ep, smp->lno, NULL) == NULL) {
 			if (file_lline(sp, ep, &last))
 				return (1);
 			for (; smp->lno > last && smp > HMAP; --smp);
+			if (cnt > smp - HMAP) {
+eof:				msgq(sp, M_BERR,
+				    "Movement past the beginning-of-screen.");
+				return (1);
+			}
+			smp -= cnt;
 		}
 		break;
 	default:
 		abort();
 	}
 
+	/* Make sure that the cached information is valid. */
 	if (!SMAP_CACHE(smp) && svi_line(sp, ep, smp, NULL, NULL))
 		return (1);
 	rp->lno = smp->lno;
