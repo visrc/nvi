@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 5.18 1993/05/15 21:26:40 bostic Exp $ (Berkeley) $Date: 1993/05/15 21:26:40 $";
+static char sccsid[] = "$Id: vs_line.c,v 5.19 1993/05/27 22:03:03 bostic Exp $ (Berkeley) $Date: 1993/05/27 22:03:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -96,11 +96,13 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 	 * line or any left-right line, display the line number.  Set
 	 * the number of columns for this screen.
 	 */
-	if (!ISINFOLINE(sp, smp) &&
-	    O_ISSET(sp, O_NUMBER) && skip_screens == 0) {
-		cols_per_screen = sp->cols -
-		    snprintf(nbuf, sizeof(nbuf), O_NUMBER_FMT, smp->lno);
-		ADDSTR(nbuf);
+	if (O_ISSET(sp, O_NUMBER) && !ISINFOLINE(sp, smp)) {
+		cols_per_screen = sp->cols - O_NUMBER_LENGTH;
+		if (skip_screens == 0) {
+			(void)snprintf(nbuf,
+			    sizeof(nbuf), O_NUMBER_FMT, smp->lno);
+			ADDSTR(nbuf);
+		}
 	} else
 		cols_per_screen = sp->cols;
 
@@ -160,6 +162,7 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 				continue;
 			}
 			count_cols -= cols_per_screen;
+			cols_per_screen = sp->cols;
 			if (--skip_screens || !count_cols) {
 				if (cno_cnt)
 					--cno_cnt;
@@ -195,8 +198,12 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 			*yp = smp - HMAP;
 			if (F_ISSET(sp, S_INPUT))
 				*xp = last_count_cols;
-			else if (!partial)
+			else if (!partial) {
 				*xp = count_cols - 1;
+				if (O_ISSET(sp, O_NUMBER) &&
+				    !ISINFOLINE(sp, smp) && smp->off == 1)
+					*xp += O_NUMBER_LENGTH;
+			}
 		}
 
 		/*
