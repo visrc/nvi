@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 8.35 1994/08/31 17:15:20 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:15:20 $";
+static char sccsid[] = "$Id: v_search.c,v 8.36 1994/09/15 08:20:23 bostic Exp $ (Berkeley) $Date: 1994/09/15 08:20:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -231,7 +231,7 @@ search(sp, ep, vp, ptrn, len, flags, dir)
 			goto ret;
 		default:
 usage:			msgq(sp, M_ERR,
-			    "188|Characters after search string and/or delta");
+		    "188|Characters after search string and/or line offset");
 			return (1);
 		}
 	}
