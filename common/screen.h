@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.65 1993/11/22 17:27:55 bostic Exp $ (Berkeley) $Date: 1993/11/22 17:27:55 $
+ *	$Id: screen.h,v 8.66 1993/11/26 15:10:35 bostic Exp $ (Berkeley) $Date: 1993/11/26 15:10:35 $
  */
 
 /*
@@ -95,6 +95,7 @@ struct _scr {
 	FREF	*p_frp;			/* Previous FREF. */
 
 	u_long	 ccnt;			/* Command count. */
+	u_long	 q_ccnt;		/* Quit or ZZ command count. */
 
 					/* Screen's: */
 	size_t	 rows;			/* 1-N: number of rows. */
