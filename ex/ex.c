@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.117 1994/04/13 10:36:11 bostic Exp $ (Berkeley) $Date: 1994/04/13 10:36:11 $";
+static char sccsid[] = "$Id: ex.c,v 8.118 1994/04/26 13:36:20 bostic Exp $ (Berkeley) $Date: 1994/04/26 13:36:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,6 +33,7 @@ static char sccsid[] = "$Id: ex.c,v 8.117 1994/04/13 10:36:11 bostic Exp $ (Berk
 #include "vi.h"
 #include "excmd.h"
 
+static void	badlno __P((SCR *, recno_t));
 static inline EXCMDLIST const *
 		ex_comm_search __P((char *, size_t));
 static int	ep_line __P((SCR *, EXF *, MARK *, char **, size_t *, int *));
@@ -914,6 +915,13 @@ end2:			break;
 				     "%s: bad line specification", cmd);
 				goto err;
 			}
+			/* The line must exist for these commands. */
+			if (file_lline(sp, ep, &lno))
+				goto err;
+			if (cur.lno > lno) {
+				badlno(sp, lno);
+				goto err;
+			}
 			exc.lineno = cur.lno;
 			break;
 		case 'S':				/* string, file exp. */
@@ -1026,12 +1034,7 @@ addr2:	switch (exc.addrcnt) {
 			if (F_ISSET(&exc, E_COUNT))
 				exc.addr2.lno = lno;
 			else {
-				if (lno == 0)
-					msgq(sp, M_ERR, "The file is empty.");
-				else
-					msgq(sp, M_ERR,
-					    "Only %lu line%s in the file.",
-					    lno, lno > 1 ? "s" : "");
+				badlno(sp, lno);
 				goto err;
 			}
 		/* FALLTHROUGH */
@@ -1052,11 +1055,7 @@ addr2:	switch (exc.addrcnt) {
 		if (file_lline(sp, ep, &lno))
 			goto err;
 		if (num > lno) {
-			if (lno == 0)
-				msgq(sp, M_ERR, "The file is empty.");
-			else
-				msgq(sp, M_ERR, "Only %lu line%s in the file.",
-				    lno, lno > 1 ? "s" : "");
+			badlno(sp, lno);
 			goto err;
 		}
 		break;
@@ -1600,4 +1599,16 @@ ex_comm_search(name, len)
 			return (cp);
 	}
 	return (NULL);
+}
+
+static void
+badlno(sp, lno)
+	SCR *sp;
+	recno_t lno;
+{
+	if (lno == 0)
+		msgq(sp, M_ERR, "The file is empty.");
+	else
+		msgq(sp, M_ERR,
+		    "Only %lu line%s in the file.", lno, lno > 1 ? "s" : "");
 }
