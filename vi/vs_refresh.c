@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_refresh.c,v 10.24 1996/03/28 15:19:55 bostic Exp $ (Berkeley) $Date: 1996/03/28 15:19:55 $";
+static const char sccsid[] = "$Id: vs_refresh.c,v 10.25 1996/03/28 17:21:58 bostic Exp $ (Berkeley) $Date: 1996/03/28 17:21:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -650,20 +650,25 @@ number:	if (O_ISSET(sp, O_NUMBER) &&
 		    !F_ISSET(vip, VIP_S_MODELINE) && !IS_ONELINE(sp))
 			vs_modeline(sp);
 
-		OCNO = CNO;
-		OLNO = LNO;
-		(void)gp->scr_move(sp, y, SCNO);
-		(void)gp->scr_refresh(sp, F_ISSET(vip, VIP_N_EX_PAINT));
+		if (LF_ISSET(UPDATE_CURSOR)) {
+			OCNO = CNO;
+			OLNO = LNO;
+			(void)gp->scr_move(sp, y, SCNO);
 
-		/*
-		 * XXX
-		 * Recalculate the "most favorite" cursor position.  Vi won't
-		 * know that we've warped the screen, so it's going to have a
-		 * wrong idea about where the cursor should be.  This is vi's
-		 * problem, and fixing it here is a gross layering violation.
-		 */
-		if (leftright_warp)
-			(void)vs_column(sp, &sp->rcm);
+			/*
+			 * XXX
+			 * If the screen shifted, we recalculate the "most
+			 * favorite" cursor position.  Vi won't know that
+			 * we've warped the screen, so it's going to have
+			 * a wrong idea about where the cursor should be.
+			 * This is vi's problem, and fixing it here is a
+			 * gross layering violation.
+			 */
+			if (leftright_warp)
+				(void)vs_column(sp, &sp->rcm);
+		}
+
+		(void)gp->scr_refresh(sp, F_ISSET(vip, VIP_N_EX_PAINT));
 	}
 
 	/* 10: Clear the flags that are handled by this routine. */
