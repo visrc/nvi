@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.54 1994/05/13 19:48:35 bostic Exp $ (Berkeley) $Date: 1994/05/13 19:48:35 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.55 1994/05/19 11:55:26 bostic Exp $ (Berkeley) $Date: 1994/05/19 11:55:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -786,7 +786,7 @@ svi_modeline(sp, ep)
 	SCR *sp;
 	EXF *ep;
 {
-	char *s, buf[RULERSIZE];
+	char buf[RULERSIZE];
 
 	MOVE(sp, INFOLINE(sp), 0);
 	clrtoeol();

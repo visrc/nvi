@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.58 1994/05/19 09:04:47 bostic Exp $ (Berkeley) $Date: 1994/05/19 09:04:47 $";
+static char sccsid[] = "$Id: recover.c,v 8.59 1994/05/19 11:54:47 bostic Exp $ (Berkeley) $Date: 1994/05/19 11:54:47 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -641,7 +641,6 @@ rcv_copy(sp, wfd, fname)
 	int wfd;
 	char *fname;
 {
-	struct stat sbuf;
 	int nr, nw, off, rfd;
 	char buf[8 * 1024];
 
