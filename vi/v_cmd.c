@@ -6,16 +6,18 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 5.12 1992/04/16 17:58:32 bostic Exp $ (Berkeley) $Date: 1992/04/16 17:58:32 $";
+static char sccsid[] = "$Id: v_cmd.c,v 5.13 1992/04/18 15:40:18 bostic Exp $ (Berkeley) $Date: 1992/04/18 15:40:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
+#include <termios.h>
 #include <stdio.h>
 #include <ctype.h>
 
 #include "vi.h"
 #include "curses.h"
 #include "options.h"
+#include "tty.h"
 #include "extern.h"
 
 /* This array describes what each key does */
@@ -246,6 +248,7 @@ void vi()
 	int			dotkey2;/* last extra "getkey()" of a change */
 	int			dotcnt;	/* last "count" of a change */
 	REG int			i;
+	char *p;
 
 	/* Tell the redraw() function to start from scratch. */
 	iredraw();
@@ -513,15 +516,15 @@ void vi()
 		  case CURSOR_TEXT:
 		  	do
 		  	{	
-				text[0] = key;
-				if (vgets(key, text + 1, sizeof text - 1) >= 0)
-				{
+				if ((p =
+				    gb(key, GB_BS|GB_ESC|GB_OFF)) != NULL) {
 					/* reassure user that <CR> was hit */
 					qaddch('\r');
 					refresh();
 
 					/* call the function with the text */
-					tcurs = (*keyptr->func)(cursor, text);
+					p[0] = key;
+					tcurs = (*keyptr->func)(cursor, p);
 				}
 				else
 				{
