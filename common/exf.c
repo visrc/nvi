@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.4 1993/06/21 11:16:10 bostic Exp $ (Berkeley) $Date: 1993/06/21 11:16:10 $";
+static char sccsid[] = "$Id: exf.c,v 8.5 1993/07/06 12:54:12 bostic Exp $ (Berkeley) $Date: 1993/07/06 12:54:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -321,10 +321,14 @@ file_stop(sp, ep, force)
 	}
 
 	/* Delete the recovery file. */
-	if (!F_ISSET(ep, F_RCV_NORM))
+	if (!F_ISSET(ep, F_RCV_NORM)) {
 		(void)unlink(ep->rcv_path);
+		(void)unlink(ep->rcv_mpath);
+	}
 	if (ep->rcv_path != NULL)
 		FREE(ep->rcv_path, strlen(ep->rcv_path));
+	if (ep->rcv_mpath != NULL)
+		FREE(ep->rcv_mpath, strlen(ep->rcv_path));
 
 	/*
 	 * Committed to the close.
