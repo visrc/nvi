@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 8.30 1993/12/09 19:42:48 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:42:48 $";
+static char sccsid[] = "$Id: ex_tag.c,v 8.31 1994/01/22 12:54:55 bostic Exp $ (Berkeley) $Date: 1994/01/22 12:54:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -106,6 +106,15 @@ ex_tagfirst(sp, tagarg)
 /*
  * ex_tagpush -- :tag [file]
  *	Move to a new tag.
+ *
+ * The tags stacks in nvi are a bit tricky.  Each tag contains a file name,
+ * search string, and line/column numbers.  The search string is only used
+ * for the first access and for user display.  The first record on the stack
+ * is the place where we first did a tag, so it has no search string.  The
+ * second record is the first tag, and so on.  Note, this means that the
+ * "current" tag is always on the stack.  Each tag has a line/column which is
+ * the location from which the user tagged the following TAG entry, and which
+ * is used as the return location.
  */
 int
 ex_tagpush(sp, ep, cmdp)
@@ -158,33 +167,30 @@ ex_tagpush(sp, ep, cmdp)
 	}
 
 	/*
-	 * The tags stacks in nvi are a bit tricky.  The first record on the
-	 * stack is the place where we first did a tag, so it has no search
-	 * string.  The second record is the first tag, and so on.  This means
-	 * that the "current" tag is always on the stack.  Each tag contains
-	 * a file name, search string, and line/column numbers.  The search
-	 * string is only used for the first access and to display to the user.
-	 * we use the saved line/column number when returning to a file.
+	 * Get a tag structure -- if this is the first tag, push it on the
+	 * stack as a placeholder and get another tag structure.  Set the
+	 * line/column of the most recent element on the stack to be the
+	 * current values, including the file pointer.  Then push the new
+	 * TAG onto the stack with the new file and search string for user
+	 * display.
 	 */
 	CALLOC(sp, tp, TAG *, 1, sizeof(TAG));
-	if (exp->tagq.tqh_first == NULL) {
-		tp->frp = sp->frp;
-		tp->lno = sp->lno;
-		tp->cno = sp->cno;
+	if (tp != NULL && exp->tagq.tqh_first == NULL) {
 		TAILQ_INSERT_HEAD(&exp->tagq, tp, q);
-
 		CALLOC(sp, tp, TAG *, 1, sizeof(TAG));
 	}
-
+	if (exp->tagq.tqh_first != NULL) {
+		exp->tagq.tqh_first->frp = sp->frp;
+		exp->tagq.tqh_first->lno = sp->lno;
+		exp->tagq.tqh_first->cno = sp->cno;
+	}
 	if (tp != NULL) {
-		/* Copy the search pattern. */
 		if ((tp->search = strdup(search)) == NULL)
 			msgq(sp, M_SYSERR, NULL);
 		else
 			tp->slen = strlen(search);
-
-		/* Save the file. */
 		tp->frp = frp;
+		TAILQ_INSERT_HEAD(&exp->tagq, tp, q);
 	}
 
 	/* Switch to the new file. */
@@ -224,11 +230,12 @@ ex_tagpush(sp, ep, cmdp)
 			p[1] = '\0';
 			sval = f_search(sp, sp->ep,
 			     &m, &m, search, NULL, &flags);
+			p[1] = '(';
 		}
 		if (sval)
 			msgq(sp, M_ERR, "%s: search pattern not found.", tag);
 	}
-	FREE(tag, strlen(tag));
+	free(tag);
 
 	switch (which) {
 	case TC_CHANGE:
@@ -244,14 +251,6 @@ ex_tagpush(sp, ep, cmdp)
 		sp->cno = m.cno;
 		break;
 	}
-
-	/* Push the tag onto the stack. */
-	if (tp != NULL) {
-		tp->lno = m.lno;
-		tp->cno = m.cno;
-		TAILQ_INSERT_HEAD(&exp->tagq, tp, q);
-	}
-
 	return (0);
 }
 
@@ -259,12 +258,12 @@ ex_tagpush(sp, ep, cmdp)
 #define	FREETAG(tp) {							\
 	TAILQ_REMOVE(&exp->tagq, (tp), q);				\
 	if ((tp)->search != NULL)					\
-		FREE((tp)->search, (tp)->slen);				\
+		free((tp)->search);					\
 	FREE((tp), sizeof(TAGF));					\
 }
 #define	FREETAGF(tfp) {							\
 	TAILQ_REMOVE(&exp->tagfq, (tfp), q);				\
-	FREE((tfp)->name, strlen((tfp)->name) + 1);			\
+	free((tfp)->name);						\
 	FREE((tfp), sizeof(TAGF));					\
 }
 
@@ -280,8 +279,9 @@ ex_tagpop(sp, ep, cmdp)
 {
 	EX_PRIVATE *exp;
 	TAG *ntp, *tp;
-	long off;
-	size_t arglen;
+	recno_t lno;
+	long off, saved_off;
+	size_t arglen, cno;
 	char *arg, *p, *t;
 
 	/* Check for an empty stack. */
@@ -292,18 +292,25 @@ ex_tagpop(sp, ep, cmdp)
 	}
 
 	switch (cmdp->argc) {
-	case 0:
-		/* Toss the current record. */
+	case 0:				/* Pop one tag. */
 		tp = exp->tagq.tqh_first;
 		FREETAG(tp);
 		break;
-	case 1:
+	case 1:				/* Name or number. */
 		arg = cmdp->argv[0]->bp;
-		off = strtol(arg, &p, 10);
+		saved_off = strtol(arg, &p, 10);
 		if (*p == '\0') {
-			if (off < 1)
+			if (saved_off < 1)
 				return (0);
-			while (off-- > 1) {
+			for (tp = exp->tagq.tqh_first, off = saved_off;
+			    tp != NULL && off-- > 1; tp = tp->q.tqe_next);
+			if (tp == NULL) {
+				msgq(sp, M_ERR,
+"Less than %d entries on the tags stack; use :display to see the tags stack.",
+				    saved_off);
+				return (1);
+			}
+			for (off = saved_off; off-- > 1;) {
 				tp = exp->tagq.tqh_first;
 				FREETAG(tp);
 			}
@@ -340,7 +347,7 @@ ex_tagpop(sp, ep, cmdp)
 		abort();
 	}
 
-	/* If not switching files, it's easy; else do the work. */
+	/* Update the cursor from the saved TAG information. */
 	tp = exp->tagq.tqh_first;
 	if (tp->frp == sp->frp) {
 		sp->lno = tp->lno;
@@ -444,8 +451,7 @@ ex_tagdisplay(sp, ep)
 			maxlen = len;
 	}
 
-	for (cnt = 1,
-	    tp = exp->tagq.tqh_first; tp != NULL;
+	for (cnt = 1, tp = exp->tagq.tqh_first; tp != NULL;
 	    ++cnt, tp = tp->q.tqe_next) {
 		len = strlen(name = tp->frp->name);	/* The original name. */
 		if (len > maxlen || len + tp->slen > sp->cols)
