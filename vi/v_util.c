@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_util.c,v 5.23 1993/02/24 13:02:09 bostic Exp $ (Berkeley) $Date: 1993/02/24 13:02:09 $";
+static char sccsid[] = "$Id: v_util.c,v 5.24 1993/02/25 17:52:02 bostic Exp $ (Berkeley) $Date: 1993/02/25 17:52:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -169,31 +169,4 @@ lcont:		/* Move to the message line and clear it. */
 	FF_SET(ep, F_NEEDMERASE);
 
 	return (0);
-}
-
-/*
- * onwinch --
- *	Handle SIGWINCH.
- */
-void
-onwinch(signo)
-	int signo;
-{
-	if (mode != MODE_VI)
-		return;
-
-	/*
-	 * XXX
-	 * Using the global `curf' here is completely unreasonable.  If
-	 * the signal arrives while it's invalid, we're hosed.  This will
-	 * change when we move to an event based mechanism.
-	 */
-	if (set_window_size(curf, 0))
-		return;
-
-	/* Do the resize if waiting. */
-	if (FF_ISSET(curf, F_READING)) {
-		scr_update(curf);
-		refresh();
-	}
 }
