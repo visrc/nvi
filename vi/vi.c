@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.86 1994/08/12 10:45:34 bostic Exp $ (Berkeley) $Date: 1994/08/12 10:45:34 $";
+static char sccsid[] = "$Id: vi.c,v 8.87 1994/08/14 10:49:37 bostic Exp $ (Berkeley) $Date: 1994/08/14 10:49:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -267,12 +267,8 @@ vi(sp, ep)
 		    mark_set(sp, ep, ABSMARK1, &abs, 1))
 			goto err;
 
-		if (!MAPPED_KEYS_WAITING(sp)) {
+		if (!MAPPED_KEYS_WAITING(sp))
 			(void)msg_rpt(sp, 1);
-			if (0) {
-err:				term_flush(sp, "Vi error", CH_MAPPED);
-			}
-		}
 
 		/*
 		 * Check and clear the interrupts.  There's an obvious race,
@@ -280,7 +276,7 @@ err:				term_flush(sp, "Vi error", CH_MAPPED);
 		 * err: lable, so that if the "error" was an interupt it gets
 		 * cleaned up.
 		 */
-		if (INTERRUPTED(sp))
+err:		if (INTERRUPTED(sp))
 			term_flush(sp, "Interrupted", CH_MAPPED);
 		CLR_INTERRUPT(sp);
 	}
