@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 9.7 1995/01/31 09:42:08 bostic Exp $ (Berkeley) $Date: 1995/01/31 09:42:08 $";
+static char sccsid[] = "$Id: ex_global.c,v 9.8 1995/02/01 09:16:14 bostic Exp $ (Berkeley) $Date: 1995/02/01 09:16:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -162,13 +162,15 @@ usage:		ex_message(sp, cmdp->cmd, EXM_USAGE);
 	/*
 	 * Get a copy of the command string; the default command is print.
 	 * Don't worry about a set of <blank>s with no command, that will
-	 * default to print in the ex parser.
+	 * default to print in the ex parser.  We need to have two copies
+	 * because the ex parser may step on the command string when it's
+	 * parsing it.
 	 */
 	if ((clen = strlen(p)) == 0) {
-		p = "p";
+		p = "pp";
 		clen = 1;
 	}
-	MALLOC_RET(sp, cb, char *, clen);
+	MALLOC_RET(sp, cb, char *, clen * 2);
 	memmove(cb, p, clen);
 
 	/*
@@ -258,13 +260,14 @@ usage:		ex_message(sp, cmdp->cmd, EXM_USAGE);
 		}
 
 		/*
-		 * Execute the command, setting the cursor to the line so that
-		 * relative addressing works.  This means that the cursor moves
-		 * to the last line sent to the command, by default, even if
-		 * the command fails.
+		 * Make a new copy and execute the command, setting the cursor
+		 * to the line so that relative addressing works.  This means
+		 * that the cursor moves to the last line sent to the command,
+		 * by default, even if the command fails.
 		 */
 		exp->range_lno = sp->lno = rp->start++;
-		if (ex_cmd(sp, cb, clen, 0))
+		memmove(cb + clen, cb, clen);
+		if (ex_cmd(sp, cb + clen, clen, 0))
 			goto err;
 
 		/* Someone's unhappy, time to stop. */
