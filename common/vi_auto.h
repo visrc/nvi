@@ -25,6 +25,7 @@ typedef struct _vi_mark_args {
 	u_int32_t type;
 	DB_TXN *txnid;
 	DB_LSN prev_lsn;
+	LMARK	lmp;
 } __vi_mark_args;
 
 #define	DB_vi_change	203

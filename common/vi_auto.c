@@ -376,14 +376,17 @@ __vi_cursor_read(dbenv, recbuf, argpp)
 }
 
 /*
- * PUBLIC: int __vi_mark_log __P((DB_ENV *, DB_TXN *, DB_LSN *, u_int32_t));
+ * PUBLIC: int __vi_mark_log __P((DB_ENV *, DB_TXN *, DB_LSN *, u_int32_t,
+ * PUBLIC:      LMARK *));
  */
 int
-__vi_mark_log(dbenv, txnid, ret_lsnp, flags)
+__vi_mark_log(dbenv, txnid, ret_lsnp, flags,
+	lmp)
 	DB_ENV *dbenv;
 	DB_TXN *txnid;
 	DB_LSN *ret_lsnp;
 	u_int32_t flags;
+	LMARK * lmp;
 {
 	DBT logrec;
 	DB_LSN *lsnp, null_lsn;
@@ -402,7 +405,8 @@ __vi_mark_log(dbenv, txnid, ret_lsnp, flags)
 		lsnp = &null_lsn;
 	} else
 		lsnp = &txnid->last_lsn;
-	logrec.size = sizeof(rectype) + sizeof(txn_num) + sizeof(DB_LSN);
+	logrec.size = sizeof(rectype) + sizeof(txn_num) + sizeof(DB_LSN)
+	    + sizeof(*lmp);
 	if ((ret = __os_malloc(dbenv, logrec.size, &logrec.data)) != 0)
 		return (ret);
 
@@ -416,6 +420,12 @@ __vi_mark_log(dbenv, txnid, ret_lsnp, flags)
 
 	memcpy(bp, lsnp, sizeof(DB_LSN));
 	bp += sizeof(DB_LSN);
+
+	if (lmp != NULL)
+		memcpy(bp, lmp, sizeof(*lmp));
+	else
+		memset(bp, 0, sizeof(*lmp));
+	bp += sizeof(*lmp);
 
 	DB_ASSERT((u_int32_t)(bp - (u_int8_t *)logrec.data) == logrec.size);
 	ret = dbenv->log_put(dbenv, ret_lsnp, (DBT *)&logrec, flags);
@@ -491,6 +501,7 @@ __vi_mark_print(dbenv, dbtp, lsnp, notused2, notused3)
 	    (u_long)argp->txnid->txnid,
 	    (u_long)argp->prev_lsn.file,
 	    (u_long)argp->prev_lsn.offset);
+	(void)printf("\tlmp: %lu\n", (u_long)argp->lmp);
 	(void)printf("\n");
 	__os_free(dbenv, argp, 0);
 	return (0);
@@ -524,6 +535,9 @@ __vi_mark_read(dbenv, recbuf, argpp)
 
 	memcpy(&argp->prev_lsn, bp, sizeof(DB_LSN));
 	bp += sizeof(DB_LSN);
+
+	memcpy(&argp->lmp, bp,  sizeof(argp->lmp));
+	bp += sizeof(argp->lmp);
 
 	*argpp = argp;
 	return (0);
