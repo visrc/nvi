@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_trans.c,v 8.10 1996/12/11 20:57:03 bostic Exp $ (Berkeley) $Date: 1996/12/11 20:57:03 $";
+static const char sccsid[] = "$Id: ip_trans.c,v 8.11 1996/12/14 14:03:22 bostic Exp $ (Berkeley) $Date: 1996/12/14 14:03:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -44,20 +44,23 @@ __vi_trans(bp, lenp)
 	size_t len, needlen;
 	u_int32_t *vp;
 	int foff;
-	char *fmt, *p, *s_bp;
+	char *fmt, *p, *s_bp, **vsp;
 
 	for (s_bp = bp, len = *lenp; len > 0;) {
 		switch (foff = bp[0]) {
 		case SI_ADDSTR:
 		case SI_RENAME:
-			fmt = "s";
+			fmt = "a";
 			break;
 		case SI_ATTRIBUTE:
 		case SI_MOVE:
 			fmt = "12";
 			break;
 		case SI_BUSY_ON:
-			fmt = "s1";
+			fmt = "a1";
+			break;
+		case SI_EDITOPT:
+			fmt = "ab1";
 			break;
 		case SI_REWRITE:
 			fmt = "1";
@@ -73,13 +76,13 @@ __vi_trans(bp, lenp)
 		needlen = IPO_CODE_LEN;
 		for (; *fmt != '\0'; ++fmt)
 			switch (*fmt) {
-			case '1':
+			case '1':				/* Value #1. */
 				vp = &ipb.val1;
 				goto value;
-			case '2':
+			case '2':				/* Value #2. */
 				vp = &ipb.val2;
 				goto value;
-			case '3':
+			case '3':				/* Value #3. */
 				vp = &ipb.val3;
 value:				needlen += IPO_INT_LEN;
 				if (len < needlen)
@@ -88,18 +91,24 @@ value:				needlen += IPO_INT_LEN;
 				*vp = ntohl(*vp);
 				p += IPO_INT_LEN;
 				break;
-			case 's':
-				needlen += IPO_INT_LEN;
+			case 'a':				/* String #1. */
+				vp = &ipb.len1;
+				vsp = &ipb.str1;
+				goto string;
+			case 'b':				/* String #2. */
+				vp = &ipb.len2;
+				vsp = &ipb.str2;
+string:				needlen += IPO_INT_LEN;
 				if (len < needlen)
 					goto partial;
-				memcpy(&ipb.len, p, IPO_INT_LEN);
-				ipb.len = ntohl(ipb.len);
+				memcpy(vp, p, IPO_INT_LEN);
+				*vp = ntohl(*vp);
 				p += IPO_INT_LEN;
-				needlen += ipb.len;
+				needlen += *vp;
 				if (len < needlen)
 					goto partial;
-				ipb.str = p;
-				p += ipb.len;
+				*vsp = p;
+				p += *vp;
 				break;
 			}
 		bp += needlen;

@@ -10,8 +10,11 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_options.c,v 8.7 1996/12/14 09:04:12 bostic Exp $ (Berkeley) $Date: 1996/12/14 09:04:12 $";
+static const char sccsid[] = "$Id: m_options.c,v 8.8 1996/12/14 14:04:39 bostic Exp $ (Berkeley) $Date: 1996/12/14 14:04:39 $";
 #endif /* not lint */
+
+#include <sys/types.h>
+#include <sys/queue.h>
 
 #include <X11/X.h>
 #include <X11/Intrinsic.h>
@@ -23,6 +26,13 @@ static const char sccsid[] = "$Id: m_options.c,v 8.7 1996/12/14 09:04:12 bostic 
 #include <Xm/ToggleBG.h>
 #include <Xm/RowColumn.h>
 
+#include <bitstring.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "../common/common.h"
+#include "../ip/ip.h"
 #include "m_motif.h"
 #include "m_extern.h"
 
@@ -40,7 +50,7 @@ typedef enum {
 typedef struct {
 	optKind	kind;
 	String	name;
-	void	*value;		/* really should get this from core */
+	void	*value;
 } optData;
 
 typedef	struct {
@@ -50,6 +60,8 @@ typedef	struct {
 	optData	*ints;
 	optData	*others;
 } optSheet;
+
+static void set_opt __P((Widget, optData *));
 
 
 /* constants */
@@ -72,122 +84,122 @@ typedef	struct {
 static	Widget	preferences = NULL;
 
 static	optData	Search_toggles[] = {
-	{ optToggle,	"iclower",	(void *) False	},
-	{ optToggle,	"searchincr",	(void *) True	},
-	{ optToggle,	"wrapscan",	(void *) True	},
-	{ optToggle,	"extended",	(void *) False	},
-	{ optToggle,	"edcompatible",	(void *) False	},
-	{ optToggle,	"ignorecase",	(void *) True	},
-	{ optToggle,	"magic",	(void *) True	},
-	{ optTerminator,NULL,		(void *) NULL	}
+	{ optToggle,	"edcompatible",	},
+	{ optToggle,	"extended",	},
+	{ optToggle,	"iclower",	},
+	{ optToggle,	"ignorecase",	},
+	{ optToggle,	"magic",	},
+	{ optToggle,	"searchincr",	},
+	{ optToggle,	"wrapscan",	},
+	{ optTerminator,		},
 },
 		File_toggles[] = {
-	{ optToggle,	"readonly",	(void *) False	},
-	{ optToggle,	"autowrite",	(void *) False	},
-	{ optToggle,	"warn",		(void *) True	},
-	{ optToggle,	"lock",		(void *) True	},
-	{ optToggle,	"writeany",	(void *) False	},
-	{ optTerminator,NULL,		(void *) NULL	}
+	{ optToggle,	"autowrite",	},
+	{ optToggle,	"lock",		},
+	{ optToggle,	"readonly",	},
+	{ optToggle,	"warn",		},
+	{ optToggle,	"writeany",	},
+	{ optTerminator,		},
 },
 		Shell_toggles[] = {
-	{ optToggle,	"secure",	(void *) False	},
-	{ optTerminator,NULL,		(void *) NULL	}
+	{ optToggle,	"secure",	},
+	{ optTerminator,		},
 },
 		Ex_toggles[] = {
-	{ optToggle,	"autoprint",	(void *) True	},
-	{ optToggle,	"exrc",		(void *) False	},
-	{ optToggle,	"prompt",	(void *) True	},
-	{ optTerminator,NULL,		(void *) NULL	}
+	{ optToggle,	"autoprint",	},
+	{ optToggle,	"exrc",		},
+	{ optToggle,	"prompt",	},
+	{ optTerminator,		},
 },
 		Programming_toggles[] = {
-	{ optToggle,	"lisp",		(void *) False	},
-	{ optToggle,	"autoindent",	(void *) True	},
-	{ optToggle,	"showmatch",	(void *) False	},
-	{ optTerminator,NULL,		(void *) NULL	}
+	{ optToggle,	"autoindent",	},
+	{ optToggle,	"lisp",		},
+	{ optToggle,	"showmatch",	},
+	{ optTerminator,		},
 },
 		Display_toggles[] = {
-	{ optToggle,	"list",		(void *) False	},
-	{ optToggle,	"number",	(void *) False	},
-	{ optToggle,	"octal",	(void *) False	},
-	{ optToggle,	"showmode",	(void *) False	},
-	{ optToggle,	"comment",	(void *) False	},
-	{ optToggle,	"windowname",	(void *) False	},
-	{ optToggle,	"leftright",	(void *) False	},
-	{ optToggle,	"ruler",	(void *) False	},
-	{ optTerminator,NULL,		(void *) NULL	}
+	{ optToggle,	"comment",	},
+	{ optToggle,	"leftright",	},
+	{ optToggle,	"list",		},
+	{ optToggle,	"number",	},
+	{ optToggle,	"octal",	},
+	{ optToggle,	"ruler",	},
+	{ optToggle,	"showmode",	},
+	{ optToggle,	"windowname",	},
+	{ optTerminator,		},
 },
 		Insert_toggles[] = {
-	{ optToggle,	"altwerase",	(void *) False	},
-	{ optToggle,	"ttywerase",	(void *) False	},
-	{ optToggle,	"timeout",	(void *) True	},
-	{ optToggle,	"beautify",	(void *) False	},
-	{ optToggle,	"remap",	(void *) True	},
-	{ optTerminator,NULL,		(void *) NULL	}
+	{ optToggle,	"altwerase",	},
+	{ optToggle,	"beautify",	},
+	{ optToggle,	"remap",	},
+	{ optToggle,	"timeout",	},
+	{ optToggle,	"ttywerase",	},
+	{ optTerminator,		},
 },
 		Command_toggles[] = {
-	{ optToggle,	"tildeop",	(void *) False	},
-	{ optTerminator,NULL,		(void *) NULL	}
+	{ optToggle,	"tildeop",	},
+	{ optTerminator,		},
 },
 		Error_toggles[] = {
-	{ optToggle,	"verbose",	(void *) False	},
-	{ optToggle,	"errorbells",	(void *) False	},
-	{ optToggle,	"flash",	(void *) True	},
-	{ optTerminator,NULL,		(void *) NULL	}
+	{ optToggle,	"errorbells",	},
+	{ optToggle,	"flash",	},
+	{ optToggle,	"verbose",	},
+	{ optTerminator,		},
 };
 
 static	optData Programming_ints[] = {
-	{ optInteger,	"matchtime",	(void *) "7"	},
-	{ optInteger,	"shiftwidth",	(void *) "4"	},
-	{ optInteger,	"taglength",	(void *) "0"	},
-	{ optTerminator,NULL,		(void *) NULL	}
+	{ optInteger,	"matchtime",	},
+	{ optInteger,	"shiftwidth",	},
+	{ optInteger,	"taglength",	},
+	{ optTerminator,		},
 },
 		Display_ints[] = {
-	{ optInteger,	"report",	(void *) "5"	},
-	{ optInteger,	"tabstop",	(void *) "8"	},
-	{ optTerminator,NULL,		(void *) NULL	}
+	{ optInteger,	"report",	},
+	{ optInteger,	"tabstop",	},
+	{ optTerminator,		},
 },
 		Insert_ints[] = {
-	{ optInteger,	"wrapmargin",	(void *) "0"	},
-	{ optInteger,	"escapetime",	(void *) "1"	},
-	{ optInteger,	"wraplen",	(void *) "0"	},
-	{ optTerminator,NULL,		(void *) NULL	}
+	{ optInteger,	"wrapmargin",	},
+	{ optInteger,	"escapetime",	},
+	{ optInteger,	"wraplen",	},
+	{ optTerminator,		},
 };
 
 static	optData	Search_others[] = {
-	{ optString,	"paragraphs",	(void *) "IPLPPPQPP LIpplpipbp"	},
-	{ optString,	"sections",	(void *) "NHSHH HUnhsh"	},
-	{ optTerminator,NULL,		(void *) NULL	}
+	{ optString,	"paragraphs",	},
+	{ optString,	"sections",	},
+	{ optTerminator,		},
 },
 		File_others[] = {
-	{ optString,	"filec",	(void *) "^["	},
-	{ optString,	"path",		(void *) "src:include:/debugger/src:/debugger/include/"	},
-	{ optFile,	"recdir",	(void *) "/var/tmp/vi.recover"	},
-	{ optFile,	"directory",	(void *) "/tmp"	},
-	{ optString,	"backup",	(void *) ""	},
-	{ optTerminator,NULL,		(void *) NULL	}
+	{ optFile,	"directory",	},
+	{ optFile,	"recdir",	},
+	{ optString,	"backup",	},
+	{ optString,	"filec",	},
+	{ optString,	"path",		},
+	{ optTerminator,		},
 },
 		Shell_others[] = {
-	{ optString,	"cdpath",	(void *) ":"	},
-	{ optFile,	"shell",	(void *) "/bin/csh"	},
-	{ optString,	"shellmeta",	(void *) "~{[*?$`'\"\\"	},
-	{ optTerminator,NULL,		(void *) NULL	}
+	{ optString,	"cdpath",	},
+	{ optFile,	"shell",	},
+	{ optString,	"shellmeta",	},
+	{ optTerminator,		},
 },
 		Ex_others[] = {
-	{ optString,	"cedit",	(void *) ""	},
-	{ optTerminator,NULL,		(void *) NULL	}
+	{ optString,	"cedit",	},
+	{ optTerminator,		},
 },
 		Programming_others[] = {
-	{ optString,	"tags",		(void *) "tags /debugger/tmp/tags10 /debugger/tags /debugger/lib/tags"	},
-	{ optTerminator,NULL,		(void *) NULL	}
+	{ optString,	"tags",		},
+	{ optTerminator,		},
 },
 		Display_others[] = {
-	{ optString,	"print",	(void *) ""	},
-	{ optString,	"noprint",	(void *) ""	},
-	{ optTerminator,NULL,		(void *) NULL	}
+	{ optString,	"print",	},
+	{ optString,	"noprint",	},
+	{ optTerminator,		},
 },
 		Error_others[] = {
-	{ optString,	"msgcat",	(void *) "./"	},
-	{ optTerminator,NULL,		(void *) NULL	}
+	{ optString,	"msgcat",	},
+	{ optTerminator,		},
 };
 
 static	optSheet sheets[] = {
@@ -272,62 +284,110 @@ static	void destroyed()
 }
 
 
-#if defined(__STDC__)
-static	void	change_toggle( Widget w, optData *option )
-#else
-static	void	change_toggle( w, option )
-	Widget	w;
-	optData	*option;
-#endif
+/*
+ * __vi_editopt --
+ *	Set an edit option based on a core message.
+ *
+ * PUBLIC: int __vi_editopt __P((IP_BUF *));
+ */
+int
+__vi_editopt(ipbp)
+	IP_BUF *ipbp;
 {
-    char	buffer[1024];
-    Boolean	set;
+	optData *opt;
 
-    XtVaGetValues( w, XmNset, &set, 0 );
-
-    sprintf( buffer, ":set %s%s", (set) ? "" : "no", option->name );
-    option->value = (void *) set;
-
-#if 1
-    if ( strcmp( option->name, "ruler" ) == 0 )
-	if ( set )
-	    __vi_show_text_ruler_dialog( __vi_screen->area, "Ruler" );
-	else
-	    __vi_clear_text_ruler_dialog();
-#endif
-
-#if defined(SelfTest)
-    printf( "sending command <<%s>>\n", buffer );
-#else
-    __vi_send_command_string( buffer );
-#endif
+#undef	SEARCH
+#define	SEARCH(toggle) {						\
+	for (opt = toggle; opt->kind != optTerminator; ++opt)		\
+		if (!strcmp(opt->name, ipbp->str1))			\
+			goto found;					\
 }
 
+	SEARCH(Search_toggles);
+	SEARCH(File_toggles);
+	SEARCH(Shell_toggles);
+	SEARCH(Ex_toggles);
+	SEARCH(Programming_toggles);
+	SEARCH(Display_toggles);
+	SEARCH(Insert_toggles);
+	SEARCH(Command_toggles);
+	SEARCH(Error_toggles);
+	SEARCH(Programming_ints);
+	SEARCH(Display_ints);
+	SEARCH(Insert_ints);
+	SEARCH(Search_others);
+	SEARCH(File_others);
+	SEARCH(Shell_others);
+	SEARCH(Ex_others);
+	SEARCH(Programming_others);
+	SEARCH(Display_others);
+	SEARCH(Error_others);
+	return (0);
 
-#if defined(__STDC__)
-static	void	change_string( Widget w, optData *option )
-#else
-static	void	change_string( w, option )
-	Widget	w;
-	optData	*option;
-#endif
+found:	switch (opt->kind) {
+	case optToggle:
+		opt->value = (void *)ipbp->val1;
+		break;
+	case optInteger:
+		if (opt->value != NULL)
+			free(opt->value);
+		if ((opt->value = malloc(15)) != NULL)
+			(void)snprintf(opt->value,
+			    15, "%lu", (u_long)ipbp->val1);
+		break;
+	case optString:
+	case optFile:
+		if (opt->value != NULL)
+			free(opt->value);
+		if ((opt->value = malloc(ipbp->len2)) != NULL)
+			memcpy(opt->value, ipbp->str2, ipbp->len2);
+		break;
+	}
+	return (0);
+}
+
+/*
+ * set_opt --
+ *	Send a set-edit-option message to core.
+ */
+static void
+set_opt(w, opt)
+	Widget w;
+	optData *opt;
 {
-    char	buffer[1024];
-    String	str;
+	Boolean set;
+	IP_BUF ipb;
+	String str;
 
-    str = XmTextFieldGetString( w );
-    sprintf( buffer, ":set %s=%s", option->name, str );
+	ipb.code = VI_EDITOPT;
+	ipb.str1 = opt->name;
+	ipb.len1 = strlen(opt->name);
 
-    /* Note memory leak.  We should free the old string, but that
-     * would require another bit to let us know if it had been allocated.
-     */
-    option->value = (void *) str;
+	switch (opt->kind) {
+	case optToggle:
+		XtVaGetValues(w, XmNset, &set, 0);
+		ipb.val1 = set;
+		ipb.len2 = 0;
 
-#if defined(SelfTest)
-    printf( "sending command <<%s>>\n", buffer );
-#else
-    __vi_send_command_string( buffer );
-#endif
+		if (strcmp(opt->name, "ruler") == 0)
+			if (set)
+				__vi_show_text_ruler_dialog(
+				    __vi_screen->area, "Ruler");
+			else
+				__vi_clear_text_ruler_dialog();
+		break;
+	case optInteger:
+		str = XmTextFieldGetString(w);
+		ipb.val1 = atoi(str);
+		ipb.len2 = 0;
+		break;
+	case optFile:
+	case optString:
+		ipb.str2 = XmTextFieldGetString(w);
+		ipb.len2 = strlen(ipb.str2);
+		break;
+	}
+	__vi_send("ab1", &ipb);
 }
 
 
@@ -349,7 +409,7 @@ static	void	add_toggle( parent, option )
 				 XmNset,	(Boolean) option->value,
 				 0
 				 );
-    XtAddCallback( w, XmNvalueChangedCallback, change_toggle, option );
+    XtAddCallback( w, XmNvalueChangedCallback, set_opt, option );
 }
 
 
@@ -430,7 +490,7 @@ static	void	add_string_options( parent, options )
 				     );
 
 	XmTextFieldSetString( w, (char *) options[i].value );
-	XtAddCallback( w, XmNactivateCallback, change_string, &options[i] );
+	XtAddCallback( w, XmNactivateCallback, set_opt, &options[i] );
 	XtManageChild( f );
     }
 }

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_vi.c,v 8.29 1996/12/13 12:23:05 bostic Exp $ (Berkeley) $Date: 1996/12/13 12:23:05 $";
+static const char sccsid[] = "$Id: m_vi.c,v 8.30 1996/12/14 14:03:39 bostic Exp $ (Berkeley) $Date: 1996/12/14 14:03:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -711,11 +711,11 @@ Cardinal        *cardinal;
 {
     IP_BUF	ipb;
 
-    ipb.len = strlen( *str );
-    if ( ipb.len != 0 ) {
+    ipb.len1 = strlen( *str );
+    if ( ipb.len1 != 0 ) {
 	ipb.code = VI_STRING;
-	ipb.str = *str;
-	__vi_send("s", &ipb);
+	ipb.str1 = *str;
+	__vi_send("a", &ipb);
     }
 
 #ifdef TRACE
@@ -742,14 +742,14 @@ Cardinal        *cardinal;
     IP_BUF	ipb;
     char	bp[BufferSize];
 
-    ipb.len = XLookupString( event, bp, BufferSize, NULL, NULL );
-    if ( ipb.len != 0 ) {
+    ipb.len1 = XLookupString( event, bp, BufferSize, NULL, NULL );
+    if ( ipb.len1 != 0 ) {
 	ipb.code = VI_STRING;
-	ipb.str = bp;
+	ipb.str1 = bp;
 #ifdef TRACE
-	trace("key_press {%.*s}\n", ipb.len, bp );
+	trace("key_press {%.*s}\n", ipb.len1, bp );
 #endif
-	__vi_send("s", &ipb);
+	__vi_send("a", &ipb);
     }
 
 }

@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_read.c,v 8.12 1996/12/13 12:22:54 bostic Exp $ (Berkeley) $Date: 1996/12/13 12:22:54 $";
+static const char sccsid[] = "$Id: ip_read.c,v 8.13 1996/12/14 14:02:38 bostic Exp $ (Berkeley) $Date: 1996/12/14 14:02:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -203,22 +203,10 @@ ip_trans(sp, ipp, evp)
 	IP_PRIVATE *ipp;
 	EVENT *evp;
 {
-	u_int32_t val1, val2;
+	u_int32_t skip, val;
+	char *fmt;
 
 	switch (ipp->ibuf[0]) {
-	case VI_C_DOWN:
-	case VI_C_PGDOWN:
-	case VI_C_PGUP:
-	case VI_C_UP:
-	case VI_C_SETTOP:
-		if (ipp->iblen < IPO_CODE_LEN + IPO_INT_LEN)
-			return (0);
-		evp->e_event = E_IPCOMMAND;
-		evp->e_ipcom = ipp->ibuf[0];
-		memcpy(&val1, ipp->ibuf + IPO_CODE_LEN, IPO_INT_LEN);
-		evp->e_lno = ntohl(val1);
-		ipp->iskip = IPO_CODE_LEN + IPO_INT_LEN;
-		return (1);
 	case VI_C_BOL:
 	case VI_C_BOTTOM:
 	case VI_C_DEL:
@@ -237,29 +225,33 @@ ip_trans(sp, ipp, evp)
 		evp->e_ipcom = ipp->ibuf[0];
 		ipp->iskip = IPO_CODE_LEN;
 		return (1);
+	case VI_C_DOWN:
+	case VI_C_PGDOWN:
+	case VI_C_PGUP:
+	case VI_C_UP:
+	case VI_C_SETTOP:
+		evp->e_event = E_IPCOMMAND;
+		evp->e_ipcom = ipp->ibuf[0];
+		fmt = "1";
+		break;
 	case VI_C_SEARCH:
 		evp->e_event = E_IPCOMMAND;
 		evp->e_ipcom = ipp->ibuf[0];
-		if (ipp->iblen < IPO_CODE_LEN + IPO_INT_LEN * 2)
-			return (0);
-		memcpy(&val1, ipp->ibuf + IPO_CODE_LEN, IPO_INT_LEN);
-		evp->e_flags = ntohl(val1);
-		memcpy(&val1,
-		    ipp->ibuf + IPO_CODE_LEN + IPO_INT_LEN, IPO_INT_LEN);
-		val1 = ntohl(val1);
-		if (ipp->iblen < IPO_CODE_LEN + IPO_INT_LEN * 2 + val1)
-			return (0);
-		ipp->iskip = IPO_CODE_LEN + IPO_INT_LEN * 2 + val1;
-		evp->e_csp = ipp->ibuf + IPO_CODE_LEN + IPO_INT_LEN * 2;
-		evp->e_len = val1;
-		return (1);
+		fmt = "1a";
+		break;
 	case VI_EDIT:
 	case VI_EDITSPLIT:
 	case VI_TAGAS:
 	case VI_WRITEAS:
 		evp->e_event = E_IPCOMMAND;
 		evp->e_ipcom = ipp->ibuf[0];
-		goto string;
+		fmt = "a";
+		break;
+	case VI_EDITOPT:
+		evp->e_event = E_IPCOMMAND;
+		evp->e_ipcom = ipp->ibuf[0];
+		fmt = "ab1";
+		break;
 	case VI_EOF:
 		evp->e_event = E_EOF;
 		ipp->iskip = IPO_CODE_LEN;
@@ -273,29 +265,14 @@ ip_trans(sp, ipp, evp)
 		ipp->iskip = IPO_CODE_LEN;
 		return (1);
 	case VI_MOUSE_MOVE:
-		if (ipp->iblen < IPO_CODE_LEN + IPO_INT_LEN * 2)
-			return (0);
 		evp->e_event = E_IPCOMMAND;
-		evp->e_ipcom = VI_MOUSE_MOVE;
-		memcpy(&val1, ipp->ibuf + IPO_CODE_LEN, IPO_INT_LEN);
-		evp->e_lno = ntohl(val1);
-		memcpy(&val2,
-		    ipp->ibuf + IPO_CODE_LEN + IPO_INT_LEN, IPO_INT_LEN);
-		evp->e_cno = ntohl(val2);
-		ipp->iskip = IPO_CODE_LEN + IPO_INT_LEN * 2;
-		return (1);
+		evp->e_ipcom = ipp->ibuf[0];
+		fmt = "12";
+		break;
 	case VI_RESIZE:
-		if (ipp->iblen < IPO_CODE_LEN + IPO_INT_LEN * 2)
-			return (0);
 		evp->e_event = E_WRESIZE;
-		memcpy(&val1, ipp->ibuf + IPO_CODE_LEN, IPO_INT_LEN);
-		val1 = ntohl(val1);
-		memcpy(&val2,
-		    ipp->ibuf + IPO_CODE_LEN + IPO_INT_LEN, IPO_INT_LEN);
-		val2 = ntohl(val2);
-		ip_resize(sp, val1, val2);
-		ipp->iskip = IPO_CODE_LEN + IPO_INT_LEN * 2;
-		return (1);
+		fmt = "12";
+		break;
 	case VI_SIGHUP:
 		evp->e_event = E_SIGHUP;
 		ipp->iskip = IPO_CODE_LEN;
@@ -305,24 +282,56 @@ ip_trans(sp, ipp, evp)
 		ipp->iskip = IPO_CODE_LEN;
 		return (1);
 	case VI_STRING:
-		evp->e_event = E_STRING;
-string:		if (ipp->iblen < IPO_CODE_LEN + IPO_INT_LEN)
-			return (0);
-		memcpy(&val1, ipp->ibuf + IPO_CODE_LEN, IPO_INT_LEN);
-		val1 = ntohl(val1);
-		if (ipp->iblen < IPO_CODE_LEN + IPO_INT_LEN + val1)
-			return (0);
-		ipp->iskip = IPO_CODE_LEN + IPO_INT_LEN + val1;
-		evp->e_csp = ipp->ibuf + IPO_CODE_LEN + IPO_INT_LEN;
-		evp->e_len = val1;
-		return (1);
+		 evp->e_event = E_STRING;
+		 fmt = "a";
+		 break;
 	default:
 		/*
 		 * XXX: Protocol is out of sync?
 		 */
 		abort();
 	}
-	/* NOTREACHED */
+
+	for (skip = IPO_CODE_LEN; *fmt != '\0'; ++fmt)
+		switch (*fmt) {
+		case '1':
+		case '2':
+			if (ipp->iblen < skip + IPO_INT_LEN)
+				return (0);
+			memcpy(&val, ipp->ibuf + skip, IPO_INT_LEN);
+			val = ntohl(val);
+			if (*fmt == '1')
+				evp->e_val1 = val;
+			else
+				evp->e_val2 = val;
+			skip += IPO_INT_LEN;
+			break;
+		case 'a':
+		case 'b':
+			if (ipp->iblen < skip + IPO_INT_LEN)
+				return (0);
+			memcpy(&val, ipp->ibuf + skip, IPO_INT_LEN);
+			val = ntohl(val);
+			skip += IPO_INT_LEN;
+			if (ipp->iblen < skip + val)
+				return (0);
+			if (*fmt == 'a') {
+				evp->e_str1 = ipp->ibuf + skip;
+				evp->e_len1 = val;
+			} else {
+				evp->e_str2 = ipp->ibuf + skip;
+				evp->e_len2 = val;
+			}
+			skip += val;
+			break;
+		}
+
+	ipp->iskip = skip;
+
+	if (evp->e_event == E_WRESIZE)
+		(void)ip_resize(sp, evp->e_val1, evp->e_val2);
+
+	return (1);
 }
 
 /* 

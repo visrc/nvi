@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_search.c,v 8.6 1996/12/11 20:58:25 bostic Exp $ (Berkeley) $Date: 1996/12/11 20:58:25 $";
+static const char sccsid[] = "$Id: m_search.c,v 8.7 1996/12/14 14:05:22 bostic Exp $ (Berkeley) $Date: 1996/12/14 14:05:22 $";
 #endif /* not lint */
 
 #include <sys/queue.h>
@@ -195,8 +195,8 @@ search(w, flags)
     /* get current data from the root of the widget tree? */
     if ( w != NULL ) get_state( w );
 
-    ipb.str = pattern;
-    ipb.len = strlen(pattern);
+    ipb.str1 = pattern;
+    ipb.len1 = strlen(pattern);
 
 #if defined(SelfTest)
     /* initialize the search flags based on the buttons. */
@@ -208,7 +208,7 @@ search(w, flags)
 #endif
 
     ipb.code = VI_C_SEARCH;
-    __vi_send("1s", &ipb);
+    __vi_send("1a", &ipb);
 }
 
 #if defined(__STDC__)

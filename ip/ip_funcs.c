@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_funcs.c,v 8.9 1996/12/13 11:25:11 bostic Exp $ (Berkeley) $Date: 1996/12/13 11:25:11 $";
+static const char sccsid[] = "$Id: ip_funcs.c,v 8.10 1996/12/14 14:02:04 bostic Exp $ (Berkeley) $Date: 1996/12/14 14:02:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -54,9 +54,9 @@ ip_addstr(sp, str, len)
 		ip_attr(sp, SA_INVERSE, 1);
 	}
 	ipb.code = SI_ADDSTR;
-	ipb.len = len;
-	ipb.str = str;
-	rval = __vi_send("s", &ipb);
+	ipb.len1 = len;
+	ipb.str1 = str;
+	rval = __vi_send("a", &ipb);
 
 	if (iv)
 		ip_attr(sp, SA_INVERSE, 0);
@@ -133,9 +133,9 @@ ip_busy(sp, str, bval)
 	switch (bval) {
 	case BUSY_ON:
 		ipb.code = SI_BUSY_ON;
-		ipb.len = strlen(str);
-		ipb.str = str;
-		(void)__vi_send("s1", &ipb);
+		ipb.len1 = strlen(str);
+		ipb.str1 = str;
+		(void)__vi_send("a1", &ipb);
 		break;
 	case BUSY_OFF:
 		ipb.code = SI_BUSY_OFF;
@@ -337,10 +337,13 @@ ip_refresh(sp, repaint)
 	SCR *sp;
 	int repaint;
 {
+	static int first = 1;
 	IP_BUF ipb;
 	IP_PRIVATE *ipp;
+	OPTLIST const *opt;
 	SMAP *smp;
 	recno_t total;
+	int offset;
 
 	ipp = IPP(sp);
 
@@ -357,7 +360,6 @@ ip_refresh(sp, repaint)
 	 * structures at which we have absolutely no business whatsoever
 	 * looking...
 	 */
-
 	ipb.val1 = HMAP->lno;
 	ipb.val2 = TMAP->lno - HMAP->lno;
 	(void)db_last(sp, &total);
@@ -391,10 +393,9 @@ ip_rename(sp, name, on)
 	IP_BUF ipb;
 
 	ipb.code = SI_RENAME;
-	ipb.len = strlen(name);
-	ipb.str = name;
-
-	return (__vi_send("s", &ipb));
+	ipb.str1 = name;
+	ipb.len1 = strlen(name);
+	return (__vi_send("a", &ipb));
 }
 
 /*

@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_term.c,v 8.2 1996/10/13 15:40:57 bostic Exp $ (Berkeley) $Date: 1996/10/13 15:40:57 $";
+static const char sccsid[] = "$Id: ip_term.c,v 8.3 1996/12/14 14:02:51 bostic Exp $ (Berkeley) $Date: 1996/12/14 14:02:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -88,13 +88,16 @@ ip_fmap(sp, stype, from, flen, to, tlen)
  * PUBLIC: int ip_optchange __P((SCR *, int, char *, u_long *));
  */
 int
-ip_optchange(sp, opt, str, valp)
+ip_optchange(sp, offset, str, valp)
 	SCR *sp;
-	int opt;
+	int offset;
 	char *str;
 	u_long *valp;
 {
-	switch (opt) {
+	IP_BUF ipb;
+	OPTLIST const *opt;
+
+	switch (offset) {
 	case O_COLUMNS:
 	case O_LINES:
 		F_SET(sp->gp, G_SRESTART);
@@ -104,5 +107,30 @@ ip_optchange(sp, opt, str, valp)
 		msgq(sp, M_ERR, "The screen type may not be changed");
 		return (1);
 	}
+
+	opt = optlist + offset;
+	switch (opt->type) {
+	case OPT_0BOOL:
+	case OPT_1BOOL:
+	case OPT_NUM:
+		ipb.val1 = *valp;
+		ipb.len2 = 0;
+		break;
+	case OPT_STR:
+		if (str == NULL) {
+			ipb.str2 = "";
+			ipb.len2 = 1;
+		} else {
+			ipb.str2 = str;
+			ipb.len2 = strlen(str) + 1;
+		}
+		break;
+	}
+
+	ipb.code = SI_EDITOPT;
+	ipb.str1 = opt->name;
+	ipb.len1 = strlen(opt->name);
+
+	(void)__vi_send("ab1", &ipb);
 	return (0);
 }

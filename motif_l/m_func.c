@@ -10,13 +10,13 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_func.c,v 8.16 1996/12/14 09:04:11 bostic Exp $ (Berkeley) $Date: 1996/12/14 09:04:11 $";
+static const char sccsid[] = "$Id: m_func.c,v 8.17 1996/12/14 14:04:00 bostic Exp $ (Berkeley) $Date: 1996/12/14 14:04:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 #include <sys/queue.h>
 
-#include "Xm/PanedW.h"
+#include <Xm/PanedW.h>
 
 #include <bitstring.h>
 #include <stdio.h>
@@ -35,21 +35,21 @@ vi_addstr(ipbp)
 	IP_BUF *ipbp;
 {
 #ifdef TRACE
-	trace("addstr() {%.*s}\n", ipbp->len, ipbp->str);
+	trace("addstr() {%.*s}\n", ipbp->len1, ipbp->str1);
 #endif
 	/* Add to backing store. */
 	memcpy(CharAt(__vi_screen, __vi_screen->cury, __vi_screen->curx),
-	    ipbp->str, ipbp->len);
+	    ipbp->str1, ipbp->len1);
 	memset(FlagAt(__vi_screen, __vi_screen->cury, __vi_screen->curx),
-	    __vi_screen->color, ipbp->len);
+	    __vi_screen->color, ipbp->len1);
 
 	/* Draw from backing store. */
 	__vi_draw_text(__vi_screen,
-	    __vi_screen->cury, __vi_screen->curx, ipbp->len);
+	    __vi_screen->cury, __vi_screen->curx, ipbp->len1);
 
 	/* Advance the caret. */
 	__vi_move_caret(__vi_screen,
-	    __vi_screen->cury, __vi_screen->curx + ipbp->len);
+	    __vi_screen->cury, __vi_screen->curx + ipbp->len1);
 	return (0);
 }
 
@@ -264,8 +264,8 @@ vi_rename(ipbp)
 	Widget	shell;
 
 	/* For the icon, use the tail. */
-	if ((tail = strrchr(ipbp->str, '/')) == NULL || *(tail + 1) == '\0')
-		tail = ipbp->str;
+	if ((tail = strrchr(ipbp->str1, '/')) == NULL || *(tail + 1) == '\0')
+		tail = ipbp->str1;
 	else
 		tail++;
 
@@ -278,7 +278,7 @@ vi_rename(ipbp)
 	while ( ! XtIsShell(shell) ) shell = XtParent(shell);
 	XtVaSetValues(shell,
 		      XmNiconName,	tail,
-		      XmNtitle,		ipbp->str,
+		      XmNtitle,		ipbp->str1,
 		      0
 		      );
 	return (0);
@@ -375,6 +375,7 @@ int (*__vi_iplist[SI_EVENT_MAX]) __P((IP_BUF *)) = {
 	vi_clrtoeol,
 	vi_deleteln,
 	vi_discard,
+	__vi_editopt,
 	vi_insertln,
 	vi_move,
 	vi_quit,

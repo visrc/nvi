@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_tags.c,v 8.3 1996/12/14 09:04:12 bostic Exp $ (Berkeley) $Date: 1996/12/14 09:04:12 $";
+static const char sccsid[] = "$Id: m_tags.c,v 8.4 1996/12/14 14:05:18 bostic Exp $ (Berkeley) $Date: 1996/12/14 14:05:18 $";
 #endif /* not lint */
 
 /*
@@ -264,9 +264,9 @@ static	void	split_to_tag( w )
      * as part of making the editor fully 8-bit clean.
      */
     ipb.code = VI_TAGSPLIT;
-    ipb.str = str;
-    ipb.len = strlen(str) + 1;
-    __vi_send("s", &ipb);
+    ipb.str1 = str;
+    ipb.len1 = strlen(str) + 1;
+    __vi_send("a", &ipb);
 #endif
 
     XtFree( str );
@@ -296,9 +296,9 @@ static	void	go_to_tag( w )
      * as part of making the editor fully 8-bit clean.
      */
     ipb.code = VI_TAGAS;
-    ipb.str = str;
-    ipb.len = strlen(str) + 1;
-    __vi_send("s", &ipb);
+    ipb.str1 = str;
+    ipb.len1 = strlen(str) + 1;
+    __vi_send("a", &ipb);
 #endif
 
     XtFree( str );

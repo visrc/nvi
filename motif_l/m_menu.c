@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_menu.c,v 8.19 1996/12/11 20:58:23 bostic Exp $ (Berkeley) $Date: 1996/12/11 20:58:23 $";
+static const char sccsid[] = "$Id: m_menu.c,v 8.20 1996/12/14 14:04:55 bostic Exp $ (Berkeley) $Date: 1996/12/14 14:04:55 $";
 #endif /* not lint */
 
 #include <sys/queue.h>
@@ -95,9 +95,9 @@ String	str;
     }
 
     ipb.code = VI_STRING;
-    ipb.str = buffer;
-    ipb.len = strlen(buffer);
-    __vi_send("s", &ipb);
+    ipb.str1 = buffer;
+    ipb.len1 = strlen(buffer);
+    __vi_send("a", &ipb);
 }
 
 
@@ -226,9 +226,9 @@ file_command(w, code, prompt)
 
 	if ((file = get_file(w, prompt)) != NULL) {
 		ipb.code = code;
-		ipb.str = file;
-		ipb.len = strlen(file);
-		__vi_send("s", &ipb);
+		ipb.str1 = file;
+		ipb.len1 = strlen(file);
+		__vi_send("a", &ipb);
 	}
 }
 

@@ -4,7 +4,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: ip.h,v 8.13 1996/12/13 12:22:43 bostic Exp $ (Berkeley) $Date: 1996/12/13 12:22:43 $
+ *	$Id: ip.h,v 8.14 1996/12/14 14:01:50 bostic Exp $ (Berkeley) $Date: 1996/12/14 14:01:50 $
  */
 
 extern int vi_ofd;		/* Output file descriptor. */
@@ -52,11 +52,13 @@ typedef struct _ip_private {
 /* A structure that can hold the information for any frame. */
 typedef struct _ip_buf {
 	int code;		/* Event code. */
-	const char *str;	/* String. */
-	size_t len;		/* String length. */
-	u_int32_t val1;		/* First value. */
-	u_int32_t val2;		/* Second value. */
-	u_int32_t val3;		/* Third value. */
+	const char *str1;	/* String #1. */
+	u_int32_t len1;		/* String #1 length. */
+	const char *str2;	/* String #1. */
+	u_int32_t len2;		/* String #1 length. */
+	u_int32_t val1;		/* Value #1. */
+	u_int32_t val2;		/* Value #2. */
+	u_int32_t val3;		/* Value #3. */
 } IP_BUF;
 
 /*
@@ -84,23 +86,24 @@ typedef struct _ip_buf {
 #define	VI_C_TOP	13	/* Cursor to top. */
 #define	VI_C_UP		14	/* Cursor up N lines: IPO_INT. */
 #define	VI_EDIT		15	/* Edit a file: IPO_STR. */
-#define	VI_EDITSPLIT	16	/* Split to a file: IPO_STR. */
-#define	VI_EOF		17	/* End of input (NOT ^D). */
-#define	VI_ERR		18	/* Input error. */
-#define	VI_INTERRUPT	19	/* Interrupt. */
-#define	VI_MOUSE_MOVE	20	/* Mouse click move: IPO_INT, IPO_INT. */
-#define	VI_QUIT		21	/* Quit. */
-#define	VI_RESIZE	22	/* Screen resize: IPO_INT, IPO_INT. */
-#define	VI_SIGHUP	23	/* SIGHUP. */
-#define	VI_SIGTERM	24	/* SIGTERM. */
-#define	VI_STRING	25	/* Input string: IPO_STR. */
-#define	VI_TAG		26	/* Tag. */
-#define	VI_TAGAS	27	/* Tag to a string: IPO_STR. */
-#define	VI_TAGSPLIT	28	/* Split to a tag. */
-#define	VI_UNDO		29	/* Undo. */
-#define	VI_WQ		30	/* Write and quit. */
-#define	VI_WRITE	31	/* Write. */
-#define	VI_WRITEAS	32	/* Write as another file: IPO_STR. */
+#define	VI_EDITOPT	16	/* Edit option: 2 * IPO_STR, IPO_INT. */
+#define	VI_EDITSPLIT	17	/* Split to a file: IPO_STR. */
+#define	VI_EOF		18	/* End of input (NOT ^D). */
+#define	VI_ERR		19	/* Input error. */
+#define	VI_INTERRUPT	20	/* Interrupt. */
+#define	VI_MOUSE_MOVE	21	/* Mouse click move: IPO_INT, IPO_INT. */
+#define	VI_QUIT		22	/* Quit. */
+#define	VI_RESIZE	23	/* Screen resize: IPO_INT, IPO_INT. */
+#define	VI_SIGHUP	24	/* SIGHUP. */
+#define	VI_SIGTERM	25	/* SIGTERM. */
+#define	VI_STRING	26	/* Input string: IPO_STR. */
+#define	VI_TAG		27	/* Tag. */
+#define	VI_TAGAS	28	/* Tag to a string: IPO_STR. */
+#define	VI_TAGSPLIT	29	/* Split to a tag. */
+#define	VI_UNDO		30	/* Undo. */
+#define	VI_WQ		31	/* Write and quit. */
+#define	VI_WRITE	32	/* Write. */
+#define	VI_WRITEAS	33	/* Write as another file: IPO_STR. */
 
 #define	VI_SEARCH_IC	0x001	/* VI_C_SEARCH: ignore case. */
 #define	VI_SEARCH_INCR	0x002	/* VI_C_SEARCH: incremental search. */
@@ -119,15 +122,16 @@ typedef struct _ip_buf {
 #define	SI_CLRTOEOL	 6	/* Clear to the end of the line. */
 #define	SI_DELETELN	 7	/* Delete a line. */
 #define	SI_DISCARD	 8	/* Discard the screen. */
-#define	SI_INSERTLN	 9	/* Insert a line. */
-#define	SI_MOVE		10	/* Move the cursor: 2 * IPO_INT. */
-#define	SI_QUIT		11	/* Quit. */
-#define	SI_REDRAW	12	/* Redraw the screen. */
-#define	SI_REFRESH	13	/* Refresh the screen. */
-#define	SI_RENAME	14	/* Rename the screen: IPO_STR. */
-#define	SI_REWRITE	15	/* Rewrite a line: IPO_INT. */
-#define	SI_SCROLLBAR	16	/* Reset the scrollbar: 3 * IPO_INT. */
-#define	SI_SPLIT	17	/* Split the screen. */
-#define	SI_EVENT_MAX	17
+#define	SI_EDITOPT	 9	/* Edit option: 2 * IPO_STR, IPO_INT. */
+#define	SI_INSERTLN	10	/* Insert a line. */
+#define	SI_MOVE		11	/* Move the cursor: 2 * IPO_INT. */
+#define	SI_QUIT		12	/* Quit. */
+#define	SI_REDRAW	13	/* Redraw the screen. */
+#define	SI_REFRESH	14	/* Refresh the screen. */
+#define	SI_RENAME	15	/* Rename the screen: IPO_STR. */
+#define	SI_REWRITE	16	/* Rewrite a line: IPO_INT. */
+#define	SI_SCROLLBAR	17	/* Reset the scrollbar: 3 * IPO_INT. */
+#define	SI_SPLIT	18	/* Split the screen. */
+#define	SI_EVENT_MAX	18
 
 #include "ip_extern.h"
