@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.42 1993/02/14 18:31:05 bostic Exp $ (Berkeley) $Date: 1993/02/14 18:31:05 $";
+static char sccsid[] = "$Id: options.c,v 5.43 1993/02/14 18:54:39 bostic Exp $ (Berkeley) $Date: 1993/02/14 18:54:39 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -912,14 +912,14 @@ opts_prefix(name)
 	return (save_op);
 }
 
-int
+static int
 opts_abbcmp(a, b)
         const void *a, *b;
 {
         return(strcmp(((ABBREV *)a)->name, ((ABBREV *)b)->name));
 }
 
-int
+static int
 opts_cmp(a, b)
         const void *a, *b;
 {
