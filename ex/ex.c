@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.94 1994/03/02 15:55:34 bostic Exp $ (Berkeley) $Date: 1994/03/02 15:55:34 $";
+static char sccsid[] = "$Id: ex.c,v 8.95 1994/03/03 13:27:59 bostic Exp $ (Berkeley) $Date: 1994/03/03 13:27:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1455,14 +1455,18 @@ backward:	*addr_found = 1;
 			++cmd;
 		}
 	}
-	if (total < 0 && -total > cur->lno) {
-		msgq(sp, M_ERR, "Reference to a line number less than 0.");
-		return (1);
-	}
-	cur->lno += total;
 
-	*cmdp = cmd;
-	*cmdlenp = cmdlen;
+	if (*addr_found) {
+		if (total < 0 && -total > cur->lno) {
+			msgq(sp, M_ERR,
+			    "Reference to a line number less than 0.");
+			return (1);
+		}
+		cur->lno += total;
+
+		*cmdp = cmd;
+		*cmdlenp = cmdlen;
+	}
 	return (0);
 }
 
