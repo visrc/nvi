@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_increment.c,v 8.6 1993/12/09 19:43:12 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:43:12 $";
+static char sccsid[] = "$Id: v_increment.c,v 8.7 1994/02/26 17:13:53 bostic Exp $ (Berkeley) $Date: 1994/02/26 17:13:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,11 +36,10 @@ static char * const fmt[] = {
  *	Increment/decrement a keyword number.
  */
 int
-v_increment(sp, ep, vp, fm, tm, rp)
+v_increment(sp, ep, vp)
 	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
-	MARK *fm, *tm, *rp;
 {
 	VI_PRIVATE *vip;
 	u_long ulval;
@@ -109,19 +108,19 @@ underflow:			msgq(sp, M_ERR, "Resulting number too small.");
 		nlen = snprintf(nbuf, sizeof(nbuf), ntype, lval);
 	}
 
-	if ((p = file_gline(sp, ep, fm->lno, &len)) == NULL) {
-		GETLINE_ERR(sp, fm->lno);
+	if ((p = file_gline(sp, ep, vp->m_start.lno, &len)) == NULL) {
+		GETLINE_ERR(sp, vp->m_start.lno);
 		return (1);
 	}
 
 	GET_SPACE_RET(sp, bp, blen, len + nlen);
-	memmove(bp, p, fm->cno);
-	memmove(bp + fm->cno, nbuf, nlen);
-	memmove(bp + fm->cno + nlen,
-	    p + fm->cno + vp->klen, len - fm->cno - vp->klen);
+	memmove(bp, p, vp->m_start.cno);
+	memmove(bp + vp->m_start.cno, nbuf, nlen);
+	memmove(bp + vp->m_start.cno + nlen,
+	    p + vp->m_start.cno + vp->klen, len - vp->m_start.cno - vp->klen);
 	len = len - vp->klen + nlen;
 
-	rval = file_sline(sp, ep, fm->lno, bp, len);
+	rval = file_sline(sp, ep, vp->m_start.lno, bp, len);
 	FREE_SPACE(sp, bp, blen);
 	return (rval);
 }
