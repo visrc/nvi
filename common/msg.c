@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 8.9 1994/08/14 13:38:33 bostic Exp $ (Berkeley) $Date: 1994/08/14 13:38:33 $";
+static char sccsid[] = "$Id: msg.c,v 8.10 1994/08/16 10:04:34 bostic Exp $ (Berkeley) $Date: 1994/08/16 10:04:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -196,7 +196,8 @@ msg_app(gp, sp, inv_video, p, len)
 	}
 
 	/* Get enough memory for the message. */
-store:	if (len > mp->blen && binc(sp, &mp->mbuf, &mp->blen, len))
+store:	if (len > mp->blen &&
+	    (mp->mbuf = binc(sp, mp->mbuf, &mp->blen, len)) == NULL)
 		goto ret;
 
 	/* Store the message. */
