@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.27 1993/11/02 13:08:02 bostic Exp $ (Berkeley) $Date: 1993/11/02 13:08:02 $";
+static char sccsid[] = "$Id: recover.c,v 8.28 1993/11/02 13:13:11 bostic Exp $ (Berkeley) $Date: 1993/11/02 13:13:11 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -554,7 +554,7 @@ next:		(void)fclose(fp);
 		   "There are older versions of this file for you to recover.");
 		if (found > requested)
 			msgq(sp, M_INFO,
-			    "There are other files for you to recover.");
+			    "There are other files that you can recover.");
 	}
 
 	/* Create the FREF structure, start the btree file. */
