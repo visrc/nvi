@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.6 1992/02/20 14:14:35 bostic Exp $ (Berkeley) $Date: 1992/02/20 14:14:35 $";
+static char sccsid[] = "$Id: main.c,v 5.7 1992/02/28 12:34:29 bostic Exp $ (Berkeley) $Date: 1992/02/28 12:34:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -52,11 +52,6 @@ main(argc, argv)
 
 	/* Set mode based on the program name. */
 	mode = MODE_VI;
-#ifndef NO_EXTENSIONS
-	if (!strcmp(*argv, "edit"))
-		SET(O_INPUTMODE)
-	else
-#endif
 	if (!strcmp(*argv, "view"))
 		SET(O_READONLY)
 	else if (!strcmp(argv, "ex"))
@@ -64,7 +59,7 @@ main(argc, argv)
 
 	obsolete(argv);
 	cmd = err = str = tag = NULL;
-	while ((ch = getopt(argc, argv, "c:eimRrT:t:v")) != EOF)
+	while ((ch = getopt(argc, argv, "c:emRrT:t:v")) != EOF)
 		switch(ch) {
 		case 'c':		/* Run the command. */
 			cmd = optarg;
@@ -72,11 +67,6 @@ main(argc, argv)
 		case 'e':		/* Ex mode. */
 			mode = MODE_EX;
 			break;
-#ifndef NO_EXTENSIONS
-		case 'i':		/* Input mode. */
-			SET(O_INPUTMODE);
-			break;
-#endif
 #ifndef NO_ERRLIST
 		case 'm':		/* Error list. */
 			err = optarg;
@@ -364,7 +354,7 @@ static void
 usage()
 {
 	(void)fprintf(stderr,
-	    "usage: vi [-eimRrv] [-c command] [-m file] [-t tag]\n");
+	    "usage: vi [-emRrv] [-c command] [-m file] [-t tag]\n");
 	exit(1);
 }
 

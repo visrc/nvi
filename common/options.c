@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.4 1992/02/21 11:54:02 bostic Exp $ (Berkeley) $Date: 1992/02/21 11:54:02 $";
+static char sccsid[] = "$Id: options.c,v 5.5 1992/02/28 12:34:32 bostic Exp $ (Berkeley) $Date: 1992/02/28 12:34:32 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -27,6 +27,10 @@ static int opts_print __P((struct _option *));
 /*
  * First array slot is the current value, second and third are the low and
  * and high ends of the range.
+ *
+ * XXX
+ * Some of the limiting values are clearly randomly chosen, and have no
+ * meaning.  How set O_REPORT to just shut up?
  */
 static long columns[3] = {80, 32, 255};
 static long keytime[3] = {2, 0, 50};
@@ -78,79 +82,77 @@ OPTIONS opts[] = {
 	"hideformat",	NULL,		OPT_0BOOL|OPT_REDRAW,
 #define	O_IGNORECASE	17
 	"ignorecase",	NULL,		OPT_0BOOL,
-#define	O_INPUTMODE	18
-	"inputmode",	NULL,		OPT_0BOOL,
-#define	O_KEYTIME	19
+#define	O_KEYTIME	20
 	"keytime",	&keytime,	OPT_NUM,
-#define	O_KEYWORDPRG	20
+#define	O_KEYWORDPRG	21
 	"keywordprg",	"ref",		OPT_STR,
-#define	O_LINES		21
+#define	O_LINES		22
 	"lines",	&lines,		OPT_NOSAVE|OPT_NUM|OPT_REDRAW,
-#define	O_LIST		22
+#define	O_LIST		23
 	"list",		NULL,		OPT_0BOOL|OPT_REDRAW,
-#define	O_MAGIC		23
+#define	O_MAGIC		24
 	"magic",	NULL,		OPT_1BOOL,
-#define	O_MAKE		24
+#define	O_MAKE		25
 	"make",		"make",		OPT_STR,
-#define	O_MESG		25
+#define	O_MESG		26
 	"mesg",		NULL,		OPT_1BOOL,
-#define	O_MODELINE	26
+#define	O_MODELINE	27
 	"modeline",	NULL,		OPT_0BOOL,
-#define	O_MORE		27
+#define	O_MORE		28
 	"more",		NULL,		OPT_1BOOL,
-#define	O_NUMBER	28
+#define	O_NUMBER	29
 	"number",	NULL,		OPT_0BOOL|OPT_REDRAW,
-#define	O_PARAGRAPHS	29
+#define	O_PARAGRAPHS	30
 	"paragraphs",	"PPppIPLPQP",	OPT_STR,
-#define	O_PROMPT	30
+#define	O_PROMPT	31
 	"prompt",	NULL,		OPT_1BOOL,
-#define	O_READONLY	31
+#define	O_READONLY	32
 	"readonly",	NULL,		OPT_0BOOL,
-#define	O_REPORT	32
+#define	O_REPORT	33
 	"report",	&report,	OPT_NUM,
-#define	O_RULER		33
+#define	O_RULER		34
 	"ruler",	NULL,		OPT_0BOOL,
-#define	O_SCROLL	34
+#define	O_SCROLL	35
 	"scroll",	&scroll,	OPT_NUM,
-#define	O_SECTIONS	35
+#define	O_SECTIONS	36
 	"sections",	"NHSHSSSEse",	OPT_STR,
-#define	O_SHELL		36
+#define	O_SHELL		37
 	"shell",	_PATH_BSHELL,	OPT_STR,
-#define	O_SHIFTWIDTH	37
+#define	O_SHIFTWIDTH	38
 	"shiftwidth",	&shiftwidth,	OPT_NUM,
-#define	O_SHOWMATCH	38
+#define	O_SHOWMATCH	39
 	"showmatch",	NULL,		OPT_0BOOL,
-#define	O_SHOWMODE	39
+#define	O_SHOWMODE	40
 	"showmode",	NULL,		OPT_0BOOL,
-#define	O_SIDESCROLL	40
+#define	O_SIDESCROLL	41
 	"sidescroll",	&sidescroll,	OPT_NUM,
-#define	O_SYNC		41
+#define	O_SYNC		42
 	"sync",		NULL,		OPT_0BOOL,
-#define	O_TABSTOP	42
+#define	O_TABSTOP	43
 	"tabstop",	&tabstop,	OPT_NUM|OPT_REDRAW,
-#define	O_TAGLENGTH	43
+#define	O_TAGLENGTH	44
 	"taglength",	&taglength,	OPT_NUM,
-#define	O_TERM		44
+#define	O_TERM		45
 	"term",		"unknown",	OPT_NOSAVE|OPT_STR,
-#define	O_TERSE		45
+#define	O_TERSE		46
 	"terse",	NULL,		OPT_0BOOL,
-#define	O_TIMEOUT	46
+#define	O_TIMEOUT	47
 	"timeout",	NULL,		OPT_0BOOL,
-#define	O_VBELL		47
+#define	O_VBELL		48
 	"vbell",	NULL,		OPT_0BOOL,
-#define	O_WARN		48
+#define	O_WARN		49
 	"warn",		NULL,		OPT_1BOOL,
-#define	O_WINDOW	49
+#define	O_WINDOW	50
 	"window",	&window,	OPT_NUM|OPT_REDRAW,
-#define	O_WRAPMARGIN	50
+#define	O_WRAPMARGIN	51
 	"wrapmargin",	&wrapmargin,	OPT_NUM,
-#define	O_WRAPSCAN	51
+#define	O_WRAPSCAN	52
 	"wrapscan",	NULL,		OPT_1BOOL,
-#define	O_WRITEANY	52
+#define	O_WRITEANY	53
 	"writeany",	NULL,		OPT_0BOOL,
 	NULL,
 };
-#define	O_OPTIONCOUNT	53
+#define	O_OPTIONCOUNT	54
 /* END_OPTION_DEF */
 
 typedef struct abbrev {
@@ -176,7 +178,6 @@ static ABBREV abbrev[] = {
 	"fl",	O_VBELL,
 	"hf",	O_HIDEFORMAT,
 	"ic",	O_IGNORECASE,
-	"im",	O_INPUTMODE,
 	"kp",	O_KEYWORDPRG,
 	"kt",	O_KEYTIME,
 	"li",	O_LIST,

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 5.4 1992/02/21 11:54:16 bostic Exp $ (Berkeley) $Date: 1992/02/21 11:54:16 $";
+static char sccsid[] = "$Id: v_cmd.c,v 5.5 1992/02/28 12:34:41 bostic Exp $ (Berkeley) $Date: 1992/02/28 12:34:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -273,7 +273,6 @@ void vi()
 	int			dotpkey;/* last "prevkey" of a change */
 	int			dotkey2;/* last extra "getkey()" of a change */
 	int			dotcnt;	/* last "count" of a change */
-	int			firstkey;
 	REG int			i;
 
 	/* tell the redraw() function to start from scratch */
@@ -290,15 +289,6 @@ void vi()
 
 	/* safeguard against '.' with no previous command */
 	dotkey = 0;
-
-	/* go immediately into insert mode, if ":set inputmode" */
-	firstkey = 0;
-#ifndef NO_EXTENSIONS
-	if (ISSET(O_INPUTMODE))
-	{
-		firstkey = 'i';
-	}
-#endif
 
 	/* Repeatedly handle VI commands */
 	for (count = 0, prevkey = '\0'; mode == MODE_VI; )
@@ -317,19 +307,10 @@ void vi()
 		}
 		rptlines = 0L;
 
-		/* get the next command key.  It must be ASCII */
-		if (firstkey)
+		do
 		{
-			key = firstkey;
-			firstkey = 0;
-		}
-		else
-		{
-			do
-			{
-				key = getkey(WHEN_VICMD);
-			} while (key < 0 || key > 127);
-		}
+			key = getkey(WHEN_VICMD);
+		} while (key < 0 || key > 127);
 
 		/* Convert a doubled-up operator such as "dd" into "d_" */
 		if (prevkey && key == prevkey)
