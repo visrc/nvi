@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 8.25 1994/05/07 11:33:40 bostic Exp $ (Berkeley) $Date: 1994/05/07 11:33:40 $";
+static char sccsid[] = "$Id: db.c,v 8.26 1994/05/21 09:42:29 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:42:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -105,7 +105,7 @@ file_rline(sp, ep, lno, lenp)
 	switch (ep->db->get(ep->db, &key, &data, 0)) {
         case -1:
 		msgq(sp, M_ERR,
-		    "Error: %s/%d: unable to get line %u: %s.",
+		    "Error: %s/%d: unable to get line %u: %s",
 		    tail(__FILE__), __LINE__, lno, strerror(errno));
 		/* FALLTHROUGH */
         case 1:
@@ -156,7 +156,7 @@ file_dline(sp, ep, lno)
 	SIGBLOCK;
 	if (ep->db->del(ep->db, &key, 0) == 1) {
 		msgq(sp, M_ERR,
-		    "Error: %s/%d: unable to delete line %u: %s.",
+		    "Error: %s/%d: unable to delete line %u: %s",
 		    tail(__FILE__), __LINE__, lno, strerror(errno));
 		return (1);
 	}
@@ -222,7 +222,7 @@ file_aline(sp, ep, update, lno, p, len)
 	SIGBLOCK;
 	if (ep->db->put(ep->db, &key, &data, R_IAFTER) == -1) {
 		msgq(sp, M_ERR,
-		    "Error: %s/%d: unable to append to line %u: %s.",
+		    "Error: %s/%d: unable to append to line %u: %s",
 		    tail(__FILE__), __LINE__, lno, strerror(errno));
 		return (1);
 	}
@@ -300,7 +300,7 @@ file_iline(sp, ep, lno, p, len)
 	SIGBLOCK;
 	if (ep->db->put(ep->db, &key, &data, R_IBEFORE) == -1) {
 		msgq(sp, M_ERR,
-		    "Error: %s/%d: unable to insert at line %u: %s.",
+		    "Error: %s/%d: unable to insert at line %u: %s",
 		    tail(__FILE__), __LINE__, lno, strerror(errno));
 		return (1);
 	}
@@ -362,7 +362,7 @@ file_sline(sp, ep, lno, p, len)
 	SIGBLOCK;
 	if (ep->db->put(ep->db, &key, &data, 0) == -1) {
 		msgq(sp, M_ERR,
-		    "Error: %s/%d: unable to store line %u: %s.",
+		    "Error: %s/%d: unable to store line %u: %s",
 		    tail(__FILE__), __LINE__, lno, strerror(errno));
 		return (1);
 	}
@@ -411,7 +411,7 @@ file_lline(sp, ep, lnop)
 	switch (ep->db->seq(ep->db, &key, &data, R_LAST)) {
         case -1:
 		msgq(sp, M_ERR,
-		    "Error: %s/%d: unable to get last line: %s.",
+		    "Error: %s/%d: unable to get last line: %s",
 		    tail(__FILE__), __LINE__, strerror(errno));
 		*lnop = 0;
 		return (1);

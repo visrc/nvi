@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 8.27 1994/05/18 18:51:44 bostic Exp $ (Berkeley) $Date: 1994/05/18 18:51:44 $
+ *	$Id: exf.h,v 8.28 1994/05/21 09:42:28 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:42:28 $
  */
 					/* Undo direction. */
 /*
@@ -68,7 +68,7 @@ struct _exf {
 
 #define	GETLINE_ERR(sp, lno) {						\
 	msgq((sp), M_ERR,						\
-	    "Error: %s/%d: unable to retrieve line %u.",		\
+	    "Error: %s/%d: unable to retrieve line %u",			\
 	    tail(__FILE__), __LINE__, (lno));				\
 }
 

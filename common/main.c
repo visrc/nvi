@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.91 1994/05/18 18:51:22 bostic Exp $ (Berkeley) $Date: 1994/05/18 18:51:22 $";
+static char sccsid[] = "$Id: main.c,v 8.92 1994/05/21 09:42:33 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:42:33 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -183,7 +183,7 @@ main(argc, argv)
 		silent = 1;
 		if (!LF_ISSET(S_EX)) {
 			msgq(NULL, M_ERR,
-			    "Vi's standard input must be a terminal.");
+			    "Vi's standard input must be a terminal");
 			goto err;
 		}
 	}
@@ -208,7 +208,7 @@ main(argc, argv)
 			err(1, "%s", optarg);
 		(void)fprintf(gp->tracefp, "\n===\ntrace: open %s\n", optarg);
 #else
-		msgq(sp, M_ERR, "-T support not compiled into this version.");
+		msgq(sp, M_ERR, "-T support not compiled into this version");
 #endif
 	}
 
@@ -229,7 +229,7 @@ main(argc, argv)
 		ARGS *av[2], a, b;
 		errno = 0;
 		if (strtol(optarg, &p, 10) < 0 || errno || *p)
-			errx(1, "illegal window size -- %s", optarg);
+			errx(1, "illegal window size -- %s.", optarg);
 		(void)snprintf(path, sizeof(path), "window=%s", optarg);
 		a.bp = (CHAR_T *)path;
 		a.len = strlen(path);
@@ -239,7 +239,7 @@ main(argc, argv)
 		av[1] = &b;
 		if (opts_set(sp, av))
 			 msgq(sp, M_ERR,
-			     "Unable to set command line window size option.");
+			     "Unable to set command line window size option");
 	}
 
 	/* Keymaps, special keys, must follow option initializations. */
@@ -617,10 +617,10 @@ exrc_isok(sp, sbp, path, rootok)
 denied:		if (strchr(path, '/') == NULL &&
 		    getcwd(buf, sizeof(buf)) != NULL)
 			msgq(sp, M_ERR,
-			    "%s/%s: not sourced: %s.", buf, path, emsg);
+			    "%s/%s: not sourced: %s", buf, path, emsg);
 		else
 			msgq(sp, M_ERR,
-			    "%s: not sourced: %s.", path, emsg);
+			    "%s: not sourced: %s", path, emsg);
 		return (NOPERM);
 	}
 	return (OK);

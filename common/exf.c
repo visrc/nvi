@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.77 1994/05/18 18:52:03 bostic Exp $ (Berkeley) $Date: 1994/05/18 18:52:03 $";
+static char sccsid[] = "$Id: exf.c,v 8.78 1994/05/21 09:42:26 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:42:26 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -258,7 +258,7 @@ file_init(sp, frp, rcv_name, force)
 
 		if (!S_ISREG(sb.st_mode))
 			msgq(sp, M_ERR,
-			    "Warning: %s is not a regular file.", oname);
+			    "Warning: %s is not a regular file", oname);
 	}
 
 	/* Set up recovery. */
@@ -539,7 +539,7 @@ file_write(sp, ep, fm, tm, name, flags)
 	 */
 	frp = sp->frp;
 	if (name == NULL && frp->cname == NULL && frp->name == NULL) {
-		msgq(sp, M_ERR, "No filename to which to write.");
+		msgq(sp, M_ERR, "No filename to which to write");
 		return (1);
 	}
 
@@ -548,10 +548,10 @@ file_write(sp, ep, fm, tm, name, flags)
 	    name == NULL && F_ISSET(frp, FR_RDONLY)) {
 		if (LF_ISSET(FS_POSSIBLE))
 			msgq(sp, M_ERR,
-			    "Read-only file, not written; use ! to override.");
+			    "Read-only file, not written; use ! to override");
 		else
 			msgq(sp, M_ERR,
-			    "Read-only file, not written.");
+			    "Read-only file, not written");
 		return (1);
 	}
 
@@ -566,10 +566,10 @@ file_write(sp, ep, fm, tm, name, flags)
 			name = frp->cname;
 exists:			if (LF_ISSET(FS_POSSIBLE))
 				msgq(sp, M_ERR,
-		"%s exists, not written; use ! to override.", name);
+		"%s exists, not written; use ! to override", name);
 			else
 				msgq(sp, M_ERR,
-				    "%s exists, not written.", name);
+				    "%s exists, not written", name);
 			return (1);
 		}
 
@@ -581,9 +581,9 @@ exists:			if (LF_ISSET(FS_POSSIBLE))
 		    frp->cname == NULL && !stat(frp->name, &sb)) {
 			if (LF_ISSET(FS_POSSIBLE))
 				msgq(sp, M_ERR,
-				    "Use ! to write a partial file.");
+				    "Use ! to write a partial file");
 			else
-				msgq(sp, M_ERR, "Partial file, not written.");
+				msgq(sp, M_ERR, "Partial file, not written");
 			return (1);
 		}
 	}
@@ -612,7 +612,7 @@ exists:			if (LF_ISSET(FS_POSSIBLE))
 		if (!LF_ISSET(FS_FORCE | FS_APPEND)) {
 			if (frp->mtime && sb.st_mtime > frp->mtime) {
 				msgq(sp, M_ERR,
-			"%s: file modified more recently than this copy%s.",
+			"%s: file modified more recently than this copy%s",
 				    name == NULL ? frp->name : name,
 				    LF_ISSET(FS_POSSIBLE) ?
 				    "; use ! to override" : "");
@@ -689,7 +689,7 @@ exists:			if (LF_ISSET(FS_POSSIBLE))
 	if (LF_ISSET(FS_ALL))
 		F_CLR(ep, F_MODIFIED);
 
-	msgq(sp, M_INFO, "%s%s%s: %lu line%s, %lu characters.",
+	msgq(sp, M_INFO, "%s%s%s: %lu line%s, %lu characters",
 	    INTERRUPTED(sp) ? "Interrupted write: " : "",
 	    name, msg, nlno, nlno == 1 ? "" : "s", nch);
 

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: log.c,v 8.15 1994/05/07 12:15:43 bostic Exp $ (Berkeley) $Date: 1994/05/07 12:15:43 $";
+static char sccsid[] = "$Id: log.c,v 8.16 1994/05/21 09:42:31 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:42:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -72,11 +72,11 @@ static void	log_trace __P((SCR *, char *, recno_t, u_char *));
 
 /* Try and restart the log on failure, i.e. if we run out of memory. */
 #define	LOG_ERR {							\
-	msgq(sp, M_ERR, "Error: %s/%d: put log error: %s.",		\
+	msgq(sp, M_ERR, "Error: %s/%d: put log error: %s",		\
 	    tail(__FILE__), __LINE__, strerror(errno));			\
 	(void)ep->log->close(ep->log);					\
 	if (!log_init(sp, ep))						\
-		msgq(sp, M_ERR, "Log restarted.");			\
+		msgq(sp, M_ERR, "Log restarted");			\
 	return (1);							\
 }
 
@@ -353,12 +353,12 @@ log_backward(sp, ep, rp)
 
 	if (F_ISSET(ep, F_NOLOG)) {
 		msgq(sp, M_ERR,
-		    "Logging not being performed, undo not possible.");
+		    "Logging not being performed, undo not possible");
 		return (1);
 	}
 
 	if (ep->l_cur == 1) {
-		msgq(sp, M_BERR, "No changes to undo.");
+		msgq(sp, M_BERR, "No changes to undo");
 		return (1);
 	}
 
@@ -454,7 +454,7 @@ log_setline(sp, ep)
 
 	if (F_ISSET(ep, F_NOLOG)) {
 		msgq(sp, M_ERR,
-		    "Logging not being performed, undo not possible.");
+		    "Logging not being performed, undo not possible");
 		return (1);
 	}
 
@@ -540,12 +540,12 @@ log_forward(sp, ep, rp)
 
 	if (F_ISSET(ep, F_NOLOG)) {
 		msgq(sp, M_ERR,
-		    "Logging not being performed, roll-forward not possible.");
+		    "Logging not being performed, roll-forward not possible");
 		return (1);
 	}
 
 	if (ep->l_cur == ep->l_high) {
-		msgq(sp, M_BERR, "No changes to re-do.");
+		msgq(sp, M_BERR, "No changes to re-do");
 		return (1);
 	}
 
