@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 8.29 1994/04/11 09:53:14 bostic Exp $ (Berkeley) $Date: 1994/04/11 09:53:14 $
+ *	$Id: vi.h,v 8.30 1994/04/13 10:34:23 bostic Exp $ (Berkeley) $Date: 1994/04/13 10:34:23 $
  */
 
 typedef struct _vikeys VIKEYS;
@@ -208,7 +208,7 @@ int	v_isempty __P((char *, size_t));
 int	v_msgflush __P((SCR *));
 void	v_nomove __P((SCR *));
 int	v_ntext __P((SCR *, EXF *, TEXTH *, MARK *,
-	    const char *, const size_t, MARK *, int, recno_t, u_int));
+	    const char *, const size_t, MARK *, ARG_CHAR_T, recno_t, u_int));
 int	v_optchange __P((SCR *, int));
 int	v_screen_copy __P((SCR *, SCR *));
 int	v_screen_end __P((SCR *));
