@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 8.42 1994/08/31 17:17:18 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:17:18 $";
+static char sccsid[] = "$Id: ex_read.c,v 8.43 1994/08/31 18:43:01 bostic Exp $ (Berkeley) $Date: 1994/08/31 18:43:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -132,7 +132,7 @@ ex_read(sp, ep, cmdp)
 	}
 
 	/* Shell and file name expand the user's argument. */
-	if (argv_exp2(sp, ep, cmdp, arg, arglen, 0))
+	if (argv_exp2(sp, ep, cmdp, arg, arglen))
 		return (1);
 
 	/*

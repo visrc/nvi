@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 8.39 1994/08/31 17:17:33 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:17:33 $";
+static char sccsid[] = "$Id: ex_write.c,v 8.40 1994/08/31 18:43:41 bostic Exp $ (Berkeley) $Date: 1994/08/31 18:43:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -185,7 +185,7 @@ exwr(sp, ep, cmdp, cmd)
 	}
 
 	/* Build an argv so we get an argument count and file expansion. */
-	if (argv_exp2(sp, ep, cmdp, p, strlen(p), 0))
+	if (argv_exp2(sp, ep, cmdp, p, strlen(p)))
 		return (1);
 
 	switch (cmdp->argc) {
