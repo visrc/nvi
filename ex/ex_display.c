@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_display.c,v 8.20 1994/07/25 16:46:15 bostic Exp $ (Berkeley) $Date: 1994/07/25 16:46:15 $";
+static char sccsid[] = "$Id: ex_display.c,v 8.21 1994/08/03 11:59:59 bostic Exp $ (Berkeley) $Date: 1994/08/03 11:59:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -45,15 +45,28 @@ ex_display(sp, ep, cmdp)
 {
 	switch (cmdp->argv[0]->bp[0]) {
 	case 'b':
+#undef	ARG
+#define	ARG	"buffers"
+		if (cmdp->argv[0]->len >= sizeof(ARG) ||
+		    memcmp(cmdp->argv[0]->bp, ARG, cmdp->argv[0]->len))
+			break;
 		return (bdisplay(sp, ep));
 	case 's':
+#undef	ARG
+#define	ARG	"screens"
+		if (cmdp->argv[0]->len >= sizeof(ARG) ||
+		    memcmp(cmdp->argv[0]->bp, ARG, cmdp->argv[0]->len))
+			break;
 		return (ex_sdisplay(sp, ep));
 	case 't':
+#undef	ARG
+#define	ARG	"tags"
+		if (cmdp->argv[0]->len >= sizeof(ARG) ||
+		    memcmp(cmdp->argv[0]->bp, ARG, cmdp->argv[0]->len))
+			break;
 		return (ex_tagdisplay(sp, ep));
 	}
-	msgq(sp, M_ERR,
-	    "Unknown display argument %s, use b[uffers], s[creens], or t[ags]",
-	    cmdp->argv[0]);
+	msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
 	return (1);
 }
 
