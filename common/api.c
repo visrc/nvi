@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: api.c,v 8.9 1995/11/22 20:38:55 bostic Exp $ (Berkeley) $Date: 1995/11/22 20:38:55 $";
+static char sccsid[] = "$Id: api.c,v 8.10 1995/11/26 19:38:28 bostic Exp $ (Berkeley) $Date: 1995/11/26 19:38:28 $";
 #endif /* not lint */
 
 #ifdef TCL_INTERP
@@ -53,15 +53,19 @@ api_fscreen(id, name)
 	/* Search the displayed list. */
 	for (tsp = gp->dq.cqh_first;
 	    tsp != (void *)&gp->dq; tsp = tsp->q.cqe_next)
-		if (name == NULL &&
-		    id == tsp->id || !strcmp(name, tsp->frp->name))
+		if (name == NULL) {
+			if (id == tsp->id)
+				return (tsp);
+		} else if (!strcmp(name, tsp->frp->name))
 			return (tsp);
 
 	/* Search the hidden list. */
 	for (tsp = gp->hq.cqh_first;
 	    tsp != (void *)&gp->hq; tsp = tsp->q.cqe_next)
-		if (name == NULL &&
-		    id == tsp->id || !strcmp(name, tsp->frp->name))
+		if (name == NULL) {
+			if (id == tsp->id)
+				return (tsp);
+		} else if (!strcmp(name, tsp->frp->name))
 			return (tsp);
 	return (NULL);
 }
@@ -163,6 +167,36 @@ api_sline(sp, lno, line, len)
 	size_t len;
 {
 	return (db_set(sp, lno, line, len));
+}
+
+/*
+ * api_getmark --
+ *	Get the mark.
+ *
+ * PUBLIC: int api_getmark __P((SCR *, int, MARK *));
+ */
+int
+api_getmark(sp, markname, mp)
+	SCR *sp;
+	int markname;
+	MARK *mp;
+{
+	return (mark_get(sp, (ARG_CHAR_T)markname, mp, M_ERR));
+}
+
+/*
+ * api_setmark --
+ *	Set the mark.
+ *
+ * PUBLIC: int api_setmark __P((SCR *, int, MARK *));
+ */
+int
+api_setmark(sp, markname, mp)
+	SCR *sp;
+	int markname;
+	MARK *mp;
+{
+	return (mark_set(sp, (ARG_CHAR_T)markname, mp, 1));
 }
 
 /*
