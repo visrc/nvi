@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.93 1997/08/03 17:04:12 bostic Exp $ (Berkeley) $Date: 1997/08/03 17:04:12 $
+#	@(#)Makefile.in	8.94 (Berkeley) 03/08/00
 
 srcdir=	@srcdir@/..
 CC=	@CC@
@@ -60,7 +60,7 @@ vi ex: $(VIALL)
 	-$(rm) -f ex
 	$(ln) $@ ex
 
-MALL=	m_main.o m_cde.o trace.o libmvi.a @LIBOBJS@
+MALL=	m_main.o m_cde.o trace.o libmvi.a
 vi_motif: $(MALL)
 	$(SHRPENV) $(CC) $(LDFLAGS) -o $@ $(MALL) @MOTIFLIBS@
 
@@ -92,8 +92,8 @@ install: all install_common
 	    ($(mkdir) $(bindir) && $(chmod) $(dmode) $(bindir))
 	@cd $(bindir) && $(rm) -f `echo vi | sed '$(transform)'`
 	@$(cp) vi $(bindir)/`echo vi | sed '$(transform)'`
-	@cd $(bindir) && [ -f $(strip) ] && \
-	    $(strip) `echo vi | sed '$(transform)'`
+	@cd $(bindir) && ([ ! -x $(strip) ] || \
+	    $(strip) `echo vi | sed '$(transform)'`)
 	@cd $(bindir) && $(chmod) $(emode) `echo vi | sed '$(transform)'`
 	@cd $(bindir) && $(rm) -f `echo ex | sed '$(transform)'`
 	@cd $(bindir) && $(rm) -f `echo view | sed '$(transform)'`
@@ -107,8 +107,8 @@ install: all install_common
 		    $(rm) -f `echo vi_motif | sed '$(transform)'`); \
 		$(cp) vi_motif \
 		    $(bindir)/`echo vi_motif | sed '$(transform)'`; \
-	        (cd $(bindir) && [ -f $(strip) ] && \
-	            $(strip) `echo vi_motif | sed '$(transform)'`); \
+	        (cd $(bindir) && ([ ! -x $(strip) ] || \
+	            $(strip) `echo vi_motif | sed '$(transform)'`)); \
 	        (cd $(bindir) && \
 		    $(chmod) $(emode) `echo vi_motif | sed '$(transform)'`); \
 	}
