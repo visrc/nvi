@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: delete.c,v 8.4 1993/09/27 11:48:25 bostic Exp $ (Berkeley) $Date: 1993/09/27 11:48:25 $";
+static char sccsid[] = "$Id: delete.c,v 8.5 1993/09/27 16:18:30 bostic Exp $ (Berkeley) $Date: 1993/09/27 16:18:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -151,10 +151,7 @@ delete(sp, ep, fm, tm, lmode)
 	/* Reporting. */
 vdone:	sp->rptlines[L_DELETED] += tm->lno - fm->lno + 1;
 
-	/* Update the marks. */
-done:	mark_delete(sp, ep, fm, tm, lmode);
-
-	if (bp != NULL)
+done:	if (bp != NULL)
 		FREE_SPACE(sp, bp, blen);
 
 	return (0);
