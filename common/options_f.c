@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: options_f.c,v 10.19 1996/04/15 20:31:24 bostic Exp $ (Berkeley) $Date: 1996/04/15 20:31:24 $";
+static const char sccsid[] = "$Id: options_f.c,v 10.20 1996/04/26 07:53:38 bostic Exp $ (Berkeley) $Date: 1996/04/26 07:53:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -168,7 +168,7 @@ f_modeline(sp, op, str, valp)
 {
 	if (!*valp)
 		msgq(sp, M_ERR, "047|The modeline(s) option may never be set");
-	return (0);
+	return (1);
 }
 
 /*
@@ -331,7 +331,7 @@ f_sourceany(sp, op, str, valp)
 {
 	if (!*valp)
 		msgq(sp, M_ERR, "051|The sourceany option may never be set");
-	return (0);
+	return (1);
 }
 
 /*
