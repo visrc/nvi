@@ -18,7 +18,7 @@ static const char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static const char sccsid[] = "$Id: main.c,v 10.42 1996/05/15 19:23:37 bostic Exp $ (Berkeley) $Date: 1996/05/15 19:23:37 $";
+static const char sccsid[] = "$Id: main.c,v 10.43 1996/05/15 20:16:19 bostic Exp $ (Berkeley) $Date: 1996/05/15 20:16:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -142,10 +142,15 @@ editor(gp, argc, argv)
 					v_estr(gp->progname, errno, _PATH_TTY);
 					return (1);
 				}
-				(void)printf("%lu waiting... ",
+		(void)printf("process %lu waiting, enter <CR> to continue: ",
 				    (u_long)getpid());
 				(void)fflush(stdout);
-				(void)read(fd, &ch, 1);
+				do {
+					if (read(fd, &ch, 1) != 1) {
+						(void)close(fd);
+						return (0);
+					}
+				} while (ch != '\n' && ch != '\r');
 				(void)close(fd);
 				break;
 			default:
