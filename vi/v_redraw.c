@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_redraw.c,v 5.9 1992/10/13 17:22:52 bostic Exp $ (Berkeley) $Date: 1992/10/13 17:22:52 $";
+static char sccsid[] = "$Id: v_redraw.c,v 5.10 1992/10/18 13:09:19 bostic Exp $ (Berkeley) $Date: 1992/10/18 13:09:19 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -32,8 +32,7 @@ v_redraw(vp, fm, tm, rp)
 	u_char *p;
 
 	TRACE("cursor: line %lu col %u", fm->lno, fm->cno);
-	GETLINE(p, fm->lno, len);
-	if (p)
+	if ((p = file_gline(curf, fm->lno, &len)) == NULL)
 		TRACE(" len: %u {%.*s}\n", len, MIN(len, 20), p);
 	else
 		TRACE(" GET failed.\n");
