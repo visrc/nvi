@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 9.4 1995/01/23 16:58:40 bostic Exp $ (Berkeley) $Date: 1995/01/23 16:58:40 $";
+static char sccsid[] = "$Id: screen.c,v 9.5 1995/01/23 18:31:37 bostic Exp $ (Berkeley) $Date: 1995/01/23 18:31:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,9 +30,13 @@ static char sccsid[] = "$Id: screen.c,v 9.4 1995/01/23 16:58:40 bostic Exp $ (Be
 #include <regex.h>
 
 #include "vi.h"
-#include "../vi/vcmd.h"
 #include "excmd.h"
+#include "../cl/cl.h"
 #include "../ex/tag.h"
+#include "../sex/sex_screen.h"
+#include "../svi/svi_screen.h"
+#include "../vi/vcmd.h"
+#include "../xaw/xaw.h"
 
 /*
  * screen_init --

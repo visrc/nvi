@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_screen.c,v 9.4 1995/01/23 17:03:13 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:03:13 $";
+static char sccsid[] = "$Id: ex_screen.c,v 9.5 1995/01/23 18:32:08 bostic Exp $ (Berkeley) $Date: 1995/01/23 18:32:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,6 +29,7 @@ static char sccsid[] = "$Id: ex_screen.c,v 9.4 1995/01/23 17:03:13 bostic Exp $ 
 
 #include "vi.h"
 #include "excmd.h"
+#include "../svi/svi_screen.h"
 
 /*
  * ex_split --	:s[plit] [file ...]

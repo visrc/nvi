@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 9.12 1995/01/23 17:26:28 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:26:28 $";
+static char sccsid[] = "$Id: key.c,v 9.13 1995/01/23 18:31:42 bostic Exp $ (Berkeley) $Date: 1995/01/23 18:31:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,6 +34,7 @@ static char sccsid[] = "$Id: key.c,v 9.12 1995/01/23 17:26:28 bostic Exp $ (Berk
 #include <regex.h>
 
 #include "vi.h"
+#include "../sex/sex_screen.h"
 
 /*
  * If we're reading less than 20 characters, up the size of the tty buffer.

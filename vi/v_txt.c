@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 9.13 1995/01/23 17:33:17 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:33:17 $";
+static char sccsid[] = "$Id: v_txt.c,v 9.14 1995/01/23 18:33:00 bostic Exp $ (Berkeley) $Date: 1995/01/23 18:33:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,6 +33,7 @@ static char sccsid[] = "$Id: v_txt.c,v 9.13 1995/01/23 17:33:17 bostic Exp $ (Be
 #include "vi.h"
 #include "vcmd.h"
 #include "excmd.h"
+#include "../svi/svi_screen.h"
 
 static int	 txt_abbrev __P((SCR *, TEXT *, CHAR_T *, int, int *, int *));
 static void	 txt_ai_resolve __P((SCR *, TEXT *));

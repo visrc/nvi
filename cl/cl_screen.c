@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_screen.c,v 8.1 1995/01/23 17:01:53 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:01:53 $";
+static char sccsid[] = "$Id: cl_screen.c,v 8.2 1995/01/23 18:32:25 bostic Exp $ (Berkeley) $Date: 1995/01/23 18:32:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -276,10 +276,10 @@ cl_keypad(sp, on)
 	char *sbp, *t, sbuf[128];
 
 	sbp = sbuf;
-	if ((t = tgetstr(on ? "ks" : "ke", &sbp)) == NULL)
-		return;
-	(void)tputs(t, 0, vi_putchar);
-	(void)fflush(stdout);
+	if ((t = tgetstr(on ? "ks" : "ke", &sbp)) != NULL) {
+		(void)tputs(t, 0, vi_putchar);
+		(void)fflush(stdout);
+	}
 #endif
 	return (0);
 }
