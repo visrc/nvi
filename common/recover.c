@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 5.4 1993/05/16 21:12:58 bostic Exp $ (Berkeley) $Date: 1993/05/16 21:12:58 $";
+static char sccsid[] = "$Id: recover.c,v 5.5 1993/05/19 16:13:42 bostic Exp $ (Berkeley) $Date: 1993/05/19 16:13:42 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -203,8 +203,11 @@ rcv_hup(signo)
 	/* Walk the list of screens, sync'ing the files. */
 	for (sp = __global_list->scrhdr.next;
 	    sp != (SCR *)&__global_list->scrhdr; sp = sp->next)
-		if (sp->ep != NULL && F_ISSET(sp->ep, F_RCV_ON))
-			(void)sp->ep->db->sync(sp->ep->db, R_RECNOSYNC);
+		if (sp->ep != NULL)
+			if (F_ISSET(sp->ep, F_RCV_ON))
+				(void)sp->ep->db->sync(sp->ep->db, R_RECNOSYNC);
+			else
+				(void)unlink(sp->ep->rcv_path);
 
 	/* Die with the proper exit status. */
 	(void)signal(SIGHUP, SIG_DFL);
