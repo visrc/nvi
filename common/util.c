@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.61 1994/05/16 16:04:17 bostic Exp $ (Berkeley) $Date: 1994/05/16 16:04:17 $";
+static char sccsid[] = "$Id: util.c,v 8.62 1994/05/21 09:47:50 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:47:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -218,7 +218,7 @@ set_window_size(sp, set_row, sigwinch)
 		return (1);
 	}
 	if (col > 1000) {
-		msgq(sp, M_ERR, "%lu columns isn't believable.", (u_long)col);
+		msgq(sp, M_ERR, "%lu columns isn't believable", (u_long)col);
 		return (1);
 	}
 

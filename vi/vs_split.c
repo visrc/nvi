@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 8.39 1994/04/24 14:19:42 bostic Exp $ (Berkeley) $Date: 1994/04/24 14:19:42 $";
+static char sccsid[] = "$Id: vs_split.c,v 8.40 1994/05/21 09:46:57 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:46:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -195,7 +195,7 @@ svi_split(sp, argv)
 
 	/* Set up the argument and current FREF pointers. */
 	if ((tsp->frp = file_first(tsp)) == NULL) {
-		msgq(sp, M_ERR, "No files in the file list.");
+		msgq(sp, M_ERR, "No files in the file list");
 		goto err;
 	}
 
@@ -291,7 +291,7 @@ svi_bg(csp)
 		return (1);
 	if (sp == NULL) {
 		msgq(csp, M_ERR,
-		    "You may not background your only displayed screen.");
+		    "You may not background your only displayed screen");
 		return (1);
 	}
 
@@ -369,10 +369,10 @@ svi_fg(csp, name)
 		return (1);
 	if (sp == NULL) {
 		if (name == NULL)
-			msgq(csp, M_ERR, "There are no background screens.");
+			msgq(csp, M_ERR, "There are no background screens");
 		else
 			msgq(csp, M_ERR,
-		    "There's no background screen editing a file named %s.",
+		    "There's no background screen editing a file named %s",
 			    name);
 		return (1);
 	}
@@ -528,13 +528,13 @@ svi_rabs(sp, count, adj)
 			s = NULL;
 		if (s == NULL) {
 			if ((s = sp->q.cqe_prev) == (void *)&sp->gp->dq) {
-toobig:				msgq(sp, M_BERR, "The screen cannot %s.",
+toobig:				msgq(sp, M_BERR, "The screen cannot %s",
 				    adj == A_DECREASE ? "shrink" : "grow");
 				return (1);
 			}
 			if (s->t_maxrows < MINIMUM_SCREEN_ROWS + count) {
 toosmall:			msgq(sp, M_BERR,
-				    "The screen can only shrink to %d rows.",
+				    "The screen can only shrink to %d rows",
 				    MINIMUM_SCREEN_ROWS);
 				return (1);
 			}

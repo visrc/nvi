@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 8.40 1994/04/29 07:34:00 bostic Exp $ (Berkeley) $Date: 1994/04/29 07:34:00 $";
+static char sccsid[] = "$Id: vs_smap.c,v 8.41 1994/05/21 09:46:58 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:46:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1083,7 +1083,7 @@ svi_sm_position(sp, ep, rp, cnt, pos)
 			goto sof;
 		smp = HMAP + cnt;
 		if (cnt && file_gline(sp, ep, smp->lno, NULL) == NULL) {
-sof:			msgq(sp, M_BERR, "Movement past the end-of-screen.");
+sof:			msgq(sp, M_BERR, "Movement past the end-of-screen");
 			return (1);
 		}
 		break;
@@ -1119,7 +1119,7 @@ sof:			msgq(sp, M_BERR, "Movement past the end-of-screen.");
 			for (; smp->lno > last && smp > HMAP; --smp);
 			if (cnt > smp - HMAP) {
 eof:				msgq(sp, M_BERR,
-				    "Movement past the beginning-of-screen.");
+				    "Movement past the beginning-of-screen");
 				return (1);
 			}
 			smp -= cnt;

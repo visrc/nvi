@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.71 1994/05/04 20:20:21 bostic Exp $ (Berkeley) $Date: 1994/05/04 20:20:21 $";
+static char sccsid[] = "$Id: key.c,v 8.72 1994/05/21 09:47:48 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:47:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -263,7 +263,7 @@ term_tgetent(sp, buf, term)
 	char *buf, *term;
 {
 	if (term == NULL) {
-		msgq(sp, M_ERR, "No terminal type set.");
+		msgq(sp, M_ERR, "No terminal type set");
 		return (1);
 	}
 	switch (tgetent(buf, term)) {
@@ -271,7 +271,7 @@ term_tgetent(sp, buf, term)
 		msgq(sp, M_SYSERR, "tgetent: %s", term);
 		return (1);
 	case 0:
-		msgq(sp, M_ERR, "%s: unknown terminal type.", term);
+		msgq(sp, M_ERR, "%s: unknown terminal type", term);
 		return (1);
 	}
 	return (0);
@@ -726,7 +726,7 @@ term_flush(sp, msg, flags)
 	do {
 		QREM_HEAD(tty, 1);
 	} while (tty->cnt && tty->chf[tty->next] & flags);
-	msgq(sp, M_ERR, "%s: keys flushed.", msg);
+	msgq(sp, M_ERR, "%s: keys flushed", msg);
 }
 
 /*
