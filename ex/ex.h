@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.11 1993/09/08 08:45:27 bostic Exp $ (Berkeley) $Date: 1993/09/08 08:45:27 $
+ *	$Id: ex.h,v 8.12 1993/09/08 09:12:45 bostic Exp $ (Berkeley) $Date: 1993/09/08 09:12:45 $
  */
 
 struct _excmdarg;
@@ -104,8 +104,14 @@ int	word_argv __P((SCR *, EXF *, char *, int *, char ***));
 int	esystem __P((SCR *, const u_char *, const u_char *));
 int	ex_run_process __P((SCR *, char *, size_t *, char *, size_t));
 
-/* Filter type. */
-enum filtertype { STANDARD, NOINPUT, NOOUTPUT };
+/*
+ * Filter actions:
+ *
+ *	FILTER		Filter text through the utility.
+ *	FILTER_READ	Read from the utility into the file.
+ *	FILTER_WRITE	Write to the utility, display its output.
+ */
+enum filtertype { FILTER, FILTER_READ, FILTER_WRITE };
 int	filtercmd __P((SCR *, EXF *,
 	    MARK *, MARK *, MARK *, char *, enum filtertype));
 
