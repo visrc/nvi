@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 5.7 1992/04/15 09:09:45 bostic Exp $ (Berkeley) $Date: 1992/04/15 09:09:45 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 5.8 1992/04/16 13:46:18 bostic Exp $ (Berkeley) $Date: 1992/04/16 13:46:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -197,7 +197,7 @@ CMDLIST cmds[] = {
 	    "!",	"q[uit][!]",
 #define	C_READ		38
 	"read",		ex_read,	E_ADDR1|E_ZERO,
-	    "!f1o",	"[line] r[ead][!] [file]",
+	    "s",	"[line] r[ead] [!cmd | [file]]",
 #define	C_REWIND	39
 	"rewind",	ex_rew,		0,
 	    "!",	"rew[ind][!]",
@@ -241,7 +241,7 @@ CMDLIST cmds[] = {
 	    "2c1", 	"[line] vi[sual] [type] [count] [flags]",
 #define	C_WRITE		52
 	"write",	ex_write,	E_ADDR2_OR_0,
-	    "!>f1o",	"[line [,line]] w[rite][!] [>>] [file]",
+	    "s",	"[line [,line]] w[rite] [!cmd | [>>] [file]]",
 #define	C_WQ		53
 	"wq",		ex_wq,		E_ADDR2_OR_0|E_NL,
 	    "!>f1o",	"[line [,line]] wq[!] [>>] [file]",
