@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 8.19 1994/02/25 19:04:34 bostic Exp $ (Berkeley) $Date: 1994/02/25 19:04:34 $";
+static char sccsid[] = "$Id: v_init.c,v 8.20 1994/03/03 11:33:03 bostic Exp $ (Berkeley) $Date: 1994/03/03 11:33:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -121,7 +121,6 @@ v_init(sp, ep)
 			}
 		} else if (sp->cno >= len)
 			sp->cno = 0;
-
 	} else {
 		sp->lno = 1;
 		sp->cno = 0;
