@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 9.16 1995/02/15 16:14:08 bostic Exp $ (Berkeley) $Date: 1995/02/15 16:14:08 $";
+static char sccsid[] = "$Id: vs_split.c,v 9.17 1995/02/16 12:05:55 bostic Exp $ (Berkeley) $Date: 1995/02/16 12:05:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,7 +46,7 @@ svi_split(sp, topp, botp)
 	int issmallscreen, splitup;
 
 	/* Can be called from ex before we're ready. */
-	if (!F_ISSET(SVP(sp), SVI_SCR_INIT)) {
+	if (!SVI_SCRINIT(sp)) {
 		svi_message(sp, "split", SVIM_NOINIT);
 		return (1);
 	}
@@ -198,10 +198,6 @@ svi_split(sp, topp, botp)
 
 	/* The new screen has to be drawn from scratch. */
 	F_SET(tsp, S_SCR_REFORMAT);
-
-	/* It's ready to go. */
-	F_SET(SVP(tsp), SVI_SCR_INIT);
-
 	return (0);
 }
 
@@ -216,7 +212,7 @@ svi_bg(csp)
 	SCR *sp;
 
 	/* Can be called from ex before we're ready. */
-	if (!F_ISSET(SVP(csp), SVI_SCR_INIT)) {
+	if (!SVI_SCRINIT(csp)) {
 		svi_message(csp, "bg", SVIM_NOINIT);
 		return (1);
 	}
@@ -235,6 +231,10 @@ svi_bg(csp)
 	CIRCLEQ_REMOVE(&csp->gp->dq, csp, q);
 	CIRCLEQ_INSERT_TAIL(&csp->gp->hq, csp, q);
 	SIGUNBLOCK(csp->gp);
+
+	/* Toss the screen map. */
+	FREE(_HMAP(csp), SIZE_HMAP(csp) * sizeof(SMAP));
+	_HMAP(csp) = NULL;
 
 	/* Switch screens. */
 	csp->nextdisp = sp;
@@ -368,7 +368,7 @@ svi_fg(csp, name)
 	char *p;
 
 	/* Can be called from ex before we're ready. */
-	if (!F_ISSET(SVP(csp), SVI_SCR_INIT)) {
+	if (!SVI_SCRINIT(csp)) {
 		svi_message(csp, "fg", SVIM_NOINIT);
 		return (1);
 	}
@@ -467,18 +467,8 @@ svi_swap(csp, nsp, name)
 	/* Reset the length of the default scroll. */
 	sp->defscroll = sp->t_maxrows / 2;
 
-	/*
-	 * Don't change the screen's cursor information other than to
-	 * note that the cursor is wrong.
-	 */
-	F_SET(SVP(sp), SVI_CUR_INVALID);
-
-	/*
-	 * The HMAP may be NULL, if the screen got resized and
-	 * a bunch of screens had to be hidden.
-	 */
-	if (HMAP == NULL)
-		CALLOC_RET(sp, HMAP, SMAP *, SIZE_HMAP(sp), sizeof(SMAP));
+	/* Allocate a new screen map. */
+	CALLOC_RET(sp, HMAP, SMAP *, SIZE_HMAP(sp), sizeof(SMAP));
 	TMAP = HMAP + (sp->t_rows - 1);
 
 	/* Fill the map. */
@@ -496,6 +486,13 @@ svi_swap(csp, nsp, name)
 	CIRCLEQ_INSERT_AFTER(&csp->gp->dq, csp, sp, q);
 	SIGUNBLOCK(sp->gp);
 
+	/*
+	 * Don't change the screen's cursor information other than to
+	 * note that the cursor is wrong.
+	 */
+	F_SET(SVP(sp), SVI_CUR_INVALID);
+
+	/* Redraw from scratch. */
 	F_SET(sp, S_SCR_REDRAW);
 	return (0);
 }
@@ -513,7 +510,7 @@ svi_resize(sp, count, adj)
 	SCR *g, *s;
 
 	/* Can be called from ex before we're ready. */
-	if (!F_ISSET(SVP(sp), SVI_SCR_INIT)) {
+	if (!SVI_SCRINIT(sp)) {
 		svi_message(sp, "resize", SVIM_NOINIT);
 		return (1);
 	}
