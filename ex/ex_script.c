@@ -13,7 +13,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_script.c,v 10.23 1996/04/22 22:57:13 bostic Exp $ (Berkeley) $Date: 1996/04/22 22:57:13 $";
+static const char sccsid[] = "$Id: ex_script.c,v 10.24 1996/04/23 12:53:44 bostic Exp $ (Berkeley) $Date: 1996/04/23 12:53:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -49,13 +49,7 @@ static int	sscr_getprompt __P((SCR *));
 static int	sscr_init __P((SCR *));
 static int	sscr_insert __P((SCR *));
 static int	sscr_matchprompt __P((SCR *, char *, size_t, size_t *));
-#ifdef TIOCGWINSZ
-static int	sscr_pty __P((int *, int *, char *, struct termios *,
-		    struct winsize *));
-#else
-static int	sscr_pty __P((int *, int *, char *, struct termios *,
-		    void *));
-#endif
+static int	sscr_pty __P((int *, int *, char *, struct termios *, void *));
 static int	sscr_setprompt __P((SCR *, char *, size_t));
 
 /*
