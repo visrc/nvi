@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_word.c,v 8.8 1993/09/17 09:39:21 bostic Exp $ (Berkeley) $Date: 1993/09/17 09:39:21 $";
+static char sccsid[] = "$Id: v_word.c,v 8.9 1993/09/30 17:31:06 bostic Exp $ (Berkeley) $Date: 1993/09/30 17:31:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -155,11 +155,13 @@ fword(sp, ep, vp, fm, rp, type)
 			}
 			/*
 			 * If a motion command and we're at the end of the
-			 * last word, only eat trailing blanks, and don't
-			 * move off the end of the line.
+			 * last word, we're done.  Delete and yank eat any
+			 * trailing blanks, but we don't move off the end
+			 * of the line regardless.
 			 */
 			if (cnt == 0 && F_ISSET(vp, VC_C | VC_D | VC_Y)) {
-				if (cs_fspace(sp, ep, &cs))
+				if (F_ISSET(vp, VC_D | VC_Y) &&
+				    cs.cs_flags == 0 && cs_fspace(sp, ep, &cs))
 					return (1);
 				break;
 			}
@@ -190,7 +192,8 @@ fword(sp, ep, vp, fm, rp, type)
 			}
 			/* See comment above. */
 			if (cnt == 0 && F_ISSET(vp, VC_C | VC_D | VC_Y)) {
-				if (cs_fspace(sp, ep, &cs))
+				if (F_ISSET(vp, VC_D | VC_Y) &&
+				    cs.cs_flags == 0 && cs_fspace(sp, ep, &cs))
 					return (1);
 				break;
 			}
