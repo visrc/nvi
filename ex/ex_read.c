@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 5.17 1992/11/07 13:42:14 bostic Exp $ (Berkeley) $Date: 1992/11/07 13:42:14 $";
+static char sccsid[] = "$Id: ex_read.c,v 5.18 1992/12/05 11:08:47 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:08:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,7 +21,6 @@ static char sccsid[] = "$Id: ex_read.c,v 5.17 1992/11/07 13:42:14 bostic Exp $ (
 
 #include "vi.h"
 #include "excmd.h"
-#include "extern.h"
 
 /*
  * ex_read --	:read[!] [file]
@@ -120,18 +119,13 @@ ex_readfp(fname, fp, fm, cntp)
 	recno_t *cntp;
 {
 	size_t len;
-	long lno;
+	recno_t lno;
 	int rval;
 	char *p;
 
 	/*
 	 * Add in the lines from the output.  Insertion starts at the line
 	 * following the address.
-	 *
-	 * XXX
-	 * This code doesn't check for lines that are too long.  Also, the
-	 * current add module requires both a newline and a terminating NULL.
-	 * This is, of course, stupid.
 	 */
 	rval = 0;
 	for (lno = fm->lno; p = fgetline(fp, &len); ++lno)

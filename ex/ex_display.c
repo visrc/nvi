@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_display.c,v 5.2 1992/11/07 10:23:42 bostic Exp $ (Berkeley) $Date: 1992/11/07 10:23:42 $";
+static char sccsid[] = "$Id: ex_display.c,v 5.3 1992/12/05 11:08:28 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:08:28 $";
 #endif /* not lint */
 
 #include <ctype.h>
@@ -15,7 +15,6 @@ static char sccsid[] = "$Id: ex_display.c,v 5.2 1992/11/07 10:23:42 bostic Exp $
 
 #include "vi.h"
 #include "excmd.h"
-#include "extern.h"
 
 static void db __P((char *, CB *));
 
@@ -33,7 +32,7 @@ ex_bdisplay(cmdp)
 	for (cb = cuts, cnt = 0; cnt < UCHAR_MAX; ++cb, ++cnt) {
 		if (cb->head == NULL)
 			continue;
-		db(charname(cnt), cb);
+		db(CHARNAME(cnt), cb);
 	}
 	if (cuts[DEFCB].head != NULL)
 		db("default buffer", &cuts[DEFCB]);

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_mkexrc.c,v 5.12 1992/11/02 22:25:11 bostic Exp $ (Berkeley) $Date: 1992/11/02 22:25:11 $";
+static char sccsid[] = "$Id: ex_mkexrc.c,v 5.13 1992/12/05 11:08:43 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:08:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -24,7 +24,6 @@ static char sccsid[] = "$Id: ex_mkexrc.c,v 5.12 1992/11/02 22:25:11 bostic Exp $
 #include "options.h"
 #include "seq.h"
 #include "pathnames.h"
-#include "extern.h"
 
 /*
  * ex_mkexrc -- (:mkexrc[!] [file])

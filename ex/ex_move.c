@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_move.c,v 5.16 1992/10/29 14:39:25 bostic Exp $ (Berkeley) $Date: 1992/10/29 14:39:25 $";
+static char sccsid[] = "$Id: ex_move.c,v 5.17 1992/12/05 11:08:44 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:08:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -16,7 +16,6 @@ static char sccsid[] = "$Id: ex_move.c,v 5.16 1992/10/29 14:39:25 bostic Exp $ (
 
 #include "vi.h"
 #include "excmd.h"
-#include "extern.h"
 
 enum which {COPY, MOVE};
 static int cm __P((EXCMDARG *, enum which));
@@ -58,12 +57,12 @@ cm(cmdp, cmd)
 
 	/* Make sure the destination is valid. */
 	if (cmd == MOVE && tm.lno >= fm1.lno && tm.lno < fm2.lno) {
-		msg("Target line is inside move range.");
+		msg("Destination line is inside move range.");
 		return (1);
 	}
 
 	/* Save the text to a cut buffer. */
-	cut(DEFCB, &fm1, &fm2, 1);
+	cut(curf, DEFCB, &fm1, &fm2, 1);
 
 	/* If we're not copying, delete the old text & adjust tm. */
 	if (cmd == MOVE) {
@@ -75,7 +74,7 @@ cm(cmdp, cmd)
 	/* Add the new text. */
 	m.lno = curf->lno;
 	m.cno = curf->cno;
-	(void)put(DEFCB, &tm, &m, 1);
+	(void)put(curf, DEFCB, &tm, &m, 1);
 
 	if (curf->lno < 1)
 		curf->lno = 1;

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shift.c,v 5.13 1992/11/02 22:27:36 bostic Exp $ (Berkeley) $Date: 1992/11/02 22:27:36 $";
+static char sccsid[] = "$Id: ex_shift.c,v 5.14 1992/12/05 11:08:53 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:08:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,7 +19,6 @@ static char sccsid[] = "$Id: ex_shift.c,v 5.13 1992/11/02 22:27:36 bostic Exp $ 
 #include "vi.h"
 #include "excmd.h"
 #include "options.h"
-#include "extern.h"
 
 enum which {LEFT, RIGHT};
 static int shift __P((EXCMDARG *, enum which));

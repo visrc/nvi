@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 5.17 1992/11/01 22:50:07 bostic Exp $ (Berkeley) $Date: 1992/11/01 22:50:07 $";
+static char sccsid[] = "$Id: ex_append.c,v 5.18 1992/12/05 11:08:24 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:08:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,7 +19,6 @@ static char sccsid[] = "$Id: ex_append.c,v 5.17 1992/11/01 22:50:07 bostic Exp $
 #include "excmd.h"
 #include "options.h"
 #include "term.h"
-#include "extern.h"
 
 enum which {APPEND, CHANGE};
 
@@ -83,7 +82,7 @@ ca(cmdp, cmd)
 	for (; !ex_gb(0, &p, &len, GB_NL|GB_NLECHO) && p != NULL; ++m.lno) {
 		if (p[0] == '.' && p[1] == '\0')
 			break;
-		add(&m, p, len);
+		add(curf, &m, p, len);
 	}
 
 	autoprint = 1;

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_map.c,v 5.14 1992/11/06 10:34:09 bostic Exp $ (Berkeley) $Date: 1992/11/06 10:34:09 $";
+static char sccsid[] = "$Id: ex_map.c,v 5.15 1992/12/05 11:08:40 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:08:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,7 +21,6 @@ static char sccsid[] = "$Id: ex_map.c,v 5.14 1992/11/06 10:34:09 bostic Exp $ (B
 #include "vi.h"
 #include "excmd.h"
 #include "seq.h"
-#include "extern.h"
 
 /*
  * ex_map -- :map[!] [key replacement]

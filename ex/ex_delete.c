@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_delete.c,v 5.11 1992/10/26 17:45:51 bostic Exp $ (Berkeley) $Date: 1992/10/26 17:45:51 $";
+static char sccsid[] = "$Id: ex_delete.c,v 5.12 1992/12/05 11:08:30 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:08:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -16,14 +16,13 @@ static char sccsid[] = "$Id: ex_delete.c,v 5.11 1992/10/26 17:45:51 bostic Exp $
 
 #include "vi.h"
 #include "excmd.h"
-#include "extern.h"
 
 int
 ex_delete(cmdp)
 	EXCMDARG *cmdp;
 {
 	/* Yank the lines. */
-	if (cut(cmdp->buffer != OOBCB ? cmdp->buffer : DEFCB,
+	if (cut(curf, cmdp->buffer != OOBCB ? cmdp->buffer : DEFCB,
 	    &cmdp->addr1, &cmdp->addr2, 1))
 		return (1);
 

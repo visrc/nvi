@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 5.16 1992/11/07 13:41:29 bostic Exp $ (Berkeley) $Date: 1992/11/07 13:41:29 $";
+static char sccsid[] = "$Id: ex_tag.c,v 5.17 1992/12/05 11:08:57 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:08:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,7 +22,6 @@ static char sccsid[] = "$Id: ex_tag.c,v 5.16 1992/11/07 13:41:29 bostic Exp $ (B
 #include "options.h"
 #include "search.h"
 #include "tag.h"
-#include "extern.h"
 
 static int tagchange __P((TAG *, int));
 

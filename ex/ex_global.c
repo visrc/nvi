@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 5.14 1992/11/07 18:44:27 bostic Exp $ (Berkeley) $Date: 1992/11/07 18:44:27 $";
+static char sccsid[] = "$Id: ex_global.c,v 5.15 1992/12/05 11:08:37 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:08:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -20,7 +20,6 @@ static char sccsid[] = "$Id: ex_global.c,v 5.14 1992/11/07 18:44:27 bostic Exp $
 #include "excmd.h"
 #include "options.h"
 #include "search.h"
-#include "extern.h"
 
 enum which {GLOBAL, VGLOBAL};
 static int global __P((EXCMDARG *, enum which));

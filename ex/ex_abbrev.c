@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_abbrev.c,v 5.13 1992/11/01 13:43:45 bostic Exp $ (Berkeley) $Date: 1992/11/01 13:43:45 $";
+static char sccsid[] = "$Id: ex_abbrev.c,v 5.14 1992/12/05 11:08:24 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:08:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,7 +18,6 @@ static char sccsid[] = "$Id: ex_abbrev.c,v 5.13 1992/11/01 13:43:45 bostic Exp $
 #include "vi.h"
 #include "excmd.h"
 #include "seq.h"
-#include "extern.h"
 
 int have_abbr;				/* If any abbreviations */
 

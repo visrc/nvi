@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 5.22 1992/11/07 18:46:48 bostic Exp $ (Berkeley) $Date: 1992/11/07 18:46:48 $
+ *	$Id: ex.h,v 5.23 1992/12/05 11:09:03 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:09:03 $
  */
 
 #include "exf.h"
@@ -78,7 +78,8 @@ extern u_char *defcmdarg[2];	/* Default array. */
 /* Control character. */
 #define	ctrl(ch)	((ch) & 0x1f)
 
-int	 buildargv __P((u_char *, int, EXCMDARG *));
+int	buildargv __P((u_char *, int, EXCMDARG *));
+int	esystem __P((const u_char *, const u_char *));
 
 int	ex_abbr __P((EXCMDARG *));
 int	ex_append __P((EXCMDARG *));
