@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 5.10 1993/05/02 12:19:18 bostic Exp $ (Berkeley) $Date: 1993/05/02 12:19:18 $";
+static char sccsid[] = "$Id: vs_line.c,v 5.11 1993/05/05 20:08:11 bostic Exp $ (Berkeley) $Date: 1993/05/05 20:08:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -39,20 +39,46 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 {
 	CHNAME *cname;
 	size_t chlen, cols_per_screen, cno_cnt, count_cols;
-	size_t offset_in_char, skip_cols;
-	int ch, reverse_video;
+	size_t offset_in_char, skip_screens;
+	int ch, listset, reverse_video;
 	char nbuf[10];
 
 	/* Move to the line. */
 	MOVE(sp, smp - HMAP, 0);
 
 	/*
+	 * Special case if we're printing the info/mode line.  Skip printing
+	 * the leading number, as well as other minor setup.  If painting the
+	 * line between two screens, it's always in reverse video.  The only
+	 * time this code paints the mode line is when the user is entering
+	 * text for a ":" command, so we can put the code here instead of
+	 * dealing with the empty line logic below.  This is a kludge, but it's
+	 * pretty much confined to this module.
+	 */
+	reverse_video = 0;
+	if (ISINFOLINE(sp, smp)) {
+		if ((p = file_gline(sp, ep, smp->lno, &len)) == NULL)
+			GETLINE_ERR(sp, smp->lno);
+		if (sp->child != NULL) {
+			reverse_video = 1;
+			standout();
+		}
+		listset = 0;
+		skip_screens = 0;
+		goto iline;
+	}
+
+	listset = O_ISSET(sp, O_LIST);
+
+	/* Set the number of screens to skip until a character is displayed. */
+	skip_screens = smp->off - 1;
+
+	/*
 	 * If O_NUMBER is set and this is the first screen of a folding
 	 * line or any left-right line, display the line number.  Set
 	 * the number of columns for this screen.
 	 */
-	if (O_ISSET(sp, O_NUMBER) &&
-	    (O_ISSET(sp, O_LEFTRIGHT) || smp->off == 1)) {
+	if (O_ISSET(sp, O_NUMBER) && skip_screens == 0) {
 		cols_per_screen = sp->cols -
 		    snprintf(nbuf, sizeof(nbuf), O_NUMBER_FMT, smp->lno);
 		addstr(nbuf);
@@ -72,35 +98,16 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 			*yp = smp - HMAP;
 		}
 		if (smp->lno > file_lline(sp, ep))
-			addch(smp->lno == 1
-			    ? O_ISSET(sp, O_LIST) ? '$' : ' ' : '~');
+			addch(smp->lno == 1 ?
+			    listset && skip_screens == 0 ? '$' : ' ' : '~');
 		else if (p == NULL) {
 			GETLINE_ERR(sp, smp->lno);
 			return (1);
-		} else if (O_ISSET(sp, O_LIST))
+		} else if (listset && skip_screens == 0)
 			addch('$');
 		clrtoeol();
 		return (0);
 	}
-
-	/*
-	 * If we're painting the line between two screens, it's always in
-	 * reverse video.  The only time this code paints the mode line is
-	 * when the user is entering text for a ":" command, so we can put
-	 * the code here instead of dealing with the empty line logic above.
-	 */
-	if (sp->child != NULL && smp - HMAP == INFOLINE(sp)) {
-		reverse_video = 1;
-		standout();
-	} else
-		reverse_video = 0;
-
-	/*
-	 * Set the number of column positions to skip until a character
-	 * gets displayed.
-	 */
-	skip_cols = smp->off - 1;
-	count_cols = 0;
 
 	/*
 	 * Set the number of characters to skip before reach the cursor
@@ -108,13 +115,13 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 	 * called repeatedly with a valid pointer to a cursor position.
 	 * Don't fill it in unless it's the right line.
 	 */
-	cno_cnt = yp == NULL || smp->lno != sp->lno ? 0 : sp->cno + 1;
+iline:	cno_cnt = yp == NULL || smp->lno != sp->lno ? 0 : sp->cno + 1;
 
 	/* This is the loop that actually displays lines. */
 	cname = sp->cname;
-	for (; len; --len) {
+	for (count_cols = 0; len; --len) {
 		/* Get the next character and figure out its length. */
-		if ((ch = *(u_char *)p++) == '\t' && !O_ISSET(sp, O_LIST))
+		if ((ch = *(u_char *)p++) == '\t' && !listset)
 			chlen = TAB_OFF(sp, count_cols);
 		else
 			chlen = cname[ch].len;
@@ -125,7 +132,7 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 		 * so, and this is the last one to skip, start displaying the
 		 * characters, assuming there's something to display.
 		 */
-		if (skip_cols) {
+		if (skip_screens) {
 			if (count_cols < cols_per_screen) {
 				if (cno_cnt)
 					--cno_cnt;
@@ -133,7 +140,7 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 			}
 			offset_in_char = chlen - (count_cols - cols_per_screen);
 			chlen = count_cols -= cols_per_screen;
-			if (--skip_cols || !chlen) {
+			if (--skip_screens || !chlen) {
 				if (cno_cnt)
 					--cno_cnt;
 				continue;
@@ -163,7 +170,7 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 #else
 #define	BLANKS	"                    "
 #endif
-		if (ch == '\t' && !O_ISSET(sp, O_LIST)) {
+		if (ch == '\t' && !listset) {
 			chlen -= offset_in_char;
 			if (chlen <= sizeof(BLANKS) - 1)
 				addnstr(BLANKS, chlen);
@@ -187,8 +194,12 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 		}
 	}
 
-	/* If O_LIST set and at the end of the line, add a trailing $. */
-	if (O_ISSET(sp, O_LIST) && len == 0) {
+	/*
+	 * If not the info/mode line, and O_LIST set, at the end of
+	 * the line, and the line ended on this screen, add a trailing $.
+	 */
+	if (listset && len == 0 &&
+	    skip_screens == 0 && count_cols < cols_per_screen) {
 		++count_cols;
 		addch('$');
 	}
