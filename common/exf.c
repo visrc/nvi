@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: exf.c,v 10.54 2000/05/01 19:59:28 skimo Exp $ (Berkeley) $Date: 2000/05/01 19:59:28 $";
+static const char sccsid[] = "$Id: exf.c,v 10.55 2000/05/20 20:56:14 skimo Exp $ (Berkeley) $Date: 2000/05/20 20:56:14 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -444,7 +444,7 @@ no_lock:
 	file_cinit(sp);
 
 	/* Redraw the screen from scratch, schedule a welcome message. */
-	F_SET(sp, SC_SCR_REFORMAT | SC_STATUS);
+	F_SET(sp, SC_SCR_REFORMAT | SC_SCR_TOP | SC_STATUS);
 
 	/* Append into the chain of file structures. */
 	if (ep->refcnt == 1)
@@ -979,7 +979,7 @@ file_write(sp, fm, tm, name, flags)
 				F_SET(frp, FR_TMPEXIT);
 			else
 				F_CLR(frp, FR_TMPEXIT);
-	}
+		}
 	}
 
 	p = msg_print(sp, name, &nf);
