@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_screen.c,v 10.55 2001/08/28 11:33:40 skimo Exp $ (Berkeley) $Date: 2001/08/28 11:33:40 $";
+static const char sccsid[] = "$Id: cl_screen.c,v 10.56 2002/05/03 19:59:44 skimo Exp $ (Berkeley) $Date: 2002/05/03 19:59:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -369,6 +369,8 @@ cl_vi_init(SCR *sp)
 
 fast:	/* Set the terminal modes. */
 	if (tcsetattr(STDIN_FILENO, TCSASOFT | TCSADRAIN, &clp->vi_enter)) {
+		if (errno == EINTR)
+			goto fast;
 		msgq(sp, M_SYSERR, "tcsetattr");
 err:		(void)cl_vi_end(sp->gp);
 		return (1);
@@ -485,6 +487,8 @@ cl_ex_init(SCR *sp)
 #endif
 
 fast:	if (tcsetattr(STDIN_FILENO, TCSADRAIN | TCSASOFT, &clp->ex_enter)) {
+		if (errno == EINTR)
+			goto fast;
 		msgq(sp, M_SYSERR, "tcsetattr");
 		return (1);
 	}
