@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 8.3 1993/07/06 18:43:47 bostic Exp $ (Berkeley) $Date: 1993/07/06 18:43:47 $";
+static char sccsid[] = "$Id: ex_filter.c,v 8.4 1993/09/08 14:51:56 bostic Exp $ (Berkeley) $Date: 1993/09/08 14:51:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,10 +22,14 @@ static char sccsid[] = "$Id: ex_filter.c,v 8.3 1993/07/06 18:43:47 bostic Exp $ 
 #include "vi.h"
 #include "excmd.h"
 
+static int	ldisplay __P((SCR *, FILE *));
+static int	filter_wait __P((SCR *, pid_t, char *, int));
+
 /*
  * filtercmd --
- *	Run a range of lines through a filter program and replace the
- *	original text with the stdout/stderr output of the filter.
+ *	Run a range of lines through a filter utility and optionally
+ *	replace the original text with the stdout/stderr output of
+ *	the utility.
  */
 int
 filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
@@ -36,77 +40,63 @@ filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
 	enum filtertype ftype;
 {
 	FILE *ifp, *ofp;		/* GCC: can't be uninitialized. */
-	pid_t pid;
-	sig_ret_t intsave, quitsave;
-	sigset_t bmask, omask;
+	pid_t parent_writer_pid, utility_pid;
 	recno_t lno, nread;
-	size_t len;
-	int input[2], output[2], pstat, rval;
+	int input[2], output[2], rval;
 	char *name;
 
-	/* Input and output are named from the child's point of view. */
+	/*
+	 * There are three different processes running through this code.
+	 * They are the utility, the parent-writer and the parent-reader.
+	 * The parent-writer is the process that writes from the file to
+	 * the utility, the parent reader is the process that reads from
+	 * the utility.
+	 *
+	 * Input and output are named from the utility's point of view.
+	 */
 	input[0] = input[1] = output[0] = output[1] = -1;
 
 	/*
-	 * Set default return cursor position; guard against a
-	 * line number of zero.
+	 * Set default return cursor position; guard against a line number
+	 * of zero.
 	 */
 	*rp = *fm;
 	if (fm->lno == 0)
 		rp->lno = 1;
 
 	/*
-	 * If child isn't supposed to want input or send output, redirect
-	 * from or to /dev/null.  Otherwise open up the pipe and get a stdio
-	 * buffer for it.
+	 * In the FILTER_READ case, the utility isn't expected to want
+	 * input.  Redirect its input from /dev/null.  Otherwise open
+	 * up utility input pipe.
 	 */
-	if (ftype == NOINPUT) {
+	if (ftype == FILTER_READ) {
 		if ((input[0] = open(_PATH_DEVNULL, O_RDONLY, 0)) < 0) {
 			msgq(sp, M_ERR,
 			    "filter: %s: %s", _PATH_DEVNULL, strerror(errno));
-			goto err;
+			goto err1;
 		}
 	} else
-		if (pipe(input) < 0 ||
-		    (ifp = fdopen(input[1], "w")) == NULL) {
-			msgq(sp, M_ERR, "filter: %s", strerror(errno));
-			goto err;
-		}
+		if (pipe(input) < 0 || (ifp = fdopen(input[1], "w")) == NULL)
+			goto err2;
 
-	if (ftype == NOOUTPUT) {
-		if ((output[1] = open(_PATH_DEVNULL, O_WRONLY, 0)) < 0) {
-			msgq(sp, M_ERR,
-			    "filter: %s: %s", _PATH_DEVNULL, strerror(errno));
-			goto err;
-		}
-	} else
-		if (pipe(output) < 0 ||
-		    (ofp = fdopen(output[0], "r")) == NULL) {
-			msgq(sp, M_ERR, "filter: %s", strerror(errno));
-			goto err;
-		}
+	/* Open up utility output pipe. */
+	if (pipe(output) < 0 || (ofp = fdopen(output[0], "r")) == NULL)
+		goto err2;
 
-	sigemptyset(&bmask);
-	sigaddset(&bmask, SIGCHLD);
-	(void)sigprocmask(SIG_BLOCK, &bmask, &omask);
-
-	switch (pid = vfork()) {
+	/* Fork off the utility process. */
+	switch (utility_pid = vfork()) {
 	case -1:			/* Error. */
-		(void)sigprocmask(SIG_SETMASK, &omask, NULL);
-		msgq(sp, M_ERR, "filter: %s", strerror(errno));
-err:		if (input[0] != -1)
+err2:		msgq(sp, M_ERR, "filter: %s", strerror(errno));
+err1:		if (input[0] != -1)
 			(void)close(input[0]);
-		if (input[0] != -1)
-			(void)close(input[0]);
+		if (input[1] != -1)
+			(void)close(input[1]);
 		if (output[0] != -1)
 			(void)close(output[0]);
 		if (output[1] != -1)
 			(void)close(input[1]);
 		return (1);
-		/* NOTREACHED */
-	case 0:				/* Child. */
-		(void)sigprocmask(SIG_SETMASK, &omask, NULL);
-
+	case 0:				/* Utility. */
 		/*
 		 * Redirect stdin from the read end of the input pipe,
 		 * and redirect stdout/stderr to the write end of the
@@ -118,9 +108,9 @@ err:		if (input[0] != -1)
 
 		/* Close the child's pipe file descriptors. */
 		(void)close(input[0]);
-		if (ftype != NOINPUT)
+		if (ftype != FILTER_READ)
 			(void)close(input[1]);
-		if (ftype != NOOUTPUT)
+		if (ftype != FILTER_WRITE)
 			(void)close(output[0]);
 		(void)close(output[1]);
 
@@ -133,61 +123,200 @@ err:		if (input[0] != -1)
 		    "exec: %s: %s", O_STR(sp, O_SHELL), strerror(errno));
 		_exit (1);
 		/* NOTREACHED */
+	default:			/* Parent-reader, parent-writer. */
+		/* Close the pipe ends neither parent will use. */
+		(void)close(input[0]);
+		(void)close(output[1]);
+		break;
 	}
 
-	/* Close the pipe ends the parent won't use. */
-	(void)close(input[0]);
-	(void)close(output[1]);
-
 	/*
-	 * Write the selected lines to the write end of the input pipe.
-	 * Ifp is closed by ex_writefp.
+	 * FILTER_READ:
+	 *
+	 * Reading is the simple case -- we don't need a parent writer, so
+	 * the parent reads the output from the read end of the output pipe
+	 * until it finishes, then waits for the child.  Ex_readfp appends
+	 * to the MARK, and closes ofp.  Set the return cursor to the last
+	 * line read in, checking to make sure that it's not past EOF because
+	 * we were reading into an empty file.
 	 */
-	rval = 0;
-	if (ftype != NOINPUT)
-		if (ex_writefp(sp, ep, "filter", ifp, fm, tm, 0))
-			rval = 1;
-		else {
-			/* Delete old text, if any. */
-			for (lno = tm->lno; lno >= fm->lno; --lno)
-				if (file_dline(sp, ep, lno))
-					rval = 1;
-			sp->rptlines[L_DELETED] += (tm->lno - fm->lno) + 1;
-		}
-
-	/*
-	 * Read the output from the read end of the output pipe.  Decrement
-	 * the line number if we deleted lines and if the the user didn't
-	 * specify an address of zero, ex_readfp appends to the MARK.  Ofp
-	 * is closed by ex_readfp.
-	 */
-	if (rval == 0 && ftype != NOOUTPUT) {
-		if (ftype != NOINPUT && fm->lno > 0)
-			--fm->lno;
+	if (ftype == FILTER_READ) {
 		rval = ex_readfp(sp, ep, "filter", ofp, fm, &nread, 0);
 		sp->rptlines[L_ADDED] += nread;
+		if (fm->lno == 0)
+			rp->lno = nread;
+		else
+			rp->lno += nread;
+		return (rval | filter_wait(sp, utility_pid, cmd, 0));
 	}
 
-	/* Wait for the child to finish. */
+	/*
+	 * FILTER, FILTER_WRITE
+	 *
+	 * Here we need both a reader and a writer.  Temporary files are
+	 * expensive and we'd like to avoid disk I/O.  Using pipes has the
+	 * obvious starvation conditions.  It's done as follows:
+	 *
+	 *	fork
+	 *	child
+	 *		write lines out
+	 *		exit
+	 *	parent
+	 *		FILTER:
+	 *			read lines into the file
+	 *			delete old lines
+	 *		FILTER_WRITE
+	 *			read and display lines
+	 *		wait for child
+	 *
+	 * XXX
+	 * We get away without locking the underlying database because we know
+	 * that none of the records that we're reading will be modified until
+	 * after we've read them.  This depends on the fact that the current
+	 * B+tree implementation doesn't balance pages or similar things when
+	 * it inserts new records.  When the DB code has locking, we should
+	 * treat vi as if it were multiple applications sharing a database, and
+	 * do the required locking.  If necessary a work-around would be to do
+	 * explicit locking in the line.c:file_gline() code, based on the flag
+	 * set here.
+	 */
+	rval = 0;
+	F_SET(ep, F_MULTILOCK);
+	switch (parent_writer_pid = fork()) {
+	case -1:			/* Error. */
+		msgq(sp, M_ERR, "filter: %s", strerror(errno));
+		(void)close(input[1]);
+		(void)close(output[0]);
+		(void)filter_wait(sp, utility_pid, cmd, 0);
+		F_CLR(ep, F_MULTILOCK);
+		return (1);
+	case 0:				/* Parent-writer. */
+		/*
+		 * Write the selected lines to the write end of the
+		 * input pipe.  Ifp is closed by ex_writefp.
+		 */
+		(void)close(output[0]);
+		_exit(ex_writefp(sp, ep, "filter", ifp, fm, tm, 0));
+
+		/* NOTREACHED */
+	default:			/* Parent-reader. */
+		(void)close(input[1]);
+		if (ftype == FILTER_WRITE)
+			/*
+			 * Read the output from the read end of the output
+			 * pipe and display it.  Ldisplay closes ofp.
+			 */
+			rval = ldisplay(sp, ofp);
+		else {
+			/*
+			 * Read the output from the read end of the output
+			 * pipe.  Ex_readfp appends to the MARK and closes
+			 * ofp.
+			 */
+			rval = ex_readfp(sp, ep, "filter", ofp, tm, &nread, 0);
+			sp->rptlines[L_ADDED] += nread;
+
+			/* Delete any lines written to the utility. */
+			if (rval == 0) {
+				for (lno = tm->lno; lno >= fm->lno; --lno)
+					if (file_dline(sp, ep, lno)) {
+						rval = 1;
+						break;
+					}
+				if (rval == 0)
+					sp->rptlines[L_DELETED] +=
+					    (tm->lno - fm->lno) + 1;
+			}
+		}
+		rval |= filter_wait(sp, parent_writer_pid, "parent-writer", 1);
+		break;
+	}
+	F_CLR(ep, F_MULTILOCK);
+	return (rval | filter_wait(sp, utility_pid, cmd, 0));
+}
+
+/*
+ * filter_wait --
+ *	Wait for one of the filter processes.
+ */
+int
+filter_wait(sp, pid, cmd, okpipe)
+	SCR *sp;
+	pid_t pid;
+	char *cmd;
+	int okpipe;
+{
+	sig_ret_t intsave, quitsave;
+	size_t len;
+	int pstat;
+
+	/* Save the parent's signal values. */
 	intsave = signal(SIGINT, SIG_IGN);
 	quitsave = signal(SIGQUIT, SIG_IGN);
+
+	/* Wait for the utility to finish. */
 	(void)waitpid(pid, &pstat, 0);
-	(void)sigprocmask(SIG_SETMASK, &omask, NULL);
+
+	/* Restore the parent's signal masks. */
 	(void)signal(SIGINT, intsave);
 	(void)signal(SIGQUIT, quitsave);
 
-	if (WIFSIGNALED(pstat)) {
+	/*
+	 * Display the utility's exit status.  Ignore SIGPIPE from the
+	 * parent-writer, as that only means that the utility chose to
+	 * exit before reading all of its input.
+	 */
+	if (WIFSIGNALED(pstat) && (!okpipe || WTERMSIG(pstat) != SIGPIPE)) {
 		len = strlen(cmd);
-		msgq(sp, M_ERR,
-		    "%.*s%s: exited with signal %d%s.",
-		    MIN(len, 10), cmd, len > 10 ? "..." : "",
-		    WTERMSIG(pstat), WCOREDUMP(pstat) ? "; core dumped" : "");
+		msgq(sp, M_ERR, "%.*s%s: received signal: %s%s.",
+		    MIN(len, 20), cmd, len > 20 ? "..." : "",
+		    sys_siglist[WTERMSIG(pstat)],
+		    WCOREDUMP(pstat) ? "; core dumped" : "");
 		return (1);
-	} else if (WIFEXITED(pstat) && WEXITSTATUS(pstat)) {
+	}
+	if (WIFEXITED(pstat) && WEXITSTATUS(pstat)) {
 		len = strlen(cmd);
 		msgq(sp, M_ERR, "%.*s%s: exited with status %d",
-		    MIN(len, 10), cmd,
-		    len > 10 ? "..." : "", WEXITSTATUS(pstat));
+		    MIN(len, 20), cmd, len > 20 ? "..." : "",
+		    WEXITSTATUS(pstat));
+		return (1);
+	}
+	return (0);
+}
+
+/*
+ * ldisplay --
+ *	Display a line output from a utility.
+ *
+ * XXX
+ * This should probably be combined with some of the ex_print() routines
+ * into a single display routine.
+ */
+static int
+ldisplay(sp, fp)
+	SCR *sp;
+	FILE *fp;
+{
+	CHNAME *cname;
+	char *p;
+	size_t len;
+	int rval;
+
+	cname = sp->cname;
+	for (rval = 0; !ex_getline(sp, fp, &len);) {
+		for (p = sp->ibp; len--; ++p) {
+			(void)fprintf(sp->stdfp, "%s", cname[*p].name);
+			if (ferror(sp->stdfp)) {
+				msgq(sp, M_ERR,
+				    "I/O error: %s", strerror(errno));
+				(void)fclose(fp);
+				return (1);
+			}
+		}
+		putc('\n', sp->stdfp);
+	}
+	if (fclose(fp)) {
+		msgq(sp, M_ERR, "I/O error: %s", strerror(errno));
 		return (1);
 	}
 	return (0);
