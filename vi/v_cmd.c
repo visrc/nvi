@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 5.26 1992/10/10 14:05:22 bostic Exp $ (Berkeley) $Date: 1992/10/10 14:05:22 $";
+static char sccsid[] = "$Id: v_cmd.c,v 5.27 1992/10/10 16:05:03 bostic Exp $ (Berkeley) $Date: 1992/10/10 16:05:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,7 +38,7 @@ VIKEYS vikeys[MAXVIKEY + 1] = {
 	v_hpagedown,	V_CNT|V_RCM_SETFNB,
 	    "page down by half screens (set count): [count]^D",	
 /* 005  ^E */
-	v_linedown,	V_CNT|V_RCM,
+	v_linedown,	V_CNT,
 	    "page down by lines: [count]^E",
 /* 006  ^F */
 	v_pagedown,	V_CNT|V_RCM_SETFNB,
@@ -89,7 +89,7 @@ VIKEYS vikeys[MAXVIKEY + 1] = {
 /* 030  ^X */
 	{},
 /* 031  ^Y */
-	v_lineup,	V_CNT|V_RCM,
+	v_lineup,	V_CNT,
 	    "page up by lines: [count]^Y",
 /* 032  ^Z */
 	v_stop, 0,
