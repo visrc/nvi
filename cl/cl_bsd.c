@@ -1,16 +1,3 @@
-/*-
- * Copyright (c) 1993, 1994
- *	The Regents of the University of California.  All rights reserved.
- * Copyright (c) 1994, 1995
- *	Keith Bostic.  All rights reserved.
- *
- * %sccs.include.redist.c%
- */
-
-#ifndef lint
-static char sccsid[] = "$Id: cl_bsd.c,v 8.1 1995/10/29 15:57:29 bostic Exp $ (Berkeley) $Date: 1995/10/29 15:57:29 $";
-#endif /* not lint */
-
 #include <curses.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -80,6 +67,17 @@ keypad(a, on)
 }
 
 /*
+ * bsd_putchar --
+ *	Function version of putchar, for tputs.
+ */
+static int
+bsd_putchar(ch)
+	int ch;
+{
+	return (putchar(ch));
+}
+
+/*
  * newterm --
  *	Create a new curses screen.
  *
@@ -134,7 +132,7 @@ char *
 tigetstr(name)
 	char *name;
 {
-	static char sbuf[1024];
+	static char sbuf[128];
 	char *p;
 
 	if (first)
@@ -153,6 +151,11 @@ ti_init()
 	static char buf[2048];
 	char *p;
 
+	/*
+	 * XXX
+	 * We don't want to use the options value, because we're not running
+	 * at that level.  This might fail on unusually configured systems.
+	 */
 	if ((p = getenv("TERM")) == NULL) {
 		(void)fprintf(stderr, "Environmental variable TERM not set.\n");
 		exit (1);
@@ -163,6 +166,7 @@ ti_init()
 		exit (1);
 	}
 
+	/* Reset first, so don't call back into this routine. */
 	first = 0;
 
 	if (ke != NULL)
@@ -174,15 +178,4 @@ ti_init()
 	if (vb != NULL)
 		free(vb);
 	vb = ((p = tigetstr("vb")) == NULL) ? NULL : strdup(p);
-}
-
-/*
- * bsd_putchar --
- *	Function version of putchar, for tputs.
- */
-static int
-bsd_putchar(ch)
-	int ch;
-{
-	return (putchar(ch));
 }
