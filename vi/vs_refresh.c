@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.52 1993/05/05 20:07:34 bostic Exp $ (Berkeley) $Date: 1993/05/05 20:07:34 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.53 1993/05/05 22:01:26 bostic Exp $ (Berkeley) $Date: 1993/05/05 22:01:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -146,7 +146,8 @@ svi_refresh(sp, ep)
 		if (lcnt < sp->t_rows) {
 			if (svi_sm_fill(sp, ep, lastline, P_BOTTOM))
 				return (1);
-			goto paint;
+			F_SET(sp, S_REDRAW);
+			goto adjust;
 		}
 
 		/*
@@ -179,37 +180,42 @@ svi_refresh(sp, ep)
 	tmp.off = 1;
 	lcnt = svi_sm_nlines(sp, ep, &tmp, LNO, HALFSCREEN(sp));
 	if (lcnt < HALFSCREEN(sp))
-		(void)svi_sm_fill(sp, ep, 1, P_TOP);
+		if (svi_sm_fill(sp, ep, 1, P_TOP))
+			return (1);
 	else
-middle:		(void)svi_sm_fill(sp, ep, LNO, P_MIDDLE);
-
-	/*
-	 * If we got here, we know the screen needs to be repainted, in
-	 * which case, we can skip any cursor optimization.
-	 */
-	goto paint;
+middle:		if (svi_sm_fill(sp, ep, LNO, P_MIDDLE))
+			return (1);
+	F_SET(sp, S_REDRAW);
 
 	/*
 	 * At this point we know part of the line is on the screen.  Since
 	 * scrolling is done using logical lines, not physical, all of the
 	 * line may not be on the screen.  While that's not necessarily bad,
 	 * if the part the cursor is on isn't there, we're going to lose.
-	 * This isn't a problem for left-right scrolling, the cursor movement
-	 * code will handle the problem.
+	 * This can be tricky; if the line covers the entire screen, lno
+	 * may be the same as both ends of the map.  This isn't a problem
+	 * for left-right scrolling, the cursor movement code handles the
+	 * problem.
+	 *
+	 * XXX
+	 * There's a real performance issue here if editing *really* long
+	 * lines.  This gets to the right spot by scrolling, and, in a
+	 * binary, by scrolling hundreds of lines.
 	 */
-adjust:	if (!O_ISSET(sp, O_LEFTRIGHT))
-		if (LNO == HMAP->lno) {
-			cnt = svi_screens(sp, ep, LNO, &CNO);
+adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
+	    (LNO == HMAP->lno || LNO == TMAP->lno)) {
+		cnt = svi_screens(sp, ep, LNO, &CNO);
+		if (LNO == HMAP->lno && cnt < HMAP->off) {
 			while (cnt < HMAP->off)
 				if (svi_sm_1down(sp, ep))
 					return (1);
-		} else if (LNO == TMAP->lno) {
-			cnt = svi_screens(sp, ep, LNO, &CNO);
+		} else if (LNO == TMAP->lno && cnt > TMAP->off)
 			while (cnt > TMAP->off)
 				if (svi_sm_1up(sp, ep))
 					return (1);
-		}
+	}
 
+	/* If the screen needs to be repainted, skip cursor optimization. */
 	if (F_ISSET(sp, S_REDRAW))
 		goto paint;
 
