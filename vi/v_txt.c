@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.61 1993/11/29 20:02:17 bostic Exp $ (Berkeley) $Date: 1993/11/29 20:02:17 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.62 1993/11/30 09:28:57 bostic Exp $ (Berkeley) $Date: 1993/11/30 09:28:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -95,6 +95,7 @@ v_ntext(sp, ep, tiqh, tm, lp, len, rp, prompt, ai_line, flags)
 	size_t col;		/* Current column. */
 	u_long margin;		/* Wrapmargin value. */
 	u_int iflags;		/* Input flags. */
+	int ab_cnt;		/* Abbreviation count. */
 	int eval;		/* Routine return value. */
 	int replay;		/* If replaying a set of input. */
 	int showmatch;		/* Showmatch set on this character. */
@@ -224,9 +225,12 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 	else if ((margin = O_VAL(sp, O_WRAPMARGIN)) != 0)
 		margin = sp->cols - margin;
 
-	/* Initialize abbreviations check. */
-	abb = F_ISSET(sp, S_ABBREV) &&
-	    LF_ISSET(TXT_MAPINPUT) ? A_NOTSPACE : A_NOTSET;
+	/* Initialize abbreviations checks. */
+	if (F_ISSET(sp, S_ABBREV) && LF_ISSET(TXT_MAPINPUT)) {
+		abb = A_NOTSPACE;
+		ab_cnt = 0;
+	} else
+		abb = A_NOTSET;
 
 	/*
 	 * Set up the dot command.  Dot commands are done by saving the
@@ -252,7 +256,8 @@ nullreplay:
 		 * !!!
 		 * Historically, vi did not remap or reabbreviate replayed
 		 * input.  It did, however, beep at you if you changed an
-		 * abbreviation and then replayed the input.
+		 * abbreviation and then replayed the input.  We're not that
+		 * compatible.
 		 */
 		if (VIP(sp)->rep == NULL)
 			return (0);
@@ -288,6 +293,18 @@ next_ch:	if (term_key(sp, &ikey, iflags) != INP_OK)
 			goto err;
 		ch = ikey.ch;
 
+		/* Abbreviation check.  See comment in txt_abbrev(). */
+#define	MAX_ABBREVIATION_EXPANSION	256
+		if (ikey.flags & CH_ABBREVIATED) {
+			if (++ab_cnt > MAX_ABBREVIATION_EXPANSION) {
+				term_ab_flush(sp,
+			"Abbreviation exceeded maximum number of characters");
+				ab_cnt = 0;
+				continue;
+			}
+		} else
+			ab_cnt = 0;
+			
 		/*
 		 * !!!
 		 * Historic feature.  If the first character of the input is
@@ -939,17 +956,23 @@ txt_abbrev(sp, tp, didsubp, pushc)
 	 * didn't work as expected.  (The command ':ab a b|ab b c|ab c a' will
 	 * silently only implement and/or display the last abbreviation.)
 	 *
-	 * XXX
-	 * The obvious infinite loop, if a abbreviates to b and b to a, is
-	 * NOT FIXED.
+	 * This implementation doesn't recover well from such abbreviations.
+	 * The main input loop counts abbreviated characters, and, when it
+	 * reaches a limit, discards any abbreviated characters on the queue.
+	 * It's difficult to back up to the original position, as the replay
+	 * queue would have to be adjusted, and the line state when an initial
+	 * abbreviated character was received would have to be saved.
 	 */
 	ch = pushc;
-	if (term_push(sp, &ch, 1, 0, 0))
+	if (term_push(sp, &ch, 1, 0, CH_ABBREVIATED))
 		return (1);
-	if (term_push(sp, qp->output, qp->olen, 0, 0))
+	if (term_push(sp, qp->output, qp->olen, 0, CH_ABBREVIATED))
 		return (1);
 
-	/* Move the cursor to the start of the hex value, adjust the length. */
+	/*
+	 * Move the cursor to the start of the abbreviation,
+	 * adjust the length.
+	 */
 	sp->cno -= len;
 	tp->len -= len;
 
