@@ -14,7 +14,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_perl.c,v 8.2 1996/03/06 19:52:30 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:52:30 $";
+static const char sccsid[] = "$Id: ex_perl.c,v 8.3 1996/03/06 20:11:06 bostic Exp $ (Berkeley) $Date: 1996/03/06 20:11:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -74,6 +74,7 @@ ex_perl(sp, cmdp)
 	char *err, buf[64];
 
 	/* Initialize the interpreter. */
+	gp = sp->gp;
 	if (gp->perl_interp == NULL && perl_init(gp))
 		return (1);
 
@@ -88,7 +89,6 @@ ex_perl(sp, cmdp)
 		return (1);
 	}
 
-	gp = sp->gp;
 	(void)snprintf(buf, sizeof(buf),
 	    "$VI::ScreenId=%d;$VI::StartLine=%lu;$VI::StopLine=%lu",
 	    sp->id, cmdp->addr1.lno, cmdp->addr2.lno);
@@ -128,6 +128,7 @@ ex_perldo(sp, cmdp)
 	dSP;
 
 	/* Initialize the interpreter. */
+	gp = sp->gp;
 	if (gp->perl_interp == NULL && perl_init(gp))
 		return (1);
 
@@ -142,7 +143,6 @@ ex_perldo(sp, cmdp)
 		return (1);
 	}
 
-	gp = sp->gp;
 	argv[0] = cmdp->argv[0]->bp;
 	argv[1] = NULL;
 
