@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.14 1993/10/03 14:14:48 bostic Exp $ (Berkeley) $Date: 1993/10/03 14:14:48 $";
+static char sccsid[] = "$Id: screen.c,v 8.15 1993/10/05 13:47:15 bostic Exp $ (Berkeley) $Date: 1993/10/05 13:47:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,11 +26,11 @@ static int	 seq_copy __P((SCR *, SCR *));
 static int	 tag_copy __P((SCR *, SCR *));
 
 /*
- * scr_init --
+ * screen_init --
  *	Do the default initialization of an SCR structure.
  */
 int
-scr_init(orig, sp)
+screen_init(orig, sp)
 	SCR *orig, *sp;
 {
 	extern CHNAME asciiname[];		/* XXX */
@@ -173,11 +173,11 @@ mem:			msgq(orig, M_ERR,
 }
 
 /*
- * scr_end --
+ * screen_end --
  *	Release a screen.
  */
 int
-scr_end(sp)
+screen_end(sp)
 	SCR *sp;
 {
 	sigset_t bmask, omask;

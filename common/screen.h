@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.33 1993/10/03 19:48:04 bostic Exp $ (Berkeley) $Date: 1993/10/03 19:48:04 $
+ *	$Id: screen.h,v 8.34 1993/10/05 13:47:14 bostic Exp $ (Berkeley) $Date: 1993/10/05 13:47:14 $
  */
 
 /*
@@ -275,8 +275,8 @@ typedef struct _scr {
 } SCR;
 
 /* Public interfaces to the screens. */
-int	scr_end __P((struct _scr *));
-int	scr_init __P((struct _scr *, struct _scr *));
+int	screen_end __P((struct _scr *));
+int	screen_init __P((struct _scr *, struct _scr *));
 int	sex __P((struct _scr *, struct _exf *, struct _scr **));
 int	svi __P((struct _scr *, struct _exf *, struct _scr **));
 int	xaw __P((struct _scr *, struct _exf *, struct _scr **));
