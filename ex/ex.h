@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 5.3 1992/04/05 15:47:37 bostic Exp $ (Berkeley) $Date: 1992/04/05 15:47:37 $
+ *	$Id: ex.h,v 5.4 1992/04/15 09:10:43 bostic Exp $ (Berkeley) $Date: 1992/04/15 09:10:43 $
  */
 
 struct _cmdarg;
@@ -18,19 +18,20 @@ typedef struct _cmdlist {
 
 #define	E_ADDR1		0x0001		/* One address. */
 #define	E_ADDR2		0x0002		/* Two address. */
-#define	E_EXRCOK	0x0004		/* OK in a .exrc file. */
-#define	E_FORCE		0x0008		/* ! flag. */
-#define	E_F_CARAT	0x0010		/* ^ flag. */
-#define	E_F_DASH	0x0020		/* - flag. */
-#define	E_F_DOT		0x0040		/* . flag. */
-#define	E_F_HASH	0x0080		/* # flag. */
-#define	E_F_LIST	0x0100		/* l flag. */
-#define	E_F_PLUS	0x0200		/* + flag. */
-#define	E_F_PRINT	0x0400		/* p flag. */
-#define	E_F_RIGHT	0x0800		/* >> */
-#define	E_NL		0x1000		/* Newline first if not MODE_EX mode.*/
-#define	E_NOPERM	0x2000		/* Permission denied for now. */
-#define	E_ZERO		0x4000		/* 0 is a legal (first) address.*/
+#define	E_ADDR2_OR_0	0x0004		/* Either 0 or two addresses. */
+#define	E_EXRCOK	0x0008		/* OK in a .exrc file. */
+#define	E_FORCE		0x0010		/*  ! flag. */
+#define	E_F_APPEND	0x0020		/* >> flag. */
+#define	E_F_CARAT	0x0040		/*  ^ flag. */
+#define	E_F_DASH	0x0080		/*  - flag. */
+#define	E_F_DOT		0x0100		/*  . flag. */
+#define	E_F_HASH	0x0200		/*  # flag. */
+#define	E_F_LIST	0x0400		/*  l flag. */
+#define	E_F_PLUS	0x0800		/*  + flag. */
+#define	E_F_PRINT	0x1000		/*  p flag. */
+#define	E_NL		0x2000		/* Newline first if not MODE_EX mode.*/
+#define	E_NOPERM	0x4000		/* Permission denied for now. */
+#define	E_ZERO		0x8000		/* 0 is a legal (first) address.*/
 	u_int flags;
 	char *syntax;			/* Syntax script. */
 	char *usage;			/* Usage line. */
@@ -70,11 +71,8 @@ typedef struct _cmdarg {
 }
 extern char *defcmdarg[2];
 
-void	ex __P((void));
-int	excmd __P((char *));
-int	exfile __P((char *, int));
-void	exrefresh __P((void));
-int	exstring __P((char *, int));
+void	 ex __P((void));
+char	*linespec __P((char *, CMDARG *));
 
 int	ex_abbr __P((CMDARG *));
 int	ex_append __P((CMDARG *));
@@ -83,9 +81,12 @@ int	ex_at __P((CMDARG *));
 int	ex_bang __P((CMDARG *));
 int	ex_cc __P((CMDARG *));
 int	ex_cd __P((CMDARG *));
+int	ex_cfile __P((char *, int));
 int	ex_change __P((CMDARG *));
+int	ex_cmd __P((char *));
 int	ex_color __P((CMDARG *));
 int	ex_copy __P((CMDARG *));
+int	ex_cstring __P((char *, int));
 int	ex_debug __P((CMDARG *));
 int	ex_delete __P((CMDARG *));
 int	ex_digraph __P((CMDARG *));
@@ -108,6 +109,7 @@ int	ex_print __P((CMDARG *));
 int	ex_put __P((CMDARG *));
 int	ex_quit __P((CMDARG *));
 int	ex_read __P((CMDARG *));
+void	ex_refresh __P((void));
 int	ex_rew __P((CMDARG *));
 int	ex_set __P((CMDARG *));
 int	ex_shell __P((CMDARG *));
@@ -126,7 +128,6 @@ int	ex_vglobal __P((CMDARG *));
 int	ex_visual __P((CMDARG *));
 int	ex_wq __P((CMDARG *));
 int	ex_write __P((CMDARG *));
+int	ex_writerange __P((char *, int, MARK, MARK, int));
 int	ex_xit __P((CMDARG *));
 int	ex_yank __P((CMDARG *));
-
-char	*linespec __P((char *, CMDARG *));
