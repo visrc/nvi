@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 8.23 1993/11/18 08:18:30 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:18:30 $
+ *	$Id: common.h,v 8.24 1993/11/18 10:08:41 bostic Exp $ (Berkeley) $Date: 1993/11/18 10:08:41 $
  */
 
 /* System includes. */
@@ -33,7 +33,6 @@ typedef struct _excmdarg	EXCMDARG;
 typedef struct _exf		EXF;
 typedef struct _fref		FREF;
 typedef struct _gs		GS;
-typedef struct _hdr		HDR;
 typedef struct _ibuf		IBUF;
 typedef struct _mark		MARK;
 typedef struct _msg		MSG;
@@ -64,7 +63,6 @@ typedef	u_int		ARG_CHAR_T;
 /*
  * Local includes.
  */
-#include "link.h"		/* XXX */
 #include <db.h>			/* Required by exf.h; includes compat.h. */
 
 #include "mark.h"		/* Required by most everybody. */
@@ -74,10 +72,10 @@ typedef	u_int		ARG_CHAR_T;
 #include "term.h"		/* Required by screen.h. */
 
 #include "gs.h"			/* Required by screen.h. */
+#include "cut.h"		/* Required by screen.h. */
 #include "screen.h"		/* Required by exf.h. */
 
 #include "exf.h"		
-#include "cut.h"
 #include "log.h"
 #include "msg.h"
 #include "seq.h"

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 8.18 1993/11/04 16:17:25 bostic Exp $ (Berkeley) $Date: 1993/11/04 16:17:25 $";
+static char sccsid[] = "$Id: v_itxt.c,v 8.19 1993/11/18 10:09:28 bostic Exp $ (Berkeley) $Date: 1993/11/18 10:09:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -84,7 +84,7 @@ v_iA(sp, ep, vp, fm, tm, rp)
 			sp->cno = len;
 
 		if (v_ntext(sp, ep,
-		    &sp->txthdr, NULL, p, len, rp, 0, OOBLNO, flags))
+		    &sp->tiq, NULL, p, len, rp, 0, OOBLNO, flags))
 			return (1);
 
 		SET_TXT_STD(sp, TXT_APPENDEOL | TXT_REPLAY);
@@ -140,7 +140,7 @@ v_ia(sp, ep, vp, fm, tm, rp)
 			LF_SET(TXT_APPENDEOL);
 
 		if (v_ntext(sp, ep,
-		    &sp->txthdr, NULL, p, len, rp, 0, OOBLNO, flags))
+		    &sp->tiq, NULL, p, len, rp, 0, OOBLNO, flags))
 			return (1);
 
 		SET_TXT_STD(sp, TXT_REPLAY);
@@ -193,7 +193,7 @@ v_iI(sp, ep, vp, fm, tm, rp)
 			LF_SET(TXT_APPENDEOL);
 
 		if (v_ntext(sp, ep,
-		    &sp->txthdr, NULL, p, len, rp, 0, OOBLNO, flags))
+		    &sp->tiq, NULL, p, len, rp, 0, OOBLNO, flags))
 			return (1);
 
 		SET_TXT_STD(sp, TXT_REPLAY);
@@ -240,7 +240,7 @@ v_ii(sp, ep, vp, fm, tm, rp)
 			LF_SET(TXT_APPENDEOL);
 
 		if (v_ntext(sp, ep,
-		    &sp->txthdr, NULL, p, len, rp, 0, OOBLNO, flags))
+		    &sp->tiq, NULL, p, len, rp, 0, OOBLNO, flags))
 			return (1);
 
 		/*
@@ -297,7 +297,7 @@ insert:			p = "";
 		}
 
 		if (v_ntext(sp, ep,
-		    &sp->txthdr, NULL, p, len, rp, 0, ai_line, flags))
+		    &sp->tiq, NULL, p, len, rp, 0, ai_line, flags))
 			return (1);
 
 		SET_TXT_STD(sp, TXT_APPENDEOL | TXT_REPLAY);
@@ -350,7 +350,7 @@ insert:			p = "";
 		}
 
 		if (v_ntext(sp, ep,
-		    &sp->txthdr, NULL, p, len, rp, 0, ai_line, flags))
+		    &sp->tiq, NULL, p, len, rp, 0, ai_line, flags))
 			return (1);
 
 		SET_TXT_STD(sp, TXT_APPENDEOL | TXT_REPLAY);
@@ -489,7 +489,7 @@ v_CS(sp, ep, vp, fm, tm, rp, iflags)
 		}
 	}
 	return (v_ntext(sp, ep,
-	    &sp->txthdr, tm, p, len, rp, 0, OOBLNO, flags));
+	    &sp->tiq, tm, p, len, rp, 0, OOBLNO, flags));
 }
 
 /*
@@ -558,7 +558,7 @@ v_change(sp, ep, vp, fm, tm, rp)
 			LF_SET(TXT_EMARK | TXT_OVERWRITE);
 		}
 		return (v_ntext(sp, ep,
-		    &sp->txthdr, tm, p, len, rp, 0, OOBLNO, flags));
+		    &sp->tiq, tm, p, len, rp, 0, OOBLNO, flags));
 	}
 
 	/*
@@ -618,7 +618,7 @@ v_change(sp, ep, vp, fm, tm, rp)
 	/* No to mark. */
 	tm = NULL;
 
-	rval = v_ntext(sp, ep, &sp->txthdr, tm, p, len, rp, 0, OOBLNO, flags);
+	rval = v_ntext(sp, ep, &sp->tiq, tm, p, len, rp, 0, OOBLNO, flags);
 
 	if (bp != NULL)
 		FREE_SPACE(sp, bp, blen);
@@ -663,7 +663,7 @@ v_Replace(sp, ep, vp, fm, tm, rp)
 	}
 	tm->lno = rp->lno;
 	tm->cno = len ? len : 0;
-	if (v_ntext(sp, ep, &sp->txthdr, tm, p, len, rp, 0, OOBLNO, flags))
+	if (v_ntext(sp, ep, &sp->tiq, tm, p, len, rp, 0, OOBLNO, flags))
 		return (1);
 
 	/*
@@ -695,7 +695,7 @@ v_Replace(sp, ep, vp, fm, tm, rp)
 		}
 
 		if (v_ntext(sp, ep,
-		    &sp->txthdr, tm, p, len, rp, 0, OOBLNO, flags))
+		    &sp->tiq, tm, p, len, rp, 0, OOBLNO, flags))
 			return (1);
 	}
 	return (0);
@@ -745,5 +745,5 @@ v_subst(sp, ep, vp, fm, tm, rp)
 		return (1);
 
 	return (v_ntext(sp, ep,
-	    &sp->txthdr, tm, p, len, rp, 0, OOBLNO, flags));
+	    &sp->tiq, tm, p, len, rp, 0, OOBLNO, flags));
 }

@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.59 1993/11/18 08:17:16 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:17:16 $
+ *	$Id: screen.h,v 8.60 1993/11/18 10:08:38 bostic Exp $ (Berkeley) $Date: 1993/11/18 10:08:38 $
  */
 
 /*
@@ -121,7 +121,7 @@ struct _scr {
 
 	fd_set	 rdfd;			/* Ex/vi: read fd select mask. */
 
-	HDR	 txthdr;		/* Vi: text input TEXT header. */
+	TEXTH	 tiq;			/* Ex/vi: text input queue. */
 
 	int	 sh_in[2];		/* Script: pipe. */
 	int	 sh_out[2];		/* Script: pipe. */
@@ -202,7 +202,7 @@ struct _scr {
 					/* Fill the screen's map. */
 	int	 (*s_fill) __P((SCR *, EXF *, recno_t, enum position));
 	enum input			/* Get a line from the user. */
-		 (*s_get) __P((SCR *, EXF *, HDR *, int, u_int));
+		 (*s_get) __P((SCR *, EXF *, TEXTH *, int, u_int));
 	enum input			/* Get a key from the user. */
 		 (*s_key_read) __P((SCR *, int *, int));
 					/* Tell the screen an option changed. */

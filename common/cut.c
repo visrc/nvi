@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 8.12 1993/11/18 08:16:57 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:16:57 $";
+static char sccsid[] = "$Id: cut.c,v 8.13 1993/11/18 10:08:30 bostic Exp $ (Berkeley) $Date: 1993/11/18 10:08:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -80,9 +80,9 @@ cut(sp, ep, name, fm, tm, lmode)
 		memset(cbp, 0, sizeof(CB));
 		cbp->name = name;
 		LIST_INSERT_HEAD(&sp->gp->cutq, cbp, q);
-		HDR_INIT(cbp->txthdr, next, prev);
+		CIRCLEQ_INIT(&cbp->textq);
 	} else if (!append) {
-		hdr_text_free(&cbp->txthdr);
+		text_lfree(&cbp->textq);
 		cbp->len = 0;
 		cbp->flags = 0;
 	}
@@ -91,7 +91,7 @@ cut(sp, ep, name, fm, tm, lmode)
 		for (lno = fm->lno; lno <= tm->lno; ++lno) {
 			if (cb_line(sp, ep, lno, 0, 0, &tp))
 				goto mem;
-			HDR_INSERT(tp, &cbp->txthdr, next, prev, TEXT);
+			CIRCLEQ_INSERT_TAIL(&cbp->textq, tp, q);
 			cbp->len += tp->len;
 		}
 		cbp->flags |= CB_LMODE;
@@ -103,13 +103,13 @@ cut(sp, ep, name, fm, tm, lmode)
 	if (cb_line(sp, ep, fm->lno, fm->cno, len, &tp))
 		goto mem;
 
-	HDR_INSERT(tp, &cbp->txthdr, next, prev, TEXT);
+	CIRCLEQ_INSERT_TAIL(&cbp->textq, tp, q);
 	cbp->len += tp->len;
 
 	for (lno = fm->lno; ++lno < tm->lno;) {
 		if (cb_line(sp, ep, lno, 0, 0, &tp))
 			goto mem;
-		HDR_INSERT(tp, &cbp->txthdr, next, prev, TEXT);
+		CIRCLEQ_INSERT_TAIL(&cbp->textq, tp, q);
 		cbp->len += tp->len;
 	}
 
@@ -119,12 +119,12 @@ mem:			if (append)
 				msgq(sp, M_ERR,
 				    "Contents of %s buffer lost.",
 				    charname(sp, name));
-			hdr_text_free(&cbp->txthdr);
+			text_lfree(&cbp->textq);
 			cbp->len = 0;
 			cbp->flags = 0;
 			return (1);
 		}
-		HDR_INSERT(tp, &cbp->txthdr, next, prev, TEXT);
+		CIRCLEQ_INSERT_TAIL(&cbp->textq, tp, q);
 		cbp->len += tp->len;
 	}
 	return (0);
@@ -173,7 +173,7 @@ cb_rotate(sp)
 		}
 	if (del_cbp != NULL) {
 		LIST_REMOVE(del_cbp, q);
-		hdr_text_free(&del_cbp->txthdr);
+		text_lfree(&del_cbp->textq);
 		FREE(del_cbp, sizeof(CB));
 	}
 	return (0);
@@ -251,18 +251,17 @@ mem:		msgq(sp, M_SYSERR, NULL);
 }
 
 /*
- * hdr_text_free --
+ * text_lfree --
  *	Free a chain of text structures.
  */
 void
-hdr_text_free(hp)
-	HDR *hp;
+text_lfree(headp)
+	TEXTH *headp;
 {
 	TEXT *tp;
 
-	while (hp->next != hp) {
-		tp = hp->next;
-		HDR_DELETE(tp, next, prev, TEXT);
+	while ((tp = headp->cqh_first) != (void *)headp) {
+		CIRCLEQ_REMOVE(headp, tp, q);
 		text_free(tp);
 	}
 }
@@ -310,7 +309,7 @@ put(sp, ep, name, cp, rp, append)
 
 	CBEMPTY(sp, cbp, name);
 
-	tp = cbp->txthdr.next;
+	tp = cbp->textq.cqh_first;
 	lmode = F_ISSET(cbp, CB_LMODE);
 
 	/*
@@ -325,7 +324,8 @@ put(sp, ep, name, cp, rp, append)
 		if (file_lline(sp, ep, &lno))
 			return (1);
 		if (lno == 0) {
-			for (; tp != (TEXT *)&cbp->txthdr; ++lno, tp = tp->next)
+			for (; tp != (void *)&cbp->textq;
+			     ++lno, tp = tp->q.cqe_next)
 				if (file_aline(sp, ep, 1, lno, tp->lb, tp->len))
 					return (1);
 			rp->lno = 1;
@@ -342,7 +342,7 @@ put(sp, ep, name, cp, rp, append)
 	if (lmode) {
 		lno = append ? cp->lno : cp->lno - 1;
 		rp->lno = lno + 1;
-		for (; tp != (TEXT *)&cbp->txthdr; ++lno, tp = tp->next)
+		for (; tp != (void *)&cbp->textq; ++lno, tp = tp->q.cqe_next)
 			if (file_aline(sp, ep, 1, lno, tp->lb, tp->len))
 				return (1);
 		rp->cno = 0;
@@ -388,7 +388,7 @@ put(sp, ep, name, cp, rp, append)
 	 * the intermediate lines, because the line changes will lose
 	 * the cached line.
 	 */
-	if (tp->next == (TEXT *)&cbp->txthdr) {
+	if (tp->q.cqe_next == (void *)&cbp->textq) {
 		/*
 		 * Historical practice is that if a non-line mode put
 		 * is inside a single line, the cursor ends up on the
@@ -414,7 +414,7 @@ put(sp, ep, name, cp, rp, append)
 		 * Last part of original line; check for space, reset
 		 * the pointer into the buffer.
 		 */
-		ltp = cbp->txthdr.prev;
+		ltp = cbp->textq.cqh_last;
 		len = t - bp;
 		ADD_SPACE(sp, bp, blen, ltp->len + clen);
 		t = bp + len;
@@ -446,8 +446,9 @@ put(sp, ep, name, cp, rp, append)
 		rp->cno = (t - bp) - 1;
 
 		/* Output any intermediate lines in the CB. */
-		for (tp = tp->next;
-		    tp->next != (TEXT *)&cbp->txthdr; ++lno, tp = tp->next)
+		for (tp = tp->q.cqe_next;
+		    tp->q.cqe_next != (void *)&cbp->textq;
+		    ++lno, tp = tp->q.cqe_next)
 			if (file_aline(sp, ep, 1, lno, tp->lb, tp->len))
 				goto mem;
 

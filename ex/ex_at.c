@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_at.c,v 8.9 1993/11/13 18:02:19 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:02:19 $";
+static char sccsid[] = "$Id: ex_at.c,v 8.10 1993/11/18 10:08:54 bostic Exp $ (Berkeley) $Date: 1993/11/18 10:08:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -58,10 +58,10 @@ ex_at(sp, ep, cmdp)
 	 * than one line, <newlines> are appended to each line as it
 	 * is executed.
 	 */
-	tp = cbp->txthdr.prev;
-	lmode = F_ISSET(cbp, CB_LMODE) || tp->prev != (TEXT *)&cbp->txthdr;
-	for (; tp != (TEXT *)&cbp->txthdr; tp = tp->prev)
-		if ((lmode || tp->prev != (TEXT *)&cbp->txthdr) &&
+	tp = cbp->textq.cqh_last;
+	lmode = F_ISSET(cbp, CB_LMODE) || tp->q.cqe_prev != (void *)&cbp->textq;
+	for (; tp != (void *)&cbp->textq; tp = tp->q.cqe_prev)
+		if ((lmode || tp->q.cqe_prev != (void *)&cbp->textq) &&
 		    term_push(sp, sp->gp->key, "\n", 1) ||
 		    term_push(sp, sp->gp->key, tp->lb, tp->len))
 			return (1);

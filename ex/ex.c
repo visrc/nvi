@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.52 1993/11/17 10:21:22 bostic Exp $ (Berkeley) $Date: 1993/11/17 10:21:22 $";
+static char sccsid[] = "$Id: ex.c,v 8.53 1993/11/18 10:08:50 bostic Exp $ (Berkeley) $Date: 1993/11/18 10:08:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -55,8 +55,7 @@ ex(sp, ep)
 
 	for (eval = 0;;) {
 		/* Get the next command. */
-		switch (sp->s_get(sp, ep,
-		    &sp->txthdr, ':', TXT_CR | TXT_PROMPT)) {
+		switch (sp->s_get(sp, ep, &sp->tiq, ':', TXT_CR | TXT_PROMPT)) {
 		case INP_OK:
 			break;
 		case INP_EOF:
@@ -66,8 +65,8 @@ ex(sp, ep)
 			continue;
 		}
 
-		tp = sp->txthdr.next;
 		saved_mode = F_ISSET(sp, S_SCREENS | S_MAJOR_CHANGE);
+		tp = sp->tiq.cqh_first;
 		if (tp->len == 0) {
 			if (F_ISSET(sp->gp, G_ISFROMTTY)) {
 				(void)fputc('\r', stdout);

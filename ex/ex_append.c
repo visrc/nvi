@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 8.4 1993/11/05 11:08:33 bostic Exp $ (Berkeley) $Date: 1993/11/05 11:08:33 $";
+static char sccsid[] = "$Id: ex_append.c,v 8.5 1993/11/18 10:08:53 bostic Exp $ (Berkeley) $Date: 1993/11/18 10:08:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -80,7 +80,7 @@ ac(sp, ep, cmdp, cmd)
 				--m.lno;
 				break;
 			}
-			switch (sp->s_get(sp, ep, &sp->txthdr, 0,
+			switch (sp->s_get(sp, ep, &sp->tiq, 0,
 			    TXT_BEAUTIFY | TXT_CR | TXT_NLECHO)) {
 			case INP_OK:
 				break;
@@ -89,7 +89,7 @@ ac(sp, ep, cmdp, cmd)
 				rval = 1;
 				goto done;
 			}
-			tp = sp->txthdr.next;
+			tp = sp->tiq.cqh_first;
 			if (tp->len == 1 && tp->lb[0] == '.') {
 				cnt = cmdp->addr2.lno - m.lno;
 				while (cnt--)
@@ -107,7 +107,7 @@ ac(sp, ep, cmdp, cmd)
 
 	if (cmd == APPEND)
 		for (;; ++m.lno) {
-			switch (sp->s_get(sp, ep, &sp->txthdr, 0,
+			switch (sp->s_get(sp, ep, &sp->tiq, 0,
 			    TXT_BEAUTIFY | TXT_CR | TXT_NLECHO)) {
 			case INP_OK:
 				break;
@@ -116,7 +116,7 @@ ac(sp, ep, cmdp, cmd)
 				rval = 1;
 				goto done;
 			}
-			tp = sp->txthdr.next;
+			tp = sp->tiq.cqh_first;
 			if (tp->len == 1 && tp->lb[0] == '.')
 				break;
 			if (file_aline(sp, ep, 1, m.lno, tp->lb, tp->len)) {

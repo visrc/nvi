@@ -4,22 +4,26 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: cut.h,v 8.6 1993/11/18 08:16:59 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:16:59 $
+ *	$Id: cut.h,v 8.7 1993/11/18 10:08:33 bostic Exp $ (Berkeley) $Date: 1993/11/18 10:08:33 $
  */
+
+typedef struct _texth TEXTH;		/* TEXT list head structure. */
+CIRCLEQ_HEAD(_texth, _text);
 
 /* Cut buffers. */
 struct _cb {
 	LIST_ENTRY(_cb) q;		/* Linked list of cut buffers. */
-	CHAR_T	name;			/* Cut buffer name. */
-	HDR	txthdr;			/* Linked list of TEXT structures. */
-	size_t	len;			/* Total length of cut text. */
+	TEXTH	 textq;			/* Linked list of TEXT structures. */
+	CHAR_T	 name;			/* Cut buffer name. */
+	size_t	 len;			/* Total length of cut text. */
 
 #define	CB_LMODE	0x01		/* Cut was in line mode. */
 	u_char	 flags;
 };
 		
+/* Lines/blocks of text. */
 struct _text {				/* Text: a linked list of lines. */
-	TEXT *next, *prev;		/* Linked list of text structures. */
+	CIRCLEQ_ENTRY(_text) q;		/* Linked list of text structures. */
 	char	*lb;			/* Line buffer. */
 	size_t	 lb_len;		/* Line buffer length. */
 	size_t	 len;			/* Line length. */
@@ -66,7 +70,7 @@ struct _text {				/* Text: a linked list of lines. */
 
 int	 cut __P((SCR *, EXF *, ARG_CHAR_T, MARK *, MARK *, int));
 int	 delete __P((SCR *, EXF *, MARK *, MARK *, int));
-void	 hdr_text_free __P((HDR *));
 int	 put __P((SCR *, EXF *, ARG_CHAR_T, MARK *, MARK *, int));
 void	 text_free __P((TEXT *));
 TEXT	*text_init __P((SCR *, char *, size_t, size_t));
+void	 text_lfree __P((TEXTH *));

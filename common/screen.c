@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.35 1993/11/18 08:17:14 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:17:14 $";
+static char sccsid[] = "$Id: screen.c,v 8.36 1993/11/18 10:08:36 bostic Exp $ (Berkeley) $Date: 1993/11/18 10:08:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -49,7 +49,7 @@ screen_init(orig, spp, flags)
 
 	FD_ZERO(&sp->rdfd);
 
-	HDR_INIT(sp->txthdr, next, prev);
+	CIRCLEQ_INIT(&sp->tiq);
 
 /* PARTIALLY OR COMPLETELY COPIED FROM PREVIOUS SCREEN. */
 	if (orig == NULL) {
@@ -187,8 +187,8 @@ screen_end(sp)
 		}
 	}
 
-	/* Free text input chain. */
-	hdr_text_free(&sp->txthdr);
+	/* Free any text input. */
+	text_lfree(&sp->tiq);
 
 	/* Free any script information. */
 	if (F_ISSET(sp, S_SCRIPT))

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.49 1993/11/13 18:01:37 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:01:37 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.50 1993/11/18 10:09:24 bostic Exp $ (Berkeley) $Date: 1993/11/18 10:09:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -23,14 +23,14 @@ static char sccsid[] = "$Id: v_txt.c,v 8.49 1993/11/13 18:01:37 bostic Exp $ (Be
 
 static int	 txt_abbrev __P((SCR *, TEXT *, int *, ARG_CHAR_T));
 static void	 txt_ai_resolve __P((SCR *, TEXT *));
-static TEXT	*txt_backup __P((SCR *, EXF *, HDR *, TEXT *, u_int));
-static void	 txt_err __P((SCR *, EXF *, HDR *));
+static TEXT	*txt_backup __P((SCR *, EXF *, TEXTH *, TEXT *, u_int));
+static void	 txt_err __P((SCR *, EXF *, TEXTH *));
 static int	 txt_hex __P((SCR *, TEXT *, int *, ARG_CHAR_T));
 static int	 txt_indent __P((SCR *, TEXT *));
 static int	 txt_margin __P((SCR *, TEXT *, int *, ARG_CHAR_T));
 static int	 txt_outdent __P((SCR *, TEXT *));
 static void	 txt_showmatch __P((SCR *, EXF *));
-static int	 txt_resolve __P((SCR *, EXF *, HDR *));
+static int	 txt_resolve __P((SCR *, EXF *, TEXTH *));
 
 /* Cursor character (space is hard to track on the screen). */
 #if defined(DEBUG) && 0
@@ -41,7 +41,7 @@ static int	 txt_resolve __P((SCR *, EXF *, HDR *));
 /* Error jump. */
 #define	ERR {								\
 	eval = 1;							\
-	txt_err(sp, ep, hp);						\
+	txt_err(sp, ep, tiqh);						\
 	goto ret;							\
 }
 
@@ -73,10 +73,10 @@ static int	 txt_resolve __P((SCR *, EXF *, HDR *));
  * with something here, but I think I'm unlikely to get caught.
  */
 int
-v_ntext(sp, ep, hp, tm, p, len, rp, prompt, ai_line, flags)
+v_ntext(sp, ep, tiqh, tm, p, len, rp, prompt, ai_line, flags)
 	SCR *sp;
 	EXF *ep;
-	HDR *hp;
+	TEXTH *tiqh;
 	MARK *tm;		/* To MARK. */
 	char *p;		/* Input line. */
 	size_t len;		/* Input line length. */
@@ -119,10 +119,10 @@ v_ntext(sp, ep, hp, tm, p, len, rp, prompt, ai_line, flags)
 	 * default to 0 -- text_init() handles this.)  If changing a line,
 	 * copy it into the TEXT buffer.
 	 */
-	if (hp->next != hp) {
-		tp = hp->next;
-		if (tp->next != (TEXT *)hp || tp->lb_len < len + 32) {
-			hdr_text_free(hp);
+	if (tiqh->cqh_first != (void *)tiqh) {
+		tp = tiqh->cqh_first;
+		if (tp->q.cqe_next != (void *)tiqh || tp->lb_len < len + 32) {
+			text_lfree(tiqh);
 			goto newtp;
 		}
 		tp->ai = tp->insert = tp->offset = tp->owrite = 0;
@@ -134,7 +134,7 @@ v_ntext(sp, ep, hp, tm, p, len, rp, prompt, ai_line, flags)
 	} else {
 newtp:		if ((tp = text_init(sp, p, len, len + 32)) == NULL)
 			return (1);
-		HDR_INSERT(tp, hp, next, prev, TEXT);
+		CIRCLEQ_INSERT_HEAD(tiqh, tp, q);
 	}
 
 	/* Set the starting line number. */
@@ -365,7 +365,7 @@ next_ch:	if (replay)
 			    tp->lb + sp->cno + tp->owrite,
 			    tp->insert, tp->insert + 32)) == NULL)
 				ERR;
-			HDR_INSERT(ntp, hp, next, prev, TEXT);
+			CIRCLEQ_INSERT_TAIL(tiqh, ntp, q);
 
 			/* Set bookkeeping for the new line. */
 			ntp->lno = tp->lno + 1;
@@ -463,9 +463,10 @@ k_escape:		if (tp->insert && tp->owrite)
 			 * Delete any lines that were inserted into the text
 			 * structure and then erased.
 			 */
-			while (tp->next != (TEXT *)hp) {
-				HDR_DELETE(tp->next, next, prev, TEXT);
-				text_free(tp->next);
+			while (tp->q.cqe_next != (void *)tiqh) {
+				ntp = tp->q.cqe_next;
+				CIRCLEQ_REMOVE(tiqh, ntp, q);
+				text_free(ntp);
 			}
 
 			/*
@@ -476,7 +477,7 @@ k_escape:		if (tp->insert && tp->owrite)
 			 * This is wrong, should pass back a length.
 			 */
 			if (LF_ISSET(TXT_RESOLVE)) {
-				if (txt_resolve(sp, ep, hp))
+				if (txt_resolve(sp, ep, tiqh))
 					ERR;
 			} else {
 				TBINC(sp, tp->lb, tp->lb_len, tp->len + 1);
@@ -559,8 +560,8 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 			 * to a previously inserted line.
 			 */
 			if (sp->cno == 0) {
-				if ((ntp =
-				    txt_backup(sp, ep, hp, tp, flags)) == NULL)
+				if ((ntp = txt_backup(sp,
+				    ep, tiqh, tp, flags)) == NULL)
 					ERR;
 				tp = ntp;
 				break;
@@ -593,8 +594,8 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 			 * to a previously inserted line.
 			 */
 			if (sp->cno == 0) {
-				if ((ntp =
-				    txt_backup(sp, ep, hp, tp, flags)) == NULL)
+				if ((ntp = txt_backup(sp,
+				    ep, tiqh, tp, flags)) == NULL)
 					ERR;
 				tp = ntp;
 			}
@@ -680,8 +681,8 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 			 * to a previously inserted line.
 			 */
 			if (sp->cno == 0) {
-				if ((ntp =
-				    txt_backup(sp, ep, hp, tp, flags)) == NULL)
+				if ((ntp = txt_backup(sp,
+				    ep, tiqh, tp, flags)) == NULL)
 					ERR;
 				tp = ntp;
 			}
@@ -1023,17 +1024,17 @@ txt_auto(sp, ep, lno, aitp, tp)
  *	Back up to the previously edited line.
  */
 static TEXT *
-txt_backup(sp, ep, hp, tp, flags)
+txt_backup(sp, ep, tiqh, tp, flags)
 	SCR *sp;
 	EXF *ep;
-	HDR *hp;
+	TEXTH *tiqh;
 	TEXT *tp;
 	u_int flags;
 {
 	TEXT *ntp;
 	size_t col;
 
-	if (tp->prev == (TEXT *)hp) {
+	if (tp->q.cqe_prev == (void *)tiqh) {
 		msgq(sp, M_BERR, "Already at the beginning of the insert");
 		return (tp);
 	}
@@ -1043,7 +1044,7 @@ txt_backup(sp, ep, hp, tp, flags)
 		return (NULL);
 
 	/* Get a handle on the previous TEXT structure. */
-	ntp = tp->prev;
+	ntp = tp->q.cqe_prev;
 
 	/* Make sure that we can get enough space. */
 	if (LF_ISSET(TXT_APPENDEOL) && ntp->len + 1 > ntp->lb_len &&
@@ -1054,7 +1055,7 @@ txt_backup(sp, ep, hp, tp, flags)
 	 * Release current TEXT; now committed to the swap, nothing
 	 * better fail.
 	 */
-	HDR_DELETE(tp, next, prev, TEXT);
+	CIRCLEQ_REMOVE(tiqh, tp, q);
 	text_free(tp);
 
 	/* Swap TEXT's. */
@@ -1077,10 +1078,10 @@ txt_backup(sp, ep, hp, tp, flags)
  *	Handle an error during input processing.
  */
 static void
-txt_err(sp, ep, hp)
+txt_err(sp, ep, tiqh)
 	SCR *sp;
 	EXF *ep;
-	HDR *hp;
+	TEXTH *tiqh;
 {
 	recno_t lno;
 	size_t len;
@@ -1094,7 +1095,7 @@ txt_err(sp, ep, hp)
 	 * We depend on at least one line number being set in the text
 	 * chain.
 	 */
-	for (lno = ((TEXT *)(hp->next))->lno;
+	for (lno = tiqh->cqh_first->lno;
 	    file_gline(sp, ep, lno, &len) == NULL && lno > 0; --lno);
 
 	sp->lno = lno == 0 ? 1 : lno;
@@ -1325,22 +1326,21 @@ txt_outdent(sp, tp)
  *	Resolve the input text chain into the file.
  */
 static int
-txt_resolve(sp, ep, hp)
+txt_resolve(sp, ep, tiqh)
 	SCR *sp;
 	EXF *ep;
-	HDR *hp;
+	TEXTH *tiqh;
 {
 	TEXT *tp;
 	recno_t lno;
 
-	tp = hp->next;
-
 	/* The first line replaces a current line. */
+	tp = tiqh->cqh_first;
 	if (file_sline(sp, ep, tp->lno, tp->lb, tp->len))
 		return (1);
 
 	/* All subsequent lines are appended into the file. */
-	for (lno = tp->lno; (tp = tp->next) != (TEXT *)&sp->txthdr; ++lno)
+	for (lno = tp->lno; (tp = tp->q.cqe_next) != (void *)&sp->tiq; ++lno)
 		if (file_aline(sp, ep, 0, lno, tp->lb, tp->len))
 			return (1);
 	return (0);

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_display.c,v 8.9 1993/11/18 08:17:41 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:17:41 $";
+static char sccsid[] = "$Id: ex_display.c,v 8.10 1993/11/18 10:08:55 bostic Exp $ (Berkeley) $Date: 1993/11/18 10:08:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,20 +34,20 @@ ex_bdisplay(sp, ep, cmdp)
 	int displayed;
 
 	displayed = 0;
+	/* Display regular cut buffers. */
 	for (cbp = sp->gp->cutq.lh_first; cbp != NULL; cbp = cbp->q.le_next) {
 		if (isdigit(cbp->name))
 			continue;
-		if (cbp->txthdr.next != NULL &&
-		    cbp->txthdr.next != &cbp->txthdr) {
+		if (cbp->textq.cqh_first != (void *)&cbp->textq) {
 			displayed = 1;
 			db(sp, cbp);
 		}
 	}
+	/* Display numbered buffers. */
 	for (cbp = sp->gp->cutq.lh_first; cbp != NULL; cbp = cbp->q.le_next) {
 		if (!isdigit(cbp->name))
 			continue;
-		if (cbp->txthdr.next != NULL &&
-		    cbp->txthdr.next != &cbp->txthdr) {
+		if (cbp->textq.cqh_first != (void *)&cbp->textq) {
 			displayed = 1;
 			db(sp, cbp);
 		}
@@ -69,7 +69,8 @@ db(sp, cbp)
 	(void)ex_printf(EXCOOKIE,
 	    "================ %s%s\n", charname(sp, cbp->name),
 	    F_ISSET(cbp, CB_LMODE) ? " (line mode)" : "");
-	for (tp = cbp->txthdr.next; tp != (TEXT *)&cbp->txthdr; tp = tp->next) {
+	for (tp = cbp->textq.cqh_first;
+	    tp != (void *)&cbp->textq; tp = tp->q.cqe_next) {
 		for (len = tp->len, p = tp->lb; len--;)
 			(void)ex_printf(EXCOOKIE, "%s", charname(sp, *p++));
 		(void)ex_printf(EXCOOKIE, "\n");
