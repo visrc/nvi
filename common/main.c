@@ -16,7 +16,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 10.15 1995/09/28 12:57:28 bostic Exp $ (Berkeley) $Date: 1995/09/28 12:57:28 $";
+static char sccsid[] = "$Id: main.c,v 10.16 1995/09/28 13:14:53 bostic Exp $ (Berkeley) $Date: 1995/09/28 13:14:53 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -121,12 +121,12 @@ editor(gp, argc, argv, rows, cols)
 			 * XXX
 			 * We should support multiple -c options.
 			 */
-			if (gp->icommand != NULL) {
+			if (gp->c_option != NULL) {
 				v_estr(gp->progname, 0,
 				    "only one -c command may be specified.");
 				return (1);
 			}
-			gp->icommand = optarg;
+			gp->c_option = optarg;
 			break;
 #ifdef DEBUG
 		case 'D':
@@ -272,8 +272,7 @@ editor(gp, argc, argv, rows, cols)
 		if (ex_exrc(sp))
 			goto err;
 		if (EXCMD_RUNNING(gp)) {
-			if (ex_cmd(sp))
-				goto err;
+			(void)ex_cmd(sp);
 			if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE)) {
 				if (screen_end(sp))
 					goto err;
@@ -335,7 +334,7 @@ editor(gp, argc, argv, rows, cols)
 	 * If we don't have a command-line option, switch into the right
 	 * editor now, so that we position default files correctly.
 	 */
-	if (gp->icommand == NULL) {
+	if (gp->c_option == NULL) {
 		F_CLR(sp, S_EX | S_VI);
 		F_SET(sp, LF_ISSET(S_EX | S_VI));
 	}
@@ -359,8 +358,7 @@ editor(gp, argc, argv, rows, cols)
 		if (file_init(sp, frp, NULL, 0))
 			goto err;
 		if (EXCMD_RUNNING(gp)) {
-			if (ex_cmd(sp))
-				goto err;
+			(void)ex_cmd(sp);
 			if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE)) {
 				if (screen_end(sp))
 					goto err;

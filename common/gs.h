@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 10.11 1995/09/28 13:02:45 bostic Exp $ (Berkeley) $Date: 1995/09/28 13:02:45 $
+ *	$Id: gs.h,v 10.12 1995/09/28 13:14:52 bostic Exp $ (Berkeley) $Date: 1995/09/28 13:14:52 $
  */
 
 #define	TEMPORARY_FILE_STRING	"/tmp"	/* Default temporary file name. */
@@ -86,7 +86,7 @@ struct _gs {
 	char	 *if_name;		/* Current associated file. */
 	recno_t	  if_lno;		/* Current associated line number. */
 
-	char	*icommand;		/* Ex initial, command-line command. */
+	char	*c_option;		/* Ex initial, command-line command. */
 
 #ifdef DEBUG
 	FILE	*tracefp;		/* Trace file pointer. */

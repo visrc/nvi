@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 10.9 1995/09/28 13:06:05 bostic Exp $ (Berkeley) $Date: 1995/09/28 13:06:05 $";
+static char sccsid[] = "$Id: exf.c,v 10.10 1995/09/28 13:14:47 bostic Exp $ (Berkeley) $Date: 1995/09/28 13:14:47 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -443,7 +443,7 @@ file_cinit(sp)
 	 */
 	nb = 0;
 	gp = sp->gp;
-	if (gp->icommand != NULL && !F_ISSET(sp->frp, FR_NEWFILE)) {
+	if (gp->c_option != NULL && !F_ISSET(sp->frp, FR_NEWFILE)) {
 		if (file_lline(sp, &sp->lno))
 			return;
 		if (sp->lno == 0) {
@@ -451,9 +451,9 @@ file_cinit(sp)
 			sp->cno = 0;
 		}
 		if (ex_run_str(sp,
-		    "-c option", gp->icommand, strlen(gp->icommand), 0))
+		    "-c option", gp->c_option, strlen(gp->c_option), 0))
 			return;
-		gp->icommand = NULL;
+		gp->c_option = NULL;
 	} else if (F_ISSET(sp, S_EX)) {
 		if (file_lline(sp, &sp->lno))
 			return;
