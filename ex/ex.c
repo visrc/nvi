@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.82 1993/12/22 17:01:57 bostic Exp $ (Berkeley) $Date: 1993/12/22 17:01:57 $";
+static char sccsid[] = "$Id: ex.c,v 8.83 1993/12/22 17:25:03 bostic Exp $ (Berkeley) $Date: 1993/12/22 17:25:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1448,9 +1448,11 @@ ex_comm_search(name, len)
 {
 	EXCMDLIST const *cp;
 
-	for (cp = cmds; cp->name != NULL; ++cp) {
+	for (cp = &cmds[C_APPEND]; cp->name != NULL; ++cp) {
 		if (cp->name[0] > name[0])
 			return (NULL);
+		if (cp->name[0] != name[0])
+			continue;
 		if (!memcmp(name, cp->name, len))
 			return (cp);
 	}
