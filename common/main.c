@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.59 1993/12/28 11:59:38 bostic Exp $ (Berkeley) $Date: 1993/12/28 11:59:38 $";
+static char sccsid[] = "$Id: main.c,v 8.60 1993/12/28 12:28:40 bostic Exp $ (Berkeley) $Date: 1993/12/28 12:28:40 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -231,16 +231,24 @@ main(argc, argv)
 
 	/*
 	 * Source the system, environment, ~user and local .exrc values.
-	 * If the environment exists, vi historically doesn't check ~user.
-	 * This is done before the file is read in because things in the
-	 * .exrc information can set, for example, the recovery directory.
+	 * Vi historically didn't check ~user/.exrc if the environment
+	 * variable EXINIT was set.  This is all done before the file is
+	 * read in because things in the .exrc information can set, for
+	 * example, the recovery directory.
+	 *
+	 * !!!
+	 * While nvi can handle any of the options settings of historic vi,
+	 * the converse is not true.  Since users are going to have to have
+	 * files and environmental variables that work with both, we use nvi
+	 * versions if they exist, otherwise the historic ones.
 	 */
 	if (!silent) {
 		if (exrc_isok(sp, _PATH_SYSEXRC, 1))
 			(void)ex_cfile(sp, NULL, _PATH_SYSEXRC);
 
-		/* Source the EXINIT environment variable. */
-		if ((p = getenv("EXINIT")) != NULL)
+		/* Source the {N,}EXINIT environment variable. */
+		if ((p = getenv("NEXINIT")) != NULL ||
+		    (p = getenv("EXINIT")) != NULL)
 			if ((p = strdup(p)) == NULL) {
 				msgq(sp, M_SYSERR, NULL);
 				goto err1;
