@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 9.4 1994/11/12 13:11:10 bostic Exp $ (Berkeley) $Date: 1994/11/12 13:11:10 $";
+static char sccsid[] = "$Id: v_itxt.c,v 9.5 1994/11/14 10:36:08 bostic Exp $ (Berkeley) $Date: 1994/11/14 10:36:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -301,7 +301,7 @@ v_change(sp, vp)
 	 * special case.
 	 */
 	if (vp->m_start.lno == vp->m_stop.lno &&
-	    file_gline(sp, vp->m_start.lno, &len) == NULL) {
+	    (p = file_gline(sp, vp->m_start.lno, &len)) == NULL) {
 		if (file_lline(sp, &lno))
 			return (1);
 		if (lno != 0) {
