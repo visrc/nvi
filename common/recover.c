@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 5.3 1993/05/16 19:53:06 bostic Exp $ (Berkeley) $Date: 1993/05/16 19:53:06 $";
+static char sccsid[] = "$Id: recover.c,v 5.4 1993/05/16 21:12:58 bostic Exp $ (Berkeley) $Date: 1993/05/16 21:12:58 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -252,8 +252,7 @@ rcv_list()
 		*p = '\0';
 
 		found = 1;
-		(void)printf("%s: %s",
-		    dp->d_name + 3, ctime(&sb.st_mtimespec.ts_sec));
+		(void)printf("%s: %s", dp->d_name + 3, ctime(&sb.st_mtime));
 	}
 	if (found == 0)
 		(void)printf("vi: no files to recover.\n");
