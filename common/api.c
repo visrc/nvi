@@ -12,7 +12,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: api.c,v 8.20 1996/07/02 19:37:47 bostic Exp $ (Berkeley) $Date: 1996/07/02 19:37:47 $";
+static const char sccsid[] = "$Id: api.c,v 8.21 1996/07/19 19:46:44 bostic Exp $ (Berkeley) $Date: 1996/07/19 19:46:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -199,6 +199,33 @@ api_setmark(sp, markname, mp)
 }
 
 /*
+ * api_nextmark --
+ *	Return the first mark if next not set, otherwise return the
+ *	subsequent mark.
+ *
+ * PUBLIC: int api_nextmark __P((SCR *, int, int *));
+ */
+int
+api_nextmark(sp, next, namep)
+	SCR *sp;
+	int next, *namep;
+{
+	LMARK *mp;
+
+	mp = sp->ep->marks.lh_first;
+	if (next)
+		for (; mp != NULL; mp = mp->q.le_next)
+			if (mp->name == *namep) {
+				mp = mp->q.le_next;
+				break;
+			}
+	if (mp == NULL)
+		return (1);
+	*namep = mp->name;
+	return (0);
+}
+
+/*
  * api_getcursor --
  *	Get the cursor.
  *
@@ -269,16 +296,18 @@ api_imessage(sp, text)
 }
 
 /*
- * api_iscreen
- *	Create a new screen and return its id.
+ * api_edit
+ *	Create a new screen and return its id 
+ *	or edit a new file in the current screen.
  *
- * PUBLIC: int api_iscreen __P((SCR *, char *, SCR **));
+ * PUBLIC: int api_edit __P((SCR *, char *, SCR **, int));
  */
 int
-api_iscreen(sp, file, spp)
+api_edit(sp, file, spp, newscreen)
 	SCR *sp;
 	char *file;
 	SCR **spp;
+	int newscreen;
 {
 	ARGS *ap[2], a;
 	EXCMD cmd;
@@ -288,7 +317,8 @@ api_iscreen(sp, file, spp)
 		ex_cadd(&cmd, &a, file, strlen(file));
 	} else
 		ex_cinit(&cmd, C_EDIT, 0, OOBLNO, OOBLNO, 0, NULL);
-	cmd.flags |= E_NEWSCREEN;			/* XXX */
+	if (newscreen)
+		cmd.flags |= E_NEWSCREEN;		/* XXX */
 	if (cmd.cmd->fn(sp, &cmd))
 		return (1);
 	*spp = sp->nextdisp;
