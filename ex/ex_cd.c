@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cd.c,v 8.6 1994/03/18 20:02:48 bostic Exp $ (Berkeley) $Date: 1994/03/18 20:02:48 $";
+static char sccsid[] = "$Id: ex_cd.c,v 8.7 1994/03/18 20:06:27 bostic Exp $ (Berkeley) $Date: 1994/03/18 20:06:27 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -116,14 +116,11 @@ ex_cdalloc(sp, str)
 		FREE_CDPATH(cdp);
 
 	/*
-	 * Create new queue.
-	 *
-	 * The environmental variable is delimited by colon characters.
-	 * Permit blanks as well, since user's are like to use them as
-	 * delimiters when manually entering a new value.
+	 * Create new queue.  The CDPATH environmental variable (and the
+	 * user's manual entry) are delimited by colon characters.
 	 */
 	for (p = t = str;; ++p) {
-		if (*p == '\0' || *p == ':' || isblank(*p)) {
+		if (*p == '\0' || *p == ':') {
 			/* Empty strings specify ".". */
 			if ((len = p - t) < 1) {
 				len = 1;
