@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 10.10 1995/10/19 11:10:50 bostic Exp $ (Berkeley) $Date: 1995/10/19 11:10:50 $";
+static char sccsid[] = "$Id: vs_line.c,v 10.11 1995/11/10 10:25:16 bostic Exp $ (Berkeley) $Date: 1995/11/10 10:25:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -59,6 +59,8 @@ vs_line(sp, smp, yp, xp)
 	 * don't touch it -- we'll get scrolling wrong, at best.
 	 */
 	if (!F_ISSET(sp, S_INPUT_INFO) && VIP(sp)->totalcount > 1)
+		return (0);
+	if (F_ISSET(sp, S_SCR_EXWROTE) && smp - HMAP != LASTLINE(sp))
 		return (0);
 
 	/*
