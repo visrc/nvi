@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_util.c,v 5.18 1993/02/19 11:25:40 bostic Exp $ (Berkeley) $Date: 1993/02/19 11:25:40 $";
+static char sccsid[] = "$Id: v_util.c,v 5.19 1993/02/19 13:40:14 bostic Exp $ (Berkeley) $Date: 1993/02/19 13:40:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -99,44 +99,53 @@ int
 v_msgflush(ep)
 	EXF *ep;
 {
-	size_t oldy, oldx;
-	register int ch, cnt;
+	MSG *mp;
+	size_t len, oldy, oldx;
+	int ch;
+	char *p;
 
 	/* Ring the bell. */
 	if (FF_ISSET(ep, F_BELLSCHED))
 		bell(ep);
 
 	/* May not be any messages. */
-	if (msgcnt == 0)
+	if (ep->msgp == NULL || ep->msgp->flags & M_EMPTY)
 		return (0);
 
 	/* Display the messages. */
 	getyx(stdscr, oldy, oldx);
 	MOVE(ep, SCREENSIZE(ep), 0);
 	clrtoeol();
-	for (cnt = 0;;) {
-		standout();
-		addstr(msglist[cnt]);
-		free(msglist[cnt]);
 
-		/*
-		 * XXX
-		 * This may be wrong -- should figure out how much of the
-		 * message can be displayed here, not in the msg() routine,
-		 * and then display it on multiple lines, as necessary.
-		 */
-		if (++cnt < msgcnt)
-			addstr(" [More ...]");
-		standend();
+#define	MCONTMSG	" [More ...]"
+	for (mp = ep->msgp, p = NULL;
+	    mp != NULL && !(mp->flags & M_EMPTY); mp = mp->next) {
+		if (mp->flags & M_BELL)
+			standout();
+
+		for (p = mp->mbuf; mp->len;) {
+			len = ep->cols - sizeof(MCONTMSG) - 1;
+			if (mp->len < len)
+				len = mp->len;
+			addnstr(p, len);
+			p += len;
+			mp->len -= len;
+		}
+
+		mp->flags |= M_EMPTY;
+
+		if (mp->flags & M_BELL)
+			standend();
 		clrtoeol();
 
-		if (cnt >= msgcnt)
-			break;
-
-		refresh();
-		while (special[ch = getkey(ep, 0)] != K_CR && !isspace(ch))
-			bell(ep);
-		MOVE(ep, SCREENSIZE(ep), 0);
+		if (mp->next != NULL && !(mp->flags & M_EMPTY)) {
+			addnstr(MCONTMSG, sizeof(MCONTMSG) - 1);
+			refresh();
+			while (special[ch = getkey(ep, 0)] != K_CR &&
+			    !isspace(ch))
+				bell(ep);
+			MOVE(ep, SCREENSIZE(ep), 0);
+		}
 	}
 	MOVE(ep, oldy, oldx);
 	refresh();
@@ -144,7 +153,6 @@ v_msgflush(ep)
 	/* Leave the message alone until after the next keystroke. */
 	FF_SET(ep, F_NEEDMERASE);
 
-	msgcnt = 0;
 	return (0);
 }
 

@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 5.30 1993/02/19 11:12:43 bostic Exp $ (Berkeley) $Date: 1993/02/19 11:12:43 $
+ *	$Id: exf.h,v 5.31 1993/02/19 13:39:38 bostic Exp $ (Berkeley) $Date: 1993/02/19 13:39:38 $
  */
 
 #ifndef _EXF_H_
@@ -31,6 +31,8 @@ typedef struct exf {
 #define	RCM_FNB		0x01		/* Column suck: first non-blank. */
 #define	RCM_LAST	0x02		/* Column suck: last. */
 	u_char rcmflags;
+
+	MSG *msgp;			/* Linked list of messages. */
 
 	/*
 	 * s_confirm:	confirm an action, yes or no.

@@ -4,18 +4,18 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: msg.h,v 5.1 1993/02/19 11:18:23 bostic Exp $ (Berkeley) $Date: 1993/02/19 11:18:23 $
+ *	$Id: msg.h,v 5.2 1993/02/19 13:39:43 bostic Exp $ (Berkeley) $Date: 1993/02/19 13:39:43 $
  */
-
-extern int msgcnt;		/* Current message count. */
-extern char *msglist[];		/* Message list. */
 
 #define	M_BELL		0x01	/* Schedule a bell event. */
 #define	M_DISPLAY	0x02	/* Always display. */
+#define	M_EMPTY		0x04	/* No message. */
+#define	M_ERROR		0x08	/* Bell, always display, inverse video. */
 
-#define	M_ERROR	(M_BELL | M_DISPLAY)
-
-void	bell __P((EXF *));
-void	bell_sched __P((EXF *));
-void	msg __P((EXF *, u_int, const char *, ...));
-void	msg_eflush __P((EXF *));
+typedef struct _msg {
+	struct _msg *next;	/* Linked list of messages. */
+	char *mbuf;		/* Message. */
+	size_t blen;		/* Message buffer length. */
+	size_t len;		/* Message length. */
+	u_int flags;		/* Flags. */
+} MSG;
