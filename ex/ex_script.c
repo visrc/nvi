@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_script.c,v 8.1 1993/10/09 12:13:20 bostic Exp $ (Berkeley) $Date: 1993/10/09 12:13:20 $";
+static char sccsid[] = "$Id: ex_script.c,v 8.2 1993/10/10 10:58:23 bostic Exp $ (Berkeley) $Date: 1993/10/10 10:58:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -320,45 +320,6 @@ err1:			if (matchprompt)
 	return (0);
 }
 
-
-/*
- * sscr_matchprompt --
- *	Check to see if a line matches the prompt.  Nul's indicate
- *	parts that can change, in both content and size.
- */
-static int
-sscr_matchprompt(sp, lp, line_len, lenp)
-	SCR *sp;
-	char *lp;
-	size_t line_len, *lenp;
-{
-	char *pp;
-	size_t prompt_len;
-
-	if (line_len < (prompt_len = sp->sh_prompt_len))
-		return (0);
-
-	for (pp = sp->sh_prompt;
-	    prompt_len && line_len; --prompt_len, --line_len) {
-		if (*pp == '\0') {
-			for (; prompt_len && *pp == '\0'; --prompt_len, ++pp);
-			if (!prompt_len)
-				return (0);
-			for (; line_len && *lp != *pp; --line_len, ++lp);
-			if (!line_len)
-				return (0);
-		}
-		if (*pp++ != *lp++)
-			break;
-	}
-
-	if (prompt_len)
-		return (0);
-	if (lenp != NULL)
-		*lenp = line_len;
-	return (1);
-}
-
 /*
  * sscr_input --
  *	Take a line from the shell and insert it into the file.
@@ -439,6 +400,44 @@ more:	switch (nr = read(sp->sh_out[0], endp, MINREAD)) {
 
 ret:	FREE_SPACE(sp, bp, blen);
 	return (rval);
+}
+
+/*
+ * sscr_matchprompt --
+ *	Check to see if a line matches the prompt.  Nul's indicate
+ *	parts that can change, in both content and size.
+ */
+static int
+sscr_matchprompt(sp, lp, line_len, lenp)
+	SCR *sp;
+	char *lp;
+	size_t line_len, *lenp;
+{
+	char *pp;
+	size_t prompt_len;
+
+	if (line_len < (prompt_len = sp->sh_prompt_len))
+		return (0);
+
+	for (pp = sp->sh_prompt;
+	    prompt_len && line_len; --prompt_len, --line_len) {
+		if (*pp == '\0') {
+			for (; prompt_len && *pp == '\0'; --prompt_len, ++pp);
+			if (!prompt_len)
+				return (0);
+			for (; line_len && *lp != *pp; --line_len, ++lp);
+			if (!line_len)
+				return (0);
+		}
+		if (*pp++ != *lp++)
+			break;
+	}
+
+	if (prompt_len)
+		return (0);
+	if (lenp != NULL)
+		*lenp = line_len;
+	return (1);
 }
 
 /*
