@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_screen.c,v 10.31 1996/02/04 18:58:00 bostic Exp $ (Berkeley) $Date: 1996/02/04 18:58:00 $";
+static char sccsid[] = "$Id: cl_screen.c,v 10.32 1996/02/20 20:55:40 bostic Exp $ (Berkeley) $Date: 1996/02/20 20:55:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -161,13 +161,11 @@ cl_quit(gp)
 	 * terminal modes.
 	 *
 	 * XXX
-	 * We could always do this but don't want to.  It may discard type-ahead
-	 * characters from the tty queue.
+	 * We always do this because it's too hard to figure out what curses
+	 * implementations get it wrong.  It may discard type-ahead characters
+	 * from the tty queue.
 	 */
-#ifndef FORCE_TERM_RESET
-	if (clp->in_ex)
-#endif
-		(void)tcsetattr(STDIN_FILENO, TCSADRAIN | TCSASOFT, &clp->orig);
+	(void)tcsetattr(STDIN_FILENO, TCSADRAIN | TCSASOFT, &clp->orig);
 
 	/*
 	 * If we were running vi when we quit, force the screen to scroll
@@ -309,6 +307,22 @@ cl_vi_init(sp)
 #endif
 	clp->vi_enter.c_cc[VQUIT] = _POSIX_VDISABLE;
 	clp->vi_enter.c_cc[VSUSP] = _POSIX_VDISABLE;
+
+	/*
+	 * XXX
+	 * OSF/1 doesn't turn off the <discard>, <literal-next> or <status>
+	 * characters when curses switches into raw mode.  It should be OK
+	 * to do it explicitly for everyone.
+	 */
+#ifdef VDISCARD
+	clp->vi_enter.c_cc[VDISCARD] = _POSIX_VDISABLE;
+#endif
+#ifdef VLNEXT
+	clp->vi_enter.c_cc[VLNEXT] = _POSIX_VDISABLE;
+#endif
+#ifdef VSTATUS
+	clp->vi_enter.c_cc[VSTATUS] = _POSIX_VDISABLE;
+#endif
 
 	/* Initialize terminal based information. */
 	if (cl_term_init(sp))
