@@ -1,4 +1,4 @@
-#	$Id: Makefile,v 8.27 1996/08/21 16:28:33 bostic Exp $ (Berkeley) $Date: 1996/08/21 16:28:33 $
+#	$Id: Makefile,v 8.28 1996/10/15 10:56:48 bostic Exp $ (Berkeley) $Date: 1996/10/15 10:56:48 $
 
 CAT=	dutch english french german ru_SU.KOI8-R swedish
 FILES=	../cl/*.c ../common/*.c ../ex/*.c ../tk/*.c ../vi/*.c
@@ -33,8 +33,8 @@ ${CAT}: english.base
 		grep 'NOT LEGAL' $@;					\
 	fi
 
-CHK=	dutch.check english.check german.check ru_SU.KOI8-R.check \
-	swedish.check
+CHK=	dutch.check english.check french.check german.check \
+	ru_SU.KOI8-R.check swedish.check
 check: ${CHK}
 ${CHK}: ${CAT}
 	@echo "... $@";							\
