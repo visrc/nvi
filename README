@@ -1,4 +1,4 @@
-#	$Id: README,v 8.93 1994/10/24 12:46:47 bostic Exp $ (Berkeley) $Date: 1994/10/24 12:46:47 $
+#	$Id: README,v 8.94 1994/10/24 12:50:11 bostic Exp $ (Berkeley) $Date: 1994/10/24 12:50:11 $
 
 This is the README for nex/nvi, a freely redistributable replacement for
 the ex/vi text editors originally distributed as part of the Fourth
@@ -22,7 +22,8 @@ specific information.
 
 The nex/nvi reference manual is in USD.doc/vi.ref/, and the manual page
 is in USD.doc/vi.man/.  The files ending in the letters ".ps" are already
-formatted Postscript versions.
+formatted Postscript versions, the files ending in the letters ".txt" are
+already formatted flat text versions.
 
 If you have any questions about nex/nvi, or problems making it work,
 please contact me by electronic mail at one of the following addresses:
