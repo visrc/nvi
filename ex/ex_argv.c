@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 10.10 1995/10/17 08:58:52 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:58:52 $";
+static char sccsid[] = "$Id: ex_argv.c,v 10.11 1995/10/17 11:43:11 bostic Exp $ (Berkeley) $Date: 1995/10/17 11:43:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -482,6 +482,13 @@ argv_sexp(sp, bpp, blenp, lenp)
 	size_t blen, len;
 	int ch, rval, std_output[2];
 	char *bp, *p, *sh, *sh_path;
+
+	/* Secure means no shell access. */
+	if (O_ISSET(sp, O_SECURE)) {
+		msgq(sp, M_ERR,
+"289|Shell expansions not supported when the secure edit option is set");
+		return (1);
+	}
 
 	bp = *bpp;
 	blen = *blenp;

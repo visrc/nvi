@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 10.13 1995/10/04 12:30:18 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:30:18 $";
+static char sccsid[] = "$Id: options.c,v 10.14 1995/10/17 11:42:29 bostic Exp $ (Berkeley) $Date: 1995/10/17 11:42:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -143,6 +143,8 @@ OPTLIST const optlist[] = {
 	{"scroll",	NULL,		OPT_NUM,	0},
 /* O_SECTIONS	    4BSD */
 	{"sections",	f_section,	OPT_STR,	0},
+/* O_SECURE	  4.4BSD */
+	{"secure",	NULL,		OPT_0BOOL,	OPT_NOUNSET},
 /* O_SHELL	    4BSD */
 	{"shell",	NULL,		OPT_STR,	0},
 /* O_SHELLMETA	  4.4BSD */
@@ -516,6 +518,14 @@ found:		if (op == NULL) {
 		switch (op->type) {
 		case OPT_0BOOL:
 		case OPT_1BOOL:
+			/* Security. */
+			if (F_ISSET(op, OPT_NOUNSET) && turnoff) {
+				msgq_str(sp, M_ERR, name,
+				    "035|set: %s may not be turned off");
+				rval = 1;
+				break;
+			}
+
 			if (equals) {
 				msgq_str(sp, M_ERR, name,
 			    "034|set: [no]%s option doesn't take a value");

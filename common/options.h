@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: options.h,v 10.3 1995/09/21 10:56:14 bostic Exp $ (Berkeley) $Date: 1995/09/21 10:56:14 $
+ *	$Id: options.h,v 10.4 1995/10/17 11:42:37 bostic Exp $ (Berkeley) $Date: 1995/10/17 11:42:37 $
  */
 
 struct _option {
@@ -32,7 +32,8 @@ struct _optlist {
 
 #define	OPT_ADISP	0x01		/* Always display the option. */
 #define	OPT_NDISP	0x02		/* Never display the option. */
-#define	OPT_NOSAVE	0x04		/* Mkexrc command doesn't save. */
+#define	OPT_NOSAVE	0x04		/* Option may not be unset. */
+#define	OPT_NOUNSET	0x08		/* Mkexrc command doesn't save. */
 	u_int8_t flags;
 };
 

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 10.15 1995/10/17 11:00:14 bostic Exp $ (Berkeley) $Date: 1995/10/17 11:00:14 $";
+static char sccsid[] = "$Id: ex_filter.c,v 10.16 1995/10/17 11:43:34 bostic Exp $ (Berkeley) $Date: 1995/10/17 11:43:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -52,6 +52,12 @@ ex_filter(sp, cmdp, fm, tm, rp, cmd, ftype)
 	recno_t nread;
 	int input[2], output[2], rval;
 	char *name;
+
+	/* Secure means no shell access. */
+	if (O_ISSET(sp, O_SECURE)) {
+		ex_emsg(sp, cmdp->cmd->name, EXM_SECURE_F);
+		return (1);
+	}
 
 	/* Set return cursor position; guard against a line number of zero. */
 	*rp = *fm;
@@ -99,7 +105,7 @@ ex_filter(sp, cmdp, fm, tm, rp, cmd, ftype)
 	 */
 	if (ftype == FILTER_READ && F_ISSET(sp, S_VI)) {
 		if (sp->gp->scr_screen(sp, S_EX)) {
-			ex_emsg(sp, cmdp->cmd->name, EXM_NOCANON);
+			ex_emsg(sp, cmdp->cmd->name, EXM_NOCANON_F);
 			return (1);
 		}
 		F_SET(sp, S_SCREEN_READY);

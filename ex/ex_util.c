@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_util.c,v 10.12 1995/10/04 12:35:58 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:35:58 $";
+static char sccsid[] = "$Id: ex_util.c,v 10.13 1995/10/17 11:43:06 bostic Exp $ (Berkeley) $Date: 1995/10/17 11:43:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -162,7 +162,11 @@ ex_emsg(sp, p, which)
 		break;
 	case EXM_NOCANON:
 		msgq(sp, M_ERR,
-	"272|That form of the %s command requires the ex terminal interface",
+		    "272|The %s command requires the ex terminal interface", p);
+		break;
+	case EXM_NOCANON_F:
+		msgq(sp, M_ERR,
+		    "272|That form of %s requires the ex terminal interface",
 		    p);
 		break;
 	case EXM_NOFILEYET:
@@ -181,6 +185,14 @@ ex_emsg(sp, p, which)
 		break;
 	case EXM_NOSUSPEND:
 		msgq(sp, M_ERR, "230|This screen may not be suspended");
+		break;
+	case EXM_SECURE:
+		msgq(sp, M_ERR,
+"290|The %s command is not supported when the secure edit option is set", p);
+		break;
+	case EXM_SECURE_F:
+		msgq(sp, M_ERR,
+"290|That form of %s is not supported when the secure edit option is set", p);
 		break;
 	case EXM_USAGE:
 		msgq(sp, M_ERR, "174|Usage: %s", p);
