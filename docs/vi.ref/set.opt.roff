@@ -5,7 +5,7 @@
 .\"
 .\" See the LICENSE file for redistribution information.
 .\"
-.\"     $Id: set.opt.roff,v 8.65 1996/08/17 17:47:02 bostic Exp $ (Berkeley) $Date: 1996/08/17 17:47:02 $
+.\"     $Id: set.opt.roff,v 8.66 1996/10/10 21:38:25 bostic Exp $ (Berkeley) $Date: 1996/10/10 21:38:25 $
 .\"
 .SH 1 "Set Options"
 .pp
@@ -358,12 +358,13 @@ more information.
 .CO Vi
 only.
 If the first non-empty line of the file begins with the string
+.QT # ,
 .QT /\&*
 or
-.QT # ,
+.QT // ,
 this option causes
 .CO vi
-to skip to the end of that C-language or shell comment (probably a
+to skip to the end of that shell, C or C++ comment (probably a
 terribly boring legal notice) before displaying the file.
 .KY directory
 .IP "directory, dir [environment variable TMPDIR, or /tmp]"
