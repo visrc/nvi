@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: set.opt.roff,v 8.32 1994/09/27 14:25:02 bostic Exp $ (Berkeley) $Date: 1994/09/27 14:25:02 $
+.\"     $Id: set.opt.roff,v 8.33 1994/09/29 17:09:32 bostic Exp $ (Berkeley) $Date: 1994/09/29 17:09:32 $
 .\"
 .SH 1 "Set Options"
 .pp
@@ -723,11 +723,6 @@ option and by the
 and
 .CO shift
 commands.
-.KY showdirty
-.IP "showdirty [off]"
-.CO Vi
-only.
-Display an asterisk on the colon command line if the file has been modified.
 .KY showmatch
 .IP "showmatch, sm [off]"
 .CO Vi
@@ -751,8 +746,10 @@ option for more information.
 only.
 This option causes
 .CO vi
-to display a string identifying the current editor mode on the
-colon command line.
+to display a string identifying the current editor mode on the colon
+command line.
+The string is preceded by an asterisk (``*'') if the file has been
+modified since it was last completely written,
 .KY sidescroll
 .IP "sidescroll [16]"
 .CO Vi
