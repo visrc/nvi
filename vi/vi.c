@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.17 1992/06/05 11:04:57 bostic Exp $ (Berkeley) $Date: 1992/06/05 11:04:57 $";
+static char sccsid[] = "$Id: vi.c,v 5.18 1992/06/07 15:16:44 bostic Exp $ (Berkeley) $Date: 1992/06/07 15:16:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,7 +30,7 @@ static int getcount __P((int, u_long *, int *));
 static int getkeyword __P((VICMDARG *, u_int));
 static int getmotion __P((VICMDARG *, MARK *, MARK *));
 
-static VICMDARG dot, dotmotion;
+static VICMDARG cmd, dot, dotmotion;
 
 /*
  * vi --
@@ -41,7 +41,6 @@ vi()
 {
 	register VICMDARG *vp;
 	MARK fm, tm, m;
-	VICMDARG cmd;
 	u_int flags;
 	int erase;
 
