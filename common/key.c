@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 9.5 1994/11/18 17:27:11 bostic Exp $ (Berkeley) $Date: 1994/11/18 17:27:11 $";
+static char sccsid[] = "$Id: key.c,v 9.6 1994/12/02 09:55:08 bostic Exp $ (Berkeley) $Date: 1994/12/02 09:55:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -760,7 +760,9 @@ term_window(sp, sigwinch)
 	SCR *sp;
 	int sigwinch;
 {
+#ifdef TIOCGWINSZ
 	struct winsize win;
+#endif
 	size_t col, row;
 	int nf, rval;
 	ARGS *argv[2], a, b;
