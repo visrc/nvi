@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.93 1994/05/21 09:52:05 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:52:05 $";
+static char sccsid[] = "$Id: main.c,v 8.94 1994/05/23 10:22:29 bostic Exp $ (Berkeley) $Date: 1994/05/23 10:22:29 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -50,7 +50,7 @@ static char sccsid[] = "$Id: main.c,v 8.93 1994/05/21 09:52:05 bostic Exp $ (Ber
 
 enum rc { NOEXIST, NOPERM, OK };
 
-static enum rc	 exrc_isok __P((SCR *, struct stat *, char *, int));
+static enum rc	 exrc_isok __P((SCR *, struct stat *, char *, int, int));
 static void	 gs_end __P((GS *));
 static GS	*gs_init __P((void));
 static void	 obsolete __P((char *[]));
@@ -276,7 +276,7 @@ main(argc, argv)
 	 * anyone depending on it.
 	 */
 	if (!silent) {
-		switch (exrc_isok(sp, &hsb, _PATH_SYSEXRC, 1)) {
+		switch (exrc_isok(sp, &hsb, _PATH_SYSEXRC, 1, 0)) {
 		case NOEXIST:
 		case NOPERM:
 			break;
@@ -299,11 +299,11 @@ main(argc, argv)
 		else if ((p = getenv("HOME")) != NULL && *p) {
 			(void)snprintf(path,
 			    sizeof(path), "%s/%s", p, _PATH_NEXRC);
-			switch (exrc_isok(sp, &hsb, path, 0)) {
+			switch (exrc_isok(sp, &hsb, path, 0, 1)) {
 			case NOEXIST:
 				(void)snprintf(path,
 				    sizeof(path), "%s/%s", p, _PATH_EXRC);
-				if (exrc_isok(sp, &hsb, path, 0) == OK)
+				if (exrc_isok(sp, &hsb, path, 0, 1) == OK)
 					(void)ex_cfile(sp, NULL, path);
 				break;
 			case NOPERM:
@@ -315,9 +315,10 @@ main(argc, argv)
 		}
 
 		if (O_ISSET(sp, O_EXRC))
-			switch (exrc_isok(sp, &lsb, _PATH_NEXRC, 0)) {
+			switch (exrc_isok(sp, &lsb, _PATH_NEXRC, 0, 0)) {
 			case NOEXIST:
-				if (exrc_isok(sp, &lsb, _PATH_EXRC, 0) == OK &&
+				if (exrc_isok(sp,
+				    &lsb, _PATH_EXRC, 0, 0) == OK &&
 				    (lsb.st_dev != hsb.st_dev ||
 				    lsb.st_ino != hsb.st_ino))
 					(void)ex_cfile(sp, NULL, _PATH_EXRC);
@@ -556,13 +557,14 @@ gs_end(gp)
  *	Check a .exrc file for source-ability.
  *
  * !!!
- * Historically, vi read both $HOME and local .exrc file if they were owned
+ * Historically, vi read the $HOME and local .exrc files if they were owned
  * by the user's real ID, or the "sourceany" option was set, regardless of
  * any other considerations.  We no longer support the sourceany option as
- * it's a security problem of mammoth proportions.  We require that the file
- * be owned by root (for the system .exrc files) or the user's effective ID
- * (for any of the .exrc files), and require that it not be writeable by
- * anyone other than the owner.
+ * it's a security problem of mammoth proportions.  We require the system
+ * .exrc file to be owned by root, the $HOME .exrc file to be owned by the
+ * user's effective ID (or that the user's effective ID be root) and the
+ * local .exrc files to be owned by the user's effective ID.  In all cases,
+ * the file cannot be writeable by anyone other than its owner.
  * 
  * In O'Reilly ("Learning the VI Editor", Fifth Ed., May 1992, page 106),
  * it notes that System V release 3.2 and later has an option "[no]exrc".
@@ -570,7 +572,7 @@ gs_end(gp)
  * is set.  The default for the exrc option was off, so, by default, local
  * .exrc files were not read.  The problem this was intended to solve was
  * that System V permitted users to give away files, so there's no possible
- * ownership/writeability test that the file is safe.
+ * ownership or writeability test to ensure that the file is safe.
  * 
  * POSIX 1003.2-1992 standardized exrc as an option.  It required the exrc
  * option to be off by default, thus local .exrc files are not to be read
@@ -587,33 +589,29 @@ gs_end(gp)
  * files.
  */
 static enum rc
-exrc_isok(sp, sbp, path, rootok)
+exrc_isok(sp, sbp, path, rootown, rootid)
 	SCR *sp;
 	struct stat *sbp;
 	char *path;
-	int rootok;
+	int rootown, rootid;
 {
-	uid_t uid;
+	uid_t euid;
 	char *emsg, buf[MAXPATHLEN];
 
 	/* Check for the file's existence. */
 	if (stat(path, sbp))
 		return (NOEXIST);
 
-	/* Owned by the user or root. */
-	uid = geteuid();
-	if (rootok) {
-		if (sbp->st_uid != uid && sbp->st_uid != 0) {
-			emsg = "not owned by you or root";
-			goto denied;
-		}
-	} else
-		if (sbp->st_uid != uid) {
-			emsg = "not owned by you";
-			goto denied;
-		}
+	/* Check ownership permissions. */
+	euid = geteuid();
+	if (!(rootown && sbp->st_uid == 0) && 
+	    !(rootid && euid == 0) && sbp->st_uid != euid) {
+		emsg = rootown ?
+		    "not owned by you or root" : "not owned by you";
+		goto denied;
+	}
 
-	/* Not writeable by anyone but the owner. */
+	/* Check writeability. */
 	if (sbp->st_mode & (S_IWGRP | S_IWOTH)) {
 		emsg = "writeable by a user other than the owner";
 denied:		if (strchr(path, '/') == NULL &&
