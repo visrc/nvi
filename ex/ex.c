@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 10.13 1995/10/02 16:52:50 bostic Exp $ (Berkeley) $Date: 1995/10/02 16:52:50 $";
+static char sccsid[] = "$Id: ex.c,v 10.14 1995/10/03 10:23:12 bostic Exp $ (Berkeley) $Date: 1995/10/03 10:23:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1346,8 +1346,13 @@ addr_verify:
 		F_CLR(ecp, E_NRSEP);
 	}
 
-	/* Call the underlying function for the ex command. */
-	if (ecp->cmd->fn(sp, ecp)) {
+	/*
+	 * Call the underlying function for the ex command.
+	 *
+	 * XXX
+	 * Interrupts behave like errors, for now.
+	 */
+	if (ecp->cmd->fn(sp, ecp) || INTERRUPTED(sp)) {
 		if (!F_ISSET(gp, G_STDIN_TTY))
 			F_SET(sp, S_EXIT_FORCE);
 		goto err;
@@ -1525,10 +1530,6 @@ addr_verify:
 			ex_discard(sp);
 		goto rsuccess;
 	}
-
-	/* The @/global commands may be infinitely looping, check interrupts. */
-	if (INTERRUPTED(sp))
-		return (0);
 
 	goto loop;
 	/* NOTREACHED */
