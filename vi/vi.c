@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.60 1994/04/09 18:21:08 bostic Exp $ (Berkeley) $Date: 1994/04/09 18:21:08 $";
+static char sccsid[] = "$Id: vi.c,v 8.61 1994/04/10 13:07:58 bostic Exp $ (Berkeley) $Date: 1994/04/10 13:07:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -150,7 +150,8 @@ vi(sp, ep)
 		/* Increment the command count. */
 		++sp->ccnt;
 
-		/* Save the mode and call the function. */
+		/* Clear interrupt bits, save the mode and call the function. */
+		F_CLR(sp, S_INTERRUPTED | S_INTERRUPTIBLE);
 		saved_mode = F_ISSET(sp, S_SCREENS | S_MAJOR_CHANGE);
 		if ((vp->kp->func)(sp, ep, vp))
 			goto err;
