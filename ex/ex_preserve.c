@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_preserve.c,v 8.9 1994/05/21 09:38:18 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:38:18 $";
+static char sccsid[] = "$Id: ex_preserve.c,v 8.10 1994/06/27 11:22:15 bostic Exp $ (Berkeley) $Date: 1994/06/27 11:22:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -75,14 +75,10 @@ ex_recover(sp, ep, cmdp)
 	ARGS *ap;
 	FREF *frp;
 
-	/* Get a file structure for the file. */
 	ap = cmdp->argv[0];
-	if ((frp = file_add(sp, sp->frp, ap->bp, 1)) == NULL)
-		return (1);
-	set_alt_name(sp, ap->bp);
 
-	/* Set the recover bit. */
-	F_SET(frp, FR_RECOVER);
+	/* Set the alternate file name. */
+	set_alt_name(sp, ap->bp);
 
 	/*
 	 * Check for modifications.  Autowrite did not historically
@@ -94,6 +90,13 @@ ex_recover(sp, ep, cmdp)
 		    "Modified since last write; write or use ! to override");
 		return (1);
 	}
+
+	/* Get a file structure for the file. */
+	if ((frp = file_add(sp, ap->bp)) == NULL)
+		return (1);
+
+	/* Set the recover bit. */
+	F_SET(frp, FR_RECOVER);
 
 	/* Switch files. */
 	if (file_init(sp, frp, NULL, F_ISSET(cmdp, E_FORCE)))

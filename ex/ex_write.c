@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 8.32 1994/05/21 09:38:29 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:38:29 $";
+static char sccsid[] = "$Id: ex_write.c,v 8.33 1994/06/27 11:22:22 bostic Exp $ (Berkeley) $Date: 1994/06/27 11:22:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -72,7 +72,7 @@ ex_wq(sp, ep, cmdp)
 
 	force = F_ISSET(cmdp, E_FORCE);
 	if (!force && sp->ccnt != sp->q_ccnt + 1 &&
-	    ep->refcnt <= 1 && file_unedited(sp) != NULL) {
+	    ep->refcnt <= 1 && sp->cargv != NULL && sp->cargv[1] != NULL) {
 		sp->q_ccnt = sp->ccnt;
 		msgq(sp, M_ERR,
 		    "More files to edit; use \":n\" to go to the next file");
@@ -116,7 +116,7 @@ ex_xit(sp, ep, cmdp)
 
 	force = F_ISSET(cmdp, E_FORCE);
 	if (!force && sp->ccnt != sp->q_ccnt + 1 &&
-	    ep->refcnt <= 1 && file_unedited(sp) != NULL) {
+	    ep->refcnt <= 1 && sp->cargv != NULL && sp->cargv[1] != NULL) {
 		sp->q_ccnt = sp->ccnt;
 		msgq(sp, M_ERR,
 		    "More files to edit; use \":n\" to go to the next file");
@@ -147,6 +147,8 @@ exwr(sp, ep, cmdp, cmd)
 	LF_INIT(FS_POSSIBLE);
 	if (F_ISSET(cmdp, E_FORCE))
 		LF_SET(FS_FORCE);
+	if (cmd != WRITE)
+		LF_SET(FS_WILLEXIT);
 
 	/* Skip any leading whitespace. */
 	if (cmdp->argc != 0)

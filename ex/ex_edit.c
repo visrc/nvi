@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 8.16 1994/05/21 09:38:07 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:38:07 $";
+static char sccsid[] = "$Id: ex_edit.c,v 8.17 1994/06/27 11:22:12 bostic Exp $ (Berkeley) $Date: 1994/06/27 11:22:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -60,17 +60,18 @@ ex_edit(sp, ep, cmdp)
 		 * special exit processing of temporary files, and reusing
 		 * them is tricky.
 		 */
-		if (frp->cname != NULL) {
-			if ((frp = file_add(sp, frp, frp->cname, 1)) == NULL)
+		if (F_ISSET(frp, FR_TMPFILE)) {
+			if ((frp = file_add(sp, NULL)) == NULL)
 				return (1);
-			set_alt_name(sp, sp->frp->cname);
-		} else if (frp->name == NULL)
-			if ((frp = file_add(sp, frp, NULL, 1)) == NULL)
+		} else {
+			if ((frp = file_add(sp, frp->name)) == NULL)
 				return (1);
+			set_alt_name(sp, sp->frp->name);
+		}
 		break;
 	case 1:
 		ap = cmdp->argv[0];
-		if ((frp = file_add(sp, sp->frp, ap->bp, 1)) == NULL)
+		if ((frp = file_add(sp, ap->bp)) == NULL)
 			return (1);
 		set_alt_name(sp, ap->bp);
 		break;

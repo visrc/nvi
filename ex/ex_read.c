@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 8.29 1994/05/21 09:38:19 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:38:19 $";
+static char sccsid[] = "$Id: ex_read.c,v 8.30 1994/06/27 11:22:16 bostic Exp $ (Berkeley) $Date: 1994/06/27 11:22:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -97,7 +97,7 @@ ex_read(sp, ep, cmdp)
 		 * No arguments, read the current file.
 		 * Doesn't set the alternate file name.
 		 */
-		name = FILENAME(sp->frp);
+		name = sp->frp->name;
 		break;
 	case 2:
 		/*

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.80 1994/06/26 09:56:34 bostic Exp $ (Berkeley) $Date: 1994/06/26 09:56:34 $";
+static char sccsid[] = "$Id: exf.c,v 8.81 1994/06/27 11:21:48 bostic Exp $ (Berkeley) $Date: 1994/06/27 11:21:48 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -54,30 +54,22 @@ static char sccsid[] = "$Id: exf.c,v 8.80 1994/06/26 09:56:34 bostic Exp $ (Berk
  * not just the previously edited file.
  */
 FREF *
-file_add(sp, frp_append, name, ignore)
+file_add(sp, name)
 	SCR *sp;
-	FREF *frp_append;
 	CHAR_T *name;
-	int ignore;
 {
 	FREF *frp;
-	char *p;
 
 	/*
 	 * Return it if it already exists.  Note that we test against the
-	 * user's current name, whatever that happens to be, including if
-	 * it's a temporary file.  If the user is trying to set an argument
-	 * list, the ignore argument will be on -- if we're ignoring the
-	 * file turn off the ignore bit, so it's back in the argument list.
+	 * user's name, whatever that happens to be, including if it's a
+	 * temporary file.
 	 */
 	if (name != NULL)
 		for (frp = sp->frefq.cqh_first;
 		    frp != (FREF *)&sp->frefq; frp = frp->q.cqe_next)
-			if ((p = FILENAME(frp)) != NULL && !strcmp(p, name)) {
-				if (!ignore)
-					F_CLR(frp, FR_IGNORE);
+			if (!strcmp(frp->name, name))
 				return (frp);
-			}
 
 	/* Allocate and initialize the FREF structure. */
 	CALLOC(sp, frp, FREF *, 1, sizeof(FREF));
@@ -89,7 +81,6 @@ file_add(sp, frp_append, name, ignore)
 	 * for something temporary, file_init() will allocate the file
 	 * name.  Temporary files are always ignored.
 	 */
-#define	TEMPORARY_FILE_STRING	"/tmp"
 	if (name != NULL && strcmp(name, TEMPORARY_FILE_STRING) &&
 	    (frp->name = strdup(name)) == NULL) {
 		FREE(frp, sizeof(FREF));
@@ -97,83 +88,10 @@ file_add(sp, frp_append, name, ignore)
 		return (NULL);
 	}
 
-	/* Only the initial argument list is "remembered". */
-	if (ignore)
-		F_SET(frp, FR_IGNORE);
-
 	/* Append into the chain of file names. */
-	if (frp_append != NULL) {
-		CIRCLEQ_INSERT_AFTER(&sp->frefq, frp_append, frp, q);
-	} else
-		CIRCLEQ_INSERT_TAIL(&sp->frefq, frp, q);
+	CIRCLEQ_INSERT_TAIL(&sp->frefq, frp, q);
 
 	return (frp);
-}
-
-/*
- * file_first --
- *	Return the first file name for editing, if any.
- */
-FREF *
-file_first(sp)
-	SCR *sp;
-{
-	FREF *frp;
-
-	/* Return the first file name. */
-	for (frp = sp->frefq.cqh_first;
-	    frp != (FREF *)&sp->frefq; frp = frp->q.cqe_next)
-		if (!F_ISSET(frp, FR_IGNORE))
-			return (frp);
-	return (NULL);
-}
-
-/*
- * file_next --
- *	Return the next file name, if any.
- */
-FREF *
-file_next(sp, frp)
-	SCR *sp;
-	FREF *frp;
-{
-	while ((frp = frp->q.cqe_next) != (FREF *)&sp->frefq)
-		if (!F_ISSET(frp, FR_IGNORE))
-			return (frp);
-	return (NULL);
-}
-
-/*
- * file_prev --
- *	Return the previous file name, if any.
- */
-FREF *
-file_prev(sp, frp)
-	SCR *sp;
-	FREF *frp;
-{
-	while ((frp = frp->q.cqe_prev) != (FREF *)&sp->frefq)
-		if (!F_ISSET(frp, FR_IGNORE))
-			return (frp);
-	return (NULL);
-}
-
-/*
- * file_unedited --
- *	Return if there are files that aren't ignored and are unedited.
- */
-FREF *
-file_unedited(sp)
-	SCR *sp;
-{
-	FREF *frp;
-
-	/* Return the next file name. */
-	for (frp = sp->frefq.cqh_first;
-	    frp != (FREF *)&sp->frefq; frp = frp->q.cqe_next)
-		if (!F_ISSET(frp, FR_EDITED | FR_IGNORE))
-			return (frp);
-	return (NULL);
 }
 
 /*
@@ -194,7 +112,7 @@ file_init(sp, frp, rcv_name, force)
 	struct stat sb;
 	size_t psize;
 	int fd;
-	char *p, *oname, tname[MAXPATHLEN];
+	char *oname, tname[MAXPATHLEN];
 
 	/*
 	 * If the file is a recovery file, let the recovery code handle it.
@@ -205,12 +123,11 @@ file_init(sp, frp, rcv_name, force)
 	 */
 	if (F_ISSET(frp, FR_RECOVER)) {
 		F_CLR(frp, FR_RECOVER);
-		if (!rcv_read(sp, frp))
-			return (0);
+		return (rcv_read(sp, frp));
 	}
 
 	/*
-	 * Required ep initialization:
+	 * Required EXF initialization:
 	 *	Flush the line caches.
 	 *	Default recover mail file fd to -1.
 	 *	Set initial EXF flag bits.
@@ -223,21 +140,25 @@ file_init(sp, frp, rcv_name, force)
 
 	/*
 	 * If no name or backing file, create a backing temporary file, saving
-	 * the temp file name so can later unlink it.  Repoint the name to the
-	 * temporary name (we display it to the user until they rename it).
-	 * There are some games we play with the FR_FREE_TNAME and FR_NONAME
-	 * flags (see ex/ex_file.c) to make sure that the temporary memory gets
-	 * free'd up.
+	 * the temp file name so we can later unlink it.  If the user never
+	 * named this file, copy the temporary file name to the real name (we
+	 * display that until the user renames it).
 	 */
-	if ((oname = FILENAME(frp)) == NULL || stat(oname, &sb)) {
-		(void)snprintf(tname, sizeof(tname),
-		    "%s/vi.XXXXXX", O_STR(sp, O_DIRECTORY));
+	if ((oname = frp->name) == NULL || stat(oname, &sb)) {
+		(void)snprintf(tname,
+		    sizeof(tname), "%s/vi.XXXXXX", O_STR(sp, O_DIRECTORY));
 		if ((fd = mkstemp(tname)) == -1) {
 			msgq(sp, M_SYSERR, "Temporary file");
 			goto err;
 		}
 		(void)close(fd);
-		if ((frp->tname = strdup(tname)) == NULL) {
+
+		if (frp->name == NULL)
+			F_SET(frp, FR_TMPFILE);
+		if ((frp->tname = strdup(tname)) == NULL ||
+		    frp->name == NULL && (frp->name = strdup(tname)) == NULL) {
+			if (frp->tname != NULL)
+				free(frp->tname);
 			msgq(sp, M_SYSERR, NULL);
 			(void)unlink(tname);
 			goto err;
@@ -246,7 +167,10 @@ file_init(sp, frp, rcv_name, force)
 		psize = 4 * 1024;
 		F_SET(frp, FR_NEWFILE);
 	} else {
-		/* Try to keep it at 10 pages or less per file. */
+		/*
+		 * Try to keep it at 10 pages or less per file.  This
+		 * isn't friendly on a loaded machine, btw.
+		 */
 		if (sb.st_size < 40 * 1024)
 			psize = 4 * 1024;
 		else if (sb.st_size < 320 * 1024)
@@ -267,7 +191,7 @@ file_init(sp, frp, rcv_name, force)
 	oinfo.psize = psize;
 	oinfo.flags = F_ISSET(sp->gp, G_SNAPSHOT) ? R_SNAPSHOT : 0;
 	if (rcv_name == NULL) {
-		if (!rcv_tmp(sp, ep, FILENAME(frp)))
+		if (!rcv_tmp(sp, ep, frp->name))
 			oinfo.bfname = ep->rcv_path;
 	} else {
 		if ((ep->rcv_path = strdup(rcv_name)) == NULL) {
@@ -334,24 +258,37 @@ file_init(sp, frp, rcv_name, force)
 	 */
 	if (O_ISSET(sp, O_READONLY) || !F_ISSET(frp, FR_NEWFILE) &&
 	    (!(sb.st_mode & (S_IWUSR | S_IWGRP | S_IWOTH)) ||
-	    access(FILENAME(frp), W_OK)))
+	    access(frp->name, W_OK)))
 		F_SET(frp, FR_RDONLY);
 	else
 		F_CLR(frp, FR_RDONLY);
 
 	/*
-	 * Close the previous file; if that fails, close the new one
-	 * and run for the border.
+	 * Close the previous file; if that fails, close the new one and
+	 * run for the border.
+	 *
+	 * !!!
+	 * There's a nasty special case.  If the user edits a temporary file,
+	 * and then does an ":e! %", we need to re-initialize the backing
+	 * file, but we can't change the name.  (It's worse -- we're dealing
+	 * with *names* here, we can't even detect that it happened.)  Set a
+	 * flag so that the file_end routine ignores the backing information
+	 * of the old file if it happens to be the same as the new one.
+	 *
+	 * !!!
+	 * Side-effect: after the call to file_end(), sp->frp may be NULL.
 	 */
+	F_SET(frp, FR_DONTDELETE);
 	if (sp->ep != NULL && file_end(sp, sp->ep, force)) {
 		(void)file_end(sp, ep, 1);
 		goto err;
 	}
+	F_CLR(frp, FR_DONTDELETE);
 
 	/*
 	 * 4.4BSD supports locking in the open call, other systems don't.
 	 * Since the user can't interrupt us between the open and here,
-	 * it's a don't care.
+	 * we Don't Care.
 	 *
 	 * !!!
 	 * We need to distinguish a lock not being available for the file
@@ -359,7 +296,7 @@ file_init(sp, frp, rcv_name, force)
 	 * or EWOULDBLOCK is the former.  There isn't a portable way to do
 	 * this.
 	 *
-	 * If it's a recovery file, it's already locked.
+	 * If it's a recovery file, it should already be locked.
 	 *
 	 * XXX
 	 * The locking is flock(2) style, not fcntl(2).  The latter is known
@@ -381,28 +318,17 @@ file_init(sp, frp, rcv_name, force)
 			F_SET(frp, FR_UNLOCKED);
 
 	/*
-	 * Set the previous file pointer and the alternate file name to be
-	 * the file we're about to discard.
+	 * Set the alternate file name to be the file we've just discarded.
 	 *
 	 * !!!
 	 * If the current file was a temporary file, the call to file_end()
 	 * unlinked it and free'd the name.  So, there is no previous file,
 	 * and there is no alternate file name.  This matches historical
 	 * practice, although in historical vi it could only happen as the
-	 * result of the initial command, i.e. if vi was execute without a
+	 * result of the initial command, i.e. if vi was executed without a
 	 * file name.
 	 */
-	if (sp->frp != NULL) {
-		p = FILENAME(sp->frp);
-		if (p == NULL)
-			sp->p_frp = NULL;
-		else
-			sp->p_frp = sp->frp;
-		set_alt_name(sp, p);
-	}
-
-	/* The new file has now been officially edited. */
-	F_SET(frp, FR_EDITED);
+	set_alt_name(sp, sp->frp == NULL ? NULL : sp->frp->name);
 
 	/* Switch... */
 	++ep->refcnt;
@@ -410,7 +336,12 @@ file_init(sp, frp, rcv_name, force)
 	sp->frp = frp;
 	return (0);
 
-err:	if (frp->tname != NULL) {
+err:	if (frp->name != NULL) {
+		(void)unlink(frp->name);
+		free(frp->name);
+		frp->name = NULL;
+	}
+	if (frp->tname != NULL) {
 		(void)unlink(frp->tname);
 		free(frp->tname);
 		frp->tname = NULL;
@@ -438,8 +369,7 @@ file_end(sp, ep, force)
 	FREF *frp;
 
 	/*
-	 *
-	 * sp->ep MAY NOT BE THE SAME AS THE ARGUMENT ep, SO DON'T USE IT!
+	 * Clean up the FREF structure.
 	 *
 	 * Save the cursor location.
 	 *
@@ -452,14 +382,39 @@ file_end(sp, ep, force)
 	frp->cno = sp->cno;
 	F_SET(frp, FR_CURSORSET);
 
-	/* If multiply referenced, just decrement the count and return. */
+	/*
+	 * We may no longer need the temporary backing file, so clean it
+	 * up.  We don't need the FREF structure either, if the file was
+	 * never named, so lose it.
+	 *
+	 * !!!
+	 * Re: FR_DONTDELETE, see the comment above in file_init().
+	 */
+	if (!F_ISSET(frp, FR_DONTDELETE) && frp->tname != NULL) {
+		if (unlink(frp->tname))
+			msgq(sp, M_SYSERR, "%s: remove", frp->tname);
+		free(frp->tname);
+		if (F_ISSET(frp, FR_TMPFILE)) {
+			CIRCLEQ_REMOVE(&sp->frefq, frp, q);
+			free(frp->name);
+			free(frp);
+		}
+		sp->frp = NULL;
+	}
+
+	/*
+	 * Clean up the EXF structure.
+	 *
+	 * sp->ep MAY NOT BE THE SAME AS THE ARGUMENT ep, SO DON'T USE IT!
+	 *
+	 * If multiply referenced, just decrement the count and return.
+	 */
 	if (--ep->refcnt != 0)
 		return (0);
 
 	/* Close the db structure. */
 	if (ep->db->close != NULL && ep->db->close(ep->db) && !force) {
-		msgq(sp, M_ERR,
-		    "%s: close: %s", FILENAME(frp), strerror(errno));
+		msgq(sp, M_ERR, "%s: close: %s", frp->name, strerror(errno));
 		++ep->refcnt;
 		return (1);
 	}
@@ -470,7 +425,7 @@ file_end(sp, ep, force)
 	(void)log_end(sp, ep);
 
 	/* Free up any marks. */
-	mark_end(sp, ep);
+	(void)mark_end(sp, ep);
 
 	/*
 	 * Delete recovery files, close the open descriptor, free recovery
@@ -496,22 +451,6 @@ file_end(sp, ep, force)
 	if (ep->rcv_mpath != NULL)
 		free(ep->rcv_mpath);
 
-	/*
-	 * Unlink any temporary file, file name.  We also turn on the
-	 * ignore bit at this point, because it was a "created" file,
-	 * not an argument file.
-	 */
-	if (frp->tname != NULL) {
-		if (unlink(frp->tname))
-			msgq(sp, M_ERR,
-			    "%s: remove: %s", frp->tname, strerror(errno));
-		free(frp->tname);
-		frp->tname = NULL;
-
-		if (frp->name == NULL && frp->cname == NULL)
-			F_SET(frp, FR_IGNORE);
-	}
-	/* Free the EXF structure. */
 	FREE(ep, sizeof(EXF));
 	return (0);
 }
@@ -539,14 +478,16 @@ file_write(sp, ep, fm, tm, name, flags)
 	char *msg;
 
 	/*
-	 * Don't permit writing to temporary files.  The problem is that
-	 * if it's a temp file, and the user does ":wq", we write and quit,
-	 * unlinking the temporary file.  Not what the user had in mind
-	 * at all.  This test cannot be forced.
+	 * Don't permit writing to temporary files if the command is going to
+	 * exit.  The problem is that if it's a temp file, and the user does
+	 * ":wq", we write and quit, unlinking the temporary file.  Not what
+	 * the user had in mind at all.  This test cannot be forced.
 	 */
 	frp = sp->frp;
-	if (name == NULL && frp->cname == NULL && frp->name == NULL) {
-		msgq(sp, M_ERR, "No filename to which to write");
+	if (name == NULL &&
+	    F_ISSET(frp, FR_TMPFILE) && LF_ISSET(FS_WILLEXIT)) {
+		msgq(sp, M_ERR,
+		    "File is a temporary; write/exit not permitted");
 		return (1);
 	}
 
@@ -568,9 +509,9 @@ file_write(sp, ep, fm, tm, name, flags)
 		if (name != NULL) {
 			if (!stat(name, &sb))
 				goto exists;
-		} else if (frp->cname != NULL &&
-		    !F_ISSET(frp, FR_CHANGEWRITE) && !stat(frp->cname, &sb)) {
-			name = frp->cname;
+		} else if (F_ISSET(frp,
+		    FR_NAMECHANGE) && !stat(frp->name, &sb)) {
+			name = frp->name;
 exists:			if (LF_ISSET(FS_POSSIBLE))
 				msgq(sp, M_ERR,
 		"%s exists, not written; use ! to override", name);
@@ -584,8 +525,8 @@ exists:			if (LF_ISSET(FS_POSSIBLE))
 		 * Don't write part of any existing file.  Only test for the
 		 * original file, the previous test catches anything else.
 		 */
-		if (!LF_ISSET(FS_ALL) && name == NULL &&
-		    frp->cname == NULL && !stat(frp->name, &sb)) {
+		if (!LF_ISSET(FS_ALL) &&
+		    name == NULL && !stat(frp->name, &sb)) {
 			if (LF_ISSET(FS_POSSIBLE))
 				msgq(sp, M_ERR,
 				    "Use ! to write a partial file");
@@ -604,15 +545,15 @@ exists:			if (LF_ISSET(FS_POSSIBLE))
 	 *
 	 * If the user is overwriting a file other than the original file, and
 	 * O_WRITEANY was what got us here (neither force nor append was set),
-	 * display the "existing file" messsage.  Since the FR_CHANGEWRITE flag
-	 * is set on a successful write, the message only appears once when the
-	 * user changes a file name.  This is historic practice.
+	 * display the "existing file" messsage.  Since the FR_NAMECHANGE flag
+	 * is cleared on a successful write, the message only appears once when
+	 * the user changes a file name.  This is historic practice.
 	 *
 	 * One final test.  If we're not forcing or appending, and we have a
 	 * saved modification time, stop the user if it's been written since
 	 * we last edited or wrote it, and make them force it.
 	 */
-	if (stat(name == NULL ? FILENAME(frp) : name, &sb))
+	if (stat(name == NULL ? frp->name : name, &sb))
 		msg = ": new file";
 	else {
 		msg = "";
@@ -625,15 +566,14 @@ exists:			if (LF_ISSET(FS_POSSIBLE))
 				    "; use ! to override" : "");
 				return (1);
 			}
-			if (name != NULL ||
-			    !F_ISSET(frp, FR_CHANGEWRITE) && frp->cname != NULL)
+			if (name != NULL || F_ISSET(frp, FR_NAMECHANGE))
 				msg = ": existing file";
 		}
 	}
 
 	/* We no longer care where the name came from. */
 	if (name == NULL)
-		name = FILENAME(frp);
+		name = frp->name;
 
 	/* Set flags to either append or truncate. */
 	oflags = O_CREAT | O_WRONLY;
@@ -690,7 +630,7 @@ exists:			if (LF_ISSET(FS_POSSIBLE))
 	 * Once we've actually written the file, it doesn't matter that the
 	 * file name was changed -- if it was, we've already whacked it.
 	 */
-	F_SET(frp, FR_CHANGEWRITE);
+	F_CLR(frp, FR_NAMECHANGE);
 
 	/* If wrote the entire file, clear the modified bit. */
 	if (LF_ISSET(FS_ALL))

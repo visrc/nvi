@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.115 1994/06/26 11:35:57 bostic Exp $ (Berkeley) $Date: 1994/06/26 11:35:57 $
+ *	$Id: screen.h,v 8.116 1994/06/27 11:21:52 bostic Exp $ (Berkeley) $Date: 1994/06/27 11:21:52 $
  */
 
 /*
@@ -33,48 +33,37 @@ enum sctype {				/* Scroll operations. */
 
 /*
  * Structure for holding file references.  Each SCR structure contains a
- * linked list of these (the user's argument list) as well as pointers to
- * the current and previous files.  The structure contains the name of the
- * file, along with the information that follows the name.  A file has up
- * to three "names".  The tname field is the path of the temporary backing
- * file, if any.  The name field is the name the user originally used to
- * specify the file to be edited.  The cname field is the changed name if
- * the user changed the name.
+ * linked list of these.  The structure contains the name of the file,
+ * along with the information that follows the name.
  *
- * Note that the read-only bit follows the file name, not the file itself.
+ * !!!
+ * The read-only bit follows the file name, not the file itself.
  *
  * XXX
  * The mtime field should be a struct timespec, but time_t is more portable.
  */
 struct _fref {
 	CIRCLEQ_ENTRY(_fref) q;		/* Linked list of file references. */
-	char	*cname;			/* Changed file name. */
 	char	*name;			/* File name. */
-	char	*tname;			/* Temporary file name. */
+	char	*tname;			/* Backing temporary file name. */
 
+	int	 refcnt;		/* Reference count. */
 	recno_t	 lno;			/* 1-N: file cursor line. */
 	size_t	 cno;			/* 0-N: file cursor column. */
 	time_t	 mtime;			/* Last modification time. */
 
-#define	FR_CHANGEWRITE	0x001		/* Name changed and then written. */
-#define	FR_CURSORSET	0x002		/* If lno/cno valid. */
-#define	FR_EDITED	0x004		/* If the file was ever edited. */
-#define	FR_IGNORE	0x008		/* File isn't part of argument list. */
-#define	FR_NEWFILE	0x010		/* File doesn't really exist yet. */
-#define	FR_RDONLY	0x020		/* File is read-only. */
-#define	FR_RECOVER	0x040		/* File is to be recovered. */
+#define	FR_CURSORSET	0x001		/* If lno/cno values valid. */
+#define	FR_DONTDELETE	0x002		/* Don't delete the temporary file. */
+#define	FR_NAMECHANGE	0x004		/* If the name changed. */
+#define	FR_NEWFILE	0x080		/* File doesn't really exist yet. */
+#define	FR_RDONLY	0x010		/* File is read-only. */
+#define	FR_RECOVER	0x020		/* File is being recovered. */
+#define	FR_TMPFILE	0x040		/* If file has no name. */
 #define	FR_UNLOCKED	0x080		/* File couldn't be locked. */
-	u_int	 flags;
+	u_int8_t flags;
 };
 
-/*
- * There's a file name hierarchy -- if the user has changed the name, we
- * use it, otherwise, we use the original name, if there was one, othewise
- * use the temporary name.
- */
-#define	FILENAME(frp)							\
-	((frp)->cname != NULL) ? (frp)->cname :				\
-	((frp)->name != NULL) ? (frp)->name : (frp)->tname
+#define	TEMPORARY_FILE_STRING	"/tmp"	/* Default temporary file name. */
 
 /*
  * SCR --
@@ -96,8 +85,9 @@ struct _scr {
 					/* FREF list. */
 	CIRCLEQ_HEAD(_frefh, _fref) frefq;
 	FREF	*frp;			/* FREF being edited. */
-	FREF	*a_frp;			/* Last argument list FREF edited. */
-	FREF	*p_frp;			/* Last FREF edited. */
+
+	char	**argv;			/* NULL terminated file name array. */
+	char	**cargv;		/* Current file name. */
 
 	u_long	 ccnt;			/* Command count. */
 	u_long	 q_ccnt;		/* Quit or ZZ command count. */
@@ -233,7 +223,7 @@ struct _scr {
 					/* Move down the screen. */
 	int	(*s_scroll) __P((SCR *, EXF *, MARK *, recno_t, enum sctype));
 					/* Split the screen. */
-	int	(*s_split) __P((SCR *, ARGS *[]));
+	int	(*s_split) __P((SCR *, ARGS *[], int));
 					/* Suspend the screen. */
 	int	(*s_suspend) __P((SCR *));
 
@@ -257,23 +247,25 @@ struct _scr {
 #define	S_MAJOR_CHANGE			/* Screen or file changes. */	\
 	(S_EXIT | S_EXIT_FORCE | S_FSWITCH | S_SSWITCH)
 
-#define	S_BELLSCHED	0x0000080	/* Bell scheduled. */
-#define	S_CONTINUE	0x0000100	/* Need to ask the user to continue. */
-#define	S_EXSILENT	0x0000200	/* Ex batch script. */
-#define	S_GLOBAL	0x0000400	/* Doing a global command. */
-#define	S_INPUT		0x0000800	/* Doing text input. */
-#define	S_INTERRUPTED	0x0001000	/* If have been interrupted. */
-#define	S_INTERRUPTIBLE	0x0002000	/* If can be interrupted. */
-#define	S_REDRAW	0x0004000	/* Redraw the screen. */
-#define	S_REFORMAT	0x0008000	/* Reformat the screen. */
-#define	S_REFRESH	0x0010000	/* Refresh the screen. */
-#define	S_RENUMBER	0x0020000	/* Renumber the screen. */
-#define	S_RESIZE	0x0040000	/* Resize the screen. */
-#define	S_SCRIPT	0x0080000	/* Window is a shell script. */
-#define	S_SRE_SET	0x0100000	/* The search RE has been set. */
-#define	S_SUBRE_SET	0x0200000	/* The substitute RE has been set. */
-#define	S_UPDATE_MODE	0x0400000	/* Don't repaint modeline. */
-#define	S_VLITONLY	0x0800000	/* ^V literal next only. */
+#define	S_ARGNOFREE	0x0000080	/* Argument list wasn't allocated. */
+#define	S_ARGRECOVER	0x0000100	/* Argument list is recovery files. */
+#define	S_BELLSCHED	0x0000200	/* Bell scheduled. */
+#define	S_CONTINUE	0x0000400	/* Need to ask the user to continue. */
+#define	S_EXSILENT	0x0000800	/* Ex batch script. */
+#define	S_GLOBAL	0x0001000	/* Doing a global command. */
+#define	S_INPUT		0x0002000	/* Doing text input. */
+#define	S_INTERRUPTED	0x0004000	/* If have been interrupted. */
+#define	S_INTERRUPTIBLE	0x0008000	/* If can be interrupted. */
+#define	S_REDRAW	0x0010000	/* Redraw the screen. */
+#define	S_REFORMAT	0x0020000	/* Reformat the screen. */
+#define	S_REFRESH	0x0040000	/* Refresh the screen. */
+#define	S_RENUMBER	0x0080000	/* Renumber the screen. */
+#define	S_RESIZE	0x0100000	/* Resize the screen. */
+#define	S_SCRIPT	0x0200000	/* Window is a shell script. */
+#define	S_SRE_SET	0x0400000	/* The search RE has been set. */
+#define	S_SUBRE_SET	0x0800000	/* The substitute RE has been set. */
+#define	S_UPDATE_MODE	0x1000000	/* Don't repaint modeline. */
+#define	S_VLITONLY	0x2000000	/* ^V literal next only. */
 	u_int32_t flags;
 };
 

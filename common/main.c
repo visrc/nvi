@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.94 1994/05/23 10:22:29 bostic Exp $ (Berkeley) $Date: 1994/05/23 10:22:29 $";
+static char sccsid[] = "$Id: main.c,v 8.95 1994/06/27 11:21:45 bostic Exp $ (Berkeley) $Date: 1994/06/27 11:21:45 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -349,27 +349,26 @@ main(argc, argv)
 	 * Append any remaining arguments as file names.  Files are
 	 * recovery files if -r specified.
 	 */
-	for (; *argv != NULL; ++argv) {
-		if ((frp = file_add(sp, NULL, *argv, 0)) == NULL)
-			goto err;
+	if (*argv != NULL) {
+		sp->argv = sp->cargv = argv;
+		F_SET(sp, S_ARGNOFREE);
 		if (flagchk == 'r')
-			F_SET(frp, FR_RECOVER);
+			F_SET(sp, S_ARGRECOVER);
 	}
 
 	/*
-	 * If no tag file, get an EXF structure.  If no argv file,
-	 * use a temporary file.
+	 * If the tag option hasn't already created a file, create one.
+	 * If no files as arguments, use a temporary file.
 	 */
 	if (tag_f == NULL) {
-		if ((frp = file_first(sp)) == NULL &&
-		    (frp = file_add(sp, NULL, NULL, 1)) == NULL)
+		if ((frp = file_add(sp,
+		    sp->argv == NULL ? NULL : (CHAR_T *)(sp->argv[0]))) == NULL)
 			goto err;
+		if (F_ISSET(sp, S_ARGRECOVER))
+			F_SET(frp, FR_RECOVER);
 		if (file_init(sp, frp, NULL, 0))
 			goto err;
 	}
-
-	/* Set up the argument pointer. */
-	sp->a_frp = sp->frp;
 
 	/*
 	 * If there's an initial command, push it on the command stack.

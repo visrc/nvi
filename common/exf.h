@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 8.29 1994/06/25 12:13:13 bostic Exp $ (Berkeley) $Date: 1994/06/25 12:13:13 $
+ *	$Id: exf.h,v 8.30 1994/06/27 11:21:50 bostic Exp $ (Berkeley) $Date: 1994/06/27 11:21:50 $
  */
 					/* Undo direction. */
 /*
@@ -56,6 +56,7 @@ struct _exf {
 #define	FS_APPEND	0x02		/* Append to the file. */
 #define	FS_FORCE	0x04		/* Force is set. */
 #define	FS_POSSIBLE	0x08		/* Force could be set. */
+#define	FS_WILLEXIT	0x10		/* Command will exit on success. */
 
 #define	GETLINE_ERR(sp, lno) {						\
 	msgq((sp), M_ERR,						\
@@ -63,14 +64,8 @@ struct _exf {
 	    tail(__FILE__), __LINE__, (lno));				\
 }
 
-/* FREF routines. */
-FREF	*file_add __P((SCR *, FREF *, CHAR_T *, int));
-FREF	*file_first __P((SCR *));
-FREF	*file_next __P((SCR *, FREF *));
-FREF	*file_prev __P((SCR *, FREF *));
-FREF	*file_unedited __P((SCR *));
-
 /* EXF routines. */
+FREF	*file_add __P((SCR *, CHAR_T *));
 int	 file_end __P((SCR *, EXF *, int));
 int	 file_init __P((SCR *, FREF *, char *, int));
 int	 file_write __P((SCR *, EXF *, MARK *, MARK *, char *, int));

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.63 1994/06/26 09:56:57 bostic Exp $ (Berkeley) $Date: 1994/06/26 09:56:57 $";
+static char sccsid[] = "$Id: recover.c,v 8.64 1994/06/27 11:21:55 bostic Exp $ (Berkeley) $Date: 1994/06/27 11:21:55 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -377,7 +377,7 @@ rcv_mailfile(sp, ep, iscopy, cp_path)
 	 * is lost.  So, we could never close the FILE *, even if we dup'd the
 	 * fd first.
 	 */
-	t = FILENAME(sp->frp);
+	t = sp->frp->name;
 	if ((p = strrchr(t, '/')) == NULL)
 		p = t;
 	else
@@ -446,7 +446,7 @@ rcv_list(sp)
 	DIR *dirp;
 	FILE *fp;
 	int found;
-	char *p, file[1024];
+	char *p, *t, file[MAXPATHLEN], path[MAXPATHLEN];
 
 	/*
 	 * XXX
@@ -481,15 +481,18 @@ rcv_list(sp)
 			 */
 		}
 
-		/* Check the header, get the file name. */
+		/* Check the headers. */
 		if (fgets(file, sizeof(file), fp) == NULL ||
 		    strncmp(file, VI_FHEADER, sizeof(VI_FHEADER) - 1) ||
-		    (p = strchr(file, '\n')) == NULL) {
-			(void)fprintf(stderr,
-			    "vi: %s: malformed recovery file.\n", dp->d_name);
+		    (p = strchr(file, '\n')) == NULL ||
+		    fgets(path, sizeof(path), fp) == NULL ||
+		    strncmp(path, VI_PHEADER, sizeof(VI_PHEADER) - 1) ||
+		    (t = strchr(path, '\n')) == NULL) {
+			msgq(sp, M_ERR,
+			    "%s: malformed recovery file", dp->d_name);
 			goto next;
 		}
-		*p = '\0';
+		*p = *t = '\0';
 
 		/*
 		 * If the file doesn't exist, it's an orphaned recovery file,
@@ -500,7 +503,7 @@ rcv_list(sp)
 		 * before deleting the email file.
 		 */
 		errno = 0;
-		if (stat(file + sizeof(VI_FHEADER) - 1, &sb) &&
+		if (stat(path + sizeof(VI_PHEADER) - 1, &sb) &&
 		    errno == ENOENT) {
 			(void)unlink(dp->d_name);
 			goto next;
@@ -537,7 +540,7 @@ rcv_read(sp, frp)
 	time_t rec_mtime;
 	int fd, found, locked, requested, sv_fd;
 	char *name, *p, *t, *recp, *pathp;
-	char recpath[MAXPATHLEN], file[MAXPATHLEN], path[MAXPATHLEN];
+	char file[MAXPATHLEN], path[MAXPATHLEN], recpath[MAXPATHLEN];
 
 	if ((dirp = opendir(O_STR(sp, O_RECDIR))) == NULL) {
 		msgq(sp, M_ERR,
@@ -545,7 +548,7 @@ rcv_read(sp, frp)
 		return (1);
 	}
 
-	name = FILENAME(frp);
+	name = frp->name;
 	sv_fd = -1;
 	rec_mtime = 0;
 	recp = pathp = NULL;
@@ -593,8 +596,8 @@ rcv_read(sp, frp)
 			    "%s: malformed recovery file", recpath);
 			goto next;
 		}
+		*p = *t = '\0';
 		++found;
-		*t = *p = '\0';
 
 		/*
 		 * If the file doesn't exist, it's an orphaned recovery file,
@@ -605,7 +608,7 @@ rcv_read(sp, frp)
 		 * before deleting the email file.
 		 */
 		errno = 0;
-		if (stat(file + sizeof(VI_FHEADER) - 1, &sb) &&
+		if (stat(path + sizeof(VI_PHEADER) - 1, &sb) &&
 		    errno == ENOENT) {
 			(void)unlink(dp->d_name);
 			goto next;

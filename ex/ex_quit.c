@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_quit.c,v 8.9 1994/05/21 09:38:08 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:38:08 $";
+static char sccsid[] = "$Id: ex_quit.c,v 8.10 1994/06/27 11:22:13 bostic Exp $ (Berkeley) $Date: 1994/06/27 11:22:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -56,7 +56,7 @@ ex_quit(sp, ep, cmdp)
 	 * user will get the message on the last screen.
 	 */
 	if (!force && sp->ccnt != sp->q_ccnt + 1 &&
-	    ep->refcnt <= 1 && file_unedited(sp) != NULL) {
+	    ep->refcnt <= 1 && sp->cargv != NULL && sp->cargv[1] != NULL) {
 		sp->q_ccnt = sp->ccnt;
 		msgq(sp, M_ERR,
 	"More files; use \":n\" to go to the next file, \":q!\" to quit");

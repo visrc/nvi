@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 8.41 1994/05/21 09:38:24 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:38:24 $";
+static char sccsid[] = "$Id: ex_tag.c,v 8.42 1994/06/27 11:22:20 bostic Exp $ (Berkeley) $Date: 1994/06/27 11:22:20 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -70,7 +70,7 @@ ex_tagfirst(sp, tagarg)
 		return (1);
 
 	/* Create the file entry. */
-	if ((frp = file_add(sp, NULL, name, 0)) == NULL)
+	if ((frp = file_add(sp, name)) == NULL)
 		return (1);
 	if (file_init(sp, frp, NULL, 0))
 		return (1);
@@ -186,7 +186,7 @@ ex_tagpush(sp, ep, cmdp)
 		return (1);
 
 	/* Get the (possibly new) FREF structure. */
-	if ((frp = file_add(sp, sp->frp, name, 1)) == NULL)
+	if ((frp = file_add(sp, name)) == NULL)
 		goto modify_err;
 
 	if (sp->frp == frp)

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_status.c,v 8.13 1994/05/01 13:06:35 bostic Exp $ (Berkeley) $Date: 1994/05/01 13:06:35 $";
+static char sccsid[] = "$Id: v_status.c,v 8.14 1994/06/27 11:22:36 bostic Exp $ (Berkeley) $Date: 1994/06/27 11:22:36 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -77,7 +77,7 @@ status(sp, ep, lno, showlast)
 		mo = nc = "";
 	} else {
 		nf = "";
-		if (sp->frp->cname != NULL) {
+		if (F_ISSET(sp->frp, FR_NAMECHANGE)) {
 			nc = "name changed";
 			mo = F_ISSET(ep, F_MODIFIED) ?
 			    ", modified" : ", unmodified";
@@ -95,13 +95,13 @@ status(sp, ep, lno, showlast)
 		if (last >= 1)
 			msgq(sp, M_INFO,
 			    "%s: %s%s%s%s%s: line %lu of %lu [%ld%%]%s",
-			    FILENAME(sp->frp), nf, nc, mo, ul, ro, lno,
+			    sp->frp->name, nf, nc, mo, ul, ro, lno,
 			    last, (lno * 100) / last, pid);
 		else
 			msgq(sp, M_INFO, "%s: %s%s%s%s%s: empty file%s",
-			    FILENAME(sp->frp), nf, nc, mo, ul, ro, pid);
+			    sp->frp->name, nf, nc, mo, ul, ro, pid);
 	} else
 		msgq(sp, M_INFO, "%s: %s%s%s%s%s: line %lu%s",
-		    FILENAME(sp->frp), nf, nc, mo, ul, ro, lno, pid);
+		    sp->frp->name, nf, nc, mo, ul, ro, lno, pid);
 	return (0);
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 8.30 1994/05/21 09:38:01 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:38:01 $";
+static char sccsid[] = "$Id: ex_argv.c,v 8.31 1994/06/27 11:22:10 bostic Exp $ (Berkeley) $Date: 1994/06/27 11:22:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -295,12 +295,12 @@ argv_fexp(sp, excp, cmd, cmdlen, p, lenp, bpp, blenp, is_bang)
 			F_SET(excp, E_MODIFY);
 			break;
 		case '%':
-			if (sp->frp->cname == NULL && sp->frp->name == NULL) {
+			if ((t = sp->frp->name) == NULL) {
 				msgq(sp, M_ERR,
 				    "No filename to substitute for %%");
 				return (1);
 			}
-			tlen = strlen(t = FILENAME(sp->frp));
+			tlen = strlen(t);
 			len += tlen;
 			ADD_SPACE_RET(sp, bp, blen, len);
 			memmove(p, t, tlen);
@@ -308,20 +308,11 @@ argv_fexp(sp, excp, cmd, cmdlen, p, lenp, bpp, blenp, is_bang)
 			F_SET(excp, E_MODIFY);
 			break;
 		case '#':
-			/*
-			 * Try the alternate file name first, then the
-			 * previously edited file.
-			 */
-			if (sp->alt_name == NULL && (sp->p_frp == NULL ||
-			    sp->frp->cname == NULL && sp->frp->name == NULL)) {
+			if ((t = sp->alt_name) == NULL) {
 				msgq(sp, M_ERR,
 				    "No filename to substitute for #");
 				return (1);
 			}
-			if (sp->alt_name != NULL)
-				t = sp->alt_name;
-			else
-				t = FILENAME(sp->frp);
 			len += tlen = strlen(t);
 			ADD_SPACE_RET(sp, bp, blen, len);
 			memmove(p, t, tlen);

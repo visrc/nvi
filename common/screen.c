@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.60 1994/06/26 11:35:55 bostic Exp $ (Berkeley) $Date: 1994/06/26 11:35:55 $";
+static char sccsid[] = "$Id: screen.c,v 8.61 1994/06/27 11:21:53 bostic Exp $ (Berkeley) $Date: 1994/06/27 11:21:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -201,13 +201,20 @@ screen_end(sp)
 	{ FREF *frp;
 		while ((frp = sp->frefq.cqh_first) != (FREF *)&sp->frefq) {
 			CIRCLEQ_REMOVE(&sp->frefq, frp, q);
-			if (frp->cname != NULL)
-				free(frp->cname);
 			if (frp->name != NULL)
 				free(frp->name);
 			if (frp->tname != NULL)
 				free(frp->tname);
 			FREE(frp, sizeof(FREF));
+		}
+	}
+
+	/* Free file names. */
+	{ char **ap;
+		if (!F_ISSET(sp, S_ARGNOFREE) && sp->argv != NULL) {
+			for (ap = sp->argv; *ap != NULL; ++ap)
+				free(*ap);
+			free(sp->argv);
 		}
 	}
 
@@ -220,7 +227,7 @@ screen_end(sp)
 
 	/* Free alternate file name. */
 	if (sp->alt_name != NULL)
-		FREE(sp->alt_name, strlen(sp->alt_name) + 1);
+		free(sp->alt_name);
 
 	/* Free up search information. */
 	if (sp->repl != NULL)

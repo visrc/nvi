@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_screen.c,v 8.12 1994/03/08 19:39:38 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:39:38 $";
+static char sccsid[] = "$Id: ex_screen.c,v 8.13 1994/06/27 11:22:19 bostic Exp $ (Berkeley) $Date: 1994/06/27 11:22:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,7 +38,7 @@ ex_split(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	return (sp->s_split(sp, cmdp->argc ? cmdp->argv : NULL));
+	return (sp->s_split(sp, cmdp->argc ? cmdp->argv : NULL, cmdp->argc));
 }
 
 /*
@@ -112,7 +112,7 @@ ex_sdisplay(sp, ep)
 
 	col = len = sep = 0;
 	for (cnt = 1; tsp != (void *)&sp->gp->hq; tsp = tsp->q.cqe_next) {
-		col += len = strlen(FILENAME(tsp->frp)) + sep;
+		col += len = strlen(tsp->frp->name) + sep;
 		if (col >= sp->cols - 1) {
 			col = len;
 			sep = 0;
@@ -121,7 +121,7 @@ ex_sdisplay(sp, ep)
 			sep = 1;
 			(void)ex_printf(EXCOOKIE, " ");
 		}
-		(void)ex_printf(EXCOOKIE, "%s", FILENAME(tsp->frp));
+		(void)ex_printf(EXCOOKIE, "%s", tsp->frp->name);
 		++cnt;
 	}
 	(void)ex_printf(EXCOOKIE, "\n");
