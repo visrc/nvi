@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 8.11 1993/10/11 09:24:44 bostic Exp $ (Berkeley) $Date: 1993/10/11 09:24:44 $
+ *	$Id: vi.h,v 8.12 1993/10/31 14:21:07 bostic Exp $ (Berkeley) $Date: 1993/10/31 14:21:07 $
  */
 
 /* Structure passed around to functions implementing vi commands. */
@@ -94,7 +94,6 @@ extern VIKEYS const vikeys[MAXVIKEY + 1];
 /* Definition of a "word". */
 #define	inword(ch)	(isalnum(ch) || (ch) == '_')
 
-
 /* Character stream structure, prototypes. */
 typedef struct _vcs {
 	recno_t	 cs_lno;			/* Line. */
@@ -115,6 +114,15 @@ int	cs_fspace __P((SCR *, EXF *, VCS *));
 int	cs_init __P((SCR *, EXF *, VCS *));
 int	cs_next __P((SCR *, EXF *, VCS *));
 int	cs_prev __P((SCR *, EXF *, VCS *));
+
+/* Vi private, per-screen memory. */
+typedef struct _vi_private {
+	VICMDARG	sdot;		/* Vi: saved dot, motion command. */
+	VICMDARG	sdotmotion;
+	CHAR_T	rlast;			/* Vi: saved 'r' command character. */
+} VI_PRIVATE;
+
+#define	VP(sp)	((VI_PRIVATE *)((sp)->vi_private))
 
 /* Vi function prototypes. */
 int	txt_auto __P((SCR *, EXF *, recno_t, TEXT *, TEXT *));

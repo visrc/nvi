@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.21 1993/10/28 17:04:13 bostic Exp $ (Berkeley) $Date: 1993/10/28 17:04:13 $";
+static char sccsid[] = "$Id: screen.c,v 8.22 1993/10/31 14:22:01 bostic Exp $ (Berkeley) $Date: 1993/10/31 14:22:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -92,11 +92,6 @@ screen_init(orig, sp)
 
 		sp->inc_lastch = orig->inc_lastch;
 		sp->inc_lastval = orig->inc_lastval;
-
-		/*
-		 * XXX
-		 * dot, dotmotion not copied.
-		 */
 
 		if (orig->paragraph != NULL &&
 		    (sp->paragraph = strdup(orig->paragraph)) == NULL)

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_put.c,v 8.2 1993/08/25 16:53:22 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:53:22 $";
+static char sccsid[] = "$Id: v_put.c,v 8.3 1993/10/31 14:20:34 bostic Exp $ (Berkeley) $Date: 1993/10/31 14:20:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -98,5 +98,5 @@ inc_buf(sp, vp)
 	default:
 		return;
 	}
-	((VICMDARG *)sp->sdot)->buffer = vp->buffer = v;
+	VP(sp)->sdot.buffer = vp->buffer = v;
 }

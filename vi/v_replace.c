@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_replace.c,v 8.6 1993/10/27 16:43:11 bostic Exp $ (Berkeley) $Date: 1993/10/27 16:43:11 $";
+static char sccsid[] = "$Id: v_replace.c,v 8.7 1993/10/31 14:21:13 bostic Exp $ (Berkeley) $Date: 1993/10/31 14:21:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -82,7 +82,7 @@ nochar:		msgq(sp, M_BERR, "No characters to replace");
 
 	/* Get the character, literal escapes, escape terminates. */
 	if (F_ISSET(vp, VC_ISDOT))
-		ch = sp->rlast;
+		ch = VP(sp)->rlast;
 	else {
 		if (term_key(sp, &ch, 0) != INP_OK)
 			return (1);
@@ -95,7 +95,7 @@ nochar:		msgq(sp, M_BERR, "No characters to replace");
 				return (1);
 			break;
 		}
-		sp->rlast = ch;
+		VP(sp)->rlast = ch;
 	}
 
 	/* Copy the line. */

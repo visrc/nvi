@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.43 1993/10/28 17:04:03 bostic Exp $ (Berkeley) $Date: 1993/10/28 17:04:03 $
+ *	$Id: screen.h,v 8.44 1993/10/31 14:22:09 bostic Exp $ (Berkeley) $Date: 1993/10/31 14:22:09 $
  */
 
 /*
@@ -84,6 +84,7 @@ typedef struct _scr {
 	FREF	*frp;			/* Current FREF. */
 	FREF	*p_frp;			/* Previous FREF. */
 
+	void	*vi_private;		/* Vi information. */
 	void	*svi_private;		/* Vi curses screen information. */
 	void	*xaw_private;		/* Vi XAW screen information. */
 
@@ -169,11 +170,6 @@ typedef struct _scr {
 
 	u_char	 inc_lastch;		/* Vi: Last increment character. */
 	long	 inc_lastval;		/*     Last increment value. */
-
-	void	*sdot;			/* Vi: saved dot, motion command. */
-	void	*sdotmotion;
-
-	char	 rlast;			/* Vi: saved 'r' command character. */
 
 	char	*paragraph;		/* Vi: paragraph search list. */
 
@@ -270,11 +266,11 @@ typedef struct _scr {
 #define	S_REFORMAT	0x0008000	/* Reformat the screen. */
 #define	S_REFRESH	0x0010000	/* Refresh the screen. */
 #define	S_RESIZE	0x0020000	/* Resize the screen. */
-#define	S_SRE_SET	0x0040000	/* The search RE has been set. */
-#define	S_SUBRE_SET	0x0080000	/* The substitute RE has been set. */
-#define	S_SCRIPT	0x0100000	/* Window is a shell script. */
-#define	S_TIMER_SET	0x0200000	/* If a busy timer is running. */
-#define	S_TERMSIGNAL	0x0400000	/* Termination signal received. */
+#define	S_SCRIPT	0x0040000	/* Window is a shell script. */
+#define	S_SRE_SET	0x0080000	/* The search RE has been set. */
+#define	S_SUBRE_SET	0x0100000	/* The substitute RE has been set. */
+#define	S_TERMSIGNAL	0x0200000	/* Termination signal received. */
+#define	S_TIMER_SET	0x0400000	/* If a busy timer is running. */
 #define	S_UPDATE_MODE	0x0800000	/* Don't repaint modeline. */
 	u_int flags;
 } SCR;

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 8.11 1993/10/11 20:07:30 bostic Exp $ (Berkeley) $Date: 1993/10/11 20:07:30 $";
+static char sccsid[] = "$Id: v_init.c,v 8.12 1993/10/31 14:21:22 bostic Exp $ (Berkeley) $Date: 1993/10/31 14:21:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,15 +29,6 @@ v_init(sp, ep)
 	EXF *ep;
 {
 	size_t len;
-
-	/* Make ex display to a special function. */
-	if ((sp->stdfp = fwopen(sp, sp->s_ex_write)) == NULL) {
-		msgq(sp, M_ERR, "ex output: %s", strerror(errno));
-		return (1);
-	}
-#ifdef MAKE_EX_OUTPUT_LINE_BUFFERED
-	(void)setvbuf(sp->stdfp, NULL, _IOLBF, 0);
-#endif
 
 	/*
 	 * The default address is line 1, column 0.  If the address set
@@ -71,6 +62,22 @@ v_init(sp, ep)
 	sp->rcm = 0;
 	sp->rcmflags = 0;
 
+	/* Create the private vi structure. */
+	if ((VP(sp) = malloc(sizeof(VI_PRIVATE))) == NULL) {
+		msgq(sp, M_ERR, "Error: %s", strerror(errno));
+		return (1);
+	}
+	memset(VP(sp), 0, sizeof(VI_PRIVATE));
+
+	/* Make ex display to a special function. */
+	if ((sp->stdfp = fwopen(sp, sp->s_ex_write)) == NULL) {
+		msgq(sp, M_ERR, "ex output: %s", strerror(errno));
+		return (1);
+	}
+#ifdef MAKE_EX_OUTPUT_LINE_BUFFERED
+	(void)setvbuf(sp->stdfp, NULL, _IOLBF, 0);
+#endif
+
 	/* Display the status line. */
 	return (status(sp, ep, sp->lno, 0));
 }
@@ -83,9 +90,13 @@ int
 v_end(sp)
 	SCR *sp;
 {
-#ifdef FWOPEN_NOT_AVAILABLE
+	/* Close down ex output file descriptor. */
 	sp->trapped_fd = -1;
-#endif
 	(void)fclose(sp->stdfp);
+
+	/* Free private memory. */
+	FREE(VP(sp), sizeof(VI_PRIVATE));
+	VP(sp) = NULL;
+
 	return (0);
 }
