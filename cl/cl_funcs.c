@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_funcs.c,v 8.3 1995/01/30 09:23:52 bostic Exp $ (Berkeley) $Date: 1995/01/30 09:23:52 $";
+static char sccsid[] = "$Id: cl_funcs.c,v 8.4 1995/01/30 15:19:45 bostic Exp $ (Berkeley) $Date: 1995/01/30 15:19:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,9 +30,9 @@ static char sccsid[] = "$Id: cl_funcs.c,v 8.3 1995/01/30 09:23:52 bostic Exp $ (
 #include "cl.h"
 
 /*
- * search.c:f_search() is called from ex/ex_tag.c:ex_tagfirst(),
- * which runs before the screen really exists, and try to access
- * the screen.  Make sure we don't step on anything.
+ * search.c:f_search() is called from ex/ex_tag.c:ex_tagfirst(), which
+ * runs before the screen really exists, and tries to access the screen.
+ * Make sure we don't step on anything.
  *
  * If the terminal isn't initialized, there's nothing to do.
  */
@@ -191,6 +191,63 @@ cl_inverse(sp, on)
 }
 
 /*
+ * cl_linverse --
+ *	Return the character at the current cursor.
+ *
+ * XXX
+ * This is completely wrong, and should be deleted.
+ */
+int
+cl_linverse(sp, lno)
+	SCR *sp;
+	size_t lno;
+{
+	size_t spcnt, col, row;
+	char ch;
+
+	CINIT;
+
+	/*
+	 * Walk through the line, retrieving each character and writing it back
+	 * out in inverse video.  Since curses doesn't have an EOL marker, keep
+	 * track of strings of spaces, and only put out trailing spaces if find
+	 * another character.  The steps that get us here are as follows:
+	 *
+	 *	+ The user splits the screen and edits in any other than
+	 *	  the bottom screen.
+	 *	+ The user enters ex commands, but not ex mode, so the ex
+	 *	  output is piped through vi/curses.
+	 *	+ The ex output is only a single line.
+	 *	+ When ex returns into vi, vi has already output the line,
+	 *	  and it needs to be reverse video to show the separation
+	 *	  between the screens.
+	 * XXX
+	 * This is a kluge -- it would be nice if curses had an interface that
+	 * allowed us to change attributes on a per line basis.
+	 */
+	(void)move(lno, 0);
+	(void)standout();
+	for (spcnt = col = 0;;) {
+		ch = winch(stdscr);
+		if (isspace(ch)) {
+			++spcnt;
+			(void)move(lno, col);
+		} else {
+			if (spcnt) {
+				(void)move(lno, col - spcnt);
+				for (; spcnt > 0; --spcnt)
+					(void)addnstr(" ", 1);
+			}
+			(void)addnstr(&ch, 1);
+		}
+		if (++col >= sp->cols)
+			break;
+	}
+	standend();
+	return (0);
+}
+
+/*
  * cl_move --
  *	Move the cursor.
  */
@@ -233,24 +290,6 @@ cl_restore(sp)
 	CINIT;
 
 	return (wrefresh(curscr) == ERR);
-}
-
-/*
- * cl_winch --
- *	Return the character at the current cursor.
- *
- * XXX
- * This is completely wrong, and should be deleted.
- */
-int
-cl_winch(sp, chp)
-	SCR *sp;
-	CHAR_T *chp;
-{
-	CINIT;
-
-	*chp = winch(stdscr);
-	return (0);
 }
 
 #ifdef DEBUG
