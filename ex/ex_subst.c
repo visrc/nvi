@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.55 1994/07/21 13:57:44 bostic Exp $ (Berkeley) $Date: 1994/07/21 13:57:44 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.56 1994/08/07 13:45:20 bostic Exp $ (Berkeley) $Date: 1994/08/07 13:45:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -398,6 +398,12 @@ substitute(sp, ep, cmdp, s, re, flags)
 		switch (*s) {
 		case ' ':
 		case '\t':
+			continue;
+		case '+':
+			++cmdp->flagoff;
+			break;
+		case '-':
+			--cmdp->flagoff;
 			break;
 		case '0': case '1': case '2': case '3': case '4':
 		case '5': case '6': case '7': case '8': case '9':
@@ -796,8 +802,11 @@ endmatch:	if (!linechanged)
 
 	/*
 	 * !!!
-	 * Move the cursor to the first non-blank of the last line
-	 * change.
+	 * Move the cursor to the first non-blank of the last line change.
+	 *
+	 * XXX
+	 * This is NOT backward compatible with historic vi, which always
+	 * moved to the last line actually changed.
 	 */
 	if (!sp->c_suffix) {
 		sp->cno = 0;
