@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 5.40 1993/05/16 12:30:17 bostic Exp $ (Berkeley) $Date: 1993/05/16 12:30:17 $";
+static char sccsid[] = "$Id: search.c,v 5.41 1993/05/16 14:57:03 bostic Exp $ (Berkeley) $Date: 1993/05/16 14:57:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -70,17 +70,17 @@ noprev:			msgq(sp, M_INFO, "No previous search pattern.");
 		delim = *ptrn++;
 
 		/* Find terminating delimiter, handling escaped delimiters. */
-		for (p = t = ptrn;;)
-			if (p[1] && p[0] == '\\') {
-				++p;
-				*t++ = *p++;
-			} else if (p[0] == '\0' || p[0] == delim) {
+		for (p = t = ptrn;;) {
+			if (p[0] == '\0' || p[0] == delim) {
 				*t = '\0';
 				if (p[0] == delim)
 					++p;
 				break;
-			} else
-				*t++ = *p++;
+			}
+			if (p[1] == delim && p[0] == '\\')
+				++p;
+			*t++ = *p++;
+		}
 
 		/*
 		 * If characters after the terminating delimiter, it may
