@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.106 2001/07/26 17:15:53 skimo Exp $ (Berkeley) $Date: 2001/07/26 17:15:53 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.107 2001/10/08 19:21:45 skimo Exp $ (Berkeley) $Date: 2001/10/08 19:21:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1911,7 +1911,7 @@ txt_dent(SCR *sp, TEXT *tp, int isindent)
 	 */
 	for (current = cno = 0; cno < tp->cno; ++cno)
 		current += tp->lb[cno] == '\t' ?
-		    COL_OFF(current, ts) : KEY_LEN(sp, tp->lb[cno]);
+		    COL_OFF(current, ts) : KEY_COL(sp, tp->lb[cno]);
 
 	target = current;
 	if (isindent)
