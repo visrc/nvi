@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.60 1993/02/14 12:33:15 bostic Exp $ (Berkeley) $Date: 1993/02/14 12:33:15 $";
+static char sccsid[] = "$Id: ex.c,v 5.61 1993/02/14 14:34:05 bostic Exp $ (Berkeley) $Date: 1993/02/14 14:34:05 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -47,24 +47,29 @@ int
 ex()
 {
 	size_t len;
+	int first;
 	u_char *p, defcom[sizeof(DEFCOM)];
 
-	FF_SET(curf, F_NEWSESSION);
+	first = 1;
 	do {
-		if (FF_ISSET(curf, F_NEWSESSION)) {
+		if (first || FF_ISSET(curf, F_NEWSESSION)) {
 			if (ex_init(curf))
 				return (1);
 			FF_CLR(curf, F_NEWSESSION);
+			first = 0;
 		}
 
-		if (ex_gb(ISSET(O_PROMPT) ? ':' : 0,
+		if (ex_gb(curf, ISSET(O_PROMPT) ? ':' : 0,
 		    &p, &len, GB_MAPCOMMAND) || !p)
 			continue;
-		if (*p)
+		if (*p) {
+			(void)fputc('\n', curf->stdfp);
 			ex_cstring(p, len, 0);
-		else {
+		} else {
+			(void)fputc('\r', curf->stdfp);
+			(void)fflush(curf->stdfp);
 			memmove(defcom, DEFCOM, sizeof(DEFCOM));
-			ex_cstring(defcom, 3, 0);
+			ex_cstring(defcom, sizeof(DEFCOM) - 1, 0);
 		}
 	} while (mode == MODE_EX);
 	return (ex_end(curf));
@@ -1008,6 +1013,7 @@ fileexpand(gp, word, wordlen)
 		p = word;
 
 	glob((char *)p,
-	    GLOB_APPEND|GLOB_NOSORT|GLOB_NOCHECK|GLOB_QUOTE, NULL, gp);
+	    GLOB_APPEND|GLOB_NOSORT|GLOB_NOCHECK|GLOB_QUOTE|GLOB_TILDE,
+	    NULL, gp);
 	return (0);
 }
