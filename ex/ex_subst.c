@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_subst.c,v 10.29 1996/05/15 19:56:39 bostic Exp $ (Berkeley) $Date: 1996/05/15 19:56:39 $";
+static const char sccsid[] = "$Id: ex_subst.c,v 10.30 1996/05/16 19:32:11 bostic Exp $ (Berkeley) $Date: 1996/05/16 19:32:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -903,7 +903,7 @@ re_compile(sp, ptrn, ptrnp, lenp, rep, flags)
 
 	/* Set RE flags. */
 	reflags = 0;
-	if (LF_ISSET(RE_C_SEARCH | RE_C_SUBST)) {
+	if (!LF_ISSET(RE_C_CSCOPE | RE_C_TAG)) {
 		if (O_ISSET(sp, O_EXTENDED))
 			reflags |= REG_EXTENDED;
 		if (O_ISSET(sp, O_IGNORECASE))
