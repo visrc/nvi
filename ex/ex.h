@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.49 1994/03/09 14:17:05 bostic Exp $ (Berkeley) $Date: 1994/03/09 14:17:05 $
+ *	$Id: ex.h,v 8.50 1994/03/14 11:03:24 bostic Exp $ (Berkeley) $Date: 1994/03/14 11:03:24 $
  */
 
 /* Ex command structure. */
@@ -99,7 +99,7 @@ typedef struct _ex_private {
 	u_int	flags;
 } EX_PRIVATE;
 #define	EXP(sp)	((EX_PRIVATE *)((sp)->ex_private))
-	
+
 /* Macro to set up a command structure. */
 #define	SETCMDARG(s, cmd_id, naddr, lno1, lno2, force, arg) {		\
 	ARGS *__ap[2], __a;						\
@@ -122,6 +122,16 @@ typedef struct _ex_private {
 	__ap[1] = NULL;							\
 	s.argv = __ap;							\
 }
+
+/*
+ * !!!
+ * Historically, .exrc files and EXINIT variables could only use ^V
+ * as an escape character, neither ^Q or a user specified character
+ * worked.  We enforce that here, just in case someone depends on it.
+ */
+#define	IS_ESCAPE(sp, ch)						\
+	(F_ISSET(sp, S_VLITONLY) ?					\
+	    (ch) == LITERAL_CH : term_key_val(sp, ch) == K_VLNEXT)
 
 /*
  * :next, :prev, :rewind, :tag, :tagpush, :tagpop modifications check.
