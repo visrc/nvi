@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.33 1993/01/11 20:37:22 bostic Exp $ (Berkeley) $Date: 1993/01/11 20:37:22 $";
+static char sccsid[] = "$Id: options.c,v 5.34 1993/01/17 17:15:48 bostic Exp $ (Berkeley) $Date: 1993/01/17 17:15:48 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -43,10 +43,11 @@ static int	f_tabstop __P((EXF *, void *));
 static int	f_term __P((EXF *, void *));
 static int	f_wrapmargin __P((EXF *, void *));
 
-static int	opts_abbcmp __P((const void *, const void *));
-static int	opts_cmp __P((const void *, const void *));
-static int	opts_print __P((struct _option *));
-static int	opts_print __P((struct _option *));
+static int	 opts_abbcmp __P((const void *, const void *));
+static int	 opts_cmp __P((const void *, const void *));
+static OPTIONS	*opts_prefix __P((char *));
+static int	 opts_print __P((struct _option *));
+static int	 opts_print __P((struct _option *));
 
 static long	s_columns	= 80;
 static long	s_keytime	=  2;
@@ -359,7 +360,7 @@ opts_set(argv)
 			off = 1;
 			name += 2;
 		} else
-			goto found;
+			goto prefix;
 
 		/* Check list of abbreviations. */
 		atmp.name = name;
@@ -372,9 +373,13 @@ opts_set(argv)
 
 		/* Check list of options. */
 		otmp.name = name;
-		op = bsearch(&otmp, opts,
+		if ((op = bsearch(&otmp, opts,
 		    sizeof(opts) / sizeof(OPTIONS) - 1,
-		    sizeof(OPTIONS), opts_cmp);
+		    sizeof(OPTIONS), opts_cmp)) != NULL)
+			goto found;
+
+		/* Check for prefix match. */
+prefix:		op = opts_prefix(name);
 
 found:		if (op == NULL || off && !ISFSETP(op, OPT_0BOOL|OPT_1BOOL)) {
 			msg("no option %s: 'set all' gives all option values",
@@ -878,6 +883,29 @@ opts_print(op)
 		break;
 	}
 	return (curlen);
+}
+
+/*
+ * opts_prefix --
+ *	Check to see if the name is the prefix of one (only one) option.
+ *	If so, return that option.
+ */
+static OPTIONS *
+opts_prefix(name)
+	char *name;
+{
+	OPTIONS *op, *save_op;
+	size_t len;
+
+	save_op = NULL;
+	len = strlen(name);
+	for (op = opts; op->name != NULL; ++op)
+		if (!bcmp(op->name, name, len)) {
+			if (save_op != NULL)
+				return (NULL);
+			save_op = op;
+		}
+	return (save_op);
 }
 
 int
