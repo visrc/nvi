@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 10.8 1995/09/29 09:21:47 bostic Exp $ (Berkeley) $Date: 1995/09/29 09:21:47 $";
+static char sccsid[] = "$Id: ex_argv.c,v 10.9 1995/10/04 12:36:12 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:36:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -480,7 +480,7 @@ argv_sexp(sp, bpp, blenp, lenp)
 	FILE *ifp;
 	pid_t pid;
 	size_t blen, len;
-	int ch, nf, rval, std_output[2];
+	int ch, rval, std_output[2];
 	char *bp, *p, *sh, *sh_path;
 
 	bp = *bpp;
@@ -542,10 +542,7 @@ err:		if (ifp != NULL)
 		 * Assume that all shells have -c.
 		 */
 		execl(sh_path, sh, "-c", bp, NULL);
-		p = msg_print(sp, sh_path, &nf);
-		msgq(sp, M_SYSERR, "118|Error: execl: %s", p);
-		if (nf)
-			FREE_SPACE(sp, p, 0);
+		msgq_str(sp, M_SYSERR, sh_path, "118|Error: execl: %s");
 		_exit(127);
 	default:			/* Parent. */
 		/* Close the pipe ends the parent won't use. */
@@ -581,14 +578,11 @@ err:		if (ifp != NULL)
 	if (ferror(ifp))
 		goto ioerr;
 	if (fclose(ifp)) {
-ioerr:		p = msg_print(sp, sh, &nf);
-		msgq(sp, M_ERR, "119|I/O error: %s", p);
-		if (nf)
-			FREE_SPACE(sp, p, 0);
+ioerr:		msgq_str(sp, M_ERR, sh, "119|I/O error: %s");
 binc_err:	rval = 1;
 	} else
 		rval = 0;
 
 	/* Wait for the process. */
-	return (proc_wait(sp, (long)pid, sh, 1, 0));
+	return (proc_wait(sp, (long)pid, sh, 1, 0) || rval);
 }

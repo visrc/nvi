@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_script.c,v 10.7 1995/09/28 10:39:14 bostic Exp $ (Berkeley) $Date: 1995/09/28 10:39:14 $";
+static char sccsid[] = "$Id: ex_script.c,v 10.8 1995/10/04 12:37:06 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:37:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -83,8 +83,7 @@ sscr_init(sp)
 	SCR *sp;
 {
 	SCRIPT *sc;
-	int nf;
-	char *p, *sh, *sh_path;
+	char *sh, *sh_path;
 
 	MALLOC_RET(sp, sc, SCRIPT *, sizeof(SCRIPT));
 	sp->script = sc;
@@ -172,10 +171,7 @@ err:		if (sc->sh_master != -1)
 		else
 			++sh;
 		execl(sh_path, sh, "-i", NULL);
-		p = msg_print(sp, sh_path, &nf);
-		msgq(sp, M_SYSERR, "execl: %s", p);
-		if (nf)
-			FREE_SPACE(sp, p, 0);
+		msgq_str(sp, M_SYSERR, sh_path, "execl: %s");
 		_exit(127);
 	default:			/* Parent. */
 		break;
