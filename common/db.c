@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 5.6 1992/11/02 22:11:11 bostic Exp $ (Berkeley) $Date: 1992/11/02 22:11:11 $";
+static char sccsid[] = "$Id: db.c,v 5.7 1992/11/07 13:43:02 bostic Exp $ (Berkeley) $Date: 1992/11/07 13:43:02 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -127,7 +127,7 @@ file_dline(ep, lno)
 	scr_update(ep, lno, NULL, 0, LINE_DELETE);
 
 	/* File now dirty. */
-	ep->flags |= F_MODIFIED;
+	FF_SET(ep, F_MODIFIED);
 	return (0);
 }
 
@@ -170,7 +170,7 @@ file_aline(ep, lno, p, len)
 	scr_update(ep, lno, p, len, LINE_APPEND);
 
 	/* File now dirty. */
-	ep->flags |= F_MODIFIED;
+	FF_SET(ep, F_MODIFIED);
 	return (0);
 }
 
@@ -212,7 +212,7 @@ file_iline(ep, lno, p, len)
 	scr_update(ep, lno, p, len, LINE_INSERT);
 
 	/* File now dirty. */
-	ep->flags |= F_MODIFIED;
+	FF_SET(ep, F_MODIFIED);
 	return (0);
 }
 
@@ -252,7 +252,7 @@ file_sline(ep, lno, p, len)
 	scr_update(ep, lno, p, len, LINE_RESET);
 	
 	/* File now dirty. */
-	ep->flags |= F_MODIFIED;
+	FF_SET(ep, F_MODIFIED);
 	return (0);
 }
 
@@ -300,7 +300,7 @@ file_ibresolv(ep, ibp)
 	ep->c_nlines = OOBLNO;
 
 	/* File now dirty. */
-	ep->flags |= F_MODIFIED;
+	FF_SET(ep, F_MODIFIED);
 	return (0);
 }
 

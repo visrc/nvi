@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 5.16 1992/11/02 22:28:55 bostic Exp $ (Berkeley) $Date: 1992/11/02 22:28:55 $";
+static char sccsid[] = "$Id: ex_read.c,v 5.17 1992/11/07 13:42:14 bostic Exp $ (Berkeley) $Date: 1992/11/07 13:42:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,7 +40,7 @@ ex_read(cmdp)
 
 	/* If nothing, just read the file. */
 	if ((p = cmdp->string) == NULL) {
-		if (curf->flags & F_NONAME) {
+		if (FF_ISSET(curf, F_NONAME)) {
 			msg("No filename from which to read.");
 			return (1);
 		}

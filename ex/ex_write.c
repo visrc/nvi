@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 5.14 1992/11/07 10:23:55 bostic Exp $ (Berkeley) $Date: 1992/11/07 10:23:55 $";
+static char sccsid[] = "$Id: ex_write.c,v 5.15 1992/11/07 13:42:19 bostic Exp $ (Berkeley) $Date: 1992/11/07 13:42:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -41,11 +41,11 @@ ex_write(cmdp)
 
 	/* If nothing, just write the file back. */
 	if ((p = cmdp->string) == NULL) {
-		if (curf->flags & F_NONAME) {
+		if (FF_ISSET(curf, F_NONAME)) {
 			msg("No filename to which to write.");
 			return (1);
 		}
-		if (curf->flags & F_NAMECHANGED) {
+		if (FF_ISSET(curf, F_NAMECHANGED)) {
 			fname = curf->name;
 			flags = O_TRUNC;
 			force = 0;
@@ -118,7 +118,7 @@ noargs:	if (!force && flags != O_APPEND && !stat(fname, &sb)) {
 		return (1);
 	/* If wrote the entire file, turn off modify bit. */
 	if (cmdp->flags & E_ADDR2_ALL)
-		curf->flags &= ~F_MODIFIED;
+		FF_CLR(curf, F_MODIFIED);
 	return (0);
 }
 

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.29 1992/11/06 11:22:11 bostic Exp $ (Berkeley) $Date: 1992/11/06 11:22:11 $";
+static char sccsid[] = "$Id: vi.c,v 5.30 1992/11/07 13:42:54 bostic Exp $ (Berkeley) $Date: 1992/11/07 13:42:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -51,12 +51,12 @@ vi()
 		 * refresh the screen.  Otherwise, report any status info
 		 * from the last command.
 		 */
-		if (curf->flags & F_NEWSESSION) {
+		if (FF_ISSET(curf, F_NEWSESSION)) {
 			if (v_init(curf))
 				return (1);
 			scr_ref(curf);
 			status(curf, curf->lno);
-			curf->flags &= ~F_NEWSESSION;
+			FF_CLR(curf, F_NEWSESSION);
 		} else if (curf->rptlines) {
 			if (LVAL(O_REPORT) &&
 			    curf->rptlines >= LVAL(O_REPORT)) {
@@ -157,7 +157,7 @@ err:		if (msgcnt) {
 		 * If the underlying file has changed, don't bother with
 		 * cursor positioning.
 		 */
-		if (curf->flags & F_NEWSESSION)
+		if (FF_ISSET(curf, F_NEWSESSION))
 			continue;
 
 		/*
