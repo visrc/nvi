@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.38 1996/02/27 18:55:08 bostic Exp $ (Berkeley) $Date: 1996/02/27 18:55:08 $
+dnl	$Id: configure.in,v 8.39 1996/02/27 19:03:51 bostic Exp $ (Berkeley) $Date: 1996/02/27 19:03:51 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(configure)
@@ -223,7 +223,7 @@ AC_REPLACE_FUNCS(mmap)
 AC_REPLACE_FUNCS(openpty)
 AC_REPLACE_FUNCS(realloc)
 AC_CHECK_FUNCS(select)
-AC_CHECK_FUNCS(setenv, [need_env=yes], [need_env=no])
+AC_CHECK_FUNCS(setenv, [need_env=no], [need_env=yes])
 AC_REPLACE_FUNCS(snprintf)
 AC_REPLACE_FUNCS(strdup)
 AC_REPLACE_FUNCS(strerror)
@@ -231,7 +231,7 @@ AC_REPLACE_FUNCS(strpbrk)
 AC_REPLACE_FUNCS(strsep)
 AC_REPLACE_FUNCS(strtol)
 AC_REPLACE_FUNCS(strtoul)
-AC_CHECK_FUNCS(unsetenv, [need_env=yes])
+AC_CHECK_FUNCS(unsetenv,, [need_env=yes])
 if test "$need_env" = yes; then
 	LIBOBJS="env.o $LIBOBJS"
 fi
