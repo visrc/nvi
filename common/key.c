@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 9.11 1995/01/23 16:58:45 bostic Exp $ (Berkeley) $Date: 1995/01/23 16:58:45 $";
+static char sccsid[] = "$Id: key.c,v 9.12 1995/01/23 17:26:28 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:26:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -467,13 +467,13 @@ term_push(sp, s, nchars, flags)
  * point.  Given that this might make the log grow unacceptably (consider that
  * cursor keys are done with maps), for now we leave any changes made in place.
  */
-enum input
+input_t
 term_key(sp, chp, flags)
 	SCR *sp;
 	CH *chp;
 	u_int flags;
 {
-	enum input rval;
+	input_t rval;
 	struct timeval t, *tp;
 	CHAR_T ch;
 	GS *gp;
@@ -658,20 +658,20 @@ the user has seen one or more error messages.   Historic vi just used
 the next character regardless, and users complained.  This routine is
 left in place in case we ever need it again.
 
-static enum input term_key_queue __P((SCR *));
-static enum input term_user_key __P((SCR *, CH *));
+static input_t term_key_queue __P((SCR *));
+static input_t term_user_key __P((SCR *, CH *));
 
 /*
  * term_user_key --
  *	Get the next key, but require the user enter one.
  */
-enum input
+input_t
 term_user_key(sp, chp)
 	SCR *sp;
 	CH *chp;
 {
 	GS *gp;
-	enum input rval;
+	input_t rval;
 	int nr;
 
 	/*
@@ -699,12 +699,12 @@ term_user_key(sp, chp)
  * term_key_queue --
  *	Read the keys off of the terminal queue until it's empty.
  */
-static enum input
+static input_t
 term_key_queue(sp)
 	SCR *sp;
 {
 	GS *gp;
-	enum input rval;
+	input_t rval;
 	struct timeval t;
 	int nr;
 

@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 9.13 1995/01/23 16:58:41 bostic Exp $ (Berkeley) $Date: 1995/01/23 16:58:41 $
+ *	$Id: screen.h,v 9.14 1995/01/23 17:26:26 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:26:26 $
  */
 
 /*
@@ -185,8 +185,8 @@ struct _scr {
 	int	(*e_change) __P((SCR *, recno_t, enum operation));
 					/* Clear to the end of the screen. */
 	int	(*e_clrtoeos) __P((SCR *));
-	enum confirm			/* Confirm an action with the user. */
-		(*e_confirm) __P((SCR *, MARK *, MARK *));
+					/* Confirm an action with the user. */
+	conf_t	(*e_confirm) __P((SCR *, MARK *, MARK *));
 	int     (*e_fmap)		/* Set a function key. */
 	    __P((SCR *, enum seqtype, CHAR_T *, size_t, CHAR_T *, size_t));
 					/* Refresh the screen. */

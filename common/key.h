@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 9.3 1995/01/11 15:58:39 bostic Exp $ (Berkeley) $Date: 1995/01/11 15:58:39 $
+ *	$Id: key.h,v 9.4 1995/01/23 17:26:31 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:26:31 $
  */
 
 /*
@@ -86,7 +86,7 @@ extern KEYLIST keylist[];
  * INP_EOF that vi will reach the command level for the screen, at which point
  * the exit flags will be set and vi will exit.
  */
-enum input	{ INP_OK=0, INP_EOF, INP_ERR, INP_INTR };
+typedef enum { INP_OK=0, INP_EOF, INP_ERR, INP_INTR } input_t;
 
 /*
  * Routines that return a confirmation return:
@@ -95,7 +95,7 @@ enum input	{ INP_OK=0, INP_EOF, INP_ERR, INP_INTR };
  *	CONF_QUIT	User answered quit, eof or an error.
  *	CONF_YES	User answered yes.
  */
-enum confirm	{ CONF_NO, CONF_QUIT, CONF_YES };
+typedef enum { CONF_NO, CONF_QUIT, CONF_YES } conf_t;
 
 /*
  * Ex/vi commands are generally separated by whitespace characters.  We

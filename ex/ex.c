@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 9.23 1995/01/23 17:02:58 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:02:58 $";
+static char sccsid[] = "$Id: ex.c,v 9.24 1995/01/23 17:26:42 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:26:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -52,8 +52,8 @@ int
 ex(sp)
 	SCR *sp;
 {
-	enum input irval;
 	TEXT *tp;
+	input_t irval;
 	u_int flags, saved_mode;
 	int eval;
 
