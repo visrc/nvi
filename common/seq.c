@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 5.14 1992/10/10 13:58:07 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:58:07 $";
+static char sccsid[] = "$Id: seq.c,v 5.15 1992/10/29 14:42:16 bostic Exp $ (Berkeley) $Date: 1992/10/29 14:42:16 $";
 #endif /* not lint */
 
 #include <ctype.h>
@@ -222,7 +222,6 @@ seq_dump(stype, isname)
 	if (seqhead.lnext == (SEQ *)&seqhead)
 		return (0);
 
-	EX_PRSTART(1);
 	cnt = 0;
 	for (sp = seqhead.lnext; sp != (SEQ *)&seqhead; sp = sp->lnext) {
 		if (stype != sp->stype)
@@ -230,31 +229,31 @@ seq_dump(stype, isname)
 		++cnt;
 		for (p = sp->input, len = 0; (ch = *p); ++p, ++len)
 			if (iscntrl(ch)) {
-				(void)putchar('^');
-				(void)putchar(ch + 0x40);
+				(void)putc('^', curf->stdfp);
+				(void)putc(ch + 0x40, curf->stdfp);
 			} else
-				(void)putchar(ch);
+				(void)putc(ch, curf->stdfp);
 		for (len = TAB - len % TAB; len; --len)
-			(void)putchar(' ');
+			(void)putc(' ', curf->stdfp);
 
 		for (p = sp->output; (ch = *p); ++p)
 			if (iscntrl(ch)) {
-				(void)putchar('^');
-				(void)putchar(ch + 0x40);
+				(void)putc('^', curf->stdfp);
+				(void)putc(ch + 0x40, curf->stdfp);
 			} else
-				(void)putchar(ch);
+				(void)putc(ch, curf->stdfp);
 
 		if (isname && sp->name) {
 			for (len = TAB - len % TAB; len; --len)
-				(void)putchar(' ');
+				(void)putc(' ', curf->stdfp);
 			for (p = sp->name, len = 0; (ch = *p); ++p, ++len)
 				if (iscntrl(ch)) {
-					(void)putchar('^');
-					(void)putchar(ch + 0x40);
+					(void)putc('^', curf->stdfp);
+					(void)putc(ch + 0x40, curf->stdfp);
 				} else
-					(void)putchar(ch);
+					(void)putc(ch, curf->stdfp);
 		}
-		EX_PRTRAIL;
+		(void)putc('\n', curf->stdfp);
 	}
 	return (cnt);
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 5.13 1992/10/24 15:25:51 bostic Exp $ (Berkeley) $Date: 1992/10/24 15:25:51 $";
+static char sccsid[] = "$Id: v_ex.c,v 5.14 1992/10/29 14:43:51 bostic Exp $ (Berkeley) $Date: 1992/10/29 14:43:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -14,6 +14,7 @@ static char sccsid[] = "$Id: v_ex.c,v 5.13 1992/10/24 15:25:51 bostic Exp $ (Ber
 #include <curses.h>
 #include <limits.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "vi.h"
 #include "excmd.h"
@@ -22,6 +23,8 @@ static char sccsid[] = "$Id: v_ex.c,v 5.13 1992/10/24 15:25:51 bostic Exp $ (Ber
 #include "term.h"
 #include "vcmd.h"
 #include "extern.h"
+
+static size_t exlinecount, extotalcount;
 
 /*
  * v_ex --
@@ -33,6 +36,7 @@ v_ex(vp, fm, tm, rp)
 	MARK *fm, *tm, *rp;
 {
 	EXF *scurf;
+	size_t len;
 	int flags, key;
 	u_char *p;
 
@@ -44,54 +48,137 @@ v_ex(vp, fm, tm, rp)
 		 * the first.  We may have to overwrite the command later;
 		 * get the length for later.
 		 */
-		if (gb(ISSET(O_PROMPT) ? ':' : 0, &p, &ex_prerase, flags) ||
+		if (gb(ISSET(O_PROMPT) ? ':' : 0, &p, &len, flags) ||
 		    p == NULL)
 			break;
 
-		/*
-		 * Execute the command.  If the command fails, and nothing was
-		 * printed, we return to vi, confident that the error messages
-		 * will be displayed.  If something has been printed, we want
-		 * to group the errors together with the normal output, so we
-		 * supply a terminating newline if it's needed, and then display
-		 * the error messages.
-		 *
-		 * If successful and nothing was printed, return to vi.
-		 *
-		 * In either case, if something was printed, wait for the user
-		 * to confirm that they saw it.
-		 */
-		if (ex_cstring(p, ex_prerase, 0)) {
-			if (ex_prstate == PR_NONE)
-				break;
-			if (ex_prstate == PR_STARTED)
-				EX_PRNEWLINE;
-			if (msgcnt)
-				msg_eflush();
-			else
-				(void)printf("Error...\n");
-		} else if (ex_prstate < PR_PRINTED)
+		(void)ex_cstring(p, len, 0);
+		(void)fflush(curf->stdfp);
+		if (extotalcount <= 1) {
+			needexerase = 1;
 			break;
-		(void)tputs(SO, 0, __putchar);
-		(void)printf("Enter key to continue: ");
-		(void)tputs(SE, 0, __putchar);
-		(void)fflush(stdout);
+		}
+			
+		(void)msg_vflush(curf);
+
+		standout();
+		(void)v_exwrite(curf, CONTMSG, sizeof(CONTMSG) - 1);
+		standend();
+		refresh();
 
 		/* The user may continue in ex mode by entering a ':'. */
-		if ((key = getkey(0)) != ':')
-			break;
+                if ((key = getkey(0)) != ':')
+                        break;
+
+		/* Reset current count. */
+		exlinecount = 0;
 	}
-	v_leaveex();
 
 	/* The file may have changed. */
-	if (scurf != curf) {
+	if (scurf != curf)
 		scr_ref(curf);
-		refresh();
-	}
+	else
+		v_leaveex();
 
 	/* The only cursor modifications will have been real. */
 	rp->lno = curf->lno;
 	rp->cno = curf->cno;
 
 	return (0);
+}
+		
+/*
+ * v_startex --
+ *	Vi calls ex.
+ */
+void
+v_startex()
+{
+	exlinecount = extotalcount = 0;
+}
+
+/*
+ * v_leaveex --
+ *	Ex returns to vi.
+ */
+void
+v_leaveex()
+{
+	if (extotalcount == 0)
+		return;
+	if (extotalcount >= SCREENSIZE(curf)) {
+		scr_ref(curf);
+		return;
+	}
+	do {
+		--extotalcount;
+		(void)scr_update(curf,
+		    SCREENSIZE(curf) - extotalcount, NULL, 0, LINE_RESET);
+	} while (extotalcount);
+}
+
+/*
+ * v_exwrite --
+ *	Write out the ex messages.
+ */
+int
+v_exwrite(cookie, line, llen)
+	void *cookie;
+	const char *line;
+	int llen;
+{
+	EXF *ep;
+	int ch, len, rlen;
+	char *p;
+
+	for (ep = cookie, rlen = llen; llen;) {
+		/* Newline delimits. */
+		if ((p = memchr(line, '\n', llen)) == NULL)
+			len = llen;
+		else
+			len = p - line;
+
+		/* Fold if past end-of-screen. */
+		if (len > ep->cols)
+			len = ep->cols;
+		llen -= len + (p == NULL ? 0 : 1);
+		
+		/* First line is a special case. */
+		if (extotalcount != 0) {
+TRACE("extotalcount %d\n", extotalcount);
+			/*
+			 * Scroll the screen.  Instead of scrolling the entire
+			 * screen, delete the line above the first line output
+			 * so that we preserve the maximum amount of the screen.
+			 */
+			if (extotalcount >= SCREENSIZE(ep)) {
+				MOVE(0, 0);
+			} else
+				MOVE(SCREENSIZE(ep) - (extotalcount - 1), 0);
+			deleteln();
+
+			/* If just displayed a full screen, wait. */
+			if (exlinecount == SCREENSIZE(ep)) {
+				MOVE(SCREENSIZE(ep), 0);
+				addbytes(CONTMSG, sizeof(CONTMSG) - 1);
+				clrtoeol();
+				refresh();
+				while ((ch = getkey(0)) != SPACE &&
+				    special[ch] != K_CR)
+					bell();
+				exlinecount = 0;
+			}
+		}
+		++extotalcount;
+		++exlinecount;
+
+		MOVE(SCREENSIZE(ep), 0);
+		addbytes(line, len);
+
+		if (len < ep->cols)
+			clrtoeol();
+
+		line += len + (p == NULL ? 0 : 1);
+	}
+	return (rlen);
 }

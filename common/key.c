@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.30 1992/10/26 09:08:46 bostic Exp $ (Berkeley) $Date: 1992/10/26 09:08:46 $";
+static char sccsid[] = "$Id: key.c,v 5.31 1992/10/29 14:42:53 bostic Exp $ (Berkeley) $Date: 1992/10/29 14:42:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -110,39 +110,38 @@ gb(prompt, storep, lenp, flags)
 	u_int flags;
 	
 {
-	register int ch, cnt, col, len, quoted;
-#ifndef NO_DIGRAPH
-	int erased;			/* 0, or first char of a digraph. */
-#endif
+	register int ch, cnt, quoted;
 	register u_char *p;
-	char oct[5];
+	size_t clen, col, len;
+	char *dp, oct[5];
 
 	col = 0;
 
+	if (mode == MODE_VI)
+		MOVE(SCREENSIZE(curf), 0);
+
 	/* Display any prompt. */
 	if (prompt) {
-		(void)putchar(prompt);
-		(void)fflush(stdout);
+		if (mode == MODE_VI)
+			addch(prompt);
+		else {
+			(void)putchar(prompt);
+			(void)fflush(stdout);
+		}
 		++col;
+	}
+	if (mode == MODE_VI) {
+		clrtoeol();
+		refresh();
 	}
 
 	/* Read in a line. */
-#ifndef NO_DIGRAPH
-	erased = 0;
-#endif
 	p = flags & GB_OFF ? cb + 1 : cb;
 	for (len = quoted = 0;;) {
 		if (len >= cblen && gb_inc())
 			return (1);
 			
 		ch = getkey(quoted ? 0 : flags & (GB_MAPCOMMAND | GB_MAPINPUT));
-
-#ifndef NO_DIGRAPH
-		if (ISSET(O_DIGRAPH) && erased != 0 && ch != '\b') {
-			ch = digraph(erased, ch);
-			erased = 0;
-		}
-#endif
 		if (quoted)
 			goto insch;
 
@@ -151,14 +150,14 @@ gb(prompt, storep, lenp, flags)
 			if (!(flags & GB_ESC))
 				goto insch;
 			/* FALLTHROUGH */
-		case K_NL:
 		case K_CR:
+		case K_NL:
 			if (flags & GB_NL) {
 				*p++ = '\n';
 				if (len >= cblen && gb_inc())
 					return (1);
 			}
-			if (flags & GB_NLECHO) {
+			if (mode != MODE_VI) {
 				(void)putchar('\n');
 				(void)fflush(stdout);
 			}
@@ -173,82 +172,119 @@ gb(prompt, storep, lenp, flags)
 			}
 			--p;
 			--len;
-#ifndef NO_DIGRAPH
-			erased = *p;
-#endif
-			for (cnt = wb[len]; cnt > 0; --cnt, --col)
-				(void)printf("\b \b");
-			(void)fflush(stdout);
+			if (mode == MODE_VI) {
+				col -= wb[len];
+				MOVE(SCREENSIZE(curf), col);
+				clrtoeol();
+				refresh();
+			} else {
+				for (cnt = wb[len]; cnt > 0; --cnt, --col)
+					(void)printf("\b \b");
+				(void)fflush(stdout);
+			}
 			break;
 		case K_VKILL:
-			if (!len)
+			if (!len) {
+				bell();
 				break;
-			while (len)
-				for (cnt = wb[--len]; cnt > 0; --cnt, --col)
-					(void)printf("\b \b");
-			(void)fflush(stdout);
+			}
+			if (mode == MODE_VI) {
+				if (prompt) {
+					col = len = 1;
+					MOVE(SCREENSIZE(curf), 1);
+				} else {
+					col = len = 0;
+					MOVE(SCREENSIZE(curf), 0);
+				}
+				clrtoeol();
+				refresh();
+			} else {
+				while (len)
+					for (cnt = wb[--len];
+					    cnt > 0; --cnt, --col)
+						(void)printf("\b \b");
+				(void)fflush(stdout);
+			}
 			p = cb;
 			break;
 		case K_VLNEXT:
-			(void)putchar('^');
-			(void)putchar('\b');
-			(void)fflush(stdout);
+			if (mode == MODE_VI) {
+				addbytes("^", 1);
+				MOVE(SCREENSIZE(curf), col);
+				refresh();
+			} else {
+				(void)putchar('^');
+				(void)putchar('\b');
+				(void)fflush(stdout);
+			}
 			quoted = 1;
 			break;
 		case K_VWERASE:
 			if (!len) {
-				if (flags & GB_BS) {
-					*storep = NULL;
-					return (0);
-				}
+				bell();
 				break;
 			}
-			while (len && isspace(*--p))
-				for (cnt = wb[--len]; cnt > 0; --cnt, --col)
-					(void)printf("\b \b");
-			for (; len && !isspace(*p); --p)
-				for (cnt = wb[--len]; cnt > 0; --cnt, --col)
-					(void)printf("\b \b");
-			(void)fflush(stdout);
+			if (mode == MODE_VI) {
+				while (len && isspace(*--p))
+					col -= wb[--len];
+				for (; len && !isspace(*p); --p)
+					col -= wb[--len];
+				MOVE(SCREENSIZE(curf), col);
+				clrtoeol();
+				refresh();
+			} else {
+				while (len && isspace(*--p))
+					for (cnt = wb[--len];
+					    cnt > 0; --cnt, --col)
+						(void)printf("\b \b");
+				for (; len && !isspace(*p); --p)
+					for (cnt = wb[--len];
+					    cnt > 0; --cnt, --col)
+						(void)printf("\b \b");
+				(void)fflush(stdout);
+			}
 			if (len)
 				++p;
 			break;
-		case 0:
+		default:
 insch:			if (quoted) {
 				QSET(len);
 				quoted = 0;
 			}
-#define	WCHECK(ch) { \
-	if (col == COLS) { \
-		(void)putchar('\n'); \
-		col = 0; \
-	} \
-	(void)putchar(ch); \
-	++col; \
-}
 			/* Add & echo the char. */
 			if (ch == '\t') {
-				wb[len] =
+				clen = 
 				    LVAL(O_TABSTOP) - (col % LVAL(O_TABSTOP));
-				for (cnt = wb[len]; cnt > 0; --cnt, ++col)
-					WCHECK(' ');
-			} else if (isprint(ch)) {
-				WCHECK(ch);
-				wb[len] = 1;
-				++col;
-			} else if (ch & 0x80) {
-				(void)snprintf(oct, sizeof(oct), "\\%03o", ch);
-				wb[len] = strlen(oct);
-				for (cnt = 0; cnt < wb[len]; ++cnt, ++col)
-					WCHECK(oct[cnt]);
-			} else if (ch > 0 && ch < ' ') {
-				WCHECK('^');
-				WCHECK(ch + 0x40);
-				col += wb[len] = 2;
+				dp = "          ";
+			} else {
+				clen = asciilen[ch];
+				dp = asciiname[ch];
 			}
-			(void)fflush(stdout);
+			/*
+			 * XXX
+			 * We limit vi command lines to the screen width.
+			 * Should handle longer lines for complex commands.
+			 */
+			if (col == curf->cols) {
+				if (mode == MODE_VI) {
+					bell();
+					break;
+				}
+				(void)putchar('\n');
+				col = 0;
+			}
+			if (mode == MODE_VI)
+				addbytes(dp, clen);
+			else
+				(void)printf("%.*s", dp, clen);
+
+			if (mode == MODE_VI)
+				refresh();
+			else
+				(void)fflush(stdout);
+
 			*p++ = ch;
-			++len;
+			col += wb[len++] = clen;
 			break;
 		}
 	}
