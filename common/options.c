@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.73 1994/09/29 17:03:32 bostic Exp $ (Berkeley) $Date: 1994/09/29 17:03:32 $";
+static char sccsid[] = "$Id: options.c,v 8.74 1994/10/05 10:39:54 bostic Exp $ (Berkeley) $Date: 1994/10/05 10:39:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -102,8 +102,6 @@ static OPTLIST const optlist[] = {
 	{"matchtime",	NULL,		OPT_NUM,	0},
 /* O_MESG	    4BSD */
 	{"mesg",	f_mesg,		OPT_1BOOL,	0},
-/* O_META	  4.4BSD */
-	{"meta",	NULL,		OPT_STR,	0},
 /* O_MODELINE	    4BSD */
 	{"modeline",	f_modeline,	OPT_0BOOL,	0},
 /* O_MSGCAT	  4.4BSD */
@@ -138,6 +136,8 @@ static OPTLIST const optlist[] = {
 	{"sections",	f_section,	OPT_STR,	0},
 /* O_SHELL	    4BSD */
 	{"shell",	NULL,		OPT_STR,	0},
+/* O_SHELLMETA	  4.4BSD */
+	{"shellmeta",	NULL,		OPT_STR,	0},
 /* O_SHIFTWIDTH	    4BSD */
 	{"shiftwidth",	f_shiftwidth,	OPT_NUM,	0},
 /* O_SHOWMATCH	    4BSD */
@@ -295,7 +295,6 @@ opts_init(sp, oargs)
 	SET_DEF(O_DIRECTORY, b1);
 	SET_DEF(O_KEYTIME, "keytime=6");
 	SET_DEF(O_MATCHTIME, "matchtime=7");
-	SET_DEF(O_META, "meta=~{[*?$`'\"\\");
 	(void)snprintf(b1, sizeof(b1), "msgcat=%s", _PATH_MSGCAT);
 	SET_DEF(O_MSGCAT, b1);
 	SET_DEF(O_REPORT, "report=5");
@@ -306,6 +305,7 @@ opts_init(sp, oargs)
 	(void)snprintf(b1, sizeof(b1), "shell=%s",
 	    (s = getenv("SHELL")) == NULL ? _PATH_BSHELL : s);
 	SET_DEF(O_SHELL, b1);
+	SET_DEF(O_SHELLMETA, "shellmeta=~{[*?$`'\"\\");
 	SET_DEF(O_SHIFTWIDTH, "shiftwidth=8");
 	SET_DEF(O_SIDESCROLL, "sidescroll=16");
 	SET_DEF(O_TABSTOP, "tabstop=8");
