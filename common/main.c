@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.42 1993/11/18 08:17:05 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:17:05 $";
+static char sccsid[] = "$Id: main.c,v 8.43 1993/11/18 08:24:13 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:24:13 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -400,6 +400,8 @@ gs_init()
 		err(1, NULL);
 	memset(gp, 0, sizeof(GS));
 
+	LIST_INIT(&gp->scrq);
+
 	/* Structures shared by screens so stored in the GS structure. */
 	if ((gp->key = malloc(sizeof(IBUF))) == NULL)
 		err(1, NULL);
@@ -407,6 +409,9 @@ gs_init()
 	if ((gp->tty = malloc(sizeof(IBUF))) == NULL)
 		err(1, NULL);
 	memset(gp->tty, 0, sizeof(IBUF));
+
+	LIST_INIT(&gp->cutq);
+	LIST_INIT(&gp->seqq);
 
 	/* Set a flag if we're reading from the tty. */
 	if (isatty(STDIN_FILENO))
