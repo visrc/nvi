@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.68 1993/05/16 12:34:53 bostic Exp $ (Berkeley) $Date: 1993/05/16 12:34:53 $";
+static char sccsid[] = "$Id: key.c,v 5.69 1993/05/16 20:49:10 bostic Exp $ (Berkeley) $Date: 1993/05/16 20:49:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -169,8 +169,10 @@ term_key(sp, flags)
 	int ispartial, nr;
 
 	/* Sync the recovery file if necessary. */
-	if (F_ISSET(sp->ep, F_RCV_ALRM))
+	if (F_ISSET(sp->ep, F_RCV_ALRM)) {
 		(void)rcv_sync(sp, sp->ep);
+		F_CLR(sp->ep, F_RCV_ALRM);
+	}
 
 	/* If in the middle of an @ macro, return the next char. */
 	if (sp->atkey_len) {
