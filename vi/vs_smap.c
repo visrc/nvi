@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 8.16 1993/10/07 10:38:22 bostic Exp $ (Berkeley) $Date: 1993/10/07 10:38:22 $";
+static char sccsid[] = "$Id: vs_smap.c,v 8.17 1993/10/10 13:10:28 bostic Exp $ (Berkeley) $Date: 1993/10/10 13:10:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,6 +21,7 @@ static char sccsid[] = "$Id: vs_smap.c,v 8.16 1993/10/07 10:38:22 bostic Exp $ (
 
 static int	svi_deleteln __P((SCR *, int));
 static int	svi_insertln __P((SCR *, int));
+static int	svi_sm_cursor __P((SCR *, EXF *, SMAP **));
 
 /*
  * svi_change --
@@ -440,72 +441,73 @@ svi_sm_up(sp, ep, rp, count, cursor_move)
 	int cursor_move;
 {
 	SMAP *p, svmap, tmp;
-	recno_t last, scount;
+	recno_t lno;
 	int ignore_cursor;
-
-	/* Check to see if it's possible. */
-	if (file_lline(sp, ep, &last))
-		return (1);
-	if (last == 0) {
-		v_eof(sp, ep, NULL);
-		return (1);
-	}
 
 	/* Set the default return position. */
 	rp->lno = sp->lno;
 	rp->cno = sp->cno;
 
 	/*
-	 * There are two forms of this command, one where the cursor follows
-	 * the line, and one where it doesn't.  In the latter, we try and keep
-	 * the cursor at the same position on the screen, but, if the screen
-	 * is small enough and the line length large enough, the cursor can
-	 * end up in very strange places.  Probably not worth fixing.
+	 * There are two forms of this command, one where the cursor tries to
+	 * follow the line, and one where it doesn't.  In the latter, we try
+	 * and keep the cursor at the same position on the screen, but, if the
+	 * screen is small enough and the line length large enough, the cursor
+	 * can end up in very strange places.  Probably not worth fixing.
 	 *
-	 * Find the line in the SMAP.  If the line isn't there, then we
-	 * completely ignore the cursor.
+	 * Find the line in the SMAP -- ignore the cursor if it wasn't on the
+	 * screen.
 	 */
-	ignore_cursor = 0;
-	for (p = HMAP;; ++p) {
-		if (p > TMAP) {
-			ignore_cursor = 1;
-			break;
-		}
-		if (p->lno == sp->lno) {
-			svmap = *p;
-			break;
-		}
+	if (svi_sm_cursor(sp, ep, &p))
+		return (1);
+	if (p == NULL)
+		ignore_cursor = 1;
+	else {
+		svmap = *p;
+		ignore_cursor = 0;
 	}
 
+	/* Check to see if movement is possible. */
+	if (p == TMAP) {
+		if (svi_sm_next(sp, ep, p, &tmp))
+			return (1);
+		if (tmp.lno > p->lno && !file_gline(sp, ep, tmp.lno, NULL)) {
+			v_eof(sp, ep, NULL);
+			return (1);
+		}
+	}
+			
 	/*
 	 * Small screens: see svi/svi_refresh.c:svi_refresh, section 3b.
 	 *
-	 * If it's a small screen, and the movement is small, open up
-	 * the screen.  Otherwise, compress and repaint.
+	 * If it's a small screen, and the movement is small, open up the
+	 * screen.  Otherwise, compress and repaint.  If we compress, we
+	 * ignore the cursor, the movement is too large to care.
 	 */
-	scount = count;
 	if (ISSMALLSCREEN(sp))
-		if (count <= HALFTEXT(sp))
+		if (count <= HALFTEXT(sp)) {
 			for (; count && sp->t_rows != sp->t_maxrows;
 			     --count, ++sp->t_rows) {
-				if (svi_sm_next(sp, ep, TMAP, TMAP + 1))
+				if (svi_sm_next(sp, ep, TMAP, &tmp))
 					return (1);
-				++TMAP;
-				if (TMAP->lno > last) {
-					--TMAP;
+				if (TMAP->lno != tmp.lno &&
+				    !file_gline(sp, ep, tmp.lno, NULL))
 					break;
-				}
+				*++TMAP = tmp;
 				if (svi_line(sp, ep, TMAP, NULL, NULL))
 					return (1);
 			}
-		else {
+			if (count == 0)
+				return (0);
+		} else {
 			MOVE(sp, INFOLINE(sp), 0);
 			clrtoeol();
-			for (; sp->t_rows > sp->t_minrows;
-			    --sp->t_rows, --TMAP) {
+			for (;
+			    sp->t_rows > sp->t_minrows; --sp->t_rows, --TMAP) {
 				MOVE(sp, TMAP - HMAP, 0);
 				clrtoeol();
 			}
+			ignore_cursor = 1;
 		}
 
 	for (; count; --count) {
@@ -514,13 +516,12 @@ svi_sm_up(sp, ep, rp, count, cursor_move)
 			return (1);
 
 		/* If the line doesn't exist, we're done. */
-		if (tmp.lno > last)
+		if (TMAP->lno != tmp.lno && !file_gline(sp, ep, tmp.lno, NULL))
 			break;
 			
-		/* Scroll up one logical line. */
+		/* Scroll the screen cursor up one logical line. */
 		if (svi_sm_1up(sp, ep))
 			return (1);
-		
 		if (!cursor_move && !ignore_cursor && p > HMAP)
 			--p;
 	}
@@ -530,22 +531,13 @@ svi_sm_up(sp, ep, rp, count, cursor_move)
 		return (0);
 
 	if (cursor_move) {
-		/*
-		 * If didn't move enough lines, it's an error if we're at the
-		 * EOF, else move there.  Otherwise, try and place the cursor
-		 * roughly where it was before.
-		 */
+		/* If we didn't move enough, move to SOF. */
 		if (count) {
-			if (count == scount) {
-				v_eof(sp, ep, NULL);
+			if (file_lline(sp, ep, &lno))
 				return (1);
-			}
-			if (last < TMAP->lno) {
-				for (p = HMAP;; ++p)
-					if (p->lno == last)
-						break;
-			} else
-				p = TMAP;
+			for (p = HMAP;; ++p)
+				if (p->lno == lno)
+					break;
 		}
 	} else {
 		/*
@@ -554,7 +546,7 @@ svi_sm_up(sp, ep, rp, count, cursor_move)
 		 */
 		F_SET(SVP(sp), SVI_CUR_INVALID);
 
-		/* It's an error if we didn't scroll enough. */
+		/* If didn't move enough, it's an error. */
 		if (count) {
 			v_eof(sp, ep, NULL);
 			return (1);
@@ -645,61 +637,64 @@ svi_sm_down(sp, ep, rp, count, cursor_move)
 	SMAP *p, svmap;
 	int ignore_cursor;
 
-	/* If at the start of the file, we're done. */
-	if (HMAP->lno == 1 && HMAP->off == 1) {
-		v_sof(sp, NULL);
-		return (1);
-	}
-			
 	/* Set the default return position. */
 	rp->lno = sp->lno;
 	rp->cno = sp->cno;
 
 	/*
-	 * There are two forms of this command, one where the cursor follows
-	 * the line, and one where it doesn't.  In the latter, we try and keep
-	 * the cursor at the same position on the screen, but, if the screen
-	 * is small enough and the line length large enough, the cursor can
-	 * end up in very strange places.  Probably not worth fixing.
+	 * There are two forms of this command, one where the cursor tries to
+	 * follow the line, and one where it doesn't.  In the latter, we try
+	 * and keep the cursor at the same position on the screen, but, if the
+	 * screen is small enough and the line length large enough, the cursor
+	 * can end up in very strange places.  Probably not worth fixing.
 	 *
-	 * Find the line in the SMAP.  If the line isn't there, then we
-	 * completely ignore the cursor.
+	 * Find the line in the SMAP -- ignore the cursor if it wasn't on the
+	 * screen.
 	 */
-	ignore_cursor = 0;
-	for (p = HMAP;; ++p) {
-		if (p > TMAP) {
-			ignore_cursor = 1;
-			break;
-		}
-		if (p->lno == sp->lno) {
-			svmap = *p;
-			break;
-		}
+	if (svi_sm_cursor(sp, ep, &p))
+		return (1);
+	if (p == NULL)
+		ignore_cursor = 1;
+	else {
+		svmap = *p;
+		ignore_cursor = 0;
+	}
+
+	/* Check to see if movement is possible. */
+	if (p == HMAP && p->lno == 1 && p->off == 1) {
+		v_sof(sp, NULL);
+		return (1);
 	}
 
 	/*
 	 * Small screens: see svi/svi_refresh.c:svi_refresh, section 3b.
 	 *
-	 * If it's a small screen, and the movement is small, open up
-	 * the screen.  Otherwise, compress and repaint.
+	 * If it's a small screen, and the movement is small, open up the
+	 * screen.  Otherwise, compress and repaint.  If we compress, we
+	 * ignore the cursor, the movement is too large to care.
 	 */
 	if (ISSMALLSCREEN(sp))
-		if (count <= HALFTEXT(sp))
+		if (count <= HALFTEXT(sp)) {
 			for (; count && sp->t_rows != sp->t_maxrows &&
 			    (HMAP->lno > 1 || HMAP->off > 1);
 			    --count, ++sp->t_rows) {
 				++TMAP;
 				if (svi_sm_1down(sp, ep))
 					return (1);
+				if (!cursor_move)
+					++p;
 			}
-		else {
+			if (count == 0)
+				return (0);
+		} else {
 			MOVE(sp, INFOLINE(sp), 0);
 			clrtoeol();
-			for (; sp->t_rows > sp->t_minrows;
-			    --sp->t_rows, --TMAP) {
+			for (;
+			    sp->t_rows > sp->t_minrows; --sp->t_rows, --TMAP) {
 				MOVE(sp, TMAP - HMAP, 0);
 				clrtoeol();
 			}
+			ignore_cursor = 1;
 		}
 
 	for (; count; --count) {
@@ -707,10 +702,9 @@ svi_sm_down(sp, ep, rp, count, cursor_move)
 		if (HMAP->lno == 1 && HMAP->off == 1)
 			break;
 			
-		/* Scroll down one logical line. */
+		/* Scroll the screen and cursor down one logical line. */
 		if (svi_sm_1down(sp, ep))
 			return (1);
-		
 		if (!cursor_move && !ignore_cursor && p < TMAP)
 			++p;
 	}
@@ -720,18 +714,9 @@ svi_sm_down(sp, ep, rp, count, cursor_move)
 		return (0);
 
 	if (cursor_move) {
-		/*
-		 * If didn't move enough lines, it's an error if we're at the
-		 * SOF, else move there.  Otherwise, try and place the cursor
-		 * roughly where it was before.
-		 */
-		if (count) {
-			if (sp->lno == HMAP->lno) {
-				v_sof(sp, NULL);
-				return (1);
-			}
+		/* If we didn't move enough, move to SOF. */
+		if (count)
 			p = HMAP;
-		}
 	} else {
 		/*
 		 * If the line itself moved, invalidate the cursor, because
@@ -739,7 +724,7 @@ svi_sm_down(sp, ep, rp, count, cursor_move)
 		 */
 		F_SET(SVP(sp), SVI_CUR_INVALID);
 
-		/* It's an error if we didn't scroll enough. */
+		/* If didn't move enough, it's an error. */
 		if (count) {
 			v_sof(sp, NULL);
 			return (1);
@@ -866,8 +851,49 @@ svi_sm_prev(sp, ep, p, t)
 }
 
 /*
+ * svi_sm_cursor --
+ *	Return the SMAP entry referenced by the cursor.
+ */
+static int
+svi_sm_cursor(sp, ep, smp)
+	SCR *sp;
+	EXF *ep;
+	SMAP **smp;
+{
+	SMAP *p, tmp;
+
+	/* See if the cursor is not in the map. */
+	if (sp->lno < HMAP->lno || sp->lno > TMAP->lno) {
+		*smp = NULL;
+		return (0);
+	}
+
+	/* Find the first occurence of the line. */
+	for (p = HMAP; p->lno != sp->lno; ++p);
+
+	/* Fill in the map information until we find the right line. */
+	for (; p <= TMAP; ++p) {
+		/* Short lines are common and easy to detect. */
+		if (p != TMAP && (p + 1)->lno != p->lno) {
+			*smp = p;
+			return (0);
+		}
+		if (!SMAP_CACHE(p) && svi_line(sp, ep, p, NULL, NULL))
+			return (1);
+		if (p->c_eboff >= sp->cno) {
+			*smp = p;
+			return (0);
+		}
+	}
+
+	/* It was past the end of the map after all. */
+	*smp = NULL;
+	return (0);
+}
+
+/*
  * svi_sm_position --
- *	Return the line number of the top, middle or last line on the screen.
+ *	Return the line/column of the top, middle or last line on the screen.
  *	(The vi H, M and L commands.)  Here because only the screen routines
  *	know what's really out there.
  */
