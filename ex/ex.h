@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 5.23 1992/12/05 11:09:03 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:09:03 $
+ *	$Id: ex.h,v 5.24 1992/12/20 15:07:09 bostic Exp $ (Berkeley) $Date: 1992/12/20 15:07:09 $
  */
 
 #include "exf.h"
@@ -32,9 +32,10 @@ typedef struct {
 #define	E_F_PRINT	0x00800		/*  p flag. */
 #define	E_F_MASK	0x00fe0		/* Flag mask. */
 
-#define	E_NOPERM	0x01000		/* Permission denied for now. */
-#define	E_SETLAST	0x02000		/* Reset last command. */
-#define	E_ZERO		0x04000		/* 0 is a legal (first) address.*/
+#define	E_NOGLOBAL	0x01000		/* Not in a global. */
+#define	E_NOPERM	0x02000		/* Permission denied for now. */
+#define	E_SETLAST	0x04000		/* Reset last command. */
+#define	E_ZERO		0x08000		/* 0 is a legal (first) address.*/
 	u_int flags;
 	char *syntax;			/* Syntax script. */
 	char *usage;			/* Usage line. */

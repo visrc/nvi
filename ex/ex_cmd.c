@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 5.18 1992/12/05 11:09:02 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:09:02 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 5.19 1992/12/20 15:07:23 bostic Exp $ (Berkeley) $Date: 1992/12/20 15:07:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -72,30 +72,25 @@ EXCMDLIST cmds[] = {
 	"append",	ex_append,	E_ADDR1|E_ZERO,
 	    "!",	"[line] a[ppend][!]",
 /* C_ABBR */
-	"abbreviate", 	ex_abbr,	0,
+	"abbreviate", 	ex_abbr,	E_NOGLOBAL,
 	    "s",	"ab[brev] word replace",
 /* C_ARGS */
-	"args",		ex_args,	0,
+	"args",		ex_args,	E_NOGLOBAL,
 	    "",		"ar[gs]",
 /* C_BDISPLAY */
-	"bdisplay",	ex_bdisplay,	0,
+	"bdisplay",	ex_bdisplay,	E_NOGLOBAL,
 	    "",		"[b]display",
 /* C_CHANGE */
 	"change",	ex_change,	E_ADDR2,
 	    "!c",	"[line [,line]] c[hange][!] [count]",
-#ifdef	NO_ERRLIST
-#define	E_PERM		E_NOPERM
-#else
-#define	E_PERM		0
-#endif
 /* C_CC */
-	"cc",		ex_cc,		E_PERM,
+	"cc",		ex_cc,		E_NOGLOBAL,
 	    "s",	"cc [argument ...]",
 /* C_CD */
-	"cd",		ex_cd,		0,
+	"cd",		ex_cd,		E_NOGLOBAL|0,
 	    "!f1o",	"cd[!] [directory]",
 /* C_CHDIR */
-	"chdir",	ex_cd,		0,
+	"chdir",	ex_cd,		E_NOGLOBAL,
 	    "!f1o",	"chd[ir][!] [directory]",
 /* C_COPY */
 	"copy",		ex_copy,	E_ADDR2,
@@ -103,36 +98,26 @@ EXCMDLIST cmds[] = {
 /* C_DELETE */
 	"delete",	ex_delete,	E_ADDR2,
 	    "bc1",	"[line [,line]] d[elete] [buffer] [count] [flags]",
-#ifdef NO_DIGRAPH
-#define	E_PERM		E_NOPERM
-#else
-#define	E_PERM		0
-#endif
 /* C_DIGRAPH */
-	"digraph",	ex_digraph,	0|E_PERM,
+	"digraph",	ex_digraph,	E_NOGLOBAL|E_NOPERM,
 	    "",		"digraph XXX",
 /* C_EDIT */
-	"edit",		ex_edit,	0,
+	"edit",		ex_edit,	E_NOGLOBAL,
 	    "!+f1o",	"e[dit][!] [+cmd] [file]",
-#ifdef NO_ERRLIST
-#define	E_PERM		E_NOPERM
-#else
-#define	E_PERM		0
-#endif
 /* C_ERRLIST */
-	"errlist",	ex_errlist,	E_PERM,
+	"errlist",	ex_errlist,	E_NOGLOBAL,
 	    "f1o",	"errlist [file]",
 /* C_EX */
-	"ex",		ex_edit,	0,
+	"ex",		ex_edit,	E_NOGLOBAL,
 	    "!+f1o",	"ex[!] [+cmd] [file]",
 /* C_EXUSAGE */
-	"exusage",	ex_usage,	0,
+	"exusage",	ex_usage,	E_NOGLOBAL,
 	    "w1r",	"[exu]sage cmd",
 /* C_FILE */
-	"file",		ex_file,	0,
+	"file",		ex_file,	E_NOGLOBAL,
 	    "f10",	"f[ile] [name]",
 /* C_GLOBAL */
-	"global",	ex_global,	E_ADDR2_ALL,
+	"global",	ex_global,	E_ADDR2_ALL|E_NOGLOBAL,
 	    "!s",	"[line [,line]] g[lobal][!] [;/]pattern[;/] [commands]",
 /* C_INSERT */
 	"insert",	ex_append,	E_ADDR1,
@@ -152,27 +137,17 @@ EXCMDLIST cmds[] = {
 /* C_MARK */
 	"mark",		ex_mark,	E_ADDR1,
 	    "w1r",	"[line] ma[rk] key",
-#ifdef NO_ERRLIST
-#define	E_PERM		E_NOPERM
-#else
-#define	E_PERM		0
-#endif
 /* C_MAKE */
-	"make",		ex_make,	E_PERM,
+	"make",		ex_make,	E_NOGLOBAL|E_NOPERM,
 	    "s",	"make [argument ...]",
 /* C_MAP */
 	"map",		ex_map,		0,
 	    "s",	"map[!] [key replace]",
-#ifdef NO_MKEXRC
-#define	E_PERM		E_NOPERM
-#else
-#define	E_PERM		0
-#endif
 /* C_MKEXRC */
-	"mkexrc",	ex_mkexrc,	E_PERM,
+	"mkexrc",	ex_mkexrc,	E_NOGLOBAL,
 	    "!f1r",	"mkexrc[!] file",
 /* C_NEXT */
-	"next",		ex_next,	0,
+	"next",		ex_next,	E_NOGLOBAL,
 	    "fN",	"n[ext][!] [file ...]",
 /* C_NUMBER */
 	"number",	ex_number,	E_ADDR2|E_SETLAST,
@@ -181,75 +156,75 @@ EXCMDLIST cmds[] = {
 	"print",	ex_pr,		E_ADDR2|E_SETLAST,
 	    "c1",	"[line [,line]] p[rint] [count] [#l]",
 /* C_PREVIOUS */
-	"previous",	ex_prev,	0,
+	"previous",	ex_prev,	E_NOGLOBAL,
 	    "!fN",	"prev[ious][!] [file ...]",
 /* C_PUT */
 	"put",		ex_put,		E_ADDR1|E_ZERO,
 	    "b",	"[line] pu[t] [buffer]",
 /* C_QUIT */
-	"quit",		ex_quit,	0,
+	"quit",		ex_quit,	E_NOGLOBAL,
 	    "!",	"q[uit][!]",
 /* C_READ */
 	"read",		ex_read,	E_ADDR1|E_ZERO,
 	    "s",	"[line] r[ead] [!cmd | [file]]",
 /* C_REWIND */
-	"rewind",	ex_rew,		0,
+	"rewind",	ex_rew,		E_NOGLOBAL,
 	    "!",	"rew[ind][!]",
 /* C_SUBSTITUTE */
 	"substitute",	ex_substitute,	E_ADDR2,
 	    "s",
 	"[line [,line]] s[ubstitute] [[/;]pat[/;]/repl[/;] [count] [#cglpr]]",
 /* C_SET */
-	"set",		ex_set,		0,
+	"set",		ex_set,		E_NOGLOBAL,
 	    "wN",
 	    "se[t] [option[=[value]]...] [nooption ...] [option? ...] [all]",
 /* C_SHELL */
-	"shell",	ex_shell,	0,
+	"shell",	ex_shell,	E_NOGLOBAL,
 	    "", 	"sh[ell]",
 /* C_SOURCE */
-	"source",	ex_source,	0,
+	"source",	ex_source,	E_NOGLOBAL,
 	    "f1r", 	"so[urce] file",
 /* C_T */
 	"t",		ex_move,	E_ADDR2,
 	    "l1", 	"[line [,line]] t line [flags]",
 /* C_TAG */
-	"tag",		ex_tagpush,	0,
+	"tag",		ex_tagpush,	E_NOGLOBAL,
 	    "!w1o", 	"ta[g][!] [string]",
 /* C_TAGPOP */
-	"tagpop",	ex_tagpop,	0,
+	"tagpop",	ex_tagpop,	E_NOGLOBAL,
 	    "!", 	"tagp[op][!]",
 /* C_TAGTOP */
-	"tagtop",	ex_tagtop,	0,
+	"tagtop",	ex_tagtop,	E_NOGLOBAL,
 	    "!", 	"tagt[op][!]",
 /* C_UNDO */
-	"undo",		ex_undo,	0,
+	"undo",		ex_undo,	E_NOGLOBAL,
 	    "", 	"u[ndo]",
 /* C_UNABBREVIATE */
-	"unabbreviate",	ex_unabbr,	0,
+	"unabbreviate",	ex_unabbr,	E_NOGLOBAL,
 	    "w1r", 	"una[bbrev] word",
 /* C_UNMAP */
-	"unmap",	ex_unmap,	0,
+	"unmap",	ex_unmap,	E_NOGLOBAL,
 	    "!w1r", 	"unm[ap][!] key",
 /* C_VGLOBAL */
-	"vglobal",	ex_global,	E_ADDR2_ALL,
+	"vglobal",	ex_global,	E_ADDR2_ALL|E_NOGLOBAL,
 	    "s", 	"[line [,line]] v[global] [;/]pattern[;/] [commands]",
 /* C_VERSION */
-	"version",	ex_version,	0,
+	"version",	ex_version,	E_NOGLOBAL,
 	    "", 	"version",
 /* C_VISUAL */
-	"visual",	ex_visual,	E_ADDR2,
+	"visual",	ex_visual,	E_ADDR2|E_NOGLOBAL,
 	    "2c1", 	"[line] vi[sual] [type] [count] [flags]",
 /* C_VIUSAGE */
-	"viusage",	ex_viusage,	0,
+	"viusage",	ex_viusage,	E_NOGLOBAL,
 	    "w1r",	"[viu]sage key",
 /* C_WRITE */
-	"write",	ex_write,	E_ADDR2_ALL,
+	"write",	ex_write,	E_ADDR2_ALL|E_NOGLOBAL,
 	    "s",	"[line [,line]] w[rite] [!cmd | [>>] [file]]",
 /* C_WQ */
-	"wq",		ex_wq,		E_ADDR2_ALL,
+	"wq",		ex_wq,		E_ADDR2_ALL|E_NOGLOBAL,
 	    "!>f1o",	"[line [,line]] wq[!] [>>] [file]",
 /* C_XIT */
-	"xit",		ex_xit,		E_ADDR2_ALL,
+	"xit",		ex_xit,		E_ADDR2_ALL|E_NOGLOBAL,
 	    "!f1o",	"[line [,line]] x[it][!] [file]",
 /* C_YANK */
 	"yank",		ex_yank,	E_ADDR2,
