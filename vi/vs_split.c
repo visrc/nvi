@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 9.9 1995/01/30 13:20:29 bostic Exp $ (Berkeley) $Date: 1995/01/30 13:20:29 $";
+static char sccsid[] = "$Id: vs_split.c,v 9.10 1995/01/30 15:11:35 bostic Exp $ (Berkeley) $Date: 1995/01/30 15:11:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -37,18 +37,13 @@ static char sccsid[] = "$Id: vs_split.c,v 9.9 1995/01/30 13:20:29 bostic Exp $ (
  *	Split the screen.
  */
 int
-svi_split(sp, argv, argc)
-	SCR *sp;
-	ARGS *argv[];
-	int argc;
+svi_split(sp, topp, botp)
+	SCR *sp, **topp, **botp;
 {
-	MSG *mp, *next;
-	SCR *tsp, saved_sp;
-	SVI_PRIVATE saved_svp, *svp;
+	SCR *tsp;
 	SMAP *smp;
 	size_t cnt, half;
 	int issmallscreen, splitup;
-	char **ap;
 
 	/* Check to see if it's possible. */
 	half = sp->rows / 2;
@@ -64,13 +59,6 @@ svi_split(sp, argv, argc)
 	CALLOC(sp, _HMAP(tsp), SMAP *, SIZE_HMAP(sp), sizeof(SMAP));
 	if (_HMAP(tsp) == NULL)
 		return (1);
-
-	/*
-	 * We're about to modify the current screen.  Save the contents
-	 * in case something goes horribly, senselessly wrong.
-	 */
-	saved_sp = *sp;
-	saved_svp = *SVP(sp);
 
 /* INITIALIZED AT SCREEN CREATE. */
 
@@ -101,6 +89,8 @@ svi_split(sp, argv, argc)
 		sp->rows = half;
 		sp->t_maxrows = IS_ONELINE(sp) ? 1 : sp->rows - 1;
 
+		*topp = sp;
+		*botp = tsp;
 		splitup = 0;
 	} else {				/* Parent is bottom half. */
 		/* Child. */
@@ -117,6 +107,8 @@ svi_split(sp, argv, argc)
 		memmove(_HMAP(sp),
 		    _HMAP(sp) + tsp->rows, sp->t_maxrows * sizeof(SMAP));
 
+		*topp = tsp;
+		*botp = sp;
 		splitup = 1;
 	}
 
@@ -150,7 +142,6 @@ svi_split(sp, argv, argc)
 		 * were painted in the parent may not be painted in the
 		 * child.  Clear any lines not being used in the child
 		 * screen.
-		 *
 		 */
 		if (splitup)
 			for (cnt = tsp->t_rows; ++cnt <= tsp->t_maxrows;) {
@@ -180,6 +171,9 @@ svi_split(sp, argv, argc)
 			}
 	}
 
+	/* Copy the parent's map into the child's map. */
+	memmove(_HMAP(tsp), _HMAP(sp), tsp->t_rows * sizeof(SMAP));
+
 	/* Adjust the ends of both maps. */
 	_TMAP(sp) = IS_ONELINE(sp) ?
 	    _HMAP(sp) : _HMAP(sp) + (sp->t_rows - 1);
@@ -192,111 +186,7 @@ svi_split(sp, argv, argc)
 	if ((tsp->defscroll = tsp->t_maxrows / 2) == 0)
 		tsp->defscroll = 1;
 
-	/*
-	 * If files specified, build the file list, else, link to the
-	 * current file.
-	 */
-	if (argv == NULL) {
-		if ((tsp->frp = file_add(tsp, sp->frp->name)) == NULL)
-			goto err;
-	} else {
-		/* Create a new argument list. */
-		CALLOC(sp, tsp->argv, char **, argc + 1, sizeof(char *));
-		if (tsp->argv == NULL)
-			goto err;
-		for (ap = tsp->argv, argv; argv[0]->len != 0; ++ap, ++argv)
-			if ((*ap =
-			    v_strdup(sp, argv[0]->bp, argv[0]->len)) == NULL)
-				goto err;
-		*ap = NULL;
-
-		/* Switch to the first one. */
-		tsp->cargv = tsp->argv;
-		if ((tsp->frp = file_add(tsp, *tsp->cargv)) == NULL)
-			goto err;
-	}
-
-	/*
-	 * Copy the file state flags, start the file.  Fill the child's
-	 * screen map.  If the file is unchanged, keep the screen and
-	 * cursor the same.
-	 */
-	if (argv == NULL) {
-		tsp->ep = sp->ep;
-		++sp->ep->refcnt;
-
-		tsp->frp->flags = sp->frp->flags;
-		tsp->lno = sp->lno;
-		tsp->cno = sp->cno;
-
-		/* Copy the parent's map into the child's map. */
-		memmove(_HMAP(tsp), _HMAP(sp), tsp->t_rows * sizeof(SMAP));
-	} else {
-		if (file_init(tsp, tsp->frp, NULL, 0))
-			goto err;
-		(void)svi_sm_fill(tsp, 1, P_TOP);
-		(void)msg_status(tsp, tsp->lno, 0);
-	}
-
-	/* Everything's initialized, put the screen on the displayed queue.*/
-	SIGBLOCK(sp->gp);
-	if (splitup) {
-		/* Link in before the parent. */
-		CIRCLEQ_INSERT_BEFORE(&sp->gp->dq, sp, tsp, q);
-	} else {
-		/* Link in after the parent. */
-		CIRCLEQ_INSERT_AFTER(&sp->gp->dq, sp, tsp, q);
-	}
-	SIGUNBLOCK(sp->gp);
-
-	/* Clear the current information lines in both screens. */
-	svp = SVP(sp);
-	(void)svp->scr_move(sp, RLNO(sp, INFOLINE(sp)), 0);
-	(void)svp->scr_clrtoeol(sp);
-	(void)svp->scr_move(tsp, RLNO(sp, INFOLINE(tsp)), 0);
-	(void)svp->scr_clrtoeol(sp);
-
-	/* Redraw the status line for the parent screen. */
-	(void)msg_status(sp, sp->lno, 0);
-
-	/* Save the parent screen's cursor information. */
-	sp->frp->lno = sp->lno;
-	sp->frp->cno = sp->cno;
-	F_SET(sp->frp, FR_CURSORSET);
-
-	/* Completely redraw the child screen. */
-	F_SET(tsp, S_SCR_REDRAW);
-
-	/* Switch screens. */
-	sp->nextdisp = tsp;
-	F_SET(sp, S_SSWITCH);
 	return (0);
-
-	/* Recover the original screen. */
-err:	*sp = saved_sp;
-	*SVP(sp) = saved_svp;
-
-	/* Copy any (probably error) messages in the new screen. */
-	for (mp = tsp->msgq.lh_first; mp != NULL; mp = next) {
-		if (!F_ISSET(mp, M_EMPTY))
-			msg_app(sp->gp, sp,
-			    mp->flags & M_INV_VIDEO, mp->mbuf, mp->len);
-		next = mp->q.le_next;
-		if (mp->mbuf != NULL)
-			free(mp->mbuf);
-		free(mp);
-	}
-
-	/* Free the new screen. */
-	if (tsp->argv != NULL) {
-		for (ap = tsp->argv; *ap != NULL; ++ap)
-			free(*ap);
-		free(tsp->argv);
-	}
-	free(_HMAP(tsp));
-	free(SVP(tsp));
-	FREE(tsp, sizeof(SCR));
-	return (1);
 }
 
 /*
@@ -310,7 +200,7 @@ svi_bg(csp)
 	SCR *sp;
 
 	/* Try and join with another screen. */
-	if ((svi_join(csp, &sp)))
+	if ((svi_join(csp, NULL, NULL, &sp)))
 		return (1);
 	if (sp == NULL) {
 		msgq(csp, M_ERR,
@@ -337,26 +227,37 @@ svi_bg(csp)
  *	and return that screen.
  */
 int
-svi_join(csp, nsp)
-	SCR *csp, **nsp;
+svi_join(csp, prev, next, nsp)
+	SCR *csp, *prev, *next, **nsp;
 {
 	SCR *sp;
 	SVI_PRIVATE *svp;
 	size_t cnt;
 
 	/*
-	 * If a split screen, add space to parent/child.  Make no effort
-	 * to clean up the screen's values.  If it's not exiting, we'll
-	 * get it when the user asks to show it again.
+	 * If a split screen, add space to the specified previous or next
+	 * screen, or, if none specified, to the parent/child.  Make no
+	 * effort to clean up the screen's values.  If it's not exiting,
+	 * we'll get it when the user asks to display it again.
 	 */
-	if ((sp = csp->q.cqe_prev) == (void *)&csp->gp->dq) {
-		if ((sp = csp->q.cqe_next) == (void *)&csp->gp->dq) {
-			*nsp = NULL;
-			return (0);
-		}
+	if ((sp = prev) != NULL)
+		goto found;
+	if ((sp = next) != NULL) {
 		sp->woff = csp->woff;
+		goto found;
 	}
-	sp->rows += csp->rows;
+	if ((sp = csp->q.cqe_prev) != (void *)&csp->gp->dq)
+		goto found;
+	if ((sp = csp->q.cqe_next) != (void *)&csp->gp->dq) {
+		sp->woff = csp->woff;
+		goto found;
+	}
+
+	if (nsp != NULL)
+		*nsp = NULL;
+	return (0);
+
+found:	sp->rows += csp->rows;
 
 	svp = SVP(sp);
 	if (IS_SMALL(sp)) {
@@ -393,7 +294,8 @@ svi_join(csp, nsp)
 		F_SET(csp->frp, FR_CURSORSET);
 	}
 
-	*nsp = sp;
+	if (nsp != NULL)
+		*nsp = sp;
 	return (0);
 }
 
