@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_funcs.c,v 10.45 1996/06/26 20:07:32 bostic Exp $ (Berkeley) $Date: 1996/06/26 20:07:32 $";
+static const char sccsid[] = "$Id: cl_funcs.c,v 10.46 1996/07/12 18:23:13 bostic Exp $ (Berkeley) $Date: 1996/07/12 18:23:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -490,11 +490,13 @@ cl_refresh(sp, repaint)
  * cl_rename --
  *	Rename the file.
  *
- * PUBLIC: int cl_rename __P((SCR *));
+ * PUBLIC: int cl_rename __P((SCR *, char *, int));
  */
 int
-cl_rename(sp)
+cl_rename(sp, name, on)
 	SCR *sp;
+	char *name;
+	int on;
 {
 	GS *gp;
 	CL_PRIVATE *clp;
@@ -507,14 +509,13 @@ cl_rename(sp)
 
 	/*
 	 * XXX
-	 * We can only rename windows for xterm.  Since it's destructive (we
-	 * can't restore it to its original value on exit) we have to get the
-	 * user's permission.
+	 * We can only rename windows for xterm.
 	 */
-	if (O_ISSET(sp, O_WINDOWNAME)) {
-		if (!strncmp(ttype, "xterm", sizeof("xterm") - 1)) {
+	if (on) {
+		if (F_ISSET(clp, CL_RENAME_OK) &&
+		    !strncmp(ttype, "xterm", sizeof("xterm") - 1)) {
 			F_SET(clp, CL_RENAME);
-			(void)printf(XTERM_RENAME, sp->frp->name);
+			(void)printf(XTERM_RENAME, name);
 			(void)fflush(stdout);
 		}
 	} else

@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: cl.h,v 10.16 1996/06/18 12:49:46 bostic Exp $ (Berkeley) $Date: 1996/06/18 12:49:46 $
+ *	$Id: cl.h,v 10.17 1996/07/12 18:23:13 bostic Exp $ (Berkeley) $Date: 1996/07/12 18:23:13 $
  */
 
 typedef struct _cl_private {
@@ -41,12 +41,13 @@ typedef struct _cl_private {
 	    TE_SENT=0, TI_SENT } ti_te;
 
 #define	CL_RENAME	0x001	/* X11 xterm icon/window renamed. */
-#define	CL_SCR_EX_INIT	0x002	/* Ex screen initialized. */
-#define	CL_SCR_VI_INIT	0x004	/* Vi screen initialized. */
-#define	CL_SIGHUP	0x008	/* SIGHUP arrived. */
-#define	CL_SIGINT	0x010	/* SIGINT arrived. */
-#define	CL_SIGTERM	0x020	/* SIGTERM arrived. */
-#define	CL_SIGWINCH	0x040	/* SIGWINCH arrived. */
+#define	CL_RENAME_OK	0x002	/* User wants the windows renamed. */
+#define	CL_SCR_EX_INIT	0x004	/* Ex screen initialized. */
+#define	CL_SCR_VI_INIT	0x008	/* Vi screen initialized. */
+#define	CL_SIGHUP	0x010	/* SIGHUP arrived. */
+#define	CL_SIGINT	0x020	/* SIGINT arrived. */
+#define	CL_SIGTERM	0x040	/* SIGTERM arrived. */
+#define	CL_SIGWINCH	0x080	/* SIGWINCH arrived. */
 	u_int32_t flags;
 } CL_PRIVATE;
 
