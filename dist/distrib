@@ -1,5 +1,5 @@
 #! /bin/sh
-# $Id: distrib,v 8.1 1996/04/26 08:11:49 bostic Exp $ (Berkeley) $Date: 1996/04/26 08:11:49 $
+# $Id: distrib,v 8.2 1996/05/13 18:46:43 bostic Exp $ (Berkeley) $Date: 1996/05/13 18:46:43 $
 
 # Clean
 make -f Makefile.in distclean
@@ -67,8 +67,7 @@ sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../vi/*.c > $f
 chmod 444 $f
 
 # Build tags files.
-(cd ../common
 rm -f tags
 ctags ../cl/*.[ch] ../common/*.[ch] ../ex/*.[ch] ../perl_api/*.[ch] \
     ../tcl_api/*.[ch] ../tk/*.[ch] ../vi/*.[ch]
-chmod 444 tags)
+chmod 444 tags
