@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 10.12 1995/09/28 10:38:57 bostic Exp $ (Berkeley) $Date: 1995/09/28 10:38:57 $";
+static char sccsid[] = "$Id: ex_shell.c,v 10.13 1995/09/29 18:30:58 bostic Exp $ (Berkeley) $Date: 1995/09/29 18:30:58 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -40,7 +40,7 @@ ex_shell(sp, cmdp)
 	char buf[MAXPATHLEN];
 
 	(void)snprintf(buf, sizeof(buf), "%s -i", O_STR(sp, O_SHELL));
-	return (ex_exec_proc(sp, cmdp, buf, "\n", NULL));
+	return (ex_exec_proc(sp, cmdp, buf, NULL, NULL));
 }
 
 /*
@@ -68,9 +68,6 @@ ex_exec_proc(sp, cmdp, cmd, p1, p2)
 		}
 		F_SET(sp, S_SCREEN_READY);
 	}
-
-	/* Don't overwrite the last line of the screen. */
-	(void)ex_puts(sp, "\n");
 
 	/* Put out special messages. */
 	if (p1 != NULL || p2 != NULL) {
