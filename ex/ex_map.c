@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_map.c,v 8.15 1994/07/15 16:15:01 bostic Exp $ (Berkeley) $Date: 1994/07/15 16:15:01 $";
+static char sccsid[] = "$Id: ex_map.c,v 8.16 1994/07/16 09:22:32 bostic Exp $ (Berkeley) $Date: 1994/07/16 09:22:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -77,7 +77,7 @@ ex_map(sp, ep, cmdp)
 	 */
 	if (input[0] == '#') {
 		for (p = input + 1; isdigit(*p); ++p);
-		if (p != '\0')
+		if (p[0] != '\0')
 			goto nofunc;
 
 		if (seq_set(sp, NULL, 0, input, cmdp->argv[0]->len,
