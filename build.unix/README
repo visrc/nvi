@@ -1,38 +1,67 @@
-#	$Id: README,v 8.3 1996/02/21 12:53:17 bostic Exp $ (Berkeley) $Date: 1996/02/21 12:53:17 $
+#	$Id: README,v 8.4 1996/02/25 15:01:50 bostic Exp $ (Berkeley) $Date: 1996/02/25 15:01:50 $
 
-Nvi uses the GNU autoconf program for configuration and compilation.
-You should enter:
+Nvi uses the GNU autoconf program for configuration and compilation.  You
+should enter:
 
 	./configure<carriage-return>
 	make<carriage-return>
 
-and nvi should configure the system and build two binaries, named
-"nex" and "nvi" for you.  There are options that you can specify
-to the ./configure command.  The most common of these are:
+and nvi should configure the system and build two binaries, named "nex"
+and "nvi" for you.  There are options that you can specify to the
+./configure command.  See the next section  for a description of these
+options.
 
-	--with-curses=XXXX
+If you want to rebuild nvi, for example, you change your mind about what
+curses library implementation that you want to use, enter:
 
-	See the next section of this README for information about
-	nvi and the curses library.
+	make distclean<carriage-return>
+
+and then follow the above instructions.
 
 If you have trouble with this procedure, send email to the addresses
 listed in ../README.  In that email, please provide a complete script
 of the output for all of the above commands that you entered.
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-If you want to rebuild nvi, for example, you change your mind about
-what curses library implementation that you want to use, enter:
+The options that you can enter to the configure program are as follows:
 
-	make distclean<carriage-return>
+The most common of these are:
 
-and then follow the above instructions.
+  --with-curses=ask|system|vi
+                          ask:     Prompt for the curses library to use.
+                          system:  Use the system curses library.
+                          vi:      Use the vi-provided curses library
+  --with-db=library|vi    library: Use the DB routines in the C library.
+                          vi:      Use the vi-provided DB routines
+  --with-re=library|vi    library: Use the RE routines in the C library.
+                          vi:      Use the vi-provided RE routines
+
+See the next section of this README for information about nvi and the
+curses library.
+
+If your C library contains a copy of the Berkeley DB routines and you
+want to use them, enter:
+
+	./configure --with-db=library
+
+and the DB routines will be loaded from the C library.  Make sure that
+you DB routines are at least version 1.85 or later.
+
+If your C library contains an implementation of the POSIX 1003.2 RE
+routines and you want to use them, enter:
+
+	./configure --with-re=library
+
+and the RE routines will be loaded from the C library.  Make sure that
+your RE routines have Henry Spencer's extensions for doing vi-style "word"
+searches.
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 The major portability problem for nvi is selecting a curses library.
-Unfortunately, it is not at all uncommon to find broken versions of
-curses -- the original System V curses was broken, resulting in all
-vendors whose implementations are derived from System V having broken
-implementations in turn.
+Unfortunately, it is not at all uncommon to find broken versions of curses
+-- the original System V curses was broken, resulting in all vendors whose
+implementations are derived from System V having broken implementations
+in turn.
 
 For this reason, BY DEFAULT, nvi uses the stripped-down curses library
 that's included in its distribution.  Of course, it would be preferable
