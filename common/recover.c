@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.11 1993/08/24 10:47:53 bostic Exp $ (Berkeley) $Date: 1993/08/24 10:47:53 $";
+static char sccsid[] = "$Id: recover.c,v 8.12 1993/08/25 18:08:24 bostic Exp $ (Berkeley) $Date: 1993/08/25 18:08:24 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -201,13 +201,14 @@ rcv_mailfile(sp, ep)
 	    "To: ", pw->pw_name,
 	    "Subject: Nvi saved the file ", p,
 	    "Precedence: bulk");			/* For vacation(1). */
-	(void)fprintf(fp, "%s%.24s%s%s\n%s%s%s\n",
+	(void)fprintf(fp, "%s%.24s%s%s\n%s%s", 
 	    "On ", ctime(&now),
 	    ", the user ", pw->pw_name,
-	    "was editing a file named ", sp->frp->fname,
-	    " on the machine ");
-	(void)fprintf(fp, "%s%s\n",
-	    host, ", when it was saved for\nrecovery.");
+	    "was editing a file named ", p);
+	if (p != sp->frp->fname)
+		(void)fprintf(fp, " (%s)", sp->frp->fname);
+	(void)fprintf(fp, "\n%s%s%s\n",
+	    "on the machine ", host, ", when it was saved for\nrecovery.");
 	(void)fprintf(fp, "\n%s\n%s\n%s\n\n",
 	    "You can recover most, if not all, of the changes",
 	    "to this file using the -l and -r options to nvi(1)",
