@@ -10,10 +10,11 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: recover.c,v 10.17 1996/03/30 13:46:55 bostic Exp $ (Berkeley) $Date: 1996/03/30 13:46:55 $";
+static const char sccsid[] = "$Id: recover.c,v 10.18 1996/05/15 17:40:15 bostic Exp $ (Berkeley) $Date: 1996/05/15 17:40:15 $";
 #endif /* not lint */
 
 #include <sys/param.h>
+#include <sys/types.h>		/* XXX: param.h may not have included types.h */
 #include <sys/queue.h>
 #include <sys/stat.h>
 
@@ -856,7 +857,7 @@ rcv_email(sp, fname)
 	struct stat sb;
 	char buf[MAXPATHLEN * 2 + 20];
 
-	if (stat(_PATH_SENDMAIL, &sb))
+	if (_PATH_SENDMAIL[0] != '/' || stat(_PATH_SENDMAIL, &sb))
 		msgq_str(sp, M_SYSERR,
 		    _PATH_SENDMAIL, "071|not sending email: %s");
 	else {
