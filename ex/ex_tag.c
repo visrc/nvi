@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 8.10 1993/09/10 12:18:21 bostic Exp $ (Berkeley) $Date: 1993/09/10 12:18:21 $";
+static char sccsid[] = "$Id: ex_tag.c,v 8.11 1993/09/11 18:28:16 bostic Exp $ (Berkeley) $Date: 1993/09/11 18:28:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -197,6 +197,21 @@ ex_tagpush(sp, ep, cmdp)
 			msgq(sp, M_ERR, "%s: search pattern not found.", tag);
 	}
 	FREE(tag, strlen(tag));
+
+	/*
+	 * Save enough information that we can get back; if the malloc
+	 * fails, keep going, it just means the user can't return.
+	 */
+	if ((tp = malloc(sizeof(TAG))) == NULL)
+		msgq(sp, M_ERR, "Error: %s.", strerror(errno));
+	else {
+		tp->frp = sp->frp;
+		tp->lno = sp->lno;
+		tp->cno = sp->cno;
+
+		HDR_APPEND(tp, &sp->taghdr, next, prev, TAG);
+	}
+
 	if (sval) {
 		switch (which) {
 		case TC_CHANGE:
@@ -221,20 +236,6 @@ ex_tagpush(sp, ep, cmdp)
 			sp->cno = m.cno;
 			break;
 		}
-
-	/*
-	 * Save enough information that we can get back; if the malloc
-	 * fails, keep going, it just means the user can't return.
-	 */
-	if ((tp = malloc(sizeof(TAG))) == NULL)
-		msgq(sp, M_ERR, "Error: %s.", strerror(errno));
-	else {
-		tp->frp = sp->frp;
-		tp->lno = sp->lno;
-		tp->cno = sp->cno;
-
-		HDR_APPEND(tp, &sp->taghdr, next, prev, TAG);
-	}
 	return (0);
 }
 
