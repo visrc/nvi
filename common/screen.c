@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 5.14 1993/05/16 12:34:09 bostic Exp $ (Berkeley) $Date: 1993/05/16 12:34:09 $";
+static char sccsid[] = "$Id: screen.c,v 5.15 1993/06/01 23:32:49 bostic Exp $ (Berkeley) $Date: 1993/06/01 23:32:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -157,6 +157,7 @@ mem:			msgq(orig, M_ERR,
 		}
 
 		sp->flags = orig->flags & S_SCREEN_RETAIN;
+		sp->flags |= S_REDRAW | S_REFORMAT;
 	} else {
 		if (isatty(STDIN_FILENO))
 			F_SET(sp, S_ISFROMTTY);
@@ -170,6 +171,8 @@ mem:			msgq(orig, M_ERR,
 		sp->csearchdir = CNOTSET;
 
 		sp->cname = asciiname;			/* XXX */
+
+		sp->flags = S_REDRAW | S_REFORMAT;
 	}
 
 	return (0);
