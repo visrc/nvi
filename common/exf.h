@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 5.11 1992/10/18 13:02:59 bostic Exp $ (Berkeley) $Date: 1992/10/18 13:02:59 $
+ *	$Id: exf.h,v 5.12 1992/10/24 14:21:05 bostic Exp $ (Berkeley) $Date: 1992/10/24 14:21:05 $
  */
 
 #ifndef _EXF_H_
@@ -19,7 +19,8 @@ typedef struct exf {
 	struct exf *next, *prev;	/* Linked list of files. */
 
 					/* Screen state. */
-	recno_t top;			/* 1-N: Physical screen top line. */
+	recno_t top;			/* 1-N:     Physical screen top line. */
+	recno_t otop;			/* 1-N: Old physical screen top line. */
 	recno_t lno;			/* 1-N:     Physical cursor line. */
 	recno_t olno;			/* 0-N: Old physical cursor line. */
 	size_t cno;			/* 0-N:     Physical cursor col. */
@@ -27,12 +28,12 @@ typedef struct exf {
 	size_t scno;			/* 0-N: Logical cursor col. */
 	size_t shift;			/* 0-N: Shift count. */
 	size_t rcm;			/* 0-N: Column suck. */
+	size_t lines;			/* Physical lines. */
+	size_t cols;			/* Physical columns. */
 	u_char cwidth;			/* Width of current character. */
 #define	RCM_FNB		0x01		/* Column suck: first non-blank. */
 #define	RCM_LAST	0x02		/* Column suck: last. */
 	u_char rcmflags;
-	u_short uwindow;		/* Lines to move window up. */
-	u_short dwindow;		/* Lines to move window down. */
 
 	char *name;			/* File name. */
 	size_t nlen;			/* File name length. */
