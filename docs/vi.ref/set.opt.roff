@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: set.opt.roff,v 8.10 1994/04/27 17:31:24 bostic Exp $ (Berkeley) $Date: 1994/04/27 17:31:24 $
+.\"     $Id: set.opt.roff,v 8.11 1994/04/27 20:30:00 bostic Exp $ (Berkeley) $Date: 1994/04/27 20:30:00 $
 .\"
 .Sh SET OPTIONS
 There are a large number of options that may be set (or unset) to
@@ -43,7 +43,7 @@ command in the section entitled
 #endif
 .sp
 .Bl -tag -width "XXXX" -compact
-.It Li "altwerase [off]"
+.It Sy "altwerase [off]"
 .Nm \&Vi
 only.
 #ifdef MANUAL
@@ -60,7 +60,8 @@ Changing from one class to another marks the end of a word.
 In addition, the class of the first character erased is ignored
 (which is exactly what you want when erasing pathname components).
 #endif
-.It Li "autoindent, ai [off]"
+.sp
+.It Sy "autoindent, ai [off]"
 #ifdef MANUAL
 Automatically indent new lines.
 #endif
@@ -135,7 +136,8 @@ and
 commands change from the first nonblank of the line to the end of the
 line, instead of from the beginning of the line to the end of the line.
 #endif
-.It Li "autoprint, ap [off]"
+.sp
+.It Sy "autoprint, ap [off]"
 .Nm \&Ex
 only.
 #ifdef MANUAL
@@ -166,7 +168,8 @@ and
 commands, and for any command where optional flags are used to explicitly
 display the line.
 #endif
-.It Li "autowrite, aw [off]"
+.sp
+.It Sy "autowrite, aw [off]"
 #ifdef MANUAL
 Write modified files automatically when changing files.
 #endif
@@ -225,7 +228,8 @@ affected by the
 .Sy autowrite
 option.
 #endif
-.It Li "beautify, bf [off]"
+.sp
+.It Sy "beautify, bf [off]"
 #ifdef MANUAL
 Discard control characters.
 #endif
@@ -245,7 +249,8 @@ affected by the
 .Sy beautify
 option.
 #endif
-.It Li "cdpath [environment variable CDPATH, or current directory]"
+.sp
+.It Sy "cdpath [environment variable CDPATH, or current directory]"
 #ifdef MANUAL
 The directory paths used as path prefixes for the
 .Sy cd
@@ -273,7 +278,8 @@ into the
 .Ev CDPATH
 variable or the option value.
 #endif
-.It Li "columns, co [80]"
+.sp
+.It Sy "columns, co [80]"
 #ifdef MANUAL
 Set the number of columns in the screen.
 #endif
@@ -287,7 +293,8 @@ See the section entitled
 .Dq "Screen Sizing"
 more information.
 #endif
-.It Li "comment [off]"
+.sp
+.It Sy "comment [off]"
 .Nm \&Vi
 only.
 #ifdef MANUAL
@@ -301,7 +308,8 @@ this option causes
 to skip to the end of that C comment (probably a terribly boring
 legal notice) before displaying the file.
 #endif
-.It Li "directory, dir [environment variable TMPDIR, or /tmp]"
+.sp
+.It Sy "directory, dir [environment variable TMPDIR, or /tmp]"
 #ifdef MANUAL
 The directory where temporary files are created.
 #endif
@@ -313,7 +321,8 @@ is used as the default value if it exists, otherwise
 .Pa /tmp
 is used.
 #endif
-.It Li "edcompatible, ed [off]"
+.sp
+.It Sy "edcompatible, ed [off]"
 Remember the values of the
 .Dq \&c
 and
@@ -331,7 +340,8 @@ and
 .Dq \&g
 suffices as well.
 #endif
-.It Li "errorbells, eb [off]"
+.sp
+.It Sy "errorbells, eb [off]"
 .Nm \&Ex
 only.
 #ifdef MANUAL
@@ -343,7 +353,8 @@ error messages are normally presented in inverse video.
 If that is not possible for the terminal, setting this option causes
 error messages to be announced by ringing the terminal bell.
 #endif
-.It Li "exrc, ex [off]"
+.sp
+.It Sy "exrc, ex [off]"
 #ifdef MANUAL
 Never read startup files in the local directory.
 #endif
@@ -357,7 +368,8 @@ See the section entitled
 .Dq "Startup Information"
 for more information.
 #endif
-.It Li "extended [off]"
+.sp
+.It Sy "extended [off]"
 #ifdef MANUAL
 Regular expressions are extended (i.e.
 .Xr egrep 1
@@ -369,7 +381,8 @@ This option causes all regular expressions to be treated as POSIX
 .Xr egrep 1
 style expressions).
 #endif
-.It Li "flash [on]"
+.sp
+.It Sy "flash [on]"
 #ifdef MANUAL
 Flash the screen instead of beeping the keyboard on error.
 #endif
@@ -377,7 +390,8 @@ Flash the screen instead of beeping the keyboard on error.
 This option causes the screen to flash instead of beeping the keyboard,
 on error, if the terminal has the capability.
 #endif
-.It Li "hardtabs, ht [8]"
+.sp
+.It Sy "hardtabs, ht [8]"
 #ifdef MANUAL
 Set the spacing between hardware tab settings.
 #endif
@@ -391,7 +405,8 @@ never writes tabs to the terminal, unlike historic versions of
 .Nm ex/vi ,
 this option does not currently have any affect.
 #endif
-.It Li "ignorecase, ic [off]"
+.sp
+.It Sy "ignorecase, ic [off]"
 #ifdef MANUAL
 Ignore case differences in regular expressions.
 #endif
@@ -401,11 +416,13 @@ This option causes regular expressions, both in
 commands and in searches,
 to be evaluated in a case-insensitive manner.
 #endif
-.It Li "keytime [6]"
+.sp
+.It Sy "keytime [6]"
 The 10th's of a second
 .Nm ex/vi
 waits for a subsequent key to complete a key mapping.
-.It Li "leftright [off]"
+.sp
+.It Sy "leftright [off]"
 .Nm \&Vi
 only.
 #ifdef MANUAL
@@ -418,7 +435,8 @@ lines longer than the screen, instead of the traditional
 screen interface which folds long lines at the right-hand margin
 of the terminal.
 #endif
-.It Li "lines, li [24]"
+.sp
+.It Sy "lines, li [24]"
 .Nm \&Vi
 only.
 #ifdef MANUAL
@@ -434,7 +452,8 @@ See the section entitled
 .Dq "Screen Sizing"
 for more information.
 #endif
-.It Li "lisp [off]"
+.sp
+.It Sy "lisp [off]"
 .Nm \&Vi
 only.
 #ifdef MANUAL
@@ -457,7 +476,8 @@ option's behavior is changed to be appropriate for Lisp.
 #endif
 .br
 .Em "This option is not yet implemented."
-.It Li "list [off]"
+.sp
+.It Sy "list [off]"
 #ifdef MANUAL
 Display lines in an unambiguous fashion.
 #endif
@@ -469,7 +489,8 @@ and the ends of lines are marked with a
 .Dq \&$
 character.
 #endif
-.It Li "magic [on]"
+.sp
+.It Sy "magic [on]"
 #ifdef MANUAL
 Treat certain characters specially in regular expressions.
 #endif
@@ -491,7 +512,8 @@ See the section entitled
 .Dq "Regular Expressions and Replacement Strings"
 for more information.
 #endif
-.It Li "matchtime [7]"
+.sp
+.It Sy "matchtime [7]"
 .Nm \&Vi
 only.
 The 10th's of a second
@@ -499,7 +521,8 @@ The 10th's of a second
 pauses on the matching character when the
 .Sy showmatch
 option is set.
-.It Li "mesg [on]"
+.sp
+.It Sy "mesg [on]"
 #ifdef MANUAL
 Permit messages from other users.
 #endif
@@ -517,7 +540,8 @@ See the
 .Xr mesg 1
 utility for more information.
 #endif
-.It Li "modelines, modeline [off]"
+.sp
+.It Sy "modelines, modeline [off]"
 #ifdef MANUAL
 Read the first and last few lines of each file for
 .Nm ex
@@ -554,12 +578,15 @@ and should not be used under any circumstances.
 #endif
 .br
 .Em "This option will never be implemented."
-.It Li "number, nu [off]"
+.sp
+.It Sy "number, nu [off]"
 Precede each line displayed with its current line number.
-.It Li "octal [off]"
+.sp
+.It Sy "octal [off]"
 Display unknown characters as octal numbers, instead of the default
 hexadecimal.
-.It Li "open [on]"
+.sp
+.It Sy "open [on]"
 .Nm \&Ex
 only.
 If this option is not set, the
@@ -567,7 +594,8 @@ If this option is not set, the
 and
 .Sy visual
 commands are disallowed.
-.It Li "optimize, opt [on]"
+.sp
+.It Sy "optimize, opt [on]"
 .Nm \&Vi
 only.
 #ifdef MANUAL
@@ -581,7 +609,8 @@ with leading white space is printed.
 #endif
 .br
 .Em "This option is not yet implemented."
-.It Li "paragraphs, para [IPLPPPQPP LIpplpipbp]"
+.sp
+.It Sy "paragraphs, para [IPLPPPQPP LIpplpipbp]"
 .Nm \&Vi
 only.
 Define additional paragraph boundaries for the
@@ -597,7 +626,7 @@ In the text to be edited, the character string <newline>.<char-pair>,
 (where <char-pair> is one of the character pairs in the option's value)
 defines a paragraph boundary.
 For example, if the option were set to
-.Dq "LaA ##" ,
+.Dq "LaA<space>##" ,
 then all of the following additional paragraph boundaries would be
 recognized:
 .Bd -literal -offset indent -compact
@@ -607,7 +636,8 @@ recognized:
 .Ed
 #endif
 .br
-.It Li "prompt [on]"
+.sp
+.It Sy "prompt [on]"
 .Nm \&Ex
 only.
 #ifdef MANUAL
@@ -620,7 +650,8 @@ to prompt for command input with a
 .Dq \&:
 character; when it's not set, no prompt is displayed.
 #endif
-.It Li "readonly, ro [off]"
+.sp
+.It Sy "readonly, ro [off]"
 #ifdef MANUAL
 Mark the file as read-only.
 #endif
@@ -631,9 +662,11 @@ Setting this option is equivalent to using the
 .Fl R
 command line option, or editing a file which lacks write permission.
 #endif
-.It Li "recdir [/var/tmp/vi.recover]"
+.sp
+.It Sy "recdir [/var/tmp/vi.recover]"
 The directory where recovery files are stored.
-.It Li "redraw, re [off]"
+.sp
+.It Sy "redraw, re [off]"
 .Nm \&Vi
 only.
 #ifdef MANUAL
@@ -648,7 +681,8 @@ character is typed).
 #endif
 .br
 .Em "This option is not yet implemented."
-.It Li "remap [on]"
+.sp
+.It Sy "remap [on]"
 #ifdef MANUAL
 Remap keys until resolved.
 #endif
@@ -674,7 +708,8 @@ is set, and to
 .Dq \&B
 if it is not set.
 #endif
-.It Li "remapmax [on]"
+.sp
+.It Sy "remapmax [on]"
 #ifdef MANUAL
 Limit the number of times a key may be remapped.
 #endif
@@ -683,7 +718,8 @@ If this option is set, a key may only be remapped 50 times.
 If it is not set, a key may be remapped an infinite number of times,
 and the editor can be placed into infinite loops.
 #endif
-.It Li "report [5]"
+.sp
+.It Sy "report [5]"
 #ifdef MANUAL
 Set the number of lines about which the editor reports changes.
 #endif
@@ -693,11 +729,13 @@ before a message will be displayed to the user.
 The value is the largest value about which the editor is silent,
 i.e. by default, 6 lines must change before the user is notified.
 #endif
-.It Li "ruler [off]"
+.sp
+.It Sy "ruler [off]"
 .Nm \&Vi
 only.
 Display a row/column ruler on the colon command line.
-.It Li "scroll, scr [window / 2]"
+.sp
+.It Sy "scroll, scr [window / 2]"
 #ifdef MANUAL
 Set the number of lines scrolled.
 #endif
@@ -716,7 +754,8 @@ command, when specified without a count, used two times the size of the
 scroll value; the POSIX 1003.2 standard specified the window size, which
 is a better choice.
 #endif
-.It Li "sections, sect [NHSHH HUnhsh]"
+.sp
+.It Sy "sections, sect [NHSHH HUnhsh]"
 .Nm \&Vi
 only.
 Define additional section boundaries for the
@@ -735,7 +774,8 @@ defines a section boundary in the same manner that
 .Sy paragraph
 option boundaries are defined.
 #endif
-.It Li "shell, sh [environment variable SHELL, or /bin/sh]"
+.sp
+.It Sy "shell, sh [environment variable SHELL, or /bin/sh]"
 Select the shell used by the editor.
 #ifdef REFERENCE
 The specified path is the pathname of the shell invoked by the
@@ -749,7 +789,8 @@ This program is also used to resolve any shell meta-characters in
 .Nm \&ex
 commands.
 #endif
-.It Li "shiftwidth, sw [8]"
+.sp
+.It Sy "shiftwidth, sw [8]"
 Set the autoindent and shift command indentation width.
 #ifdef REFERENCE
 This width is used by the
@@ -761,11 +802,13 @@ and
 .Sy shift
 commands.
 #endif
-.It Li "showdirty [off]"
+.sp
+.It Sy "showdirty [off]"
 .Nm \&Vi
 only.
 Display an asterisk on the colon command line if the file has been modified.
-.It Li "showmatch, sm [off]"
+.sp
+.It Sy "showmatch, sm [off]"
 .Nm \&Vi
 only.
 #ifdef MANUAL
@@ -794,7 +837,8 @@ See the
 .Sy matchtime
 option for more information.
 #endif
-.It Li "showmode [off]"
+.sp
+.It Sy "showmode [off]"
 .Nm \&Vi
 only.
 #ifdef MANUAL
@@ -809,7 +853,8 @@ or
 .Dq Input
 on the colon command line, based on the current mode of the editor.
 #endif
-.It Li "sidescroll [16]"
+.sp
+.It Sy "sidescroll [16]"
 .Nm \&Vi
 only.
 #ifdef MANUAL
@@ -825,7 +870,8 @@ See the
 .Sy leftright
 option for more information.
 #endif
-.It Li "slowopen, slow [off]"
+.sp
+.It Sy "slowopen, slow [off]"
 #ifdef MANUAL
 Delay display updating during text input.
 #endif
@@ -837,7 +883,8 @@ throughput when the terminal in use is slow and unintelligent.
 #endif
 .br
 .Em "This option is not yet implemented."
-.It Li "sourceany [off]"
+.sp
+.It Sy "sourceany [off]"
 #ifdef MANUAL
 Read startup files not owned by the current user.
 #endif
@@ -854,9 +901,11 @@ and should not be used under any circumstances.
 #endif
 .br
 .Em "This option will never be implemented."
-.It Li "tabstop, ts [8]"
+.sp
+.It Sy "tabstop, ts [8]"
 This option sets tab widths for the editor display.
-.It Li "taglength, tl [0]"
+.sp
+.It Sy "taglength, tl [0]"
 #ifdef MANUAL
 Set the number of significant characters in tag names.
 #endif
@@ -866,7 +915,8 @@ significant in a tag name.
 Setting the value to 0 makes all of the characters in the tag name
 significant.
 #endif
-.It Li "tags, tag [tags /var/db/libc.tags /sys/kern/tags]"
+.sp
+.It Sy "tags, tag [tags /var/db/libc.tags /sys/kern/tags]"
 #ifdef MANUAL
 Set the list of tags files.
 #endif
@@ -874,7 +924,8 @@ Set the list of tags files.
 Sets the list of tags files, in search order,
 which are used when the editor searches for a tag.
 #endif
-.It Li "term, ttytype, tty [environment variable TERM]"
+.sp
+.It Sy "term, ttytype, tty [environment variable TERM]"
 Set the terminal type.
 #ifdef REFERENCE
 Setting this option causes
@@ -882,7 +933,8 @@ Setting this option causes
 to set (or reset) the environmental variable
 .Ev TERM .
 #endif
-.It Li "terse [off]"
+.sp
+.It Sy "terse [off]"
 This option has historically made editor messages less verbose.
 It has no effect in this implementation.
 #ifdef REFERENCE
@@ -890,7 +942,8 @@ See the
 .Sy verbose
 option for more information.
 #endif
-.It Li "timeout, to [on]"
+.sp
+.It Sy "timeout, to [on]"
 #ifdef MANUAL
 Time out on keys which may be mapped.
 #endif
@@ -904,7 +957,8 @@ option).
 If the option is not set, the editor waits until enough keys are
 entered to resolve the ambiguity, regardless of how long it takes.
 #endif
-.It Li "ttywerase [off]"
+.sp
+.It Sy "ttywerase [off]"
 .Nm \&Vi
 only.
 #ifdef MANUAL
@@ -918,7 +972,8 @@ If this option is set, text is broken up into two classes,
 blank characters and nonblank characters.
 Changing from one class to another marks the end of a word.
 #endif
-.It Li "verbose [off]"
+.sp
+.It Sy "verbose [off]"
 .NM \&Vi
 only.
 #ifdef MANUAL
@@ -930,7 +985,8 @@ historically bells the terminal for many obvious mistakes, e.g. trying
 to move past the left-hand margin, or past the end of the file.
 If this option is set, an error message is displayed for all errors.
 #endif
-.It Li "w300 [no default]"
+.sp
+.It Sy "w300 [no default]"
 .Nm \&Vi
 only.
 Set the window size if the baud rate is less than 1200 baud.
@@ -939,7 +995,8 @@ See the
 .Sy window
 option for more information.
 #endif
-.It Li "w1200 [no default]"
+.sp
+.It Sy "w1200 [no default]"
 .Nm \&Vi
 only.
 Set the window size if the baud rate is equal to 1200 baud.
@@ -948,7 +1005,8 @@ See the
 .Sy window
 option for more information.
 #endif
-.It Li "w9600 [no default]"
+.sp
+.It Sy "w9600 [no default]"
 .Nm \&Vi
 only.
 Set the window size if the baud rate is greater than 1200 baud.
@@ -957,14 +1015,16 @@ See the
 .Sy window
 option for more information.
 #endif
-.It Li "warn [on]"
+.sp
+.It Sy "warn [on]"
 .Nm \&Ex
 only.
 This option causes a warning message to the terminal if the file has
 been modified, since it was last written, before a
 .Sy \&!
 command.
-.It Li "window, w, wi [environment variable LINES]"
+.sp
+.It Sy "window, w, wi [environment variable LINES]"
 #ifdef MANUAL
 Set the window size for the screen.
 #endif
@@ -1006,7 +1066,8 @@ filled.)
 This can provide a performance improvement when viewing different
 places in one or more files over a slow link.
 #endif
-.It Li "wrapmargin, wm [0]"
+.sp
+.It Sy "wrapmargin, wm [0]"
 .Nm \&Vi
 only.
 #ifdef MANUAL
@@ -1021,7 +1082,8 @@ If wrapmargin is 0,
 or if there is no blank character upon which to break the line,
 the line will not be broken.
 #endif
-.It Li "wrapscan, ws [on]"
+.sp
+.It Sy "wrapscan, ws [on]"
 #ifdef MANUAL
 Set searches to wrap around the end or beginning of the file.
 #endif
@@ -1030,7 +1092,8 @@ This option causes searches to wrap around the end or the beginning
 of the file, and back to the starting point.
 Otherwise, the end or beginning of the file terminates the search.
 #endif
-.It Li "writeany, wa [off]"
+.sp
+.It Sy "writeany, wa [off]"
 #ifdef MANUAL
 Turn off file-overwriting checks.
 #endif

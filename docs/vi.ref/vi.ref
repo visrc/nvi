@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.25 1994/04/27 17:31:15 bostic Exp $ (Berkeley) $Date: 1994/04/27 17:31:15 $
+.\"     $Id: vi.ref,v 8.26 1994/04/27 20:29:58 bostic Exp $ (Berkeley) $Date: 1994/04/27 20:29:58 $
 .\"
 .Dd "%Q%"
 .Dt "EX/VI REFERENCE MANUAL" 1
@@ -548,17 +548,19 @@ and
 command descriptions:
 .sp
 .Bl -tag -width "XXXX" -compact
-.It Li "<interrupt>"
+.It Sy "<interrupt>"
 The interrupt character is used to interrupt the current operation.
 This character is normally <control-C>, however, whatever character
 is set for the current terminal is used.
-.It Li "<literal next>"
+.sp
+.It Sy "<literal next>"
 The literal next character is used to escape the subsequent character
 from any special meaning.
 This character is normally <control-V>.
 If the terminal is not set up to do XON/XOFF flow control,
 then <control-Q> may be used as well.
-.It Li "current pathname"
+.sp
+.It Sy "current pathname"
 The pathname of the file currently being edited by vi.
 When the character
 .Dq Li \&%
@@ -568,7 +570,8 @@ command argument, it's replaced by the current pathname.
 (The
 .Dq Li \&%
 character can be escaped by preceding it with a backslash.)
-.It Li "alternate pathname"
+.sp
+.It Sy "alternate pathname"
 The name of the last file name mentioned in an
 .Nm \&ex
 command, or, the previous current pathname if the last file mentioned
@@ -581,7 +584,8 @@ command argument, it's replaced by the alternate pathname.
 (The
 .Dq Li \&#
 character can be escaped by preceding it with a backslash.)
-.It Li "buffer"
+.sp
+.It Sy "buffer"
 One of a number of named areas for saving copies of text.
 Commands that change or delete text can save the changed or deleted
 text into a specific buffer, for later use.
@@ -667,7 +671,8 @@ character oriented buffers create new lines for any lines
 than the first and last lines they contain.
 The first and last lines are inserted into the text at the current
 cursor position.
-.It Li "unnamed buffer"
+.sp
+.It Sy "unnamed buffer"
 The unnamed buffer is a text storage area which is used by commands
 that take a buffer as an argument when no buffer is specified by the
 user.
