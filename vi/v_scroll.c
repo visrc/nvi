@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 5.16 1992/12/22 16:09:13 bostic Exp $ (Berkeley) $Date: 1992/12/22 16:09:13 $";
+static char sccsid[] = "$Id: v_scroll.c,v 5.17 1993/02/11 15:12:06 bostic Exp $ (Berkeley) $Date: 1993/02/11 15:12:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -126,25 +126,7 @@ v_bottom(vp, fm, tm, rp)
 }
 
 /*
- * v_nbdown -- [count]^M, [count]+
- *	Move down by lines, moving cursor to first non-blank character.
- */
-int
-v_nbdown(vp, fm, tm, rp)
-	VICMDARG *vp;
-	MARK *fm, *tm, *rp;
-{
-	recno_t lno;
-	size_t len;
-
-	lno = fm->lno + (vp->flags & VC_C1SET ? vp->count : 1);
-
-	DOWN(lno);
-	return (0);
-}
-
-/*
- * v_down -- [count]^J, [count]^N, [count]j
+ * v_down -- [count]^J, [count]^N, [count]j, [count]^M, [count]+
  *	Move down by lines.
  */
 int
