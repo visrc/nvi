@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 8.30 1994/06/27 11:22:16 bostic Exp $ (Berkeley) $Date: 1994/06/27 11:22:16 $";
+static char sccsid[] = "$Id: ex_read.c,v 8.31 1994/07/22 18:21:37 bostic Exp $ (Berkeley) $Date: 1994/07/22 18:21:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,8 +33,11 @@ static char sccsid[] = "$Id: ex_read.c,v 8.30 1994/06/27 11:22:16 bostic Exp $ (
 
 /*
  * ex_read --	:read [file]
- *		:read [! cmd]
- *	Read from a file or utility.
+ *		:read [!cmd]
+ * Read from a file or utility.
+ *
+ * !!!
+ * Historical vi wouldn't undo a filter read, for no apparent reason.
  */
 int
 ex_read(sp, ep, cmdp)
@@ -43,31 +46,53 @@ ex_read(sp, ep, cmdp)
 	EXCMDARG *cmdp;
 {
 	struct stat sb;
+	CHAR_T *arg;
 	FILE *fp;
 	MARK rm;
 	recno_t nlines;
-	size_t blen, len;
-	int btear, rval;
+	size_t arglen, blen, len;
+	int btear, filterargs, rval;
 	char *bp, *name;
 
 	/*
-	 * If "read !", it's a pipe from a utility.
-	 *
-	 * !!!
-	 * Historical vi wouldn't undo a filter read, for no apparent
-	 * reason.
+	 *  0 args: we're done.
+	 *  1 args: check for "read !arg".
+	 *  2 args: check for "read ! arg".
+	 * >2 args: object, too many args.
 	 */
-	if (F_ISSET(cmdp, E_FORCE)) {
-		/* Expand the user's argument. */
-		if (argv_exp1(sp, ep,
-		    cmdp, cmdp->argv[0]->bp, cmdp->argv[0]->len, 0))
+	filterargs = 0;
+	switch (cmdp->argc) {
+	case 0:
+		break;
+	case 1:
+		arg = cmdp->argv[0]->bp;
+		arglen = cmdp->argv[0]->len;
+		if (*arg == '!') {
+			++arg;
+			--arglen;
+			filterargs = 1;
+		}
+		break;
+	case 2:
+		if (cmdp->argv[0]->len == 1 && cmdp->argv[0]->bp[0] == '!')  {
+			arg = cmdp->argv[1]->bp;
+			arglen = cmdp->argv[1]->len;
+			filterargs = 2;
+			break;
+		}
+		/* FALLTHROUGH */
+	default:
+		goto badarg;
+	}
+
+	if (filterargs != 0) {
+		/* File name expand the user's argument. */
+		if (argv_exp1(sp, ep, cmdp, arg, arglen, 0))
 			return (1);
 
 		/* If argc still 1, there wasn't anything to expand. */
-		if (cmdp->argc == 1) {
-			msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
-			return (1);
-		}
+		if (cmdp->argc == filterargs)
+			goto usage;
 
 		/* Redisplay the user's argument if it's changed. */
 		if (F_ISSET(cmdp, E_MODIFY) && IN_VI_MODE(sp)) {
@@ -86,32 +111,28 @@ ex_read(sp, ep, cmdp)
 		return (0);
 	}
 
-	/* Expand the user's argument. */
-	if (argv_exp2(sp, ep,
-	    cmdp, cmdp->argv[0]->bp, cmdp->argv[0]->len, 0))
+	/* Shell and file name expand the user's argument. */
+	if (argv_exp2(sp, ep, cmdp, arg, arglen, 0))
 		return (1);
 
+	/*
+	 *  0 args: no arguments, read the current file, don't set the
+	 *	    alternate file name.
+	 *  1 args: read it, set the alternate file name.
+	 * >1 args: object, too many args.
+	 */
 	switch (cmdp->argc) {
 	case 1:
-		/*
-		 * No arguments, read the current file.
-		 * Doesn't set the alternate file name.
-		 */
 		name = sp->frp->name;
 		break;
 	case 2:
-		/*
-		 * One argument, read it.
-		 * Sets the alternate file name.
-		 */
 		name = cmdp->argv[1]->bp;
 		set_alt_name(sp, name);
 		break;
 	default:
-		/* If expanded to more than one argument, object. */
-		msgq(sp, M_ERR,
+badarg:		msgq(sp, M_ERR,
 		    "%s expanded into too many file names", cmdp->argv[0]->bp);
-		msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
+usage:		msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
 		return (1);
 	}
 
