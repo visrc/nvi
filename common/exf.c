@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.60 1993/12/19 18:00:27 bostic Exp $ (Berkeley) $Date: 1993/12/19 18:00:27 $";
+static char sccsid[] = "$Id: exf.c,v 8.61 1993/12/20 09:24:41 bostic Exp $ (Berkeley) $Date: 1993/12/20 09:24:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -452,15 +452,21 @@ file_end(sp, ep, force)
 	if (ep->rcv_mpath != NULL)
 		free(ep->rcv_mpath);
 
-	/* Unlink any temporary file, file name. */
+	/*
+	 * Unlink any temporary file, file name.  We also turn on the
+	 * ignore bit at this point, because it was a "created" file,
+	 * not an argument file.
+	 */
 	if (frp->tname != NULL) {
 		if (unlink(frp->tname))
 			msgq(sp, M_ERR,
 			    "%s: remove: %s", frp->tname, strerror(errno));
 		free(frp->tname);
 		frp->tname = NULL;
-	}
 
+		if (frp->name == NULL && frp->cname == NULL)
+			F_SET(frp, FR_IGNORE);
+	}
 	/* Free the EXF structure. */
 	FREE(ep, sizeof(EXF));
 	return (0);
