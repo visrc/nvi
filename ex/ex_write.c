@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 9.3 1995/01/11 16:16:08 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:16:08 $";
+static char sccsid[] = "$Id: ex_write.c,v 9.4 1995/01/11 19:21:01 bostic Exp $ (Berkeley) $Date: 1995/01/11 19:21:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -135,7 +135,6 @@ exwr(sp, cmdp, cmd)
 	EXCMDARG *cmdp;
 	enum which cmd;
 {
-	EX_PRIVATE *exp;
 	MARK rm;
 	int flags, nf;
 	char *name, *p;
@@ -160,7 +159,6 @@ exwr(sp, cmdp, cmd)
 	}
 
 	/* If "write !" it's a pipe to a utility. */
-	exp = EXP(sp);
 	if (cmd == WRITE && *p == '!') {
 		for (++p; *p && isblank(*p); ++p);
 		if (*p == '\0') {
@@ -168,7 +166,7 @@ exwr(sp, cmdp, cmd)
 			return (1);
 		}
 		/* Expand the argument. */
-		if (argv_exp1(sp, cmdp, p, strlen(p), 0))
+		if (argv_exp1(sp, cmdp, p, strlen(p), 1))
 			return (1);
 		if (filtercmd(sp, &cmdp->addr1, &cmdp->addr2,
 		    &rm, cmdp->argv[1]->bp, FILTER_WRITE))
@@ -200,7 +198,8 @@ exwr(sp, cmdp, cmd)
 		break;
 	case 2:
 		/* One new argument, write it. */
-		name = cmdp->argv[exp->argsoff - 1]->bp;
+		name = cmdp->argv[EXP(sp)->argsoff - 1]->bp;
+
 		/*
 		 * !!!
 		 * Historically, the read and write commands renamed
