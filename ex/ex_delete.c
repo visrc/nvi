@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_delete.c,v 8.10 1994/07/20 16:28:03 bostic Exp $ (Berkeley) $Date: 1994/07/20 16:28:03 $";
+static char sccsid[] = "$Id: ex_delete.c,v 8.11 1994/07/23 14:23:02 bostic Exp $ (Berkeley) $Date: 1994/07/23 14:23:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -41,16 +41,20 @@ ex_delete(sp, ep, cmdp)
 
 	/*
 	 * !!!
-	 * Historically, delete permitted an address of 0, i.e.
-	 * an empty file.
+	 * Historically, delete permitted an address of 0, i.e. an empty file.
 	 */
 	if (cmdp->addr1.lno == 0)
 		return (0);
 
-	/* Yank the lines. */
+	/*
+	 * !!!
+	 * Historically, lines deleted in ex were not placed in the numeric
+	 * buffers.  We follow historic practice so that we don't overwrite
+	 * vi buffers accidentally.
+	 */
 	if (cut(sp, ep,
 	    F_ISSET(cmdp, E_BUFFER) ? &cmdp->buffer : NULL,
-	    &cmdp->addr1, &cmdp->addr2, CUT_LINEMODE | CUT_NBUFFER))
+	    &cmdp->addr1, &cmdp->addr2, CUT_LINEMODE))
 		return (1);
 
 	/* Delete the lines. */
