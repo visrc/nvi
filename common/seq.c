@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 5.28 1993/04/19 15:25:48 bostic Exp $ (Berkeley) $Date: 1993/04/19 15:25:48 $";
+static char sccsid[] = "$Id: seq.c,v 5.29 1993/05/02 15:55:06 bostic Exp $ (Berkeley) $Date: 1993/05/02 15:55:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -75,6 +75,7 @@ mem1:		msgq(sp, M_ERR, "Error: %s", strerror(errno));
 
 	qp->stype = stype;
 	qp->ilen = ilen;
+	qp->olen = strlen(output);;
 	qp->flags = userdef ? S_USERDEF : 0;
 
 	/* Link into the chains. */
@@ -107,8 +108,8 @@ seq_delete(sp, input, stype)
 	/* Free up the space. */
 	if (qp->name)
 		FREE(qp->name, strlen(qp->name));
-	FREE(qp->input, strlen(qp->input));
-	FREE(qp->output, strlen(qp->output));
+	FREE(qp->input, qp->ilen);
+	FREE(qp->output, qp->olen);
 	FREE(qp, sizeof(SEQ));
 	return (0);
 }

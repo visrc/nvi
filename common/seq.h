@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: seq.h,v 5.11 1993/04/05 07:12:44 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:12:44 $
+ *	$Id: seq.h,v 5.12 1993/05/02 15:55:05 bostic Exp $ (Berkeley) $Date: 1993/05/02 15:55:05 $
  */
 
 /*
@@ -36,8 +36,9 @@ typedef struct _seq {
 	enum seqtype stype;		/* Sequence type. */
 	char	*name;			/* Name of the sequence, if any. */
 	char	*input;			/* Input key sequence. */
+	size_t	 ilen;			/* Input key sequence length. */
 	char	*output;		/* Output key sequence. */
-	int	 ilen;			/* Input key sequence length. */
+	size_t	 olen;			/* Output key sequence length. */
 
 #define	S_USERDEF	0x01		/* If sequence user defined. */
 	u_char	 flags;
