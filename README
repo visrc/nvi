@@ -1,4 +1,4 @@
-#	$Id: README,v 8.36 1994/01/02 17:02:31 bostic Exp $ (Berkeley) $Date: 1994/01/02 17:02:31 $
+#	$Id: README,v 8.37 1994/01/03 16:50:38 bostic Exp $ (Berkeley) $Date: 1994/01/03 16:50:38 $
 
 This is the README for version 0.94 of nex/nvi, a (soon to be) freely
 redistributable replacement for the vi/ex text editors.
@@ -42,6 +42,11 @@ o From the original vi acknowledgements, by William Joy and Mark Horton:
 	and created the framework that users see in the present editor.
 	Mark Horton added macros and other features and made the editor
 	work on a large number of terminals and Unix systems.
+
+o And...
+
+	The financial support of UUNET Communications Services is
+	gratefully acknowledged.
 
 =-=-=-=-=-=-=-=-=-=-=
 o Comments:
