@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.68 1994/05/02 15:53:10 bostic Exp $ (Berkeley) $Date: 1994/05/02 15:53:10 $";
+static char sccsid[] = "$Id: key.c,v 8.69 1994/05/02 16:30:58 bostic Exp $ (Berkeley) $Date: 1994/05/02 16:30:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -552,6 +552,12 @@ term_push(sp, s, nchars, flags)
  * place.  We recover gracefully, but the only recourse the user has in an
  * infinite macro loop is to interrupt.
  *
+ * !!!
+ * It is historic practice that mapping characters to themselves as the first
+ * part of the mapped string was legal, and did not cause infinite loops, i.e.
+ * ":map! { {^M^T" and ":map n nz." were known to work.  The initial, matching
+ * characters were returned instead of being remapped.
+ *
  * XXX
  * The final issue is recovery.  It would be possible to undo all of the work
  * that was done by the macro if we entered a record into the log so that we
@@ -571,7 +577,7 @@ term_key(sp, chp, flags)
 	GS *gp;
 	IBUF *tty;
 	SEQ *qp;
-	int ispartial, nr;
+	int init_nomap, ispartial, nr;
 
 	/* If we've been interrupted, return an error. */
 	if (F_ISSET(sp, S_INTERRUPTED))
@@ -652,6 +658,9 @@ remap:		qp = seq_find(sp, NULL, &tty->ch[tty->next], tty->cnt,
 		    qp->output != NULL && !isdigit(qp->output[0]))
 			goto not_digit_ch;
 
+		/* Find out if the initial segments are identical. */
+		init_nomap = !memcmp(&tty->ch[tty->next], qp->output, qp->ilen);
+
 		/* Delete the mapped characters from the queue. */
 		QREM_HEAD(tty, qp->ilen);
 
@@ -660,9 +669,19 @@ remap:		qp = seq_find(sp, NULL, &tty->ch[tty->next], tty->cnt,
 			goto loop;
 
 		/* If remapping characters, push the character on the queue. */
-		if (O_ISSET(sp, O_REMAP)) {
-			if (term_push(sp, qp->output, qp->olen, CH_MAPPED))
-				return (INP_ERR);
+		if (O_ISSET(sp, O_REMAP)) { 
+			if (init_nomap) {
+				if (term_push(sp, qp->output + qp->ilen,
+				    qp->olen - qp->ilen, CH_MAPPED))
+					return (INP_ERR);
+				if (term_push(sp,
+				    qp->output, qp->ilen, CH_NOMAP | CH_MAPPED))
+					return (INP_ERR);
+				goto nomap;
+			} else
+				if (term_push(sp,
+				    qp->output, qp->olen, CH_MAPPED))
+					return (INP_ERR);
 			goto newmap;
 		}
 
