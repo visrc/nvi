@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 5.24 1993/01/24 18:37:14 bostic Exp $ (Berkeley) $Date: 1993/01/24 18:37:14 $";
+static char sccsid[] = "$Id: v_itxt.c,v 5.25 1993/01/30 17:31:59 bostic Exp $ (Berkeley) $Date: 1993/01/30 17:31:59 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -32,13 +32,6 @@ static char sccsid[] = "$Id: v_itxt.c,v 5.24 1993/01/24 18:37:14 bostic Exp $ (B
 #define	N_REPLACE	0x10		/* Replace; don't delete overwrite. */
 
 #define	END_CH		'$'		/* End-of-change character. */
-
-#define	SCREEN_UPDATE {							\
-	curf->scr_update(curf);						\
-	if (ISSET(O_RULER))						\
-		scr_modeline(curf, 1);					\
-	refresh();							\
-}
 
 static int	autoindent __P((recno_t, size_t *));
 static void	ib_err __P((void));
@@ -112,8 +105,8 @@ v_ia(vp, fm, tm, rp)
 				curf->cno = len;
 			} else
 				++curf->cno;
-			SCREEN_UPDATE;
-		}
+		} else
+			flags = N_APPENDEOL;
 		if (newtext(vp, NULL, p, len, rp, OOBLNO, flags))
 			return (1);
 
@@ -146,11 +139,10 @@ v_iI(vp, fm, tm, rp)
 				return (1);
 			}
 			len = 0;
-		} else if (curf->cno != 0) {
+		} else if (curf->cno != 0)
 			curf->cno = 0;
-			SCREEN_UPDATE;
-		}
-		if (newtext(vp, NULL, p, len, rp, OOBLNO, 0))
+		if (newtext(vp,
+		    NULL, p, len, rp, OOBLNO, len == 0 ? N_APPENDEOL : 0))
 			return (1);
 
 		vp->flags |= VC_ISDOT;
@@ -179,7 +171,8 @@ v_ii(vp, fm, tm, rp)
 			}
 			len = 0;
 		}
-		if (newtext(vp, NULL, p, len, rp, OOBLNO, 0))
+		if (newtext(vp,
+		    NULL, p, len, rp, OOBLNO, len == 0 ? N_APPENDEOL : 0))
 			return (1);
 
 		vp->flags |= VC_ISDOT;
@@ -214,7 +207,6 @@ v_iO(vp, fm, tm, rp)
 				return (1);
 			}
 			curf->cno = 0;
-			SCREEN_UPDATE;
 		}
 		if (newtext(vp, NULL,
 		    p, len, rp, curf->lno + 1, N_APPENDEOL | N_AUTOINDENT))
@@ -252,7 +244,6 @@ v_io(vp, fm, tm, rp)
 				return (1);
 			}
 			curf->cno = 0;
-			SCREEN_UPDATE;
 		}
 		if (newtext(vp, NULL,
 		    p, len, rp, curf->lno - 1, N_APPENDEOL | N_AUTOINDENT))
@@ -302,7 +293,6 @@ v_Change(vp, fm, tm, rp)
 		}
 		curf->lno = fm->lno;
 		curf->cno = 0;
-		SCREEN_UPDATE;
 		return (newtext(vp, NULL, p, len, rp, OOBLNO, 0));
 	}
 
@@ -351,7 +341,6 @@ v_change(vp, fm, tm, rp)
 		}
 		curf->lno = fm->lno;
 		curf->cno = 0;
-		SCREEN_UPDATE;
 		return (newtext(vp, NULL, p, len, rp, OOBLNO, 0));
 	}
 
@@ -403,7 +392,6 @@ v_Replace(vp, fm, tm, rp)
 				++rp->cno;
 				curf->lno = rp->lno;
 				curf->cno = rp->cno;
-				SCREEN_UPDATE;
 				vp->flags |= VC_ISDOT;
 			}
 		}
@@ -448,9 +436,10 @@ v_subst(vp, fm, tm, rp)
 	return (newtext(vp, tm, p, len, rp, OOBLNO, N_EMARK | N_OVERWRITE));
 }
 
+/* Allocate a new TEXT structure. */
 #define	NEWTP {								\
 	if ((tp = malloc(sizeof(TEXT))) == NULL ||			\
-	    (tp->lp = malloc(col)) == NULL) {				\
+	    (tp->lp = malloc(ib.len)) == NULL) {			\
 		if (tp != NULL)						\
 			free(tp);					\
 		bell();							\
@@ -458,43 +447,75 @@ v_subst(vp, fm, tm, rp)
 		eval = 1;						\
 		goto done;						\
 	}								\
+	memmove(tp->lp, ib.ilb, ib.len);				\
+	tp->len = ib.len;						\
+	tp->next = NULL;						\
+	TEXTAPPEND(&ib, tp);						\
+}
+
+#define	SCREEN_UPDATE {							\
+	if (curf->scr_update(curf)) {					\
+		eval = 1;						\
+		goto done;						\
+	}								\
+	if (ISSET(O_RULER))						\
+		scr_modeline(curf, 1);					\
+	refresh();							\
 }
 
 /*
  * newtext --
  *	Read in text from the user.
+ *
+ * XXX
+ * Make quoted an enum.
  */
 static int
 newtext(vp, tm, p, len, rp, ai_line, flags)
 	VICMDARG *vp;
-	MARK *tm;
-	u_char *p;
-	size_t len;
-	MARK *rp;
-	recno_t ai_line;
-	u_int flags;
+	MARK *tm;		/* To MARK. */
+	u_char *p;		/* Input line, then input buffer pointer. */
+	size_t len;		/* Input line length. */
+	MARK *rp;		/* Return MARK. */
+	recno_t ai_line;	/* Line number to use for autoindent count. */
+	u_int flags;		/* N_stuff. */
 {
-	TEXT *tp;
-	size_t col, insert, overwrite, rcol, startcol;
-	int carat_ch, carat_set, ch, eval, flag, in_ai, quoted, replay;
-	u_char *repp;
+				/* State of the "[^0]^D" sequences. */
+	enum { C_CARATSET, C_NOINC, C_NOTSET, C_ZEROSET } carat_st;
+	TEXT *tp;		/* Input text structure. */
+	size_t col;		/* The current column in the buffer. */
+	size_t insert;		/* The number of bytes to push. */
+	size_t overwrite;	/* The number of bytes to overwrite. */
+	size_t rcol;		/* Insert offset in the replay buffer. */
+	size_t startcol;	/* Starting column in the buffer. */
+	int carat_ch;		/* Character after the ^ character. */
+	int ch;			/* Input character. */
+	int eval;		/* Routine return value. */
+	int in_ai;		/* If no characters after autoindented ones. */
+	int quoted;		/* If next character is quoted. */
+	int replay;		/* If replaying a set of input. */
+	int tmp;
+	u_char *repp;		/* Replay buffer. */
 
 	/* Set the initial cursor position. */
 	ib.start.lno = ib.stop.lno = curf->lno;
 	ib.start.cno = ib.stop.cno = curf->cno;
 
-	/* Make sure the buffer is big enough for the special stuff. */
+	/* Make sure the buffer is big enough even if the line is empty. */
 	if (binc(&ib.ilb, &ib.ilblen, len + 5))
 		return (1);
 
 	/*
-	 * Copy the current line into the buffer for editing.  Set insert and
-	 * overwrite marks.  No overwrite implies insert, and, in any case,
-	 * insert after that many characters have been overwritten.  If change
-	 * to a mark, flag it with END_CH.
+	 * If there's a line, copy it into the buffer for editing.
+	 *
+	 * Set insert and overwrite counts.  If nothing is being overwritten,
+	 * we assume we're doing insertion.  Even if overwriting, do insertion
+	 * once the specified characters are overwritten.  If change is to a
+	 * mark, flag it with END_CH.
 	 */
 	if (len) {
 		memmove(ib.ilb, p, len);
+		ib.len = len;
 		if (flags & N_OVERWRITE) {
 			overwrite = tm->cno - curf->cno;
 			insert = len - tm->cno;
@@ -504,37 +525,49 @@ newtext(vp, tm, p, len, rp, ai_line, flags)
 		}
 		if (flags & N_EMARK)
 			ib.ilb[tm->cno - 1] = END_CH;
-	} else
+	} else {
+		ib.len = 0;
 		insert = overwrite = 0;
+	}
 
 	/*
-	 * If doing auto-indent, figure out how much indentation we
-	 * need, and get it filled in.  Also, set the local pointers
-	 * to point into the buffer at the appropriate places, and
-	 * update the cursor as necessary.
+	 * Many of the special cases in this routine are to handle autoindent
+	 * support.  Some utter fool decided that it would be a good idea if
+	 * "^^D" and "0^D" deleted all of the autoindented characters.  In an
+	 * editor that takes single character input from the user, this is so
+	 * stupid as to be unbelievable.  Note also that "^^D" resets the next
+	 * lines' autoindent, but "0^D" doesn't.
+	 *
+	 * We assume that auto-indent only happens on empty lines, so insert
+	 * and overwrite should already be zero.  If doing auto-indent, figure
+	 * out how much indentation we need, and get it filled in.  Also, set
+	 * the local pointers to point into the buffer at the right places, and
+	 * update the screen cursor as necessary.
 	 */
-	startcol = curf->cno;
 	if (flags & N_AUTOINDENT && ISSET(O_AUTOINDENT)) {
-		in_ai = 1;
 		if (autoindent(ai_line, &col))
 			return (1);
+		in_ai = 1;
+		startcol = 0;
 		curf->cno = col ? col - 1 : 0;
 	} else {
 		in_ai = 0;
 		col = startcol = curf->cno;
 	}
+
+	/* Point to the first empty slot in which to insert a character. */
 	p = ib.ilb + col;
 
 	/*
 	 * If appending after the end-of-line, add a space into the buffer
 	 * and move the cursor right.  This space is inserted, i.e. pushed
-	 * along, and then deleted when the line is resolved.  NOTE: assumes
-	 * that the cursor is already positioned at the end of the line.
+	 * along, and then deleted when the line is resolved.  Assumes that
+	 * the cursor is already positioned at the end of the line.
 	 */
 	if (flags & N_APPENDEOL) {
 		*p = '+';
+		curf->cno = ib.len;
 		++ib.len;
-		++curf->cno;
 		++insert;
 	}
 
@@ -548,25 +581,31 @@ newtext(vp, tm, p, len, rp, ai_line, flags)
 	 * actual characters and replaying the input.
 	 *
 	 * XXX
-	 * This is not very clean; we should swallow backspaces and such,
-	 * but it's not all that easy to do.
+	 * This is not as clean as it should be.  It would be nice if we
+	 * could swallow backspaces and such, but it's not all that easy
+	 * to do.  Another possibility would be to recognize full line
+	 * insertions, which could be performed quickly, without replay.
 	 */
 	rcol = 0;
 	repp = ib.rep;
 	replay = vp->flags & VC_ISDOT;
 
-	for (carat_set = quoted = 0;;) {
-		if (col + insert >= ib.ilblen) {
-			if (binc(&ib.ilb, &ib.ilblen, 0)) {
-				eval = 1;
-				goto done;
-			}
-			p = ib.ilb + col;
-		}
-
+	for (carat_st = C_NOTSET, eval = quoted = 0;;) {
 next_ch:	if (replay)
 			ch = *repp++;
 		else {
+			/*
+			 * Check if the character fits into the input and
+			 * replay buffers; allocate space as necesssary.
+			 */
+			if (col + insert >= ib.ilblen) {
+				if (binc(&ib.ilb, &ib.ilblen, 0)) {
+					eval = 1;
+					goto done;
+				}
+				p = ib.ilb + col;
+			}
+
 			if (rcol >= ib.replen) {
 				if (binc(&ib.rep, &ib.replen, 0)) {
 					eval = 1;
@@ -574,9 +613,16 @@ next_ch:	if (replay)
 				}
 				repp = ib.rep + rcol;
 			}
+			/* Store the character into the replay buffer. */
 			*repp++ = ch = getkey(GB_MAPINPUT);
 			++rcol;
 		}
+
+		/*
+		 * If the character is quoted, delete the last character
+		 * (the literal mark), and insert the character without
+		 * further ado.
+		 */
 		if (quoted) {
 			--p;
 			--col;
@@ -585,128 +631,159 @@ next_ch:	if (replay)
 		}
 
 		switch(special[ch]) {
-		case K_ESCAPE:			/* Escape. */
-			/* Delete any autoindent characters. */
-			if (in_ai)
-				curf->cno = 0;
-				
+		case K_ESCAPE:				/* Escape. */
 			/*
-			 * Delete any extra append character, if we haven't
-			 * backspaced over characters we inserted.
+			 * If the user hasn't inserted any characters,
+			 * delete the autoindent characters.
+			 *
+			 * If we haven't been backspacing over characters
+			 * already, delete any appended space character.
 			 */
-			if (!overwrite && flags & N_APPENDEOL) {
+			if (in_ai) {
+				p = ib.ilb;
+				ib.len = 0;
+				FF_SET(curf, F_CHARDELETED);
+			} else if (flags & N_APPENDEOL) {
 				--p;
-				--col;
+				--ib.len;
+				--insert;
+				FF_SET(curf, F_CHARDELETED);
 			}
 
-			/* Set the end cursor position. */
+			/*
+			 * The cursor normally follows the last inserted
+			 * character.  Reset the return cursor position
+			 * to rest on the last inserted character.
+			 */
 			if (curf->cno)
 				--curf->cno;
 			ib.stop.cno = curf->cno;
 
-			/* If no input, return. */
+			/* If no input, just return. */
 			if (ib.start.lno == ib.stop.lno &&
-			    ib.start.cno == ib.stop.cno) {
-				eval = 0;
+			    ib.start.cno == ib.stop.cno)
 				goto done;
-			}
 
-			/* Delete any remaining overwrite characters. */
-			if (!(flags & N_REPLACE) && overwrite) {
+			/*
+			 * The "R" command doesn't delete the characters
+			 * that it could have overwritten.  Other input
+			 * modes do.
+			 *
+			 * Delete any remaining "overwrite" characters by
+			 * copying the "insert" characters over them.
+			 */
+			if (!(flags & N_REPLACE) && overwrite && insert)
 				memmove(p, p + overwrite, insert);
-				overwrite = 0;
-			}
-
-			/* Add in insert characters, set length. */
-			ib.len = col += insert + overwrite;
+			overwrite = 0;
 
 			/* Update the screen. */
 			curf->scr_change(curf, ib.stop.lno, LINE_RESET);
 			SCREEN_UPDATE;
 
-			/* Copy the line into place. */
+			/* Append the line into the text structure. */
 			NEWTP;
-			memmove(tp->lp, ib.ilb, col);
-			tp->len = col;
-			tp->next = NULL;
-			TEXTAPPEND(&ib, tp);
 
-			eval = file_ibresolv(curf, &ib);
+			/* Resolve the input lines into the file. */
+			eval = file_ibresolv(curf, ib.start.lno);
 			goto done;
 		case K_CR:
-		case K_NL:			/* New line. */
-			/* Delete any autoindent characters. */
+		case K_NL:				/* New line. */
+			/*
+			 * If the user hasn't inserted any characters,
+			 * delete the autoindent characters.
+			 */
 			if (in_ai) {
-				col = startcol;
-				curf->cno = 0;
+				col = 0;
+				FF_SET(curf, F_CHARDELETED);
 			}
 
-			/* Delete any remaining overwrite characters. */
-			if (!(flags & N_REPLACE) && overwrite) {
-				memmove(p, p + overwrite, overwrite);
-				flag = 1;
-				overwrite = 0;
-			} else
-				flag = 0;
-
-			/* Move the current line into the cut buffer. */
-			NEWTP;
-			memmove(tp->lp, ib.ilb, col);
-			tp->len = col;
-			tp->next = NULL;
-			TEXTAPPEND(&ib, tp);
+			/* Ignore the rest of the line. */
+			ib.len = col;
 
 			/*
-			 * Increment line number, reset length, replace the
-			 * current line if necessary.
+			 * The "R" command doesn't delete the characters
+			 * that it could have overwritten.  Other input
+			 * modes do.
+			 */
+			if (flags & N_REPLACE)
+				insert += overwrite;
+			else
+				p += overwrite;
+			overwrite = 0;
+
+			/* Append the line into the text structure. */
+			NEWTP;
+
+			/*
+			 * Update the screen.  Update the current line number
+			 * so the line is retrieved from the TEXT structure.
 			 */
 			++ib.stop.lno;
-			if (flags & N_REPLACE || insert || flag) {
-				memmove(ib.ilb, p, insert + overwrite);
-				ib.len = insert + overwrite;
-			} else
-				ib.len = 0;
-
-			/* Update the current line (retrieve from TP struct). */
 			if (curf->scr_change(curf,
 			    ib.stop.lno - 1, LINE_RESET)) {
 				eval = 1;
 				goto done;
 			}
 
-			/* Reset the input buffer, handling any autoindent. */
+			/*
+			 * Copy the remaining characters to the start of the
+			 * input buffer, reset the buffer.
+			 */
+			if (insert) {
+				memmove(ib.ilb, p, insert);
+				ib.len = insert;
+			} else
+				ib.len = 0;
+
+			/* Reset the autoindent if necessary. */
+			if (carat_st == C_NOINC)
+				carat_st = C_NOTSET;
+			else if (!in_ai)
+				ai_line = ib.stop.lno - 1;
+
+			/* Reset the input buffer, adding any autoindent. */
 			startcol = 0;
 			if (ISSET(O_AUTOINDENT)) {
-				if (autoindent(ib.stop.lno, &col)) {
+				if (autoindent(ai_line, &col)) {
 					eval = 1;
 					goto done;
 				}
+				in_ai = 1;
 			} else
 				col = 0;
+			ib.len += col;
 			p = ib.ilb + col;
 			
 			/* Reset the cursor. */
-			++curf->lno;
-			curf->cno = 0;
+			curf->lno = ib.stop.lno;
+			curf->cno = col;
 			break;
-		case K_CARAT:			/* Delete autoindent char. */
-			/*
-			 * Some utter fool decided that it would be a good idea
-			 * if "^^D" deleted all of the autoindented characters.
-			 * In an editor that takes single character input from
-			 * the user, this is so moronic as to be unbelievable.
-			 */
+		case K_CARAT:			/* Delete autoindent chars. */
 			if (in_ai) {
-				carat_set = 1;
+				carat_st = C_CARATSET;
+				goto next_ch;
+			}
+			goto ins_ch;
+		case K_ZERO:			/* Delete autoindent chars. */
+			if (in_ai) {
+				carat_st = C_ZEROSET;
 				goto next_ch;
 			}
 			goto ins_ch;
 		case K_CNTRLD:			/* Delete autoindent char. */
 			if (!in_ai)
 				goto ins_ch;
-			if (carat_set) {
-				carat_set = 0;
+			switch(carat_st) {
+			case C_CARATSET:
+				carat_st = C_NOTSET;
 				goto werase;
+			case C_ZEROSET:
+				carat_st = C_NOINC;
+				goto werase;
+			case C_NOTSET:
+				break;
+			default:
+				abort();
 			}
 			/* FALLTHROUGH */
 		case K_VERASE:			/* Erase the last character. */
@@ -716,13 +793,9 @@ next_ch:	if (replay)
 				break;
 			}
 			/*
-			 * Drop back one  character.  If in autoindent, delete
-			 * the character -- the cwidth setting is an awful hack
-			 * that forces the screen code to figure out where the
-			 * cursor goes, from scratch.  This is because if we
-			 * physically delete the tab, the code has no idea what
-			 * character we "traversed".  Otherwise, just increment
-			 * the overwrite count.
+			 * Drop back one character.  If in autoindent, delete
+			 * the character, otherwise, increment the overwrite
+			 * count.
 			 */
 			--p;
 			--col;
@@ -730,7 +803,7 @@ next_ch:	if (replay)
 			if (in_ai) {
 				p[0] = p[1];
 				--ib.len;
-				curf->cwidth = 0;	/* XXX */
+				FF_SET(curf, F_CHARDELETED);
 			} else
 				++overwrite;
 			break;
@@ -754,15 +827,15 @@ werase:			if (col == startcol) {
 					++overwrite;
 			}
 			if (in_ai)
-				curf->cwidth = 0;	/* XXX */
+				FF_SET(curf, F_CHARDELETED);
 			if (col == startcol)
 				break;
-			for (flag = inword(p[-1]); col > startcol;) {
+			for (tmp = inword(p[-1]); col > startcol;) {
 				++overwrite;
 				--p;
 				--col;
 				--curf->cno;
-				if (flag != inword(p[-1]))
+				if (tmp != inword(p[-1]))
 					break;
 			}
 			break;
@@ -775,20 +848,21 @@ werase:			if (col == startcol) {
 			ch = '^';
 			/* FALLTHROUGH */
 		case 0:				/* Insert the character. */
-carat_lable:		if (carat_set) {
+carat_lable:		if (carat_st == C_ZEROSET || carat_st == C_CARATSET) {
 				carat_ch = ch;
 				ch = '^';
 			}
-ins_ch:			if (overwrite)
+ins_ch:			if (overwrite) {
 				--overwrite;
-			else if (insert)
+				FF_SET(curf, F_CHARDELETED);
+			} else if (insert)
 				memmove(p + 1, p, insert);
 ins_qch:		*p++ = ch;
 			++col;
 			++curf->cno;
-			if (carat_set) {
+			if (carat_st == C_ZEROSET || carat_st == C_CARATSET) {
 				ch = carat_ch;
-				carat_set = 0;
+				carat_st = C_NOTSET;
 				goto carat_lable;
 			}
 			in_ai = 0;
@@ -866,26 +940,32 @@ autoindent(lno, lenp)
 
 	if ((p = t = file_gline(curf, lno, &len)) == NULL)
 		return (0);
-	for (; len--; ++p)
+	for (nlen = 0; len; ++p) {
 		if (!isspace(*p))
 			break;
+		/* If last character is a space, it counts. */
+		if (--len == 0) {
+			++p;
+			break;
+		}
+	}
 
 	/* No indentation. */
 	if (p == t)
 		return (0);
 
+	/* Set count. */
 	nlen = p - t;
-	if (len == 0)
-		++nlen;
 
 	/* Make sure the buffer's big enough. */
-	BINC(ib.ilb, ib.ilblen, nlen);
+	BINC(ib.ilb, ib.ilblen, nlen + ib.len);
 
 	/* Copy the indentation into the new buffer. */
+	memmove(ib.ilb + nlen, ib.ilb, nlen);
 	memmove(ib.ilb, t, nlen);
-	ib.len = nlen;
+	ib.len += nlen;
 
-	/* Return the length. */
+	/* Return the additional length. */
 	*lenp = nlen;
 	return (0);
 }
