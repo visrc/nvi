@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_at.c,v 8.19 1994/04/09 18:13:52 bostic Exp $ (Berkeley) $Date: 1994/04/09 18:13:52 $";
+static char sccsid[] = "$Id: ex_at.c,v 8.20 1994/04/29 12:03:46 bostic Exp $ (Berkeley) $Date: 1994/04/29 12:03:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -44,7 +44,7 @@ ex_at(sp, ep, cmdp)
 	CB *cbp;
 	EX_PRIVATE *exp;
 	TEXT *tp;
-	int name, lmode;
+	int name;
 
 	exp = EXP(sp);
 
@@ -69,14 +69,15 @@ ex_at(sp, ep, cmdp)
 	exp->at_lbuf_set = 1;
 
 	/*
-	 * If the buffer was cut in line mode or had portions of more
-	 * than one line, <newlines> are appended to each line as it
-	 * is pushed onto the stack.
+	 * If the buffer was cut in line mode <newlines> are appended to
+	 * each line as it is pushed onto the stack.  If the buffer was
+	 * cut in character mode, <newlines> are appended to all lines
+	 * but the last one.
 	 */
-	tp = cbp->textq.cqh_last;
-	lmode = F_ISSET(cbp, CB_LMODE) || tp->q.cqe_prev != (void *)&cbp->textq;
-	for (; tp != (void *)&cbp->textq; tp = tp->q.cqe_prev)
-		if ((lmode || tp->q.cqe_prev != (void *)&cbp->textq) &&
+	for (tp = cbp->textq.cqh_last;
+	    tp != (void *)&cbp->textq; tp = tp->q.cqe_prev)
+		if ((F_ISSET(cbp, CB_LMODE) ||
+		    tp->q.cqe_next != (void *)&cbp->textq) &&
 		    term_push(sp, "\n", 1, 0, 0) ||
 		    term_push(sp, tp->lb, tp->len, 0, CH_QUOTED))
 			return (1);
