@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_at.c,v 8.2 1993/07/06 08:55:22 bostic Exp $ (Berkeley) $Date: 1993/07/06 08:55:22 $";
+static char sccsid[] = "$Id: v_at.c,v 8.3 1993/08/25 16:48:04 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:48:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -17,6 +17,7 @@ static char sccsid[] = "$Id: v_at.c,v 8.2 1993/07/06 08:55:22 bostic Exp $ (Berk
 #include <string.h>
 
 #include "vi.h"
+#include "excmd.h"
 #include "vcmd.h"
 
 int
@@ -26,59 +27,9 @@ v_at(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	CB *cb;
-	TEXT *tp;
-	size_t len, remain;
-	int key;
-	char *p, *start;
+	EXCMDARG cmd;
 
-	key = vp->buffer;
-	CBNAME(sp, key, cb);
-	CBEMPTY(sp, key, cb);
-
-	if (sp->atkey_len == 0)
-		memset(sp->atkey_stack, 0, sizeof(sp->atkey_stack));
-	else if (sp->atkey_stack[key]) {
-		msgq(sp, M_ERR, "Buffer %s already occurs in this command.",
-		    charname(sp, key));
-		return (1);
-	}
-
-	/* Get buffer for rest of at string plus cut buffer. */
-	remain = sp->atkey_len ?
-	    sp->atkey_len - (sp->atkey_cur - sp->atkey_buf) : 0;
-
-	/* Check for overflow. */
-	len = cb->len + remain;
-	if (len < cb->len + remain) {
-		msgq(sp, M_ERR, "Buffer overflow.");
-		return (1);
-	}
-
-	if ((start = p = malloc(len)) == NULL) {
-		msgq(sp, M_ERR, "Error: %s", strerror(errno));
-		return (1);
-	}
-
-	/* Copy into the new buffer. */
-	for (tp = cb->txthdr.next; tp != (TEXT *)&cb->txthdr; tp = tp->next) {
-		memmove(p, tp->lb, tp->len);
-		p += tp->len;
-		*p++ = '\n';
-	}
-	
-	/* Copy the rest of the current at string into place. */
-	if (sp->atkey_len != 0) {
-		memmove(p, sp->atkey_cur, remain);
-		free(sp->atkey_buf);
-
-	}
-	/* Fix the pointers. */
-	sp->atkey_buf = sp->atkey_cur = start;
-	sp->atkey_len = len;
-
-	sp->atkey_stack[key] = 1;
-
-	*rp = *fm;
-	return (0);
+        SETCMDARG(cmd, C_AT, 0, OOBLNO, OOBLNO, 0, NULL);
+	cmd.buffer = vp->buffer;
+        return (sp->s_ex_cmd(sp, ep, &cmd, rp));
 }
