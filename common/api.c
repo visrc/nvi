@@ -12,7 +12,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: api.c,v 8.33 2000/09/03 18:58:25 skimo Exp $ (Berkeley) $Date: 2000/09/03 18:58:25 $";
+static const char sccsid[] = "$Id: api.c,v 8.34 2001/03/14 21:48:14 skimo Exp $ (Berkeley) $Date: 2001/03/14 21:48:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -161,21 +161,16 @@ api_gline(sp, lno, linepp, lenp)
  * api_iline --
  *	Insert a line.
  *
- * PUBLIC: int api_iline __P((SCR *, db_recno_t, char *, size_t));
+ * PUBLIC: int api_iline __P((SCR *, db_recno_t, CHAR_T *, size_t));
  */
 int
 api_iline(sp, lno, line, len)
 	SCR *sp;
 	db_recno_t lno;
-	char *line;
+	CHAR_T *line;
 	size_t len;
 {
-	size_t wblen;
-	CHAR_T *wbp;
-
-	CHAR2INT(sp, line, len, wbp, wblen);
-
-	return (db_insert(sp, lno, wbp, wblen));
+	return (db_insert(sp, lno, line, len));
 }
 
 /*
@@ -196,21 +191,16 @@ api_lline(sp, lnop)
  * api_sline --
  *	Set a line.
  *
- * PUBLIC: int api_sline __P((SCR *, db_recno_t, char *, size_t));
+ * PUBLIC: int api_sline __P((SCR *, db_recno_t, CHAR_T *, size_t));
  */
 int
 api_sline(sp, lno, line, len)
 	SCR *sp;
 	db_recno_t lno;
-	char *line;
+	CHAR_T *line;
 	size_t len;
 {
-	size_t wblen;
-	CHAR_T *wbp;
-
-	CHAR2INT(sp, line, len, wbp, wblen);
-
-	return (db_set(sp, lno, wbp, wblen));
+	return (db_set(sp, lno, line, len));
 }
 
 /*

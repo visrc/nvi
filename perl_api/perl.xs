@@ -14,7 +14,7 @@
 #undef VI
 
 #ifndef lint
-static const char sccsid[] = "$Id: perl.xs,v 8.36 2000/07/07 22:28:18 skimo Exp $ (Berkeley) $Date: 2000/07/07 22:28:18 $";
+static const char sccsid[] = "$Id: perl.xs,v 8.37 2001/03/14 21:48:14 skimo Exp $ (Berkeley) $Date: 2001/03/14 21:48:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -67,8 +67,13 @@ static char *errmsg = 0;
 
 typedef struct _perl_data {
     	PerlInterpreter*	interp;
-	SV *svcurscr, *svstart, *svstop, *svid;
+	SV 	*svcurscr, *svstart, *svstop, *svid;
+	void	*perl_bp;
+	size_t   perl_blen;
 } perl_data_t;
+
+#define CHAR2INTP(sp,n,nlen,w,wlen)					    \
+    CHAR2INTB(sp,n,nlen,w,wlen,((perl_data_t *)sp->wp->perl_private)->perl)
 
 /*
  * INITMESSAGE --
@@ -81,7 +86,7 @@ typedef struct _perl_data {
 	sp->gp->scr_msg = scr_msg;					\
 	if (rval) croak(errmsg);
 
-void xs_init __P((void));
+void xs_init __P((pTHXo));
 
 /*
  * perl_end --
@@ -186,6 +191,8 @@ perl_init(scrp)
 	}
 	MALLOC(scrp, pp, perl_data_t *, sizeof(perl_data_t));
 	wp->perl_private = pp;
+	pp->perl_blen = 0;
+	pp->perl_bp = 0;
 #ifdef USE_ITHREADS
 	pp->interp = perl_clone(gp->perl_interp, 0);
         if (1) { /* hack for bug fixed in perl-current (5.6.1) */
@@ -279,6 +286,8 @@ perl_ex_perl(scrp, cmdp, cmdlen, f_lno, t_lno)
 	STRLEN length;
 	size_t len;
 	char *err;
+	char *np;
+	size_t nlen;
 	Signal_t (*istat)();
 	perl_data_t *pp;
 
@@ -297,7 +306,8 @@ perl_ex_perl(scrp, cmdp, cmdlen, f_lno, t_lno)
 	newVIrv(pp->svid, scrp);
 
 	istat = signal(SIGINT, my_sighandler);
-	perl_eval(cmdp);
+	INT2CHAR(scrp, cmdp, v_strlen(cmdp)+1, np, nlen);
+	perl_eval(np);
 	signal(SIGINT, istat);
 
 	SvREFCNT_dec(SvRV(pp->svcurscr));
@@ -329,17 +339,21 @@ replace_line(scrp, line, t_lno, defsv)
 	SV *defsv;
 {
 	char *str, *next;
-	size_t len;
+	CHAR_T *wp;
+	size_t len, wlen;
 	dTHXs
 
 	if (SvOK(defsv)) {
 		str = SvPV(defsv,len);
 		next = memchr(str, '\n', len);
-		api_sline(scrp, line, str, next ? (next - str) : len);
+		CHAR2INTP(scrp, str, next ? (next - str) : len, wp, wlen);
+		api_sline(scrp, line, wp, wlen);
 		while (next++) {
 			len -= next - str;
 			next = memchr(str = next, '\n', len);
-			api_iline(scrp, ++line, str, next ? (next - str) : len);
+			CHAR2INTP(scrp, str, next ? (next - str) : len, 
+				    wp, wlen);
+			api_iline(scrp, ++line, wp, wlen);
 			(*t_lno)++;
 		}
 	} else {
@@ -368,9 +382,12 @@ perl_ex_perldo(scrp, cmdp, cmdlen, f_lno, t_lno)
 	size_t len;
 	db_recno_t i;
 	CHAR_T *str;
+	char *estr;
 	SV* cv;
 	char *command;
 	perl_data_t *pp;
+	char *np;
+	size_t nlen;
 
 	/* Initialize the interpreter. */
 	if (scrp->wp->perl_private == NULL && perl_init(scrp))
@@ -384,9 +401,10 @@ perl_ex_perldo(scrp, cmdp, cmdlen, f_lno, t_lno)
 	/* Backwards compatibility. */
 	newVIrv(pp->svid, scrp);
 
-	if (!(command = malloc(length = strlen(cmdp) + sizeof("sub {}"))))
+	INT2CHAR(scrp, cmdp, v_strlen(cmdp)+1, np, nlen);
+	if (!(command = malloc(length = nlen - 1 + sizeof("sub {}"))))
 		return 1;
-	snprintf(command, length, "sub {%s}", cmdp);
+	snprintf(command, length, "sub {%s}", np);
 
 	ENTER;
 	SAVETMPS;
@@ -394,17 +412,18 @@ perl_ex_perldo(scrp, cmdp, cmdlen, f_lno, t_lno)
 	cv = perl_eval_pv(command, FALSE);
 	free (command);
 
-	str = SvPV(ERRSV,length);
+	estr = SvPV(ERRSV,length);
 	if (length)
 		goto err;
 
 	for (i = f_lno; i <= t_lno && !api_gline(scrp, i, &str, &len); i++) {
-		sv_setpvn(DEFSV,str,len);
+		INT2CHAR(scrp, str, len, np, nlen);
+		sv_setpvn(DEFSV,np,nlen);
 		sv_setiv(pp->svstart, i);
 		sv_setiv(pp->svstop, i);
 		PUSHMARK(sp);
                 perl_call_sv(cv, G_SCALAR | G_EVAL);
-		str = SvPV(ERRSV, length);
+		estr = SvPV(ERRSV, length);
 		if (length) break;
 		SPAGAIN;
 		if(SvTRUEx(POPs)) 
@@ -422,8 +441,8 @@ perl_ex_perldo(scrp, cmdp, cmdlen, f_lno, t_lno)
 	if (!length)
 		return (0);
 
-err:	str[length - 1] = '\0';
-	msgq(scrp, M_ERR, "perl: %s", str);
+err:	estr[length - 1] = '\0';
+	msgq(scrp, M_ERR, "perl: %s", estr);
 	return (1);
     }
 }
@@ -651,11 +670,14 @@ SetLine(screen, linenumber, text)
 	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
 	int rval;
 	STRLEN length;
+	size_t len;
+	CHAR_T *line;
 
 	CODE:
 	SvPV(ST(2), length);
 	INITMESSAGE(screen);
-	rval = api_sline(screen, linenumber, text, length);
+	CHAR2INTP(screen, text, length, line, len);
+	rval = api_sline(screen, linenumber, line, len);
 	ENDMESSAGE(screen);
 
 # XS_VI_iline --
@@ -674,11 +696,14 @@ InsertLine(screen, linenumber, text)
 	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
 	int rval;
 	STRLEN length;
+	size_t len;
+	CHAR_T *line;
 
 	CODE:
 	SvPV(ST(2), length);
 	INITMESSAGE(screen);
-	rval = api_iline(screen, linenumber, text, length);
+	CHAR2INTP(screen, text, length, line, len);
+	rval = api_iline(screen, linenumber, line, len);
 	ENDMESSAGE(screen);
 
 # XS_VI_lline --
@@ -1233,6 +1258,8 @@ STORE(screen, linenumber, text)
 	int rval;
 	STRLEN length;
 	db_recno_t last;
+	size_t len;
+	CHAR_T *line;
 
 	CODE:
 	++linenumber;	/* vi 1 based ; perl 0 based */
@@ -1243,7 +1270,8 @@ STORE(screen, linenumber, text)
 	    if (linenumber > last)
 		rval = api_extend(screen, linenumber);
 	    if (!rval)
-		rval = api_sline(screen, linenumber, text, length);
+		CHAR2INTP(screen, text, length, line, len);
+		rval = api_sline(screen, linenumber, line, len);
 	}
 	ENDMESSAGE(screen);
 
@@ -1415,12 +1443,15 @@ UNSHIFT(screen, ...)
 	PREINIT:
 	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
 	int rval, i, len;
-	char *line;
+	char *np;
+	size_t nlen;
+	CHAR_T *line;
 
 	CODE:
 	INITMESSAGE(screen);
 	while (--items != 0) {
-		line = SvPV(ST(items), len);
+		np = SvPV(ST(items), nlen);
+		CHAR2INTP(screen, np, nlen, line, len);
 		if ((rval = api_iline(screen, (db_recno_t)1, line, len)))
 			break;
 	}
@@ -1435,6 +1466,8 @@ SPLICE(screen, ...)
 	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
 	int rval, length, common, len, i, offset;
 	CHAR_T *line;
+	char *np;
+	size_t nlen;
 
 	PPCODE:
 	INITMESSAGE(screen);
@@ -1453,18 +1486,22 @@ SPLICE(screen, ...)
 	for (common = MIN(length, items - 3), i = 3; common > 0; 
 	    --common, ++db_offset, --length, ++i) {
 		rval |= api_gline(screen, db_offset, &line, &len);
-		PUSHs(sv_2mortal(newSVpv(len ? (char *)line : "", len)));
-		line = SvPV(ST(i), len);
+		INT2CHAR(screen, line, len, np, nlen);
+		PUSHs(sv_2mortal(newSVpv(nlen ? np : "", nlen)));
+		np = SvPV(ST(i), nlen);
+		CHAR2INTP(screen, np, nlen, line, len);
 		rval |= api_sline(screen, db_offset, line, len);
 	}
 	for (; length; --length) {
 		rval |= api_gline(screen, db_offset, &line, &len);
-		PUSHs(sv_2mortal(newSVpv(len ? (char *)line : "", len)));
+		INT2CHAR(screen, line, len, np, nlen);
+		PUSHs(sv_2mortal(newSVpv(len ? np : "", nlen)));
 		rval |= api_dline(screen, db_offset);
 	}
 	for (; i < items; ++i) {
-		line = SvPV(ST(i), len);
-		rval |= api_iline(screen, db_offset, line, len);
+		np = SvPV(ST(i), len);
+		CHAR2INTP(screen, np, len, line, nlen);
+		rval |= api_iline(screen, db_offset, line, nlen);
 	}
 	ENDMESSAGE(screen);
 
