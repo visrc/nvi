@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 9.13 1994/12/02 11:01:38 bostic Exp $ (Berkeley) $Date: 1994/12/02 11:01:38 $";
+static char sccsid[] = "$Id: exf.c,v 9.14 1994/12/02 12:33:08 bostic Exp $ (Berkeley) $Date: 1994/12/02 12:33:08 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -1088,8 +1088,7 @@ file_m1(sp, force, flags)
 	 */
 	if (F_ISSET(sp->ep, F_MODIFIED))
 		if (O_ISSET(sp, O_AUTOWRITE)) {
-			if (!force &&
-			    file_write(sp, NULL, NULL, NULL, flags))
+			if (!force && file_aw(sp, flags))
 				return (1);
 		} else if (sp->ep->refcnt <= 1 && !force) {
 			msgq(sp, M_ERR, LF_ISSET(FS_POSSIBLE) ?
@@ -1154,6 +1153,39 @@ file_m3(sp, force)
 		return (1);
 	}
 	return (0);
+}
+
+/*
+ * file_aw --
+ *	Autowrite routine.  If modified, autowrite is set and the readonly bit
+ *	is not set, write the file.  A routine so there's a place to put the
+ *	comment.
+ */
+int
+file_aw(sp, flags)
+	SCR *sp;
+	int flags;
+{
+	if (!F_ISSET(sp->ep, F_MODIFIED))
+		return (0);
+	if (!O_ISSET(sp, O_AUTOWRITE))
+		return (0);
+
+	/*
+	 * !!!
+	 * Historic 4BSD vi attempted to write the file if autowrite was set,
+	 * regardless of the writeability of the file (as defined by the file
+	 * readonly flag).  System V changed this as some point, not attempting
+	 * autowrite if the file was readonly.  This feels like a bug fix to
+	 * me (e.g. the principle of least surprise is violated if readonly is
+	 * set and vi writes the file), so I'm compatible with System V.
+	 */
+	if (F_ISSET(sp->frp, FR_RDONLY)) {
+		msgq(sp, M_INFO,
+		    "268|File readonly, modifications not auto-written");
+		return (0);
+	}
+	return (file_write(sp, NULL, NULL, NULL, flags));
 }
 
 /*
