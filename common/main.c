@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.64 1994/01/23 16:22:48 bostic Exp $ (Berkeley) $Date: 1994/01/23 16:22:48 $";
+static char sccsid[] = "$Id: main.c,v 8.65 1994/01/23 19:36:36 bostic Exp $ (Berkeley) $Date: 1994/01/23 19:36:36 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -216,7 +216,7 @@ main(argc, argv)
 		if (strtol(optarg, &p, 10) < 0 || *p)
 			errx(1, "illegal window size -- %s", optarg);
 		(void)snprintf(path, sizeof(path), "window=%s", optarg);
-		a.bp = path;
+		a.bp = (CHAR_T *)path;
 		a.len = strlen(path);
 		b.bp = NULL;
 		b.len = 0;
@@ -446,9 +446,8 @@ err:		eval = 1;
 	 * other systems mess up characters typed after the quit command to
 	 * vi but before vi actually exits.
 	 */
-	if (F_ISSET(gp, G_ISFROMTTY) &&
-	    tcsetattr(STDIN_FILENO, TCSADRAIN, &gp->original_termios))
-		err(1, "tcsetattr");
+	if (F_ISSET(gp, G_ISFROMTTY))
+		(void)tcsetattr(STDIN_FILENO, TCSADRAIN, &gp->original_termios);
 	exit(eval);
 }
 
