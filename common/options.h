@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: options.h,v 8.21 1994/07/22 19:48:56 bostic Exp $ (Berkeley) $Date: 1994/07/22 19:48:56 $
+ *	$Id: options.h,v 8.22 1994/08/08 10:59:07 bostic Exp $ (Berkeley) $Date: 1994/08/08 10:59:07 $
  */
 
 struct _option {
@@ -44,14 +44,16 @@ struct _optlist {
 #define	O_VAL(sp, o)		(sp)->opts[(o)].o_u.val
 
 /* Option routines. */
-enum optdisp { NO_DISPLAY, ALL_DISPLAY, CHANGED_DISPLAY, SELECT_DISPLAY };
+u_long	 baud_from_bval __P((SCR *));
 
 int	opts_copy __P((SCR *, SCR *));
-void	opts_dump __P((SCR *, enum optdisp));
 void	opts_free __P((SCR *));
 int	opts_init __P((SCR *));
 int	opts_save __P((SCR *, FILE *));
 int	opts_set __P((SCR *, char *, ARGS *[]));
+
+enum optdisp { NO_DISPLAY, ALL_DISPLAY, CHANGED_DISPLAY, SELECT_DISPLAY };
+void	opts_dump __P((SCR *, enum optdisp));
 
 /* Per-option change routines. */
 int	f_altwerase __P((SCR *, OPTION *, char *, u_long));
