@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 9.5 1994/11/17 20:44:55 bostic Exp $ (Berkeley) $Date: 1994/11/17 20:44:55 $";
+static char sccsid[] = "$Id: ex_tag.c,v 9.6 1994/12/15 19:27:22 bostic Exp $ (Berkeley) $Date: 1994/12/15 19:27:22 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -45,6 +45,9 @@ static char	*linear_search __P((char *, char *, char *));
 static int	 search __P((SCR *, char *, char *, char **));
 static int	 tag_get __P((SCR *, char *, char **, char **, char **));
 
+enum tagmsg {TAG_BADLNO, TAG_EMPTY, TAG_SEARCH};
+static void	 tag_msg __P((SCR *, enum tagmsg, char *));
+
 /*
  * ex_tagfirst --
  *	The tag code can be entered from main, i.e. "vi -t tag".
@@ -58,7 +61,7 @@ ex_tagfirst(sp, tagarg)
 	MARK m;
 	long tl;
 	u_int flags;
-	int nf, sval;
+	int sval;
 	char *p, *tag, *name, *search;
 
 	/* Taglength may limit the number of characters. */
@@ -83,6 +86,10 @@ ex_tagfirst(sp, tagarg)
 	 */
 	if (isdigit(search[0])) {
 		m.lno = atoi(search);
+		if (file_gline(sp, m.lno, NULL) == NULL) {
+			m.lno = 1;
+			tag_msg(sp, TAG_BADLNO, tag);
+		}
 		m.cno = 0;
 	} else {
 		/*
@@ -97,12 +104,8 @@ ex_tagfirst(sp, tagarg)
 			p[1] = '\0';
 			sval = f_search(sp, &m, &m, search, NULL, &flags);
 		}
-		if (sval) {
-			p = msg_print(sp, tag, &nf);
-			msgq(sp, M_ERR, "161|%s: search pattern not found", p);
-			if (nf)
-				FREE_SPACE(sp, p, 0);
-		}
+		if (sval)
+			tag_msg(sp, TAG_SEARCH, tag);
 	}
 
 	/* Set up the screen. */
@@ -155,7 +158,7 @@ ex_tagpush(sp, cmdp)
 	MARK m;
 	TAG *tp;
 	u_int flags;
-	int nf, sval;
+	int sval;
 	long tl;
 	char *name, *p, *search, *tag;
 
@@ -239,11 +242,16 @@ err:		free(tag);
 
 	/*
 	 * !!!
-	 * Historic vi accepted a line number as well as a search
-	 * string, and people are apparently still using the format.
+	 * The historic tags file format (from a long, long time ago...)
+	 * used a line number, not a search string.  I got complaints, so
+	 * people are still using the format.
 	 */
 	if (isdigit(search[0])) {
 		m.lno = atoi(search);
+		if (file_gline(sp, m.lno, NULL) == NULL) {
+			m.lno = 1;
+			tag_msg(sp, TAG_BADLNO, tag);
+		}
 		m.cno = 0;
 		sval = 0;
 	} else {
@@ -260,12 +268,8 @@ err:		free(tag);
 			sval = f_search(sp, &m, &m, search, NULL, &flags);
 			p[1] = '(';
 		}
-		if (sval) {
-			p = msg_print(sp, tag, &nf);
-			msgq(sp, M_ERR, "163|%s: search pattern not found", p);
-			if (nf)
-				FREE_SPACE(sp, p, 0);
-		}
+		if (sval)
+			tag_msg(sp, TAG_SEARCH, tag);
 	}
 	free(tag);
 
@@ -302,7 +306,7 @@ ex_tagpop(sp, cmdp)
 	/* Check for an empty stack. */
 	exp = EXP(sp);
 	if (exp->tagq.tqh_first == NULL) {
-		msgq(sp, M_INFO, "164|The tags stack is empty");
+		tag_msg(sp, TAG_EMPTY, NULL);
 		return (1);
 	}
 
@@ -399,7 +403,7 @@ ex_tagtop(sp, cmdp)
 	for (tp = exp->tagq.tqh_first;
 	    tp != NULL && tp->q.tqe_next != NULL; tp = tp->q.tqe_next);
 	if (tp == NULL) {
-		msgq(sp, M_INFO, "167|The tags stack is empty");
+		tag_msg(sp, TAG_EMPTY, NULL);
 		return (1);
 	}
 
@@ -887,4 +891,35 @@ compare(s1, s2, back)
 			return (*s1 < *s2 ? LESS : GREATER);
 	return (*s1 ? GREATER : s2 < back &&
 	    (*s2 != '\t' && *s2 != ' ') ? LESS : EQUAL);
+}
+
+/*
+ * tag_msg
+ *	A few common messages.
+ */
+static void
+tag_msg(sp, msg, tag)
+	SCR *sp;
+	enum tagmsg msg;
+	char *tag;
+{
+	int nf;
+	char *p;
+
+	nf = 0;
+	switch (msg) {
+	case TAG_BADLNO:
+		p = msg_print(sp, tag, &nf);
+		msgq(sp, M_ERR, "269|%s: the tag line doesn't exist", p);
+		break;
+	case TAG_EMPTY:
+		msgq(sp, M_INFO, "164|The tags stack is empty");
+		break;
+	case TAG_SEARCH:
+		p = msg_print(sp, tag, &nf);
+		msgq(sp, M_ERR, "161|%s: search pattern not found", p);
+		break;
+	}
+	if (nf)
+		FREE_SPACE(sp, p, 0);
 }
