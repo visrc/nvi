@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 5.24 1993/04/06 11:36:31 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:36:31 $";
+static char sccsid[] = "$Id: search.c,v 5.25 1993/04/12 14:32:00 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:32:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -17,17 +17,21 @@ static char sccsid[] = "$Id: search.c,v 5.24 1993/04/06 11:36:31 bostic Exp $ (B
 
 #include "vi.h"
 
-static int	checkdelta __P((SCR *, EXF *, recno_t, recno_t));
+static int	checkdelta __P((SCR *, EXF *, long, recno_t));
 static int	resetup __P((SCR *, regex_t **, enum direction,
-		    char *, char **, recno_t *, u_int));
+		    char *, char **, long *, u_int));
 
+/*
+ * resetup --
+ *	Set up a search for a regular expression.
+ */
 static int
 resetup(sp, rep, dir, ptrn, epp, deltap, flags)
 	SCR *sp;
 	regex_t **rep;
 	enum direction dir;
 	char *ptrn, **epp;
-	recno_t *deltap;
+	long *deltap;
 	u_int flags;
 {
 	int eval, reflags;
@@ -35,7 +39,7 @@ resetup(sp, rep, dir, ptrn, epp, deltap, flags)
 	char delim[2];
 
 	if (ptrn == NULL && !F_ISSET(sp, S_RE_SET)) {
-noprev:		msgq(sp, M_DISPLAY, "No previous search pattern.");
+noprev:		msgq(sp, M_INFO, "No previous search pattern.");
 		return (1);
 	}
 
@@ -77,7 +81,7 @@ noprev:		msgq(sp, M_DISPLAY, "No previous search pattern.");
 		 */
 		if (endp != NULL && *endp != '\0') {
 			if (flags & SEARCH_TERM) {
-				msgq(sp, M_ERROR,
+				msgq(sp, M_ERR,
 				    "Characters after search string.");
 				return (1);
 			}
@@ -132,14 +136,15 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 {
 	regmatch_t match[1];
 	regex_t *re, lre;
-	recno_t delta, lno;
+	recno_t lno;
 	size_t coff, len;
+	long delta;
 	int eval, wrapped;
 	char *l;
 
 	if ((lno = file_lline(sp, ep)) == 0) {
 		if (flags & SEARCH_MSG)
-			msgq(sp, M_DISPLAY, EMPTYMSG);
+			msgq(sp, M_INFO, EMPTYMSG);
 		return (1);
 	}
 
@@ -156,7 +161,7 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 		if (fm->lno == lno) {
 			if (!O_ISSET(sp, O_WRAPSCAN)) {
 				if (flags & SEARCH_MSG)
-					msgq(sp, M_DISPLAY, EOFMSG);
+					msgq(sp, M_INFO, EOFMSG);
 				return (1);
 			}
 			lno = 1;
@@ -170,12 +175,12 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 		if ((l = file_gline(sp, ep, lno, &len)) == NULL) {
 			if (wrapped) {
 				if (flags & SEARCH_MSG)
-					msgq(sp, M_DISPLAY, NOTFOUND);
+					msgq(sp, M_INFO, NOTFOUND);
 				break;
 			}
 			if (!O_ISSET(sp, O_WRAPSCAN)) {
 				if (flags & SEARCH_MSG)
-					msgq(sp, M_DISPLAY, EOFMSG);
+					msgq(sp, M_INFO, EOFMSG);
 				break;
 			}
 			lno = 1;
@@ -206,7 +211,7 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 		
 		/* Warn if wrapped. */
 		if (wrapped && O_ISSET(sp, O_WARN) && flags & SEARCH_MSG)
-			msgq(sp, M_DISPLAY, WRAPMSG);
+			msgq(sp, M_INFO, WRAPMSG);
 
 		/*
 		 * If an offset, see if it's legal.  It's possible to match
@@ -242,14 +247,15 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 {
 	regmatch_t match[1];
 	regex_t *re, lre;
+	recno_t lno;
 	size_t coff, len, last;
-	recno_t delta, lno;
+	long delta;
 	int eval, wrapped;
 	char *l;
 
 	if ((lno = file_lline(sp, ep)) == 0) {
 		if (flags & SEARCH_MSG)
-			msgq(sp, M_DISPLAY, EMPTYMSG);
+			msgq(sp, M_INFO, EMPTYMSG);
 		return (1);
 	}
 
@@ -262,7 +268,7 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 		if (fm->lno == 1) {
 			if (!O_ISSET(sp, O_WRAPSCAN)) {
 				if (flags & SEARCH_MSG)
-					msgq(sp, M_DISPLAY, SOFMSG);
+					msgq(sp, M_INFO, SOFMSG);
 				return (1);
 			}
 		} else
@@ -275,19 +281,19 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 		if (lno == 0) {
 			if (!O_ISSET(sp, O_WRAPSCAN)) {
 				if (flags & SEARCH_MSG)
-					msgq(sp, M_DISPLAY, SOFMSG);
+					msgq(sp, M_INFO, SOFMSG);
 				break;
 			}
 			if ((lno = file_lline(sp, ep)) == 0) {
 				if (flags & SEARCH_MSG)
-					msgq(sp, M_DISPLAY, EMPTYMSG);
+					msgq(sp, M_INFO, EMPTYMSG);
 				break;
 			}
 			wrapped = 1;
 			continue;
 		} else if (lno == fm->lno && wrapped) {
 			if (flags & SEARCH_MSG)
-				msgq(sp, M_DISPLAY, NOTFOUND);
+				msgq(sp, M_INFO, NOTFOUND);
 			break;
 		}
 
@@ -313,7 +319,7 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 
 		/* Warn if wrapped. */
 		if (wrapped && O_ISSET(sp, O_WARN) && flags & SEARCH_MSG)
-			msgq(sp, M_DISPLAY, WRAPMSG);
+			msgq(sp, M_INFO, WRAPMSG);
 		
 		if (delta) {
 			if (checkdelta(sp, ep, delta, lno))
@@ -353,23 +359,32 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 	return (1);
 }
 
+/*
+ * checkdelta --
+ *	Check a line delta to see if it's legal.
+ */
 static int
 checkdelta(sp, ep, delta, lno)
 	SCR *sp;
 	EXF *ep;
-	recno_t delta, lno;
+	long delta;
+	recno_t lno;
 {
 	if (delta < 0 && (recno_t)delta >= lno) {
-		msgq(sp, M_ERROR, "Search offset before line 1.");
+		msgq(sp, M_ERR, "Search offset before line 1.");
 		return (1);
 	}
 	if (file_gline(sp, ep, lno + delta, NULL) == NULL) {
-		msgq(sp, M_ERROR, "Search offset past end-of-file.");
+		msgq(sp, M_ERR, "Search offset past end-of-file.");
 		return (1);
 	}
 	return (0);
 }
 
+/*
+ * re_error --
+ *	Report a regular expression error.
+ */
 void
 re_error(sp, errcode, preg)
 	SCR *sp;
@@ -381,10 +396,10 @@ re_error(sp, errcode, preg)
 
 	s = regerror(errcode, preg, "", 0);
 	if ((oe = malloc(s)) == NULL)
-		msgq(sp, M_ERROR, "Error: %s", strerror(errno));
+		msgq(sp, M_ERR, "Error: %s", strerror(errno));
 	else {
 		(void)regerror(errcode, preg, oe, s);
-		msgq(sp, M_ERROR, "RE error: %s", oe);
+		msgq(sp, M_ERR, "RE error: %s", oe);
 	}
 	free(oe);
 }
