@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: screen.c,v 10.18 2000/07/14 14:29:17 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:17 $";
+static const char sccsid[] = "$Id: screen.c,v 10.19 2000/07/19 20:31:58 skimo Exp $ (Berkeley) $Date: 2000/07/19 20:31:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -117,7 +117,7 @@ mem:				msgq(orig, M_SYSERR, NULL);
 	if (v_screen_copy(orig, sp))		/* Vi. */
 		goto err;
 	sp->cl_private = 0;			/* XXX */
-	conv_init(sp);				/* XXX */
+	conv_init(orig, sp);			/* XXX */
 
 	*spp = sp;
 	return (0);

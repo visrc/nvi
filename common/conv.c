@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: conv.c,v 1.3 2000/07/19 18:32:58 skimo Exp $ (Berkeley) $Date: 2000/07/19 18:32:58 $";
+static const char sccsid[] = "$Id: conv.c,v 1.4 2000/07/19 20:31:58 skimo Exp $ (Berkeley) $Date: 2000/07/19 20:31:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -127,9 +127,12 @@ CONV gb_conv = { 0, 0, default_char2int, default_int2char,
 		      gb2int, int2gb, default_int2disp };
 
 void
-conv_init (SCR *sp)
+conv_init (SCR *orig, SCR *sp)
 {
-    sp->conv = &default_conv;
+    if (orig != NULL)
+	sp->conv = orig->conv;
+    else
+	sp->conv = &default_conv;
 }
 
 int
