@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.34 1993/12/28 16:38:20 bostic Exp $ (Berkeley) $Date: 1993/12/28 16:38:20 $";
+static char sccsid[] = "$Id: options.c,v 8.35 1993/12/29 15:25:11 bostic Exp $ (Berkeley) $Date: 1993/12/29 15:25:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -514,23 +514,36 @@ opts_dump(sp, type)
 	enum optdisp type;
 {
 	OPTLIST const *op;
-	int base, b_num, chcnt, cnt, col, colwidth, curlen, endcol, s_num;
-	int numcols, numrows, row, tablen, termwidth;
+	int base, b_num, cnt, col, colwidth, curlen, s_num;
+	int numcols, numrows, row;
 	int b_op[O_OPTIONCOUNT], s_op[O_OPTIONCOUNT];
 	char nbuf[20];
 
 	/*
-	 * Options are output in two groups -- those that fit at least two to
-	 * a line and those that don't.  We do output on tab boundaries for no
-	 * particular reason.   First get the set of options to list, keeping
-	 * track of the length of each.  No error checking, because we know
-	 * that O_TERM was set so at least one option has the OPT_SET bit on.
-	 * Termwidth is the tab stop before half of the line in the first loop,
-	 * and the full line length later on.
+	 * Options are output in two groups -- those that fit in a column and
+	 * those that don't.  Output is done on 6 character "tab" boundaries
+	 * for no particular reason.  (Since we don't output tab characters,
+	 * we can ignore the terminal's tab settings.)  Ignore the user's tab
+	 * setting because we have no idea how reasonable it is.
 	 */
-	colwidth = -1;
-	tablen = O_VAL(sp, O_TABSTOP);
-	termwidth = (sp->cols - 1) / 2 & ~(tablen - 1);
+#define	BOUND	6
+
+	/* Find a column width we can live with. */
+	for (cnt = 6; cnt > 1; --cnt) {
+		colwidth = (sp->cols - 1) / cnt & ~(BOUND - 1);
+		if (colwidth >= 10) {
+			colwidth = (colwidth + BOUND) & ~(BOUND - 1);
+			break;
+		}
+		colwidth = 0;
+	}
+
+	/* 
+	 * Two passes.  First, get the set of options to list, entering them
+	 * into the column list or the overflow list.  No error checking,
+	 * since we know that at least one option (O_TERM) has the OPT_SET bit
+	 * set.
+	 */
 	for (b_num = s_num = 0, op = optlist; op->name; ++op) {
 		cnt = op - optlist;
 
@@ -572,17 +585,14 @@ opts_dump(sp, type)
 			curlen += strlen(O_STR(sp, cnt)) + 3;
 			break;
 		}
-		if (curlen < termwidth) {
-			if (colwidth < curlen)
-				colwidth = curlen;
+		/* Offset by two so there's a gap. */
+		if (curlen < colwidth - 2)
 			s_op[s_num++] = cnt;
-		} else
+		else
 			b_op[b_num++] = cnt;
 	}
 
-	colwidth = (colwidth + tablen) & ~(tablen - 1);
-	termwidth = sp->cols - 1;
-	numcols = termwidth / colwidth;
+	numcols = (sp->cols - 1) / colwidth;
 	if (s_num > numcols) {
 		numrows = s_num / numcols;
 		if (s_num % numcols)
@@ -591,18 +601,13 @@ opts_dump(sp, type)
 		numrows = 1;
 
 	for (row = 0; row < numrows;) {
-		endcol = colwidth;
-		for (base = row, chcnt = col = 0; col < numcols; ++col) {
-			chcnt += opts_print(sp,
+		for (base = row, col = 0; col < numcols; ++col) {
+			cnt = opts_print(sp,
 			    &optlist[s_op[base]], &sp->opts[s_op[base]]);
 			if ((base += numrows) >= s_num)
 				break;
-			while ((cnt =
-			    (chcnt + tablen & ~(tablen - 1))) <= endcol) {
-				(void)ex_printf(EXCOOKIE, "\t");
-				chcnt = cnt;
-			}
-			endcol += colwidth;
+			(void)ex_printf(EXCOOKIE,
+			    "%*.s", (int)(colwidth - cnt), "");
 		}
 		if (++row < numrows || b_num)
 			(void)ex_printf(EXCOOKIE, "\n");
