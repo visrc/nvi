@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 5.57 1993/05/15 11:12:40 bostic Exp $ (Berkeley) $Date: 1993/05/15 11:12:40 $
+ *	$Id: common.h,v 5.58 1993/05/15 11:30:18 bostic Exp $ (Berkeley) $Date: 1993/05/15 11:30:18 $
  */
 
 #include <limits.h>			/* Ordered before local includes. */
@@ -46,7 +46,6 @@ struct _text;
 #include "gs.h"
 #include "log.h"
 #include "msg.h"
-#include "pathnames.h"
 #include "seq.h"
 #include "term.h"
 
