@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex.c,v 10.52 1996/08/11 10:54:25 bostic Exp $ (Berkeley) $Date: 1996/08/11 10:54:25 $";
+static const char sccsid[] = "$Id: ex.c,v 10.53 1996/08/11 11:45:09 bostic Exp $ (Berkeley) $Date: 1996/08/11 11:45:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -617,15 +617,9 @@ skip_srch:	if (ecp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, SC_VI))
 	 *	:s/a/b/|s/c/d|set
 	 *
 	 * was also legal, i.e. the historic ex parser (using the word loosely,
-	 * since "parser" implies some regularity) delimited the RE's based on
-	 * its delimiter and not anything so irretrievably vulgar as a command
-	 * syntax.
-	 *
-	 * One thing that makes this easier is that we can ignore most of the
-	 * command termination conditions for the commands that want to take
-	 * the command up to the next newline.  None of them are legal in .exrc
-	 * files, so if we're here, we only dealing with a single line, and we
-	 * can just eat it.
+	 * since "parser" implies some regularity of syntax) delimited the RE's
+	 * based on its delimiter and not anything so irretrievably vulgar as a
+	 * command syntax.
 	 *
 	 * Anyhow, the following code makes this all work.  First, for the
 	 * special cases we move past their special argument(s).  Then, we
@@ -657,9 +651,8 @@ skip_srch:	if (ecp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, SC_VI))
 		 * The historic implementation ignored all escape characters
 		 * so there was no way to put a space or newline into the +cmd
 		 * field.  We do a simplistic job of fixing it by moving to the
-		 * first whitespace character that isn't escaped by a literal
-		 * next character.  The literal next characters are stripped
-		 * as they're no longer useful.
+		 * first whitespace character that isn't escaped.  The escaping
+		 * characters are stripped as no longer useful.
 		 */
 		if (ecp->clen > 0 && *ecp->cp == '+') {
 			++ecp->cp;
@@ -667,8 +660,8 @@ skip_srch:	if (ecp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, SC_VI))
 			for (arg1 = p = ecp->cp;
 			    ecp->clen > 0; --ecp->clen, ++ecp->cp) {
 				ch = *ecp->cp;
-				if (IS_ESCAPE(sp,
-				    ecp, ch) && ecp->clen > 1) {
+				if (IS_ESCAPE(sp, ecp, ch) &&
+				    ecp->clen > 1) {
 					--ecp->clen;
 					ch = *++ecp->cp;
 				} else if (isblank(ch))
@@ -682,22 +675,30 @@ skip_srch:	if (ecp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, SC_VI))
 		}
 	} else if (ecp->cmd == &cmds[C_BANG] ||
 	    ecp->cmd == &cmds[C_GLOBAL] || ecp->cmd == &cmds[C_V]) {
-		ecp->cp += ecp->clen;
-		ecp->clen = 0;
+		for (; ecp->clen > 0; --ecp->clen, ++ecp->cp)
+			if (ecp->cp[0] == '\n')
+				break;
 	} else if (ecp->cmd == &cmds[C_READ] || ecp->cmd == &cmds[C_WRITE]) {
 		/*
-		 * Move to the next character.  If it's a '!', it's a filter
-		 * command and we want to eat it all, otherwise, we're done.
+		 * For write commands, if the next character is a <blank>, and
+		 * the next non-blank character is a '!', it's a filter command
+		 * and we want to eat everything up to the <newline>.  For read
+		 * commands, if the next non-blank character is a '!', it's a
+		 * filter command and we want to eat everything up to the next
+		 * <newline>.  Otherwise, we're done.
 		 */
-		for (; ecp->clen > 0; --ecp->clen, ++ecp->cp) {
+		for (tmp = 0; ecp->clen > 0; --ecp->clen, ++ecp->cp) {
 			ch = *ecp->cp;
-			if (!isblank(ch))
+			if (isblank(ch))
+				tmp = 1;
+			else
 				break;
 		}
-		if (ecp->clen > 0 && ch == '!') {
-			ecp->cp += ecp->clen;
-			ecp->clen = 0;
-		}
+		if (ecp->clen > 0 && ch == '!' &&
+		    (ecp->cmd == &cmds[C_READ] || tmp))
+			for (; ecp->clen > 0; --ecp->clen, ++ecp->cp)
+				if (ecp->cp[0] == '\n')
+					break;
 	} else if (ecp->cmd == &cmds[C_SUBSTITUTE]) {
 		/*
 		 * Move to the next non-whitespace character, we'll use it as
