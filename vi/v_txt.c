@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.87 1994/03/11 12:08:01 bostic Exp $ (Berkeley) $Date: 1994/03/11 12:08:01 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.88 1994/03/13 11:30:01 bostic Exp $ (Berkeley) $Date: 1994/03/13 11:30:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -105,7 +105,7 @@ v_ntext(sp, ep, tiqh, tm, lp, len, rp, prompt, ai_line, flags)
 	u_int flags;		/* TXT_ flags. */
 {
 				/* State of abbreviation checks. */
-	enum { A_NOTSET, A_SPACE, A_NOTSPACE } abb;
+	enum { A_NOTSET, A_NOTWORD, A_INWORD } abb;
 				/* State of the "[^0]^D" sequences. */
 	enum { C_NOTSET, C_CARATSET, C_NOCHANGE, C_ZEROSET } carat_st;
 				/* State of the hex input character. */
@@ -261,7 +261,7 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 
 	/* Initialize abbreviations checks. */
 	if (F_ISSET(gp, G_ABBREV) && LF_ISSET(TXT_MAPINPUT)) {
-		abb = A_NOTSPACE;
+		abb = A_INWORD;
 		ab_cnt = ab_turnoff = 0;
 	} else
 		abb = A_NOTSET;
@@ -395,7 +395,7 @@ next_ch:	if (term_key(sp, &ikey, iflags) != INP_OK)
 			 * Handle abbreviations.  If there was one,	\
 			 * discard the replay characters.		\
 			 */						\
-			if (abb == A_NOTSPACE && !replay) {		\
+			if (abb == A_INWORD && !replay) {		\
 				if (txt_abbrev(sp, tp, ch,		\
 				    LF_ISSET(TXT_INFOLINE), &tmp,	\
 				    &ab_turnoff))			\
@@ -406,10 +406,10 @@ next_ch:	if (term_key(sp, &ikey, iflags) != INP_OK)
 					goto next_ch;			\
 				}					\
 			}						\
+			if (abb != A_NOTSET)				\
+				abb = A_NOTWORD;			\
 			if (unmap_tst)					\
 				txt_unmap(sp, tp, &iflags);		\
-			if (abb != A_NOTSET)				\
-				abb = A_SPACE;				\
 			/* Handle hex numbers. */			\
 			if (hex == H_INHEX) {				\
 				if (txt_hex(sp, tp, &tmp, ch))		\
@@ -900,13 +900,13 @@ ins_ch:			/*
 				break;
 			}
 insq_ch:		/*
-			 * If entering a space character after a word, check
+			 * If entering a non-word character after a word, check
 			 * for abbreviations.  If there was one, discard the
-			 * replay characters.  Check for unmap commands, as
-			 * well.
+			 * replay characters.  If entering a blank character,
+			 * check for unmap commands, as well.
 			 */
-			if (isblank(ch)) {
-				if (abb == A_NOTSPACE && !replay) {
+			if (!inword(ch)) {
+				if (abb == A_INWORD && !replay) {
 					if (txt_abbrev(sp, tp, ch,
 					    LF_ISSET(TXT_INFOLINE),
 					    &tmp, &ab_turnoff))
@@ -917,7 +917,7 @@ insq_ch:		/*
 						goto next_ch;
 					}
 				}
-				if (unmap_tst)
+				if (isblank(ch) && unmap_tst)
 					txt_unmap(sp, tp, &iflags);
 			}
 			/* If in hex mode, see if we've entered a hex value. */
@@ -941,7 +941,7 @@ insq_ch:		/*
 				}
 			}
 			if (abb != A_NOTSET)
-				abb = isblank(ch) ? A_SPACE : A_NOTSPACE;
+				abb = inword(ch) ? A_INWORD : A_NOTWORD;
 
 			if (tp->owrite)		/* Overwrite a character. */
 				--tp->owrite;
@@ -1014,9 +1014,12 @@ txt_abbrev(sp, tp, pushc, isinfoline, didsubp, turnoffp)
 	size_t len, off;
 	char *p;
 
-	/* Find the beginning of this "word". */
+	/*
+	 * Find the start of the "word".  Historically, abbreviations
+	 * could be preceded by any non-word character.
+	 */
 	for (off = sp->cno - 1, p = tp->lb + off, len = 0;; --p, --off) {
-		if (isblank(*p)) {
+		if (!inword(*p)) {
 			++p;
 			break;
 		}
