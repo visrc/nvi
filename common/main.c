@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.108 1994/08/31 19:07:58 bostic Exp $ (Berkeley) $Date: 1994/08/31 19:07:58 $";
+static char sccsid[] = "$Id: main.c,v 8.109 1994/08/31 19:09:24 bostic Exp $ (Berkeley) $Date: 1994/08/31 19:09:24 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -734,7 +734,7 @@ usage(is_ex)
 #define	EX_USAGE \
     "ex [-eFRrsv] [-c command] [-t tag] [-w size] [files ...]"
 #define	VI_USAGE \
-    "vi [-eFRrv] [-c command] [-t tag] [-w size] [files ...]"
+    "vi [-eFlRrv] [-c command] [-t tag] [-w size] [files ...]"
 
 	(void)fprintf(stderr, "usage: %s\n", is_ex ? EX_USAGE : VI_USAGE);
 	exit(1);

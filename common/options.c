@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.67 1994/08/31 17:12:13 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:12:13 $";
+static char sccsid[] = "$Id: options.c,v 8.68 1994/08/31 19:09:48 bostic Exp $ (Berkeley) $Date: 1994/08/31 19:09:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -239,8 +239,9 @@ static OABBREV const abbrev[] = {
  *	"setting" these variables, don't set their OPT_SET bits.
  */
 int
-opts_init(sp)
+opts_init(sp, oargs)
 	SCR *sp;
+	int *oargs;
 {
 	ARGS *argv[2], a, b;
 	OPTLIST const *op;
@@ -337,6 +338,14 @@ opts_init(sp)
 	SET_DEF(O_WINDOW, b1);
 
 	SET_DEF(O_WRAPMARGIN, "wrapmargin=0");
+
+	/*
+	 * Some options can be initialized by the command name or the
+	 * command-line arguments.
+	 */
+	for (; *oargs != -1; ++oargs)
+		SET_DEF(*oargs, optlist[*oargs].name);
+		
 
 	/*
 	 * By default, the historic vi always displayed information
