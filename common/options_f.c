@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 8.15 1993/10/04 17:38:30 bostic Exp $ (Berkeley) $Date: 1993/10/04 17:38:30 $";
+static char sccsid[] = "$Id: options_f.c,v 8.16 1993/10/04 17:58:46 bostic Exp $ (Berkeley) $Date: 1993/10/04 17:58:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -440,7 +440,7 @@ DECL(f_term)
 DECL(f_w300)
 {
 	/* Historical behavior for w300 was < 1200. */
-	if (cfgetospeed(&sp->gp->original_termios) >= 1200)
+	if (baud_from_bval(sp) >= 1200)
 		return (0);
 
 	if (val < MINIMUM_SCREEN_ROWS) {
@@ -458,10 +458,10 @@ DECL(f_w300)
 
 DECL(f_w1200)
 {
-	speed_t v;
+	u_long v;
 
 	/* Historical behavior for w1200 was == 1200. */
-	v = cfgetospeed(&sp->gp->original_termios);
+	v = baud_from_bval(sp);
 	if (v < 1200 || v > 4800)
 		return (0);
 
@@ -483,7 +483,7 @@ DECL(f_w9600)
 	speed_t v;
 
 	/* Historical behavior for w9600 was > 1200. */
-	v = cfgetospeed(&sp->gp->original_termios);
+	v = baud_from_bval(sp);
 	if (v <= 4800)
 		return (0);
 
