@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ch.c,v 5.25 1993/04/12 14:50:03 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:50:03 $";
+static char sccsid[] = "$Id: v_ch.c,v 5.26 1993/05/08 16:37:07 bostic Exp $ (Berkeley) $Date: 1993/05/08 16:37:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -39,7 +39,7 @@ v_chrepeat(sp, ep, vp, fm, tm, rp)
 {
 	vp->character = sp->lastckey;
 
-	switch(sp->csearchdir) {
+	switch (sp->csearchdir) {
 	case CNOTSET:
 		NOPREV;
 	case FSEARCH:
@@ -73,7 +73,7 @@ v_chrrepeat(sp, ep, vp, fm, tm, rp)
 	vp->character = sp->lastckey;
 	savedir = sp->csearchdir;
 
-	switch(sp->csearchdir) {
+	switch (sp->csearchdir) {
 	case CNOTSET:
 		NOPREV;
 	case FSEARCH:
@@ -98,7 +98,7 @@ v_chrrepeat(sp, ep, vp, fm, tm, rp)
 /*
  * v_cht -- [count]tc
  *	Search forward in the line for the next occurrence of the character.
- *	Place the cursor to its left.
+ *	Place the cursor on it if a motion command, or to its left if not.
  */
 int
 v_cht(sp, ep, vp, fm, tm, rp)
@@ -109,8 +109,9 @@ v_cht(sp, ep, vp, fm, tm, rp)
 {
 	int rval;
 
-	if (!(rval = v_chf(sp, ep, vp, fm, tm, rp)))
-		--rp->cno;
+	rval = v_chf(sp, ep, vp, fm, tm, rp);
+	if (!rval)
+		--rp->cno;	/* XXX: Motion interaction with v_chf. */
 	sp->csearchdir = tSEARCH;
 	return (rval);
 }
@@ -118,6 +119,7 @@ v_cht(sp, ep, vp, fm, tm, rp)
 /*
  * v_chf -- [count]fc
  *	Search forward in the line for the next occurrence of the character.
+ *	Place the cursor to it's right if a motion command, or on it if not.
  */
 int
 v_chf(sp, ep, vp, fm, tm, rp)
@@ -155,6 +157,8 @@ v_chf(sp, ep, vp, fm, tm, rp)
 	}
 	rp->lno = fm->lno;
 	rp->cno = p - startp;
+	if (F_ISSET(vp, VC_C | VC_D | VC_Y))
+		++rp->cno;
 	return (0);
 }
 
@@ -172,7 +176,8 @@ v_chT(sp, ep, vp, fm, tm, rp)
 {
 	int rval;
 
-	if (!(rval = v_chF(sp, ep, vp, fm, tm, rp)))
+	rval = v_chF(sp, ep, vp, fm, tm, rp);
+	if (!rval)
 		++rp->cno;
 	sp->csearchdir = TSEARCH;
 	return (0);
@@ -181,6 +186,7 @@ v_chT(sp, ep, vp, fm, tm, rp)
 /*
  * v_chF -- [count]Fc
  *	Search backward in the line for the next occurrence of the character.
+ *	Place the cursor on it.
  */
 int
 v_chF(sp, ep, vp, fm, tm, rp)
