@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: vi.cmd.roff,v 8.28 1994/07/17 13:29:38 bostic Exp $ (Berkeley) $Date: 1994/07/17 13:29:38 $
+.\"	$Id: vi.cmd.roff,v 8.29 1994/08/31 17:28:53 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:28:53 $
 .\"
 .SH 1 "Vi Description"
 .pp
@@ -1326,6 +1326,25 @@ search for the last search RE, in the indicated direction.
 Searches may be interrupted using the
 .LI <interrupt>
 character.
+.sp
+Multiple search patterns may be grouped together by delimiting
+them with semicolons and zero or more whitespace characters, e.g.
+.LI "/foo/ ; ?bar?"
+searches forward for
+.LI foo
+and then, from that location, backwards for
+.LI bar .
+When search patterns are grouped together in this manner,
+the search patterns are evaluated left to right with the
+final cursor position determined by the last search pattern.
+.sp
+It is also permissible to append a
+.CO z
+command to the search strings, e.g.
+.LI "/foo/ z."
+searches forward for the next occurrence of
+.LI foo ,
+and then positions that line in the middle of screen.
 .SS
 .SP Line:
 Set to the line in which the match occurred.
