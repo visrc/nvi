@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.52 1994/03/09 10:48:53 bostic Exp $ (Berkeley) $Date: 1994/03/09 10:48:53 $";
+static char sccsid[] = "$Id: vi.c,v 8.53 1994/03/09 11:52:49 bostic Exp $ (Berkeley) $Date: 1994/03/09 11:52:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -216,6 +216,11 @@ vi(sp, ep)
 			sp->rcmflags = RCM_LAST;
 			break;
 		case VM_RCM_SETLFNB:
+			/*
+			 * If we changed lines, move to the first non-blank.
+			 * This is the hack that makes logical scrolling on
+			 * really long lines work.
+			 */
 			if (vp->m_start.lno != vp->m_final.lno) {
 				if (nonblank(sp, ep,
 				    vp->m_final.lno, &vp->m_final.cno))
