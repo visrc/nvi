@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 9.12 1995/02/02 17:53:30 bostic Exp $ (Berkeley) $Date: 1995/02/02 17:53:30 $";
+static char sccsid[] = "$Id: ex_global.c,v 9.13 1995/02/17 11:42:03 bostic Exp $ (Berkeley) $Date: 1995/02/17 11:42:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -79,7 +79,7 @@ global(sp, cmdp, cmd)
 
 	NEEDFILE(sp, cmdp->cmd);
 
-	if (F_ISSET(sp, S_GLOBAL)) {
+	if (F_ISSET(sp, S_EX_GLOBAL)) {
 		msgq(sp, M_ERR,
 	"102|The %s command can't be used as part of a global command",
 		    cmdp->cmd->name);
@@ -95,7 +95,7 @@ global(sp, cmdp, cmd)
 	for (p = cmdp->argv[0]->bp; isblank(*p); ++p);
 	if (*p == '\0' || isalnum(*p) ||
 	    *p == '\\' || *p == '|' || *p == '\n') {
-usage:		ex_message(sp, cmdp->cmd, EXM_USAGE);
+usage:		ex_message(sp, cmdp->cmd->usage, EXM_USAGE);
 		return (1);
 	}
 	delim = *p++;
@@ -189,7 +189,7 @@ usage:		ex_message(sp, cmdp->cmd, EXM_USAGE);
 	F_SET(sp, S_RE_SUBST);
 
 	/* Set the global flag. */
-	F_SET(sp, S_GLOBAL);
+	F_SET(sp, S_EX_GLOBAL);
 
 	/* The global commands always set the previous context mark. */
 	abs.lno = sp->lno;
@@ -282,12 +282,12 @@ usage:		ex_message(sp, cmdp->cmd, EXM_USAGE);
 		if (INTERRUPTED(sp))
 			break;
 		/*
-		 * If we've exited or switched to a new file/screen, the rest of
-		 * the global command is discarded.  This is historic practice,
+		 * If we've exited or switched to a new file/screen, the rest
+		 * of the command is discarded.  This is historic practice,
 		 * and changing it would be difficult.
 		 */
 		if (F_ISSET(sp,
-		    S_EXIT | S_EXIT_FORCE | S_GLOBAL_ABORT | S_SSWITCH))
+		    S_EXIT | S_EXIT_FORCE | S_EX_CMDABORT | S_SSWITCH))
 			break;
 	}
 
@@ -306,7 +306,7 @@ err:		rval = 1;
 	F_CLR(exp, EX_AUTOPRINT);
 
 	/* Clear the global flag. */
-	F_CLR(sp, S_GLOBAL);
+	F_CLR(sp, S_EX_GLOBAL);
 
 	/* Free any remaining ranges and the command buffer. */
 	while ((rp = exp->rangeq.cqh_first) != (void *)&exp->rangeq) {
