@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.75 1993/12/09 19:42:32 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:42:32 $";
+static char sccsid[] = "$Id: ex.c,v 8.76 1993/12/19 16:06:08 bostic Exp $ (Berkeley) $Date: 1993/12/19 16:06:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,7 +22,7 @@ static char sccsid[] = "$Id: ex.c,v 8.75 1993/12/09 19:42:32 bostic Exp $ (Berke
 #include "vi.h"
 #include "excmd.h"
 
-static int	 ep_line __P((SCR *, EXF *, MARK *, char **, size_t *));
+static int	 ep_line __P((SCR *, EXF *, MARK *, char **, size_t *, int *));
 static int	 ep_range __P((SCR *, EXF *, EXCMDARG *, char **, size_t *));
 
 #define	DEFCOM	".+1"
@@ -196,7 +196,7 @@ ex_cmd(sp, ep, cmd, cmdlen)
 	size_t arg1_len, len, save_cmdlen;
 	long flagoff;
 	u_int saved_mode;
-	int ch, cnt, delim, flags, namelen, nl, uselastcmd;
+	int ch, cnt, delim, flags, namelen, nl, uselastcmd, tmp;
 	char *arg1, *save_cmd, *p, *t;
 
 	/* Init. */
@@ -785,11 +785,10 @@ end2:			break;
 				goto err;
 			goto countchk;
 		case 'l':				/* line */
-			cur.lno = OOBLNO;
-			if (ep_line(sp, ep, &cur, &cmd, &cmdlen))
+			if (ep_line(sp, ep, &cur, &cmd, &cmdlen, &tmp))
 				goto err;
 			/* Line specifications are always required. */
-			if (cur.lno == OOBLNO) {
+			if (!tmp) {
 				msgq(sp, M_ERR, 
 				     "%s: bad line specification", cmd);
 				goto err;
@@ -1158,7 +1157,7 @@ ep_range(sp, ep, excp, cmdp, cmdlenp)
 {
 	MARK cur, savecursor;
 	size_t cmdlen;
-	int savecursor_set;
+	int savecursor_set, tmp;
 	char *cmd;
 
 	/* Percent character is all lines in the file. */
@@ -1199,18 +1198,26 @@ ep_range(sp, ep, excp, cmdp, cmdlenp)
 				sp->cno = excp->addr1.cno;
 				savecursor_set = 1;
 			}
+			++cmd;
+			--cmdlen;
+			break;
+		case ',':		/* Comma delimiter. */
+			/* If no addresses yet, defaults to ".". */
+			if (excp->addrcnt == 0) {
+				excp->addr1.lno = sp->lno;
+				excp->addr1.cno = sp->cno;
+				excp->addrcnt = 1;
+			}
 			/* FALLTHROUGH */
 		case ' ':		/* Whitespace. */
 		case '\t':		/* Whitespace. */
-		case ',':		/* Comma delimiter. */
 			++cmd;
 			--cmdlen;
 			break;
 		default:
-			cur.lno = OOBLNO;
-			if (ep_line(sp, ep, &cur, &cmd, &cmdlen))
+			if (ep_line(sp, ep, &cur, &cmd, &cmdlen, &tmp))
 				return (1);
-			if (cur.lno == OOBLNO)
+			if (!tmp)
 				goto done;
 
 			/*
@@ -1261,124 +1268,135 @@ done:	if (savecursor_set) {
  * Get a single line address specifier.
  */
 static int
-ep_line(sp, ep, cur, cmdp, cmdlenp)
+ep_line(sp, ep, cur, cmdp, cmdlenp, addr_found)
 	SCR *sp;
 	EXF *ep;
 	MARK *cur;
 	char **cmdp;
 	size_t *cmdlenp;
+	int *addr_found;
 {
 	MARK m, *mp;
-	long num, total;
+	long total;
 	u_int flags;
 	size_t cmdlen;
 	char *cmd, *endp;
 
-	for (cmd = *cmdp, cmdlen = *cmdlenp; cmdlen > 0;) {
-		switch (*cmd) {
-		case '$':		/* Last line. */
-			if (file_lline(sp, ep, &cur->lno))
-				return (1);
-			cur->cno = 0;
-			++cmd;
-			--cmdlen;
-			break;		/* Absolute line number. */
-		case '0': case '1': case '2': case '3': case '4':
-		case '5': case '6': case '7': case '8': case '9':
-			/*
-			 * The way the vi "previous context" mark worked was
-			 * that "non-relative" motions set it.  While vi was
-			 * not completely consistent about this, ANY numeric
-			 * address was considered non-relative, and set the
-			 * value.  Which is why we're hacking marks down here.
-			 */
-			if (IN_VI_MODE(sp)) {
-				m.lno = sp->lno;
-				m.cno = sp->cno;
-				if (mark_set(sp, ep, ABSMARK1, &m, 1))
-					return (1);
-			}
-/* 8-bit XXX */		cur->lno = strtol(cmd, &endp, 10);
-			cur->cno = 0;
-			cmdlen -= (endp - cmd);
-			cmd = endp;
-			break;
-		case '\'':		/* Set mark. */
-			if (cmdlen == 1) {
-				msgq(sp, M_ERR, "No mark name supplied.");
-				return (1);
-			}
-			if ((mp = mark_get(sp, ep, cmd[1])) == NULL)
-				return (1);
-			*cur = *mp;
-			cmd += 2;
-			cmdlen -= 2;
-			break;
-		case '/':		/* Search forward. */
-			m.lno = sp->lno;
-			m.cno = sp->cno;
-			flags = SEARCH_MSG | SEARCH_PARSE | SEARCH_SET;
-			if (f_search(sp, ep, &m, &m, cmd, &endp, &flags))
-				return (1);
-			cur->lno = m.lno;
-			cur->cno = m.cno;
-			cmdlen -= (endp - cmd);
-			cmd = endp;
-			break;
-		case '?':		/* Search backward. */
-			m.lno = sp->lno;
-			m.cno = sp->cno;
-			flags = SEARCH_MSG | SEARCH_PARSE | SEARCH_SET;
-			if (b_search(sp, ep, &m, &m, cmd, &endp, &flags))
-				return (1);
-			cur->lno = m.lno;
-			cur->cno = m.cno;
-			cmdlen -= (endp - cmd);
-			cmd = endp;
-			break;
-		case '.':		/* Current position. */
-			++cmd;
-			--cmdlen;
-			/* FALLTHROUGH */
-		case '+':		/* Increment. */
-		case '-':		/* Decrement. */
-			/* If an empty file, then '.' is 0, not 1. */
-			if (sp->lno == 1) {
-				if (file_lline(sp, ep, &cur->lno))
-					return (1);
-				if (cur->lno != 0)
-					cur->lno = 1;
-			} else
-				cur->lno = sp->lno;
-			cur->cno = sp->cno;
-			break;
-		default:
-			*cmdp = cmd;
-			*cmdlenp = cmdlen;
-			return (0);
-		}
+	*addr_found = 0;
 
+	cmd = *cmdp;
+	cmdlen = *cmdlenp;
+	switch (*cmd) {
+	case '$':				/* Last line in the file. */
+		*addr_found = 1;
+		cur->cno = 0;
+		if (file_lline(sp, ep, &cur->lno))
+			return (1);
+		++cmd;
+		--cmdlen;
+		break;				/* Absolute line number. */
+	case '0': case '1': case '2': case '3': case '4':
+	case '5': case '6': case '7': case '8': case '9':
+		*addr_found = 1;
 		/*
-		 * Evaluate any offset.  Offsets are +/- any number, or,
-		 * any number of +/- signs, or any combination thereof.
+		 * The way the vi "previous context" mark worked was that
+		 * "non-relative" motions set it.  While vi wasn't totally
+		 * consistent about this, ANY numeric address was considered
+		 * non-relative, and set the value.  Which is why we're
+		 * hacking marks down here.
 		 */
-		for (total = 0; cmdlen > 0; --cmdlen, ++cmd, total += num) {
-			if (*cmd != '-' && *cmd != '+')
-				break;
-			num = *cmd == '-' ? -1 : 1;
-			if (cmdlen > 1 && isdigit(*++cmd)) {
-/* 8-bit XXX */			num *= strtol(cmd, &endp, 10);
-				cmdlen -= (endp - cmd);
-				cmd = endp;
-			}
+		if (IN_VI_MODE(sp)) {
+			m.lno = sp->lno;
+			m.cno = sp->cno;
+			if (mark_set(sp, ep, ABSMARK1, &m, 1))
+				return (1);
 		}
-		if (total < 0 && -total > cur->lno) {
-			msgq(sp, M_ERR,
-			    "Reference to a line number less than 0.");
+		cur->cno = 0;
+/* 8-bit XXX */	cur->lno = strtol(cmd, &endp, 10);
+		cmdlen -= (endp - cmd);
+		cmd = endp;
+		break;
+	case '\'':				/* Use a mark. */
+		*addr_found = 1;
+		if (cmdlen == 1) {
+			msgq(sp, M_ERR, "No mark name supplied.");
 			return (1);
 		}
-		cur->lno += total;
+		if ((mp = mark_get(sp, ep, cmd[1])) == NULL)
+			return (1);
+		*cur = *mp;
+		cmd += 2;
+		cmdlen -= 2;
+		break;
+	case '/':				/* Search forward. */
+		*addr_found = 1;
+		m.lno = sp->lno;
+		m.cno = sp->cno;
+		flags = SEARCH_MSG | SEARCH_PARSE | SEARCH_SET;
+		if (f_search(sp, ep, &m, &m, cmd, &endp, &flags))
+			return (1);
+		cur->lno = m.lno;
+		cur->cno = m.cno;
+		cmdlen -= (endp - cmd);
+		cmd = endp;
+		break;
+	case '?':				/* Search backward. */
+		*addr_found = 1;
+		m.lno = sp->lno;
+		m.cno = sp->cno;
+		flags = SEARCH_MSG | SEARCH_PARSE | SEARCH_SET;
+		if (b_search(sp, ep, &m, &m, cmd, &endp, &flags))
+			return (1);
+		cur->lno = m.lno;
+		cur->cno = m.cno;
+		cmdlen -= (endp - cmd);
+		cmd = endp;
+		break;
+	case '.':				/* Current position. */
+		*addr_found = 1;
+		cur->cno = sp->cno;
+
+		/* If an empty file, then '.' is 0, not 1. */
+		if (sp->lno == 1) {
+			if (file_lline(sp, ep, &cur->lno))
+				return (1);
+			if (cur->lno != 0)
+				cur->lno = 1;
+		} else
+			cur->lno = sp->lno;
+		++cmd;
+		--cmdlen;
+		break;
 	}
+
+	/*
+	 * Evaluate any offset.  Offsets are +/- any number, or any number
+	 * of +/- signs, or any combination thereof.  If no address found
+	 * yet, offset is relative to ".".
+	 */
+	for (total = 0; cmdlen > 0 && (cmd[0] == '-' || cmd[0] == '+');) {
+		if (!*addr_found) {
+			cur->lno = sp->lno;
+			cur->cno = sp->cno;
+			*addr_found = 1;
+		}
+
+		if (cmdlen > 1 && isdigit(cmd[1])) {
+/* 8-bit XXX */		total += strtol(cmd, &endp, 10);
+			cmdlen -= (endp - cmd);
+			cmd = endp;
+		} else {
+			total += cmd[0] == '-' ? -1 : 1;
+			--cmdlen;
+			++cmd;
+		}
+	}
+	if (total < 0 && -total > cur->lno) {
+		msgq(sp, M_ERR, "Reference to a line number less than 0.");
+		return (1);
+	}
+	cur->lno += total;
+
 	*cmdp = cmd;
 	*cmdlenp = cmdlen;
 	return (0);
