@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_abbrev.c,v 8.8 1994/03/08 19:39:05 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:39:05 $";
+static char sccsid[] = "$Id: ex_abbrev.c,v 8.9 1994/05/19 10:04:04 bostic Exp $ (Berkeley) $Date: 1994/05/19 10:04:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,6 +27,7 @@ static char sccsid[] = "$Id: ex_abbrev.c,v 8.8 1994/03/08 19:39:05 bostic Exp $ 
 #include "vi.h"
 #include "seq.h"
 #include "excmd.h"
+#include "vcmd.h"
 
 /*
  * ex_abbr -- :abbreviate [key replacement]
@@ -38,6 +39,9 @@ ex_abbr(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
+	CHAR_T *p;
+	size_t len;
+
 	switch (cmdp->argc) {
 	case 0:
 		if (seq_dump(sp, SEQ_ABBREV, 0) == 0)
@@ -49,9 +53,19 @@ ex_abbr(sp, ep, cmdp)
 		abort();
 	}
 
+	/* Check for illegal characters. */
+	for (p = cmdp->argv[0]->bp, len = cmdp->argv[0]->len; len--; ++p)
+		if (!inword(*p)) {
+			msgq(sp, M_ERR,
+			    "%s may not be part of an abbreviated word.",
+			    KEY_NAME(sp, *p));
+			return (1);
+		}
+
 	if (seq_set(sp, NULL, 0, cmdp->argv[0]->bp, cmdp->argv[0]->len,
 	    cmdp->argv[1]->bp, cmdp->argv[1]->len, SEQ_ABBREV, S_USERDEF))
 		return (1);
+
 	F_SET(sp->gp, G_ABBREV);
 	return (0);
 }
