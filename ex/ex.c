@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.122 1994/05/03 21:40:05 bostic Exp $ (Berkeley) $Date: 1994/05/03 21:40:05 $";
+static char sccsid[] = "$Id: ex.c,v 8.123 1994/05/04 10:39:41 bostic Exp $ (Berkeley) $Date: 1994/05/04 10:39:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -285,17 +285,6 @@ loop:	if (nl) {
 	if (cmdlen == 0)
 		return (0);
 
-	/* Command lines that start with a double-quote are comments. */
-	if (ch == '"') {
-		while (--cmdlen > 0 && *++cmd != '\n');
-		if (*cmd == '\n') {
-			++cmd;
-			--cmdlen;
-			++sp->if_lno;
-		}
-		goto loop;
-	}
-
 	/*
 	 * !!!
 	 * Permit extra colons at the start of the line.  Historically,
@@ -304,7 +293,26 @@ loop:	if (nl) {
 	 * could have preceding colons, e.g. ":g/pattern/:p" worked.
 	 */
 	if (ch == ':')
-		while (--cmdlen > 0 && *++cmd == ':');
+		while (--cmdlen > 0 && (ch = *++cmd) == ':');
+
+	/*
+	 * Command lines that start with a double-quote are comments.
+	 *
+	 * !!!
+	 * Historically, there was no escape or delimiter for a comment,
+	 * e.g. :"foo|set was a single comment and nothing was output.
+	 * Since nvi permits users to escape <newline> characters into
+	 * command lines, we have to check for that case.
+	 */
+	if (ch == '"') {
+		while (--cmdlen > 0 && *++cmd != '\n');
+		if (*cmd == '\n') {
+			nl = 1;
+			++cmd;
+			--cmdlen;
+		}
+		goto loop;
+	}
 
 	/* Skip whitespace. */
 	for (; cmdlen > 0; ++cmd, --cmdlen) {
