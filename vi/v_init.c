@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 5.29 1993/05/14 16:38:44 bostic Exp $ (Berkeley) $Date: 1993/05/14 16:38:44 $";
+static char sccsid[] = "$Id: v_init.c,v 5.30 1993/05/15 11:02:08 bostic Exp $ (Berkeley) $Date: 1993/05/15 11:02:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -83,6 +83,8 @@ v_init(sp, ep)
 	if ((sp->stdfp = fwopen(sp, sp->s_ex_write)) == NULL)
 		return (1);
 #endif
+	(void)setvbuf(sp->stdfp, NULL, _IOLBF, 0);
+
 	/*
 	 * If no starting location specified, vi starts at the beginning.
 	 * Otherwise, check to make sure that the location exists.
