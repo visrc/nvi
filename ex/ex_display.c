@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_display.c,v 10.8 1995/09/21 12:07:07 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:07:07 $";
+static char sccsid[] = "$Id: ex_display.c,v 10.9 1995/10/04 12:36:58 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:36:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -62,7 +62,7 @@ ex_display(sp, cmdp)
 			break;
 		return (ex_tagdisplay(sp));
 	}
-	ex_message(sp, cmdp->cmd->usage, EXM_USAGE);
+	ex_emsg(sp, cmdp->cmd->usage, EXM_USAGE);
 	return (1);
 }
 
