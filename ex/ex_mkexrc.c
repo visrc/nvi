@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_mkexrc.c,v 8.7 1993/11/28 19:30:30 bostic Exp $ (Berkeley) $Date: 1993/11/28 19:30:30 $";
+static char sccsid[] = "$Id: ex_mkexrc.c,v 8.8 1993/12/02 10:49:53 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:49:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,7 +25,8 @@ static char sccsid[] = "$Id: ex_mkexrc.c,v 8.7 1993/11/28 19:30:30 bostic Exp $ 
 
 /*
  * ex_mkexrc -- :mkexrc[!] [file]
- *	Create (or overwrite) a .exrc file with the current info.
+ *
+ * Create (or overwrite) a .exrc file with the current info.
  */
 int
 ex_mkexrc(sp, ep, cmdp)
@@ -43,7 +44,7 @@ ex_mkexrc(sp, ep, cmdp)
 		fname = _PATH_EXRC;
 		break;
 	case 1:
-		fname = cmdp->argv[0];
+		fname = cmdp->argv[0]->bp;
 		set_alt_name(sp, fname);
 		break;
 	default:
