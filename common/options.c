@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 9.3 1994/11/09 23:04:59 bostic Exp $ (Berkeley) $Date: 1994/11/09 23:04:59 $";
+static char sccsid[] = "$Id: options.c,v 9.4 1994/11/10 16:51:35 bostic Exp $ (Berkeley) $Date: 1994/11/10 16:51:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -165,8 +165,13 @@ static OPTLIST const optlist[] = {
 	{"taglength",	NULL,		OPT_NUM,	0},
 /* O_TAGS	    4BSD */
 	{"tags",	f_tags,		OPT_STR,	0},
+/*
+ * !!!
+ * By default, the historic vi always displayed information about two
+ * options, redraw and term.  Term seems sufficient.
+ */
 /* O_TERM	    4BSD */
-	{"term",	f_term,		OPT_STR,	OPT_NOSAVE},
+	{"term",	f_term,		OPT_STR,	OPT_ADISP|OPT_NOSAVE},
 /* O_TERSE	    4BSD */
 	{"terse",	NULL,		OPT_0BOOL,	0},
 /* O_TILDEOP      4.4BSD */
@@ -178,11 +183,11 @@ static OPTLIST const optlist[] = {
 /* O_VERBOSE	  4.4BSD */
 	{"verbose",	NULL,		OPT_0BOOL,	0},
 /* O_W1200	    4BSD */
-	{"w1200",	f_w1200,	OPT_NUM,	OPT_NEVER|OPT_NOSAVE},
+	{"w1200",	f_w1200,	OPT_NUM,	OPT_NDISP|OPT_NOSAVE},
 /* O_W300	    4BSD */
-	{"w300",	f_w300,		OPT_NUM,	OPT_NEVER|OPT_NOSAVE},
+	{"w300",	f_w300,		OPT_NUM,	OPT_NDISP|OPT_NOSAVE},
 /* O_W9600	    4BSD */
-	{"w9600",	f_w9600,	OPT_NUM,	OPT_NEVER|OPT_NOSAVE},
+	{"w9600",	f_w9600,	OPT_NUM,	OPT_NDISP|OPT_NOSAVE},
 /* O_WARN	    4BSD */
 	{"warn",	NULL,		OPT_1BOOL,	0},
 /* O_WINDOW	    4BSD */
@@ -245,8 +250,7 @@ static OABBREV const abbrev[] = {
 
 /*
  * opts_init --
- *	Initialize some of the options.  Since the user isn't really
- *	"setting" these variables, don't set their OPT_SET bits.
+ *	Initialize some of the options.
  */
 int
 opts_init(sp, oargs)
@@ -266,32 +270,40 @@ opts_init(sp, oargs)
 	argv[0] = &a;
 	argv[1] = &b;
 
-#define	SET_DEF_NOCLR(opt, str) {					\
+	/* Set boolean default values. */
+	for (op = optlist, cnt = 0; op->name != NULL; ++op, ++cnt)
+		switch (op->type) {
+		case OPT_0BOOL:
+			O_CLR(sp, cnt);
+			O_D_CLR(sp, cnt);
+			break;
+		case OPT_1BOOL:
+			O_SET(sp, cnt);
+			O_D_SET(sp, cnt);
+			break;
+		case OPT_NUM:
+		case OPT_STR:
+			break;
+		default:
+			abort();
+		}
+
+	/* Set numeric and string default values. */
+#define	OI(opt, str, setdef) {						\
 	if (str != b1)		/* GCC puts strings in text-space. */	\
 		(void)strcpy(b1, str);					\
 	a.len = strlen(b1);						\
-	if (opts_set(sp, NULL, argv)) {					\
+	if (opts_set(sp, argv, setdef, NULL)) {				\
 		msgq(sp, M_ERR,						\
 		    "052|Unable to set default %s option",		\
 		    optlist[opt]);					\
 		return (1);						\
 	}								\
 }
-#define	SET_DEF(opt, str) {						\
-	SET_DEF_NOCLR(opt, str);					\
-	F_CLR(&sp->opts[opt], OPT_SET);					\
-}
-	/* Set default values. */
-	for (op = optlist, cnt = 0; op->name != NULL; ++op, ++cnt)
-		if (op->type == OPT_0BOOL)
-			O_CLR(sp, cnt);
-		else if (op->type == OPT_1BOOL)
-			O_SET(sp, cnt);
-
-	SET_DEF(O_BACKUP, "backup=");
+	OI(O_BACKUP, "backup=", 1);
 	(void)snprintf(b1, sizeof(b1), "cdpath=%s",
 	    (s = getenv("CDPATH")) == NULL ? ":" : s);
-	SET_DEF(O_CDPATH, b1);
+	OI(O_CDPATH, b1, 1);
 
 	/*
 	 * !!!
@@ -302,33 +314,28 @@ opts_init(sp, oargs)
 	 */
 	(void)snprintf(b1, sizeof(b1), "directory=%s",
 	    (s = getenv("TMPDIR")) == NULL ? _PATH_TMP : s);
-	SET_DEF(O_DIRECTORY, b1);
-	SET_DEF(O_KEYTIME, "keytime=6");
-	SET_DEF(O_MATCHTIME, "matchtime=7");
+	OI(O_DIRECTORY, b1, 1);
+	OI(O_KEYTIME, "keytime=6", 1);
+	OI(O_MATCHTIME, "matchtime=7", 1);
 	(void)snprintf(b1, sizeof(b1), "msgcat=%s", _PATH_MSGCAT);
-	SET_DEF(O_MSGCAT, b1);
-	SET_DEF(O_REPORT, "report=5");
-	SET_DEF(O_PARAGRAPHS, "paragraphs=IPLPPPQPP LIpplpipbp");
+	OI(O_MSGCAT, b1, 1);
+	OI(O_REPORT, "report=5", 1);
+	OI(O_PARAGRAPHS, "paragraphs=IPLPPPQPP LIpplpipbp", 1);
 	(void)snprintf(b1, sizeof(b1), "recdir=%s", _PATH_PRESERVE);
-	SET_DEF(O_RECDIR, b1);
-	SET_DEF(O_SECTIONS, "sections=NHSHH HUnhsh");
+	OI(O_RECDIR, b1, 1);
+	OI(O_SECTIONS, "sections=NHSHH HUnhsh", 1);
 	(void)snprintf(b1, sizeof(b1), "shell=%s",
 	    (s = getenv("SHELL")) == NULL ? _PATH_BSHELL : s);
-	SET_DEF(O_SHELL, b1);
-	SET_DEF(O_SHELLMETA, "shellmeta=~{[*?$`'\"\\");
-	SET_DEF(O_SHIFTWIDTH, "shiftwidth=8");
-	SET_DEF(O_SIDESCROLL, "sidescroll=16");
-	SET_DEF(O_TABSTOP, "tabstop=8");
+	OI(O_SHELL, b1, 1);
+	OI(O_SHELLMETA, "shellmeta=~{[*?$`'\"\\", 1);
+	OI(O_SHIFTWIDTH, "shiftwidth=8", 1);
+	OI(O_SIDESCROLL, "sidescroll=16", 1);
+	OI(O_TABSTOP, "tabstop=8", 1);
 	(void)snprintf(b1, sizeof(b1), "tags=%s", _PATH_TAGS);
-	SET_DEF(O_TAGS, b1);
-	/*
-	 * By default, the historic vi always displayed information
-	 * about two options, redraw and term.  Term seems sufficient.
-	 */
-	F_SET(&sp->opts[O_TERM], OPT_SET);
+	OI(O_TAGS, b1, 1);
 	(void)snprintf(b1, sizeof(b1), "term=%s",
 	    (s = getenv("TERM")) == NULL ? "unknown" : s);
-	SET_DEF_NOCLR(O_TERM, b1);
+	OI(O_TERM, b1, 1);
 
 	/*
 	 * XXX
@@ -337,7 +344,7 @@ opts_init(sp, oargs)
 	 */
 	(void)snprintf(b1, sizeof(b1),
 	    "scroll=%ld", (O_VAL(sp, O_LINES) - 1) / 2);
-	SET_DEF(O_SCROLL, b1);
+	OI(O_SCROLL, b1, 1);
 
 	/*
 	 * The default window option values are:
@@ -353,16 +360,17 @@ opts_init(sp, oargs)
 	else
 		v = O_VAL(sp, O_LINES) - 1;
 	(void)snprintf(b1, sizeof(b1), "window=%lu", v);
-	SET_DEF(O_WINDOW, b1);
+	OI(O_WINDOW, b1, 1);
 
 	/*
 	 * !!!
-	 * Some options can be initialized by the command name or
-	 * the command-line arguments.  Leave them set, it's historic
-	 * practice.
+	 * Some options can be initialized by the command name or the
+	 * command-line arguments.  They don't set the default values,
+	 * it's historic practice.
 	 */
 	for (; *oargs != -1; ++oargs)
-		SET_DEF_NOCLR(*oargs, optlist[*oargs].name);
+		OI(*oargs, optlist[*oargs].name, 0);
+#undef OI
 
 	return (0);
 }
@@ -372,10 +380,11 @@ opts_init(sp, oargs)
  *	Change the values of one or more options.
  */
 int
-opts_set(sp, usage, argv)
+opts_set(sp, argv, setdef, usage)
 	SCR *sp;
-	char *usage;
 	ARGS *argv[];
+	int setdef;
+	char *usage;
 {
 	enum optdisp disp;
 	OABBREV atmp, *ap;
@@ -514,6 +523,8 @@ found:		if (op == NULL) {
 				O_CLR(sp, offset);
 			else
 				O_SET(sp, offset);
+			if (setdef)
+				O_D_VAL(sp, offset) = O_VAL(sp, offset);
 			goto change;
 		case OPT_NUM:
 			if (turnoff) {
@@ -546,6 +557,8 @@ found:		if (op == NULL) {
 				}
 			} else
 				O_VAL(sp, offset) = value;
+			if (setdef)
+				O_D_VAL(sp, offset) = O_VAL(sp, offset);
 			goto change;
 		case OPT_STR:
 			if (turnoff) {
@@ -568,20 +581,26 @@ found:		if (op == NULL) {
 					break;
 				}
 			} else {
-				if (F_ISSET(&sp->opts[offset], OPT_ALLOCATED))
+				if (setdef && O_D_STR(sp, offset) != NULL) {
+					free(O_D_STR(sp, offset));
+					O_D_STR(sp, offset) = NULL;
+				}
+				if (O_STR(sp, offset) != NULL &&
+				    O_STR(sp, offset) != O_D_STR(sp, offset))
 					free(O_STR(sp, offset));
 				if ((O_STR(sp, offset) = strdup(sep)) == NULL) {
 					msgq(sp, M_SYSERR, NULL);
 					rval = 1;
 					break;
-				} else
-					F_SET(&sp->opts[offset], OPT_ALLOCATED);
+				}
 			}
+			if (setdef)
+				O_D_STR(sp, offset) = O_STR(sp, offset);
+			/* Give underlying functions a chance. */
 change:			(void)ex_optchange(sp, offset);
 			(void)sex_optchange(sp, offset);
 			(void)svi_optchange(sp, offset);
 			(void)v_optchange(sp, offset);
-			F_SET(&sp->opts[offset], OPT_SET);
 			break;
 		default:
 			abort();
@@ -633,16 +652,31 @@ opts_dump(sp, type)
 	for (b_num = s_num = 0, op = optlist; op->name != NULL; ++op) {
 		cnt = op - optlist;
 
-		/* If OPT_NEVER set, it's never displayed. */
-		if (F_ISSET(op, OPT_NEVER))
+		/* If OPT_NDISP set, it's never displayed. */
+		if (F_ISSET(op, OPT_NDISP))
 			continue;
 
 		switch (type) {
 		case ALL_DISPLAY:		/* Display all. */
 			break;
 		case CHANGED_DISPLAY:		/* Display changed. */
-			if (!F_ISSET(&sp->opts[cnt], OPT_SET))
-				continue;
+			/* If OPT_ADISP set, it's always "changed". */
+			if (F_ISSET(op, OPT_ADISP))
+				break;
+			switch (op->type) {
+			case OPT_0BOOL:
+			case OPT_1BOOL:
+			case OPT_NUM:
+				if (O_VAL(sp, cnt) == O_D_VAL(sp, cnt))
+					continue;
+				break;
+			case OPT_STR:
+				if (O_STR(sp, cnt) == O_D_STR(sp, cnt))
+					continue;
+				if (!strcmp(O_STR(sp, cnt), O_D_STR(sp, cnt)))
+					continue;
+				break;
+			}
 			break;
 		case SELECT_DISPLAY:		/* Display selected. */
 			if (!F_ISSET(&sp->opts[cnt], OPT_SELECTED))
@@ -846,13 +880,21 @@ opts_free(sp)
 	SCR *sp;
 {
 	int cnt;
-	char *p;
 
-	for (cnt = 0; cnt < O_OPTIONCOUNT; ++cnt)
-		if (F_ISSET(&sp->opts[cnt], OPT_ALLOCATED)) {
-			p = O_STR(sp, cnt);
-			FREE(p, strlen(p) + 1);
+	for (cnt = 0; cnt < O_OPTIONCOUNT; ++cnt) {
+		if (optlist[cnt].type != OPT_STR)
+			continue;
+		/*
+		 * The default and current strings may reference the same
+		 * memory.
+		 */
+		if (O_STR(sp, cnt) != O_D_STR(sp, cnt)) {
+			if (O_D_STR(sp, cnt) != NULL)
+				free(O_D_STR(sp, cnt));
 		}
+		if (O_STR(sp, cnt) != NULL)
+			free(O_STR(sp, cnt));
+	}
 }
 
 /*
@@ -863,22 +905,39 @@ int
 opts_copy(orig, sp)
 	SCR *orig, *sp;
 {
-	OPTION *op;
-	int cnt;
+	int cnt, rval;
 
 	/* Copy most everything without change. */
 	memmove(sp->opts, orig->opts, sizeof(orig->opts));
 
-	/*
-	 * Allocate copies of the strings -- keep trying to reallocate
-	 * after ENOMEM failure, otherwise end up with more than one
-	 * screen referencing the original memory.
-	 */
-	for (op = sp->opts, cnt = 0; cnt < O_OPTIONCOUNT; ++cnt, ++op)
-		if (F_ISSET(&sp->opts[cnt], OPT_ALLOCATED) &&
-		    (O_STR(sp, cnt) = strdup(O_STR(sp, cnt))) == NULL) {
-			msgq(orig, M_SYSERR, NULL);
-			return (1);
+	/* Copy the string edit options. */
+	for (cnt = rval = 0; cnt < O_OPTIONCOUNT; ++cnt) {
+		if (optlist[cnt].type != OPT_STR)
+			continue;
+		/*
+		 * If already failed, just NULL out the entries -- have to
+		 * continue, otherwise would have two screens referencing
+		 * the same memory.
+		 */
+		if (rval) {
+			O_STR(sp, cnt) = O_D_STR(sp, cnt) = NULL;
+			continue;
 		}
-	return (0);
+		/* Copy the current string. */
+		if ((O_STR(sp, cnt) = strdup(O_STR(sp, cnt))) == NULL) {
+			O_D_STR(sp, cnt) = NULL;
+			goto nomem;
+		}
+		/* If the default was the same as the current, repoint it. */
+		if (O_D_STR(orig, cnt) == O_STR(orig, cnt)) {
+			O_D_STR(sp, cnt) = O_STR(sp, cnt);
+			continue;
+		}
+		/* Copy the default string. */
+		if ((O_D_STR(sp, cnt) = strdup(O_D_STR(sp, cnt))) == NULL) {
+nomem:			msgq(orig, M_SYSERR, NULL);
+			rval = 1;
+		}
+	}
+	return (rval);
 }

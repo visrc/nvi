@@ -4,20 +4,21 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: options.h,v 9.2 1994/11/09 23:05:02 bostic Exp $ (Berkeley) $Date: 1994/11/09 23:05:02 $
+ *	$Id: options.h,v 9.3 1994/11/10 16:51:38 bostic Exp $ (Berkeley) $Date: 1994/11/10 16:51:38 $
  */
 
 struct _option {
 	union {
 		u_long	 val;		/* Value or boolean. */
 		char	*str;		/* String. */
-	} o_u;
-	size_t	len;			/* String length. */
+	} o_cur;
+	union {
+		u_long	 val;		/* Value or boolean. */
+		char	*str;		/* String. */
+	} o_def;
 
-#define	OPT_ALLOCATED	0x01		/* Allocated space. */
-#define	OPT_SELECTED	0x02		/* Selected for display. */
-#define	OPT_SET		0x04		/* Set (display for the user). */
-	u_char	flags;
+#define	OPT_SELECTED	0x01		/* Selected for display. */
+	u_int8_t flags;
 };
 
 struct _optlist {
@@ -27,20 +28,27 @@ struct _optlist {
 					/* Type of object. */
 	enum { OPT_0BOOL, OPT_1BOOL, OPT_NUM, OPT_STR } type;
 
-#define	OPT_NEVER	0x01		/* Never display the option. */
-#define	OPT_NOSAVE	0x02		/* Mkexrc command doesn't save. */
-	u_int	 flags;
+#define	OPT_ADISP	0x01		/* Always display the option. */
+#define	OPT_NDISP	0x02		/* Never display the option. */
+#define	OPT_NOSAVE	0x04		/* Mkexrc command doesn't save. */
+	u_int8_t flags;
 };
 
 /* Clear, set, test boolean options. */
-#define	O_SET(sp, o)		(sp)->opts[(o)].o_u.val = 1
-#define	O_CLR(sp, o)		(sp)->opts[(o)].o_u.val = 0
-#define	O_ISSET(sp, o)		((sp)->opts[(o)].o_u.val)
+#define	O_SET(sp, o)		(sp)->opts[(o)].o_cur.val = 1
+#define	O_CLR(sp, o)		(sp)->opts[(o)].o_cur.val = 0
+#define	O_ISSET(sp, o)		((sp)->opts[(o)].o_cur.val)
+
+#define	O_D_SET(sp, o)		(sp)->opts[(o)].o_def.val = 1
+#define	O_D_CLR(sp, o)		(sp)->opts[(o)].o_def.val = 0
+#define	O_D_ISSET(sp, o)	((sp)->opts[(o)].o_def.val)
 
 /* Get option values. */
-#define	O_LEN(sp, o)		(sp)->opts[(o)].len
-#define	O_STR(sp, o)		(sp)->opts[(o)].o_u.str
-#define	O_VAL(sp, o)		(sp)->opts[(o)].o_u.val
+#define	O_STR(sp, o)		(sp)->opts[(o)].o_cur.str
+#define	O_VAL(sp, o)		(sp)->opts[(o)].o_cur.val
+
+#define	O_D_STR(sp, o)		(sp)->opts[(o)].o_def.str
+#define	O_D_VAL(sp, o)		(sp)->opts[(o)].o_def.val
 
 /* Option routines. */
 u_long	 baud_from_bval __P((SCR *));
@@ -49,7 +57,7 @@ int	opts_copy __P((SCR *, SCR *));
 void	opts_free __P((SCR *));
 int	opts_init __P((SCR *, int *));
 int	opts_save __P((SCR *, FILE *));
-int	opts_set __P((SCR *, char *, ARGS *[]));
+int	opts_set __P((SCR *, ARGS *[], int, char *));
 
 enum optdisp { NO_DISPLAY, ALL_DISPLAY, CHANGED_DISPLAY, SELECT_DISPLAY };
 void	opts_dump __P((SCR *, enum optdisp));
