@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.33 1993/12/20 09:07:58 bostic Exp $ (Berkeley) $Date: 1993/12/20 09:07:58 $";
+static char sccsid[] = "$Id: util.c,v 8.34 1993/12/23 18:41:25 bostic Exp $ (Berkeley) $Date: 1993/12/23 18:41:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -362,10 +362,12 @@ set_window_size(sp, set_row, ign_env)
 	 * Try TIOCGWINSZ.
 	 */
 	row = col = 0;
+#ifdef TIOCGWINSZ
 	if (ioctl(STDERR_FILENO, TIOCGWINSZ, &win) != -1) {
 		row = win.ws_row;
 		col = win.ws_col;
 	}
+#endif
 
 	/* If TIOCGWINSZ failed, or had entries of 0, try termcap. */
 	if (row == 0 || col == 0) {
