@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.185 2001/11/01 10:27:55 skimo Exp $
+dnl	$Id: configure.in,v 8.186 2001/11/01 19:29:19 skimo Exp $
 dnl Process this file with autoconf to produce a configure script.
 
 AC_INIT(../common/main.c)
@@ -951,10 +951,12 @@ fi
 saveLDFLAGS="$LDFLAGS"
 if test "x$with_db3" != "x"; then
 	LDFLAGS="-L$with_db3/lib $LDFLAGS"
-	CFLAGS="-I$with_db3/include $CFLAGS"
+	CPPFLAGS="-I$with_db3/include $CPPFLAGS"
 fi;
 
-AC_CHECK_LIB(db, db_create,
+LIBS="$LIBS -ldb"
+AC_TRY_LINK([#include <db.h>],
+	[db_create(NULL,NULL,0)],
 	[vi_cv_dbfatal="no"], [vi_cv_dbfatal="yes"])
 if test "$vi_cv_dbfatal" = "yes"; then
 	AC_MSG_ERROR([Need DB 3.])
