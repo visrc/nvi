@@ -4,21 +4,23 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: msg.h,v 8.8 1993/11/18 13:47:39 bostic Exp $ (Berkeley) $Date: 1993/11/18 13:47:39 $
+ *	$Id: msg.h,v 8.9 1994/03/13 14:11:14 bostic Exp $ (Berkeley) $Date: 1994/03/13 14:11:14 $
  */
 
 /*
- * M_BERR	-- Error: ring a bell if O_VERBOSE not set, else
- *		   display in inverse video.
- * M_ERR	-- Error: display in inverse video.
- * M_INFO	-- Info: display in normal video.
- * M_SYSERR	-- M_ERR, but use standard error message.
- * M_VINFO	-- Info: display only if O_VERBOSE set.
+ * Message types.
  *
- * In historical vi, O_VERBOSE didn't exist, and O_TERSE made the
- * error messages shorter.  In this version, O_TERSE has no effect
- * and O_VERBOSE results in informational displays about common
- * errors.
+ * !!!
+ * In historical vi, O_VERBOSE didn't exist, and O_TERSE made the error
+ * messages shorter.  In this implementation, O_TERSE has no effect and
+ * O_VERBOSE results in informational displays about common errors for
+ * naive users.
+ *
+ * M_BERR	Error: M_ERR if O_VERBOSE, else bell.
+ * M_ERR	Error: Display in inverse video.
+ * M_INFO	 Info: Display in normal video.
+ * M_SYSERR	Error: M_ERR, using strerror(3) message.
+ * M_VINFO	 Info: M_INFO if O_VERBOSE, else ignore.
  */
 enum msgtype { M_BERR, M_ERR, M_INFO, M_SYSERR, M_VINFO };
 
