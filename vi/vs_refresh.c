@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.38 1993/02/28 16:30:09 bostic Exp $ (Berkeley) $Date: 1993/02/28 16:30:09 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.39 1993/02/28 16:42:05 bostic Exp $ (Berkeley) $Date: 1993/02/28 16:42:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -383,8 +383,8 @@ adjust:	if (LNO == HMAP->lno) {
 	 * If a character is deleted from the line, we don't know how
 	 * wide it was, so reparse.
 	 */
-	if (SF_ISSET(ep, S_CHARDELETED)) {
-		SF_CLR(ep, S_CHARDELETED);
+	if (SF_ISSET(ep, (S_CHARDELETED | S_CUR_INVALID))) {
+		SF_CLR(ep, S_CHARDELETED | S_CUR_INVALID);
 		goto slow;
 	}
 

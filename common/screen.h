@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 5.20 1993/02/28 14:01:42 bostic Exp $ (Berkeley) $Date: 1993/02/28 14:01:42 $
+ *	$Id: screen.h,v 5.21 1993/02/28 16:41:53 bostic Exp $ (Berkeley) $Date: 1993/02/28 16:41:53 $
  */
 
 /*
@@ -62,10 +62,11 @@ typedef struct scr {
 	u_int rcmflags;
 
 #define	S_CHARDELETED	0x01	/* Character deleted. */
-#define	S_REDRAW	0x02	/* Redraw the screen. */
-#define	S_REFORMAT	0x04	/* Reformat the lines. */
-#define	S_REFRESH	0x08	/* Refresh the screen. */
-#define	S_RESIZE	0x10	/* Resize the screen. */
+#define	S_CUR_INVALID	0x02	/* The cursor moved behind the screen's back. */
+#define	S_REDRAW	0x04	/* Redraw the screen. */
+#define	S_REFORMAT	0x08	/* Reformat the lines. */
+#define	S_REFRESH	0x10	/* Refresh the screen. */
+#define	S_RESIZE	0x20	/* Resize the screen. */
 
 #define	SF_SET(ep, f)	(SCRP(ep))->flags |= (f)
 #define	SF_CLR(ep, f)	(SCRP(ep))->flags &= ~(f)
