@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.69 1994/03/06 10:14:40 bostic Exp $ (Berkeley) $Date: 1994/03/06 10:14:40 $";
+static char sccsid[] = "$Id: main.c,v 8.70 1994/03/07 19:18:30 bostic Exp $ (Berkeley) $Date: 1994/03/07 19:18:30 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -38,7 +38,9 @@ static char sccsid[] = "$Id: main.c,v 8.69 1994/03/06 10:14:40 bostic Exp $ (Ber
 #include "pathnames.h"
 #include "tag.h"
 
-static int	 exrc_isok __P((SCR *, struct stat *, char *, int));
+enum rc { NOEXIST, NOPERM, OK };
+
+static enum rc	 exrc_isok __P((SCR *, struct stat *, char *, int));
 static void	 gs_end __P((GS *));
 static GS	*gs_init __P((void));
 static void	 h_hup __P((int));
@@ -272,8 +274,14 @@ main(argc, argv)
 	 * anyone depending on it.
 	 */
 	if (!silent) {
-		if (exrc_isok(sp, &hsb, _PATH_SYSEXRC, 1))
+		switch (exrc_isok(sp, &hsb, _PATH_SYSEXRC, 1)) {
+		case NOEXIST:
+		case NOPERM:
+			break;
+		case OK:
 			(void)ex_cfile(sp, NULL, _PATH_SYSEXRC);
+			break;
+		}
 
 		if ((p = getenv("NEXINIT")) != NULL ||
 		    (p = getenv("EXINIT")) != NULL)
@@ -287,25 +295,37 @@ main(argc, argv)
 		else if ((p = getenv("HOME")) != NULL && *p) {
 			(void)snprintf(path,
 			    sizeof(path), "%s/%s", p, _PATH_NEXRC);
-			if (exrc_isok(sp, &hsb, path, 0))
-				(void)ex_cfile(sp, NULL, path);
-			else {
+			switch (exrc_isok(sp, &hsb, path, 0)) {
+			case NOEXIST:
 				(void)snprintf(path,
 				    sizeof(path), "%s/%s", p, _PATH_EXRC);
-				if (exrc_isok(sp, &hsb, path, 0))
+				if (exrc_isok(sp, &hsb, path, 0) == OK)
 					(void)ex_cfile(sp, NULL, path);
+				break;
+			case NOPERM:
+				break;
+			case OK:
+				(void)ex_cfile(sp, NULL, path);
+				break;
 			}
 		}
 
 		if (!F_ISSET(&sp->opts[O_EXRC], OPT_SET) || O_ISSET(sp, O_EXRC))
-			if (exrc_isok(sp, &lsb, _PATH_NEXRC, 0)) {
+			switch (exrc_isok(sp, &lsb, _PATH_NEXRC, 0)) {
+			case NOEXIST:
+				if (exrc_isok(sp, &lsb, _PATH_EXRC, 0) == OK &&
+				    (lsb.st_dev != hsb.st_dev ||
+				    lsb.st_ino != hsb.st_ino))
+					(void)ex_cfile(sp, NULL, _PATH_EXRC);
+				break;
+			case NOPERM:
+				break;
+			case OK:
 				if (lsb.st_dev != hsb.st_dev ||
 				    lsb.st_ino != hsb.st_ino)
 					(void)ex_cfile(sp, NULL, _PATH_NEXRC);
-			} else if (exrc_isok(sp, &lsb, _PATH_EXRC, 0))
-				if (lsb.st_dev != hsb.st_dev ||
-				    lsb.st_ino != hsb.st_ino)
-					(void)ex_cfile(sp, NULL, _PATH_EXRC);
+				break;
+			}
 	}
 
 	/* List recovery files if -l specified. */
@@ -620,7 +640,7 @@ h_winch(signo)
  * exrc_isok --
  *	Check a .exrc for source-ability.
  */
-static int
+static enum rc
 exrc_isok(sp, sbp, path, rootok)
 	SCR *sp;
 	struct stat *sbp;
@@ -632,7 +652,7 @@ exrc_isok(sp, sbp, path, rootok)
 
 	/* Check for the file's existence. */
 	if (stat(path, sbp))
-		return (0);
+		return (NOEXIST);
 
 	/*
 	 * !!!
@@ -648,27 +668,27 @@ exrc_isok(sp, sbp, path, rootok)
 	if (rootok) {
 		if (sbp->st_uid != uid && sbp->st_uid != 0) {
 			emsg = "not owned by you or root";
-			goto err;
+			goto denied;
 		}
 	} else
 		if (sbp->st_uid != uid) {
 			emsg = "not owned by you";
-			goto err;
+			goto denied;
 		}
 
 	/* Not writeable by anyone but the owner. */
 	if (sbp->st_mode & (S_IWGRP | S_IWOTH)) {
 		emsg = "writeable by a user other than the owner";
-err:		if (strchr(path, '/') == NULL &&
+denied:		if (strchr(path, '/') == NULL &&
 		    getcwd(buf, sizeof(buf)) != NULL)
 			msgq(sp, M_ERR,
 			    "%s/%s: not sourced: %s.", buf, path, emsg);
 		else
 			msgq(sp, M_ERR,
 			    "%s: not sourced: %s.", path, emsg);
-		return (0);
+		return (NOPERM);
 	}
-	return (1);
+	return (OK);
 }
 
 static void
