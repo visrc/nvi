@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 9.1 1994/11/09 18:41:09 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:41:09 $";
+static char sccsid[] = "$Id: ex_subst.c,v 9.2 1994/11/09 21:51:10 bostic Exp $ (Berkeley) $Date: 1994/11/09 21:51:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -67,13 +67,16 @@ ex_s(sp, cmdp)
 	 * If the arguments are empty, it's the same as &, i.e. we
 	 * repeat the last substitution.
 	 */
+	if (cmdp->argc == 0)
+		goto subagain;
 	for (p = cmdp->argv[0]->bp,
 	    len = cmdp->argv[0]->len; len > 0; --len, ++p) {
 		if (!isblank(*p))
 			break;
 	}
 	if (len == 0)
-		return (ex_subagain(sp, cmdp));
+subagain:	return (ex_subagain(sp, cmdp));
+
 	delim = *p++;
 	if (isalnum(delim))
 		return (s(sp, cmdp, p, &sp->subre, SUB_MUSTSETR));
@@ -272,7 +275,8 @@ ex_subagain(sp, cmdp)
 		ex_message(sp, NULL, EXM_NOPREVRE);
 		return (1);
 	}
-	return (s(sp, cmdp, cmdp->argv[0]->bp, &sp->subre, 0));
+	return (s(sp,
+	    cmdp, cmdp->argc ? cmdp->argv[0]->bp : NULL, &sp->subre, 0));
 }
 
 /*
@@ -290,7 +294,8 @@ ex_subtilde(sp, cmdp)
 		ex_message(sp, NULL, EXM_NOPREVRE);
 		return (1);
 	}
-	return (s(sp, cmdp, cmdp->argv[0]->bp, &sp->sre, 0));
+	return (s(sp,
+	    cmdp, cmdp->argc ? cmdp->argv[0]->bp : NULL, &sp->sre, 0));
 }
 
 /*
@@ -391,6 +396,8 @@ s(sp, cmdp, s, re, flags)
 	 * usage statement doesn't reflect this.)
 	 */
 	cflag = lflag = nflag = pflag = rflag = 0;
+	if (s == NULL)
+		goto noargs;
 	for (lno = OOBLNO; *s != '\0'; ++s)
 		switch (*s) {
 		case ' ':
@@ -463,7 +470,7 @@ usage:		ex_message(sp, cmdp->cmd, EXM_USAGE);
 		return (1);
 	}
 
-	if (IN_VI_MODE(sp) && sp->c_suffix && (lflag || nflag || pflag)) {
+noargs:	if (IN_VI_MODE(sp) && sp->c_suffix && (lflag || nflag || pflag)) {
 		msgq(sp, M_ERR,
 "159|The #, l and p flags may not be combined with the c flag in vi mode");
 		return (1);

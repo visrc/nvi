@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 9.3 1994/11/09 19:22:59 bostic Exp $ (Berkeley) $Date: 1994/11/09 19:22:59 $";
+static char sccsid[] = "$Id: ex_read.c,v 9.4 1994/11/09 21:50:47 bostic Exp $ (Berkeley) $Date: 1994/11/09 21:50:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -44,6 +44,7 @@ ex_read(sp, cmdp)
 	SCR *sp;
 	EXCMDARG *cmdp;
 {
+	enum { R_ARG, R_EXPANDARG, R_FILTER } which;
 	struct stat sb;
 	CHAR_T *arg, *name;
 	EX_PRIVATE *exp;
@@ -52,18 +53,16 @@ ex_read(sp, cmdp)
 	MARK rm;
 	recno_t nlines;
 	size_t arglen, blen, len;
-	int btear, farg, nf, rval;
+	int argc, btear, nf, rval;
 	char *p;
 
 	/*
-	 *  0 args: we're done.
-	 *  1 args: check for "read !arg".
-	 *  2 args: check for "read ! arg".
-	 * >2 args: object, too many args.
+	 * 0 args: read the current pathname.
+	 * 1 args: check for "read !arg".
 	 */
-	farg = 0;
 	switch (cmdp->argc) {
 	case 0:
+		which = R_ARG;
 		break;
 	case 1:
 		arg = cmdp->argv[0]->bp;
@@ -71,19 +70,13 @@ ex_read(sp, cmdp)
 		if (*arg == '!') {
 			++arg;
 			--arglen;
-			farg = 1;
-		}
+			which = R_FILTER;
+		} else
+			which = R_EXPANDARG;
 		break;
-	case 2:
-		if (cmdp->argv[0]->len == 1 && cmdp->argv[0]->bp[0] == '!')  {
-			arg = cmdp->argv[1]->bp;
-			arglen = cmdp->argv[1]->len;
-			farg = 2;
-			break;
-		}
-		/* FALLTHROUGH */
 	default:
-		goto badarg;
+		abort();
+		/* NOTREACHED */
 	}
 
 	/* Load a temporary file if no file being edited. */
@@ -94,37 +87,42 @@ ex_read(sp, cmdp)
 			return (1);
 	}
 
-	if (farg != 0) {
-		/* File name and bang expand the user's argument. */
+	switch (which) {
+	case R_FILTER:
+		/*
+		 * File name and bang expand the user's argument.  If
+		 * we don't get an additional argument, it's illegal.
+		 */
+		argc = cmdp->argc;
 		if (argv_exp1(sp, cmdp, arg, arglen, 1))
 			return (1);
-
-		/* If argc unchanged, there wasn't anything to expand. */
-		if (cmdp->argc == farg)
+		if (argc == cmdp->argc)
 			goto usage;
+		argc = cmdp->argc - 1;
 
 		/* Set the last bang command. */
 		exp = EXP(sp);
 		if (exp->lastbcomm != NULL)
 			free(exp->lastbcomm);
-		if ((exp->lastbcomm = strdup(cmdp->argv[farg]->bp)) == NULL) {
+		if ((exp->lastbcomm =
+		    strdup(cmdp->argv[argc]->bp)) == NULL) {
 			msgq(sp, M_SYSERR, NULL);
 			return (1);
 		}
 
 		/* Redisplay the user's argument if it's changed. */
 		if (F_ISSET(cmdp, E_MODIFY) && IN_VI_MODE(sp)) {
-			len = cmdp->argv[farg]->len;
+			len = cmdp->argv[argc]->len;
 			GET_SPACE_RET(sp, p, blen, len + 2);
 			p[0] = '!';
 			memmove(p + 1,
-			    cmdp->argv[farg]->bp, cmdp->argv[farg]->len + 1);
+			    cmdp->argv[argc]->bp, cmdp->argv[argc]->len + 1);
 			(void)sp->s_busy(sp, p);
 			FREE_SPACE(sp, p, blen);
 		}
 
 		if (filtercmd(sp, &cmdp->addr1,
-		    NULL, &rm, cmdp->argv[farg]->bp, FILTER_READ))
+		    NULL, &rm, cmdp->argv[argc]->bp, FILTER_READ))
 			return (1);
 
 		/* The filter version of read set the autoprint flag. */
@@ -137,50 +135,52 @@ ex_read(sp, cmdp)
 			(void)nonblank(sp, sp->lno, &sp->cno);
 		}
 		return (0);
-	}
-
-	/* Shell and file name expand the user's argument. */
-	if (argv_exp2(sp, cmdp, arg, arglen))
-		return (1);
-
-	/*
-	 *  0 args: no arguments, read the current file, don't set the
-	 *	    alternate file name.
-	 *  1 args: read it, switching to it or setting the alternate file
-	 *	    name.
-	 * >1 args: object, too many args.
-	 */
-	switch (cmdp->argc) {
-	case 1:
+	case R_ARG:
 		name = sp->frp->name;
 		break;
-	case 2:
-		name = cmdp->argv[1]->bp;
+	case R_EXPANDARG:
+		if (argv_exp2(sp, cmdp, arg, arglen))
+			return (1);
 		/*
-		 * !!!
-		 * Historically, the read and write commands renamed
-		 * "unnamed" files, or, if the file had a name, set
-		 * the alternate file name.
+		 * 0/1 args: impossible.
+		 *   2 args: read it.
+		 *  >2 args: object, too many args.
 		 */
-		if (F_ISSET(sp->frp, FR_TMPFILE) &&
-		    !F_ISSET(sp->frp, FR_EXNAMED)) {
-			if ((p = v_strdup(sp,
-			    cmdp->argv[1]->bp, cmdp->argv[1]->len)) != NULL) {
-				free(sp->frp->name);
-				sp->frp->name = p;
-			}
-			F_SET(sp->frp, FR_NAMECHANGE | FR_EXNAMED);
-		} else
-			set_alt_name(sp, name);
+		switch (cmdp->argc) {
+		case 0:
+		case 1:
+			abort();
+			/* NOTREACHED */
+		case 2:
+			name = cmdp->argv[1]->bp;
+			/*
+			 * !!!
+			 * Historically, the read and write commands renamed
+			 * "unnamed" files, or, if the file had a name, set
+			 * the alternate file name.
+			 */
+			if (F_ISSET(sp->frp, FR_TMPFILE) &&
+			    !F_ISSET(sp->frp, FR_EXNAMED)) {
+				if ((p = v_strdup(sp, cmdp->argv[1]->bp,
+				    cmdp->argv[1]->len)) != NULL) {
+					free(sp->frp->name);
+					sp->frp->name = p;
+				}
+				F_SET(sp->frp, FR_NAMECHANGE | FR_EXNAMED);
+			} else
+				set_alt_name(sp, name);
+			break;
+		default:
+			p = msg_print(sp, cmdp->argv[0]->bp, &nf);
+			msgq(sp, M_ERR,
+			    "149|%s expanded into too many file names", p);
+			if (nf)
+				FREE_SPACE(sp, p, 0);
+usage:			ex_message(sp, cmdp->cmd, EXM_USAGE);
+			return (1);
+		
+		}
 		break;
-	default:
-badarg:		p = msg_print(sp, cmdp->argv[0]->bp, &nf);
-		msgq(sp, M_ERR,
-		    "149|%s expanded into too many file names", p);
-		if (nf)
-			FREE_SPACE(sp, p, 0);
-usage:		ex_message(sp, cmdp->cmd, EXM_USAGE);
-		return (1);
 	}
 
 	/*

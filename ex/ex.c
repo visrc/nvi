@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 9.1 1994/11/09 18:40:22 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:40:22 $";
+static char sccsid[] = "$Id: ex.c,v 9.2 1994/11/09 21:50:56 bostic Exp $ (Berkeley) $Date: 1994/11/09 21:50:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -916,17 +916,7 @@ two:		switch (exc.addrcnt) {
 		for (; cmdlen > 0; --cmdlen, ++cmd)
 			if (!isblank(*cmd))
 				break;
-
-		/*
-		 * Quit when reach the end of the command, unless it's a
-		 * command that does its own parsing, in which case we want
-		 * to build a reasonable argv for it.  This code guarantees
-		 * that there will be an argv when the function gets called,
-		 * so the correct test is for a length of 0, not for the
-		 * argc > 0.  Since '!' can precede commands that do their
-		 * own parsing, we have to have already handled it.
-		 */
-		if (cmdlen == 0 && *p != 'S' && *p != 's')
+		if (cmdlen == 0)
 			break;
 
 		switch (*p) {
@@ -1077,10 +1067,13 @@ end2:			break;
 			exc.lineno = cur.lno;
 			break;
 		case 'S':				/* string, file exp. */
-			if (argv_exp1(sp,
-			    &exc, cmd, cmdlen, cp == &cmds[C_BANG]))
-				goto err;
-			goto addr2;
+			if (cmdlen != 0) {
+				if (argv_exp1(sp, &exc,
+				    cmd, cmdlen, cp == &cmds[C_BANG]))
+					goto err;
+				goto addr2;
+			}
+			/* FALLTHROUGH */
 		case 's':				/* string */
 			if (argv_exp0(sp, &exc, cmd, cmdlen))
 				goto err;

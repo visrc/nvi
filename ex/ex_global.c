@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 9.1 1994/11/09 18:40:44 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:40:44 $";
+static char sccsid[] = "$Id: ex_global.c,v 9.2 1994/11/09 21:50:35 bostic Exp $ (Berkeley) $Date: 1994/11/09 21:50:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -81,9 +81,11 @@ global(sp, cmdp, cmd)
 	 * Skip leading white space.  Historic vi allowed any non-
 	 * alphanumeric to serve as the global command delimiter.
 	 */
+	if (cmdp->argc == 0)
+		goto usage;
 	for (p = cmdp->argv[0]->bp; isblank(*p); ++p);
 	if (*p == '\0' || isalnum(*p)) {
-		ex_message(sp, cmdp->cmd, EXM_USAGE);
+usage:		ex_message(sp, cmdp->cmd, EXM_USAGE);
 		return (1);
 	}
 	delim = *p++;
