@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 8.7 1993/09/08 14:37:58 bostic Exp $ (Berkeley) $Date: 1993/09/08 14:37:58 $";
+static char sccsid[] = "$Id: ex_write.c,v 8.8 1993/09/08 15:16:50 bostic Exp $ (Berkeley) $Date: 1993/09/08 15:16:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -190,6 +190,13 @@ ex_writefp(sp, ep, fname, fp, fm, tm, success_msg)
 
 	ccnt = 0;
 	/*
+	 * The vi filter code has multiple processes running simultaneously,
+	 * and one of them calls ex_writefp().  The "unsafe" function calls
+	 * in this code are to file_gline() and msgq().  File_gline() is safe,
+	 * see the comment in filter.c:filtercmd() for details.  We don't call
+	 * msgq if the multiple process bit in the EXF is set.
+	 *
+	 * !!!
 	 * Historic vi permitted files of 0 length to be written.  However,
 	 * since the way vi got around dealing with "empty" files was to
 	 * always have a line in the file no matter what, it wrote them as
@@ -212,13 +219,15 @@ ex_writefp(sp, ep, fname, fp, fm, tm, success_msg)
 			++ccnt;
 		}
 	if (fclose(fp)) {
-		msgq(sp, M_ERR, "%s: %s", fname, strerror(errno));
+		if (!F_ISSET(ep, F_MULTILOCK))
+			msgq(sp, M_ERR, "%s: %s", fname, strerror(errno));
 		return (1);
 	}
 	if (success_msg) {
 		nlines = tm->lno == 0 ? 0 : tm->lno - fm->lno + 1;
-		msgq(sp, M_INFO, "%s: %lu line%s, %lu characters.",
-		    fname, nlines, nlines == 1 ? "" : "s", ccnt);
+		if (!F_ISSET(ep, F_MULTILOCK))
+			msgq(sp, M_INFO, "%s: %lu line%s, %lu characters.",
+			    fname, nlines, nlines == 1 ? "" : "s", ccnt);
 	}
 	return (0);
 }
