@@ -6,8 +6,23 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 5.1 1992/04/04 16:32:16 bostic Exp $ (Berkeley) $Date: 1992/04/04 16:32:16 $";
+static char sccsid[] = "$Id: util.c,v 5.2 1992/04/05 09:47:40 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:47:40 $";
 #endif /* not lint */
+
+/*
+ * bell --
+ *	Ring the terminal's bell.
+ */
+void
+bell()
+{
+	if (ISSET(O_VBELL)) {
+		do_VB();
+		refresh();
+	}
+	else if (ISSET(O_ERRORBELLS))
+		(void)write(STDOUT_FILENO, "\007", 1);	/* '\a' */
+}
 
 /*
  * parseptrn --
