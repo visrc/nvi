@@ -192,6 +192,7 @@ vi_ipc_SOURCES = \
 	$(visrcdir)/ip/ip_read.c \
 	$(visrcdir)/ip/ip_screen.c \
 	$(visrcdir)/ipc/ip_send.c \
+	$(visrcdir)/ipc/ip.h \
 	$(visrcdir)/ip/ip_term.c 
 vi_ipc_LDADD = libvi.la @perllibs@ @IPCOBJS@
 vi_ipc_LDFLAGS = @perlldflags@
