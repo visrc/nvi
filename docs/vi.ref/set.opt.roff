@@ -3,10 +3,11 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: set.opt.roff,v 8.21 1994/05/25 22:31:05 bostic Exp $ (Berkeley) $Date: 1994/05/25 22:31:05 $
+.\"     $Id: set.opt.roff,v 8.22 1994/05/26 01:41:28 bostic Exp $ (Berkeley) $Date: 1994/05/26 01:41:28 $
 .\"
 #ifdef REFERENCE
 .SH 1 "Set Options"
+.pp
 #else
 .Sh SET OPTIONS
 #endif
@@ -45,7 +46,6 @@ their current values, see the
 command in the section entitled
 .QB "Ex Commands" .
 #endif
-.sp
 .KY altwerase
 .IP "altwerase [off]"
 .CO Vi
@@ -100,7 +100,7 @@ option) and then using space characters as necessary.
 For commands inserting text into the middle of a line, any blank characters
 to the right of the cursor are discarded, and the first nonblank character
 to the right of the cursor is aligned as described above.
-.pp
+.sp
 The indent characters are themselves somewhat special.
 If you do not enter more characters on the new line before moving moving to
 another line, or entering

@@ -3,14 +3,14 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: ex.cmd.roff,v 8.20 1994/05/26 00:04:34 bostic Exp $ (Berkeley) $Date: 1994/05/26 00:04:34 $
+.\"	$Id: ex.cmd.roff,v 8.21 1994/05/26 01:41:49 bostic Exp $ (Berkeley) $Date: 1994/05/26 01:41:49 $
 .\"
 #ifdef REFERENCE
 .SH 1 "Ex Description"
+.pp
 The following words have special meanings for
 .CO ex
 commands.
-.sp
 .KY "<eof>"
 .IP "<eof>"
 The end-of-file character is used to scroll the screen in the
@@ -130,6 +130,7 @@ retain their literal value when preceded by a backslash.
 #endif /* REFERENCE */
 #ifdef REFERENCE
 .SH 1 "Ex Commands"
+.pp
 #else
 .Sh EX COMMANDS
 #endif
@@ -164,7 +165,6 @@ Each
 command described below notes the new current line after it
 is executed, as well as any options that affect the command.
 #endif
-.sp
 .KY DOUBLEQUOTE
 .IP """"
 A comment.
