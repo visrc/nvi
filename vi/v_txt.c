@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.75 1996/07/10 08:40:59 bostic Exp $ (Berkeley) $Date: 1996/07/10 08:40:59 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.76 1996/07/12 19:56:40 bostic Exp $ (Berkeley) $Date: 1996/07/12 19:56:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -45,7 +45,7 @@ static int	 txt_map_end __P((SCR *));
 static int	 txt_map_init __P((SCR *));
 static int	 txt_margin __P((SCR *, TEXT *, TEXT *, int *, u_int32_t));
 static void	 txt_nomorech __P((SCR *));
-static void	 txt_Rcleanup __P((SCR *, TEXTH *, TEXT *, const size_t));
+static void	 txt_Rresolve __P((SCR *, TEXTH *, TEXT *, const size_t));
 static int	 txt_resolve __P((SCR *, TEXTH *, u_int32_t));
 static int	 txt_showmatch __P((SCR *, TEXT *));
 static void	 txt_unmap __P((SCR *, TEXT *, u_int32_t *));
@@ -879,7 +879,7 @@ k_escape:	LINE_RESOLVE;
 		 * characters, and making them into insert characters.
 		 */
 		if (LF_ISSET(TXT_REPLACE))
-			txt_Rcleanup(sp, &sp->tiq, tp, len);
+			txt_Rresolve(sp, &sp->tiq, tp, len);
 
 		/*
 		 * If there are any overwrite characters, copy down
@@ -1556,7 +1556,7 @@ search:	if (isinfoline)
 
 	/* Move to the start of the abbreviation, adjust the length. */
 	tp->cno -= len;
-	tp->len -= len;
+	tp->owrite += len;
 
 	/* Copy any insert characters back. */
 	if (tp->insert)
@@ -2822,18 +2822,18 @@ txt_margin(sp, tp, wmtp, didbreak, flags)
 }
 
 /*
- * txt_Rcleanup --
+ * txt_Rresolve --
  *	Resolve the input line for the 'R' command.
  */
 static void
-txt_Rcleanup(sp, tiqh, tp, olen)
+txt_Rresolve(sp, tiqh, tp, orig_len)
 	SCR *sp;
 	TEXTH *tiqh;
 	TEXT *tp;
-	const size_t olen;
+	const size_t orig_len;
 {
 	TEXT *ttp;
-	size_t ilen, tmp;
+	size_t input_len, retain;
 	char *p;
 
 	/*
@@ -2847,8 +2847,8 @@ txt_Rcleanup(sp, tiqh, tp, olen)
 	 * Calculate how many characters the user has entered,
 	 * plus the blanks erased by <carriage-return>/<newline>s.
 	 */
-	for (ttp = tiqh->cqh_first, ilen = 0;;) {
-		ilen += ttp == tp ? tp->cno : ttp->len + ttp->R_erase;
+	for (ttp = tiqh->cqh_first, input_len = 0;;) {
+		input_len += ttp == tp ? tp->cno : ttp->len + ttp->R_erase;
 		if ((ttp = ttp->q.cqe_next) == (void *)&sp->tiq)
 			break;
 	}
@@ -2860,17 +2860,22 @@ txt_Rcleanup(sp, tiqh, tp, olen)
 	 * because they're after the cursor and we don't want to lose them.
 	 * (This is okay because the R command has no insert characters.)
 	 * We set owrite to 0 so that the insert characters don't get copied
-	 * to somewhere else, which means that the length has to be adjusted
-	 * here as well.
+	 * to somewhere else, which means that the line and the length have
+	 * to be adjusted here as well.
+	 *
+	 * We have to retrieve the original line because the original pinned
+	 * page has long since been discarded.  If it doesn't exist, that's
+	 * okay, the user just extended the file.
 	 */
-	if (ilen < olen) {
-		tmp = MIN(tp->owrite, olen - ilen);
-		if (db_get(sp, tp->lno, DBG_FATAL | DBG_NOCACHE, &p, NULL))
-			return;
-		memmove(tp->lb + tp->cno, p + ilen, tmp);
-		tp->len -= tp->owrite - tmp;
+	if (input_len < orig_len) {
+		retain = MIN(tp->owrite, orig_len - input_len);
+		if (db_get(sp,
+		    tiqh->cqh_first->lno, DBG_FATAL | DBG_NOCACHE, &p, NULL))
+			return (1);
+		memcpy(tp->lb + tp->cno, p + input_len, retain);
+		tp->len -= tp->owrite - retain;
 		tp->owrite = 0;
-		tp->insert += tmp;
+		tp->insert += retain;
 	}
 }
 
