@@ -6,12 +6,13 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 5.20 1992/10/18 13:07:14 bostic Exp $ (Berkeley) $Date: 1992/10/18 13:07:14 $";
+static char sccsid[] = "$Id: util.c,v 5.21 1992/11/01 22:49:00 bostic Exp $ (Berkeley) $Date: 1992/11/01 22:49:00 $";
 #endif /* not lint */
 
 #include <sys/param.h>
 #include <sys/ioctl.h>
 
+#include <ctype.h>
 #include <curses.h>
 #include <errno.h>
 #include <signal.h>
@@ -83,30 +84,6 @@ binc(bpp, bsizep, min)
 }
 
 /*
- * parseptrn --
- */
-u_char *
-parseptrn(ptrn)
-	register u_char *ptrn;
-{
-	register u_char sep;
-
-	/*
-	 * Return a pointer to the end of the string or the first character
-	 * after the second occurrence of the first character.  In the latter
-	 * case, replace the second occurrence with a '\0'.  Used to parse
-	 * search strings.
-	 */
-	for (sep = *ptrn; *++ptrn && *ptrn != sep;)
-		/* Backslash escapes the next character. */
-		if (ptrn[0] == '\\' && ptrn[1] != '\0')
-			++ptrn;
-	if (*ptrn)
-		*ptrn++ = '\0';
-	return (ptrn);
-}
-
-/*
  * nonblank --
  *	Return the column number of the first non-blank character of the
  *	line.
@@ -157,8 +134,6 @@ void
 onhup(signo)
 	int signo;
 {
-	char buf[MAXPATHLEN + sizeof(_PATH_PRESERVE) + 2];
-
 	/* Restore the terminal's sanity. */
 	endwin();
 
