@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 8.37 1994/07/23 09:47:56 bostic Exp $ (Berkeley) $Date: 1994/07/23 09:47:56 $";
+static char sccsid[] = "$Id: ex_global.c,v 8.38 1994/08/05 08:25:54 bostic Exp $ (Berkeley) $Date: 1994/08/05 08:25:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -76,7 +76,7 @@ global(sp, ep, cmdp, cmd)
 	regmatch_t match[1];
 	regex_t *re, lre;
 	size_t clen, len;
-	int delim, eval, reflags, replaced, rval;
+	int ap, delim, eval, reflags, replaced, rval;
 	char *cb, *ptrn, *p, *t;
 
 	/*
@@ -233,6 +233,10 @@ global(sp, ep, cmdp, cmd)
 		CIRCLEQ_INSERT_TAIL(&exp->rangeq, rp, q);
 	}
 
+	/* Global commands turn off autoprint while they run. */
+	ap = O_ISSET(sp, O_AUTOPRINT);
+	O_CLR(sp, O_AUTOPRINT);
+
 	exp = EXP(sp);
 	exp->range_lno = OOBLNO;
 	for (;;) {
@@ -265,6 +269,10 @@ interrupted:		msgq(sp, M_INFO, "Interrupted");
 		}
 	}
 
+	/* Restore autoprint value. */
+	if (ap)
+		O_SET(sp, O_AUTOPRINT);
+
 	/* Set the cursor to the new value, making sure it exists. */
 	if (exp->range_lno != OOBLNO) {
 		if (file_lline(sp, ep, &lno))
@@ -274,6 +282,10 @@ interrupted:		msgq(sp, M_INFO, "Interrupted");
 	}
 	if (0) {
 err:		rval = 1;
+
+		/* Restore autoprint value. */
+		if (ap)
+			O_SET(sp, O_AUTOPRINT);
 	}
 
 	F_CLR(sp, S_GLOBAL);
