@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_funcs.c,v 10.68 2001/06/09 21:34:14 skimo Exp $ (Berkeley) $Date: 2001/06/09 21:34:14 $";
+static const char sccsid[] = "$Id: cl_funcs.c,v 10.69 2001/06/09 22:05:47 skimo Exp $ (Berkeley) $Date: 2001/06/09 22:05:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -410,7 +410,6 @@ cl_discard(discardp, acquirep)
 		return 0;
 
 	for (; (tsp = *acquirep) != NULL; ++acquirep) {
-		WINDOW *win = CLSP(tsp);
 		clp = CLP(tsp);
 		F_SET(clp, CL_LAYOUT);
 
@@ -418,8 +417,6 @@ cl_discard(discardp, acquirep)
 			delwin(CLSP(tsp));
 		CLSP(tsp) = subwin(stdscr, tsp->rows, tsp->cols,
 					   tsp->roff, tsp->coff);
-		if (win == clp->focus)
-			clp->focus = CLSP(tsp);
 	}
 
 	/* discardp is going away, acquirep is taking up its space. */
@@ -637,7 +634,7 @@ cl_refresh(sp, repaint)
 	 */
 	return (wnoutrefresh(stdscr) == ERR || 
 		wnoutrefresh(win) == ERR || 
-		(win == clp->focus && doupdate() == ERR));
+		(sp == clp->focus && doupdate() == ERR));
 }
 
 /*
@@ -677,7 +674,7 @@ cl_rename(sp, name, on)
 	clp = CLP(sp);
 
 	if (on) {
-		clp->focus = CLSP(sp) ? CLSP(sp) : stdscr;
+		clp->focus = sp;
 		if (!F_ISSET(clp, CL_RENAME_OK))
 			return (0);
 
