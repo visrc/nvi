@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.138 1994/08/03 11:43:15 bostic Exp $ (Berkeley) $Date: 1994/08/03 11:43:15 $";
+static char sccsid[] = "$Id: ex.c,v 8.139 1994/08/05 06:26:51 bostic Exp $ (Berkeley) $Date: 1994/08/05 06:26:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -39,8 +39,6 @@ static __inline EXCMDLIST const *
 static int	ep_line __P((SCR *, EXF *, MARK *, char **, size_t *, int *));
 static int	ep_range __P((SCR *, EXF *, EXCMDARG *, char **, size_t *));
 
-#define	DEFCOM	".+1"
-
 /*
  * ex --
  *	Read an ex command and execute it.
@@ -54,7 +52,6 @@ ex(sp, ep)
 	TEXT *tp;
 	u_int flags, saved_mode;
 	int eval;
-	char defcom[sizeof(DEFCOM)];
 
 	if (ex_init(sp, ep))
 		return (1);
@@ -88,8 +85,8 @@ ex(sp, ep)
 			LF_CLR(TXT_PROMPT);
 
 		/*
-		 * Get the next command.  Interrupt flag manipulation is safe
-		 * because ex_icmd clears them all.
+		 * Get the next command.  Interrupt flag manipulation is
+		 * safe because ex_icmd clears them all.
 		 */
 		CLR_INTERRUPT(sp);
 		F_SET(sp, S_INTERRUPTIBLE);
@@ -110,30 +107,20 @@ ex(sp, ep)
 			goto ret;
 		}
 
-		saved_mode = F_ISSET(sp, S_SCREENS | S_MAJOR_CHANGE);
+		/*
+		 * If the user entered a carriage return, send ex_cmd()
+		 * a separator -- it discards single newlines.
+		 */
 		tp = sp->tiqp->cqh_first;
 		if (tp->len == 0) {
-			if (F_ISSET(sp->gp, G_STDIN_TTY)) {
-				/* Special case \r command. */
-				(void)fputc('\r', stdout);
-				(void)fflush(stdout);
-			}
-			memmove(defcom, DEFCOM, sizeof(DEFCOM));
-			if (ex_icmd(sp, ep, defcom, sizeof(DEFCOM) - 1) &&
-			    !F_ISSET(sp->gp, G_STDIN_TTY))
-				F_SET(sp, S_EXIT_FORCE);
-		} else {
-			if (F_ISSET(sp->gp, G_STDIN_TTY))
-				/* Special case ^D command. */
-				if (tp->len == 1 && tp->lb[0] == '\004') {
-					(void)fputc('\r', stdout);
-					(void)fflush(stdout);
-				} else
-					(void)fputc('\n', stdout);
-			if (ex_icmd(sp, ep, tp->lb, tp->len) &&
-			    !F_ISSET(sp->gp, G_STDIN_TTY))
-				F_SET(sp, S_EXIT_FORCE);
+			tp->len = 1;
+			tp->lb[0] = '|';
 		}
+
+		saved_mode = F_ISSET(sp, S_SCREENS | S_MAJOR_CHANGE);
+		if (ex_icmd(sp, ep,
+		    tp->lb, tp->len) && !F_ISSET(sp->gp, G_STDIN_TTY))
+			F_SET(sp, S_EXIT_FORCE);
 		(void)msg_rpt(sp, 0);
 		if (saved_mode != F_ISSET(sp, S_SCREENS | S_MAJOR_CHANGE))
 			break;
@@ -266,11 +253,12 @@ ex_cmd(sp, ep, cmd, cmdlen)
 	size_t arg1_len, len, save_cmdlen;
 	long flagoff;
 	u_int saved_mode;
-	int ch, cnt, delim, flags, namelen, nl, uselastcmd, tmp, vi_address;
+	int blank, ch, cnt, delim, flags, namelen, nl;
+	int osepline, uselastcmd, tmp, vi_address;
 	char *arg1, *save_cmd, *p, *t;
 
 	/* Init. */
-	nl = 0;
+	osepline = nl = 0;
 loop:	if (nl) {
 		nl = 0;
 		++sp->if_lno;
@@ -282,14 +270,14 @@ loop:	if (nl) {
 	if (INTERRUPTED(sp))
 		return (0);
 
-	/* Skip whitespace, separators, newlines. */
-	for (; cmdlen > 0; ++cmd, --cmdlen)
+	/* Skip <blank>s, empty lines.  */
+	for (blank = 0; cmdlen > 0; ++cmd, --cmdlen)
 		if ((ch = *cmd) == '\n')
 			++sp->if_lno;
-		else if (!isblank(ch))
+		else if (isblank(ch))
+			blank = 1;
+		else
 			break;
-	if (cmdlen == 0)
-		return (0);
 
 	/*
 	 * !!!
@@ -298,7 +286,7 @@ loop:	if (nl) {
 	 * The stripping is done here because, historically, any command
 	 * could have preceding colons, e.g. ":g/pattern/:p" worked.
 	 */
-	if (ch == ':')
+	if (cmdlen != 0 && ch == ':')
 		while (--cmdlen > 0 && (ch = *++cmd) == ':');
 
 	/*
@@ -310,7 +298,7 @@ loop:	if (nl) {
 	 * Since nvi permits users to escape <newline> characters into
 	 * command lines, we have to check for that case.
 	 */
-	if (ch == '"') {
+	if (cmdlen != 0 && ch == '"') {
 		while (--cmdlen > 0 && *++cmd != '\n');
 		if (*cmd == '\n') {
 			nl = 1;
@@ -327,10 +315,22 @@ loop:	if (nl) {
 			break;
 	}
 
-	/* The last point at which an empty line means do nothing. */
-	if (cmdlen == 0)
+	/*
+	 * The last point at which an empty line can mean do nothing.
+	 *
+	 * !!!
+	 * Historically, in ex mode, lines containing only <blank> characters
+	 * were the same as a single <carriage-return>, i.e. a default command.
+	 * In vi mode, they were ignored.
+	 *
+	 * In .exrc files this was a serious annoyance, as vi kept trying to
+	 * treat them as print commands.  We ignore backward compatibility in
+	 * this case, and discard lines containing only <blank> characters from
+	 * .exrc files.
+	 */
+	if (cmdlen == 0 && (!IN_EX_MODE(sp) || ep == NULL || !blank))
 		return (0);
-
+		
 	/* Initialize the structure passed to underlying functions. */
 	memset(&exc, 0, sizeof(EXCMDARG));
 	exp = EXP(sp);
@@ -357,6 +357,16 @@ loop:	if (nl) {
 	 * it means that, for the command ":e +cut.c file", we'll report that
 	 * the command "cut" wasn't known.  However, it makes ":e+35 file" work
 	 * correctly.
+	 *
+	 * !!!
+	 * Historically, lines with multiple adjacent (or <blank> separated)
+	 * command separators were very strange.  For example, the command
+	 * |||<carriage-return>, when the cursor was on line 1, displayed
+	 * lines 2, 3 and 5 of the file.  In addition, the command "   |  "
+	 * would only display the line after the next line, instead of the
+	 * next two lines.  No ideas why.  It worked reasonably when executed
+	 * from vi mode, and displayed lines 2, 3, and 4, so we do a default
+	 * command for each separator.
 	 */
 #define	SINGLE_CHAR_COMMANDS	"\004!#&*<=>@~"
 	if (cmdlen != 0 && cmd[0] != '|' && cmd[0] != '\n') {
@@ -449,9 +459,26 @@ loop:	if (nl) {
 		else
 			exp->fdef = 0;
 		uselastcmd = 0;
+
 	} else {
+		/* Print is the default command. */
 		cp = &cmds[C_PRINT];
+
+		/* Set the saved format flags. */
 		F_SET(&exc, exp->fdef);
+
+		/*
+		 * !!!
+		 * If no address was specified, and it's not a global command,
+		 * we up the address by one.  (I have not an idea why global
+		 * commands are exempted, but it's (ahem) historic practice.
+		 */
+		if (exc.addrcnt == 0 && !F_ISSET(sp, S_GLOBAL)) {
+			exc.addrcnt = 1;
+			exc.addr1.lno = sp->lno + 1;
+			exc.addr1.cno = sp->cno;
+		}
+
 		uselastcmd = 1;
 	}
 
@@ -1072,7 +1099,7 @@ addr2:	switch (exc.addrcnt) {
 		/*
 		 * If it's a "default vi command", zero is okay.  Historic
 		 * vi allowed this, note, it's also the hack that allows
-		 * "vi + nonexistent_file" to work.
+		 * "vi +100 nonexistent_file" to work.
 		 */
 		if (num == 0 && (IN_EX_MODE(sp) || uselastcmd != 1) &&
 		    !LF_ISSET(E_ZERO)) {
@@ -1098,7 +1125,6 @@ addr2:	switch (exc.addrcnt) {
 	 * !!!
 	 * This is done before the absolute mark gets set; historically,
 	 * "/a/,/b/" did NOT set vi's absolute mark, but "/a/,/b/d" did.
-	 * If ep_line() set the absolute mark flag, lose it.
 	 */
 	if (IN_VI_MODE(sp) && uselastcmd && vi_address == 0) {
 		switch (exc.addrcnt) {
@@ -1166,6 +1192,29 @@ addr2:	switch (exc.addrcnt) {
 	 */
 	if (ep != NULL && !F_ISSET(sp, S_GLOBAL))
 		(void)log_cursor(sp, ep);
+
+	/*
+	 * !!!
+	 * There are two special commands for the purposes of this code: the
+	 * scrolling command (<EOF> and ^D as the first character of the line),
+	 * and the print default command (<carriage-return> with nothing but
+	 * <blank>s before it).
+	 *
+	 * If this is the first command in the command line, we received the
+	 * command from the ex command loop and we're talking to a tty, and
+	 * and there's nothing else on the command line, and it's one of the
+	 * special commands, we erase the prompt character with a '\r'.  Else,
+	 * we put out a newline character to separate the command from the
+	 * output from the command.  It's OK if vi calls us -- we won't be in
+	 * ex mode so we'll do nothing.
+	 */
+	if (!osepline &&
+	    !F_ISSET(sp, S_GLOBAL) && ep != NULL && IN_EX_MODE(sp) &&
+	    F_ISSET(sp->gp, G_STDIN_TTY)) {
+		(void)fputc((uselastcmd || cp == &cmds[C_SCROLL]) &&
+		    (osepline || save_cmdlen == 0) ? '\r' : '\n', stdout);
+		osepline = 1;
+	}
 
 	/* Save the current mode. */
 	saved_mode = F_ISSET(sp, S_SCREENS | S_MAJOR_CHANGE);
@@ -1295,13 +1344,21 @@ addr2:	switch (exc.addrcnt) {
 	/* NOTREACHED */
 
 	/*
+	 * If we haven't put out a separator line, do it now.  For more
+	 * detailed comments, see above.
+	 */
+err:	if (!osepline &&
+	    !F_ISSET(sp, S_GLOBAL) && ep != NULL && IN_EX_MODE(sp) &&
+	    F_ISSET(sp->gp, G_STDIN_TTY))
+		(void)fputc('\n', stdout);
+	/*
 	 * On error, we discard any keys we have left, as well as any keys
 	 * that were mapped.  The test of save_cmdlen isn't necessarily
 	 * correct.  If we fail early enough we don't know if the entire
 	 * string was a single command or not.  Try and guess, it's useful
 	 * to know if part of the command was discarded.
 	 */
-err:	if (save_cmdlen == 0)
+	if (save_cmdlen == 0)
 		for (; cmdlen; --cmdlen) {
 			ch = *cmd++;
 			if (IS_ESCAPE(sp, ch) && cmdlen > 1) {
