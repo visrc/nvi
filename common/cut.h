@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: cut.h,v 5.7 1992/12/05 11:04:33 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:04:33 $
+ *	$Id: cut.h,v 5.8 1993/01/30 17:24:57 bostic Exp $ (Berkeley) $Date: 1993/01/30 17:24:57 $
  */
 
 typedef struct text {			/* Text: a linked list of lines. */
@@ -69,7 +69,6 @@ extern IB ib;				/* Input buffer. */
 		for (; __cblp->next; __cblp = __cblp->next);		\
 		__cblp->next = (text);					\
 	}								\
-	(start)->len += (text)->len;					\
 }
 
 enum filtertype { STANDARD, NOINPUT, NOOUTPUT };

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 5.24 1993/01/23 16:29:58 bostic Exp $ (Berkeley) $Date: 1993/01/23 16:29:58 $";
+static char sccsid[] = "$Id: cut.c,v 5.25 1993/01/30 17:24:56 bostic Exp $ (Berkeley) $Date: 1993/01/30 17:24:56 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -77,6 +77,7 @@ cut(ep, buffer, fm, tm, lmode)
 			if (cutline(ep, lno, 0, 0, &tp))
 				goto mem;
 			TEXTAPPEND(cb, tp);
+			cb->len += tp->len;
 		}
 		cb->flags |= CB_LMODE;
 		return (0);
@@ -88,11 +89,13 @@ cut(ep, buffer, fm, tm, lmode)
 		goto mem;
 
 	TEXTAPPEND(cb, tp);
+	cb->len += tp->len;
 
 	for (lno = fm->lno; ++lno < tm->lno;) {
 		if (cutline(ep, lno, 0, 0, &tp))
 			goto mem;
 		TEXTAPPEND(cb, tp);
+		cb->len += tp->len;
 	}
 
 	if (tm->lno > fm->lno && tm->cno > 0) {
@@ -105,6 +108,7 @@ mem:			if (append)
 			return (1);
 		}
 		TEXTAPPEND(cb, tp);
+		cb->len += tp->len;
 	}
 	return (0);
 }
