@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_cscope.c,v 10.11 1996/08/10 17:16:15 bostic Exp $ (Berkeley) $Date: 1996/08/10 17:16:15 $";
+static const char sccsid[] = "$Id: ex_cscope.c,v 10.12 1996/08/11 16:30:31 bostic Exp $ (Berkeley) $Date: 1996/08/11 16:30:31 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -159,7 +159,7 @@ start_cscopes(sp, cmdp)
 	EXCMD *cmdp;
 {
 	size_t blen, len;
-	char *bp, *cscopes, *p;
+	char *bp, *cscopes, *p, *t;
 
 	/*
 	 * EXTENSION #1:
@@ -179,9 +179,11 @@ start_cscopes(sp, cmdp)
 	GET_SPACE_RET(sp, bp, blen, len);
 	memcpy(bp, cscopes, len + 1);
 
-	for (cscopes = bp; (p = strsep(&bp, "\t ")) != NULL;)
+	for (cscopes = t = bp; (p = strsep(&t, "\t :")) != NULL;)
 		if (*p != '\0')
 			(void)cscope_add(sp, cmdp, p);
+
+	FREE_SPACE(sp, bp, blen);
 	return (0);
 }
 
@@ -199,32 +201,26 @@ cscope_add(sp, cmdp, dname)
 	EX_PRIVATE *exp;
 	CSC *csc;
 	size_t len;
+	int cur_argc;
 	char *dbname, path[MAXPATHLEN];
 
 	exp = EXP(sp);
 
+	/*
+	 *  0 additional args: usage.
+	 *  1 additional args: matched a file.
+	 * >1 additional args: object, too many args.
+	 */
+	cur_argc = cmdp->argc;
 	if (argv_exp2(sp, cmdp, dname, strlen(dname)))
 		return (1);
-	/*
-	 *  0 args: impossible.
-	 *  1 args: usage.
-	 *  2 args: matched a file.
-	 * >2 args: object, too many args.
-	 *
-	 * The 1 args case depends on the argv_sexp() function refusing
-	 * to return success without at least one non-blank character.
-	 */
-	switch (cmdp->argc) {
-	case 0:
-		abort();
-		/* NOTREACHED */
-	case 1:
+	if (cmdp->argc == cur_argc) {
 		(void)csc_help(sp, "add");
 		return (1);
-	case 2:
-		dname = cmdp->argv[1]->bp;
-		break;
-	default:
+	}
+	if (cmdp->argc == cur_argc + 1)
+		dname = cmdp->argv[cur_argc]->bp;
+	else {
 		ex_emsg(sp, dname, EXM_FILECOUNT);
 		return (1);
 	}
