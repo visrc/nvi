@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 5.7 1992/10/24 14:21:30 bostic Exp $ (Berkeley) $Date: 1992/10/24 14:21:30 $
+ *	$Id: screen.h,v 5.8 1992/10/26 17:44:50 bostic Exp $ (Berkeley) $Date: 1992/10/26 17:44:50 $
  */
 
 /* 
@@ -45,10 +45,10 @@
 
 extern int needexerase;
 
-#define	BOTLINE(ep)	(ep->otop + ep->lines - 2)
-#define	COLSIZE(ep)	(ISSET(O_NUMBER) ? ep->cols - 9 : ep->cols - 1)
-#define	HALFSCREEN(ep)	((ep->lines - 1) / 2)
-#define	SCREENSIZE(ep)	(ep->lines - 1)
+#define	BOTLINE(ep, l)	((l) + (ep)->lines - 2)
+#define	COLSIZE(ep)	(ISSET(O_NUMBER) ? (ep)->cols - 9 : (ep)->cols - 1)
+#define	HALFSCREEN(ep)	(((ep)->lines - 1) / 2)
+#define	SCREENSIZE(ep)	((ep)->lines - 1)
 
 #define	MOVE(lno, cno) {						\
 	if (move(lno, cno) == ERR) {					\
