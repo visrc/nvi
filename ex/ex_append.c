@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 8.14 1994/04/10 14:50:50 bostic Exp $ (Berkeley) $Date: 1994/04/10 14:50:50 $";
+static char sccsid[] = "$Id: ex_append.c,v 8.15 1994/04/11 10:50:58 bostic Exp $ (Berkeley) $Date: 1994/04/11 10:50:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -17,6 +17,7 @@ static char sccsid[] = "$Id: ex_append.c,v 8.14 1994/04/10 14:50:50 bostic Exp $
 #include <limits.h>
 #include <signal.h>
 #include <stdio.h>
+#include <string.h>
 #include <termios.h>
 
 #include "compat.h"
@@ -81,34 +82,19 @@ aci(sp, ep, cmdp, cmd)
 	MARK m;
 	TEXTH *sv_tiqp, tiq;
 	TEXT *tp;
-	recno_t cnt, lastlno;
+	recno_t cnt;
 	u_int flags;
-	int rval, aiset;
+	int rval;
 
-	/*
-	 * The ! flag turns off autoindent for append, change and
-	 * insert.
-	 */
-	if (F_ISSET(cmdp, E_FORCE)) {
-		aiset = O_ISSET(sp, O_AUTOINDENT);
-		O_CLR(sp, O_AUTOINDENT);
-	} else
-		aiset = 0;
-
-	/*
-	 * If doing a change, replace lines as long as possible.
-	 * Then, append more lines or delete remaining lines.
-	 * Inserts are the same as appends to the previous line.
-	 */
 	rval = 0;
-	m = cmdp->addr1;
-	if (cmd == INSERT) {
-		--m.lno;
-		cmd = APPEND;
-	}
 
-	/* Set input flags. */
-	LF_INIT(TXT_CR | TXT_NLECHO);
+	/*
+	 * Set input flags; the ! flag turns off autoindent for append,
+	 * change and insert.
+	 */
+	LF_INIT(TXT_DOTTERM | TXT_NLECHO);
+	if (!F_ISSET(cmdp, E_FORCE) && O_ISSET(sp, O_AUTOINDENT))
+		LF_SET(TXT_AUTOINDENT);
 	if (O_ISSET(sp, O_BEAUTIFY))
 		LF_SET(TXT_BEAUTIFY);
 
@@ -116,32 +102,46 @@ aci(sp, ep, cmdp, cmd)
 	F_SET(sp, S_INTERRUPTIBLE);
 
 	/*
-	 * If we're called by vi, the standard TEXTH structure (sp->tiqp) may
-	 * already be in use, e.g. ":append|s/abc/ABC/" doesn't work because
-	 * we're only halfway through the line when the append code fires.
-	 * Use a local structure instead.
+	 * If this code is called by vi, the screen TEXTH structure (sp->tiqp)
+	 * may already be in use, e.g. ":append|s/abc/ABC/" would fail as we're
+	 * only halfway through the line when the append code fires.  Use the
+	 * local structure instead.
 	 */
-	memset(tiq, 0, sizeof(TEXTH));
-	CIRCLEQ_INIT(&tiq);
-	sv_tiqp = sp->tiqp;
-	sp->tiqp = &tiq;
+	if (IN_VI_MODE(sp)) {
+		memset(&tiq, 0, sizeof(TEXTH));
+		CIRCLEQ_INIT(&tiq);
+		sv_tiqp = sp->tiqp;
+		sp->tiqp = &tiq;
+	}
 
+	switch (sp->s_get(sp, ep, sp->tiqp, 0, flags)) {
+	case INP_OK:
+		break;
+	case INP_EOF:
+	case INP_ERR:
+		goto err;
+	}
+	
+	/*
+	 * If doing a change, replace lines for as long as possible.
+	 * Then, append more lines or delete remaining lines.  Inserts
+	 * are the same as appends to the previous line.
+	 */
+	m = cmdp->addr1;
+	if (cmd == INSERT) {
+		--m.lno;
+		cmd = APPEND;
+	}
+
+	tp = sp->tiqp->cqh_first;
 	if (cmd == CHANGE)
-		for (;;) {
+		for (;; tp = tp->q.cqe_next) {
 			if (m.lno > cmdp->addr2.lno) {
 				cmd = APPEND;
 				--m.lno;
 				break;
 			}
-			switch (sp->s_get(sp, ep, &tiq, 0, flags)) {
-			case INP_OK:
-				break;
-			case INP_EOF:
-			case INP_ERR:
-				goto err;
-			}
-			tp = tiq.cqh_first;
-			if (tp->len == 1 && tp->lb[0] == '.') {
+			if (tp == (TEXT *)sp->tiqp) {
 				for (cnt =
 				    (cmdp->addr2.lno - m.lno) + 1; cnt--;)
 					if (file_dline(sp, ep, m.lno))
@@ -150,43 +150,21 @@ aci(sp, ep, cmdp, cmd)
 			}
 			if (file_sline(sp, ep, m.lno, tp->lb, tp->len))
 				goto err;
-			lastlno = m.lno++;
-			if (F_ISSET(sp, S_INTERRUPTED))
-				goto done;
-			if (sp->s_refresh(sp, ep))
-				goto err;
+			sp->lno = m.lno++;
 		}
 
 	if (cmd == APPEND)
-		for (;;) {
-			switch (sp->s_get(sp, ep, &tiq, 0, flags)) {
-			case INP_OK:
-				break;
-			case INP_EOF:
-			case INP_ERR:
-				goto err;
-			}
-			tp = tiq.cqh_first;
-			if (tp->len == 1 && tp->lb[0] == '.')
-				break;
-			if (file_aline(sp, ep, 1, m.lno, tp->lb, tp->len))
-				goto err;
-			lastlno = ++m.lno;
-			if (F_ISSET(sp, S_INTERRUPTED))
+		for (; tp != (TEXT *)sp->tiqp; tp = tp->q.cqe_next) {
+			if (file_aline(sp, ep, 1, m.lno, tp->lb, tp->len)) {
+err:				rval = 1;
 				goto done;
-			if (sp->s_refresh(sp, ep))
-				goto err;
+			}
+			sp->lno = ++m.lno;
 		}
-	if (0)
-err:		rval = 1;
 
-done:	if (aiset)
-		O_SET(sp, O_AUTOINDENT);
-
-	/* Set the line number to the last line successfully modified. */
-	sp->lno = lastlno;
-
-	sp->tiqp = sv_tiqp;
-	text_lfree(&tiq);
+done:	if (IN_VI_MODE(sp)) {
+		sp->tiqp = sv_tiqp;
+		text_lfree(&tiq);
+	}
 	return (rval);
 }
