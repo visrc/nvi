@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_paragraph.c,v 8.2 1993/06/28 13:21:56 bostic Exp $ (Berkeley) $Date: 1993/06/28 13:21:56 $";
+static char sccsid[] = "$Id: v_paragraph.c,v 8.3 1993/11/13 18:01:41 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:01:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -65,7 +65,7 @@ v_paragraphf(sp, ep, vp, fm, tm, rp)
 		switch (pstate) {
 		case P_INTEXT:
 			if (p[0] == '.' && len >= 2)
-				for (lp = sp->paragraph; *lp; lp += 2)
+				for (lp = VIP(sp)->paragraph; *lp; lp += 2)
 					if (lp[0] == p[1] &&
 					    (lp[1] == ' ' || lp[1] == p[2]) &&
 					    !--cnt)
@@ -177,7 +177,7 @@ v_paragraphb(sp, ep, vp, fm, tm, rp)
 		switch (pstate) {
 		case P_INTEXT:
 			if (p[0] == '.' && len >= 2)
-				for (lp = sp->paragraph; *lp; lp += 2)
+				for (lp = VIP(sp)->paragraph; *lp; lp += 2)
 					if (lp[0] == p[1] &&
 					    (lp[1] == ' ' || lp[1] == p[2]) &&
 					    !--cnt)
@@ -206,5 +206,45 @@ found:					rp->lno = lno;
 	/* SOF is a movement sink. */
 sof:	rp->lno = 1;
 	rp->cno = 0;
+	return (0);
+}
+
+/*
+ * v_buildparagraph --
+ *	Build the paragraph command search pattern.
+ */
+int
+v_buildparagraph(sp)
+	SCR *sp;
+{
+	VI_PRIVATE *vip;
+	size_t p_len, s_len;
+	char *p, *p_p, *s_p;
+
+	/*
+	 * The vi paragraph command searches for either a paragraph or
+	 * section option macro.
+	 */
+	p_len = (p_p = O_STR(sp, O_PARAGRAPHS)) == NULL ? 0 : strlen(p_p);
+	s_len = (s_p = O_STR(sp, O_SECTIONS)) == NULL ? 0 : strlen(s_p);
+
+	if (p_len == 0 && s_len == 0)
+		return (0);
+
+	if ((p = malloc(p_len + s_len + 1)) == NULL) {
+		msgq(sp, M_SYSERR, NULL);
+		return (1);
+	}
+
+	vip = VIP(sp);
+	if (vip->paragraph != NULL)
+		FREE(vip->paragraph, vip->paragraph_len);
+
+	if (p_p != NULL)
+		memmove(p, p_p, p_len + 1);
+	if (s_p != NULL)
+		memmove(p + p_len, s_p, s_len + 1);
+	vip->paragraph = p;
+	vip->paragraph_len = p_len + s_len + 1;
 	return (0);
 }

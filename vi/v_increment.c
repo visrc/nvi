@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_increment.c,v 8.4 1993/08/25 16:48:43 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:48:43 $";
+static char sccsid[] = "$Id: v_increment.c,v 8.5 1993/11/13 18:01:35 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:01:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -42,25 +42,28 @@ v_increment(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
+	VI_PRIVATE *vip;
 	u_long ulval;
 	long lval;
 	size_t blen, len, nlen;
 	int rval;
 	char *bp, *ntype, *p, nbuf[100];
 
+	vip = VIP(sp);
+
 	/* Do repeat operations. */
 	if (vp->character == '#')
-		vp->character = sp->inc_lastch;
+		vp->character = vip->inc_lastch;
 
 	/* Get new value. */
 	if (F_ISSET(vp, VC_C1SET))
-		sp->inc_lastval = vp->count;
+		vip->inc_lastval = vp->count;
 
 	if (vp->character != '+' && vp->character != '-') {
 		msgq(sp, M_ERR, "usage: %s.", vp->kp->usage);
 		return (1);
 	}
-	sp->inc_lastch = vp->character;
+	vip->inc_lastch = vp->character;
 
 	/* Figure out the resulting type and number. */
 	p = vp->keyword;
@@ -68,14 +71,14 @@ v_increment(sp, ep, vp, fm, tm, rp)
 	if (len > 1 && p[0] == '0') {
 		if (vp->character == '+') {
 			ulval = strtoul(vp->keyword, NULL, 0);
-			if (ULONG_MAX - ulval < sp->inc_lastval)
+			if (ULONG_MAX - ulval < vip->inc_lastval)
 				goto overflow;
-			ulval += sp->inc_lastval;
+			ulval += vip->inc_lastval;
 		} else {
 			ulval = strtoul(vp->keyword, NULL, 0);
-			if (ulval < sp->inc_lastval)
+			if (ulval < vip->inc_lastval)
 				goto underflow;
-			ulval -= sp->inc_lastval;
+			ulval -= vip->inc_lastval;
 		}
 		ntype = fmt[OCTAL];
 		if (len > 2)
@@ -87,18 +90,18 @@ v_increment(sp, ep, vp, fm, tm, rp)
 	} else {
 		if (vp->character == '+') {
 			lval = strtol(vp->keyword, NULL, 0);
-			if (lval > 0 && LONG_MAX - lval < sp->inc_lastval) {
+			if (lval > 0 && LONG_MAX - lval < vip->inc_lastval) {
 overflow:			msgq(sp, M_ERR, "Resulting number too large.");
 				return (1);
 			}
-			lval += sp->inc_lastval;
+			lval += vip->inc_lastval;
 		} else {
 			lval = strtol(vp->keyword, NULL, 0);
-			if (lval < 0 && -(LONG_MIN - lval) < sp->inc_lastval) {
+			if (lval < 0 && -(LONG_MIN - lval) < vip->inc_lastval) {
 underflow:			msgq(sp, M_ERR, "Resulting number too small.");
 				return (1);
 			}
-			lval -= sp->inc_lastval;
+			lval -= vip->inc_lastval;
 		}
 		ntype = lval != 0 &&
 		    (*vp->keyword == '+' || *vp->keyword == '-') ?

@@ -4,12 +4,12 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 8.13 1993/11/04 16:17:29 bostic Exp $ (Berkeley) $Date: 1993/11/04 16:17:29 $
+ *	$Id: vi.h,v 8.14 1993/11/13 18:01:44 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:01:44 $
  */
 
 /* Structure passed around to functions implementing vi commands. */
 typedef struct _vicmdarg {
-				/* ZERO OUT. */
+#define	vp_startzero	buffer	/* START ZERO OUT. */
 	CHAR_T	buffer;		/* Buffer. */
 	CHAR_T	character;	/* Character. */
 	u_long	count;		/* Count. */
@@ -50,18 +50,15 @@ typedef struct _vicmdarg {
 #define	VC_ISDOT	0x0200	/* Command was the dot command. */
 
 	u_int flags;
-				/* DO NOT ZERO OUT. */
+
+#define	vp_endzero	keyword	/* END ZERO OUT. */
 	char *keyword;		/* Keyword. */
 	size_t kbuflen;		/* Keyword buffer length. */
 } VICMDARG;
 
-#define	vp_startzero	buffer
-#define	vp_endzero	keyword
-
 /* Vi command structure. */
 typedef struct _vikeys {	/* Underlying function. */
-	int (*func) __P((SCR *, EXF *,
-	    VICMDARG *, MARK *, MARK *, MARK *));
+	int (*func) __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
 
 #define	V_DONTUSE1	0x000001	/* VC_C */
 #define	V_DONTUSE2	0x000002	/* VC_D */
@@ -88,7 +85,6 @@ typedef struct _vikeys {	/* Underlying function. */
 	char *usage;		/* Usage line. */
 	char *help;		/* Help line. */
 } VIKEYS;
-
 #define	MAXVIKEY	126	/* List of vi commands. */
 extern VIKEYS const vikeys[MAXVIKEY + 1];
 
@@ -118,16 +114,26 @@ int	cs_prev __P((SCR *, EXF *, VCS *));
 
 /* Vi private, per-screen memory. */
 typedef struct _vi_private {
-	VICMDARG	sdot;		/* Vi: saved dot, motion command. */
-	VICMDARG	sdotmotion;
-	CHAR_T	rlast;			/* Vi: saved 'r' command character. */
+	VICMDARG sdot;			/* Saved dot, motion command. */
+	VICMDARG sdotmotion;
+
+	CHAR_T	 rlast;			/* Last 'r' command character. */
+
+	char	*rep;			/* Input replay buffer. */
+	size_t	 rep_len;		/* Input replay buffer length. */
+
+	CHAR_T	 inc_lastch;		/* Last increment character. */
+	long	 inc_lastval;		/* Last increment value. */
+
+	char	*paragraph;		/* Paragraph search list. */
+	size_t	 paragraph_len;		/* Paragraph search list length. */
 } VI_PRIVATE;
 
-#define	VP(sp)	((VI_PRIVATE *)((sp)->vi_private))
+#define	VIP(sp)	((VI_PRIVATE *)((sp)->vi_private))
 
 /* Vi function prototypes. */
 int	txt_auto __P((SCR *, EXF *, recno_t, TEXT *, TEXT *));
-int	vi __P((struct _scr *, struct _exf *));
+int	v_buildparagraph __P((SCR *));
 int	v_comment __P((SCR *, EXF *));
 int	v_end __P((SCR *));
 void	v_eof __P((SCR *, EXF *, MARK *));
@@ -136,12 +142,16 @@ int	v_exwrite __P((void *, const char *, int));
 int	v_init __P((SCR *, EXF *));
 int	v_isempty __P((char *, size_t));
 int	v_msgflush __P((SCR *));
-int	v_ntext __P((SCR *, EXF *, HDR *,
-	    MARK *, char *, size_t, MARK *, int, recno_t, u_int));
+int	v_ntext __P((SCR *, EXF *,
+	    HDR *, MARK *, char *, size_t, MARK *, int, recno_t, u_int));
+int	v_optchange __P((SCR *, int));
+int	v_screen_copy __P((SCR *, SCR *));
+int	v_screen_end __P((SCR *));
 void	v_sof __P((SCR *, MARK *));
+int	vi __P((SCR *, EXF *));
 
 #define	VIPROTO(type, name)						\
-	type	name __P((SCR *, EXF *,	VICMDARG *, MARK *, MARK *, MARK *))
+	type name __P((SCR *, EXF *,	VICMDARG *, MARK *, MARK *, MARK *))
 
 VIPROTO(int, v_again);
 VIPROTO(int, v_at);

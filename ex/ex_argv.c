@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 8.13 1993/11/03 17:18:45 bostic Exp $ (Berkeley) $Date: 1993/11/03 17:18:45 $";
+static char sccsid[] = "$Id: ex_argv.c,v 8.14 1993/11/13 18:02:18 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:02:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,27 +26,17 @@ static int argv_fexp __P((SCR *, EXCMDARG *,
 	       char *, char *, size_t *, char **, size_t *, int));
 static int argv_sexp __P((SCR *, char *, size_t, size_t *));
 
-/* Structure for building argc/argv vector of ex arguments. */
-typedef struct _args {
-	char	*bp;			/* Buffer. */
-	size_t	 len;			/* Buffer length. */
-
-#define	A_ALLOCATED	0x01		/* If allocated space. */
-	u_char	 flags;
-} ARGS;
-
-#define	ARGP	((ARGS *)(sp->args))
 #define	ARGALLOC(off, len)						\
-	if (ARGP[off].len < len) {					\
-		if ((ARGP[off].bp =					\
-		   realloc(ARGP[off].bp, len)) == NULL) {		\
-			ARGP[off].bp = NULL;				\
-			ARGP[off].len = 0;				\
-			msgq(sp, M_ERR, "Error: %s.", strerror(errno));	\
+	if (exp->args[off].len < len) {					\
+		if ((exp->args[off].bp =				\
+		   realloc(exp->args[off].bp, len)) == NULL) {		\
+			exp->args[off].bp = NULL;			\
+			exp->args[off].len = 0;				\
+			msgq(sp, M_SYSERR, NULL);			\
 			return (1);					\
 		}							\
-		ARGP[off].len = len;					\
-		ARGP[off].flags |= A_ALLOCATED;				\
+		exp->args[off].len = len;				\
+		exp->args[off].flags |= A_ALLOCATED;			\
 	}
 
 /*
@@ -61,26 +51,28 @@ argv_exp1(sp, ep, cmdp, s, is_bang)
 	char *s;
 	int is_bang;
 {
+	EX_PRIVATE *exp;
 	size_t blen, len;
 	char *bp;
 
 	GET_SPACE(sp, bp, blen, 512);
 
 	len = 0;
+	exp = EXP(sp);
 	if (argv_fexp(sp, cmdp, s, bp, &len, &bp, &blen, is_bang) ||
-	    sp->argscnt < 2 && argv_allocate(sp, 0)) {
+	    exp->argscnt < 2 && argv_allocate(sp, 0)) {
 		FREE_SPACE(sp, bp, blen);
 		return (1);
 	}
 
 	ARGALLOC(0, len);
-	memmove(ARGP[0].bp, bp, len);
-	sp->argv[0] = ARGP[0].bp;
-	sp->argv[1] = NULL;
+	memmove(exp->args[0].bp, bp, len);
+	exp->argv[0] = exp->args[0].bp;
+	exp->argv[1] = NULL;
 
 	FREE_SPACE(sp, bp, blen);
 
-	cmdp->argv = sp->argv;
+	cmdp->argv = exp->argv;
 	cmdp->argc = 1;
 	return (0);
 }
@@ -159,10 +151,12 @@ argv_exp3(sp, ep, cmdp, p)
 	EXCMDARG *cmdp;
 	char *p;
 {
+	EX_PRIVATE *exp;
 	size_t len;
 	int done, off;
 	char *ap, *t;
 
+	exp = EXP(sp);
 	for (done = off = 0;; ++p) {
 		/* Skip any leading whitespace. */
 		for (; isblank(p[0]); ++p);
@@ -190,20 +184,20 @@ argv_exp3(sp, ep, cmdp, p)
 		 * Allocate more pointer space if necessary, making
 		 * sure there's space for a trailing NULL pointer.
 		 */
-		if (off + 2 >= sp->argscnt - 1 && argv_allocate(sp, off))
+		if (off + 2 >= exp->argscnt - 1 && argv_allocate(sp, off))
 			return (1);
 
 		/* Allocate more argument space if necessary. */
 		len = (p - ap) + 1;
 		ARGALLOC(off, len);
-		sp->argv[off] = ARGP[off].bp;
+		exp->argv[off] = exp->args[off].bp;
 
 		/*
 		 * QUOTING NOTE:
 		 *
 		 * Copy the argument into place, losing quote chars.
 		 */
-		for (t = ARGP[off].bp; len; *t++ = *ap++, --len)
+		for (t = exp->args[off].bp; len; *t++ = *ap++, --len)
 			if (sp->special[*ap] == K_VLNEXT && len) {
 				++ap;
 				--len;
@@ -213,13 +207,13 @@ argv_exp3(sp, ep, cmdp, p)
 		if (done)
 			break;
 	}
-	sp->argv[off] = NULL;
-	cmdp->argv = sp->argv;
+	exp->argv[off] = NULL;
+	cmdp->argv = exp->argv;
 	cmdp->argc = off;
 
 #if defined(DEBUG) && 0
 	for (cnt = 0; cnt < off; ++cnt)
-		TRACE(sp, "arg %d: {%s}\n", cnt, sp->argv[cnt]);
+		TRACE(sp, "arg %d: {%s}\n", cnt, exp->argv[cnt]);
 #endif
 	return (0);
 }
@@ -236,6 +230,7 @@ argv_fexp(sp, cmdp, s, p, lenp, bpp, blenp, is_bang)
 	size_t *lenp, *blenp;
 	int is_bang;
 {
+	EX_PRIVATE *exp;
 	char *bp, *t;
 	size_t blen, len, tlen;
 
@@ -245,14 +240,15 @@ argv_fexp(sp, cmdp, s, p, lenp, bpp, blenp, is_bang)
 		case '!':
 			if (!is_bang)
 				goto ins_ch;
-			if (sp->lastbcomm == NULL) {
+			exp = EXP(sp);
+			if (exp->lastbcomm == NULL) {
 				msgq(sp, M_ERR,
 				    "No previous command to replace \"!\".");
 				return (1);
 			}
-			len += tlen = strlen(sp->lastbcomm);
+			len += tlen = strlen(exp->lastbcomm);
 			ADD_SPACE(sp, bp, blen, len);
-			memmove(p, sp->lastbcomm, tlen);
+			memmove(p, exp->lastbcomm, tlen);
 			p += tlen;
 			F_SET(cmdp, E_MODIFY);
 			break;
@@ -323,22 +319,24 @@ argv_allocate(sp, off)
 	SCR *sp;
 	int off;
 {
+	EX_PRIVATE *exp;
 	int cnt;
 
 #define	INCREMENT	20
-	cnt = sp->argscnt + INCREMENT;
-	if ((ARGP = realloc(ARGP, cnt * sizeof(ARGS))) == NULL) {
+	exp = EXP(sp);
+	cnt = exp->argscnt + INCREMENT;
+	if ((exp->args = realloc(exp->args, cnt * sizeof(ARGS))) == NULL) {
 		(void)argv_free(sp);
 		goto mem;
 	}
-	if ((sp->argv =
-	    realloc(sp->argv, cnt * sizeof(char *))) == NULL) {
+	if ((exp->argv =
+	    realloc(exp->argv, cnt * sizeof(char *))) == NULL) {
 		(void)argv_free(sp);
-mem:		msgq(sp, M_ERR, "Error: %s.", strerror(errno));
+mem:		msgq(sp, M_SYSERR, NULL);
 		return (1);
 	}
-	memset(&ARGP[off], 0, INCREMENT * sizeof(ARGS));
-	sp->argscnt = cnt;
+	memset(&exp->args[off], 0, INCREMENT * sizeof(ARGS));
+	exp->argscnt = cnt;
 	return (0);
 }
 
@@ -350,17 +348,19 @@ int
 argv_free(sp)
 	SCR *sp;
 {
+	EX_PRIVATE *exp;
 	int off;
 
-	if (ARGP != NULL) {
-		for (off = 0; off < sp->argscnt; ++off)
-			if (F_ISSET(&ARGP[off], A_ALLOCATED))
-				FREE(ARGP[off].bp, ARGP[off].len);
-		FREE(ARGP, sp->argscnt * sizeof(ARGS *));
+	exp = EXP(sp);
+	if (exp->args != NULL) {
+		for (off = 0; off < exp->argscnt; ++off)
+			if (F_ISSET(&exp->args[off], A_ALLOCATED))
+				FREE(exp->args[off].bp, exp->args[off].len);
+		FREE(exp->args, exp->argscnt * sizeof(ARGS *));
 	}
-	if (sp->argv != NULL)
-		FREE(sp->argv, sp->argscnt * sizeof(char *));
-	sp->argscnt = 0;
+	if (exp->argv != NULL)
+		FREE(exp->argv, exp->argscnt * sizeof(char *));
+	exp->argscnt = 0;
 	return (0);
 }
 
@@ -395,11 +395,11 @@ argv_sexp(sp, bp, blen, lenp)
 	 * from output[0], and the utility writes to output[1].
 	 */
 	if (pipe(output) < 0) {
-		msgq(sp, M_ERR, "Error: pipe: %s", strerror(errno));
+		msgq(sp, M_SYSERR, "pipe");
 		return (1);
 	}
 	if ((ifp = fdopen(output[0], "r")) == NULL) {
-		msgq(sp, M_ERR, "Error: fdopen: %s", strerror(errno));
+		msgq(sp, M_SYSERR, "fdopen");
 		goto err;
 	}
 		
@@ -409,7 +409,7 @@ argv_sexp(sp, bp, blen, lenp)
 	 */
 	switch (pid = vfork()) {
 	case -1:			/* Error. */
-		msgq(sp, M_ERR, "Error: vfork: %s", strerror(errno));
+		msgq(sp, M_SYSERR, "vfork");
 err:		(void)close(output[0]);
 		(void)close(output[1]);
 		return (1);

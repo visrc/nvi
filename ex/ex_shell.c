@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 8.11 1993/11/12 17:48:41 bostic Exp $ (Berkeley) $Date: 1993/11/12 17:48:41 $";
+static char sccsid[] = "$Id: ex_shell.c,v 8.12 1993/11/13 18:02:27 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:02:27 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -72,15 +72,13 @@ ex_exec_proc(sp, shell, cmd, p1, p2)
 		act.sa_flags = 0;
 		if (isig = !sigaction(SIGINT, &act, &oact)) {
 			if (tcgetattr(STDIN_FILENO, &term)) {
-				msgq(sp, M_ERR,
-				    "Error: tcgetattr: %s", strerror(errno));
+				msgq(sp, M_SYSERR, "tcgetattr");
 				rval = 1;
 				goto ret;
 			}
 			if (tcsetattr(STDIN_FILENO,
 			    TCSADRAIN, &sp->gp->original_termios)) {
-				msgq(sp, M_ERR,
-				    "Error: tcsetattr: %s", strerror(errno));
+				msgq(sp, M_SYSERR, "tcsetattr");
 				rval = 1;
 				goto ret;
 			}
@@ -96,7 +94,7 @@ ex_exec_proc(sp, shell, cmd, p1, p2)
 
 	switch (pid = vfork()) {
 	case -1:			/* Error. */
-		msgq(sp, M_ERR, "vfork: %s", strerror(errno));
+		msgq(sp, M_SYSERR, "vfork");
 		rval = 1;
 		goto ret;
 	case 0:				/* Utility. */
@@ -123,12 +121,11 @@ ex_exec_proc(sp, shell, cmd, p1, p2)
 	/* Restore ex/vi terminal settings. */
 ret:	if (F_ISSET(sp->gp, G_ISFROMTTY) && isig) {
 		if (sigaction(SIGINT, &oact, NULL)) {
-			msgq(sp, M_ERR, "Error: signal: %s", strerror(errno));
+			msgq(sp, M_SYSERR, "signal");
 			rval = 1;
 		}
 		if (tcsetattr(STDIN_FILENO, TCSANOW | TCSASOFT, &term)) {
-			msgq(sp, M_ERR,
-			    "Error: tcsetattr: %s", strerror(errno));
+			msgq(sp, M_SYSERR, "tcgetattr");
 			rval = 1;
 		}
 	}

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.17 1993/10/31 17:17:35 bostic Exp $ (Berkeley) $Date: 1993/10/31 17:17:35 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.18 1993/11/13 18:02:28 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:02:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -194,7 +194,7 @@ tilde:				++p;
 		if (sp->repl != NULL)
 			FREE(sp->repl, sp->repl_len);
 		if ((sp->repl = malloc(len)) == NULL) {
-			msgq(sp, M_ERR, "Error: %s.", strerror(errno));
+			msgq(sp, M_SYSERR, NULL);
 			FREE_SPACE(sp, bp, blen);
 			return (1);
 		}
@@ -259,8 +259,7 @@ ex_subtilde(sp, ep, cmdp)
 		sp->newl_len += 25;					\
 		if ((sp->newl = realloc(sp->newl,			\
 		    sp->newl_len * sizeof(size_t))) == NULL) {		\
-			msgq(sp, M_ERR,					\
-			    "Error: %s", strerror(errno));		\
+			msgq(sp, M_SYSERR, NULL);			\
 			sp->newl_len = 0;				\
 			return (1);					\
 		}							\
@@ -271,8 +270,7 @@ ex_subtilde(sp, ep, cmdp)
 	if (lbclen + (len) > lblen) {					\
 		lblen += MAX(lbclen + (len), 256);			\
 		if ((lb = realloc(lb, lblen)) == NULL) {		\
-			msgq(sp, M_ERR,					\
-			    "Error: %s", strerror(errno));		\
+			msgq(sp, M_SYSERR, NULL);			\
 			lbclen = 0;					\
 			return (1);					\
 		}							\
@@ -285,8 +283,7 @@ ex_subtilde(sp, ep, cmdp)
 	if (lbclen + (len) > lblen) {					\
 		lblen += MAX(lbclen + (len), 256);			\
 		if ((lb = realloc(lb, lblen)) == NULL) {		\
-			msgq(sp, M_ERR,					\
-			    "Error: %s", strerror(errno));		\
+			msgq(sp, M_SYSERR, NULL);			\
 			lbclen = 0;					\
 			return (1);					\
 		}							\
@@ -350,8 +347,7 @@ substitute(sp, ep, cmdp, s, re, flags)
 				else if (lno == LONG_MIN)
 					msgq(sp, M_ERR, "Count underflow.");
 				else
-					msgq(sp, M_ERR,
-					    "Error: %s.", strerror(errno));
+					msgq(sp, M_SYSERR, NULL);
 				return (1);
 			}
 			/*
@@ -398,7 +394,7 @@ usage:		msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
 		return (1);
 	}
 
-	if (F_ISSET(sp, S_MODE_VI) && cflag && (lflag || nflag || pflag)) {
+	if (IN_VI_MODE(sp) && cflag && (lflag || nflag || pflag)) {
 		msgq(sp, M_ERR,
 	"The #, l and p flags may not be combined with the c flag in vi mode.");
 		return (1);
@@ -874,7 +870,7 @@ checkmatchsize(sp, re)
 		sp->matchsize = re->re_nsub + 1;
 		if ((sp->match = realloc(sp->match,
 		    sp->matchsize * sizeof(regmatch_t))) == NULL) {
-			msgq(sp, M_ERR, "Error: %s", strerror(errno));
+			msgq(sp, M_SYSERR, NULL);
 			sp->matchsize = 0;
 			return (1);
 		}

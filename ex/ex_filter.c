@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 8.22 1993/11/03 17:49:01 bostic Exp $ (Berkeley) $Date: 1993/11/03 17:49:01 $";
+static char sccsid[] = "$Id: ex_filter.c,v 8.23 1993/11/13 18:02:35 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:02:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -76,22 +76,22 @@ filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
 		}
 	} else {
 		if (pipe(input) < 0) {
-			msgq(sp, M_ERR, "Error: pipe: %s", strerror(errno));
+			msgq(sp, M_SYSERR, "pipe");
 			goto err;
 		}
 		if ((ifp = fdopen(input[1], "w")) == NULL) {
-			msgq(sp, M_ERR, "Error: fdopen: %s", strerror(errno));
+			msgq(sp, M_SYSERR, "fdopen");
 			goto err;
 		}
 	}
 
 	/* Open up utility output pipe. */
 	if (pipe(output) < 0) {
-		msgq(sp, M_ERR, "Error: pipe: %s", strerror(errno));
+		msgq(sp, M_SYSERR, "pipe");
 		goto err;
 	}
 	if ((ofp = fdopen(output[0], "r")) == NULL) {
-		msgq(sp, M_ERR, "Error: fdopen: %s", strerror(errno));
+		msgq(sp, M_SYSERR, "fdopen");
 		goto err;
 	}
 
@@ -109,16 +109,14 @@ filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
 		act.sa_flags = 0;
 		if (isig = !sigaction(SIGINT, &act, &oact)) {
 			if (tcgetattr(STDIN_FILENO, &term)) {
-				msgq(sp, M_ERR,
-				    "Error: tcgetattr: %s", strerror(errno));
+				msgq(sp, M_SYSERR, "tcgetattr");
 				goto err;
 			}
 			nterm = term;
 			nterm.c_lflag |= ISIG;
 			if (tcsetattr(STDIN_FILENO,
 			    TCSANOW | TCSASOFT, &nterm)) {
-				msgq(sp, M_ERR,
-				    "Error: tcsetattr: %s", strerror(errno));
+				msgq(sp, M_SYSERR, "tcsetattr");
 				goto err;
 			}
 		}
@@ -127,7 +125,7 @@ filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
 	/* Fork off the utility process. */
 	switch (utility_pid = vfork()) {
 	case -1:			/* Error. */
-		msgq(sp, M_ERR, "Error: vfork: %s", strerror(errno));
+		msgq(sp, M_SYSERR, "vfork");
 err:		if (input[0] != -1)
 			(void)close(input[0]);
 		if (ifp != NULL)
@@ -237,7 +235,7 @@ err:		if (input[0] != -1)
 	switch (parent_writer_pid = fork()) {
 	case -1:			/* Error. */
 		rval = 1;
-		msgq(sp, M_ERR, "Error: fork: %s", strerror(errno));
+		msgq(sp, M_SYSERR, "fork");
 		(void)close(input[1]);
 		(void)close(output[0]);
 		break;
@@ -298,12 +296,11 @@ uwait:	rval |= proc_wait(sp, (long)utility_pid, cmd, 0);
 
 ret:	if (F_ISSET(sp->gp, G_ISFROMTTY) && isig) {
 		if (sigaction(SIGINT, &oact, NULL)) {
-			msgq(sp, M_ERR, "Error: signal: %s", strerror(errno));
+			msgq(sp, M_SYSERR, "signal");
 			rval = 1;
 		}
 		if (tcsetattr(STDIN_FILENO, TCSANOW | TCSASOFT, &term)) {
-			msgq(sp, M_ERR,
-			    "Error: tcsetattr: %s", strerror(errno));
+			msgq(sp, M_SYSERR, "tcsetattr");
 			rval = 1;
 		}
 	}
@@ -372,18 +369,20 @@ filter_ldisplay(sp, fp)
 	SCR *sp;
 	FILE *fp;
 {
+	EX_PRIVATE *exp;
 	size_t len;
 
+	exp = EXP(sp);
 	while (!ex_getline(sp, fp, &len)) {
-		(void)ex_printf(EXCOOKIE, "%.*s\n", (int)len, sp->ibp);
+		(void)ex_printf(EXCOOKIE, "%.*s\n", (int)len, exp->ibp);
 		if (ferror(sp->stdfp)) {
-			msgq(sp, M_ERR, "I/O error: %s", strerror(errno));
+			msgq(sp, M_SYSERR, NULL);
 			(void)fclose(fp);
 			return (1);
 		}
 	}
 	if (fclose(fp)) {
-		msgq(sp, M_ERR, "I/O error: %s", strerror(errno));
+		msgq(sp, M_SYSERR, NULL);
 		return (1);
 	}
 	return (0);

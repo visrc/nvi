@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.27 1993/11/12 16:44:57 bostic Exp $ (Berkeley) $Date: 1993/11/12 16:44:57 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.28 1993/11/13 18:01:18 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:01:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -86,27 +86,14 @@ svi_paint(sp, ep)
 	 *
 	 * Notice that a resize is requested, and set up everything so that
 	 * the file gets reinitialized.  Done here, instead of in the vi
-	 * loop because, there may be other initialization that other screens
+	 * loop because there may be other initialization that other screens
 	 * need to do.  The actual changing of the row/column values was done
 	 * by calling the ex options code which put them into the environment,
 	 * which is used by curses.  Stupid, but ugly.
 	 */
 	if (F_ISSET(sp, S_RESIZE)) {
-		/*
-		 * During initialization, S_RESIZE will be set, but screen_init
-		 * will have never been called.  We can't just have screen_end
-		 * protect itself, because when we finish the edit session it
-		 * gets called after the last SCR structure has been free'd, so
-		 * sp is almost certainly NULL.
-		 */
-		if (SVP(sp) != NULL) {
-			FREE(HMAP, sp->w_rows * sizeof(SMAP));
-			FREE(SVP(sp), sizeof(SVI_PRIVATE));
-			if (svi_screen_end(INFOLINE(sp)))
-				return (1);
-		}
-
-		if (svi_screen_init(sp))
+		/* Reinitialize curses. */
+		if (svi_curses_end(sp) || svi_curses_init(sp))
 			return (1);
 
 		/* Toss svi_screens() cached information. */

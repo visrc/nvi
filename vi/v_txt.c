@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.48 1993/11/11 11:03:45 bostic Exp $ (Berkeley) $Date: 1993/11/11 11:03:45 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.49 1993/11/13 18:01:37 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:01:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -269,14 +269,15 @@ newtp:		if ((tp = text_init(sp, p, len, len + 32)) == NULL)
 		 * consider the overwrite characters, but not worth fixing.
 		 */
 next_ch:	if (replay)
-			ch = sp->rep[rcol++];
+			ch = VIP(sp)->rep[rcol++];
 		else {
 			if (term_key(sp, &ch,
 			    flags & TXT_GETKEY_MASK) != INP_OK)
 				ERR;
 			if (LF_ISSET(TXT_RECORD)) {
-				TBINC(sp, sp->rep, sp->rep_len, rcol + 1);
-				sp->rep[rcol++] = ch;
+				TBINC(sp,
+				    VIP(sp)->rep, VIP(sp)->rep_len, rcol + 1);
+				VIP(sp)->rep[rcol++] = ch;
 			}
 		}
 		TBINC(sp, tp->lb, tp->lb_len, tp->len + 1);

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_visual.c,v 8.5 1993/10/03 15:23:42 bostic Exp $ (Berkeley) $Date: 1993/10/03 15:23:42 $";
+static char sccsid[] = "$Id: ex_visual.c,v 8.6 1993/11/13 18:02:32 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:02:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -89,8 +89,8 @@ ex_visual(sp, ep, cmdp)
 	}
 
 	/* Switch modes. */
-	F_CLR(sp, S_MODE_EX);
-	F_SET(sp, S_MODE_VI);
+	F_CLR(sp, S_SCREENS);
+	F_SET(sp, sp->saved_vi_mode);
 
 	return (0);
 }

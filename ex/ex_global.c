@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 8.19 1993/11/05 10:31:00 bostic Exp $ (Berkeley) $Date: 1993/11/05 10:31:00 $";
+static char sccsid[] = "$Id: ex_global.c,v 8.20 1993/11/13 18:02:23 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:02:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -175,16 +175,14 @@ global(sp, ep, cmdp, cmd)
 			F_CLR(sp, S_INTERRUPTED);
 			F_SET(sp, S_INTERRUPTIBLE);
 			if (tcgetattr(STDIN_FILENO, &term)) {
-				msgq(sp, M_ERR,
-				    "tcgetattr: %s", strerror(errno));
+				msgq(sp, M_SYSERR, "tcgetattr");
 				return (1);
 			}
 			nterm = term;
 			nterm.c_lflag |= ISIG;
 			if (tcsetattr(STDIN_FILENO,
 			    TCSANOW | TCSASOFT, &nterm)) {
-				msgq(sp, M_ERR,
-				    "tcsetattr: %s", strerror(errno));
+				msgq(sp, M_SYSERR, "tcsetattr");
 				return (1);
 			}
 		}
@@ -256,9 +254,9 @@ err:			rval = 1;
 
 	if (F_ISSET(sp->gp, G_ISFROMTTY) && isig) {
 		if (sigaction(SIGINT, &oact, NULL))
-			msgq(sp, M_ERR, "signal: %s", strerror(errno));
+			msgq(sp, M_SYSERR, "signal");
 		if (tcsetattr(STDIN_FILENO, TCSANOW | TCSASOFT, &term))
-			msgq(sp, M_ERR, "tcsetattr: %s", strerror(errno));
+			msgq(sp, M_SYSERR, "tcsetattr");
 		F_CLR(sp, S_INTERRUPTED);
 		if (!istate)
 			F_CLR(sp, S_INTERRUPTIBLE);

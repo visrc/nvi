@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_mkexrc.c,v 8.4 1993/08/31 16:54:03 bostic Exp $ (Berkeley) $Date: 1993/08/31 16:54:03 $";
+static char sccsid[] = "$Id: ex_mkexrc.c,v 8.5 1993/11/13 18:02:25 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:02:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -58,7 +58,7 @@ ex_mkexrc(sp, ep, cmdp)
 	/* Create with max permissions of rw-r--r--. */
 	if ((fd = open(fname, O_CREAT | O_TRUNC | O_WRONLY,
 	    S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) < 0) {
-		msgq(sp, M_ERR, "%s: %s", fname, strerror(errno));
+		msgq(sp, M_SYSERR, fname);
 		return (1);
 	}
 

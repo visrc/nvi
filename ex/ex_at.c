@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_at.c,v 8.8 1993/11/04 16:16:51 bostic Exp $ (Berkeley) $Date: 1993/11/04 16:16:51 $";
+static char sccsid[] = "$Id: ex_at.c,v 8.9 1993/11/13 18:02:19 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:02:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,25 +31,27 @@ ex_at(sp, ep, cmdp)
 	EXCMDARG *cmdp;
 {
 	CB *cbp;
+	EX_PRIVATE *exp;
 	TEXT *tp;
 	int name, lmode;
 
-	name = cmdp->buffer;
+	exp = EXP(sp);
 
 	/* Historically, @@ and ** execute the last buffer. */
+	name = cmdp->buffer;
 	if (name == cmdp->cmd->name[0]) {
-		if (!sp->at_lbuf_set) {
+		if (!exp->at_lbuf_set) {
 			msgq(sp, M_ERR, "No previous buffer to execute.");
 			return (1);
 		}
-		name = sp->at_lbuf;
+		name = exp->at_lbuf;
 	}
 
 	CBEMPTY(sp, cbp, name);
 
 	/* Save for reuse. */
-	sp->at_lbuf = name;
-	sp->at_lbuf_set = 1;
+	exp->at_lbuf = name;
+	exp->at_lbuf_set = 1;
 		
 	/*
 	 * If the buffer was cut in line mode or had portions of more

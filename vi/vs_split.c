@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 8.13 1993/11/02 10:13:11 bostic Exp $ (Berkeley) $Date: 1993/11/02 10:13:11 $";
+static char sccsid[] = "$Id: vs_split.c,v 8.14 1993/11/13 18:01:24 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:01:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -43,33 +43,22 @@ svi_split(sp, argv)
 
 #define	_HMAP(sp)	(((SVI_PRIVATE *)((sp)->svi_private))->h_smap)
 #define	_TMAP(sp)	(((SVI_PRIVATE *)((sp)->svi_private))->t_smap)
-	/*
-	 * Malloc a new screen and initialize it.  Malloc a screen map
-	 * for the child that's large enough to hold the entire window.
-	 */
-	if ((tsp = malloc(sizeof(SCR))) == NULL) {
-		msgq(sp, M_ERR, "Error: %s", strerror(errno));
-		return (1);
-	}
-	if (screen_init(sp, tsp))
+	/* Get a new screen. */
+	if (screen_init(sp, &tsp, 0))
 		goto mem1;
 	if ((SVP(tsp) = malloc(sizeof(SVI_PRIVATE))) == NULL) {
-		msgq(sp, M_ERR, "Error: %s", strerror(errno));
+		msgq(sp, M_SYSERR, NULL);
 		goto mem2;
 	}
 	memset(SVP(tsp), 0, sizeof(SVI_PRIVATE));
 	if ((_HMAP(tsp) = malloc(SIZE_HMAP * sizeof(SMAP))) == NULL) {
-		msgq(sp, M_ERR, "Error: %s", strerror(errno));
+		msgq(sp, M_SYSERR, NULL);
 		goto mem3;
 	}
 
 /* INITIALIZED AT SCREEN CREATE. */
 
 /* PARTIALLY OR COMPLETELY COPIED FROM PREVIOUS SCREEN. */
-	if (SVP(sp)->VB != NULL &&
-	    (SVP(tsp)->VB = strdup(SVP(sp)->VB)) == NULL)
-		goto mem4;
-
 	/*
 	 * Small screens: see svi/svi_refresh.c:svi_refresh, section 3b.
 	 * Set a flag so we know to fix the screen up later.
@@ -203,9 +192,6 @@ svi_split(sp, argv)
 		O_VAL(tsp, O_SCROLL) = sp->t_maxrows / 2;
 	}
 
-	/* Init support routines. */
-	svi_init(tsp);
-
 	/*
 	 * If files specified, build the file list, else, link to the
 	 * current file.
@@ -213,15 +199,15 @@ svi_split(sp, argv)
 	if (argv != NULL && *argv != NULL) {
 		for (; *argv != NULL; ++argv)
 			if (file_add(tsp, NULL, *argv, 0) == NULL)
-				goto mem5;
+				goto mem4;
 	} else {
 		if (file_add(tsp, NULL, sp->frp->fname, 0) == NULL)
-			goto mem5;
+			goto mem4;
 	}
 
 	if ((tsp->frp = file_first(tsp, 0)) == NULL) {
 		msgq(sp, M_ERR, "No files in the file list.");
-		goto mem5;
+		goto mem4;
 	}
 
 	/*
@@ -242,7 +228,7 @@ svi_split(sp, argv)
 		memmove(_HMAP(tsp), _HMAP(sp), tsp->t_rows * sizeof(SMAP));
 	} else {
 		if (file_init(tsp, tsp->frp, NULL, 0))
-			goto mem5;
+			goto mem4;
 		(void)svi_sm_fill(tsp, tsp->ep, 1, P_TOP);
 	}
 
@@ -269,8 +255,6 @@ svi_split(sp, argv)
 	F_SET(sp, S_SSWITCH);
 	return (0);
 
-mem5:	if (SVP(tsp)->VB != NULL)
-		FREE(SVP(tsp)->VB, strlen(SVP(tsp)->VB));
 mem4:	FREE(_HMAP(tsp), SIZE_HMAP * sizeof(SMAP));
 mem3:	FREE(SVP(sp), sizeof(SVI_PRIVATE));
 mem2:	(void)screen_end(tsp);

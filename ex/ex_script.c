@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_script.c,v 8.5 1993/11/03 17:24:24 bostic Exp $ (Berkeley) $Date: 1993/11/03 17:24:24 $";
+static char sccsid[] = "$Id: ex_script.c,v 8.6 1993/11/13 18:02:26 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:02:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,7 +35,7 @@ ex_script(sp, ep, cmdp)
 	EXCMDARG *cmdp;
 {
 	/* Vi only command. */
-	if (!F_ISSET(sp, S_MODE_VI)) {
+	if (!IN_VI_MODE(sp)) {
 		msgq(sp, M_ERR,
 		    "The script command is only available in vi mode.");
 		return (1);
@@ -83,13 +83,13 @@ sscr_init(sp, ep)
 	 */
 	sp->sh_in[0] = sp->sh_in[1] = sp->sh_out[0] = sp->sh_out[1] = -1;
 	if (pipe(sp->sh_in) < 0 || pipe(sp->sh_out) < 0) {
-		msgq(sp, M_ERR, "Error: pipe: %s", strerror(errno));
+		msgq(sp, M_SYSERR, "pipe");
 		goto err;
 	}
 
 	switch (sp->sh_pid = vfork()) {
 	case -1:			/* Error. */
-		msgq(sp, M_ERR, "Error: vfork: %s", strerror(errno));
+		msgq(sp, M_SYSERR, "vfork");
 err:		if (sp->sh_in[0] != -1)
 			(void)close(sp->sh_in[0]);
 		if (sp->sh_in[1] != -1)
@@ -154,7 +154,7 @@ err:		if (sp->sh_in[0] != -1)
 		FD_SET(sp->sh_out[0], &fdset);
 		switch (select(sp->sh_out[0] + 1, &fdset, NULL, NULL, &tv)) {
 		case -1:		/* Error or interrupt. */
-			msgq(sp, M_ERR, "Error: select: %s.", strerror(errno));
+			msgq(sp, M_SYSERR, "select");
 			goto prompterr;
 		case  0:		/* Timeout */
 			msgq(sp, M_ERR, "Error: timed out.");
@@ -170,7 +170,7 @@ more:		len = sizeof(buf) - (endp - buf);
 			msgq(sp, M_ERR, "Error: shell: EOF");
 			goto prompterr;
 		case -1:			/* Error or interrupt. */
-			msgq(sp, M_ERR, "Error: shell: %s", strerror(errno));
+			msgq(sp, M_SYSERR, "shell");
 			goto prompterr;
 		default:
 			endp += nr;
@@ -198,7 +198,7 @@ more:		len = sizeof(buf) - (endp - buf);
 		tv.tv_usec = 100000;
 		switch (select(sp->sh_out[0] + 1, &fdset, NULL, NULL, &tv)) {
 		case -1:		/* Error or interrupt. */
-			msgq(sp, M_ERR, "Error: select: %s", strerror(errno));
+			msgq(sp, M_SYSERR, "select");
 			goto prompterr;
 		case  0:		/* Timeout */
 			break;
@@ -219,7 +219,7 @@ prompterr:		sscr_end(sp);
 
 		if (cnt == 0) {
 			if ((sp->sh_prompt = malloc(llen)) == NULL) {
-				msgq(sp, M_ERR, "Error: %s", strerror(errno));
+				msgq(sp, M_SYSERR, NULL);
 				goto prompterr;
 			}
 			memmove(sp->sh_prompt, buf, llen);
@@ -306,8 +306,9 @@ empty:			msgq(sp, M_BERR, "Nothing to execute.");
 	if ((nw = write(sp->sh_in[1], p, len)) != len)
 		goto err2;
 	if (write(sp->sh_in[1], "\n", 1) != 1) {
-err2:		msgq(sp, M_ERR,
-		    "Error: shell: %s", strerror(nw == 0 ? EIO : errno));
+err2:		if (nw == 0)
+			errno = EIO;
+		msgq(sp, M_SYSERR, "shell");
 		goto err1;
 	}
 
@@ -356,7 +357,7 @@ more:	switch (nr = read(sp->sh_out[0], endp, MINREAD)) {
 		rval = 0;
 		goto ret;
 	case -1:			/* Error or interrupt. */
-		msgq(sp, M_ERR, "Error: shell: %s", strerror(errno));
+		msgq(sp, M_SYSERR, "shell");
 		goto ret;
 	default:
 		endp += nr;

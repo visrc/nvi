@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.50 1993/11/12 08:50:20 bostic Exp $ (Berkeley) $Date: 1993/11/12 08:50:20 $";
+static char sccsid[] = "$Id: ex.c,v 8.51 1993/11/13 18:02:14 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:02:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,6 +40,7 @@ ex(sp, ep)
 	EXF *ep;
 {
 	TEXT *tp;
+	u_int saved_mode;
 	int eval;
 	char defcom[sizeof(DEFCOM)];
 
@@ -66,6 +67,7 @@ ex(sp, ep)
 		}
 
 		tp = sp->txthdr.next;
+		saved_mode = F_ISSET(sp, S_SCREENS | S_MAJOR_CHANGE);
 		if (tp->len == 0) {
 			if (F_ISSET(sp->gp, G_ISFROMTTY)) {
 				(void)fputc('\r', stdout);
@@ -80,7 +82,7 @@ ex(sp, ep)
 		}
 		(void)msg_rpt(sp, 0);
 
-		if (!F_ISSET(sp, S_MODE_EX) || F_ISSET(sp, S_MAJOR_CHANGE))
+		if (saved_mode != F_ISSET(sp, S_SCREENS | S_MAJOR_CHANGE))
 			break;
 
 		if (sp->s_refresh(sp, ep)) {
@@ -141,7 +143,7 @@ ex_cfile(sp, ep, filename)
 
 e3:	free(bp);
 e2:	(void)close(fd);
-e1:	msgq(sp, M_ERR, "%s: %s.", filename, strerror(errno));
+e1:	msgq(sp, M_SYSERR, filename);
 	return (1);
 }
 
@@ -188,7 +190,7 @@ ex_cstring(sp, ep, cmd, len)
 	 */
 	arg1 = NULL;
 	arg1_len = 0;
-	saved_mode = F_ISSET(sp, S_MODE_EX | S_MODE_VI | S_MAJOR_CHANGE);
+	saved_mode = F_ISSET(sp, S_SCREENS | S_MAJOR_CHANGE);
 	for (p = t = cmd;;) {
 		if (p == cmd) {
 			/* Skip leading whitespace, literals, newlines. */
@@ -265,7 +267,7 @@ cend:			if (p > cmd) {
 				p = cmd;
 			}
 			if (saved_mode !=
-			    F_ISSET(sp, S_MODE_EX | S_MODE_VI | S_MAJOR_CHANGE))
+			    F_ISSET(sp, S_SCREENS | S_MAJOR_CHANGE))
 				break;
 			if (len == 0)
 				return (0);
@@ -297,22 +299,21 @@ cend:			if (p > cmd) {
 	 */
 	if (arg1 == NULL && len == 0)
 		return (0);
-	if (F_ISSET(sp, S_MODE_VI) && term_push(sp, sp->gp->tty, "\n", 1))
+	if (IN_VI_MODE(sp) && term_push(sp, sp->gp->tty, "\n", 1))
 		goto err;
 	if (len != 0)
 		if (term_push(sp, sp->gp->tty, t, len))
 			goto err;
 	if (arg1 != NULL) {
-		if (F_ISSET(sp, S_MODE_VI) && len != 0 &&
+		if (IN_VI_MODE(sp) && len != 0 &&
 		    term_push(sp, sp->gp->tty, "|", 1))
 			goto err;
 		if (term_push(sp, sp->gp->tty, arg1, arg1_len))
 			goto err;
 	}
-	if (F_ISSET(sp, S_MODE_VI) && term_push(sp, sp->gp->tty, ":", 1)) {
-err:		TERM_FLUSH(sp->gp->key);
-		msgq(sp, M_ERR, "Error: %s: remaining command input discarded",
-		    strerror(errno));
+	if (IN_VI_MODE(sp) && term_push(sp, sp->gp->tty, ":", 1)) {
+err:		msgq(sp, M_SYSERR, "remaining command input discarded");
+		TERM_FLUSH(sp->gp->key);
 	}
 	return (0);
 }
@@ -328,6 +329,7 @@ ex_cmd(sp, ep, exc, arg1_len)
 	char *exc;
 	int arg1_len;
 {
+	EX_PRIVATE *exp;
 	EXCMDARG cmd;
 	EXCMDLIST const *cp;
 	MARK cur;
@@ -356,10 +358,11 @@ ex_cmd(sp, ep, exc, arg1_len)
 
 	/* Initialize the argument structure. */
 	memset(&cmd, 0, sizeof(EXCMDARG));
-	sp->ex_argv[0] = "";
-	sp->ex_argv[1] = NULL;
+	exp = EXP(sp);
+	exp->ex_argv[0] = "";
+	exp->ex_argv[1] = NULL;
 	cmd.argc = 0;
-	cmd.argv = sp->ex_argv;
+	cmd.argv = exp->ex_argv;
 
 	/*
 	 * Parse line specifiers if the command uses addresses.
@@ -432,10 +435,10 @@ ex_cmd(sp, ep, exc, arg1_len)
 		 */
 		if ((cp == &cmds[C_SHIFTL] && *p == '<') ||
 		    (cp == &cmds[C_SHIFTR] && *p == '>')) {
-			sp->ex_argv[0] = p;
-			sp->ex_argv[1] = NULL;
+			exp->ex_argv[0] = p;
+			exp->ex_argv[1] = NULL;
 			cmd.argc = 1;
-			cmd.argv = sp->ex_argv;
+			cmd.argv = exp->ex_argv;
 			for (ch = *p, exc = p; *++exc == ch;);
 		}
 
@@ -443,10 +446,10 @@ ex_cmd(sp, ep, exc, arg1_len)
 		 * The visual command has a different syntax when called
 		 * from ex than when called from a vi colon command.  FMH.
 		 */
-		if (cp == &cmds[C_VISUAL_EX] && F_ISSET(sp, S_MODE_VI))
+		if (cp == &cmds[C_VISUAL_EX] && IN_VI_MODE(sp))
 			cp = &cmds[C_VISUAL_VI];
 	} else {
-		cp = sp->lastcmd;
+		cp = exp->lastcmd;
 		uselastcmd = 1;
 	}
 	LF_INIT(cp->flags);
@@ -715,10 +718,10 @@ end2:			break;
 				return (1);
 			goto addr2;
 		case 's':				/* string */
-			sp->ex_argv[0] = exc;
-			sp->ex_argv[1] = NULL;
+			exp->ex_argv[0] = exc;
+			exp->ex_argv[1] = NULL;
 			cmd.argc = 1;
-			cmd.argv = sp->ex_argv;
+			cmd.argv = exp->ex_argv;
 			goto addr2;
 		case 'W':				/* word string */
 			/*
@@ -737,20 +740,20 @@ end2:			break;
 					break;
 			if (*p == '\0')
 				goto usage;
-			sp->ex_argv[0] = exc;
+			exp->ex_argv[0] = exc;
 
 			/* Delete leading whitespace. */
 			for (*t++ = '\0'; (ch = *++p) != '\0' && isblank(ch););
 
 			/* String. */
-			sp->ex_argv[1] = p;
+			exp->ex_argv[1] = p;
 			for (t = p; (ch = *p++) != '\0'; *t++ = ch)
 				if (sp->special[ch] == K_VLNEXT && p[0] != '\0')
 					ch = *p++;
 			*t = '\0';
-			sp->ex_argv[2] = NULL;
+			exp->ex_argv[2] = NULL;
 			cmd.argc = 2;
-			cmd.argv = sp->ex_argv;
+			cmd.argv = exp->ex_argv;
 			goto addr2;
 		case 'w':				/* word */
 			if (argv_exp3(sp, ep, &cmd, exc))
@@ -816,7 +819,7 @@ addr2:	switch (cmd.addrcnt) {
 		 * vi allowed this, note, it's also the hack that allows
 		 * "vi + nonexistent_file" to work.
 		 */
-		if (num == 0 && (!F_ISSET(sp, S_MODE_VI) || uselastcmd != 1) &&
+		if (num == 0 && (!IN_VI_MODE(sp) || uselastcmd != 1) &&
 		    !LF_ISSET(E_ZERO)) {
 			msgq(sp, M_ERR,
 			    "The %s command doesn't permit an address of 0.",
@@ -837,7 +840,7 @@ addr2:	switch (cmd.addrcnt) {
 	}
 
 	/* If doing a default command, vi just moves to the line. */
-	if (F_ISSET(sp, S_MODE_VI) && uselastcmd) {
+	if (IN_VI_MODE(sp) && uselastcmd) {
 		switch (cmd.addrcnt) {
 		case 2:
 			sp->lno = cmd.addr2.lno ? cmd.addr2.lno : 1;
@@ -853,7 +856,7 @@ addr2:	switch (cmd.addrcnt) {
 
 	/* Reset "last" command. */
 	if (LF_ISSET(E_SETLAST))
-		sp->lastcmd = cp;
+		exp->lastcmd = cp;
 
 	cmd.cmd = cp;
 #if defined(DEBUG) && 0
@@ -892,10 +895,10 @@ addr2:	switch (cmd.addrcnt) {
 		(void)log_cursor(sp, ep);
 
 	/* Save the current mode. */
-	saved_mode = F_ISSET(sp, S_MODE_EX | S_MODE_VI | S_MAJOR_CHANGE);
+	saved_mode = F_ISSET(sp, S_SCREENS | S_MAJOR_CHANGE);
 
 	/* Increment the command count if not called from vi. */
-	if (!F_ISSET(sp, S_MODE_VI))
+	if (!IN_VI_MODE(sp))
 		++sp->ccnt;
 
 	/* Do the command. */
@@ -911,11 +914,11 @@ addr2:	switch (cmd.addrcnt) {
 #endif
 
 	/* If the world changed, we're done. */
-	if (saved_mode != F_ISSET(sp, S_MODE_EX | S_MODE_VI | S_MAJOR_CHANGE))
+	if (saved_mode != F_ISSET(sp, S_SCREENS | S_MAJOR_CHANGE))
 		return (0);
 
 	/* If just starting up, or not in ex mode, we're done. */
-	if (ep == NULL || !F_ISSET(sp, S_MODE_EX))
+	if (ep == NULL || !IN_EX_MODE(sp))
 		return (0);
 
 	/*
@@ -1376,7 +1379,7 @@ ep_line(sp, ep, cmd, cur)
 			 * address was considered non-relative, and set the
 			 * value.
 			 */
-			if (F_ISSET(sp, S_MODE_VI)) {
+			if (IN_VI_MODE(sp)) {
 				m.lno = sp->lno;
 				m.cno = sp->cno;
 				if (mark_set(sp, ep, ABSMARK1, &m, 1))

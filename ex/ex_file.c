@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_file.c,v 8.3 1993/09/30 13:20:18 bostic Exp $ (Berkeley) $Date: 1993/09/30 13:20:18 $";
+static char sccsid[] = "$Id: ex_file.c,v 8.4 1993/11/13 18:02:22 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:02:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,7 +36,7 @@ ex_file(sp, ep, cmdp)
 		break;
 	case 1:
 		if ((p = strdup((char *)cmdp->argv[0])) == NULL) {
-			msgq(sp, M_ERR, "Error: %s", strerror(errno));
+			msgq(sp, M_SYSERR, NULL);
 			return (1);
 		}
 		frp = sp->frp;

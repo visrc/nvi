@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 8.16 1993/11/13 08:36:27 bostic Exp $ (Berkeley) $Date: 1993/11/13 08:36:27 $";
+static char sccsid[] = "$Id: ex_bang.c,v 8.17 1993/11/13 18:02:20 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:02:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -42,6 +42,7 @@ ex_bang(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
+	EX_PRIVATE *exp;
 	enum filtertype ftype;
 	recno_t lno;
 	MARK rm;
@@ -55,9 +56,13 @@ ex_bang(sp, ep, cmdp)
 	}
 
 	/* Swap commands. */
-	if (sp->lastbcomm != NULL)
-		FREE(sp->lastbcomm, strlen(sp->lastbcomm) + 1);
-	sp->lastbcomm = strdup(cmdp->argv[0]);
+	exp = EXP(sp);
+	if (exp->lastbcomm != NULL)
+		FREE(exp->lastbcomm, strlen(exp->lastbcomm) + 1);
+	if ((exp->lastbcomm = strdup(cmdp->argv[0])) == NULL) {
+		msgq(sp, M_SYSERR, NULL);
+		return (1);
+	}
 
 	/*
 	 * If the command was modified by the expansion, we redisplay it.
@@ -67,7 +72,7 @@ ex_bang(sp, ep, cmdp)
 	 */
 	bp = NULL;
 	if (F_ISSET(cmdp, E_MODIFY)) {
-		if (F_ISSET(sp, S_MODE_EX)) {
+		if (IN_EX_MODE(sp)) {
 			(void)ex_printf(EXCOOKIE, "!%s\n", cmdp->argv[0]);
 			(void)ex_fflush(EXCOOKIE);
 		}
@@ -81,7 +86,7 @@ ex_bang(sp, ep, cmdp)
 		 * ex_exec_proc routine to display after the screen has been
 		 * cleaned up.
 		 */
-		if (F_ISSET(sp, S_MODE_VI)) {
+		if (IN_VI_MODE(sp)) {
 			len = strlen(cmdp->argv[0]);
 			GET_SPACE(sp, bp, blen, len + 2);
 			bp[0] = '!';
@@ -135,7 +140,7 @@ ex_bang(sp, ep, cmdp)
 				goto ret;
 			}
 		} else if (O_ISSET(sp, O_WARN))
-			if (F_ISSET(sp, S_MODE_VI) && F_ISSET(cmdp, E_MODIFY))
+			if (IN_VI_MODE(sp) && F_ISSET(cmdp, E_MODIFY))
 				msg = "\nFile modified since last write.\n";
 			else
 				msg = "File modified since last write.\n";
@@ -144,11 +149,11 @@ ex_bang(sp, ep, cmdp)
 	rval = ex_exec_proc(sp, O_STR(sp, O_SHELL), cmdp->argv[0], bp, msg);
 
 	/* Ex terminates with a bang. */
-	if (F_ISSET(sp, S_MODE_EX))
+	if (IN_EX_MODE(sp))
 		(void)write(STDOUT_FILENO, "!\n", 2);
 
 	/* Vi requires user permission to continue. */
-	if (F_ISSET(sp, S_MODE_VI))
+	if (IN_VI_MODE(sp))
 		F_SET(sp, S_CONTINUE);
 
 	/* Free the extra space. */

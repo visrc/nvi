@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cd.c,v 8.1 1993/06/09 22:23:43 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:23:43 $";
+static char sccsid[] = "$Id: ex_cd.c,v 8.2 1993/11/13 18:02:21 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:02:21 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -47,7 +47,7 @@ ex_cd(sp, ep, cmdp)
 	}
 
 	if (chdir(dir) < 0) {
-		msgq(sp, M_ERR, "%s: %s", dir, strerror(errno));
+		msgq(sp, M_SYSERR, dir);
 		return (1);
 	}
 	if (getcwd(buf, sizeof(buf)) != NULL)

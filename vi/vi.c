@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.31 1993/11/12 16:43:26 bostic Exp $ (Berkeley) $Date: 1993/11/12 16:43:26 $";
+static char sccsid[] = "$Id: vi.c,v 8.32 1993/11/13 18:01:45 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:01:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,8 +34,8 @@ static int getmotion __P((SCR *, EXF *,
  *	The dot structure can be set by the underlying vi functions,
  *	see v_Put() and v_put().
  */
-#define	DOT		(&VP(sp)->sdot)
-#define	DOTMOTION	(&VP(sp)->sdotmotion)
+#define	DOT		(&VIP(sp)->sdot)
+#define	DOTMOTION	(&VIP(sp)->sdotmotion)
 
 /*
  * vi --
@@ -48,7 +48,7 @@ vi(sp, ep)
 {
 	MARK abs, fm, tm, m;
 	VICMDARG cmd, *vp;
-	u_int flags;
+	u_int flags, saved_mode;
 	int comcount, eval;
 
 	/* Start vi. */
@@ -145,6 +145,7 @@ vi(sp, ep)
 		 */
 		m.lno = sp->lno;
 		m.cno = sp->cno;
+		saved_mode = F_ISSET(sp, S_SCREENS | S_MAJOR_CHANGE);
 		if ((vp->kp->func)(sp, ep, vp, &fm, &tm, &m))
 			goto err;
 #ifdef DEBUG
@@ -159,7 +160,7 @@ vi(sp, ep)
 		 * If that command took us out of vi or changed the screen,
 		 * then exit the loop without further action.
 		 */
-		if (!F_ISSET(sp, S_MODE_VI) || F_ISSET(sp, S_MAJOR_CHANGE))
+		 if (saved_mode != F_ISSET(sp, S_SCREENS | S_MAJOR_CHANGE))
 			break;
 		
 		/* Set the absolute mark. */

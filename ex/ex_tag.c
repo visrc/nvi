@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 8.18 1993/11/07 17:40:40 bostic Exp $ (Berkeley) $Date: 1993/11/07 17:40:40 $";
+static char sccsid[] = "$Id: ex_tag.c,v 8.19 1993/11/13 18:02:30 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:02:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -96,8 +96,8 @@ ex_tagfirst(sp, tagarg)
 	F_SET(frp, FR_CURSORSET);
 
 	/* Might as well make this the default tag. */
-	if ((sp->tlast = strdup(tagarg)) == NULL) {
-		msgq(sp, M_ERR, "Error: %s", strerror(errno));
+	if ((EXP(sp)->tlast = strdup(tagarg)) == NULL) {
+		msgq(sp, M_SYSERR, NULL);
 		return (1);
 	}
 	return (0);
@@ -114,6 +114,7 @@ ex_tagpush(sp, ep, cmdp)
 	EXCMDARG *cmdp;
 {
 	enum {TC_CHANGE, TC_CURRENT} which;
+	EX_PRIVATE *exp;
 	FREF *frp;
 	MARK m;
 	TAG *tp, ttag;
@@ -122,17 +123,18 @@ ex_tagpush(sp, ep, cmdp)
 	long tl;
 	char *fname, *p, *search, *tag;
 	
+	exp = EXP(sp);
 	switch (cmdp->argc) {
 	case 1:
-		if (sp->tlast != NULL)
-			free(sp->tlast);
-		if ((sp->tlast = strdup((char *)cmdp->argv[0])) == NULL) {
-			msgq(sp, M_ERR, "Error: %s", strerror(errno));
+		if (exp->tlast != NULL)
+			FREE(exp->tlast, strlen(exp->tlast) + 1);
+		if ((exp->tlast = strdup((char *)cmdp->argv[0])) == NULL) {
+			msgq(sp, M_SYSERR, NULL);
 			return (1);
 		}
 		break;
 	case 0:
-		if (sp->tlast == NULL) {
+		if (exp->tlast == NULL) {
 			msgq(sp, M_ERR, "No previous tag entered.");
 			return (1);
 		}
@@ -142,11 +144,11 @@ ex_tagpush(sp, ep, cmdp)
 	}
 
 	/* Taglength may limit the number of characters. */
-	if ((tl = O_VAL(sp, O_TAGLENGTH)) != 0 && strlen(sp->tlast) > tl)
-		sp->tlast[tl] = '\0';
+	if ((tl = O_VAL(sp, O_TAGLENGTH)) != 0 && strlen(exp->tlast) > tl)
+		exp->tlast[tl] = '\0';
 
 	/* Get the tag information. */
-	if (tag_get(sp, sp->tlast, &tag, &fname, &search))
+	if (tag_get(sp, exp->tlast, &tag, &fname, &search))
 		return (1);
 
 	/* Save enough information that we can get back. */
@@ -220,10 +222,10 @@ ex_tagpush(sp, ep, cmdp)
 
 	/* If the malloc fails, no big deal, just can't return. */
 	if ((tp = malloc(sizeof(TAG))) == NULL)
-		msgq(sp, M_ERR, "Error: %s.", strerror(errno));
+		msgq(sp, M_SYSERR, NULL);
 	else {
 		*tp = ttag;
-		queue_enter_head(&sp->tagq, tp, TAG *, q);
+		queue_enter_head(&EXP(sp)->tagq, tp, TAG *, q);
 
 	}
 	return (0);
@@ -242,7 +244,7 @@ ex_tagpop(sp, ep, cmdp)
 	TAG *tp;
 
 	/* Pop newest saved information. */
-	if ((tp = sp->tagq.qe_next) == NULL) {
+	if ((tp = EXP(sp)->tagq.qe_next) == NULL) {
 		msgq(sp, M_INFO, "The tags stack is empty.");
 		return (1);
 	}
@@ -265,7 +267,7 @@ ex_tagpop(sp, ep, cmdp)
 	}
 
 	/* Delete the saved information from the stack. */
-	queue_remove(&sp->tagq, tp, TAG *, q);
+	queue_remove(&EXP(sp)->tagq, tp, TAG *, q);
 	return (0);
 }
 
@@ -279,13 +281,15 @@ ex_tagtop(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
+	EX_PRIVATE *exp;
 	TAG *tp, tmp;
 	int found;
 
 	/* Pop to oldest saved information. */
-	for (found = 0; (tp = sp->tagq.qe_next) != NULL; found = 1) {
-		queue_remove(&sp->tagq, tp, TAG *, q);
-		if (sp->tagq.qe_next == NULL)
+	exp = EXP(sp);
+	for (found = 0; (tp = exp->tagq.qe_next) != NULL; found = 1) {
+		queue_remove(&exp->tagq, tp, TAG *, q);
+		if (exp->tagq.qe_next == NULL)
 			tmp = *tp;
 		FREE(tp, sizeof(TAG));
 	}
@@ -316,6 +320,120 @@ ex_tagtop(sp, ep, cmdp)
 }
 
 /*
+ * ex_tagalloc --
+ *	Create a new list of tag files.
+ */
+int
+ex_tagalloc(sp, str)
+	SCR *sp;
+	char *str;
+{
+	EX_PRIVATE *exp;
+	TAGF *tp;
+	size_t len;
+	char *p, *t;
+
+	/* Free current queue. */
+	exp = EXP(sp);
+	while ((tp = exp->tagfq.qe_next) != NULL) {
+		queue_remove(&exp->tagfq, tp, TAGF *, q);
+		FREE(tp->fname, strlen(tp->fname) + 1);
+		FREE(tp, sizeof(TAGF));
+	}
+
+	/* Create new queue. */
+	for (p = t = str;; ++p) {
+		if (*p == '\0' || isblank(*p)) {
+			if ((len = p - t) > 1) {
+				if ((tp = malloc(sizeof(TAGF))) == NULL ||
+				    (tp->fname = malloc(len + 1)) == NULL) {
+					if (tp != NULL)
+						FREE(tp, sizeof(TAGF));
+					msgq(sp, M_SYSERR, NULL);
+					return (1);
+				}
+				memmove(tp->fname, t, len);
+				tp->fname[len] = '\0';
+				tp->flags = 0;
+				queue_enter_tail(&exp->tagfq, tp, TAGF *, q);
+			}
+			t = p + 1;
+		}
+		if (*p == '\0')
+			 break;
+	}
+	return (0);
+}
+						/* Free previous queue. */
+/*
+ * ex_tagfree --
+ *	Free the tags file list.
+ */
+int
+ex_tagfree(sp)
+	SCR *sp;
+{
+	EX_PRIVATE *exp;
+	TAG *tp;
+	TAGF *tfp;
+
+	/* Free up tag information. */
+	exp = EXP(sp);
+	while ((tp = exp->tagq.qe_next) != NULL) {
+		queue_remove(&exp->tagq, tp, TAG *, q);
+		FREE(tp, sizeof(TAG));
+	}
+	while ((tfp = exp->tagfq.qe_next) != NULL) {
+		queue_remove(&exp->tagfq, tfp, TAGF *, q);
+		FREE(tfp->fname, strlen(tfp->fname) + 1);
+		FREE(tfp, sizeof(TAGF));
+	}
+	FREE(exp->tlast, strlen(exp->tlast) + 1);
+	return (0);
+}
+
+/*
+ * ex_tagcopy --
+ *	Copy a screen's tag structures.
+ */
+int
+ex_tagcopy(orig, sp)
+	SCR *orig, *sp;
+{
+	EX_PRIVATE *oexp, *nexp;
+	TAG *ap, *tp;
+	TAGF *atfp, *tfp;
+
+	/* Copy tag stack. */
+	oexp = EXP(orig);
+	nexp = EXP(sp);
+	for (ap = oexp->tagq.qe_next; ap != NULL; ap = ap->q.qe_next) {
+		if ((tp = malloc(sizeof(TAG))) == NULL)
+			goto nomem;
+		*tp = *ap;
+		queue_enter_tail(&nexp->tagq, tp, TAG *, q);
+	}
+
+	/* Copy list of tag files. */
+	for (atfp = oexp->tagfq.qe_next; atfp != NULL; atfp = atfp->q.qe_next) {
+		if ((tfp = malloc(sizeof(TAGF))) == NULL)
+			goto nomem;
+		*tfp = *atfp;
+		if ((tfp->fname = strdup(atfp->fname)) == NULL)
+			goto nomem;
+		queue_enter_tail(&nexp->tagfq, tfp, TAGF *, q);
+	}
+		
+	/* Copy the last tag. */
+	if (oexp->tlast != NULL &&
+	    (nexp->tlast = strdup(oexp->tlast)) == NULL) {
+nomem:		msgq(sp, M_SYSERR, NULL);
+		return (1);
+	}
+	return (0);
+}
+
+/*
  * tag_get --
  *	Get a tag from the tags files.
  */
@@ -324,6 +442,7 @@ tag_get(sp, tag, tagp, filep, searchp)
 	SCR *sp;
 	char *tag, **tagp, **filep, **searchp;
 {
+	EX_PRIVATE *exp;
 	TAGF *tfp;
 	int dne;
 	char *p;
@@ -333,7 +452,8 @@ tag_get(sp, tag, tagp, filep, searchp)
 	 * then only if we didn't find the tag.
 	 */
 	dne = 0;
-	for (tfp = sp->tagfq.qe_next, p = NULL;
+	exp = EXP(sp);
+	for (tfp = exp->tagfq.qe_next, p = NULL;
 	    tfp != NULL && p == NULL; tfp = tfp->q.qe_next) {
 		errno = 0;
 		F_CLR(tfp, TAGF_DNE);
@@ -344,18 +464,17 @@ tag_get(sp, tag, tagp, filep, searchp)
 					F_SET(tfp, TAGF_DNE);
 				}
 			} else
-				msgq(sp, M_ERR,
-				    "%s: %s", tfp->fname, strerror(errno));
+				msgq(sp, M_SYSERR, tfp->fname);
 	}
 	
 	if (p == NULL) {
 		msgq(sp, M_ERR, "%s: tag not found.", tag);
 		if (dne)
-			for (tfp = sp->tagfq.qe_next;
+			for (tfp = exp->tagfq.qe_next;
 			    tfp != NULL; tfp = tfp->q.qe_next)
 				if (F_ISSET(tfp, TAGF_DNE)) {
-					msgq(sp, M_ERR, "%s: %s",
-					    tfp->fname, strerror(ENOENT));
+					errno = ENOENT;
+					msgq(sp, M_SYSERR, tfp->fname);
 					F_SET(tfp, TAGF_DNE_WARN);
 				}
 		return (1);
@@ -430,7 +549,7 @@ search(sp, fname, tname, tag)
 
 	len = endp - front;
 	if ((p = malloc(len + 1)) == NULL) {
-		msgq(sp, M_ERR, "Error: %s.", strerror(errno));
+		msgq(sp, M_SYSERR, NULL);
 		*tag = NULL;
 		goto done;
 	}
@@ -439,9 +558,9 @@ search(sp, fname, tname, tag)
 	*tag = p;
 
 done:	if (munmap(map, (size_t)sb.st_size))
-		msgq(sp, M_ERR, "tags: munmap: %s", strerror(errno));
+		msgq(sp, M_SYSERR, "munmap");
 	if (close(fd))
-		msgq(sp, M_ERR, "tags: munmap: %s", strerror(errno));
+		msgq(sp, M_SYSERR, "close");
 	return (0);
 }
 

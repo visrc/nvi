@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 8.14 1993/11/12 17:00:15 bostic Exp $ (Berkeley) $Date: 1993/11/12 17:00:15 $";
+static char sccsid[] = "$Id: v_init.c,v 8.15 1993/11/13 18:01:36 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:01:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,6 +18,70 @@ static char sccsid[] = "$Id: v_init.c,v 8.14 1993/11/12 17:00:15 bostic Exp $ (B
 #include "vi.h"
 #include "vcmd.h"
 #include "excmd.h"
+
+/*
+ * v_screen_copy --
+ *	Copy vi screen.
+ */
+int
+v_screen_copy(orig, sp)
+	SCR *orig, *sp;
+{
+	VI_PRIVATE *ovip, *nvip;
+
+	/* Create the private vi structure. */
+	if ((sp->vi_private = nvip = malloc(sizeof(VI_PRIVATE))) == NULL)
+		goto mem;
+	memset(nvip, 0, sizeof(VI_PRIVATE));
+
+	if (orig == NULL) {
+		nvip->inc_lastch = '+';
+		nvip->inc_lastval = 1;
+	} else {
+		ovip = VIP(orig);
+
+		/* User can replay the last input, but nothing else. */
+		if (ovip->rep_len != 0)
+			if ((nvip->rep = malloc(ovip->rep_len)) == NULL)
+				goto mem;
+			else {
+				memmove(nvip->rep, ovip->rep, ovip->rep_len);
+				nvip->rep_len = ovip->rep_len;
+			}
+
+		nvip->inc_lastch = ovip->inc_lastch;
+		nvip->inc_lastval = ovip->inc_lastval;
+
+		if (ovip->paragraph != NULL &&
+		    (nvip->paragraph = strdup(ovip->paragraph)) == NULL) {
+mem:			msgq(sp, M_SYSERR, NULL);
+			return (1);
+		}
+	}
+	return (0);
+}
+
+/*
+ * v_screen_end --
+ *	End a vi screen.
+ */
+int
+v_screen_end(sp)
+	SCR *sp;
+{
+	VI_PRIVATE *vip;
+
+	vip = VIP(sp);
+
+	if (vip->rep != NULL)
+		FREE(vip->rep, vip->rep_len);
+
+	if (vip->paragraph != NULL)
+		FREE(vip->paragraph, vip->paragraph_len);
+
+	FREE(vip, sizeof(VI_PRIVATE));
+	return (0);
+}
 
 /*
  * v_init --
@@ -62,18 +126,9 @@ v_init(sp, ep)
 	sp->rcm = 0;
 	sp->rcmflags = 0;
 
-	/* Create the private vi structure. */
-	if (VP(sp) == NULL) {
-		if ((VP(sp) = malloc(sizeof(VI_PRIVATE))) == NULL) {
-			msgq(sp, M_ERR, "Error: %s", strerror(errno));
-			return (1);
-		}
-		memset(VP(sp), 0, sizeof(VI_PRIVATE));
-	}
-
 	/* Make ex display to a special function. */
 	if ((sp->stdfp = fwopen(sp, sp->s_ex_write)) == NULL) {
-		msgq(sp, M_ERR, "ex output: %s", strerror(errno));
+		msgq(sp, M_SYSERR, "ex output");
 		return (1);
 	}
 #ifdef MAKE_EX_OUTPUT_LINE_BUFFERED
@@ -95,12 +150,22 @@ v_end(sp)
 	/* Close down ex output file descriptor. */
 	(void)fclose(sp->stdfp);
 
-	/*
-	 * XXX
-	 * We can't delete the private VI memory, otherwise we'll lose
-	 * the dot/dotmotion and last 'r' character information.  The
-	 * correct fix is to have a way to register a "call-me-when-the
-	 * screen-is-deleted" function.
-	 */
+	return (0);
+}
+
+/*
+ * v_optchange --
+ *	Handle change of options for vi.
+ */
+int
+v_optchange(sp, opt)
+	SCR *sp;
+	int opt;
+{
+	switch (opt) {
+	case O_PARAGRAPHS:
+	case O_SECTIONS:
+		return (v_buildparagraph(sp));
+	}
 	return (0);
 }

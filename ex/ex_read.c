@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 8.11 1993/11/03 17:18:47 bostic Exp $ (Berkeley) $Date: 1993/11/03 17:18:47 $";
+static char sccsid[] = "$Id: ex_read.c,v 8.12 1993/11/13 18:02:26 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:02:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -39,7 +39,6 @@ ex_read(sp, ep, cmdp)
 	int rval;
 	char *bp, *fname;
 
-
 	/* If "read !", it's a pipe from a utility. */
 	if (F_ISSET(cmdp, E_FORCE)) {
 		if (cmdp->argv[0][0] == '\0') {
@@ -48,7 +47,7 @@ ex_read(sp, ep, cmdp)
 		}
 		if (argv_exp1(sp, ep, cmdp, cmdp->argv[0], 0))
 			return (1);
-		if (F_ISSET(cmdp, E_MODIFY) && F_ISSET(sp, S_MODE_VI)) {
+		if (F_ISSET(cmdp, E_MODIFY) && IN_VI_MODE(sp)) {
 			len = strlen(cmdp->argv[0]);
 			GET_SPACE(sp, bp, blen, len + 2);
 			bp[0] = '!';
@@ -96,7 +95,7 @@ ex_read(sp, ep, cmdp)
 	 * was no way to "force" it.
 	 */
 	if ((fp = fopen(fname, "r")) == NULL || fstat(fileno(fp), &sb)) {
-		msgq(sp, M_ERR, "%s: %s", fname, strerror(errno));
+		msgq(sp, M_SYSERR, fname);
 		return (1);
 	}
 	if (!S_ISREG(sb.st_mode)) {
@@ -137,7 +136,8 @@ ex_readfp(sp, ep, fname, fp, fm, nlinesp, success_msg)
 	recno_t *nlinesp;
 	int success_msg;
 {
-	register u_long ccnt;
+	EX_PRIVATE *exp;
+	u_long ccnt;
 	size_t len;
 	recno_t lno, nlines;
 	int rval;
@@ -148,8 +148,9 @@ ex_readfp(sp, ep, fname, fp, fm, nlinesp, success_msg)
 	 */
 	ccnt = 0;
 	rval = 0;
+	exp = EXP(sp);
 	for (lno = fm->lno; !ex_getline(sp, fp, &len); ++lno) {
-		if (file_aline(sp, ep, 1, lno, sp->ibp, len)) {
+		if (file_aline(sp, ep, 1, lno, exp->ibp, len)) {
 			rval = 1;
 			break;
 		}
@@ -157,12 +158,12 @@ ex_readfp(sp, ep, fname, fp, fm, nlinesp, success_msg)
 	}
 
 	if (ferror(fp)) {
-		msgq(sp, M_ERR, "%s: %s", fname, strerror(errno));
+		msgq(sp, M_SYSERR, fname);
 		rval = 1;
 	}
 
 	if (fclose(fp)) {
-		msgq(sp, M_ERR, "%s: %s", fname, strerror(errno));
+		msgq(sp, M_SYSERR, fname);
 		return (1);
 	}
 
