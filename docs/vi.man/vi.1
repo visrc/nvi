@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.1,v 8.17 1994/10/26 11:43:32 bostic Exp $ (Berkeley) $Date: 1994/10/26 11:43:32 $
+.\"     $Id: vi.1,v 8.18 1994/11/09 19:20:05 bostic Exp $ (Berkeley) $Date: 1994/11/09 19:20:05 $
 .\"
 .Dd "%Q%"
 .Dt EX/VI 1
@@ -909,6 +909,9 @@ Modify various search commands and options to work with Lisp.
 .Em "This option is not yet implemented."
 .It Sy "list [off]"
 Display lines in an unambiguous fashion.
+.It Sy "lock [on]"
+Attempt to get an exclusive lock on any file being edited,
+read or written.
 .It Sy "magic [on]"
 Treat certain characters specially in regular expressions.
 .It Sy "matchtime [7]"

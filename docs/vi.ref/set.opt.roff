@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: set.opt.roff,v 8.35 1994/10/26 11:43:58 bostic Exp $ (Berkeley) $Date: 1994/10/26 11:43:58 $
+.\"     $Id: set.opt.roff,v 8.36 1994/11/09 19:20:15 bostic Exp $ (Berkeley) $Date: 1994/11/09 19:20:15 $
 .\"
 .SH 1 "Set Options"
 .pp
@@ -424,6 +424,16 @@ Specifically, tabs are displayed as control characters, i.e.
 and the ends of lines are marked with a
 .QT $
 character.
+.KY lock
+.IP "lock [on]"
+This option causes the editor to attempt to get an exclusive lock on
+any file being edited, read or written.
+Reading or writing a file that cannot be locked produces a warning
+message, but no other effect.
+Editing a file that cannot be locked results in a read only edit session,
+as if the
+.OP readonly
+edit option were set.
 .KY magic
 .IP "magic [on]"
 This option is on by default.
@@ -598,7 +608,7 @@ command line option, or editing a file which lacks write permission.
 The directory where recovery files are stored.
 .sp
 If you change the value of
-.CO recdir ,
+.OP recdir ,
 be careful to choose a directory whose contents are not regularly
 deleted.
 Bad choices include directories in memory based filesystems,
@@ -617,7 +627,7 @@ There is no requirement that you use a public directory,
 e.g. a sub-directory of your home directory will work fine.
 .sp
 Finally, if you change the value of
-.CO recdir ,
+.OP recdir ,
 you must modify the recovery script to operate in your chosen recovery
 area.
 .sp
