@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 8.1 1993/06/09 22:23:37 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:23:37 $";
+static char sccsid[] = "$Id: ex_bang.c,v 8.2 1993/06/28 20:03:53 bostic Exp $ (Berkeley) $Date: 1993/06/28 20:03:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,6 +32,8 @@ ex_bang(sp, ep, cmdp)
 {
 	register int ch, len, modified;
 	register char *p, *t;
+	enum filtertype ftype;
+	recno_t lno;
 	MARK rm;
 	char *com;
 
@@ -126,8 +128,24 @@ ex_bang(sp, ep, cmdp)
 	 * the command.
 	 */
 	if (cmdp->addrcnt != 0) {
-		if (filtercmd(sp, ep,
-		    &cmdp->addr1, &cmdp->addr2, &rm, com, STANDARD))
+		/*
+		 * Major Kluge.
+		 *
+		 * Historical vi permitted "!!" in an empty file, for no
+		 * immediately apparent reason.  When that happens, we
+		 * end up here with addresses of 1,1 and a bad attitude.
+		 */
+		ftype = STANDARD;
+		if (cmdp->addr1.lno == 1 && cmdp->addr2.lno == 1) {
+			if (file_lline(sp, ep, &lno))
+				return (1);
+			if (lno == 0) {
+				cmdp->addr1.lno = cmdp->addr2.lno = 0;
+				ftype = NOINPUT;
+			}
+		}
+		if (filtercmd(sp,
+		    ep, &cmdp->addr1, &cmdp->addr2, &rm, com, ftype))
 			return (1);
 		sp->lno = rm.lno;
 		F_SET(sp, S_AUTOPRINT);
