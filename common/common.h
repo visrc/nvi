@@ -1,3 +1,12 @@
+/*-
+ * Copyright (c) 1991 The Regents of the University of California.
+ * All rights reserved.
+ *
+ * %sccs.include.redist.c%
+ *
+ *	$Id: common.h,v 5.16 1992/04/18 18:31:13 bostic Exp $ (Berkeley) $Date: 1992/04/18 18:31:13 $
+ */
+
 #include <sys/types.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -227,15 +236,14 @@ extern MARK	v_again();	/* & */
  extern MARK	v_at();		/* @ */
 #endif
 
-/*----------------------------------------------------------------------*/
-/* These describe what mode we're in */
-
+/* Describe the current mode. */
 #define MODE_EX		1	/* executing ex commands */
 #define	MODE_VI		2	/* executing vi commands */
 #define	MODE_COLON	3	/* executing an ex command from vi mode */
 #define	MODE_QUIT	4
 extern int	mode;
 
+/* Describe the current state. */
 #define WHEN_VICMD	0x0001	/* getkey: reading a VI command */
 #define WHEN_VIINP	0x0002	/* getkey: in VI's INPUT mode */
 #define WHEN_VIREP	0x0004	/* getkey: in VI's REPLACE mode */
@@ -245,7 +253,6 @@ extern int	mode;
 #define WHEN_CUT	0x0080	/* getkey: getting a cut buffer name */
 #define WHEN_MARK	0x0100	/* getkey: getting a mark name */
 #define WHEN_CHAR	0x0200	/* getkey: getting a destination for f/F/t/T */
-#define WHEN_FREE	0x2000	/* free the keymap after doing it once */
 #define WHENMASK	(WHEN_VICMD|WHEN_VIINP|WHEN_VIREP|WHEN_REP1|WHEN_CUT|WHEN_MARK|WHEN_CHAR)
 
 extern MARK	V_from;
