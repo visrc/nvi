@@ -14,7 +14,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "@(#)perl.c	8.12 (Berkeley) 4/12/96";
+static const char sccsid[] = "$Id: perl.xs,v 8.16 1996/07/12 20:26:11 bostic Exp $ (Berkeley) $Date: 1996/07/12 20:26:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
