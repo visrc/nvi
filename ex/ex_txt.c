@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_txt.c,v 10.20 2000/07/11 19:07:18 skimo Exp $ (Berkeley) $Date: 2000/07/11 19:07:18 $";
+static const char sccsid[] = "$Id: ex_txt.c,v 10.21 2000/07/15 20:26:35 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -148,7 +148,7 @@ newtp:		if ((tp = text_init(sp, NULL, 0, 32)) == NULL)
 		 * Check to see if the character fits into the input buffer.
 		 * (Use tp->len, ignore overwrite and non-printable chars.)
 		 */
-		BINC_GOTO(sp, tp->lb, tp->lb_len, tp->len + 1);
+		BINC_GOTOW(sp, tp->lb, tp->lb_len, tp->len + 1);
 
 		switch (ev.e_value) {
 		case K_CR:
@@ -293,7 +293,7 @@ notlast:			CIRCLEQ_REMOVE(tiqh, tp, q);
 				/* Save the ai string for later. */
 				ait.lb = NULL;
 				ait.lb_len = 0;
-				BINC_GOTO(sp, ait.lb, ait.lb_len, tp->ai);
+				BINC_GOTOW(sp, ait.lb, ait.lb_len, tp->ai);
 				memcpy(ait.lb, tp->lb, tp->ai);
 				ait.ai = ait.len = tp->ai;
 
@@ -330,7 +330,7 @@ leftmargin:			(void)gp->scr_ex_adjust(sp, EX_TERM_CE);
 			 * not already handled specially, except for <tab> and
 			 * <ff>.
 			 */
-ins_ch:			if (LF_ISSET(TXT_BEAUTIFY) && iscntrl(ev.e_c) &&
+ins_ch:			if (LF_ISSET(TXT_BEAUTIFY) && ISCNTRL(ev.e_c) &&
 			    ev.e_value != K_FORMFEED && ev.e_value != K_TAB)
 				break;
 
@@ -418,7 +418,7 @@ txt_dent(sp, tp)
 	spaces = scno - cno;
 
 	/* Make sure there's enough room. */
-	BINC_RET(sp, tp->lb, tp->lb_len, tabs + spaces + 1);
+	BINC_RETW(sp, tp->lb, tp->lb_len, tabs + spaces + 1);
 
 	/* Adjust the final ai character count. */
 	tp->ai = tabs + spaces;

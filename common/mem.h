@@ -6,13 +6,14 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: mem.h,v 10.8 2000/07/11 22:05:09 skimo Exp $ (Berkeley) $Date: 2000/07/11 22:05:09 $
+ *	$Id: mem.h,v 10.9 2000/07/15 20:26:34 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:34 $
  */
 
 /* Increase the size of a malloc'd buffer.  Two versions, one that
  * returns, one that jumps to an error label.
  */
 #define	BINC_GOTO(sp, lp, llen, nlen) {					\
+	char *L__p = lp;						\
 	void *L__bincp;							\
 	if ((nlen) > llen) {						\
 		if ((L__bincp = binc(sp, lp, &(llen), nlen)) == NULL)	\
@@ -24,7 +25,12 @@
 		lp = L__bincp;						\
 	}								\
 }
+#define	BINC_GOTOW(sp, lp, llen, nlen) {					\
+	CHAR_T *L__bp = lp;						\
+	BINC_GOTO(sp, (char *)lp, llen, nlen * sizeof(CHAR_T))	    	\
+}
 #define	BINC_RET(sp, lp, llen, nlen) {					\
+	char *L__p = lp;						\
 	void *L__bincp;							\
 	if ((nlen) > llen) {						\
 		if ((L__bincp = binc(sp, lp, &(llen), nlen)) == NULL)	\
@@ -35,6 +41,10 @@
 		 */							\
 		lp = L__bincp;						\
 	}								\
+}
+#define	BINC_RETW(sp, lp, llen, nlen) {					\
+	CHAR_T *L__bp = lp;						\
+	BINC_RET(sp, (char *)lp, llen, nlen * sizeof(CHAR_T))	    	\
 }
 
 /*
@@ -55,6 +65,10 @@
 		F_SET(L__wp, W_TMP_INUSE);				\
 	}								\
 }
+#define	GET_SPACE_GOTOW(sp, bp, blen, nlen) {				\
+	CHAR_T *L__bp = bp;						\
+	GET_SPACE_GOTO(sp, (char *)bp, blen, nlen * sizeof(CHAR_T))	\
+}
 #define	GET_SPACE_RET(sp, bp, blen, nlen) {				\
 	WIN *L__wp = (sp) == NULL ? NULL : (sp)->wp;			\
 	if (L__wp == NULL || F_ISSET(L__wp, W_TMP_INUSE)) {		\
@@ -67,6 +81,10 @@
 		blen = L__wp->tmp_blen;					\
 		F_SET(L__wp, W_TMP_INUSE);				\
 	}								\
+}
+#define	GET_SPACE_RETW(sp, bp, blen, nlen) {				\
+	CHAR_T *L__bp = bp;						\
+	GET_SPACE_RET(sp, (char *)bp, blen, nlen * sizeof(CHAR_T))	\
 }
 
 /*
@@ -84,6 +102,10 @@
 	} else								\
 		BINC_GOTO(sp, bp, blen, nlen);				\
 }
+#define	ADD_SPACE_GOTOW(sp, bp, blen, nlen) {				\
+	CHAR_T *L__bp = bp;						\
+	ADD_SPACE_GOTO(sp, (char *)bp, blen, nlen * sizeof(CHAR_T))	\
+}
 #define	ADD_SPACE_RET(sp, bp, blen, nlen) {				\
 	WIN *L__wp = (sp) == NULL ? NULL : (sp)->wp;			\
 	if (L__wp == NULL || bp == L__wp->tmp_bp) {			\
@@ -95,6 +117,10 @@
 	} else								\
 		BINC_RET(sp, bp, blen, nlen);				\
 }
+#define	ADD_SPACE_RETW(sp, bp, blen, nlen) {				\
+	CHAR_T *L__bp = bp;						\
+	ADD_SPACE_RET(sp, (char *)bp, blen, nlen * sizeof(CHAR_T))	\
+}
 
 /* Free a GET_SPACE returned buffer. */
 #define	FREE_SPACE(sp, bp, blen) {					\
@@ -103,6 +129,10 @@
 		F_CLR(L__wp, W_TMP_INUSE);				\
 	else								\
 		free(bp);						\
+}
+#define	FREE_SPACEW(sp, bp, blen) {					\
+	CHAR_T *L__bp = bp;						\
+	FREE_SPACE(sp, (char *)bp, blen);				\
 }
 
 /*

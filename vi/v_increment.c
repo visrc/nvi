@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_increment.c,v 10.14 2000/07/14 14:29:23 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:23 $";
+static const char sccsid[] = "$Id: v_increment.c,v 10.15 2000/07/15 20:26:36 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -176,9 +176,9 @@ nonum:			msgq(sp, M_ERR, "181|Cursor not in a number");
 	 * buffer big enough to fit the line changes as well, and only
 	 * allocate once.
 	 */
-	GET_SPACE_RET(sp, bp, blen, len + 50);
+	GET_SPACE_RETW(sp, bp, blen, len + 50);
 	if (end == len) {
-		memmove(bp, &p[beg], wlen);
+		MEMMOVEW(bp, &p[beg], wlen);
 		bp[wlen] = '\0';
 		t = bp;
 	} else
@@ -230,9 +230,9 @@ nonum:			msgq(sp, M_ERR, "181|Cursor not in a number");
 	}
 
 	/* Build the new line. */
-	memmove(bp, p, beg);
-	memmove(bp + beg, nbuf, nlen);
-	memmove(bp + beg + nlen, p + end, len - beg - (end - beg));
+	MEMMOVEW(bp, p, beg);
+	MEMMOVEW(bp + beg, nbuf, nlen);
+	MEMMOVEW(bp + beg + nlen, p + end, len - beg - (end - beg));
 	len = beg + nlen + (len - beg - (end - beg));
 
 	nret = NUM_OK;
@@ -243,7 +243,7 @@ err:		rval = 1;
 		inc_err(sp, nret);
 	}
 	if (bp != NULL)
-		FREE_SPACE(sp, bp, blen);
+		FREE_SPACEW(sp, bp, blen);
 	return (rval);
 }
 

@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: screen.h,v 10.35 2000/07/14 14:29:17 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:17 $
+ *	$Id: screen.h,v 10.36 2000/07/15 20:26:34 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:34 $
  */
 
 /*
@@ -52,7 +52,7 @@ struct _win {
 	db_recno_t	if_lno;		/* Current associated line number. */
 
 	/* For now, can be either char or CHAR_T buffer */
-	void	*tmp_bp;		/* Temporary buffer. */
+	char	*tmp_bp;		/* Temporary buffer. */
 	size_t	 tmp_blen;		/* Temporary buffer size. */
 
 /* Flags. */

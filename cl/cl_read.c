@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_read.c,v 10.18 2000/07/11 19:07:18 skimo Exp $ (Berkeley) $Date: 2000/07/11 19:07:18 $";
+static const char sccsid[] = "$Id: cl_read.c,v 10.19 2000/07/15 20:26:33 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,7 +36,7 @@ static const char sccsid[] = "$Id: cl_read.c,v 10.18 2000/07/11 19:07:18 skimo E
 #include "cl.h"
 
 static input_t	cl_read __P((SCR *,
-    u_int32_t, CHAR_T *, size_t, int *, struct timeval *));
+    u_int32_t, char *, size_t, int *, struct timeval *));
 static int	cl_resize __P((SCR *, size_t, size_t));
 
 /*
@@ -56,6 +56,8 @@ cl_event(sp, evp, flags, ms)
 	CL_PRIVATE *clp;
 	size_t lines, columns;
 	int changed, nr;
+	CHAR_T *wp;
+	size_t wlen;
 
 	/*
 	 * Queue signal based events.  We never clear SIGHUP or SIGTERM events,
@@ -103,10 +105,12 @@ retest:	if (LF_ISSET(EC_INTERRUPT) || F_ISSET(clp, CL_SIGINT)) {
 
 	/* Read input characters. */
 	switch (cl_read(sp, LF_ISSET(EC_QUOTED | EC_RAW),
-	    clp->ibuf, sizeof(clp->ibuf), &nr, tp)) {
+	    (char *)clp->ibuf, sizeof(clp->ibuf)/sizeof(CHAR_T), &nr, tp)) {
 	case INP_OK:
+		CHAR2INT(sp, (char *)clp->ibuf, nr, wp, wlen);
+		MEMMOVEW(clp->ibuf, wp, wlen);
 		evp->e_csp = clp->ibuf;
-		evp->e_len = nr;
+		evp->e_len = wlen;
 		evp->e_event = E_STRING;
 		break;
 	case INP_EOF:
@@ -134,7 +138,7 @@ static input_t
 cl_read(sp, flags, bp, blen, nrp, tp)
 	SCR *sp;
 	u_int32_t flags;
-	CHAR_T *bp;
+	char *bp;
 	size_t blen;
 	int *nrp;
 	struct timeval *tp;

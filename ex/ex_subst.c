@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_subst.c,v 10.43 2000/07/14 14:29:22 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:22 $";
+static const char sccsid[] = "$Id: ex_subst.c,v 10.44 2000/07/15 20:26:35 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -203,7 +203,7 @@ subagain:	return (ex_subagain(sp, cmdp));
 		    p[0] != '\0' && p[0] != delim; ++p, ++len)
 			if (p[0] == '~')
 				len += sp->repl_len;
-		GET_SPACE_RET(sp, bp, blen, len);
+		GET_SPACE_RETW(sp, bp, blen, len);
 		for (t = bp, len = 0, p = rep;;) {
 			if (p[0] == '\0' || p[0] == delim) {
 				if (p[0] == delim)
@@ -236,12 +236,12 @@ tilde:				++p;
 				free(sp->repl);
 			if ((sp->repl = malloc(len)) == NULL) {
 				msgq(sp, M_SYSERR, NULL);
-				FREE_SPACE(sp, bp, blen);
+				FREE_SPACEW(sp, bp, blen);
 				return (1);
 			}
-			memcpy(sp->repl, bp, len);
+			MEMCPYW(sp->repl, bp, len);
 		}
-		FREE_SPACE(sp, bp, blen);
+		FREE_SPACEW(sp, bp, blen);
 	}
 	return (s(sp, cmdp, p, re, flags));
 }
@@ -519,10 +519,10 @@ noargs:	if (F_ISSET(sp, SC_VI) && sp->c_suffix && (lflag || nflag || pflag)) {
 		 */
 		if (sp->c_suffix) {
 			if (bp == NULL) {
-				GET_SPACE_RET(sp, bp, blen, llen * sizeof(CHAR_T));
+				GET_SPACE_RETW(sp, bp, blen, llen);
 			} else
-				ADD_SPACE_RET(sp, bp, blen, llen * sizeof(CHAR_T));
-			memcpy(bp, s, llen);
+				ADD_SPACE_RETW(sp, bp, blen, llen);
+			MEMCPYW(bp, s, llen);
 			s = bp;
 		}
 
@@ -755,8 +755,8 @@ skip:		offset += match[0].rm_eo;
 				goto err;
 			if (db_get(sp, lno, DBG_FATAL, &s, &llen))
 				goto err;
-			ADD_SPACE_RET(sp, bp, blen, llen)
-			memcpy(bp, s, llen);
+			ADD_SPACE_RETW(sp, bp, blen, llen)
+			MEMCPYW(bp, s, llen);
 			s = bp;
 			len = llen - offset;
 
@@ -882,7 +882,7 @@ err:		rval = 1;
 	}
 
 	if (bp != NULL)
-		FREE_SPACE(sp, bp, blen);
+		FREE_SPACEW(sp, bp, blen);
 	if (lb != NULL)
 		free(lb);
 	return (rval);
@@ -988,7 +988,7 @@ iclower:	for (p = ptrn, len = plen; len > 0; ++p, --len)
 
 		/* Free up conversion-routine-allocated memory. */
 		if (replaced)
-			FREE_SPACE(sp, ptrn, 0);
+			FREE_SPACEW(sp, ptrn, 0);
 
 		if (*ptrnp == NULL)
 			return (1);
@@ -1115,7 +1115,7 @@ re_conv(sp, ptrnp, plenp, replacedp)
 
 	/* Get enough memory to hold the final pattern. */
 	*replacedp = 1;
-	GET_SPACE_RET(sp, bp, blen, needlen);
+	GET_SPACE_RETW(sp, bp, blen, needlen);
 
 	for (p = *ptrnp, len = *plenp, t = bp; len > 0; ++p, --len)
 		switch (*p) {
@@ -1200,7 +1200,7 @@ re_tag_conv(sp, ptrnp, plenp, replacedp)
 
 	/* Max memory usage is 2 times the length of the string. */
 	*replacedp = 1;
-	GET_SPACE_RET(sp, bp, blen, len * 2);
+	GET_SPACE_RETW(sp, bp, blen, len * 2);
 
 	p = *ptrnp;
 	t = bp;
@@ -1286,7 +1286,7 @@ re_cscope_conv(sp, ptrnp, plenp, replacedp)
 	 */
 	*replacedp = 1;
 	len = (p - *ptrnp) * 2 + (nspaces + 2) * sizeof(CSCOPE_RE_SPACE) + 3;
-	GET_SPACE_RET(sp, bp, blen, len * sizeof(CHAR_T));
+	GET_SPACE_RETW(sp, bp, blen, len);
 
 	p = *ptrnp;
 	t = bp;
@@ -1297,7 +1297,7 @@ re_cscope_conv(sp, ptrnp, plenp, replacedp)
 
 	for (len = *plenp; len > 0; ++p, --len)
 		if (*p == ' ') {
-			memcpy(t, wp, wlen * sizeof(CHAR_T));
+			MEMCPYW(t, wp, wlen);
 			t += wlen;
 		} else {
 			if (strchr("\\^.[]$*+?()|{}", *p))
@@ -1305,7 +1305,7 @@ re_cscope_conv(sp, ptrnp, plenp, replacedp)
 			*t++ = *p;
 		}
 
-	memcpy(t, wp, wlen * sizeof(CHAR_T));
+	MEMCPYW(t, wp, wlen);
 	t += wlen;
 	*t++ = '$';
 

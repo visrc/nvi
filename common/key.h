@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: key.h,v 10.25 2000/07/14 14:29:16 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:16 $
+ *	$Id: key.h,v 10.26 2000/07/15 20:26:34 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:34 $
  */
 
 #include "multibyte.h"
@@ -29,12 +29,20 @@ typedef	u_int		ARG_CHAR_T;
 #define ROOM_FOR(name,len)	CHAR_T	name[len]
 
 #ifdef USE_WIDECHAR
+#define FILE2INT(sp,n,nlen,w,wlen) \
+    sp->conv->file2int(sp->conv, n, nlen, &w, &wlen)
+#define INT2FILE(sp,w,wlen,n,nlen) \
+    sp->conv->int2file(sp->conv, w, wlen, &n, &nlen)
 #define CHAR2INT(sp,n,nlen,w,wlen) \
     sp->conv->char2int(sp->conv, n, nlen, &w, &wlen)
 #define INT2CHAR(sp,w,wlen,n,nlen) \
     sp->conv->int2char(sp->conv, w, wlen, &n, &nlen)
 #define CONST
 #else
+#define FILE2INT(sp,n,nlen,w,wlen) \
+    w = n; wlen = nlen
+#define INT2FILE(sp,w,wlen,n,nlen) \
+    n = w; nlen = wlen
 #define CHAR2INT(sp,n,nlen,w,wlen) \
     w = n; wlen = nlen
 #define INT2CHAR(sp,w,wlen,n,nlen) \
@@ -42,8 +50,16 @@ typedef	u_int		ARG_CHAR_T;
 #define CONST const
 #endif
 
+#define ISCNTRL(ch) \
+    iscntrl((u_char)(ch))
 #define ISDIGIT(ch) \
     isdigit((u_char)(ch))
+#define ISPRINT(ch) \
+    isprint((u_char)(ch))
+#define MEMCPYW(to, from, n) \
+    memcpy(to, from, (n) * sizeof(CHAR_T))
+#define MEMMOVEW(to, from, n) \
+    memmove(to, from, (n) * sizeof(CHAR_T))
 
 /* The maximum number of columns any character can take up on a screen. */
 #define	MAX_CHARACTER_COLUMNS	4

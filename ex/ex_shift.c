@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_shift.c,v 10.14 2000/07/14 14:29:21 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:21 $";
+static const char sccsid[] = "$Id: ex_shift.c,v 10.15 2000/07/15 20:26:35 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -94,7 +94,7 @@ shift(sp, cmdp, rl)
 	for (p = cmdp->argv[0]->bp, sw = 0; *p == '>' || *p == '<'; ++p)
 		sw += O_VAL(sp, O_SHIFTWIDTH);
 
-	GET_SPACE_RET(sp, bp, blen, 256);
+	GET_SPACE_RETW(sp, bp, blen, 256);
 
 	curset = 0;
 	for (from = cmdp->addr1.lno, to = cmdp->addr2.lno; from <= to; ++from) {
@@ -132,7 +132,7 @@ shift(sp, cmdp, rl)
 		}
 
 		/* Get a buffer that will hold the new line. */
-		ADD_SPACE_RET(sp, bp, blen, newcol + len);
+		ADD_SPACE_RETW(sp, bp, blen, newcol + len);
 
 		/*
 		 * Build a new indent string and count the number of
@@ -151,7 +151,7 @@ shift(sp, cmdp, rl)
 
 		/* Set the replacement line. */
 		if (db_set(sp, from, bp, (tbp + (len - oldidx)) - bp)) {
-err:			FREE_SPACE(sp, bp, blen);
+err:			FREE_SPACEW(sp, bp, blen);
 			return (1);
 		}
 
@@ -185,7 +185,7 @@ err:			FREE_SPACE(sp, bp, blen);
 		(void)nonblank(sp, to, &sp->cno);
 	}
 
-	FREE_SPACE(sp, bp, blen);
+	FREE_SPACEW(sp, bp, blen);
 
 	sp->rptlines[L_SHIFT] += cmdp->addr2.lno - cmdp->addr1.lno + 1;
 	return (0);

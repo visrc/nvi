@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: exf.h,v 10.11 2000/07/14 14:29:15 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:15 $
+ *	$Id: exf.h,v 10.12 2000/07/15 20:26:34 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:34 $
  */
 					/* Undo direction. */
 /*
@@ -21,14 +21,18 @@ struct _exf {
 	DB	*db;			/* File db structure. */
 	CHAR_T	*c_lp;			/* Cached line. */
 	size_t	 c_len;			/* Cached line length. */
-	db_recno_t	 c_lno;			/* Cached line number. */
-	db_recno_t	 c_nlines;		/* Cached lines in the file. */
+	/* May move out again once we use DB 
+	 * to cache internal representation
+	 */
+	size_t	 c_blen;		/* Cached line buffer length. */
+	db_recno_t	 c_lno;		/* Cached line number. */
+	db_recno_t	 c_nlines;	/* Cached lines in the file. */
 
 	DB	*log;			/* Log db structure. */
 	char	*l_lp;			/* Log buffer. */
 	size_t	 l_len;			/* Log buffer length. */
-	db_recno_t	 l_high;		/* Log last + 1 record number. */
-	db_recno_t	 l_cur;			/* Log current record number. */
+	db_recno_t	 l_high;	/* Log last + 1 record number. */
+	db_recno_t	 l_cur;		/* Log current record number. */
 	MARK	 l_cursor;		/* Log cursor position. */
 	dir_t	 lundo;			/* Last undo direction. */
 

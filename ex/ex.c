@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex.c,v 10.66 2000/07/14 14:29:19 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:19 $";
+static const char sccsid[] = "$Id: ex.c,v 10.67 2000/07/15 20:26:34 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -2202,11 +2202,11 @@ ex_unknown(sp, cmd, len)
 	size_t blen;
 	CHAR_T *bp;
 
-	GET_SPACE_GOTO(sp, bp, blen, (len + 1) * sizeof(CHAR_T));
+	GET_SPACE_GOTOW(sp, bp, blen, len + 1);
 	bp[len] = '\0';
-	memcpy(bp, cmd, len * sizeof(CHAR_T));
+	MEMCPYW(bp, cmd, len);
 	msgq_wstr(sp, M_ERR, bp, "098|The %s command is unknown");
-	FREE_SPACE(sp, bp, blen);
+	FREE_SPACEW(sp, bp, blen);
 
 alloc_err:
 	return;

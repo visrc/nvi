@@ -13,7 +13,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_script.c,v 10.35 2000/07/14 14:29:21 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:21 $";
+static const char sccsid[] = "$Id: ex_script.c,v 10.36 2000/07/15 20:26:35 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -317,8 +317,8 @@ sscr_exec(sp, lno)
 		return (1);
 	if (sscr_matchprompt(sp, p, last_len, &tlen) && tlen == 0) {
 		matchprompt = 1;
-		GET_SPACE_RET(sp, bp, blen, last_len + 128);
-		memmove(bp, p, last_len);
+		GET_SPACE_RETW(sp, bp, blen, last_len + 128);
+		MEMMOVEW(bp, p, last_len);
 	} else
 		matchprompt = 0;
 
@@ -356,13 +356,13 @@ err2:		if (nw == 0)
 	}
 
 	if (matchprompt) {
-		ADD_SPACE_RET(sp, bp, blen, last_len + len);
-		memmove(bp + last_len, p, len);
+		ADD_SPACE_RETW(sp, bp, blen, last_len + len);
+		MEMMOVEW(bp + last_len, p, len);
 		if (db_set(sp, last_lno, bp, last_len + len))
 err1:			rval = 1;
 	}
 	if (matchprompt)
-		FREE_SPACE(sp, bp, blen);
+		FREE_SPACEW(sp, bp, blen);
 	return (rval);
 }
 
@@ -486,7 +486,7 @@ sscr_insert(sp)
 		return (1);
 
 #define	MINREAD	1024
-	GET_SPACE_RET(sp, bp, blen, MINREAD);
+	GET_SPACE_RETW(sp, bp, blen, MINREAD);
 	endp = bp;
 
 	/* Read the characters. */
@@ -547,7 +547,7 @@ more:	switch (nr = read(sc->sh_master, endp, MINREAD)) {
 	sp->cno = len ? len - 1 : 0;
 	rval = vs_refresh(sp, 1);
 
-ret:	FREE_SPACE(sp, bp, blen);
+ret:	FREE_SPACEW(sp, bp, blen);
 	return (rval);
 }
 

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_term.c,v 10.24 2000/07/14 14:29:14 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:14 $";
+static const char sccsid[] = "$Id: cl_term.c,v 10.25 2000/07/15 20:26:33 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -142,17 +142,21 @@ cl_term_init(sp)
 		if (!strcmp(t, "\b"))
 			continue;
 		if (tkp->output == NULL) {
-			if (seq_set(sp, tkp->name, strlen(tkp->name),
-			    t, strlen(t), NULL, 0,
+			CHAR2INT(sp, tkp->name, strlen(tkp->name), wp, wlen);
+			MEMCPYW(name, wp, wlen);
+			CHAR2INT(sp, t, strlen(t), wp, wlen);
+			MEMCPYW(ts, wp, wlen);
+			if (seq_set(sp, name, strlen(tkp->name),
+			    ts, strlen(t), NULL, 0,
 			    SEQ_INPUT, SEQ_NOOVERWRITE | SEQ_SCREEN))
 				return (1);
 		} else {
 			CHAR2INT(sp, tkp->name, strlen(tkp->name), wp, wlen);
-			memcpy(name, wp, wlen * sizeof(CHAR_T));
+			MEMCPYW(name, wp, wlen);
 			CHAR2INT(sp, t, strlen(t), wp, wlen);
-			memcpy(ts, wp, wlen * sizeof(CHAR_T));
+			MEMCPYW(ts, wp, wlen);
 			CHAR2INT(sp, tkp->output, strlen(tkp->output), wp, wlen);
-			memcpy(output, wp, wlen * sizeof(CHAR_T));
+			MEMCPYW(output, wp, wlen);
 			if (seq_set(sp, name, strlen(tkp->name),
 			    ts, strlen(t), output, strlen(tkp->output),
 			    SEQ_INPUT, SEQ_NOOVERWRITE | SEQ_SCREEN))
@@ -227,20 +231,32 @@ cl_pfmap(sp, stype, from, flen, to, tlen)
 {
 	size_t nlen;
 	char *p, keyname[64];
+	char *np;
+	size_t nplen;
+	CHAR_T name[60];
+	CHAR_T ts[20];
+	CHAR_T *wp;
+	size_t wlen;
 
-	(void)snprintf(keyname, sizeof(keyname), "kf%d", atoi(from + 1));
+	INT2CHAR(sp, from+1, v_strlen(from+1)+1, np, nplen);
+	(void)snprintf(keyname, sizeof(keyname), "kf%d", atoi(np));
 	if ((p = tigetstr(keyname)) == NULL ||
 	    p == (char *)-1 || strlen(p) == 0)
 		p = NULL;
 	if (p == NULL) {
-		msgq_str(sp, M_ERR, from, "233|This terminal has no %s key");
+		msgq_wstr(sp, M_ERR, from, "233|This terminal has no %s key");
 		return (1);
 	}
 
+	INT2CHAR(sp, from+1, v_strlen(from+1)+1, np, nplen);
 	nlen = snprintf(keyname,
-	    sizeof(keyname), "function key %d", atoi(from + 1));
-	return (seq_set(sp, keyname, nlen,
-	    p, strlen(p), to, tlen, stype, SEQ_NOOVERWRITE | SEQ_SCREEN));
+	    sizeof(keyname), "function key %d", atoi(np));
+	CHAR2INT(sp, keyname, nlen, wp, wlen);
+	MEMCPYW(name, wp, wlen);
+	CHAR2INT(sp, p, strlen(p), wp, wlen);
+	MEMCPYW(ts, wp, wlen);
+	return (seq_set(sp, name, nlen,
+	    ts, strlen(p), to, tlen, stype, SEQ_NOOVERWRITE | SEQ_SCREEN));
 }
 
 /*

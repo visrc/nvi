@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_itxt.c,v 10.19 2000/07/14 14:29:23 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:23 $";
+static const char sccsid[] = "$Id: v_itxt.c,v 10.20 2000/07/15 20:26:36 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -358,8 +358,8 @@ v_change(sp, vp)
 		 */
 		if (db_get(sp, vp->m_start.lno, DBG_FATAL, &p, &len))
 			return (1);
-		GET_SPACE_RET(sp, bp, blen, vp->m_start.cno);
-		memmove(bp, p, vp->m_start.cno);
+		GET_SPACE_RETW(sp, bp, blen, vp->m_start.cno);
+		MEMMOVEW(bp, p, vp->m_start.cno);
 	} else
 		bp = NULL;
 
@@ -390,7 +390,7 @@ v_change(sp, vp)
 	    0, OOBLNO, F_ISSET(vp, VC_C1SET) ? vp->count : 1, flags);
 
 	if (bp != NULL)
-		FREE_SPACE(sp, bp, blen);
+		FREE_SPACEW(sp, bp, blen);
 	return (rval);
 }
 

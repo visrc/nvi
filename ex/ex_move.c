@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_move.c,v 10.13 2000/07/14 14:29:20 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:20 $";
+static const char sccsid[] = "$Id: ex_move.c,v 10.14 2000/07/15 20:26:35 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -136,7 +136,7 @@ ex_move(sp, cmdp)
 		}
 
 	/* Get memory for the copy. */
-	GET_SPACE_RET(sp, bp, blen, 256);
+	GET_SPACE_RETW(sp, bp, blen, 256);
 
 	/* Move the lines. */
 	diff = (fm2.lno - fm1.lno) + 1;
@@ -146,8 +146,8 @@ ex_move(sp, cmdp)
 		for (cnt = diff; cnt--;) {
 			if (db_get(sp, fl, DBG_FATAL, &p, &len))
 				return (1);
-			BINC_RET(sp, bp, blen, len);
-			memcpy(bp, p, len);
+			BINC_RETW(sp, bp, blen, len);
+			MEMCPYW(bp, p, len);
 			if (db_append(sp, 1, tl, bp, len))
 				return (1);
 			if (mark_reset)
@@ -165,8 +165,8 @@ ex_move(sp, cmdp)
 		for (cnt = diff; cnt--;) {
 			if (db_get(sp, fl, DBG_FATAL, &p, &len))
 				return (1);
-			BINC_RET(sp, bp, blen, len);
-			memcpy(bp, p, len);
+			BINC_RETW(sp, bp, blen, len);
+			MEMCPYW(bp, p, len);
 			if (db_append(sp, 1, tl++, bp, len))
 				return (1);
 			if (mark_reset)
@@ -180,7 +180,7 @@ ex_move(sp, cmdp)
 				return (1);
 		}
 	}
-	FREE_SPACE(sp, bp, blen);
+	FREE_SPACEW(sp, bp, blen);
 
 	sp->lno = tl;				/* Last line moved. */
 	sp->cno = 0;

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: delete.c,v 10.15 2000/07/10 15:28:44 skimo Exp $ (Berkeley) $Date: 2000/07/10 15:28:44 $";
+static const char sccsid[] = "$Id: delete.c,v 10.16 2000/07/15 20:26:34 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -80,8 +80,8 @@ del(sp, fm, tm, lmode)
 			}
 			if (db_get(sp, fm->lno, DBG_FATAL, &p, &len))
 				return (1);
-			GET_SPACE_RET(sp, bp, blen, fm->cno);
-			memcpy(bp, p, fm->cno);
+			GET_SPACE_RETW(sp, bp, blen, fm->cno);
+			MEMCPYW(bp, p, fm->cno);
 			if (db_set(sp, fm->lno, bp, fm->cno))
 				return (1);
 			goto done;
@@ -92,10 +92,11 @@ del(sp, fm, tm, lmode)
 	if (tm->lno == fm->lno) {
 		if (db_get(sp, fm->lno, DBG_FATAL, &p, &len))
 			return (1);
-		GET_SPACE_RET(sp, bp, blen, len);
+		GET_SPACE_RETW(sp, bp, blen, len);
 		if (fm->cno != 0)
-			memcpy(bp, p, fm->cno);
-		memcpy(bp + fm->cno, p + (tm->cno + 1), len - (tm->cno + 1));
+			MEMCPYW(bp, p, fm->cno);
+		MEMCPYW(bp + fm->cno, p + (tm->cno + 1), 
+			len - (tm->cno + 1));
 		if (db_set(sp, fm->lno,
 		    bp, len - ((tm->cno - fm->cno) + 1)))
 			goto err;
@@ -110,8 +111,8 @@ del(sp, fm, tm, lmode)
 	if ((tlen = fm->cno) != 0) {
 		if (db_get(sp, fm->lno, DBG_FATAL, &p, NULL))
 			return (1);
-		GET_SPACE_RET(sp, bp, blen, tlen + 256);
-		memcpy(bp, p, tlen);
+		GET_SPACE_RETW(sp, bp, blen, tlen + 256);
+		MEMCPYW(bp, p, tlen);
 	}
 
 	/* Copy the end partial line into place. */
@@ -130,11 +131,11 @@ del(sp, fm, tm, lmode)
 			goto err;
 		}
 		if (tlen == 0) {
-			GET_SPACE_RET(sp, bp, blen, nlen);
+			GET_SPACE_RETW(sp, bp, blen, nlen);
 		} else
-			ADD_SPACE_RET(sp, bp, blen, nlen);
+			ADD_SPACE_RETW(sp, bp, blen, nlen);
 
-		memcpy(bp + tlen, p + (tm->cno + 1), len - (tm->cno + 1));
+		MEMCPYW(bp + tlen, p + (tm->cno + 1), len - (tm->cno + 1));
 		tlen += len - (tm->cno + 1);
 	}
 
@@ -155,6 +156,6 @@ done:	rval = 0;
 	if (0)
 err:		rval = 1;
 	if (bp != NULL)
-		FREE_SPACE(sp, bp, blen);
+		FREE_SPACEW(sp, bp, blen);
 	return (rval);
 }

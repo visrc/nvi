@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_util.c,v 10.27 2000/07/14 14:29:22 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:22 $";
+static const char sccsid[] = "$Id: ex_util.c,v 10.28 2000/07/15 20:26:35 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -71,7 +71,7 @@ ex_getline(sp, fp, lenp)
 	exp = EXP(sp);
 	for (errno = 0, off = 0, p = exp->ibp;;) {
 		if (off >= exp->ibp_len) {
-			BINC_RET(sp, exp->ibp, exp->ibp_len, off + 1);
+			BINC_RETW(sp, exp->ibp, exp->ibp_len, off + 1);
 			p = exp->ibp + off;
 		}
 		if ((ch = getc(fp)) == EOF && !feof(fp)) {

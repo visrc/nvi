@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_write.c,v 10.33 2000/07/14 14:29:22 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:22 $";
+static const char sccsid[] = "$Id: ex_write.c,v 10.34 2000/07/15 20:26:35 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -296,6 +296,8 @@ ex_writefp(sp, name, fp, fm, tm, nlno, nch, silent)
 	int rval;
 	char *msg;
 	CHAR_T *p;
+	char *f;
+	size_t flen;
 
 	gp = sp->gp;
 	fline = fm->lno;
@@ -338,7 +340,8 @@ ex_writefp(sp, name, fp, fm, tm, nlno, nch, silent)
 			}
 			if (db_get(sp, fline, DBG_FATAL, &p, &len))
 				goto err;
-			if (fwrite(p, 1, len, fp) != len)
+			INT2FILE(sp, p, len, f, flen);
+			if (fwrite(f, 1, flen, fp) != len)
 				goto err;
 			ccnt += len;
 			if (putc('\n', fp) != '\n')

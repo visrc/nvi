@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: put.c,v 10.14 2000/07/14 14:29:17 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:17 $";
+static const char sccsid[] = "$Id: put.c,v 10.15 2000/07/15 20:26:34 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -121,19 +121,19 @@ put(sp, cbp, namep, cp, rp, append)
 	if (db_get(sp, lno, DBG_FATAL, &p, &len))
 		return (1);
 
-	GET_SPACE_RET(sp, bp, blen, tp->len + len + 1);
+	GET_SPACE_RETW(sp, bp, blen, tp->len + len + 1);
 	t = bp;
 
 	/* Original line, left of the split. */
 	if (len > 0 && (clen = cp->cno + (append ? 1 : 0)) > 0) {
-		memcpy(bp, p, clen);
+		MEMCPYW(bp, p, clen);
 		p += clen;
 		t += clen;
 	}
 
 	/* First line from the CB. */
 	if (tp->len != 0) {
-		memcpy(t, tp->lb, tp->len);
+		MEMCPYW(t, tp->lb, tp->len);
 		t += tp->len;
 	}
 
@@ -186,7 +186,7 @@ put(sp, cbp, namep, cp, rp, append)
 		 */
 		ltp = cbp->textq.cqh_last;
 		len = t - bp;
-		ADD_SPACE_RET(sp, bp, blen, ltp->len + clen);
+		ADD_SPACE_RETW(sp, bp, blen, ltp->len + clen);
 		t = bp + len;
 
 		/* Add in last part of the CB. */
@@ -227,6 +227,6 @@ put(sp, cbp, namep, cp, rp, append)
 	if (0)
 err:		rval = 1;
 
-	FREE_SPACE(sp, bp, blen);
+	FREE_SPACEW(sp, bp, blen);
 	return (rval);
 }

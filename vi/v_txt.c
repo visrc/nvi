@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.96 2000/07/14 14:29:24 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:24 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.97 2000/07/15 20:26:36 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -594,7 +594,7 @@ next:	if (v_event_get(sp, evp, 0, ec_flags))
 
 	/* Check to see if the character fits into the replay buffers. */
 	if (LF_ISSET(TXT_RECORD)) {
-		BINC_GOTO(sp, vip->rep,
+		BINC_GOTO(sp, (char *)vip->rep,
 		    vip->rep_len, (rcol + 1) * sizeof(EVENT));
 		vip->rep[rcol++] = *evp;
 	}
@@ -793,7 +793,7 @@ k_cr:		if (LF_ISSET(TXT_CR)) {
 			if (carat == C_NOCHANGE) {
 				if (v_txt_auto(sp, OOBLNO, &ait, ait.ai, ntp))
 					goto err;
-				FREE_SPACE(sp, ait.lb, ait.lb_len);
+				FREE_SPACEW(sp, ait.lb, ait.lb_len);
 			} else
 				if (v_txt_auto(sp, OOBLNO, tp, tp->cno, ntp))
 					goto err;
@@ -812,9 +812,9 @@ k_cr:		if (LF_ISSET(TXT_CR)) {
 			if (wmt.offset != 0 ||
 			    wmt.owrite != 0 || wmt.insert != 0) {
 #define	WMTSPACE	wmt.offset + wmt.owrite + wmt.insert
-				BINC_GOTO(sp, ntp->lb,
+				BINC_GOTOW(sp, ntp->lb,
 				    ntp->lb_len, ntp->len + WMTSPACE + 32);
-				memmove(ntp->lb + ntp->cno, wmt.lb, WMTSPACE);
+				MEMMOVEW(ntp->lb + ntp->cno, wmt.lb, WMTSPACE);
 				ntp->len += WMTSPACE;
 				ntp->cno += wmt.offset;
 				ntp->owrite = wmt.owrite;
@@ -825,7 +825,7 @@ k_cr:		if (LF_ISSET(TXT_CR)) {
 
 		/* New lines are TXT_APPENDEOL. */
 		if (ntp->owrite == 0 && ntp->insert == 0) {
-			BINC_GOTO(sp, ntp->lb, ntp->lb_len, ntp->len + 1);
+			BINC_GOTOW(sp, ntp->lb, ntp->lb_len, ntp->len + 1);
 			LF_SET(TXT_APPENDEOL);
 			ntp->lb[ntp->cno] = CH_CURSOR;
 			++ntp->insert;
@@ -914,7 +914,7 @@ k_escape:	LINE_RESOLVE;
 			if (txt_resolve(sp, &sp->tiq, flags))
 				goto err;
 		} else {
-			BINC_GOTO(sp, tp->lb, tp->lb_len, tp->len + 1);
+			BINC_GOTOW(sp, tp->lb, tp->lb_len, tp->len + 1);
 			tp->lb[tp->len] = '\0';
 		}
 
@@ -958,8 +958,8 @@ k_escape:	LINE_RESOLVE;
 			/* Save the ai string for later. */
 			ait.lb = NULL;
 			ait.lb_len = 0;
-			BINC_GOTO(sp, ait.lb, ait.lb_len, tp->ai);
-			memmove(ait.lb, tp->lb, tp->ai);
+			BINC_GOTOW(sp, ait.lb, ait.lb_len, tp->ai);
+			MEMMOVEW(ait.lb, tp->lb, tp->ai);
 			ait.ai = ait.len = tp->ai;
 
 			carat = C_NOCHANGE;
@@ -1264,7 +1264,7 @@ ins_ch:		/*
 		 * wasn't a replay and wasn't handled specially, except
 		 * <tab> or <ff>.
 		 */
-		if (LF_ISSET(TXT_BEAUTIFY) && iscntrl(evp->e_c) &&
+		if (LF_ISSET(TXT_BEAUTIFY) && ISCNTRL(evp->e_c) &&
 		    evp->e_value != K_FORMFEED && evp->e_value != K_TAB) {
 			msgq(sp, M_BERR,
 			    "192|Illegal character; quote to enter");
@@ -1356,7 +1356,7 @@ insl_ch:	if (txt_insch(sp, tp, &evp->e_c, flags))
 		 * the length of the motion.
 		 */
 ebuf_chk:	if (tp->cno >= tp->len) {
-			BINC_GOTO(sp, tp->lb, tp->lb_len, tp->len + 1);
+			BINC_GOTOW(sp, tp->lb, tp->lb_len, tp->len + 1);
 			LF_SET(TXT_APPENDEOL);
 
 			tp->lb[tp->cno] = CH_CURSOR;
@@ -1806,7 +1806,7 @@ v_txt_auto(sp, lno, aitp, len, tp)
 		return (0);
 
 	/* Make sure the buffer's big enough. */
-	BINC_RET(sp, tp->lb, tp->lb_len, tp->len + nlen);
+	BINC_RETW(sp, tp->lb, tp->lb_len, tp->len + nlen);
 
 	/* Copy the buffer's current contents up. */
 	if (tp->len != 0)
@@ -2052,7 +2052,7 @@ retry:		for (len = 0,
 	 * character.  I'm not sure if that's a bug or not...
 	 */
 	off = p - tp->lb;
-	BINC_RET(sp, tp->lb, tp->lb_len, tp->len + 1);
+	BINC_RETW(sp, tp->lb, tp->lb_len, tp->len + 1);
 	p = tp->lb + off;
 
 	s_ch = p[len];
@@ -2127,7 +2127,7 @@ retry:		for (len = 0,
 	/* Shift remaining text up, and move the cursor to the end. */
 	if (nlen) {
 		off = p - tp->lb;
-		BINC_RET(sp, tp->lb, tp->lb_len, tp->len + nlen);
+		BINC_RETW(sp, tp->lb, tp->lb_len, tp->len + nlen);
 		p = tp->lb + off;
 
 		tp->cno += nlen;
@@ -2144,7 +2144,7 @@ retry:		for (len = 0,
 	if (argc == 1 && !stat(np, &sb) && S_ISDIR(sb.st_mode)) {
 isdir:		if (tp->owrite == 0) {
 			off = p - tp->lb;
-			BINC_RET(sp, tp->lb, tp->lb_len, tp->len + 1);
+			BINC_RETW(sp, tp->lb, tp->lb_len, tp->len + 1);
 			p = tp->lb + off;
 			if (tp->insert != 0)
 				(void)memmove(p + 1, p, tp->insert * sizeof(CHAR_T));
@@ -2236,7 +2236,7 @@ txt_fc_col(sp, argc, argv)
 				break;
 		}
 		if (nf)
-			FREE_SPACE(sp, p, 0);
+			FREE_SPACEW(sp, p, 0);
 		CHK_INTR;
 	} else {
 		/* Figure out the number of columns. */
@@ -2256,7 +2256,7 @@ txt_fc_col(sp, argc, argv)
 				pp = msg_print(sp, np, &nf);
 				cnt = ex_printf(sp, "%s", pp);
 				if (nf)
-					FREE_SPACE(sp, p, 0);
+					FREE_SPACEW(sp, p, 0);
 				CHK_INTR;
 				if ((base += numrows) >= argc)
 					break;
@@ -2314,7 +2314,7 @@ txt_emark(sp, tp, cno)
 	 * to fix it up.
 	 */
 	if (olen > nlen) {
-		BINC_RET(sp, tp->lb, tp->lb_len, (tp->len + olen) * sizeof(CHAR_T));
+		BINC_RETW(sp, tp->lb, tp->lb_len, tp->len + olen);
 		chlen = olen - nlen;
 		if (tp->insert != 0)
 			memmove(tp->lb + cno + 1 + chlen,
@@ -2520,12 +2520,12 @@ txt_insch(sp, tp, chp, flags)
 				++copydown;
 				nlen -= olen;
 			} else {
-				BINC_RET(sp,
-				    tp->lb, tp->lb_len, (tp->len + olen) * sizeof(CHAR_T));
+				BINC_RETW(sp,
+				    tp->lb, tp->lb_len, tp->len + olen);
 				chlen = olen - nlen;
-				memmove(tp->lb + cno + 1 + chlen,
+				MEMMOVEW(tp->lb + cno + 1 + chlen,
 				    tp->lb + cno + 1, 
-				    (tp->owrite + tp->insert) * sizeof(CHAR_T));
+				    tp->owrite + tp->insert);
 
 				tp->len += chlen;
 				tp->owrite += chlen;
@@ -2559,7 +2559,7 @@ txt_insch(sp, tp, chp, flags)
 	}
 
 	/* Check to see if the character fits into the input buffer. */
-	BINC_RET(sp, tp->lb, tp->lb_len, tp->len + 1);
+	BINC_RETW(sp, tp->lb, tp->lb_len, tp->len + 1);
 
 	++tp->len;
 	if (tp->insert) {			/* Insert a character. */

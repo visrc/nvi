@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cut.c,v 10.14 2000/07/14 14:29:15 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:15 $";
+static const char sccsid[] = "$Id: cut.c,v 10.15 2000/07/15 20:26:33 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -266,7 +266,7 @@ cut_line(sp, lno, fcno, clen, cbp)
 	if (len != 0) {
 		if (clen == 0)
 			clen = len - fcno;
-		memcpy(tp->lb, p + fcno, clen);
+		MEMCPYW(tp->lb, p + fcno, clen);
 		tp->len = clen;
 	}
 
@@ -322,13 +322,13 @@ text_init(sp, p, len, total_len)
 		return (NULL);
 	/* ANSI C doesn't define a call to malloc(3) for 0 bytes. */
 	if ((tp->lb_len = total_len) != 0) {
-		MALLOC(sp, tp->lb, CHAR_T *, CHAR_T_BLEN(sp, tp->lb_len));
+		MALLOC(sp, tp->lb, CHAR_T *, tp->lb_len * sizeof(CHAR_T));
 		if (tp->lb == NULL) {
 			free(tp);
 			return (NULL);
 		}
 		if (p != NULL && len != 0)
-			memcpy(tp->lb, p, len * sizeof(CHAR_T));
+			MEMCPYW(tp->lb, p, len);
 	}
 	tp->len = len;
 	return (tp);

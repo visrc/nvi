@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: key.c,v 10.42 2000/07/14 14:29:16 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:16 $";
+static const char sccsid[] = "$Id: key.c,v 10.43 2000/07/15 20:26:34 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -146,7 +146,7 @@ v_key_init(sp)
 
 	/* Find a non-printable character to use as a message separator. */
 	for (ch = 1; ch <= MAX_CHAR_T; ++ch)
-		if (!isprint(ch)) {
+		if (!ISPRINT(ch)) {
 			gp->noprint = ch;
 			break;
 		}
@@ -286,12 +286,12 @@ v_key_name(sp, ach)
 	 * NB: There's an assumption here that all printable characters take
 	 * up a single column on the screen.  This is not always correct.
 	 */
-	if (isprint(ch)) {
+	if (ISPRINT(ch)) {
 pr:		sp->cname[0] = ch;
 		len = 1;
 		goto done;
 	}
-nopr:	if (iscntrl(ch) && (ch < 0x20 || ch == 0x7f)) {
+nopr:	if (ISCNTRL(ch) && (ch < 0x20 || ch == 0x7f)) {
 		sp->cname[0] = '^';
 		sp->cname[1] = ch == 0x7f ? '?' : '@' + ch;
 		len = 2;
@@ -850,7 +850,7 @@ v_event_grow(sp, add)
 	gp = sp->gp;
 	new_nelem = gp->i_nelem + add;
 	olen = gp->i_nelem * sizeof(gp->i_event[0]);
-	BINC_RET(sp, gp->i_event, olen, new_nelem * sizeof(gp->i_event[0]));
+	BINC_RET(sp, (char *)gp->i_event, olen, new_nelem * sizeof(gp->i_event[0]));
 	gp->i_nelem = olen / sizeof(gp->i_event[0]);
 	return (0);
 }

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_argv.c,v 10.29 2000/07/14 14:29:19 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:19 $";
+static const char sccsid[] = "$Id: ex_argv.c,v 10.30 2000/07/15 20:26:35 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -104,12 +104,12 @@ argv_exp1(sp, excp, cmd, cmdlen, is_bang)
 	size_t wlen;
 	CHAR_T *wp;
 
-	GET_SPACE_RET(sp, bp, blen, 512);
+	GET_SPACE_RETW(sp, bp, blen, 512);
 
 	len = 0;
 	exp = EXP(sp);
 	if (argv_fexp(sp, excp, cmd, cmdlen, bp, &len, &bp, &blen, is_bang)) {
-		FREE_SPACE(sp, bp, blen);
+		FREE_SPACEW(sp, bp, blen);
 		return (1);
 	}
 
@@ -125,7 +125,7 @@ argv_exp1(sp, excp, cmd, cmdlen, is_bang)
 
 	(void)argv_exp0(sp, excp, bp, len);
 
-ret:	FREE_SPACE(sp, bp, blen);
+ret:	FREE_SPACEW(sp, bp, blen);
 	return (0);
 }
 
@@ -148,7 +148,7 @@ argv_exp2(sp, excp, cmd, cmdlen)
 	CHAR_T *bp, *p;
 	char *mp, *np;
 
-	GET_SPACE_RET(sp, bp, blen, 512);
+	GET_SPACE_RETW(sp, bp, blen, 512);
 
 #define	SHELLECHO	"echo "
 #define	SHELLOFFSET	(sizeof(SHELLECHO) - 1)
@@ -249,7 +249,7 @@ argv_exp2(sp, excp, cmd, cmdlen)
 		break;
 	}
 
-err:	FREE_SPACE(sp, bp, blen);
+err:	FREE_SPACEW(sp, bp, blen);
 	return (rval);
 }
 
@@ -356,9 +356,9 @@ argv_fexp(sp, excp, cmd, cmdlen, p, lenp, bpp, blenp, is_bang)
 			}
 			len += tlen = v_strlen(exp->lastbcomm);
 			off = p - bp;
-			ADD_SPACE_RET(sp, bp, blen, len);
+			ADD_SPACE_RETW(sp, bp, blen, len);
 			p = bp + off;
-			memcpy(p, exp->lastbcomm, tlen);
+			MEMCPYW(p, exp->lastbcomm, tlen);
 			p += tlen;
 			F_SET(excp, E_MODIFY);
 			break;
@@ -371,9 +371,9 @@ argv_fexp(sp, excp, cmd, cmdlen, p, lenp, bpp, blenp, is_bang)
 			tlen = strlen(t);
 			len += tlen;
 			off = p - bp;
-			ADD_SPACE_RET(sp, bp, blen, len);
+			ADD_SPACE_RETW(sp, bp, blen, len);
 			p = bp + off;
-			memcpy(p, t, tlen);
+			MEMCPYW(p, t, tlen);
 			p += tlen;
 			F_SET(excp, E_MODIFY);
 			break;
@@ -385,7 +385,7 @@ argv_fexp(sp, excp, cmd, cmdlen, p, lenp, bpp, blenp, is_bang)
 			}
 			len += tlen = strlen(t);
 			off = p - bp;
-			ADD_SPACE_RET(sp, bp, blen, len);
+			ADD_SPACE_RETW(sp, bp, blen, len);
 			p = bp + off;
 			memcpy(p, t, tlen);
 			p += tlen;
@@ -407,7 +407,7 @@ argv_fexp(sp, excp, cmd, cmdlen, p, lenp, bpp, blenp, is_bang)
 		default:
 ins_ch:			++len;
 			off = p - bp;
-			ADD_SPACE_RET(sp, bp, blen, len);
+			ADD_SPACE_RETW(sp, bp, blen, len);
 			p = bp + off;
 			*p++ = *cmd;
 		}
@@ -415,7 +415,7 @@ ins_ch:			++len;
 	/* Nul termination. */
 	++len;
 	off = p - bp;
-	ADD_SPACE_RET(sp, bp, blen, len);
+	ADD_SPACE_RETW(sp, bp, blen, len);
 	p = bp + off;
 	*p = '\0';
 
@@ -728,7 +728,7 @@ err:		if (ifp != NULL)
 	for (p = bp, len = 0, ch = EOF;
 	    (ch = getc(ifp)) != EOF; *p++ = ch, --blen, ++len)
 		if (blen < 5) {
-			ADD_SPACE_GOTO(sp, bp, *blenp, *blenp * 2);
+			ADD_SPACE_GOTOW(sp, bp, *blenp, *blenp * 2);
 			p = bp + len;
 			blen = *blenp - len;
 		}

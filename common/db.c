@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: db.c,v 10.27 2000/07/14 14:29:15 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:15 $";
+static const char sccsid[] = "$Id: db.c,v 10.28 2000/07/15 20:26:33 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -91,6 +91,8 @@ db_get(sp, lno, flags, pp, lenp)
 	EXF *ep;
 	TEXT *tp;
 	db_recno_t l1, l2;
+	CHAR_T *wp;
+	size_t wlen;
 
 	/*
 	 * The underlying recno stuff handles zero by returning NULL, but
@@ -162,6 +164,7 @@ nocache:
 	case DB_NOTFOUND:
 err1:		if (LF_ISSET(DBG_FATAL))
 err2:			db_err(sp, lno);
+alloc_err:
 err3:		if (lenp != NULL)
 			*lenp = 0;
 		if (pp != NULL)
@@ -171,16 +174,19 @@ err3:		if (lenp != NULL)
 		;
 	}
 
+	FILE2INT(sp, data.data, data.size, wp, wlen);
+
 	/* Reset the cache. */
+	BINC_GOTOW(sp, ep->c_lp, ep->c_blen, wlen);
+	MEMCPYW(ep->c_lp, wp, wlen);
 	ep->c_lno = lno;
-	ep->c_len = data.size / sizeof(CHAR_T);
-	ep->c_lp = data.data;
+	ep->c_len = wlen;
 
 #if defined(DEBUG) && 0
 	vtrace(sp, "retrieve DB line %lu\n", (u_long)lno);
 #endif
 	if (lenp != NULL)
-		*lenp = data.size / sizeof(CHAR_T);
+		*lenp = wlen;
 	if (pp != NULL)
 		*pp = ep->c_lp;
 	return (0);
@@ -262,6 +268,8 @@ append(sp, lno, p, len)
 	DBT data, key;
 	DBC *dbcp_put;
 	EXF *ep;
+	char *fp;
+	size_t flen;
 
 	ep = sp->ep;
 
@@ -273,12 +281,14 @@ append(sp, lno, p, len)
 	if ((sp->db_error = ep->db->cursor(ep->db, NULL, &dbcp_put, 0)) != 0)
 	    return 1;
 
+	INT2FILE(sp, p, len, fp, flen);
+
 	if (lno != 0) {
 	    if ((sp->db_error = dbcp_put->c_get(dbcp_put, &key, &data, DB_SET)) != 0) 
 		goto err2;
 
-	    data.data = p;
-	    data.size = len * sizeof(CHAR_T);
+	    data.data = fp;
+	    data.size = flen;
 	    if ((sp->db_error = dbcp_put->c_put(dbcp_put, &key, &data, DB_AFTER)) != 0) {
 err2:
 		(void)dbcp_put->c_close(dbcp_put);
@@ -289,16 +299,16 @@ err2:
 		if (sp->db_error != DB_NOTFOUND)
 		    goto err2;
 
-		data.data = p;
-		data.size = len * sizeof(CHAR_T);
+		data.data = fp;
+		data.size = flen;
 		if ((sp->db_error = ep->db->put(ep->db, NULL, &key, &data, DB_APPEND)) != 0) {
 		    goto err2;
 		}
 	    } else {
 		key.data = &lno;
 		key.size = sizeof(lno);
-		data.data = p;
-		data.size = len * sizeof(CHAR_T);
+		data.data = fp;
+		data.size = flen;
 		if ((sp->db_error = dbcp_put->c_put(dbcp_put, &key, &data, DB_BEFORE)) != 0) {
 		    goto err2;
 		}
@@ -452,12 +462,13 @@ db_set(sp, lno, p, len)
 {
 	DBT data, key;
 	EXF *ep;
+	char *fp;
+	size_t flen;
 
 #if defined(DEBUG) && 0
 	vtrace(sp, "replace line %lu: len %lu {%.*s}\n",
 	    (u_long)lno, (u_long)len, MIN(len, 20), p);
 #endif
-
 	/* Check for no underlying file. */
 	if ((ep = sp->ep) == NULL) {
 		ex_emsg(sp, NULL, EXM_NOFILEYET);
@@ -467,13 +478,15 @@ db_set(sp, lno, p, len)
 	/* Log before change. */
 	log_line(sp, lno, LOG_LINE_RESET_B);
 
+	INT2FILE(sp, p, len, fp, flen);
+
 	/* Update file. */
 	memset(&key, 0, sizeof(key));
 	key.data = &lno;
 	key.size = sizeof(lno);
 	memset(&data, 0, sizeof(data));
-	data.data = p;
-	data.size = len * sizeof(CHAR_T);
+	data.data = fp;
+	data.size = flen;
 	if ((sp->db_error = ep->db->put(ep->db, NULL, &key, &data, 0)) != 0) {
 		msgq(sp, M_DBERR, "006|unable to store line %lu", (u_long)lno);
 		return (1);
@@ -545,6 +558,8 @@ db_last(sp, lnop)
 	DBC *dbcp;
 	EXF *ep;
 	db_recno_t lno;
+	CHAR_T *wp;
+	size_t wlen;
 
 	/* Check for no underlying file. */
 	if ((ep = sp->ep) == NULL) {
@@ -577,6 +592,7 @@ db_last(sp, lnop)
 		return (0);
 	default:
 		(void)dbcp->c_close(dbcp);
+alloc_err:
 err1:
 		msgq(sp, M_DBERR, "007|unable to get last line");
 		*lnop = 0;
@@ -586,11 +602,14 @@ err1:
 	}
 	(void)dbcp->c_close(dbcp);
 
+	FILE2INT(sp, data.data, data.size, wp, wlen);
+
 	/* Fill the cache. */
+	BINC_GOTOW(sp, ep->c_lp, ep->c_blen, wlen);
+	MEMCPYW(ep->c_lp, wp, wlen);
 	memcpy(&lno, key.data, sizeof(lno));
 	ep->c_nlines = ep->c_lno = lno;
-	ep->c_len = data.size / sizeof(CHAR_T);
-	ep->c_lp = data.data;
+	ep->c_len = wlen;
 
 	/* Return the value. */
 	*lnop = (F_ISSET(sp, SC_TINPUT) &&

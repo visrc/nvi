@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_replace.c,v 10.20 2000/07/14 14:29:24 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:24 $";
+static const char sccsid[] = "$Id: v_replace.c,v 10.21 2000/07/15 20:26:36 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -145,8 +145,8 @@ next:		if (v_event_get(sp, &ev, 0, 0))
 	}
 
 	/* Copy the line. */
-	GET_SPACE_RET(sp, bp, blen, len);
-	memmove(bp, p, len);
+	GET_SPACE_RETW(sp, bp, blen, len);
+	MEMMOVEW(bp, p, len);
 	p = bp;
 
 	/*
@@ -197,7 +197,7 @@ err_ret:		rval = 1;
 		memset(bp + vp->m_start.cno, vip->rlast, cnt);
 		rval = db_set(sp, vp->m_start.lno, bp, len);
 	}
-	FREE_SPACE(sp, bp, blen);
+	FREE_SPACEW(sp, bp, blen);
 
 	vp->m_final = vp->m_stop;
 	return (rval);

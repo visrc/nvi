@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_join.c,v 10.13 2000/07/14 14:29:20 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:20 $";
+static const char sccsid[] = "$Id: ex_join.c,v 10.14 2000/07/15 20:26:35 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -53,7 +53,7 @@ ex_join(sp, cmdp)
 		return (1);
 	}
 
-	GET_SPACE_RET(sp, bp, blen, 256);
+	GET_SPACE_RETW(sp, bp, blen, 256);
 
 	/*
 	 * The count for the join command was off-by-one,
@@ -91,7 +91,7 @@ ex_join(sp, cmdp)
 		 * tbp - bp is the length of the new line.
 		 */
 		tlen += len + 2;
-		ADD_SPACE_RET(sp, bp, blen, tlen);
+		ADD_SPACE_RETW(sp, bp, blen, tlen);
 		tbp = bp + clen;
 
 		/*
@@ -168,10 +168,10 @@ ex_join(sp, cmdp)
 
 	/* If the original line changed, reset it. */
 	if (!first && db_set(sp, from, bp, tbp - bp)) {
-err:		FREE_SPACE(sp, bp, blen);
+err:		FREE_SPACEW(sp, bp, blen);
 		return (1);
 	}
-	FREE_SPACE(sp, bp, blen);
+	FREE_SPACEW(sp, bp, blen);
 
 	sp->rptlines[L_JOINED] += (cmdp->addr2.lno - cmdp->addr1.lno) + 1;
 	return (0);
