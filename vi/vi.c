@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vi.c,v 10.49 1996/06/17 10:42:03 bostic Exp $ (Berkeley) $Date: 1996/06/17 10:42:03 $";
+static const char sccsid[] = "$Id: vi.c,v 10.50 1996/06/18 18:53:20 bostic Exp $ (Berkeley) $Date: 1996/06/18 18:53:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -575,12 +575,6 @@ v_cmd(sp, dp, vp, ismotion, comcountp, mappedp)
 		if (dp == NULL)
 			goto usage;
 
-		/* A repeatable command must have been executed. */
-		if (!F_ISSET(dp, VC_ISDOT)) {
-			msgq(sp, M_ERR, "208|No command to repeat");
-			return (GC_ERR);
-		}
-
 		/*
 		 * !!!
 		 * If a '.' is immediately entered after an undo command, we
@@ -592,6 +586,12 @@ v_cmd(sp, dp, vp, ismotion, comcountp, mappedp)
 			vp->kp = &vikeys['u'];
 			F_SET(vp, VC_ISDOT);
 			return (GC_OK);
+		}
+
+		/* Otherwise, a repeatable command must have been executed. */
+		if (!F_ISSET(dp, VC_ISDOT)) {
+			msgq(sp, M_ERR, "208|No command to repeat");
+			return (GC_ERR);
 		}
 
 		/* Set new count/buffer, if any, and return. */
