@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.1,v 8.10 1994/05/18 19:41:06 bostic Exp $ (Berkeley) $Date: 1994/05/18 19:41:06 $
+.\"     $Id: vi.1,v 8.11 1994/05/24 18:04:58 bostic Exp $ (Berkeley) $Date: 1994/05/24 18:04:58 $
 .\"
 .Dd "%Q%"
 .Dt EX/VI 1
@@ -103,7 +103,7 @@ Start editing in read-only mode, as if the command name was
 .Nm view ,
 or the readonly option was set.
 .It Fl r
-Recover the specified file, or, if no files are specified,
+Recover the specified files, or, if no files are specified,
 list the files that could be recovered.
 If no recoverable files by the specified name exist,
 the file is edited as if the
@@ -368,9 +368,6 @@ The location used to stored temporary files (see also the
 option).
 .El
 .Sh ASYNCHRONOUS EVENTS
-.Nm \&Vi/ex
-handles six signals specially.
-.sp
 .Bl -tag -width "SIGWINCHXX" -compact
 .It SIGALRM
 .Nm \&Vi/ex
