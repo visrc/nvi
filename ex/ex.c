@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.34 1992/10/17 16:09:57 bostic Exp $ (Berkeley) $Date: 1992/10/17 16:09:57 $";
+static char sccsid[] = "$Id: ex.c,v 5.35 1992/10/18 13:07:43 bostic Exp $ (Berkeley) $Date: 1992/10/18 13:07:43 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -472,8 +472,8 @@ addr2:	switch(cmd.addrcnt) {
 			msg("%lu is an invalid address.", num);
 			return (1);
 		}
-		if (num > nlines) {
-			msg("Only %lu lines in the file.", nlines);
+		if (num > file_lline(curf)) {
+			msg("Only %lu lines in the file.", file_lline(curf));
 			return (1);
 		}
 		/* FALLTHROUGH */
@@ -488,8 +488,8 @@ addr2:	switch(cmd.addrcnt) {
 			msg("%lu is an invalid address.", num);
 			return (1);
 		}
-		if (num > nlines) {
-			msg("Only %lu lines in the file.", nlines);
+		if (num > file_lline(curf)) {
+			msg("Only %lu lines in the file.", file_lline(curf));
 			return (1);
 		}
 		break;

@@ -24,7 +24,7 @@ MARK *m_z(m, cnt, key)
 	int	i;
 
 	/* Which line are we talking about? */
-	if (cnt < 0 || cnt > nlines)
+	if (cnt < 0 || cnt > file_lline(curf))
 	{
 		return NULL;
 	}

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 5.13 1992/10/10 13:58:00 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:58:00 $";
+static char sccsid[] = "$Id: ex_subst.c,v 5.14 1992/10/18 13:07:47 bostic Exp $ (Berkeley) $Date: 1992/10/18 13:07:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -227,7 +227,7 @@ Continue:
 			 * in the file will increase after each line has been substituted.
 			 * we need to adjust for this.
 			 */
-			oldnlines = nlines;
+			oldnlines = file_lline(curf);
 
 			/* replace the old version of the line with the new */
 			d[-1] = '\n';
@@ -237,8 +237,8 @@ Continue:
 			change(MARK_AT_LINE(l), MARK_AT_LINE(l + 1), lbuf);
 #endif
 
-			l += nlines - oldnlines;
-			cmdp->addr2.lno += nlines - oldnlines;
+			l += file_lline(curf) - oldnlines;
+			cmdp->addr2.lno += file_lline(curf) - oldnlines;
 
 			/* if supposed to print it, do so */
 			if (optp)

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 5.11 1992/10/10 13:57:53 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:57:53 $";
+static char sccsid[] = "$Id: ex_global.c,v 5.12 1992/10/18 13:07:46 bostic Exp $ (Berkeley) $Date: 1992/10/18 13:07:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -104,20 +104,20 @@ global(cmdp, cmd)
 		 * work.  The solution: count lines relative to the end of
 		 * the file.  Think about it.
 		 */
-		for (l = nlines - cmdp->addr1.lno,
+		for (l = file_lline(curf) - cmdp->addr1.lno,
 			lqty = cmdp->addr2.lno - cmdp->addr1.lno + 1L,
 			nchanged = 0L;
-		     lqty > 0 && nlines - l >= 0 && nchanged >= 0L;
+		     lqty > 0 && file_lline(curf) - l >= 0 && nchanged >= 0L;
 		     l--, lqty--)
 		{
 			/* fetch the line */
-			line = file_gline(curf, nlines - l, NULL);
+			line = file_gline(curf, file_lline(curf) - l, NULL);
 
 			/* if it contains the search pattern... */
 			if ((!regexec(re, line, 1)) == isv)
 			{
 				/* move the cursor to that line */
-				curf->lno = nlines - l;
+				curf->lno = file_lline(curf) - l;
 
 				/* do the ex command (without mucking up
 				 * the original copy of the command line)

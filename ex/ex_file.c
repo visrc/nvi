@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_file.c,v 5.8 1992/10/10 13:57:52 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:57:52 $";
+static char sccsid[] = "$Id: ex_file.c,v 5.9 1992/10/18 13:07:45 bostic Exp $ (Berkeley) $Date: 1992/10/18 13:07:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -24,6 +24,8 @@ int
 ex_file(cmdp)
 	EXCMDARG *cmdp;
 {
+	recno_t lline;
+
 	switch(cmdp->argc) {
 	case 0:
 		break;
@@ -43,10 +45,11 @@ ex_file(cmdp)
 		return (1);
 	}
 
+	lline = file_lline(curf);
 	msg("\"%s\" %s%s %ld lines,  line %ld [%ld%%]",
 	    curf->name,
 	    curf->flags & F_MODIFIED ? "[MODIFIED]" : "[UNMODIFIED]",
-	    curf->flags & F_RDONLY ? "[READONLY]" : "",
-	    nlines, cmdp->addr1.lno, cmdp->addr1.lno * 100 / nlines);
+	    curf->flags & F_RDONLY ? "[READONLY]" : "", lline,
+	    cmdp->addr1.lno, cmdp->addr1.lno * 100 / lline);
 	return (0);
 }
