@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 9.6 1995/01/30 10:05:08 bostic Exp $ (Berkeley) $Date: 1995/01/30 10:05:08 $";
+static char sccsid[] = "$Id: ex_filter.c,v 9.7 1995/02/10 12:33:25 bostic Exp $ (Berkeley) $Date: 1995/02/10 12:33:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -73,26 +73,18 @@ filtercmd(sp, fm, tm, rp, cmd, ftype)
 	 * input[1].  The parent(s) read from output[0] and the utility
 	 * writes to output[1].
 	 *
-	 * In the FILTER_READ case, the utility isn't expected to want
-	 * input.  Redirect its input from /dev/null.  Otherwise open
-	 * up utility input pipe.
+	 * !!!
+	 * Historically, in the FILTER_READ case, the utility reads from
+	 * the terminal (e.g. :r! cat works).  Otherwise open up utility
+	 * input pipe.
 	 */
 	teardown = 0;
 	ofp = NULL;
 	input[0] = input[1] = output[0] = output[1] = -1;
-	if (ftype == FILTER_READ) {
-		if ((input[0] = open(_PATH_DEVNULL, O_RDONLY, 0)) < 0) {
-			p = msg_print(sp, _PATH_DEVNULL, &nf);
-			msgq(sp, M_SYSERR, "open: %s", p);
-			if (nf)
-				FREE_SPACE(sp, p, 0);
-			return (1);
-		}
-	} else
-		if (pipe(input) < 0) {
-			msgq(sp, M_SYSERR, "pipe");
-			goto err;
-		}
+	if (ftype != FILTER_READ && pipe(input) < 0) {
+		msgq(sp, M_SYSERR, "pipe");
+		goto err;
+	}
 
 	/* Open up utility output pipe. */
 	if (pipe(output) < 0) {
@@ -141,15 +133,18 @@ err:		if (input[0] != -1)
 		 * Historically, ex only directed stdout into the input pipe,
 		 * letting stderr come out on the terminal as usual.  Vi did
 		 * not, directing both stdout and stderr into the input pipe.
-		 * We match that practice for both ex and vi for consistency.
+		 * We match that practice in both ex and vi for consistency.
 		 */
-		(void)dup2(input[0], STDIN_FILENO);
+		if (input[0] != -1)
+			(void)dup2(input[0], STDIN_FILENO);
 		(void)dup2(output[1], STDOUT_FILENO);
 		(void)dup2(output[1], STDERR_FILENO);
 
 		/* Close the utility's file descriptors. */
-		(void)close(input[0]);
-		(void)close(input[1]);
+		if (input[0] != -1)
+			(void)close(input[0]);
+		if (input[1] != -1)
+			(void)close(input[1]);
 		(void)close(output[0]);
 		(void)close(output[1]);
 
@@ -169,7 +164,8 @@ err:		if (input[0] != -1)
 		SIGUNBLOCK(sp->gp);
 
 		/* Close the pipe ends neither parent will use. */
-		(void)close(input[0]);
+		if (input[0] != -1)
+			(void)close(input[0]);
 		(void)close(output[1]);
 		break;
 	}
