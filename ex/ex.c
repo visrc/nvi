@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.56 1993/02/11 20:06:39 bostic Exp $ (Berkeley) $Date: 1993/02/11 20:06:39 $";
+static char sccsid[] = "$Id: ex.c,v 5.57 1993/02/12 10:03:19 bostic Exp $ (Berkeley) $Date: 1993/02/12 10:03:19 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -265,6 +265,7 @@ msg("The %.*s command can't be used as part of a global command.",
 		cp = lastcmd;
 		uselastcmd = 1;
 	}
+	flags = cp->flags;
 
 	/*
 	 * File state must be checked throughout this code, because it is
@@ -275,7 +276,7 @@ msg("The %.*s command can't be used as part of a global command.",
 	 * Historic vi generally took the easy way out, by dropping core.
  	 */
 	if (curf == NULL &&
-	    cp->flags & (E_ADDR1|E_ADDR2|E_ADDR2_ALL|E_ADDR2_NONE)) {
+	    flags & (E_ADDR1|E_ADDR2|E_ADDR2_ALL|E_ADDR2_NONE)) {
 	msg("The %s command requires a file to already have been read in.",
 		    cp->name);
 		return (1);
@@ -288,14 +289,24 @@ msg("The %.*s command can't be used as part of a global command.",
 	 * cases here, some commands take 0 or 2 addresses.  For most of them
 	 * (the E_ADDR2_ALL flag), 0 defaults to the entire file.  For one
 	 * (the `!' command, the E_ADDR2_NONE flag), 0 defaults to no lines.
+	 *
+	 * Also, if the file is empty, some commands want to use an address of
+	 * 0, i.e. the entire file is 0 to 0, and the default first address is
+	 * 0.  Otherwise, an entire file is 1 to N and the default line is 1.
+	 * Note, we also add the E_ZERO flag to the command flags, for the case
+	 * where the 0 address is only valid if it's a default address.
 	 */
 	flagoff = 0;
-	switch(cp->flags & (E_ADDR1|E_ADDR2|E_ADDR2_ALL|E_ADDR2_NONE)) {
+	switch(flags & (E_ADDR1|E_ADDR2|E_ADDR2_ALL|E_ADDR2_NONE)) {
 	case E_ADDR1:				/* One address: */
 		switch(cmd.addrcnt) {
 		case 0:				/* Default to cursor. */
 			cmd.addrcnt = 1;
-			cmd.addr1.lno = curf->lno;
+			if (flags & E_ZERODEF && file_lline(curf) == 0) {
+				cmd.addr1.lno = 0;
+				flags |= E_ZERO;
+			} else
+				cmd.addr1.lno = curf->lno;
 			cmd.addr1.cno = curf->cno;
 			break;
 		case 1:
@@ -312,10 +323,13 @@ msg("The %.*s command can't be used as part of a global command.",
 	case E_ADDR2_ALL:			/* Zero/two addresses: */
 		if (cmd.addrcnt == 0) {		/* Default to entire file. */
 			cmd.addrcnt = 2;
-			cmd.addr1.lno = 1;
-			cmd.addr1.cno = 0;
 			cmd.addr2.lno = file_lline(curf);
-			cmd.addr2.cno = 0;
+			if (flags & E_ZERODEF && cmd.addr2.lno == 0) {
+				cmd.addr1.lno = 0;
+				flags |= E_ZERO;
+			} else
+				cmd.addr1.lno = 1;
+			cmd.addr1.cno = cmd.addr2.cno = 0;
 			cmd.flags |= E_ADDR2_ALL;
 			break;
 		}
@@ -512,7 +526,7 @@ addr2:	switch(cmd.addrcnt) {
 		/* FALLTHROUGH */
 	case 1:
 		num = cmd.addr1.lno;
-		if (num == 0 && !(cp->flags & E_ZERO)) {
+		if (num == 0 && !(flags & E_ZERO)) {
 			msg("The %s command doesn't permit an address of 0.",
 			    cp->name);
 			return (1);
@@ -536,7 +550,7 @@ addr2:	switch(cmd.addrcnt) {
 	}
 
 	/* Reset "last" command. */
-	if (cp->flags & E_SETLAST)
+	if (flags & E_SETLAST)
 		lastcmd = cp;
 
 	cmd.cmd = cp;
