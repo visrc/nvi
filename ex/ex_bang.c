@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 8.8 1993/09/29 16:24:02 bostic Exp $ (Berkeley) $Date: 1993/09/29 16:24:02 $";
+static char sccsid[] = "$Id: ex_bang.c,v 8.9 1993/10/06 17:19:16 bostic Exp $ (Berkeley) $Date: 1993/10/06 17:19:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,6 +36,7 @@ ex_bang(sp, ep, cmdp)
 	enum filtertype ftype;
 	recno_t lno;
 	MARK rm;
+	int rval;
 	char *com;
 
 	/* Make sure we got something. */
@@ -169,12 +170,10 @@ ex_bang(sp, ep, cmdp)
 	}
 
 	/* Run the command. */
-	if (ex_run_process(sp, com, NULL, NULL, 0))
-		return (1);
+	rval = ex_exec_process(sp, O_STR(sp, O_SHELL), com, 1);
 
 	/* Ex terminates with a bang. */
 	if (F_ISSET(sp, S_MODE_EX))
 		(void)fprintf(sp->stdfp, "!\n");
-
-	return (0);
+	return (rval);
 }
