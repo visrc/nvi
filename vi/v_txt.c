@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 10.19 1995/10/19 11:10:25 bostic Exp $ (Berkeley) $Date: 1995/10/19 11:10:25 $";
+static char sccsid[] = "$Id: v_txt.c,v 10.20 1995/10/19 13:15:24 bostic Exp $ (Berkeley) $Date: 1995/10/19 13:15:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -425,7 +425,7 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 
 	/* Get an event. */
 	evp = &ev;
-next:	if (v_event_get(sp, evp, ec_flags))
+next:	if (v_event_get(sp, evp, 0, ec_flags))
 		return (1);
 
 	/* If file completion overwrote part of the screen, clean up. */
@@ -2194,10 +2194,8 @@ txt_showmatch(sp)
 	SCR *sp;
 {
 	GS *gp;
-	struct timeval second;
 	VCS cs;
 	MARK m;
-	fd_set zero;
 	int cnt, endc, startc;
 
 	gp = sp->gp;
@@ -2251,14 +2249,9 @@ txt_showmatch(sp)
 	if (vs_refresh(sp))
 		return (1);
 
-	/*
-	 * Sleep(3) is eight system calls.  Do it fast -- besides,
-	 * I don't want to wait an entire second.
-	 */
-	FD_ZERO(&zero);
-	second.tv_sec = O_VAL(sp, O_MATCHTIME) / 10;
-	second.tv_usec = (O_VAL(sp, O_MATCHTIME) % 10) * 100000L;
-	(void)select(0, &zero, &zero, &zero, &second);
+	/* Wait for timeout or character arrival. */
+	if (v_event_get(sp, NULL, O_VAL(sp, O_MATCHTIME) * 100, EC_TIMEOUT))
+		return (1);
 
 	/* Return to the current location. */
 	sp->lno = m.lno;
