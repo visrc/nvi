@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_read.c,v 10.34 1996/06/26 19:24:31 bostic Exp $ (Berkeley) $Date: 1996/06/26 19:24:31 $";
+static const char sccsid[] = "$Id: ex_read.c,v 10.35 1996/06/27 09:44:30 bostic Exp $ (Berkeley) $Date: 1996/06/27 09:44:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -243,17 +243,20 @@ ex_read(sp, cmdp)
 
 	/*
 	 * !!!
-	 * Historically, vi did not permit reads from non-regular files,
-	 * nor did it distinguish between "read !" and "read!", so there
-	 * was no way to "force" it.
+	 * Historically, vi did not permit reads from non-regular files, nor
+	 * did it distinguish between "read !" and "read!", so there was no
+	 * way to "force" it.  We permit reading from named pipes too, since
+	 * they didn't exist when the original implementation of vi was done
+	 * and they seem a reasonable addition.
 	 */
 	if ((fp = fopen(name, "r")) == NULL || fstat(fileno(fp), &sb)) {
 		msgq_str(sp, M_SYSERR, name, "%s");
 		return (1);
 	}
-	if (!S_ISREG(sb.st_mode)) {
+	if (!S_ISFIFO(sb.st_mode) && !S_ISREG(sb.st_mode)) {
 		(void)fclose(fp);
-		msgq(sp, M_ERR, "145|Only regular files may be read");
+		msgq(sp, M_ERR,
+		    "145|Only regular files and named pipes may be read");
 		return (1);
 	}
 
