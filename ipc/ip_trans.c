@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_trans.c,v 8.4 1996/12/03 11:22:04 bostic Exp $ (Berkeley) $Date: 1996/12/03 11:22:04 $";
+static const char sccsid[] = "$Id: ip_trans.c,v 8.5 1996/12/03 18:13:58 bostic Exp $ (Berkeley) $Date: 1996/12/03 18:13:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -41,10 +41,11 @@ ip_trans(bp, lenp)
 	extern int (*iplist[IPO_EVENT_MAX - 1]) __P((IP_BUF *));
 	IP_BUF ipb;
 	size_t len, needlen;
+	int foff;
 	char *fmt, *p, *s_bp;
 
-	for (s_bp = bp, len = *lenp; len > 0; bp += needlen, len -= needlen) {
-		switch (bp[0]) {
+	for (s_bp = bp, len = *lenp; len > 0;) {
+		switch (foff = bp[0]) {
 		case IPO_ADDSTR:
 		case IPO_RENAME:
 			fmt = "s";
@@ -63,8 +64,8 @@ ip_trans(bp, lenp)
 			fmt = "";
 		}
 
-		needlen = IPO_CODE_LEN;
 		p = bp + IPO_CODE_LEN;
+		needlen = IPO_CODE_LEN;
 		for (; *fmt != '\0'; ++fmt)
 			switch (*fmt) {
 			case '1':
@@ -97,13 +98,12 @@ ip_trans(bp, lenp)
 				p += ipb.len;
 				break;
 			}
-
-		/* Check for out-of-band events. */
-		if (bp[0] > IPO_EVENT_MAX)
-			abort();
+		bp += needlen;
+		len -= needlen;
 
 		/* Call the underlying routine. */
-		(void)iplist[bp[0] - 1](&ipb);
+		if (foff <= IPO_EVENT_MAX && iplist[foff - 1](&ipb))
+			break;
 	}
 partial:
 	if ((*lenp = len) != 0)
