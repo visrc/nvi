@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_util.c,v 10.4 1995/06/09 12:51:58 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:51:58 $";
+static char sccsid[] = "$Id: ex_util.c,v 10.5 1995/06/15 19:38:50 bostic Exp $ (Berkeley) $Date: 1995/06/15 19:38:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -108,76 +108,6 @@ ex_getline(sp, fp, lenp)
 		++off;
 	}
 	/* NOTREACHED */
-}
-
-/*
- * ex_sleave --
- *	Save the terminal/signal state, screen modification time.
- * 	Specific to ex/filter.c and ex/ex_shell.c.
- *
- * PUBLIC: int ex_sleave __P((SCR *));
- */
-int
-ex_sleave(sp)
-	SCR *sp;
-{
-	struct stat sb;
-	EX_PRIVATE *exp;
-
-	/* Ignore sessions not using tty's. */
-	if (!F_ISSET(sp->gp, G_STDIN_TTY))
-		return (1);
-
-	exp = EXP(sp);
-	if (tcgetattr(STDIN_FILENO, &exp->leave_term)) {
-		msgq(sp, M_SYSERR, "tcgetattr");
-		return (1);
-	}
-	if (tcsetattr(STDIN_FILENO,
-	    TCSANOW | TCSASOFT, &sp->gp->original_termios)) {
-		msgq(sp, M_SYSERR, "tcsetattr");
-		return (1);
-	}
-	/*
-	 * The process may write to the terminal.  Save the access time
-	 * (read) and modification time (write) of the tty; if they have
-	 * changed when we restore the modes, will have to refresh the
-	 * screen.
-	 */
-	if (fstat(STDIN_FILENO, &sb)) {
-		msgq(sp, M_SYSERR, "stat: stdin");
-		exp->leave_atime = exp->leave_mtime = 0;
-	} else {
-		exp->leave_atime = sb.st_atime;
-		exp->leave_mtime = sb.st_mtime;
-	}
-	return (0);
-}
-
-/*
- * ex_rleave --
- *	Return the terminal/signal state, not screen modification time.
- * 	Specific to ex/filter.c and ex/ex_shell.c.
- *
- * PUBLIC: void ex_rleave __P((SCR *));
- */
-void
-ex_rleave(sp)
-	SCR *sp;
-{
-	EX_PRIVATE *exp;
-	struct stat sb;
-
-	exp = EXP(sp);
-
-	/* Restore the terminal modes. */
-	if (tcsetattr(STDIN_FILENO, TCSANOW | TCSASOFT, &exp->leave_term))
-		msgq(sp, M_SYSERR, "tcsetattr");
-
-	/* If the terminal was used, refresh the screen. */
-	if (fstat(STDIN_FILENO, &sb) || exp->leave_atime == 0 ||
-	    exp->leave_atime != sb.st_atime || exp->leave_mtime != sb.st_mtime)
-		F_SET(sp, S_SCR_REFRESH);
 }
 
 /*
