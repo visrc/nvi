@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 10.6 1995/09/21 12:07:46 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:07:46 $";
+static char sccsid[] = "$Id: ex_write.c,v 10.7 1995/09/29 19:03:29 bostic Exp $ (Berkeley) $Date: 1995/09/29 19:03:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -282,8 +282,8 @@ ex_writefp(sp, name, fp, fm, tm, nlno, nch)
 	 * The vi filter code has multiple processes running simultaneously,
 	 * and one of them calls ex_writefp().  The "unsafe" function calls
 	 * in this code are to file_gline() and msgq().  File_gline() is safe,
-	 * see the comment in filter.c:filtercmd() for details.  We don't call
-	 * msgq if the multiple process bit in the EXF is set.
+	 * see the comment in ex_filter.c:filtercmd() for details.  We don't
+	 * call msgq if the multiple process bit in the EXF is set.
 	 *
 	 * !!!
 	 * Historic vi permitted files of 0 length to be written.  However,
@@ -295,38 +295,38 @@ ex_writefp(sp, name, fp, fm, tm, nlno, nch)
 	 */
 	ccnt = 0;
 	lcnt = 0;
-	if (tline != 0) {
+	if (tline != 0)
 		for (; fline <= tline; ++fline, ++lcnt) {
 			/* Caller has to provide any interrupt message. */
-			if (INTERRUPTED(sp))
-				break;
+			if ((lcnt % INTERRUPT_CHECK) == 0) {
+				if (INTERRUPTED(sp))
+					break;
+				(void)sp->gp->scr_busy(sp, NULL, 1);
+			}
 			if ((p = file_gline(sp, fline, &len)) == NULL)
 				break;
-			if (fwrite(p, 1, len, fp) != len) {
-				p = msg_print(sp, name, &nf);
-				msgq(sp, M_SYSERR, "%s", p);
-				if (nf)
-					FREE_SPACE(sp, p, 0);
-				(void)fclose(fp);
-				return (1);
-			}
+			if (fwrite(p, 1, len, fp) != len)
+				goto err;
 			ccnt += len;
 			if (putc('\n', fp) != '\n')
 				break;
 			++ccnt;
 		}
-	}
 
-	/* If it's a regular file, sync it so that NFS is forced to flush. */
-	if (!fstat(fileno(fp), &sb) &&
-	    S_ISREG(sb.st_mode) && fsync(fileno(fp))) {
-		sv_errno = errno;
-		(void)fclose(fp);
-		errno = sv_errno;
+	if (fflush(fp))
 		goto err;
-	}
+	/*
+	 * XXX
+	 * I don't trust NFS -- check to make sure that we're talking to
+	 * a regular file and sync so that NFS is forced to flush.
+	 */
+	if (!fstat(fileno(fp), &sb) &&
+	    S_ISREG(sb.st_mode) && fsync(fileno(fp)))
+		goto err;
+
 	if (fclose(fp))
 		goto err;
+
 	if (nlno != NULL) {
 		*nch = ccnt;
 		*nlno = lcnt;
@@ -334,10 +334,13 @@ ex_writefp(sp, name, fp, fm, tm, nlno, nch)
 	return (0);
 
 err:	if (!F_ISSET(sp->ep, F_MULTILOCK)) {
+		sv_errno = errno;
 		p = msg_print(sp, name, &nf);
+		errno = sv_errno;
 		msgq(sp, M_SYSERR, "%s", p);
 		if (nf)
 			FREE_SPACE(sp, p, 0);
 	}
+	(void)fclose(fp);
 	return (1);
 }
