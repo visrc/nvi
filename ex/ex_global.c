@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 8.5 1993/07/06 19:07:53 bostic Exp $ (Berkeley) $Date: 1993/07/06 19:07:53 $";
+static char sccsid[] = "$Id: ex_global.c,v 8.6 1993/08/19 15:04:33 bostic Exp $ (Berkeley) $Date: 1993/08/19 15:04:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -65,8 +65,8 @@ global(sp, ep, cmdp, cmd)
 	 * non-alphanumeric to serve as the substitution command
 	 * delimiter.
 	 */
-	for (; isspace(*cmdp->string); ++cmdp->string);
-	delim = *cmdp->string++;
+	for (p = cmdp->argv[0]; isspace(*p); ++p);
+	delim = *p++;
 	if (isalnum(delim)) {
 		msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
 		return (1);
@@ -75,10 +75,10 @@ global(sp, ep, cmdp, cmd)
 	/*
 	 * Get the pattern string, toss escaped characters.
 	 *
-	 * ESCAPE CHARACTER NOTE:
+	 * QUOTING NOTE:
 	 * Only toss an escaped character if it escapes a delimiter.
 	 */
-	for (ptrn = t = p = cmdp->string;;) {
+	for (ptrn = t = p;;) {
 		if (p[0] == '\0' || p[0] == delim) {
 			if (p[0] == delim)
 				++p;
@@ -169,7 +169,7 @@ global(sp, ep, cmdp, cmd)
 
 		sp->lno = lno;
 		(void)snprintf(cbuf, sizeof(cbuf), "%s", p);
-		if (ex_cmd(sp, ep, cbuf)) {
+		if (ex_cmd(sp, ep, cbuf, 0)) {
 			rval = 1;
 			goto quit;
 		}
