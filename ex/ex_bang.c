@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 8.14 1993/11/11 12:19:20 bostic Exp $ (Berkeley) $Date: 1993/11/11 12:19:20 $";
+static char sccsid[] = "$Id: ex_bang.c,v 8.15 1993/11/12 16:42:10 bostic Exp $ (Berkeley) $Date: 1993/11/12 16:42:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -60,27 +60,33 @@ ex_bang(sp, ep, cmdp)
 		FREE(sp->lastbcomm, strlen(sp->lastbcomm) + 1);
 	sp->lastbcomm = strdup(cmdp->argv[0]);
 
-	/* Display the command if modified. */
+	/*
+	 * If the command was modified by the expansion, we redisplay it.
+	 * Redisplaying it in vi mode is tricky, and handled separately
+	 * in each case below.  If we're in ex mode, it's easy, so we just
+	 * do it here.
+	 */
+	bp = NULL;
 	if (F_ISSET(cmdp, E_MODIFY)) {
 		if (F_ISSET(sp, S_MODE_EX)) {
 			(void)ex_printf(EXCOOKIE, "!%s\n", cmdp->argv[0]);
 			(void)ex_fflush(EXCOOKIE);
 		}
 		/*
-		 * !!!
-		 * Historic vi redisplayed the command if it was modified due
-		 * to file name and/or bang expansion.  This was immediately
-		 * erased by any error or line change reporting.  We don't want
-		 * to force the user to page through the responses, so we only
-		 * put it up until it's erased by something else.
+		 * Vi: Display the command if modified.  Historic vi displayed
+		 * the command if it was modified due to file name and/or bang
+		 * expansion.  If piping lines, it was immediately overwritten
+		 * by any error or line change reporting.  We don't the user to
+		 * have to page through the responses, so we only post it until
+		 * it's erased by something else.  Otherwise, pass it on to the
+		 * ex_exec_proc routine to display after the screen has been
+		 * cleaned up.
 		 */
 		if (F_ISSET(sp, S_MODE_VI)) {
 			len = strlen(cmdp->argv[0]);
 			GET_SPACE(sp, bp, blen, len + 2);
 			bp[0] = '!';
 			memmove(bp + 1, cmdp->argv[0], len + 1);
-			(void)sp->s_busy(sp, bp);
-			FREE_SPACE(sp, bp, blen);
 		}
 	}
 
@@ -89,6 +95,10 @@ ex_bang(sp, ep, cmdp)
 	 * the command.
 	 */
 	if (cmdp->addrcnt != 0) {
+		if (bp != NULL) {
+			(void)sp->s_busy(sp, bp);
+			FREE_SPACE(sp, bp, blen);
+		}
 		/*
 		 * !!!
 		 * Historical vi permitted "!!" in an empty file.  When it
@@ -121,8 +131,10 @@ ex_bang(sp, ep, cmdp)
 	msg = "\n";
 	if (F_ISSET(ep, F_MODIFIED))
 		if (O_ISSET(sp, O_AUTOWRITE)) {
-			if (file_write(sp, ep, NULL, NULL, NULL, FS_ALL))
-				return (1);
+			if (file_write(sp, ep, NULL, NULL, NULL, FS_ALL)) {
+				rval = 1;
+				goto ret;
+			}
 		} else if (O_ISSET(sp, O_WARN))
 			if (F_ISSET(sp, S_MODE_VI) && F_ISSET(cmdp, E_MODIFY))
 				msg = "\nFile modified since last write.\n";
@@ -130,25 +142,19 @@ ex_bang(sp, ep, cmdp)
 				msg = "File modified since last write.\n";
 
 	/* Run the command. */
-	rval = ex_exec_proc(sp, O_STR(sp, O_SHELL), cmdp->argv[0], msg);
+	rval = ex_exec_proc(sp, O_STR(sp, O_SHELL), cmdp->argv[0], bp, msg);
 
 	/* Ex terminates with a bang. */
 	if (F_ISSET(sp, S_MODE_EX))
 		(void)write(STDOUT_FILENO, "!\n", 2);
 
-	/* Vi will repaint the screen; get the user to okay it. */
-	if (F_ISSET(sp, S_MODE_VI)) {
-		(void)write(STDOUT_FILENO, CONTMSG, sizeof(CONTMSG) - 1);
-		for (;;) {
-			if (term_key(sp, &ch, 0) != INP_OK)
-				break;
-			if (sp->special[ch] == K_CR ||
-			    sp->special[ch] == K_NL || isblank(ch))
-				break;
-			(void)sp->s_bell(sp);
-		}
-		F_SET(sp, S_REFRESH);
-	}
+	/* Vi requires user permission to continue. */
+	if (F_ISSET(sp, S_MODE_VI))
+		F_SET(sp, S_CONTINUE);
+
+	/* Free the extra space. */
+ret:	if (bp != NULL)
+		FREE_SPACE(sp, bp, blen);
 
 	return (rval);
 }
