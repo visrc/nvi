@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 8.34 1994/08/17 14:28:00 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:28:00 $";
+static char sccsid[] = "$Id: cut.c,v 8.35 1994/09/02 13:24:42 bostic Exp $ (Berkeley) $Date: 1994/09/02 13:24:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -102,7 +102,7 @@ cut(sp, ep, namep, fm, tm, flags)
 	append = copy_one = copy_def = 0;
 	if (namep != NULL) {
 		name = *namep;
-		if (LF_ISSET(CUT_NUMREQ) || LF_ISSET(CUT_NUMOPT) && 
+		if (LF_ISSET(CUT_NUMREQ) || LF_ISSET(CUT_NUMOPT) &&
 		    (LF_ISSET(CUT_LINEMODE) || fm->lno != tm->lno)) {
 			copy_one = 1;
 			cb_rotate(sp);

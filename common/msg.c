@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 8.16 1994/09/02 10:19:23 bostic Exp $ (Berkeley) $Date: 1994/09/02 10:19:23 $";
+static char sccsid[] = "$Id: msg.c,v 8.17 1994/09/02 13:24:50 bostic Exp $ (Berkeley) $Date: 1994/09/02 13:24:50 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -299,7 +299,7 @@ format:	len = vsnprintf(mp, REM, fmt, ap);
 		--len;
 	}
 	memmove(mp, s_rbp, rbp - s_rbp);
-		
+
 	/* Free the reordered string memory. */
 	free(s_rbp);
 #endif
