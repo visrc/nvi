@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_line.c,v 10.29 2000/09/02 09:12:17 skimo Exp $ (Berkeley) $Date: 2000/09/02 09:12:17 $";
+static const char sccsid[] = "$Id: vs_line.c,v 10.30 2000/09/22 19:59:48 skimo Exp $ (Berkeley) $Date: 2000/09/22 19:59:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -379,7 +379,10 @@ display:
 		    --cno_cnt == 0 && (F_ISSET(sp, SC_TINPUT) || !is_partial)) {
 			*yp = smp - HMAP;
 			if (F_ISSET(sp, SC_TINPUT))
-				*xp = scno - chlen;
+				if (is_partial)
+					*xp = scno - smp->c_ecsize;
+				else
+					*xp = scno - chlen;
 			else
 				*xp = scno - 1;
 			if (O_ISSET(sp, O_NUMBER) &&
