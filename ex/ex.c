@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.119 1994/04/26 18:05:31 bostic Exp $ (Berkeley) $Date: 1994/04/26 18:05:31 $";
+static char sccsid[] = "$Id: ex.c,v 8.120 1994/05/01 13:40:36 bostic Exp $ (Berkeley) $Date: 1994/05/01 13:40:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1146,10 +1146,13 @@ addr2:	switch (exc.addrcnt) {
 		 *
 		 *	:edit +25 file.c|s/abc/ABC/|1
 		 *
-		 * The historic vi just hung, of course; nvi handle's it by
-		 * pushing the keys onto the tty queue.  If we're switching
-		 * modes to vi, since the commands are intended as ex commands,
-		 * add the extra characters to make it work.
+		 * !!!
+		 * The historic vi just hung, of course; nvi handles it by
+		 * pushing the keys onto the tty queue.  Since the commands
+		 * are intended as ex commands, add additional characters
+		 * to make it all work if we're switching modes to vi.  Also,
+		 * + commands were oriented to the last line in the file,
+		 * historically, make the cursor start out there.
 		 *
 		 * For the fun of it, if you want to see if a vi clone got the
 		 * ex argument parsing right, try:
@@ -1171,6 +1174,9 @@ addr2:	switch (exc.addrcnt) {
 				goto err;
 			if (term_push(sp, arg1, arg1_len, 0, 0))
 				goto err;
+			if (file_lline(sp, ep, &sp->frp->lno))
+				goto err;
+			F_SET(sp->frp, FR_CURSORSET);
 		}
 		if (IN_VI_MODE(sp) && term_push(sp, ":", 1, 0, 0))
 			goto err;
