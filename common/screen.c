@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.42 1993/11/29 14:14:49 bostic Exp $ (Berkeley) $Date: 1993/11/29 14:14:49 $";
+static char sccsid[] = "$Id: screen.c,v 8.43 1993/12/02 10:34:15 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:34:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -177,11 +177,11 @@ screen_end(sp)
 		while ((frp = sp->frefq.tqh_first) != NULL) {
 			TAILQ_REMOVE(&sp->frefq, frp, q);
 			if (frp->cname != NULL)
-				FREE(frp->cname, frp->clen);
+				free(frp->cname);
 			if (frp->name != NULL)
-				FREE(frp->name, frp->nlen);
+				free(frp->name);
 			if (frp->tname != NULL)
-				FREE(frp->tname, frp->tlen);
+				free(frp->tname);
 			FREE(frp, sizeof(FREF));
 		}
 	}
