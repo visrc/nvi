@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_screen.c,v 10.20 1995/10/31 14:47:32 bostic Exp $ (Berkeley) $Date: 1995/10/31 14:47:32 $";
+static char sccsid[] = "$Id: cl_screen.c,v 10.21 1995/11/01 18:16:49 bostic Exp $ (Berkeley) $Date: 1995/11/01 18:16:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -317,23 +317,26 @@ cl_vi_end(gp)
 	(void)keypad(stdscr, FALSE);
 
 	/*
-	 * Move to the bottom of the window, clear that line.  Some
-	 * implementations of endwin() don't do this for you.
+	 * Move to the bottom of the window (some endwin implementations
+	 * don't do this for you).
 	 */
 	(void)move(LINES - 1, 0);
-	(void)clrtoeol();
 	(void)refresh();
 
 	/* End curses window. */
 	(void)endwin();
 
 	/*
-	 * Force restoration of terminal modes.  Some implementations of
-	 * endwin() don't do this for you.
+	 * Force restoration of terminal modes (some endwin implementations
+	 * endwin() don't do this for you).
 	 */
 #ifdef FORCE_TERM_RESET
 	(void)tcsetattr(STDIN_FILENO, TCSADRAIN | TCSASOFT, &clp->orig);
 #endif
+
+	/* Force the screen to scroll, so we get a fresh line. */
+	(void)write(STDOUT_FILENO, "\n", 1);
+
 	return (0);
 }
 
