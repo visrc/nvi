@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_screen.c,v 8.16 1994/08/31 17:17:20 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:17:20 $";
+static char sccsid[] = "$Id: ex_screen.c,v 8.17 1994/10/28 09:03:39 bostic Exp $ (Berkeley) $Date: 1994/10/28 09:03:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -105,8 +105,7 @@ ex_sdisplay(sp, ep)
 	int cnt, col, len, sep;
 
 	if ((tsp = sp->gp->hq.cqh_first) == (void *)&sp->gp->hq) {
-		(void)ex_printf(EXCOOKIE,
-		    "No backgrounded screens to display.\n");
+		msgq(sp, M_INFO, "261|No background screens to display");
 		return (0);
 	}
 
