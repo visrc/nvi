@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 5.7 1992/04/22 08:08:03 bostic Exp $ (Berkeley) $Date: 1992/04/22 08:08:03 $";
+static char sccsid[] = "$Id: ex_read.c,v 5.8 1992/05/04 11:52:01 bostic Exp $ (Berkeley) $Date: 1992/05/04 11:52:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,6 +18,7 @@ static char sccsid[] = "$Id: ex_read.c,v 5.7 1992/04/22 08:08:03 bostic Exp $ (B
 
 #include "vi.h"
 #include "excmd.h"
+#include "exf.h"
 #include "extern.h"
 
 /*
@@ -32,16 +33,16 @@ ex_read(cmdp)
 	register char *p;
 	struct stat sb;
 	FILE *fp;
-	int force, rval;
+	int force;
 	char *fname;
 
 	/* If nothing, just read the file. */
 	if ((p = cmdp->string) == NULL) {
-		if (!*origname) {
+		if (curf->flags & F_NONAME) {
 			msg("No filename from which to read.");
 			return (1);
 		}
-		fname = origname;
+		fname = curf->name;
 		goto noargs;
 	}
 
@@ -71,7 +72,7 @@ ex_read(cmdp)
 
 	switch(cmdp->argc) {
 	case 0:
-		fname = origname;
+		fname = curf->name;
 		break;
 	case 1:
 		fname = cmdp->argv[0];
@@ -93,13 +94,9 @@ noargs:	if ((fp = fopen(fname, "r")) == NULL || fstat(fileno(fp), &sb)) {
 		return (1);
 	}
 
-	rval = ex_readfp(fname, fp, cmdp->addr1, &rptlines);
-
-	(void)fclose(fp);
-
-	if (rval)
+	if (ex_readfp(fname, fp, cmdp->addr1, &rptlines))
 		return (1);
-	
+
 	autoprint = 1;
 
 	rptlabel = "read";
@@ -146,6 +143,11 @@ ex_readfp(fname, fp, addr, cntp)
 			addr = MARK_AT_LINE(++lno);
 		}
 		if (ferror(fp)) {
+			msg("%s: %s", strerror(errno));
+			(void)fclose(fp);
+			return (1);
+		}
+		if (fclose(fp)) {
 			msg("%s: %s", strerror(errno));
 			return (1);
 		}

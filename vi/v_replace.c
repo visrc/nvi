@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_replace.c,v 5.2 1992/04/22 08:10:28 bostic Exp $ (Berkeley) $Date: 1992/04/22 08:10:28 $";
+static char sccsid[] = "$Id: v_replace.c,v 5.3 1992/05/04 11:53:06 bostic Exp $ (Berkeley) $Date: 1992/05/04 11:53:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -23,6 +23,7 @@ v_replace(m, cnt, key)
 {
 	REG char	*text;
 	REG int		i;
+	char lbuf[1024];
 
 	SETDEFCNT(1);
 
@@ -39,7 +40,7 @@ v_replace(m, cnt, key)
 	}
 
 	/* build a string of the desired character with the desired length */
-	for (text = tmpblk.c, i = cnt; i > 0; i--)
+	for (text = lbuf, i = cnt; i > 0; i--)
 	{
 		*text++ = key;
 	}
@@ -56,10 +57,10 @@ v_replace(m, cnt, key)
 	/* do the replacement */
 	ChangeText
 	{
-		change(m, m + cnt, tmpblk.c);
+		change(m, m + cnt, lbuf);
 	}
 
-	if (*tmpblk.c == '\n')
+	if (*lbuf == '\n')
 	{
 		return (m & ~(BLKSIZE - 1)) + cnt * BLKSIZE;
 	}

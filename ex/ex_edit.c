@@ -6,16 +6,16 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 5.10 1992/04/28 16:55:39 bostic Exp $ (Berkeley) $Date: 1992/04/28 16:55:39 $";
+static char sccsid[] = "$Id: ex_edit.c,v 5.11 1992/05/04 11:51:46 bostic Exp $ (Berkeley) $Date: 1992/05/04 11:51:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
-#include <curses.h>
 #include <stdio.h>
 #include <stddef.h>
 
 #include "vi.h"
 #include "excmd.h"
+#include "exf.h"
 #include "extern.h"
 
 enum which {EDIT, VISUAL};
@@ -47,16 +47,25 @@ edit(cmdp, cmd)
 	enum which cmd;
 {
 	long line;
+	EXF *ep;
+	int previous;
 	char *fname;
 
 	switch(cmdp->argc) {
 	case 0:
 		if (cmd == VISUAL)
 			return (0);
-		fname = origname;
 		break;
 	case 1:
-		fname = cmdp->argv[0];
+		if ((ep = file_prev(curf)) != NULL &&
+		    !strcmp(ep->name, cmdp->argv[0]))
+			previous = 1;
+		else {
+			previous = 0;
+			if (file_ins(curf, cmdp->argv[0]) ||
+			    (ep = file_next(curf)) == NULL)
+			return (1);
+		}
 		break;
 	}
 
@@ -65,20 +74,17 @@ edit(cmdp, cmd)
 	 * end of the file and vi starts at the beginning, unless a command
 	 * is specified.
 	 */
-	if (tmpabort(cmdp->flags & E_FORCE)) {
-		tmpstart(fname);
-		if (cmdp->plus)
-			(void)ex_cstring(cmdp->plus, strlen(cmdp->plus), 1);
-		else {
-			if (mode == MODE_VI)
-				line = !strcmp(fname, prevorig) ? prevline : 1;
-			else
-				line = 1;
-			if (line <= nlines && line >= 1)
-				cursor = MARK_AT_LINE(line);
-		}
-		return (0);
+	if (file_stop(curf, cmdp->flags & E_FORCE))
+		return (1);
+	if (file_start(curf))
+		return (1);
+
+	if (cmdp->plus)
+		(void)ex_cstring(cmdp->plus, strlen(cmdp->plus), 1);
+	else {
+		line = mode == MODE_VI ? ep->lno : 1;
+		if (line <= nlines && line >= 1)
+			cursor = MARK_AT_LINE(line);
 	}
-	msg("%s has been modified but not written.", origname);
-	return (1);
+	return (0);
 }

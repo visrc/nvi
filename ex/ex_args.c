@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 5.13 1992/04/28 17:43:06 bostic Exp $ (Berkeley) $Date: 1992/04/28 17:43:06 $";
+static char sccsid[] = "$Id: ex_args.c,v 5.14 1992/05/04 11:51:35 bostic Exp $ (Berkeley) $Date: 1992/05/04 11:51:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,11 +18,10 @@ static char sccsid[] = "$Id: ex_args.c,v 5.13 1992/04/28 17:43:06 bostic Exp $ (
 
 #include "vi.h"
 #include "excmd.h"
+#include "exf.h"
+#include "options.h"
 #include "tty.h"
 #include "extern.h"
-
-static char	**s_flist;		/* start of file list */
-static int	total, current;
 
 /*
  * ex_next -- :next [files]
@@ -32,20 +31,27 @@ int
 ex_next(cmdp)
 	EXCMDARG *cmdp;
 {
-	/* It's permissible to specify a list of files with :next. */
-	if (cmdp->argc)
-		file_set(cmdp->argc, cmdp->argv, 1);
+	EXF *ep;
 
-	if (current < total)
-		if (tmpabort(cmdp->flags & E_FORCE)) {
-			tmpstart(s_flist[current]);
-			++current;
-			return (0);
-		} else
-			msg("Use next! to discard changes, or w to save them.");
-	else
+	DEFMODSYNC;
+
+	/*
+	 * If a file list specified or there are more files to edit, the
+	 * next command will succeed.  Toss the last file.
+	 */
+	if (cmdp->argc || file_next(curf) != NULL) {
+		if (file_stop(curf, 0))
+			return (1);
+	} else {
 		msg("No more files to edit.");
-	return (1);
+		return (1);
+	}
+
+	/* Take any file list specified. */
+	if (cmdp->argc)
+		file_set(cmdp->argc, cmdp->argv);
+
+	return (file_start(file_next(curf)));
 }
 
 /*
@@ -56,16 +62,17 @@ int
 ex_prev(cmdp)
 	EXCMDARG *cmdp;
 {
-	if (current > 1)
-		if (tmpabort(cmdp->flags & E_FORCE)) {
-			--current;
-			tmpstart(s_flist[current - 1]);
-			return (0);
-		} else
-			msg("Use prev! to discard changes, or w to save them.");
-	else
+	EXF *ep;
+
+	if ((ep = file_prev(curf)) == NULL) {
 		msg("No previous files to edit.");
-	return (1);
+		return (1);
+	}
+
+	DEFMODSYNC;
+	if (file_stop(curf, 0))
+		return (1);
+	return (file_start(ep));
 }
 
 /*
@@ -76,16 +83,16 @@ int
 ex_rew(cmdp)
 	EXCMDARG *cmdp;
 {
-	if (current > 1)
-		if (tmpabort(cmdp->flags & E_FORCE)) {
-			tmpstart(s_flist[0]);
-			current = 1;
-			return (0);
-		} else
-			msg("Use rew! to discard changes, or w to save them.");
-	else
-		msg("No previous files to edit.");
-	return (1);
+	if (file_prev(curf) == NULL) {
+		msg("No previous files to rewind.");
+		return (1);
+	}
+
+	DEFMODSYNC;
+
+	if (file_stop(curf, 0))
+		return (1);
+	return (file_start(file_first()));
 }
 
 /*
@@ -96,19 +103,20 @@ int
 ex_args(cmdp)
 	EXCMDARG *cmdp;
 {
-	register char **p;
+	register EXF *ep;
 	register int cnt, col, sep;
 	int len;
 
-	if (current == 0) {
+	ep = file_first();
+	if (ep->name == NULL) {
 		msg("No file names.");
 		return (1);
 	}
 
 	EX_PRSTART(1);
 	col = len = sep = 0;
-	for (p = s_flist, cnt = 1; *p; ++p, ++cnt) {
-		col += len = strlen(*p) + sep + (cnt == current ? 2 : 0);
+	for (cnt = 1; ep; ++cnt) {
+		col += len = strlen(ep->name) + sep + (curf == ep ? 2 : 0);
 		if (col >= COLS - 1) {
 			col = len;
 			sep = 0;
@@ -117,59 +125,12 @@ ex_args(cmdp)
 			sep = 1;
 			(void)putchar(' ');
 		}
-		if (cnt == current)
-			(void)printf("[%s]", *p);
+		if (curf == ep)
+			(void)printf("[%s]", ep->name);
 		else
-			(void)printf("%s", *p);
+			(void)printf("%s", ep->name);
+		ep = file_next(ep);
 	}
 	EX_PRTRAIL;
 	return (0);
-}
-
-/*
- * file_set --
- *	Set the file list from an argc/argv.
- */
-void
-file_set(argc, argv, copy)
-	int argc, copy;
-	char *argv[];
-{
-	static char **copyav;
-	int cnt;
-	char **avp;
-
-	/* Copy the array and strings if necessary. */
-	if (copy) {
-		if (copyav) {
-			for (avp = copyav; *avp; ++avp)
-				free(*avp);
-			free(copyav);
-		}
-		if ((copyav = malloc((argc + 1) * sizeof(char *))) == NULL) {
-			msg("Error: %s.", strerror(errno));
-			return;
-		}
-		for (cnt = 0; cnt < argc; ++cnt)
-			if ((copyav[cnt] = strdup(argv[cnt])) == NULL) {
-				msg("Error: %s.", strerror(errno));
-				break;
-			}
-		copyav[cnt] = NULL;
-		s_flist = copyav;
-	} else
-		s_flist = argv;
-
-	total = argc;
-	current = 0;
-}
-
-/*
- * file_cnt --
- *	Return a count of the files left to edit.
- */
-int
-file_cnt()
-{
-	return (total - current);
 }

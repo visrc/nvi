@@ -6,14 +6,17 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_file.c,v 5.4 1992/04/19 08:53:50 bostic Exp $ (Berkeley) $Date: 1992/04/19 08:53:50 $";
+static char sccsid[] = "$Id: ex_file.c,v 5.5 1992/05/04 11:51:53 bostic Exp $ (Berkeley) $Date: 1992/05/04 11:51:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
+#include <errno.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "vi.h"
 #include "excmd.h"
+#include "exf.h"
 #include "extern.h"
 
 int
@@ -24,8 +27,15 @@ ex_file(cmdp)
 	case 0:
 		break;
 	case 1:
-		(void)strcpy(origname, cmdp->argv[0]);
-		storename(origname);
+		if (!(curf->flags & F_NONAME))
+			free(curf->name);
+		else
+			curf->flags &= ~F_NONAME;
+		if ((curf->name = strdup(cmdp->argv[0])) == NULL) {
+			curf->flags |= F_NONAME;
+			msg("Error: %s", strerror(errno));
+			return (1);
+		}
 		break;
 	default:
 		msg("Usage: file [newname].");
@@ -33,11 +43,11 @@ ex_file(cmdp)
 	}
 
 	msg("\"%s\" %s%s %ld lines,  line %ld [%ld%%]",
-		*origname ? origname : "[UNNAMED FILE]",
-		tstflag(file, MODIFIED) ? "[MODIFIED]" : "",
-		tstflag(file, READONLY) ? "[READONLY]" : "",
-		nlines,
-		markline(cmdp->addr1),
-		markline(cmdp->addr1) * 100 / nlines);
+	    curf->name,
+	    curf->flags & F_MODIFIED ? "[MODIFIED]" : "[UNMODIFIED]",
+	    curf->flags & F_RDONLY ? "[READONLY]" : "",
+	    nlines,
+	    markline(cmdp->addr1),
+	    markline(cmdp->addr1) * 100 / nlines);
 	return (0);
 }

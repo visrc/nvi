@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.12 1992/05/02 09:13:50 bostic Exp $ (Berkeley) $Date: 1992/05/02 09:13:50 $";
+static char sccsid[] = "$Id: options.c,v 5.13 1992/05/04 11:52:25 bostic Exp $ (Berkeley) $Date: 1992/05/04 11:52:25 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -19,6 +19,7 @@ static char sccsid[] = "$Id: options.c,v 5.12 1992/05/02 09:13:50 bostic Exp $ (
 
 #include "vi.h"
 #include "excmd.h"
+#include "exf.h"
 #include "options.h"
 #include "tty.h"
 #include "extern.h"
@@ -33,7 +34,7 @@ static int opts_print __P((struct _option *));
  *
  * XXX
  * Some of the limiting values are clearly randomly chosen, and have no
- * meaning.  How set O_REPORT to just shut up?
+ * meaning.  How make O_REPORT just shut up?
  */
 static long o_columns[3] = {80, 32, 255};
 static long o_keytime[3] = {2, 0, 50};
@@ -388,13 +389,20 @@ found:		if (op == NULL || off && !ISFSETP(op, OPT_0BOOL|OPT_1BOOL)) {
 
 	/* Special processing. */
 
-	/* If "readonly" then set the READONLY flag for this file */
+	/*
+	 * If "readonly" then set the READONLY flag for this file.
+	 * XXX
+	 * Should set for all files?
+	 */
 	if (ISSET(O_READONLY))
-		setflag(file, READONLY);
+		curf->flags |= F_RDONLY;
 
 	/*
-	 * XXX -- why, just use O_LINES/O_COLUMNS
 	 * Copy O_LINES and O_COLUMNS into LINES and COLS.
+	 * XXX
+	 * This isn't going to work if the screen is already in place.
+	 * Need a window call to shut it down and restart it, but that
+	 * means that we'll have to put these in the environment.
 	 */
 	LINES = LVAL(O_LINES);
 	COLS = LVAL(O_COLUMNS);

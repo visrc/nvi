@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_join.c,v 5.6 1992/04/19 08:53:51 bostic Exp $ (Berkeley) $Date: 1992/04/19 08:53:51 $";
+static char sccsid[] = "$Id: ex_join.c,v 5.7 1992/05/04 11:51:56 bostic Exp $ (Berkeley) $Date: 1992/05/04 11:51:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,6 +25,7 @@ ex_join(cmdp)
 	int	len;	/* length of the new line */
 	MARK	frommark;
 	MARK	tomark;
+	char lbuf[2048];
 
 	frommark = cmdp->addr1;
 	tomark = cmdp->addr2;
@@ -42,8 +43,8 @@ ex_join(cmdp)
 
 	/* get the first line */
 	l = markline(frommark);
-	strcpy(tmpblk.c, fetchline(l, NULL));
-	len = strlen(tmpblk.c);
+	strcpy(lbuf, fetchline(l, NULL));
+	len = strlen(lbuf);
 
 	/* build the longer line */
 	while (++l <= markline(tomark))
@@ -66,18 +67,18 @@ ex_join(cmdp)
 
 		/* catenate it, with a space (or two) in between */
 		if (len >= 1 &&
-			(tmpblk.c[len - 1] == '.'
-			 || tmpblk.c[len - 1] == '?'
-			 || tmpblk.c[len - 1] == '!'))
+			(lbuf[len - 1] == '.'
+			 || lbuf[len - 1] == '?'
+			 || lbuf[len - 1] == '!'))
 		{
-			 tmpblk.c[len++] = ' ';
+			 lbuf[len++] = ' ';
 		}
-		tmpblk.c[len++] = ' ';
-		strcpy(tmpblk.c + len, scan);
+		lbuf[len++] = ' ';
+		strcpy(lbuf + len, scan);
 		len += strlen(scan);
 	}
-	tmpblk.c[len++] = '\n';
-	tmpblk.c[len] = '\0';
+	lbuf[len++] = '\n';
+	lbuf[len] = '\0';
 
 	/* make the change */
 	ChangeText
@@ -85,7 +86,7 @@ ex_join(cmdp)
 		frommark &= ~(BLKSIZE - 1);
 		tomark &= ~(BLKSIZE - 1);
 		tomark += BLKSIZE;
-		change(frommark, tomark, tmpblk.c);
+		change(frommark, tomark, lbuf);
 	}
 
 	/* Reporting... */

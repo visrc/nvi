@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 5.12 1992/04/28 17:41:25 bostic Exp $ (Berkeley) $Date: 1992/04/28 17:41:25 $";
+static char sccsid[] = "$Id: ex_bang.c,v 5.13 1992/05/04 11:51:38 bostic Exp $ (Berkeley) $Date: 1992/05/04 11:51:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -17,6 +17,7 @@ static char sccsid[] = "$Id: ex_bang.c,v 5.12 1992/04/28 17:41:25 bostic Exp $ (
 
 #include "vi.h"
 #include "excmd.h"
+#include "exf.h"
 #include "options.h"
 #include "tty.h"
 #include "extern.h"
@@ -31,8 +32,9 @@ ex_bang(cmdp)
 	EXCMDARG *cmdp;
 {
 	static char *lastcom;
-	register int ch, l_alt, l_cur, l_last, len;
+	register int ch, len, modified;
 	register char *p, *t;
+	EXF *ep;
 	char *com;
 
 	/* Make sure we got something. */
@@ -42,7 +44,7 @@ ex_bang(cmdp)
 	}
 
 	/* Figure out how much space we could possibly need. */
-	l_alt = l_cur = l_last = 0;
+	modified = 0;
 	len = strlen(cmdp->string) + 1;
 	for (p = cmdp->string; p = strpbrk(p, "!%#\\"); ++p)
 		switch (*p) {
@@ -51,21 +53,26 @@ ex_bang(cmdp)
 				msg("No previous command to replace \"!\".");
 				return (1);
 			}
-			len += l_last ? l_last : (l_last = strlen(lastcom));
+			len += strlen(lastcom);
+			modified = 1;
 			break;
 		case '%':
-			if (!*origname) {
+			if (curf->flags & F_NONAME) {
 				msg("No filename to substitute for %%.");
 				return (1);
 			}
-			len += l_cur ? l_cur : (l_cur = strlen(origname));
+			len += curf->nlen;
+			modified = 1;
 			break;
 		case '#':
-			if (!*prevorig) {
+			if (ep == NULL)
+				ep = file_prev(curf);
+			if (ep == NULL || ep->flags & F_NONAME) {
 				msg("No filename to substitute for #.");
 				return (1);
 			}
-			len += l_alt ? l_alt : (l_alt = strlen(origname));
+			len += ep->nlen;
+			modified = 1;
 			break;
 		case '\\':
 			if (*p)
@@ -80,50 +87,45 @@ ex_bang(cmdp)
 	}
 
 	/* Fill it in. */
-	for (p = cmdp->string, t = com; ch = *p; ++p)
-		switch (ch) {
-		case '!':
-			bcopy(lastcom, t, l_last);
-			t += l_last;
-			break;
-		case '%':
-			bcopy(origname, t, l_cur);
-			t += l_cur;
-			break;
-		case '#':
-			bcopy(prevorig, t, l_alt);
-			t += l_alt;
-			break;
-		case '\\':
-			if (*p)
-				ch = *++p;
-			/* FALLTHROUGH */
-		default:
-			*t++ = ch;
-		}
- 	*p = '\0';
+	if (modified) {
+		for (p = cmdp->string, t = com; ch = *p; ++p)
+			switch (ch) {
+			case '!':
+				len = strlen(lastcom);
+				bcopy(lastcom, t, len);
+				t += len;
+				break;
+			case '%':
+				bcopy(curf->name, t, curf->nlen);
+				t += curf->nlen;
+				break;
+			case '#':
+				bcopy(ep->name, t, ep->nlen);
+				t += ep->nlen;
+				break;
+			case '\\':
+				if (*p)
+					ch = *++p;
+				/* FALLTHROUGH */
+			default:
+				*t++ = ch;
+			}
+		*p = '\0';
+	} else
+		bcopy(cmdp->string, com, len);
+		
 
 	/* Swap commands. */
 	if (lastcom)
 		free(lastcom);
 	lastcom = com;
 
-	/*
-	 * If autowrite set, write the file; otherwise warn the user if
-	 * the file has been modified but not written.
-	 */
-	if (ISSET(O_AUTOWRITE)) {
-		if (tmpsave(NULL, 0))
-			return (1);
-	} else if (ISSET(O_WARN) && tstflag(file, MODIFIED)) {
-		msg("%s has been modified but not written.", origname);
-		return (1);
-	}
+	DEFMODSYNC;
 
 	EX_PRSTART(0);
 
 	/* If modified, echo the new command. */
-	if (l_alt || l_cur || l_last) {
+	if (modified) {
 		(void)printf("%s", com);
 		EX_PRNEWLINE;
 	}

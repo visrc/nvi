@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 5.8 1992/04/22 08:08:05 bostic Exp $ (Berkeley) $Date: 1992/04/22 08:08:05 $";
+static char sccsid[] = "$Id: ex_write.c,v 5.9 1992/05/04 11:52:16 bostic Exp $ (Berkeley) $Date: 1992/05/04 11:52:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,6 +18,7 @@ static char sccsid[] = "$Id: ex_write.c,v 5.8 1992/04/22 08:08:05 bostic Exp $ (
 
 #include "vi.h"
 #include "excmd.h"
+#include "exf.h"
 #include "extern.h"
 
 /*
@@ -32,18 +33,21 @@ ex_write(cmdp)
 	register char *p;
 	struct stat sb;
 	FILE *fp;
-	int fd, flags, force, rval;
+	int fd, flags, force;
 	char *fname;
 
 	/* If nothing, just write the file back. */
 	if ((p = cmdp->string) == NULL) {
-		if (!*origname) {
+		if (curf->flags & F_NONAME) {
 			msg("No filename to which to write.");
 			return (1);
 		}
-		fname = origname;
-		flags = O_TRUNC;
-		goto noargs;
+		if (curf->flags & F_NAMECHANGED) {
+			fname = curf->name;
+			flags = O_TRUNC;
+			goto noargs;
+		} else
+			return (file_sync(curf, 0));
 	}
 
 	/* If "write!" it's a force to a file. */
@@ -81,7 +85,7 @@ ex_write(cmdp)
 
 	switch(cmdp->argc) {
 	case 0:
-		fname = origname;
+		fname = curf->name;
 		break;
 	case 1:
 		fname = cmdp->argv[0];
@@ -106,8 +110,7 @@ noargs:	if (!force && flags != O_APPEND && !stat(fname, &sb)) {
 		msg("%s: %s", fname, strerror(errno));
 		return (1);
 	}
-	rval = ex_writefp(fname, fp, cmdp->addr1, cmdp->addr2, 1);
-	return (fclose(fp) || rval);
+	return (ex_writefp(fname, fp, cmdp->addr1, cmdp->addr2, 1));
 }
 
 /*
@@ -132,10 +135,12 @@ ex_writefp(fname, fp, from, to, success_msg)
 	for (ccnt = 0; fline <= tline; ++fline, ccnt += len) {
 		p = fetchline(fline, &len);
 		if (fwrite(p, 1, len, fp) != len ||
-		    putc('\n', fp) != '\n') {
-			msg("%s: %s", fname, strerror(errno));
-			return (1);
-		}
+		    putc('\n', fp) != '\n')
+			goto err;
+	}
+	if (fclose(fp)) {
+err:		msg("%s: %s", fname, strerror(errno));
+		return (1);
 	}
 	if (success_msg)
 		msg("%s: %lu lines, %lu characters.", fname, lcnt, ccnt);

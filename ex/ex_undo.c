@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_undo.c,v 5.5 1992/04/19 08:54:05 bostic Exp $ (Berkeley) $Date: 1992/04/19 08:54:05 $";
+static char sccsid[] = "$Id: ex_undo.c,v 5.6 1992/05/04 11:52:13 bostic Exp $ (Berkeley) $Date: 1992/05/04 11:52:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -20,7 +20,9 @@ int
 ex_undo(cmdp)
 	EXCMDARG *cmdp;
 {
+#ifdef NOT_RIGHT_NOW
 	undo();
+#endif
 	
 	autoprint = 1;
 	return (0);

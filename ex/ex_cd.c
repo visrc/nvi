@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cd.c,v 5.8 1992/05/02 09:11:34 bostic Exp $ (Berkeley) $Date: 1992/05/02 09:11:34 $";
+static char sccsid[] = "$Id: ex_cd.c,v 5.9 1992/05/04 11:51:41 bostic Exp $ (Berkeley) $Date: 1992/05/04 11:51:41 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -17,6 +17,7 @@ static char sccsid[] = "$Id: ex_cd.c,v 5.8 1992/05/02 09:11:34 bostic Exp $ (Ber
 
 #include "vi.h"
 #include "excmd.h"
+#include "exf.h"
 #include "extern.h"
 
 /*
@@ -28,15 +29,6 @@ ex_cd(cmdp)
 	EXCMDARG *cmdp;
 {
 	char *dir, buf[MAXPATHLEN];
-
-	/*
-	 * If the file has been modified, write a warning and fail, unless
-	 * overridden by the '!' flag.
-	 */
-	if (!(cmdp->flags & E_FORCE) && tstflag(file, MODIFIED)) {
-		msg("The file has been modified but not written.");
-		return (1);
-	}
 
 	switch (cmdp->argc) {
 	case 0:

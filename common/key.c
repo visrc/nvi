@@ -6,21 +6,22 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.19 1992/05/02 09:13:20 bostic Exp $ (Berkeley) $Date: 1992/05/02 09:13:20 $";
+static char sccsid[] = "$Id: key.c,v 5.20 1992/05/04 11:52:31 bostic Exp $ (Berkeley) $Date: 1992/05/04 11:52:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 #include <sys/time.h>
 #include <termios.h>
 #include <limits.h>
-#include <errno.h>
 #include <curses.h>
+#include <errno.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
 
 #include "vi.h"
+#include "exf.h"
 #include "options.h"
 #include "seq.h"
 #include "tty.h"
@@ -43,6 +44,7 @@ static char *wb;			/* Widths buffer. */
 static int	key_inc __P((void));
 static void	modeline __P((int));
 static void	position __P((int));
+static int	ttyread __P((char *, int, int));
 
 /*
  * gb_init --
@@ -314,7 +316,7 @@ getkey(when)
 		 * This should return to somewhere else.
 		 */
 		if (nkeybuf == 0) {
-			tmpabort(1);
+			file_stop(curf, 0);
 			move(LINES - 1, 0);
 			clrtoeol();
 			refresh();
@@ -365,7 +367,7 @@ retry:		sp = seq_find(&keybuf[nextkey], nkeybuf,
 	return (ch);
 }
 
-int
+static int
 ttyread(buf, len, time)
 	char *buf;		/* where to store the characters */
 	int len;		/* max characters to read */

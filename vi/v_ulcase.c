@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ulcase.c,v 5.3 1992/04/22 08:10:36 bostic Exp $ (Berkeley) $Date: 1992/04/22 08:10:36 $";
+static char sccsid[] = "$Id: v_ulcase.c,v 5.4 1992/05/04 11:53:13 bostic Exp $ (Berkeley) $Date: 1992/05/04 11:53:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,6 +28,7 @@ v_ulcase(m, cnt)
 	register char ch, *from, *to;
 	long scnt;
 	int madechange;
+	char lbuf[1024];
 
 	SETDEFCNT(1);
 
@@ -36,7 +37,7 @@ v_ulcase(m, cnt)
 
 	scnt = cnt;
 	madechange = 0;
-	for (from = &ptext[markidx(m)], to = tmpblk.c; cnt--; to)  {
+	for (from = &ptext[markidx(m)], to = lbuf; cnt--; to)  {
 		if ((ch = *from++) == '\0')
 			break;
 		if (isupper(ch)) {
@@ -51,8 +52,8 @@ v_ulcase(m, cnt)
 
 	if (madechange)
 		ChangeText {
-			tmpblk.c[scnt] = '\0';
-			change(m, m + scnt, tmpblk.c);
+			lbuf[scnt] = '\0';
+			change(m, m + scnt, lbuf);
 		}
 	return (m + scnt);
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 5.8 1992/04/28 13:43:25 bostic Exp $ (Berkeley) $Date: 1992/04/28 13:43:25 $";
+static char sccsid[] = "$Id: ex_subst.c,v 5.9 1992/05/04 11:52:08 bostic Exp $ (Berkeley) $Date: 1992/05/04 11:52:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -59,6 +59,7 @@ substitute(cmdp, cmd)
 #ifndef CRUNCH
 	long	oldnlines;
 #endif
+	char lbuf[2048];
 	char *extra;
 
 	extra = cmdp->argv[0];
@@ -160,7 +161,7 @@ substitute(cmdp, cmd)
 
 				/* initialize the pointers */
 				s = line;
-				d = tmpblk.c;
+				d = lbuf;
 
 				/* do once or globally ... */
 				do
@@ -237,7 +238,7 @@ Continue:
 				/* replace the old version of the line with the new */
 				d[-1] = '\n';
 				d[0] = '\0';
-				change(MARK_AT_LINE(l), MARK_AT_LINE(l + 1), tmpblk.c);
+				change(MARK_AT_LINE(l), MARK_AT_LINE(l + 1), lbuf);
 
 #ifndef CRUNCH
 				l += nlines - oldnlines;
@@ -247,7 +248,7 @@ Continue:
 				/* if supposed to print it, do so */
 				if (optp)
 				{
-					addstr(tmpblk.c);
+					addstr(lbuf);
 					refresh();
 				}
 

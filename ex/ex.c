@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.26 1992/04/28 17:41:54 bostic Exp $ (Berkeley) $Date: 1992/04/28 17:41:54 $";
+static char sccsid[] = "$Id: ex.c,v 5.27 1992/05/04 11:51:29 bostic Exp $ (Berkeley) $Date: 1992/05/04 11:51:29 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -14,7 +14,6 @@ static char sccsid[] = "$Id: ex.c,v 5.26 1992/04/28 17:41:54 bostic Exp $ (Berke
 #include <termios.h>
 #include <fcntl.h>
 #include <glob.h>
-#include <curses.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -23,6 +22,7 @@ static char sccsid[] = "$Id: ex.c,v 5.26 1992/04/28 17:41:54 bostic Exp $ (Berke
 
 #include "vi.h"
 #include "excmd.h"
+#include "exf.h"
 #include "options.h"
 #include "tty.h"
 #include "pathnames.h"
@@ -816,7 +816,8 @@ fileexpand(gp, word, wordlen)
 {
 	static int tpathlen;
 	static char *tpath;
-	int cnt, len, olen, plen;
+	EXF *ep;
+	int len, olen, plen;
 	char ch, *p;
 
 	/*
@@ -824,27 +825,26 @@ fileexpand(gp, word, wordlen)
 	 * XXX
 	 */
 	/* Figure out how much space we need for this argument. */
+	ep = NULL;
 	len = wordlen;
 	for (p = word, olen = plen = 0; p = strpbrk(p, "%#"); ++p)
 		if (*p == '%') {
-			if (!*origname) {
+			if (curf->flags & F_NONAME) {
 				msg("No filename to substitute for %%.");
 				return (1);
 			}
-			if (!olen)
-				olen = strlen(origname);
-			len += olen;
+			len += curf->nlen;
 		} else {
-			if (!*prevorig) {
+			if (ep == NULL)
+				ep = file_prev(curf);
+			if (ep == NULL || ep->flags & F_NONAME) {
 				msg("No filename to substitute for #.");
 				return (1);
 			}
-			if (!plen)
-				plen = strlen(prevorig);
-			len += cnt * plen;
+			len += ep->nlen;
 		}
 
-	if (olen || plen) {
+	if (len != wordlen) {
 		/*
 		 * Copy argument into temporary space, replacing file
 		 * names.  Allocate temporary space if necessary.
@@ -863,12 +863,12 @@ fileexpand(gp, word, wordlen)
 		for (p = tpath; ch = *word; ++word)
 			switch(ch) {
 			case '%':
-				bcopy(origname, p, olen);
-				p += olen;
+				bcopy(curf->name, p, curf->nlen);
+				p += curf->nlen;
 				break;
 			case '#':
-				bcopy(prevorig, p, plen);
-				p += plen;
+				bcopy(ep->name, p, ep->nlen);
+				p += ep->nlen;
 				break;
 			case '\\':
 				if (p[1] != '\0')

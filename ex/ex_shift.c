@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shift.c,v 5.6 1992/04/19 08:54:01 bostic Exp $ (Berkeley) $Date: 1992/04/19 08:54:01 $";
+static char sccsid[] = "$Id: ex_shift.c,v 5.7 1992/05/04 11:52:06 bostic Exp $ (Berkeley) $Date: 1992/05/04 11:52:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -47,6 +47,7 @@ shift(cmdp, rl)
 	int	oldcol;	/* previous indent amount */
 	int	newcol;	/* new indent amount */
 	char	*text;	/* pointer to the old line's text */
+	char lbuf[2048];
 
 	ChangeText
 	{
@@ -93,19 +94,19 @@ shift(cmdp, rl)
 			{
 				while (newcol >= LVAL(O_TABSTOP))
 				{
-					tmpblk.c[newidx++] = '\t';
+					lbuf[newidx++] = '\t';
 					newcol -= LVAL(O_TABSTOP);
 				}
 			}
 			while (newcol > 0)
 			{
-				tmpblk.c[newidx++] = ' ';
+				lbuf[newidx++] = ' ';
 				newcol--;
 			}
-			tmpblk.c[newidx] = '\0';
+			lbuf[newidx] = '\0';
 
 			/* change the old indent string into the new */
-			change(MARK_AT_LINE(l), MARK_AT_LINE(l) + oldidx, tmpblk.c);
+			change(MARK_AT_LINE(l), MARK_AT_LINE(l) + oldidx, lbuf);
 		}
 	}
 

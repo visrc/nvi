@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 5.12 1992/04/28 17:42:05 bostic Exp $ (Berkeley) $Date: 1992/04/28 17:42:05 $
+ *	$Id: ex.h,v 5.13 1992/05/04 11:52:22 bostic Exp $ (Berkeley) $Date: 1992/05/04 11:52:22 $
  */
 
 struct excmdarg;
@@ -73,6 +73,22 @@ extern char *defcmdarg[2];	/* Default array. */
 	s.argc = _arg ? 1 : 0; \
 	s.argv = defcmdarg; \
 	defcmdarg[0] = _arg; \
+}
+
+/*
+ * Macro to do standard force/write/save stuff.
+ *
+ * If autowrite set, write the file; otherwise warn the user if the file has
+ * been modified but not written.
+ */
+#define	DEFMODSYNC { \
+	if (ISSET(O_AUTOWRITE)) { \
+		if (file_sync(curf, 0)) \
+			return (1); \
+	} else if (ISSET(O_WARN) && curf->flags & F_MODIFIED) { \
+		msg("%s has been modified but not written.", curf->name); \
+		return (1); \
+	} \
 }
 
 void	 ex __P((void));

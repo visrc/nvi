@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 5.6 1992/05/01 18:43:34 bostic Exp $ (Berkeley) $Date: 1992/05/01 18:43:34 $";
+static char sccsid[] = "$Id: ex_tag.c,v 5.7 1992/05/04 11:52:11 bostic Exp $ (Berkeley) $Date: 1992/05/04 11:52:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -16,6 +16,8 @@ static char sccsid[] = "$Id: ex_tag.c,v 5.6 1992/05/01 18:43:34 bostic Exp $ (Be
 
 #include "vi.h"
 #include "excmd.h"
+#include "exf.h"
+#include "options.h"
 #include "tag.h"
 #include "extern.h"
 
@@ -27,17 +29,11 @@ int
 ex_tag(cmdp)
 	EXCMDARG *cmdp;
 {
+	EXF *ep;
 	TAG *tag;
 	static char *lasttag;
 	
-	/*
-	 * If the file has been modified, write a warning and fail, unless
-	 * overridden by the '!' flag.
-	 */
-	if (!(cmdp->flags & E_FORCE) && tstflag(file, MODIFIED)) {
-		msg("%s has been modified but not written.", origname);
-		return (1);
-	}
+	DEFMODSYNC;
 
 	switch (cmdp->argc) {
 	case 1:
@@ -52,14 +48,11 @@ ex_tag(cmdp)
 		break;
 	}
 
-TRACE("tag %s, fname %s, line %s\n", tag->tag, tag->fname, tag->line);
-
-	if (strcmp(origname, tag->fname)) {
-		if (!tmpabort(cmdp->flags & E_FORCE)) {
-		msg("Use :tag! to abort changes, or :w to save changes");
+	if (strcmp(curf->name, tag->fname)) {
+		if (!file_stop(curf, 0))
 			return (1);
-		}
-		tmpstart(tag->fname);
+		file_ins(curf, tag->fname);
+		file_start(file_next(curf));
 	}
 
 	if ((cursor = f_search(MARK_FIRST, tag->line)) == MARK_UNSET) {
