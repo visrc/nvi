@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.39 1993/10/05 12:05:38 bostic Exp $ (Berkeley) $Date: 1993/10/05 12:05:38 $";
+static char sccsid[] = "$Id: ex.c,v 8.40 1993/10/28 14:14:49 bostic Exp $ (Berkeley) $Date: 1993/10/28 14:14:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -868,6 +868,12 @@ addr2:	switch (cmd.addrcnt) {
 	/* Do the command. */
 	if ((cp->fn)(sp, ep, &cmd))
 		return (1);
+
+#ifdef DEBUG
+	/* Make sure no function left the temporary space locked. */
+	if (F_ISSET(sp->gp, G_TMP_INUSE))
+		abort();
+#endif
 
 	/* If the world changed, we're done. */
 	if (saved_mode != F_ISSET(sp, S_MODE_EX | S_MODE_VI | S_MAJOR_CHANGE))

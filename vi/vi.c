@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.22 1993/10/28 08:55:53 bostic Exp $ (Berkeley) $Date: 1993/10/28 08:55:53 $";
+static char sccsid[] = "$Id: vi.c,v 8.23 1993/10/28 14:15:01 bostic Exp $ (Berkeley) $Date: 1993/10/28 14:15:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -168,6 +168,11 @@ vi(sp, ep)
 		if ((vp->kp->func)(sp, ep, vp, &fm, &tm, &m))
 			goto err;
 		
+#ifdef DEBUG
+		/* Make sure no function left the temporary space locked. */
+		if (F_ISSET(sp->gp, G_TMP_INUSE))
+			abort();
+#endif
 		/*
 		 * If that command took us out of vi or changed the screen,
 		 * then exit the loop without further action.
