@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.33 1993/10/04 19:20:40 bostic Exp $ (Berkeley) $Date: 1993/10/04 19:20:40 $";
+static char sccsid[] = "$Id: exf.c,v 8.34 1993/10/07 15:17:08 bostic Exp $ (Berkeley) $Date: 1993/10/07 15:17:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -314,6 +314,11 @@ file_init(sp, frp, rcv_fname, force)
 	 * We need to distinguish a lock not being available for the file
 	 * from the file system not supporting locking.  Assume that EAGAIN
 	 * is the former.  There isn't a portable way to do this.
+	 *
+	 * XXX
+	 * The locking is flock(2) style, not fcntl(2).  The latter is known
+	 * to fail badly on various systems, and its only advantage is that
+	 * it sometimes works over NFS.
 	 */
 	if (flock(ep->db->fd(ep->db), LOCK_EX | LOCK_NB))
 		if (errno == EAGAIN) {
