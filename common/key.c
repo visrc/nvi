@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: key.c,v 10.30 1996/04/03 17:56:09 bostic Exp $ (Berkeley) $Date: 1996/04/03 17:56:09 $";
+static const char sccsid[] = "$Id: key.c,v 10.31 1996/06/08 14:47:58 bostic Exp $ (Berkeley) $Date: 1996/06/08 14:47:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -792,9 +792,6 @@ v_event_err(sp, evp)
 		break;
 	case E_WRITE:
 		msgq(sp, M_ERR, "287|Unexpected write event");
-		break;
-	case E_WRITEQUIT:
-		msgq(sp, M_ERR, "288|Unexpected write-and-quit event");
 		break;
 
 	/*
