@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_msg.c,v 10.61 1996/04/30 18:56:35 bostic Exp $ (Berkeley) $Date: 1996/04/30 18:56:35 $";
+static const char sccsid[] = "$Id: vs_msg.c,v 10.62 1996/05/01 09:38:59 bostic Exp $ (Berkeley) $Date: 1996/05/01 09:38:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -542,6 +542,7 @@ vs_ex_resolve(sp, continuep)
 	EVENT ev;
 	GS *gp;
 	VI_PRIVATE *vip;
+	sw_t wtype;
 
 	gp = sp->gp;
 	vip = VIP(sp);
@@ -580,20 +581,17 @@ vs_ex_resolve(sp, continuep)
 		return (1);
 
 	/*
-	 * Wait, unless explicitly told not to wait, the user interrupted
-	 * the command or is leaving (or trying to leave) the screen.
-	 *
-	 * If the user is continuing, and we're already into an ex screen,
-	 * output a <newline> so that we don't erase anything.  It has to
-	 * be done here, because we never get control back if the command
-	 * is all internal, e.g. :set.
+	 * Wait, unless explicitly told not to wait or the user interrupted
+	 * the command.  If the user is leaving the screen, for any reason,
+	 * they can't continue with further ex commands.
 	 */
-	if (!F_ISSET(sp, SC_EX_DONTWAIT) && !INTERRUPTED(sp) &&
-	    !F_ISSET(sp, SC_EXIT | SC_EXIT_FORCE | SC_FSWITCH | SC_SSWITCH)) {
+	if (!F_ISSET(sp, SC_EX_DONTWAIT) && !INTERRUPTED(sp)) {
+		wtype = F_ISSET(sp, SC_EXIT | SC_EXIT_FORCE |
+		    SC_FSWITCH | SC_SSWITCH) ? SCROLL_W : SCROLL_W_EX;
 		if (F_ISSET(sp, SC_SCR_EXWROTE))
-			vs_wait(sp, continuep, SCROLL_W_EX);
+			vs_wait(sp, continuep, wtype);
 		else
-			vs_scroll(sp, continuep, SCROLL_W_EX);
+			vs_scroll(sp, continuep, wtype);
 		if (*continuep)
 			return (0);
 	}
