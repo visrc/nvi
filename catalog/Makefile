@@ -1,4 +1,4 @@
-#	$Id: Makefile,v 8.12 1994/11/22 09:34:21 bostic Exp $ (Berkeley) $Date: 1994/11/22 09:34:21 $
+#	$Id: Makefile,v 8.13 1994/11/22 09:52:21 bostic Exp $ (Berkeley) $Date: 1994/11/22 09:52:21 $
 
 CAT=	vi_dutch vi_english vi_german vi_ru_SU.KOI8-R
 FILES=	../common/*.c ../ex/*.c ../sex/*.c ../vi/*.c ../svi/*.c ../xaw/*.c
@@ -8,7 +8,8 @@ all: dump ${CAT}
 ${CAT}: vi_english.base
 	@echo "... $@";							\
 	rm -f $@;							\
-	awk '{								\
+	awk 'BEGIN {nline = 1}						\
+	{								\
 		if (++nline > $$1) {					\
 			print "DUPLICATE MESSAGE NUMBERS";		\
 			exit;						\
@@ -17,8 +18,9 @@ ${CAT}: vi_english.base
 			print "";					\
 		print $0;						\
 	}' < $@.base |							\
+	(echo VI_MESSAGE_CATALOG &&					\
 	sed -e '/"/s/^[^"]*"//'						\
-	    -e '/"/s/"$$//' > $@;					\
+	    -e '/^001/!s/"$$/X/') > $@;					\
 	chmod 444 $@;							\
 
 check: ${CAT}
@@ -51,8 +53,7 @@ vi_english.base: dump ${FILES}
 	./dump ${FILES} |\
 	sed -e '/|/!d' \
 	    -e 's/|/ "/' \
-	    -e 's/^"//' \
-	    -e '/^001/!s/"$$/X"/' |\
+	    -e 's/^"//' |\
 	sort -n > $@
 
 dump: dump.c
