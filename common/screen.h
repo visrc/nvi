@@ -4,13 +4,13 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 5.1 1992/06/08 09:27:55 bostic Exp $ (Berkeley) $Date: 1992/06/08 09:27:55 $
+ *	$Id: screen.h,v 5.2 1992/09/01 15:34:37 bostic Exp $ (Berkeley) $Date: 1992/09/01 15:34:37 $
  */
 
 #define	BOTLINE	(curf->top + LINES - 2)
 
 /* 
- * The interface to the screen is defined by six functions:
+ * The interface to the screen is defined by the following functions:
  *
  *	scr_init
  *		Set up curses, initialize the screen.
@@ -20,6 +20,10 @@
  *	scr_cchange:
  *		Change the screen as necessary for a cursor movement and
  *		move to the position.
+ *	scr_ldelete:
+ *		Delete a line from the screen.
+ *	scr_linsert:
+ *		Insert a line into the screen.
  *	scr_lchange
  *		Change the screen as necessary for a line change.
  *	scr_modeline
@@ -31,5 +35,7 @@ void	scr_cchange __P((void));
 void	scr_end __P((void));
 int	scr_init __P((void));
 void	scr_lchange __P((u_long, char *, size_t));
+void	scr_ldelete __P((recno_t));
+void	scr_linsert __P((recno_t, char *, size_t));
 void	scr_modeline __P((void));
 void	scr_ref __P((void));

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.14 1992/08/22 19:16:10 bostic Exp $ (Berkeley) $Date: 1992/08/22 19:16:10 $";
+static char sccsid[] = "$Id: exf.c,v 5.15 1992/09/01 15:34:36 bostic Exp $ (Berkeley) $Date: 1992/09/01 15:34:36 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -243,7 +243,7 @@ file_dline(ep, lno)
 		return (1);
 	}
 	if (mode == MODE_VI)
-		scr_lchange(lno, NULL, 0);
+		scr_ldelete(lno);
 	ep->flags |= F_MODIFIED;
 	return (0);
 }
@@ -274,7 +274,7 @@ file_aline(ep, lno, p, len)
 		return (1);
 	}
 	if (mode == MODE_VI)
-		scr_lchange(lno + 1, p, len);
+		scr_linsert(lno + 1, p, len);
 	ep->flags |= F_MODIFIED;
 	return (0);
 }
@@ -305,7 +305,7 @@ file_iline(ep, lno, p, len)
 		return (1);
 	}
 	if (mode == MODE_VI)
-		scr_lchange(lno - 1, p, len);
+		scr_linsert(lno, p, len);
 	ep->flags |= F_MODIFIED;
 	return (0);
 }
