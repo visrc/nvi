@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: vi.h,v 10.20 1996/10/29 12:13:30 bostic Exp $ (Berkeley) $Date: 1996/10/29 12:13:30 $
+ *	$Id: vi.h,v 10.21 1996/10/31 09:31:20 bostic Exp $ (Berkeley) $Date: 1996/10/31 09:31:20 $
  */
 
 /* Definition of a vi "word". */
@@ -351,20 +351,15 @@ typedef struct _vi_private {
  */
 #define	TAB_OFF(c)	COL_OFF((c), O_VAL(sp, O_TABSTOP))
 
-/* If more than one screen being shown. */
-#define	IS_SPLIT(sp)							\
-	((sp)->q.cqe_next != (void *)&(sp)->gp->dq ||			\
-	(sp)->q.cqe_prev != (void *)&(sp)->gp->dq)
 /* If more than one horizontal screen being shown. */
 #define	IS_HSPLIT(sp)							\
-	((sp)->roff != 0 ||						\
-	(sp)->q.cqe_next != (void *)&(sp)->gp->dq &&			\
-	(sp)->q.cqe_next->roff != 0)
+	((sp)->rows != O_VAL(sp, O_LINES))
 /* If more than one vertical screen being shown. */
 #define	IS_VSPLIT(sp)							\
-	((sp)->coff != 0 ||						\
-	(sp)->q.cqe_next != (void *)&(sp)->gp->dq &&			\
-	(sp)->q.cqe_next->coff != 0)
+	((sp)->cols != O_VAL(sp, O_COLUMNS))
+/* If more than one screen being shown. */
+#define	IS_SPLIT(sp)							\
+	(IS_HSPLIT(sp) || IS_VSPLIT(sp))
 
 /* Screen adjustment operations. */
 typedef enum { A_DECREASE, A_INCREASE, A_SET } adj_t;
