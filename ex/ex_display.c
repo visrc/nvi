@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_display.c,v 8.8 1993/11/08 14:13:34 bostic Exp $ (Berkeley) $Date: 1993/11/08 14:13:34 $";
+static char sccsid[] = "$Id: ex_display.c,v 8.9 1993/11/18 08:17:41 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:17:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,7 +34,7 @@ ex_bdisplay(sp, ep, cmdp)
 	int displayed;
 
 	displayed = 0;
-	for (cbp = sp->gp->cutq.le_next; cbp != NULL; cbp = cbp->q.qe_next) {
+	for (cbp = sp->gp->cutq.lh_first; cbp != NULL; cbp = cbp->q.le_next) {
 		if (isdigit(cbp->name))
 			continue;
 		if (cbp->txthdr.next != NULL &&
@@ -43,7 +43,7 @@ ex_bdisplay(sp, ep, cmdp)
 			db(sp, cbp);
 		}
 	}
-	for (cbp = sp->gp->cutq.le_next; cbp != NULL; cbp = cbp->q.qe_next) {
+	for (cbp = sp->gp->cutq.lh_first; cbp != NULL; cbp = cbp->q.le_next) {
 		if (!isdigit(cbp->name))
 			continue;
 		if (cbp->txthdr.next != NULL &&

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_screen.c,v 8.3 1993/11/17 10:28:58 bostic Exp $ (Berkeley) $Date: 1993/11/17 10:28:58 $";
+static char sccsid[] = "$Id: ex_screen.c,v 8.4 1993/11/18 08:17:44 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:17:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -86,8 +86,8 @@ ex_sargs(sp, ep, cmdp)
 	int cnt, col, len, sep;
 
 	col = len = sep = 0;
-	for (cnt = 1, tsp = __global_list->screens.le_next;
-	    tsp != NULL; tsp = tsp->screenq.qe_next) {
+	for (cnt = 1, tsp = __global_list->scrq.lh_first;
+	    tsp != NULL; tsp = tsp->q.le_next) {
 		frp = tsp->frp;
 		col += len =
 		    frp->nlen + sep + (F_ISSET(tsp, S_DISPLAYED) ? 2 : 0);

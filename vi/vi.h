@@ -4,8 +4,10 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 8.15 1993/11/16 10:36:11 bostic Exp $ (Berkeley) $Date: 1993/11/16 10:36:11 $
+ *	$Id: vi.h,v 8.16 1993/11/18 08:18:00 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:18:00 $
  */
+
+typedef struct _vikeys VIKEYS;
 
 /* Structure passed around to functions implementing vi commands. */
 typedef struct _vicmdarg {
@@ -15,8 +17,7 @@ typedef struct _vicmdarg {
 	u_long	count;		/* Count. */
 	u_long	count2;		/* Second count (only used by z). */
 	int	key;		/* Command key. */
-				/* VIKEYS structure. */
-	struct _vikeys const *kp;
+	VIKEYS const *kp;	/* VIKEYS structure. */
 	size_t	klen;		/* Keyword length. */
 
 /*
@@ -57,7 +58,7 @@ typedef struct _vicmdarg {
 } VICMDARG;
 
 /* Vi command structure. */
-typedef struct _vikeys {	/* Underlying function. */
+struct _vikeys {			/* Underlying function. */
 	int (*func) __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
 
 #define	V_DONTUSE1	0x000001	/* VC_C */
@@ -84,7 +85,7 @@ typedef struct _vikeys {	/* Underlying function. */
 	u_long flags;
 	char *usage;		/* Usage line. */
 	char *help;		/* Help line. */
-} VIKEYS;
+};
 #define	MAXVIKEY	126	/* List of vi commands. */
 extern VIKEYS const vikeys[MAXVIKEY + 1];
 

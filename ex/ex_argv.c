@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 8.15 1993/11/16 18:59:26 bostic Exp $ (Berkeley) $Date: 1993/11/16 18:59:26 $";
+static char sccsid[] = "$Id: ex_argv.c,v 8.16 1993/11/18 08:17:40 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:17:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -124,8 +124,10 @@ argv_exp2(sp, ep, cmdp, s, is_bang)
 		if (!isalnum(*p) && !isblank(*p) && *p != '/' && *p != '.')
 			break;
 	if (*p) {
-		if (argv_sexp(sp, bp, blen, &len))
-			return (1);
+		if (argv_sexp(sp, bp, blen, &len)) {
+			rval = 1;
+			goto err;
+		}
 		p = bp;
 	} else
 		p = bp + SHELLOFFSET;

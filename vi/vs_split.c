@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 8.15 1993/11/17 10:24:52 bostic Exp $ (Berkeley) $Date: 1993/11/17 10:24:52 $";
+static char sccsid[] = "$Id: vs_split.c,v 8.16 1993/11/18 08:18:09 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:18:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -380,8 +380,7 @@ svi_swap(csp, nsp, fname)
 	int issmallscreen;
 
 	/* Find the screen, or, if fname is NULL, the first screen. */
-	for (sp = __global_list->screens.le_next;
-	    sp != NULL; sp = sp->screenq.qe_next)
+	for (sp = __global_list->scrq.lh_first; sp != NULL; sp = sp->q.le_next)
 		if (!F_ISSET(sp, S_DISPLAYED) &&
 		    (fname == NULL || !strcmp(sp->frp->fname, fname)))
 			break;

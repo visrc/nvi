@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 8.22 1993/11/04 16:16:11 bostic Exp $ (Berkeley) $Date: 1993/11/04 16:16:11 $
+ *	$Id: common.h,v 8.23 1993/11/18 08:18:30 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:18:30 $
  */
 
 /* System includes. */
@@ -27,22 +27,23 @@
  * Forward structure declarations.  Not pretty, but the include files
  * are far too interrelated for a clean solution.
  */
-struct _cb;
-struct _excmdarg;
-struct _excmdlist;
-struct _exf;
-struct _fref;
-struct _gs;
-struct _hdr;
-struct _ibuf;
-struct _mark;
-struct _msg;
-struct _option;
-struct _scr;
-struct _seq;
-struct _tag;
-struct _tagf;
-struct _text;
+typedef struct _cb		CB;
+typedef struct _chname		CHNAME;
+typedef struct _excmdarg	EXCMDARG;
+typedef struct _exf		EXF;
+typedef struct _fref		FREF;
+typedef struct _gs		GS;
+typedef struct _hdr		HDR;
+typedef struct _ibuf		IBUF;
+typedef struct _mark		MARK;
+typedef struct _msg		MSG;
+typedef struct _option		OPTION;
+typedef struct _optlist		OPTLIST;
+typedef struct _scr		SCR;
+typedef struct _seq		SEQ;
+typedef struct _tag		TAG;
+typedef struct _tagf		TAGF;
+typedef struct _text		TEXT;
 
 /*
  * Fundamental character types.
@@ -62,11 +63,8 @@ typedef	u_int		ARG_CHAR_T;
 
 /*
  * Local includes.
- *
- * Required by everybody; include before any local includes.
  */
-#include "link.h"
-
+#include "link.h"		/* XXX */
 #include <db.h>			/* Required by exf.h; includes compat.h. */
 
 #include "mark.h"		/* Required by most everybody. */

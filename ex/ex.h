@@ -4,16 +4,14 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.30 1993/11/17 10:21:59 bostic Exp $ (Berkeley) $Date: 1993/11/17 10:21:59 $
+ *	$Id: ex.h,v 8.31 1993/11/18 08:17:46 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:17:46 $
  */
-
-struct _excmdarg;
 
 /* Ex command structure. */
 typedef struct _excmdlist {
 	char	*name;			/* Command name. */
 					/* Underlying function. */
-	int (*fn) __P((SCR *, EXF *, struct _excmdarg *));
+	int (*fn) __P((SCR *, EXF *, EXCMDARG *));
 
 #define	E_ADDR1		0x0000001	/* One address. */
 #define	E_ADDR2		0x0000002	/* Two address. */
@@ -50,7 +48,7 @@ typedef struct _excmdlist {
 extern EXCMDLIST const cmds[];		/* List of ex commands. */
 
 /* Structure passed around to functions implementing ex commands. */
-typedef struct _excmdarg {
+struct _excmdarg {
 	EXCMDLIST const *cmd;	/* Command entry in command table. */
 	CHAR_T	buffer;		/* Named buffer. */
 	recno_t	lineno;		/* Line number. */
@@ -61,7 +59,7 @@ typedef struct _excmdarg {
 	int	argc;		/* Count of file/word arguments. */
 	char  **argv;		/* List of file/word arguments. */
 	u_int	flags;		/* Selected flags from EXCMDLIST. */
-} EXCMDARG;
+};
 
 /* Structure for building argc/argv vector of ex arguments. */
 typedef struct _args {
@@ -89,8 +87,8 @@ typedef struct _ex_private {
 
 	char	*lastbcomm;		/* Last bang command. */
 
-	struct queue_entry tagq;	/* Tag stack. */
-	struct queue_entry tagfq;	/* Tag file queue. */
+	TAILQ_HEAD(_tagh, _tag) tagq;	/* Tag stack. */
+	TAILQ_HEAD(_tagfh, _tagf) tagfq;/* Tag stack. */
 	char	*tlast;			/* Saved last tag. */
 
 	u_long	q_ccnt;			/* Quit command count. */

@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 8.19 1993/11/13 18:02:30 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:02:30 $";
+static char sccsid[] = "$Id: ex_tag.c,v 8.20 1993/11/18 08:17:45 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:17:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -225,7 +225,7 @@ ex_tagpush(sp, ep, cmdp)
 		msgq(sp, M_SYSERR, NULL);
 	else {
 		*tp = ttag;
-		queue_enter_head(&EXP(sp)->tagq, tp, TAG *, q);
+		TAILQ_INSERT_HEAD(&EXP(sp)->tagq, tp, q);
 
 	}
 	return (0);
@@ -244,7 +244,7 @@ ex_tagpop(sp, ep, cmdp)
 	TAG *tp;
 
 	/* Pop newest saved information. */
-	if ((tp = EXP(sp)->tagq.qe_next) == NULL) {
+	if ((tp = EXP(sp)->tagq.tqh_first) == NULL) {
 		msgq(sp, M_INFO, "The tags stack is empty.");
 		return (1);
 	}
@@ -267,7 +267,7 @@ ex_tagpop(sp, ep, cmdp)
 	}
 
 	/* Delete the saved information from the stack. */
-	queue_remove(&EXP(sp)->tagq, tp, TAG *, q);
+	TAILQ_REMOVE(&EXP(sp)->tagq, tp, q);
 	return (0);
 }
 
@@ -287,9 +287,9 @@ ex_tagtop(sp, ep, cmdp)
 
 	/* Pop to oldest saved information. */
 	exp = EXP(sp);
-	for (found = 0; (tp = exp->tagq.qe_next) != NULL; found = 1) {
-		queue_remove(&exp->tagq, tp, TAG *, q);
-		if (exp->tagq.qe_next == NULL)
+	for (found = 0; (tp = exp->tagq.tqh_first) != NULL; found = 1) {
+		TAILQ_REMOVE(&exp->tagq, tp, q);
+		if (exp->tagq.tqh_first == NULL)
 			tmp = *tp;
 		FREE(tp, sizeof(TAG));
 	}
@@ -335,8 +335,8 @@ ex_tagalloc(sp, str)
 
 	/* Free current queue. */
 	exp = EXP(sp);
-	while ((tp = exp->tagfq.qe_next) != NULL) {
-		queue_remove(&exp->tagfq, tp, TAGF *, q);
+	while ((tp = exp->tagfq.tqh_first) != NULL) {
+		TAILQ_REMOVE(&exp->tagfq, tp, q);
 		FREE(tp->fname, strlen(tp->fname) + 1);
 		FREE(tp, sizeof(TAGF));
 	}
@@ -355,7 +355,7 @@ ex_tagalloc(sp, str)
 				memmove(tp->fname, t, len);
 				tp->fname[len] = '\0';
 				tp->flags = 0;
-				queue_enter_tail(&exp->tagfq, tp, TAGF *, q);
+				TAILQ_INSERT_TAIL(&exp->tagfq, tp, q);
 			}
 			t = p + 1;
 		}
@@ -379,12 +379,12 @@ ex_tagfree(sp)
 
 	/* Free up tag information. */
 	exp = EXP(sp);
-	while ((tp = exp->tagq.qe_next) != NULL) {
-		queue_remove(&exp->tagq, tp, TAG *, q);
+	while ((tp = exp->tagq.tqh_first) != NULL) {
+		TAILQ_REMOVE(&exp->tagq, tp, q);
 		FREE(tp, sizeof(TAG));
 	}
-	while ((tfp = exp->tagfq.qe_next) != NULL) {
-		queue_remove(&exp->tagfq, tfp, TAGF *, q);
+	while ((tfp = exp->tagfq.tqh_first) != NULL) {
+		TAILQ_REMOVE(&exp->tagfq, tfp, q);
 		FREE(tfp->fname, strlen(tfp->fname) + 1);
 		FREE(tfp, sizeof(TAGF));
 	}
@@ -407,21 +407,22 @@ ex_tagcopy(orig, sp)
 	/* Copy tag stack. */
 	oexp = EXP(orig);
 	nexp = EXP(sp);
-	for (ap = oexp->tagq.qe_next; ap != NULL; ap = ap->q.qe_next) {
+	for (ap = oexp->tagq.tqh_first; ap != NULL; ap = ap->q.tqe_next) {
 		if ((tp = malloc(sizeof(TAG))) == NULL)
 			goto nomem;
 		*tp = *ap;
-		queue_enter_tail(&nexp->tagq, tp, TAG *, q);
+		TAILQ_INSERT_TAIL(&nexp->tagq, tp, q);
 	}
 
 	/* Copy list of tag files. */
-	for (atfp = oexp->tagfq.qe_next; atfp != NULL; atfp = atfp->q.qe_next) {
+	for (atfp = oexp->tagfq.tqh_first;
+	    ap != NULL; atfp = atfp->q.tqe_next) {
 		if ((tfp = malloc(sizeof(TAGF))) == NULL)
 			goto nomem;
 		*tfp = *atfp;
 		if ((tfp->fname = strdup(atfp->fname)) == NULL)
 			goto nomem;
-		queue_enter_tail(&nexp->tagfq, tfp, TAGF *, q);
+		TAILQ_INSERT_TAIL(&nexp->tagfq, tfp, q);
 	}
 		
 	/* Copy the last tag. */
@@ -453,8 +454,8 @@ tag_get(sp, tag, tagp, filep, searchp)
 	 */
 	dne = 0;
 	exp = EXP(sp);
-	for (tfp = exp->tagfq.qe_next, p = NULL;
-	    tfp != NULL && p == NULL; tfp = tfp->q.qe_next) {
+	for (p = NULL, tfp = exp->tagfq.tqh_first;
+	    tfp != NULL && p == NULL; tfp = tfp->q.tqe_next) {
 		errno = 0;
 		F_CLR(tfp, TAGF_DNE);
 		if (search(sp, tfp->fname, tag, &p))
@@ -470,8 +471,8 @@ tag_get(sp, tag, tagp, filep, searchp)
 	if (p == NULL) {
 		msgq(sp, M_ERR, "%s: tag not found.", tag);
 		if (dne)
-			for (tfp = exp->tagfq.qe_next;
-			    tfp != NULL; tfp = tfp->q.qe_next)
+			for (tfp = exp->tagfq.tqh_first;
+			    tfp != NULL; tfp = tfp->q.tqe_next)
 				if (F_ISSET(tfp, TAGF_DNE)) {
 					errno = ENOENT;
 					msgq(sp, M_SYSERR, tfp->fname);
