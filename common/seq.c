@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 5.1 1992/04/05 15:50:52 bostic Exp $ (Berkeley) $Date: 1992/04/05 15:50:52 $";
+static char sccsid[] = "$Id: seq.c,v 5.2 1992/04/05 16:59:56 bostic Exp $ (Berkeley) $Date: 1992/04/05 16:59:56 $";
 #endif /* not lint */
 
 #include <errno.h>
@@ -106,10 +106,7 @@ seq_set(name, input, output, stype, userdef)
 	}
 
 	/* Link into the sequence list. */
-	sp->lnext = seqhead.lnext;
-	seqhead.lnext->lprev = sp;
-	seqhead.lnext = sp;
-	sp->lprev = (SEQ *)&seqhead;
+	inseq(sp, &seqhead);
 	return (0);
 
 mem4:	free(sp->input);
@@ -147,8 +144,7 @@ seq_delete(input, stype)
 		seq[*input] = NULL;
 
 	/* Unlink out of the sequence list. */
-	sp->lprev->lnext = sp->lnext;
-	sp->lnext->lprev = sp->lprev;
+	rmseq(sp);
 
 	/* Free up the space. */
 	if (sp->name)
@@ -197,6 +193,7 @@ seq_find(input, ilen, stype, ispartialp)
 			if (stype != sp->stype)
 				continue;
 			if (!strncmp(sp->input, input, ilen))
+				return (sp);
 		}
 	return (NULL);
 }
@@ -206,8 +203,9 @@ seq_find(input, ilen, stype, ispartialp)
  *	Display the sequence entries of a specified type.
  */
 int
-seq_dump(stype)
+seq_dump(stype, isname)
 	enum seqtype stype;
+	int isname;
 {
 	register SEQ *sp;
 	register int ch, len;
@@ -216,15 +214,20 @@ seq_dump(stype)
 	for (sp = seqhead.lnext; sp != (SEQ *)&seqhead; sp = sp->lnext) {
 		if (stype != sp->stype)
 			continue;
-		for (p = sp->name ? sp->name : sp->input, len = 0;
-		    (ch = *p); ++p, ++len)
-			if (iscntrl(ch)) {
-				qaddch('^');
-				qaddch(ch ^ '@');
+		if (isname)
+			if (sp->name) {
+				for (p = sp->name, len = 0;
+				    (ch = *p); ++p, ++len)
+					if (iscntrl(ch)) {
+						qaddch('^');
+						qaddch(ch ^ '@');
+					} else
+						qaddch(ch);
+				for (len = TAB - len % TAB; len; --len)
+					qaddch(' ');
 			} else
-				qaddch(ch);
-		for (len = TAB - len % TAB; len; --len)
-			qaddch(' ');
+				qaddstr("        ");
+
 		for (p = sp->input, len = 0; (ch = *p); ++p, ++len)
 			if (iscntrl(ch)) {
 				qaddch('^');
@@ -233,6 +236,7 @@ seq_dump(stype)
 				qaddch(ch);
 		for (len = TAB - len % TAB; len; --len)
 			qaddch(' ');
+
 		for (p = sp->output; (ch = *p); ++p)
 			if (iscntrl(ch)) {
 				qaddch('^');
