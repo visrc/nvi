@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.43 1994/03/14 10:33:51 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:33:51 $";
+static char sccsid[] = "$Id: recover.c,v 8.44 1994/03/15 09:27:06 bostic Exp $ (Berkeley) $Date: 1994/03/15 09:27:06 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -508,6 +508,7 @@ rcv_read(sp, name)
 		return (1);
 	}
 
+	rec_mtime = 0;
 	recp = pathp = NULL;
 	for (found = requested = 0; (dp = readdir(dirp)) != NULL;) {
 		if (strncmp(dp->d_name, "recover.", 8))
