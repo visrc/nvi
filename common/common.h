@@ -4,12 +4,11 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 5.28 1992/10/20 18:24:07 bostic Exp $ (Berkeley) $Date: 1992/10/20 18:24:07 $
+ *	$Id: common.h,v 5.29 1992/10/26 17:45:11 bostic Exp $ (Berkeley) $Date: 1992/10/26 17:45:11 $
  */
 
 #include <db.h>				/* XXX for rptlines, below */
 
-#define	CARRIAGE_RETURN	'\r'		/* Carriage return. */
 #define	CHEND		'$'		/* End-of-change character. */
 #define	ESCAPE		'\033'		/* Escape character. */
 #define	SPACE		' '		/* Space character. */
@@ -41,7 +40,6 @@ enum direction { FORWARD, BACKWARD };	/* Direction type. */
 
 /* misc housekeeping variables & functions				  */
 
-extern long	changes;	/* counts changes, to prohibit short-cuts */
 extern int	doingglobal;	/* boolean: are doing a ":g" command? */
 extern recno_t	rptlines;	/* number of lines affected by a command */
 extern char	*rptlabel;	/* description of how lines were affected */
