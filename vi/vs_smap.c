@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 10.12 1995/10/20 10:14:13 bostic Exp $ (Berkeley) $Date: 1995/10/20 10:14:13 $";
+static char sccsid[] = "$Id: vs_smap.c,v 10.13 1995/11/07 20:27:29 bostic Exp $ (Berkeley) $Date: 1995/11/07 20:27:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -120,10 +120,12 @@ vs_change(sp, lno, op)
 		F_SET(vip, VIP_CUR_INVALID);
 
 	/*
-	 * If ex modifies the screen after ex output is already on the
-	 * screen, don't touch it -- we'll get scrolling wrong, at best.
+	 * If ex modifies the screen after ex output is already on the screen
+	 * or if we've switched into ex canonical mode, don't touch it -- we'll
+	 * get scrolling wrong, at best.
 	 */
-	if (!F_ISSET(sp, S_INPUT_INFO) && VIP(sp)->totalcount > 1) {
+	if (!F_ISSET(sp, S_INPUT_INFO) &&
+	    (F_ISSET(sp, S_EX_CANON) || VIP(sp)->totalcount > 1)) {
 		F_SET(vip, VIP_N_REDRAW);
 		return (0);
 	}
