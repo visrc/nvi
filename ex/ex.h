@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.35 1993/11/26 15:09:17 bostic Exp $ (Berkeley) $Date: 1993/11/26 15:09:17 $
+ *	$Id: ex.h,v 8.36 1993/12/02 10:57:04 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:57:04 $
  */
 
 /* Ex command structure. */
@@ -56,26 +56,16 @@ struct _excmdarg {
 	int	addrcnt;	/* Number of addresses (0, 1 or 2). */
 	MARK	addr1;		/* 1st address. */
 	MARK	addr2;		/* 2nd address. */
-	int	argc;		/* Count of file/word arguments. */
-	char  **argv;		/* List of file/word arguments. */
+	ARGS  **argv;		/* Array of arguments. */
+	int	argc;		/* Count of arguments. */
 	u_int	flags;		/* Selected flags from EXCMDLIST. */
 };
 
-/* Structure for building argc/argv vector of ex arguments. */
-typedef struct _args {
-	char	*bp;			/* Buffer. */
-	size_t	 len;			/* Buffer length. */
-
-#define	A_ALLOCATED	0x01		/* If allocated space. */
-	u_char	 flags;
-} ARGS;
-
 /* Ex private, per-screen memory. */
 typedef struct _ex_private {
-	char   **argv;			/* Arguments. */
-	ARGS	*args;			/* Argument buffers. */
+	ARGS   **args;			/* Arguments. */
 	int	 argscnt;		/* Argument count. */
-	char	*ex_argv[3];		/* Special purpose 2 slots. */
+	int	 argsoff;		/* Offset into arguments. */
 
 	CHAR_T	 at_lbuf;		/* Last executed at buffer's name. */
 	int	 at_lbuf_set;		/* If at_lbuf is set. */
@@ -85,7 +75,7 @@ typedef struct _ex_private {
 
 	EXCMDLIST const *lastcmd;	/* Last command. */
 
-	char	*lastbcomm;		/* Last bang command. */
+	CHAR_T	*lastbcomm;		/* Last bang command. */
 
 	TAILQ_HEAD(_tagh, _tag) tagq;	/* Tag stack. */
 	TAILQ_HEAD(_tagfh, _tagf) tagfq;/* Tag stack. */
@@ -94,18 +84,26 @@ typedef struct _ex_private {
 #define	EXP(sp)	((EX_PRIVATE *)((sp)->ex_private))
 	
 /* Macro to set up a command structure. */
-#define	SETCMDARG(s, _cmd, _addrcnt, _lno1, _lno2, _force, _arg) {	\
+#define	SETCMDARG(s, cmd_id, naddr, lno1, lno2, force, arg) {		\
+	ARGS *__ap[2], __a;						\
 	memset(&s, 0, sizeof(EXCMDARG));				\
-	s.cmd = &cmds[_cmd];						\
-	s.addrcnt = (_addrcnt);						\
-	s.addr1.lno = (_lno1);						\
-	s.addr2.lno = (_lno2);						\
+	s.cmd = &cmds[cmd_id];						\
+	s.addrcnt = (naddr);						\
+	s.addr1.lno = (lno1);						\
+	s.addr2.lno = (lno2);						\
 	s.addr1.cno = s.addr2.cno = 1;					\
-	if (_force)							\
+	if (force)							\
 		s.flags |= E_FORCE;					\
-	EXP(sp)->ex_argv[0] = _arg;					\
-	s.argc = _arg == NULL ? 0 : 1;					\
-	s.argv = EXP(sp)->ex_argv;					\
+	if ((__a.bp = arg) == NULL) {					\
+		s.argc = 0;						\
+		__a.len = strlen(arg);					\
+	} else {							\
+		s.argc = 1;						\
+		__a.len = 0;						\
+	}								\
+	__ap[0] = &__a;							\
+	__ap[1] = NULL;							\
+	s.argv = __ap;							\
 }
 
 /*
@@ -138,21 +136,21 @@ int	filtercmd __P((SCR *, EXF *,
 	    MARK *, MARK *, MARK *, char *, enum filtertype));
 
 /* Argument expansion routines. */
-int	argv_exp1 __P((SCR *, EXF *, EXCMDARG *, char *, int));
-int	argv_exp2 __P((SCR *, EXF *, EXCMDARG *, char *, int));
-int	argv_exp3 __P((SCR *, EXF *, EXCMDARG *, char *));
+int	argv_exp0 __P((SCR *, EXF *, EXCMDARG *, char *, size_t));
+int	argv_exp1 __P((SCR *, EXF *, EXCMDARG *, char *, size_t, int));
+int	argv_exp2 __P((SCR *, EXF *, EXCMDARG *, char *, size_t, int));
+int	argv_exp3 __P((SCR *, EXF *, EXCMDARG *, char *, size_t));
 int	argv_free __P((SCR *));
 
 /* Ex function prototypes. */
 int	ex __P((SCR *, EXF *));
 int	ex_cfile __P((SCR *, EXF *, char *));
-int	ex_cmd __P((SCR *, EXF *, char *, int));
-int	ex_cstring __P((SCR *, EXF *, char *, int));
+int	ex_cmd __P((SCR *, EXF *, char *, size_t));
 int	ex_end __P((SCR *));
-int	ex_exec_proc __P((SCR *,
-	    const u_char *, const u_char *, char *, char *));
+int	ex_exec_proc __P((SCR *, char *, char *, char *));
 int	ex_gb __P((SCR *, EXF *, TEXTH *, int, u_int));
 int	ex_getline __P((SCR *, FILE *, size_t *));
+int	ex_icmd __P((SCR *, EXF *, char *, size_t));
 int	ex_init __P((SCR *, EXF *));
 int	ex_optchange __P((SCR *, int));
 int	ex_print __P((SCR *, EXF *, MARK *, MARK *, int));
