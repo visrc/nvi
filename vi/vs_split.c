@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 8.6 1993/09/12 14:51:02 bostic Exp $ (Berkeley) $Date: 1993/09/12 14:51:02 $";
+static char sccsid[] = "$Id: vs_split.c,v 8.7 1993/09/13 17:02:08 bostic Exp $ (Berkeley) $Date: 1993/09/13 17:02:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -75,14 +75,18 @@ svi_split(sp, argv)
 		goto mem4;
 
 	/* Split the screen, and link the screens together. */
+	nochange = argv == NULL;
 	if (sp->sc_row <= half) {		/* Parent is top half. */
-		tsp->rows = sp->rows - half;	/* Child. */
-		tsp->cols = sp->cols;
-		tsp->t_rows = tsp->rows - 1;
+		tsp->cols = sp->cols;		/* Stuff in common. */
 		tsp->w_rows = sp->w_rows;
+
+		tsp->rows = sp->rows - half;	/* Child. */
+		tsp->t_rows = tsp->rows - 1;
 		tsp->s_off = sp->s_off + half;
-		tsp->sc_col = tsp->sc_row = 0;
 		TMAP(tsp) = HMAP(tsp) + (tsp->t_rows - 1);
+		if (nochange)			/* Both start the same place.*/
+			memmove(HMAP(tsp), HMAP(sp),
+			    tsp->t_rows * sizeof(SMAP));
 
 		sp->rows = half;		/* Parent. */
 		sp->t_rows = sp->rows - 1;
@@ -94,17 +98,22 @@ svi_split(sp, argv)
 		sp->child = tsp;
 		tsp->parent = sp;
 	} else {				/* Parent is bottom half. */
-		tsp->rows = sp->rows - half;	/* Child. */
-		tsp->cols = sp->cols;
-		tsp->t_rows = tsp->rows - 1;
+		tsp->cols = sp->cols;		/* Stuff in common. */
 		tsp->w_rows = sp->w_rows;
+
+		tsp->rows = sp->rows - half;	/* Child. */
+		tsp->t_rows = tsp->rows - 1;
 		tsp->s_off = sp->s_off;
-		tsp->sc_col = tsp->sc_row = 0;
 		TMAP(tsp) = HMAP(tsp) + (tsp->t_rows - 1);
+		if (nochange)			/* Both start the same place. */
+			memmove(HMAP(tsp), TMAP(sp) - (tsp->t_rows - 1),
+			    tsp->t_rows * sizeof(SMAP));
 
 		sp->rows = half;		/* Parent. */
 		sp->t_rows = sp->rows - 1;
-		sp->s_off = sp->s_off + half;
+		sp->s_off = sp->s_off + tsp->rows;
+		memmove(HMAP(sp),		/* Copy the map down. */
+		    TMAP(sp) - (sp->t_rows - 1), sp->t_rows * sizeof(SMAP));
 		TMAP(sp) = HMAP(sp) + (sp->t_rows - 1);
 
 		tsp->parent = sp->parent;
@@ -134,11 +143,9 @@ svi_split(sp, argv)
 		for (; *argv != NULL; ++argv)
 			if (file_add(tsp, NULL, *argv, 0) == NULL)
 				goto mem4;
-		nochange = 0;
 	} else {
 		if (file_add(tsp, NULL, sp->frp->fname, 0) == NULL)
 			goto mem4;
-		nochange = 1;
 	}
 
 	if ((tsp->frp = file_first(tsp, 0)) == NULL) {
@@ -146,20 +153,21 @@ svi_split(sp, argv)
 		goto mem4;
 	}
 
-	/* If the file unchanged, keep the same cursor position. */
-	if (nochange) {
-		tsp->frp->lno = sp->lno;
-		tsp->frp->cno = sp->cno;
-		F_SET(tsp->frp, FR_CURSORSET);
-	}
-
 	/* Start the file. */
 	if ((tsp->ep = file_init(tsp,
 	    nochange ? sp->ep : NULL, tsp->frp, NULL)) == NULL)
 		goto mem4;
 
-	/* Fill the child's screen map. */
-	(void)svi_sm_fill(tsp, tsp->ep, sp->lno, P_FILL);
+	/*
+	 * Fill the child's screen map.  If the file is
+	 * unchanged, keep the screen and cursor the same.
+	 */
+	if (nochange) {
+		tsp->frp->lno = sp->lno;
+		tsp->frp->cno = sp->cno;
+		F_SET(tsp->frp, FR_CURSORSET);
+	} else
+		(void)svi_sm_fill(tsp, tsp->ep, sp->lno, P_FILL);
 
 	/* Clear the information lines. */
 	MOVE(sp, INFOLINE(sp), 0);
