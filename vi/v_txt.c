@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.44 1993/11/06 11:54:23 bostic Exp $ (Berkeley) $Date: 1993/11/06 11:54:23 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.45 1993/11/07 14:01:15 bostic Exp $ (Berkeley) $Date: 1993/11/07 14:01:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -661,6 +661,8 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 				if (LF_ISSET(TXT_ALTWERASE)) {
 					--sp->cno;
 					++tp->overwrite;
+					if (isblank(tp->lb[sp->cno - 1]))
+						break;
 				}
 				if (sp->cno > max)
 					tmp = inword(tp->lb[sp->cno - 1]);
