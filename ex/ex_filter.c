@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 10.2 1995/05/05 18:54:06 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:54:06 $";
+static char sccsid[] = "$Id: ex_filter.c,v 10.3 1995/06/15 19:39:33 bostic Exp $ (Berkeley) $Date: 1995/06/15 19:39:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -55,7 +55,7 @@ filtercmd(sp, fm, tm, rp, cmd, ftype)
 	FILE *ifp, *ofp;
 	pid_t parent_writer_pid, utility_pid;
 	recno_t nread;
-	int input[2], output[2], nf, rval, teardown;
+	int input[2], output[2], nf, rval;
 	char *name, *p;
 
 	/* Set return cursor position; guard against a line number of zero. */
@@ -80,7 +80,6 @@ filtercmd(sp, fm, tm, rp, cmd, ftype)
 	 * the terminal (e.g. :r! cat works).  Otherwise open up utility
 	 * input pipe.
 	 */
-	teardown = 0;
 	ofp = NULL;
 	input[0] = input[1] = output[0] = output[1] = -1;
 	if (ftype != FILTER_READ && pipe(input) < 0) {
@@ -99,10 +98,18 @@ filtercmd(sp, fm, tm, rp, cmd, ftype)
 	}
 
 	/*
-	 * Save ex/vi terminal settings, and restore the original ones.
-	 * Restoration so that users can do things like ":r! cat /dev/tty".
+	 * If not doing a filter write, switch into ex canonical mode.  The
+	 * restoration of the original terminal modes for read filters is
+	 * necessary so that users can do things like ":r! cat /dev/tty".
 	 */
-	teardown = ftype != FILTER_WRITE && !ex_sleave(sp);
+	if (ftype != FILTER_WRITE) {
+		(void)ex_fflush(sp);
+		(void)vs_msgflush(sp, 1, NULL, NULL);
+		if (sp->gp->scr_canon(sp, 1))
+			return (1);
+		F_SET(sp, S_EX_WROTE);
+		(void)write(STDOUT_FILENO, "\n", 1);
+	}
 
 	/* Fork off the utility process. */
 	switch (utility_pid = vfork()) {
@@ -119,7 +126,7 @@ err:		if (input[0] != -1)
 		if (output[1] != -1)
 			(void)close(output[1]);
 		rval = 1;
-		goto ret;
+		goto uwait;
 	case 0:				/* Utility. */
 		/*
 		 * Redirect stdin from the read end of the input pipe, and
@@ -279,12 +286,7 @@ err:		if (input[0] != -1)
 	}
 	F_CLR(sp->ep, F_MULTILOCK);
 
-uwait:	rval |= proc_wait(sp, (long)utility_pid, cmd, 0);
-
-	/* Restore ex/vi terminal settings. */
-ret:	if (teardown)
-		ex_rleave(sp);
-	return (rval);
+uwait:	return (proc_wait(sp, (long)utility_pid, cmd, 0) || rval);
 }
 
 /*
