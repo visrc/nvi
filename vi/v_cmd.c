@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 5.53 1993/05/07 16:21:17 bostic Exp $ (Berkeley) $Date: 1993/05/07 16:21:17 $";
+static char sccsid[] = "$Id: v_cmd.c,v 5.54 1993/05/08 16:08:49 bostic Exp $ (Berkeley) $Date: 1993/05/08 16:08:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -24,19 +24,19 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	{v_searchw,	V_ABS|V_CNT|V_KEYW|V_RCM_SET,
 	    "search forward for cursor word: [count]^A"},
 /* 002  ^B */
-	{v_pageup,	V_CNT,
+	{v_pageup,	V_ABS|V_CNT,
 	    "page up by screens: [count]^B"},
 /* 003  ^C */
 	{NULL,		0,
 	    "interrupt a search: ^C"},
 /* 004  ^D */
-	{v_hpagedown,	V_CNT,
+	{v_hpagedown,	V_ABS|V_CNT,
 	    "page down by half screens (set count): [count]^D"},
 /* 005  ^E */
 	{v_linedown,	V_CNT,
 	    "page down by lines: [count]^E"},
 /* 006  ^F */
-	{v_pagedown,	V_CNT,
+	{v_pagedown,	V_ABS|V_CNT,
 	    "page down by screens: [count]^F"},
 /* 007  ^G */
 	{v_status,	0,
@@ -76,7 +76,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	{v_tagpop,	V_RCM_SET,
 	    "tag pop: ^T"},
 /* 025  ^U */
-	{v_hpageup,	V_CNT,
+	{v_hpageup,	V_ABS|V_CNT,
 	    "half page up (set count): [count]^U"},
 /* 026  ^V */
 	{NULL,		0,
@@ -120,19 +120,19 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	{v_dollar,	V_CNT|V_MOVE|V_RCM_SETLAST,
 	    "move to last column: [count]$"},
 /* 045   % */
-	{v_match,	V_MOVE|V_RCM_SET,
+	{v_match,	V_ABS|V_MOVE|V_RCM_SET,
 	    "move to match: %"},
 /* 046   & */
 	{v_again,	0,
 	    "repeat substitution: &"},
 /* 047   ' */
-	{v_marksq,	V_CHAR|V_LMODE|V_MOVE|V_RCM_SETFNB,
+	{v_gomark,	V_ABS|V_CHAR|V_LMODE|V_MOVE|V_RCM_SETFNB,
 	    "move to mark (first non-blank): '['a-z]"},
 /* 050   ( */
 	{v_sentenceb,	V_CNT|V_MOVE|V_RCM_SET,
 	    "move back sentence: [count]("},
 /* 051   ) */
-	{v_sentencef,	V_CNT|V_MOVE|V_RCM_SET,
+	{v_sentencef,	V_ABS|V_CNT|V_MOVE|V_RCM_SET,
 	    "move forward sentence: [count])"},
 /* 052   * */
 	{v_errlist,	0,
@@ -150,7 +150,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	{NULL,		0,
 	    "repeat the last command: ."},
 /* 057   / */
-	{v_searchf,	V_MOVE|V_RCM_SET,
+	{v_searchf,	V_ABS|V_MOVE|V_RCM_SET,
 	    "search forward: /RE"},
 /* 060   0 */
 	{v_zero,	V_MOVE|V_RCM_SET,
@@ -188,7 +188,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	{v_shiftr,	V_CNT|V_DOT|V_MOTION|V_RCM_SET,
 	    "shift lines right: [count]>[count]motion"},
 /* 077   ? */
-	{v_searchb,	V_MOVE|V_RCM_SET,
+	{v_searchb,	V_ABS|V_MOVE|V_RCM_SET,
 	    "search backward: /RE"},
 /* 100   @ */
 	{v_at,		V_RBUF|V_RCM_SET,
@@ -232,7 +232,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	{v_middle,	V_LMODE|V_MOVE|V_RCM_SETFNB,
 	    "move to screen middle: M"},
 /* 116   N */
-	{v_searchN,	V_MOVE|V_RCM_SET,
+	{v_searchN,	V_ABS|V_MOVE|V_RCM_SET,
 	    "reverse last search: n"},
 /* 117   O */
 	{v_iO,		V_CNT|V_DOT|V_RCM_SET,
@@ -284,7 +284,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	{v_first,	V_MOVE|V_RCM_SET,
 	    "move to first non-blank: _"},
 /* 140   ` */
-	{v_markbt,	V_CHAR|V_MOVE|V_RCM_SET,
+	{v_gomark,	V_ABS|V_CHAR|V_MOVE|V_RCM_SET,
 	    "move to mark: `[`a-z]"},
 /* 141   a */
 	{v_ia,		V_CNT|V_DOT|V_RCM_SET,
@@ -325,7 +325,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	{v_mark,	V_CHAR,
 	    "set mark: m[a-z]"},
 /* 156   n */
-	{v_searchn,	V_MOVE|V_RCM_SET,
+	{v_searchn,	V_ABS|V_MOVE|V_RCM_SET,
 	    "repeat last search: n"},
 /* 157   o */
 	{v_io,		V_CNT|V_DOT|V_RCM_SET,
@@ -360,13 +360,13 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    "copy text: [buffer][count]y[count]motion"},
 /* 172   z */
 	/*
-	 * DON'T set the V_CHAR flag, the char isn't required, so it's
-	 * handled specially in getcmd().
+	 * DON'T set the V_CHAR flag, the char isn't required,
+	 * so it's handled specially in getcmd().
 	 */
 	{v_z, 		V_CNT|V_RCM_SETFNB,
 	    "redraw window: [line]z[window_size][.-<CR>]"},
 /* 173   { */
-	{v_paragraphb,	V_CNT|V_MOVE|V_RCM_SET,
+	{v_paragraphb,	V_ABS|V_CNT|V_MOVE|V_RCM_SET,
 	    "move back paragraph: [count]{"},
 /* 174   | */
 	/*
@@ -376,7 +376,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	{v_ncol,	V_ABS|V_CNT|V_MOVE|V_RCM_SET,
 	    "move to column: [count]|"},
 /* 175   } */
-	{v_paragraphf,	V_CNT|V_MOVE|V_RCM_SET,
+	{v_paragraphf,	V_ABS|V_CNT|V_MOVE|V_RCM_SET,
 	    "move forward paragraph: [count]}"},
 /* 176   ~ */
 	{v_ulcase,	V_CNT|V_DOT|V_RCM_SET,
