@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 8.11 1994/04/10 13:06:45 bostic Exp $ (Berkeley) $Date: 1994/04/10 13:06:45 $";
+static char sccsid[] = "$Id: ex_append.c,v 8.12 1994/04/10 13:46:00 bostic Exp $ (Berkeley) $Date: 1994/04/10 13:46:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -126,25 +126,22 @@ aci(sp, ep, cmdp, cmd)
 				break;
 			case INP_EOF:
 			case INP_ERR:
-				rval = 1;
-				goto done;
+				goto err;
 			}
 			tp = sp->tiq.cqh_first;
 			if (tp->len == 1 && tp->lb[0] == '.') {
 				for (cnt =
 				    (cmdp->addr2.lno - m.lno) + 1; cnt--;)
-					if (file_dline(sp, ep, m.lno)) {
-						rval = 1;
-						goto done;
-					}
+					if (file_dline(sp, ep, m.lno))
+						goto err;
 				goto done;
 			}
-			if (file_sline(sp, ep, m.lno, tp->lb, tp->len)) {
-				rval = 1;
-				goto done;
-			}
+			if (file_sline(sp, ep, m.lno, tp->lb, tp->len))
+				goto err;
 			if (F_ISSET(sp, S_INTERRUPTED))
 				goto done;
+			if (sp->s_refresh(sp, ep))
+				goto err;
 		}
 
 	if (cmd == APPEND)
@@ -154,19 +151,20 @@ aci(sp, ep, cmdp, cmd)
 				break;
 			case INP_EOF:
 			case INP_ERR:
-				rval = 1;
-				goto done;
+				goto err;
 			}
 			tp = sp->tiq.cqh_first;
 			if (tp->len == 1 && tp->lb[0] == '.')
 				break;
-			if (file_aline(sp, ep, 1, m.lno, tp->lb, tp->len)) {
-				rval = 1;
-				goto done;
-			}
+			if (file_aline(sp, ep, 1, m.lno, tp->lb, tp->len))
+				goto err;
 			if (F_ISSET(sp, S_INTERRUPTED))
 				goto done;
+			if (sp->s_refresh(sp, ep))
+				goto err;
 		}
+	if (0)
+err:		rval = 1;
 
 done:	if (aiset)
 		O_SET(sp, O_AUTOINDENT);
