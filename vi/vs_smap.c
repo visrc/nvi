@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 8.20 1993/11/01 18:54:25 bostic Exp $ (Berkeley) $Date: 1993/11/01 18:54:25 $";
+static char sccsid[] = "$Id: vs_smap.c,v 8.21 1993/11/02 10:12:48 bostic Exp $ (Berkeley) $Date: 1993/11/02 10:12:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,7 +21,6 @@ static char sccsid[] = "$Id: vs_smap.c,v 8.20 1993/11/01 18:54:25 bostic Exp $ (
 
 static int	svi_deleteln __P((SCR *, int));
 static int	svi_insertln __P((SCR *, int));
-static int	svi_sm_cursor __P((SCR *, EXF *, SMAP **));
 
 /*
  * svi_change --
@@ -849,7 +848,7 @@ svi_sm_prev(sp, ep, p, t)
  * svi_sm_cursor --
  *	Return the SMAP entry referenced by the cursor.
  */
-static int
+int
 svi_sm_cursor(sp, ep, smp)
 	SCR *sp;
 	EXF *ep;
