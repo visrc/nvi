@@ -3,21 +3,23 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: ex.cmd.roff,v 8.25 1994/09/02 19:02:10 bostic Exp $ (Berkeley) $Date: 1994/09/02 19:02:10 $
+.\"	$Id: ex.cmd.roff,v 8.26 1994/09/02 20:40:28 bostic Exp $ (Berkeley) $Date: 1994/09/02 20:40:28 $
 .\"
 .SH 1 "Ex Description"
 .pp
 The following words have special meanings for
 .CO ex
 commands.
-.KY "<eof>"
-.IP "<eof>"
+.KY "<end-of-file>"
+.IP "<end-of-file>"
 The end-of-file character is used to scroll the screen in the
 .CO ex
 editor.
 This character is normally
 .LI <control-D> ,
-however, whatever character is set for the current terminal is used.
+however, whatever character is set for the current terminal is used
+as well as
+.LI <control-D> .
 .KY "line"
 .IP "line"
 A single-line address, given in any of the forms described in the
@@ -164,7 +166,9 @@ Command lines beginning with the double-quote character
 .PQ """"
 are ignored.
 This permits comments in editor scripts and startup files.
+.KY "<control-D>"
 .KY "<end-of-file>"
+.IP "<control-D>"
 .IP "<end-of-file>"
 Scroll the screen.
 Write the next N lines, where N is the value of the
