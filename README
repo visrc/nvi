@@ -1,13 +1,16 @@
-#	$Id: README,v 8.19 1993/11/04 16:57:08 bostic Exp $ (Berkeley) $Date: 1993/11/04 16:57:08 $
+#	$Id: README,v 8.20 1993/11/04 17:24:23 bostic Exp $ (Berkeley) $Date: 1993/11/04 17:24:23 $
 
 This is the README for version 0.80 of nex/nvi, a (soon to be) freely
 redistributable replacement for the vi/ex text editors.
 
 This is still ALPHA software, please do not redistribute it without
-talking to me first.  A BETA version will be released RSN, and it
-will be redistributable as you choose.  It and future versions this
-software will be available by anonymous ftp from ftp.cs.berkeley.edu,
-in the file ucb/4bsd/nvi.tar.Z, or from ftp.uu.net.
+talking to me first.  It can be retrieved via anonymous ftp from
+vangogh.cs.berkeley.edu:~ftp/hidden/nvi.tar.Z.
+
+A BETA version will be released RSN, and it will be redistributable
+as you choose.  The beta version and future versions of this software
+will be available by anonymous ftp from ftp.cs.berkeley.edu, in the
+file ucb/4bsd/nvi.tar.Z, or from ftp.uu.net.
 
 If you have any questions, please send them by email to me at one
 of the following email addresses:
