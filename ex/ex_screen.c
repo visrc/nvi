@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_screen.c,v 8.8 1993/11/23 10:25:49 bostic Exp $ (Berkeley) $Date: 1993/11/23 10:25:49 $";
+static char sccsid[] = "$Id: ex_screen.c,v 8.9 1993/12/02 10:53:04 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:53:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -53,7 +53,7 @@ ex_fg(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	return (sp->s_fg(sp, cmdp->argc ? cmdp->argv[0] : NULL));
+	return (sp->s_fg(sp, cmdp->argc ? cmdp->argv[0]->bp : NULL));
 }
 
 /*
@@ -91,7 +91,7 @@ ex_sdisplay(sp, ep)
 
 	col = len = sep = 0;
 	for (cnt = 1; tsp != (void *)&sp->gp->hq; tsp = tsp->q.cqe_next) {
-		col += len = tsp->frp->nlen + sep;
+		col += len = strlen(FILENAME(tsp->frp)) + sep;
 		if (col >= sp->cols - 1) {
 			col = len;
 			sep = 0;
