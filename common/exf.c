@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.107 1994/10/23 18:09:30 bostic Exp $ (Berkeley) $Date: 1994/10/23 18:09:30 $";
+static char sccsid[] = "$Id: exf.c,v 8.108 1994/10/31 19:25:57 bostic Exp $ (Berkeley) $Date: 1994/10/31 19:25:57 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -683,13 +683,14 @@ file_write(sp, ep, fm, tm, name, flags)
 	 * we re-init the time.  That way the user can clean up the disk
 	 * and rewrite without having to force it.
 	 */
-	if (stat(name, &sb))
-		ep->mtime = 0;
-	else {
-		ep->mdev = sb.st_dev;
-		ep->minode = sb.st_ino;
-		ep->mtime = sb.st_mtime;
-	}
+	if (noname)
+		if (stat(name, &sb))
+			ep->mtime = 0;
+		else {
+			ep->mdev = sb.st_dev;
+			ep->minode = sb.st_ino;
+			ep->mtime = sb.st_mtime;
+		}
 
 	/* If the write failed, complain loudly. */
 	if (rval) {
