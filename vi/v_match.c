@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_match.c,v 8.10 1994/03/10 13:35:17 bostic Exp $ (Berkeley) $Date: 1994/03/10 13:35:17 $";
+static char sccsid[] = "$Id: v_match.c,v 8.11 1994/04/21 11:39:15 bostic Exp $ (Berkeley) $Date: 1994/04/21 11:39:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -44,6 +44,10 @@ v_match(sp, ep, vp)
 	int cnt, matchc, startc, (*gc)__P((SCR *, EXF *, VCS *));
 	char *p;
 
+	/*
+	 * !!!
+	 * Historic practice; ignore the count.
+	 */
 	if ((p = file_gline(sp, ep, vp->m_start.lno, &len)) == NULL) {
 		if (file_lline(sp, ep, &lno))
 			return (1);
