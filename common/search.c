@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 5.10 1992/11/07 18:50:26 bostic Exp $ (Berkeley) $Date: 1992/11/07 18:50:26 $";
+static char sccsid[] = "$Id: search.c,v 5.11 1992/12/05 11:06:32 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:06:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,7 +22,6 @@ static char sccsid[] = "$Id: search.c,v 5.10 1992/11/07 18:50:26 bostic Exp $ (B
 #include "exf.h"
 #include "options.h"
 #include "search.h"
-#include "extern.h"
 
 enum direction searchdir = NOTSET;	/* Search direction. */
 
