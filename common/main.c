@@ -18,7 +18,7 @@ static const char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static const char sccsid[] = "$Id: main.c,v 10.36 1996/04/27 11:41:10 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:41:10 $";
+static const char sccsid[] = "$Id: main.c,v 10.37 1996/05/02 11:01:43 bostic Exp $ (Berkeley) $Date: 1996/05/02 11:01:43 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -367,20 +367,13 @@ editor(gp, argc, argv)
 	}
 
 	/*
-	 * Check to see if we need to wait for ex.  If SC_SCR_EX is set, ex was
-	 * forced to initialize the screen during startup.  Wait for the user.
+	 * Check to see if we need to wait for ex.  If SC_SCR_EX is set, ex
+	 * was forced to initialize the screen during startup.  Wait for a
+	 * single character from the user.
 	 */
-	if (F_ISSET(sp, SC_SCR_EX)) {
-		if (gp->scr_screen(sp, SC_VI))
-			goto err;
-		F_CLR(sp, SC_EX | SC_SCR_EX);
-		F_SET(sp, SC_VI);
-
-		p = msg_cmsg(sp, CMSG_CONT, &len);
-		(void)write(STDOUT_FILENO, p, len);
-
-		/* Wait for a single character. */
-		for (;;) {
+	if (F_ISSET(sp, SC_SCR_EX))
+		for (p = msg_cmsg(sp, CMSG_CONT, &len);;) {
+			(void)write(STDOUT_FILENO, p, len);
 			if (v_event_get(sp, &ev, 0, 0))
 				goto err;
 			if (ev.e_event == E_CHARACTER ||
@@ -388,7 +381,6 @@ editor(gp, argc, argv)
 				break;
 			(void)gp->scr_bell(sp);
 		}
-	}
 
 	/* Switch into the right editor, regardless. */
 	F_CLR(sp, SC_EX | SC_VI | SC_SCR_EX | SC_SCR_VI);
