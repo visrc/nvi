@@ -6,13 +6,16 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 5.1 1992/05/04 11:55:45 bostic Exp $ (Berkeley) $Date: 1992/05/04 11:55:45 $";
+static char sccsid[] = "$Id: search.c,v 5.2 1992/05/07 12:45:44 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:45:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
+#include <limits.h>
+#include <db.h>
 #include <stdio.h>
 
 #include "vi.h"
+#include "exf.h"
 #include "options.h"
 #include "regexp.h"
 #include "extern.h"
@@ -20,201 +23,142 @@ static char sccsid[] = "$Id: search.c,v 5.1 1992/05/04 11:55:45 bostic Exp $ (Be
 static regexp *re;		/* Compiled version of the pattern. */
 enum direction searchdir;
 
-MARK
-f_search(m, ptrn)
-	MARK	m;	/* where to start searching */
-	char	*ptrn;	/* pattern to search for */
-{
-	long	l;	/* line# of line to be searched */
-	char	*line;	/* text of line to be searched */
-	int	wrapped;/* boolean: has our search wrapped yet? */
-	int	pos;	/* where we are in the line */
-	long	delta = INFINITY;/* line offset, for things like "/foo/+1" */
-
-	searchdir = FORWARD;
-	if (ptrn && *ptrn)
-	{
-		/* locate the closing '/', if any */
-		line = parseptrn(ptrn);
-		if (*line)
-		{
-			delta = atol(line);
-		}
-		ptrn++;
-
-		/* free the previous pattern */
-		if (re) free(re);
-
-		/* compile the pattern */
-		re = regcomp(ptrn);
-		if (!re)
-		{
-			return MARK_UNSET;
-		}
-	}
-	else if (!re)
-	{
-		msg("No previous expression");
-		return MARK_UNSET;
-	}
-
-	/* search forward for the pattern */
-	pos = markidx(m) + 1;
-	pfetch(markline(m));
-	if (pos >= plen)
-	{
-		pos = 0;
-		m = (m | (BLKSIZE - 1)) + 1;
-	}
-	wrapped = FALSE;
-	for (l = markline(m); l != markline(m) + 1 || !wrapped; l++)
-	{
-		/* wrap search */
-		if (l > nlines)
-		{
-			/* if we wrapped once already, then the search failed */
-			if (wrapped)
-			{
-				break;
-			}
-
-			/* else maybe we should wrap now? */
-			if (ISSET(O_WRAPSCAN))
-			{
-				l = 0;
-				wrapped = TRUE;
-				continue;
-			}
-			else
-			{
-				break;
-			}
-		}
-
-		/* get this line */
-		line = fetchline(l, NULL);
-
-		/* check this line */
-		if (regexec(re, &line[pos], (pos == 0)))
-		{
-			/* match! */
-			if (wrapped && ISSET(O_WARN))
-				msg("(wrapped)");
-			if (delta != INFINITY)
-			{
-				l += delta;
-				if (l < 1 || l > nlines)
-				{
-					msg("search offset too big");
-					return MARK_UNSET;
-				}
-				force_lnmd = TRUE;
-				return MARK_AT_LINE(l);
-			}
-			return MARK_AT_LINE(l) + (int)(re->startp[0] - line);
-		}
-		pos = 0;
-	}
-
-	/* not found */
-	msg(ISSET(O_WRAPSCAN) ? "Not found" : "Hit bottom without finding RE");
-	return MARK_UNSET;
+#define	START(dir) { \
+	if (set) \
+		searchdir = dir; \
+	if (ptrn && *ptrn) { \
+		l = parseptrn(ptrn); \
+		if (*l) { \
+			delta = *l ? strtol(l, &ep, 10) : 0; \
+			if (eptrn) \
+				*eptrn = ep; \
+		} else \
+			if (eptrn) \
+				*eptrn = l; \
+		if (re) \
+			free(re); \
+		if ((re = regcomp(ptrn)) == NULL) \
+			return (NULL); \
+	} else if (re == NULL) { \
+		msg("No previous regular expression."); \
+		return (NULL); \
+	} \
 }
 
-MARK
-b_search(m, ptrn)
-	MARK	m;	/* where to start searching */
-	char	*ptrn;	/* pattern to search for */
+MARK *
+f_search(fm, ptrn, eptrn, set)
+	MARK *fm;
+	char *ptrn, **eptrn;
+	int set;
 {
-	long	l;	/* line# of line to be searched */
-	char	*line;	/* text of line to be searched */
-	int	wrapped;/* boolean: has our search wrapped yet? */
-	int	pos;	/* last acceptable idx for a match on this line */
-	int	last;	/* remembered idx of the last acceptable match on this line */
-	int	try;	/* an idx at which we strat searching for another match */
-	long	delta = INFINITY;/* line offset, for things like "/foo/+1" */
+	static MARK rval;
+	u_long coff, lno;
+	long delta;
+	int wrapped;
+	char *ep, *l;
 
-	searchdir = BACKWARD;
-	if (ptrn && *ptrn)
-	{
-		/* locate the closing '?', if any */
-		line = parseptrn(ptrn);
-		if (*line)
-		{
-			delta = atol(line);
-		}
-		ptrn++;
+	START(FORWARD);
 
-		/* free the previous pattern, if any */
-		if (re) free(re);
-
-		/* compile the pattern */
-		re = regcomp(ptrn);
-		if (!re)
-		{
-			return MARK_UNSET;
-		}
-	}
-	else if (!re)
-	{
-		msg("No previous expression");
-		return MARK_UNSET;
-	}
-
-	/* search backward for the pattern */
-	pos = markidx(m);
-	wrapped = FALSE;
-	for (l = markline(m); l != markline(m) - 1 || !wrapped; l--)
-	{
-		/* wrap search */
-		if (l < 1)
-		{
-			if (ISSET(O_WRAPSCAN))
-			{
-				l = nlines + 1;
-				wrapped = TRUE;
-				continue;
+	wrapped = 0;
+	for (lno = fm->lno, coff = fm->cno;; ++lno, coff = 1)
+		if ((l = file_line(curf, lno, NULL)) == NULL) {
+			if (wrapped) {
+				msg("Pattern not found.");
+				return (NULL);
 			}
-			else
-			{
-				break;
+			if (!ISSET(O_WRAPSCAN)) {
+		msg("Reached end-of-file without finding the pattern.");
+				return (NULL);
 			}
-		}
-
-		/* get this line */
-		line = fetchline(l, NULL);
-
-		/* check this line */
-		if (regexec(re, line, 1) && (int)(re->startp[0] - line) < pos)
-		{
-			/* match!  now find the last acceptable one in this line */
-			do
-			{
-				last = (int)(re->startp[0] - line);
-				try = (int)(re->endp[0] - line);
-			} while (try > 0
-				 && regexec(re, &line[try], FALSE)
-				 && (int)(re->startp[0] - line) < pos);
-
+			lno = 1;
+			wrapped = 1;
+		} else if (regexec(re, l + coff, coff == 1)) {
 			if (wrapped && ISSET(O_WARN))
-				msg("(wrapped)");
-			if (delta != INFINITY)
-			{
-				l += delta;
-				if (l < 1 || l > nlines)
-				{
-					msg("search offset too big");
-					return MARK_UNSET;
+				msg("Search wrapped.");
+			if (delta) {
+				if (delta < 0 && (u_long)delta > lno) {
+					msg("Search offset before line 1.");
+					return (NULL);
 				}
-				force_lnmd = TRUE;
-				return MARK_AT_LINE(l);
+				lno += delta;
+				if (file_line(curf, lno, NULL) == NULL) {
+					msg("Search offset past end-of-file.");
+					return (NULL);
+				}
+				rval.lno = lno;
+				rval.cno = 1;
+			} else {
+				rval.lno = lno;
+				rval.cno = re->startp[0] - l;
 			}
-			return MARK_AT_LINE(l) + last;
+			return (&rval);
 		}
-		pos = BLKSIZE;
-	}
+	/* NOTREACHED */
+}
 
-	/* not found */
-	msg(ISSET(O_WRAPSCAN) ? "Not found" : "Hit top without finding RE");
-	return MARK_UNSET;
+MARK *
+b_search(fm, ptrn, eptrn, set)
+	MARK *fm;
+	char *ptrn, **eptrn;
+	int set;
+{
+	static MARK rval;
+	u_long coff, lno;
+	long delta;
+	int last, try, wrapped;
+	char *ep, *l;
+
+	START(BACKWARD);
+
+	wrapped = 0;
+	for (lno = fm->lno, coff = fm->cno;; --lno, coff = 1) {
+		if (lno == 0) {
+			if (!ISSET(O_WRAPSCAN)) {
+		msg("Reached top-of-file without finding the pattern.");
+				return (NULL);
+			}
+			if ((lno = file_lline(curf)) == 0)
+				return (NULL);
+			wrapped = 1;
+			continue;
+		} else if (lno == fm->lno && wrapped) {
+			msg("Pattern not found.");
+			return (NULL);
+		}
+
+		if ((l = file_line(curf, lno, NULL)) == NULL)
+			return (NULL);
+
+		if (regexec(re, l, 1) && (int)(re->startp[0] - l) < coff) {
+			if (wrapped && ISSET(O_WARN))
+				msg("Search wrapped.");
+			if (delta) {
+				if (delta < 0 && (u_long)delta > lno) {
+					msg("Search offset before line 1.");
+					return (NULL);
+				}
+				lno += delta;
+				if (file_line(curf, lno, NULL) == NULL) {
+					msg("Search offset past end-of-file.");
+					return (NULL);
+				}
+				rval.lno = lno;
+				rval.cno = 1;
+			} else {
+				/* Find the last acceptable one in this line. */
+				for (;;) {
+					last = (int)(re->startp[0] - l);
+					try = (int)(re->endp[0] - l);
+					if (try < 0 ||
+					    !regexec(re, &l[try], 0) ||
+					    (int)(re->startp[0] - l) < coff)
+						break;
+				}
+				rval.lno = lno;
+				rval.cno = last;
+			}
+			return (&rval);
+		}
+	}
+	/* NOTREACHED */
 }

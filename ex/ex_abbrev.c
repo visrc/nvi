@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_abbrev.c,v 5.10 1992/04/28 13:45:42 bostic Exp $ (Berkeley) $Date: 1992/04/28 13:45:42 $";
+static char sccsid[] = "$Id: ex_abbrev.c,v 5.11 1992/05/07 12:46:24 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:46:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -72,45 +72,6 @@ ex_unabbr(cmdp)
 		return (1);
 	}
 	return (0);
-}
-
-/*
- * abbr_expand --
- *	
- *	This function is called before each character is inserted.  If we're
- *	at the end of a word, then that word is checked against the set of
- *	abbreviation sequences and expanded, if appropriate.  When returning
- *	from this function, the new character must still be inserted.
- */
-MARK
-abbr_expand(m, toptr)
-	MARK m;			/* The cursor position. */
-	MARK *toptr;		/* The end of the text to be changed. */
-{
-	register SEQ *sp;
-	register int len;
-	int olen;
-	char *word;
-
-	/* See where the preceding word starts. */
-	pfetch(markline(m));
-	for (word = ptext + markidx(m), len = 0;
-	    --word >= ptext && inword(*word); ++len);
-	++word;
-
-	/* If zero-length or not in the sequence list, return. */
-	if (len == 0 || (sp = seq_find(word, len, ABBREV, NULL)) == NULL)
-		return (m);
-
-	/*
-	 * Replace the word with the replacement text and return with
-	 * the cursor after the end of the replacement text.
-	 */
-	add(m, sp->output);
-	delete(m - len, m);
-	olen = strlen(sp->output);
-	*toptr = *toptr - len + olen;
-	return (m - len + olen);
 }
 
 /*

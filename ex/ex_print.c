@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 5.10 1992/05/04 11:51:58 bostic Exp $ (Berkeley) $Date: 1992/05/04 11:51:58 $";
+static char sccsid[] = "$Id: ex_print.c,v 5.11 1992/05/07 12:46:59 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:46:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -17,7 +17,7 @@ static char sccsid[] = "$Id: ex_print.c,v 5.10 1992/05/04 11:51:58 bostic Exp $ 
 #include "vi.h"
 #include "excmd.h"
 #include "options.h"
-#include "tty.h"
+#include "term.h"
 #include "extern.h"
 
 static int print __P((EXCMDARG *, int));
@@ -96,8 +96,7 @@ print(cmdp, flags)
 	char buf[10];
 
 	EX_PRSTART(0);
-	for (cur = markline(cmdp->addr1), end = markline(cmdp->addr2);
-	    cur <= end; ++cur) {
+	for (cur = cmdp->addr1.lno, end = cmdp->addr2.lno; cur <= end; ++cur) {
 
 		/* Display the line number. */
 		if (flags & E_F_HASH) {

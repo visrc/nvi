@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 5.13 1992/05/04 11:51:38 bostic Exp $ (Berkeley) $Date: 1992/05/04 11:51:38 $";
+static char sccsid[] = "$Id: ex_bang.c,v 5.14 1992/05/07 12:46:33 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:46:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,7 +19,7 @@ static char sccsid[] = "$Id: ex_bang.c,v 5.13 1992/05/04 11:51:38 bostic Exp $ (
 #include "excmd.h"
 #include "exf.h"
 #include "options.h"
-#include "tty.h"
+#include "term.h"
 #include "extern.h"
 
 /*
@@ -138,7 +138,7 @@ ex_bang(cmdp)
 		if (esystem(PVAL(O_SHELL), com))
 			return (1);
 	} else {
-		if (filter(cmdp->addr1, cmdp->addr2, com, STANDARD))
+		if (filter(&cmdp->addr1, &cmdp->addr2, com, STANDARD))
 			return (1);
 		autoprint = 1;
 	}

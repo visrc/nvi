@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_file.c,v 5.5 1992/05/04 11:51:53 bostic Exp $ (Berkeley) $Date: 1992/05/04 11:51:53 $";
+static char sccsid[] = "$Id: ex_file.c,v 5.6 1992/05/07 12:46:46 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:46:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,8 +46,6 @@ ex_file(cmdp)
 	    curf->name,
 	    curf->flags & F_MODIFIED ? "[MODIFIED]" : "[UNMODIFIED]",
 	    curf->flags & F_RDONLY ? "[READONLY]" : "",
-	    nlines,
-	    markline(cmdp->addr1),
-	    markline(cmdp->addr1) * 100 / nlines);
+	    nlines, cmdp->addr1.lno, cmdp->addr1.lno * 100 / nlines);
 	return (0);
 }

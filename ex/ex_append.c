@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 5.12 1992/05/04 11:51:33 bostic Exp $ (Berkeley) $Date: 1992/05/04 11:51:33 $";
+static char sccsid[] = "$Id: ex_append.c,v 5.13 1992/05/07 12:46:27 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:46:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -16,7 +16,7 @@ static char sccsid[] = "$Id: ex_append.c,v 5.12 1992/05/04 11:51:33 bostic Exp $
 #include "vi.h"
 #include "excmd.h"
 #include "options.h"
-#include "tty.h"
+#include "term.h"
 #include "extern.h"
 
 enum which {APPEND, CHANGE};
@@ -54,39 +54,35 @@ ca(cmdp, cmd)
 	enum which cmd;
 {
 	MARK m;
-	long l;
+	size_t len;
 	int set;
 	char *p;
 
-	/* The ! flag turns off autoindent for the command. */
+	/* The ! flag turns off autoindent for change and append. */
 	if (cmdp->flags & E_FORCE) {
 		set = ISSET(O_AUTOINDENT);
 		UNSET(O_AUTOINDENT);
 	} else
 		set = 0;
 
+	/* If we're doing a change, delete the old version. */
+	if (cmd == CHANGE)
+		ex_delete(cmdp);
+
+	/*
+	 * New lines start at the specified line for changes,
+	 * after it for appends.
+	 */
 	m = cmdp->addr1;
-	ChangeText
-	{
-		/* If we're doing a change, delete the old version. */
-		if (cmd == CHANGE)
-			ex_delete(cmdp);
+	if (cmd == APPEND)
+		++m.lno;
 
-		/*
-		 * New lines start at the specified line for changes,
-		 * after it for appends.
-		 */
-		l = markline(m);
-		if (cmd == APPEND)
- 			++l;
-
-		/* Insert lines until no more lines, or "." line. */
-		EX_PRSTART(0);
-		for (; (p = gb(0, NULL, GB_NL|GB_NLECHO)) != NULL; ++l) {
-			if (p[0] == '.' && p[1] == '\0')
-				break;
-			add(MARK_AT_LINE(l), p);
-		}
+	/* Insert lines until no more lines, or "." line. */
+	EX_PRSTART(0);
+	for (; (p = gb(0, &len, GB_NL|GB_NLECHO)) != NULL; ++m.lno) {
+		if (p[0] == '.' && p[1] == '\0')
+			break;
+		add(&m, p, len);
 	}
 
 	autoprint = 1;

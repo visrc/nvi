@@ -6,91 +6,80 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_join.c,v 5.7 1992/05/04 11:51:56 bostic Exp $ (Berkeley) $Date: 1992/05/04 11:51:56 $";
+static char sccsid[] = "$Id: ex_join.c,v 5.8 1992/05/07 12:46:51 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:46:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
+#include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "vi.h"
 #include "excmd.h"
+#include "exf.h"
 #include "extern.h"
 
 int
 ex_join(cmdp)
 	EXCMDARG *cmdp;
 {
-	long	l;
-	char	*scan;
-	int	len;	/* length of the new line */
-	MARK	frommark;
-	MARK	tomark;
-	char lbuf[2048];
+	MARK fm, tm;
+	size_t blen, llen, tlen;
+	u_long cnt, lno;
+	int ret;
+	char *bp, *p;
 
-	frommark = cmdp->addr1;
-	tomark = cmdp->addr2;
+	fm = cmdp->addr1;
+	tm = cmdp->addr2;
 
-	/* if only one line is specified, assume the following one joins too */
-	if (markline(frommark) == nlines)
-	{
-		msg("Nothing to join with this line");
+	/* If only one line is specified, join with the next one. */
+	if (fm.lno == nlines) {
+		msg("No remaining lines to join into this line.");
 		return (1);
 	}
-	if (markline(frommark) == markline(tomark))
-	{
-		tomark += BLKSIZE;
-	}
 
-	/* get the first line */
-	l = markline(frommark);
-	strcpy(lbuf, fetchline(l, NULL));
-	len = strlen(lbuf);
+	bp = NULL;
+	blen = tlen = 0;
 
-	/* build the longer line */
-	while (++l <= markline(tomark))
-	{
-		/* get the next line */
-		scan = fetchline(l, NULL);
-
-		/* remove any leading whitespace */
-		while (*scan == '\t' || *scan == ' ')
-		{
-			scan++;
-		}
-
-		/* see if the line will fit */
-		if (strlen(scan) + len + 3 > BLKSIZE)
-		{
-			msg("Can't join -- the resulting line would be too long");
+	lno = fm.lno;
+	cnt = tm.lno - fm.lno;
+	do {
+		/* Get next line. */
+		if ((p = file_line(curf, lno, &llen)) == NULL)
 			return (1);
+
+		/* Resize buffer as necessary. */
+		if (llen + tlen + 3 > blen) {
+			blen = llen + tlen + 256;
+			if ((bp = realloc(bp, blen)) == NULL) {
+				msg("Error: %s", strerror(errno));
+				return (1);
+			}
 		}
 
-		/* catenate it, with a space (or two) in between */
-		if (len >= 1 &&
-			(lbuf[len - 1] == '.'
-			 || lbuf[len - 1] == '?'
-			 || lbuf[len - 1] == '!'))
-		{
-			 lbuf[len++] = ' ';
-		}
-		lbuf[len++] = ' ';
-		strcpy(lbuf + len, scan);
-		len += strlen(scan);
-	}
-	lbuf[len++] = '\n';
-	lbuf[len] = '\0';
+		/* If line ends with ., ?, or !, two spaces, otherwise one. */
+		if (index(".?!", p[llen - 1]) == NULL)
+			bp[tlen++] = ' ';
+		bp[tlen++] = ' ';
 
-	/* make the change */
-	ChangeText
-	{
-		frommark &= ~(BLKSIZE - 1);
-		tomark &= ~(BLKSIZE - 1);
-		tomark += BLKSIZE;
-		change(frommark, tomark, lbuf);
-	}
+		/* Skip leading space. */
+		for (; *p && isspace(*p); ++p, --llen);
 
-	/* Reporting... */
-	rptlines = markline(tomark) - markline(frommark) - 1L;
+		/* Catenate. */
+		bcopy(p, bp + tlen, llen);
+		tlen += llen;
+
+	} while (cnt-- > 1);
+
+	ret = change(&fm, &tm, bp, tlen);
+
+	free(bp);
+
+	if (ret)
+		return (1);
+
+	if ((rptlines = tm.lno - fm.lno) == 0)
+		rptlines = 1;
 	rptlabel = "joined";
 
 	autoprint = 1;

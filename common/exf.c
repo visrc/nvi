@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.4 1992/05/04 11:49:58 bostic Exp $ (Berkeley) $Date: 1992/05/04 11:49:58 $";
+static char sccsid[] = "$Id: exf.c,v 5.5 1992/05/07 12:45:27 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:45:27 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -52,18 +52,8 @@ file_default()
 {
 	EXF *ep;
 
-	if ((ep = malloc(sizeof(EXF))) == NULL) {
-		msg("Error: %s", strerror(errno));
-		return (1);
-	}
-	
-	ep->flags = F_NONAME;
-	ep->name = "no.name";
-	ep->nlen = strlen(ep->name);
-	ep->pos = MARK_FIRST;
-	insexf(ep, &exfhdr);
-
-	curf = ep;
+	file_ins((EXF *)&exfhdr, "no.name");
+	ep->flags |= F_NONAME;
 	return (0);
 }
 
@@ -80,14 +70,14 @@ file_ins(before, name)
 
 	if ((ep = malloc(sizeof(EXF))) == NULL)
 		goto err;
+
 	if ((ep->name = strdup(name)) == NULL) {
 		free(ep);
 err:		msg("Error: %s", strerror(errno));
 		return (1);
 	}
-
+	ep->lno = ep->cno = 1;
 	ep->nlen = strlen(ep->name);
-	ep->pos = MARK_FIRST;
 	ep->flags = ISSET(O_READONLY) ? F_RDONLY : 0;
 	insexf(ep, before);
 	return (0);
@@ -122,13 +112,11 @@ file_set(argc, argv)
 err:			msg("Error: %s", strerror(errno));
 			return (1);
 		}
+		ep->lno = ep->cno = 1;
 		ep->nlen = strlen(ep->name);
-		ep->pos = MARK_FIRST;
 		ep->flags = ISSET(O_READONLY) ? F_RDONLY : 0;
 		instailexf(ep, &exfhdr);
 	}
-
-	curf = file_first();
 	return (0);
 }
 
@@ -186,28 +174,11 @@ file_prev(ep)
 	return (ep->prev != (EXF *)&exfhdr ? ep->prev : NULL);
 }
 
-#ifdef FILE_LIST_DEBUG
-void
-file_show(s)
-	char *s;
-{
-	register EXF *ep;
-
-	(void)printf("%s", s);
-	for (ep = exfhdr.next; ep != (EXF *)&exfhdr; ep = ep->next)
-		if (ep == curf)
-			(void)printf("[%s] ", ep->name ? ep->name : "NONAME");
-		else
-			(void)printf("{%s} ", ep->name ? ep->name : "NONAME");
-	(void)printf("\n");
-}
-#endif
-
 /*
  * fetchline --
  *	Find a line and return a pointer to a copy of its text.
  * XXX
- * Old interface.
+ * Delete, old interface.
  */
 char *
 fetchline(lno, lenp)
@@ -246,6 +217,34 @@ file_line(ep, lno, lenp)
 }
 
 /*
+ * file_lline --
+ *	Figure out the line number of the last line in the file.
+ */
+u_long
+file_lline(ep)
+	EXF *ep;
+{
+	DBT data, key;
+	u_long lno;
+
+	lno = 0;
+	key.data = &lno;
+	key.size = sizeof(lno);
+
+	switch((ep->db->get)(ep->db, &key, &data, 0)) {
+        case -1:
+		msg("%s: line %lu: %s", ep->name, lno, strerror(errno));
+		/* FALLTHROUGH */
+        case 1:
+		return (0);
+		/* NOTREACHED */
+	}
+
+	bcopy(key.data, &lno, sizeof(lno));
+	return (lno);
+}
+
+/*
  * file_start --
  *	Start editing a file.
  */
@@ -262,26 +261,15 @@ file_start(ep)
 		return (1);
 	}
 
-	/* Init the file structure. */
-	ep->lno = 1;
-	ep->cno = 1;
-	ep->nlines = 0;
-
-	/*
-	 * Set up the cursor.
-	 * XXX
-	 * Old stuff.
-	 */
-	cursor = ep->pos = MARK_FIRST;
-
 	/*
 	 * XXX
-	 * Right now, db doesn't return enough info to set the read-only
-	 * flag, nor do we have a stat structure to set the dev/ino bits.
+	 * Db doesn't return enough info to set the read-only flag.
 	 */
 
-	/* Set the current file pointer. */
+	/* Change the global state. */
 	curf = ep;
+	cursor.lno = ep->lno;
+	cursor.cno = ep->cno;
 
 	/*
 	 * XXX
@@ -361,7 +349,7 @@ err:			msg("%s: %s", ep->name, strerror(errno));
 			return (1);
 		}
 
-		if (ex_writefp(ep->name, fp, MARK_FIRST, MARK_LAST, 1))
+		if (ex_writefp(ep->name, fp, 1, OOBLC, 1))
 			return (1);
 	} else if ((ep->db->sync)(ep->db)) {
 		msg("%s: sync: %s", ep->name, strerror(errno));

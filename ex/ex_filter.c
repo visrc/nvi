@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 5.12 1992/05/04 09:25:05 bostic Exp $ (Berkeley) $Date: 1992/05/04 09:25:05 $";
+static char sccsid[] = "$Id: ex_filter.c,v 5.13 1992/05/07 12:45:35 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:45:35 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -20,8 +20,8 @@ static char sccsid[] = "$Id: ex_filter.c,v 5.12 1992/05/04 09:25:05 bostic Exp $
 #include <paths.h>
 
 #include "vi.h"
-#include "options.h"
 #include "excmd.h"
+#include "options.h"
 #include "extern.h"
 
 /*
@@ -30,8 +30,8 @@ static char sccsid[] = "$Id: ex_filter.c,v 5.12 1992/05/04 09:25:05 bostic Exp $
  *	text with the stdout/stderr output of the filter.
  */
 int
-filter(from, to, cmd, ftype)
-	MARK from, to;
+filter(fm, tm, cmd, ftype)
+	MARK *fm, *tm;
 	char *cmd;
 	enum filtertype ftype;
 {
@@ -129,20 +129,20 @@ err:		if (input[0] != -1)
 	 * Write the selected lines to the write end of the input pipe.
 	 * Ifp is closed by ex_writefp.
 	 */
-	rval = ftype != NOINPUT ? ex_writefp("filter", ifp, from, to, 0) : 0;
+	rval = ftype != NOINPUT ? ex_writefp("filter", ifp, fm, tm, 0) : 0;
 
 	/*
  	 * Read the output from the read end of the outupt pipe.
 	 * Ofp is closed by ex_readfp.
 	 */
 	if (rval == 0 && ftype != NOOUTPUT)
-		rval = ex_readfp("filter", ofp, from, &ilines);
+		rval = ex_readfp("filter", ofp, fm, &ilines);
 
 	if (rval == 0) {
 		/* Delete old text, if any. */
 		if (ftype != NOINPUT) {
-			delete(from, to);		/* XXX check error. */
-			dlines = markline(to) - markline(from);
+			delete(fm, tm);		/* XXX check error. */
+			dlines = tm->lno - fm->lno;
 		} else
 			dlines = 0;
 

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: delete.c,v 5.2 1992/05/04 11:49:55 bostic Exp $ (Berkeley) $Date: 1992/05/04 11:49:55 $";
+static char sccsid[] = "$Id: delete.c,v 5.3 1992/05/07 12:45:24 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:45:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -158,7 +158,10 @@ void delete(frommark, tomark)
 	}
 }
 #else
-void delete(frommark, tomark)
-	MARK frommark, tomark;
-{}
+int
+delete(fm, tm)
+	MARK *fm, *tm;
+{
+	return (0);
+}
 #endif

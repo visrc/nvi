@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 5.11 1992/05/04 11:51:46 bostic Exp $ (Berkeley) $Date: 1992/05/04 11:51:46 $";
+static char sccsid[] = "$Id: ex_edit.c,v 5.12 1992/05/07 12:46:38 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:46:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -84,7 +84,7 @@ edit(cmdp, cmd)
 	else {
 		line = mode == MODE_VI ? ep->lno : 1;
 		if (line <= nlines && line >= 1)
-			cursor = MARK_AT_LINE(line);
+			cursor.lno = line;
 	}
 	return (0);
 }

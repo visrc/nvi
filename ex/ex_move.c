@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_move.c,v 5.7 1992/04/28 13:45:12 bostic Exp $ (Berkeley) $Date: 1992/04/28 13:45:12 $";
+static char sccsid[] = "$Id: ex_move.c,v 5.8 1992/05/07 12:46:56 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:46:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -14,100 +14,80 @@ static char sccsid[] = "$Id: ex_move.c,v 5.7 1992/04/28 13:45:12 bostic Exp $ (B
 
 #include "vi.h"
 #include "excmd.h"
+#include "exf.h"
 #include "extern.h"
 
 enum which {COPY, MOVE};
-static void copy __P((EXCMDARG *, enum which));
+static int cm __P((EXCMDARG *, enum which));
 
+/*
+ * ex_copy -- :[line [,line]] co[py] line [flags]
+ *	Copy selected lines.
+ */
 int
 ex_copy(cmdp)
 	EXCMDARG *cmdp;
 {
-	copy(cmdp, COPY);
-	return (0);
+	return (cm(cmdp, COPY));
 }
 
+/*
+ * ex_move -- :[line [,line]] co[py] line
+ *	Move selected lines.
+ */
 int
 ex_move(cmdp)
 	EXCMDARG *cmdp;
 {
-	copy(cmdp, MOVE);
-	return (0);
+	return (cm(cmdp, MOVE));
 }
 
-/* move or copy selected lines */
-static void
-copy(cmdp, cmd)
+static int
+cm(cmdp, cmd)
 	EXCMDARG *cmdp;
 	enum which cmd;
 {
-	MARK	frommark;
-	MARK	tomark;
-	MARK	destmark;
+	MARK fm1, fm2, tm;
 	char *extra;
 
-	frommark = cmdp->addr1;
-	tomark = cmdp->addr2;
-	extra = cmdp->argv[0];
+	fm1 = cmdp->addr1;
+	fm2 = cmdp->addr2;
+	tm.lno = cmdp->lineno;
+	tm.cno = 1;
 
-
-	/* parse the destination linespec.  No defaults.  Line 0 is okay */
-	destmark = cursor;
-	if (!strcmp(extra, "0"))
-	{
-		destmark = 0L;
-	}
-	else {
-		EXCMDARG __xxx;
-		if (linespec(extra, &__xxx) == extra || !destmark) {
-			msg("invalid destination address");
-			return;
-		}
-		destmark = __xxx.addr1;
+	/* Make sure the destination is valid. */
+	if (cmd == MOVE && tm.lno >= fm1.lno && tm.lno < fm2.lno) {
+		msg("Target line is inside move range.");
+		return (1);
 	}
 
-	/* flesh the marks out to encompass whole lines */
-	frommark &= ~(BLKSIZE - 1);
-	tomark = (tomark & ~(BLKSIZE - 1)) + BLKSIZE;
-	destmark = (destmark & ~(BLKSIZE - 1)) + BLKSIZE;
+	/* Save the text to a cut buffer. */
+	cutname('\0');
+	cut(&fm1, &fm2);
 
-	/* make sure the destination is valid */
-	if (cmd == MOVE && destmark >= frommark && destmark < tomark)
-	{
-		msg("invalid destination address");
+	/* If we're not copying, delete the old text & adjust tm. */
+	if (cmd == MOVE) {
+		delete(&fm1, &fm2);
+		if (tm.lno >= fm1.lno)
+			tm.lno -= fm2.lno - fm1.lno;
 	}
 
-	/* Do it */
-	ChangeText
-	{
-		/* save the text to a cut buffer */
-		cutname('\0');
-		cut(frommark, tomark);
+	/* Add the new text. */
+	paste(&tm, 0, 0);
 
-		/* if we're not copying, delete the old text & adjust destmark */
-		if (cmd == MOVE)
-		{
-			delete(frommark, tomark);
-			if (destmark >= frommark)
-			{
-				destmark -= (tomark - frommark);
-			}
-		}
+	/* Move the cursor to the last line of the moved text. */
+	cursor.lno = tm.lno + (fm2.lno - fm1.lno);
+	nlines = file_lline(curf);
+	if (cursor.lno < 1)
+		cursor.lno = 1;
+	else if (cursor.lno > nlines)
+		cursor.lno = nlines;
 
-		/* add the new text */
-		paste(destmark, 0, 0);
-	}
-
-	/* move the cursor to the last line of the moved text */
-	cursor = destmark + (tomark - frommark) - BLKSIZE;
-	if (cursor < MARK_FIRST || cursor >= MARK_LAST + BLKSIZE)
-	{
-		cursor = MARK_LAST;
-	}
-
-	/* Reporting... */
+	/* Reporting. */
+	if ((rptlines = fm2.lno - fm1.lno) == 0)
+		rptlines = 1;
 	rptlabel = (cmd == MOVE ? "moved" : "copied");
 
 	autoprint = 1;
+	return (0);
 }
-

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_equal.c,v 5.4 1992/04/19 08:53:47 bostic Exp $ (Berkeley) $Date: 1992/04/19 08:53:47 $";
+static char sccsid[] = "$Id: ex_equal.c,v 5.5 1992/05/07 12:46:41 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:46:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -14,10 +14,11 @@ static char sccsid[] = "$Id: ex_equal.c,v 5.4 1992/04/19 08:53:47 bostic Exp $ (
 
 #include "vi.h"
 #include "excmd.h"
+#include "exf.h"
 #include "extern.h"
 
 /*
- * ex_equal (:address =)
+ * ex_equal -- :address =
  *	Print out the line number matching the specified address, or the
  *	last line number in the file if no address specified.
  */
@@ -25,6 +26,6 @@ int
 ex_equal(cmdp)
 	EXCMDARG *cmdp;
 {
-	msg("%ld", markline(cmdp->addrcnt ? cmdp->addr1 : MARK_LAST));
+	msg("%ld", cmdp->addrcnt ? cmdp->addr1.lno : file_lline(curf));
 	return (0);
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 5.11 1992/05/04 11:50:13 bostic Exp $ (Berkeley) $Date: 1992/05/04 11:50:13 $";
+static char sccsid[] = "$Id: util.c,v 5.12 1992/05/07 12:45:50 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:45:50 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -155,10 +155,8 @@ void
 onstop(signo)
 	int signo;
 {
-	MARK current;
 	sigset_t set;
 
-	current = cursor;
 	move(LINES - 1, 0);
 	clrtoeol();
 	refresh();
@@ -172,7 +170,16 @@ onstop(signo)
 	/* Time passes... */
 
 	(void)signal(SIGTSTP, onstop);
-
-	cursor = current;
 	wrefresh(curscr);
+}
+
+/*
+ * regerror --
+ *	Error message from the regexp code.
+ */
+void
+regerror(errmsg)
+	char *errmsg;
+{
+	msg("RE error: %s", errmsg);
 }

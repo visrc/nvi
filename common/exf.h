@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 5.2 1992/05/04 11:50:01 bostic Exp $ (Berkeley) $Date: 1992/05/04 11:50:01 $
+ *	$Id: exf.h,v 5.3 1992/05/07 12:45:30 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:45:30 $
  */
 
 #include <db.h>
@@ -26,12 +26,8 @@ typedef struct exf {
 	DB *db;					/* Underlying db structure. */
 	u_long lno;				/* Last line number. */
 	u_long cno;				/* Last column number. */
-	u_long nlines;				/* Number of lines. */
-	MARK pos;				/* XXX Last position in file. */
 	char *name;				/* File name. */
 	size_t nlen;				/* File name length. */
-	dev_t dev;				/* File device. */
-	ino_t ino;				/* File inode. */
 
 #define	F_MODIFIED	0x001			/* File has been modified. */
 #define	F_NAMECHANGED	0x002			/* File name changed. */
@@ -74,9 +70,11 @@ void	 file_init __P((void));
 int	 file_ins __P((EXF *, char *));
 int	 file_iscurrent __P((char *));
 char	*file_line __P((EXF *, u_long, size_t *));
+u_long	 file_lline __P((EXF *));
 EXF	*file_next __P((EXF *));
 EXF	*file_prev __P((EXF *));
 int	 file_set __P((int, char *[]));
 int	 file_start __P((EXF *));
 int	 file_stop __P((EXF *, int));
 int	 file_sync __P((EXF *, int));
+

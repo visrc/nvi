@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 5.8 1992/05/04 11:52:01 bostic Exp $ (Berkeley) $Date: 1992/05/04 11:52:01 $";
+static char sccsid[] = "$Id: ex_read.c,v 5.9 1992/05/07 12:47:04 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:47:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -63,7 +63,7 @@ ex_read(cmdp)
 			msg("Usage: %s.", cmdp->cmd->usage);
 			return (1);
 		}
-		return (filter(cmdp->addr1, MARK_UNSET, ++p, NOINPUT));
+		return (filter(&cmdp->addr1, NULL, ++p, NOINPUT));
 	}
 
 	/* Build an argv. */
@@ -94,7 +94,7 @@ noargs:	if ((fp = fopen(fname, "r")) == NULL || fstat(fileno(fp), &sb)) {
 		return (1);
 	}
 
-	if (ex_readfp(fname, fp, cmdp->addr1, &rptlines))
+	if (ex_readfp(fname, fp, &cmdp->addr1, &rptlines))
 		return (1);
 
 	autoprint = 1;
@@ -110,55 +110,50 @@ noargs:	if ((fp = fopen(fname, "r")) == NULL || fstat(fileno(fp), &sb)) {
  *		The cursor position gets set, and autoprint gets set.
  */
 int
-ex_readfp(fname, fp, addr, cntp)
+ex_readfp(fname, fp, fm, cntp)
 	char *fname;
 	FILE *fp;
-	MARK addr;
+	MARK *fm;
 	long *cntp;
 {
+	MARK m;
 	size_t len;
-	long lno, startlno;
+	long lno;
 	char *p;
 
-	/* Add in the lines from the output. */
-	ChangeText
-	{
-		/* Insertion starts at the line following the address. */
-		addr = (addr | (BLKSIZE - 1L)) + 1L;
+	/*
+	 * Add in the lines from the output.  Insertion starts at the line
+	 * following the address.
+	 *
+	 * XXX
+	 * This code doesn't check for lines that are too long.  Also, the
+	 * current add module requires both a newline and a terminating NULL.
+	 * This is, of course, stupid.
+	 */
+	m = *fm;
+	for (lno = ++m.lno; p = fgetline(fp, &len); ++m.lno)
+		add(&m, p, len);
 
-		/*
-		 * XXX
-		 * This code doesn't check for lines that are too long.
-		 * Also, the current add module requires both a newline
-		 * and a terminating NULL.  This is, of course, stupid.
-		 */
-		startlno = lno = markline(addr);
-		while (p = fgetline(fp, &len)) {
-			char __buf[8 * 1024];		/* XXX */
-			bcopy(p, __buf, len);		/* XXX */
-			__buf[len] = '\n';		/* XXX */
-			__buf[len + 1] = '\0';		/* XXX */
-
-			add(addr, __buf);		/* XXX */
-			addr = MARK_AT_LINE(++lno);
-		}
-		if (ferror(fp)) {
-			msg("%s: %s", strerror(errno));
-			(void)fclose(fp);
-			return (1);
-		}
-		if (fclose(fp)) {
-			msg("%s: %s", strerror(errno));
-			return (1);
-		}
+	if (ferror(fp)) {
+		msg("%s: %s", strerror(errno));
+		(void)fclose(fp);
+		return (1);
+	}
+	if (fclose(fp)) {
+		msg("%s: %s", strerror(errno));
+		return (1);
 	}
 
-	/* Set cursor to first line read in. */
-	cursor = MARK_AT_LINE(startlno);
+	/*
+	 * Set cursor to first line read in.
+	 * XXX
+	 * Should probably be set by the caller.
+	 */
+	cursor.lno = lno;
 
 	/* Return the number of lines read in. */
 	if (cntp)
-		*cntp = lno - startlno;
+		*cntp = m.lno - fm->lno;
 
 	return (0);
 }

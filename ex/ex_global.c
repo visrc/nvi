@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 5.6 1992/04/28 13:45:32 bostic Exp $ (Berkeley) $Date: 1992/04/28 13:45:32 $";
+static char sccsid[] = "$Id: ex_global.c,v 5.7 1992/05/07 12:46:49 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:46:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -101,8 +101,8 @@ global(cmdp, cmd)
 		 * work.  The solution: count lines relative to the end of
 		 * the file.  Think about it.
 		 */
-		for (l = nlines - markline(cmdp->addr1),
-			lqty = markline(cmdp->addr2) - markline(cmdp->addr1) + 1L,
+		for (l = nlines - cmdp->addr1.lno,
+			lqty = cmdp->addr2.lno - cmdp->addr1.lno + 1L,
 			nchanged = 0L;
 		     lqty > 0 && nlines - l >= 0 && nchanged >= 0L;
 		     l--, lqty--)
@@ -114,7 +114,7 @@ global(cmdp, cmd)
 			if ((!regexec(re, line, 1)) == isv)
 			{
 				/* move the cursor to that line */
-				cursor = MARK_AT_LINE(nlines - l);
+				cursor.lno = nlines - l;
 
 				/* do the ex command (without mucking up
 				 * the original copy of the command line)

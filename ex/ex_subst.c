@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 5.9 1992/05/04 11:52:08 bostic Exp $ (Berkeley) $Date: 1992/05/04 11:52:08 $";
+static char sccsid[] = "$Id: ex_subst.c,v 5.10 1992/05/07 12:47:13 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:47:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -56,9 +56,7 @@ substitute(cmdp, cmd)
 	static	optp;	/* boolean option: print when done? */
 	static	optg;	/* boolean option: substitute globally in line? */
 	static	optc;	/* boolean option: confirm before subst? */
-#ifndef CRUNCH
 	long	oldnlines;
-#endif
 	char lbuf[2048];
 	char *extra;
 
@@ -68,12 +66,10 @@ substitute(cmdp, cmd)
 	rptlines = -1L;
 
 	if (cmd == AGAIN) {
-#ifndef NO_MAGIC
 		if (ISSET(O_MAGIC))
 			subst = "~";
 		else
-#endif
-		subst = "\\~";
+			subst = "\\~";
 		re = regcomp("");
 
 		/* if visual "&", then turn off the "p" and "c" options */
@@ -142,119 +138,113 @@ substitute(cmdp, cmd)
 		refresh();
 	}
 
-	ChangeText
+	/* reset the change counters */
+	chline = chsub = 0L;
+
+	/* for each selected line */
+	for (l = cmdp->addr1.lno; l <= cmdp->addr2.lno; l++)
 	{
-		/* reset the change counters */
-		chline = chsub = 0L;
+		/* fetch the line */
+		line = fetchline(l, NULL);
 
-		/* for each selected line */
-		for (l = markline(cmdp->addr1); l <= markline(cmdp->addr2); l++)
+		/* if it contains the search pattern... */
+		if (regexec(re, line, 1))
 		{
-			/* fetch the line */
-			line = fetchline(l, NULL);
+			/* increment the line change counter */
+			chline++;
 
-			/* if it contains the search pattern... */
-			if (regexec(re, line, 1))
+			/* initialize the pointers */
+			s = line;
+			d = lbuf;
+
+			/* do once or globally ... */
+			do
 			{
-				/* increment the line change counter */
-				chline++;
-
-				/* initialize the pointers */
-				s = line;
-				d = lbuf;
-
-				/* do once or globally ... */
-				do
+				/* confirm, if necessary */
+				if (optc)
 				{
-#ifndef CRUNCH
-					/* confirm, if necessary */
-					if (optc)
+					for (conf = line; conf < re->startp[0]; conf++)
+						addch(*conf);
+					standout();
+					for ( ; conf < re->endp[0]; conf++)
+						addch(*conf);
+					standend();
+					for (; *conf; conf++)
+						addch(*conf);
+					addch('\n');
+					refresh();
+					if (getkey(0) != 'y')
 					{
-						for (conf = line; conf < re->startp[0]; conf++)
-							addch(*conf);
-						standout();
-						for ( ; conf < re->endp[0]; conf++)
-							addch(*conf);
-						standend();
-						for (; *conf; conf++)
-							addch(*conf);
-						addch('\n');
-						refresh();
-						if (getkey(0) != 'y')
-						{
-							/* copy accross the original chars */
-							while (s < re->endp[0])
-								*d++ = *s++;
+						/* copy accross the original chars */
+						while (s < re->endp[0])
+							*d++ = *s++;
 
-							/* skip to next match on this line, if any */
-							goto Continue;
-						}
+						/* skip to next match on this line, if any */
+						goto Continue;
 					}
-#endif /* not CRUNCH */
+				}
 
-					/* increment the substitution change counter */
-					chsub++;
+				/* increment the substitution change counter */
+				chsub++;
 
-					/* copy stuff from before the match */
-					while (s < re->startp[0])
-					{
-						*d++ = *s++;
-					}
+				/* copy stuff from before the match */
+				while (s < re->startp[0])
+				{
+					*d++ = *s++;
+				}
 
-					/* substitute for the matched part */
-					regsub(re, subst, d);
-					s = re->endp[0];
-					d += strlen(d);
+				/* substitute for the matched part */
+				regsub(re, subst, d);
+				s = re->endp[0];
+				d += strlen(d);
 
 Continue:
-					/* if this regexp could conceivably match
-					 * a zero-length string, then require at
-					 * least 1 unmatched character between
-					 * matches.
-					 */
-					if (re->minlen == 0)
-					{
-						if (!*s)
-							break;
-						*d++ = *s++;
-					}
-
-				} while (optg && regexec(re, s, 0));
-
-				/* copy stuff from after the match */
-				while (*d++ = *s++)	/* yes, ASSIGNMENT! */
-				{
-				}
-
-#ifndef CRUNCH
-				/* NOTE: since the substitution text is allowed to have ^Ms which are
-				 * translated into newlines, it is possible that the number of lines
-				 * in the file will increase after each line has been substituted.
-				 * we need to adjust for this.
+				/* if this regexp could conceivably match
+				 * a zero-length string, then require at
+				 * least 1 unmatched character between
+				 * matches.
 				 */
-				oldnlines = nlines;
-#endif
-
-				/* replace the old version of the line with the new */
-				d[-1] = '\n';
-				d[0] = '\0';
-				change(MARK_AT_LINE(l), MARK_AT_LINE(l + 1), lbuf);
-
-#ifndef CRUNCH
-				l += nlines - oldnlines;
-				cmdp->addr2 += MARK_AT_LINE(nlines - oldnlines);
-#endif
-
-				/* if supposed to print it, do so */
-				if (optp)
+				if (re->minlen == 0)
 				{
-					addstr(lbuf);
-					refresh();
+					if (!*s)
+						break;
+					*d++ = *s++;
 				}
 
-				/* move the cursor to that line */
-				cursor = MARK_AT_LINE(l);
+			} while (optg && regexec(re, s, 0));
+
+			/* copy stuff from after the match */
+			while (*d++ = *s++)	/* yes, ASSIGNMENT! */
+			{
 			}
+
+			/* NOTE: since the substitution text is allowed to have ^Ms which are
+			 * translated into newlines, it is possible that the number of lines
+			 * in the file will increase after each line has been substituted.
+			 * we need to adjust for this.
+			 */
+			oldnlines = nlines;
+
+			/* replace the old version of the line with the new */
+			d[-1] = '\n';
+			d[0] = '\0';
+			
+#ifdef TURN_THIS_OFF
+			change(MARK_AT_LINE(l), MARK_AT_LINE(l + 1), lbuf);
+#endif
+
+			l += nlines - oldnlines;
+			cmdp->addr2.lno += nlines - oldnlines;
+
+			/* if supposed to print it, do so */
+			if (optp)
+			{
+				addstr(lbuf);
+				refresh();
+			}
+
+			/* move the cursor to that line */
+			cursor.lno = l;
 		}
 	}
 

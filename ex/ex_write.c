@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 5.9 1992/05/04 11:52:16 bostic Exp $ (Berkeley) $Date: 1992/05/04 11:52:16 $";
+static char sccsid[] = "$Id: ex_write.c,v 5.10 1992/05/07 12:47:18 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:47:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -67,7 +67,7 @@ ex_write(cmdp)
 			msg("Usage: %s.", cmdp->cmd->usage);
 			return (1);
 		}
-		return (filter(cmdp->addr1, cmdp->addr2, ++p, NOOUTPUT));
+		return (filter(&cmdp->addr1, &cmdp->addr2, ++p, NOOUTPUT));
 	}
 
 	/* If "write >>" it's an append to a file. */
@@ -110,7 +110,7 @@ noargs:	if (!force && flags != O_APPEND && !stat(fname, &sb)) {
 		msg("%s: %s", fname, strerror(errno));
 		return (1);
 	}
-	return (ex_writefp(fname, fp, cmdp->addr1, cmdp->addr2, 1));
+	return (ex_writefp(fname, fp, &cmdp->addr1, &cmdp->addr2, 1));
 }
 
 /*
@@ -118,24 +118,22 @@ noargs:	if (!force && flags != O_APPEND && !stat(fname, &sb)) {
  *	Write a range of lines to a FILE *.
  */
 int
-ex_writefp(fname, fp, from, to, success_msg)
+ex_writefp(fname, fp, fm, tm, success_msg)
 	char *fname;
 	FILE *fp;
-	MARK from, to;
+	MARK *fm, *tm;
 	int success_msg;
 {
 	register u_long ccnt, fline, tline;
-	u_long lcnt;
 	size_t len;
 	char *p;
 
-	fline = markline(from);
-	tline = markline(to);
-	lcnt = tline - fline + 1;
+	fline = fm->lno;
+	tline = tm->lno;
 	for (ccnt = 0; fline <= tline; ++fline, ccnt += len) {
-		p = fetchline(fline, &len);
-		if (fwrite(p, 1, len, fp) != len ||
-		    putc('\n', fp) != '\n')
+		if ((p = file_line(curf, fline, &len)) == NULL)
+			return (1);
+		if (fwrite(p, 1, len, fp) != len || putc('\n', fp) != '\n')
 			goto err;
 	}
 	if (fclose(fp)) {
@@ -143,6 +141,7 @@ err:		msg("%s: %s", fname, strerror(errno));
 		return (1);
 	}
 	if (success_msg)
-		msg("%s: %lu lines, %lu characters.", fname, lcnt, ccnt);
+		msg("%s: %lu lines, %lu characters.",
+		    fname, tm->lno - fm->lno + 1, ccnt);
 	return (0);
 }

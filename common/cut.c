@@ -648,29 +648,43 @@ cb2str(name, lenp)
 int
 cutneeds(need)
 	void *need;
-{}
+{
+	return (0);
+}
 void
 cutswitch()
-{}
+{
+	return;
+}
 void
 cutend()
-{}
+{
+	return;
+}
 void
 cutname(name)
 	int name;
-{}
-void
-cut(from, to)
-	MARK from, to;
-{}
-MARK
-paste(at, after, retend)
-	MARK at;
+{
+	return;
+}
+int
+cut(fm, tm)
+	MARK *fm, *tm;
+{
+	return (0);
+}
+MARK *
+paste(m, after, retend)
+	MARK *m;
 	int after, retend;
-{}
+{
+	return (NULL);
+}
 u_char *
 cb2str(name, lenp)
 	int name;
 	size_t *lenp;
-{}
+{
+	return (NULL);
+}
 #endif

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.27 1992/05/04 11:51:29 bostic Exp $ (Berkeley) $Date: 1992/05/04 11:51:29 $";
+static char sccsid[] = "$Id: ex.c,v 5.28 1992/05/07 12:46:19 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:46:19 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -21,10 +21,11 @@ static char sccsid[] = "$Id: ex.c,v 5.27 1992/05/04 11:51:29 bostic Exp $ (Berke
 #include <string.h>
 
 #include "vi.h"
+#include "vcmd.h"
 #include "excmd.h"
 #include "exf.h"
 #include "options.h"
-#include "tty.h"
+#include "term.h"
 #include "pathnames.h"
 #include "extern.h"
 
@@ -165,6 +166,7 @@ ex_cmd(exc)
 	EXCMDARG cmd;
 	EXCMDLIST *cp;
 	u_long lcount, num;
+	long flagoff;
 	int flags, uselastcmd;
 	char *ep;
 
@@ -266,8 +268,10 @@ addr1:	switch(cp->flags & (E_ADDR1|E_ADDR2|E_ADDR2_ALL|E_ADDR2_NONE)) {
 	case E_ADDR2_ALL:			/* Zero/two addresses: */
 		if (cmd.addrcnt == 0) {		/* Default to entire file. */
 			cmd.addrcnt = 2;
-			cmd.addr1 = MARK_FIRST;
-			cmd.addr2 = MARK_LAST;
+			cmd.addr1.lno = 1;
+			cmd.addr1.cno = 1;
+			cmd.addr2.lno = file_lline(curf);
+			cmd.addr2.cno = 1;
 			break;
 		}
 		/* FALLTHROUGH */
@@ -301,7 +305,7 @@ two:		switch(cmd.addrcnt) {
 		cmd.string = *p ? exc : NULL;
 		goto addr2;
 	}
-	for (lcount = 0; *p; ++p) {
+	for (lcount = flagoff = 0; *p; ++p) {
 		for (; isspace(*exc); ++exc);		/* Skip whitespace. */
 		if (!*exc)
 			break;
@@ -324,10 +328,10 @@ two:		switch(cmd.addrcnt) {
 			for (; *exc == '+' || *exc == '-'; ++exc)
 				switch (*exc) {
 				case '+':
-					++cmd.flagoff;
+					++flagoff;
 					break;
 				case '-':
-					--cmd.flagoff;
+					--flagoff;
 					break;
 				}
 			for (; *exc == '#' || *exc == 'l' || *exc == 'p'; ++exc)
@@ -345,10 +349,10 @@ two:		switch(cmd.addrcnt) {
 			for (; *exc == '+' || *exc == '-'; ++exc)
 				switch (*exc) {
 				case '+':
-					++cmd.flagoff;
+					++flagoff;
 					break;
 				case '-':
-					--cmd.flagoff;
+					--flagoff;
 					break;
 				}
 			break;
@@ -396,13 +400,14 @@ end2:			break;
 				 * second.
 				 */
 				cmd.addr1 = cmd.addr2;
-				cmd.addr2 = cmd.addr1 + lcount;
+				cmd.addr2.lno = cmd.addr1.lno + lcount;
 			}
 			break;
 		case 'l':				/* line */
 			/*
 			 * XXX
 			 * Check for illegal line numbers.
+			 * Line 0 okay for copy, move??
 			 */
 			if (isdigit(*exc)) {
 				cmd.lineno = strtol(exc, &ep, 10);
@@ -450,7 +455,7 @@ usage:		msg("Usage: %s.", cp->usage);
 	/* Verify that the addresses are legal. */
 addr2:	switch(cmd.addrcnt) {
 	case 2:
-		num = markline(cmd.addr2);
+		num = cmd.addr2.lno;
 		if (num < 0) {
 			msg("%lu is an invalid address.", num);
 			return (1);
@@ -461,7 +466,7 @@ addr2:	switch(cmd.addrcnt) {
 		}
 		/* FALLTHROUGH */
 	case 1:
-		num = markline(cmd.addr1);
+		num = cmd.addr1.lno;
 		if (num == 0 && !(cp->flags & E_ZERO)) {
 			msg("The %s command doesn't permit an address of 0.",
 			    cp->name);
@@ -495,9 +500,9 @@ addr2:	switch(cmd.addrcnt) {
 
 	TRACE("ex_cmd: %s", cmd.cmd->name);
 	if (cmd.addrcnt > 0) {
-		TRACE("\taddr1 %d", markline(cmd.addr1));
+		TRACE("\taddr1 %d", cmd.addr1.lno);
 		if (cmd.addrcnt > 1)
-			TRACE(" addr2: %d", markline(cmd.addr2));
+			TRACE(" addr2: %d", cmd.addr2.lno);
 		TRACE("\n");
 	}
 	if (cmd.lineno)
@@ -528,12 +533,23 @@ addr2:	switch(cmd.addrcnt) {
 	 * display the new cursor line, or we're in ex mode, autoprint is set,
 	 * and a change was made, display the line.
 	 */
-	flags = cmd.flags & (E_F_HASH|E_F_LIST|E_F_PRINT);
-	if (flags) {
-		if (cmd.flagoff)
-			cursor = MARK_AT_LINE(markline(cursor) + cmd.flagoff);
-	} else if (mode == MODE_EX && autoprint && ISSET(O_AUTOPRINT))
+	if (flagoff) {
+		if (flagoff < 0) {
+			if ((u_long)flagoff > cursor.lno) {
+				msg("Flag offset before line 1.");
+				return (1);
+			}
+		} else if (cursor.lno + flagoff > file_lline(curf)) {
+			msg("Flag offset past end-of-file.");
+			return (1);
+		}
+		cursor.lno += flagoff;
+	}
+
+	if (mode == MODE_EX && autoprint && ISSET(O_AUTOPRINT))
 		flags = E_F_PRINT;
+	else
+		flags = cmd.flags & (E_F_HASH|E_F_LIST|E_F_PRINT);
 	parg.addr1 = parg.addr2 = cursor;
 	if (flags) {
 		switch (flags) {
@@ -563,21 +579,23 @@ linespec(cmd, cp)
 	char *cmd;
 	EXCMDARG *cp;
 {
-	MARK cur, savecursor;
+	MARK cur, savecursor, *mp;
 	u_long num, total;
-	int delimiter;
+	int delimiter, savecursor_set;
 	char ch, *ep;
 
 	/* Percent character is all lines in the file. */
 	if (*cmd == '%') {
-		cp->addr1 = MARK_FIRST;
-		cp->addr2 = MARK_LAST;
+		cp->addr1.lno = 1;
+		cp->addr1.cno = 1;
+		cp->addr2.lno = file_lline(curf);
+		cp->addr2.cno = 1;
 		cp->addrcnt = 2;
 		return (++cmd);
 	}
 
 	/* Parse comma or semi-colon delimited line specs. */
-	savecursor = MARK_UNSET;
+	savecursor_set = 0;
 	for (cp->addrcnt = 0;;) {
 		delimiter = 0;
 		switch(*cmd) {
@@ -590,38 +608,34 @@ linespec(cmd, cp)
 			++cmd;
 			break;
 		case '$':		/* Last line. */
-			cur = MARK_LAST;
+			cur.lno = file_lline(curf);
+			cur.cno = 1;
 			++cmd;
 			break;
 					/* Absolute line number. */
 		case '0': case '1': case '2': case '3': case '4':
 		case '5': case '6': case '7': case '8': case '9':
-			cur = MARK_AT_LINE(strtol(cmd, &ep, 10));
+			cur.lno = strtol(cmd, &ep, 10);
+			cur.cno = 1;
 			cmd = ep;
 			break;
 		case '\'':		/* Set mark. */
-			cur = m_tomark(cursor, 1L, (int)cmd[1]);
+			if ((mp = m_tomark(&cursor, 1L, (int)cmd[1])) == NULL)
+				return (NULL);
+			cur = *mp;
 			cmd += 2;
 			break;
 		case '/':		/* Search forward. */
-			/* Terminate the search pattern. */
-			ep = parseptrn(cmd);
-
-			/* Search for the pattern. */
-			cur &= ~(BLKSIZE - 1);
-			pfetch(markline(cur));
-			if (plen > 0)
-				cur += plen - 1;
-			cur = f_search(cur, cmd);
+			if ((mp = f_search(&cursor, cmd, &ep, 0)) == NULL)
+				return (NULL);
+			cur = *mp;
 			cmd = ep;
 			break;
 		case '?':		/* Search backward. */
-			/* Terminate the search pattern. */
-			ep = parseptrn(cmd);
-
-			/* Search for the pattern. */
-			cur &= ~(BLKSIZE - 1);
-			cur = b_search(cur, cmd);
+			if ((mp = b_search(&cursor, cmd, &ep, 0)) == NULL)
+				return (NULL);
+			cur = *mp;
+			cmd = ep;
 			break;
 		default:
 			goto done;
@@ -632,9 +646,9 @@ linespec(cmd, cp)
 		 * the current line address for the second address to be the
 		 * first address.  Trailing/multiple delimiters are discarded.
 		 */
-		if (delimiter) {
-			if (*cmd == ';')
-				savecursor = cursor;
+		if (delimiter && *cmd == ';') {
+			savecursor = cursor;
+			savecursor_set = 1;
 		}
 
 		/*
@@ -651,8 +665,11 @@ linespec(cmd, cp)
 				}
 				total += num;
 			}
-			if (total)
-				cur = m_updnto(cur, num, ch);
+			if (total) {
+				if ((mp = m_updnto(&cur, num, ch)) == NULL)
+					return (NULL);
+				cur = *mp;
+			}
 		}
 
 		/* Extra addresses are discarded, starting with the first. */
@@ -677,7 +694,7 @@ linespec(cmd, cp)
 	 * This is probably not right for treatment of savecursor -- figure
 	 * out what the historical ex did for ";,;,;5p" or similar stupidity.
 	 */
-done:	if (savecursor != MARK_UNSET)
+done:	if (savecursor_set)
 		cursor = savecursor;
 
 	return (cmd);
