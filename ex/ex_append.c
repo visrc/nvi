@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 8.17 1994/05/02 13:51:33 bostic Exp $ (Berkeley) $Date: 1994/05/02 13:51:33 $";
+static char sccsid[] = "$Id: ex_append.c,v 8.18 1994/07/20 19:34:15 bostic Exp $ (Berkeley) $Date: 1994/07/20 19:34:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -132,15 +132,18 @@ aci(sp, ep, cmdp, cmd)
 		goto err;
 	
 	/*
-	 * If doing a change, replace lines for as long as possible.
-	 * Then, append more lines or delete remaining lines.  Inserts
-	 * are the same as appends to the previous line.
+	 * If doing a change, replace lines for as long as possible.  Then,
+	 * append more lines or delete remaining lines.  Changes to an empty
+	 * file are just appends, and inserts are the same as appends to the
+	 * previous line.
 	 */
 	m = cmdp->addr1;
 	if (cmd == INSERT) {
 		--m.lno;
 		cmd = APPEND;
 	}
+	if (cmd == CHANGE && m.lno == 0)
+		cmd = APPEND;
 
 	tp = sp->tiqp->cqh_first;
 	if (cmd == CHANGE)
