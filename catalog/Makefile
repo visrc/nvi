@@ -1,4 +1,4 @@
-#	$Id: Makefile,v 8.3 1994/09/19 12:44:28 bostic Exp $ (Berkeley) $Date: 1994/09/19 12:44:28 $
+#	$Id: Makefile,v 8.4 1994/09/19 12:55:31 bostic Exp $ (Berkeley) $Date: 1994/09/19 12:55:31 $
 
 FILES=	../common/*.c ../ex/*.c ../sex/*.c ../vi/*.c ../svi/*.c ../xaw/*.c
 english: dump ${FILES}
@@ -31,9 +31,15 @@ check:
 		(echo "UNUSED MESSAGE NUMBERS (this is okay):";		\
 		awk '{while (++nline < $$1) print nline}' < $$i;	\
 		echo =========================;				\
+		echo "MISSING ERROR MESSAGES (this is NOT okay):";	\
+		awk '{print $$1}' < $$i > __check1;			\
+		awk '{print $$1}' < vi_english.base > __check2;		\
+		join -v 2 __check1 __check2;				\
+		rm -f __check1 __check2;				\
+		echo =========================;				\
 		echo "DUPLICATE MESSAGE NUMBERS (this is NOT okay):";	\
 		for j in						\
-		    `sed '/^$$/d' < $$i | sort -u |		\
+		    `sed '/^$$/d' < $$i | sort -u |			\
 		    awk '{print $$1}' | uniq -d`; do			\
 			egrep $$j $$i;					\
 		done;							\
@@ -48,4 +54,6 @@ dump: dump.c
 	${CC} -O -o dump dump.c
 
 clean:
-	rm -f dump dump.o vi_english vi_english.base *.check
+	rm -f dump dump.o 
+	rm -f vi_english vi_english.base
+	rm -f *.check __check1 __check2
