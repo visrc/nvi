@@ -13,7 +13,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_tag.c,v 10.43 2000/06/29 19:41:52 skimo Exp $ (Berkeley) $Date: 2000/06/29 19:41:52 $";
+static const char sccsid[] = "$Id: ex_tag.c,v 10.44 2000/07/12 12:23:29 skimo Exp $ (Berkeley) $Date: 2000/07/12 12:23:29 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -174,6 +174,8 @@ ex_tag_next(sp, cmdp)
 		(void)cscope_search(sp, tqp, tp);
 	else
 		(void)ctag_search(sp, tp->search, tp->slen, tqp->tag);
+	if (tqp->current->msg)
+	    msgq(sp, M_INFO, tqp->current->msg);
 	return (0);
 }
 
@@ -209,6 +211,8 @@ ex_tag_prev(sp, cmdp)
 		(void)cscope_search(sp, tqp, tp);
 	else
 		(void)ctag_search(sp, tp->search, tp->slen, tqp->tag);
+	if (tqp->current->msg)
+	    msgq(sp, M_INFO, tqp->current->msg);
 	return (0);
 }
 
@@ -664,13 +668,17 @@ tag_copy(sp, otp, tpp)
 		len += otp->fnlen + 1;
 	if (otp->search != NULL)
 		len += otp->slen + 1;
+	if (otp->msg != NULL)
+		len += otp->mlen + 1;
 	MALLOC_RET(sp, tp, TAG *, len);
 	memcpy(tp, otp, len);
 
 	if (otp->fname != NULL)
 		tp->fname = tp->buf;
 	if (otp->search != NULL)
-		tp->search = tp->fname + otp->fnlen + 1;
+		tp->search = tp->buf + (otp->search - otp->buf);
+	if (otp->msg != NULL)
+		tp->msg = tp->buf + (otp->msg - otp->buf);
 
 	*tpp = tp;
 	return (0);
@@ -798,6 +806,8 @@ tagq_push(sp, tqp, new_screen, force)
 
 	(void)ctag_search(sp,
 	    tqp->current->search, tqp->current->slen, tqp->tag);
+	if (tqp->current->msg)
+	    msgq(sp, M_INFO, tqp->current->msg);
 
 	/*
 	 * Move the current context from the temporary save area into the

@@ -1,27 +1,20 @@
-sub make {
-    open MAKE, "make 2>&1 1>/dev/null |";
-    while(<MAKE>) {
-	if (($file, $line, $msg) = /([^: ]*):(\d*):(.+)/) {
-	    if ($file == $prevfile && $line == $prevline) {
-		$error[-1]->[2] .= "\n$msg";
-	    } else {
-		push @error, [$file, $line, $msg];
-		($prevline, $prevfile) = ($line, $file);
-	    }
+sub push_tags {
+    my ($fh) = shift;
+    my ($tagq) = $curscr->TagQ("msg");
+    while(<$fh>) {
+	my ($f, $l, $m);
+	if ((($f, $l, $m) = split /:/) >= 2 && -f $f && $l =~ /^\d+$/) {
+	    $tagq->Add($f, $l, $m);
 	}
     }
-    close MAKE;
+    $tagq->Push();
 }
 
-sub nexterror {
-    if ($index <= $#error) {
-    	my $error = $error[$index++];
-    	$curscr->Edit($error->[0]);
-	$curscr->SetCursor($error->[1],0);
-	$curscr->Msg($error->[2]);
-    }
+sub make {
+    local (*FH);
+    open FH, "make 2>&1 |";
+    ::push_tags(\*FH);
+    close FH;
 }
-
-# preverror is left as an exercise
 
 1;
