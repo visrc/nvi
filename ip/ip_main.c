@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_main.c,v 8.5 1996/12/05 12:29:49 bostic Exp $ (Berkeley) $Date: 1996/12/05 12:29:49 $";
+static const char sccsid[] = "$Id: ip_main.c,v 8.6 1996/12/10 21:01:55 bostic Exp $ (Berkeley) $Date: 1996/12/10 21:01:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,17 +18,24 @@ static const char sccsid[] = "$Id: ip_main.c,v 8.5 1996/12/05 12:29:49 bostic Ex
 #include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "../common/common.h"
 #include "ip.h"
+#include "../include/ipc_extern.h"
+
+int vi_ofd;				/* GLOBAL: known to __vi_send(). */
 
 static void	   ip_func_std __P((GS *));
 static IP_PRIVATE *ip_init __P((GS *, char *));
 static void	   perr __P((char *, char *));
 
 /*
- * main --
+ * ip_main --
  *      This is the main loop for the vi-as-library editor.
+ *
+ * PUBLIC: int ip_main __P((int, char *[], GS *, char *));
  */
 int
 ip_main(argc, argv, gp, ip_arg)
@@ -62,7 +69,7 @@ ip_main(argc, argv, gp, ip_arg)
 		if (ev.e_event == E_EOF || ev.e_event == E_ERR ||
 		    ev.e_event == E_SIGHUP || ev.e_event == E_SIGTERM)
 			return (1);
-		if (ev.e_event == E_IPCOMMAND && ev.e_ipcom == IPO_QUIT)
+		if (ev.e_event == E_IPCOMMAND && ev.e_ipcom == VI_QUIT)
 			return (1);
 	}
 
@@ -71,6 +78,10 @@ ip_main(argc, argv, gp, ip_arg)
 
 	/* Clean up the screen. */
 	(void)ip_quit(gp);
+
+	/* Send the quit message. */
+	ipb.code = SI_QUIT;
+	(void)__vi_send(NULL, &ipb);
 
 	/* Free the global and IP private areas. */
 #if defined(DEBUG) || defined(PURIFY) || defined(LIBRARY)
@@ -109,7 +120,7 @@ ip_init(gp, ip_arg)
 	ipp->i_fd = strtol(ip_arg, &ep, 10);
 	if (ep[0] != '.' || !isdigit(ep[1]))
 		goto usage;
-	ipp->o_fd = strtol(++ep, &ep, 10);
+	vi_ofd = strtol(++ep, &ep, 10);
 	if (ep[0] != '\0') {
 usage:		ip_usage();
 		return (NULL);
