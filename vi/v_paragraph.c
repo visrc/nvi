@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_paragraph.c,v 8.21 1994/10/13 13:59:28 bostic Exp $ (Berkeley) $Date: 1994/10/13 13:59:28 $";
+static char sccsid[] = "$Id: v_paragraph.c,v 9.1 1994/11/09 18:36:13 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:36:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -64,9 +64,8 @@ static char sccsid[] = "$Id: v_paragraph.c,v 8.21 1994/10/13 13:59:28 bostic Exp
  * from the paragraph or section options.
  */
 int
-v_paragraphf(sp, ep, vp)
+v_paragraphf(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	enum { P_INTEXT, P_INBLANK } pstate;
@@ -94,7 +93,7 @@ v_paragraphf(sp, ep, vp)
 		else {
 			vp->m_stop = vp->m_start;
 			vp->m_stop.cno = 0;
-			if (nonblank(sp, ep, vp->m_stop.lno, &vp->m_stop.cno))
+			if (nonblank(sp, vp->m_stop.lno, &vp->m_stop.cno))
 				return (1);
 			if (vp->m_start.cno <= vp->m_stop.cno)
 				F_SET(vp, VM_LMODE);
@@ -102,7 +101,7 @@ v_paragraphf(sp, ep, vp)
 
 	/* Figure out what state we're currently in. */
 	lno = vp->m_start.lno;
-	if ((p = file_gline(sp, ep, lno, &len)) == NULL)
+	if ((p = file_gline(sp, lno, &len)) == NULL)
 		goto eof;
 
 	/*
@@ -121,7 +120,7 @@ v_paragraphf(sp, ep, vp)
 	for (;;) {
 		lastlno = lno;
 		lastlen = len;
-		if ((p = file_gline(sp, ep, ++lno, &len)) == NULL)
+		if ((p = file_gline(sp, ++lno, &len)) == NULL)
 			goto eof;
 		switch (pstate) {
 		case P_INTEXT:
@@ -167,8 +166,8 @@ found:			if (ISMOTION(vp)) {
 	 * have to make it okay.
 	 */
 eof:	if (vp->m_start.lno == lno || vp->m_start.lno == lno - 1) {
-		if (file_gline(sp, ep, vp->m_start.lno, &len) == NULL) {
-			if (file_lline(sp, ep, &lno))
+		if (file_gline(sp, vp->m_start.lno, &len) == NULL) {
+			if (file_lline(sp, &lno))
 				return (1);
 			if (vp->m_start.lno != 1 || lno != 0) {
 				GETLINE_ERR(sp, vp->m_start.lno);
@@ -178,7 +177,7 @@ eof:	if (vp->m_start.lno == lno || vp->m_start.lno == lno - 1) {
 			return (0);
 		}
 		if (vp->m_start.cno == (len ? len - 1 : 0)) {
-			v_eof(sp, ep, NULL);
+			v_eof(sp, NULL);
 			return (1);
 		}
 	}
@@ -205,9 +204,8 @@ eof:	if (vp->m_start.lno == lno || vp->m_start.lno == lno - 1) {
  *	Move backward count paragraphs.
  */
 int
-v_paragraphb(sp, ep, vp)
+v_paragraphb(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	enum { P_INTEXT, P_INBLANK } pstate;
@@ -250,7 +248,7 @@ v_paragraphb(sp, ep, vp)
 		goto sof;
 
 	/* Figure out what state we're currently in. */
-	if ((p = file_gline(sp, ep, lno, &len)) == NULL)
+	if ((p = file_gline(sp, lno, &len)) == NULL)
 		goto sof;
 
 	/*
@@ -275,7 +273,7 @@ v_paragraphb(sp, ep, vp)
 	}
 
 	for (;;) {
-		if ((p = file_gline(sp, ep, --lno, &len)) == NULL)
+		if ((p = file_gline(sp, --lno, &len)) == NULL)
 			goto sof;
 		switch (pstate) {
 		case P_INTEXT:

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_undo.c,v 8.12 1994/08/17 14:36:18 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:36:18 $";
+static char sccsid[] = "$Id: v_undo.c,v 9.1 1994/11/09 18:36:31 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:36:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,9 +34,8 @@ static char sccsid[] = "$Id: v_undo.c,v 8.12 1994/08/17 14:36:18 bostic Exp $ (B
  *	Undo changes to this line.
  */
 int
-v_Undo(sp, ep, vp)
+v_Undo(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	/*
@@ -58,10 +57,10 @@ v_Undo(sp, ep, vp)
 	 * the line, so starting to replay the changes seems the best way to
 	 * get to there.
 	 */
-	F_SET(ep, F_UNDO);
-	ep->lundo = BACKWARD;
+	F_SET(sp->ep, F_UNDO);
+	sp->ep->lundo = BACKWARD;
 
-	return (log_setline(sp, ep));
+	return (log_setline(sp));
 }
 
 /*
@@ -69,11 +68,12 @@ v_Undo(sp, ep, vp)
  *	Undo the last change.
  */
 int
-v_undo(sp, ep, vp)
+v_undo(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
+	EXF *ep;
+
 	/* Set the command count. */
 	VIP(sp)->u_ccnt = sp->ccnt;
 
@@ -118,6 +118,7 @@ v_undo(sp, ep, vp)
 	 * to completely match historic practice, we'd have to track users line
 	 * changes, too.  This isn't worth the effort.
 	 */
+	ep = sp->ep;
 	if (!F_ISSET(ep, F_UNDO)) {
 		F_SET(ep, F_UNDO);
 		ep->lundo = BACKWARD;
@@ -126,9 +127,9 @@ v_undo(sp, ep, vp)
 
 	switch (ep->lundo) {
 	case BACKWARD:
-		return (log_backward(sp, ep, &vp->m_final));
+		return (log_backward(sp, &vp->m_final));
 	case FORWARD:
-		return (log_forward(sp, ep, &vp->m_final));
+		return (log_forward(sp, &vp->m_final));
 	default:
 		abort();
 	}

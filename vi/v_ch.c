@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ch.c,v 8.17 1994/10/13 13:59:25 bostic Exp $ (Berkeley) $Date: 1994/10/13 13:59:25 $";
+static char sccsid[] = "$Id: v_ch.c,v 9.1 1994/11/09 18:35:59 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:35:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,9 +35,8 @@ static void noprev __P((SCR *));
  *	Repeat the last F, f, T or t search.
  */
 int
-v_chrepeat(sp, ep, vp)
+v_chrepeat(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	vp->character = VIP(sp)->lastckey;
@@ -47,13 +46,13 @@ v_chrepeat(sp, ep, vp)
 		noprev(sp);
 		return (1);
 	case FSEARCH:
-		return (v_chF(sp, ep, vp));
+		return (v_chF(sp, vp));
 	case fSEARCH:
-		return (v_chf(sp, ep, vp));
+		return (v_chf(sp, vp));
 	case TSEARCH:
-		return (v_chT(sp, ep, vp));
+		return (v_chT(sp, vp));
 	case tSEARCH:
-		return (v_cht(sp, ep, vp));
+		return (v_cht(sp, vp));
 	default:
 		abort();
 	}
@@ -65,9 +64,8 @@ v_chrepeat(sp, ep, vp)
  *	Repeat the last F, f, T or t search in the reverse direction.
  */
 int
-v_chrrepeat(sp, ep, vp)
+v_chrrepeat(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	enum cdirection savedir;
@@ -81,16 +79,16 @@ v_chrrepeat(sp, ep, vp)
 		noprev(sp);
 		return (1);
 	case FSEARCH:
-		rval = v_chf(sp, ep, vp);
+		rval = v_chf(sp, vp);
 		break;
 	case fSEARCH:
-		rval = v_chF(sp, ep, vp);
+		rval = v_chF(sp, vp);
 		break;
 	case TSEARCH:
-		rval = v_cht(sp, ep, vp);
+		rval = v_cht(sp, vp);
 		break;
 	case tSEARCH:
-		rval = v_chT(sp, ep, vp);
+		rval = v_chT(sp, vp);
 		break;
 	default:
 		abort();
@@ -105,12 +103,11 @@ v_chrrepeat(sp, ep, vp)
  *	occurrence of the specified character.
  */
 int
-v_cht(sp, ep, vp)
+v_cht(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
-	if (v_chf(sp, ep, vp))
+	if (v_chf(sp, vp))
 		return (1);
 
 	/*
@@ -137,9 +134,8 @@ v_cht(sp, ep, vp)
  *	specified character.
  */
 int
-v_chf(sp, ep, vp)
+v_chf(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	size_t len;
@@ -158,8 +154,8 @@ v_chf(sp, ep, vp)
 		VIP(sp)->lastckey = key;
 	VIP(sp)->csearchdir = fSEARCH;
 
-	if ((p = file_gline(sp, ep, vp->m_start.lno, &len)) == NULL) {
-		if (file_lline(sp, ep, &lno))
+	if ((p = file_gline(sp, vp->m_start.lno, &len)) == NULL) {
+		if (file_lline(sp, &lno))
 			return (1);
 		if (lno == 0) {
 			notfound(sp, key);
@@ -200,12 +196,11 @@ v_chf(sp, ep, vp)
  *	occurrence of the specified character.
  */
 int
-v_chT(sp, ep, vp)
+v_chT(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
-	if (v_chF(sp, ep, vp))
+	if (v_chF(sp, vp))
 		return (1);
 
 	/*
@@ -226,9 +221,8 @@ v_chT(sp, ep, vp)
  *	specified character.
  */
 int
-v_chF(sp, ep, vp)
+v_chF(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	recno_t lno;
@@ -248,8 +242,8 @@ v_chF(sp, ep, vp)
 		VIP(sp)->lastckey = key;
 	VIP(sp)->csearchdir = FSEARCH;
 
-	if ((p = file_gline(sp, ep, vp->m_start.lno, &len)) == NULL) {
-		if (file_lline(sp, ep, &lno))
+	if ((p = file_gline(sp, vp->m_start.lno, &len)) == NULL) {
+		if (file_lline(sp, &lno))
 			return (1);
 		if (lno == 0) {
 			notfound(sp, key);

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: getc.c,v 8.12 1994/08/31 17:15:04 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:15:04 $";
+static char sccsid[] = "$Id: getc.c,v 9.1 1994/11/09 18:35:58 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:35:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -42,16 +42,14 @@ static char sccsid[] = "$Id: getc.c,v 8.12 1994/08/31 17:15:04 bostic Exp $ (Ber
  *	Initialize character stream routines.
  */
 int
-cs_init(sp, ep, csp)
+cs_init(sp, csp)
 	SCR *sp;
-	EXF *ep;
 	VCS *csp;
 {
 	recno_t lno;
 
-	if ((csp->cs_bp =
-	    file_gline(sp, ep, csp->cs_lno, &csp->cs_len)) == NULL) {
-		if (file_lline(sp, ep, &lno))
+	if ((csp->cs_bp = file_gline(sp, csp->cs_lno, &csp->cs_len)) == NULL) {
+		if (file_lline(sp, &lno))
 			return (1);
 		if (lno == 0)
 			msgq(sp, M_BERR, "173|Empty file");
@@ -74,9 +72,8 @@ cs_init(sp, ep, csp)
  *	Retrieve the next character.
  */
 int
-cs_next(sp, ep, csp)
+cs_next(sp, csp)
 	SCR *sp;
-	EXF *ep;
 	VCS *csp;
 {
 	recno_t slno;
@@ -86,9 +83,9 @@ cs_next(sp, ep, csp)
 	case CS_EOL:				/* EOL; get next line. */
 		slno = csp->cs_lno;		/* Save current line. */
 		if ((csp->cs_bp =
-		    file_gline(sp, ep, ++csp->cs_lno, &csp->cs_len)) == NULL) {
+		    file_gline(sp, ++csp->cs_lno, &csp->cs_len)) == NULL) {
 			csp->cs_lno = slno;
-			if (file_lline(sp, ep, &slno))
+			if (file_lline(sp, &slno))
 				return (1);
 			if (slno > csp->cs_lno) {
 				GETLINE_ERR(sp, csp->cs_lno);
@@ -130,15 +127,14 @@ cs_next(sp, ep, csp)
  * to change.
  */
 int
-cs_fspace(sp, ep, csp)
+cs_fspace(sp, csp)
 	SCR *sp;
-	EXF *ep;
 	VCS *csp;
 {
 	if (csp->cs_flags != 0 || !isblank(csp->cs_ch))
 		return (0);
 	for (;;) {
-		if (cs_next(sp, ep, csp))
+		if (cs_next(sp, csp))
 			return (1);
 		if (csp->cs_flags != 0 || !isblank(csp->cs_ch))
 			break;
@@ -151,13 +147,12 @@ cs_fspace(sp, ep, csp)
  *	Eat forward to the next non-whitespace character.
  */
 int
-cs_fblank(sp, ep, csp)
+cs_fblank(sp, csp)
 	SCR *sp;
-	EXF *ep;
 	VCS *csp;
 {
 	for (;;) {
-		if (cs_next(sp, ep, csp))
+		if (cs_next(sp, csp))
 			return (1);
 		if (csp->cs_flags == CS_EOL || csp->cs_flags == CS_EMP ||
 		    csp->cs_flags == 0 && isblank(csp->cs_ch))
@@ -172,9 +167,8 @@ cs_fblank(sp, ep, csp)
  *	Retrieve the previous character.
  */
 int
-cs_prev(sp, ep, csp)
+cs_prev(sp, csp)
 	SCR *sp;
-	EXF *ep;
 	VCS *csp;
 {
 	recno_t slno;
@@ -188,7 +182,7 @@ cs_prev(sp, ep, csp)
 		}
 		slno = csp->cs_lno;		/* Save current line. */
 		if ((csp->cs_bp =		/* Line should exist. */
-		    file_gline(sp, ep, --csp->cs_lno, &csp->cs_len)) == NULL) {
+		    file_gline(sp, --csp->cs_lno, &csp->cs_len)) == NULL) {
 			GETLINE_ERR(sp, csp->cs_lno);
 			csp->cs_lno = slno;
 			return (1);
@@ -225,13 +219,12 @@ cs_prev(sp, ep, csp)
  *	Eat backward to the next non-whitespace character.
  */
 int
-cs_bblank(sp, ep, csp)
+cs_bblank(sp, csp)
 	SCR *sp;
-	EXF *ep;
 	VCS *csp;
 {
 	for (;;) {
-		if (cs_prev(sp, ep, csp))
+		if (cs_prev(sp, csp))
 			return (1);
 		if (csp->cs_flags == CS_EOL || csp->cs_flags == CS_EMP ||
 		    csp->cs_flags == 0 && isblank(csp->cs_ch))

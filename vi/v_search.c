@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 8.39 1994/11/02 10:39:53 bostic Exp $ (Berkeley) $Date: 1994/11/02 10:39:53 $";
+static char sccsid[] = "$Id: v_search.c,v 9.1 1994/11/09 18:36:19 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:36:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,22 +29,21 @@ static char sccsid[] = "$Id: v_search.c,v 8.39 1994/11/02 10:39:53 bostic Exp $ 
 #include "vi.h"
 #include "vcmd.h"
 
-static int correct __P((SCR *, EXF *, VICMDARG *, u_int));
-static int getptrn __P((SCR *, EXF *, ARG_CHAR_T, char **, size_t *));
+static int correct __P((SCR *, VICMDARG *, u_int));
+static int getptrn __P((SCR *, ARG_CHAR_T, char **, size_t *));
 static int search __P((SCR *,
-    EXF *, VICMDARG *, char *, size_t, u_int, enum direction));
+    VICMDARG *, char *, size_t, u_int, enum direction));
 
 /*
  * v_searchn -- n
  *	Repeat last search.
  */
 int
-v_searchn(sp, ep, vp)
+v_searchn(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
-	return (search(sp, ep, vp, NULL, 0, SEARCH_MSG, sp->searchdir));
+	return (search(sp, vp, NULL, 0, SEARCH_MSG, sp->searchdir));
 }
 
 /*
@@ -52,9 +51,8 @@ v_searchn(sp, ep, vp)
  *	Reverse last search.
  */
 int
-v_searchN(sp, ep, vp)
+v_searchN(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	enum direction dir;
@@ -70,7 +68,7 @@ v_searchN(sp, ep, vp)
 		dir = sp->searchdir;
 		break;
 	}
-	return (search(sp, ep, vp, NULL, 0, SEARCH_MSG, dir));
+	return (search(sp, vp, NULL, 0, SEARCH_MSG, dir));
 }
 
 /*
@@ -78,9 +76,8 @@ v_searchN(sp, ep, vp)
  *	Search backward.
  */
 int
-v_searchb(sp, ep, vp)
+v_searchb(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	size_t len;
@@ -89,14 +86,14 @@ v_searchb(sp, ep, vp)
 	if (F_ISSET(vp, VC_ISDOT))
 		ptrn = NULL;
 	else {
-		if (getptrn(sp, ep, CH_BSEARCH, &ptrn, &len))
+		if (getptrn(sp, CH_BSEARCH, &ptrn, &len))
 			return (1);
 		if (len == 0) {
 			F_SET(vp, VM_NOMOTION);
 			return (0);
 		}
 	}
-	return (search(sp, ep, vp, ptrn, len,
+	return (search(sp, vp, ptrn, len,
 	    SEARCH_MSG | SEARCH_PARSE | SEARCH_SET, BACKWARD));
 }
 
@@ -105,9 +102,8 @@ v_searchb(sp, ep, vp)
  *	Search forward.
  */
 int
-v_searchf(sp, ep, vp)
+v_searchf(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	size_t len;
@@ -116,14 +112,14 @@ v_searchf(sp, ep, vp)
 	if (F_ISSET(vp, VC_ISDOT))
 		ptrn = NULL;
 	else {
-		if (getptrn(sp, ep, CH_FSEARCH, &ptrn, &len))
+		if (getptrn(sp, CH_FSEARCH, &ptrn, &len))
 			return (1);
 		if (len == 0) {
 			F_SET(vp, VM_NOMOTION);
 			return (0);
 		}
 	}
-	return (search(sp, ep, vp, ptrn, len,
+	return (search(sp, vp, ptrn, len,
 	    SEARCH_MSG | SEARCH_PARSE | SEARCH_SET, FORWARD));
 }
 
@@ -132,9 +128,8 @@ v_searchf(sp, ep, vp)
  *	Search for the word under the cursor.
  */
 int
-v_searchw(sp, ep, vp)
+v_searchw(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	size_t blen, len;
@@ -145,7 +140,7 @@ v_searchw(sp, ep, vp)
 	GET_SPACE_RET(sp, bp, blen, len);
 	(void)snprintf(bp, blen, "%s%s%s", RE_WSTART, vp->keyword, RE_WSTOP);
 
-	rval = search(sp, ep,
+	rval = search(sp,
 	    vp, bp, 0, SEARCH_MSG | SEARCH_SET | SEARCH_TERM, FORWARD);
 
 	FREE_SPACE(sp, bp, blen);
@@ -153,9 +148,8 @@ v_searchw(sp, ep, vp)
 }
 
 static int
-search(sp, ep, vp, ptrn, len, flags, dir)
+search(sp, vp, ptrn, len, flags, dir)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 	u_int flags;
 	char *ptrn;
@@ -170,12 +164,12 @@ search(sp, ep, vp, ptrn, len, flags, dir)
 	for (;;) {
 		switch (dir) {
 		case BACKWARD:
-			if (b_search(sp, ep,
+			if (b_search(sp,
 			    &vp->m_start, &vp->m_stop, ptrn, &eptrn, &flags))
 				return (1);
 			break;
 		case FORWARD:
-			if (f_search(sp, ep,
+			if (f_search(sp,
 			    &vp->m_start, &vp->m_stop, ptrn, &eptrn, &flags))
 				return (1);
 			break;
@@ -239,7 +233,7 @@ usage:			msgq(sp, M_ERR,
 
 	/* Non-motion commands move to the end of the range. */
 ret:	if (ISMOTION(vp)) {
-		if (correct(sp, ep, vp, flags))
+		if (correct(sp, vp, flags))
 			return (1);
 	} else
 		vp->m_final = vp->m_stop;
@@ -251,16 +245,15 @@ ret:	if (ISMOTION(vp)) {
  *	Get the search pattern.
  */
 static int
-getptrn(sp, ep, prompt, ptrnp, lenp)
+getptrn(sp, prompt, ptrnp, lenp)
 	SCR *sp;
-	EXF *ep;
 	ARG_CHAR_T prompt;
 	char **ptrnp;
 	size_t *lenp;
 {
 	TEXT *tp;
 
-	if (sp->s_get(sp, ep, sp->tiqp, prompt,
+	if (sp->s_get(sp, sp->tiqp, prompt,
 	    TXT_BS | TXT_CR | TXT_ESCAPE | TXT_PROMPT) != INP_OK)
 		return (1);
 
@@ -289,9 +282,8 @@ getptrn(sp, ep, prompt, ptrnp, lenp)
  * the right thing, but it's not going to exactly match historic practice.
  */
 static int
-correct(sp, ep, vp, flags)
+correct(sp, vp, flags)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 	u_int flags;
 {
@@ -373,7 +365,7 @@ correct(sp, ep, vp, flags)
 	 * end at column 0 of another line.
 	 */
 	if (vp->m_start.lno < vp->m_stop.lno && vp->m_stop.cno == 0) {
-		if (file_gline(sp, ep, --vp->m_stop.lno, &len) == NULL) {
+		if (file_gline(sp, --vp->m_stop.lno, &len) == NULL) {
 			GETLINE_ERR(sp, vp->m_stop.lno);
 			return (1);
 		}

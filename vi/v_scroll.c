@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 8.24 1994/10/26 09:45:34 bostic Exp $ (Berkeley) $Date: 1994/10/26 09:45:34 $";
+static char sccsid[] = "$Id: v_scroll.c,v 9.1 1994/11/09 18:36:18 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:36:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -68,31 +68,30 @@ static void goto_adjust __P((VICMDARG *));
  *	of the file by default.
  */
 int
-v_lgoto(sp, ep, vp)
+v_lgoto(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	recno_t nlines;
 
 	if (F_ISSET(vp, VC_C1SET)) {
-		if (file_gline(sp, ep, vp->count, NULL) == NULL) {
+		if (file_gline(sp, vp->count, NULL) == NULL) {
 			/*
 			 * !!!
 			 * Historically, 1G was legal in an empty file.
 			 */
 			if (vp->count == 1) {
-				if (file_lline(sp, ep, &nlines))
+				if (file_lline(sp, &nlines))
 					return (1);
 				if (nlines == 0)
 					return (0);
 			}
-			v_eof(sp, ep, &vp->m_start);
+			v_eof(sp, &vp->m_start);
 			return (1);
 		}
 		vp->m_stop.lno = vp->count;
 	} else {
-		if (file_lline(sp, ep, &nlines))
+		if (file_lline(sp, &nlines))
 			return (1);
 		vp->m_stop.lno = nlines ? nlines : 1;
 	}
@@ -106,12 +105,11 @@ v_lgoto(sp, ep, vp)
  *	count - 1 from the top of the screen, 0 by default.
  */
 int
-v_home(sp, ep, vp)
+v_home(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
-	if (sp->s_position(sp, ep, &vp->m_stop,
+	if (sp->s_position(sp, &vp->m_stop,
 	    F_ISSET(vp, VC_C1SET) ? vp->count - 1 : 0, P_TOP))
 		return (1);
 	goto_adjust(vp);
@@ -124,9 +122,8 @@ v_home(sp, ep, vp)
  *	in the middle of the screen.
  */
 int
-v_middle(sp, ep, vp)
+v_middle(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	/*
@@ -134,7 +131,7 @@ v_middle(sp, ep, vp)
 	 * historical blemish of vi, no matter how strange it might be,
 	 * we permit the user to enter a count and then ignore it.
 	 */
-	if (sp->s_position(sp, ep, &vp->m_stop, 0, P_MIDDLE))
+	if (sp->s_position(sp, &vp->m_stop, 0, P_MIDDLE))
 		return (1);
 	goto_adjust(vp);
 	return (0);
@@ -146,12 +143,11 @@ v_middle(sp, ep, vp)
  *	count - 1 from the bottom of the screen, 0 by default.
  */
 int
-v_bottom(sp, ep, vp)
+v_bottom(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
-	if (sp->s_position(sp, ep, &vp->m_stop,
+	if (sp->s_position(sp, &vp->m_stop,
 	    F_ISSET(vp, VC_C1SET) ? vp->count - 1 : 0, P_BOTTOM))
 		return (1);
 	goto_adjust(vp);
@@ -211,9 +207,8 @@ goto_adjust(vp)
  *	Move up by lines.
  */
 int
-v_up(sp, ep, vp)
+v_up(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	recno_t lno;
@@ -234,9 +229,8 @@ v_up(sp, ep, vp)
  *	In a regular window, move down by lines.
  */
 int
-v_cr(sp, ep, vp)
+v_cr(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	/*
@@ -244,7 +238,7 @@ v_cr(sp, ep, vp)
 	 * otherwise it's the same as v_down().
 	 */
 	return (F_ISSET(sp, S_SCRIPT) ?
-	    sscr_exec(sp, ep, vp->m_start.lno) : v_down(sp, ep, vp));
+	    sscr_exec(sp, vp->m_start.lno) : v_down(sp, vp));
 }
 
 /*
@@ -252,16 +246,15 @@ v_cr(sp, ep, vp)
  *	Move down by lines.
  */
 int
-v_down(sp, ep, vp)
+v_down(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	recno_t lno;
 
 	lno = vp->m_start.lno + (F_ISSET(vp, VC_C1SET) ? vp->count : 1);
-	if (file_gline(sp, ep, lno, NULL) == NULL) {
-		v_eof(sp, ep, &vp->m_start);
+	if (file_gline(sp, lno, NULL) == NULL) {
+		v_eof(sp, &vp->m_start);
 		return (1);
 	}
 	vp->m_stop.lno = lno;
@@ -274,9 +267,8 @@ v_down(sp, ep, vp)
  *	Page up half screens.
  */
 int
-v_hpageup(sp, ep, vp)
+v_hpageup(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	/*
@@ -288,7 +280,7 @@ v_hpageup(sp, ep, vp)
 	 */
 	if (F_ISSET(vp, VC_C1SET))
 		sp->defscroll = vp->count;
-	if (sp->s_scroll(sp, ep, &vp->m_stop, sp->defscroll, CNTRL_U))
+	if (sp->s_scroll(sp, &vp->m_stop, sp->defscroll, CNTRL_U))
 		return (1);
 	vp->m_final = vp->m_stop;
 	return (0);
@@ -299,9 +291,8 @@ v_hpageup(sp, ep, vp)
  *	Page down half screens.
  */
 int
-v_hpagedown(sp, ep, vp)
+v_hpagedown(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	/*
@@ -313,7 +304,7 @@ v_hpagedown(sp, ep, vp)
 	 */
 	if (F_ISSET(vp, VC_C1SET))
 		sp->defscroll = vp->count;
-	if (sp->s_scroll(sp, ep, &vp->m_stop, sp->defscroll, CNTRL_D))
+	if (sp->s_scroll(sp, &vp->m_stop, sp->defscroll, CNTRL_D))
 		return (1);
 	vp->m_final = vp->m_stop;
 	return (0);
@@ -328,9 +319,8 @@ v_hpagedown(sp, ep, vp)
  * move to EOF in that case, making ^F more like the the historic ^D.
  */
 int
-v_pagedown(sp, ep, vp)
+v_pagedown(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	recno_t offset;
@@ -366,7 +356,7 @@ v_pagedown(sp, ep, vp)
 	    MIN(sp->t_maxrows, O_VAL(sp, O_WINDOW)) : O_VAL(sp, O_WINDOW)) - 2;
 	if (offset == 0)
 		offset = 1;
-	if (sp->s_scroll(sp, ep, &vp->m_stop, offset, CNTRL_F))
+	if (sp->s_scroll(sp, &vp->m_stop, offset, CNTRL_F))
 		return (1);
 	vp->m_final = vp->m_stop;
 	return (0);
@@ -382,9 +372,8 @@ v_pagedown(sp, ep, vp)
  * move to SOF in that case, making ^B more like the the historic ^U.
  */
 int
-v_pageup(sp, ep, vp)
+v_pageup(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	recno_t offset;
@@ -421,7 +410,7 @@ v_pageup(sp, ep, vp)
 	    MIN(sp->t_maxrows, O_VAL(sp, O_WINDOW)) : O_VAL(sp, O_WINDOW)) - 2;
 	if (offset == 0)
 		offset = 1;
-	if (sp->s_scroll(sp, ep, &vp->m_stop, offset, CNTRL_B))
+	if (sp->s_scroll(sp, &vp->m_stop, offset, CNTRL_B))
 		return (1);
 	vp->m_final = vp->m_stop;
 	return (0);
@@ -432,16 +421,15 @@ v_pageup(sp, ep, vp)
  *	Page up by lines.
  */
 int
-v_lineup(sp, ep, vp)
+v_lineup(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	/*
 	 * The cursor moves down, staying with its original line, unless it
 	 * reaches the bottom of the screen.
 	 */
-	if (sp->s_scroll(sp, ep,
+	if (sp->s_scroll(sp,
 	    &vp->m_stop, F_ISSET(vp, VC_C1SET) ? vp->count : 1, CNTRL_Y))
 		return (1);
 	vp->m_final = vp->m_stop;
@@ -453,16 +441,15 @@ v_lineup(sp, ep, vp)
  *	Page down by lines.
  */
 int
-v_linedown(sp, ep, vp)
+v_linedown(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	/*
 	 * The cursor moves up, staying with its original line, unless it
 	 * reaches the top of the screen.
 	 */
-	if (sp->s_scroll(sp, ep,
+	if (sp->s_scroll(sp,
 	    &vp->m_stop, F_ISSET(vp, VC_C1SET) ? vp->count : 1, CNTRL_E))
 		return (1);
 	vp->m_final = vp->m_stop;

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 8.15 1994/10/23 10:18:47 bostic Exp $ (Berkeley) $Date: 1994/10/23 10:18:47 $";
+static char sccsid[] = "$Id: v_ex.c,v 9.1 1994/11/09 18:36:02 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:36:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,9 +33,8 @@ static char sccsid[] = "$Id: v_ex.c,v 8.15 1994/10/23 10:18:47 bostic Exp $ (Ber
  *	Repeat the previous substitution.
  */
 int
-v_again(sp, ep, vp)
+v_again(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	ARGS *ap[2], a;
@@ -43,7 +42,7 @@ v_again(sp, ep, vp)
 
 	ex_cbuild(&cmd, C_SUBAGAIN,
 	    2, vp->m_start.lno, vp->m_start.lno, 1, ap, &a, "");
-	return (sp->s_ex_cmd(sp, ep, &cmd, &vp->m_final));
+	return (sp->s_ex_cmd(sp, &cmd, &vp->m_final));
 }
 
 /*
@@ -51,9 +50,8 @@ v_again(sp, ep, vp)
  *	Execute a buffer.
  */
 int
-v_at(sp, ep, vp)
+v_at(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	ARGS *ap[2], a;
@@ -64,7 +62,7 @@ v_at(sp, ep, vp)
 		F_SET(&cmd, E_BUFFER);
 		cmd.buffer = vp->buffer;
 	}
-        return (sp->s_ex_cmd(sp, ep, &cmd, &vp->m_final));
+        return (sp->s_ex_cmd(sp, &cmd, &vp->m_final));
 }
 
 /*
@@ -72,12 +70,11 @@ v_at(sp, ep, vp)
  *	Execute a colon command line.
  */
 int
-v_ex(sp, ep, vp)
+v_ex(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
-	return (sp->s_ex_run(sp, ep, &vp->m_final));
+	return (sp->s_ex_run(sp, &vp->m_final));
 }
 
 /*
@@ -85,9 +82,8 @@ v_ex(sp, ep, vp)
  *	Switch the editor into EX mode.
  */
 int
-v_exmode(sp, ep, vp)
+v_exmode(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	/* Save the current line/column number. */
@@ -107,9 +103,8 @@ v_exmode(sp, ep, vp)
  *	Run range through shell commands, replacing text.
  */
 int
-v_filter(sp, ep, vp)
+v_filter(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	ARGS *ap[2], a;
@@ -140,11 +135,11 @@ v_filter(sp, ep, vp)
 	EXP(sp)->argsoff = 0;			/* XXX */
 	if (F_ISSET(vp, VC_ISDOT) ||
 	    ISCMD(vp->rkp, 'N') || ISCMD(vp->rkp, 'n')) {
-		if (argv_exp1(sp, ep, &cmd, "!", 1, 1))
+		if (argv_exp1(sp, &cmd, "!", 1, 1))
 			return (1);
 	} else {
 		/* Get the command from the user. */
-		if (sp->s_get(sp, ep, sp->tiqp,
+		if (sp->s_get(sp, sp->tiqp,
 		    '!', TXT_BS | TXT_CR | TXT_ESCAPE | TXT_PROMPT) != INP_OK)
 			return (1);
 		/*
@@ -155,12 +150,12 @@ v_filter(sp, ep, vp)
 		if (tp->len <= 1)
 			return (0);
 
-		if (argv_exp1(sp, ep, &cmd, tp->lb + 1, tp->len - 1, 1))
+		if (argv_exp1(sp, &cmd, tp->lb + 1, tp->len - 1, 1))
 			return (1);
 	}
 	cmd.argc = EXP(sp)->argsoff;		/* XXX */
 	cmd.argv = EXP(sp)->args;		/* XXX */
-	return (sp->s_ex_cmd(sp, ep, &cmd, &vp->m_final));
+	return (sp->s_ex_cmd(sp, &cmd, &vp->m_final));
 }
 
 /*
@@ -168,9 +163,8 @@ v_filter(sp, ep, vp)
  *	Join lines together.
  */
 int
-v_join(sp, ep, vp)
+v_join(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	ARGS *ap[2], a;
@@ -191,7 +185,7 @@ v_join(sp, ep, vp)
 		lno = vp->m_start.lno + (vp->count - 1);
 
 	ex_cbuild(&cmd, C_JOIN, 2, vp->m_start.lno, lno, 0, ap, &a, NULL);
-	return (sp->s_ex_cmd(sp, ep, &cmd, &vp->m_final));
+	return (sp->s_ex_cmd(sp, &cmd, &vp->m_final));
 }
 
 /*
@@ -199,9 +193,8 @@ v_join(sp, ep, vp)
  *	Shift lines left.
  */
 int
-v_shiftl(sp, ep, vp)
+v_shiftl(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	ARGS *ap[2], a;
@@ -209,7 +202,7 @@ v_shiftl(sp, ep, vp)
 
 	ex_cbuild(&cmd, C_SHIFTL,
 	    2, vp->m_start.lno, vp->m_stop.lno, 0, ap, &a, "<");
-	return (sp->s_ex_cmd(sp, ep, &cmd, &vp->m_final));
+	return (sp->s_ex_cmd(sp, &cmd, &vp->m_final));
 }
 
 /*
@@ -217,9 +210,8 @@ v_shiftl(sp, ep, vp)
  *	Shift lines right.
  */
 int
-v_shiftr(sp, ep, vp)
+v_shiftr(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	ARGS *ap[2], a;
@@ -227,7 +219,7 @@ v_shiftr(sp, ep, vp)
 
 	ex_cbuild(&cmd, C_SHIFTR,
 	    2, vp->m_start.lno, vp->m_stop.lno, 0, ap, &a, ">");
-	return (sp->s_ex_cmd(sp, ep, &cmd, &vp->m_final));
+	return (sp->s_ex_cmd(sp, &cmd, &vp->m_final));
 }
 
 /*
@@ -235,9 +227,8 @@ v_shiftr(sp, ep, vp)
  *	Switch to the previous file.
  */
 int
-v_switch(sp, ep, vp)
+v_switch(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	ARGS *ap[2], a;
@@ -254,11 +245,11 @@ v_switch(sp, ep, vp)
 	}
 
 	/* If autowrite is set, write out the file. */
-	if (file_m1(sp, ep, 0, FS_ALL))
+	if (file_m1(sp, 0, FS_ALL))
 		return (1);
 
 	ex_cbuild(&cmd, C_EDIT, 0, OOBLNO, OOBLNO, 0, ap, &a, name);
-	return (sp->s_ex_cmd(sp, ep, &cmd, &vp->m_final));
+	return (sp->s_ex_cmd(sp, &cmd, &vp->m_final));
 }
 
 /*
@@ -266,16 +257,15 @@ v_switch(sp, ep, vp)
  *	Do a tag search on a the cursor keyword.
  */
 int
-v_tagpush(sp, ep, vp)
+v_tagpush(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	ARGS *ap[2], a;
 	EXCMDARG cmd;
 
 	ex_cbuild(&cmd, C_TAG, 0, OOBLNO, 0, 0, ap, &a, vp->keyword);
-	return (sp->s_ex_cmd(sp, ep, &cmd, &vp->m_final));
+	return (sp->s_ex_cmd(sp, &cmd, &vp->m_final));
 }
 
 /*
@@ -283,14 +273,13 @@ v_tagpush(sp, ep, vp)
  *	Pop the tags stack.
  */
 int
-v_tagpop(sp, ep, vp)
+v_tagpop(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	ARGS *ap[2], a;
 	EXCMDARG cmd;
 
 	ex_cbuild(&cmd, C_TAGPOP, 0, OOBLNO, 0, 0, ap, &a, NULL);
-	return (sp->s_ex_cmd(sp, ep, &cmd, &vp->m_final));
+	return (sp->s_ex_cmd(sp, &cmd, &vp->m_final));
 }

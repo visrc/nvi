@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_relative.c,v 8.19 1994/08/17 19:30:14 bostic Exp $ (Berkeley) $Date: 1994/08/17 19:30:14 $";
+static char sccsid[] = "$Id: vs_relative.c,v 9.1 1994/11/09 18:35:35 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:35:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,9 +32,8 @@ static char sccsid[] = "$Id: vs_relative.c,v 8.19 1994/08/17 19:30:14 bostic Exp
  *	Return the logical column of the cursor.
  */
 int
-svi_column(sp, ep, cp)
+svi_column(sp, cp)
 	SCR *sp;
-	EXF *ep;
 	size_t *cp;
 {
 	size_t col;
@@ -53,9 +52,8 @@ svi_column(sp, ep, cp)
  *	including space required for the O_NUMBER and O_LIST options.
  */
 size_t
-svi_opt_screens(sp, ep, lno, cnop)
+svi_opt_screens(sp, lno, cnop)
 	SCR *sp;
-	EXF *ep;
 	recno_t lno;
 	size_t *cnop;
 {
@@ -74,7 +72,7 @@ svi_opt_screens(sp, ep, lno, cnop)
 		return (1);
 
 	/* Figure out how many columns the line/column needs. */
-	cols = svi_screens(sp, ep, NULL, 0, lno, cnop);
+	cols = svi_screens(sp, NULL, 0, lno, cnop);
 
 	/* Leading number if O_NUMBER option set. */
 	if (O_ISSET(sp, O_NUMBER))
@@ -102,9 +100,8 @@ svi_opt_screens(sp, ep, lno, cnop)
  *	if specified, the physical character column within the line.
  */
 size_t
-svi_screens(sp, ep, lp, llen, lno, cnop)
+svi_screens(sp, lp, llen, lno, cnop)
 	SCR *sp;
-	EXF *ep;
 	char *lp;
 	size_t llen;
 	recno_t lno;
@@ -116,7 +113,7 @@ svi_screens(sp, ep, lp, llen, lno, cnop)
 
 	/* Need the line to go any further. */
 	if (lp == NULL)
-		lp = file_gline(sp, ep, lno, &llen);
+		lp = file_gline(sp, lno, &llen);
 
 	/* Missing or empty lines are easy. */
 	if (lp == NULL || llen == 0)
@@ -168,9 +165,8 @@ svi_screens(sp, ep, lp, llen, lno, cnop)
  *	position (which is stored as a screen column).
  */
 size_t
-svi_rcm(sp, ep, lno)
+svi_rcm(sp, lno)
 	SCR *sp;
-	EXF *ep;
 	recno_t lno;
 {
 	size_t len;
@@ -178,7 +174,7 @@ svi_rcm(sp, ep, lno)
 	/* Last character is easy, and common. */
 	if (sp->rcm_last)
 		return (file_gline(sp,
-		    ep, lno, &len) == NULL || len == 0 ? 0 : len - 1);
+		    lno, &len) == NULL || len == 0 ? 0 : len - 1);
 
 	/* First character is easy, and common. */
 	if (HMAP->off == 1 && sp->rcm == 0)
@@ -199,7 +195,7 @@ svi_rcm(sp, ep, lno)
 	 * screen offset.  Unfortunately, that's not going to be easy, as we
 	 * don't keep that information around and it may be expensive to get.
 	 */
-	return (svi_cm_private(sp, ep, lno,
+	return (svi_cm_private(sp, lno,
 	    O_ISSET(sp, O_LEFTRIGHT) ? HMAP->off : 1, sp->rcm));
 }
 
@@ -212,13 +208,12 @@ svi_rcm(sp, ep, lno)
  *	have a handle on the SMAP structure.
  */
 size_t
-svi_cm_public(sp, ep, lno, cno)
+svi_cm_public(sp, lno, cno)
 	SCR *sp;
-	EXF *ep;
 	recno_t lno;
 	size_t cno;
 {
-	return (svi_cm_private(sp, ep, lno, HMAP->off, cno));
+	return (svi_cm_private(sp, lno, HMAP->off, cno));
 }
 
 /*
@@ -232,9 +227,8 @@ svi_cm_public(sp, ep, lno, cno)
  *	on the logical line, not the physical line.
  */
 size_t
-svi_cm_private(sp, ep, lno, off, cno)
+svi_cm_private(sp, lno, off, cno)
 	SCR *sp;
-	EXF *ep;
 	recno_t lno;
 	size_t off, cno;
 {
@@ -243,7 +237,7 @@ svi_cm_private(sp, ep, lno, off, cno)
 	char *lp, *p;
 
 	/* Need the line to go any further. */
-	lp = file_gline(sp, ep, lno, &llen);
+	lp = file_gline(sp, lno, &llen);
 
 	/* Missing or empty lines are easy. */
 	if (lp == NULL || llen == 0)

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_left.c,v 8.12 1994/10/13 13:59:26 bostic Exp $ (Berkeley) $Date: 1994/10/13 13:59:26 $";
+static char sccsid[] = "$Id: v_left.c,v 9.1 1994/11/09 18:36:05 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:36:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,9 +31,8 @@ static char sccsid[] = "$Id: v_left.c,v 8.12 1994/10/13 13:59:26 bostic Exp $ (B
  *	Move left by columns.
  */
 int
-v_left(sp, ep, vp)
+v_left(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	recno_t cnt;
@@ -70,9 +69,8 @@ v_left(sp, ep, vp)
  *	Move to the first non-blank character in a line.
  */
 int
-v_cfirst(sp, ep, vp)
+v_cfirst(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	recno_t cnt;
@@ -95,7 +93,7 @@ v_cfirst(sp, ep, vp)
 	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
 	if (cnt != 1) {
 		--vp->count;
-		return (v_down(sp, ep, vp));
+		return (v_down(sp, vp));
 	}
 
 	/*
@@ -105,7 +103,7 @@ v_cfirst(sp, ep, vp)
 	 * component of another command.
 	 */
 	vp->m_stop.cno = 0;
-	if (nonblank(sp, ep, vp->m_stop.lno, &vp->m_stop.cno))
+	if (nonblank(sp, vp->m_stop.lno, &vp->m_stop.cno))
 		return (1);
 
 	/*
@@ -122,9 +120,8 @@ v_cfirst(sp, ep, vp)
  *	Move to the first non-blank character in this line.
  */
 int
-v_first(sp, ep, vp)
+v_first(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	/*
@@ -141,7 +138,7 @@ v_first(sp, ep, vp)
 	 * component of another command.
 	 */
 	vp->m_stop.cno = 0;
-	if (nonblank(sp, ep, vp->m_stop.lno, &vp->m_stop.cno))
+	if (nonblank(sp, vp->m_stop.lno, &vp->m_stop.cno))
 		return (1);
 
 	/*
@@ -173,15 +170,14 @@ v_first(sp, ep, vp)
  *	that we have to know character column widths to make this work.
  */
 int
-v_ncol(sp, ep, vp)
+v_ncol(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	if (F_ISSET(vp, VC_C1SET) && vp->count > 1) {
 		--vp->count;
 		vp->m_stop.cno =
-		    sp->s_colpos(sp, ep, vp->m_start.lno, (size_t)vp->count);
+		    sp->s_colpos(sp, vp->m_start.lno, (size_t)vp->count);
 		/*
 		 * !!!
 		 * The | command succeeded if used as a command and the cursor
@@ -229,9 +225,8 @@ v_ncol(sp, ep, vp)
  *	Move to the first column on this line.
  */
 int
-v_zero(sp, ep, vp)
+v_zero(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	/*

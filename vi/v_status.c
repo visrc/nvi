@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_status.c,v 8.18 1994/08/17 14:36:11 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:36:11 $";
+static char sccsid[] = "$Id: v_status.c,v 9.1 1994/11/09 18:36:24 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:36:24 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -32,9 +32,8 @@ static char sccsid[] = "$Id: v_status.c,v 8.18 1994/08/17 14:36:11 bostic Exp $ 
  *	Show the file status.
  */
 int
-v_status(sp, ep, vp)
+v_status(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 
@@ -43,5 +42,5 @@ v_status(sp, ep, vp)
 	 * non-blank character in the line.  This doesn't seem of
 	 * any usefulness whatsoever, so I don't bother.
 	 */
-	return (msg_status(sp, ep, vp->m_start.lno, 1));
+	return (msg_status(sp, vp->m_start.lno, 1));
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_util.c,v 8.13 1994/08/31 17:15:21 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:15:21 $";
+static char sccsid[] = "$Id: v_util.c,v 9.1 1994/11/09 18:36:32 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:36:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,9 +35,8 @@ static char sccsid[] = "$Id: v_util.c,v 8.13 1994/08/31 17:15:21 bostic Exp $ (B
  *	Vi end-of-file error.
  */
 void
-v_eof(sp, ep, mp)
+v_eof(sp, mp)
 	SCR *sp;
-	EXF *ep;
 	MARK *mp;
 {
 	recno_t lno;
@@ -45,7 +44,7 @@ v_eof(sp, ep, mp)
 	if (mp == NULL)
 		msgq(sp, M_BERR, "190|Already at end-of-file");
 	else {
-		if (file_lline(sp, ep, &lno))
+		if (file_lline(sp, &lno))
 			return;
 		if (mp->lno >= lno)
 			msgq(sp, M_BERR, "191|Already at end-of-file");
@@ -59,9 +58,8 @@ v_eof(sp, ep, mp)
  *	Vi end-of-line error.
  */
 void
-v_eol(sp, ep, mp)
+v_eol(sp, mp)
 	SCR *sp;
-	EXF *ep;
 	MARK *mp;
 {
 	size_t len;
@@ -69,7 +67,7 @@ v_eol(sp, ep, mp)
 	if (mp == NULL)
 		msgq(sp, M_BERR, "193|Already at end-of-line");
 	else {
-		if (file_gline(sp, ep, mp->lno, &len) == NULL) {
+		if (file_gline(sp, mp->lno, &len) == NULL) {
 			GETLINE_ERR(sp, mp->lno);
 			return;
 		}

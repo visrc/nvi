@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 8.28 1994/08/17 14:35:54 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:35:54 $";
+static char sccsid[] = "$Id: v_init.c,v 9.1 1994/11/09 18:36:04 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:36:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,7 +30,7 @@ static char sccsid[] = "$Id: v_init.c,v 8.28 1994/08/17 14:35:54 bostic Exp $ (B
 #include "vcmd.h"
 #include "excmd.h"
 
-static int v_comment __P((SCR *, EXF *));
+static int v_comment __P((SCR *));
 
 /*
  * v_screen_copy --
@@ -55,7 +55,7 @@ v_screen_copy(orig, sp)
 
 		/* User can replay the last input, but nothing else. */
 		if (ovip->rep_len != 0) {
-			MALLOC(orig, nvip->rep, char *, ovip->rep_len);
+			MALLOC(orig, nvip->rep, CH *, ovip->rep_len);
 			if (nvip->rep != NULL) {
 				memmove(nvip->rep, ovip->rep, ovip->rep_len);
 				nvip->rep_len = ovip->rep_len;
@@ -107,58 +107,18 @@ v_screen_end(sp)
  *	Initialize vi.
  */
 int
-v_init(sp, ep)
+v_init(sp)
 	SCR *sp;
-	EXF *ep;
 {
-	size_t len;
+	if (!F_ISSET(sp->frp, FR_CURSORSET) &&
+	    O_ISSET(sp, O_COMMENT) && v_comment(sp))
+		return (1);
 
-	/*
-	 * The default address is line 1, column 0.  If the address set
-	 * bit is on for this file, load the address, ensuring that it
-	 * exists.
-	 */
-	if (F_ISSET(sp->frp, FR_CURSORSET)) {
-		sp->lno = sp->frp->lno;
-		sp->cno = sp->frp->cno;
+	/* Reset strange attraction. */
+	sp->rcm = 0;
+	sp->rcm_last = 0;
 
-		if (file_gline(sp, ep, sp->lno, &len) == NULL) {
-			if (sp->lno != 1 || sp->cno != 0) {
-				if (file_lline(sp, ep, &sp->lno))
-					return (1);
-				if (sp->lno == 0)
-					sp->lno = 1;
-				sp->cno = 0;
-			}
-		} else if (sp->cno >= len)
-			sp->cno = 0;
-
-		if (F_ISSET(sp->frp, FR_FNONBLANK)) {
-			sp->cno = 0;
-			if (nonblank(sp, ep, sp->lno, &sp->cno))
-				return (1);
-
-			/* Reset strange attraction. */
-			sp->rcm = 0;
-			sp->rcm_last = 0;
-		}
-	} else {
-		sp->lno = 1;
-		sp->cno = 0;
-
-		if (O_ISSET(sp, O_COMMENT) && v_comment(sp, ep))
-			return (1);
-
-		/* Vi always starts up on the first non-<blank>. */
-		if (nonblank(sp, ep, sp->lno, &sp->cno))
-			return (1);
-
-		/* Reset strange attraction. */
-		sp->rcm = 0;
-		sp->rcm_last = 0;
-	}
-
-	/* Make ex display to a special function. */
+	/* Make ex display to a scrolling function. */
 	if ((sp->stdfp = fwopen(sp, sp->s_ex_write)) == NULL) {
 		msgq(sp, M_SYSERR, "ex output");
 		return (1);
@@ -167,8 +127,7 @@ v_init(sp, ep)
 	(void)setvbuf(sp->stdfp, NULL, _IOLBF, 0);
 #endif
 
-	/* Display the status line. */
-	return (msg_status(sp, ep, sp->lno, 0));
+	return (msg_status(sp, sp->lno, 0));
 }
 
 /*
@@ -207,16 +166,15 @@ v_optchange(sp, opt)
  *	Skip the first comment.
  */
 static int
-v_comment(sp, ep)
+v_comment(sp)
 	SCR *sp;
-	EXF *ep;
 {
 	recno_t lno;
 	size_t len;
 	char *p;
 
 	for (lno = 1;
-	    (p = file_gline(sp, ep, lno, &len)) != NULL && len == 0; ++lno);
+	    (p = file_gline(sp, lno, &len)) != NULL && len == 0; ++lno);
 	if (p == NULL || len <= 1 || memcmp(p, "/*", 2))
 		return (0);
 	do {
@@ -225,6 +183,6 @@ v_comment(sp, ep)
 				sp->lno = lno;
 				return (0);
 			}
-	} while ((p = file_gline(sp, ep, ++lno, &len)) != NULL);
+	} while ((p = file_gline(sp, ++lno, &len)) != NULL);
 	return (0);
 }

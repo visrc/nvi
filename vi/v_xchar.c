@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_xchar.c,v 8.12 1994/09/23 15:54:57 bostic Exp $ (Berkeley) $Date: 1994/09/23 15:54:57 $";
+static char sccsid[] = "$Id: v_xchar.c,v 9.1 1994/11/09 18:36:34 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:36:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,16 +31,15 @@ static char sccsid[] = "$Id: v_xchar.c,v 8.12 1994/09/23 15:54:57 bostic Exp $ (
  *	Deletes the character(s) on which the cursor sits.
  */
 int
-v_xchar(sp, ep, vp)
+v_xchar(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	recno_t lno;
 	size_t len;
 
-	if (file_gline(sp, ep, vp->m_start.lno, &len) == NULL) {
-		if (file_lline(sp, ep, &lno))
+	if (file_gline(sp, vp->m_start.lno, &len) == NULL) {
+		if (file_lline(sp, &lno))
 			return (1);
 		if (lno == 0)
 			goto nodel;
@@ -69,11 +68,11 @@ nodel:		msgq(sp, M_BERR, "200|No characters to delete");
 	} else
 		vp->m_final.cno = vp->m_start.cno;
 
-	if (cut(sp, ep,
+	if (cut(sp,
 	    F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
 	    &vp->m_start, &vp->m_stop, 0))
 		return (1);
-	return (delete(sp, ep, &vp->m_start, &vp->m_stop, 0));
+	return (delete(sp, &vp->m_start, &vp->m_stop, 0));
 }
 
 /*
@@ -82,9 +81,8 @@ nodel:		msgq(sp, M_BERR, "200|No characters to delete");
  *	position.
  */
 int
-v_Xchar(sp, ep, vp)
+v_Xchar(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	u_long cnt;
@@ -102,9 +100,9 @@ v_Xchar(sp, ep, vp)
 	--vp->m_stop.cno;
 	vp->m_final.cno = vp->m_start.cno;
 
-	if (cut(sp, ep,
+	if (cut(sp,
 	    F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
 	    &vp->m_start, &vp->m_stop, 0))
 		return (1);
-	return (delete(sp, ep, &vp->m_start, &vp->m_stop, 0));
+	return (delete(sp, &vp->m_start, &vp->m_stop, 0));
 }

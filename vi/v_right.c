@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_right.c,v 8.11 1994/10/13 13:59:29 bostic Exp $ (Berkeley) $Date: 1994/10/13 13:59:29 $";
+static char sccsid[] = "$Id: v_right.c,v 9.1 1994/11/09 18:36:16 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:36:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,19 +31,18 @@ static char sccsid[] = "$Id: v_right.c,v 8.11 1994/10/13 13:59:29 bostic Exp $ (
  *	Move right by columns.
  */
 int
-v_right(sp, ep, vp)
+v_right(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	recno_t lno;
 	size_t len;
 
-	if (file_gline(sp, ep, vp->m_start.lno, &len) == NULL) {
-		if (file_lline(sp, ep, &lno))
+	if (file_gline(sp, vp->m_start.lno, &len) == NULL) {
+		if (file_lline(sp, &lno))
 			return (1);
 		if (lno == 0)
-			v_eol(sp, ep, NULL);
+			v_eol(sp, NULL);
 		else
 			GETLINE_ERR(sp, vp->m_start.lno);
 		return (1);
@@ -51,7 +50,7 @@ v_right(sp, ep, vp)
 
 	/* It's always illegal to move right on empty lines. */
 	if (len == 0) {
-		v_eol(sp, ep, NULL);
+		v_eol(sp, NULL);
 		return (1);
 	}
 
@@ -67,7 +66,7 @@ v_right(sp, ep, vp)
 	vp->m_stop.cno = vp->m_start.cno +
 	    (F_ISSET(vp, VC_C1SET) ? vp->count : 1);
 	if (vp->m_start.cno == len - 1 && !ISMOTION(vp)) {
-		v_eol(sp, ep, NULL);
+		v_eol(sp, NULL);
 		return (1);
 	}
 	if (vp->m_stop.cno >= len) {
@@ -86,9 +85,8 @@ v_right(sp, ep, vp)
  *	Move to the last column.
  */
 int
-v_dollar(sp, ep, vp)
+v_dollar(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	recno_t lno;
@@ -106,21 +104,21 @@ v_dollar(sp, ep, vp)
 		 * line motion, and the line motion flag is set.
 		 */
 		vp->m_stop.cno = 0;
-		if (nonblank(sp, ep, vp->m_start.lno, &vp->m_stop.cno))
+		if (nonblank(sp, vp->m_start.lno, &vp->m_stop.cno))
 			return (1);
 		if (ISMOTION(vp) && vp->m_start.cno <= vp->m_stop.cno)
 			F_SET(vp, VM_LMODE);
 
 		--vp->count;
-		if (v_down(sp, ep, vp))
+		if (v_down(sp, vp))
 			return (1);
 	}
 
-	if (file_gline(sp, ep, vp->m_stop.lno, &len) == NULL) {
-		if (file_lline(sp, ep, &lno))
+	if (file_gline(sp, vp->m_stop.lno, &len) == NULL) {
+		if (file_lline(sp, &lno))
 			return (1);
 		if (lno == 0)
-			v_eol(sp, ep, NULL);
+			v_eol(sp, NULL);
 		else
 			GETLINE_ERR(sp, vp->m_start.lno);
 		return (1);

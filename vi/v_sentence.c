@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_sentence.c,v 8.18 1994/10/13 13:59:34 bostic Exp $ (Berkeley) $Date: 1994/10/13 13:59:34 $";
+static char sccsid[] = "$Id: v_sentence.c,v 9.1 1994/11/09 18:36:22 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:36:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -52,9 +52,8 @@ static char sccsid[] = "$Id: v_sentence.c,v 8.18 1994/10/13 13:59:34 bostic Exp 
  *	Move forward count sentences.
  */
 int
-v_sentencef(sp, ep, vp)
+v_sentencef(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	enum { BLANK, NONE, PERIOD } state;
@@ -64,7 +63,7 @@ v_sentencef(sp, ep, vp)
 
 	cs.cs_lno = vp->m_start.lno;
 	cs.cs_cno = vp->m_start.cno;
-	if (cs_init(sp, ep, &cs))
+	if (cs_init(sp, &cs))
 		return (1);
 
 	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
@@ -76,7 +75,7 @@ v_sentencef(sp, ep, vp)
 	 * what correctly means in that case.
 	 */
 	if (cs.cs_flags == CS_EMP || cs.cs_flags == 0 && isblank(cs.cs_ch)) {
-		if (cs_fblank(sp, ep, &cs))
+		if (cs_fblank(sp, &cs))
 			return (1);
 		if (--cnt == 0) {
 			if (vp->m_start.lno != cs.cs_lno ||
@@ -87,16 +86,16 @@ v_sentencef(sp, ep, vp)
 	}
 
 	for (state = NONE;;) {
-		if (cs_next(sp, ep, &cs))
+		if (cs_next(sp, &cs))
 			return (1);
 		if (cs.cs_flags == CS_EOF)
 			break;
 		if (cs.cs_flags == CS_EOL) {
 			if ((state == PERIOD || state == BLANK) && --cnt == 0) {
-				if (cs_next(sp, ep, &cs))
+				if (cs_next(sp, &cs))
 					return (1);
 				if (cs.cs_flags == 0 &&
-				    isblank(cs.cs_ch) && cs_fblank(sp, ep, &cs))
+				    isblank(cs.cs_ch) && cs_fblank(sp, &cs))
 					return (1);
 				goto okret;
 			}
@@ -106,7 +105,7 @@ v_sentencef(sp, ep, vp)
 		if (cs.cs_flags == CS_EMP) {	/* An EMP is two sentences. */
 			if (--cnt == 0)
 				goto okret;
-			if (cs_fblank(sp, ep, &cs))
+			if (cs_fblank(sp, &cs))
 				return (1);
 			if (--cnt == 0)
 				goto okret;
@@ -136,7 +135,7 @@ v_sentencef(sp, ep, vp)
 				break;
 			}
 			if (state == BLANK && --cnt == 0) {
-				if (cs_fblank(sp, ep, &cs))
+				if (cs_fblank(sp, &cs))
 					return (1);
 				goto okret;
 			}
@@ -149,7 +148,7 @@ v_sentencef(sp, ep, vp)
 
 	/* EOF is a movement sink, but it's an error not to have moved. */
 	if (vp->m_start.lno == cs.cs_lno && vp->m_start.cno == cs.cs_cno) {
-		v_eof(sp, ep, NULL);
+		v_eof(sp, NULL);
 		return (1);
 	}
 
@@ -171,8 +170,7 @@ okret:	vp->m_stop.lno = cs.cs_lno;
 	if (ISMOTION(vp)) {
 		if (vp->m_start.cno == 0 &&
 		    (cs.cs_flags != 0 || vp->m_stop.cno == 0)) {
-			if (file_gline(sp, ep,
-			    --vp->m_stop.lno, &len) == NULL) {
+			if (file_gline(sp, --vp->m_stop.lno, &len) == NULL) {
 				GETLINE_ERR(sp, vp->m_stop.lno);
 				return (1);
 			}
@@ -191,9 +189,8 @@ okret:	vp->m_stop.lno = cs.cs_lno;
  *	Move backward count sentences.
  */
 int
-v_sentenceb(sp, ep, vp)
+v_sentenceb(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	VCS cs;
@@ -211,7 +208,7 @@ v_sentenceb(sp, ep, vp)
 
 	cs.cs_lno = vp->m_start.lno;
 	cs.cs_cno = vp->m_start.cno;
-	if (cs_init(sp, ep, &cs))
+	if (cs_init(sp, &cs))
 		return (1);
 
 	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
@@ -228,24 +225,24 @@ v_sentenceb(sp, ep, vp)
 	 * Berkeley was once a major center of drug activity.
 	 */
 	if (cs.cs_flags == CS_EMP) {
-		if (cs_bblank(sp, ep, &cs))
+		if (cs_bblank(sp, &cs))
 			return (1);
 		for (;;) {
-			if (cs_prev(sp, ep, &cs))
+			if (cs_prev(sp, &cs))
 				return (1);
 			if (cs.cs_flags != CS_EOL)
 				break;
 		}
 	} else if (cs.cs_flags == 0 && !isblank(cs.cs_ch))
 		for (;;) {
-			if (cs_prev(sp, ep, &cs))
+			if (cs_prev(sp, &cs))
 				return (1);
 			if (cs.cs_flags != 0 || isblank(cs.cs_ch))
 				break;
 		}
 
 	for (last = 0;;) {
-		if (cs_prev(sp, ep, &cs))
+		if (cs_prev(sp, &cs))
 			return (1);
 		if (cs.cs_flags == CS_SOF)	/* SOF is a movement sink. */
 			break;
@@ -256,7 +253,7 @@ v_sentenceb(sp, ep, vp)
 		if (cs.cs_flags == CS_EMP) {
 			if (--cnt == 0)
 				goto ret;
-			if (cs_bblank(sp, ep, &cs))
+			if (cs_bblank(sp, &cs))
 				return (1);
 			last = 0;
 			continue;
@@ -278,13 +275,13 @@ ret:			slno = cs.cs_lno;
 			 * and special characters.
 			 */
 			do {
-				if (cs_next(sp, ep, &cs))
+				if (cs_next(sp, &cs))
 					return (1);
 			} while (!cs.cs_flags &&
 			    (cs.cs_ch == ')' || cs.cs_ch == ']' ||
 			    cs.cs_ch == '"' || cs.cs_ch == '\''));
 			if ((cs.cs_flags || isblank(cs.cs_ch)) &&
-			    cs_fblank(sp, ep, &cs))
+			    cs_fblank(sp, &cs))
 				return (1);
 
 			/*
@@ -302,7 +299,7 @@ ret:			slno = cs.cs_lno;
 			 * and the sentence, it could be a real sentence.
 			 */
 			for (;;) {
-				if (cs_prev(sp, ep, &cs))
+				if (cs_prev(sp, &cs))
 					return (1);
 				if (cs.cs_flags == CS_EOL)
 					continue;
@@ -346,8 +343,7 @@ okret:	vp->m_stop.lno = cs.cs_lno;
 	if (ISMOTION(vp))
 		if (vp->m_start.cno == 0 &&
 		    (cs.cs_flags != 0 || vp->m_stop.cno == 0)) {
-			if (file_gline(sp, ep,
-			    --vp->m_start.lno, &len) == NULL) {
+			if (file_gline(sp, --vp->m_start.lno, &len) == NULL) {
 				GETLINE_ERR(sp, vp->m_start.lno);
 				return (1);
 			}

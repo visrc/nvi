@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_increment.c,v 8.13 1994/10/09 13:54:12 bostic Exp $ (Berkeley) $Date: 1994/10/09 13:54:12 $";
+static char sccsid[] = "$Id: v_increment.c,v 9.1 1994/11/09 18:36:03 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:36:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -47,9 +47,8 @@ static char * const fmt[] = {
  *	Increment/decrement a keyword number.
  */
 int
-v_increment(sp, ep, vp)
+v_increment(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	VI_PRIVATE *vip;
@@ -124,7 +123,7 @@ underflow:			msgq(sp, M_ERR,
 		nlen = snprintf(nbuf, sizeof(nbuf), ntype, lval);
 	}
 
-	if ((p = file_gline(sp, ep, vp->m_start.lno, &len)) == NULL) {
+	if ((p = file_gline(sp, vp->m_start.lno, &len)) == NULL) {
 		GETLINE_ERR(sp, vp->m_start.lno);
 		return (1);
 	}
@@ -136,7 +135,7 @@ underflow:			msgq(sp, M_ERR,
 	    p + vp->m_start.cno + vp->klen, len - vp->m_start.cno - vp->klen);
 	len = len - vp->klen + nlen;
 
-	rval = file_sline(sp, ep, vp->m_start.lno, bp, len);
+	rval = file_sline(sp, vp->m_start.lno, bp, len);
 	FREE_SPACE(sp, bp, blen);
 	return (rval);
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_word.c,v 8.24 1994/10/13 13:59:35 bostic Exp $ (Berkeley) $Date: 1994/10/13 13:59:35 $";
+static char sccsid[] = "$Id: v_word.c,v 9.1 1994/11/09 18:36:33 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:36:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -68,21 +68,20 @@ static char sccsid[] = "$Id: v_word.c,v 8.24 1994/10/13 13:59:35 bostic Exp $ (B
 
 enum which {BIGWORD, LITTLEWORD};
 
-static int bword __P((SCR *, EXF *, VICMDARG *, enum which));
-static int eword __P((SCR *, EXF *, VICMDARG *, enum which));
-static int fword __P((SCR *, EXF *, VICMDARG *, enum which));
+static int bword __P((SCR *, VICMDARG *, enum which));
+static int eword __P((SCR *, VICMDARG *, enum which));
+static int fword __P((SCR *, VICMDARG *, enum which));
 
 /*
  * v_wordW -- [count]W
  *	Move forward a bigword at a time.
  */
 int
-v_wordW(sp, ep, vp)
+v_wordW(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
-	return (fword(sp, ep, vp, BIGWORD));
+	return (fword(sp, vp, BIGWORD));
 }
 
 /*
@@ -90,12 +89,11 @@ v_wordW(sp, ep, vp)
  *	Move forward a word at a time.
  */
 int
-v_wordw(sp, ep, vp)
+v_wordw(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
-	return (fword(sp, ep, vp, LITTLEWORD));
+	return (fword(sp, vp, LITTLEWORD));
 }
 
 /*
@@ -103,9 +101,8 @@ v_wordw(sp, ep, vp)
  *	Move forward by words.
  */
 static int
-fword(sp, ep, vp, type)
+fword(sp, vp, type)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 	enum which type;
 {
@@ -116,7 +113,7 @@ fword(sp, ep, vp, type)
 	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
 	cs.cs_lno = vp->m_start.lno;
 	cs.cs_cno = vp->m_start.cno;
-	if (cs_init(sp, ep, &cs))
+	if (cs_init(sp, &cs))
 		return (1);
 
 	/*
@@ -131,12 +128,12 @@ fword(sp, ep, vp, type)
 			if (ISCMD(vp->rkp, 'c'))
 				return (0);
 			if (ISCMD(vp->rkp, 'd') || ISCMD(vp->rkp, 'y')) {
-				if (cs_fspace(sp, ep, &cs))
+				if (cs_fspace(sp, &cs))
 					return (1);
 				goto ret;
 			}
 		}
-		if (cs_fblank(sp, ep, &cs))
+		if (cs_fblank(sp, &cs))
 			return (1);
 		--cnt;
 	}
@@ -150,7 +147,7 @@ fword(sp, ep, vp, type)
 	if (type == BIGWORD)
 		while (cnt--) {
 			for (;;) {
-				if (cs_next(sp, ep, &cs))
+				if (cs_next(sp, &cs))
 					return (1);
 				if (cs.cs_flags == CS_EOF)
 					goto ret;
@@ -166,13 +163,13 @@ fword(sp, ep, vp, type)
 			if (cnt == 0 && ISMOTION(vp)) {
 				if ((ISCMD(vp->rkp, 'd') ||
 				    ISCMD(vp->rkp, 'y')) &&
-				    cs_fspace(sp, ep, &cs))
+				    cs_fspace(sp, &cs))
 					return (1);
 				break;
 			}
 
 			/* Eat whitespace characters. */
-			if (cs_fblank(sp, ep, &cs))
+			if (cs_fblank(sp, &cs))
 				return (1);
 			if (cs.cs_flags == CS_EOF)
 				goto ret;
@@ -182,7 +179,7 @@ fword(sp, ep, vp, type)
 			state = cs.cs_flags == 0 &&
 			    inword(cs.cs_ch) ? INWORD : NOTWORD;
 			for (;;) {
-				if (cs_next(sp, ep, &cs))
+				if (cs_next(sp, &cs))
 					return (1);
 				if (cs.cs_flags == CS_EOF)
 					goto ret;
@@ -199,14 +196,14 @@ fword(sp, ep, vp, type)
 			if (cnt == 0 && ISMOTION(vp)) {
 				if ((ISCMD(vp->rkp, 'd') ||
 				    ISCMD(vp->rkp, 'y')) &&
-				    cs_fspace(sp, ep, &cs))
+				    cs_fspace(sp, &cs))
 					return (1);
 				break;
 			}
 
 			/* Eat whitespace characters. */
 			if (cs.cs_flags != 0 || isblank(cs.cs_ch))
-				if (cs_fblank(sp, ep, &cs))
+				if (cs_fblank(sp, &cs))
 					return (1);
 			if (cs.cs_flags == CS_EOF)
 				goto ret;
@@ -220,7 +217,7 @@ fword(sp, ep, vp, type)
 	 */
 ret:	if (!ISMOTION(vp) &&
 	    cs.cs_lno == vp->m_start.lno && cs.cs_cno == vp->m_start.cno) {
-		v_eof(sp, ep, &vp->m_start);
+		v_eof(sp, &vp->m_start);
 		return (1);
 	}
 
@@ -243,12 +240,11 @@ ret:	if (!ISMOTION(vp) &&
  *	Move forward to the end of the bigword.
  */
 int
-v_wordE(sp, ep, vp)
+v_wordE(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
-	return (eword(sp, ep, vp, BIGWORD));
+	return (eword(sp, vp, BIGWORD));
 }
 
 /*
@@ -256,12 +252,11 @@ v_wordE(sp, ep, vp)
  *	Move forward to the end of the word.
  */
 int
-v_worde(sp, ep, vp)
+v_worde(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
-	return (eword(sp, ep, vp, LITTLEWORD));
+	return (eword(sp, vp, LITTLEWORD));
 }
 
 /*
@@ -269,9 +264,8 @@ v_worde(sp, ep, vp)
  *	Move forward to the end of the word.
  */
 static int
-eword(sp, ep, vp, type)
+eword(sp, vp, type)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 	enum which type;
 {
@@ -282,7 +276,7 @@ eword(sp, ep, vp, type)
 	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
 	cs.cs_lno = vp->m_start.lno;
 	cs.cs_cno = vp->m_start.cno;
-	if (cs_init(sp, ep, &cs))
+	if (cs_init(sp, &cs))
 		return (1);
 
 	/*
@@ -292,12 +286,12 @@ eword(sp, ep, vp, type)
 	 * past the current one, it sets word "state" for the 'e' command.
 	 */
 	if (cs.cs_flags == 0 && !isblank(cs.cs_ch)) {
-		if (cs_next(sp, ep, &cs))
+		if (cs_next(sp, &cs))
 			return (1);
 		if (cs.cs_flags == 0 && !isblank(cs.cs_ch))
 			goto start;
 	}
-	if (cs_fblank(sp, ep, &cs))
+	if (cs_fblank(sp, &cs))
 		return (1);
 
 	/*
@@ -309,7 +303,7 @@ eword(sp, ep, vp, type)
 start:	if (type == BIGWORD)
 		while (cnt--) {
 			for (;;) {
-				if (cs_next(sp, ep, &cs))
+				if (cs_next(sp, &cs))
 					return (1);
 				if (cs.cs_flags == CS_EOF)
 					goto ret;
@@ -322,13 +316,13 @@ start:	if (type == BIGWORD)
 			 * to the end of the previous word.
 			 */
 			if (cnt == 0) {
-				if (cs.cs_flags == 0 && cs_prev(sp, ep, &cs))
+				if (cs.cs_flags == 0 && cs_prev(sp, &cs))
 					return (1);
 				break;
 			}
 
 			/* Eat whitespace characters. */
-			if (cs_fblank(sp, ep, &cs))
+			if (cs_fblank(sp, &cs))
 				return (1);
 			if (cs.cs_flags == CS_EOF)
 				goto ret;
@@ -338,7 +332,7 @@ start:	if (type == BIGWORD)
 			state = cs.cs_flags == 0 &&
 			    inword(cs.cs_ch) ? INWORD : NOTWORD;
 			for (;;) {
-				if (cs_next(sp, ep, &cs))
+				if (cs_next(sp, &cs))
 					return (1);
 				if (cs.cs_flags == CS_EOF)
 					goto ret;
@@ -353,14 +347,14 @@ start:	if (type == BIGWORD)
 			}
 			/* See comment above. */
 			if (cnt == 0) {
-				if (cs.cs_flags == 0 && cs_prev(sp, ep, &cs))
+				if (cs.cs_flags == 0 && cs_prev(sp, &cs))
 					return (1);
 				break;
 			}
 
 			/* Eat whitespace characters. */
 			if (cs.cs_flags != 0 || isblank(cs.cs_ch))
-				if (cs_fblank(sp, ep, &cs))
+				if (cs_fblank(sp, &cs))
 					return (1);
 			if (cs.cs_flags == CS_EOF)
 				goto ret;
@@ -374,7 +368,7 @@ start:	if (type == BIGWORD)
 	 */
 ret:	if (!ISMOTION(vp) &&
 	    cs.cs_lno == vp->m_start.lno && cs.cs_cno == vp->m_start.cno) {
-		v_eof(sp, ep, &vp->m_start);
+		v_eof(sp, &vp->m_start);
 		return (1);
 	}
 
@@ -395,12 +389,11 @@ ret:	if (!ISMOTION(vp) &&
  *	Move backward a bigword at a time.
  */
 int
-v_wordB(sp, ep, vp)
+v_wordB(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
-	return (bword(sp, ep, vp, BIGWORD));
+	return (bword(sp, vp, BIGWORD));
 }
 
 /*
@@ -408,12 +401,11 @@ v_wordB(sp, ep, vp)
  *	Move backward a word at a time.
  */
 int
-v_wordb(sp, ep, vp)
+v_wordb(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
-	return (bword(sp, ep, vp, LITTLEWORD));
+	return (bword(sp, vp, LITTLEWORD));
 }
 
 /*
@@ -421,9 +413,8 @@ v_wordb(sp, ep, vp)
  *	Move backward by words.
  */
 static int
-bword(sp, ep, vp, type)
+bword(sp, vp, type)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 	enum which type;
 {
@@ -434,7 +425,7 @@ bword(sp, ep, vp, type)
 	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
 	cs.cs_lno = vp->m_start.lno;
 	cs.cs_cno = vp->m_start.cno;
-	if (cs_init(sp, ep, &cs))
+	if (cs_init(sp, &cs))
 		return (1);
 
 	/*
@@ -445,12 +436,12 @@ bword(sp, ep, vp, type)
 	 * 'b' command.
 	 */
 	if (cs.cs_flags == 0 && !isblank(cs.cs_ch)) {
-		if (cs_prev(sp, ep, &cs))
+		if (cs_prev(sp, &cs))
 			return (1);
 		if (cs.cs_flags == 0 && !isblank(cs.cs_ch))
 			goto start;
 	}
-	if (cs_bblank(sp, ep, &cs))
+	if (cs_bblank(sp, &cs))
 		return (1);
 
 	/*
@@ -462,7 +453,7 @@ bword(sp, ep, vp, type)
 start:	if (type == BIGWORD)
 		while (cnt--) {
 			for (;;) {
-				if (cs_prev(sp, ep, &cs))
+				if (cs_prev(sp, &cs))
 					return (1);
 				if (cs.cs_flags == CS_SOF)
 					goto ret;
@@ -475,13 +466,13 @@ start:	if (type == BIGWORD)
 			 * one to the end of the next word.
 			 */
 			if (cnt == 0) {
-				if (cs.cs_flags == 0 && cs_next(sp, ep, &cs))
+				if (cs.cs_flags == 0 && cs_next(sp, &cs))
 					return (1);
 				break;
 			}
 
 			/* Eat whitespace characters. */
-			if (cs_bblank(sp, ep, &cs))
+			if (cs_bblank(sp, &cs))
 				return (1);
 			if (cs.cs_flags == CS_SOF)
 				goto ret;
@@ -491,7 +482,7 @@ start:	if (type == BIGWORD)
 			state = cs.cs_flags == 0 &&
 			    inword(cs.cs_ch) ? INWORD : NOTWORD;
 			for (;;) {
-				if (cs_prev(sp, ep, &cs))
+				if (cs_prev(sp, &cs))
 					return (1);
 				if (cs.cs_flags == CS_SOF)
 					goto ret;
@@ -506,14 +497,14 @@ start:	if (type == BIGWORD)
 			}
 			/* See comment above. */
 			if (cnt == 0) {
-				if (cs.cs_flags == 0 && cs_next(sp, ep, &cs))
+				if (cs.cs_flags == 0 && cs_next(sp, &cs))
 					return (1);
 				break;
 			}
 
 			/* Eat whitespace characters. */
 			if (cs.cs_flags != 0 || isblank(cs.cs_ch))
-				if (cs_bblank(sp, ep, &cs))
+				if (cs_bblank(sp, &cs))
 					return (1);
 			if (cs.cs_flags == CS_SOF)
 				goto ret;

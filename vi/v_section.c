@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_section.c,v 8.14 1994/10/13 13:59:33 bostic Exp $ (Berkeley) $Date: 1994/10/13 13:59:33 $";
+static char sccsid[] = "$Id: v_section.c,v 9.1 1994/11/09 18:36:21 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:36:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -62,9 +62,8 @@ static char sccsid[] = "$Id: v_section.c,v 8.14 1994/10/13 13:59:33 bostic Exp $
  * did include the line.  No clue why.
  */
 int
-v_sectionf(sp, ep, vp)
+v_sectionf(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	recno_t cnt, lno;
@@ -89,7 +88,7 @@ v_sectionf(sp, ep, vp)
 		else {
 			vp->m_stop = vp->m_start;
 			vp->m_stop.cno = 0;
-			if (nonblank(sp, ep, vp->m_stop.lno, &vp->m_stop.cno))
+			if (nonblank(sp, vp->m_stop.lno, &vp->m_stop.cno))
 				return (1);
 			if (vp->m_start.cno <= vp->m_stop.cno)
 				F_SET(vp, VM_LMODE);
@@ -97,7 +96,7 @@ v_sectionf(sp, ep, vp)
 
 	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
 	for (lno = vp->m_start.lno;
-	    (p = file_gline(sp, ep, ++lno, &len)) != NULL;) {
+	    (p = file_gline(sp, ++lno, &len)) != NULL;) {
 		if (len == 0)
 			continue;
 		if (p[0] == '{' || ISMOTION(vp) && p[0] == '}') {
@@ -143,11 +142,11 @@ adjust2:			vp->m_stop.lno = lno;
 
 	/* If moving forward, reached EOF, check to see if we started there. */
 	if (vp->m_start.lno == lno - 1) {
-		v_eof(sp, ep, NULL);
+		v_eof(sp, NULL);
 		return (1);
 	}
 
-ret1:	if (file_gline(sp, ep, --lno, &len) == NULL)
+ret1:	if (file_gline(sp, --lno, &len) == NULL)
 		return (1);
 	vp->m_stop.lno = lno;
 	vp->m_stop.cno = len ? len - 1 : 0;
@@ -170,9 +169,8 @@ ret2:	if (ISMOTION(vp)) {
  *	Move backward count sections/functions.
  */
 int
-v_sectionb(sp, ep, vp)
+v_sectionb(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	size_t len;
@@ -191,7 +189,7 @@ v_sectionb(sp, ep, vp)
 
 	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
 	for (lno = vp->m_start.lno;
-	    (p = file_gline(sp, ep, --lno, &len)) != NULL;) {
+	    (p = file_gline(sp, --lno, &len)) != NULL;) {
 		if (len == 0)
 			continue;
 		if (p[0] == '{') {

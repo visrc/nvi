@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.134 1994/10/13 19:25:08 bostic Exp $ (Berkeley) $Date: 1994/10/13 19:25:08 $";
+static char sccsid[] = "$Id: v_txt.c,v 9.1 1994/11/09 18:36:08 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:36:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,8 +34,8 @@ static char sccsid[] = "$Id: v_txt.c,v 8.134 1994/10/13 19:25:08 bostic Exp $ (B
 
 static int	 txt_abbrev __P((SCR *, TEXT *, CHAR_T *, int, int *, int *));
 static void	 txt_ai_resolve __P((SCR *, TEXT *));
-static TEXT	*txt_backup __P((SCR *, EXF *, TEXTH *, TEXT *, u_int *));
-static void	 txt_err __P((SCR *, EXF *, TEXTH *));
+static TEXT	*txt_backup __P((SCR *, TEXTH *, TEXT *, u_int *));
+static void	 txt_err __P((SCR *, TEXTH *));
 static int	 txt_hex __P((SCR *, TEXT *));
 static int	 txt_indent __P((SCR *, TEXT *));
 static int	 txt_margin __P((SCR *,
@@ -44,8 +44,8 @@ static void	 txt_nomorech __P((SCR *));
 static int	 txt_outdent __P((SCR *, TEXT *));
 static void	 txt_Rcleanup __P((SCR *,
 		    TEXTH *, TEXT *, const char *, const size_t));
-static int	 txt_resolve __P((SCR *, EXF *, TEXTH *, u_int));
-static void	 txt_showmatch __P((SCR *, EXF *));
+static int	 txt_resolve __P((SCR *, TEXTH *, u_int));
+static void	 txt_showmatch __P((SCR *));
 static void	 txt_unmap __P((SCR *, TEXT *, u_int *));
 
 /* Cursor character (space is hard to track on the screen). */
@@ -70,9 +70,8 @@ static void	 txt_unmap __P((SCR *, TEXT *, u_int *));
  * on the second <esc> key.
  */
 int
-v_ntext(sp, ep, tiqh, tm, lp, len, rp, prompt, ai_line, flags)
+v_ntext(sp, tiqh, tm, lp, len, rp, prompt, ai_line, flags)
 	SCR *sp;
-	EXF *ep;
 	TEXTH *tiqh;
 	MARK *tm;		/* To MARK. */
 	const char *lp;		/* Input line. */
@@ -179,7 +178,7 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 	 * screen cursor as necessary.
 	 */
 	if (LF_ISSET(TXT_AUTOINDENT) && ai_line != OOBLNO) {
-		if (txt_auto(sp, ep, ai_line, NULL, 0, tp))
+		if (txt_auto(sp, ai_line, NULL, 0, tp))
 			return (1);
 		sp->cno = tp->ai;
 	} else {
@@ -309,12 +308,12 @@ nullreplay:
 		 * the cursor really is.
 		 */
 		if (showmatch || margin || !KEYS_WAITING(sp)) {
-			if (sp->s_change(sp, ep, tp->lno, LINE_RESET))
+			if (sp->s_change(sp, tp->lno, LINE_RESET))
 				goto err;
 			if (showmatch) {
 				showmatch = 0;
-				txt_showmatch(sp, ep);
-			} else if (sp->s_refresh(sp, ep))
+				txt_showmatch(sp);
+			} else if (sp->s_refresh(sp))
 				goto err;
 		}
 
@@ -451,7 +450,7 @@ k_cr:			if (LF_ISSET(TXT_CR)) {
 				 */
 				if (LF_ISSET(TXT_INFOLINE)) {
 					if (sp->s_change(sp,
-					    ep, tp->lno, LINE_RESET))
+					    tp->lno, LINE_RESET))
 						goto err;
 				} else if (F_ISSET(sp, S_SCRIPT))
 					(void)term_push(sp, "\r", 1, CH_NOMAP);
@@ -496,7 +495,7 @@ k_cr:			if (LF_ISSET(TXT_CR)) {
 			tp->len = sp->cno;
 
 			/* Update the old line. */
-			if (sp->s_change(sp, ep, tp->lno, LINE_RESET))
+			if (sp->s_change(sp, tp->lno, LINE_RESET))
 				goto err;
 
 			/*
@@ -544,12 +543,12 @@ k_cr:			if (LF_ISSET(TXT_CR)) {
 			 */
 			if (LF_ISSET(TXT_AUTOINDENT)) {
 				if (carat_st == C_NOCHANGE) {
-					if (txt_auto(sp, ep,
+					if (txt_auto(sp,
 					    OOBLNO, &ait, ait.ai, ntp))
 						goto err;
 					FREE_SPACE(sp, ait.lb, ait.lb_len);
 				} else
-					if (txt_auto(sp, ep,
+					if (txt_auto(sp,
 					    OOBLNO, tp, sp->cno, ntp))
 						goto err;
 				carat_st = C_NOTSET;
@@ -603,15 +602,12 @@ k_cr:			if (LF_ISSET(TXT_CR)) {
 			CIRCLEQ_INSERT_TAIL(tiqh, tp, q);
 
 			/* Update the new line. */
-			if (sp->s_change(sp, ep, tp->lno, LINE_INSERT))
+			if (sp->s_change(sp, tp->lno, LINE_INSERT))
 				goto err;
-
-			/* Set the renumber bit. */
-			F_SET(sp, S_RENUMBER);
 
 			/* Refresh if nothing waiting. */
 			if (margin || !KEYS_WAITING(sp))
-				if (sp->s_refresh(sp, ep))
+				if (sp->s_refresh(sp))
 					goto err;
 			goto next_ch;
 		case K_ESCAPE:				/* Escape. */
@@ -648,7 +644,7 @@ k_escape:		LINE_RESOLVE;
 			 * This is wrong, should pass back a length.
 			 */
 			if (LF_ISSET(TXT_RESOLVE)) {
-				if (txt_resolve(sp, ep, tiqh, flags))
+				if (txt_resolve(sp, tiqh, flags))
 					goto err;
 				F_CLR(sp, S_INPUT);
 			} else {
@@ -663,7 +659,7 @@ k_escape:		LINE_RESOLVE;
 			if (rp != NULL) {
 				rp->lno = tp->lno;
 				rp->cno = sp->cno ? sp->cno - 1 : 0;
-				if (sp->s_change(sp, ep, rp->lno, LINE_RESET))
+				if (sp->s_change(sp, rp->lno, LINE_RESET))
 					goto err;
 			}
 			goto ret;
@@ -733,8 +729,8 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 			 * to a previously inserted line.
 			 */
 			if (sp->cno == 0) {
-				if ((ntp = txt_backup(sp,
-				    ep, tiqh, tp, &flags)) == NULL)
+				if ((ntp =
+				    txt_backup(sp, tiqh, tp, &flags)) == NULL)
 					goto err;
 				tp = ntp;
 				break;
@@ -766,8 +762,8 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 			 * to a previously inserted line.
 			 */
 			if (sp->cno == 0) {
-				if ((ntp = txt_backup(sp,
-				    ep, tiqh, tp, &flags)) == NULL)
+				if ((ntp =
+				    txt_backup(sp, tiqh, tp, &flags)) == NULL)
 					goto err;
 				tp = ntp;
 			}
@@ -852,8 +848,8 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 			 * to a previously inserted line.
 			 */
 			if (sp->cno == 0) {
-				if ((ntp = txt_backup(sp,
-				    ep, tiqh, tp, &flags)) == NULL)
+				if ((ntp =
+				    txt_backup(sp, tiqh, tp, &flags)) == NULL)
 					goto err;
 				tp = ntp;
 			}
@@ -899,7 +895,7 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 #endif
 #ifdef	HISTORIC_PRACTICE_IS_TO_INSERT_NOT_REPAINT
 		case K_FORMFEED:
-			F_SET(sp, S_REFRESH);
+			F_SET(sp, S_SCR_REFRESH);
 			break;
 #endif
 		case K_RIGHTBRACE:
@@ -1020,7 +1016,7 @@ insl_ch:		if (tp->owrite)		/* Overwrite a character. */
 
 			/* Check to see if we've crossed the margin. */
 			if (margin) {
-				if (sp->s_column(sp, ep, &col))
+				if (sp->s_column(sp, &col))
 					goto err;
 				if (col >= margin) {
 					if (txt_margin(sp,
@@ -1078,7 +1074,7 @@ ret:	F_CLR(sp, S_INPUT);
 err:	/* Error jumps. */
 binc_err:
 	eval = 1;
-	txt_err(sp, ep, tiqh);
+	txt_err(sp, tiqh);
 	goto ret;
 }
 
@@ -1377,9 +1373,8 @@ txt_ai_resolve(sp, tp)
  *	retrieve the line.
  */
 int
-txt_auto(sp, ep, lno, aitp, len, tp)
+txt_auto(sp, lno, aitp, len, tp)
 	SCR *sp;
-	EXF *ep;
 	recno_t lno;
 	size_t len;
 	TEXT *aitp, *tp;
@@ -1397,7 +1392,7 @@ txt_auto(sp, ep, lno, aitp, len, tp)
 			tp->ai = 0;
 			return (0);
 		}
-		if ((t = file_gline(sp, ep, lno, &len)) == NULL)
+		if ((t = file_gline(sp, lno, &len)) == NULL)
 			return (1);
 	} else
 		t = aitp->lb;
@@ -1432,9 +1427,8 @@ txt_auto(sp, ep, lno, aitp, len, tp)
  *	Back up to the previously edited line.
  */
 static TEXT *
-txt_backup(sp, ep, tiqh, tp, flagsp)
+txt_backup(sp, tiqh, tp, flagsp)
 	SCR *sp;
-	EXF *ep;
 	TEXTH *tiqh;
 	TEXT *tp;
 	u_int *flagsp;
@@ -1469,7 +1463,7 @@ txt_backup(sp, ep, tiqh, tp, flagsp)
 	text_free(tp);
 
 	/* Update the old line on the screen. */
-	if (sp->s_change(sp, ep, ntp->lno + 1, LINE_DELETE))
+	if (sp->s_change(sp, ntp->lno + 1, LINE_DELETE))
 		return (NULL);
 
 	/* Return the new/current TEXT. */
@@ -1481,9 +1475,8 @@ txt_backup(sp, ep, tiqh, tp, flagsp)
  *	Handle an error during input processing.
  */
 static void
-txt_err(sp, ep, tiqh)
+txt_err(sp, tiqh)
 	SCR *sp;
-	EXF *ep;
 	TEXTH *tiqh;
 {
 	recno_t lno;
@@ -1499,13 +1492,13 @@ txt_err(sp, ep, tiqh)
 	 * chain.
 	 */
 	for (lno = tiqh->cqh_first->lno;
-	    file_gline(sp, ep, lno, &len) == NULL && lno > 0; --lno);
+	    file_gline(sp, lno, &len) == NULL && lno > 0; --lno);
 
 	sp->lno = lno == 0 ? 1 : lno;
 	sp->cno = 0;
 
 	/* Redraw the screen, just in case. */
-	F_SET(sp, S_REDRAW);
+	F_SET(sp, S_SCR_REFRESH);
 }
 
 /*
@@ -1740,9 +1733,8 @@ txt_outdent(sp, tp)
  *	Resolve the input text chain into the file.
  */
 static int
-txt_resolve(sp, ep, tiqh, flags)
+txt_resolve(sp, tiqh, flags)
 	SCR *sp;
-	EXF *ep;
 	TEXTH *tiqh;
 	u_int flags;
 {
@@ -1757,13 +1749,13 @@ txt_resolve(sp, ep, tiqh, flags)
 	tp = tiqh->cqh_first;
 	if (LF_ISSET(TXT_AUTOINDENT))
 		txt_ai_resolve(sp, tp);
-	if (file_sline(sp, ep, tp->lno, tp->lb, tp->len))
+	if (file_sline(sp, tp->lno, tp->lb, tp->len))
 		return (1);
 
 	for (lno = tp->lno; (tp = tp->q.cqe_next) != (void *)sp->tiqp; ++lno) {
 		if (LF_ISSET(TXT_AUTOINDENT))
 			txt_ai_resolve(sp, tp);
-		if (file_aline(sp, ep, 0, lno, tp->lb, tp->len))
+		if (file_aline(sp, 0, lno, tp->lb, tp->len))
 			return (1);
 	}
 	return (0);
@@ -1778,9 +1770,8 @@ txt_resolve(sp, ep, tiqh, flags)
  * I think not.
  */
 static void
-txt_showmatch(sp, ep)
+txt_showmatch(sp)
 	SCR *sp;
-	EXF *ep;
 {
 	struct timeval second;
 	VCS cs;
@@ -1793,25 +1784,25 @@ txt_showmatch(sp, ep)
 	 * one in awhile, so the user can see what we're complaining
 	 * about.
 	 */
-	if (sp->s_refresh(sp, ep))
+	if (sp->s_refresh(sp))
 		return;
 	/*
 	 * We don't display the match if it's not on the screen.  Find
 	 * out what the first character on the screen is.
 	 */
-	if (sp->s_position(sp, ep, &m, 0, P_TOP))
+	if (sp->s_position(sp, &m, 0, P_TOP))
 		return;
 
 	/* Initialize the getc() interface. */
 	cs.cs_lno = sp->lno;
 	cs.cs_cno = sp->cno - 1;
-	if (cs_init(sp, ep, &cs))
+	if (cs_init(sp, &cs))
 		return;
 	startc = (endc = cs.cs_ch)  == ')' ? '(' : '{';
 
 	/* Search for the match. */
 	for (cnt = 1;;) {
-		if (cs_prev(sp, ep, &cs))
+		if (cs_prev(sp, &cs))
 			return;
 		if (cs.cs_lno < m.lno ||
 		    cs.cs_lno == m.lno && cs.cs_cno < m.cno)
@@ -1834,7 +1825,7 @@ txt_showmatch(sp, ep)
 	m.cno = sp->cno;
 	sp->lno = cs.cs_lno;
 	sp->cno = cs.cs_cno;
-	(void)sp->s_refresh(sp, ep);
+	(void)sp->s_refresh(sp);
 
 	/*
 	 * Sleep(3) is eight system calls.  Do it fast -- besides,
@@ -1848,7 +1839,7 @@ txt_showmatch(sp, ep)
 	/* Return to the current location. */
 	sp->lno = m.lno;
 	sp->cno = m.cno;
-	(void)sp->s_refresh(sp, ep);
+	(void)sp->s_refresh(sp);
 }
 
 /*

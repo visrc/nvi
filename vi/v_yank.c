@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_yank.c,v 8.16 1994/08/17 14:36:24 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:36:24 $";
+static char sccsid[] = "$Id: v_yank.c,v 9.1 1994/11/09 18:36:35 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:36:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -42,23 +42,22 @@ static char sccsid[] = "$Id: v_yank.c,v 8.16 1994/08/17 14:36:24 bostic Exp $ (B
  * got it right...   Unlike delete, we make no adjustments here.
  */
 int
-v_yank(sp, ep, vp)
+v_yank(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	int lmode;
 
 	/* The line may not exist in line mode cuts, check to be sure. */
 	if (F_ISSET(vp, VM_LMODE)) {
-		if (file_gline(sp, ep, vp->m_stop.lno, NULL) == NULL) {
-			v_eof(sp, ep, &vp->m_start);
+		if (file_gline(sp, vp->m_stop.lno, NULL) == NULL) {
+			v_eof(sp, &vp->m_start);
 			return (1);
 		}
 		lmode = CUT_LINEMODE;
 	} else
 		lmode = 0;
-	if (cut(sp, ep,
+	if (cut(sp,
 	    F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
 	    &vp->m_start, &vp->m_stop, lmode))
 		return (1);

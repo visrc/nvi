@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_put.c,v 8.11 1994/08/17 14:36:02 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:36:02 $";
+static char sccsid[] = "$Id: v_put.c,v 9.1 1994/11/09 18:36:14 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:36:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,9 +33,8 @@ static void	inc_buf __P((SCR *, VICMDARG *));
  *	Insert the contents of the buffer before the cursor.
  */
 int
-v_Put(sp, ep, vp)
+v_Put(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	u_long cnt;
@@ -49,7 +48,7 @@ v_Put(sp, ep, vp)
 	 * commands.  It's useful, so we do.
 	 */
 	for (cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
-		if (put(sp, ep, NULL,
+		if (put(sp, NULL,
 		    F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
 		    &vp->m_start, &vp->m_final, 0))
 			return (1);
@@ -63,9 +62,8 @@ v_Put(sp, ep, vp)
  *	Insert the contents of the buffer after the cursor.
  */
 int
-v_put(sp, ep, vp)
+v_put(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	u_long cnt;
@@ -79,7 +77,7 @@ v_put(sp, ep, vp)
 	 * commands.  It's useful, so we do.
 	 */
 	for (cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
-		if (put(sp, ep, NULL,
+		if (put(sp, NULL,
 		    F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
 		    &vp->m_start, &vp->m_final, 1))
 			return (1);

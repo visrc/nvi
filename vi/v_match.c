@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_match.c,v 8.19 1994/10/13 13:59:27 bostic Exp $ (Berkeley) $Date: 1994/10/13 13:59:27 $";
+static char sccsid[] = "$Id: v_match.c,v 9.1 1994/11/09 18:36:07 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:36:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,24 +32,23 @@ static char sccsid[] = "$Id: v_match.c,v 8.19 1994/10/13 13:59:27 bostic Exp $ (
  *	Search to matching character.
  */
 int
-v_match(sp, ep, vp)
+v_match(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	VCS cs;
 	MARK *mp;
 	recno_t lno;
 	size_t cno, len, off;
-	int cnt, matchc, startc, (*gc)__P((SCR *, EXF *, VCS *));
+	int cnt, matchc, startc, (*gc)__P((SCR *, VCS *));
 	char *p;
 
 	/*
 	 * !!!
 	 * Historic practice; ignore the count.
 	 */
-	if ((p = file_gline(sp, ep, vp->m_start.lno, &len)) == NULL) {
-		if (file_lline(sp, ep, &lno))
+	if ((p = file_gline(sp, vp->m_start.lno, &len)) == NULL) {
+		if (file_lline(sp, &lno))
 			return (1);
 		if (lno == 0)
 			goto nomatch;
@@ -108,10 +107,10 @@ nomatch:		msgq(sp, M_BERR, "180|No match character on this line");
 
 	cs.cs_lno = vp->m_start.lno;
 	cs.cs_cno = off;
-	if (cs_init(sp, ep, &cs))
+	if (cs_init(sp, &cs))
 		return (1);
 	for (cnt = 1;;) {
-		if (gc(sp, ep, &cs))
+		if (gc(sp, &cs))
 			return (1);
 		if (cs.cs_flags != 0) {
 			if (cs.cs_flags == CS_EOF || cs.cs_flags == CS_SOF)
@@ -161,13 +160,13 @@ nomatch:		msgq(sp, M_BERR, "180|No match character on this line");
 	mp = vp->m_start.lno < vp->m_stop.lno ? &vp->m_start : &vp->m_stop;
 	if (mp->cno != 0) {
 		cno = 0;
-		if (nonblank(sp, ep, mp->lno, &cno))
+		if (nonblank(sp, mp->lno, &cno))
 			return (1);
 		if (cno < mp->cno)
 			return (0);
 	}
 	mp = vp->m_start.lno < vp->m_stop.lno ? &vp->m_stop : &vp->m_start;
-	if ((p = file_gline(sp, ep, mp->lno, &len)) == NULL) {
+	if ((p = file_gline(sp, mp->lno, &len)) == NULL) {
 		GETLINE_ERR(sp, mp->lno);
 		return (1);
 	}

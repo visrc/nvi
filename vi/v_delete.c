@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_delete.c,v 8.16 1994/08/17 14:35:51 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:35:51 $";
+static char sccsid[] = "$Id: v_delete.c,v 9.1 1994/11/09 18:36:00 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:36:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,16 +31,15 @@ static char sccsid[] = "$Id: v_delete.c,v 8.16 1994/08/17 14:35:51 bostic Exp $ 
  *	Delete line command.
  */
 int
-v_Delete(sp, ep, vp)
+v_Delete(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	recno_t lno;
 	size_t len;
 
-	if (file_gline(sp, ep, vp->m_start.lno, &len) == NULL) {
-		if (file_lline(sp, ep, &lno))
+	if (file_gline(sp, vp->m_start.lno, &len) == NULL) {
+		if (file_lline(sp, &lno))
 			return (1);
 		if (lno == 0)
 			return (0);
@@ -55,11 +54,11 @@ v_Delete(sp, ep, vp)
 	vp->m_stop.cno = len - 1;
 
 	/* Yank the lines. */
-	if (cut(sp, ep,
+	if (cut(sp,
 	    F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
 	    &vp->m_start, &vp->m_stop, CUT_NUMOPT))
 		return (1);
-	if (delete(sp, ep, &vp->m_start, &vp->m_stop, 0))
+	if (delete(sp, &vp->m_start, &vp->m_stop, 0))
 		return (1);
 
 	vp->m_final.lno = vp->m_start.lno;
@@ -72,9 +71,8 @@ v_Delete(sp, ep, vp)
  *	Delete a range of text.
  */
 int
-v_delete(sp, ep, vp)
+v_delete(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	recno_t nlines;
@@ -84,21 +82,21 @@ v_delete(sp, ep, vp)
 	lmode = F_ISSET(vp, VM_LMODE) ? CUT_LINEMODE : 0;
 
 	/* Yank the lines. */
-	if (cut(sp, ep, F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
+	if (cut(sp, F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
 	    &vp->m_start, &vp->m_stop,
 	    lmode | (F_ISSET(vp, VM_CUTREQ) ? CUT_NUMREQ : CUT_NUMOPT)))
 		return (1);
 
 	/* Delete the lines. */
-	if (delete(sp, ep, &vp->m_start, &vp->m_stop, lmode))
+	if (delete(sp, &vp->m_start, &vp->m_stop, lmode))
 		return (1);
 
 	/*
 	 * Check for deletion of the entire file.  Try to check a close
 	 * by line so we don't go to the end of the file unnecessarily.
 	 */
-	if (file_gline(sp, ep, vp->m_final.lno + 1, &len) == NULL) {
-		if (file_lline(sp, ep, &nlines))
+	if (file_gline(sp, vp->m_final.lno + 1, &len) == NULL) {
+		if (file_lline(sp, &nlines))
 			return (1);
 		if (nlines == 0) {
 			vp->m_final.lno = 1;
@@ -112,8 +110,8 @@ v_delete(sp, ep, vp)
 	 * character.  We check it here instead of checking in every command
 	 * that can be a motion component.
 	 */
-	if (file_gline(sp, ep, vp->m_final.lno, &len) == NULL) {
-		if (file_gline(sp, ep, nlines, &len) == NULL) {
+	if (file_gline(sp, vp->m_final.lno, &len) == NULL) {
+		if (file_gline(sp, nlines, &len) == NULL) {
 			GETLINE_ERR(sp, nlines);
 			return (1);
 		}

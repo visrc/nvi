@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.67 1994/10/13 19:41:03 bostic Exp $ (Berkeley) $Date: 1994/10/13 19:41:03 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 9.1 1994/11/09 18:35:32 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:35:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,15 +31,14 @@ static char sccsid[] = "$Id: vs_refresh.c,v 8.67 1994/10/13 19:41:03 bostic Exp 
 #include "svi_screen.h"
 #include "../sex/sex_screen.h"
 
-static int	svi_modeline __P((SCR *, EXF *));
+static int	svi_modeline __P((SCR *));
 
 int
-svi_refresh(sp, ep)
+svi_refresh(sp)
 	SCR *sp;
-	EXF *ep;
 {
 	SCR *tsp;
-	u_int paintbits;
+	u_int priv_paint, pub_paint;
 
 	/*
 	 * 1: Resize the screen.
@@ -51,7 +50,7 @@ svi_refresh(sp, ep)
 	 * calling the ex options code which put them into the environment,
 	 * which is used by curses.  Stupid, but ugly.
 	 */
-	if (F_ISSET(sp, S_RESIZE)) {
+	if (F_ISSET(sp, S_SCR_RESIZE)) {
 		/* Reinitialize curses. */
 		if (svi_curses_end(sp) || svi_curses_init(sp))
 			return (1);
@@ -63,23 +62,23 @@ svi_refresh(sp, ep)
 		 * Fill the map, incidentally losing any svi_line()
 		 * cached information.
 		 */
-		if (svi_sm_fill(sp, ep, sp->lno, P_FILL))
+		if (svi_sm_fill(sp, sp->lno, P_FILL))
 			return (1);
-		F_CLR(sp, S_RESIZE | S_REFORMAT);
-		F_SET(sp, S_REDRAW);
+		F_CLR(sp, S_SCR_RESIZE | S_SCR_REFORMAT);
+		F_SET(sp, S_SCR_REFRESH);
 	}
 
 	/*
-	 * 2: S_REFRESH
+	 * 2: Refresh the screen.
 	 *
-	 * If S_REFRESH is set in the current screen, repaint everything
+	 * If S_SCR_REFRESH is set in the current screen, repaint everything
 	 * that we can find.
 	 */
-	if (F_ISSET(sp, S_REFRESH))
+	if (F_ISSET(sp, S_SCR_REFRESH))
 		for (tsp = sp->gp->dq.cqh_first;
 		    tsp != (void *)&sp->gp->dq; tsp = tsp->q.cqe_next)
 			if (tsp != sp)
-				F_SET(tsp, S_REDRAW);
+				F_SET(tsp, S_SCR_REFRESH);
 	/*
 	 * 3: Related or dirtied screens, or screens with messages.
 	 *
@@ -88,18 +87,19 @@ svi_refresh(sp, ep)
 	 * set, or where messages are waiting.  Finally, if we refresh any
 	 * screens other than the current one, the cursor will be trashed.
 	 */
-	paintbits = S_REDRAW | S_REFORMAT | S_REFRESH;
+	pub_paint = S_SCR_REFORMAT | S_SCR_REFRESH;
+	priv_paint = SVI_SCR_DIRTY;
 	if (O_ISSET(sp, O_NUMBER))
-		paintbits |= S_RENUMBER;
+		priv_paint |= SVI_SCR_NUMBER;
 	for (tsp = sp->gp->dq.cqh_first;
 	    tsp != (void *)&sp->gp->dq; tsp = tsp->q.cqe_next)
 		if (tsp != sp &&
-		    (F_ISSET(tsp, paintbits) ||
-		    F_ISSET(SVP(tsp), SVI_SCREENDIRTY) ||
+		    (F_ISSET(tsp, pub_paint) ||
+		    F_ISSET(SVP(tsp), priv_paint) ||
 		    tsp->msgq.lh_first != NULL &&
 		    !F_ISSET(tsp->msgq.lh_first, M_EMPTY))) {
-			(void)svi_paint(tsp, tsp->ep);
-			F_CLR(SVP(tsp), SVI_SCREENDIRTY);
+			(void)svi_paint(tsp);
+			F_CLR(SVP(tsp), SVI_SCR_DIRTY);
 			F_SET(SVP(sp), SVI_CUR_INVALID);
 		}
 
@@ -107,11 +107,11 @@ svi_refresh(sp, ep)
 	 * 4: Refresh the current screen.
 	 *
 	 * Always refresh the current screen, it may be a cursor movement.
-	 * Also, always do it last -- that way, S_REFRESH can be set in
-	 * the current screen only, and the screen won't flash.
+	 * Also, always do it last -- that way, S_SCR_REFRESH can be set
+	 * in the current screen only, and the screen won't flash.
 	 */
-	F_CLR(sp, SVI_SCREENDIRTY);
-	return (svi_paint(sp, ep));
+	F_CLR(sp, SVI_SCR_DIRTY);
+	return (svi_paint(sp));
 }
 
 /*
@@ -125,9 +125,8 @@ svi_refresh(sp, ep)
  *	what you're doing.  It's subtle and quick to anger.
  */
 int
-svi_paint(sp, ep)
+svi_paint(sp)
 	SCR *sp;
-	EXF *ep;
 {
 	SMAP *smp, tmp;
 	SVI_PRIVATE *svp;
@@ -152,19 +151,19 @@ svi_paint(sp, ep)
 	 * fill in the map from scratch.  Adjust the screen that's being
 	 * displayed if the leftright flag is set.
 	 */
-	if (F_ISSET(sp, S_REFORMAT)) {
+	if (F_ISSET(sp, S_SCR_REFORMAT)) {
 		/* Invalidate the line size cache. */
 		SVI_SCR_CFLUSH(SVP(sp));
 
 		/* Toss svi_line() cached information. */
-		if (svi_sm_fill(sp, ep, HMAP->lno, P_TOP))
+		if (svi_sm_fill(sp, HMAP->lno, P_TOP))
 			return (1);
 		if (O_ISSET(sp, O_LEFTRIGHT) &&
-		    (cnt = svi_opt_screens(sp, ep, LNO, &CNO)) != 1)
+		    (cnt = svi_opt_screens(sp, LNO, &CNO)) != 1)
 			for (smp = HMAP; smp <= TMAP; ++smp)
 				smp->off = cnt;
-		F_CLR(sp, S_REFORMAT);
-		F_SET(sp, S_REDRAW);
+		F_CLR(sp, S_SCR_REFORMAT);
+		F_SET(sp, S_SCR_REFRESH);
 	}
 
 	/*
@@ -186,16 +185,16 @@ svi_paint(sp, ep)
 	 */
 	if (sp->t_rows <= 2) {
 		if (LNO < HMAP->lno) {
-			if (svi_sm_fill(sp, ep, LNO, P_TOP))
+			if (svi_sm_fill(sp, LNO, P_TOP))
 				return (1);
 		} else if (LNO > TMAP->lno)
-			if (svi_sm_fill(sp, ep, LNO, P_BOTTOM))
+			if (svi_sm_fill(sp, LNO, P_BOTTOM))
 				return (1);
 		if (sp->t_rows == 1) {
-			HMAP->off = svi_opt_screens(sp, ep, LNO, &CNO);
+			HMAP->off = svi_opt_screens(sp, LNO, &CNO);
 			goto paint;
 		}
-		F_SET(sp, S_REDRAW);
+		F_SET(sp, S_SCR_REFRESH);
 		goto adjust;
 	}
 
@@ -234,25 +233,25 @@ svi_paint(sp, ep)
 	 */
 	if (ISSMALLSCREEN(sp))
 		if (LNO < HMAP->lno) {
-			lcnt = svi_sm_nlines(sp, ep, HMAP, LNO, sp->t_maxrows);
+			lcnt = svi_sm_nlines(sp, HMAP, LNO, sp->t_maxrows);
 			if (lcnt <= HALFSCREEN(sp))
 				for (; lcnt && sp->t_rows != sp->t_maxrows;
 				     --lcnt, ++sp->t_rows) {
 					++TMAP;
-					if (svi_sm_1down(sp, ep))
+					if (svi_sm_1down(sp))
 						return (1);
 				}
 			else
 				goto small_fill;
 		} else if (LNO > TMAP->lno) {
-			lcnt = svi_sm_nlines(sp, ep, TMAP, LNO, sp->t_maxrows);
+			lcnt = svi_sm_nlines(sp, TMAP, LNO, sp->t_maxrows);
 			if (lcnt <= HALFSCREEN(sp))
 				for (; lcnt && sp->t_rows != sp->t_maxrows;
 				     --lcnt, ++sp->t_rows) {
-					if (svi_sm_next(sp, ep, TMAP, TMAP + 1))
+					if (svi_sm_next(sp, TMAP, TMAP + 1))
 						return (1);
 					++TMAP;
-					if (svi_line(sp, ep, TMAP, NULL, NULL))
+					if (svi_line(sp, TMAP, NULL, NULL))
 						return (1);
 				}
 			else {
@@ -263,9 +262,9 @@ small_fill:			MOVE(sp, INFOLINE(sp), 0);
 					MOVE(sp, TMAP - HMAP, 0);
 					clrtoeol();
 				}
-				if (svi_sm_fill(sp, ep, LNO, P_FILL))
+				if (svi_sm_fill(sp, LNO, P_FILL))
 					return (1);
-				F_SET(sp, S_REDRAW);
+				F_SET(sp, S_SCR_REFRESH);
 				goto adjust;
 			}
 		}
@@ -282,10 +281,10 @@ small_fill:			MOVE(sp, INFOLINE(sp), 0);
 		 * If less than half a screen above the line, scroll down
 		 * until the line is on the screen.
 		 */
-		lcnt = svi_sm_nlines(sp, ep, TMAP, LNO, HALFTEXT(sp));
+		lcnt = svi_sm_nlines(sp, TMAP, LNO, HALFTEXT(sp));
 		if (lcnt < HALFTEXT(sp)) {
 			while (lcnt--)
-				if (svi_sm_1up(sp, ep))
+				if (svi_sm_1up(sp))
 					return (1);
 			goto adjust;
 		}
@@ -295,16 +294,16 @@ small_fill:			MOVE(sp, INFOLINE(sp), 0);
 	/*
 	 * 3b: Line up.
 	 */
-	lcnt = svi_sm_nlines(sp, ep, HMAP, LNO, HALFTEXT(sp));
+	lcnt = svi_sm_nlines(sp, HMAP, LNO, HALFTEXT(sp));
 	if (lcnt < HALFTEXT(sp)) {
 		/*
 		 * If less than half a screen below the line, scroll up until
 		 * the line is the first line on the screen.  Special check so
 		 * that if the screen has been emptied, we refill it.
 		 */
-		if (file_gline(sp, ep, HMAP->lno, &len) != NULL) {
+		if (file_gline(sp, HMAP->lno, &len) != NULL) {
 			while (lcnt--)
-				if (svi_sm_1down(sp, ep))
+				if (svi_sm_1down(sp))
 					return (1);
 			goto adjust;
 		}
@@ -313,15 +312,15 @@ small_fill:			MOVE(sp, INFOLINE(sp), 0);
 		 * If less than a half screen from the bottom of the file,
 		 * put the last line of the file on the bottom of the screen.
 		 */
-bottom:		if (file_lline(sp, ep, &lastline))
+bottom:		if (file_lline(sp, &lastline))
 			return (1);
 		tmp.lno = LNO;
 		tmp.off = 1;
-		lcnt = svi_sm_nlines(sp, ep, &tmp, lastline, sp->t_rows);
+		lcnt = svi_sm_nlines(sp, &tmp, lastline, sp->t_rows);
 		if (lcnt < HALFTEXT(sp)) {
-			if (svi_sm_fill(sp, ep, lastline, P_BOTTOM))
+			if (svi_sm_fill(sp, lastline, P_BOTTOM))
 				return (1);
-			F_SET(sp, S_REDRAW);
+			F_SET(sp, S_SCR_REFRESH);
 			goto adjust;
 		}
 		/* It's not close, just put the line in the middle. */
@@ -335,14 +334,14 @@ bottom:		if (file_lline(sp, ep, &lastline))
 	 */
 	tmp.lno = 1;
 	tmp.off = 1;
-	lcnt = svi_sm_nlines(sp, ep, &tmp, LNO, HALFTEXT(sp));
+	lcnt = svi_sm_nlines(sp, &tmp, LNO, HALFTEXT(sp));
 	if (lcnt < HALFTEXT(sp)) {
-		if (svi_sm_fill(sp, ep, 1, P_TOP))
+		if (svi_sm_fill(sp, 1, P_TOP))
 			return (1);
 	} else
-middle:		if (svi_sm_fill(sp, ep, LNO, P_MIDDLE))
+middle:		if (svi_sm_fill(sp, LNO, P_MIDDLE))
 			return (1);
-	F_SET(sp, S_REDRAW);
+	F_SET(sp, S_SCR_REFRESH);
 
 	/*
 	 * At this point we know part of the line is on the screen.  Since
@@ -361,24 +360,24 @@ middle:		if (svi_sm_fill(sp, ep, LNO, P_MIDDLE))
 	 */
 adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 	    (LNO == HMAP->lno || LNO == TMAP->lno)) {
-		cnt = svi_opt_screens(sp, ep, LNO, &CNO);
+		cnt = svi_opt_screens(sp, LNO, &CNO);
 		if (LNO == HMAP->lno && cnt < HMAP->off)
 			if ((HMAP->off - cnt) > HALFTEXT(sp)) {
 				HMAP->off = cnt;
-				svi_sm_fill(sp, ep, OOBLNO, P_TOP);
-				F_SET(sp, S_REDRAW);
+				svi_sm_fill(sp, OOBLNO, P_TOP);
+				F_SET(sp, S_SCR_REFRESH);
 			} else
 				while (cnt < HMAP->off)
-					if (svi_sm_1down(sp, ep))
+					if (svi_sm_1down(sp))
 						return (1);
 		if (LNO == TMAP->lno && cnt > TMAP->off)
 			if ((cnt - TMAP->off) > HALFTEXT(sp)) {
 				TMAP->off = cnt;
-				svi_sm_fill(sp, ep, OOBLNO, P_BOTTOM);
-				F_SET(sp, S_REDRAW);
+				svi_sm_fill(sp, OOBLNO, P_BOTTOM);
+				F_SET(sp, S_SCR_REFRESH);
 			} else
 				while (cnt > TMAP->off)
-					if (svi_sm_1up(sp, ep))
+					if (svi_sm_1up(sp))
 						return (1);
 	}
 
@@ -388,9 +387,9 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 	 * the grounds that the cursor code would handle it.  Make sure
 	 * the right screen is up.
 	 */
-	if (F_ISSET(sp, S_REDRAW)) {
+	if (F_ISSET(sp, S_SCR_REFRESH)) {
 		if (O_ISSET(sp, O_LEFTRIGHT)) {
-			cnt = svi_opt_screens(sp, ep, LNO, &CNO);
+			cnt = svi_opt_screens(sp, LNO, &CNO);
 			if (HMAP->off != cnt)
 				for (smp = HMAP; smp <= TMAP; ++smp)
 					smp->off = cnt;
@@ -430,8 +429,8 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 	 * isn't a performance issue because there aren't any ways to get
 	 * here repeatedly.
 	 */
-	if ((p = file_gline(sp, ep, LNO, &len)) == NULL) {
-		if (file_lline(sp, ep, &lastline))
+	if ((p = file_gline(sp, LNO, &len)) == NULL) {
+		if (file_lline(sp, &lastline))
 			return (1);
 		if (lastline == 0)
 			goto slow;
@@ -506,7 +505,7 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 		if (SCNO < cwtotal) {
 lscreen:		if (O_ISSET(sp, O_LEFTRIGHT)) {
 				cnt = HMAP->off == 2 ? 1 :
-				    svi_opt_screens(sp, ep, LNO, &CNO);
+				    svi_opt_screens(sp, LNO, &CNO);
 				for (smp = HMAP; smp <= TMAP; ++smp)
 					smp->off = cnt;
 				leftright_warp = 1;
@@ -545,7 +544,7 @@ lscreen:		if (O_ISSET(sp, O_LEFTRIGHT)) {
 		/* See screen change comment in section 4a. */
 		if (SCNO >= SCREEN_COLS(sp)) {
 			if (O_ISSET(sp, O_LEFTRIGHT)) {
-				cnt = svi_opt_screens(sp, ep, LNO, &CNO);
+				cnt = svi_opt_screens(sp, LNO, &CNO);
 				for (smp = HMAP; smp <= TMAP; ++smp)
 					smp->off = cnt;
 				leftright_warp = 1;
@@ -576,7 +575,7 @@ fast:	getyx(stdscr, y, x);
 	 */
 slow:	for (smp = HMAP; smp->lno != LNO; ++smp);
 	if (O_ISSET(sp, O_LEFTRIGHT)) {
-		cnt = svi_opt_screens(sp, ep, LNO, &CNO) % SCREEN_COLS(sp);
+		cnt = svi_opt_screens(sp, LNO, &CNO) % SCREEN_COLS(sp);
 		if (cnt != HMAP->off) {
 			if (ISINFOLINE(sp, smp))
 				smp->off = cnt;
@@ -589,7 +588,7 @@ slow:	for (smp = HMAP; smp->lno != LNO; ++smp);
 		}
 	}
 	for (y = -1; smp <= TMAP && smp->lno == LNO; ++smp) {
-		if (svi_line(sp, ep, smp, &y, &SCNO))
+		if (svi_line(sp, smp, &y, &SCNO))
 			return (1);
 		if (y != -1)
 			break;
@@ -599,27 +598,28 @@ slow:	for (smp = HMAP; smp->lno != LNO; ++smp);
 	/*
 	 * 5: Repaint the entire screen.
 	 *
-	 * Lost big, do what you have to do.  We flush the cache as S_REDRAW
-	 * gets set when the screen isn't worth fixing, and it's simpler to
-	 * repaint.  So, don't trust anything that we think we know about it.
+	 * Lost big, do what you have to do.  We flush the cache, since
+	 * S_SCR_REFRESH gets set when the screen isn't worth fixing, and
+	 * it's simpler to repaint.  So, don't trust anything that we
+	 * think we know about it.
 	 */
 paint:	for (smp = HMAP; smp <= TMAP; ++smp)
 		SMAP_FLUSH(smp);
 	for (smp = HMAP; smp <= TMAP; ++smp)
-		if (svi_line(sp, ep, smp, &y, &SCNO))
+		if (svi_line(sp, smp, &y, &SCNO))
 			return (1);
 
 	/*
 	 * If it's a small screen and we're redrawing, clear the unused lines,
 	 * ex may have overwritten them.
 	 */
-	if (F_ISSET(sp, S_REDRAW)) {
+	if (F_ISSET(sp, S_SCR_REFRESH)) {
 		if (ISSMALLSCREEN(sp))
 			for (cnt = sp->t_rows; cnt <= sp->t_maxrows; ++cnt) {
 				MOVE(sp, cnt, 0);
 				clrtoeol();
 			}
-		F_CLR(sp, S_REDRAW);
+		F_CLR(sp, S_SCR_REFRESH);
 	}
 
 	didpaint = 1;
@@ -627,14 +627,14 @@ paint:	for (smp = HMAP; smp <= TMAP; ++smp)
 	/*
 	 * 6: Repaint the line numbers.
 	 *
-	 * If O_NUMBER is set and the S_RENUMBER bit is set, and we didn't
-	 * repaint the screen, repaint all of the line numbers, they've
-	 * changed.
+	 * If O_NUMBER is set and the SVI_SCR_NUMBER bit is set, and we
+	 * didn't repaint the screen, repaint all of the line numbers,
+	 * they've changed.
 	 */
-number:	if (O_ISSET(sp, O_NUMBER) && F_ISSET(sp, S_RENUMBER) && !didpaint) {
-		if (svi_number(sp, ep))
+number:	if (O_ISSET(sp, O_NUMBER) && F_ISSET(svp, SVI_SCR_NUMBER)) {
+		if (!didpaint && svi_number(sp))
 			return (1);
-		F_CLR(sp, S_RENUMBER);
+		F_CLR(svp, SVI_SCR_NUMBER);
 	}
 
 	/*
@@ -642,9 +642,9 @@ number:	if (O_ISSET(sp, O_NUMBER) && F_ISSET(sp, S_RENUMBER) && !didpaint) {
 	 *
 	 * If the screen was corrupted, refresh it.
 	 */
-	if (F_ISSET(sp, S_REFRESH)) {
+	if (F_ISSET(sp, S_SCR_REFRESH)) {
 		wrefresh(curscr);
-		F_CLR(sp, S_REFRESH);
+		F_CLR(sp, S_SCR_REFRESH);
 	}
 
 	if (F_ISSET(sp, S_BELLSCHED))
@@ -653,7 +653,7 @@ number:	if (O_ISSET(sp, O_NUMBER) && F_ISSET(sp, S_RENUMBER) && !didpaint) {
 	 * If the bottom line isn't in use by the colon command, and
 	 * we're not in the middle of a map:
 	 *
-	 *	Display any messages.  Don't test S_UPDATE_MODE.  The
+	 *	Display any messages.  Don't test S_SCR_UMODE.  The
 	 *	message printing routine set it to avoid anyone else
 	 *	destroying the message we're about to display.
 	 *
@@ -664,8 +664,8 @@ number:	if (O_ISSET(sp, O_NUMBER) && F_ISSET(sp, S_RENUMBER) && !didpaint) {
 		if (sp->msgq.lh_first != NULL &&
 		    !F_ISSET(sp->msgq.lh_first, M_EMPTY))
 			svi_msgflush(sp);
-		else if (!F_ISSET(sp, S_UPDATE_MODE))
-			svi_modeline(sp, ep);
+		else if (!F_ISSET(sp, S_SCR_UMODE))
+			svi_modeline(sp);
 
 	/* Update saved information. */
 	OCNO = CNO;
@@ -685,7 +685,7 @@ number:	if (O_ISSET(sp, O_NUMBER) && F_ISSET(sp, S_RENUMBER) && !didpaint) {
 	 * and fixing it here is a gross violation of layering.
 	 */
 	if (leftright_warp)
-		(void)svi_column(sp, ep, &sp->rcm);
+		(void)svi_column(sp, &sp->rcm);
 
 	return (0);
 }
@@ -695,9 +695,8 @@ number:	if (O_ISSET(sp, O_NUMBER) && F_ISSET(sp, S_RENUMBER) && !didpaint) {
  *	Update the mode line.
  */
 static int
-svi_modeline(sp, ep)
+svi_modeline(sp)
 	SCR *sp;
-	EXF *ep;
 {
 	SMAP *smp;
 	SVI_PRIVATE *svp;
@@ -767,7 +766,7 @@ svi_modeline(sp, ep)
 			    (smp == TMAP || smp[1].lno != sp->lno))
 				scno = svp->sc_col + 1;
 			else
-				scno = svi_screens(sp, ep,
+				scno = svi_screens(sp,
 				    NULL, 0, sp->lno, &sp->cno);
 		}
 		len = snprintf(buf, sizeof(buf), "%lu,%lu", sp->lno, scno);
@@ -795,7 +794,7 @@ svi_modeline(sp, ep)
 #define	MODESIZE	9
 	endpoint = cols;
 	if (O_ISSET(sp, O_SHOWMODE)) {
-		if (F_ISSET(ep, F_MODIFIED))
+		if (F_ISSET(sp->ep, F_MODIFIED))
 			--endpoint;
 		endpoint -= MAX_MODE_NAME;
 	}
@@ -805,7 +804,7 @@ svi_modeline(sp, ep)
 
 	MOVE(sp, INFOLINE(sp), endpoint);
 	if (O_ISSET(sp, O_SHOWMODE)) {
-		if (F_ISSET(ep, F_MODIFIED))
+		if (F_ISSET(sp->ep, F_MODIFIED))
 			ADDSTR("*");
 		ADDSTR(sp->showmode);
 	}

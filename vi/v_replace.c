@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_replace.c,v 8.21 1994/08/31 17:15:18 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:15:18 $";
+static char sccsid[] = "$Id: v_replace.c,v 9.1 1994/11/09 18:36:15 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:36:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -41,9 +41,8 @@ static char sccsid[] = "$Id: v_replace.c,v 8.21 1994/08/31 17:15:18 bostic Exp $
  * it's not insane.
  */
 int
-v_replace(sp, ep, vp)
+v_replace(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	CH ikey;
@@ -64,8 +63,8 @@ v_replace(sp, ep, vp)
 	 *	   the end of the line, also work.
 	 *	3: Replacing a newline has somewhat odd semantics.
 	 */
-	if ((p = file_gline(sp, ep, vp->m_start.lno, &len)) == NULL) {
-		if (file_lline(sp, ep, &lno))
+	if ((p = file_gline(sp, vp->m_start.lno, &len)) == NULL) {
+		if (file_lline(sp, &lno))
 			return (1);
 		if (lno != 0) {
 			GETLINE_ERR(sp, vp->m_start.lno);
@@ -89,7 +88,7 @@ nochar:		msgq(sp, M_BERR, "185|No characters to replace");
 	vp->m_stop.lno = vp->m_start.lno;
 	vp->m_stop.cno = vp->m_start.cno + cnt - 1;
 	if (vp->m_stop.cno > len - 1) {
-		v_eol(sp, ep, &vp->m_start);
+		v_eol(sp, &vp->m_start);
 		return (1);
 	}
 
@@ -102,7 +101,7 @@ nochar:		msgq(sp, M_BERR, "185|No characters to replace");
 		ikey.value = KEY_VAL(sp, ikey.ch);
 	} else {
 		sp->showmode = "Replace char";
-		(void)sp->s_refresh(sp, ep);
+		(void)sp->s_refresh(sp);
 
 		if (term_key(sp, &ikey, 0) != INP_OK)
 			return (1);
@@ -128,7 +127,7 @@ nochar:		msgq(sp, M_BERR, "185|No characters to replace");
 		vp->m_stop.cno = 0;
 
 		/* The first part of the current line. */
-		if (file_sline(sp, ep, vp->m_start.lno, p, vp->m_start.cno))
+		if (file_sline(sp, vp->m_start.lno, p, vp->m_start.cno))
 			goto err_ret;
 
 		/*
@@ -142,10 +141,10 @@ nochar:		msgq(sp, M_BERR, "185|No characters to replace");
 
 		if ((tp = text_init(sp, p, len, len)) == NULL)
 			goto err_ret;
-		if (txt_auto(sp, ep, vp->m_start.lno, NULL, 0, tp))
+		if (txt_auto(sp, vp->m_start.lno, NULL, 0, tp))
 			goto err_ret;
 		vp->m_stop.cno = tp->ai ? tp->ai - 1 : 0;
-		if (file_aline(sp, ep, 1, vp->m_start.lno, tp->lb, tp->len))
+		if (file_aline(sp, 1, vp->m_start.lno, tp->lb, tp->len))
 			goto err_ret;
 		text_free(tp);
 
@@ -153,13 +152,13 @@ nochar:		msgq(sp, M_BERR, "185|No characters to replace");
 
 		/* All of the middle lines. */
 		while (--cnt)
-			if (file_aline(sp, ep, 1, vp->m_start.lno, "", 0)) {
+			if (file_aline(sp, 1, vp->m_start.lno, "", 0)) {
 err_ret:			rval = 1;
 				break;
 			}
 	} else {
 		memset(bp + vp->m_start.cno, ikey.ch, cnt);
-		rval = file_sline(sp, ep, vp->m_start.lno, bp, len);
+		rval = file_sline(sp, vp->m_start.lno, bp, len);
 	}
 	FREE_SPACE(sp, bp, blen);
 

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 8.27 1994/08/17 14:33:38 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:33:38 $";
+static char sccsid[] = "$Id: vs_line.c,v 9.1 1994/11/09 18:35:31 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:35:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -41,9 +41,8 @@ static char sccsid[] = "$Id: vs_line.c,v 8.27 1994/08/17 14:33:38 bostic Exp $ (
  *	Update one line on the screen.
  */
 int
-svi_line(sp, ep, smp, yp, xp)
+svi_line(sp, smp, yp, xp)
 	SCR *sp;
-	EXF *ep;
 	SMAP *smp;
 	size_t *xp, *yp;
 {
@@ -84,7 +83,7 @@ svi_line(sp, ep, smp, yp, xp)
 	MOVE(sp, smp - HMAP, 0);
 
 	/* Get a copy of the line. */
-	p = file_gline(sp, ep, smp->lno, &len);
+	p = file_gline(sp, smp->lno, &len);
 
 	/*
 	 * Special case if we're printing the info/mode line.  Skip printing
@@ -374,9 +373,8 @@ ret:	MOVEA(sp, oldy, oldx);
  *	Repaint the numbers on all the lines.
  */
 int
-svi_number(sp, ep)
+svi_number(sp)
 	SCR *sp;
-	EXF *ep;
 {
 	SMAP *smp;
 	size_t oldy, oldx;
@@ -395,7 +393,7 @@ svi_number(sp, ep)
 	 * The problem is that file_lline will lie, and tell us that the
 	 * info line is the last line in the file.
 	 */
-	lp = file_gline(sp, ep, TMAP->lno + 1, NULL);
+	lp = file_gline(sp, TMAP->lno + 1, NULL);
 
 	getyx(stdscr, oldy, oldx);
 	for (smp = HMAP; smp <= TMAP; ++smp) {
@@ -404,7 +402,7 @@ svi_number(sp, ep)
 		if (ISINFOLINE(sp, smp))
 			break;
 		if (smp->lno != 1 && lp == NULL &&
-		    file_gline(sp, ep, smp->lno, NULL) == NULL)
+		    file_gline(sp, smp->lno, NULL) == NULL)
 			break;
 		MOVE(sp, smp - HMAP, 0);
 		(void)snprintf(nbuf, sizeof(nbuf), O_NUMBER_FMT, smp->lno);

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ulcase.c,v 8.10 1994/08/17 14:36:16 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:36:16 $";
+static char sccsid[] = "$Id: v_ulcase.c,v 9.1 1994/11/09 18:36:30 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:36:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,8 +30,7 @@ static char sccsid[] = "$Id: v_ulcase.c,v 8.10 1994/08/17 14:36:16 bostic Exp $ 
 #include "vi.h"
 #include "vcmd.h"
 
-static int ulcase __P((SCR *, EXF *,
-    recno_t, CHAR_T *, size_t, size_t, size_t));
+static int ulcase __P((SCR *, recno_t, CHAR_T *, size_t, size_t, size_t));
 
 /*
  * v_ulcase -- [count]~
@@ -48,9 +47,8 @@ static int ulcase __P((SCR *, EXF *,
  * that the default now.
  */
 int
-v_ulcase(sp, ep, vp)
+v_ulcase(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	recno_t lno;
@@ -64,7 +62,7 @@ v_ulcase(sp, ep, vp)
 	/* EOF is an infinite count sink. */
 	for (cnt =
 	    F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt > 0; cno = 0, ++lno) {
-		if ((p = file_gline(sp, ep, lno, &len)) == NULL)
+		if ((p = file_gline(sp, lno, &len)) == NULL)
 			break;
 
 		/* Empty lines decrement the count by one. */
@@ -87,14 +85,14 @@ v_ulcase(sp, ep, vp)
 				vp->m_final.cno = lcnt + 1;
 			}
 
-			if (ulcase(sp, ep, lno, p, len, cno, lcnt))
+			if (ulcase(sp, lno, p, len, cno, lcnt))
 				return (1);
 		}
 	}
 
 	/* Check to see if we tried to move past EOF. */
-	if (file_gline(sp, ep, vp->m_final.lno, &len) == NULL) {
-		(void)file_gline(sp, ep, --vp->m_final.lno, &len);
+	if (file_gline(sp, vp->m_final.lno, &len) == NULL) {
+		(void)file_gline(sp, --vp->m_final.lno, &len);
 		vp->m_final.cno = len == 0 ? 0 : len - 1;
 	}
 	return (0);
@@ -105,9 +103,8 @@ v_ulcase(sp, ep, vp)
  *	Toggle upper & lower case letters over a range.
  */
 int
-v_mulcase(sp, ep, vp)
+v_mulcase(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	CHAR_T *p;
@@ -115,12 +112,11 @@ v_mulcase(sp, ep, vp)
 	recno_t lno;
 
 	for (lno = vp->m_start.lno;;) {
-		if ((p = file_gline(sp, ep, lno, &len)) == NULL) {
+		if ((p = file_gline(sp, lno, &len)) == NULL) {
 			GETLINE_ERR(sp, lno);
 			return (1);
 		}
-		if (len != 0 &&
-		    ulcase(sp, ep, lno, p, len,
+		if (len != 0 && ulcase(sp, lno, p, len,
 		    lno == vp->m_start.lno ? vp->m_start.cno : 0,
 		    !F_ISSET(vp, VM_LMODE) &&
 		    lno == vp->m_stop.lno ? vp->m_stop.cno : len))
@@ -147,9 +143,8 @@ v_mulcase(sp, ep, vp)
  *	Change part of a line's case.
  */
 static int
-ulcase(sp, ep, lno, lp, len, scno, ecno)
+ulcase(sp, lno, lp, len, scno, ecno)
 	SCR *sp;
-	EXF *ep;
 	recno_t lno;
 	CHAR_T *lp;
 	size_t len, scno, ecno;
@@ -174,7 +169,7 @@ ulcase(sp, ep, lno, lp, len, scno, ecno)
 		}
 	}
 
-	if (change && file_sline(sp, ep, lno, bp, len))
+	if (change && file_sline(sp, lno, bp, len))
 		rval = 1;
 
 	FREE_SPACE(sp, bp, blen);

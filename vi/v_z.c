@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_z.c,v 8.19 1994/08/31 17:15:23 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:15:23 $";
+static char sccsid[] = "$Id: v_z.c,v 9.1 1994/11/09 18:36:36 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:36:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,9 +31,8 @@ static char sccsid[] = "$Id: v_z.c,v 8.19 1994/08/31 17:15:23 bostic Exp $ (Berk
  *	Move the screen.
  */
 int
-v_z(sp, ep, vp)
+v_z(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
 	recno_t last, lno;
@@ -45,7 +44,7 @@ v_z(sp, ep, vp)
 	 */
 	if (F_ISSET(vp, VC_C1SET)) {
 		lno = vp->count;
-		if (file_lline(sp, ep, &last))
+		if (file_lline(sp, &last))
 			return (1);
 		if (lno > last)
 			lno = last;
@@ -71,11 +70,11 @@ v_z(sp, ep, vp)
 
 	switch (vp->character) {
 	case '-':		/* Put the line at the bottom. */
-		if (sp->s_fill(sp, ep, lno, P_BOTTOM))
+		if (sp->s_fill(sp, lno, P_BOTTOM))
 			return (1);
 		break;
 	case '.':		/* Put the line in the middle. */
-		if (sp->s_fill(sp, ep, lno, P_MIDDLE))
+		if (sp->s_fill(sp, lno, P_MIDDLE))
 			return (1);
 		break;
 	case '+':
@@ -85,12 +84,12 @@ v_z(sp, ep, vp)
 		 * a screen from the current screen.
 		 */
 		if (F_ISSET(vp, VC_C1SET)) {
-			if (sp->s_fill(sp, ep, lno, P_TOP))
+			if (sp->s_fill(sp, lno, P_TOP))
 				return (1);
-			if (sp->s_position(sp, ep, &vp->m_final, 0, P_TOP))
+			if (sp->s_position(sp, &vp->m_final, 0, P_TOP))
 				return (1);
 		} else
-			if (sp->s_scroll(sp, ep,
+			if (sp->s_scroll(sp,
 			    &vp->m_final, sp->t_rows, Z_PLUS))
 				return (1);
 		break;
@@ -106,15 +105,14 @@ v_z(sp, ep, vp)
 		 * vi, here.
 		 */
 		if (F_ISSET(vp, VC_C1SET)) {
-			if (sp->s_fill(sp, ep, lno, P_BOTTOM))
+			if (sp->s_fill(sp, lno, P_BOTTOM))
 				return (1);
-			if (sp->s_position(sp, ep, &vp->m_final, 0, P_TOP))
+			if (sp->s_position(sp, &vp->m_final, 0, P_TOP))
 				return (1);
-			if (sp->s_fill(sp, ep, vp->m_final.lno, P_BOTTOM))
+			if (sp->s_fill(sp, vp->m_final.lno, P_BOTTOM))
 				return (1);
 		} else
-			if (sp->s_scroll(sp, ep,
-			    &vp->m_final, sp->t_rows, Z_CARAT))
+			if (sp->s_scroll(sp, &vp->m_final, sp->t_rows, Z_CARAT))
 				return (1);
 		break;
 	default:		/* Put the line at the top for <cr>. */
@@ -123,7 +121,7 @@ v_z(sp, ep, vp)
 			msgq(sp, M_ERR, "201|Usage: %s", vp->kp->usage);
 			return (1);
 		}
-		if (sp->s_fill(sp, ep, lno, P_TOP))
+		if (sp->s_fill(sp, lno, P_TOP))
 			return (1);
 		break;
 	}

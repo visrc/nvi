@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_mark.c,v 8.12 1994/10/13 13:59:26 bostic Exp $ (Berkeley) $Date: 1994/10/13 13:59:26 $";
+static char sccsid[] = "$Id: v_mark.c,v 9.1 1994/11/09 18:36:06 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:36:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,16 +31,15 @@ static char sccsid[] = "$Id: v_mark.c,v 8.12 1994/10/13 13:59:26 bostic Exp $ (B
  *	Set a mark.
  */
 int
-v_mark(sp, ep, vp)
+v_mark(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
-	return (mark_set(sp, ep, vp->character, &vp->m_start, 1));
+	return (mark_set(sp, vp->character, &vp->m_start, 1));
 }
 
 enum which {BMARK, FMARK};
-static int mark __P((SCR *, EXF *, VICMDARG *, enum which));
+static int mark __P((SCR *, VICMDARG *, enum which));
 
 
 /*
@@ -57,12 +56,11 @@ static int mark __P((SCR *, EXF *, VICMDARG *, enum which));
  * them.
  */
 int
-v_bmark(sp, ep, vp)
+v_bmark(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
-	return (mark(sp, ep, vp, BMARK));
+	return (mark(sp, vp, BMARK));
 }
 
 /*
@@ -72,18 +70,16 @@ v_bmark(sp, ep, vp)
  * Move to the first nonblank character of the line containing the mark.
  */
 int
-v_fmark(sp, ep, vp)
+v_fmark(sp, vp)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 {
-	return (mark(sp, ep, vp, FMARK));
+	return (mark(sp, vp, FMARK));
 }
 
 static int
-mark(sp, ep, vp, cmd)
+mark(sp, vp, cmd)
 	SCR *sp;
-	EXF *ep;
 	VICMDARG *vp;
 	enum which cmd;
 {
@@ -91,13 +87,13 @@ mark(sp, ep, vp, cmd)
 	MARK m;
 	size_t len;
 
-	if (mark_get(sp, ep, vp->character, &vp->m_stop))
+	if (mark_get(sp, vp->character, &vp->m_stop))
 		return (1);
 
 	/* Forward marks move to the first non-blank. */
 	if (cmd == FMARK) {
 		vp->m_stop.cno = 0;
-		if (nonblank(sp, ep, vp->m_stop.lno, &vp->m_stop.cno))
+		if (nonblank(sp, vp->m_stop.lno, &vp->m_stop.cno))
 			return (1);
 	}
 
@@ -193,7 +189,7 @@ mark(sp, ep, vp, cmd)
 	 * and end at column 0 of another line.
 	 */
 	if (vp->m_start.lno < vp->m_stop.lno && vp->m_stop.cno == 0) {
-		if (file_gline(sp, ep, --vp->m_stop.lno, &len) == NULL) {
+		if (file_gline(sp, --vp->m_stop.lno, &len) == NULL) {
 			GETLINE_ERR(sp, vp->m_stop.lno);
 			return (1);
 		}
