@@ -16,7 +16,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 9.17 1995/01/27 16:11:18 bostic Exp $ (Berkeley) $Date: 1995/01/27 16:11:18 $";
+static char sccsid[] = "$Id: main.c,v 9.18 1995/02/07 18:41:15 bostic Exp $ (Berkeley) $Date: 1995/02/07 18:41:15 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -87,10 +87,6 @@ vi_main(argc, argv, e_ssize)
 	char *excmdarg, *myname, *tag_f, *trace_f, *wsizearg;
 	char path[MAXPATHLEN];
 
-#ifdef GDBATTACH
-	(void)printf("%u waiting...\n", getpid());
-	(void)read(STDIN_FILENO, &eval, 1);
-#endif
 	/* Set screen type and mode based on the program name. */
 	readonly = 0;
 	if ((myname = strrchr(*argv, '/')) == NULL)
@@ -116,11 +112,21 @@ vi_main(argc, argv, e_ssize)
 	excmdarg = tag_f = trace_f = wsizearg = NULL;
 	lflag = silent = 0;
 	snapshot = 1;
+#ifdef DEBUG
+	while ((ch = getopt(argc, argv, "c:DeFlRrsT:t:vw:X:")) != EOF)
+#else
 	while ((ch = getopt(argc, argv, "c:eFlRrsT:t:vw:X:")) != EOF)
+#endif
 		switch (ch) {
 		case 'c':		/* Run the command. */
 			excmdarg = optarg;
 			break;
+#ifdef DEBUG
+		case 'D':
+			(void)printf("process %u waiting...\n", getpid());
+			(void)read(STDIN_FILENO, &eval, 1);
+			break;
+#endif
 		case 'e':		/* Ex mode. */
 			LF_CLR(S_SCREENS);
 			LF_SET(S_EX);
