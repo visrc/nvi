@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 5.16 1992/12/07 16:11:44 bostic Exp $ (Berkeley) $Date: 1992/12/07 16:11:44 $";
+static char sccsid[] = "$Id: ex_global.c,v 5.17 1992/12/20 15:06:50 bostic Exp $ (Berkeley) $Date: 1992/12/20 15:06:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -58,11 +58,6 @@ global(cmdp, cmd)
 	int eval, reflags, rval;
 	u_char *ep, *ptrn, *s, cbuf[512];
 	char delim[2];
-
-	if (FF_ISSET(curf, F_IN_GLOBAL)) {
-		msg("Nested global commands aren't permitted.");
-		return (1);
-	}
 
 	/* Skip whitespace. */
 	for (s = cmdp->string; *s && isspace(*s); ++s);
@@ -179,6 +174,8 @@ global(cmdp, cmd)
 		nchanged += curf->rptlines;
 		curf->rptlines = 0;
 	}
+	/* Cursor is on column 0, regardless. */
+	curf->cno = 0;
 
 	/* Report statistics. */
 err:	curf->rptlines += nchanged;
