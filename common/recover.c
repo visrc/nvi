@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: recover.c,v 10.26 2001/08/21 09:16:37 skimo Exp $ (Berkeley) $Date: 2001/08/21 09:16:37 $";
+static const char sccsid[] = "$Id: recover.c,v 10.27 2001/08/21 11:52:04 skimo Exp $ (Berkeley) $Date: 2001/08/21 11:52:04 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -215,7 +215,7 @@ rcv_init(SCR *sp)
 		/* Turn on a busy message, and sync it to backing store. */
 		sp->gp->scr_busy(sp,
 		    "057|Copying file for recovery...", BUSY_ON);
-		ep->db->get_type(ep->db, &type);
+		type = ep->db->type;
 		/* XXXX gross hack
 		   We don't want DB to write to the underlying
 		   recno database, so we just tell it that it's
@@ -269,7 +269,7 @@ rcv_sync(SCR *sp, u_int flags)
 	/* Sync the file if it's been modified. */
 	if (F_ISSET(ep, F_MODIFIED)) {
 		DBTYPE type;
-		ep->db->get_type(ep->db, &type);
+		type = ep->db->type;
 		/* XXXX gross hack
 		   We don't want DB to write to the underlying
 		   recno database, so we just tell it that it's
