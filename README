@@ -1,6 +1,6 @@
-#	$Id: README,v 8.10 1993/08/26 19:05:38 bostic Exp $ (Berkeley) $Date: 1993/08/26 19:05:38 $
+#	$Id: README,v 8.11 1993/09/13 21:36:23 bostic Exp $ (Berkeley) $Date: 1993/09/13 21:36:23 $
 
-This is the README for version 0.6 of nex/nvi, a (soon to be) freely
+This is the README for version 0.7 of nex/nvi, a (soon to be) freely
 redistributable replacement for the vi/ex text editors.
 
 This is still ALPHA software, please do not redistribute it without
@@ -79,24 +79,11 @@ things you might like:
 		:"prev[ious][!]" edits the previous file
 
 =-=-=-=-=-=-=-=-=-=-=
-o Known bugs:
-
-	o Erasure of characters input using the 'R' command isn't
-	  correct.
-	o Several options have not been implemented: wrapmargin,
-	  showmatch and a few others.
-	o Nvi uses POSIX 1003.2 basic and extended RE's.  The historic
-	  RE hack will be put in RSN.
-	o Piping more than 4K or so at a time through a system command
-	  causes nvi to hang.
-
-	And, frankly, lots of fairly random other stuff.
-
-=-=-=-=-=-=-=-=-=-=-=
 o Porting information:
 
-The directory PORT has a old-style Makefile which builds the entire nvi
-distribution.  See it and the file PORT/README for more information.
+The directory PORT has directories per machine/OS combination, with
+old-style Makefiles which build nvi.  See it and the file PORT/README
+for more information.
 
 =-=-=-=-=-=-=-=-=-=-=
 o Directories:
