@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 5.4 1992/04/15 09:06:22 bostic Exp $ (Berkeley) $Date: 1992/04/15 09:06:22 $";
+static char sccsid[] = "$Id: seq.c,v 5.5 1992/04/16 17:58:34 bostic Exp $ (Berkeley) $Date: 1992/04/16 17:58:34 $";
 #endif /* not lint */
 
 #include <errno.h>
@@ -16,6 +16,7 @@ static char sccsid[] = "$Id: seq.c,v 5.4 1992/04/15 09:06:22 bostic Exp $ (Berke
 #include <string.h>
 
 #include "vi.h"
+#include "curses.h"
 #include "seq.h"
 
 SEQ *seq[UCHAR_MAX];

@@ -13,9 +13,11 @@
 #include <sys/types.h>
 #include <stdio.h>
 
-#include "options.h"
 #include "vi.h"
+#include "curses.h"
+#include "options.h"
 #include "regexp.h"
+#include "extern.h"
 
 extern long	atol();
 

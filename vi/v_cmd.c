@@ -6,15 +6,16 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 5.11 1992/04/15 11:54:22 bostic Exp $ (Berkeley) $Date: 1992/04/15 11:54:22 $";
+static char sccsid[] = "$Id: v_cmd.c,v 5.12 1992/04/16 17:58:32 bostic Exp $ (Berkeley) $Date: 1992/04/16 17:58:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 #include <stdio.h>
 #include <ctype.h>
 
-#include "options.h"
 #include "vi.h"
+#include "curses.h"
+#include "options.h"
 #include "extern.h"
 
 /* This array describes what each key does */

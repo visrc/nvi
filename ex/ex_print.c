@@ -6,15 +6,16 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 5.4 1992/04/15 09:13:50 bostic Exp $ (Berkeley) $Date: 1992/04/15 09:13:50 $";
+static char sccsid[] = "$Id: ex_print.c,v 5.5 1992/04/16 17:57:37 bostic Exp $ (Berkeley) $Date: 1992/04/16 17:57:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 #include <stdio.h>
 
-#include "options.h"
 #include "vi.h"
+#include "curses.h"
 #include "excmd.h"
+#include "options.h"
 #include "extern.h"
 
 enum which {LIST, NUMBER, PRINT};

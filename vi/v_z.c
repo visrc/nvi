@@ -14,6 +14,7 @@
 #include <stdio.h>
 
 #include "vi.h"
+#include "curses.h"
 #include "options.h"
 #include "extern.h"
 
