@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.2 1993/07/21 09:34:15 bostic Exp $ (Berkeley) $Date: 1993/07/21 09:34:15 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.3 1993/07/21 14:31:34 bostic Exp $ (Berkeley) $Date: 1993/07/21 14:31:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -194,29 +194,27 @@ middle:		if (svi_sm_fill(sp, ep, LNO, P_MIDDLE))
 	 * line may not be on the screen.  While that's not necessarily bad,
 	 * if the part the cursor is on isn't there, we're going to lose.
 	 * This can be tricky; if the line covers the entire screen, lno
-	 * may be the same as both ends of the map.  This isn't a problem
-	 * for left-right scrolling, the cursor movement code handles the
-	 * problem.
+	 * may be the same as both ends of the map, that's why we test both
+	 * the top and the bottom of the map.  This isn't a problem for
+	 * left-right scrolling, the cursor movement code handles the problem.
 	 *
 	 * XXX
 	 * There's a real performance issue here if editing *really* long
 	 * lines.  This gets to the right spot by scrolling, and, in a
 	 * binary, by scrolling hundreds of lines.
 	 */
-adjust:	if (!O_ISSET(sp, O_LEFTRIGHT))
-		if (LNO == HMAP->lno) {
-			cnt = svi_screens(sp, ep, LNO, &CNO);
-			if (cnt < HMAP->off)
-				while (cnt < HMAP->off)
-					if (svi_sm_1down(sp, ep))
-						return (1);
-		} else if (LNO == TMAP->lno) {
-			cnt = svi_screens(sp, ep, LNO, &CNO);
-			if (cnt > TMAP->off)
-				while (cnt > TMAP->off)
-					if (svi_sm_1up(sp, ep))
-						return (1);
-		}
+adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
+	    (LNO == HMAP->lno || LNO == TMAP->lno)) {
+		cnt = svi_screens(sp, ep, LNO, &CNO);
+		if (LNO == HMAP->lno)
+			while (cnt < HMAP->off)
+				if (svi_sm_1down(sp, ep))
+					return (1);
+		if (LNO == TMAP->lno)
+			while (cnt > TMAP->off)
+				if (svi_sm_1up(sp, ep))
+					return (1);
+	}
 
 	/* If the screen needs to be repainted, skip cursor optimization. */
 	if (F_ISSET(sp, S_REDRAW))
