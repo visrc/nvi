@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.111 1994/05/04 18:22:06 bostic Exp $ (Berkeley) $Date: 1994/05/04 18:22:06 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.112 1994/05/04 18:38:18 bostic Exp $ (Berkeley) $Date: 1994/05/04 18:38:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -531,16 +531,20 @@ k_cr:			if (LF_ISSET(TXT_CR)) {
 			 * broken a line, there may be additional information
 			 * (i.e. the start of a line) in the wmt structure.
 			 */
-			if (wmset && (wmt.len != 0 ||
-			    wmt.insert != 0 || wmt.owrite != 0)) {
-				BINC_GOTO(sp, ntp->lb,
-				    ntp->lb_len, ntp->len + wmt.len + 10);
-				memmove(ntp->lb + sp->cno,
-				    wmt.lb, wmt.len + wmt.insert + wmt.owrite);
-				ntp->len += wmt.len + wmt.insert + wmt.owrite;
-				ntp->insert = wmt.insert;
-				ntp->owrite = wmt.owrite;
-				sp->cno += wmt.len;
+			if (wmset) {
+				if (wmt.len != 0 ||
+				     wmt.insert != 0 || wmt.owrite != 0) {
+					BINC_GOTO(sp, ntp->lb, ntp->lb_len,
+					    ntp->len + wmt.len + 32);
+					memmove(ntp->lb + sp->cno, wmt.lb,
+					    wmt.len + wmt.insert + wmt.owrite);
+					ntp->len +=
+					    wmt.len + wmt.insert + wmt.owrite;
+					ntp->insert = wmt.insert;
+					ntp->owrite = wmt.owrite;
+					sp->cno += wmt.len;
+				}
+				wmset = 0;
 			}
 
 			/* New lines are TXT_APPENDEOL. */
