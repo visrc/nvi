@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 8.13 1994/08/31 17:15:06 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:15:06 $";
+static char sccsid[] = "$Id: v_ex.c,v 8.14 1994/10/13 13:33:07 bostic Exp $ (Berkeley) $Date: 1994/10/13 13:33:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -133,11 +133,16 @@ v_filter(sp, ep, vp)
 	 * would succeed, even if they all moved to the same location in the
 	 * current line.  I don't see any reason to disallow '!' using any of
 	 * the possible motion commands.
+	 *
+	 * !!!
+	 * Historical vi ran the last bang command if N or n was used as the
+	 * search motion.
 	 */
 	excmd(&cmd, C_BANG,
 	    2, vp->m_start.lno, vp->m_stop.lno, 0, ap, &a, NULL);
 	EXP(sp)->argsoff = 0;			/* XXX */
-	if (F_ISSET(vp,  VC_ISDOT)) {
+	if (F_ISSET(vp, VC_ISDOT) ||
+	    ISCMD(vp->rkp, 'N') || ISCMD(vp->rkp, 'n')) {
 		if (argv_exp1(sp, ep, &cmd, "!", 1, 1))
 			return (1);
 	} else {
