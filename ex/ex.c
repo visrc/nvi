@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 9.12 1994/11/25 11:31:14 bostic Exp $ (Berkeley) $Date: 1994/11/25 11:31:14 $";
+static char sccsid[] = "$Id: ex.c,v 9.13 1994/12/01 17:37:11 bostic Exp $ (Berkeley) $Date: 1994/12/01 17:37:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,10 +33,9 @@ static char sccsid[] = "$Id: ex.c,v 9.12 1994/11/25 11:31:14 bostic Exp $ (Berke
 #include "vi.h"
 #include "excmd.h"
 
-enum baddr {A_COMBO, A_EMPTY, A_EOF, A_NOTSET, A_ZERO };
-static void	badaddr __P((SCR *,
-		    EXCMDLIST const *, enum baddr, enum nresult));
+#if defined(DEBUG) && defined(COMLOG)
 static void	ex_comlog __P((SCR *, EXCMDARG *));
+#endif
 static __inline EXCMDLIST const *
 		ex_comm_search __P((char *, size_t));
 static int	ex_range __P((SCR *, EXCMDARG *, char **, size_t *));
@@ -556,17 +555,10 @@ skip:		if (F_ISSET(cp, E_NOPERM)) {
 		 * !!!
 		 * If no address was specified, and it's not a global command,
 		 * we up the address by one.  (I have no idea why globals are
-		 * exempted, but it's (ahem) historic practice.)  Make sure
-		 * we're not in a missing or empty file, this could disguise an
-		 * address of 0.
+		 * exempted, but it's (ahem) historic practice.)
 		 */
 		if (exc.addrcnt == 0 && !F_ISSET(sp, S_GLOBAL)) {
 			exc.addrcnt = 1;
-			if (sp->ep == NULL ||
-			    sp->lno == 1 && file_gline(sp, 1, NULL) == NULL) {
-				badaddr(sp, NULL, A_EMPTY, NUM_OK);
-				goto err;
-			}
 			exc.addr1.lno = sp->lno + 1;
 			exc.addr1.cno = sp->cno;
 		}
@@ -1029,7 +1021,7 @@ end2:			break;
 				F_SET(&exc, E_COUNT_POS);
 			if ((nret =
 			    nget_slong(sp, &ltmp, cmd, &t, 10)) != NUM_OK) {
-				badaddr(sp, NULL, A_NOTSET, nret);
+				ex_badaddr(sp, NULL, A_NOTSET, nret);
 				goto err;
 			}
 			if (ltmp == 0 && *p != '0') {
@@ -1068,6 +1060,11 @@ end2:			break;
 				     "105|%s: bad line specification", p);
 				if (nf)
 					FREE_SPACE(sp, p, 0);
+				goto err;
+			}
+			/* The target line must exist for these commands. */
+			if (file_gline(sp, cur.lno, NULL) == NULL) {
+				ex_badaddr(sp, NULL, A_EOF, NUM_OK);
 				goto err;
 			}
 			exc.lineno = cur.lno;
@@ -1168,7 +1165,13 @@ usage:		msgq(sp, M_ERR, "107|Usage: %s", cp->usage);
 		goto err;
 	}
 
-	/* Verify that the addresses are legal. */
+	/*
+	 * Verify that the addresses are legal.  Check the addresses here,
+	 * because this is a place where all ex addresses pass through.
+	 * (They don't all pass through ep_line(), for instance.)  We're
+	 * assuming that any non-existent line doesn't exist because it's
+	 * past the end-of-file.  That's a pretty good guess.
+	 */
 addr2:	switch (exc.addrcnt) {
 	case 2:
 		/*
@@ -1179,13 +1182,20 @@ addr2:	switch (exc.addrcnt) {
 		 * of the underlying commands handle random line numbers,
 		 * fix it here.
 		 */
-		if (F_ISSET(&exc, E_COUNT) &&
-		    file_gline(sp, exc.addr2.lno, NULL) == NULL) {
-			if (file_lline(sp, &lno))
+		if (exc.addr2.lno == 0) {
+			if (!LF_ISSET(E_ZERO)) {
+				ex_badaddr(sp, cp, A_ZERO, NUM_OK);
 				goto err;
-			if (exc.addr2.lno > lno)
+			}
+		} else if (file_gline(sp, exc.addr2.lno, NULL) == NULL)
+			if (F_ISSET(&exc, E_COUNT)) {
+				if (file_lline(sp, &lno))
+					goto err;
 				exc.addr2.lno = lno;
-		}
+			} else {
+				ex_badaddr(sp, NULL, A_EOF, NUM_OK);
+				goto err;
+			}
 		/* FALLTHROUGH */
 	case 1:
 		/*
@@ -1193,9 +1203,14 @@ addr2:	switch (exc.addrcnt) {
 		 * vi allowed this, note, it's also the hack that allows
 		 * "vi +100 nonexistent_file" to work.
 		 */
-		if (exc.addr1.lno == 0 &&
-		    (IN_EX_MODE(sp) || uselastcmd != 1) && !LF_ISSET(E_ZERO)) {
-			badaddr(sp, cp, A_ZERO, NUM_OK);
+		if (exc.addr1.lno == 0) {
+			if (!LF_ISSET(E_ZERO) &&
+			    (IN_EX_MODE(sp) || uselastcmd != 1)) {
+				ex_badaddr(sp, cp, A_ZERO, NUM_OK);
+				goto err;
+			}
+		} else if (file_gline(sp, exc.addr1.lno, NULL) == NULL) {
+			ex_badaddr(sp, NULL, A_EOF, NUM_OK);
 			goto err;
 		}
 		break;
@@ -1372,7 +1387,7 @@ addr2:	switch (exc.addrcnt) {
 			}
 		} else {
 			if (!NPFITS(MAX_REC_NUMBER, sp->lno, flagoff)) {
-				badaddr(sp, NULL, A_NOTSET, NUM_OVER);
+				ex_badaddr(sp, NULL, A_NOTSET, NUM_OVER);
 				goto err;
 			}
 			if (file_gline(sp, sp->lno + flagoff, NULL) == NULL) {
@@ -1507,7 +1522,7 @@ ex_range(sp, excp, cmdp, cmdlenp)
 		switch (*cmd) {
 		case '%':		/* Entire file. */
 			if (sp->ep == NULL) {
-				badaddr(sp, NULL, A_EMPTY, NUM_OK);
+				ex_badaddr(sp, NULL, A_EMPTY, NUM_OK);
 				return (1);
 			}
 			/*
@@ -1521,7 +1536,7 @@ ex_range(sp, excp, cmdp, cmdlenp)
 			 * If it's an empty file, the first line is 0, not 1.
 			 */
 			if (addr == ADDR_FOUND) {
-				badaddr(sp, NULL, A_COMBO, NUM_OK);
+				ex_badaddr(sp, NULL, A_COMBO, NUM_OK);
 				return (1);
 			}
 			if (file_lline(sp, &excp->addr2.lno))
@@ -1536,7 +1551,7 @@ ex_range(sp, excp, cmdp, cmdlenp)
 		case ',':               /* Comma delimiter. */
 		case ';':               /* Semi-colon delimiter. */
 			if (sp->ep == NULL) {
-				badaddr(sp, NULL, A_EMPTY, NUM_OK);
+				ex_badaddr(sp, NULL, A_EMPTY, NUM_OK);
 				return (1);
 			}
 			if (addr != ADDR_FOUND)
@@ -1583,7 +1598,7 @@ ex_range(sp, excp, cmdp, cmdlenp)
 				goto done;
 
 			if (addr == ADDR_FOUND) {
-				badaddr(sp, NULL, A_COMBO, NUM_OK);
+				ex_badaddr(sp, NULL, A_COMBO, NUM_OK);
 				return (1);
 			}
 			switch (excp->addrcnt) {
@@ -1662,7 +1677,7 @@ ex_line(sp, cur, cmdp, cmdlenp, isaddrp, isdeltap)
 	size_t cmdlen;
 	int isneg;
 	int (*sf) __P((SCR *, MARK *, MARK *, char *, char **, u_int *));
-	char *cmd, *endp, *omsg, *umsg;
+	char *cmd, *endp;
 
 	exp = EXP(sp);
 	cmd = *cmdp;
@@ -1671,7 +1686,7 @@ ex_line(sp, cur, cmdp, cmdlenp, isaddrp, isdeltap)
 
 	/* No addresses permitted until a file has been read in. */
 	if (sp->ep == NULL && strchr("$0123456789'\\/?.+-^", *cmd)) {
-		badaddr(sp, NULL, A_EMPTY, NUM_OK);
+		ex_badaddr(sp, NULL, A_EMPTY, NUM_OK);
 		return (1);
 	}
 
@@ -1691,11 +1706,11 @@ ex_line(sp, cur, cmdp, cmdlenp, isaddrp, isdeltap)
 		*isaddrp = 1;
 		F_SET(exp, EX_ABSMARK);
 		if ((nret = nget_slong(sp, &val, cmd, &endp, 10)) != NUM_OK) {
-			badaddr(sp, NULL, A_NOTSET, nret);
+			ex_badaddr(sp, NULL, A_NOTSET, nret);
 			return (1);
 		}
 		if (!NPFITS(MAX_REC_NUMBER, 0, val)) {
-			msgq(sp, M_ERR, omsg);
+			ex_badaddr(sp, NULL, A_NOTSET, NUM_OVER);
 			return (1);
 		}
 		cur->lno = val;
@@ -1840,7 +1855,7 @@ search:		F_SET(exp, EX_ABSMARK);
 				    &val, cmd, &endp, 10)) != NUM_OK ||
 				    (nret = NADD_SLONG(sp,
 				    total, val)) != NUM_OK) {
-					badaddr(sp, NULL, A_NOTSET, nret);
+					ex_badaddr(sp, NULL, A_NOTSET, nret);
 					return (1);
 				}
 				total += isneg ? -val : val;
@@ -1864,22 +1879,12 @@ search:		F_SET(exp, EX_ABSMARK);
 				}
 			} else
 				if (!NPFITS(MAX_REC_NUMBER, cur->lno, total)) {
-					msgq(sp, M_ERR, omsg);
+					ex_badaddr(sp,
+					    NULL, A_NOTSET, NUM_OVER);
 					return (1);
 				}
 			cur->lno += total;
 		}
-
-		/*
-		 * It's illegal to specify a line that doesn't exist (other
-		 * than 0, which is a special address).  Check it here, not
-		 * in lots of other places.
-		 */
-		if (cur->lno && file_gline(sp, cur->lno, NULL) == NULL) {
-			badaddr(sp, NULL, A_EOF, NUM_OK);
-			return (1);
-		}
-
 		*cmdp = cmd;
 		*cmdlenp = cmdlen;
 	}
@@ -1972,11 +1977,11 @@ ex_comm_search(name, len)
 	return (NULL);
 }
 
-static void
-badaddr(sp, cp, ba, nret)
+void
+ex_badaddr(sp, cp, ba, nret)
 	SCR *sp;
 	EXCMDLIST const *cp;
-	enum baddr ba;
+	enum badaddr ba;
 	enum nresult nret;
 {
 	recno_t lno;
@@ -2008,14 +2013,18 @@ badaddr(sp, cp, ba, nret)
 	case A_COMBO:
 		msgq(sp, M_ERR, "253|Illegal address combination");
 		break;
-	case A_EMPTY:
-		msgq(sp, M_ERR, "118|Illegal address: the file is empty");
-		break;
 	case A_EOF:
 		if (file_lline(sp, &lno))
 			return;
-		msgq(sp, M_ERR,
-		    "119|Illegal address: only %lu lines in the file", lno);
+		if (lno != 0) {
+			msgq(sp, M_ERR,
+			    "119|Illegal address: only %lu lines in the file",
+			    lno);
+			break;
+		}
+		/* FALLTHROUGH */
+	case A_EMPTY:
+		msgq(sp, M_ERR, "118|Illegal address: the file is empty");
 		break;
 	case A_NOTSET:
 		abort();
