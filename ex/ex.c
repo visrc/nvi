@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.86 1993/12/27 10:49:56 bostic Exp $ (Berkeley) $Date: 1993/12/27 10:49:56 $";
+static char sccsid[] = "$Id: ex.c,v 8.87 1993/12/27 17:34:05 bostic Exp $ (Berkeley) $Date: 1993/12/27 17:34:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -216,6 +216,13 @@ loop:	if (nl) {
 	}
 	arg1 = NULL;
 	save_cmdlen = 0;
+
+	/*
+	 * It's possible that we've been interrupted during a
+	 * command.
+	 */
+	if (F_ISSET(sp, S_INTERRUPTED))
+		return (0);
 
 	/* Skip whitespace, separators, newlines. */
 	for (; cmdlen > 0; ++cmd, --cmdlen)
