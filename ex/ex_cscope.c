@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_cscope.c,v 8.5 1996/04/12 09:57:51 bostic Exp $ (Berkeley) $Date: 1996/04/12 09:57:51 $";
+static const char sccsid[] = "$Id: ex_cscope.c,v 8.6 1996/04/12 11:11:59 bostic Exp $ (Berkeley) $Date: 1996/04/12 11:11:59 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -362,7 +362,7 @@ err:		if (to_cs[0] != -1)
 		(void)close(from_cs[0]);
 
 		/* Run the cscope command. */
-#define	CSCOPE_CMD_FMT		"cd '%s' && exec cscope -dlq"
+#define	CSCOPE_CMD_FMT		"cd '%s' && exec cscope -dl"
 		(void)snprintf(cmd, sizeof(cmd), CSCOPE_CMD_FMT, csc->dname);
 		(void)execl("/bin/sh", "sh", "-c", cmd, NULL);
 		msgq_str(sp, M_SYSERR, cmd, "execl: %s");
@@ -557,6 +557,9 @@ create_cs_cmd(sp, pattern, patternp, searchp)
 	/* Skip leading blanks. */
 	for (; isblank(*pattern); ++pattern);
 
+	if (pattern[0] == '\0' || !isblank(pattern[1]))
+		goto usage;
+
 	/*
 	 * Cscope supports a "change pattern" command which we never use,
 	 * cscope command 5.  Set CSCOPE_QUERIES[5] to " " since the user
@@ -567,23 +570,17 @@ create_cs_cmd(sp, pattern, patternp, searchp)
 #define	CSCOPE_QUERIES		"sgdct efi"
 	for (*searchp = 0,
 	    p = CSCOPE_QUERIES; *p != '\0' && *p != *pattern; ++*searchp, ++p);
-	if (*p == '\0') {
-		msgq(sp, M_ERR, "%s: unknown search type: use one of %s",
-		    KEY_NAME(sp, *pattern), CSCOPE_QUERIES);
-		return (NULL);
-	}
+	if (*p == '\0')
+		goto usage;
 
 	/* Skip <blank> characters to the pattern. */
 	for (p = pattern + 1; *p != '\0' && isblank(*p); ++p);
 	if (*p == '\0') {
-		msgq(sp, M_ERR, "No search pattern specified.");
+usage:		(void)cscope_help(sp, NULL, "find");
 		return (NULL);
 	}
 
-	/*
-	 * The user can specify the contents of a buffer instead of an
-	 * explicit pattern.
-	 */
+	/* The user can specify the contents of a buffer as the pattern. */
 	cbp = NULL;
 	if (p[0] == '"' && p[1] != '\0' && p[2] == '\0')
 		CBNAME(sp, cbp, p[1]);
