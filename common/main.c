@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.26 1992/05/27 10:28:58 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:28:58 $";
+static char sccsid[] = "$Id: main.c,v 5.27 1992/06/07 14:00:31 bostic Exp $ (Berkeley) $Date: 1992/06/07 14:00:31 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -30,6 +30,7 @@ static char sccsid[] = "$Id: main.c,v 5.26 1992/05/27 10:28:58 bostic Exp $ (Ber
 #include "options.h"
 #include "pathnames.h"
 #include "seq.h"
+#include "tag.h"
 #include "extern.h"
 
 #ifdef DEBUG
@@ -109,37 +110,14 @@ main(argc, argv)
 	argc -= optind;
 	argv += optind;
 
-	/* Any remaining arguments are file names. */
-	file_init();
-	if (argc)
-		file_set(argc, argv);
-	else
-		(void)file_default();
-
-	/* Temporarily ignore interrupts. */
-	(void)signal(SIGINT, SIG_IGN);
-
 	/* Initialize the key sequence list. */
 	seq_init();
 
-	/* Catch HUP, WINCH */
-	(void)signal(SIGHUP, onhup);
-#ifdef notdef
-	(void)signal(SIGWINCH, onwinch);		/* CCC */
-#endif
-
-	if (mode == MODE_VI)
-		scr_init();
-
-	/*
-	 * Initialize the options -- must be done after scr_init(),
-	 * so that we can alter LINES and COLS if necessary.
-	 * XXX
-	 * -- WRONG --
-	 * Options has to put LINES/COLUMNS into the environment so
-	 * that the curses package finds them.
-	 */
-	opts_init();
+	/* Initialize the options. */
+	if (opts_init()) {
+		msg_eflush();
+		exit(1);
+	}
 
 #ifndef NO_DIGRAPH
 	digraph_init();
@@ -147,6 +125,29 @@ main(argc, argv)
 
 	/* Initialize special key table. */
 	gb_init();
+
+	/* Initialize file list. */
+	file_init();
+
+	/* Any remaining arguments are file names. */
+	if (argc)
+		file_set(argc, argv);
+
+	/* Use an error list file if specified. */
+#ifndef NO_ERRLIST
+	if (err) {
+		SETCMDARG(cmd, C_ERRLIST, 0, OOBLNO, 0, 0, err);
+		ex_errlist(&cmd);
+	} else
+#endif
+	/* Use a tag file if specified. */
+	if (tag) {
+		SETCMDARG(cmd, C_TAG, 0, OOBLNO, 0, 0, tag);
+		ex_tag(&cmd);
+	} else if (file_start(file_first())) {
+		msg_eflush();
+		exit(1);
+	}
 
 	/*
 	 * Source the system, ~user and local .exrc files.
@@ -172,30 +173,17 @@ main(argc, argv)
 			free(p);
 		}
 
-	/* Search for a tag (or an error) now, if desired. */
-	if (tag) {
-		SETCMDARG(cmd, C_TAG, 0, OOBLNO, 0, 0, tag);
-		ex_tag(&cmd);
-	} else
-#ifndef NO_ERRLIST
-	if (err) {
-		SETCMDARG(cmd, C_ERRLIST, 0, OOBLNO, 0, 0, err);
-		ex_errlist(&cmd);
-	} else
-#endif
-		if (file_start(file_first()))
-			goto mexit;
-
-	/* Now we do any commands from the command line. */
+	/* Do any commands from the command line. */
 	if (excmdarg)
 		(void)ex_cstring(excmdarg, strlen(excmdarg), 0);
 
-	/*
-	 * Repeatedly call ex() or vi() (depending on the mode) until the
-	 * mode is set to MODE_QUIT.
-	 */
-	while (mode != MODE_QUIT) {
+	/* Catch HUP, INT, WINCH */
+	(void)signal(SIGHUP, onhup);
+	(void)signal(SIGINT, SIG_IGN);		/* XXX */
+	(void)signal(SIGWINCH, onwinch);
 
+	/* Repeatedly call ex() or vi() until the mode is set to MODE_QUIT. */
+	while (mode != MODE_QUIT) {
 #ifdef NOT_RIGHT_NOW
 		/* Maybe we just aborted a change? */
 		if (setjmp(jmpenv))
@@ -203,7 +191,6 @@ main(argc, argv)
 #endif
 
 		(void)signal(SIGINT, trapint);
-
 		switch (mode) {
 		case MODE_VI:
 			vi();
@@ -213,9 +200,6 @@ main(argc, argv)
 			break;
 		}
 	}
-
-	/* End the window. */
-mexit:	endwin();
 
 	/* Flush any left-over error message. */
 	msg_eflush();
@@ -231,12 +215,10 @@ trapint(signo)
 {
 #ifdef NOT_RIGHT_NOW
 	abortdo();
-	resume_curses(FALSE);
 #endif
-	doingglobal = FALSE;
+	doingglobal = 0;
 	longjmp(jmpenv, 1);
 }
-
 
 static void
 obsolete(argv)
