@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 8.9 1993/09/15 15:14:55 bostic Exp $ (Berkeley) $Date: 1993/09/15 15:14:55 $";
+static char sccsid[] = "$Id: v_init.c,v 8.10 1993/09/29 16:20:01 bostic Exp $ (Berkeley) $Date: 1993/09/29 16:20:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -79,11 +79,6 @@ int
 v_end(sp)
 	SCR *sp;
 {
-	/* Save the cursor location. */
-	sp->frp->lno = sp->lno;
-	sp->frp->cno = sp->cno;
-	F_SET(sp->frp, FR_CURSORSET);
-
 #ifdef FWOPEN_NOT_AVAILABLE
 	sp->trapped_fd = -1;
 #endif
