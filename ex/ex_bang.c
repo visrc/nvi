@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 10.12 1995/10/03 09:16:46 bostic Exp $ (Berkeley) $Date: 1995/10/03 09:16:46 $";
+static char sccsid[] = "$Id: ex_bang.c,v 10.13 1995/10/03 13:18:11 bostic Exp $ (Berkeley) $Date: 1995/10/03 13:18:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -106,6 +106,7 @@ ex_bang(sp, cmdp)
 			    !F_ISSET(sp, S_EX_SILENT))
 				msg = "File modified since last write.\n";
 
+		F_SET(sp, S_EX_WROTE);
 		(void)ex_exec_proc(sp, cmdp, ap->bp, msg);
 	}
 

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 10.14 1995/10/02 16:52:25 bostic Exp $ (Berkeley) $Date: 1995/10/02 16:52:25 $";
+static char sccsid[] = "$Id: vi.c,v 10.15 1995/10/03 13:18:01 bostic Exp $ (Berkeley) $Date: 1995/10/03 13:18:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -870,31 +870,15 @@ static int
 v_init(sp)
 	SCR *sp;
 {
-	EVENT ev;
 	VI_PRIVATE *vip;
 	size_t len;
 	const char *p;
 
 	vip = VIP(sp);
 
-	/*
-	 * !!!
-	 * If ex wrote to the screen and the ex to vi transition wasn't done
-	 * by user command, wait for user acknowledgement.  (The S_EX_WROTE
-	 * flag is cleared in ex if the ex to vi transition was explicit.)
-	 *
-	 * XXX
-	 * We're ignoring any errors or illegal events.
-	 */
-	if (F_ISSET(sp, S_EX_WROTE)) {
-		p = msg_cmsg(sp, CMSG_CONT, &len);
-		(void)write(STDOUT_FILENO, p, len);
-		do {
-			if (v_event_get(sp, &ev, 0))
-				return (1);
-		} while (ev.e_event != E_CHARACTER);
-		F_CLR(sp, S_EX_WROTE);
-	}
+	/* Check to see if we need to wait for ex. */
+	if (vs_ex_wrchk(sp))
+		return (1);
 
 	/* Start up the underlying screen. */
 	if (sp->gp->scr_screen(sp, S_VI))

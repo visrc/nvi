@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_msg.c,v 10.19 1995/10/03 12:49:02 bostic Exp $ (Berkeley) $Date: 1995/10/03 12:49:02 $";
+static char sccsid[] = "$Id: vs_msg.c,v 10.20 1995/10/03 13:17:54 bostic Exp $ (Berkeley) $Date: 1995/10/03 13:17:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -447,6 +447,39 @@ vs_output(sp, mtype, line, llen)
 }
 
 /*
+ * vs_ex_wrchk --
+ *	Check and wait for ex.
+ *
+ * PUBLIC: int vs_ex_wrchk __P((SCR *));
+ */
+int
+vs_ex_wrchk(sp)
+	SCR *sp;
+{
+	const char *p;
+	EVENT ev;
+	size_t len;
+
+	/*
+	 * Ex sets S_EX_WROTE depending on whether or not the ex command
+	 * should be waited for.
+	 *
+	 * XXX
+	 * We're ignoring most errors or illegal events.
+	 */
+	if (F_ISSET(sp, S_EX_WROTE)) {
+		p = msg_cmsg(sp, CMSG_CONT, &len);
+		(void)write(STDOUT_FILENO, p, len);
+		do {
+			if (v_event_get(sp, &ev, 0))
+				return (1);
+		} while (ev.e_event != E_CHARACTER);
+		F_CLR(sp, S_EX_WROTE);
+	}
+	return (0);
+}
+
+/*
  * vs_ex_resolve --
  *	Deal with ex message output.
  *
@@ -481,13 +514,12 @@ vs_ex_resolve(sp, continuep)
 	if (F_ISSET(sp, S_VI) && vip->totalcount < 2)
 		return (0);
 
-	/*
-	 * If we switched into ex mode, return into vi mode.  Historically,
-	 * none of the commands that switched into canonical mode gave the
-	 * user an opportunity to enter additional ex commands, so don't wait.
-	 */
+	/* If we switched into ex mode, return into vi mode. */
 	gp = sp->gp;
 	if (F_ISSET(sp, S_EX)) {
+		/* Check to see if we have to wait for ex. */
+		if (vs_ex_wrchk(sp))
+			return (1);
 		if (gp->scr_screen(sp, S_VI))
 			return (1);
 		F_SET(sp, S_SCR_REDRAW);
