@@ -1,4 +1,4 @@
-#	$Id: Makefile,v 8.15 1994/07/16 18:31:31 bostic Exp $ (Berkeley) $Date: 1994/07/16 18:31:31 $
+#	$Id: Makefile,v 8.16 1994/08/15 11:14:53 bostic Exp $ (Berkeley) $Date: 1994/08/15 11:14:53 $
 
 DIR=	usd/13.viref
 SRCS=	vi.ref ex.cmd.roff set.opt.roff vi.cmd.roff ref.so
@@ -9,7 +9,7 @@ paper.ps: vi.ref index.so
 	soelim vi.ref | ${TBL} | ${ROFF} > ${.TARGET}
 
 vi.ref.txt: vi.ref index.so
-	soelim vi.ref | ${TBL} | ${ROFF} -Tascii > $@
+	soelim vi.ref | ${TBL} | groff ${MACROS} -Tascii > $@
 
 index.so: vi.ref
 	# Build index.so, side-effect of building the paper.
