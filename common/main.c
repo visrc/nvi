@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.22 1993/10/05 12:04:59 bostic Exp $ (Berkeley) $Date: 1993/10/05 12:04:59 $";
+static char sccsid[] = "$Id: main.c,v 8.23 1993/10/05 13:48:45 bostic Exp $ (Berkeley) $Date: 1993/10/05 13:48:45 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -126,7 +126,7 @@ main(argc, argv)
 	/* Build and initialize the first/current screen. */
 	if ((sp = malloc(sizeof(SCR))) == NULL)
 		err(1, NULL);
-	if (scr_init(NULL, sp))
+	if (screen_init(NULL, sp))
 		err(1, NULL);
 	sp->gp = gp;		/* All screens point to the GS structure. */
 	HDR_INIT(sp->seqhdr, next, prev);

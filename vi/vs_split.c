@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 8.10 1993/10/03 11:50:41 bostic Exp $ (Berkeley) $Date: 1993/10/03 11:50:41 $";
+static char sccsid[] = "$Id: vs_split.c,v 8.11 1993/10/05 13:48:07 bostic Exp $ (Berkeley) $Date: 1993/10/05 13:48:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -50,7 +50,7 @@ svi_split(sp, argv)
 		msgq(sp, M_ERR, "Error: %s", strerror(errno));
 		return (1);
 	}
-	if (scr_init(sp, tsp))
+	if (screen_init(sp, tsp))
 		goto mem1;
 	if ((SVP(tsp) = malloc(sizeof(SVI_PRIVATE))) == NULL) {
 		msgq(sp, M_ERR, "Error: %s", strerror(errno));
@@ -271,7 +271,7 @@ mem5:	if (SVP(tsp)->VB != NULL)
 		FREE(SVP(tsp)->VB, strlen(SVP(tsp)->VB));
 mem4:	FREE(_HMAP(tsp), SIZE_HMAP * sizeof(SMAP));
 mem3:	FREE(SVP(sp), sizeof(SVI_PRIVATE));
-mem2:	(void)scr_end(tsp);
+mem2:	(void)screen_end(tsp);
 mem1:	FREE(tsp, sizeof(SCR));
 	return (1);
 }
