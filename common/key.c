@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.85 1994/09/16 16:59:35 bostic Exp $ (Berkeley) $Date: 1994/09/16 16:59:35 $";
+static char sccsid[] = "$Id: key.c,v 8.86 1994/09/28 17:01:43 bostic Exp $ (Berkeley) $Date: 1994/09/28 17:01:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -45,10 +45,9 @@ static char sccsid[] = "$Id: key.c,v 8.85 1994/09/16 16:59:35 bostic Exp $ (Berk
 	(sp)->gp->i_nelem - ((sp)->gp->i_cnt + (sp)->gp->i_next) >= 20 ?\
 	0 : __term_read_grow(sp, 64)
 
-static int	  keycmp __P((const void *, const void *));
-static enum input term_key_queue __P((SCR *));
-static void	  term_key_set __P((GS *, int, int));
-static int	__term_read_grow __P((SCR *, int));
+static int	keycmp __P((const void *, const void *));
+static void	term_key_set __P((GS *, int, int));
+static int    __term_read_grow __P((SCR *, int));
 
 /*
  * !!!
@@ -621,7 +620,9 @@ the user has seen one or more error messages.   Historic vi just used
 the next character regardless, and users complained.  This routine is
 left in place in case we ever need it again.
 
-enum input	 term_user_key __P((SCR *, CH *));
+static enum input term_key_queue __P((SCR *));
+static enum input term_user_key __P((SCR *, CH *));
+
 /*
  * term_user_key --
  *	Get the next key, but require the user enter one.
@@ -655,7 +656,6 @@ term_user_key(sp, chp)
 	QREM_TAIL(1);
 	return (INP_OK);
 }
-#endif
 
 /*
  * term_key_queue --
@@ -682,6 +682,7 @@ term_key_queue(sp)
 	}
 	return (INP_OK);
 }
+#endif
 
 /*
  * __key_val --
