@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.70 1996/05/02 10:05:37 bostic Exp $ (Berkeley) $Date: 1996/05/02 10:05:37 $
+.\"     $Id: vi.ref,v 8.71 1996/05/08 11:42:08 bostic Exp $ (Berkeley) $Date: 1996/05/08 11:42:08 $
 .\"
 .\"
 .so ref.so
@@ -696,6 +696,280 @@ and replacing its space in the window with the foregrounded screen.
 If the last screen in the window is exited, and there are backgrounded
 screens, the first screen on the list of backgrounded screens takes over
 the window.
+.SH 1 "Tags, Tag Stacks, and Cscope"
+.pp
+.CO Nvi
+supports the historic
+.CO vi
+tag command
+.CO <control-]> ,
+and the historic
+.CO ex
+tag command
+.CO tag .
+These commands change the current file context to a new location,
+based on information found in the
+.LI tags
+files.
+If you are unfamiliar with these commands,
+you should review their description in the
+.CO ex
+and
+.CO vi
+commands section of this manual.
+For additional information on tags files,
+see the discussion of the
+.OP tags
+edit option and the system
+.XR ctags 1
+manual page.
+.pp
+In addition,
+.CO nvi
+supports the notion of
+.QQ "tags stacks" ,
+using the
+.CO <control-T>
+command.
+The
+.CO <control-T>
+command returns the user to the previous context, i.e.,
+the last place from which a
+.CO <control-]>
+or
+.CO "tag"
+command was entered.
+These three commands provide the basic functionality which allows you
+to use
+.CO vi
+to review source code in a structured manner.
+.pp
+.CO Nvi
+also provides two other basic
+.CO ex
+commands for tag support:
+.CO tagpop
+and
+.CO tagtop .
+The
+.CO tagpop
+command is identical to the
+.CO <control-T>
+command,
+with the additional functionality that you may specify that modifications
+to the current file are to be discarded.
+This cannot be done using the
+.CO <control-T>
+command.
+The
+.CO tagtop
+command discards all of the contexts that have been pushed onto the tag
+stack, returning to the context from which the first
+.CO <control-]>
+or
+.CO tag
+command was entered.
+.pp
+The historic
+.XR ctags 1
+tags file format supports only a single location per tag,
+normally the function declaration or structure or string definition.
+More sophisticated source code tools often provide multiple locations
+per tag, e.g.,
+a list of the places from which a function is called or a string
+definition is used.
+An example of this functionality is the System V source code tool,
+.CO cscope .
+(To obtain a copy of
+.CO cscope ,
+see http://www.att.com/ssg/products/toolchest.html.)
+.sp
+.CO Cscope
+creates a database of information on source code files,
+and supports a query language for that information as described in the
+.XR cscope 1
+manual page.
+.CO Nvi
+contains an interface to the
+.CO cscope
+query language which permits you to query
+.CO cscope
+and then sequentially step through the locations in the sources files which
+.CO cscope
+returns.
+There are two
+.CO nvi
+commands which support this ability to step through multiple locations.
+They are the
+.CO ex
+commands
+.CO tagnext
+and
+.CO tagprev .
+The
+.CO tagnext
+command moves to the next location for the current tag.
+The
+.CO tagprev
+command moves to the previous location for the current tag.
+(See the
+.CO tagnext
+and
+.CO tagprev
+command discussion in the
+.CO ex
+commands section of this manual for more information.)
+At any time during this sequential walk,
+you may use the
+.CO <control-]> ,
+.CO tag
+or
+.CO cscope
+commands to move to a new tag context, and then use the
+.CO <control-T>
+or
+.CO tagpop
+commands to return and continue stepping through the locations for this
+tag.
+This is similar to the previous model of a simple tag stack,
+except that each entry in the tag stack may have more than one file context
+that is of interest.
+.pp
+The
+.CO nvi
+and
+.CO cscope
+interface is based on the new
+.CO ex
+command
+.CO cscope ,
+which has five subcommands:
+.CO add ,
+.CO find ,
+.CO help ,
+.CO kill
+and
+.CO reset .
+The subcommand
+.CO find
+itself has eight subcommands:
+.CO \&c ,
+.CO \&d ,
+.CO \&e ,
+.CO \&f ,
+.CO \&g ,
+.CO \&i ,
+.CO \&s
+and
+.CO \&t .
+.pp
+.IP "cs[cope] a[dd] directory"
+The
+.CO add
+command attaches to the
+.CO cscope
+database in the specified directory.
+After
+.CO nvi
+attaches to a new database,
+all subsequent
+.CO cscope
+queries will be asked of that database.
+The result of any single query is the collection of responses from all
+of the databases to the query.
+.sp
+If the
+.QQ CSCOPE_DIRS
+environmental variable is set when
+.CO nvi
+is run, it is expected to be a <blank>-separated list of directories containing
+.CO cscope
+databases to which the user wishes to attach.
+.IP ":cs[cope] f[ind] c|d|e|f|g|i|s|t buffer|pattern"
+The
+.CO find
+command is the
+.CO cscope
+query command for
+.CO nvi .
+For this command,
+.CO nvi
+queries all attached
+.CO cscope
+databases for the pattern.
+If the pattern is a double-quote character followed by a valid buffer
+name (e.g.,
+.LI """<character>" ), 
+then the contents of the named buffer are used as the pattern.
+Otherwise, the pattern is a Regular Expression.
+.sp
+The
+.CO find
+command pushes the current location onto the tags stack,
+and switches to the first location resulting from the query,
+if the query returned at least one result.
+.sp
+File names returned by the
+.CO cscope
+query, if not absolute paths, are searched for relative to the directory
+where the
+.CO cscope
+database is located.
+In addition, if the file
+.QQ cscope.tpath
+appears in the same directory as the
+.CO cscope
+database, it is expected to contain a colon-separated list of directory
+names where files referenced by its associated
+.CO cscope
+database may be found.
+.sp
+The
+.CO find
+subcommand is one of the following:
+.SS
+.SP \&c
+Find callers of the name.
+.SP \&d
+Find all function calls made from name.
+.SP \&e
+Find pattern.
+.SP \&f
+Find files with name as substring.
+.SP \&g
+Find definition of name.
+.SP \&i
+Find files #including name.
+.SP \&s
+Find all uses of name.
+.SP \&t
+Find assignments to name.
+.SE
+.IP ":cs[cope] h[elp] [command]"
+List the
+.CO cscope
+commands,
+or optionally list usage help for any single
+.CO cscope
+command.
+.IP ":display c[onnections]"
+Display the list of
+.CO cscope
+databases to which
+.CO nvi
+is currently connected.
+.IP ":cs[cope] k[ill] #"
+Disconnect from a specific
+.CO cscope
+database.
+The connection number is the one displayed by the
+.CO ex
+.CO "display connections"
+command.
+.IP ":cs[cope] r[eset]"
+Disconnect from all attached
+.CO cscope
+databases.
 .SH 1 "Regular Expressions and Replacement Strings"
 .pp
 Regular expressions are used in line addresses,

@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: ex.cmd.roff,v 8.37 1995/10/03 20:52:20 bostic Exp $ (Berkeley) $Date: 1995/10/03 20:52:20 $
+.\"	$Id: ex.cmd.roff,v 8.38 1996/05/08 11:42:07 bostic Exp $ (Berkeley) $Date: 1996/05/08 11:42:07 $
 .\"
 .SH 1 "Ex Description"
 .pp
@@ -608,8 +608,10 @@ or to the last line if the deleted lines were at the end.
 None.
 .SE
 .KY display
-.IP "di[splay] b[uffers] | s[creens] | t[ags]"
-Display buffers, screens or tags.
+.IP "di[splay] b[uffers] | c[onnections] | s[creens] | t[ags]"
+Display buffers,
+.CO cscope
+connections, screens or tags.
 The
 .CO display
 command takes one of three additional arguments, which are as follows:
@@ -617,6 +619,10 @@ command takes one of three additional arguments, which are as follows:
 .SP b[uffers]
 Display all buffers (including named, unnamed, and numeric)
 that contain text.
+.SP c[onnections]
+Display the source directories for all attached
+.CO cscope
+databases.
 .SP s[creens]
 Display the file names of all background screens.
 .SP t[ags]
@@ -1448,7 +1454,6 @@ options.
 .KY tag
 .IP "ta[g][!] tagstring"
 Edit the file containing the specified tag.
-Search for the tagstring, which can be in a different file.
 If the tag is in a different file, then the new file is edited.
 If the current file has been modified since the last complete write,
 the
@@ -1487,6 +1492,34 @@ and
 .OP writeany
 options.
 .SE
+.KY tagnext
+.IP "tagn[ext][!]"
+Edit the file containing the next context for the current tag.
+If the context is in a different file, then the new file is edited.
+If the current file has been modified since the last complete write,
+the
+.CO tagnext
+command will fail.
+This check can be overridden by appending the
+.QT !
+character to the command name.
+.sp
+Capitalizing the first letter of the command, i.e.
+.CO Tagnext ,
+while in 
+.CO vi 
+mode, will edit the file in a new screen.
+In this case, any modifications to the current file are ignored.
+.SS 
+.SP Line:
+Set to the line indicated by the tag.
+.SP Options:
+Affected by the 
+.OP autowrite
+and
+.OP writeany
+options.
+.SE
 .KY tagpop
 .IP "tagp[op][!] [file | number]"
 Pop to the specified tag in the tags stack.
@@ -1520,6 +1553,34 @@ character to the command name.
 Set to the line indicated by the tag.
 .SP Options:
 Affected by the
+.OP autowrite
+and
+.OP writeany
+options.
+.SE
+.KY tagprev
+.IP "tagp[rev][!]"
+Edit the file containing the previous context for the current tag.
+If the context is in a different file, then the new file is edited.
+If the current file has been modified since the last complete write,
+the
+.CO tagprev
+command will fail.
+This check can be overridden by appending the
+.QT !
+character to the command name.
+.sp
+Capitalizing the first letter of the command, i.e.
+.CO Tagprev ,
+while in 
+.CO vi 
+mode, will edit the file in a new screen.
+In this case, any modifications to the current file are ignored.
+.SS 
+.SP Line:
+Set to the line indicated by the tag.
+.SP Options:
+Affected by the 
 .OP autowrite
 and
 .OP writeany

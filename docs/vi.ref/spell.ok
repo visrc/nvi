@@ -1,10 +1,14 @@
 ABC
 Amir
+Autoindent
 Autoprint
 BRE's
 Bostic
 Bourne
 CDPATH
+CSCOPE
+Cscope
+DIRS
 DOUBLEQUOTE
 Dq
 Ds
@@ -14,6 +18,7 @@ Englar
 Ev
 FF
 Fa
+FindScreen
 Fl
 Foregrounding
 HUnhsh
@@ -53,6 +58,8 @@ Sy
 TANDARDS
 TIOCGWINSZ
 TMPDIR
+Tagnext
+Tagprev
 Tcl
 Tk
 Todo
@@ -61,6 +68,7 @@ USD.doc
 USD:13
 UUNET
 Unmap
+VI
 Vi
 Vx
 Whitespace
@@ -81,8 +89,10 @@ al
 altwerase
 ap
 api
+ar
 arg
 args
+att
 autoindent
 autoprint
 autowrite
@@ -107,6 +117,7 @@ cdy
 cedit
 changelog
 chd
+chdir
 cmd
 co
 count1
@@ -114,8 +125,12 @@ count2
 creens
 cs
 cs.berkeley.edu
+cscope
+ctags
+cw
 db
 dbopen
+dd
 def
 di
 dir
@@ -133,6 +148,7 @@ edu
 ee
 egrep
 elete
+elp
 elvis
 email
 enum
@@ -140,6 +156,7 @@ eof
 errorbells
 esc
 escapetime
+eset
 eu
 ex.cmd.roff
 exrc
@@ -158,6 +175,7 @@ ftp.cs.berkeley.edu
 ftp.uu.net
 gdb
 gdb.script
+getpwent
 gs
 gzip'd
 halfbyte
@@ -165,12 +183,15 @@ hange
 hangup
 hardtabs
 ht
+html
+http
 ic
 iclower
 ifdef
 ignorecase
 ile
 ind
+initially
 ious
 ir
 iscntrl
@@ -209,6 +230,7 @@ nexrc
 nk
 nomagic
 nonblank
+nonoverlapping
 nooption
 noprint
 nsert
@@ -218,6 +240,7 @@ nvi.tar.Z
 nvi.tar.z
 nz
 oin
+onnections
 op
 ove
 para
@@ -227,6 +250,7 @@ pe
 perl
 perld
 ppend
+prev
 pu
 py
 rc
@@ -243,9 +267,11 @@ redist
 reimplementations
 remapmax
 remapped
+repl
 res
 rew
 rhs
+rint
 ript
 rk
 rl
@@ -274,15 +300,20 @@ sm
 sourceany
 sp
 spell.ok
+ssg
 st
+su
 sual
 svi
 sw
 ta
 tabstop
 taglength
+tagn
+tagnext
 tagp
 tagpop
+tagprev
 tagstring
 tagt
 tagtop
@@ -295,6 +326,8 @@ th's
 tildeop
 tl
 tmp
+toolchest
+tpath
 tr
 ts
 ttytype
@@ -306,7 +339,9 @@ uffers
 uit
 una
 unabbrev
+unescaped
 unm
+unmap
 unsets
 uppercase
 urce
@@ -359,6 +394,7 @@ wrapmargin
 wrapscan
 writeany
 ws
+www
 xaw
 xit
 ya
