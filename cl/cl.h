@@ -6,8 +6,12 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: cl.h,v 10.30 2001/06/24 19:48:05 skimo Exp $ (Berkeley) $Date: 2001/06/24 19:48:05 $
+ *	$Id: cl.h,v 10.31 2001/07/08 13:06:11 skimo Exp $ (Berkeley) $Date: 2001/07/08 13:06:11 $
  */
+
+/* Avoid clash on OSF1 */
+#undef DB
+
 #ifdef USE_SLANG_CURSES
 #include <slcurses.h>
 #else
