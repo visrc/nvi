@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 8.28 1994/05/21 09:42:28 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:42:28 $
+ *	$Id: exf.h,v 8.29 1994/06/25 12:13:13 bostic Exp $ (Berkeley) $Date: 1994/06/25 12:13:13 $
  */
 					/* Undo direction. */
 /*
@@ -32,17 +32,8 @@ struct _exf {
 	LIST_HEAD(_markh, _lmark) marks;/* Linked list of file MARK's. */
 
 	/*
-	 * Paths for the recovery mail file and the vi recovery file and
-	 * a file descriptor for the former.  We keep a file descriptor
-	 * to the recovery file open and locked, while the file is in use.
-	 * This allows the recovery option to distinguish between files
-	 * that are live, and those that should be recovered.
-	 *
-	 * F_RCV_ON is set as long as we believe that the file is recoverable.
-	 * This doesn't mean that any initialization has been done, however.
-	 * If F_RCV_NORM is not set and rcv_path and rcv_mpath are not NULL,
-	 * they are unlinked on file exit.  If not NULL they are free'd on file
-	 * exit.  On file exit, if rcv_fd is not -1, it is closed.
+	 * Recovery in general, and these fields specifically,
+	 * are described in recover.c.
 	 */
 #define	RCV_PERIOD	120		/* Sync every two minutes. */
 	char	*rcv_path;		/* Recover file name. */
