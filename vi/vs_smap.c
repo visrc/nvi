@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 5.27 1993/05/16 19:34:46 bostic Exp $ (Berkeley) $Date: 1993/05/16 19:34:46 $";
+static char sccsid[] = "$Id: vs_smap.c,v 5.28 1993/05/20 12:09:04 bostic Exp $ (Berkeley) $Date: 1993/05/20 12:09:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -272,12 +272,6 @@ svi_sm_insert(sp, ep, lno)
 	for (cnt = cnt_orig; cnt--;)
 		if (svi_insertln(sp))
 			return (1);
-	/*
-	 * Clear the last line on the screen, it's going to have been
-	 * corrupted.
-	 */
-	MOVE(sp, INFOLINE(sp), 0);
-	clrtoeol();
 
 	/* Shift the screen map down. */
 	memmove(p + cnt_orig, p, (((TMAP - p) - cnt_orig) + 1) * sizeof(SMAP));
@@ -541,21 +535,16 @@ svi_sm_1up(sp, ep)
 
 /*
  * svi_deleteln --
- *	Delete a line a la curses.
+ *	Delete a line a la curses, make sure to put the information
+ *	line and other screens back.
  */
 int
 svi_deleteln(sp)
 	SCR *sp;
 {
-	/*
-	 * Delete the top line, scrolling everything else.  If
-	 * we're not the bottom screen, put everything else back.
-	 */
 	deleteln();
-	if (sp->child != NULL) {
-		MOVE(sp, INFOLINE(sp), 0);
-		insertln();
-	}
+	MOVE(sp, INFOLINE(sp) - 1, 0);
+	insertln();
 	return (0);
 }
 
@@ -687,21 +676,20 @@ svi_sm_1down(sp, ep)
 
 /*
  * svi_insertln --
- *	insertln a line a la curses.
+ *	Insert a line a la curses, make sure to put the information
+ *	line and other screens back.
  */
 int
 svi_insertln(sp)
 	SCR *sp;
 {
-	/*
-	 * Insert at the current line, scrolling everything else.
-	 * If we're not the bottom screen, put everything else back.
-	 */
+	size_t oldy, oldx;
+
+	getyx(stdscr, oldy, oldx);
+	MOVE(sp, INFOLINE(sp) - 1, 0);
+	deleteln();
+	MOVEA(sp, oldy, oldx);
 	insertln();
-	if (sp->child != NULL) {
-		MOVE(sp, INFOLINE(sp), 0);
-		deleteln();
-	}
 	return (0);
 }
 
