@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.120 1996/06/30 19:19:37 bostic Exp $ (Berkeley) $Date: 1996/06/30 19:19:37 $
+dnl	$Id: configure.in,v 8.121 1996/07/01 09:36:30 bostic Exp $ (Berkeley) $Date: 1996/07/01 09:36:30 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(../common/main.c)
@@ -308,15 +308,6 @@ if test "$vi_cv_include_sys_select" = yes; then
 	AC_DEFINE(HAVE_SYS_SELECT_H)
 fi
 AC_MSG_RESULT($vi_cv_include_sys_select)
-
-AC_MSG_CHECKING(for term.h)
-AC_CACHE_VAL(vi_cv_include_term, [dnl
-AC_TRY_CPP([#include <term.h>],
-	[vi_cv_include_term=yes], [vi_cv_include_term=no])])
-if test "$vi_cv_include_term" = yes; then
-	AC_DEFINE(HAVE_TERM_H)
-fi
-AC_MSG_RESULT($vi_cv_include_term)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_CHECK_TYPE(ssize_t, int)
