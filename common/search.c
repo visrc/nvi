@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.45 1994/05/21 09:44:35 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:44:35 $";
+static char sccsid[] = "$Id: search.c,v 8.46 1994/07/02 20:51:01 bostic Exp $ (Berkeley) $Date: 1994/07/02 20:51:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -93,6 +93,7 @@ prev:		if (!F_ISSET(sp, S_SRE_SET)) {
 	if (O_ISSET(sp, O_IGNORECASE))
 		re_flags |= REG_ICASE;
 
+	replaced = 0;
 	if (LF_ISSET(SEARCH_PARSE)) {		/* Parse the string. */
 		/* Set delimiter. */
 		delim = *ptrn++;
