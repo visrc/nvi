@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_abbrev.c,v 8.1 1993/06/09 22:23:19 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:23:19 $";
+static char sccsid[] = "$Id: ex_abbrev.c,v 8.2 1993/08/19 15:03:41 bostic Exp $ (Berkeley) $Date: 1993/08/19 15:03:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,26 +26,19 @@ ex_abbr(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	register char *input, *output;
+	char *input, *output;
 
-	if (cmdp->string == NULL) {
+	switch (cmdp->argc) {
+	case 0:
 		if (seq_dump(sp, SEQ_ABBREV, 0) == 0)
-			msgq(sp, M_ERR, "No abbreviations.");
+			msgq(sp, M_INFO, "No abbreviations.");
 		return (0);
-	}
-
-	/*
-	 * Abbreviations can't be parsed by the upper-level parser because
-	 * input is the first word and output is everything else, i.e. any
-	 * space characters are included.
-	 */
-	for (input = cmdp->string; isspace(*input); ++input);
-	for (output = input; *output && !isspace(*output); ++output);
-	if (*output != '\0')
-		for (*output++ = '\0'; isspace(*output); ++output);
-	if (*output == '\0') {
-		msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
-		return (1);
+	case 2:
+		input = cmdp->argv[0];
+		output = cmdp->argv[1];
+		break;
+	default:
+		abort();
 	}
 
 	if (seq_set(sp, NULL, input, output, SEQ_ABBREV, 1))
@@ -69,7 +62,7 @@ ex_unabbr(sp, ep, cmdp)
 	input = cmdp->argv[0];
 	if (!F_ISSET(sp, S_ABBREV) || seq_delete(sp, input, SEQ_ABBREV)) {
 		msgq(sp, M_ERR,
-		    "\"%s\" was never an abbreviation.", input);
+		    "\"%s\" is not an abbreviation.", input);
 		return (1);
 	}
 	return (0);
