@@ -3,9 +3,12 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: vi.cmd.roff,v 8.5 1994/04/29 15:20:08 bostic Exp $ (Berkeley) $Date: 1994/04/29 15:20:08 $
+.\"	$Id: vi.cmd.roff,v 8.6 1994/04/30 10:28:59 bostic Exp $ (Berkeley) $Date: 1994/04/30 10:28:59 $
 .\"
 #ifdef REFERENCE
+.de SP
+.sp
+..
 .Sh VI DESCRIPTION
 .Nm \&Vi
 takes up the entire screen to display the edited file,
@@ -166,7 +169,7 @@ In addition, specifying
 address to an
 .Nm \&ex
 command is considered a non-relative movement.
-.sp
+.SP
 .It Sy "motion"
 A second
 .Nm \&vi
@@ -242,7 +245,7 @@ and
 are equivalent, and the region affected by the
 .Sy \&c
 command is four words of text.
-.sp
+.SP
 .It Sy "count"
 A positive number used as an optional argument to most commands,
 either to give a size or a position (for display or movement commands),
@@ -257,14 +260,14 @@ command synopsis shows both a
 and
 .Dq Li [count] ,
 they may be presented in any order.
-.sp
+.SP
 .It Sy "bigword"
 A set of non-whitespace characters preceded and followed by whitespace
 characters or the beginning or end of the file or line.
 .Pp
 Groups of empty lines (or lines containing only whitespace characters)
 are treated as a single bigword.
-.sp
+.SP
 .It Sy "word  "
 Generally, in languages where it is applicable,
 .Nm \&vi
@@ -279,7 +282,7 @@ the beginning or end of a line; the beginning or end of the file.
 .Pp
 Groups of empty lines (or lines containing only whitespace characters)
 are treated as a single word.
-.sp
+.SP
 .It Sy "paragraph"
 An area of text that begins with either the beginning of a file,
 an empty line, or a section boundary, and continues until either
@@ -291,7 +294,7 @@ are treated as a single paragraph.
 Additional paragraph boundaries can be defined using the
 .Sy paragraph
 option.
-.sp
+.SP
 .It Sy "section"
 An area of text that starts with the beginning of the file or a line
 whose first character is an open brace
@@ -300,7 +303,7 @@ and continues until the next section or the end of the file.
 Additional section boundaries can be defined using the
 .Sy sections
 option.
-.sp
+.SP
 .It Sy "sentence"
 An area of text that begins with either the beginning of the file or the
 first nonblank character following the previous sentence, paragraph, or
@@ -337,6 +340,7 @@ character.
 In addition, the final line and column the cursor rests upon,
 and any options which affect the command are noted.
 #endif
+.sp
 .Bl -tag -width "XXXX" -compact
 .It Sy "[count] <control-A>"
 Search forward
@@ -367,7 +371,7 @@ and
 options.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] <control-B>"
 Page backwards
 .Li count
@@ -391,7 +395,7 @@ Set to the first nonblank character of the line.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] <control-D>"
 Scroll forwards
 .Li count
@@ -418,7 +422,7 @@ Set to the first nonblank character of the line.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] <control-E>"
 Scroll forward
 .Li count
@@ -438,7 +442,7 @@ in which case it's the most attractive cursor position.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] <control-F>"
 Page forward
 .Li count
@@ -462,7 +466,7 @@ Set to the first nonblank character of the current line.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "<control-G>"
 Display the file information.
 #ifdef REFERENCE
@@ -480,7 +484,7 @@ Unchanged.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "<control-H>"
 .It Sy "[count] h"
 Move the cursor back
@@ -512,7 +516,7 @@ cursor in the line.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] <control-J>"
 .It Sy "[count] <control-N>"
 .It Sy "[count] j"
@@ -542,7 +546,7 @@ The most attractive cursor position.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "<control-L>"
 .It Sy "<control-R>"
 Repaint the screen.
@@ -557,7 +561,7 @@ Unchanged.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] <control-M>"
 .It Sy "[count] +"
 Move the cursor down
@@ -585,7 +589,7 @@ Set to the first nonblank character of the line.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] <control-P>"
 .It Sy "[count] k"
 Move the cursor up
@@ -612,7 +616,7 @@ The most attractive cursor position.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "<control-T>"
 Return to the most recent tag context.
 #ifdef REFERENCE
@@ -626,7 +630,7 @@ Set to the context of the previous tag command.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "<control-U>"
 Scroll backwards
 .Li count
@@ -653,7 +657,7 @@ Set to the first nonblank character of the line.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "<control-W>"
 Switch to the next lower window in the screen.
 #ifdef REFERENCE
@@ -667,7 +671,7 @@ Set to the previous cursor position in the window.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "<control-Y>"
 Scroll backwards
 .Li count
@@ -688,7 +692,7 @@ in which case it's the most attractive cursor position.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "<control-Z>"
 Suspend the current editor session.
 #ifdef REFERENCE
@@ -710,7 +714,7 @@ Affected by the
 option.
 .El
 #endif
-.sp
+.SP
 .It Sy "<escape>"
 Execute
 .Nm \&ex
@@ -749,7 +753,7 @@ Otherwise, unchanged.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "<control-]>"
 Push a tag reference onto the tag stack.
 #ifdef REFERENCE
@@ -776,7 +780,7 @@ and
 options.
 .El
 #endif
-.sp
+.SP
 .It Sy "<control-^>"
 Switch to the most recently edited file.
 #ifdef REFERENCE
@@ -800,7 +804,7 @@ Affected by the
 option.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] <space>"
 .It Sy "[count] l"
 Move the cursor forwards
@@ -835,7 +839,7 @@ current character.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] ! motion shell-command(s) <newline>"
 Replace text with results from shell command.
 #ifdef REFERENCE
@@ -917,7 +921,7 @@ Affected by the
 options.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] #"
 Increment the cursor word.
 #ifdef REFERENCE
@@ -939,7 +943,7 @@ Unchanged.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] $"
 Move the cursor to the end of a line.
 #ifdef REFERENCE
@@ -977,13 +981,14 @@ Set to the last character in the line.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "%"
-Move the cursor to the parenthesis or curly brace which
+Move to the matching character.
+#ifdef REFERENCE
+The cursor moves to the parenthesis or curly brace which
 .Em matches
 the parenthesis or curly brace found at the current cursor position
 or which is the closest one to the right of the cursor on the line.
-#ifdef REFERENCE
 It is an error to execute the
 .Sy \&%
 command on a line without a parenthesis or curly brace.
@@ -1014,7 +1019,7 @@ Set to the matching character.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "&"
 Repeat the previous substitution command on the current line.
 #ifdef REFERENCE
@@ -1041,7 +1046,7 @@ and
 options.
 .El
 #endif
-.sp
+.SP
 .It Sy "'<character>"
 .It Sy "`<character>"
 Return to a context marked by the character <character>.
@@ -1105,7 +1110,7 @@ command.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] ("
 Back up
 .Li count
@@ -1136,7 +1141,7 @@ Set to the first nonblank character of the sentence.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] )"
 Move forward
 .Li count
@@ -1166,7 +1171,7 @@ Set to the first nonblank character of the sentence.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] ,"
 Reverse find character
 .Li count
@@ -1197,7 +1202,7 @@ Set to the searched-for character.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] -"
 Move to first nonblank of previous line,
 .Li count
@@ -1223,7 +1228,7 @@ Set to the first nonblank character of the line.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] ."
 Repeat the last command that modified text.
 #ifdef REFERENCE
@@ -1257,7 +1262,7 @@ Set as described for the repeated command.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "/RE<carriage-return>"
 .It Sy "/RE/ [offset]<carriage-return>"
 .It Sy "?RE<carriage-return>"
@@ -1336,7 +1341,7 @@ and
 options.
 .El
 #endif
-.sp
+.SP
 .It Sy "0"
 Move to the first character in the current line.
 #ifdef REFERENCE
@@ -1356,7 +1361,7 @@ Set to the first character in the line.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy ":"
 Execute an ex command.
 #ifdef REFERENCE
@@ -1410,7 +1415,7 @@ command.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] ;"
 Repeat the last character find
 .Li count
@@ -1440,7 +1445,7 @@ The character searched for.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] < motion"
 .It Sy "[count] > motion"
 Shift lines left or right.
@@ -1475,7 +1480,7 @@ Affected by the
 option.
 .El
 #endif
-.sp
+.SP
 .It Sy "@ buffer"
 Execute a named buffer.
 #ifdef REFERENCE
@@ -1513,7 +1518,7 @@ Dependent on the results of the execution of the command(s).
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] A"
 Enter input mode, appending the text after the end of the line.
 #ifdef REFERENCE
@@ -1540,7 +1545,7 @@ and
 options.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] B"
 Move backwards
 .Li count
@@ -1571,7 +1576,7 @@ Set to the first character of the word selected.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[buffer] [count] C"
 Change text from the current position to the end-of-line.
 #ifdef REFERENCE
@@ -1599,7 +1604,7 @@ and
 options.
 .El
 #endif
-.sp
+.SP
 .It Sy "[buffer] D"
 Delete text from the current position to the end-of-line.
 #ifdef REFERENCE
@@ -1618,7 +1623,7 @@ the cursor was on column 1.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] E"
 Move forward
 .Li count
@@ -1650,7 +1655,7 @@ Set to the last character of the word selected.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] F <character>"
 Search
 .Li count
@@ -1674,7 +1679,7 @@ Set to the character searched for.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] G"
 Move to line
 .Li count ,
@@ -1704,7 +1709,7 @@ Set to the first nonblank character of the line.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] H"
 Move to the line
 .Li "count - 1"
@@ -1732,7 +1737,7 @@ Set to the first nonblank character of the line.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] I"
 Enter input mode, inserting the text at the beginning of the line.
 #ifdef REFERENCE
@@ -1751,7 +1756,7 @@ Set to the last character entered.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] J"
 Join lines.
 #ifdef REFERENCE
@@ -1790,7 +1795,7 @@ joined line.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] L"
 Move to the line
 .Li "count - 1"
@@ -1818,7 +1823,7 @@ Set to the first nonblank character of the line.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy " M"
 Move to the line in the middle of the screen.
 #ifdef REFERENCE
@@ -1848,7 +1853,7 @@ Set to the first nonblank character of the line.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] O"
 Enter input mode, appending text in a new line above the current line.
 #ifdef REFERENCE
@@ -1881,7 +1886,7 @@ and
 options.
 .El
 #endif
-.sp
+.SP
 .It Sy "[buffer] P"
 Insert text from a buffer.
 #ifdef REFERENCE
@@ -1901,7 +1906,7 @@ of the appended text.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "Q"
 Exit
 .Nm \&vi
@@ -1919,7 +1924,7 @@ No longer relevant.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] R"
 Enter input mode, replacing the characters in the current line.
 #ifdef REFERENCE
@@ -1949,7 +1954,7 @@ and
 options.
 .El
 #endif
-.sp
+.SP
 .It Sy "[buffer] [count] S"
 Substitute
 .Li count
@@ -1973,7 +1978,7 @@ and
 options.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] T <character>"
 Search backwards,
 .Li count
@@ -2001,7 +2006,7 @@ the character searched for.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "U"
 Restore the current line to its state before the cursor last
 moved to it.
@@ -2016,7 +2021,7 @@ The first character.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] W"
 Move forward
 .Li count
@@ -2046,7 +2051,7 @@ The last character of the word selected.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[buffer] [count] X"
 Delete
 .Li count
@@ -2069,7 +2074,7 @@ characters in the line before the cursor.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[buffer] [count] Y"
 Copy (or
 .Dq yank )
@@ -2086,7 +2091,7 @@ Unchanged.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "ZZ"
 Write the file and exit
 .Nm \&vi .
@@ -2109,7 +2114,7 @@ or
 in a row) will override this check and the editor will exit,
 unless the write fails.
 #endif
-.sp
+.SP
 .It Sy "[count] [["
 Back up
 .Li count
@@ -2144,7 +2149,7 @@ Affected by the
 option.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] ]]"
 Move forward
 .Li count
@@ -2179,7 +2184,7 @@ Affected by the
 option.
 .El
 #endif
-.sp
+.SP
 .It Sy "^"
 Move to first nonblank character on the current line.
 #ifdef REFERENCE
@@ -2200,7 +2205,7 @@ Set to the first nonblank character of the current line.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] _"
 Move down
 .Li "count - 1"
@@ -2231,7 +2236,7 @@ The first nonblank character of the line.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] a"
 Enter input mode, appending the text after the cursor.
 #ifdef REFERENCE
@@ -2258,7 +2263,7 @@ and
 options.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] b"
 Move backwards
 .Li count
@@ -2290,7 +2295,7 @@ Set to the first character of the word selected.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[buffer] [count] c motion"
 Change a region of text.
 #ifdef REFERENCE
@@ -2321,7 +2326,7 @@ and
 options.
 .El
 #endif
-.sp
+.SP
 .It Sy "[buffer] [count] d motion"
 Delete a region of text.
 #ifdef REFERENCE
@@ -2339,7 +2344,7 @@ Set to the character after where the region starts.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] e"
 Move forward
 .Li count
@@ -2368,7 +2373,7 @@ Set to the last character of the word selected.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] f<character>"
 Search forward,
 .Li count
@@ -2391,7 +2396,7 @@ Set to the character searched for.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] i"
 Enter input mode, inserting the text before the cursor.
 #ifdef REFERENCE
@@ -2418,7 +2423,7 @@ and
 options.
 .El
 #endif
-.sp
+.SP
 .It Sy "m <character>"
 Save the current context (line and column) as
 .Li <character> .
@@ -2441,7 +2446,7 @@ Unchanged.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] o"
 Enter input mode, appending text in a new line under the current line.
 #ifdef REFERENCE
@@ -2474,7 +2479,7 @@ and
 options.
 .El
 #endif
-.sp
+.SP
 .It Sy "[buffer] p"
 Append text from a buffer.
 #ifdef REFERENCE
@@ -2493,7 +2498,7 @@ is line oriented, otherwise, the last character of the appended text.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] r <character>
 Replace characters.
 #ifdef REFERENCE
@@ -2521,7 +2526,7 @@ in which case the cursor is in column 1 of the line.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[buffer] [count] s"
 Substitute
 .Li count
@@ -2545,7 +2550,7 @@ and
 options.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] t <character>"
 Search forward,
 .Li count
@@ -2572,7 +2577,7 @@ the character searched for.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "u"
 Undo the last change made to the file.
 #ifdef REFERENCE
@@ -2602,7 +2607,7 @@ Set to the first nonblank character on line.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] w"
 Move forward
 .Li count
@@ -2631,7 +2636,7 @@ Set to the first character of the word selected.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[buffer] [count] x"
 Delete
 .Li count
@@ -2653,7 +2658,7 @@ set to the previous character.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[buffer] [count] y motion"
 Copy (or
 .Dq yank )
@@ -2677,7 +2682,7 @@ in which case it is set to the character were the region starts.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count1] z [count2] [-|.|+|^|<carriage-return>"
 Redraw, optionally repositioning, the screen.
 #ifdef REFERENCE
@@ -2729,7 +2734,7 @@ Set to the first nonblank character of the line.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] {"
 Move backward
 .Li count
@@ -2758,7 +2763,7 @@ Affected by the
 option.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] |"
 Move to a specific
 .Em column
@@ -2789,7 +2794,7 @@ the cursor is moved to the last character in the line.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] }"
 Move forwards
 .Li count
@@ -2819,7 +2824,7 @@ Affected by the
 option.
 .El
 #endif
-.sp
+.SP
 .It Sy "[count] ~"
 Reverse the case of the
 .Li count
@@ -2851,7 +2856,7 @@ line, in which case it is set to the first character of the next line.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "<interrupt>"
 Interrupt the current operation.
 #ifdef REFERENCE
@@ -2948,7 +2953,7 @@ Otherwise, a literal
 .Li <control-D>
 character is entered.
 #endif
-.sp
+.SP
 .It Sy "^<control-D>"
 #ifdef MANUAL
 Erase all of the autoindent characters, and reset the autoindent level.
@@ -2963,7 +2968,7 @@ In addition, the
 .Sy autoindent
 level is reset to 0.
 #endif
-.sp
+.SP
 .It Sy "0<control-D>"
 #ifdef MANUAL
 Erase all of the autoindent characters.
@@ -2975,7 +2980,7 @@ character, erase all of the
 .Sy autoindent
 characters on the line.
 #endif
-.sp
+.SP
 .It Sy "<control-T>"
 Insert sufficient <tab> and <space> characters to move the cursor
 forward to a column immediately after a column which is an even
@@ -2995,13 +3000,14 @@ characters.
 .Nm \&Nvi
 permits it to be used at any time during insert mode.
 #endif
-.sp
+.SP
 .It Sy "<erase>
 .It Sy "<control-H>"
 Erase the last character.
-.sp
+.SP
 .It Sy "<literal next>"
 Quote the next character.
+#ifdef REFERENCE
 The next character will not be mapped (see the
 .Sy map
 command for more information)
@@ -3010,13 +3016,14 @@ A placeholder character
 .Pq Dq \&^
 will be displayed immediately, but will be replaced by the next
 character.
-.sp
+#endif
+.SP
 .It Sy "<escape>
 Resolve all text input into the file, and return to command mode.
-.sp
+.SP
 .It Sy "<line erase>
 Erase the current line.
-.sp
+.SP
 .It Sy "<control-W>"
 .It Sy "<word erase>
 Erase the last word.
@@ -3025,10 +3032,10 @@ The definition of word in this case is dependent on the
 and
 .Sy ttywerase
 options.
-.sp
+.SP
 .It Sy "<control-X>[0-9A-Fa-f]*"
 Insert a character with the hexadecimal value specified into the text.
-.sp
+.SP
 .It Sy "<interrupt>"
 Interrupt text input mode, returning to command mode.
 #ifdef REFERENCE

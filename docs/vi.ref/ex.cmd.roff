@@ -3,9 +3,13 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: ex.cmd.roff,v 8.7 1994/04/29 15:20:05 bostic Exp $ (Berkeley) $Date: 1994/04/29 15:20:05 $
+.\"	$Id: ex.cmd.roff,v 8.8 1994/04/30 10:28:55 bostic Exp $ (Berkeley) $Date: 1994/04/30 10:28:55 $
 .\"
-.Sh EX COMMANDS
+#ifdef REFERENCE
+.de SP
+.sp
+..
+.Sh EX DESCRIPTION
 The following words have special meanings for
 .Nm \&ex
 commands.
@@ -17,7 +21,7 @@ The end-of-file character is used to scroll the screen in the
 editor.
 This character is normally <control-D>, however, whatever character
 is set for the current terminal is used.
-.sp
+.SP
 .It Sy "line"
 A single-line address, given in any of the forms described in the
 section entitled
@@ -25,7 +29,7 @@ section entitled
 The default for
 .Li line
 is the current line.
-.sp
+.SP
 .It Sy "range"
 A line, or a pair of line addresses, separated by a comma or semicolon.
 (See the section entitled
@@ -40,11 +44,11 @@ A percent sign
 stands for the range
 .Dq Li \&1,$ .
 The starting address must be less than, or equal to, the ending address.
-.sp
+.SP
 .It Sy "count"
 A positive integer, specifying the number of lines to be affected by
 the command; the default is 1.
-.sp
+.SP
 .It Sy "flags"
 One or more of the characters
 .Dq \&# ,
@@ -68,7 +72,7 @@ but rather the line addressed by the offset address specified.
 The default for
 .Li flags
 is none.
-.sp
+.SP
 .It Sy "file"
 A pattern used to derive a pathname; the default is the current file.
 File names are subjected to normal
@@ -82,7 +86,7 @@ This will be replaced with a temporary file name which can be used
 for temporary work, e.g.
 .Dq Li ":e /tmp"
 creates and edits a new file.
-.sp
+.SP
 .It Sy "word"
 A word consists of a sequence of letters, digits, and underscores,
 delimited at both ends by characters other than letters, digits, or
@@ -107,7 +111,7 @@ If none of these commands have been used before, the
 .Sy print
 command is the implied command.
 When no range or count is specified and the command line is a blank line,
-the current line is incremented by 1 and then the current line is dislayed.
+the current line is incremented by 1 and then the current line is displayed.
 .Pp
 Zero or more whitespace characters may precede or follow the addresses,
 count, flags, or command name.
@@ -120,13 +124,15 @@ Any character, including <carriage-return>,
 and
 .Dq Li \&#
 retain their literal value when preceded by a backslash.
-.Pp
-Each
+.bp
+#endif /* REFERENCE */
+.sh EX COMMANDS
+The following section describes the commands available in the
 .Nm \&ex
-command described below notes the new current line after it
-is executed, as well an any options that affect the command.
-.Pp
+editor.
 In each entry below, the tag line is a usage synopsis for the command.
+#ifdef REFERENCE
+.Pp
 For each of the commands, the command can be entered as the abbreviation
 (those characters in the synopsis command word preceding the [), the full
 command (all characters shown for the command word, omitting the [ and ]),
@@ -139,6 +145,12 @@ can be entered as
 .Dq Li arg
 or
 .Dq Li args .
+.Pp
+Each
+.Nm \&ex
+command described below notes the new current line after it
+is executed, as well an any options that affect the command.
+#endif
 .sp
 .Bl -tag -width "XXXX" -compact
 .It Sy "<end-of-file>"
@@ -169,7 +181,7 @@ Set to the last line written.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "! command"
 .It Sy "[range]! command"
 Execute a shell command, or filter lines through a shell command.
@@ -259,13 +271,16 @@ and
 options.
 .El
 #endif
-.sp
+.SP
 .It Sy \&"
+A comment.
+#ifdef REFERENCE
 Command lines beginning with the double-quote character
 .Pq Dq Li \&"
 are ignored.
 This permits comments in editor scripts and startup files.
-.sp
+#endif
+.SP
 .It Sy "[range] nu[mber] [count] [flags]"
 .It Sy "[range] # [count] [flags]"
 Display the selected lines, each preceded with its line number.
@@ -282,7 +297,7 @@ Set to the last line displayed.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "@ buffer"
 .It Sy "* buffer"
 Execute a buffer.
@@ -295,7 +310,7 @@ If no buffer is specified, or if the specified buffer is
 or
 .Dq Li * ,
 the last buffer executed is used.
-.sp
+.SP
 .It Sy "[range] <[< ...] [count] [flags]"
 Shift lines left or right.
 #ifdef REFERENCE
@@ -331,7 +346,7 @@ Affected by the
 option.
 .El
 #endif
-.sp
+.SP
 .It Sy "[line] = [flags]"
 Display the line number.
 #ifdef REFERENCE
@@ -346,7 +361,7 @@ Unchanged.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[range] >[> ...] [count] [flags]"
 Shift right.
 #ifdef REFERENCE
@@ -368,7 +383,7 @@ Set to the last line modified by the command.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "ab[brev] word rhs"
 Add the named abbreviation to the current abbreviation list.
 #ifdef REFERENCE
@@ -385,7 +400,7 @@ Unchanged.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[line] a[ppend][!]"
 The input text is appended to the specified line.
 #ifdef REFERENCE
@@ -417,7 +432,7 @@ and
 options.
 .El
 #endif
-.sp
+.SP
 .It Sy "ar[gs]"
 Display the argument list.
 #ifdef REFERENCE
@@ -438,7 +453,7 @@ Unchanged.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "bg"
 Visual mode only.
 Background the current screen.
@@ -451,7 +466,7 @@ Set to the current line when the screen was last edited.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[range] c[hange][!] [count]"
 Replace the lines with input text.
 #ifdef REFERENCE
@@ -478,7 +493,7 @@ and
 options.
 .El
 #endif
-.sp
+.SP
 .It Sy "chd[ir][!] [directory]"
 .It Sy "cd[!] [directory]"
 Change the current working directory.
@@ -513,7 +528,7 @@ Unchanged.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[range] co[py] line [flags]"
 .It Sy "[range] t line [flags]"
 Copy the specified lines (range) after the destination line.
@@ -526,7 +541,7 @@ Unchanged.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[range] d[elete] [buffer] [count] [flags]"
 Delete the lines from the file.
 #ifdef REFERENCE
@@ -549,7 +564,7 @@ or to the last line if the deleted lines were at the end.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "di[splay] b[uffers] | s[creens] | t[ags]"
 Display buffers, screens or tags.
 #ifdef REFERENCE 
@@ -573,7 +588,7 @@ Unchanged.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "e[dit][!] [+cmd] [file]"
 .It Sy "ex[!] [+cmd] [file]"
 Edit a different file.
@@ -611,7 +626,7 @@ and
 .Sy writeany .
 .El
 #endif
-.sp
+.SP
 .It Sy "exu[sage] [command]"
 Display usage for an
 .Nm \&ex
@@ -631,7 +646,7 @@ Unchanged.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "f[ile] [file]"
 Display and optionally change the file name.
 #ifdef REFERENCE
@@ -647,7 +662,7 @@ Unchanged.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "fg [name]"
 Visual mode only.
 Foreground the specified screen.
@@ -662,7 +677,7 @@ Set to the current line when the screen was last edited.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[range] g[lobal] /pattern/ [commands]"
 .It Sy "[range] v /pattern/ [commands]
 Apply commands to lines matching (or not matching) a pattern.
@@ -731,7 +746,7 @@ The last line modified.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "he[lp]"
 Display a help message.
 #ifdef REFERENCE
@@ -743,7 +758,7 @@ Unchanged.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[line] i[nsert][!]"
 The input text is inserted before the specified line.
 #ifdef REFERENCE
@@ -770,7 +785,7 @@ and
 options.
 .El
 #endif
-.sp
+.SP
 .It Sy "[range] j[oin][!] [count] [flags]"
 Join lines of text together.
 #ifdef REFERENCE
@@ -806,7 +821,7 @@ Unchanged.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[range] l[ist] [count] [flags]"
 Display the lines unambiguously.
 #ifdef REFERENCE
@@ -826,7 +841,7 @@ option.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "map[!] [lhs rhs]"
 Define or display maps (for
 .Nm \&vi
@@ -868,7 +883,7 @@ Unchanged.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[line] ma[rk] <character>"
 .It Sy "[line] k <character>"
 Mark the line with the mark <character>.
@@ -886,11 +901,11 @@ Unchanged.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[range] m[ove] line"
 Move the specified lines after the target line.
-A target line of 0 places the lines at the beginning of the file.
 #ifdef REFERENCE
+A target line of 0 places the lines at the beginning of the file.
 .Pp
 .Bl -tag -width "XOptions:" -compact
 .It "Line:"
@@ -899,7 +914,7 @@ Set to the first of the moved lines.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "mk[exrc][!] file"
 Write the abbreviations, editor options and maps to the specified
 file.
@@ -925,7 +940,7 @@ Unchanged.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "n[ext][!] [file ...]"
 Edit the next file from the argument list.
 #ifdef REFERENCE
@@ -953,7 +968,7 @@ and
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[line] o[pen] /pattern/ [flags]"
 Enter open mode.
 #ifdef REFERENCE
@@ -978,7 +993,7 @@ Affected by the
 option.
 .El
 #endif
-.sp
+.SP
 .It Sy "pre[serve]"
 Save the file in a form that can later be recovered by using
 .Nm \&ex
@@ -996,7 +1011,7 @@ Unchanged.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "prev[ious][!]"
 Edit the previous file from the argument list.
 #ifdef REFERENCE
@@ -1021,7 +1036,7 @@ and
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[range] p[rint] [count] [flags]"
 Display the specified lines.
 #ifdef REFERENCE
@@ -1033,7 +1048,7 @@ Set to the last line displayed.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[line] pu[t] [buffer]"
 Append buffer contents to the current line.
 #ifdef REFERENCE
@@ -1047,7 +1062,7 @@ Set to the line after the current line.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "q[uit][!]"
 End the editing session.
 #ifdef REFERENCE
@@ -1080,7 +1095,7 @@ Unchanged.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[line] r[ead][!] [file]"
 Read a file.
 #ifdef REFERENCE
@@ -1127,7 +1142,7 @@ the current line is set to the first line read.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "rec[over] file"
 Recover
 .Li file
@@ -1143,7 +1158,7 @@ command.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "res[ize] [+|-]size"
 Visual mode only.
 Grow or shrink the current screen.
@@ -1167,7 +1182,7 @@ Unchanged.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "rew[ind][!]"
 Rewind the argument list.
 #ifdef REFERENCE
@@ -1195,7 +1210,7 @@ and
 options.
 .El
 #endif
-.sp
+.SP
 .It Sy "se[t] [option[=[value]] ...] [nooption ...] [option? ...] [all]"
 Display or set editor options.
 #ifdef REFERENCE
@@ -1236,7 +1251,7 @@ Unchanged.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "sh[ell]"
 Run a shell program.
 #ifdef REFERENCE
@@ -1254,7 +1269,7 @@ Unchanged.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "so[urce] file"
 Read and execute
 .Nm \&ex
@@ -1270,7 +1285,7 @@ Unchanged.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "sp[lit] [file ...]"
 Visual mode only.
 Split the screen.
@@ -1297,7 +1312,7 @@ command, otherwise unchanged.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[range] s[ubstitute] [/pattern/replace/] [options] [count] [flags]"
 .It Sy "[range] & [options] [count] [flags]"
 .It Sy "[range] ~ [options] [count] [flags]"
@@ -1387,7 +1402,7 @@ Set to the last line upon which a substitution was made.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "su[spend][!]"
 .It Sy "st[op][!]"
 .It Sy <suspend>
@@ -1408,7 +1423,7 @@ Affected by the
 option.
 .El
 #endif
-.sp
+.SP
 .It Sy "ta[g][!] tagstring"
 Edit the file containing the specified tag.
 #ifdef REFERENCE
@@ -1446,7 +1461,7 @@ and
 options.
 .El
 #endif
-.sp
+.SP
 .It Sy "tagp[op][!] [file | number]"
 Pop to the specified tag in the tags stack.
 #ifdef REFERENCE
@@ -1488,7 +1503,7 @@ and
 options.
 .El
 #endif
-.sp
+.SP
 .It Sy "tagt[op][!]"
 Pop to the least recent tag on the tags stack, clearing the tags stack.
 .Pp
@@ -1511,7 +1526,7 @@ and
 options.
 .El
 #endif
-.sp
+.SP
 .It Sy "una[bbrev] word"
 Delete an abbreviation.
 #ifdef REFERENCE
@@ -1526,7 +1541,7 @@ Unchanged.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "u[ndo]"
 Undo the last change made to the file.
 Changes made by
@@ -1545,7 +1560,7 @@ Set to the last line modified by the command.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "unm[ap][!] lhs"
 Unmap a mapped string.
 #ifdef REFERENCE
@@ -1563,12 +1578,12 @@ Unchanged.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "ve[rsion]"
 Display the version of the
 .Nm \&ex/vi
 editor.
-.sp
+.SP
 .It Sy "[line] vi[sual] [type] [count] [flags]"
 .Nm \&Ex
 mode only.
@@ -1603,7 +1618,7 @@ is specified, in which case it is set to that line.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "vi[sual][!] [+cmd] [file]"
 Visual mode only.
 Edit a new file.
@@ -1612,7 +1627,7 @@ Identical to the
 .Dq Li "edit[!] [+cmd] [file]"
 command.
 #endif
-.sp
+.SP
 .It Sy "viu[sage] [command]"
 Display usage for a
 .Nm \&vi
@@ -1632,7 +1647,7 @@ Unchanged.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[range] w[rite][!] [>>] [file]"
 .It Sy "[range] w[rite] [!] [file]"
 .It Sy "[range] wn[!] [>>] [file]"
@@ -1708,7 +1723,7 @@ and
 options.
 .El
 #endif
-.sp
+.SP
 .It Sy "[range] x[it][!] [file]"
 Write the file if it has been modified.
 #ifdef REFERENCE
@@ -1748,7 +1763,7 @@ and
 options.
 .El
 #endif
-.sp
+.SP
 .It Sy "[range] ya[nk] [buffer] [count]"
 Copy the specified lines to a buffer.
 #ifdef REFERENCE
@@ -1761,7 +1776,7 @@ Unchanged.
 None.
 .El
 #endif
-.sp
+.SP
 .It Sy "[line] z [type] [count] [flags]"
 Adjust the window.
 #ifdef REFERENCE
