@@ -6,73 +6,75 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: mark.c,v 8.1 1993/06/09 22:21:27 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:21:27 $";
+static char sccsid[] = "$Id: mark.c,v 8.2 1993/09/27 16:24:13 bostic Exp $ (Berkeley) $Date: 1993/09/27 16:24:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
+#include <errno.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "vi.h"
 
+static MARK *mark_find __P((SCR *, EXF *, ARG_CHAR_T));
+
 /*
- * Historic vi got mark updates wrong.  Marks were fixed, and if the line
- * subsequently changed modifications of the line wouldn't update the mark's
- * offset in the line.  This is arguably correct in some cases, e.g. when
- * the user wants to keep track of the start of a line, even after inserting
- * text at the beginning of the line.  However, given that single quotes mark
- * lines, not specific locations in the line, and that it would be difficult
- * to reproduce the exact vi semantics, these routines do it "correctly".
+ * Marks are maintained in a key sorted doubly linked list.  We can't
+ * use arrays because we have no idea how big an index key could be.
+ * The underlying assumption is that users don't have more than, say,
+ * 10 marks at any one time, so this will be is fast enough.
  *
- * XXX
- * Right now, it's expensive to find the marks since we traverse the array
- * linearly.  Should have a doubly linked list of mark entries so we can
- * traverse it quickly on updates.
+ * Marks are fixed, and modifications to the line don't update the mark's
+ * position in the line.  This can be hard.  If you add text to the line,
+ * place a mark in that text, undo the addition and use ` to move to the
+ * mark, the location will have disappeared.  It's tempting to try to adjust
+ * the mark with the changes in the line, but this is hard to do, especially
+ * if we've given the line to v_ntext.c:v_ntext() for editing.  Historic vi
+ * would move to the first non-blank on the line when the mark location was
+ * past the end of the line.  This can be complicated by deleting to a mark
+ * that has disappeared using the ` command.  Historic vi vi treated this as
+ * a line-mode motion and deleted the line.  This implementation complains to
+ * the user.
  *
- * In the historic vi, marks would return if the operation was undone.  This
- * code doesn't handle that problem.  It should be done as part of TXN undo,
- * logged from here.
+ * In historic vi, marks returned if the operation was undone, unless the
+ * mark had been subsequently reset.  Tricky.  This is hard to start with,
+ * but in the presence of repeated undo it gets nasty.  When a line is
+ * deleted, we delete (and log) any marks on that line.  An undo will create
+ * the mark.  Any mark creations are noted as to whether the user created
+ * it or if it was created by an undo.  The former cannot be reset by another
+ * undo, but the latter may. 
+ *
+ * All of these routines translate ABSMARK2 to ABSMARK1.  Setting either of
+ * the absolute mark locations sets both, so that "m'" and "m`" work like
+ * they, ah, for lack of a better word, "should".
  */
 
 /*
  * mark_init --
- *	Initialize the marks for a file.
+ *	Set up the marks.
  */
 int
 mark_init(sp, ep)
 	SCR *sp;
 	EXF *ep;
 {
-	MARK m;
-
-	/* Default absolute marks. */
-	ep->absmark.lno = m.lno = 1;
-	ep->absmark.cno = m.cno = 0;
-	return (mark_set(sp, ep, ABSMARK1, &m));
-}
-
-/*
- * mark_set --
- *	Set the location referenced by a mark.  Note, setting either of
- *	the absolute mark locations sets both, so that "m'" and "m`" work
- *	like they, ah, for lack of a better word, should.
- */
-int
-mark_set(sp, ep, key, mp)
-	SCR *sp;
-	EXF *ep;
-	int key;
 	MARK *mp;
-{
-	if (key > UCHAR_MAX) {
-		msgq(sp, M_BERR, "Invalid mark name.");
+
+	/*
+	 * Make sure the marks have been set up.  If they
+	 * haven't, do so, and create the absolute mark.
+	 */
+	HDR_INIT(ep->marks, next, prev);
+	if ((mp = malloc(sizeof(MARK))) == NULL) {
+		msgq(sp, M_ERR, "Error: %s", strerror(errno));
 		return (1);
 	}
-	if (key == ABSMARK1 || key == ABSMARK2) {
-		ep->absmark = ep->marks[ABSMARK1];
-		ep->marks[ABSMARK1] = ep->marks[ABSMARK2] = *mp;
-	} else
-		ep->marks[key] = *mp;
+	ep->absmark.lno = mp->lno = 1;
+	ep->absmark.cno = mp->cno = 0;
+	mp->name = ABSMARK1;
+	mp->flags = 0;
+	HDR_INSERT(mp, &ep->marks, next, prev, MARK);
 	return (0);
 }
 
@@ -84,20 +86,107 @@ MARK *
 mark_get(sp, ep, key)
 	SCR *sp;
 	EXF *ep;
-	int key;
+	ARG_CHAR_T key;
 {
 	MARK *mp;
+	size_t len;
+	char *p;
 
-	if (key > UCHAR_MAX) {
-		msgq(sp, M_BERR, "Invalid mark name.");
+	if (key == ABSMARK2)
+		key = ABSMARK1;
+
+	if ((mp = mark_find(sp, ep, key)) == NULL)
 		return (NULL);
-	}
-	mp = &ep->marks[key];
-	if (mp->lno == OOBLNO) {
-		msgq(sp, M_BERR, "Mark '%s not set.", sp->cname[key].name);
+	if (mp->name != key) {
+		msgq(sp, M_BERR, "Mark %s: not set.", sp->cname[key].name);
                 return (NULL);
 	}
+	if (F_ISSET(mp, MARK_DELETED)) {
+		msgq(sp, M_BERR,
+		    "Mark %s: the line was deleted.", sp->cname[key].name);
+                return (NULL);
+	}
+	if ((p = file_gline(sp, ep, mp->lno, &len)) == NULL ||
+	    mp->cno > len || mp->cno == len && len != 0) {
+		msgq(sp, M_BERR, "Mark %s: cursor position no longer exists.",
+		    sp->cname[key].name);
+		return (NULL);
+	}
 	return (mp);
+}
+
+/*
+ * mark_set --
+ *	Set the location referenced by a mark.
+ */
+int
+mark_set(sp, ep, key, value, userset)
+	SCR *sp;
+	EXF *ep;
+	ARG_CHAR_T key;
+	MARK *value;
+	int userset;
+{
+	MARK *mp, *mt;
+
+	if (key == ABSMARK2)
+		key = ABSMARK1;
+
+	if ((mp = mark_find(sp, ep, key)) == NULL)
+		return (1);
+	/*
+	 * The rules are simple.  If the user is setting a mark (if it's a
+	 * new mark this is always true), it always happens.  If not, it's
+	 * an undo, and we set it if it's not already set or if it was set
+	 * by a previous undo.  If we're setting the default mark, rotate
+	 * the old default mark out.
+	 */
+	if (mp->name != key) {
+		if ((mt = malloc(sizeof(MARK))) == NULL) {
+			msgq(sp, M_ERR, "Error: %s", strerror(errno));
+			return (1);
+		}
+		HDR_APPEND(mt, mp, next, prev, MARK);
+		mp = mt;
+	} else {
+		if (!userset &&
+		    !F_ISSET(mp, MARK_DELETED) && F_ISSET(mp, MARK_USERSET))
+			return (0);
+		if (key == ABSMARK1) {
+			ep->absmark.lno = mp->lno;
+			ep->absmark.cno = mp->cno;
+		}
+	}
+
+	mp->lno = value->lno;
+	mp->cno = value->cno;
+	mp->name = key;
+	mp->flags = userset ? MARK_USERSET : 0;
+	return (0);
+}
+
+/*
+ * mark_find --
+ *	Find the requested mark, or, the slot immediately before
+ *	where it would go.
+ */
+static MARK *
+mark_find(sp, ep, key)
+	SCR *sp;
+	EXF *ep;
+	ARG_CHAR_T key;
+{
+	HDR *hp;
+	MARK *mp;
+
+	/*
+	 * Return the requested mark or the slot immediately before
+	 * where it should go.
+	 */
+	for (hp = &ep->marks, mp = hp->next; mp != (MARK *)hp; mp = mp->next)
+		if (mp->name >= key)
+			return (mp->name == key ? mp : mp->prev);
+	return (mp->prev);
 }
 
 /*
@@ -105,44 +194,21 @@ mark_get(sp, ep, key)
  *	Update the marks based on a deletion.
  */
 void
-mark_delete(sp, ep, fm, tm, lmode)
+mark_delete(sp, ep, lno)
 	SCR *sp;
 	EXF *ep;
-	MARK *fm, *tm;
-	int lmode;
+	recno_t lno;
 {
-	register MARK *mp;
-	register int cno, cnt, lno;
-	
-	cno = tm->cno - fm->cno;
-	if (tm->lno == fm->lno) {
-		lno = fm->lno;
-		for (cnt = 0, mp = ep->marks;
-		    cnt < sizeof(ep->marks) / sizeof(ep->marks[0]);
-		    ++cnt, ++mp) {
-			if (mp->lno != lno || mp->cno < fm->cno)
-				continue;
-			if (lmode || mp->cno < tm->cno)
-				mp->lno = OOBLNO;
-			else
-				mp->cno -= cno;
-		}
-	} else {
-		lno = tm->lno - fm->lno + 1;
-		for (cnt = 0, mp = ep->marks;
-		    cnt < sizeof(ep->marks) / sizeof(ep->marks[0]);
-		    ++cnt, ++mp) {
-			if (mp->lno < fm->lno)
-				continue;
-			if (mp->lno == fm->lno)
-				if (lmode || mp->cno >= fm->cno)
-					mp->lno = OOBLNO;
-				else
-					mp->cno -= cno;
-			else
-				mp->lno -= lno;
-		}
-	}
+	HDR *hp;
+	MARK *mp;
+
+	for (hp = &ep->marks, mp = hp->next; mp != (MARK *)hp; mp = mp->next)
+		if (mp->lno >= lno)
+			if (mp->lno == lno) {
+				F_SET(mp, MARK_DELETED);
+				(void)log_mark(sp, ep, mp);
+			} else
+				--mp->lno;
 }
 
 /*
@@ -150,28 +216,15 @@ mark_delete(sp, ep, fm, tm, lmode)
  *	Update the marks based on an insertion.
  */
 void
-mark_insert(sp, ep, fm, tm)
+mark_insert(sp, ep, lno)
 	SCR *sp;
 	EXF *ep;
-	MARK *fm, *tm;
+	recno_t lno;
 {
-	register MARK *mp;
-	register int cno, cnt, lno;
-	
-	lno = tm->lno - fm->lno;
-	cno = tm->cno - fm->cno;
-	for (cnt = 0, mp = ep->marks;
-	    cnt < sizeof(ep->marks) / sizeof(ep->marks[0]); ++cnt, ++mp) {
-		if (mp->lno < fm->lno)
-			continue;
-		if (mp->lno > tm->lno) {
-			mp->lno += lno;
-			continue;
-		}
-		if (mp->cno < fm->cno)
-			continue;
+	HDR *hp;
+	MARK *mp;
 
-		mp->lno += lno;
-		mp->cno += cno;
-	}
+	for (hp = &ep->marks, mp = hp->next; mp != (MARK *)hp; mp = mp->next)
+		if (mp->lno >= lno)
+			++mp->lno;
 }
