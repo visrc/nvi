@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.38 1994/03/06 13:13:03 bostic Exp $ (Berkeley) $Date: 1994/03/06 13:13:03 $";
+static char sccsid[] = "$Id: util.c,v 8.39 1994/03/08 09:50:24 bostic Exp $ (Berkeley) $Date: 1994/03/08 09:50:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -291,7 +291,7 @@ binc(sp, argp, bsizep, min)
 	 * Memory is guaranteed to be zero-filled, various parts of
 	 * nvi depend on this.
 	 */
-	memset(bpp + *bsizep, 0, csize - *bsizep);
+	memset((char *)bpp + *bsizep, 0, csize - *bsizep);
 	*(char **)argp = bpp;
 	*bsizep = csize;
 	return (0);
