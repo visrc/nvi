@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.91 1996/04/22 18:10:43 bostic Exp $ (Berkeley) $Date: 1996/04/22 18:10:43 $
+dnl	$Id: configure.in,v 8.92 1996/04/22 19:41:03 bostic Exp $ (Berkeley) $Date: 1996/04/22 19:41:03 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(../common/main.c)
@@ -495,7 +495,7 @@ AC_MSG_RESULT($vi_cv_gettimeofday)
 dnl Check for which version of openpty to use, System V or Berkeley.
 AC_MSG_CHECKING(for System V pty calls)
 AC_CACHE_VAL(vi_cv_sys5_pty, [dnl
-AC_TRY_LINK(, [ptym_open("a");],
+AC_TRY_LINK(, [grantpt(0);],
 	[vi_cv_sys5_pty=yes], [vi_cv_sys5_pty=no])])
 if test "$vi_cv_sys5_pty" = yes; then
 	AC_DEFINE(HAVE_SYS5_PTY)
