@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: util.h,v 9.1 1994/11/09 18:38:20 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:38:20 $
+ *	$Id: util.h,v 9.2 1994/11/17 20:35:58 bostic Exp $ (Berkeley) $Date: 1994/11/17 20:35:58 $
  */
 
 /*
@@ -19,6 +19,37 @@
 #define	MIN(_a,_b)	((_a)<(_b)?(_a):(_b))
 #endif
 
+/*
+ * Number handling defines and protoypes.
+ *
+ * NNFITS:	test for addition of two negative numbers under a limit
+ * NPFITS:	test for addition of two positive numbers under a limit
+ * NADD_SLONG:	test for addition of two signed longs
+ * NADD_USLONG:	test for addition of two unsigned longs
+ */
+enum nresult { NUM_ERR, NUM_OK, NUM_OVER, NUM_UNDER };
+#define	NNFITS(min, cur, add)						\
+	((min) - (cur) <= (add))
+#define	NPFITS(max, cur, add)						\
+	((max) - (cur) >= (add))
+#define	NADD_SLONG(sp, v1, v2)						\
+	((v1) < 0 ?							\
+	    ((v2) < 0 &&						\
+	    NNFITS(LONG_MIN, (v1), (v2))) ? NUM_UNDER : NUM_OK :	\
+	 (v1) > 0 ?							\
+	    (v2) > 0 &&							\
+	    NPFITS(LONG_MAX, (v1), (v2)) ? NUM_OK : NUM_OVER :		\
+	 NUM_OK)
+#define	NADD_USLONG(sp, v1, v2)						\
+	(NPFITS(ULONG_MAX, (v1), (v2)) ? NUM_OK : NUM_OVER)
+enum nresult nget_slong __P((SCR *, long *, char *, char **));
+enum nresult nget_uslong __P((SCR *, u_long *, char *, char **));
+
+/* Digraphs (not currently real). */
+int	digraph __P((SCR *, int, int));
+int	digraph_init __P((SCR *));
+void	digraph_save __P((SCR *, int));
+
 /* Function prototypes that don't seem to belong anywhere else. */
 int	 nonblank __P((SCR *, recno_t, size_t *));
 void	 set_alt_name __P((SCR *, char *));
@@ -26,17 +57,6 @@ char	*tail __P((char *));
 CHAR_T	*v_strdup __P((SCR *, const CHAR_T *, size_t));
 void	 vi_putchar __P((int));
 
-int	 add_slong __P((SCR *, long, long, char *, char *));
-int	 add_uslong __P((SCR *, u_long, u_long, char *));
-int	 get_slong __P((SCR *,
-	    long, long *, int, char *, char **, char *, char *));
-int	 get_uslong __P((SCR *, u_long, u_long *, char *, char **, char *));
-
 #ifdef DEBUG
 void	TRACE __P((SCR *, const char *, ...));
 #endif
-
-/* Digraphs (not currently real). */
-int	digraph __P((SCR *, int, int));
-int	digraph_init __P((SCR *));
-void	digraph_save __P((SCR *, int));
