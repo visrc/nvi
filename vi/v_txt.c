@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.1 1993/06/09 22:27:30 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:27:30 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.2 1993/06/28 18:38:33 bostic Exp $ (Berkeley) $Date: 1993/06/28 18:38:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -503,13 +503,32 @@ k_escape:		if (tp->insert && tp->overwrite)
 			}
 			if (sp->cno == max)
 				break;
-			for (tmp =
-			    inword(tp->lb[sp->cno - 1]); sp->cno > max;) {
-				--sp->cno;
-				++tp->overwrite;
-				if (tmp != inword(tp->lb[sp->cno - 1]) ||
-				    isspace(tp->lb[sp->cno - 1]))
-					break;
+			/*
+			 * The 4.4BSD tty driver has two types of word erase.
+			 * In the traditional mode words are delimited by
+			 * whitespace characters.  In the newer mode words
+			 * are divided into two classes of characters, and
+			 * are delimited by each other and by white space.
+			 * The latter mode is the mode implemented by the
+			 * historical version of vi.  This implementation of
+			 * vi offers both.
+			 */ 
+			if (LF_ISSET(TXT_ALTWERASE))
+				while (sp->cno > max) {
+					--sp->cno;
+					++tp->overwrite;
+					if (isspace(tp->lb[sp->cno - 1]))
+						break;
+				}
+			else {
+				tmp = inword(tp->lb[sp->cno - 1]);
+				while (sp->cno > max) {
+					--sp->cno;
+					++tp->overwrite;
+					if (tmp != inword(tp->lb[sp->cno - 1])
+					    || isspace(tp->lb[sp->cno - 1]))
+						break;
+				}
 			}
 			break;
 		case K_VKILL:			/* Restart this line. */

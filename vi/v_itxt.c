@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 8.2 1993/06/20 14:12:30 bostic Exp $ (Berkeley) $Date: 1993/06/20 14:12:30 $";
+static char sccsid[] = "$Id: v_itxt.c,v 8.3 1993/06/28 18:38:35 bostic Exp $ (Berkeley) $Date: 1993/06/28 18:38:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,6 +22,8 @@ static char sccsid[] = "$Id: v_itxt.c,v 8.2 1993/06/20 14:12:30 bostic Exp $ (Be
 #define	SET_TXT_STD(sp, f) {						\
 	LF_INIT((f) | TXT_BEAUTIFY | TXT_CNTRLT | TXT_ESCAPE |		\
 	    TXT_MAPINPUT | TXT_RECORD | TXT_RESOLVE);			\
+	if (O_ISSET(sp, O_ALTWERASE))					\
+		LF_SET(TXT_ALTWERASE);					\
 	if (O_ISSET(sp, O_AUTOINDENT))					\
 		LF_SET(TXT_AUTOINDENT);					\
 	if (O_ISSET(sp, O_SHOWMATCH))					\

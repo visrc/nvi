@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 8.1 1993/06/09 22:22:25 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:22:25 $
+ *	$Id: key.h,v 8.2 1993/06/28 18:38:16 bostic Exp $ (Berkeley) $Date: 1993/06/28 18:38:16 $
  */
 
 /* Special character lookup values. */
@@ -32,30 +32,25 @@
 
 /* Flags describing how input is handled. */
 #define	TXT_AICHARS	0x000001	/* Leading autoindent chars. */
-#define	TXT_APPENDEOL	0x000002	/* Appending after EOL. */
-#define	TXT_AUTOINDENT	0x000004	/* Autoindent set this line. */
-#define	TXT_BEAUTIFY	0x000008	/* Only printable characters. */
-#define	TXT_BS		0x000010	/* Backspace returns the buffer. */
-#define	TXT_CNTRLT	0x000020	/* Control-T is an indent special. */
-#define	TXT_CR		0x000040	/* CR returns the buffer. */
-#define	TXT_EMARK	0x000080	/* End of replacement mark. */
-#define	TXT_ESCAPE	0x000100	/* Escape returns the buffer. */
-#define	TXT_MAPCOMMAND	0x000200	/* Apply the command map. */
-#define	TXT_MAPINPUT	0x000400	/* Apply the input map. */
-#define	TXT_NLECHO	0x000800	/* Echo the newline. */
-#define	TXT_OVERWRITE	0x001000	/* Overwrite characters. */
-#define	TXT_PROMPT	0x002000	/* Display a prompt. */
-#define	TXT_RECORD	0x004000	/* Record for replay. */
-#define	TXT_REPLACE	0x008000	/* Replace; don't delete overwrite. */
-#define	TXT_REPLAY	0x010000	/* Replay the last input. */
-#define	TXT_RESOLVE	0x020000	/* Resolve the text into the file. */
-#define	TXT_SHOWMATCH	0x040000	/* Showmatch flag is set. */
-
-#define	TXT_VALID_VI							\
-	(TXT_APPENDEOL | TXT_AUTOINDENT | TXT_BEAUTIFY | TXT_CNTRLT |	\
-	 TXT_CR | TXT_EMARK | TXT_ESCAPE | TXT_MAPCOMMAND |		\
-	 TXT_OVERWRITE | TXT_PROMPT | TXT_RECORD | TXT_REPLACE |	\
-	 TXT_REPLAY | TXT_RESOLVE)
+#define	TXT_ALTWERASE	0x000002	/* Option: altwerase. */
+#define	TXT_APPENDEOL	0x000004	/* Appending after EOL. */
+#define	TXT_AUTOINDENT	0x000008	/* Autoindent set this line. */
+#define	TXT_BEAUTIFY	0x000010	/* Only printable characters. */
+#define	TXT_BS		0x000020	/* Backspace returns the buffer. */
+#define	TXT_CNTRLT	0x000040	/* Control-T is an indent special. */
+#define	TXT_CR		0x000080	/* CR returns the buffer. */
+#define	TXT_EMARK	0x000100	/* End of replacement mark. */
+#define	TXT_ESCAPE	0x000200	/* Escape returns the buffer. */
+#define	TXT_MAPCOMMAND	0x000400	/* Apply the command map. */
+#define	TXT_MAPINPUT	0x000800	/* Apply the input map. */
+#define	TXT_NLECHO	0x001000	/* Echo the newline. */
+#define	TXT_OVERWRITE	0x002000	/* Overwrite characters. */
+#define	TXT_PROMPT	0x004000	/* Display a prompt. */
+#define	TXT_RECORD	0x008000	/* Record for replay. */
+#define	TXT_REPLACE	0x010000	/* Replace; don't delete overwrite. */
+#define	TXT_REPLAY	0x020000	/* Replay the last input. */
+#define	TXT_RESOLVE	0x040000	/* Resolve the text into the file. */
+#define	TXT_SHOWMATCH	0x080000	/* Option: showmatch. */
 
 #define	TXT_VALID_EX							\
 	(TXT_BEAUTIFY | TXT_CR | TXT_NLECHO | TXT_PROMPT)
