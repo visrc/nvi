@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 5.51 1993/05/08 17:03:38 bostic Exp $ (Berkeley) $Date: 1993/05/08 17:03:38 $
+ *	$Id: exf.h,v 5.52 1993/05/10 11:13:10 bostic Exp $ (Berkeley) $Date: 1993/05/10 11:13:10 $
  */
 
 					/* Undo direction. */
@@ -35,8 +35,9 @@ typedef struct _exf {
 	DB	*log;			/* Log db structure. */
 	char	*l_lp;			/* Log buffer. */
 	size_t	 l_len;			/* Log buffer length. */
-	u_char	 l_ltype;		/* Log type. */
-	recno_t	 l_srecno;		/* Saved record number. */
+	recno_t	 l_high;		/* Log last + 1 record number. */
+	recno_t	 l_cur;			/* Log current record number. */
+	struct _mark	l_cursor;	/* Log cursor position. */
 	enum udirection lundo;		/* Last undo direction. */
 
 	struct _mark	getc_m;		/* Getc mark. */
@@ -112,6 +113,7 @@ int	 file_iline __P((struct _scr *,
 recno_t	 file_lline __P((struct _scr *, struct _exf *));
 EXF	*file_next __P((struct _scr *, struct _exf *, int));
 EXF	*file_prev __P((struct _scr *, struct _exf *, int));
+char	*file_rline __P((struct _scr *, struct _exf *, recno_t, size_t *));
 int	 file_set __P((struct _scr *, int, char *[]));
 int	 file_sline __P((struct _scr *,
 	    struct _exf *, recno_t, char *, size_t));

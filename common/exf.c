@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.65 1993/05/08 20:42:00 bostic Exp $ (Berkeley) $Date: 1993/05/08 20:42:00 $";
+static char sccsid[] = "$Id: exf.c,v 5.66 1993/05/10 11:12:56 bostic Exp $ (Berkeley) $Date: 1993/05/10 11:12:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -413,7 +413,6 @@ file_def(sp, ep)
 	memset(ep, 0, sizeof(EXF));
 
 	ep->c_lno = OOBLNO;
-	ep->l_ltype = LOG_NOTYPE;
 	F_SET(ep, F_NOSETPOS);
 
 	return (mark_init(sp, ep));
