@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 5.26 1992/12/23 13:12:36 bostic Exp $ (Berkeley) $Date: 1992/12/23 13:12:36 $";
+static char sccsid[] = "$Id: v_ex.c,v 5.27 1992/12/25 16:22:44 bostic Exp $ (Berkeley) $Date: 1992/12/25 16:22:44 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -59,7 +59,7 @@ v_ex(vp, fm, tm, rp)
 		(void)ex_cstring(p, len, 0);
 		(void)fflush(curf->stdfp);
 		if (extotalcount <= 1) {
-			needexerase = 1;
+			FF_SET(curf, F_NEEDMERASE);
 			break;
 		}
 
