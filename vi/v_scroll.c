@@ -6,13 +6,45 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 8.3 1993/08/22 10:47:30 bostic Exp $ (Berkeley) $Date: 1993/08/22 10:47:30 $";
+static char sccsid[] = "$Id: v_scroll.c,v 8.4 1993/09/01 12:20:57 bostic Exp $ (Berkeley) $Date: 1993/09/01 12:20:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
 #include "vi.h"
 #include "vcmd.h"
+
+/*
+ * The historic vi had a problem in that all movements were by physical
+ * lines, not by logical, or screen lines.  Arguments can be made that this
+ * is the right thing to do.  For example, single line movements, such as
+ * 'j' or 'k', should probably work on physical lines.  Commands like "dj",
+ * or "j.", where '.' is a change command, make more sense for physical lines
+ * than they do for logical lines.
+ *
+ * These arguments, however, don't apply to scrolling commands like ^D and
+ * ^F -- if the window is fairly small, using physical lines can result in
+ * a half-page scroll repainting the entire screen, which is not what the
+ * user wanted.  Second, if the line is larger than the screen, using physical
+ * lines can make it impossible to display parts of the line -- there aren't
+ * any commands that don't display the beginning of the line in historic vi,
+ * and if both the beginning and end of the line can't be on the screen at
+ * the same time, you lose.  This is even worse in the case of the H, L, and
+ * M commands -- for large lines, they may all refer to the same line and
+ * will result in no movement at all.
+ *
+ * This implementation does the scrolling (^B, ^D, ^F, ^U, ^Y, ^E), and the
+ * cursor positioning commands (H, L, M) commands using logical lines, not
+ * physical.
+ *
+ * Another issue is that page and half-page scrolling commands historically
+ * moved to the first non-blank character in the new line.  If the line is
+ * approximately the same size as the screen, this loses because the cursor
+ * before and after a ^D, may refer to the same location on the screen.  In
+ * this implementation, scrolling commands set the cursor to the first non-
+ * blank character if the line changes because of the scroll.  Otherwise,
+ * the cursor is left alone.
+ */
 
 /*
  * v_lgoto -- [count]G
@@ -43,8 +75,8 @@ v_lgoto(sp, ep, vp, fm, tm, rp)
 
 /* 
  * v_home -- [count]H
- *	Move to the first non-blank character of the line count from
- *	the top of the screen, 1 by default.
+ *	Move to the first non-blank character of the logical line
+ *	count from the top of the screen, 1 by default.
  */
 int
 v_home(sp, ep, vp, fm, tm, rp)
@@ -53,14 +85,15 @@ v_home(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	return (sp->s_position(sp, ep, &rp->lno,
-	    F_ISSET(vp, VC_C1SET) ? vp->count : 1, P_TOP));
+	if (sp->s_position(sp, ep, rp,
+	    F_ISSET(vp, VC_C1SET) ? vp->count : 0, P_TOP))
+		return (1);
 }
 
 /*
  * v_middle -- M
- *	Move to the first non-blank character of the line in the middle
- *	of the screen.
+ *	Move to the first non-blank character of the logical line
+ *	in the middle of the screen.
  */
 int
 v_middle(sp, ep, vp, fm, tm, rp)
@@ -74,13 +107,14 @@ v_middle(sp, ep, vp, fm, tm, rp)
 	 * historical blemish of vi, no matter how strange it might be,
 	 * we permit the user to enter a count and then ignore it.
 	 */
-	return (sp->s_position(sp, ep, &rp->lno, 0, P_MIDDLE));
+	if (sp->s_position(sp, ep, rp, 0, P_MIDDLE))
+		return (1);
 }
 
 /*
  * v_bottom -- [count]L
- *	Move to the first non-blank character of the line count from
- *	the bottom of the screen, 1 by default.
+ *	Move to the first non-blank character of the logical line
+ *	count from the bottom of the screen, 1 by default.
  */
 int
 v_bottom(sp, ep, vp, fm, tm, rp)
@@ -89,8 +123,9 @@ v_bottom(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	return (sp->s_position(sp, ep, &rp->lno,
-	    F_ISSET(vp, VC_C1SET) ? vp->count : 1, P_BOTTOM));
+	if (sp->s_position(sp, ep, rp,
+	    F_ISSET(vp, VC_C1SET) ? vp->count : 0, P_BOTTOM))
+		return (1);
 }
 
 /*
@@ -140,27 +175,6 @@ v_down(sp, ep, vp, fm, tm, rp)
 }
 
 /*
- * The historic vi had a problem in that all movements were by physical
- * lines, not by logical, or screen lines.  Arguments can be made that this
- * is the right thing to do.  For example, single line movements, such as
- * 'j' or 'k', should probably work on physical lines.  Commands like "dj",
- * or "j.", where '.' is a change command, make more sense for physical lines
- * than they do logical lines.  The arguments, however, don't apply to
- * scrolling commands like ^D and ^F -- if the window is fairly small, using
- * physical lines can result in a half-page scroll repainting the entire
- * screen, which is not what the user wanted.  In addition, if the line is
- * large and the screen is small, using physical lines can make it impossible
- * to display parts of the line.  This implementation does the scrolling
- * (^B, ^D, ^F, ^U), ^Y and ^E commands using logical lines, not physical.
- *
- * Another minor issue is that historically, page and half-page scrolling
- * commands moved to the first non-blank character in the new line.  If
- * the line changes because of the scroll, we do that as well, but if the
- * line doesn't change because the line is so large that the scroll happened
- * inside of the line, we leave the cursor alone.
- */
-
-/*
  * v_hpageup -- [count]^U
  *	Page up half screens.
  */
@@ -181,12 +195,7 @@ v_hpageup(sp, ep, vp, fm, tm, rp)
 	else
 		vp->count = O_VAL(sp, O_SCROLL);
 
-	if (sp->s_down(sp, ep, rp, (recno_t)O_VAL(sp, O_SCROLL), 1))
-		return (1);
-
-	if (rp->lno != fm->lno && nonblank(sp, ep, rp->lno, &rp->cno))
-		return (1);
-	return (0);
+	return (sp->s_down(sp, ep, rp, (recno_t)O_VAL(sp, O_SCROLL), 1));
 }
 
 /*
@@ -210,12 +219,7 @@ v_hpagedown(sp, ep, vp, fm, tm, rp)
 	else
 		vp->count = O_VAL(sp, O_SCROLL);
 
-	if (sp->s_up(sp, ep, rp, (recno_t)O_VAL(sp, O_SCROLL), 1))
-		return (1);
-
-	if (rp->lno != fm->lno && nonblank(sp, ep, rp->lno, &rp->cno))
-		return (1);
-	return (0);
+	return (sp->s_up(sp, ep, rp, (recno_t)O_VAL(sp, O_SCROLL), 1));
 }
 
 /*
@@ -234,12 +238,7 @@ v_pageup(sp, ep, vp, fm, tm, rp)
 	/* Calculation from POSIX 1003.2/D8. */
 	count = (F_ISSET(vp, VC_C1SET) ? vp->count : 1) * (sp->t_rows - 1);
 
-	if (sp->s_down(sp, ep, rp, count, 1))
-		return (1);
-
-	if (rp->lno != fm->lno && nonblank(sp, ep, rp->lno, &rp->cno))
-		return (1);
-	return (0);
+	return (sp->s_down(sp, ep, rp, count, 1));
 }
 
 /*
@@ -258,12 +257,7 @@ v_pagedown(sp, ep, vp, fm, tm, rp)
 	/* Calculation from POSIX 1003.2/D8. */
 	count = (F_ISSET(vp, VC_C1SET) ? vp->count : 1) * (sp->t_rows - 1);
 
-	if (sp->s_up(sp, ep, rp, count, 1))
-		return (1);
-
-	if (rp->lno != fm->lno && nonblank(sp, ep, rp->lno, &rp->cno))
-		return (1);
-	return (0);
+	return (sp->s_up(sp, ep, rp, count, 1));
 }
 
 /*
