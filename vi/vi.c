@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 9.1 1994/11/09 18:36:40 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:36:40 $";
+static char sccsid[] = "$Id: vi.c,v 9.2 1994/11/12 11:31:45 bostic Exp $ (Berkeley) $Date: 1994/11/12 11:31:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,12 +31,11 @@ static char sccsid[] = "$Id: vi.c,v 9.1 1994/11/09 18:36:40 bostic Exp $ (Berkel
 #include "vcmd.h"
 
 enum gcret { GC_ERR, GC_ERR_NOFLUSH, GC_OK } gcret;
-static enum gcret getcmd
-	__P((SCR *, VICMDARG *, VICMDARG *, VICMDARG *, int *, int *));
-static __inline int
-	   getcount __P((SCR *, ARG_CHAR_T, u_long *));
-static __inline int
-	   getkey __P((SCR *, CH *, u_int));
+static enum gcret
+	 getcmd __P((SCR *, VICMDARG *, VICMDARG *, VICMDARG *, int *, int *));
+static __inline VIKEYS const *getalias __P((SCR *, VICMDARG *, VIKEYS const *));
+static __inline int getcount __P((SCR *, ARG_CHAR_T, u_long *));
+static __inline int getkey __P((SCR *, CH *, u_int));
 static int getkeyword __P((SCR *, VICMDARG *, u_int));
 static int getmotion __P((SCR *, VICMDARG *, VICMDARG *, int *));
 
@@ -427,6 +426,10 @@ getcmd(sp, dp, vp, ismotion, comcountp, mappedp)
 	}
 	kp = &vikeys[vp->key = key];
 
+	/* Check for command aliases. */
+	if (kp->func == NULL && (kp = getalias(sp, vp, kp)) == NULL)
+		return (GC_ERR);
+
 	/* The tildeop option makes the ~ command take a motion. */
 	if (key == '~' && O_ISSET(sp, O_TILDEOP))
 		kp = &tmotion;
@@ -569,6 +572,52 @@ esc:	switch (cpart) {
 		break;
 	}
 	return (GC_ERR);
+}
+
+/*
+ * getalias --
+ *	Get command alias.
+ */
+static VIKEYS const *
+getalias(sp, vp, kp)
+	SCR *sp;
+	VICMDARG *vp;
+	VIKEYS const *kp;
+{
+	CHAR_T push;
+
+	switch (vp->key) {
+	case 'A':
+		push = 'a';
+		vp->key = '$';
+		break;
+	case 'C':
+		push = '$';
+		vp->key = 'c';
+		break;
+	case 'D':
+		push = '$';
+		vp->key = 'd';
+		break;
+	case 'I':
+		push = 'i';
+		vp->key = '^';
+		break;
+	case 'S':
+		push = '_';
+		vp->key = 'c';
+		break;
+	case 'Y':
+		push = '_';
+		vp->key = 'y';
+		break;
+	default:
+		abort();
+		/* NOTREACHED */
+	}
+	if (term_push(sp, &push, 1, CH_NOMAP | CH_QUOTED))
+		return (NULL);
+	return (&vikeys[vp->key]);
 }
 
 /*

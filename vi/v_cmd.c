@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 9.1 1994/11/09 18:44:00 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:44:00 $";
+static char sccsid[] = "$Id: v_cmd.c,v 9.2 1994/11/12 11:31:28 bostic Exp $ (Berkeley) $Date: 1994/11/12 11:31:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -252,7 +252,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    "@buffer",
 	    " @ execute buffer"},
 /* 101   A */
-	{v_iA,		V_CNT|V_DOT|VM_RCM_SET,
+	{NULL,		0,
 	    "[count]A",
 	    " A append to the line"},
 /* 102   B */
@@ -260,12 +260,12 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    "[count]B",
 	    " B move back bigword"},
 /* 103   C */
-	{v_Change,	V_CNT|V_DOT|V_OBUF|VM_RCM_SET,
+	{NULL,		0,
 	    "[buffer][count]C",
 	    " C change to end-of-line"},
 /* 104   D */
-	{v_Delete,	V_CNT|V_DOT|V_OBUF|VM_RCM_SET,
-	    "[buffer][count]D",
+	{NULL,		0,
+	    "[buffer]D",
 	    " D delete to end-of-line"},
 /* 105   E */
 	{v_wordE,	V_CNT|V_MOVE|VM_RCM_SET,
@@ -284,9 +284,9 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    "[count]H",
 	    " H move to count lines from screen top"},
 /* 111   I */
-	{v_iI,		V_CNT|V_DOT|VM_RCM_SET,
+	{NULL,		0,
 	    "[count]I",
-	    " I insert at line beginning"},
+	    " I insert at first nonblank"},
 /* 112   J */
 	{v_join,	V_CNT|V_DOT|VM_RCM_SET,
 	    "[count]J",
@@ -322,7 +322,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    "[count]R",
 	    " R replace characters"},
 /* 123   S */
-	{v_Subst,	V_CNT|V_DOT|V_OBUF|VM_LMODE|VM_RCM_SET,
+	{NULL,		0,
 	    "[buffer][count]S",
 	    " S substitute for the line(s)"},
 /* 124   T */
@@ -344,7 +344,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	    "[buffer][count]X",
 	    " X delete character before cursor"},
 /* 131   Y */
-	{v_yank,	V_CNT|V_DOT|VM_LMODE|V_OBUF,
+	{NULL,		0,
 	    "[buffer][count]Y",
 	    " Y copy line"},
 /* 132   Z */
