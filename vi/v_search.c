@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 9.5 1994/11/18 14:02:38 bostic Exp $ (Berkeley) $Date: 1994/11/18 14:02:38 $";
+static char sccsid[] = "$Id: v_search.c,v 9.6 1994/12/01 17:44:17 bostic Exp $ (Berkeley) $Date: 1994/12/01 17:44:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -67,6 +67,7 @@ search_addr(sp, vp, dir)
 	VICMDARG *vp;
 	enum direction dir;
 {
+	static EXCMDLIST fake = { "search" };
 	MARK save;
 	size_t len, tlen;
 	int isdelta, nb, notused, type;
@@ -130,6 +131,11 @@ search_addr(sp, vp, dir)
 			nb = 1;
 		sp->lno = vp->m_stop.lno;
 		sp->cno = vp->m_stop.cno;
+		if (sp->lno == 0 || file_gline(sp, sp->lno, NULL) == NULL) {
+			ex_badaddr(sp,
+			    &fake, sp->lno == 0 ? A_ZERO : A_EOF, NUM_OK);
+			goto err2;
+		}
 
 		for (; len > 0 && isblank(*p); ++p, --len);
 		if (len == 0)
