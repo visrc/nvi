@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 5.21 1992/11/11 18:28:37 bostic Exp $ (Berkeley) $Date: 1992/11/11 18:28:37 $";
+static char sccsid[] = "$Id: v_search.c,v 5.22 1992/12/04 19:53:10 bostic Exp $ (Berkeley) $Date: 1992/12/04 19:53:10 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -98,21 +98,13 @@ v_searchw(vp, fm, tm, rp)
 	MARK *fm, *tm, *rp;
 {
 	MARK *mp;
-	static char *wbuf;
+	static u_char *wbuf;
 	static size_t wbuflen;
 
 #define	WORDFORMAT	"[^[:alnum:]]%s[^[:alnum:]]"
 
-	if (vp->kbuflen > wbuflen + sizeof(WORDFORMAT)) {
-		wbuflen = MAX(vp->kbuflen + sizeof(WORDFORMAT), 256);
-		if ((wbuf = realloc(wbuf, wbuflen)) == NULL) {
-			wbuf = NULL;
-			wbuflen = 0;
-			msg("Word too long to search for.");
-			return (1);
-		}
-	}
-	(void)snprintf(wbuf, wbuflen, WORDFORMAT, vp->keyword);
+	BINC(wbuf, wbuflen, vp->kbuflen + sizeof(WORDFORMAT));
+	(void)snprintf((char *)wbuf, wbuflen, WORDFORMAT, vp->keyword);
 		
 	if ((mp = f_search(curf, fm, (u_char *)wbuf, NULL, SEARCH_MSG)) == NULL)
 		return (1);
