@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.36 1993/11/01 11:33:32 bostic Exp $ (Berkeley) $Date: 1993/11/01 11:33:32 $";
+static char sccsid[] = "$Id: exf.c,v 8.37 1993/11/02 13:07:39 bostic Exp $ (Berkeley) $Date: 1993/11/02 13:07:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -338,7 +338,7 @@ err:	if (ep->rcv_path != NULL) {
 	if (F_ISSET(frp, FR_FREE_TNAME))
 		FREE(frp->tname, strlen(frp->tname));
 	FREE(ep, sizeof(EXF));
-	return (NULL);
+	return (1);
 }
 
 /*
