@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_term.c,v 8.3 1996/12/14 14:02:51 bostic Exp $ (Berkeley) $Date: 1996/12/14 14:02:51 $";
+static const char sccsid[] = "$Id: ip_term.c,v 8.4 1996/12/17 10:44:54 bostic Exp $ (Berkeley) $Date: 1996/12/17 10:44:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -131,6 +131,6 @@ ip_optchange(sp, offset, str, valp)
 	ipb.str1 = opt->name;
 	ipb.len1 = strlen(opt->name);
 
-	(void)__vi_send("ab1", &ipb);
+	(void)vi_send("ab1", &ipb);
 	return (0);
 }

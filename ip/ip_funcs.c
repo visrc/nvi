@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_funcs.c,v 8.10 1996/12/14 14:02:04 bostic Exp $ (Berkeley) $Date: 1996/12/14 14:02:04 $";
+static const char sccsid[] = "$Id: ip_funcs.c,v 8.11 1996/12/17 10:44:53 bostic Exp $ (Berkeley) $Date: 1996/12/17 10:44:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -56,7 +56,7 @@ ip_addstr(sp, str, len)
 	ipb.code = SI_ADDSTR;
 	ipb.len1 = len;
 	ipb.str1 = str;
-	rval = __vi_send("a", &ipb);
+	rval = vi_send("a", &ipb);
 
 	if (iv)
 		ip_attr(sp, SA_INVERSE, 0);
@@ -81,7 +81,7 @@ ip_attr(sp, attribute, on)
 	ipb.val1 = attribute;
 	ipb.val2 = on;
 
-	return (__vi_send("12", &ipb));
+	return (vi_send("12", &ipb));
 }
 
 /*
@@ -113,7 +113,7 @@ ip_bell(sp)
 
 	ipb.code = SI_BELL;
 
-	return (__vi_send(NULL, &ipb));
+	return (vi_send(NULL, &ipb));
 }
 
 /*
@@ -135,11 +135,11 @@ ip_busy(sp, str, bval)
 		ipb.code = SI_BUSY_ON;
 		ipb.len1 = strlen(str);
 		ipb.str1 = str;
-		(void)__vi_send("a1", &ipb);
+		(void)vi_send("a1", &ipb);
 		break;
 	case BUSY_OFF:
 		ipb.code = SI_BUSY_OFF;
-		(void)__vi_send(NULL, &ipb);
+		(void)vi_send(NULL, &ipb);
 		break;
 	case BUSY_UPDATE:
 		break;
@@ -161,7 +161,7 @@ ip_clrtoeol(sp)
 
 	ipb.code = SI_CLRTOEOL;
 
-	return (__vi_send(NULL, &ipb));
+	return (vi_send(NULL, &ipb));
 }
 
 /*
@@ -206,7 +206,7 @@ ip_deleteln(sp)
 	if (!F_ISSET(sp, SC_SCR_EXWROTE) && IS_SPLIT(sp)) {
 		ipb.code = SI_REWRITE;
 		ipb.val1 = RLNO(sp, LASTLINE(sp));
-		if (__vi_send("1", &ipb))
+		if (vi_send("1", &ipb))
 			return (1);
 	}
 
@@ -215,7 +215,7 @@ ip_deleteln(sp)
 	 * and other screens must support that semantic.
 	 */
 	ipb.code = SI_DELETELN;
-	return (__vi_send(NULL, &ipb));
+	return (vi_send(NULL, &ipb));
 }
 
 /*
@@ -260,7 +260,7 @@ ip_insertln(sp)
 
 	ipb.code = SI_INSERTLN;
 
-	return (__vi_send(NULL, &ipb));
+	return (vi_send(NULL, &ipb));
 }
 
 /*
@@ -323,7 +323,7 @@ ip_move(sp, lno, cno)
 	ipb.code = SI_MOVE;
 	ipb.val1 = RLNO(sp, lno);
 	ipb.val2 = cno;
-	return (__vi_send("12", &ipb));
+	return (vi_send("12", &ipb));
 }
 
 /*
@@ -367,7 +367,7 @@ ip_refresh(sp, repaint)
 	if (ipb.val1 != ipp->sb_top ||
 	    ipb.val2 != ipp->sb_num || ipb.val3 != ipp->sb_total) {
 		ipb.code = SI_SCROLLBAR;
-		(void)__vi_send("123", &ipb);
+		(void)vi_send("123", &ipb);
 		ipp->sb_top = ipb.val1;
 		ipp->sb_num = ipb.val2;
 		ipp->sb_total = ipb.val3;
@@ -375,7 +375,7 @@ ip_refresh(sp, repaint)
 
 	/* Refresh/repaint the screen. */
 	ipb.code = repaint ? SI_REDRAW : SI_REFRESH;
-	return (__vi_send(NULL, &ipb));
+	return (vi_send(NULL, &ipb));
 }
 
 /*
@@ -395,7 +395,7 @@ ip_rename(sp, name, on)
 	ipb.code = SI_RENAME;
 	ipb.str1 = name;
 	ipb.len1 = strlen(name);
-	return (__vi_send("a", &ipb));
+	return (vi_send("a", &ipb));
 }
 
 /*

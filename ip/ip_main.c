@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_main.c,v 8.7 1996/12/11 13:34:22 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:34:22 $";
+static const char sccsid[] = "$Id: ip_main.c,v 8.8 1996/12/17 10:44:54 bostic Exp $ (Berkeley) $Date: 1996/12/17 10:44:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,7 +25,7 @@ static const char sccsid[] = "$Id: ip_main.c,v 8.7 1996/12/11 13:34:22 bostic Ex
 #include "ip.h"
 #include "../include/ipc_extern.h"
 
-int vi_ofd;				/* GLOBAL: known to __vi_send(). */
+int vi_ofd;				/* GLOBAL: known to vi_send(). */
 
 static void	   ip_func_std __P((GS *));
 static IP_PRIVATE *ip_init __P((GS *, char *));
@@ -81,7 +81,7 @@ ip_main(argc, argv, gp, ip_arg)
 
 	/* Send the quit message. */
 	ipb.code = SI_QUIT;
-	(void)__vi_send(NULL, &ipb);
+	(void)vi_send(NULL, &ipb);
 
 	/* Give the screen a couple of seconds to deal with it. */
 	sleep(2);
