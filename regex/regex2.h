@@ -134,7 +134,7 @@ typedef struct {
 #define	MCin(p, cs, cp)	mcin(p, cs, cp)
 
 /* stuff for character categories */
-typedef CHAR_T cat_t;
+typedef RCHAR_T cat_t;
 
 /*
  * main compiled-expression structure
@@ -159,7 +159,7 @@ struct re_guts {
 	int neol;		/* number of $ used */
 	int ncategories;	/* how many character categories */
 	cat_t *categories;	/* ->catspace[-CHAR_MIN] */
-	CHAR_T *must;		/* match must contain this string */
+	RCHAR_T *must;		/* match must contain this string */
 	int mlen;		/* length of must */
 	size_t nsub;		/* copy of re_nsub */
 	int backrefs;		/* does it use back references? */
@@ -169,5 +169,5 @@ struct re_guts {
 };
 
 /* misc utilities */
-#define	OUT	(CHAR_T_MAX+1)	/* a non-character value */
+#define	OUT	(RCHAR_T_MAX+1)	/* a non-character value */
 #define	ISWORD(c)	((c <= 0xFF && isalnum(c)) || (c) == '_')

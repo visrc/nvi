@@ -155,7 +155,7 @@ static int nope = 0;		/* for use in asserts; shuts lint up */
 int				/* 0 success, REG_NOMATCH failure */
 regexec(preg, string, nmatch, pmatch, eflags)
 const regex_t *preg;
-const CHAR_T *string;
+const RCHAR_T *string;
 size_t nmatch;
 regmatch_t pmatch[];
 int eflags;
@@ -175,7 +175,7 @@ int eflags;
 	eflags = GOODFLAGS(eflags);
 
 	if (g->nstates <= CHAR_BIT*sizeof(states1) && !(eflags&REG_LARGE))
-		return(smatcher(g, (CHAR_T *)string, nmatch, pmatch, eflags));
+		return(smatcher(g, (RCHAR_T *)string, nmatch, pmatch, eflags));
 	else
-		return(lmatcher(g, (CHAR_T *)string, nmatch, pmatch, eflags));
+		return(lmatcher(g, (RCHAR_T *)string, nmatch, pmatch, eflags));
 }

@@ -37,22 +37,22 @@
  *	@(#)cclass.h	8.2 (Berkeley) 3/16/94
  */
 
-CHAR_T ALNUM[] = {'a','l','n','u','m',0};
-CHAR_T ALPHA[] = {'a','l','p','h','a',0};
-CHAR_T BLANK[] = {'b','l','a','n','k',0};
-CHAR_T CNTRL[] = {'c','n','t','r','l',0};
-CHAR_T DIGIT[] = {'d','i','g','i','t',0};
-CHAR_T GRAPH[] = {'g','r','a','p','h',0};
-CHAR_T LOWER[] = {'l','o','w','e','r',0};
-CHAR_T PRINT[] = {'p','r','i','n','t',0};
-CHAR_T PUNCT[] = {'p','u','n','c','t',0};
-CHAR_T SPACE[] = {'s','p','a','c','e',0};
-CHAR_T UPPER[] = {'u','p','p','e','r',0};
-CHAR_T XDIGIT[] = {'x','d','i','g','i','t',0};
+RCHAR_T ALNUM[] = {'a','l','n','u','m',0};
+RCHAR_T ALPHA[] = {'a','l','p','h','a',0};
+RCHAR_T BLANK[] = {'b','l','a','n','k',0};
+RCHAR_T CNTRL[] = {'c','n','t','r','l',0};
+RCHAR_T DIGIT[] = {'d','i','g','i','t',0};
+RCHAR_T GRAPH[] = {'g','r','a','p','h',0};
+RCHAR_T LOWER[] = {'l','o','w','e','r',0};
+RCHAR_T PRINT[] = {'p','r','i','n','t',0};
+RCHAR_T PUNCT[] = {'p','u','n','c','t',0};
+RCHAR_T SPACE[] = {'s','p','a','c','e',0};
+RCHAR_T UPPER[] = {'u','p','p','e','r',0};
+RCHAR_T XDIGIT[] = {'x','d','i','g','i','t',0};
 
 /* character-class table */
 static struct cclass {
-	CHAR_T *name;
+	RCHAR_T *name;
 	char *chars;
 	char *multis;
 } cclasses[] = {
