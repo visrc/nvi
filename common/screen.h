@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 5.3 1992/10/01 17:30:39 bostic Exp $ (Berkeley) $Date: 1992/10/01 17:30:39 $
+ *	$Id: screen.h,v 5.4 1992/10/10 13:53:03 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:53:03 $
  */
 
 #define	BOTLINE		(curf->top + LINES - 2)
@@ -14,30 +14,26 @@
 /* 
  * The interface to the screen is defined by the following functions:
  *
+ *	scr_cchange
+ *		Change the screen for a cursor movement.
+ *	scr_end
+ *		Close down curses, end the screen.
  *	scr_init
  *		Set up curses, initialize the screen.
- *	scr_end
- *		End the screen.
- *
- *	scr_cchange:
- *		Change the screen as necessary for a cursor movement and
- *		move to the position.
- *	scr_ldelete:
- *		Delete a line from the screen.
- *	scr_linsert:
- *		Insert a line into the screen.
- *	scr_lchange
- *		Change the screen as necessary for a line change.
  *	scr_modeline
- *		Refresh the screen info line.
- *	scr_ref:
- *		Repaint the entire screen.
+ *		Display the modeline (ruler, mode).
+ *	scr_ref
+ *		Repaint the screen from scratch.
+ *	scr_relative
+ *		Return the physical column that would display closest to
+ *		a specified character position.
+ *	scr_update
+ *		Inform the screen a line has been modified.
  */
-void	scr_cchange __P((void));
+void	scr_cchange __P((EXF *));
 void	scr_end __P((void));
 int	scr_init __P((void));
-void	scr_lchange __P((u_long, char *, size_t));
-void	scr_ldelete __P((recno_t));
-void	scr_linsert __P((recno_t, char *, size_t));
-void	scr_modeline __P((void));
+void	scr_modeline __P((EXF *));
 void	scr_ref __P((void));
+size_t	scr_relative __P((EXF *, recno_t));
+void	scr_update __P((EXF *, recno_t, u_char *, size_t, enum upmode));
