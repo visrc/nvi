@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.16 1992/04/28 13:48:51 bostic Exp $ (Berkeley) $Date: 1992/04/28 13:48:51 $";
+static char sccsid[] = "$Id: key.c,v 5.17 1992/04/28 16:48:17 bostic Exp $ (Berkeley) $Date: 1992/04/28 16:48:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -266,10 +266,6 @@ getkey(when)
 	int ch;
 	SEQ *sp;
 	int inuse, ispartial, nr;
-
-#ifdef DEBUG
-	watch();
-#endif
 
 	/*
 	 * If this key is needed for delay between multiple error messages,
