@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_cscope.c,v 8.6 1996/04/12 11:11:59 bostic Exp $ (Berkeley) $Date: 1996/04/12 11:11:59 $";
+static const char sccsid[] = "$Id: ex_cscope.c,v 8.7 1996/04/12 11:29:19 bostic Exp $ (Berkeley) $Date: 1996/04/12 11:29:19 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -90,6 +90,7 @@ static CC const cscope_cmds[] = {
 };
 
 static TAGQ	*create_cs_cmd __P((SCR *, char *, char **, size_t *));
+static int	 csc_help __P((SCR *, char *));
 static void	 find_file __P((SCR *,
 		    CSC *, char *, char **, size_t *, int *));
 static int	 get_paths __P((SCR *, CSC *));
@@ -139,7 +140,7 @@ ex_cscope(sp, cmdp)
 	}
 
 	if ((ccp = lookup_ccmd(cmd)) == NULL) {
-usage:		msgq(sp, M_ERR, "Use \"cscope help\" for help");
+usage:		msgq(sp, M_ERR, "309|Use \"cscope help\" for help");
 		return (1);
 	}
 
@@ -409,13 +410,7 @@ cscope_find(sp, cmdp, pattern)
 
 	/* Check for connections. */
 	if (exp->cscq.lh_first == NULL) {
-		msgq(sp, M_ERR, "No cscope connections running");
-		return (1);
-	}
-
-	/* No pattern specified. */
-	if (pattern == NULL || pattern[0] == '\0') {
-		msgq(sp, M_ERR, "No search type and pattern specified");
+		msgq(sp, M_ERR, "310|No cscope connections running");
 		return (1);
 	}
 
@@ -554,12 +549,6 @@ create_cs_cmd(sp, pattern, patternp, searchp)
 	size_t tlen;
 	char *p;
 
-	/* Skip leading blanks. */
-	for (; isblank(*pattern); ++pattern);
-
-	if (pattern[0] == '\0' || !isblank(pattern[1]))
-		goto usage;
-
 	/*
 	 * Cscope supports a "change pattern" command which we never use,
 	 * cscope command 5.  Set CSCOPE_QUERIES[5] to " " since the user
@@ -568,15 +557,27 @@ create_cs_cmd(sp, pattern, patternp, searchp)
 	 * code.
 	 */
 #define	CSCOPE_QUERIES		"sgdct efi"
-	for (*searchp = 0,
-	    p = CSCOPE_QUERIES; *p != '\0' && *p != *pattern; ++*searchp, ++p);
-	if (*p == '\0')
+
+	if (pattern == NULL)
 		goto usage;
+
+	/* Skip leading blanks, check for command character. */
+	for (; isblank(pattern[0]); ++pattern);
+	if (pattern[0] == '\0' || !isblank(pattern[1]))
+		goto usage;
+	for (*searchp = 0, p = CSCOPE_QUERIES;
+	    *p != '\0' && *p != pattern[0]; ++*searchp, ++p);
+	if (*p == '\0') {
+		msgq(sp, M_ERR,
+		    "311|%s: unknown search type: use one of %s",
+		    KEY_NAME(sp, pattern[0]), CSCOPE_QUERIES);
+		return (NULL);
+	}
 
 	/* Skip <blank> characters to the pattern. */
 	for (p = pattern + 1; *p != '\0' && isblank(*p); ++p);
 	if (*p == '\0') {
-usage:		(void)cscope_help(sp, NULL, "find");
+usage:		(void)csc_help(sp, "find");
 		return (NULL);
 	}
 
@@ -773,12 +774,24 @@ cscope_help(sp, cmdp, subcmd)
 	EXCMD *cmdp;
 	char *subcmd;
 {
+	return (csc_help(sp, subcmd));
+}
+
+/*
+ * csc_help --
+ *	Display help/usage messages.
+ */
+static int
+csc_help(sp, cmd)
+	SCR *sp;
+	char *cmd;
+{
 	CC const *ccp;
 
-	if (subcmd != NULL && *subcmd != '\0')
-		if ((ccp = lookup_ccmd(subcmd)) == NULL) {
+	if (cmd != NULL && *cmd != '\0')
+		if ((ccp = lookup_ccmd(cmd)) == NULL) {
 			ex_printf(sp,
-			    "%s doesn't match any cscope command\n", subcmd);
+			    "%s doesn't match any cscope command\n", cmd);
 			return (1);
 		} else {
 			ex_printf(sp,
@@ -833,7 +846,7 @@ terminate(sp, csc, n)
 			if (i == n)
 				break;
 		if (csc == NULL) {
-badno:			msgq(sp, M_ERR, "%d: no such cscope session", n);
+badno:			msgq(sp, M_ERR, "312|%d: no such cscope session", n);
 			return (1);
 		}
 	}
