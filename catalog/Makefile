@@ -1,12 +1,12 @@
-#	$Id: Makefile,v 8.22 1996/03/18 09:52:54 bostic Exp $ (Berkeley) $Date: 1996/03/18 09:52:54 $
+#	$Id: Makefile,v 8.23 1996/05/02 09:51:38 bostic Exp $ (Berkeley) $Date: 1996/05/02 09:51:38 $
 
-CAT=	vi_dutch vi_english vi_german vi_ru_SU.KOI8-R vi_swedish
+CAT=	dutch english german ru_SU.KOI8-R swedish
 FILES=	../cl/*.c ../common/*.c ../ex/*.c ../perl_api/*.c ../tcl_api/*.c \
 	../tk/*.c ../vi/*.c
 
 all: dump ${CAT}
 
-${CAT}: vi_english.base
+${CAT}: english.base
 	@echo "... $@";							\
 	rm -f $@;							\
 	sort -u $@.base |						\
@@ -34,8 +34,8 @@ ${CAT}: vi_english.base
 		grep 'NOT LEGAL' $@;					\
 	fi
 
-CHK=	vi_dutch.check vi_english.check vi_german.check \
-	vi_ru_SU.KOI8-R.check vi_swedish.check
+CHK=	dutch.check english.check german.check ru_SU.KOI8-R.check \
+	swedish.check
 check: ${CHK}
 ${CHK}: ${CAT}
 	@echo "... $@";							\
@@ -48,7 +48,7 @@ ${CHK}: ${CAT}
 	echo =========================;					\
 	echo "MISSING ERROR MESSAGES (FIX!!!):";			\
 	awk '{print $$1}' < $$f.base > __ck1;				\
-	awk '{print $$1}' < vi_english.base > __ck2;			\
+	awk '{print $$1}' < english.base > __ck2;			\
 	join -v 2 __ck1 __ck2;						\
 	echo =========================;					\
 	echo "Extra error messages (just delete them):";		\
@@ -71,7 +71,7 @@ ${CHK}: ${CAT}
 	awk '$$1 != 1 { print $$0 }' | sort -n;				\
 	echo =========================) > $@
 
-vi_english.base: dump ${FILES} #Makefile
+english.base: dump ${FILES} #Makefile
 	./dump ${FILES} |\
 	sed -e '/|/!d' \
 	    -e 's/|/ "/' \
@@ -82,4 +82,4 @@ dump: dump.c
 	${CC} -O -o dump dump.c
 
 clean:
-	rm -f dump dump.o ${CAT} vi_english.base *.check __ck1 __ck2
+	rm -f dump dump.o ${CAT} english.base *.check __ck1 __ck2
