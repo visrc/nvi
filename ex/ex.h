@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 5.4 1992/04/15 09:10:43 bostic Exp $ (Berkeley) $Date: 1992/04/15 09:10:43 $
+ *	$Id: ex.h,v 5.5 1992/04/16 09:50:47 bostic Exp $ (Berkeley) $Date: 1992/04/16 09:50:47 $
  */
 
 struct _cmdarg;
@@ -128,6 +128,6 @@ int	ex_vglobal __P((CMDARG *));
 int	ex_visual __P((CMDARG *));
 int	ex_wq __P((CMDARG *));
 int	ex_write __P((CMDARG *));
-int	ex_writerange __P((char *, int, MARK, MARK, int));
+int	ex_writerange __P((char *, FILE *, MARK, MARK, int));
 int	ex_xit __P((CMDARG *));
 int	ex_yank __P((CMDARG *));

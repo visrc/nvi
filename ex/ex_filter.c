@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 5.7 1992/04/15 09:12:26 bostic Exp $ (Berkeley) $Date: 1992/04/15 09:12:26 $";
+static char sccsid[] = "$Id: ex_filter.c,v 5.8 1992/04/16 09:50:25 bostic Exp $ (Berkeley) $Date: 1992/04/16 09:50:25 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -32,6 +32,7 @@ filter(from, to, cmd)
 	MARK from, to;
 	char *cmd;
 {
+	FILE *fp;
 	MARK new;
 	pid_t pid;
 	sig_t intsave, quitsave;
@@ -41,23 +42,19 @@ filter(from, to, cmd)
 	char *name;
 
 	if (pipe(input) < 0)
-		goto nopipe;
-	if (pipe(output) < 0) {
-		(void)close(input[0]);
-		(void)close(input[1]);
-nopipe:		msg("filter: pipe: %s", strerror(errno));
-		return (1);
-	}
+		goto err1;
+	if ((fp = fdopen(input[1], "w")) == NULL || pipe(output) < 0)
+		goto err2;
 
 	omask = sigblock(sigmask(SIGCHLD));
 	switch (pid = vfork()) {
 	case -1:			/* Error. */
 		(void)sigsetmask(omask);
-		(void)close(input[0]);
-		(void)close(input[1]);
 		(void)close(output[0]);
 		(void)close(output[1]);
-		msg("filter: fork: %s", strerror(errno));
+err2:		(void)close(input[0]);
+		(void)close(input[1]);
+err1:		msg("filter: %s", strerror(errno));
 		return (1);
 		/* NOTREACHED */
 	case 0:				/* Child. */
@@ -88,14 +85,17 @@ nopipe:		msg("filter: pipe: %s", strerror(errno));
 		/* NOTREACHED */
 	}
 
-	/* Write the selected lines to the write end of the input pipe. */
-	if (to != MARK_UNSET)
-		ex_writerange("filter", input[1], from, to, 0);
-
-	/* Close all but the read end of the output pipe. */
+	/* Close the pipe ends the parent won't use. */
 	(void)close(input[0]);
-	(void)close(input[1]);
 	(void)close(output[1]);
+
+	/*
+	 * Write the selected lines to the write end of the input pipe.
+	 * Close to flush when done.
+	 */
+	if (to != MARK_UNSET)
+		ex_writerange("filter", fp, from, to, 0);
+	(void)fclose(fp);
 		
 	ChangeText
 	{

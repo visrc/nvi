@@ -6,11 +6,12 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 5.4 1992/04/15 09:14:53 bostic Exp $ (Berkeley) $Date: 1992/04/15 09:14:53 $";
+static char sccsid[] = "$Id: ex_write.c,v 5.5 1992/04/16 09:50:10 bostic Exp $ (Berkeley) $Date: 1992/04/16 09:50:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <stdio.h>
 
 #include "vi.h"
 #include "excmd.h"
@@ -21,6 +22,7 @@ ex_write(cmdp)
 	CMDARG *cmdp;
 {
 	struct stat sb;
+	FILE *fp;
 	int fd, flags, rval;
 	char *fname;
 
@@ -47,27 +49,33 @@ ex_write(cmdp)
 		msg("%s: %s", fname, strerror(errno));
 		return (1);
 	}
-
-	rval = ex_writerange(fname, fd, cmdp->addr1, cmdp->addr2, 1);
-	return (close(fd) || rval);
+	if ((fp = fdopen(fd, "w")) == NULL) {
+		(void)close(fd);
+		msg("%s: %s", fname, strerror(errno));
+		return (1);
+	}
+	rval = ex_writerange(fname, fp, cmdp->addr1, cmdp->addr2, 1);
+	return (fclose(fp) || rval);
 }
 
-ex_writerange(fname, fd, from, to, success_msg)
+ex_writerange(fname, fp, from, to, success_msg)
 	char *fname;
-	int fd, success_msg;
+	FILE *fp;
 	MARK from, to;
+	int success_msg;
 {
-	register u_long ccnt, fline, lcnt, tline;
-	register char *p;
+	register u_long ccnt, fline, tline;
+	u_long lcnt;
 	size_t len;
+	char *p;
 
 	fline = markline(from);
 	tline = markline(to);
 	lcnt = tline - fline;
 	for (ccnt = 0; fline <= tline; ++fline, ccnt += len) {
 		p = fetchline(fline, &len);
-		p[len++] = '\n';
-		if (write(fd, p, len) != len) {
+		if (fwrite(p, 1, len, fp) != len ||
+		    putc('\n', fp) != '\n') {
 			msg("%s: %s", fname, strerror(errno));
 			return (1);
 		}
