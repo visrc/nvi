@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_search.c,v 10.27 2000/09/02 13:14:16 skimo Exp $ (Berkeley) $Date: 2000/09/02 13:14:16 $";
+static const char sccsid[] = "$Id: v_search.c,v 10.28 2001/06/13 20:01:31 skimo Exp $ (Berkeley) $Date: 2001/06/13 20:01:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -70,7 +70,7 @@ v_exaddr(sp, vp, dir)
 	VICMD *vp;
 	dir_t dir;
 {
-	static EXCMDLIST fake = { "search" };
+	static EXCMDLIST fake = { L("search") };
 	EXCMD *cmdp;
 	WIN *wp;
 	TEXT *tp;
@@ -79,7 +79,6 @@ v_exaddr(sp, vp, dir)
 	int err, nb, type;
 	char buf[20];
 	CHAR_T *cmd, *t;
-	static CHAR_T plus[] = { '+', 0 };
 	CHAR_T *w;
 	size_t wlen;
 
@@ -250,7 +249,7 @@ v_exaddr(sp, vp, dir)
 
 		/* Default to z+. */
 		if (!type &&
-		    v_event_push(sp, NULL, plus, 1, CH_NOMAP | CH_QUOTED))
+		    v_event_push(sp, NULL, L("+"), 1, CH_NOMAP | CH_QUOTED))
 			return (1);
 
 		/* Push the user's command. */

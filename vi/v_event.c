@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_event.c,v 8.19 2001/06/09 18:26:31 skimo Exp $ (Berkeley) $Date: 2001/06/09 18:26:31 $";
+static const char sccsid[] = "$Id: v_event.c,v 8.20 2001/06/13 20:01:31 skimo Exp $ (Berkeley) $Date: 2001/06/13 20:01:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -101,16 +101,14 @@ v_editopt(sp, vp)
 	int rval;
 	char *np;
 	size_t nlen;
-	char *p1, *p2;
+	char *p2;
 
-	INT2CHAR(sp, vp->ev.e_str1, STRLEN(vp->ev.e_str1), np, nlen);
-	p1 = strdup(np);
-	INT2CHAR(sp, vp->ev.e_str2, STRLEN(vp->ev.e_str2), np, nlen);
+	INT2CHAR(sp, vp->ev.e_str2, STRLEN(vp->ev.e_str2)+1, np, nlen);
 	p2 = strdup(np);
-	rval = api_opts_set(sp, p1, p2, vp->ev.e_val1, vp->ev.e_val1);
+	rval = api_opts_set(sp, vp->ev.e_str1, p2, 
+			    vp->ev.e_val1, vp->ev.e_val1);
 	if (sp->gp->scr_reply != NULL)
 		(void)sp->gp->scr_reply(sp, rval, NULL);
-	free(p1);
 	free(p2);
 	return (rval);
 }
