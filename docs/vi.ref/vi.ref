@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.72 1996/05/08 18:10:58 bostic Exp $ (Berkeley) $Date: 1996/05/08 18:10:58 $
+.\"     $Id: vi.ref,v 8.73 1996/05/15 17:58:29 bostic Exp $ (Berkeley) $Date: 1996/05/15 17:58:29 $
 .\"
 .\"
 .so ref.so
@@ -336,8 +336,7 @@ Because the
 .CO ex
 command set supported by
 .EV nex nvi
-is a superset of the command set supported by most historical
-implementations of
+is a superset of the command set supported by historical implementations of
 .CO ex ,
 .EV nex nvi
 can use the startup files created for the historical implementations,
@@ -380,6 +379,18 @@ if
 does not exist) is read,
 as long as the effective user ID of the user is root or is the same as
 the owner of the file.
+.sp
+When the $HOME directory is being used for both
+.EV nex nvi
+and an historic implementation of
+.EV ex vi ,
+a possible solution is to put
+.EV nex nvi
+specific commands in the
+.LI \&.nexrc
+file, along with a
+.CO ":source $HOME/.exrc"
+command to read in the commands common to both implementations.
 .np
 If the
 .OP exrc
