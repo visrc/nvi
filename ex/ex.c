@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.32 1993/09/13 13:56:53 bostic Exp $ (Berkeley) $Date: 1993/09/13 13:56:53 $";
+static char sccsid[] = "$Id: ex.c,v 8.33 1993/09/13 18:24:39 bostic Exp $ (Berkeley) $Date: 1993/09/13 18:24:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1149,8 +1149,7 @@ ep_range(sp, ep, cmd, cp)
 	}
 
 	/* Parse comma or semi-colon delimited line specs. */
-	savecursor_set = 0;
-	for (cp->addrcnt = 0;;) {
+	for (savecursor_set = 0, cp->addrcnt = 0;;)
 		switch (*cmd) {
 		case ';':		/* Semi-colon delimiter. */
 			/*
@@ -1166,9 +1165,11 @@ ep_range(sp, ep, cmd, cp)
 				savecursor.cno = sp->cno;
 				sp->lno = cp->addr1.lno;
 				sp->cno = cp->addr1.cno;
+				savecursor_set = 1;
 			}
-			savecursor_set = 1;
 			/* FALLTHROUGH */
+		case ' ':
+		case '\t':
 		case ',':		/* Comma delimiter. */
 			++cmd;
 			break;
@@ -1177,30 +1178,32 @@ ep_range(sp, ep, cmd, cp)
 				return (NULL);
 			if (cmd != endp) {
 				cmd = endp;
+
+				/*
+				 * Extra addresses are discarded, starting with
+				 * the first.
+				 */
+				switch (cp->addrcnt) {
+				case 0:
+					cp->addr1 = cur;
+					cp->addrcnt = 1;
+					break;
+				case 1:
+					cp->addr2 = cur;
+					cp->addrcnt = 2;
+					break;
+				case 2:
+					cp->addr1 = cp->addr2;
+					cp->addr2 = cur;
+					break;
+				}
 				break;
 			}
 			/* FALLTHROUGH */
 		case '\0':
 			goto done;
-			/* NOTREACHED */
 		}
 
-		/* Extra addresses are discarded, starting with the first. */
-		switch (cp->addrcnt) {
-		case 0:
-			cp->addr1 = cur;
-			cp->addrcnt = 1;
-			break;
-		case 1:
-			cp->addr2 = cur;
-			cp->addrcnt = 2;
-			break;
-		case 2:
-			cp->addr1 = cp->addr2;
-			cp->addr2 = cur;
-			break;
-		}
-	}
 	/*
 	 * XXX
 	 * This is probably not right for treatment of savecursor -- figure
@@ -1209,6 +1212,12 @@ ep_range(sp, ep, cmd, cp)
 done:	if (savecursor_set) {
 		sp->lno = savecursor.lno;
 		sp->cno = savecursor.cno;
+	}
+	if (cp->addrcnt == 2 &&
+	    (cp->addr2.lno < cp->addr1.lno || cp->addr2.cno < cp->addr1.cno)) {
+		msgq(sp, M_ERR,
+		    "The second address is smaller than the first.");
+		return (NULL);
 	}
 	return (cmd);
 }
@@ -1272,8 +1281,8 @@ ep_line(sp, ep, cmd, cur)
 			flags = SEARCH_MSG | SEARCH_PARSE | SEARCH_SET;
 			if (f_search(sp, ep, &m, &m, cmd, &endp, &flags))
 				return (NULL);
-			cur->lno = sp->lno = m.lno;
-			cur->cno = sp->cno = m.cno;
+			cur->lno = m.lno;
+			cur->cno = m.cno;
 			cmd = endp;
 			break;
 		case '?':		/* Search backward. */
@@ -1282,8 +1291,8 @@ ep_line(sp, ep, cmd, cur)
 			flags = SEARCH_MSG | SEARCH_PARSE | SEARCH_SET;
 			if (b_search(sp, ep, &m, &m, cmd, &endp, &flags))
 				return (NULL);
-			cur->lno = sp->lno = m.lno;
-			cur->cno = sp->cno = m.cno;
+			cur->lno = m.lno;
+			cur->cno = m.cno;
 			cmd = endp;
 			break;
 		case '.':		/* Current position. */
