@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.16 1993/09/01 09:54:53 bostic Exp $ (Berkeley) $Date: 1993/09/01 09:54:53 $
+ *	$Id: screen.h,v 8.17 1993/09/08 09:27:12 bostic Exp $ (Berkeley) $Date: 1993/09/08 09:27:12 $
  */
 
 /*
@@ -127,7 +127,7 @@ typedef struct _scr {
 
 	void	*args;			/* Ex argument buffers. */
 	char   **argv;			/* Arguments. */
-	char	*ex_argv[2];		/* Special purpose 2 slots. */
+	char	*ex_argv[3];		/* Special purpose 2 slots. */
 	int	 argscnt;		/* Argument count. */
 	
 					/* Ex/vi: interface between ex/vi. */
