@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 5.17 1992/06/07 13:54:17 bostic Exp $ (Berkeley) $Date: 1992/06/07 13:54:17 $";
+static char sccsid[] = "$Id: util.c,v 5.18 1992/10/10 13:36:10 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:36:10 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -60,7 +60,7 @@ __putchar(ch)
  */
 int
 binc(bpp, bsizep, min)
-	char **bpp;
+	u_char **bpp;
 	size_t *bsizep, min;
 {
 	size_t csize;
@@ -84,11 +84,11 @@ binc(bpp, bsizep, min)
 /*
  * parseptrn --
  */
-char *
+u_char *
 parseptrn(ptrn)
-	register char *ptrn;
+	register u_char *ptrn;
 {
-	register char sep;
+	register u_char sep;
 
 	/*
 	 * Return a pointer to the end of the string or the first character
@@ -103,6 +103,26 @@ parseptrn(ptrn)
 	if (*ptrn)
 		*ptrn++ = '\0';
 	return (ptrn);
+}
+
+/*
+ * nonblank --
+ *	Return the column number of the first non-blank character of the
+ *	line.
+ */
+int
+nonblank(lno, cnop)
+	recno_t lno;
+	size_t *cnop;
+{
+	register int cnt;
+	register u_char *p;
+	size_t len;
+
+	EGETLINE(p, lno, len);
+	for (cnt = 0; len-- && isspace(*p); ++cnt, ++p);
+	*cnop = cnt;
+	return (0);
 }
 
 /*
