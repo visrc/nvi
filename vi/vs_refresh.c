@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.26 1993/11/07 13:15:42 bostic Exp $ (Berkeley) $Date: 1993/11/07 13:15:42 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.27 1993/11/12 16:44:57 bostic Exp $ (Berkeley) $Date: 1993/11/12 16:44:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,18 +30,25 @@ svi_refresh(sp, ep)
 {
 	SCR *tsp;
 
+#define	PAINTBITS	S_REDRAW | S_REFORMAT | S_REFRESH | S_RESIZE
 	/* Paint any related screens that have changed. */
 	for (tsp = sp->child; tsp != NULL; tsp = tsp->child)
-		if (tsp->ep == ep && F_ISSET(SVP(tsp), SVI_SCREENDIRTY)) {
+		if (F_ISSET(tsp, PAINTBITS) ||
+		    tsp->ep == ep && F_ISSET(SVP(tsp), SVI_SCREENDIRTY)) {
 			(void)svi_paint(tsp, ep);
 			F_CLR(SVP(tsp), SVI_SCREENDIRTY);
 		}
 	for (tsp = sp->parent; tsp != NULL; tsp = tsp->parent)
-		if (tsp->ep == ep && F_ISSET(SVP(tsp), SVI_SCREENDIRTY)) {
+		if (F_ISSET(tsp, PAINTBITS) ||
+		    tsp->ep == ep && F_ISSET(SVP(tsp), SVI_SCREENDIRTY)) {
 			(void)svi_paint(tsp, ep);
 			F_CLR(SVP(tsp), SVI_SCREENDIRTY);
 		}
-	/* Always refresh the current screen, it may be a cursor movement. */
+	/*
+	 * Always refresh the current screen, it may be a cursor movement.
+	 * Also, always do it last -- that way, S_REFRESH can be set in
+	 * the current screen only, and the screen won't flash.
+	 */
 	F_CLR(sp, SVI_SCREENDIRTY);
 	return (svi_paint(sp, ep));
 }
