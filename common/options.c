@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: options.c,v 10.37 1996/04/27 13:41:36 bostic Exp $ (Berkeley) $Date: 1996/04/27 13:41:36 $";
+static const char sccsid[] = "$Id: options.c,v 10.38 1996/04/29 11:22:58 bostic Exp $ (Berkeley) $Date: 1996/04/29 11:22:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -525,7 +525,7 @@ opts_set(sp, argv, usage)
 			/* Some options may not be set. */
 			if (F_ISSET(op, OPT_NOSET) && !turnoff) {
 				msgq_str(sp, M_ERR, name,
-			    "304|set: the %s option may never be turned on");
+			    "313|set: the %s option may never be turned on");
 				rval = 1;
 				break;
 			}
