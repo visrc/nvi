@@ -14,7 +14,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: perl.xs,v 8.23 1996/09/20 11:13:57 bostic Exp $ (Berkeley) $Date: 1996/09/20 11:13:57 $";
+static const char sccsid[] = "$Id: perl.xs,v 8.24 1996/09/25 09:56:21 bostic Exp $ (Berkeley) $Date: 1996/09/25 09:56:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -82,15 +82,23 @@ perl_end(gp)
 	}
 }
 
-static int perl_eval(string)
+static int
+clear_eval_sv(sv)
+    SV * sv;
+{
+	sv_setpv(GvSV(errgv),"");
+	hv_clear(GvHV(errgv));
+	perl_eval_sv(sv, G_DISCARD | G_NOARGS | G_KEEPERR);
+}
+
+static int 
+perl_eval(string)
 	char *string;
 {
 #ifdef HAVE_PERL_5_003_01
 	SV* sv = newSVpv(string, 0);
 
-	sv_setpv(GvSV(errgv),"");
-	hv_clear(GvHV(errgv));
-	perl_eval_sv(sv, G_DISCARD | G_NOARGS | G_KEEPERR);
+	clear_eval_sv(sv);
 	SvREFCNT_dec(sv);
 #else
 	char *argv[2];
@@ -292,7 +300,7 @@ perl_ex_perldo(scrp, cmdp, cmdlen, f_lno, t_lno)
 	sv_setpvn(sv, "sub VI::perldo {", sizeof("sub VI::perldo {")-1); 
 	sv_catpvn(sv, cmdp, length);
 	sv_catpvn(sv, "}", 1);
-	perl_eval_sv(sv, G_DISCARD | G_NOARGS | G_KEEPERR);
+	clear_eval_sv(sv);
 	SvREFCNT_dec(sv);
 	str = SvPV(GvSV(errgv),length);
 	if (length)
