@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.27 1993/11/30 11:11:33 bostic Exp $ (Berkeley) $Date: 1993/11/30 11:11:33 $";
+static char sccsid[] = "$Id: options.c,v 8.28 1993/12/02 10:35:06 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:35:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -207,18 +207,20 @@ int
 opts_init(sp)
 	SCR *sp;
 {
+	ARGS *argv[2], a;
 	OPTLIST const *op;
 	u_long v;
 	int cnt;
-	char *s, *argv[2], b1[1024];
+	char *s, b1[1024];
 
-	argv[0] = b1;
+	a.bp = b1;
+	argv[0] = &a;
 	argv[1] = NULL;
 
 #define	SET_DEF(opt, str) {						\
 	if (str != b1)		/* GCC puts strings in text-space. */	\
 		(void)strcpy(b1, str);					\
-	if (opts_set(sp, argv))	{					\
+	if (opts_set(sp, argv)) {					\
 		msgq(sp, M_ERR,						\
 		    "Unable to set default %s option", optlist[opt]);	\
 		return (1);						\
@@ -287,7 +289,7 @@ opts_init(sp)
 int
 opts_set(sp, argv)
 	SCR *sp;
-	char **argv;
+	ARGS *argv[];
 {
 	enum optdisp disp;
 	OABBREV atmp, *ap;
@@ -304,13 +306,13 @@ opts_set(sp, argv)
 		 * The historic vi dumped the options for each occurrence of
 		 * "all" in the set list.  Puhleeze.
 		 */
-		if (!strcmp(*argv, "all")) {
+		if (!strcmp(argv[0]->bp, "all")) {
 			disp = ALL_DISPLAY;
 			continue;
 		}
 			
 		/* Find equals sign or end of set, skipping backquoted chars. */
-		for (p = name = *argv, equals = NULL; ch = *p; ++p)
+		for (p = name = argv[0]->bp, equals = NULL; ch = *p; ++p)
 			switch(ch) {
 			case '=':
 				equals = p;
