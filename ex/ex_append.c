@@ -6,15 +6,15 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 5.8 1992/04/19 08:53:38 bostic Exp $ (Berkeley) $Date: 1992/04/19 08:53:38 $";
+static char sccsid[] = "$Id: ex_append.c,v 5.9 1992/04/28 11:56:49 bostic Exp $ (Berkeley) $Date: 1992/04/28 11:56:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 #include <termios.h>
+#include <curses.h>
 #include <stdio.h>
 
 #include "vi.h"
-#include "curses.h"
 #include "excmd.h"
 #include "options.h"
 #include "tty.h"
@@ -25,7 +25,7 @@ enum which {APPEND, CHANGE};
 static void ca __P((EXCMDARG *, enum which));
 
 /*
- * ex_append (:address append)
+ * ex_append -- :address append[!]
  *	Append one or more lines of new text after the specified line,
  *	or the current line if no address is specified.
  */
@@ -37,6 +37,10 @@ ex_append(cmdp)
 	return (0);
 }
 
+/*
+ * ex_change -- :range change[!] [count]
+ *	Change one or more lines to the input text.
+ */
 int
 ex_change(cmdp)
 	EXCMDARG *cmdp;
@@ -78,19 +82,14 @@ ca(cmdp, cmd)
  			++l;
 
 		/* Insert lines until no more lines, or "." line. */
-		for (; (p = gb(0, GB_NL)) != NULL; ++l) {
-			addch('\n');
-			if (!strcmp(p, "."))
+		EX_PRSTART;
+		for (; (p = gb(0, GB_NL|GB_NLECHO)) != NULL; ++l) {
+			if (p[0] == '.' && p[1] == '\0')
 				break;
 			add(MARK_AT_LINE(l), p);
 		}
 	}
 
-	/* This can be called from vi mode. */
-	if (mode == MODE_VI)
-		redraw(MARK_UNSET, FALSE);
-
-	/* Turn on autoprint. */
 	autoprint = 1;
 
 	if (set)
