@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 9.20 1995/02/08 14:20:05 bostic Exp $ (Berkeley) $Date: 1995/02/08 14:20:05 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 9.21 1995/02/12 17:23:59 bostic Exp $ (Berkeley) $Date: 1995/02/12 17:23:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -660,10 +660,11 @@ paint:	if (LF_ISSET(PAINT_FLUSH) && !IS_SPLIT(sp)) {
 	}
 	for (smp = HMAP; smp <= TMAP; ++smp)
 		SMAP_FLUSH(smp);
-	for (y = -1, smp = HMAP; smp <= TMAP; ++smp) {
+	for (y = -1,
+	    svp->sc_smap = NULL, smp = HMAP; smp <= TMAP; ++smp) {
 		if (svi_line(sp, smp, &y, &SCNO))
 			return (1);
-		if (y != -1)
+		if (y != -1 && svp->sc_smap == NULL)
 			svp->sc_smap = smp;
 	}
 
