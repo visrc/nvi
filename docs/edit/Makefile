@@ -1,10 +1,10 @@
-#	$Id: Makefile,v 6.2 1990/06/30 15:09:20 bostic Exp $ (Berkeley) $Date: 1990/06/30 15:09:20 $
+#	$Id: Makefile,v 6.3 1993/06/05 17:20:05 bostic Exp $ (Berkeley) $Date: 1993/06/05 17:20:05 $
 
-DIR=	usd/14.edit
+DIR=	usd/11.edit
 SRCS=	edittut.ms
 MACROS=	-msU
 
-paper.${PRINTER}: ${SRCS}
+paper.ps: ${SRCS}
 	${TBL} ${SRCS} | ${ROFF} > ${.TARGET}
 
 # index for versatec is different from the one in edit.tut
