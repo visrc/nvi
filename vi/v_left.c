@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_left.c,v 9.1 1994/11/09 18:36:05 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:36:05 $";
+static char sccsid[] = "$Id: v_left.c,v 9.2 1994/11/11 18:54:33 bostic Exp $ (Berkeley) $Date: 1994/11/11 18:54:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -73,7 +73,8 @@ v_cfirst(sp, vp)
 	SCR *sp;
 	VICMDARG *vp;
 {
-	recno_t cnt;
+	recno_t cnt, lno;
+	size_t len;
 
 	/*
 	 * !!!
@@ -105,6 +106,22 @@ v_cfirst(sp, vp)
 	vp->m_stop.cno = 0;
 	if (nonblank(sp, vp->m_stop.lno, &vp->m_stop.cno))
 		return (1);
+
+	/*
+	 * !!!
+	 * The _ command has to fail if the file is empty and we're doing
+	 * a delete.  If deleting line 1, and 0 is the first nonblank,
+	 * make the check.
+	 */
+	if (vp->m_stop.lno == 1 &&
+	    vp->m_stop.cno == 0 && ISCMD(vp->rkp, 'd')) {
+		if (file_lline(sp, &lno))
+			return (1);
+		if (lno == 0) {
+			v_sol(sp);
+			return (1);
+		}
+	}
 
 	/*
 	 * Delete and non-motion commands move to the end of the range,
