@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.114 1994/06/25 19:44:52 bostic Exp $ (Berkeley) $Date: 1994/06/25 19:44:52 $
+ *	$Id: screen.h,v 8.115 1994/06/26 11:35:57 bostic Exp $ (Berkeley) $Date: 1994/06/26 11:35:57 $
  */
 
 /*
@@ -166,8 +166,6 @@ struct _scr {
 	regex_t	 sre;			/* Last search RE. */
 	regex_t	 subre;			/* Last substitute RE. */
 	enum direction	searchdir;	/* File search direction. */
-	regmatch_t     *match;		/* Substitute match array. */
-	size_t	 matchsize;		/* Substitute match array size. */
 	char	*repl;			/* Substitute replacement. */
 	size_t	 repl_len;		/* Substitute replacement length.*/
 	size_t	*newl;			/* Newline offset array. */

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.59 1994/04/25 16:22:24 bostic Exp $ (Berkeley) $Date: 1994/04/25 16:22:24 $";
+static char sccsid[] = "$Id: screen.c,v 8.60 1994/06/26 11:35:55 bostic Exp $ (Berkeley) $Date: 1994/06/26 11:35:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -105,14 +105,6 @@ screen_init(orig, spp, flags)
 		}
 		sp->searchdir = orig->searchdir == NOTSET ? NOTSET : FORWARD;
 
-		if (orig->matchsize) {
-			len = orig->matchsize * sizeof(regmatch_t);
-			MALLOC(sp, sp->match, regmatch_t *, len);
-			if (sp->match == NULL)
-				goto mem;
-			sp->matchsize = orig->matchsize;
-			memmove(sp->match, orig->match, len);
-		}
 		if (orig->repl_len) {
 			MALLOC(sp, sp->repl, char *, orig->repl_len);
 			if (sp->repl == NULL)
@@ -231,8 +223,6 @@ screen_end(sp)
 		FREE(sp->alt_name, strlen(sp->alt_name) + 1);
 
 	/* Free up search information. */
-	if (sp->match != NULL)
-		FREE(sp->match, sizeof(regmatch_t));
 	if (sp->repl != NULL)
 		FREE(sp->repl, sp->repl_len);
 	if (sp->newl != NULL)

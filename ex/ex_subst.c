@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.50 1994/05/21 09:38:22 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:38:22 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.51 1994/06/26 11:36:10 bostic Exp $ (Berkeley) $Date: 1994/06/26 11:36:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,9 +34,8 @@ static char sccsid[] = "$Id: ex_subst.c,v 8.50 1994/05/21 09:38:22 bostic Exp $ 
 #define	SUB_FIRST	0x01		/* The 'r' flag isn't reasonable. */
 #define	SUB_MUSTSETR	0x02		/* The 'r' flag is required. */
 
-static int		checkmatchsize __P((SCR *, regex_t *));
-static inline int	regsub __P((SCR *,
-			    char *, char **, size_t *, size_t *));
+static inline int	regsub __P((SCR *, char *,
+			    char **, size_t *, size_t *, regmatch_t [10]));
 static int		substitute __P((SCR *, EXF *,
 			    EXCMDARG *, char *, regex_t *, u_int));
 
@@ -256,9 +255,6 @@ tilde:				++p;
 		sp->repl_len = len;
 		FREE_SPACE(sp, bp, blen);
 	}
-
-	if (checkmatchsize(sp, &sp->subre))
-		return (1);
 	return (substitute(sp, ep, cmdp, p, re, flags));
 }
 
@@ -362,6 +358,7 @@ substitute(sp, ep, cmdp, s, re, flags)
 {
 	MARK from, to;
 	recno_t elno, lno;
+	regmatch_t match[10];
 	size_t blen, cnt, last, lbclen, lblen, len, llen, offset, saved_offset;
 	int cflag, lflag, nflag, pflag, rflag;
 	int didsub, do_eol_match, eflags, empty_ok, eval;
@@ -536,16 +533,15 @@ usage:		msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
 		/*
 		 * The search area is from s + offset to the EOL.
 		 *
-		 * Generally, sp->match[0].rm_so is the offset of the start
-		 * of the match from the start of the search, and offset is
-		 * the offset of the start of the last search.
+		 * Generally, match[0].rm_so is the offset of the start
+		 * of the match from the start of the search, and offset
+		 * is the offset of the start of the last search.
 		 */
-nextmatch:	sp->match[0].rm_so = 0;
-		sp->match[0].rm_eo = len;
+nextmatch:	match[0].rm_so = 0;
+		match[0].rm_eo = len;
 
 		/* Get the next match. */
-		eval = regexec(re,
-		    (char *)s + offset, re->re_nsub + 1, sp->match, eflags);
+		eval = regexec(re, (char *)s + offset, 10, match, eflags);
 
 		/*
 		 * There wasn't a match or if there was an error, deal with
@@ -583,8 +579,7 @@ nextmatch:	sp->match[0].rm_so = 0;
 		 * more characters in the string, we were attempting to match
 		 * after the last character, so quit.
 		 */
-		if (!empty_ok &&
-		    sp->match[0].rm_so == 0 && sp->match[0].rm_eo == 0) {
+		if (!empty_ok && match[0].rm_so == 0 && match[0].rm_eo == 0) {
 			empty_ok = 1;
 			if (len == 0)
 				goto endmatch;
@@ -607,8 +602,8 @@ nextmatch:	sp->match[0].rm_so = 0;
 			 * a cursor past EOL.
 			 */
 			from.lno = to.lno = lno;
-			from.cno = sp->match[0].rm_so + offset;
-			to.cno = sp->match[0].rm_eo;
+			from.cno = match[0].rm_so + offset;
+			to.cno = match[0].rm_eo;
 			if (llen == 0)
 				from.cno = to.cno = 0;
 			else {
@@ -622,7 +617,7 @@ nextmatch:	sp->match[0].rm_so = 0;
 				break;
 			case CONF_NO:
 				didsub = 0;
-				BUILD(sp, s +offset, sp->match[0].rm_eo);
+				BUILD(sp, s +offset, match[0].rm_eo);
 				goto skip;
 			case CONF_QUIT:
 				/* Set the quit flag. */
@@ -641,19 +636,19 @@ nextmatch:	sp->match[0].rm_so = 0;
 		}
 
 		/* Copy the bytes before the match into the build buffer. */
-		BUILD(sp, s + offset, sp->match[0].rm_so);
+		BUILD(sp, s + offset, match[0].rm_so);
 
 		/* Substitute the matching bytes. */
 		didsub = 1;
-		if (regsub(sp, s + offset, &lb, &lbclen, &lblen))
+		if (regsub(sp, s + offset, &lb, &lbclen, &lblen, match))
 			goto ret1;
 
 		/* Set the change flag so we know this line was modified. */
 		linechanged = 1;
 
 		/* Move past the matched bytes. */
-skip:		offset += sp->match[0].rm_eo;
-		len -= sp->match[0].rm_eo;
+skip:		offset += match[0].rm_eo;
+		len -= match[0].rm_eo;
 
 		/* A match cannot be followed by an empty pattern. */
 		empty_ok = 0;
@@ -833,11 +828,12 @@ ret1:		rval = 1;
  * 	Do the substitution for a regular expression.
  */
 static inline int
-regsub(sp, ip, lbp, lbclenp, lblenp)
+regsub(sp, ip, lbp, lbclenp, lblenp, match)
 	SCR *sp;
 	char *ip;			/* Input line. */
 	char **lbp;
 	size_t *lbclenp, *lblenp;
+	regmatch_t match[10];
 {
 	enum { C_NOTSET, C_LOWER, C_ONELOWER, C_ONEUPPER, C_UPPER } conv;
 	size_t lbclen, lblen;		/* Local copies. */
@@ -924,12 +920,11 @@ regsub(sp, ip, lbp, lbclenp, lblenp)
 			case '0': case '1': case '2': case '3': case '4':
 			case '5': case '6': case '7': case '8': case '9':
 				no = *rp++ - '0';
-subzero:			if (sp->match[no].rm_so == -1 ||
-			    	    sp->match[no].rm_eo == -1)
-					continue;
-				mlen =
-				    sp->match[no].rm_eo - sp->match[no].rm_so;
-				for (t = ip + sp->match[no].rm_so; mlen--; ++t)
+subzero:			if (match[no].rm_so == -1 ||
+			    	    match[no].rm_eo == -1)
+					break;
+				mlen = match[no].rm_eo - match[no].rm_so;
+				for (t = ip + match[no].rm_so; mlen--; ++t)
 					ADDCH(*t);
 				continue;
 			case 'e':
@@ -964,23 +959,5 @@ subzero:			if (sp->match[no].rm_so == -1 ||
 	*lbp = lb;			/* Update caller's information. */
 	*lbclenp = lbclen;
 	*lblenp = lblen;
-	return (0);
-}
-
-static int
-checkmatchsize(sp, re)
-	SCR *sp;
-	regex_t *re;
-{
-	/* Build nsub array as necessary. */
-	if (sp->matchsize < re->re_nsub + 1) {
-		sp->matchsize = re->re_nsub + 1;
-		REALLOC(sp, sp->match,
-		    regmatch_t *, sp->matchsize * sizeof(regmatch_t));
-		if (sp->match == NULL) {
-			sp->matchsize = 0;
-			return (1);
-		}
-	}
 	return (0);
 }
