@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.124 1994/08/31 17:15:10 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:15:10 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.125 1994/09/01 10:49:29 bostic Exp $ (Berkeley) $Date: 1994/09/01 10:49:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1589,7 +1589,7 @@ txt_outdent(sp, tp)
 	TEXT *tp;
 {
 	u_long sw, ts;
-	size_t cno, off, scno, spaces;
+	size_t cno, off, scno, spaces, tabs;
 
 	ts = O_VAL(sp, O_TABSTOP);
 	sw = O_VAL(sp, O_SHIFTWIDTH);
@@ -1604,38 +1604,52 @@ txt_outdent(sp, tp)
 	/* Get the previous shiftwidth column. */
 	for (cno = scno; --scno % sw != 0;);
 
-	/* Decrement characters until less than or equal to that slot. */
-	for (; cno > scno; --sp->cno, --tp->ai, ++tp->owrite)
-		if (tp->lb[--off] == '\t')
-			cno -= STOP_OFF(cno, ts);
-		else
-			--cno;
-
-	/* Spaces needed to get to the target. */
+	/*
+	 * Since we don't know what comes before the character(s) being
+	 * deleted, we have to resolve the autoindent characters .  The
+	 * example is a <tab>, which doesn't take up a full shiftwidth
+	 * number of columns because it's preceded by <space>s.  This is
+	 * easy to get if the user sets shiftwidth to a value less than
+	 * tabstop, and then uses ^T to indent, and ^D to outdent.
+	 *
+	 * Count up spaces/tabs needed to get to the target.
+	 */
+	for (cno = 0, tabs = 0; cno + STOP_OFF(cno, ts) <= scno; ++tabs)
+		cno += STOP_OFF(cno, ts);
 	spaces = scno - cno;
 
-	/* Maybe just a delete. */
-	if (spaces == 0)
-		return (0);
+	/*
+	 * If there are insert characters on the line, shift them up or
+	 * down depending on if we're gaining or losing characters.
+	 */
+	if (tp->insert && tabs + spaces != tp->ai + tp->owrite) {
+		if (tabs + spaces > tp->ai + tp->owrite) {
+			BINC_RET(sp,
+			    tp->lb, tp->lb_len, tp->len + tabs + spaces);
+			off = (tabs + spaces) - (tp->ai + tp->owrite);
+			memmove(tp->lb + sp->cno + tp->owrite + off,
+			    tp->lb + sp->cno + tp->owrite, tp->insert);
+			tp->len += off;
+		} else {
+			off = (tp->ai + tp->owrite) - (tabs + spaces);
+			memmove(tp->lb + sp->cno + tp->owrite - off,
+			    tp->lb + sp->cno + tp->owrite, tp->insert);
+			tp->len -= off;
+		}
+		/* Adjust the final overwrite character count. */
+		tp->owrite = 0;
+	}
 
-	/* Make sure there's enough room. */
-	BINC_RET(sp, tp->lb, tp->lb_len, tp->len + spaces);
+	/* Move the cursor to the start of the ai characters. */
+	sp->cno -= tp->ai;
 
-	/* Use up any overwrite characters. */
-	for (; tp->owrite && spaces; --spaces, ++tp->ai, --tp->owrite)
-		tp->lb[sp->cno++] = ' ';
+	/* Adjust the final ai character count. */
+	tp->ai = tabs + spaces;
 
-	/* Maybe that was enough. */
-	if (spaces == 0)
-		return (0);
-
-	/* Move the insert characters out of the way. */
-	if (tp->insert)
-		memmove(tp->lb + sp->cno + spaces,
-		    tp->lb + sp->cno, tp->insert);
-
-	/* Add new space characters. */
-	for (; spaces--; ++tp->len, ++tp->ai)
+	/* Enter the replacement characters. */
+	for (; tabs > 0; --tabs)
+		tp->lb[sp->cno++] = '\t';
+	for (; spaces > 0; --spaces)
 		tp->lb[sp->cno++] = ' ';
 	return (0);
 }
