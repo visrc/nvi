@@ -162,6 +162,7 @@ EXTRA_libvi_la_SOURCES = \
 	$(visrcdir)/clib/strsep.c \
 	$(visrcdir)/clib/strtol.c \
 	$(visrcdir)/clib/strtoul.c \
+	$(visrcdir)/clib/vsnprintf.c \
 	$(visrcdir)/common/pthread.c \
 	perl.c \
 	perlxsi.c
