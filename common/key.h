@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 10.8 1995/11/01 19:10:59 bostic Exp $ (Berkeley) $Date: 1995/11/01 19:10:59 $
+ *	$Id: key.h,v 10.9 1995/11/06 19:26:35 bostic Exp $ (Berkeley) $Date: 1995/11/06 19:26:35 $
  */
 
 /*
@@ -186,7 +186,8 @@ extern KEYLIST keylist[];
 #define	EC_MAPINPUT	0x004		/* Apply the input map. */
 #define	EC_MAPNODIGIT	0x008		/* Return to a digit. */
 #define	EC_QUOTED	0x010		/* Try to quote next character */
-#define	EC_TIMEOUT	0x020		/* Timeout to next character. */
+#define	EC_RAW		0x020		/* Any next character. */
+#define	EC_TIMEOUT	0x040		/* Timeout to next character. */
 
 /* Flags describing text input special cases. */
 #define	TXT_ADDNEWLINE	0x00000001	/* Replay starts on a new line. */

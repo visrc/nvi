@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_read.c,v 10.6 1995/10/28 10:36:08 bostic Exp $ (Berkeley) $Date: 1995/10/28 10:36:08 $";
+static char sccsid[] = "$Id: cl_read.c,v 10.7 1995/11/06 19:26:06 bostic Exp $ (Berkeley) $Date: 1995/11/06 19:26:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,7 +32,7 @@ static char sccsid[] = "$Id: cl_read.c,v 10.6 1995/10/28 10:36:08 bostic Exp $ (
 #include "cl.h"
 
 static input_t cl_read __P((SCR *,
-    int, CHAR_T *, size_t, int *, struct timeval *));
+    u_int32_t, CHAR_T *, size_t, int *, struct timeval *));
 
 /*
  * cl_event --
@@ -95,8 +95,8 @@ retest:	if (LF_ISSET(EC_INTERRUPT) || F_ISSET(clp, CL_SIGINT)) {
 	}
 
 	/* Read input characters. */
-	switch (cl_read(sp,
-	    LF_ISSET(EC_QUOTED), clp->ibuf, sizeof(clp->ibuf), &nr, tp)) {
+	switch (cl_read(sp, LF_ISSET(EC_QUOTED | EC_RAW),
+	    clp->ibuf, sizeof(clp->ibuf), &nr, tp)) {
 	case INP_OK:
 		evp->e_csp = clp->ibuf;
 		evp->e_len = nr;
@@ -124,9 +124,9 @@ retest:	if (LF_ISSET(EC_INTERRUPT) || F_ISSET(clp, CL_SIGINT)) {
  *	Read characters from the input.
  */
 static input_t
-cl_read(sp, quoted, bp, blen, nrp, tp)
+cl_read(sp, flags, bp, blen, nrp, tp)
 	SCR *sp;
-	int quoted;
+	u_int32_t flags;
 	CHAR_T *bp;
 	size_t blen;
 	int *nrp;
@@ -141,6 +141,7 @@ cl_read(sp, quoted, bp, blen, nrp, tp)
 	input_t rval;
 	int maxfd, nr, term_reset;
 
+	clp = CLP(sp);
 	term_reset = 0;
 
 	/*
@@ -189,13 +190,21 @@ cl_read(sp, quoted, bp, blen, nrp, tp)
 	 * Reset the tty so that the user can enter a ^C, ^Q, ^S.  There's an
 	 * obvious race here, when the key has already been entered, but there's
 	 * nothing that we can do to fix that problem.
+	 *
+	 * The editor can ask for the next literal character even thought it's
+	 * generally running in line-at-a-time mode.  Do what we can.
 	 */
-	if (quoted && !tcgetattr(STDIN_FILENO, &term1)) {
-		term2 = term1;
-		term2.c_lflag &= ~ISIG;
-		term2.c_iflag &= ~(IXON | IXOFF);
+	if (LF_ISSET(EC_QUOTED | EC_RAW) && !tcgetattr(STDIN_FILENO, &term1)) {
 		term_reset = 1;
-		(void)tcsetattr(STDIN_FILENO, TCSASOFT | TCSADRAIN, &term2);
+		if (LF_ISSET(EC_QUOTED)) {
+			term2 = term1;
+			term2.c_lflag &= ~ISIG;
+			term2.c_iflag &= ~(IXON | IXOFF);
+			(void)tcsetattr(STDIN_FILENO,
+			    TCSASOFT | TCSADRAIN, &term2);
+		} else
+			(void)tcsetattr(STDIN_FILENO,
+			    TCSASOFT | TCSADRAIN, &clp->vi_enter);
 	}
 
 	/*
@@ -247,7 +256,6 @@ loop:		FD_ZERO(&rdfd);
 	 * are entered followed by an <EOF> character.
 	 */
 #define	ONE_FOR_EOF	1
-	clp = CLP(sp);
 	switch (nr = read(STDIN_FILENO, bp, blen - ONE_FOR_EOF)) {
 	case  0:				/* EOF. */
 		/*

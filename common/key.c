@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 10.16 1995/10/19 13:14:40 bostic Exp $ (Berkeley) $Date: 1995/10/19 13:14:40 $";
+static char sccsid[] = "$Id: key.c,v 10.17 1995/11/06 19:26:27 bostic Exp $ (Berkeley) $Date: 1995/11/06 19:26:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -555,8 +555,8 @@ retry:	istimeout = remap_cnt = 0;
 		 */
 		if (F_ISSET(gp, G_SCRIPT) && sscr_input(sp))
 			return (1);
-loop:		if (gp->scr_event(sp,
-		    argp, LF_ISSET(EC_QUOTED | EC_INTERRUPT), timeout))
+loop:		if (gp->scr_event(sp, argp,
+		    LF_ISSET(EC_INTERRUPT | EC_QUOTED | EC_RAW), timeout))
 			return (1);
 		switch (argp->e_event) {
 		case E_ERR:
