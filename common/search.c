@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 5.30 1993/05/03 13:23:49 bostic Exp $ (Berkeley) $Date: 1993/05/03 13:23:49 $";
+static char sccsid[] = "$Id: search.c,v 5.31 1993/05/03 14:27:14 bostic Exp $ (Berkeley) $Date: 1993/05/03 14:27:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -162,15 +162,17 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 	if (resetup(sp, &re, FORWARD, ptrn, eptrn, &delta, &wordoffset, flags))
 		return (1);
 
+	/*
+	 * Start searching immediately after the cursor.  If at the end of the
+	 * line, start searching on the next line.  This is incompatible (read
+	 * bug fix) with the historic vi -- searches for the '$' pattern never
+	 * moved forward, and "-t foo" didn't work if "foo" was the first thing
+	 * in the file.
+	 */
 	if (LF_ISSET(SEARCH_FILE)) {
 		lno = 1;
 		coff = 0;
 	} else {
-		/*
-		 * If in the last column, start searching on the next line.
-		 * This is incompatible (read bug fix) with the historic vi
-		 * -- searches for the '$' pattern never moved forward.
-		 */
 		if ((l = file_gline(sp, ep, fm->lno, &len)) == NULL) {
 			GETLINE_ERR(sp, fm->lno);
 			return (1);
