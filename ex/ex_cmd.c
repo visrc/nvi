@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 10.5 1995/09/21 12:07:04 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:07:04 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 10.6 1995/11/05 10:29:58 bostic Exp $ (Berkeley) $Date: 1995/11/05 10:29:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -344,6 +344,13 @@ EXCMDLIST const cmds[] = {
 	    "!",
 	    "tagt[op][!]",
 	    "return to the first tag"},
+#ifdef TCL_INTERP
+/* C_TCLCMD */
+	{"tcl",		ex_tcl,		E_ADDR2_NONE,
+	    "s",
+	    "tcl cmd",
+	    "run the tcl interpreter with the command"},
+#endif
 /* C_UNDO */
 	{"undo",	ex_undo,	E_AUTOPRINT,
 	    "",
