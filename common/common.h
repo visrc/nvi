@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 8.37 1994/03/16 08:05:59 bostic Exp $ (Berkeley) $Date: 1994/03/16 08:05:59 $
+ *	$Id: common.h,v 8.38 1994/03/22 18:40:44 bostic Exp $ (Berkeley) $Date: 1994/03/22 18:40:44 $
  */
 
 /*
@@ -32,31 +32,12 @@ typedef struct _tagf		TAGF;
 typedef struct _text		TEXT;
 
 /*
- * Fundamental character types.
- *
- * CHAR_T	An integral type that can hold any character.
- * ARG_CHAR_T	The type of a CHAR_T when passed as an argument using
- *		traditional promotion rules.  It should also be able
- *		to be compared against any CHAR_T for equality without
- *		problems.
- * MAX_CHAR_T	The maximum value of any character.
- *
- * If no integral type can hold a character, don't even try the port.
- */
-typedef	u_char		CHAR_T;
-typedef	u_int		ARG_CHAR_T;
-#define	MAX_CHAR_T	0xff
-
-/* The maximum number of columns any character can take up on a screen. */
-#define	MAX_CHARACTER_COLUMNS	4
-
-/*
  * Local includes.
  */
-#include "search.h"		/* Required by screen.h. */
+#include "term.h"		/* Required by args.h. */
 #include "args.h"		/* Required by options.h. */
 #include "options.h"		/* Required by screen.h. */
-#include "term.h"		/* Required by screen.h. */
+#include "search.h"		/* Required by screen.h. */
 
 #include "msg.h"		/* Required by gs.h. */
 #include "cut.h"		/* Required by gs.h. */
@@ -105,6 +86,8 @@ u_long	 baud_from_bval __P((SCR *));
 char	*charname __P((SCR *, ARG_CHAR_T));
 void	 busy_off __P((SCR *));
 void	 busy_on __P((SCR *, int, char const *));
+void	 intr_end __P((SCR *));
+int	 intr_init __P((SCR *));
 int	 nonblank __P((SCR *, EXF *, recno_t, size_t *));
 void	 set_alt_name __P((SCR *, char *));
 int	 set_window_size __P((SCR *, u_int, int));
