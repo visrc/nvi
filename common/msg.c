@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: msg.c,v 10.28 1996/03/06 19:50:38 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:50:38 $";
+static const char sccsid[] = "$Id: msg.c,v 10.29 1996/03/15 20:15:26 bostic Exp $ (Berkeley) $Date: 1996/03/15 20:15:26 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -72,11 +72,6 @@ msgq(sp, mt, fmt, va_alist)
 	char *bp, *mp, *rbp, *s_rbp;
         va_list ap;
 
-#ifdef __STDC__
-        va_start(ap, fmt);
-#else
-        va_start(ap);
-#endif
 	/*
 	 * !!!
 	 * It's possible to enter msg when there's no screen to hold the
@@ -276,8 +271,14 @@ retry:		FREE_SPACE(sp, bp, blen);
 	fmt = rbp;
 #endif
 
-	/* Format the arguments into the string. */
-format:	len = vsnprintf(mp, REM, fmt, ap);
+format:	/* Format the arguments into the string. */
+#ifdef __STDC__
+        va_start(ap, fmt);
+#else
+        va_start(ap);
+#endif
+	len = vsnprintf(mp, REM, fmt, ap);
+	va_end(ap);
 	if (len >= nlen)
 		goto retry;
 
