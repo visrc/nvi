@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 10.4 1995/06/09 12:47:59 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:47:59 $";
+static char sccsid[] = "$Id: search.c,v 10.5 1995/06/14 11:33:18 bostic Exp $ (Berkeley) $Date: 1995/06/14 11:33:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -206,15 +206,15 @@ f_search(sp, fm, rm, ptrn, eptrn, flags)
 			return (1);
 		}
 		if (fm->cno + 1 >= len) {
-			if (fm->lno == lno) {
+			lno = fm->lno + 1;
+			if ((l = file_gline(sp, lno, &len)) == NULL) {
 				if (!O_ISSET(sp, O_WRAPSCAN)) {
 					if (LF_ISSET(SEARCH_MSG))
 						search_msg(sp, S_EOF);
 					return (1);
 				}
 				lno = 1;
-			} else
-				lno = fm->lno + 1;
+			}
 			coff = 0;
 		} else {
 			lno = fm->lno;
