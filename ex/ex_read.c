@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_read.c,v 10.30 1996/04/27 11:40:23 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:23 $";
+static const char sccsid[] = "$Id: ex_read.c,v 10.31 1996/05/08 18:06:20 bostic Exp $ (Berkeley) $Date: 1996/05/08 18:06:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -105,8 +105,10 @@ ex_read(sp, cmdp)
 		argc = cmdp->argc;
 		if (argv_exp1(sp, cmdp, arg, arglen, 1))
 			return (1);
-		if (argc == cmdp->argc)
-			goto usage;
+		if (argc == cmdp->argc) {
+			ex_emsg(sp, cmdp->cmd->usage, EXM_USAGE);
+			return (1);
+		}
 		argc = cmdp->argc - 1;
 
 		/* Set the last bang command. */
@@ -226,9 +228,7 @@ ex_read(sp, cmdp)
 				set_alt_name(sp, name);
 			break;
 		default:
-			msgq_str(sp, M_ERR, cmdp->argv[0]->bp,
-			    "144|%s expanded into too many file names");
-usage:			ex_emsg(sp, cmdp->cmd->usage, EXM_USAGE);
+			ex_emsg(sp, cmdp->argv[0]->bp, EXM_FILECOUNT);
 			return (1);
 		
 		}
