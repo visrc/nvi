@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.70 1994/03/23 16:37:00 bostic Exp $ (Berkeley) $Date: 1994/03/23 16:37:00 $";
+static char sccsid[] = "$Id: exf.c,v 8.71 1994/03/23 17:47:23 bostic Exp $ (Berkeley) $Date: 1994/03/23 17:47:23 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -651,11 +651,10 @@ exists:			if (LF_ISSET(FS_POSSIBLE))
 
 	/*
 	 * Save the new last modification time -- even if the write fails
-	 * we re-init the time if we wrote anything.  That way the user can
-	 * clean up the disk and rewrite without having to force it.
+	 * we re-init the time.  That way the user can clean up the disk
+	 * and rewrite without having to force it.
 	 */
-	if (nlno || nch)
-		frp->mtime = stat(name, &sb) ? 0 : sb.st_mtime;
+	frp->mtime = stat(name, &sb) ? 0 : sb.st_mtime;
 
 	/* If the write failed, complain loudly. */
 	if (rval) {
