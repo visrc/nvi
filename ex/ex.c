@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 10.37 1996/02/22 11:49:50 bostic Exp $ (Berkeley) $Date: 1996/02/22 11:49:50 $";
+static char sccsid[] = "$Id: ex.c,v 10.38 1996/02/25 18:26:56 bostic Exp $ (Berkeley) $Date: 1996/02/25 18:26:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -139,8 +139,10 @@ ex(spp)
 		 * If the last command caused a restart, or switched screens
 		 * or into vi, return.
 		 */
-		if (F_ISSET(gp, G_SRESTART) || F_ISSET(sp, S_SSWITCH | S_VI))
+		if (F_ISSET(gp, G_SRESTART) || F_ISSET(sp, S_SSWITCH | S_VI)) {
+			*spp = sp;
 			break;
+		}
 
 		/* If the last command switched files, we don't care. */
 		F_CLR(sp, S_FSWITCH);

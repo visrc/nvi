@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_txt.c,v 10.10 1995/11/13 08:26:34 bostic Exp $ (Berkeley) $Date: 1995/11/13 08:26:34 $";
+static char sccsid[] = "$Id: ex_txt.c,v 10.11 1996/02/25 18:26:47 bostic Exp $ (Berkeley) $Date: 1996/02/25 18:26:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -122,10 +122,6 @@ newtp:		if ((tp = text_init(sp, NULL, 0, 32)) == NULL)
 		case E_ERR:
 			goto err;
 		case E_REPAINT:
-			continue;
-		case E_RESIZE:
-			if (ex_init(sp))
-				return (1);
 			continue;
 		case E_EOF:
 			rval = 1;
