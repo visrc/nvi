@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 8.12 1994/03/08 19:41:28 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:41:28 $";
+static char sccsid[] = "$Id: v_scroll.c,v 8.13 1994/03/10 12:09:50 bostic Exp $ (Berkeley) $Date: 1994/03/10 12:09:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -153,24 +153,26 @@ goto_adjust(vp)
 	VICMDARG *vp;
 {
 	/*
-	 * Non-motion commands go to the end of the range.  If moving backward
-	 * in the file, VC_D and VC_Y move to the end of the range, unless the
-	 * line didn't change, in which case VC_Y doesn't move.  If moving
-	 * forward in the file, VC_D and VC_Y stay at the start of the range.
-	 * Ignore VC_C and VC_S.  Since these commands are line oriented,
-	 * ignore all column adjustments.
-	 *
 	 * !!!
-	 * Move to the first non-blank of the line, unless it's a yank to the
-	 * current line or greater.
+	 * If it's not a yank to the current line or greater, and we've
+	 * changed lines, move to the first non-blank of the line.
 	 */
 	if (!F_ISSET(vp, VC_Y) || vp->m_stop.lno < vp->m_start.lno) {
 		F_CLR(vp, VM_RCM_MASK);
-		F_SET(vp, VM_RCM_SETFNB);
+		F_SET(vp, VM_RCM_SETLFNB);
 	}
+
+	/* Non-motion commands go to the end of the range. */
 	vp->m_final = vp->m_stop;
 	if (!ISMOTION(vp))
 		return;
+
+	/*
+	 * If moving backward in the file, VC_D and VC_Y move to the end
+	 * of the range, unless the line didn't change, in which case VC_Y
+	 * doesn't move.  If moving forward in the file, VC_D and VC_Y stay
+	 * at the start of the range.  Ignore VC_C and VC_S.
+	 */
 	if (vp->m_stop.lno < vp->m_start.lno ||
 	    vp->m_stop.lno == vp->m_start.lno &&
 	    vp->m_stop.cno < vp->m_start.cno) {
