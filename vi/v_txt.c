@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.99 1994/04/10 14:32:41 bostic Exp $ (Berkeley) $Date: 1994/04/10 14:32:41 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.100 1994/04/10 16:44:15 bostic Exp $ (Berkeley) $Date: 1994/04/10 16:44:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -600,7 +600,7 @@ k_escape:		LINE_RESOLVE;
 			 */
 			if (!LF_ISSET(TXT_AUTOINDENT))
 				goto ins_ch;
-			if (sp->cno == 0 || tp->ai == 0)
+			if (sp->cno == 0)
 				break;
 			switch (carat_st) {
 			case C_CARATSET:	/* ^^D */
