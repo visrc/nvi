@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.31 1993/11/04 16:16:09 bostic Exp $ (Berkeley) $Date: 1993/11/04 16:16:09 $";
+static char sccsid[] = "$Id: screen.c,v 8.32 1993/11/12 16:53:32 bostic Exp $ (Berkeley) $Date: 1993/11/12 16:53:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -49,8 +49,6 @@ screen_init(orig, sp)
 	sp->cno = sp->ocno = 0;
 
 	sp->ccnt = 2;				/* Anything > 1 */
-
-	sp->trapped_fd = -1;
 
 	FD_ZERO(&sp->rdfd);
 
