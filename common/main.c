@@ -16,7 +16,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 10.12 1995/09/22 19:28:42 bostic Exp $ (Berkeley) $Date: 1995/09/22 19:28:42 $";
+static char sccsid[] = "$Id: main.c,v 10.13 1995/09/24 15:58:27 bostic Exp $ (Berkeley) $Date: 1995/09/24 15:58:27 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -411,7 +411,7 @@ v_end(gp)
 	while ((sp = gp->hq.cqh_first) != (void *)&gp->hq)
 		(void)screen_end(sp);
 
-#if defined(DEBUG) || defined(PURIFY) || !defined(STANDALONE)
+#if defined(DEBUG) || defined(PURIFY) || defined(LIBRARY)
 	{ FREF *frp;
 		/* Free FREF's. */
 		while ((frp = gp->frefq.cqh_first) != (FREF *)&gp->frefq) {
@@ -458,7 +458,7 @@ v_end(gp)
 			(void)fprintf(stderr,
 			    "ex/vi: %.*s.\n", (int)mp->len, mp->buf);
 		LIST_REMOVE(mp, q);
-#if defined(DEBUG) || defined(PURIFY) || !defined(STANDALONE)
+#if defined(DEBUG) || defined(PURIFY) || defined(LIBRARY)
 		free(mp->buf);
 		free(mp);
 #endif
@@ -471,7 +471,7 @@ v_end(gp)
 		else if (chmod(tty, gp->origmode) < 0)
 			v_estr(gp->progname, errno, tty);
 
-#if defined(DEBUG) || defined(PURIFY) || !defined(STANDALONE)
+#if defined(DEBUG) || defined(PURIFY) || defined(LIBRARY)
 	/* Free any temporary space. */
 	if (gp->tmp_bp != NULL)
 		free(gp->tmp_bp);

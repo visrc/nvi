@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_screen.c,v 10.14 1995/09/22 12:54:24 bostic Exp $ (Berkeley) $Date: 1995/09/22 12:54:24 $";
+static char sccsid[] = "$Id: cl_screen.c,v 10.15 1995/09/24 15:57:58 bostic Exp $ (Berkeley) $Date: 1995/09/24 15:57:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -452,7 +452,7 @@ cl_ex_end(gp)
 	(void)tcsetattr(STDIN_FILENO, TCSADRAIN | TCSASOFT, &clp->orig);
 	F_CLR(clp, CL_SCR_EX_INIT);
 
-#if defined(DEBUG) || defined(PURIFY) || !defined(STANDALONE)
+#if defined(DEBUG) || defined(PURIFY) || defined(LIBRARY)
 	if (clp->el != NULL)
 		free(clp->el);
 	if (clp->cup != NULL)

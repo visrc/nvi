@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_main.c,v 10.12 1995/09/22 12:54:47 bostic Exp $ (Berkeley) $Date: 1995/09/22 12:54:47 $";
+static char sccsid[] = "$Id: cl_main.c,v 10.13 1995/09/24 15:57:59 bostic Exp $ (Berkeley) $Date: 1995/09/24 15:57:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -105,7 +105,7 @@ main(argc, argv)
 	}
 
 	/* Free the global and CL private areas. */
-#if defined(DEBUG) || defined(PURIFY) || !defined(STANDALONE)
+#if defined(DEBUG) || defined(PURIFY) || defined(LIBRARY)
 	free(clp);
 	free(gp);
 #endif
