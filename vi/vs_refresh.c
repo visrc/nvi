@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.20 1993/10/07 11:13:20 bostic Exp $ (Berkeley) $Date: 1993/10/07 11:13:20 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.21 1993/10/07 13:53:38 bostic Exp $ (Berkeley) $Date: 1993/10/07 13:53:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -496,14 +496,18 @@ slow:	/* Find the current line in the map. */
 	for (smp = HMAP; smp->lno != LNO; ++smp);
 
 	/*
-	 * If doing left-right scrolling, and the cursor movement has
-	 * changed the screen being displayed, fix it.
+	 * If doing left-right scrolling and the cursor movement has changed
+	 * the screen being displayed, scroll it.  If we're painting the info
+	 * line, however, just scroll that single line.
 	 */
-	if (!ISINFOLINE(sp, smp) && O_ISSET(sp, O_LEFTRIGHT)) {
+	if (O_ISSET(sp, O_LEFTRIGHT)) {
 		cnt = svi_screens(sp, ep, LNO, &CNO) % SCREEN_COLS(sp);
 		if (cnt != HMAP->off) {
-			for (smp = HMAP; smp <= TMAP; ++smp)
+			if (ISINFOLINE(sp, smp))
 				smp->off = cnt;
+			else
+				for (smp = HMAP; smp <= TMAP; ++smp)
+					smp->off = cnt;
 			goto paint;
 		}
 	}
