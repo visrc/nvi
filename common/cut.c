@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 5.38 1993/05/08 10:51:55 bostic Exp $ (Berkeley) $Date: 1993/05/08 10:51:55 $";
+static char sccsid[] = "$Id: cut.c,v 5.39 1993/05/08 11:09:09 bostic Exp $ (Berkeley) $Date: 1993/05/08 11:09:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -208,8 +208,8 @@ put(sp, ep, buffer, cp, rp, append)
 
 	/*
 	 * If buffer was created in line mode, append each new line into the
-	 * file.  Otherwise, insert the first line into place, append each
-	 * new line into the file, and insert the last line into place.
+	 * file.  Historical practice is that the cursor ends up on the first
+	 * non-blank character of the first line inserted.
 	 */
 	if (lmode) {
 		if (append) {
@@ -233,7 +233,8 @@ put(sp, ep, buffer, cp, rp, append)
 					return (1);
 			rp->lno = 1;
 		}
-		rp->cno = 0;
+		if (nonblank(sp, ep, rp->lno, &rp->cno))
+			rp->cno = 0;
 	}
 	/*
 	 * If buffer was cut in character mode, replace the current line with
@@ -284,7 +285,11 @@ put(sp, ep, buffer, cp, rp, append)
 		 * the cached line.
 		 */
 		if (tp->next == (TEXT *)&cb->txthdr) {
-			/* Set cursor to end of inserted text. */
+			/*
+			 * Historical practice is that if a non-line mode put
+			 * is inside a single line, the cursor ends up on the
+			 * last character inserted.
+			 */
 			rp->lno = lno;
 			rp->cno = (t - bp) - 1;
 
@@ -332,18 +337,24 @@ put(sp, ep, buffer, cp, rp, append)
 			if (file_sline(sp, ep, lno, bp, t - bp))
 				goto mem;
 
+			/*
+			 * Historical practice is that if a non-line mode put
+			 * covers multiple lines, the cursor ends up on the
+			 * first character inserted.
+			 *
+			 * Q: What's the difference between whomever made up
+			 *    the cursor placement semantics of vi and the
+			 *    Boy Scouts?
+			 * A: The Boy Scounts have adult supervision.
+			 */
+			rp->lno = lno;
+			rp->cno = (t - bp) - 1;
+
 			/* Output any intermediate lines in the CB. */
 			for (tp = tp->next; tp->next != (TEXT *)&cb->txthdr;
 			    ++lno, tp = tp->next)
 				if (file_aline(sp, ep, lno, tp->lb, tp->len))
 					goto mem;
-
-			/*
-			 * This is the end of the added text; set cursor to
-			 * the last character inserted.
-			 */
-			rp->lno = lno + 1;
-			rp->cno = clen - 1;
 
 			if (file_aline(sp, ep, lno, t, clen)) {
 mem:				if (bp == gp->tmp_bp)
