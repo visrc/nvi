@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_script.c,v 10.16 1996/03/06 19:52:37 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:52:37 $";
+static const char sccsid[] = "$Id: ex_script.c,v 10.17 1996/03/20 20:13:16 bostic Exp $ (Berkeley) $Date: 1996/03/20 20:13:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -378,13 +378,14 @@ sscr_input(sp)
 	fd_set rdfd;
 	int maxfd;
 
+	gp = sp->gp;
+
 loop:	maxfd = 0;
 	FD_ZERO(&rdfd);
 	poll.tv_sec = 0;
 	poll.tv_usec = 0;
 
 	/* Set up the input mask. */
-	gp = sp->gp;
 	for (sp = gp->dq.cqh_first; sp != (void *)&gp->dq; sp = sp->q.cqe_next)
 		if (F_ISSET(sp, S_SCRIPT)) {
 			FD_SET(sp->script->sh_master, &rdfd);
