@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_main.c,v 8.34 1996/12/18 14:49:49 bostic Exp $ (Berkeley) $Date: 1996/12/18 14:49:49 $";
+static const char sccsid[] = "$Id: m_main.c,v 8.35 1997/08/02 16:49:52 bostic Exp $ (Berkeley) $Date: 1997/08/02 16:49:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -253,8 +253,6 @@ main(argc, argv)
 	int argc;
 	char *argv[];
 {
-	int i_fd;
-
 	/*
 	 * Initialize the X widgetry.  We must do this before picking off
 	 * arguments as well-behaved X programs have common argument lists
@@ -266,10 +264,10 @@ main(argc, argv)
 	(void)signal(SIGCHLD, onchld);
 
 	/* Run vi: the parent returns, the child is the vi process. */
-	(void)vi_run(argc, argv, &i_fd, &vi_ofd, &pid);
+	(void)vi_run(argc, argv, &vi_ifd, &vi_ofd, &pid);
 
 	/* Tell X that we are interested in input on the pipe. */
-	XtAppAddInput(ctx, i_fd,
+	XtAppAddInput(ctx, vi_ifd,
 	    (XtPointer)XtInputReadMask, vi_input_func, NULL);
 
 	/* Main loop. */
