@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.52 1993/11/07 12:55:21 bostic Exp $ (Berkeley) $Date: 1993/11/07 12:55:21 $
+ *	$Id: screen.h,v 8.53 1993/11/08 11:06:15 bostic Exp $ (Berkeley) $Date: 1993/11/08 11:06:15 $
  */
 
 /*
@@ -262,9 +262,8 @@ typedef struct _scr {
 #define	S_SCRIPT	0x0020000	/* Window is a shell script. */
 #define	S_SRE_SET	0x0040000	/* The search RE has been set. */
 #define	S_SUBRE_SET	0x0080000	/* The substitute RE has been set. */
-#define	S_TERMSIGNAL	0x0100000	/* Termination signal received. */
-#define	S_TIMER_SET	0x0200000	/* If a busy timer is running. */
-#define	S_UPDATE_MODE	0x0400000	/* Don't repaint modeline. */
+#define	S_TIMER_SET	0x0100000	/* If a busy timer is running. */
+#define	S_UPDATE_MODE	0x0200000	/* Don't repaint modeline. */
 	u_int flags;
 } SCR;
 

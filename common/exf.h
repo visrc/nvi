@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 8.14 1993/11/01 11:33:39 bostic Exp $ (Berkeley) $Date: 1993/11/01 11:33:39 $
+ *	$Id: exf.h,v 8.15 1993/11/08 11:06:14 bostic Exp $ (Berkeley) $Date: 1993/11/08 11:06:14 $
  */
 					/* Undo direction. */
 enum udirection { UBACKWARD, UFORWARD };
@@ -34,21 +34,29 @@ typedef struct _exf {
 	struct list_entry marks;	/* Linked list of file MARK's. */
 
 	/*
-	 * If F_RCV_NORM is not set, rcv_path and rcv_mpath are unlinked
-	 * on file exit.  If rcv_path or rcv_mpath are not NULL, they are
-	 * free'd as well.  (This means that, on error, F_RCV_NORM will
-	 * normally be set.)
+	 * Paths for the recovery mail file and the vi recovery file and
+	 * a file descriptor for the former.  We keep a file descriptor
+	 * to the recovery file open and locked, while the file is in use.
+	 * This allows the recovery option to distinguish between files
+	 * that are live, and those that should be recovered.
+	 *
+	 * F_RCV_ON is set as long as we believe that the file is recoverable.
+	 * This doesn't mean that any initialization has been done, however.
+	 * If F_RCV_NORM is not set and rcv_path and rcv_mpath are not NULL,
+	 * they are unlinked on file exit.  If not NULL they are free'd on file
+	 * exit.  On file exit, if rcv_fd is not -1, it is closed.
 	 */
 	char	*rcv_path;		/* Recover file name. */
 	char	*rcv_mpath;		/* Recover mail file name. */
+	int	 rcv_fd;		/* Locked mail file descriptor. */
 
 #define	F_FIRSTMODIFY	0x001		/* File not yet modified. */
 #define	F_MODIFIED	0x002		/* File is currently dirty. */
 #define	F_MULTILOCK	0x004		/* Multiple processes running, lock. */
 #define	F_NOLOG		0x008		/* Logging turned off. */
-#define	F_RCV_ALRM	0x010		/* File should be synced. */
-#define	F_RCV_NORM	0x020		/* Don't remove the recovery file. */
-#define	F_RCV_ON	0x040		/* File is recoverable. */
+#define	F_RCV_ALRM	0x010		/* File needs to be synced. */
+#define	F_RCV_NORM	0x020		/* Don't delete recovery files. */
+#define	F_RCV_ON	0x040		/* Recovery is possible. */
 #define	F_UNDO		0x080		/* No change since last undo. */
 	u_int	 flags;
 } EXF;

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.38 1993/11/07 14:04:56 bostic Exp $ (Berkeley) $Date: 1993/11/07 14:04:56 $";
+static char sccsid[] = "$Id: exf.c,v 8.39 1993/11/08 11:06:11 bostic Exp $ (Berkeley) $Date: 1993/11/08 11:06:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -161,9 +161,16 @@ file_init(sp, frp, rcv_fname, force)
 		msgq(sp, M_ERR, "Error: %s", strerror(errno));
 		return (1);
 	}
-	memset(ep, 0, sizeof(EXF));
 
-	/* Set initial EXF flag bits. */
+	/*
+	 * Required ep initialization:
+	 *	Flush the line caches.
+	 *	Default recover mail file fd to -1.
+	 *	Set initial EXF flag bits.
+	 */
+	memset(ep, 0, sizeof(EXF));
+	ep->c_lno = ep->c_nlines = OOBLNO;
+	ep->rcv_fd = -1;
 	F_SET(ep, F_FIRSTMODIFY);
 
 	/*
@@ -289,9 +296,6 @@ file_init(sp, frp, rcv_fname, force)
 	    access(frp->fname, W_OK)))
 		F_SET(frp, FR_RDONLY);
 
-	/* Flush the line caches. */
-	ep->c_lno = ep->c_nlines = OOBLNO;
-
 	/* Start logging. */
 	log_init(sp, ep);
 
@@ -357,7 +361,6 @@ file_end(sp, ep, force)
 	int force;
 {
 	FREF *frp;
-	int termsignal;
 
 	/*
 	 * Save the cursor location.
@@ -375,36 +378,32 @@ file_end(sp, ep, force)
 	if (--ep->refcnt != 0)
 		return (0);
 
-	/*
-	 * The HUP and TERM signal handlers use this routine.  If the
-	 * S_TERMSIGNAL flag is set, we clean up and get out.  We very
-	 * specifically don't muck with linked lists or messages.
-	 */
-	termsignal = F_ISSET(sp, S_TERMSIGNAL);
-
 	/* Close the db structure. */
 	if (ep->db->close != NULL && ep->db->close(ep->db) && !force) {
-		if (!termsignal)
-		    msgq(sp, M_ERR,
-		        "%s: close: %s", frp->fname, strerror(errno));
+		msgq(sp, M_ERR, "%s: close: %s", frp->fname, strerror(errno));
 		return (1);
 	}
 
-	/* Committed to the close.  There's no going back... */
+	/* COMMITTED TO THE CLOSE.  THERE'S NO GOING BACK... */
 
-	/* Delete the recovery file. */
+	/*
+	 * Delete the recovery files, close the open descriptor,
+	 * free recovery memory.
+	 */
 	if (!F_ISSET(ep, F_RCV_NORM)) {
-		(void)unlink(ep->rcv_path);
-		(void)unlink(ep->rcv_mpath);
+		if (ep->rcv_path != NULL && unlink(ep->rcv_path))
+			msgq(sp, M_ERR,
+			    "%s: remove: %s", ep->rcv_path, strerror(errno));
+		if (ep->rcv_mpath != NULL && unlink(ep->rcv_mpath))
+			msgq(sp, M_ERR,
+			    "%s: remove: %s", ep->rcv_mpath, strerror(errno));
 	}
-
-	/* Free recovery memory. */
-	if (!termsignal) {
-		if (ep->rcv_path != NULL)
-			FREE(ep->rcv_path, strlen(ep->rcv_path));
-		if (ep->rcv_mpath != NULL)
-			FREE(ep->rcv_mpath, strlen(ep->rcv_mpath));
-	}
+	if (ep->rcv_fd != -1)
+		(void)close(ep->rcv_fd);
+	if (ep->rcv_path != NULL)
+		FREE(ep->rcv_path, strlen(ep->rcv_path));
+	if (ep->rcv_mpath != NULL)
+		FREE(ep->rcv_mpath, strlen(ep->rcv_mpath));
 
 	/* Stop logging. */
 	(void)log_end(sp, ep);
@@ -415,10 +414,10 @@ file_end(sp, ep, force)
 	 */
 	if (F_ISSET(frp, FR_UNLINK_TFILE)) {
 		F_CLR(frp, FR_UNLINK_TFILE);
-		if (unlink(frp->tname) && !termsignal)
+		if (unlink(frp->tname))
 			msgq(sp, M_ERR,
 			    "%s: remove: %s", frp->tname, strerror(errno));
-		if (!termsignal && F_ISSET(frp, FR_FREE_TNAME)) {
+		if (F_ISSET(frp, FR_FREE_TNAME)) {
 			F_CLR(frp, FR_FREE_TNAME);
 			FREE(frp->tname, strlen(frp->tname));
 		}
@@ -428,8 +427,7 @@ file_end(sp, ep, force)
 	mark_end(sp, ep);
 
 	/* Free the EXF structure. */
-	if (!termsignal)
-		FREE(ep, sizeof(EXF));
+	FREE(ep, sizeof(EXF));
 	return (0);
 }
 

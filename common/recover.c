@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.30 1993/11/07 14:07:14 bostic Exp $ (Berkeley) $Date: 1993/11/07 14:07:14 $";
+static char sccsid[] = "$Id: recover.c,v 8.31 1993/11/08 11:06:17 bostic Exp $ (Berkeley) $Date: 1993/11/08 11:06:17 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -81,7 +81,7 @@ rcv_tmp(sp, ep, fname)
 	 * If the recovery directory doesn't exist, try and create it.  As
 	 * the recovery files are themselves protected from reading/writing
 	 * by other than the owner, the worst that can happen is that a user
-	 * would have permission to remove other user's recovery files.  If
+	 * would have permission to remove other users recovery files.  If
 	 * the sticky bit has the BSD semantics, that too will be impossible.
 	 */
 	dp = O_STR(sp, O_DIRECTORY);
@@ -106,11 +106,14 @@ rcv_tmp(sp, ep, fname)
 	/*
 	 * !!!
 	 * We depend on mkstemp(3) setting the permissions correctly.
+	 * GP's, we do it ourselves, to keep the window as small as
+	 * possible.
 	 */
 	if ((fd = mkstemp(path)) == -1) {
 		msgq(sp, M_ERR, "Error: %s: %s", dp, strerror(errno));
 		return (1);
 	}
+	(void)chmod(path, S_IRUSR | S_IWUSR);
 	(void)close(fd);
 
 	if ((ep->rcv_path = strdup(path)) == NULL) {
@@ -118,6 +121,8 @@ rcv_tmp(sp, ep, fname)
 		(void)unlink(path);
 		return (1);
 	}
+
+	/* We believe the file is recoverable. */
 	F_SET(ep, F_RCV_ON);
 	return (0);
 }
@@ -139,21 +144,19 @@ rcv_init(sp, ep)
 
 	/* Build file to mail to the user. */
 	if (rcv_mailfile(sp, ep))
-		goto err1;
+		goto err;
 
 	/* Force read of entire file. */
 	if (file_lline(sp, ep, &lno))
-		goto err2;
+		goto err;
 
-	/* Turn on a busy message. */
+	/* Turn on a busy message, and sync it to backing store. */
 	busy_on(sp, 1, "Copying file for recovery...");
-
-	/* Sync it to backing store. */
 	if (ep->db->sync(ep->db, R_RECNOSYNC)) {
 		msgq(sp, M_ERR, "Preservation failed: %s: %s",
 		    ep->rcv_path, strerror(errno));
 		busy_off(sp);
-		goto err2;
+		goto err;
 	}
 	busy_off(sp);
 
@@ -170,18 +173,26 @@ rcv_init(sp, ep)
 		if (setitimer(ITIMER_REAL, &value, NULL)) {
 			msgq(sp, M_ERR,
 			    "Error: setitimer: %s", strerror(errno));
-			goto err2;
+err:			msgq(sp, M_ERR,
+			    "Recovery after system crash not possible.");
+			return (1);
 		}
 	}
 
+	/* We believe the file is recoverable. */
 	F_SET(ep, F_RCV_ON);
 	return (0);
+}
 
-err2:	(void)unlink(ep->rcv_mpath);
-	(void)unlink(ep->rcv_path);
-	F_SET(ep, F_RCV_NORM);
-err1:	msgq(sp, M_ERR, "Recovery after system crash not possible.");
-	return (1);
+/*
+ * rcv_alrm --
+ *	Recovery timer interrupt handler.
+ */
+static void
+rcv_alrm(signo)
+	int signo;
+{
+	F_SET(__global_list, G_SIGALRM);
 }
 
 /*
@@ -214,6 +225,16 @@ rcv_mailfile(sp, ep)
 		    "Error: %s: %s", O_STR(sp, O_DIRECTORY), strerror(errno));
 		return (1);
 	}
+
+	/*
+	 * We keep an open lock on the file so that the recover option can
+	 * distinguish between files that are live and those that need to
+	 * be recovered.  There's an obvious window between the mkstemp call
+	 * and the lock, but it's pretty small.
+	 */
+	if ((ep->rcv_fd = dup(fd)) != -1)
+		(void)flock(ep->rcv_fd, LOCK_EX | LOCK_NB);
+
 	if ((ep->rcv_mpath = strdup(path)) == NULL) {
 		(void)fclose(fp);
 		msgq(sp, M_ERR, "Error: %s", strerror(errno));
@@ -247,23 +268,11 @@ rcv_mailfile(sp, ep)
 	    "to this file using the -l and -r options to nvi(1)",
 	    "or nex(1).");
 
-	if (ferror(fp)) {
+	if (fflush(fp) || ferror(fp)) {
 		sverrno = errno;
 		(void)fclose(fp);
 		errno = sverrno;
-		goto err;
-	}
-	if (fclose(fp)) {
 err:		msgq(sp, M_ERR, "Error: %s", strerror(errno));
-
-		/*
-		 * XXX
-		 * Without a mail file, a recovery file is pretty useless.
-		 * This might be worth fixing.
-		 */
-		(void)unlink(ep->rcv_mpath);
-		(void)unlink(ep->rcv_path);
-		F_SET(ep, F_RCV_NORM);
 		return (1);
 	}
 	return (0);
@@ -293,17 +302,6 @@ rcv_sync(sp, ep)
 }
 
 /*
- * rcv_alrm --
- *	Recovery timer interrupt handler.
- */
-static void
-rcv_alrm(signo)
-	int signo;
-{
-	F_SET(__global_list, G_SIGALRM);
-}
-
-/*
  * rcv_hup --
  *	Recovery SIGHUP interrupt handler.  (Modem line dropped, or
  *	xterm window closed.)
@@ -324,14 +322,13 @@ rcv_hup()
 	 * the recipients instead of us specifying them some other way.
 	 */
 	for (sp = __global_list->screens.le_next;
-	    sp != NULL; sp = sp->screenq.qe_next) {
-		F_SET(sp, S_TERMSIGNAL);
+	    sp != NULL; sp = sp->screenq.qe_next)
 		if (sp->ep != NULL) {
 			if (F_ISSET(sp->ep, F_MODIFIED) &&
 			    F_ISSET(sp->ep, F_RCV_ON)) {
 				(void)sp->ep->db->sync(sp->ep->db, R_RECNOSYNC);
-				F_CLR(sp->ep, F_RCV_ON);
 				F_SET(sp->ep, F_RCV_NORM);
+
 				(void)snprintf(comm, sizeof(comm),
 				    "%s -t < %s", _PATH_SENDMAIL,
 				    sp->ep->rcv_mpath);
@@ -339,7 +336,6 @@ rcv_hup()
 			}
 			(void)file_end(sp, sp->ep, 1);
 		}
-	}
 
 	/*
 	 * Die with the proper exit status.  Don't bother using
@@ -366,18 +362,15 @@ rcv_term()
 	 * each file once.
 	 */
 	for (sp = __global_list->screens.le_next;
-	    sp != NULL; sp = sp->screenq.qe_next) {
-		F_SET(sp, S_TERMSIGNAL);
+	    sp != NULL; sp = sp->screenq.qe_next)
 		if (sp->ep != NULL) {
 			if (F_ISSET(sp->ep, F_MODIFIED) &&
 			    F_ISSET(sp->ep, F_RCV_ON)) {
 				(void)sp->ep->db->sync(sp->ep->db, R_RECNOSYNC);
-				F_CLR(sp->ep, F_RCV_ON);
 				F_SET(sp->ep, F_RCV_NORM);
 			}
 			(void)file_end(sp, sp->ep, 1);
 		}
-	}
 
 	/*
 	 * Die with the proper exit status.  Don't bother using
@@ -422,6 +415,12 @@ rcv_list(sp)
 		/* If it's readable, it's recoverable. */
 		if ((fp = fopen(dp->d_name, "r")) == NULL)
 			continue;
+
+		/* If it's locked, it's live. */
+		if (flock(fileno(fp), LOCK_EX | LOCK_NB)) {
+			(void)fclose(fp);
+			continue;
+		}
 
 		/* Check the header, get the file name. */
 		if (fgets(file, sizeof(file), fp) == NULL ||
@@ -488,6 +487,12 @@ rcv_read(sp, name)
 		    "%s/%s", O_STR(sp, O_DIRECTORY), dp->d_name);
 		if ((fp = fopen(recpath, "r")) == NULL)
 			continue;
+
+		/* If it's locked, it's live. */
+		if (flock(fileno(fp), LOCK_EX | LOCK_NB)) {
+			(void)fclose(fp);
+			continue;
+		}
 
 		/* Check the headers. */
 		if (fgets(file, sizeof(file), fp) == NULL ||
