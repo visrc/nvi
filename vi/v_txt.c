@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 5.4 1993/04/13 16:24:35 bostic Exp $ (Berkeley) $Date: 1993/04/13 16:24:35 $";
+static char sccsid[] = "$Id: v_txt.c,v 5.5 1993/04/17 12:02:39 bostic Exp $ (Berkeley) $Date: 1993/04/17 12:02:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -20,7 +20,6 @@ static char sccsid[] = "$Id: v_txt.c,v 5.4 1993/04/13 16:24:35 bostic Exp $ (Ber
 #include "vi.h"
 #include "vcmd.h"
 
-static int	 txt_auto __P((SCR *, EXF *, recno_t, TEXT *));
 static TEXT	*txt_backup __P((SCR *, EXF *, HDR *, TEXT *, u_int));
 static void	 txt_err __P((SCR *, EXF *, HDR *));
 static int	 txt_indent __P((SCR *, TEXT *));
@@ -75,7 +74,6 @@ v_ntext(sp, ep, hp, tm, p, len, rp, prompt, ai_line, flags)
 	enum { Q_NOTSET, Q_NEXTCHAR, Q_THISCHAR } quoted;
 	TEXT *tp, *ntp;		/* Input text structures. */
 	size_t rcol;		/* 0-N: insert offset in the replay buffer. */
-	int carat_ch;		/* Character after the ^ character. */
 	int ch;			/* Input character. */
 	int eval;		/* Routine return value. */
 	int replay;		/* If replaying a set of input. */
@@ -97,11 +95,12 @@ v_ntext(sp, ep, hp, tm, p, len, rp, prompt, ai_line, flags)
 
 	/*
 	 * Get a TEXT structure with some initial buffer space.  (All
-	 * TEXT bookkeeping fields default to 0, and txt_new() takes care
+	 * TEXT bookkeeping fields default to 0, and text_init() handles
 	 * of this.  If changing a line, copy it into the TEXT buffer.
 	 */
-	if ((tp = txt_new(sp, hp, p, len, len + 32)) == NULL)
+	if ((tp = text_init(sp, p, len, len + 32)) == NULL)
 		return (1);
+	HDR_INSERT(tp, hp, next, prev, TEXT);
 
 	/* Set the starting line number. */
 	tp->lno = sp->lno;
@@ -185,7 +184,7 @@ v_ntext(sp, ep, hp, tm, p, len, rp, prompt, ai_line, flags)
 		SCREEN_UPDATE(sp, ep, tp->lno, LINE_RESET);
 		
 next_ch:	if (replay)
-			ch = sp->rep[rcol];
+			ch = sp->rep[rcol++];
 		else {
 			/* Get the character. */
 			ch = getkey(sp, flags & TXT_GETKEY_MASK);
@@ -233,21 +232,17 @@ next_ch:	if (replay)
 			/*						\
 			 * If the user has not inserted any characters,	\
 			 * delete any autoindent characters.  We can	\
-			 * safely ignore tp->offset here, since it's	\
-			 * greater than tp->ai if it's non-zero (as	\
-			 * tp->ai will be 0), and therefore the test	\
-			 * (sp->cno <= tp->ai) will fail.		\
+			 * safely ignore most everything else here, as	\
+			 * autoindent only applies to empty lines.	\
+			 * Otherwise, delete any appended cursor.	\
 			 */						\
 			if (LF_ISSET(TXT_AUTOINDENT) &&			\
 			    sp->cno <= tp->ai) {			\
-				tp->overwrite += sp->cno;		\
+				tp->insert = tp->len =			\
+				    tp->overwrite = 0;			\
 				sp->cno = 0;				\
 				F_SET(sp, S_CHARDELETED);		\
-			}						\
-			/* Delete any appended cursor character. */	\
-			if (LF_ISSET(TXT_APPENDEOL)) {			\
-				if (sp->cno > 0)			\
-					--sp->cno;			\
+			} else if (LF_ISSET(TXT_APPENDEOL)) {		\
 				--tp->len;				\
 				--tp->insert;				\
 				F_SET(sp, S_CHARDELETED);		\
@@ -259,20 +254,22 @@ next_ch:	if (replay)
 			LINE_RESOLVE;
 
 			/*
-			 * Move remaining insert characters in the line into
+			 * Move any remaining insert characters into
 			 * a new TEXT structure.
 			 */
-			if ((ntp = txt_new(sp, hp,
-			    tp->lb + sp->cno + tp->overwrite, tp->insert,
-			    tp->insert + 32)) == NULL)
+			if ((ntp = text_init(sp,
+			    tp->lb + sp->cno + tp->overwrite,
+			    tp->insert, tp->insert + 32)) == NULL)
 				ERR;
-
-			/* Reset bookkeeping for the old line. */
-			tp->len = sp->cno + 1 + tp->insert;
-			tp->insert = tp->overwrite = 0;
+			HDR_INSERT(ntp, hp, next, prev, TEXT);
 
 			/* Set bookkeeping for the new line. */
 			ntp->lno = tp->lno + 1;
+			ntp->insert = tp->insert;
+
+			/* Reset bookkeeping for the old line. */
+			tp->len = sp->cno;
+			tp->ai = tp->insert = tp->overwrite = 0;
 
 			/* New lines are always TXT_AUTOINDENT. */
 			if (!LF_ISSET(TXT_AUTOINDENT))
@@ -286,10 +283,7 @@ next_ch:	if (replay)
 				ERR;
 			sp->cno = ntp->ai;
 			
-			/*
-			 * New lines are always TXT_APPENDEOL.  If no insert
-			 * characters, add in the cursor character.
-			 */
+			/* New lines are TXT_APPENDEOL if nothing to insert. */
 			if (ntp->insert == 0) {
 				TBINC(sp, tp->lb, tp->lb_len, tp->len + 1);
 				LF_SET(TXT_APPENDEOL);
@@ -326,14 +320,6 @@ k_escape:		LINE_RESOLVE;
 			tp->len -= tp->overwrite;
 
 			/*
-			 * It's possible for the cursor to be one past the
-			 * line's end, now, for example, a change to a mark
-			 * where characters were deleted.
-			 */
-			if (tp->len == sp->cno)
-				--sp->cno;
-
-			/*
 			 * Delete any lines that were inserted into the text
 			 * structure and then erased.
 			 */
@@ -360,7 +346,7 @@ k_escape:		LINE_RESOLVE;
 			 */
 			if (rp != NULL) {
 				rp->lno = tp->lno;
-				rp->cno = sp->cno;
+				rp->cno = sp->cno ? sp->cno - 1 : 0;
 			}
 			goto ret;
 		case K_CARAT:			/* Delete autoindent chars. */
@@ -559,8 +545,8 @@ ins_ch:			if (tp->overwrite) {	/* Overwrite a character. */
 			    "len %u != cno: %u ai: %u insert %u overwrite %u",
 			    tp->len, sp->cno, tp->ai, tp->insert,
 			    tp->overwrite);
-#endif
 		tp->len = sp->cno + tp->insert + tp->overwrite;
+#endif
 	}
 
 	/* Clear input, text buffer in-use flags. */
@@ -574,7 +560,7 @@ ret:	F_CLR(sp, S_INPUT);
  * txt_auto --
  *	Handle autoindent.
  */
-static int
+int
 txt_auto(sp, ep, lno, tp)
 	SCR *sp;
 	EXF *ep;
@@ -607,7 +593,7 @@ txt_auto(sp, ep, lno, tp)
 	BINC(sp, tp->lb, tp->lb_len, nlen + tp->len);
 
 	/* Copy the indentation into the new buffer. */
-	memmove(tp->lb + nlen, tp->lb, nlen);
+	memmove(tp->lb + nlen, tp->lb, tp->len);
 	memmove(tp->lb, t, nlen);
 	tp->len += nlen;
 
@@ -792,7 +778,7 @@ txt_outdent(sp, tp)
 	for (cno = scno; --scno % sw != 0;);
 
 	/* Decrement characters until less than or equal to that slot. */
-	for (; cno > scno; --sp->cno, --tp->ai, --tp->len, ++tp->overwrite)
+	for (; cno > scno; --sp->cno, --tp->ai, ++tp->overwrite)
 		if (tp->lb[--off] == '\t')
 			cno -= STOP_OFF(cno, ts);
 		else
