@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_zexit.c,v 5.6 1992/05/15 11:14:27 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:14:27 $";
+static char sccsid[] = "$Id: v_zexit.c,v 5.7 1992/06/16 07:40:36 bostic Exp $ (Berkeley) $Date: 1992/06/16 07:40:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,31 +19,20 @@ static char sccsid[] = "$Id: v_zexit.c,v 5.6 1992/05/15 11:14:27 bostic Exp $ (B
 #include "extern.h"
 
 /*
- * v_xit --
- *	Same as the ex command "xit".
+ * v_exit -- ZZ
+ *	Save the file and exit.
  */
-/* ARGSUSED */
-MARK *
-v_xit(m, cnt, key)
-	MARK	*m;	/* ignored */
-	long	cnt;	/* ignored */
-	int	key;	/* must be a second 'Z' */
+int
+v_exit(vp, fm, tm, rp)
+	VICMDARG *vp;
+	MARK *fm, *tm, *rp;
 {
 	EXCMDARG cmd;
-	/* if second char wasn't 'Z', fail */
-	if (key != 'Z')
-	{
-		return NULL;
-	}
 
-	/* move the cursor to the bottom of the screen */
-	move(LINES - 1, 0);
-	clrtoeol();
+	v_startex();
 
-	/* do the xit command */
-	SETCMDARG(cmd, C_XIT, 2, m->lno, m->lno, 0, "");
-	ex_xit(&cmd);
-
-	/* return the cursor */
-	return m;
+	SETCMDARG(cmd, C_WQ, 0, OOBLNO, OOBLNO, 0, NULL);
+	(void)ex_wq(&cmd);
+	v_leaveex();
+	return (1);
 }
