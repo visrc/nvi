@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.23 1992/04/22 09:27:29 bostic Exp $ (Berkeley) $Date: 1992/04/22 09:27:29 $";
+static char sccsid[] = "$Id: ex.c,v 5.24 1992/04/27 16:02:43 bostic Exp $ (Berkeley) $Date: 1992/04/27 16:02:43 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -14,6 +14,7 @@ static char sccsid[] = "$Id: ex.c,v 5.23 1992/04/22 09:27:29 bostic Exp $ (Berke
 #include <termios.h>
 #include <fcntl.h>
 #include <glob.h>
+#include <curses.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -21,7 +22,6 @@ static char sccsid[] = "$Id: ex.c,v 5.23 1992/04/22 09:27:29 bostic Exp $ (Berke
 #include <string.h>
 
 #include "vi.h"
-#include "curses.h"
 #include "excmd.h"
 #include "options.h"
 #include "tty.h"
@@ -42,24 +42,17 @@ ex()
 {
 	char *p;
 
-	while (mode == MODE_EX &&
-	    (p = gb(ISSET(O_PROMPT) ? ':' : 0, 0)) != NULL)
-		if (*p == '\0') {
-			qaddch('\r');
-			clrtoeol();
-			refresh();
-			(void)ex_cmd(".+1");
-		} else {
-			qaddch('\n');
-			qaddch('\r');
-			refresh();
-			(void)ex_cmd(p);
-		}
+	while (mode == MODE_EX) 
+		if ((p = gb(ISSET(O_PROMPT) ? ':' : 0, 0)) != NULL)
+			if (*p)
+				ex_cstring(p, strlen(p), 0);
+			else
+				ex_cstring(".+1", 3, 0);
 }
 
 /*
  * ex_cfile --
- *	Execute EX commands from a file.
+ *	Execute ex commands from a file.
  */
 int
 ex_cfile(filename, noexisterr)
@@ -77,8 +70,8 @@ ex_cfile(filename, noexisterr)
 	}
 	if (fstat(fd, &sb))
 		goto e2;
-	/* Add in +1 so can guarantee a trailing EOS. */
-	if ((bp = malloc(sb.st_size + 1)) == NULL)
+
+	if ((bp = malloc(sb.st_size)) == NULL)
 		goto e2;
 
 	len = read(fd, bp, sb.st_size);
@@ -89,7 +82,7 @@ ex_cfile(filename, noexisterr)
 	}
 	bp[sb.st_size] = '\0';
 
-	rval = ex_cstring(bp, len + 1, 1);
+	rval = ex_cstring(bp, len, 1);
 	free(bp);
 	(void)close(fd);
 	return (rval);
@@ -103,8 +96,7 @@ e1:	msg("%s: %s.", filename, strerror(errno));
 /*
  * ex_cstring --
  *	Execute EX commands from a string.  The commands may be separated
- *	by newlines or by | characters, and may be quoted.  The string is
- *	expected to be EOS terminated.
+ *	by newlines or by | characters, and may be quoted.
  */
 int
 ex_cstring(cmd, len, doquoting)
@@ -116,42 +108,43 @@ ex_cstring(cmd, len, doquoting)
 	char *start;
 
 	/*
-	 * Walk the command, checking for ^V quotes.  The string "^V\n"
-	 * is treated as a single ^V.
+	 * Walk the string, checking for '^V' quotes and '|' or '\n'
+	 * separated commands.  The string "^V\n" is a single '^V'.
 	 */
-	for (p = t = cmd; len; ++p) {
-		if (doquoting)
-			QINIT;
-		for (cnt = 0; len--; ++cnt) {
-			if (doquoting && cnt == cblen)
-				gb_inc();
-			switch(*p) {
-			case '|':
-			case '\n':
-				*p = '\0';
-				/* FALLTHROUGH */
-			case '\0':
-				if (p > cmd) {
-					if (ex_cmd(cmd))
-						return (1);
-				}
-				++p;
-				goto cont;
-			case ctrl('V'):
-				if (doquoting && len > 1 && p[1] != '\n') {
-					QSET(cnt);
-					++p;
-					--len;
-				}
-				/* FALLTHROUGH */
-			default:
-				*p++ = *t++;
-				break;
+	if (doquoting)
+		QINIT;
+	for (p = t = cmd, cnt = 0;; ++cnt, ++t, --len) {
+		if (len == 0)
+			goto cend;
+		if (doquoting && cnt == cblen)
+			gb_inc();
+		switch(*t) {
+		case '|':
+		case '\n':
+cend:			if (p > cmd) {
+				*p = '\0';	/* XXX: 8BIT */
+				if (ex_cmd(cmd))
+					return (1);
+				p = cmd;
 			}
+			if (len == 0)
+				return (0);
+			if (doquoting)
+				QINIT;
+			break;
+		case ctrl('V'):
+			if (doquoting && len > 1 && t[1] != '\n') {
+				QSET(cnt);
+				++t;
+				--len;
+			}
+			/* FALLTHROUGH */
+		default:
+			*p++ = *t;
+			break;
 		}
-cont:		continue;
 	}
-	return (0);
+	/* NOTREACHED */
 }
 
 static EXCMDARG parg = { NULL, 2 };
@@ -219,7 +212,7 @@ ex_cmd(exc)
 			for (p = exc; isalpha(*exc); ++exc);
 			cmdlen = exc - p;
 		}
-		for (cp = cmds; cp->name && strncmp(p, cp->name, cmdlen); ++cp);
+		for (cp = cmds; cp->name && bcmp(p, cp->name, cmdlen); ++cp);
 		if (cp->name == NULL) {
 			msg("The %.*s command is unknown.", cmdlen, p);
 			return (1);
@@ -241,12 +234,14 @@ ex_cmd(exc)
 	}
 
 	/*
-	 * Set the default addresses.  It's an error to specify an address
-	 * for a command that doesn't take addresses.  If two addresses are
-	 * specified for a command that only takes one, lose the first one.
-	 * A nasty special case here, some commands take 0 or 2 addresses.
+	 * Set the default addresses.  It's an error to specify an address for
+	 * a command that doesn't take them.  If two addresses are specified
+	 * for a command that only takes one, lose the first one.  Two special
+	 * cases here, some commands take 0 or 2 addresses.  For most of them
+	 * (the E_ADDR2_ALL flag), 0 defaults to the entire file.  For one
+	 * (the `!' command, the E_ADDR2_NONE flag), 0 defaults to no lines.
 	 */
-addr1:	switch(cp->flags & (E_ADDR1|E_ADDR2|E_ADDR2_OR_0)) {
+addr1:	switch(cp->flags & (E_ADDR1|E_ADDR2|E_ADDR2_ALL|E_ADDR2_NONE)) {
 	case E_ADDR1:				/* One address: */
 		switch(cmd.addrcnt) {
 		case 0:				/* Default to cursor. */
@@ -260,7 +255,11 @@ addr1:	switch(cp->flags & (E_ADDR1|E_ADDR2|E_ADDR2_OR_0)) {
 			cmd.addr1 = cmd.addr2;
 		}
 		break;
-	case E_ADDR2_OR_0:			/* Zero or two addresses: */
+	case E_ADDR2_NONE:			/* Zero/two addresses: */
+		if (cmd.addrcnt == 0)		/* Default to nothing. */
+			break;
+		goto two;
+	case E_ADDR2_ALL:			/* Zero/two addresses: */
 		if (cmd.addrcnt == 0) {		/* Default to entire file. */
 			cmd.addrcnt = 2;
 			cmd.addr1 = MARK_FIRST;
@@ -269,7 +268,7 @@ addr1:	switch(cp->flags & (E_ADDR1|E_ADDR2|E_ADDR2_OR_0)) {
 		}
 		/* FALLTHROUGH */
 	case E_ADDR2:				/* Two addresses: */
-		switch(cmd.addrcnt) {
+two:		switch(cmd.addrcnt) {
 		case 0:				/* Default to cursor. */
 			cmd.addrcnt = 2;
 			cmd.addr1 = cmd.addr2 = cursor;
@@ -477,13 +476,7 @@ addr2:	switch(cmd.addrcnt) {
 	/* If doing a default command, vi just moves to the line. */
 	if (mode == MODE_VI && cp == lastcmd) {
 		cursor = cmd.addr1;
-		return;
-	}
-
-	/* Write a newline if called from visual mode. */
-	if (cp->flags & E_NL && mode != MODE_EX && !exwrote) {
-		addch('\n');
-		ex_refresh();
+		return (0);
 	}
 
 	/* Reset "last" command. */
@@ -491,7 +484,7 @@ addr2:	switch(cmd.addrcnt) {
 		lastcmd = cp;
 
 	cmd.cmd = cp;
-#if defined(DEBUG)
+#if defined(DEBUG) && 1
 {
 	int __cnt;
 
@@ -526,10 +519,9 @@ addr2:	switch(cmd.addrcnt) {
 		return (1);
 
 	/*
-	 * If the command was successful, and either there was an
-	 * explicit flag to display the new cursor line, or we're
-	 * in ex, autoprint is set, and a change was made, display
-	 * the line.
+	 * If the command was successful, and there was an explicit flag to
+	 * display the new cursor line, or we're in ex mode, autoprint is set,
+	 * and a change was made, display the line.
 	 */
 	flags = cmd.flags & (E_F_HASH|E_F_LIST|E_F_PRINT);
 	if (flags) {
@@ -554,6 +546,7 @@ addr2:	switch(cmd.addrcnt) {
 			break;
 		}
 	}
+	return (0);
 }
 
 /*
@@ -675,9 +668,9 @@ linespec(cmd, cp)
 	}
 
 	/*
+	 * XXX
 	 * This is probably not right for treatment of savecursor -- figure
 	 * out what the historical ex did for ";,;,;5p" or similar stupidity.
-	 * XXX
 	 */
 done:	if (savecursor != MARK_UNSET)
 		cursor = savecursor;
