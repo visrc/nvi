@@ -248,3 +248,41 @@ int		count;
 	success = XtConvertAndStore( wid, XtRString, &from, kind, &to );
     }
 }
+
+
+#if defined(__STDC__)
+void	XutSetIcon( Widget wid, int height, int width, Pixmap p )
+#else
+void	XutSetIcon( wid, height, width, p )
+Widget	wid;
+int	height, width;
+Pixmap	p;
+#endif
+{
+    Display	*display = XtDisplay(wid);
+    Window	win;
+
+    /* best bet is to set the icon window */
+    XtVaGetValues( wid, XtNiconWindow, &win, 0 );
+
+    if ( win == None ) {
+	win = XCreateSimpleWindow( display,
+				   RootWindow( display, Screen ),
+				   0, 0,
+				   width, height,
+				   0,
+				   CopyFromParent,
+				   CopyFromParent
+				   );
+    }
+
+    if ( win != None ) {
+	XtVaSetValues( wid, XtNiconWindow, win, 0 );
+	XSetWindowBackgroundPixmap( display, win, p );
+    }
+
+    else {
+	/* do it the old fashioned way */
+	XtVaSetValues( wid, XtNiconPixmap, p, 0 );
+    }
+}

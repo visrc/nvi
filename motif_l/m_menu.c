@@ -347,7 +347,11 @@ XtPointer	call_data;
 XtPointer	client_data;
 #endif
 {
+#if 0
     send_command_string( ":E" );
+#else
+    split_screen();
+#endif
 }
 
 
