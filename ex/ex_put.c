@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_put.c,v 5.21 1993/04/05 07:11:43 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:11:43 $";
+static char sccsid[] = "$Id: ex_put.c,v 5.22 1993/04/20 18:42:29 bostic Exp $ (Berkeley) $Date: 1993/04/20 18:42:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,16 +27,10 @@ ex_put(sp, ep, cmdp)
 	CB *cb;
 	int buffer;
 
-	if (cmdp->buffer == OOBCB)
-		buffer = DEFCB;
-	else {
-		buffer = cmdp->buffer;
-		CBNAME(sp, buffer, cb);
-	}
-	
 	m.lno = sp->lno;
 	m.cno = sp->cno;
-	if (put(sp, ep, buffer, &cmdp->addr1, &m, 1))
+	if (put(sp, ep,
+	    cmdp->buffer == OOBCB ? DEFCB : cmdp->buffer, &cmdp->addr1, &m, 1))
 		return (1);
 
 	F_SET(sp, S_AUTOPRINT);
