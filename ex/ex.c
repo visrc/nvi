@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.154 1994/08/14 11:03:17 bostic Exp $ (Berkeley) $Date: 1994/08/14 11:03:17 $";
+static char sccsid[] = "$Id: ex.c,v 8.155 1994/08/14 11:04:14 bostic Exp $ (Berkeley) $Date: 1994/08/14 11:04:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -224,7 +224,6 @@ ex_icmd(sp, ep, cmd, len, needsep)
 	 * Previous versions of nvi cleared mapped characters on error.  This
 	 * feature was removed when users complained that it wasn't historic
 	 * practice.
-	 */
 	 */
 	CLR_INTERRUPT(sp);
 	return (ex_cmd(sp, ep, cmd, len, needsep));
