@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 8.24 1993/12/16 13:01:15 bostic Exp $ (Berkeley) $Date: 1993/12/16 13:01:15 $";
+static char sccsid[] = "$Id: ex_argv.c,v 8.25 1993/12/19 19:35:12 bostic Exp $ (Berkeley) $Date: 1993/12/19 19:35:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -408,6 +408,7 @@ mem:			msgq(sp, M_SYSERR, NULL);
 	}						
 	/* 0 length serves as end-of-argument marker. */
 	exp->args[off]->len = 0;			
+	return (0);
 }
 
 /*
