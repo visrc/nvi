@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 9.6 1995/01/11 16:15:56 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:15:56 $";
+static char sccsid[] = "$Id: ex_subst.c,v 9.7 1995/01/11 18:47:55 bostic Exp $ (Berkeley) $Date: 1995/01/11 18:47:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -134,7 +134,7 @@ subagain:	return (ex_subagain(sp, cmdp));
 	 * last substitution RE).
 	 */
 	if (*ptrn == '\0') {
-		if (!F_ISSET(sp, S_SRE_SET)) {
+		if (!F_ISSET(sp, S_RE_SEARCH)) {
 			ex_message(sp, NULL, EXM_NOPREVRE);
 			return (1);
 		}
@@ -173,9 +173,9 @@ subagain:	return (ex_subagain(sp, cmdp));
 		 */
 		sp->searchdir = FORWARD;
 		sp->sre = lre;
-		F_SET(sp, S_SRE_SET);
+		F_SET(sp, S_RE_SEARCH);
 		sp->subre = lre;
-		F_SET(sp, S_SUBRE_SET);
+		F_SET(sp, S_RE_SUBST);
 
 		re = &lre;
 		flags = SUB_FIRST;
@@ -273,7 +273,7 @@ ex_subagain(sp, cmdp)
 	SCR *sp;
 	EXCMDARG *cmdp;
 {
-	if (!F_ISSET(sp, S_SUBRE_SET)) {
+	if (!F_ISSET(sp, S_RE_SUBST)) {
 		ex_message(sp, NULL, EXM_NOPREVRE);
 		return (1);
 	}
@@ -292,7 +292,7 @@ ex_subtilde(sp, cmdp)
 	SCR *sp;
 	EXCMDARG *cmdp;
 {
-	if (!F_ISSET(sp, S_SRE_SET)) {
+	if (!F_ISSET(sp, S_RE_SEARCH)) {
 		ex_message(sp, NULL, EXM_NOPREVRE);
 		return (1);
 	}
@@ -456,7 +456,7 @@ s(sp, cmdp, s, re, flags)
 		    "158|Regular expression specified; r flag meaningless");
 				return (1);
 			}
-			if (!F_ISSET(sp, S_SRE_SET)) {
+			if (!F_ISSET(sp, S_RE_SEARCH)) {
 				ex_message(sp, NULL, EXM_NOPREVRE);
 				return (1);
 			}

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 9.4 1995/01/11 16:15:32 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:15:32 $";
+static char sccsid[] = "$Id: ex_global.c,v 9.5 1995/01/11 18:47:39 bostic Exp $ (Berkeley) $Date: 1995/01/11 18:47:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -120,7 +120,7 @@ usage:		ex_message(sp, cmdp->cmd, EXM_USAGE);
 
 	/* If the pattern string is empty, use the last one. */
 	if (*ptrn == '\0') {
-		if (!F_ISSET(sp, S_SRE_SET)) {
+		if (!F_ISSET(sp, S_RE_SEARCH)) {
 			ex_message(sp, NULL, EXM_NOPREVRE);
 			return (1);
 		}
@@ -156,7 +156,7 @@ usage:		ex_message(sp, cmdp->cmd, EXM_USAGE);
 		 */
 		sp->sre = lre;
 		sp->searchdir = FORWARD;
-		F_SET(sp, S_SRE_SET);
+		F_SET(sp, S_RE_SEARCH);
 	}
 
 	/*
@@ -176,7 +176,7 @@ usage:		ex_message(sp, cmdp->cmd, EXM_USAGE);
 	 * the everything-else RE.
 	 */
 	sp->subre = sp->sre;
-	F_SET(sp, S_SUBRE_SET);
+	F_SET(sp, S_RE_SUBST);
 
 	/* Set the global flag. */
 	F_SET(sp, S_GLOBAL);
