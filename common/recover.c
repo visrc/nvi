@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.18 1993/09/16 09:08:20 bostic Exp $ (Berkeley) $Date: 1993/09/16 09:08:20 $";
+static char sccsid[] = "$Id: recover.c,v 8.19 1993/09/29 16:16:25 bostic Exp $ (Berkeley) $Date: 1993/09/29 16:16:25 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -543,13 +543,10 @@ rcv_read(sp, name)
 	}
 
 	/* Start the btree file. */
-	if ((ep = file_init(sp,
-	    NULL, frp, path + sizeof(VI_PHEADER) - 1)) == NULL) {
+	if (file_init(sp, frp, path + sizeof(VI_PHEADER) - 1), 0) {
 		FREE(p, strlen(p));
 		return (1);
 	}
 	ep->rcv_mpath = p;
-	sp->ep = ep;
-	sp->frp = frp;
 	return (0);
 }

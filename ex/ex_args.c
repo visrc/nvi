@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 8.3 1993/09/28 15:21:40 bostic Exp $ (Berkeley) $Date: 1993/09/28 15:21:40 $";
+static char sccsid[] = "$Id: ex_args.c,v 8.4 1993/09/29 16:16:44 bostic Exp $ (Berkeley) $Date: 1993/09/29 16:16:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -57,10 +57,9 @@ ex_next(sp, ep, cmdp)
 		return (1);
 	}
 
-	if ((sp->n_ep = file_init(sp, NULL, frp, NULL)) == NULL)
+	if (file_init(sp, frp, NULL, F_ISSET(cmdp, E_FORCE)))
 		return (1);
-	sp->n_frp = frp;
-	F_SET(sp, F_ISSET(cmdp, E_FORCE) ? S_FSWITCH_FORCE : S_FSWITCH);
+	F_SET(sp, S_FSWITCH);
 	return (0);
 }
 
@@ -81,10 +80,9 @@ ex_prev(sp, ep, cmdp)
 		return (1);
 	}
 
-	if ((sp->n_ep = file_init(sp, NULL, sp->p_frp, NULL)) == NULL)
+	if (file_init(sp, sp->p_frp, NULL, F_ISSET(cmdp, E_FORCE)))
 		return (1);
-	sp->n_frp = sp->p_frp;
-	F_SET(sp, F_ISSET(cmdp, E_FORCE) ? S_FSWITCH_FORCE : S_FSWITCH);
+	F_SET(sp, S_FSWITCH);
 	return (0);
 }
 
@@ -113,10 +111,9 @@ ex_rew(sp, ep, cmdp)
 	    tfrp != (FREF *)&sp->frefhdr; tfrp = tfrp->next)
 		F_CLR(tfrp, FR_EDITED);
 
-	if ((sp->n_ep = file_init(sp, NULL, frp, NULL)) == NULL)
+	if (file_init(sp, frp, NULL, F_ISSET(cmdp, E_FORCE)))
 		return (1);
-	sp->n_frp = frp;
-	F_SET(sp, F_ISSET(cmdp, E_FORCE) ? S_FSWITCH_FORCE : S_FSWITCH);
+	F_SET(sp, S_FSWITCH);
 	return (0);
 }
 

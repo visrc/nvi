@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 8.9 1993/09/27 16:18:13 bostic Exp $ (Berkeley) $Date: 1993/09/27 16:18:13 $
+ *	$Id: exf.h,v 8.10 1993/09/29 16:15:27 bostic Exp $ (Berkeley) $Date: 1993/09/29 16:15:27 $
  */
 
 					/* Undo direction. */
@@ -70,7 +70,7 @@ FREF	*file_next __P((SCR *, int));
 
 /* EXF routines. */
 int	 file_end __P((SCR *, EXF *, int));
-EXF	*file_init __P((SCR *, EXF *, FREF *, char *));
+int	 file_init __P((SCR *, FREF *, char *, int));
 int	 file_write __P((SCR *, EXF *, MARK *, MARK *, char *, int));
 
 /* DB interface routines */

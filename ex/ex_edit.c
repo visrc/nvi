@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 8.8 1993/09/28 15:21:43 bostic Exp $ (Berkeley) $Date: 1993/09/28 15:21:43 $";
+static char sccsid[] = "$Id: ex_edit.c,v 8.9 1993/09/29 16:16:58 bostic Exp $ (Berkeley) $Date: 1993/09/29 16:16:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,7 +32,6 @@ ex_edit(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	EXF *tep;
 	FREF *frp;
 
 	switch (cmdp->argc) {
@@ -61,24 +60,9 @@ ex_edit(sp, ep, cmdp)
 		return (1);
 	}
 
-	/*
-	 * Users don't like "already locked" messages when they do ":e" to
-	 * re-edit the current file name.  We handle this here, before the
-	 * file_init() call.  If the file_init doesn't succeed we're truly
-	 * screwed.  In any case, nobody better try use sp->ep before the
-	 * actual switch.
-	 */
-	if (frp == sp->frp) {
-		if (file_end(sp, sp->ep, F_ISSET(cmdp, E_FORCE)))
-			return (1);
-		sp->ep = NULL;
-	}
-
 	/* Switch files. */
-	if ((tep = file_init(sp, NULL, frp, NULL)) == NULL)
+	if (file_init(sp, frp, NULL, F_ISSET(cmdp, E_FORCE)))
 		return (1);
-	sp->n_ep = tep;
-	sp->n_frp = frp;
-	F_SET(sp, F_ISSET(cmdp, E_FORCE) ? S_FSWITCH_FORCE : S_FSWITCH);
+	F_SET(sp, S_FSWITCH);
 	return (0);
 }
