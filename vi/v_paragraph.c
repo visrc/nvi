@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_paragraph.c,v 8.16 1994/07/28 20:57:34 bostic Exp $ (Berkeley) $Date: 1994/07/28 20:57:34 $";
+static char sccsid[] = "$Id: v_paragraph.c,v 8.17 1994/07/28 20:59:15 bostic Exp $ (Berkeley) $Date: 1994/07/28 20:59:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -337,6 +337,5 @@ v_buildps(sp)
 	if (s_p != NULL)
 		memmove(p + p_len, s_p, s_len + 1);
 	vip->ps = p;
-	vip->ps_len = p_len + s_len + 1;
 	return (0);
 }

@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 8.38 1994/07/28 20:49:17 bostic Exp $ (Berkeley) $Date: 1994/07/28 20:49:17 $
+ *	$Id: vi.h,v 8.39 1994/07/28 20:59:15 bostic Exp $ (Berkeley) $Date: 1994/07/28 20:59:15 $
  */
 
 typedef struct _vikeys VIKEYS;
@@ -199,7 +199,6 @@ typedef struct _vi_private {
 	long	 inc_lastval;		/* Last increment value. */
 
 	char	*ps;			/* Paragraph plus section list. */
-	size_t	 ps_len;		/* List length. */
 
 	u_long	 u_ccnt;		/* Undo command count. */
 
