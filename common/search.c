@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 5.29 1993/05/03 11:00:11 bostic Exp $ (Berkeley) $Date: 1993/05/03 11:00:11 $";
+static char sccsid[] = "$Id: search.c,v 5.30 1993/05/03 13:23:49 bostic Exp $ (Berkeley) $Date: 1993/05/03 13:23:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -162,25 +162,34 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 	if (resetup(sp, &re, FORWARD, ptrn, eptrn, &delta, &wordoffset, flags))
 		return (1);
 
-	/* If in the last column, start searching on the next line. */
-	if ((l = file_gline(sp, ep, fm->lno, &len)) == NULL) {
-		GETLINE_ERR(sp, fm->lno);
-		return (1);
-	}
-	if (fm->cno + 1 >= len) {
-		if (fm->lno == lno) {
-			if (!O_ISSET(sp, O_WRAPSCAN)) {
-				if (LF_ISSET(SEARCH_MSG))
-					msgq(sp, M_INFO, EOFMSG);
-				return (1);
-			}
-			lno = 1;
-		} else
-			lno = fm->lno + 1;
+	if (LF_ISSET(SEARCH_FILE)) {
+		lno = 1;
 		coff = 0;
 	} else {
-		lno = fm->lno;
-		coff = fm->cno + 1;
+		/*
+		 * If in the last column, start searching on the next line.
+		 * This is incompatible (read bug fix) with the historic vi
+		 * -- searches for the '$' pattern never moved forward.
+		 */
+		if ((l = file_gline(sp, ep, fm->lno, &len)) == NULL) {
+			GETLINE_ERR(sp, fm->lno);
+			return (1);
+		}
+		if (fm->cno + 1 >= len) {
+			if (fm->lno == lno) {
+				if (!O_ISSET(sp, O_WRAPSCAN)) {
+					if (LF_ISSET(SEARCH_MSG))
+						msgq(sp, M_INFO, EOFMSG);
+					return (1);
+				}
+				lno = 1;
+			} else
+				lno = fm->lno + 1;
+			coff = 0;
+		} else {
+			lno = fm->lno;
+			coff = fm->cno + 1;
+		}
 	}
 
 	wrapped = 0;
