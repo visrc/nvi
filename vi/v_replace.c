@@ -6,13 +6,12 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_replace.c,v 5.4 1992/05/07 12:49:13 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:49:13 $";
+static char sccsid[] = "$Id: v_replace.c,v 5.5 1992/05/15 11:14:18 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:14:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
 #include "vi.h"
-#include "exf.h"
 #include "vcmd.h"
 #include "extern.h"
 
@@ -45,7 +44,7 @@ v_replace(m, cnt, key)
 	*text = '\0';
 
 	/* make sure cnt doesn't extend past EOL */
-	(void)file_line(curf, m->lno, &len);
+	(void)file_gline(curf, m->lno, &len);
 	key = m->cno;
 	if (key + cnt > len)
 	{
@@ -60,7 +59,7 @@ v_replace(m, cnt, key)
 	if (*lbuf == '\n')
 	{
 		++m->lno;
-		m->cno = 1;
+		m->cno = 0;
 	}
 	else
 	{

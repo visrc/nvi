@@ -6,13 +6,11 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 5.6 1992/05/07 12:48:48 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:48:48 $";
+static char sccsid[] = "$Id: v_ex.c,v 5.7 1992/05/15 11:14:09 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:14:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
-#include <termios.h>
 #include <curses.h>
-#include <unistd.h>
 #include <stdio.h>
 
 #include "vi.h"
@@ -26,8 +24,10 @@ static char sccsid[] = "$Id: v_ex.c,v 5.6 1992/05/07 12:48:48 bostic Exp $ (Berk
  * v_ex --
  *	Execute strings of ex commands.
  */
-MARK *
-v_ex()
+int
+v_ex(vp, cp, rp)
+	VICMDARG *vp;
+	MARK *cp, *rp;
 {
 	int flags, key;
 	char *p;
@@ -39,8 +39,8 @@ v_ex()
 		 * the first.  We may have to overwrite the command later;
 		 * get the length for later.
 		 */
-		if ((p =
-		    gb(ISSET(O_PROMPT) ? ':' : 0, &ex_prerase, flags)) == NULL)
+		if (gb(ISSET(O_PROMPT) ? ':' : 0, &p, &ex_prerase, flags) ||
+		    p == NULL)
 			break;
 
 		/*
@@ -78,55 +78,5 @@ v_ex()
 		(void)printf("\n");
 	}
 	v_leaveex();
-	return (&cursor);
-}
-
-static u_long oldy, oldx;
-
-void
-v_startex()
-{
-	struct termios t;
-
-	/*
-	 * Go to the ex window line and clear it.
-	 *
-	 * XXX
-	 * This doesn't work yet; curses needs a line oriented semantic
-	 * to force writing regardless of differences.
-	 */
-	getyx(stdscr, oldy, oldx);
-	move(LINES - 1, 0);
-	clrtoeol();
-	refresh();
-
-	/* Suspend the window. */
-	suspendwin();
-
-	/* We have special needs... */
-	(void)tcgetattr(STDIN_FILENO, &t);
-	cfmakeraw(&t);
-
-	/*
-	 * XXX
-	 * This line means that we know much too much about the tty driver.
-	 * We want raw input, but we want NL -> CR mapping on output.  The
-	 * only way to get that in the 4.4BSD tty driver is to have OPOST
-	 * turned on and it's turned off by cfmakeraw(3).
-	 */
-	t.c_oflag |= ONLCR|OPOST;
-	(void)tcsetattr(STDIN_FILENO, TCSADRAIN, &t);
-
-	/* Initialize the globals that let vi know what happened in ex. */
-	ex_prstate = PR_NONE;
-}
-
-void
-v_leaveex()
-{
-	/* Restart the curses window, repainting if necessary. */
-	restartwin(ex_prstate == PR_PRINTED);
-
-	/* Return to the last cursor position. */
-	move(oldy, oldx);
+	return (0);
 }

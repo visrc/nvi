@@ -1,173 +1,174 @@
-/* move3.c */
-
-/* Author:
- *	Steve Kirkendall
- *	14407 SW Teal Blvd. #C
- *	Beaverton, OR 97005
- *	kirkenda@cs.pdx.edu
- */
-
-
-/* This file contains movement functions that perform character searches */
 #include <sys/types.h>
-#include <stddef.h>
+#include <stdio.h>
 
 #include "vi.h"
-#include "exf.h"
+#include "options.h"
 #include "vcmd.h"
 #include "extern.h"
 
-static MARK	*(*prevfwdfn)();/* function to search in same direction */
-static MARK	*(*prevrevfn)();/* function to search in opposite direction */
-static char	prev_key;	/* sought cvhar from previous [fFtT] */
-static MARK rval;
+static enum { NOTSET, CBACK, CFORW } csearchdir = NOTSET;
+static int lastkey;
 
-MARK	*m__ch(m, cnt, cmd)
-	MARK	*m;	/* current position */
-	long	cnt;
-	int	cmd;	/* command: either ',' or ';' */
+/*
+ * v_repeatch -- [count];
+ *	Repeate the last F, f, T or t search.
+ */
+int
+v_repeatch(vp, cp, rp)
+	VICMDARG *vp;
+	MARK *cp, *rp;
 {
-	MARK	*(*tmp)();
+	vp->character = lastkey;
 
-	if (!prevfwdfn)
-	{
-		msg("No previous f, F, t, or T command");
-		return NULL;
+	switch(csearchdir) {
+	case NOTSET:
+		bell();
+		if (ISSET(O_VERBOSE))
+			msg("No previous F, f, T or t search.");
+		return (1);
+	case CBACK:
+		return (v_rch(vp, cp, rp));
+	case CFORW:
+		return (v_fch(vp, cp, rp));
 	}
-
-	if (cmd == ',')
-	{
-		m = (*prevrevfn)(m, cnt, prev_key);
-
-		/* Oops! we didn't want to change the prev*fn vars! */
-		tmp = prevfwdfn;
-		prevfwdfn = prevrevfn;
-		prevrevfn = tmp;
-
-		rval = *m;
-		return (&rval);
-	}
-	else
-	{
-		return (*prevfwdfn)(m, cnt, prev_key);
-	}
+	/* NOTREACHED */
 }
 
-/* move forward within this line to next occurrence of key */
-MARK	*m_fch(m, cnt, key)
-	MARK	*m;	/* where to search from */
-	long	cnt;
-	int	key;	/* what to search for */
+/*
+ * v_rrepeatch -- [count],
+ *	Repeat the last F, f, T or t search in the reverse direction.
+ */
+int
+v_rrepeatch(vp, cp, rp)
+	VICMDARG *vp;
+	MARK *cp, *rp;
 {
-	REG char	*text;
+	int rval;
 
-	SETDEFCNT(1);
+	vp->character = lastkey;
 
-	prevfwdfn = m_fch;
-	prevrevfn = m_Fch;
-	prev_key = key;
-
-	text = file_line(curf, m->lno, NULL);
-	while (cnt-- > 0)
-	{
-		do
-		{
-			++m->cno;
-			text++;
-		} while (*text && *text != key);
+	switch(csearchdir) {
+	case NOTSET:
+		bell();
+		if (ISSET(O_VERBOSE))
+			msg("No previous F, f, T or t search.");
+		return (1);
+	case CBACK:
+		rval = v_fch(vp, cp, rp);
+		csearchdir = CBACK;
+		break;
+	case CFORW:
+		rval = v_rch(vp, cp, rp);
+		csearchdir = CFORW;
+		break;
 	}
-	if (!*text)
-	{
-		return NULL;
-	}
-	rval = *m;
-	return (&rval);
+	return (rval);
+}
+	
+/*
+ * v_tfch -- [count]tc
+ *	Search this line for a character after the cursor and position to
+ *	its left.
+ */
+int
+v_tfch(vp, cp, rp)
+	VICMDARG *vp;
+	MARK *cp, *rp;
+{
+	if (v_fch(vp, cp, rp))
+		return (1);
+	--rp->cno;
+	return (0);
 }
 
-/* move backward within this line to previous occurrence of key */
-MARK	*m_Fch(m, cnt, key)
-	MARK	*m;	/* where to search from */
-	long	cnt;
-	int	key;	/* what to search for */
-{
-	REG char	*stext, *text;
-
-	SETDEFCNT(1);
-
-	prevfwdfn = m_Fch;
-	prevrevfn = m_fch;
-	prev_key = key;
-
-	stext = text = file_line(curf, m->lno, NULL);
-	while (cnt-- > 0)
-	{
-		do
-		{
-			m->cno--;
-			text--;
-		} while (text >= stext && *text != key);
-	}
-	if (text < stext)
-	{
-		return NULL;
-	}
-	rval = *m;
-	return (&rval);
-}
-
-/* move forward within this line almost to next occurrence of key */
-MARK	*m_tch(m, cnt, key)
-	MARK	*m;	/* where to search from */
-	long	cnt;
-	int	key;	/* what to search for */
+/*
+ * v_fch -- [count]fc
+ *	Search this line for a character after the cursor.
+ */
+int
+v_fch(vp, cp, rp)
+	VICMDARG *vp;
+	MARK *cp, *rp;
 {
 	size_t len;
+	u_long cnt;
+	int key;
+	char *ep, *p, *sp;
 
-	/* skip the adjacent char */
-	(void)file_line(curf, m->lno, &len);
-	if (len <= m->cno)
-	{
-		return NULL;
+	EGETLINE(p, cp->lno, len);
+
+	lastkey = key = vp->character;
+	csearchdir = CFORW;
+
+	p += cp->cno - 1;
+	sp = p;
+	ep = p + len;
+	for (cnt = vp->flags & VC_C1SET ? vp->count : 1; cnt--;) {
+		while (++p < ep)
+			if (*p == key)
+				break;
+		if (p == ep) {
+			bell();
+			if (ISSET(O_VERBOSE))
+				msg("Character not found.");
+			return (1);
+		}
 	}
-	m->cno++;
-
-	m = m_fch(m, cnt, key);
-	if (m == NULL)
-	{
-		return NULL;
-	}
-
-	prevfwdfn = m_tch;
-	prevrevfn = m_Tch;
-
-	--m->cno;
-	rval = *m;
-	return (&rval);
+	rp->lno = cp->lno;
+	rp->cno = p - sp;
+	return (0);
+}
+	
+/*
+ * v_trch -- [count]Tc
+ *	Search this line for a character before the cursor and position to
+ *	its left.
+ */
+int
+v_trch(vp, cp, rp)
+	VICMDARG *vp;
+	MARK *cp, *rp;
+{
+	if (v_rch(vp, cp, rp))
+		return (1);
+	if (rp->cno > 0)
+		--rp->cno;
+	return (0);
 }
 
-/* move backward within this line almost to previous occurrence of key */
-MARK	*m_Tch(m, cnt, key)
-	MARK	*m;	/* where to search from */
-	long	cnt;
-	int	key;	/* what to search for */
+/*
+ * v_rch -- [count]fc
+ *	Search this line for a character before the cursor.
+ */
+int
+v_rch(vp, cp, rp)
+	VICMDARG *vp;
+	MARK *cp, *rp;
 {
-	/* skip the adjacent char */
-	if (m->cno == 1)
-	{
-		return NULL;
+	size_t len;
+	u_long cnt;
+	int key;
+	char *ep, *p, *sp;
+
+	GETLINE(p, cp->lno, len);
+
+	lastkey = key = vp->character;
+	csearchdir = CBACK;
+
+	sp = p;
+	p += cp->cno;
+	for (cnt = vp->flags & VC_C1SET ? vp->count : 1; cnt--;) {
+		while (--p < ep)
+			if (*p == key)
+				break;
+		if (p == sp) {
+			bell();
+			if (ISSET(O_VERBOSE))
+				msg("Character not found.");
+			return (1);
+		}
 	}
-	m->cno--;
-
-	m = m_Fch(m, cnt, key);
-	if (m == NULL)
-	{
-		return NULL;
-	}
-
-	prevfwdfn = m_Tch;
-	prevrevfn = m_tch;
-
-	++m->cno;
-	rval = *m;
-	return (&rval);
+	rp->lno = cp->lno;
+	rp->cno = p - sp;
+	return (0);
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_at.c,v 5.3 1992/05/07 12:48:38 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:48:38 $";
+static char sccsid[] = "$Id: v_at.c,v 5.4 1992/05/15 11:14:05 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:14:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,34 +22,34 @@ static char sccsid[] = "$Id: v_at.c,v 5.3 1992/05/07 12:48:38 bostic Exp $ (Berk
 u_char	*atkeybuf, *atkeyp;			/* Shared at buffer. */
 u_long	 atkeybuflen;				/* Length of shared buffer. */
 
-/* ARGSUSED */
-MARK *
-v_at(m, cnt, key)
-	MARK *m;
-	long cnt;
-	int key;
+int
+v_at(vp, cp, rp)
+	VICMDARG *vp;
+	MARK *cp, *rp;
 {
 	static int recurse;
 	static char rstack[UCHAR_MAX];
 	size_t len, remain;
+	int key;
 	u_char *buf, *p;
 
+	key = vp->character;
 	if (atkeybuflen == 0)
 		bzero(rstack, sizeof(rstack));
 	else if (rstack[key]) {
 		msg("Buffer %c already occurs in this command.", key);
-		return (NULL);
+		return (1);
 	}
 
 	if ((buf = cb2str(key, &len)) == NULL)
-		return (NULL);
+		return (1);
 
 	if (atkeybuflen == 0) {
 		/* Allocate a buffer that will hold both. */
 		remain = atkeybuflen - (atkeyp - atkeybuf);
 		if ((p = malloc(len + remain)) == NULL) {
 			msg("Error: %s", strerror(errno));
-			return (NULL);
+			return (1);
 		}
 
 		/* Copy into the new buffer. */
@@ -69,5 +69,5 @@ v_at(m, cnt, key)
 	}
 
 	rstack[key] = 1;
-	return (&cursor);
+	return (0);
 }

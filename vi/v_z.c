@@ -115,7 +115,6 @@ MARK *m_z(m, cnt, key)
 	return (&rval);
 }
 
-
 /* This function scrolls the screen.  It does this by calling redraw() with
  * an off-screen line as the argument.  It will move the cursor if necessary
  * so that the cursor is on the new screen.

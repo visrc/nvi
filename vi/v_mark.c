@@ -6,33 +6,59 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_mark.c,v 5.3 1992/05/07 12:49:00 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:49:00 $";
+static char sccsid[] = "$Id: v_mark.c,v 5.4 1992/05/15 11:14:14 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:14:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
+#include <stdio.h>
 
 #include "vi.h"
+#include "options.h"
 #include "vcmd.h"
 #include "extern.h"
 
 /*
- * v_mark --
+ * v_mark -- m[a-z]
  *	Define a mark.
  */
-/* ARGSUSED */
-MARK *
-v_mark(m, count, key)
-	MARK	*m;	/* where the mark will be */
-	long	count;	/* (ignored) */
-	int	key;	/* the ASCII label of the mark */
+int
+v_mark(vp, cp, rp)
+	VICMDARG *vp;
+	MARK *cp, *rp;
 {
-	if (key < 'a' || key > 'z')
-	{
-		msg("Marks must be from a to z");
-	}
-	else
-	{
-		mark[key - 'a'] = *m;
-	}
-	return m;
+	return (mark_set(vp->character, cp));
+}
+
+/*
+ * v_markbt -- '['`a-z]
+ *	Move to a mark.
+ */
+int
+v_markbt(vp, cp, rp)
+	VICMDARG *vp;
+	MARK *cp, *rp;
+{
+	MARK *mp;
+
+	if ((mp = mark_get(vp->character)) == NULL)
+		return (1);
+	*rp = *mp;
+	return (0);
+}
+
+/*
+ * v_marksq -- '['`a-z]
+ *	Move to the first nonblank character of a line containing a mark.
+ */
+int
+v_marksq(vp, cp, rp)
+	VICMDARG *vp;
+	MARK *cp, *rp;
+{
+	MARK *mp;
+
+	if ((mp = mark_get(vp->character)) == NULL)
+		return (1);
+	*rp = *mp;
+	return (v_nonblank(rp));
 }

@@ -6,14 +6,13 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_xchar.c,v 5.3 1992/05/07 12:49:46 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:49:46 $";
+static char sccsid[] = "$Id: v_xchar.c,v 5.4 1992/05/15 11:14:26 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:14:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 #include <stddef.h>
 
 #include "vi.h"
-#include "exf.h"
 #include "vcmd.h"
 #include "extern.h"
 
@@ -41,7 +40,7 @@ v_xchar(m, cnt, cmd)
 	}
 
 	/* make sure we don't try to delete more thars than there are */
-	(void)file_line(curf, m->lno, &len);
+	(void)file_gline(curf, m->lno, &len);
 	if (m->cno + cnt > len)
 	{
 		cnt = len - m->cno;
