@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.30 1994/05/18 19:37:08 bostic Exp $ (Berkeley) $Date: 1994/05/18 19:37:08 $
+.\"     $Id: vi.ref,v 8.31 1994/05/21 10:34:06 bostic Exp $ (Berkeley) $Date: 1994/05/21 10:34:06 $
 .\"
 .Dd "%Q%"
 .Dt "EX/VI REFERENCE MANUAL" 1
@@ -341,6 +341,78 @@ In
 .Nm \&vi
 text insert mode, the cursor is positioned on the first column of
 characters which take up more than one column on the screen.
+.Sh MULTIPLE SCREENS
+.Nm Nvi
+supports multiple screens by dividing the window up into multiple
+editing regions.
+It also supports stacks of screens by permitting the user to change
+the set of current screens that are currently displayed.
+.Pp
+The command
+.Sy split
+divides the current
+.Dq screen
+into two regions of approximately equal size.
+If a list of files are specified as arguments to the
+.Sy split
+command, the list of files to be edited is initialized as if the
+.Sy next
+command had been used.
+If no files are specified, the new screen will begin by editing the same
+file as the previous screen.
+.Pp
+When two screens are editing the same file, changes in one screen are
+reflected in all other screens editing that file.
+Exiting any screen without saving the changes (or explicitly discarding
+them) is permitted until the last screen editing the file is exited.
+.Pp
+The command
+.Sy resize
+permits resizing of individual screens.
+Screens may be grown, shrunk or set to an absolute number of rows.
+.Pp
+The
+.Sy \&vi
+command
+.Sy \&^W
+is used to switch between screens.
+Each
+.Sy \&^W
+moves to the next lower screen in the window, or, to the first screen
+in the window if there are no lower screens.
+.Pp
+The
+.Sy bg
+command
+.Dq backgrounds
+the current screen.
+The screen disappears from the window, and the rows it occupied are
+taken over by a neighboring screen.
+It is an error to attempt to background the only screen in the window.
+.Pp
+The
+.Sy display
+command, with the
+.Li screens
+argument, displays the names of the files associated with the current
+backgrounded screens in the window.
+.Pp
+The
+.Sy fg
+command
+.Dq foregrounds
+the first screen in the list of backgrounded screens that is associated
+with the its
+.Li file
+argument
+If no file argument is specified, the first screen on the list is
+foregrounded.
+Foregrounding consists of backgrounding the current screen, and replacing
+its space in the window with the previously backgrounded screen.
+.Pp
+If the last screen in the window is exited, and there are backgrounded
+screens, the first screen on the list of backgrounded screens takes over
+the window.
 .Sh REGULAR EXPRESSIONS AND REPLACEMENT STRINGS
 Regular expressions are used in line addresses,
 as the first part of
