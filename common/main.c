@@ -16,7 +16,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 10.19 1995/11/10 10:20:02 bostic Exp $ (Berkeley) $Date: 1995/11/10 10:20:02 $";
+static char sccsid[] = "$Id: main.c,v 10.20 1995/11/10 19:03:51 bostic Exp $ (Berkeley) $Date: 1995/11/10 19:03:51 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -381,7 +381,7 @@ editor(gp, argc, argv, ttype, rows, cols)
 	 * forced to initialize the screen during startup.  Wait for the user.
 	 */
 	if (F_ISSET(sp, S_SCR_EX)) {
-		if (sp->gp->scr_screen(sp, S_VI))
+		if (gp->scr_screen(sp, S_VI))
 			goto err;
 		F_CLR(sp, S_EX | S_SCR_EX);
 		F_SET(sp, S_VI);
@@ -389,16 +389,15 @@ editor(gp, argc, argv, ttype, rows, cols)
 		p = msg_cmsg(sp, CMSG_CONT, &len);
 		(void)write(STDOUT_FILENO, p, len);
 
-		/*
-		 * Get a single character from the terminal.
-		 *
-		 * XXX
-		 * We're ignoring any errors or illegal events.
-		 */
-		do {
+		/* Wait for a single character. */
+		for (;;) {
 			if (v_event_get(sp, &ev, 0, 0))
 				goto err;
-		} while (ev.e_event != E_CHARACTER);
+			if (ev.e_event == E_CHARACTER ||
+			    ev.e_event == E_INTERRUPT)
+				break;
+			(void)gp->scr_bell(sp);
+		}
 	}
 
 	/* Switch into the right editor, regardless. */
