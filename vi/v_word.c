@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_word.c,v 5.21 1993/05/15 21:25:58 bostic Exp $ (Berkeley) $Date: 1993/05/15 21:25:58 $";
+static char sccsid[] = "$Id: v_word.c,v 5.22 1993/05/27 23:32:02 bostic Exp $ (Berkeley) $Date: 1993/05/27 23:32:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -297,7 +297,7 @@ line:			if (lno == 1) {
 				return (1);
 			}
 			if (len == 0) {
-				if (--cnt == 0) {
+				if (cnt == 0 || --cnt == 0) {
 					rp->lno = lno;
 					rp->cno = 0;
 					return (0);
