@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex.c,v 10.48 1996/06/06 11:26:18 bostic Exp $ (Berkeley) $Date: 1996/06/06 11:26:18 $";
+static const char sccsid[] = "$Id: ex.c,v 10.49 1996/06/29 12:26:29 bostic Exp $ (Berkeley) $Date: 1996/06/29 12:26:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -427,7 +427,7 @@ loop:	ecp = gp->ecq.lh_first;
 				goto skip_srch;
 			}
 			break;
-		case 'E': case 'N': case 'P': case 'T': case 'V':
+		case 'E': case 'F': case 'N': case 'P': case 'T': case 'V':
 			newscreen = 1;
 			p[0] = tolower(p[0]);
 			break;
