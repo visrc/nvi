@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: api.c,v 8.5 1995/11/18 12:59:09 bostic Exp $ (Berkeley) $Date: 1995/11/18 12:59:09 $";
+static char sccsid[] = "$Id: api.c,v 8.6 1995/11/22 10:16:53 bostic Exp $ (Berkeley) $Date: 1995/11/22 10:16:53 $";
 #endif /* not lint */
 
 #ifdef TCL_INTERP
@@ -109,7 +109,14 @@ api_gline(sp, lno, linepp, lenp)
 	char **linepp;
 	size_t *lenp;
 {
-	return (db_get(sp, lno, DBG_FATAL, linepp, lenp));
+	int isempty;
+
+	if (db_eget(sp, lno, linepp, lenp, &isempty)) {
+		if (isempty)
+			msgq(sp, M_ERR, "209|The file is empty");
+		return (1);
+	}
+	return (0);
 }
 
 /*
