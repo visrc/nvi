@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 8.3 1993/08/31 17:21:06 bostic Exp $ (Berkeley) $Date: 1993/08/31 17:21:06 $";
+static char sccsid[] = "$Id: cut.c,v 8.4 1993/09/01 12:16:03 bostic Exp $ (Berkeley) $Date: 1993/09/01 12:16:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -228,8 +228,8 @@ put(sp, ep, buffer, cp, rp, append)
 				if (file_aline(sp, ep, 1, lno, tp->lb, tp->len))
 					return (1);
 			rp->lno = 1;
-			if (nonblank(sp, ep, rp->lno, &rp->cno))
-				rp->cno = 0;
+			rp->cno = 0;
+			(void)nonblank(sp, ep, rp->lno, &rp->cno);
 			goto ret;
 		}
 	}
@@ -244,8 +244,8 @@ put(sp, ep, buffer, cp, rp, append)
 		for (; tp != (TEXT *)&cb->txthdr; ++lno, tp = tp->next)
 			if (file_aline(sp, ep, 1, lno, tp->lb, tp->len))
 				return (1);
-		if (nonblank(sp, ep, rp->lno, &rp->cno))
-			rp->cno = 0;
+		rp->cno = 0;
+		(void)nonblank(sp, ep, rp->lno, &rp->cno);
 		goto ret;
 	}
 
