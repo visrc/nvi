@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.147 1997/08/03 15:59:17 bostic Exp $ (Berkeley) $Date: 1997/08/03 15:59:17 $
+dnl	$Id: configure.in,v 8.148 1997/08/03 16:27:35 bostic Exp $ (Berkeley) $Date: 1997/08/03 16:27:35 $
 dnl Process this file with autoconf to produce a configure script.
 
 AC_INIT(../common/main.c)
@@ -123,9 +123,6 @@ LDFLAGS="$ADDLDFLAGS $LDFLAGS"
 
 dnl The user may have additional library information.
 LIBS="$ADDLIBS $LIBS"
-
-dnl Check to see if it's going to work.
-AM_SANITY_CHECK_CC
 
 dnl Checks for programs.
 PATH="$PATH:/usr/bin:/usr/sbin:/sbin:/etc:/usr/etc:/usr/lib:/usr/ucblib"
