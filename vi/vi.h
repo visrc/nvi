@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 5.18 1992/10/24 14:23:34 bostic Exp $ (Berkeley) $Date: 1992/10/24 14:23:34 $
+ *	$Id: vi.h,v 5.19 1992/10/26 17:49:43 bostic Exp $ (Berkeley) $Date: 1992/10/26 17:49:43 $
  */
 
 #include "exf.h"
@@ -25,7 +25,6 @@ typedef struct {
 #define	VC_C2SET	0x004	/* Count 2 set. */
 #define	VC_LMODE	0x008	/* Motion is line oriented. */
 #define	VC_ISDOT	0x010	/* Command was the dot command. */
-#define	VC_ISMOTION	0x020	/* Decoding a motion. */
 
 /*
  * Historic vi allowed "dl" when the cursor was on the last column, deleting
@@ -41,9 +40,9 @@ typedef struct {
  * be fixed.  This is implemented by setting special flags per command so that
  * the motion routines know what's really going on.
  */
-#define	VC_C		0x040	/* The 'c' command. */
-#define	VC_D		0x080	/* The 'd' command. */
-#define	VC_COMMASK	0x0c0	/* Mask for special flags. */
+#define	VC_C		0x020	/* The 'c' command. */
+#define	VC_D		0x040	/* The 'd' command. */
+#define	VC_COMMASK	0x060	/* Mask for special flags. */
 	u_int flags;
 				/* DO NOT ZERO OUT. */
 	char *keyword;		/* Keyword. */
