@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: log.c,v 8.8 1993/12/09 19:42:07 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:42:07 $";
+static char sccsid[] = "$Id: log.c,v 8.9 1993/12/28 16:39:21 bostic Exp $ (Berkeley) $Date: 1993/12/28 16:39:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -20,8 +20,8 @@ static char sccsid[] = "$Id: log.c,v 8.8 1993/12/09 19:42:07 bostic Exp $ (Berke
 #include "vi.h"
 
 /*
- * The log consists of records, where a record contains a type byte and
- * the a variable length byte string, as follows:
+ * The log consists of records, each containing a type byte and a variable
+ * length byte string, as follows:
  *
  *	LOG_CURSOR_INIT		MARK
  *	LOG_CURSOR_END		MARK
@@ -33,28 +33,25 @@ static char sccsid[] = "$Id: log.c,v 8.8 1993/12/09 19:42:07 bostic Exp $ (Berke
  *	LOG_MARK		MARK
  *
  * We do before image physical logging.  This means that the editor layer
- * cannot modify records in place, even if simply deleting or overwriting
+ * MAY NOT modify records in place, even if simply deleting or overwriting
  * characters.  Since the smallest unit of logging is a line, we're using
  * up lots of space.  This may eventually have to be reduced, probably by
  * doing logical logging, which is a much cooler database phrase.
  *
- * The implementation of roll-forward and roll-back when O_NUNDO is set
- * is fairly simple.  Each set of changes consists of a LOG_CURSOR_INIT
- * record, followed by some number of other records, followed by a
- * LOG_CURSOR_END record.  LOG_LINE_RESET records come in pairs; the first
- * is a LOG_LINE_RESET_B record, and is the line before the change.  The
- * second is a LOG_LINE_RESET_F, and is the line after the change.  To do
- * roll-back, back up until the LOG_CURSOR_INIT record before a change
- * is reached.  Roll-forward is done in a similar fashion.
+ * The implementation of the historic vi 'u' command, using roll-forward and
+ * roll-back, is simple.  Each set of changes has a LOG_CURSOR_INIT record,
+ * followed by a number of other records, followed by a LOG_CURSOR_END record.
+ * LOG_LINE_RESET records come in pairs.  The first is a LOG_LINE_RESET_B
+ * record, and is the line before the change.  The second is LOG_LINE_RESET_F,
+ * and is the line after the change.  Roll-back is done by backing up to the
+ * first LOG_CURSOR_INIT record before a change.  Roll-forward is done in a
+ * similar fashion.
  *
- * The historic vi undo (the variable O_NUNDO is not set) is trickier.
- * The obvious solution is to implement the log as described above, but
- * toggle whether the 'u' command means roll-forward or roll-back.  In
- * this scheme the 'U' command results in rolling backward until reaching
- * a LOG_CURSOR_END record for a line different from the current one.  It
- * should be noted that this means that a subsequent 'u' command will make
- * a change based on the new position of the log's cursor.  This is okay,
- * and, in fact, historic vi behaved that way.
+ * The 'U' command is implemented by rolling backward to a LOG_CURSOR_END
+ * record for a line different from the current one.  It should be noted that
+ * this means that a subsequent 'u' command will make a change based on the
+ * new position of the log's cursor.  This is okay, and, in fact, historic vi
+ * behaved that way.
  */
 
 static int	log_cursor1 __P((SCR *, EXF *, int));
@@ -204,8 +201,9 @@ log_line(sp, ep, lno, action)
 
 	/*
 	 * XXX
-	 * Hack for vi.  Clear the undo flag so that the next 'u'
-	 * command does a roll-back instead of a roll-forward.
+	 *
+	 * Kluge for vi.  Clear the EXF undo flag so that the
+	 * next 'u' command does a roll-back, regardless.
 	 */
 	F_CLR(ep, F_UNDO);
 
@@ -423,10 +421,9 @@ err:	F_CLR(ep, F_NOLOG);
  * it was before the original change.
  */
 int
-log_setline(sp, ep, rp)
+log_setline(sp, ep)
 	SCR *sp;
 	EXF *ep;
-	MARK *rp;
 {
 	DBT key, data;
 	MARK m;
@@ -446,15 +443,6 @@ log_setline(sp, ep, rp)
 
 	key.data = &ep->l_cur;		/* Initialize db request. */
 	key.size = sizeof(recno_t);
-
-	/*
-	 * Historically, U always reset the cursor to the first column in
-	 * the line.  This seems a bit non-intuitive, but, considering that
-	 * we may have undone multiple changes, anything else is going to
-	 * look like random positioning.
-	 */
-	rp->lno = sp->lno;
-	rp->cno = 0;
 
 	for (;;) {
 		--ep->l_cur;
