@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_funcs.c,v 10.55 1997/08/03 15:30:59 bostic Exp $ (Berkeley) $Date: 1997/08/03 15:30:59 $";
+static const char sccsid[] = "$Id: cl_funcs.c,v 10.56 1997/08/03 15:38:23 bostic Exp $ (Berkeley) $Date: 1997/08/03 15:38:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -242,8 +242,7 @@ cl_clrtoeol(sp)
 	if (IS_VSPLIT(sp)) {
 		/* The cursor must be returned to its original position. */
 		getyx(stdscr, y, x);
-		for (spcnt =
-		    ((sp->coff + sp->cols) - x) - 1; spcnt > 0; --spcnt)
+		for (spcnt = (sp->coff + sp->cols) - x; spcnt > 0; --spcnt)
 			(void)addch(' ');
 		(void)move(y, x);
 		return (0);
