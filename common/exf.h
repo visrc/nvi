@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 5.45 1993/04/12 14:28:19 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:28:19 $
+ *	$Id: exf.h,v 5.46 1993/04/17 11:45:12 bostic Exp $ (Berkeley) $Date: 1993/04/17 11:45:12 $
  */
 
 					/* Undo direction. */
@@ -22,8 +22,8 @@ typedef struct _exf {
 	size_t	 nlen;			/* File name length. */
 	u_char	 refcnt;		/* Reference count. */
 
-	recno_t	 start_lno;		/* Starting line number. */
-	size_t	 start_cno;		/* Starting physical column. */
+	recno_t	 lno;			/* Last/starting physical line. */
+	size_t	 cno;			/* Last/starting physical column. */
 
 					/* Underlying database state. */
 	DB	*db;			/* File db structure. */
@@ -46,14 +46,17 @@ typedef struct _exf {
 					/* File marks. */
 	struct _mark	marks[UCHAR_MAX + 1];
 
-#define	F_IGNORE	0x0001		/* File to be ignored. */
-#define	F_MODIFIED	0x0002		/* File has been modified. */
-#define	F_NAMECHANGED	0x0004		/* File name was changed. */
-#define	F_NEWSESSION	0x0008		/* If a new edit session. */
+	char	*icommand;		/* Initial command. */
+
+#define	F_ICOMMAND	0x0001		/* Initial command set. */
+#define	F_IGNORE	0x0002		/* File to be ignored. */
+#define	F_MODIFIED	0x0004		/* File has been modified. */
+#define	F_NAMECHANGED	0x0008		/* File name was changed. */
 #define	F_NOLOG		0x0010		/* Logging turned off. */
 #define	F_NONAME	0x0020		/* File has no name. */
-#define	F_RDONLY	0x0040		/* File is read-only. */
-#define	F_UNDO		0x0080		/* No change since last undo. */
+#define	F_NOSETPOS	0x0040		/* No line position. */
+#define	F_RDONLY	0x0080		/* File is read-only. */
+#define	F_UNDO		0x0100		/* No change since last undo. */
 	u_int	 flags;
 } EXF;
 
