@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 8.19 1993/12/02 10:36:50 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:36:50 $";
+static char sccsid[] = "$Id: seq.c,v 8.20 1993/12/02 15:01:51 bostic Exp $ (Berkeley) $Date: 1993/12/02 15:01:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -236,9 +236,10 @@ seq_save(sp, fp, prefix, stype)
 	char *prefix;
 	enum seqtype stype;
 {
+	CHAR_T esc;
 	SEQ *qp;
 	size_t olen;
-	int ch, esc;
+	int ch;
 	char *p;
 
 	/* Write a sequence command for all keys the user defined. */
