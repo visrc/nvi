@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_move.c,v 8.10 1994/03/14 20:18:13 bostic Exp $ (Berkeley) $Date: 1994/03/14 20:18:13 $";
+static char sccsid[] = "$Id: ex_move.c,v 8.11 1994/03/15 14:18:04 bostic Exp $ (Berkeley) $Date: 1994/03/15 14:18:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -147,7 +147,6 @@ ex_move(sp, ep, cmdp)
 			if (file_dline(sp, ep, fl))
 				return (1);
 		}
-		sp->lno = tl;			/* Last line moved. */
 	} else {				/* Destination < source. */
 		mfl = tl;
 		mtl = tl + diff;
@@ -166,8 +165,8 @@ ex_move(sp, ep, cmdp)
 			if (file_dline(sp, ep, fl))
 				return (1);
 		}
-		sp->lno = tl - 1;		/* Last line moved. */
 	}
+	sp->lno = tl;				/* Last line moved. */
 	sp->cno = 0;
 
 	/* Log the new positions of the marks. */
