@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_source.c,v 10.15 2001/06/25 15:19:20 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:20 $";
+static const char sccsid[] = "$Id: ex_source.c,v 10.16 2001/08/18 21:49:58 skimo Exp $ (Berkeley) $Date: 2001/08/18 21:49:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -82,10 +82,11 @@ err:		msgq_str(sp, M_SYSERR, name, "%s");
 		return (1);
 	}
 
-	CHAR2INT(sp, bp, (size_t)sb.st_size + 1, wp, wlen);
+	if (CHAR2INT(sp, bp, (size_t)sb.st_size + 1, wp, wlen))
+		msgq(sp, M_ERR, "323|Invalid input. Truncated.");
 	dp = v_wstrdup(sp, wp, wlen - 1);
 	free(bp);
 	/* Put it on the ex queue. */
 	INT2CHAR(sp, cmdp->argv[0]->bp, cmdp->argv[0]->len + 1, name, nlen);
-	return (ex_run_str(sp, name, dp, (size_t)sb.st_size, 1, 1));
+	return (ex_run_str(sp, name, dp, wlen - 1, 1, 1));
 }
