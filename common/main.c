@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.50 1993/12/02 10:26:24 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:26:24 $";
+static char sccsid[] = "$Id: main.c,v 8.51 1993/12/02 22:43:55 bostic Exp $ (Berkeley) $Date: 1993/12/02 22:43:55 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -61,7 +61,7 @@ main(argc, argv)
 	GS *gp;
 	FREF *frp;
 	SCR *sp;
-	u_int flags;
+	u_int flags, saved_vi_mode;
 	int ch, eval, flagchk, readonly, silent, snapshot;
 	char *excmdarg, *myname, *p, *rec_f, *tag_f, *trace_f, *wsizearg;
 	char path[MAXPATHLEN];
@@ -84,6 +84,7 @@ main(argc, argv)
 			readonly = 1;
 		LF_INIT(S_VI_CURSES);
 	}
+	saved_vi_mode = S_VI_CURSES;
 
 	/* Convert old-style arguments into new-style ones. */
 	obsolete(argv);
@@ -154,8 +155,9 @@ main(argc, argv)
 			break;
 		case 'x':
 			if (!strcmp(optarg, "aw")) {
-				F_CLR(sp, S_SCREENS);
-				F_SET(sp, S_VI_XAW);
+				LF_CLR(S_SCREENS);
+				LF_SET(S_VI_XAW);
+				saved_vi_mode = S_VI_XAW;
 				break;
 			}
 			/* FALLTHROUGH */
@@ -175,6 +177,7 @@ main(argc, argv)
 	/* Build and initialize the first/current screen. */
 	if (screen_init(NULL, &sp, flags))
 		goto err1;
+	sp->saved_vi_mode = saved_vi_mode;
 	CIRCLEQ_INSERT_HEAD(&__global_list->dq, sp, q);
 
 	if (trace_f != NULL) {
