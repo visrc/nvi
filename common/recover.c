@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.56 1994/05/18 19:59:59 bostic Exp $ (Berkeley) $Date: 1994/05/18 19:59:59 $";
+static char sccsid[] = "$Id: recover.c,v 8.57 1994/05/19 08:58:16 bostic Exp $ (Berkeley) $Date: 1994/05/19 08:58:16 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -211,15 +211,17 @@ rcv_sync(sp, ep, flags)
 		return (0);
 
 	/* Sync the file. */
-	if (F_ISSET(ep, F_MODIFIED) && ep->db->sync(ep->db, R_RECNOSYNC)) {
-		F_CLR(ep, F_RCV_ON | F_RCV_NORM);
-		msgq(sp, M_SYSERR, "File backup failed: %s", ep->rcv_path);
-		return (1);
+	if (F_ISSET(ep, F_MODIFIED)) {
+		if (ep->db->sync(ep->db, R_RECNOSYNC)) {
+			F_CLR(ep, F_RCV_ON | F_RCV_NORM);
+			msgq(sp, M_SYSERR,
+			    "File backup failed: %s", ep->rcv_path);
+			return (1);
+		}
+		/* Don't remove backing file on exit. */
+		if (LF_ISSET(RCV_PRESERVE))
+			F_SET(ep, F_RCV_NORM);
 	}
-
-	/* Don't remove backing file on exit. */
-	if (LF_ISSET(RCV_PRESERVE))
-		F_SET(ep, F_RCV_NORM);
 
 	/* Put up a busy message. */
 	if (LF_ISSET(RCV_SNAPSHOT | RCV_EMAIL))
