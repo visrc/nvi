@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.58 1994/07/17 10:51:44 bostic Exp $ (Berkeley) $Date: 1994/07/17 10:51:44 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.59 1994/07/17 11:10:40 bostic Exp $ (Berkeley) $Date: 1994/07/17 11:10:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -659,7 +659,7 @@ number:	if (O_ISSET(sp, O_NUMBER) && F_ISSET(sp, S_RENUMBER) && !didpaint) {
 	 *	If the bottom line isn't in use by anyone, put out the
 	 *	standard status line.
 	 */
-	if (!F_ISSET(SVP(sp), SVI_INFOLINE) && !MAPPED_KEYS_WAITING(sp))
+	if (!F_ISSET(SVP(sp), SVI_INFOLINE) && !KEYS_WAITING(sp))
 		if (sp->msgq.lh_first != NULL &&
 		    !F_ISSET(sp->msgq.lh_first, M_EMPTY))
 			svi_msgflush(sp);
