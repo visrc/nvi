@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_main.c,v 10.14 1995/09/28 13:01:29 bostic Exp $ (Berkeley) $Date: 1995/09/28 13:01:29 $";
+static char sccsid[] = "$Id: cl_main.c,v 10.15 1995/09/29 16:53:42 bostic Exp $ (Berkeley) $Date: 1995/09/29 16:53:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -151,7 +151,6 @@ gs_init(name)
 	gp->scr_clrtoeol = cl_clrtoeol;
 	gp->scr_cursor = cl_cursor;
 	gp->scr_deleteln = cl_deleteln;
-	gp->scr_discard = cl_discard;
 	gp->scr_event = cl_event;
 	gp->scr_ex_adjust = cl_ex_adjust;
 	gp->scr_fmap = cl_fmap;
@@ -162,9 +161,7 @@ gs_init(name)
 	gp->scr_optchange = cl_optchange;
 	gp->scr_refresh = cl_refresh;
 	gp->scr_rename = cl_rename;
-	gp->scr_resize = cl_resize;
 	gp->scr_screen = cl_screen;
-	gp->scr_split = cl_split;
 	gp->scr_suspend = cl_suspend;
 	gp->scr_usage = cl_usage;
 

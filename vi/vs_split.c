@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 10.11 1995/09/27 10:43:25 bostic Exp $ (Berkeley) $Date: 1995/09/27 10:43:25 $";
+static char sccsid[] = "$Id: vs_split.c,v 10.12 1995/09/29 16:53:54 bostic Exp $ (Berkeley) $Date: 1995/09/29 16:53:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -73,28 +73,31 @@ vs_split(sp, new)
 
 	/*
 	 * Recalculate current cursor position based on sp->lno, we're called
-	 * with the cursor on the colon command line.
+	 * with the cursor on the colon command line.  Then split the screen
+	 * in half and update the shared information.
 	 */
 	splitup = (vs_sm_cursor(sp, &smp) ? 0 : smp - HMAP) > half;
-		
-	/* Get new screen real-estate. */
-	if (gp->scr_split(sp, new, splitup))
-		return (1);
-
-	/* Enter the new screen into the queue. */
-	if (splitup) {				/* Link in before old. */
+	if (splitup) {				/* Old is bottom half. */
+		new->rows = sp->rows - half;	/* New. */
+		new->woff = sp->woff;
+		sp->rows = half;		/* Old. */
+		sp->woff += new->rows;
+						/* Link in before old. */
 		CIRCLEQ_INSERT_BEFORE(&gp->dq, sp, new, q);
-	} else {				/* Link in after old. */
-		CIRCLEQ_INSERT_AFTER(&gp->dq, sp, new, q);
-	}
 
-	/*
-	 * If the parent is the bottom half of the screen, shift the map
-	 * down to match on-screen text.
-	 */
-	if (splitup)
+		/*
+		 * If the parent is the bottom half of the screen, shift
+		 * the map down to match on-screen text.
+		 */
 		memmove(_HMAP(sp),
 		    _HMAP(sp) + new->rows, sp->t_maxrows * sizeof(SMAP));
+	} else {				/* Old is top half. */
+		new->rows = sp->rows - half;	/* New. */
+		new->woff = sp->woff + half;
+		sp->rows = half;		/* Old. */
+						/* Link in after old. */
+		CIRCLEQ_INSERT_AFTER(&gp->dq, sp, new, q);
+	}
 
 	/*
 	 * Small screens: see vs_refresh.c, section 6a.
@@ -165,15 +168,44 @@ vs_split(sp, new)
  * PUBLIC: int vs_discard __P((SCR *, SCR **));
  */
 int
-vs_discard(csp, spp)
-	SCR *csp, **spp;
+vs_discard(sp, spp)
+	SCR *sp, **spp;
 {
-	SCR *sp;
+	SCR *nsp;
 	dir_t dir;
 
-	/* Discard the underlying screen. */
-	if (csp->gp->scr_discard(csp, &sp, &dir))
-		return (1);
+	/*
+	 * Save the old screen's cursor information.
+	 *
+	 * XXX
+	 * If called after file_end(), and the underlying file was a tmp
+	 * file, it may have gone away.
+	 */
+	if (sp->frp != NULL) {
+		sp->frp->lno = sp->lno;
+		sp->frp->cno = sp->cno;
+		F_SET(sp->frp, FR_CURSORSET);
+	}
+
+	/*
+	 * Add into a previous screen and then into a subsequent screen, as
+	 * they're the closest to the current screen.  If that doesn't work,
+	 * there was no screen to join.
+	 */
+	if ((nsp = sp->q.cqe_prev) != (void *)&sp->gp->dq) {
+		nsp->rows += sp->rows;
+		sp = nsp;
+		dir = FORWARD;
+	} else if ((nsp = sp->q.cqe_next) != (void *)&sp->gp->dq) {
+		nsp->woff = sp->woff;
+		nsp->rows += sp->rows;
+		sp = nsp;
+		dir = BACKWARD;
+	} else {
+		sp = NULL;
+		dir = NOTSET;
+	}
+
 	if (spp != NULL)
 		*spp = sp;
 	if (sp == NULL)
@@ -194,19 +226,6 @@ vs_discard(csp, spp)
 	sp->defscroll = sp->t_maxrows / 2;
 	*(HMAP + (sp->t_rows - 1)) = *TMAP;
 	TMAP = HMAP + (sp->t_rows - 1);
-
-	/*
-	 * Save the old screen's cursor information.
-	 *
-	 * XXX
-	 * If called after file_end(), and the underlying file was a tmp
-	 * file, it may have gone away.
-	 */
-	if (csp->frp != NULL) {
-		csp->frp->lno = csp->lno;
-		csp->frp->cno = csp->cno;
-		F_SET(csp->frp, FR_CURSORSET);
-	}
 
 	/*
 	 * Draw the new screen from scratch.
@@ -470,8 +489,12 @@ vs_resize(sp, count, adj)
 		else
 			s = NULL;
 		if (s == NULL) {
-			if ((s = sp->q.cqe_prev) == (void *)&gp->dq)
-				goto toobig;
+			if ((s = sp->q.cqe_prev) == (void *)&gp->dq) {
+toobig:				msgq(sp, M_BERR, adj == A_DECREASE ?
+				    "227|The screen cannot shrink" :
+				    "228|The screen cannot grow");
+				return (1);
+			}
 			if (s->t_maxrows < MINIMUM_SCREEN_ROWS + count) {
 toosmall:			msgq(sp, M_BERR,
 				    "226|The screen can only shrink to %d rows",
@@ -482,19 +505,16 @@ toosmall:			msgq(sp, M_BERR,
 		}
 	}
 
-	/* Update the underlying screens. */
-	if (gp->scr_resize(s, -count, s_off, g, count, g_off)) {
-toobig:		msgq(sp, M_BERR, adj == A_DECREASE ?
-		    "227|The screen cannot shrink" :
-		    "228|The screen cannot grow");
-		return (1);
-	}
-
 	/*
 	 * Fix up the screens; we could optimize the reformatting of the
 	 * screen, but this isn't likely to be a common enough operation
 	 * to make it worthwhile.
 	 */
+	s->rows += -count;
+	s->woff += s_off;
+	g->rows += count;
+	g->woff += g_off;
+
 	g->t_rows += count;
 	if (g->t_minrows == g->t_maxrows)
 		g->t_minrows += count;

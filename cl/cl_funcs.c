@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_funcs.c,v 10.19 1995/09/28 13:02:21 bostic Exp $ (Berkeley) $Date: 1995/09/28 13:02:21 $";
+static char sccsid[] = "$Id: cl_funcs.c,v 10.20 1995/09/29 16:53:44 bostic Exp $ (Berkeley) $Date: 1995/09/29 16:53:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -310,59 +310,6 @@ cl_deleteln(sp)
 	return (deleteln() == ERR);
 }
 
-/*
- * cl_discard --
- *	Discard a screen.
- *
- * PUBLIC: int cl_discard __P((SCR *, SCR **, dir_t *));
- */
-int
-cl_discard(sp, addp, dp)
-	SCR *sp, **addp;
-	dir_t *dp;
-{
-	SCR *nsp;
-
-	EX_ABORT(sp);
-	VI_INIT_ABORT(sp);
-
-	/*
-	 * The cl_discard, cl_resize and cl_split routines are called when
-	 * screens are exited, resized or split, respectively.  They will
-	 * all have to change (and, in addition, the vi editor code may have
-	 * to change) if there's a screen implementation that doesn't split
-	 * screens the way that the curses screen does, i.e. one where split
-	 * screens aren't created by splitting an existing screen in half.
-	 *
-	 * XXX
-	 * This code is badly broken up between the editor and the screen
-	 * code.  Once we have some idea what other screens will want, it
-	 * should be reworked to provide a lot more information hiding.
-	 *
-	 * Discard screen sp.  If another screen got its real-estate, return
-	 * return that screen and set if it was a screen immediately above or
-	 * below it the discarded screen.  Otherwise, return NULL.
-	 *
-	 * In the curses screen, add into a previous screen and then into a
-	 * subsequent screen, as they're the closest to the current screen.
-	 * If that doesn't work, there was no screen to join.
-	 */
-	if ((nsp = sp->q.cqe_prev) != (void *)&sp->gp->dq) {
-		nsp->rows += sp->rows;
-		*addp = nsp;
-		*dp = FORWARD;
-	} else if ((nsp = sp->q.cqe_next) != (void *)&sp->gp->dq) {
-		nsp->woff = sp->woff;
-		nsp->rows += sp->rows;
-		*addp = nsp;
-		*dp = BACKWARD;
-	} else {
-		*addp = NULL;
-		*dp = NOTSET;
-	}
-	return (0);
-}
-
 /* 
  * cl_ex_adjust --
  *	Adjust the screen for ex.
@@ -555,69 +502,6 @@ cl_rename(sp)
 	SCR *sp;
 {
 	return (0);			/* Curses doesn't care. */
-}
-
-/*
- * cl_resize --
- *	Resize a screen.
- *
- * PUBLIC: int cl_resize __P((SCR *, long, long, SCR *, long, long));
- */
-int
-cl_resize(a, a_sz, a_off, b, b_sz, b_off)
-	SCR *a, *b;
-	long a_sz, a_off, b_sz, b_off;
-{
-	EX_ABORT(a);
-	VI_INIT_ABORT(a);
-
-	/*
-	 * See the comment in cl_discard().
-	 *
-	 * X_sz is the signed, change in the total size of the split screen,
-	 * X_off is the signed change in the offset of the split screen in the
-	 * curses screen.
-	 */
-	a->rows += a_sz;
-	a->woff += a_off;
-	b->rows += b_sz;
-	b->woff += b_off;
-	return (0);
-}
-
-/*
- * cl_split --
- *	Split a screen.
- *
- * PUBLIC: int cl_split __P((SCR *, SCR *, int));
- */
-int
-cl_split(old, new, to_up)
-	SCR *old, *new;
-	int to_up;
-{
-	size_t half;
-
-	EX_ABORT(old);
-	VI_INIT_ABORT(old);
-
-	/*
-	 * See the comment in cl_discard.
-	 *
-	 * Split the screen in half, and update the shared information.
-	 */
-	half = old->rows / 2;
-	if (to_up) {				/* Old is bottom half. */
-		new->rows = old->rows - half;	/* New. */
-		new->woff = old->woff;
-		old->rows = half;		/* Old. */
-		old->woff += new->rows;
-	} else {				/* Old is top half. */
-		new->rows = old->rows - half;	/* New. */
-		new->woff = old->woff + half;
-		old->rows = half;		/* Old. */
-	}
-	return (0);
 }
 
 /*
