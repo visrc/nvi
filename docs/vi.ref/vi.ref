@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.38 1994/05/25 22:33:38 bostic Exp $ (Berkeley) $Date: 1994/05/25 22:33:38 $
+.\"     $Id: vi.ref,v 8.39 1994/05/25 22:37:06 bostic Exp $ (Berkeley) $Date: 1994/05/25 22:37:06 $
 .\"
 .\"
 .so ref.so
@@ -82,7 +82,6 @@ acknowledged.
 .oh 'Nvi/Nex Reference''USD:13-%'
 .eh 'USD:13-%''Nvi/Nex Reference'
 .bp 3
-.bp
 .SH 1 Description
 .pp
 .CO Vi
@@ -882,9 +881,7 @@ The unnamed buffer is a text storage area which is used by commands
 that take a buffer as an argument, when no buffer is specified by
 the user.
 There is no way to explicitly reference this buffer.
-.bp
 #include <vi.cmd.roff>
-.bp
 .SH 1 "Ex Addressing"
 .pp
 Addressing in
@@ -1051,11 +1048,8 @@ The first address must be less than or equal to the second address.
 The first address must be greater than or equal to the first line of the
 file, and the last address must be less than or equal to the last line
 of the file.
-.bp
 #include <ex.cmd.roff>
-.bp
 #include <set.opt.roff>
-.bp
 .SH 1 "Additional Features in Nex/Nvi"
 .pp
 There are a few features in
@@ -1164,7 +1158,6 @@ option causes
 to do left-right screen scrolling, instead of the traditional
 .CO vi
 line wrapping.
-.bp
 .SH 1 Index
 .lp
 .nr PS 9
