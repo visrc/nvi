@@ -14,7 +14,7 @@ If, on top of that, the vi binary is explicitly linked against that
 previous version of db (such as might happen if you enable the perl
 embedding), you should compile the 3.x version with all symbols internally
 resolved.  In case you use the Gnu linker (ld), this can be accomplished
-by passing it the -Bsymbolic option. You can do these by setting CC
+by passing it the -Bsymbolic option. You can do this by setting CC
 to e.g. "gcc -Wl,-Bsymbolic" prior to configuring db.
 See docs/ref/build_unix/flags.html in the db distribution for more
 information.
