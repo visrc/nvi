@@ -1,4 +1,4 @@
-#	$Id: README,v 8.125 1996/03/22 11:51:22 bostic Exp $ (Berkeley) $Date: 1996/03/22 11:51:22 $
+#	$Id: README,v 8.126 1996/03/28 18:15:18 bostic Exp $ (Berkeley) $Date: 1996/03/28 18:15:18 $
 
 This is the README for nex/nvi, a freely redistributable replacement for
 the ex/vi text editors originally distributed as part of the Fourth
@@ -27,15 +27,26 @@ please contact me by electronic mail at one of the following addresses:
 Keith Bostic
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-o Credit where it's due:
+o This software is several years old and is the product of many folks' work.  
 
-	This software was originally derived from software contributed
-	to the University of California, Berkeley by Steve Kirkendall,
-	the author of the vi clone elvis.  Without his work, this work
-	would have been far more difficult.
+	This software was originally derived from software contributed to
+	the University of California, Berkeley by Steve Kirkendall, the
+	author of the vi clone elvis.  Without his work, this work would
+	have been far more difficult.
 
-	IEEE POSIX 1003.2 style regular expression support is courtesy
-	of Henry Spencer, for which I am *very* grateful.
+	IEEE POSIX 1003.2 style regular expression support is courtesy of
+	Henry Spencer, for which I am *very* grateful.
+
+	Elan Amir did the original 4BSD curses work that made it possible
+	to support a full-screen editor using curses.
+
+	George Neville-Neil added the Tcl interpreter, and the initial
+	interpreter design was his.
+
+	Sven Verdoolaege added the Perl5 interpreter.
+
+o Lots of people provided enhancements, bug reports and testing, far too
+  many to individually thank.
 
 o From the original vi acknowledgements, by William Joy and Mark Horton:
 
