@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 5.28 1993/05/20 20:31:55 bostic Exp $ (Berkeley) $Date: 1993/05/20 20:31:55 $";
+static char sccsid[] = "$Id: ex_write.c,v 5.29 1993/05/27 19:53:56 bostic Exp $ (Berkeley) $Date: 1993/05/27 19:53:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,7 +21,7 @@ static char sccsid[] = "$Id: ex_write.c,v 5.28 1993/05/20 20:31:55 bostic Exp $ 
 #include "vi.h"
 #include "excmd.h"
 
-enum which {WQ, WRITE};
+enum which {WQ, WRITE, XIT};
 
 static int exwr __P((SCR *, EXF *, EXCMDARG *, enum which));
 
@@ -64,6 +64,35 @@ ex_write(sp, ep, cmdp)
 	EXCMDARG *cmdp;
 {
 	return (exwr(sp, ep, cmdp, WRITE));
+}
+
+
+/*
+ * ex_xit -- :x[it]! [file]
+ *
+ *	Write out any modifications and quit.
+ */
+int
+ex_xit(sp, ep, cmdp)
+	SCR *sp;
+	EXF *ep;
+	EXCMDARG *cmdp;
+{
+	int force;
+
+	force = F_ISSET(cmdp, E_FORCE);
+
+	if (F_ISSET((ep), F_MODIFIED) && exwr(sp, ep, cmdp, XIT))
+		return (1);
+
+	if (!force && ep->refcnt <= 1 && file_next(sp, ep, 0)) {
+		msgq(sp, M_ERR,
+		    "More files to edit; use \":n\" to go to the next file");
+		return (1);
+	}
+
+	F_SET(sp, force ? S_EXIT_FORCE : S_EXIT);
+	return (0);
 }
 
 /*
@@ -117,7 +146,7 @@ exwr(sp, ep, cmdp, cmd)
 	}
 
 	/* If "write >>" it's an append to a file. */
-	if (p[0] == '>' && p[1] == '>') {
+	if (cmd != XIT && p[0] == '>' && p[1] == '>') {
 		LF_SET(FS_APPEND);
 
 		/* Skip ">>" and whitespace. */
