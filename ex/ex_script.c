@@ -13,7 +13,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_script.c,v 10.28 1996/05/10 18:09:15 bostic Exp $ (Berkeley) $Date: 1996/05/10 18:09:15 $";
+static const char sccsid[] = "$Id: ex_script.c,v 10.29 1996/05/12 14:29:00 bostic Exp $ (Berkeley) $Date: 1996/05/12 14:29:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,9 +32,9 @@ static const char sccsid[] = "$Id: ex_script.c,v 10.28 1996/05/10 18:09:15 bosti
 #include <bitstring.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <stdio.h>		/* XXX: OSF/1 bug: include before <grp.h> */
 #include <grp.h>
 #include <limits.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <termios.h>
