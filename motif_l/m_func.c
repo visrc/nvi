@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_func.c,v 8.9 1996/12/10 17:27:20 bostic Exp $ (Berkeley) $Date: 1996/12/10 17:27:20 $";
+static const char sccsid[] = "$Id: m_func.c,v 8.10 1996/12/10 17:44:31 bostic Exp $ (Berkeley) $Date: 1996/12/10 17:44:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,15 +26,15 @@ static const char sccsid[] = "$Id: m_func.c,v 8.9 1996/12/10 17:27:20 bostic Exp
 #include "../common/common.h"
 #include "../ip_vi/ip.h"
 #include "ipc_motif.h"
-#include "ipc_extern.h"
 #include "ipc_mextern.h"
+#include "ipc_extern.h"
 
 static int
-_vi_ipo_addstr(ipbp)
+vi_addstr(ipbp)
 	IP_BUF *ipbp;
 {
 #ifdef TR
-	trace("ipo_addstr() {%.*s}\n", ipbp->len, ipbp->str);
+	trace("addstr() {%.*s}\n", ipbp->len, ipbp->str);
 #endif
 	/* Add to backing store. */
 	memcpy(CharAt(_vi_screen, _vi_screen->cury, _vi_screen->curx),
@@ -53,7 +53,7 @@ _vi_ipo_addstr(ipbp)
 }
 
 static int
-_vi_ipo_attribute(ipbp)
+vi_attribute(ipbp)
 	IP_BUF *ipbp;
 {
 	switch (ipbp->val1) {
@@ -68,7 +68,7 @@ _vi_ipo_attribute(ipbp)
 }
 
 static int
-_vi_ipo_bell(ipbp)
+vi_bell(ipbp)
 	IP_BUF *ipbp;
 {
 	/*
@@ -80,7 +80,7 @@ _vi_ipo_bell(ipbp)
 }
 
 static int
-_vi_ipo_busyon(ipbp)
+vi_busyon(ipbp)
 	IP_BUF *ipbp;
 {
 	_vi_set_cursor(_vi_screen, 1);
@@ -88,7 +88,7 @@ _vi_ipo_busyon(ipbp)
 }
 
 static int
-_vi_ipo_busyoff(ipbp)
+vi_busyoff(ipbp)
 	IP_BUF *ipbp;
 {
 	_vi_set_cursor(_vi_screen, 0);
@@ -96,7 +96,7 @@ _vi_ipo_busyoff(ipbp)
 }
 
 static int
-_vi_ipo_clrtoeol(ipbp)
+vi_clrtoeol(ipbp)
 	IP_BUF *ipbp;
 {
 	int len;
@@ -117,7 +117,7 @@ _vi_ipo_clrtoeol(ipbp)
 }
 
 static int
-_vi_ipo_deleteln(ipbp)
+vi_deleteln(ipbp)
 	IP_BUF *ipbp;
 {
 	int y, rows, len, height, width;
@@ -151,7 +151,7 @@ _vi_ipo_deleteln(ipbp)
 }
 
 static int
-_vi_ipo_discard(ipbp)
+vi_discard(ipbp)
 	IP_BUF *ipbp;
 {
 	/* XXX: Nothing. */
@@ -159,7 +159,7 @@ _vi_ipo_discard(ipbp)
 }
 
 static int
-_vi_ipo_insertln(ipbp)
+vi_insertln(ipbp)
 	IP_BUF *ipbp;
 {
 	int y, rows, height, width;
@@ -211,7 +211,7 @@ _vi_ipo_insertln(ipbp)
 }
 
 static int
-_vi_ipo_move(ipbp)
+vi_move(ipbp)
 	IP_BUF *ipbp;
 {
 	_vi_move_caret(_vi_screen, ipbp->val1, ipbp->val2);
@@ -219,7 +219,7 @@ _vi_ipo_move(ipbp)
 }
 
 static int
-_vi_ipo_redraw(ipbp)
+vi_redraw(ipbp)
 	IP_BUF *ipbp;
 {
 	_vi_expose_func(0, _vi_screen, 0);
@@ -227,7 +227,7 @@ _vi_ipo_redraw(ipbp)
 }
 
 static int
-_vi_ipo_refresh(ipbp)
+vi_refresh(ipbp)
 	IP_BUF *ipbp;
 {
 #if 0
@@ -238,7 +238,7 @@ _vi_ipo_refresh(ipbp)
 }
 
 static int
-_vi_ipo_rename(ipbp)
+vi_rename(ipbp)
 	IP_BUF *ipbp;
 {
 	const char *tail;
@@ -265,7 +265,7 @@ _vi_ipo_rename(ipbp)
 }
 
 static int
-_vi_ipo_rewrite(ipbp)
+vi_rewrite(ipbp)
 	IP_BUF *ipbp;
 {
 	/* XXX: Nothing. */
@@ -273,7 +273,7 @@ _vi_ipo_rewrite(ipbp)
 }
 
 static int
-_vi_ipo_scrollbar(ipbp)
+vi_scrollbar(ipbp)
 	IP_BUF *ipbp;
 {
 	/* XXX: Nothing. */
@@ -281,7 +281,7 @@ _vi_ipo_scrollbar(ipbp)
 }
 
 static int
-_vi_ipo_split(ipbp)
+vi_split(ipbp)
 	IP_BUF *ipbp;
 {
 	/* XXX: Nothing. */
@@ -289,20 +289,20 @@ _vi_ipo_split(ipbp)
 }
 
 int (*_vi_iplist[IPO_EVENT_MAX]) __P((IP_BUF *)) = {
-	_vi_ipo_addstr,
-	_vi_ipo_attribute,
-	_vi_ipo_bell,
-	_vi_ipo_busyoff,
-	_vi_ipo_busyon,
-	_vi_ipo_clrtoeol,
-	_vi_ipo_deleteln,
-	_vi_ipo_discard,
-	_vi_ipo_insertln,
-	_vi_ipo_move,
-	_vi_ipo_redraw,
-	_vi_ipo_refresh,
-	_vi_ipo_rename,
-	_vi_ipo_rewrite,
-	_vi_ipo_scrollbar,
-	_vi_ipo_split
+	vi_addstr,
+	vi_attribute,
+	vi_bell,
+	vi_busyoff,
+	vi_busyon,
+	vi_clrtoeol,
+	vi_deleteln,
+	vi_discard,
+	vi_insertln,
+	vi_move,
+	vi_redraw,
+	vi_refresh,
+	vi_rename,
+	vi_rewrite,
+	vi_scrollbar,
+	vi_split
 };
