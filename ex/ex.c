@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 10.9 1995/09/21 12:06:46 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:06:46 $";
+static char sccsid[] = "$Id: ex.c,v 10.10 1995/09/25 10:16:13 bostic Exp $ (Berkeley) $Date: 1995/09/25 10:16:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -132,7 +132,7 @@ ex(spp)
 		}
 		F_INIT(&gp->excmd, E_NRSEP);
 
-		if (ex_cmd(sp))
+		if (ex_cmd(sp) && !F_ISSET(gp, G_STDIN_TTY))
 			return (1);
 
 		/* If switching screens or into vi, return. */
