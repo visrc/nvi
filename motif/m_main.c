@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_main.c,v 8.13 1996/12/03 11:18:04 bostic Exp $ (Berkeley) $Date: 1996/12/03 11:18:04 $";
+static const char sccsid[] = "$Id: m_main.c,v 8.14 1996/12/03 12:08:48 bostic Exp $ (Berkeley) $Date: 1996/12/03 12:08:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,17 +36,19 @@ static const char sccsid[] = "$Id: m_main.c,v 8.13 1996/12/03 11:18:04 bostic Ex
 #include <string.h>
 #include <unistd.h>
 
+#include "../common/common.h"
+#include "../ip_vi/ip.h"
+#include "ipc_motif.h"
+#include "ipc_mutil.h"
+#include "ipc_extern.h"
+#include "ipc_mextern.h"
+#include "pathnames.h"
+
 #if XtSpecificationRelease == 4
 #define	ArgcType	Cardinal *
 #else
 #define	ArgcType	int *
 #endif
-
-#include "../common/common.h"
-#include "../ip_vi/ip.h"
-#include "ipc_mutil.h"
-#include "ipc_extern.h"
-#include "pathnames.h"
 
 #include "nvi.xbm"
 
@@ -60,53 +62,6 @@ void	onintr __P((int));
 static	void	f_copy();
 static	void	f_paste();
 static	void	f_clear();
-
-
-/*
- * describes a single 'screen' implemented in X widgetry
- */
-typedef	struct {
-    Widget	parent,		/* the pane */
-		area,		/* text goes here */
-		form,		/* holds text and scrollbar */
-		scroll;		/* not connected yet */
-    Region	clip;
-    int		color;
-    int		rows,
-		cols;
-    int		ch_width,
-		ch_height,
-		ch_descent;
-    int		curx, cury;
-    char	*characters;
-    char	*flags;
-} xvi_screen;
-
-void	draw_caret __P( (xvi_screen *) );
-void	set_cursor __P( (xvi_screen *, Boolean ) );
-
-#define	ToRowCol( scr, lin, r, c )	\
-	    r = (lin) / scr->cols;	\
-	    c = ((lin) - r * (scr->cols)) % scr->cols;
-#define	Linear( scr, y, x )	\
-	    ( (y) * scr->cols + (x) )
-#define	CharAt( scr, y, x )	\
-	    ( scr->characters + Linear( scr, y, x ) )
-#define	FlagAt( scr, y, x )	\
-	    ( scr->flags + Linear( scr, y, x ) )
-
-#define	XPOS( scr, x )	\
-	scr->ch_width * (x)
-#define	YTOP( scr, y )	\
-	scr->ch_height * (y)
-#define	YPOS( scr, y )	\
-	YTOP( scr, ((y)+1) ) - scr->ch_descent
-
-#define	ROW( scr, y )	\
-	( (y) / scr->ch_height )
-
-#define	COLUMN( scr, x )	\
-	( (x) / scr->ch_width )
 
 
 /*
@@ -130,26 +85,9 @@ XtTranslations	area_trans;
 int		multi_click_length;
 
 char	bp[ BufferSize ];		/* input buffer from pipe */
-int	len = 0, blen = BufferSize;
+size_t	len, blen = sizeof(bp);
 
 
-/*
- * Color support
- */
-
-#define	COLOR_INVALID	0xff	/* force color change */
-
-/* These are color indeces.  When vi passes color info,
- * we can do 2..0x3f in the 8 bits i've allocated
- */
-#define	COLOR_STANDARD	0x00	/* standard video */
-#define	COLOR_INVERSE	0x01	/* reverse video */
-
-/* These are flag bits.  they override the above colors */
-#define	COLOR_CARET	0x80	/* draw the caret */
-#define	COLOR_SELECT	0x40	/* draw the selection */
-
-
 #if defined(__STDC__)
 void		set_gc_colors( xvi_screen *this_screen, int val )
 #else
@@ -478,20 +416,16 @@ XtPointer	call_data;
 }
 
 
-/* draw from backing store */
-#if defined(__STDC__)
-void		draw_text( xvi_screen *this_screen,
-			   int row,
-			   int start_col,
-			   int len
-			   )
-#else
-void		draw_text( this_screen, row, start_col, len )
-xvi_screen	*this_screen;
-int		row;
-int		start_col;
-int		len;
-#endif
+/*
+ * draw_text --
+ *	Draw from backing store.
+ *
+ * PUBLIC: void	draw_text __P((xvi_screen *, int, int, int));
+ */
+void
+draw_text(this_screen, row, start_col, len)
+	xvi_screen *this_screen;
+	int row, start_col, len;
 {
     int		col, color, xpos;
     char	*start, *end;
@@ -575,21 +509,19 @@ static	void	add_to_clip( cur_screen, x, y, width, height )
 }
 
 
-/* redraw the window's contents.
- * NOTE:  when vi wants to force a redraw, we are called with
- * NULL widget and call_data
+/*
+ * expose_func --
+ *	Redraw the window's contents.
+ *
+ * NOTE: When vi wants to force a redraw, we are called with NULL widget
+ *	 and call_data.
+ *
+ * PUBLIC: void	expose_func __P((Widget, XtPointer, XtPointer));
  */
-#if defined(__STDC__)
-void		expose_func( Widget wid,
-			     XtPointer client_data,
-			     XtPointer call_data
-			     )
-#else
-void		expose_func( wid, client_data, call_data )
-Widget		wid;
-XtPointer	client_data;
-XtPointer	call_data;
-#endif
+void
+expose_func(wid, client_data, call_data)
+	Widget wid;
+	XtPointer client_data, call_data;
 {
     xvi_screen			*this_screen;
     XmDrawingAreaCallbackStruct	*cbs;
@@ -924,6 +856,8 @@ xvi_screen	*split_screen()
 
     /* re-manage */
     XtManageChildren( c, num );
+
+    /* RAZ: IS THERE A RETURN VALUE? */
 }
 
 
@@ -1429,42 +1363,39 @@ Boolean		is_busy;
 
 
 
-/* These routines deal with the caret */
-
-#if defined(__STDC__)
-void		draw_caret( xvi_screen *this_screen )
-#else
-void		draw_caret( this_screen )
-xvi_screen	*this_screen;
-#endif
+/*
+ * These routines deal with the caret.
+ *
+ * PUBLIC: void draw_caret __P((xvi_screen *));
+ */
+void
+draw_caret(this_screen)
+	xvi_screen *this_screen;
 {
     /* draw the caret by drawing the text in highlight color */
     *FlagAt( cur_screen, this_screen->cury, this_screen->curx ) |= COLOR_CARET;
     draw_text( this_screen, this_screen->cury, this_screen->curx, 1 );
 }
 
-
-#if defined(__STDC__)
-void		erase_caret( xvi_screen *this_screen )
-#else
-void		erase_caret( this_screen )
-xvi_screen	*this_screen;
-#endif
+/*
+ * PUBLIC: void erase_caret __P((xvi_screen *));
+ */
+void
+erase_caret(this_screen)
+	xvi_screen *this_screen;
 {
     /* erase the caret by drawing the text in normal video */
     *FlagAt( cur_screen, this_screen->cury, this_screen->curx ) &= ~COLOR_CARET;
     draw_text( cur_screen, this_screen->cury, this_screen->curx, 1 );
 }
 
-
-#if defined(__STDC__)
-void		move_caret( xvi_screen *this_screen, int newy, int newx )
-#else
-void		move_caret( this_screen, newy, newx )
-xvi_screen	*this_screen;
-int		newy;
-int		newx;
-#endif
+/*
+ * PUBLIC: void	move_caret __P((xvi_screen *, int, int));
+ */
+void
+move_caret(this_screen, newy, newx)
+	xvi_screen *this_screen;
+	int newy, newx;
 {
     /* caret is now here */
     erase_caret( this_screen );
@@ -1472,8 +1403,6 @@ int		newx;
     this_screen->cury = newy;
     draw_caret( this_screen );
 }
-
-#include "ipc_mfunc.c"
 
 
 int
