@@ -4,11 +4,10 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 5.53 1993/05/13 12:16:27 bostic Exp $ (Berkeley) $Date: 1993/05/13 12:16:27 $
+ *	$Id: common.h,v 5.54 1993/05/13 12:20:28 bostic Exp $ (Berkeley) $Date: 1993/05/13 12:20:28 $
  */
 
-#include <glob.h>			/* Ordered before local includes. */
-#include <limits.h>
+#include <limits.h>			/* Ordered before local includes. */
 #include <regex.h>
 #include <stdio.h>
 #include <db.h>				/* Last, for compat.h. */
