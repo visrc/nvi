@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_status.c,v 5.5 1992/05/15 11:14:22 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:14:22 $";
+static char sccsid[] = "$Id: v_status.c,v 5.6 1992/05/18 07:48:12 bostic Exp $ (Berkeley) $Date: 1992/05/18 07:48:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,7 +27,7 @@ v_status(vp, cp, rp)
 	u_long lno;
 
 	lno = file_lline(curf);
-	msg("\"%s\" %s%s %ld lines,  line %ld [%ld%%]",
+	msg("\"%s\" %s%s: line %lu of %lu [%ld%%]",
 	    curf->name,
 	    curf->flags & F_MODIFIED ? "[MODIFIED]" : "[UNMODIFIED]",
 	    curf->flags & F_RDONLY ? "[READONLY]" : "",
