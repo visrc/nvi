@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.55 1993/04/13 16:19:50 bostic Exp $ (Berkeley) $Date: 1993/04/13 16:19:50 $";
+static char sccsid[] = "$Id: key.c,v 5.56 1993/04/17 11:53:34 bostic Exp $ (Berkeley) $Date: 1993/04/17 11:53:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -55,39 +55,6 @@ key_special(sp)
 	sp->special['0'] = K_ZERO;
 
 	return (0);
-}
-
-/*
- * txt_new --
- *	Allocate a new TEXT structure, and append it into a hdr
- *	structure.
- */
-TEXT *
-txt_new(sp, hdrp, p, len, total_len)
-	SCR *sp;
-	HDR *hdrp;
-	char *p;
-	size_t len, total_len;
-{
-	TEXT *tp;
-
-	if ((tp = malloc(sizeof(TEXT))) == NULL)
-		goto mem;
-	if ((tp->lb = malloc(tp->lb_len = total_len)) == NULL) {
-		free(tp);
-mem:		msgq(sp, M_ERR, "Error: %s", strerror(errno));
-		return (NULL);
-	}
-#ifdef DEBUG
-	memset(tp->lb, 0, total_len - 1);
-#endif
-
-	if (tp->len = len)
-		memmove(tp->lb, p, len);
-	tp->ai = tp->insert = tp->offset = tp->overwrite = 0;
-
-	HDR_INSERT(tp, hdrp, next, prev, TEXT);
-	return (tp);
 }
 
 /*
