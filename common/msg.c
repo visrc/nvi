@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: msg.c,v 10.37 1996/05/21 15:00:19 bostic Exp $ (Berkeley) $Date: 1996/05/21 15:00:19 $";
+static const char sccsid[] = "$Id: msg.c,v 10.38 1996/05/23 10:19:10 bostic Exp $ (Berkeley) $Date: 1996/05/23 10:19:10 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -672,8 +672,8 @@ msg_open(sp, file)
 	char *p, *t, buf[MAXPATHLEN];
 
 	if ((p = strrchr(file, '/')) != NULL && p[1] == '\0' &&
-	    ((t = getenv("LANG")) != NULL && t[0] != '\0' ||
-	    (t = getenv("LC_MESSAGES")) != NULL && t[0] != '\0')) {
+	    ((t = getenv("LC_MESSAGES")) != NULL && t[0] != '\0' ||
+	    (t = getenv("LANG")) != NULL && t[0] != '\0')) {
 		(void)snprintf(buf, sizeof(buf), "%svi_%s", file, t);
 		p = buf;
 	} else
