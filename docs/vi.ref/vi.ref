@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.6 1994/01/23 17:43:29 bostic Exp $ (Berkeley) $Date: 1994/01/23 17:43:29 $
+.\"     $Id: vi.ref,v 8.7 1994/01/23 17:49:36 bostic Exp $ (Berkeley) $Date: 1994/01/23 17:49:36 $
 .\"
 .Dd "%Q%"
 .Dt EX/VI 1
@@ -347,6 +347,15 @@ found in the
 .Dq "Ex Reference Manual (Version 3.7)" ,
 found in the
 .Dq "UNIX User's Manual Supplementary Documents" .
+.Pp
+.Nm Nroff/troff
+source for the previous three documents are distributed with
+.Nm nex/nvi
+in the
+.Pa nvi/docs/USD.doc
+directory of the
+.Nm nex/nvi
+source code.
 .sp
 The files
 .Dq "autowrite" ,
