@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.50 1994/03/22 19:53:24 bostic Exp $ (Berkeley) $Date: 1994/03/22 19:53:24 $";
+static char sccsid[] = "$Id: options.c,v 8.51 1994/03/23 17:15:17 bostic Exp $ (Berkeley) $Date: 1994/03/23 17:15:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -522,7 +522,7 @@ change:			if (sp->s_optchange != NULL)
 			abort();
 		}
 	}
-	if (disp)
+	if (disp != NO_DISPLAY)
 		opts_dump(sp, disp);
 	return (rval);
 }
@@ -541,6 +541,18 @@ opts_dump(sp, type)
 	int numcols, numrows, row;
 	int b_op[O_OPTIONCOUNT], s_op[O_OPTIONCOUNT];
 	char nbuf[20];
+
+	/*
+	 * XXX
+	 * It's possible to get here by putting "set option" in the
+	 * .exrc file.  I can't think of a clean way to layer this,
+	 * or a reasonable check to make, so we block it here.
+	 */
+	if (sp->stdfp == NULL) {
+		msgq(sp, M_ERR,
+		    "Option display requires that the screen be initialized.");
+		return;
+	}
 
 	/*
 	 * Options are output in two groups -- those that fit in a column and
