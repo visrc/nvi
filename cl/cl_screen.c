@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_screen.c,v 10.28 1995/11/12 17:47:18 bostic Exp $ (Berkeley) $Date: 1995/11/12 17:47:18 $";
+static char sccsid[] = "$Id: cl_screen.c,v 10.29 1995/11/13 08:21:47 bostic Exp $ (Berkeley) $Date: 1995/11/13 08:21:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -112,6 +112,13 @@ cl_quit(gp)
 
 	rval = 0;
 	clp = GCLP(gp);
+
+	/*
+	 * If we weren't really running, ignore it.  This happens if the
+	 * screen changes size before we've called curses.
+	 */
+	if (!F_ISSET(clp, CL_SCR_EX_INIT | CL_SCR_VI_INIT))
+		return (0);
 
 	/* Clean up the terminal mappings. */
 	if (cl_term_end(gp))

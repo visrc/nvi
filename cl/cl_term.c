@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_term.c,v 10.10 1995/10/29 15:22:45 bostic Exp $ (Berkeley) $Date: 1995/10/29 15:22:45 $";
+static char sccsid[] = "$Id: cl_term.c,v 10.11 1995/11/13 08:21:48 bostic Exp $ (Berkeley) $Date: 1995/11/13 08:21:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -223,14 +223,12 @@ cl_optchange(sp, opt)
 		 * XXX
 		 * The actual changing of the row/column and terminal value is
 		 * done by putting them into the environment, which is used by
-		 * curses.  Stupid, but ugly.
+		 * curses.  Ugly, but stupid.
 		 *
 		 * Set the columns value in the environment for curses.
 		 */
 		(void)snprintf(buf,
 		    sizeof(buf), "COLUMNS=%lu", O_VAL(sp, O_COLUMNS));
-		if (cl_putenv(buf))
-			return (1);
 		goto restart;
 	case O_LINES:
 		/*
@@ -241,8 +239,6 @@ cl_optchange(sp, opt)
 		 */
 		(void)snprintf(buf,
 		    sizeof(buf), "LINES=%lu", O_VAL(sp, O_LINES));
-		if (cl_putenv(buf))
-			return (1);
 		goto restart;
 	case O_TERM:
 		/*
@@ -252,23 +248,16 @@ cl_optchange(sp, opt)
 		 * Set the terminal value in the environment for curses.
 		 */
 		(void)snprintf(buf, sizeof(buf), "TERM=%s", O_VAL(sp, O_TERM));
-		if (cl_putenv(buf))
+restart:	if (cl_putenv(buf))
 			return (1);
 		
-		/* If we're not really running, just ignore it. */
-restart:	EX_INIT_IGNORE(sp);
-		VI_INIT_IGNORE(sp);
-
-		/* Exit and reenter the vi screen. */
-		if (F_ISSET(sp, S_VI)) {
-			if (cl_quit(sp->gp))
-				return (1);
-			if (cl_screen(sp, S_VI))
-				return (1);
-		}
-
-		/* The screen may have changed size. */
-		F_SET(clp, CL_SIGWINCH);
+		/*
+		 * Exit the screen; the editor is expected to restart a screen
+		 * on a resize event.  
+		 */
+		if (cl_quit(sp->gp))
+			return (1);
+		F_CLR(sp, S_SCR_EX | S_SCR_VI);
 		break;
 	}
 	return (0);
