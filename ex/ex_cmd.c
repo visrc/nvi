@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 8.51 1994/08/02 09:26:04 bostic Exp $ (Berkeley) $Date: 1994/08/02 09:26:04 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 8.52 1994/08/02 10:23:59 bostic Exp $ (Berkeley) $Date: 1994/08/02 10:23:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -106,7 +106,7 @@ EXCMDLIST const cmds[] = {
 /* C_ABBR */
 	{"abbreviate", 	ex_abbr,	E_NOGLOBAL,
 	    "W",
-	    "ab[brev] word replace",
+	    "ab[brev] [word replace]",
 	    "specify an input abbreviation"},
 /* C_ARGS */
 	{"args",	ex_args,	E_NOGLOBAL|E_NORC,
