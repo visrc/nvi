@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.1,v 8.15 1994/09/29 17:10:58 bostic Exp $ (Berkeley) $Date: 1994/09/29 17:10:58 $
+.\"     $Id: vi.1,v 8.16 1994/10/23 10:31:38 bostic Exp $ (Berkeley) $Date: 1994/10/23 10:31:38 $
 .\"
 .Dd "%Q%"
 .Dt EX/VI 1
@@ -842,6 +842,8 @@ only.
 Display the current line automatically.
 .It Sy "autowrite, aw [off]"
 Write modified files automatically when changing files.
+.It Sy "backup [\"\"]"
+Backup files before they are overwritten.
 .It Sy "beautify, bf [off]"
 Discard control characters.
 .It Sy "cdpath [environment variable CDPATH, or current directory]"
