@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 5.16 1992/11/06 18:08:21 bostic Exp $ (Berkeley) $Date: 1992/11/06 18:08:21 $
+ *	$Id: exf.h,v 5.17 1992/11/07 13:46:03 bostic Exp $ (Berkeley) $Date: 1992/11/07 13:46:03 $
  */
 
 #ifndef _EXF_H_
@@ -53,14 +53,17 @@ typedef struct exf {
 
 	char *name;			/* File name. */
 	size_t nlen;			/* File name length. */
-#define	F_CREATED	0x001		/* File was created. */
-#define	F_IGNORE	0x002		/* File inserted later. */
-#define	F_MODIFIED	0x004		/* File was modified. */
-#define	F_NAMECHANGED	0x008		/* File name changed. */
-#define	F_NEWSESSION	0x010		/* File newly edited. */
-#define	F_NONAME	0x020		/* File has no name. */
-#define	F_RDONLY	0x040		/* File is read-only. */
-#define	F_WRITTEN	0x080		/* File has been written. */
+
+#define	F_IGNORE	0x001		/* File inserted later. */
+#define	F_MODIFIED	0x002		/* File was modified. */
+#define	F_NAMECHANGED	0x004		/* File name changed. */
+#define	F_NEWSESSION	0x008		/* File newly edited. */
+#define	F_NONAME	0x010		/* File has no name. */
+#define	F_RDONLY	0x020		/* File is read-only. */
+
+#define	FF_SET(ep, f)	(ep)->flags |= (f)
+#define	FF_CLR(ep, f)	(ep)->flags &= ~(f)
+#define	FF_ISSET(ep, f)	((ep)->flags & (f))
 	u_int flags;
 } EXF;
 
