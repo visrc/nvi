@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: vi.cmd.roff,v 8.27 1994/07/15 15:31:43 bostic Exp $ (Berkeley) $Date: 1994/07/15 15:31:43 $
+.\"	$Id: vi.cmd.roff,v 8.28 1994/07/17 13:29:38 bostic Exp $ (Berkeley) $Date: 1994/07/17 13:29:38 $
 .\"
 .SH 1 "Vi Description"
 .pp
@@ -2580,52 +2580,74 @@ in which case it is set to the character were the region starts.
 None.
 .SE
 .KY z
-.IP "[count1] z [count2] -|.|+|^|<carriage-return>"
-Redraw, optionally repositioning and resizing the screen.
+.IP "[count1] z [count2] type"
 Redraw the screen with a window
 .LI count2
-lines long, containing line
+lines long, with line
 .LI count1
-placed as specified by the following character:
-.QT +
-or
-.LI <carriage-return>
-specifies the top of the screen,
-.QT .
-specifies the center of the screen, and
-.QT \-
-or
-.QT ^
-specifies the bottom of the screen.
-.sp
+placed as specified by the
+.LI type
+character.
 If
 .LI count1
-is not specified, it defaults to the current line, and the action
-is as described above except for the
-.QT ^
-and
-.QT +
-characters.
-The
-.QT ^
-character displays the screen before the current screen,
-and the
-.QT +
-character displays the screen after the current screen,
-similarly to the
-.CO <control-B>
-and
-.CO <control-L>
-commands.
-.sp
+is not specified, it defaults to the current line.
 If
 .LI count2
 is not specified, it defaults to the current window size.
+.sp
+The following
+.LI type
+characters may be used:
+.SS
+.SP +
+If
+.LI count1
+is specified, place the line
+.LI count1
+at the top of the screen.
+Otherwise, display the screen after the current screen, similarly to the
+.CO <control-F>
+command.
+.SP <carriage-return>
+Place the line
+.LI count1
+at the top of the screen.
+.SP \&.
+Place the line
+.LI count1
+in the center of the screen.
+.SP \-
+Place the line
+.LI count1
+at the bottom of the screen.
+.SP ^
+If
+.LI count1
+is specified, place the line that is at the top of the screen 
+when
+.LI count1
+is at the bottom of the screen, at the bottom of the screen,
+i.e. display the screen before the screen before
+.LI count1 .
+Otherwise, display the screen before the current screen, similarly to the
+.CO <control-B>
+command.
+.SE
 .SS
 .SP Line:
 Set to
-.LI count1 ,
-if specified, otherwise unchanged.
+.LI count1
+unless
+.LI count1
+is not specified and the
+.LI type
+character was either
+.QT ^
+or
+.QT + ,
+in which case it is set to the line before the first line on the
+previous screen or the line after the last line on the previous
+screen, respectively.
 .SP Column:
 Set to the first nonblank character in the line.
 .SP Options:
