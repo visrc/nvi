@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 10.10 1995/09/28 10:40:28 bostic Exp $ (Berkeley) $Date: 1995/09/28 10:40:28 $
+ *	$Id: vi.h,v 10.11 1995/09/30 10:40:03 bostic Exp $ (Berkeley) $Date: 1995/09/30 10:40:03 $
  */
 
 /* Definition of a vi "word". */
@@ -246,12 +246,10 @@ typedef struct _vi_private {
 	size_t	totalcount;	/* 1-N: Output overwrite count. */
 
 				/* Busy state. */
-	enum { BUSY_OFF=0, BUSY_ON, BUSY_SILENT } busy_state;
+	int	busy_ref;	/* Busy reference count. */
 	int	busy_ch;	/* Busy character. */
-	struct timeval
-		busy_tv;	/* Busy timer. */
 	size_t	busy_fx;	/* Busy character x coordinate. */
-	size_t	busy_y, busy_x;/* Busy saved screen coordinates. */
+	struct timeval busy_tv;	/* Busy timer. */
 
 	char   *ps;		/* Paragraph plus section list. */
 
