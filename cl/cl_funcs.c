@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_funcs.c,v 8.10 1995/05/26 09:09:37 bostic Exp $ (Berkeley) $Date: 1995/05/26 09:09:37 $";
+static char sccsid[] = "$Id: cl_funcs.c,v 10.1 1995/06/08 19:00:31 bostic Exp $ (Berkeley) $Date: 1995/06/08 19:00:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,9 +33,25 @@ static char sccsid[] = "$Id: cl_funcs.c,v 8.10 1995/05/26 09:09:37 bostic Exp $ 
 #include "cl.h"
 #include "vi.h"
 
+static int cl_lline_copy __P((SCR *, size_t *, CHAR_T **, size_t *));
+
+/*
+ * cl_addstr --
+ *	Add the string at the cursor, advancing the cursor.
+ *
+ * PUBLIC: int cl_addstr __P((SCR *, const char *));
+ */
+int
+cl_addstr(sp, str)
+	SCR *sp;
+	const char *str;
+{
+	return (cl_addnstr(sp, str, strlen(str)));
+}
+
 /*
  * cl_addnstr --
- *	Add len bytes from the string at the cursor.
+ *	Add len bytes from the string at the cursor, advancing the cursor.
  *
  * PUBLIC: int cl_addnstr __P((SCR *, const char *, size_t));
  */
@@ -45,39 +61,41 @@ cl_addnstr(sp, str, len)
 	const char *str;
 	size_t len;
 {
+	CL_PRIVATE *clp;
+	size_t oldx, oldy;
+	int iv, rval;
+
 	EX_ABORT(sp);
 	VI_INIT_IGNORE(sp);
 
-	if (addnstr(str, len) == ERR) {
-		msgq(sp, M_ERR, "Error: addnstr: %.*s", (int)len, str);
-		return (1);
+	/*
+	 * If the last line:
+	 *	If a busy message already there, discard the busy message.
+	 *	if a split screen, use inverse video.
+	 */
+	iv = 0;
+	clp = CLP(sp);
+	getyx(stdscr, oldy, oldx);
+	if (oldy == RLNO(sp, INFOLINE(sp))) {
+		if (clp->busy_state == BUSY_ON)
+			clp->busy_state = BUSY_SILENT;
+		if (IS_SPLIT(sp)) {
+			iv = 1;
+			F_SET(clp, CL_LLINE_IV);
+		}
 	}
-	return (0);
-}
-/*
- * cl_addstr --
- *	Add the string at the current cursor.
- *
- * PUBLIC: int cl_addstr __P((SCR *, const char *));
- */
-int
-cl_addstr(sp, str)
-	SCR *sp;
-	const char *str;
-{
-	EX_ABORT(sp);
-	VI_INIT_IGNORE(sp);
-
-	if (addstr(str) == ERR) {
-		msgq(sp, M_ERR, "Error: addstr: %s", str);
-		return (1);
-	}
-	return (0);
+	if (iv)
+		(void)standout();
+	if (rval = (addnstr(str, len) == ERR))
+		msgq(sp, M_ERR, "Error: addstr/addnstr: %.*s", (int)len, str);
+	if (iv)
+		(void)standend();
+	return (rval);
 }
 
 /*
  * cl_attr --
- *	Toggle a screen attribute.
+ *	Toggle a screen attribute on/off.
  *
  * PUBLIC: int cl_attr __P((SCR *, attr_t, int));
  */
@@ -113,7 +131,7 @@ cl_attr(sp, attribute, on)
 
 /*
  * cl_bell --
- *	Ring the bell.
+ *	Ring the bell or flash the screen.
  *
  * PUBLIC: int cl_bell __P((SCR *));
  */
@@ -145,7 +163,7 @@ cl_bell(sp)
 
 /*
  * cl_busy --
- *	Put up a busy message.
+ *	Put up, update or clear a busy message.
  *
  * PUBLIC: int cl_busy __P((SCR *, const char *, int));
  */
@@ -155,42 +173,135 @@ cl_busy(sp, msg, on)
 	const char *msg;
 	int on;
 {
+	static const char flagc[] = "|/-|-\\";
 	CL_PRIVATE *clp;
-	size_t notused;
+	struct timeval tv;
+	size_t len, lno, notused;
+	const char *p;
 
+	clp = CLP(sp);
+
+	/* Check for ex batch mode. */
+	if (F_ISSET(sp, S_EX_SILENT))
+		return (0);
+
+	/*
+	 * If on is set:
+	 *	If no busy message is currently displayed, put one up.
+	 *	If a busy message already displayed, update it.
+	 * If on is not set:
+	 *	Close down any displayed busy message.  It's okay to clear
+	 *	a non-existent busy message, as it makes the calling code
+	 *	simpler.
+	 */
 	if (F_ISSET(sp, S_EX | S_EX_CANON)) {
 		if (on)
-			(void)write(STDOUT_FILENO, msg, strlen(msg));
+			switch (clp->busy_state) {
+			case BUSY_OFF:
+				if (msg == NULL)
+					clp->busy_state = BUSY_SILENT;
+				else {
+					clp->busy_state = BUSY_ON;
+					p = msg_cat(sp, msg, &len);
+					(void)write(STDOUT_FILENO, p, len);
+				}
+				break;
+			case BUSY_ON:
+			case BUSY_SILENT:
+				break;
+			default:
+				abort();
+			}
 		else
-			(void)write(STDOUT_FILENO, "\n", 1);
+			switch(clp->busy_state) {
+			case BUSY_OFF:
+			case BUSY_ON:
+				(void)write(STDOUT_FILENO, "\n", 1);
+				/* FALLTHROUGH */
+			case BUSY_SILENT:
+				clp->busy_state = BUSY_OFF;
+				break;
+
+			}
 		return (0);
 	}
 
 	VI_INIT_IGNORE(sp);
 
-	clp = CLP(sp);
-	if (on) {
-		clp->busy_state = 0;
-		getyx(stdscr, clp->busy_y, clp->busy_x);
-		(void)move(RLNO(sp, INFOLINE(sp)), 0);
-		getyx(stdscr, notused, clp->busy_fx);
-
-		/*
-		 * If there's no message, just rest the cursor without
-		 * setting the flag so the main loop doesn't update it.
-		 */
-		if (msg == NULL)
-			(void)refresh();
-		else {
-			(void)addstr(msg);
-			(void)clrtoeol();
+	lno = RLNO(sp, INFOLINE(sp));
+	if (on)
+		switch (clp->busy_state) {
+		case BUSY_OFF:
+			getyx(stdscr, clp->busy_y, clp->busy_x);
+			(void)move(lno, 0);
 			getyx(stdscr, notused, clp->busy_fx);
-			F_SET(clp, CL_BUSY);
-			(void)cl_busy_update(sp, 1);
+
+			/* If there's no message, just rest the cursor. */
+			if (msg == NULL) {
+				clp->busy_state = BUSY_SILENT;
+				refresh();
+				break;
+			}
+
+			/* Save a copy of whatever is currently there. */
+			if (cl_lline_copy(sp,
+			    &clp->lline_len, &clp->lline, &clp->lline_blen))
+				return (1);
+
+			/* Display the busy message. */
+			p = msg_cat(sp, msg, &len);
+			(void)addnstr(p, len);
+			getyx(stdscr, notused, clp->busy_fx);
+			(void)clrtoeol();
+			(void)move(lno, clp->busy_fx);
+
+			/* Set up for updates. */
+			clp->busy_ch = 0;
+			(void)gettimeofday(&clp->busy_tv, NULL);
+
+			/* Update the state. */
+			clp->busy_state = BUSY_ON;
+			refresh();
+			break;
+		case BUSY_ON:
+			/* Update no more than every 1/4 of a second. */
+			(void)gettimeofday(&tv, NULL);
+			if (((tv.tv_sec - clp->busy_tv.tv_sec) * 1000000 +
+			    (tv.tv_usec - clp->busy_tv.tv_usec)) < 4000)
+				return (0);
+
+			/* Display the update. */
+			(void)move(lno, clp->busy_fx);
+			if (clp->busy_ch == sizeof(flagc))
+				clp->busy_ch = 0;
+			(void)addnstr(flagc + clp->busy_ch++, 1);
+			(void)move(lno, clp->busy_fx);
+
+			refresh();
+			break;
+		case BUSY_SILENT:
+			break;
 		}
-	} else
-		if (F_ISSET(clp, CL_BUSY)) {
-			F_CLR(clp, CL_BUSY);
+	else
+		switch (clp->busy_state) {
+		case BUSY_OFF:
+			break;
+		case BUSY_ON:
+			/* Restore the contents of the line. */
+			move(lno, 0);
+			if (clp->lline_len == 0)
+				clrtoeol();
+			else {
+				if (F_ISSET(clp, CL_LLINE_IV))
+					(void)standout();
+				(void)addnstr(clp->lline, clp->lline_len);
+				if (F_ISSET(clp, CL_LLINE_IV))
+					(void)standend();
+				clp->lline_len = 0;
+			}
+			/* FALLTHROUGH */
+		case BUSY_SILENT:
+			clp->busy_state = BUSY_OFF;
 			(void)move(clp->busy_y, clp->busy_x);
 			(void)refresh();
 		}
@@ -198,51 +309,12 @@ cl_busy(sp, msg, on)
 }
 
 /*
- * cl_busy_update --
- *	Update the busy message.
- *
- * PUBLIC: int cl_busy_update __P((SCR *, int));
- */
-int
-cl_busy_update(sp, init)
-	SCR *sp;
-	int init;
-{
-	static const char flagc[] = "|/-|-\\";
-	struct timeval tv;
-	CL_PRIVATE *clp;
-
-	EX_NOOP(sp);
-	VI_INIT_IGNORE(sp);
-
-	clp = CLP(sp);
-
-	/* Update no more than every 1/4 of a second. */
-	if (!init) {
-		(void)gettimeofday(&tv, NULL);
-		if (((tv.tv_sec - clp->busy_tv.tv_sec) * 1000000 +
-		    (tv.tv_usec - clp->busy_tv.tv_usec)) < 4000)
-			return (0);
-	}
-
-	(void)move(RLNO(sp, INFOLINE(sp)), clp->busy_fx);
-	if (init) {
-		(void)addnstr("+", 1);
-		clp->busy_state = 0;
-		(void)gettimeofday(&clp->busy_tv, NULL);
-	} else {
-		if (clp->busy_state == sizeof(flagc))
-			clp->busy_state = 0;
-		(void)addnstr(flagc + clp->busy_state++, 1);
-	}
-	(void)move(RLNO(sp, INFOLINE(sp)), clp->busy_fx);
-	(void)refresh();
-	return (0);
-}
-
-/*
  * cl_canon --
  *	Enter/leave tty canonical mode.
+ *
+ * XXX
+ * This need not be supported by any screen model not supporting full ex
+ * canonical mode.
  *
  * PUBLIC: int cl_canon __P((SCR *, int));
  */
@@ -293,6 +365,10 @@ cl_clrtoeol(sp)
  * cl_clrtoeos --
  *	Clear from the current line to the end of the screen.
  *
+ * XXX
+ * This need not be supported by any screen model not supporting full ex
+ * canonical mode.
+ *
  * PUBLIC: int cl_clrtoeos __P((SCR *));
  */
 int
@@ -341,15 +417,109 @@ int
 cl_deleteln(sp)
 	SCR *sp;
 {
+	CHAR_T *p;
+	CL_PRIVATE *clp;
+	size_t col, len, llen, lno, oldy, oldx, spcnt;
+
 	EX_ABORT(sp);
 	VI_INIT_IGNORE(sp);
 
+	clp = CLP(sp);
+
+	/*
+	 * If the bottom line was in use for a busy message:
+	 *
+	 *	Get a copy of the busy message.
+	 *	Replace it with whatever was there previously.
+	 *	Scroll the screen.
+	 *	Restore the busy message.
+	 */ 
+	if (clp->busy_state == BUSY_ON) {
+		getyx(stdscr, oldy, oldx);
+		p = NULL;
+		len = llen = 0;
+		if (cl_lline_copy(sp, &len, &p, &llen))
+			return (1);
+		if (clp->lline_len == 0)
+			clrtoeol();
+		else {
+			(void)move(RLNO(sp, INFOLINE(sp)), 0);
+			(void)addnstr(clp->lline, clp->lline_len);
+			clp->lline_len = 0;
+		}
+		if (deleteln() == ERR)
+			return (1);
+		if (len != 0) {
+			(void)move(RLNO(sp, INFOLINE(sp)), 0);
+			(void)addnstr(p, len);
+		}
+		(void)move(oldy, oldx);
+		return (0);
+	}
+
+	/*
+	 * If the bottom line was in reverse video, rewrite it in normal
+	 * video.
+	 */
+	if (F_ISSET(clp, CL_LLINE_IV)) {
+		if (cl_lline_copy(sp,
+		    &clp->lline_len, &clp->lline, &clp->lline_blen))
+			return (1);
+
+		if (clp->lline_len == 0)
+			clrtoeol();
+		else {
+			getyx(stdscr, oldy, oldx);
+			(void)move(RLNO(sp, INFOLINE(sp)), 0);
+			(void)addnstr(clp->lline, clp->lline_len);
+			(void)move(oldy, oldx);
+			clp->lline_len = 0;
+		}
+		F_CLR(clp, CL_LLINE_IV);
+	}
 	return (deleteln() == ERR);
+}
+
+/*
+ * cl_discard --
+ *	Discard a screen.
+ *
+ * PUBLIC: int cl_discard __P((SCR *, SCR **));
+ */
+int
+cl_discard(sp, addp)
+	SCR *sp, **addp;
+{
+	SCR *nsp;
+
+	EX_ABORT(sp);
+
+	/*
+	 * Discard screen sp, and return the screen that got its real-estate.
+	 * Try to add into a previous screen and then into a subsequent screen,
+	 * as they're the closest to the current screen in curses.  If that
+	 * doesn't work, there was no screen to join.
+	 */
+	if ((nsp = sp->q.cqe_prev) != (void *)&sp->gp->dq) {
+		nsp->rows += sp->rows;
+		*addp = nsp;
+		return (0);
+	} else if ((nsp = sp->q.cqe_next) != (void *)&sp->gp->dq) {
+		nsp->woff = sp->woff;
+		nsp->rows += sp->rows;
+		*addp = nsp;
+	} else
+		*addp = NULL;
+	return (0);
 }
 
 /* 
  * cl_exadjust --
  *	Adjust the screen for ex.  All special purpose, all special case.
+ *
+ * XXX
+ * This need not be supported by any screen model not supporting full ex
+ * canonical mode.
  *
  * PUBLIC: int cl_exadjust __P((SCR *, exadj_t));
  */
@@ -380,6 +550,18 @@ cl_exadjust(sp, action)
 			(void)putchar('\r');
 			(void)tputs(clp->CE, 1, cl_putchar);
 		} else {
+			/*
+			 * !!!
+			 * Historically, ex didn't erase the line, so, if the
+			 * displayed line was only a single glyph, and <eof>
+			 * was more than one glyph, the output would not fully
+			 * overwrite the user's input.  To fix this, output
+			 * the maxiumum character number of spaces.  Note,
+			 * this won't help if the user entered extra prompt
+			 * or <blank> characters before the command character.
+			 * We'd have to do a lot of work to make that work, and
+			 * it's not worth the effort.
+			 */
 			for (cnt = 0; cnt < MAX_CHARACTER_COLUMNS; ++cnt)
 				(void)putchar('\b');
 			for (cnt = 0; cnt < MAX_CHARACTER_COLUMNS; ++cnt)
@@ -396,7 +578,7 @@ cl_exadjust(sp, action)
 
 /*
  * cl_getkey --
- *	Get a single key from the terminal.
+ *	Get a single terminal key (NOT event, terminal key).
  *
  * PUBLIC: int cl_getkey __P((SCR *, CHAR_T *));
  */
@@ -418,12 +600,10 @@ cl_getkey(sp, chp)
 		}
 		return (0);
 	case INP_INTR:
-		F_SET(sp->gp, G_INTERRUPTED);
-		break;
 	case INP_EOF:
 	case INP_ERR:
 		break;
-	case INP_TIMEOUT:
+	default:
 		abort();
 	}
 	return (1);
@@ -446,74 +626,29 @@ cl_insertln(sp)
 	return (insertln() == ERR);
 }
 
-/*
- * cl_lattr --
- *	Toggle a screen attribute for an entire line.
+/* 
+ * cl_interrupt --
+ *	Check for interrupts.
  *
- * PUBLIC: int cl_lattr __P((SCR *, size_t, attr_t, int));
+ * PUBLIC: int cl_interrupt __P((SCR *));
  */
 int
-cl_lattr(sp, lno, attribute, on)
+cl_interrupt(sp)
 	SCR *sp;
-	size_t lno;
-	attr_t attribute;
-	int on;
 {
-	size_t spcnt, col;
-	char ch;
+	CL_PRIVATE *clp;
 
-	EX_ABORT(sp);
-	VI_INIT_IGNORE(sp);
-
-	switch (attribute) {
-	case SA_INVERSE:
-		/*
-		 * Walk through the line, retrieving each character and writing
-		 * it back out in inverse video.  Since curses doesn't have an
-		 * EOL marker, keep track of strings of spaces, and only put
-		 * out trailing spaces if find another character.  The steps
-		 * that get us here are as follows:
-		 *
-		 * + The user splits the screen and edits in any other than the
-		 *   bottom screen.
-		 * + The user enters ex commands, but not ex mode, so the ex
-		 *   output is piped through vi/curses.
-		 * + The ex output is only a single line.
-		 * + When ex returns into vi, vi has already output the line,
-		 *   and it needs to be in reverse video to show the separation
-		 *   between the screens.
-		 *
-		 * XXX
-		 * This is a major kluge -- it would be nice if curses had an
-		 * interface that let us change attributes on a per line basis.
-		 */
-		lno = RLNO(sp, lno);
-		(void)move(lno, 0);
-		if (on)
-			(void)standout();
-		for (spcnt = col = 0;;) {
-			ch = winch(stdscr);
-			if (isspace(ch)) {
-				++spcnt;
-				if (++col >= sp->cols)
-					break;
-				(void)move(lno, col);
-			} else {
-				if (spcnt) {
-					(void)move(lno, col - spcnt);
-					for (; spcnt > 0; --spcnt)
-						(void)addnstr(" ", 1);
-				}
-				(void)addnstr(&ch, 1);
-				if (++col >= sp->cols)
-					break;
-			}
-		}
-		if (on)
-			(void)standend();
-		break;
-	default:
-		abort();
+	/*
+	 * XXX
+	 * This is nasty.  If ex/vi asks about interrupts we can assume that
+	 * the appropriate messages have been displayed and there's no need
+	 * to post an interrupt event later.  Else, the screen code must post
+	 * an interrupt event.
+	 */
+	clp = CLP(sp);
+	if (F_ISSET(clp, CL_SIGINT)) {
+		F_CLR(clp, CL_SIGINT);
+		return (1);
 	}
 	return (0);
 }
@@ -532,12 +667,11 @@ cl_move(sp, lno, cno)
 	EX_ABORT(sp);
 	VI_INIT_IGNORE(sp);
 
-	if (move(RLNO(sp, lno), cno) == ERR) {
-		msgq(sp, M_ERR,
-		    "Error: move: l(%u) c(%u) o(%u)", lno, cno, sp->woff);
-		return (1);
-	}
-	return (0);
+	if (move(RLNO(sp, lno), cno) != ERR)
+		return (0);
+
+	msgq(sp, M_ERR, "Error: move: l(%u) c(%u) o(%u)", lno, cno, sp->woff);
+	return (1);
 }
 
 /*
@@ -570,6 +704,108 @@ cl_repaint(sp)
 	VI_INIT_IGNORE(sp);
 
 	return (wrefresh(curscr) == ERR);
+}
+
+/*
+ * cl_resize --
+ *	Resize a screen.
+ *
+ * PUBLIC: int cl_resize __P((SCR *, long, long, SCR *, long, long));
+ */
+int
+cl_resize(a, a_sz, a_off, b, b_sz, b_off)
+	SCR *a, *b;
+	long a_sz, a_off, b_sz, b_off;
+{
+	EX_ABORT(a);
+
+	/*
+	 * X_sz is the signed, change in the total size of the split screen,
+	 * X_off is the signed change in the offset of the split screen in
+	 * the curses screen.
+	 */
+	a->rows += a_sz;
+	a->woff += a_off;
+	b->rows += b_sz;
+	b->woff += b_off;
+	return (0);
+}
+
+/*
+ * cl_split --
+ *	Split a screen.
+ *
+ * PUBLIC: int cl_split __P((SCR *, SCR *, int));
+ */
+int
+cl_split(old, new, to_up)
+	SCR *old, *new;
+	int to_up;
+{
+	size_t half;
+
+	EX_ABORT(old);
+
+	half = old->rows / 2;
+	if (to_up) {				/* Old is bottom half. */
+		new->rows = old->rows - half;	/* New. */
+		new->woff = old->woff;
+		old->rows = half;		/* Old. */
+		old->woff += new->rows;
+	} else {				/* Old is top half. */
+		new->rows = old->rows - half;	/* New. */
+		new->woff = old->woff + half;
+		old->rows = half;		/* Old. */
+	}
+	return (0);
+}
+
+/*
+ * cl_lline_copy --
+ *	Get a copy of the current last line.  We could save a copy each time
+ *	the last line is written, but it would be a lot more work and I don't
+ *	expect to do this very often.
+ */
+static int
+cl_lline_copy(sp, lenp, bufpp, blenp)
+	SCR *sp;
+	size_t *lenp, *blenp;
+	CHAR_T **bufpp;
+{
+	CHAR_T *p, ch;
+	size_t col, lno,oldx, oldy, spcnt;
+
+	/* Allocate enough memory to hold the line. */
+	BINC_RET(sp, *bufpp, *blenp, O_VAL(sp, O_COLUMNS));
+
+	/*
+	 * Walk through the line, retrieving each character.  Since curses
+	 * has no EOL marker, keep track of strings of spaces, and copy the
+	 * trailing spaces only if there's another non-space character.
+	 *
+	 * XXX
+	 * This is a major kluge; it would be nice if there was an interface
+	 * that let us change attributes on a per line basis.
+	 */
+	getyx(stdscr, oldy, oldx);
+	lno = RLNO(sp, INFOLINE(sp));
+	for (p = *bufpp, col = spcnt = 0;;) {
+		(void)move(lno, col);
+		ch = winch(stdscr);
+		if (isblank(ch))
+			++spcnt;
+		else {
+			for (; spcnt > 0; --spcnt)
+				*p++ = ' ';
+			*p++ = ch;
+		}
+		if (++col >= sp->cols)
+			break;
+	}
+	(void)move(oldy, oldx);
+
+	*lenp = p - *bufpp;
+	return (0);
 }
 
 #ifdef DEBUG

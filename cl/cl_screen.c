@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_screen.c,v 8.9 1995/05/26 09:09:18 bostic Exp $ (Berkeley) $Date: 1995/05/26 09:09:18 $";
+static char sccsid[] = "$Id: cl_screen.c,v 10.1 1995/06/08 19:00:33 bostic Exp $ (Berkeley) $Date: 1995/06/08 19:00:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -201,6 +201,8 @@ int
 cl_vi_end(sp)
 	SCR *sp;
 {
+	CL_PRIVATE *clp;
+
 	/* Restore signals. */
 	cl_sig_end(sp);
 
@@ -226,8 +228,12 @@ cl_vi_end(sp)
 		return (1);
 	}
 
-	/* Free the private space. */
-	free(sp->gp->cl_private);
+#if defined(DEBUG) || defined(PURIFY) || !defined(STANDALONE)
+	clp = CLP(sp);
+	if (clp->lline != NULL)
+		free(clp->lline);
+	free(clp);
+#endif
 	sp->gp->cl_private = NULL;
 
 	return (0);
@@ -361,6 +367,7 @@ cl_ex_end(sp)
 	if (cl_ex_tend(sp))
 		return (1);
 
+#if defined(DEBUG) || defined(PURIFY) || !defined(STANDALONE)
 	clp = CLP(sp);
 	if (clp->CE != NULL)
 		free(clp->CE);
@@ -373,8 +380,10 @@ cl_ex_end(sp)
 	if (clp->SO != NULL)
 		free(clp->SO);
 
-	/* Free private space. */
+	if (clp->lline != NULL)
+		free(clp->lline);
 	free(clp);
+#endif
 	sp->gp->cl_private = NULL;
 
 	return (0);
@@ -481,8 +490,6 @@ cl_common(sp)
 	CALLOC_RET(sp, clp, CL_PRIVATE *, 1, sizeof(CL_PRIVATE));
 	gp->cl_private = clp;
 
-	TAILQ_INIT(&clp->eventq);
-
 	/* Start catching signals. */
 	if (cl_sig_init(sp))
 		return (1);
@@ -499,15 +506,18 @@ cl_common(sp)
 	gp->scr_clrtoeos = cl_clrtoeos;
 	gp->scr_cursor = cl_cursor;
 	gp->scr_deleteln = cl_deleteln;
+	gp->scr_discard = cl_discard;
 	gp->scr_exadjust = cl_exadjust;
 	gp->scr_exinit = cl_ex_init;
 	gp->scr_fmap = cl_fmap;
 	gp->scr_getkey = cl_getkey;
 	gp->scr_insertln = cl_insertln;
-	gp->scr_lattr = cl_lattr;
+	gp->scr_interrupt = cl_interrupt;
 	gp->scr_move = cl_move;
 	gp->scr_refresh = cl_refresh;
 	gp->scr_repaint = cl_repaint;
+	gp->scr_resize = cl_resize;
+	gp->scr_split = cl_split;
 	gp->scr_suspend = cl_suspend;
 
 	return (0);
