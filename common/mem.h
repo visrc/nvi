@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: mem.h,v 10.9 2000/07/15 20:26:34 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:34 $
+ *	$Id: mem.h,v 10.10 2000/08/20 09:05:36 skimo Exp $ (Berkeley) $Date: 2000/08/20 09:05:36 $
  */
 
 /* Increase the size of a malloc'd buffer.  Two versions, one that
@@ -44,7 +44,7 @@
 }
 #define	BINC_RETW(sp, lp, llen, nlen) {					\
 	CHAR_T *L__bp = lp;						\
-	BINC_RET(sp, (char *)lp, llen, nlen * sizeof(CHAR_T))	    	\
+	BINC_RET(sp, (char *)lp, llen, (nlen) * sizeof(CHAR_T))	    	\
 }
 
 /*

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_filter.c,v 10.36 2000/07/14 14:29:20 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:20 $";
+static const char sccsid[] = "$Id: ex_filter.c,v 10.37 2000/08/20 09:05:37 skimo Exp $ (Berkeley) $Date: 2000/08/20 09:05:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -143,7 +143,8 @@ err:		if (input[0] != -1)
 		else
 			++name;
 
-		execl(O_STR(sp, O_SHELL), name, "-c", cmd, NULL);
+		INT2CHAR(sp, cmd, v_strlen(cmd)+1, np, nlen);
+		execl(O_STR(sp, O_SHELL), name, "-c", np, NULL);
 		msgq_str(sp, M_SYSERR, O_STR(sp, O_SHELL), "execl: %s");
 		_exit (127);
 		/* NOTREACHED */
