@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.24 1993/10/09 12:39:15 bostic Exp $ (Berkeley) $Date: 1993/10/09 12:39:15 $";
+static char sccsid[] = "$Id: main.c,v 8.25 1993/10/27 16:09:34 bostic Exp $ (Berkeley) $Date: 1993/10/27 16:09:34 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -40,9 +40,11 @@ static char sccsid[] = "$Id: main.c,v 8.24 1993/10/09 12:39:15 bostic Exp $ (Ber
 #include "pathnames.h"
 #include "tag.h"
 
+static void h_hup __P((int));
+static void h_term __P((int));
+static void h_winch __P((int, int, struct sigcontext *));
 static void msgflush __P((GS *));
 static void obsolete __P((char *[]));
-static void rcv_winch __P((int, int, struct sigcontext *));
 static void reset __P((GS *));
 static void usage __P((void));
 
@@ -312,9 +314,9 @@ main(argc, argv)
 	/*
 	 * Initialize the window change size handler.  Use sigaction(2),
 	 * not signal(3) so we can specify that we don't want to restart
-	 * read(2) system calls.
+	 * the read(2) system calls.
 	 */
-	act.sa_handler = rcv_winch;
+	act.sa_handler = h_winch;
 	sigemptyset(&act.sa_mask);
 	sigaddset(&act.sa_mask, SIGWINCH);
 	act.sa_flags = 0;
@@ -324,8 +326,8 @@ main(argc, argv)
 	(void)signal(SIGQUIT, SIG_IGN);
 
 	/* Initialize the about-to-die handlers. */
-	(void)signal(SIGHUP, rcv_hup);
-	(void)signal(SIGTERM, rcv_term);
+	(void)signal(SIGHUP, h_hup);
+	(void)signal(SIGTERM, h_term);
 
 	/*
 	 * If there's an initial command, push it on the command stack.
@@ -398,14 +400,16 @@ err1:		gp->msgp = sp->msgp;
 err2:		eval = 1;
 	}
 
-	/* Turn off the recovery timer. */
-	rcv_end();
-
 	/* Reset anything that needs resetting. */
 	reset(gp);
 
 	/* Flush any left-over error messages. */
 	msgflush(gp);
+
+	/*
+	 * DON'T FREE THE GLOBAL STRUCTURE -- WE DIDN'T TURN
+	 * OFF SIGNALS/TIMERS, SO IT MAY STILL BE REFERENCED.
+	 */
 
 	/* Make absolutely sure that the modes are restored correctly. */
 	if (F_ISSET(gp, G_ISFROMTTY) &&
@@ -452,11 +456,33 @@ msgflush(gp)
 }
 
 /*
- * rcv_winch --
+ * h_hup --
+ *	Handle SIGHUP.
+ */
+static void
+h_hup(signo)
+	int signo;
+{
+	F_SET(__global_list, G_SIGHUP);
+}
+
+/*
+ * h_term --
+ *	Handle SIGTERM.
+ */
+static void
+h_term(signo)
+	int signo;
+{
+	F_SET(__global_list, G_SIGTERM);
+}
+
+/*
+ * h_winch --
  *	Handle SIGWINCH.
  */
 static void
-rcv_winch(signo, code, scp)
+h_winch(signo, code, scp)
 	int signo, code;
 	struct sigcontext *scp;
 {
