@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 5.30 1993/05/21 10:38:25 bostic Exp $ (Berkeley) $Date: 1993/05/21 10:38:25 $";
+static char sccsid[] = "$Id: vs_smap.c,v 5.31 1993/05/28 01:42:41 bostic Exp $ (Berkeley) $Date: 1993/05/28 01:42:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -278,16 +278,13 @@ svi_sm_insert(sp, ep, lno)
 	for (t = p + cnt_orig; t <= TMAP; ++t)
 		++t->lno;
 
-	/* Fill in the SMAP for the new lines. */
+	/* Fill in the SMAP for the new lines, and display. */
 	for (cnt = 1, t = p; cnt <= cnt_orig; ++t, ++cnt) {
 		t->lno = lno;
 		t->off = cnt;
-	}
-
-	/* Display the new lines. */
-	while (cnt_orig--)
-		if (svi_line(sp, ep, p++, NULL, 0, NULL, NULL))
+		if (svi_line(sp, ep, t, NULL, 0, NULL, NULL))
 			return (1);
+	}
 	return (0);
 }
 
@@ -333,26 +330,16 @@ svi_sm_reset(sp, ep, lno)
 		if (svi_insertln(sp, diff))
 			return (1);
 
-		/*
-		 * Clear the last line on the screen,
-		 * it's going to have been corrupted.
-		 */
-		MOVE(sp, INFOLINE(sp), 0);
-		clrtoeol();
-
 		/* Shift the screen map down. */
 		memmove(p + diff, p, (((TMAP - p) - diff) + 1) * sizeof(SMAP));
 
-		/* Fill in the SMAP for the replaced line. */
+		/* Fill in the SMAP for the replaced line, and display. */
 		for (cnt = 1, t = p; cnt_new--; ++t, ++cnt) {
 			t->lno = lno;
 			t->off = cnt;
-		}
-
-		/* Display the replaced line. */
-		while (diff--)
-			if (svi_line(sp, ep, p++, NULL, 0, NULL, NULL))
+			if (svi_line(sp, ep, t, NULL, 0, NULL, NULL))
 				return (1);
+		}
 	} else {
 		/* Get the difference. */
 		diff = cnt_orig - cnt_new;
@@ -365,16 +352,13 @@ svi_sm_reset(sp, ep, lno)
 		/* Shift the screen map up. */
 		memmove(p, p + diff, (((TMAP - p) - diff) + 1) * sizeof(SMAP));
 
-		/* Fill in the SMAP for the replaced line. */
+		/* Fill in the SMAP for the replaced line, and display. */
 		for (cnt = 1, t = p; cnt_new--; ++t, ++cnt) {
 			t->lno = lno;
 			t->off = cnt;
-		}
-
-		/* Display the replaced line. */
-		for (cnt = diff; cnt--;)
-			if (svi_line(sp, ep, p++, NULL, 0, NULL, NULL))
+			if (svi_line(sp, ep, t, NULL, 0, NULL, NULL))
 				return (1);
+		}
 
 		/* Display the new lines at the bottom of the screen. */
 		for (t = TMAP - diff;;) {
