@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: options.c,v 10.57 2000/07/16 20:49:29 skimo Exp $ (Berkeley) $Date: 2000/07/16 20:49:29 $";
+static const char sccsid[] = "$Id: options.c,v 10.58 2001/06/06 19:40:34 skimo Exp $ (Berkeley) $Date: 2001/06/06 19:40:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -79,7 +79,7 @@ OPTLIST const optlist[] = {
 /* O_FILEC	  4.4BSD */
 	{"filec",	NULL,		OPT_STR,	0},
 /* O_FILEENCODING */
-	{"fileencoding",f_fileencoding,	OPT_STR,	0},
+	{"fileencoding",f_encoding,	OPT_STR,	0},
 /* O_FLASH	    HPUX */
 	{"flash",	NULL,		OPT_1BOOL,	0},
 /* O_HARDTABS	    4BSD */
@@ -88,6 +88,8 @@ OPTLIST const optlist[] = {
 	{"iclower",	f_recompile,	OPT_0BOOL,	0},
 /* O_IGNORECASE	    4BSD */
 	{"ignorecase",	f_recompile,	OPT_0BOOL,	0},
+/* O_INPUTENCODING */
+	{"inputencoding",f_encoding,	OPT_STR,	0},
 /* O_KEYTIME	  4.4BSD */
 	{"keytime",	NULL,		OPT_NUM,	0},
 /* O_LEFTRIGHT	  4.4BSD */
@@ -249,6 +251,7 @@ static OABBREV const abbrev[] = {
 	{"fe",		O_FILEENCODING},
 	{"ht",		O_HARDTABS},		/*     4BSD */
 	{"ic",		O_IGNORECASE},		/*     4BSD */
+	{"ie",		O_INPUTENCODING},
 	{"li",		O_LINES},		/*   4.4BSD */
 	{"modelines",	O_MODELINE},		/*     HPUX */
 	{"nu",		O_NUMBER},		/*     4BSD */

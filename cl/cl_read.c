@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_read.c,v 10.21 2001/05/13 19:41:54 skimo Exp $ (Berkeley) $Date: 2001/05/13 19:41:54 $";
+static const char sccsid[] = "$Id: cl_read.c,v 10.22 2001/06/06 19:40:32 skimo Exp $ (Berkeley) $Date: 2001/06/06 19:40:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -110,7 +110,7 @@ retest:	if (LF_ISSET(EC_INTERRUPT) || F_ISSET(clp, CL_SIGINT)) {
 	switch (cl_read(sp, LF_ISSET(EC_QUOTED | EC_RAW),
 	    (char *)clp->ibuf, sizeof(clp->ibuf)/sizeof(CHAR_T), &nr, tp)) {
 	case INP_OK:
-		CHAR2INT(sp, (char *)clp->ibuf, nr, wp, wlen);
+		INPUT2INT(sp, (char *)clp->ibuf, nr, wp, wlen);
 		MEMMOVEW(clp->ibuf, wp, wlen);
 		evp->e_csp = clp->ibuf;
 		evp->e_len = wlen;

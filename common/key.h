@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: key.h,v 10.41 2001/05/11 20:09:38 skimo Exp $ (Berkeley) $Date: 2001/05/11 20:09:38 $
+ *	$Id: key.h,v 10.42 2001/06/06 19:40:34 skimo Exp $ (Berkeley) $Date: 2001/06/06 19:40:34 $
  */
 
 #include "multibyte.h"
@@ -31,9 +31,11 @@ typedef	u_int		ARG_CHAR_T;
 #define INT2FILE(sp,w,wlen,n,nlen) 					    \
     sp->conv.int2file(sp, w, wlen, &sp->wp->cw, &nlen, &n)
 #define CHAR2INTB(sp,n,nlen,w,wlen,buf)					    \
-    sp->conv.char2int(sp, n, nlen, &buf, &wlen, &w)
+    sp->conv.sys2int(sp, n, nlen, &buf, &wlen, &w)
 #define INT2CHAR(sp,w,wlen,n,nlen) 					    \
-    sp->conv.int2char(sp, w, wlen, &sp->wp->cw, &nlen, &n)
+    sp->conv.int2sys(sp, w, wlen, &sp->wp->cw, &nlen, &n)
+#define INPUT2INT(sp,n,nlen,w,wlen)					    \
+    sp->conv.input2int(sp, n, nlen, &sp->wp->cw, &wlen, &w)
 #define INT2DISP(sp,w,wlen,n,nlen) 					    \
     sp->conv.int2disp(sp, w, wlen, &sp->wp->cw, &nlen, &n)
 #define CONST

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: conv.c,v 1.18 2001/06/03 20:43:28 skimo Exp $ (Berkeley) $Date: 2001/06/03 20:43:28 $";
+static const char sccsid[] = "$Id: conv.c,v 1.19 2001/06/06 19:40:33 skimo Exp $ (Berkeley) $Date: 2001/06/06 19:40:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -73,7 +73,7 @@ raw2int(SCR *sp, const char * str, ssize_t len, CONVWIN *cw, size_t *tolen,
 
 int 
 default_char2int(SCR *sp, const char * str, ssize_t len, CONVWIN *cw, 
-		size_t *tolen, CHAR_T **dst)
+		size_t *tolen, CHAR_T **dst, char *enc)
 {
     int i = 0, j;
     CHAR_T **tostr = (CHAR_T **)&cw->bp1;
@@ -83,7 +83,6 @@ default_char2int(SCR *sp, const char * str, ssize_t len, CONVWIN *cw,
     ssize_t  nlen = len;
     char *src = (char *)str;
     iconv_t	id = (iconv_t)-1;
-    char *enc = O_STR(sp, O_FILEENCODING);
     char	buffer[CONV_BUFFER_SIZE];
     size_t	left = len;
 
@@ -127,6 +126,20 @@ err:
     *dst = cw->bp1;
 
     return 1;
+}
+
+int 
+fe_char2int(SCR *sp, const char * str, ssize_t len, CONVWIN *cw, 
+	    size_t *tolen, CHAR_T **dst)
+{
+    default_char2int(sp, str, len, cw, tolen, dst, O_STR(sp, O_FILEENCODING));
+}
+
+int 
+ie_char2int(SCR *sp, const char * str, ssize_t len, CONVWIN *cw, 
+	    size_t *tolen, CHAR_T **dst)
+{
+    default_char2int(sp, str, len, cw, tolen, dst, O_STR(sp, O_INPUTENCODING));
 }
 
 int 
@@ -259,7 +272,7 @@ int
 default_int2disp (SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw, 
 		size_t *tolen, char **dst)
 {
-    *dst = str;
+    *dst = (char*)str;
     *tolen = len;
 
     return 0;
@@ -299,29 +312,44 @@ conv_init (SCR *orig, SCR *sp)
 	MEMCPY(&sp->conv, &orig->conv, 1);
     else {
 	setlocale(LC_ALL, "");
-	sp->conv.char2int = raw2int;
-	sp->conv.int2char = int2raw;
-	sp->conv.file2int = default_char2int;
+	sp->conv.sys2int = raw2int;
+	sp->conv.int2sys = int2raw;
+	sp->conv.file2int = fe_char2int;
 	sp->conv.int2file = default_int2char;
+	sp->conv.input2int = ie_char2int;
 	sp->conv.int2disp = default_int2disp;
 	o_set(sp, O_FILEENCODING, OS_STRDUP, nl_langinfo(CODESET), 0);
+	o_set(sp, O_INPUTENCODING, OS_STRDUP, nl_langinfo(CODESET), 0);
     }
 }
 
 int
-conv_enc (SCR *sp, char *enc)
+conv_enc (SCR *sp, int option, char *enc)
 {
     iconv_t id;
+    char2wchar_t    *c2w;
+    wchar2char_t    *w2c;
+
+    switch (option) {
+    case O_FILEENCODING:
+	c2w = &sp->conv.file2int;
+	w2c = &sp->conv.int2file;
+	break;
+    case O_INPUTENCODING:
+	c2w = &sp->conv.input2int;
+	w2c = NULL;
+	break;
+    }
 
     if (!*enc) {
-	sp->conv.file2int = raw2int;
-	sp->conv.int2file = int2raw;
+	if (c2w) *c2w = raw2int;
+	if (w2c) *w2c = int2raw;
 	return 0;
     }
 
     if (!strcmp(enc, "WCHAR_T")) {
-	sp->conv.file2int = CHAR_T_char2int;
-	sp->conv.int2file = CHAR_T_int2char;
+	if (c2w) *c2w = CHAR_T_char2int;
+	if (w2c) *w2c = CHAR_T_int2char;
 	return 0;
     }
 
@@ -334,16 +362,29 @@ conv_enc (SCR *sp, char *enc)
 	goto err;
     iconv_close(id);
 
-    sp->conv.file2int = default_char2int;
-    sp->conv.int2file = default_int2char;
+    switch (option) {
+    case O_FILEENCODING:
+	*c2w = fe_char2int;
+	*w2c = default_int2char;
+	break;
+    case O_INPUTENCODING:
+	*c2w = ie_char2int;
+	break;
+    }
 
     F_CLR(sp, SC_CONV_ERROR);
     F_SET(sp, SC_SCR_REFORMAT);
 
     return 0;
 err:
-    msgq(sp, M_ERR,
-	"321|File encoding conversion not supported");
+    switch (option) {
+    case O_FILEENCODING:
+	msgq(sp, M_ERR,
+	    "321|File encoding conversion not supported");
+    case O_INPUTENCODING:
+	msgq(sp, M_ERR,
+	    "322|Input encoding conversion not supported");
+    }
     return 1;
 }
 
