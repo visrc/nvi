@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.5 1992/10/26 09:07:45 bostic Exp $ (Berkeley) $Date: 1992/10/26 09:07:45 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.6 1992/11/02 09:42:39 bostic Exp $ (Berkeley) $Date: 1992/11/02 09:42:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -14,7 +14,9 @@ static char sccsid[] = "$Id: vs_refresh.c,v 5.5 1992/10/26 09:07:45 bostic Exp $
 
 #include <curses.h>
 #include <db.h>
+#include <errno.h>
 #include <limits.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "vi.h"
@@ -31,22 +33,13 @@ int
 scr_init(ep)
 	EXF *ep;
 {
-	static int first = 1;
-
-	if (first) {
-		first = 0;
-		if (initscr() == NULL)
-			return (1);
-		raw();
-		noecho();
-		nonl();
-		scrollok(stdscr, 1);
+	if (initscr() == NULL) {
+		msg("Error: initscr failed: %s", strerror(errno));
+		return (1);
 	}
-
-	ep->lines = LINES;
-	ep->cols = COLS;
-
-	MOVE(0, 0);
+	raw();
+	noecho();
+	scrollok(stdscr, 1);
 	return (0);
 }
 
@@ -99,8 +92,6 @@ scr_modeline(ep, isinput)
 
 	static char buf[RULERSIZE];
 	size_t oldy, oldx;
-	int when;
-	char *p;
 
 	getyx(stdscr, oldy, oldx);
 	MOVE(SCREENSIZE(ep), 0);
@@ -158,6 +149,7 @@ onwinch(signo)
 	}
 	(void)scr_end(curf);
 	(void)scr_init(curf);
+	(void)v_init(curf);
 	(void)scr_ref(curf);
 	refresh();
 }
