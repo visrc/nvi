@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 10.16 1995/10/18 11:35:11 bostic Exp $ (Berkeley) $Date: 1995/10/18 11:35:11 $";
+static char sccsid[] = "$Id: options.c,v 10.17 1995/10/19 13:53:01 bostic Exp $ (Berkeley) $Date: 1995/10/19 13:53:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -635,6 +635,9 @@ badnum:				p = msg_print(sp, name, &nf);
 				}
 			} else {
 				if (setdef && O_D_STR(sp, offset) != NULL) {
+					if (O_STR(sp, offset) ==
+					    O_D_STR(sp, offset))
+						O_STR(sp, offset) = NULL;
 					free(O_D_STR(sp, offset));
 					O_D_STR(sp, offset) = NULL;
 				}

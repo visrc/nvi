@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 10.7 1995/09/28 13:03:14 bostic Exp $ (Berkeley) $Date: 1995/09/28 13:03:14 $";
+static char sccsid[] = "$Id: options_f.c,v 10.8 1995/10/19 13:53:05 bostic Exp $ (Berkeley) $Date: 1995/10/19 13:53:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -383,7 +383,8 @@ prset(sp, str, set_index, unset_index)
 			*++t = '\0';
 		}
 	}
-	if (O_STR(sp, set_index) != NULL)
+	if (O_STR(sp, set_index) != NULL &&
+	    O_STR(sp, set_index) != O_D_STR(sp, set_index))
 		free(O_STR(sp, set_index));
 	O_STR(sp, set_index) = p;
 
@@ -599,7 +600,7 @@ opt_dup(sp, opt, str)
 		msgq(sp, M_SYSERR, NULL);
 		return (1);
 	}
-	if (O_STR(sp, opt) != NULL)
+	if (O_STR(sp, opt) != NULL && O_STR(sp, opt) != O_D_STR(sp, opt))
 		free(O_STR(sp, opt));
 	O_STR(sp, opt) = p;
 	return (0);
