@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.109 1994/05/02 13:58:11 bostic Exp $ (Berkeley) $Date: 1994/05/02 13:58:11 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.110 1994/05/02 14:30:06 bostic Exp $ (Berkeley) $Date: 1994/05/02 14:30:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -91,6 +91,7 @@ v_ntext(sp, ep, tiqh, tm, lp, len, rp, prompt, ai_line, flags)
 				/* State of quotation. */
 	enum { Q_NOTSET, Q_NEXTCHAR, Q_THISCHAR } quoted;
 	enum input tval;
+	struct termios t;	/* Terminal characteristics. */
 	CH ikey;		/* Input character structure. */
 	CHAR_T ch;		/* Input character. */
 	TEXT *tp, *ntp, ait;	/* Input and autoindent text structures. */
@@ -104,6 +105,7 @@ v_ntext(sp, ep, tiqh, tm, lp, len, rp, prompt, ai_line, flags)
 	int eval;		/* Routine return value. */
 	int replay;		/* If replaying a set of input. */
 	int showmatch;		/* Showmatch set on this character. */
+	int sig_ix, sig_reset;	/* Signal information. */
 	int testnr;		/* Test first character for nul replay. */
 	int max, tmp;
 	int unmap_tst;		/* Input map needs testing. */
@@ -291,7 +293,7 @@ nullreplay:
 
 	unmap_tst = LF_ISSET(TXT_MAPINPUT) && LF_ISSET(TXT_INFOLINE);
 	iflags = LF_ISSET(TXT_MAPCOMMAND | TXT_MAPINPUT);
-	for (showmatch = 0,
+	for (showmatch = 0, sig_reset = 0,
 	    carat_st = C_NOTSET, hex = H_NOTSET, quoted = Q_NOTSET;;) {
 		/*
 		 * Reset the line and update the screen.  (The txt_showmatch()
@@ -313,6 +315,14 @@ nullreplay:
 next_ch:	tval = term_key(sp, &ikey, quoted == Q_THISCHAR ?
 		    iflags & ~(TXT_MAPCOMMAND | TXT_MAPINPUT) : iflags);
 		ch = ikey.ch;
+
+		/* Restore the terminal state if it was modified. */
+		if (sig_reset && !tcgetattr(STDIN_FILENO, &t)) {
+			t.c_lflag |= ISIG;
+			t.c_iflag |= sig_ix;
+			sig_reset = 0;
+			(void)tcsetattr(STDIN_FILENO, TCSASOFT | TCSADRAIN, &t);
+		}
 
 		/*
 		 * !!!
@@ -852,6 +862,21 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 		case K_VLNEXT:			/* Quote the next character. */
 			ch = '^';
 			quoted = Q_NEXTCHAR;
+			/*
+			 * If there are no keys in the queue, reset the tty
+			 * so that the user can enter a ^C, ^Q, ^S.  There's
+			 * an obvious race here, if the user entered the ^C
+			 * already.  There's nothing that we can do to fix
+			 * that problem.
+			 */
+			if (!KEYS_WAITING(sp) && !tcgetattr(STDIN_FILENO, &t)) {
+				t.c_lflag &= ~ISIG;
+				sig_ix = t.c_iflag & (IXON | IXOFF);
+				t.c_iflag &= ~(IXON | IXOFF);
+				sig_reset = 1;
+				(void)tcsetattr(STDIN_FILENO,
+				    TCSASOFT | TCSADRAIN, &t);
+			}
 			goto insq_ch;
 		case K_HEXCHAR:
 			hex = H_NEXTCHAR;
