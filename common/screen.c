@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 5.15 1993/06/01 23:32:49 bostic Exp $ (Berkeley) $Date: 1993/06/01 23:32:49 $";
+static char sccsid[] = "$Id: screen.c,v 5.16 1993/06/01 23:45:43 bostic Exp $ (Berkeley) $Date: 1993/06/01 23:45:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -172,7 +172,7 @@ mem:			msgq(orig, M_ERR,
 
 		sp->cname = asciiname;			/* XXX */
 
-		sp->flags = S_REDRAW | S_REFORMAT;
+		sp->flags |= S_REDRAW | S_REFORMAT;
 	}
 
 	return (0);
