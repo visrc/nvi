@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex.c,v 10.51 1996/07/09 19:01:20 bostic Exp $ (Berkeley) $Date: 1996/07/09 19:01:20 $";
+static const char sccsid[] = "$Id: ex.c,v 10.52 1996/08/11 10:54:25 bostic Exp $ (Berkeley) $Date: 1996/08/11 10:54:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1408,9 +1408,9 @@ addr_verify:
 	}
 
 	/*
-	 * If the command was successful may want to display a line based on
-	 * the autoprint option or an explicit print flag.  (Make sure that
-	 * there's a line to display.)  Also, the autoprint edit option is
+	 * If the command executed successfully, we may want to display a line
+	 * based on the autoprint option or an explicit print flag.  (Make sure
+	 * that there's a line to display.)  Also, the autoprint edit option is
 	 * turned off for the duration of global commands.
 	 */
 	if (F_ISSET(sp, SC_EX) && sp->ep != NULL && sp->lno != 0) {
