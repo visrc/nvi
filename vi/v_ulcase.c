@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ulcase.c,v 8.7 1994/05/08 10:08:26 bostic Exp $ (Berkeley) $Date: 1994/05/08 10:08:26 $";
+static char sccsid[] = "$Id: v_ulcase.c,v 8.8 1994/07/15 17:56:41 bostic Exp $ (Berkeley) $Date: 1994/07/15 17:56:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -133,34 +133,12 @@ v_mulcase(sp, ep, vp)
 	/*
 	 * XXX
 	 * I didn't create a new motion command when I added motion semantics
-	 * for ~.  That's the right way to do it, but it would have required
-	 * changes all over the vi directories for little good.  Instead, we
-	 * pretend it's a yank command, and correct it here.  If we're moving
-	 * backward, move to the start of the region.  If we're moving forward,
-	 * try and put the cursor one space past the end of the region.  This
-	 * matches historic semantics.  The test used to decide if it was a
-	 * forward or backward motion is completely bogus, depending on the
-	 * unknown fact that the real screen cursor has not yet been updated,
-	 * but I don't want to set a bit in vi.c:getmotion(), either.
+	 * for ~.  While that's the correct way to do it, that choice would
+	 * have required changes all over the vi directory for little gain.
+	 * Instead, we pretend it's a yank command.  Note, this means that we
+	 * follow the cursor motion rules for yank commands, but that seems
+	 * reasonable to me.
 	 */
-	if (vp->m_start.lno < sp->lno ||
-	    vp->m_start.lno == sp->lno && vp->m_start.cno < sp->cno) {
-		vp->m_final = vp->m_start;
-		return (0);
-	}
-
-	vp->m_final = vp->m_stop;
-
-	if (!F_ISSET(vp, VM_LMODE) && len != 0 && vp->m_final.cno < len - 1) {
-		++vp->m_final.cno;
-		return (0);
-	}
-
-	if (file_gline(sp, ep, ++vp->m_final.lno, &len) == NULL) {
-		(void)file_gline(sp, ep, --vp->m_final.lno, &len);
-		vp->m_final.cno = len == 0 ? 0 : len - 1;
-	} else
-		vp->m_final.cno = 0;
 	return (0);
 }
 
