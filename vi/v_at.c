@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_at.c,v 5.4 1992/05/15 11:14:05 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:14:05 $";
+static char sccsid[] = "$Id: v_at.c,v 5.5 1992/05/21 12:57:25 bostic Exp $ (Berkeley) $Date: 1992/05/21 12:57:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -16,24 +16,31 @@ static char sccsid[] = "$Id: v_at.c,v 5.4 1992/05/15 11:14:05 bostic Exp $ (Berk
 #include <stddef.h>
 
 #include "vi.h"
+#include "exf.h"
+#include "mark.h"
+#include "cut.h"
 #include "vcmd.h"
 #include "extern.h"
 
-u_char	*atkeybuf, *atkeyp;			/* Shared at buffer. */
-u_long	 atkeybuflen;				/* Length of shared buffer. */
+u_long atkeybuflen;				/* Length of shared buffer. */
+char *atkeybuf, *atkeyp;			/* Shared at buffer. */
 
 int
 v_at(vp, cp, rp)
 	VICMDARG *vp;
 	MARK *cp, *rp;
 {
-	static int recurse;
 	static char rstack[UCHAR_MAX];
+	CB *cb;
+	CBLINE *lp;
 	size_t len, remain;
 	int key;
-	u_char *buf, *p;
+	char *p, *start;
 
 	key = vp->character;
+	CBNAME(key, cb);
+	CBEMPTY(key, cb);
+
 	if (atkeybuflen == 0)
 		bzero(rstack, sizeof(rstack));
 	else if (rstack[key]) {
@@ -41,33 +48,41 @@ v_at(vp, cp, rp)
 		return (1);
 	}
 
-	if ((buf = cb2str(key, &len)) == NULL)
+	/* Get buffer for rest of at string plus cut buffer. */
+	remain = atkeybuflen ? atkeybuflen - (atkeyp - atkeybuf) : 0;
+
+	/* Check for overflow. */
+	len = cb->len + remain;
+	if (len < cb->len + remain) {
+		msg("Buffer overflow.");
 		return (1);
-
-	if (atkeybuflen == 0) {
-		/* Allocate a buffer that will hold both. */
-		remain = atkeybuflen - (atkeyp - atkeybuf);
-		if ((p = malloc(len + remain)) == NULL) {
-			msg("Error: %s", strerror(errno));
-			return (1);
-		}
-
-		/* Copy into the new buffer. */
-		bcopy(atkeyp, p, remain);
-		bcopy(buf, p + remain, len);
-
-		/* Free the old buffers. */
-		free(atkeybuf);
-		free(buf);
-
-		/* Fix the pointers. */
-		atkeybuf = atkeyp = p;
-		atkeybuflen = len + remain;
-	} else {
-		atkeybuf = atkeyp = buf;
-		atkeybuflen = len;
 	}
 
+	if ((start = p = malloc(len)) == NULL) {
+		msg("Error: %s", strerror(errno));
+		return (1);
+	}
+
+	/* Copy into the new buffer. */
+	for (lp = cb->head;;) {
+		bcopy(lp->lp, p, lp->len);
+		p += lp->len;
+		*p++ = '\n';
+		if ((lp = lp->next) == NULL)
+			break;
+	}
+	
+	/* Copy the rest of the current at string into place. */
+	if (atkeybuflen != 0) {
+		bcopy(atkeyp, p, remain);
+		free(atkeybuf);
+
+	}
+	/* Fix the pointers. */
+	atkeybuf = atkeyp = start;
+	atkeybuflen = len;
+
 	rstack[key] = 1;
+
 	return (0);
 }
