@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.127 1994/06/30 09:37:42 bostic Exp $ (Berkeley) $Date: 1994/06/30 09:37:42 $";
+static char sccsid[] = "$Id: ex.c,v 8.128 1994/07/02 20:46:23 bostic Exp $ (Berkeley) $Date: 1994/07/02 20:46:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1390,18 +1390,15 @@ ep_range(sp, ep, excp, cmdp, cmdlenp)
 
 	/*
 	 * XXX
-	 * This is probably not right behavior for savecursor -- need
-	 * to figure out what the historical ex did for ";,;,;5p" or
-	 * similar stupidity.
+	 * This is probably not the right behavior for savecursor --
+	 * need to figure out what the historical ex did for ";,;,;5p"
+	 * or similar stupidity.
 	 */
 done:	if (savecursor_set) {
 		sp->lno = savecursor.lno;
 		sp->cno = savecursor.cno;
 	}
-	if (excp->addrcnt == 2 &&
-	    (excp->addr2.lno < excp->addr1.lno ||
-	    excp->addr2.lno == excp->addr1.lno &&
-	    excp->addr2.cno < excp->addr1.cno)) {
+	if (excp->addrcnt == 2 && excp->addr2.lno < excp->addr1.lno) {
 		msgq(sp, M_ERR,
 		    "The second address is smaller than the first");
 		return (1);
