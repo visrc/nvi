@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.72 1994/06/30 09:38:10 bostic Exp $ (Berkeley) $Date: 1994/06/30 09:38:10 $";
+static char sccsid[] = "$Id: vi.c,v 8.73 1994/07/01 10:10:06 bostic Exp $ (Berkeley) $Date: 1994/07/01 10:10:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -666,17 +666,19 @@ getkeyword(sp, ep, kp, flags)
 			GETLINE_ERR(sp, sp->lno);
 		return (1);
 	}
-	beg = sp->cno;
 
-	/* May not be a keyword at all. */
-	if (p == NULL || len == 0 ||
+	/*
+	 * !!!
+	 * Historically, tag commands skipped over any leading whitespace
+	 * characters.
+	 */
+	for (beg = sp->cno; beg < len && isspace(p[beg]); ++beg);
+
+	if (beg >= len ||
 	    LF_ISSET(V_KEYW) && !inword(p[beg]) ||
 	    LF_ISSET(V_KEYNUM) && !innum(p[beg]) &&
-	    p[beg] != '-' && p[beg] != '+') {
-noword:		msgq(sp, M_BERR, "Cursor not in a %s",
-		    LF_ISSET(V_KEYW) ? "word" : "number");
-		return (1);
-	}
+	    p[beg] != '-' && p[beg] != '+')
+		goto noword;
 
 	/*
 	 * !!!
@@ -684,8 +686,8 @@ noword:		msgq(sp, M_BERR, "Cursor not in a %s",
 	 * used for cursor-word searching and for tags.  Historical vi
 	 * only used the word in a tag search from the cursor to the end
 	 * of the word, i.e. if the cursor was on the 'b' in " abc ", the
-	 * tag was "bc".  For no particular reason, we make cursor word
-	 * searches follow the same rule.
+	 * tag was "bc".  For no particular reason, we make the cursor
+	 * word searches follow the same rule.
 	 */
 	if (beg != 0)
 		if (LF_ISSET(V_KEYW)) {
@@ -722,10 +724,10 @@ noword:		msgq(sp, M_BERR, "Cursor not in a %s",
 		}
 
 	if (LF_ISSET(V_KEYW)) {
-		for (end = sp->cno; ++end < len && inword(p[end]););
+		for (end = beg; ++end < len && inword(p[end]););
 		--end;
 	} else {
-		for (end = sp->cno; ++end < len;) {
+		for (end = beg; ++end < len;) {
 			if (p[end] == 'X' || p[end] == 'x') {
 				if (end != beg + 1 || p[beg] != '0')
 					break;
@@ -736,8 +738,11 @@ noword:		msgq(sp, M_BERR, "Cursor not in a %s",
 		}
 
 		/* Just a sign isn't a number. */
-		if (end == beg && (p[beg] == '+' || p[beg] == '-'))
-			goto noword;
+		if (end == beg && (p[beg] == '+' || p[beg] == '-')) {
+noword:			msgq(sp, M_BERR, "Cursor not in a %s",
+			    LF_ISSET(V_KEYW) ? "word" : "number");
+			return (1);
+		}
 		--end;
 	}
 
