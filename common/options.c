@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.46 1994/03/19 15:41:43 bostic Exp $ (Berkeley) $Date: 1994/03/19 15:41:43 $";
+static char sccsid[] = "$Id: options.c,v 8.47 1994/03/19 16:56:55 bostic Exp $ (Berkeley) $Date: 1994/03/19 16:56:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -261,7 +261,7 @@ opts_init(sp)
 			O_SET(sp, cnt);
 
 	(void)snprintf(b1, sizeof(b1), "cdpath=%s",
-	    (s = getenv("CDPATH")) == NULL ? s : ".");
+	    (s = getenv("CDPATH")) == NULL ? ":" : s);
 	SET_DEF(O_CDPATH, b1);
 
 	/*
