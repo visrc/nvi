@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.96 1996/04/30 11:19:59 bostic Exp $ (Berkeley) $Date: 1996/04/30 11:19:59 $
+dnl	$Id: configure.in,v 8.97 1996/04/30 20:11:04 bostic Exp $ (Berkeley) $Date: 1996/04/30 20:11:04 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(../common/main.c)
@@ -11,8 +11,8 @@ AC_PROG_INSTALL()
 AC_CANONICAL_HOST
 AC_ARG_PROGRAM()
 
-dnl If the user wants a debugging environment, set CFLAGS now.
-dnl Some compilers won't mix optimizing and debug flags.
+dnl If the user wants a debugging environment, set OPTFLAG now.  (Some
+dnl compilers won't mix optimizing and debug flags.)
 AC_MSG_CHECKING(for debugging)
 AC_CACHE_VAL(vi_cv_debug, [dnl
 AC_ARG_ENABLE(debug,
@@ -20,49 +20,50 @@ AC_ARG_ENABLE(debug,
 	[vi_cv_debug="yes"], [vi_cv_debug="no"])])
 if test "$vi_cv_debug" = yes; then
 	AC_DEFINE(DEBUG)
-	CFLAGS=${CFLAGS-"-g"}
-	no_op_CFLAGS=${CFLAGS-"-g"}
+	OPTFLAG=${OPTFLAG-"-g"}
+	no_op_OPTFLAG=${no_op_OPTFLAG-"-g"}
 fi
 AC_MSG_RESULT($vi_cv_debug)
 
 dnl Compilers, compiler flags and libraries per architecture.  This is where
 dnl we handle stuff that autoconf can't handle.
 dnl XXX
-dnl Don't override CC or CFLAGS if it's already set from the environment.
+dnl Don't override anything if it's already set from the environment.
 dnl XXX
 dnl A/UX	has broken getopt(3), strpbrk(3).
 dnl		-ZP disables _BSD_SOURCE et al, but enables POSIX at link time.
 AC_SUBST(CPPFLAGS)
 case "$host_os" in
-aix3.2.5)  CFLAGS=${CFLAGS-"-O"};;
-aix4.1*)   CFLAGS=${CFLAGS-"-O3 -qstrict"};;
-aux*)	   CFLAGS=${CFLAGS-"-O"}
+aix3.2.5)  OPTFLAG=${OPTFLAG-"-O"};;
+aix4.1*)   OPTFLAG=${OPTFLAG-"-O3"}
+	   CFLAGS=${CFLAGS-"-qstrict"};;
+aux*)	   OPTFLAG=${OPTFLAG-"-O"}
 	   CPPFLAGS="-ZP -D_BSD_SOURCE -D_SYSV_SOURCE -D_AUX_SOURCE $CPPFLAGS"
 	   LDFLAGS="-ZP $LDFLAGS"
 	   LIBOBJS="getopt.o strpbrk.o $LIBOBJS";;
-bsd4.4)    CFLAGS=${CFLAGS-"-O2"}
+bsd4.4)    OPTFLAG=${OPTFLAG-"-O2"}
 	   LIBS="$LIBS";;
 bsdi2.1)   CC=${CC-"shlicc"}
-	   CFLAGS=${CFLAGS-"-O2"};;
-bsdi*)	   CFLAGS=${CFLAGS-"-O2"};;
+	   OPTFLAG=${OPTFLAG-"-O2"};;
+bsdi*)	   OPTFLAG=${OPTFLAG-"-O2"};;
 dgux*)	   LIBS="$LIBS -ldgc";;
-irix6*)	   CFLAGS=${CFLAGS-"-O2"}
+irix6*)	   OPTFLAG=${OPTFLAG-"-O2"}
 	   LIBS="$LIBS -lbsd";;
-irix*)	   CFLAGS=${CFLAGS-"-O2"}
+irix*)	   OPTFLAG=${OPTFLAG-"-O2"}
 	   LIBS="$LIBS -lc_s -lbsd";;
 isc*)	   LIBS="$LIBS -lcposix -linet";;
 netbsd1*)  LIBS="$LIBS -lcrypt";;
-nextstep3) CFLAGS=${CFLAGS-"-O9"}
+nextstep3) OPTFLAG=${OPTFLAG-"-O9"}
 	   CPPFLAGS="-w -pipe -posix $CPPFLAGS"
 	   LDFLAGS="-posix $LDFLAGS";;
 osf*)	   CPPFLAGS="-Olimit 1000 $CPPFLAGS";;
 ptx*)	   LIBS="$LIBS -lseq -linet -lsocket";;
 sco3.2*)   LIBS="$LIBS -lsocket";;
 sinix*)	   LIBS="$LIBS -lelf -lc";;
-solaris*)  no_op_CFLAGS=${no_op_CFLAGS-""}
+solaris*)  no_op_OPTFLAG=${no_op_OPTFLAG-""}
 	   LIBS="$LIBS -lsocket -lnsl -ldl"
 	   RLIBS=yes;;
-sunos*)	   no_op_CFLAGS=${no_op_CFLAGS-""};;
+sunos*)	   no_op_OPTFLAG=${no_op_OPTFLAG-""};;
 ultrix*)   AC_DEFINE(HAVE_BROKEN_VDISABLE);;
 wgs*)	   LIBS="$LIBS -lnsl";;
 esac
@@ -71,13 +72,14 @@ dnl The default compiler is cc.
 AC_SUBST(CC)
 CC=${CC-cc}
 
-dnl The default CFLAGS is -O
-CFLAGS=${CFLAGS-"-O"}
+dnl The default OPTFLAG is -O
+AC_SUBST(OPTFLAG)
+OPTFLAG=${OPTFLAG-"-O"}
 
 dnl The SunOS/Solaris compiler can't optimize vi/v_txt.c; the symptom is
 dnl that the command 35i==<esc> turns into an infinite loop.
-AC_SUBST(no_op_CFLAGS)
-no_op_CFLAGS=${no_op_CFLAGS-"$CFLAGS"}
+AC_SUBST(no_op_OPTFLAG)
+no_op_OPTFLAG=${no_op_OPTFLAG-"$OPTFLAG"}
 
 dnl Checks for programs.
 PATH="$PATH:/usr/bin:/usr/sbin:/sbin:/etc:/usr/etc:/usr/lib:/usr/ucblib:"
