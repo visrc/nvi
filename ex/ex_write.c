@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 8.30 1994/05/02 13:54:18 bostic Exp $ (Berkeley) $Date: 1994/05/02 13:54:18 $";
+static char sccsid[] = "$Id: ex_write.c,v 8.31 1994/05/03 21:40:18 bostic Exp $ (Berkeley) $Date: 1994/05/03 21:40:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -265,7 +265,7 @@ ex_writefp(sp, ep, name, fp, fm, tm, nlno, nch)
 	if (tline != 0) {
 		for (; fline <= tline; ++fline, ++lcnt) {
 			/* Caller has to provide any interrupt message. */
-			if (F_ISSET(sp, S_INTERRUPTED))
+			if (INTERRUPTED(sp))
 				break;
 			if ((p = file_gline(sp, ep, fline, &len)) == NULL)
 				break;

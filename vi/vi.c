@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.66 1994/05/02 13:57:50 bostic Exp $ (Berkeley) $Date: 1994/05/02 13:57:50 $";
+static char sccsid[] = "$Id: vi.c,v 8.67 1994/05/03 21:41:18 bostic Exp $ (Berkeley) $Date: 1994/05/03 21:41:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -77,9 +77,9 @@ vi(sp, ep)
 		 * Check and clear for interrupts; there's an obvious race,
 		 * but I don't want to make a system call to eliminate it.
 		 */
-		if (F_ISSET(sp, S_INTERRUPTED))
+		if (INTERRUPTED(sp))
 			term_flush(sp, "Interrupted", CH_MAPPED);
-		F_CLR(sp, S_INTERRUPTED | S_INTERRUPTIBLE);
+		CLR_INTERRUPT(sp);
 
 		/* If not in a map, log the cursor position. */
 		if (!MAPPED_KEYS_WAITING(sp) && log_cursor(sp, ep))

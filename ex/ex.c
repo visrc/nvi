@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.121 1994/05/02 13:54:29 bostic Exp $ (Berkeley) $Date: 1994/05/02 13:54:29 $";
+static char sccsid[] = "$Id: ex.c,v 8.122 1994/05/03 21:40:05 bostic Exp $ (Berkeley) $Date: 1994/05/03 21:40:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -85,10 +85,10 @@ ex(sp, ep)
 		 * Get the next command.  Interrupt flag manipulation is safe
 		 * because ex_icmd clears them all.
 		 */
-		F_CLR(sp, S_INTERRUPTED);
+		CLR_INTERRUPT(sp);
 		F_SET(sp, S_INTERRUPTIBLE);
 		irval = sp->s_get(sp, ep, sp->tiqp, ':', flags);
-		if (F_ISSET(sp, S_INTERRUPTED)) {
+		if (INTERRUPTED(sp)) {
 			(void)fputc('\n', stdout);
 			(void)fflush(stdout);
 			goto refresh;
@@ -227,9 +227,9 @@ ex_icmd(sp, ep, cmd, len)
 	 * here, instead, they call ex_cmd directly.  So, reset all of the
 	 * interruptible flags now.
 	 */
-	F_CLR(sp, S_INTERRUPTED | S_INTERRUPTIBLE);
+	CLR_INTERRUPT(sp);
 	rval = ex_cmd(sp, ep, cmd, len);
-	if (F_ISSET(sp, S_INTERRUPTED))
+	if (INTERRUPTED(sp))
 		term_flush(sp, "Interrupted", CH_MAPPED);
 	return (rval);
 }
@@ -272,11 +272,8 @@ loop:	if (nl) {
 	arg1 = NULL;
 	save_cmdlen = 0;
 
-	/*
-	 * It's possible that we've been interrupted during a
-	 * command.
-	 */
-	if (F_ISSET(sp, S_INTERRUPTED))
+	/* It's possible that we've been interrupted during a command. */
+	if (INTERRUPTED(sp))
 		return (0);
 
 	/* Skip whitespace, separators, newlines. */

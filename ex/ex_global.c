@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 8.33 1994/05/02 13:51:47 bostic Exp $ (Berkeley) $Date: 1994/05/02 13:51:47 $";
+static char sccsid[] = "$Id: ex_global.c,v 8.34 1994/05/03 21:40:11 bostic Exp $ (Berkeley) $Date: 1994/05/03 21:40:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -187,7 +187,7 @@ global(sp, ep, cmdp, cmd)
 	for (rval = 0, lno = cmdp->addr1.lno,
 	    elno = cmdp->addr2.lno; lno <= elno; ++lno) {
 		/* Someone's unhappy, time to stop. */
-		if (F_ISSET(sp, S_INTERRUPTED))
+		if (INTERRUPTED(sp))
 			goto interrupted;
 
 		/* Get the line and search for a match. */
@@ -252,7 +252,7 @@ global(sp, ep, cmdp, cmd)
 			goto err;
 
 		/* Someone's unhappy, time to stop. */
-		if (F_ISSET(sp, S_INTERRUPTED)) {
+		if (INTERRUPTED(sp)) {
 interrupted:		msgq(sp, M_INFO, "Interrupted.");
 			break;
 		}

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.47 1994/05/02 15:26:35 bostic Exp $ (Berkeley) $Date: 1994/05/02 15:26:35 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.48 1994/05/03 21:40:15 bostic Exp $ (Berkeley) $Date: 1994/05/03 21:40:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -484,7 +484,7 @@ usage:		msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
 	    elno = cmdp->addr2.lno; !quit && lno <= elno; ++lno) {
 
 		/* Someone's unhappy, time to stop. */
-		if (F_ISSET(sp, S_INTERRUPTED)) {
+		if (INTERRUPTED(sp)) {
 			if (!F_ISSET(sp, S_GLOBAL))
 				msgq(sp, M_INFO, "Interrupted.");
 			break;

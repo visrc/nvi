@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_display.c,v 8.16 1994/04/09 18:13:53 bostic Exp $ (Berkeley) $Date: 1994/04/09 18:13:53 $";
+static char sccsid[] = "$Id: ex_display.c,v 8.17 1994/05/03 21:40:10 bostic Exp $ (Berkeley) $Date: 1994/05/03 21:40:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -83,7 +83,7 @@ bdisplay(sp, ep)
 			continue;
 		if (cbp->textq.cqh_first != (void *)&cbp->textq)
 			db(sp, cbp, NULL);
-		if (F_ISSET(sp, S_INTERRUPTED))
+		if (INTERRUPTED(sp))
 			return (0);
 	}
 	/* Display numbered buffers. */
@@ -92,7 +92,7 @@ bdisplay(sp, ep)
 			continue;
 		if (cbp->textq.cqh_first != (void *)&cbp->textq)
 			db(sp, cbp, NULL);
-		if (F_ISSET(sp, S_INTERRUPTED))
+		if (INTERRUPTED(sp))
 			return (0);
 	}
 	/* Display default buffer. */
@@ -122,7 +122,7 @@ db(sp, cbp, name)
 	    tp != (void *)&cbp->textq; tp = tp->q.cqe_next) {
 		for (len = tp->len, p = tp->lb; len--; ++p) {
 			(void)ex_printf(EXCOOKIE, "%s", KEY_NAME(sp, *p));
-			if (F_ISSET(sp, S_INTERRUPTED))
+			if (INTERRUPTED(sp))
 				return;
 		}
 		(void)ex_printf(EXCOOKIE, "\n");
