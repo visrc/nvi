@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.73 1993/05/22 14:18:36 bostic Exp $ (Berkeley) $Date: 1993/05/22 14:18:36 $";
+static char sccsid[] = "$Id: exf.c,v 5.74 1993/05/24 10:35:49 bostic Exp $ (Berkeley) $Date: 1993/05/24 10:35:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -376,9 +376,10 @@ file_write(sp, ep, fm, tm, fname, flags)
 
 	/*
 	 * If the name was changed, or we're writing to a new file, don't
-	 * overwrite anything unless forced.  Appending is okay, though.
+	 * overwrite anything unless forced, the "writeany" option is set,
+	 * or appending.
 	 */
-	if (!LF_ISSET(FS_FORCE | FS_APPEND) &&
+	if (!LF_ISSET(FS_FORCE | FS_APPEND) && !O_ISSET(sp, O_WRITEANY) &&
 	    (fname != NULL && !stat(fname, &sb) ||
 	    F_ISSET(ep, F_NAMECHANGED) && !stat(ep->name, &sb))) {
 		if (fname == NULL)
