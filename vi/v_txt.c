@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.105 1994/04/27 09:58:47 bostic Exp $ (Berkeley) $Date: 1994/04/27 09:58:47 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.106 1994/05/01 11:56:00 bostic Exp $ (Berkeley) $Date: 1994/05/01 11:56:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -39,7 +39,8 @@ static TEXT	*txt_backup __P((SCR *, EXF *, TEXTH *, TEXT *, u_int *));
 static void	 txt_err __P((SCR *, EXF *, TEXTH *));
 static int	 txt_hex __P((SCR *, TEXT *));
 static int	 txt_indent __P((SCR *, TEXT *));
-static int	 txt_margin __P((SCR *, TEXT *, int *, CHAR_T *));
+static int	 txt_margin __P((SCR *,
+		    TEXT *, CHAR_T *, TEXT *, u_int, int *));
 static int	 txt_outdent __P((SCR *, TEXT *));
 static void	 txt_Rcleanup __P((SCR *,
 		    TEXTH *, TEXT *, const char *, const size_t));
@@ -92,6 +93,7 @@ v_ntext(sp, ep, tiqh, tm, lp, len, rp, prompt, ai_line, flags)
 	CH ikey;		/* Input character structure. */
 	CHAR_T ch;		/* Input character. */
 	TEXT *tp, *ntp, ait;	/* Input and autoindent text structures. */
+	TEXT wmt;		/* Wrapmargin text structure. */
 	size_t owrite, insert;	/* Temporary copies of TEXT fields. */
 	size_t rcol;		/* 0-N: insert offset in the replay buffer. */
 	size_t col;		/* Current column. */
@@ -104,6 +106,7 @@ v_ntext(sp, ep, tiqh, tm, lp, len, rp, prompt, ai_line, flags)
 	int testnr;		/* Test first character for nul replay. */
 	int max, tmp;
 	int unmap_tst;		/* Input map needs testing. */
+	int wmset, wmskip;	/* Wrapmargin happened, blank skip flags. */
 	char *p;
 
 	/*
@@ -229,11 +232,17 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 	 * we don't update the screen if there are keys waiting, but we
 	 * have to if margin is set, otherwise the screen routines don't
 	 * know where the cursor is.
+	 *
+	 * !!!
+	 * One more special case.  If appending characters and wrapmargin
+	 * breaks the line, the first character entered is discarded if it
+	 * is a <space> character.
 	 */
 	if (LF_ISSET(TXT_REPLAY) || !LF_ISSET(TXT_WRAPMARGIN))
 		margin = 0;
 	else if ((margin = O_VAL(sp, O_WRAPMARGIN)) != 0)
 		margin = sp->cols - margin;
+	wmset = wmskip = 0;
 
 	/* Initialize abbreviations checks. */
 	if (F_ISSET(sp->gp, G_ABBREV) && LF_ISSET(TXT_MAPINPUT)) {
@@ -318,6 +327,12 @@ next_ch:	if (term_key(sp, &ikey, quoted == Q_THISCHAR ?
 		} else
 			ab_cnt = 0;
 
+		/* Wrapmargin check. */
+		if (wmskip && ch == ' ') {
+			wmskip = 0;
+			goto next_ch;
+		}
+			
 		/*
 		 * !!!
 		 * Historic feature.  If the first character of the input is
@@ -371,7 +386,7 @@ next_ch:	if (term_key(sp, &ikey, quoted == Q_THISCHAR ?
 		case K_CR:
 		case K_NL:				/* New line. */
 			/* CR returns from the vi command line. */
-			if (LF_ISSET(TXT_CR)) {
+k_cr:			if (LF_ISSET(TXT_CR)) {
 				/*
 				 * If a script window and not the colon
 				 * line, push a <cr> so it gets executed.
@@ -479,12 +494,37 @@ next_ch:	if (term_key(sp, &ikey, quoted == Q_THISCHAR ?
 				carat_st = C_NOTSET;
 			}
 
+			/* Reset the cursor. */
+			sp->lno = ntp->lno;
+			sp->cno = ntp->ai;
+
+			/*
+			 * If we're here because wrapmargin was set and we've
+			 * broken a line, there may be additional information
+			 * (i.e. the start of a line) in the wmt structure.
+			 */
+			if (wmset)
+				if (wmt.len == 0)
+					wmskip = 1;
+				else {
+					BINC_GOTO(sp, ntp->lb, ntp->lb_len,
+					    ntp->len + wmt.len + 10);
+					memmove(ntp->lb + sp->cno, wmt.lb,
+					    wmt.len + wmt.insert + wmt.owrite);
+					ntp->len +=
+					    wmt.len + wmt.insert + wmt.owrite;
+					ntp->insert = wmt.insert;
+					ntp->owrite = wmt.owrite;
+					sp->cno += wmt.len;
+					wmskip = 0;
+				}
+
 			/* New lines are TXT_APPENDEOL. */
 			if (ntp->owrite == 0 && ntp->insert == 0) {
 				BINC_GOTO(sp,
 				    ntp->lb, ntp->lb_len, ntp->len + 1);
 				LF_SET(TXT_APPENDEOL);
-				ntp->lb[ntp->ai] = CH_CURSOR;
+				ntp->lb[sp->cno] = CH_CURSOR;
 				++ntp->insert;
 				++ntp->len;
 			}
@@ -500,10 +540,6 @@ next_ch:	if (term_key(sp, &ikey, quoted == Q_THISCHAR ?
 			 */
 			tp = ntp;
 			CIRCLEQ_INSERT_TAIL(tiqh, tp, q);
-
-			/* Reset the cursor. */
-			sp->lno = tp->lno;
-			sp->cno = tp->ai;
 
 			/* Update the new line. */
 			if (sp->s_change(sp, ep, tp->lno, LINE_INSERT))
@@ -867,17 +903,6 @@ insq_ch:		/*
 				if (isblank(ch) && unmap_tst)
 					txt_unmap(sp, tp, &iflags);
 			}
-			/* Check to see if we've crossed the margin. */
-			if (margin) {
-				if (sp->s_column(sp, ep, &col))
-					goto err;
-				if (col >= margin) {
-					if (txt_margin(sp, tp, &tmp, &ch))
-						goto err;
-					if (tmp)
-						goto next_ch;
-				}
-			}
 			if (abb != A_NOTSET)
 				abb = inword(ch) ? A_INWORD : A_NOTWORD;
 
@@ -893,6 +918,21 @@ insq_ch:		/*
 			}
 
 			tp->lb[sp->cno++] = ch;
+
+			/* Check to see if we've crossed the margin. */
+			if (margin) {
+				if (sp->s_column(sp, ep, &col))
+					goto err;
+				if (col >= margin) {
+					if (txt_margin(sp,
+					    tp, &ch, &wmt, flags, &tmp))
+						goto err;
+					if (tmp) {
+						wmset = 1;
+						goto k_cr;
+					}
+				}
+			}
 
 			/*
 			 * If we've reached the end of the buffer, then we
@@ -955,7 +995,9 @@ txt_abbrev(sp, tp, pushcp, isinfoline, didsubp, turnoffp)
 
 	/*
 	 * Find the start of the "word".  Historically, abbreviations
-	 * could be preceded by any non-word character.
+	 * could be preceded by any non-word character or the beginning
+	 * of the entry, .e.g inserting an abbreviated string in the
+	 * middle of another string triggered the replacement.
 	 */
 	for (off = sp->cno - 1, p = tp->lb + off, len = 0;; --p, --off) {
 		if (!inword(*p)) {
@@ -1330,7 +1372,7 @@ txt_err(sp, ep, tiqh)
  *	Let the user insert any character value they want.
  *
  * !!!
- * This is an extension.  The pattern "^Vx[0-9a-fA-F]*" is a way
+ * This is an extension.  The pattern "^X[0-9a-fA-F]*" is a way
  * for the user to specify a character value which their keyboard
  * may not be able to enter.
  */
@@ -1656,31 +1698,35 @@ txt_showmatch(sp, ep)
 /*
  * txt_margin --
  *	Handle margin wrap.
- *
- * !!!
- * Historic vi belled the user each time a character was entered after
- * crossing the margin until a space was entered which could be used to
- * break the line.  I don't, it tends to wake the cats.
  */
 static int
-txt_margin(sp, tp, didbreak, pushcp)
+txt_margin(sp, tp, chp, wmtp, flags, didbreak)
 	SCR *sp;
-	TEXT *tp;
+	TEXT *tp, *wmtp;
+	CHAR_T *chp;
 	int *didbreak;
-	CHAR_T *pushcp;
+	u_int flags;
 {
 	CHAR_T ch;
 	size_t len, off, tlen;
 	char *p, *wp;
 
-	/* Find the closest previous blank. */
-	for (off = sp->cno - 1, p = tp->lb + off, len = 0;; --p, --off) {
+	/* Find the nearest previous blank. */
+	for (off = sp->cno - 1, p = tp->lb + off, len = 0;; --off, --p, ++len) {
 		if (isblank(*p)) {
 			wp = p + 1;
 			break;
 		}
-		++len;
-		/* If it's the beginning of the line, there's nothing to do. */
+
+		/*
+		 * If reach the start of the line, there's nowhere to break.
+		 *
+		 * !!!
+		 * Historic vi belled each time a character was entered after
+		 * crossing the margin until a space was entered which could
+		 * be used to break the line.  I don't as it tends to wake the
+		 * cats.
+		 */
 		if (off == tp->ai || off == tp->offset) {
 			*didbreak = 0;
 			return (0);
@@ -1688,28 +1734,37 @@ txt_margin(sp, tp, didbreak, pushcp)
 	}
 
 	/*
-	 * Historic practice is to delete any trailing whitespace
-	 * from the previous line.
+	 * Store saved information about the rest of the line in the
+	 * wrapmargin TEXT structure.
 	 */
-	for (tlen = len;; --p, --off) {
+	wmtp->lb = p + 1;
+	wmtp->len = len;
+	wmtp->insert = LF_ISSET(TXT_APPENDEOL) ? tp->insert - 1 : tp->insert;
+	wmtp->owrite = tp->owrite;
+
+	/* Correct current bookkeeping information. */
+	sp->cno -= len;
+	if (LF_ISSET(TXT_APPENDEOL)) {
+		tp->len -= len + tp->owrite + (tp->insert - 1);
+		tp->insert = 1;
+	} else {
+		tp->len -= len + tp->owrite + tp->insert;
+		tp->insert = 0;
+	}
+	tp->owrite = 0;
+
+	/*
+	 * !!!
+	 * Delete any trailing whitespace from the current line.
+	 */
+	for (;; --p, --off) {
 		if (!isblank(*p))
 			break;
-		++tlen;
+		--sp->cno;
+		--tp->len;
 		if (off == tp->ai || off == tp->offset)
 			break;
 	}
-
-	ch = *pushcp;
-	if (term_push(sp, &ch, 1, 0, CH_NOMAP))
-		return (1);
-	if (len && term_push(sp, wp, len, 0, CH_NOMAP | CH_QUOTED))
-		return (1);
-	ch = '\n';
-	if (term_push(sp, &ch, 1, 0, CH_NOMAP))
-		return (1);
-
-	sp->cno -= tlen;
-	tp->owrite += tlen;
 	*didbreak = 1;
 	return (0);
 }
