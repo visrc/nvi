@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: getc.c,v 8.3 1993/06/28 14:21:43 bostic Exp $ (Berkeley) $Date: 1993/06/28 14:21:43 $";
+static char sccsid[] = "$Id: getc.c,v 8.4 1993/08/25 16:52:45 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:52:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -121,7 +121,7 @@ cs_fblank(sp, ep, csp)
 		if (cs_next(sp, ep, csp))
 			return (1);
 		if (csp->cs_flags == CS_EOL || csp->cs_flags == CS_EMP ||
-		    csp->cs_flags == 0 && isspace(csp->cs_ch))
+		    csp->cs_flags == 0 && isblank(csp->cs_ch))
 			continue;
 		break;
 	}
@@ -191,7 +191,7 @@ cs_bblank(sp, ep, csp)
 		if (cs_prev(sp, ep, csp))
 			return (1);
 		if (csp->cs_flags == CS_EOL || csp->cs_flags == CS_EMP ||
-		    csp->cs_flags == 0 && isspace(csp->cs_ch))
+		    csp->cs_flags == 0 && isblank(csp->cs_ch))
 			continue;
 		break;
 	}

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_util.c,v 8.2 1993/06/28 13:19:47 bostic Exp $ (Berkeley) $Date: 1993/06/28 13:19:47 $";
+static char sccsid[] = "$Id: v_util.c,v 8.3 1993/08/25 16:53:38 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:53:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -97,7 +97,7 @@ v_isempty(p, len)
 	size_t len;
 {
 	for (; len--; ++p)
-		if (!isspace(*p))
+		if (!isblank(*p))
 			return (0);
 	return (1);
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.4 1993/08/16 18:17:43 bostic Exp $ (Berkeley) $Date: 1993/08/16 18:17:43 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.5 1993/08/25 16:52:06 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:52:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -289,7 +289,7 @@ next_ch:	if (replay)
 			 * commands.
 			 */
 			for (p = tp->lb + sp->cno + tp->overwrite;
-			    tp->insert && isspace(*p);
+			    tp->insert && isblank(*p);
 			    ++p, ++tp->overwrite, --tp->insert);
 
 			/*
@@ -502,7 +502,7 @@ k_escape:		if (tp->insert && tp->overwrite)
 				max = tp->offset;
 
 			/* Skip over trailing space characters. */
-			while (sp->cno > max && isspace(tp->lb[sp->cno - 1])) {
+			while (sp->cno > max && isblank(tp->lb[sp->cno - 1])) {
 				--sp->cno;
 				++tp->overwrite;
 			}
@@ -522,7 +522,7 @@ k_escape:		if (tp->insert && tp->overwrite)
 				while (sp->cno > max) {
 					--sp->cno;
 					++tp->overwrite;
-					if (isspace(tp->lb[sp->cno - 1]))
+					if (isblank(tp->lb[sp->cno - 1]))
 						break;
 				}
 			else {
@@ -531,7 +531,7 @@ k_escape:		if (tp->insert && tp->overwrite)
 					--sp->cno;
 					++tp->overwrite;
 					if (tmp != inword(tp->lb[sp->cno - 1])
-					    || isspace(tp->lb[sp->cno - 1]))
+					    || isblank(tp->lb[sp->cno - 1]))
 						break;
 				}
 			}
@@ -581,11 +581,11 @@ k_escape:		if (tp->insert && tp->overwrite)
 			 * If entering a space character after a word, check
 			 * for abbreviations.
 			 */
-ins_ch:			if (isspace(ch) &&
+ins_ch:			if (isblank(ch) &&
 			    lch == L_NOTSPACE && txt_abbrev(sp, tp))
 				ERR;
 			if (lch != L_NOCHECK)
-				lch = isspace(ch) ? L_SPACE : L_NOTSPACE;
+				lch = isblank(ch) ? L_SPACE : L_NOTSPACE;
 
 			if (tp->overwrite)	/* Overwrite a character. */
 				--tp->overwrite;
@@ -650,7 +650,7 @@ txt_abbrev(sp, tp)
 
 	/* Find the beginning of this "word". */
 	for (off = sp->cno - 1, p = tp->lb + off, len = 0;; --p, --off) {
-		if (isspace(*p)) {
+		if (isblank(*p)) {
 			++p;
 			break;
 		}
@@ -703,7 +703,7 @@ txt_auto(sp, ep, lno, aitp, tp)
 		p = t = aitp->lb;
 	}
 	for (nlen = 0; len; ++p) {
-		if (!isspace(*p))
+		if (!isblank(*p))
 			break;
 		/* If last character is a space, it counts. */
 		if (--len == 0) {

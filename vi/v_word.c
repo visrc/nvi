@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_word.c,v 8.6 1993/08/21 18:24:29 bostic Exp $ (Berkeley) $Date: 1993/08/21 18:24:29 $";
+static char sccsid[] = "$Id: v_word.c,v 8.7 1993/08/25 16:53:31 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:53:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -119,7 +119,7 @@ fword(sp, ep, vp, fm, rp, type)
 	 *	Else, move to the first non-white-space character, which
 	 *	    counts as a single word move.
 	 */
-	if (cs.cs_flags == CS_EMP || cs.cs_flags == 0 && isspace(cs.cs_ch)) {
+	if (cs.cs_flags == CS_EMP || cs.cs_flags == 0 && isblank(cs.cs_ch)) {
 		if (cs.cs_flags != CS_EMP && cnt == 1 && F_ISSET(vp, VC_C)) {
 			++cs.cs_cno;
 			goto ret2;
@@ -142,7 +142,7 @@ fword(sp, ep, vp, fm, rp, type)
 					return (1);
 				if (cs.cs_flags == CS_EOF)
 					goto ret1;
-				if (cs.cs_flags != 0 || isspace(cs.cs_ch))
+				if (cs.cs_flags != 0 || isblank(cs.cs_ch))
 					break;
 			}
 			/*
@@ -175,7 +175,7 @@ fword(sp, ep, vp, fm, rp, type)
 					return (1);
 				if (cs.cs_flags == CS_EOF)
 					goto ret1;
-				if (cs.cs_flags != 0 || isspace(cs.cs_ch))
+				if (cs.cs_flags != 0 || isblank(cs.cs_ch))
 					break;
 				if (state == INWORD) {
 					if (!inword(cs.cs_ch))
@@ -194,7 +194,7 @@ fword(sp, ep, vp, fm, rp, type)
 			}
 
 			/* Eat any space characters. */
-			if (cs.cs_flags != 0 || isspace(cs.cs_ch))
+			if (cs.cs_flags != 0 || isblank(cs.cs_ch))
 				if (cs_fblank(sp, ep, &cs))
 					return (1);
 			if (cs.cs_flags == CS_EOF)
@@ -301,30 +301,30 @@ bword(sp, ep, vp, fm, rp, spaceonly)
 		goto line;
 	for (startp = p, p += cno; cnt--;) {
 		if (spaceonly) {
-			if (!isspace(*p)) {
+			if (!isblank(*p)) {
 				if (len < 2)
 					goto line;
 				--p;
 				--len;
 			}
-			BW(isspace(*p));
+			BW(isblank(*p));
 			if (len)
-				BW(!isspace(*p));
+				BW(!isblank(*p));
 			else
 				goto line;
 		} else {
-			if (!isspace(*p)) {
+			if (!isblank(*p)) {
 				if (len < 2)
 					goto line;
 				--p;
 				--len;
 			}
-			BW(isspace(*p));
+			BW(isblank(*p));
 			if (len)
 				if (inword(*p))
 					BW(inword(*p));
 				else
-					BW(!isspace(*p) && !inword(*p));
+					BW(!isblank(*p) && !inword(*p));
 			else
 				goto line;
 		}
@@ -362,11 +362,11 @@ line:			if (lno == 1) {
 			startp = p;
 			if (len) {
 				p += len - 1;
-				if (cnt && len > 1 && !isspace(p[0]))
+				if (cnt && len > 1 && !isblank(p[0]))
 					if (inword(p[0])) {
 						if (!inword(p[-1]))
 							--cnt;
-					} else if (!isspace(p[-1]) &&
+					} else if (!isblank(p[-1]) &&
 					    !inword(p[-1]))
 							--cnt;
 			}
@@ -453,30 +453,30 @@ eword(sp, ep, vp, fm, rp, spaceonly)
 
 	for (startp = p += cno; cnt--; empty = 0) {
 		if (spaceonly) {
-			if (!isspace(*p)) {
+			if (!isblank(*p)) {
 				if (len < 2)
 					goto line;
 				++p;
 				--len;
 			}
-			FW(isspace(*p));
+			FW(isblank(*p));
 			if (len)
-				FW(!isspace(*p));
+				FW(!isblank(*p));
 			else
 				++cnt;
 		} else {
-			if (!isspace(*p)) {
+			if (!isblank(*p)) {
 				if (len < 2)
 					goto line;
 				++p;
 				--len;
 			}
-			FW(isspace(*p));
+			FW(isblank(*p));
 			if (len)
 				if (inword(*p))
 					FW(inword(*p));
 				else
-					FW(!isspace(*p) && !inword(*p));
+					FW(!isblank(*p) && !inword(*p));
 			else
 				++cnt;
 		}
