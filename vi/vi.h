@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 9.10 1995/02/02 15:25:54 bostic Exp $ (Berkeley) $Date: 1995/02/02 15:25:54 $
+ *	$Id: vi.h,v 9.11 1995/02/22 09:36:02 bostic Exp $ (Berkeley) $Date: 1995/02/22 09:36:02 $
  */
 
 typedef struct _vikeys VIKEYS;
@@ -203,6 +203,12 @@ typedef struct _vi_private {
 int	v_optchange __P((SCR *, int));
 int	v_screen_copy __P((SCR *, SCR *));
 int	v_screen_end __P((SCR *));
+
+/* Vi common messages. */
+enum vimtype {
+    VIM_COMBUF, VIM_EOF, VIM_EOL, VIM_NOCOM, VIM_NOCOM_B, VIM_USAGE
+};
+void	v_message __P((SCR *, char *, enum vimtype));
 
 /* Vi function prototypes. */
 int	txt_auto __P((SCR *, recno_t, TEXT *, size_t, TEXT *));

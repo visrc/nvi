@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_util.c,v 9.3 1995/01/11 16:22:34 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:22:34 $";
+static char sccsid[] = "$Id: v_util.c,v 9.4 1995/02/22 09:36:00 bostic Exp $ (Berkeley) $Date: 1995/02/22 09:36:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -44,12 +44,12 @@ v_eof(sp, mp)
 	recno_t lno;
 
 	if (mp == NULL)
-		msgq(sp, M_BERR, "190|Already at end-of-file");
+		v_message(sp, NULL, VIM_EOF);
 	else {
 		if (file_lline(sp, &lno))
 			return;
 		if (mp->lno >= lno)
-			msgq(sp, M_BERR, "191|Already at end-of-file");
+			v_message(sp, NULL, VIM_EOF);
 		else
 			msgq(sp, M_BERR, "192|Movement past the end-of-file");
 	}
@@ -67,14 +67,14 @@ v_eol(sp, mp)
 	size_t len;
 
 	if (mp == NULL)
-		msgq(sp, M_BERR, "193|Already at end-of-line");
+		v_message(sp, NULL, VIM_EOL);
 	else {
 		if (file_gline(sp, mp->lno, &len) == NULL) {
 			FILE_LERR(sp, mp->lno);
 			return;
 		}
 		if (mp->cno == len - 1)
-			msgq(sp, M_BERR, "194|Already at end-of-line");
+			v_message(sp, NULL, VIM_EOL);
 		else
 			msgq(sp, M_BERR, "195|Movement past the end-of-line");
 	}
@@ -130,4 +130,37 @@ v_isempty(p, len)
 		if (!isblank(*p))
 			return (0);
 	return (1);
+}
+
+/*
+ * v_message --
+ *	Display a few common messages.
+ */
+void
+v_message(sp, p, which)
+	SCR *sp;
+	char *p;
+	enum vimtype which;
+{
+	switch (which) {
+	case VIM_COMBUF:
+		msgq(sp, M_ERR,
+		    "203|Buffers should be specified before the command");
+		break;
+	case VIM_EOF:
+		msgq(sp, M_BERR, "190|Already at end-of-file");
+		break;
+	case VIM_EOL:
+		msgq(sp, M_BERR, "193|Already at end-of-line");
+		break;
+	case VIM_NOCOM:
+	case VIM_NOCOM_B:
+		msgq(sp,
+		    which == VIM_NOCOM_B ? M_BERR : M_ERR,
+		    "206|%s isn't a vi command", p);
+		break;
+	case VIM_USAGE:
+		msgq(sp, M_ERR, "177|Usage: %s", p);
+		break;
+	}
 }

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 9.23 1995/02/06 14:24:11 bostic Exp $ (Berkeley) $Date: 1995/02/06 14:24:11 $";
+static char sccsid[] = "$Id: vi.c,v 9.24 1995/02/22 09:36:04 bostic Exp $ (Berkeley) $Date: 1995/02/22 09:36:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -409,8 +409,7 @@ v_cmd(sp, dp, vp, ismotion, comcountp, mappedp)
 	if (key == '"') {
 		cpart = ISPARTIAL;
 		if (ismotion != NULL) {
-			msgq(sp, M_BERR,
-		    "203|Buffers should be specified before the command");
+			v_message(sp, NULL, VIM_COMBUF);
 			return (GC_ERR);
 		}
 		KEY(vp->buffer, 0);
@@ -441,8 +440,7 @@ v_cmd(sp, dp, vp, ismotion, comcountp, mappedp)
 			return (GC_ERR);
 		}
 		if (ismotion != NULL) {
-			msgq(sp, M_BERR,
-		    "205|Buffers should be specified before the command");
+			v_message(sp, NULL, VIM_COMBUF);
 			return (GC_ERR);
 		}
 		KEY(vp->buffer, 0);
@@ -454,8 +452,7 @@ v_cmd(sp, dp, vp, ismotion, comcountp, mappedp)
 	/* Check for an OOB command key. */
 	cpart = ISPARTIAL;
 	if (key > MAXVIKEY) {
-		msgq(sp, M_BERR,
-		    "206|%s isn't a vi command", KEY_NAME(sp, key));
+		v_message(sp, KEY_NAME(sp, key), VIM_NOCOM);
 		return (GC_ERR);
 	}
 	kp = &vikeys[vp->key = key];
@@ -479,8 +476,8 @@ v_cmd(sp, dp, vp, ismotion, comcountp, mappedp)
 	 */
 	if (kp->func == NULL) {
 		if (key != '.') {
-			msgq(sp, ikey.value == K_ESCAPE ? M_BERR : M_ERR,
-			    "207|%s isn't a vi command", KEY_NAME(sp, key));
+			v_message(sp, KEY_NAME(sp, key),
+			    ikey.value == K_ESCAPE ? VIM_NOCOM_B : VIM_NOCOM);
 			return (GC_ERR);
 		}
 
@@ -560,7 +557,7 @@ usage:			if (ismotion == NULL)
 				s = tmotion.usage;
 			else
 				s = vikeys[ismotion->key].usage;
-			msgq(sp, M_ERR, "209|Usage: %s", s);
+			v_message(sp, s, VIM_USAGE);
 			return (GC_ERR);
 		}
 	}
