@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 10.34 1996/02/25 15:23:03 bostic Exp $ (Berkeley) $Date: 1996/02/25 15:23:03 $";
+static char sccsid[] = "$Id: v_txt.c,v 10.35 1996/02/25 18:28:31 bostic Exp $ (Berkeley) $Date: 1996/02/25 18:28:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -487,9 +487,6 @@ next:	if (v_event_get(sp, evp, 0, ec_flags))
 		if (vs_repaint(sp, &ev))
 			return (1);
 		goto next;
-	case E_RESIZE:
-		(void)v_event_push(sp, &ev, NULL, 1, 0);
-		goto k_escape;
 	default:
 		v_event_err(sp, evp);
 		goto k_escape;
