@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.61 1993/05/07 11:59:19 bostic Exp $ (Berkeley) $Date: 1993/05/07 11:59:19 $";
+static char sccsid[] = "$Id: exf.c,v 5.62 1993/05/08 12:56:05 bostic Exp $ (Berkeley) $Date: 1993/05/08 12:56:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -208,16 +208,28 @@ file_start(sp, ep)
 	} else
 		oname = ep->name;
 	
-	/* Open a db structure. */
-	ep->db = dbopen(oname, O_EXLOCK | O_NONBLOCK| O_RDONLY,
-	    DEFFILEMODE, DB_RECNO, NULL);
-	if (ep->db == NULL && errno == EAGAIN) {
-		F_SET(ep, F_RDONLY);
-		ep->db = dbopen(oname, O_NONBLOCK | O_RDONLY,
-		    DEFFILEMODE, DB_RECNO, NULL);
+	/*
+	 * Open a db structure.
+	 *
+	 * XXX
+	 * Assume that we get EAGAIN if the file is already locked, and
+	 * EOPNOTSUPP if the file can't be locked.  There really isn't a
+	 * portable way to do this.
+	 */
+	ep->db = dbopen(oname,
+	    O_EXLOCK | O_NONBLOCK| O_RDONLY, DEFFILEMODE, DB_RECNO, NULL);
+	if (ep->db == NULL &&
+	    (errno == EAGAIN || errno == EOPNOTSUPP)) {
+		ep->db = dbopen(oname,
+		    O_NONBLOCK | O_RDONLY, DEFFILEMODE, DB_RECNO, NULL);
 		if (ep->db != NULL)
-			msgq(sp, M_INFO,
-			    "%s already locked, session is read-only", oname);
+			if (errno == EAGAIN) {
+				msgq(sp, M_INFO,
+				    "%s already locked, session is read-only",
+				    oname);
+				F_SET(ep, F_RDONLY);
+			} else
+				msgq(sp, M_VINFO, "%s cannot be locked", oname);
 	}
 	if (ep->db == NULL) {
 		msgq(sp, M_ERR, "%s: %s", oname, strerror(errno));
