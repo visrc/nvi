@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 9.7 1994/11/16 16:18:21 bostic Exp $ (Berkeley) $Date: 1994/11/16 16:18:21 $";
+static char sccsid[] = "$Id: msg.c,v 9.8 1994/11/24 10:55:58 bostic Exp $ (Berkeley) $Date: 1994/11/24 10:55:58 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -596,10 +596,7 @@ msg_open(sp, file)
 	 * Test record 1 for the magic string.  The msgq call
 	 * is here so the message catalog build finds it.
 	 */
-	if (0) {
 #define	VMC	"VI_MESSAGE_CATALOG"
-		msgq(sp, M_ERR, "001|VI_MESSAGE_CATALOG");
-	}
 	key.data = &msgno;
 	key.size = sizeof(recno_t);
 	msgno = 1;
