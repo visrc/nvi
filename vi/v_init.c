@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 8.6 1993/08/21 13:48:16 bostic Exp $ (Berkeley) $Date: 1993/08/21 13:48:16 $";
+static char sccsid[] = "$Id: v_init.c,v 8.7 1993/08/25 16:52:29 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:52:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -109,17 +109,6 @@ v_init(sp, ep)
 
 		if (O_ISSET(sp, O_COMMENT) && v_comment(sp, ep))
 			return (1);
-	}
-
-	/*
-	 * After address set, run any saved or initial command; failure
-	 * doesn't halt the session.  Hopefully changing the cursor
-	 * position didn't affect the success of the command, but it's
-	 * possible and undetectible.
-	 */
-	if (sp->comm_len > 0) {
-		(void)ex_cstring(sp, ep, sp->comm, sp->comm_len);
-		F_SET(ep, S_REDRAW);
 	}
 
 	/*
