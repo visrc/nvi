@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 8.7 1993/08/28 10:30:04 bostic Exp $ (Berkeley) $Date: 1993/08/28 10:30:04 $";
+static char sccsid[] = "$Id: ex_argv.c,v 8.8 1993/08/28 11:13:01 bostic Exp $ (Berkeley) $Date: 1993/08/28 11:13:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -57,10 +57,10 @@ file_argv(sp, ep, s, argcp, argvp)
 				    "No filename to substitute for %%.");
 				return (1);
 			}
-			ADD_SPACE(sp, bp, blen, len + sp->frp->nlen);
+			len += sp->frp->nlen;
+			ADD_SPACE(sp, bp, blen, len);
 			memmove(p, sp->frp->fname, sp->frp->nlen);
 			p += sp->frp->nlen;
-			len += sp->frp->nlen;
 			break;
 		case '#':
 			if (sp->alt_fname != NULL)
@@ -74,10 +74,10 @@ file_argv(sp, ep, s, argcp, argvp)
 				    "No filename to substitute for #.");
 				return (1);
 			}
-			ADD_SPACE(sp, bp, blen, len + tlen);
+			len += tlen;
+			ADD_SPACE(sp, bp, blen, len);
 			memmove(p, t, tlen);
 			p += tlen;
-			len += tlen;
 			break;
 		case '\\':
 			/*
@@ -90,9 +90,9 @@ file_argv(sp, ep, s, argcp, argvp)
 				++s;
 			/* FALLTHROUGH */
 		default:
-			ADD_SPACE(sp, bp, blen, len + 1);
-			*p++ = *s;
 			++len;
+			ADD_SPACE(sp, bp, blen, len);
+			*p++ = *s;
 		}
 
 	/* Nul termination. */
@@ -108,7 +108,7 @@ file_argv(sp, ep, s, argcp, argvp)
 	 * pure vanilla, don't even try.
 	 */
 	for (p = bp; *p; ++p)
-		if (!isalnum(*p) && !isblank(*p) && *p != '/')
+		if (!isalnum(*p) && !isblank(*p) && *p != '/' && *p != '.')
 			break;
 	if (*p) {
 		if (ex_run_process(sp, bp, &len, bp, blen))
@@ -164,7 +164,7 @@ word_argv(sp, ep, p, argcp, argvp)
 		 * Allocate more pointer space if necessary; leave a space
 		 * for a trailing NULL.
 		 */
-		len = (p - ap);
+		len = (p - ap) + 1;
 #define	INCREMENT	20
 		if (off + 2 >= sp->argscnt - 1) {
 			sp->argscnt += cnt = MAX(INCREMENT, 2);
@@ -189,12 +189,15 @@ mem1:				sp->argscnt = 0;
 		 * Copy the argument(s) into place, allocating space if
 		 * necessary.
 		 */
-		if (sp->args[off].len < len && (sp->args[off].bp =
-		    realloc(sp->args[off].bp, len)) == NULL) {
-			sp->args[off].bp = NULL;
-			sp->args[off].len = 0;
-			msgq(sp, M_ERR, "Error: %s.", strerror(errno));
-			return (1);
+		if (sp->args[off].len < len) {
+			if ((sp->args[off].bp =
+			    realloc(sp->args[off].bp, len)) == NULL) {
+				sp->args[off].bp = NULL;
+				sp->args[off].len = 0;
+				msgq(sp, M_ERR, "Error: %s.", strerror(errno));
+				return (1);
+			}
+			sp->args[off].len = len;
 		}
 		sp->argv[off] = sp->args[off].bp;
 		sp->args[off].flags |= A_ALLOCATED;
