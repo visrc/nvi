@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_abbrev.c,v 5.9 1992/04/19 08:53:37 bostic Exp $ (Berkeley) $Date: 1992/04/19 08:53:37 $";
+static char sccsid[] = "$Id: ex_abbrev.c,v 5.10 1992/04/28 13:45:42 bostic Exp $ (Berkeley) $Date: 1992/04/28 13:45:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,7 +21,7 @@ static char sccsid[] = "$Id: ex_abbrev.c,v 5.9 1992/04/19 08:53:37 bostic Exp $ 
 int have_abbr;				/* If any abbreviations */
 
 /*
- * ex_abbr -- (:abbreviate [key replacement])
+ * ex_abbr -- :abbreviate [key replacement]
  *	Create an abbreviation or display abbreviations.
  */
 int
@@ -57,7 +57,7 @@ ex_abbr(cmdp)
 }
 
 /*
- * ex_unabbr -- (:unabbreviate key)
+ * ex_unabbr -- :unabbreviate key
  *      Delete an abbreviation.
  */
 int
