@@ -6,34 +6,51 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_delete.c,v 5.4 1992/05/15 11:14:08 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:14:08 $";
+static char sccsid[] = "$Id: v_delete.c,v 5.5 1992/05/21 12:57:39 bostic Exp $ (Berkeley) $Date: 1992/05/21 12:57:39 $";
 #endif /* not lint */
 
-#include <sys/types.h>
+#include <sys/param.h>
+#include <limits.h>
 #include <stddef.h>
 
 #include "vi.h"
 #include "vcmd.h"
+#include "cut.h"
 #include "extern.h"
 
 /*
  * v_delete --
- *	Deletes a range of text.
+ *	Delete a range of text.
  */
-MARK *
-v_delete(m, n)
-	MARK	*m, *n;	/* range of text to delete */
+int
+v_delete(vp, cp, rp)
+	VICMDARG *vp;
+	MARK *cp, *rp;
 {
-	static MARK rval;
-	/* illegal to try and delete nothing */
-	if (n->lno <= m->lno)
-	{
-		return NULL;
+	int buffer, lmode;
+	
+	lmode = vp->flags & VC_LMODE;
+	buffer = vp->buffer == OOBCB ? DEFCB : vp->buffer;
+
+	if (cut(buffer, cp, &vp->motion, lmode) ||
+	    delete(cp, &vp->motion, lmode))
+		return (1);
+
+	/* If deleting lines, leave the cursor at the lowest line deleted. */
+	if (lmode) {
+		rp->lno = MIN(cp->lno, vp->motion.lno);
+		rp->cno = cp->cno;
+		return (0);
 	}
 
-	/* Do it */
-	cut(m, n);
-	delete(m, n);
-	rval = *m;
-	return (&rval);
+	/* If deleting forward, leave the cursor in the current spot. */
+	if (vp->motion.lno > cp->lno ||
+	    vp->motion.lno == cp->lno && vp->motion.cno > cp->cno) {
+		*rp = *cp;
+		return (0);
+	}
+
+	/* Else, leave the cursor where it moved. */
+	*rp = vp->motion;
+	return (0);
 }
