@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.41 1996/02/27 20:43:49 bostic Exp $ (Berkeley) $Date: 1996/02/27 20:43:49 $
+dnl	$Id: configure.in,v 8.42 1996/02/27 20:55:10 bostic Exp $ (Berkeley) $Date: 1996/02/27 20:55:10 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(configure)
@@ -189,7 +189,6 @@ if test "$vi_cv_include_sys_mman" = yes; then
 fi
 AC_MSG_RESULT($vi_cv_include_sys_mman)
 
-AC_MSG_RESULT($vi_cv_include_sys_select)
 AC_MSG_CHECKING(for sys/select.h)
 AC_CACHE_VAL(vi_cv_include_sys_select, [dnl
 AC_TRY_CPP([#include <sys/select.h>], 
