@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 5.2 1992/04/05 16:59:56 bostic Exp $ (Berkeley) $Date: 1992/04/05 16:59:56 $";
+static char sccsid[] = "$Id: seq.c,v 5.3 1992/04/14 09:10:41 bostic Exp $ (Berkeley) $Date: 1992/04/14 09:10:41 $";
 #endif /* not lint */
 
 #include <errno.h>
@@ -214,20 +214,6 @@ seq_dump(stype, isname)
 	for (sp = seqhead.lnext; sp != (SEQ *)&seqhead; sp = sp->lnext) {
 		if (stype != sp->stype)
 			continue;
-		if (isname)
-			if (sp->name) {
-				for (p = sp->name, len = 0;
-				    (ch = *p); ++p, ++len)
-					if (iscntrl(ch)) {
-						qaddch('^');
-						qaddch(ch ^ '@');
-					} else
-						qaddch(ch);
-				for (len = TAB - len % TAB; len; --len)
-					qaddch(' ');
-			} else
-				qaddstr("        ");
-
 		for (p = sp->input, len = 0; (ch = *p); ++p, ++len)
 			if (iscntrl(ch)) {
 				qaddch('^');
@@ -243,6 +229,17 @@ seq_dump(stype, isname)
 				qaddch(ch ^ '@');
 			} else
 				qaddch(ch);
+
+		if (isname && sp->name) {
+			for (len = TAB - len % TAB; len; --len)
+				qaddch(' ');
+			for (p = sp->name, len = 0; (ch = *p); ++p, ++len)
+				if (iscntrl(ch)) {
+					qaddch('^');
+					qaddch(ch ^ '@');
+				} else
+					qaddch(ch);
+		}
 
 		addch('\n');
 		exrefresh();
