@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.1 1996/02/18 15:38:02 bostic Exp $ (Berkeley) $Date: 1996/02/18 15:38:02 $
+dnl	$Id: configure.in,v 8.2 1996/02/19 19:32:29 bostic Exp $ (Berkeley) $Date: 1996/02/19 19:32:29 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(configure)
@@ -39,6 +39,7 @@ AC_TRY_RUN([#include <stdio.h>
 	[vi_cv_curses="user specified curses"], [vi_cv_curses=no])))])
 AC_MSG_RESULT($vi_cv_curses)
 if test "$vi_cv_curses" = "system curses"; then
+	LIBS="$LIBS -lcurses"
 fi
 if test "$vi_cv_curses" = "vi curses"; then
 	cobjs=\$\{COBJS\}
@@ -201,7 +202,14 @@ AC_MSG_RESULT($vi_cv_have_curses_tigetstr)
 dnl Check for potentially missing curses functions.
 if test "$vi_cv_curses" = "system curses"; then
 	dnl Check for the addnstr function.
-	AC_REPLACE_FUNCS(addnstr)
+	AC_MSG_CHECKING(addnstr)
+	AC_TRY_LINK([#include <curses.h>], [addnstr(0, 0);],
+		[vi_cv_have_curses_addnstr=yes],
+		[vi_cv_have_curses_addnstr=no])
+	if test "$vi_cv_have_curses_addnstr" = yes; then
+		AC_DEFINE(HAVE_CURSES_ADDNSTR)
+	fi
+	AC_MSG_RESULT($vi_cv_have_curses_addnstr)
 
 	dnl Check for the beep function.
 	AC_MSG_CHECKING(beep)
