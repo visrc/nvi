@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_main.c,v 8.30 1996/12/16 18:38:44 bostic Exp $ (Berkeley) $Date: 1996/12/16 18:38:44 $";
+static const char sccsid[] = "$Id: m_main.c,v 8.31 1996/12/17 10:45:46 bostic Exp $ (Berkeley) $Date: 1996/12/17 10:45:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,6 +27,7 @@ static const char sccsid[] = "$Id: m_main.c,v 8.30 1996/12/16 18:38:44 bostic Ex
 #include <string.h>
 
 #include "../common/common.h"
+#include "../motif_l/m_motif.h"
 #include "../motif_l/vi_mextern.h"
 #include "extern.h"
 
@@ -45,6 +46,8 @@ static	Pixmap		icon_pm;
 static	Widget		top_level;
 static	XtAppContext	ctx;
 
+static void XutInstallColormap __P((String, Widget));
+static void XutSetIcon __P((Widget, int, int, Pixmap));
 static void onchld __P((int));
 static void onexit __P((void));
 
@@ -164,7 +167,7 @@ static	void	create_top_level_shell( argc, argv )
     XutInstallColormap( argv[0], top_level );
 
     /* check the resource database for interesting resources */
-    XutConvertResources( top_level,
+    __XutConvertResources( top_level,
 			 vi_progname,
 			 resource,
 			 XtNumber(resource)
@@ -243,6 +246,103 @@ main(argc, argv)
 	abort();
 }
 
+static void
+XutSetIcon(wid, height, width, p)
+	Widget wid;
+	int height, width;
+	Pixmap p;
+{
+    Display	*display = XtDisplay(wid);
+    Window	win;
+
+    /* best bet is to set the icon window */
+    XtVaGetValues( wid, XtNiconWindow, &win, 0 );
+
+    if ( win == None ) {
+	win = XCreateSimpleWindow( display,
+				   RootWindow( display,
+				   DefaultScreen( display ) ),
+				   0, 0,
+				   width, height,
+				   0,
+				   CopyFromParent,
+				   CopyFromParent
+				   );
+    }
+
+    if ( win != None ) {
+	XtVaSetValues( wid, XtNiconWindow, win, 0 );
+	XSetWindowBackgroundPixmap( display, win, p );
+    }
+
+    else {
+	/* do it the old fashioned way */
+	XtVaSetValues( wid, XtNiconPixmap, p, 0 );
+    }
+}
+
+/* Support for multiple colormaps
+ *
+ * XutInstallColormap( String name, Widget wid )
+ *	The first time called, this routine checks to see if the
+ *	resource "name*installColormap" is "True".  If so, the
+ *	widget is assigned a newly allocated colormap.
+ *
+ *	Subsequent calls ignore the "name" parameter and use the
+ *	same colormap.
+ *
+ *	Future versions of this routine may handle multiple colormaps
+ *	by name.
+ */
+static	enum { cmap_look, cmap_use, cmap_ignore } cmap_state = cmap_look;
+
+static	Boolean	use_colormap = False;
+
+static XutResource	colormap_resources[] = {
+    { "installColormap",	XutRKboolean,	&use_colormap	}
+};
+
+static void
+XutInstallColormap(name, wid)
+	String name;
+	Widget wid;
+{
+    static Colormap cmap = 0;
+    static Display  *cmap_display = 0;
+    Display	*display = XtDisplay(wid);
+
+    /* what is the current finite state? */
+    if ( cmap_state == cmap_look ) {
+
+	/* what does the resource say? */
+	__XutConvertResources( wid,
+			     name,
+			     colormap_resources,
+			     XtNumber(colormap_resources)
+			     );
+
+	/* was the result "True"? */
+	if ( ! use_colormap ) {
+	    cmap_state = cmap_ignore;
+	    return;
+	}
+
+	/* yes it was */
+	cmap_state = cmap_use;
+	cmap_display = display;
+	cmap = XCopyColormapAndFree( display,
+				     DefaultColormap( display,
+						      DefaultScreen( display )
+						      )
+				     );
+    }
+
+    /* use the private colormap? */
+    if ( cmap_state == cmap_use ) {
+	XtVaSetValues( wid, XtNcolormap, cmap, 0 );
+    }
+}
+
 /*
  * onchld --
  *	Handle SIGCHLD.
@@ -265,4 +365,3 @@ onexit()
 {
 	exit (0);
 }
-
