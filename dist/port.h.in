@@ -1,4 +1,4 @@
-/* $Id: port.h.in,v 8.3 1996/02/20 20:17:04 bostic Exp $ (Berkeley) $Date: 1996/02/20 20:17:04 $ */
+/* $Id: port.h.in,v 8.4 1996/02/25 13:20:39 bostic Exp $ (Berkeley) $Date: 1996/02/25 13:20:39 $ */
 
 /* Declare the basic types, if they aren't already declared. */
 @u_int8_decl@
@@ -87,6 +87,8 @@
  * "DB" isn't always portable, and we want the private information.
  */
 #define DB      __DB
+#undef	pgno_t			/* IRIX has it's own version. */
+#define	pgno_t	__db_pgno_t
 
 /*
  * XXX
