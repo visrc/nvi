@@ -1,4 +1,4 @@
-#	$Id: README,v 8.6 1996/02/28 19:18:33 bostic Exp $ (Berkeley) $Date: 1996/02/28 19:18:33 $
+#	$Id: README,v 8.7 1996/03/03 16:30:21 bostic Exp $ (Berkeley) $Date: 1996/03/03 16:30:21 $
 
 Nvi uses the GNU autoconf program for configuration and compilation.  You
 should enter:
@@ -29,6 +29,7 @@ follows:
 The most common of these are:
 
   --enable-debug    	  Build a debugging version.
+  --enable-perlinterp	  Compile a Perl interpreter into vi.
   --enable-tclinterp	  Compile a Tcl/Tk interpreter into vi.
   --with-curses=ask|system|vi
                           ask:     Prompt for the curses library to use.
@@ -38,6 +39,30 @@ The most common of these are:
                           vi:      Use the vi-provided DB routines
   --with-re=library|vi    library: Use the RE routines in the C library.
                           vi:      Use the vi-provided RE routines
+
+enable-debug:
+	If you want to build nvi with symbol tables and the -DDEBUG
+	as a C preprocessor #define, enter:
+
+	--enable-debug
+
+	as an argument to configure.
+
+enable-perlinterp:
+	If you have the Perl 5 libraries and you want to compile in the
+	Perl interpreter, enter:
+
+	--enable-perlinterp
+
+	as an argument to configure.
+
+enable-tclinterp:
+	If you have the Tk/Tcl libraries and you want to compile in the
+	Tcl/Tk interpreter, enter:
+
+	--enable-tclinterp
+
+	as an argument to configure.
 
 with-curses:
 	See the next section of this README for information about nvi and
@@ -62,14 +87,6 @@ with-re:
 	as an argument to configure, and the RE routines will be loaded
 	from the C library.  Please ensure that your RE routines have
 	Henry Spencer's extensions for doing vi-style "word" searches.
-
-enable-tclinterp:
-	If you have the Tk/Tcl libraries and you want to compile in the
-	Tcl/Tk interpreter, enter:
-
-	--enable-tclinterp
-
-	as an argument to configure.
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 The major portability problem for nvi is selecting a curses library.
