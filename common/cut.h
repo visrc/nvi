@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: cut.h,v 9.3 1995/01/11 15:57:58 bostic Exp $ (Berkeley) $Date: 1995/01/11 15:57:58 $
+ *	$Id: cut.h,v 9.4 1995/01/30 09:04:44 bostic Exp $ (Berkeley) $Date: 1995/01/30 09:04:44 $
  */
 
 typedef struct _texth TEXTH;		/* TEXT list head structure. */
@@ -39,6 +39,18 @@ struct _text {				/* Text: a linked list of lines. */
 	size_t	 R_erase;		/* 0-N: 'R' erase count. */
 	size_t	 sv_cno;		/* 0-N: Saved line cursor. */
 	size_t	 sv_len;		/* 0-N: Saved line length. */
+
+	/*
+	 * These fields returns information from the vi text input routine.
+	 *
+	 * The termination condition.  Note, this field is only valid if the
+	 * text input routine returns success.
+	 *	TERM_BS:	User backspaced over the prompt.
+	 *	TERM_CR:	User entered <carriage-return>; no data.
+	 *	TERM_ESC:	User entered <escape>; no data.
+	 *	TERM_OK:	Data available.
+	 */
+	enum { TERM_BS, TERM_CR, TERM_ESC, TERM_OK } term;
 };
 
 /*
