@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_display.c,v 5.1 1992/11/03 19:10:47 bostic Exp $ (Berkeley) $Date: 1992/11/03 19:10:47 $";
+static char sccsid[] = "$Id: ex_display.c,v 5.2 1992/11/07 10:23:42 bostic Exp $ (Berkeley) $Date: 1992/11/07 10:23:42 $";
 #endif /* not lint */
 
 #include <ctype.h>
@@ -47,8 +47,8 @@ db(name, cb)
 {
 	TEXT *tp;
 
-	(void)fprintf(curf->stdfp, "%s: %d bytes%s\n", name,
-	    cb->len, cb->flags & CB_LMODE ? " (line mode)" : "");
+	(void)fprintf(curf->stdfp, "%s%s\n", name,
+	    cb->flags & CB_LMODE ? ": line mode" : "");
 	for (tp = cb->head; tp; tp = tp->next)
 		(void)fprintf(curf->stdfp, "%.*s\n", tp->len, tp->lp);
 }
