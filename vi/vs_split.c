@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 8.12 1993/11/01 19:00:34 bostic Exp $ (Berkeley) $Date: 1993/11/01 19:00:34 $";
+static char sccsid[] = "$Id: vs_split.c,v 8.13 1993/11/02 10:13:11 bostic Exp $ (Berkeley) $Date: 1993/11/02 10:13:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,6 +29,7 @@ svi_split(sp, argv)
 	char *argv[];
 {
 	SCR *tsp;
+	SMAP *smp;
 	size_t cnt, half;
 	int issmallscreen, nochange, splitup;
 
@@ -88,7 +89,9 @@ svi_split(sp, argv)
 	 */
 	tsp->cols = sp->cols;
 	tsp->w_rows = sp->w_rows;
-	if (sp->sc_row <= half) {		/* Parent is top half. */
+	
+	cnt = svi_sm_cursor(sp, sp->ep, &smp) ? 0 : smp - HMAP;
+	if (cnt <= half) {			/* Parent is top half. */
 		/* Child. */
 		tsp->rows = sp->rows - half;
 		tsp->s_off = sp->s_off + half;
