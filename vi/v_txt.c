@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.82 1994/03/03 15:03:57 bostic Exp $ (Berkeley) $Date: 1994/03/03 15:03:57 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.83 1994/03/03 17:02:28 bostic Exp $ (Berkeley) $Date: 1994/03/03 17:02:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,6 +32,8 @@ static int	 txt_indent __P((SCR *, TEXT *));
 static int	 txt_margin __P((SCR *, TEXT *, int *, ARG_CHAR_T));
 static int	 txt_outdent __P((SCR *, TEXT *));
 static void	 txt_showmatch __P((SCR *, EXF *));
+static void	 txt_Rcleanup __P((SCR *,
+		    TEXTH *, TEXT *, const char *, const size_t));	
 static int	 txt_resolve __P((SCR *, EXF *, TEXTH *));
 
 /* Cursor character (space is hard to track on the screen). */
@@ -402,18 +404,9 @@ next_ch:	if (term_key(sp, &ikey, iflags) != INP_OK)
 					goto next_ch;			\
 				}					\
 			}						\
-			/*						\
-			 * The 'R' command returns any overwriteable	\
-			 * characters in the first line to the original	\
-			 * characters.
-			 */						\
-			if (LF_ISSET(TXT_REPLACE) && tp->owrite &&	\
-			    tp == tiqh->cqh_first) {			\
-				memmove(tp->lb + sp->cno,		\
-				    lp + sp->cno, tp->owrite);		\
-				tp->insert += tp->owrite;		\
-				tp->owrite = 0;				\
-			}						\
+			/* Clean up for the 'R' command. */		\
+			if (LF_ISSET(TXT_REPLACE))			\
+				txt_Rcleanup(sp, tiqh, tp, lp, len);	\
 			/* Delete any appended cursor. */		\
 			if (LF_ISSET(TXT_APPENDEOL)) {			\
 				--tp->len;				\
@@ -1699,4 +1692,47 @@ txt_margin(sp, tp, didbreak, pushc)
 	tp->owrite += tlen;
 	*didbreak = 1;
 	return (0);
+}
+
+static void
+txt_Rcleanup(sp, tiqh, tp, lp, len)
+	SCR *sp;
+	TEXTH *tiqh;
+	TEXT *tp;
+	const char *lp;
+	const size_t len;
+{
+	size_t tmp;
+
+	/*
+	 * The 'R' command restores any overwritable characters in the
+	 * first line to the original characters.  Check to make sure
+	 * that the cursor hasn't moved beyond the end of the original
+	 * line.
+	 */
+	if (tp != tiqh->cqh_first || tp->owrite == 0 || sp->cno >= len)
+		return;
+
+	/* Restore whatever we can restore from the original line. */
+	tmp = MIN(tp->owrite, len - sp->cno);
+	memmove(tp->lb + sp->cno, lp + sp->cno, tmp);
+
+	/*
+	 * If there's more to overwrite, what happened was that the user
+	 * extended the line and then erased it.  What we have to do is
+	 * delete whatever the user inserted and then erased.  There
+	 * shouldn't be any insert characters, but we handle them just in
+	 * case.  If there's no overwrite characters left, increase the
+	 * insert character count to make the TEXT structure look right.
+	 */
+	if (tp->owrite > tmp) {
+		tp->owrite -= tmp;
+		if (tp->insert != 0)
+			memmove(tp->lb + sp->cno + tmp,
+			    tp->lb + sp->cno + tmp + tp->owrite, tp->insert);
+		tp->insert += tmp;
+		tp->len -= tp->owrite;
+	} else
+		tp->insert += tmp;
+	tp->owrite = 0;
 }
