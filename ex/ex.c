@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.106 1994/03/23 17:27:57 bostic Exp $ (Berkeley) $Date: 1994/03/23 17:27:57 $";
+static char sccsid[] = "$Id: ex.c,v 8.107 1994/04/06 12:18:09 bostic Exp $ (Berkeley) $Date: 1994/04/06 12:18:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -477,22 +477,30 @@ loop:	if (nl) {
 	 * can just eat it.
 	 *
 	 * Anyhow, the following code makes this all work.  First, for the
-	 * special cases we move past their special argument.  Then, we do
-	 * normal command processing on whatever is left.  Barf-O-Rama.
+	 * special cases we move past their special argument(s).  Then, we
+	 * do normal command processing on whatever is left.  Barf-O-Rama.
 	 */
 	arg1_len = 0;
 	save_cmd = cmd;
 	if (cp == &cmds[C_EDIT] ||
 	    cp == &cmds[C_EX] || cp == &cmds[C_VISUAL_VI]) {
 		/*
-		 * Move to the next non-whitespace character.  As '+' must
-		 * be the character after the command name, if there isn't
-		 * one, we're done.
+		 * Move to the next non-whitespace character.
+		 * The first '!' is eaten as a force flag.
 		 */
-		for (; cmdlen > 0; --cmdlen, ++cmd) {
+		for (tmp = 0; cmdlen > 0; --cmdlen, ++cmd) {
 			ch = *cmd;
-			if (!isblank(ch))
+			if (!isblank(ch)) {
+				if (!tmp && ch == '!') {
+					tmp = 1;
+					++cmd;
+					--cmdlen;
+					save_cmd = cmd;
+					F_SET(&exc, E_FORCE);
+					continue;
+				}
 				break;
+			}
 		}
 		/*
 		 * QUOTING NOTE:
