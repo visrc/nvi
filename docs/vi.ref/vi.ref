@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.33 1994/05/23 15:31:12 bostic Exp $ (Berkeley) $Date: 1994/05/23 15:31:12 $
+.\"     $Id: vi.ref,v 8.34 1994/05/23 15:52:12 bostic Exp $ (Berkeley) $Date: 1994/05/23 15:52:12 $
 .\"
 .Dd "%Q%"
 .Dt "EX/VI REFERENCE MANUAL" 1
@@ -1056,7 +1056,7 @@ command searches for the word referenced by the cursor.
 .It "Number increment"
 The
 .Sy \&#
-command increments the number referenced by the cursor.
+command increments or decrements the number referenced by the cursor.
 .It "Previous file"
 The
 .Sy previous
