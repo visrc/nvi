@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.42 1994/05/27 01:07:15 bostic Exp $ (Berkeley) $Date: 1994/05/27 01:07:15 $
+.\"     $Id: vi.ref,v 8.43 1994/06/02 11:51:25 bostic Exp $ (Berkeley) $Date: 1994/06/02 11:51:25 $
 .\"
 .\"
 .so ref.so
@@ -379,9 +379,9 @@ call, and all other information is ignored.
 In both
 .CO ex
 and
-.CO vi ,
+.CO vi
 printable characters as defined by
-.XR isprint 3,
+.XR isprint 3
 are displayed using the local character set.
 .pp
 Non-printable characters, for which
