@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.9 1993/09/10 11:38:19 bostic Exp $ (Berkeley) $Date: 1993/09/10 11:38:19 $";
+static char sccsid[] = "$Id: util.c,v 8.10 1993/09/11 14:40:49 bostic Exp $ (Berkeley) $Date: 1993/09/11 14:40:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -433,16 +433,22 @@ turn_interrupts_on(sp, tp, handler)
 
 	/* Install the interrupt catcher. */
 	(void)signal(SIGINT, handler);
+
+	/* Set interrupt bits. */
 	F_CLR(sp, S_INTERRUPTED);
 	F_SET(sp, S_INTERRUPTIBLE);
 
-	/* Turn on interrupts. */
+	/*
+	 * ISIG activates VINTR, VQUIT and VSUSP.  We
+	 * don't drop core if the utility does, however.
+	 */
 	if (tcgetattr(STDIN_FILENO, tp)) {
 		msgq(sp, M_ERR, "tcgetattr: %s", strerror(errno));
 		return (1);
 	}
 	n = *tp;
 	n.c_lflag |= ISIG;
+	n.c_cc[VQUIT] = _POSIX_VDISABLE;
 	if (tcsetattr(STDIN_FILENO, TCSANOW | TCSASOFT, &n)) {
 		msgq(sp, M_ERR, "global: tcsetattr: %s", strerror(errno));
 		return (1);
