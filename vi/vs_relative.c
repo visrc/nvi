@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_relative.c,v 10.15 2000/06/27 17:19:09 skimo Exp $ (Berkeley) $Date: 2000/06/27 17:19:09 $";
+static const char sccsid[] = "$Id: vs_relative.c,v 10.16 2000/07/19 17:05:20 skimo Exp $ (Berkeley) $Date: 2000/07/19 17:05:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -141,8 +141,8 @@ done:		if (diffp != NULL)		/* XXX */
 		scno += O_NUMBER_LENGTH;
 
 	/* Macro to return the display length of any signal character. */
-#define	CHLEN(val) (ch = *(u_char *)p++) == '\t' &&			\
-	    !listset ? TAB_OFF(val) : KEY_LEN(sp, ch);
+#define	CHLEN(val) (ch = *(UCHAR_T *)p++) == '\t' &&			\
+	    !listset ? TAB_OFF(val) : KEY_COL(sp, ch);
 
 	/*
 	 * If folding screens (the historic vi screen format), past the end

@@ -1,3 +1,9 @@
+/* temporary assumption */
+#define CHAR_WIDTH(sp, ch)						\
+	((UCHAR_T)(ch) > 255) ? 2 : 1
+#define KEY_COL(sp, ch)							\
+	(CHAR_WIDTH(sp, ch) > 1 ? CHAR_WIDTH(sp, ch) : KEY_LEN(sp,ch))
+
 #define F_GB 'A'
 
 #define INT9494(f,r,c)	((f) << 16) | ((r) << 8) | (c)
@@ -15,4 +21,5 @@ struct _conv {
 	int	(*int2char) (struct _conv*, const CHAR_T *, ssize_t, char **, size_t *);
 	int	(*file2int) (struct _conv*, const char *, ssize_t, CHAR_T **, size_t *);
 	int	(*int2file) (struct _conv*, const CHAR_T *, ssize_t, char **, size_t *);
+	int	(*int2disp) (struct _conv*, const CHAR_T *, ssize_t, char **, size_t *);
 };

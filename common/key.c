@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: key.c,v 10.44 2000/07/17 21:17:52 skimo Exp $ (Berkeley) $Date: 2000/07/17 21:17:52 $";
+static const char sccsid[] = "$Id: key.c,v 10.45 2000/07/19 17:05:18 skimo Exp $ (Berkeley) $Date: 2000/07/19 17:05:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -309,7 +309,11 @@ nopr:	if (ISCNTRL(ch) && (ch < 0x20 || ch == 0x7f)) {
 		sp->cname[0] = '\\';
 		sp->cname[1] = 'x';
 		for (len = 2, chp = (u_int8_t *)&ch,
-		    cnt = sizeof(CHAR_T); cnt-- > 0; ++chp) {
+		    /* sizeof(CHAR_T) conflict with MAX_CHARACTER_COLUMNS
+		     * and code depends on big endian
+		     * and might not be needed in the long run
+		     */
+		    cnt = /*sizeof(CHAR_T)*/1; cnt-- > 0; ++chp) {
 			sp->cname[len++] = hexdigit[(*chp & 0xf0) >> 4];
 			sp->cname[len++] = hexdigit[*chp & 0x0f];
 		}

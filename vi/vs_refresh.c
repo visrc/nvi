@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_refresh.c,v 10.48 2000/06/27 17:19:08 skimo Exp $ (Berkeley) $Date: 2000/06/27 17:19:08 $";
+static const char sccsid[] = "$Id: vs_refresh.c,v 10.49 2000/07/19 17:05:20 skimo Exp $ (Berkeley) $Date: 2000/07/19 17:05:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -485,8 +485,8 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 		 * Count up the widths of the characters.  If it's a tab
 		 * character, go do it the the slow way.
 		 */
-		for (cwtotal = 0; cnt--; cwtotal += KEY_LEN(sp, ch))
-			if ((ch = *(u_char *)p--) == '\t')
+		for (cwtotal = 0; cnt--; cwtotal += KEY_COL(sp, ch))
+			if ((ch = *(UCHAR_T *)p--) == '\t')
 				goto slow;
 
 		/*
@@ -499,8 +499,8 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 		 * If we're moving left, and there's a wide character in the
 		 * current position, go to the end of the character.
 		 */
-		if (KEY_LEN(sp, ch) > 1)
-			cwtotal -= KEY_LEN(sp, ch) - 1;
+		if (KEY_COL(sp, ch) > 1)
+			cwtotal -= KEY_COL(sp, ch) - 1;
 
 		/*
 		 * If the new column moved us off of the current logical line,
@@ -525,9 +525,9 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 		 * screen boundary, we can quit.
 		 */
 		for (cwtotal = SCNO; cnt--;) {
-			if ((ch = *(u_char *)p++) == '\t')
+			if ((ch = *(UCHAR_T *)p++) == '\t')
 				goto slow;
-			if ((cwtotal += KEY_LEN(sp, ch)) >= SCREEN_COLS(sp))
+			if ((cwtotal += KEY_COL(sp, ch)) >= SCREEN_COLS(sp))
 				break;
 		}
 

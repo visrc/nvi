@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_funcs.c,v 10.60 2000/07/14 14:29:14 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:14 $";
+static const char sccsid[] = "$Id: cl_funcs.c,v 10.61 2000/07/19 17:05:17 skimo Exp $ (Berkeley) $Date: 2000/07/19 17:05:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -48,7 +48,7 @@ cl_waddstr(sp, str, len)
 	CONST char *np;
 	size_t nlen;
 
-	INT2CHAR(sp, str, len, np, nlen);
+	INT2DISP(sp, str, len, np, nlen);
 	cl_addstr(sp, np, nlen);
 }
 

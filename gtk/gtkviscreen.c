@@ -80,8 +80,15 @@ gtk_vi_screen_attribute(GtkViScreen *vi, gint attribute, gint on)
 void
 gtk_vi_screen_move(GtkViScreen *vi, gint row, gint col)
 {
+    gint x, xpos;
+    CHAR_T *line;
+
     mark_lines(vi, vi->cury, vi->curx, vi->cury+1, vi->curx+1);
-    vi->curx = col;
+    line = vi->chars + row*vi->cols; 
+    for (x = 0, xpos = 0; xpos <= col; ++x)
+	xpos += INTIS9494(*(line+x)) ? 2 : 1;
+    xpos -= INTIS9494(*(line+--x)) ? 2 : 1;
+    vi->curx = x;
     vi->cury = row;
     mark_lines(vi, vi->cury, vi->curx, vi->cury+1, vi->curx+1);
 }
@@ -253,7 +260,7 @@ gtk_vi_screen_class_init (GtkViScreenClass *class)
   class->rename = NULL;
   class->resized = NULL;
 
-  gb_font = gdk_font_load ("-*-*-*-*-*-*-24-*-*-*-*-*-gb2312.1980-*");
+  gb_font = gdk_font_load ("-*-*-*-*-*-*-12-*-*-*-*-*-gb2312.1980-*");
 }
 
 static void
@@ -611,7 +618,7 @@ expose_text (GtkViScreen* vi, GdkRectangle *area, gboolean cursor)
 static void
 draw_lines(GtkViScreen *vi, gint ymin, gint xmin, gint ymax, gint xmax)
 {
-    gint y, x, len;
+    gint y, x, len, blen, xpos;
     CHAR_T *line;
     GdkGC *fg, *bg;
     GdkFont *font;
@@ -620,7 +627,10 @@ draw_lines(GtkViScreen *vi, gint ymin, gint xmin, gint ymax, gint xmax)
 
     for (y = ymin, line = vi->chars + y*vi->cols; 
 			     y < ymax; ++y, line += vi->cols) {
-	for (x = xmin; x < xmax; x+=len) {
+	for (x = 0, xpos = 0; xpos <= xmin; ++x)
+	    xpos += INTIS9494(*(line+x)) ? 2 : 1;
+	xpos -= INTIS9494(*(line+--x)) ? 2 : 1;
+	for (; xpos < xmax; x+=len, xpos+= blen) {
 	    gchar inverse;
 	    inverse = Inverse(vi,y,x); 
 	    len = 1;
@@ -639,7 +649,7 @@ draw_lines(GtkViScreen *vi, gint ymin, gint xmin, gint ymax, gint xmax)
 		buf[0] = INT9494R(*(line+x));
 		buf[1] = INT9494C(*(line+x));
 		p = buf;
-		len = 2;
+		blen = 2;
 	    } else {
 		font = GTK_WIDGET(vi)->style->font;
 		if (sizeof(CHAR_T) == sizeof(gchar))
@@ -648,14 +658,15 @@ draw_lines(GtkViScreen *vi, gint ymin, gint xmin, gint ymax, gint xmax)
 		    buf[0] = *(line+x);
 		    p = buf;
 		}
+		blen = len;
 	    }
-	    gdk_draw_rectangle(vi->text_area, bg, 1, x * vi->ch_width,
-				y * vi->ch_height, len * vi->ch_width,
+	    gdk_draw_rectangle(vi->text_area, bg, 1, xpos * vi->ch_width,
+				y * vi->ch_height, blen * vi->ch_width,
 				vi->ch_height);
 	    gdk_draw_text (vi->text_area, font, fg,
-			    x * vi->ch_width, 
+			    xpos * vi->ch_width, 
 			    y * vi->ch_height + vi->ch_ascent, 
-			    p, len);
+			    p, blen);
 	}
     }
 }

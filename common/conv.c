@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: conv.c,v 1.1 2000/07/18 19:18:43 skimo Exp $ (Berkeley) $Date: 2000/07/18 19:18:43 $";
+static const char sccsid[] = "$Id: conv.c,v 1.2 2000/07/19 17:05:17 skimo Exp $ (Berkeley) $Date: 2000/07/19 17:05:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -47,12 +47,31 @@ default_int2char(CONV *conv, const CHAR_T * str, ssize_t len, char **tostr, size
 {
     int i;
 
-    BINC_RET(NULL, conv->buffer, conv->size, len * 2);
+    BINC_RET(NULL, conv->buffer, conv->size, len);
     *tostr = conv->buffer;
 
     *tolen = len;
     for (i = 0; i < len; ++i)
 	(*tostr)[i] = str[i];
+
+    return 0;
+}
+
+int 
+default_int2disp(CONV *conv, const CHAR_T * str, ssize_t len, char **tostr, size_t *tolen)
+{
+    int i, j;
+
+    BINC_RET(NULL, conv->buffer, conv->size, len * 2);
+    *tostr = conv->buffer;
+
+    for (i = 0, j = 0; i < len; ++i)
+	if (CHAR_WIDTH(NULL, str[i]) > 1) {
+	    (*tostr)[j++] = '[';
+	    (*tostr)[j++] = ']';
+	} else
+	    (*tostr)[j++] = str[i];
+    *tolen = j;
 
     return 0;
 }
@@ -103,9 +122,9 @@ int2gb(CONV *conv, const CHAR_T * str, ssize_t len, char **tostr, size_t *tolen)
 }
 
 CONV default_conv = { 0, 0, default_char2int, default_int2char, 
-		      default_char2int, default_int2char };
+		      default_char2int, default_int2char, default_int2disp };
 CONV gb_conv = { 0, 0, default_char2int, default_int2char, 
-		      gb2int, int2gb };
+		      gb2int, int2gb, default_int2disp };
 
 void
 conv_init (SCR *sp)

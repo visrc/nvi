@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: key.h,v 10.28 2000/07/17 21:17:52 skimo Exp $ (Berkeley) $Date: 2000/07/17 21:17:52 $
+ *	$Id: key.h,v 10.29 2000/07/19 17:05:18 skimo Exp $ (Berkeley) $Date: 2000/07/19 17:05:18 $
  */
 
 #include "multibyte.h"
@@ -37,6 +37,8 @@ typedef	u_int		ARG_CHAR_T;
     sp->conv->char2int(sp->conv, n, nlen, &w, &wlen)
 #define INT2CHAR(sp,w,wlen,n,nlen) \
     sp->conv->int2char(sp->conv, w, wlen, &n, &nlen)
+#define INT2DISP(sp,w,wlen,n,nlen) \
+    sp->conv->int2disp(sp->conv, w, wlen, &n, &nlen)
 #define CONST
 #else
 #define FILE2INT(sp,n,nlen,w,wlen) \
@@ -46,6 +48,8 @@ typedef	u_int		ARG_CHAR_T;
 #define CHAR2INT(sp,n,nlen,w,wlen) \
     w = n, wlen = nlen
 #define INT2CHAR(sp,w,wlen,n,nlen) \
+    n = w, nlen = wlen
+#define INT2DISP(sp,w,wlen,n,nlen) \
     n = w, nlen = wlen
 #define CONST const
 #endif

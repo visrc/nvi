@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_line.c,v 10.24 2000/07/17 21:17:55 skimo Exp $ (Berkeley) $Date: 2000/07/17 21:17:55 $";
+static const char sccsid[] = "$Id: vs_line.c,v 10.25 2000/07/19 17:05:19 skimo Exp $ (Berkeley) $Date: 2000/07/19 17:05:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -259,7 +259,7 @@ empty:					(void)gp->scr_addstr(sp,
 	if (O_ISSET(sp, O_LEFTRIGHT)) {
 		for (; offset_in_line < len; ++offset_in_line) {
 			chlen = (ch = *(u_char *)p++) == '\t' && !list_tab ?
-			    TAB_OFF(scno) : KEY_LEN(sp, ch);
+			    TAB_OFF(scno) : KEY_COL(sp, ch);
 			if ((scno += chlen) >= skip_cols)
 				break;
 		}
@@ -283,7 +283,7 @@ empty:					(void)gp->scr_addstr(sp,
 	else {
 		for (; offset_in_line < len; ++offset_in_line) {
 			chlen = (ch = *(u_char *)p++) == '\t' && !list_tab ?
-			    TAB_OFF(scno) : KEY_LEN(sp, ch);
+			    TAB_OFF(scno) : KEY_COL(sp, ch);
 			if ((scno += chlen) < cols_per_screen)
 				continue;
 			scno -= cols_per_screen;
@@ -336,7 +336,7 @@ display:
 			scno += chlen = TAB_OFF(scno) - offset_in_char;
 			is_tab = 1;
 		} else {
-			scno += chlen = KEY_LEN(sp, ch) - offset_in_char;
+			scno += chlen = KEY_COL(sp, ch) - offset_in_char;
 			is_tab = 0;
 		}
 
@@ -416,8 +416,12 @@ display:
 		else {
 			if (cbp + chlen >= ecbp)
 				FLUSH;
-			for (kp = KEY_NAME(sp, ch) + offset_in_char; chlen--;)
-				*cbp++ = *kp++;
+			if (CHAR_WIDTH(sp, ch) > 1)
+				*cbp++ = ch;
+			else
+				for (kp = KEY_NAME(sp, ch) + offset_in_char; 
+				     chlen--;)
+					*cbp++ = *kp++;
 		}
 	}
 
