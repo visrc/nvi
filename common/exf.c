@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 9.7 1994/11/13 16:26:13 bostic Exp $ (Berkeley) $Date: 1994/11/13 16:26:13 $";
+static char sccsid[] = "$Id: exf.c,v 9.8 1994/11/14 09:47:23 bostic Exp $ (Berkeley) $Date: 1994/11/14 09:47:23 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -1179,6 +1179,7 @@ file_lock(sp, name, fdp, fd, iswrite)
 	        LOCK_UNAVAIL : LOCK_FAILED : LOCK_SUCCESS);
 
 #else					/* Gag me.  We've got fcntl(2). */
+{
 	struct flock arg;
 	int didopen, sverrno;
 
@@ -1215,5 +1216,6 @@ file_lock(sp, name, fdp, fd, iswrite)
 	 */
 	return (errno == EACCES || errno == EAGAIN || errno == EWOULDBLOCK ?
 	    LOCK_UNAVAIL : LOCK_FAILED);
+}
 #endif
 }
