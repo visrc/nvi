@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.11 1993/08/30 08:36:48 bostic Exp $ (Berkeley) $Date: 1993/08/30 08:36:48 $";
+static char sccsid[] = "$Id: main.c,v 8.12 1993/09/09 14:23:15 bostic Exp $ (Berkeley) $Date: 1993/09/09 14:23:15 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -62,7 +62,8 @@ main(argc, argv)
 	FREF *frp;
 	SCR *sp;
 	int ch, flagchk, eval;
-	char *excmdarg, *errf, *myname, *p, *rfname, *tfname, path[MAXPATHLEN];
+	char *excmdarg, *errf, *myname, *p, *rfname, *tfname;
+	char *av[2], path[MAXPATHLEN];
 
 	/* Stop if indirecting through a NULL pointer. */
 	if (reenter++)
@@ -130,7 +131,7 @@ main(argc, argv)
 	/* Parse the arguments. */
 	flagchk = '\0';
 	excmdarg = errf = rfname = tfname = NULL;
-	while ((ch = getopt(argc, argv, "c:elmRr:sT:t:v")) != EOF)
+	while ((ch = getopt(argc, argv, "c:elmRr:sT:t:vw:")) != EOF)
 		switch (ch) {
 		case 'c':		/* Run the command. */
 			excmdarg = optarg;
@@ -196,6 +197,17 @@ main(argc, argv)
 			break;
 		case 'v':		/* Vi mode. */
 			F_SET(sp, S_MODE_VI);
+			break;
+		case 'w':
+			av[0] = path;
+			av[1] = NULL;
+			if (strtol(optarg, &p, 10) < 0 || *p)
+				errx(1, "illegal window size -- %s", optarg);
+			(void)snprintf(path,
+			    sizeof(path), "window=%s", optarg);
+			if (opts_set(sp, av))
+				 msgq(sp, M_ERR,
+			     "Unable to set command line window option");
 			break;
 		case '?':
 		default:
@@ -444,6 +456,6 @@ static void
 usage()
 {
 	(void)fprintf(stderr,
-	    "usage: vi [-eRsv] [-c command] [-m file] [-r file] [-t tag]\n");
+"usage: vi [-eRsv] [-c command] [-m file] [-r file] [-t tag] [-w size]\n");
 	exit(1);
 }
