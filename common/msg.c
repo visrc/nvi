@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: msg.c,v 10.29 1996/03/15 20:15:26 bostic Exp $ (Berkeley) $Date: 1996/03/15 20:15:26 $";
+static const char sccsid[] = "$Id: msg.c,v 10.30 1996/04/11 11:40:51 bostic Exp $ (Berkeley) $Date: 1996/04/11 11:40:51 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -590,14 +590,14 @@ msgq_status(sp, lno, showlast)
 	if (showlast) {
 		if (db_last(sp, &last))
 			return;
-		if (last > 1) {
-			t = msg_cat(sp, "027|line %lu of %lu [%ld%%]", &len);
-			(void)sprintf(p, t, lno, last, (lno * 100) / last);
-			p += strlen(p);
-		} else {
+		if (last == 0) {
 			t = msg_cat(sp, "028|empty file", &len);
 			memmove(p, t, len);
 			p += len;
+		} else {
+			t = msg_cat(sp, "027|line %lu of %lu [%ld%%]", &len);
+			(void)sprintf(p, t, lno, last, (lno * 100) / last);
+			p += strlen(p);
 		}
 	} else {
 		t = msg_cat(sp, "029|line %lu", &len);
