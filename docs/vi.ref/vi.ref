@@ -8,7 +8,7 @@
 .\"
 .\" See the LICENSE file for redistribution information.
 .\"
-.\"     $Id: vi.ref,v 8.84 1996/10/10 19:11:54 bostic Exp $ (Berkeley) $Date: 1996/10/10 19:11:54 $
+.\"     $Id: vi.ref,v 8.85 1996/10/10 19:13:42 bostic Exp $ (Berkeley) $Date: 1996/10/10 19:13:42 $
 .\"
 .\"
 .so ref.so
@@ -16,7 +16,7 @@
 .(l C
 .ps 12
 .ft B
-Ex/Vi Reference Manual
+Vi/Ex Reference Manual
 .ft
 .ps
 .sp
