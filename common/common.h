@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 5.36 1993/02/16 20:16:28 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:16:28 $
+ *	$Id: common.h,v 5.37 1993/02/19 13:39:05 bostic Exp $ (Berkeley) $Date: 1993/02/19 13:39:05 $
  */
 
 #include <limits.h>		/* XXX */
@@ -12,8 +12,8 @@
 #include <regex.h>
 
 #include "mark.h"
-#include "exf.h"
 #include "msg.h"
+#include "exf.h"
 #include "cut.h"
 
 /*
@@ -55,7 +55,7 @@ typedef void (*sig_ret_t) __P((int));	/* Type of signal function. */
 	    binc(ep, &(lp), &(llen), nlen))				\
 		return (1);						\
 }
-int	binc __P((EXF *, u_char **, size_t *, size_t));
+int	binc __P((EXF *, void *, size_t *, size_t));
 
 /* Filter type. */
 enum filtertype { STANDARD, NOINPUT, NOOUTPUT };

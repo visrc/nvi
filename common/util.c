@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 5.26 1993/02/16 20:16:28 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:16:28 $";
+static char sccsid[] = "$Id: util.c,v 5.27 1993/02/19 13:39:56 bostic Exp $ (Berkeley) $Date: 1993/02/19 13:39:56 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -39,11 +39,12 @@ __putchar(ch)
  *	Increase the size of a buffer.
  */
 int
-binc(ep, bpp, bsizep, min)
+binc(ep, argp, bsizep, min)
 	EXF *ep;
-	u_char **bpp;
+	void *argp;
 	size_t *bsizep, min;
 {
+	void *bpp;
 	size_t csize;
 
 	/* If already larger than the minimum, just return. */
@@ -52,11 +53,19 @@ binc(ep, bpp, bsizep, min)
 		return (0);
 
 	csize += MAX(min, 256);
-	if ((*bpp = realloc(*bpp, csize)) == NULL) {
+	bpp = *(char **)argp;
+
+	/* For non-ANSI C realloc implementations. */
+	if (bpp == NULL)
+		bpp = malloc(csize);
+	else
+		bpp = realloc(bpp, csize);
+	if (bpp == NULL) {
 		msg(ep, M_ERROR, "Error: %s.", strerror(errno));
 		*bsizep = 0;
 		return (1);
 	}
+	*(char **)argp = bpp;
 	*bsizep = csize;
 	return (0);
 }
