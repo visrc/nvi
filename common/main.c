@@ -18,7 +18,7 @@ static const char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static const char sccsid[] = "$Id: main.c,v 10.62 2001/11/01 10:28:25 skimo Exp $ (Berkeley) $Date: 2001/11/01 10:28:25 $";
+static const char sccsid[] = "$Id: main.c,v 10.63 2001/11/01 15:24:43 skimo Exp $ (Berkeley) $Date: 2001/11/01 15:24:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -141,7 +141,8 @@ editor(WIN *wp, int argc, char **argv)
 			LF_SET(SC_EX);
 			break;
 		case 'F':		/* No snapshot. */
-			F_CLR(gp, G_SNAPSHOT);
+			v_estr(gp->progname, 0, 
+			    "-F option no longer supported.");
 			break;
 		case 'l':		/* Set lisp, showmatch options. */
 			lflag = 1;

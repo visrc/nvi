@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: exf.c,v 10.68 2001/11/01 13:15:21 skimo Exp $ (Berkeley) $Date: 2001/11/01 13:15:21 $";
+static const char sccsid[] = "$Id: exf.c,v 10.69 2001/11/01 15:24:43 skimo Exp $ (Berkeley) $Date: 2001/11/01 15:24:43 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -42,7 +42,7 @@ static int	file_backup __P((SCR *, char *, char *));
 static void	file_cinit __P((SCR *));
 static void	file_comment __P((SCR *));
 static int	file_spath __P((SCR *, FREF *, struct stat *, int *));
-static int * 	db_setup __P((SCR *sp, EXF *ep));
+static int   	db_setup __P((SCR *sp, EXF *ep));
 
 /*
  * file_add --
@@ -265,16 +265,14 @@ file_init(SCR *sp, FREF *frp, char *rcv_name, int flags)
 		goto err;
 
 	/* Open a db structure. */
-	if ((sp->db_error = db_create(&ep->db, ep->env, 0)) != 0) {
-		/* XXXX */
-		fprintf(stderr, "db_create %d\n", sp->db_error);
+	if ((sp->db_error = db_create(&ep->db, 0, 0)) != 0) {
+		msgq(sp, M_DBERR, "db_create");
 		goto err;
 	}
 
 	ep->db->set_re_delim(ep->db, '\n');		/* Always set. */
 	ep->db->set_pagesize(ep->db, psize);
-	ep->db->set_flags(ep->db, DB_RENUMBER |
-			(F_ISSET(sp->gp, G_SNAPSHOT) ? DB_SNAPSHOT : 0));
+	ep->db->set_flags(ep->db, DB_RENUMBER | DB_SNAPSHOT);
 	if (rcv_name == NULL)
 		ep->db->set_re_source(ep->db, oname);
 
@@ -287,9 +285,11 @@ file_init(SCR *sp, FREF *frp, char *rcv_name, int flags)
 #define NOMMAPIFFCNTL 0
 #endif
 
+#define _DB_OPEN_MODE	S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH
+
 	if ((sp->db_error = ep->db->open(ep->db, ep->rcv_path, NULL, DB_RECNO, 
 	    ((rcv_name == 0) ? DB_TRUNCATE : 0) | VI_DB_THREAD | NOMMAPIFFCNTL,
-	    S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)) != 0) {
+	    _DB_OPEN_MODE)) != 0) {
 		msgq_str(sp,
 		    M_DBERR, rcv_name == NULL ? oname : rcv_name, "%s");
 		/*
@@ -306,6 +306,24 @@ file_init(SCR *sp, FREF *frp, char *rcv_name, int flags)
 
 		open_err = 1;
 		goto oerr;
+	}
+
+	/* re_source is loaded into the database.
+	 * Close it and reopen it in the environment. 
+	 */
+	if ((sp->db_error = ep->db->close(ep->db, 0))) {
+		msgq(sp, M_DBERR, "close");
+		goto err;
+	}
+	if ((sp->db_error = db_create(&ep->db, ep->env, 0)) != 0) {
+		msgq(sp, M_DBERR, "db_create 2");
+		goto err;
+	}
+	if ((sp->db_error = ep->db->open(ep->db, ep->rcv_path, NULL, DB_RECNO, 
+	    VI_DB_THREAD | NOMMAPIFFCNTL, _DB_OPEN_MODE)) != 0) {
+		msgq_str(sp,
+		    M_DBERR, ep->rcv_path, "%s");
+		goto err;
 	}
 
 	/*
@@ -1562,7 +1580,7 @@ file_lock(SCR *sp, char *name, int *fdp, int fd, int iswrite)
 #endif
 }
 
-static int *
+static int
 db_setup(SCR *sp, EXF *ep)
 {
 	char path[MAXPATHLEN];
@@ -1585,7 +1603,8 @@ db_setup(SCR *sp, EXF *ep)
 		goto err;
 	}
 	if ((sp->db_error = env->open(env, path, 
-	    DB_PRIVATE | DB_CREATE | DB_INIT_MPOOL | VI_DB_THREAD, 0)) != 0) {
+	    DB_PRIVATE | DB_CREATE | DB_INIT_MPOOL | VI_DB_THREAD 
+	    /* | DB_INIT_LOG */, 0)) != 0) {
 		msgq(sp, M_DBERR, "env->open");
 		goto err;
 	}

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: recover.c,v 10.30 2001/11/01 10:06:55 skimo Exp $ (Berkeley) $Date: 2001/11/01 10:06:55 $";
+static const char sccsid[] = "$Id: recover.c,v 10.31 2001/11/01 15:24:44 skimo Exp $ (Berkeley) $Date: 2001/11/01 15:24:44 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -201,8 +201,6 @@ rcv_init(SCR *sp)
 
 	/* Test if we're recovering a file, not editing one. */
 	if (ep->rcv_mpath == NULL) {
-		DBTYPE type;
-
 		/* Build a file to mail to the user. */
 		if (rcv_mailfile(sp, 0, NULL))
 			goto err;
@@ -214,20 +212,12 @@ rcv_init(SCR *sp)
 		/* Turn on a busy message, and sync it to backing store. */
 		sp->gp->scr_busy(sp,
 		    "057|Copying file for recovery...", BUSY_ON);
-		type = ep->db->type;
-		/* XXXX gross hack
-		   We don't want DB to write to the underlying
-		   recno database, so we just tell it that it's
-		   not a recno database
-		*/
-		ep->db->type = DB_UNKNOWN;
 		if (ep->db->sync(ep->db, 0)) {
 			msgq_str(sp, M_SYSERR, ep->rcv_path,
 			    "058|Preservation failed: %s");
 			sp->gp->scr_busy(sp, NULL, BUSY_OFF);
 			goto err;
 		}
-		ep->db->type = type;
 		sp->gp->scr_busy(sp, NULL, BUSY_OFF);
 	}
 
@@ -267,21 +257,12 @@ rcv_sync(SCR *sp, u_int flags)
 
 	/* Sync the file if it's been modified. */
 	if (F_ISSET(ep, F_MODIFIED)) {
-		DBTYPE type;
-		type = ep->db->type;
-		/* XXXX gross hack
-		   We don't want DB to write to the underlying
-		   recno database, so we just tell it that it's
-		   not a recno database
-		*/
-		ep->db->type = DB_UNKNOWN;
 		if (ep->db->sync(ep->db, 0)) {
 			F_CLR(ep, F_RCV_ON | F_RCV_NORM);
 			msgq_str(sp, M_SYSERR,
 			    ep->rcv_path, "060|File backup failed: %s");
 			return (1);
 		}
-		ep->db->type = type;
 
 		/* REQUEST: don't remove backing file on exit. */
 		if (LF_ISSET(RCV_PRESERVE))
