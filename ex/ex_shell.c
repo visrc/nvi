@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 9.5 1995/01/11 16:15:52 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:15:52 $";
+static char sccsid[] = "$Id: ex_shell.c,v 9.6 1995/01/23 17:03:16 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:03:16 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -65,8 +65,7 @@ ex_exec_proc(sp, cmd, p1, p2)
 	char *p;
 
 	/* Clear the rest of the screen. */
-	if (sp->s_clear(sp))
-		return (1);
+	sp->e_clrtoeos(sp);
 
 	/* Save ex/vi terminal settings, and restore the original ones. */
 	teardown = !ex_sleave(sp);
@@ -93,7 +92,7 @@ ex_exec_proc(sp, cmd, p1, p2)
 		break;
 	case 0:				/* Utility. */
 		/* The utility has default signal behavior. */
-		sig_end(sp);
+		sig_restore(sp);
 
 		if ((name = strrchr(O_STR(sp, O_SHELL), '/')) == NULL)
 			name = O_STR(sp, O_SHELL);

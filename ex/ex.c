@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 9.22 1995/01/11 18:59:04 bostic Exp $ (Berkeley) $Date: 1995/01/11 18:59:04 $";
+static char sccsid[] = "$Id: ex.c,v 9.23 1995/01/23 17:02:58 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:02:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -60,7 +60,7 @@ ex(sp)
 	if (ex_init(sp))
 		return (1);
 
-	if (sp->s_refresh(sp))
+	if (sp->e_refresh(sp))
 		return (ex_end(sp));
 
 	/* If reading from a file, messages should have line info. */
@@ -93,7 +93,7 @@ ex(sp)
 		 * safe because ex_icmd clears them all.
 		 */
 		CLR_INTERRUPT(sp);
-		irval = sp->s_get(sp, sp->tiqp, ':', flags);
+		irval = sex_get(sp, sp->tiqp, ':', flags);
 		if (INTERRUPTED(sp)) {
 			(void)putchar('\n');
 			goto refresh;
@@ -127,7 +127,7 @@ ex(sp)
 		if (saved_mode != F_ISSET(sp, S_SCREENS | S_MAJOR_CHANGE))
 			break;
 
-refresh:	if (sp->s_refresh(sp)) {
+refresh:	if (sp->e_refresh(sp)) {
 			eval = 1;
 			break;
 		}
@@ -368,7 +368,7 @@ done:		if (bp != NULL)
 	 * contain only <blank> characters from .exrc files.
 	 */
 	if (cmdlen == 0 &&
-	    (!notempty || IN_VI_MODE(sp) || pflags & EXPAR_BLIGNORE))
+	    (!notempty || F_ISSET(sp, S_VI) || pflags & EXPAR_BLIGNORE))
 		goto done;
 
 	/* Initialize the structure passed to underlying functions. */
@@ -549,7 +549,7 @@ skip:		if (F_ISSET(cp, E_NOPERM)) {
 		 * The visual command has a different syntax when called
 		 * from ex than when called from a vi colon command.  FMH.
 		 */
-		if (cp == &cmds[C_VISUAL_EX] && IN_VI_MODE(sp))
+		if (cp == &cmds[C_VISUAL_EX] && F_ISSET(sp, S_VI))
 			cp = &cmds[C_VISUAL_VI];
 
 		/* Set the format style flags for the next command. */
@@ -594,6 +594,12 @@ skip:		if (F_ISSET(cp, E_NOPERM)) {
 		F_SET(&exc, E_F_HASH);
 	} else
 		optnum = 0;
+
+	/* Check for ex mode legality. */
+	if (F_ISSET(sp, S_EX) && F_ISSET(cp, E_VIONLY)) {
+		msgq(sp, M_ERR, "095|Command not available in ex mode");
+		goto err;
+	}
 
 	/* Initialize local flags to the command flags. */
 	LF_INIT(cp->flags);
@@ -1206,7 +1212,7 @@ addr2:	switch (exc.addrcnt) {
 		 */
 		if (exc.addr2.lno == 0) {
 			if (!LF_ISSET(E_ZERO) &&
-			    (IN_EX_MODE(sp) || uselastcmd != 1)) {
+			    (F_ISSET(sp, S_EX) || uselastcmd != 1)) {
 				ex_badaddr(sp, cp, A_ZERO, NUM_OK);
 				goto err;
 			}
@@ -1223,7 +1229,7 @@ addr2:	switch (exc.addrcnt) {
 	case 1:
 		if (exc.addr1.lno == 0) {
 			if (!LF_ISSET(E_ZERO) &&
-			    (IN_EX_MODE(sp) || uselastcmd != 1)) {
+			    (F_ISSET(sp, S_EX) || uselastcmd != 1)) {
 				ex_badaddr(sp, cp, A_ZERO, NUM_OK);
 				goto err;
 			}
@@ -1243,7 +1249,7 @@ addr2:	switch (exc.addrcnt) {
 	 * This is done before the absolute mark gets set; historically,
 	 * "/a/,/b/" did NOT set vi's absolute mark, but "/a/,/b/d" did.
 	 */
-	if ((IN_VI_MODE(sp) ||
+	if ((F_ISSET(sp, S_VI) ||
 	    pflags & EXPAR_NOPRDEF) && uselastcmd && vi_address == 0) {
 		switch (exc.addrcnt) {
 		case 2:
@@ -1283,7 +1289,7 @@ addr2:	switch (exc.addrcnt) {
 	F_CLR(exp, EX_AUTOPRINT);
 
 	/* Increment the command count if not called from vi. */
-	if (IN_EX_MODE(sp))
+	if (F_ISSET(sp, S_EX))
 		++sp->ccnt;
 
 	/*
@@ -1319,7 +1325,7 @@ addr2:	switch (exc.addrcnt) {
 	 */
 	if (sep != NONE) {
 		if (sp->ep != NULL &&
-		    IN_EX_MODE(sp) && F_ISSET(sp->gp, G_STDIN_TTY))
+		    F_ISSET(sp, S_EX) && F_ISSET(sp->gp, G_STDIN_TTY))
 			if (sep == NEEDSEP_NR &&
 			    (uselastcmd || cp == &cmds[C_SCROLL]))
 				sex_termcap(sp, EX_TERM_SCROLL);
@@ -1415,7 +1421,7 @@ addr2:	switch (exc.addrcnt) {
 	 * want to display a line.  (Make sure there's a line to display.)
 	 */
 	if (sp->ep != NULL &&
-	    IN_EX_MODE(sp) && !F_ISSET(sp, S_GLOBAL) && sp->lno != 0) {
+	    F_ISSET(sp, S_EX) && !F_ISSET(sp, S_GLOBAL) && sp->lno != 0) {
 		/*
 		 * The print commands have already handled the `print' flags.
 		 * If so, clear them.

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_script.c,v 9.6 1995/01/11 16:15:49 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:15:49 $";
+static char sccsid[] = "$Id: ex_script.c,v 9.7 1995/01/23 17:03:14 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:03:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -60,7 +60,7 @@ ex_script(sp, cmdp)
 	EXCMDARG *cmdp;
 {
 	/* Vi only command. */
-	if (!IN_VI_MODE(sp)) {
+	if (!F_ISSET(sp, S_VI)) {
 		msgq(sp, M_ERR,
 		    "153|The script command is only available in vi mode");
 		return (1);
@@ -147,7 +147,7 @@ err:		if (sc->sh_master != -1)
 		return (1);
 	case 0:				/* Utility. */
 		/* The utility has default signal behavior. */
-		sig_end(sp);
+		sig_restore(sp);
 
 		/*
 		 * XXX
@@ -452,7 +452,7 @@ more:	switch (nr = read(sc->sh_master, endp, MINREAD)) {
 	/* The cursor moves to EOF. */
 	sp->lno = lno;
 	sp->cno = len ? len - 1 : 0;
-	rval = sp->s_refresh(sp);
+	rval = sp->e_refresh(sp);
 
 ret:	FREE_SPACE(sp, bp, blen);
 	return (rval);

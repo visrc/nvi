@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_map.c,v 9.2 1995/01/11 16:15:36 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:15:36 $";
+static char sccsid[] = "$Id: ex_map.c,v 9.3 1995/01/23 17:03:10 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:03:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -71,11 +71,10 @@ ex_map(sp, cmdp)
 	}
 
 	/*
-	 * If the mapped string is #[0-9]* (and wasn't quoted) then store
-	 * the function key mapping, and call the screen specific routine.
-	 * Note, if the screen specific routine is able to create the
-	 * mapping, the SEQ_FUNCMAP type stays around, maybe the next screen
-	 * type can get it right.
+	 * If the mapped string is #[0-9]* (and wasn't quoted) then store the
+	 * function key mapping.  If the screen specific routine has been set,
+	 * call it as well.  Note, the SEQ_FUNCMAP type is persistent across
+	 * screen types, maybe the next screen type will get it right.
 	 */
 	if (input[0] == '#' && isdigit(input[1])) {
 		for (p = input + 2; isdigit(*p); ++p);
@@ -85,8 +84,9 @@ ex_map(sp, cmdp)
 		if (seq_set(sp, NULL, 0, input, cmdp->argv[0]->len,
 		    cmdp->argv[1]->bp, cmdp->argv[1]->len, stype, SEQ_FUNCMAP))
 			return (1);
-		return (sp->s_fmap(sp, stype, input, cmdp->argv[0]->len,
-		    cmdp->argv[1]->bp, cmdp->argv[1]->len));
+		if (sp->e_fmap != NULL)
+			return (sp->e_fmap(sp, stype, input, cmdp->argv[0]->len,
+			    cmdp->argv[1]->bp, cmdp->argv[1]->len));
 	}
 
 	/* Some single keys may not be remapped in command mode. */

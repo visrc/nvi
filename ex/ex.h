@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 9.8 1995/01/11 21:33:46 bostic Exp $ (Berkeley) $Date: 1995/01/11 21:33:46 $
+ *	$Id: ex.h,v 9.9 1995/01/23 17:03:22 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:03:22 $
  */
 
 #define	PROMPTCHAR	':'		/* Prompt character. */
@@ -42,8 +42,9 @@ typedef struct _excmdlist {
 #define	E_MODIFY	0x0100000	/* File name expansion modified arg. */
 #define	E_NOGLOBAL	0x0200000	/* Not in a global. */
 #define	E_NOPERM	0x0400000	/* Permission denied for now. */
-#define	E_ZERO		0x0800000	/* 0 is a legal addr1. */
-#define	E_ZERODEF	0x1000000	/* 0 is default addr1 of empty files. */
+#define	E_VIONLY	0x0800000	/* Meaningful only in vi. */
+#define	E_ZERO		0x1000000	/* 0 is a legal addr1. */
+#define	E_ZERODEF	0x2000000	/* 0 is default addr1 of empty files. */
 	u_int32_t flags;
 	char	 *syntax;		/* Syntax script. */
 	char	*usage;			/* Usage line. */
@@ -146,6 +147,11 @@ typedef struct _ex_private {
 #define	IS_ESCAPE(sp, ch)						\
 	(F_ISSET(EXP(sp), EX_VLITONLY) ?				\
 	    (ch) == CH_LITERAL : KEY_VAL(sp, ch) == K_VLNEXT)
+
+/* Generic interfaces to ex. */
+int	ex_optchange __P((SCR *, int));
+int	ex_screen_copy __P((SCR *, SCR *));
+int	ex_screen_end __P((SCR *));
 
 /*
  * Filter actions:

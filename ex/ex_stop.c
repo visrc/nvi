@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_stop.c,v 9.3 1995/01/11 16:15:55 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:15:55 $";
+static char sccsid[] = "$Id: ex_stop.c,v 9.4 1995/01/23 17:03:17 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:03:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,5 +46,5 @@ ex_stop(sp, cmdp)
 	if (!F_ISSET(cmdp, E_FORCE) && file_aw(sp, FS_ALL))
 		return (1);
 
-	return (sp->s_suspend(sp));
+	return (sp->e_suspend(sp));
 }

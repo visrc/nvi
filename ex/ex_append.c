@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 9.8 1995/01/11 16:15:15 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:15:15 $";
+static char sccsid[] = "$Id: ex_append.c,v 9.9 1995/01/23 17:03:05 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:03:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -110,11 +110,11 @@ aci(sp, cmdp, cmd)
 	 * local structure instead.
 	 *
 	 * If this code is called by vi, we want to reset the terminal and use
-	 * ex's s_get() routine.  It actually works fine if we use vi's s_get()
+	 * ex's line get routine.  It actually works fine if we use vi's get
 	 * routine, but it doesn't look as nice.  Maybe if we had a separate
 	 * window or something, but getting a line at a time looks awkward.
 	 */
-	if (IN_VI_MODE(sp)) {
+	if (F_ISSET(sp, S_VI)) {
 		memset(&tiq, 0, sizeof(TEXTH));
 		CIRCLEQ_INIT(&tiq);
 		sv_tiqp = sp->tiqp;
@@ -179,7 +179,7 @@ err:			rval = 1;
 		sp->lno = ++m.lno;
 	}
 
-	if (IN_VI_MODE(sp)) {
+	if (F_ISSET(sp, S_VI)) {
 		sp->tiqp = sv_tiqp;
 		text_lfree(&tiq);
 

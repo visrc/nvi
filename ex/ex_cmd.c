@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 9.4 1995/01/11 16:16:11 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:16:11 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 9.5 1995/01/23 17:03:20 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:03:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -116,7 +116,7 @@ EXCMDLIST const cmds[] = {
 	    "ar[gs]",
 	    "display file argument list"},
 /* C_BG */
-	{"bg",		ex_bg,		E_NOGLOBAL,
+	{"bg",		ex_bg,		E_NOGLOBAL|E_VIONLY,
 	    "",
 	    "bg",
 	    "background the current screen"},
@@ -181,7 +181,7 @@ EXCMDLIST const cmds[] = {
 	    "f[ile] [name]",
 	    "display (and optionally set) file name"},
 /* C_FG */
-	{"fg",		ex_fg,		E_NOGLOBAL,
+	{"fg",		ex_fg,		E_NOGLOBAL|E_VIONLY,
 	    "f1o",
 	    "fg [file]",
 	    "switch the current screen and a backgrounded screen"},
@@ -287,7 +287,7 @@ EXCMDLIST const cmds[] = {
 	    "recover[!] file",
 	    "recover a saved file"},
 /* C_RESIZE */
-	{"resize",	ex_resize,	E_NOGLOBAL,
+	{"resize",	ex_resize,	E_NOGLOBAL|E_VIONLY,
 	    "c+",
 	    "resize [+-]rows",
 	    "grow or shrink the current screen"},
@@ -327,7 +327,7 @@ EXCMDLIST const cmds[] = {
 	    "so[urce] file",
 	    "read a file of ex commands"},
 /* C_SPLIT */
-	{"split",	ex_split,	E_NOGLOBAL,
+	{"split",	ex_split,	E_NOGLOBAL|E_VIONLY,
 	    "fNo",
 	    "sp[lit] [file ...]",
 	    "split the current screen into two screens"},

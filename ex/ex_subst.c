@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 9.8 1995/01/12 12:09:08 bostic Exp $ (Berkeley) $Date: 1995/01/12 12:09:08 $";
+static char sccsid[] = "$Id: ex_subst.c,v 9.9 1995/01/23 17:03:18 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:03:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -472,7 +472,7 @@ usage:		ex_message(sp, cmdp->cmd, EXM_USAGE);
 		return (1);
 	}
 
-noargs:	if (IN_VI_MODE(sp) && sp->c_suffix && (lflag || nflag || pflag)) {
+noargs:	if (F_ISSET(sp, S_VI) && sp->c_suffix && (lflag || nflag || pflag)) {
 		msgq(sp, M_ERR,
 "159|The #, l and p flags may not be combined with the c flag in vi mode");
 		return (1);
@@ -624,7 +624,7 @@ nextmatch:	match[0].rm_so = 0;
 				if (from.cno >= llen)
 					from.cno = llen - 1;
 			}
-			switch (sp->s_confirm(sp, &from, &to)) {
+			switch (sp->e_confirm(sp, &from, &to)) {
 			case CONF_YES:
 				break;
 			case CONF_NO:

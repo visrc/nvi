@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 9.5 1995/01/11 16:15:21 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:15:21 $";
+static char sccsid[] = "$Id: ex_bang.c,v 9.6 1995/01/23 17:03:08 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:03:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -88,7 +88,7 @@ ex_bang(sp, cmdp)
 	 */
 	bp = NULL;
 	if (F_ISSET(cmdp, E_MODIFY) && !F_ISSET(sp, S_EXSILENT)) {
-		if (IN_EX_MODE(sp)) {
+		if (F_ISSET(sp, S_EX)) {
 			F_SET(sp, S_SCR_EXWROTE);
 			(void)ex_printf(EXCOOKIE, "!%s\n", ap->bp);
 			(void)ex_fflush(EXCOOKIE);
@@ -103,7 +103,7 @@ ex_bang(sp, cmdp)
 		 * ex_exec_proc routine to display after the screen has been
 		 * cleaned up.
 		 */
-		if (IN_VI_MODE(sp)) {
+		if (F_ISSET(sp, S_VI)) {
 			GET_SPACE_RET(sp, bp, blen, ap->len + 3);
 			bp[0] = '!';
 			memmove(bp + 1, ap->bp, ap->len);
@@ -133,7 +133,7 @@ ex_bang(sp, cmdp)
 		 */
 		if (bp != NULL) {
 			bp[ap->len + 1] = '\0';
-			(void)sp->s_busy(sp, bp);
+			(void)sp->e_busy(sp, bp);
 		}
 
 		/*
@@ -170,7 +170,7 @@ ex_bang(sp, cmdp)
 		 */
 		sp->lno = rm.lno;
 		sp->cno = rm.cno;
-		if (rval == 0 && IN_VI_MODE(sp)) {
+		if (rval == 0 && F_ISSET(sp, S_VI)) {
 			sp->cno = 0;
 			(void)nonblank(sp, sp->lno, &sp->cno);
 		}
@@ -197,10 +197,10 @@ ex_bang(sp, cmdp)
 	rval = ex_exec_proc(sp, ap->bp, bp, msg);
 
 	/* Vi requires user permission to continue. */
-	if (IN_VI_MODE(sp))
+	if (F_ISSET(sp, S_VI))
 		F_SET(sp, S_CONTINUE);
 
-ret2:	if (IN_EX_MODE(sp)) {
+ret2:	if (F_ISSET(sp, S_EX)) {
 		/*
 		 * Put ex error messages out so they aren't confused with
 		 * the autoprint output.

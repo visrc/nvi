@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_term.c,v 9.2 1995/01/11 16:19:01 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:19:01 $";
+static char sccsid[] = "$Id: cl_term.c,v 9.3 1995/01/23 17:02:02 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:02:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,9 +31,8 @@ static char sccsid[] = "$Id: cl_term.c,v 9.2 1995/01/11 16:19:01 bostic Exp $ (B
 #include <regex.h>
 
 #include "vi.h"
-#include "../vi/vcmd.h"
+#include "cl.h"
 #include "excmd.h"
-#include "svi_screen.h"
 
 /*
  * XXX
@@ -102,11 +101,11 @@ static TKLIST const m2_tklist[] = {	/* Input mappings (set or delete). */
 };
 
 /*
- * svi_term_init --
+ * cl_term_init --
  *	Initialize the special keys defined by the termcap/terminfo entry.
  */
 int
-svi_term_init(sp)
+cl_term_init(sp)
 	SCR *sp;
 {
 	KEYLIST *kp;
@@ -182,11 +181,14 @@ svi_term_init(sp)
 				return (1);
 	}
 
-	/* Rework any function key mappings. */
+	/*
+	 * Rework any function key mappings that were set before the
+	 * screen was initialized.
+	 */
 	for (qp = sp->gp->seqq.lh_first; qp != NULL; qp = qp->q.le_next) {
 		if (!F_ISSET(qp, SEQ_FUNCMAP))
 			continue;
-		(void)svi_fmap(sp, qp->stype,
+		(void)cl_fmap(sp, qp->stype,
 		    qp->input, qp->ilen, qp->output, qp->olen);
 	}
 
@@ -195,24 +197,26 @@ svi_term_init(sp)
 	if (tgetstr("vb", &t) != NULL && (len = t - sbuf) != 0) {
 		MALLOC_RET(sp, s, char *, len);
 		memmove(s, sbuf, len);
-		if (SVP(sp)->VB != NULL)
-			free(SVP(sp)->VB);
-		SVP(sp)->VB = s;
-		return (0);
+		if (CLP(sp)->VB != NULL)
+			free(CLP(sp)->VB);
+		CLP(sp)->VB = s;
 	}
-
 	return (0);
 }
 
 /*
- * svi_term_end --
+ * cl_term_end --
  *	End the special keys defined by the termcap/terminfo entry.
  */
 int
-svi_term_end(sp)
+cl_term_end(sp)
 	SCR *sp;
 {
 	SEQ *qp, *nqp;
+
+	/* Free visual bell information. */
+	if (CLP(sp)->VB != NULL)
+		free(CLP(sp)->VB);
 
 	/* Delete screen specific mappings. */
 	for (qp = sp->gp->seqq.lh_first; qp != NULL; qp = nqp) {
@@ -225,11 +229,11 @@ svi_term_end(sp)
 }
 
 /*
- * svi_fmap --
+ * cl_fmap --
  *	Map a function key.
  */
 int
-svi_fmap(sp, stype, from, flen, to, tlen)
+cl_fmap(sp, stype, from, flen, to, tlen)
 	SCR *sp;
 	enum seqtype stype;
 	CHAR_T *from, *to;
@@ -240,7 +244,7 @@ svi_fmap(sp, stype, from, flen, to, tlen)
 	char *p, *t, keyname[64];
 
 	/* If the terminal isn't initialized, there's nothing to do. */
-	if (!F_ISSET(SVP(sp), SVI_CURSES_INIT))
+	if (!F_ISSET(CLP(sp), CL_CURSES_INIT))
 		return (0);
 
 #ifdef SYSV_CURSES
@@ -292,4 +296,144 @@ svi_fmap(sp, stype, from, flen, to, tlen)
 	    sizeof(keyname), "function key %d", atoi(from + 1));
 	return (seq_set(sp, keyname, nlen, t, strlen(t),
 	    to, tlen, stype, SEQ_NOOVERWRITE | SEQ_SCREEN | SEQ_USERDEF));
+}
+
+/*
+ * cl_ssize --
+ *	Set the terminal size.
+ */
+int
+cl_ssize(sp, sigwinch)
+	SCR *sp;
+	int sigwinch;
+{
+#ifdef TIOCGWINSZ
+	struct winsize win;
+#endif
+	size_t col, row;
+	int nf, rval;
+	ARGS *argv[2], a, b;
+	char *p, *s, buf[2048];
+
+	/*
+	 * Get the screen rows and columns.  If the values are wrong, it's
+	 * not a big deal -- as soon as the user sets them explicitly the
+	 * environment will be set and the screen package will use the new
+	 * values.
+	 *
+	 * Try TIOCGWINSZ.
+	 */
+	row = col = 0;
+#ifdef TIOCGWINSZ
+	if (ioctl(STDERR_FILENO, TIOCGWINSZ, &win) != -1) {
+		row = win.ws_row;
+		col = win.ws_col;
+	}
+#endif
+	/* If here because of suspend or a signal, only trust TIOCGWINSZ. */
+	if (sigwinch) {
+		/*
+		 * Somebody didn't get TIOCGWINSZ right, or has suspend
+		 * without window resizing support.  The user just lost,
+		 * but there's nothing we can do.
+		 */
+		if (row == 0 || col == 0)
+			return (1);
+
+		/*
+		 * SunOS systems deliver SIGWINCH when windows are uncovered
+		 * as well as when they change size.  In addition, we call
+		 * here when continuing after being suspended since the window
+		 * may have changed size.  Since we don't want to background
+		 * all of the screens just because the window was uncovered,
+		 * ignore the signal if there's no change.
+		 */
+		if (row == O_VAL(sp, O_LINES) && col == O_VAL(sp, O_COLUMNS))
+			return (1);
+
+		goto sigw;
+	}
+
+	/*
+	 * !!!
+	 * If TIOCGWINSZ failed, or had entries of 0, try termcap.  This
+	 * routine is called before any termcap or terminal information
+	 * has been set up.  If there's no TERM environmental variable set,
+	 * let it go, at least ex can run.
+	 */
+	if (row == 0 || col == 0) {
+		if ((s = getenv("TERM")) == NULL)
+			goto noterm;
+#ifdef SYSV_CURSES
+		if (row == 0)
+			if ((rval = tigetnum("lines")) < 0)
+				msgq(sp, M_SYSERR, "tigetnum: lines");
+			else
+				row = rval;
+		if (col == 0)
+			if ((rval = tigetnum("cols")) < 0)
+				msgq(sp, M_SYSERR, "tigetnum: cols");
+			else
+				col = rval;
+#else
+		switch (tgetent(buf, s)) {
+		case -1:
+			msgq(sp, M_SYSERR, "tgetent: %s", s);
+			return (1);
+		case 0:
+			p = msg_print(sp, s, &nf);
+			msgq(sp, M_ERR, "096|%s: unknown terminal type", p);
+			if (nf)
+				FREE_SPACE(sp, p, 0);
+			return (1);
+		}
+		if (row == 0)
+			if ((rval = tgetnum("li")) < 0) {
+				p = msg_print(sp, s, &nf);
+				msgq(sp, M_ERR,
+			    "097|no \"li\" terminal capability for %s", p);
+				if (nf)
+					FREE_SPACE(sp, p, 0);
+			} else
+				row = rval;
+		if (col == 0)
+			if ((rval = tgetnum("co")) < 0) {
+				p = msg_print(sp, s, &nf);
+				msgq(sp, M_ERR,
+			    "098|no \"co\" terminal capability for %s", p);
+				if (nf)
+					FREE_SPACE(sp, p, 0);
+			} else
+				col = rval;
+#endif
+	}
+
+	/* If nothing else, well, it's probably a VT100. */
+noterm:	if (row == 0)
+		row = 24;
+	if (col == 0)
+		col = 80;
+
+	/* POSIX 1003.2 requires the environment to override. */
+	if ((s = getenv("LINES")) != NULL)
+		row = strtol(s, NULL, 10);
+	if ((s = getenv("COLUMNS")) != NULL)
+		col = strtol(s, NULL, 10);
+
+sigw:	a.bp = buf;
+	b.bp = NULL;
+	b.len = 0;
+	argv[0] = &a;
+	argv[1] = &b;;
+
+	/* Use the options code to accomplish the change. */
+	a.len = snprintf(buf, sizeof(buf), "lines=%u", row);
+	if (opts_set(sp, argv, 1, NULL))
+		return (1);
+	a.len = snprintf(buf, sizeof(buf), "columns=%u", col);
+	if (opts_set(sp, argv, 1, NULL))
+		return (1);
+
+	F_SET(sp, S_SCR_RESIZE);
+	return (0);
 }

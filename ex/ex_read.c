@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 9.7 1995/01/11 16:15:46 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:15:46 $";
+static char sccsid[] = "$Id: ex_read.c,v 9.8 1995/01/23 17:03:11 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:03:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -114,13 +114,13 @@ ex_read(sp, cmdp)
 		}
 
 		/* Redisplay the user's argument if it's changed. */
-		if (F_ISSET(cmdp, E_MODIFY) && IN_VI_MODE(sp)) {
+		if (F_ISSET(cmdp, E_MODIFY) && F_ISSET(sp, S_VI)) {
 			len = cmdp->argv[argc]->len;
 			GET_SPACE_RET(sp, p, blen, len + 2);
 			p[0] = '!';
 			memmove(p + 1,
 			    cmdp->argv[argc]->bp, cmdp->argv[argc]->len + 1);
-			(void)sp->s_busy(sp, p);
+			(void)sp->e_busy(sp, p);
 			FREE_SPACE(sp, p, blen);
 		}
 
@@ -133,7 +133,7 @@ ex_read(sp, cmdp)
 
 		/* If in vi mode, move to the first nonblank. */
 		sp->lno = rm.lno;
-		if (IN_VI_MODE(sp)) {
+		if (F_ISSET(sp, S_VI)) {
 			sp->cno = 0;
 			(void)nonblank(sp, sp->lno, &sp->cno);
 		}

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 9.5 1995/01/11 16:15:18 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:15:18 $";
+static char sccsid[] = "$Id: ex_argv.c,v 9.6 1995/01/23 17:03:07 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:03:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -533,7 +533,7 @@ err:		if (ifp != NULL)
 		return (1);
 	case 0:				/* Utility. */
 		/* The utility has default signal behavior. */
-		sig_end(sp);
+		sig_restore(sp);
 
 		/* Redirect stdout/stderr to the write end of the pipe. */
 		(void)dup2(std_output[1], STDOUT_FILENO);

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_screen.c,v 9.3 1995/01/11 16:15:48 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:15:48 $";
+static char sccsid[] = "$Id: ex_screen.c,v 9.4 1995/01/23 17:03:13 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:03:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -39,7 +39,7 @@ ex_split(sp, cmdp)
 	SCR *sp;
 	EXCMDARG *cmdp;
 {
-	return (sp->s_split(sp, cmdp->argc ? cmdp->argv : NULL, cmdp->argc));
+	return (svi_split(sp, cmdp->argc ? cmdp->argv : NULL, cmdp->argc));
 }
 
 /*
@@ -51,7 +51,7 @@ ex_bg(sp, cmdp)
 	SCR *sp;
 	EXCMDARG *cmdp;
 {
-	return (sp->s_bg(sp));
+	return (svi_bg(sp));
 }
 
 /*
@@ -63,7 +63,7 @@ ex_fg(sp, cmdp)
 	SCR *sp;
 	EXCMDARG *cmdp;
 {
-	return (sp->s_fg(sp, cmdp->argc ? cmdp->argv[0]->bp : NULL));
+	return (svi_fg(sp, cmdp->argc ? cmdp->argv[0]->bp : NULL));
 }
 
 /*
@@ -87,7 +87,7 @@ ex_resize(sp, cmdp)
 		adj = A_INCREASE;
 	else
 		adj = A_SET;
-	return (sp->s_rabs(sp, cmdp->count, adj));
+	return (svi_rabs(sp, cmdp->count, adj));
 }
 
 /*
