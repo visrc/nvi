@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 8.4 1993/07/06 09:08:29 bostic Exp $ (Berkeley) $Date: 1993/07/06 09:08:29 $";
+static char sccsid[] = "$Id: ex_global.c,v 8.5 1993/07/06 19:07:53 bostic Exp $ (Berkeley) $Date: 1993/07/06 19:07:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -60,12 +60,14 @@ global(sp, ep, cmdp, cmd)
 	int delim, eval, reflags, rval;
 	char *ptrn, *p, *t, cbuf[1024];
 
-	/* Skip whitespace. */
-	for (p = cmdp->string; *p && isspace(*p); ++p);
-
-	/* Delimiter is the first character. */
-	delim = *p;
-	if (delim != '/' && delim != ';') {
+	/*
+	 * Skip leading white space.  Historic vi allowed any
+	 * non-alphanumeric to serve as the substitution command
+	 * delimiter.
+	 */
+	for (; isspace(*cmdp->string); ++cmdp->string);
+	delim = *cmdp->string++;
+	if (isalnum(delim)) {
 		msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
 		return (1);
 	}
@@ -76,7 +78,7 @@ global(sp, ep, cmdp, cmd)
 	 * ESCAPE CHARACTER NOTE:
 	 * Only toss an escaped character if it escapes a delimiter.
 	 */
-	for (ptrn = t = ++p;;) {
+	for (ptrn = t = p = cmdp->string;;) {
 		if (p[0] == '\0' || p[0] == delim) {
 			if (p[0] == delim)
 				++p;

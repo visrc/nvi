@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.6 1993/06/28 17:24:03 bostic Exp $ (Berkeley) $Date: 1993/06/28 17:24:03 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.7 1993/07/06 19:07:54 bostic Exp $ (Berkeley) $Date: 1993/07/06 19:07:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,12 +38,12 @@ ex_substitute(sp, ep, cmdp)
 	char *sub, *rep, *p, *t;
 
 	/*
-	 * Historic vi only permitted '/' to begin the substitution command.
-	 * We permit ';' as well, since users often want to operate on UNIX
-	 * pathnames.  We don't just allow anything because the flag chars
-	 * wouldn't work.
+	 * Skip leading white space.  Historic vi allowed any
+	 * non-alphanumeric to serve as the substitution command
+	 * delimiter.
 	 */
-	if (*cmdp->string == '/' || *cmdp->string == ';') {
+	for (; isspace(*cmdp->string); ++cmdp->string);
+	if (!isalnum(*cmdp->string)) {
 		/* Delimiter is the first character. */
 		delim = *cmdp->string;
 
