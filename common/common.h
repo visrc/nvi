@@ -4,15 +4,10 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 5.30 1992/11/06 20:07:02 bostic Exp $ (Berkeley) $Date: 1992/11/06 20:07:02 $
+ *	$Id: common.h,v 5.31 1992/12/05 11:06:56 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:06:56 $
  */
 
-#include <db.h>				/* XXX for rptlines, below */
-
-/* Confirmation stuff. */
-#define	CONFIRMCHAR	'y'		/* Make change character. */
-#define	QUITCHAR	'q'		/* Quit character. */
-enum confirmation { YES, NO, QUIT };
+#include <db.h>
 
 /*
  * Most of the arrays, names, etc. in ex/vi are u_char's, since we want
@@ -36,8 +31,55 @@ enum confirmation { YES, NO, QUIT };
 #define	USTRPBRK(a, b)		(u_char *)strpbrk((char *)(a), (char *)(b))
 #define	USTRTOL(a, b, c)	strtol((char *)(a), (char **)(b), c)
 
-/* misc housekeeping variables & functions				  */
+/* Confirmation stuff. */
+#define	CONFIRMCHAR	'y'		/* Make change character. */
+#define	QUITCHAR	'q'		/* Quit character. */
+enum confirmation { YES, NO, QUIT };
 
-extern int	doingglobal;	/* boolean: are doing a ":g" command? */
-extern recno_t	rptlines;	/* number of lines affected by a command */
-extern char	*rptlabel;	/* description of how lines were affected */
+/* Buffer allocation. */
+#define	BINC(lp, llen, nlen) {						\
+	if ((nlen) > llen &&						\
+	    binc(&(lp), &(llen), nlen))					\
+		return (1);						\
+}
+int	binc __P((u_char **, size_t *, size_t));
+
+/* Editor mode. */
+enum editmode {MODE_EX, MODE_VI, MODE_QUIT};
+extern enum editmode mode;
+
+extern int autoprint;		/* Flag a change qualifying for autoprint. */
+
+/* Messages. */
+extern int msgcnt;		/* Current message count. */
+extern char *msglist[];		/* Message list. */
+void	msg __P((const char *, ...));
+void	msg_eflush __P((void));
+
+#ifdef DEBUG
+void	TRACE __P((const char *, ...));
+#endif
+
+/* Digraphs. */
+int	digraph __P((int, int));
+void	digraph_init __P((void));
+void	digraph_save __P((int));
+
+/* Signals. */
+void	onhup __P((int));
+void	onwinch __P((int));
+void	trapint __P((int));
+
+/* Random stuff. */
+void	 __putchar __P((int));
+void	 bell __P((void));
+int	 nonblank(recno_t, size_t *);
+char	*tail __P((char *));
+
+/* Display characters. */
+#define	CHARNAME(c)	(asciiname[c & 0xff])
+extern char *asciiname[UCHAR_MAX + 1];
+extern u_char asciilen[UCHAR_MAX + 1];
+
+int	ex __P((void));
+int	vi __P((void));

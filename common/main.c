@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.33 1992/11/07 18:50:07 bostic Exp $ (Berkeley) $Date: 1992/11/07 18:50:07 $";
+static char sccsid[] = "$Id: main.c,v 5.34 1992/12/05 11:06:03 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:06:03 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -32,11 +32,13 @@ static char sccsid[] = "$Id: main.c,v 5.33 1992/11/07 18:50:07 bostic Exp $ (Ber
 #include "seq.h"
 #include "tag.h"
 #include "term.h"
-#include "extern.h"
 
 #ifdef DEBUG
 FILE *tracefp;
 #endif
+
+int autoprint;					/* See vi.h. */
+enum editmode mode;				/* See vi.h. */
 
 static jmp_buf jmpenv;
 
@@ -213,7 +215,6 @@ trapint(signo)
 #ifdef NOT_RIGHT_NOW
 	abortdo();
 #endif
-	doingglobal = 0;
 	longjmp(jmpenv, 1);
 }
 
