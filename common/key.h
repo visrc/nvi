@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 8.42 1994/04/13 15:20:43 bostic Exp $ (Berkeley) $Date: 1994/04/13 15:20:43 $
+ *	$Id: key.h,v 8.43 1994/04/14 10:44:03 bostic Exp $ (Berkeley) $Date: 1994/04/14 10:44:03 $
  */
 
 /*
@@ -169,7 +169,6 @@ enum input	 term_key __P((SCR *, CH *, u_int));
 enum input	 term_user_key __P((SCR *, CH *));
 void		 term_ab_flush __P((SCR *, char *));
 int		 term_init __P((SCR *));
-int		 term_key_queue __P((SCR *));
 void		 term_map_flush __P((SCR *, char *));
 int		 term_push __P((SCR *, CHAR_T *, size_t, u_int, u_int));
 int		 term_waiting __P((SCR *));

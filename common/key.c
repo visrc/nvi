@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.62 1994/04/14 10:18:23 bostic Exp $ (Berkeley) $Date: 1994/04/14 10:18:23 $";
+static char sccsid[] = "$Id: key.c,v 8.63 1994/04/14 10:44:01 bostic Exp $ (Berkeley) $Date: 1994/04/14 10:44:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,7 +34,8 @@ static char sccsid[] = "$Id: key.c,v 8.62 1994/04/14 10:18:23 bostic Exp $ (Berk
 #include "seq.h"
 
 static int	 keycmp __P((const void *, const void *));
-static void	 termkeyset __P((GS *, int, int));
+static int	 term_key_queue __P((SCR *));
+static void	 term_key_set __P((GS *, int, int));
 
 /*
  * If we're reading less than 20 characters, up the size of the tty buffer.
@@ -164,16 +165,16 @@ term_init(sp)
 
 	gp = sp->gp;
 #ifdef VERASE
-	termkeyset(gp, VERASE, K_VERASE);
+	term_key_set(gp, VERASE, K_VERASE);
 #endif
 #ifdef VINTR
-	termkeyset(gp, VINTR, K_VINTR);
+	term_key_set(gp, VINTR, K_VINTR);
 #endif
 #ifdef VKILL
-	termkeyset(gp, VKILL, K_VKILL);
+	term_key_set(gp, VKILL, K_VKILL);
 #endif
 #ifdef VWERASE
-	termkeyset(gp, VWERASE, K_VWERASE);
+	term_key_set(gp, VWERASE, K_VWERASE);
 #endif
 	/* Sort the special key list. */
 	qsort(keylist, nkeylist, sizeof(keylist[0]), keycmp);
@@ -257,7 +258,7 @@ term_init(sp)
 }
 
 /*
- * termkeyset --
+ * term_key_set --
  *	Set keys found in the termios structure.  VERASE, VINTR and VKILL are
  *	required by POSIX 1003.1-1990, VWERASE is a 4.4BSD extension.  We've
  *	left four open slots in the keylist table, if these values exist, put
@@ -265,7 +266,7 @@ term_init(sp)
  *	in the table, so we check for that first.
  */
 static void
-termkeyset(gp, name, val)
+term_key_set(gp, name, val)
 	GS *gp;
 	int name, val;
 {
@@ -778,7 +779,7 @@ term_user_key(sp, chp)
  * term_key_queue --
  *	Read the keys off of the terminal queue until it's empty.
  */
-int
+static int
 term_key_queue(sp)
 	SCR *sp;
 {
