@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 8.35 1993/12/29 09:50:59 bostic Exp $ (Berkeley) $Date: 1993/12/29 09:50:59 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 8.36 1994/01/22 13:45:44 bostic Exp $ (Berkeley) $Date: 1994/01/22 13:45:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -294,7 +294,7 @@ EXCMDLIST const cmds[] = {
 /* C_SPLIT */
 	{"split",	ex_split,	E_NOGLOBAL|E_NORC,
 	    "fNo",
-	    "s[plit] [file ...]",
+	    "sp[lit] [file ...]",
 	    "split the current screen into two screens"},
 /* C_STOP */
 	{"stop",	ex_stop,	E_NOGLOBAL|E_NORC,
