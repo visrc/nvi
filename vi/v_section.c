@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_section.c,v 8.12 1994/08/17 14:36:09 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:36:09 $";
+static char sccsid[] = "$Id: v_section.c,v 8.13 1994/09/02 12:39:22 bostic Exp $ (Berkeley) $Date: 1994/09/02 12:39:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -111,7 +111,7 @@ v_sectionf(sp, ep, vp)
 		/*
 		 * !!!
 		 * Historic documentation (USD:15-11, 4.2) said that formfeed
-		 * characters (^L) in the first column delimited sections.  
+		 * characters (^L) in the first column delimited sections.
 		 * The historic code mentions formfeed characters, but never
 		 * implements them.  Seems reasonable, do it.
 		 */
@@ -202,7 +202,7 @@ v_sectionb(sp, ep, vp)
 		/*
 		 * !!!
 		 * Historic documentation (USD:15-11, 4.2) said that formfeed
-		 * characters (^L) in the first column delimited sections.  
+		 * characters (^L) in the first column delimited sections.
 		 * The historic code mentions formfeed characters, but never
 		 * implements them.  Seems reasonable, do it.
 		 */

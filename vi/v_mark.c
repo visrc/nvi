@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_mark.c,v 8.10 1994/08/17 14:35:56 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:35:56 $";
+static char sccsid[] = "$Id: v_mark.c,v 8.11 1994/09/02 12:39:20 bostic Exp $ (Berkeley) $Date: 1994/09/02 12:39:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -159,7 +159,7 @@ mark(sp, ep, vp, cmd)
 	/*
 	 * Forward marks are always line oriented, and it's set in the
 	 * vcmd.c table.  Backward marks that start and stop at column
-	 * 0 of the line are also line mode commands. 
+	 * 0 of the line are also line mode commands.
 	 */
 	if (vp->m_start.cno == 0 && vp->m_stop.cno == 0)
 		F_SET(vp, VM_LMODE);
