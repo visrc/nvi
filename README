@@ -1,4 +1,4 @@
-#	$Id: README,v 8.16 1993/10/04 20:05:35 bostic Exp $ (Berkeley) $Date: 1993/10/04 20:05:35 $
+#	$Id: README,v 8.17 1993/10/09 12:46:39 bostic Exp $ (Berkeley) $Date: 1993/10/09 12:46:39 $
 
 This is the README for version 0.76 of nex/nvi, a (soon to be) freely
 redistributable replacement for the vi/ex text editors.
@@ -64,23 +64,26 @@ things you might like:
 
 	o 8-bit clean data, practically infinite lines/files.
 	o Split screens:
-		:split [file ...]" splits the screen
+		:sp[lit] [file ...] splits the screen
 		^W switches between screens
+	o Shell screens:
+		:sc[ript] [file ...] runs a shell in the screen.
+		Carriage return sends a line to the shell.
 	o Buffer display:
 		:b[display] displays the current cut buffers
 	o Tag stacks:
 		^T returns from previous tag location
-		":tagpop" returns to previous tag location
-		":tagtop" returns to original tag location
+		:tagpop returns to previous tag location
+		:tagtop returns to original tag location
 	o Infinite undo:
-		":set nundo" toggles this behavior
+		:set nundo toggles this behavior
 		u un-does the previous operation
 		U re-does the next operation
 	o Usage information:
-		":exu[sage] cmd" for ex commands
-		":viu[sage] key" for vi commands
+		:exu[sage] cmd for ex commands
+		:viu[sage] key for vi commands
 	o Extended RE expressions:
-		":set extended" turns on extended RE's, so you can
+		:set extended turns on extended RE's, so you can
 		do "/in|or" and search for the next occurrence of
 		more than one expression.
 	o Word search:
@@ -88,7 +91,7 @@ things you might like:
 	o Number increment:
 		# increments the number referenced by the cursor
 	o Previous file:
-		:"prev[ious][!]" edits the previous file from the
+		:prev[ious][!] edits the previous file from the
 		argument list.
 
 =-=-=-=-=-=-=-=-=-=-=
