@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.76 1994/05/03 21:45:45 bostic Exp $ (Berkeley) $Date: 1994/05/03 21:45:45 $";
+static char sccsid[] = "$Id: exf.c,v 8.77 1994/05/18 18:52:03 bostic Exp $ (Berkeley) $Date: 1994/05/18 18:52:03 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -359,6 +359,8 @@ file_init(sp, frp, rcv_name, force)
 	 * or EWOULDBLOCK is the former.  There isn't a portable way to do
 	 * this.
 	 *
+	 * If it's a recovery file, it's already locked.
+	 *
 	 * XXX
 	 * The locking is flock(2) style, not fcntl(2).  The latter is known
 	 * to fail badly on some systems, and its only advantage is that it
@@ -370,7 +372,7 @@ file_init(sp, frp, rcv_name, force)
 	 * like print an error message, let alone make the file readonly.  At
 	 * some future time, this should be changed to be an error.
 	 */
-	if (flock(ep->db->fd(ep->db), LOCK_EX | LOCK_NB))
+	if (rcv_name == NULL && flock(ep->db->fd(ep->db), LOCK_EX | LOCK_NB))
 		if (errno == EAGAIN || errno == EWOULDBLOCK) {
 			msgq(sp, M_INFO,
 			    "%s already locked, session is read-only", oname);
