@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 8.1 1993/06/09 22:20:58 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:20:58 $";
+static char sccsid[] = "$Id: ex_filter.c,v 8.2 1993/06/28 16:47:27 bostic Exp $ (Berkeley) $Date: 1993/06/28 16:47:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -47,8 +47,13 @@ filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
 	/* Input and output are named from the child's point of view. */
 	input[0] = input[1] = output[0] = output[1] = -1;
 
-	/* Set default cursor position. */
+	/*
+	 * Set default return cursor position; guard against a
+	 * line number of zero.
+	 */
 	*rp = *fm;
+	if (fm->lno == 0)
+		rp->lno = 1;
 
 	/*
 	 * If child isn't supposed to want input or send output, redirect
@@ -150,19 +155,17 @@ err:		if (input[0] != -1)
 			sp->rptlines[L_DELETED] += (tm->lno - fm->lno) + 1;
 		}
 
-	if (rval == 0) {
-		/*
-		 * Read the output from the read end of the output pipe.
-		 * Decrement the line number, ex_readfp appends to the
-		 * MARK.  Ofp is closed by ex_readfp.  Set the cursor to
-		 * the first line read in.
-		 */
-		if (ftype != NOOUTPUT) {
-			rp->lno = fm->lno;
+	/*
+	 * Read the output from the read end of the output pipe.  Decrement
+	 * the line number if we deleted lines and if the the user didn't
+	 * specify an address of zero, ex_readfp appends to the MARK.  Ofp
+	 * is closed by ex_readfp.
+	 */
+	if (rval == 0 && ftype != NOOUTPUT) {
+		if (ftype != NOINPUT && fm->lno > 0)
 			--fm->lno;
-			rval = ex_readfp(sp, ep,
-			    "filter", ofp, fm, &sp->rptlines[L_ADDED]);
-		}
+		rval = ex_readfp(sp, ep,
+		    "filter", ofp, fm, &sp->rptlines[L_ADDED]);
 	}
 
 	/* Wait for the child to finish. */
