@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_cscope.c,v 10.8 1996/06/30 16:13:57 bostic Exp $ (Berkeley) $Date: 1996/06/30 16:13:57 $";
+static const char sccsid[] = "$Id: ex_cscope.c,v 10.9 1996/07/15 17:43:01 bostic Exp $ (Berkeley) $Date: 1996/07/15 17:43:01 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -648,7 +648,7 @@ parse(sp, csc, tqp, matchesp)
 	TAG *tp;
 	recno_t slno;
 	size_t dlen, nlen, slen;
-	int ch, i, isnewer, nlines;
+	int ch, i, isolder, nlines;
 	char *dname, *name, *search, *p, *t, dummy[2], buf[2048];
 
 	for (;;) {
@@ -709,14 +709,14 @@ parse(sp, csc, tqp, matchesp)
 		slen = strlen(p);
 
 		/* Resolve the file name. */
-		csc_file(sp, csc, name, &dname, &dlen, &isnewer);
+		csc_file(sp, csc, name, &dname, &dlen, &isolder);
 
 		/*
-		 * If the file was modified more recently than the cscope
-		 * database, or there wasn't a search string, use the line
-		 * number.
+		 * If the file is older than the cscope database, that is,
+		 * the database was built since the file was last modified,
+		 * or there wasn't a search string, use the line number.
 		 */
-		if (isnewer || strcmp(search, "<unknown>") == 0) {
+		if (isolder || strcmp(search, "<unknown>") == 0) {
 			search = NULL;
 			slen = 0;
 		}
@@ -760,12 +760,12 @@ io_err:	if (feof(csc->from_fp))
  *	Search for the right path to this file.
  */
 static void
-csc_file(sp, csc, name, dirp, dlenp, isnewerp)
+csc_file(sp, csc, name, dirp, dlenp, isolderp)
 	SCR *sp;
 	CSC *csc;
 	char *name, **dirp;
 	size_t *dlenp;
-	int *isnewerp;
+	int *isolderp;
 {
 	struct stat sb;
 	char **pp, buf[MAXPATHLEN];
@@ -782,7 +782,7 @@ csc_file(sp, csc, name, dirp, dlenp, isnewerp)
 		if (stat(buf, &sb) == 0) {
 			*dirp = *pp;
 			*dlenp = strlen(*pp);
-			*isnewerp = sb.st_mtime > csc->mtime;
+			*isolderp = sb.st_mtime < csc->mtime;
 			return;
 		}
 	}
