@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 5.21 1992/10/29 14:47:34 bostic Exp $ (Berkeley) $Date: 1992/10/29 14:47:34 $
+ *	$Id: vi.h,v 5.22 1992/11/06 20:06:28 bostic Exp $ (Berkeley) $Date: 1992/11/06 20:06:28 $
  */
 
 #include "exf.h"
@@ -105,10 +105,12 @@ int	v_chrepeat  __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_chrrepeat __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_chT __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_cht __P((VICMDARG *, MARK *, MARK *, MARK *));
+enum confirmation v_confirm __P((EXF *, MARK *, MARK *));
 int	v_Delete __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_delete __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_dollar __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_down __P((VICMDARG *, MARK *, MARK *, MARK *));
+int	v_end __P((EXF *));
 void	v_eof __P((MARK *));
 void	v_eol __P((MARK *));
 int	v_errlist __P((VICMDARG *, MARK *, MARK *, MARK *));
@@ -125,6 +127,7 @@ int	v_ia __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_iI __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_ii __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_increment __P((VICMDARG *, MARK *, MARK *, MARK *));
+int	v_init __P((EXF *));
 int	v_iO __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_io __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_join __P((VICMDARG *, MARK *, MARK *, MARK *));
@@ -169,7 +172,8 @@ int	v_status __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_stop __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_subst __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_switch __P((VICMDARG *, MARK *, MARK *, MARK *));
-int	v_tag __P((VICMDARG *, MARK *, MARK *, MARK *));
+int	v_tagpop __P((VICMDARG *, MARK *, MARK *, MARK *));
+int	v_tagpush __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_ulcase __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_undo __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_up __P((VICMDARG *, MARK *, MARK *, MARK *));
@@ -181,6 +185,7 @@ int	v_wordW __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_wordw __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_Xchar __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_xchar __P((VICMDARG *, MARK *, MARK *, MARK *));
+int	v_Yank __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_yank __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_z __P((VICMDARG *, MARK *, MARK *, MARK *));
 int	v_zero __P((VICMDARG *, MARK *, MARK *, MARK *));
