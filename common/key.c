@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.75 1994/07/15 16:00:18 bostic Exp $ (Berkeley) $Date: 1994/07/15 16:00:18 $";
+static char sccsid[] = "$Id: key.c,v 8.76 1994/07/17 16:49:55 bostic Exp $ (Berkeley) $Date: 1994/07/17 16:49:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -161,7 +161,7 @@ term_key_set(gp, name, val)
 
 	if (!F_ISSET(gp, G_TERMIOS_SET))
 		return;
-	if ((ch = gp->original_termios.c_cc[(name)]) == _POSIX_VDISABLE)
+	if ((ch = gp->original_termios.c_cc[name]) == _POSIX_VDISABLE)
 		return;
 
 	/* Check for duplication. */
