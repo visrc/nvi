@@ -101,7 +101,6 @@ extern int	tmpnum;		/* counter used to generate unique filenames */
 extern long	lnum[MAXBLKS];	/* last line# of each block */
 extern long	nlines;		/* number of lines in the file */
 extern long	changes;	/* counts changes, to prohibit short-cuts */
-extern int	significant;	/* boolean: was a *REAL* change made? */
 extern BLK	tmpblk;		/* a block used to accumulate changes */
 extern int	exwrote;	/* used to detect verbose ex commands */
 extern int	doingdot;	/* boolean: are we doing the "." command? */
