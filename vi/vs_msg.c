@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_msg.c,v 10.50 1996/03/19 21:00:02 bostic Exp $ (Berkeley) $Date: 1996/03/19 21:00:02 $";
+static const char sccsid[] = "$Id: vs_msg.c,v 10.51 1996/03/28 18:02:41 bostic Exp $ (Berkeley) $Date: 1996/03/28 18:02:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -63,7 +63,7 @@ vs_busy(sp, msg, btype)
 {
 	GS *gp;
 	VI_PRIVATE *vip;
-	static const char flagc[] = "|/-|-\\";
+	static const char flagc[] = "|/-\\";
 	struct timeval tv;
 	size_t len, notused;
 	const char *p;
@@ -124,11 +124,12 @@ vs_busy(sp, msg, btype)
 		/* Update no more than every 1/4 of a second. */
 		(void)gettimeofday(&tv, NULL);
 		if (((tv.tv_sec - vip->busy_tv.tv_sec) * 1000000 +
-		    (tv.tv_usec - vip->busy_tv.tv_usec)) < 4000)
+		    (tv.tv_usec - vip->busy_tv.tv_usec)) < 250000)
 			return;
+		vip->busy_tv = tv;
 
 		/* Display the update. */
-		if (vip->busy_ch == sizeof(flagc))
+		if (vip->busy_ch == sizeof(flagc) - 1)
 			vip->busy_ch = 0;
 		(void)gp->scr_move(sp, LASTLINE(sp), vip->busy_fx);
 		(void)gp->scr_addstr(sp, flagc + vip->busy_ch++, 1);
