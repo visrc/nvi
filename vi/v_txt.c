@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 5.6 1993/04/18 09:33:57 bostic Exp $ (Berkeley) $Date: 1993/04/18 09:33:57 $";
+static char sccsid[] = "$Id: v_txt.c,v 5.7 1993/04/19 15:33:16 bostic Exp $ (Berkeley) $Date: 1993/04/19 15:33:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -106,14 +106,15 @@ v_ntext(sp, ep, hp, tm, p, len, rp, prompt, ai_line, flags)
 	if (hp->next != hp) {
 		tp = hp->next;
 		if (tp->next != (TEXT *)hp || tp->lb_len < len + 32) {
-			text_free(hp);
+			hdr_text_free(hp);
 			goto newtp;
 		}
 		tp->ai = tp->insert = tp->offset = tp->overwrite = 0;
 		if (p != NULL) {
 			tp->len = len;
 			memmove(tp->lb, p, len);
-		}
+		} else
+			tp->len = 0;
 	} else {
 newtp:		if ((tp = text_init(sp, p, len, len + 32)) == NULL)
 			return (1);
@@ -342,8 +343,8 @@ k_escape:		LINE_RESOLVE;
 			 * structure and then erased.
 			 */
 			while (tp->next != (TEXT *)hp) {
-				free(tp->next->lb);
 				HDR_DELETE(tp->next, next, prev, TEXT);
+				text_free(tp->next);
 			}
 
 			/*
@@ -667,8 +668,8 @@ txt_backup(sp, ep, hp, tp, flags)
 	 * Release current TEXT; now committed to the swap, nothing
 	 * better fail.
 	 */
-	free(tp->lb);
 	HDR_DELETE(tp, next, prev, TEXT);
+	text_free(tp);
 
 	/* Swap TEXT's. */
 	tp = ntp;
