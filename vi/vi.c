@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.29 1993/11/11 11:10:50 bostic Exp $ (Berkeley) $Date: 1993/11/11 11:10:50 $";
+static char sccsid[] = "$Id: vi.c,v 8.30 1993/11/11 12:06:07 bostic Exp $ (Berkeley) $Date: 1993/11/11 12:06:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -471,8 +471,8 @@ getmotion(sp, ep, dm, vp, fm, tm)
 		 * Set the end of the command; the column is after the line.
 		 *
 		 * If the current line is missing, i.e. the file is empty,
-		 * historic vi permitted a "cc" or "!!" command to change
-		 * insert text.
+		 * historic vi permitted a "cc" or "!!" command to insert
+		 * text.
 		 */
 		tm->lno = sp->lno + motion.count - 1;
 		if (file_gline(sp, ep, tm->lno, &tm->cno) == NULL) {
