@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 10.13 1996/01/08 07:25:00 bostic Exp $ (Berkeley) $Date: 1996/01/08 07:25:00 $";
+static char sccsid[] = "$Id: ex_argv.c,v 10.14 1996/02/06 17:53:53 bostic Exp $ (Berkeley) $Date: 1996/02/06 17:53:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -477,10 +477,11 @@ argv_sexp(sp, bpp, blenp, lenp)
 	char **bpp;
 	size_t *blenp, *lenp;
 {
+	enum { SEXP_ERR, SEXP_EXPANSION_ERR, SEXP_OK } rval;
 	FILE *ifp;
 	pid_t pid;
 	size_t blen, len;
-	int ch, rval, std_output[2];
+	int ch, std_output[2];
 	char *bp, *p, *sh, *sh_path;
 
 	/* Secure means no shell access. */
@@ -586,10 +587,30 @@ err:		if (ifp != NULL)
 		goto ioerr;
 	if (fclose(ifp)) {
 ioerr:		msgq_str(sp, M_ERR, sh, "119|I/O error: %s");
-alloc_err:	rval = 1;
+alloc_err:	rval = SEXP_ERR;
 	} else
-		rval = 0;
+		rval = SEXP_OK;
 
-	/* Wait for the process. */
-	return (proc_wait(sp, (long)pid, sh, 1, 0) || rval);
+	/*
+	 * Wait for the process.  If the shell process fails (e.g., "echo $q"
+	 * where q wasn't a defined variable) or if the returned string has
+	 * no characters or only blank characters, (e.g., "echo $5"), complain
+	 * that the shell expansion failed.  We can't know for certain that's
+	 * the error, but it's a good guess, and it matches historic practice.
+	 * This won't catch "echo foo_$5", but that's not a common error and
+	 * historic vi didn't catch it either.
+	 */
+	if (proc_wait(sp, (long)pid, sh, 1, 0))
+		rval = SEXP_EXPANSION_ERR;
+
+	for (p = bp; len; ++p, --len)
+		if (!isblank(*p))
+			break;
+	if (len == 0)
+		rval = SEXP_EXPANSION_ERR;
+
+	if (rval == SEXP_EXPANSION_ERR)
+		msgq(sp, M_ERR, "304|Shell expansion failed");
+
+	return (rval == SEXP_OK ? 0 : 1);
 }

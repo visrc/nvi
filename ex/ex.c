@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 10.35 1996/02/04 18:57:01 bostic Exp $ (Berkeley) $Date: 1996/02/04 18:57:01 $";
+static char sccsid[] = "$Id: ex.c,v 10.36 1996/02/06 17:53:46 bostic Exp $ (Berkeley) $Date: 1996/02/06 17:53:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1060,10 +1060,8 @@ end_case23:		break;
 			FL_SET(ecp->iflags, E_C_COUNT);
 			break;
 		case 'f':				/* file */
-			if (argv_exp2(sp, ecp, ecp->cp, ecp->clen)) {
-				msgq(sp, M_ERR, "No match found");
+			if (argv_exp2(sp, ecp, ecp->cp, ecp->clen))
 				goto err;
-			}
 			goto arg_cnt_chk;
 		case 'l':				/* line */
 			/*

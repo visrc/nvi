@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 10.16 1995/11/29 20:47:19 bostic Exp $ (Berkeley) $Date: 1995/11/29 20:47:19 $";
+static char sccsid[] = "$Id: ex_write.c,v 10.17 1996/02/06 17:53:57 bostic Exp $ (Berkeley) $Date: 1996/02/06 17:53:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -199,18 +199,22 @@ exwr(sp, cmdp, cmd)
 	if (argv_exp2(sp, cmdp, p, strlen(p)))
 		return (1);
 
+	/*
+	 *  0 args: impossible.
+	 *  1 args: impossible (I hope).
+	 *  2 args: read it.
+	 * >2 args: object, too many args.
+	 *
+	 * The 1 args case depends on the argv_sexp() function refusing
+	 * to return success without at least one non-blank character.
+	 */
 	switch (cmdp->argc) {
+	case 0:
 	case 1:
-		/*
-		 * Nothing to expand, write the current file.
-		 * XXX
-		 * Should never happen, already checked this case.
-		 */
-		name = NULL;
-		break;
+		abort();
+		/* NOTREACHED */
 	case 2:
-		/* One new argument, write it. */
-		name = cmdp->argv[EXP(sp)->argsoff - 1]->bp;
+		name = cmdp->argv[1]->bp;
 
 		/*
 		 * !!!
@@ -218,7 +222,7 @@ exwr(sp, cmdp, cmd)
 		 * "unnamed" files, or, if the file had a name, set
 		 * the alternate file name.
 		 */
-		if (F_ISSET(sp->frp, FR_TMPFILE) &&
+writeit:	if (F_ISSET(sp->frp, FR_TMPFILE) &&
 		    !F_ISSET(sp->frp, FR_EXNAMED)) {
 			if ((p = v_strdup(sp,
 			    cmdp->argv[1]->bp, cmdp->argv[1]->len)) != NULL) {
@@ -245,7 +249,6 @@ exwr(sp, cmdp, cmd)
 			set_alt_name(sp, name);
 		break;
 	default:
-		/* If expanded to more than one argument, object. */
 		msgq_str(sp, M_ERR, cmdp->argv[0]->bp,
 		    "176|%s expanded into too many file names");
 		ex_emsg(sp, cmdp->cmd->usage, EXM_USAGE);
