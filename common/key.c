@@ -1,31 +1,28 @@
-/* unix.c */
-
-/* Author:
- *	Steve Kirkendall
- *	14407 SW Teal Blvd. #C
- *	Beaverton, OR 97005
- *	kirkenda@cs.pdx.edu
+/*-
+ * Copyright (c) 1991 The Regents of the University of California.
+ * All rights reserved.
+ *
+ * %sccs.include.redist.c%
  */
 
+#ifndef lint
+static char sccsid[] = "$Id: key.c,v 5.2 1991/12/17 12:11:45 bostic Exp $ (Berkeley) $Date: 1991/12/17 12:11:45 $";
+#endif /* not lint */
 
-/* This file contains the unix-specific versions the ttyread() functions.
- * There are actually three versions of ttyread() defined here, because
- * BSD, SysV, and V7 all need quite different implementations.
- */
+#include <sys/types.h>
+#include <sys/time.h>
 
 #include "config.h"
-#if ANY_UNIX
-# include "vi.h"
+#include "vi.h"
 
-# if BSD
-/* For BSD, we use select() to wait for characters to become available,
+/*
+ * For BSD, we use select() to wait for characters to become available,
  * and then do a read() to actually get the characters.  We also try to
  * handle SIGWINCH -- if the signal arrives during the select() call, then
  * we adjust the o_columns and o_lines variables, and fake a control-L.
  */
-#  include <sys/types.h>
-#  include <sys/time.h>
-int ttyread(buf, len, time)
+int
+ttyread(buf, len, time)
 	char	*buf;	/* where to store the gotten characters */
 	int	len;	/* maximum number of characters to read */
 	int	time;	/* maximum time to allow for reading */
@@ -98,103 +95,3 @@ int ttyread(buf, len, time)
 		}
 	}
 }
-# else
-
-# if M_SYSV
-/* For System-V or Coherent, we use VMIN/VTIME to implement the timeout.
- * For no timeout, VMIN should be 1 and VTIME should be 0; for timeout,
- * VMIN should be 0 and VTIME should be the timeout value.
- */
-#  include <termio.h>
-int ttyread(buf, len, time)
-	char	*buf;	/* where to store the gotten characters */
-	int	len;	/* maximum number of characters to read */
-	int	time;	/* maximum time to allow for reading */
-{
-	struct termio tio;
-	int	bytes;	/* number of bytes actually read */
-
-	/* arrange for timeout */
-	ioctl(0, TCGETA, &tio);
-	if (time)
-	{
-		tio.c_cc[VMIN] = 0;
-		tio.c_cc[VTIME] = time;
-	}
-	else
-	{
-		tio.c_cc[VMIN] = 1;
-		tio.c_cc[VTIME] = 0;
-	}
-	ioctl(0, TCSETA, &tio);
-
-	/* Perform the read.  Loop if EINTR error happens */
-	do
-	{
-		bytes = read(0, buf, len);
-	} while (bytes < 0);
-
-	/* return the number of bytes read */
-	return bytes;
-
-	/* NOTE: The terminal may be left in a timeout-mode after this function
-	 * returns.  This shouldn't be a problem since Elvis *NEVER* tries to
-	 * read from the keyboard except through this function.
-	 */
-}
-
-# else /* any other version of UNIX, assume it is V7 compatible */
-
-/* For V7 UNIX (including Minix) we set an alarm() before doing a blocking
- * read(), and assume that the SIGALRM signal will cause the read() function
- * to give up.
- */
-
-#include <signal.h>
-#include <setjmp.h>
-
-static jmp_buf env;
-
-/*ARGSUSED*/
-int dummy(signo)
-	int	signo;
-{
-	longjmp(env, 1);
-}
-int ttyread(buf, len, time)
-	char	*buf;	/* where to store the gotten characters */
-	int	len;	/* maximum number of characters to read */
-	int	time;	/* maximum time to allow for reading */
-{
-	/* arrange for timeout */
-#if __GNUC__
-	signal(SIGALRM, (void (*)()) dummy);
-#else
-	signal(SIGALRM, dummy);
-#endif
-	alarm(time);
-
-	/* perform the blocking read */
-	if (setjmp(env) == 0)
-	{
-		len = read(0, buf, len);
-	}
-	else /* I guess we timed out */
-	{
-		len = 0;
-	}
-
-	/* cancel the alarm */
-	signal(SIGALRM, dummy); /* <-- to work around a bug in Minix */
-	alarm(0);
-
-	/* return the number of bytes read */
-	if (len < 0)
-		len = 0;
-	return len;
-}
-
-# endif /* !(M_SYSV || COHERENT) */
-# endif /* !BSD */
-
-#endif /* ANY_UNIX */
