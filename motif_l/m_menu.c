@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_menu.c,v 8.21 1996/12/17 10:46:45 bostic Exp $ (Berkeley) $Date: 1996/12/17 10:46:45 $";
+static const char sccsid[] = "$Id: m_menu.c,v 8.22 1996/12/17 19:12:55 bostic Exp $ (Berkeley) $Date: 1996/12/17 19:12:55 $";
 #endif /* not lint */
 
 #include <sys/queue.h>
@@ -129,7 +129,11 @@ __vi_cancel_cb(w, client_data, call_data)
 	have_answer = True;
 }
 
-void	__vi_modal_dialog( db )
+/*
+ * PUBLIC: void __vi_modal_dialog __P((Widget));
+ */
+void
+__vi_modal_dialog( db )
 Widget	db;
 {
     XtAppContext	ctx;
