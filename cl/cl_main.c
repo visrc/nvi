@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_main.c,v 10.28 1996/06/09 10:48:52 bostic Exp $ (Berkeley) $Date: 1996/06/09 10:48:52 $";
+static const char sccsid[] = "$Id: cl_main.c,v 10.29 1996/06/12 13:01:33 bostic Exp $ (Berkeley) $Date: 1996/06/12 13:01:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -353,9 +353,13 @@ sig_init(gp, sp)
 		    sigaddset(&__sigblockset, SIGINT) ||
 		    setsig(SIGINT, &clp->oact[INDX_INT], h_int) ||
 		    sigaddset(&__sigblockset, SIGTERM) ||
-		    setsig(SIGTERM, &clp->oact[INDX_TERM], h_term) ||
+		    setsig(SIGTERM, &clp->oact[INDX_TERM], h_term)
+#ifdef SIGWINCH
+		    ||
 		    sigaddset(&__sigblockset, SIGWINCH) ||
-		    setsig(SIGWINCH, &clp->oact[INDX_WINCH], h_winch)) {
+		    setsig(SIGWINCH, &clp->oact[INDX_WINCH], h_winch)
+#endif
+		    ) {
 			(void)fprintf(stderr,
 			    "%s: %s\n", gp->progname, strerror(errno));
 			return (1);
@@ -363,8 +367,12 @@ sig_init(gp, sp)
 	} else
 		if (setsig(SIGHUP, NULL, h_hup) ||
 		    setsig(SIGINT, NULL, h_int) ||
-		    setsig(SIGTERM, NULL, h_term) ||
-		    setsig(SIGWINCH, NULL, h_winch)) {
+		    setsig(SIGTERM, NULL, h_term)
+#ifdef SIGWINCH
+		    ||
+		    setsig(SIGWINCH, NULL, h_winch)
+#endif
+		    ) {
 			msgq(sp, M_SYSERR, "signal-reset");
 		}
 	return (0);
@@ -418,7 +426,9 @@ sig_end(gp)
 	(void)sigaction(SIGHUP, NULL, &clp->oact[INDX_HUP]);
 	(void)sigaction(SIGINT, NULL, &clp->oact[INDX_INT]);
 	(void)sigaction(SIGTERM, NULL, &clp->oact[INDX_TERM]);
+#ifdef SIGWINCH
 	(void)sigaction(SIGWINCH, NULL, &clp->oact[INDX_WINCH]);
+#endif
 }
 
 /*
