@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 10.16 1995/10/17 08:10:45 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:10:45 $";
+static char sccsid[] = "$Id: v_ex.c,v 10.17 1995/10/17 11:43:55 bostic Exp $ (Berkeley) $Date: 1995/10/17 11:43:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -143,6 +143,24 @@ v_shiftr(sp, vp)
 
 	ex_cbuild(&cmd, C_SHIFTR,
 	    2, vp->m_start.lno, vp->m_stop.lno, 0, ap, &a, ">");
+	return (v_ex_cmd(sp, vp, &cmd));
+}
+
+/*
+ * v_suspend -- ^Z
+ *	Suspend vi.
+ *
+ * PUBLIC: int v_suspend __P((SCR *, VICMD *));
+ */
+int
+v_suspend(sp, vp)
+	SCR *sp;
+	VICMD *vp;
+{
+	ARGS *ap[2], a;
+	EXCMD cmd;
+
+	ex_cbuild(&cmd, C_STOP, 0, OOBLNO, OOBLNO, 0, ap, &a, "suspend");
 	return (v_ex_cmd(sp, vp, &cmd));
 }
 
