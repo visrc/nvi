@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.71 1993/12/02 19:29:34 bostic Exp $ (Berkeley) $Date: 1993/12/02 19:29:34 $";
+static char sccsid[] = "$Id: ex.c,v 8.72 1993/12/02 19:46:00 bostic Exp $ (Berkeley) $Date: 1993/12/02 19:46:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -672,12 +672,13 @@ two:		switch (exc.addrcnt) {
 		/*
 		 * Quit when reach the end of the command, unless it's a
 		 * command that does its own parsing, in which case we want
-		 * to build a reasonable argv for it.
+		 * to build a reasonable argv for it.  This code guarantees
+		 * that there will be an argv when the function gets called,
+		 * so the correct test is for a length of 0, not for the
+		 * argc > 0.
 		 */
-		if (cmdlen == 0) {
-			if (*p != 's' && *p != 'S')
-				break;
-		}
+		if (cmdlen == 0 && *p != 'S' && *p != 's')
+			break;
 
 		switch (*p) {
 		case '!':				/* ! */
