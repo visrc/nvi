@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 9.5 1995/01/11 15:58:23 bostic Exp $ (Berkeley) $Date: 1995/01/11 15:58:23 $";
+static char sccsid[] = "$Id: recover.c,v 9.6 1995/02/08 14:17:28 bostic Exp $ (Berkeley) $Date: 1995/02/08 14:17:28 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -747,13 +747,12 @@ next:			(void)close(fd);
 	 * XXX
 	 * file_init() is going to set ep->rcv_path.
 	 */
-	if (file_init(sp, frp, pathp + sizeof(VI_PHEADER) - 1, 0)) {
+	if (file_init(sp, frp, pathp + sizeof(VI_PHEADER) - 1, FS_WELCOME)) {
 		free(recp);
 		free(pathp);
 		(void)close(sv_fd);
 		return (1);
 	}
-	(void)msg_status(sp, sp->lno, 0);
 
 	/*
 	 * We keep an open lock on the file so that the recover option can

@@ -16,7 +16,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 9.18 1995/02/07 18:41:15 bostic Exp $ (Berkeley) $Date: 1995/02/07 18:41:15 $";
+static char sccsid[] = "$Id: main.c,v 9.19 1995/02/08 14:17:39 bostic Exp $ (Berkeley) $Date: 1995/02/08 14:17:39 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -372,9 +372,8 @@ vi_main(argc, argv, e_ssize)
 			goto err;
 		if (F_ISSET(sp, S_ARGRECOVER))
 			F_SET(frp, FR_RECOVER);
-		if (file_init(sp, frp, NULL, 0))
+		if (file_init(sp, frp, NULL, FS_WELCOME))
 			goto err;
-		(void)msg_status(sp, sp->lno, 0);
 	}
 
 	/* Startup information may have exited. */
