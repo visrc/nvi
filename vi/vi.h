@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 5.37 1993/04/06 11:43:58 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:43:58 $
+ *	$Id: vi.h,v 5.38 1993/04/13 16:27:46 bostic Exp $ (Berkeley) $Date: 1993/04/13 16:27:46 $
  */
 
 /* Structure passed around to functions implementing vi commands. */
@@ -70,16 +70,15 @@ typedef struct _vikeys {	/* Underlying function. */
 #define	V_DOT		0x00020	/* Successful command sets dot command. */
 #define	V_KEYNUM	0x00040	/* Cursor referenced number. */
 #define	V_KEYW		0x00080	/* Cursor referenced word. */
-#define	V_INPUT		0x00100	/* Input command. */
-#define	V_LMODE		0x00200	/* Motion is line oriented. */
-#define	V_MOTION	0x00400	/* Motion (required, trailing). */
-#define	V_MOVE		0x00800	/* Command defines movement. */
-#define	V_OBUF		0x01000	/* Buffer (optional, leading). */
-#define	V_RBUF		0x02000	/* Buffer (required, trailing). */
-#define	V_RCM		0x04000	/* Use relative cursor movment (RCM). */
-#define	V_RCM_SET	0x08000	/* Set RCM absolutely. */
-#define	V_RCM_SETFNB	0x10000	/* Set RCM to first non-blank character. */
-#define	V_RCM_SETLAST	0x20000	/* Set RCM to last character. */
+#define	V_LMODE		0x00100	/* Motion is line oriented. */
+#define	V_MOTION	0x00200	/* Motion (required, trailing). */
+#define	V_MOVE		0x00400	/* Command defines movement. */
+#define	V_OBUF		0x00800	/* Buffer (optional, leading). */
+#define	V_RBUF		0x01000	/* Buffer (required, trailing). */
+#define	V_RCM		0x02000	/* Use relative cursor movment (RCM). */
+#define	V_RCM_SET	0x04000	/* Set RCM absolutely. */
+#define	V_RCM_SETFNB	0x08000	/* Set RCM to first non-blank character. */
+#define	V_RCM_SETLAST	0x10000	/* Set RCM to last character. */
 	u_long flags;
 	char *usage;		/* Usage line. */
 } VIKEYS;
@@ -103,6 +102,8 @@ void	v_eol __P((SCR *, EXF *, MARK *));
 int	v_exwrite __P((void *, const char *, int));
 int	v_init __P((SCR *, EXF *));
 int	v_msgflush __P((SCR *));
+int	v_ntext __P((SCR *, EXF *, HDR *,
+	    MARK *, char *, size_t, MARK *, int, recno_t, u_int));
 void	v_sof __P((SCR *, MARK *));
 
 #define	VIPROTO(type, name)						\
