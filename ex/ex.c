@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.95 1993/05/15 10:10:37 bostic Exp $ (Berkeley) $Date: 1993/05/15 10:10:37 $";
+static char sccsid[] = "$Id: ex.c,v 5.96 1993/05/15 21:22:52 bostic Exp $ (Berkeley) $Date: 1993/05/15 21:22:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -208,7 +208,7 @@ ex_cmd(sp, ep, exc)
 {
 	EXCMDARG cmd;
 	EXCMDLIST *cp;
-	recno_t lcount, num;
+	recno_t lcount, lno, num;
 	long flagoff;
 	u_int saved_mode;
 	int ch, cmdlen, flags, uselastcmd;
@@ -333,9 +333,14 @@ ex_cmd(sp, ep, exc)
 		switch(cmd.addrcnt) {
 		case 0:				/* Default cursor/empty file. */
 			cmd.addrcnt = 1;
-			if (LF_ISSET(E_ZERODEF) && file_lline(sp, ep) == 0) {
-				cmd.addr1.lno = 0;
-				LF_SET(E_ZERO);
+			if (LF_ISSET(E_ZERODEF)) {
+				if (file_lline(sp, ep, &lno))
+					return (1);
+				if (lno == 0) {
+					cmd.addr1.lno = 0;
+					LF_SET(E_ZERO);
+				} else
+					cmd.addr1.lno = sp->lno;
 			} else
 				cmd.addr1.lno = sp->lno;
 			cmd.addr1.cno = sp->cno;
@@ -354,7 +359,8 @@ ex_cmd(sp, ep, exc)
 	case E_ADDR2_ALL:			/* Zero/two addresses: */
 		if (cmd.addrcnt == 0) {		/* Default entire/empty file. */
 			cmd.addrcnt = 2;
-			cmd.addr2.lno = file_lline(sp, ep);
+			if (file_lline(sp, ep, &cmd.addr2.lno))
+				return (1);
 			if (LF_ISSET(E_ZERODEF) && cmd.addr2.lno == 0) {
 				cmd.addr1.lno = 0;
 				LF_SET(E_ZERO);
@@ -369,10 +375,14 @@ ex_cmd(sp, ep, exc)
 two:		switch(cmd.addrcnt) {
 		case 0:				/* Default cursor/empty file. */
 			cmd.addrcnt = 2;
-			if (LF_ISSET(E_ZERODEF) && sp->lno == 1 &&
-			    file_lline(sp, ep) == 0) {
-				cmd.addr1.lno = cmd.addr2.lno = 0;
-				LF_SET(E_ZERO);
+			if (LF_ISSET(E_ZERODEF) && sp->lno == 1) {
+				if (file_lline(sp, ep, &lno))
+					return (1);
+				if (lno == 0) {
+					cmd.addr1.lno = cmd.addr2.lno = 0;
+					LF_SET(E_ZERO);
+				} else 
+					cmd.addr1.lno = cmd.addr2.lno = sp->lno;
 			} else
 				cmd.addr1.lno = cmd.addr2.lno = sp->lno;
 			cmd.addr1.cno = cmd.addr2.cno = sp->cno;
@@ -548,7 +558,8 @@ usage:		msgq(sp, M_ERR, "Usage: %s.", cp->usage);
 	/* Verify that the addresses are legal. */
 addr2:	switch(cmd.addrcnt) {
 	case 2:
-		lcount = file_lline(sp, ep);
+		if (file_lline(sp, ep, &lcount))
+			return (1);
 		if (cmd.addr2.lno > lcount) {
 			if (lcount == 0)
 				msgq(sp, M_ERR, "The file is empty.");
@@ -573,7 +584,8 @@ addr2:	switch(cmd.addrcnt) {
 			    cp->name);
 			return (1);
 		}
-		lcount = file_lline(sp, ep);
+		if (file_lline(sp, ep, &lcount))
+			return (1);
 		if (num > lcount) {
 			msgq(sp, M_ERR, "Only %lu line%s in the file",
 			    lcount, lcount > 1 ? "s" : "");
@@ -668,9 +680,14 @@ addr2:	switch(cmd.addrcnt) {
 				    "Flag offset before line 1.");
 				return (1);
 			}
-		} else if (sp->lno + flagoff > file_lline(sp, ep)) {
-			msgq(sp, M_ERR, "Flag offset past end-of-file.");
-			return (1);
+		} else {
+			if (file_lline(sp, ep, &lno))
+				return (1);
+			if (sp->lno + flagoff > lno) {
+				msgq(sp, M_ERR,
+				    "Flag offset past end-of-file.");
+				return (1);
+			}
 		}
 		sp->lno += flagoff;
 	}
@@ -725,7 +742,8 @@ linespec(sp, ep, cmd, cp)
 	/* Percent character is all lines in the file. */
 	if (*cmd == '%') {
 		cp->addr1.lno = 1;
-		cp->addr2.lno = file_lline(sp, ep);
+		if (file_lline(sp, ep, &cp->addr2.lno))
+			return (NULL);
 		/* If an empty file, then the first line is 0, not 1. */
 		if (cp->addr2.lno == 0)
 			cp->addr1.lno = 0;
@@ -759,7 +777,8 @@ linespec(sp, ep, cmd, cp)
 			++cmd;
 			break;
 		case '$':		/* Last line. */
-			cur.lno = file_lline(sp, ep);
+			if (file_lline(sp, ep, &cur.lno))
+				return (NULL);
 			cur.cno = 0;
 			++cmd;
 			break;
@@ -808,7 +827,9 @@ linespec(sp, ep, cmd, cp)
 		case '-':		/* Decrement. */
 			/* If an empty file, then '.' is 0, not 1. */
 			if (sp->lno == 1) {
-				if ((cur.lno = file_lline(sp, ep)) != 0)
+				if (file_lline(sp, ep, &cur.lno))
+					return (NULL);
+				if (cur.lno != 0)
 					cur.lno = 1;
 			} else
 				cur.lno = sp->lno;

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_init.c,v 5.16 1993/05/14 16:38:51 bostic Exp $ (Berkeley) $Date: 1993/05/14 16:38:51 $";
+static char sccsid[] = "$Id: ex_init.c,v 5.17 1993/05/15 21:23:16 bostic Exp $ (Berkeley) $Date: 1993/05/15 21:23:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,7 +33,9 @@ ex_init(sp, ep)
 	 * Otherwise, check to make sure that the location exists.
 	 */
 	if (F_ISSET(ep, F_NOSETPOS)) {
-		if ((sp->lno = file_lline(sp, ep)) == 0)
+		if (file_lline(sp, ep, &sp->lno))
+			return (1);
+		if (sp->lno == 0)
 			sp->lno = 1;
 		sp->cno = 0;
 		F_CLR(sp, F_NOSETPOS);
@@ -41,7 +43,9 @@ ex_init(sp, ep)
 		sp->lno = ep->lno;
 		sp->cno = ep->cno;
 		if (file_gline(sp, ep, sp->lno, &len) == NULL) {
-			if ((sp->lno = file_lline(sp, ep)) == 0)
+			if (file_lline(sp, ep, &sp->lno))
+				return (1);
+			if (sp->lno == 0)
 				sp->lno = 1;
 			sp->cno = 0;
 		} else if (sp->cno >= len)
