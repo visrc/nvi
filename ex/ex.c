@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.85 1993/12/23 11:30:03 bostic Exp $ (Berkeley) $Date: 1993/12/23 11:30:03 $";
+static char sccsid[] = "$Id: ex.c,v 8.86 1993/12/27 10:49:56 bostic Exp $ (Berkeley) $Date: 1993/12/27 10:49:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -772,10 +772,17 @@ end1:			break;
 				}
 end2:			break;
 		case 'b':				/* buffer */
-			exc.buffer = *cmd;
-			++cmd;
-			--cmdlen;
-			F_SET(&exc, E_BUFFER);
+			/*
+			 * Digits can't be buffer names in ex commands, or the
+			 * command "d2" would be a delete into buffer '2', and
+			 * not a two-line deletion.
+			 */
+			if (!isdigit(cmd[0])) {
+				exc.buffer = *cmd;
+				++cmd;
+				--cmdlen;
+				F_SET(&exc, E_BUFFER);
+			}
 			break;
 		case 'c':				/* count [01+a] */
 			++p;
