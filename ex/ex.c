@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 9.11 1994/11/20 12:51:20 bostic Exp $ (Berkeley) $Date: 1994/11/20 12:51:20 $";
+static char sccsid[] = "$Id: ex.c,v 9.12 1994/11/25 11:31:14 bostic Exp $ (Berkeley) $Date: 1994/11/25 11:31:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,7 +33,9 @@ static char sccsid[] = "$Id: ex.c,v 9.11 1994/11/20 12:51:20 bostic Exp $ (Berke
 #include "vi.h"
 #include "excmd.h"
 
-static void	badlno __P((SCR *, int, enum nresult));
+enum baddr {A_COMBO, A_EMPTY, A_EOF, A_NOTSET, A_ZERO };
+static void	badaddr __P((SCR *,
+		    EXCMDLIST const *, enum baddr, enum nresult));
 static void	ex_comlog __P((SCR *, EXCMDARG *));
 static __inline EXCMDLIST const *
 		ex_comm_search __P((char *, size_t));
@@ -553,11 +555,18 @@ skip:		if (F_ISSET(cp, E_NOPERM)) {
 		/*
 		 * !!!
 		 * If no address was specified, and it's not a global command,
-		 * we up the address by one.  (I have not an idea why global
-		 * commands are exempted, but it's (ahem) historic practice.
+		 * we up the address by one.  (I have no idea why globals are
+		 * exempted, but it's (ahem) historic practice.)  Make sure
+		 * we're not in a missing or empty file, this could disguise an
+		 * address of 0.
 		 */
 		if (exc.addrcnt == 0 && !F_ISSET(sp, S_GLOBAL)) {
 			exc.addrcnt = 1;
+			if (sp->ep == NULL ||
+			    sp->lno == 1 && file_gline(sp, 1, NULL) == NULL) {
+				badaddr(sp, NULL, A_EMPTY, NUM_OK);
+				goto err;
+			}
 			exc.addr1.lno = sp->lno + 1;
 			exc.addr1.cno = sp->cno;
 		}
@@ -1020,7 +1029,7 @@ end2:			break;
 				F_SET(&exc, E_COUNT_POS);
 			if ((nret =
 			    nget_slong(sp, &ltmp, cmd, &t, 10)) != NUM_OK) {
-				badlno(sp, 0, nret);
+				badaddr(sp, NULL, A_NOTSET, nret);
 				goto err;
 			}
 			if (ltmp == 0 && *p != '0') {
@@ -1182,18 +1191,11 @@ addr2:	switch (exc.addrcnt) {
 		/*
 		 * If it's a "default vi command", zero is okay.  Historic
 		 * vi allowed this, note, it's also the hack that allows
-		 * "vi +100 nonexistent_file" to work.  If there's no file
-		 * at all, that's the real problem, might as well tell the
-		 * user.
+		 * "vi +100 nonexistent_file" to work.
 		 */
 		if (exc.addr1.lno == 0 &&
 		    (IN_EX_MODE(sp) || uselastcmd != 1) && !LF_ISSET(E_ZERO)) {
-			if (sp->ep == NULL)
-				ex_message(sp, cp, EXM_NORC);
-			else
-				msgq(sp, M_ERR,
-			    "108|The %s command doesn't permit an address of 0",
-				    cp->name);
+			badaddr(sp, cp, A_ZERO, NUM_OK);
 			goto err;
 		}
 		break;
@@ -1370,7 +1372,7 @@ addr2:	switch (exc.addrcnt) {
 			}
 		} else {
 			if (!NPFITS(MAX_REC_NUMBER, sp->lno, flagoff)) {
-				badlno(sp, 0, NUM_OVER);
+				badaddr(sp, NULL, A_NOTSET, NUM_OVER);
 				goto err;
 			}
 			if (file_gline(sp, sp->lno + flagoff, NULL) == NULL) {
@@ -1505,7 +1507,7 @@ ex_range(sp, excp, cmdp, cmdlenp)
 		switch (*cmd) {
 		case '%':		/* Entire file. */
 			if (sp->ep == NULL) {
-				badlno(sp, 0, NUM_OK);
+				badaddr(sp, NULL, A_EMPTY, NUM_OK);
 				return (1);
 			}
 			/*
@@ -1518,8 +1520,10 @@ ex_range(sp, excp, cmdp, cmdlenp)
 			 *
 			 * If it's an empty file, the first line is 0, not 1.
 			 */
-			if (addr == ADDR_FOUND)
-				goto badaddr;
+			if (addr == ADDR_FOUND) {
+				badaddr(sp, NULL, A_COMBO, NUM_OK);
+				return (1);
+			}
 			if (file_lline(sp, &excp->addr2.lno))
 				return (1);
 			excp->addr1.lno = excp->addr2.lno == 0 ? 0 : 1;
@@ -1532,7 +1536,7 @@ ex_range(sp, excp, cmdp, cmdlenp)
 		case ',':               /* Comma delimiter. */
 		case ';':               /* Semi-colon delimiter. */
 			if (sp->ep == NULL) {
-				badlno(sp, 0, NUM_OK);
+				badaddr(sp, NULL, A_EMPTY, NUM_OK);
 				return (1);
 			}
 			if (addr != ADDR_FOUND)
@@ -1579,8 +1583,7 @@ ex_range(sp, excp, cmdp, cmdlenp)
 				goto done;
 
 			if (addr == ADDR_FOUND) {
-badaddr:			msgq(sp, M_ERR,
-				    "253|Illegal address combination");
+				badaddr(sp, NULL, A_COMBO, NUM_OK);
 				return (1);
 			}
 			switch (excp->addrcnt) {
@@ -1668,7 +1671,7 @@ ex_line(sp, cur, cmdp, cmdlenp, isaddrp, isdeltap)
 
 	/* No addresses permitted until a file has been read in. */
 	if (sp->ep == NULL && strchr("$0123456789'\\/?.+-^", *cmd)) {
-		badlno(sp, 0, NUM_OK);
+		badaddr(sp, NULL, A_EMPTY, NUM_OK);
 		return (1);
 	}
 
@@ -1688,7 +1691,7 @@ ex_line(sp, cur, cmdp, cmdlenp, isaddrp, isdeltap)
 		*isaddrp = 1;
 		F_SET(exp, EX_ABSMARK);
 		if ((nret = nget_slong(sp, &val, cmd, &endp, 10)) != NUM_OK) {
-			badlno(sp, 0, nret);
+			badaddr(sp, NULL, A_NOTSET, nret);
 			return (1);
 		}
 		if (!NPFITS(MAX_REC_NUMBER, 0, val)) {
@@ -1837,7 +1840,7 @@ search:		F_SET(exp, EX_ABSMARK);
 				    &val, cmd, &endp, 10)) != NUM_OK ||
 				    (nret = NADD_SLONG(sp,
 				    total, val)) != NUM_OK) {
-					badlno(sp, 0, nret);
+					badaddr(sp, NULL, A_NOTSET, nret);
 					return (1);
 				}
 				total += isneg ? -val : val;
@@ -1873,7 +1876,7 @@ search:		F_SET(exp, EX_ABSMARK);
 		 * in lots of other places.
 		 */
 		if (cur->lno && file_gline(sp, cur->lno, NULL) == NULL) {
-			badlno(sp, 1, NUM_OK);
+			badaddr(sp, NULL, A_EOF, NUM_OK);
 			return (1);
 		}
 
@@ -1970,9 +1973,10 @@ ex_comm_search(name, len)
 }
 
 static void
-badlno(sp, eof, nret)
+badaddr(sp, cp, ba, nret)
 	SCR *sp;
-	int eof;
+	EXCMDLIST const *cp;
+	enum baddr ba;
 	enum nresult nret;
 {
 	recno_t lno;
@@ -1990,13 +1994,39 @@ badlno(sp, eof, nret)
 		msgq(sp, M_ERR, "255|Address value underflow");
 		return;
 	}
-	if (eof) {
+
+	/*
+	 * When encountering an address error, tell the user if there's no
+	 * underlying file, that's the real problem.
+	 */
+	if (sp->ep == NULL) {
+		ex_message(sp, cp, EXM_NORC);
+		return;
+	}
+
+	switch (ba) {
+	case A_COMBO:
+		msgq(sp, M_ERR, "253|Illegal address combination");
+		break;
+	case A_EMPTY:
+		msgq(sp, M_ERR, "118|Illegal address: the file is empty");
+		break;
+	case A_EOF:
 		if (file_lline(sp, &lno))
 			return;
 		msgq(sp, M_ERR,
 		    "119|Illegal address: only %lu lines in the file", lno);
-	} else
-		msgq(sp, M_ERR, "118|Illegal address: the file is empty");
+		break;
+	case A_NOTSET:
+		abort();
+		/* NOTREACHED */
+	case A_ZERO:
+		msgq(sp, M_ERR,
+		    "108|The %s command doesn't permit an address of 0",
+		    cp->name);
+		break;
+	}
+	return;
 }
 
 #if defined(DEBUG) && defined(COMLOG)
