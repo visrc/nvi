@@ -4,35 +4,28 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: seq.h,v 8.2 1993/10/03 10:41:16 bostic Exp $ (Berkeley) $Date: 1993/10/03 10:41:16 $
+ *	$Id: seq.h,v 8.3 1993/11/01 13:25:39 bostic Exp $ (Berkeley) $Date: 1993/11/01 13:25:39 $
  */
 
 /*
  * Map and abbreviation structures.
  *
- * The map structure is an UCHAR_MAX size array of SEQ pointers which are
- * NULL or valid depending if the offset key begins any map or abbreviation
- * sequences.  If the pointer is valid, it references a doubly linked list
- * of SEQ pointers, threaded through the snext and sprev pointers.  This is
- * based on the belief that most normal characters won't start sequences so
- * lookup will be fast on non-mapped characters.  Only a single pointer is
- * maintained to keep the overhead of the map array fairly small, so the first
- * element of the linked list has a NULL sprev pointer and the last element
- * of the list has a NULL snext pointer.  The structures in this list are
- * ordered by length, shortest to longest.  This is so that short matches 
- * will happen before long matches when the list is searched.
+ * The map structure is doubly linked list, sorted by input string and by
+ * input length within the string.  (The latter is necessary so that short
+ * matches will happen before long matches when the list is searched.)
+ * Additionally, there is a bitmap which has bits set if there are entries
+ * starting with the corresponding character.  This keeps us from walking
+ * the list unless it's necessary.
  *
- * In addition, each SEQ structure is on another doubly linked list of SEQ
- * pointers, threaded through the next and prev pointers.  This is a list
- * of all of the sequences.  This list is used by the routines that display
- * all of the sequences to the screen or write them to a file.
+ * XXX
+ * The fast-lookup bits are never turned off -- users don't usually unmap
+ * things, though, so it's probably not a big deal.
  */
 					/* Sequence type. */
 enum seqtype { SEQ_ABBREV, SEQ_COMMAND, SEQ_INPUT };
 
 typedef struct _seq {
-	struct _seq *next, *prev;	/* Linked list of all sequences. */
-	struct _seq *forw, *back;	/* Linked list of ch sequences. */
+	struct queue_entry q;		/* Linked list of all sequences. */
 	enum seqtype stype;		/* Sequence type. */
 	char	*name;			/* Name of the sequence, if any. */
 	char	*input;			/* Input key sequence. */

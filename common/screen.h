@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.45 1993/11/01 11:59:02 bostic Exp $ (Berkeley) $Date: 1993/11/01 11:59:02 $
+ *	$Id: screen.h,v 8.46 1993/11/01 13:25:45 bostic Exp $ (Berkeley) $Date: 1993/11/01 13:25:45 $
  */
 
 /*
@@ -194,9 +194,9 @@ typedef struct _scr {
 	CHNAME	const *cname;		/* Display names of characters. */
 	u_char	 special[UCHAR_MAX];	/* Special character array. */
 
-					/* Ex/vi: mapped chars, abbrevs. */
-	HDR	 seqhdr;		/* Linked list of all sequences. */
-	HDR	 seq[UCHAR_MAX];	/* Linked character sequences. */
+#define	MAX_BIT_SEQ	128		/* Max + 1 fast check character. */
+	bitstr_t bit_decl(seqb, 128);	/* Bit map of chars in list. */
+	struct list_entry seqq;		/* Linked list of maps, abbrevs. */
 
 	char const *time_msg;		/* ITIMER_REAL message. */
 	struct itimerval time_value;	/* ITIMER_REAL saved value. */
