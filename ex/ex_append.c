@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 9.9 1995/01/23 17:03:05 bostic Exp $ (Berkeley) $Date: 1995/01/23 17:03:05 $";
+static char sccsid[] = "$Id: ex_append.c,v 9.10 1995/02/01 12:29:32 bostic Exp $ (Berkeley) $Date: 1995/02/01 12:29:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -82,54 +82,61 @@ aci(sp, cmdp, cmd)
 	MARK m;
 	TEXTH *sv_tiqp, tiq;
 	TEXT *tp;
-	struct termios t;
+	struct termios ts;
+	size_t len;
 	u_int flags;
 	int rval;
-
-	rval = 0;
+	char *p, *t;
 
 	NEEDFILE(sp, cmdp->cmd);
 
-	/*
-	 * Set input flags; the ! flag turns off autoindent for append,
-	 * change and insert.
-	 */
-	LF_INIT(TXT_DOTTERM | TXT_NUMBER);
-	if (!F_ISSET(cmdp, E_FORCE) && O_ISSET(sp, O_AUTOINDENT))
-		LF_SET(TXT_AUTOINDENT);
-	if (O_ISSET(sp, O_BEAUTIFY))
-		LF_SET(TXT_BEAUTIFY);
+	rval = 0;
+	if (F_ISSET(sp, S_GLOBAL)) {
+		if (cmdp->argc == 0 || cmdp->argv[0]->len == 0)
+			return (0);
+	} else {
+		/*
+		 * Set input flags; the ! flag turns off autoindent for append,
+		 * change and insert.
+		 */
+		LF_INIT(TXT_DOTTERM | TXT_NUMBER);
+		if (!F_ISSET(cmdp, E_FORCE) && O_ISSET(sp, O_AUTOINDENT))
+			LF_SET(TXT_AUTOINDENT);
+		if (O_ISSET(sp, O_BEAUTIFY))
+			LF_SET(TXT_BEAUTIFY);
 
-	/* The screen is now dirty. */
-	F_SET(sp, S_SCR_EXWROTE);
+		/* The screen is now dirty. */
+		F_SET(sp, S_SCR_EXWROTE);
 
-	/*
-	 * If this code is called by vi, the screen TEXTH structure (sp->tiqp)
-	 * may already be in use, e.g. ":append|s/abc/ABC/" would fail as we're
-	 * only halfway through the line when the append code fires.  Use the
-	 * local structure instead.
-	 *
-	 * If this code is called by vi, we want to reset the terminal and use
-	 * ex's line get routine.  It actually works fine if we use vi's get
-	 * routine, but it doesn't look as nice.  Maybe if we had a separate
-	 * window or something, but getting a line at a time looks awkward.
-	 */
-	if (F_ISSET(sp, S_VI)) {
-		memset(&tiq, 0, sizeof(TEXTH));
-		CIRCLEQ_INIT(&tiq);
-		sv_tiqp = sp->tiqp;
-		sp->tiqp = &tiq;
+		/*
+		 * If this code is called by vi, the screen TEXTH structure
+		 * (sp->tiqp) may already be in use, e.g. ":append|s/abc/ABC/"
+		 * would fail as we're only halfway through the line when the
+		 * append code fires.  Use the local structure instead.
+		 *
+		 * If this code is called by vi, we want to reset the terminal
+		 * and use ex's line get routine.  It actually works fine if we
+		 * use vi's get routine, but it doesn't look as nice.  Maybe if
+		 * we had a separate window or something, but getting a line at
+		 * a time looks awkward.
+		 */
+		if (F_ISSET(sp, S_VI)) {
+			memset(&tiq, 0, sizeof(TEXTH));
+			CIRCLEQ_INIT(&tiq);
+			sv_tiqp = sp->tiqp;
+			sp->tiqp = &tiq;
 
-		if (sex_tsetup(sp, &t))
-			return (1);
-		(void)write(STDOUT_FILENO, "\n", 1);
+			if (sex_tsetup(sp, &ts))
+				return (1);
+			(void)write(STDOUT_FILENO, "\n", 1);
+		}
+
+		/* Set the line number, so that autoindent works correctly. */
+		sp->lno = cmdp->addr1.lno;
+
+		if (sex_get(sp, sp->tiqp, 0, flags) != INP_OK)
+			goto err;
 	}
-
-	/* Set the line number, so that autoindent works correctly. */
-	sp->lno = cmdp->addr1.lno;
-
-	if (sex_get(sp, sp->tiqp, 0, flags) != INP_OK)
-		goto err;
 
 	/*
 	 * If doing a change, replace lines for as long as possible.  Then,
@@ -170,21 +177,53 @@ aci(sp, cmdp, cmd)
 	    delete(sp, &cmdp->addr1, &cmdp->addr2, 1)))
 		goto err;
 
-	for (tp = sp->tiqp->cqh_first;
-	    tp != (TEXT *)sp->tiqp; tp = tp->q.cqe_next) {
-		if (file_aline(sp, 1, m.lno, tp->lb, tp->len)) {
-err:			rval = 1;
-			break;
+	/*
+	 * !!!
+	 * Input lines specified on the ex command line (see the comment in
+	 * ex.c:ex_cmd()) lines are separated by <backslash><newline> pairs.
+	 * If there is a trailing delimiter pair an empty line is inserted.
+	 * There may also be a leading delimiter pair, which is ignored unless
+	 * it's also a trailing delimiter pair.
+	 */
+	if (cmdp->argc != 0)
+		for (p = cmdp->argv[0]->bp,
+		    len = cmdp->argv[0]->len; len > 0; p = t) {
+			for (t = p; len > 0; ++t, --len)
+				if (t[0] == '\\' && len > 1 && t[1] == '\n')
+					break;
+			if (len == 0 || t != p) {
+				if (file_aline(sp, 1, m.lno, p, t - p))
+					goto err;
+				sp->lno = ++m.lno;
+			}
+			if (len != 0) {
+				t += 2;
+				if ((len -= 2) == 0) {
+					if (file_aline(sp, 1, m.lno, "", 0))
+						goto err;
+					sp->lno = ++m.lno;
+				}
+			}
 		}
-		sp->lno = ++m.lno;
+
+	if (!F_ISSET(sp, S_GLOBAL))
+		for (tp = sp->tiqp->cqh_first;
+		    tp != (TEXT *)sp->tiqp; tp = tp->q.cqe_next) {
+			if (file_aline(sp, 1, m.lno, tp->lb, tp->len))
+				goto err;
+			sp->lno = ++m.lno;
+		}
+
+	if (0) {
+err:		rval = 1;
 	}
 
-	if (F_ISSET(sp, S_VI)) {
+	if (!F_ISSET(sp, S_GLOBAL) && F_ISSET(sp, S_VI)) {
 		sp->tiqp = sv_tiqp;
 		text_lfree(&tiq);
 
 		/* Reset the terminal state. */
-		if (sex_tteardown(sp, &t))
+		if (sex_tteardown(sp, &ts))
 			rval = 1;
 		F_SET(sp, S_SCR_REFRESH);
 	}

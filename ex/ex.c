@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 9.29 1995/01/31 18:32:12 bostic Exp $ (Berkeley) $Date: 1995/01/31 18:32:12 $";
+static char sccsid[] = "$Id: ex.c,v 9.30 1995/02/01 12:29:10 bostic Exp $ (Berkeley) $Date: 1995/02/01 12:29:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -237,20 +237,6 @@ ex_icmd(sp, cmd, len, flags)
 	return (rval);
 }
 
-/* Special command structure for :s as a repeat substitution command. */
-static EXCMDLIST const cmd_subagain =
-	{"s",		ex_subagain,	E_ADDR2,
-	    "s",
-	    "[line [,line]] s [cgr] [count] [#lp]",
-	    "repeat the last subsitution"};
-
-/* Special command structure for :d[flags]. */
-static EXCMDLIST const cmd_del2 =
-	{"delete",	ex_delete,	E_ADDR2|E_AUTOPRINT,
-	    "1bca1",
-	    "[line [,line]] d[elete][flags] [buffer] [count] [flags]",
-	    "delete lines from the file"};
-
 /*
  * ex_cmd --
  *	The guts of the ex parser: parse and execute a string containing
@@ -283,6 +269,7 @@ ex_cmd(sp, cmd, cmdlen, pflags)
 	EX_PRIVATE *exp;
 	EXCMDARG exc;
 	EXCMDLIST const *cp;
+	EXCMDLIST cmd_rep;
 	MARK cur;
 	recno_t lno;
 	size_t arg1_len, blen, len, save_cmdlen;
@@ -476,7 +463,9 @@ done:		if (bp != NULL)
 				len = (cmd - p) - (s - p);
 				cmd -= len;
 				cmdlen += len;
-				cp = &cmd_del2;
+				cmd_rep = cmds[C_DELETE];
+				cmd_rep.syntax = "1bca1";
+				cp = &cmd_rep;
 				goto skip;
 			}
 			break;
@@ -506,7 +495,9 @@ done:		if (bp != NULL)
 			case 's':
 				cmd -= namelen - 1;
 				cmdlen += namelen - 1;
-				cp = &cmd_subagain;
+				cmd_rep = cmds[C_SUBSTITUTE];
+				cmd_rep.fn = ex_subagain;
+				cp = &cmd_rep;
 				break;
 			case 'k':
 				if (p[1] && !p[2]) {
@@ -618,18 +609,21 @@ skip:		if (F_ISSET(cp, E_NOPERM)) {
 	/*
 	 * There are three normal termination cases for an ex command.  They
 	 * are the end of the string (cmdlen), or unescaped (by literal next
-	 * characters) newline or '|' characters.  As we're past any addresses,
-	 * we can now determine how long the command is, so we don't have to
-	 * look for all the possible terminations.  There are three exciting
-	 * special cases:
+	 * characters) <newline> or '|' characters.  As we're now past possible
+	 * addresses, we can determine how long the command is, so we don't
+	 * have to look for all the possible terminations.  Naturally, there
+	 * are some exciting special cases:
 	 *
 	 * 1: The bang, global, v and the filter versions of the read and
-	 *    write commands are delimited by newlines (they can contain shell
-	 *    pipes).
+	 *    write commands are delimited by <newline>s (they can contain
+	 *    shell pipes).
 	 * 2: The ex, edit, next and visual in vi mode commands all take ex
 	 *    commands as their first arguments.
 	 * 3: The s command takes an RE as its first argument, and wants it
 	 *    to be specially delimited.
+	 * 4: The append, change and insert commands can (or, if in a global
+	 *    command, always will) have their input passed with them in the
+	 *    command line, and the entire line is then passed to the function.
 	 *
 	 * Historically, '|' characters in the first argument of the ex, edit,
 	 * next, vi visual, and s commands didn't delimit the command.  And,
@@ -738,9 +732,11 @@ skip:		if (F_ISSET(cp, E_NOPERM)) {
 			if (!isblank(cmd[0]))
 				break;
 
-		if (isalnum(cmd[0]) || cmd[0] == '|')
-			cp = &cmd_subagain;
-		else if (cmdlen > 0) {
+		if (isalnum(cmd[0]) || cmd[0] == '|') {
+			cmd_rep = cmds[C_SUBSTITUTE];
+			cmd_rep.fn = ex_subagain;
+			cp = &cmd_rep;
+		} else if (cmdlen > 0) {
 			/*
 			 * QUOTING NOTE:
 			 *
@@ -760,6 +756,7 @@ skip:		if (F_ISSET(cp, E_NOPERM)) {
 					--cnt;
 		}
 	}
+
 	/*
 	 * Use normal quoting and termination rules to find the end of this
 	 * command.
@@ -770,7 +767,7 @@ skip:		if (F_ISSET(cp, E_NOPERM)) {
 	 * file.  It was almost certainly a bug, but that's what bug-for-bug
 	 * compatibility means, Grasshopper.  Also, ^V's escape the command
 	 * delimiters.  Literal next quote characters in front of the newlines,
-	 * '|' characters or literal next characters are stripped as as they're
+	 * '|' characters or literal next characters are stripped as they're
 	 * no longer useful.
 	 */
 	vi_address = cmdlen != 0 && cmd[0] != '\n';
@@ -790,6 +787,17 @@ skip:		if (F_ISSET(cp, E_NOPERM)) {
 			if (ch == '\n')
 				nl = 1;
 			--cmdlen;
+			break;
+		} else if (ch == '\\' && cmdlen > 1 && cmd[1] == '\n' &&
+		    (cp == &cmds[C_APPEND] || cp == &cmds[C_CHANGE] ||
+		    cp == &cmds[C_INSERT])) {
+			--cmd;
+			/*
+			 * -1 is right.  In this case, there isn't a separation
+			 * character to discard, the underlying functions need
+			 * both the <backslash> and the <newline>.
+			 */
+			cnt = -1;
 			break;
 		}
 		*p++ = ch;
@@ -1186,7 +1194,7 @@ countchk:		if (*++p != 'N') {		/* N */
 	}
 
 	/* Skip trailing whitespace. */
-	for (; cmdlen; --cmdlen) {
+	for (; cmdlen > 0; --cmdlen) {
 		ch = *cmd++;
 		if (!isblank(ch))
 			break;
@@ -1196,9 +1204,46 @@ countchk:		if (*++p != 'N') {		/* N */
 	 * There shouldn't be anything left, and no more required
 	 * fields, i.e neither 'l' or 'r' in the syntax string.
 	 */
-	if (cmdlen || strpbrk(p, "lr")) {
+	if (cmdlen != 0 || strpbrk(p, "lr")) {
 usage:		msgq(sp, M_ERR, "107|Usage: %s", cp->usage);
 		goto err;
+	}
+
+	/*
+	 * !!!
+	 * If it was an append, change or insert command, anything that
+	 * was left after the command separator is passed to the command.
+	 * The reason for this is that it was common usage to enter:
+	 *
+	 *	:g/pattern/append|stuff1
+	 *
+	 * and append the line of text "stuff1" to the lines containing
+	 * the pattern.  It was also historically legal to enter:
+	 *
+	 *	:append|stuff1
+	 *	stuff2
+	 *	.
+	 *
+	 * and the text on the ex command line would be appended as well as
+	 * the text inserted after it.  There was an historic bug however,
+	 * that the user had to enter *two* terminating lines (the '.' lines)
+	 * to terminate text input mode, in this case.  This whole thing
+	 * could be taken too far, however.  Entering:
+	 *
+	 *	:append|stuff1\
+	 *	stuff2
+	 *	stuff3
+	 *	.
+	 *
+	 * i.e. mixing and matching the forms confused the historic vi, and,
+	 * not only did it take two terminating lines to terminate text input
+	 * mode, but the trailing backslashes were retained on the input.
+	 */
+	if (save_cmdlen && (cp == &cmds[C_APPEND] ||
+	    cp == &cmds[C_CHANGE] || cp == &cmds[C_INSERT])) {
+		if (argv_exp0(sp, &exc, save_cmd, save_cmdlen))
+			goto err;
+		save_cmdlen = 0;
 	}
 
 	/*
@@ -1879,7 +1924,7 @@ search:		F_SET(exp, EX_ABSMARK);
 					isneg = 1;
 				} else
 					isneg = 0;
-					
+
 				/* Get a signed long, add it to the total. */
 				if ((nret = nget_slong(sp,
 				    &val, cmd, &endp, 10)) != NUM_OK ||
@@ -2015,7 +2060,7 @@ ex_badaddr(sp, cp, ba, nret)
 	enum nresult nret;
 {
 	recno_t lno;
-		
+
 	switch (nret) {
 	case NUM_OK:
 		break;
