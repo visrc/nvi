@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 5.40 1993/05/07 16:49:21 bostic Exp $ (Berkeley) $Date: 1993/05/07 16:49:21 $";
+static char sccsid[] = "$Id: util.c,v 5.41 1993/05/08 11:06:57 bostic Exp $ (Berkeley) $Date: 1993/05/08 11:06:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -229,7 +229,7 @@ cursor_check(sp, ep, lnop, cnop)
 
 /*
  * nonblank --
- *	Return the column number of the first non-blank character of the
+ *	Set the column number of the first non-blank character of the
  *	line.
  */
 int
