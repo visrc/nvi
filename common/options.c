@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.18 1992/06/07 13:50:18 bostic Exp $ (Berkeley) $Date: 1992/06/07 13:50:18 $";
+static char sccsid[] = "$Id: options.c,v 5.19 1992/06/15 10:44:44 bostic Exp $ (Berkeley) $Date: 1992/06/15 10:44:44 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -98,7 +98,7 @@ OPTIONS opts[] = {
 /* O_NUMBER */
 	"number",	NULL,		OPT_0BOOL|OPT_REDRAW,
 /* O_PARAGRAPHS */
-	"paragraphs",	"PPppIPLPQP",	OPT_STR,
+	"paragraphs",	"IPLPPPQPP LIpplpipbp",	OPT_STR,
 /* O_PROMPT */
 	"prompt",	NULL,		OPT_1BOOL,
 /* O_READONLY */
@@ -110,7 +110,7 @@ OPTIONS opts[] = {
 /* O_SCROLL */
 	"scroll",	&o_scroll,	OPT_NUM,
 /* O_SECTIONS */
-	"sections",	"NHSHSSSEse",	OPT_STR,
+	"sections",	"NHSHH HUnhsh",	OPT_STR,
 /* O_SHELL */
 	"shell",	_PATH_BSHELL,	OPT_STR,
 /* O_SHIFTWIDTH */
