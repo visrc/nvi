@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 5.15 1992/12/05 11:08:37 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:08:37 $";
+static char sccsid[] = "$Id: ex_global.c,v 5.16 1992/12/07 16:11:44 bostic Exp $ (Berkeley) $Date: 1992/12/07 16:11:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -154,7 +154,8 @@ global(cmdp, cmd)
 		curf->rptlines = 0;
 		last1 = file_lline(curf);
 
-		(void)snprintf((char *)cbuf, sizeof(cbuf), "%d %s", lno, ep);
+		curf->lno = lno;
+		(void)snprintf((char *)cbuf, sizeof(cbuf), "%s", ep);
 		if (ex_cmd(cbuf)) {
 			rval = 1;
 			goto err;
