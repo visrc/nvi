@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 5.21 1993/05/27 19:20:18 bostic Exp $ (Berkeley) $Date: 1993/05/27 19:20:18 $";
+static char sccsid[] = "$Id: v_txt.c,v 5.22 1993/05/28 00:40:18 bostic Exp $ (Berkeley) $Date: 1993/05/28 00:40:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -901,7 +901,7 @@ txt_outdent(sp, tp)
 	BINC(sp, tp->lb, tp->lb_len, tp->len + spaces);
 
 	/* Use up any overwrite characters. */
-	for (; tp->overwrite && spaces--; ++tp->ai, --tp->overwrite)
+	for (; tp->overwrite && spaces; --spaces, ++tp->ai, --tp->overwrite)
 		tp->lb[sp->cno++] = ' ';
 
 	/* Maybe that was enough. */
