@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.35 1993/01/23 16:37:19 bostic Exp $ (Berkeley) $Date: 1993/01/23 16:37:19 $";
+static char sccsid[] = "$Id: options.c,v 5.36 1993/01/31 10:26:48 bostic Exp $ (Berkeley) $Date: 1993/01/31 10:26:48 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -439,11 +439,8 @@ found:		if (op == NULL || off && !ISFSETP(op, OPT_0BOOL|OPT_1BOOL)) {
 				free(PVALP(op));
 			PVALP(op) = strdup(equals);
 			FSETP(op, OPT_ALLOCATED | OPT_SET);
-draw:			if (curf != NULL &&
-			    ISFSETP(op, OPT_REDRAW)) {
-				if (ISFSETP(op, OPT_REDRAW))
-					FF_SET(curf, F_REDRAW);
-			}
+draw:			if (curf != NULL && ISFSETP(op, OPT_REDRAW))
+				FF_SET(curf, F_REDRAW);
 			break;
 		default:
 			abort();
@@ -491,6 +488,10 @@ f_columns(ep, valp)
 	}
 	(void)snprintf(buf, sizeof(buf), "%lu", val);
 	(void)setenv("COLUMNS", buf, 1);
+
+	/* Set resize bit; note, the EXF structure may not yet be in place. */
+	if (ep != NULL)
+		FF_SET(ep, F_RESIZE);
 	return (0);
 }
 
@@ -618,6 +619,10 @@ f_lines(ep, valp)
 	}
 	(void)snprintf(buf, sizeof(buf), "%lu", val);
 	(void)setenv("ROWS", buf, 1);
+
+	/* Set resize bit; note, the EXF structure may not yet be in place. */
+	if (ep != NULL)
+		FF_SET(ep, F_RESIZE);
 	return (0);
 }
 
