@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: put.c,v 8.7 1994/05/05 23:47:05 bostic Exp $ (Berkeley) $Date: 1994/05/05 23:47:05 $";
+static char sccsid[] = "$Id: put.c,v 8.8 1994/05/07 12:15:44 bostic Exp $ (Berkeley) $Date: 1994/05/07 12:15:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -162,7 +162,10 @@ put(sp, ep, cbp, namep, cp, rp, append)
 		}
 		if (file_sline(sp, ep, lno, bp, t - bp))
 			goto mem;
-		++sp->rptlines[L_CHANGED];
+		if (sp->rptlchange != lno) {
+			sp->rptlchange = lno;
+			++sp->rptlines[L_CHANGED];
+		}
 	} else {
 		/*
 		 * Have to build both the first and last lines of the
@@ -196,7 +199,10 @@ put(sp, ep, cbp, namep, cp, rp, append)
 		 */
 		if (file_sline(sp, ep, lno, bp, t - bp))
 			goto mem;
-		++sp->rptlines[L_CHANGED];
+		if (sp->rptlchange != lno) {
+			sp->rptlchange = lno;
+			++sp->rptlines[L_CHANGED];
+		}
 
 		/*
 		 * Historical practice is that if a non-line mode put

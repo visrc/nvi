@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.48 1994/05/03 21:40:15 bostic Exp $ (Berkeley) $Date: 1994/05/03 21:40:15 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.49 1994/05/07 12:15:52 bostic Exp $ (Berkeley) $Date: 1994/05/07 12:15:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -765,7 +765,10 @@ endmatch:	if (!linechanged)
 			goto ret1;
 
 		/* Update changed line counter. */
-		++sp->rptlines[L_CHANGED];
+		if (sp->rptlchange != lno) {
+			sp->rptlchange = lno;
+			++sp->rptlines[L_CHANGED];
+		}
 
 		/*
 		 * !!!

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: log.c,v 8.14 1994/03/14 10:31:57 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:31:57 $";
+static char sccsid[] = "$Id: log.c,v 8.15 1994/05/07 12:15:43 bostic Exp $ (Berkeley) $Date: 1994/05/07 12:15:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -409,7 +409,10 @@ log_backward(sp, ep, rp)
 			    sizeof(recno_t), data.size - sizeof(u_char) -
 			    sizeof(recno_t)))
 				goto err;
-			++sp->rptlines[L_CHANGED];
+			if (sp->rptlchange != lno) {
+				sp->rptlchange = lno;
+				++sp->rptlines[L_CHANGED];
+			}
 			break;
 		case LOG_MARK:
 			didop = 1;
@@ -498,7 +501,10 @@ log_setline(sp, ep)
 			    sizeof(recno_t), data.size - sizeof(u_char) -
 			    sizeof(recno_t)))
 				goto err;
-			++sp->rptlines[L_CHANGED];
+			if (sp->rptlchange != lno) {
+				sp->rptlchange = lno;
+				++sp->rptlines[L_CHANGED];
+			}
 		case LOG_MARK:
 			memmove(&lm, p + sizeof(u_char), sizeof(LMARK));
 			m.lno = lm.lno;
@@ -591,7 +597,10 @@ log_forward(sp, ep, rp)
 			    sizeof(recno_t), data.size - sizeof(u_char) -
 			    sizeof(recno_t)))
 				goto err;
-			++sp->rptlines[L_CHANGED];
+			if (sp->rptlchange != lno) {
+				sp->rptlchange = lno;
+				++sp->rptlines[L_CHANGED];
+			}
 			break;
 		case LOG_MARK:
 			didop = 1;
