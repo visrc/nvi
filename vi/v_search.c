@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 8.36 1994/09/15 08:20:23 bostic Exp $ (Berkeley) $Date: 1994/09/15 08:20:23 $";
+static char sccsid[] = "$Id: v_search.c,v 8.37 1994/10/09 09:52:09 bostic Exp $ (Berkeley) $Date: 1994/10/09 09:52:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -145,7 +145,8 @@ v_searchw(sp, ep, vp)
 	GET_SPACE_RET(sp, bp, blen, len);
 	(void)snprintf(bp, blen, "%s%s%s", RE_WSTART, vp->keyword, RE_WSTOP);
 
-	rval = search(sp, ep, vp, bp, 0, SEARCH_MSG | SEARCH_TERM, FORWARD);
+	rval = search(sp, ep,
+	    vp, bp, 0, SEARCH_MSG | SEARCH_SET | SEARCH_TERM, FORWARD);
 
 	FREE_SPACE(sp, bp, blen);
 	return (rval);
