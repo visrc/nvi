@@ -1,4 +1,4 @@
-#	$Id: Makefile,v 8.14 1994/12/16 10:37:44 bostic Exp $ (Berkeley) $Date: 1994/12/16 10:37:44 $
+#	$Id: Makefile,v 8.15 1994/12/16 10:38:58 bostic Exp $ (Berkeley) $Date: 1994/12/16 10:38:58 $
 
 CAT=	vi_dutch vi_english vi_german vi_ru_SU.KOI8-R vi_swedish
 FILES=	../common/*.c ../ex/*.c ../sex/*.c ../vi/*.c ../svi/*.c ../xaw/*.c
@@ -49,7 +49,7 @@ check: ${CAT}
 		echo =========================) > $$f.check;		\
 	done
 
-vi_english.base: dump ${FILES}
+vi_english.base: dump ${FILES} Makefile
 	./dump ${FILES} |\
 	sed -e '/|/!d' \
 	    -e 's/|/ "/' \
