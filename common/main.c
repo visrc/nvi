@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.10 1992/04/05 09:58:50 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:58:50 $";
+static char sccsid[] = "$Id: main.c,v 5.11 1992/04/05 15:46:21 bostic Exp $ (Berkeley) $Date: 1992/04/05 15:46:21 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -25,9 +25,9 @@ static char sccsid[] = "$Id: main.c,v 5.10 1992/04/05 09:58:50 bostic Exp $ (Ber
 
 #include "vi.h"
 #include "excmd.h"
-#include "map.h"
 #include "options.h"
 #include "pathnames.h"
+#include "seq.h"
 #include "extern.h"
 
 #ifdef DEBUG
@@ -134,7 +134,10 @@ main(argc, argv)
 	 */
 	opts_init();
 
-	/* Map certain special keys. */
+	/* Initialize the key sequence list. */
+	seq_init();
+
+	/* Initialize special keys, must be after key sequence init. */
 	map_init();
 
 #ifndef NO_DIGRAPH
