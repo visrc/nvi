@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.45 1993/11/18 16:43:17 bostic Exp $ (Berkeley) $Date: 1993/11/18 16:43:17 $";
+static char sccsid[] = "$Id: exf.c,v 8.46 1993/11/19 13:00:36 bostic Exp $ (Berkeley) $Date: 1993/11/19 13:00:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -480,12 +480,13 @@ file_write(sp, ep, fm, tm, fname, flags)
 	/* If not forced, not appending, and "writeany" not set ... */
 	if (!LF_ISSET(FS_FORCE | FS_APPEND) && !O_ISSET(sp, O_WRITEANY)) {
 		/* Don't overwrite anything but the original file. */
-		if (fname != NULL && !stat(fname, &sb) ||
-		    F_ISSET(sp->frp, FR_NAMECHANGED) &&
+		if (fname != NULL) {
+			if (!stat(fname, &sb))
+				goto exists;
+		} else if (F_ISSET(sp->frp, FR_NAMECHANGED) &&
 		    !stat(sp->frp->fname, &sb)) {
-			if (fname == NULL)
-				fname = sp->frp->fname;
-			if (LF_ISSET(FS_POSSIBLE))
+			fname = sp->frp->fname;
+exists:			if (LF_ISSET(FS_POSSIBLE))
 				msgq(sp, M_ERR,
 		"%s exists, not written; use ! to override.", fname);
 			else
