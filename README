@@ -1,4 +1,4 @@
-#	$Id: README,v 8.86 1994/08/17 14:37:27 bostic Exp $ (Berkeley) $Date: 1994/08/17 14:37:27 $
+#	$Id: README,v 8.87 1994/08/17 18:17:30 bostic Exp $ (Berkeley) $Date: 1994/08/17 18:17:30 $
 
 This is the README for version 1.34 of nex/nvi, a freely redistributable
 replacement for the Berkeley ex and vi text editors.  The compressed or
@@ -136,15 +136,15 @@ nvi/USD.doc:
 
 	edit/		Roff source for "Edit: A tutorial", USD:14 in the
 			4.3BSD manuals.
-	ex/		Roff source for "Ex Reference Manual -- Version
+	exref/		Roff source for "Ex Reference Manual -- Version
 			3.7", USD:16 in the 4.3BSD manuals.
-	vi/		Roff source for "An Introduction to Display
-			Editing with Vi", USD:15 in the 4.3BSD manuals.
-			Includes the "Vi Quick Reference" card.
 	vi.man/		Manual page for nex/nvi; an updated version of
 			the document distributed with 4.4BSD-Lite.
 	vi.ref/		Reference document for nex/nvi; an updated version
 			of the document distributed with 4.4BSD-Lite.
+	vitut/		Roff source for "An Introduction to Display
+			Editing with Vi", USD:15 in the 4.3BSD manuals.
+			Includes the "Vi Quick Reference" card.
 
 nvi/common:
 	Source files for pieces of code that are shared by all the editors,
