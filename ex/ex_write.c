@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 10.8 1995/09/30 10:39:49 bostic Exp $ (Berkeley) $Date: 1995/09/30 10:39:49 $";
+static char sccsid[] = "$Id: ex_write.c,v 10.9 1995/10/04 12:35:41 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:35:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -162,7 +162,7 @@ exwr(sp, cmdp, cmd)
 	if (cmd == WRITE && *p == '!') {
 		for (++p; *p && isblank(*p); ++p);
 		if (*p == '\0') {
-			ex_message(sp, cmdp->cmd->usage, EXM_USAGE);
+			ex_emsg(sp, cmdp->cmd->usage, EXM_USAGE);
 			return (1);
 		}
 		/* Expand the argument. */
@@ -235,11 +235,9 @@ exwr(sp, cmdp, cmd)
 		break;
 	default:
 		/* If expanded to more than one argument, object. */
-		p = msg_print(sp, cmdp->argv[0]->bp, &nf);
-		msgq(sp, M_ERR, "176|%s expanded into too many file names", p);
-		if (nf)
-			FREE_SPACE(sp, p, 0);
-		ex_message(sp, cmdp->cmd->usage, EXM_USAGE);
+		msgq_str(sp, M_ERR, cmdp->argv[0]->bp,
+		    "176|%s expanded into too many file names");
+		ex_emsg(sp, cmdp->cmd->usage, EXM_USAGE);
 		return (1);
 	}
 
@@ -267,7 +265,6 @@ ex_writefp(sp, name, fp, fm, tm, nlno, nch)
 	u_long ccnt;			/* XXX: can't print off_t portably. */
 	recno_t fline, tline, lcnt;
 	size_t len;
-	int nf, sv_errno;
 	char *p;
 
 	fline = fm->lno;
@@ -333,14 +330,8 @@ ex_writefp(sp, name, fp, fm, tm, nlno, nch)
 	}
 	return (0);
 
-err:	if (!F_ISSET(sp->ep, F_MULTILOCK)) {
-		sv_errno = errno;
-		p = msg_print(sp, name, &nf);
-		errno = sv_errno;
-		msgq(sp, M_SYSERR, "%s", p);
-		if (nf)
-			FREE_SPACE(sp, p, 0);
-	}
+err:	if (!F_ISSET(sp->ep, F_MULTILOCK))
+		msgq_str(sp, M_SYSERR, name, "%s");
 	(void)fclose(fp);
 	return (1);
 }
