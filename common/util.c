@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.34 1993/12/23 18:41:25 bostic Exp $ (Berkeley) $Date: 1993/12/23 18:41:25 $";
+static char sccsid[] = "$Id: util.c,v 8.35 1994/01/24 19:28:31 bostic Exp $ (Berkeley) $Date: 1994/01/24 19:28:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -183,6 +183,13 @@ ret:	reenter = 0;
  * This isn't true -- edit a large file and do "100d|1".  We don't implement
  * this semantic as it would require that we track each line that changes
  * during a command instead of just keeping count.
+ *
+ * Line counts weren't right in historic vi, either.  For example, given the
+ * file:
+ *	abc
+ *	def
+ * the command 2d}, from the 'b' would report that two lines were deleted,
+ * not one.
  */
 int
 msg_rpt(sp, is_message)
