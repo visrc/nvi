@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 8.20 1993/11/18 13:50:21 bostic Exp $ (Berkeley) $Date: 1993/11/18 13:50:21 $
+ *	$Id: gs.h,v 8.21 1993/11/19 10:54:59 bostic Exp $ (Berkeley) $Date: 1993/11/19 10:54:59 $
  */
 
 struct _gs {
@@ -38,16 +38,17 @@ struct _gs {
 	int	key_cnt;		/* Map expansion count. */
 
 #define	G_BELLSCHED	0x0001		/* Bell scheduled. */
-#define	G_ISFROMTTY	0x0002		/* Reading from a tty. */
-#define	G_RECOVER_SET	0x0004		/* Recover system initialized. */
-#define	G_SETMODE	0x0008		/* Tty mode changed. */
-#define	G_SIGALRM	0x0010		/* SIGALRM arrived. */
-#define	G_SIGHUP	0x0020		/* SIGHUP arrived. */
-#define	G_SIGTERM	0x0040		/* SIGTERM arrived. */
-#define	G_SIGWINCH	0x0080		/* SIGWINCH arrived. */
-#define	G_SLEEPING	0x0100		/* Asleep (die on signal). */
-#define	G_SNAPSHOT	0x0200		/* Always snapshot files. */
-#define	G_TMP_INUSE	0x0400		/* Temporary buffer in use. */
+#define	G_CURSES_INIT	0x0002		/* Curses initialized. */
+#define	G_ISFROMTTY	0x0004		/* Reading from a tty. */
+#define	G_RECOVER_SET	0x0008		/* Recover system initialized. */
+#define	G_SETMODE	0x0010		/* Tty mode changed. */
+#define	G_SIGALRM	0x0020		/* SIGALRM arrived. */
+#define	G_SIGHUP	0x0040		/* SIGHUP arrived. */
+#define	G_SIGTERM	0x0080		/* SIGTERM arrived. */
+#define	G_SIGWINCH	0x0100		/* SIGWINCH arrived. */
+#define	G_SLEEPING	0x0200		/* Asleep (die on signal). */
+#define	G_SNAPSHOT	0x0400		/* Always snapshot files. */
+#define	G_TMP_INUSE	0x0800		/* Temporary buffer in use. */
 	u_int	 flags;
 };
 
