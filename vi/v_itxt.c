@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 5.50 1993/05/27 19:19:55 bostic Exp $ (Berkeley) $Date: 1993/05/27 19:19:55 $";
+static char sccsid[] = "$Id: v_itxt.c,v 5.51 1993/05/30 15:34:23 bostic Exp $ (Berkeley) $Date: 1993/05/30 15:34:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -224,12 +224,10 @@ v_ii(sp, ep, vp, fm, tm, rp)
 		}
 		if (len == 0)
 			LF_SET(TXT_APPENDEOL);
-		else if (LF_ISSET(TXT_REPLAY))
-			if (len == sp->cno + 1) {
-				LF_SET(TXT_APPENDEOL);
-				sp->cno = len;
-			} else
-				++sp->cno;
+		else if (LF_ISSET(TXT_REPLAY) && len == sp->cno + 1) {
+			LF_SET(TXT_APPENDEOL);
+			sp->cno = len;
+		}
 
 		if (v_ntext(sp, ep,
 		    &sp->txthdr, NULL, p, len, rp, 0, OOBLNO, flags))
@@ -237,7 +235,9 @@ v_ii(sp, ep, vp, fm, tm, rp)
 
 		SET_TXT_STD(sp, TXT_REPLAY);
 		sp->lno = lno = rp->lno;
-		sp->cno = rp->cno;
+
+		/* On replay, advance the insert by one (make it an append). */
+		sp->cno = rp->cno + 1;
 	}
 	return (0);
 }
