@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 5.10 1992/04/19 10:53:38 bostic Exp $ (Berkeley) $Date: 1992/04/19 10:53:38 $
+ *	$Id: ex.h,v 5.11 1992/04/28 13:42:07 bostic Exp $ (Berkeley) $Date: 1992/04/28 13:42:07 $
  */
 
 struct excmdarg;
@@ -17,24 +17,25 @@ typedef struct {
 
 #define	E_ADDR1		0x00001		/* One address. */
 #define	E_ADDR2		0x00002		/* Two address. */
-#define	E_ADDR2_OR_0	0x00004		/* Either 0 or two addresses. */
-#define	E_APPEND	0x00008		/* >> */
-#define	E_EXRCOK	0x00010		/* OK in a .exrc file. */
-#define	E_FORCE		0x00020		/*  ! */
+#define	E_ADDR2_ALL	0x00004		/* Zero/two addresses; zero == all. */
+#define	E_ADDR2_NONE	0x00008		/* Zero/two addresses; zero == none. */
+#define	E_APPEND	0x00010		/* >> */
+#define	E_EXRCOK	0x00020		/* OK in a .exrc file. */
+#define	E_FORCE		0x00040		/*  ! */
 
-#define	E_F_CARAT	0x00040		/*  ^ flag. */
-#define	E_F_DASH	0x00080		/*  - flag. */
-#define	E_F_DOT		0x00100		/*  . flag. */
-#define	E_F_HASH	0x00200		/*  # flag. */
-#define	E_F_LIST	0x00400		/*  l flag. */
-#define	E_F_PLUS	0x00800		/*  + flag. */
-#define	E_F_PRINT	0x01000		/*  p flag. */
-#define	E_F_MASK	0x01fc0		/* Flag mask. */
+#define	E_F_CARAT	0x00080		/*  ^ flag. */
+#define	E_F_DASH	0x00100		/*  - flag. */
+#define	E_F_DOT		0x00200		/*  . flag. */
+#define	E_F_HASH	0x00400		/*  # flag. */
+#define	E_F_LIST	0x00800		/*  l flag. */
+#define	E_F_PLUS	0x01000		/*  + flag. */
+#define	E_F_PRINT	0x02000		/*  p flag. */
+#define	E_F_MASK	0x03f80		/* Flag mask. */
 
-#define	E_NL		0x02000		/* Newline first if not MODE_EX mode.*/
-#define	E_NOPERM	0x04000		/* Permission denied for now. */
-#define	E_SETLAST	0x08000		/* Reset last command. */
-#define	E_ZERO		0x10000		/* 0 is a legal (first) address.*/
+#define	E_NL		0x04000		/* Newline first if not MODE_EX mode.*/
+#define	E_NOPERM	0x08000		/* Permission denied for now. */
+#define	E_SETLAST	0x10000		/* Reset last command. */
+#define	E_ZERO		0x20000		/* 0 is a legal (first) address.*/
 	u_int flags;
 	char *syntax;			/* Syntax script. */
 	char *usage;			/* Usage line. */
@@ -58,6 +59,8 @@ typedef struct excmdarg {
 	u_char buffer;		/* Named buffer. */
 } EXCMDARG;
 
+extern char *defcmdarg[2];	/* Default array. */
+
 /* Macro to set up the structure. */
 #define	SETCMDARG(s, _cmd, _addrcnt, _addr1, _addr2, _force, _arg) { \
 	bzero(&s, sizeof(EXCMDARG)); \
@@ -71,7 +74,58 @@ typedef struct excmdarg {
 	s.argv = defcmdarg; \
 	defcmdarg[0] = _arg; \
 }
-extern char *defcmdarg[2];
+
+/*
+ * Vi has made the screen ready for ex to print, but there are special ways
+ * that information gets displayed.   The output overwrites some ex commands,
+ * so in that case we erase the command line, outputting a '\r' to guarantee
+ * the first column.  (We could theoretically lose if the command line has
+ * already wrapped, but this should only result in additional characters being
+ * sent to the terminal.)  All other initial output lines are preceded by a
+ * '\n'.  When the command(s) complete, vi waits if more than one line was
+ * displayed, otherwise it continues.
+ *
+ * XXX
+ * Currently, there's a bug.  The msg line isn't getting erased when the line
+ * is used again without an intervening repaint, so there can be garabage on
+ * the end of the line.  The fix is to change curses to support a "force this
+ * line to be written" semantic.
+ */
+/* Start the sequence. */
+#define	EX_PRSTART(overwrite) { \
+	if (mode == MODE_VI) { \
+		if (ex_prstate == PR_NONE) { \
+			if (overwrite) { \
+				while (ex_prerase--) { \
+					(void)putchar('\b'); \
+					(void)putchar(' '); \
+					(void)putchar('\b'); \
+				} \
+				(void)putchar('\r'); \
+				ex_prstate = PR_STARTED; \
+			} else { \
+				(void)putchar('\n'); \
+				ex_prstate = PR_PRINTED; \
+			} \
+		}  else if (ex_prstate == PR_STARTED) { \
+			(void)putchar('\n'); \
+			ex_prstate = PR_PRINTED; \
+		} \
+	} else \
+		(void)putchar('\n'); \
+}
+
+/* Print a newline. */
+#define	EX_PRNEWLINE { \
+	(void)putchar('\n'); \
+	ex_prstate = PR_PRINTED; \
+}
+
+/* Print a trailing newline, if necessary. */
+#define	EX_PRTRAIL { \
+	if (mode != MODE_VI || ex_prstate == PR_PRINTED) \
+		(void)putchar('\n'); \
+}
 
 void	 ex __P((void));
 char	*linespec __P((char *, EXCMDARG *));
