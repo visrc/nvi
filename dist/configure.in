@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.69 1996/03/21 18:12:20 bostic Exp $ (Berkeley) $Date: 1996/03/21 18:12:20 $
+dnl	$Id: configure.in,v 8.70 1996/03/21 18:31:41 bostic Exp $ (Berkeley) $Date: 1996/03/21 18:31:41 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(configure)
@@ -71,7 +71,7 @@ dnl The default CFLAGS is -O
 CFLAGS=${CFLAGS-"-O"}
 
 dnl Checks for programs.
-PATH="$PATH:/usr/bin:/usr/sbin:/sbin:/etc:/usr/etc:/usr/lib:"
+PATH="$PATH:/usr/bin:/usr/sbin:/sbin:/etc:/usr/etc:/usr/lib:/usr/ucblib:"
 
 dnl Check for the shell path.
 AC_PATH_PROG(vi_cv_path_shell, sh, no)
