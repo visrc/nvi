@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 10.16 1995/10/17 09:06:37 bostic Exp $ (Berkeley) $Date: 1995/10/17 09:06:37 $";
+static char sccsid[] = "$Id: msg.c,v 10.17 1995/10/18 10:48:04 bostic Exp $ (Berkeley) $Date: 1995/10/18 10:48:04 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -443,7 +443,7 @@ msgq_rpt(sp)
 	}
 
 	/* Build and display the message. */
-	GET_SPACE_GOTO(sp, bp, blen, sizeof(action) * MAXNUM);
+	GET_SPACE_GOTO(sp, bp, blen, sizeof(action) * MAXNUM + 1);
 	for (p = bp, first = 1, tlen = 0,
 	    ap = action, cnt = 0; cnt < ARSIZE(action); ++ap, ++cnt)
 		if (sp->rptlines[cnt] != 0) {
@@ -454,6 +454,10 @@ msgq_rpt(sp)
 			tlen += len;
 			sp->rptlines[cnt] = 0;
 		}
+
+	/* Add trailing newline. */
+	*p = '\n';
+	++tlen;
 
 	(void)ex_fflush(sp);
 	sp->gp->scr_msg(sp, M_INFO, bp, tlen);
