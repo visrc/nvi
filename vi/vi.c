@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 9.4 1994/11/12 16:21:20 bostic Exp $ (Berkeley) $Date: 1994/11/12 16:21:20 $";
+static char sccsid[] = "$Id: vi.c,v 9.5 1994/11/16 16:56:27 bostic Exp $ (Berkeley) $Date: 1994/11/16 16:56:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,6 +38,7 @@ static __inline int getcount __P((SCR *, ARG_CHAR_T, u_long *));
 static __inline int getkey __P((SCR *, CH *, u_int));
 static int getkeyword __P((SCR *, VICMDARG *, u_int));
 static int getmotion __P((SCR *, VICMDARG *, VICMDARG *, int *));
+static void v_comlog __P((SCR *, VICMDARG *));
 
 /*
  * Side-effect:
@@ -182,6 +183,9 @@ vi(sp)
 		/* Increment the command count. */
 		++sp->ccnt;
 
+#if defined(DEBUG) && defined(COMLOG)
+		v_comlog(sp, vp);
+#endif
 		/* Save the mode and call the function. */
 		saved_mode = F_ISSET(sp, S_SCREENS | S_MAJOR_CHANGE);
 		if ((vp->kp->func)(sp, vp))
@@ -1001,3 +1005,24 @@ getkey(sp, ikeyp, map)
 	}
 	/* NOTREACHED */
 }
+
+#if defined(DEBUG) && defined(COMLOG)
+/*
+ * v_comlog --
+ *	Log the contents of the command structure.
+ */
+static void
+v_comlog(sp, vp)
+	SCR *sp;
+	VICMDARG *vp;
+{
+	TRACE(sp, "vcmd: %c", vp->key);
+	if (F_ISSET(vp, VC_BUFFER))
+		TRACE(sp, " buffer: %c", vp->buffer);
+	if (F_ISSET(vp, VC_C1SET))
+		TRACE(sp, " c1: %lu", vp->count);
+	if (F_ISSET(vp, VC_C2SET))
+		TRACE(sp, " c2: %lu", vp->count2);
+	TRACE(sp, " flags: 0x%x\n", vp->flags);
+}
+#endif
