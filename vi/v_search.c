@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 8.29 1994/07/19 17:24:31 bostic Exp $ (Berkeley) $Date: 1994/07/19 17:24:31 $";
+static char sccsid[] = "$Id: v_search.c,v 8.30 1994/07/23 12:05:42 bostic Exp $ (Berkeley) $Date: 1994/07/23 12:05:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,9 +30,9 @@ static char sccsid[] = "$Id: v_search.c,v 8.29 1994/07/19 17:24:31 bostic Exp $ 
 #include "vcmd.h"
 
 static int correct __P((SCR *, EXF *, VICMDARG *, u_int));
-static int getptrn __P((SCR *, EXF *, ARG_CHAR_T, char **));
+static int getptrn __P((SCR *, EXF *, ARG_CHAR_T, char **, size_t *));
 static int search __P((SCR *,
-    EXF *, VICMDARG *, char *, u_int, enum direction));
+    EXF *, VICMDARG *, char *, size_t, u_int, enum direction));
 
 /*
  * v_searchn -- n
@@ -44,7 +44,7 @@ v_searchn(sp, ep, vp)
 	EXF *ep;
 	VICMDARG *vp;
 {
-	return (search(sp, ep, vp, NULL, SEARCH_MSG, sp->searchdir));
+	return (search(sp, ep, vp, NULL, 0, SEARCH_MSG, sp->searchdir));
 }
 
 /*
@@ -70,7 +70,7 @@ v_searchN(sp, ep, vp)
 		dir = sp->searchdir;
 		break;
 	}
-	return (search(sp, ep, vp, NULL, SEARCH_MSG, dir));
+	return (search(sp, ep, vp, NULL, 0, SEARCH_MSG, dir));
 }
 
 /*
@@ -83,20 +83,21 @@ v_searchb(sp, ep, vp)
 	EXF *ep;
 	VICMDARG *vp;
 {
+	size_t len;
 	char *ptrn;
 
 	if (F_ISSET(vp, VC_ISDOT))
 		ptrn = NULL;
 	else {
-		if (getptrn(sp, ep, CH_BSEARCH, &ptrn))
+		if (getptrn(sp, ep, CH_BSEARCH, &ptrn, &len))
 			return (1);
-		if (ptrn == NULL) {
+		if (len == 0) {
 			F_SET(vp, VM_NOMOTION);
 			return (0);
 		}
 	}
-	return (search(sp, ep, vp, ptrn,
-	    SEARCH_MSG | SEARCH_PARSE | SEARCH_SET | SEARCH_TERM, BACKWARD));
+	return (search(sp, ep, vp, ptrn, len,
+	    SEARCH_MSG | SEARCH_PARSE | SEARCH_SET, BACKWARD));
 }
 
 /*
@@ -109,20 +110,21 @@ v_searchf(sp, ep, vp)
 	EXF *ep;
 	VICMDARG *vp;
 {
+	size_t len;
 	char *ptrn;
 
 	if (F_ISSET(vp, VC_ISDOT))
 		ptrn = NULL;
 	else {
-		if (getptrn(sp, ep, CH_FSEARCH, &ptrn))
+		if (getptrn(sp, ep, CH_FSEARCH, &ptrn, &len))
 			return (1);
-		if (ptrn == NULL) {
+		if (len == 0) {
 			F_SET(vp, VM_NOMOTION);
 			return (0);
 		}
 	}
-	return (search(sp, ep, vp, ptrn,
-	    SEARCH_MSG | SEARCH_PARSE | SEARCH_SET | SEARCH_TERM, FORWARD));
+	return (search(sp, ep, vp, ptrn, len,
+	    SEARCH_MSG | SEARCH_PARSE | SEARCH_SET, FORWARD));
 }
 
 /*
@@ -143,50 +145,91 @@ v_searchw(sp, ep, vp)
 	GET_SPACE_RET(sp, bp, blen, len);
 	(void)snprintf(bp, blen, "%s%s%s", RE_WSTART, vp->keyword, RE_WSTOP);
 
-	rval = search(sp, ep, vp, bp, SEARCH_MSG, FORWARD);
+	rval = search(sp, ep, vp, bp, 0, SEARCH_MSG | SEARCH_TERM, FORWARD);
 
 	FREE_SPACE(sp, bp, blen);
 	return (rval);
 }
 
 static int
-search(sp, ep, vp, ptrn, flags, dir)
+search(sp, ep, vp, ptrn, len, flags, dir)
 	SCR *sp;
 	EXF *ep;
 	VICMDARG *vp;
 	u_int flags;
 	char *ptrn;
+	size_t len;
 	enum direction dir;
 {
+	char *eptrn;
+
 	if (ISMOTION(vp))
 		flags |= SEARCH_EOL;
-	switch (dir) {
-	case BACKWARD:
-		if (b_search(sp, ep,
-		    &vp->m_start, &vp->m_stop, ptrn, NULL, &flags))
+
+	for (;;) {
+		switch (dir) {
+		case BACKWARD:
+			if (b_search(sp, ep,
+			    &vp->m_start, &vp->m_stop, ptrn, &eptrn, &flags))
+				return (1);
+			break;
+		case FORWARD:
+			if (f_search(sp, ep,
+			    &vp->m_start, &vp->m_stop, ptrn, &eptrn, &flags))
+				return (1);
+			break;
+		case NOTSET:
+			msgq(sp, M_ERR, "No previous search pattern");
 			return (1);
-		/* Non-motion commands move to the end of the range. */
-		if (!ISMOTION(vp))
-			vp->m_final = vp->m_stop;
-		else if (correct(sp, ep, vp, flags))
+		default:
+			abort();
+		}
+
+		/*
+		 * !!!
+		 * Historically, vi permitted trailing <blank>'s, multiple
+		 * search strings (separated by semi-colons) and full-blown
+		 * z commands after / and ? search strings.  In the case of
+		 * multiple search strings, leading <blank>'s on the second
+		 * and subsequent strings was eaten as well.
+		 *
+		 * !!!
+		 * However, the command "/STRING/;   " failed, apparently it
+		 * confused the parser.  We're not *that* compatible.
+		 *
+		 * The N, n, and ^A commands also get to here, but they've
+		 * set ptrn to NULL, len to 0, or the SEARCH_TERM flag, or
+		 * some combination thereof.
+		 */
+		if (ptrn == NULL || len == 0)
+			break;
+		len -= eptrn - ptrn;
+		for (; len > 0 && isblank(*eptrn); ++eptrn, --len);
+		if (len == 0)
+			break;
+
+		switch (*eptrn) {
+		case ';':
+			for (++eptrn; --len > 0 && isblank(*eptrn); ++eptrn);
+			ptrn = eptrn;
+			continue;
+		case 'z':
+			if (term_push(sp, eptrn, len, CH_NOMAP | CH_QUOTED))
+				return (1);
+			goto ret;
+		default:
+			msgq(sp, M_ERR,
+			    "Characters after search string and/or delta");
 			return (1);
-		break;
-	case FORWARD:
-		if (f_search(sp, ep,
-		    &vp->m_start, &vp->m_stop, ptrn, NULL, &flags))
-			return (1);
-		/* Non-motion commands move to the end of the range. */
-		if (!ISMOTION(vp))
-			vp->m_final = vp->m_stop;
-		else if (correct(sp, ep, vp, flags))
-			return (1);
-		break;
-	case NOTSET:
-		msgq(sp, M_ERR, "No previous search pattern");
-		return (1);
-	default:
-		abort();
+		}
 	}
+
+	/* Non-motion commands move to the end of the range. */
+ret:	if (ISMOTION(vp)) {
+		if (correct(sp, ep, vp, flags))
+			return (1);
+	} else
+		vp->m_final = vp->m_stop;
 	return (0);
 }
 
@@ -195,11 +238,12 @@ search(sp, ep, vp, ptrn, flags, dir)
  *	Get the search pattern.
  */
 static int
-getptrn(sp, ep, prompt, storep)
+getptrn(sp, ep, prompt, ptrnp, lenp)
 	SCR *sp;
 	EXF *ep;
 	ARG_CHAR_T prompt;
-	char **storep;
+	char **ptrnp;
+	size_t *lenp;
 {
 	TEXT *tp;
 
@@ -209,10 +253,8 @@ getptrn(sp, ep, prompt, storep)
 
 	/* Len is 0 if backspaced over the prompt, 1 if only CR entered. */
 	tp = sp->tiqp->cqh_first;
-	if (tp->len == 0)
-		*storep = NULL;
-	else
-		*storep = tp->lb;
+	*ptrnp = tp->lb;
+	*lenp = tp->len;
 	return (0);
 }
 
