@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.43 1994/05/03 21:45:48 bostic Exp $ (Berkeley) $Date: 1994/05/03 21:45:48 $";
+static char sccsid[] = "$Id: search.c,v 8.44 1994/05/13 07:21:28 bostic Exp $ (Berkeley) $Date: 1994/05/13 07:21:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -178,7 +178,7 @@ ctag_conv(sp, ptrnp, replacedp)
 
 	t = bp;
 
-	/* The last charcter is a '/' or '?', we just strip it. */
+	/* The last character is a '/' or '?', we just strip it. */
 	if (p[len - 1] == '/' || p[len - 1] == '?')
 		p[len - 1] = '\0';
 
