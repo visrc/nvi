@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.15 1992/05/27 10:40:02 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:40:02 $";
+static char sccsid[] = "$Id: vi.c,v 5.16 1992/05/28 13:49:14 bostic Exp $ (Berkeley) $Date: 1992/05/28 13:49:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -193,41 +193,24 @@ getcmd(vp, ismotion)
 	bzero(&vp->vpstartzero,
 	    (char *)&vp->vpendzero - (char *)&vp->vpstartzero);
 
-	/*
-	 * Some commands imply motions; if they do, any buffer or count
-	 * should have been specified as part of the command.
-	 */
-	switch(vp->key) {
-	case 'C':			/* Implied EOL motion. */
-	case 'D':
-		key = '$';
-		break;
-	case 'X':			/* Implied cursor left motion. */
-		key = 'h';
-		break;
-	case 's':			/* Implied cursor right motion. */
-		key = 'l';
-		break;
-	default:
-		KEY(key);
+	KEY(key);
 
-		/* Pick up optional buffer. */
-		if (key == '"') {
-			KEY(key);
-			if (!isalnum(key))
-				goto ebuf;
-			vp->buffer = key;
-			KEY(key);
-		} else
-			vp->buffer = OOBCB;
-		/*
-		 * Pick up optional count.  Special case, a leading 0 is not
-		 * a count, it's a command.
-		 */
-		if (isdigit(key) && key != '0') {
-			GETCOUNT(vp->count);
-			vp->flags |= VC_C1SET;
-		}
+	/* Pick up optional buffer. */
+	if (key == '"') {
+		KEY(key);
+		if (!isalnum(key))
+			goto ebuf;
+		vp->buffer = key;
+		KEY(key);
+	} else
+		vp->buffer = OOBCB;
+	/*
+	 * Pick up optional count.  Special case, a leading 0 is not
+	 * a count, it's a command.
+	 */
+	if (isdigit(key) && key != '0') {
+		GETCOUNT(vp->count);
+		vp->flags |= VC_C1SET;
 	}
 
 	/* Find the command. */
@@ -285,12 +268,8 @@ ebuf:				bell();
 		 */
 		if (vp->key == '[' || vp->key == ']') {
 			KEY(key);
-			if (vp->key != key) {
-usage:				bell();
-				msg("Usage: %s", ismotion != NULL ?
-				    vikeys[ismotion->key].usage : kp->usage);
-				return (1);
-			}
+			if (vp->key != key)
+				goto usage;
 		}
 		/* Special case: 'z' command. */
 		if (vp->key == 'z') {
@@ -301,33 +280,23 @@ usage:				bell();
 			}
 			vp->character = key;
 		}
-	} else {
-		/*
-		 * Commands that have motion components can be doubled to
-		 * imply the current line.
-		 */
-		if (ismotion->key != key && !(flags & V_MOVE))
-			goto usage;
+	}
 
-		/*
-		 * Special case: c[wW] converted to c[eE].
-		 *
-		 * Wouldn't work right at the end of a word unless backspace
-		 * one character before doing the move.  This will fix most
-		 * cases.
-		 * XXX
-		 * But not all.
-		 */
-		if (ismotion->key == 'c' && (key == 'W' || key == 'w')) {
-			kp = vp->kp = &vikeys[vp->key = key == 'W' ? 'E' : 'e'];
-			if (cursor.cno && (key == 'e' || key == 'E'))
-				--cursor.cno;
-		}
+	/*
+	 * Commands that have motion components can be doubled to
+	 * imply the current line.
+	 */
+	else if (ismotion->key != key && !(flags & V_MOVE)) {
+usage:		bell();
+		msg("Usage: %s", ismotion != NULL ?
+		    vikeys[ismotion->key].usage : kp->usage);
+		return (1);
 	}
 
 	/* Required character. */
 	if (flags & V_CHAR)
 		KEY(vp->character);
+
 	return (0);
 }
 
@@ -394,9 +363,10 @@ getmotion(vp, fm, tm)
 		/*
 		 * Motion commands change the underlying movement (*snarl*).
 		 * For example, "l" is illegal at the end of a line, but "dl"
-		 * is not.  Set a flag so the function knows the situation.
+		 * is not.  Set flags so the function knows the situation.
 		 */
-		motion.flags |= VC_ISMOTION;
+		motion.flags |= vp->kp->flags & VC_COMMASK;
+
 		if ((motion.kp->func)(&motion, &cursor, NULL, tm))
 			return (1);
 
