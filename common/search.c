@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: search.c,v 10.25 1996/06/30 16:12:50 bostic Exp $ (Berkeley) $Date: 1996/06/30 16:12:50 $";
+static const char sccsid[] = "$Id: search.c,v 10.26 1996/12/11 13:04:05 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:04:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -87,8 +87,7 @@ prev:			if (sp->re == NULL) {
 			/* Re-compile the search pattern if necessary. */
 			if (!F_ISSET(sp, SC_RE_SEARCH) && re_compile(sp,
 			    sp->re, sp->re_len, NULL, NULL, &sp->re_c,
-			    RE_C_SEARCH |
-			    (LF_ISSET(SEARCH_MSG) ? 0 : RE_C_SILENT)))
+			    SEARCH_CSEARCH | SEARCH_MSG))
 				return (1);
 
 			/* Set the search direction. */
@@ -123,10 +122,8 @@ prev:			if (sp->re == NULL) {
 
 	/* Compile the RE. */
 	if (re_compile(sp, ptrn, plen, &sp->re, &sp->re_len, &sp->re_c,
-	    RE_C_SEARCH |
-	    (LF_ISSET(SEARCH_MSG) ? 0 : RE_C_SILENT) |
-	    (LF_ISSET(SEARCH_TAG) ? RE_C_TAG : 0) |
-	    (LF_ISSET(SEARCH_CSCOPE) ? RE_C_CSCOPE : 0)))
+	    SEARCH_CSEARCH | LF_ISSET(SEARCH_CSCOPE | SEARCH_IC |
+	    SEARCH_LITERAL | SEARCH_MSG | SEARCH_TAG)))
 		return (1);
 
 	/* Set the search direction. */
@@ -161,7 +158,11 @@ f_search(sp, fm, rm, ptrn, plen, eptrn, flags)
 	if (search_init(sp, FORWARD, ptrn, plen, eptrn, flags))
 		return (1);
 
-	if (LF_ISSET(SEARCH_FILE)) {
+	/* Figure out if we're going to wrap. */
+	if (!LF_ISSET(SEARCH_NOOPT) && O_ISSET(sp, O_WRAPSCAN))
+		LF_SET(SEARCH_WRAP);
+
+	if (LF_ISSET(SEARCH_FIRST)) {
 		lno = 1;
 		coff = 0;
 	} else {
@@ -188,7 +189,7 @@ f_search(sp, fm, rm, ptrn, plen, eptrn, flags)
 			coff = 0;
 			lno = fm->lno + 1;
 			if (db_get(sp, lno, 0, &l, &len)) {
-				if (!O_ISSET(sp, O_WRAPSCAN)) {
+				if (!LF_ISSET(SEARCH_WRAP)) {
 					if (LF_ISSET(SEARCH_MSG))
 						search_msg(sp, S_EOF);
 					return (1);
@@ -216,7 +217,7 @@ f_search(sp, fm, rm, ptrn, plen, eptrn, flags)
 					search_msg(sp, S_NOTFOUND);
 				break;
 			}
-			if (!O_ISSET(sp, O_WRAPSCAN)) {
+			if (!LF_ISSET(SEARCH_WRAP)) {
 				if (LF_ISSET(SEARCH_MSG))
 					search_msg(sp, S_EOF);
 				break;
@@ -235,7 +236,7 @@ f_search(sp, fm, rm, ptrn, plen, eptrn, flags)
 		match[0].rm_eo = len;
 
 #if defined(DEBUG) && 0
-		TRACE(sp, "F search: %lu from %u to %u\n",
+		trace(sp, "F search: %lu from %u to %u\n",
 		    lno, coff, len != 0 ? len - 1 : len);
 #endif
 		/* Search the line. */
@@ -256,7 +257,7 @@ f_search(sp, fm, rm, ptrn, plen, eptrn, flags)
 			search_msg(sp, S_WRAP);
 
 #if defined(DEBUG) && 0
-		TRACE(sp, "F search: %qu to %qu\n",
+		trace(sp, "F search: %qu to %qu\n",
 		    match[0].rm_so, match[0].rm_eo);
 #endif
 		rm->lno = lno;
@@ -305,6 +306,10 @@ b_search(sp, fm, rm, ptrn, plen, eptrn, flags)
 	if (search_init(sp, BACKWARD, ptrn, plen, eptrn, flags))
 		return (1);
 
+	/* Figure out if we're going to wrap. */
+	if (!LF_ISSET(SEARCH_NOOPT) && O_ISSET(sp, O_WRAPSCAN))
+		LF_SET(SEARCH_WRAP);
+
 	/*
 	 * If doing incremental search, set the "starting" position past the
 	 * current column, so that we search a minimal distance and still
@@ -320,7 +325,7 @@ b_search(sp, fm, rm, ptrn, plen, eptrn, flags)
 		coff = fm->cno + 1;
 	} else {
 		if (fm->cno == 0) {
-			if (fm->lno == 1 && !O_ISSET(sp, O_WRAPSCAN)) {
+			if (fm->lno == 1 && !LF_ISSET(SEARCH_WRAP)) {
 				if (LF_ISSET(SEARCH_MSG))
 					search_msg(sp, S_SOF);
 				return (1);
@@ -348,7 +353,7 @@ b_search(sp, fm, rm, ptrn, plen, eptrn, flags)
 					search_msg(sp, S_NOTFOUND);
 				break;
 			}
-			if (!O_ISSET(sp, O_WRAPSCAN)) {
+			if (!LF_ISSET(SEARCH_WRAP)) {
 				if (LF_ISSET(SEARCH_MSG))
 					search_msg(sp, S_SOF);
 				break;
@@ -373,7 +378,7 @@ b_search(sp, fm, rm, ptrn, plen, eptrn, flags)
 		match[0].rm_eo = len;
 
 #if defined(DEBUG) && 0
-		TRACE(sp, "B search: %lu from 0 to %qu\n", lno, match[0].rm_eo);
+		trace(sp, "B search: %lu from 0 to %qu\n", lno, match[0].rm_eo);
 #endif
 		/* Search the line. */
 		eval = regexec(&sp->re_c, l, 1, match,
@@ -397,7 +402,7 @@ b_search(sp, fm, rm, ptrn, plen, eptrn, flags)
 			search_msg(sp, S_WRAP);
 
 #if defined(DEBUG) && 0
-		TRACE(sp, "B found: %qu to %qu\n",
+		trace(sp, "B found: %qu to %qu\n",
 		    match[0].rm_so, match[0].rm_eo);
 #endif
 		/*
