@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.6 1993/08/27 11:43:03 bostic Exp $ (Berkeley) $Date: 1993/08/27 11:43:03 $";
+static char sccsid[] = "$Id: util.c,v 8.7 1993/09/01 12:16:21 bostic Exp $ (Berkeley) $Date: 1993/09/01 12:16:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -245,8 +245,9 @@ binc(sp, argp, bsizep, min)
 
 /*
  * nonblank --
- *	Set the column number of the first non-blank character of the
- *	line.
+ *	Set the column number of the first non-blank character
+ *	including or after the starting column.  On error, set
+ *	the column to 0, it's safest.
  */
 int
 nonblank(sp, ep, lno, cnop)
@@ -256,23 +257,30 @@ nonblank(sp, ep, lno, cnop)
 	size_t *cnop;
 {
 	char *p;
-	size_t cnt, len;
+	size_t cnt, len, off;
 
+	/* Default. */
+	off = *cnop;
+	*cnop = 0;
+
+	/* Get the line. */
 	if ((p = file_gline(sp, ep, lno, &len)) == NULL) {
 		if (file_lline(sp, ep, &lno))
 			return (1);
-		if (lno == 0) {
-			*cnop = 0;
+		if (lno == 0)
 			return (0);
-		}
 		GETLINE_ERR(sp, lno);
 		return (1);
 	}
-	if (len == 0) {
-		*cnop = 0;
+
+	/* Set the offset. */
+	if (len == 0 || off >= len)
 		return (0);
-	}
-	for (cnt = 0; len && isblank(*p); ++cnt, ++p, --len);
+
+	for (cnt = off, p = &p[off],
+	    len -= off; len && isblank(*p); ++cnt, ++p, --len);
+
+	/* Set the return. */
 	*cnop = len ? cnt : cnt - 1;
 	return (0);
 }
