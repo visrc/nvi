@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 10.17 1995/10/17 11:00:15 bostic Exp $ (Berkeley) $Date: 1995/10/17 11:00:15 $";
+static char sccsid[] = "$Id: ex_read.c,v 10.18 1995/11/05 16:01:05 bostic Exp $ (Berkeley) $Date: 1995/11/05 16:01:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -52,7 +52,7 @@ ex_read(sp, cmdp)
 	MARK rm;
 	recno_t nlines;
 	size_t arglen;
-	int argc, rval;
+	int argc, in_vi, rval;
 	char *p;
 
 	gp = sp->gp;
@@ -121,6 +121,7 @@ ex_read(sp, cmdp)
 				(void)ex_fflush(sp);
 			}
 
+		in_vi = F_ISSET(sp, S_VI);
 		if (ex_filter(sp, cmdp, &cmdp->addr1,
 		    NULL, &rm, cmdp->argv[argc]->bp, FILTER_READ))
 			return (1);
@@ -128,9 +129,12 @@ ex_read(sp, cmdp)
 		/* The filter version of read set the autoprint flag. */
 		F_SET(cmdp, E_AUTOPRINT);
 
-		/* If in vi mode, move to the first nonblank. */
+		/*
+		 * If in vi mode, move to the first nonblank.  Might have
+		 * switched into ex mode, so saved the original S_VI value.
+		 */
 		sp->lno = rm.lno;
-		if (F_ISSET(sp, S_VI)) {
+		if (in_vi) {
 			sp->cno = 0;
 			(void)nonblank(sp, sp->lno, &sp->cno);
 		}
