@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 5.23 1993/02/23 10:40:12 bostic Exp $ (Berkeley) $Date: 1993/02/23 10:40:12 $";
+static char sccsid[] = "$Id: v_scroll.c,v 5.24 1993/02/24 13:05:01 bostic Exp $ (Berkeley) $Date: 1993/02/24 13:05:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -17,8 +17,8 @@ static char sccsid[] = "$Id: v_scroll.c,v 5.23 1993/02/23 10:40:12 bostic Exp $ 
 
 #include "vi.h"
 #include "options.h"
-#include "vcmd.h"
 #include "screen.h"
+#include "vcmd.h"
 
 /*
  * v_lgoto -- [count]G
@@ -169,7 +169,7 @@ v_hpageup(ep, vp, fm, tm, rp)
 	else
 		vp->count = LVAL(O_SCROLL);
 
-	return (scr_sm_down(ep, &rp->lno, (recno_t)LVAL(O_SCROLL), 1));
+	return (scr_sm_down(ep, rp, (recno_t)LVAL(O_SCROLL), 1));
 }
 
 /*
@@ -192,7 +192,7 @@ v_hpagedown(ep, vp, fm, tm, rp)
 	else
 		vp->count = LVAL(O_SCROLL);
 
-	return (scr_sm_up(ep, &rp->lno, (recno_t)LVAL(O_SCROLL), 1));
+	return (scr_sm_up(ep, rp, (recno_t)LVAL(O_SCROLL), 1));
 }
 
 /*
@@ -209,7 +209,7 @@ v_pageup(ep, vp, fm, tm, rp)
 
 	/* Calculation from POSIX 1003.2/D8. */
 	count = (vp->flags & VC_C1SET ? vp->count : 1) * (TEXTSIZE(ep) - 1);
-	return (scr_sm_down(ep, &rp->lno, count, 1));
+	return (scr_sm_down(ep, rp, count, 1));
 }
 
 /*
@@ -226,7 +226,7 @@ v_pagedown(ep, vp, fm, tm, rp)
 
 	/* Calculation from POSIX 1003.2/D8. */
 	count = (vp->flags & VC_C1SET ? vp->count : 1) * (TEXTSIZE(ep) - 1);
-	return (scr_sm_up(ep, &rp->lno, count, 1));
+	return (scr_sm_up(ep, rp, count, 1));
 }
 
 /*
@@ -239,21 +239,11 @@ v_lineup(ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	recno_t saved_lno;
-
-	saved_lno = ep->lno;
-
 	/*
 	 * The cursor moves down, staying with its original line, unless it
-	 * reaches the bottom of the screen.  If the line number changes,
-	 * we have to do screen relative movement (as if V_RCM was set),
-	 * otherwise, we set the relative movement (as if V_RCM_SET was set).
-	 * It's enough to make you cry.
+	 * reaches the bottom of the screen.
 	 */
-	if (scr_sm_down(ep, &rp->lno, vp->flags & VC_C1SET ? vp->count : 1, 0))
-		return (1);
-	vp->kp->flags |= rp->lno != saved_lno ? V_RCM : V_RCM_SET;
-	return (0);
+	return (scr_sm_down(ep, rp, vp->flags & VC_C1SET ? vp->count : 1, 0));
 }
 
 /*
@@ -266,19 +256,9 @@ v_linedown(ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	recno_t saved_lno;
-
-	saved_lno = ep->lno;
-
 	/*
 	 * The cursor moves up, staying with its original line, unless it
-	 * reaches the top of the screen.  If the line number changes,
-         * we have to do screen relative movement (as if V_RCM was set),
-         * otherwise, we set the relative movement (as if V_RCM_SET was set).
-         * It's enough to make you cry.
+	 * reaches the top of the screen.
 	 */
-	if (scr_sm_up(ep, &rp->lno, vp->flags & VC_C1SET ? vp->count : 1, 0))
-		return (1);
-	vp->kp->flags |= rp->lno != saved_lno ? V_RCM : V_RCM_SET;
-	return (0);
+	return (scr_sm_up(ep, rp, vp->flags & VC_C1SET ? vp->count : 1, 0));
 }

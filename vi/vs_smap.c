@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 5.4 1993/02/23 10:40:03 bostic Exp $ (Berkeley) $Date: 1993/02/23 10:40:03 $";
+static char sccsid[] = "$Id: vs_smap.c,v 5.5 1993/02/24 13:04:59 bostic Exp $ (Berkeley) $Date: 1993/02/24 13:04:59 $";
 #endif /* not lint */
 
 #include <curses.h>
@@ -16,33 +16,13 @@ static char sccsid[] = "$Id: vs_smap.c,v 5.4 1993/02/23 10:40:03 bostic Exp $ (B
 
 #include "vi.h"
 #include "options.h"
+#include "vcmd.h"
+
+#define	SMAP_PRIVATE
 #include "screen.h"
 
-/*
- * scr_sm_init --
- *	Initialize the screen map.
- */
-int
-scr_sm_init(ep)
-	EXF *ep;
-{
-	SMAP *p;
-
-	/* Build the map. */
-	if ((p = malloc(ep->lines * sizeof(SMAP))) == NULL)
-		return (1);
-
-	/* Put the map into the EXF structure. */
-	ep->h_smap = p;				/* HMAP = p; */
-	ep->t_smap = p + TEXTSIZE(ep);		/* TMAP = ... */
-
-	/* Fill in the map. */
-	if (scr_sm_fill(ep, ep->otop, P_TOP)) {
-		free(p);
-		return (1);
-	}
-	return (0);
-}
+#define	HMAP		(SCRP(ep)->h_smap)	/* Head of line map. */
+#define	TMAP		(SCRP(ep)->t_smap)	/* Tail of line map. */
 
 /*
  * scr_sm_fill --
@@ -61,29 +41,30 @@ scr_sm_fill(ep, lno, pos)
 	case P_TOP:
 		for (p = HMAP, p->lno = lno, p->off = 1; p < TMAP; ++p)
 			if (scr_sm_next(ep, p, p + 1))
-				goto recover;
+				goto err;
 		break;
 	case P_MIDDLE:
 		p = HMAP + (TMAP - HMAP) / 2;
 		for (p->lno = lno, p->off = 1; p < TMAP; ++p)
 			if (scr_sm_next(ep, p, p + 1))
-				goto recover;
+				goto err;
 		p = HMAP + (TMAP - HMAP) / 2;
 		for (; p > HMAP; --p)
 			if (scr_sm_prev(ep, p, p - 1))
-				goto recover;
+				goto err;
 		break;
 	case P_BOTTOM:
 		for (p = TMAP, p->lno = lno, p->off = 1; p > HMAP; --p)
-			if (scr_sm_prev(ep, p, p - 1)) {
-recover:			msg(ep, M_BELL, "Movement not possible");
-				(void)scr_sm_fill(ep, ep->top, P_TOP);
-				return (1);
-			}
+			if (scr_sm_prev(ep, p, p - 1))
+				goto err;
 		break;
 	}
-	ep->top = ep->otop = HMAP->lno;
 	return (0);
+
+err:	msg(ep, M_BELL, "Movement not possible");
+	for (p = HMAP; p < TMAP; ++p)
+		(void)scr_sm_next(ep, p, p + 1);
+	return (1);
 }
 
 /*
@@ -91,10 +72,9 @@ recover:			msg(ep, M_BELL, "Movement not possible");
  *	Delete a line out of the SMAP.
  */
 int
-scr_sm_delete(ep, lno, islogical)
+scr_sm_delete(ep, lno)
 	EXF *ep;
 	recno_t lno;
-	int islogical;
 {
 	SMAP *p, *t;
 	size_t cnt1, cnt2;
@@ -116,13 +96,9 @@ scr_sm_delete(ep, lno, islogical)
 	/* Shift the screen map up. */
 	memmove(p, p + cnt1, (((TMAP - p) - cnt1) + 1) * sizeof(SMAP));
 
-	/*
-	 * If really deleting the line, decrement the line numbers for
-	 * the rest of the map.
-	 */
-	if (!islogical)
-		for (t = TMAP - cnt1; p <= t; ++p)
-			--p->lno;
+	/* Decrement the line numbers for the rest of the map. */
+	for (t = TMAP - cnt1; p <= t; ++p)
+		--p->lno;
 
 	/* Display the new lines. */
 	for (p = TMAP - cnt1;;) {
@@ -141,10 +117,9 @@ scr_sm_delete(ep, lno, islogical)
  *	Insert a line into the SMAP.
  */
 int
-scr_sm_insert(ep, lno, islogical)
+scr_sm_insert(ep, lno)
 	EXF *ep;
 	recno_t lno;
-	int islogical;
 {
 	SMAP *p, *t;
 	size_t cnt1, cnt2;
@@ -176,13 +151,9 @@ scr_sm_insert(ep, lno, islogical)
 	/* Shift the screen map down. */
 	memmove(p + cnt1, p, (((TMAP - p) - cnt1) + 1) * sizeof(SMAP));
 
-	/*
-	 * If really inserting the line, increment the line numbers for
-	 * the rest of the map.
-	 */
-	 if (!islogical)
-		for (t = p + cnt1; t <= TMAP; ++t)
-			++t->lno;
+	/* Increment the line numbers for the rest of the map. */
+	for (t = p + cnt1; t <= TMAP; ++t)
+		++t->lno;
 
 	/* Fill in the SMAP for the new lines. */
 	for (cnt2 = 1, t = p; cnt2 <= cnt1; ++t, ++cnt2) {
@@ -202,14 +173,19 @@ scr_sm_insert(ep, lno, islogical)
  *	Scroll the SMAP up count logical lines.
  */
 int
-scr_sm_up(ep, lnop, count, cursor_move)
+scr_sm_up(ep, rp, count, cursor_move)
 	EXF *ep;
-	recno_t *lnop, count;
+	MARK *rp;
+	recno_t count;
 	int cursor_move;
 {
-	SMAP *p, t;
+	SMAP *p, svmap, tmp;
 	recno_t last;
 	int scrolled;
+
+	/* Set the default return position. */
+	rp->lno = SCRLNO(ep);
+	rp->cno = SCRCNO(ep);
 
 	/*
 	 * There are two forms of this command, one where the cursor follows
@@ -223,25 +199,25 @@ scr_sm_up(ep, lnop, count, cursor_move)
 	for (p = HMAP;; ++p) {
 		if (p > TMAP) {
 			msg(ep, M_ERROR,
-			    "Line %lu not on the screen.", ep->lno);
+			    "Line %lu not on the screen.", SCRLNO(ep));
 			return (1);
 		}
-		if (p->lno == ep->lno)
+		if (p->lno == SCRLNO(ep))
 			break;
 	}
 
 	last = file_lline(ep);
-	for (scrolled = 0;; scrolled = 1) {
+	for (svmap = *p, scrolled = 0;; scrolled = 1) {
 		if (count == 0)
 			break;
 		--count;
 
 		/* Decide what would show up on the screen. */
-		if (scr_sm_next(ep, TMAP, &t))
+		if (scr_sm_next(ep, TMAP, &tmp))
 			return (1);
 
 		/* If the line doesn't exist, we're done. */
-		if (t.lno > last)
+		if (tmp.lno > last)
 			break;
 			
 		/* Scroll up one logical line. */
@@ -259,13 +235,12 @@ scr_sm_up(ep, lnop, count, cursor_move)
 		 * roughly where it was before.
 		 */
 		if (!scrolled || count) {
-			if (ep->lno == TMAP->lno) {
+			if (SCRLNO(ep) == TMAP->lno) {
 				v_eof(ep, NULL);
 				return (1);
 			}
-			*lnop = TMAP->lno;
-		} else
-			*lnop = p->lno;
+			p = TMAP;
+		}
 	} else {
 		/* It's an error if we didn't scroll enough. */
 		if (!scrolled || count) {
@@ -274,7 +249,18 @@ scr_sm_up(ep, lnop, count, cursor_move)
 		}
 
 		/* If the cursor moved off the screen, move it to the top. */
-		 *lnop = ep->lno < HMAP->lno ? HMAP->lno : ep->lno;
+		if (SCRLNO(ep) < HMAP->lno)
+			p = HMAP;
+	}
+	/*
+	 * On a logical movement, we try and keep the cursor as close as
+	 * possible to the last position, but also set it up so that the
+	 * next "real" movement will return the cursor to the closest position
+	 * to the last real movement.
+	 */
+	if (p->lno != svmap.lno || p->off != svmap.off) {
+		rp->lno = p->lno;
+		rp->cno = scr_lrelative(ep, p->lno, p->off);
 	}
 	return (0);
 }
@@ -294,9 +280,6 @@ scr_sm_1up(ep)
 	/* Shift the screen map up. */
 	memmove(HMAP, HMAP + 1, SCREENSIZE(ep) * sizeof(SMAP));
 
-	/* Set the new top line. */
-	ep->otop = ep->top = HMAP->lno;
-
 	/* Decide what to display at the bottom of the screen. */
 	if (scr_sm_next(ep, TMAP - 1, TMAP))
 		return (1);
@@ -313,13 +296,18 @@ scr_sm_1up(ep)
  *	Scroll the SMAP down count logical lines.
  */
 int
-scr_sm_down(ep, lnop, count, cursor_move)
+scr_sm_down(ep, rp, count, cursor_move)
 	EXF *ep;
-	recno_t *lnop, count;
+	MARK *rp;
+	recno_t count;
 	int cursor_move;
 {
-	SMAP *p;
+	SMAP *p, svmap;
 	int scrolled;
+
+	/* Set the default return position. */
+	rp->lno = SCRLNO(ep);
+	rp->cno = SCRCNO(ep);
 
 	/*
 	 * There are two forms of this command, one where the cursor follows
@@ -333,14 +321,14 @@ scr_sm_down(ep, lnop, count, cursor_move)
 	for (p = HMAP;; ++p) {
 		if (p > TMAP) {
 			msg(ep, M_ERROR,
-			    "Line %lu not on the screen.", ep->lno);
+			    "Line %lu not on the screen.", SCRLNO(ep));
 			return (1);
 		}
-		if (p->lno == ep->lno)
+		if (p->lno == SCRLNO(ep))
 			break;
 	}
 
-	for (scrolled = 0;; scrolled = 1) {
+	for (svmap = *p, scrolled = 0;; scrolled = 1) {
 		if (count == 0)
 			break;
 		--count;
@@ -357,21 +345,20 @@ scr_sm_down(ep, lnop, count, cursor_move)
 			++p;
 	}
 
-	if (cursor_move)
+	if (cursor_move) {
 		/*
 		 * If didn't move enough lines, it's an error if we're at the
 		 * SOF, else move there.  Otherwise, try and place the cursor
 		 * roughly where it was before.
 		 */
 		if (!scrolled || count) {
-			if (ep->lno == HMAP->lno) {
+			if (SCRLNO(ep) == HMAP->lno) {
 				v_sof(ep, NULL);
 				return (1);
 			}
-			*lnop = HMAP->lno;
-		} else
-			*lnop = p->lno;
-	else {
+			p = HMAP;
+		}
+	} else {
 		/* It's an error if we didn't scroll enough. */
 		if (!scrolled || count) {
 			v_sof(ep, NULL);
@@ -379,7 +366,19 @@ scr_sm_down(ep, lnop, count, cursor_move)
 		}
 
 		/* If the cursor moved off the screen, move it to the bottom. */
-		*lnop = ep->lno > TMAP->lno ? TMAP->lno : ep->lno;
+		if (SCRLNO(ep) > TMAP->lno)
+			p = TMAP;
+	}
+
+	/*
+	 * On a logical movement, we try and keep the cursor as close as
+	 * possible to the last position, but also set it up so that the
+	 * next "real" movement will return the cursor to the closest position
+	 * to the last real movement.
+	 */
+	if (p->lno != svmap.lno || p->off != svmap.off) {
+		rp->lno = p->lno;
+		rp->cno = scr_lrelative(ep, p->lno, p->off);
 	}
 	return (0);
 }
@@ -406,9 +405,6 @@ scr_sm_1down(ep)
 	/* Decide what to display at the top of the screen. */
 	if (scr_sm_prev(ep, HMAP + 1, HMAP))
 		return (1);
-
-	/* Set the new top line. */
-	ep->otop = ep->top = HMAP->lno;
 
 	/* Display it. */
 	if (scr_line(ep, HMAP, NULL, 0, NULL, NULL))

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.32 1993/02/23 10:39:31 bostic Exp $ (Berkeley) $Date: 1993/02/23 10:39:31 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.33 1993/02/24 13:04:57 bostic Exp $ (Berkeley) $Date: 1993/02/24 13:04:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -20,27 +20,47 @@ static char sccsid[] = "$Id: vs_refresh.c,v 5.32 1993/02/23 10:39:31 bostic Exp 
 
 #include "vi.h"
 #include "options.h"
-#include "screen.h"
 #include "vcmd.h"
 
+#define	SMAP_PRIVATE
+#include "screen.h"
+
 /*
- * This code is the screen interface to the vi editor.  It's commented
- * extremely heavily because it's downright nasty.  Changing this code
- * can be hazardous to your health.
+ * This code is the historic screen interface for the vi editor, with the
+ * one change that it supports left-right scrolling.  It's commented heavily
+ * because it's downright nasty.  Changing this code can be hazardous to
+ * your health.
  *
  * We use a single curses window for vi.  The model would be simpler with
  * two windows (one for the text, and one for the modeline) because
  * scrolling the text window down would work correctly then, not affecting
  * the mode line.  As it is we have to play games to make it look right.
- * The reason is that it would be difficult for curses to optimize the
- * movement, i.e. detect that the downward scroll isn't going to change
- * the modeline, set the scrolling region on the terminal and only scroll
- * the first part of the text window.  (Even if curses did detect it, the
- * set-scrolling-region terminal commands can't be used by curses because
+ * The reason for this choice is that it would be difficult for curses to
+ * optimize the movement, i.e. detect that the downward scroll isn't going
+ * to change the modeline, set the scrolling region on the terminal and only
+ * scroll the first part of the text window.  (Even if curses did detect it,
+ * the set-scrolling-region terminal commands can't be used by curses because
  * it's indeterminate where the cursor ends up after they are sent.)
  */
 
-#define	HALFSCREEN(ep)	(SCREENSIZE(ep) / 2)	/* Middle of the screen. */
+#define	HALFSCREEN(ep)	(SCREENSIZE(ep) / 2)	/* Half a screen. */
+
+#define	HMAP		(SCRP(ep)->h_smap)	/* Head of line map. */
+#define	TMAP		(SCRP(ep)->t_smap)	/* Tail of line map. */
+
+/*
+ * scr_def --
+ *	Do the default initialization of an SCR structure.
+ */
+void
+scr_def(sp)
+	SCR *sp;
+{
+	memset(sp, 0, sizeof(SCR));
+
+	sp->lno = 1;
+	sp->cno = 0;
+}
 
 /*
  * screen_init --
@@ -50,23 +70,37 @@ int
 scr_begin(ep)
 	EXF *ep;
 {
+	void *p;
+
 	if (initscr() == NULL) {
-		msg(ep, M_ERROR, "Error: initscr failed: %s", strerror(errno));
+		msg(ep,
+		    M_ERROR, "Error: initscr failed: %s", strerror(errno));
 		return (1);
 	}
-	noecho();
-	nonl();
-	raw();
-	scrollok(stdscr, 1);
-	idlok(stdscr, 1);
+	noecho();			/* Don't echo characters. */
+	nonl();				/* Don't do newline mapping. */
+	raw();				/* No special characters. */
+	scrollok(stdscr, 1);		/* Scrolling is encouraged. */
+	idlok(stdscr, 1);		/* Use hardware scrolling. */
 
-	ep->lines = LINES;		/* XXX: Way ugly. */
-	ep->cols = COLS;
+	SCRP(ep)->lines = LINES;	/* XXX: Way ugly. */
+	SCRP(ep)->cols = COLS;
 
-	/* Force redraw. */
-	FF_SET(ep, F_REDRAW);
+	/* Create the screen map. */
+	if ((p = malloc(SCRP(ep)->lines * sizeof(SMAP))) == NULL)
+		return (1);
 
-	return (scr_sm_init(ep));
+	/* Put the map into the EXF structure. */
+	HMAP = (SMAP *)p;
+	TMAP = (SMAP *)p + TEXTSIZE(ep);
+
+	/* Initialize the top line. */
+	HMAP->lno = SCRLNO(ep);
+	HMAP->off = 1;
+
+	SF_SET(ep, S_REFORMAT);		/* Force map fill, redraw. */
+
+	return (0);
 }
 
 /*
@@ -85,7 +119,7 @@ scr_end(ep)
 
 	if (HMAP != NULL) {
 		free(HMAP);
-		ep->h_smap = NULL;	/* HMAP = NULL; */
+		HMAP = NULL;
 	}
 	return (0);
 }
@@ -100,15 +134,15 @@ scr_end(ep)
  *	the new cursor position has to be.
  */
 int
-scr_change(ep, lno, action)
+scr_change(ep, lno, op)
 	EXF *ep;
 	recno_t lno;
-	u_int action;
+	enum operation op;
 {
 	size_t oldy, oldx;
 
 	/* Appending is the same as inserting, if the line is incremented. */
-	if (action & LINE_APPEND)
+	if (op == LINE_APPEND)
 		++lno;
 
 	/* Ignore the change if the line is not on the screen. */
@@ -117,47 +151,36 @@ scr_change(ep, lno, action)
 
 	getyx(stdscr, oldy, oldx);
 
-	switch(action & ~LINE_LOGICAL) {
+	switch(op) {
 	case LINE_DELETE:
 		/* Update SMAP. */
-		if (scr_sm_delete(ep, lno, action & LINE_LOGICAL))
+		if (scr_sm_delete(ep, lno))
 			return (1);
 
-		/*
-		 * If not a physical deletion, i.e. a movement, and deleting
-		 * the top line, then the top line and the line number must
-		 * be incremented.
-		 */
-		if (action & LINE_LOGICAL && lno == ep->otop)
-			++ep->otop;
-
 		/* Invalidate the cursor. */
-		ep->olno = OOBLNO;
+		SCRP(ep)->olno = OOBLNO;
 		break;
 
 	case LINE_APPEND:
 	case LINE_INSERT:
 		/* Update SMAP. */
-		if (scr_sm_insert(ep, lno, action & LINE_LOGICAL))
+		if (scr_sm_insert(ep, lno))
 			return (1);
 
-		/*
-		 * If not a physical insertion, i.e. a movement, and
-		 * we're inserting at the top of the screen, then the
-		 * top line and the line number must be incremented.
-		 */
-		if (action & LINE_LOGICAL && lno == ep->otop)
-			--ep->otop;
-
 		/* Invalidate the cursor. */
-		ep->olno = OOBLNO;
+		SCRP(ep)->olno = OOBLNO;
 		break;
 
 	case LINE_RESET:
-		/* Update SMAP. */
-		if (scr_sm_delete(ep, lno, 0))
+		/*
+		 * Update SMAP.
+		 *
+		 * XXX
+		 * Add an scr_sm_reset() function.
+		 */
+		if (scr_sm_delete(ep, lno))
 			return (1);
-		if (scr_sm_insert(ep, lno, 0))
+		if (scr_sm_insert(ep, lno))
 			return (1);
 		break;
 	default:
@@ -183,11 +206,19 @@ int
 scr_update(ep)
 	EXF *ep;
 {
-	SMAP *sp;
+	SCR *esp;
+	SMAP *sp, tmp;
 	recno_t lastline, lcnt;
 	size_t cwtotal, cnt, len, x, y;
 	int ch;
 	u_char *p;
+
+#define	 LNO	esp->lno
+#define	OLNO	esp->olno
+#define	 CNO	esp->cno
+#define	OCNO	esp->ocno
+#define	SCNO	esp->scno
+	esp = SCRP(ep);
 
 	/*
 	 * 1: Resize the window.
@@ -195,50 +226,36 @@ scr_update(ep)
 	 * The actual changing of the row/column values was done by calling
 	 * the ex options code which entered them into the environment.  The
 	 * function scr_end() uses the values from the EXF structure, and
-	 * then scr_begin() uses the the new values, from the curses
-	 * package, which got them from the environment.  We hope.
+	 * then scr_begin() uses the new values, from the curses package,
+	 * which got them from the environment.  We hope.
 	 *
 	 * Once the resize is done, we fall through.  The reason for this is
 	 * that RESIZE or REDRAW might be set along with another movement.
 	 * So, fall through until we figure out what the map should look like
 	 * and then jump to repaint.
 	 */
-	if (FF_ISSET(ep, F_RESIZE)) {
+	if (SF_ISSET(ep, S_RESIZE)) {
 		if (scr_end(ep) || scr_begin(ep))
 			return (1);
 
-		FF_CLR(ep, F_RESIZE);
-		FF_SET(ep, F_REDRAW);
+		SF_CLR(ep, S_RESIZE);
+		SF_SET(ep, S_REFORMAT);		/* Force reformat. */
 	}
 
 	/*
-	 * 2: Window (not line) movement.
+	 * 2: Reformat the lines.
 	 *
-	 * The EXF 'top' value is set if the window itself has moved, as
-	 * opposed to the lines within the window moving.  If it's a big
-	 * movement, repaint the screen.  Otherwise, scroll the screen as
-	 * necessary to get the right top line in place.
+	 * If the lines themselves have changed (:set list, for example),
+	 * fill in the map from scratch.
 	 */
-	if (ep->top != ep->otop) {
-		if (FF_ISSET(ep, F_REDRAW))		/* Redraw flag. */
-			goto win_redraw;
-							/* Check distance. */
-		lcnt = scr_sm_nlines(ep, HMAP, ep->top, HALFSCREEN(ep));
-		if (lcnt > HALFSCREEN(ep)) {
-win_redraw:		(void)scr_sm_fill(ep, ep->top, P_TOP);
-			goto paint;
-		}
+	if (SF_ISSET(ep, S_REFORMAT)) {
+		if (scr_sm_fill(ep, HMAP->lno, P_TOP))
+			return (1);
 
-		if (ep->top > ep->otop) {		/* Window move down. */
-			while (HMAP->lno != ep->top || HMAP->off != 1)
-				if (scr_sm_1up(ep))
-					return (1);
-		} else					/* Window move up. */
-			while (HMAP->lno != ep->top)
-				if (scr_sm_1down(ep))
-					return (1);
+		SF_CLR(ep, S_REFORMAT);
+		SF_SET(ep, S_REDRAW);		/* Force redraw. */
 	}
-		
+
 	/*
 	 * 3: Line movement.
 	 *
@@ -247,26 +264,20 @@ win_redraw:		(void)scr_sm_fill(ep, ep->top, P_TOP);
 	 *
 	 * 3a: Line down.
 	 */
-	if (ep->lno >= ep->otop) {
-		/* If on the current screen, we're done. */
-		if (ep->lno <= TMAP->lno) {
-			if (FF_ISSET(ep, F_REDRAW))
-				goto paint;
-			goto cursor;
-		}
+	if (LNO >= HMAP->lno) {
+		if (LNO <= TMAP->lno)
+			goto adjust;
 
 		/*
 		 * If less than half a screen away, scroll down until the
 		 * desired line is on the screen.
 		 */
-		lcnt = scr_sm_nlines(ep, TMAP, ep->lno, HALFSCREEN(ep));
-		if (lcnt <= HALFSCREEN(ep)) {
+		lcnt = scr_sm_nlines(ep, TMAP, LNO, HALFSCREEN(ep));
+		if (lcnt < HALFSCREEN(ep)) {
 			while (lcnt--)
 				if (scr_sm_1up(ep))
 					return (1);
-			if (FF_ISSET(ep, F_REDRAW))
-				goto paint;
-			goto cursor;
+			goto adjust;
 		}
 
 		/*
@@ -276,11 +287,12 @@ win_redraw:		(void)scr_sm_fill(ep, ep->top, P_TOP);
 		 * full screen of lines, otherwise couldn't have gotten here.
 		 */
 		lastline = file_lline(ep);
-		HMAP->lno = ep->lno;
-		HMAP->off = 1;
-		lcnt = scr_sm_nlines(ep, HMAP, lastline, TEXTSIZE(ep));
+		tmp.lno = LNO;
+		tmp.off = 1;
+		lcnt = scr_sm_nlines(ep, &tmp, lastline, TEXTSIZE(ep));
 		if (lcnt < TEXTSIZE(ep)) {
-			scr_sm_fill(ep, lastline, P_BOTTOM);
+			if (scr_sm_fill(ep, lastline, P_BOTTOM))
+				return (1);
 			goto paint;
 		}
 
@@ -294,17 +306,15 @@ win_redraw:		(void)scr_sm_fill(ep, ep->top, P_TOP);
 	/*
 	 * 3b: Line up.
 	 *
-	 * If less than half a screen away, reset the top line and scroll up
-	 * until the desired line is the first line on the screen.
+	 * If less than half a screen away, scroll up until the desired
+	 * line is the first line on the screen.
 	 */
-	lcnt = scr_sm_nlines(ep, HMAP, ep->lno, HALFSCREEN(ep));
-	if (lcnt <= HALFSCREEN(ep)) {
+	lcnt = scr_sm_nlines(ep, HMAP, LNO, HALFSCREEN(ep));
+	if (lcnt < HALFSCREEN(ep)) {
 		while (lcnt--)
 			if (scr_sm_1down(ep))
 				return (1);
-		if (FF_ISSET(ep, F_REDRAW))
-			goto paint;
-		goto cursor;
+		goto adjust;
 	}
 
 	/*
@@ -312,14 +322,40 @@ win_redraw:		(void)scr_sm_fill(ep, ep->top, P_TOP);
 	 * line of the file at the top of the screen.  Otherwise, put the line
 	 * in the middle of the screen.
 	 */
-	HMAP->lno = 1;
-	HMAP->off = 1;
-	lcnt = scr_sm_nlines(ep, HMAP, ep->lno, HALFSCREEN(ep));
+	tmp.lno = 1;
+	tmp.off = 1;
+	lcnt = scr_sm_nlines(ep, &tmp, LNO, HALFSCREEN(ep));
 	if (lcnt < HALFSCREEN(ep))
 		(void)scr_sm_fill(ep, 1, P_TOP);
 	else
-middle:		(void)scr_sm_fill(ep, ep->lno, P_MIDDLE);
+middle:		(void)scr_sm_fill(ep, LNO, P_MIDDLE);
+
+	/*
+	 * If we got here, we know the screen needs to be repainted, in
+	 * which case, we can skip any cursor optimization.
+	 */
 	goto paint;
+
+	/*
+	 * At this point we know that part of the line is on the screen.
+	 * Because scrolling is done using logical ines, not physical,
+	 * all of the line may not be on the screen.  While that's not
+	 * necessarily bad, if the part the cursor is on isn't there,
+	 * we're going to lose.
+	 */
+adjust:	if (LNO == HMAP->lno) {
+		cnt = scr_screens(ep, LNO, &CNO);
+		while (cnt < HMAP->off)
+			if (scr_sm_1down(ep))
+				return (1);
+	} else if (LNO == TMAP->lno) {
+		cnt = scr_screens(ep, LNO, &CNO);
+		while (cnt > TMAP->off)
+			if (scr_sm_1up(ep))
+				return (1);
+	}
+	if (SF_ISSET(ep, S_REDRAW))
+		goto paint;
 
 	/*
 	 * 4: Cursor movements.
@@ -332,65 +368,62 @@ middle:		(void)scr_sm_fill(ep, ep->lno, P_MIDDLE);
 	 *
 	 * Otherwise, we've just moved over fixed-width characters, and can
 	 * calculate the left/right scrolling and cursor movement without
-	 * reparsing the line.  Note that we don't know which (if any) of the
-	 * characters between the old and new cursor positions changed.
+	 * reparsing the line.  Note that we don't know which (if any) of
+	 * the characters between the old and new cursor positions changed.
 	 *
 	 * XXX
 	 * With some work, it should be possible to handle tabs quickly, at
 	 * least in obvious situations, like moving right and encountering
-	 * a tab, without looking over the whole line.
+	 * a tab, without reparsing the whole line.
 	 */
-
-cursor:	/* If line has changed. */
-	if (ep->lno != ep->olno)
-		goto slow;
 
 	/*
-	 * If a character is deleted from the line, we can't figure out
-	 * how wide the character was so we have to do it slowly.
+	 * If a character is deleted from the line, we don't know how
+	 * wide it was, so reparse.
 	 */
-	if (FF_ISSET(ep, F_CHARDELETED)) {
-		FF_CLR(ep, F_CHARDELETED);
+	if (SF_ISSET(ep, S_CHARDELETED)) {
+		SF_CLR(ep, S_CHARDELETED);
 		goto slow;
 	}
 
-	/*
-	 * If no movement, don't trust it (we shouldn't be updating the
-	 * screen if nothing happened).
-	 */
-	if (ep->cno == ep->ocno)
+	/* If the line we're working with has changed, reparse. */
+	if (LNO != OLNO)
+		goto slow;
+
+	/* If no cursor movement, don't trust it. */
+	if (CNO != OCNO)
 		goto slow;
 
 	/*
 	 * Get the current line.  If this fails, we either have an empty
-	 * file and we should just repaint, or there's a real problem.
-	 * This isn't a performance issue because there aren't any ways
-	 * to get this to hit repeatedly.
+	 * file and can just repaint, or there's a real problem.  This
+	 * isn't a performance issue because there aren't any ways to get
+	 * here repeatedly.
 	 */
-	if ((p = file_gline(ep, ep->lno, &len)) == NULL) {
+	if ((p = file_gline(ep, LNO, &len)) == NULL) {
 		if (file_lline(ep) == 0)
-			goto paint;
-		GETLINE_ERR(ep, ep->lno);
+			goto slow;
+		GETLINE_ERR(ep, LNO);
 		return (0);
 	}
 
 	/*
-	 * 4a: Cursor moved left.
-	 *
 	 * The basic scheme here is to look at the characters in between
 	 * the old and new positions and decide how big they are on the
 	 * screen, and therefore, how many screen positions to move.
 	 */
-	if (ep->cno < ep->ocno) {
+	if (CNO < OCNO) {
 		/*
+		 * 4a: Cursor moved left.
+		 *
 		 * Point to the old character.  The old cursor position can
 		 * be past EOL if, for example, we just deleted the rest of
 		 * the line.  In this case, since we don't know the width of
 		 * the characters we traversed, we have to do it slowly.
 		 */
-		p += ep->ocno;
-		cnt = (ep->ocno - ep->cno) + 1;
-		if (ep->ocno >= len)
+		p += OCNO;
+		cnt = (OCNO - CNO) + 1;
+		if (OCNO >= len)
 			goto slow;
 
 		/*
@@ -418,7 +451,7 @@ cursor:	/* If line has changed. */
 		 * If the new column moved us out of the current screen,
 		 * calculate a new screen.
 		 */
-		if (ep->scno < cwtotal) {
+		if (SCNO < cwtotal) {
 			if (ISSET(O_LEFTRIGHT)) {
 				for (sp = HMAP; sp <= TMAP; ++sp)
 					--sp->off;
@@ -426,20 +459,20 @@ cursor:	/* If line has changed. */
 			}
 			goto slow;
 		}
-		ep->scno -= cwtotal;
+		SCNO -= cwtotal;
 	} else {
 		/*
 		 * 4b: Cursor moved right.
 		 *
 		 * Point to the old character.
 		 */
-		p += ep->ocno;
-		cnt = (ep->cno - ep->ocno) + 1;
+		p += OCNO;
+		cnt = (CNO - OCNO) + 1;
 #ifdef DEBUG
-		if (ep->cno >= len) {
+		if (CNO >= len) {
 			msg(ep, M_ERROR,
-			    "Error: %s/%d: ep->cno (%u) >= len (%u)",
-			     tail(__FILE__), __LINE__, ep->cno, len);
+			    "Error: %s/%d: SCRCNO(ep) (%u) >= len (%u)",
+			     tail(__FILE__), __LINE__, CNO, len);
 			return (1);
 		}
 #endif
@@ -458,15 +491,15 @@ cursor:	/* If line has changed. */
 		 * Increment the screen cursor by the total width of the
 		 * characters minus the width of the original character.
 		 */
-		ep->scno += cwtotal - len;
+		SCNO += cwtotal - len;
 
 		/*
 		 * If the new column moved us out of the current screen,
 		 * calculate a new screen.
 		 */
-		if (ep->scno >= SCREEN_COLS(ep)) {
+		if (SCNO >= SCREEN_COLS(ep)) {
 			if (ISSET(O_LEFTRIGHT)) {
-				ep->scno -= SCREEN_COLS(ep);
+				SCNO -= SCREEN_COLS(ep);
 				for (sp = HMAP; sp <= TMAP; ++sp)
 					++sp->off;
 				goto paint;
@@ -479,15 +512,15 @@ cursor:	/* If line has changed. */
 	getyx(stdscr, y, x);
 	goto update;
 
-slow:	/* Find the line. */
-	for (sp = HMAP; sp->lno != ep->lno; ++sp);
+slow:	/* Find the current line in the map. */
+	for (sp = HMAP; sp->lno != LNO; ++sp);
 
 	/*
-	 * If doing left-right scrolling and the cursor movement has
+	 * If doing left-right scrolling, and the cursor movement has
 	 * changed the screen being displayed, fix it.
 	 */
 	if (ISSET(O_LEFTRIGHT)) {
-		cnt = scr_screens(ep, ep->lno, &ep->cno) % SCREEN_COLS(ep);
+		cnt = scr_screens(ep, LNO, &CNO) % SCREEN_COLS(ep);
 		if (cnt != HMAP->off) {
 			for (sp = HMAP; sp <= TMAP; ++sp)
 				sp->off = cnt;
@@ -496,38 +529,30 @@ slow:	/* Find the line. */
 	}
 
 	/* Update all of the screen lines for this file line. */
-	for (; sp <= TMAP && sp->lno == ep->lno; ++sp)
-		if (scr_line(ep, sp, NULL, 0, &y, &ep->scno))
+	for (; sp <= TMAP && sp->lno == LNO; ++sp)
+		if (scr_line(ep, sp, NULL, 0, &y, &SCNO))
 			return (1);
 
-	/* Not too bad, just move the cursor. */
+	/* Not too bad, move the cursor. */
 	goto update;
 
 	/* Lost big, do what you have to do. */
 paint:	for (sp = HMAP; sp <= TMAP; ++sp)
-		if (scr_line(ep, sp, NULL, 0, &y, &ep->scno))
+		if (scr_line(ep, sp, NULL, 0, &y, &SCNO))
 			return (1);
-	FF_CLR(ep, F_REDRAW);
+	SF_CLR(ep, S_REDRAW);
 		
-update:	MOVE(ep, y, ep->scno);
+update:	MOVE(ep, y, SCNO);
 
-	/* If the screen has been trashed, refresh it all. */
-	if (FF_ISSET(ep, F_REFRESH)) {
+	/* Refresh the screen if necessary. */
+	if (SF_ISSET(ep, S_REFRESH)) {
 		wrefresh(curscr);
-		FF_CLR(ep, F_REFRESH);
+		SF_CLR(ep, S_REFRESH);
 	}
 
-	/*
-	 * Update the screen information.
-	 *
-	 * XXX
-	 * The whole usage of otop and top is probably wrong.  It would
-	 * probably be simpler to encode screen routines that do the
-	 * movement and return the physical cursor position.
-	 */
-	ep->ocno = ep->cno;
-	ep->olno = ep->lno;
-	ep->top = ep->otop = HMAP->lno;
+	/* Update saved information. */
+	OCNO = CNO;
+	OLNO = LNO;
 
 	return (0);
 }
@@ -565,11 +590,11 @@ scr_line(ep, sp, p, len, yp, xp)
 	 * the number of columns for this screen.
 	 */
 	if (ISSET(O_NUMBER) && (ISSET(O_LEFTRIGHT) || sp->off == 1)) {
-		cols_per_screen = ep->cols -
+		cols_per_screen = SCRCOL(ep) -
 		    snprintf(nbuf, sizeof(nbuf), O_NUMBER_FMT, sp->lno);
 		addstr(nbuf);
 	} else
-		cols_per_screen = ep->cols;
+		cols_per_screen = SCRCOL(ep);
 
 	/*
 	 * Get a copy of the line.  Special case non-existent lines and the
@@ -579,7 +604,7 @@ scr_line(ep, sp, p, len, yp, xp)
 	if (p == NULL)
 		p = file_gline(ep, sp->lno, &len);
 	if (p == NULL || len == 0) {
-		if (yp != NULL && sp->lno == ep->lno) {
+		if (yp != NULL && sp->lno == SCRLNO(ep)) {
 			*xp = 0;
 			*yp = sp - HMAP;
 		}
@@ -606,7 +631,7 @@ scr_line(ep, sp, p, len, yp, xp)
 	 * called repeatedly with a valid pointer to a cursor position.
 	 * Don't fill it in unless it's the right line.
 	 */
-	cno_cnt = yp == NULL || sp->lno != ep->lno ? 0 : ep->cno + 1;
+	cno_cnt = yp == NULL || sp->lno != SCRLNO(ep) ? 0 : SCRCNO(ep) + 1;
 
 	/* This is the loop that actually displays lines. */
 	for (; len; --len) {
@@ -710,24 +735,25 @@ scr_modeline(ep, isinput)
 	MOVE(ep, SCREENSIZE(ep), 0);
 	clrtoeol();
 
-	if (!ISSET(O_RULER) && !ISSET(O_SHOWMODE) || ep->cols <= RULERSIZE) {
+	if (!ISSET(O_RULER) &&
+	    !ISSET(O_SHOWMODE) || SCRCOL(ep) <= RULERSIZE) {
 		MOVE(ep, oldy, oldx);
 		return (0);
 	}
 
 	/* Display the ruler and mode. */
-	if (ISSET(O_RULER) && ep->cols > RULERSIZE) {
-		MOVE(ep, SCREENSIZE(ep), ep->cols / 2 - RULERSIZE / 2);
+	if (ISSET(O_RULER) && SCRCOL(ep) > RULERSIZE) {
+		MOVE(ep, SCREENSIZE(ep), SCRCOL(ep) / 2 - RULERSIZE / 2);
 		memset(buf, ' ', sizeof(buf) - 1);
 		(void)snprintf(buf,
-		    sizeof(buf) - 1, "%lu,%lu", ep->lno, ep->cno + 1);
+		    sizeof(buf) - 1, "%lu,%lu", SCRLNO(ep), SCRCNO(ep) + 1);
 		buf[strlen(buf)] = ' ';
 		addstr(buf);
 	}
 
 	/* Show the mode. */
-	if (ISSET(O_SHOWMODE) && ep->cols > MODESIZE) {
-		MOVE(ep, SCREENSIZE(ep), ep->cols - 7);
+	if (ISSET(O_SHOWMODE) && SCRCOL(ep) > MODESIZE) {
+		MOVE(ep, SCREENSIZE(ep), SCRCOL(ep) - 7);
 		addstr(isinput ? "Input" : "Command");
 	}
 	MOVE(ep, oldy, oldx);
@@ -748,7 +774,7 @@ scr_refresh(ep, loff)
 	p = HMAP + loff;
 	if (p > TMAP)
 		return (1);
-	scr_line(ep, p, NULL, 0, NULL, NULL);
+	return (scr_line(ep, p, NULL, 0, NULL, NULL));
 }
 
 /*
@@ -771,7 +797,7 @@ scr_screens(ep, lno, cnop)
 		return (1);
 
 	/* If a line number is being displayed, there's fewer columns. */
-	cols = ep->cols;
+	cols = SCRCOL(ep);
 	if (ISSET(O_NUMBER))
 		cols -= O_NUMBER_LENGTH;
 
@@ -807,29 +833,53 @@ scr_screens(ep, lno, cnop)
 
 /*
  * scr_relative --
- *	Return the physical column from the line that will display a character
- *	closest to the currently most attractive character position.  The vi
- *	functions use this routine because only screen routine knows how many
- *	columns each character needs.
+ *	Return the physical column from the line that will display a
+ *	character closest to the currently most attractive character
+ *	position.  If it's not easy, uses the underlying routine that
+ *	really figures it out.  It's broken into two parts because the
+ *	scr_lrelative routine handles "logical" offsets, which nobody
+ *	but the screen routines understand.
  */
 size_t
 scr_relative(ep, lno)
 	EXF *ep;
 	recno_t lno;
 {
-	size_t cno, len, llen, scno;
-	int ch;
-	u_char *lp, *p;
+	SCR *sp;
+
+	sp = SCRP(ep);
 
 	/* First non-blank character. */
-	if (ep->rcmflags == RCM_FNB) {
+	if (sp->rcmflags == RCM_FNB) {
 		(void)nonblank(ep, lno, &cno);
 		return (cno);
 	}
 
 	/* First character is easy, and common. */
-	if (ep->rcmflags != RCM_LAST && ep->scno == 0)
+	if (sp->rcmflags != RCM_LAST && sp->scno == 0)
 		return (0);
+
+	return (scr_lrelative(ep, lno, 1));
+}
+
+/*
+ * scr_lrelative --
+ *	Return the physical column from the line that will display a
+ *	character closest to the currently most attractive character
+ *	position.  The offset is for the commands that move logical
+ *	distances, i.e. if it's a logical scroll the closest physical
+ *	distance is based on the logical line, not the physical line.
+ */
+size_t
+scr_lrelative(ep, lno, off)
+	EXF *ep;
+	recno_t lno;
+	size_t off;
+{
+	SCR *sp;
+	size_t cno, len, llen, scno;
+	int ch;
+	u_char *lp, *p;
 
 	/* Need the line to go any further. */
 	if ((lp = file_gline(ep, lno, &len)) == NULL)
@@ -840,22 +890,38 @@ scr_relative(ep, lno)
 		return (0);
 
 	/* Last character is easy, and common. */
-	if (ep->rcmflags == RCM_LAST)
+	sp = SCRP(ep);
+	if (sp->rcmflags == RCM_LAST)
 		return (len - 1);
 
 	/* Set scno to the right initial value. */
 	scno = ISSET(O_NUMBER) ? O_NUMBER_LENGTH : 0;
 
+	/* Discard logical lines. */
+	for (p = lp, llen = len; --off;) {
+		for (; len && scno < sp->cols; --len) {
+			ch = *p++;
+			if (ch == '\t' && !ISSET(O_LIST))
+				scno +=
+				    LVAL(O_TABSTOP) - scno % LVAL(O_TABSTOP);
+			else
+				scno += asciilen[ch];
+		}
+		if (len == 0)
+			return (llen - 1);
+		scno -= sp->cols;
+	}
+
 	/* Step through the line until reach the right character. */
-	for (p = lp, llen = len; --len;) {
+	while (len--) {
 		ch = *p++;
 		if (ch == '\t' && !ISSET(O_LIST))
 			scno += LVAL(O_TABSTOP) - scno % LVAL(O_TABSTOP);
 		else
 			scno += asciilen[ch];
-		if (scno >= ep->rcm) {
+		if (scno >= sp->rcm) {
 			len = p - lp;
-			return (scno == ep->rcm ? len : len - 1);
+			return (scno == sp->rcm ? len : len - 1);
 		}
 	}
 	return (llen - 1);
