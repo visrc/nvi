@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.64 1993/12/16 14:19:27 bostic Exp $ (Berkeley) $Date: 1993/12/16 14:19:27 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.65 1993/12/19 19:00:32 bostic Exp $ (Berkeley) $Date: 1993/12/19 19:00:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -413,7 +413,12 @@ next_ch:	if (term_key(sp, &ikey, iflags) != INP_OK)
 
 			/* CR returns from the vi command line. */
 			if (LF_ISSET(TXT_CR)) {
-				if (F_ISSET(sp, S_SCRIPT))
+				/*
+				 * If a script window and not the colon
+				 * line, push a <cr> so it gets executed.
+				 */
+				if (F_ISSET(sp, S_SCRIPT) &&
+				    !LF_ISSET(TXT_INFOLINE))
 					(void)term_push(sp,
 					    "\r", 1, 0, CH_NOMAP);
 				goto k_escape;
