@@ -6,12 +6,13 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 5.2 1993/02/20 16:07:58 bostic Exp $ (Berkeley) $Date: 1993/02/20 16:07:58 $";
+static char sccsid[] = "$Id: vs_smap.c,v 5.3 1993/02/20 16:44:28 bostic Exp $ (Berkeley) $Date: 1993/02/20 16:44:28 $";
 #endif /* not lint */
 
 #include <curses.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "vi.h"
 #include "options.h"
@@ -323,7 +324,7 @@ scr_sm_down(ep, lnop, count, cursor_move)
 	recno_t *lnop, count;
 	int cursor_move;
 {
-	SMAP *p, t;
+	SMAP *p;
 	int scrolled;
 
 	/*

@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 5.16 1993/02/19 11:17:42 bostic Exp $ (Berkeley) $Date: 1993/02/19 11:17:42 $
+ *	$Id: screen.h,v 5.17 1993/02/20 16:44:27 bostic Exp $ (Berkeley) $Date: 1993/02/20 16:44:27 $
  */
 
 #define	CONTMSG	"Enter return to continue: "
@@ -79,9 +79,11 @@ size_t	scr_screens __P((EXF *, recno_t, size_t *));
 int	scr_update __P((EXF *));
 
 /* SMAP manipulation functions. */
+int	scr_sm_1down __P((EXF *));
+int	scr_sm_1up __P((EXF *));
 int	scr_sm_bot __P((EXF *, recno_t *, u_long));
 int	scr_sm_delete __P((EXF *, recno_t, int));
-int	scr_sm_1down __P((EXF *));
+int	scr_sm_down __P((EXF *, recno_t *, recno_t, int));
 int	scr_sm_init __P((EXF *));
 int	scr_sm_insert __P((EXF *, recno_t, int));
 int	scr_sm_mid __P((EXF *, recno_t *));
@@ -89,7 +91,7 @@ int	scr_sm_next __P((EXF *, SMAP *, SMAP *));
 recno_t	scr_sm_nlines __P((EXF *, SMAP *, recno_t, size_t));
 int	scr_sm_prev __P((EXF *, SMAP *, SMAP *));
 int	scr_sm_top __P((EXF *, recno_t *, u_long));
-int	scr_sm_1up __P((EXF *));
+int	scr_sm_up __P((EXF *, recno_t *, recno_t, int));
 
 enum position { P_TOP, P_MIDDLE, P_BOTTOM };
 int	scr_sm_fill __P((EXF *, recno_t, enum position));
