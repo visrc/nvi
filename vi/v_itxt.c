@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 9.5 1994/11/14 10:36:08 bostic Exp $ (Berkeley) $Date: 1994/11/14 10:36:08 $";
+static char sccsid[] = "$Id: v_itxt.c,v 9.6 1994/11/16 19:57:47 bostic Exp $ (Berkeley) $Date: 1994/11/16 19:57:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -68,6 +68,22 @@ static char sccsid[] = "$Id: v_itxt.c,v 9.5 1994/11/14 10:36:08 bostic Exp $ (Be
 static u_int	set_txt_std __P((SCR *, VICMDARG *, u_int));
 
 /*
+ * v_iA -- [count]A
+ *	Append text to the end of the line.
+ */
+int
+v_iA(sp, vp)
+	SCR *sp;
+	VICMDARG *vp;
+{
+	size_t len;
+
+	if (file_gline(sp, vp->m_start.lno, &len) != NULL)
+		sp->cno = len == 0 ? 0 : len - 1;
+	return (v_ia(sp, vp));
+}
+
+/*
  * v_ia -- [count]a
  *	   [count]A
  *	Append text to the cursor position.
@@ -120,6 +136,19 @@ v_ia(sp, vp)
 		sp->cno = vp->m_final.cno;
 	}
 	return (0);
+}
+
+/*
+ * v_iI -- [count]I
+ *	Insert text at the first nonblank.
+ */
+int
+v_iI(sp, vp)
+	SCR *sp;
+	VICMDARG *vp;
+{
+	sp->cno = 0;
+	return (nonblank(sp, vp->m_start.lno, &sp->cno) ? 1 : v_ii(sp, vp));
 }
 
 /*
