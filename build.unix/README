@@ -1,4 +1,4 @@
-#	$Id: README,v 8.4 1996/02/25 15:01:50 bostic Exp $ (Berkeley) $Date: 1996/02/25 15:01:50 $
+#	$Id: README,v 8.5 1996/02/28 18:45:28 bostic Exp $ (Berkeley) $Date: 1996/02/28 18:45:28 $
 
 Nvi uses the GNU autoconf program for configuration and compilation.  You
 should enter:
@@ -23,10 +23,12 @@ listed in ../README.  In that email, please provide a complete script
 of the output for all of the above commands that you entered.
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-The options that you can enter to the configure program are as follows:
+The nvi options that you can enter to the configure program are as
+follows:
 
 The most common of these are:
 
+  --enable-tclinterp	  Compile a Tcl/Tk interpreter into vi.
   --with-curses=ask|system|vi
                           ask:     Prompt for the curses library to use.
                           system:  Use the system curses library.
@@ -36,25 +38,37 @@ The most common of these are:
   --with-re=library|vi    library: Use the RE routines in the C library.
                           vi:      Use the vi-provided RE routines
 
-See the next section of this README for information about nvi and the
-curses library.
+with-curses:
+	See the next section of this README for information about nvi and
+	the curses library.
 
-If your C library contains a copy of the Berkeley DB routines and you
-want to use them, enter:
+with-db:
+	If your C library contains a copy of the Berkeley DB routines and
+	you want to use them, enter:
 
-	./configure --with-db=library
+	--with-db=library
 
-and the DB routines will be loaded from the C library.  Make sure that
-you DB routines are at least version 1.85 or later.
+	as an argument to configure, and the DB routines will be loaded
+	from the C library.  Make sure that you DB routines are at least
+	version 1.85 or later.
 
-If your C library contains an implementation of the POSIX 1003.2 RE
-routines and you want to use them, enter:
+with-re:
+	If your C library contains an implementation of the POSIX 1003.2
+	RE routines and you want to use them, enter:
 
-	./configure --with-re=library
+	--with-re=library
 
-and the RE routines will be loaded from the C library.  Make sure that
-your RE routines have Henry Spencer's extensions for doing vi-style "word"
-searches.
+	as an argument to configure, and the RE routines will be loaded
+	from the C library.  Please ensure that your RE routines have
+	Henry Spencer's extensions for doing vi-style "word" searches.
+
+enable-tclinterp:
+	If you have the Tk/Tcl libraries and you want to compile in the
+	Tcl/Tk interpreter, enter:
+
+	--enable-tclinterp
+
+	as an argument to configure.
 
 =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 The major portability problem for nvi is selecting a curses library.
