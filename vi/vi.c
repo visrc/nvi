@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 9.9 1994/11/18 14:19:30 bostic Exp $ (Berkeley) $Date: 1994/11/18 14:19:30 $";
+static char sccsid[] = "$Id: vi.c,v 9.10 1994/11/20 12:49:22 bostic Exp $ (Berkeley) $Date: 1994/11/20 12:49:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,7 +36,7 @@ static __inline int
 		 v_count __P((SCR *, ARG_CHAR_T, u_long *));
 static __inline int
 		 v_key __P((SCR *, CH *, u_int));
-static int	 v_keyword __P((SCR *, VICMDARG *, u_int));
+static int	 v_keyword __P((SCR *, VICMDARG *));
 static int	 v_motion __P((SCR *, VICMDARG *, VICMDARG *, int *));
 
 enum gcret { GC_ERR, GC_ERR_NOFLUSH, GC_OK } gcret;
@@ -312,7 +312,7 @@ enoflush:		(void)msg_rpt(sp, 1);
 		CLR_INTERRUPT(sp);
 	}
 
-	/* Free allocated keyword memory. */
+	/* Free allocated key number/word memory. */
 	if (cmd.keyword != NULL)
 		free(cmd.keyword);
 
@@ -568,9 +568,8 @@ usage:			if (ismotion == NULL)
 	if (LF_ISSET(V_CHAR))
 		KEY(vp->character, 0);
 
-	/* Get any associated keyword. */
-	if (F_ISSET(kp, V_KEYNUM | V_KEYW) &&
-	    v_keyword(sp, vp, F_ISSET(kp, V_KEYNUM | V_KEYW)))
+	/* Get any associated cursor word. */
+	if (F_ISSET(kp, V_KEYW) && v_keyword(sp, vp))
 		return (GC_ERR);
 
 	return (GC_OK);
@@ -806,135 +805,60 @@ v_motion(sp, dm, vp, mappedp)
 err:		rval = 1;
 	}
 
-	/* Free allocated keyword memory. */
+	/* Free allocated key number/word memory. */
 	if (motion.keyword != NULL)
 		free(motion.keyword);
 
 	return (rval);
 }
 
-#define	innum(c)	(isdigit(c) || strchr("abcdefABCDEF", c))
-
 /*
  * v_keyword --
- *	Get the "word" the cursor is on.
+ *	Get the word (or non-word) the cursor is on.
  */
 static int
-v_keyword(sp, vp, flags)
+v_keyword(sp, vp)
 	SCR *sp;
 	VICMDARG *vp;
-	u_int flags;
 {
-	recno_t lno;
 	size_t beg, end, len;
+	int moved, state;
 	char *p;
 
-	if ((p = file_gline(sp, sp->lno, &len)) == NULL) {
-		if (file_lline(sp, &lno))
-			return (1);
-		if (lno == 0)
-			v_eof(sp, NULL);
-		else
-			GETLINE_ERR(sp, sp->lno);
-		return (1);
-	}
+	if ((p = file_gline(sp, sp->lno, &len)) == NULL)
+		goto err;
 
 	/*
 	 * !!!
 	 * Historically, tag commands skipped over any leading whitespace
-	 * characters.
-	 */
-	for (beg = sp->cno; beg < len && isspace(p[beg]); ++beg);
-
-	if (beg >= len ||
-	    LF_ISSET(V_KEYW) && !inword(p[beg]) ||
-	    LF_ISSET(V_KEYNUM) && !innum(p[beg]) &&
-	    p[beg] != '-' && p[beg] != '+')
-		goto noword;
-
-	/*
+	 * characters.  Make this true in general when using cursor words.
+	 * If movement, getting a cursor word implies moving the cursor to
+	 * its beginning.  Refresh now.
+	 *
 	 * !!!
-	 * Find the beginning/end of the keyword.  Keywords (V_KEYW) are
+	 * Find the beginning/end of the keyword.  Keywords are currently
 	 * used for cursor-word searching and for tags.  Historical vi
 	 * only used the word in a tag search from the cursor to the end
 	 * of the word, i.e. if the cursor was on the 'b' in " abc ", the
-	 * tag was "bc".  For no particular reason, we make the cursor
-	 * word searches follow the same rule.
+	 * tag was "bc".  For consistency, we make cursor word searches
+	 * follow the same rule.
 	 */
-	if (beg != 0)
-		if (LF_ISSET(V_KEYW)) {
-#ifdef	MOVE_TO_KEYWORD_BEGINNING
-			for (;;) {
-				--beg;
-				if (!inword(p[beg])) {
-					++beg;
-					break;
-				}
-				if (beg == 0)
-					break;
-			}
-#endif
-		} else {
-			for (;;) {
-				--beg;
-				if (!innum(p[beg])) {
-					if (beg > 0 && p[beg - 1] == '0' &&
-					    (p[beg] == 'X' || p[beg] == 'x'))
-						--beg;
-					else
-						++beg;
-					break;
-				}
-				if (beg == 0)
-					break;
-			}
-
-			/* Skip possible leading sign. */
-			if (beg != 0 && p[beg] != '0' &&
-			    (p[beg - 1] == '+' || p[beg - 1] == '-'))
-				--beg;
-		}
-
-	if (LF_ISSET(V_KEYW)) {
-		for (end = beg; ++end < len && inword(p[end]););
-		--end;
-	} else {
-		for (end = beg; ++end < len;) {
-			if (p[end] == 'X' || p[end] == 'x') {
-				if (end != beg + 1 || p[beg] != '0')
-					break;
-				continue;
-			}
-			if (!innum(p[end]))
-				break;
-		}
-
-		/* Just a sign isn't a number. */
-		if (end == beg && (p[beg] == '+' || p[beg] == '-')) {
-noword:			msgq(sp, M_BERR,
-			    LF_ISSET(V_KEYW) ?
-			    "212|Cursor not in a word" :
-			    "213|Cursor not in a number");
-			return (1);
-		}
-		--end;
+	for (moved = 0,
+	    beg = sp->cno; beg < len && isspace(p[beg]); moved = 1, ++beg);
+	if (beg >= len) {
+err:		msgq(sp, M_BERR, "212|Cursor not in a word");
+		return (1);
 	}
-
-	/*
-	 * Getting a keyword implies moving the cursor to its beginning.
-	 * Refresh now.
-	 */
-	if (beg != sp->cno) {
+	if (moved) {
 		sp->cno = beg;
 		(void)sp->s_refresh(sp);
 	}
 
-	/*
-	 * XXX
-	 * 8-bit clean problem.  Numeric keywords are handled using strtol(3)
-	 * and friends.  This would have to be fixed in v_increment and here
-	 * to not depend on a trailing NULL.
-	 */
+	/* Find the end of the word. */
+	for (state = inword(p[beg]),
+	    end = beg; ++end < len && state == inword(p[end]););
+	--end;
+
 	len = (end - beg) + 2;				/* XXX */
 	vp->klen = (end - beg) + 1;
 	BINC_RET(sp, vp->keyword, vp->kbuflen, len);
