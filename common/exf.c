@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.24 1992/11/01 22:46:27 bostic Exp $ (Berkeley) $Date: 1992/11/01 22:46:27 $";
+static char sccsid[] = "$Id: exf.c,v 5.25 1992/11/04 10:41:39 bostic Exp $ (Berkeley) $Date: 1992/11/04 10:41:39 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -202,7 +202,8 @@ file_start(ep)
 	int fd;
 	char tname[sizeof(_PATH_TMPNAME) + 1];
 
-	if (ep == NULL) {
+	fd = -1;
+	if (ep == NULL) { 
 		(void)strcpy(tname, _PATH_TMPNAME);
 		if ((fd = mkstemp(tname)) == -1) {
 			msg("Temporary file: %s", strerror(errno));
@@ -213,6 +214,7 @@ file_start(ep)
 		ep->flags |= F_CREATED | F_NONAME;
 	} else if (stat(ep->name, &sb))
 		ep->flags |= F_CREATED;
+	ep->flags |= F_NEWSESSION;
 
 	/* Open a db structure. */
 	ep->db = dbopen(ep->name, O_CREAT | O_EXLOCK | O_NONBLOCK| O_RDONLY,
@@ -229,8 +231,8 @@ file_start(ep)
 		msg("%s: %s", ep->name, strerror(errno));
 		return (1);
 	}
-	if (ep->flags & F_NONAME)
-		(void)close(fd);		/* Can't be uninitialized. */
+	if (fd != -1)
+		(void)close(fd);
 
 	/* Flush the line caches. */
 	ep->c_lno = ep->c_nlines = OOBLNO;
@@ -293,6 +295,10 @@ file_stop(ep, force)
 	int force;
 {
 	struct stat sb;
+
+	/* Clean up the session, if necessary. */
+	if (ep->s_end && ep->s_end(ep))
+		return (1);
 
 	/* Close the db structure. */
 	if ((ep->db->close)(ep->db) && !force) {
