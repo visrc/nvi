@@ -1,9 +1,9 @@
-#	$Id: Makefile.in,v 8.17 1996/02/26 16:47:49 bostic Exp $ (Berkeley) $Date: 1996/02/26 16:47:49 $
+#	$Id: Makefile.in,v 8.18 1996/02/27 16:40:28 bostic Exp $ (Berkeley) $Date: 1996/02/27 16:40:28 $
 
 #GCCF=	-Wall
 #DEBUG=	-g -DDEBUG
 CC=	@CC@
-CFLAGS=	-c $(GCCF) $(DEBUG) -I. -I../include @CFLAGS@
+CFLAGS=	-c @CFLAGS@ -I. -I../include @CPPFLAGS@
 LDFLAGS=@LDFLAGS@
 
 # Header files.
