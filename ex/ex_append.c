@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 9.3 1994/11/10 16:22:34 bostic Exp $ (Berkeley) $Date: 1994/11/10 16:22:34 $";
+static char sccsid[] = "$Id: ex_append.c,v 9.4 1994/11/12 13:10:04 bostic Exp $ (Berkeley) $Date: 1994/11/12 13:10:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -98,8 +98,8 @@ aci(sp, cmdp, cmd)
 	if (O_ISSET(sp, O_BEAUTIFY))
 		LF_SET(TXT_BEAUTIFY);
 
-	/* Input is interruptible, the screen is now dirty. */
-	F_SET(sp, S_INTERRUPTIBLE | S_SCR_EXWROTE);
+	/* The screen is now dirty. */
+	F_SET(sp, S_SCR_EXWROTE);
 
 	/*
 	 * If this code is called by vi, the screen TEXTH structure (sp->tiqp)

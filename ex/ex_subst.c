@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 9.2 1994/11/09 21:51:10 bostic Exp $ (Berkeley) $Date: 1994/11/09 21:51:10 $";
+static char sccsid[] = "$Id: ex_subst.c,v 9.3 1994/11/12 13:10:10 bostic Exp $ (Berkeley) $Date: 1994/11/12 13:10:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -630,16 +630,13 @@ nextmatch:	match[0].rm_so = 0;
 				BUILD(sp, s +offset, match[0].rm_eo);
 				goto skip;
 			case CONF_QUIT:
-				/* Set the quit flag. */
+				/* Set the quit/interrupted flags. */
 				quit = 1;
-
-				/* If interruptible, pass the info back. */
-				if (F_ISSET(sp, S_INTERRUPTIBLE))
-					F_SET(sp, S_INTERRUPTED);
+				F_SET(sp, S_INTERRUPTED);
 
 				/*
-				 * If any changes, resolve them, otherwise
-				 * return to the main loop.
+				 * Resolve any changes, then return to (and
+				 * exit from) the main loop.
 				 */
 				goto endmatch;
 			}

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 9.2 1994/11/09 21:50:56 bostic Exp $ (Berkeley) $Date: 1994/11/09 21:50:56 $";
+static char sccsid[] = "$Id: ex.c,v 9.3 1994/11/12 13:09:58 bostic Exp $ (Berkeley) $Date: 1994/11/12 13:09:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -89,7 +89,6 @@ ex(sp)
 		 * safe because ex_icmd clears them all.
 		 */
 		CLR_INTERRUPT(sp);
-		F_SET(sp, S_INTERRUPTIBLE);
 		irval = sp->s_get(sp, sp->tiqp, ':', flags);
 		if (INTERRUPTED(sp)) {
 			(void)fputc('\n', stdout);

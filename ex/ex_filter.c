@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 9.1 1994/11/09 18:41:29 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:41:29 $";
+static char sccsid[] = "$Id: ex_filter.c,v 9.2 1994/11/12 13:10:19 bostic Exp $ (Berkeley) $Date: 1994/11/12 13:10:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -385,13 +385,9 @@ filter_ldisplay(sp, fp)
 
 	EX_PRIVATE *exp;
 
-	F_SET(sp, S_INTERRUPTIBLE);
-	for (exp = EXP(sp); !ex_getline(sp, fp, &len);) {
+	for (exp = EXP(sp); !ex_getline(sp, fp, &len) && !INTERRUPTED(sp);)
 		if (ex_ldisplay(sp, exp->ibp, len, 0, 0))
 			break;
-		if (INTERRUPTED(sp))
-			break;
-	}
 	if (ferror(fp))
 		msgq(sp, M_SYSERR, "filter read");
 	(void)fclose(fp);

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_display.c,v 9.1 1994/11/09 18:40:39 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:40:39 $";
+static char sccsid[] = "$Id: ex_display.c,v 9.2 1994/11/12 13:10:07 bostic Exp $ (Berkeley) $Date: 1994/11/12 13:10:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -85,8 +85,7 @@ bdisplay(sp)
 		return (0);
 	}
 
-	/* Buffers can be infinitely long, make it interruptible. */
-	F_SET(sp, S_INTERRUPTIBLE);
+	F_SET(sp, S_SCR_EXWROTE);
 
 	/* Display regular cut buffers. */
 	for (cbp = sp->gp->cutq.lh_first; cbp != NULL; cbp = cbp->q.le_next) {
@@ -126,7 +125,6 @@ db(sp, cbp, name)
 	TEXT *tp;
 	size_t len;
 
-	F_SET(sp, S_SCR_EXWROTE);
 	(void)ex_printf(EXCOOKIE, "********** %s%s\n",
 	    name == NULL ? KEY_NAME(sp, cbp->name) : name,
 	    F_ISSET(cbp, CB_LMODE) ? " (line mode)" : " (character mode)");

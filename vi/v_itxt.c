@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 9.3 1994/11/12 11:23:08 bostic Exp $ (Berkeley) $Date: 1994/11/12 11:23:08 $";
+static char sccsid[] = "$Id: v_itxt.c,v 9.4 1994/11/12 13:11:10 bostic Exp $ (Berkeley) $Date: 1994/11/12 13:11:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -565,9 +565,6 @@ set_txt_std(sp, vp, init)
 	u_int init;
 {
 	u_int flags;
-
-	/* Text operations are all interruptible. */
-	F_SET(sp, S_INTERRUPTIBLE);
 
 	LF_INIT(init);
 	LF_SET(TXT_CNTRLT |

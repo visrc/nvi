@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 9.1 1994/11/09 18:41:12 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:41:12 $";
+static char sccsid[] = "$Id: ex_tag.c,v 9.2 1994/11/12 13:10:13 bostic Exp $ (Berkeley) $Date: 1994/11/12 13:10:13 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -453,8 +453,8 @@ ex_tagdisplay(sp)
 			maxlen = len;
 	}
 
-	for (cnt = 1, tp = exp->tagq.tqh_first; tp != NULL;
-	    ++cnt, tp = tp->q.tqe_next) {
+	for (cnt = 1, tp = exp->tagq.tqh_first;
+	    tp != NULL && !INTERRUPTED(sp); ++cnt, tp = tp->q.tqe_next) {
 		len = strlen(name = tp->frp->name);	/* The original name. */
 		if (len > maxlen || len + tp->slen > sp->cols)
 			if (tp == NULL || tp->search == NULL)

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_usage.c,v 9.1 1994/11/09 18:41:16 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:41:16 $";
+static char sccsid[] = "$Id: ex_usage.c,v 9.2 1994/11/12 13:10:15 bostic Exp $ (Berkeley) $Date: 1994/11/12 13:10:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -93,8 +93,7 @@ ex_usage(sp, cmdp)
 		}
 		break;
 	case 0:
-		F_SET(sp, S_INTERRUPTIBLE | S_SCR_EXWROTE);
-		for (cp = cmds; cp->name != NULL; ++cp) {
+		for (cp = cmds; cp->name != NULL && !INTERRUPTED(sp); ++cp) {
 			/* The ^D command has an unprintable name. */
 			if (cp == &cmds[C_SCROLL])
 				name = "^D";
@@ -102,6 +101,7 @@ ex_usage(sp, cmdp)
 				name = cp->name;
 			(void)ex_printf(EXCOOKIE,
 			    "%*s: %s\n", MAXCMDNAMELEN, name, cp->help);
+			F_SET(sp, S_SCR_EXWROTE);
 		}
 		break;
 	default:
@@ -153,8 +153,7 @@ nokey:			(void)ex_printf(EXCOOKIE,
 			    isblank(*kp->help) ? "" : " ", kp->help, kp->usage);
 		break;
 	case 0:
-		F_SET(sp, S_INTERRUPTIBLE | S_SCR_EXWROTE);
-		for (key = 0; key <= MAXVIKEY; ++key) {
+		for (key = 0; key <= MAXVIKEY && !INTERRUPTED(sp); ++key) {
 			/* Special case: ~ command. */
 			if (key == '~' && O_ISSET(sp, O_TILDEOP))
 				kp = &tmotion;
@@ -162,6 +161,7 @@ nokey:			(void)ex_printf(EXCOOKIE,
 				kp = &vikeys[key];
 			if (kp->help != NULL)
 				(void)ex_printf(EXCOOKIE, "%s\n", kp->help);
+			F_SET(sp, S_SCR_EXWROTE);
 		}
 		break;
 	default:

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_screen.c,v 9.1 1994/11/09 18:41:01 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:41:01 $";
+static char sccsid[] = "$Id: ex_screen.c,v 9.2 1994/11/12 13:10:09 bostic Exp $ (Berkeley) $Date: 1994/11/12 13:10:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -105,7 +105,8 @@ ex_sdisplay(sp)
 	}
 
 	col = len = sep = 0;
-	for (cnt = 1; tsp != (void *)&sp->gp->hq; tsp = tsp->q.cqe_next) {
+	for (cnt = 1; tsp != (void *)&sp->gp->hq && !INTERRUPTED(sp);
+	    tsp = tsp->q.cqe_next) {
 		col += len = strlen(tsp->frp->name) + sep;
 		if (col >= sp->cols - 1) {
 			col = len;
@@ -118,7 +119,9 @@ ex_sdisplay(sp)
 		(void)ex_printf(EXCOOKIE, "%s", tsp->frp->name);
 		++cnt;
 	}
+	if (!INTERRUPTED(sp))
+		(void)ex_printf(EXCOOKIE, "\n");
+
 	F_SET(sp, S_SCR_EXWROTE);
-	(void)ex_printf(EXCOOKIE, "\n");
 	return (0);
 }

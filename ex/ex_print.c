@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 9.1 1994/11/09 18:40:55 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:40:55 $";
+static char sccsid[] = "$Id: ex_print.c,v 9.2 1994/11/12 13:10:08 bostic Exp $ (Berkeley) $Date: 1994/11/12 13:10:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -99,7 +99,6 @@ ex_print(sp, fp, tp, flags)
 	size_t col, len;
 	char *p;
 
-	F_SET(sp, S_INTERRUPTIBLE | S_SCR_EXWROTE);
 	for (from = fp->lno, to = tp->lno; from <= to; ++from) {
 		/*
 		 * Display the line number.  The %6 format is specified
@@ -124,9 +123,10 @@ ex_print(sp, fp, tp, flags)
 			return (1);
 		}
 
-		if (len == 0 && !LF_ISSET(E_F_LIST))
+		if (len == 0 && !LF_ISSET(E_F_LIST)) {
+			F_SET(sp, S_SCR_EXWROTE);
 			(void)ex_printf(EXCOOKIE, "\n");
-		else if (ex_ldisplay(sp, p, len, col, flags))
+		} else if (ex_ldisplay(sp, p, len, col, flags))
 			return (1);
 
 		if (INTERRUPTED(sp))
@@ -152,8 +152,7 @@ ex_ldisplay(sp, lp, len, col, flags)
 
 	F_SET(sp, S_SCR_EXWROTE);
 
-	ts = O_VAL(sp, O_TABSTOP);
-	for (;; --len) {
+	for (ts = O_VAL(sp, O_TABSTOP);; --len) {
 		if (len > 0)
 			ch = *lp++;
 		else if (LF_ISSET(E_F_LIST))
@@ -179,9 +178,11 @@ ex_ldisplay(sp, lp, len, col, flags)
 					(void)ex_printf(EXCOOKIE, "%c", *kp);
 				}
 		}
-		if (len == 0)
+		F_SET(sp, S_SCR_EXWROTE);
+		if (INTERRUPTED(sp) || len == 0)
 			break;
 	}
-	(void)ex_printf(EXCOOKIE, "\n");
+	if (!INTERRUPTED(sp))
+		(void)ex_printf(EXCOOKIE, "\n");
 	return (0);
 }
