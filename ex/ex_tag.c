@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 8.26 1993/11/23 12:51:26 bostic Exp $ (Berkeley) $Date: 1993/11/23 12:51:26 $";
+static char sccsid[] = "$Id: ex_tag.c,v 8.27 1993/11/28 15:49:01 bostic Exp $ (Berkeley) $Date: 1993/11/28 15:49:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -565,7 +565,7 @@ ex_tagcopy(orig, sp)
 
 	/* Copy list of tag files. */
 	for (atfp = oexp->tagfq.tqh_first;
-	    ap != NULL; atfp = atfp->q.tqe_next) {
+	    atfp != NULL; atfp = atfp->q.tqe_next) {
 		if ((tfp = malloc(sizeof(TAGF))) == NULL)
 			goto nomem;
 		*tfp = *atfp;
