@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 9.3 1994/11/12 13:09:58 bostic Exp $ (Berkeley) $Date: 1994/11/12 13:09:58 $";
+static char sccsid[] = "$Id: ex.c,v 9.4 1994/11/13 11:44:10 bostic Exp $ (Berkeley) $Date: 1994/11/13 11:44:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -272,7 +272,7 @@ ex_cmd(sp, cmd, cmdlen, pflags)
 	recno_t lno, num;
 	size_t arg1_len, blen, len, save_cmdlen;
 	long flagoff;
-	int blank, ch, cnt, delim, flags, namelen, nf, nl;
+	int ch, cnt, delim, flags, namelen, nf, nl, notempty;
 	int optnum, uselastcmd, tmp, vi_address;
 	char *arg1, *bp, *p, *s, *save_cmd, *t;
 
@@ -306,11 +306,11 @@ done:		if (bp != NULL)
 	}
 
 	/* Skip <blank>s, empty lines.  */
-	for (blank = 0; cmdlen > 0; ++cmd, --cmdlen)
+	for (notempty = 0; cmdlen > 0; ++cmd, --cmdlen)
 		if ((ch = *cmd) == '\n')
 			++sp->if_lno;
 		else if (isblank(ch))
-			blank = 1;
+			notempty = 1;
 		else
 			break;
 
@@ -322,8 +322,7 @@ done:		if (bp != NULL)
 	 * could have preceding colons, e.g. ":g/pattern/:p" worked.
 	 */
 	if (cmdlen != 0 && ch == ':') {
-		if (sep == NOTSET)
-			sep = NEEDSEP_N;
+		notempty = 1;
 		while (--cmdlen > 0 && (ch = *++cmd) == ':');
 	}
 
@@ -365,7 +364,7 @@ done:		if (bp != NULL)
 	 * contain only <blank> characters from .exrc files.
 	 */
 	if (cmdlen == 0 &&
-	    (!blank || IN_VI_MODE(sp) || pflags & EXPAR_BLIGNORE))
+	    (!notempty || IN_VI_MODE(sp) || pflags & EXPAR_BLIGNORE))
 		goto done;
 
 	/* Initialize the structure passed to underlying functions. */
