@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 8.4 1993/08/25 16:38:28 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:38:28 $";
+static char sccsid[] = "$Id: seq.c,v 8.5 1993/08/27 18:10:39 bostic Exp $ (Berkeley) $Date: 1993/08/27 18:10:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,6 +33,7 @@ seq_set(sp, name, input, output, stype, userdef)
 	HDR *hp;
 	SEQ *ip, *qp;
 	int ilen;
+	char *p;
 
 #if DEBUG && 0
 	TRACE(sp, "seq_set: name {%s} input {%s} output {%s}\n",
@@ -49,9 +50,11 @@ seq_set(sp, name, input, output, stype, userdef)
 	    qp != (SEQ *)hp && qp->ilen <= ilen; ip = qp, qp = qp->snext)
 		if (qp->ilen == ilen && stype == qp->stype &&
 		    !strcmp(qp->input, input)) {
-			free(qp->output);
-			if ((qp->output = strdup(output)) == NULL)
+			if ((p = strdup(output)) == NULL)
 				goto mem1;
+			FREE(qp->output, qp->olen);
+			qp->olen = strlen(output);
+			qp->output = p;
 			return (0);
 		}
 
