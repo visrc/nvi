@@ -9,10 +9,10 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 8.38 1994/03/17 15:41:38 bostic Exp $ (Berkeley) $Date: 1994/03/17 15:41:38 $";
+static char sccsid[] = "$Id: ex_tag.c,v 8.39 1994/03/19 11:18:06 bostic Exp $ (Berkeley) $Date: 1994/03/19 11:18:06 $";
 #endif /* not lint */
 
-#include <sys/types.h>
+#include <sys/param.h>
 #include <sys/mman.h>
 #include <sys/queue.h>
 #include <sys/stat.h>
@@ -599,10 +599,12 @@ tag_get(sp, tag, tagp, filep, searchp)
 	SCR *sp;
 	char *tag, **tagp, **filep, **searchp;
 {
+	struct stat sb;
 	EX_PRIVATE *exp;
 	TAGF *tfp;
+	size_t plen, slen, tlen;
 	int dne;
-	char *p;
+	char *p, pbuf[MAXPATHLEN];
 
 	/*
 	 * Find the tag, only display missing file messages once, and
@@ -614,14 +616,15 @@ tag_get(sp, tag, tagp, filep, searchp)
 	    tfp != NULL && p == NULL; tfp = tfp->q.tqe_next) {
 		errno = 0;
 		F_CLR(tfp, TAGF_DNE);
-		if (search(sp, tfp->name, tag, &p))
-			if (errno == ENOENT) {
-				if (!F_ISSET(tfp, TAGF_DNE_WARN)) {
-					dne = 1;
-					F_SET(tfp, TAGF_DNE);
-				}
-			} else
-				msgq(sp, M_SYSERR, tfp->name);
+		if (!search(sp, tfp->name, tag, &p))
+			break;
+		if (errno == ENOENT) {
+			if (!F_ISSET(tfp, TAGF_DNE_WARN)) {
+				dne = 1;
+				F_SET(tfp, TAGF_DNE);
+			}
+		} else
+			msgq(sp, M_SYSERR, tfp->name);
 	}
 
 	if (p == NULL) {
@@ -639,8 +642,8 @@ tag_get(sp, tag, tagp, filep, searchp)
 
 	/*
 	 * Set the return pointers; tagp points to the tag, and, incidentally
-	 * the allocated string, filep points to the nul-terminated file name,
-	 * searchp points to the nul-terminated search string.
+	 * the allocated string, filep points to the file name, and searchp
+	 * points to the search string.  All three are nul-terminated.
 	 */
 	for (*tagp = p; *p && !isblank(*p); ++p);
 	if (*p == '\0')
@@ -655,6 +658,38 @@ tag_get(sp, tag, tagp, filep, searchp)
 malformed:	free(*tagp);
 		msgq(sp, M_ERR, "%s: corrupted tag in %s.", tag, tfp->name);
 		return (1);
+	}
+
+	/*
+	 * !!!
+	 * If the tag file path is a relative path, see if it exists.  If it
+	 * doesn't, look relative to the tags file path.  It's okay for a tag
+	 * file to not exist, and, historically, vi simply displayed a "new"
+	 * file.  However, if the path exists relative to the tag file, it's
+	 * pretty clear what's happening, so we may as well do it right.
+	 */
+	if ((*filep)[0] != '/'
+	    && stat(*filep, &sb) && (p = strrchr(tfp->name, '/')) != NULL) {
+		*p = '\0';
+		plen = snprintf(pbuf, sizeof(pbuf), "%s/%s", tfp->name, *filep);
+		*p = '/';
+		if (stat(pbuf, &sb) == 0) {
+			slen = strlen(*searchp);
+			tlen = strlen(*tagp);
+			MALLOC(sp, p, char *, plen + slen + tlen + 5);
+			if (p != NULL) {
+				memmove(p, *tagp, tlen);
+				free(*tagp);
+				*tagp = p;
+				*(p += tlen) = '\0';
+				memmove(++p, pbuf, plen);
+				*filep = p;
+				*(p += plen) = '\0';
+				memmove(++p, *searchp, slen);
+				*searchp = p;
+				*(p += slen) = '\0';
+			}
+		}
 	}
 	return (0);
 }
