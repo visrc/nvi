@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.72 1996/10/10 21:15:36 bostic Exp $ (Berkeley) $Date: 1996/10/10 21:15:36 $
+#	$Id: Makefile.in,v 8.73 1996/10/13 11:54:08 bostic Exp $ (Berkeley) $Date: 1996/10/13 11:54:08 $
 
 srcdir=	@srcdir@/..
 CC=	@CC@
@@ -139,6 +139,8 @@ install_common:
 	    cd $(datadir)/vi/catalog && $(chmod) $(fmode) *)
 	@echo "Installing Perl5 scripts: $(datadir)/vi/perl ..."
 	$(mkdir) $(datadir)/vi/perl && $(chmod) $(dmode) $(datadir)/vi/perl
+	[ -f VI.pm ] && $(cp) VI.pm $(datadir)/vi/perl && \
+	    cd $(datadir)/vi/perl && $(chmod) $(fmode) VI.pm)
 	(cd $(srcdir)/perl_scripts && $(cp) *.pl $(datadir)/vi/perl && \
 	    cd $(datadir)/vi/perl && $(chmod) $(fmode) *.pl)
 	@echo "Installing Tcl scripts: $(datadir)/vi/tcl ..."
@@ -220,6 +222,8 @@ perl.c: $(srcdir)/perl_api/perl.xs $(srcdir)/perl_api/typemap
 	echo "#define _PATH_PERLSCRIPTS \"$(datadir)/vi/perl\"" > $@
 	$(PERL) $(PERLLIB)/ExtUtils/xsubpp -typemap \
 	    $(PERLLIB)/ExtUtils/typemap $(srcdir)/perl_api/perl.xs >> $@
+	($(PERL) -ne 'print "sub $$1 {\$$curscr->$$1(\@_)}\n" \
+	    if /newXS\("VI::([^":]*)"/;' $@ ; echo "1;") > VI.pm
 perl.o: perl.c
 	$(CC) $(CFLAGS) $?
 perlsfio.o: $(srcdir)/perl_api/perlsfio.c
