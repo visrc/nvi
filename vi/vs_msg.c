@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_msg.c,v 10.5 1995/07/06 12:55:11 bostic Exp $ (Berkeley) $Date: 1995/07/06 12:55:11 $";
+static char sccsid[] = "$Id: vs_msg.c,v 10.6 1995/07/08 10:24:04 bostic Exp $ (Berkeley) $Date: 1995/07/08 10:24:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -75,8 +75,7 @@ cl_msg(sp, mtype, line, rlen)
 	 * running, or in ex canonical mode, let stdio(3) do the work.
 	 */
 	clp = CLP(sp);
-	if (F_ISSET(clp, CL_INIT_EX) ||
-	    F_ISSET(sp, S_EX | S_EX_CANON | S_EX_SILENT)) {
+	if (F_ISSET(clp, CL_INIT_EX) || F_ISSET(sp, S_EX | S_EX_CANON)) {
 		F_SET(clp, CL_EX_WROTE);
 		return (printf("%.*s", rlen, line));
 	}
@@ -312,8 +311,8 @@ cl_resolve(sp, fakecomplete)
 	}
 
 	/* That's all that needs to be done for ex. */
-	if (F_ISSET(sp, S_EX | S_EX_CANON | S_EX_SILENT))
-		return;
+	if (F_ISSET(sp, S_EX))
+		return (0);
 
 	getyx(stdscr, oldy, oldx);
 
