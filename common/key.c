@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.48 1994/03/11 12:07:32 bostic Exp $ (Berkeley) $Date: 1994/03/11 12:07:32 $";
+static char sccsid[] = "$Id: key.c,v 8.49 1994/03/13 12:34:10 bostic Exp $ (Berkeley) $Date: 1994/03/13 12:34:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,7 +32,8 @@ static char sccsid[] = "$Id: key.c,v 8.48 1994/03/11 12:07:32 bostic Exp $ (Berk
 #include "vi.h"
 #include "seq.h"
 
-static int keycmp __P((const void *, const void *));
+static int	keycmp __P((const void *, const void *));
+static void	termkeyset __P((GS *, int, int));
 
 /*
  * If we're reading less than 20 characters, up the size of the tty buffer.
@@ -84,6 +85,23 @@ static TKLIST const m2_tklist[] = {	/* Input mappings (set or delete). */
 };
 
 /*
+ * !!!
+ * Historic ex/vi always used:
+ *
+ *	^D: autoindent deletion
+ *	^H: last character deletion
+ *	^W: last word deletion
+ *	^Q: quote the next character (if not used in flow control).
+ *	^V: quote the next character
+ *
+ * regardless of the user's choices for these characters.  The user's erase
+ * and kill characters worked in addition to these characters.  Ex was not
+ * completely consistent with this scheme, as it did map the scroll command
+ * to the user's current EOF character.  This implementation wires down the
+ * above characters, but in addition uses the VERASE, VINTR, VKILL and VWERASE
+ * characters described by the user's termios structure.  We don't do the EOF
+ * mapping for ex, but I think I'm unlikely to get caught on that one.
+ *
  * XXX
  * THIS REQUIRES THAT ALL SCREENS SHARE A SPECIAL KEY SET.
  */
@@ -92,26 +110,32 @@ typedef struct _keylist {
 	CHAR_T	ch;			/* Key. */
 } KEYLIST;
 static KEYLIST keylist[] = {
-	{K_CARAT,	   '^'},
-	{K_CNTRLR,	'\022'},
-	{K_CNTRLT,	'\024'},
-	{K_CNTRLZ,	'\032'},
-	{K_COLON,	   ':'},
-	{K_CR,		  '\r'},
-	{K_ESCAPE,	'\033'},
-	{K_FORMFEED,	  '\f'},
-	{K_NL,		  '\n'},
-	{K_RIGHTBRACE,	   '}'},
-	{K_RIGHTPAREN,	   ')'},
-	{K_TAB,		  '\t'},
-	{K_VEOF,	'\004'},
-	{K_VERASE,	  '\b'},
-	{K_VINTR,	'\003'},
-	{K_VKILL,	'\025'},
-	{K_VLNEXT,	'\026'},
-	{K_VWERASE,	'\027'},
-	{K_ZERO,	   '0'},
+	{K_CARAT,	   '^'},	/*  ^ */
+	{K_CNTRLD,	'\004'},	/* ^D */
+	{K_CNTRLR,	'\022'},	/* ^R */
+	{K_CNTRLT,	'\024'},	/* ^T */
+	{K_CNTRLZ,	'\032'},	/* ^Z */
+	{K_COLON,	   ':'},	/*  : */
+	{K_CR,		  '\r'},	/* \r */
+	{K_ESCAPE,	'\033'},	/* ^[ */
+	{K_FORMFEED,	  '\f'},	/* \f */
+	{K_NL,		  '\n'},	/* \n */
+	{K_RIGHTBRACE,	   '}'},	/*  } */
+	{K_RIGHTPAREN,	   ')'},	/*  ) */
+	{K_TAB,		  '\t'},	/* \t */
+	{K_VERASE,	  '\b'},	/* \b */
+	{K_VINTR,	'\003'},	/* ^C */
+	{K_VKILL,	'\025'},	/* ^U */
+	{K_VLNEXT,	'\021'},	/* ^Q */
+	{K_VLNEXT,	'\026'},	/* ^V */
+	{K_VWERASE,	'\027'},	/* ^W */
+	{K_ZERO,	   '0'},	/*  0 */
+	{K_NOTUSED, 0},			/* VERASE, VINTR, VKILL, VWERASE */
+	{K_NOTUSED, 0},
+	{K_NOTUSED, 0},
+	{K_NOTUSED, 0},
 };
+static int nkeylist = (sizeof(keylist) / sizeof(keylist[0])) - 4;
 
 /*
  * term_init --
@@ -126,7 +150,6 @@ term_init(sp)
 	GS *gp;
 	KEYLIST *kp;
 	TKLIST const *tkp;
-	cc_t ch;
 	int cnt;
 	char *sbp, *t, buf[2 * 1024], sbuf[128];
 
@@ -138,45 +161,25 @@ term_init(sp)
 	gp = sp->gp;
 	gp->cname = asciiname;			/* XXX */
 
-	/* Set keys found in the termios structure. */
-#define	TERMSET(name, val) {						\
-	if (F_ISSET(gp, G_TERMIOS_SET) &&				\
-	    (ch = gp->original_termios.c_cc[name]) != _POSIX_VDISABLE)	\
-		for (kp = keylist;; ++kp)				\
-			if (kp->value == (val)) {			\
-				kp->ch = ch;				\
-				break;					\
-			}						\
-}
-/*
- * VEOF, VERASE, VKILL are required by POSIX 1003.1-1990,
- * VWERASE is a 4.4BSD extension.
- */
-#ifdef VEOF
-	TERMSET(VEOF, K_VEOF);
-#endif
 #ifdef VERASE
-	TERMSET(VERASE, K_VERASE);
+	termkeyset(gp, VERASE, K_VERASE);
 #endif
 #ifdef VINTR
-	TERMSET(VINTR, K_VINTR);
+	termkeyset(gp, VINTR, K_VINTR);
 #endif
 #ifdef VKILL
-	TERMSET(VKILL, K_VKILL);
+	termkeyset(gp, VKILL, K_VKILL);
 #endif
 #ifdef VWERASE
-	TERMSET(VWERASE, K_VWERASE);
+	termkeyset(gp, VWERASE, K_VWERASE);
 #endif
-
 	/* Sort the special key list. */
-	qsort(keylist,
-	    sizeof(keylist) / sizeof(keylist[0]), sizeof(keylist[0]), keycmp);
+	qsort(keylist, nkeylist, sizeof(keylist[0]), keycmp);
 
 	/* Initialize the fast lookup table. */
 	CALLOC_RET(sp,
 	    gp->special_key, u_char *, MAX_FAST_KEY + 1, sizeof(u_char));
-	for (gp->max_special = 0, kp = keylist,
-	    cnt = sizeof(keylist) / sizeof(keylist[0]); cnt--; ++kp) {
+	for (gp->max_special = 0, kp = keylist, cnt = nkeylist; cnt--; ++kp) {
 		if (gp->max_special < kp->value)
 			gp->max_special = kp->value;
 		if (kp->ch <= MAX_FAST_KEY)
@@ -234,6 +237,41 @@ term_init(sp)
 				return (1);
 	}
 	return (0);
+}
+
+/*
+ * termkeyset --
+ *	Set keys found in the termios structure.  VERASE, VINTR and VKILL are
+ *	required by POSIX 1003.1-1990, VWERASE is a 4.4BSD extension.  We've
+ *	left four open slots in the keylist table, if these values exist, put
+ *	them into place.  Note, they may reset (or duplicate) values already
+ *	in the table, so we check for that first.
+ */
+static void
+termkeyset(gp, name, val)
+	GS *gp;
+	int name, val;
+{
+	KEYLIST *kp;
+	cc_t ch;
+
+	if (!F_ISSET(gp, G_TERMIOS_SET))
+		return;
+	if ((ch = gp->original_termios.c_cc[(name)]) == _POSIX_VDISABLE)
+		return;
+
+	/* Check for duplication. */
+	for (kp = keylist; kp->value != K_NOTUSED; ++kp)
+		if (kp->ch == ch) {
+			kp->value = val;
+			return;
+		}
+	/* Add a new entry. */
+	if (kp->value == K_NOTUSED) {
+		keylist[nkeylist].ch = ch;
+		keylist[nkeylist].value = val;
+		++nkeylist;
+	}
 }
 
 /*
@@ -669,8 +707,7 @@ __term_key_val(sp, ch)
 	KEYLIST k, *kp;
 
 	k.ch = ch;
-	kp = bsearch(&k, keylist,
-	    sizeof(keylist) / sizeof(keylist[0]), sizeof(keylist[0]), keycmp);
+	kp = bsearch(&k, keylist, nkeylist, sizeof(keylist[0]), keycmp);
 	return (kp == NULL ? 0 : kp->value);
 }
 
