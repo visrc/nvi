@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_word.c,v 5.2 1992/05/15 11:12:18 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:12:18 $";
+static char sccsid[] = "$Id: v_word.c,v 5.3 1992/05/21 12:52:28 bostic Exp $ (Berkeley) $Date: 1992/05/21 12:52:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -114,14 +114,15 @@ fword(vp, cp, rp, spaceonly)
 			/* If we hit EOF, stay there (historic practice). */
 			if (p == NULL) {
 				/* If already at eof, complain. */
-				if (empty) {
+				if (empty && !(vp->flags & VC_ISMOTION)) {
 					v_eof(NULL);
 					return (1);
 				}
 				--lno;
 				EGETLINE(p, lno, len);
 				rp->lno = lno;
-				rp->cno = len ? len - 1 : 0;
+				rp->cno = len ?
+				    vp->flags & VC_ISMOTION ? len : len - 1 : 0;
 				return (0);
 			}
 			cno = 0;
@@ -190,13 +191,12 @@ bword(vp, cp, rp, spaceonly)
 	cnt = vp->flags & VC_C1SET ? vp->count : 1;
 
 	/*
-	 * Reset the length; the first character is the current cursor
-	 * position.
+	 * Reset the length to the number of characters in the line; the
+	 * first character is the current cursor position.
 	 */
 	len = cno ? cno + 1 : 0;
 	if (len == 0)
 		goto line;
-
 	for (startp = p, p += cno; cnt--;) {
 		if (spaceonly) {
 			if (!isspace(*p)) {
@@ -209,7 +209,7 @@ bword(vp, cp, rp, spaceonly)
 			if (len)
 				BW(!isspace(*p));
 			else
-				++cnt;
+				goto line;
 		} else {
 			if (!isspace(*p)) {
 				if (len < 2)
@@ -224,7 +224,7 @@ bword(vp, cp, rp, spaceonly)
 				else
 					BW(!isspace(*p) && !inword(*p));
 			else
-				++cnt;
+				goto line;
 		}
 
 		if (cnt && len == 0) {
@@ -235,12 +235,36 @@ line:			if (lno == 1) {
 				return (0);
 			}
 
-			/* Get the line. */
+			/*
+			 * Get the line.  If the line is empty, decrement
+			 * count and get another one.
+			 */
 			EGETLINE(p, --lno, len);
+			if (len == 0) {
+				if (--cnt == 0) {
+					rp->lno = lno;
+					rp->cno = 0;
+					return (0);
+				}
+				goto line;
+			}
 
-			/* Cursor set to the end of the line. */
+			/*
+			 * Set the cursor to the end of the line.  If the word
+			 * at the end of this line has only a single character,
+			 * we've already skipped over it.
+			 */
 			startp = p;
-			p += len ? len - 1 : 0;
+			if (len) {
+				p += len - 1;
+				if (len > 1 && !isspace(p[0]))
+					if (inword(p[0])) {
+						if (!inword(p[-1]))
+							--cnt;
+					} else if (!isspace(p[-1]) &&
+					    !inword(p[-1]))
+							--cnt;
+			}
 		} else {
 			++p;
 			++len;
