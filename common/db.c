@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 5.18 1993/02/19 11:11:44 bostic Exp $ (Berkeley) $Date: 1993/02/19 11:11:44 $";
+static char sccsid[] = "$Id: db.c,v 5.19 1993/02/22 17:32:42 bostic Exp $ (Berkeley) $Date: 1993/02/22 17:32:42 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -331,7 +331,8 @@ file_lline(ep)
 
 	/* Check the cache. */
 	if (ep->c_nlines != OOBLNO)
-		return (ep->c_nlines);
+		return (ib.stop.lno > ep->c_nlines ?
+		    ib.stop.lno : ep->c_nlines);
 
 	key.data = &lno;
 	key.size = sizeof(lno);
@@ -354,5 +355,5 @@ file_lline(ep)
 	ep->c_len = data.size;
 	ep->c_lp = data.data;
 
-	return (lno);
+	return (ib.stop.lno > lno ? ib.stop.lno : lno);
 }
