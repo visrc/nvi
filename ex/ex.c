@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.23 1993/09/02 13:05:18 bostic Exp $ (Berkeley) $Date: 1993/09/02 13:05:18 $";
+static char sccsid[] = "$Id: ex.c,v 8.24 1993/09/07 18:44:22 bostic Exp $ (Berkeley) $Date: 1993/09/07 18:44:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -320,8 +320,8 @@ ex_cmd(sp, ep, exc, arg1_len)
 	cmd.buffer = OOBCB;
 
 	/*
-	 * Parse line specifiers if the command uses addresses.  New command
-	 * line position is returned, or NULL on error.  
+	 * Parse line specifiers if the command uses addresses.
+	 * New command line position is returned, or NULL on error.  
 	 */
 	if ((exc = ep_range(sp, ep, exc, &cmd)) == NULL)
 		return (1);
@@ -753,8 +753,16 @@ addr2:	switch (cmd.addrcnt) {
 
 	/* If doing a default command, vi just moves to the line. */
 	if (F_ISSET(sp, S_MODE_VI) && uselastcmd) {
-		sp->lno = cmd.addr1.lno ? cmd.addr1.lno : 1;
-		sp->cno = cmd.addr1.cno;
+		switch (cmd.addrcnt) {
+		case 2:
+			sp->lno = cmd.addr2.lno ? cmd.addr2.lno : 1;
+			sp->cno = cmd.addr2.cno;
+			break;
+		case 1:
+			sp->lno = cmd.addr1.lno ? cmd.addr1.lno : 1;
+			sp->cno = cmd.addr1.cno;
+			break;
+		}
 		return (0);
 	}
 
@@ -1130,11 +1138,14 @@ ep_range(sp, ep, cmd, cp)
 		default:
 			if ((endp = ep_line(sp, ep, cmd, &cur)) == NULL)
 				return (NULL);
-			if (cmd == endp)
-				goto done;
-			else
+			if (cmd != endp) {
 				cmd = endp;
-			break;
+				break;
+			}
+			/* FALLTHROUGH */
+		case '\0':
+			goto done;
+			/* NOTREACHED */
 		}
 
 		/* Extra addresses are discarded, starting with the first. */
@@ -1175,7 +1186,7 @@ ep_line(sp, ep, cmd, cur)
 	char *cmd;
 	MARK *cur;
 {
-	MARK sm, *mp;
+	MARK m, *mp;
 	long num, total;
 	char *endp;
 
@@ -1186,10 +1197,22 @@ ep_line(sp, ep, cmd, cur)
 				return (NULL);
 			cur->cno = 0;
 			++cmd;
-			break;
-					/* Absolute line number. */
+			break;		/* Absolute line number. */
 		case '0': case '1': case '2': case '3': case '4':
 		case '5': case '6': case '7': case '8': case '9':
+			/*
+			 * The way the vi "previous context" mark worked was
+			 * that "non-relative" motions set it.  While vi was
+			 * not completely consistent about this, ANY numeric
+			 * address was considered non-relative, and set the
+			 * value.
+			 */
+			if (F_ISSET(sp, S_MODE_VI)) {
+				m.lno = sp->lno;
+				m.cno = sp->cno;
+				if (mark_set(sp, ep, ABSMARK1, &m))
+					return (NULL);
+			}
 			cur->lno = strtol(cmd, &endp, 10);
 			cur->cno = 0;
 			cmd = endp;
@@ -1206,23 +1229,23 @@ ep_line(sp, ep, cmd, cur)
 			cmd += 2;
 			break;
 		case '/':		/* Search forward. */
-			sm.lno = sp->lno;
-			sm.cno = sp->cno;
-			if (f_search(sp, ep, &sm, &sm,
+			m.lno = sp->lno;
+			m.cno = sp->cno;
+			if (f_search(sp, ep, &m, &m,
 			    cmd, &endp, SEARCH_MSG | SEARCH_PARSE | SEARCH_SET))
 				return (NULL);
-			cur->lno = sp->lno = sm.lno;
-			cur->cno = sp->cno = sm.cno;
+			cur->lno = sp->lno = m.lno;
+			cur->cno = sp->cno = m.cno;
 			cmd = endp;
 			break;
 		case '?':		/* Search backward. */
-			sm.lno = sp->lno;
-			sm.cno = sp->cno;
-			if (b_search(sp, ep, &sm, &sm,
+			m.lno = sp->lno;
+			m.cno = sp->cno;
+			if (b_search(sp, ep, &m, &m,
 			    cmd, &endp, SEARCH_MSG | SEARCH_PARSE | SEARCH_SET))
 				return (NULL);
-			cur->lno = sp->lno = sm.lno;
-			cur->cno = sp->cno = sm.cno;
+			cur->lno = sp->lno = m.lno;
+			cur->cno = sp->cno = m.cno;
 			cmd = endp;
 			break;
 		case '.':		/* Current position. */
