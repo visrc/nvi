@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 5.26 1993/04/13 16:18:59 bostic Exp $ (Berkeley) $Date: 1993/04/13 16:18:59 $";
+static char sccsid[] = "$Id: search.c,v 5.27 1993/05/02 11:00:53 bostic Exp $ (Berkeley) $Date: 1993/05/02 11:00:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -17,52 +17,53 @@ static char sccsid[] = "$Id: search.c,v 5.26 1993/04/13 16:18:59 bostic Exp $ (B
 
 #include "vi.h"
 
-static int	checkdelta __P((SCR *, EXF *, long, recno_t));
+static int	check_delta __P((SCR *, EXF *, long, recno_t));
+static int	check_word __P((SCR *, char **, int *, int *));
 static int	resetup __P((SCR *, regex_t **, enum direction,
-		    char *, char **, long *, u_int));
+		    char *, char **, long *, int *, u_int));
 
 /*
  * resetup --
  *	Set up a search for a regular expression.
  */
 static int
-resetup(sp, rep, dir, ptrn, epp, deltap, flags)
+resetup(sp, rep, dir, ptrn, epp, deltap, wordoffsetp, flags)
 	SCR *sp;
 	regex_t **rep;
 	enum direction dir;
 	char *ptrn, **epp;
 	long *deltap;
+	int *wordoffsetp;
 	u_int flags;
 {
-	int eval, reflags;
-	char *endp;
-	char delim[2];
-
-	if (ptrn == NULL && !F_ISSET(sp, S_RE_SET)) {
-noprev:		msgq(sp, M_INFO, "No previous search pattern.");
-		return (1);
-	}
+	int eval, re_flags, replaced;
+	char *endp, delim[2];
 
 	/* Set delta to default. */
 	if (deltap != NULL)
 		*deltap = 0;
 
 	/*
-	 * Use saved pattern if no pattern supplied, or if only the delimiter
-	 * character is supplied.  Only the pattern is retained, historic vi
+	 * Use saved pattern if no pattern supplied, or if only a delimiter
+	 * character is supplied.  Only the pattern was saved, historic vi
 	 * did not reuse any delta supplied.
 	 */
 	if (ptrn == NULL || ptrn[1] == '\0') {
+		if (!F_ISSET(sp, S_RE_SET)) {
+noprev:			msgq(sp, M_INFO, "No previous search pattern.");
+			return (1);
+		}
 		*rep = &sp->sre;
 		return (0);
 	}
 
-	reflags = 0;				/* Set flags. */
+	re_flags = 0;				/* Set flags. */
 	if (O_ISSET(sp, O_EXTENDED))
-		reflags |= REG_EXTENDED;
+		re_flags |= REG_EXTENDED;
 	if (O_ISSET(sp, O_IGNORECASE))
-		reflags |= REG_ICASE;
+		re_flags |= REG_ICASE;
 
+	*wordoffsetp = 0;
 	if (flags & SEARCH_PARSE) {		/* Parse the string. */
 		/* Set delimiter. */
 		delim[0] = *ptrn++;
@@ -105,19 +106,28 @@ noprev:		msgq(sp, M_INFO, "No previous search pattern.");
 				goto noprev;
 			*rep = &sp->sre;
 		}
+
+		/* Replace any word search pattern. */
+		if (check_word(sp, &ptrn, &replaced, wordoffsetp))
+			return (1);
 	}
-						/* Compile the RE. */
-	eval = regcomp(*rep, (char *)ptrn, reflags);
-	if (eval != 0) {
+
+	/* Compile the RE. */
+	if (eval = regcomp(*rep, (char *)ptrn, re_flags))
 		re_error(sp, eval, *rep);
-		return (1);
-	}
-	if (flags & SEARCH_SET) {
+	else if (flags & SEARCH_SET) {
 		F_SET(sp, S_RE_SET);
 		sp->searchdir = dir;
 		sp->sre = **rep;
 	}
-	return (0);
+
+	/* Free up any extra memory. */
+	if (replaced)
+		if (ptrn == sp->gp->tmp_bp)
+			F_CLR(sp->gp, G_TMP_INUSE);
+		else
+			free(ptrn);
+	return (eval);
 }
 
 #define	EMPTYMSG	"File empty; nothing to search."
@@ -139,7 +149,7 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 	recno_t lno;
 	size_t coff, len;
 	long delta;
-	int eval, wrapped;
+	int eval, wordoffset, wrapped;
 	char *l;
 
 	if ((lno = file_lline(sp, ep)) == 0) {
@@ -149,7 +159,7 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 	}
 
 	re = &lre;
-	if (resetup(sp, &re, FORWARD, ptrn, eptrn, &delta, flags))
+	if (resetup(sp, &re, FORWARD, ptrn, eptrn, &delta, &wordoffset, flags))
 		return (1);
 
 	/* If in the last column, start searching on the next line. */
@@ -222,7 +232,7 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 		 * past the end of the line with $, so check for that case.
 		 */
 		if (delta) {
-			if (checkdelta(sp, ep, delta, lno))
+			if (check_delta(sp, ep, delta, lno))
 				break;
 			rm->lno = delta + lno;
 			rm->cno = 0;
@@ -233,6 +243,10 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 #endif
 			rm->lno = lno;
 			rm->cno = match[0].rm_so;
+
+			if (wordoffset)
+				++rm->cno;
+
 			if (rm->cno >= len)
 				rm->cno = len ? len - 1 : 0;
 		}
@@ -254,7 +268,7 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 	recno_t lno;
 	size_t coff, len, last;
 	long delta;
-	int eval, wrapped;
+	int eval, wordoffset, wrapped;
 	char *l;
 
 	if ((lno = file_lline(sp, ep)) == 0) {
@@ -264,7 +278,7 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 	}
 
 	re = &lre;
-	if (resetup(sp, &re, BACKWARD, ptrn, eptrn, &delta, flags))
+	if (resetup(sp, &re, BACKWARD, ptrn, eptrn, &delta, &wordoffset, flags))
 		return (1);
 
 	/* If in the first column, start searching on the previous line. */
@@ -326,7 +340,7 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 			msgq(sp, M_INFO, WRAPMSG);
 		
 		if (delta) {
-			if (checkdelta(sp, ep, delta, lno))
+			if (check_delta(sp, ep, delta, lno))
 				break;
 			rm->lno = delta + lno;
 			rm->cno = 0;
@@ -357,6 +371,9 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 			}
 			rm->lno = lno;
 			rm->cno = last;
+
+			if (wordoffset)
+				++rm->cno;
 		}
 		return (0);
 	}
@@ -364,11 +381,68 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 }
 
 /*
- * checkdelta --
+ * check_word --
+ *	Vi special cases the pattern "\<ptrn\>", doing "word" searches.
+ */
+static int
+check_word(sp, ptrnp, replacedp, wordoffsetp)
+	SCR *sp;
+	char **ptrnp;
+	int *replacedp, *wordoffsetp;
+{
+	GS *gp;
+	size_t needspace;
+	int cnt;
+	char *p, *t, *mp;
+
+	/* Count up the "word" patterns. */
+	*replacedp = *wordoffsetp = 0;
+	for (p = *ptrnp, cnt = 0; *p; ++p)
+		if (p[0] == '\\' && p[1] && p[1] == '<')
+			++cnt;
+	if (cnt == 0)
+		return (0);
+
+	/* Report back if altered the start of the search pattern. */
+	p = *ptrnp;
+	if (p[0] == '\\' && p[1] == '<')
+		*wordoffsetp = 1;
+
+	/* Get enough memory to hold the final pattern. */
+	needspace = strlen(*ptrnp) + cnt * sizeof(RE_NOTINWORD) * 2;
+	gp = sp->gp;
+	if (F_ISSET(gp, G_TMP_INUSE)) {
+		if ((mp = malloc(needspace)) == NULL) {
+			msgq(sp, M_ERR, "Error: %s", strerror(errno));
+			return (1);
+		}
+	} else {
+		BINC(sp, gp->tmp_bp, gp->tmp_blen, needspace);
+		mp = gp->tmp_bp;
+		F_SET(gp, G_TMP_INUSE);
+	}
+
+	for (p = *ptrnp, t = mp; *p;)
+		if (p[0] == '\\' && p[1] &&
+		    p[1] == '<' || p[1] == '>') {
+			memmove(t, RE_NOTINWORD, sizeof(RE_NOTINWORD) - 1);
+			t += sizeof(RE_NOTINWORD) - 1;
+			p += 2;
+		} else
+			*t++ = *p++;
+	*t = '\0';
+
+	*ptrnp = mp;
+	*replacedp = 1;
+	return (0);
+}
+
+/*
+ * check_delta --
  *	Check a line delta to see if it's legal.
  */
 static int
-checkdelta(sp, ep, delta, lno)
+check_delta(sp, ep, delta, lno)
 	SCR *sp;
 	EXF *ep;
 	long delta;
