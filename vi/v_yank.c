@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_yank.c,v 8.1 1993/06/09 22:28:48 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:28:48 $";
+static char sccsid[] = "$Id: v_yank.c,v 8.2 1993/08/06 10:37:11 bostic Exp $ (Berkeley) $Date: 1993/08/06 10:37:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -15,25 +15,9 @@ static char sccsid[] = "$Id: v_yank.c,v 8.1 1993/06/09 22:28:48 bostic Exp $ (Be
 #include "vcmd.h"
 
 /*
- * v_Yank -- [buffer][count]y
- *	Yank lines of text into a cut buffer.
- */
-int
-v_Yank(sp, ep, vp, fm, tm, rp)
-	SCR *sp;
-	EXF *ep;
-	VICMDARG *vp;
-	MARK *fm, *tm, *rp;
-{
-	rp->lno = sp->lno;
-	rp->cno = sp->cno;
-	sp->rptlines[L_YANKED] += tm->lno - fm->lno + 1;
-	return (cut(sp, ep, VICB(vp), fm, tm, 1));
-}
-
-/*
- * v_yank -- [buffer][count]y[count][motion]
- *	Yank text into a cut buffer.
+ * v_yank --	[buffer][count]Y
+ *		[buffer][count]y[count][motion]
+ *	Yank text (or lines of text) into a cut buffer.
  */
 int
 v_yank(sp, ep, vp, fm, tm, rp)

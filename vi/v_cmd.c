@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 8.2 1993/08/06 09:43:46 bostic Exp $ (Berkeley) $Date: 1993/08/06 09:43:46 $";
+static char sccsid[] = "$Id: v_cmd.c,v 8.3 1993/08/06 10:37:00 bostic Exp $ (Berkeley) $Date: 1993/08/06 10:37:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -264,7 +264,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	{v_Xchar,	V_CNT|V_DOT|V_OBUF|V_RCM_SET,
 	    "delete character before cursor: [buffer][count]X"},
 /* 131   Y */
-	{v_Yank,	V_CNT|V_LMODE|V_OBUF,
+	{v_yank,	V_CNT|V_LMODE|V_OBUF,
 	    "copy line: [buffer][count]Y"},
 /* 132   Z */
 	{v_exit,	0,
