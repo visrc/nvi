@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.64 1994/04/17 16:51:09 bostic Exp $ (Berkeley) $Date: 1994/04/17 16:51:09 $";
+static char sccsid[] = "$Id: key.c,v 8.65 1994/04/21 10:45:21 bostic Exp $ (Berkeley) $Date: 1994/04/21 10:45:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -88,7 +88,7 @@ static TKLIST const m2_tklist[] = {	/* Input mappings (set or delete). */
 
 /*
  * !!!
- * Historic ex/vi always used:
+ * Historic vi always used:
  *
  *	^D: autoindent deletion
  *	^H: last character deletion
@@ -96,13 +96,19 @@ static TKLIST const m2_tklist[] = {	/* Input mappings (set or delete). */
  *	^Q: quote the next character (if not used in flow control).
  *	^V: quote the next character
  *
- * regardless of the user's choices for these characters.  The user's erase
- * and kill characters worked in addition to these characters.  Ex was not
- * completely consistent with this scheme, as it did map the scroll command
- * to the user's current EOF character.  This implementation wires down the
- * above characters, but in addition uses the VERASE, VINTR, VKILL and VWERASE
- * characters described by the user's termios structure.  We don't do the EOF
- * mapping for ex, but I think I'm unlikely to get caught on that one.
+ * regardless of the user's choices for these characters.  The user's
+ * erase and kill characters worked in addition to these characters.
+ * This implementation wires down the above characters, but in addition
+ * permits the VERASE, VINTR, VKILL and VWERASE characters described by
+ * the user's termios structure.
+ *
+ * Ex was not consistent with this scheme, as it historically ran in tty
+ * cooked mode.  This meant that the scroll command and autoindent erase
+ * characters were mapped to the user's EOF character, and the character
+ * and word deletion characters were the user's tty character and word
+ * deletion characters.  This implementation makes it all consistent, as
+ * described above for vi.  I don't do EOF mapping for ex, but I think I'm
+ * unlikely to get caught on that one.
  *
  * XXX
  * THIS REQUIRES THAT ALL SCREENS SHARE A SPECIAL KEY SET.
