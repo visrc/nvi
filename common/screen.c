@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 5.4 1993/04/12 14:31:14 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:31:14 $";
+static char sccsid[] = "$Id: screen.c,v 5.5 1993/04/13 16:16:01 bostic Exp $ (Berkeley) $Date: 1993/04/13 16:16:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -49,8 +49,10 @@ scr_init(orig, sp)
 #ifdef FWOPEN_NOT_AVAILABLE
 	sp->trapped_fd = -1;
 #endif
-
 	FD_ZERO(&sp->rdfd);
+
+	HDR_INIT(sp->bhdr, next, prev);
+	HDR_INIT(sp->txthdr, next, prev);
 
 	sp->lastcmd = &cmds[C_PRINT];
 
@@ -176,16 +178,13 @@ scr_end(sp)
 	if (sp->g.gl_pathc)
 		globfree(&sp->g);
 
-	/* Free input character arrays. */
-	if (sp->gb_cb != NULL) {
-		free(sp->gb_cb);
-		free(sp->gb_qb);
-		free(sp->gb_wb);
-	}
-
 	/* Free line input buffer. */
 	if (sp->ibp != NULL)
 		free(sp->ibp);
+
+	/* Free text input, command chains. */
+	text_free(&sp->txthdr);
+	text_free(&sp->bhdr);
 
 	/* Free vi text input memory. */
 	if (sp->rep != NULL)
@@ -317,7 +316,7 @@ cut_copy(a, b)
 		if (acb->txthdr.next == NULL ||
 		    acb->txthdr.next == &acb->txthdr)
 			continue;
-		HDR_INIT(bcb->txthdr, next, prev, TEXT);
+		HDR_INIT(bcb->txthdr, next, prev);
 		for (atp = acb->txthdr.next;
 		    atp != (TEXT *)&acb->txthdr; atp = atp->next) {
 			if ((tp = malloc(sizeof(TEXT))) == NULL)
@@ -375,7 +374,7 @@ seq_copy(a, b)
 	SEQ *ap;
 
 	/* Initialize linked list. */
-	HDR_INIT(b->seqhdr, next, prev, SEQ);
+	HDR_INIT(b->seqhdr, next, prev);
 
 	for (ap = a->seqhdr.next; ap != (SEQ *)&a->seqhdr; ap = ap->next)
 		if (seq_set(b,
