@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 10.21 1996/02/06 11:55:11 bostic Exp $ (Berkeley) $Date: 1996/02/06 11:55:11 $";
+static char sccsid[] = "$Id: key.c,v 10.22 1996/02/20 21:05:40 bostic Exp $ (Berkeley) $Date: 1996/02/20 21:05:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -115,6 +115,16 @@ v_key_init(sp)
 	 * character set, as long as nul isn't a character.
 	 */
 	(void)setlocale(LC_ALL, "");
+#if __linux__
+	/*
+	 * In libc 4.5.26, setlocale(LC_ALL, ""), doesn't setup the table
+	 * for ctype(3c) correctly.  This bug is fixed in libc 4.6.x.
+	 *
+	 * This code works around this problem for libc 4.5.x users.
+	 * Note that this code is harmless if you're using libc 4.6.x.
+	 */
+	(void)setlocale(LC_CTYPE, "");
+#endif
 	v_key_ilookup(sp);
 
 	v_keyval(sp, KEY_VEOF, K_CNTRLD);
