@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 8.1 1993/06/09 22:24:59 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:24:59 $";
+static char sccsid[] = "$Id: ex_print.c,v 8.2 1993/06/21 15:13:21 bostic Exp $ (Berkeley) $Date: 1993/06/21 15:13:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -109,6 +109,9 @@ ex_print(sp, ep, fp, tp, flags)
 	int cnt;
 	char *p, buf[10];
 
+	F_CLR(sp, S_INTERRUPTED);
+	F_SET(sp, S_INTERRUPTIBLE);
+
 	for (from = fp->lno, to = tp->lno; from <= to; ++from) {
 		/* Display the line number. */
 		if (LF_ISSET(E_F_HASH))
@@ -180,6 +183,10 @@ ex_print(sp, ep, fp, tp, flags)
 			WCHECK(' ');
 		}
 		(void)putc('\n', sp->stdfp);
+
+		if (F_ISSET(sp, S_INTERRUPTED))
+			break;
 	}
+	F_CLR(sp, S_INTERRUPTED | S_INTERRUPTIBLE);
 	return (0);
 }
