@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_argv.c,v 10.21 1996/08/10 19:24:35 bostic Exp $ (Berkeley) $Date: 1996/08/10 19:24:35 $";
+static const char sccsid[] = "$Id: ex_argv.c,v 10.22 1996/08/11 18:30:22 bostic Exp $ (Berkeley) $Date: 1996/08/11 18:30:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -563,10 +563,15 @@ argv_prefix(sp, path, wp, bpp, blenp, lenp)
 	len = wp - bp;
 	blen -= len;
 
-	/* Read the directory, checking for files with a matching prefix. */
+	/*
+	 * Read the directory, checking for files with a matching prefix.
+	 *
+	 * XXX
+	 * We don't use the d_namlen field, it's not portable enough; we
+	 * assume that d_name is nul terminated, instead.
+	 */
 	while ((dp = readdir(dirp)) != NULL)
-		if (nlen == 0 ||
-		    (dp->d_namlen >= nlen && !memcmp(dp->d_name, name, nlen))) {
+		if (nlen == 0 || !strncmp(dp->d_name, name, nlen)) {
 			if (blen < dp->d_namlen + dlen + 5) {
 				doffset = dname - bp;
 				ADD_SPACE_GOTO(sp, bp, *blenp,
@@ -596,7 +601,7 @@ argv_prefix(sp, path, wp, bpp, blenp, lenp)
 	 * can't know for certain that's the error, but it's a good guess, and
 	 * it matches historic practice. 
 	 */
-	if (p == bp) {
+	if (p == wp) {
 		msgq(sp, M_ERR, "304|Shell expansion failed");
 alloc_err:	return (1);
 	}
