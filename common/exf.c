@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.25 1993/09/27 18:00:04 bostic Exp $ (Berkeley) $Date: 1993/09/27 18:00:04 $";
+static char sccsid[] = "$Id: exf.c,v 8.26 1993/09/28 10:26:50 bostic Exp $ (Berkeley) $Date: 1993/09/28 10:26:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -437,7 +437,8 @@ file_write(sp, ep, fm, tm, fname, flags)
 	FILE *fp;
 	MARK from, to;
 	u_long nlno, nch;
-	int fd, newfile, oflags;
+	int fd, oflags;
+	char *msg;
 
 	/*
 	 * Don't permit writing to temporary files.  The problem is that
@@ -496,15 +497,28 @@ file_write(sp, ep, fm, tm, fname, flags)
 		}
 	}
 
+	/*
+	 * Figure out if the file already exists -- if it doesn't, we display
+	 * the "new file" message.  The stat might not be necessary, but we
+	 * just repeat it because it's easier than hacking the previous tests.
+	 * The information is only used for the user message, so we can ignore
+	 * the obvious race condition.  If overwriting a file other than the
+	 * original file, and O_WRITEANY was what got us here (neither force
+	 * nor append was set), display the "existing file" messsage.  Note,
+	 * since we turn FR_NAMECHANGED off on a successful write, the latter
+	 * message only appears once.  This is historic practice.
+	 */
+	if (stat(fname == NULL ? sp->frp->fname : fname, &sb))
+		msg = ": new file";
+	else if (!LF_ISSET(FS_FORCE | FS_APPEND) &&
+	    (fname != NULL || F_ISSET(sp->frp, FR_NAMECHANGED)))
+		msg = ": existing file";
+	else
+		msg = "";
+
+	/* We no longer care where the name came from. */
 	if (fname == NULL)
 		fname = sp->frp->fname;
-
-	/*
-	 * Once we've decided that we can actually write the file, it
-	 * doesn't matter that the file name was changed -- if it was,
-	 * we created the file.
-	 */
-	F_CLR(sp->frp, FR_NAMECHANGED);
 
 	/* Set flags to either append or truncate. */
 	oflags = O_CREAT | O_WRONLY;
@@ -513,19 +527,18 @@ file_write(sp, ep, fm, tm, fname, flags)
 	else
 		oflags |= O_TRUNC;
 
-	/*
-	 * Figure out if the file already exists.  We redo the stat 'cause
-	 * it's easier than hacking the various tests above.  The information
-	 * is only used for the user message, so we can ignore the obvious
-	 * race condition.
-	 */
-	newfile = stat(fname, &sb);
-
 	/* Open the file. */
 	if ((fd = open(fname, oflags, DEFFILEMODE)) < 0) {
 		msgq(sp, M_ERR, "%s: %s", fname, strerror(errno));
 		return (1);
 	}
+
+	/*
+	 * Once we've decided that we can actually write the file, it
+	 * doesn't matter that the file name was changed -- if it was,
+	 * we created the file.
+	 */
+	F_CLR(sp->frp, FR_NAMECHANGED);
 
 	/* Use stdio for buffering. */
 	if ((fp = fdopen(fd, "w")) == NULL) {
@@ -552,8 +565,8 @@ file_write(sp, ep, fm, tm, fname, flags)
 		return (1);
 	}
 
-	msgq(sp, M_INFO, "%s%s: %lu line%s, %lu characters.", fname,
-	    newfile ? ": new file" : "", nlno, nlno == 1 ? "" : "s", nch);
+	msgq(sp, M_INFO, "%s%s: %lu line%s, %lu characters.",
+	    fname, msg, nlno, nlno == 1 ? "" : "s", nch);
 
 	/* If wrote the entire file, clear the modified bit. */
 	if (LF_ISSET(FS_ALL))
