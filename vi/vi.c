@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 9.5 1994/11/16 16:56:27 bostic Exp $ (Berkeley) $Date: 1994/11/16 16:56:27 $";
+static char sccsid[] = "$Id: vi.c,v 9.6 1994/11/16 19:46:27 bostic Exp $ (Berkeley) $Date: 1994/11/16 19:46:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -484,6 +484,7 @@ getcmd(sp, dp, vp, ismotion, comcountp, mappedp)
 		}
 		if (F_ISSET(vp, VC_BUFFER))
 			dp->buffer = vp->buffer;
+
 		*vp = *dp;
 		return (GC_OK);
 	}
@@ -591,10 +592,6 @@ getalias(sp, vp, kp)
 	CHAR_T push;
 
 	switch (vp->key) {
-	case 'A':			/* A -> $a */
-		push = 'a';
-		vp->key = '$';
-		break;
 	case 'C':			/* C -> c$ */
 		push = '$';
 		vp->key = 'c';
@@ -602,10 +599,6 @@ getalias(sp, vp, kp)
 	case 'D':			/* D -> d$ */
 		push = '$';
 		vp->key = 'd';
-		break;
-	case 'I':			/* I -> ^i */
-		push = 'i';
-		vp->key = '^';
 		break;
 	case 'S':			/* S -> c_ */
 		push = '_';
