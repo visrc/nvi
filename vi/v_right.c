@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_right.c,v 8.1 1993/06/09 22:27:46 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:27:46 $";
+static char sccsid[] = "$Id: v_right.c,v 8.2 1993/08/16 21:10:07 bostic Exp $ (Berkeley) $Date: 1993/08/16 21:10:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -62,7 +62,7 @@ v_right(sp, ep, vp, fm, tm, rp)
 }
 
 /*
- * v_dollar -- $
+ * v_dollar -- [count]$
  *	Move to the last column.
  *
  *	One of places that you are allowed to move beyond the end of
@@ -77,6 +77,16 @@ v_dollar(sp, ep, vp, fm, tm, rp)
 {
 	recno_t lno;
 	size_t len;
+	u_long cnt;
+
+	/* A count moves down count - 1 rows, so, "3$" is the same as "2j$". */
+	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
+	if (cnt != 1) {
+		--vp->count;
+		if (v_down(sp, ep, vp, fm, tm, rp))
+			return (1);
+		*fm = *rp;
+	}
 
 	if (file_gline(sp, ep, fm->lno, &len) == NULL) {
 		if (file_lline(sp, ep, &lno))
