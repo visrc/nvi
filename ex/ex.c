@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.84 1993/04/17 11:55:22 bostic Exp $ (Berkeley) $Date: 1993/04/17 11:55:22 $";
+static char sccsid[] = "$Id: ex.c,v 5.85 1993/04/18 09:31:17 bostic Exp $ (Berkeley) $Date: 1993/04/18 09:31:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -39,10 +39,15 @@ ex(sp, ep)
 	EXF *ep;
 {
 	TEXT *tp;
+	int eval;
 	char defcom[sizeof(DEFCOM)];
 
 	if (ex_init(sp, ep))
 		return (1);
+
+	if (sp->refresh(sp, ep))
+		return (ex_end(sp));
+
 	/*
 	 * XXX
 	 * Turn on signal handling.
@@ -50,8 +55,9 @@ ex(sp, ep)
 	(void)signal(SIGHUP, onhup);
 	(void)signal(SIGINT, SIG_IGN);
 
-	do {
-		if (ex_gb(sp, ep, &sp->bhdr, ':', TXT_MAPCOMMAND | TXT_PROMPT))
+	for (eval = 0;;) {
+		if (sex_gb(sp, ep,
+		    &sp->bhdr, ':', TXT_CR | TXT_MAPCOMMAND | TXT_PROMPT))
 			continue;
 		tp = sp->bhdr.next;
 		if (tp->len == 0) {
@@ -63,8 +69,16 @@ ex(sp, ep)
 			(void)fputc('\n', sp->stdfp);
 			(void)ex_cstring(sp, ep, tp->lb, tp->len);
 		}
-	} while (F_ISSET(sp, S_MODE_EX) && !F_ISSET(sp, S_MAJOR_CHANGE));
-	return (ex_end(sp));
+
+		if (!F_ISSET(sp, S_MODE_EX) || F_ISSET(sp, S_MAJOR_CHANGE))
+			break;
+
+		if (sp->refresh(sp, ep)) {
+			eval = 1;
+			break;
+		}
+	}
+	return (ex_end(sp) || eval);
 }
 
 /*
