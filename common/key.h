@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: key.h,v 10.15 1996/05/24 12:02:16 bostic Exp $ (Berkeley) $Date: 1996/05/24 12:02:16 $
+ *	$Id: key.h,v 10.16 1996/06/11 19:46:01 bostic Exp $ (Berkeley) $Date: 1996/06/11 19:46:01 $
  */
 
 /*
@@ -48,7 +48,7 @@ typedef enum {
 	E_SIGTERM,			/* SIGTERM. */
 	E_STRING,			/* Input string: e_csp, e_len set. */
 	E_TIMEOUT,			/* Timeout. */
-	E_WRITE,			/* Write. */
+	E_WRITE				/* Write. */
 } e_event_t;
 
 /*
