@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 8.15 1993/09/29 16:30:16 bostic Exp $ (Berkeley) $Date: 1993/09/29 16:30:16 $";
+static char sccsid[] = "$Id: ex_tag.c,v 8.16 1993/10/03 14:15:32 bostic Exp $ (Berkeley) $Date: 1993/10/03 14:15:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -225,7 +225,8 @@ ex_tagpush(sp, ep, cmdp)
 		msgq(sp, M_ERR, "Error: %s.", strerror(errno));
 	else {
 		*tp = ttag;
-		HDR_APPEND(tp, &sp->taghdr, next, prev, TAG);
+		queue_enter_head(&sp->tagq, tp, TAG *, q);
+
 	}
 	return (0);
 }
@@ -243,8 +244,7 @@ ex_tagpop(sp, ep, cmdp)
 	TAG *tp;
 
 	/* Pop newest saved information. */
-	tp = sp->taghdr.next;
-	if (tp == (TAG *)&sp->taghdr) {
+	if ((tp = sp->tagq.qe_next) == NULL) {
 		msgq(sp, M_INFO, "The tags stack is empty.");
 		return (1);
 	}
@@ -267,7 +267,7 @@ ex_tagpop(sp, ep, cmdp)
 	}
 
 	/* Delete the saved information from the stack. */
-	HDR_DELETE(tp, next, prev, TAG);
+	queue_remove(&sp->tagq, tp, TAG *, q);
 	return (0);
 }
 
@@ -281,36 +281,38 @@ ex_tagtop(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	TAG *tp;
+	TAG *tp, tmp;
+	int found;
 
-	/* Pop oldest saved information. */
-	tp = sp->taghdr.prev;
-	if (tp == (TAG *)&sp->taghdr) {
+	/* Pop to oldest saved information. */
+	for (found = 0; (tp = sp->tagq.qe_next) != NULL; found = 1) {
+		queue_remove(&sp->tagq, tp, TAG *, q);
+		if (sp->tagq.qe_next == NULL)
+			tmp = *tp;
+		FREE(tp, sizeof(TAG));
+	}
+
+	if (!found) {
 		msgq(sp, M_INFO, "The tags stack is empty.");
 		return (1);
 	}
 
 	/* If not switching files, it's easy; else do the work. */
-	if (tp->frp == sp->frp) {
-		sp->lno = tp->lno;
-		sp->cno = tp->cno;
+	if (tmp.frp == sp->frp) {
+		sp->lno = tmp.lno;
+		sp->cno = tmp.cno;
 	} else {
 		MODIFY_CHECK(sp, sp->ep, F_ISSET(cmdp, E_FORCE));
 
-		if (file_init(sp, tp->frp, NULL, 0))
+		if (file_init(sp, tmp.frp, NULL, 0))
 			return (1);
 
-		tp->frp->lno = tp->lno;
-		tp->frp->cno = tp->cno;
+		tmp.frp->lno = tmp.lno;
+		tmp.frp->cno = tmp.cno;
+
 		F_SET(sp->frp, FR_CURSORSET);
 
 		F_SET(sp, S_FSWITCH);
-	}
-
-	/* Delete the stack. */
-	while ((tp = sp->taghdr.next) != (TAG *)&sp->taghdr) {
-		HDR_DELETE(tp, next, prev, TAG);
-		FREE(tp, sizeof(TAG));
 	}
 	return (0);
 }
