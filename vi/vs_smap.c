@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 8.5 1993/08/29 15:22:15 bostic Exp $ (Berkeley) $Date: 1993/08/29 15:22:15 $";
+static char sccsid[] = "$Id: vs_smap.c,v 8.6 1993/08/30 09:40:25 bostic Exp $ (Berkeley) $Date: 1993/08/30 09:40:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -49,12 +49,16 @@ svi_change(sp, ep, lno, op)
 	 * ignore it.
 	 */
 	if (lno < HMAP->lno) {
-		if (op == LINE_DELETE)
+		switch (op) {
+		case LINE_DELETE:
 			for (p = HMAP; p <= TMAP; ++p)
 				--p->lno;
-		else if (op == LINE_INSERT)
+			break;
+		case LINE_INSERT:
 			for (p = HMAP; p <= TMAP; ++p)
 				++p->lno;
+			break;
+		}
 		return (0);
 	}
 
@@ -106,6 +110,7 @@ svi_sm_fill(sp, ep, lno, pos)
 	case P_FILL:
 		tmp.lno = 1;
 		tmp.off = 1;
+
 		/* See if less than half a screen from the top. */
 		if (svi_sm_nlines(sp, ep,
 		    &tmp, lno, HALFSCREEN(sp)) <= HALFSCREEN(sp)) {
@@ -230,7 +235,7 @@ svi_sm_delete(sp, ep, lno)
 	for (p = TMAP - cnt_orig;;) {
 		if (p < TMAP && svi_sm_next(sp, ep, p, p + 1))
 			return (1);
-		if (svi_line(sp, ep, ++p, 0, NULL, NULL))
+		if (svi_line(sp, ep, ++p, NULL, NULL))
 			return (1);
 		if (p == TMAP)
 			break;
@@ -284,7 +289,7 @@ svi_sm_insert(sp, ep, lno)
 	for (cnt = 1, t = p; cnt <= cnt_orig; ++t, ++cnt) {
 		t->lno = lno;
 		t->off = cnt;
-		if (svi_line(sp, ep, t, 0, NULL, NULL))
+		if (svi_line(sp, ep, t, NULL, NULL))
 			return (1);
 	}
 	return (0);
@@ -317,7 +322,7 @@ svi_sm_reset(sp, ep, lno)
 
 	if (cnt_orig == cnt_new) {
 		do {
-			if (svi_line(sp, ep, p, 0, NULL, NULL))
+			if (svi_line(sp, ep, p, NULL, NULL))
 				return (1);
 		} while (++p < t);
 		return (0);
@@ -347,7 +352,7 @@ svi_sm_reset(sp, ep, lno)
 		for (cnt = 1, t = p; cnt_new-- && t <= TMAP; ++t, ++cnt) {
 			t->lno = lno;
 			t->off = cnt;
-			if (svi_line(sp, ep, t, 0, NULL, NULL))
+			if (svi_line(sp, ep, t, NULL, NULL))
 				return (1);
 		}
 	} else {
@@ -366,7 +371,7 @@ svi_sm_reset(sp, ep, lno)
 		for (cnt = 1, t = p; cnt_new--; ++t, ++cnt) {
 			t->lno = lno;
 			t->off = cnt;
-			if (svi_line(sp, ep, t, 0, NULL, NULL))
+			if (svi_line(sp, ep, t, NULL, NULL))
 				return (1);
 		}
 
@@ -374,7 +379,7 @@ svi_sm_reset(sp, ep, lno)
 		for (t = TMAP - diff;;) {
 			if (t < TMAP && svi_sm_next(sp, ep, t, t + 1))
 				return (1);
-			if (svi_line(sp, ep, ++t, 0, NULL, NULL))
+			if (svi_line(sp, ep, ++t, NULL, NULL))
 				return (1);
 			if (t == TMAP)
 				break;
@@ -523,7 +528,7 @@ svi_sm_1up(sp, ep)
 		if (svi_sm_next(sp, ep, TMAP - 1, TMAP))
 			return (1);
 	}
-	if (svi_line(sp, ep, TMAP, 0, NULL, NULL))
+	if (svi_line(sp, ep, TMAP, NULL, NULL))
 		return (1);
 	return (0);
 }
@@ -671,7 +676,7 @@ svi_sm_1down(sp, ep)
 	memmove(HMAP + 1, HMAP, (sp->rows - 1) * sizeof(SMAP));
 	if (svi_sm_prev(sp, ep, HMAP + 1, HMAP))
 		return (1);
-	if (svi_line(sp, ep, HMAP, 0, NULL, NULL))
+	if (svi_line(sp, ep, HMAP, NULL, NULL))
 		return (1);
 	return (0);
 }
@@ -861,10 +866,8 @@ svi_sm_nlines(sp, ep, from_sp, to_lno, max)
 	recno_t lno, lcnt;
 
 	if (O_ISSET(sp, O_LEFTRIGHT))
-		if (from_sp->lno > to_lno)
-			return (from_sp->lno - to_lno);
-		else
-			return (to_lno - from_sp->lno);
+		return (from_sp->lno > to_lno ?
+		    from_sp->lno - to_lno : to_lno - from_sp->lno);
 
 	if (from_sp->lno == to_lno)
 		return (from_sp->off - 1);
