@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_preserve.c,v 8.10 1994/06/27 11:22:15 bostic Exp $ (Berkeley) $Date: 1994/06/27 11:22:15 $";
+static char sccsid[] = "$Id: ex_preserve.c,v 8.11 1994/07/18 14:54:04 bostic Exp $ (Berkeley) $Date: 1994/07/18 14:54:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -54,7 +54,7 @@ ex_preserve(sp, ep, cmdp)
 		return (1);
 
 	/* Sync to disk. */
-	if (rcv_sync(sp, ep, RCV_EMAIL | RCV_SNAPSHOT))
+	if (rcv_sync(sp, ep, RCV_SNAPSHOT))
 		return (1);
 
 	msgq(sp, M_INFO, "File preserved");
