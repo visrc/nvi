@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_match.c,v 8.17 1994/08/31 17:15:08 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:15:08 $";
+static char sccsid[] = "$Id: v_match.c,v 8.18 1994/09/21 18:18:28 bostic Exp $ (Berkeley) $Date: 1994/09/21 18:18:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -90,6 +90,14 @@ nomatch:		msgq(sp, M_BERR, "180|No match character on this line");
 			break;
 		case '}':
 			matchc = '{';
+			gc = cs_prev;
+			break;
+		case '<':
+			matchc = '>';
+			gc = cs_next;
+			break;
+		case '>':
+			matchc = '<';
 			gc = cs_prev;
 			break;
 		default:
