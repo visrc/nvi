@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.67 1993/05/07 17:13:20 bostic Exp $ (Berkeley) $Date: 1993/05/07 17:13:20 $";
+static char sccsid[] = "$Id: main.c,v 5.68 1993/05/08 19:19:41 bostic Exp $ (Berkeley) $Date: 1993/05/08 19:19:41 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -206,8 +206,11 @@ main(argc, argv)
 	if (excmdarg != NULL)
 		(void)ex_cstring(sp, sp->ep, excmdarg, strlen(excmdarg));
 
-	/* The commands we executed probably positioned the file. */
-	if (sp->lno != OOBLNO) {
+	/*
+	 * The commands we executed probably positioned the file.  This
+	 * isn't a wonderful test, but it's probably fairly safe.
+	 */
+	if ((sp->lno != 1 || sp->cno != 0) && F_ISSET(sp->ep, F_NOSETPOS)) {
 		sp->ep->lno = sp->lno;
 		sp->ep->cno = sp->cno;
 		F_CLR(sp->ep, F_NOSETPOS);
