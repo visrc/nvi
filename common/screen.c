@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 5.10 1993/05/09 14:13:45 bostic Exp $ (Berkeley) $Date: 1993/05/09 14:13:45 $";
+static char sccsid[] = "$Id: screen.c,v 5.11 1993/05/11 17:15:33 bostic Exp $ (Berkeley) $Date: 1993/05/11 17:15:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -74,6 +74,10 @@ scr_init(orig, sp)
 		
 		if (orig->lastbcomm != NULL &&
 		    (sp->lastbcomm = strdup(orig->lastbcomm)) == NULL)
+			goto mem;
+
+		if (orig->altfname != NULL &&
+		    (sp->altfname = strdup(orig->altfname)) == NULL)
 			goto mem;
 
 		sp->inc_lastch = orig->inc_lastch;
@@ -203,6 +207,9 @@ scr_end(sp)
 	/* Free last bang command. */
 	if (sp->lastbcomm != NULL)
 		FREE(sp->lastbcomm, strlen(sp->lastbcomm) + 1);
+
+	if (sp->altfname != NULL)
+		FREE(sp->altfname, strlen(sp->altfname) + 1);
 
 	/* Free cut buffers. */
 	{ CB *cb; int cnt;
