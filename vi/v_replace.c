@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_replace.c,v 5.27 1993/05/15 21:24:41 bostic Exp $ (Berkeley) $Date: 1993/05/15 21:24:41 $";
+static char sccsid[] = "$Id: v_replace.c,v 5.28 1993/05/16 15:19:16 bostic Exp $ (Berkeley) $Date: 1993/05/16 15:19:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -96,13 +96,13 @@ nochar:		msgq(sp, M_BERR, "No characters to replace");
 		if (txt_auto(sp, ep, fm->lno, NULL, tp))
 			return (1);
 		rp->cno = tp->ai ? tp->ai - 1 : 0;
-		if (file_aline(sp, ep, fm->lno, tp->lb, tp->len))
+		if (file_aline(sp, ep, 1, fm->lno, tp->lb, tp->len))
 			return (1);
 		text_free(tp);
 		
 		/* All of the middle lines. */
 		while (--cnt)
-			if (file_aline(sp, ep, fm->lno, "", 0))
+			if (file_aline(sp, ep, 1, fm->lno, "", 0))
 				return (1);
 		return (0);
 	}

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 5.33 1993/05/16 12:33:29 bostic Exp $ (Berkeley) $Date: 1993/05/16 12:33:29 $";
+static char sccsid[] = "$Id: db.c,v 5.34 1993/05/16 15:18:42 bostic Exp $ (Berkeley) $Date: 1993/05/16 15:18:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -179,9 +179,10 @@ file_dline(sp, ep, lno)
  *	Append a line into the file.
  */
 int
-file_aline(sp, ep, lno, p, len)
+file_aline(sp, ep, update, lno, p, len)
 	SCR *sp;
 	EXF *ep;
+	int update;
 	recno_t lno;
 	char *p;
 	size_t len;
@@ -221,14 +222,13 @@ file_aline(sp, ep, lno, p, len)
 	 * Update screen.
 	 *
 	 * XXX
-	 * Nasty hack, that I'm not real happy with.  If multiple lines are
-	 * input by the user, they aren't committed until an <ESC> is entered.
-	 * The problem is that the screen was updated/scrolled as each line
-	 * was entered.  So, when this routine is called to copy the new lines
-	 * from the cut buffer into the file, it has to know not to update the
-	 * screen again.
+	 * Nasty hack.  If multiple lines are input by the user, they aren't
+	 * committed until an <ESC> is entered.  The problem is the screen was
+	 * updated/scrolled as each line was entered.  So, when this routine
+	 * is called to copy the new lines from the cut buffer into the file,
+	 * it has to know not to update the screen again.
 	 */ 
-	if (!F_ISSET(sp, S_INPUT))
+	if (update)
 		UPDATE_SCREENS(LINE_APPEND);
 	return (0);
 }

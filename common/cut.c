@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 5.43 1993/05/15 10:08:48 bostic Exp $ (Berkeley) $Date: 1993/05/15 10:08:48 $";
+static char sccsid[] = "$Id: cut.c,v 5.44 1993/05/16 15:18:35 bostic Exp $ (Berkeley) $Date: 1993/05/16 15:18:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -214,13 +214,13 @@ put(sp, ep, buffer, cp, rp, append)
 		if (append) {
 			for (lno = cp->lno;
 			    tp != (TEXT *)&cb->txthdr; ++lno, tp = tp->next)
-				if (file_aline(sp, ep, lno, tp->lb, tp->len))
+				if (file_aline(sp, ep, 1, lno, tp->lb, tp->len))
 					return (1);
 			rp->lno = cp->lno + 1;
 		} else if ((lno = cp->lno) != 1) {
 			for (--lno;
 			    tp != (TEXT *)&cb->txthdr; tp = tp->next, ++lno)
-				if (file_aline(sp, ep, lno, tp->lb, tp->len))
+				if (file_aline(sp, ep, 1, lno, tp->lb, tp->len))
 					return (1);
 			rp->lno = cp->lno;
 		} else {
@@ -228,7 +228,7 @@ put(sp, ep, buffer, cp, rp, append)
 				return (1);
 			for (lno = 1;
 			    (tp = tp->next) != (TEXT *)&cb->txthdr; ++lno)
-				if (file_aline(sp, ep, lno, tp->lb, tp->len))
+				if (file_aline(sp, ep, 1, lno, tp->lb, tp->len))
 					return (1);
 			rp->lno = 1;
 		}
@@ -333,10 +333,10 @@ put(sp, ep, buffer, cp, rp, append)
 			/* Output any intermediate lines in the CB. */
 			for (tp = tp->next; tp->next != (TEXT *)&cb->txthdr;
 			    ++lno, tp = tp->next)
-				if (file_aline(sp, ep, lno, tp->lb, tp->len))
+				if (file_aline(sp, ep, 1, lno, tp->lb, tp->len))
 					goto mem;
 
-			if (file_aline(sp, ep, lno, t, clen)) {
+			if (file_aline(sp, ep, 1, lno, t, clen)) {
 mem:				FREE_SPACE(sp, bp, blen);
 				return (1);
 			}

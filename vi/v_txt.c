@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 5.19 1993/05/13 14:06:25 bostic Exp $ (Berkeley) $Date: 1993/05/13 14:06:25 $";
+static char sccsid[] = "$Id: v_txt.c,v 5.20 1993/05/16 15:19:14 bostic Exp $ (Berkeley) $Date: 1993/05/16 15:19:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -79,9 +79,8 @@ v_ntext(sp, ep, hp, tm, p, len, rp, prompt, ai_line, flags)
 	int tty_cwait;		/* Characters waiting. */
 	int max, tmp;
 
-	/* Set the input flag. */
-	if (LF_ISSET(TXT_RESOLVE))
-		F_SET(sp, S_INPUT);
+	/* Set the input flag, so tabs get displayed correctly. */
+	F_SET(sp, S_INPUT);
 
 	/* Set text buffer in-use flag. */
 	F_SET(hp, HDR_INUSE);
@@ -939,7 +938,7 @@ txt_resolve(sp, ep, hp)
 
 	/* All subsequent lines are appended into the file. */
 	for (lno = tp->lno; (tp = tp->next) != (TEXT *)&sp->txthdr; ++lno)
-		if (file_aline(sp, ep, lno, tp->lb, tp->len))
+		if (file_aline(sp, ep, 0, lno, tp->lb, tp->len))
 			return (1);
 	return (0);
 }

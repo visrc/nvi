@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 5.36 1993/05/11 16:10:47 bostic Exp $ (Berkeley) $Date: 1993/05/11 16:10:47 $";
+static char sccsid[] = "$Id: ex_append.c,v 5.37 1993/05/16 15:18:59 bostic Exp $ (Berkeley) $Date: 1993/05/16 15:18:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -111,7 +111,7 @@ ac(sp, ep, cmdp, cmd)
 			tp = sp->bhdr.next;
 			if (tp->len == 1 && tp->lb[0] == '.')
 				break;
-			if (file_aline(sp, ep, m.lno, tp->lb, tp->len)) {
+			if (file_aline(sp, ep, 1, m.lno, tp->lb, tp->len)) {
 				rval = 1;
 				goto done;
 			}
