@@ -7,7 +7,8 @@ setenv X version.h
 cd $S/ex && sco $X && echo "go to $VERSION" | sccs delget $X
 #setenv X README
 #cd $S && sco $X && vi $X && echo "go to $VERSION" | sccs delget $X
-cd $S/docs && vi changelog
+setenv X changelog
+cd $S/docs && sco $X && vi $X && echo "go to $VERSION" | sccs delget $X
 
 # build the distribution
 cd $S/build && sh ./distrib
