@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_yank.c,v 8.2 1993/11/04 16:16:55 bostic Exp $ (Berkeley) $Date: 1993/11/04 16:16:55 $";
+static char sccsid[] = "$Id: ex_yank.c,v 8.3 1994/01/09 14:20:57 bostic Exp $ (Berkeley) $Date: 1994/01/09 14:20:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,7 +25,7 @@ ex_yank(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	return (cut(sp, ep,
-	    F_ISSET(cmdp, E_BUFFER) ? cmdp->buffer : DEFCB,
-	    &cmdp->addr1, &cmdp->addr2, 1));
+	return (cut(sp, ep, NULL,
+	    F_ISSET(cmdp, E_BUFFER) ? &cmdp->buffer : NULL,
+	    &cmdp->addr1, &cmdp->addr2, CUT_LINEMODE));
 }

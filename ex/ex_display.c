@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_display.c,v 8.13 1993/12/28 11:47:50 bostic Exp $ (Berkeley) $Date: 1993/12/28 11:47:50 $";
+static char sccsid[] = "$Id: ex_display.c,v 8.14 1994/01/09 14:20:55 bostic Exp $ (Berkeley) $Date: 1994/01/09 14:20:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,7 +19,7 @@ static char sccsid[] = "$Id: ex_display.c,v 8.13 1993/12/28 11:47:50 bostic Exp 
 #include "excmd.h"
 
 static int	bdisplay __P((SCR *, EXF *));
-static void	db __P((SCR *, CB *));
+static void	db __P((SCR *, CB *, char *));
 
 /*
  * ex_display -- :display b[uffers] | s[creens] | t[ags]
@@ -58,7 +58,7 @@ bdisplay(sp, ep)
 {
 	CB *cbp;
 
-	if (sp->gp->cutq.lh_first == NULL) {
+	if (sp->gp->cutq.lh_first == NULL && sp->gp->dcbp == NULL) {
 		(void)ex_printf(EXCOOKIE, "No cut buffers to display.");
 		return (0);
 	}
@@ -71,7 +71,7 @@ bdisplay(sp, ep)
 		if (isdigit(cbp->name))
 			continue;
 		if (cbp->textq.cqh_first != (void *)&cbp->textq)
-			db(sp, cbp);
+			db(sp, cbp, NULL);
 		if (F_ISSET(sp, S_INTERRUPTED))
 			return (0);
 	}
@@ -80,10 +80,13 @@ bdisplay(sp, ep)
 		if (!isdigit(cbp->name))
 			continue;
 		if (cbp->textq.cqh_first != (void *)&cbp->textq)
-			db(sp, cbp);
+			db(sp, cbp, NULL);
 		if (F_ISSET(sp, S_INTERRUPTED))
 			return (0);
 	}
+	/* Display default buffer. */
+	if ((cbp = sp->gp->dcbp) != NULL)
+		db(sp, cbp, "default buffer");
 	return (0);
 }
 
@@ -92,15 +95,17 @@ bdisplay(sp, ep)
  *	Display a buffer.
  */
 static void
-db(sp, cbp)
+db(sp, cbp, name)
 	SCR *sp;
 	CB *cbp;
+	char *name;
 {
 	TEXT *tp;
 	size_t len;
 	char *p;
 
-	(void)ex_printf(EXCOOKIE, "********** %s%s\n", charname(sp, cbp->name),
+	(void)ex_printf(EXCOOKIE, "********** %s%s\n",
+	    name == NULL ? charname(sp, cbp->name) : name,
 	    F_ISSET(cbp, CB_LMODE) ? " (line mode)" : "");
 	for (tp = cbp->textq.cqh_first;
 	    tp != (void *)&cbp->textq; tp = tp->q.cqe_next) {

@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: cut.h,v 8.8 1993/11/19 11:55:04 bostic Exp $ (Berkeley) $Date: 1993/11/19 11:55:04 $
+ *	$Id: cut.h,v 8.9 1994/01/09 14:20:10 bostic Exp $ (Berkeley) $Date: 1994/01/09 14:20:10 $
  */
 
 typedef struct _texth TEXTH;		/* TEXT list head structure. */
@@ -40,8 +40,6 @@ struct _text {				/* Text: a linked list of lines. */
 	size_t	 wd_len;		/* Width buffer length. */
 };
 
-#define	DEFCB	'1'			/* Buffer '1' is the default buffer. */
-
 /*
  * Get named buffer 'name'.
  * Translate upper-case buffer names to lower-case buffer names.
@@ -54,23 +52,12 @@ struct _text {				/* Text: a linked list of lines. */
 			break;						\
 }
 
-/* Get a cut buffer, and check to see if it's empty. */
-#define	CBEMPTY(sp, cbp, name) {					\
-	CBNAME(sp, cbp, name);						\
-	if (cbp == NULL) {						\
-		if ((name) == '1')					\
-			msgq(sp, M_ERR,					\
-			    "The default buffer is empty.");		\
-		else							\
-			msgq(sp, M_ERR,					\
-			    "Buffer %s is empty.", charname(sp, name));	\
-		return (1);						\
-	}								\
-}
-
-int	 cut __P((SCR *, EXF *, ARG_CHAR_T, MARK *, MARK *, int));
+#define	CUT_LINEMODE	0x01		/* Cut in line mode. */
+#define	CUT_ROTATE	0x02		/* Rotate numeric buffers (delete). */
+int	 cut __P((SCR *, EXF *, CB *, CHAR_T *, MARK *, MARK *, int));
 int	 delete __P((SCR *, EXF *, MARK *, MARK *, int));
-int	 put __P((SCR *, EXF *, ARG_CHAR_T, MARK *, MARK *, int));
+int	 put __P((SCR *, EXF *, CB *, CHAR_T *, MARK *, MARK *, int));
+
 void	 text_free __P((TEXT *));
 TEXT	*text_init __P((SCR *, const char *, size_t, size_t));
 void	 text_lfree __P((TEXTH *));

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_at.c,v 8.15 1993/12/22 13:15:47 bostic Exp $ (Berkeley) $Date: 1993/12/22 13:15:47 $";
+static char sccsid[] = "$Id: ex_at.c,v 8.16 1994/01/09 14:20:53 bostic Exp $ (Berkeley) $Date: 1994/01/09 14:20:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -47,7 +47,11 @@ ex_at(sp, ep, cmdp)
 		name = exp->at_lbuf;
 	}
 
-	CBEMPTY(sp, cbp, name);
+	CBNAME(sp, cbp, name);
+	if (cbp == NULL) {
+		msgq(sp, M_ERR, "Buffer %s is empty.", charname(sp, name));
+		return (1);
+	}
 
 	/* Save for reuse. */
 	exp->at_lbuf = name;

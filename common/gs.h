@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 8.25 1993/12/22 16:13:58 bostic Exp $ (Berkeley) $Date: 1993/12/22 16:13:58 $
+ *	$Id: gs.h,v 8.26 1994/01/09 14:20:11 bostic Exp $ (Berkeley) $Date: 1994/01/09 14:20:11 $
  */
 
 struct _gs {
@@ -29,6 +29,8 @@ struct _gs {
 /* INFORMATION SHARED BY ALL SCREENS. */
 	IBUF	*tty;			/* Key input buffer. */
 
+	CB	*dcbp;			/* Default cut buffer pointer. */
+	CB	*dcb_store;		/* Default cut buffer storage. */
 	LIST_HEAD(_cuth, _cb) cutq;	/* Linked list of cut buffers. */
 
 #define	MAX_BIT_SEQ	128		/* Max + 1 fast check character. */

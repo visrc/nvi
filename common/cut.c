@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 8.16 1993/12/29 10:48:43 bostic Exp $ (Berkeley) $Date: 1993/12/29 10:48:43 $";
+static char sccsid[] = "$Id: cut.c,v 8.17 1994/01/09 14:20:08 bostic Exp $ (Berkeley) $Date: 1994/01/09 14:20:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -25,65 +25,87 @@ static int	cb_rotate __P((SCR *));
 /* 
  * cut --
  *	Put a range of lines/columns into a buffer.
+ *
+ * There are two buffer areas, both found in the global structure.  The first
+ * is the linked list of all the buffers the user has named, the second is the
+ * default buffer storage.  There is a pointer, too, which is the current
+ * default buffer, i.e. it may point to the default buffer or a named buffer
+ * depending on into what buffer the last text was cut.  In delete operations,
+ * text is cut into either the buffer named by the user, or the buffer named
+ * '1'.  In a yank, the text is cut into either the buffer named by the user,
+ * or the default buffer.  In both cases, as stated above, the default buffer
+ * pointer is changed to reference the cut text, wherever that may be.  Also,
+ * delete operations rotate the contents of the numbered buffers up one, and
+ * the contents of buffer '9' are discarded.
+ *
+ * In all cases, upper-case buffer names are the same as lower-case names,
+ * with the exception that they cause the buffer to be appended to instead
+ * of replaced.
+ *
+ * !!!
+ * The contents of the default buffer would disappear after most operations in
+ * historic vi.  It's unclear that this is useful, so we don't bother.
+ *
+ * When users explicitly cut text into the numeric buffers, historic vi became
+ * genuinely strange.  I've never been able to figure out what was supposed to
+ * happen.  It behaved differently if you deleted text than if you yanked text,
+ * and, in the latter case, the text was appended to the buffer instead of
+ * replacing the contents.  Hopefully it's not worth getting right.
  */
 int
-cut(sp, ep, name, fm, tm, lmode)
+cut(sp, ep, cbp, namep, fm, tm, flags)
 	SCR *sp;
 	EXF *ep;
-	ARG_CHAR_T name;
-	int lmode;
+	CB *cbp;
+	CHAR_T *namep;
+	int flags;
 	MARK *fm, *tm;
 {
-	CB *cbp;
+	CHAR_T name;
 	TEXT *tp;
 	recno_t lno;
 	size_t len;
-	int append;
+	int append, namedbuffer;
 
 #if defined(DEBUG) && 0
 	TRACE(sp, "cut: from {%lu, %d}, to {%lu, %d}%s\n",
-	    fm->lno, fm->cno, tm->lno, tm->cno, lmode ? " LINE MODE" : "");
+	    fm->lno, fm->cno, tm->lno, tm->cno,
+	    LF_ISSET(CUT_LINEMODE) ? " LINE MODE" : "");
 #endif
-	/*
-	 * !!!
-	 * The numeric buffers in historic vi offer us yet another opportunity
-	 * for contemplation.  First, the default buffer was the same as buffer
-	 * '1'.  Second, cutting into any numeric buffer caused buffers '1' to
-	 * '8' to be rotated up one, and '9' to drop off the end.  Finally,
-	 * text cut into a numeric buffer other than '1' was always appended
-	 * to the buffer (after the rotation), it was not a replacement.
-	 */
-	append = 0;
-	if (isdigit(name)) {
+	if (LF_ISSET(CUT_ROTATE))
 		(void)cb_rotate(sp);
-		if (name != '1')
-			append = 1;
-	}
+
+	if (cbp == NULL) {
+		if (namep == NULL) {
+			cbp = sp->gp->dcb_store;
+			append = namedbuffer = 0;
+		} else {
+			name = *namep;
+			CBNAME(sp, cbp, name);
+			append = isupper(name);
+			namedbuffer = 1;
+		}
+	} else
+		append = namedbuffer = 0;
 
 	/*
-	 * Upper-case buffer names map into lower-case buffers, but with
-	 * append mode set so the buffer is appended to, not overwritten.
-	 */
-	if (isupper(name))
-		append = 1;
-	CBNAME(sp, cbp, name);
-
-	/*
-	 * If this is a new buffer, create it, and add it into the list.
+	 * If this is a new buffer, create it and add it into the list.
 	 * Otherwise, if it's not an append, free its current contents.
 	 */
 	if (cbp == NULL) {
 		CALLOC(sp, cbp, CB *, 1, sizeof(CB));
 		cbp->name = name;
-		LIST_INSERT_HEAD(&sp->gp->cutq, cbp, q);
 		CIRCLEQ_INIT(&cbp->textq);
+		if (namedbuffer)
+			LIST_INSERT_HEAD(&sp->gp->cutq, cbp, q);
 	} else if (!append) {
 		text_lfree(&cbp->textq);
 		cbp->len = 0;
 		cbp->flags = 0;
 	}
 
-	if (lmode) {
+	/* In line mode, it's pretty easy, just cut the lines. */
+	if (LF_ISSET(CUT_LINEMODE)) {
 		for (lno = fm->lno; lno <= tm->lno; ++lno) {
 			if (cb_line(sp, ep, lno, 0, 0, &tp))
 				goto mem;
@@ -91,38 +113,40 @@ cut(sp, ep, name, fm, tm, lmode)
 			cbp->len += tp->len;
 		}
 		cbp->flags |= CB_LMODE;
-		return (0);
-	}
-		
-	/* Get the first line. */
-	len = fm->lno < tm->lno ? 0 : tm->cno - fm->cno;
-	if (cb_line(sp, ep, fm->lno, fm->cno, len, &tp))
-		goto mem;
-
-	CIRCLEQ_INSERT_TAIL(&cbp->textq, tp, q);
-	cbp->len += tp->len;
-
-	for (lno = fm->lno; ++lno < tm->lno;) {
-		if (cb_line(sp, ep, lno, 0, 0, &tp))
+	} else {
+		/* Get the first line. */
+		len = fm->lno < tm->lno ? 0 : tm->cno - fm->cno;
+		if (cb_line(sp, ep, fm->lno, fm->cno, len, &tp))
 			goto mem;
 		CIRCLEQ_INSERT_TAIL(&cbp->textq, tp, q);
 		cbp->len += tp->len;
-	}
 
-	if (tm->lno > fm->lno && tm->cno > 0) {
-		if (cb_line(sp, ep, lno, 0, tm->cno, &tp)) {
-mem:			if (append)
-				msgq(sp, M_ERR,
-				    "Contents of %s buffer lost.",
-				    charname(sp, name));
-			text_lfree(&cbp->textq);
-			cbp->len = 0;
-			cbp->flags = 0;
-			return (1);
+		/* Get the intermediate lines. */
+		for (lno = fm->lno; ++lno < tm->lno;) {
+			if (cb_line(sp, ep, lno, 0, 0, &tp))
+				goto mem;
+			CIRCLEQ_INSERT_TAIL(&cbp->textq, tp, q);
+			cbp->len += tp->len;
 		}
-		CIRCLEQ_INSERT_TAIL(&cbp->textq, tp, q);
-		cbp->len += tp->len;
+
+		/* Get the last line. */
+		if (tm->lno > fm->lno && tm->cno > 0) {
+			if (cb_line(sp, ep, lno, 0, tm->cno, &tp)) {
+mem:				if (append)
+					msgq(sp, M_ERR,
+					    "Contents of %s buffer lost.",
+					    charname(sp, name));
+				text_lfree(&cbp->textq);
+				cbp->len = 0;
+				cbp->flags = 0;
+				return (1);
+			}
+			CIRCLEQ_INSERT_TAIL(&cbp->textq, tp, q);
+			cbp->len += tp->len;
+		}
 	}
+	if (namedbuffer)
+		sp->gp->dcbp = cbp;	/* Repoint default buffer. */
 	return (0);
 }
 
@@ -288,24 +312,37 @@ text_free(tp)
  * blank line.
  */	
 int
-put(sp, ep, name, cp, rp, append)
+put(sp, ep, cbp, namep, cp, rp, append)
 	SCR *sp;
 	EXF *ep;
-	ARG_CHAR_T name;
+	CB *cbp;
+	CHAR_T *namep;
 	MARK *cp, *rp;
 	int append;
 {
-	CB *cbp;
+	CHAR_T name;
 	TEXT *ltp, *tp;
 	recno_t lno;
 	size_t blen, clen, len;
-	int lmode;
 	char *bp, *p, *t;
 
-	CBEMPTY(sp, cbp, name);
-
+	if (cbp == NULL)
+		if (namep == NULL) {
+			cbp = sp->gp->dcbp;
+			if (cbp == NULL) {
+				msgq(sp, M_ERR, "The default buffer is empty.");
+				return (1);
+			}
+		} else {
+			name = *namep;
+			CBNAME(sp, cbp, name);
+			if (cbp == NULL) {
+				msgq(sp, M_ERR,
+				    "Buffer %s is empty.", charname(sp, name));
+				return (1);
+			}
+		}
 	tp = cbp->textq.cqh_first;
-	lmode = F_ISSET(cbp, CB_LMODE);
 
 	/*
 	 * It's possible to do a put into an empty file, meaning that the
@@ -330,11 +367,8 @@ put(sp, ep, name, cp, rp, append)
 		}
 	}
 			
-	/*
-	 * If buffer was created in line mode, append each new line into the
-	 * file.
-	 */
-	if (lmode) {
+	/* If a line mode buffer, append each new line into the file. */
+	if (F_ISSET(cbp, CB_LMODE)) {
 		lno = append ? cp->lno : cp->lno - 1;
 		rp->lno = lno + 1;
 		for (; tp != (void *)&cbp->textq; ++lno, tp = tp->q.cqe_next)

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 8.21 1993/12/29 12:30:28 bostic Exp $ (Berkeley) $Date: 1993/12/29 12:30:28 $";
+static char sccsid[] = "$Id: v_itxt.c,v 8.22 1994/01/09 14:21:13 bostic Exp $ (Berkeley) $Date: 1994/01/09 14:21:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -489,7 +489,8 @@ v_CS(sp, ep, vp, fm, tm, rp, iflags)
 
 		/* Cut the lines. */
 		if (cut(sp, ep,
-		    F_ISSET(vp, VC_BUFFER) ? vp->buffer : DEFCB, fm, tm, 1))
+		    NULL, F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
+		    fm, tm, CUT_LINEMODE))
 			return (1);
 
 		/* Insert a line while we still can... */
@@ -524,8 +525,8 @@ v_CS(sp, ep, vp, fm, tm, rp, iflags)
 			LF_SET(TXT_APPENDEOL);
 		} else {
 			if (cut(sp, ep,
-			    F_ISSET(vp, VC_BUFFER) ? vp->buffer : DEFCB,
-			    fm, tm, 1))
+			    NULL, F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
+			    fm, tm, CUT_LINEMODE))
 				return (1);
 			tm->cno = len;
 			if (len == 0)
@@ -567,7 +568,8 @@ v_change(sp, ep, vp, fm, tm, rp)
 	 * to make it just a bit more exciting, the initial space is handled
 	 * as auto-indent characters.
 	 */
-	if (lmode = F_ISSET(vp, VC_LMODE)) {
+	lmode = F_ISSET(vp, VC_LMODE) ? CUT_LINEMODE : 0;
+	if (lmode) {
 		fm->cno = 0;
 		if (O_ISSET(sp, O_AUTOINDENT)) {
 			if (nonblank(sp, ep, fm->lno, &fm->cno))
@@ -600,7 +602,7 @@ v_change(sp, ep, vp, fm, tm, rp)
 			LF_SET(TXT_APPENDEOL);
 		} else {
 			if (cut(sp, ep,
-			    F_ISSET(vp, VC_BUFFER) ? vp->buffer : DEFCB,
+			    NULL, F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
 			    fm, tm, lmode))
 				return (1);
 			if (len == 0)
@@ -622,7 +624,7 @@ v_change(sp, ep, vp, fm, tm, rp)
 	 * Copy the text.
 	 */
 	if (cut(sp, ep,
-	    F_ISSET(vp, VC_BUFFER) ? vp->buffer : DEFCB, fm, tm, lmode))
+	    NULL, F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL, fm, tm, lmode))
 		return (1);
 
 	/* If replacing entire lines and there's leading text. */
@@ -791,7 +793,7 @@ v_subst(sp, ep, vp, fm, tm, rp)
 		tm->cno = len;
 
 	if (p != NULL && cut(sp, ep,
-	    F_ISSET(vp, VC_BUFFER) ? vp->buffer : DEFCB, fm, tm, 0))
+	    NULL, F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL, fm, tm, 0))
 		return (1);
 
 	return (v_ntext(sp, ep,

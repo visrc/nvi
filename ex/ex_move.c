@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_move.c,v 8.4 1993/12/29 10:37:04 bostic Exp $ (Berkeley) $Date: 1993/12/29 10:37:04 $";
+static char sccsid[] = "$Id: ex_move.c,v 8.5 1994/01/09 14:20:55 bostic Exp $ (Berkeley) $Date: 1994/01/09 14:20:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -50,8 +50,10 @@ cm(sp, ep, cmdp, cmd)
 	EXCMDARG *cmdp;
 	enum which cmd;
 {
+	CB cb;
 	MARK fm1, fm2, m, tm;
 	recno_t diff;
+	int rval;
 
 	fm1 = cmdp->addr1;
 	fm2 = cmdp->addr2;
@@ -60,37 +62,44 @@ cm(sp, ep, cmdp, cmd)
 
 	/* Make sure the destination is valid. */
 	if (cmd == MOVE && tm.lno >= fm1.lno && tm.lno < fm2.lno) {
-		msgq(sp, M_ERR,
-		    "Destination line is inside move range.");
+		msgq(sp, M_ERR, "Destination line is inside move range.");
 		return (1);
 	}
 
 	/* Save the text to a cut buffer. */
-	if (cut(sp, ep, DEFCB, &fm1, &fm2, 1))
+	memset(&cb, 0, sizeof(cb));
+	CIRCLEQ_INIT(&cb.textq);
+	if (cut(sp, ep, &cb, NULL, &fm1, &fm2, CUT_LINEMODE))
 		return (1);
 
 	/* If we're not copying, delete the old text and adjust tm. */
 	if (cmd == MOVE) {
-		if (delete(sp, ep, &fm1, &fm2, 1))
-			return (1);
+		if (delete(sp, ep, &fm1, &fm2, 1)) {
+			rval = 1;
+			goto err;
+		}
 		if (tm.lno >= fm1.lno)
 			tm.lno -= (fm2.lno - fm1.lno) + 1;
 	}
 
 	/* Add the new text. */
-	if (put(sp, ep, DEFCB, &tm, &m, 1))
-		return (1);
+	if (put(sp, ep, &cb, NULL, &tm, &m, 1)) {
+		rval = 1;
+		goto err;
+	}
 
 	/*
-	 * Move and copy move the cursor to the last line moved or copied.
+	 * Move and copy put the cursor on the last line moved or copied.
 	 * The returned cursor from the put routine is the first line put,
-	 * not the last, because that's the semantics that vi uses.
+	 * not the last, because that's the semantics of vi.
 	 */
 	diff = (fm2.lno - fm1.lno) + 1;
 	sp->lno = m.lno + (diff - 1);
 	sp->cno = 0;
 
-	/* Reporting. */
 	sp->rptlines[cmd == COPY ? L_COPIED : L_MOVED] += diff;
-	return (0);
+	rval = 0;
+
+err:	(void)text_lfree(&cb.textq);
+	return (rval);
 }
