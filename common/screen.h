@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.89 1994/03/23 14:45:13 bostic Exp $ (Berkeley) $Date: 1994/03/23 14:45:13 $
+ *	$Id: screen.h,v 8.90 1994/03/23 16:37:40 bostic Exp $ (Berkeley) $Date: 1994/03/23 16:37:40 $
  */
 
 /*
@@ -70,25 +70,6 @@ struct _fref {
 #define	FILENAME(frp)							\
 	((frp)->cname != NULL) ? (frp)->cname :				\
 	((frp)->name != NULL) ? (frp)->name : (frp)->tname
-
-/* Timer structure. */
-typedef struct _timer {
-	struct timeval tod;		/* Time-of-day for timer fire. */
-	int period;			/* Periodic timer value. */
-	char const *msg;		/* Busy message. */
-	int (*handler)			/* Timer handler. */
-	    __P((SCR *, char const *));
-
-#define	TIMER_ISRUNNING	0x01		/* Timer is live. */
-#define	TIMER_REPEATS	0x02		/* Timer is reset. */
-	u_int8_t flags;
-} TIMER;
-
-/* Timer structure supporting routines. */
-void	 h_alrm __P((int));
-TIMER	*start_timer __P((SCR *,
-	    int, int (*)(SCR *, char const *), char const *, u_int));
-void	 stop_timer __P((SCR *, TIMER *));
 
 /*
  * SCR --
@@ -156,8 +137,9 @@ struct _scr {
 
 	SCRIPT	*script;		/* Vi: script mode information .*/
 
-#define	MAX_TIMERS	5		/* ITIMER_REAL max count. */
-	TIMER timers[MAX_TIMERS];	/* ITIMER_REAL array. */
+	struct timeval	 busy_tod;	/* ITIMER_REAL: busy time-of-day. */
+	char const	*busy_msg;	/* ITIMER_REAL: busy message. */
+	struct timeval	 rcv_tod;	/* ITIMER_REAL: recovery time-of-day. */
 
 	struct sigaction intr_act;	/* Interrupt saved signal state. */
 	struct termios	 intr_term;	/* Interrupt saved terminal state. */
@@ -283,11 +265,16 @@ struct _scr {
 #define	S_SCRIPT	0x0080000	/* Window is a shell script. */
 #define	S_SRE_SET	0x0100000	/* The search RE has been set. */
 #define	S_SUBRE_SET	0x0200000	/* The substitute RE has been set. */
-#define	S_TIMER_SET	0x0400000	/* If a busy timer is running. */
-#define	S_UPDATE_MODE	0x0800000	/* Don't repaint modeline. */
-#define	S_VLITONLY	0x1000000	/* ^V literal next only. */
+#define	S_UPDATE_MODE	0x0400000	/* Don't repaint modeline. */
+#define	S_VLITONLY	0x0800000	/* ^V literal next only. */
 	u_int32_t flags;
 };
+
+/* Timers have no structure, so routines are here. */
+void	 h_alrm __P((int));
+int	 busy_on __P((SCR *, char const *));
+void	 busy_off __P((SCR *));
+int	 rcv_on __P((SCR *));
 
 /* Interrupts have no structure, so routines are here. */
 void	 intr_end __P((SCR *));

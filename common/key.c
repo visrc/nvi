@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.55 1994/03/23 08:38:26 bostic Exp $ (Berkeley) $Date: 1994/03/23 08:38:26 $";
+static char sccsid[] = "$Id: key.c,v 8.56 1994/03/23 16:37:48 bostic Exp $ (Berkeley) $Date: 1994/03/23 16:37:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -442,7 +442,7 @@ term_key(sp, chp, flags)
 	GS *gp;
 	IBUF *tty;
 	SEQ *qp;
-	int cmap, ispartial, nr, teardown;
+	int cmap, ispartial, nr, itear;
 
 	gp = sp->gp;
 	tty = gp->tty;
@@ -467,7 +467,7 @@ loop:	if (tty->cnt == 0) {
 	}
 
 	/* If no limit on remaps, set it up so the user can interrupt. */
-	teardown = O_ISSET(sp, O_REMAPMAX) ? 0 : !intr_init(sp);
+	itear = O_ISSET(sp, O_REMAPMAX) ? 0 : !intr_init(sp);
 
 	/* If the key is mappable and should be mapped, look it up. */
 	if (!(tty->chf[tty->next] & CH_NOMAP) &&
@@ -575,7 +575,7 @@ not_digit_ch:	chp->ch = NOT_DIGIT_CH;
 	QREM_HEAD(tty, 1);
 	rval = INP_OK;
 
-ret:	if (teardown)
+ret:	if (itear)
 		intr_end(sp);
 	return (rval);
 }

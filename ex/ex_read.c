@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 8.25 1994/03/23 15:04:38 bostic Exp $ (Berkeley) $Date: 1994/03/23 15:04:38 $";
+static char sccsid[] = "$Id: ex_read.c,v 8.26 1994/03/23 16:38:37 bostic Exp $ (Berkeley) $Date: 1994/03/23 16:38:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -45,10 +45,9 @@ ex_read(sp, ep, cmdp)
 	struct stat sb;
 	FILE *fp;
 	MARK rm;
-	TIMER *timerp;
 	recno_t nlines;
 	size_t blen, len;
-	int rval, teardown;
+	int btear, itear, rval;
 	char *bp, *name;
 
 	/*
@@ -137,13 +136,12 @@ ex_read(sp, ep, cmdp)
 	 * when reading from a filter, since the terminal settings have
 	 * been reset.
 	 */
-	timerp = F_ISSET(sp, S_EXSILENT) ?
-	    NULL : start_timer(sp, 8, sp->s_busy, "Reading...", 0);
-	teardown = !intr_init(sp);
+	btear = F_ISSET(sp, S_EXSILENT) ? 0 : !busy_on(sp, "Reading...");
+	itear = !intr_init(sp);
 	rval = ex_readfp(sp, ep, name, fp, &cmdp->addr1, &nlines, 1);
-	if (timerp != NULL)
-		stop_timer(sp, timerp);
-	if (teardown)
+	if (btear)
+		busy_off(sp);
+	if (itear)
 		intr_end(sp);
 
 	/*

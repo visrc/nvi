@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.47 1994/03/23 14:45:22 bostic Exp $ (Berkeley) $Date: 1994/03/23 14:45:22 $";
+static char sccsid[] = "$Id: recover.c,v 8.48 1994/03/23 16:38:01 bostic Exp $ (Berkeley) $Date: 1994/03/23 16:38:01 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -76,7 +76,6 @@ static char sccsid[] = "$Id: recover.c,v 8.47 1994/03/23 14:45:22 bostic Exp $ (
 #define	VI_FHEADER	"Vi-recover-file: "
 #define	VI_PHEADER	"Vi-recover-path: "
 
-static int	rcv_alrm __P((SCR *, char const *));
 static int	rcv_mailfile __P((SCR *, EXF *));
 static void	rcv_syncit __P((SCR *, int));
 
@@ -153,10 +152,10 @@ rcv_init(sp, ep)
 	SCR *sp;
 	EXF *ep;
 {
-	TIMER *timerp;
 	struct itimerval value;
 	struct sigaction act;
 	recno_t lno;
+	int btear;
 
 	F_CLR(ep, F_FIRSTMODIFY | F_RCV_ON);
 
@@ -173,39 +172,25 @@ rcv_init(sp, ep)
 
 	/* Turn on a busy message, and sync it to backing store. */
 
-	timerp = F_ISSET(sp, S_EXSILENT) ? NULL :
-	    start_timer(sp, 8, sp->s_busy, "Copying file for recovery...", 0);
+	btear = F_ISSET(sp, S_EXSILENT) ? 0 :
+	    !busy_on(sp, "Copying file for recovery...");
 	if (ep->db->sync(ep->db, R_RECNOSYNC)) {
 		msgq(sp, M_ERR, "Preservation failed: %s: %s",
 		    ep->rcv_path, strerror(errno));
-		if (timerp != NULL)
-			stop_timer(sp, timerp);
+		if (btear)
+			busy_off(sp);
 		goto err;
 	}
-	if (timerp != NULL)
-		stop_timer(sp, timerp);
+	if (btear)
+		busy_off(sp);
 
-	if (!F_ISSET(sp->gp, G_RECOVER_SET) && start_timer(sp,
-	    RCV_PERIOD, rcv_alrm, NULL, TIMER_REPEATS) == NULL) {
+	if (!F_ISSET(sp->gp, G_RECOVER_SET) && rcv_on(sp)) {
 err:		msgq(sp, M_ERR, "Recovery after system crash not possible.");
 		return (1);
 	}
 
 	/* We believe the file is recoverable. */
 	F_SET(ep, F_RCV_ON);
-	return (0);
-}
-
-/*
- * rcv_alrm --
- *	Recovery timer interrupt handler.
- */
-static int
-rcv_alrm(sp, msg)
-	SCR *sp;
-	char const *msg;
-{
-	F_SET(sp->gp, G_SIGALRM);
 	return (0);
 }
 
@@ -302,15 +287,10 @@ rcv_sync(sp, ep)
 	SCR *sp;
 	EXF *ep;
 {
-	struct itimerval value;
-
 	if (ep->db->sync(ep->db, R_RECNOSYNC)) {
+		F_CLR(ep, F_RCV_ON);
 		msgq(sp, M_ERR, "Automatic file backup failed: %s: %s",
 		    ep->rcv_path, strerror(errno));
-		value.it_interval.tv_sec = value.it_interval.tv_usec = 0;
-		value.it_value.tv_sec = value.it_value.tv_usec = 0;
-		(void)setitimer(ITIMER_REAL, &value, NULL);
-		F_CLR(ep, F_RCV_ON);
 		return (1);
 	}
 	return (0);

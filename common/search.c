@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.39 1994/03/23 14:44:53 bostic Exp $ (Berkeley) $Date: 1994/03/23 14:44:53 $";
+static char sccsid[] = "$Id: search.c,v 8.40 1994/03/23 16:37:29 bostic Exp $ (Berkeley) $Date: 1994/03/23 16:37:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -233,14 +233,13 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 	char *ptrn, **eptrn;
 	u_int *flagp;
 {
-	TIMER *timerp;
 	regmatch_t match[1];
 	regex_t *re, lre;
 	recno_t lno;
 	size_t coff, len;
 	long delta;
 	u_int flags;
-	int eval, rval, teardown, wrapped;
+	int btear, eval, itear, rval, wrapped;
 	char *l;
 
 	if (file_lline(sp, ep, &lno))
@@ -289,9 +288,8 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 	}
 
 	/* Set up busy message, interrupts. */
-	timerp = F_ISSET(sp, S_EXSILENT) ?
-	    NULL : start_timer(sp, 8, sp->s_busy, "Searching...", 0);
-	teardown = !intr_init(sp);
+	btear = F_ISSET(sp, S_EXSILENT) ? 0 : !busy_on(sp, "Searching...");
+	itear = !intr_init(sp);
 
 	for (rval = 1, wrapped = 0;; ++lno, coff = 0) {
 		if (F_ISSET(sp, S_INTERRUPTED)) {
@@ -372,9 +370,9 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 	}
 
 	/* Turn off busy message, interrupts. */
-	if (timerp != NULL)
-		stop_timer(sp, timerp);
-	if (teardown)
+	if (btear)
+		busy_off(sp);
+	if (itear)
 		intr_end(sp);
 	return (rval);
 }
@@ -387,14 +385,13 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 	char *ptrn, **eptrn;
 	u_int *flagp;
 {
-	TIMER *timerp;
 	regmatch_t match[1];
 	regex_t *re, lre;
 	recno_t lno;
 	size_t coff, len, last;
 	long delta;
 	u_int flags;
-	int eval, rval, teardown, wrapped;
+	int btear, eval, itear, rval, wrapped;
 	char *l;
 
 	if (file_lline(sp, ep, &lno))
@@ -424,9 +421,8 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 		lno = fm->lno;
 
 	/* Turn on busy message, interrupts. */
-	timerp = F_ISSET(sp, S_EXSILENT) ?
-	    NULL : start_timer(sp, 8, sp->s_busy, "Searching...", 0);
-	teardown = !intr_init(sp);
+	btear = F_ISSET(sp, S_EXSILENT) ? 0 : !busy_on(sp, "Searching...");
+	itear = !intr_init(sp);
 
 	for (rval = 1, wrapped = 0, coff = fm->cno;; --lno, coff = 0) {
 		if (F_ISSET(sp, S_INTERRUPTED)) {
@@ -531,9 +527,9 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 	}
 
 	/* Turn off busy message, interrupts. */
-err:	if (timerp != NULL)
-		stop_timer(sp, timerp);
-	if (teardown)
+err:	if (btear)
+		busy_off(sp);
+	if (itear)
 		intr_end(sp);
 
 	return (rval);
