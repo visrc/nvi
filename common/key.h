@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 8.29 1994/03/07 17:49:59 bostic Exp $ (Berkeley) $Date: 1994/03/07 17:49:59 $
+ *	$Id: key.h,v 8.30 1994/03/11 12:11:27 bostic Exp $ (Berkeley) $Date: 1994/03/11 12:11:27 $
  */
 
 /* Structure to return a character and associated information. */
@@ -145,9 +145,6 @@ enum confirm	{ CONF_NO, CONF_QUIT, CONF_YES };
 #define	TXT_SHOWMATCH	0x200000	/* Option: showmatch. */
 #define	TXT_TTYWERASE	0x400000	/* Option: ttywerase. */
 #define	TXT_WRAPMARGIN	0x800000	/* Option: wrapmargin. */
-
-#define	TXT_VALID_EX							\
-	(TXT_BEAUTIFY | TXT_CR | TXT_NLECHO | TXT_PROMPT)
 
 /* Support keyboard routines. */
 int		__term_key_val __P((SCR *, ARG_CHAR_T));
