@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 9.7 1995/01/11 18:47:55 bostic Exp $ (Berkeley) $Date: 1995/01/11 18:47:55 $";
+static char sccsid[] = "$Id: ex_subst.c,v 9.8 1995/01/12 12:09:08 bostic Exp $ (Berkeley) $Date: 1995/01/12 12:09:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -80,7 +80,7 @@ ex_s(sp, cmdp)
 subagain:	return (ex_subagain(sp, cmdp));
 
 	delim = *p++;
-	if (isalnum(delim))
+	if (isalnum(delim) || delim == '\\')
 		return (s(sp, cmdp, p, &sp->subre, SUB_MUSTSETR));
 
 	/*
