@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex.c,v 10.63 2000/06/25 17:34:39 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:39 $";
+static const char sccsid[] = "$Id: ex.c,v 10.64 2000/07/01 09:44:40 skimo Exp $ (Berkeley) $Date: 2000/07/01 09:44:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1532,7 +1532,7 @@ addr_verify:
 	 */
 	if (F_ISSET(sp, SC_EXIT | SC_EXIT_FORCE | SC_FSWITCH | SC_SSWITCH)) {
 		at_found = gv_found = 0;
-		for (ecp = sp->wp->ecq.lh_first;
+		for (ecp = wp->ecq.lh_first;
 		    ecp != NULL; ecp = ecp->q.le_next)
 			switch (ecp->agv_flags) {
 			case 0:
