@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 9.6 1994/11/12 14:34:16 bostic Exp $ (Berkeley) $Date: 1994/11/12 14:34:16 $";
+static char sccsid[] = "$Id: exf.c,v 9.7 1994/11/13 16:26:13 bostic Exp $ (Berkeley) $Date: 1994/11/13 16:26:13 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -430,7 +430,9 @@ file_cinit(sp)
 	 */
 	nb = 0;
 	if (IN_EX_MODE(sp)) {
-		if (file_lline(sp, &sp->lno))
+		/* XXX:  If this fails, we're toast. */
+		(void)file_lline(sp, &sp->lno);
+		if (sp->lno == 0)
 			sp->lno = 1;
 		nb = 1;
 	} else {
