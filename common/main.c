@@ -16,7 +16,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 9.21 1995/02/15 12:09:51 bostic Exp $ (Berkeley) $Date: 1995/02/15 12:09:51 $";
+static char sccsid[] = "$Id: main.c,v 9.22 1995/02/15 16:13:35 bostic Exp $ (Berkeley) $Date: 1995/02/15 16:13:35 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -49,6 +49,7 @@ static char sccsid[] = "$Id: main.c,v 9.21 1995/02/15 12:09:51 bostic Exp $ (Ber
 static void	 estr __P((char *, int, char *));
 static void	 gs_end __P((GS *));
 static GS	*gs_init __P((char *));
+static void	 gs_msgdisplay __P((MSG *));
 static int	 obsolete __P((char *, char *[]));
 static void	 usage __P((int));
 
@@ -493,6 +494,7 @@ gs_end(gp)
 	/* Turn off signals. */
 	sig_end(gp);
 
+#if defined(PURIFY) || defined(VI_LIBRARY)
 	/* Free FREF's. */
 	while ((frp = gp->frefq.cqh_first) != (FREF *)&gp->frefq) {
 		CIRCLEQ_REMOVE(&gp->frefq, frp, q);
@@ -503,8 +505,43 @@ gs_end(gp)
 		free(frp);
 	}
 
+	/* Free key input queues. */
+	if (gp->i_ch != NULL)
+		free(gp->i_ch);
+	if (gp->i_chf != NULL)
+		free(gp->i_chf);
+
+	/* Free cut buffers. */
+	cut_close(gp);
+
+	/* Free map sequences. */
+	seq_close(gp);
+
 	/* Default buffer storage. */
 	(void)text_lfree(&gp->dcb_store.textq);
+
+	/* Close message catalogs. */
+	msg_close(gp);
+#endif
+
+	/* Ring the bell if scheduled. */
+	if (F_ISSET(gp, G_BELLSCHED))
+		(void)fprintf(stderr, "\07");		/* \a */
+
+	/*
+	 * If there are any remaining screens, flush their messages,
+	 * then flush any messages on the global queue.
+	 */
+	for (sp = __global_list->dq.cqh_first;
+	    sp != (void *)&__global_list->dq; sp = sp->q.cqe_next)
+		while ((mp = sp->msgq.lh_first) != NULL)
+			gs_msgdisplay(mp);
+	for (sp = __global_list->hq.cqh_first;
+	    sp != (void *)&__global_list->hq; sp = sp->q.cqe_next)
+		while ((mp = sp->msgq.lh_first) != NULL)
+			gs_msgdisplay(mp);
+	while ((mp = gp->msgq.lh_first) != NULL)
+		gs_msgdisplay(mp);
 
 	/* Reset anything that needs resetting. */
 	if (gp->flags & G_SETMODE)			/* O_MESG */
@@ -513,36 +550,37 @@ gs_end(gp)
 		else if (chmod(tty, gp->origmode) < 0)
 			estr(gp->progname, errno, tty);
 
-	/* Close message catalogs. */
-	msg_close(gp);
-
-	/* Ring the bell if scheduled. */
-	if (F_ISSET(gp, G_BELLSCHED))
-		(void)fprintf(stderr, "\07");		/* \a */
-
-	/* If there are any remaining screens, flush their messages. */
-	for (sp = __global_list->dq.cqh_first;
-	    sp != (void *)&__global_list->dq; sp = sp->q.cqe_next)
-		for (mp = sp->msgq.lh_first;
-		    mp != NULL && !(F_ISSET(mp, M_EMPTY)); mp = mp->q.le_next)
-			(void)fprintf(stderr,
-			    "%.*s.\n", (int)mp->len, mp->mbuf);
-	for (sp = __global_list->hq.cqh_first;
-	    sp != (void *)&__global_list->hq; sp = sp->q.cqe_next)
-		for (mp = sp->msgq.lh_first;
-		    mp != NULL && !(F_ISSET(mp, M_EMPTY)); mp = mp->q.le_next)
-			(void)fprintf(stderr,
-			    "%.*s.\n", (int)mp->len, mp->mbuf);
-	/* Flush messages on the global queue. */
-	for (mp = gp->msgq.lh_first;
-	    mp != NULL && !(F_ISSET(mp, M_EMPTY)); mp = mp->q.le_next)
-		(void)fprintf(stderr, "%.*s.\n", (int)mp->len, mp->mbuf);
-
+#if defined(PURIFY) || defined(VI_LIBRARY)
 	/* Free any temporary space. */
 	if (gp->tmp_bp != NULL)
 		free(gp->tmp_bp);
 
+#ifdef DEBUG
+	/* Free debugging file descriptor. */
+	if (gp->tracefp != NULL)
+		(void)fclose(gp->tracefp);
+#endif
 	free(gp);
+#endif
+}
+
+/*
+ * gs_msgdisplay --
+ *	Display remaining messages when exiting vi.
+ */
+static void
+gs_msgdisplay(mp)
+	MSG *mp;
+{
+	
+	if (!F_ISSET(mp, M_EMPTY))
+		(void)fprintf(stderr, "%.*s.\n", (int)mp->len, mp->mbuf);
+	LIST_REMOVE(mp, q);
+#if defined(PURIFY) || defined(VI_LIBRARY)
+	if (mp->mbuf != NULL)
+		free(mp->mbuf);
+	free(mp);
+#endif
 }
 
 static int
