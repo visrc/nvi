@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_init.c,v 8.5 1993/08/19 15:01:39 bostic Exp $ (Berkeley) $Date: 1993/08/19 15:01:39 $";
+static char sccsid[] = "$Id: ex_init.c,v 8.6 1993/08/25 16:45:42 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:45:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -52,15 +52,6 @@ ex_init(sp, ep)
 			sp->lno = 1;
 		sp->cno = 0;
 	}
-
-	/*
-	 * After address set, run any saved or initial command; failure
-	 * doesn't halt the session.  Hopefully changing the cursor
-	 * position won't affect the success of the command, but it's
-	 * possible and undetectible.
-	 */
-	if (sp->comm_len > 0)
-		(void)ex_cstring(sp, ep, sp->comm, sp->comm_len);
 
 	/* Display the status line. */
 	return (status(sp, ep, sp->lno, 0));
