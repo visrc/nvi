@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_screen.c,v 10.15 1995/09/24 15:57:58 bostic Exp $ (Berkeley) $Date: 1995/09/24 15:57:58 $";
+static char sccsid[] = "$Id: cl_screen.c,v 10.16 1995/10/28 11:01:16 bostic Exp $ (Berkeley) $Date: 1995/10/28 11:01:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,10 +46,10 @@ cl_screen(sp, flags)
 	u_int32_t flags;
 {
 	CL_PRIVATE *clp;
-	int nl;
+	int need_nl;
 
 	clp = CLP(sp);
-	nl = 0;
+	need_nl = 0;
 
 	/* See if we're already in the right mode. */
 	if (LF_ISSET(S_EX) && F_ISSET(clp, CL_SCR_EX) ||
@@ -84,7 +84,7 @@ cl_screen(sp, flags)
 	if (F_ISSET(clp, CL_SCR_VI)) {
 		(void)move(LINES - 1, 0);
 		(void)refresh();
-		nl = 1;
+		need_nl = 1;
 
 		F_CLR(sp, S_VI);
 		F_CLR(clp, CL_SCR_VI);
@@ -97,7 +97,7 @@ cl_screen(sp, flags)
 			return (1);
 		F_SET(sp, S_EX);
 
-		if (nl)
+		if (need_nl)
 			(void)write(STDOUT_FILENO, "\n", 1);
 	} else {
 		if (cl_vi_init(sp))
