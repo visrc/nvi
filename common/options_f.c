@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 5.5 1993/04/06 11:36:28 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:36:28 $";
+static char sccsid[] = "$Id: options_f.c,v 5.6 1993/04/12 14:30:43 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:30:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,27 +35,27 @@ DECL(f_columns)
 
 	/* Validate the number. */
 	if (val < MINIMUM_SCREEN_COLS) {
-		msgq(sp, M_ERROR, "Screen columns too small, less than %d.",
+		msgq(sp, M_ERR, "Screen columns too small, less than %d.",
 		    MINIMUM_SCREEN_COLS);
 		return (1);
 	}
 	if (val < O_VAL(sp, O_SHIFTWIDTH)) {
-		msgq(sp, M_ERROR,
+		msgq(sp, M_ERR,
 		    "Screen columns too small, less than shiftwidth.");
 		return (1);
 	}
 	if (val < O_VAL(sp, O_SIDESCROLL)) {
-		msgq(sp, M_ERROR,
+		msgq(sp, M_ERR,
 		    "Screen columns too small, less than sidescroll.");
 		return (1);
 	}
 	if (val < O_VAL(sp, O_TABSTOP)) {
-		msgq(sp, M_ERROR,
+		msgq(sp, M_ERR,
 		    "Screen columns too small, less than tabstop.");
 		return (1);
 	}
 	if (val < O_VAL(sp, O_WRAPMARGIN)) {
-		msgq(sp, M_ERROR,
+		msgq(sp, M_ERR,
 		    "Screen columns too small, less than wrapmargin.");
 		return (1);
 	}
@@ -64,7 +64,7 @@ DECL(f_columns)
 	 * This has to be checked by reaching down into the screen code.
 	 */
 	if (val < O_NUMBER_LENGTH) {
-		msgq(sp, M_ERROR,
+		msgq(sp, M_ERR,
 		    "Screen columns too small, less than number option.");
 		return (1);
 	}
@@ -97,25 +97,21 @@ DECL(f_flash)
 	/* Get the termcap information. */
 	s = O_STR(sp, O_TERM);
 	if (tgetent(b1, s) != 1) {
-		msgq(sp, M_ERROR, "No termcap entry for %s", s);
+		msgq(sp, M_ERR, "No termcap entry for %s", s);
 		return (1);
 	}
 
-	/*
-	 * Get the visual bell string.  If one doesn't exist, then
-	 * set O_ERRORBELLS.
-	 */
+	/* Get the visual bell string. */
 	t = b2;
 	if (tgetstr("vb", &t) == NULL) {
-		msgq(sp, M_DISPLAY, "No visual bell for %s terminal type", s);
-		O_SET(sp, O_ERRORBELLS);
+		msgq(sp, M_VINFO, "No visual bell for %s terminal type", s);
 		O_CLR(sp, O_FLASH);
 		return (0);
 	}
 
 	len = t - b2;
 	if ((s = malloc(len)) == NULL) {
-		msgq(sp, M_ERROR, "Error: %s", strerror(errno));
+		msgq(sp, M_ERR, "Error: %s", strerror(errno));
 		return (1);
 	}
 
@@ -133,7 +129,7 @@ DECL(f_keytime)
 {
 #define	MAXKEYTIME	20
 	if (val > MAXKEYTIME) {
-		msgq(sp, M_ERROR,
+		msgq(sp, M_ERR,
 		    "Keytime too large, more than %d.", MAXKEYTIME);
 		return (1);
 	}
@@ -157,7 +153,7 @@ DECL(f_lines)
 
 	/* Validate the number. */
 	if (val < MINIMUM_SCREEN_ROWS) {
-		msgq(sp, M_ERROR, "Screen lines too small, less than %d.",
+		msgq(sp, M_ERR, "Screen lines too small, less than %d.",
 		    MINIMUM_SCREEN_ROWS);
 		return (1);
 	}
@@ -195,7 +191,7 @@ DECL(f_mesg)
 
 	/* Find the tty. */
 	if ((tty = ttyname(STDERR_FILENO)) == NULL) {
-		msgq(sp, M_ERROR, "ttyname: %s", strerror(errno));
+		msgq(sp, M_ERR, "ttyname: %s", strerror(errno));
 		return (1);
 	}
 
@@ -203,7 +199,7 @@ DECL(f_mesg)
 	if (!F_ISSET(sp->gp, G_SETMODE)) {
 		F_SET(sp->gp, G_SETMODE);
 		if (stat(tty, &sb) < 0) {
-			msgq(sp, M_ERROR, "%s: %s", strerror(errno));
+			msgq(sp, M_ERR, "%s: %s", strerror(errno));
 			return (1);
 		}
 		sp->gp->origmode = sb.st_mode;
@@ -211,13 +207,13 @@ DECL(f_mesg)
 
 	if (turnoff) {
 		if (chmod(tty, sb.st_mode & ~S_IWGRP) < 0) {
-			msgq(sp, M_ERROR, "%s: %s", strerror(errno));
+			msgq(sp, M_ERR, "%s: %s", strerror(errno));
 			return (1);
 		}
 		O_CLR(sp, O_MESG);
 	} else {
 		if (chmod(tty, sb.st_mode | S_IWGRP) < 0) {
-			msgq(sp, M_ERROR, "%s: %s", strerror(errno));
+			msgq(sp, M_ERR, "%s: %s", strerror(errno));
 			return (1);
 		}
 		O_SET(sp, O_MESG);
@@ -228,7 +224,7 @@ DECL(f_mesg)
 DECL(f_modelines)
 {
 	if (!turnoff)
-		msgq(sp, M_ERROR, "The modelines option may never be set");
+		msgq(sp, M_ERR, "The modelines option may never be set");
 	return (0);
 }
 
@@ -249,15 +245,17 @@ DECL(f_ruler)
 		O_CLR(sp, O_RULER);
 	else
 		O_SET(sp, O_RULER);
-
-	F_SET(sp, S_REDRAW);
 	return (0);
 }
 
 DECL(f_shiftwidth)
 {
+	if (val == 0) {
+		msgq(sp, M_ERR, "The shiftwidth can't be set to 0.");
+		return (1);
+	}
 	if (val > O_VAL(sp, O_COLUMNS)) {
-		msgq(sp, M_ERROR,
+		msgq(sp, M_ERR,
 		    "Shiftwidth can't be larger than screen size.");
 		return (1);
 	}
@@ -268,7 +266,7 @@ DECL(f_shiftwidth)
 DECL(f_sidescroll)
 {
 	if (val > O_VAL(sp, O_COLUMNS)) {
-		msgq(sp, M_ERROR,
+		msgq(sp, M_ERR,
 		    "Sidescroll can't be larger than screen size.");
 		return (1);
 	}
@@ -279,17 +277,17 @@ DECL(f_sidescroll)
 DECL(f_tabstop)
 {
 	if (val == 0) {
-		msgq(sp, M_ERROR, "Tab stops can't be set to 0.");
+		msgq(sp, M_ERR, "Tab stops can't be set to 0.");
 		return (1);
 	}
 #define	MAXTABSTOP	20
 	if (val > MAXTABSTOP) {
-		msgq(sp, M_ERROR,
+		msgq(sp, M_ERR,
 		    "Tab stops can't be larger than %d.", MAXTABSTOP);
 		return (1);
 	}
 	if (val > O_VAL(sp, O_COLUMNS)) {
-		msgq(sp, M_ERROR,
+		msgq(sp, M_ERR,
 		    "Tab stops can't be larger than screen size.",
 		    MAXTABSTOP);
 		return (1);
@@ -323,7 +321,7 @@ DECL(f_tags)
 	if (F_ISSET(&sp->opts[O_TAGS], OPT_ALLOCATED))
 		free(O_STR(sp, O_TAGS));
 	if ((O_STR(sp, O_TAGS) = strdup(str)) == NULL) {
-		msgq(sp, M_ERROR, "Error: %s", strerror(errno));
+		msgq(sp, M_ERR, "Error: %s", strerror(errno));
 		return (1);
 	}
 	F_SET(&sp->opts[O_TAGS], OPT_ALLOCATED);
@@ -350,7 +348,7 @@ DECL(f_tags)
 				if ((sp->tfhead[cnt]->fname =
 				    malloc(len + 1)) == NULL) {
 mem1:					sp->tfhead[cnt] = NULL;
-mem2:					msgq(sp, M_ERROR,
+mem2:					msgq(sp, M_ERR,
 					    "Error: %s", strerror(errno));
 					return (1);
 				}
@@ -373,14 +371,14 @@ DECL(f_term)
 	if (F_ISSET(&sp->opts[O_TERM], OPT_ALLOCATED))
 		free(O_STR(sp, O_TERM));
 	if ((O_STR(sp, O_TERM) = strdup(str)) == NULL) {
-		msgq(sp, M_ERROR, "Error: %s", strerror(errno));
+		msgq(sp, M_ERR, "Error: %s", strerror(errno));
 		return (1);
 	}
 	F_SET(&sp->opts[O_TERM], OPT_ALLOCATED | OPT_SET);
 
 	/* Change the flash value if it's set. */
 	if (O_ISSET(sp, O_FLASH) && f_flash(sp, op, NULL, 0))
-		msgq(sp, M_ERROR,
+		msgq(sp, M_ERR,
 		    "Term value %s; unable to set flash option.", str);
 	return (0);
 }
@@ -388,7 +386,7 @@ DECL(f_term)
 DECL(f_wrapmargin)
 {
 	if (val > O_VAL(sp, O_COLUMNS)) {
-		msgq(sp, M_ERROR,
+		msgq(sp, M_ERR,
 		    "Wrapmargin value can't be larger than screen size.");
 		return (1);
 	}
