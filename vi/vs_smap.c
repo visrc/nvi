@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_smap.c,v 10.25 1996/07/12 21:46:18 bostic Exp $ (Berkeley) $Date: 1996/07/12 21:46:18 $";
+static const char sccsid[] = "$Id: vs_smap.c,v 10.26 1996/10/31 09:33:28 bostic Exp $ (Berkeley) $Date: 1996/10/31 09:33:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -792,6 +792,13 @@ vs_deleteln(sp, cnt)
 	size_t oldy, oldx;
 
 	gp = sp->gp;
+
+	/* If the screen is vertically split, we can't scroll it. */
+	if (IS_VSPLIT(sp)) {
+		F_SET(sp, SC_SCR_REDRAW);
+		return (0);
+	}
+		
 	if (IS_ONELINE(sp))
 		(void)gp->scr_clrtoeol(sp);
 	else {
@@ -1027,6 +1034,13 @@ vs_insertln(sp, cnt)
 	size_t oldy, oldx;
 
 	gp = sp->gp;
+
+	/* If the screen is vertically split, we can't scroll it. */
+	if (IS_VSPLIT(sp)) {
+		F_SET(sp, SC_SCR_REDRAW);
+		return (0);
+	}
+		
 	if (IS_ONELINE(sp)) {
 		(void)gp->scr_move(sp, LASTLINE(sp), 0);
 		(void)gp->scr_clrtoeol(sp);
