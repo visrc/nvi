@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.4 1993/07/21 11:08:22 bostic Exp $ (Berkeley) $Date: 1993/07/21 11:08:22 $";
+static char sccsid[] = "$Id: recover.c,v 8.5 1993/07/22 13:52:17 bostic Exp $ (Berkeley) $Date: 1993/07/22 13:52:17 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -140,6 +140,7 @@ rcv_init(sp, ep)
 
 		/* Initialize the about-to-die handler. */
 		(void)signal(SIGHUP, rcv_hup);
+		(void)signal(SIGTERM, rcv_term);
 	}
 
 	F_SET(ep, F_RCV_ON);
@@ -231,6 +232,7 @@ rcv_end()
 
 	(void)signal(SIGALRM, SIG_IGN);
 	(void)signal(SIGHUP, SIG_IGN);
+	(void)signal(SIGTERM, SIG_IGN);
 
 	value.it_interval.tv_sec = value.it_interval.tv_usec = 0;
 	value.it_value.tv_sec = value.it_value.tv_usec = 0;
@@ -277,7 +279,8 @@ rcv_alrm(signo)
 
 /*
  * rcv_hup --
- *	Recovery death interrupt handler.
+ *	Recovery SIGHUP interrupt handler.  (Modem line dropped, or
+ *	xterm window closed.)
  *
  *	The only race should be with linking and unlinking the SCR
  *	chain, and using the underlying EXF * from the SCR structure.
@@ -289,19 +292,69 @@ rcv_hup(signo)
 	int signo;
 {
 	SCR *sp;
+	char comm[4096];
 
-	/* Walk the list of screens, sync'ing the files. */
+	/*
+	 * Walk the list of screens, sync'ing the files; only sync
+	 * each file once.  Send email to the user for each file
+	 * saved.
+	 */
 	for (sp = __global_list->scrhdr.next;
 	    sp != (SCR *)&__global_list->scrhdr; sp = sp->next)
 		if (sp->ep != NULL)
-			if (F_ISSET(sp->ep, F_RCV_ON))
+			if (F_ISSET(sp->ep, F_RCV_ON)) {
 				(void)sp->ep->db->sync(sp->ep->db, R_RECNOSYNC);
-			else
+				F_CLR(sp->ep, F_RCV_ON);
+				F_SET(sp->ep, F_RCV_NORM);
+				if (sp->ep->rcv_mpath != NULL) {
+					(void)snprintf(comm, sizeof(comm),
+					    "%s -t < %s", _PATH_SENDMAIL,
+					    sp->ep->rcv_mpath);
+					(void)system(comm);
+				}
+			} else if (!F_ISSET(sp->ep, F_RCV_NORM))
 				(void)unlink(sp->ep->rcv_path);
 
 	/* Die with the proper exit status. */
 	(void)signal(SIGHUP, SIG_DFL);
 	(void)kill(0, SIGHUP);
+
+	/* NOTREACHED */
+	exit (1);
+}
+
+/*
+ * rcv_term --
+ *	Recovery SIGTERM interrupt handler.  (Reboot or halt is running.)
+ *
+ *	The only race should be with linking and unlinking the SCR
+ *	chain, and using the underlying EXF * from the SCR structure.
+ *
+ *	DON'T USE MSG ROUTINES, THEY'RE NOT PROTECTED AGAINST US!
+ */
+void
+rcv_term(signo)
+	int signo;
+{
+	SCR *sp;
+
+	/*
+	 * Walk the list of screens, sync'ing the files; only sync
+	 * each file once.
+	 */
+	for (sp = __global_list->scrhdr.next;
+	    sp != (SCR *)&__global_list->scrhdr; sp = sp->next)
+		if (sp->ep != NULL)
+			if (F_ISSET(sp->ep, F_RCV_ON)) {
+				(void)sp->ep->db->sync(sp->ep->db, R_RECNOSYNC);
+				F_CLR(sp->ep, F_RCV_ON);
+				F_SET(sp->ep, F_RCV_NORM);
+			} else if (!F_ISSET(sp->ep, F_RCV_NORM))
+				(void)unlink(sp->ep->rcv_path);
+
+	/* Die with the proper exit status. */
+	(void)signal(SIGTERM, SIG_DFL);
+	(void)kill(0, SIGTERM);
 
 	/* NOTREACHED */
 	exit (1);
