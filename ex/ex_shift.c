@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shift.c,v 5.3 1992/04/05 09:23:48 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:23:48 $";
+static char sccsid[] = "$Id: ex_shift.c,v 5.4 1992/04/15 09:13:57 bostic Exp $ (Berkeley) $Date: 1992/04/15 09:13:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -54,7 +54,7 @@ shift(cmdp, rl)
 		for (l = markline(cmdp->addr1); l <= markline(cmdp->addr2); l++)
 		{
 			/* get the line - ignore empty lines unless ! mode */
-			text = fetchline(l);
+			text = fetchline(l, NULL);
 			if (!*text && !cmdp->flags & E_FORCE)
 				continue;
 

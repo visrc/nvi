@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_join.c,v 5.3 1992/04/05 09:23:39 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:23:39 $";
+static char sccsid[] = "$Id: ex_join.c,v 5.4 1992/04/15 09:13:22 bostic Exp $ (Berkeley) $Date: 1992/04/15 09:13:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -42,14 +42,14 @@ ex_join(cmdp)
 
 	/* get the first line */
 	l = markline(frommark);
-	strcpy(tmpblk.c, fetchline(l));
+	strcpy(tmpblk.c, fetchline(l, NULL));
 	len = strlen(tmpblk.c);
 
 	/* build the longer line */
 	while (++l <= markline(tomark))
 	{
 		/* get the next line */
-		scan = fetchline(l);
+		scan = fetchline(l, NULL);
 
 		/* remove any leading whitespace */
 		while (*scan == '\t' || *scan == ' ')
