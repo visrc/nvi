@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_split.c,v 10.19 1996/03/18 09:09:04 bostic Exp $ (Berkeley) $Date: 1996/03/18 09:09:04 $";
+static const char sccsid[] = "$Id: vs_split.c,v 10.20 1996/03/21 19:51:11 bostic Exp $ (Berkeley) $Date: 1996/03/21 19:51:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -103,6 +103,10 @@ vs_split(sp, new, ccl)
 		CIRCLEQ_INSERT_AFTER(&gp->dq, sp, new, q);
 	}
 
+	/* Adjust maximum text count. */
+	sp->t_maxrows = IS_ONELINE(sp) ? 1 : sp->rows - 1;
+	new->t_maxrows = IS_ONELINE(new) ? 1 : new->rows - 1;
+
 	/*
 	 * Small screens: see vs_refresh.c, section 6a.
 	 *
@@ -141,10 +145,6 @@ vs_split(sp, new, ccl)
 			new->t_minrows = new->t_rows =
 			    IS_ONELINE(new) ? 1 : new->rows - 1;
 	}
-
-	/* Adjust maximum text count. */
-	sp->t_maxrows = IS_ONELINE(sp) ? 1 : sp->rows - 1;
-	new->t_maxrows = IS_ONELINE(new) ? 1 : new->rows - 1;
 
 	/* Adjust the ends of the new and old maps. */
 	_TMAP(sp) = IS_ONELINE(sp) ?
