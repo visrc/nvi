@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.92 1994/08/31 17:15:25 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:15:25 $";
+static char sccsid[] = "$Id: vi.c,v 8.93 1994/09/15 20:02:47 bostic Exp $ (Berkeley) $Date: 1994/09/15 20:02:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -100,7 +100,12 @@ vi(sp, ep)
 		 * motion.  If it does, we get it too, calling its underlying
 		 * function to get the resulting mark.  We then call the
 		 * command setting the cursor to the resulting mark.
+		 *
+		 * Refresh the command structure.
 		 */
+		memset(&vp->vp_startzero, 0,
+		    (u_int8_t *)&vp->vp_endzero -
+		    (u_int8_t *)&vp->vp_startzero);
 		if (getcmd(sp, ep, DOT, vp, NULL, &comcount, &mapped))
 			goto err;
 
@@ -114,11 +119,6 @@ vi(sp, ep)
 
 		/* Copy the key flags into the local structure. */
 		F_SET(vp, vp->kp->flags);
-
-		/* Get any associated keyword. */
-		if (F_ISSET(vp, V_KEYNUM | V_KEYW) &&
-		    getkeyword(sp, ep, vp, vp->flags))
-			goto err;
 
 		/* Prepare to set the previous context. */
 		if (F_ISSET(vp, V_ABS | V_ABS_C | V_ABS_L)) {
@@ -348,10 +348,6 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp, mappedp)
 	CHAR_T key;
 	char *s;
 
-	/* Refresh the command structure. */
-	memset(&vp->vp_startzero, 0,
-	    (char *)&vp->vp_endzero - (char *)&vp->vp_startzero);
-
 	/*
 	 * Get a key.
 	 *
@@ -548,6 +544,11 @@ usage:			if (ismotion == NULL)
 	if (LF_ISSET(V_CHAR))
 		KEY(vp->character, 0);
 
+	/* Get any associated keyword. */
+	if (F_ISSET(kp, V_KEYNUM | V_KEYW) &&
+	    getkeyword(sp, ep, vp, F_ISSET(kp, V_KEYNUM | V_KEYW)))
+		return (1);
+
 	return (0);
 
 esc:	switch (cpart) {
@@ -590,8 +591,11 @@ getmotion(sp, ep, dm, vp, mappedp)
 		motion = *dm;
 		F_SET(&motion, VC_ISDOT);
 		F_CLR(&motion, VM_COMMASK);
-	} else if (getcmd(sp, ep, NULL, &motion, vp, &notused, mappedp))
-		return (1);
+	} else {
+		memset(&motion, 0, sizeof(VICMDARG));
+		if (getcmd(sp, ep, NULL, &motion, vp, &notused, mappedp))
+			return (1);
+	}
 
 	/*
 	 * A count may be provided both to the command and to the motion, in
