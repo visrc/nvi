@@ -6,10 +6,10 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.61 1993/12/20 09:24:41 bostic Exp $ (Berkeley) $Date: 1993/12/20 09:24:41 $";
+static char sccsid[] = "$Id: exf.c,v 8.62 1993/12/21 11:58:31 bostic Exp $ (Berkeley) $Date: 1993/12/21 11:58:31 $";
 #endif /* not lint */
 
-#include <sys/types.h>
+#include <sys/param.h>
 #include <sys/stat.h>
 
 /*
@@ -183,7 +183,7 @@ file_init(sp, frp, rcv_name, force)
 	struct stat sb;
 	size_t psize;
 	int fd;
-	char *p, *oname, tname[sizeof(_PATH_TMPNAME) + 1];
+	char *p, *oname, tname[MAXPATHLEN];
 
 	/*
 	 * Required ep initialization:
@@ -206,7 +206,8 @@ file_init(sp, frp, rcv_name, force)
 	 * free'd up.
 	 */
 	if ((oname = FILENAME(frp)) == NULL || stat(oname, &sb)) {
-		(void)strcpy(tname, _PATH_TMPNAME);
+		(void)snprintf(tname, sizeof(tname),
+		    "%s/vi.XXXXXX", O_STR(sp, O_DIRECTORY));
 		if ((fd = mkstemp(tname)) == -1) {
 			msgq(sp, M_SYSERR, "Temporary file");
 			goto err;

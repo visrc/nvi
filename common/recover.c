@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.39 1993/11/20 10:05:20 bostic Exp $ (Berkeley) $Date: 1993/11/20 10:05:20 $";
+static char sccsid[] = "$Id: recover.c,v 8.40 1993/12/21 11:58:53 bostic Exp $ (Berkeley) $Date: 1993/12/21 11:58:53 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -91,7 +91,7 @@ rcv_tmp(sp, ep, name)
 	 * would have permission to remove other users recovery files.  If
 	 * the sticky bit has the BSD semantics, that too will be impossible.
 	 */
-	dp = O_STR(sp, O_DIRECTORY);
+	dp = O_STR(sp, O_RECDIR);
 	if (stat(dp, &sb)) {
 		if (errno != ENOENT || mkdir(dp, 0)) {
 			msgq(sp, M_ERR, "Error: %s: %s", dp, strerror(errno));
@@ -224,10 +224,10 @@ rcv_mailfile(sp, ep)
 	}
 
 	(void)snprintf(path, sizeof(path),
-	    "%s/recover.XXXXXX", O_STR(sp, O_DIRECTORY));
+	    "%s/recover.XXXXXX", O_STR(sp, O_RECDIR));
 	if ((fd = mkstemp(path)) == -1 || (fp = fdopen(fd, "w")) == NULL) {
 		msgq(sp, M_ERR,
-		    "Error: %s: %s", O_STR(sp, O_DIRECTORY), strerror(errno));
+		    "Error: %s: %s", O_STR(sp, O_RECDIR), strerror(errno));
 		if (fd != -1)
 			(void)close(fd);
 		return (1);
@@ -422,9 +422,9 @@ rcv_list(sp)
 	int found;
 	char *p, file[1024];
 
-	if (chdir(O_STR(sp, O_DIRECTORY)) || (dirp = opendir(".")) == NULL) {
+	if (chdir(O_STR(sp, O_RECDIR)) || (dirp = opendir(".")) == NULL) {
 		(void)fprintf(stderr,
-		    "vi: %s: %s\n", O_STR(sp, O_DIRECTORY), strerror(errno));
+		    "vi: %s: %s\n", O_STR(sp, O_RECDIR), strerror(errno));
 		return (1);
 	}
 
@@ -491,9 +491,9 @@ rcv_read(sp, name)
 	char *p, *t, *recp, *pathp;
 	char recpath[MAXPATHLEN], file[MAXPATHLEN], path[MAXPATHLEN];
 		
-	if ((dirp = opendir(O_STR(sp, O_DIRECTORY))) == NULL) {
+	if ((dirp = opendir(O_STR(sp, O_RECDIR))) == NULL) {
 		msgq(sp, M_ERR,
-		    "%s: %s", O_STR(sp, O_DIRECTORY), strerror(errno));
+		    "%s: %s", O_STR(sp, O_RECDIR), strerror(errno));
 		return (1);
 	}
 
@@ -504,7 +504,7 @@ rcv_read(sp, name)
 
 		/* If it's readable, it's recoverable. */
 		(void)snprintf(recpath, sizeof(recpath),
-		    "%s/%s", O_STR(sp, O_DIRECTORY), dp->d_name);
+		    "%s/%s", O_STR(sp, O_RECDIR), dp->d_name);
 		if ((fp = fopen(recpath, "r")) == NULL)
 			continue;
 

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.32 1993/12/20 18:16:37 bostic Exp $ (Berkeley) $Date: 1993/12/20 18:16:37 $";
+static char sccsid[] = "$Id: options.c,v 8.33 1993/12/21 11:58:41 bostic Exp $ (Berkeley) $Date: 1993/12/21 11:58:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -54,7 +54,7 @@ static OPTLIST const optlist[] = {
 /* O_DIGRAPH	  XXX: Elvis */
 	{"digraph",	NULL,		OPT_0BOOL,	0},
 /* O_DIRECTORY	    4BSD */
-	{"directory",	NULL,		OPT_STR,	OPT_NOSAVE},
+	{"directory",	NULL,		OPT_STR,	0},
 /* O_EDCOMPATIBLE   4BSD */
 	{"edcompatible",NULL,		OPT_0BOOL,	0},
 /* O_ERRORBELLS	    4BSD */
@@ -101,6 +101,8 @@ static OPTLIST const optlist[] = {
 	{"prompt",	NULL,		OPT_1BOOL,	0},
 /* O_READONLY	    4BSD (undocumented) */
 	{"readonly",	f_readonly,	OPT_0BOOL,	0},
+/* O_RECDIR	  4.4BSD */
+	{"recdir",	NULL,		OPT_STR,	0},
 /* O_REDRAW	    4BSD */
 	{"redraw",	NULL,		OPT_0BOOL,	0},
 /* O_REMAP	    4BSD */
@@ -248,13 +250,22 @@ opts_init(sp)
 		else if (op->type == OPT_1BOOL)
 			O_SET(sp, cnt);
 			
+	/*
+	 * !!!
+	 * Vi historically stored temporary files in /var/tmp.  We store them
+	 * in /tmp by default, hoping it's a memory based file system.  There
+	 * are two ways to change this -- the user can set either the directory
+	 * option or the TMPDIR environmental variable.
+	 */
 	(void)snprintf(b1, sizeof(b1), "directory=%s",
-	    (s = getenv("TMPDIR")) == NULL ? _PATH_PRESERVE : s);
+	    (s = getenv("TMPDIR")) == NULL ? _PATH_TMP : s);
 	SET_DEF(O_DIRECTORY, b1);
 	SET_DEF(O_KEYTIME, "keytime=6");
 	SET_DEF(O_MATCHTIME, "matchtime=7");
 	SET_DEF(O_REPORT, "report=5");
 	SET_DEF(O_PARAGRAPHS, "paragraphs=IPLPPPQPP LIpplpipbp");
+	(void)snprintf(b1, sizeof(b1), "recdir=%s", _PATH_PRESERVE);
+	SET_DEF(O_RECDIR, b1);
 	(void)snprintf(b1, sizeof(b1), "scroll=%ld", O_VAL(sp, O_LINES) / 2);
 	SET_DEF(O_SCROLL, b1);
 	SET_DEF(O_SECTIONS, "sections=NHSHH HUnhsh");
