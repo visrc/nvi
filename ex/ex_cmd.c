@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_cmd.c,v 10.23 1997/01/13 18:27:54 bostic Exp $ (Berkeley) $Date: 1997/01/13 18:27:54 $";
+static const char sccsid[] = "$Id: ex_cmd.c,v 10.24 1997/08/03 15:36:05 bostic Exp $ (Berkeley) $Date: 1997/08/03 15:36:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -256,7 +256,7 @@ EXCMDLIST const cmds[] = {
 	    "pe[rl] cmd",
 	    "run the perl interpreter with the command"},
 /* C_PERLDOCMD */
-	{"perldo",	ex_perl,	E_ADDR2_ALL|E_ADDR_ZERO|
+	{"perldo",	ex_perl,	E_ADDR2|E_ADDR_ZERO|
 					    E_ADDR_ZERODEF|E_SECURE,
 	    "s",
 	    "perld[o] cmd",
