@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: vi.cmd.roff,v 8.39 1994/11/20 13:09:10 bostic Exp $ (Berkeley) $Date: 1994/11/20 13:09:10 $
+.\"	$Id: vi.cmd.roff,v 8.40 1994/12/27 09:54:34 bostic Exp $ (Berkeley) $Date: 1994/12/27 09:54:34 $
 .\"
 .SH 1 "Vi Description"
 .pp
@@ -2972,7 +2972,9 @@ the previous input is replayed, as if just entered.
 .IP "<control-D>"
 If the previous character on the line was an autoindent character,
 erase it.
-Otherwise, if the user is entering the first character in the line,
+Otherwise, if the
+.OP autoindent
+option is set and the user is entering the first character in the line,
 .LI <control-D>
 is ignored.
 Otherwise, a literal
