@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 10.8 1995/07/04 12:43:24 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:43:24 $";
+static char sccsid[] = "$Id: msg.c,v 10.9 1995/07/05 23:19:31 bostic Exp $ (Berkeley) $Date: 1995/07/05 23:19:31 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -345,7 +345,7 @@ nofmt:	mp += len;
 	}
 
 	(void)ex_fflush(sp);
-	(void)gp->scr_msg(sp, mt, "%.*s", (int)mlen, bp);
+	(void)gp->scr_msg(sp, mt, bp, mlen);
 
 	/* Cleanup. */
 ret:	FREE_SPACE(sp, bp, blen);
@@ -436,7 +436,7 @@ msg_rpt(sp)
 		}
 
 	(void)ex_fflush(sp);
-	(void)sp->gp->scr_msg(sp, M_INFO, "%.*s", (int)len, bp);
+	(void)sp->gp->scr_msg(sp, M_INFO, bp, len);
 
 	FREE_SPACE(sp, bp, blen);
 	return (0);
@@ -550,7 +550,7 @@ msg_status(sp, lno, showlast)
 	p += strlen(p);
 #endif
 	(void)ex_fflush(sp);
-	(void)sp->gp->scr_msg(sp, M_INFO, "%.*s", (int)(p - bp), bp);
+	(void)sp->gp->scr_msg(sp, M_INFO, bp, (size_t)(p - bp));
 
 	FREE_SPACE(sp, bp, blen);
 	return (0);
