@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_funcs.c,v 10.12 1995/07/08 12:45:27 bostic Exp $ (Berkeley) $Date: 1995/07/08 12:45:27 $";
+static char sccsid[] = "$Id: cl_funcs.c,v 10.13 1995/07/11 14:54:07 bostic Exp $ (Berkeley) $Date: 1995/07/11 14:54:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -271,10 +271,10 @@ cl_busy(sp, msg, on)
 				return (0);
 
 			/* Display the update. */
-			(void)move(info, clp->busy_fx);
 			if (clp->busy_ch == sizeof(flagc))
 				clp->busy_ch = 0;
-			(void)addnstr(flagc + clp->busy_ch++, 1);
+			(void)mvaddnstr(info,
+			    clp->busy_fx, flagc + clp->busy_ch++, 1);
 			(void)move(info, clp->busy_fx);
 
 			refresh();
@@ -477,16 +477,14 @@ cl_deleteln(sp)
 		if (clp->lline_len == 0)
 			(void)clrtoeol();
 		else {
-			(void)move(RLNO(sp, INFOLINE(sp)), 0);
-			(void)addnstr(clp->lline, clp->lline_len);
+			(void)mvaddnstr(RLNO(sp, INFOLINE(sp)),
+			    0, clp->lline, clp->lline_len);
 			clp->lline_len = 0;
 		}
 		if (deleteln() == ERR)
 			return (1);
-		if (len != 0) {
-			(void)move(RLNO(sp, INFOLINE(sp)), 0);
-			(void)addnstr(p, len);
-		}
+		if (len != 0)
+			(void)mvaddnstr(RLNO(sp, INFOLINE(sp)), 0, p, len);
 		(void)move(oldy, oldx);
 		return (0);
 	}
@@ -498,8 +496,18 @@ cl_deleteln(sp)
 	 *
 	 * If the bottom line was in reverse video, rewrite it in normal
 	 * video before it's scrolled.
+	 *
+	 * Check for the existence of a chgat function; XSI requires it, but
+	 * historic implementations of System V curses don't.   If it's not
+	 * a #define, we'll fall back to doing it by hand, which is slow but
+	 * acceptable.
 	 */
 	if (F_ISSET(clp, CL_LLINE_IV)) {
+#ifdef mvchgat
+		getyx(stdscr, oldy, oldx);
+		mvchgat(RLNO(sp, INFOLINE(sp)), 0, -1, A_NORMAL, 0, NULL);
+		(void)move(oldy, oldx);
+#else
 		if (cl_lline_copy(sp,
 		    &clp->lline_len, &clp->lline, &clp->lline_blen))
 			return (1);
@@ -508,18 +516,20 @@ cl_deleteln(sp)
 			(void)clrtoeol();
 		else {
 			getyx(stdscr, oldy, oldx);
-			(void)move(RLNO(sp, INFOLINE(sp)), 0);
-			(void)addnstr(clp->lline, clp->lline_len);
+			(void)mvaddnstr(RLNO(sp, INFOLINE(sp)),
+			    0, clp->lline, clp->lline_len);
 			(void)move(oldy, oldx);
 			clp->lline_len = 0;
-#ifndef THIS_FIXES_A_BUG_IN_NCURSES
-/*
- * This line fixes a bug in ncurses, where "file|file|file" shows
- * up with half the lines in reverse video.
- */
-refresh();
-#endif
 		}
+#endif
+
+#ifndef THIS_FIXES_A_BUG_IN_NCURSES
+		/*
+		 * This line fixes a bug in ncurses, where "file|file|file"
+		 * shows up with half the lines in reverse video.
+		 */
+		refresh();
+#endif
 		F_CLR(clp, CL_LLINE_IV);
 	}
 
