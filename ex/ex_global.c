@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 8.12 1993/09/30 11:26:56 bostic Exp $ (Berkeley) $Date: 1993/09/30 11:26:56 $";
+static char sccsid[] = "$Id: ex_global.c,v 8.13 1993/10/27 14:46:45 bostic Exp $ (Berkeley) $Date: 1993/10/27 14:46:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -64,7 +64,7 @@ global(sp, ep, cmdp, cmd)
 	regex_t *re, lre;
 	sig_ret_t saveintr;
 	size_t len;
-	int delim, eval, reflags, rval;
+	int delim, eval, reflags, replaced, rval;
 	char *ptrn, *p, *t, cbuf[1024];
 
 	/*
@@ -118,9 +118,19 @@ global(sp, ep, cmdp, cmd)
 		if (O_ISSET(sp, O_IGNORECASE))
 			reflags |= REG_ICASE;
 
+		/* Replace any word search pattern. */
+		if (search_word(sp, &ptrn, &replaced))
+			return (1);
+
 		/* Compile the RE. */
 		re = &lre;
-		if (eval = regcomp(re, ptrn, reflags)) {
+		eval = regcomp(re, ptrn, reflags);
+
+		/* Free up any extra memory. */
+		if (replaced)
+			FREE_SPACE(sp, ptrn, 0);
+
+		if (eval) {
 			re_error(sp, eval, re);
 			return (1);
 		}
