@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_move.c,v 8.16 1994/07/17 14:25:14 bostic Exp $ (Berkeley) $Date: 1994/07/17 14:25:14 $";
+static char sccsid[] = "$Id: ex_move.c,v 8.17 1994/08/08 09:12:15 bostic Exp $ (Berkeley) $Date: 1994/08/08 09:12:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -75,8 +75,6 @@ ex_copy(sp, ep, cmdp)
 		cnt = (fm2.lno - fm1.lno) + 1;
 		sp->lno = m.lno + (cnt - 1);
 		sp->cno = 0;
-
-		sp->rptlines[L_COPIED] += cnt;
 	}
 err:	text_lfree(&cb.textq);
 	return (rval);
