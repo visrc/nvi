@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 8.29 1993/12/02 10:50:12 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:50:12 $";
+static char sccsid[] = "$Id: ex_tag.c,v 8.30 1993/12/09 19:42:48 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:42:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -166,16 +166,14 @@ ex_tagpush(sp, ep, cmdp)
 	 * string is only used for the first access and to display to the user.
 	 * we use the saved line/column number when returning to a file.
 	 */
-	if ((tp = calloc(1, sizeof(TAG))) == NULL)
-		msgq(sp, M_SYSERR, NULL);
+	CALLOC(sp, tp, TAG *, 1, sizeof(TAG));
 	if (exp->tagq.tqh_first == NULL) {
 		tp->frp = sp->frp;
 		tp->lno = sp->lno;
 		tp->cno = sp->cno;
 		TAILQ_INSERT_HEAD(&exp->tagq, tp, q);
 
-		if ((tp = calloc(1, sizeof(TAG))) == NULL)
-			msgq(sp, M_SYSERR, NULL);
+		CALLOC(sp, tp, TAG *, 1, sizeof(TAG));
 	}
 
 	if (tp != NULL) {
@@ -493,11 +491,10 @@ ex_tagalloc(sp, str)
 	for (p = t = str;; ++p) {
 		if (*p == '\0' || isblank(*p)) {
 			if ((len = p - t) > 1) {
-				if ((tp = malloc(sizeof(TAGF))) == NULL ||
-				    (tp->name = malloc(len + 1)) == NULL) {
-					if (tp != NULL)
-						FREE(tp, sizeof(TAGF));
-					msgq(sp, M_SYSERR, NULL);
+				MALLOC_RET(sp, tp, TAGF *, sizeof(TAGF));
+				MALLOC(sp, tp->name, char *, len + 1);
+				if (tp->name == NULL) {
+					FREE(tp, sizeof(TAGF));
 					return (1);
 				}
 				memmove(tp->name, t, len);
@@ -551,7 +548,8 @@ ex_tagcopy(orig, sp)
 	oexp = EXP(orig);
 	nexp = EXP(sp);
 	for (ap = oexp->tagq.tqh_first; ap != NULL; ap = ap->q.tqe_next) {
-		if ((tp = malloc(sizeof(TAG))) == NULL)
+		MALLOC(sp, tp, TAG *, sizeof(TAG));
+		if (tp == NULL)
 			goto nomem;
 		*tp = *ap;
 		if (ap->search != NULL &&
@@ -563,7 +561,8 @@ ex_tagcopy(orig, sp)
 	/* Copy list of tag files. */
 	for (atfp = oexp->tagfq.tqh_first;
 	    atfp != NULL; atfp = atfp->q.tqe_next) {
-		if ((tfp = malloc(sizeof(TAGF))) == NULL)
+		MALLOC(sp, tfp, TAGF *, sizeof(TAGF));
+		if (tfp == NULL)
 			goto nomem;
 		*tfp = *atfp;
 		if ((tfp->name = strdup(atfp->name)) == NULL)
@@ -695,8 +694,8 @@ search(sp, name, tname, tag)
 	}
 
 	len = endp - front;
-	if ((p = malloc(len + 1)) == NULL) {
-		msgq(sp, M_SYSERR, NULL);
+	MALLOC(sp, p, char *, len + 1);
+	if (p == NULL) {
 		*tag = NULL;
 		goto done;
 	}

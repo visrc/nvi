@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_init.c,v 8.8 1993/11/18 08:17:43 bostic Exp $ (Berkeley) $Date: 1993/11/18 08:17:43 $";
+static char sccsid[] = "$Id: ex_init.c,v 8.9 1993/12/09 19:42:41 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:42:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,9 +30,8 @@ ex_screen_copy(orig, sp)
 	EX_PRIVATE *oexp, *nexp;
 
 	/* Create the private ex structure. */
-	if ((sp->ex_private = nexp = malloc(sizeof(EX_PRIVATE))) == NULL)
-		goto mem;
-	memset(nexp, 0, sizeof(EX_PRIVATE));
+	CALLOC_RET(orig, nexp, EX_PRIVATE *, 1, sizeof(EX_PRIVATE));
+	sp->ex_private = nexp;
 
 	/* Initialize queues. */
 	TAILQ_INIT(&nexp->tagq);
@@ -48,7 +47,7 @@ ex_screen_copy(orig, sp)
 
 		if (oexp->lastbcomm != NULL &&
 		    (nexp->lastbcomm = strdup(oexp->lastbcomm)) == NULL) {
-mem:			msgq(sp, M_SYSERR, NULL);
+			msgq(sp, M_SYSERR, NULL);
 			return(1);
 		}
 

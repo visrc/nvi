@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.62 1993/11/30 09:28:57 bostic Exp $ (Berkeley) $Date: 1993/11/30 09:28:57 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.63 1993/12/09 19:43:14 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:43:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1109,7 +1109,7 @@ txt_auto(sp, ep, lno, aitp, len, tp)
 	nlen = p - t;
 
 	/* Make sure the buffer's big enough. */
-	BINC(sp, tp->lb, tp->lb_len, tp->len + nlen);
+	BINC_RET(sp, tp->lb, tp->lb_len, tp->len + nlen);
 
 	/* Copy the indentation into the new buffer. */
 	memmove(tp->lb + nlen, tp->lb, tp->len);
@@ -1346,7 +1346,7 @@ txt_indent(sp, tp)
 		return (0);
 
 	/* Make sure there's enough room. */
-	BINC(sp, tp->lb, tp->lb_len, tp->len + spaces + tabs);
+	BINC_RET(sp, tp->lb, tp->lb_len, tp->len + spaces + tabs);
 
 	/* Move the insert characters out of the way. */
 	if (tp->insert)
@@ -1402,7 +1402,7 @@ txt_outdent(sp, tp)
 		return (0);
 
 	/* Make sure there's enough room. */
-	BINC(sp, tp->lb, tp->lb_len, tp->len + spaces);
+	BINC_RET(sp, tp->lb, tp->lb_len, tp->len + spaces);
 
 	/* Use up any overwrite characters. */
 	for (; tp->owrite && spaces; --spaces, ++tp->ai, --tp->owrite)

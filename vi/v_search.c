@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 8.15 1993/11/18 10:09:27 bostic Exp $ (Berkeley) $Date: 1993/11/18 10:09:27 $";
+static char sccsid[] = "$Id: v_search.c,v 8.16 1993/12/09 19:43:18 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:43:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -119,7 +119,7 @@ v_searchw(sp, ep, vp, fm, tm, rp)
 	char *bp;
 
 	len = vp->kbuflen + sizeof(RE_WSTART) + sizeof(RE_WSTOP);
-	GET_SPACE(sp, bp, blen, len);
+	GET_SPACE_RET(sp, bp, blen, len);
 	(void)snprintf(bp, blen, "%s%s%s", RE_WSTART, vp->keyword, RE_WSTOP);
 		
 	flags = SEARCH_MSG;

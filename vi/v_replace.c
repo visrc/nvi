@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_replace.c,v 8.11 1993/11/29 14:15:29 bostic Exp $ (Berkeley) $Date: 1993/11/29 14:15:29 $";
+static char sccsid[] = "$Id: v_replace.c,v 8.12 1993/12/09 19:43:17 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:43:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -100,7 +100,7 @@ nochar:		msgq(sp, M_BERR, "No characters to replace");
 	}
 
 	/* Copy the line. */
-	GET_SPACE(sp, bp, blen, len);
+	GET_SPACE_RET(sp, bp, blen, len);
 	memmove(bp, p, len);
 	p = bp;
 

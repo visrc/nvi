@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.39 1993/12/02 14:44:08 bostic Exp $ (Berkeley) $Date: 1993/12/02 14:44:08 $";
+static char sccsid[] = "$Id: vi.c,v 8.40 1993/12/09 19:43:22 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:43:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -660,7 +660,7 @@ noword:		msgq(sp, M_BERR, "Cursor not in a %s",
 	 */
 	len = (end - beg) + 2;				/* XXX */
 	kp->klen = (end - beg) + 1;
-	BINC(sp, kp->keyword, kp->kbuflen, len);
+	BINC_RET(sp, kp->keyword, kp->kbuflen, len);
 	memmove(kp->keyword, p + beg, kp->klen);
 	kp->keyword[kp->klen] = '\0';			/* XXX */
 	return (0);

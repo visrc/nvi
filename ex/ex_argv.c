@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 8.22 1993/12/03 15:40:45 bostic Exp $ (Berkeley) $Date: 1993/12/03 15:40:45 $";
+static char sccsid[] = "$Id: ex_argv.c,v 8.23 1993/12/09 19:42:37 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:42:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -24,7 +24,7 @@ static char sccsid[] = "$Id: ex_argv.c,v 8.22 1993/12/03 15:40:45 bostic Exp $ (
 static int argv_alloc __P((SCR *, size_t));
 static int argv_fexp __P((SCR *, EXCMDARG *,
 	       char *, size_t, char *, size_t *, char **, size_t *, int));
-static int argv_sexp __P((SCR *, char *, size_t, size_t *));
+static int argv_sexp __P((SCR *, char **, size_t *, size_t *));
 
 /*
  * argv_init --
@@ -89,7 +89,7 @@ argv_exp1(sp, ep, excp, cmd, cmdlen, is_bang)
 	size_t blen, len;
 	char *bp;
 
-	GET_SPACE(sp, bp, blen, 512);
+	GET_SPACE_RET(sp, bp, blen, 512);
 
 	len = 0;
 	exp = EXP(sp);
@@ -128,7 +128,7 @@ argv_exp2(sp, ep, excp, cmd, cmdlen, is_bang)
 	int rval;
 	char *bp, *p;
 
-	GET_SPACE(sp, bp, blen, 512);
+	GET_SPACE_RET(sp, bp, blen, 512);
 
 #define	SHELLECHO	"echo "
 #define	SHELLOFFSET	(sizeof(SHELLECHO) - 1)
@@ -158,7 +158,7 @@ argv_exp2(sp, ep, excp, cmd, cmdlen, is_bang)
 		if (!isalnum(*p) && !isblank(*p) && *p != '/' && *p != '.')
 			break;
 	if (n > 0) {
-		if (argv_sexp(sp, bp, blen, &len)) {
+		if (argv_sexp(sp, &bp, &blen, &len)) {
 			rval = 1;
 			goto err;
 		}
@@ -279,7 +279,7 @@ argv_fexp(sp, excp, cmd, cmdlen, p, lenp, bpp, blenp, is_bang)
 				return (1);
 			}
 			len += tlen = strlen(exp->lastbcomm);
-			ADD_SPACE(sp, bp, blen, len);
+			ADD_SPACE_RET(sp, bp, blen, len);
 			memmove(p, exp->lastbcomm, tlen);
 			p += tlen;
 			F_SET(excp, E_MODIFY);
@@ -292,7 +292,7 @@ argv_fexp(sp, excp, cmd, cmdlen, p, lenp, bpp, blenp, is_bang)
 			}
 			tlen = strlen(t = FILENAME(sp->frp));
 			len += tlen;
-			ADD_SPACE(sp, bp, blen, len);
+			ADD_SPACE_RET(sp, bp, blen, len);
 			memmove(p, t, tlen);
 			p += tlen;
 			F_SET(excp, E_MODIFY);
@@ -313,7 +313,7 @@ argv_fexp(sp, excp, cmd, cmdlen, p, lenp, bpp, blenp, is_bang)
 			else
 				t = FILENAME(sp->frp);
 			len += tlen = strlen(t);
-			ADD_SPACE(sp, bp, blen, len);
+			ADD_SPACE_RET(sp, bp, blen, len);
 			memmove(p, t, tlen);
 			p += tlen;
 			F_SET(excp, E_MODIFY);
@@ -330,13 +330,13 @@ argv_fexp(sp, excp, cmd, cmdlen, p, lenp, bpp, blenp, is_bang)
 			/* FALLTHROUGH */
 		default:
 ins_ch:			++len;
-			ADD_SPACE(sp, bp, blen, len);
+			ADD_SPACE_RET(sp, bp, blen, len);
 			*p++ = *cmd;
 		}
 
 	/* Nul termination. */
 	++len;
-	ADD_SPACE(sp, bp, blen, len);
+	ADD_SPACE_RET(sp, bp, blen, len);
 	*p = '\0';
 
 	/* Return the new string length, buffer, buffer length. */
@@ -368,8 +368,8 @@ argv_alloc(sp, len)
 	off = exp->argsoff;
 	if (exp->argscnt == 0 || off + 2 >= exp->argscnt - 1) {
 		cnt = exp->argscnt + INCREMENT;
-		if ((exp->args =
-		    realloc(exp->args, cnt * sizeof(ARGS *))) == NULL) {
+		REALLOC(sp, exp->args, ARGS **, cnt * sizeof(ARGS *));
+		if (exp->args == NULL) {
 			(void)argv_free(sp);
 			goto mem;
 		}
@@ -378,10 +378,10 @@ argv_alloc(sp, len)
 	}
 
 	/* First argument. */
-	if (exp->args[off] == NULL &&			
-	    (exp->args[off] = calloc(1, sizeof(ARGS))) == NULL) {
-		exp->args[off] = NULL;		
-		goto mem;				
+	if (exp->args[off] == NULL) {
+		CALLOC(sp, exp->args[off], ARGS *, 1, sizeof(ARGS));
+		if (exp->args[off] == NULL)
+			goto mem;				
 	}						
 
 	/* First argument buffer. */
@@ -389,8 +389,8 @@ argv_alloc(sp, len)
 	ap->len = 0;					
 	if (ap->blen < len + 1) {			
 		ap->blen = len + 1;			
-		if ((ap->bp = realloc(ap->bp,	
-		    ap->blen * sizeof(CHAR_T))) == NULL) {
+		REALLOC(sp, ap->bp, CHAR_T *, ap->blen * sizeof(CHAR_T));
+		if (ap->bp == NULL) {
 			ap->bp = NULL;		
 			ap->blen = 0;			
 			F_CLR(ap, A_ALLOCATED);	
@@ -401,10 +401,10 @@ mem:			msgq(sp, M_SYSERR, NULL);
 	}						
 
 	/* Second argument. */
-	if (exp->args[++off] == NULL &&		
-	    (exp->args[off] = calloc(1, sizeof(ARGS))) == NULL) {
-		exp->args[off] = NULL;		
-		goto mem;				
+	if (exp->args[++off] == NULL) {
+		CALLOC(sp, exp->args[off], ARGS *, 1, sizeof(ARGS));
+		if (exp->args[off] == NULL)
+			goto mem;				
 	}						
 	/* 0 length serves as end-of-argument marker. */
 	exp->args[off]->len = 0;			
@@ -444,16 +444,19 @@ argv_free(sp)
  *	a buffer.
  */
 static int
-argv_sexp(sp, bp, blen, lenp)
+argv_sexp(sp, bpp, blenp, lenp)
 	SCR *sp;
-	char *bp;
-	size_t *lenp, blen;
+	char **bpp;
+	size_t *blenp, *lenp;
 {
 	FILE *ifp;
 	pid_t pid;
-	size_t len;
+	size_t blen, len;
 	int ch, rval, output[2];
-	char *p, *sh, *sh_path;
+	char *bp, *p, *sh, *sh_path;
+
+	bp = *bpp;
+	blen = *blenp;
 
 	sh_path = O_STR(sp, O_SHELL);
 	if ((sh = strrchr(sh_path, '/')) == NULL)
@@ -518,19 +521,12 @@ err:		(void)close(output[0]);
 	 * shell that does that is broken.
 	 */
 	for (p = bp, len = 0, ch = EOF;
-	    --blen && (ch = getc(ifp)) != EOF; *p++ = ch, ++len);
-	if (ch != EOF) {
-		rval = 1;
-		msgq(sp, M_ERR, "%s: output truncated", sh);
-	}
-	if (ferror(ifp)) {
-		rval = 1;
-		msgq(sp, M_ERR, "I/O error: %s", sh);
-	}
-	(void)fclose(ifp);
-
-	/* Wait for the process. */
-	rval |= proc_wait(sp, (long)pid, sh, 0);
+	    (ch = getc(ifp)) != EOF; *p++ = ch, --blen, ++len)
+		if (blen < 5) {
+			ADD_SPACE_GOTO(sp, bp, blen, *blenp * 2);
+			p = bp + len;
+			blen = *blenp - len;
+		}
 
 	/* Delete the final newline, nul terminate the string. */
 	if (p > bp && p[-1] == '\n' || p[-1] == '\r') {
@@ -540,5 +536,14 @@ err:		(void)close(output[0]);
 		*p = '\0';
 	*lenp = len;
 
-	return (rval);
+	if (ferror(ifp)) {
+		msgq(sp, M_ERR, "I/O error: %s", sh);
+binc_err:	rval = 1;
+	}
+	(void)fclose(ifp);
+
+	*bpp = bp;		/* *blenp is already updated. */
+
+	/* Wait for the process. */
+	return (proc_wait(sp, (long)pid, sh, 0) | rval);
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 8.20 1993/12/03 15:40:47 bostic Exp $ (Berkeley) $Date: 1993/12/03 15:40:47 $";
+static char sccsid[] = "$Id: ex_bang.c,v 8.21 1993/12/09 19:42:38 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:42:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -90,7 +90,7 @@ ex_bang(sp, ep, cmdp)
 		 * cleaned up.
 		 */
 		if (IN_VI_MODE(sp)) {
-			GET_SPACE(sp, bp, blen, ap->len + 2);
+			GET_SPACE_RET(sp, bp, blen, ap->len + 2);
 			bp[0] = '!';
 			memmove(bp + 1, ap->bp, ap->len + 1);
 		}

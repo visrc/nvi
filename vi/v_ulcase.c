@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ulcase.c,v 8.2 1993/11/04 09:16:58 bostic Exp $ (Berkeley) $Date: 1993/11/04 09:16:58 $";
+static char sccsid[] = "$Id: v_ulcase.c,v 8.3 1993/12/09 19:43:21 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:43:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -42,7 +42,7 @@ v_ulcase(sp, ep, vp, fm, tm, rp)
 	char *bp, *p;
 
 	/* Figure out what memory to use. */
-	GET_SPACE(sp, bp, blen, 256);
+	GET_SPACE_RET(sp, bp, blen, 256);
 
 	/*
 	 * !!!
@@ -81,7 +81,7 @@ v_ulcase(sp, ep, vp, fm, tm, rp)
 		}
 
 		/* Get a copy of the line. */
-		ADD_SPACE(sp, bp, blen, len);
+		ADD_SPACE_RET(sp, bp, blen, len);
 		memmove(bp, p, len);
 
 		/* Set starting pointer. */

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_increment.c,v 8.5 1993/11/13 18:01:35 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:01:35 $";
+static char sccsid[] = "$Id: v_increment.c,v 8.6 1993/12/09 19:43:12 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:43:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -114,7 +114,7 @@ underflow:			msgq(sp, M_ERR, "Resulting number too small.");
 		return (1);
 	}
 
-	GET_SPACE(sp, bp, blen, len + nlen);
+	GET_SPACE_RET(sp, bp, blen, len + nlen);
 	memmove(bp, p, fm->cno);
 	memmove(bp + fm->cno, nbuf, nlen);
 	memmove(bp + fm->cno + nlen,

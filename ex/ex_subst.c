@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.23 1993/12/02 19:10:54 bostic Exp $ (Berkeley) $Date: 1993/12/02 19:10:54 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.24 1993/12/09 19:42:46 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:42:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -184,7 +184,7 @@ ex_substitute(sp, ep, cmdp)
 		    p[0] != '\0' && p[0] != delim; ++p, ++len)
 			if (p[0] == '~')
 				len += sp->repl_len;
-		GET_SPACE(sp, bp, blen, len);
+		GET_SPACE_RET(sp, bp, blen, len);
 		for (t = bp, len = 0, p = rep;;) {
 			if (p[0] == '\0' || p[0] == delim) {
 				if (p[0] == delim)
@@ -275,9 +275,9 @@ ex_subtilde(sp, ep, cmdp)
 #define	NEEDNEWLINE(sp) {						\
 	if (sp->newl_len == sp->newl_cnt) {				\
 		sp->newl_len += 25;					\
-		if ((sp->newl = realloc(sp->newl,			\
-		    sp->newl_len * sizeof(size_t))) == NULL) {		\
-			msgq(sp, M_SYSERR, NULL);			\
+		REALLOC(sp, sp->newl, size_t *,				\
+		    sp->newl_len * sizeof(size_t));			\
+		if (sp->newl == NULL) {					\
 			sp->newl_len = 0;				\
 			return (1);					\
 		}							\
@@ -287,8 +287,8 @@ ex_subtilde(sp, ep, cmdp)
 #define	BUILD(sp, l, len) {						\
 	if (lbclen + (len) > lblen) {					\
 		lblen += MAX(lbclen + (len), 256);			\
-		if ((lb = realloc(lb, lblen)) == NULL) {		\
-			msgq(sp, M_SYSERR, NULL);			\
+		REALLOC(sp, lb, char *, lblen);				\
+		if (lb == NULL) {					\
 			lbclen = 0;					\
 			return (1);					\
 		}							\
@@ -300,8 +300,8 @@ ex_subtilde(sp, ep, cmdp)
 #define	NEEDSP(sp, len, pnt) {						\
 	if (lbclen + (len) > lblen) {					\
 		lblen += MAX(lbclen + (len), 256);			\
-		if ((lb = realloc(lb, lblen)) == NULL) {		\
-			msgq(sp, M_SYSERR, NULL);			\
+		REALLOC(sp, lb, char *, lblen);				\
+		if (lb == NULL) {					\
 			lbclen = 0;					\
 			return (1);					\
 		}							\
@@ -419,7 +419,7 @@ usage:		msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
 	}
 
 	/* Get some space. */
-	GET_SPACE(sp, bp, blen, 512);
+	GET_SPACE_RET(sp, bp, blen, 512);
 
 	/*
 	 * lb:		build buffer pointer.
@@ -450,7 +450,7 @@ usage:		msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
 		 * the confirm routine we're likely to lose our cached copy.
 		 */
 		if (cflag) {
-			ADD_SPACE(sp, bp, blen, len)
+			ADD_SPACE_RET(sp, bp, blen, len)
 			memmove(bp, s, len);
 			s = bp;
 		}
@@ -621,7 +621,7 @@ skip:		s += sp->match[0].rm_eo;
 				GETLINE_ERR(sp, lno);
 				goto ret1;
 			}
-			ADD_SPACE(sp, bp, blen, len)
+			ADD_SPACE_RET(sp, bp, blen, len)
 			memmove(bp, s, len);
 			s = bp;
 
@@ -888,9 +888,9 @@ checkmatchsize(sp, re)
 	/* Build nsub array as necessary. */
 	if (sp->matchsize < re->re_nsub + 1) {
 		sp->matchsize = re->re_nsub + 1;
-		if ((sp->match = realloc(sp->match,
-		    sp->matchsize * sizeof(regmatch_t))) == NULL) {
-			msgq(sp, M_SYSERR, NULL);
+		REALLOC(sp, sp->match,
+		    regmatch_t *, sp->matchsize * sizeof(regmatch_t));
+		if (sp->match == NULL) {
 			sp->matchsize = 0;
 			return (1);
 		}

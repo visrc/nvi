@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 8.19 1993/11/18 10:09:28 bostic Exp $ (Berkeley) $Date: 1993/11/18 10:09:28 $";
+static char sccsid[] = "$Id: v_itxt.c,v 8.20 1993/12/09 19:43:19 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:43:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -583,7 +583,7 @@ v_change(sp, ep, vp, fm, tm, rp)
 			return (1);
 		}
 		/* Copy the leading text elsewhere. */
-		GET_SPACE(sp, bp, blen, fm->cno);
+		GET_SPACE_RET(sp, bp, blen, fm->cno);
 		memmove(bp, p, fm->cno);
 	} else
 		bp = NULL;

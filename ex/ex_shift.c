@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shift.c,v 8.10 1993/12/03 15:40:51 bostic Exp $ (Berkeley) $Date: 1993/12/03 15:40:51 $";
+static char sccsid[] = "$Id: ex_shift.c,v 8.11 1993/12/09 19:42:45 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:42:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -68,7 +68,7 @@ shift(sp, ep, cmdp, rl)
 	for (p = cmdp->argv[0]->bp, sw = 0; *p == '>' || *p == '<'; ++p)
 		sw += O_VAL(sp, O_SHIFTWIDTH);
 
-	GET_SPACE(sp, bp, blen, 256);
+	GET_SPACE_RET(sp, bp, blen, 256);
 
 	curset = 0;
 	for (from = cmdp->addr1.lno, to = cmdp->addr2.lno; from <= to; ++from) {
@@ -106,7 +106,7 @@ shift(sp, ep, cmdp, rl)
 		}
 
 		/* Get a buffer that will hold the new line. */
-		ADD_SPACE(sp, bp, blen, newcol + len);
+		ADD_SPACE_RET(sp, bp, blen, newcol + len);
 
 		/*
 		 * Build a new indent string and count the number of

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 8.24 1993/12/03 15:40:49 bostic Exp $ (Berkeley) $Date: 1993/12/03 15:40:49 $";
+static char sccsid[] = "$Id: ex_global.c,v 8.25 1993/12/09 19:42:40 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:42:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -103,17 +103,6 @@ global(sp, ep, cmdp, cmd)
 		*t++ = *p++;
 	}
 
-	/* Get the command string. */
-	if ((clen = strlen(p)) == 0) {
-		msgq(sp, M_ERR, "No command string specified.");
-		return (1);
-	}
-	if ((cb = malloc(clen)) == NULL) {
-		msgq(sp, M_SYSERR, NULL);
-		return (1);
-	}
-	memmove(cb, p, clen);
-
 	/* If the pattern string is empty, use the last one. */
 	if (*ptrn == '\0') {
 		if (!F_ISSET(sp, S_SRE_SET)) {
@@ -155,6 +144,14 @@ global(sp, ep, cmdp, cmd)
 		F_SET(sp, S_SRE_SET);
 	}
 
+	/* Get the command string. */
+	if ((clen = strlen(p)) == 0) {
+		msgq(sp, M_ERR, "No command string specified.");
+		return (1);
+	}
+	MALLOC_RET(sp, cb, char *, clen);
+	memmove(cb, p, clen);
+
 	/*
 	 * The global commands sets the substitute RE as well as
 	 * the everything-else RE.
@@ -182,6 +179,7 @@ global(sp, ep, cmdp, cmd)
 			F_SET(sp, S_INTERRUPTIBLE);
 			if (tcgetattr(STDIN_FILENO, &term)) {
 				msgq(sp, M_SYSERR, "tcgetattr");
+				free(cb);
 				return (1);
 			}
 			nterm = term;
@@ -189,6 +187,7 @@ global(sp, ep, cmdp, cmd)
 			if (tcsetattr(STDIN_FILENO,
 			    TCSANOW | TCSASOFT, &nterm)) {
 				msgq(sp, M_SYSERR, "tcsetattr");
+				free(cb);
 				return (1);
 			}
 		}
@@ -266,6 +265,7 @@ err:			rval = 1;
 		if (!istate)
 			F_CLR(sp, S_INTERRUPTIBLE);
 	}
+	free(cb);
 	return (rval);
 }
 

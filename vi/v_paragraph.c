@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_paragraph.c,v 8.3 1993/11/13 18:01:41 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:01:41 $";
+static char sccsid[] = "$Id: v_paragraph.c,v 8.4 1993/12/09 19:43:16 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:43:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -231,10 +231,7 @@ v_buildparagraph(sp)
 	if (p_len == 0 && s_len == 0)
 		return (0);
 
-	if ((p = malloc(p_len + s_len + 1)) == NULL) {
-		msgq(sp, M_SYSERR, NULL);
-		return (1);
-	}
+	MALLOC_RET(sp, p, char *, p_len + s_len + 1);
 
 	vip = VIP(sp);
 	if (vip->paragraph != NULL)

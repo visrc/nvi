@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 8.15 1993/11/13 18:01:36 bostic Exp $ (Berkeley) $Date: 1993/11/13 18:01:36 $";
+static char sccsid[] = "$Id: v_init.c,v 8.16 1993/12/09 19:43:13 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:43:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,9 +30,8 @@ v_screen_copy(orig, sp)
 	VI_PRIVATE *ovip, *nvip;
 
 	/* Create the private vi structure. */
-	if ((sp->vi_private = nvip = malloc(sizeof(VI_PRIVATE))) == NULL)
-		goto mem;
-	memset(nvip, 0, sizeof(VI_PRIVATE));
+	CALLOC_RET(orig, nvip, VI_PRIVATE *, 1, sizeof(VI_PRIVATE));
+	sp->vi_private = nvip;
 
 	if (orig == NULL) {
 		nvip->inc_lastch = '+';
@@ -41,20 +40,20 @@ v_screen_copy(orig, sp)
 		ovip = VIP(orig);
 
 		/* User can replay the last input, but nothing else. */
-		if (ovip->rep_len != 0)
-			if ((nvip->rep = malloc(ovip->rep_len)) == NULL)
-				goto mem;
-			else {
+		if (ovip->rep_len != 0) {
+			MALLOC(orig, nvip->rep, char *, ovip->rep_len);
+			if (nvip->rep != NULL) {
 				memmove(nvip->rep, ovip->rep, ovip->rep_len);
 				nvip->rep_len = ovip->rep_len;
 			}
+		}
 
 		nvip->inc_lastch = ovip->inc_lastch;
 		nvip->inc_lastval = ovip->inc_lastval;
 
 		if (ovip->paragraph != NULL &&
 		    (nvip->paragraph = strdup(ovip->paragraph)) == NULL) {
-mem:			msgq(sp, M_SYSERR, NULL);
+			msgq(sp, M_SYSERR, NULL);
 			return (1);
 		}
 	}

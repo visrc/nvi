@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 8.24 1993/12/03 15:54:42 bostic Exp $ (Berkeley) $Date: 1993/12/03 15:54:42 $";
+static char sccsid[] = "$Id: vs_split.c,v 8.25 1993/12/09 19:43:32 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:43:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -44,10 +44,9 @@ svi_split(sp, argv)
 	/* Get a new screen. */
 	if (screen_init(sp, &tsp, 0))
 		goto mem1;
-	if ((_HMAP(tsp) = malloc(SIZE_HMAP(sp) * sizeof(SMAP))) == NULL) {
-		msgq(sp, M_SYSERR, NULL);
+	MALLOC(sp, _HMAP(tsp), SMAP *, SIZE_HMAP(sp) * sizeof(SMAP));
+	if (_HMAP(tsp) == NULL)
 		goto mem2;
-	}
 
 /* INITIALIZED AT SCREEN CREATE. */
 
@@ -432,11 +431,8 @@ svi_swap(csp, nsp, name)
 	 * The HMAP may be NULL, if the screen got resized and
 	 * a bunch of screens had to be hidden.
 	 */
-	if (HMAP == NULL &&
-	    (HMAP = malloc(SIZE_HMAP(sp) * sizeof(SMAP))) == NULL) {
-		msgq(sp, M_SYSERR, NULL);
-		return (1);
-	}
+	if (HMAP == NULL)
+		MALLOC_RET(sp, HMAP, SMAP *, SIZE_HMAP(sp) * sizeof(SMAP));
 	TMAP = HMAP + (sp->t_rows - 1);
 
 	/* Fill the map. */

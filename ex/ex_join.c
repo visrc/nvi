@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_join.c,v 8.6 1993/11/14 17:16:28 bostic Exp $ (Berkeley) $Date: 1993/11/14 17:16:28 $";
+static char sccsid[] = "$Id: ex_join.c,v 8.7 1993/12/09 19:42:42 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:42:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -42,7 +42,7 @@ ex_join(sp, ep, cmdp)
 		return (1);
 	}
 
-	GET_SPACE(sp, bp, blen, 256);
+	GET_SPACE_RET(sp, bp, blen, 256);
 
 	/*
 	 * The count for the join command was off-by-one,
@@ -80,7 +80,7 @@ ex_join(sp, ep, cmdp)
 		 * tbp - bp is the length of the new line.
 		 */
 		tlen += len + 2;
-		ADD_SPACE(sp, bp, blen, tlen);
+		ADD_SPACE_RET(sp, bp, blen, tlen);
 		tbp = bp + clen;
 
 		/*
