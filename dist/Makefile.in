@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.29 1996/03/11 09:24:25 bostic Exp $ (Berkeley) $Date: 1996/03/11 09:24:25 $
+#	$Id: Makefile.in,v 8.30 1996/03/18 15:16:05 bostic Exp $ (Berkeley) $Date: 1996/03/18 15:16:05 $
 
 CC=	@CC@
 CFLAGS=	-c @CFLAGS@ -I. -I../include @CPPFLAGS@
@@ -53,7 +53,7 @@ tknvi: $(TKALL)
 	$(CC) $(LDFLAGS) -o $@ $(TKALL) @TKLIBS@
 
 clean:
-	rm -f nex nvi tknvi perl.o tcl.o @LIBOBJS@
+	-rm -f nex nvi tknvi core *.core *.o
 	rm -f $(COBJS) $(CLOBJS) $(DBOBJS) $(REOBJS)
 	rm -f $(TKOBJS) $(VIOBJS)
 
