@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.74 1994/10/05 10:39:54 bostic Exp $ (Berkeley) $Date: 1994/10/05 10:39:54 $";
+static char sccsid[] = "$Id: options.c,v 8.75 1994/10/23 10:14:19 bostic Exp $ (Berkeley) $Date: 1994/10/23 10:14:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -55,6 +55,8 @@ static OPTLIST const optlist[] = {
 	{"autoprint",	NULL,		OPT_1BOOL,	0},
 /* O_AUTOWRITE	    4BSD */
 	{"autowrite",	NULL,		OPT_0BOOL,	0},
+/* O_BACKUP	  4.4BSD */
+	{"backup",	NULL,		OPT_STR,	0},
 /* O_BEAUTIFY	    4BSD */
 	{"beautify",	NULL,		OPT_0BOOL,	0},
 /* O_CDPATH	  4.4BSD */
@@ -279,6 +281,7 @@ opts_init(sp, oargs)
 		else if (op->type == OPT_1BOOL)
 			O_SET(sp, cnt);
 
+	SET_DEF(O_BACKUP, "backup=");
 	(void)snprintf(b1, sizeof(b1), "cdpath=%s",
 	    (s = getenv("CDPATH")) == NULL ? ":" : s);
 	SET_DEF(O_CDPATH, b1);
