@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 5.4 1993/04/17 12:33:29 bostic Exp $ (Berkeley) $Date: 1993/04/17 12:33:29 $";
+static char sccsid[] = "$Id: vs_split.c,v 5.5 1993/05/06 01:21:14 bostic Exp $ (Berkeley) $Date: 1993/05/06 01:21:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -114,7 +114,7 @@ svi_split(sp, ep)
 	tsp->fill	= svi_sm_fill;
 	tsp->gb		= svi_gb;
 	tsp->position	= svi_sm_position;
-	tsp->refresh	= svi_refresh;
+	tsp->srefresh	= svi_refresh;
 	tsp->relative	= svi_relative;
 	tsp->split	= svi_split;
 	tsp->up		= svi_sm_up;
