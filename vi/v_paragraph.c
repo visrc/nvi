@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_paragraph.c,v 5.16 1993/05/08 16:10:50 bostic Exp $ (Berkeley) $Date: 1993/05/08 16:10:50 $";
+static char sccsid[] = "$Id: v_paragraph.c,v 5.17 1993/06/07 23:08:59 bostic Exp $ (Berkeley) $Date: 1993/06/07 23:08:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,8 +35,8 @@ v_paragraphf(sp, ep, vp, fm, tm, rp)
 	MARK *fm, *tm, *rp;
 {
 	enum { P_INTEXT, P_INBLANK } pstate;
-	size_t len;
-	recno_t cnt, lno;
+	size_t lastlen, len;
+	recno_t cnt, lastlno, lno;
 	char *p, *lp;
 
 	/* Figure out what state we're currently in. */
@@ -58,6 +58,8 @@ v_paragraphf(sp, ep, vp, fm, tm, rp)
 	}
 
 	for (;;) {
+		lastlno = lno;
+		lastlen = len;
 		if ((p = file_gline(sp, ep, ++lno, &len)) == NULL)
 			goto eof;
 		switch (pstate) {
@@ -75,15 +77,25 @@ v_paragraphf(sp, ep, vp, fm, tm, rp)
 			}
 			break;
 		case P_INBLANK:
-			if (len != 0) {
-				if (!--cnt) {
-found:					rp->lno = lno;
-					rp->cno = 0;
-					return (0);
-				}
+			if (len == 0)
+				break;
+			if (--cnt) {
 				pstate = P_INTEXT;
+				break;
 			}
-			break;
+			/*
+			 * Historically, a motion command was up to the end
+			 * of the previous line, whereas the movement command
+			 * was to the start of the new "paragraph".
+			 */
+found:			if (F_ISSET(vp, VC_C | VC_D | VC_Y)) {
+				rp->lno = lastlno;
+				rp->cno = lastlen + 1;
+			} else {
+				rp->lno = lno;
+				rp->cno = 0;
+			}
+			return (0);
 		default:
 			abort();
 		}
