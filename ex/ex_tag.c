@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 8.16 1993/10/03 14:15:32 bostic Exp $ (Berkeley) $Date: 1993/10/03 14:15:32 $";
+static char sccsid[] = "$Id: ex_tag.c,v 8.17 1993/10/28 08:55:36 bostic Exp $ (Berkeley) $Date: 1993/10/28 08:55:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -326,7 +326,7 @@ tag_get(sp, tag, tagp, filep, searchp)
 	SCR *sp;
 	char *tag, **tagp, **filep, **searchp;
 {
-	TAGF **tfp;
+	TAGF *tfp;
 	int dne;
 	char *p;
 
@@ -335,28 +335,30 @@ tag_get(sp, tag, tagp, filep, searchp)
 	 * then only if we didn't find the tag.
 	 */
 	dne = 0;
-	for (tfp = sp->tfhead, p = NULL; *tfp != NULL && p == NULL; ++tfp) {
+	for (tfp = sp->tagfq.qe_next, p = NULL;
+	    tfp != NULL && p == NULL; tfp = tfp->q.qe_next) {
 		errno = 0;
-		F_CLR(*tfp, TAGF_DNE);
-		if (search(sp, (*tfp)->fname, tag, &p))
+		F_CLR(tfp, TAGF_DNE);
+		if (search(sp, tfp->fname, tag, &p))
 			if (errno == ENOENT) {
-				if (!F_ISSET(*tfp, TAGF_DNE_WARN)) {
+				if (!F_ISSET(tfp, TAGF_DNE_WARN)) {
 					dne = 1;
-					F_SET(*tfp, TAGF_DNE);
+					F_SET(tfp, TAGF_DNE);
 				}
 			} else
 				msgq(sp, M_ERR,
-				    "%s: %s", (*tfp)->fname, strerror(errno));
+				    "%s: %s", tfp->fname, strerror(errno));
 	}
 	
 	if (p == NULL) {
 		msgq(sp, M_ERR, "%s: tag not found.", tag);
 		if (dne)
-			for (tfp = sp->tfhead; *tfp != NULL; ++tfp)
-				if (F_ISSET(*tfp, TAGF_DNE)) {
+			for (tfp = sp->tagfq.qe_next;
+			    tfp != NULL; tfp = tfp->q.qe_next)
+				if (F_ISSET(tfp, TAGF_DNE)) {
 					msgq(sp, M_ERR, "%s: %s",
-					    (*tfp)->fname, strerror(ENOENT));
-					F_SET(*tfp, TAGF_DNE_WARN);
+					    tfp->fname, strerror(ENOENT));
+					F_SET(tfp, TAGF_DNE_WARN);
 				}
 		return (1);
 	}
@@ -377,7 +379,7 @@ tag_get(sp, tag, tagp, filep, searchp)
 	*searchp = p;
 	if (*p == '\0') {
 malformed:	free(*tagp);
-		msgq(sp, M_ERR, "%s: corrupted tag in %s.", tag, (*tfp)->fname);
+		msgq(sp, M_ERR, "%s: corrupted tag in %s.", tag, tfp->fname);
 		return (1);
 	}
 	return (0);
