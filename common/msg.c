@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: msg.c,v 10.32 1996/04/27 11:41:10 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:41:10 $";
+static const char sccsid[] = "$Id: msg.c,v 10.33 1996/05/02 09:22:04 bostic Exp $ (Berkeley) $Date: 1996/05/02 09:22:04 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -517,7 +517,7 @@ msgq_status(sp, lno, showlast)
 {
 	recno_t last;
 	const char *t;
-	char *bp, *p;
+	char *bp, *np, *p, *s;
 	int needsep;
 	size_t blen, len;
 
@@ -527,6 +527,7 @@ msgq_status(sp, lno, showlast)
 
 	memmove(p, sp->frp->name, len);
 	p += len;
+	np = p;
 	*p++ = ':';
 	*p++ = ' ';
 
@@ -609,8 +610,33 @@ msgq_status(sp, lno, showlast)
 	p += strlen(p);
 #endif
 	*p++ = '\n';
+
+	/*
+	 * There's a nasty problem with long path names.  Cscope and tags files
+	 * can result in long paths and vi will request a continuation key from
+	 * the user as soon as it starts the screen.  Unfortunately, the user
+	 * has already typed ahead, and chaos results.  If we assume that the
+	 * characters in the filenames and informational messages only take a
+	 * single screen column each, we can trim the filename.
+	 */
+	if ((p - bp) >= sp->cols) {
+		for (s = bp;
+		    s < np && (*s != '/' || (p - s) > sp->cols - 3); ++s);
+		if (s == np)
+			s = bp;
+		else {
+			*--s = '.';
+			*--s = '.';
+			*--s = '.';
+		}
+	} else
+		s = bp;
+	len = p - s;
+
+	/* Flush any waiting ex messages. */
 	(void)ex_fflush(sp);
-	sp->gp->scr_msg(sp, M_INFO, bp, (size_t)(p - bp));
+
+	sp->gp->scr_msg(sp, M_INFO, s, len);
 
 	FREE_SPACE(sp, bp, blen);
 alloc_err:
