@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 10.10 1995/10/16 15:24:40 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:24:40 $";
+static char sccsid[] = "$Id: db.c,v 10.11 1995/10/16 15:47:02 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:47:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -89,6 +89,8 @@ db_get(sp, lno, flags, pp, lenp)
 	TEXT *tp;
 	recno_t l1, l2;
 
+	ep = sp->ep;
+
 	/*
 	 * The underlying recno stuff handles zero by returning NULL, but
 	 * have to have an OOB condition for the look-aside into the input
@@ -128,7 +130,6 @@ db_get(sp, lno, flags, pp, lenp)
 	}
 
 	/* Look-aside into the cache, and see if the line we want is there. */
-	ep = sp->ep;
 	if (lno == ep->c_lno) {
 #if defined(DEBUG) && 0
 	TRACE(sp, "retrieve cached line %lu\n", (u_long)lno);
