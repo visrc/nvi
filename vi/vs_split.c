@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 8.1 1993/06/09 22:25:57 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:25:57 $";
+static char sccsid[] = "$Id: vs_split.c,v 8.2 1993/08/05 18:05:27 bostic Exp $ (Berkeley) $Date: 1993/08/05 18:05:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,10 +26,11 @@ static char sccsid[] = "$Id: vs_split.c,v 8.1 1993/06/09 22:25:57 bostic Exp $ (
  *	from top of the real screen to the bottom.
  */
 int
-svi_split(sp, ep)
+svi_split(sp, argv)
 	SCR *sp;
-	EXF *ep;
+	char *argv[];
 {
+	EXF *ep;
 	SCR *tsp;
 	size_t half;
 
@@ -45,24 +46,16 @@ svi_split(sp, ep)
 		msgq(sp, M_ERR, "Error: %s", strerror(errno));
 		return (1);
 	}
-	if (scr_init(sp, tsp)) {
-		free(tsp);
-		return (1);
-	}
-
-	/* Start the file. */
-	if ((tsp->ep = file_start(tsp, ep, NULL)) == NULL) {
-		free(tsp);
-		return (1);
-	}
+	if (scr_init(sp, tsp))
+		goto err;
 
 	/*
 	 * Build a screen map for the child -- large enough to accomodate
 	 * the entire window.
 	 */
 	if ((tsp->h_smap = malloc(sp->w_rows * sizeof(SMAP))) == NULL) {
-		free(tsp);
-		return (1);
+		msgq(sp, M_ERR, "Error: %s", strerror(errno));
+		goto err;
 	}
 
 	/* Split the screen, and link the screens together. */
@@ -108,6 +101,30 @@ svi_split(sp, ep)
 	/* Init support routines. */
 	svi_init(tsp);
 
+	/*
+	 * If files specified, build the file list, else, link to the
+	 * current file.
+	 */
+	if (argv != NULL && *argv != NULL) {
+		for (; *argv != NULL; ++argv)
+			if (file_add(tsp, NULL, *argv, 0) == NULL)
+				goto err;
+		ep = NULL;
+	} else {
+		if (file_add(tsp, NULL, sp->frp->fname, 0) == NULL)
+			goto err;
+		ep = sp->ep;
+	}
+
+	if ((tsp->frp = file_first(tsp, 0)) == NULL) {
+		msgq(sp, M_ERR, "No files in the file list.");
+		goto err;
+	}
+
+	/* Start the file. */
+	if ((tsp->ep = file_init(tsp, ep, tsp->frp, NULL)) == NULL)
+		goto err;
+
 	/* Fill the child's screen map. */
 	(void)svi_sm_fill(tsp, tsp->ep, sp->lno, P_FILL);
 
@@ -128,4 +145,7 @@ svi_split(sp, ep)
 	sp->snext = tsp;
 	F_SET(sp, S_SSWITCH);
 	return (0);
+
+err:	FREE(tsp, sizeof(SCR));
+	return (1);
 }
