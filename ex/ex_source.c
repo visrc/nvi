@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_source.c,v 10.13 2000/07/14 14:29:22 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:22 $";
+static const char sccsid[] = "$Id: ex_source.c,v 10.14 2000/07/16 15:37:24 skimo Exp $ (Berkeley) $Date: 2000/07/16 15:37:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -88,5 +88,6 @@ err:		msgq_str(sp, M_SYSERR, name, "%s");
 	dp = v_wstrdup(sp, wp, wlen - 1);
 	free(bp);
 	/* Put it on the ex queue. */
+	INT2CHAR(sp, cmdp->argv[0]->bp, cmdp->argv[0]->len + 1, name, nlen);
 	return (ex_run_str(sp, name, dp, (size_t)sb.st_size, 1, 1));
 }

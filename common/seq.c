@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: seq.c,v 10.11 2000/07/14 14:29:17 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:17 $";
+static const char sccsid[] = "$Id: seq.c,v 10.12 2000/07/16 15:37:24 skimo Exp $ (Berkeley) $Date: 2000/07/16 15:37:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -212,7 +212,7 @@ seq_find(sp, lastqp, e_input, c_input, ilen, stype, ispartialp)
 			if (qp->input[0] < c_input[0] ||
 			    qp->stype != stype || F_ISSET(qp, SEQ_FUNCMAP))
 				continue;
-			diff = memcmp(qp->input, c_input, MIN(qp->ilen, ilen));
+			diff = MEMCMPW(qp->input, c_input, MIN(qp->ilen, ilen));
 		} else {
 			if (qp->input[0] > e_input->e_c)
 				break;

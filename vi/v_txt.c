@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.97 2000/07/15 20:26:36 skimo Exp $ (Berkeley) $Date: 2000/07/15 20:26:36 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.98 2000/07/16 15:37:25 skimo Exp $ (Berkeley) $Date: 2000/07/16 15:37:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -308,7 +308,7 @@ v_txt(sp, vp, tm, lp, len, prompt, ai_line, rcount, flags)
 		tp->ai = tp->insert = tp->offset = tp->owrite = 0;
 		if (lp != NULL) {
 			tp->len = len;
-			memmove(tp->lb, lp, len);
+			MEMMOVEW(tp->lb, lp, len);
 		} else
 			tp->len = 0;
 	} else {
@@ -896,7 +896,7 @@ k_escape:	LINE_RESOLVE;
 		 */
 		if (tp->owrite) {
 			if (tp->insert)
-				memmove(tp->lb + tp->cno,
+				MEMMOVEW(tp->lb + tp->cno,
 				    tp->lb + tp->cno + tp->owrite, tp->insert);
 			tp->len -= tp->owrite;
 		}
@@ -1617,7 +1617,7 @@ search:	if (isinfoline)
 		tp->owrite += len;
 	else {
 		if (tp->insert)
-			memmove(tp->lb + tp->cno + qp->olen,
+			MEMMOVEW(tp->lb + tp->cno + qp->olen,
 			    tp->lb + tp->cno + tp->owrite + len, tp->insert);
 		tp->owrite += qp->olen;
 		tp->len -= len - qp->olen;
@@ -1752,7 +1752,7 @@ txt_ai_resolve(sp, tp, changedp)
 
 	/* Shift the rest of the characters down, adjust the counts. */
 	del = old - new;
-	memmove(p - del, p, tp->len - old);
+	MEMMOVEW(p - del, p, tp->len - old);
 	tp->len -= del;
 	tp->cno -= del;
 
@@ -1810,11 +1810,11 @@ v_txt_auto(sp, lno, aitp, len, tp)
 
 	/* Copy the buffer's current contents up. */
 	if (tp->len != 0)
-		memmove(tp->lb + nlen, tp->lb, tp->len);
+		MEMMOVEW(tp->lb + nlen, tp->lb, tp->len);
 	tp->len += nlen;
 
 	/* Copy the indentation into the new buffer. */
-	memmove(tp->lb, t, nlen);
+	MEMMOVEW(tp->lb, t, nlen);
 
 	/* Set the autoindent count. */
 	tp->ai = nlen;
@@ -2077,7 +2077,7 @@ retry:		for (len = 0,
 	case 1:				/* One match. */
 		/* If something changed, do the exchange. */
 		nlen = v_strlen(cmd.argv[0]->bp);
-		if (len != nlen || memcmp(cmd.argv[0]->bp, p, len * sizeof(CHAR_T)))
+		if (len != nlen || MEMCMPW(cmd.argv[0]->bp, p, len))
 			break;
 
 		/* If haven't done a directory test, do it now. */
@@ -2134,7 +2134,7 @@ retry:		for (len = 0,
 		tp->len += nlen;
 
 		if (tp->insert != 0)
-			(void)memmove(p + nlen, p, tp->insert * sizeof(CHAR_T));
+			(void)MEMMOVEW(p + nlen, p, tp->insert);
 		while (nlen--)
 			*p++ = *t++;
 	}
@@ -2147,7 +2147,7 @@ isdir:		if (tp->owrite == 0) {
 			BINC_RETW(sp, tp->lb, tp->lb_len, tp->len + 1);
 			p = tp->lb + off;
 			if (tp->insert != 0)
-				(void)memmove(p + 1, p, tp->insert * sizeof(CHAR_T));
+				(void)MEMMOVEW(p + 1, p, tp->insert);
 			++tp->len;
 		} else
 			--tp->owrite;
@@ -2189,8 +2189,8 @@ txt_fc_col(sp, argc, argv)
 		prefix = (pp - np) + 1;
 		for (ac = argc - 1, av = argv + 1; ac > 0; --ac, ++av)
 			if (av[0]->len < prefix ||
-			    memcmp(av[0]->bp, argv[0]->bp, 
-				   prefix * sizeof(CHAR_T))) {
+			    MEMCMPW(av[0]->bp, argv[0]->bp, 
+				   prefix)) {
 				prefix = 0;
 				break;
 			}
@@ -2317,7 +2317,7 @@ txt_emark(sp, tp, cno)
 		BINC_RETW(sp, tp->lb, tp->lb_len, tp->len + olen);
 		chlen = olen - nlen;
 		if (tp->insert != 0)
-			memmove(tp->lb + cno + 1 + chlen,
+			MEMMOVEW(tp->lb + cno + 1 + chlen,
 			    tp->lb + cno + 1, tp->insert);
 
 		tp->len += chlen;
@@ -2428,14 +2428,14 @@ nothex:		tp->lb[tp->cno] = savec;
 
 	/* Copy down any overwrite characters. */
 	if (tp->owrite)
-		memmove(tp->lb + tp->cno, tp->lb + tp->cno + len, 
-		    tp->owrite * sizeof(CHAR_T));
+		MEMMOVEW(tp->lb + tp->cno, tp->lb + tp->cno + len, 
+		    tp->owrite);
 
 	/* Copy down any insert characters. */
 	if (tp->insert)
-		memmove(tp->lb + tp->cno + tp->owrite,
+		MEMMOVEW(tp->lb + tp->cno + tp->owrite,
 		    tp->lb + tp->cno + tp->owrite + len, 
-		    tp->insert * sizeof(CHAR_T));
+		    tp->insert);
 
 	return (0);
 }
@@ -2548,7 +2548,7 @@ txt_insch(sp, tp, chp, flags)
 		 * into position.
 		 */
 		if (copydown != 0 && (tp->len -= copydown) != 0)
-			memmove(tp->lb + cno, tp->lb + cno + copydown,
+			MEMMOVEW(tp->lb + cno, tp->lb + cno + copydown,
 			    tp->owrite + tp->insert + copydown);
 
 		/* If we had enough overwrite characters, we're done. */
@@ -2566,7 +2566,7 @@ txt_insch(sp, tp, chp, flags)
 		if (tp->insert == 1)
 			tp->lb[tp->cno + 1] = tp->lb[tp->cno];
 		else
-			memmove(tp->lb + tp->cno + 1,
+			MEMMOVEW(tp->lb + tp->cno + 1,
 			    tp->lb + tp->cno, tp->owrite + tp->insert);
 	}
 	tp->lb[tp->cno++] = *chp;
@@ -2954,7 +2954,7 @@ txt_Rresolve(sp, tiqh, tp, orig_len)
 		if (db_get(sp,
 		    tiqh->cqh_first->lno, DBG_FATAL | DBG_NOCACHE, &p, NULL))
 			return;
-		memcpy(tp->lb + tp->cno, p + input_len, retain);
+		MEMCPYW(tp->lb + tp->cno, p + input_len, retain);
 		tp->len -= tp->owrite - retain;
 		tp->owrite = 0;
 		tp->insert += retain;
