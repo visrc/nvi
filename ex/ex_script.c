@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_script.c,v 10.3 1995/06/09 12:51:50 bostic Exp $ (Berkeley) $Date: 1995/06/09 12:51:50 $";
+static char sccsid[] = "$Id: ex_script.c,v 10.4 1995/06/15 19:39:11 bostic Exp $ (Berkeley) $Date: 1995/06/15 19:39:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -450,7 +450,7 @@ more:	switch (nr = read(sc->sh_master, endp, MINREAD)) {
 	/* The cursor moves to EOF. */
 	sp->lno = lno;
 	sp->cno = len ? len - 1 : 0;
-	rval = sp->gp->scr_refresh(sp);
+	rval = sp->gp->scr_refresh(sp, 0);
 
 ret:	FREE_SPACE(sp, bp, blen);
 	return (rval);
