@@ -4,13 +4,16 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: common.h,v 5.58 1993/05/15 11:30:18 bostic Exp $ (Berkeley) $Date: 1993/05/15 11:30:18 $
+ *	$Id: common.h,v 5.59 1993/05/16 10:31:37 bostic Exp $ (Berkeley) $Date: 1993/05/16 10:31:37 $
  */
 
-#include <limits.h>			/* Ordered before local includes. */
-#include <regex.h>
-#include <stdio.h>
-#include <db.h>				/* Last, for compat.h. */
+					/* Ordered before local includes. */
+#include <limits.h>			/* Required by screen.h. */
+#include <regex.h>			/* Required by screen.h. */
+#include <signal.h>			/* Required by hdr.h. */
+#include <stdio.h>			/* Required by screen.h. */
+					/* Last, includes compat.h. */
+#include <db.h>				/* Required by exf.h. */
 
 /*
  * Forward structure declarations.  Not pretty, but the include files
@@ -32,7 +35,7 @@ struct _tag;
 struct _tagf;
 struct _text;
 
-#include "hdr.h"			/* Include before local includes. */
+#include "hdr.h"			/* Include before any local includes. */
 
 #include "mark.h"			/* Include before cut.h. */
 #include "cut.h"
