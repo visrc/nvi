@@ -13,7 +13,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_tag.c,v 10.18 1996/03/06 19:52:46 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:52:46 $";
+static const char sccsid[] = "$Id: ex_tag.c,v 10.19 1996/03/18 08:49:32 bostic Exp $ (Berkeley) $Date: 1996/03/18 08:49:32 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -254,7 +254,7 @@ ex_N_tagpush(sp, cmdp, frp, search, tag)
 	/* Get a new screen. */
 	if (screen_init(sp->gp, sp, &new))
 		return (1);
-	if (vs_split(sp, new)) {
+	if (vs_split(sp, new, 0)) {
 		(void)file_end(new, new->ep, 1);
 		(void)screen_end(new);
 		return (1);

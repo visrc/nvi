@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_edit.c,v 10.7 1996/03/06 19:52:16 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:52:16 $";
+static const char sccsid[] = "$Id: ex_edit.c,v 10.8 1996/03/18 08:49:31 bostic Exp $ (Berkeley) $Date: 1996/03/18 08:49:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -119,7 +119,7 @@ ex_N_edit(sp, cmdp, frp, attach)
 	/* Get a new screen. */
 	if (screen_init(sp->gp, sp, &new))
 		return (1);
-	if (vs_split(sp, new)) {
+	if (vs_split(sp, new, 0)) {
 		(void)screen_end(new);
 		return (1);
 	}
