@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vi.c,v 10.59 1996/12/04 10:15:13 bostic Exp $ (Berkeley) $Date: 1996/12/04 10:15:13 $";
+static const char sccsid[] = "$Id: vi.c,v 10.60 1996/12/04 19:09:38 bostic Exp $ (Berkeley) $Date: 1996/12/04 19:09:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1196,6 +1196,15 @@ v_key(sp, vp, events_ok, ec_flags)
 			return (GC_FATAL);
 		quote = 0;
 
+		/*
+		 * There are really two classes of "events" that we can see.
+		 * There are the ones that we deal with immediately, because
+		 * they aren't part of the vi command stream, e.g., E_ERR,
+		 * E_WRESIZE and E_INTERRUPT.  The others are part of the vi
+		 * command stream, and we return them in the normal course
+		 * of events (no pun intended), e.g., E_CHARACTER, E_MOVE and
+		 * E_QUIT.
+		 */
 		switch (evp->e_event) {
 		case E_CHARACTER:
 			/*
@@ -1220,15 +1229,24 @@ v_key(sp, vp, events_ok, ec_flags)
 			 *
 			 * Historically, vi exited to ex mode if no file was
 			 * named on the command line, and two interrupts were
-			 * generated in a row.  (Just figured you might want
-			 * to know that.)
+			 * generated in a row.  (I figured you might want to
+			 * know that, just in case there's a quiz later.)
 			 */
 			(void)sp->gp->scr_bell(sp);
 			return (GC_INTERRUPT);
 		case E_REPAINT:
-			if (vs_repaint(sp, evp))
+			if (v_erepaint(sp, evp))
 				return (GC_FATAL);
 			break;
+		case E_WRESIZE:
+			/*
+			 * !!!
+			 * We don't do anything here, just return an error.
+			 * The vi loop will return because of this, and then
+			 * the main loop will realize that we had to restart
+			 * the world and will call the vi loop again.
+			 */
+			return (GC_ERR);
 		default:
 			if (events_ok)
 				return (GC_EVENT);
