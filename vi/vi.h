@@ -4,11 +4,10 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 5.16 1992/10/10 14:05:37 bostic Exp $ (Berkeley) $Date: 1992/10/10 14:05:37 $
+ *	$Id: vi.h,v 5.17 1992/10/17 16:10:54 bostic Exp $ (Berkeley) $Date: 1992/10/17 16:10:54 $
  */
 
 #include "exf.h"
-#include "mark.h"
 
 /* Structure passed around to functions implementing vi commands. */
 typedef struct {
