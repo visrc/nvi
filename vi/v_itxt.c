@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 8.30 1994/03/14 10:45:24 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:45:24 $";
+static char sccsid[] = "$Id: v_itxt.c,v 8.31 1994/04/10 13:08:34 bostic Exp $ (Berkeley) $Date: 1994/04/10 13:08:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -39,28 +39,7 @@ static char sccsid[] = "$Id: v_itxt.c,v 8.30 1994/03/14 10:45:24 bostic Exp $ (B
  * right now, where "3o" would open 3 lines and then let the user fill them
  * in, to make screen movements on 300 baud modems more tolerable.  I don't
  * think it's going to be missed.
- */
-
-#define	SET_TXT_STD(sp, f) {						\
-	LF_INIT((f) | TXT_CNTRLT | TXT_ESCAPE |				\
-	    TXT_MAPINPUT | TXT_RECORD | TXT_RESOLVE);			\
-	if (O_ISSET(sp, O_ALTWERASE))					\
-		LF_SET(TXT_ALTWERASE);					\
-	if (O_ISSET(sp, O_AUTOINDENT))					\
-		LF_SET(TXT_AUTOINDENT);					\
-	if (O_ISSET(sp, O_BEAUTIFY))					\
-		LF_SET(TXT_BEAUTIFY);					\
-	if (O_ISSET(sp, O_SHOWMATCH))					\
-		LF_SET(TXT_SHOWMATCH);					\
-	if (O_ISSET(sp, O_WRAPMARGIN))					\
-		LF_SET(TXT_WRAPMARGIN);					\
-	if (F_ISSET(sp, S_SCRIPT))					\
-		LF_SET(TXT_CR);						\
-	if (O_ISSET(sp, O_TTYWERASE))					\
-		LF_SET(TXT_TTYWERASE);					\
-}
-
-/*
+ *
  * !!!
  * There's a problem with the way that we do logging for change commands with
  * implied motions (e.g. A, I, O, cc, etc.).  Since the main vi loop logs the
@@ -86,7 +65,8 @@ static char sccsid[] = "$Id: v_itxt.c,v 8.30 1994/03/14 10:45:24 bostic Exp $ (B
 	}								\
 }
 
-static int v_CS __P((SCR *, EXF *, VICMDARG *, u_int));
+static u_int	set_txt_std __P((SCR *, VICMDARG *, u_int));
+static int	v_CS __P((SCR *, EXF *, VICMDARG *, u_int));
 
 /*
  * v_iA -- [count]A
@@ -105,9 +85,7 @@ v_iA(sp, ep, vp)
 	int first;
 	char *p;
 
-	SET_TXT_STD(sp, TXT_APPENDEOL);
-	if (F_ISSET(vp,  VC_ISDOT))
-		LF_SET(TXT_REPLAY);
+	set_txt_std(sp, vp, TXT_APPENDEOL);
 	for (first = 1, lno = vp->m_start.lno,
 	    cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
 		/* Move the cursor to the end of the line + 1. */
@@ -136,9 +114,12 @@ v_iA(sp, ep, vp)
 		    &sp->tiq, NULL, p, len, &vp->m_final, 0, OOBLNO, flags))
 			return (1);
 
-		SET_TXT_STD(sp, TXT_APPENDEOL | TXT_REPLAY);
+		flags = set_txt_std(sp, vp, TXT_APPENDEOL | TXT_REPLAY);
 		sp->lno = lno = vp->m_final.lno;
 		sp->cno = vp->m_final.cno;
+
+		if (F_ISSET(sp, S_INTERRUPTED))
+			break;
 	}
 	return (0);
 }
@@ -159,9 +140,7 @@ v_ia(sp, ep, vp)
 	size_t len;
 	char *p;
 
-	SET_TXT_STD(sp, 0);
-	if (F_ISSET(vp,  VC_ISDOT))
-		LF_SET(TXT_REPLAY);
+	flags = set_txt_std(sp, vp, 0);
 	for (lno = vp->m_start.lno,
 	    cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
 		/*
@@ -191,9 +170,12 @@ v_ia(sp, ep, vp)
 		    &sp->tiq, NULL, p, len, &vp->m_final, 0, OOBLNO, flags))
 			return (1);
 
-		SET_TXT_STD(sp, TXT_REPLAY);
+		flags = set_txt_std(sp, vp, TXT_REPLAY);
 		sp->lno = lno = vp->m_final.lno;
 		sp->cno = vp->m_final.cno;
+
+		if (F_ISSET(sp, S_INTERRUPTED))
+			break;
 	}
 	return (0);
 }
@@ -215,9 +197,7 @@ v_iI(sp, ep, vp)
 	int first;
 	char *p;
 
-	SET_TXT_STD(sp, 0);
-	if (F_ISSET(vp,  VC_ISDOT))
-		LF_SET(TXT_REPLAY);
+	flags = set_txt_std(sp, vp, 0);
 	for (first = 1, lno = vp->m_start.lno,
 	    cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
 		/*
@@ -248,9 +228,12 @@ v_iI(sp, ep, vp)
 		    &sp->tiq, NULL, p, len, &vp->m_final, 0, OOBLNO, flags))
 			return (1);
 
-		SET_TXT_STD(sp, TXT_REPLAY);
+		flags = set_txt_std(sp, vp, TXT_REPLAY);
 		sp->lno = lno = vp->m_final.lno;
 		sp->cno = vp->m_final.cno;
+
+		if (F_ISSET(sp, S_INTERRUPTED))
+			break;
 	}
 	return (0);
 }
@@ -271,9 +254,7 @@ v_ii(sp, ep, vp)
 	u_int flags;
 	char *p;
 
-	SET_TXT_STD(sp, 0);
-	if (F_ISSET(vp,  VC_ISDOT))
-		LF_SET(TXT_REPLAY);
+	flags = set_txt_std(sp, vp, 0);
 	for (lno = vp->m_start.lno,
 	    cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
 		if ((p = file_gline(sp, ep, lno, &len)) == NULL) {
@@ -298,10 +279,13 @@ v_ii(sp, ep, vp)
 		 * On replay, if the line isn't empty, advance the insert
 		 * by one (make it an append).
 		 */
-		SET_TXT_STD(sp, TXT_REPLAY);
+		flags = set_txt_std(sp, vp, TXT_REPLAY);
 		sp->lno = lno = vp->m_final.lno;
 		if ((sp->cno = vp->m_final.cno) != 0)
 			++sp->cno;
+
+		if (F_ISSET(sp, S_INTERRUPTED))
+			break;
 	}
 	return (0);
 }
@@ -323,9 +307,7 @@ v_iO(sp, ep, vp)
 	int first;
 	char *p;
 
-	SET_TXT_STD(sp, TXT_APPENDEOL);
-	if (F_ISSET(vp, VC_ISDOT))
-		LF_SET(TXT_REPLAY);
+	flags = set_txt_std(sp, vp, TXT_APPENDEOL);
 	for (first = 1, cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
 		if (sp->lno == 1) {
 			if (file_lline(sp, ep, &lno))
@@ -355,9 +337,12 @@ insert:			p = "";
 		    &sp->tiq, NULL, p, len, &vp->m_final, 0, ai_line, flags))
 			return (1);
 
-		SET_TXT_STD(sp, TXT_APPENDEOL | TXT_REPLAY);
+		flags = set_txt_std(sp, vp, TXT_APPENDEOL | TXT_REPLAY);
 		sp->lno = lno = vp->m_final.lno;
 		sp->cno = vp->m_final.cno;
+
+		if (F_ISSET(sp, S_INTERRUPTED))
+			break;
 	}
 	return (0);
 }
@@ -379,9 +364,7 @@ v_io(sp, ep, vp)
 	int first;
 	char *p;
 
-	SET_TXT_STD(sp, TXT_APPENDEOL);
-	if (F_ISSET(vp,  VC_ISDOT))
-		LF_SET(TXT_REPLAY);
+	flags = set_txt_std(sp, vp, TXT_APPENDEOL);
 	for (first = 1,
 	    cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1; cnt--;) {
 		if (sp->lno == 1) {
@@ -413,9 +396,12 @@ insert:			p = "";
 		    &sp->tiq, NULL, p, len, &vp->m_final, 0, ai_line, flags))
 			return (1);
 
-		SET_TXT_STD(sp, TXT_APPENDEOL | TXT_REPLAY);
+		flags = set_txt_std(sp, vp, TXT_APPENDEOL | TXT_REPLAY);
 		sp->lno = lno = vp->m_final.lno;
 		sp->cno = vp->m_final.cno;
+
+		if (F_ISSET(sp, S_INTERRUPTED))
+			break;
 	}
 	return (0);
 }
@@ -483,9 +469,7 @@ v_CS(sp, ep, vp, iflags)
 	char *p;
 	u_int flags;
 
-	SET_TXT_STD(sp, iflags);
-	if (F_ISSET(vp,  VC_ISDOT))
-		LF_SET(TXT_REPLAY);
+	flags = set_txt_std(sp, vp, iflags);
 
 	/*
 	 * There are two cases -- if a count is supplied, we do a line
@@ -578,9 +562,7 @@ v_change(sp, ep, vp)
 	int lmode, rval;
 	char *bp, *p;
 
-	SET_TXT_STD(sp, 0);
-	if (F_ISSET(vp,  VC_ISDOT))
-		LF_SET(TXT_REPLAY);
+	flags = set_txt_std(sp, vp, 0);
 
 	/*
 	 * Move the cursor to the start of the change.  Note, if autoindent
@@ -712,9 +694,7 @@ v_Replace(sp, ep, vp)
 	u_int flags;
 	char *p;
 
-	SET_TXT_STD(sp, 0);
-	if (F_ISSET(vp,  VC_ISDOT))
-		LF_SET(TXT_REPLAY);
+	flags = set_txt_std(sp, vp, 0);
 
 	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
 	if ((p = file_gline(sp, ep, vp->m_start.lno, &len)) == NULL) {
@@ -737,6 +717,9 @@ v_Replace(sp, ep, vp)
 	    &vp->m_stop, p, len, &vp->m_final, 0, OOBLNO, flags))
 		return (1);
 
+	if (F_ISSET(sp, S_INTERRUPTED))
+		return (0);
+
 	/*
 	 * Special case.  The historic vi handled [count]R badly, in that R
 	 * would replace some number of characters, and then the count would
@@ -751,7 +734,7 @@ v_Replace(sp, ep, vp)
 	while (--cnt) {
 		if ((p = file_gline(sp, ep, vp->m_final.lno, &len)) == NULL)
 			GETLINE_ERR(sp, vp->m_final.lno);
-		SET_TXT_STD(sp, TXT_REPLAY);
+		flags = set_txt_std(sp, vp, TXT_REPLAY);
 
 		sp->lno = vp->m_final.lno;
 
@@ -770,6 +753,9 @@ v_Replace(sp, ep, vp)
 		if (v_ntext(sp, ep, &sp->tiq,
 		    &vp->m_stop, p, len, &vp->m_final, 0, OOBLNO, flags))
 			return (1);
+
+		if (F_ISSET(sp, S_INTERRUPTED))
+			break;
 	}
 	return (0);
 }
@@ -789,9 +775,7 @@ v_subst(sp, ep, vp)
 	u_int flags;
 	char *p;
 
-	SET_TXT_STD(sp, 0);
-	if (F_ISSET(vp,  VC_ISDOT))
-		LF_SET(TXT_REPLAY);
+	flags = set_txt_std(sp, vp, 0);
 	if ((p = file_gline(sp, ep, vp->m_start.lno, &len)) == NULL) {
 		if (file_lline(sp, ep, &lno))
 			return (1);
@@ -820,4 +804,41 @@ v_subst(sp, ep, vp)
 
 	return (v_ntext(sp, ep, &sp->tiq,
 	    &vp->m_stop, p, len, &vp->m_final, 0, OOBLNO, flags));
+}
+
+/*
+ * set_txt_std --
+ *	Initialize text processing flags.
+ */
+static u_int
+set_txt_std(sp, vp, init)
+	SCR *sp;
+	VICMDARG *vp;
+	u_int init;
+{
+	u_int flags;
+
+	/* Text operations are all interruptible. */
+	F_SET(sp, S_INTERRUPTIBLE);
+
+	LF_INIT(init);
+	LF_SET(TXT_CNTRLT |
+	    TXT_ESCAPE | TXT_MAPINPUT | TXT_RECORD | TXT_RESOLVE);
+	if (O_ISSET(sp, O_ALTWERASE))
+		LF_SET(TXT_ALTWERASE);
+	if (O_ISSET(sp, O_AUTOINDENT))
+		LF_SET(TXT_AUTOINDENT);
+	if (O_ISSET(sp, O_BEAUTIFY))
+		LF_SET(TXT_BEAUTIFY);
+	if (O_ISSET(sp, O_SHOWMATCH))
+		LF_SET(TXT_SHOWMATCH);
+	if (O_ISSET(sp, O_WRAPMARGIN))
+		LF_SET(TXT_WRAPMARGIN);
+	if (F_ISSET(sp, S_SCRIPT))
+		LF_SET(TXT_CR);
+	if (O_ISSET(sp, O_TTYWERASE))
+		LF_SET(TXT_TTYWERASE);
+	if (F_ISSET(vp,  VC_ISDOT))
+		LF_SET(TXT_REPLAY);
+	return (flags);
 }
