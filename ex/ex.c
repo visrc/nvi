@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.28 1992/05/07 12:46:19 bostic Exp $ (Berkeley) $Date: 1992/05/07 12:46:19 $";
+static char sccsid[] = "$Id: ex.c,v 5.29 1992/05/15 11:08:01 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:08:01 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -21,11 +21,10 @@ static char sccsid[] = "$Id: ex.c,v 5.28 1992/05/07 12:46:19 bostic Exp $ (Berke
 #include <string.h>
 
 #include "vi.h"
-#include "vcmd.h"
 #include "excmd.h"
-#include "exf.h"
 #include "options.h"
 #include "term.h"
+#include "vcmd.h"
 #include "pathnames.h"
 #include "extern.h"
 
@@ -44,12 +43,14 @@ ex()
 	size_t len;
 	char *p;
 
-	while (mode == MODE_EX) 
-		if ((p = gb(ISSET(O_PROMPT) ? ':' : 0, &len, 0)) != NULL)
-			if (*p)
-				ex_cstring(p, len, 0);
-			else
-				ex_cstring(".+1", 3, 0);
+	while (mode == MODE_EX) {
+		if (gb(ISSET(O_PROMPT) ? ':' : 0, &p, &len, 0) || !p)
+			continue;
+		if (*p)
+			ex_cstring(p, len, 0);
+		else
+			ex_cstring(".+1", 3, 0);
+	}
 }
 
 /*
@@ -269,9 +270,9 @@ addr1:	switch(cp->flags & (E_ADDR1|E_ADDR2|E_ADDR2_ALL|E_ADDR2_NONE)) {
 		if (cmd.addrcnt == 0) {		/* Default to entire file. */
 			cmd.addrcnt = 2;
 			cmd.addr1.lno = 1;
-			cmd.addr1.cno = 1;
+			cmd.addr1.cno = 0;
 			cmd.addr2.lno = file_lline(curf);
-			cmd.addr2.cno = 1;
+			cmd.addr2.cno = 0;
 			break;
 		}
 		/* FALLTHROUGH */
@@ -587,9 +588,9 @@ linespec(cmd, cp)
 	/* Percent character is all lines in the file. */
 	if (*cmd == '%') {
 		cp->addr1.lno = 1;
-		cp->addr1.cno = 1;
+		cp->addr1.cno = 0;
 		cp->addr2.lno = file_lline(curf);
-		cp->addr2.cno = 1;
+		cp->addr2.cno = 0;
 		cp->addrcnt = 2;
 		return (++cmd);
 	}
@@ -609,18 +610,22 @@ linespec(cmd, cp)
 			break;
 		case '$':		/* Last line. */
 			cur.lno = file_lline(curf);
-			cur.cno = 1;
+			cur.cno = 0;
 			++cmd;
 			break;
 					/* Absolute line number. */
 		case '0': case '1': case '2': case '3': case '4':
 		case '5': case '6': case '7': case '8': case '9':
 			cur.lno = strtol(cmd, &ep, 10);
-			cur.cno = 1;
+			cur.cno = 0;
 			cmd = ep;
 			break;
 		case '\'':		/* Set mark. */
-			if ((mp = m_tomark(&cursor, 1L, (int)cmd[1])) == NULL)
+			if (cmd[1] == '\0') {
+				msg("No mark name; use 'a' to 'z'.");
+				return (NULL);
+			}
+			if ((mp = mark_get(cmd[1])) == NULL)
 				return (NULL);
 			cur = *mp;
 			cmd += 2;
