@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.46 1993/02/18 11:42:56 bostic Exp $ (Berkeley) $Date: 1993/02/18 11:42:56 $";
+static char sccsid[] = "$Id: vi.c,v 5.47 1993/02/19 11:14:12 bostic Exp $ (Berkeley) $Date: 1993/02/19 11:14:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -54,7 +54,7 @@ vi(ep)
 		if (first || FF_ISSET(ep, F_NEWSESSION)) {
 			if (v_init(ep))
 				return (1);
-			if (ep->scr_update(ep)) {
+			if (scr_update(ep)) {
 				rval = 1;
 				break;
 			}
@@ -188,7 +188,7 @@ err:		v_msgflush(ep);
 		 */
 		flags = vp->kp->flags;
 		if (flags & V_RCM)
-			m.cno = ep->scr_relative(ep, m.lno);
+			m.cno = scr_relative(ep, m.lno);
 		else if (flags & V_RCM_SETFNB) {
 			/*
 			 * Hack -- instead of calling nonblank() in all of
@@ -204,7 +204,7 @@ err:		v_msgflush(ep);
 		/* Update the cursor. */
 		ep->lno = m.lno;
 		ep->cno = m.cno;
-		ep->scr_update(ep);
+		(void)scr_update(ep);
 
 		if (flags & V_RCM_SET) {
 			ep->rcmflags = 0;
@@ -595,7 +595,7 @@ noword:		msg(ep, M_BELL, "Cursor not in a %s.",
 	 */
 	if (beg != ep->cno) {
 		ep->cno = beg;
-		ep->scr_update(ep);
+		scr_update(ep);
 		refresh();
 	}
 

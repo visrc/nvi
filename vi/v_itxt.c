@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 5.27 1993/02/16 20:09:01 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:09:01 $";
+static char sccsid[] = "$Id: v_itxt.c,v 5.28 1993/02/19 11:13:58 bostic Exp $ (Berkeley) $Date: 1993/02/19 11:13:58 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -485,7 +485,7 @@ v_subst(ep, vp, fm, tm, rp)
 }
 
 #define	SCREEN_UPDATE(ep) {						\
-	if (ep->scr_update(ep)) {					\
+	if (scr_update(ep)) {						\
 		eval = 1;						\
 		goto done;						\
 	}								\
@@ -604,7 +604,7 @@ newtext(ep, vp, tm, p, len, rp, ai_line, flags)
 	}
 
 	/* Reset the line and update the screen. */
-	if (ep->scr_change(ep, ib.start.lno, LINE_RESET))
+	if (scr_change(ep, ib.start.lno, LINE_RESET))
 		return (1);
 	SCREEN_UPDATE(ep);
 		
@@ -709,7 +709,7 @@ next_ch:	if (replay)
 			overwrite = 0;
 
 			/* Update the screen. */
-			ep->scr_change(ep, ib.stop.lno, LINE_RESET);
+			scr_change(ep, ib.stop.lno, LINE_RESET);
 			SCREEN_UPDATE(ep);
 
 			/* Append the line into the text structure. */
@@ -751,7 +751,7 @@ next_ch:	if (replay)
 			 * so the line is retrieved from the TEXT structure.
 			 */
 			++ib.stop.lno;
-			if (ep->scr_change(ep, ib.stop.lno - 1, LINE_RESET)) {
+			if (scr_change(ep, ib.stop.lno - 1, LINE_RESET)) {
 				eval = 1;
 				goto done;
 			}
@@ -902,7 +902,7 @@ ins_qch:		*p++ = ch;
 			abort();
 		}
 		ib.len = col + insert + overwrite;
-		ep->scr_change(ep, ib.stop.lno,
+		scr_change(ep, ib.stop.lno,
 		    !quoted && (special[ch] == K_NL || special[ch] == K_CR) ?
 		    LINE_INSERT : LINE_RESET);
 		SCREEN_UPDATE(ep);
