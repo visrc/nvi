@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: tcl.c,v 8.6 1996/02/28 19:23:15 bostic Exp $ (Berkeley) $Date: 1996/02/28 19:23:15 $";
+static char sccsid[] = "$Id: tcl.c,v 8.7 1996/03/03 16:23:18 bostic Exp $ (Berkeley) $Date: 1996/03/03 16:23:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -727,12 +727,12 @@ int
 tcl_init(gp)
 	GS *gp;
 {
-	gp->interp = Tcl_CreateInterp();
-	if (Tcl_Init(gp->interp) == TCL_ERROR)
+	gp->tcl_interp = Tcl_CreateInterp();
+	if (Tcl_Init(gp->tcl_interp) == TCL_ERROR)
 		return (1);
 
 #define	TCC(name, function) {						\
-	Tcl_CreateCommand(gp->interp, name, function,			\
+	Tcl_CreateCommand(gp->tcl_interp, name, function,		\
 	    (ClientData)NULL, (Tcl_CmdDeleteProc *)NULL);		\
 }
 	TCC("viAppendLine", tcl_aline);
@@ -773,7 +773,7 @@ msghandler(sp, mtype, msg, len)
 	/* Replace the trailing <newline> with an EOS. */
 	msg[len - 1] = '\0';
 
-	Tcl_SetResult(sp->gp->interp, msg, TCL_VOLATILE);
+	Tcl_SetResult(sp->gp->tcl_interp, msg, TCL_VOLATILE);
 }
 
 /*
