@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.57 1993/11/27 15:52:45 bostic Exp $ (Berkeley) $Date: 1993/11/27 15:52:45 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.58 1993/11/27 17:20:29 bostic Exp $ (Berkeley) $Date: 1993/11/27 17:20:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -377,6 +377,14 @@ next_ch:	if (term_key(sp, &ch, flags & TXT_GETKEY_MASK) != INP_OK)
 			ntp->insert = tp->insert;
 
 			/*
+			 * Note if the user inserted any characters on this
+			 * line.  Done before calling txt_ai_resolve() because
+			 * it changes the value of sp->cno without making the
+			 * corresponding changes to tp->ai.
+			 */
+			tmp = sp->cno <= tp->ai;
+
+			/*
 			 * Resolve autoindented characters for the old line.
 			 * Reset the autoindent line value.  0^D keeps the ai
 			 * line from changing, ^D changes the level, even if
@@ -402,14 +410,14 @@ next_ch:	if (term_key(sp, &ch, flags & TXT_GETKEY_MASK) != INP_OK)
 
 			/*
 			 * If the user hasn't entered any characters, delete
-			 * autoindent characters.
+			 * any autoindent characters.
 			 *
 			 * !!!
 			 * Historic vi didn't get the insert test right, if
-			 * there were characters being inserted, entering a
-			 * <cr> left the autoindent characters on the line.
+			 * there were characters after the cursor, entering
+			 * a <cr> left the autoindent characters on the line.
 			 */
-			if (sp->cno <= tp->ai)
+			if (tmp)
 				sp->cno = 0;
 
 			/* Reset bookkeeping for the old line. */
@@ -943,6 +951,7 @@ txt_ai_resolve(sp, tp)
 	TEXT *tp;
 {
 	u_long ts;
+	int del;
 	size_t cno, len, new, old, scno, spaces, tab_after_sp, tabs;
 	char *p;
 
@@ -993,10 +1002,11 @@ txt_ai_resolve(sp, tp)
 	if (old == new)
 		return;
 
-	/* Shift the rest of the characters down. */
-	memmove(p - (old - new), p, tp->len - old);
-	tp->len -= (old - new);
-	sp->cno -= (old - new);
+	/* Shift the rest of the characters down, adjust the counts. */
+	del = old - new;
+	memmove(p - del, p, tp->len - old);
+	sp->cno -= del;
+	tp->len -= del;
 
 	/* Fill in space/tab characters. */
 	for (p = tp->lb; tabs--;)
