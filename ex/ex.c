@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.136 1994/08/02 09:25:57 bostic Exp $ (Berkeley) $Date: 1994/08/02 09:25:57 $";
+static char sccsid[] = "$Id: ex.c,v 8.137 1994/08/02 10:21:57 bostic Exp $ (Berkeley) $Date: 1994/08/02 10:21:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -442,10 +442,11 @@ loop:	if (nl) {
 			exp->fdef = E_F_PRINT;
 		else
 			exp->fdef = 0;
+		uselastcmd = 0;
 	} else {
-		uselastcmd = 1;
 		cp = &cmds[C_PRINT];
 		F_SET(&exc, exp->fdef);
+		uselastcmd = 1;
 	}
 
 	/* Initialize local flags to the command flags. */
