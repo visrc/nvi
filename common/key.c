@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.25 1993/11/27 15:52:11 bostic Exp $ (Berkeley) $Date: 1993/11/27 15:52:11 $";
+static char sccsid[] = "$Id: key.c,v 8.26 1993/11/28 17:41:39 bostic Exp $ (Berkeley) $Date: 1993/11/28 17:41:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -166,12 +166,17 @@ term_push(sp, ibp, s, len)
 	return (0);
 }
 
-/* Remove characters from a queue. */
-#define	QREM(q, len) {							\
+/* Remove characters from the head of a queue. */
+#define	QREM_HEAD(q, len) {						\
 	if (((q)->cnt -= len) == 0)					\
 		(q)->next = 0;						\
 	else								\
 		(q)->next += len;					\
+}
+/* Remove characters from the tail of a queue. */
+#define	QREM_TAIL(q, len) {						\
+	if (((q)->cnt -= len) == 0)					\
+		(q)->next = 0;						\
 }
 
 /*
@@ -245,6 +250,7 @@ term_key(sp, chp, flags)
 	u_int flags;
 {
 	enum input rval;
+	struct timeval t;
 	GS *gp;
 	IBUF *keyp, *ttyp;
 	SEQ *qp;
@@ -260,18 +266,18 @@ loop:	if (keyp->cnt) {
 			*chp = NOT_DIGIT_CH;
 			return (INP_OK);
 		}
-		QREM(keyp, 1);
+		QREM_HEAD(keyp, 1);
 		goto ret;
 	}
 
 	/*
-	 * Read in more keys if none in the queue.  Since no timeout
-	 * is requested, s_key_read will either return 1 or will read
+	 * Read in more keys if none in the queue.  Since no timeout is
+	 * requested, s_key_read will either return an error or will read
 	 * some number of characters.
 	 */
 	if (ttyp->cnt == 0) {
 		gp->key_cnt = 0;
-		if (rval = sp->s_key_read(sp, &nr, 0))
+		if (rval = sp->s_key_read(sp, &nr, NULL))
 			return (rval);
 		/*
 		 * If there's something on the mode line that we wanted
@@ -289,6 +295,8 @@ loop:	if (keyp->cnt) {
 	/* Check for mapped keys.  */
 	if (LF_ISSET(TXT_MAPCOMMAND | TXT_MAPINPUT)) {
 		ml_cnt = 0;
+		t.tv_sec = O_VAL(sp, O_KEYTIME) / 10;
+		t.tv_usec = (O_VAL(sp, O_KEYTIME) % 10) * 100000L;
 newmap:		ch = ttyp->buf[ttyp->next];
 		if (ch < MAX_BIT_SEQ && !bit_test(gp->seqb, ch))
 			goto nomap;
@@ -298,7 +306,7 @@ remap:		qp = seq_find(sp, NULL, &ttyp->buf[ttyp->next], ttyp->cnt,
 
 		/* If get a partial match, keep trying. */
 		if (ispartial) {
-			if (rval = sp->s_key_read(sp, &nr, 1))
+			if (rval = sp->s_key_read(sp, &nr, &t))
 				return (rval);
 			if (nr)
 				goto remap;
@@ -317,7 +325,7 @@ remap:		qp = seq_find(sp, NULL, &ttyp->buf[ttyp->next], ttyp->cnt,
 			return (INP_OK);
 		}
 
-		QREM(ttyp, qp->ilen);
+		QREM_HEAD(ttyp, qp->ilen);
 		if (O_ISSET(sp, O_REMAP)) {
 			if (term_push(sp, ttyp, qp->output, qp->olen))
 				goto err;
@@ -335,7 +343,7 @@ nomap:	ch = ttyp->buf[ttyp->next];
 		*chp = NOT_DIGIT_CH;
 		return (INP_OK);
 	}
-	QREM(ttyp, 1);
+	QREM_HEAD(ttyp, 1);
 
 #define	MAX_KEYS_WITHOUT_READ	1000
 ret:	if (++gp->key_cnt > MAX_KEYS_WITHOUT_READ) {
@@ -363,5 +371,39 @@ rec_err:	gp->key_cnt = 0;
 		goto loop;
 	}
 	*chp = ch;
+	return (INP_OK);
+}
+
+/*
+ * term_user_key --
+ *	Get the next key, but require the user enter one.
+ */
+enum input
+term_user_key(sp, chp)
+	SCR *sp;
+	CHAR_T *chp;
+{
+	enum input rval;
+	struct timeval t;
+	IBUF *ttyp;
+	int nr;
+
+	/*
+	 * Read any keys the user has waiting.  There's an obvious
+	 * race condition, but it's quite short.
+	 */
+	t.tv_sec = 0;
+	t.tv_usec = 1;
+	if (rval = sp->s_key_read(sp, &nr, &t))
+		return (rval);
+
+	/* Read another key. */
+	if (rval = sp->s_key_read(sp, &nr, NULL))
+		return (rval);
+			
+	/* Return the entered key. */
+	ttyp = sp->gp->tty;
+	*chp = ttyp->buf[ttyp->next + (ttyp->cnt - 1)];
+	QREM_TAIL(ttyp, 1);
 	return (INP_OK);
 }
