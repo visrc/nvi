@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 9.9 1995/01/11 16:22:09 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:22:09 $";
+static char sccsid[] = "$Id: v_init.c,v 9.10 1995/01/11 21:33:00 bostic Exp $ (Berkeley) $Date: 1995/01/11 21:33:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -105,29 +105,6 @@ int
 v_init(sp)
 	SCR *sp;
 {
-	recno_t lno;
-	size_t len;
-
-	/*
-	 * If the first visit to a file, check to see if we're skipping
-	 * an initial comment.  Otherwise, make sure that the cursor
-	 * position is a legal one.
-	 */
-	if (F_ISSET(sp->frp, FR_CURSORSET))
-		if (file_gline(sp, sp->lno, &len) == NULL) {
-			if (file_lline(sp, &lno))
-				return (1);
-			sp->lno = 1;
-			sp->cno = 0;
-		} else if (sp->cno >= len) {
-			sp->cno = 0;
-			if (nonblank(sp, sp->lno, &sp->cno))
-				return (1);
-		}
-	else
-		if (O_ISSET(sp, O_COMMENT) && ex_comment(sp))
-			return (1);
-
 	/* Make ex display to a vi scrolling function. */
 	if ((sp->stdfp = fwopen(sp, sp->s_ex_write)) == NULL) {
 		msgq(sp, M_SYSERR, "ex output");
