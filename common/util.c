@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 5.44 1993/05/11 16:09:55 bostic Exp $ (Berkeley) $Date: 1993/05/11 16:09:55 $";
+static char sccsid[] = "$Id: util.c,v 5.45 1993/05/12 12:58:09 bostic Exp $ (Berkeley) $Date: 1993/05/12 12:58:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -284,22 +284,6 @@ void
 onhup(signo)
 	int signo;
 {
-#ifdef XXX_RIP_THIS_OUT
-	/* Restore the terminal's sanity. */
-	endwin();
-
-	/* If we had a temp file going, then preserve it. */
-	if (tmpnum > 0 && tmpfd >= 0) {
-		(void)close(tmpfd);
-		(void)snprintf(buf, sizeof(buf),
-		    "%s %s", _PATH_PRESERVE, tmpname);
-		(void)esystem(PVAL(O_SHELL), tmpblk.c);
-	}
-
-	/* Delete any old temp files. */
-	cutend();
-#endif
-
 	/* Exit with the proper exit status. */
 	(void)signal(SIGHUP, SIG_DFL);
 	(void)kill(0, SIGHUP);
