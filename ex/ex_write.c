@@ -6,16 +6,18 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 5.12 1992/10/10 13:58:02 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:58:02 $";
+static char sccsid[] = "$Id: ex_write.c,v 5.13 1992/11/02 22:28:46 bostic Exp $ (Berkeley) $Date: 1992/11/02 22:28:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "vi.h"
@@ -46,6 +48,7 @@ ex_write(cmdp)
 		if (curf->flags & F_NAMECHANGED) {
 			fname = curf->name;
 			flags = O_TRUNC;
+			force = 0;
 			goto noargs;
 		} else
 			return (file_sync(curf, 0));

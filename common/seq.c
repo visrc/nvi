@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 5.15 1992/10/29 14:42:16 bostic Exp $ (Berkeley) $Date: 1992/10/29 14:42:16 $";
+static char sccsid[] = "$Id: seq.c,v 5.16 1992/11/02 22:29:25 bostic Exp $ (Berkeley) $Date: 1992/11/02 22:29:25 $";
 #endif /* not lint */
 
 #include <ctype.h>
@@ -47,7 +47,6 @@ seq_set(name, input, output, stype, userdef)
 {
 	register SEQ *ip, *sp;
 	int ilen;
-	char *s;
 
 #if DEBUG && 0
 	TRACE("seq_set: name {%s} input {%s} output {%s}\n",
@@ -129,6 +128,7 @@ mem1:	msg("Error: %s", strerror(errno));
  * seq_delete --
  *	Delete a sequence.
  */
+int
 seq_delete(input, stype)
 	u_char *input;
 	enum seqtype stype;
@@ -176,7 +176,6 @@ seq_find(input, ilen, stype, ispartialp)
 	int *ispartialp;
 {
 	register SEQ *sp;
-	register int len;
 
 	if (ispartialp) {
 		*ispartialp = 0;

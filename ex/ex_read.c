@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 5.15 1992/11/02 22:26:31 bostic Exp $ (Berkeley) $Date: 1992/11/02 22:26:31 $";
+static char sccsid[] = "$Id: ex_read.c,v 5.16 1992/11/02 22:28:55 bostic Exp $ (Berkeley) $Date: 1992/11/02 22:28:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -45,6 +45,7 @@ ex_read(cmdp)
 			return (1);
 		}
 		fname = curf->name;
+		force = 0;
 		goto noargs;
 	}
 
