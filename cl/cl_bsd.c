@@ -9,6 +9,14 @@ static char	*ks;				/* Keypad off. */
 static char	*vb;				/* Visible bell string. */
 
 /*
+ * We want const if we can get it, there are large, read-only structures in
+ * here.
+ */
+#ifndef	__STDC__
+#define	const
+#endif
+
+/*
  * HP's support the entire System V curses package except for the tigetstr
  * and tigetnum functions.  Cthulu only knows why.
  */
