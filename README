@@ -1,4 +1,4 @@
-#	$Id: README,v 8.24 1993/11/22 19:49:56 bostic Exp $ (Berkeley) $Date: 1993/11/22 19:49:56 $
+#	$Id: README,v 8.25 1993/11/22 22:11:00 bostic Exp $ (Berkeley) $Date: 1993/11/22 22:11:00 $
 
 This is the README for version 0.84 of nex/nvi, a (soon to be) freely
 redistributable replacement for the vi/ex text editors.
@@ -71,6 +71,11 @@ things you might like:
 	o Split screens:
 		:sp[lit] [file ...] splits the screen.
 		^W switches between screens.
+		:resize count grows/shrinks the current screen.
+	o Background/foreground screens
+		:bg backgrounds the current screen.
+		:display s[creens] lists the hidden screens.
+		:fg [file] foregrounds the specified (or next) screen.
 	o Shell screens:
 		:sc[ript] [file ...] runs a shell in the screen.
 		Carriage return sends a line to the shell.
