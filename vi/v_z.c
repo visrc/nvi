@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_z.c,v 8.6 1993/11/29 14:15:30 bostic Exp $ (Berkeley) $Date: 1993/11/29 14:15:30 $";
+static char sccsid[] = "$Id: v_z.c,v 8.7 1993/12/02 15:17:59 bostic Exp $ (Berkeley) $Date: 1993/12/02 15:17:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -41,8 +41,17 @@ v_z(sp, ep, vp, fm, tm, rp)
 	} else
 		lno = fm->lno;
 
-	/* The second count is the window size. */
-	if (F_ISSET(vp, VC_C2SET) && set_window_size(sp, vp->count2, 0))
+	/*
+	 * The second count is the displayed window size, i.e. the 'z'
+	 * command is another way to get artificially small windows.
+	 *
+	 * !!!
+	 * A window size of 0 was historically allowed, and simply ignored.
+	 * Also, this could be much more simply done by modifying the value
+	 * of the O_WINDOW option, but that's not how it worked historically.
+	 */
+	if (F_ISSET(vp, VC_C2SET) &&
+	    vp->count2 != 0 && sp->s_rrel(sp, vp->count2))
 		return (1);
 
 	/* Set default cursor values. */
