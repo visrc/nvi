@@ -14,7 +14,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: perl.xs,v 8.16 1996/07/12 20:26:11 bostic Exp $ (Berkeley) $Date: 1996/07/12 20:26:11 $";
+static const char sccsid[] = "$Id: perl.xs,v 8.17 1996/07/19 19:47:38 bostic Exp $ (Berkeley) $Date: 1996/07/19 19:47:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -85,10 +85,10 @@ static int perl_eval(string)
 	char *string;
 {
 #ifdef HAVE_PERL_5_003_01
-	SV* sv = sv_newmortal();
+	SV* sv = newSVpv(string, 0);
 
-	sv_setpv(sv, string);
 	perl_eval_sv(sv, G_DISCARD | G_NOARGS | G_KEEPERR);
+	SvREFCNT_dec(sv);
 #else
 	char *argv[2];
 
@@ -128,14 +128,53 @@ perl_init(gp)
 #endif
         perl_call_argv("VI::bootstrap", G_DISCARD, bootargs);
 	perl_eval("$SIG{__WARN__}='VI::Warn'");
-#if 0
+
 	av_unshift(av = perl_get_av("INC", TRUE), 1);
-	av_store(av, 0, sv_2mortal(newSVpv(_PATH_PERLSCRIPTS,
-					sizeof(_PATH_PERLSCRIPTS)-1)));
-#endif
+	av_store(av, 0, newSVpv(_PATH_PERLSCRIPTS,
+				sizeof(_PATH_PERLSCRIPTS)-1));
 
 	return (0);
 }
+
+/*
+ * perl_screen_end
+ *	Remove all refences to the screen to be destroyed
+ *
+ * PUBLIC: int perl_screen_end __P((SCR*));
+ */
+int
+perl_screen_end(scrp)
+	SCR *scrp;
+{
+	if (scrp->perl_private) {
+		sv_setiv((SV*) scrp->perl_private, 0);
+	}
+	return 0;
+}
+
+static void
+my_sighandler(i)
+	int i;
+{
+	croak("Perl command interrupted by SIGINT");
+}
+
+static void
+newVIrv(rv, screen)
+	SV *rv;
+	SCR *screen;
+{
+	sv_upgrade(rv, SVt_RV);
+	if (!screen->perl_private) {
+		screen->perl_private = newSV(0);
+		sv_setiv(screen->perl_private, (IV) screen);
+	} 
+	else SvREFCNT_inc(screen->perl_private);
+	SvRV(rv) = screen->perl_private;
+	SvROK_on(rv);
+	sv_bless(rv, gv_stashpv("VI", TRUE));
+}
+
 
 /* 
  * perl_ex_perl -- :[line [,line]] perl [command]
@@ -155,6 +194,7 @@ perl_ex_perl(scrp, cmdp, cmdlen, f_lno, t_lno)
 	STRLEN length;
 	size_t len;
 	char *err;
+	Signal_t (*istat)();
 
 	/* Initialize the interpreter. */
 	gp = scrp->gp;
@@ -169,10 +209,29 @@ perl_ex_perl(scrp, cmdp, cmdlen, f_lno, t_lno)
 
 	sv_setiv(svstart, f_lno);
 	sv_setiv(svstop, t_lno);
-	sv_setref_pv(svcurscr, "VI", (void *)scrp);
+	newVIrv(svcurscr, scrp);
 	/* Backwards compatibility. */
-	sv_setref_pv(svid, "VI", (void *)scrp);
+	newVIrv(svid, scrp);
+
+	istat = signal(SIGINT, my_sighandler);
 	perl_eval(cmdp);
+	signal(SIGINT, istat);
+
+	SvREFCNT_dec(SvRV(svcurscr));
+	SvROK_off(svcurscr);
+	SvREFCNT_dec(SvRV(svid));
+	SvROK_off(svid);
+	/* Inclusion of the following code produces a segmentation
+	 * fault elsewhere in the code when some special
+	 * sequence of perl commands is issued.
+	 * The above doesn't have that, or I just haven't found that
+	 * special sequence for it yet.
+	SAVETMPS;
+	sv_setiv(svcurscr, 0);
+	sv_setiv(svid, 0);
+	FREETMPS;
+	 */
+
 	err = SvPV(GvSV(errgv), length);
 	if (!length)
 		return (0);
@@ -217,14 +276,14 @@ perl_ex_perldo(scrp, cmdp, cmdlen, f_lno, t_lno)
 	argv[0] = cmdp;
 	argv[1] = NULL;
 #else
-	sv = sv_newmortal();
+	length = strlen(cmdp);
+	sv = newSV(length + sizeof("sub VI::perldo {")-1 + 1 /* } */);
 	sv_setpvn(sv, "sub VI::perldo {", sizeof("sub VI::perldo {")-1); 
-	sv_catpv(sv, cmdp);
+	sv_catpvn(sv, cmdp, length);
 	sv_catpvn(sv, "}", 1);
 	perl_eval_sv(sv, G_DISCARD | G_NOARGS | G_KEEPERR);
+	SvREFCNT_dec(sv);
 	str = SvPV(GvSV(errgv),length);
-	/* it seems you don't mind a goto here and there */
-	/* delete this comment (and the line above) */
 	if (length)
 		goto err;
 #endif
@@ -301,6 +360,10 @@ xs_init()
 }
 
 typedef SCR *	VI;
+typedef SCR *	VI__OPT;
+typedef SCR *	VI__MAP;
+typedef SCR * 	VI__MARK;
+typedef AV *	AVREF;
 
 MODULE = VI	PACKAGE = VI
 
@@ -344,9 +407,12 @@ EndScreen(screen)
 # Perl Command: VI::NewScreen
 # Usage: VI::NewScreen screenId [file]
 
-SV *
-NewScreen(screen, ...)
+VI
+Edit(screen, ...)
 	VI screen
+
+	ALIAS:
+	NewScreen = 1
 
 	PROTOTYPE: $;$
 	PREINIT:
@@ -358,11 +424,10 @@ NewScreen(screen, ...)
 	CODE:
 	file = (items == 1) ? NULL : (char *)SvPV(ST(1),na);
 	INITMESSAGE;
-	rval = api_iscreen(screen, file, &nsp);
+	rval = api_edit(screen, file, &nsp, ix);
 	ENDMESSAGE;
-	# the SV is mortalized by code emitted by xsubpp
-	# this is in some doc, no doubt, but it surprised me
-	RETVAL = sv_setref_pv(newSV(0), "VI", (void *)nsp);
+	
+	RETVAL = ix ? nsp : screen;
 
 	OUTPUT:
 	RETVAL
@@ -373,17 +438,14 @@ NewScreen(screen, ...)
 # Perl Command: VI::FindScreen
 # Usage: VI::FindScreen file
 
-void
-FindScreen(screen, file)
-	VI screen
+VI
+FindScreen(file)
 	char *file
 
 	PREINIT:
 	SCR *fsp;
 	CODE:
-	if (((fsp) = api_fscreen(0, file)) == NULL) 
-		ST(0) = &sv_undef;
-	else sv_setref_pv(ST(0), "VI", (void *)fsp);
+	RETVAL = api_fscreen(0, file);
 
 # XS_VI_aline --
 #	-- Append the string text after the line in lineNumber.
@@ -425,7 +487,7 @@ DelLine(screen, linenumber)
 
 	CODE:
 	INITMESSAGE;
-	rval = api_dline(screen, (recno_t)(int)SvIV(ST(1)));
+	rval = api_dline(screen, (recno_t)linenumber);
 	ENDMESSAGE;
 
 # XS_VI_gline --
@@ -571,7 +633,7 @@ SetMark(screen, mark, line, column)
 	INITMESSAGE;
 	cursor.lno = line;
 	cursor.cno = column;
-	rval = api_setmark(screen, (int)*(char *)SvPV(ST(1),na), &cursor);
+	rval = api_setmark(screen, (int)mark, &cursor);
 	ENDMESSAGE;
 
 # XS_VI_getcursor --
@@ -728,11 +790,11 @@ GetOpt(screen, option)
 
 	PPCODE:
 	INITMESSAGE;
-	rval = api_opts_get(screen, (char *)SvPV(ST(1),na), &value);
+	rval = api_opts_get(screen, option, &value);
 	ENDMESSAGE;
 
 	EXTEND(SP,1);
-        PUSHs(sv_2mortal(newSVpv(value, na)));
+	PUSHs(sv_2mortal(newSVpv(value, 0)));
 	free(value);
 
 # XS_VI_run --
@@ -755,6 +817,13 @@ Run(screen, command)
 	rval = api_run_str(screen, command);
 	ENDMESSAGE;
 
+void 
+DESTROY(screen)
+	VI screen
+
+	CODE:
+	screen->perl_private = 0;
+
 void
 Warn(warning)
 	char *warning;
@@ -763,3 +832,170 @@ Warn(warning)
 	int i;
 	CODE:
 	sv_catpv(GvSV(errgv),warning);
+
+#define TIED(package) \
+	sv_magic((SV *) hv = \
+	    sv_2mortal((SV *)newHV()), \
+		sv_setref_pv(sv_newmortal(), package, (void *)screen),\
+		'P', Nullch, 0);\
+	RETVAL = newRV((SV *)hv)
+
+SV *
+Opt(screen)
+	VI screen;
+	PREINIT:
+	HV *hv;
+	CODE:
+	TIED("VI::OPT");
+	OUTPUT:
+	RETVAL
+
+SV *
+Map(screen)
+	VI screen;
+	PREINIT:
+	HV *hv;
+	CODE:
+	TIED("VI::MAP");
+	OUTPUT:
+	RETVAL
+
+SV *
+Mark(screen)
+	VI screen
+	PREINIT:
+	HV *hv;
+	CODE:
+	TIED("VI::MARK");
+	OUTPUT:
+	RETVAL
+
+MODULE = VI	PACKAGE = VI::OPT
+
+void
+FETCH(screen, key)
+	VI::OPT screen
+	char *key
+
+	PREINIT:
+	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
+	int rval;
+	char *value;
+
+	PPCODE:
+	INITMESSAGE;
+	rval = api_opts_get(screen, key, &value);
+	if (!rval) {
+		EXTEND(SP,1);
+		PUSHs(sv_2mortal(newSVpv(value, 0)));
+		free(value);
+	} else ST(0) = &sv_undef;
+	rval = 0;
+	ENDMESSAGE;
+
+MODULE = VI	PACKAGE = VI::MAP
+
+void
+STORE(screen, key, perlproc)
+	VI::MAP screen
+	char *key
+	SV *perlproc
+
+	PREINIT:
+	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
+	int rval;
+	int length;
+	char *command;
+	SV *svc;
+
+	CODE:
+	rval = SvTRUE(perlproc);
+	INITMESSAGE;
+	svc = sv_2mortal(newSVpv(":perl ", 6));
+	sv_catsv(svc, perlproc);
+	command = SvPV(svc, length);
+	rval = api_map(screen, key, command, length);
+	ENDMESSAGE;
+
+void
+DELETE(screen, key)
+	VI::MAP screen
+	char *key
+
+	PREINIT:
+	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
+	int rval;
+
+	CODE:
+	INITMESSAGE;
+	rval = api_unmap(screen, key);
+	ENDMESSAGE;
+
+MODULE = VI	PACKAGE = VI::MARK
+
+AV *
+FETCH(screen, mark)
+	VI::MARK screen
+	char mark
+
+	PREINIT:
+	struct _mark cursor;
+	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
+	int rval;
+
+	CODE:
+	INITMESSAGE;
+	rval = api_getmark(screen, (int)mark, &cursor);
+	ENDMESSAGE;
+	RETVAL = newAV();
+	av_push(RETVAL, newSViv(cursor.lno));
+	av_push(RETVAL, newSViv(cursor.cno));
+
+	OUTPUT:
+	RETVAL
+
+void
+STORE(screen, mark, pos)
+	VI::MARK screen
+	char mark
+	AVREF pos
+
+	PREINIT:
+	struct _mark cursor;
+	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
+	int rval;
+
+	CODE:
+	if (av_len(pos) < 1) 
+	    croak("cursor position needs 2 elements");
+	INITMESSAGE;
+	cursor.lno = SvIV(*av_fetch(pos, 0, 0));
+	cursor.cno = SvIV(*av_fetch(pos, 1, 0));
+	rval = api_setmark(screen, (int)mark, &cursor);
+	ENDMESSAGE;
+
+void
+FIRSTKEY(screen, ...)
+	VI::MARK screen
+
+	ALIAS:
+	NEXTKEY = 1
+	
+	PROTOTYPE: $;$
+
+	PREINIT:
+	struct _mark cursor;
+	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
+	int next, rval;
+	char key[] = {0, 0};
+
+	PPCODE:
+	if (items == 2) {
+		next = 1;
+		*key = *(char *)SvPV(ST(1),na);
+	} else next = 0;
+	api_nextmark(screen, next, key);
+        if (*key) {
+		EXTEND(sp, 1);
+        	PUSHs(sv_2mortal(newSVpv(key, 1)));
+	} else ST(0) = &sv_undef;
