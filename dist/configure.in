@@ -189,6 +189,16 @@ if test "$vi_cv_path_preserve" = no; then
 	AC_MSG_ERROR([No writeable preserve directory found.])
 fi
 AC_MSG_RESULT($vi_cv_path_preserve)
+AC_PATH_PROG(vi_cv_path_fuser, fuser, no)
+AC_PATH_PROG(vi_cv_path_lsof, lsof, no)
+AC_SUBST(INUSE)
+INUSE=""
+if test "$vi_cv_path_lsof" != no; then
+	INUSE='test `lsof -t $i`'
+fi
+if test "$vi_cv_path_fuser" != no; then
+	INUSE='fuser -s $i'
+fi
 
 dnl Check for programs used for installation
 AC_PROG_AWK

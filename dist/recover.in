@@ -1,6 +1,6 @@
 #!/bin/sh -
 #
-#	$Id: recover.in,v 8.8 1996/10/10 21:15:37 bostic Exp $ (Berkeley) $Date: 1996/10/10 21:15:37 $
+#	$Id: recover.in,v 8.9 2001/08/30 13:59:23 skimo Exp $ (Berkeley) $Date: 2001/08/30 13:59:23 $
 #
 # Script to recover nvi edit sessions.
 
@@ -15,6 +15,11 @@ if [ "$vibackup" != "$RECDIR/vi.*" ]; then
 	for i in $vibackup; do
 		# Only test files that are readable.
 		if test ! -r $i; then
+			continue
+		fi
+
+		INUSE="@INUSE@"
+		if test "$INUSE" && $INUSE; then
 			continue
 		fi
 
@@ -33,6 +38,11 @@ if [ "$virecovery" != "$RECDIR/recover.*" ]; then
 	for i in $virecovery; do
 		# Only test files that are readable.
 		if test ! -r $i; then
+			continue
+		fi
+
+		INUSE="@INUSE@"
+		if test "$INUSE" && $INUSE; then
 			continue
 		fi
 
