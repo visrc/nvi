@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 8.10 1993/09/02 11:12:02 bostic Exp $ (Berkeley) $Date: 1993/09/02 11:12:02 $";
+static char sccsid[] = "$Id: v_cmd.c,v 8.11 1993/09/08 18:17:43 bostic Exp $ (Berkeley) $Date: 1993/09/08 18:17:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -364,7 +364,7 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	 * so it's handled specially in getcmd().
 	 */
 	{v_z, 		V_CNT|V_RCM_SETFNB,
-	    "redraw window: [line]z[window_size][.-<CR>]"},
+	    "redraw window: [line]z[window_size][-|.|+|^|<CR>]"},
 /* 173   { */
 	{v_paragraphb,	V_ABS|V_CNT|V_LMODE|V_MOVE|V_RCM_SET,
 	    "move back paragraph: [count]{"},
