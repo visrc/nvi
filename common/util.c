@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.51 1994/04/24 14:16:48 bostic Exp $ (Berkeley) $Date: 1994/04/24 14:16:48 $";
+static char sccsid[] = "$Id: util.c,v 8.52 1994/04/26 11:40:58 bostic Exp $ (Berkeley) $Date: 1994/04/26 11:40:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -423,9 +423,9 @@ set_window_size(sp, set_row, sigwinch)
 #ifdef SYSV_CURSES
 		if (s != NULL) {
 			if (row == 0)
-				row = tigetnum("li");
+				row = tigetnum("lines");
 			if (col == 0)
-				col = tigetnum("co");
+				col = tigetnum("cols");
 		}
 #else
 		if (s != NULL && !term_tgetent(sp, buf, s)) {
