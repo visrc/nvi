@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: vi.h,v 10.22 1996/12/04 09:48:07 bostic Exp $ (Berkeley) $Date: 1996/12/04 09:48:07 $
+ *	$Id: vi.h,v 10.23 1997/04/12 17:18:58 bostic Exp $ (Berkeley) $Date: 1997/04/12 17:18:58 $
  */
 
 /* Definition of a vi "word". */
@@ -255,6 +255,8 @@ typedef struct _vi_private {
 	size_t	busy_oldx;	/* Saved x coordinate. */
 	struct timeval busy_tv;	/* Busy timer. */
 
+	MARK	sel;		/* Select start position. */
+
 	char   *ps;		/* Paragraph plus section list. */
 
 	u_long	u_ccnt;		/* Undo command count. */
@@ -379,4 +381,4 @@ typedef enum {
 	VIM_NOCOM, VIM_NOCOM_B, VIM_USAGE, VIM_WRESIZE
 } vim_t;
 
-#include "vi_extern.h"
+#include "extern.h"
