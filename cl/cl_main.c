@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_main.c,v 10.19 1995/11/25 16:41:10 bostic Exp $ (Berkeley) $Date: 1995/11/25 16:41:10 $";
+static char sccsid[] = "$Id: cl_main.c,v 10.20 1996/02/04 18:58:51 bostic Exp $ (Berkeley) $Date: 1996/02/04 18:58:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,6 +34,7 @@ GS *__global_list;				/* GLOBAL: List of screens. */
 sigset_t __sigblockset;				/* GLOBAL: Blocked signals. */
 
 static GS	*gs_init __P((char *));
+static void	 nomem __P((char *));
 static int	 setsig __P((int, struct sigaction *, void (*)(int)));
 static void	 sig_end __P((GS *));
 static void	 term_init __P((char *));
@@ -86,9 +87,18 @@ main(argc, argv)
 	 */
 	term_init((ttype = getenv("TERM")) == NULL ? "unknown" : ttype);
 
+	/* Add the terminal type to the global structure. */
+	if ((OG_D_STR(gp, GO_TERM) =
+	    OG_STR(gp, GO_TERM) = strdup(ttype)) == NULL)
+		nomem(gp->progname);
+
 	/* Figure out how big the screen is. */
 	if (cl_ssize(NULL, 0, &rows, &cols, NULL))
 		exit (1);
+
+	/* Add the rows and columns to the global structure. */
+	OG_VAL(gp, GO_LINES) = OG_D_VAL(gp, GO_LINES) = rows;
+	OG_VAL(gp, GO_COLUMNS) = OG_D_VAL(gp, GO_COLUMNS) = cols;
 
 	/* Ex wants stdout to be buffered. */
 	(void)setvbuf(stdout, NULL, _IOFBF, 0);
@@ -98,7 +108,7 @@ main(argc, argv)
 		exit (1);
 
 	/* Run ex/vi. */
-	rval = editor(gp, argc, argv, ttype, rows, cols);
+	rval = editor(gp, argc, argv);
 
 	/* Clean up signals. */
 	sig_end(gp);
@@ -145,10 +155,8 @@ gs_init(name)
 	/* Allocate the CL private structure. */
 	if (gp != NULL)
 		CALLOC_NOMSG(NULL, clp, CL_PRIVATE *, 1, sizeof(CL_PRIVATE));
-	if (gp == NULL || clp == NULL) {
-		(void)fprintf(stderr, "%s: %s\n", name, strerror(errno));
-		exit(1);
-	}
+	if (gp == NULL || clp == NULL)
+		nomem(name);
 	gp->cl_private = clp;
 
 	/* Initialize the list of curses functions. */
@@ -342,4 +350,16 @@ sig_end(gp)
 	(void)sigaction(SIGINT, NULL, &clp->oact[INDX_INT]);
 	(void)sigaction(SIGTERM, NULL, &clp->oact[INDX_TERM]);
 	(void)sigaction(SIGWINCH, NULL, &clp->oact[INDX_WINCH]);
+}
+
+/*
+ * nomem --
+ *	No memory error.
+ */
+static void
+nomem(name)
+	char *name;
+{
+	(void)fprintf(stderr, "%s: %s\n", name, strerror(errno));
+	exit(1);
 }
