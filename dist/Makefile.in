@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.15 1996/02/26 14:54:05 bostic Exp $ (Berkeley) $Date: 1996/02/26 14:54:05 $
+#	$Id: Makefile.in,v 8.16 1996/02/26 15:20:00 bostic Exp $ (Berkeley) $Date: 1996/02/26 15:20:00 $
 
 #GCCF=	-Wall
 #DEBUG=	-g -DDEBUG
@@ -45,13 +45,13 @@ VIOBJS=	cut.o delete.o ex.o ex_abbrev.o ex_append.o ex_args.o ex_argv.o \
 
 all: $(HDRS) nvi @tknvi@
 
-NVIALL=	$(CLOBJS) $(VIOBJS) @cobjs@ @dbobjs@ @reobjs@ @LIBOBJS@
+NVIALL=	$(CLOBJS) $(VIOBJS) @LIBOBJS@
 nvi: $(NVIALL)
 	$(CC) $(LDFLAGS) -o $@ $(NVIALL) @LIBS@
 
-TKALL=	$(TKOBJS) $(VIOBJS) @dbobjs@ @reobjs@ @LIBOBJS@
+TKALL=	$(TKOBJS) $(VIOBJS) @LIBOBJS@
 tknvi: $(TKALL)
-	$(CC) $(LDFLAGS) -o $@ $(TKALL) @LIBS@
+	$(CC) $(LDFLAGS) -o $@ $(TKALL) @TKLIBS@
 
 clean:
 	rm -f nex nvi tknvi @LIBOBJS@ \
