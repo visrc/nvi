@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 8.23 1994/07/23 18:49:04 bostic Exp $ (Berkeley) $Date: 1994/07/23 18:49:04 $";
+static char sccsid[] = "$Id: ex_shell.c,v 8.24 1994/08/05 07:55:07 bostic Exp $ (Berkeley) $Date: 1994/08/05 07:55:07 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -66,6 +66,12 @@ ex_exec_proc(sp, cmd, p1, p2)
 
 	/* Save ex/vi terminal settings, and restore the original ones. */
 	teardown = !ex_sleave(sp);
+
+	/*
+	 * Flush waiting messages (autowrite, for example) so the output
+	 * matches historic practice.
+	 */
+	(void)sex_refresh(sp, sp->ep);
 
 	/* Put out various messages. */
 	if (p1 != NULL)
