@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 10.4 1995/06/09 13:41:24 bostic Exp $ (Berkeley) $Date: 1995/06/09 13:41:24 $";
+static char sccsid[] = "$Id: ex.c,v 10.5 1995/07/02 11:59:48 bostic Exp $ (Berkeley) $Date: 1995/07/02 11:59:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -70,7 +70,8 @@ ex(sp, evp)
 		break;
 	case E_EOF:
 	case E_ERR:
-		return (0);
+		F_SET(sp, S_EXIT_FORCE);
+		goto done;
 	case E_INTERRUPT:
 		/* Interrupts get passed on to other handlers. */
 		if (gp->cm_state == ES_RUNNING)
@@ -160,7 +161,7 @@ next_state:
 		(void)msg_rpt(sp);
 
 		/* If we're exiting the screen, clean up. */
-		switch (F_ISSET(sp, S_VI | S_EXIT | S_EXIT_FORCE | S_SSWITCH)) {
+done:		switch (F_ISSET(sp, S_VI | S_EXIT | S_EXIT_FORCE | S_SSWITCH)) {
 		case S_VI:
 			gp->cm_state = ES_PARSE;
 			return (0);
@@ -362,10 +363,12 @@ loop:	switch (gp->cm_state) {
 	 * do it now.
 	 */
 	if (F_ISSET(ecp, E_MOVETOEND)) {
-		 if (file_lline(sp, &sp->lno))
+		if (file_lline(sp, &sp->lno))
 			return (1);
-		 sp->cno = 0;
-		 F_CLR(ecp, E_MOVETOEND);
+		if (sp->lno == 0)
+			sp->lno = 1;
+		sp->cno = 0;
+		F_CLR(ecp, E_MOVETOEND);
 	}
 
 	/* If we found a newline, increment the count now. */
@@ -1471,7 +1474,7 @@ addr_verify:
 			if (ecp->sep == SEP_NEED_NR &&
 			    (F_ISSET(ecp, E_USELASTCMD) ||
 			    ecp->cmd == &cmds[C_SCROLL]))
-				gp->scr_exadjust(sp, EX_TERM_SCROLL);
+				gp->scr_ex_adjust(sp, EX_TERM_SCROLL);
 		ecp->sep = SEP_NONE;
 	}
 
@@ -1562,7 +1565,7 @@ func_restart:
 		if (LF_ISSET(E_C_HASH | E_C_LIST | E_C_PRINT)) {
 			cur.lno = sp->lno;
 			cur.cno = 0;
-			(void)ex_print(sp, &cur, &cur, flags);
+			(void)ex_print(sp, ecp, &cur, &cur, flags);
 		}
 	}
 
@@ -2310,7 +2313,7 @@ ex_badaddr(sp, cp, ba, nret)
 	 * underlying file, that's the real problem.
 	 */
 	if (sp->ep == NULL) {
-		ex_message(sp, cp->name, EXM_NORC);
+		ex_message(sp, cp->name, EXM_NOFILEYET);
 		return;
 	}
 
