@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.62 1993/02/16 20:09:57 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:09:57 $";
+static char sccsid[] = "$Id: ex.c,v 5.63 1993/02/18 12:45:38 bostic Exp $ (Berkeley) $Date: 1993/02/18 12:45:38 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -636,6 +636,14 @@ addr2:	switch(cmd.addrcnt) {
 	/* If no file state, the rest of this isn't all that useful. */
 	if (ep == NULL)
 		return (0);
+
+	/*
+	 * The print commands have already handled the `print' flags.
+	 * If so, clear them.  Don't return, autoprint may still have
+	 * stuff to print out.
+	 */
+	 if (flags & E_F_PRCLEAR)
+		 cmd.flags &= ~(E_F_HASH | E_F_LIST | E_F_PRINT);
 
 	/*
 	 * If the command was successful, and there was an explicit flag to

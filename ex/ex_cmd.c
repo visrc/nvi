@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 5.22 1993/02/16 20:10:34 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:34 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 5.23 1993/02/18 12:45:41 bostic Exp $ (Berkeley) $Date: 1993/02/18 12:45:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -48,7 +48,7 @@ EXCMDLIST cmds[] = {
 	"!",		ex_bang,	E_ADDR2_NONE,
 	    "s",	"[line [,line]] ! command",
 /* C_HASH */
-	"#",		ex_number,	E_ADDR2|E_SETLAST,
+	"#",		ex_number,	E_ADDR2|E_F_PRCLEAR|E_SETLAST,
 	    "c1",	"[line [,line]] # [count] [l]",
 /* C_SUBAGAIN */
 	"&",		ex_subagain,	E_ADDR2,
@@ -129,7 +129,7 @@ EXCMDLIST cmds[] = {
 	"k",		ex_mark,	E_ADDR1,
 	    "w1r",	"[line] k key",
 /* C_LIST */
-	"list",		ex_list,	E_ADDR2|E_SETLAST,
+	"list",		ex_list,	E_ADDR2|E_F_PRCLEAR|E_SETLAST,
 	    "c1",	"[line [,line]] l[ist] [count] [#]",
 /* C_MOVE */
 	"move",		ex_move,	E_ADDR2,
@@ -150,10 +150,10 @@ EXCMDLIST cmds[] = {
 	"next",		ex_next,	E_NOGLOBAL,
 	    "fN",	"n[ext][!] [file ...]",
 /* C_NUMBER */
-	"number",	ex_number,	E_ADDR2|E_SETLAST,
+	"number",	ex_number,	E_ADDR2|E_F_PRCLEAR|E_SETLAST,
 	    "c1",	"[line [,line]] nu[mber] [count] [l]",
 /* C_PRINT */
-	"print",	ex_pr,		E_ADDR2|E_SETLAST,
+	"print",	ex_pr,		E_ADDR2|E_F_PRCLEAR|E_SETLAST,
 	    "c1",	"[line [,line]] p[rint] [count] [#l]",
 /* C_PREVIOUS */
 	"previous",	ex_prev,	E_NOGLOBAL,

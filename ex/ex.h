@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 5.29 1993/02/16 20:10:35 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:10:35 $
+ *	$Id: ex.h,v 5.30 1993/02/18 12:45:42 bostic Exp $ (Berkeley) $Date: 1993/02/18 12:45:42 $
  */
 
 struct excmdarg;
@@ -29,12 +29,13 @@ typedef struct {
 #define	E_F_PLUS	0x00400		/*  + flag. */
 #define	E_F_PRINT	0x00800		/*  p flag. */
 #define	E_F_MASK	0x00fe0		/* Flag mask. */
+#define	E_F_PRCLEAR	0x01000		/* Clear the print (#, l, p) flags. */
 
-#define	E_NOGLOBAL	0x01000		/* Not in a global. */
-#define	E_NOPERM	0x02000		/* Permission denied for now. */
-#define	E_SETLAST	0x04000		/* Reset last command. */
-#define	E_ZERO		0x08000		/* 0 is a legal addr1. */
-#define	E_ZERODEF	0x10000		/* 0 is default addr1 of empty files. */
+#define	E_NOGLOBAL	0x02000		/* Not in a global. */
+#define	E_NOPERM	0x04000		/* Permission denied for now. */
+#define	E_SETLAST	0x08000		/* Reset last command. */
+#define	E_ZERO		0x10000		/* 0 is a legal addr1. */
+#define	E_ZERODEF	0x20000		/* 0 is default addr1 of empty files. */
 	u_int flags;
 	char *syntax;			/* Syntax script. */
 	char *usage;			/* Usage line. */
