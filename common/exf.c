@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.87 1994/07/19 12:26:41 bostic Exp $ (Berkeley) $Date: 1994/07/19 12:26:41 $";
+static char sccsid[] = "$Id: exf.c,v 8.88 1994/07/19 13:18:24 bostic Exp $ (Berkeley) $Date: 1994/07/19 13:18:24 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -210,13 +210,44 @@ file_init(sp, frp, rcv_name, force)
 	}
 
 	/*
-	 * XXX
-	 * 4.4BSD supports locking in the open call, other systems don't.
-	 * (but should).  While the user can't interrupt us between the
-	 * open and here, there's a race between the dbopen() and the lock.
-	 * Not much we can do about it.
+	 * Do the remaining things that can cause failure of the new file,
+	 * mark and logging initialization.
+	 */
+	if (mark_init(sp, ep) || log_init(sp, ep))
+		goto err;
+
+	/*
+	 * Close the previous file; if that fails, close the new one and
+	 * run for the border.
 	 *
-	 * If it's a recovery file, it should already be locked.
+	 * !!!
+	 * There's a nasty special case.  If the user edits a temporary file,
+	 * and then does an ":e! %", we need to re-initialize the backing
+	 * file, but we can't change the name.  (It's worse -- we're dealing
+	 * with *names* here, we can't even detect that it happened.)  Set a
+	 * flag so that the file_end routine ignores the backing information
+	 * of the old file if it happens to be the same as the new one.
+	 *
+	 * !!!
+	 * Side-effect: after the call to file_end(), sp->frp may be NULL.
+	 */
+	F_SET(frp, FR_DONTDELETE);
+	if (sp->ep != NULL && file_end(sp, sp->ep, force)) {
+		(void)file_end(sp, ep, 1);
+		goto err;
+	}
+	F_CLR(frp, FR_DONTDELETE);
+
+	/*
+	 * Lock the file; if it's a recovery file, it should already be
+	 * locked.  Note, we acquire the lock after the previous file
+	 * has been ended, so that we don't get an "already locked" error
+	 * for ":edit!".
+	 *
+	 * XXX
+	 * While the user can't interrupt us between the open and here,
+	 * there's a race between the dbopen() and the lock.  Not much
+	 * we can do about it.
 	 *
 	 * XXX
 	 * We don't make a big deal of not being able to lock the file.  As
@@ -240,14 +271,6 @@ file_init(sp, frp, rcv_name, force)
 		case LOCK_SUCCESS:
 			break;
 		}
-
-	/* Init file marks. */
-	if (mark_init(sp, ep))
-		goto err;
-
-	/* Start logging. */
-	if (log_init(sp, ep))
-		goto err;
 
 	/*
 	 * The -R flag, or doing a "set readonly" during a session causes
@@ -294,28 +317,6 @@ file_init(sp, frp, rcv_name, force)
 		F_SET(frp, FR_RDONLY);
 	else
 		F_CLR(frp, FR_RDONLY);
-
-	/*
-	 * Close the previous file; if that fails, close the new one and
-	 * run for the border.
-	 *
-	 * !!!
-	 * There's a nasty special case.  If the user edits a temporary file,
-	 * and then does an ":e! %", we need to re-initialize the backing
-	 * file, but we can't change the name.  (It's worse -- we're dealing
-	 * with *names* here, we can't even detect that it happened.)  Set a
-	 * flag so that the file_end routine ignores the backing information
-	 * of the old file if it happens to be the same as the new one.
-	 *
-	 * !!!
-	 * Side-effect: after the call to file_end(), sp->frp may be NULL.
-	 */
-	F_SET(frp, FR_DONTDELETE);
-	if (sp->ep != NULL && file_end(sp, sp->ep, force)) {
-		(void)file_end(sp, ep, 1);
-		goto err;
-	}
-	F_CLR(frp, FR_DONTDELETE);
 
 	/*
 	 * Set the alternate file name to be the file we've just discarded.
