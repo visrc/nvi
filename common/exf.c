@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.22 1992/10/26 17:43:19 bostic Exp $ (Berkeley) $Date: 1992/10/26 17:43:19 $";
+static char sccsid[] = "$Id: exf.c,v 5.23 1992/10/28 18:04:28 bostic Exp $ (Berkeley) $Date: 1992/10/28 18:04:28 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -36,7 +36,7 @@ static EXF defexf = {
 	0, 0,					/* cwidth, rcmflags */
 	NULL,					/* db */
 	NULL, 0, OOBLNO, OOBLNO,		/* c_lp, c_len, c_lno, nlines */
-	NULL,					/* sdb */
+	stdout, NULL,				/* stdfp, sdb */
 	NULL, 0, 0,				/* name, nlen, flags */
 };
 
