@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 8.10 1993/09/10 11:01:09 bostic Exp $ (Berkeley) $Date: 1993/09/10 11:01:09 $";
+static char sccsid[] = "$Id: ex_global.c,v 8.11 1993/09/13 13:56:02 bostic Exp $ (Berkeley) $Date: 1993/09/13 13:56:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -58,10 +58,11 @@ global(sp, ep, cmdp, cmd)
 	EXCMDARG *cmdp;
 	enum which cmd;
 {
-	struct termios term;
+	struct termios nterm, term;
 	recno_t elno, last1, last2, lno;
 	regmatch_t match[1];
 	regex_t *re, lre;
+	sig_ret_t saveintr;
 	size_t len;
 	int delim, eval, reflags, rval;
 	char *ptrn, *p, *t, cbuf[1024];
@@ -135,9 +136,28 @@ global(sp, ep, cmdp, cmd)
 
 	F_SET(sp, S_GLOBAL);
 
-	/* Turn on interrupts and install an interrupt catcher. */
-	if (turn_interrupts_on(sp, &term, global_intr))
-		return (1);
+	/*
+	 * Command interrupts.
+	 *
+	 * ISIG turns on VINTR, VQUIT and VSUSP.  We want VINTR to interrupt
+	 * the command, so we install a handler.  VQUIT is ignored by main()
+	 * because nvi never wants to catch it.  A handler for VSUSP should
+	 * have been installed by the screen code.
+	 */
+	if ((saveintr = signal(SIGINT, global_intr)) != (sig_ret_t)-1) {
+		F_CLR(sp, S_INTERRUPTED);
+		F_SET(sp, S_INTERRUPTIBLE);
+		if (tcgetattr(STDIN_FILENO, &term)) {
+			msgq(sp, M_ERR, "tcgetattr: %s", strerror(errno));
+			return (1);
+		}
+		nterm = term;
+		nterm.c_lflag |= ISIG;
+		if (tcsetattr(STDIN_FILENO, TCSANOW | TCSASOFT, &nterm)) {
+			msgq(sp, M_ERR, "tcsetattr: %s", strerror(errno));
+			return (1);
+		}
+	}
 
 	/* For each line... */
 	for (rval = 0, lno = cmdp->addr1.lno,
@@ -203,7 +223,12 @@ err:			rval = 1;
 	}
 	F_CLR(sp, S_GLOBAL);
 
-	(void)turn_interrupts_off(sp, &term);
+	if (saveintr != (sig_ret_t)-1) {
+		if (signal(SIGINT, saveintr) == (sig_ret_t)-1)
+			msgq(sp, M_ERR, "signal: %s", strerror(errno));
+		if (tcsetattr(STDIN_FILENO, TCSANOW | TCSASOFT, &term))
+			msgq(sp, M_ERR, "tcsetattr: %s", strerror(errno));
+	}
 	return (rval);
 }
 

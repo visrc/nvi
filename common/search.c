@@ -6,14 +6,16 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.10 1993/09/10 14:45:39 bostic Exp $ (Berkeley) $Date: 1993/09/10 14:45:39 $";
+static char sccsid[] = "$Id: search.c,v 8.11 1993/09/13 13:55:14 bostic Exp $ (Berkeley) $Date: 1993/09/13 13:55:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
 #include <errno.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "vi.h"
 
@@ -142,6 +144,47 @@ noprev:			msgq(sp, M_INFO, "No previous search pattern.");
 	return (eval);
 }
 
+/*
+ * Search interrupts.
+ *
+ * ISIG turns on VINTR, VQUIT and VSUSP.  We want VINTR to interrupt the
+ * search, so we install a handler.  VQUIT is ignored by main() because
+ * nvi never wants to catch it.  A handler for VSUSP should have been
+ * installed by the screen code.
+ */
+#define	SET_UP_INTERRUPTS {						\
+	if ((saveintr =							\
+	    signal(SIGINT, search_intr)) != (sig_ret_t)-1) {		\
+		F_CLR(sp, S_INTERRUPTED);				\
+		F_SET(sp, S_INTERRUPTIBLE);				\
+		if (tcgetattr(STDIN_FILENO, &term)) {			\
+			msgq(sp, M_ERR,					\
+			    "tcgetattr: %s", strerror(errno));		\
+			return (1);					\
+		}							\
+		nterm = term;						\
+		nterm.c_lflag |= ISIG;					\
+		if (tcsetattr(STDIN_FILENO,				\
+		    TCSANOW | TCSASOFT, &nterm)) {			\
+			msgq(sp, M_ERR,					\
+			    "tcsetattr: %s", strerror(errno));		\
+			return (1);					\
+		}							\
+	}								\
+}
+
+#define	TEAR_DOWN_INTERRUPTS {						\
+	if (saveintr != (sig_ret_t)-1) {				\
+		if (signal(SIGINT, saveintr) == (sig_ret_t)-1)		\
+			msgq(sp, M_ERR,					\
+			    "signal: %s", strerror(errno));		\
+		if (tcsetattr(STDIN_FILENO, TCSANOW | TCSASOFT, &term))	\
+			msgq(sp, M_ERR,					\
+			    "tcsetattr: %s", strerror(errno));		\
+	}								\
+}
+
+
 #define	EMPTYMSG	"File empty; nothing to search."
 #define	EOFMSG		"Reached end-of-file without finding the pattern."
 #define	NOTFOUND	"Pattern not found."
@@ -156,10 +199,11 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 	char *ptrn, **eptrn;
 	u_int *flagp;
 {
-	struct termios term;
+	struct termios nterm, term;
 	regmatch_t match[1];
 	regex_t *re, lre;
 	recno_t lno;
+	sig_ret_t saveintr;
 	size_t coff, len;
 	long delta;
 	u_int flags;
@@ -212,7 +256,7 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 	}
 
 	/*
-	 * Turn on busy message, interrupts.
+	 * Set up busy message, interrupts.
 	 *
 	 * F_search is called from the ex_tagfirst() routine, which runs
 	 * before the screen really exists.  Make sure we don't step on
@@ -220,7 +264,8 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 	 */
 	if (sp->s_position != NULL)
 		busy_on(sp, 1, "Searching...");
-	turn_interrupts_on(sp, &term, search_intr);
+
+	SET_UP_INTERRUPTS;
 
 	for (rval = 1, wrapped = 0;; ++lno, coff = 0) {
 		if (F_ISSET(sp, S_INTERRUPTED)) {
@@ -303,7 +348,8 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 	/* Turn off busy message, interrupts. */
 	if (sp->s_position != NULL)
 		busy_off(sp);
-	(void)turn_interrupts_off(sp, &term);
+
+	TEAR_DOWN_INTERRUPTS;
 
 	return (rval);
 }
@@ -316,10 +362,11 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 	char *ptrn, **eptrn;
 	u_int *flagp;
 {
-	struct termios term;
+	struct termios nterm, term;
 	regmatch_t match[1];
 	regex_t *re, lre;
 	recno_t lno;
+	sig_ret_t saveintr;
 	size_t coff, len, last;
 	long delta;
 	u_int flags;
@@ -354,7 +401,8 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 
 	/* Turn on busy message, interrupts. */
 	busy_on(sp, 1, "Searching...");
-	turn_interrupts_on(sp, &term, search_intr);
+
+	SET_UP_INTERRUPTS;
 
 	for (rval = 1, wrapped = 0, coff = fm->cno;; --lno, coff = 0) {
 		if (F_ISSET(sp, S_INTERRUPTED)) {
@@ -454,7 +502,8 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 
 	/* Turn off busy message, interrupts. */
 err:	busy_off(sp);
-	(void)turn_interrupts_off(sp, &term);
+
+	TEAR_DOWN_INTERRUPTS;
 
 	return (rval);
 }
