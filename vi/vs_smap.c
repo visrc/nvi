@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 9.9 1995/01/30 11:12:21 bostic Exp $ (Berkeley) $Date: 1995/01/30 11:12:21 $";
+static char sccsid[] = "$Id: vs_smap.c,v 9.10 1995/01/30 12:05:52 bostic Exp $ (Berkeley) $Date: 1995/01/30 12:05:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,11 +34,11 @@ static char sccsid[] = "$Id: vs_smap.c,v 9.9 1995/01/30 11:12:21 bostic Exp $ (B
 static int	svi_deleteln __P((SCR *, int));
 static int	svi_insertln __P((SCR *, int));
 static int	svi_sm_delete __P((SCR *, recno_t));
-static int	svi_sm_down __P((SCR *, MARK *, recno_t, enum sctype, SMAP *));
+static int	svi_sm_down __P((SCR *, MARK *, recno_t, scroll_t, SMAP *));
 static int	svi_sm_erase __P((SCR *));
 static int	svi_sm_insert __P((SCR *, recno_t));
 static int	svi_sm_reset __P((SCR *, recno_t));
-static int	svi_sm_up __P((SCR *, MARK *, recno_t, enum sctype, SMAP *));
+static int	svi_sm_up __P((SCR *, MARK *, recno_t, scroll_t, SMAP *));
 
 /*
  * svi_change --
@@ -48,7 +48,7 @@ int
 svi_change(sp, lno, op)
 	SCR *sp;
 	recno_t lno;
-	enum operation op;
+	lnop_t op;
 {
 	SMAP *p;
 	SVI_PRIVATE *svp;
@@ -146,7 +146,7 @@ int
 svi_sm_fill(sp, lno, pos)
 	SCR *sp;
 	recno_t lno;
-	enum position pos;
+	pos_t pos;
 {
 	SMAP *p, tmp;
 	size_t cnt;
@@ -474,7 +474,7 @@ svi_sm_scroll(sp, rp, count, scmd)
 	SCR *sp;
 	MARK *rp;
 	recno_t count;
-	enum sctype scmd;
+	scroll_t scmd;
 {
 	SMAP *smp;
 
@@ -534,7 +534,7 @@ static int
 svi_sm_up(sp, rp, count, scmd, smp)
 	SCR *sp;
 	MARK *rp;
-	enum sctype scmd;
+	scroll_t scmd;
 	recno_t count;
 	SMAP *smp;
 {
@@ -768,7 +768,7 @@ svi_sm_down(sp, rp, count, scmd, smp)
 	MARK *rp;
 	recno_t count;
 	SMAP *smp;
-	enum sctype scmd;
+	scroll_t scmd;
 {
 	SMAP *ssmp, s1, s2;
 	int cursor_set, ychanged, zset;
@@ -1083,7 +1083,7 @@ svi_sm_position(sp, rp, cnt, pos)
 	SCR *sp;
 	MARK *rp;
 	u_long cnt;
-	enum position pos;
+	pos_t pos;
 {
 	SMAP *smp;
 	recno_t last;
