@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_replace.c,v 10.13 1996/03/06 19:54:30 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:54:30 $";
+static const char sccsid[] = "$Id: v_replace.c,v 10.14 1996/03/14 09:34:54 bostic Exp $ (Berkeley) $Date: 1996/03/14 09:34:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -76,6 +76,24 @@ v_replace(sp, vp)
 	}
 
 	/*
+	 * Figure out how many characters to be replace.  For no particular
+	 * reason (other than that the semantics of replacing the newline
+	 * are confusing) only permit the replacement of the characters in
+	 * the current line.  I suppose we could append replacement characters
+	 * to the line, but I see no compelling reason to do so.  Check this
+	 * before we get the character to match historic practice, where Nr
+	 * failed immediately if there were less than N characters from the
+	 * cursor to the end of the line.
+	 */
+	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
+	vp->m_stop.lno = vp->m_start.lno;
+	vp->m_stop.cno = vp->m_start.cno + cnt - 1;
+	if (vp->m_stop.cno > len - 1) {
+		v_eol(sp, &vp->m_start);
+		return (1);
+	}
+
+	/*
 	 * If it's not a repeat, reset the current mode and get a replacement
 	 * character.
 	 */
@@ -121,29 +139,20 @@ next:		if (v_event_get(sp, &ev, 0, 0))
 		}
 	}
 
-	/*
-	 * Figure out how many characters to be replace.  For no particular
-	 * reason (other than that the semantics of replacing the newline
-	 * are confusing) only permit the replacement of the characters in
-	 * the current line.  I suppose we could append replacement characters
-	 * to the line, but I see no compelling reason to do so.
-	 */
-	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
-	vp->m_stop.lno = vp->m_start.lno;
-	vp->m_stop.cno = vp->m_start.cno + cnt - 1;
-	if (vp->m_stop.cno > len - 1) {
-		v_eol(sp, &vp->m_start);
-		return (1);
-	}
-
 	/* Copy the line. */
 	GET_SPACE_RET(sp, bp, blen, len);
 	memmove(bp, p, len);
 	p = bp;
 
+	/*
+	 * Versions of nvi before 1.57 created N new lines when they replaced
+	 * N characters with <carriage-return> or <newline> characters.  This
+	 * is different from the historic vi, which replaced N characters with
+	 * a single new line.  Users complained, so we match historic practice.
+	 */
 	if (!quote && vip->rvalue == K_CR || vip->rvalue == K_NL) {
 		/* Set return line. */
-		vp->m_stop.lno = vp->m_start.lno + cnt;
+		vp->m_stop.lno = vp->m_start.lno + 1;
 		vp->m_stop.cno = 0;
 
 		/* The first part of the current line. */
@@ -152,19 +161,20 @@ next:		if (v_event_get(sp, &ev, 0, 0))
 
 		/*
 		 * The rest of the current line.  And, of course, now it gets
-		 * tricky.  If the autoindent edit option is set, white space
-		 * after the replaced character is discarded, autoindent is
-		 * applied, and the cursor moves to the last indent character.
+		 * tricky.  If there are characters left in the line and if
+		 * the autoindent edit option is set, white space after the
+		 * replaced character is discarded, autoindent is applied, and
+		 * the cursor moves to the last indent character.
 		 */
 		p += vp->m_start.cno + cnt;
 		len -= vp->m_start.cno + cnt;
-		if (O_ISSET(sp, O_AUTOINDENT))
+		if (len != 0 && O_ISSET(sp, O_AUTOINDENT))
 			for (; len && isblank(*p); --len, ++p);
 
 		if ((tp = text_init(sp, p, len, len)) == NULL)
 			goto err_ret;
 
-		if (O_ISSET(sp, O_AUTOINDENT)) {
+		if (len != 0 && O_ISSET(sp, O_AUTOINDENT)) {
 			if (v_txt_auto(sp, vp->m_start.lno, NULL, 0, tp))
 				goto err_ret;
 			vp->m_stop.cno = tp->ai ? tp->ai - 1 : 0;
@@ -173,17 +183,11 @@ next:		if (v_event_get(sp, &ev, 0, 0))
 
 		vp->m_stop.cno = tp->ai ? tp->ai - 1 : 0;
 		if (db_append(sp, 1, vp->m_start.lno, tp->lb, tp->len))
-			goto err_ret;
-		text_free(tp);
-
-		rval = 0;
-
-		/* All of the middle lines. */
-		while (--cnt)
-			if (db_append(sp, 1, vp->m_start.lno, "", 0)) {
-err_ret:			rval = 1;
-				break;
-			}
+err_ret:		rval = 1;
+		else {
+			text_free(tp);
+			rval = 0;
+		}
 	} else {
 		memset(bp + vp->m_start.cno, vip->rlast, cnt);
 		rval = db_set(sp, vp->m_start.lno, bp, len);
