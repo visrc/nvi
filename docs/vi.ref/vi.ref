@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.63 1995/10/03 20:52:33 bostic Exp $ (Berkeley) $Date: 1995/10/03 20:52:33 $
+.\"     $Id: vi.ref,v 8.64 1995/10/17 12:09:41 bostic Exp $ (Berkeley) $Date: 1995/10/17 12:09:41 $
 .\"
 .\"
 .so ref.so
@@ -1324,6 +1324,14 @@ commands provide usage information for all of the
 and
 .CO vi
 commands by default, or, optionally, for a specific command or key.
+.IP "File Name Completion"
+It is possible to do file name completion and file name displays when
+entering commands on the
+.CO vi
+colon command line.
+See the
+.OP filec
+option for more information.
 .IP "Message Catalogs"
 It is possible to display informational and error messages in different
 languages by providing a catalog of messages.
