@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: msg.c,v 10.41 1996/07/14 12:12:44 bostic Exp $ (Berkeley) $Date: 1996/07/14 12:12:44 $";
+static const char sccsid[] = "$Id: msg.c,v 10.42 1996/08/11 18:04:01 bostic Exp $ (Berkeley) $Date: 1996/08/11 18:04:01 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -537,7 +537,9 @@ msgq_status(sp, lno, flags)
 	/* Copy in the argument count. */
 	if (F_ISSET(sp, SC_STATUS_CNT) && sp->argv != NULL) {
 		for (cnt = 0, ap = sp->argv; *ap != NULL; ++ap, ++cnt);
-		p += sprintf(p, msg_cat(sp, "317|%d files to edit", NULL), cnt);
+		(void)sprintf(p,
+		    msg_cat(sp, "317|%d files to edit", NULL), cnt);
+		p += strlen(p);
 		*p++ = ':';
 		*p++ = ' ';
 
