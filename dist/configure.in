@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.101 1996/05/12 16:45:47 bostic Exp $ (Berkeley) $Date: 1996/05/12 16:45:47 $
+dnl	$Id: configure.in,v 8.102 1996/05/13 11:08:32 bostic Exp $ (Berkeley) $Date: 1996/05/13 11:08:32 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(../common/main.c)
@@ -200,8 +200,7 @@ if test "$vi_cv_perlinterp" = "yes"; then
 	LIBOBJS="perl.o $LIBOBJS"
 	LIBS="$LIBS -lperl"
 	perllibs=`$vi_cv_path_perl -e \
-	'use Config;print "$Config{libs} " . \
-        "$Config{installarchlib}/auto/DynaLoader/DynaLoader$Config{lib_ext}"'`
+	    'use Config;print "$Config{libs} " . "$Config{installarchlib}/auto/DynaLoader/DynaLoader$Config{lib_ext}"'`
         LIBS="$LIBS $perllibs"
 	AC_DEFINE(HAVE_PERL_INTERP)
 fi
