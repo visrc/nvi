@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 8.8 1993/09/10 11:01:18 bostic Exp $ (Berkeley) $Date: 1993/09/10 11:01:18 $";
+static char sccsid[] = "$Id: ex_filter.c,v 8.9 1993/09/11 14:08:38 bostic Exp $ (Berkeley) $Date: 1993/09/11 14:08:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -134,7 +134,7 @@ err:		if (input[0] != -1)
 		execl(O_STR(sp, O_SHELL), name, "-c", cmd, NULL);
 		msgq(sp, M_ERR,
 		    "exec: %s: %s", O_STR(sp, O_SHELL), strerror(errno));
-		_exit (1);
+		_exit (127);
 		/* NOTREACHED */
 	default:			/* Parent-reader, parent-writer. */
 		/* Close the pipe ends neither parent will use. */
