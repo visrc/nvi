@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.9 1993/09/10 12:17:48 bostic Exp $ (Berkeley) $Date: 1993/09/10 12:17:48 $";
+static char sccsid[] = "$Id: search.c,v 8.10 1993/09/10 14:45:39 bostic Exp $ (Berkeley) $Date: 1993/09/10 14:45:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -157,14 +157,13 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 	u_int *flagp;
 {
 	struct termios term;
-	MARK m;
 	regmatch_t match[1];
 	regex_t *re, lre;
 	recno_t lno;
 	size_t coff, len;
 	long delta;
 	u_int flags;
-	int eval, wrapped;
+	int eval, rval, wrapped;
 	char *l;
 
 	if (file_lline(sp, ep, &lno))
@@ -213,20 +212,17 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 	}
 
 	/*
-	 * f_search is called from the ex_tagfirst() routine, which runs
+	 * Turn on busy message, interrupts.
+	 *
+	 * F_search is called from the ex_tagfirst() routine, which runs
 	 * before the screen really exists.  Make sure we don't step on
 	 * anything.
 	 */
-	if (sp->s_position != NULL) {
-		if (sp->s_position(sp, ep, &m, 0, P_BOTTOM))
-			return (1);
-		(void)sp->s_busy_cursor(sp, NULL);
-	} else
-		m.lno = OOBLNO;
-
-	wrapped = 0;
+	if (sp->s_position != NULL)
+		busy_on(sp, 1, "Searching...");
 	turn_interrupts_on(sp, &term, search_intr);
-	for (;; ++lno, coff = 0) {
+
+	for (rval = 1, wrapped = 0;; ++lno, coff = 0) {
 		if (F_ISSET(sp, S_INTERRUPTED)) {
 			msgq(sp, M_INFO, "Interrupted.");
 			break;
@@ -251,10 +247,6 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 		/* If already at EOL, just keep going. */
 		if (len && coff == len)
 			continue;
-
-		/* If it's going to be awhile, put up a message. */
-		if (lno == m.lno)
-			(void)sp->s_busy_cursor(sp, "Searching...");
 
 		/* Set the termination. */
 		match[0].rm_so = coff;
@@ -304,11 +296,16 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 			if (!LF_ISSET(SEARCH_EOL) && rm->cno >= len)
 				rm->cno = len ? len - 1 : 0;
 		}
-		(void)turn_interrupts_off(sp, &term);
-		return (0);
+		rval = 0;
+		break;
 	}
+
+	/* Turn off busy message, interrupts. */
+	if (sp->s_position != NULL)
+		busy_off(sp);
 	(void)turn_interrupts_off(sp, &term);
-	return (1);
+
+	return (rval);
 }
 
 int
@@ -320,14 +317,13 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 	u_int *flagp;
 {
 	struct termios term;
-	MARK m;
 	regmatch_t match[1];
 	regex_t *re, lre;
 	recno_t lno;
 	size_t coff, len, last;
 	long delta;
 	u_int flags;
-	int eval, wrapped;
+	int eval, rval, wrapped;
 	char *l;
 
 	if (file_lline(sp, ep, &lno))
@@ -356,13 +352,11 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 	} else
 		lno = fm->lno;
 
-	if (sp->s_position(sp, ep, &m, 0, P_TOP))
-		return (1);
-	(void)sp->s_busy_cursor(sp, NULL);
-
-	wrapped = 0;
+	/* Turn on busy message, interrupts. */
+	busy_on(sp, 1, "Searching...");
 	turn_interrupts_on(sp, &term, search_intr);
-	for (coff = fm->cno;; --lno, coff = 0) {
+
+	for (rval = 1, wrapped = 0, coff = fm->cno;; --lno, coff = 0) {
 		if (F_ISSET(sp, S_INTERRUPTED)) {
 			msgq(sp, M_INFO, "Interrupted.");
 			break;
@@ -392,10 +386,6 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 
 		if ((l = file_gline(sp, ep, lno, &len)) == NULL)
 			goto err;
-
-		/* If it's going to be awhile, put up a message. */
-		if (lno == m.lno)
-			(void)sp->s_busy_cursor(sp, "Searching...");
 
 		/* Set the termination. */
 		match[0].rm_so = 0;
@@ -458,11 +448,15 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flagp)
 			else
 				rm->cno = last;
 		}
-		(void)turn_interrupts_off(sp, &term);
-		return (0);
+		rval = 0;
+		break;
 	}
-err:	(void)turn_interrupts_off(sp, &term);
-	return (1);
+
+	/* Turn off busy message, interrupts. */
+err:	busy_off(sp);
+	(void)turn_interrupts_off(sp, &term);
+
+	return (rval);
 }
 
 /*
