@@ -12,7 +12,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: api.c,v 8.39 2001/06/25 15:19:08 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:08 $";
+static const char sccsid[] = "$Id: api.c,v 8.40 2002/06/08 19:30:33 skimo Exp $ (Berkeley) $Date: 2002/06/08 19:30:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -482,6 +482,9 @@ api_opts_set(SCR *sp, CHAR_T *name,
 		GET_SPACE_RETW(sp, bp, blen, 1024);
 		a.len = SPRINTF(bp, 1024, L(""WS"=%s"), name, str_value);
 		break;
+	default:
+		bp = NULL;
+		break;
 	}
 
 	a.bp = bp;
@@ -573,10 +576,6 @@ alloc_err:
 int
 api_tagq_push(SCR *sp, TAGQ **tqpp)
 {
-	FREF *frp;
-	db_recno_t lno;
-	size_t cno;
-	int istmp;
 	TAGQ *tqp;
 
 	tqp = *tqpp;
