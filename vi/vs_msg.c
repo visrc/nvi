@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_msg.c,v 10.1 1995/07/04 12:47:12 bostic Exp $ (Berkeley) $Date: 1995/07/04 12:47:12 $";
+static char sccsid[] = "$Id: vs_msg.c,v 10.2 1995/07/05 22:30:57 bostic Exp $ (Berkeley) $Date: 1995/07/05 22:30:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -43,32 +43,21 @@ static void	cl_scroll __P((SCR *, CHAR_T *, u_int));
  * cl_msg --
  *	Display ex output or error messages for the screen.
  *
- * PUBLIC: int cl_msg __P((SCR *, mtype_t, const char *, ...));
+ * PUBLIC: int cl_msg __P((SCR *, mtype_t, const char *, size_t));
  */
 int
-#ifdef __STDC__
-cl_msg(SCR *sp, mtype_t mtype, const char *fmt, ...)
-#else
-cl_msg(sp, mtype, fmt, va_alist)
+cl_msg(sp, mtype, line, rlen)
 	SCR *sp;
 	mtype_t mtype;
-	const char *fmt;
-	va_dcl
-#endif
+	const char *line;
+	size_t rlen;
 {
-	va_list ap;
 	CL_PRIVATE *clp;
-	size_t cols, len, oldy, oldx, padding, rlen;
+	size_t cols, len, oldy, oldx, padding;
 	const char *e, *s, *t;
-	char line[512];
 
-#ifdef __STDC__
-	va_start(ap, fmt);
-#else
-	va_start(ap);
-#endif
 	/* If fmt is NULL, flush any buffered output. */
-	if (fmt == NULL) {
+	if (line == NULL) {
 		if (F_ISSET(sp, S_EX))
 			(void)fflush(stdout);
 		return (0);
@@ -82,18 +71,15 @@ cl_msg(sp, mtype, fmt, va_alist)
 	if (F_ISSET(clp, CL_INIT_EX) &&
 	    F_ISSET(sp, S_EX | S_EX_CANON | S_EX_SILENT)) {
 		F_SET(clp, CL_EX_WROTE);
-		return (vfprintf(stdout, fmt, ap));
+		return (printf("%.*s", len, line));
 	}
-
-	/* Get a formatted copy of the message. */
-	len = rlen = vsnprintf(line, sizeof(line), fmt, ap);
 
 	/*
 	 * If no screen yet, the user is doing output from a .exrc file or
 	 * something similar.  Save the output for later.
 	 */
 	if (!F_ISSET(clp, CL_INIT_EX | CL_INIT_VI)) {
-		cl_msgsave(sp, mtype, line, len);
+		cl_msgsave(sp, mtype, line, rlen);
 		return (rlen);
 	}
 
@@ -117,9 +103,8 @@ cl_msg(sp, mtype, fmt, va_alist)
 
 	/* If it an ex output message, just write it out. */
 	if (mtype == M_NONE) {
-		(void)cl_output(sp, mtype, line, len);
-		(void)cl_move(sp, oldy, oldx);
-		return (len);
+		(void)cl_output(sp, mtype, line, rlen);
+		goto ret;
 	}
 
 	/*
@@ -143,6 +128,7 @@ cl_msg(sp, mtype, fmt, va_alist)
 	 * same line, write a separator, and output it.  Otherwise, put out
 	 * a newline.
 	 */
+	len = rlen;
 	if (clp->lcontinue != 0)
 		if (len + clp->lcontinue + padding >= sp->cols)
 			(void)cl_output(sp, mtype, ".\n", 2);
@@ -199,18 +185,16 @@ cl_output(sp, mtype, line, llen)
 	CL_PRIVATE *clp;
 	CHAR_T ch;
 	size_t notused;
-	int len, ref, rlen, tlen;
+	int len, rlen, tlen;
 	const char *p, *t;
 
 	clp = CLP(sp);
-	for (ref = 0, p = line, rlen = llen; llen > 0;) {
+	for (p = line, rlen = llen; llen > 0;) {
 		/* Get the next physical line. */
 		if ((p = memchr(line, '\n', llen)) == NULL)
 			len = llen;
-		else {
-			ref = 1;
+		else
 			len = p - line;
-		}
 
 		/*
 		 * The max is sp->cols characters, and we may have already
