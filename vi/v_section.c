@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_section.c,v 10.5 1995/10/16 15:34:03 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:34:03 $";
+static char sccsid[] = "$Id: v_section.c,v 10.6 1995/11/23 17:42:58 bostic Exp $ (Berkeley) $Date: 1995/11/23 17:42:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -187,7 +187,7 @@ v_sectionb(sp, vp)
 		return (1);
 
 	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
-	for (lno = vp->m_start.lno; db_get(sp, --lno, 0, &p, &len);) {
+	for (lno = vp->m_start.lno; !db_get(sp, --lno, 0, &p, &len);) {
 		if (len == 0)
 			continue;
 		if (p[0] == '{') {
