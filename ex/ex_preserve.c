@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_preserve.c,v 8.6 1994/04/24 17:40:42 bostic Exp $ (Berkeley) $Date: 1994/04/24 17:40:42 $";
+static char sccsid[] = "$Id: ex_preserve.c,v 8.7 1994/05/17 12:31:30 bostic Exp $ (Berkeley) $Date: 1994/05/17 12:31:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -54,7 +54,7 @@ ex_preserve(sp, ep, cmdp)
 		return (1);
 
 	/* Sync to disk. */
-	if (rcv_sync(sp, ep))
+	if (rcv_sync(sp, ep, 1, 1, 0))
 		return (1);
 
 	/* Preserve the recovery files. */

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: recover.c,v 8.53 1994/05/07 11:33:44 bostic Exp $ (Berkeley) $Date: 1994/05/07 11:33:44 $";
+static char sccsid[] = "$Id: recover.c,v 8.54 1994/05/17 12:31:15 bostic Exp $ (Berkeley) $Date: 1994/05/17 12:31:15 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -284,53 +284,48 @@ rcv_mailfile(sp, ep)
 
 /*
  * rcv_sync --
- *	Sync the backing file.
+ *	Sync the file, optionally:
+ *		flagging the backup file to be preserved
+ *		sending email
+ *		ending the file session
  */
 int
-rcv_sync(sp, ep)
+rcv_sync(sp, ep, preserve, email, endsession)
 	SCR *sp;
 	EXF *ep;
+	int preserve, email, endsession;
 {
-	if (ep->db->sync(ep->db, R_RECNOSYNC)) {
-		F_CLR(ep, F_RCV_ON);
-		msgq(sp, M_ERR, "Automatic file backup failed: %s: %s",
-		    ep->rcv_path, strerror(errno));
-		return (1);
-	}
-	return (0);
-}
-
-/*
- * rcv_syncit --
- *	Sync the file, optionally send mail.
- */
-void
-rcv_syncit(sp, email)
-	SCR *sp;
-	int email;
-{
-	EXF *ep;
+	int rval;
 	char comm[1024];
 
-	if ((ep = sp->ep) == NULL ||
-	    !F_ISSET(ep, F_MODIFIED) || !F_ISSET(ep, F_RCV_ON))
+	if (ep == NULL || !F_ISSET(ep, F_MODIFIED) || !F_ISSET(ep, F_RCV_ON))
 		return;
 
-	(void)ep->db->sync(ep->db, R_RECNOSYNC);
-	F_SET(ep, F_RCV_NORM);
+	if (ep->db->sync(ep->db, R_RECNOSYNC)) {
+		F_CLR(ep, F_RCV_ON);
+		msgq(sp, M_SYSERR, "File backup failed: %s", ep->rcv_path);
+		rval = 1;
+	} else
+		rval = 0;
+
+	if (preserve)
+		F_SET(ep, F_RCV_NORM);
 
 	/*
 	 * !!!
 	 * If you need to port this to a system that doesn't have sendmail,
-	 * the -t flag being used causes sendmail to read the message for
-	 * the recipients instead of us specifying them some other way.
+	 * the -t flag causes sendmail to read the message for the recipients
+	 * instead of vi specifying them some other way.
 	 */
 	if (email) {
 		(void)snprintf(comm, sizeof(comm),
 		    "%s -t < %s", _PATH_SENDMAIL, ep->rcv_mpath);
 		(void)system(comm);
 	}
-	(void)file_end(sp, ep, 1);
+
+	if (endsession && file_end(sp, ep, 1))
+		rval = 1;
+	return (rval);
 }
 
 /*
