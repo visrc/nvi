@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_map.c,v 8.2 1993/08/19 15:05:19 bostic Exp $ (Berkeley) $Date: 1993/08/19 15:05:19 $";
+static char sccsid[] = "$Id: ex_map.c,v 8.3 1993/08/20 13:43:36 bostic Exp $ (Berkeley) $Date: 1993/08/20 13:43:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,6 +21,16 @@ static char sccsid[] = "$Id: ex_map.c,v 8.2 1993/08/19 15:05:19 bostic Exp $ (Be
 /*
  * ex_map -- :map[!] [input] [replacement]
  *	Map a key/string or display mapped keys.
+ *
+ * Historical note:
+ *	Historic vi maps were fairly bizarre, and likely to differ in
+ *	very subtle and strange ways from this implementation.  Two
+ *	things worth noting are that vi would often hang or drop core
+ *	if the map was strange enough (ex: map X "xy$@x^V), or, simply
+ *	not work.  One trick worth remembering is that if you put a
+ *	mark at the start of the map, e.g. map X mx"xy ...), or if you
+ *	put the map in a .exrc file, things would often work much better.
+ *	No clue why.
  */
 int
 ex_map(sp, ep, cmdp)
