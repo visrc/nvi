@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.44 1994/06/25 12:39:33 bostic Exp $ (Berkeley) $Date: 1994/06/25 12:39:33 $
+.\"     $Id: vi.ref,v 8.45 1994/06/28 09:01:07 bostic Exp $ (Berkeley) $Date: 1994/06/28 09:01:07 $
 .\"
 .\"
 .so ref.so
@@ -307,6 +307,13 @@ should be sent to their owners, by email, using the
 option of
 .CO sendmail
 (or a similar mechanism in other mailers).
+If
+.CO vi
+is changed to use another mailer,
+it is important to remember that the owner of the file given to
+the mailer is the
+.CO vi
+user, therefore, nothing in the file should be trusted.
 .pp
 Finally, the owner execute bit is set on backup files when they are
 created, and unset when they are first modified, e.g. backup files
