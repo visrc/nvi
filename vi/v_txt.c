@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.35 1993/10/27 13:02:02 bostic Exp $ (Berkeley) $Date: 1993/10/27 13:02:02 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.36 1993/10/27 17:36:13 bostic Exp $ (Berkeley) $Date: 1993/10/27 17:36:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -178,8 +178,9 @@ newtp:		if ((tp = text_init(sp, p, len, len + 32)) == NULL)
 		sp->cno = tp->ai;
 	} else {
 		/*
-		 * The change command has a special "feature" -- leading space
-		 * characters are handled as autoindent characters.  Beauty!
+		 * The cc and S commands have a special feature -- leading
+		 * <blank> characters are handled as autoindent characters.
+		 * Beauty!
 		 */
 		if (LF_ISSET(TXT_AICHARS)) {
 			tp->offset = 0;
