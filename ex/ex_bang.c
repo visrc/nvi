@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 10.21 1995/11/08 08:53:08 bostic Exp $ (Berkeley) $Date: 1995/11/08 08:53:08 $";
+static char sccsid[] = "$Id: ex_bang.c,v 10.22 1995/11/08 20:01:50 bostic Exp $ (Berkeley) $Date: 1995/11/08 20:01:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -97,7 +97,7 @@ ex_bang(sp, cmdp)
 	 * file has been modified, autowrite is not set and the warn option is
 	 * set, tell the user about the file.
 	 */
-	in_vi = F_ISSET(sp, S_VI);
+	in_vi = F_ISSET(sp, S_VI) ? 1 : 0;
 	if (cmdp->addrcnt == 0) {
 		msg = NULL;
 		if (F_ISSET(sp->ep, F_MODIFIED))
