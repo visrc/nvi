@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_run.c,v 8.15 2000/06/28 20:20:38 skimo Exp $ (Berkeley) $Date: 2000/06/28 20:20:38 $";
+static const char sccsid[] = "$Id: ip_run.c,v 8.16 2000/07/01 09:27:56 skimo Exp $ (Berkeley) $Date: 2000/07/01 09:27:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -24,6 +24,8 @@ static const char sccsid[] = "$Id: ip_run.c,v 8.15 2000/06/28 20:20:38 skimo Exp
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
+#include <sys/socket.h>
 
 #include "../common/common.h"
 #include "ip.h"
@@ -113,7 +115,7 @@ vi_run(ipvi, argc, argv)
 	 * writes to wpipe[1].  The vi process reads from wpipe[0], and it
 	 * writes to rpipe[1].
 	 */
-	if (pipe(rpipe) == -1 || pipe(wpipe) == -1)
+	if (channel(rpipe, wpipe) == -1)
 		fatal();
 	ipvi->ifd = rpipe[0];
 	ipvi->ofd = wpipe[1];
@@ -169,6 +171,30 @@ fatal()
 {
 	(void)fprintf(stderr, "%s: %s\n", vi_progname, strerror(errno));
 	exit (1);
+}
+
+static 
+int channel(int rpipe[2], int wpipe[2])
+{
+	if (0) {
+
+	if (pipe(rpipe) == -1 || pipe(wpipe) == -1)
+		return -1;
+
+	} else {
+
+	int sockets[2];
+
+	if (socketpair(AF_LOCAL, SOCK_STREAM, 0, sockets) == -1)
+		return -1;
+
+	rpipe[0] = sockets[0];
+	wpipe[0] = sockets[1];
+	if (((rpipe[1] = dup(sockets[1])) == -1) ||
+	    ((wpipe[1] = dup(sockets[0])) == -1))
+		return -1;
+
+	}
 }
 
 /*
