@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.34 1992/12/20 15:09:59 bostic Exp $ (Berkeley) $Date: 1992/12/20 15:09:59 $";
+static char sccsid[] = "$Id: vi.c,v 5.35 1992/12/25 16:23:17 bostic Exp $ (Berkeley) $Date: 1992/12/25 16:23:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,7 +31,6 @@ static int getkeyword __P((VICMDARG *, u_int));
 static int getmotion __P((VICMDARG *, MARK *, MARK *));
 
 static VICMDARG cmd, dot, dotmotion;
-int needexerase;
 
 /*
  * vi --
@@ -78,8 +77,8 @@ vi()
 		 */
 err:		if (msgcnt) {
 			v_msgflush(curf);
-			needexerase = 1;
-		} else if (!needexerase)
+			FF_SET(curf, F_NEEDMERASE);
+		} else if (!FF_ISSET(curf, F_NEEDMERASE))
 			scr_modeline(curf, 0);
 		refresh();
 
@@ -166,16 +165,23 @@ err:		if (msgcnt) {
 		/*
 		 * Some vi row movements are "attracted" to the last set
 		 * position, i.e. the V_RCM commands are moths to the
-		 * V_RCM_SET commands' candle.  Does this totally violate
-		 * the screen and editor layering?  You betcha.  To make
-		 * it worse, note that the value of flags may have changed.
-		 * As they say, if you think you understand it, you don't.
+		 * V_RCM_SET commands' candle.  It's broken into two parts.
+		 * Here we deal with the command flags.  In scr_relative(),
+		 * we deal with the current file flags.
+		 *
+		 * Does this totally violate the screen and editor layering?
+		 * You betcha.  To make it worse, note that the value of flags
+		 * may have changed.  As they say, if you think you understand
+		 * it, you don't.
 		 */
 		flags = vp->kp->flags;
 		if (flags & V_RCM)
 			m.cno = scr_relative(curf, m.lno);
 		else if (flags & V_RCM_SETFNB) {
-			/* Hack -- do the movement here, too. */
+			/*
+			 * Hack -- instead of calling nonblank() in all of
+			 * the command routines, we do the movement here.
+			 */
 			if (nonblank(m.lno, &m.cno))
 				goto err;
 			curf->rcmflags = RCM_FNB;
@@ -199,9 +205,9 @@ err:		if (msgcnt) {
 
 #define	KEY(k, flags) {							\
 	(k) = getkey(flags);						\
-	if (needexerase) {						\
+	if (FF_ISSET(curf, F_NEEDMERASE)) {				\
 		scr_modeline(curf, 0);					\
-		needexerase = 0;					\
+		FF_CLR(curf, F_NEEDMERASE);				\
 		refresh();						\
 	}								\
 	if (special[(k)] == K_VLNEXT)					\
