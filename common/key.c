@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.54 1994/03/22 18:42:14 bostic Exp $ (Berkeley) $Date: 1994/03/22 18:42:14 $";
+static char sccsid[] = "$Id: key.c,v 8.55 1994/03/23 08:38:26 bostic Exp $ (Berkeley) $Date: 1994/03/23 08:38:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -524,13 +524,15 @@ remap:		qp = seq_find(sp, NULL, &tty->ch[tty->next], tty->cnt,
 		 * Only permit a character to be remapped a certain number
 		 * of times before we figure that it's not going to finish.
 		 */
-		if (O_ISSET(sp, O_REMAPMAX) &&
-		    (cmap = tty->cmap[tty->next]) > MAX_MAP_COUNT ||
-		    !O_ISSET(sp, O_REMAPMAX) && F_ISSET(sp, S_INTERRUPTED)) {
-			term_map_flush(sp, "Character remapped too many times");
+		if (O_ISSET(sp, O_REMAPMAX)) {
+			if ((cmap = tty->cmap[tty->next]) > MAX_MAP_COUNT)
+				goto flush;
+		} else if (F_ISSET(sp, S_INTERRUPTED)) {
+flush:			term_map_flush(sp, "Character remapped too many times");
 			rval = INP_ERR;
 			goto ret;
-		}
+		} else
+			cmap = 0;
 
 		/* Delete the mapped characters from the queue. */
 		QREM_HEAD(tty, qp->ilen);
