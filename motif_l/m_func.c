@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_func.c,v 8.19 1996/12/17 16:51:43 bostic Exp $ (Berkeley) $Date: 1996/12/17 16:51:43 $";
+static const char sccsid[] = "$Id: m_func.c,v 8.20 1996/12/17 20:15:44 bostic Exp $ (Berkeley) $Date: 1996/12/17 20:15:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -320,7 +320,7 @@ vi_scrollbar(ipbp)
 	 */
 	if ( top >= maximum ) {
 #if 0
-	    fprintf( stderr, "Correcting for top > maximum\n" );
+	    fprintf( stderr, "Correcting for top >= maximum\n" );
 #endif
 	    maximum	= top + 1;
 	    size	= 1;
@@ -359,6 +359,14 @@ vi_scrollbar(ipbp)
 }
 
 static int
+vi_select(ipbp)
+	IP_BUF *ipbp;
+{
+	/* XXX: Nothing. */
+	return (0);
+}
+
+static int
 vi_split(ipbp)
 	IP_BUF *ipbp;
 {
@@ -384,5 +392,6 @@ int (*__vi_iplist[SI_EVENT_MAX]) __P((IP_BUF *)) = {
 	vi_rename,
 	vi_rewrite,
 	vi_scrollbar,
+	vi_select,
 	vi_split
 };
