@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 8.40 1994/08/14 11:58:58 bostic Exp $ (Berkeley) $Date: 1994/08/14 11:58:58 $";
+static char sccsid[] = "$Id: v_itxt.c,v 8.41 1994/08/17 08:56:39 bostic Exp $ (Berkeley) $Date: 1994/08/17 08:56:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -588,10 +588,13 @@ v_change(sp, ep, vp)
 	LOG_CORRECT;
 
 	/*
-	 * Turn off the VM_RCM flags, inserting text has its own rules for
-	 * cursor positioning.
+	 * 'c' can be combined with motion commands that set the resulting
+	 * cursor position, i.e. "cG".  Clear the VM_RCM flags and make the
+	 * resulting cursor position stick, inserting text has its own rules
+	 * for cursor positioning.
 	 */
 	F_CLR(vp, VM_RCM_MASK);
+	F_SET(vp, VM_RCM_SET);
 
 	/*
 	 * If not in line mode and changing within a single line, the line
