@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 5.27 1993/01/17 16:54:59 bostic Exp $ (Berkeley) $Date: 1993/01/17 16:54:59 $";
+static char sccsid[] = "$Id: ex_args.c,v 5.28 1993/02/12 11:30:57 bostic Exp $ (Berkeley) $Date: 1993/02/12 11:30:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,16 +35,20 @@ ex_next(cmdp)
 
 	MODIFY_CHECK(curf, cmdp->flags & E_FORCE);
 
-	if (file_stop(curf, cmdp->flags & E_FORCE))
-		return (1);
 	if (cmdp->argc) {
+		if (file_stop(curf, cmdp->flags & E_FORCE))
+			return (1);
 		if (file_set(cmdp->argc, (char **)cmdp->argv))
 			PANIC;
 		if ((ep = file_first(1)) == NULL)
 			PANIC;
-	} else if ((ep = file_next(curf, 0)) == NULL) {
-		msg("No more files to edit.");
-		return (1);
+	} else {
+		if ((ep = file_next(curf, 0)) == NULL) {
+			msg("No more files to edit.");
+			return (1);
+		}
+		if (file_stop(curf, cmdp->flags & E_FORCE))
+			return (1);
 	}
 
 	if (file_start(ep))
