@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_msg.c,v 10.36 1995/11/10 19:04:26 bostic Exp $ (Berkeley) $Date: 1995/11/10 19:04:26 $";
+static char sccsid[] = "$Id: vs_msg.c,v 10.37 1995/11/11 10:03:31 bostic Exp $ (Berkeley) $Date: 1995/11/11 10:03:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -517,12 +517,19 @@ vs_ex_resolve(sp, continuep)
 	/*
 	 * Wait, unless explicitly told not to wait, the user interrupted
 	 * the command or is leaving (or trying to leave) the screen.
+	 *
+	 * If the user is continuing, and we're already into an ex screen,
+	 * output a <newline> so that we don't erase anything.  It has to
+	 * be done here, because we never get control back if the command
+	 * is all internal, e.g. :set.
 	 */
 	if (!F_ISSET(sp, S_EX_DONTWAIT) && !INTERRUPTED(sp) &&
 	    !F_ISSET(sp, S_EXIT | S_EXIT_FORCE | S_FSWITCH | S_SSWITCH)) {
-		if (F_ISSET(sp, S_SCR_EXWROTE))
+		if (F_ISSET(sp, S_SCR_EXWROTE)) {
 			vs_wait(sp, continuep, SCROLL_W_EX);
-		else
+			if (*continuep)
+				ex_puts(sp, "\n");
+		} else
 			vs_scroll(sp, continuep, SCROLL_W_EX);
 		if (*continuep)
 			return (0);
