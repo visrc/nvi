@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 10.2 1995/06/08 18:53:45 bostic Exp $ (Berkeley) $Date: 1995/06/08 18:53:45 $";
+static char sccsid[] = "$Id: ex_print.c,v 10.3 1995/06/23 19:25:11 bostic Exp $ (Berkeley) $Date: 1995/06/23 19:25:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -50,9 +50,8 @@ ex_list(sp, cmdp)
 	SCR *sp;
 	EXCMD *cmdp;
 {
-	NEEDFILE(sp, cmdp->cmd);
-
-	if (ex_print(sp, &cmdp->addr1, &cmdp->addr2, cmdp->iflags | E_C_LIST))
+	if (ex_print(sp, cmdp,
+	    &cmdp->addr1, &cmdp->addr2, cmdp->iflags | E_C_LIST))
 		return (1);
 	sp->lno = cmdp->addr2.lno;
 	sp->cno = cmdp->addr2.cno;
@@ -71,9 +70,8 @@ ex_number(sp, cmdp)
 	SCR *sp;
 	EXCMD *cmdp;
 {
-	NEEDFILE(sp, cmdp->cmd);
-
-	if (ex_print(sp, &cmdp->addr1, &cmdp->addr2, cmdp->iflags | E_C_HASH))
+	if (ex_print(sp, cmdp,
+	    &cmdp->addr1, &cmdp->addr2, cmdp->iflags | E_C_HASH))
 		return (1);
 	sp->lno = cmdp->addr2.lno;
 	sp->cno = cmdp->addr2.cno;
@@ -92,9 +90,7 @@ ex_pr(sp, cmdp)
 	SCR *sp;
 	EXCMD *cmdp;
 {
-	NEEDFILE(sp, cmdp->cmd);
-
-	if (ex_print(sp, &cmdp->addr1, &cmdp->addr2, cmdp->flags))
+	if (ex_print(sp, cmdp, &cmdp->addr1, &cmdp->addr2, cmdp->flags))
 		return (1);
 	sp->lno = cmdp->addr2.lno;
 	sp->cno = cmdp->addr2.cno;
@@ -105,11 +101,12 @@ ex_pr(sp, cmdp)
  * ex_print --
  *	Print the selected lines.
  *
- * PUBLIC: int ex_print __P((SCR *, MARK *, MARK *, u_int32_t));
+ * PUBLIC: int ex_print __P((SCR *, EXCMD *, MARK *, MARK *, u_int32_t));
  */
 int
-ex_print(sp, fp, tp, flags)
+ex_print(sp, cmdp, fp, tp, flags)
 	SCR *sp;
+	EXCMD *cmdp;
 	MARK *fp, *tp;
 	u_int32_t flags;
 {
@@ -117,6 +114,9 @@ ex_print(sp, fp, tp, flags)
 	recno_t from, to;
 	size_t col, len;
 	char buf[10];
+
+	NEEDFILE(sp, cmdp);
+	ENTERCANONICAL(sp, cmdp, 0);
 
 	for (from = fp->lno, to = tp->lno; from <= to; ++from) {
 		col = 0;
@@ -147,7 +147,7 @@ ex_print(sp, fp, tp, flags)
 		}
 
 		if (len == 0 && !LF_ISSET(E_C_LIST))
-			(void)ex_puts(sp, "\n");
+			(void)ex_printf(sp, "\n");
 		else if (ex_ldisplay(sp, p, len, col, flags))
 			return (1);
 
@@ -178,7 +178,7 @@ ex_ldisplay(sp, p, len, col, flags)
 			return (1);
 	}
 	if (!INTERRUPTED(sp))
-		(void)ex_puts(sp, "\n");
+		(void)ex_printf(sp, "\n");
 	return (0);
 }
 
@@ -253,13 +253,13 @@ ex_prchars(sp, p, colp, len, flags, repeatc)
 			kp = KEY_NAME(sp, ch);
 			tlen = KEY_LEN(sp, ch);
 			if (!repeatc  && col + tlen < sp->cols) {
-				(void)ex_puts(sp, kp);
+				(void)ex_printf(sp, "%s", kp);
 				col += tlen;
 			} else
 				for (; tlen--; ++kp, ++col) {
 					if (col == sp->cols) {
 						col = 0;
-						(void)ex_puts(sp, "\n");
+						(void)ex_printf(sp, "\n");
 					}
 					(void)ex_printf(sp,
 					    "%c", repeatc ? repeatc : *kp);
@@ -292,9 +292,9 @@ ex_msgwrite(sp, mtype, line, len)
 }
 
 /*
- * Buffers for the ex data.  The curses screen doesn't do any character
- * buffering of any kind.  We do it here so that we're not calling the
- * screen output routines on every character.
+ * Buffers for the ex data.  The vi screen doesn't do character buffering
+ * of any kind.  We do it here so that we're not calling the screen output
+ * routines on every character.
  *
  * XXX
  * Move into screen specific ex private area, change to grow dynamically.
@@ -328,15 +328,15 @@ ex_printf(sp, fmt, va_alist)
 	va_start(ap);
 #endif
 
-	/* If ex running, let stdio(3) do the work. */
+	/* If ex running, or in ex canonical mode, let stdio(3) do the work. */
 	if (F_ISSET(sp, S_EX | S_EX_CANON)) {
 		F_SET(sp, S_EX_WROTE);
-		return (vprintf(fmt, ap));
+		return (vfprintf(stdout, fmt, ap));
 	}
 
 	/*
 	 * XXX
-	 * We discard any characters past the first 1024.
+	 * Discard any characters past the first 1024.
 	 */
 	n = vsnprintf(b1, sizeof(b1), fmt, ap);
 	va_end(ap);
@@ -353,39 +353,6 @@ ex_printf(sp, fmt, va_alist)
 	}
 	memmove(buf + off, b1, n);
 	off += n;
-	return (n);
-}
-
-/*
- * ex_puts --
- *	Ex's version of puts.
- *
- * PUBLIC: int ex_puts __P((SCR *, const char *));
- */
-int
-ex_puts(sp, str)
-	SCR *sp;
-	const char *str;
-{
-	int n;
-
-	/* If ex running, let stdio(3) do the work. */
-	if (F_ISSET(sp, S_EX | S_EX_CANON)) {
-		F_SET(sp, S_EX_WROTE);
-		return (printf("%s", str));
-	}
-
-	for (n = 0; *str != '\0'; ++n) {
-		if (off > sizeof(buf)) {
-			(void)vs_msgwrite(sp, M_CAT, buf, off);
-			if (INTERRUPTED(sp)) {
-				off = 0;
-				break;
-			}
-			off = 0;
-		}
-		buf[off++] = *str++;
-	}
 	return (n);
 }
 
