@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 5.45 1993/05/13 08:57:30 bostic Exp $ (Berkeley) $Date: 1993/05/13 08:57:30 $
+ *	$Id: ex.h,v 5.46 1993/05/13 10:17:09 bostic Exp $ (Berkeley) $Date: 1993/05/13 10:17:09 $
  */
 
 struct _excmdarg;
@@ -83,7 +83,7 @@ extern char *defcmdarg[2];	/* Default array. */
 /* Ex function prototypes. */
 int	buildargv __P((SCR *, EXF *, char *, int, int *, char ***));
 int	esystem __P((SCR *, const u_char *, const u_char *));
-int	ex_run_process __P((SCR *, char *, char *, size_t));
+int	ex_run_process __P((SCR *, char *, size_t *, char *, size_t));
 
 int	ex __P((struct _scr *, struct _exf *));
 int	ex_cfile __P((SCR *, EXF *, char *, int));
