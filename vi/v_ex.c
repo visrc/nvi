@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 5.31 1993/02/12 14:24:29 bostic Exp $ (Berkeley) $Date: 1993/02/12 14:24:29 $";
+static char sccsid[] = "$Id: v_ex.c,v 5.32 1993/02/14 13:19:13 bostic Exp $ (Berkeley) $Date: 1993/02/14 13:19:13 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -52,7 +52,7 @@ v_ex(vp, fm, tm, rp)
 		 * the first.  We may have to overwrite the command later;
 		 * get the length for later.
 		 */
-		if (v_gb(ISSET(O_PROMPT) ? ':' : 0, &p, &len, flags) ||
+		if (v_gb(curf, ISSET(O_PROMPT) ? ':' : 0, &p, &len, flags) ||
 		    p == NULL)
 			break;
 
