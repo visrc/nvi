@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 5.14 1993/04/17 12:32:49 bostic Exp $ (Berkeley) $Date: 1993/04/17 12:32:49 $";
+static char sccsid[] = "$Id: vs_smap.c,v 5.15 1993/05/03 10:37:07 bostic Exp $ (Berkeley) $Date: 1993/05/03 10:37:07 $";
 #endif /* not lint */
 
 #include <curses.h>
@@ -358,6 +358,12 @@ svi_sm_up(sp, ep, rp, count, cursor_move)
 			p = TMAP;
 		}
 	} else {
+		/*
+		 * If the line itself moved, invalidate the cursor, because
+		 * the comparison with the old line/new line won't be right
+		 */
+		F_SET(sp, S_CUR_INVALID);
+
 		/* It's an error if we didn't scroll enough. */
 		if (!scrolled || count) {
 			v_eof(sp, ep, NULL);
@@ -494,6 +500,12 @@ svi_sm_down(sp, ep, rp, count, cursor_move)
 			p = HMAP;
 		}
 	} else {
+		/*
+		 * If the line itself moved, invalidate the cursor, because
+		 * the comparison with the old line/new line won't be right
+		 */
+		F_SET(sp, S_CUR_INVALID);
+
 		/* It's an error if we didn't scroll enough. */
 		if (!scrolled || count) {
 			v_sof(sp, NULL);
