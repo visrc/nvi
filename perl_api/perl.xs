@@ -14,7 +14,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: perl.xs,v 8.12 1996/04/12 10:37:54 bostic Exp $ (Berkeley) $Date: 1996/04/12 10:37:54 $";
+static const char sccsid[] = "@(#)perl.c	8.12 (Berkeley) 4/12/96";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -38,7 +38,6 @@ static const char sccsid[] = "$Id: perl.xs,v 8.12 1996/04/12 10:37:54 bostic Exp
 #include <perl.h>
 #include <XSUB.h>
 
-static void noscreen __P((int, char *));
 static void msghandler __P((SCR *, mtype_t, char *, size_t));
 
 extern GS *__global_list;			/* XXX */
@@ -47,7 +46,7 @@ static char *errmsg = 0;
 
 /*
  * INITMESSAGE --
- *	Macros to point messages at the Tcl message handler.
+ *	Macros to point messages at the Perl message handler.
  */
 #define	INITMESSAGE							\
 	scr_msg = __global_list->scr_msg;				\
@@ -55,618 +54,6 @@ static char *errmsg = 0;
 #define	ENDMESSAGE							\
 	__global_list->scr_msg = scr_msg;				\
 	if (rval) croak(errmsg);
-
-/*
- * GETSCREENID --
- *	Macro to get the specified screen pointer.
- *
- * XXX
- * This is fatal.  We can't post a message into vi that we're unable to find
- * the screen without first finding the screen... So, this must be the first
- * thing a Perl routine does, and, if it fails, the last as well.
- */
-#define	GETSCREENID(sp, id, name) {					\
-	int __id = id;							\
-	char *__name = name;						\
-	if (((sp) = api_fscreen(__id, __name)) == NULL) {		\
-		noscreen(__id, __name);					\
-		return;							\
-	}								\
-}
-
-/*
- * XS_VI_fscreen --
- *	Return the screen id associated with file name.
- *
- * Perl Command: VI::FindScreen
- * Usage: VI::FindScreen file
- */
-XS(XS_VI_fscreen)
-{
-	dXSARGS;
-	SCR *screen;
-
-	if (items != 1)
-		croak("Usage: VI::FindScreen file");
-	SP -= items;
-
-	GETSCREENID(screen, 0, (char *)SvPV(ST(0),na));
-
-	EXTEND(sp, 1);
-	PUSHs(sv_2mortal(newSViv(screen->id)));
-
-	PUTBACK;
-	return;
-}
-
-/*
- * XS_VI_aline --
- *	-- Append the string text after the line in lineNumber.
- *
- * Perl Command: VI::AppendLine
- * Usage: VI::AppendLine screenId lineNumber text
- */
-XS(XS_VI_aline)
-{
-	dXSARGS;
-	SCR *screen;
-	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
-	int rval;
-	char *line;
-	STRLEN length;
-
-	if (items != 3)
-		croak("Usage: VI::AppendLine screenId lineNumber text");
-	SP -= items;
-
-	GETSCREENID(screen, (int)SvIV(ST(0)), NULL);
-	line = (char *)SvPV(ST(2), length);
-	INITMESSAGE;
-	rval = api_aline(screen, (int)SvIV(ST(1)),
-	                     line, length);
-	ENDMESSAGE;
-
-	PUTBACK;
-	return;
-}
-
-/*
- * XS_VI_dline --
- *	Delete lineNum.
- *
- * Perl Command: VI::DelLine
- * Usage: VI::DelLine screenId lineNum
- */
-XS(XS_VI_dline)
-{
-	dXSARGS;
-
-	SCR *screen;
-	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
-	int rval;
-
-	if (items != 2)
-		croak("Usage: VI::DelLine screenId lineNumber");
-	SP -= items;
-
-	GETSCREENID(screen, (int)SvIV(ST(0)), NULL);
-	INITMESSAGE;
-	rval = api_dline(screen, (recno_t)(int)SvIV(ST(1)));
-	ENDMESSAGE;
-
-	PUTBACK;
-	return;
-}
-
-/*
- * XS_VI_gline --
- *	Return lineNumber.
- *
- * Perl Command: VI::GetLine
- * Usage: VI::GetLine screenId lineNumber
- */
-XS(XS_VI_gline)
-{
-	dXSARGS;
-
-	SCR *screen;
-	size_t len;
-	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
-	int rval;
-	char *line, *p;
-
-	if (items != 2)
-		croak("Usage: VI::GetLine screenId lineNumber");
-	SP -= items;
-	GETSCREENID(screen, (int)SvIV(ST(0)), NULL);
-	INITMESSAGE;
-	rval = api_gline(screen, (recno_t)(int)SvIV(ST(1)), &p, &len);
-	ENDMESSAGE;
-
-	EXTEND(sp,1);
-        PUSHs(sv_2mortal(newSVpv(p, len)));
-
-	PUTBACK;
-	return;
-}
-
-/*
- * XS_VI_iline --
- *	Insert the string text before the line in lineNumber.
- *
- * Perl Command: VI::InsertLine
- * Usage: VI::InsertLine screenId lineNumber text
- */
-XS(XS_VI_iline)
-{
-	dXSARGS;
-
-	SCR *screen;
-	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
-	int rval;
-	char *line;
-	STRLEN length;
-
-	if (items != 3)
-		croak("Usage: VI::InsertLine screenId lineNumber text");
-	SP -= items;
-
-	GETSCREENID(screen, (int)SvIV(ST(0)), NULL);
-	line = (char *)SvPV(ST(2), length);
-	INITMESSAGE;
-	rval = api_iline(screen, (int)SvIV(ST(1)),
-	                     line, length);
-	ENDMESSAGE;
-
-	PUTBACK;
-	return;
-}
-
-/*
- * XS_VI_lline --
- *	Return the last line in the screen.
- *
- * Perl Command: VI::LastLine
- * Usage: VI::LastLine screenId
- */
-XS(XS_VI_lline) 
-{
-	dXSARGS;
-	SCR *screen;
-	recno_t last;
-	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
-	int rval;
-
-	if (items != 1) 
-		croak("Usage: VI::LastLine(screenId)");
-	SP -= items;
-	GETSCREENID(screen, (int)SvIV(ST(0)), NULL);
-
-	INITMESSAGE;
-	rval = api_lline(screen, &last);
-	ENDMESSAGE;
-
-	EXTEND(sp,1);
-        PUSHs(sv_2mortal(newSViv(last)));
-
-	PUTBACK;
-	return;
-}
-
-/*
- * XS_VI_sline --
- *	Set lineNumber to the text supplied.
- *
- * Perl Command: VI::SetLine
- * Usage: VI::SetLine screenId lineNumber text
- */
-XS(XS_VI_sline)
-{
-	dXSARGS;
-	SCR *screen;
-	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
-	int rval;
-	STRLEN length;
-	char *line;
-
-	if (items != 3) 
-		croak("Usage: VI::SetLine(screenid, linenumber, text)");
-
-	GETSCREENID(screen, (int)SvIV(ST(0)), NULL);
-	line = (char *)SvPV(ST(2), length);
-	INITMESSAGE;
-	rval = api_sline(screen, (int)SvIV(ST(1)),
-	                     line, length);
-	ENDMESSAGE;
-
-	PUTBACK;
-	return;
-}
-
-/*
- * XS_VI_getmark --
- *	Return the mark's cursor position as a list with two elements.
- *	{line, column}.
- *
- * Perl Command: VI::GetMark
- * Usage: VI::GetMark screenId mark
- */
-XS(XS_VI_getmark)
-{
-	dXSARGS;
-
-	struct _mark cursor;
-	SCR *screen;
-	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
-	int rval;
-	char buf[20];
-
-	if (items != 2)
-		croak("Usage: VI::GetMark screenId mark");
-	SP -= items;
-
-	GETSCREENID(screen, (int)SvIV(ST(0)), NULL);
-	INITMESSAGE;
-	rval = api_getmark(screen, (int)*(char *)SvPV(ST(1),na), &cursor);
-	ENDMESSAGE;
-
-	EXTEND(sp,2);
-        PUSHs(sv_2mortal(newSViv(cursor.lno)));
-        PUSHs(sv_2mortal(newSViv(cursor.cno)));
-	PUTBACK;
-	return;
-}
-
-/*
- * XS_VI_setmark --
- *	Set the mark to the line and column numbers supplied.
- *
- * Perl Command: VI::SetMark
- * Usage: VI::SetMark screenId mark line column
- */
-XS(XS_VI_setmark)
-{
-	dXSARGS;
-
-	struct _mark cursor;
-	SCR *screen;
-	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
-	int rval;
-
-	if (items != 5)
-		croak("Usage: VI::SetMark screenId mark line column");
-	SP -= items;
-
-	GETSCREENID(screen, (int)SvIV(ST(0)), NULL);
-	INITMESSAGE;
-	cursor.lno = (int)SvIV(ST(2));
-	cursor.cno = (int)SvIV(ST(3));
-	rval = api_setmark(screen, (int)*(char *)SvPV(ST(1),na), &cursor);
-	ENDMESSAGE;
-
-	PUTBACK;
-	return;
-}
-
-/*
- * XS_VI_getcursor --
- *	Return the current cursor position as a list with two elements.
- *	{line, column}.
- *
- * Perl Command: VI::GetCursor
- * Usage: VI::GetCursor screenId
- */
-XS(XS_VI_getcursor)
-{
-	dXSARGS;
-
-	struct _mark cursor;
-	SCR *screen;
-	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
-	int rval;
-	char buf[20];
-
-	if (items != 1)
-		croak("Usage: VI::GetCursor screenId");
-	SP -= items;
-
-	GETSCREENID(screen, (int)SvIV(ST(0)), NULL);
-	INITMESSAGE;
-	rval = api_getcursor(screen, &cursor);
-	ENDMESSAGE;
-
-	EXTEND(sp,2);
-        PUSHs(sv_2mortal(newSViv(cursor.lno)));
-        PUSHs(sv_2mortal(newSViv(cursor.cno)));
-	PUTBACK;
-	return;
-}
-
-/*
- * XS_VI_setcursor --
- *	Set the cursor to the line and column numbers supplied.
- *
- * Perl Command: VI::SetCursor
- * Usage: VI::SetCursor screenId line column
- */
-XS(XS_VI_setcursor)
-{
-	dXSARGS;
-
-	struct _mark cursor;
-	SCR *screen;
-	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
-	int rval;
-
-	if (items != 3)
-		croak("Usage: VI::SetCursor screenId line column");
-	SP -= items;
-
-	GETSCREENID(screen, (int)SvIV(ST(0)), NULL);
-	INITMESSAGE;
-	cursor.lno = (int)SvIV(ST(1));
-	cursor.cno = (int)SvIV(ST(2));
-	rval = api_setcursor(screen, &cursor);
-	ENDMESSAGE;
-
-	PUTBACK;
-	return;
-}
-
-/*
- * XS_VI_msg --
- *	Set the message line to text.
- *
- * Perl Command: VI::Msg
- * Usage: VI::Msg screenId text
- */
-XS(XS_VI_msg) 
-{
-	dXSARGS;
-	SCR *screen;
-
-	if (items != 2) 
-		croak("Usage: VI::Msg(screenId, text)");
-	SP -= items;
-	GETSCREENID(screen, (int)SvIV(ST(0)), NULL);
-	api_imessage(screen, (char *)SvPV(ST(1), na));
-	PUTBACK;
-	return;
-}
-
-/*
- * XS_VI_iscreen --
- *	Create a new screen.  If a filename is specified then the screen
- *	is opened with that file.
- *
- * Perl Command: VI::NewScreen
- * Usage: VI::NewScreen screenId [file]
- */
-XS(XS_VI_iscreen)
-{
-	dXSARGS;
-
-	SCR *screen;
-	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
-	int id, rval;
-	char *file;
-
-	if (items != 1 && items != 2)
-		croak("Usage: VI::NewScreen screenId [file]");
-	SP -= items;
-	if (items == 1)
-		file = NULL;
-	else
-		file = (char *)SvPV(ST(1),na);
-
-	GETSCREENID(screen, (int)SvIV(ST(0)), NULL);
-	INITMESSAGE;
-	rval = api_iscreen(screen, file, &id);
-	ENDMESSAGE;
-
-	EXTEND(sp,1);
-        PUSHs(sv_2mortal(newSViv(id)));
-	PUTBACK;
-	return;
-}
-
-/*
- * XS_VI_escreen --
- *	End a screen.
- *
- * Perl Command: VI::EndScreen
- * Usage: VI::EndScreen screenId
- */
-XS(XS_VI_escreen)
-{
-	dXSARGS;
-
-	SCR *screen;
-	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
-	int rval;
-
-	if (items != 1)
-		croak("Usage: VI::EndScreen screenId");
-	SP -= items;
-
-	GETSCREENID(screen, (int)SvIV(ST(0)), NULL);
-	INITMESSAGE;
-	rval = api_escreen(screen);
-	ENDMESSAGE;
-
-	PUTBACK;
-	return;
-}
-
-/*
- * XS_VI_swscreen --
- *	Change the current focus to screen.
- *
- * Perl Command: VI::SwitchScreen
- * Usage: VI::SwitchScreen screenId screenId
- */
-XS(XS_VI_swscreen)
-{
-	dXSARGS;
-
-	SCR *screen, *new;
-	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
-	int rval;
-
-	if (items != 2)
-		croak("Usage: VI::SwitchScreen cur_screenId new_screenId");
-	SP -= items;
-
-	GETSCREENID(screen, (int)SvIV(ST(0)), NULL);
-	INITMESSAGE;
-	GETSCREENID(new, (int)SvIV(ST(1)), NULL);
-	rval = api_swscreen(screen, new);
-	ENDMESSAGE;
-
-	PUTBACK;
-	return;
-}
-
-/*
- * XS_VI_map --
- *	Associate a key with a perl procedure.
- *
- * Perl Command: VI::MapKey
- * Usage: VI::MapKey screenId key perlproc
- */
-XS(XS_VI_map)
-{
-	dXSARGS;
-
-	SCR *screen;
-	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
-	int rval;
-	char command[256];
-
-	if (items != 3)
-		croak("Usage: VI::MapKey screenId key perlproc");
-	SP -= items;
-
-	GETSCREENID(screen, (int)SvIV(ST(0)), NULL);
-	INITMESSAGE;
-	(void)snprintf(command, sizeof(command), ":perl %s\n", 
-	                                         (char *)SvPV(ST(2),na));
-	rval = api_map(screen, (char *)SvPV(ST(1),na), command, 
-	               strlen(command));
-	ENDMESSAGE;
-
-	PUTBACK;
-	return;
-}
-
-/*
- * XS_VI_unmap --
- *	Unmap a key.
- *
- * Perl Command: VI::UnmapKey
- * Usage: VI::UnmmapKey screenId key
- */
-XS(XS_VI_unmap)
-{
-	dXSARGS;
-
-	SCR *screen;
-	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
-	int rval;
-
-	if (items != 2)
-		croak("Usage: VI::UnmapKey screenId key");
-	SP -= items;
-
-	GETSCREENID(screen, (int)SvIV(ST(0)), NULL);
-	INITMESSAGE;
-	rval = api_unmap(screen, (char *)SvPV(ST(1),na));
-	ENDMESSAGE;
-
-	PUTBACK;
-	return;
-}
-
-/*
- * XS_VI_opts_set --
- *	Set an option.
- *
- * Perl Command: VI::SetOpt
- * Usage: VI::SetOpt screenId command
- */
-XS(XS_VI_opts_set)
-{
-	dXSARGS;
-
-	SCR *screen;
-	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
-	int rval;
-
-	if (items != 2)
-		croak("Usage: VI::SetOpt screenId command");
-	SP -= items;
-
-	GETSCREENID(screen, (int)SvIV(ST(0)), NULL);
-	INITMESSAGE;
-	rval = api_opts_set(screen, (char *)SvPV(ST(1),na));
-	ENDMESSAGE;
-
-	PUTBACK;
-	return;
-}
-
-/*
- * XS_VI_opts_get --
- 	Return the value of an option.
- *	
- * Perl Command: VI::GetOpt
- * Usage: VI::GetOpt screenId option
- */
-XS(XS_VI_opts_get)
-{
-	dXSARGS;
-
-	SCR *screen;
-	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
-	int rval;
-	char *value;
-
-	if (items != 2)
-		croak("Usage: VI::GetOpt screenId option");
-	SP -= items;
-
-	GETSCREENID(screen, (int)SvIV(ST(0)), NULL);
-	INITMESSAGE;
-	rval = api_opts_get(screen, (char *)SvPV(ST(1),na), &value);
-	ENDMESSAGE;
-
-	EXTEND(SP,1);
-        PUSHs(sv_2mortal(newSVpv(value, na)));
-	free(value);
-	PUTBACK;
-	return;
-}
-
-/*
- * XS_VI_run --
- *	Run the ex command cmd.
- *
- * Perl Command: VI::Run
- * Usage: VI::Run screenId cmd
- */
-XS(XS_VI_run) 
-{
-	dXSARGS;
-	SCR *screen;
-
-	if (items != 2) 
-		croak("Usage: VI::Run(screenId, cmd)");
-	SP -= items;
-	GETSCREENID(screen, (int)SvIV(ST(0)), NULL);
-	api_run_str(screen, (char *)SvPV(ST(1), na));
-	PUTBACK;
-	return;
-}
 
 static void xs_init __P((void));
 
@@ -705,34 +92,30 @@ perl_init(gp)
 	GS *gp;
 {
         char buf[64];
+	char *bootargs[] = { "VI" };
+	AV * av;
 
+#ifndef HAVE_PERL_5_003_01
 	static char *embedding[] = { "", "-e", "sub _eval_ { eval $_[0] }" };
+#else
+	static char *args[] = { "", "-e" };
+#endif
 	STRLEN length;
 	char *file = __FILE__;
 
 	gp->perl_interp = perl_alloc();
   	perl_construct(gp->perl_interp);
+#ifndef HAVE_PERL_5_003_01
 	perl_parse(gp->perl_interp, xs_init, 3, embedding, 0);
-	newXS("VI::AppendLine", XS_VI_aline, file);
-	newXS("VI::DelLine", XS_VI_dline, file);
-	newXS("VI::EndScreen", XS_VI_escreen, file);
-	newXS("VI::GetLine", XS_VI_gline, file);
-	newXS("VI::FindScreen", XS_VI_fscreen, file);
-	newXS("VI::GetCursor", XS_VI_getcursor, file);
-	newXS("VI::GetMark", XS_VI_getmark, file);
-	newXS("VI::GetOpt", XS_VI_opts_get, file);
-	newXS("VI::InsertLine", XS_VI_iline, file);
-	newXS("VI::LastLine", XS_VI_lline, file);
-	newXS("VI::MapKey", XS_VI_map, file);
-	newXS("VI::Msg", XS_VI_msg, file);
-	newXS("VI::NewScreen", XS_VI_iscreen, file);
-	newXS("VI::Run", XS_VI_run, file);
-	newXS("VI::SetCursor", XS_VI_setcursor, file);
-	newXS("VI::SetLine", XS_VI_sline, file);
-	newXS("VI::SetMark", XS_VI_setmark, file);
-	newXS("VI::SetOpt", XS_VI_opts_set, file);
-	newXS("VI::SwitchScreen", XS_VI_swscreen, file);
-	newXS("VI::UnmapKey", XS_VI_unmap, file);
+#else
+	perl_parse(gp->perl_interp, xs_init, 2, args, 0);
+#endif
+        perl_call_argv("VI::bootstrap", G_DISCARD, bootargs);
+#if 0
+	av_unshift(av = perl_get_av("INC", TRUE), 1);
+	av_store(av, 0, sv_2mortal(newSVpv(_PATH_PERLSCRIPTS,
+					sizeof(_PATH_PERLSCRIPTS)-1)));
+#endif
 
 	return (0);
 }
@@ -757,36 +140,474 @@ msghandler(sp, mtype, msg, len)
 	errmsg[len] = '\0';
 }
 
-/*
- * noscreen --
- *	Perl message if can't find the requested screen.
- */
-static void
-noscreen(id, name)
-	int id;
-	char *name;
-{
-	char buf[256];
-
-	if (name == NULL)
-		(void)snprintf(buf, sizeof(buf), "unknown screen id: %d", id);
-	else
-		(void)snprintf(buf, sizeof(buf), "unknown screen: %s", name);
-	croak(buf);
-}
-
 /* Register any extra external extensions */
 
 extern void boot_DynaLoader _((CV* cv));
+extern void boot_VI _((CV* cv));
 
 static void
 xs_init()
 {
-#ifdef HAVE_PERL_5_002_01
+#ifdef HAVE_PERL_5_003_01
 	dXSUB_SYS;
 #endif
 	char *file = __FILE__;
-	{
-		newXS("DynaLoader::boot_DynaLoader", boot_DynaLoader, file);
-	}
+
+	newXS("DynaLoader::boot_DynaLoader", boot_DynaLoader, file);
+	newXS("VI::bootstrap", boot_VI, file);
 }
+
+typedef SCR *	VI;
+
+MODULE = VI	PACKAGE = VI
+
+# msg --
+#	Set the message line to text.
+#
+# Perl Command: VI::Msg
+# Usage: VI::Msg screenId text
+
+void
+Msg(screen, text)
+	VI          screen
+	char *      text
+ 
+	CODE:
+	api_imessage(screen, text);
+
+# XS_VI_escreen --
+#	End a screen.
+#
+# Perl Command: VI::EndScreen
+# Usage: VI::EndScreen screenId
+
+void
+EndScreen(screen)
+	VI	screen
+
+	PREINIT:
+	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
+	int rval;
+
+	CODE:
+	INITMESSAGE;
+	rval = api_escreen(screen);
+	ENDMESSAGE;
+
+# XS_VI_iscreen --
+#	Create a new screen.  If a filename is specified then the screen
+#	is opened with that file.
+#
+# Perl Command: VI::NewScreen
+# Usage: VI::NewScreen screenId [file]
+
+SV *
+NewScreen(screen, ...)
+	VI screen
+
+	PROTOTYPE: $;$
+	PREINIT:
+	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
+	int rval;
+	char *file;
+	SCR *nsp;
+
+	CODE:
+	file = (items == 1) ? NULL : (char *)SvPV(ST(1),na);
+	INITMESSAGE;
+	rval = api_iscreen(screen, file, &nsp);
+	ENDMESSAGE;
+	# the SV is mortalized by code emitted by xsubpp
+	# this is in some doc, no doubt, but it surprised me
+	RETVAL = sv_setref_pv(newSV(0), "VI", (void *)nsp);
+
+	OUTPUT:
+	RETVAL
+
+# XS_VI_fscreen --
+#	Return the screen id associated with file name.
+#
+# Perl Command: VI::FindScreen
+# Usage: VI::FindScreen file
+
+void
+FindScreen(screen, file)
+	VI screen
+	char *file
+
+	PREINIT:
+	SCR *fsp;
+	CODE:
+	if (((fsp) = api_fscreen(0, file)) == NULL) 
+		ST(0) = &sv_undef;
+	else sv_setref_pv(ST(0), "VI", (void *)fsp);
+
+# XS_VI_aline --
+#	-- Append the string text after the line in lineNumber.
+#
+# Perl Command: VI::AppendLine
+# Usage: VI::AppendLine screenId lineNumber text
+
+void
+AppendLine(screen, linenumber, text)
+	VI screen
+	int linenumber
+	char *text
+
+	PREINIT:
+	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
+	int rval;
+	STRLEN length;
+
+	CODE:
+	SvPV(ST(2), length);
+	INITMESSAGE;
+	rval = api_aline(screen, linenumber, text, length);
+	ENDMESSAGE;
+
+# XS_VI_dline --
+#	Delete lineNum.
+#
+# Perl Command: VI::DelLine
+# Usage: VI::DelLine screenId lineNum
+
+void 
+DelLine(screen, linenumber)
+	VI screen
+	int linenumber
+
+	PREINIT:
+	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
+	int rval;
+
+	CODE:
+	INITMESSAGE;
+	rval = api_dline(screen, (recno_t)(int)SvIV(ST(1)));
+	ENDMESSAGE;
+
+# XS_VI_gline --
+#	Return lineNumber.
+#
+# Perl Command: VI::GetLine
+# Usage: VI::GetLine screenId lineNumber
+
+char *
+GetLine(screen, linenumber)
+	VI screen
+	int linenumber
+
+	PREINIT:
+	size_t len;
+	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
+	int rval;
+	char *line, *p;
+
+	PPCODE:
+	INITMESSAGE;
+	rval = api_gline(screen, (recno_t)linenumber, &p, &len);
+	ENDMESSAGE;
+
+	EXTEND(sp,1);
+        PUSHs(sv_2mortal(newSVpv(p, len)));
+
+# XS_VI_sline --
+#	Set lineNumber to the text supplied.
+#
+# Perl Command: VI::SetLine
+# Usage: VI::SetLine screenId lineNumber text
+
+void
+SetLine(screen, linenumber, text)
+	VI screen
+	int linenumber
+	char *text
+
+	PREINIT:
+	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
+	int rval;
+	STRLEN length;
+
+	CODE:
+	SvPV(ST(2), length);
+	INITMESSAGE;
+	rval = api_sline(screen, linenumber, text, length);
+	ENDMESSAGE;
+
+# XS_VI_iline --
+#	Insert the string text before the line in lineNumber.
+#
+# Perl Command: VI::InsertLine
+# Usage: VI::InsertLine screenId lineNumber text
+
+void
+InsertLine(screen, linenumber, text)
+	VI screen
+	int linenumber
+	char *text
+
+	PREINIT:
+	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
+	int rval;
+	STRLEN length;
+
+	CODE:
+	SvPV(ST(2), length);
+	INITMESSAGE;
+	rval = api_iline(screen, linenumber, text, length);
+	ENDMESSAGE;
+
+# XS_VI_lline --
+#	Return the last line in the screen.
+#
+# Perl Command: VI::LastLine
+# Usage: VI::LastLine screenId
+
+int 
+LastLine(screen)
+	VI screen
+
+	PREINIT:
+	recno_t last;
+	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
+	int rval;
+
+	CODE:
+	INITMESSAGE;
+	rval = api_lline(screen, &last);
+	ENDMESSAGE;
+	RETVAL=last;
+
+	OUTPUT:
+	RETVAL
+
+# XS_VI_getmark --
+#	Return the mark's cursor position as a list with two elements.
+#	{line, column}.
+#
+# Perl Command: VI::GetMark
+# Usage: VI::GetMark screenId mark
+
+void
+GetMark(screen, mark)
+	VI screen
+	char mark
+
+	PREINIT:
+	struct _mark cursor;
+	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
+	int rval;
+
+	PPCODE:
+	INITMESSAGE;
+	rval = api_getmark(screen, (int)mark, &cursor);
+	ENDMESSAGE;
+
+	EXTEND(sp,2);
+        PUSHs(sv_2mortal(newSViv(cursor.lno)));
+        PUSHs(sv_2mortal(newSViv(cursor.cno)));
+
+# XS_VI_setmark --
+#	Set the mark to the line and column numbers supplied.
+#
+# Perl Command: VI::SetMark
+# Usage: VI::SetMark screenId mark line column
+
+void
+SetMark(screen, mark, line, column)
+	VI screen
+	char mark
+	int line
+	int column
+
+	PREINIT:
+	struct _mark cursor;
+	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
+	int rval;
+
+	CODE:
+	INITMESSAGE;
+	cursor.lno = line;
+	cursor.cno = column;
+	rval = api_setmark(screen, (int)*(char *)SvPV(ST(1),na), &cursor);
+	ENDMESSAGE;
+
+# XS_VI_getcursor --
+#	Return the current cursor position as a list with two elements.
+#	{line, column}.
+#
+# Perl Command: VI::GetCursor
+# Usage: VI::GetCursor screenId
+
+void
+GetCursor(screen)
+	VI screen
+
+	PREINIT:
+	struct _mark cursor;
+	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
+	int rval;
+
+	PPCODE:
+	INITMESSAGE;
+	rval = api_getcursor(screen, &cursor);
+	ENDMESSAGE;
+
+	EXTEND(sp,2);
+        PUSHs(sv_2mortal(newSViv(cursor.lno)));
+        PUSHs(sv_2mortal(newSViv(cursor.cno)));
+
+# XS_VI_setcursor --
+#	Set the cursor to the line and column numbers supplied.
+#
+# Perl Command: VI::SetCursor
+# Usage: VI::SetCursor screenId line column
+
+void
+SetCursor(screen, line, column)
+	VI screen
+	int line
+	int column
+
+	PREINIT:
+	struct _mark cursor;
+	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
+	int rval;
+
+	CODE:
+	INITMESSAGE;
+	cursor.lno = line;
+	cursor.cno = column;
+	rval = api_setcursor(screen, &cursor);
+	ENDMESSAGE;
+
+# XS_VI_swscreen --
+#	Change the current focus to screen.
+#
+# Perl Command: VI::SwitchScreen
+# Usage: VI::SwitchScreen screenId screenId
+
+void
+SwitchScreen(screenFrom, screenTo)
+	VI screenFrom
+	VI screenTo
+
+	PREINIT:
+	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
+	int rval;
+
+	CODE:
+	INITMESSAGE;
+	rval = api_swscreen(screenFrom, screenTo);
+	ENDMESSAGE;
+
+# XS_VI_map --
+#	Associate a key with a perl procedure.
+#
+# Perl Command: VI::MapKey
+# Usage: VI::MapKey screenId key perlproc
+
+void
+MapKey(screen, key, perlproc)
+	VI screen
+	char *key
+	SV *perlproc
+
+	PREINIT:
+	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
+	int rval;
+	int length;
+	char *command;
+	SV *svc;
+
+	CODE:
+	INITMESSAGE;
+	svc = sv_2mortal(newSVpv(":perl ", 6));
+	sv_catsv(svc, perlproc);
+	command = SvPV(svc, length);
+	rval = api_map(screen, key, command, length);
+	ENDMESSAGE;
+
+# XS_VI_unmap --
+#	Unmap a key.
+#
+# Perl Command: VI::UnmapKey
+# Usage: VI::UnmmapKey screenId key
+
+void
+UnmapKey(screen, key)
+	VI screen
+	char *key
+
+	PREINIT:
+	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
+	int rval;
+
+	CODE:
+	INITMESSAGE;
+	rval = api_unmap(screen, key);
+	ENDMESSAGE;
+
+# XS_VI_opts_set --
+#	Set an option.
+#
+# Perl Command: VI::SetOpt
+# Usage: VI::SetOpt screenId command
+
+void
+SetOpt(screen, command)
+	VI screen
+	char *command
+
+	PREINIT:
+	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
+	int rval;
+
+	CODE:
+	INITMESSAGE;
+	rval = api_opts_set(screen, command);
+	ENDMESSAGE;
+
+# XS_VI_opts_get --
+#	Return the value of an option.
+#	
+# Perl Command: VI::GetOpt
+# Usage: VI::GetOpt screenId option
+
+void
+GetOpt(screen, option)
+	VI screen
+	char *option
+
+	PREINIT:
+	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
+	int rval;
+	char *value;
+
+	PPCODE:
+	INITMESSAGE;
+	rval = api_opts_get(screen, (char *)SvPV(ST(1),na), &value);
+	ENDMESSAGE;
+
+	EXTEND(SP,1);
+        PUSHs(sv_2mortal(newSVpv(value, na)));
+	free(value);
+
+# XS_VI_run --
+#	Run the ex command cmd.
+#
+# Perl Command: VI::Run
+# Usage: VI::Run screenId cmd
+
+void
+Run(screen, command)
+	VI screen
+	char *command;
+
+	PREINIT:
+	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
+	int rval;
+
+	CODE:
+	INITMESSAGE;
+	rval = api_run_str(screen, command);
+	ENDMESSAGE;

@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.76 1996/06/28 17:12:39 bostic Exp $ (Berkeley) $Date: 1996/06/28 17:12:39 $
+.\"     $Id: vi.ref,v 8.77 1996/07/02 19:38:38 bostic Exp $ (Berkeley) $Date: 1996/07/02 19:38:38 $
 .\"
 .\"
 .so ref.so
@@ -1197,7 +1197,7 @@ source directories for more information.
 As a quick reference, the following function calls are provided for
 both the Perl and Tcl interfaces.
 The Perl interface uses a slightly different naming convention,
-e.g. ``viFindScreen'' is named ``VI:FindScreen''.
+e.g. ``viFindScreen'' is named ``VI::FindScreen''.
 .IP "viFindScreen file"
 Return the
 .LI "screenId" associated with

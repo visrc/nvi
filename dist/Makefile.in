@@ -1,10 +1,12 @@
-#	$Id: Makefile.in,v 8.63 1996/06/19 20:02:10 bostic Exp $ (Berkeley) $Date: 1996/06/19 20:02:10 $
+#	$Id: Makefile.in,v 8.64 1996/07/02 19:37:38 bostic Exp $ (Berkeley) $Date: 1996/07/02 19:37:38 $
 
 srcdir=	@srcdir@/..
 CC=	@CC@
 OPTFLAG=@OPTFLAG@
 CFLAGS=	-c $(OPTFLAG) @CFLAGS@ -I. -I$(srcdir)/include @CPPFLAGS@
 LDFLAGS=@LDFLAGS@
+PERL=	@vi_cv_path_perl@
+PERLLIB=@vi_cv_perllib@
 
 # Objects
 COBJS=	addbytes.o addch.o box.o clear.o clrtobot.o clrtoeol.o \
@@ -53,7 +55,7 @@ tknvi: $(TKALL)
 	$(CC) $(LDFLAGS) -o $@ $(TKALL) @TKLIBS@
 
 clean:
-	-rm -f *.core *.o memcpy.c
+	-rm -f *.core *.o memcpy.c perl.c
 	-rm -f nex nvi tknvi core
 	-rm -f $(COBJS) $(CLOBJS) $(DBOBJS) $(REOBJS)
 	-rm -f $(TKOBJS) $(VIOBJS)
@@ -184,7 +186,10 @@ tk_util.o: $(srcdir)/tk/tk_util.c
 # Vi Tcl/Perl interpreter sources.
 api.o: $(srcdir)/common/api.c
 	$(CC) $(CFLAGS) $?
-perl.o: $(srcdir)/perl_api/perl.c
+perl.c: $(srcdir)/perl_api/perl.xs
+	$(PERL) $(PERLLIB)/ExtUtils/xsubpp \
+	    -typemap $(PERLLIB)/ExtUtils/typemap $< > $@
+perl.o: perl.c
 	$(CC) $(CFLAGS) $?
 tcl.o: $(srcdir)/tcl_api/tcl.c
 	$(CC) $(CFLAGS) $?

@@ -2,8 +2,10 @@ sub wc {
   my $words;
   $i = $VI::StartLine;
   while ($i <= $VI::StopLine) {
-    $_ = VI::GetLine($VI::ScreenId, $i++);
+    $_ = $curscr->GetLine($i++);
     $words+=split;
   }
-  VI::Msg($VI::ScreenId,"$words words");
+  $curscr->Msg("$words words");
 }
+
+1;

@@ -12,7 +12,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: api.c,v 8.19 1996/06/08 12:22:19 bostic Exp $ (Berkeley) $Date: 1996/06/08 12:22:19 $";
+static const char sccsid[] = "$Id: api.c,v 8.20 1996/07/02 19:37:47 bostic Exp $ (Berkeley) $Date: 1996/07/02 19:37:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -272,13 +272,13 @@ api_imessage(sp, text)
  * api_iscreen
  *	Create a new screen and return its id.
  *
- * PUBLIC: int api_iscreen __P((SCR *, char *, int *));
+ * PUBLIC: int api_iscreen __P((SCR *, char *, SCR **));
  */
 int
-api_iscreen(sp, file, idp)
+api_iscreen(sp, file, spp)
 	SCR *sp;
 	char *file;
-	int *idp;
+	SCR **spp;
 {
 	ARGS *ap[2], a;
 	EXCMD cmd;
@@ -291,7 +291,7 @@ api_iscreen(sp, file, idp)
 	cmd.flags |= E_NEWSCREEN;			/* XXX */
 	if (cmd.cmd->fn(sp, &cmd))
 		return (1);
-	*idp = sp->nextdisp->id;
+	*spp = sp->nextdisp;
 	return (0);
 }
 

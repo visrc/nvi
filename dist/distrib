@@ -1,5 +1,5 @@
 #! /bin/sh
-# $Id: distrib,v 8.4 1996/05/19 12:20:10 bostic Exp $ (Berkeley) $Date: 1996/05/19 12:20:10 $
+# $Id: distrib,v 8.5 1996/07/02 19:37:39 bostic Exp $ (Berkeley) $Date: 1996/07/02 19:37:39 $
 
 # Clean
 make -f Makefile.in clean
@@ -45,7 +45,7 @@ chmod 444 $f
 f=../include/perl_extern.h
 echo "Building $f ..."
 rm -f $f
-sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../perl_api/*.c > $f
+sed -n "s/^ \* PUBLIC: \(.*\)/\1/p" ../perl_api/*.xs > $f
 chmod 444 $f
 
 f=../include/tcl_extern.h

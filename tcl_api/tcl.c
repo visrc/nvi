@@ -12,7 +12,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: tcl.c,v 8.11 1996/04/29 11:01:21 bostic Exp $ (Berkeley) $Date: 1996/04/29 11:01:21 $";
+static const char sccsid[] = "$Id: tcl.c,v 8.12 1996/07/02 19:38:09 bostic Exp $ (Berkeley) $Date: 1996/07/02 19:38:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -501,9 +501,9 @@ tcl_iscreen(clientData, interp, argc, argv)
 	int argc;
 	char **argv;
 {
-	SCR *sp;
+	SCR *sp, *nsp;
 	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
-	int id, rval;
+	int rval;
 
 	if (argc != 2 && argc != 3) {
 		Tcl_SetResult(interp,
@@ -514,13 +514,13 @@ tcl_iscreen(clientData, interp, argc, argv)
 	if (getscreenid(interp, &sp, argv[1], NULL))
 		return (TCL_ERROR);
 	INITMESSAGE;
-	rval = api_iscreen(sp, argv[2], &id);
+	rval = api_iscreen(sp, argv[2], &nsp);
 	ENDMESSAGE;
 
 	if (rval)
 		return (TCL_ERROR);
 
-	(void)sprintf(interp->result, "%d", id);
+	(void)sprintf(interp->result, "%d", nsp->id);
 	return (TCL_OK);
 }
 

@@ -16,3 +16,5 @@ sub fun {
     }
     waitpid($pid, 0);
 }
+
+1;

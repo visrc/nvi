@@ -14,7 +14,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_perl.c,v 8.6 1996/03/18 09:35:22 bostic Exp $ (Berkeley) $Date: 1996/03/18 09:35:22 $";
+static const char sccsid[] = "$Id: ex_perl.c,v 8.7 1996/07/02 19:37:53 bostic Exp $ (Berkeley) $Date: 1996/07/02 19:37:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,13 +40,21 @@ static const char sccsid[] = "$Id: ex_perl.c,v 8.6 1996/03/18 09:35:22 bostic Ex
 static int perl_eval(string)
 	char *string;
 {
+#ifdef HAVE_PERL_5_003_01
+	SV* sv;
+
+	sv = sv_newmortal();
+	sv_setpv(sv, string);
+	perl_eval_sv(sv, G_DISCARD | G_NOARGS);
+#else
 	char *argv[2];
 
 	argv[0] = string;
 	argv[1] = NULL;
 	perl_call_argv("_eval_", G_EVAL | G_DISCARD | G_KEEPERR, argv);
+#endif
 }
-#else
+#else /* !HAVE_PERL_INTERP */
 
 static void
 noperl(scrp)
@@ -68,6 +76,7 @@ ex_perl(scrp, cmdp)
 	EXCMD *cmdp;
 {
 #ifdef HAVE_PERL_INTERP
+	static SV *svcurscr, *svstart, *svstop, *svid;
 	CHAR_T *p;
 	GS *gp;
 	STRLEN length;
@@ -76,8 +85,14 @@ ex_perl(scrp, cmdp)
 
 	/* Initialize the interpreter. */
 	gp = scrp->gp;
-	if (gp->perl_interp == NULL && perl_init(gp))
-		return (1);
+	if (!svcurscr) {
+		if (gp->perl_interp == NULL && perl_init(gp))
+			return (1);
+		SvREADONLY_on(svcurscr = perl_get_sv("curscr", TRUE));
+		SvREADONLY_on(svstart = perl_get_sv("VI::StartLine", TRUE));
+		SvREADONLY_on(svstop = perl_get_sv("VI::StopLine", TRUE));
+		SvREADONLY_on(svid = perl_get_sv("VI::ScreenId", TRUE));
+	}
 
 	/* Skip leading white space. */
 	if (cmdp->argc != 0)
@@ -90,12 +105,13 @@ ex_perl(scrp, cmdp)
 		return (1);
 	}
 
-	(void)snprintf(buf, sizeof(buf),
-	    "$VI::ScreenId=%d;$VI::StartLine=%lu;$VI::StopLine=%lu",
-	    scrp->id, cmdp->addr1.lno, cmdp->addr2.lno);
-	perl_eval(buf);
+	sv_setiv(svstart, cmdp->addr1.lno);
+	sv_setiv(svstop, cmdp->addr2.lno);
+	sv_setref_pv(svcurscr, "VI", (void *)scrp);
+	/* Backwards compatibility. */
+	sv_setref_pv(svid, "VI", (void *)scrp);
 	perl_eval(cmdp->argv[0]->bp);
-	err = SvPV(GvSV(errgv),length);
+	err = SvPV(GvSV(errgv), length);
 	if (!length)
 		return (0);
 
@@ -125,7 +141,12 @@ ex_perldo(scrp, cmdp)
 	STRLEN length;
 	size_t len;
 	int i;
-	char *str, *argv[2];
+	char *str;
+#ifndef HAVE_PERL_5_003_01
+	char *argv[2];
+#else
+	SV* sv;
+#endif
 	dSP;
 
 	/* Initialize the interpreter. */
@@ -144,20 +165,29 @@ ex_perldo(scrp, cmdp)
 		return (1);
 	}
 
+#ifndef HAVE_PERL_5_003_01
 	argv[0] = cmdp->argv[0]->bp;
 	argv[1] = NULL;
+#else
+	sv = sv_newmortal();
+	sv_setpv(sv, cmdp->argv[0]->bp);
+#endif
 
 	ENTER;
 	SAVETMPS;
 	for (i = cmdp->addr1.lno; i <= cmdp->addr2.lno; i++) {
-		/*api_gline(scrp, i, argv+1, &len);*/
 		api_gline(scrp, i, &str, &len);
 		sv_setpvn(perl_get_sv("_", FALSE),str,len);
+#ifndef HAVE_PERL_5_003_01
 		perl_call_argv("_eval_", G_SCALAR | G_EVAL | G_KEEPERR, argv);
+#else
+		perl_eval_sv(sv, G_SCALAR | G_NOARGS);
+#endif
 		str = SvPV(GvSV(errgv),length);
-		if (length) break;
+		if (length)
+			break;
 		SPAGAIN;
-		if(SvTRUEx(POPs)) {
+		if (SvTRUEx(POPs)) {
 			str = SvPV(perl_get_sv("_", FALSE),len);
 			api_sline(scrp, i, str, len);
 		}
