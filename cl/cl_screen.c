@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_screen.c,v 10.45 1996/05/29 13:08:30 bostic Exp $ (Berkeley) $Date: 1996/05/29 13:08:30 $";
+static const char sccsid[] = "$Id: cl_screen.c,v 10.46 1996/06/17 10:34:46 bostic Exp $ (Berkeley) $Date: 1996/06/17 10:34:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -284,7 +284,11 @@ cl_vi_init(sp)
 	/* Put the cursor keys into application mode. */
 	(void)keypad(stdscr, TRUE);
 
-	/* The screen TI sequence just got sent. */
+	/*
+	 * XXX
+	 * The screen TI sequence just got sent.  See the comment in
+	 * cl_funcs.c:cl_attr().
+	 */
 	clp->ti_te = TI_SENT;
 
 	/*
@@ -368,16 +372,6 @@ fast:	/* Set the terminal modes. */
 err:		(void)cl_vi_end(sp->gp);
 		return (1);
 	}
-
-	/* If not already done, send the terminal initialization sequence. */
-	if (clp->ti_te == TE_SENT) {
-		clp->ti_te = TI_SENT;
-		if (clp->smcup == NULL)
-			(void)cl_getcap(sp, "smcup", &clp->smcup);
-		if (clp->smcup != NULL)
-			(void)tputs(clp->smcup, 1, cl_putchar);
-		(void)fflush(stdout);
-	}
 	return (0);
 }
 
@@ -415,7 +409,11 @@ cl_vi_end(gp)
 	/* End curses window. */
 	(void)endwin();
 
-	/* The screen TE sequence just got sent. */
+	/*
+	 * XXX
+	 * The screen TE sequence just got sent.  See the comment in
+	 * cl_funcs.c:cl_attr().
+	 */
 	clp->ti_te = TE_SENT;
 
 	return (0);
@@ -490,16 +488,6 @@ cl_ex_init(sp)
 fast:	if (tcsetattr(STDIN_FILENO, TCSADRAIN | TCSASOFT, &clp->ex_enter)) {
 		msgq(sp, M_SYSERR, "tcsetattr");
 		return (1);
-	}
-
-	/* If not already done, send the terminal end sequence. */
-	if (clp->ti_te == TI_SENT) {
-		clp->ti_te = TE_SENT;
-		if (clp->rmcup == NULL)
-			(void)cl_getcap(sp, "rmcup", &clp->rmcup);
-		if (clp->rmcup != NULL)
-			(void)tputs(clp->rmcup, 1, cl_putchar);
-		(void)fflush(stdout);
 	}
 	return (0);
 }
