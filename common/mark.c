@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: mark.c,v 5.3 1992/05/21 13:04:45 bostic Exp $ (Berkeley) $Date: 1992/05/21 13:04:45 $";
+static char sccsid[] = "$Id: mark.c,v 5.4 1992/05/27 10:30:34 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:30:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -137,9 +137,8 @@ mark_insert(fm, tm)
 		}
 		if (mp->cno < fm->cno)
 			continue;
-		if (mp->cno >= fm->cno) {
-			mp->lno += lno;
-			mp->cno += cno;
-		}
+
+		mp->lno += lno;
+		mp->cno += cno;
 	}
 }
