@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 5.10 1992/04/19 08:54:08 bostic Exp $ (Berkeley) $Date: 1992/04/19 08:54:08 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 5.11 1992/04/28 13:39:17 bostic Exp $ (Berkeley) $Date: 1992/04/28 13:39:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -42,13 +42,13 @@ static char sccsid[] = "$Id: ex_cmd.c,v 5.10 1992/04/19 08:54:08 bostic Exp $ (B
  *	w[N]|#[or]	-- word (a number or N, optional or required)
  *	s		-- string (parse locally)
  */
-/* START_OPTION_DEF */
+/* START_SED_INCLUDE */
 EXCMDLIST cmds[] = {
 #define	C_BANG		0
-	"!",		ex_bang,	E_ADDR2|E_EXRCOK|E_NL,
+	"!",		ex_bang,	E_ADDR2_NONE|E_EXRCOK,
 	    "s",	"[line [,line]] ! command",
 #define	C_HASH		1
-	"#",		ex_number,	E_ADDR2|E_NL|E_SETLAST,
+	"#",		ex_number,	E_ADDR2|E_SETLAST,
 	    "c1",	"[line [,line]] # [count] [l]",
 #define	C_SUBAGAIN	2
 	"&",		ex_subagain,	E_ADDR2,
@@ -139,7 +139,7 @@ EXCMDLIST cmds[] = {
 	"file",		ex_file,	0,
 	    "f10",	"f[ile] [name]",
 #define	C_GLOBAL	23
-	"global",	ex_global,	E_ADDR2_OR_0,
+	"global",	ex_global,	E_ADDR2_ALL,
 	    "s",	"[line [,line]] g[lobal] /pattern/ [commands]",
 #define	C_INSERT	24
 	"insert",	ex_append,	E_ADDR1,
@@ -151,7 +151,7 @@ EXCMDLIST cmds[] = {
 	"k",		ex_mark,	E_ADDR1,
 	    "w1r",	"[line] k key",
 #define	C_LIST		27
-	"list",		ex_list,	E_ADDR2|E_NL|E_SETLAST,
+	"list",		ex_list,	E_ADDR2|E_SETLAST,
 	    "c1",	"[line [,line]] l[ist] [count] [#]",
 #define	C_MOVE		28
 	"move",		ex_move,	E_ADDR2,
@@ -184,10 +184,10 @@ EXCMDLIST cmds[] = {
 	"next",		ex_next,	0,
 	    "fN",	"n[ext][!] [file ...]",
 #define	C_NUMBER	34
-	"number",	ex_number,	E_ADDR2|E_NL|E_SETLAST,
+	"number",	ex_number,	E_ADDR2|E_SETLAST,
 	    "c1",	"[line [,line]] nu[mber] [count] [l]",
 #define	C_PRINT		35
-	"print",	ex_print,	E_ADDR2|E_NL|E_SETLAST,
+	"print",	ex_print,	E_ADDR2|E_SETLAST,
 	    "c1",	"[line [,line]] p[rint] [count] [#l]",
 #define	C_PREVIOUS	36
 	"previous",	ex_prev,	0,
@@ -213,7 +213,7 @@ EXCMDLIST cmds[] = {
 	    "wN",
 	    "se[t] [option[=[value]]...] [nooption ...] [option? ...] [all]",
 #define	C_SHELL		43
-	"shell",	ex_shell,	E_NL,
+	"shell",	ex_shell,	0,
 	    "", 	"sh[ell]",
 #define	C_SOURCE	44
 	"source",	ex_source,	E_EXRCOK,
@@ -234,7 +234,7 @@ EXCMDLIST cmds[] = {
 	"unmap",	ex_unmap,	E_EXRCOK,
 	    "!w1r", 	"unm[ap][!] key",
 #define	C_VGLOBAL	50
-	"vglobal",	ex_global,	E_ADDR2_OR_0,
+	"vglobal",	ex_global,	E_ADDR2_ALL,
 	    "s", 	"[line [,line]] v[global] /pattern/ [commands]",
 #define	C_VERSION	51
 	"version",	ex_version,	E_EXRCOK,
@@ -243,18 +243,17 @@ EXCMDLIST cmds[] = {
 	"visual",	ex_visual,	E_ADDR2,
 	    "2c1", 	"[line] vi[sual] [type] [count] [flags]",
 #define	C_WRITE		53
-	"write",	ex_write,	E_ADDR2_OR_0,
+	"write",	ex_write,	E_ADDR2_ALL,
 	    "s",	"[line [,line]] w[rite] [!cmd | [>>] [file]]",
 #define	C_WQ		54
-	"wq",		ex_wq,		E_ADDR2_OR_0|E_NL,
+	"wq",		ex_wq,		E_ADDR2_ALL,
 	    "!>f1o",	"[line [,line]] wq[!] [>>] [file]",
 #define	C_XIT		55
-	"xit",		ex_xit,		E_ADDR2_OR_0|E_NL,
+	"xit",		ex_xit,		E_ADDR2_ALL,
 	    "!f1o",	"[line [,line]] x[it][!] [file]",
 #define	C_YANK		56
 	"yank",		ex_yank,	E_ADDR2,
 	    "bc",	"[line [,line]] ya[nk] [buffer] [count]",
 	{NULL},
 };
-#define	O_OPTIONCOUNT	57
-/* END_OPTION_DEF */
+/* END_SED_INCLUDE */
