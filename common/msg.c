@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 10.15 1995/10/17 08:49:49 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:49:49 $";
+static char sccsid[] = "$Id: msg.c,v 10.16 1995/10/17 09:06:37 bostic Exp $ (Berkeley) $Date: 1995/10/17 09:06:37 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -340,7 +340,7 @@ nofmt:	mp += len;
 
 	/* Cleanup. */
 ret:	FREE_SPACE(sp, bp, blen);
-binc_err:
+alloc_err:
 	reenter = 0;
 }
 
@@ -373,7 +373,7 @@ msgq_str(sp, mtype, str, fmt)
 }
 
 /*
- * msg_rpt --
+ * msgq_rpt --
  *	Report on the lines that changed.
  *
  * !!!
@@ -414,7 +414,7 @@ msgq_rpt(sp)
 
 	/* Change reports are turned off in batch mode. */
 	if (F_ISSET(sp, S_EX_SILENT))
-		return (0);
+		return;
 
 	/* Reset changing line number. */
 	sp->rptlchange = OOBLNO;
@@ -439,11 +439,11 @@ msgq_rpt(sp)
 		if (total != 0)
 			for (cnt = 0; cnt < ARSIZE(action); ++cnt)
 				sp->rptlines[cnt] = 0;
-		return (0);
+		return;
 	}
 
 	/* Build and display the message. */
-	GET_SPACE_RET(sp, bp, blen, sizeof(action) * MAXNUM);
+	GET_SPACE_GOTO(sp, bp, blen, sizeof(action) * MAXNUM);
 	for (p = bp, first = 1, tlen = 0,
 	    ap = action, cnt = 0; cnt < ARSIZE(action); ++ap, ++cnt)
 		if (sp->rptlines[cnt] != 0) {
@@ -459,19 +459,20 @@ msgq_rpt(sp)
 	sp->gp->scr_msg(sp, M_INFO, bp, tlen);
 
 	FREE_SPACE(sp, bp, blen);
-	return (0);
+alloc_err:
+
 #undef ARSIZE
 #undef MAXNUM
 }
 
 /*
- * msg_status --
+ * msgq_status --
  *	Report on the file's status.
  *
- * PUBLIC: void msg_status __P((SCR *, recno_t, int));
+ * PUBLIC: void msgq_status __P((SCR *, recno_t, int));
  */
 void
-msg_status(sp, lno, showlast)
+msgq_status(sp, lno, showlast)
 	SCR *sp;
 	recno_t lno;
 	int showlast;
@@ -483,7 +484,7 @@ msg_status(sp, lno, showlast)
 	size_t blen, len;
 
 	len = strlen(sp->frp->name);
-	GET_SPACE_RET(sp, bp, blen, len + 128);
+	GET_SPACE_GOTO(sp, bp, blen, len + 128);
 	p = bp;
 
 	memmove(p, sp->frp->name, len);
@@ -550,7 +551,7 @@ msg_status(sp, lno, showlast)
 	}
 	if (showlast) {
 		if (db_last(sp, &last))
-			return (1);
+			return;
 		if (last > 1) {
 			t = msg_cat(sp, "027|line %lu of %lu [%ld%%]", &len);
 			(void)sprintf(p, t, lno, last, (lno * 100) / last);
@@ -574,7 +575,7 @@ msg_status(sp, lno, showlast)
 	sp->gp->scr_msg(sp, M_INFO, bp, (size_t)(p - bp));
 
 	FREE_SPACE(sp, bp, blen);
-	return (0);
+alloc_err:
 }
 
 /*
@@ -777,11 +778,11 @@ retry:		if (sp == NULL)
 	nlen += 256;
 	if (sp == NULL) {
 		if ((bp = malloc(nlen)) == NULL)
-			goto binc_err;
+			goto alloc_err;
 	} else
 		GET_SPACE_GOTO(sp, bp, blen, nlen);
 	if (0) {
-binc_err:	return ("");
+alloc_err:	return ("");
 	}
 	*needfree = 1;
 
