@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 8.19 1993/10/27 14:51:51 bostic Exp $ (Berkeley) $Date: 1993/10/27 14:51:51 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 8.20 1993/10/28 14:23:37 bostic Exp $ (Berkeley) $Date: 1993/10/28 14:23:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -82,6 +82,12 @@ EXCMDLIST const cmds[] = {
 	    "b",
 	    "@ [buffer]",
 	    "execute a buffer"},
+/* C_SUBTILDE */
+	{"~",		ex_subtilde,	E_ADDR2|E_NORC,
+	    "s",
+	    "[line [,line]] & [options] [count] [flags]",
+	    "replace previous RE with previous replacement string,"},
+
 /* C_APPEND */
 	{"append",	ex_append,	E_ADDR1|E_NORC|E_ZERO|E_ZERODEF,
 	    "!",
