@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 5.4 1992/05/15 10:58:45 bostic Exp $ (Berkeley) $Date: 1992/05/15 10:58:45 $
+ *	$Id: exf.h,v 5.5 1992/05/21 13:03:49 bostic Exp $ (Berkeley) $Date: 1992/05/21 13:03:49 $
  */
 
 #ifndef _EXF_H_
@@ -74,25 +74,29 @@ typedef struct {
 	(p)->next = (EXF *)(hp); \
 }
 
-/*
- * The MARK structure defines a position in the file.  Because of the
- * different interfaces used by the db(3) package, curses, and users,
- * the line number is 1 based, while the column number is 0 based.  The
- * line number is of type recno_t, because that's the underlying type
- * of the database.  The column number is of type size_t so that we can
- * malloc a line.
- */
-typedef struct {
-#define	OOBLNO		0			/* Out-of-band line number. */
-	recno_t lno;				/* Line number. */
-	size_t cno;				/* Column number. */
-} MARK;
+/* Get current line. */
+#define	GETLINE(p, lno, len) {						\
+	u_long __lno = (lno);						\
+	p = file_gline(curf, __lno, &(len));				\
+}
 
-extern MARK cursor;				/* Cursor MARK. */
+/* Get current line; an error if fail. */
+#define	EGETLINE(p, lno, len) {						\
+	u_long __lno = (lno);						\
+	p = file_gline(curf, __lno, &(len));				\
+	if (p == NULL) {						\
+		bell();							\
+		msg("Unable to retrieve line %lu.", lno);		\
+		return (1);						\
+	}								\
+}
 
+int	 file_aline __P((EXF *, recno_t, char *, size_t));
 int	 file_default __P((void));
+int	 file_dline __P((EXF *, recno_t));
 EXF	*file_first __P((void));
 char	*file_gline __P((EXF *, recno_t, size_t *));
+int	 file_iline __P((EXF *, recno_t, char *, size_t));
 void	 file_init __P((void));
 int	 file_ins __P((EXF *, char *));
 int	 file_iscurrent __P((char *));
