@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.24 1993/11/23 15:52:50 bostic Exp $ (Berkeley) $Date: 1993/11/23 15:52:50 $";
+static char sccsid[] = "$Id: util.c,v 8.25 1993/11/26 15:31:29 bostic Exp $ (Berkeley) $Date: 1993/11/26 15:31:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -331,30 +331,38 @@ set_window_size(sp, set_row, ign_env)
 	int user_set;
 	char *argv[2], *s, buf[2048];
 
-	row = 24;
-	col = 80;
-
 	/*
 	 * Get the screen rows and columns.  If the values are wrong, it's
 	 * not a big deal -- as soon as the user sets them explicitly the
 	 * environment will be set and the screen package will use the new
 	 * values.
 	 *
-	 * Try TIOCGWINSZ, followed by the termcap entry.
+	 * Try TIOCGWINSZ.
 	 */
-	if (ioctl(STDERR_FILENO, TIOCGWINSZ, &win) != -1 &&
-	    win.ws_row != 0 && win.ws_col != 0) {
+	if (ioctl(STDERR_FILENO, TIOCGWINSZ, &win) != -1) {
 		row = win.ws_row;
 		col = win.ws_col;
-	} else {
+	} else
+		row = col = 0;
+
+	/*
+	 * If TIOCGWINSZ failed, or had entries of 0, try termcap.
+	 * If that fails, use some defaults.
+	 */
+	if (row == 0 || col == 0) {
 		s = NULL;
 		if (F_ISSET(&sp->opts[O_TERM], OPT_SET))
 			s = O_STR(sp, O_TERM);
 		else
 			s = getenv("TERM");
 		if (s != NULL && tgetent(buf, s) == 1) {
-			row = tgetnum("li");
-			col = tgetnum("co");
+			if (row == 0)
+				row = tgetnum("li");
+			if (col == 0)
+				col = tgetnum("co");
+		} else {
+			row = 24;
+			col = 80;
 		}
 	}
 
