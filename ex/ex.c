@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex.c,v 10.56 1996/10/10 17:31:55 bostic Exp $ (Berkeley) $Date: 1996/10/10 17:31:55 $";
+static const char sccsid[] = "$Id: ex.c,v 10.57 1996/10/10 18:49:45 bostic Exp $ (Berkeley) $Date: 1996/10/10 18:49:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -201,7 +201,7 @@ ex_cmd(sp)
 	GS *gp;
 	MARK cur;
 	recno_t lno;
-	size_t arg1_len, len;
+	size_t arg1_len, discard, len;
 	u_int32_t flags;
 	long ltmp;
 	int at_found, gv_found;
@@ -625,6 +625,7 @@ skip_srch:	if (ecp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, SC_VI))
 	 * special cases we move past their special argument(s).  Then, we
 	 * do normal command processing on whatever is left.  Barf-O-Rama.
 	 */
+	discard = 0;		/* Characters discarded from the command. */
 	arg1_len = 0;
 	ecp->save_cmd = ecp->cp;
 	if (ecp->cmd == &cmds[C_EDIT] || ecp->cmd == &cmds[C_EX] ||
@@ -662,6 +663,7 @@ skip_srch:	if (ecp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, SC_VI))
 				ch = *ecp->cp;
 				if (IS_ESCAPE(sp, ecp, ch) &&
 				    ecp->clen > 1) {
+					++discard;
 					--ecp->clen;
 					ch = *++ecp->cp;
 				} else if (isblank(ch))
@@ -675,9 +677,28 @@ skip_srch:	if (ecp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, SC_VI))
 		}
 	} else if (ecp->cmd == &cmds[C_BANG] ||
 	    ecp->cmd == &cmds[C_GLOBAL] || ecp->cmd == &cmds[C_V]) {
-		for (; ecp->clen > 0; --ecp->clen, ++ecp->cp)
-			if (ecp->cp[0] == '\n')
+		/*
+		 * QUOTING NOTE:
+		 *
+		 * We use backslashes to escape <newline> characters, although
+		 * this wasn't historic practice for the bang command.  It was
+		 * for the global and v commands, and it's common usage when
+		 * doing text insert during the command.  Escaping characters
+		 * are stripped as no longer useful.
+		 */
+		for (p = ecp->cp; ecp->clen > 0; --ecp->clen, ++ecp->cp) {
+			ch = *ecp->cp;
+			if (ch == '\\' && ecp->clen > 1 && ecp->cp[1] == '\n') {
+				++discard;
+				--ecp->clen;
+				ch = *++ecp->cp;
+
+				++gp->if_lno;
+				++ecp->if_lno;
+			} else if (ch == '\n')
 				break;
+			*p++ = ch;
+		}
 	} else if (ecp->cmd == &cmds[C_READ] || ecp->cmd == &cmds[C_WRITE]) {
 		/*
 		 * For write commands, if the next character is a <blank>, and
@@ -751,7 +772,7 @@ skip_srch:	if (ecp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, SC_VI))
 	 * no longer useful.
 	 */
 	vi_address = ecp->clen != 0 && ecp->cp[0] != '\n';
-	for (cnt = 0, p = ecp->cp; ecp->clen > 0; --ecp->clen, ++ecp->cp) {
+	for (p = ecp->cp; ecp->clen > 0; --ecp->clen, ++ecp->cp) {
 		ch = ecp->cp[0];
 		if (IS_ESCAPE(sp, ecp, ch) && ecp->clen > 1) {
 			tmp = ecp->cp[1];
@@ -760,9 +781,9 @@ skip_srch:	if (ecp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, SC_VI))
 					++gp->if_lno;
 					++ecp->if_lno;
 				}
+				++discard;
 				--ecp->clen;
 				++ecp->cp;
-				++cnt;
 				ch = tmp;
 			}
 		} else if (ch == '\n' || ch == '|') {
@@ -782,7 +803,7 @@ skip_srch:	if (ecp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, SC_VI))
 	ecp->cp = ecp->save_cmd;
 	ecp->save_cmd = p;
 	ecp->save_cmdlen = ecp->clen;
-	ecp->clen = ((ecp->save_cmd - ecp->cp) - 1) - cnt;
+	ecp->clen = ((ecp->save_cmd - ecp->cp) - 1) - discard;
 
 	/*
 	 * QUOTING NOTE:
