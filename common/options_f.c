@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 9.2 1994/11/10 16:50:54 bostic Exp $ (Berkeley) $Date: 1994/11/10 16:50:54 $";
+static char sccsid[] = "$Id: options_f.c,v 9.3 1994/11/17 17:09:31 bostic Exp $ (Berkeley) $Date: 1994/11/17 17:09:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -73,6 +73,22 @@ DECL(f_columns)
 		    MINIMUM_SCREEN_COLS);
 		return (1);
 	}
+
+	/*
+	 * !!!
+	 * It's not uncommon for allocation of huge chunks of memory to cause
+	 * core dumps on various systems.  So, we prune out numbers that are
+	 * "obviously" wrong.  Vi will not work correctly if it has the wrong
+	 * number of lines/columns for the screen, but at least we don't drop
+	 * core.
+	 */
+#define	MAXIMUM_SCREEN_COLS	500
+	if (val > MAXIMUM_SCREEN_COLS) {
+		msgq(sp, M_ERR, "266|Screen columns too large, greater than %d",
+		    MAXIMUM_SCREEN_COLS);
+		return (1);
+	}
+
 	/* Set the columns value in the environment for curses. */
 	(void)snprintf(buf, sizeof(buf), "COLUMNS=%lu", val);
 	if (opt_putenv(buf))
@@ -105,9 +121,23 @@ DECL(f_lines)
 
 	/* Validate the number. */
 	if (val < MINIMUM_SCREEN_ROWS) {
-		msgq(sp, M_ERR,
-		    "061|Screen lines too small, less than %d",
+		msgq(sp, M_ERR, "061|Screen lines too small, less than %d",
 		    MINIMUM_SCREEN_ROWS);
+		return (1);
+	}
+
+	/*
+	 * !!!
+	 * It's not uncommon for allocation of huge chunks of memory to cause
+	 * core dumps on various systems.  So, we prune out numbers that are
+	 * "obviously" wrong.  Vi will not work correctly if it has the wrong
+	 * number of lines/columns for the screen, but at least we don't drop
+	 * core.
+	 */
+#define	MAXIMUM_SCREEN_ROWS	500
+	if (val > MAXIMUM_SCREEN_ROWS) {
+		msgq(sp, M_ERR, "267|Screen lines too large, greater than %d",
+		    MAXIMUM_SCREEN_ROWS);
 		return (1);
 	}
 
