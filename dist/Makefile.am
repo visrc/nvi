@@ -164,6 +164,8 @@ EXTRA_libvi_la_SOURCES = \
 	$(visrcdir)/clib/strtoul.c \
 	$(visrcdir)/clib/vsnprintf.c \
 	$(visrcdir)/common/pthread.c \
+	$(visrcdir)/common/vi_auto.c \
+	$(visrcdir)/common/vi_rec.c \
 	$(visrcdir)/perl_api/perl.xs \
 	$(visrcdir)/perl_api/perlsfio.c \
 	$(visrcdir)/tcl_api/tcl.c \

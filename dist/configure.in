@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.186 2001/11/01 19:29:19 skimo Exp $
+dnl	$Id: configure.in,v 8.187 2001/11/01 23:56:29 skimo Exp $
 dnl Process this file with autoconf to produce a configure script.
 
 AC_INIT(../common/main.c)
@@ -996,6 +996,16 @@ else
 	fi
 fi
 
+AC_MSG_CHECKING(for DB 4)
+AC_EGREP_CPP([^4],
+	[#include <db.h>
+DB_VERSION_MAJOR],
+	[vi_cv_db4="yes"], [vi_cv_db4="no"])
+AC_MSG_RESULT($vi_cv_db4)
+if test "$vi_cv_db4" = "yes"; then
+	AC_DEFINE(USE_DB4_LOGGING)
+	LTLIBOBJS="vi_auto.lo vi_rec.lo $LTLIBOBJS"
+fi
 
 dnl We compile in nvi's RE routines unless the user specifies otherwise.
 AC_MSG_CHECKING(if --disable-re option specified)
