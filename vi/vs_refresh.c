@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.47 1994/03/09 12:08:52 bostic Exp $ (Berkeley) $Date: 1994/03/09 12:08:52 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.48 1994/03/10 11:21:35 bostic Exp $ (Berkeley) $Date: 1994/03/10 11:21:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -57,7 +57,7 @@ svi_refresh(sp, ep)
 		if (svi_curses_end(sp) || svi_curses_init(sp))
 			return (1);
 
-		/* Lose any svi_screens() cached information. */
+		/* Lose any svi_opt_screens() cached information. */
 		SVP(sp)->ss_lno = OOBLNO;
 
 		/*
@@ -155,14 +155,14 @@ svi_paint(sp, ep)
 	 * displayed if the leftright flag is set.
 	 */
 	if (F_ISSET(sp, S_REFORMAT)) {
-		/* Toss svi_screens() cached information. */
+		/* Toss svi_opt_screens() cached information. */
 		SVP(sp)->ss_lno = OOBLNO;
 
 		/* Toss svi_line() cached information. */
 		if (svi_sm_fill(sp, ep, HMAP->lno, P_TOP))
 			return (1);
 		if (O_ISSET(sp, O_LEFTRIGHT) &&
-		    (cnt = svi_screens(sp, ep, LNO, &CNO)) != 1)
+		    (cnt = svi_opt_screens(sp, ep, LNO, &CNO)) != 1)
 			for (smp = HMAP; smp <= TMAP; ++smp)
 				smp->off = cnt;
 		F_CLR(sp, S_REFORMAT);
@@ -194,7 +194,7 @@ svi_paint(sp, ep)
 			if (svi_sm_fill(sp, ep, LNO, P_BOTTOM))
 				return (1);
 		if (sp->t_rows == 1) {
-			HMAP->off = svi_screens(sp, ep, LNO, &CNO);
+			HMAP->off = svi_opt_screens(sp, ep, LNO, &CNO);
 			goto paint;
 		}
 		F_SET(sp, S_REDRAW);
@@ -363,7 +363,7 @@ middle:		if (svi_sm_fill(sp, ep, LNO, P_MIDDLE))
 	 */
 adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 	    (LNO == HMAP->lno || LNO == TMAP->lno)) {
-		cnt = svi_screens(sp, ep, LNO, &CNO);
+		cnt = svi_opt_screens(sp, ep, LNO, &CNO);
 		if (LNO == HMAP->lno && cnt < HMAP->off)
 			if ((HMAP->off - cnt) > HALFTEXT(sp)) {
 				HMAP->off = cnt;
@@ -497,7 +497,7 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 		if (SCNO < cwtotal) {
 lscreen:		if (O_ISSET(sp, O_LEFTRIGHT)) {
 				cnt = HMAP->off == 2 ? 1 :
-				    svi_screens(sp, ep, LNO, &CNO);
+				    svi_opt_screens(sp, ep, LNO, &CNO);
 				for (smp = HMAP; smp <= TMAP; ++smp)
 					smp->off = cnt;
 				leftright_warp = 1;
@@ -536,7 +536,7 @@ lscreen:		if (O_ISSET(sp, O_LEFTRIGHT)) {
 		/* See screen change comment in section 4a. */
 		if (SCNO >= SCREEN_COLS(sp)) {
 			if (O_ISSET(sp, O_LEFTRIGHT)) {
-				cnt = svi_screens(sp, ep, LNO, &CNO);
+				cnt = svi_opt_screens(sp, ep, LNO, &CNO);
 				for (smp = HMAP; smp <= TMAP; ++smp)
 					smp->off = cnt;
 				leftright_warp = 1;
@@ -567,7 +567,7 @@ fast:	getyx(stdscr, y, x);
 	 */
 slow:	for (smp = HMAP; smp->lno != LNO; ++smp);
 	if (O_ISSET(sp, O_LEFTRIGHT)) {
-		cnt = svi_screens(sp, ep, LNO, &CNO) % SCREEN_COLS(sp);
+		cnt = svi_opt_screens(sp, ep, LNO, &CNO) % SCREEN_COLS(sp);
 		if (cnt != HMAP->off) {
 			if (ISINFOLINE(sp, smp))
 				smp->off = cnt;
@@ -718,7 +718,7 @@ lcont:		/* Move to the message line and clear it. */
 		 * Print up to the "more" message.  Avoid the last character
 		 * in the last line, some hardware doesn't like it.
 		 */
-		if (svi_ncols(sp, p, mp->len, NULL) < sp->cols - 1)
+		if (svi_screens(sp, sp->ep, p, mp->len, 0, NULL) < sp->cols - 1)
 			len = sp->cols - 1;
 		else
 			len = (sp->cols - sizeof(MCONTMSG)) - 1;
