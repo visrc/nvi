@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 10.14 1995/10/16 15:24:45 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:24:45 $";
+static char sccsid[] = "$Id: msg.c,v 10.15 1995/10/17 08:49:49 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:49:49 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -336,7 +336,7 @@ nofmt:	mp += len;
 	*mp = '\n';
 
 	(void)ex_fflush(sp);
-	(void)gp->scr_msg(sp, mt, bp, mlen);
+	gp->scr_msg(sp, mt, bp, mlen);
 
 	/* Cleanup. */
 ret:	FREE_SPACE(sp, bp, blen);
@@ -390,10 +390,10 @@ msgq_str(sp, mtype, str, fmt)
  * the command 2d}, from the 'b' would report that two lines were deleted,
  * not one.
  *
- * PUBLIC: int msg_rpt __P((SCR *));
+ * PUBLIC: void msgq_rpt __P((SCR *));
  */
-int
-msg_rpt(sp)
+void
+msgq_rpt(sp)
 	SCR *sp;
 {
 	static char * const action[] = {
@@ -456,7 +456,7 @@ msg_rpt(sp)
 		}
 
 	(void)ex_fflush(sp);
-	(void)sp->gp->scr_msg(sp, M_INFO, bp, tlen);
+	sp->gp->scr_msg(sp, M_INFO, bp, tlen);
 
 	FREE_SPACE(sp, bp, blen);
 	return (0);
@@ -468,9 +468,9 @@ msg_rpt(sp)
  * msg_status --
  *	Report on the file's status.
  *
- * PUBLIC: int msg_status __P((SCR *, recno_t, int));
+ * PUBLIC: void msg_status __P((SCR *, recno_t, int));
  */
-int
+void
 msg_status(sp, lno, showlast)
 	SCR *sp;
 	recno_t lno;
@@ -571,7 +571,7 @@ msg_status(sp, lno, showlast)
 #endif
 	*p++ = '\n';
 	(void)ex_fflush(sp);
-	(void)sp->gp->scr_msg(sp, M_INFO, bp, (size_t)(p - bp));
+	sp->gp->scr_msg(sp, M_INFO, bp, (size_t)(p - bp));
 
 	FREE_SPACE(sp, bp, blen);
 	return (0);
