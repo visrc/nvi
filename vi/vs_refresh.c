@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.11 1992/12/22 14:59:29 bostic Exp $ (Berkeley) $Date: 1992/12/22 14:59:29 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.12 1992/12/22 16:10:34 bostic Exp $ (Berkeley) $Date: 1992/12/22 16:10:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -105,10 +105,6 @@ scr_modeline(ep, isinput)
 /*
  * onwinch --
  *	Handle SIGWINCH.
- *
- * XXX
- *	Obvious race exists -- if receive SIGWINCH while updating the
- *	screen, or in msg() it's possible to fail badly?
  */
 void
 onwinch(signo)
@@ -119,15 +115,11 @@ onwinch(signo)
 
 	/*
 	 * Try TIOCGWINSZ.  If it fails, ignore the signal.  Otherwise,
-	 * reset any environmental values, so curses uses the new values.
+	 * set the row/column options.  No error messages, because it's
+	 * not worth making msg reentrant.
 	 */
-	if (ioctl(STDERR_FILENO, TIOCGWINSZ, &win) == -1) {
-		msg("TIOCGWINSZ: %s", strerror(errno));
+	if (ioctl(STDERR_FILENO, TIOCGWINSZ, &win) == -1)
 		return;
-	}
-
-	(void)unsetenv("ROWS");
-	(void)unsetenv("COLUMNS");
 
 	argv[0] = sbuf;
 	argv[1] = NULL;
@@ -139,21 +131,10 @@ onwinch(signo)
 	if (opts_set(argv))
 		return;
 
-	/* End the current screen. */
-	(void)scr_end(curf);
-
-	/* Set the new values and start the next one. */
-	(void)snprintf(sbuf, sizeof(sbuf), "%u", win.ws_row);
-	(void)setenv("ROWS", sbuf, 1);
-	(void)snprintf(sbuf, sizeof(sbuf), "%u", win.ws_col);
-	(void)setenv("COLUMNS", sbuf, 1);
-
-	(void)scr_init(curf);
-
-	curf->lines = LINES;
-	curf->cols = COLS;
-
-	FF_SET(curf, F_REDRAW);
-	scr_cchange(curf);
-	refresh();
+	/* Do the resize if waiting, otherwise just schedule it. */
+	FF_SET(curf, F_RESIZE);
+	if (FF_ISSET(curf, F_READING)) {
+		scr_cchange(curf);
+		refresh();
+	}
 }
