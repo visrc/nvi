@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_util.c,v 8.7 1994/04/26 16:02:10 bostic Exp $ (Berkeley) $Date: 1994/04/26 16:02:10 $";
+static char sccsid[] = "$Id: ex_util.c,v 8.8 1994/04/26 16:18:35 bostic Exp $ (Berkeley) $Date: 1994/04/26 16:18:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -61,7 +61,7 @@ ex_getline(sp, fp, lenp)
 			return (1);
 		}
 		if (ch == EOF || ch == '\n') {
-			if (off == 0)
+			if (ch == EOF && !off)
 				return (1);
 			*lenp = off;
 			return (0);
