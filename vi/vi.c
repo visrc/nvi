@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 9.2 1994/11/12 11:31:45 bostic Exp $ (Berkeley) $Date: 1994/11/12 11:31:45 $";
+static char sccsid[] = "$Id: vi.c,v 9.3 1994/11/12 11:41:30 bostic Exp $ (Berkeley) $Date: 1994/11/12 11:41:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -587,27 +587,27 @@ getalias(sp, vp, kp)
 	CHAR_T push;
 
 	switch (vp->key) {
-	case 'A':
+	case 'A':			/* A -> $a */
 		push = 'a';
 		vp->key = '$';
 		break;
-	case 'C':
+	case 'C':			/* C -> c$ */
 		push = '$';
 		vp->key = 'c';
 		break;
-	case 'D':
+	case 'D':			/* D -> d$ */
 		push = '$';
 		vp->key = 'd';
 		break;
-	case 'I':
+	case 'I':			/* I -> ^i */
 		push = 'i';
 		vp->key = '^';
 		break;
-	case 'S':
+	case 'S':			/* S -> c_ */
 		push = '_';
 		vp->key = 'c';
 		break;
-	case 'Y':
+	case 'Y':			/* Y -> y_ */
 		push = '_';
 		vp->key = 'y';
 		break;
