@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.40 1994/05/25 23:45:09 bostic Exp $ (Berkeley) $Date: 1994/05/25 23:45:09 $
+.\"     $Id: vi.ref,v 8.41 1994/05/26 01:41:02 bostic Exp $ (Berkeley) $Date: 1994/05/26 01:41:02 $
 .\"
 .\"
 .so ref.so
@@ -1158,6 +1158,7 @@ option causes
 to do left-right screen scrolling, instead of the traditional
 .CO vi
 line wrapping.
+.bp
 .SH 1 Index
 .lp
 .nr PS 9
