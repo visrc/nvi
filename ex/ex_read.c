@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 10.23 1995/11/17 12:24:12 bostic Exp $ (Berkeley) $Date: 1995/11/17 12:24:12 $";
+static char sccsid[] = "$Id: ex_read.c,v 10.24 1995/11/29 20:47:18 bostic Exp $ (Berkeley) $Date: 1995/11/29 20:47:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -252,10 +252,7 @@ usage:			ex_emsg(sp, cmdp->cmd->usage, EXM_USAGE);
 	if (file_lock(sp, NULL, NULL, fileno(fp), 0) == LOCK_UNAVAIL)
 		msgq(sp, M_ERR, "146|%s: read lock was unavailable", name);
 
-	/* Turn on busy message. */
-	gp->scr_busy(sp, "147|Reading...", BUSY_ON);
-	rval = ex_readfp(sp, name, fp, &cmdp->addr1, &nlines, 1);
-	gp->scr_busy(sp, NULL, BUSY_OFF);
+	rval = ex_readfp(sp, name, fp, &cmdp->addr1, &nlines, 0);
 
 	/*
 	 * Set the cursor to the first line read in, if anything read
@@ -277,21 +274,23 @@ usage:			ex_emsg(sp, cmdp->cmd->usage, EXM_USAGE);
  * PUBLIC: int ex_readfp __P((SCR *, char *, FILE *, MARK *, recno_t *, int));
  */
 int
-ex_readfp(sp, name, fp, fm, nlinesp, success_msg)
+ex_readfp(sp, name, fp, fm, nlinesp, silent)
 	SCR *sp;
 	char *name;
 	FILE *fp;
 	MARK *fm;
 	recno_t *nlinesp;
-	int success_msg;
+	int silent;
 {
 	EX_PRIVATE *exp;
+	GS *gp;
 	recno_t lcnt, lno;
 	size_t len;
 	u_long ccnt;			/* XXX: can't print off_t portably. */
-	int nf;
+	int nf, rval;
 	char *p;
 
+	gp = sp->gp;
 	exp = EXP(sp);
 
 	/*
@@ -300,11 +299,16 @@ ex_readfp(sp, name, fp, fm, nlinesp, success_msg)
 	 */
 	ccnt = 0;
 	lcnt = 0;
+	p = "147|Reading...";
 	for (lno = fm->lno; !ex_getline(sp, fp, &len); ++lno, ++lcnt) {
-		if ((lcnt % INTERRUPT_CHECK) == 0) {
+		if ((lcnt + 1) % INTERRUPT_CHECK == 0) {
 			if (INTERRUPTED(sp))
 				break;
-			sp->gp->scr_busy(sp, NULL, BUSY_UPDATE);
+			if (!silent) {
+				gp->scr_busy(sp, p,
+				    p == NULL ? BUSY_UPDATE : BUSY_ON);
+				p = NULL;
+			}
 		}
 		if (db_append(sp, 1, lno, exp->ibp, len))
 			goto err;
@@ -318,16 +322,22 @@ ex_readfp(sp, name, fp, fm, nlinesp, success_msg)
 	if (nlinesp != NULL)
 		*nlinesp = lcnt;
 
-	if (success_msg) {
+	if (!silent) {
 		p = msg_print(sp, name, &nf);
-		msgq(sp, M_INFO, "148|%s: %lu lines, %lu characters",
-		    p, lcnt, ccnt);
+		msgq(sp, M_INFO,
+		    "148|%s: %lu lines, %lu characters", p, lcnt, ccnt);
 		if (nf)
 			FREE_SPACE(sp, p, 0);
 	}
-	return (0);
 
-err:	msgq_str(sp, M_SYSERR, name, "%s");
-	(void)fclose(fp);
+	rval = 0;
+	if (0) {
+err:		msgq_str(sp, M_SYSERR, name, "%s");
+		(void)fclose(fp);
+		rval = 1;
+	}
+
+	if (!silent)
+		gp->scr_busy(sp, NULL, BUSY_OFF);
 	return (1);
 }

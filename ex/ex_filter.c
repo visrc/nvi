@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 10.24 1995/11/27 11:27:38 bostic Exp $ (Berkeley) $Date: 1995/11/27 11:27:38 $";
+static char sccsid[] = "$Id: ex_filter.c,v 10.25 1995/11/29 20:47:15 bostic Exp $ (Berkeley) $Date: 1995/11/29 20:47:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -160,7 +160,7 @@ err:		if (input[0] != -1)
 	 * empty file.
 	 */
 	if (ftype == FILTER_RBANG || ftype == FILTER_READ) {
-		rval = ex_readfp(sp, "filter", ofp, fm, &nread, 0);
+		rval = ex_readfp(sp, "filter", ofp, fm, &nread, 1);
 		sp->rptlines[L_ADDED] += nread;
 		if (ftype == FILTER_READ)
 			if (fm->lno == 0)
@@ -217,7 +217,7 @@ err:		if (input[0] != -1)
 		(void)close(output[0]);
 		if ((ifp = fdopen(input[1], "w")) == NULL)
 			_exit (1);
-		_exit(ex_writefp(sp, "filter", ifp, fm, tm, NULL, NULL));
+		_exit(ex_writefp(sp, "filter", ifp, fm, tm, NULL, NULL, 1));
 
 		/* NOTREACHED */
 	default:			/* Parent-reader. */

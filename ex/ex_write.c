@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 10.15 1995/11/17 11:19:09 bostic Exp $ (Berkeley) $Date: 1995/11/17 11:19:09 $";
+static char sccsid[] = "$Id: ex_write.c,v 10.16 1995/11/29 20:47:19 bostic Exp $ (Berkeley) $Date: 1995/11/29 20:47:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -261,23 +261,27 @@ exwr(sp, cmdp, cmd)
  * ex_writefp --
  *	Write a range of lines to a FILE *.
  *
- * PUBLIC: int ex_writefp
- * PUBLIC:    __P((SCR *, char *, FILE *, MARK *, MARK *, u_long *, u_long *));
+ * PUBLIC: int ex_writefp __P((SCR *,
+ * PUBLIC:    char *, FILE *, MARK *, MARK *, u_long *, u_long *, int));
  */
 int
-ex_writefp(sp, name, fp, fm, tm, nlno, nch)
+ex_writefp(sp, name, fp, fm, tm, nlno, nch, silent)
 	SCR *sp;
 	char *name;
 	FILE *fp;
 	MARK *fm, *tm;
 	u_long *nlno, *nch;
+	int silent;
 {
 	struct stat sb;
+	GS *gp;
 	u_long ccnt;			/* XXX: can't print off_t portably. */
 	recno_t fline, tline, lcnt;
 	size_t len;
-	char *p;
+	int rval;
+	char *msg, *p;
 
+	gp = sp->gp;
 	fline = fm->lno;
 	tline = tm->lno;
 
@@ -303,13 +307,18 @@ ex_writefp(sp, name, fp, fm, tm, nlno, nch)
 	 */
 	ccnt = 0;
 	lcnt = 0;
+	msg = "253|Writing...";
 	if (tline != 0)
 		for (; fline <= tline; ++fline, ++lcnt) {
 			/* Caller has to provide any interrupt message. */
-			if ((lcnt % INTERRUPT_CHECK) == 0) {
+			if ((lcnt + 1) % INTERRUPT_CHECK == 0) {
 				if (INTERRUPTED(sp))
 					break;
-				sp->gp->scr_busy(sp, NULL, BUSY_UPDATE);
+				if (!silent) {
+					gp->scr_busy(sp, msg, msg == NULL ?
+					    BUSY_UPDATE : BUSY_ON);
+					msg = NULL;
+				}
 			}
 			if (db_get(sp, fline, DBG_FATAL, &p, &len))
 				goto err;
@@ -335,14 +344,21 @@ ex_writefp(sp, name, fp, fm, tm, nlno, nch)
 	if (fclose(fp))
 		goto err;
 
+	rval = 0;
+	if (0) {
+err:		if (!F_ISSET(sp->ep, F_MULTILOCK))
+			msgq_str(sp, M_SYSERR, name, "%s");
+		(void)fclose(fp);
+		rval = 1;
+	}
+
+	if (!silent)
+		gp->scr_busy(sp, NULL, BUSY_OFF);
+
+	/* Report the possibly partial transfer. */
 	if (nlno != NULL) {
 		*nch = ccnt;
 		*nlno = lcnt;
 	}
-	return (0);
-
-err:	if (!F_ISSET(sp->ep, F_MULTILOCK))
-		msgq_str(sp, M_SYSERR, name, "%s");
-	(void)fclose(fp);
-	return (1);
+	return (rval);
 }

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 10.19 1995/11/25 11:04:59 bostic Exp $ (Berkeley) $Date: 1995/11/25 11:04:59 $";
+static char sccsid[] = "$Id: exf.c,v 10.20 1995/11/29 20:47:04 bostic Exp $ (Berkeley) $Date: 1995/11/29 20:47:04 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -771,9 +771,7 @@ file_write(sp, fm, tm, name, flags)
 		tm = &to;
 	}
 
-	sp->gp->scr_busy(sp, "253|Writing...", BUSY_ON);
-	rval = ex_writefp(sp, name, fp, fm, tm, &nlno, &nch);
-	sp->gp->scr_busy(sp, NULL, BUSY_OFF);
+	rval = ex_writefp(sp, name, fp, fm, tm, &nlno, &nch, 0);
 
 	/*
 	 * Save the new last modification time -- even if the write fails
