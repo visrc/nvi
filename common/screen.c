@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: screen.c,v 8.10 1993/09/11 11:35:03 bostic Exp $ (Berkeley) $Date: 1993/09/11 11:35:03 $";
+static char sccsid[] = "$Id: screen.c,v 8.11 1993/09/11 18:08:38 bostic Exp $ (Berkeley) $Date: 1993/09/11 18:08:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,6 +34,7 @@ scr_init(orig, sp)
 	SCR *orig, *sp;
 {
 	extern CHNAME asciiname[];		/* XXX */
+	size_t len;
 	sigset_t bmask, omask;
 
 /* INITIALIZED AT SCREEN CREATE. */
@@ -128,29 +129,26 @@ scr_init(orig, sp)
 		sp->csearchdir = CNOTSET;
 		sp->lastckey = orig->lastckey;
 
-		if (orig->matchsize && (sp->match =
-		    malloc(orig->matchsize * sizeof(regmatch_t))) == NULL)
-			goto mem;
-		else {
-			if (sp->matchsize = orig->matchsize)
-				memmove(sp->match, orig->match,
-				    orig->matchsize * sizeof(regmatch_t));
+		if (orig->matchsize) {
+			len = orig->matchsize * sizeof(regmatch_t);
+			if ((sp->match = malloc(len)) == NULL)
+				goto mem;
+			sp->matchsize = orig->matchsize;
+			memmove(sp->match, orig->match, len);
 		}
-		if (sp->repl_len &&
-		    (sp->repl = malloc(orig->repl_len)) == NULL)
-			goto mem;
-		else {
-			if (sp->repl_len = orig->repl_len)
-				memmove(sp->repl, orig->repl, orig->repl_len);
+		if (orig->repl_len) {
+			if ((sp->repl = malloc(orig->repl_len)) == NULL)
+				goto mem;
+			sp->repl_len = orig->repl_len;
+			memmove(sp->repl, orig->repl, orig->repl_len);
 		}
-		if (sp->newl_len && (sp->newl =
-		    malloc(orig->newl_len * sizeof(size_t))) == NULL)
-			goto mem;
-		else {
+		if (orig->newl_len) {
+			len = orig->newl_len * sizeof(size_t);
+			if ((sp->newl = malloc(len)) == NULL)
+				goto mem;
 			sp->newl_len = orig->newl_len;
-			if (sp->newl_cnt = orig->newl_cnt)
-				memmove(sp->newl, orig->newl,
-				    orig->newl_len * sizeof(size_t));
+			sp->newl_cnt = orig->newl_cnt;
+			memmove(sp->newl, orig->newl, len);
 		}
 
 		sp->cname = orig->cname;
