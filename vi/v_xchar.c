@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_xchar.c,v 5.19 1993/04/05 07:10:37 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:10:37 $";
+static char sccsid[] = "$Id: v_xchar.c,v 5.20 1993/04/12 14:58:14 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:58:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -15,7 +15,7 @@ static char sccsid[] = "$Id: v_xchar.c,v 5.19 1993/04/05 07:10:37 bostic Exp $ (
 #include "vcmd.h"
 
 #define	NODEL(sp) {							\
-	msgq(sp, M_BELL, "No characters to delete.");			\
+	msgq(sp, M_BERR, "No characters to delete.");			\
 	return (1);							\
 }
 
@@ -44,7 +44,7 @@ v_xchar(sp, ep, vp, fm, tm, rp)
 	if (len == 0)
 		NODEL(sp);
 
-	cnt = vp->flags & VC_C1SET ? vp->count : 1;
+	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
 	fm->lno = tm->lno = fm->lno;
 
 	/*
@@ -85,12 +85,12 @@ v_Xchar(sp, ep, vp, fm, tm, rp)
 	u_long cnt;
 
 	if (fm->cno == 0) {
-		msgq(sp, M_BELL, "Already at the left-hand margin.");
+		msgq(sp, M_BERR, "Already at the left-hand margin.");
 		return (1);
 	}
 
 	*tm = *fm;
-	cnt = vp->flags & VC_C1SET ? vp->count : 1;
+	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
 	fm->cno = cnt >= tm->cno ? 0 : tm->cno - cnt;
 
 	if (cut(sp, ep, VICB(vp), fm, tm, 0) || delete(sp, ep, fm, tm, 0))
