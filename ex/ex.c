@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.59 1993/11/27 14:09:28 bostic Exp $ (Berkeley) $Date: 1993/11/27 14:09:28 $";
+static char sccsid[] = "$Id: ex.c,v 8.60 1993/11/27 14:11:57 bostic Exp $ (Berkeley) $Date: 1993/11/27 14:11:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -226,13 +226,8 @@ ex_cstring(sp, ep, cmd, len)
 			 */
 			for (; len > 0; ++p, ++t, --len) {
 				ch = *p = *t;
-				if (isalpha(ch))	/* Command. */
+				if (isalpha(ch) || sp->special[ch] == K_NL)
 					break;
-							/* Something else. */
-				if (sp->special[ch] == K_NL) {
-					++sp->if_lno;
-					break;
-				}
 			}
 			if (len > 0 &&
 			    strchr("egrvws", t[0] == ':' ? t[1] : t[0]))
