@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: vi.cmd.roff,v 8.11 1994/05/23 15:25:11 bostic Exp $ (Berkeley) $Date: 1994/05/23 15:25:11 $
+.\"	$Id: vi.cmd.roff,v 8.12 1994/05/23 15:51:38 bostic Exp $ (Berkeley) $Date: 1994/05/23 15:51:38 $
 .\"
 #ifdef REFERENCE
 .de SP
@@ -972,18 +972,22 @@ option.
 .El
 #endif
 .SP
-.It Sy "[count] #"
-Increment the cursor word.
+.It Sy "[count] # +|-|#"
+Increment or decrement the cursor number.
 #ifdef REFERENCE
-The current word is incremented by
-.Li count ,
-or, if
-.Li count
-is not specified, by the amount of the last increment.
-If no word has ever been incremented before, it is incremented by 1.
-The format (decimal, hexadecimal, and octal, and leading 0's) and
-type of the word are retained unless the new value cannot be represented
-in the previous format.
+If the trailing character is a
+.Li \&+ ,
+the number is incremented by count.
+If the trailing character is a
+.Li \&- ,
+the number is decremented by count.
+If the trailing character is a
+.Li \&# ,
+the previous increment or decrement is repeated.
+.Pp
+The format of the number (decimal, hexadecimal, and octal,
+and leading 0's) is retained unless the new value cannot be
+represented in the previous format.
 .Pp
 .Bl -tag -width "XOptions:" -compact
 .It "Line:"
@@ -2790,14 +2794,14 @@ None.
 .El
 #endif
 .SP
-.It Sy "[count1] z [count2] [-|.|+|^|<carriage-return>]"
+.It Sy "[count1] z [count2] -|.|+|^|<carriage-return>"
 Redraw, optionally repositioning and resizing the screen.
 #ifdef REFERENCE
 Redraw the screen with a window
 .Li count2
 lines long, containing line
 .Li count1
-placed as specified by character:
+placed as specified by the following character:
 .Dq Li \&+
 or
 .Li <carriage-return>
