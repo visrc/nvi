@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.14 1993/09/01 12:19:55 bostic Exp $ (Berkeley) $Date: 1993/09/01 12:19:55 $";
+static char sccsid[] = "$Id: vi.c,v 8.15 1993/09/10 18:38:06 bostic Exp $ (Berkeley) $Date: 1993/09/10 18:38:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -252,10 +252,6 @@ err:				TERM_KEY_FLUSH(sp);
 
 #define	KEY(sp, k) {							\
 	(k) = term_key(sp, TXT_MAPCOMMAND);				\
-	if (F_ISSET(sp, S_UPDATE_MODE)) {				\
-		F_CLR(sp, S_UPDATE_MODE);				\
-		sp->s_refresh(sp, ep);					\
-	}								\
 	if (sp->special[(k)] == K_VLNEXT)				\
 		(k) = term_key(sp, TXT_MAPCOMMAND);			\
 	if (sp->special[(k)] == K_ESCAPE) {				\
