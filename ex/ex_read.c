@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 8.10 1993/10/31 17:17:34 bostic Exp $ (Berkeley) $Date: 1993/10/31 17:17:34 $";
+static char sccsid[] = "$Id: ex_read.c,v 8.11 1993/11/03 17:18:47 bostic Exp $ (Berkeley) $Date: 1993/11/03 17:18:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,14 +35,26 @@ ex_read(sp, ep, cmdp)
 	FILE *fp;
 	MARK rm;
 	recno_t nlines;
+	size_t blen, len;
 	int rval;
-	char *fname;
+	char *bp, *fname;
+
 
 	/* If "read !", it's a pipe from a utility. */
 	if (F_ISSET(cmdp, E_FORCE)) {
 		if (cmdp->argv[0][0] == '\0') {
 			msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
 			return (1);
+		}
+		if (argv_exp1(sp, ep, cmdp, cmdp->argv[0], 0))
+			return (1);
+		if (F_ISSET(cmdp, E_MODIFY) && F_ISSET(sp, S_MODE_VI)) {
+			len = strlen(cmdp->argv[0]);
+			GET_SPACE(sp, bp, blen, len + 2);
+			bp[0] = '!';
+			memmove(bp + 1, cmdp->argv[0], len + 1);
+			(void)sp->s_busy(sp, bp);
+			FREE_SPACE(sp, bp, blen);
 		}
 		if (filtercmd(sp, ep,
 		    &cmdp->addr1, NULL, &rm, cmdp->argv[0], FILTER_READ))
@@ -60,7 +72,7 @@ ex_read(sp, ep, cmdp)
 		}
 		fname = sp->alt_fname;
 	} else {
-		if (file_argv(sp, ep, cmdp->argv[0], &cmdp->argc, &cmdp->argv))
+		if (argv_exp2(sp, ep, cmdp, cmdp->argv[0], 0))
 			return (1);
 
 		switch (cmdp->argc) {

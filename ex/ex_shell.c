@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 8.7 1993/11/02 18:46:50 bostic Exp $ (Berkeley) $Date: 1993/11/02 18:46:50 $";
+static char sccsid[] = "$Id: ex_shell.c,v 8.8 1993/11/03 17:18:48 bostic Exp $ (Berkeley) $Date: 1993/11/03 17:18:48 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -31,26 +31,22 @@ ex_shell(sp, ep, cmdp)
 {
 	char buf[MAXPATHLEN];
 
-	/* Start with a new line. */
-	(void)ex_printf(EXCOOKIE, "\n");
-
 	(void)snprintf(buf, sizeof(buf), "%s -i", O_STR(sp, O_SHELL));
-	return (ex_exec_process(sp, O_STR(sp, O_SHELL), buf, 0));
+	return (ex_exec_proc(sp, O_STR(sp, O_SHELL), buf, "\n"));
 }
 
 /*
- * ex_exec_process --
+ * ex_exec_proc --
  *	Run a separate process.
  */
 int
-ex_exec_process(sp, shell, cmd, needcontinue)
+ex_exec_proc(sp, shell, cmd, msg)
 	SCR *sp;
 	const u_char *shell, *cmd;
-	int needcontinue;
+	char *msg;
 {
 	const char *name;
 	struct termios t;
-	CHAR_T ch;
 	pid_t pid;
 	int rval;
 
@@ -68,6 +64,8 @@ ex_exec_process(sp, shell, cmd, needcontinue)
 			return (1);
 		}
 	}
+
+	(void)write(STDOUT_FILENO, msg, strlen(msg));
 
 	switch (pid = vfork()) {
 	case -1:			/* Error. */
@@ -93,20 +91,6 @@ ex_exec_process(sp, shell, cmd, needcontinue)
 	}
 
 	rval = proc_wait(sp, (long)pid, cmd, 0);
-
-	/* Vi will repaint the screen; get the user to okay it. */
-	if (needcontinue && F_ISSET(sp, S_MODE_VI)) {
-		(void)write(STDOUT_FILENO, CONTMSG, sizeof(CONTMSG) - 1);
-		for (;;) {
-			if (term_key(sp, &ch, 0) != INP_OK)
-				break;
-			if (sp->special[ch] == K_CR ||
-			    sp->special[ch] == K_NL || isblank(ch))
-				break;
-			(void)sp->s_bell(sp);
-		}
-	}
-	F_SET(sp, S_REFRESH);
 
 	/* Restore ex/vi terminal settings. */
 	if (F_ISSET(sp->gp, G_ISFROMTTY))

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 8.11 1993/09/29 16:24:42 bostic Exp $ (Berkeley) $Date: 1993/09/29 16:24:42 $";
+static char sccsid[] = "$Id: ex_write.c,v 8.12 1993/11/03 17:18:49 bostic Exp $ (Berkeley) $Date: 1993/11/03 17:18:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -130,6 +130,8 @@ exwr(sp, ep, cmdp, cmd)
 			msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
 			return (1);
 		}
+		if (argv_exp1(sp, ep, cmdp, p, 0))
+			return (1);
 		if (filtercmd(sp, ep,
 		    &cmdp->addr1, &cmdp->addr2, &rm, ++p, FILTER_WRITE))
 			return (1);
@@ -145,8 +147,8 @@ exwr(sp, ep, cmdp, cmd)
 		for (p += 2; *p && isblank(*p); ++p);
 	}
 
-	/* Build an argv (so we get file expansion). */
-	if (file_argv(sp, ep, p, &cmdp->argc, &cmdp->argv))
+	/* Build an argv so we get and argument count and file expansion. */
+	if (argv_exp2(sp, ep, cmdp, p, 0))
 		return (1);
 
 	switch(cmdp->argc) {

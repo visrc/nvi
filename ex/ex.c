@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.46 1993/11/03 10:23:05 bostic Exp $ (Berkeley) $Date: 1993/11/03 10:23:05 $";
+static char sccsid[] = "$Id: ex.c,v 8.47 1993/11/03 17:18:41 bostic Exp $ (Berkeley) $Date: 1993/11/03 17:18:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,6 +26,7 @@ static void	 ep_comm __P((SCR *, char **, char **, int *, char **, int *));
 static char	*ep_line __P((SCR *, EXF *, char *, MARK *));
 static char	*ep_range __P((SCR *, EXF *, char *, EXCMDARG *));
 static void	 ep_re __P((SCR *, char **, char **, int *));
+static void	 ep_rw __P((SCR *, char **, char **, int *));
 
 #define	DEFCOM	".+1"
 
@@ -178,12 +179,12 @@ ex_cstring(sp, ep, cmd, len)
 	 * be escaped by literal next characters.  The quote characters are
 	 * stripped here since they are no longer useful.
 	 *
-	 * There are two exceptions to this, the two commands that take
-	 * ex commands are arguments (ex and edit), and the three commands
-	 * that take RE patterns (global, vglobal and substitute).  These
-	 * commands want their first argument be specially delimited, not
-	 * necessarily by '|' characters.  See ep_comm() and ep_re() below
-	 * for details.
+	 * There are seven exceptions to this.  The filter versions of read
+	 * and write are delimited by newlines (the filter command can contain
+	 * shell pipes) ex and edit take ex commands as arguments, and global,
+	 * vglobal and substitute take RE's as arguments and want their first
+	 * argument be specially delimited, not necessarily by '|' characters.
+	 * See ep_comm(), ep_re() and ep_rw() below for details.
 	 */
 	arg1 = NULL;
 	arg1_len = 0;
@@ -194,14 +195,34 @@ ex_cstring(sp, ep, cmd, len)
 			for (; len > 0 && (isblank(t[0]) || t[0] == '|' ||
 			    sp->special[t[0]] == K_VLNEXT); ++t, --len);
 
-			/* Special case ex/edit, RE commands. */
+			/*
+			 * Skip leading address.  The command starts with
+			 * the first alphabetic character.
+			 */
+			for (; len > 0; ++p, ++t, --len) {
+				ch = *p = *t;
+				if (isalpha(ch))
+					break;
+			}
+
+			/* Special case read/write, ex/edit, RE commands. */
 			if (len > 0 &&
-			    strchr("egvs", t[0] == ':' ? t[1] : t[0]))
-				if (t[0] == ':' && t[1] == 'e' || t[0] == 'e')
+			    strchr("egrvws", t[0] == ':' ? t[1] : t[0]))
+				switch (t[0] == ':' ? t[1] : t[0]) {
+				case 'e':
 					ep_comm(sp,
 					    &p, &t, &len, &arg1, &arg1_len);
-				else
+					break;
+				case 'r':
+				case 'w':
+					ep_rw(sp, &p, &t, &len);
+					break;
+				case 'g':
+				case 'v':
+				case 's':
 					ep_re(sp, &p, &t, &len);
+					break;
+				}
 			if (len == 0)
 				goto cend;
 		}
@@ -535,7 +556,7 @@ two:		switch (cmd.addrcnt) {
 	/*
 	 * YASC.  The "set tags" command historically used a backslash, not
 	 * the user's literal next character, to escape whitespace.  Handle
-	 * it here instead of complicating the word_argv() code.  Note, this
+	 * it here instead of complicating the argv_exp3() code.  Note, this
 	 * isn't a particularly complex trap, and if backslashes were legal
 	 * in set commands, this would have to be much more complicated.
 	 */
@@ -560,7 +581,7 @@ two:		switch (cmd.addrcnt) {
 		 * a command that does its own parsing, in which case we
 		 * want to build a reasonable argv for it.
 		 */
-		if (*p != 's' && *exc == '\0')
+		if (*p != 's' && *p != 'S' && *exc == '\0')
 			break;
 
 		switch (*p) {
@@ -667,7 +688,7 @@ end2:			break;
 			F_SET(&cmd, E_COUNT);
 			break;
 		case 'f':				/* file */
-			if (file_argv(sp, ep, exc, &cmd.argc, &cmd.argv))
+			if (argv_exp2(sp, ep, &cmd, exc, cp == &cmds[C_BANG]))
 				return (1);
 			goto countchk;
 		case 'l':				/* line */
@@ -681,6 +702,10 @@ end2:			break;
 				exc = endp;
 			}
 			break;
+		case 'S':				/* string, file exp. */
+			if (argv_exp1(sp, ep, &cmd, exc, cp == &cmds[C_BANG]))
+				return (1);
+			goto addr2;
 		case 's':				/* string */
 			sp->ex_argv[0] = exc;
 			sp->ex_argv[1] = NULL;
@@ -720,7 +745,7 @@ end2:			break;
 			cmd.argv = sp->ex_argv;
 			goto addr2;
 		case 'w':				/* word */
-			if (word_argv(sp, ep, exc, &cmd.argc, &cmd.argv))
+			if (argv_exp3(sp, ep, &cmd, exc))
 				return (1);
 countchk:		if (*++p != 'N') {		/* N */
 				/*
@@ -945,29 +970,33 @@ addr2:	switch (cmd.addrcnt) {
 }
 
 /*
- * ep_comm, ep_re --
+ * ep_comm, ep_re, ep_rw --
  *
  * Historically, '|' characters in the first argument of the ex, edit,
  * global, vglobal and substitute commands did not separate commands.
- * For example, the following two commands were legal:
+ * And, in the filter cases for read and write, they did not delimit
+ * the command at all.
+ *
+ * For example, the following commands were legal:
  *
  *	:edit +25|s/abc/ABC/ file.c
  *	:substitute s/|/PIPE/
+ *	:read !spell % | columnate
  *
  * It's not quite as simple as it looks, however.  The command:
  *
  *	:substitute s/a/b/|s/c/d|set
  *
  * was also legal, i.e. the historic ex parser (and I use the word loosely,
- * since "parser" must imply some regularity of syntax) delimited the RE's
+ * since "parser" implies some regularity of syntax) delimited the RE's
  * based on its delimiter and not anything so vulgar as a command syntax.
  *
- * The ep_comm() and ep_re() routines make this work.  They are passed the
- * state of ex_cstring(), and, if it's a special case, they parse the first
- * argument and then return the new state.  For the +cmd field, since we
- * don't want to parse the line more than once, a pointer to and the length
- * of the first argument is returned to ex_cstring(), which will subsequently
- * pass it into ex_cmd().  Barf-O-Rama.
+ * The ep_comm(), ep_re(), and ep_rw routines make this work.  They're passed
+ * the state from ex_cstring(), and, if it's a special case, they parse the
+ * first (or entire) argument and return the new state.  For the +cmd field,
+ * since we don't want to parse the line more than once, a pointer to, and the
+ * length of, the first argument is returned to ex_cstring(), which passes it
+ * to ex_cmd().  Barf-O-Rama.
  */
 static void
 ep_comm(sp, pp, tp, lenp, arg1p, arg1_lenp)
@@ -980,7 +1009,7 @@ ep_comm(sp, pp, tp, lenp, arg1p, arg1_lenp)
 
 	/* Copy the state to local variables. */
 	p = *pp;
-	t = *tp;
+	cp = t = *tp;
 	len = *lenp;
 
 	/*
@@ -989,7 +1018,8 @@ ep_comm(sp, pp, tp, lenp, arg1p, arg1_lenp)
 	 * are all lower-case alphabetics, and there has to be a '+' to
 	 * start the arguments.  If there isn't one, we're done.
 	 */
-	if (*p == ':') {
+	if (*t == ':') {
+		++cp;
 		*p++ = *t++;
 		--len;
 	}
@@ -997,13 +1027,11 @@ ep_comm(sp, pp, tp, lenp, arg1p, arg1_lenp)
 	if (len == 0)
 		goto ret;
 
-	/* Make sure it's the ex or edit command. */
-	cp = *pp;
-	if (*cp == ':') {
-		++cp;
-		cnt = (p - cp) - 1;
-	} else
-		cnt = (p - cp);
+	/*
+	 * Make sure it's the ex or edit command.  Note, 'e' has
+	 * to map to the edit command or the strncmp's aren't right.
+	 */
+	cnt = t - cp;
 	if (strncmp(cp, "ex", cnt) && strncmp(cp, "edit", cnt))
 		goto ret;
 
@@ -1063,7 +1091,7 @@ ep_re(sp, pp, tp, lenp)
 
 	/* Copy the state to local variables. */
 	p = *pp;
-	t = *tp;
+	cp = t = *tp;
 	len = *lenp;
 
 	/*
@@ -1073,6 +1101,7 @@ ep_re(sp, pp, tp, lenp)
 	 * to start the arguments.  If there isn't one, we're done.
 	 */
 	if (*t == ':') {
+		++cp;
 		*p++ = *t++;
 		--len;
 	}
@@ -1084,13 +1113,12 @@ ep_re(sp, pp, tp, lenp)
 	if (len == 0)
 		goto ret;
 
-	/* Make sure it's the substitute, global or vglobal command. */
-	cp = *pp;
-	if (*cp == ':') {
-		++cp;
-		cnt = (p - cp) - 1;
-	} else
-		cnt = (p - cp);
+	/*
+	 * Make sure it's the substitute, global or vglobal command.
+	 * Note, 's', 'g and 'v' have to map to these commands or the
+	 * strncmp's aren't right.
+	 */
+	cnt = t - cp;
 	if (strncmp(cp, "substitute", cnt) &&
 	    strncmp(cp, "global", cnt) && strncmp(cp, "vglobal", cnt))
 		goto ret;
@@ -1135,6 +1163,69 @@ ep_re(sp, pp, tp, lenp)
 		++p;
 		--len;
 	}
+
+	/* Restore the state. */
+ret:	*pp = p;
+	*tp = t;
+	*lenp = len;
+}
+
+static void
+ep_rw(sp, pp, tp, lenp)
+	SCR *sp;
+	char **pp, **tp;
+	int *lenp;
+{
+	char *cp, *p, *t;
+	int ch, cnt, len;
+
+	/* Copy the state to local variables. */
+	p = *pp;
+	cp = t = *tp;
+	len = *lenp;
+
+	/*
+	 * Move to the next non-lower-case, alphabetic character.  We can
+	 * do this fairly brutally because we know that the command names
+	 * are all lower-case alphabetics, and there has to be a delimiter
+	 * to start the arguments.  If there isn't one, we're done.
+	 */
+	if (*t == ':') {
+		++cp;
+		*p++ = *t++;
+		--len;
+	}
+	for (; len; ++p, ++t, --len) {
+		ch = *p = *t;
+		if (!islower(ch))
+			break;
+	}
+	if (len == 0)
+		goto ret;
+
+	/*
+	 * Make sure it's the read or write command.  Note, 'r' and 'w'
+	 * have to map to these commands or the strncmp's aren't right.
+	 */
+	cnt = t - cp;
+	if (strncmp(cp, "read", cnt) && strncmp(cp, "write", cnt))
+		goto ret;
+
+	/*
+	 * Move to the next character.  If it's a '!', it's a filter
+	 * command we want to eat it all, otherwise, we're done.
+	 */
+	if (isblank(ch))
+		while (len--) {
+			ch = *++p = *++t;
+			if (!isblank(ch))
+				break;
+		}
+	if (ch != '!')
+		goto ret;
+
+	for (; len; --len)
+		*++p = *++t;
 
 	/* Restore the state. */
 ret:	*pp = p;

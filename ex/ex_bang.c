@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 8.11 1993/11/03 11:39:14 bostic Exp $ (Berkeley) $Date: 1993/11/03 11:39:14 $";
+static char sccsid[] = "$Id: ex_bang.c,v 8.12 1993/11/03 17:18:46 bostic Exp $ (Berkeley) $Date: 1993/11/03 17:18:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,13 +28,13 @@ static char sccsid[] = "$Id: ex_bang.c,v 8.11 1993/11/03 11:39:14 bostic Exp $ (
  *
  * Historical vi did NOT do shell expansion on the arguments before passing
  * them, only file name expansion.  This means that the O_SHELL program got
- * "$t" as an argument if that is what the user entered.
+ * "$t" as an argument if that is what the user entered.  Also, there's a
+ * special expansion done for the bang command.  Any exclamation points in
+ * the user's argument are replaced by the last, expanded ! command.
  *
- * This file duplicates a fair amount of code from ex_argv.c.  There are two
- * reasons.  The first is that we have to know if the user's string changed,
- * so we can display it if it was.  The second is that there's an additional
- * expansion.  Any exclamation points in the user's argument are replaced by
- * the last, expanded ! command.
+ * There's some fairly amazing slop in this routine to make the different
+ * ways of getting here display the right things.  It took a long time to
+ * get it right (wrong?), so be careful.
  */
 int
 ex_bang(sp, ep, cmdp)
@@ -42,104 +42,54 @@ ex_bang(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	register int ch, len, modified;
-	register char *p, *t;
 	enum filtertype ftype;
 	recno_t lno;
+	CHAR_T ch;
 	MARK rm;
+	size_t blen, len;
 	int rval;
-	char *com;
+	char *bp, *msg;
 
 	if (cmdp->argv[0][0] == '\0') {
 		msgq(sp, M_ERR, "Usage: %s", cmdp->cmd->usage);
 		return (1);
 	}
 
-	/* Figure out how much space we could possibly need. */
-	modified = 0;
-	len = strlen(cmdp->argv[0]) + 1;
-	for (p = cmdp->argv[0]; (p = strpbrk(p, "!%#\\")) != NULL; ++p)
-		switch (*p) {
-		case '!':
-			if (sp->lastbcomm == NULL) {
-				msgq(sp, M_ERR,
-				    "No previous command to replace \"!\".");
-				return (1);
-			}
-			len += strlen(sp->lastbcomm);
-			modified = 1;
-			break;
-		case '%':
-			if (F_ISSET(sp->frp, FR_NONAME)) {
-				msgq(sp, M_ERR,
-				    "No filename to substitute for %%.");
-				return (1);
-			}
-			len += sp->frp->nlen;
-			modified = 1;
-			break;
-		case '#':
-			if (F_ISSET(sp->frp, FR_NONAME)) {
-				msgq(sp, M_ERR,
-				    "No filename to substitute for #.");
-				return (1);
-			}
-			len += sp->frp->nlen;
-			modified = 1;
-			break;
-		case '\\':
-			if (*p)
-				++p;
-			break;
-		}
-
-	/* Allocate space. */
-	if ((com = malloc(len)) == NULL) {
-		msgq(sp, M_ERR, "Error: %s", strerror(errno));
-		return (1);
-	}
-
-	/* Fill it in. */
-	if (modified) {
-		for (p = cmdp->argv[0], t = com; (ch = *p) != '\0'; ++p)
-			switch (ch) {
-			case '!':
-				len = strlen(sp->lastbcomm);
-				memmove(t, sp->lastbcomm, len);
-				t += len;
-				break;
-			case '%':
-				memmove(t, sp->frp->fname, sp->frp->nlen);
-				t += sp->frp->nlen;
-				break;
-			case '#':
-				memmove(t, sp->frp->fname, sp->frp->nlen);
-				t += sp->frp->nlen;
-				break;
-			case '\\':
-				if (*p)
-					ch = *++p;
-				/* FALLTHROUGH */
-			default:
-				*t++ = ch;
-			}
-		*t = '\0';
-	} else
-		memmove(com, cmdp->argv[0], len);
-
 	/* Swap commands. */
 	if (sp->lastbcomm != NULL)
-		free(sp->lastbcomm);
-	sp->lastbcomm = com;
+		FREE(sp->lastbcomm, strlen(sp->lastbcomm) + 1);
+	sp->lastbcomm = strdup(cmdp->argv[0]);
 
-	if (modified)
-		(void)ex_printf(EXCOOKIE, "%s\n", com);
+	/* Display the command if modified. */
+	if (F_ISSET(cmdp, E_MODIFY)) {
+		if (F_ISSET(sp, S_MODE_EX)) {
+			(void)ex_printf(EXCOOKIE, "!%s\n", cmdp->argv[0]);
+			(void)ex_fflush(EXCOOKIE);
+		}
+		/*
+		 * !!!
+		 * Historic vi redisplayed the command if it was modified due
+		 * to file name and/or bang expansion.  This was immediately
+		 * erased by any error or line change reporting.  We don't want
+		 * to force the user to page through the responses, so we only
+		 * put it up until it's erased by something else.
+		 */
+		if (F_ISSET(sp, S_MODE_VI)) {
+			len = strlen(cmdp->argv[0]);
+			GET_SPACE(sp, bp, blen, len + 2);
+			bp[0] = '!';
+			memmove(bp + 1, cmdp->argv[0], len + 1);
+			(void)sp->s_busy(sp, bp);
+			FREE_SPACE(sp, bp, blen);
+		}
+	}
 
 	/*
 	 * If addresses were specified, pipe lines from the file through
 	 * the command.
 	 */
 	if (cmdp->addrcnt != 0) {
+
 		/*
 		 * !!!
 		 * Historical vi permitted "!!" in an empty file, for no
@@ -156,7 +106,7 @@ ex_bang(sp, ep, cmdp)
 			}
 		}
 		if (filtercmd(sp, ep,
-		    &cmdp->addr1, &cmdp->addr2, &rm, com, ftype))
+		    &cmdp->addr1, &cmdp->addr2, &rm, cmdp->argv[0], ftype))
 			return (1);
 		sp->lno = rm.lno;
 		F_SET(sp, S_AUTOPRINT);
@@ -174,16 +124,34 @@ ex_bang(sp, ep, cmdp)
 			if (file_write(sp, ep, NULL, NULL, NULL, FS_ALL))
 				return (1);
 		} else if (O_ISSET(sp, O_WARN))
-			msgq(sp, M_ERR, "Modified since last write.");
-		if (sex_refresh(sp, ep))
-			return (1);
-	}
+			if (F_ISSET(sp, S_MODE_VI) &&
+			    F_ISSET(cmdp, E_MODIFY))
+				msg = "\nFile modified since last write.\n";
+			else
+				msg = "File modified since last write.\n";
+	} else
+		msg = "\n";
 
 	/* Run the command. */
-	rval = ex_exec_process(sp, O_STR(sp, O_SHELL), com, 1);
+	rval = ex_exec_proc(sp, O_STR(sp, O_SHELL), cmdp->argv[0], msg);
 
 	/* Ex terminates with a bang. */
 	if (F_ISSET(sp, S_MODE_EX))
-		(void)fprintf(stdout, "!\n");
+		(void)write(STDOUT_FILENO, "!\n", 2);
+
+	/* Vi will repaint the screen; get the user to okay it. */
+	if (F_ISSET(sp, S_MODE_VI)) {
+		(void)write(STDOUT_FILENO, CONTMSG, sizeof(CONTMSG) - 1);
+		for (;;) {
+			if (term_key(sp, &ch, 0) != INP_OK)
+				break;
+			if (sp->special[ch] == K_CR ||
+			    sp->special[ch] == K_NL || isblank(ch))
+				break;
+			(void)sp->s_bell(sp);
+		}
+		F_SET(sp, S_REFRESH);
+	}
+
 	return (rval);
 }

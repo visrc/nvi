@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 8.22 1993/11/03 11:40:38 bostic Exp $ (Berkeley) $Date: 1993/11/03 11:40:38 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 8.23 1993/11/03 17:18:33 bostic Exp $ (Berkeley) $Date: 1993/11/03 17:18:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -37,6 +37,7 @@ static char sccsid[] = "$Id: ex_cmd.c,v 8.22 1993/11/03 11:40:38 bostic Exp $ (B
  *	c		-- count as an address offset
  *	f[N#][or]	-- file (a number or N, optional or required)
  *	l		-- line
+ *	S		-- string with file name expansion
  *	s		-- string
  *	W		-- word string
  *	w[N#][or]	-- word (a number or N, optional or required)
@@ -44,7 +45,7 @@ static char sccsid[] = "$Id: ex_cmd.c,v 8.22 1993/11/03 11:40:38 bostic Exp $ (B
 EXCMDLIST const cmds[] = {
 /* C_BANG */
 	{"!",		ex_bang,	E_ADDR2_NONE|E_NORC,
-	    "s",
+	    "S",
 	    "[line [,line]] ! command",
 	    "filter lines through commands or run commands"},
 /* C_HASH */

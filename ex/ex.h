@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.25 1993/10/28 14:23:24 bostic Exp $ (Berkeley) $Date: 1993/10/28 14:23:24 $
+ *	$Id: ex.h,v 8.26 1993/11/03 17:18:50 bostic Exp $ (Berkeley) $Date: 1993/11/03 17:18:50 $
  */
 
 struct _excmdarg;
@@ -15,30 +15,31 @@ typedef struct _excmdlist {
 					/* Underlying function. */
 	int (*fn) __P((SCR *, EXF *, struct _excmdarg *));
 
-#define	E_ADDR1		0x000001	/* One address. */
-#define	E_ADDR2		0x000002	/* Two address. */
-#define	E_ADDR2_ALL	0x000004	/* Zero/two addresses; zero == all. */
-#define	E_ADDR2_NONE	0x000008	/* Zero/two addresses; zero == none. */
-#define	E_ADDRDEF	0x000010	/* Default addresses used. */
-#define	E_COUNT		0x000020	/* Count supplied. */
-#define	E_FORCE		0x000040	/*  ! */
+#define	E_ADDR1		0x0000001	/* One address. */
+#define	E_ADDR2		0x0000002	/* Two address. */
+#define	E_ADDR2_ALL	0x0000004	/* Zero/two addresses; zero == all. */
+#define	E_ADDR2_NONE	0x0000008	/* Zero/two addresses; zero == none. */
+#define	E_ADDRDEF	0x0000010	/* Default addresses used. */
+#define	E_COUNT		0x0000020	/* Count supplied. */
+#define	E_FORCE		0x0000040	/*  ! */
 
-#define	E_F_CARAT	0x000080	/*  ^ flag. */
-#define	E_F_DASH	0x000100	/*  - flag. */
-#define	E_F_DOT		0x000200	/*  . flag. */
-#define	E_F_EQUAL	0x000400	/*  = flag. */
-#define	E_F_HASH	0x000800	/*  # flag. */
-#define	E_F_LIST	0x001000	/*  l flag. */
-#define	E_F_PLUS	0x002000	/*  + flag. */
-#define	E_F_PRINT	0x004000	/*  p flag. */
+#define	E_F_CARAT	0x0000080	/*  ^ flag. */
+#define	E_F_DASH	0x0000100	/*  - flag. */
+#define	E_F_DOT		0x0000200	/*  . flag. */
+#define	E_F_EQUAL	0x0000400	/*  = flag. */
+#define	E_F_HASH	0x0000800	/*  # flag. */
+#define	E_F_LIST	0x0001000	/*  l flag. */
+#define	E_F_PLUS	0x0002000	/*  + flag. */
+#define	E_F_PRINT	0x0004000	/*  p flag. */
 
-#define	E_F_PRCLEAR	0x008000	/* Clear the print (#, l, p) flags. */
-#define	E_NOGLOBAL	0x010000	/* Not in a global. */
-#define	E_NOPERM	0x020000	/* Permission denied for now. */
-#define	E_NORC		0x040000	/* Not from a .exrc or EXINIT. */
-#define	E_SETLAST	0x080000	/* Reset last command. */
-#define	E_ZERO		0x100000	/* 0 is a legal addr1. */
-#define	E_ZERODEF	0x200000	/* 0 is default addr1 of empty files. */
+#define	E_F_PRCLEAR	0x0008000	/* Clear the print (#, l, p) flags. */
+#define	E_MODIFY	0x0010000	/* File name expansion modified arg. */
+#define	E_NOGLOBAL	0x0020000	/* Not in a global. */
+#define	E_NOPERM	0x0040000	/* Permission denied for now. */
+#define	E_NORC		0x0080000	/* Not from a .exrc or EXINIT. */
+#define	E_SETLAST	0x0100000	/* Reset last command. */
+#define	E_ZERO		0x0200000	/* 0 is a legal addr1. */
+#define	E_ZERODEF	0x0400000	/* 0 is default addr1 of empty files. */
 	u_int	 flags;
 	char	*syntax;		/* Syntax script. */
 	char	*usage;			/* Usage line. */
@@ -106,12 +107,16 @@ int	filtercmd __P((SCR *, EXF *,
 	    MARK *, MARK *, MARK *, char *, enum filtertype));
 
 /* Ex function prototypes. */
+int	argv_exp1 __P((SCR *, EXF *, EXCMDARG *, char *, int));
+int	argv_exp2 __P((SCR *, EXF *, EXCMDARG *, char *, int));
+int	argv_exp3 __P((SCR *, EXF *, EXCMDARG *, char *));
+int	argv_free __P((SCR *));
 int	ex __P((SCR *, EXF *));
 int	ex_cfile __P((SCR *, EXF *, char *));
 int	ex_cmd __P((SCR *, EXF *, char *, int));
 int	ex_cstring __P((SCR *, EXF *, char *, int));
 int	ex_end __P((SCR *));
-int	ex_exec_process __P((SCR *, const u_char *, const u_char *, int));
+int	ex_exec_proc __P((SCR *, const u_char *, const u_char *, char *));
 int	ex_gb __P((SCR *, EXF *, HDR *, int, u_int));
 int	ex_getline __P((SCR *, FILE *, size_t *));
 int	ex_init __P((SCR *, EXF *));
@@ -121,13 +126,10 @@ void	ex_refresh __P((SCR *, EXF *));
 int	ex_suspend __P((SCR *));
 int	ex_writefp __P((SCR *, EXF *,					\
 	    char *, FILE *, MARK *, MARK *, u_long *, u_long *));
-int	file_argv __P((SCR *, EXF *, char *, int *, char ***));
-int	free_argv __P((SCR *));
 int	proc_wait __P((SCR *, long, const char *, int));
 int	sscr_exec __P((SCR *, EXF *, recno_t));
 int	sscr_end __P((SCR *));
 int	sscr_input __P((SCR *));
-int	word_argv __P((SCR *, EXF *, char *, int *, char ***));
 
 #define	EXPROTO(type, name)						\
 	type	name __P((SCR *, EXF *, EXCMDARG *))
