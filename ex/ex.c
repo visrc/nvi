@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.114 1994/04/10 14:32:15 bostic Exp $ (Berkeley) $Date: 1994/04/10 14:32:15 $";
+static char sccsid[] = "$Id: ex.c,v 8.115 1994/04/12 09:08:27 bostic Exp $ (Berkeley) $Date: 1994/04/12 09:08:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -73,7 +73,7 @@ ex(sp, ep)
 	 * from a file.  In addition, the first time a ^H was discarded from
 	 * the input, a message "^H discarded" was displayed.  We don't bother.
 	 */
-	LF_INIT(TXT_CNTRLD | TXT_CR | TXT_PROMPT);
+	LF_INIT(TXT_BACKSLASH | TXT_CNTRLD | TXT_CR | TXT_PROMPT);
 	if (O_ISSET(sp, O_BEAUTIFY))
 		LF_SET(TXT_BEAUTIFY);
 
