@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 8.23 1993/11/03 17:18:33 bostic Exp $ (Berkeley) $Date: 1993/11/03 17:18:33 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 8.24 1993/11/13 16:15:42 bostic Exp $ (Berkeley) $Date: 1993/11/13 16:15:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -267,7 +267,7 @@ EXCMDLIST const cmds[] = {
 /* C_SCRIPT */
 	{"script",	ex_script,	E_NOGLOBAL|E_NORC,
 	    "!f1o",
-	    "sc[dit][!] [file]",
+	    "sc[ript][!] [file]",
 	    "run a shell in a screen"},
 /* C_SET */
 	{"set",		ex_set,		E_NOGLOBAL,
