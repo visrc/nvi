@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 10.26 1996/02/22 19:55:29 bostic Exp $ (Berkeley) $Date: 1996/02/22 19:55:29 $";
+static char sccsid[] = "$Id: ex_filter.c,v 10.27 1996/02/23 10:48:27 bostic Exp $ (Berkeley) $Date: 1996/02/23 10:48:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -50,6 +50,8 @@ ex_filter(sp, cmdp, fm, tm, rp, cmd, ftype)
 	recno_t nread;
 	int input[2], output[2], rval;
 	char *name;
+
+	rval = 0;
 
 	/* Set return cursor position. */
 	*rp = *fm;
@@ -164,7 +166,8 @@ err:		if (input[0] != -1)
 	 * empty file.
 	 */
 	if (ftype == FILTER_RBANG || ftype == FILTER_READ) {
-		rval = ex_readfp(sp, "filter", ofp, fm, &nread, 1);
+		if (ex_readfp(sp, "filter", ofp, fm, &nread, 1))
+			rval = 1;
 		sp->rptlines[L_ADDED] += nread;
 		if (ftype == FILTER_READ)
 			if (fm->lno == 0)
@@ -204,7 +207,6 @@ err:		if (input[0] != -1)
 	 * explicit locking in the line.c:db_get() code, based on the flag set
 	 * here.
 	 */
-	rval = 0;
 	F_SET(sp->ep, F_MULTILOCK);
 	switch (parent_writer_pid = fork()) {
 	case -1:			/* Error. */
@@ -231,20 +233,23 @@ err:		if (input[0] != -1)
 			 * Read the output from the read end of the output
 			 * pipe and display it.  Filter_ldisplay closes ofp.
 			 */
-			rval = filter_ldisplay(sp, ofp);
+			if (filter_ldisplay(sp, ofp))
+				rval = 1;
 		else {
 			/*
 			 * Read the output from the read end of the output
 			 * pipe.  Ex_readfp appends to the MARK and closes
 			 * ofp.
 			 */
-			rval = ex_readfp(sp, "filter", ofp, tm, &nread, 0);
+			if (ex_readfp(sp, "filter", ofp, tm, &nread, 1))
+				rval = 1;
 			sp->rptlines[L_ADDED] += nread;
 		}
 
 		/* Wait for the parent-writer. */
-		rval |= proc_wait(sp,
-		    (long)parent_writer_pid, "parent-writer", 0, 1);
+		if (proc_wait(sp,
+		    (long)parent_writer_pid, "parent-writer", 0, 1))
+			rval = 1;
 
 		/* Delete any lines written to the utility. */
 		if (rval == 0 && ftype == FILTER_BANG &&
