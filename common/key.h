@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 5.9 1992/10/24 14:20:05 bostic Exp $ (Berkeley) $Date: 1992/10/24 14:20:05 $
+ *	$Id: key.h,v 5.10 1992/10/30 12:31:40 bostic Exp $ (Berkeley) $Date: 1992/10/30 12:31:40 $
  */
 
 #define	K_CR		1
@@ -39,47 +39,3 @@ int	gb __P((int, u_char **, size_t *, u_int));
 int	gb_inc __P((void));
 void	gb_init __P((void));
 int	getkey __P((u_int));
-
-/*
- * Vi makes the screen ready for ex to print, but there are special ways that
- * information gets displayed.   The output overwrites some ex commands, so
- * in that case we erase the command line, outputting a '\r' to guarantee the
- * first column.  (We could theoretically lose if the command line has already
- * wrapped, but this should only result in additional characters being sent to
- * the terminal.)  All other initial output lines are preceded by a '\n'.
- */
-/* Start the sequence. */
-#define	EX_PRSTART(overwrite) {						\
-	if (mode == MODE_VI) {						\
-		if (ex_prstate == PR_NONE) {				\
-			if (overwrite) {				\
-				while (ex_prerase--) {			\
-					(void)putchar('\b');		\
-					(void)putchar(' ');		\
-					(void)putchar('\b');		\
-				}					\
-				(void)putchar('\r');			\
-				ex_prstate = PR_STARTED;		\
-			} else {					\
-				(void)putchar('\n');			\
-				ex_prstate = PR_PRINTED;		\
-			}						\
-		}  else if (ex_prstate == PR_STARTED) {			\
-			(void)putchar('\n');				\
-			ex_prstate = PR_PRINTED;			\
-		}							\
-	} else								\
-		(void)putchar('\n');					\
-}
-
-/* Print a newline. */
-#define	EX_PRNEWLINE {							\
-	(void)putchar('\n');						\
-	ex_prstate = PR_PRINTED;					\
-}
-
-/* Print a trailing newline, if necessary. */
-#define	EX_PRTRAIL {							\
-	if (mode != MODE_VI || ex_prstate == PR_PRINTED)		\
-		(void)putchar('\n');					\
-}
