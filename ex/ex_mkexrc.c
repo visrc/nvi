@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_mkexrc.c,v 8.2 1993/08/05 18:09:24 bostic Exp $ (Berkeley) $Date: 1993/08/05 18:09:24 $";
+static char sccsid[] = "$Id: ex_mkexrc.c,v 8.3 1993/08/17 18:45:05 bostic Exp $ (Berkeley) $Date: 1993/08/17 18:45:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -23,7 +23,7 @@ static char sccsid[] = "$Id: ex_mkexrc.c,v 8.2 1993/08/05 18:09:24 bostic Exp $ 
 #include "pathnames.h"
 
 /*
- * ex_mkexrc -- (:mkexrc[!] [file])
+ * ex_mkexrc -- :mkexrc[!] [file]
  *	Create (or overwrite) a .exrc file with the current info.
  */
 int
@@ -32,6 +32,7 @@ ex_mkexrc(sp, ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
+	struct stat sb;
 	FILE *fp;
 	int fd;
 	char *fname;
@@ -48,16 +49,18 @@ ex_mkexrc(sp, ep, cmdp)
 		abort();
 	}
 
-	/* Create with max permissions of rw-r--r--. */
-	if ((fd = open(fname, (F_ISSET(cmdp, E_FORCE) ? 0 : O_EXCL) |
-	    O_CREAT | O_TRUNC | O_WRONLY,
-	    S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) < 0) {
-		msgq(sp, M_ERR, "%s: %s", fname, strerror(errno));
+	if (!F_ISSET(cmdp, E_FORCE) && !stat(fname, &sb)) {
+		msgq(sp, M_ERR,
+		    "%s exists, not written; use ! to override.", fname);
 		return (1);
 	}
 
-	/* In case it already existed, set the permissions. */
-	(void)fchmod(fd, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+	/* Create with max permissions of rw-r--r--. */
+	if ((fd = open(fname, O_CREAT | O_TRUNC | O_WRONLY,
+	    S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) < 0) {
+		msgq(sp, M_ERR, "%s: %s%s", fname, strerror(errno));
+		return (1);
+	}
 
 	if ((fp = fdopen(fd, "w")) == NULL) {
 		msgq(sp, M_ERR, "%s: %s", fname, strerror(errno));
