@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_init.c,v 10.25 1996/07/10 09:13:42 bostic Exp $ (Berkeley) $Date: 1996/07/10 09:13:42 $";
+static const char sccsid[] = "$Id: ex_init.c,v 10.26 1996/08/12 20:23:59 bostic Exp $ (Berkeley) $Date: 1996/08/12 20:23:59 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -55,7 +55,6 @@ ex_screen_copy(orig, sp)
 	CIRCLEQ_INIT(&nexp->tq);
 	TAILQ_INIT(&nexp->tagfq);
 	LIST_INIT(&nexp->cscq);
-	TAILQ_INIT(&nexp->cdq);
 
 	if (orig == NULL) {
 	} else {
@@ -106,9 +105,6 @@ ex_screen_end(sp)
 	if (ex_tag_free(sp))
 		rval = 1;
 
-	if (ex_cdfree(sp))
-		rval = 1;
-
 	/* Free private memory. */
 	free(exp);
 	sp->ex_private = NULL;
@@ -130,8 +126,6 @@ ex_optchange(sp, offset, str, valp)
 	u_long *valp;
 {
 	switch (offset) {
-	case O_CDPATH:
-		return (ex_cdalloc(sp, str));
 	case O_TAGS:
 		return (ex_tagf_alloc(sp, str));
 	}
