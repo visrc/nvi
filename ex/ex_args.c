@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 5.32 1993/02/24 12:53:50 bostic Exp $ (Berkeley) $Date: 1993/02/24 12:53:50 $";
+static char sccsid[] = "$Id: ex_args.c,v 5.33 1993/02/25 17:45:53 bostic Exp $ (Berkeley) $Date: 1993/02/25 17:45:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,28 +32,32 @@ ex_next(ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	EXF *new_ep;
+	EXF *tep;
 
 	MODIFY_CHECK(ep, cmdp->flags & E_FORCE);
 
 	if (cmdp->argc) {
-		if (file_stop(ep, cmdp->flags & E_FORCE))
-			return (1);
+		/* Mark all the current files as ignored. */
+		for (tep = ep; tep->prev; tep = tep->prev)
+			FF_SET(tep, F_IGNORE);
+		for (tep = ep; tep->next; tep = tep->next)
+			FF_SET(tep, F_IGNORE);
+		FF_SET(ep, F_IGNORE);
+
+		/* Add the new files into the file list. */
 		if (file_set(cmdp->argc, (char **)cmdp->argv))
-			PANIC;
-		if ((new_ep = file_first(1)) == NULL)
-			PANIC;
-	} else {
-		if ((new_ep = file_next(ep, 0)) == NULL) {
-			msg(ep, M_ERROR, "No more files to edit.");
 			return (1);
-		}
-		if (file_stop(ep, cmdp->flags & E_FORCE))
+		
+		/* Get the next file to edit. */
+		if ((tep = file_first(1)) == NULL)
 			return (1);
+	} else if ((tep = file_next(ep, 0)) == NULL) {
+		msg(ep, M_ERROR, "No more files to edit.");
+		return (1);
 	}
 
-	if (file_start(new_ep))
-		PANIC;
+	ep->enext = tep;
+	FF_SET(ep, cmdp->flags & E_FORCE ? F_SWITCH_FORCE : F_SWITCH);
 	return (0);
 }
 
@@ -66,20 +70,17 @@ ex_prev(ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	EXF *prev_ep;
+	EXF *tep;
 
 	MODIFY_CHECK(ep, cmdp->flags & E_FORCE);
 
-	if ((prev_ep = file_prev(ep, 0)) == NULL) {
+	if ((tep = file_prev(ep, 0)) == NULL) {
 		msg(ep, M_ERROR, "No previous files to edit.");
 		return (1);
 	}
 
-	if (file_stop(ep, cmdp->flags & E_FORCE))
-		return (1);
-
-	if (file_start(prev_ep))
-		PANIC;
+	FF_SET(ep, cmdp->flags & E_FORCE ? F_SWITCH_FORCE : F_SWITCH);
+	ep->enext = tep;
 	return (0);
 }
 
@@ -92,10 +93,10 @@ ex_rew(ep, cmdp)
 	EXF *ep;
 	EXCMDARG *cmdp;
 {
-	EXF *rew_ep;
+	EXF *tep;
 
 	/* Historic practice -- you can rewind to the current file. */
-	if ((rew_ep = file_first(0)) == NULL) {
+	if ((tep = file_first(0)) == NULL) {
 		msg(ep, M_ERROR, "No previous files to rewind.");
 		return (1);
 	}
@@ -104,11 +105,8 @@ ex_rew(ep, cmdp)
 	if (!(cmdp->flags & E_FORCE))
 		MODIFY_CHECK(ep, 0);
 
-	if (file_stop(ep, 0))
-		return (1);
-
-	if (file_start(rew_ep))
-		PANIC;
+	FF_SET(ep, cmdp->flags & E_FORCE ? F_SWITCH_FORCE : F_SWITCH);
+	ep->enext = tep;
 	return (0);
 }
 
