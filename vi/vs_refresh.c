@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.56 1993/05/06 16:11:12 bostic Exp $ (Berkeley) $Date: 1993/05/06 16:11:12 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.57 1993/05/06 17:12:26 bostic Exp $ (Berkeley) $Date: 1993/05/06 17:12:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -551,10 +551,13 @@ svi_modeline(sp, ep)
 		addstr(buf);
 	}
 
-	/* Show the mode. */
+	/*
+	 * Show the mode.  Leave the last character blank, just in case
+	 * it's a really dumb terminal with hardware scroll.
+	 */
 	if (O_ISSET(sp, O_SHOWMODE) && sp->cols > MODESIZE) {
-		MOVE(sp, INFOLINE(sp), sp->cols - 7);
-		addstr(F_ISSET(sp, S_INPUT) ? "  Input" : "Command");
+		MOVE(sp, INFOLINE(sp), sp->cols - 8);
+		addstr(F_ISSET(sp, S_INPUT) ? "  Input " : "Command ");
 	}
 
 	return (0);
