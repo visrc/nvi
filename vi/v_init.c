@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_init.c,v 9.5 1994/11/13 18:08:38 bostic Exp $ (Berkeley) $Date: 1994/11/13 18:08:38 $";
+static char sccsid[] = "$Id: v_init.c,v 9.6 1994/11/16 17:41:46 bostic Exp $ (Berkeley) $Date: 1994/11/16 17:41:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -108,6 +108,7 @@ int
 v_init(sp)
 	SCR *sp;
 {
+	recno_t lno;
 	size_t len;
 
 	/*
@@ -115,22 +116,18 @@ v_init(sp)
 	 * an initial comment.  Otherwise, make sure that the cursor
 	 * position is a legal one.
 	 */
-	if (F_ISSET(sp->frp, FR_CURSORSET)) {
-		if (file_lline(sp, &sp->lno))
-			return (1);
-		if (sp->lno == 0) {
+	if (F_ISSET(sp->frp, FR_CURSORSET))
+		if (file_gline(sp, sp->lno, &len) == NULL) {
+			if (file_lline(sp, &lno))
+				return (1);
 			sp->lno = 1;
 			sp->cno = 0;
-		} else {
-			if (file_gline(sp, sp->lno, &len) == NULL)
+		} else if (sp->cno >= len) {
+			sp->cno = 0;
+			if (nonblank(sp, sp->lno, &sp->cno))
 				return (1);
-			if (sp->cno >= len) {
-				sp->cno = 0;
-				if (nonblank(sp, sp->lno, &sp->cno))
-					return (1);
-			}
 		}
-	} else
+	else
 		if (O_ISSET(sp, O_COMMENT) && ex_comment(sp))
 			return (1);
 
