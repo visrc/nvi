@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_map.c,v 8.20 1994/08/31 17:17:11 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:17:11 $";
+static char sccsid[] = "$Id: ex_map.c,v 8.21 1994/10/25 18:31:17 bostic Exp $ (Berkeley) $Date: 1994/10/25 18:31:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -76,8 +76,8 @@ ex_map(sp, ep, cmdp)
 	 * mapping, the SEQ_FUNCMAP type stays around, maybe the next screen
 	 * type can get it right.
 	 */
-	if (input[0] == '#') {
-		for (p = input + 1; isdigit(*p); ++p);
+	if (input[0] == '#' && isdigit(input[1])) {
+		for (p = input + 2; isdigit(*p); ++p);
 		if (p[0] != '\0')
 			goto nofunc;
 
