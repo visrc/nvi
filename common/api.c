@@ -10,7 +10,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: api.c,v 8.12 1996/02/28 19:23:14 bostic Exp $ (Berkeley) $Date: 1996/02/28 19:23:14 $";
+static char sccsid[] = "$Id: api.c,v 8.13 1996/03/03 16:21:43 bostic Exp $ (Berkeley) $Date: 1996/03/03 16:21:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -23,12 +23,10 @@ static char sccsid[] = "$Id: api.c,v 8.12 1996/02/28 19:23:14 bostic Exp $ (Berk
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <tcl.h>
 #include <termios.h>
 #include <unistd.h>
 
 #include "../common/common.h"
-#include "tcl_extern.h"
 
 extern GS *__global_list;			/* XXX */
 
