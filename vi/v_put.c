@@ -6,26 +6,37 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_put.c,v 5.4 1992/05/15 11:14:16 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:14:16 $";
+static char sccsid[] = "$Id: v_put.c,v 5.5 1992/05/21 12:59:39 bostic Exp $ (Berkeley) $Date: 1992/05/21 12:59:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
+#include <limits.h>
 
 #include "vi.h"
 #include "vcmd.h"
+#include "cut.h"
 #include "extern.h"
 
 /*
- * v_paste --
- *	Paste text from a cut buffer.
+ * v_Put -- [buffer]P
+ *	Insert the contents of the buffer before the cursor.
  */
-/* ARGSUSED */
-MARK *
-v_paste(m, cnt, cmd)
-	MARK	*m;	/* where to paste the text */
-	long	cnt;	/* (ignored) */
-	int	cmd;	/* either 'p' or 'P' */
+int
+v_Put(vp, cp, rp)
+	VICMDARG *vp;
+	MARK *cp, *rp;
 {
-	m = paste(m, cmd == 'p', 0);
-	return m;
+	return (put(vp->buffer == OOBCB ? DEFCB : vp->buffer, cp, rp, 0));
+}
+
+/*
+ * v_put -- [buffer]p
+ *	Insert the contents of the buffer after the cursor.
+ */
+int
+v_put(vp, cp, rp)
+	VICMDARG *vp;
+	MARK *cp, *rp;
+{
+	return (put(vp->buffer == OOBCB ? DEFCB : vp->buffer, cp, rp, 1));
 }
