@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.130 1994/07/18 21:30:58 bostic Exp $ (Berkeley) $Date: 1994/07/18 21:30:58 $";
+static char sccsid[] = "$Id: ex.c,v 8.131 1994/07/21 11:02:21 bostic Exp $ (Berkeley) $Date: 1994/07/21 11:02:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1056,7 +1056,7 @@ addr2:	switch (exc.addrcnt) {
 		 * vi allowed this, note, it's also the hack that allows
 		 * "vi + nonexistent_file" to work.
 		 */
-		if (num == 0 && (!IN_VI_MODE(sp) || uselastcmd != 1) &&
+		if (num == 0 && (IN_EX_MODE(sp) || uselastcmd != 1) &&
 		    !LF_ISSET(E_ZERO)) {
 			msgq(sp, M_ERR,
 			    "The %s command doesn't permit an address of 0",
@@ -1075,8 +1075,12 @@ addr2:	switch (exc.addrcnt) {
 	/*
 	 * If doing a default command and there's nothing left on the line,
 	 * vi just moves to the line.  For example, ":3" and ":'a,'b" just
-	 * move to line 3 and line 'b, respectively, but ":3|" prints line
-	 * 3.
+	 * move to line 3 and line 'b, respectively, but ":3|" prints line 3.
+	 *
+	 * !!!
+	 * This is done before the absolute mark gets set; historically,
+	 * "/a/,/b/" did NOT set vi's absolute mark, but "/a/,/b/d" did.
+	 * If ep_line() set the absolute mark flag, lose it.
 	 */
 	if (IN_VI_MODE(sp) && uselastcmd && vi_address == 0) {
 		switch (exc.addrcnt) {
@@ -1092,6 +1096,19 @@ addr2:	switch (exc.addrcnt) {
 		cmd = save_cmd;
 		cmdlen = save_cmdlen;
 		goto loop;
+	}
+
+	/*
+	 * Set the absolute mark -- we have to set it for vi here, in case
+	 * it's a compound command, e.g. ":5p|6" should set the absolute
+	 * mark for vi.
+	 */
+	if (F_ISSET(exp, EX_ABSMARK)) {
+		cur.lno = sp->lno;
+		cur.cno = sp->cno;
+		F_CLR(exp, EX_ABSMARK);
+		if (mark_set(sp, ep, ABSMARK1, &cur, 1))
+			goto err;
 	}
 
 	/* Reset "last" command. */
@@ -1126,12 +1143,12 @@ addr2:	switch (exc.addrcnt) {
 	F_CLR(exp, EX_AUTOPRINT);
 
 	/* Increment the command count if not called from vi. */
-	if (!IN_VI_MODE(sp))
+	if (IN_EX_MODE(sp))
 		++sp->ccnt;
 
 	/*
-	 * If file state and not doing a global command, log the start of
-	 * an action.
+	 * If file state available, and not doing a global command,
+	 * log the start of an action.
 	 */
 	if (ep != NULL && !F_ISSET(sp, S_GLOBAL))
 		(void)log_cursor(sp, ep);
@@ -1409,6 +1426,17 @@ done:	if (savecursor_set) {
 
 /*
  * Get a single line address specifier.
+ *
+ * The way the "previous context" mark worked was that any "non-relative"
+ * motion set it.  While ex/vi wasn't totally consistent about this, ANY
+ * numeric address, search pattern, '$', or mark reference in an address
+ * was considered non-relative, and set the value.  Which should explain
+ * why we're hacking marks down here.  The problem was that the mark was
+ * only set if the command was called, i.e. we have to set a flag and test
+ * it later.
+ *
+ * XXX
+ * This is not exactly historic practice, although it's fairly close.
  */
 static int
 ep_line(sp, ep, cur, cmdp, cmdlenp, addr_found)
@@ -1419,6 +1447,7 @@ ep_line(sp, ep, cur, cmdp, cmdlenp, addr_found)
 	size_t *cmdlenp;
 	int *addr_found;
 {
+	EX_PRIVATE *exp;
 	MARK m;
 	long total;
 	u_int flags;
@@ -1426,6 +1455,7 @@ ep_line(sp, ep, cur, cmdp, cmdlenp, addr_found)
 	int (*sf) __P((SCR *, EXF *, MARK *, MARK *, char *, char **, u_int *));
 	char *cmd, *endp;
 
+	exp = EXP(sp);
 	*addr_found = 0;
 
 	cmd = *cmdp;
@@ -1433,6 +1463,8 @@ ep_line(sp, ep, cur, cmdp, cmdlenp, addr_found)
 	switch (*cmd) {
 	case '$':				/* Last line in the file. */
 		*addr_found = 1;
+		F_SET(exp, EX_ABSMARK);
+
 		cur->cno = 0;
 		if (file_lline(sp, ep, &cur->lno))
 			return (1);
@@ -1442,19 +1474,8 @@ ep_line(sp, ep, cur, cmdp, cmdlenp, addr_found)
 	case '0': case '1': case '2': case '3': case '4':
 	case '5': case '6': case '7': case '8': case '9':
 		*addr_found = 1;
-		/*
-		 * The way the vi "previous context" mark worked was that
-		 * "non-relative" motions set it.  While vi wasn't totally
-		 * consistent about this, ANY numeric address was considered
-		 * non-relative, and set the value.  Which is why we're
-		 * hacking marks down here.
-		 */
-		if (IN_VI_MODE(sp)) {
-			m.lno = sp->lno;
-			m.cno = sp->cno;
-			if (mark_set(sp, ep, ABSMARK1, &m, 1))
-				return (1);
-		}
+		F_SET(exp, EX_ABSMARK);
+
 		cur->cno = 0;
 /* 8-bit XXX */	cur->lno = strtol(cmd, &endp, 10);
 		cmdlen -= (endp - cmd);
@@ -1462,6 +1483,8 @@ ep_line(sp, ep, cur, cmdp, cmdlenp, addr_found)
 		break;
 	case '\'':				/* Use a mark. */
 		*addr_found = 1;
+		F_SET(exp, EX_ABSMARK);
+
 		if (cmdlen == 1) {
 			msgq(sp, M_ERR, "No mark name supplied");
 			return (1);
@@ -1474,9 +1497,9 @@ ep_line(sp, ep, cur, cmdp, cmdlenp, addr_found)
 	case '\\':				/* Search: forward/backward. */
 		/*
 		 * !!!
-		 * I can't find any difference between // and \/ or
-		 * between ?? and \?.  Mark Horton doesn't remember
-		 * there being any difference.  C'est la vie.
+		 * I can't find any difference between // and \/ or between
+		 * ?? and \?.  Mark Horton doesn't remember there being any
+		 * difference.  C'est la vie.
 		 */
 		if (cmdlen < 2 || cmd[1] != '/' && cmd[1] != '?') {
 			msgq(sp, M_ERR, "\\ not followed by / or ?");
@@ -1491,7 +1514,9 @@ ep_line(sp, ep, cur, cmdp, cmdlenp, addr_found)
 		goto search;
 	case '?':				/* Search backward. */
 		sf = b_search;
-search:		if (ep == NULL) {
+search:		F_SET(exp, EX_ABSMARK);
+
+		if (ep == NULL) {
 			msgq(sp, M_ERR,
 	"A search address requires that a file have already been read in");
 			return (1);

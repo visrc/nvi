@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.65 1994/07/17 00:26:46 bostic Exp $ (Berkeley) $Date: 1994/07/17 00:26:46 $
+ *	$Id: ex.h,v 8.66 1994/07/21 11:02:26 bostic Exp $ (Berkeley) $Date: 1994/07/21 11:02:26 $
  */
 
 /* Ex command structure. */
@@ -113,7 +113,8 @@ typedef struct _ex_private {
 	CIRCLEQ_HEAD(_rangeh, _range) rangeq;
 	recno_t  range_lno;		/* Range set line number. */
 
-#define	EX_AUTOPRINT	0x01		/* Autoprint flag. */
+#define	EX_ABSMARK	0x01		/* Set the absolute mark. */
+#define	EX_AUTOPRINT	0x02		/* Autoprint flag. */
 	u_int8_t flags;
 } EX_PRIVATE;
 #define	EXP(sp)	((EX_PRIVATE *)((sp)->ex_private))
