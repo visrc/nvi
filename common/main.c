@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.112 1994/09/16 16:59:26 bostic Exp $ (Berkeley) $Date: 1994/09/16 16:59:26 $";
+static char sccsid[] = "$Id: main.c,v 8.113 1994/09/26 19:47:50 bostic Exp $ (Berkeley) $Date: 1994/09/26 19:47:50 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -178,17 +178,17 @@ main(argc, argv)
 	__global_list = gp = gs_init();
 
 	/*
-	 * If not reading from a terminal, it's like -s was specified.
-	 * Vi always reads from the terminal, so fail if it's not a
-	 * terminal.
+	 * If not reading from a terminal, it's like -s was specified to
+	 * ex.  Vi always reads from (and writes to) a terminal, so fail
+	 * if it's not a terminal.
 	 */
-	if (!F_ISSET(gp, G_STDIN_TTY)) {
-		silent = 1;
-		if (!LF_ISSET(S_EX)) {
-			msgq(NULL, M_ERR,
-			    "040|Vi's standard input must be a terminal");
-			goto err;
-		}
+	if (LF_ISSET(S_EX)) {
+		if (!F_ISSET(gp, G_STDIN_TTY))
+			silent = 1;
+	} else if (!F_ISSET(gp, G_STDIN_TTY) || !isatty(STDOUT_FILENO)) {
+		msgq(NULL, M_ERR,
+		    "040|Vi's standard input and output must be a terminal");
+		goto err;
 	}
 
 	/*
