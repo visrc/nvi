@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.9 1994/02/21 23:50:58 bostic Exp $ (Berkeley) $Date: 1994/02/21 23:50:58 $
+.\"     $Id: vi.ref,v 8.10 1994/02/21 23:57:03 bostic Exp $ (Berkeley) $Date: 1994/02/21 23:57:03 $
 .\"
 .Dd "%Q%"
 .Dt EX/VI 1
@@ -207,7 +207,7 @@ A '.' command immediately after a 'u' command continues either forward
 or backward depending on whether the 'u' command was an undo or a redo.
 .It "Usage information"
 The command
-.Dq ":exu[sage [cmd]"
+.Dq ":exu[sage] [cmd]"
 and
 .Dq "viu[sage] [key]"
 provide usage
