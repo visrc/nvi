@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.62 1993/04/17 11:49:23 bostic Exp $ (Berkeley) $Date: 1993/04/17 11:49:23 $";
+static char sccsid[] = "$Id: main.c,v 5.63 1993/04/18 09:36:34 bostic Exp $ (Berkeley) $Date: 1993/04/18 09:36:34 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -209,24 +209,27 @@ main(argc, argv)
 	switch(F_ISSET(sp, S_MODE_EX | S_MODE_VI)) {
 	case S_MODE_EX:
 		if (sex(sp, sp->ep))
-			goto err1;
+			goto err2;
 		break;
 	case S_MODE_VI:
 		if (svi(sp, sp->ep))
-			goto err1;
+			goto err2;
 		break;
 	default:
 		abort();
 	}
 
 	/*
-	 * NOTE: sp may be GONE by now.
-	 * Only gp can be trusted.
+	 * Two error paths.  The first means that something failed before
+	 * we called a screen routine.  Swap the message pointers between
+	 * the SCR and the GS, so messages get displayed.  The second is
+	 * something failed in a screen.  NOTE: sp may be GONE when the
+	 * screen returns, so only the gp can be trusted.
 	 */
-
-	/* Yeah, I don't like it either. */
-	if (0)
-err1:		eval = 1;
+	if (0) {
+err1:		gp->msgp = sp->msgp;
+err2:		eval = 1;
+	}
 
 	/* Reset anything that needs resetting. */
 	reset(gp);
