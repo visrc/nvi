@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_yank.c,v 9.2 1995/01/11 16:16:09 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:16:09 $";
+static char sccsid[] = "$Id: ex_yank.c,v 9.3 1995/02/07 18:35:15 bostic Exp $ (Berkeley) $Date: 1995/02/07 18:35:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,6 +40,11 @@ ex_yank(sp, cmdp)
 {
 	NEEDFILE(sp, cmdp->cmd);
 
+	/*
+	 * !!!
+	 * Historically, yanking lines in ex didn't count toward the
+	 * number-of-lines-yanked report.
+	 */
 	return (cut(sp,
 	    F_ISSET(cmdp, E_BUFFER) ? &cmdp->buffer : NULL,
 	    &cmdp->addr1, &cmdp->addr2, CUT_LINEMODE));
