@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.17 1993/01/25 20:13:46 bostic Exp $ (Berkeley) $Date: 1993/01/25 20:13:46 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.18 1993/01/30 17:29:03 bostic Exp $ (Berkeley) $Date: 1993/01/30 17:29:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -412,9 +412,14 @@ cursor:	/* If line has changed. */
 	if (ep->lno != ep->olno)
 		goto slow;
 
-	/* If don't know how big the last cursor character was. */
-	if (ep->cwidth == 0)
+	/*
+	 * If a character is deleted from the line, we can't figure out
+	 * how wide the character was so we have to do it slowly.
+	 */
+	if (FF_ISSET(ep, F_CHARDELETED)) {
+		FF_CLR(ep, F_CHARDELETED);
 		goto slow;
+	}
 
 	/*
 	 * If no movement, don't trust it (we shouldn't be updating the
@@ -425,7 +430,7 @@ cursor:	/* If line has changed. */
 
 	/*
 	 * Get the current line.  If this fails, we either have an empty
-	 * file and we should just repaint, or, there's a real problem.
+	 * file and we should just repaint, or there's a real problem.
 	 * This isn't a performance issue because there aren't any ways
 	 * to get this to hit repeatedly.
 	 */
@@ -504,6 +509,9 @@ cursor:	/* If line has changed. */
 			return (1);
 		}
 #endif
+		/* Save the width of the original character. */
+		len = asciilen[*p];
+
 		/*
 		 * Count up the widths of the characters.  If it's a tab
 		 * character, just do it the the slow way.
@@ -513,10 +521,10 @@ cursor:	/* If line has changed. */
 				goto slow;
 
 		/*
-		 * Decrement the screen cursor by the total width of the
+		 * Increment the screen cursor by the total width of the
 		 * characters minus the width of the original character.
 		 */
-		ep->scno += cwtotal - ep->cwidth;
+		ep->scno += cwtotal - len;
 
 		/*
 		 * If the new column moved us out of the current screen,
@@ -571,20 +579,13 @@ paint:	if (FF_ISSET(ep, F_REDRAW))
 		
 update:	MOVE(y, ep->scno);
 
-	/* Update the screen information. */
+	/*
+	 * Update the screen information.
+	 * NOTE: the top assignment is right, don't swap them!
+	 */
 	ep->ocno = ep->cno;
 	ep->olno = ep->lno;
-	/* This is right, don't swap them! */
 	ep->top = ep->otop;
-
-	/*
-	 * Set the width of the current character.  If the line is empty
-	 * or we're past EOL it's 1.
-	 */
-	if ((lp = file_gline(ep, ep->lno, &len)) == NULL)
-		ep->cwidth = 1;
-	else
-		ep->cwidth = ep->cno >= len ? 1 : asciilen[lp[ep->cno]];
 
 	return (0);
 }
