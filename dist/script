@@ -3,10 +3,13 @@ setenv VERSION
 setenv S /usr/src/nvi
 
 # build the docs
-cd $S/docs/USD.doc/vi.ref && \
-    make clean paper.ps vi.ref.txt && chmod 444 vi.ref.txt vi.ref.ps && \
-    rm index index.so
-cd $S/docs/USD.doc/vi.man && make clean vi.0 vi.0.ps && chmod 444 vi.0 vi.0.ps
+setenv D $S/docs/USD.doc
+cd $D/edit && make clean && make && chmod 444 edittut.ps
+cd $D/exref && make clean && make && chmod 444 exref.ps summary.ps
+cd $D/vi.man && make clean && make && chmod 444 vi.0 vi.0.ps
+cd $D/vi.ref && make clean && make && \
+    chmod 444 index index.so vi.ref.ps vi.ref.txt
+cd $D/vitut && make clean && make && chmod 444 summary.ps viapwh.ps vitut.ps
 
 # increment the version numbers
 setenv X version.h
