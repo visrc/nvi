@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 9.5 1995/02/08 12:24:09 bostic Exp $ (Berkeley) $Date: 1995/02/08 12:24:09 $";
+static char sccsid[] = "$Id: v_ex.c,v 9.6 1995/02/17 11:43:55 bostic Exp $ (Berkeley) $Date: 1995/02/17 11:43:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,26 +46,6 @@ v_again(sp, vp)
 	ex_cbuild(&cmd, C_SUBAGAIN,
 	    2, vp->m_start.lno, vp->m_start.lno, 1, ap, &a, "");
 	return (svi_ex_cmd(sp, &cmd, &vp->m_final));
-}
-
-/*
- * v_at -- @
- *	Execute a buffer.
- */
-int
-v_at(sp, vp)
-	SCR *sp;
-	VICMDARG *vp;
-{
-	ARGS *ap[2], a;
-	EXCMDARG cmd;
-
-        ex_cbuild(&cmd, C_AT, 0, OOBLNO, OOBLNO, 0, ap, &a, NULL);
-	if (F_ISSET(vp, VC_BUFFER)) {
-		F_SET(&cmd, E_BUFFER);
-		cmd.buffer = vp->buffer;
-	}
-        return (svi_ex_cmd(sp, &cmd, &vp->m_final));
 }
 
 /*
