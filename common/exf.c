@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 9.10 1994/11/25 12:04:38 bostic Exp $ (Berkeley) $Date: 1994/11/25 12:04:38 $";
+static char sccsid[] = "$Id: exf.c,v 9.11 1994/12/01 19:17:49 bostic Exp $ (Berkeley) $Date: 1994/12/01 19:17:49 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -733,6 +733,7 @@ file_write(sp, fm, tm, name, flags)
 		return (1);
 
 	/* Open the file. */
+	SIGBLOCK(sp->gp);
 	if ((fd = open(name, oflags, DEFFILEMODE)) < 0) {
 		p = msg_print(sp, name, &nf);
 		msgq(sp, M_SYSERR, "%s", p);
@@ -740,6 +741,7 @@ file_write(sp, fm, tm, name, flags)
 			FREE_SPACE(sp, p, 0);
 		return (1);
 	}
+	SIGUNBLOCK(sp->gp);
 
 	/* Try and get a lock. */
 	if (!noname && file_lock(sp, NULL, NULL, fd, 0) == LOCK_UNAVAIL)
