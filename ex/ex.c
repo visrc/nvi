@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 10.28 1995/11/05 14:36:47 bostic Exp $ (Berkeley) $Date: 1995/11/05 14:36:47 $";
+static char sccsid[] = "$Id: ex.c,v 10.29 1995/11/05 15:36:47 bostic Exp $ (Berkeley) $Date: 1995/11/05 15:36:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -231,8 +231,6 @@ loop:	ecp = gp->ecq.lh_first;
 	if (F_ISSET(ecp, E_MOVETOEND)) {
 		if (db_last(sp, &sp->lno))
 			goto rfail;
-		if (sp->lno == 0)
-			sp->lno = 1;
 		sp->cno = 0;
 		F_CLR(ecp, E_MOVETOEND);
 	}
