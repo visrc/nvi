@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 8.6 1993/08/07 10:03:01 bostic Exp $ (Berkeley) $Date: 1993/08/07 10:03:01 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 8.7 1993/08/19 15:07:46 bostic Exp $ (Berkeley) $Date: 1993/08/19 15:07:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,10 +34,11 @@ static char sccsid[] = "$Id: ex_cmd.c,v 8.6 1993/08/07 10:03:01 bostic Exp $ (Be
  *	>		-- >> string
  *	b		-- buffer
  *	c		-- count
- *	f[N]|#[or]	-- file (a number or N, optional or required)
+ *	f[N#][or]	-- file (a number or N, optional or required)
  *	l		-- line
- *	w[N]|#[or]	-- word (a number or N, optional or required)
- *	s		-- string (parse locally)
+ *	s		-- string
+ *	W		-- word string
+ *	w[N#][or]	-- word (a number or N, optional or required)
  */
 EXCMDLIST cmds[] = {
 /* C_BANG */
@@ -69,7 +70,7 @@ EXCMDLIST cmds[] = {
 	    "!",	"[line] a[ppend][!]"},
 /* C_ABBR */
 	{"abbreviate", 	ex_abbr,	E_NOGLOBAL,
-	    "s",	"ab[brev] word replace"},
+	    "W",	"ab[brev] word replace"},
 /* C_ARGS */
 	{"args",	ex_args,	E_NOGLOBAL|E_NORC,
 	    "",		"ar[gs]"},
@@ -108,10 +109,10 @@ EXCMDLIST cmds[] = {
 	    "!+f1o",	"ex[!] [+cmd] [file]"},
 /* C_EXUSAGE */
 	{"exusage",	ex_usage,	E_NOGLOBAL|E_NORC,
-	    "w1r",	"[exu]sage cmd"},
+	    "w1r",	"[exu]sage command"},
 /* C_FILE */
 	{"file",	ex_file,	E_NOGLOBAL|E_NORC,
-	    "f10",	"f[ile] [name]"},
+	    "f1o",	"f[ile] [name]"},
 /* C_GLOBAL */
 	{"global",	ex_global,	E_ADDR2_ALL|E_NOGLOBAL|E_NORC,
 	    "!s",
@@ -139,7 +140,7 @@ EXCMDLIST cmds[] = {
 	    "s",	"make [argument ...]"},
 /* C_MAP */
 	{"map",		ex_map,		0,
-	    "!s",	"map[!] [key replace]"},
+	    "!W",	"map[!] [key replace]"},
 /* C_MKEXRC */
 	{"mkexrc",	ex_mkexrc,	E_NOGLOBAL|E_NORC,
 	    "!f1r",	"mkexrc[!] file"},
@@ -213,7 +214,7 @@ EXCMDLIST cmds[] = {
 	    "w1r", 	"una[bbrev] word"},
 /* C_UNMAP */
 	{"unmap",	ex_unmap,	E_NOGLOBAL,
-	    "!w1r", 	"unm[ap][!] key"},
+	    "!w1r", 	"unm[ap][!] word"},
 /* C_VGLOBAL */
 	{"vglobal",	ex_vglobal,	E_ADDR2_ALL|E_NOGLOBAL|E_NORC,
 	    "s", 	"[line [,line]] v[global] [;/]pattern[;/] [commands]"},
