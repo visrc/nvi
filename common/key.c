@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.6 1993/09/10 18:31:42 bostic Exp $ (Berkeley) $Date: 1993/09/10 18:31:42 $";
+static char sccsid[] = "$Id: key.c,v 8.7 1993/09/11 11:42:44 bostic Exp $ (Berkeley) $Date: 1993/09/11 11:42:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -154,24 +154,6 @@ term_push(sp, ibp, push, len)
 	ibp->next = TERM_PUSH_SHIFT;
 	ibp->cnt += len;
 	return (0);
-}
-
-/*
- * term_waiting --
- *	Return if keys waiting.
- */
-int
-term_waiting(sp)
-	SCR *sp;
-{
-	struct timeval t;
-
-	if (sp->key.cnt != 0 || sp->tty.cnt != 0)
-		return (1);
-
-	t.tv_sec = t.tv_usec = 0;
-	FD_SET(STDIN_FILENO, &sp->rdfd);
-	return (select(32, &sp->rdfd, NULL, NULL, &t));
 }
 
 /*
