@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_funcs.c,v 8.5 1995/01/30 15:31:45 bostic Exp $ (Berkeley) $Date: 1995/01/30 15:31:45 $";
+static char sccsid[] = "$Id: cl_funcs.c,v 8.6 1995/01/30 19:48:44 bostic Exp $ (Berkeley) $Date: 1995/01/30 19:48:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -199,7 +199,7 @@ cl_linverse(sp, lno)
 	SCR *sp;
 	size_t lno;
 {
-	size_t spcnt, col, row;
+	size_t spcnt, col;
 	char ch;
 
 	CINIT;
