@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 10.7 1995/09/21 12:08:38 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:08:38 $";
+static char sccsid[] = "$Id: v_search.c,v 10.8 1995/09/27 12:05:43 bostic Exp $ (Berkeley) $Date: 1995/09/27 12:05:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -210,7 +210,7 @@ v_exaddr(sp, vp, dir)
 			return (1);
 		 
 		/* Don't refresh until after 'z' happens. */
-		F_SET(VIP(sp), VIP_SKIPREFRESH);
+		F_SET(VIP(sp), VIP_S_REFRESH);
 	}
 
 	/* Non-motion commands move to the end of the range. */
