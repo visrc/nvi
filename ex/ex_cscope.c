@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_cscope.c,v 8.2 1996/04/10 11:31:30 bostic Exp $ (Berkeley) $Date: 1996/04/10 11:31:30 $";
+static const char sccsid[] = "$Id: ex_cscope.c,v 8.3 1996/04/10 16:24:52 bostic Exp $ (Berkeley) $Date: 1996/04/10 16:24:52 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -179,7 +179,6 @@ start_cscopes(sp, cmdp)
 
 	for (cscopes = bp; (p = strsep(&bp, "\t ")) != NULL;)
 		if (*p != '\0')
-			(void)cscope_add(sp, cmdp, p);
 			(void)cscope_add(sp, cmdp, p);
 	return (0);
 }
