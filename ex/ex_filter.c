@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 5.34 1993/05/15 10:08:42 bostic Exp $ (Berkeley) $Date: 1993/05/15 10:08:42 $";
+static char sccsid[] = "$Id: ex_filter.c,v 5.35 1993/05/28 01:04:15 bostic Exp $ (Berkeley) $Date: 1993/05/28 01:04:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -147,7 +147,7 @@ err:		if (input[0] != -1)
 			for (lno = tm->lno; lno >= fm->lno; --lno)
 				if (file_dline(sp, ep, lno))
 					rval = 1;
-			sp->rptlines[L_DELETED] += tm->lno - fm->lno;
+			sp->rptlines[L_DELETED] += (tm->lno - fm->lno) + 1;
 		}
 
 	if (rval == 0) {
