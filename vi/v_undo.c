@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_undo.c,v 5.20 1993/04/05 07:10:33 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:10:33 $";
+static char sccsid[] = "$Id: v_undo.c,v 5.21 1993/04/06 11:43:56 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:43:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,7 +29,7 @@ v_Undo(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	return (ISSET(O_NUNDO) ?
+	return (O_ISSET(sp, O_NUNDO) ?
 	    log_forward(sp, ep, rp) : log_backward(sp, ep, rp, sp->lno));
 }
 	
@@ -44,7 +44,7 @@ v_undo(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	if (ISSET(O_NUNDO))
+	if (O_ISSET(sp, O_NUNDO))
 		return (log_backward(sp, ep, rp, OOBLNO));
 
 	if (!F_ISSET(ep, F_UNDO)) {

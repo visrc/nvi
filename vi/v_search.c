@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_search.c,v 5.32 1993/04/05 07:10:20 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:10:20 $";
+static char sccsid[] = "$Id: v_search.c,v 5.33 1993/04/06 11:43:52 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:43:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,17 +31,15 @@ v_searchn(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	MARK *m;
-
 	switch(sp->searchdir) {
 	case BACKWARD:
-		if ((m = b_search(sp, ep, fm, NULL, NULL,
-		    SEARCH_MSG | SEARCH_PARSE | SEARCH_TERM)) == NULL)
+		if (b_search(sp, ep, fm, rp, NULL, NULL,
+		    SEARCH_MSG | SEARCH_PARSE | SEARCH_TERM))
 			return (1);
 		break;
 	case FORWARD:
-		if ((m = f_search(sp, ep, fm, NULL, NULL,
-		    SEARCH_MSG | SEARCH_PARSE | SEARCH_TERM)) == NULL)
+		if (f_search(sp, ep, fm, rp, NULL, NULL,
+		    SEARCH_MSG | SEARCH_PARSE | SEARCH_TERM))
 			return (1);
 		break;
 	case NOTSET:
@@ -50,7 +48,6 @@ v_searchn(sp, ep, vp, fm, tm, rp)
 	default:
 		abort();
 	}
-	*rp = *m;
 	return (0);
 }
 
@@ -65,17 +62,15 @@ v_searchN(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	MARK *m;
-
 	switch(sp->searchdir) {
 	case BACKWARD:
-		if ((m = f_search(sp, ep, fm, NULL, NULL,
-		    SEARCH_MSG | SEARCH_PARSE | SEARCH_TERM)) == NULL)
+		if (f_search(sp, ep, fm, rp, NULL, NULL,
+		    SEARCH_MSG | SEARCH_PARSE | SEARCH_TERM))
 			return (1);
 		break;
 	case FORWARD:
-		if ((m = b_search(sp, ep, fm, NULL, NULL,
-		    SEARCH_MSG | SEARCH_PARSE | SEARCH_TERM)) == NULL)
+		if (b_search(sp, ep, fm, rp, NULL, NULL,
+		    SEARCH_MSG | SEARCH_PARSE | SEARCH_TERM))
 			return (1);
 		break;
 	case NOTSET:
@@ -84,7 +79,6 @@ v_searchN(sp, ep, vp, fm, tm, rp)
 	default:
 		abort();
 	}
-	*rp = *m;
 	return (0);
 }
 
@@ -100,8 +94,8 @@ v_searchw(sp, ep, vp, fm, tm, rp)
 	MARK *fm, *tm, *rp;
 {
 	GS *gp;
-	MARK *mp;
 	size_t blen;
+	int rval;
 	char *bp;
 
 #define	WORDFORMAT	"[^[:alnum:]]%s[^[:alnum:]]"
@@ -120,19 +114,15 @@ v_searchw(sp, ep, vp, fm, tm, rp)
 	}
 	(void)snprintf(bp, blen, WORDFORMAT, vp->keyword);
 		
-	mp = f_search(sp, ep, fm, bp, NULL, SEARCH_MSG | SEARCH_TERM);
+	rval = f_search(sp, ep, fm, rp, bp, NULL, SEARCH_MSG | SEARCH_TERM);
 
 	if (bp == gp->tmp_bp)
 		F_CLR(gp, G_TMP_INUSE);
 	else
 		free(bp);
 
-	if (mp == NULL)
-		return (1);
-
-	rp->lno = mp->lno;
-	rp->cno = mp->cno + 1;		/* Offset by one. */
-	return (0);
+	++rp->cno;			/* Offset by one. */
+	return (rval);
 }
 
 /*
@@ -146,7 +136,6 @@ v_searchb(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	MARK *m;
 	char *ptrn;
 
 	if (getptrn(sp, '?', &ptrn))
@@ -155,10 +144,9 @@ v_searchb(sp, ep, vp, fm, tm, rp)
 		*rp = *fm;
 		return (0);
 	}
-	if ((m = b_search(sp, ep, fm, ptrn, NULL,
-	    SEARCH_MSG | SEARCH_PARSE | SEARCH_SET | SEARCH_TERM)) == NULL)
+	if (b_search(sp, ep, fm, rp, ptrn, NULL,
+	    SEARCH_MSG | SEARCH_PARSE | SEARCH_SET | SEARCH_TERM))
 		return (1);
-	*rp = *m;
 	return (0);
 }
 
@@ -173,7 +161,6 @@ v_searchf(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	MARK *m;
 	char *ptrn;
 
 	if (getptrn(sp, '/', &ptrn))
@@ -182,10 +169,9 @@ v_searchf(sp, ep, vp, fm, tm, rp)
 		*rp = *fm;
 		return (0);
 	}
-	if ((m = f_search(sp, ep, fm, ptrn, NULL,
-	    SEARCH_MSG | SEARCH_PARSE | SEARCH_SET | SEARCH_TERM)) == NULL)
+	if (f_search(sp, ep, fm, rp, ptrn, NULL,
+	    SEARCH_MSG | SEARCH_PARSE | SEARCH_SET | SEARCH_TERM))
 		return (1);
-	*rp = *m;
 	return (0);
 }
 

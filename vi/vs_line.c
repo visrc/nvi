@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 5.2 1993/04/05 07:13:12 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:13:12 $";
+static char sccsid[] = "$Id: vs_line.c,v 5.3 1993/04/06 11:44:44 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:44:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -51,7 +51,8 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 	 * line or any left-right line, display the line number.  Set
 	 * the number of columns for this screen.
 	 */
-	if (ISSET(O_NUMBER) && (ISSET(O_LEFTRIGHT) || smp->off == 1)) {
+	if (O_ISSET(sp, O_NUMBER) &&
+	    (O_ISSET(sp, O_LEFTRIGHT) || smp->off == 1)) {
 		cols_per_screen = sp->cols -
 		    snprintf(nbuf, sizeof(nbuf), O_NUMBER_FMT, smp->lno);
 		addstr(nbuf);
@@ -71,7 +72,8 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 			*yp = smp - HMAP;
 		}
 		if (smp->lno > file_lline(sp, ep))
-			addch(smp->lno == 1 ? ISSET(O_LIST) ? '$' : ' ' : '~');
+			addch(smp->lno == 1
+			    ? O_ISSET(sp, O_LIST) ? '$' : ' ' : '~');
 		else if (p == NULL) {
 			GETLINE_ERR(sp, smp->lno);
 			return (1);
@@ -99,8 +101,9 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 	cname = sp->cname;
 	for (; len; --len) {
 		/* Get the next character and figure out its length. */
-		if ((ch = *p++) == '\t' && !ISSET(O_LIST))
-			chlen = LVAL(O_TABSTOP) - count_cols % LVAL(O_TABSTOP);
+		if ((ch = *p++) == '\t' && !O_ISSET(sp, O_LIST))
+			chlen = O_VAL(sp, O_TABSTOP) -
+			    count_cols % O_VAL(sp, O_TABSTOP);
 		else
 			chlen = cname[ch].len;
 		count_cols += chlen;
@@ -144,7 +147,7 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 		 * because curses doesn't have a way to set the tab length.)
 		 */
 #define	BLANKS	"                    "
-		if (ch == '\t' && !ISSET(O_LIST)) {
+		if (ch == '\t' && !O_ISSET(sp, O_LIST)) {
 			chlen -= offset_in_char;
 			if (chlen <= sizeof(BLANKS) - 1)
 				addnstr(BLANKS, chlen);
@@ -168,7 +171,7 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 	 * If O_LIST set, at the end of the line and didn't paint the whole
 	 * line, add a trailing $.
 	 */
-	if (ISSET(O_LIST) && len == 0 && count_cols < cols_per_screen) {
+	if (O_ISSET(sp, O_LIST) && len == 0 && count_cols < cols_per_screen) {
 		++count_cols;
 		addch('$');
 	}

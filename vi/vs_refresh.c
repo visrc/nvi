@@ -6,11 +6,12 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.43 1993/04/05 07:13:13 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:13:13 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.44 1993/04/06 11:44:45 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:44:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
+#include <ctype.h>
 #include <curses.h>
 #include <string.h>
 
@@ -289,7 +290,7 @@ adjust:	if (LNO == HMAP->lno) {
 		 * calculate a new screen.
 		 */
 		if (SCNO < cwtotal) {
-			if (ISSET(O_LEFTRIGHT)) {
+			if (O_ISSET(sp, O_LEFTRIGHT)) {
 				for (smp = HMAP; smp <= TMAP; ++smp)
 					--smp->off;
 				goto paint;
@@ -335,7 +336,7 @@ adjust:	if (LNO == HMAP->lno) {
 		 * calculate a new screen.
 		 */
 		if (SCNO >= SCREEN_COLS(sp)) {
-			if (ISSET(O_LEFTRIGHT)) {
+			if (O_ISSET(sp, O_LEFTRIGHT)) {
 				SCNO -= SCREEN_COLS(sp);
 				for (smp = HMAP; smp <= TMAP; ++smp)
 					++smp->off;
@@ -356,7 +357,7 @@ slow:	/* Find the current line in the map. */
 	 * If doing left-right scrolling, and the cursor movement has
 	 * changed the screen being displayed, fix it.
 	 */
-	if (ISSET(O_LEFTRIGHT)) {
+	if (O_ISSET(sp, O_LEFTRIGHT)) {
 		cnt = svi_screens(sp, ep, LNO, &CNO) % SCREEN_COLS(sp);
 		if (cnt != HMAP->off) {
 			for (smp = HMAP; smp <= TMAP; ++smp)
@@ -384,9 +385,9 @@ update:	/* Ring the bell if scheduled. */
 		svi_bell(sp);
 
 	/* Display any messages or paint the mode line. */
-	if (sp->msgp != NULL && !(sp->msgp->flags & M_EMPTY))
+	if (sp->msgp != NULL && !F_ISSET(sp->msgp, M_EMPTY))
 		svi_msgflush(sp);
-	else
+	else if (!F_ISSET(sp, S_UPDATE_MODE))
 		svi_modeline(sp, ep);
 
 	/* Place the cursor. */
@@ -423,7 +424,7 @@ svi_msgflush(sp)
 
 	/* Display the messages. */
 	for (mp = sp->msgp, p = NULL;
-	    mp != NULL && !(mp->flags & M_EMPTY); mp = mp->next) {
+	    mp != NULL && !F_ISSET(mp, M_EMPTY); mp = mp->next) {
 
 		p = mp->mbuf;
 
@@ -435,7 +436,7 @@ lcont:		/* Move to the message line and clear it. */
 		 * Turn on standout mode if requested, or, if we've split
 		 * the screen and need a divider.
 		 */
-		if (mp->flags & (M_BELL | M_ERROR) || sp->child != NULL)
+		if (F_ISSET(mp, M_BELL | M_ERROR) || sp->child != NULL)
 			standout();
 
 		/*
@@ -443,7 +444,7 @@ lcont:		/* Move to the message line and clear it. */
 		 * Adjust for the next line.
 		 */
 		len = sp->cols;
-		if (mp->next != NULL && !(mp->next->flags & M_EMPTY))
+		if (mp->next != NULL && !F_ISSET(mp->next, M_EMPTY))
 			len -= sizeof(MCONTMSG);
 		if (mp->len < len)
 			len = mp->len;
@@ -453,7 +454,7 @@ lcont:		/* Move to the message line and clear it. */
 
 		/* If more, print continue message. */
 		if (mp->len ||
-		    mp->next != NULL && !(mp->next->flags & M_EMPTY)) {
+		    mp->next != NULL && !F_ISSET(mp->next, M_EMPTY)) {
 			addnstr(MCONTMSG, sizeof(MCONTMSG) - 1);
 			refresh();
 			while (sp->special[ch = getkey(sp, 0)] != K_CR &&
@@ -462,14 +463,14 @@ lcont:		/* Move to the message line and clear it. */
 		}
 
 		/* Turn off standout mode. */
-		if (mp->flags & (M_BELL | M_ERROR) || sp->child != NULL)
+		if (F_ISSET(mp, M_BELL | M_ERROR) || sp->child != NULL)
 			standend();
 
 		if (mp->len)
 			goto lcont;
 
 		refresh();
-		mp->flags |= M_EMPTY;
+		F_SET(mp, M_EMPTY);
 	}
 	return (0);
 }
@@ -493,11 +494,12 @@ svi_modeline(sp, ep)
 	if (sp->child != NULL)
 		svi_divider(sp);
 
-	if (!ISSET(O_RULER) && !ISSET(O_SHOWMODE) || sp->cols <= RULERSIZE)
+	if (!O_ISSET(sp, O_RULER) &&
+	    !O_ISSET(sp, O_SHOWMODE) || sp->cols <= RULERSIZE)
 		return (0);
 
 	/* Display the ruler and mode. */
-	if (ISSET(O_RULER) && sp->cols > RULERSIZE) {
+	if (O_ISSET(sp, O_RULER) && sp->cols > RULERSIZE) {
 		MOVE(sp, INFOLINE(sp), sp->cols / 2 - RULERSIZE / 2);
 		memset(buf, ' ', sizeof(buf) - 1);
 		(void)snprintf(buf,
@@ -511,7 +513,7 @@ svi_modeline(sp, ep)
 		standout();
 
 	/* Show the mode. */
-	if (ISSET(O_SHOWMODE) && sp->cols > MODESIZE) {
+	if (O_ISSET(sp, O_SHOWMODE) && sp->cols > MODESIZE) {
 		MOVE(sp, INFOLINE(sp), sp->cols - 7);
 		addstr(F_ISSET(sp, S_INPUT) ? "Input" : "Command");
 	}

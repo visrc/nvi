@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 5.36 1993/04/05 07:10:41 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:10:41 $
+ *	$Id: vi.h,v 5.37 1993/04/06 11:43:58 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:43:58 $
  */
 
 /* Structure passed around to functions implementing vi commands. */
@@ -15,7 +15,8 @@ typedef struct _vicmdarg {
 	u_long count;		/* Count. */
 	u_long count2;		/* Second count (only used by z). */
 	int key;		/* Command key. */
-	struct _vikeys *kp;	/* VIKEYS structure. */
+				/* VIKEYS structure. */
+	struct _vikeys const *kp;
 	size_t klen;		/* Keyword length. */
 
 /*
@@ -57,7 +58,8 @@ typedef struct _vicmdarg {
 
 /* Vi command structure. */
 typedef struct _vikeys {	/* Underlying function. */
-	int (*func) __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
+	int (*func) __P((SCR *, EXF *,
+	    VICMDARG *, MARK *, MARK *, MARK *));
 
 /* XXX Check to see if these are all needed. */
 #define	V_DONTUSE1	0x00001	/* VC_C */
@@ -83,111 +85,112 @@ typedef struct _vikeys {	/* Underlying function. */
 } VIKEYS;
 
 #define	MAXVIKEY	126	/* List of vi commands. */
-extern VIKEYS vikeys[MAXVIKEY + 1];
+extern VIKEYS const vikeys[MAXVIKEY + 1];
 
 /* Definition of a "word". */
 #define	inword(ch)	(isalnum(ch) || (ch) == '_')
 
 #define	EMPTYLINE	-1
 
-/* Vi getc functions. */
-int	getc_init __P((struct _scr *, struct _exf *, struct _mark *, int *));
-int	getc_next __P((struct _scr *, struct _exf *, enum direction, int *));
-void	getc_set __P((struct _scr *, struct _exf *, struct _mark *));
-
-/* Vi functions. */
-int	v_again __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_at __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_bottom __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_Change __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_change __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_chF __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_chf __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_chrepeat  __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_chrrepeat __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_chT __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_cht __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-enum confirmation v_confirm __P((SCR *, EXF *, MARK *, MARK *));
+/* Vi function prototypes. */
+int	getc_init __P((SCR *, EXF *, MARK *, int *));
+int	getc_next __P((SCR *, EXF *, enum direction, int *));
+void	getc_set __P((SCR *, EXF *, MARK *));
 int	v_comment __P((SCR *, EXF *));
-int	v_Delete __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_delete __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_dollar __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_down __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
 int	v_end __P((SCR *));
 void	v_eof __P((SCR *, EXF *, MARK *));
 void	v_eol __P((SCR *, EXF *, MARK *));
-int	v_errlist __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_ex __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_exmode __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
 int	v_exwrite __P((void *, const char *, int));
-int	v_exit __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_filter __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_first __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_home __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_hpagedown __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_hpageup __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_iA __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_ia __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_iI __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_ii __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_increment __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
 int	v_init __P((SCR *, EXF *));
-int	v_iO __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_io __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_join __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_left __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_lgoto __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_linedown __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_lineup __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_mark __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_markbt __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_marksq __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_match __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_middle __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
 int	v_msgflush __P((SCR *));
-int	v_ncol __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_pagedown __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_pageup __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_paragraphb __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_paragraphf __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_Put __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_put __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_redraw __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_Replace __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_replace __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_right __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_searchb __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_searchf __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_searchN __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_searchn __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_searchw __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_sectionb __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_sectionf __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_sentenceb __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_sentencef __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_shiftl __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_shiftr __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
 void	v_sof __P((SCR *, MARK *));
-int	v_status __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_stop __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_subst __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_switch __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_tagpop __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_tagpush __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_ulcase __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_Undo __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_undo __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_up __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_window __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_wordB __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_wordb __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_wordE __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_worde __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_wordW __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_wordw __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_Xchar __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_xchar __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_Yank __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_yank __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_z __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
-int	v_zero __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *, MARK *));
+
+#define	VIPROTO(type, name)						\
+	type	name __P((SCR *, EXF *,	VICMDARG *, MARK *, MARK *, MARK *))
+
+VIPROTO(int, v_again);
+VIPROTO(int, v_at);
+VIPROTO(int, v_bottom);
+VIPROTO(int, v_Change);
+VIPROTO(int, v_change);
+VIPROTO(int, v_chF);
+VIPROTO(int, v_chf);
+VIPROTO(int, v_chrepeat);
+VIPROTO(int, v_chrrepeat);
+VIPROTO(int, v_chT);
+VIPROTO(int, v_cht);
+VIPROTO(int, v_Delete);
+VIPROTO(int, v_delete);
+VIPROTO(int, v_dollar);
+VIPROTO(int, v_down);
+VIPROTO(int, v_errlist);
+VIPROTO(int, v_ex);
+VIPROTO(int, v_exit);
+VIPROTO(int, v_exmode);
+VIPROTO(int, v_filter);
+VIPROTO(int, v_first);
+VIPROTO(int, v_home);
+VIPROTO(int, v_hpagedown);
+VIPROTO(int, v_hpageup);
+VIPROTO(int, v_iA);
+VIPROTO(int, v_ia);
+VIPROTO(int, v_iI);
+VIPROTO(int, v_ii);
+VIPROTO(int, v_increment);
+VIPROTO(int, v_iO);
+VIPROTO(int, v_io);
+VIPROTO(int, v_join);
+VIPROTO(int, v_left);
+VIPROTO(int, v_lgoto);
+VIPROTO(int, v_linedown);
+VIPROTO(int, v_lineup);
+VIPROTO(int, v_mark);
+VIPROTO(int, v_markbt);
+VIPROTO(int, v_marksq);
+VIPROTO(int, v_match);
+VIPROTO(int, v_middle);
+VIPROTO(int, v_ncol);
+VIPROTO(int, v_pagedown);
+VIPROTO(int, v_pageup);
+VIPROTO(int, v_paragraphb);
+VIPROTO(int, v_paragraphf);
+VIPROTO(int, v_Put);
+VIPROTO(int, v_put);
+VIPROTO(int, v_redraw);
+VIPROTO(int, v_Replace);
+VIPROTO(int, v_replace);
+VIPROTO(int, v_right);
+VIPROTO(int, v_searchb);
+VIPROTO(int, v_searchf);
+VIPROTO(int, v_searchN);
+VIPROTO(int, v_searchn);
+VIPROTO(int, v_searchw);
+VIPROTO(int, v_sectionb);
+VIPROTO(int, v_sectionf);
+VIPROTO(int, v_sentenceb);
+VIPROTO(int, v_sentencef);
+VIPROTO(int, v_shiftl);
+VIPROTO(int, v_shiftr);
+VIPROTO(int, v_status);
+VIPROTO(int, v_stop);
+VIPROTO(int, v_subst);
+VIPROTO(int, v_switch);
+VIPROTO(int, v_tagpop);
+VIPROTO(int, v_tagpush);
+VIPROTO(int, v_ulcase);
+VIPROTO(int, v_Undo);
+VIPROTO(int, v_undo);
+VIPROTO(int, v_up);
+VIPROTO(int, v_window);
+VIPROTO(int, v_wordB);
+VIPROTO(int, v_wordb);
+VIPROTO(int, v_wordE);
+VIPROTO(int, v_worde);
+VIPROTO(int, v_wordW);
+VIPROTO(int, v_wordw);
+VIPROTO(int, v_Xchar);
+VIPROTO(int, v_xchar);
+VIPROTO(int, v_Yank);
+VIPROTO(int, v_yank);
+VIPROTO(int, v_z);
+VIPROTO(int, v_zero);

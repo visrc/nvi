@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_paragraph.c,v 5.12 1993/04/05 07:10:15 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:10:15 $";
+static char sccsid[] = "$Id: v_paragraph.c,v 5.13 1993/04/06 11:43:50 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:43:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -185,13 +185,13 @@ makelist(sp)
 	char *list;
 
 	/* Search for either a paragraph or section option macro. */
-	s1 = strlen(PVAL(O_PARAGRAPHS));
+	s1 = strlen(O_STR(sp, O_PARAGRAPHS));
 	if (s1 & 1) {
 		msgq(sp, M_ERROR,
 		    "Paragraph options must be in groups of two characters.");
 		return (NULL);
 	}
-	s2 = strlen(PVAL(O_SECTIONS));
+	s2 = strlen(O_STR(sp, O_SECTIONS));
 	if (s2 & 1) {
 		msgq(sp, M_ERROR,
 		    "Section options must be in groups of two characters.");
@@ -201,7 +201,7 @@ makelist(sp)
 		msgq(sp, M_ERROR, "%s", strerror(errno));
 		return (NULL);
 	}
-	memmove(list, PVAL(O_PARAGRAPHS), s1);
-	memmove(list + s1, PVAL(O_SECTIONS), s2 + 1);
+	memmove(list, O_STR(sp, O_PARAGRAPHS), s1);
+	memmove(list + s1, O_STR(sp, O_SECTIONS), s2 + 1);
 	return (list);
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 5.44 1993/04/05 07:10:38 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:10:38 $";
+static char sccsid[] = "$Id: v_cmd.c,v 5.45 1993/04/06 11:43:56 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:43:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -17,7 +17,7 @@ static char sccsid[] = "$Id: v_cmd.c,v 5.44 1993/04/05 07:10:38 bostic Exp $ (Be
 /*
  * This array maps keystrokes to vi command functions.
  */
-VIKEYS vikeys[MAXVIKEY + 1] = {
+VIKEYS const vikeys [MAXVIKEY + 1] = {
 /* 000 NUL -- The code in vi.c expects key 0 to be undefined. */
 	{ NULL },
 /* 001  ^A */

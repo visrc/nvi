@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 5.11 1993/04/05 07:13:18 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:13:18 $";
+static char sccsid[] = "$Id: vs_smap.c,v 5.12 1993/04/06 11:44:49 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:44:49 $";
 #endif /* not lint */
 
 #include <curses.h>
@@ -475,7 +475,7 @@ svi_sm_next(sp, ep, p, t)
 {
 	size_t lcnt;
 
-	if (ISSET(O_LEFTRIGHT)) {
+	if (O_ISSET(sp, O_LEFTRIGHT)) {
 		t->lno = p->lno + 1;
 		t->off = p->off;
 	} else {
@@ -501,7 +501,7 @@ svi_sm_prev(sp, ep, p, t)
 	EXF *ep;
 	SMAP *p, *t;
 {
-	if (ISSET(O_LEFTRIGHT)) {
+	if (O_ISSET(sp, O_LEFTRIGHT)) {
 		t->lno = p->lno - 1;
 		t->off = p->off;
 	} else if (p->off != 1) {
@@ -623,7 +623,7 @@ svi_sm_nlines(sp, ep, from_sp, to_lno, max)
 {
 	recno_t lno, lcnt;
 
-	if (ISSET(O_LEFTRIGHT))
+	if (O_ISSET(sp, O_LEFTRIGHT))
 		if (from_sp->lno > to_lno)
 			return (from_sp->lno - to_lno);
 		else

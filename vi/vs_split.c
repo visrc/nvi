@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 5.1 1993/04/05 07:14:47 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:14:47 $";
+static char sccsid[] = "$Id: vs_split.c,v 5.2 1993/04/06 11:44:50 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:44:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -14,6 +14,7 @@ static char sccsid[] = "$Id: vs_split.c,v 5.1 1993/04/05 07:14:47 bostic Exp $ (
 #include <curses.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "vi.h"
 #include "svi_screen.h"
@@ -44,7 +45,7 @@ svi_split(sp, ep)
 		msgq(sp, M_ERROR, "Error: %s", strerror(errno));
 		return (1);
 	}
-	if (scr_def(sp, tsp)) {
+	if (scr_init(sp, tsp)) {
 		free(tsp);
 		return (1);
 	}
@@ -140,4 +141,5 @@ svi_split(sp, ep)
 	/* Switch screens. */
 	sp->snext = tsp;
 	F_SET(sp, S_SSWITCH);
+	return (0);
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.55 1993/04/05 07:10:44 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:10:44 $";
+static char sccsid[] = "$Id: vi.c,v 5.56 1993/04/06 11:43:59 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:43:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,11 +19,10 @@ static char sccsid[] = "$Id: vi.c,v 5.55 1993/04/05 07:10:44 bostic Exp $ (Berke
 #include "vi.h"
 #include "vcmd.h"
 
-static int getcmd __P((SCR *, EXF *, VICMDARG *, VICMDARG *));
+static int getcmd __P((SCR *, EXF *, VICMDARG *, VICMDARG *, VICMDARG *));
 static int getkeyword __P((SCR *, EXF *, VICMDARG *, u_int));
-static int getmotion __P((SCR *, EXF *, VICMDARG *, MARK *, MARK *));
-
-static VICMDARG cmd, dot, dotmotion;
+static int getmotion
+	    __P((SCR *, EXF *, VICMDARG *, VICMDARG *, MARK *, MARK *));
 
 /*
  * vi --
@@ -35,7 +34,7 @@ vi(sp, ep)
 	EXF *ep;
 {
 	MARK fm, tm, m;
-	VICMDARG *vp;
+	VICMDARG cmd, dot, dotmotion, *vp;
 	int eval;
 	u_int flags;
 
@@ -46,7 +45,7 @@ vi(sp, ep)
 	status(sp, ep, sp->lno);
 
 	for (eval = 0;;) {
-err:		if (!F_ISSET(sp, S_SCREENWAIT) && sp->refresh(sp, ep)) {
+err:		if (!F_ISSET(sp, S_UPDATE_SCREEN) && sp->refresh(sp, ep)) {
 			eval = 1;
 			break;
 		}
@@ -58,7 +57,7 @@ err:		if (!F_ISSET(sp, S_SCREENWAIT) && sp->refresh(sp, ep)) {
 		 * command setting the cursor to the resulting mark.
 		 */
 		vp = &cmd;
-		if (getcmd(sp, ep, vp, NULL))
+		if (getcmd(sp, ep, &dot, vp, NULL))
 			goto err;
 
 		flags = vp->kp->flags;
@@ -81,7 +80,7 @@ err:		if (!F_ISSET(sp, S_SCREENWAIT) && sp->refresh(sp, ep)) {
 		 * set to that many lines, counting the current one.
 		 */
 		if (flags & V_MOTION) {
-			if (getmotion(sp, ep, vp, &fm, &tm))
+			if (getmotion(sp, ep, &dotmotion, vp, &fm, &tm))
 				goto err;
 		} else {
 			fm.lno = sp->lno;
@@ -148,7 +147,8 @@ err:		if (!F_ISSET(sp, S_SCREENWAIT) && sp->refresh(sp, ep)) {
 
 		/* Report on the changes from the command. */
 		if (sp->rptlines) {
-			if (LVAL(O_REPORT) && sp->rptlines >= LVAL(O_REPORT)) {
+			if (O_VAL(sp, O_REPORT) &&
+			    sp->rptlines >= O_VAL(sp, O_REPORT)) {
 				msgq(sp, M_DISPLAY,
 				    "%ld line%s %s", sp->rptlines,
 				    sp->rptlines == 1 ? "" : "s", sp->rptlabel);
@@ -167,8 +167,8 @@ err:		if (!F_ISSET(sp, S_SCREENWAIT) && sp->refresh(sp, ep)) {
 
 #define	KEY(sp, k, flags) {						\
 	(k) = getkey(sp, flags);					\
-	if (F_ISSET(sp, S_SCHED_UPDATE)) {				\
-		F_CLR(sp, S_SCHED_UPDATE);				\
+	if (F_ISSET(sp, S_UPDATE_MODE)) {				\
+		F_CLR(sp, S_UPDATE_MODE);				\
 		sp->refresh(sp, ep);					\
 	}								\
 	if (sp->special[(k)] == K_VLNEXT)				\
@@ -205,13 +205,13 @@ err:		if (!F_ISSET(sp, S_SCREENWAIT) && sp->refresh(sp, ep)) {
  *	[count] key [character]
  */
 static int
-getcmd(sp, ep, vp, ismotion)
+getcmd(sp, ep, dp, vp, ismotion)
 	SCR *sp;
 	EXF *ep;
-	VICMDARG *vp;
+	VICMDARG *dp, *vp;
 	VICMDARG *ismotion;	/* Previous key if getting motion component. */
 {
-	register VIKEYS *kp;
+	register VIKEYS const *kp;
 	register u_int flags;
 	u_long hold;
 	int key;
@@ -263,14 +263,14 @@ getcmd(sp, ep, vp, ismotion)
 	if (kp->func == NULL) {
 		/* If dot, set new count/buffer, if any, and return. */
 		if (key == '.') {
-			if (dot.flags & VC_ISDOT) {
+			if (dp->flags & VC_ISDOT) {
 				if (vp->flags & VC_C1SET) {
-					dot.flags |= VC_C1SET;
-					dot.count = vp->count;
+					dp->flags |= VC_C1SET;
+					dp->count = vp->count;
 				}
 				if (vp->buffer != OOBCB)
-					dot.buffer = vp->buffer;
-				*vp = dot;
+					dp->buffer = vp->buffer;
+				*vp = *dp;
 				return (0);
 			}
 			msgq(sp, M_ERROR,
@@ -356,10 +356,10 @@ usage:		msgq(sp, M_ERROR, "Usage: %s", ismotion != NULL ?
  * Get resulting motion mark.
  */
 static int
-getmotion(sp, ep, vp, fm, tm)
+getmotion(sp, ep, dm, vp, fm, tm)
 	SCR *sp;
 	EXF *ep;
-	VICMDARG *vp;
+	VICMDARG *dm, *vp;
 	MARK *fm, *tm;
 {
 	MARK m;
@@ -368,8 +368,8 @@ getmotion(sp, ep, vp, fm, tm)
 
 	/* If '.' command, use the dot motion, else get the motion command. */
 	if (vp->flags & VC_ISDOT)
-		motion = dotmotion;
-	else if (getcmd(sp, ep, &motion, vp))
+		motion = *dm;
+	else if (getcmd(sp, ep, NULL, &motion, vp))
 		return (1);
 
 	/*
@@ -460,8 +460,8 @@ getmotion(sp, ep, vp, fm, tm)
 	 * was changed above and needs to be reset.
 	 */
 	if (vp->kp->flags & V_DOT) {
-		dotmotion = motion;
-		dotmotion.count = cnt;
+		*dm = motion;
+		dm->count = cnt;
 	}
 	return (0);
 }

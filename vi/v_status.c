@@ -6,10 +6,12 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_status.c,v 5.20 1993/04/05 07:10:25 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:10:25 $";
+static char sccsid[] = "$Id: v_status.c,v 5.21 1993/04/06 11:43:55 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:43:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
+
+#include <unistd.h>
 
 #include "vi.h"
 #include "vcmd.h"
@@ -45,7 +47,8 @@ status(sp, ep, lno)
 #else
 	pid = "";
 #endif
-	ro = F_ISSET(sp, F_RDONLY) || ISSET(O_READONLY) ? ", readonly" : "";
+	ro = F_ISSET(sp, F_RDONLY) ||
+	    O_ISSET(sp, O_READONLY) ? ", readonly" : "";
 	if ((last = file_lline(sp, ep)) >= 1)
 		msgq(sp, M_DISPLAY,
 		    "%s: %s%s: line %lu of %lu [%ld%%]%s", ep->name,

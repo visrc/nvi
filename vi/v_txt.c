@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 5.1 1993/04/06 11:17:04 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:17:04 $";
+static char sccsid[] = "$Id: v_txt.c,v 5.2 1993/04/06 11:43:49 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:43:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -134,7 +134,7 @@ v_ntext(sp, ep, vp, tm, p, len, rp, ai_line, flags)
 	 * the local pointers to point into the buffer at the right places, and
 	 * update the screen cursor as necessary.
 	 */
-	if (flags & N_AUTOINDENT && ISSET(O_AUTOINDENT)) {
+	if (flags & N_AUTOINDENT && O_ISSET(sp, O_AUTOINDENT)) {
 		if (autoindent(sp, ep, ai_line, &col))
 			return (1);
 		in_ai = 1;
@@ -332,7 +332,7 @@ next_ch:	if (replay)
 
 			/* Reset the input buffer, adding any autoindent. */
 			startcol = 0;
-			if (ISSET(O_AUTOINDENT)) {
+			if (O_ISSET(sp, O_AUTOINDENT)) {
 				if (autoindent(sp, ep, ai_line, &col)) {
 					eval = 1;
 					goto done;

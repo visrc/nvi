@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_section.c,v 5.13 1993/04/05 07:10:22 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:10:22 $";
+static char sccsid[] = "$Id: v_section.c,v 5.14 1993/04/06 11:43:53 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:43:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -43,7 +43,7 @@ v_sectionf(sp, ep, vp, fm, tm, rp)
 	char *p, *list, *lp;
 
 	/* Get macro list. */
-	if ((list = PVAL(O_SECTIONS)) == NULL)
+	if ((list = O_STR(sp, O_SECTIONS)) == NULL)
 		return (1);
 	if (strlen(list) & 1) {
 		msgq(sp, M_ERROR,
@@ -107,7 +107,7 @@ v_sectionb(sp, ep, vp, fm, tm, rp)
 		return (1);
 	}
 
-	if ((list = PVAL(O_SECTIONS)) == NULL)
+	if ((list = O_STR(sp, O_SECTIONS)) == NULL)
 		return (1);
 	if (strlen(list) & 1) {
 		msgq(sp, M_ERROR,

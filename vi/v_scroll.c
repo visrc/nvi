@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 5.28 1993/04/05 07:10:18 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:10:18 $";
+static char sccsid[] = "$Id: v_scroll.c,v 5.29 1993/04/06 11:43:51 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:43:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -166,11 +166,11 @@ v_hpageup(sp, ep, vp, fm, tm, rp)
 	 * historic vi.  It's probably a don't care.
 	 */
 	if (vp->flags & VC_C1SET)
-		LVAL(O_SCROLL) = vp->count;
+		O_VAL(sp, O_SCROLL) = vp->count;
 	else
-		vp->count = LVAL(O_SCROLL);
+		vp->count = O_VAL(sp, O_SCROLL);
 
-	return (sp->down(sp, ep, rp, (recno_t)LVAL(O_SCROLL), 1));
+	return (sp->down(sp, ep, rp, (recno_t)O_VAL(sp, O_SCROLL), 1));
 }
 
 /*
@@ -190,11 +190,11 @@ v_hpagedown(sp, ep, vp, fm, tm, rp)
 	 * historic vi.  It's probably a don't care.
 	 */
 	if (vp->flags & VC_C1SET)
-		LVAL(O_SCROLL) = vp->count;
+		O_VAL(sp, O_SCROLL) = vp->count;
 	else
-		vp->count = LVAL(O_SCROLL);
+		vp->count = O_VAL(sp, O_SCROLL);
 
-	return (sp->up(sp, ep, rp, (recno_t)LVAL(O_SCROLL), 1));
+	return (sp->up(sp, ep, rp, (recno_t)O_VAL(sp, O_SCROLL), 1));
 }
 
 /*
