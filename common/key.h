@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: key.h,v 10.38 2001/04/26 11:07:01 skimo Exp $ (Berkeley) $Date: 2001/04/26 11:07:01 $
+ *	$Id: key.h,v 10.39 2001/04/27 19:57:32 skimo Exp $ (Berkeley) $Date: 2001/04/27 19:57:32 $
  */
 
 #include "multibyte.h"
@@ -50,6 +50,7 @@ typedef	u_int		ARG_CHAR_T;
     iswprint((ch))
 #define CHAR_WIDTH(sp, ch)  wcwidth(ch)
 #define INTISWIDE(c)	(!!(c >> 8))	    /* XXX wrong name */
+#define L(ch)		L ## ch
 #else
 #define FILE2INT(sp,n,nlen,w,wlen) \
     w = n, wlen = nlen
@@ -70,6 +71,7 @@ typedef	u_int		ARG_CHAR_T;
     isprint((ch))
 #define INTISWIDE(c)	    0
 #define CHAR_WIDTH(sp, ch)  1
+#define L(ch)		ch
 #endif
 #define CHAR2INT(sp,n,nlen,w,wlen)					    \
     CHAR2INTB(sp,n,nlen,w,wlen,sp->wp->cw)

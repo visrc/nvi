@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_line.c,v 10.31 2001/02/25 17:05:06 skimo Exp $ (Berkeley) $Date: 2001/02/25 17:05:06 $";
+static const char sccsid[] = "$Id: vs_line.c,v 10.32 2001/04/27 19:57:33 skimo Exp $ (Berkeley) $Date: 2001/04/27 19:57:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -49,10 +49,11 @@ vs_line(sp, smp, yp, xp)
 	size_t chlen, cno_cnt, cols_per_screen, len, nlen;
 	size_t offset_in_char, offset_in_line, oldx, oldy;
 	size_t scno, skip_cols, skip_screens;
-	int ch, dne, is_cached, is_partial, is_tab;
+	int dne, is_cached, is_partial, is_tab;
 	int list_tab, list_dollar;
 	CHAR_T *p;
 	CHAR_T *cbp, *ecbp, cbuf[128];
+	CHAR_T ch;
 
 #if defined(DEBUG) && 0
 	vtrace(sp, "vs_line: row %u: line: %u off: %u\n",
@@ -174,16 +175,16 @@ vs_line(sp, smp, yp, xp)
 			if (dne) {
 				if (smp->lno == 1) {
 					if (list_dollar) {
-						ch = '$';
+						ch = L('$');
 						goto empty;
 					}
 				} else {
-					ch = '~';
+					ch = L('~');
 					goto empty;
 				}
 			} else
 				if (list_dollar) {
-					ch = '$';
+					ch = L('$');
 empty:					(void)gp->scr_addstr(sp,
 					    KEY_NAME(sp, ch), KEY_LEN(sp, ch));
 				}
@@ -258,7 +259,7 @@ empty:					(void)gp->scr_addstr(sp,
 	/* Do it the hard way, for leftright scrolling screens. */
 	if (O_ISSET(sp, O_LEFTRIGHT)) {
 		for (; offset_in_line < len; ++offset_in_line) {
-			chlen = (ch = *(UCHAR_T *)p++) == '\t' && !list_tab ?
+			chlen = (ch = *p++) == L('\t') && !list_tab ?
 			    TAB_OFF(scno) : KEY_COL(sp, ch);
 			if ((scno += chlen) >= skip_cols)
 				break;
@@ -282,7 +283,7 @@ empty:					(void)gp->scr_addstr(sp,
 	/* Do it the hard way, for historic line-folding screens. */
 	else {
 		for (; offset_in_line < len; ++offset_in_line) {
-			chlen = (ch = *(UCHAR_T *)p++) == '\t' && !list_tab ?
+			chlen = (ch = *p++) == L('\t') && !list_tab ?
 			    TAB_OFF(scno) : KEY_COL(sp, ch);
 			if ((scno += chlen) < cols_per_screen)
 				continue;
@@ -332,7 +333,7 @@ display:
 	ecbp = (cbp = cbuf) + sizeof(cbuf)/sizeof(CHAR_T) - 1;
 	for (is_partial = 0, scno = 0;
 	    offset_in_line < len; ++offset_in_line, offset_in_char = 0) {
-		if ((ch = *(UCHAR_T *)p++) == '\t' && !list_tab) {
+		if ((ch = *p++) == L('\t') && !list_tab) {
 			scno += chlen = TAB_OFF(scno) - offset_in_char;
 			is_tab = 1;
 		} else {
