@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 5.56 1993/05/21 11:55:14 bostic Exp $ (Berkeley) $Date: 1993/05/21 11:55:14 $";
+static char sccsid[] = "$Id: v_cmd.c,v 5.57 1993/05/27 22:08:38 bostic Exp $ (Berkeley) $Date: 1993/05/27 22:08:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -369,10 +369,6 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	{v_paragraphb,	V_ABS|V_CNT|V_LMODE|V_MOVE|V_RCM_SET,
 	    "move back paragraph: [count]{"},
 /* 174   | */
-	/*
-	 * DON'T set the V_RCM_SETFNB flag, if a count is supplied `|'
-	 * doesn't move to the first non-blank.
-	 */
 	{v_ncol,	V_ABS|V_CNT|V_MOVE|V_RCM_SET,
 	    "move to column: [count]|"},
 /* 175   } */
