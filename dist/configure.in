@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.92 1996/04/22 19:41:03 bostic Exp $ (Berkeley) $Date: 1996/04/22 19:41:03 $
+dnl	$Id: configure.in,v 8.93 1996/04/28 19:20:09 bostic Exp $ (Berkeley) $Date: 1996/04/28 19:20:09 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(../common/main.c)
@@ -151,7 +151,7 @@ if test "$vi_cv_perlinterp" = "yes"; then
 		echo "Fatal error: perl5 must be version 5.002 or later."
 		exit 1
 	}
-	$vi_cv_path_perl -e 'require 5.002_01' &&
+	$vi_cv_path_perl -e 'require 5.002_01' >/dev/null 2>&1 &&
 	    AC_DEFINE(HAVE_PERL_5_002_01)
 
 	perlcppflags=`$vi_cv_path_perl -e 'use Config;print $Config{ccflags}'`
