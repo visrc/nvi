@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_split.c,v 8.28 1993/12/19 18:00:59 bostic Exp $ (Berkeley) $Date: 1993/12/19 18:00:59 $";
+static char sccsid[] = "$Id: vs_split.c,v 8.29 1993/12/22 15:12:14 bostic Exp $ (Berkeley) $Date: 1993/12/22 15:12:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -360,7 +360,7 @@ svi_join(csp, nsp)
 int
 svi_fg(csp, name)
 	SCR *csp;
-	char *name;
+	CHAR_T *name;
 {
 	SCR *sp;
 
