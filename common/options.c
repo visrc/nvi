@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.48 1994/03/22 15:18:09 bostic Exp $ (Berkeley) $Date: 1994/03/22 15:18:09 $";
+static char sccsid[] = "$Id: options.c,v 8.49 1994/03/22 18:59:43 bostic Exp $ (Berkeley) $Date: 1994/03/22 18:59:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -88,7 +88,12 @@ static OPTLIST const optlist[] = {
 /* O_LINES	  4.4BSD */
 	{"lines",	f_lines,	OPT_NUM,	OPT_NOSAVE},
 /* O_LISP	    4BSD */
-	{"lisp",	f_lisp,		OPT_0BOOL,	0},
+/*
+ * XXX
+ * When the lisp option is implemented, delete
+ * the OPT_NOSAVE flag, so that :mkexrc dumps it.
+ */
+	{"lisp",	f_lisp,		OPT_0BOOL,	OPT_NOSAVE},
 /* O_LIST	    4BSD */
 	{"list",	f_list,		OPT_0BOOL,	0},
 /* O_MAGIC	    4BSD */
@@ -160,11 +165,11 @@ static OPTLIST const optlist[] = {
 /* O_VERBOSE	  4.4BSD */
 	{"verbose",	NULL,		OPT_0BOOL,	0},
 /* O_W1200	    4BSD */
-	{"w1200",	f_w1200,	OPT_NUM,	OPT_NEVER},
+	{"w1200",	f_w1200,	OPT_NUM,	OPT_NEVER|OPT_NOSAVE},
 /* O_W300	    4BSD */
-	{"w300",	f_w300,		OPT_NUM,	OPT_NEVER},
+	{"w300",	f_w300,		OPT_NUM,	OPT_NEVER|OPT_NOSAVE},
 /* O_W9600	    4BSD */
-	{"w9600",	f_w9600,	OPT_NUM,	OPT_NEVER},
+	{"w9600",	f_w9600,	OPT_NUM,	OPT_NEVER|OPT_NOSAVE},
 /* O_WARN	    4BSD */
 	{"warn",	NULL,		OPT_1BOOL,	0},
 /* O_WINDOW	    4BSD */
