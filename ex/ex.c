@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.28 1993/09/08 17:20:49 bostic Exp $ (Berkeley) $Date: 1993/09/08 17:20:49 $";
+static char sccsid[] = "$Id: ex.c,v 8.29 1993/09/09 14:26:34 bostic Exp $ (Berkeley) $Date: 1993/09/09 14:26:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -426,6 +426,10 @@ ex_cmd(sp, ep, exc, arg1_len)
 	 * 0.  Otherwise, an entire file is 1 to N and the default line is 1.
 	 * Note, we also add the E_ZERO flag to the command flags, for the case
 	 * where the 0 address is only valid if it's a default address.
+	 *
+	 * Also, set a flag if we set the default addresses.  Some commands
+	 * (ex: z) care if the user specified an address of if we just used
+	 * the current cursor.
 	 */
 	flagoff = 0;
 	switch (flags & (E_ADDR1|E_ADDR2|E_ADDR2_ALL|E_ADDR2_NONE)) {
@@ -433,6 +437,7 @@ ex_cmd(sp, ep, exc, arg1_len)
 		switch (cmd.addrcnt) {
 		case 0:				/* Default cursor/empty file. */
 			cmd.addrcnt = 1;
+			F_SET(&cmd, E_ADDRDEF);
 			if (LF_ISSET(E_ZERODEF)) {
 				if (file_lline(sp, ep, &lno))
 					return (1);
@@ -459,6 +464,7 @@ ex_cmd(sp, ep, exc, arg1_len)
 	case E_ADDR2_ALL:			/* Zero/two addresses: */
 		if (cmd.addrcnt == 0) {		/* Default entire/empty file. */
 			cmd.addrcnt = 2;
+			F_SET(&cmd, E_ADDRDEF);
 			if (file_lline(sp, ep, &cmd.addr2.lno))
 				return (1);
 			if (LF_ISSET(E_ZERODEF) && cmd.addr2.lno == 0) {
@@ -475,6 +481,7 @@ ex_cmd(sp, ep, exc, arg1_len)
 two:		switch (cmd.addrcnt) {
 		case 0:				/* Default cursor/empty file. */
 			cmd.addrcnt = 2;
+			F_SET(&cmd, E_ADDRDEF);
 			if (LF_ISSET(E_ZERODEF) && sp->lno == 1) {
 				if (file_lline(sp, ep, &lno))
 					return (1);
@@ -545,8 +552,18 @@ two:		switch (cmd.addrcnt) {
 			if (*exc)
 				*exc++ = '\0';
 			break;
-		case '1':				/* #, l, p */
-			for (; *exc == '+' || *exc == '-'; ++exc)
+		case '1':				/* +, -, #, l, p */
+			/*
+			 * !!!
+			 * Historically, some flags were ignored depending
+			 * on where they occurred in the command line.  For
+			 * example, in the command, ":3+++p--#", historic vi
+			 * acted on the '#' flag, but ignored the '-' flags.
+			 * It's unambiguous what the flags mean, so we just
+			 * handle them regardless of the stupidity of their
+			 * location.
+			 */
+			for (;; ++exc)
 				switch (*exc) {
 				case '+':
 					++flagoff;
@@ -554,9 +571,6 @@ two:		switch (cmd.addrcnt) {
 				case '-':
 					--flagoff;
 					break;
-				}
-			for (; *exc == '#' || *exc == 'l' || *exc == 'p'; ++exc)
-				switch (*exc) {
 				case '#':
 					F_SET(&cmd, E_F_HASH);
 					break;
@@ -566,18 +580,12 @@ two:		switch (cmd.addrcnt) {
 				case 'p':
 					F_SET(&cmd, E_F_PRINT);
 					break;
+				default:
+					goto end1;
 				}
-			for (; *exc == '+' || *exc == '-'; ++exc)
-				switch (*exc) {
-				case '+':
-					++flagoff;
-					break;
-				case '-':
-					--flagoff;
-					break;
-				}
-			break;
+end1:			break;
 		case '2':				/* -, ., +, ^ */
+		case '3':				/* -, ., +, ^, = */
 			for (;; ++exc)
 				switch (*exc) {
 				case '-':
@@ -592,6 +600,12 @@ two:		switch (cmd.addrcnt) {
 				case '^':
 					F_SET(&cmd, E_F_CARAT);
 					break;
+				case '=':
+					if (*p == '3') {
+						F_SET(&cmd, E_F_EQUAL);
+						break;
+					}
+					/* FALLTHROUGH */
 				default:
 					goto end2;
 				}
@@ -599,32 +613,38 @@ end2:			break;
 		case 'b':				/* buffer */
 			cmd.buffer = *exc++;
 			break;
-		case 'c':				/* count */
-			if (isdigit(*exc)) {
-				lcount = strtol(exc, &endp, 10);
-				if (lcount == 0) {
-					msgq(sp, M_ERR,
-					    "Count may not be zero.");
-					return (1);
-				}
-				exc = endp;
-				/*
-				 * Count's (with one exception, :visual) only
-				 * occur in commands taking two addresses.
-				 * Historic vi practice was to use the count as
-				 * an offset from the *second* address.
-				 */
+		case 'C':				/* count */
+		case 'c':				/* count (address) */
+			if (!isdigit(*exc))
+				break;
+			lcount = strtol(exc, &endp, 10);
+			if (lcount == 0) {
+				msgq(sp, M_ERR,
+				    "Count may not be zero.");
+				return (1);
+			}
+			exc = endp;
+			/*
+			 * Count as address offsets occur in commands taking
+			 * two addresses.  Historic vi practice was to use
+			 * the count as an offset from the *second* address.
+			 *
+			 * Set the count flag; some underlying commands (see
+			 * join) do different things with counts than with
+			 * line addresses.
+			 */
+			if (*p == 'C')
+				cmd.count = lcount;
+			else {
 				cmd.addr1 = cmd.addr2;
 				cmd.addr2.lno = cmd.addr1.lno + lcount - 1;
-				/*
-				 * Set the count flag; some underlying commands
-				 * (see join) do different things with counts
-				 * than with line addresses.
-				 */
-				cmd.count = lcount;
-				F_SET(&cmd, E_COUNT);
 			}
+			F_SET(&cmd, E_COUNT);
 			break;
+		case 'f':				/* file */
+			if (file_argv(sp, ep, exc, &cmd.argc, &cmd.argv))
+				return (1);
+			goto countchk;
 		case 'l':				/* line */
 			endp = ep_line(sp, ep, exc, &cur);
 			if (endp == NULL || exc == endp) {
@@ -636,10 +656,6 @@ end2:			break;
 				exc = endp;
 			}
 			break;
-		case 'f':				/* file */
-			if (file_argv(sp, ep, exc, &cmd.argc, &cmd.argv))
-				return (1);
-			goto countchk;
 		case 's':				/* string */
 			sp->ex_argv[0] = exc;
 			sp->ex_argv[1] = NULL;
@@ -851,9 +867,8 @@ addr2:	switch (cmd.addrcnt) {
 	 */
 	if (flagoff) {
 		if (flagoff < 0) {
-			if ((recno_t)flagoff > sp->lno) {
-				msgq(sp, M_ERR,
-				    "Flag offset before line 1.");
+			if (sp->lno < -flagoff) {
+				msgq(sp, M_ERR, "Flag offset before line 1.");
 				return (1);
 			}
 		} else {
