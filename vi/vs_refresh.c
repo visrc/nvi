@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.16 1993/10/03 13:39:14 bostic Exp $ (Berkeley) $Date: 1993/10/03 13:39:14 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.17 1993/10/05 18:00:55 bostic Exp $ (Berkeley) $Date: 1993/10/05 18:00:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -72,11 +72,11 @@ svi_refresh(sp, ep)
 		if (SVP(sp) != NULL) {
 			FREE(HMAP, sp->w_rows * sizeof(SMAP));
 			FREE(SVP(sp), sizeof(SVI_PRIVATE));
-			if (screen_end(INFOLINE(sp)))
+			if (svi_screen_end(INFOLINE(sp)))
 				return (1);
 		}
 
-		if (screen_init(sp))
+		if (svi_screen_init(sp))
 			return (1);
 
 		/* Toss svi_screens() cached information. */
