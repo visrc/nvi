@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_filter.c,v 10.38 2000/11/26 11:00:20 skimo Exp $ (Berkeley) $Date: 2000/11/26 11:00:20 $";
+static const char sccsid[] = "$Id: ex_filter.c,v 10.39 2000/11/26 20:10:19 skimo Exp $ (Berkeley) $Date: 2000/11/26 20:10:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,7 +28,6 @@ static const char sccsid[] = "$Id: ex_filter.c,v 10.38 2000/11/26 11:00:20 skimo
 #include "../common/common.h"
 
 static int filter_ldisplay __P((SCR *, FILE *));
-static CHAR_T filter[] = { 'f', 'i', 'l', 't', 'e', 'r', 0 };
 
 /*
  * ex_filter --
@@ -180,7 +179,7 @@ err:		if (input[0] != -1)
 		if (ftype == FILTER_RBANG)
 			(void)close(input[1]);
 
-		if (ex_readfp(sp, filter, ofp, fm, &nread, 1))
+		if (ex_readfp(sp, "filter", ofp, fm, &nread, 1))
 			rval = 1;
 		sp->rptlines[L_ADDED] += nread;
 		if (ftype == FILTER_READ)
@@ -255,7 +254,7 @@ err:		if (input[0] != -1)
 			 * pipe.  Ex_readfp appends to the MARK and closes
 			 * ofp.
 			 */
-			if (ex_readfp(sp, filter, ofp, tm, &nread, 1))
+			if (ex_readfp(sp, "filter", ofp, tm, &nread, 1))
 				rval = 1;
 			sp->rptlines[L_ADDED] += nread;
 		}

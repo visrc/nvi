@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_read.c,v 10.41 2000/11/26 11:00:20 skimo Exp $ (Berkeley) $Date: 2000/11/26 11:00:20 $";
+static const char sccsid[] = "$Id: ex_read.c,v 10.42 2000/11/26 20:10:19 skimo Exp $ (Berkeley) $Date: 2000/11/26 20:10:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -234,8 +234,11 @@ ex_read(sp, cmdp)
 
 				/* Notify the screen. */
 				(void)sp->gp->scr_rename(sp, sp->frp->name, 1);
-			} else
+				name = sp->frp->name;
+			} else {
 				set_alt_name(sp, name);
+				name = sp->alt_name;
+			}
 			break;
 		default:
 			INT2CHAR(sp, cmdp->argv[0]->bp, 
@@ -270,7 +273,7 @@ ex_read(sp, cmdp)
 	if (file_lock(sp, NULL, NULL, fileno(fp), 0) == LOCK_UNAVAIL)
 		msgq(sp, M_ERR, "146|%s: read lock was unavailable", name);
 
-	rval = ex_readfp(sp, cmdp->argv[1]->bp, fp, &cmdp->addr1, &nlines, 0);
+	rval = ex_readfp(sp, name, fp, &cmdp->addr1, &nlines, 0);
 
 	/*
 	 * In vi, set the cursor to the first line read in, if anything read
@@ -294,12 +297,12 @@ ex_read(sp, cmdp)
  * ex_readfp --
  *	Read lines into the file.
  *
- * PUBLIC: int ex_readfp __P((SCR *, CHAR_T *, FILE *, MARK *, db_recno_t *, int));
+ * PUBLIC: int ex_readfp __P((SCR *, char *, FILE *, MARK *, db_recno_t *, int));
  */
 int
 ex_readfp(sp, name, fp, fm, nlinesp, silent)
 	SCR *sp;
-	CHAR_T *name;
+	char *name;
 	FILE *fp;
 	MARK *fm;
 	db_recno_t *nlinesp;
@@ -312,8 +315,6 @@ ex_readfp(sp, name, fp, fm, nlinesp, silent)
 	u_long ccnt;			/* XXX: can't print off_t portably. */
 	int nf, rval;
 	char *p;
-	char *np;
-	size_t nlen;
 
 	gp = sp->gp;
 	exp = EXP(sp);
@@ -348,8 +349,7 @@ ex_readfp(sp, name, fp, fm, nlinesp, silent)
 		*nlinesp = lcnt;
 
 	if (!silent) {
-		INT2CHAR(sp, name, v_strlen(name)+1, np, nlen);
-		p = msg_print(sp, np, &nf);
+		p = msg_print(sp, name, &nf);
 		msgq(sp, M_INFO,
 		    "148|%s: %lu lines, %lu characters", p, lcnt, ccnt);
 		if (nf)
@@ -358,8 +358,7 @@ ex_readfp(sp, name, fp, fm, nlinesp, silent)
 
 	rval = 0;
 	if (0) {
-err:		INT2CHAR(sp, name, v_strlen(name)+1, np, nlen);
-		msgq_str(sp, M_SYSERR, np, "%s");
+err:		msgq_str(sp, M_SYSERR, name, "%s");
 		(void)fclose(fp);
 		rval = 1;
 	}
