@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: options.h,v 10.18 1996/10/01 21:30:02 bostic Exp $ (Berkeley) $Date: 1996/10/01 21:30:02 $
+ *	$Id: options.h,v 10.19 1996/10/10 17:02:46 bostic Exp $ (Berkeley) $Date: 1996/10/10 17:02:46 $
  */
 
 /*
@@ -39,11 +39,14 @@
 #define	OG_D_STR(gp, o)		((gp)->opts[(o)].o_def.str)
 #define	OG_D_VAL(gp, o)		((gp)->opts[(o)].o_def.val)
 
-/* Flags to o_set(). */
+/*
+ * Flags to o_set(); need explicit OS_STR as can be setting the value to
+ * NULL.
+ */
 #define	OS_DEF		0x01		/* Set the default value. */
 #define	OS_NOFREE	0x02		/* Don't free the old string. */
-#define	OS_STR		0x04		/* Set to the str value. */
-#define	OS_STRDUP	0x08		/* Copy and set to the str value. */
+#define	OS_STR		0x04		/* Set to string argument. */
+#define	OS_STRDUP	0x08		/* Copy then set to string argument. */
 
 struct _option {
 	union {
