@@ -6,12 +6,14 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 5.6 1992/10/01 17:30:50 bostic Exp $ (Berkeley) $Date: 1992/10/01 17:30:50 $";
+static char sccsid[] = "$Id: v_scroll.c,v 5.7 1992/10/10 14:00:10 bostic Exp $ (Berkeley) $Date: 1992/10/10 14:00:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
-#include <stdio.h>
+
 #include <curses.h>
+#include <limits.h>
+#include <stdio.h>
 
 #include "vi.h"
 #include "options.h"
@@ -48,7 +50,7 @@ v_lgoto(vp, fm, tm, rp)
 		rp->lno = vp->count;
 	} else
 		rp->lno = file_lline(curf);
-	return (v_nonblank(rp));
+	return (0);
 }
 
 /* 
@@ -67,7 +69,7 @@ v_home(vp, fm, tm, rp)
 	lno = curf->top + (vp->flags & VC_C1SET ? vp->count : 0);
 
 	DOWN(lno);
-	return (v_nonblank(rp));
+	return (0);
 }
 
 /*
@@ -89,7 +91,7 @@ v_middle(vp, fm, tm, rp)
 		rp->lno = lno;
 	} else
 		rp->lno = curf->top + LINES / 2;
-	return (v_nonblank(rp));
+	return (0);
 }
 
 /*
@@ -118,7 +120,7 @@ v_bottom(vp, fm, tm, rp)
 		return (1);
 	}
 	rp->lno = lno - cnt;
-	return (v_nonblank(rp));
+	return (0);
 }
 
 /*
@@ -136,7 +138,7 @@ v_nbdown(vp, fm, tm, rp)
 	lno = fm->lno + (vp->flags & VC_C1SET ? vp->count : 1);
 
 	DOWN(lno);
-	return (v_nonblank(rp));
+	return (0);
 }
 
 /*
@@ -188,7 +190,7 @@ v_hpagedown(vp, fm, tm, rp)
 		}
 	}
 	rp->lno = lno;
-	return (v_nonblank(rp));
+	return (0);
 }
 
 /*
@@ -207,7 +209,7 @@ v_pagedown(vp, fm, tm, rp)
 	lno = fm->lno + (vp->flags & VC_C1SET ? vp->count : 1) * (LINES - 2);
 
 	DOWN(lno);
-	return (v_nonblank(rp));
+	return (0);
 }
 
 /*
@@ -240,6 +242,5 @@ v_linedown(vp, fm, tm, rp)
 	 * unless it reaches the top of the screen.
 	 */
 	rp->lno = fm->lno == curf->top ? fm->lno + off : fm->lno;
-	rp->cno = fm->cno;
 	return (0);
 }
