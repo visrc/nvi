@@ -4,20 +4,22 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 5.28 1993/04/13 16:18:31 bostic Exp $ (Berkeley) $Date: 1993/04/13 16:18:31 $
+ *	$Id: screen.h,v 5.29 1993/04/17 11:53:13 bostic Exp $ (Berkeley) $Date: 1993/04/17 11:53:13 $
  */
 
 /*
- * There are minimum values that vi has to have to display a screen.  These
- * are about the MINIMUM that are possible, and changing them is not a good
- * idea.  In particular, while I intend to get the minimum rows down to 2
- * for the curses screen version of the vi screen, (1 for the line, 1 for
- * the error messages) changing the minimum columns is a lot trickier.  For
- * example, you have to have enough columns to display the line number, not
- * to mention guaranteeing that the tabstop and shiftwidth values are smaller.
- * It's a lot simpler to have a fixed value and not worry about it.
+ * There are minimum values that vi has to have to display a screen.  The
+ * row minimum is fixed at 1 line for the text, and 1 line for any error
+ * messages.  The column calculation is a lot trickier.  For example, you
+ * have to have enough columns to display the line number, not to mention
+ * guaranteeing that tabstop and shiftwidth values are smaller than the
+ * current column value.  It's a lot simpler to have a fixed value and not
+ * worry about it.
+ *
+ * XXX
+ * MINIMUM_SCREEN_COLS is probably wrong.
  */
-#define	MINIMUM_SCREEN_ROWS	 4		/* XXX Should be 2. */
+#define	MINIMUM_SCREEN_ROWS	 2
 #define	MINIMUM_SCREEN_COLS	20
 
 enum confirmation { YES, NO, QUIT };	/* Confirmation routine interface. */
@@ -85,17 +87,19 @@ typedef struct _scr {
 					/* Physical screen information. */
 	struct _smap	*h_smap;	/* Head of screen/row map. */
 	struct _smap	*t_smap;	/* Tail of screen/row map. */
+
 	recno_t	 lno;			/* 1-N:     cursor file line. */
 	recno_t	 olno;			/* 1-N: old cursor file line. */
 	size_t	 cno;			/* 0-N:     file cursor column. */
 	size_t	 ocno;			/* 0-N: old file cursor column. */
-	size_t	 rows;			/* 1-N: number of rows per screen. */
-	size_t	 cols;			/* 1-N: number of columns per screen. */
-	size_t	 t_rows;		/* 1-N: text rows per screen. */
-	size_t	 w_rows;		/* 1-N: number of rows per window. */
-	size_t	 s_off;			/* 0-N: offset into window. */
 	size_t	 sc_row;		/* 0-N: logical screen cursor row. */
 	size_t	 sc_col;		/* 0-N: logical screen cursor column. */
+
+	size_t	 rows;			/* 1-N:      rows per screen. */
+	size_t	 cols;			/* 1-N:   columns per screen. */
+	size_t	 t_rows;		/* 1-N: text rows per screen. */
+	size_t	 w_rows;		/* 1-N:      rows per window. */
+	size_t	 s_off;			/* 0-N: row offset in window. */
 
 	struct _msg	*msgp;		/* User message list. */
 
@@ -200,7 +204,6 @@ typedef struct _scr {
 		     struct _exf *, struct _mark *, struct _mark *));
 	int	 (*down) __P((struct _scr *,
 		     struct _exf *, struct _mark *, recno_t, int));
-	int	 (*end) __P((struct _scr *));
 	int	 (*exwrite) __P((void *, const char *, int));
 	int	 (*fill) __P((struct _scr *,
 		     struct _exf *, recno_t, enum position));
@@ -216,16 +219,18 @@ typedef struct _scr {
 	int	 (*vex) __P((struct _scr *, struct _exf *,
 		     struct _mark *, struct _mark *, struct _mark *));
 
-/* FLAGS. */
-#define	S_EXIT		0x0000001	/* Exiting (forced). */
-#define	S_EXIT_FORCE	0x0000002	/* Exiting (not forced). */
-#define	S_MODE_EX	0x0000004	/* In ex mode. */
-#define	S_MODE_VI	0x0000008	/* In vi mode. */
+/* Editor screens (implies edit mode, as well). */
+#define	S_MODE_EX	0x0000001	/* Ex mode. */
+#define	S_MODE_VI	0x0000002	/* Vi mode. */
+
+/* Major screen/file changes. */
+#define	S_EXIT		0x0000004	/* Exiting (not forced). */
+#define	S_EXIT_FORCE	0x0000008	/* Exiting (forced). */
 #define	S_FSWITCH	0x0000010	/* Switch files (not forced). */
 #define	S_FSWITCH_FORCE	0x0000020	/* Switch files (forced). */
 #define	S_SSWITCH	0x0000040	/* Switch screens. */
-#define	__S_SPARE	0x0000080	/* Unused. */
-#define	S_FILE_CHANGED			/* File change mask. */ \
+#define	__S_UNUSED	0x0000080	/* Unused. */
+#define	S_MAJOR_CHANGE			/* Screen or file changes. */	\
 	(S_EXIT | S_EXIT_FORCE | S_FSWITCH | S_FSWITCH_FORCE | S_SSWITCH)
 
 #define	S_ABBREV	0x0000100	/* If have abbreviations. */
@@ -239,13 +244,13 @@ typedef struct _scr {
 #define	S_MSGREENTER	0x0010000	/* If msg routine reentered. */
 #define	S_RE_SET	0x0020000	/* The file's RE has been set. */
 #define	S_REDRAW	0x0040000	/* Redraw the screen. */
-#define	S_REFORMAT	0x0080000	/* Reformat the lines. */
+#define	S_REFORMAT	0x0080000	/* Reformat the screen. */
 #define	S_REFRESH	0x0100000	/* Refresh the screen. */
 #define	S_RESIZE	0x0200000	/* Resize the screen. */
 #define	S_UPDATE_MODE	0x0400000	/* Don't repaint modeline. */
 #define	S_UPDATE_SCREEN	0x0800000	/* Don't repaint screen. */
 
-#define	S_SCREEN_RETAIN			/* Retain over screen create. */ \
+#define	S_SCREEN_RETAIN			/* Retain at screen create. */	\
 	(S_MODE_EX | S_MODE_VI | S_ISFROMTTY)
 
 	u_int flags;
@@ -254,5 +259,5 @@ typedef struct _scr {
 /* Public interfaces to the screens. */
 int	scr_end __P((struct _scr *));
 int	scr_init __P((struct _scr *, struct _scr *));
-int	sex_init __P((struct _scr *, struct _exf *));
-int	svi_init __P((struct _scr *, struct _exf *));
+int	sex __P((struct _scr *, struct _exf *));
+int	svi __P((struct _scr *, struct _exf *));
