@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 8.1 1993/06/09 22:22:04 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:22:04 $";
+static char sccsid[] = "$Id: search.c,v 8.2 1993/07/06 15:02:13 bostic Exp $ (Berkeley) $Date: 1993/07/06 15:02:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -221,7 +221,8 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 
 	wrapped = 0;
 	for (;; ++lno, coff = 0) {
-		if ((l = file_gline(sp, ep, lno, &len)) == NULL) {
+		if (wrapped && lno > fm->lno ||
+		    (l = file_gline(sp, ep, lno, &len)) == NULL) {
 			if (wrapped) {
 				if (LF_ISSET(SEARCH_MSG))
 					msgq(sp, M_INFO, NOTFOUND);
@@ -342,7 +343,12 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 
 	wrapped = 0;
 	for (coff = fm->cno;; --lno, coff = 0) {
-		if (lno == 0) {
+		if (wrapped && lno < fm->lno || lno == 0) {
+			if (wrapped) {
+				if (LF_ISSET(SEARCH_MSG))
+					msgq(sp, M_INFO, NOTFOUND);
+				break;
+			}
 			if (!O_ISSET(sp, O_WRAPSCAN)) {
 				if (LF_ISSET(SEARCH_MSG))
 					msgq(sp, M_INFO, SOFMSG);
@@ -358,10 +364,6 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 			++lno;
 			wrapped = 1;
 			continue;
-		} else if (lno == fm->lno && wrapped) {
-			if (LF_ISSET(SEARCH_MSG))
-				msgq(sp, M_INFO, NOTFOUND);
-			break;
 		}
 
 		if ((l = file_gline(sp, ep, lno, &len)) == NULL)
@@ -373,7 +375,7 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 
 		/* Set the termination. */
 		match[0].rm_so = 0;
-		match[0].rm_eo = coff ? coff - 1 : len;
+		match[0].rm_eo = coff ? coff : len;
 
 #if defined(DEBUG) && defined(SEARCHDEBUG)
 		TRACE(sp, "B search: %lu from 0 to %qu\n", lno, match[0].rm_eo);
@@ -410,7 +412,8 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 			for (;;) {
 				last = match[0].rm_so;
 				match[0].rm_so = match[0].rm_eo + 1;
-				if (match[0].rm_so >= len)
+				if (match[0].rm_so >= len ||
+				    coff && match[0].rm_so >= coff)
 					break;
 				match[0].rm_eo = coff ? coff : len;
 				eval = regexec(re,
