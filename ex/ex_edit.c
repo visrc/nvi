@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 8.13 1993/12/03 15:40:48 bostic Exp $ (Berkeley) $Date: 1993/12/03 15:40:48 $";
+static char sccsid[] = "$Id: ex_edit.c,v 8.14 1994/01/22 20:41:39 bostic Exp $ (Berkeley) $Date: 1994/01/22 20:41:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -43,14 +43,19 @@ ex_edit(sp, ep, cmdp)
 	switch (cmdp->argc) {
 	case 0:
 		/*
-		 * If the name has been changed, we edit that file, not
-		 * the original name.
+		 * If the name has been changed, we edit that file, not the
+		 * original name.  If the user was editing a temporary file,
+		 * create another one.  The reason for this is that we do
+		 * special exit processing of temporary files, and reusing
+		 * them is tricky.
 		 */
 		if (frp->cname != NULL) {
 			if ((frp = file_add(sp, frp, frp->cname, 1)) == NULL)
 				return (1);
 			set_alt_name(sp, sp->frp->cname);
-		}
+		} else if (frp->name == NULL)
+			if ((frp = file_add(sp, frp, NULL, 1)) == NULL)
+				return (1);
 		break;
 	case 1:
 		ap = cmdp->argv[0];
