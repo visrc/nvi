@@ -12,7 +12,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 8.88 1994/05/02 15:11:02 bostic Exp $ (Berkeley) $Date: 1994/05/02 15:11:02 $";
+static char sccsid[] = "$Id: main.c,v 8.89 1994/05/03 13:48:51 bostic Exp $ (Berkeley) $Date: 1994/05/03 13:48:51 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -103,7 +103,7 @@ main(argc, argv)
 	excmdarg = tag_f = trace_f = wsizearg = NULL;
 	silent = 0;
 	snapshot = 1;
-	while ((ch = getopt(argc, argv, "c:eFRrsT:t:vw:x:")) != EOF)
+	while ((ch = getopt(argc, argv, "c:eFRrsT:t:vw:X:")) != EOF)
 		switch (ch) {
 		case 'c':		/* Run the command. */
 			excmdarg = optarg;
@@ -147,7 +147,7 @@ main(argc, argv)
 		case 'w':
 			wsizearg = optarg;
 			break;
-		case 'x':
+		case 'X':
 			if (!strcmp(optarg, "aw")) {
 				LF_CLR(S_SCREENS);
 				LF_SET(S_VI_XAW);
@@ -666,9 +666,9 @@ usage(is_ex)
 	int is_ex;
 {
 #define	EX_USAGE \
-    "ex [-eFRrsv] [-c command] [-t tag] [-w size] [-x aw] [files ...]"
+    "ex [-eFRrsv] [-c command] [-t tag] [-w size] [files ...]"
 #define	VI_USAGE \
-    "vi [-eFRrv] [-c command] [-t tag] [-w size] [-x aw] [files ...]"
+    "vi [-eFRrv] [-c command] [-t tag] [-w size] [files ...]"
 
 	(void)fprintf(stderr, "usage: %s\n", is_ex ? EX_USAGE : VI_USAGE);
 	exit(1);
