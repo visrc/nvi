@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 9.14 1995/02/09 16:19:53 bostic Exp $ (Berkeley) $Date: 1995/02/09 16:19:53 $";
+static char sccsid[] = "$Id: ex_append.c,v 9.15 1995/02/17 11:42:29 bostic Exp $ (Berkeley) $Date: 1995/02/17 11:42:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -131,7 +131,7 @@ aci(sp, cmdp, cmd)
 		for (p = cmdp->aci_text, len = cmdp->aci_len; len > 0; p = t) {
 			for (t = p; len > 0 && t[0] != '\n'; ++t, --len);
 			if (t != p || len == 0) {
-				if (F_ISSET(sp, S_GLOBAL) &&
+				if (F_ISSET(sp, S_EX_GLOBAL) &&
 				    t - p == 1 && p[0] == '.') {
 					++t;
 					--len;
@@ -158,7 +158,7 @@ aci(sp, cmdp, cmd)
 			cmdp->aci_text = NULL;
 	}
 
-	if (F_ISSET(sp, S_GLOBAL)) {
+	if (F_ISSET(sp, S_EX_GLOBAL)) {
 		if ((sp->lno = m.lno) == 0 && file_eline(sp, 1))
 			sp->lno = 1;
 		return (0);
