@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.2 1994/01/13 12:04:17 bostic Exp $ (Berkeley) $Date: 1994/01/13 12:04:17 $
+.\"     $Id: vi.ref,v 8.3 1994/01/13 17:50:34 bostic Exp $ (Berkeley) $Date: 1994/01/13 17:50:34 $
 .\"
 .Dd "%Q%"
 .Dt EX/VI 1
@@ -36,7 +36,7 @@
 .Op Fl w Ar size
 .Op Fl x Ar aw
 .Sh DESCRIPTION
-.Nm Ex
+.Nm "Ex"
 is a line-oriented text editor.
 .Nm Vi
 is a screen oriented text editor, based on
@@ -46,7 +46,7 @@ is the same as using the
 .Fl R
 (read-only) option of
 .Nm vi .
-.Nm Ex
+.Nm "Ex"
 and
 .Nm vi
 are really different interfaces to the same program,
