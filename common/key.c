@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.86 1994/09/28 17:01:43 bostic Exp $ (Berkeley) $Date: 1994/09/28 17:01:43 $";
+static char sccsid[] = "$Id: key.c,v 8.87 1994/10/12 21:49:00 bostic Exp $ (Berkeley) $Date: 1994/10/12 21:49:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -491,14 +491,6 @@ loop:	if (gp->i_cnt == 0) {
 	/* If the key is mappable and should be mapped, look it up. */
 	if (!(gp->i_chf[gp->i_next] & CH_NOMAP) &&
 	    LF_ISSET(TXT_MAPCOMMAND | TXT_MAPINPUT)) {
-		/* Set up timeout value. */
-		if (O_ISSET(sp, O_TIMEOUT)) {
-			tp = &t;
-			t.tv_sec = O_VAL(sp, O_KEYTIME) / 10;
-			t.tv_usec = (O_VAL(sp, O_KEYTIME) % 10) * 100000L;
-		} else
-			tp = NULL;
-
 		/* Get the next key. */
 newmap:		ch = gp->i_ch[gp->i_next];
 		if (ch < MAX_BIT_SEQ && !bit_test(gp->seqb, ch))
@@ -517,10 +509,33 @@ remap:		qp = seq_find(sp, NULL, &gp->i_ch[gp->i_next], gp->i_cnt,
 		 * If get a partial match, read more characters and retry
 		 * the map.  If no characters read, return the characters
 		 * unmapped.
+		 *
+		 * !!!
+		 * <escape> characters are a problem.  Input mode ends with
+		 * an <escape>, and cursor keys start with one, so there's
+		 * an ugly pause at the end of an input session.  If it's an
+		 * <escape>, check for followon characters, but timeout after
+		 * a 20th of a second.  This will lose if users create maps
+		 * that use <escape> as the first character, and that aren't
+		 * entered as a single keystroke.
 		 */
 		if (ispartial) {
 			if (term_read_grow(sp))
 				return (INP_ERR);
+			if (O_ISSET(sp, O_TIMEOUT)) {
+				tp = &t;
+				if (KEY_VAL(sp,
+				    gp->i_ch[gp->i_next]) == K_ESCAPE) {
+					t.tv_sec = 0;
+					t.tv_usec = 50000L;
+				} else {
+					t.tv_sec = O_VAL(sp, O_KEYTIME) / 10;
+					t.tv_usec = (O_VAL(sp,
+					    O_KEYTIME) % 10) * 100000L;
+				}
+			} else
+				tp = NULL;
+
 			if ((rval = sp->s_key_read(sp, &nr, tp)) != INP_OK)
 				return (rval);
 			if (nr)
