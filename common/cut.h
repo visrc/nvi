@@ -1,10 +1,12 @@
 /*-
  * Copyright (c) 1991, 1993, 1994
  *	The Regents of the University of California.  All rights reserved.
+ * Copyright (c) 1994, 1995
+ *	Keith Bostic.  All rights reserved.
  *
  * %sccs.include.redist.c%
  *
- *	$Id: cut.h,v 9.2 1995/01/07 12:57:35 bostic Exp $ (Berkeley) $Date: 1995/01/07 12:57:35 $
+ *	$Id: cut.h,v 9.3 1995/01/11 15:57:58 bostic Exp $ (Berkeley) $Date: 1995/01/11 15:57:58 $
  */
 
 typedef struct _texth TEXTH;		/* TEXT list head structure. */

@@ -1,10 +1,12 @@
 /*-
  * Copyright (c) 1993, 1994
  *	The Regents of the University of California.  All rights reserved.
+ * Copyright (c) 1994, 1995
+ *	Keith Bostic.  All rights reserved.
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 9.4 1995/01/11 12:49:05 bostic Exp $ (Berkeley) $Date: 1995/01/11 12:49:05 $
+ *	$Id: gs.h,v 9.5 1995/01/11 15:58:05 bostic Exp $ (Berkeley) $Date: 1995/01/11 15:58:05 $
  */
 
 struct _gs {
