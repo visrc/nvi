@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_screen.c,v 10.8 1995/06/26 11:06:03 bostic Exp $ (Berkeley) $Date: 1995/06/26 11:06:03 $";
+static char sccsid[] = "$Id: cl_screen.c,v 10.9 1995/07/02 11:57:13 bostic Exp $ (Berkeley) $Date: 1995/07/02 11:57:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -70,7 +70,7 @@ cl_vi_init(sp)
 	 * at a time.
 	 */
 	errno = 0;
-	if (newterm(O_STR(sp, O_TERM), stdout, stdin) == NULL) {
+	if (newterm(NULL, stdout, stdin) == NULL) {
 		if (errno)
 			msgq(sp, M_SYSERR, "%s", O_STR(sp, O_TERM));
 		else
