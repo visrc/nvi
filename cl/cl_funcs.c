@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_funcs.c,v 10.39 1996/04/27 17:17:13 bostic Exp $ (Berkeley) $Date: 1996/04/27 17:17:13 $";
+static const char sccsid[] = "$Id: cl_funcs.c,v 10.40 1996/05/16 10:45:33 bostic Exp $ (Berkeley) $Date: 1996/05/16 10:45:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -555,7 +555,7 @@ cl_suspend(sp, allowedp)
 	if (F_ISSET(gp, G_STDIN_TTY))
 		(void)tcsetattr(STDIN_FILENO, TCSASOFT | TCSADRAIN, &t);
 
-	/* Send the terminal initialize sequence. */
+	/* Send the terminal initialization sequence. */
 	if (clp->smcup == NULL)
 		(void)cl_getcap(sp, "smcup", &clp->smcup);
 	if (clp->smcup != NULL)
