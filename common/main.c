@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.27 1992/06/07 14:00:31 bostic Exp $ (Berkeley) $Date: 1992/06/07 14:00:31 $";
+static char sccsid[] = "$Id: main.c,v 5.28 1992/10/10 13:33:15 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:33:15 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -169,13 +169,13 @@ main(argc, argv)
 		if ((p = strdup(p)) == NULL)
 			msg("Error: %s", strerror(errno));
 		else {
-			(void)ex_cstring(p, strlen(p), 1);
+			(void)ex_cstring((u_char *)p, strlen(p), 1);
 			free(p);
 		}
 
 	/* Do any commands from the command line. */
 	if (excmdarg)
-		(void)ex_cstring(excmdarg, strlen(excmdarg), 0);
+		(void)ex_cstring((u_char *)excmdarg, strlen(excmdarg), 0);
 
 	/* Catch HUP, INT, WINCH */
 	(void)signal(SIGHUP, onhup);

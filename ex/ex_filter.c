@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 5.15 1992/06/07 16:46:30 bostic Exp $ (Berkeley) $Date: 1992/06/07 16:46:30 $";
+static char sccsid[] = "$Id: ex_filter.c,v 5.16 1992/10/10 13:32:52 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:32:52 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -33,7 +33,7 @@ static char sccsid[] = "$Id: ex_filter.c,v 5.15 1992/06/07 16:46:30 bostic Exp $
 int
 filter(fm, tm, cmd, ftype)
 	MARK *fm, *tm;
-	char *cmd;
+	u_char *cmd;
 	enum filtertype ftype;
 {
 	union wait pstat;
@@ -112,11 +112,11 @@ err:		if (input[0] != -1)
 			(void)close(output[0]);
 		(void)close(output[1]);
 
-		if ((name = rindex(PVAL(O_SHELL), '/')) == NULL)
-			name = PVAL(O_SHELL);
+		if ((name = rindex((char *)PVAL(O_SHELL), '/')) == NULL)
+			name = (char *)PVAL(O_SHELL);
 		else
 			++name;
-		execl(PVAL(O_SHELL), name, "-c", cmd, NULL);
+		execl((char *)PVAL(O_SHELL), name, "-c", cmd, NULL);
 		msg("exec: %s: %s", PVAL(O_SHELL), strerror(errno));
 		_exit (1);
 		/* NOTREACHED */

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 5.14 1992/05/27 10:32:35 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:32:35 $";
+static char sccsid[] = "$Id: cut.c,v 5.15 1992/10/10 13:33:04 bostic Exp $ (Berkeley) $Date: 1992/10/10 13:33:04 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -70,8 +70,8 @@ cut(buffer, fm, tm, lmode)
 	}
 
 #if DEBUG && 1
-	TRACE("cut: from {%lu, %d}, to {%lu, %d}\n",
-	    fm->lno, fm->cno, tm->lno, tm->cno);
+	TRACE("cut: from {%lu, %d}, to {%lu, %d}%s\n",
+	    fm->lno, fm->cno, tm->lno, tm->cno, lmode ? " LINE MODE" : "");
 #endif
 
 	if (lmode) {
@@ -124,7 +124,7 @@ cutline(lno, fcno, len, newp)
 {
 	TEXT *tp;
 	size_t llen;
-	char *lp, *p;
+	u_char *lp, *p;
 
 	EGETLINE(p, lno, llen);
 	if ((tp = malloc(sizeof(TEXT))) == NULL)
@@ -177,14 +177,14 @@ put(buffer, cp, rp, append)
 	int buffer, append;
 	MARK *cp, *rp;
 {
-	static char *bp;
+	static u_char *bp;
 	static size_t blen;
 	CB *cb;
 	TEXT *tp;
 	recno_t lno;
 	size_t clen, len;
 	int intermediate, lmode;
-	char *p, *t;
+	u_char *p, *t;
 
 	CBNAME(buffer, cb);
 	CBEMPTY(buffer, cb);
@@ -302,9 +302,6 @@ put(buffer, cp, rp, append)
 				return (1);
 		}
 	}
-
-	/* Ping the screen. */
-	scr_ref();
 
 	/* Shift any marks in the range. */
 	mark_insert(cp, rp);
