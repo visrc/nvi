@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 5.24 1992/12/25 16:46:17 bostic Exp $ (Berkeley) $Date: 1992/12/25 16:46:17 $
+ *	$Id: exf.h,v 5.25 1993/01/17 16:55:51 bostic Exp $ (Berkeley) $Date: 1993/01/17 16:55:51 $
  */
 
 #ifndef _EXF_H_
@@ -29,15 +29,29 @@ typedef struct exf {
 	size_t lines;			/* Physical number of lines. */
 	size_t cols;			/* Physical number of cols. */
 	u_char cwidth;			/* Width of current character. */
+	void *h_smap;			/* Map of lno's to the screen (head). */
+	void *t_smap;			/* Map of lno's to the screen (tail). */
 
 	size_t rcm;			/* 0-N: Column suck. */
 #define	RCM_FNB		0x01		/* Column suck: first non-blank. */
 #define	RCM_LAST	0x02		/* Column suck: last. */
 	u_char rcmflags;
 
-					/* Support functions. */
-	enum confirmation (*s_confirm) __P((struct exf *, MARK *, MARK *));
-	int (*s_end) __P((struct exf *));
+	/*
+	 * Support functions.
+	 *
+	 * s_confirm:	confirm an action, yes or no.
+	 * s_end:	end the session.
+	 * s_change:	notify the screen of a line change.
+	 * s_relative:	return the most attractive character on the line.
+	 * s_update:	update the screen.
+	 */
+	enum confirmation
+		(*s_confirm)	__P((struct exf *, MARK *, MARK *));
+	int	(*s_end)	__P((struct exf *));
+	int	(*scr_change)	__P((struct exf *, recno_t, u_int));
+	int	(*scr_update)	__P((struct exf *));
+	size_t	(*scr_relative)	__P((struct exf *, recno_t));
 
 					/* Underlying database state. */
 	DB *db;				/* File db structure. */
@@ -60,19 +74,20 @@ typedef struct exf {
 	char *name;			/* File name. */
 	size_t nlen;			/* File name length. */
 
-#define	F_IGNORE	0x0001		/* File not on the command line. */
-#define	F_IN_GLOBAL	0x0002		/* Doing a global command. */
-#define	F_MODIFIED	0x0004		/* File has been modified. */
-#define	F_NAMECHANGED	0x0008		/* File name was changed. */
-#define	F_NEEDMERASE	0x0010		/* Erase modeline after keystroke. */
-#define	F_NEWSESSION	0x0020		/* File has just been edited. */
-#define	F_NONAME	0x0040		/* File has no name. */
-#define	F_RDONLY	0x0080		/* File is read-only. */
-#define	F_RE_SET	0x0100		/* The file's RE has been set. */
-#define	F_READING	0x0200		/* Waiting on a read. */
-#define	F_REDRAW	0x0400		/* Repaint the screen. */
-#define	F_RESIZE	0x0800		/* Resize the screen. */
-#define	F_UNDO		0x1000		/* No change since last undo. */
+#define	F_AUTOPRINT	0x0001		/* Autoprint flag. */
+#define	F_IGNORE	0x0002		/* File not on the command line. */
+#define	F_IN_GLOBAL	0x0004		/* Doing a global command. */
+#define	F_MODIFIED	0x0008		/* File has been modified. */
+#define	F_NAMECHANGED	0x0010		/* File name was changed. */
+#define	F_NEEDMERASE	0x0020		/* Erase modeline after keystroke. */
+#define	F_NEWSESSION	0x0040		/* File has just been edited. */
+#define	F_NONAME	0x0080		/* File has no name. */
+#define	F_RDONLY	0x0100		/* File is read-only. */
+#define	F_RE_SET	0x0200		/* The file's RE has been set. */
+#define	F_READING	0x0400		/* Waiting on a read. */
+#define	F_REDRAW	0x0800		/* Repaint the screen. */
+#define	F_RESIZE	0x1000		/* Resize the screen. */
+#define	F_UNDO		0x2000		/* No change since last undo. */
 
 #define	FF_SET(ep, f)	(ep)->flags |= (f)
 #define	FF_CLR(ep, f)	(ep)->flags &= ~(f)
