@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 8.44 1994/09/12 09:48:27 bostic Exp $ (Berkeley) $Date: 1994/09/12 09:48:27 $";
+static char sccsid[] = "$Id: ex_read.c,v 8.45 1994/09/16 18:39:48 bostic Exp $ (Berkeley) $Date: 1994/09/16 18:39:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -138,7 +138,7 @@ ex_read(sp, ep, cmdp)
 	/*
 	 *  0 args: no arguments, read the current file, don't set the
 	 *	    alternate file name.
-	 *  1 args: read it, switching to it or settgin the alternate file
+	 *  1 args: read it, switching to it or setting the alternate file
 	 *	    name.
 	 * >1 args: object, too many args.
 	 */
