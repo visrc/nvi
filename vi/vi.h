@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 8.21 1993/12/27 17:41:29 bostic Exp $ (Berkeley) $Date: 1993/12/27 17:41:29 $
+ *	$Id: vi.h,v 8.22 1994/01/08 13:54:29 bostic Exp $ (Berkeley) $Date: 1994/01/08 13:54:29 $
  */
 
 typedef struct _vikeys VIKEYS;
@@ -129,6 +129,8 @@ typedef struct _vi_private {
 
 	char	*paragraph;		/* Paragraph search list. */
 	size_t	 paragraph_len;		/* Paragraph search list length. */
+
+	u_long	 u_ccnt;		/* Undo command count. */
 } VI_PRIVATE;
 
 #define	VIP(sp)	((VI_PRIVATE *)((sp)->vi_private))
