@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_file.c,v 5.15 1992/12/20 15:54:11 bostic Exp $ (Berkeley) $Date: 1992/12/20 15:54:11 $";
+static char sccsid[] = "$Id: ex_file.c,v 5.16 1993/02/15 14:13:49 bostic Exp $ (Berkeley) $Date: 1993/02/15 14:13:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -24,19 +24,19 @@ int
 ex_file(cmdp)
 	EXCMDARG *cmdp;
 {
+	char *p;
+
 	switch(cmdp->argc) {
 	case 0:
 		break;
 	case 1:
-		if (!FF_ISSET(curf, F_NONAME))
-			free(curf->name);
-		else
-			FF_CLR(curf, F_NONAME);
-		if ((curf->name = strdup((char *)cmdp->argv[0])) == NULL) {
-			FF_SET(curf, F_NONAME);
+		if ((p = strdup((char *)cmdp->argv[0])) == NULL) {
 			msg("Error: %s", strerror(errno));
 			return (1);
 		}
+		free(curf->name);
+		curf->name = p;
+		FF_CLR(curf, F_NONAME);
 		FF_SET(curf, F_NAMECHANGED);
 		break;
 	default:
