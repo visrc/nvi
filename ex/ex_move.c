@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_move.c,v 8.3 1993/12/29 09:50:51 bostic Exp $ (Berkeley) $Date: 1993/12/29 09:50:51 $";
+static char sccsid[] = "$Id: ex_move.c,v 8.4 1993/12/29 10:37:04 bostic Exp $ (Berkeley) $Date: 1993/12/29 10:37:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -51,7 +51,7 @@ cm(sp, ep, cmdp, cmd)
 	enum which cmd;
 {
 	MARK fm1, fm2, m, tm;
-	recno_t lline;
+	recno_t diff;
 
 	fm1 = cmdp->addr1;
 	fm2 = cmdp->addr2;
@@ -69,7 +69,7 @@ cm(sp, ep, cmdp, cmd)
 	if (cut(sp, ep, DEFCB, &fm1, &fm2, 1))
 		return (1);
 
-	/* If we're not copying, delete the old text & adjust tm. */
+	/* If we're not copying, delete the old text and adjust tm. */
 	if (cmd == MOVE) {
 		if (delete(sp, ep, &fm1, &fm2, 1))
 			return (1);
@@ -78,22 +78,19 @@ cm(sp, ep, cmdp, cmd)
 	}
 
 	/* Add the new text. */
-	m.lno = sp->lno;
-	m.cno = sp->cno;
 	if (put(sp, ep, DEFCB, &tm, &m, 1))
 		return (1);
 
-	if (sp->lno < 1)
-		sp->lno = 1;
-	else {
-		if (file_lline(sp, ep, &lline))
-			return (1);
-		if (sp->lno > lline)
-			sp->lno = lline;
-	}
+	/*
+	 * Move and copy move the cursor to the last line moved or copied.
+	 * The returned cursor from the put routine is the first line put,
+	 * not the last, because that's the semantics that vi uses.
+	 */
+	diff = (fm2.lno - fm1.lno) + 1;
+	sp->lno = m.lno + (diff - 1);
+	sp->cno = 0;
 
 	/* Reporting. */
-	sp->rptlines[cmd ==
-	    COPY ? L_COPIED : L_MOVED] += (fm2.lno - fm1.lno) + 1;
+	sp->rptlines[cmd == COPY ? L_COPIED : L_MOVED] += diff;
 	return (0);
 }
