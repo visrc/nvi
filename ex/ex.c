@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.50 1992/12/23 10:33:52 bostic Exp $ (Berkeley) $Date: 1992/12/23 10:33:52 $";
+static char sccsid[] = "$Id: ex.c,v 5.51 1992/12/25 16:50:44 bostic Exp $ (Berkeley) $Date: 1992/12/25 16:50:44 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -921,14 +921,16 @@ fileexpand(gp, word, wordlen)
 	/* Figure out how much space we need for this argument. */
 	ep = NULL;
 	len = wordlen;
-	for (p = word, olen = plen = 0; p = USTRPBRK(p, "%#"); ++p)
-		if (*p == '%') {
+	for (p = word, olen = plen = 0; p = USTRPBRK(p, "%#\\"); ++p)
+		switch (*p) {
+		case '%':
 			if (FF_ISSET(curf, F_NONAME)) {
 				msg("No filename to substitute for %%.");
 				return (1);
 			}
 			len += curf->nlen;
-		} else {
+			break;
+		case '#':
 			if (ep == NULL)
 				ep = file_prev(curf, 0);
 			if (ep == NULL || FF_ISSET(ep, F_NONAME)) {
@@ -936,6 +938,11 @@ fileexpand(gp, word, wordlen)
 				return (1);
 			}
 			len += ep->nlen;
+			break;
+		case '\\':
+			if (p[1] != '\0')
+				++p;
+			break;
 		}
 
 	if (len != wordlen) {
@@ -967,6 +974,7 @@ fileexpand(gp, word, wordlen)
 			case '\\':
 				if (p[1] != '\0')
 					++p;
+				/* FALLTHROUGH */
 			default:
 				*p++ = ch;
 			}
