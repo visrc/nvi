@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.67 1994/05/02 13:50:59 bostic Exp $ (Berkeley) $Date: 1994/05/02 13:50:59 $";
+static char sccsid[] = "$Id: key.c,v 8.68 1994/05/02 15:53:10 bostic Exp $ (Berkeley) $Date: 1994/05/02 15:53:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -77,13 +77,13 @@ static TKLIST const c_tklist[] = {	/* Command mappings. */
 	{NULL},
 };
 static TKLIST const m1_tklist[] = {	/* Input mappings (lookup). */
-	{"kl",   NULL,	"cursor erase", K_VERASE},
 	{NULL},
 };
 static TKLIST const m2_tklist[] = {	/* Input mappings (set or delete). */
-	{"kd",   NULL,	"cursor down"},
-	{"ku",   NULL,	"cursor up"},
-	{"kr",    " ",	"cursor space"},
+	{"kd",   "\033ja",	"cursor down"},
+	{"kl",   "\033ha",	"cursor left"},
+	{"ku",   "\033ka",	"cursor up"},
+	{"kr",   "\033la",	"cursor space"},
 	{NULL},
 };
 
