@@ -6,12 +6,11 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 5.3 1992/04/05 09:23:56 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:23:56 $";
+static char sccsid[] = "$Id: ex_write.c,v 5.4 1992/04/15 09:14:53 bostic Exp $ (Berkeley) $Date: 1992/04/15 09:14:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <stdio.h>
 
 #include "vi.h"
 #include "excmd.h"
@@ -21,77 +20,59 @@ int
 ex_write(cmdp)
 	CMDARG *cmdp;
 {
-	int		fd;
-	int		append;	/* boolean: write in "append" mode? */
-	REG long	l;
-	REG char	*scan;
-	REG int		i;
-	char	*extra;
-/*
- * XXX
- * If no address, do all addresses.
- */
-	extra = cmdp->argv[0];
+	struct stat sb;
+	int fd, flags, rval;
+	char *fname;
 
-	/* if all lines are to be written, use tmpsave() */
-	if (cmdp->addr1 == MARK_FIRST && cmdp->addr2 == MARK_LAST)
-	{
-		tmpsave(extra, cmdp->flags & E_FORCE);
-		return (0);
+	switch(cmdp->argc) {
+	case 0:
+		fname = origname;
+		break;
+	case 1:
+		fname = cmdp->argv[0];
+		break;
 	}
-
-	/* see if we're going to do this in append mode or not */
-	append = FALSE;
-	if (extra[0] == '>' && extra[1] == '>')
-	{
-		extra += 2;
-		append = TRUE;
-	}
-
-	/* either the file must not exist, or we must have a ! or be appending */
-	if (access(extra, 0) == 0 && !cmdp->flags & E_FORCE && !append)
-	{
-		msg("File already exists - Use :w! to overwrite");
+		
+	/* If the file exists, must either be a ! or a >> flag. */
+	if (!(cmdp->flags & (E_FORCE | E_F_APPEND)) && !stat(fname, &sb)) {
+		msg("%s already exists -- use ! to overwrite it.", fname);
 		return (1);
 	}
 
-	/* else do it line-by-line, like ex_print() */
-	if (append)
-	{
-#ifdef O_APPEND
-		fd = open(extra, O_WRONLY|O_APPEND);
-#else
-		fd = open(extra, O_WRONLY);
-		if (fd >= 0)
-		{
-			lseek(fd, 0L, 2);
-		}
-#endif
-	}
-	else
-	{
-		fd = -1; /* so we know the file isn't open yet */
+	flags = O_CREAT | O_TRUNC | O_WRONLY;
+	if (cmdp->flags & E_F_APPEND)
+		flags |= O_APPEND;
+
+	if ((fd = open(fname, flags, DEFFILEMODE)) < 0) {
+		msg("%s: %s", fname, strerror(errno));
+		return (1);
 	}
 
-	if (fd < 0)
-	{
-		fd = creat(extra, DEFFILEMODE);
-		if (fd < 0)
-		{
-			msg("Can't write to \"%s\"", extra);
+	rval = ex_writerange(fname, fd, cmdp->addr1, cmdp->addr2, 1);
+	return (close(fd) || rval);
+}
+
+ex_writerange(fname, fd, from, to, success_msg)
+	char *fname;
+	int fd, success_msg;
+	MARK from, to;
+{
+	register u_long ccnt, fline, lcnt, tline;
+	register char *p;
+	size_t len;
+
+	fline = markline(from);
+	tline = markline(to);
+	lcnt = tline - fline;
+	for (ccnt = 0; fline <= tline; ++fline, ccnt += len) {
+		p = fetchline(fline, &len);
+		p[len++] = '\n';
+		if (write(fd, p, len) != len) {
+			msg("%s: %s", fname, strerror(errno));
 			return (1);
 		}
 	}
-	for (l = markline(cmdp->addr1); l <= markline(cmdp->addr2); l++)
-	{
-		/* get the next line */
-		scan = fetchline(l);
-		i = strlen(scan);
-		scan[i++] = '\n';
-
-		/* print the line */
-		write(fd, scan, i);
-	}
-	close(fd);
+	if (success_msg)
+		msg("%s: %lu lines, %lu characters.", fname, lcnt, ccnt);
 	return (0);
-}	
+}
