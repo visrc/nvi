@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 10.15 1995/10/04 12:33:11 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:33:11 $";
+static char sccsid[] = "$Id: ex.c,v 10.16 1995/10/04 15:56:30 bostic Exp $ (Berkeley) $Date: 1995/10/04 15:56:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -78,12 +78,6 @@ ex(spp)
 		free(mp);
 	}
 
-	/* Display new file status line. */
-	if (F_ISSET(sp, S_STATUS)) {
-		F_CLR(sp, S_STATUS);
-		msg_status(sp, sp->lno, 0);
-	}
-
 	/* If reading from a file, errors should have name and line info. */
 	if (!F_ISSET(gp, G_STDIN_TTY)) {
 		gp->excmd.if_lno = 1;
@@ -99,6 +93,13 @@ ex(spp)
 	 */
 	LF_INIT(TXT_BACKSLASH | TXT_CNTRLD | TXT_CR);
 	for (;; ++gp->excmd.if_lno) {
+		/* Display status line and flush. */
+		if (F_ISSET(sp, S_STATUS)) {
+			F_CLR(sp, S_STATUS);
+			msg_status(sp, sp->lno, 0);
+		}
+		(void)ex_fflush(sp);
+
 		/* Set the flags the user can reset. */
 		if (O_ISSET(sp, O_BEAUTIFY))
 			LF_SET(TXT_BEAUTIFY);
@@ -156,7 +157,6 @@ ex(spp)
 			*spp = screen_next(sp);
 			return (screen_end(sp));
 		}
-		(void)ex_fflush(sp);
 	}
 	return (0);
 }
