@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 8.20 1993/12/29 09:50:53 bostic Exp $ (Berkeley) $Date: 1993/12/29 09:50:53 $";
+static char sccsid[] = "$Id: ex_read.c,v 8.21 1994/01/23 16:30:20 bostic Exp $ (Berkeley) $Date: 1994/01/23 16:30:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -82,19 +82,24 @@ ex_read(sp, ep, cmdp)
 
 	switch (cmdp->argc) {
 	case 1:
-		/* Nothing to expand, read the current file. */
+		/*
+		 * No arguments, read the current file.
+		 * Doesn't set the alternate file name.
+		 */
 		name = FILENAME(sp->frp);
-		if (sp->alt_name == NULL)
-			set_alt_name(sp, name);
 		break;
 	case 2:
-		/* One new argument, read it. */
+		/*
+		 * One argument, read it.
+		 * Sets the alternate file name.
+		 */
 		name = cmdp->argv[1]->bp;
+		set_alt_name(sp, name);
 		break;
 	default:
 		/* If expanded to more than one argument, object. */
-		msgq(sp, M_ERR, "%s expanded into too many file names",
-		    cmdp->argv[0]->bp);
+		msgq(sp, M_ERR,
+		    "%s expanded into too many file names", cmdp->argv[0]->bp);
 		msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
 		return (1);
 	}
