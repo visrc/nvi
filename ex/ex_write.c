@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 8.6 1993/08/25 16:45:23 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:45:23 $";
+static char sccsid[] = "$Id: ex_write.c,v 8.7 1993/09/08 14:37:58 bostic Exp $ (Berkeley) $Date: 1993/09/08 14:37:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -37,11 +37,10 @@ ex_wq(sp, ep, cmdp)
 {
 	int force;
 
-	force = F_ISSET(cmdp, E_FORCE);
-
 	if (exwr(sp, ep, cmdp, WQ))
 		return (1);
 
+	force = F_ISSET(cmdp, E_FORCE);
 	if (!force && ep->refcnt <= 1 && file_next(sp, 0) != NULL) {
 		msgq(sp, M_ERR,
 		    "More files to edit; use \":n\" to go to the next file");
@@ -80,11 +79,10 @@ ex_xit(sp, ep, cmdp)
 {
 	int force;
 
-	force = F_ISSET(cmdp, E_FORCE);
-
 	if (F_ISSET((ep), F_MODIFIED) && exwr(sp, ep, cmdp, XIT))
 		return (1);
 
+	force = F_ISSET(cmdp, E_FORCE);
 	if (!force && ep->refcnt <= 1 && file_next(sp, 0) != NULL) {
 		msgq(sp, M_ERR,
 		    "More files to edit; use \":n\" to go to the next file");
@@ -108,23 +106,17 @@ exwr(sp, ep, cmdp, cmd)
 {
 	register char *p;
 	MARK rm;
-	int flags;
+	int flags, force;
 	char *fname;
 
 	/* All write commands can have an associated '!'. */
 	LF_INIT(FS_POSSIBLE);
-
-	p = cmdp->argv[0] ? cmdp->argv[0] : "";
-
-	/* If "write!" it's a force to a file. */
-	if (*p == '!') {
-		++p;
+	if (F_ISSET(cmdp, E_FORCE))
 		LF_SET(FS_FORCE);
-	}
 
 	/* If no more arguments, just write the file back. */
-	for (; *p && isblank(*p); ++p);
-	if (!*p) {
+	for (p = cmdp->argv[0]; *p && isblank(*p); ++p);
+	if (*p == '\0') {
 		if (F_ISSET(cmdp, E_ADDR2_ALL))
 			LF_SET(FS_ALL);
 		return (file_write(sp, ep,
@@ -139,7 +131,7 @@ exwr(sp, ep, cmdp, cmd)
 			return (1);
 		}
 		if (filtercmd(sp, ep,
-		    &cmdp->addr1, &cmdp->addr2, &rm, ++p, NOOUTPUT))
+		    &cmdp->addr1, &cmdp->addr2, &rm, ++p, FILTER_WRITE))
 			return (1);
 		sp->lno = rm.lno;
 		return (0);
