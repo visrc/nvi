@@ -6,10 +6,12 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_left.c,v 5.4 1992/05/27 10:36:21 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:36:21 $";
+static char sccsid[] = "$Id: v_left.c,v 5.5 1992/10/10 14:01:11 bostic Exp $ (Berkeley) $Date: 1992/10/10 14:01:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
+
+#include <limits.h>
 #include <stdio.h>
 
 #include "vi.h"
@@ -54,7 +56,7 @@ v_first(vp, fm, tm, rp)
 	MARK *fm, *tm, *rp;
 {
 	rp->lno = fm->lno;
-	return (v_nonblank(rp));
+	return (0);
 }
 
 /*
@@ -71,7 +73,7 @@ v_ncol(vp, fm, tm, rp)
 		return (0);
 	}
 	rp->lno = fm->lno;
-	return (v_nonblank(rp));
+	return (0);
 }
 
 /*

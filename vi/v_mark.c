@@ -6,10 +6,12 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_mark.c,v 5.5 1992/05/27 10:36:30 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:36:30 $";
+static char sccsid[] = "$Id: v_mark.c,v 5.6 1992/10/10 14:01:23 bostic Exp $ (Berkeley) $Date: 1992/10/10 14:01:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
+
+#include <limits.h>
 #include <stdio.h>
 
 #include "vi.h"
@@ -60,5 +62,5 @@ v_marksq(vp, fm, tm, rp)
 	if ((mp = mark_get(vp->character)) == NULL)
 		return (1);
 	*rp = *mp;
-	return (v_nonblank(rp));
+	return (0);
 }
