@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_screen.c,v 8.6 1995/02/12 18:31:50 bostic Exp $ (Berkeley) $Date: 1995/02/12 18:31:50 $";
+static char sccsid[] = "$Id: cl_screen.c,v 8.7 1995/02/16 12:03:52 bostic Exp $ (Berkeley) $Date: 1995/02/16 12:03:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -42,9 +42,6 @@ cl_init(sp)
 	struct termios t;
 	int nf;
 	char *p;
-
-	CALLOC_RET(sp, clp, CL_PRIVATE *, 1, sizeof(CL_PRIVATE));
-	sp->cl_private = clp;
 
 #ifdef SYSV_CURSES
 	/*
@@ -185,6 +182,10 @@ cl_init(sp)
 	svp->scr_restore = cl_restore;
 	svp->scr_size = cl_ssize;
 
+	/* Allocate private space. */
+	CALLOC_RET(sp, clp, CL_PRIVATE *, 1, sizeof(CL_PRIVATE));
+	sp->gp->cl_private = clp;
+
 	/* Things are now initialized -- set the bit. */
 	F_SET(clp, CL_CURSES_INIT);
 
@@ -196,7 +197,7 @@ cl_init(sp)
 	 * initscr() was called and the CL_CURSES_INIT bit was set.  Do it now.
 	 */
 	if (cl_term_init(sp)) {
-		free(clp);
+		(void)cl_end(sp);
 		return (1);
 	}
 
@@ -216,6 +217,10 @@ cl_end(sp)
 	/* Restore the terminal. */
 	cl_term_end(sp);
 
+	/* Free private space. */
+	FREE(CLP(sp), sizeof(CL_PRIVATE));
+	sp->gp->cl_private = NULL;
+
 	/* Move to the bottom of the screen. */
 	if (move(sp->t_maxrows, 0) == OK) {		/* XXX */
 		clrtoeol();
@@ -230,37 +235,6 @@ cl_end(sp)
 		else
 			msgq(sp, M_ERR, "Error: endwin");
 		return (1);
-	}
-	return (0);
-}
-
-/*
- * cl_copy --
- *	Copy to a new screen.
- */
-int
-cl_copy(orig, sp)
-	SCR *orig, *sp;
-{
-	CL_PRIVATE *oclp, *nclp;
-
-	/* Create the private screen structure. */
-	CALLOC_RET(orig, nclp, CL_PRIVATE *, 1, sizeof(CL_PRIVATE));
-	sp->cl_private = nclp;
-
-/* INITIALIZED AT SCREEN CREATE. */
-
-/* PARTIALLY OR COMPLETELY COPIED FROM PREVIOUS SCREEN. */
-	if (orig == NULL) {
-	} else {
-		oclp = CLP(orig);
-
-		if (oclp->VB != NULL && (nclp->VB = strdup(oclp->VB)) == NULL) {
-			msgq(sp, M_SYSERR, NULL);
-			return (1);
-		}
-
-		F_SET(nclp, F_ISSET(oclp, CL_CURSES_INIT));
 	}
 	return (0);
 }
