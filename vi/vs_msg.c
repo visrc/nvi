@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_msg.c,v 10.23 1995/10/17 08:50:04 bostic Exp $ (Berkeley) $Date: 1995/10/17 08:50:04 $";
+static char sccsid[] = "$Id: vs_msg.c,v 10.24 1995/10/17 10:13:36 bostic Exp $ (Berkeley) $Date: 1995/10/17 10:13:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -535,18 +535,25 @@ vs_ex_resolve(sp, continuep)
 			F_SET(sp, S_SCR_REDRAW);
 	}
 
-	/* Set up the redraw of the overwritten lines. */
-	ev.e_event = E_REPAINT;
-	ev.e_flno = vip->totalcount >=
-	    sp->rows ? 1 : sp->rows - vip->totalcount;
-	ev.e_tlno = sp->rows;
+	if (F_ISSET(sp, S_SCR_REDRAW)) {
+		if (vs_refresh(sp))
+			return (1);
 
-	/* Reset the count of overwriting lines. */
-	vip->linecount = vip->lcontinue = vip->totalcount = 0;
+		/* Reset the count of overwriting lines. */
+		vip->linecount = vip->lcontinue = vip->totalcount = 0;
+	} else {
+		/* Set up the redraw of the overwritten lines. */
+		ev.e_event = E_REPAINT;
+		ev.e_flno = vip->totalcount >=
+		    sp->rows ? 1 : sp->rows - vip->totalcount;
+		ev.e_tlno = sp->rows;
 
-	/* Redraw. */
-	(void)vs_repaint(sp, &ev);
+		/* Reset the count of overwriting lines. */
+		vip->linecount = vip->lcontinue = vip->totalcount = 0;
 
+		/* Redraw. */
+		(void)vs_repaint(sp, &ev);
+	}
 	return (0);
 }
 
@@ -752,15 +759,8 @@ vs_msgsave(sp, mt, p, len)
 	 * allocate memory here, we're genuinely screwed, dump the message
 	 * to stderr in the (probably) vain hope that someone will see it.
 	 */
-	CALLOC_NOMSG(sp, mp_n, MSG *, 1, sizeof(MSG));
-	if (mp_n == NULL)
-		goto nomem;
-	MALLOC_NOMSG(sp, mp_n->buf, char *, len);
-	if (mp_n->buf == NULL) {
-		free(mp_n);
-nomem:		(void)fprintf(stderr, "%.*s\n", (int)len, p);
-		return;
-	}
+	CALLOC_GOTO(sp, mp_n, MSG *, 1, sizeof(MSG));
+	MALLOC_GOTO(sp, mp_n->buf, char *, len);
 
 	memmove(mp_n->buf, p, len);
 	mp_n->len = len;
@@ -773,4 +773,10 @@ nomem:		(void)fprintf(stderr, "%.*s\n", (int)len, p);
 		for (; mp_c->q.le_next != NULL; mp_c = mp_c->q.le_next);
 		LIST_INSERT_AFTER(mp_c, mp_n, q);
 	}
+	return;
+
+alloc_err:
+	if (mp_n != NULL)
+		free(mp_n);
+	(void)fprintf(stderr, "%.*s\n", (int)len, p);
 }
