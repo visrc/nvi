@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 5.5 1992/06/05 11:06:52 bostic Exp $ (Berkeley) $Date: 1992/06/05 11:06:52 $";
+static char sccsid[] = "$Id: v_scroll.c,v 5.6 1992/10/01 17:30:50 bostic Exp $ (Berkeley) $Date: 1992/10/01 17:30:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -233,7 +233,7 @@ v_linedown(vp, fm, tm, rp)
 	}
 
 	/* Set the number of lines to scroll. */
-	curf->scrollup = off;
+	curf->uwindow = off;
 
 	/*
 	 * The cursor moves up, staying with its original line,
