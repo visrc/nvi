@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 10.22 1995/10/27 20:02:15 bostic Exp $ (Berkeley) $Date: 1995/10/27 20:02:15 $";
+static char sccsid[] = "$Id: msg.c,v 10.23 1995/11/01 10:04:12 bostic Exp $ (Berkeley) $Date: 1995/11/01 10:04:12 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -158,7 +158,7 @@ retry:		FREE_SPACE(sp, bp, blen);
 	 * the file name and line number prefix.
 	 */
 	if ((mt == M_ERR || mt == M_SYSERR) &&
-	    sp != NULL && gp->if_name != NULL) {
+	    sp != NULL && gp != NULL && gp->if_name != NULL) {
 		for (p = gp->if_name; *p != '\0'; ++p) {
 			len = snprintf(mp, REM, "%s", KEY_NAME(sp, *p));
 			mp += len;
@@ -335,8 +335,12 @@ nofmt:	mp += len;
 		goto retry;
 	*mp = '\n';
 
-	(void)ex_fflush(sp);
-	gp->scr_msg(sp, mt, bp, mlen);
+	if (sp != NULL)
+		(void)ex_fflush(sp);
+	if (gp != NULL)
+		gp->scr_msg(sp, mt, bp, mlen);
+	else
+		(void)fprintf(stderr, ".*s", (int)mlen, bp);
 
 	/* Cleanup. */
 ret:	FREE_SPACE(sp, bp, blen);
