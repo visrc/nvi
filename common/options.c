@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 10.12 1995/09/28 23:29:31 bostic Exp $ (Berkeley) $Date: 1995/09/28 23:29:31 $";
+static char sccsid[] = "$Id: options.c,v 10.13 1995/10/04 12:30:18 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:30:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -491,12 +491,8 @@ opts_set(sp, argv, setdef, usage)
 prefix:		op = opts_prefix(name);
 
 found:		if (op == NULL) {
-			p = msg_print(sp, name, &nf);
-			msgq(sp, M_ERR,
-		    "033|set: no %s option: 'set all' gives all option values",
-			    p);
-			if (nf)
-				FREE_SPACE(sp, p, 0);
+			msgq_str(sp, M_ERR, name,
+		    "033|set: no %s option: 'set all' gives all option values");
 			rval = 1;
 			continue;
 		}
@@ -521,11 +517,8 @@ found:		if (op == NULL) {
 		case OPT_0BOOL:
 		case OPT_1BOOL:
 			if (equals) {
-				p = msg_print(sp, name, &nf);
-				msgq(sp, M_ERR,
-			    "034|set: [no]%s option doesn't take a value", p);
-				if (nf)
-					FREE_SPACE(sp, p, 0);
+				msgq_str(sp, M_ERR, name,
+			    "034|set: [no]%s option doesn't take a value");
 				rval = 1;
 				break;
 			}
@@ -549,11 +542,8 @@ found:		if (op == NULL) {
 			goto change;
 		case OPT_NUM:
 			if (turnoff) {
-				p = msg_print(sp, name, &nf);
-				msgq(sp, M_ERR,
-				    "035|set: %s option isn't a boolean", p);
-				if (nf)
-					FREE_SPACE(sp, p, 0);
+				msgq_str(sp, M_ERR, name,
+				    "035|set: %s option isn't a boolean");
 				rval = 1;
 				break;
 			}
@@ -614,11 +604,8 @@ badnum:				p = msg_print(sp, name, &nf);
 			goto change;
 		case OPT_STR:
 			if (turnoff) {
-				p = msg_print(sp, name, &nf);
-				msgq(sp, M_ERR,
-				    "039|set: %s option isn't a boolean", p);
-				if (nf)
-					FREE_SPACE(sp, p, 0);
+				msgq_str(sp, M_ERR, name,
+				    "039|set: %s option isn't a boolean");
 				rval = 1;
 				break;
 			}

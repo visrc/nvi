@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: msg.c,v 10.12 1995/09/21 12:06:07 bostic Exp $ (Berkeley) $Date: 1995/09/21 12:06:07 $";
+static char sccsid[] = "$Id: msg.c,v 10.13 1995/10/04 12:30:57 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:30:57 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -345,6 +345,34 @@ binc_err:
 }
 
 /*
+ * msgq_str --
+ *	Display a message with an embedded string.
+ *
+ * PUBLIC: void msgq_str __P((SCR *, mtype_t, char *, char *));
+ */
+void
+msgq_str(sp, mtype, str, fmt)
+	SCR *sp;
+	mtype_t mtype;
+	char *str, *fmt;
+{
+	int nf, sv_errno;
+	char *p;
+
+	if (str == NULL) {
+		msgq(sp, mtype, fmt);
+		return;
+	}
+
+	sv_errno = errno;
+	p = msg_print(sp, str, &nf);
+	errno = sv_errno;
+	msgq(sp, mtype, fmt, p);
+	if (nf)
+		FREE_SPACE(sp, p, 0);
+}
+
+/*
  * msg_rpt --
  *	Report on the lines that changed.
  *
@@ -563,7 +591,6 @@ msg_open(sp, file)
 	DB *db;
 	DBT data, key;
 	recno_t msgno;
-	int nf;
 	char *p, *t, buf[MAXPATHLEN];
 
 	/*
@@ -586,10 +613,7 @@ msg_open(sp, file)
 	    O_NONBLOCK | O_RDONLY, 0, DB_RECNO, NULL)) == NULL) {
 		if (O_STR(sp, O_MSGCAT) == NULL)
 			return (1);
-		p = msg_print(sp, p, &nf);
-		msgq(sp, M_SYSERR, "%s", p);
-		if (nf)
-			FREE_SPACE(sp, p, 0);
+		msgq_str(sp, M_SYSERR, p, "%s");
 		return (1);
 	}
 
@@ -607,10 +631,8 @@ msg_open(sp, file)
 		(void)db->close(db);
 		if (O_STR(sp, O_MSGCAT) == NULL)
 			return (1);
-		p = msg_print(sp, p, &nf);
-		msgq(sp, M_ERR, "030|The file %s is not a message catalog", p);
-		if (nf)
-			FREE_SPACE(sp, p, 0);
+		msgq_str(sp, M_ERR, p,
+		    "030|The file %s is not a message catalog");
 		return (1);
 	}
 
@@ -636,7 +658,7 @@ msg_close(gp)
 
 /*
  * msg_cont --
- *	Return common messages.
+ *	Return common continuation messages.
  *
  * PUBLIC: const char *msg_cmsg __P((SCR *, cmsg_t, size_t *));
  */
