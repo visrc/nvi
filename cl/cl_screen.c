@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_screen.c,v 10.29 1995/11/13 08:21:47 bostic Exp $ (Berkeley) $Date: 1995/11/13 08:21:47 $";
+static char sccsid[] = "$Id: cl_screen.c,v 10.30 1995/11/17 15:59:21 bostic Exp $ (Berkeley) $Date: 1995/11/17 15:59:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -68,18 +68,22 @@ cl_screen(sp, flags)
 	/*
 	 * Fake leaving vi mode.
 	 *
-	 * All screens should move to the bottom of the screen, even in the
-	 * presence of split screens.  This makes terminal scrolling happen
-	 * naturally.  Note: we *don't* move past the end of the screen, as
-	 * there are ex commands (e.g., :read ! cat file) that don't want to
-	 * go past it.  Don't clear the info line, its contents may be valid,
-	 * e.g. :file|append.
+	 * Clear out the rest of the screen if we're in the middle of a split
+	 * screen.  Move to the last line in the current screen -- this makes
+	 * terminal scrolling happen naturally.  Note: *don't* move past the
+	 * end of the screen, as there are ex commands (e.g., :read ! cat file)
+	 * that don't want to.  Don't clear the info line, its contents may be
+	 * valid, e.g. :file|append.
 	 */
 	if (F_ISSET(sp, S_SCR_VI)) {
 		F_CLR(sp, S_SCR_VI);
 
-		(void)move(LINES - 1, 0);
-		(void)refresh();
+		if (sp->q.cqe_next != (void *)&sp->gp->dq) {
+			(void)move(RLNO(sp, sp->rows), 0);
+			clrtobot();
+		}
+		(void)move(RLNO(sp, sp->rows) - 1, 0);
+		refresh();
 	}
 
 	/* Enter the requested mode. */
@@ -88,6 +92,14 @@ cl_screen(sp, flags)
 			return (1);
 		clp->in_ex = 1;
 		F_SET(clp, CL_SCR_EX_INIT);
+
+		/*
+		 * If doing an ex screen for ex mode, move to the last line
+		 * on the screen.
+		 */
+		if (F_ISSET(sp, S_EX) && clp->cup != NULL)
+			tputs(tgoto(clp->cup,
+			    0, O_VAL(sp, O_LINES) - 1), 1, cl_putchar);
 	} else {
 		if (cl_vi_init(sp))
 			return (1);
@@ -409,11 +421,6 @@ fast:	if (tcsetattr(STDIN_FILENO, TCSADRAIN | TCSASOFT, &clp->ex_enter)) {
 		msgq(sp, M_SYSERR, "tcsetattr");
 		return (1);
 	}
-
-	/* Move to the last line on the screen. */
-	if (clp->cup != NULL)
-		tputs(tgoto(clp->cup,
-		    0, O_VAL(sp, O_LINES) - 1), 1, cl_putchar);
 	return (0);
 }
 
