@@ -1,4 +1,4 @@
-#	$Id: README,v 8.135 1996/05/18 15:41:01 bostic Exp $ (Berkeley) $Date: 1996/05/18 15:41:01 $
+#	$Id: README,v 8.136 1996/05/19 10:43:44 bostic Exp $ (Berkeley) $Date: 1996/05/19 10:43:44 $
 
 This is the README for nex/nvi, a freely redistributable replacement for
 the ex/vi text editors originally distributed as part of the Fourth
@@ -74,8 +74,9 @@ during initial development to keep things simple.  Wide character support
 will be integrated at the same time that it is made fully 8-bit clean.
 
 There aren't a lot of new features in nex/nvi, but there are a few things
-you might like.  The "Additional Features" section of the reference page
-(USD.doc/vi.ref/vi.ref.txt, USD.doc/vi.ref/vi.ref.ps) has more information.
+you might like.  The "Additional Features" section of the reference work
+(docs/USD.doc/vi.ref/vi.ref.txt, docs/USD.doc/vi.ref/vi.ref.ps) has more
+information.
 
 =-=-=-=-=-=-=-=-=-=-=
 o Debugging:
