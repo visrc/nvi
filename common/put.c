@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: put.c,v 8.6 1994/05/05 10:06:33 bostic Exp $ (Berkeley) $Date: 1994/05/05 10:06:33 $";
+static char sccsid[] = "$Id: put.c,v 8.7 1994/05/05 23:47:05 bostic Exp $ (Berkeley) $Date: 1994/05/05 23:47:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,13 +31,6 @@ static char sccsid[] = "$Id: put.c,v 8.6 1994/05/05 10:06:33 bostic Exp $ (Berke
 /*
  * put --
  *	Put text buffer contents into the file.
- *
- * !!!
- * Historically, pasting into a file with no lines in vi would preserve
- * the single blank line.  This is almost certainly a result of the fact
- * that historic vi couldn't deal with a file that had no lines in it.
- * This implementation treats that as a bug, and does not retain the blank
- * line.
  */
 int
 put(sp, ep, cbp, namep, cp, rp, append)
@@ -74,9 +67,16 @@ put(sp, ep, cbp, namep, cp, rp, append)
 	tp = cbp->textq.cqh_first;
 
 	/*
-	 * It's possible to do a put into an empty file, meaning that the
-	 * cut buffer simply becomes the file.  It's a special case so
-	 * that we can ignore it in general.
+	 * It's possible to do a put into an empty file, meaning that the cut
+	 * buffer simply becomes the file.  It's a special case so that we can
+	 * ignore it in general.
+	 *
+	 * !!!
+	 * Historically, pasting into a file with no lines in vi would preserve
+	 * the single blank line.  This is surely a result of the fact that the
+	 * historic vi couldn't deal with a file that had no lines in it.  This
+	 * implementation treats that as a bug, and does not retain the blank
+	 * line.
 	 *
 	 * Historical practice is that the cursor ends at the first character
 	 * in the file.
