@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 9.9 1995/01/10 18:52:59 bostic Exp $ (Berkeley) $Date: 1995/01/10 18:52:59 $";
+static char sccsid[] = "$Id: v_txt.c,v 9.10 1995/01/10 18:59:02 bostic Exp $ (Berkeley) $Date: 1995/01/10 18:59:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1613,7 +1613,7 @@ nothex:		tp->lb[sp->cno] = savec;
  *	Handle ^T indents, ^D outdents.
  *
  * If anything changes here, check the ex version to see if it needs similar
- * changes.  It's in sex/sex_get.c:txt_outdent().
+ * changes.  It's in sex/sex_get.c:txt_dent().
  */
 static int
 txt_dent(sp, tp, isindent)
