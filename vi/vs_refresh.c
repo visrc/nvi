@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.3 1993/07/21 14:31:34 bostic Exp $ (Berkeley) $Date: 1993/07/21 14:31:34 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.4 1993/08/17 15:44:51 bostic Exp $ (Berkeley) $Date: 1993/08/17 15:44:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -424,20 +424,23 @@ update:	/* Ring the bell if scheduled. */
 			svi_modeline(sp, ep);
 		}
 
+	/* Refresh the screen. */
+	if (F_ISSET(sp, S_REFRESH)) {
+		wrefresh(curscr);
+		F_CLR(sp, S_REFRESH);
+	}
+
 	/* Place the cursor. */
 	MOVE(sp, y, SCNO);
+
+	/* Flush it all out. */
+	refresh();
 
 	/* Update saved information. */
 	OCNO = CNO;
 	OLNO = LNO;
 	sp->sc_row = y;
 
-	/* Refresh the screen. */
-	if (F_ISSET(sp, S_REFRESH)) {
-		wrefresh(curscr);
-		F_CLR(sp, S_REFRESH);
-	} else
-		refresh();
 	return (0);
 }
 
