@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 10.7 1995/09/24 11:05:26 bostic Exp $ (Berkeley) $Date: 1995/09/24 11:05:26 $";
+static char sccsid[] = "$Id: vs_line.c,v 10.8 1995/09/27 12:07:01 bostic Exp $ (Berkeley) $Date: 1995/09/27 12:07:01 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,7 +46,7 @@ vs_line(sp, smp, yp, xp)
 	SMAP *tsmp;
 	size_t chlen, cols_per_screen, cno_cnt, len, scno, skip_screens;
 	size_t offset_in_char, offset_in_line, nlen, oldy, oldx;
-	int ch, is_cached, is_infoline, is_partial, is_tab;
+	int ch, is_cached, is_partial, is_tab;
 	int list_tab, list_dollar;
 	char *p, *cbp, *ecbp, cbuf[128];
 
@@ -54,6 +54,12 @@ vs_line(sp, smp, yp, xp)
 	TRACE(sp, "vs_line: row %u: line: %u off: %u\n",
 	    smp - HMAP, smp->lno, smp->off);
 #endif
+	/*
+	 * If ex modifies the screen after ex output is already on the screen,
+	 * don't touch it -- we'll get scrolling wrong, at best.
+	 */
+	if (!F_ISSET(sp, S_INPUT_INFO) && VIP(sp)->totalcount > 1)
+		return (0);
 
 	/*
 	 * Assume that, if the cache entry for the line is filled in, the
@@ -99,7 +105,7 @@ vs_line(sp, smp, yp, xp)
 	 */
 	cols_per_screen = sp->cols;
 	list_tab = O_ISSET(sp, O_LIST);
-	if (is_infoline = F_ISSET(sp, S_INPUT_INFO)) {
+	if (F_ISSET(sp, S_INPUT_INFO)) {
 		list_dollar = 0;
 		if (O_ISSET(sp, O_LEFTRIGHT))
 			skip_screens = 0;
@@ -317,7 +323,7 @@ empty:					(void)gp->scr_addstr(sp,
 			else
 				*xp = scno - 1;
 			if (O_ISSET(sp, O_NUMBER) &&
-			    !is_infoline && smp->off == 1)
+			    !F_ISSET(sp, S_INPUT_INFO) && smp->off == 1)
 				*xp += O_NUMBER_LENGTH;
 
 			/* If the line is on the screen, quit. */
