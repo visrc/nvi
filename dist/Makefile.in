@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.71 1996/09/18 09:23:04 bostic Exp $ (Berkeley) $Date: 1996/09/18 09:23:04 $
+#	$Id: Makefile.in,v 8.72 1996/10/10 21:15:36 bostic Exp $ (Berkeley) $Date: 1996/10/10 21:15:36 $
 
 srcdir=	@srcdir@/..
 CC=	@CC@
@@ -145,6 +145,9 @@ install_common:
 	$(mkdir) $(datadir)/vi/tcl && $(chmod) $(dmode) $(datadir)/vi/tcl
 	(cd $(srcdir)/tcl_scripts && $(cp) *.tcl $(datadir)/vi/tcl && \
 	    cd $(datadir)/vi/tcl && $(chmod) $(fmode) *.tcl)
+	@echo "Installing recover script: $(datadir)/vi/recover ..."
+	($(cp) recover $(datadir)/vi/recover && \
+	    $(chmod) $(emode) $(datadir)/vi/recover)
 
 uninstall:
 	$(rm) -rf $(datadir)/vi

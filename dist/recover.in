@@ -1,9 +1,12 @@
-#	$Id: recover.in,v 8.7 1994/08/16 16:42:55 bostic Exp $ (Berkeley) $Date: 1994/08/16 16:42:55 $
+#!/bin/sh -
+#
+#	$Id: recover.in,v 8.8 1996/10/10 21:15:37 bostic Exp $ (Berkeley) $Date: 1996/10/10 21:15:37 $
 #
 # Script to recover nvi edit sessions.
-#
-RECDIR=/var/tmp/vi.recover
-SENDMAIL=/usr/lib/sendmail
+
+RECDIR="@vi_cv_path_preserve@"
+SENDMAIL="@vi_cv_path_sendmail@"
+
 echo 'Recovering nvi editor sessions.'
 
 # Check editor backup files.

@@ -1,4 +1,4 @@
-dnl	$Id: configure.in,v 8.132 1996/10/10 20:32:23 bostic Exp $ (Berkeley) $Date: 1996/10/10 20:32:23 $
+dnl	$Id: configure.in,v 8.133 1996/10/10 21:15:37 bostic Exp $ (Berkeley) $Date: 1996/10/10 21:15:37 $
 
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(../common/main.c)
@@ -719,4 +719,5 @@ if test "$vi_cv_int32" != yes; then
 	int32_decl="typedef $vi_cv_int32 int32_t;"
 fi
 
-AC_OUTPUT(Makefile port.h:port.h.in pathnames.h:pathnames.h.in)
+AC_OUTPUT(Makefile port.h:port.h.in
+    pathnames.h:pathnames.h.in recover:recover.in)
