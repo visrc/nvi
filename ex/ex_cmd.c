@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 8.21 1993/10/28 14:43:08 bostic Exp $ (Berkeley) $Date: 1993/10/28 14:43:08 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 8.22 1993/11/03 11:40:38 bostic Exp $ (Berkeley) $Date: 1993/11/03 11:40:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -20,13 +20,13 @@ static char sccsid[] = "$Id: ex_cmd.c,v 8.21 1993/10/28 14:43:08 bostic Exp $ (B
  * The order in which command names are listed below is important --
  * ambiguous abbreviations are resolved to be the first possible match,
  * e.g. "r" means "read", not "rewind", because "read" is listed before
- * "rewind").
+ * "rewind".
  *
- * The syntax of the ex commands is unbelievably irregular.  Stupid is
- * another description that leaps to mind.  In any case, it's a special
- * case from one end to the other.  Each command has a "syntax script"
- * associated with it, which describes the items that are possible.  The
- * script syntax is as follows:
+ * The syntax of the ex commands is unbelievably irregular, and a special 
+ * case from beginning to end.  Each command has an associated "syntax
+ * script" which describes the "arguments" that are possible.  The script
+ * syntax is as follows:
+ *
  *	!		-- ! flag
  *	+		-- +cmd
  *	1		-- flags: [+-]*[pl#][+-]*
