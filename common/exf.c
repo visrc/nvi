@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: exf.c,v 10.58 2000/07/21 22:09:28 skimo Exp $ (Berkeley) $Date: 2000/07/21 22:09:28 $";
+static const char sccsid[] = "$Id: exf.c,v 10.59 2000/08/27 19:02:50 skimo Exp $ (Berkeley) $Date: 2000/08/27 19:02:50 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -133,10 +133,10 @@ file_init(sp, frp, rcv_name, flags)
 	EXF *ep;
 	struct stat sb;
 	size_t psize;
-	int fd, exists, open_err, readonly;
+	int fd, exists, open_err, readonly, stolen;
 	char *oname, tname[MAXPATHLEN];
 
-	open_err = readonly = 0;
+	stolen = open_err = readonly = 0;
 
 	/*
 	 * If the file is a recovery file, let the recovery code handle it.
@@ -279,23 +279,6 @@ file_init(sp, frp, rcv_name, flags)
 	if (rcv_name == NULL)
 		ep->db->set_re_source(ep->db, oname);
 
-	if ((sp->db_error = ep->db->open(ep->db, ep->rcv_path, NULL,
-	    DB_RECNO, ((rcv_name == 0) ? DB_TRUNCATE : 0) | DB_THREAD,
-	    S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)) != 0) {
-		msgq_str(sp,
-		    M_DBERR, rcv_name == NULL ? oname : rcv_name, "%s");
-		/*
-		 * !!!
-		 * Historically, vi permitted users to edit files that couldn't
-		 * be read.  This isn't useful for single files from a command
-		 * line, but it's quite useful for "vi *.c", since you can skip
-		 * past files that you can't read.
-		 */ 
-		open_err = 1;
-		ep->db = NULL; /* Don't close it */
-		goto oerr;
-	}
-
 	/*
 	 * Do the remaining things that can cause failure of the new file,
 	 * mark and logging initialization.
@@ -338,6 +321,7 @@ postinit:
 			(void)file_end(sp, ep, 1);
 			goto err;
 		}
+		sp->ep = NULL;
 		F_CLR(frp, FR_DONTDELETE);
 	}
 
@@ -361,15 +345,10 @@ postinit:
 	 * an error.
 	 */
 	if (rcv_name == NULL && ep->refcnt == 0) {
-		if ((ep->fd = open(oname, O_RDONLY)) == -1)
+		if ((ep->fd = open(oname, O_RDWR)) == -1)
 		    goto no_lock;
 
-		/* DB 3 appears to not return the fd of re_source
-		if (ep->db->fd(ep->db, &fd) != 0)
-		    goto no_lock;
-		*/
-
-		switch (file_lock(sp, oname, &ep->fcntl_fd, ep->fd, 0)) {
+		switch (file_lock(sp, oname, &ep->fcntl_fd, ep->fd, 1)) {
 		case LOCK_FAILED:
 no_lock:
 			F_SET(frp, FR_UNLOCKED);
@@ -382,6 +361,28 @@ no_lock:
 		case LOCK_SUCCESS:
 			break;
 		}
+	}
+
+	if (ep->refcnt == 0 &&
+	    (sp->db_error = ep->db->open(ep->db, ep->rcv_path, NULL,
+	    DB_RECNO, ((rcv_name == 0) ? DB_TRUNCATE : 0) | DB_THREAD,
+	    S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)) != 0) {
+		msgq_str(sp,
+		    M_DBERR, rcv_name == NULL ? oname : rcv_name, "%s");
+		/*
+		 * !!!
+		 * Historically, vi permitted users to edit files that couldn't
+		 * be read.  This isn't useful for single files from a command
+		 * line, but it's quite useful for "vi *.c", since you can skip
+		 * past files that you can't read.
+		 */ 
+		ep->db = NULL; /* Don't close it */
+
+		if (LF_ISSET(FS_OPENERR)) 
+		    goto err;
+
+		open_err = 1;
+		goto oerr;
 	}
 
 	/*
