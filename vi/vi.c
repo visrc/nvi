@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.23 1993/10/28 14:15:01 bostic Exp $ (Berkeley) $Date: 1993/10/28 14:15:01 $";
+static char sccsid[] = "$Id: vi.c,v 8.24 1993/10/31 14:20:59 bostic Exp $ (Berkeley) $Date: 1993/10/31 14:20:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,10 +31,11 @@ static int getmotion __P((SCR *, EXF *,
 
 /*
  * Side-effect:
- *	dot can be set by underlying vi function, see v_Put() and v_put().
+ *	The dot structure can be set by the underlying vi functions,
+ *	see v_Put() and v_put().
  */
-#define	DOT		((VICMDARG *)sp->sdot)
-#define	DOTMOTION	((VICMDARG *)sp->sdotmotion)
+#define	DOT		(&VP(sp)->sdot)
+#define	DOTMOTION	(&VP(sp)->sdotmotion)
 
 /*
  * vi --
@@ -45,7 +46,7 @@ vi(sp, ep)
 	SCR *sp;
 	EXF *ep;
 {
-	MARK fm, tm, m;
+	MARK abs, fm, tm, m;
 	VICMDARG cmd, *vp;
 	int comcount, eval;
 	u_int flags;
@@ -60,24 +61,6 @@ vi(sp, ep)
 
 	/* Command initialization. */
 	memset(&cmd, 0, sizeof(VICMDARG));
-
-	/*
-	 * XXX
-	 * Declaring these correctly in screen.h would mean that screen.h
-	 * would require vcmd.h, which I wanted to avoid.  The solution is
-	 * probably to have a vi private area in the SCR structure, but
-	 * that will require more reorganization than I want right now.
-	 */
-	sp->sdot = malloc(sizeof(VICMDARG));
-	sp->sdotmotion = malloc(sizeof(VICMDARG));
-	if (sp->sdot == NULL || sp->sdotmotion == NULL) {
-		if (sp->sdot != NULL)
-			FREE(sp->sdot, sizeof(VICMDARG));
-		if (sp->sdotmotion != NULL)
-			FREE(sp->sdotmotion, sizeof(VICMDARG));
-		msgq(sp, M_ERR, "Error: %s", strerror(errno));
-		return (1);
-	}
 
 	/* Edited as it can be. */
 	F_SET(sp->frp, FR_EDITED);
@@ -110,12 +93,10 @@ vi(sp, ep)
 		    getkeyword(sp, ep, vp, flags))
 			goto err;
 
-		/* If a non-relative movement, set the default mark. */
+		/* If a non-relative movement, copy the future absolute mark. */
 		if (LF_ISSET(V_ABS)) {
-			m.lno = sp->lno;
-			m.cno = sp->cno;
-			if (mark_set(sp, ep, ABSMARK1, &m, 1))
-				goto err;
+			abs.lno = sp->lno;
+			abs.cno = sp->cno;
 		}
 
 		/*
@@ -161,13 +142,12 @@ vi(sp, ep)
 		/*
 		 * Call the function.  Set the return cursor to the current
 		 * cursor position first -- the underlying routines don't
-		 * bother if it doesn't move.
+		 * bother to do the work if it doesn't move.
 		 */
 		m.lno = sp->lno;
 		m.cno = sp->cno;
 		if ((vp->kp->func)(sp, ep, vp, &fm, &tm, &m))
 			goto err;
-		
 #ifdef DEBUG
 		/* Make sure no function left the temporary space locked. */
 		if (F_ISSET(sp->gp, G_TMP_INUSE))
@@ -179,6 +159,10 @@ vi(sp, ep)
 		 */
 		if (!F_ISSET(sp, S_MODE_VI) || F_ISSET(sp, S_MAJOR_CHANGE))
 			break;
+		
+		/* Set the absolute mark. */
+		if (LF_ISSET(V_ABS) && mark_set(sp, ep, ABSMARK1, &abs, 1))
+			goto err;
 
 		/* Set the dot command structure. */
 		if (LF_ISSET(V_DOT)) {
@@ -257,9 +241,6 @@ err:				TERM_KEY_FLUSH(sp);
 			sp->rcm = sp->sc_col;
 		}
 	}
-
-	FREE(sp->sdot, sizeof(VICMDARG));
-	FREE(sp->sdotmotion, sizeof(VICMDARG));
 
 	return (v_end(sp) || eval);
 }
