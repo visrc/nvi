@@ -3,9 +3,12 @@
 .\" Copyright (c) 1994, 1995, 1996
 .\"	Keith Bostic.  All rights reserved.
 .\"
+.\" This document may not be republished without written permission from
+.\" Keith Bostic. 
+.\"
 .\" See the LICENSE file for redistribution information.
 .\"
-.\"     $Id: vi.ref,v 8.81 1996/08/17 17:47:03 bostic Exp $ (Berkeley) $Date: 1996/08/17 17:47:03 $
+.\"     $Id: vi.ref,v 8.82 1996/08/18 10:33:20 bostic Exp $ (Berkeley) $Date: 1996/08/18 10:33:20 $
 .\"
 .\"
 .so ref.so
@@ -35,7 +38,7 @@ Berkeley, California  94720
 This document is the reference guide for the 4.4BSD
 implementations of
 .EV nex nvi ,
-which are reimplementations of the historic Berkeley
+which are implementations of the historic Berkeley
 .EV ex vi
 editors.
 .)q
@@ -56,13 +59,9 @@ Keith Bostic.  All Rights Reserved.
 .pp
 The vi program is shareware.  You are welcome to copy, modify and share
 it with others under the conditions listed in the LICENSE file.  If your
-company finds this vi implementation sufficiently useful that you would
-have purchased it, or your company wishes to redistribute it,
-contributions to the authors would be appreciated.  If your company
-purchased this program or a distribution including this program, and you
-found this program useful, please encourage your vendor to contribute to
-the authors.  To redistribute this program under conditions other than
-these, please contact Keith Bostic for permission.
+company finds vi sufficiently useful that you would have purchased it,
+or your company wishes to redistribute it, contributions to the authors
+would be appreciated.
 .bp 2
 .(l C
 .i Acknowledgements

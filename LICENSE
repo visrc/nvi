@@ -43,18 +43,12 @@
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following message in the
  *    documentation and/or other materials provided with the distribution.
- * 3. Redistributions must reproduce the following message at the beginning
- *    of any program specific user documentation (e.g., manual page or help
- *    screen) and any reference materials, if they are not the manual page
- *    and reference materials provided as part of the distribution.
+ * 3. For permission to redistribute this program under conditions other
+ *    than these, contact Keith Bostic.
  *
  * The vi program is shareware.  You are welcome to copy, modify and share
  * it with others under the conditions listed in the LICENSE file.  If your
- * company finds this vi implementation sufficiently useful that you would
- * have purchased it, or your company wishes to redistribute it,
- * contributions to the authors would be appreciated.  If your company
- * purchased this program or a distribution including this program, and you
- * found this program useful, please encourage your vendor to contribute to
- * the authors.  To redistribute this program under conditions other than
- * these, please contact Keith Bostic for permission.
+ * company finds vi sufficiently useful that you would have purchased it,
+ * or your company wishes to redistribute it, contributions to the authors
+ * would be appreciated.
  */
