@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_paragraph.c,v 8.9 1994/03/14 10:43:37 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:43:37 $";
+static char sccsid[] = "$Id: v_paragraph.c,v 8.10 1994/04/27 20:18:25 bostic Exp $ (Berkeley) $Date: 1994/04/27 20:18:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -148,12 +148,19 @@ found:			if (ISMOTION(vp)) {
 	 * Adjust end of the range for motion commands; EOF is a movement
 	 * sink.  The } command historically moved to the end of the last
 	 * line, not the beginning, from any position before the end of the
-	 * last line.
+	 * last line.  It also historically worked on empty files, so we
+	 * have to make it okay.
 	 */
-eof:	if (vp->m_start.lno == lno - 1) {
+eof:	if (vp->m_start.lno == lno || vp->m_start.lno == lno - 1) {
 		if (file_gline(sp, ep, vp->m_start.lno, &len) == NULL) {
-			GETLINE_ERR(sp, vp->m_start.lno);
-			return (1);
+			if (file_lline(sp, ep, &lno))
+				return (1);
+			if (vp->m_start.lno != 1 || lno != 0) {
+				GETLINE_ERR(sp, vp->m_start.lno);
+				return (1);
+			}
+			vp->m_start.cno = 0;
+			return (0);
 		}
 		if (vp->m_start.cno == (len ? len - 1 : 0)) {
 			v_eof(sp, ep, NULL);
