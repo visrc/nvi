@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.21 1993/09/11 11:41:46 bostic Exp $ (Berkeley) $Date: 1993/09/11 11:41:46 $
+ *	$Id: screen.h,v 8.22 1993/09/12 16:58:51 bostic Exp $ (Berkeley) $Date: 1993/09/12 16:58:51 $
  */
 
 /*
@@ -139,10 +139,6 @@ typedef struct _scr {
 					/* FWOPEN_NOT_AVAILABLE */
 	int	 trapped_fd;		/* Ex/vi trapped file descriptor. */
 
-					/* Ex/vi: input information. */
-	IBUF	 key;			/* Key input buffer. */
-	IBUF	 tty;			/* Tty input buffer. */
-
 	char	 at_lbuf;		/* Last at buffer executed. */
 
 	fd_set	 rdfd;			/* Ex/vi: read fd select mask. */
@@ -157,6 +153,9 @@ typedef struct _scr {
 	struct _excmdlist const *lastcmd;
 
 /* SHARED BETWEEN SCREENS. */
+	IBUF	 *key;			/* Key input buffer. */
+	IBUF	 *tty;			/* Tty input buffer. */
+
 	struct _cb *cuts;		/* Ex/vi: cut buffers. */
 
 /* PARTIALLY OR COMPLETELY COPIED FROM PREVIOUS SCREEN. */
