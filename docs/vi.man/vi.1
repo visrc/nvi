@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.1,v 8.8 1994/04/30 11:03:55 bostic Exp $ (Berkeley) $Date: 1994/04/30 11:03:55 $
+.\"     $Id: vi.1,v 8.9 1994/05/03 13:37:54 bostic Exp $ (Berkeley) $Date: 1994/05/03 13:37:54 $
 .\"
 .Dd "%Q%"
 .Dt EX/VI 1
@@ -17,21 +17,21 @@
 .Op Fl c Ar cmd
 .Op Fl t Ar tag
 .Op Fl w Ar size
-.Op Fl x Ar \&aw
+.\".Op Fl X Ar \&aw
 .Op Ar "file ..."
 .Nm \&vi
 .Op Fl eFRrv
 .Op Fl c Ar cmd
 .Op Fl t Ar tag
 .Op Fl w Ar size
-.Op Fl x Ar \&aw
+.\".Op Fl X Ar \&aw
 .Op Ar "file ..."
 .Nm view
 .Op Fl eFRrv
 .Op Fl c Ar cmd
 .Op Fl t Ar tag
 .Op Fl w Ar size
-.Op Fl x Ar \&aw
+.\".Op Fl X Ar \&aw
 .Op Ar "file ..."
 .Sh DESCRIPTION
 .Nm \&Vi
@@ -72,8 +72,9 @@ This manual page is intended for users already familiar with
 Anyone else should almost certainly read a good tutorial on the
 editor before this manual page.
 If you're in an unfamiliar environment, and you absolutely have to
-get work done immediately, read the section near the end of this
-manual page, entitled Fast Startup.
+get work done immediately, read the section after the options
+description, entitled
+.Dq "Fast Startup" .
 It's probably enough to get you going.
 .Pp
 The following options are available:
@@ -130,7 +131,7 @@ Start editing in vi mode, as if the command name was
 .Nm \&vi
 or
 .Nm view .
-.It Fl x
+.It Fl X
 Reserved for X11 interfaces.
 .Em "No X11 support is currently implemented."
 .El
@@ -152,9 +153,6 @@ option had been specified.
 .Pp
 .Nm Ex/vi
 exits 0 on success, and greater than 0 if an error occurs.
-#include <vi.cmd.roff>
-#include <ex.cmd.roff>
-#include <set.opt.roff>
 .Sh FAST STARTUP
 This section will tell you the minimum amount that you need to
 do simple editing tasks using
@@ -299,8 +297,11 @@ The above commands work on
 characters and lines, i.e. they affect the entire line no matter
 how many screen lines it takes up and the entire character no matter
 how many screen columns it takes up.
+#include <vi.cmd.roff>
+#include <ex.cmd.roff>
+#include <set.opt.roff>
 .Sh ENVIRONMENTAL VARIABLES
-.Bl -tag -width XXXX -compact
+.Bl -tag -width "COLUMNSXX" -compact
 .It Ev COLUMNS
 The number of columns on the screen.
 This value overrides any system or terminal specific values.
@@ -364,21 +365,45 @@ option).
 .El
 .Sh ASYNCHRONOUS EVENTS
 .Nm \&Vi/ex
-handles three signals specially.
+handles six signals specially.
 .sp
-.Bl -tag -width "SIGCONTXXX" -compact
+.Bl -tag -width "SIGWINCHXX" -compact
+.It SIGALRM
+.Nm \&Vi/ex
+uses this signal for periodic backups of file modifications
+and to display
+.Dq busy
+messages when operations are likely to take a long time.
 .It SIGCONT
-If the editor is running in visual mode, the screen is repainted.
+If the editor is running in visual mode,
+the screen is repainted.
 .It SIGHUP
+.It SIGTERM
 If the current buffer has changed since it was last written in its
 entirety, the editor attempts to save the modified file so it can
 be later recovered.
-See the Recovery section for more information.
+See the
+.Nm \&vi/ex
+Reference manual section entitled
+.Dq Recovery
+for more information.
 .It SIGINT
-When an interrupt occurrs, the current operation is halted, and the
-editor returns to the command level.
-If interrupted during text input, the text already input is resolved
-into the file as if the text input had been normally terminated.
+When an interrupt occurs,
+the current operation is halted,
+and the editor returns to the command level.
+If interrupted during text input,
+the text already input is resolved into the file as if the text
+input had been normally terminated.
+.It SIGQUIT
+.Nm \&Vi/ex
+ignores this signal.
+.It SIGWINCH
+The screen is resized.
+See the
+.Nm \&vi/ex
+Reference manual section entitled
+.Dq "Sizing the Screen"
+for more information.
 .El
 .Sh BUGS
 See the file
