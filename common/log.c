@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: log.c,v 5.18 1993/05/16 21:05:07 bostic Exp $ (Berkeley) $Date: 1993/05/16 21:05:07 $";
+static char sccsid[] = "$Id: log.c,v 5.19 1993/05/17 16:51:34 bostic Exp $ (Berkeley) $Date: 1993/05/17 16:51:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -419,9 +419,10 @@ err:	F_CLR(ep, F_NOLOG);
  *	Reset the line to its original appearance.
  */
 int
-log_setline(sp, ep)
+log_setline(sp, ep, rp)
 	SCR *sp;
 	EXF *ep;
+	MARK *rp;
 {
 	DBT key, data;
 	MARK m;
@@ -450,15 +451,15 @@ log_setline(sp, ep)
 #endif
 		switch (*(p = (u_char *)data.data)) {
 		case LOG_CURSOR_INIT:
-			memmove(&m, p + sizeof(u_char), sizeof(MARK));
-			if (m.lno != sp->lno || ep->l_cur == 1) {
+			memmove(rp, p + sizeof(u_char), sizeof(MARK));
+			if (rp->lno != sp->lno || ep->l_cur == 1) {
 				F_CLR(ep, F_NOLOG);
 				return (0);
 			}
 			break;
 		case LOG_CURSOR_END:
-			memmove(&m, p + sizeof(u_char), sizeof(MARK));
-			if (m.lno != sp->lno) {
+			memmove(rp, p + sizeof(u_char), sizeof(MARK));
+			if (rp->lno != sp->lno) {
 				++ep->l_cur;
 				F_CLR(ep, F_NOLOG);
 				return (0);
