@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_read.c,v 10.42 2000/11/26 20:10:19 skimo Exp $ (Berkeley) $Date: 2000/11/26 20:10:19 $";
+static const char sccsid[] = "$Id: ex_read.c,v 10.43 2001/06/10 10:23:44 skimo Exp $ (Berkeley) $Date: 2001/06/10 10:23:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -80,7 +80,7 @@ ex_read(sp, cmdp)
 
 			/* Secure means no shell access. */
 			if (O_ISSET(sp, O_SECURE)) {
-				ex_emsg(sp, cmdp->cmd->name, EXM_SECURE_F);
+				ex_wemsg(sp, cmdp->cmd->name, EXM_SECURE_F);
 				return (1);
 			}
 		} else
@@ -161,7 +161,7 @@ ex_read(sp, cmdp)
 		 */
 		if (F_ISSET(sp, SC_VI)) {
 			if (gp->scr_screen(sp, SC_EX)) {
-				ex_emsg(sp, cmdp->cmd->name, EXM_NOCANON_F);
+				ex_wemsg(sp, cmdp->cmd->name, EXM_NOCANON_F);
 				return (1);
 			}
 			/*
@@ -241,9 +241,7 @@ ex_read(sp, cmdp)
 			}
 			break;
 		default:
-			INT2CHAR(sp, cmdp->argv[0]->bp, 
-				 cmdp->argv[0]->len + 1, np, nlen);
-			ex_emsg(sp, np, EXM_FILECOUNT);
+			ex_wemsg(sp, cmdp->argv[0]->bp, EXM_FILECOUNT);
 			return (1);
 		
 		}

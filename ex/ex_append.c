@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_append.c,v 10.32 2000/07/14 14:29:19 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:19 $";
+static const char sccsid[] = "$Id: ex_append.c,v 10.33 2001/06/10 10:23:44 skimo Exp $ (Berkeley) $Date: 2001/06/10 10:23:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -213,7 +213,7 @@ ex_aci(sp, cmdp, cmd)
 	 */
 	if (F_ISSET(sp, SC_VI)) {
 		if (gp->scr_screen(sp, SC_EX)) {
-			ex_emsg(sp, cmdp->cmd->name, EXM_NOCANON);
+			ex_wemsg(sp, cmdp->cmd->name, EXM_NOCANON);
 			return (1);
 		}
 

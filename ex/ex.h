@@ -6,13 +6,13 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: ex.h,v 10.28 2000/07/22 17:31:20 skimo Exp $ (Berkeley) $Date: 2000/07/22 17:31:20 $
+ *	$Id: ex.h,v 10.29 2001/06/10 10:23:43 skimo Exp $ (Berkeley) $Date: 2001/06/10 10:23:43 $
  */
 
 #define	PROMPTCHAR	':'		/* Prompt using a colon. */
 
 typedef struct _excmdlist {		/* Ex command table structure. */
-	char *name;			/* Command name, underlying function. */
+	CHAR_T *name;			/* Command name, underlying function. */
 	int (*fn) __P((SCR *, EXCMD *));
 
 #define	E_ADDR1		0x00000001	/* One address. */
@@ -56,7 +56,7 @@ extern EXCMDLIST const cmds[];		/* Table of ex commands. */
  */
 #define	NEEDFILE(sp, cmdp) {						\
 	if ((sp)->ep == NULL) {						\
-		ex_emsg(sp, (cmdp)->cmd->name, EXM_NOFILEYET);		\
+		ex_wemsg(sp, (cmdp)->cmd->name, EXM_NOFILEYET);		\
 		return (1);						\
 	}								\
 }

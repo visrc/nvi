@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex.c,v 10.70 2001/06/09 21:53:52 skimo Exp $ (Berkeley) $Date: 2001/06/09 21:53:52 $";
+static const char sccsid[] = "$Id: ex.c,v 10.71 2001/06/10 10:23:43 skimo Exp $ (Berkeley) $Date: 2001/06/10 10:23:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -213,7 +213,8 @@ ex_cmd(sp)
 	int newscreen, notempty, tmp, vi_address;
 	CHAR_T *arg1, *s, *p, *t;
 	CHAR_T ch;
-	char *n;
+	CHAR_T *n;
+	char *np;
 
 	gp = sp->gp;
 	wp = sp->wp;
@@ -517,7 +518,7 @@ skip_srch:	if (ecp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, SC_VI))
 
 		/* Secure means no shell access. */
 		if (F_ISSET(ecp->cmd, E_SECURE) && O_ISSET(sp, O_SECURE)) {
-			ex_emsg(sp, ecp->cmd->name, EXM_SECURE);
+			ex_wemsg(sp, ecp->cmd->name, EXM_SECURE);
 			goto err;
 		}
 
@@ -943,13 +944,13 @@ two_addr:	switch (ecp->addrcnt) {
 	}
 
 	ecp->flagoff = 0;
-	for (n = ecp->cmd->syntax; *n != '\0'; ++n) {
+	for (np = ecp->cmd->syntax; *np != '\0'; ++np) {
 		/*
 		 * The force flag is sensitive to leading whitespace, i.e.
 		 * "next !" is different from "next!".  Handle it before
 		 * skipping leading <blank>s.
 		 */
-		if (*n == '!') {
+		if (*np == '!') {
 			if (ecp->clen > 0 && *ecp->cp == '!') {
 				++ecp->cp;
 				--ecp->clen;
@@ -965,7 +966,7 @@ two_addr:	switch (ecp->addrcnt) {
 		if (ecp->clen == 0)
 			break;
 
-		switch (*n) {
+		switch (*np) {
 		case '1':				/* +, -, #, l, p */
 			/*
 			 * !!!
@@ -1020,7 +1021,7 @@ end_case1:		break;
 					FL_SET(ecp->iflags, E_C_CARAT);
 					break;
 				case '=':
-					if (*n == '3') {
+					if (*np == '3') {
 						FL_SET(ecp->iflags, E_C_EQUAL);
 						break;
 					}
@@ -1040,7 +1041,7 @@ end_case23:		break;
 			 */
 			if ((ecp->cp[0] == '+' || ecp->cp[0] == '-' ||
 			    ecp->cp[0] == '^' || ecp->cp[0] == '#') &&
-			    strchr(n, '1') != NULL)
+			    strchr(np, '1') != NULL)
 				break;
 			/*
 			 * !!!
@@ -1056,9 +1057,9 @@ end_case23:		break;
 			}
 			break;
 		case 'c':				/* count [01+a] */
-			++n;
+			++np;
 			/* Validate any signed value. */
-			if (!ISDIGIT(*ecp->cp) && (*n != '+' ||
+			if (!ISDIGIT(*ecp->cp) && (*np != '+' ||
 			    (*ecp->cp != '+' && *ecp->cp != '-')))
 				break;
 			/* If a signed value, set appropriate flags. */
@@ -1071,7 +1072,7 @@ end_case23:		break;
 				ex_badaddr(sp, NULL, A_NOTSET, nret);
 				goto err;
 			}
-			if (ltmp == 0 && *n != '0') {
+			if (ltmp == 0 && *np != '0') {
 				msgq(sp, M_ERR, "083|Count may not be zero");
 				goto err;
 			}
@@ -1087,7 +1088,7 @@ end_case23:		break;
 			 * join) do different things with counts than with
 			 * line addresses.
 			 */
-			if (*n == 'a') {
+			if (*np == 'a') {
 				ecp->addr1 = ecp->addr2;
 				ecp->addr2.lno = ecp->addr1.lno + ltmp - 1;
 			} else
@@ -1194,14 +1195,14 @@ end_case23:		break;
 		case 'w':				/* word */
 			if (argv_exp3(sp, ecp, ecp->cp, ecp->clen))
 				goto err;
-arg_cnt_chk:		if (*++n != 'N') {		/* N */
+arg_cnt_chk:		if (*++np != 'N') {		/* N */
 				/*
 				 * If a number is specified, must either be
 				 * 0 or that number, if optional, and that
 				 * number, if required.
 				 */
-				tmp = *n - '0';
-				if ((*++n != 'o' || exp->argsoff != 0) &&
+				tmp = *np - '0';
+				if ((*++np != 'o' || exp->argsoff != 0) &&
 				    exp->argsoff != tmp)
 					goto usage;
 			}
@@ -1209,7 +1210,7 @@ arg_cnt_chk:		if (*++n != 'N') {		/* N */
 		default:
 			msgq(sp, M_ERR,
 			    "085|Internal syntax table error (%s: %s)",
-			    ecp->cmd->name, KEY_NAME(sp, *n));
+			    ecp->cmd->name, KEY_NAME(sp, *np));
 		}
 	}
 
@@ -1224,7 +1225,7 @@ arg_cnt_chk:		if (*++n != 'N') {		/* N */
 	 * There shouldn't be anything left, and no more required fields,
 	 * i.e neither 'l' or 'r' in the syntax string.
 	 */
-	if (ecp->clen != 0 || strpbrk(n, "lr")) {
+	if (ecp->clen != 0 || strpbrk(np, "lr")) {
 usage:		msgq(sp, M_ERR, "086|Usage: %s", ecp->cmd->usage);
 		goto err;
 	}
@@ -2262,17 +2263,13 @@ static EXCMDLIST const *
 ex_comm_search(SCR *sp, CHAR_T *name, size_t len)
 {
 	EXCMDLIST const *cp;
-	size_t nlen;
-	char *nname;
-
-	INT2CHAR(sp, name, len, nname, nlen);
 
 	for (cp = cmds; cp->name != NULL; ++cp) {
-		if (cp->name[0] > nname[0])
+		if (cp->name[0] > name[0])
 			return (NULL);
-		if (cp->name[0] != nname[0])
+		if (cp->name[0] != name[0])
 			continue;
-		if (!memcmp(nname, cp->name, len))
+		if (!MEMCMP(name, cp->name, len))
 			return (cp);
 	}
 	return (NULL);
@@ -2313,7 +2310,7 @@ ex_badaddr(sp, cp, ba, nret)
 	 * underlying file, that's the real problem.
 	 */
 	if (sp->ep == NULL) {
-		ex_emsg(sp, cp ? cp->name : NULL, EXM_NOFILEYET);
+		ex_wemsg(sp, cp ? cp->name : NULL, EXM_NOFILEYET);
 		return;
 	}
 

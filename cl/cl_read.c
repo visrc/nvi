@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_read.c,v 10.22 2001/06/06 19:40:32 skimo Exp $ (Berkeley) $Date: 2001/06/06 19:40:32 $";
+static const char sccsid[] = "$Id: cl_read.c,v 10.23 2001/06/10 10:23:42 skimo Exp $ (Berkeley) $Date: 2001/06/10 10:23:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -304,8 +304,8 @@ cl_resize(sp, lines, columns)
 {
 	int rval;
 
-	rval = api_opts_set(sp, "lines", NULL, lines, 0);
-	if (api_opts_set(sp, "columns", NULL, columns, 0))
+	rval = api_opts_set(sp, L("lines"), NULL, lines, 0);
+	if (api_opts_set(sp, L("columns"), NULL, columns, 0))
 		rval = 1;
 	return (rval);
 }

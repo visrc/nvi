@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_util.c,v 10.30 2000/08/20 09:05:37 skimo Exp $ (Berkeley) $Date: 2000/08/20 09:05:37 $";
+static const char sccsid[] = "$Id: ex_util.c,v 10.31 2001/06/10 10:23:45 skimo Exp $ (Berkeley) $Date: 2001/06/10 10:23:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -149,6 +149,23 @@ ex_init(sp)
 	F_CLR(sp, SC_VI);
 	F_SET(sp, SC_EX | SC_SCR_EX);
 	return (0);
+}
+
+/*
+ * ex_emsg --
+ *	Display a few common ex and vi error messages.
+ *
+ * PUBLIC: void ex_wemsg __P((SCR *, CHAR_T *, exm_t));
+ */
+void
+ex_wemsg(SCR* sp, CHAR_T *p, exm_t which)
+{
+	char *np;
+	size_t nlen;
+
+	if (p) INT2CHAR(sp, p, STRLEN(p), np, nlen);
+	else np = NULL;
+	ex_emsg(sp, np, which);
 }
 
 /*

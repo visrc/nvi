@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_shell.c,v 10.39 2000/07/11 15:10:59 skimo Exp $ (Berkeley) $Date: 2000/07/11 15:10:59 $";
+static const char sccsid[] = "$Id: ex_shell.c,v 10.40 2001/06/10 10:23:44 skimo Exp $ (Berkeley) $Date: 2001/06/10 10:23:44 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -101,7 +101,7 @@ ex_exec_proc(sp, cmdp, cmd, msg, need_newline)
 	/* Enter ex mode. */
 	if (F_ISSET(sp, SC_VI)) {
 		if (gp->scr_screen(sp, SC_EX)) {
-			ex_emsg(sp, cmdp->cmd->name, EXM_NOCANON);
+			ex_wemsg(sp, cmdp->cmd->name, EXM_NOCANON);
 			return (1);
 		}
 		(void)gp->scr_attr(sp, SA_ALTERNATE, 0);

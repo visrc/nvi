@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_write.c,v 10.36 2001/06/09 18:26:30 skimo Exp $ (Berkeley) $Date: 2001/06/09 18:26:30 $";
+static const char sccsid[] = "$Id: ex_write.c,v 10.37 2001/06/10 10:23:45 skimo Exp $ (Berkeley) $Date: 2001/06/10 10:23:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -159,7 +159,7 @@ exwr(sp, cmdp, cmd)
 	if (cmdp->argc != 0 && cmd == WRITE && *p == '!') {
 		/* Secure means no shell access. */
 		if (O_ISSET(sp, O_SECURE)) {
-			ex_emsg(sp, cmdp->cmd->name, EXM_SECURE_F);
+			ex_wemsg(sp, cmdp->cmd->name, EXM_SECURE_F);
 			return (1);
 		}
 

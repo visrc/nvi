@@ -16,6 +16,8 @@ typedef	u_int		UCHAR_T;
 #define STRTOUL		wcstoul
 #define SPRINTF		swprintf
 #define STRCMP		wcscmp
+#define STRPBRK		wcspbrk
+#define TOUPPER		towupper
 
 #else
 typedef	char		RCHAR_T;
@@ -29,6 +31,8 @@ typedef	u_char		UCHAR_T;
 #define STRTOUL		strtoul
 #define SPRINTF		snprintf
 #define STRCMP		strcmp
+#define STRPBRK		strpbrk
+#define TOUPPER		toupper
 
 #endif
 

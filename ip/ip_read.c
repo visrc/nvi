@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_read.c,v 8.21 2000/07/16 20:49:33 skimo Exp $ (Berkeley) $Date: 2000/07/16 20:49:33 $";
+static const char sccsid[] = "$Id: ip_read.c,v 8.22 2001/06/10 10:23:45 skimo Exp $ (Berkeley) $Date: 2001/06/10 10:23:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -397,8 +397,8 @@ ip_resize(sp, lines, columns)
 		return (0);
 	}
 
-	rval = api_opts_set(sp, "lines", NULL, lines, 0);
-	if (api_opts_set(sp, "columns", NULL, columns, 0))
+	rval = api_opts_set(sp, L("lines"), NULL, lines, 0);
+	if (api_opts_set(sp, L("columns"), NULL, columns, 0))
 		rval = 1;
 	return (rval);
 }

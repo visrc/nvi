@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_usage.c,v 10.12 1996/05/03 08:58:49 bostic Exp $ (Berkeley) $Date: 1996/05/03 08:58:49 $";
+static const char sccsid[] = "$Id: ex_usage.c,v 10.14 2001/06/10 10:23:44 skimo Exp $ (Berkeley) $Date: 2001/06/10 10:23:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,6 +21,7 @@ static const char sccsid[] = "$Id: ex_usage.c,v 10.12 1996/05/03 08:58:49 bostic
 #include <ctype.h>
 #include <limits.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "../common/common.h"
@@ -63,7 +64,7 @@ ex_usage(sp, cmdp)
 	ARGS *ap;
 	EXCMDLIST const *cp;
 	int newscreen;
-	char *name, *p, nb[MAXCMDNAMELEN + 5];
+	CHAR_T *name, *p, nb[MAXCMDNAMELEN + 5];
 
 	switch (cmdp->argc) {
 	case 1:
@@ -111,19 +112,19 @@ ex_usage(sp, cmdp)
 			 * room, they're all short names.
 			 */
 			if (cp == &cmds[C_SCROLL])
-				name = "^D";
+				name = L("^D");
 			else if (F_ISSET(cp, E_NEWSCREEN)) {
-				nb[0] = '[';
-				nb[1] = toupper(cp->name[0]);
+				nb[0] = L('[');
+				nb[1] = TOUPPER(cp->name[0]);
 				nb[2] = cp->name[0];
-				nb[3] = ']';
+				nb[3] = L(']');
 				for (name = cp->name + 1,
 				    p = nb + 4; (*p++ = *name++) != '\0';);
 				name = nb;
 			} else
 				name = cp->name;
 			(void)ex_printf(sp,
-			    "%*s: %s\n", MAXCMDNAMELEN, name, cp->help);
+			    WVS": %s\n", MAXCMDNAMELEN, name, cp->help);
 		}
 		break;
 	default:
