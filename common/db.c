@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 5.10 1992/12/20 15:53:57 bostic Exp $ (Berkeley) $Date: 1992/12/20 15:53:57 $";
+static char sccsid[] = "$Id: db.c,v 5.11 1992/12/20 18:05:19 bostic Exp $ (Berkeley) $Date: 1992/12/20 18:05:19 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -285,10 +285,10 @@ file_ibresolv(ep, ibp)
 	/* Setup. */
 	tp = ib.head;
 	lno = ibp->start.lno;
-	key.data = &lno;
 	key.size = sizeof(lno);
 
 	/* Replace the original line. */
+	key.data = &lno;
 	data.data = tp->lp;
 	data.size = tp->len;
 	if ((ep->db->put)(ep->db, &key, &data, 0) == -1) {
@@ -299,6 +299,7 @@ file_ibresolv(ep, ibp)
 
 	/* Add the new lines into the file. */
 	for (; tp = tp->next; ++lno) {
+		key.data = &lno;
 		data.data = tp->lp;
 		data.size = tp->len;
 		if ((ep->db->put)(ep->db, &key, &data, R_IAFTER) == -1) {
