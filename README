@@ -1,4 +1,4 @@
-#	$Id: README,v 8.103 1995/01/24 10:22:23 bostic Exp $ (Berkeley) $Date: 1995/01/24 10:22:23 $
+#	$Id: README,v 8.104 1995/02/08 15:36:30 bostic Exp $ (Berkeley) $Date: 1995/02/08 15:36:30 $
 
 This is the README for nex/nvi, a freely redistributable replacement for
 the ex/vi text editors originally distributed as part of the Fourth
@@ -142,6 +142,17 @@ will show up as reads of uninitialized memory in the buffer write routines.
 =-=-=-=-=-=-=-=-=-=-=
 o Directory layout:
 
+nvi/PORT:
+	Porting directories, one per OS/architecture combination.  See
+	nvi/PORT/README for porting information.
+
+	curses/		-- 4.4BSD curses implementation
+	db/		-- 4.4BSD DB routines.
+	regex/		-- Henry Spencer's POSIX.2 RE support.
+
+nvi/README:
+	This file.
+
 nvi/USD.doc:
 	Ex/vi documentation, both historic and current.
 
@@ -156,6 +167,13 @@ nvi/USD.doc:
 	vitut/		Roff source for "An Introduction to Display
 			Editing with Vi", USD:15 in the 4.3BSD manuals.
 			Includes the "Vi Quick Reference" card.
+
+nvi/catalog:
+	Support for message catalogs for nvi.  See catalog/README for
+	more information.
+
+nvi/cl:
+	Source files for the curses interface to nvi.
 
 nvi/common:
 	Source files for pieces of code that are shared by all the editors,
@@ -190,19 +208,11 @@ nvi/install:
 
 	recover.script	-- Vi recovery script.
 
-nvi/PORT:
-	Porting directories, one per OS/architecture combination.  See
-	nvi/PORT/README for porting information.
-
-	curses/		-- 4.4BSD curses implementation
-	db/		-- 4.4BSD DB routines.
-	regex/		-- Henry Spencer's POSIX.2 RE support.
-
 nvi/sex:
 	The screen support for the ex editor.
 
 nvi/svi:
-	The screen support for a curses based vi editor.
+	The screen support for the vi editor.
 
 nvi/vi:
 	The vi source code.
