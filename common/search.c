@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: search.c,v 5.27 1993/05/02 11:00:53 bostic Exp $ (Berkeley) $Date: 1993/05/02 11:00:53 $";
+static char sccsid[] = "$Id: search.c,v 5.28 1993/05/02 11:59:04 bostic Exp $ (Berkeley) $Date: 1993/05/02 11:59:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,6 +19,7 @@ static char sccsid[] = "$Id: search.c,v 5.27 1993/05/02 11:00:53 bostic Exp $ (B
 
 static int	check_delta __P((SCR *, EXF *, long, recno_t));
 static int	check_word __P((SCR *, char **, int *, int *));
+static int	get_delta __P((SCR *, char **, long *));
 static int	resetup __P((SCR *, regex_t **, enum direction,
 		    char *, char **, long *, int *, u_int));
 
@@ -64,7 +65,7 @@ noprev:			msgq(sp, M_INFO, "No previous search pattern.");
 		re_flags |= REG_ICASE;
 
 	*wordoffsetp = 0;
-	if (flags & SEARCH_PARSE) {		/* Parse the string. */
+	if (LF_ISSET(SEARCH_PARSE)) {		/* Parse the string. */
 		/* Set delimiter. */
 		delim[0] = *ptrn++;
 		delim[1] = '\0';
@@ -81,13 +82,13 @@ noprev:			msgq(sp, M_INFO, "No previous search pattern.");
 		 * whack the string, in case it's text space.
 		 */
 		if (endp != NULL && *endp != '\0') {
-			if (flags & SEARCH_TERM) {
+			if (LF_ISSET(SEARCH_TERM)) {
 				msgq(sp, M_ERR,
 				    "Characters after search string.");
 				return (1);
 			}
-			if (deltap != NULL)
-				*deltap = strtol(endp, &endp, 10);
+			if (deltap != NULL && get_delta(sp, &endp, deltap))
+				return (1);
 			if (epp != NULL)
 				*epp = endp;
 		} else {
@@ -115,7 +116,7 @@ noprev:			msgq(sp, M_INFO, "No previous search pattern.");
 	/* Compile the RE. */
 	if (eval = regcomp(*rep, (char *)ptrn, re_flags))
 		re_error(sp, eval, *rep);
-	else if (flags & SEARCH_SET) {
+	else if (LF_ISSET(SEARCH_SET)) {
 		F_SET(sp, S_RE_SET);
 		sp->searchdir = dir;
 		sp->sre = **rep;
@@ -153,7 +154,7 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 	char *l;
 
 	if ((lno = file_lline(sp, ep)) == 0) {
-		if (flags & SEARCH_MSG)
+		if (LF_ISSET(SEARCH_MSG))
 			msgq(sp, M_INFO, EMPTYMSG);
 		return (1);
 	}
@@ -170,7 +171,7 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 	if (fm->cno + 1 >= len) {
 		if (fm->lno == lno) {
 			if (!O_ISSET(sp, O_WRAPSCAN)) {
-				if (flags & SEARCH_MSG)
+				if (LF_ISSET(SEARCH_MSG))
 					msgq(sp, M_INFO, EOFMSG);
 				return (1);
 			}
@@ -187,12 +188,12 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 	for (;; ++lno, coff = 0) {
 		if ((l = file_gline(sp, ep, lno, &len)) == NULL) {
 			if (wrapped) {
-				if (flags & SEARCH_MSG)
+				if (LF_ISSET(SEARCH_MSG))
 					msgq(sp, M_INFO, NOTFOUND);
 				break;
 			}
 			if (!O_ISSET(sp, O_WRAPSCAN)) {
-				if (flags & SEARCH_MSG)
+				if (LF_ISSET(SEARCH_MSG))
 					msgq(sp, M_INFO, EOFMSG);
 				break;
 			}
@@ -224,7 +225,7 @@ f_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 		}
 		
 		/* Warn if wrapped. */
-		if (wrapped && O_ISSET(sp, O_WARN) && flags & SEARCH_MSG)
+		if (wrapped && O_ISSET(sp, O_WARN) && LF_ISSET(SEARCH_MSG))
 			msgq(sp, M_INFO, WRAPMSG);
 
 		/*
@@ -272,7 +273,7 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 	char *l;
 
 	if ((lno = file_lline(sp, ep)) == 0) {
-		if (flags & SEARCH_MSG)
+		if (LF_ISSET(SEARCH_MSG))
 			msgq(sp, M_INFO, EMPTYMSG);
 		return (1);
 	}
@@ -285,7 +286,7 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 	if (fm->cno == 0) {
 		if (fm->lno == 1) {
 			if (!O_ISSET(sp, O_WRAPSCAN)) {
-				if (flags & SEARCH_MSG)
+				if (LF_ISSET(SEARCH_MSG))
 					msgq(sp, M_INFO, SOFMSG);
 				return (1);
 			}
@@ -298,19 +299,19 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 	for (coff = fm->cno;; --lno, coff = 0) {
 		if (lno == 0) {
 			if (!O_ISSET(sp, O_WRAPSCAN)) {
-				if (flags & SEARCH_MSG)
+				if (LF_ISSET(SEARCH_MSG))
 					msgq(sp, M_INFO, SOFMSG);
 				break;
 			}
 			if ((lno = file_lline(sp, ep)) == 0) {
-				if (flags & SEARCH_MSG)
+				if (LF_ISSET(SEARCH_MSG))
 					msgq(sp, M_INFO, EMPTYMSG);
 				break;
 			}
 			wrapped = 1;
 			continue;
 		} else if (lno == fm->lno && wrapped) {
-			if (flags & SEARCH_MSG)
+			if (LF_ISSET(SEARCH_MSG))
 				msgq(sp, M_INFO, NOTFOUND);
 			break;
 		}
@@ -336,7 +337,7 @@ b_search(sp, ep, fm, rm, ptrn, eptrn, flags)
 		}
 
 		/* Warn if wrapped. */
-		if (wrapped && O_ISSET(sp, O_WARN) && flags & SEARCH_MSG)
+		if (wrapped && O_ISSET(sp, O_WARN) && LF_ISSET(SEARCH_MSG))
 			msgq(sp, M_INFO, WRAPMSG);
 		
 		if (delta) {
@@ -434,6 +435,51 @@ check_word(sp, ptrnp, replacedp, wordoffsetp)
 
 	*ptrnp = mp;
 	*replacedp = 1;
+	return (0);
+}
+
+/*
+ * get_delta --
+ *	Get a line delta.  The trickiness is that the delta can be pretty
+ *	complicated, i.e. "+3-2+3" is allowed.
+ */
+static int
+get_delta(sp, dp, valp)
+	SCR *sp;
+	char **dp;
+	long *valp;
+{
+	long val, tval;
+
+	for (tval = 0; **dp;) {
+		if (!strchr("+-0123456789", **dp)) {
+			msgq(sp, M_ERR, "Characters after delta string.");
+			return (1);
+		}
+		errno = 0;
+		val = strtol(*dp, dp, 10);
+		if (errno == ERANGE) {
+			if (val == LONG_MAX)
+				msgq(sp, M_ERR, "Delta value overflow.");
+			else if (val == LONG_MIN)
+				msgq(sp, M_ERR, "Delta value underflow.");
+			else
+				msgq(sp, M_ERR, "Error: %s.", strerror(errno));
+			return (1);
+		}
+		if (val >= 0) {
+			if (LONG_MAX - val < tval) {
+				msgq(sp, M_ERR, "Delta value overflow.");
+				return (1);
+			}
+		} else
+			if (-(LONG_MIN - tval) > val) {
+				msgq(sp, M_ERR, "Delta value underflow.");
+				return (1);
+			}
+		tval += val;
+	}
+	*valp = tval;
 	return (0);
 }
 
