@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: exf.h,v 8.38 1994/09/18 11:56:54 bostic Exp $ (Berkeley) $Date: 1994/09/18 11:56:54 $
+ *	$Id: exf.h,v 8.39 1994/10/14 18:14:54 bostic Exp $ (Berkeley) $Date: 1994/10/14 18:14:54 $
  */
 					/* Undo direction. */
 /*
@@ -81,8 +81,9 @@ enum lockt
 #define	FS_ALL		0x001	/* Write the entire file. */
 #define	FS_APPEND	0x002	/* Append to the file. */
 #define	FS_FORCE	0x004	/* Force is set. */
-#define	FS_POSSIBLE	0x008	/* Force could be set. */
-#define	FS_SETALT	0x010	/* Set alternate file name. */
+#define	FS_OPENERR	0x008	/* Open failed, try it again. */
+#define	FS_POSSIBLE	0x010	/* Force could have been set. */
+#define	FS_SETALT	0x020	/* Set alternate file name. */
 int	 file_init __P((SCR *, FREF *, char *, int));
 int	 file_write __P((SCR *, EXF *, MARK *, MARK *, char *, int));
 

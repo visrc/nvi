@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.104 1994/09/18 11:56:44 bostic Exp $ (Berkeley) $Date: 1994/09/18 11:56:44 $";
+static char sccsid[] = "$Id: exf.c,v 8.105 1994/10/14 18:14:51 bostic Exp $ (Berkeley) $Date: 1994/10/14 18:14:51 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -111,8 +111,10 @@ file_init(sp, frp, rcv_name, flags)
 	RECNOINFO oinfo;
 	struct stat sb;
 	size_t psize;
-	int fd, nf;
+	int fd, nf, open_err;
 	char *p, *oname, tname[MAXPATHLEN];
+
+	open_err = 0;
 
 	/*
 	 * If the file is a recovery file, let the recovery code handle it.
@@ -145,14 +147,15 @@ file_init(sp, frp, rcv_name, flags)
 	F_SET(ep, F_FIRSTMODIFY);
 
 	/*
-	 * If no name or backing file, create a backing temporary file, saving
-	 * the temp file name so we can later unlink it.  If the user never
-	 * named this file, copy the temporary file name to the real name (we
-	 * display that until the user renames it).
+	 * If no name or backing file, for whatever reason, create a backing
+	 * temporary file, saving the temp file name so we can later unlink
+	 * it.  If the user never named this file, copy the temporary file name
+	 * to the real name (we display that until the user renames it).
 	 */
-	if ((oname = frp->name) == NULL || stat(oname, &sb)) {
-		(void)snprintf(tname,
-		    sizeof(tname), "%s/vi.XXXXXX", O_STR(sp, O_DIRECTORY));
+	oname = frp->name;
+	if (LF_ISSET(FS_OPENERR) || oname == NULL || stat(oname, &sb)) {
+		(void)snprintf(tname, sizeof(tname),
+		    "%s/vi.XXXXXX", O_STR(sp, O_DIRECTORY));
 		if ((fd = mkstemp(tname)) == -1) {
 			msgq(sp, M_SYSERR,
 			    "002|Unable to create temporary file");
@@ -172,7 +175,8 @@ file_init(sp, frp, rcv_name, flags)
 		}
 		oname = frp->tname;
 		psize = 4 * 1024;
-		F_SET(frp, FR_NEWFILE);
+		if (!LF_ISSET(FS_OPENERR))
+			F_SET(frp, FR_NEWFILE);
 	} else {
 		/*
 		 * Try to keep it at 10 pages or less per file.  This
@@ -222,7 +226,15 @@ file_init(sp, frp, rcv_name, flags)
 		msgq(sp, M_SYSERR, "%s", p);
 		if (nf)
 			FREE_SPACE(sp, p, 0);
-		goto err;
+		/*
+		 * !!!
+		 * Historically, vi permitted users to edit files that couldn't
+		 * be read.  This isn't useful for single files from a command
+		 * line, but it's quite useful for "vi *.c", since you can skip
+		 * past files that you can't read.
+		 */ 
+		open_err = 1;
+		goto oerr;
 	}
 
 	/*
@@ -370,6 +382,9 @@ err:	if (frp->name != NULL) {
 		free(frp->tname);
 		frp->tname = NULL;
 	}
+
+oerr:	if (F_ISSET(ep, F_RCV_ON))
+		(void)unlink(ep->rcv_path);
 	if (ep->rcv_path != NULL) {
 		free(ep->rcv_path);
 		ep->rcv_path = NULL;
@@ -377,7 +392,9 @@ err:	if (frp->name != NULL) {
 	if (ep->db != NULL)
 		(void)ep->db->close(ep->db);
 	FREE(ep, sizeof(EXF));
-	return (1);
+
+	return (open_err ?
+	    file_init(sp, frp, rcv_name, flags | FS_OPENERR) : 1);
 }
 
 /*
