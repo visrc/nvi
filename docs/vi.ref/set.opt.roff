@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: set.opt.roff,v 8.46 1995/12/01 10:46:47 bostic Exp $ (Berkeley) $Date: 1995/12/01 10:46:47 $
+.\"     $Id: set.opt.roff,v 8.47 1996/03/16 17:49:20 bostic Exp $ (Berkeley) $Date: 1996/03/16 17:49:20 $
 .\"
 .SH 1 "Set Options"
 .pp
@@ -34,6 +34,19 @@ Options apply to both
 and
 .CO vi
 modes, unless otherwise specified.
+.pp
+With a few exceptions,
+all options are settable per screen, i.e. the
+.OP tags
+option can be set differently in each screen.
+The exceptions are the
+.OP columns ,
+.OP lines ,
+.OP secure
+and
+.OP term
+options.
+Changing these options modifies the respective information for all screens.
 .pp
 For information on modifying the options or to display the options and
 their current values, see the
@@ -363,13 +376,12 @@ This option causes all regular expressions to be treated as POSIX
 .XR egrep 1
 style expressions).
 .KY filec
-.IP "filec [off]"
+.IP "filec [no default]"
 This option adds the ability to do shell expansion when entering input
 on the colon command line.
-When this option is set,
-and
-.LI <tab>
-is entered on the colon command line,
+This option is set to a string.
+Whenever the first character of that string is entered on the colon
+command line,
 the <blank> delimited string immediately before the cursor is expanded
 as if it were followed by a
 .LI \&*
@@ -381,9 +393,10 @@ If a single match results, that match replaces the expanded text.
 In addition, if the single match is for a directory, a
 .LI \&/
 character is appended and file completion is repeated.
-If more than a single match results, any unique prefix shared by the
-matches replaces the expanded text, the matches are displayed, and
-text input resumed.
+If more than a single match results,
+any unique prefix shared by the matches replaces the expanded text,
+the matches are displayed,
+and text input resumed.
 .KY flash
 .IP "flash [on]"
 This option causes the screen to flash instead of beeping the keyboard,
@@ -581,17 +594,6 @@ By default, the C library function
 .XR isprint 3
 is used to determine if a character is printable or not.
 This edit option overrides that decision.
-.sp
-The current value of the
-.OP noprint
-edit option is the superset of all of the characters ever specified
-using it, i.e. setting it to a string
-.b adds
-the characters in the string to the list of characters that are not
-printable, and removes them from the list of characters that are
-printable (see the
-.OP print
-edit option).
 .KY number
 .IP "number, nu [off]"
 Precede each line displayed with its current line number.
@@ -662,17 +664,6 @@ By default, the C library function
 .XR isprint 3
 is used to determine if a character is printable or not.
 This edit option overrides that decision.
-.sp
-The current value of the
-.OP print
-edit option is the superset of all of the characters ever specified
-using it, i.e. setting it to a string
-.b adds
-the characters in the string to the list of characters that are
-printable, and removes them from the list of characters that are
-not printable (see the
-.OP noprint
-edit option).
 .KY prompt
 .IP "prompt [on]"
 .CO Ex

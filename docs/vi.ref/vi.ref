@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.64 1995/10/17 12:09:41 bostic Exp $ (Berkeley) $Date: 1995/10/17 12:09:41 $
+.\"     $Id: vi.ref,v 8.65 1996/03/16 17:49:20 bostic Exp $ (Berkeley) $Date: 1996/03/16 17:49:20 $
 .\"
 .\"
 .so ref.so
@@ -147,9 +147,8 @@ There are a few features in
 that are not found in historic versions of
 .EV ex vi .
 Some of the more interesting of those features are briefly described
-in the section entitled
-.QB "Additional Features"
-near the end of this document.
+in the next section, entitled
+.QB "Additional Features" .
 For the rest of this document,
 .EV nex nvi
 is used only when it is necessary to distinguish it from the historic
@@ -161,6 +160,170 @@ by anonymous ftp, and can be retrieved from
 .LI ftp.cs.berkeley.edu ,
 in the directory
 .LI ucb/4bsd .
+.SH 1 "Additional Features in Nex/Nvi"
+.pp
+There are a few features in
+.EV nex nvi
+that are not found in historic versions of
+.EV ex vi .
+Some of the more interesting of these are as follows:
+.IP "8-bit clean data, large lines, files"
+.EV Nex nvi
+will edit any format file.
+Line lengths are limited by available memory,
+and file sizes are limited by available disk space.
+The
+.CO vi
+text input mode command
+.CO <control-X>
+can insert any possible character value into the text.
+.IP "Background and foreground screens"
+The
+.CO bg
+command backgrounds the current screen, and the
+.CO fg
+command foregrounds backgrounded screens.
+The
+.CO display
+command can be used to list the background screens.
+.IP "Command Editing"
+You can enter a normal editing window on the collected commands that
+you've entered on the
+.CO vi
+colon command-line,
+and then modify and/or execute the commands.
+If you enter <escape> as the first character of a vi colon command-line,
+the screen will split and a new window will be created.
+This will be a normal vi screen,
+the contents of which will be the commands that you have previously
+entered on the colon command-lines of all of your vi screens.
+All normal text editing is available,
+except that you cannot use
+.CO <control-W>
+to switch to an alternate screen.
+Entering a
+.CO <carriage-return>
+will execute the current line of the screen window as an ex command in
+the context of the screen from which you created the colon command-line
+screen.
+.IP "Displays"
+The
+.CO display
+command can be used to display the current buffers, the backgrounded
+screens, and the tags stack.
+.IP "Extended Regular Expressions"
+The
+.CO extended
+option causes Regular Expressions to be interpreted as as Extended
+Regular Expressions, (i.e. \fIegrep\fP(1) style Regular Expressions).
+.IP "File Name Completion"
+It is possible to do file name completion and file name displays when
+entering commands on the
+.CO vi
+colon command line.
+See the
+.OP filec
+option for more information.
+.IP "Infinite undo"
+Changes made during an edit session may be rolled backward and forward.
+A
+.CO \&.
+command immediately after a
+.CO u
+command continues either forward or backward depending on whether the
+.CO u
+command was an undo or a redo.
+.IP "Left-right scrolling"
+The
+.CO leftright
+option causes
+.CO nvi
+to do left-right screen scrolling, instead of the traditional
+.CO vi
+line wrapping.
+.IP "Message Catalogs"
+It is possible to display informational and error messages in different
+languages by providing a catalog of messages.
+See the
+.OP msgcat
+option and the file
+.LI "catalog/README"
+for more information.
+.IP "Incrementing numbers"
+The
+.CO \&#
+command increments or decrements the number referenced by the cursor.
+.IP "Previous file"
+The
+.CO previous
+command edits the previous file from the argument list.
+.IP "Scripting languages"
+The
+.CO ":pe[rl] cmd" ,
+.CO ":perld[o] cmd"
+and
+.CO ":tc[l] cmd"
+commands execute Perl5 and Tcl/Tk commands, respectively,
+on lines from the edit buffer.
+See the
+.QB "Scripting Languages"
+section and the specific commands for more information.
+.\".IP "Shell screens"
+.\"The
+.\".CO ":sc[ript] [file ...]"
+.\"command runs a shell in the screen.
+.\"Editing is unchanged, with the exception that a \fC<carriage-return>\fP
+.\"enters the current line (stripped of any prompt) as input to the
+.\"shell.
+.IP "Split screens"
+The
+.CO Edit ,
+.CO Ex ,
+.CO Next ,
+.CO Previous ,
+.CO Tag
+and
+.CO Visual
+(in
+.CO vi
+mode) commands divide the screen into multiple editing regions and
+then perform their normal function in a new screen area.
+The
+.CO <control-W>
+command rotates between the foreground screens.
+The
+.CO resize
+command can be used to grow or shrink a particular screen.
+.IP "Tag stacks"
+Tags are now maintained in a stack.
+The
+.CO <control-T>
+command returns to the previous tag location.
+The
+.CO tagpop
+command returns to the most recent tag location by default, or,
+optionally to a specific tag number in the tag stack,
+or the most recent tag from a specified file.
+The
+.CO display
+command can be used to list the tags stack.
+The
+.CO tagtop
+command returns to the top of the tag stack.
+.IP "Usage information"
+The
+.CO exusage
+and
+.CO viusage
+commands provide usage information for all of the
+.CO ex
+and
+.CO vi
+commands by default, or, optionally, for a specific command or key.
+.IP "Word search"
+The
+.CO <control-A>
+command searches for the word referenced by the cursor.
 .SH 1 "Startup Information"
 .pp
 .EV Ex vi
@@ -252,7 +415,7 @@ the first file to be edited is read in (or a temporary file is created).
 Then, any commands specified using the
 .b \-c
 option are executed, in the context of that file.
-.SH 1 Recovery
+.SH 1 "Recovery"
 .pp
 There is no recovery program for
 .EV nex nvi ,
@@ -716,6 +879,125 @@ the matched line to be split into two lines at that point.
 (The
 .LI <control-M>
 will be discarded.)
+.SH 1 "Scripting Languages"
+.pp
+The
+.CO nvi
+editor currently supports two scripting languages, Tcl/Tk and Perl5.
+(Note that Perl4 isn't sufficient, and that the Perl5 must be version
+5.002 or later.
+See the )
+See the
+.QB "Building Nvi"
+section for more information.
+.pp
+The scripting language interface is still being worked on,
+therefore the following information is probably incomplete and likely to
+change.
+See the
+.LI perl_api
+and
+.LI tcl_api
+source directories for more information.
+As a quick reference, the following function calls are provided for
+both the Perl and Tcl interfaces.
+.IP "viFindScreen file"
+Return the
+.LI "screenId" associated with
+.LI file .
+.IP "viAppendLine screenId lineNumber text"
+Append
+.LI text
+as a new line after line number
+.LI lineNumber ,
+in the screen
+.LI screenId .
+.IP "viDelLine screenId lineNum"
+Delete the line
+.LI lineNumber
+from the screen
+.LI screenId .
+.IP "viGetLine screenId lineNumber"
+Return the line
+.LI lineNumber
+from the screen
+.LI screenId .
+.IP "viInsertLine screenId lineNumber text"
+Insert
+.LI text
+as a new line before line number
+.LI lineNumber
+in the screen
+.LI screenId .
+.IP "viLastLine screenId"
+Return the line number of the last line in the screen
+.LI screenId .
+.IP "viSetLine screenId lineNumber text"
+Change the line
+.LI lineNumber
+in the screen
+.LI screenId
+to match the specified
+.LI text .
+.IP "viGetMark screenId mark"
+Return the current line and column for the specified
+.LI mark
+from the screen
+.LI screenId .
+.IP "viSetMark screenId mark line column"
+Set the specified
+.LI mark
+to be at line
+.LI line ,
+column
+.LI column ,
+in the screen
+.LI screenId .
+.IP "viGetCursor screenId"
+Return the current line and column for the cursor in the screen
+.LI screenId .
+.IP "viSetCursor screenId line column"
+Set the cursor in the screen
+.LI screenId
+to the specified
+.LI line
+and
+.LI column .
+.IP "viMsg screenId text"
+Display the specified
+.LI text
+as a vi message in the screen
+.LI screenId .
+.IP "viNewScreen screenId [file]"
+Create a new screen.
+.IP "viEndScreen screenId"
+Exit the screen 
+.LI screenId .
+.IP "viSwitchScreen screenId screenId"
+Switch from the screen
+.LI screenId
+to the screen
+.LI screenId .
+.IP "viMapKey screenId key tclproc"
+Map the specified
+.LI key
+in the screen
+.LI screenId
+to the Tcl procedure
+.LI tclproc .
+.IP "viUnmMapKey screenId key"
+Unmap the specified
+.LI key
+in the screen
+.LI screenId
+.IP "viGetOpt screenId option"
+Return the value of the specified
+.LI option
+from the screen
+.LI screenId .
+.IP "viSetOpt screenId command"
+Set one or more options in the screen
+.LI screenId .
 .SH 1 "General Editor Description"
 .pp
 When
@@ -1232,139 +1514,6 @@ of the file.
 .so set.opt.roff
 .oh 'Nvi/Nex Reference''USD:13-%'
 .eh 'USD:13-%''Nvi/Nex Reference'
-.SH 1 "Additional Features in Nex/Nvi"
-.pp
-There are a few features in
-.EV nex nvi
-that are not found in historic versions of
-.EV ex vi .
-Some of the more interesting of these are as follows:
-.IP "8-bit clean data, large lines, files"
-.EV Nex nvi
-will edit any format file.
-Line lengths are limited by available memory,
-and file sizes are limited by available disk space.
-The
-.CO vi
-text input mode command
-.CO <control-X>
-can insert any possible character value into the text.
-.IP "Split screens"
-The
-.CO Edit ,
-.CO Ex ,
-.CO Next ,
-.CO Previous ,
-.CO Tag
-and
-.CO Visual
-(in
-.CO vi
-mode) commands divide the screen into multiple editing regions and
-then perform their normal function in a new screen area.
-The
-.CO <control-W>
-command rotates between the foreground screens.
-The
-.CO resize
-command can be used to grow or shrink a particular screen.
-.IP "Background and foreground screens"
-The
-.CO bg
-command backgrounds the current screen, and the
-.CO fg
-command foregrounds backgrounded screens.
-The
-.CO display
-command can be used to list the background screens.
-.\".IP "Shell screens"
-.\"The
-.\".CO ":sc[ript] [file ...]"
-.\"command runs a shell in the screen.
-.\"Editing is unchanged, with the exception that a \fC<carriage-return>\fP
-.\"enters the current line (stripped of any prompt) as input to the
-.\"shell.
-.IP "Tag stacks"
-Tags are now maintained in a stack.
-The
-.CO <control-T>
-command returns to the previous tag location.
-The
-.CO tagpop
-command returns to the most recent tag location by default, or,
-optionally to a specific tag number in the tag stack,
-or the most recent tag from a specified file.
-The
-.CO display
-command can be used to list the tags stack.
-The
-.CO tagtop
-command returns to the top of the tag stack.
-.IP "New displays"
-The
-.CO display
-command can be used to display the current buffers, the backgrounded
-screens, and the tags stack.
-.IP "Infinite undo"
-Changes made during an edit session may be rolled backward and forward.
-A
-.CO \&.
-command immediately after a
-.CO u
-command continues either forward or backward depending on whether the
-.CO u
-command was an undo or a redo.
-.IP "Usage information"
-The
-.CO exusage
-and
-.CO viusage
-commands provide usage information for all of the
-.CO ex
-and
-.CO vi
-commands by default, or, optionally, for a specific command or key.
-.IP "File Name Completion"
-It is possible to do file name completion and file name displays when
-entering commands on the
-.CO vi
-colon command line.
-See the
-.OP filec
-option for more information.
-.IP "Message Catalogs"
-It is possible to display informational and error messages in different
-languages by providing a catalog of messages.
-See the
-.OP msgcat
-option and the file
-.LI "catalog/README"
-for more information.
-.IP "Extended Regular Expressions"
-The
-.CO extended
-option causes Regular Expressions to be interpreted as as Extended
-Regular Expressions, (i.e. \fIegrep\fP(1) style Regular Expressions).
-.IP "Word search"
-The
-.CO <control-A>
-command searches for the word referenced by the cursor.
-.IP "Number increment"
-The
-.CO \&#
-command increments or decrements the number referenced by the cursor.
-.IP "Previous file"
-The
-.CO previous
-command edits the previous file from the argument list.
-.IP "Left-right scrolling"
-The
-.CO leftright
-option causes
-.CO nvi
-to do left-right screen scrolling, instead of the traditional
-.CO vi
-line wrapping.
 .bp
 .SH 1 Index
 .lp
