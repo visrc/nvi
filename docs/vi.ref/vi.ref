@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.36 1994/05/25 17:40:26 bostic Exp $ (Berkeley) $Date: 1994/05/25 17:40:26 $
+.\"     $Id: vi.ref,v 8.37 1994/05/25 20:00:26 bostic Exp $ (Berkeley) $Date: 1994/05/25 20:00:26 $
 .\"
 .\"
 .so ref.so
@@ -1164,6 +1164,17 @@ option causes
 to do left-right screen scrolling, instead of the traditional
 .CO vi
 line wrapping.
+.bp
+.SH 1 Index
+.lp
+.nr PS 9
+.nr VS 11
+.in 2m
+.TS
+l l l l l l.
+.so index.so
+.\" for some reason, soelim requires this extra line
+.TE
 .bp 2
 .ce 1
 \fB\s+2Table of Contents\s0\fP
