@@ -1,4 +1,4 @@
-#	$Id: Makefile.in,v 8.58 1996/06/09 11:34:56 bostic Exp $ (Berkeley) $Date: 1996/06/09 11:34:56 $
+#	$Id: Makefile.in,v 8.59 1996/06/11 19:56:44 bostic Exp $ (Berkeley) $Date: 1996/06/11 19:56:44 $
 
 srcdir=	@srcdir@/..
 CC=	@CC@
@@ -43,9 +43,9 @@ VIOBJS= cut.o delete.o ex.o ex_abbrev.o ex_append.o ex_args.o ex_argv.o \
 all: nvi @tknvi@
 
 NVIALL=	$(CLOBJS) $(VIOBJS) @cobjs@ @LIBOBJS@
-nvi: $(NVIALL)
+nvi nex: $(NVIALL)
 	$(CC) $(LDFLAGS) -o $@ $(NVIALL) @LIBS@
-	rm -f nex
+	-rm -f nex
 	ln $@ nex
 
 TKALL=	$(TKOBJS) $(VIOBJS) @LIBOBJS@
@@ -53,9 +53,14 @@ tknvi: $(TKALL)
 	$(CC) $(LDFLAGS) -o $@ $(TKALL) @TKLIBS@
 
 clean:
-	-rm -f nex nvi tknvi core *.core *.o
-	rm -f $(COBJS) $(CLOBJS) $(DBOBJS) $(REOBJS)
-	rm -f $(TKOBJS) $(VIOBJS)
+	-rm -f *.core *.o
+	-rm -f nex nvi tknvi core
+	-rm -f $(COBJS) $(CLOBJS) $(DBOBJS) $(REOBJS)
+	-rm -f $(TKOBJS) $(VIOBJS)
+
+realclean maintainer-clean: clean
+	-rm -f Makefile config.cache config.h config.log config.status
+	-rm -f pathnames.h port.h
 
 chmod=	@vi_cv_path_chmod@
 cp=	@vi_cv_path_cp@
