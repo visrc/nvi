@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: screen.c,v 10.7 1996/03/06 19:50:52 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:50:52 $";
+static const char sccsid[] = "$Id: screen.c,v 10.8 1996/03/29 21:22:13 bostic Exp $ (Berkeley) $Date: 1996/03/29 21:22:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -181,6 +181,10 @@ screen_end(sp)
 		free(sp->alt_name);
 
 	/* Free up search information. */
+	if (F_ISSET(sp, S_RE_SUBST))
+		regfree(&sp->subre);
+	if (F_ISSET(sp, S_RE_SEARCH))
+		regfree(&sp->sre);
 	if (sp->repl != NULL)
 		FREE(sp->repl, sp->repl_len);
 	if (sp->newl != NULL)
