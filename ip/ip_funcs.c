@@ -8,16 +8,18 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_funcs.c,v 8.3 1996/09/24 20:52:43 bostic Exp $ (Berkeley) $Date: 1996/09/24 20:52:43 $";
+static const char sccsid[] = "$Id: ip_funcs.c,v 8.4 1996/10/13 13:49:52 bostic Exp $ (Berkeley) $Date: 1996/10/13 13:49:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 #include <sys/queue.h>
+#include <sys/time.h>
 
 #include <bitstring.h>
 #include <stdio.h>
 
 #include "../common/common.h"
+#include "../vi/vi.h"
 #include "ip.h"
 
 static int ip_send __P((SCR *, char *, IP_BUF *));
@@ -35,12 +37,29 @@ ip_addstr(sp, str, len)
 	size_t len;
 {
 	IP_BUF ipb;
+	IP_PRIVATE *ipp;
+	int iv, rval;
 
+	ipp = IPP(sp);
+
+	/*
+	 * If ex isn't in control, it's the last line of the screen and
+	 * it's a split screen, use inverse video.
+	 */
+	iv = 0;
+	if (!F_ISSET(sp, SC_SCR_EXWROTE) &&
+	    ipp->row == LASTLINE(sp) && IS_SPLIT(sp)) {
+		iv = 1;
+		ip_attr(sp, SA_INVERSE, 1);
+	}
 	ipb.code = IPO_ADDSTR;
 	ipb.len = len;
 	ipb.str = str;
+	rval = ip_send(sp, "s", &ipb);
 
-	return (ip_send(sp, "s", &ipb));
+	if (iv)
+		ip_attr(sp, SA_INVERSE, 0);
+	return (rval);
 }
 
 /*
@@ -154,7 +173,7 @@ ip_cursor(sp, yp, xp)
 	IP_PRIVATE *ipp;
 
 	ipp = IPP(sp);
-	*yp = ipp->row - sp->woff;
+	*yp = ipp->row;
 	*xp = ipp->col;
 	return (0);
 }
@@ -171,8 +190,26 @@ ip_deleteln(sp)
 {
 	IP_BUF ipb;
 
-	ipb.code = IPO_DELETELN;
+	/*
+	 * This clause is required because the curses screen uses reverse
+	 * video to delimit split screens.  If the screen does not do this,
+	 * this code won't be necessary.
+	 *
+	 * If the bottom line was in reverse video, rewrite it in normal
+	 * video before it's scrolled.
+	 */
+	if (!F_ISSET(sp, SC_SCR_EXWROTE) && IS_SPLIT(sp)) {
+		ipb.code = IPO_REWRITE;
+		ipb.val1 = RLNO(sp, LASTLINE(sp));
+		if (ip_send(sp, "1", &ipb))
+			return (1);
+	}
 
+	/*
+	 * The bottom line is expected to be blank after this operation,
+	 * and other screens must support that semantic.
+	 */
+	ipb.code = IPO_DELETELN;
 	return (ip_send(sp, NULL, &ipb));
 }
 
