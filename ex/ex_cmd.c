@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 10.11 1996/02/26 14:22:18 bostic Exp $ (Berkeley) $Date: 1996/02/26 14:22:18 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 10.12 1996/03/03 16:17:04 bostic Exp $ (Berkeley) $Date: 1996/03/03 16:17:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -237,6 +237,18 @@ EXCMDLIST const cmds[] = {
 	    "s",
 	    "[line] o[pen] [/RE/] [flags]",
 	    "enter \"open\" mode (not implemented)"},
+/* C_PERLCMD */
+	{"perl",	ex_perl,	E_ADDR2_ALL|E_ADDR_ZERO|
+					    E_ADDR_ZERODEF|E_SECURE,
+	    "s",
+	    "perl cmd",
+	    "run the perl interpreter with the command"},
+/* C_PERLDOCMD */
+	{"perldo",	ex_perldo,	E_ADDR2_ALL|E_ADDR_ZERO|
+					    E_ADDR_ZERODEF|E_SECURE,
+	    "s",
+	    "perldo cmd",
+	    "run the perl interpreter with the command, on each line"},
 /* C_PRINT */
 	{"print",	ex_pr,		E_ADDR2|E_CLRFLAG,
 	    "ca1",
