@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.10 1993/09/08 08:38:40 bostic Exp $ (Berkeley) $Date: 1993/09/08 08:38:40 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.11 1993/09/30 11:27:44 bostic Exp $ (Berkeley) $Date: 1993/09/30 11:27:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -390,16 +390,16 @@ skipmatch:	eval = regexec(re,
 			}
 
 			switch (sp->s_confirm(sp, ep, &from, &to)) {
-			case YES:
+			case CONF_YES:
 				break;
-			case NO:
+			case CONF_NO:
 				/*
 				 * Copy the bytes before the match and the
 				 * bytes in the match into the build buffer.
 				 */
 				BUILD(sp, s, sp->match[0].rm_eo);
 				goto skip;
-			case QUIT:
+			case CONF_QUIT:
 				/* Set the quit flag. */
 				quit = 1;
 

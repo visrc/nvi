@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.16 1993/09/27 16:24:57 bostic Exp $ (Berkeley) $Date: 1993/09/27 16:24:57 $";
+static char sccsid[] = "$Id: vi.c,v 8.17 1993/09/30 11:28:21 bostic Exp $ (Berkeley) $Date: 1993/09/30 11:28:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,11 +19,13 @@ static char sccsid[] = "$Id: vi.c,v 8.16 1993/09/27 16:24:57 bostic Exp $ (Berke
 #include "vi.h"
 #include "vcmd.h"
 
-static int getcmd
-	    __P((SCR *, EXF *, VICMDARG *, VICMDARG *, VICMDARG *, int *));
+static int getcmd __P((SCR *, EXF *,
+		VICMDARG *, VICMDARG *, VICMDARG *, int *));
+static inline int
+	   getkey __P((SCR *, CHAR_T *, int));
 static int getkeyword __P((SCR *, EXF *, VICMDARG *, u_int));
-static int getmotion
-	    __P((SCR *, EXF *, VICMDARG *, VICMDARG *, MARK *, MARK *));
+static int getmotion __P((SCR *, EXF *,
+		VICMDARG *, VICMDARG *, MARK *, MARK *));
 
 /*
  * Side-effect:
@@ -250,16 +252,9 @@ err:				TERM_KEY_FLUSH(sp);
 	return (v_end(sp) || eval);
 }
 
-#define	KEY(sp, k) {							\
-	(k) = term_key(sp, TXT_MAPCOMMAND);				\
-	if (sp->special[(k)] == K_VLNEXT)				\
-		(k) = term_key(sp, TXT_MAPCOMMAND);			\
-	if (sp->special[(k)] == K_ESCAPE) {				\
-		if (esc_bell)						\
-		    msgq(sp, M_BERR, "Already in command mode");	\
-		return (1);						\
-	}								\
-}
+#define	KEY(k, esc_bell)						\
+	if (getkey(sp, &k, esc_bell))					\
+		return (1);
 
 #define	GETCOUNT(sp, count) {						\
 	u_long __tc;							\
@@ -269,14 +264,14 @@ err:				TERM_KEY_FLUSH(sp);
 		if (count > __tc) {					\
 			/* Toss the rest of the number. */		\
 			do {						\
-				KEY(sp, key);				\
+				KEY(key, 0);				\
 			} while (isdigit(key));				\
 			msgq(sp, M_ERR,					\
 			    "Number larger than %lu", ULONG_MAX);	\
 			return (1);					\
 		}							\
 		count = __tc;						\
-		KEY(sp, key);						\
+		KEY(key, 0);						\
 	} while (isdigit(key));						\
 }
 
@@ -301,30 +296,28 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 	VICMDARG *ismotion;	/* Previous key if getting motion component. */
 	int *comcountp;
 {
-	register VIKEYS const *kp;
-	register u_int flags;
-	int esc_bell, key;
+	VIKEYS const *kp;
+	u_int flags;
+	CHAR_T key;
 
 	/* Clean up the command structure. */
 	memset(&vp->vpstartzero, 0,
 	    (char *)&vp->vpendzero - (char *)&vp->vpstartzero);
 
 	/* An escape bells the user only if already in command mode. */
-	esc_bell = ismotion == NULL ? 1 : 0;
-	KEY(sp, key)
-	esc_bell = 0;
-	if (key < 0 || key > MAXVIKEY) {
+	KEY(key, ismotion == NULL ? 1 : 0);
+	if (key > MAXVIKEY) {
 		msgq(sp, M_BERR, "%s isn't a vi command", charname(sp, key));
 		return (1);
 	}
 
 	/* Pick up optional buffer. */
 	if (key == '"') {
-		KEY(sp, key);
+		KEY(key, 0);
 		if (!isalnum(key))
 			goto ebuf;
 		vp->buffer = key;
-		KEY(sp, key);
+		KEY(key, 0);
 	} else
 		vp->buffer = OOBCB;
 
@@ -346,11 +339,11 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 			    "Only one buffer can be specified.");
 			return (1);
 		}
-		KEY(sp, key);
+		KEY(key, 0);
 		if (!isalnum(key))
 			goto ebuf;
 		vp->buffer = key;
-		KEY(sp, key);
+		KEY(key, 0);
 	}
 
 	/*
@@ -400,7 +393,7 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp)
 
 		/* Required buffer. */
 		if (LF_ISSET(V_RBUF)) {
-			KEY(sp, key);
+			KEY(key, 0);
 			if (key > UCHAR_MAX) {
 ebuf:				msgq(sp, M_ERR, "Invalid buffer name.");
 				return (1);
@@ -414,19 +407,19 @@ ebuf:				msgq(sp, M_ERR, "Invalid buffer name.");
 		 * the *doubled* characters do just frost your shorts?
 		 */
 		if (vp->key == '[' || vp->key == ']') {
-			KEY(sp, key);
+			KEY(key, 0);
 			if (vp->key != key)
 				goto usage;
 		}
 		/* Special case: 'Z' command. */
 		if (vp->key == 'Z') {
-			KEY(sp, key);
+			KEY(key, 0);
 			if (vp->key != key)
 				goto usage;
 		}
 		/* Special case: 'z' command. */
 		if (vp->key == 'z') {
-			KEY(sp, key);
+			KEY(key, 0);
 			if (isdigit(key)) {
 				GETCOUNT(sp, vp->count2);
 				F_SET(vp, VC_C2SET);
@@ -447,7 +440,7 @@ usage:		msgq(sp, M_ERR, "Usage: %s", ismotion != NULL ?
 
 	/* Required character. */
 	if (LF_ISSET(V_CHAR))
-		KEY(sp, vp->character);
+		KEY(vp->character, 0);
 
 	return (0);
 }
@@ -689,5 +682,40 @@ noword:		msgq(sp, M_BERR, "Cursor not in a %s",
 	BINC(sp, kp->keyword, kp->kbuflen, len);
 	memmove(kp->keyword, p + beg, kp->klen);
 	kp->keyword[kp->klen] = '\0';			/* XXX */
+	return (0);
+}
+
+static inline int
+getkey(sp, keyp, esc_bell)
+	SCR *sp;
+	CHAR_T *keyp;
+{
+	CHAR_T key;
+
+	switch (term_key(sp, &key, TXT_MAPCOMMAND)) {
+	case INP_OK:
+		break;
+	case INP_EOF:
+		F_SET(sp, S_EXIT_FORCE);
+		/* FALLTHROUGH */
+	case INP_ERR:
+		return (1);
+	}
+	if (sp->special[key] == K_VLNEXT)
+		switch (term_key(sp, &key, TXT_MAPCOMMAND)) {
+		case INP_OK:
+			break;
+		case INP_EOF:
+			F_SET(sp, S_EXIT_FORCE);
+			/* FALLTHROUGH */
+		case INP_ERR:
+			return (1);
+		}
+	if (sp->special[key] == K_ESCAPE) {
+		if (esc_bell)
+		    msgq(sp, M_BERR, "Already in command mode");
+		return (1);
+	}
+	*keyp = key;
 	return (0);
 }

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.14 1993/09/13 19:38:11 bostic Exp $ (Berkeley) $Date: 1993/09/13 19:38:11 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.15 1993/09/30 11:28:05 bostic Exp $ (Berkeley) $Date: 1993/09/30 11:28:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -76,7 +76,7 @@ v_ntext(sp, ep, hp, tm, p, len, rp, prompt, ai_line, flags)
 	TEXT *tp, *ntp;		/* Input text structures. */
 	TEXT *aitp;		/* Autoindent text structure. */
 	size_t rcol;		/* 0-N: insert offset in the replay buffer. */
-	int ch;			/* Input character. */
+	CHAR_T ch;		/* Input character. */
 	int eval;		/* Routine return value. */
 	int replay;		/* If replaying a set of input. */
 	int showmatch;		/* Showmatch set on this character. */
@@ -239,7 +239,9 @@ newtp:		if ((tp = text_init(sp, p, len, len + 32)) == NULL)
 next_ch:	if (replay)
 			ch = sp->rep[rcol++];
 		else {
-			ch = term_key(sp, flags & TXT_GETKEY_MASK);
+			if (term_key(sp, &ch,
+			    flags & TXT_GETKEY_MASK) != INP_OK)
+				ERR;
 			if (LF_ISSET(TXT_RECORD)) {
 				TBINC(sp, sp->rep, sp->rep_len, rcol + 1);
 				sp->rep[rcol++] = ch;

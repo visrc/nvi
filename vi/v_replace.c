@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_replace.c,v 8.3 1993/08/25 16:49:20 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:49:20 $";
+static char sccsid[] = "$Id: v_replace.c,v 8.4 1993/09/30 11:28:30 bostic Exp $ (Berkeley) $Date: 1993/09/30 11:28:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,11 +34,12 @@ v_replace(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
+	CHAR_T ch;
 	TEXT *tp;
 	size_t blen, len;
 	recno_t lno;
 	u_long cnt;
-	int rval, ch;
+	int rval;
 	char *bp, *p;
 
 	/*
@@ -83,7 +84,9 @@ nochar:		msgq(sp, M_BERR, "No characters to replace");
 	if (F_ISSET(vp, VC_ISDOT))
 		ch = sp->rlast;
 	else
-		ch = sp->rlast = term_key(sp, 0);
+		if (term_key(sp, &ch, 0) != INP_OK)
+			return (1);
+		sp->rlast = ch;
 
 	/* Copy the line. */
 	GET_SPACE(sp, bp, blen, len);
