@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 5.31 1992/11/03 15:07:05 bostic Exp $ (Berkeley) $Date: 1992/11/03 15:07:05 $";
+static char sccsid[] = "$Id: v_cmd.c,v 5.32 1992/11/03 15:19:55 bostic Exp $ (Berkeley) $Date: 1992/11/03 15:19:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -359,13 +359,21 @@ VIKEYS vikeys[MAXVIKEY + 1] = {
 	v_yank,		V_CNT|V_MOTION|V_OBUF,
 	    "copy text: [buffer][count]y[count]motion",
 /* 172   z */
-	v_z, 		V_CNT|V_RCM_SETFNB,	/* NOT V_CHAR (see vi.c). */
+	/*
+	 * DON'T set the V_CHAR flag, the char isn't required, so it's
+	 * handled specially in getcmd().
+	 */
+	v_z, 		V_CNT|V_RCM_SETFNB,
 	    "redraw window: [count1]z[count2][.-<CR>]",
 /* 173   { */
 	v_paragraphb,	V_CNT|V_MOVE|V_RCM_SET,
 	    "move back paragraph: [count]{",
 /* 174   | */
-	v_ncol,		V_ABS|V_CNT|V_MOVE|V_RCM_SETFNB,
+	/*
+	 * DON'T set the V_RCM_SETFNB flag, if a count is supplied `|'
+	 * doesn't move to the first non-blank.
+	 */
+	v_ncol,		V_ABS|V_CNT|V_MOVE|V_RCM_SET,
 	    "move to column: [count]|",
 /* 175   } */
 	v_paragraphf,	V_CNT|V_MOVE|V_RCM_SET,

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_left.c,v 5.6 1992/11/02 22:37:56 bostic Exp $ (Berkeley) $Date: 1992/11/02 22:37:56 $";
+static char sccsid[] = "$Id: v_left.c,v 5.7 1992/11/03 15:20:20 bostic Exp $ (Berkeley) $Date: 1992/11/03 15:20:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -69,12 +69,11 @@ v_ncol(vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	if (vp->flags & VC_C1SET) {
-		rp->lno = fm->lno;
-		fm->cno = vp->count;
-		return (0);
-	}
 	rp->lno = fm->lno;
+	if (vp->flags & VC_C1SET)
+		rp->cno = vp->count;
+	else if (nonblank(fm->lno, &rp->cno))
+		rp->cno = 0;
 	return (0);
 }
 
