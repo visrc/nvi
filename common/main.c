@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.45 1993/02/16 20:16:20 bostic Exp $ (Berkeley) $Date: 1993/02/16 20:16:20 $";
+static char sccsid[] = "$Id: main.c,v 5.46 1993/02/19 14:45:02 bostic Exp $ (Berkeley) $Date: 1993/02/19 14:45:02 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -26,6 +26,12 @@ static char sccsid[] = "$Id: main.c,v 5.45 1993/02/16 20:16:20 bostic Exp $ (Ber
 #include <string.h>
 #include <termios.h>
 #include <unistd.h>
+
+#if __STDC__
+#include <stdarg.h>
+#else
+#include <varargs.h>
+#endif
 
 #include "vi.h"
 #include "excmd.h"
@@ -45,6 +51,7 @@ struct termios original_termios;	/* Original terminal state. */
 
 char *VB;				/* Visual bell termcap string. */
 
+static void err __P((const char *, ...));
 static void obsolete __P((char *[]));
 static void usage __P((void));
 
@@ -59,7 +66,7 @@ main(argc, argv)
 	EXCMDARG cmd;
 	EXF *ep, fake_exf;
 	int ch;
-	char *excmdarg, *err, *p, *tag, path[MAXPATHLEN];
+	char *excmdarg, *errf, *p, *tag, path[MAXPATHLEN];
 
 	/* Stop if indirect through NULL. */
 	if (reenter++)
@@ -79,14 +86,12 @@ main(argc, argv)
 		mode = MODE_VI;
 
 	/* Get original terminal information. */
-	if (tcgetattr(STDIN_FILENO, &original_termios)) {
-		(void)fprintf(stderr,
-		    "%s: tcgetttr: %s\n", p, strerror(errno));
-		exit(1);
-	}
+	if (tcgetattr(STDIN_FILENO, &original_termios))
+		err("%s: tcgetttr: %s\n", p, strerror(errno));
 		
 	obsolete(argv);
-	excmdarg = err = tag = NULL;
+
+	excmdarg = errf = tag = NULL;
 	while ((ch = getopt(argc, argv, "c:emRrT:t:v")) != EOF)
 		switch(ch) {
 		case 'c':		/* Run the command. */
@@ -97,22 +102,18 @@ main(argc, argv)
 			break;
 #ifndef NO_ERRLIST
 		case 'm':		/* Error list. */
-			err = optarg;
+			errf = optarg;
 			break;
 #endif
 		case 'R':		/* Readonly. */
 			SET(O_READONLY);
 			break;
 		case 'r':		/* Recover. */
-			(void)fprintf(stderr,
-			    "%s: recover option not currently implemented.\n",
-			    *argv);
-			exit(1);
+			err("%s: recover option not yet implemented", p);
 #ifdef DEBUG
 		case 'T':		/* Trace. */
 			if ((tracefp = fopen(optarg, "w")) == NULL)
-				(void)fprintf(stderr,
-				    "%s: %s", optarg, strerror(errno));
+				err("%s: %s: %s", p, optarg, strerror(errno));
 			(void)fprintf(tracefp,
 			    "\n===\ntrace: open %s\n", optarg);
 			break;
@@ -187,8 +188,8 @@ main(argc, argv)
 
 	/* Use an error list file if specified. */
 #ifndef NO_ERRLIST
-	if (err) {
-		SETCMDARG(cmd, C_ERRLIST, 0, OOBLNO, 0, 0, err);
+	if (errf) {
+		SETCMDARG(cmd, C_ERRLIST, 0, OOBLNO, 0, 0, errf);
 		ex_errlist(ep, &cmd);
 	} else
 #endif
@@ -251,18 +252,22 @@ static void
 obsolete(argv)
 	char *argv[];
 {
-	static char *eofarg = "-c$";
+	char *pname;
 
 	/*
 	 * Translate old style arguments into something getopt will like.
-	 * Change "+/command" into "-ccommand".
-	 * Change "+" into "-c$".
+	 * Make sure it's not text space memory, because ex changes the
+	 * strings.
+	 *	Change "+/command" into "-ccommand".
+	 *	Change "+" into "-c$".
 	 */
-	while (*++argv)
+	for (pname = argv[0]; *++argv;)
 		if (argv[0][0] == '+')
-			if (argv[0][1] == '\0')
-				argv[0] = eofarg;
-			else if (argv[0][1] == '/') {
+			if (argv[0][1] == '\0') {
+				if ((argv[0] = malloc(4)) == NULL)
+					err("%s: %s", pname, strerror(errno));
+				memmove(argv[0], "-c$", 4);
+			} else if (argv[0][1] == '/') {
 				argv[0][0] = '-';
 				argv[0][1] = 'c';
 			}
@@ -274,5 +279,26 @@ usage()
 {
 	(void)fprintf(stderr,
 	    "usage: vi [-eRrv] [-c command] [-m file] [-t tag]\n");
+	exit(1);
+}
+
+void
+#if __STDC__
+err(const char *fmt, ...)
+#else
+err(fmt, va_alist)
+	char *fmt;
+	va_dcl
+#endif
+{
+	va_list ap;
+#if __STDC__
+	va_start(ap, fmt);
+#else
+	va_start(ap);
+#endif
+	(void)vfprintf(stderr, fmt, ap);
+	va_end(ap);
+	(void)fprintf(stderr, "\n");
 	exit(1);
 }
