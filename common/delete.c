@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: delete.c,v 5.6 1992/05/27 10:31:05 bostic Exp $ (Berkeley) $Date: 1992/05/27 10:31:05 $";
+static char sccsid[] = "$Id: delete.c,v 5.7 1992/06/07 16:47:58 bostic Exp $ (Berkeley) $Date: 1992/06/07 16:47:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -102,9 +102,6 @@ delete(fm, tm, lmode)
 			}
 		}
 	}
-
-	/* Ping the screen. */
-	scr_ref();
 
 	/* Update the marks. */
 	mark_delete(fm, tm, lmode);
