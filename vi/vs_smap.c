@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_smap.c,v 10.20 1996/04/23 14:33:35 bostic Exp $ (Berkeley) $Date: 1996/04/23 14:33:35 $";
+static const char sccsid[] = "$Id: vs_smap.c,v 10.21 1996/04/27 11:40:42 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -125,8 +125,8 @@ vs_change(sp, lno, op)
 	 * or if we've switched into ex canonical mode, don't touch it -- we'll
 	 * get scrolling wrong, at best.
 	 */
-	if (!F_ISSET(sp, S_TINPUT_INFO) &&
-	    (F_ISSET(sp, S_SCR_EXWROTE) || VIP(sp)->totalcount > 1)) {
+	if (!F_ISSET(sp, SC_TINPUT_INFO) &&
+	    (F_ISSET(sp, SC_SCR_EXWROTE) || VIP(sp)->totalcount > 1)) {
 		F_SET(vip, VIP_N_EX_REDRAW);
 		return (0);
 	}
@@ -192,7 +192,7 @@ vs_sm_fill(sp, lno, pos)
 	 * is already in the map or close by -- scrolling the screen would
 	 * be a lot better than redrawing.
 	 */
-	F_SET(sp, S_SCR_REDRAW);
+	F_SET(sp, SC_SCR_REDRAW);
 
 	switch (pos) {
 	case P_FILL:
@@ -283,7 +283,7 @@ err:	HMAP->lno = 1;
  */
 #define	HANDLE_WEIRDNESS(cnt) {						\
 	if (cnt >= sp->t_rows) {					\
-		F_SET(sp, S_SCR_REFORMAT);				\
+		F_SET(sp, SC_SCR_REFORMAT);				\
 		return (0);						\
 	}								\
 }

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_refresh.c,v 10.30 1996/04/26 15:32:07 bostic Exp $ (Berkeley) $Date: 1996/04/26 15:32:07 $";
+static const char sccsid[] = "$Id: vs_refresh.c,v 10.31 1996/04/27 11:40:41 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -72,14 +72,14 @@ vs_refresh(sp, forcepaint)
 	/*
 	 * 1: Refresh the screen.
 	 *
-	 * If S_SCR_REDRAW is set in the current screen, repaint everything
+	 * If SC_SCR_REDRAW is set in the current screen, repaint everything
 	 * that we can find.
 	 */
-	if (F_ISSET(sp, S_SCR_REDRAW))
+	if (F_ISSET(sp, SC_SCR_REDRAW))
 		for (tsp = sp->gp->dq.cqh_first;
 		    tsp != (void *)&sp->gp->dq; tsp = tsp->q.cqe_next)
 			if (tsp != sp)
-				F_SET(tsp, S_SCR_REDRAW);
+				F_SET(tsp, SC_SCR_REDRAW);
 
 	/*
 	 * 2: Related or dirtied screens, or screens with messages.
@@ -90,13 +90,13 @@ vs_refresh(sp, forcepaint)
 	 * are not likely to get another chance.  Finally, if we refresh any
 	 * screens other than the current one, the cursor will be trashed.
 	 */
-	pub_paint = S_SCR_REFORMAT | S_SCR_REDRAW;
+	pub_paint = SC_SCR_REFORMAT | SC_SCR_REDRAW;
 	priv_paint = VIP_N_REFRESH;
 	if (O_ISSET(sp, O_NUMBER))
 		priv_paint |= VIP_N_RENUMBER;
 	for (tsp = sp->gp->dq.cqh_first;
 	    tsp != (void *)&sp->gp->dq; tsp = tsp->q.cqe_next)
-		if (tsp != sp && !F_ISSET(tsp, S_EXIT | S_EXIT_FORCE) &&
+		if (tsp != sp && !F_ISSET(tsp, SC_EXIT | SC_EXIT_FORCE) &&
 		    (F_ISSET(tsp, pub_paint) ||
 		    F_ISSET(VIP(tsp), priv_paint))) {
 			(void)vs_paint(tsp, UPDATE_SCREEN);
@@ -107,18 +107,18 @@ vs_refresh(sp, forcepaint)
 	 * 3: Refresh the current screen.
 	 *
 	 * Always refresh the current screen, it may be a cursor movement.
-	 * Also, always do it last -- that way, S_SCR_REDRAW can be set
+	 * Also, always do it last -- that way, SC_SCR_REDRAW can be set
 	 * in the current screen only, and the screen won't flash.
 	 */
 	if (vs_paint(sp, UPDATE_CURSOR | (!forcepaint &&
-	    F_ISSET(sp, S_SCR_VI) && KEYS_WAITING(sp) ? 0 : UPDATE_SCREEN)))
+	    F_ISSET(sp, SC_SCR_VI) && KEYS_WAITING(sp) ? 0 : UPDATE_SCREEN)))
 		return (1);
 
 	/*
 	 * A side-effect of refreshing the screen is that it's now ready
 	 * for everything else, i.e. messages.
 	 */
-	F_SET(sp, S_SCR_VI);
+	F_SET(sp, SC_SCR_VI);
 	return (0);
 }
 
@@ -162,16 +162,16 @@ vs_paint(sp, flags)
 	 * fill in the map from scratch.  Adjust the screen that's being
 	 * displayed if the leftright flag is set.
 	 */
-	if (F_ISSET(sp, S_SCR_REFORMAT)) {
+	if (F_ISSET(sp, SC_SCR_REFORMAT)) {
 		/* Invalidate the line size cache. */
 		VI_SCR_CFLUSH(vip);
 
 		/* Toss vs_line() cached information. */
-		if (F_ISSET(sp, S_SCR_TOP)) {
+		if (F_ISSET(sp, SC_SCR_TOP)) {
 			if (vs_sm_fill(sp, LNO, P_TOP))
 				return (1);
 		}
-		else if (F_ISSET(sp, S_SCR_CENTER)) {
+		else if (F_ISSET(sp, SC_SCR_CENTER)) {
 			if (vs_sm_fill(sp, LNO, P_MIDDLE))
 				return (1);
 		} else
@@ -181,7 +181,7 @@ vs_paint(sp, flags)
 		    (cnt = vs_opt_screens(sp, LNO, &CNO)) != 1)
 			for (smp = HMAP; smp <= TMAP; ++smp)
 				smp->off = cnt;
-		F_SET(sp, S_SCR_REDRAW);
+		F_SET(sp, SC_SCR_REDRAW);
 	}
 
 	/*
@@ -255,7 +255,7 @@ small_fill:			(void)gp->scr_move(sp, LASTLINE(sp), 0);
 				}
 				if (vs_sm_fill(sp, LNO, P_FILL))
 					return (1);
-				F_SET(sp, S_SCR_REDRAW);
+				F_SET(sp, SC_SCR_REDRAW);
 				goto adjust;
 			}
 		}
@@ -267,9 +267,9 @@ small_fill:			(void)gp->scr_move(sp, LASTLINE(sp), 0);
 		/* Current screen. */
 		if (LNO <= TMAP->lno)
 			goto adjust;
-		if (F_ISSET(sp, S_SCR_TOP))
+		if (F_ISSET(sp, SC_SCR_TOP))
 			goto top;
-		if (F_ISSET(sp, S_SCR_CENTER))
+		if (F_ISSET(sp, SC_SCR_CENTER))
 			goto middle;
 
 		/*
@@ -289,9 +289,9 @@ small_fill:			(void)gp->scr_move(sp, LASTLINE(sp), 0);
 	/*
 	 * 5c: If not on the current screen, may request center or top.
 	 */
-	if (F_ISSET(sp, S_SCR_TOP))
+	if (F_ISSET(sp, SC_SCR_TOP))
 		goto top;
-	if (F_ISSET(sp, S_SCR_CENTER))
+	if (F_ISSET(sp, SC_SCR_CENTER))
 		goto middle;
 
 	/*
@@ -323,7 +323,7 @@ bottom:		if (db_last(sp, &lastline))
 		if (lcnt < HALFTEXT(sp)) {
 			if (vs_sm_fill(sp, lastline, P_BOTTOM))
 				return (1);
-			F_SET(sp, S_SCR_REDRAW);
+			F_SET(sp, SC_SCR_REDRAW);
 			goto adjust;
 		}
 		/* It's not close, just put the line in the middle. */
@@ -348,7 +348,7 @@ middle:		if (vs_sm_fill(sp, LNO, P_MIDDLE))
 top:		if (vs_sm_fill(sp, LNO, P_TOP))
 			return (1);
 	}
-	F_SET(sp, S_SCR_REDRAW);
+	F_SET(sp, SC_SCR_REDRAW);
 
 	/*
 	 * At this point we know part of the line is on the screen.  Since
@@ -372,7 +372,7 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 			if ((HMAP->off - cnt) > HALFTEXT(sp)) {
 				HMAP->off = cnt;
 				vs_sm_fill(sp, OOBLNO, P_TOP);
-				F_SET(sp, S_SCR_REDRAW);
+				F_SET(sp, SC_SCR_REDRAW);
 			} else
 				while (cnt < HMAP->off)
 					if (vs_sm_1down(sp))
@@ -381,7 +381,7 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 			if ((cnt - TMAP->off) > HALFTEXT(sp)) {
 				TMAP->off = cnt;
 				vs_sm_fill(sp, OOBLNO, P_BOTTOM);
-				F_SET(sp, S_SCR_REDRAW);
+				F_SET(sp, SC_SCR_REDRAW);
 			} else
 				while (cnt > TMAP->off)
 					if (vs_sm_1up(sp))
@@ -394,7 +394,7 @@ adjust:	if (!O_ISSET(sp, O_LEFTRIGHT) &&
 	 * the grounds that the cursor code would handle it.  Make sure
 	 * the right screen is up.
 	 */
-	if (F_ISSET(sp, S_SCR_REDRAW)) {
+	if (F_ISSET(sp, SC_SCR_REDRAW)) {
 		if (O_ISSET(sp, O_LEFTRIGHT)) {
 			cnt = vs_opt_screens(sp, LNO, &CNO);
 			if (HMAP->off != cnt)
@@ -581,7 +581,7 @@ slow:	for (smp = HMAP; smp->lno != LNO; ++smp);
 	if (O_ISSET(sp, O_LEFTRIGHT)) {
 		cnt = vs_opt_screens(sp, LNO, &CNO) % SCREEN_COLS(sp);
 		if (cnt != HMAP->off) {
-			if (F_ISSET(sp, S_TINPUT_INFO))
+			if (F_ISSET(sp, SC_TINPUT_INFO))
 				smp->off = cnt;
 			else {
 				for (smp = HMAP; smp <= TMAP; ++smp)
@@ -605,7 +605,7 @@ slow:	for (smp = HMAP; smp->lno != LNO; ++smp);
 	 * 7: Repaint the entire screen.
 	 *
 	 * Lost big, do what you have to do.  We flush the cache, since
-	 * S_SCR_REDRAW gets set when the screen isn't worth fixing, and
+	 * SC_SCR_REDRAW gets set when the screen isn't worth fixing, and
 	 * it's simpler to repaint.  So, don't trust anything that we
 	 * think we know about it.
 	 */
@@ -622,7 +622,7 @@ paint:	for (smp = HMAP; smp <= TMAP; ++smp)
 	 * If it's a small screen and we're redrawing, clear the unused lines,
 	 * ex may have overwritten them.
 	 */
-	if (F_ISSET(sp, S_SCR_REDRAW) && IS_SMALL(sp))
+	if (F_ISSET(sp, SC_SCR_REDRAW) && IS_SMALL(sp))
 		for (cnt = sp->t_rows; cnt <= sp->t_maxrows; ++cnt) {
 			(void)gp->scr_move(sp, cnt, 0);
 			(void)gp->scr_clrtoeol(sp);
@@ -654,7 +654,7 @@ number:	if (O_ISSET(sp, O_NUMBER) &&
 	 * If we warped the screen, we have to refresh everything.
 	 */
 	if ((LF_ISSET(UPDATE_SCREEN) || leftright_warp) &&
-	    !F_ISSET(sp, S_TINPUT_INFO) &&
+	    !F_ISSET(sp, SC_TINPUT_INFO) &&
 	    !F_ISSET(vip, VIP_S_MODELINE) && !IS_ONELINE(sp))
 		vs_modeline(sp);
 
@@ -677,7 +677,7 @@ number:	if (O_ISSET(sp, O_NUMBER) &&
 		(void)gp->scr_refresh(sp, F_ISSET(vip, VIP_N_EX_PAINT));
 
 	/* 11: Clear the flags that are handled by this routine. */
-	F_CLR(sp, S_SCR_CENTER | S_SCR_REDRAW | S_SCR_REFORMAT | S_SCR_TOP);
+	F_CLR(sp, SC_SCR_CENTER | SC_SCR_REDRAW | SC_SCR_REFORMAT | SC_SCR_TOP);
 	F_CLR(vip, VIP_CUR_INVALID |
 	    VIP_N_EX_PAINT | VIP_N_REFRESH | VIP_N_RENUMBER | VIP_S_MODELINE);
 

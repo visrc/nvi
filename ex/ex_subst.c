@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_subst.c,v 10.24 1996/04/26 17:33:16 bostic Exp $ (Berkeley) $Date: 1996/04/26 17:33:16 $";
+static const char sccsid[] = "$Id: ex_subst.c,v 10.25 1996/04/27 11:40:24 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -140,7 +140,7 @@ subagain:	return (ex_subagain(sp, cmdp));
 		}
 
 		/* Compile the RE if necessary. */
-		if (!F_ISSET(sp, S_RE_SEARCH) &&
+		if (!F_ISSET(sp, SC_RE_SEARCH) &&
 		    re_compile(sp, sp->re, NULL, NULL, &sp->re_c, RE_C_SEARCH))
 			return (1);
 		flags = 0;
@@ -262,7 +262,7 @@ ex_subagain(sp, cmdp)
 		ex_emsg(sp, NULL, EXM_NOPREVRE);
 		return (1);
 	}
-	if (!F_ISSET(sp, S_RE_SUBST) &&
+	if (!F_ISSET(sp, SC_RE_SUBST) &&
 	    re_compile(sp, sp->subre, NULL, NULL, &sp->subre_c, RE_C_SUBST))
 		return (1);
 	return (s(sp,
@@ -286,7 +286,7 @@ ex_subtilde(sp, cmdp)
 		ex_emsg(sp, NULL, EXM_NOPREVRE);
 		return (1);
 	}
-	if (!F_ISSET(sp, S_RE_SEARCH) &&
+	if (!F_ISSET(sp, SC_RE_SEARCH) &&
 	    re_compile(sp, sp->re, NULL, NULL, &sp->re_c, RE_C_SEARCH))
 		return (1);
 	return (s(sp,
@@ -443,7 +443,7 @@ s(sp, cmdp, s, re, flags)
 			sp->c_suffix = !sp->c_suffix;
 
 			/* Ex text structure initialization. */
-			if (F_ISSET(sp, S_EX)) {
+			if (F_ISSET(sp, SC_EX)) {
 				memset(&tiq, 0, sizeof(TEXTH));
 				CIRCLEQ_INIT(&tiq);
 			}
@@ -463,7 +463,7 @@ s(sp, cmdp, s, re, flags)
 		    "155|Regular expression specified; r flag meaningless");
 				return (1);
 			}
-			if (!F_ISSET(sp, S_RE_SEARCH)) {
+			if (!F_ISSET(sp, SC_RE_SEARCH)) {
 				ex_emsg(sp, NULL, EXM_NOPREVRE);
 				return (1);
 			}
@@ -479,7 +479,7 @@ usage:		ex_emsg(sp, cmdp->cmd->usage, EXM_USAGE);
 		return (1);
 	}
 
-noargs:	if (F_ISSET(sp, S_VI) && sp->c_suffix && (lflag || nflag || pflag)) {
+noargs:	if (F_ISSET(sp, SC_VI) && sp->c_suffix && (lflag || nflag || pflag)) {
 		msgq(sp, M_ERR,
 "156|The #, l and p flags may not be combined with the c flag in vi mode");
 		return (1);
@@ -619,7 +619,7 @@ nextmatch:	match[0].rm_so = 0;
 			 */
 			if (llen == 0)
 				from.cno = to.cno = 0;
-			if (F_ISSET(sp, S_VI)) {
+			if (F_ISSET(sp, SC_VI)) {
 				/*
 				 * Only vi has to correct for a change after
 				 * the last character in the line.
@@ -864,7 +864,7 @@ endmatch:	if (!linechanged)
 	 */
 	rval = 0;
 	if (!matched) {
-		if (!F_ISSET(sp, S_EX_GLOBAL)) {
+		if (!F_ISSET(sp, SC_EX_GLOBAL)) {
 			msgq(sp, M_ERR, "157|No match found");
 			goto err;
 		}
@@ -918,13 +918,13 @@ re_compile(sp, ptrn, ptrnp, lenp, rep, flags)
 	}
 
 	/* If we're replacing a saved value, clear the old one. */
-	if (LF_ISSET(RE_C_SEARCH) && F_ISSET(sp, S_RE_SEARCH)) {
+	if (LF_ISSET(RE_C_SEARCH) && F_ISSET(sp, SC_RE_SEARCH)) {
 		regfree(&sp->re_c);
-		F_CLR(sp, S_RE_SEARCH);
+		F_CLR(sp, SC_RE_SEARCH);
 	}
-	if (LF_ISSET(RE_C_SUBST) && F_ISSET(sp, S_RE_SUBST)) {
+	if (LF_ISSET(RE_C_SUBST) && F_ISSET(sp, SC_RE_SUBST)) {
 		regfree(&sp->subre_c);
-		F_CLR(sp, S_RE_SUBST);
+		F_CLR(sp, SC_RE_SUBST);
 	}
 
 	/*
@@ -966,9 +966,9 @@ re_compile(sp, ptrn, ptrnp, lenp, rep, flags)
 	}
 
 	if (LF_ISSET(RE_C_SEARCH))
-		F_SET(sp, S_RE_SEARCH);
+		F_SET(sp, SC_RE_SEARCH);
 	if (LF_ISSET(RE_C_SUBST))
-		F_SET(sp, S_RE_SUBST);
+		F_SET(sp, SC_RE_SUBST);
 
 	return (0);
 }

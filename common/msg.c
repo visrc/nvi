@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: msg.c,v 10.31 1996/04/15 20:31:22 bostic Exp $ (Berkeley) $Date: 1996/04/15 20:31:22 $";
+static const char sccsid[] = "$Id: msg.c,v 10.32 1996/04/27 11:41:10 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:41:10 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -88,7 +88,7 @@ msgq(sp, mt, fmt, va_alist)
 		gp = sp->gp;
 		switch (mt) {
 		case M_BERR:
-			if (F_ISSET(sp, S_VI) && !O_ISSET(sp, O_VERBOSE)) {
+			if (F_ISSET(sp, SC_VI) && !O_ISSET(sp, O_VERBOSE)) {
 				F_SET(gp, G_BELLSCHED);
 				return;
 			}
@@ -100,7 +100,7 @@ msgq(sp, mt, fmt, va_alist)
 			mt = M_INFO;
 			/* FALLTHROUGH */
 		case M_INFO:
-			if (F_ISSET(sp, S_EX_SILENT))
+			if (F_ISSET(sp, SC_EX_SILENT))
 				return;
 			break;
 		case M_ERR:
@@ -425,7 +425,7 @@ msgq_rpt(sp)
 	char *bp, *p;
 
 	/* Change reports are turned off in batch mode. */
-	if (F_ISSET(sp, S_EX_SILENT))
+	if (F_ISSET(sp, SC_EX_SILENT))
 		return;
 
 	/* Reset changing line number. */

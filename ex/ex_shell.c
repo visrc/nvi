@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_shell.c,v 10.32 1996/03/06 19:52:39 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:52:39 $";
+static const char sccsid[] = "$Id: ex_shell.c,v 10.33 1996/04/27 11:40:24 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:24 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -56,14 +56,14 @@ ex_shell(sp, cmdp)
 	(void)snprintf(buf, sizeof(buf), "%s -i", O_STR(sp, O_SHELL));
 
 	/* If we're stil in a vi screen, move out explicitly. */
-	rval = ex_exec_proc(sp, cmdp, buf, NULL, !F_ISSET(sp, S_SCR_EXWROTE));
+	rval = ex_exec_proc(sp, cmdp, buf, NULL, !F_ISSET(sp, SC_SCR_EXWROTE));
 
 	/*
 	 * !!!
 	 * Historically, vi didn't require a continue message after the
 	 * return of the shell.  Match it.
 	 */
-	F_SET(sp, S_EX_DONTWAIT);
+	F_SET(sp, SC_EX_DONTWAIT);
 
 	return (rval);
 }
@@ -90,12 +90,12 @@ ex_exec_proc(sp, cmdp, cmd, msg, need_newline)
 		return (1);
 
 	/* Enter ex mode. */
-	if (F_ISSET(sp, S_VI)) {
-		if (sp->gp->scr_screen(sp, S_EX)) {
+	if (F_ISSET(sp, SC_VI)) {
+		if (sp->gp->scr_screen(sp, SC_EX)) {
 			ex_emsg(sp, cmdp->cmd->name, EXM_NOCANON);
 			return (1);
 		}
-		F_SET(sp, S_SCR_EX | S_SCR_EXWROTE);
+		F_SET(sp, SC_SCR_EX | SC_SCR_EXWROTE);
 	}
 
 	/* Put out additional newline, message. */

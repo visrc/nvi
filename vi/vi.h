@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: vi.h,v 10.16 1996/04/03 14:33:13 bostic Exp $ (Berkeley) $Date: 1996/04/03 14:33:13 $
+ *	$Id: vi.h,v 10.17 1996/04/27 11:40:39 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:39 $
  */
 
 /* Definition of a vi "word". */
@@ -299,7 +299,7 @@ typedef struct _vi_private {
 #define	VIP_CUR_INVALID	0x0001	/* Cursor position is unknown. */
 #define	VIP_DIVIDER	0x0002	/* Divider line was displayed. */
 #define	VIP_N_EX_PAINT	0x0004	/* Clear and repaint when ex finishes. */
-#define	VIP_N_EX_REDRAW	0x0008	/* Schedule an S_SCR_REDRAW when ex finishes. */
+#define	VIP_N_EX_REDRAW	0x0008	/* Schedule SC_SCR_REDRAW when ex finishes. */
 #define	VIP_N_REFRESH	0x0010	/* Repaint (from SMAP) on the next refresh. */
 #define	VIP_N_RENUMBER	0x0020	/* Renumber screen on the next refresh. */
 #define	VIP_RCM_LAST	0x0040	/* Cursor drawn to the last column. */

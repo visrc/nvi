@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_filter.c,v 10.32 1996/03/06 19:52:19 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:52:19 $";
+static const char sccsid[] = "$Id: ex_filter.c,v 10.33 1996/04/27 11:40:21 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -286,7 +286,7 @@ err:		if (input[0] != -1)
 	 * completely inconsistent, and historic practice.
 	 */
 uwait:	return (proc_wait(sp, (long)utility_pid, cmd,
-	    ftype == FILTER_READ && F_ISSET(sp, S_VI) ? 1 : 0, 0) || rval);
+	    ftype == FILTER_READ && F_ISSET(sp, SC_VI) ? 1 : 0, 0) || rval);
 }
 
 /*

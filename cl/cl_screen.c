@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_screen.c,v 10.38 1996/03/06 19:49:31 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:49:31 $";
+static const char sccsid[] = "$Id: cl_screen.c,v 10.39 1996/04/27 11:41:18 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:41:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -60,8 +60,8 @@ cl_screen(sp, flags)
 	}
 	
 	/* See if we're already in the right mode. */
-	if (LF_ISSET(S_EX) && F_ISSET(sp, S_SCR_EX) ||
-	    LF_ISSET(S_VI) && F_ISSET(sp, S_SCR_VI))
+	if (LF_ISSET(SC_EX) && F_ISSET(sp, SC_SCR_EX) ||
+	    LF_ISSET(SC_VI) && F_ISSET(sp, SC_SCR_VI))
 		return (0);
 
 	/*
@@ -73,8 +73,8 @@ cl_screen(sp, flags)
 	 * "leaves" vi to enter ex, when it exits ex we'll just fall back into
 	 * vi.
 	 */
-	if (F_ISSET(sp, S_SCR_EX))
-		F_CLR(sp, S_SCR_EX);
+	if (F_ISSET(sp, SC_SCR_EX))
+		F_CLR(sp, SC_SCR_EX);
 
 	/*
 	 * Fake leaving vi mode.
@@ -86,8 +86,8 @@ cl_screen(sp, flags)
 	 * that don't want to.  Don't clear the info line, its contents may be
 	 * valid, e.g. :file|append.
 	 */
-	if (F_ISSET(sp, S_SCR_VI)) {
-		F_CLR(sp, S_SCR_VI);
+	if (F_ISSET(sp, SC_SCR_VI)) {
+		F_CLR(sp, SC_SCR_VI);
 
 		if (sp->q.cqe_next != (void *)&gp->dq) {
 			(void)move(RLNO(sp, sp->rows), 0);
@@ -98,7 +98,7 @@ cl_screen(sp, flags)
 	}
 
 	/* Enter the requested mode. */
-	if (LF_ISSET(S_EX)) {
+	if (LF_ISSET(SC_EX)) {
 		if (cl_ex_init(sp))
 			return (1);
 		clp->in_ex = 1;
@@ -108,7 +108,7 @@ cl_screen(sp, flags)
 		 * If doing an ex screen for ex mode, move to the last line
 		 * on the screen.
 		 */
-		if (F_ISSET(sp, S_EX) && clp->cup != NULL)
+		if (F_ISSET(sp, SC_EX) && clp->cup != NULL)
 			tputs(tgoto(clp->cup,
 			    0, O_VAL(sp, O_LINES) - 1), 1, cl_putchar);
 	} else {

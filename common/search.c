@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: search.c,v 10.17 1996/04/26 17:14:21 bostic Exp $ (Berkeley) $Date: 1996/04/26 17:14:21 $";
+static const char sccsid[] = "$Id: search.c,v 10.18 1996/04/27 11:41:13 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:41:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -85,8 +85,8 @@ prev:			if (sp->re == NULL) {
 				return (1);
 			}
 			/* Compile the search pattern if necessary. */
-			if (!F_ISSET(sp, S_RE_SEARCH) && re_compile(sp,
-			    sp->re, NULL, NULL, &sp->re_c, S_RE_SEARCH))
+			if (!F_ISSET(sp, SC_RE_SEARCH) && re_compile(sp,
+			    sp->re, NULL, NULL, &sp->re_c, SC_RE_SEARCH))
 				return (1);
 
 			/* Set the search direction. */

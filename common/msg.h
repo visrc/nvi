@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: msg.h,v 10.7 1996/03/06 19:50:40 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:50:40 $
+ *	$Id: msg.h,v 10.8 1996/04/27 11:41:11 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:41:11 $
  */
 
 /*
@@ -46,7 +46,7 @@ typedef enum {
  * them, or during the transition between ex (and vi startup) and a true vi.
  * There's a queue in the global area to hold them.
  *
- * If S_EX/S_VI is set, that's the mode that the editor is in.  If the flag
+ * If SC_EX/SC_VI is set, that's the mode that the editor is in.  If the flag
  * S_SCREEN_READY is set, that means that the screen is prepared to display
  * messages.
  */

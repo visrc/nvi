@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_ex.c,v 10.35 1996/03/29 20:52:30 bostic Exp $ (Berkeley) $Date: 1996/03/29 20:52:30 $";
+static const char sccsid[] = "$Id: v_ex.c,v 10.36 1996/04/27 11:40:33 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -65,7 +65,7 @@ v_exmode(sp, vp)
 	VICMD *vp;
 {
 	/* Try and switch screens -- the screen may not permit it. */
-	if (sp->gp->scr_screen(sp, S_EX)) {
+	if (sp->gp->scr_screen(sp, SC_EX)) {
 		msgq(sp, M_ERR,
 		    "207|The Q command requires the ex terminal interface");
 		return (1);
@@ -77,8 +77,8 @@ v_exmode(sp, vp)
 	F_SET(sp->frp, FR_CURSORSET);
 
 	/* Switch to ex mode. */
-	F_CLR(sp, S_VI | S_SCR_VI);
-	F_SET(sp, S_EX);
+	F_CLR(sp, SC_VI | SC_SCR_VI);
+	F_SET(sp, SC_EX);
 
 	/* Move out of the vi screen. */
 	(void)ex_puts(sp, "\n");
@@ -533,11 +533,11 @@ v_ecl(sp)
 	sp->ccl_parent = sp;
 
 	/* It's a special window. */
-	F_SET(new, S_COMEDIT);
+	F_SET(new, SC_COMEDIT);
 
 	/* Set up the switch. */
 	sp->nextdisp = new;
-	F_SET(sp, S_SSWITCH);
+	F_SET(sp, SC_SSWITCH);
 	return (0);
 }
 
@@ -569,7 +569,7 @@ v_ecl_exec(sp)
 
 	/* Set up the switch. */
 	sp->nextdisp = sp->ccl_parent;
-	F_SET(sp, S_EXIT);
+	F_SET(sp, SC_EXIT);
 	return (0);
 }
 

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_z.c,v 10.8 1996/03/06 19:54:52 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:54:52 $";
+static const char sccsid[] = "$Id: v_z.c,v 10.9 1996/04/27 11:40:37 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -144,6 +144,6 @@ vs_crel(sp, count)
 	if (sp->t_rows > sp->rows - 1)
 		sp->t_minrows = sp->t_rows = sp->rows - 1;
 	TMAP = HMAP + (sp->t_rows - 1);
-	F_SET(sp, S_SCR_REDRAW);
+	F_SET(sp, SC_SCR_REDRAW);
 	return (0);
 }

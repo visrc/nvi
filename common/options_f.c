@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: options_f.c,v 10.21 1996/04/26 08:14:58 bostic Exp $ (Berkeley) $Date: 1996/04/26 08:14:58 $";
+static const char sccsid[] = "$Id: options_f.c,v 10.22 1996/04/27 11:41:11 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:41:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -194,7 +194,7 @@ f_print(sp, op, str, valp)
 	v_key_ilookup(sp);
 
 	/* Reformat the screen. */
-	F_SET(sp, S_SCR_REFORMAT);
+	F_SET(sp, SC_SCR_REFORMAT);
 	return (0);
 }
 
@@ -213,9 +213,9 @@ f_readonly(sp, op, str, valp)
 	 * See the comment in exf.c.
 	 */
 	if (*valp)
-		F_CLR(sp, S_READONLY);
+		F_CLR(sp, SC_READONLY);
 	else
-		F_SET(sp, S_READONLY);
+		F_SET(sp, SC_READONLY);
 	return (0);
 }
 
@@ -229,13 +229,13 @@ f_recompile(sp, op, str, valp)
 	char *str;
 	u_long *valp;
 {
-	if (F_ISSET(sp, S_RE_SEARCH)) {
+	if (F_ISSET(sp, SC_RE_SEARCH)) {
 		regfree(&sp->re_c);
-		F_CLR(sp, S_RE_SEARCH);
+		F_CLR(sp, SC_RE_SEARCH);
 	}
-	if (F_ISSET(sp, S_RE_SUBST)) {
+	if (F_ISSET(sp, SC_RE_SUBST)) {
 		regfree(&sp->subre_c);
-		F_CLR(sp, S_RE_SUBST);
+		F_CLR(sp, SC_RE_SUBST);
 	}
 	return (0);
 }
@@ -250,7 +250,7 @@ f_reformat(sp, op, str, valp)
 	char *str;
 	u_long *valp;
 {
-	F_SET(sp, S_SCR_REFORMAT);
+	F_SET(sp, SC_SCR_REFORMAT);
 	return (0);
 }
 
@@ -303,7 +303,7 @@ f_tabstop(sp, op, str, valp)
 		msgq(sp, M_ERR, "052|Tab stops may not be set to 0");
 		return (1);
 	}
-	F_SET(sp, S_SCR_REFORMAT);
+	F_SET(sp, SC_SCR_REFORMAT);
 	return (0);
 }
 

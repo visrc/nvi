@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_bang.c,v 10.30 1996/03/06 19:52:10 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:52:10 $";
+static const char sccsid[] = "$Id: ex_bang.c,v 10.31 1996/04/27 11:40:20 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -78,14 +78,14 @@ ex_bang(sp, cmdp)
 	 * If the command was modified by the expansion, it was historically
 	 * redisplayed.
 	 */
-	if (F_ISSET(cmdp, E_MODIFY) && !F_ISSET(sp, S_EX_SILENT)) {
+	if (F_ISSET(cmdp, E_MODIFY) && !F_ISSET(sp, SC_EX_SILENT)) {
 		/*
 		 * Display the command if modified.  Historic ex/vi displayed
 		 * the command if it was modified due to file name and/or bang
 		 * expansion.  If piping lines in vi, it would be immediately
 		 * overwritten by any error or line change reporting.
 		 */
-		if (F_ISSET(sp, S_VI))
+		if (F_ISSET(sp, SC_VI))
 			vs_update(sp, "!", ap->bp);
 		else {
 			(void)ex_printf(sp, "!%s\n", ap->bp);
@@ -106,14 +106,14 @@ ex_bang(sp, cmdp)
 				if (file_aw(sp, FS_ALL))
 					return (0);
 			} else if (O_ISSET(sp, O_WARN) &&
-			    !F_ISSET(sp, S_EX_SILENT))
+			    !F_ISSET(sp, SC_EX_SILENT))
 				msg = msg_cat(sp,
 				    "303|File modified since last write.",
 				    NULL);
 
 		/* If we're still in a vi screen, move out explicitly. */
 		(void)ex_exec_proc(sp,
-		    cmdp, ap->bp, msg, !F_ISSET(sp, S_EX | S_SCR_EXWROTE));
+		    cmdp, ap->bp, msg, !F_ISSET(sp, SC_EX | SC_SCR_EXWROTE));
 	}
 
 	/*
@@ -167,14 +167,14 @@ ex_bang(sp, cmdp)
 		 */
 		sp->lno = rm.lno;
 		sp->cno = rm.cno;
-		if (rval == 0 && F_ISSET(sp, S_VI)) {
+		if (rval == 0 && F_ISSET(sp, SC_VI)) {
 			sp->cno = 0;
 			(void)nonblank(sp, sp->lno, &sp->cno);
 		}
 	}
 
 	/* Ex terminates with a bang, even if the command fails. */
-	if (!F_ISSET(sp, S_VI) && !F_ISSET(sp, S_EX_SILENT))
+	if (!F_ISSET(sp, SC_VI) && !F_ISSET(sp, SC_EX_SILENT))
 		(void)ex_puts(sp, "!\n");
 
 	/*

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_msg.c,v 10.58 1996/04/26 17:38:57 bostic Exp $ (Berkeley) $Date: 1996/04/26 17:38:57 $";
+static const char sccsid[] = "$Id: vs_msg.c,v 10.59 1996/04/27 11:40:40 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:40 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -69,7 +69,7 @@ vs_busy(sp, msg, btype)
 	const char *p;
 
 	/* Ex doesn't display busy messages. */
-	if (F_ISSET(sp, S_EX | S_SCR_EXWROTE))
+	if (F_ISSET(sp, SC_EX | SC_SCR_EXWROTE))
 		return;
 
 	gp = sp->gp;
@@ -177,7 +177,7 @@ vs_update(sp, m1, m2)
 	 * It's used by the ex read and ! commands when the user's command is
 	 * expanded, and by the ex substitution confirmation prompt.
 	 */
-	if (F_ISSET(sp, S_SCR_EXWROTE)) {
+	if (F_ISSET(sp, SC_SCR_EXWROTE)) {
 		(void)ex_printf(sp,
 		    "%s\n", m1 == NULL? "" : m1, m2 == NULL ? "" : m2);
 		(void)ex_fflush(sp);
@@ -248,8 +248,8 @@ vs_msg(sp, mtype, line, len)
 	 * XXX
 	 * Shouldn't we save this, too?
 	 */
-	if (F_ISSET(sp, S_TINPUT_INFO) || F_ISSET(gp, G_BELLSCHED))
-		if (F_ISSET(sp, S_SCR_VI)) {
+	if (F_ISSET(sp, SC_TINPUT_INFO) || F_ISSET(gp, G_BELLSCHED))
+		if (F_ISSET(sp, SC_SCR_VI)) {
 			F_CLR(gp, G_BELLSCHED);
 			(void)gp->scr_bell(sp);
 		} else
@@ -260,7 +260,7 @@ vs_msg(sp, mtype, line, len)
 	 * real-estate for the error message.  Nothing to do without some
 	 * information as to how important the error message is.
 	 */
-	if (F_ISSET(sp, S_TINPUT_INFO))
+	if (F_ISSET(sp, SC_TINPUT_INFO))
 		return;
 
 	/*
@@ -270,18 +270,18 @@ vs_msg(sp, mtype, line, len)
 	 * in ex mode but haven't initialized the screen.  Initialize here,
 	 * and in this case, stay in ex mode.
 	 *
-	 * If the S_SCR_EXWROTE bit is set, then we're switching back and
+	 * If the SC_SCR_EXWROTE bit is set, then we're switching back and
 	 * forth between ex and vi, but the screen is trashed and we have
 	 * to respect that.  Switch to ex mode long enough to put out the
 	 * message.
 	 *
-	 * If the S_EX_DONTWAIT bit is set, turn it off -- we're writing,
+	 * If the SC_EX_DONTWAIT bit is set, turn it off -- we're writing,
 	 * so previous opinions should be ignored.
 	 */
-	if (F_ISSET(sp, S_EX | S_SCR_EXWROTE)) {
-		if (!F_ISSET(sp, S_SCR_EX))
-			if (F_ISSET(sp, S_SCR_EXWROTE)) {
-				if (sp->gp->scr_screen(sp, S_EX))
+	if (F_ISSET(sp, SC_EX | SC_SCR_EXWROTE)) {
+		if (!F_ISSET(sp, SC_SCR_EX))
+			if (F_ISSET(sp, SC_SCR_EXWROTE)) {
+				if (sp->gp->scr_screen(sp, SC_EX))
 					return;
 			} else
 				if (ex_init(sp))
@@ -294,15 +294,15 @@ vs_msg(sp, mtype, line, len)
 			(void)gp->scr_attr(sp, SA_INVERSE, 0);
 		(void)fflush(stdout);
 
-		F_CLR(sp, S_EX_DONTWAIT);
+		F_CLR(sp, SC_EX_DONTWAIT);
 
-		if (!F_ISSET(sp, S_SCR_EX))
-			(void)sp->gp->scr_screen(sp, S_VI);
+		if (!F_ISSET(sp, SC_SCR_EX))
+			(void)sp->gp->scr_screen(sp, SC_VI);
 		return;
 	}
 
 	/* If the vi screen isn't ready, save the message. */
-	if (!F_ISSET(sp, S_SCR_VI)) {
+	if (!F_ISSET(sp, SC_SCR_VI)) {
 		(void)vs_msgsave(sp, mtype, line, len);
 		return;
 	}
@@ -557,7 +557,7 @@ vs_ex_resolve(sp, continuep)
 	 * commands will have cumulative line modification reports.  That seems
 	 * right (well, at least not wrong) to me.
 	 */
-	if (!F_ISSET(sp, S_SCR_EXWROTE) && vip->totalcount < 2) {
+	if (!F_ISSET(sp, SC_SCR_EXWROTE) && vip->totalcount < 2) {
 		if (vip->totalcount == 0)
 			return (0);
 		msgq_rpt(sp);
@@ -569,7 +569,7 @@ vs_ex_resolve(sp, continuep)
 	 * If we switched out of the vi screen, switch back while figuring what
 	 * to do with the screen and potentially get another command to execute.
 	 */
-	if (F_ISSET(sp, S_SCR_EXWROTE) && sp->gp->scr_screen(sp, S_VI))
+	if (F_ISSET(sp, SC_SCR_EXWROTE) && sp->gp->scr_screen(sp, SC_VI))
 		return (1);
 
 	/*
@@ -581,9 +581,9 @@ vs_ex_resolve(sp, continuep)
 	 * be done here, because we never get control back if the command
 	 * is all internal, e.g. :set.
 	 */
-	if (!F_ISSET(sp, S_EX_DONTWAIT) && !INTERRUPTED(sp) &&
-	    !F_ISSET(sp, S_EXIT | S_EXIT_FORCE | S_FSWITCH | S_SSWITCH)) {
-		if (F_ISSET(sp, S_SCR_EXWROTE)) {
+	if (!F_ISSET(sp, SC_EX_DONTWAIT) && !INTERRUPTED(sp) &&
+	    !F_ISSET(sp, SC_EXIT | SC_EXIT_FORCE | SC_FSWITCH | SC_SSWITCH)) {
+		if (F_ISSET(sp, SC_SCR_EXWROTE)) {
 			vs_wait(sp, continuep, SCROLL_W_EX);
 			if (*continuep)
 				ex_puts(sp, "\n");
@@ -594,7 +594,7 @@ vs_ex_resolve(sp, continuep)
 	}
 
 	/* If ex wrote on the screen, refresh the screen image. */
-	if (F_ISSET(sp, S_SCR_EXWROTE))
+	if (F_ISSET(sp, SC_SCR_EXWROTE))
 		F_SET(vip, VIP_N_EX_PAINT);
 
 	/*
@@ -602,17 +602,17 @@ vs_ex_resolve(sp, continuep)
 	 * image itself is wrong, so redraw everything.
 	 */
 	if (sp->q.cqe_next != (void *)&sp->gp->dq)
-		F_SET(sp, S_SCR_REDRAW);
+		F_SET(sp, SC_SCR_REDRAW);
 
 	/* If ex changed the underlying file, the map itself is wrong. */
 	if (F_ISSET(vip, VIP_N_EX_REDRAW))
-		F_SET(sp, S_SCR_REFORMAT);
+		F_SET(sp, SC_SCR_REFORMAT);
 
 	/*
 	 * Whew.  We're finally back home, after what feels like years.
 	 * Kiss the ground.
 	 */
-	F_CLR(sp, S_SCR_EXWROTE | S_EX_DONTWAIT);
+	F_CLR(sp, SC_SCR_EXWROTE | SC_EX_DONTWAIT);
 
 	/*
 	 * We may need to repaint some of the screen, e.g.:
@@ -675,8 +675,8 @@ vs_resolve(sp)
 	}
 
 	/* Display new file status line. */
-	if (F_ISSET(sp, S_STATUS)) {
-		F_CLR(sp, S_STATUS);
+	if (F_ISSET(sp, SC_STATUS)) {
+		F_CLR(sp, SC_STATUS);
 		msgq_status(sp, sp->lno, 0);
 	}
 
@@ -690,7 +690,7 @@ vs_resolve(sp)
 	 * extra refresh screwed the pooch.
 	 */
 	if (gp->msgq.lh_first != NULL) {
-		if (!F_ISSET(sp, S_SCR_VI) && vs_refresh(sp, 1))
+		if (!F_ISSET(sp, SC_SCR_VI) && vs_refresh(sp, 1))
 			return (1);
 		while ((mp = gp->msgq.lh_first) != NULL) {
 			gp->scr_msg(sp, mp->mtype, mp->buf, mp->len);

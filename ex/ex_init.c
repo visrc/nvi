@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_init.c,v 10.19 1996/04/22 21:32:08 bostic Exp $ (Berkeley) $Date: 1996/04/22 21:32:08 $";
+static const char sccsid[] = "$Id: ex_init.c,v 10.20 1996/04/27 11:40:22 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:22 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -208,7 +208,7 @@ ex_exrc(sp)
 	/* Run the commands, they may set the exrc edit option. */
 	if (EXCMD_RUNNING(sp->gp))
 		(void)ex_cmd(sp);
-	if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE))
+	if (F_ISSET(sp, SC_EXIT | SC_EXIT_FORCE))
 		return (0);
 
 	if (O_ISSET(sp, O_EXRC)) {
@@ -232,7 +232,7 @@ ex_exrc(sp)
 		/* Run the commands. */
 		if (EXCMD_RUNNING(sp->gp))
 			(void)ex_cmd(sp);
-		if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE))
+		if (F_ISSET(sp, SC_EXIT | SC_EXIT_FORCE))
 			return (0);
 	}
 

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_edit.c,v 10.9 1996/04/26 09:00:22 bostic Exp $ (Berkeley) $Date: 1996/04/26 09:00:22 $";
+static const char sccsid[] = "$Id: ex_edit.c,v 10.10 1996/04/27 11:40:20 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -99,7 +99,7 @@ ex_edit(sp, cmdp)
 	    (FL_ISSET(cmdp->iflags, E_C_FORCE) ? FS_FORCE : 0)))
 		return (1);
 
-	F_SET(sp, S_FSWITCH);
+	F_SET(sp, SC_FSWITCH);
 	return (0);
 }
 
@@ -147,7 +147,7 @@ ex_N_edit(sp, cmdp, frp, attach)
 
 	/* Set up the switch. */
 	sp->nextdisp = new;
-	F_SET(sp, S_SSWITCH);
+	F_SET(sp, SC_SSWITCH);
 
 	return (0);
 }

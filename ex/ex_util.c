@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_util.c,v 10.19 1996/03/06 19:52:51 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:52:51 $";
+static const char sccsid[] = "$Id: ex_util.c,v 10.20 1996/04/27 11:40:26 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -152,14 +152,14 @@ int
 ex_init(sp)
 	SCR *sp;
 {
-	if (sp->gp->scr_screen(sp, S_EX))
+	if (sp->gp->scr_screen(sp, SC_EX))
 		return (1);
 
 	sp->rows = O_VAL(sp, O_LINES);
 	sp->cols = O_VAL(sp, O_COLUMNS);
 
-	F_CLR(sp, S_VI);
-	F_SET(sp, S_EX | S_SCR_EX);
+	F_CLR(sp, SC_VI);
+	F_SET(sp, SC_EX | SC_SCR_EX);
 	return (0);
 }
 

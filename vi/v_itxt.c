@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_itxt.c,v 10.12 1996/03/06 19:54:20 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:54:20 $";
+static const char sccsid[] = "$Id: v_itxt.c,v 10.13 1996/04/27 11:40:34 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -496,7 +496,7 @@ set_txt_std(sp, vp, flags)
 		LF_SET(TXT_BEAUTIFY);
 	if (O_ISSET(sp, O_SHOWMATCH))
 		LF_SET(TXT_SHOWMATCH);
-	if (F_ISSET(sp, S_SCRIPT))
+	if (F_ISSET(sp, SC_SCRIPT))
 		LF_SET(TXT_CR);
 	if (O_ISSET(sp, O_TTYWERASE))
 		LF_SET(TXT_TTYWERASE);

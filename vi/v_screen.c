@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_screen.c,v 10.9 1996/03/18 09:37:38 bostic Exp $ (Berkeley) $Date: 1996/03/18 09:37:38 $";
+static const char sccsid[] = "$Id: v_screen.c,v 10.10 1996/04/27 11:40:35 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -41,7 +41,7 @@ v_screen(sp, vp)
 	 * a colon command out of a window that was forked from a window that's
 	 * now backgrounded...  You get the idea.
 	 */
-	if (F_ISSET(sp, S_COMEDIT)) {
+	if (F_ISSET(sp, SC_COMEDIT)) {
 		msgq(sp, M_ERR,
 		    "308|Enter <CR> to execute a command, :q to exit");
 		return (1);
@@ -59,7 +59,7 @@ v_screen(sp, vp)
 	} else
 		sp->nextdisp = sp->gp->dq.cqh_first;
 
-	F_SET(sp->nextdisp, S_STATUS);
-	F_SET(sp, S_SSWITCH | S_STATUS);
+	F_SET(sp->nextdisp, SC_STATUS);
+	F_SET(sp, SC_SSWITCH | SC_STATUS);
 	return (0);
 }

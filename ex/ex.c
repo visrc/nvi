@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex.c,v 10.42 1996/04/23 10:08:41 bostic Exp $ (Berkeley) $Date: 1996/04/23 10:08:41 $";
+static const char sccsid[] = "$Id: ex.c,v 10.43 1996/04/27 11:40:17 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -90,8 +90,8 @@ ex(spp)
 	LF_INIT(TXT_BACKSLASH | TXT_CNTRLD | TXT_CR);
 	for (;; ++gp->excmd.if_lno) {
 		/* Display status line and flush. */
-		if (F_ISSET(sp, S_STATUS)) {
-			F_CLR(sp, S_STATUS);
+		if (F_ISSET(sp, SC_STATUS)) {
+			F_CLR(sp, SC_STATUS);
 			msgq_status(sp, sp->lno, 0);
 		}
 		(void)ex_fflush(sp);
@@ -141,13 +141,13 @@ ex(spp)
 		 * If the last command caused a restart, or switched screens
 		 * or into vi, return.
 		 */
-		if (F_ISSET(gp, G_SRESTART) || F_ISSET(sp, S_SSWITCH | S_VI)) {
+		if (F_ISSET(gp, G_SRESTART) || F_ISSET(sp, SC_SSWITCH | SC_VI)) {
 			*spp = sp;
 			break;
 		}
 
 		/* If the last command switched files, we don't care. */
-		F_CLR(sp, S_FSWITCH);
+		F_CLR(sp, SC_FSWITCH);
 
 		/*
 		 * If we're exiting this screen, move to the next one.  By
@@ -155,8 +155,8 @@ ex(spp)
 		 * main editor loop.  The ordering is careful, don't discard
 		 * the contents of sp until the end.
 		 */
-		if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE)) {
-			if (file_end(sp, NULL, F_ISSET(sp, S_EXIT_FORCE)))
+		if (F_ISSET(sp, SC_EXIT | SC_EXIT_FORCE)) {
+			if (file_end(sp, NULL, F_ISSET(sp, SC_EXIT_FORCE)))
 				return (1);
 			*spp = screen_next(sp);
 			return (screen_end(sp));
@@ -317,7 +317,7 @@ loop:	ecp = gp->ecq.lh_first;
 	 * gone to zero.  Continue if there are more commands to run.
 	 */
 	if (ecp->clen == 0 &&
-	    (!notempty || F_ISSET(sp, S_VI) || F_ISSET(ecp, E_BLIGNORE))) {
+	    (!notempty || F_ISSET(sp, SC_VI) || F_ISSET(ecp, E_BLIGNORE))) {
 		if (ex_load(sp))
 			goto rfail;
 		ecp = gp->ecq.lh_first;
@@ -487,7 +487,7 @@ unknown:			if (newscreen)
 		 * Make the change now, before we test for the newscreen
 		 * semantic, so that we're testing the right one.
 		 */
-skip_srch:	if (ecp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, S_VI))
+skip_srch:	if (ecp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, SC_VI))
 			ecp->cmd = &cmds[C_VISUAL_VI];
 
 		/*
@@ -549,7 +549,7 @@ skip_srch:	if (ecp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, S_VI))
 		 * we up the address by one.  (I have no idea why globals are
 		 * exempted, but it's (ahem) historic practice.)
 		 */
-		if (ecp->addrcnt == 0 && !F_ISSET(sp, S_EX_GLOBAL)) {
+		if (ecp->addrcnt == 0 && !F_ISSET(sp, SC_EX_GLOBAL)) {
 			ecp->addrcnt = 1;
 			ecp->addr1.lno = sp->lno + 1;
 			ecp->addr1.cno = sp->cno;
@@ -572,7 +572,7 @@ skip_srch:	if (ecp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, S_VI))
 		F_CLR(ecp, E_OPTNUM);
 
 	/* Check for ex mode legality. */
-	if (F_ISSET(sp, S_EX) && (F_ISSET(ecp->cmd, E_VIONLY) || newscreen)) {
+	if (F_ISSET(sp, SC_EX) && (F_ISSET(ecp->cmd, E_VIONLY) || newscreen)) {
 		msgq(sp, M_ERR,
 		    "082|%s: command not available in ex mode", ecp->cmd->name);
 		goto err;
@@ -1220,7 +1220,7 @@ addr_verify:
 		 */
 		if (ecp->addr2.lno == 0) {
 			if (!F_ISSET(ecp, E_ADDR_ZERO) &&
-			    (F_ISSET(sp, S_EX) ||
+			    (F_ISSET(sp, SC_EX) ||
 			    !F_ISSET(ecp, E_USELASTCMD))) {
 				ex_badaddr(sp, ecp->cmd, A_ZERO, NUM_OK);
 				goto err;
@@ -1238,7 +1238,7 @@ addr_verify:
 	case 1:
 		if (ecp->addr1.lno == 0) {
 			if (!F_ISSET(ecp, E_ADDR_ZERO) &&
-			    (F_ISSET(sp, S_EX) ||
+			    (F_ISSET(sp, SC_EX) ||
 			    !F_ISSET(ecp, E_USELASTCMD))) {
 				ex_badaddr(sp, ecp->cmd, A_ZERO, NUM_OK);
 				goto err;
@@ -1263,7 +1263,7 @@ addr_verify:
 	 * This is done before the absolute mark gets set; historically,
 	 * "/a/,/b/" did NOT set vi's absolute mark, but "/a/,/b/d" did.
 	 */
-	if ((F_ISSET(sp, S_VI) || F_ISSET(ecp, E_NOPRDEF)) &&
+	if ((F_ISSET(sp, SC_VI) || F_ISSET(ecp, E_NOPRDEF)) &&
 	    F_ISSET(ecp, E_USELASTCMD) && vi_address == 0) {
 		switch (ecp->addrcnt) {
 		case 2:
@@ -1307,14 +1307,14 @@ addr_verify:
 	ex_comlog(sp, ecp);
 #endif
 	/* Increment the command count if not called from vi. */
-	if (F_ISSET(sp, S_EX))
+	if (F_ISSET(sp, SC_EX))
 		++sp->ccnt;
 
 	/*
 	 * If file state available, and not doing a global command,
 	 * log the start of an action.
 	 */
-	if (sp->ep != NULL && !F_ISSET(sp, S_EX_GLOBAL))
+	if (sp->ep != NULL && !F_ISSET(sp, SC_EX_GLOBAL))
 		(void)log_cursor(sp);
 
 	/*
@@ -1334,7 +1334,7 @@ addr_verify:
 	 */
 	if (F_ISSET(ecp, E_NRSEP)) {
 		if (sp->ep != NULL &&
-		    F_ISSET(sp, S_EX) && F_ISSET(gp, G_STDIN_TTY) &&
+		    F_ISSET(sp, SC_EX) && F_ISSET(gp, G_STDIN_TTY) &&
 		    (F_ISSET(ecp, E_USELASTCMD) || ecp->cmd == &cmds[C_SCROLL]))
 			gp->scr_ex_adjust(sp, EX_TERM_SCROLL);
 		F_CLR(ecp, E_NRSEP);
@@ -1348,7 +1348,7 @@ addr_verify:
 	 */
 	if (ecp->cmd->fn(sp, ecp) || INTERRUPTED(sp)) {
 		if (!F_ISSET(gp, G_STDIN_TTY))
-			F_SET(sp, S_EXIT_FORCE);
+			F_SET(sp, SC_EXIT_FORCE);
 		goto err;
 	}
 
@@ -1371,7 +1371,7 @@ addr_verify:
 	 * Executing ex commands from vi only reported the final modified
 	 * lines message -- that's wrong enough that we don't match it.
 	 */
-	if (F_ISSET(sp, S_EX))
+	if (F_ISSET(sp, SC_EX))
 		msgq_rpt(sp);
 
 	/*
@@ -1412,7 +1412,7 @@ addr_verify:
 	 * there's a line to display.)  Also, the autoprint edit option is
 	 * turned off for the duration of global commands.
 	 */
-	if (F_ISSET(sp, S_EX) && sp->ep != NULL && sp->lno != 0) {
+	if (F_ISSET(sp, SC_EX) && sp->ep != NULL && sp->lno != 0) {
 		/*
 		 * The print commands have already handled the `print' flags.
 		 * If so, clear them.
@@ -1431,7 +1431,7 @@ addr_verify:
 		 */
 		LF_INIT(FL_ISSET(ecp->iflags, E_C_HASH | E_C_LIST | E_C_PRINT));
 		if (!LF_ISSET(E_C_HASH | E_C_LIST | E_C_PRINT | E_NOAUTO) &&
-		    !F_ISSET(sp, S_EX_GLOBAL) &&
+		    !F_ISSET(sp, SC_EX_GLOBAL) &&
 		    O_ISSET(sp, O_AUTOPRINT) && F_ISSET(ecp, E_AUTOPRINT))
 			LF_INIT(E_C_PRINT);
 
@@ -1507,7 +1507,7 @@ addr_verify:
 	 * up the upper layers, (e.g. we could exit/reenter a screen multiple
 	 * times).  So, return and continue after we've got a new screen.
 	 */
-	if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE | S_FSWITCH | S_SSWITCH)) {
+	if (F_ISSET(sp, SC_EXIT | SC_EXIT_FORCE | SC_FSWITCH | SC_SSWITCH)) {
 		at_found = gv_found = 0;
 		for (ecp = sp->gp->ecq.lh_first;
 		    ecp != NULL; ecp = ecp->q.le_next)
@@ -1537,7 +1537,7 @@ addr_verify:
 			ex_discard(sp);
 			goto err;
 		}
-		if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE | S_SSWITCH))
+		if (F_ISSET(sp, SC_EXIT | SC_EXIT_FORCE | SC_SSWITCH))
 			goto rsuccess;
 	}
 
@@ -1580,7 +1580,7 @@ rsuccess:	tmp = 0;
 	gp->if_name = NULL;
 
 	/* Turn off the global bit. */
-	F_CLR(sp, S_EX_GLOBAL);
+	F_CLR(sp, SC_EX_GLOBAL);
 
 	return (tmp);
 }
@@ -2051,7 +2051,7 @@ ex_load(sp)
 	EXCMD *ecp;
 	RANGE *rp;
 
-	F_CLR(sp, S_EX_GLOBAL);
+	F_CLR(sp, SC_EX_GLOBAL);
 
 	/*
 	 * Lose any exhausted commands.  We know that the first command
@@ -2132,7 +2132,7 @@ ex_load(sp)
 	ecp->range_lno = sp->lno = rp->start++;
 
 	if (FL_ISSET(ecp->agv_flags, AGV_GLOBAL | AGV_V))
-		F_SET(sp, S_EX_GLOBAL);
+		F_SET(sp, SC_EX_GLOBAL);
 	return (0);
 }
 

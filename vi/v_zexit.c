@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_zexit.c,v 10.5 1996/03/06 19:54:53 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:54:53 $";
+static const char sccsid[] = "$Id: v_zexit.c,v 10.6 1996/04/27 11:40:38 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -49,6 +49,6 @@ v_zexit(sp, vp)
 	if (ex_ncheck(sp, 0))
 		return (1);
 
-	F_SET(sp, S_EXIT);
+	F_SET(sp, SC_EXIT);
 	return (0);
 }

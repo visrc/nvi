@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_args.c,v 10.13 1996/04/26 09:00:22 bostic Exp $ (Berkeley) $Date: 1996/04/26 09:00:22 $";
+static const char sccsid[] = "$Id: ex_args.c,v 10.14 1996/04/27 11:40:19 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -76,12 +76,12 @@ ex_next(sp, cmdp)
 	/* Any arguments are a replacement file list. */
 	if (cmdp->argc) {
 		/* Free the current list. */
-		if (!F_ISSET(sp, S_ARGNOFREE) && sp->argv != NULL) {
+		if (!F_ISSET(sp, SC_ARGNOFREE) && sp->argv != NULL) {
 			for (ap = sp->argv; *ap != NULL; ++ap)
 				free(*ap);
 			free(sp->argv);
 		}
-		F_CLR(sp, S_ARGNOFREE | S_ARGRECOVER);
+		F_CLR(sp, SC_ARGNOFREE | SC_ARGRECOVER);
 		sp->cargv = NULL;
 
 		/* Create a new list. */
@@ -102,7 +102,7 @@ ex_next(sp, cmdp)
 	} else {
 		if ((frp = file_add(sp, sp->cargv[1])) == NULL)
 			return (1);
-		if (F_ISSET(sp, S_ARGRECOVER))
+		if (F_ISSET(sp, SC_ARGRECOVER))
 			F_SET(frp, FR_RECOVER);
 		noargs = 1;
 	}
@@ -113,7 +113,7 @@ ex_next(sp, cmdp)
 	if (noargs)
 		++sp->cargv;
 
-	F_SET(sp, S_FSWITCH);
+	F_SET(sp, SC_FSWITCH);
 	return (0);
 }
 
@@ -151,7 +151,7 @@ ex_N_next(sp, cmdp)
 
 	/* Set up the switch. */
 	sp->nextdisp = new;
-	F_SET(sp, S_SSWITCH);
+	F_SET(sp, SC_SSWITCH);
 
 	return (0);
 }
@@ -192,7 +192,7 @@ ex_prev(sp, cmdp)
 		return (1);
 	--sp->cargv;
 
-	F_SET(sp, S_FSWITCH);
+	F_SET(sp, SC_FSWITCH);
 	return (0);
 }
 
@@ -237,7 +237,7 @@ ex_rew(sp, cmdp)
 	    (FL_ISSET(cmdp->iflags, E_C_FORCE) ? FS_FORCE : 0)))
 		return (1);
 
-	F_SET(sp, S_FSWITCH);
+	F_SET(sp, SC_FSWITCH);
 	return (0);
 }
 

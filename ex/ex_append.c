@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_append.c,v 10.26 1996/03/06 19:52:04 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:52:04 $";
+static const char sccsid[] = "$Id: ex_append.c,v 10.27 1996/04/27 11:40:19 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -160,7 +160,7 @@ ex_aci(sp, cmdp, cmd)
 		    len = cmdp->save_cmdlen; len > 0; p = t) {
 			for (t = p; len > 0 && t[0] != '\n'; ++t, --len);
 			if (t != p || len == 0) {
-				if (F_ISSET(sp, S_EX_GLOBAL) &&
+				if (F_ISSET(sp, SC_EX_GLOBAL) &&
 				    t - p == 1 && p[0] == '.') {
 					++t;
 					if (len > 0)
@@ -193,7 +193,7 @@ ex_aci(sp, cmdp, cmd)
 		cmdp->save_cmdlen = len;
 	}
 
-	if (F_ISSET(sp, S_EX_GLOBAL)) {
+	if (F_ISSET(sp, SC_EX_GLOBAL)) {
 		if ((sp->lno = lno) == 0 && db_exist(sp, 1))
 			sp->lno = 1;
 		return (0);
@@ -209,15 +209,15 @@ ex_aci(sp, cmdp, cmd)
 	 * However, depending on the screen that we're using, that may not
 	 * be possible.
 	 */
-	if (F_ISSET(sp, S_VI)) {
-		if (sp->gp->scr_screen(sp, S_EX)) {
+	if (F_ISSET(sp, SC_VI)) {
+		if (sp->gp->scr_screen(sp, SC_EX)) {
 			ex_emsg(sp, cmdp->cmd->name, EXM_NOCANON);
 			return (1);
 		}
 
 		/* If we're still in the vi screen, move out explicitly. */
-		need_newline = !F_ISSET(sp, S_SCR_EXWROTE);
-		F_SET(sp, S_SCR_EX | S_SCR_EXWROTE);
+		need_newline = !F_ISSET(sp, SC_SCR_EXWROTE);
+		F_SET(sp, SC_SCR_EX | SC_SCR_EXWROTE);
 		if (need_newline)
 			(void)ex_puts(sp, "\n");
 

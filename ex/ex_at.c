@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_at.c,v 10.9 1996/04/22 21:32:07 bostic Exp $ (Berkeley) $Date: 1996/04/22 21:32:07 $";
+static const char sccsid[] = "$Id: ex_at.c,v 10.10 1996/04/27 11:40:20 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -53,14 +53,14 @@ ex_at(sp, cmdp)
 	 */
 	name = FL_ISSET(cmdp->iflags, E_C_BUFFER) ? cmdp->buffer : '@';
 	if (name == '@' || name == '*') {
-		if (!F_ISSET(sp, S_AT_SET)) {
+		if (!F_ISSET(sp, SC_AT_SET)) {
 			ex_emsg(sp, NULL, EXM_NOPREVBUF);
 			return (1);
 		}
 		name = sp->at_lbuf;
 	}
 	sp->at_lbuf = name;
-	F_SET(sp, S_AT_SET);
+	F_SET(sp, SC_AT_SET);
 
 	CBNAME(sp, cbp, name);
 	if (cbp == NULL) {

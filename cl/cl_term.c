@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_term.c,v 10.18 1996/03/22 18:36:25 bostic Exp $ (Berkeley) $Date: 1996/03/22 18:36:25 $";
+static const char sccsid[] = "$Id: cl_term.c,v 10.19 1996/04/27 11:41:18 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:41:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -240,7 +240,7 @@ cl_optchange(sp, opt, str, valp)
 		 * we restart the screen.
 		 */
 		F_SET(sp->gp, G_SRESTART);
-		F_CLR(sp, S_SCR_EX | S_SCR_VI);
+		F_CLR(sp, SC_SCR_EX | SC_SCR_VI);
 		break;
 	case O_MESG:
 		cl_omesg(sp, CLP(sp), !*valp);

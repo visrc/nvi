@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: screen.h,v 10.17 1996/04/23 14:33:23 bostic Exp $ (Berkeley) $Date: 1996/04/23 14:33:23 $
+ *	$Id: screen.h,v 10.18 1996/04/27 11:41:12 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:41:12 $
  */
 
 /*
@@ -137,63 +137,63 @@ struct _scr {
  *
  * Editor screens.
  */
-#define	S_EX		0x00000001	/* Ex editor. */
-#define	S_VI		0x00000002	/* Vi editor. */
+#define	SC_EX		0x00000001	/* Ex editor. */
+#define	SC_VI		0x00000002	/* Vi editor. */
 
 /*
  * Screen formatting flags, first major, then minor.
  *
- * S_SCR_EX
+ * SC_SCR_EX
  *	Ex screen, i.e. cooked mode.
- * S_SCR_VI
+ * SC_SCR_VI
  *	Vi screen, i.e. raw mode.
- * S_SCR_EXWROTE
+ * SC_SCR_EXWROTE
  *	The editor had to write on the screen behind curses' back, and we can't
  *	let curses change anything until the user agrees, e.g. entering the
  *	commands :!utility followed by :set.  We have to switch back into the
  *	vi "editor" to read the user's command input, but we can't touch the
  *	rest of the screen because it's known to be wrong.
- * S_SCR_REFORMAT
+ * SC_SCR_REFORMAT
  *	The expected presentation of the lines on the screen have changed,
  *	requiring that the intended screen lines be recalculated.  Implies
- *	S_SCR_REDRAW.
- * S_SCR_REDRAW
+ *	SC_SCR_REDRAW.
+ * SC_SCR_REDRAW
  *	The screen doesn't correctly represent the file; repaint it.  Note,
- *	setting S_SCR_REDRAW in the current window causes *all* windows to
+ *	setting SC_SCR_REDRAW in the current window causes *all* windows to
  *	be repainted.
- * S_SCR_CENTER
+ * SC_SCR_CENTER
  *	If the current line isn't already on the screen, center it.
- * S_SCR_TOP
+ * SC_SCR_TOP
  *	If the current line isn't already on the screen, put it at the to@.
  */
-#define	S_SCR_EX	0x00000004	/* Screen is in ex mode. */
-#define	S_SCR_VI	0x00000008	/* Screen is in vi mode. */
-#define	S_SCR_EXWROTE	0x00000010	/* Ex overwrite: see comment above. */
-#define	S_SCR_REFORMAT	0x00000020	/* Reformat (refresh). */
-#define	S_SCR_REDRAW	0x00000040	/* Refresh. */
+#define	SC_SCR_EX	0x00000004	/* Screen is in ex mode. */
+#define	SC_SCR_VI	0x00000008	/* Screen is in vi mode. */
+#define	SC_SCR_EXWROTE	0x00000010	/* Ex overwrite: see comment above. */
+#define	SC_SCR_REFORMAT	0x00000020	/* Reformat (refresh). */
+#define	SC_SCR_REDRAW	0x00000040	/* Refresh. */
 
-#define	S_SCR_CENTER	0x00000080	/* Center the line if not visible. */
-#define	S_SCR_TOP	0x00000100	/* Top the line if not visible. */
+#define	SC_SCR_CENTER	0x00000080	/* Center the line if not visible. */
+#define	SC_SCR_TOP	0x00000100	/* Top the line if not visible. */
 
 /* Screen/file changes. */
-#define	S_EXIT		0x00000200	/* Exiting (not forced). */
-#define	S_EXIT_FORCE	0x00000400	/* Exiting (forced). */
-#define	S_FSWITCH	0x00000800	/* Switch underlying files. */
-#define	S_SSWITCH	0x00001000	/* Switch screens. */
+#define	SC_EXIT		0x00000200	/* Exiting (not forced). */
+#define	SC_EXIT_FORCE	0x00000400	/* Exiting (forced). */
+#define	SC_FSWITCH	0x00000800	/* Switch underlying files. */
+#define	SC_SSWITCH	0x00001000	/* Switch screens. */
 
-#define	S_ARGNOFREE	0x00002000	/* Argument list wasn't allocated. */
-#define	S_ARGRECOVER	0x00004000	/* Argument list is recovery files. */
-#define	S_AT_SET	0x00008000	/* Last at buffer set. */
-#define	S_COMEDIT	0x00010000	/* Colon command-line edit window. */
-#define	S_EX_DONTWAIT	0x00020000	/* Ex: don't wait for the user. */
-#define	S_EX_GLOBAL	0x00040000	/* Ex: executing a global command. */
-#define	S_EX_SILENT	0x00080000	/* Ex: batch script. */
-#define	S_READONLY	0x00100000	/* Persistent readonly state. */
-#define	S_RE_SEARCH	0x00200000	/* Search RE has been compiled. */
-#define	S_RE_SUBST	0x00400000	/* Substitute RE has been compiled. */
-#define	S_SCRIPT	0x00800000	/* Shell script window. */
-#define	S_STATUS	0x01000000	/* Schedule welcome message. */
-#define	S_TINPUT	0x02000000	/* Doing text input. */
-#define	S_TINPUT_INFO	0x04000000	/* Doing text input on info line. */
+#define	SC_ARGNOFREE	0x00002000	/* Argument list wasn't allocated. */
+#define	SC_ARGRECOVER	0x00004000	/* Argument list is recovery files. */
+#define	SC_AT_SET	0x00008000	/* Last at buffer set. */
+#define	SC_COMEDIT	0x00010000	/* Colon command-line edit window. */
+#define	SC_EX_DONTWAIT	0x00020000	/* Ex: don't wait for the user. */
+#define	SC_EX_GLOBAL	0x00040000	/* Ex: executing a global command. */
+#define	SC_EX_SILENT	0x00080000	/* Ex: batch script. */
+#define	SC_READONLY	0x00100000	/* Persistent readonly state. */
+#define	SC_RE_SEARCH	0x00200000	/* Search RE has been compiled. */
+#define	SC_RE_SUBST	0x00400000	/* Substitute RE has been compiled. */
+#define	SC_SCRIPT	0x00800000	/* Shell script window. */
+#define	SC_STATUS	0x01000000	/* Schedule welcome message. */
+#define	SC_TINPUT	0x02000000	/* Doing text input. */
+#define	SC_TINPUT_INFO	0x04000000	/* Doing text input on info line. */
 	u_int32_t flags;
 };

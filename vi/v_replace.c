@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_replace.c,v 10.15 1996/03/19 20:59:59 bostic Exp $ (Berkeley) $Date: 1996/03/19 20:59:59 $";
+static const char sccsid[] = "$Id: v_replace.c,v 10.16 1996/04/27 11:40:35 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -124,7 +124,7 @@ next:		if (v_event_get(sp, &ev, 0, 0))
 			break;
 		case E_ERR:
 		case E_EOF:
-			F_SET(sp, S_EXIT_FORCE);
+			F_SET(sp, SC_EXIT_FORCE);
 			return (1);
 		case E_INTERRUPT:
 			/* <interrupt> means they changed their minds. */

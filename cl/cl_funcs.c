@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_funcs.c,v 10.36 1996/04/10 20:06:47 bostic Exp $ (Berkeley) $Date: 1996/04/10 20:06:47 $";
+static const char sccsid[] = "$Id: cl_funcs.c,v 10.37 1996/04/27 11:41:17 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:41:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -55,7 +55,7 @@ cl_addstr(sp, str, len)
 	 */
 	iv = 0;
 	getyx(stdscr, oldy, oldx);
-	if (!F_ISSET(sp, S_SCR_EXWROTE) &&
+	if (!F_ISSET(sp, SC_SCR_EXWROTE) &&
 	    oldy == RLNO(sp, LASTLINE(sp)) && IS_SPLIT(sp)) {
 		iv = 1;
 		(void)standout();
@@ -85,7 +85,7 @@ cl_attr(sp, attribute, on)
 
 	switch (attribute) {
 	case SA_INVERSE:
-		if (F_ISSET(sp, S_EX | S_SCR_EXWROTE)) {
+		if (F_ISSET(sp, SC_EX | SC_SCR_EXWROTE)) {
 			clp = CLP(sp);
 			if (clp->smso == NULL)
 				return (1);
@@ -160,7 +160,7 @@ int
 cl_bell(sp)
 	SCR *sp;
 {
-	if (F_ISSET(sp, S_EX | S_SCR_EXWROTE))
+	if (F_ISSET(sp, SC_EX | SC_SCR_EXWROTE))
 		(void)write(STDOUT_FILENO, "\07", 1);		/* \a */
 	else {
 		/*
@@ -245,7 +245,7 @@ cl_deleteln(sp)
 	 * spaces, and copy the trailing spaces only if there's a non-space
 	 * character following.
 	 */
-	if (!F_ISSET(sp, S_SCR_EXWROTE) && IS_SPLIT(sp)) {
+	if (!F_ISSET(sp, SC_SCR_EXWROTE) && IS_SPLIT(sp)) {
 		getyx(stdscr, oldy, oldx);
 #ifdef mvchgat
 		mvchgat(RLNO(sp, LASTLINE(sp)), 0, -1, A_NORMAL, 0, NULL);
@@ -481,7 +481,7 @@ cl_suspend(sp, allowedp)
 	 *
 	 * Setting allowedp to 0 will cause the editor to reject the command.
 	 */
-	if (F_ISSET(sp, S_EX)) { 
+	if (F_ISSET(sp, SC_EX)) { 
 		/* Save the terminal settings, and restore the original ones. */
 		if (F_ISSET(gp, G_STDIN_TTY)) {
 			(void)tcgetattr(STDIN_FILENO, &t);

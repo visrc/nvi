@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_quit.c,v 10.6 1996/03/06 19:52:34 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:52:34 $";
+static const char sccsid[] = "$Id: ex_quit.c,v 10.7 1996/04/27 11:40:23 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -41,6 +41,6 @@ ex_quit(sp, cmdp)
 	if (file_m2(sp, force) || ex_ncheck(sp, force))
 		return (1);
 
-	F_SET(sp, force ? S_EXIT_FORCE : S_EXIT);
+	F_SET(sp, force ? SC_EXIT_FORCE : SC_EXIT);
 	return (0);
 }

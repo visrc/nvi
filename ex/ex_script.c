@@ -13,7 +13,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_script.c,v 10.25 1996/04/23 14:05:32 bostic Exp $ (Berkeley) $Date: 1996/04/23 14:05:32 $";
+static const char sccsid[] = "$Id: ex_script.c,v 10.26 1996/04/27 11:40:23 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -64,7 +64,7 @@ ex_script(sp, cmdp)
 	EXCMD *cmdp;
 {
 	/* Vi only command. */
-	if (!F_ISSET(sp, S_VI)) {
+	if (!F_ISSET(sp, SC_VI)) {
 		msgq(sp, M_ERR,
 		    "150|The script command is only available in vi mode");
 		return (1);
@@ -191,7 +191,7 @@ err:		if (sc->sh_master != -1)
 	if (sscr_getprompt(sp))
 		return (1);
 
-	F_SET(sp, S_SCRIPT);
+	F_SET(sp, SC_SCRIPT);
 	F_SET(sp->gp, G_SCRIPT);
 	return (0);
 }
@@ -388,7 +388,7 @@ loop:	maxfd = 0;
 
 	/* Set up the input mask. */
 	for (sp = gp->dq.cqh_first; sp != (void *)&gp->dq; sp = sp->q.cqe_next)
-		if (F_ISSET(sp, S_SCRIPT)) {
+		if (F_ISSET(sp, SC_SCRIPT)) {
 			FD_SET(sp->script->sh_master, &rdfd);
 			if (sp->script->sh_master > maxfd)
 				maxfd = sp->script->sh_master;
@@ -407,7 +407,7 @@ loop:	maxfd = 0;
 
 	/* Read the input. */
 	for (sp = gp->dq.cqh_first; sp != (void *)&gp->dq; sp = sp->q.cqe_next)
-		if (F_ISSET(sp, S_SCRIPT) &&
+		if (F_ISSET(sp, SC_SCRIPT) &&
 		    FD_ISSET(sp->script->sh_master, &rdfd) && sscr_insert(sp))
 			return (1);
 	goto loop;
@@ -586,7 +586,7 @@ sscr_end(sp)
 		return (0);
 
 	/* Turn off the script flags. */
-	F_CLR(sp, S_SCRIPT);
+	F_CLR(sp, SC_SCRIPT);
 	sscr_check(sp);
 
 	/* Close down the parent's file descriptors. */
@@ -618,7 +618,7 @@ sscr_check(sp)
 
 	gp = sp->gp;
 	for (sp = gp->dq.cqh_first; sp != (void *)&gp->dq; sp = sp->q.cqe_next)
-		if (F_ISSET(sp, S_SCRIPT)) {
+		if (F_ISSET(sp, SC_SCRIPT)) {
 			F_SET(gp, G_SCRIPT);
 			return;
 		}

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_visual.c,v 10.11 1996/03/06 19:52:53 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:52:53 $";
+static const char sccsid[] = "$Id: ex_visual.c,v 10.12 1996/04/27 11:40:26 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -118,10 +118,10 @@ nopush:	/*
 	 * It's explicit, don't have to wait for the user, unless there's
 	 * already a reason to wait.
 	 */
-	if (!F_ISSET(sp, S_SCR_EXWROTE))
-		F_SET(sp, S_EX_DONTWAIT);
+	if (!F_ISSET(sp, SC_SCR_EXWROTE))
+		F_SET(sp, SC_EX_DONTWAIT);
 
-	if (F_ISSET(sp, S_EX_GLOBAL)) {
+	if (F_ISSET(sp, SC_EX_GLOBAL)) {
 		/*
 		 * When the vi screen(s) exit, we don't want to lose our hold
 		 * on this screen or this file, otherwise we're going to fail
@@ -154,8 +154,8 @@ nopush:	/*
 		/* Move out of the vi screen. */
 		(void)ex_puts(sp, "\n");
 	} else {
-		F_CLR(sp, S_EX | S_SCR_EX);
-		F_SET(sp, S_VI);
+		F_CLR(sp, SC_EX | SC_SCR_EX);
+		F_SET(sp, SC_VI);
 	}
 	return (0);
 }

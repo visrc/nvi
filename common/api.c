@@ -12,7 +12,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: api.c,v 8.17 1996/04/10 20:14:33 bostic Exp $ (Berkeley) $Date: 1996/04/10 20:14:33 $";
+static const char sccsid[] = "$Id: api.c,v 8.18 1996/04/27 11:41:08 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:41:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -332,7 +332,7 @@ api_swscreen(sp, new)
 	 * current screen, vi isn't going to update everything correctly.
 	 */
 	sp->nextdisp = new;
-	F_SET(sp, S_SSWITCH);
+	F_SET(sp, SC_SSWITCH);
 
 	return (0);
 }

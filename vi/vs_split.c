@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_split.c,v 10.22 1996/04/26 09:21:28 bostic Exp $ (Berkeley) $Date: 1996/04/26 09:21:28 $";
+static const char sccsid[] = "$Id: vs_split.c,v 10.23 1996/04/27 11:40:42 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -160,7 +160,7 @@ vs_split(sp, new, ccl)
 		new->defscroll = 1;
 
 	/* Draw the new screen from scratch, and add a status line. */
-	F_SET(new, S_SCR_REFORMAT | S_STATUS);
+	F_SET(new, SC_SCR_REFORMAT | SC_STATUS);
 
 	return (0);
 }
@@ -249,7 +249,7 @@ vs_discard(sp, spp)
 		abort();
 	}
 
-	F_SET(sp, S_STATUS);
+	F_SET(sp, SC_STATUS);
 	return (0);
 }
 
@@ -318,7 +318,7 @@ vs_bg(csp)
 
 	/* Switch screens. */
 	csp->nextdisp = sp;
-	F_SET(csp, S_SSWITCH);
+	F_SET(csp, SC_SSWITCH);
 
 	return (0);
 }
@@ -365,7 +365,7 @@ vs_swap(csp, nsp, name)
 
 	/* Switch screens. */
 	csp->nextdisp = sp;
-	F_SET(csp, S_SSWITCH);
+	F_SET(csp, SC_SSWITCH);
 
 	/* Initialize terminal information. */
 	VIP(sp)->srows = VIP(csp)->srows;
@@ -420,7 +420,7 @@ vs_swap(csp, nsp, name)
 	F_SET(VIP(sp), VIP_CUR_INVALID);
 
 	/* Draw the new screen from scratch, and add a status line. */
-	F_SET(sp, S_SCR_REDRAW | S_STATUS);
+	F_SET(sp, SC_SCR_REDRAW | SC_STATUS);
 	return (0);
 }
 
@@ -514,14 +514,14 @@ toosmall:			msgq(sp, M_BERR,
 		g->t_minrows += count;
 	g->t_maxrows += count;
 	_TMAP(g) += count;
-	F_SET(g, S_SCR_REFORMAT | S_STATUS);
+	F_SET(g, SC_SCR_REFORMAT | SC_STATUS);
 
 	s->t_rows -= count;
 	s->t_maxrows -= count;
 	if (s->t_minrows > s->t_maxrows)
 		s->t_minrows = s->t_maxrows;
 	_TMAP(s) -= count;
-	F_SET(s, S_SCR_REFORMAT | S_STATUS);
+	F_SET(s, SC_SCR_REFORMAT | SC_STATUS);
 
 	return (0);
 }

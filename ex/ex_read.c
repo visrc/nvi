@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_read.c,v 10.29 1996/04/15 20:31:35 bostic Exp $ (Berkeley) $Date: 1996/04/15 20:31:35 $";
+static const char sccsid[] = "$Id: ex_read.c,v 10.30 1996/04/27 11:40:23 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -124,7 +124,7 @@ ex_read(sp, cmdp)
 		 * always displayed a !, plus the user's argument if it
 		 * changed.
 		 */
-		if (F_ISSET(sp, S_VI)) {
+		if (F_ISSET(sp, SC_VI)) {
 			if (F_ISSET(cmdp, E_MODIFY))
 				(void)vs_update(sp, "!", cmdp->argv[argc]->bp);
 		} else {
@@ -138,11 +138,11 @@ ex_read(sp, cmdp)
 
 		/*
 		 * Historically, filter reads as the first ex command didn't
-		 * wait for the user. If S_SCR_EXWROTE not already set, set
+		 * wait for the user. If SC_SCR_EXWROTE not already set, set
 		 * the don't-wait flag.
 		 */
-		if (!F_ISSET(sp, S_SCR_EXWROTE))
-			F_SET(sp, S_EX_DONTWAIT);
+		if (!F_ISSET(sp, SC_SCR_EXWROTE))
+			F_SET(sp, SC_EX_DONTWAIT);
 
 		/*
 		 * Switch into ex canonical mode.  The reason to restore the
@@ -153,12 +153,12 @@ ex_read(sp, cmdp)
 		 * We do not output an extra <newline>, so that we don't touch
 		 * the screen on a normal read.
 		 */
-		if (F_ISSET(sp, S_VI)) {
-			if (sp->gp->scr_screen(sp, S_EX)) {
+		if (F_ISSET(sp, SC_VI)) {
+			if (sp->gp->scr_screen(sp, SC_EX)) {
 				ex_emsg(sp, cmdp->cmd->name, EXM_NOCANON_F);
 				return (1);
 			}
-			F_SET(sp, S_SCR_EX | S_SCR_EXWROTE);
+			F_SET(sp, SC_SCR_EX | SC_SCR_EXWROTE);
 		}
 
 		if (ex_filter(sp, cmdp, &cmdp->addr1,
@@ -170,10 +170,10 @@ ex_read(sp, cmdp)
 
 		/*
 		 * If in vi mode, move to the first nonblank.  Might have
-		 * switched into ex mode, so saved the original S_VI value.
+		 * switched into ex mode, so saved the original SC_VI value.
 		 */
 		sp->lno = rm.lno;
-		if (F_ISSET(sp, S_VI)) {
+		if (F_ISSET(sp, SC_VI)) {
 			sp->cno = 0;
 			(void)nonblank(sp, sp->lno, &sp->cno);
 		}

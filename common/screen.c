@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: screen.c,v 10.10 1996/04/10 11:28:15 bostic Exp $ (Berkeley) $Date: 1996/04/10 11:28:15 $";
+static const char sccsid[] = "$Id: screen.c,v 10.11 1996/04/27 11:41:12 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:41:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -71,8 +71,8 @@ screen_init(gp, orig, spp)
 			goto mem;
 
 		/* Last executed at buffer. */
-		if (F_ISSET(orig, S_AT_SET)) {
-			F_SET(sp, S_AT_SET);
+		if (F_ISSET(orig, SC_AT_SET)) {
+			F_SET(sp, SC_AT_SET);
 			sp->at_lbuf = orig->at_lbuf;
 		}
 
@@ -105,7 +105,7 @@ mem:				msgq(orig, M_SYSERR, NULL);
 		if (opts_copy(orig, sp))
 			goto err;
 
-		F_SET(sp, F_ISSET(orig, S_EX | S_VI));
+		F_SET(sp, F_ISSET(orig, SC_EX | SC_VI));
 	}
 
 	if (ex_screen_copy(orig, sp))		/* Ex. */
@@ -147,7 +147,7 @@ screen_end(sp)
 		CIRCLEQ_REMOVE(&sp->gp->dq, sp, q);
 
 	/* The screen is no longer real. */
-	F_CLR(sp, S_SCR_EX | S_SCR_VI);
+	F_CLR(sp, SC_SCR_EX | SC_SCR_VI);
 
 	rval = 0;
 	if (v_screen_end(sp))			/* End vi. */
@@ -157,7 +157,7 @@ screen_end(sp)
 
 	/* Free file names. */
 	{ char **ap;
-		if (!F_ISSET(sp, S_ARGNOFREE) && sp->argv != NULL) {
+		if (!F_ISSET(sp, SC_ARGNOFREE) && sp->argv != NULL) {
 			for (ap = sp->argv; *ap != NULL; ++ap)
 				free(*ap);
 			free(sp->argv);
@@ -169,7 +169,7 @@ screen_end(sp)
 		text_lfree(&sp->tiq);
 
 	/* Free any script information. */
-	if (F_ISSET(sp, S_SCRIPT))
+	if (F_ISSET(sp, SC_SCRIPT))
 		sscr_end(sp);
 
 	/* Free alternate file name. */
@@ -179,11 +179,11 @@ screen_end(sp)
 	/* Free up search information. */
 	if (sp->re != NULL)
 		free(sp->re);
-	if (F_ISSET(sp, S_RE_SEARCH))
+	if (F_ISSET(sp, SC_RE_SEARCH))
 		regfree(&sp->re_c);
 	if (sp->subre != NULL)
 		free(sp->subre);
-	if (F_ISSET(sp, S_RE_SUBST))
+	if (F_ISSET(sp, SC_RE_SUBST))
 		regfree(&sp->subre_c);
 	if (sp->repl != NULL)
 		free(sp->repl);

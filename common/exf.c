@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: exf.c,v 10.30 1996/04/15 20:31:21 bostic Exp $ (Berkeley) $Date: 1996/04/15 20:31:21 $";
+static const char sccsid[] = "$Id: exf.c,v 10.31 1996/04/27 11:41:09 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:41:09 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -378,7 +378,7 @@ file_init(sp, frp, rcv_name, flags)
 	 * Access(2) doesn't consider the effective uid/gid values.  This
 	 * probably isn't a problem for vi when it's running standalone.
 	 */
-	if (readonly || F_ISSET(sp, S_READONLY) ||
+	if (readonly || F_ISSET(sp, SC_READONLY) ||
 	    !F_ISSET(frp, FR_NEWFILE) &&
 	    (!(sb.st_mode & (S_IWUSR | S_IWGRP | S_IWOTH)) ||
 	    access(frp->name, W_OK)))
@@ -395,7 +395,7 @@ file_init(sp, frp, rcv_name, flags)
 	file_cinit(sp);
 
 	/* Redraw the screen from scratch, schedule a welcome message. */
-	F_SET(sp, S_SCR_REFORMAT | S_STATUS);
+	F_SET(sp, SC_SCR_REFORMAT | SC_STATUS);
 
 	return (0);
 
@@ -472,7 +472,7 @@ file_cinit(sp)
 		    "-c option", gp->c_option, strlen(gp->c_option), 1, 1))
 			return;
 		gp->c_option = NULL;
-	} else if (F_ISSET(sp, S_EX)) {
+	} else if (F_ISSET(sp, SC_EX)) {
 		if (db_last(sp, &sp->lno))
 			return;
 		if (sp->lno == 0) {
@@ -487,7 +487,7 @@ file_cinit(sp)
 			sp->cno = sp->frp->cno;
 
 			/* If returning to a file in vi, center the line. */
-			 F_SET(sp, S_SCR_CENTER);
+			 F_SET(sp, SC_SCR_CENTER);
 		} else {
 			if (O_ISSET(sp, O_COMMENT))
 				file_comment(sp);
@@ -1070,7 +1070,7 @@ file_comment(sp)
 	for (lno = 1; !db_get(sp, lno, 0, &p, &len) && len == 0; ++lno);
 	if (p == NULL || len <= 1 || p[0] != '/' || p[1] != '*')
 		return;
-	F_SET(sp, S_SCR_TOP);
+	F_SET(sp, SC_SCR_TOP);
 	do {
 		for (; len; --len, ++p)
 			if (p[0] == '*' && len > 1 && p[1] == '/') {

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_write.c,v 10.21 1996/04/15 20:31:36 bostic Exp $ (Berkeley) $Date: 1996/04/15 20:31:36 $";
+static const char sccsid[] = "$Id: ex_write.c,v 10.22 1996/04/27 11:40:27 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -77,7 +77,7 @@ ex_wq(sp, cmdp)
 	if (ex_ncheck(sp, force))
 		return (1);
 
-	F_SET(sp, force ? S_EXIT_FORCE : S_EXIT);
+	F_SET(sp, force ? SC_EXIT_FORCE : SC_EXIT);
 	return (0);
 }
 
@@ -122,7 +122,7 @@ ex_xit(sp, cmdp)
 	if (ex_ncheck(sp, force))
 		return (1);
 
-	F_SET(sp, force ? S_EXIT_FORCE : S_EXIT);
+	F_SET(sp, force ? SC_EXIT_FORCE : SC_EXIT);
 	return (0);
 }
 
@@ -174,7 +174,7 @@ exwr(sp, cmdp, cmd)
 		sp->lno = rm.lno;
 
 		/* Ex terminates with a bang, even if the command fails. */
-		if (!F_ISSET(sp, S_VI) && !F_ISSET(sp, S_EX_SILENT))
+		if (!F_ISSET(sp, SC_VI) && !F_ISSET(sp, SC_EX_SILENT))
 			(void)ex_puts(sp, "!\n");
 
 		return (0);

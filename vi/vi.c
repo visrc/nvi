@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vi.c,v 10.42 1996/04/17 09:55:50 bostic Exp $ (Berkeley) $Date: 1996/04/17 09:55:50 $";
+static const char sccsid[] = "$Id: vi.c,v 10.43 1996/04/27 11:40:38 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -255,8 +255,8 @@ gc_event:
 		 * ordering is careful, don't discard the contents of sp until
 		 * the end.
 		 */
-		if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE)) {
-			if (file_end(sp, NULL, F_ISSET(sp, S_EXIT_FORCE)))
+		if (F_ISSET(sp, SC_EXIT | SC_EXIT_FORCE)) {
+			if (file_end(sp, NULL, F_ISSET(sp, SC_EXIT_FORCE)))
 				goto ret;
 			if (vs_discard(sp, &next))
 				goto ret;
@@ -376,14 +376,14 @@ intr:			CLR_INTERRUPT(sp);
 		}
 
 		/* If the last command switched screens, update. */
-		if (F_ISSET(sp, S_SSWITCH)) {
-			F_CLR(sp, S_SSWITCH);
+		if (F_ISSET(sp, SC_SSWITCH)) {
+			F_CLR(sp, SC_SSWITCH);
 
 			/*
 			 * If the current screen is still displayed, it will
 			 * want a new status line.
 			 */
-			if (F_ISSET(sp, S_STATUS) && vs_resolve(sp))
+			if (F_ISSET(sp, SC_STATUS) && vs_resolve(sp))
 				goto ret;
 
 			/* Switch screens. */
@@ -399,10 +399,10 @@ intr:			CLR_INTERRUPT(sp);
 		}
 
 		/* If the last command switched files, we don't care. */
-		F_CLR(sp, S_FSWITCH);
+		F_CLR(sp, SC_FSWITCH);
 
 		/* If leaving vi, return to the main editor loop. */
-		if (F_ISSET(gp, G_SRESTART) || F_ISSET(sp, S_EX)) {
+		if (F_ISSET(gp, G_SRESTART) || F_ISSET(sp, SC_EX)) {
 			*spp = sp;
 			v_dtoh(sp);
 			break;
@@ -907,10 +907,10 @@ v_init(sp)
 	vip = VIP(sp);
 
 	/* Switch into vi. */
-	if (sp->gp->scr_screen(sp, S_VI))
+	if (sp->gp->scr_screen(sp, SC_VI))
 		return (1);
-	F_CLR(sp, S_EX | S_SCR_EX);
-	F_SET(sp, S_VI);
+	F_CLR(sp, SC_EX | SC_SCR_EX);
+	F_SET(sp, SC_VI);
 
 	/*
 	 * Initialize screen values.
@@ -949,7 +949,7 @@ v_init(sp)
 	 * line in the middle, otherwise, it won't work and we'll end up with
 	 * the line at the top.
 	 */
-	F_SET(sp, S_SCR_REFORMAT | S_SCR_CENTER);
+	F_SET(sp, SC_SCR_REFORMAT | SC_SCR_CENTER);
 
 	/* Invalidate the cursor. */
 	F_SET(vip, VIP_CUR_INVALID);

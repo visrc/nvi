@@ -13,7 +13,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_tag.c,v 10.27 1996/04/26 09:00:23 bostic Exp $ (Berkeley) $Date: 1996/04/26 09:00:23 $";
+static const char sccsid[] = "$Id: ex_tag.c,v 10.28 1996/04/27 11:40:25 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:25 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -103,8 +103,8 @@ ex_tag_first(sp, tagarg)
 	}
 
 	/* Display tags in the center of the screen. */
-	F_CLR(sp, S_SCR_TOP);
-	F_SET(sp, S_SCR_CENTER);
+	F_CLR(sp, SC_SCR_TOP);
+	F_SET(sp, SC_SCR_CENTER);
 
 	return (0);
 }
@@ -364,11 +364,11 @@ ex_tag_nswitch(sp, tp, force)
 		return (1);
 
 	/* Display tags in the center of the screen. */
-	F_CLR(sp, S_SCR_TOP);
-	F_SET(sp, S_SCR_CENTER);
+	F_CLR(sp, SC_SCR_TOP);
+	F_SET(sp, SC_SCR_CENTER);
 
 	/* Switch. */
-	F_SET(sp, S_FSWITCH);
+	F_SET(sp, SC_FSWITCH);
 	return (0);
 }
 
@@ -417,12 +417,12 @@ ex_tag_Nswitch(sp, tp, force)
 	new->cargv = new->argv = ex_buildargv(sp, NULL, tp->frp->name);
 
 	/* Display tags in the center of the screen. */
-	F_CLR(new, S_SCR_TOP);
-	F_SET(new, S_SCR_CENTER);
+	F_CLR(new, SC_SCR_TOP);
+	F_SET(new, SC_SCR_CENTER);
 
 	/* Switch. */
 	sp->nextdisp = new;
-	F_SET(sp, S_SSWITCH);
+	F_SET(sp, SC_SSWITCH);
 
 	return (0);
 }
@@ -570,7 +570,7 @@ tag_pop(sp, dtqp, force)
 		if (file_init(sp, tp->frp, NULL, FS_SETALT))
 			return (1);
 
-		F_SET(sp, S_FSWITCH);
+		F_SET(sp, SC_FSWITCH);
 	}
 
 	/* Pop entries off the queue up to and including dtqp. */

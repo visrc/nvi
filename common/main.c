@@ -18,7 +18,7 @@ static const char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static const char sccsid[] = "$Id: main.c,v 10.35 1996/04/10 19:56:16 bostic Exp $ (Berkeley) $Date: 1996/04/10 19:56:16 $";
+static const char sccsid[] = "$Id: main.c,v 10.36 1996/04/27 11:41:10 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:41:10 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -89,7 +89,7 @@ editor(gp, argc, argv)
 	/* Set initial screen type and mode based on the program name. */
 	readonly = 0;
 	if (!strcmp(gp->progname, "ex") || !strcmp(gp->progname, "nex"))
-		LF_INIT(S_EX);
+		LF_INIT(SC_EX);
 	else {
 		/* Nview, view are readonly. */
 		if (!strcmp(gp->progname, "nview") ||
@@ -97,7 +97,7 @@ editor(gp, argc, argv)
 			readonly = 1;
 		
 		/* Vi is the default. */
-		LF_INIT(S_VI);
+		LF_INIT(SC_VI);
 	}
 
 	/* Convert old-style arguments into new-style ones. */
@@ -143,8 +143,8 @@ editor(gp, argc, argv)
 			break;
 #endif
 		case 'e':		/* Ex mode. */
-			LF_CLR(S_VI);
-			LF_SET(S_EX);
+			LF_CLR(SC_VI);
+			LF_SET(SC_EX);
 			break;
 		case 'F':		/* No snapshot. */
 			F_CLR(gp, G_SNAPSHOT);
@@ -191,8 +191,8 @@ editor(gp, argc, argv)
 			tag_f = optarg;
 			break;
 		case 'v':		/* Vi mode. */
-			LF_CLR(S_EX);
-			LF_SET(S_VI);
+			LF_CLR(SC_EX);
+			LF_SET(SC_VI);
 			break;
 		case 'w':
 			wsizearg = optarg;
@@ -210,11 +210,11 @@ editor(gp, argc, argv)
 	 *
 	 * If not reading from a terminal, it's like -s was specified.
 	 */
-	if (silent && !LF_ISSET(S_EX)) {
+	if (silent && !LF_ISSET(SC_EX)) {
 		v_estr(gp->progname, 0, "-s option is only applicable to ex.");
 		goto err;
 	}
-	if (LF_ISSET(S_EX) && !F_ISSET(gp, G_STDIN_TTY))
+	if (LF_ISSET(SC_EX) && !F_ISSET(gp, G_STDIN_TTY))
 		silent = 1;
 
 	/*
@@ -231,7 +231,7 @@ editor(gp, argc, argv)
 			CIRCLEQ_INSERT_HEAD(&gp->dq, sp, q);
 		goto err;
 	}
-	F_SET(sp, S_EX);
+	F_SET(sp, SC_EX);
 	CIRCLEQ_INSERT_HEAD(&gp->dq, sp, q);
 
 	if (v_key_init(sp))		/* Special key initialization. */
@@ -264,7 +264,7 @@ editor(gp, argc, argv)
 		O_CLR(sp, O_PROMPT);
 		O_CLR(sp, O_VERBOSE);
 		O_CLR(sp, O_WARN);
-		F_SET(sp, S_EX_SILENT);
+		F_SET(sp, SC_EX_SILENT);
 	}
 
 	sp->rows = O_VAL(sp, O_LINES);	/* Make ex formatting work. */
@@ -273,7 +273,7 @@ editor(gp, argc, argv)
 	if (!silent) {			/* Read EXINIT, exrc files. */
 		if (ex_exrc(sp))
 			goto err;
-		if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE)) {
+		if (F_ISSET(sp, SC_EXIT | SC_EXIT_FORCE)) {
 			if (screen_end(sp))
 				goto err;
 			goto done;
@@ -324,9 +324,9 @@ editor(gp, argc, argv)
 			(void)strcpy(*argv, sp->frp->name);
 		}
 		sp->argv = sp->cargv = argv;
-		F_SET(sp, S_ARGNOFREE);
+		F_SET(sp, SC_ARGNOFREE);
 		if (flagchk == 'r')
-			F_SET(sp, S_ARGRECOVER);
+			F_SET(sp, SC_ARGRECOVER);
 	}
 
 	/*
@@ -334,8 +334,8 @@ editor(gp, argc, argv)
 	 * editor now, so that we position default files correctly.
 	 */
 	if (gp->c_option == NULL) {
-		F_CLR(sp, S_EX | S_VI);
-		F_SET(sp, LF_ISSET(S_EX | S_VI));
+		F_CLR(sp, SC_EX | SC_VI);
+		F_SET(sp, LF_ISSET(SC_EX | SC_VI));
 	}
 
 	/*
@@ -350,7 +350,7 @@ editor(gp, argc, argv)
 		} else  {
 			if ((frp = file_add(sp, (CHAR_T *)sp->argv[0])) == NULL)
 				goto err;
-			if (F_ISSET(sp, S_ARGRECOVER))
+			if (F_ISSET(sp, SC_ARGRECOVER))
 				F_SET(frp, FR_RECOVER);
 		}
 
@@ -358,7 +358,7 @@ editor(gp, argc, argv)
 			goto err;
 		if (EXCMD_RUNNING(gp)) {
 			(void)ex_cmd(sp);
-			if (F_ISSET(sp, S_EXIT | S_EXIT_FORCE)) {
+			if (F_ISSET(sp, SC_EXIT | SC_EXIT_FORCE)) {
 				if (screen_end(sp))
 					goto err;
 				goto done;
@@ -367,14 +367,14 @@ editor(gp, argc, argv)
 	}
 
 	/*
-	 * Check to see if we need to wait for ex.  If S_SCR_EX is set, ex was
+	 * Check to see if we need to wait for ex.  If SC_SCR_EX is set, ex was
 	 * forced to initialize the screen during startup.  Wait for the user.
 	 */
-	if (F_ISSET(sp, S_SCR_EX)) {
-		if (gp->scr_screen(sp, S_VI))
+	if (F_ISSET(sp, SC_SCR_EX)) {
+		if (gp->scr_screen(sp, SC_VI))
 			goto err;
-		F_CLR(sp, S_EX | S_SCR_EX);
-		F_SET(sp, S_VI);
+		F_CLR(sp, SC_EX | SC_SCR_EX);
+		F_SET(sp, SC_VI);
 
 		p = msg_cmsg(sp, CMSG_CONT, &len);
 		(void)write(STDOUT_FILENO, p, len);
@@ -391,15 +391,15 @@ editor(gp, argc, argv)
 	}
 
 	/* Switch into the right editor, regardless. */
-	F_CLR(sp, S_EX | S_VI | S_SCR_EX | S_SCR_VI);
-	F_SET(sp, LF_ISSET(S_EX | S_VI));
+	F_CLR(sp, SC_EX | SC_VI | SC_SCR_EX | SC_SCR_VI);
+	F_SET(sp, LF_ISSET(SC_EX | SC_VI));
 
 	/*
 	 * Main edit loop.  Vi handles split screens itself, we only return
 	 * here when switching editor modes or restarting the screen.
 	 */
 	while (sp != NULL)
-		if (F_ISSET(sp, S_EX) ? ex(&sp) : vi(&sp))
+		if (F_ISSET(sp, SC_EX) ? ex(&sp) : vi(&sp))
 			goto err;
 
 done:	rval = 0;

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_global.c,v 10.18 1996/04/22 21:32:07 bostic Exp $ (Berkeley) $Date: 1996/04/22 21:32:07 $";
+static const char sccsid[] = "$Id: ex_global.c,v 10.19 1996/04/27 11:40:21 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -83,7 +83,7 @@ ex_g_setup(sp, cmdp, cmd)
 
 	NEEDFILE(sp, cmdp);
 
-	if (F_ISSET(sp, S_EX_GLOBAL)) {
+	if (F_ISSET(sp, SC_EX_GLOBAL)) {
 		msgq(sp, M_ERR,
 	"124|The %s command can't be used as part of a global or v command",
 		    cmdp->cmd->name);
@@ -138,7 +138,7 @@ usage:		ex_emsg(sp, cmdp->cmd->usage, EXM_USAGE);
 		}
 
 		/* Compile the RE if necessary. */
-		if (!F_ISSET(sp, S_RE_SEARCH) &&
+		if (!F_ISSET(sp, SC_RE_SEARCH) &&
 		    re_compile(sp, sp->re, NULL, NULL, &sp->re_c, RE_C_SEARCH))
 			return (1);
 	} else {

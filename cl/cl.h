@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: cl.h,v 10.11 1996/03/14 09:26:45 bostic Exp $ (Berkeley) $Date: 1996/03/14 09:26:45 $
+ *	$Id: cl.h,v 10.12 1996/04/27 11:41:17 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:41:17 $
  */
 
 typedef struct _cl_private {
@@ -56,10 +56,10 @@ typedef enum { INP_OK=0, INP_EOF, INP_ERR, INP_INTR, INP_TIMEOUT } input_t;
 
 /* Some functions can be safely ignored until the screen is running. */
 #define	VI_INIT_IGNORE(sp)						\
-	if (F_ISSET(sp, S_VI) && !F_ISSET(sp, S_SCR_VI))		\
+	if (F_ISSET(sp, SC_VI) && !F_ISSET(sp, SC_SCR_VI))		\
 		return (0);
 #define	EX_INIT_IGNORE(sp)						\
-	if (F_ISSET(sp, S_EX) && !F_ISSET(sp, S_SCR_EX))		\
+	if (F_ISSET(sp, SC_EX) && !F_ISSET(sp, SC_SCR_EX))		\
 		return (0);
 
 /*

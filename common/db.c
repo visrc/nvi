@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: db.c,v 10.19 1996/04/23 14:33:22 bostic Exp $ (Berkeley) $Date: 1996/04/23 14:33:22 $";
+static const char sccsid[] = "$Id: db.c,v 10.20 1996/04/27 11:41:09 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:41:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -113,7 +113,7 @@ db_get(sp, lno, flags, pp, lenp)
 	 * Look-aside into the TEXT buffers and see if the line we want
 	 * is there.
 	 */
-	if (F_ISSET(sp, S_TINPUT)) {
+	if (F_ISSET(sp, SC_TINPUT)) {
 		l1 = ((TEXT *)sp->tiq.cqh_first)->lno;
 		l2 = ((TEXT *)sp->tiq.cqh_last)->lno;
 		if (l1 <= lno && l2 >= lno) {
@@ -464,7 +464,7 @@ db_exist(sp, lno)
 	 * number for the lines used by the text input buffers.
 	 */
 	if (ep->c_nlines != OOBLNO)
-		return (lno <= (F_ISSET(sp, S_TINPUT) ?
+		return (lno <= (F_ISSET(sp, SC_TINPUT) ?
 		    ep->c_nlines + (((TEXT *)sp->tiq.cqh_last)->lno -
 		    ((TEXT *)sp->tiq.cqh_first)->lno) : ep->c_nlines));
 
@@ -499,7 +499,7 @@ db_last(sp, lnop)
 	 */
 	if (ep->c_nlines != OOBLNO) {
 		*lnop = ep->c_nlines;
-		if (F_ISSET(sp, S_TINPUT))
+		if (F_ISSET(sp, SC_TINPUT))
 			*lnop += ((TEXT *)sp->tiq.cqh_last)->lno -
 			    ((TEXT *)sp->tiq.cqh_first)->lno;
 		return (0);
@@ -527,7 +527,7 @@ db_last(sp, lnop)
 	ep->c_lp = data.data;
 
 	/* Return the value. */
-	*lnop = (F_ISSET(sp, S_TINPUT) &&
+	*lnop = (F_ISSET(sp, SC_TINPUT) &&
 	    ((TEXT *)sp->tiq.cqh_last)->lno > lno ?
 	    ((TEXT *)sp->tiq.cqh_last)->lno : lno);
 	return (0);
@@ -563,7 +563,7 @@ scr_update(sp, lno, op, current)
 	EXF *ep;
 	SCR *tsp;
 
-	if (F_ISSET(sp, S_EX))
+	if (F_ISSET(sp, SC_EX))
 		return (0);
 
 	ep = sp->ep;
