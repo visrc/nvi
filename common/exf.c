@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.11 1992/06/07 16:46:48 bostic Exp $ (Berkeley) $Date: 1992/06/07 16:46:48 $";
+static char sccsid[] = "$Id: exf.c,v 5.12 1992/06/08 09:28:43 bostic Exp $ (Berkeley) $Date: 1992/06/08 09:28:43 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -184,6 +184,14 @@ file_gline(ep, lno, lenp)
 	DBT data, key;
 	TEXT *tp;
 	recno_t cnt;
+
+	/*
+	 * The underlying recno stuff handles zero by returning NULL, but have
+	 * to have an oob condition for the look-aside into the input buffer
+	 * anyway.
+	 */
+	if (lno == 0)
+		return (NULL);
 
 	/*
 	 * If we're in input mode, look-aside into the input buffer and
