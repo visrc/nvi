@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.31 1993/02/20 16:10:18 bostic Exp $ (Berkeley) $Date: 1993/02/20 16:10:18 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.32 1993/02/23 10:39:31 bostic Exp $ (Berkeley) $Date: 1993/02/23 10:39:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -247,7 +247,7 @@ win_redraw:		(void)scr_sm_fill(ep, ep->top, P_TOP);
 	 *
 	 * 3a: Line down.
 	 */
-	if (ep->lno > ep->otop) {
+	if (ep->lno >= ep->otop) {
 		/* If on the current screen, we're done. */
 		if (ep->lno <= TMAP->lno) {
 			if (FF_ISSET(ep, F_REDRAW))
