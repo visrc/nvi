@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 8.26 1993/11/05 15:59:35 bostic Exp $ (Berkeley) $Date: 1993/11/05 15:59:35 $";
+static char sccsid[] = "$Id: vs_smap.c,v 8.27 1993/11/05 16:12:11 bostic Exp $ (Berkeley) $Date: 1993/11/05 16:12:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -470,13 +470,26 @@ svi_sm_up(sp, ep, rp, count, cursor_move)
 		ignore_cursor = 0;
 	}
 
-	/* Check to see if movement is possible. */
+	/*
+	 * Check to see if movement is possible.  Lots of checks...
+	 *
+	 * Find out if it's possible to move past the end of the map.  If
+	 * that's okay because we think that we can move the cursor down
+	 * in the map, check to make sure that the map isn't mostly empty.
+	 */
 	if (svi_sm_next(sp, ep, TMAP, &tmp))
 		return (1);
 	if (tmp.lno > TMAP->lno &&
 	    !file_gline(sp, ep, tmp.lno, NULL) ||
 	    tmp.off > svi_screens(sp, ep, tmp.lno, NULL)) {
 		if (!cursor_move || ignore_cursor || p == TMAP) {
+			v_eof(sp, ep, NULL);
+			return (1);
+		}
+		if (svi_sm_next(sp, ep, p, &tmp))
+			return (1);
+		if (!file_gline(sp, ep, tmp.lno, NULL) ||
+		    tmp.off > svi_screens(sp, ep, tmp.lno, NULL)) {
 			v_eof(sp, ep, NULL);
 			return (1);
 		}
