@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.76 1993/12/29 16:42:02 bostic Exp $ (Berkeley) $Date: 1993/12/29 16:42:02 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.77 1993/12/29 17:30:45 bostic Exp $ (Berkeley) $Date: 1993/12/29 17:30:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -699,6 +699,19 @@ leftmargin:			tp->lb[sp->cno - 1] = ' ';
 			if (sp->cno < tp->ai)
 				--tp->ai;
 			break;
+		case K_VINTR:
+			/*
+			 * !!!
+			 * Historically, <interrupt> exited the user from
+			 * editing the infoline, and returned to the main
+			 * screen.  It also beeped the terminal, but that
+			 * seems excessive.
+			 */
+			if (LF_ISSET(TXT_INFOLINE)) {
+				tp->lb[tp->len = 0] = '\0';
+				goto ret;
+			}
+			goto ins_ch;
 		case K_VWERASE:			/* Skip back one word. */
 			/*
 			 * If at the beginning of the line, try and drop back
