@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: set.opt.roff,v 8.2 1994/03/18 20:04:31 bostic Exp $ (Berkeley) $Date: 1994/03/18 20:04:31 $
+.\"     $Id: set.opt.roff,v 8.3 1994/03/18 20:17:40 bostic Exp $ (Berkeley) $Date: 1994/03/18 20:17:40 $
 .\"
 There are a large number of options that may be set (or unset) to
 change the editor's behavior.
@@ -245,17 +245,31 @@ option.
 #endif
 .It Li "cdpath [environment variable CDPATH, or ``.'']"
 #ifdef MANUAL
-The change directory paths.
-#endif
-#ifdef REFERENCE
-This option is used to specify a space or colon separated list of
-directories which are used as path prefixes for the directory named
-to the
+The directory paths used as path prefixes for the
 .Sy cd
 command.
-The environmental variable
+#endif
+#ifdef REFERENCE
+This option is used to specify a colon separated list of directories
+which are used as path prefixes for any relative path names used as
+arguments for the
+.Sy cd
+command.
+The value of this option defaults to the value of the environmental
+variable
 .Ev CDPATH
-is used if it exists, otherwise only the current directory is checked.
+if it is set, otherwise to the current directory.
+For compatibility with the POSIX 1003.2 shell, the
+.Sy cd
+command does
+.Em not
+check the current directory as a path prefix for relative path names
+unless it is explicitly specified.
+It may be so specified by entering an empty string or a
+.Dq \&.
+into the
+.Ev CDPATH 
+variable or the option value.
 #endif
 .It Li "columns, co [80]"
 #ifdef MANUAL
