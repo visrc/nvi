@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 8.3 1993/07/06 08:29:43 bostic Exp $ (Berkeley) $Date: 1993/07/06 08:29:43 $";
+static char sccsid[] = "$Id: ex_global.c,v 8.4 1993/07/06 09:08:29 bostic Exp $ (Berkeley) $Date: 1993/07/06 09:08:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -127,7 +127,7 @@ global(sp, ep, cmdp, cmd)
 
 	rval = 0;
 	F_CLR(sp, S_INTERRUPTED);
-	F_SET(sp, S_INTERRUPTIBLE);
+	F_SET(sp, S_GLOBAL | S_INTERRUPTIBLE);
 
 	/* For each line... */
 	for (lno = cmdp->addr1.lno,
