@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_put.c,v 8.5 1994/03/08 19:39:35 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:39:35 $";
+static char sccsid[] = "$Id: ex_put.c,v 8.6 1994/07/23 14:30:32 bostic Exp $ (Berkeley) $Date: 1994/07/23 14:30:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,5 +46,7 @@ ex_put(sp, ep, cmdp)
 	if (put(sp, ep, NULL, F_ISSET(cmdp, E_BUFFER) ? &cmdp->buffer : NULL,
 	    &cmdp->addr1, &m, 1))
 		return (1);
+	sp->lno = m.lno;
+	sp->cno = m.cno;
 	return (0);
 }
