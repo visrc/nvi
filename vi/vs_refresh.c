@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 8.6 1993/08/27 11:46:49 bostic Exp $ (Berkeley) $Date: 1993/08/27 11:46:49 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 8.7 1993/08/28 10:50:20 bostic Exp $ (Berkeley) $Date: 1993/08/28 10:50:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -511,7 +511,7 @@ lcont:		/* Move to the message line and clear it. */
 		for (;; ++p) {
 			if (!mp->len)
 				break;
-			ch = *p;
+			ch = *(u_char *)p;
 			chlen = cname[ch].len;
 			if (chlen >= len)
 				break;
