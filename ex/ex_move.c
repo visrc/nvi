@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_move.c,v 5.5 1992/04/18 09:54:15 bostic Exp $ (Berkeley) $Date: 1992/04/18 09:54:15 $";
+static char sccsid[] = "$Id: ex_move.c,v 5.6 1992/04/19 08:53:56 bostic Exp $ (Berkeley) $Date: 1992/04/19 08:53:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,11 +18,11 @@ static char sccsid[] = "$Id: ex_move.c,v 5.5 1992/04/18 09:54:15 bostic Exp $ (B
 #include "extern.h"
 
 enum which {COPY, MOVE};
-static void copy __P((CMDARG *, enum which));
+static void copy __P((EXCMDARG *, enum which));
 
 int
 ex_copy(cmdp)
-	CMDARG *cmdp;
+	EXCMDARG *cmdp;
 {
 	move(cmdp, COPY);
 	return (0);
@@ -30,7 +30,7 @@ ex_copy(cmdp)
 
 int
 ex_move(cmdp)
-	CMDARG *cmdp;
+	EXCMDARG *cmdp;
 {
 	move(cmdp, MOVE);
 	return (0);
@@ -39,7 +39,7 @@ ex_move(cmdp)
 /* move or copy selected lines */
 static void
 copy(cmdp, cmd)
-	CMDARG *cmdp;
+	EXCMDARG *cmdp;
 	enum which cmd;
 {
 	MARK	frommark;
@@ -59,7 +59,7 @@ copy(cmdp, cmd)
 		destmark = 0L;
 	}
 	else {
-		CMDARG __xxx;
+		EXCMDARG __xxx;
 		if (linespec(extra, &__xxx) == extra || !destmark) {
 			msg("invalid destination address");
 			return;

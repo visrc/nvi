@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 5.5 1992/04/18 09:54:19 bostic Exp $ (Berkeley) $Date: 1992/04/18 09:54:19 $";
+static char sccsid[] = "$Id: ex_read.c,v 5.6 1992/04/19 08:53:59 bostic Exp $ (Berkeley) $Date: 1992/04/19 08:53:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,7 +26,7 @@ static char sccsid[] = "$Id: ex_read.c,v 5.5 1992/04/18 09:54:19 bostic Exp $ (B
  */
 int
 ex_read(cmdp)
-	CMDARG *cmdp;
+	EXCMDARG *cmdp;
 {
 	register char *p;
 	struct stat sb;

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 5.7 1992/04/18 15:36:25 bostic Exp $ (Berkeley) $Date: 1992/04/18 15:36:25 $";
+static char sccsid[] = "$Id: ex_append.c,v 5.8 1992/04/19 08:53:38 bostic Exp $ (Berkeley) $Date: 1992/04/19 08:53:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,7 +22,7 @@ static char sccsid[] = "$Id: ex_append.c,v 5.7 1992/04/18 15:36:25 bostic Exp $ 
 
 enum which {APPEND, CHANGE};
 
-static void ca __P((CMDARG *, enum which));
+static void ca __P((EXCMDARG *, enum which));
 
 /*
  * ex_append (:address append)
@@ -31,7 +31,7 @@ static void ca __P((CMDARG *, enum which));
  */
 int
 ex_append(cmdp)
-	CMDARG *cmdp;
+	EXCMDARG *cmdp;
 {
 	ca(cmdp, APPEND);
 	return (0);
@@ -39,7 +39,7 @@ ex_append(cmdp)
 
 int
 ex_change(cmdp)
-	CMDARG *cmdp;
+	EXCMDARG *cmdp;
 {
 	ca(cmdp, CHANGE);
 	return (0);
@@ -47,7 +47,7 @@ ex_change(cmdp)
 
 static void
 ca(cmdp, cmd)
-	CMDARG *cmdp;
+	EXCMDARG *cmdp;
 	enum which cmd;
 {
 	MARK m;

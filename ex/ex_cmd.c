@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 5.9 1992/04/18 10:01:49 bostic Exp $ (Berkeley) $Date: 1992/04/18 10:01:49 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 5.10 1992/04/19 08:54:08 bostic Exp $ (Berkeley) $Date: 1992/04/19 08:54:08 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -43,7 +43,7 @@ static char sccsid[] = "$Id: ex_cmd.c,v 5.9 1992/04/18 10:01:49 bostic Exp $ (Be
  *	s		-- string (parse locally)
  */
 /* START_OPTION_DEF */
-CMDLIST cmds[] = {
+EXCMDLIST cmds[] = {
 #define	C_BANG		0
 	"!",		ex_bang,	E_ADDR2|E_EXRCOK|E_NL,
 	    "s",	"[line [,line]] ! command",

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_quit.c,v 5.3 1992/04/05 09:23:36 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:23:36 $";
+static char sccsid[] = "$Id: ex_quit.c,v 5.4 1992/04/19 08:53:49 bostic Exp $ (Berkeley) $Date: 1992/04/19 08:53:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,11 +18,11 @@ static char sccsid[] = "$Id: ex_quit.c,v 5.3 1992/04/05 09:23:36 bostic Exp $ (B
 #include "extern.h"
 
 enum which {QUIT, WQ, XIT};
-static void quit __P((CMDARG *, enum which));
+static void quit __P((EXCMDARG *, enum which));
 
 int
 ex_quit(cmdp)
-	CMDARG *cmdp;
+	EXCMDARG *cmdp;
 {
 	quit(cmdp, QUIT);
 	return (0);
@@ -30,7 +30,7 @@ ex_quit(cmdp)
 
 int
 ex_wq(cmdp)
-	CMDARG *cmdp;
+	EXCMDARG *cmdp;
 {
 	quit(cmdp, WQ);
 	return (0);
@@ -38,7 +38,7 @@ ex_wq(cmdp)
 
 int
 ex_xit(cmdp)
-	CMDARG *cmdp;
+	EXCMDARG *cmdp;
 {
 	quit(cmdp, XIT);
 	return (0);
@@ -48,7 +48,7 @@ ex_xit(cmdp)
 
 static void
 quit(cmdp, cmd)
-	CMDARG *cmdp;
+	EXCMDARG *cmdp;
 	enum which cmd;
 {
 	static long	whenwarned;	/* when the user was last warned of extra files */

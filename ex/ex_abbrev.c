@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_abbrev.c,v 5.8 1992/04/18 15:35:44 bostic Exp $ (Berkeley) $Date: 1992/04/18 15:35:44 $";
+static char sccsid[] = "$Id: ex_abbrev.c,v 5.9 1992/04/19 08:53:37 bostic Exp $ (Berkeley) $Date: 1992/04/19 08:53:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,7 +26,7 @@ int have_abbr;				/* If any abbreviations */
  */
 int
 ex_abbr(cmdp)
-	CMDARG *cmdp;
+	EXCMDARG *cmdp;
 {
 	register char *input, *output;
 
@@ -62,7 +62,7 @@ ex_abbr(cmdp)
  */
 int
 ex_unabbr(cmdp)
-        CMDARG *cmdp;
+        EXCMDARG *cmdp;
 {
 	char *input;
 

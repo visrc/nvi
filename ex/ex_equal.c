@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_equal.c,v 5.3 1992/04/05 09:23:35 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:23:35 $";
+static char sccsid[] = "$Id: ex_equal.c,v 5.4 1992/04/19 08:53:47 bostic Exp $ (Berkeley) $Date: 1992/04/19 08:53:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -23,7 +23,7 @@ static char sccsid[] = "$Id: ex_equal.c,v 5.3 1992/04/05 09:23:35 bostic Exp $ (
  */
 int
 ex_equal(cmdp)
-	CMDARG *cmdp;
+	EXCMDARG *cmdp;
 {
 	msg("%ld", markline(cmdp->addrcnt ? cmdp->addr1 : MARK_LAST));
 	return (0);

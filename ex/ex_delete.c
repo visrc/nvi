@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_delete.c,v 5.4 1992/04/18 09:54:10 bostic Exp $ (Berkeley) $Date: 1992/04/18 09:54:10 $";
+static char sccsid[] = "$Id: ex_delete.c,v 5.5 1992/04/19 08:53:44 bostic Exp $ (Berkeley) $Date: 1992/04/19 08:53:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -17,11 +17,11 @@ static char sccsid[] = "$Id: ex_delete.c,v 5.4 1992/04/18 09:54:10 bostic Exp $ 
 #include "extern.h"
 
 enum which {DELETE, YANK};
-static void Xdelete __P((CMDARG *, enum which));
+static void Xdelete __P((EXCMDARG *, enum which));
 
 int
 ex_delete(cmdp)
-	CMDARG *cmdp;
+	EXCMDARG *cmdp;
 {
 	Xdelete(cmdp, DELETE);
 	return (0);
@@ -29,7 +29,7 @@ ex_delete(cmdp)
 
 int
 ex_yank(cmdp)
-	CMDARG *cmdp;
+	EXCMDARG *cmdp;
 {
 	Xdelete(cmdp, YANK);
 	return (0);
@@ -37,7 +37,7 @@ ex_yank(cmdp)
 
 static void
 Xdelete(cmdp, cmd)
-	CMDARG *cmdp;
+	EXCMDARG *cmdp;
 	enum which cmd;
 {
 	MARK	curs2;	/* an altered form of the cursor */

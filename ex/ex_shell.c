@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 5.4 1992/04/05 09:58:44 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:58:44 $";
+static char sccsid[] = "$Id: ex_shell.c,v 5.5 1992/04/19 08:54:00 bostic Exp $ (Berkeley) $Date: 1992/04/19 08:54:00 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -24,7 +24,7 @@ static char sccsid[] = "$Id: ex_shell.c,v 5.4 1992/04/05 09:58:44 bostic Exp $ (
  */
 int
 ex_shell(cmdp)
-	CMDARG *cmdp;
+	EXCMDARG *cmdp;
 {
 	int rval;
 	char buf[MAXPATHLEN];

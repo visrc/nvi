@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 5.3 1992/04/05 09:23:52 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:23:52 $";
+static char sccsid[] = "$Id: ex_tag.c,v 5.4 1992/04/19 08:54:04 bostic Exp $ (Berkeley) $Date: 1992/04/19 08:54:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -20,7 +20,7 @@ static char sccsid[] = "$Id: ex_tag.c,v 5.3 1992/04/05 09:23:52 bostic Exp $ (Be
 
 int
 ex_tag(cmdp)
-	CMDARG *cmdp;
+	EXCMDARG *cmdp;
 {
 	int	fd;	/* file descriptor used to read the file */
 	char	*scan;	/* used to scan through the tmpblk.c */
@@ -143,7 +143,7 @@ ex_tag(cmdp)
 #endif
 	cursor = MARK_FIRST;
 {
-	CMDARG __xxx;
+	EXCMDARG __xxx;
 	linespec(scan, &__xxx);
 	cursor = __xxx.addr1;
 }

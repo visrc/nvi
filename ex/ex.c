@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.20 1992/04/18 15:37:39 bostic Exp $ (Berkeley) $Date: 1992/04/18 15:37:39 $";
+static char sccsid[] = "$Id: ex.c,v 5.21 1992/04/19 08:53:36 bostic Exp $ (Berkeley) $Date: 1992/04/19 08:53:36 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -152,8 +152,8 @@ cont:		continue;
 	return (0);
 }
 
-static CMDARG parg = { NULL, 2 };
-static CMDLIST *lastcmd = &cmds[C_PRINT];
+static EXCMDARG parg = { NULL, 2 };
+static EXCMDLIST *lastcmd = &cmds[C_PRINT];
 
 /*
  * ex_cmd --
@@ -166,8 +166,8 @@ ex_cmd(exc)
 	extern int reading_exrc;
 	register int cmdlen;
 	register char *p;
-	CMDARG	cmd;
-	CMDLIST *cp;
+	EXCMDARG cmd;
+	EXCMDLIST *cp;
 	u_long lcount, num;
 	int flags;
 	char *ep;
@@ -196,7 +196,7 @@ ex_cmd(exc)
 	for (; isspace(*exc); ++exc);
 
 	/* Initialize the argument structure. */
-	bzero(&cmd, sizeof(CMDARG));
+	bzero(&cmd, sizeof(EXCMDARG));
 
 	/*
 	 * Parse line specifiers.  New command line position is returned,
@@ -567,7 +567,7 @@ addr2:	switch(cmd.addrcnt) {
 char *
 linespec(cmd, cp)
 	char *cmd;
-	CMDARG *cp;
+	EXCMDARG *cp;
 {
 	MARK cur, savecursor;
 	u_long num, total;
@@ -704,7 +704,7 @@ int
 buildargv(exc, expand, cp)
 	char *exc;
 	int expand;
-	CMDARG	*cp;
+	EXCMDARG *cp;
 {
 	static ARGS *args;
 	static int argscnt;

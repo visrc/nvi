@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 5.6 1992/04/18 09:59:09 bostic Exp $ (Berkeley) $Date: 1992/04/18 09:59:09 $";
+static char sccsid[] = "$Id: ex_print.c,v 5.7 1992/04/19 08:53:57 bostic Exp $ (Berkeley) $Date: 1992/04/19 08:53:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -19,7 +19,7 @@ static char sccsid[] = "$Id: ex_print.c,v 5.6 1992/04/18 09:59:09 bostic Exp $ (
 #include "options.h"
 #include "extern.h"
 
-static int print __P((CMDARG *, int));
+static int print __P((EXCMDARG *, int));
 
 /*
  * ex_list -- :[line [,line]] l[ist] [count] [flags]
@@ -28,7 +28,7 @@ static int print __P((CMDARG *, int));
  */
 int
 ex_list(cmdp)
-	CMDARG *cmdp;
+	EXCMDARG *cmdp;
 {
 	int flags;
 
@@ -47,7 +47,7 @@ ex_list(cmdp)
  */
 int
 ex_number(cmdp)
-	CMDARG *cmdp;
+	EXCMDARG *cmdp;
 {
 	int flags;
 
@@ -66,7 +66,7 @@ ex_number(cmdp)
  */
 int
 ex_print(cmdp)
-	CMDARG *cmdp;
+	EXCMDARG *cmdp;
 {
 	int flags;
 
@@ -84,7 +84,7 @@ ex_print(cmdp)
  */
 static int
 print(cmdp, flags)
-	CMDARG *cmdp;
+	EXCMDARG *cmdp;
 	register int flags;
 {
 	register long cur, end;

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 5.7 1992/04/16 17:57:35 bostic Exp $ (Berkeley) $Date: 1992/04/16 17:57:35 $";
+static char sccsid[] = "$Id: ex_edit.c,v 5.8 1992/04/19 08:53:46 bostic Exp $ (Berkeley) $Date: 1992/04/19 08:53:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -20,25 +20,25 @@ static char sccsid[] = "$Id: ex_edit.c,v 5.7 1992/04/16 17:57:35 bostic Exp $ (B
 
 enum which {EDIT, VISUAL};
 
-static int edit __P((CMDARG *, enum which));
+static int edit __P((EXCMDARG *, enum which));
 
 int
 ex_edit(cmdp)
-	CMDARG *cmdp;
+	EXCMDARG *cmdp;
 {
 	return (edit(cmdp, EDIT));
 }
 
 int
 ex_visual(cmdp)
-	CMDARG *cmdp;
+	EXCMDARG *cmdp;
 {
 	return (edit(cmdp, VISUAL));
 }
 
 static int
 edit(cmdp, cmd)
-	CMDARG *cmdp;
+	EXCMDARG *cmdp;
 	enum which cmd;
 {
 	long line;

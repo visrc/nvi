@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 5.6 1992/04/18 09:54:25 bostic Exp $ (Berkeley) $Date: 1992/04/18 09:54:25 $";
+static char sccsid[] = "$Id: ex_subst.c,v 5.7 1992/04/19 08:54:03 bostic Exp $ (Berkeley) $Date: 1992/04/19 08:54:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,11 +21,11 @@ static char sccsid[] = "$Id: ex_subst.c,v 5.6 1992/04/18 09:54:25 bostic Exp $ (
 #include "extern.h"
 
 enum which {AGAIN, FIRST};
-static void substitute __P((CMDARG *, enum which));
+static void substitute __P((EXCMDARG *, enum which));
 
 int
 ex_subagain(cmdp)
-	CMDARG *cmdp;
+	EXCMDARG *cmdp;
 {
 	substitute(cmdp, AGAIN);
 	return (0);
@@ -33,7 +33,7 @@ ex_subagain(cmdp)
 
 int
 ex_substitute(cmdp)
-	CMDARG *cmdp;
+	EXCMDARG *cmdp;
 {
 	substitute(cmdp, FIRST);
 	return (0);
@@ -41,7 +41,7 @@ ex_substitute(cmdp)
 
 static void
 substitute(cmdp, cmd)
-	CMDARG *cmdp;
+	EXCMDARG *cmdp;
 	enum which cmd;
 {
 	char	*line;	/* a line from the file */

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_map.c,v 5.9 1992/04/18 15:35:29 bostic Exp $ (Berkeley) $Date: 1992/04/18 15:35:29 $";
+static char sccsid[] = "$Id: ex_map.c,v 5.10 1992/04/19 08:53:53 bostic Exp $ (Berkeley) $Date: 1992/04/19 08:53:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -28,7 +28,7 @@ static char sccsid[] = "$Id: ex_map.c,v 5.9 1992/04/18 15:35:29 bostic Exp $ (Be
  */
 int
 ex_map(cmdp)
-	CMDARG *cmdp;
+	EXCMDARG *cmdp;
 {
 	register int ch;
 	register char *input, *output;
@@ -102,7 +102,7 @@ noremap:			msg("The %s character may not be remapped.", s);
  */
 int
 ex_unmap(cmdp)
-	CMDARG *cmdp;
+	EXCMDARG *cmdp;
 {
 	char *input;
 

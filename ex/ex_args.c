@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 5.7 1992/04/16 17:57:32 bostic Exp $ (Berkeley) $Date: 1992/04/16 17:57:32 $";
+static char sccsid[] = "$Id: ex_args.c,v 5.8 1992/04/19 08:53:39 bostic Exp $ (Berkeley) $Date: 1992/04/19 08:53:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,7 +29,7 @@ static int	total, current;
  */
 int
 ex_next(cmdp)
-	CMDARG *cmdp;
+	EXCMDARG *cmdp;
 {
 	/* It's permissible to specify a list of files with :next. */
 	if (cmdp->argc)
@@ -53,7 +53,7 @@ ex_next(cmdp)
  */
 int
 ex_prev(cmdp)
-	CMDARG *cmdp;
+	EXCMDARG *cmdp;
 {
 	if (current > 1)
 		if (tmpabort(cmdp->flags & E_FORCE)) {
@@ -73,7 +73,7 @@ ex_prev(cmdp)
  */
 int
 ex_rew(cmdp)
-	CMDARG *cmdp;
+	EXCMDARG *cmdp;
 {
 	if (current > 1)
 		if (tmpabort(cmdp->flags & E_FORCE)) {
@@ -93,7 +93,7 @@ ex_rew(cmdp)
  */
 int
 ex_args(cmdp)
-	CMDARG *cmdp;
+	EXCMDARG *cmdp;
 {
 	register char **p, *sep;
 	int cnt, col, len, newline;
