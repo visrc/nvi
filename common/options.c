@@ -6,10 +6,10 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.54 1993/04/06 11:36:23 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:36:23 $";
+static char sccsid[] = "$Id: options.c,v 5.55 1993/04/12 14:30:13 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:30:13 $";
 #endif /* not lint */
 
-#include <sys/param.h>
+#include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
 
@@ -30,112 +30,112 @@ static int	 	 opts_print __P((SCR *, OPTLIST const *, OPTION *));
 
 static OPTLIST const optlist[] = {
 /* O_AUTOINDENT */
-	"autoindent",	NULL,		OPT_0BOOL,	0,
+	{"autoindent",	NULL,		OPT_0BOOL,	0},
 /* O_AUTOPRINT */
-	"autoprint",	NULL,		OPT_1BOOL,	0,
+	{"autoprint",	NULL,		OPT_1BOOL,	0},
 /* O_AUTOTAB */
-	"autotab",	NULL,		OPT_1BOOL,	0,
+	{"autotab",	NULL,		OPT_1BOOL,	0},
 /* O_AUTOWRITE */
-	"autowrite",	NULL,		OPT_0BOOL,	0,
+	{"autowrite",	NULL,		OPT_0BOOL,	0},
 /* O_BEAUTIFY */
-	"beautify",	NULL,		OPT_0BOOL,	0,
+	{"beautify",	NULL,		OPT_0BOOL,	0},
 /* O_CC */
-	"cc",		NULL,		OPT_STR,	0,
+	{"cc",		NULL,		OPT_STR,	0},
 /* O_COLUMNS */
-	"columns",	f_columns,	OPT_NUM,	OPT_NOSAVE,
+	{"columns",	f_columns,	OPT_NUM,	OPT_NOSAVE},
 /* O_COMMENT */
-	"comment",	NULL,		OPT_0BOOL,	0,
+	{"comment",	NULL,		OPT_0BOOL,	0},
 /* O_DIGRAPH */
-	"digraph",	NULL,		OPT_0BOOL,	0,
+	{"digraph",	NULL,		OPT_0BOOL,	0},
 /* O_DIRECTORY */
-	"directory",	NULL,		OPT_STR,	OPT_NOSAVE,
+	{"directory",	NULL,		OPT_STR,	OPT_NOSAVE},
 /* O_EDCOMPATIBLE */
-	"edcompatible",	NULL,		OPT_0BOOL,	0,
+	{"edcompatible",NULL,		OPT_0BOOL,	0},
 /* O_ERRORBELLS */
-	"errorbells",	NULL,		OPT_0BOOL,	0,
+	{"errorbells",	NULL,		OPT_0BOOL,	0},
 /* O_EXRC */
-	"exrc",		NULL,		OPT_0BOOL,	0,
+	{"exrc",	NULL,		OPT_0BOOL,	0},
 /* O_EXREFRESH */
-	"exrefresh",	NULL,		OPT_1BOOL,	0,
+	{"exrefresh",	NULL,		OPT_1BOOL,	0},
 /* O_EXTENDED */
-	"extended",	NULL,		OPT_0BOOL,	0,
+	{"extended",	NULL,		OPT_0BOOL,	0},
 /* O_FLASH */
-	"flash",	f_flash,	OPT_0BOOL,	0,
+	{"flash",	f_flash,	OPT_1BOOL,	0},
 /* O_IGNORECASE */
-	"ignorecase",	NULL,		OPT_0BOOL,	0,
+	{"ignorecase",	NULL,		OPT_0BOOL,	0},
 /* O_KEYTIME */
-	"keytime",	f_keytime,	OPT_NUM,	0,
+	{"keytime",	f_keytime,	OPT_NUM,	0},
 /* O_LEFTRIGHT */
-	"leftright",	f_leftright,	OPT_0BOOL,	0,
+	{"leftright",	f_leftright,	OPT_0BOOL,	0},
 /* O_LINES */
-	"lines",	f_lines,	OPT_NUM,	OPT_NOSAVE,
+	{"lines",	f_lines,	OPT_NUM,	OPT_NOSAVE},
 /* O_LIST */
-	"list",		f_list,		OPT_0BOOL,	0,
+	{"list",	f_list,		OPT_0BOOL,	0},
 /* O_MAGIC */
-	"magic",	NULL,		OPT_1BOOL,	0,
+	{"magic",	NULL,		OPT_1BOOL,	0},
 /* O_MAKE */
-	"make",		NULL,		OPT_STR,	0,
+	{"make",	NULL,		OPT_STR,	0},
 /* O_MESG */
-	"mesg",		f_mesg,		OPT_1BOOL,	0,
+	{"mesg",	f_mesg,		OPT_1BOOL,	0},
 /* O_MODELINES */
-	"modelines",	f_modelines,	OPT_0BOOL,	0,
+	{"modelines",	f_modelines,	OPT_0BOOL,	0},
 /* O_NUMBER */
-	"number",	NULL,		OPT_0BOOL,	0,
+	{"number",	NULL,		OPT_0BOOL,	0},
 /* O_NUNDO */
-	"nundo",	NULL,		OPT_0BOOL,	0,
+	{"nundo",	NULL,		OPT_0BOOL,	0},
 /* O_OPTIMIZE */
-	"optimize",	NULL,		OPT_1BOOL,	0,
+	{"optimize",	NULL,		OPT_1BOOL,	0},
 /* O_PARAGRAPHS */
-	"paragraphs",	NULL,		OPT_STR,	0,
+	{"paragraphs",	NULL,		OPT_STR,	0},
 /* O_PROMPT */
-	"prompt",	NULL,		OPT_1BOOL,	0,
+	{"prompt",	NULL,		OPT_1BOOL,	0},
 /* O_READONLY */
-	"readonly",	NULL,		OPT_0BOOL,	0,
+	{"readonly",	NULL,		OPT_0BOOL,	0},
 /* O_REDRAW */
-	"redraw",	NULL,		OPT_0BOOL,	0,
+	{"redraw",	NULL,		OPT_0BOOL,	0},
 /* O_REMAP */
-	"remap",	NULL,		OPT_1BOOL,	0,
+	{"remap",	NULL,		OPT_1BOOL,	0},
 /* O_REPORT */
-	"report",	NULL,		OPT_NUM,	0,
+	{"report",	NULL,		OPT_NUM,	0},
 /* O_RULER */
-	"ruler",	f_ruler,	OPT_0BOOL,	0,
+	{"ruler",	f_ruler,	OPT_0BOOL,	0},
 /* O_SCROLL */
-	"scroll",	NULL,		OPT_NUM,	0,
+	{"scroll",	NULL,		OPT_NUM,	0},
 /* O_SECTIONS */
-	"sections",	NULL,		OPT_STR,	0,
+	{"sections",	NULL,		OPT_STR,	0},
 /* O_SHELL */
-	"shell",	NULL,		OPT_STR,	0,
+	{"shell",	NULL,		OPT_STR,	0},
 /* O_SHIFTWIDTH */
-	"shiftwidth",	f_shiftwidth,	OPT_NUM,	0,
+	{"shiftwidth",	f_shiftwidth,	OPT_NUM,	0},
 /* O_SHOWMATCH */
-	"showmatch",	NULL,		OPT_0BOOL,	0,
+	{"showmatch",	NULL,		OPT_0BOOL,	0},
 /* O_SHOWMODE */
-	"showmode",	NULL,		OPT_0BOOL,	0,
+	{"showmode",	NULL,		OPT_0BOOL,	0},
 /* O_SIDESCROLL */
-	"sidescroll",	f_sidescroll,	OPT_NUM,	0,
+	{"sidescroll",	f_sidescroll,	OPT_NUM,	0},
 /* O_SYNCCMD */
-	"sync",		NULL,		OPT_0BOOL,	0,
+	{"sync",	NULL,		OPT_0BOOL,	0},
 /* O_TABSTOP */
-	"tabstop",	f_tabstop,	OPT_NUM,	0,
+	{"tabstop",	f_tabstop,	OPT_NUM,	0},
 /* O_TAGS */
-	"tags",		f_tags,		OPT_STR,	0,
+	{"tags",	f_tags,		OPT_STR,	0},
 /* O_TERM */
-	"term",		f_term,		OPT_STR,	OPT_NOSAVE,
+	{"term",	f_term,		OPT_STR,	OPT_NOSAVE},
 /* O_TERSE */
-	"terse",	NULL,		OPT_0BOOL,	0,
+	{"terse",	NULL,		OPT_0BOOL,	0},
 /* O_TIMEOUT */
-	"timeout",	NULL,		OPT_0BOOL,	0,
+	{"timeout",	NULL,		OPT_0BOOL,	0},
 /* O_VERBOSE */
-	"verbose",	NULL,		OPT_0BOOL,	0,
+	{"verbose",	NULL,		OPT_0BOOL,	0},
 /* O_WARN */
-	"warn",		NULL,		OPT_1BOOL,	0,
+	{"warn",	NULL,		OPT_1BOOL,	0},
 /* O_WRAPMARGIN */
-	"wrapmargin",	f_wrapmargin,	OPT_NUM,	0,
+	{"wrapmargin",	f_wrapmargin,	OPT_NUM,	0},
 /* O_WRAPSCAN */
-	"wrapscan",	NULL,		OPT_1BOOL,	0,
+	{"wrapscan",	NULL,		OPT_1BOOL,	0},
 /* O_WRITEANY */
-	"writeany",	NULL,		OPT_0BOOL,	0,
-	NULL,
+	{"writeany",	NULL,		OPT_0BOOL,	0},
+	{NULL},
 };
 
 typedef struct abbrev {
@@ -144,51 +144,51 @@ typedef struct abbrev {
 } OABBREV;
 
 static OABBREV const abbrev[] = {
-	"ai",		O_AUTOINDENT,
-	"ap",		O_AUTOPRINT,
-	"at",		O_AUTOTAB,
-	"aw",		O_AUTOWRITE,
-	"bf",		O_BEAUTIFY,
-	"cc",		O_CC,
-	"co",		O_COLUMNS,
-	"dig",		O_DIGRAPH,
-	"dir",		O_DIRECTORY,
-	"eb",		O_ERRORBELLS,
-	"ed",		O_EDCOMPATIBLE,
-	"er",		O_EXREFRESH,
-	"fl",		O_FLASH,
-	"ic",		O_IGNORECASE,
-	"kt",		O_KEYTIME,
-	"li",		O_LIST,
-	"ls",		O_LINES,
-	"ma",		O_MAGIC,
-	"me",		O_MESG,
-	"mk",		O_MAKE,
-	"modeline",	O_MODELINES,
-	"nu",		O_NUMBER,
-	"opt",		O_OPTIMIZE,
-	"pa",		O_PARAGRAPHS,
-	"pr",		O_PROMPT,
-	"re",		O_REPORT,
-	"ro",		O_READONLY,
-	"ru",		O_RULER,
-	"sc",		O_SCROLL,
-	"se",		O_SECTIONS,
-	"sh",		O_SHELL,
-	"sm",		O_SHOWMATCH,
-	"ss",		O_SIDESCROLL,
-	"sw",		O_SHIFTWIDTH,
-	"sy",		O_SYNCCMD,
-	"te",		O_TERM,
-	"to",		O_KEYTIME,
-	"tr",		O_TERSE,
-	"ts",		O_TABSTOP,
-	"ve",		O_VERBOSE,
-	"wa",		O_WARN,
-	"wm",		O_WRAPMARGIN,
-	"wr",		O_WRITEANY,
-	"ws",		O_WRAPSCAN,
-	NULL,
+	{"ai",		O_AUTOINDENT},
+	{"ap",		O_AUTOPRINT},
+	{"at",		O_AUTOTAB},
+	{"aw",		O_AUTOWRITE},
+	{"bf",		O_BEAUTIFY},
+	{"cc",		O_CC},
+	{"co",		O_COLUMNS},
+	{"dig",		O_DIGRAPH},
+	{"dir",		O_DIRECTORY},
+	{"eb",		O_ERRORBELLS},
+	{"ed",		O_EDCOMPATIBLE},
+	{"er",		O_EXREFRESH},
+	{"fl",		O_FLASH},
+	{"ic",		O_IGNORECASE},
+	{"kt",		O_KEYTIME},
+	{"li",		O_LIST},
+	{"ls",		O_LINES},
+	{"ma",		O_MAGIC},
+	{"me",		O_MESG},
+	{"mk",		O_MAKE},
+	{"modeline",	O_MODELINES},
+	{"nu",		O_NUMBER},
+	{"opt",		O_OPTIMIZE},
+	{"pa",		O_PARAGRAPHS},
+	{"pr",		O_PROMPT},
+	{"re",		O_REPORT},
+	{"ro",		O_READONLY},
+	{"ru",		O_RULER},
+	{"sc",		O_SCROLL},
+	{"se",		O_SECTIONS},
+	{"sh",		O_SHELL},
+	{"sm",		O_SHOWMATCH},
+	{"ss",		O_SIDESCROLL},
+	{"sw",		O_SHIFTWIDTH},
+	{"sy",		O_SYNCCMD},
+	{"te",		O_TERM},
+	{"to",		O_KEYTIME},
+	{"tr",		O_TERSE},
+	{"ts",		O_TABSTOP},
+	{"ve",		O_VERBOSE},
+	{"wa",		O_WARN},
+	{"wm",		O_WRAPMARGIN},
+	{"wr",		O_WRITEANY},
+	{"ws",		O_WRAPSCAN},
+	{NULL},
 };
 
 /*
@@ -211,7 +211,7 @@ opts_init(sp)
 	if (str != b1)		/* GCC puts strings in text-space. */	\
 		(void)strcpy(b1, str);					\
 	if (opts_set(sp, argv))						\
-		msgq(sp, M_ERROR,					\
+		msgq(sp, M_ERR,						\
 		    "Unable to set default %s option", optlist[opt]);	\
 	F_CLR(&sp->opts[opt], OPT_SET);					\
 }
@@ -342,10 +342,9 @@ opts_set(sp, argv)
 		/* Check for prefix match. */
 prefix:		op = opts_prefix(name);
 
-found:		if (op == NULL || turnoff &&
-		    (op->type != OPT_0BOOL && op->type != OPT_1BOOL)) {
-			msgq(sp, M_ERROR,
-			    "no option %s: 'set all' gives all option values",
+found:		if (op == NULL) {
+			msgq(sp, M_ERR,
+			    "no %s option: 'set all' gives all option values",
 			    name);
 			continue;
 		}
@@ -359,59 +358,77 @@ found:		if (op == NULL || turnoff &&
 		case OPT_0BOOL:
 		case OPT_1BOOL:
 			if (equals) {
-				msgq(sp, M_ERROR,
-				    "set: option [no]%s is a boolean", name);
+				msgq(sp, M_ERR,
+				    "set: [no]%s option doesn't take a value",
+				    name);
 				break;
 			}
 			if (op->func != NULL) {
-				if (op->func(sp, spo, NULL, turnoff))
+				if (op->func(sp, spo, NULL, turnoff)) {
 					rval = 1;
+					break;
+				}
 			} else if (turnoff)
 				O_CLR(sp, offset);
 			else
 				O_SET(sp, offset);
+			F_SET(&sp->opts[offset], OPT_SET);
 			break;
 		case OPT_NUM:
+			if (turnoff) {
+				msgq(sp, M_ERR,
+				    "set: %s option isn't a boolean", name);
+				break;
+			}
 			if (!equals) {
-				msgq(sp, M_ERROR,
-				    "set: option %s requires a value", name);
+				msgq(sp, M_ERR,
+				    "set: %s option requires a value", name);
 				break;
 			}
 			value = strtol(equals, &endp, 10);
 			if (*endp && !isspace(*endp)) {
-				msgq(sp, M_ERROR,
+				msgq(sp, M_ERR,
 				    "set %s: illegal number %s", name, equals);
 				break;
 			}
 			if (op->func != NULL) {
-				if (op->func(sp, spo, equals, value))
+				if (op->func(sp, spo, equals, value)) {
 					rval = 1;
-			} else {
+					break;
+				}
+			} else
 				O_VAL(sp, offset) = value;
-				F_SET(&sp->opts[offset], OPT_SET);
-			}
+			F_SET(&sp->opts[offset], OPT_SET);
 			break;
 		case OPT_STR:
+			if (turnoff) {
+				msgq(sp, M_ERR,
+				    "set: %s option isn't a boolean", name);
+				break;
+			}
 			if (!equals) {
-				msgq(sp, M_ERROR,
-				    "set: option %s requires a value", name);
+				msgq(sp, M_ERR,
+				    "set: %s option requires a value", name);
 				break;
 			}
 			if (op->func != NULL) {
-				if (op->func(sp, spo, equals, (u_long)0))
+				if (op->func(sp, spo, equals, (u_long)0)) {
 					rval = 1;
+					break;
+				}
 			} else {
 				if (F_ISSET(&sp->opts[offset], OPT_ALLOCATED))
 					free(O_STR(sp, offset));
 				if ((O_STR(sp, offset) =
 				    strdup(equals)) == NULL) {
-					msgq(sp, M_ERROR,
+					msgq(sp, M_ERR,
 					    "Error: %s", strerror(errno));
 					rval = 1;
+					break;
 				} else
-					F_SET(&sp->opts[offset],
-					    OPT_ALLOCATED | OPT_SET);
+					F_SET(&sp->opts[offset], OPT_ALLOCATED);
 			}
+			F_SET(&sp->opts[offset], OPT_SET);
 			break;
 		default:
 			abort();
@@ -548,7 +565,7 @@ opts_save(sp, fp)
 			break;
 		}
 		if (ferror(fp)) {
-			msgq(sp, M_ERROR, "I/O error: %s", strerror(errno));
+			msgq(sp, M_ERR, "I/O error: %s", strerror(errno));
 			return (1);
 		}
 	}
