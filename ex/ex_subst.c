@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 5.27 1993/02/19 19:46:29 bostic Exp $ (Berkeley) $Date: 1993/02/19 19:46:29 $";
+static char sccsid[] = "$Id: ex_subst.c,v 5.28 1993/02/20 15:56:16 bostic Exp $ (Berkeley) $Date: 1993/02/20 15:56:16 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -418,6 +418,10 @@ nomatch:	if (len)
 		if (pflag)
 			ex_print(ep, &from, &to, E_F_PRINT);
 	}
+
+	/* Cursor moves to last line changed. */
+	if (lastline != OOBLNO)
+		ep->lno = lastline;
 
 	/*
 	 * Note if nothing found.  Else, if nothing displayed to the
