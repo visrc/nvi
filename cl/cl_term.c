@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cl_term.c,v 8.2 1994/07/16 15:05:41 bostic Exp $ (Berkeley) $Date: 1994/07/16 15:05:41 $";
+static char sccsid[] = "$Id: cl_term.c,v 8.3 1994/07/20 19:18:17 bostic Exp $ (Berkeley) $Date: 1994/07/20 19:18:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -113,9 +113,6 @@ svi_term_init(sp)
 	size_t len;
 	char *sbp, *s, *t, sbuf[1024];
 
-	/* Regardless of the results, it's initialized. */
-	F_SET(SVP(sp), SVI_CURSES_INIT);
-
 	/* Command mappings. */
 	for (tkp = c_tklist; tkp->name != NULL; ++tkp) {
 #ifdef SYSV_CURSES
@@ -200,6 +197,26 @@ svi_term_init(sp)
 		return (0);
 	}
 
+	return (0);
+}
+
+/*
+ * svi_term_end --
+ *	End the special keys defined by the termcap/terminfo entry.
+ */
+int
+svi_term_end(sp)
+	SCR *sp;
+{
+	SEQ *qp, *nqp;
+
+	/* Delete screen specific mappings. */
+	for (qp = sp->gp->seqq.lh_first; qp != NULL; qp = nqp) {
+		nqp = qp->q.le_next;
+		if (!F_ISSET(qp, SEQ_SCREEN))
+			continue;
+		(void)seq_mdel(qp);
+	}
 	return (0);
 }
 
