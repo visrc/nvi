@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_cscope.c,v 10.17 2000/07/16 20:49:32 skimo Exp $ (Berkeley) $Date: 2000/07/16 20:49:32 $";
+static const char sccsid[] = "$Id: ex_cscope.c,v 10.18 2001/06/09 18:26:29 skimo Exp $ (Berkeley) $Date: 2001/06/09 18:26:29 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -142,7 +142,7 @@ ex_cscope(sp, cmdp)
 		for (; *p && isspace(*p); ++p);
 	}
 
-	INT2CHAR(sp, cmd, v_strlen(cmd) + 1, np, nlen);
+	INT2CHAR(sp, cmd, STRLEN(cmd) + 1, np, nlen);
 	if ((ccp = lookup_ccmd(np)) == NULL) {
 usage:		msgq(sp, M_ERR, "309|Use \"cscope help\" for help");
 		return (1);
@@ -221,7 +221,7 @@ cscope_add(sp, cmdp, dname)
 	 * >1 additional args: object, too many args.
 	 */
 	cur_argc = cmdp->argc;
-	if (argv_exp2(sp, cmdp, dname, v_strlen(dname))) {
+	if (argv_exp2(sp, cmdp, dname, STRLEN(dname))) {
 		return (1);
 	}
 	if (cmdp->argc == cur_argc) {
@@ -235,7 +235,7 @@ cscope_add(sp, cmdp, dname)
 		return (1);
 	}
 
-	INT2CHAR(sp, dname, v_strlen(dname)+1, np, nlen);
+	INT2CHAR(sp, dname, STRLEN(dname)+1, np, nlen);
 
 	/*
 	 * The user can specify a specific file (so they can have multiple
@@ -487,7 +487,7 @@ cscope_find(sp, cmdp, pattern)
 	}
 
 	/* Create the cscope command. */
-	INT2CHAR(sp, pattern, v_strlen(pattern) + 1, np, nlen);
+	INT2CHAR(sp, pattern, STRLEN(pattern) + 1, np, nlen);
 	np = strdup(np);
 	if ((tqp = create_cs_cmd(sp, np, &search)) == NULL)
 		goto err;
@@ -833,7 +833,7 @@ cscope_help(sp, cmdp, subcmd)
 	char *np;
 	size_t nlen;
 
-	INT2CHAR(sp, subcmd, v_strlen(subcmd) + 1, np, nlen);
+	INT2CHAR(sp, subcmd, STRLEN(subcmd) + 1, np, nlen);
 	return (csc_help(sp, np));
 }
 
@@ -879,7 +879,7 @@ cscope_kill(sp, cmdp, cn)
 	char *np;
 	size_t nlen;
 
-	INT2CHAR(sp, cn, v_strlen(cn) + 1, np, nlen);
+	INT2CHAR(sp, cn, STRLEN(cn) + 1, np, nlen);
 	return (terminate(sp, NULL, atoi(np)));
 }
 

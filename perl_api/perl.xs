@@ -14,7 +14,7 @@
 #undef VI
 
 #ifndef lint
-static const char sccsid[] = "$Id: perl.xs,v 8.38 2001/04/23 22:46:56 skimo Exp $ (Berkeley) $Date: 2001/04/23 22:46:56 $";
+static const char sccsid[] = "$Id: perl.xs,v 8.39 2001/06/09 18:26:30 skimo Exp $ (Berkeley) $Date: 2001/06/09 18:26:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -151,7 +151,7 @@ perl_init(scrp)
 	perl_data_t *pp;
 
 	static char *args[] = { "", "-e", "" };
-	STRLEN length;
+	size_t length;
 	char *file = __FILE__;
 
 	gp = scrp->gp;
@@ -281,7 +281,7 @@ perl_ex_perl(scrp, cmdp, cmdlen, f_lno, t_lno)
 	db_recno_t f_lno, t_lno;
 {
 	WIN *wp;
-	STRLEN length;
+	size_t length;
 	size_t len;
 	char *err;
 	char *np;
@@ -304,7 +304,7 @@ perl_ex_perl(scrp, cmdp, cmdlen, f_lno, t_lno)
 	newVIrv(pp->svid, scrp);
 
 	istat = signal(SIGINT, my_sighandler);
-	INT2CHAR(scrp, cmdp, v_strlen(cmdp)+1, np, nlen);
+	INT2CHAR(scrp, cmdp, STRLEN(cmdp)+1, np, nlen);
 	perl_eval(np);
 	signal(SIGINT, istat);
 
@@ -376,7 +376,7 @@ perl_ex_perldo(scrp, cmdp, cmdlen, f_lno, t_lno)
 {
 	CHAR_T *p;
 	WIN *wp;
-	STRLEN length;
+	size_t length;
 	size_t len;
 	db_recno_t i;
 	CHAR_T *str;
@@ -399,7 +399,7 @@ perl_ex_perldo(scrp, cmdp, cmdlen, f_lno, t_lno)
 	/* Backwards compatibility. */
 	newVIrv(pp->svid, scrp);
 
-	INT2CHAR(scrp, cmdp, v_strlen(cmdp)+1, np, nlen);
+	INT2CHAR(scrp, cmdp, STRLEN(cmdp)+1, np, nlen);
 	if (!(command = malloc(length = nlen - 1 + sizeof("sub {}"))))
 		return 1;
 	snprintf(command, length, "sub {%s}", np);
@@ -598,7 +598,7 @@ AppendLine(screen, linenumber, text)
 	PREINIT:
 	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
 	int rval;
-	STRLEN length;
+	size_t length;
 
 	CODE:
 	SvPV(ST(2), length);
@@ -667,7 +667,7 @@ SetLine(screen, linenumber, text)
 	PREINIT:
 	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
 	int rval;
-	STRLEN length;
+	size_t length;
 	size_t len;
 	CHAR_T *line;
 
@@ -693,7 +693,7 @@ InsertLine(screen, linenumber, text)
 	PREINIT:
 	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
 	int rval;
-	STRLEN length;
+	size_t length;
 	size_t len;
 	CHAR_T *line;
 
@@ -936,10 +936,13 @@ GetOpt(screen, option)
 	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
 	int rval;
 	char *value;
+	CHAR_T *wp;
+	size_t wlen;
 
 	PPCODE:
 	INITMESSAGE(screen);
-	rval = api_opts_get(screen, option, &value, NULL);
+	CHAR2INTP(screen, option, strlen(option)+1, wp, wlen);
+	rval = api_opts_get(screen, wp, &value, NULL);
 	ENDMESSAGE(screen);
 
 	EXTEND(SP,1);
@@ -1082,10 +1085,13 @@ FETCH(screen, key)
 	int rval;
 	char *value;
 	int boolvalue;
+	CHAR_T *wp;
+	size_t wlen;
 
 	PPCODE:
 	INITMESSAGE(screen);
-	rval = api_opts_get(screen, key, &value, &boolvalue);
+	CHAR2INTP(screen, key, strlen(key)+1, wp, wlen);
+	rval = api_opts_get(screen, wp, &value, &boolvalue);
 	if (!rval) {
 		EXTEND(SP,1);
 		PUSHs(sv_2mortal((boolvalue == -1) ? newSVpv(value, 0)
@@ -1104,10 +1110,13 @@ STORE(screen, key, value)
 	PREINIT:
 	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
 	int rval;
+	CHAR_T *wp;
+	size_t wlen;
 
 	CODE:
 	INITMESSAGE(screen);
-	rval = api_opts_set(screen, key, SvPV(value, PL_na), SvIV(value), 
+	CHAR2INTP(screen, key, strlen(key)+1, wp, wlen);
+	rval = api_opts_set(screen, wp, SvPV(value, PL_na), SvIV(value), 
                                          SvTRUEx(value));
 	ENDMESSAGE(screen);
 
@@ -1254,7 +1263,7 @@ STORE(screen, linenumber, text)
 	PREINIT:
 	void (*scr_msg) __P((SCR *, mtype_t, char *, size_t));
 	int rval;
-	STRLEN length;
+	size_t length;
 	db_recno_t last;
 	size_t len;
 	CHAR_T *line;

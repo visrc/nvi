@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_init.c,v 10.29 2000/07/14 14:29:20 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:20 $";
+static const char sccsid[] = "$Id: ex_init.c,v 10.30 2001/06/09 18:26:29 skimo Exp $ (Berkeley) $Date: 2001/06/09 18:26:29 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -62,7 +62,7 @@ ex_screen_copy(orig, sp)
 
 		if (oexp->lastbcomm != NULL &&
 		    (nexp->lastbcomm = v_wstrdup(sp, oexp->lastbcomm, 
-				     v_strlen(oexp->lastbcomm))) == NULL) {
+				     STRLEN(oexp->lastbcomm))) == NULL) {
 			msgq(sp, M_SYSERR, NULL);
 			return(1);
 		}

@@ -13,7 +13,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_tag.c,v 10.46 2000/07/16 20:49:32 skimo Exp $ (Berkeley) $Date: 2000/07/16 20:49:32 $";
+static const char sccsid[] = "$Id: ex_tag.c,v 10.47 2001/06/09 18:26:30 skimo Exp $ (Berkeley) $Date: 2001/06/09 18:26:30 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -70,7 +70,7 @@ ex_tag_first(sp, tagarg)
 
 	/* Build an argument for the ex :tag command. */
 	ex_cinit(sp, &cmd, C_TAG, 0, OOBLNO, OOBLNO, 0);
-	argv_exp0(sp, &cmd, tagarg, v_strlen(tagarg));
+	argv_exp0(sp, &cmd, tagarg, STRLEN(tagarg));
 
 	/*
 	 * XXX
@@ -119,7 +119,7 @@ ex_tag_push(sp, cmdp)
 
 		/* Taglength may limit the number of characters. */
 		if ((tl =
-		    O_VAL(sp, O_TAGLENGTH)) != 0 && v_strlen(exp->tag_last) > tl)
+		    O_VAL(sp, O_TAGLENGTH)) != 0 && STRLEN(exp->tag_last) > tl)
 			exp->tag_last[tl] = '\0';
 		break;
 	case 0:
@@ -609,7 +609,7 @@ ex_tag_copy(orig, sp)
 	/* Copy the last tag. */
 	if (oexp->tag_last != NULL &&
 	    (nexp->tag_last = v_wstrdup(sp, oexp->tag_last, 
-					v_strlen(oexp->tag_last))) == NULL) {
+					STRLEN(oexp->tag_last))) == NULL) {
 		msgq(sp, M_SYSERR, NULL);
 		return (1);
 	}
@@ -1044,7 +1044,7 @@ ctag_slist(sp, tag)
 	exp = EXP(sp);
 
 	/* Allocate and initialize the tag queue structure. */
-	INT2CHAR(sp, tag, v_strlen(tag) + 1, np, nlen);
+	INT2CHAR(sp, tag, STRLEN(tag) + 1, np, nlen);
 	len = nlen - 1;
 	CALLOC_GOTO(sp, tqp, TAGQ *, 1, sizeof(TAGQ) + len + 1);
 	CIRCLEQ_INIT(&tqp->tagq);

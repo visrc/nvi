@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_argv.c,v 10.35 2000/11/26 20:10:41 skimo Exp $ (Berkeley) $Date: 2000/11/26 20:10:41 $";
+static const char sccsid[] = "$Id: ex_argv.c,v 10.36 2001/06/09 18:26:29 skimo Exp $ (Berkeley) $Date: 2001/06/09 18:26:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -232,7 +232,7 @@ argv_exp2(sp, excp, cmd, cmdlen)
 
 			*p = '\0';
 			INT2CHAR(sp, bp + SHELLOFFSET, 
-				 v_strlen(bp + SHELLOFFSET) + 1, np, nlen);
+				 STRLEN(bp + SHELLOFFSET) + 1, np, nlen);
 			d = strdup(np);
 			rval = argv_lexp(sp, excp, d);
 			free (d);
@@ -356,7 +356,7 @@ argv_fexp(sp, excp, cmd, cmdlen, p, lenp, bpp, blenp, is_bang)
 				    "115|No previous command to replace \"!\"");
 				return (1);
 			}
-			len += tlen = v_strlen(exp->lastbcomm);
+			len += tlen = STRLEN(exp->lastbcomm);
 			off = p - bp;
 			ADD_SPACE_RETW(sp, bp, blen, len);
 			p = bp + off;
@@ -714,7 +714,7 @@ err:		if (ifp != NULL)
 		 * XXX
 		 * Assume that all shells have -c.
 		 */
-		INT2CHAR(sp, bp, v_strlen(bp)+1, np, nlen);
+		INT2CHAR(sp, bp, STRLEN(bp)+1, np, nlen);
 		execl(sh_path, sh, "-c", np, NULL);
 		msgq_str(sp, M_SYSERR, sh_path, "118|Error: execl: %s");
 		_exit(127);

@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: key.h,v 10.42 2001/06/06 19:40:34 skimo Exp $ (Berkeley) $Date: 2001/06/06 19:40:34 $
+ *	$Id: key.h,v 10.43 2001/06/09 18:26:27 skimo Exp $ (Berkeley) $Date: 2001/06/09 18:26:27 $
  */
 
 #include "multibyte.h"
@@ -34,6 +34,8 @@ typedef	u_int		ARG_CHAR_T;
     sp->conv.sys2int(sp, n, nlen, &buf, &wlen, &w)
 #define INT2CHAR(sp,w,wlen,n,nlen) 					    \
     sp->conv.int2sys(sp, w, wlen, &sp->wp->cw, &nlen, &n)
+#define INT2SYS(sp,w,wlen,n,nlen) 					    \
+    sp->conv.int2sys(sp, w, wlen, &sp->wp->cw, &nlen, &n)
 #define INPUT2INT(sp,n,nlen,w,wlen)					    \
     sp->conv.input2int(sp, n, nlen, &sp->wp->cw, &wlen, &w)
 #define INT2DISP(sp,w,wlen,n,nlen) 					    \
@@ -45,9 +47,13 @@ typedef	u_int		ARG_CHAR_T;
     iswdigit((ch))
 #define ISPRINT(ch) \
     iswprint((ch))
+#define ISBLANK(ch) \
+    iswblank((ch))
 #define CHAR_WIDTH(sp, ch)  wcwidth(ch)
 #define INTISWIDE(c)	(!!(c >> 8))	    /* XXX wrong name */
 #define L(ch)		L ## ch
+#define WS		"%ls"
+#define WC		"%lc"
 #else
 #define FILE2INT(sp,n,nlen,w,wlen) \
     w = n, wlen = nlen, 0
@@ -57,6 +63,10 @@ typedef	u_int		ARG_CHAR_T;
     w = n, wlen = nlen, 0
 #define INT2CHAR(sp,w,wlen,n,nlen) \
     n = w, nlen = wlen, 0
+#define INT2SYS(sp,w,wlen,n,nlen) \
+    n = w, nlen = wlen, 0
+#define INPUT2INT(sp,n,nlen,w,wlen) \
+    w = n, wlen = nlen, 0
 #define INT2DISP(sp,w,wlen,n,nlen) \
     n = w, nlen = wlen, 0
 #define CONST const
@@ -66,9 +76,13 @@ typedef	u_int		ARG_CHAR_T;
     isdigit((ch))
 #define ISPRINT(ch) \
     isprint((ch))
+#define ISBLANK(ch) \
+    isblank((ch))
 #define INTISWIDE(c)	    0
 #define CHAR_WIDTH(sp, ch)  1
 #define L(ch)		ch
+#define WS		"%s"
+#define WC		"%c"
 #endif
 #define CHAR2INT(sp,n,nlen,w,wlen)					    \
     CHAR2INTB(sp,n,nlen,w,wlen,sp->wp->cw)

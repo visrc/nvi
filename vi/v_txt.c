@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.101 2001/05/11 20:20:44 skimo Exp $ (Berkeley) $Date: 2001/05/11 20:20:44 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.102 2001/06/09 18:26:32 skimo Exp $ (Berkeley) $Date: 2001/06/09 18:26:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -2077,7 +2077,7 @@ retry:		for (len = 0,
 		return (0);
 	case 1:				/* One match. */
 		/* If something changed, do the exchange. */
-		nlen = v_strlen(cmd.argv[0]->bp);
+		nlen = STRLEN(cmd.argv[0]->bp);
 		if (len != nlen || MEMCMP(cmd.argv[0]->bp, p, len))
 			break;
 
@@ -2384,8 +2384,6 @@ txt_hex(sp, tp)
 	size_t len, off;
 	u_long value;
 	CHAR_T *p, *wp;
-	char *np;
-	size_t nlen;
 
 	/*
 	 * Null-terminate the string.  Since nul isn't a legal hex value,
@@ -2412,8 +2410,7 @@ txt_hex(sp, tp)
 
 	/* Get the value. */
 	errno = 0;
-	INT2CHAR(sp, wp, v_strlen(wp)+1, np, nlen);
-	value = strtol(np, NULL, 16);
+	value = STRTOL(wp, NULL, 16);
 	if (errno || value > MAX_CHAR_T) {
 nothex:		tp->lb[tp->cno] = savec;
 		return (0);

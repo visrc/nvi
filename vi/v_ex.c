@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_ex.c,v 10.52 2001/05/11 20:09:38 skimo Exp $ (Berkeley) $Date: 2001/05/11 20:09:38 $";
+static const char sccsid[] = "$Id: v_ex.c,v 10.53 2001/06/09 18:26:32 skimo Exp $ (Berkeley) $Date: 2001/06/09 18:26:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -226,7 +226,7 @@ v_tagpush(sp, vp)
 	EXCMD cmd;
 
 	ex_cinit(sp, &cmd, C_TAG, 0, OOBLNO, 0, 0);
-	argv_exp0(sp, &cmd, VIP(sp)->keyw, v_strlen(VIP(sp)->keyw) + 1);
+	argv_exp0(sp, &cmd, VIP(sp)->keyw, STRLEN(VIP(sp)->keyw) + 1);
 	return (v_exec_ex(sp, vp, &cmd));
 }
 

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_term.c,v 10.28 2000/12/01 13:56:18 skimo Exp $ (Berkeley) $Date: 2000/12/01 13:56:18 $";
+static const char sccsid[] = "$Id: cl_term.c,v 10.29 2001/06/09 18:26:26 skimo Exp $ (Berkeley) $Date: 2001/06/09 18:26:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -230,17 +230,16 @@ cl_pfmap(sp, stype, from, flen, to, tlen)
 	size_t flen, tlen;
 {
 	size_t nlen;
-	char *p, keyname[64];
-	char *np;
-	size_t nplen;
-	CHAR_T name[60];
+	char *p;
+	char name[64];
+	CHAR_T keyname[64];
 	CHAR_T ts[20];
 	CHAR_T *wp;
 	size_t wlen;
 
-	INT2CHAR(sp, from+1, v_strlen(from+1)+1, np, nplen);
-	(void)snprintf(keyname, sizeof(keyname), "kf%d", atoi(np));
-	if ((p = tigetstr(keyname)) == NULL ||
+	(void)snprintf(name, sizeof(name), "kf%d", 
+			(int)STRTOL(from+1,NULL,10));
+	if ((p = tigetstr(name)) == NULL ||
 	    p == (char *)-1 || strlen(p) == 0)
 		p = NULL;
 	if (p == NULL) {
@@ -248,14 +247,12 @@ cl_pfmap(sp, stype, from, flen, to, tlen)
 		return (1);
 	}
 
-	INT2CHAR(sp, from+1, v_strlen(from+1)+1, np, nplen);
-	nlen = snprintf(keyname,
-	    sizeof(keyname), "function key %d", atoi(np));
-	CHAR2INT(sp, keyname, nlen, wp, wlen);
-	MEMCPYW(name, wp, wlen);
+	nlen = SPRINTF(keyname,
+	    SIZE(keyname), "function key %d", 
+			(int)STRTOL(from+1,NULL,10));
 	CHAR2INT(sp, p, strlen(p), wp, wlen);
 	MEMCPYW(ts, wp, wlen);
-	return (seq_set(sp, name, nlen,
+	return (seq_set(sp, keyname, nlen,
 	    ts, strlen(p), to, tlen, stype, SEQ_NOOVERWRITE | SEQ_SCREEN));
 }
 

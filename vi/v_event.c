@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_event.c,v 8.18 2000/07/14 14:29:23 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:23 $";
+static const char sccsid[] = "$Id: v_event.c,v 8.19 2001/06/09 18:26:31 skimo Exp $ (Berkeley) $Date: 2001/06/09 18:26:31 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -103,9 +103,9 @@ v_editopt(sp, vp)
 	size_t nlen;
 	char *p1, *p2;
 
-	INT2CHAR(sp, vp->ev.e_str1, v_strlen(vp->ev.e_str1), np, nlen);
+	INT2CHAR(sp, vp->ev.e_str1, STRLEN(vp->ev.e_str1), np, nlen);
 	p1 = strdup(np);
-	INT2CHAR(sp, vp->ev.e_str2, v_strlen(vp->ev.e_str2), np, nlen);
+	INT2CHAR(sp, vp->ev.e_str2, STRLEN(vp->ev.e_str2), np, nlen);
 	p2 = strdup(np);
 	rval = api_opts_set(sp, p1, p2, vp->ev.e_val1, vp->ev.e_val1);
 	if (sp->gp->scr_reply != NULL)
@@ -147,7 +147,7 @@ v_tag(sp, vp)
 		return (1);
 
 	ex_cinit(sp, &cmd, C_TAG, 0, OOBLNO, OOBLNO, 0);
-	argv_exp0(sp, &cmd, VIP(sp)->keyw, v_strlen(VIP(sp)->keyw));
+	argv_exp0(sp, &cmd, VIP(sp)->keyw, STRLEN(VIP(sp)->keyw));
 	return (v_exec_ex(sp, vp, &cmd));
 }
 
@@ -183,7 +183,7 @@ v_tagsplit(sp, vp)
 
 	ex_cinit(sp, &cmd, C_TAG, 0, OOBLNO, OOBLNO, 0);
 	F_SET(&cmd, E_NEWSCREEN);
-	argv_exp0(sp, &cmd, VIP(sp)->keyw, v_strlen(VIP(sp)->keyw));
+	argv_exp0(sp, &cmd, VIP(sp)->keyw, STRLEN(VIP(sp)->keyw));
 	return (v_exec_ex(sp, vp, &cmd));
 }
 

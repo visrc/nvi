@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: util.c,v 10.19 2000/07/21 17:35:02 skimo Exp $ (Berkeley) $Date: 2000/07/21 17:35:02 $";
+static const char sccsid[] = "$Id: util.c,v 10.20 2001/06/09 18:26:28 skimo Exp $ (Berkeley) $Date: 2001/06/09 18:26:28 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -164,18 +164,6 @@ v_wstrdup(sp, str, len)
 }
 
 /*
- * PUBLIC: size_t v_strlen __P((const CHAR_T *str));
- */
-size_t
-v_strlen(const CHAR_T *str)
-{
-	size_t len = -1;
-
-	while(str[++len]);
-	return len;
-}
-
-/*
  * PUBLIC: int v_strcmp __P((const CHAR_T *s1, const CHAR_T *s2));
  */
 int 
@@ -203,7 +191,7 @@ nget_uslong(sp, valp, p, endp, base)
 	char *endnp;
 	size_t nlen;
 
-	INT2CHAR(sp, p, v_strlen(p) + 1, np, nlen);
+	INT2CHAR(sp, p, STRLEN(p) + 1, np, nlen);
 	errno = 0;
 	*valp = strtoul(np, &endnp, base);
 	*endp = (CHAR_T*)p + (endnp - np);
@@ -232,7 +220,7 @@ nget_slong(sp, valp, p, endp, base)
 	char *endnp;
 	size_t nlen;
 
-	INT2CHAR(sp, p, v_strlen(p) + 1, np, nlen);
+	INT2CHAR(sp, p, STRLEN(p) + 1, np, nlen);
 	errno = 0;
 	*valp = strtol(np, &endnp, base);
 	*endp = (CHAR_T*)p + (endnp - np);

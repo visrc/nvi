@@ -201,7 +201,7 @@ int cflags;
 			return(REG_INVARG);
 		len = preg->re_endp - pattern;
 	} else
-		len = v_strlen(pattern);
+		len = STRLEN(pattern);
 
 	/* do the mallocs early so failure handling is easy */
 	g = (struct re_guts *)malloc(sizeof(struct re_guts) +
@@ -829,7 +829,7 @@ register cset *cs;
 		NEXT();
 	len = p->next - sp;
 	for (cp = cclasses; cp->name != NULL; cp++)
-		if (v_strlen(cp->name) == len && MEMCMP(cp->name, sp, len))
+		if (STRLEN(cp->name) == len && MEMCMP(cp->name, sp, len))
 			break;
 	if (cp->name == NULL) {
 		/* oops, didn't find it */
@@ -903,7 +903,7 @@ int endc;			/* name ended by endc,']' */
 	}
 	len = p->next - sp;
 	for (cp = cnames; cp->name != NULL; cp++)
-		if (v_strlen(cp->name) == len && MEMCMP(cp->name, sp, len))
+		if (STRLEN(cp->name) == len && MEMCMP(cp->name, sp, len))
 			return(cp->code);	/* known name */
 	if (len == 1)
 		return(*sp);	/* single character */

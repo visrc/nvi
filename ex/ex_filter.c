@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_filter.c,v 10.39 2000/11/26 20:10:19 skimo Exp $ (Berkeley) $Date: 2000/11/26 20:10:19 $";
+static const char sccsid[] = "$Id: ex_filter.c,v 10.40 2001/06/09 18:26:29 skimo Exp $ (Berkeley) $Date: 2001/06/09 18:26:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -143,7 +143,7 @@ err:		if (input[0] != -1)
 		else
 			++name;
 
-		INT2CHAR(sp, cmd, v_strlen(cmd)+1, np, nlen);
+		INT2CHAR(sp, cmd, STRLEN(cmd)+1, np, nlen);
 		execl(O_STR(sp, O_SHELL), name, "-c", np, NULL);
 		msgq_str(sp, M_SYSERR, O_STR(sp, O_SHELL), "execl: %s");
 		_exit (127);
@@ -288,7 +288,7 @@ err:		if (input[0] != -1)
 	 * Ignore errors on vi file reads, to make reads prettier.  It's
 	 * completely inconsistent, and historic practice.
 	 */
-uwait:	INT2CHAR(sp, cmd, v_strlen(cmd) + 1, np, nlen);
+uwait:	INT2CHAR(sp, cmd, STRLEN(cmd) + 1, np, nlen);
 	return (proc_wait(sp, (long)utility_pid, np,
 	    ftype == FILTER_READ && F_ISSET(sp, SC_VI) ? 1 : 0, 0) || rval);
 }

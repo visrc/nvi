@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_write.c,v 10.35 2000/07/16 20:49:32 skimo Exp $ (Berkeley) $Date: 2000/07/16 20:49:32 $";
+static const char sccsid[] = "$Id: ex_write.c,v 10.36 2001/06/09 18:26:30 skimo Exp $ (Berkeley) $Date: 2001/06/09 18:26:30 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -169,7 +169,7 @@ exwr(sp, cmdp, cmd)
 			ex_emsg(sp, cmdp->cmd->usage, EXM_USAGE);
 			return (1);
 		}
-		if (argv_exp1(sp, cmdp, p, v_strlen(p), 1))
+		if (argv_exp1(sp, cmdp, p, STRLEN(p), 1))
 			return (1);
 
 		/*
@@ -214,7 +214,7 @@ exwr(sp, cmdp, cmd)
 		    &cmdp->addr1, &cmdp->addr2, NULL, flags));
 
 	/* Build an argv so we get an argument count and file expansion. */
-	if (argv_exp2(sp, cmdp, p, v_strlen(p)))
+	if (argv_exp2(sp, cmdp, p, STRLEN(p)))
 		return (1);
 
 	/*
@@ -266,7 +266,7 @@ exwr(sp, cmdp, cmd)
 			set_alt_name(sp, name);
 		break;
 	default:
-		INT2CHAR(sp, p, v_strlen(p) + 1, n, nlen);
+		INT2CHAR(sp, p, STRLEN(p) + 1, n, nlen);
 		ex_emsg(sp, n, EXM_FILECOUNT);
 		return (1);
 	}

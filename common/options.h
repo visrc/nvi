@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: options.h,v 10.19 1996/10/10 17:02:46 bostic Exp $ (Berkeley) $Date: 1996/10/10 17:02:46 $
+ *	$Id: options.h,v 10.20 2001/06/09 18:26:28 skimo Exp $ (Berkeley) $Date: 2001/06/09 18:26:28 $
  */
 
 /*
@@ -76,7 +76,7 @@ struct _option {
 
 /* List of option names, associated update functions and information. */
 struct _optlist {
-	char	*name;			/* Name. */
+	CHAR_T	*name;			/* Name. */
 					/* Change function. */
 	int	(*func) __P((SCR *, OPTION *, char *, u_long *));
 					/* Type of object. */

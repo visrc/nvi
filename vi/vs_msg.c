@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_msg.c,v 10.82 2000/07/14 14:29:25 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:25 $";
+static const char sccsid[] = "$Id: vs_msg.c,v 10.83 2001/06/09 18:26:32 skimo Exp $ (Berkeley) $Date: 2001/06/09 18:26:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -179,7 +179,7 @@ vs_update(SCR *sp, const char *m1, const CHAR_T *m2)
 	 */
 	if (F_ISSET(sp, SC_SCR_EXWROTE)) {
 		if (m2 != NULL)
-			INT2CHAR(sp, m2, v_strlen(m2) + 1, np, nlen);
+			INT2CHAR(sp, m2, STRLEN(m2) + 1, np, nlen);
 		(void)ex_printf(sp,
 		    "%s\n", m1 == NULL? "" : m1, m2 == NULL ? "" : np);
 		(void)ex_fflush(sp);
@@ -207,7 +207,7 @@ vs_update(SCR *sp, const char *m1, const CHAR_T *m2)
 	} else
 		len = 0;
 	if (m2 != NULL) {
-		mlen = v_strlen(m2);
+		mlen = STRLEN(m2);
 		if (len + mlen > sp->cols - 2)
 			mlen = (sp->cols - 2) - len;
 		(void)gp->scr_waddstr(sp, m2, mlen);

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: exf.c,v 10.62 2001/05/12 15:16:05 skimo Exp $ (Berkeley) $Date: 2001/05/12 15:16:05 $";
+static const char sccsid[] = "$Id: exf.c,v 10.63 2001/06/09 18:26:27 skimo Exp $ (Berkeley) $Date: 2001/06/09 18:26:27 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -1133,7 +1133,7 @@ file_backup(sp, name, bname)
 	 */
 	if (version) {
 		GET_SPACE_GOTO(sp, bp, blen, cmd.argv[0]->len * 2 + 50);
-		INT2CHAR(sp, cmd.argv[0]->bp, cmd.argv[0]->len + 1,
+		INT2SYS(sp, cmd.argv[0]->bp, cmd.argv[0]->len + 1,
 			 p, nlen); 
 		d = strdup(p);
 		p = d;
@@ -1159,7 +1159,7 @@ file_backup(sp, name, bname)
 			p = slash + 1;
 		}
 		if (dirp == NULL) {
-			INT2CHAR(sp, cmd.argv[0]->bp, cmd.argv[0]->len + 1,
+			INT2SYS(sp, cmd.argv[0]->bp, cmd.argv[0]->len + 1,
 				estr, nlen);
 			goto err;
 		}
@@ -1174,7 +1174,7 @@ file_backup(sp, name, bname)
 		wfname = bp;
 	} else {
 		bp = NULL;
-		INT2CHAR(sp, cmd.argv[0]->bp, cmd.argv[0]->len + 1,
+		INT2SYS(sp, cmd.argv[0]->bp, cmd.argv[0]->len + 1,
 			wfname, nlen);
 	}
 	

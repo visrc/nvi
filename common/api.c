@@ -12,7 +12,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: api.c,v 8.35 2001/04/25 21:27:32 skimo Exp $ (Berkeley) $Date: 2001/04/25 21:27:32 $";
+static const char sccsid[] = "$Id: api.c,v 8.36 2001/06/09 18:26:27 skimo Exp $ (Berkeley) $Date: 2001/06/09 18:26:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -456,13 +456,10 @@ api_unmap(sp, name)
  *	If the option is of type boolean, boolvalue is (un)set
  *	according to the value; otherwise boolvalue is -1.
  *
- * PUBLIC: int api_opts_get __P((SCR *, char *, char **, int *));
+ * PUBLIC: int api_opts_get __P((SCR *, CHAR_T *, char **, int *));
  */
 int
-api_opts_get(sp, name, value, boolvalue)
-	SCR *sp;
-	char *name, **value;
-	int *boolvalue;
+api_opts_get(SCR *sp, CHAR_T *name, char **value, int *boolvalue)
 {
 	OPTLIST const *op;
 	int offset;
@@ -506,14 +503,11 @@ api_opts_get(sp, name, value, boolvalue)
  * api_opts_set --
  *	Set options.
  *
- * PUBLIC: int api_opts_set __P((SCR *, char *, char *, u_long, int));
+ * PUBLIC: int api_opts_set __P((SCR *, CHAR_T *, char *, u_long, int));
  */
 int
-api_opts_set(sp, name, str_value, num_value, bool_value)
-	SCR *sp;
-	char *name, *str_value;
-	u_long num_value;
-	int bool_value;
+api_opts_set(SCR *sp, CHAR_T *name, 
+	     char *str_value, u_long num_value, int bool_value)
 {
 	ARGS *ap[2], a, b;
 	OPTLIST const *op;

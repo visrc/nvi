@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_split.c,v 10.40 2001/02/25 16:32:23 skimo Exp $ (Berkeley) $Date: 2001/02/25 16:32:23 $";
+static const char sccsid[] = "$Id: vs_split.c,v 10.41 2001/06/09 18:26:33 skimo Exp $ (Berkeley) $Date: 2001/06/09 18:26:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -635,7 +635,7 @@ vs_fg(sp, nspp, name, newscreen)
 	wp = sp->wp;
 
 	if (name)
-	    INT2CHAR(sp, name, v_strlen(name) + 1, np, nlen);
+	    INT2CHAR(sp, name, STRLEN(name) + 1, np, nlen);
 	else
 	    np = NULL;
 	if (newscreen)
