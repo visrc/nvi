@@ -16,7 +16,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 10.5 1995/06/09 17:33:35 bostic Exp $ (Berkeley) $Date: 1995/06/09 17:33:35 $";
+static char sccsid[] = "$Id: main.c,v 10.6 1995/06/12 19:37:07 bostic Exp $ (Berkeley) $Date: 1995/06/12 19:37:07 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -336,10 +336,10 @@ v_init(argc, argv, rows, cols, gpp)
 	 * use a temporary file.
 	 */
 	if (sp->frp == NULL) {
-		if (sp->argv == NULL)
+		if (sp->argv == NULL) {
 			if ((frp = file_add(sp, NULL)) == NULL)
 				goto err;
-		else  {
+		} else  {
 			if ((frp = file_add(sp, (CHAR_T *)sp->argv[0])) == NULL)
 				goto err;
 			if (F_ISSET(sp, S_ARGRECOVER))
