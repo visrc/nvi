@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 10.8 1995/09/25 10:41:17 bostic Exp $ (Berkeley) $Date: 1995/09/25 10:41:17 $
+ *	$Id: vi.h,v 10.9 1995/09/27 12:05:10 bostic Exp $ (Berkeley) $Date: 1995/09/27 12:05:10 $
  */
 
 /* Definition of a vi "word". */
@@ -292,11 +292,12 @@ typedef struct _vi_private {
 
 #define	VIP_CUR_INVALID	0x0001	/* Cursor position is unknown. */
 #define	VIP_DIVIDER	0x0002	/* Divider line was displayed. */
-#define	VIP_RCM_LAST	0x0004	/* Cursor drawn to the last column. */
-#define	VIP_SCR_DIRTY	0x0008	/* Screen needs refreshing. */
-#define	VIP_SCR_NUMBER	0x0010	/* Screen numbering changed. */
-#define	VIP_SKIPREFRESH	0x0020	/* Skip next refresh. */
-#define	VIP_SKIPMODE	0x0040	/* Skip next modeline refresh. */
+#define	VIP_N_REDRAW	0x0004	/* Screen needs to be redrawn. */
+#define	VIP_N_REFRESH	0x0008	/* Screen needs refreshing. */
+#define	VIP_N_RENUMBER	0x0010	/* Screen needs to be renumbered. */
+#define	VIP_RCM_LAST	0x0020	/* Cursor drawn to the last column. */
+#define	VIP_S_MODELINE	0x0040	/* Skip next modeline refresh. */
+#define	VIP_S_REFRESH	0x0080	/* Skip next refresh. */
 	u_int8_t flags;
 } VI_PRIVATE;
 
