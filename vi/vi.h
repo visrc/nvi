@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 8.28 1994/04/06 11:38:40 bostic Exp $ (Berkeley) $Date: 1994/04/06 11:38:40 $
+ *	$Id: vi.h,v 8.29 1994/04/11 09:53:14 bostic Exp $ (Berkeley) $Date: 1994/04/11 09:53:14 $
  */
 
 typedef struct _vikeys VIKEYS;
@@ -143,6 +143,9 @@ extern VIKEYS const vikeys[MAXVIKEY + 1];
 
 /* Definition of a vi "word". */
 #define	inword(ch)	(isalnum(ch) || (ch) == '_')
+
+/* Offset to next column of stop size. */
+#define	STOP_OFF(c, stop)	(stop - (c) % stop)
 
 /* Character stream structure, prototypes. */
 typedef struct _vcs {
