@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 9.7 1995/01/05 19:55:37 bostic Exp $ (Berkeley) $Date: 1995/01/05 19:55:37 $";
+static char sccsid[] = "$Id: v_txt.c,v 9.8 1995/01/08 12:20:15 bostic Exp $ (Berkeley) $Date: 1995/01/08 12:20:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1959,13 +1959,18 @@ txt_Rcleanup(sp, tiqh, tp, lp, olen)
 	/*
 	 * If the user has entered less characters than the original line
 	 * was long, restore any overwriteable characters to the original
-	 * characters, and make them insert characters.  We don't copy them
-	 * anywhere, because the 'R' command doesn't have insert characters.
+	 * characters.  These characters are entered as "insert characters",
+	 * because they're after the cursor and we don't want to lose them.
+	 * (This is okay because the R command has no insert characters.)
+	 * We set owrite to 0 so that the insert characters don't get copied
+	 * to somewhere else, which means that the length has to be adjusted
+	 * here as well.
 	 */
 	if (ilen < olen) {
 		tmp = MIN(tp->owrite, olen - ilen);
 		memmove(tp->lb + sp->cno, lp + ilen, tmp);
-		tp->owrite -= tmp;
+		tp->len -= tp->owrite - tmp;
+		tp->owrite = 0;
 		tp->insert += tmp;
 	}
 }
