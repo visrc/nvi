@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_term.c,v 10.19 1996/04/27 11:41:18 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:41:18 $";
+static const char sccsid[] = "$Id: cl_term.c,v 10.20 1996/05/03 08:55:23 bostic Exp $ (Berkeley) $Date: 1996/05/03 08:55:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -295,6 +295,7 @@ cl_omesg(sp, clp, on)
 				    "045|messages not turned off: %s", tty);
 			return (1);
 		}
+	return (0);
 }
 
 /*
