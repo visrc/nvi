@@ -1,4 +1,4 @@
-/* $Id: acconfig.h,v 8.27 2001/04/21 06:35:36 skimo Exp $ (Berkeley) $Date: 2001/04/21 06:35:36 $ */
+/* $Id: acconfig.h,v 8.28 2001/05/01 19:14:59 skimo Exp $ (Berkeley) $Date: 2001/05/01 19:14:59 $ */
 
 /* Define to `int' if <sys/types.h> doesn't define.  */
 #undef ssize_t
@@ -59,9 +59,6 @@
 
 /* Define if you have flock(2) style locking. */
 #undef HAVE_LOCK_FLOCK
-
-/* Define is appropriate pango is available */
-#undef HAVE_PANGO
 
 /* Define if you want to compile in the Perl interpreter. */
 #undef HAVE_PERL_INTERP

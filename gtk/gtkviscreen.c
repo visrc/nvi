@@ -6,22 +6,11 @@
 #include "gtkviscreen.h"
 #include <gdk/gdkx.h>
 
-#define F_GB 'A'
-
-#define INT9494(f,r,c)	((f) << 16) | ((r) << 8) | (c)
-#define INTIS9494(c)	!!(((c) >> 16) & 0x7F)
 #define INTISUCS(c)	((c & ~0x7F) && !(((c) >> 16) & 0x7F))
 #define INTUCS(c)	(c)
-#define INT9494F(c)	((c) >> 16) & 0x7F
-#define INT9494R(c)	((c) >> 8) & 0x7F
-#define INT9494C(c)	(c) & 0x7F
-#define INTILL(c)	(1 << 23) | (c)
 #ifdef USE_WIDECHAR
-#define INTISWIDE(c)	(!!(c >> 8))
-#define CHAR_WIDTH(sp, ch)						\
-	(INTISUCS(ch) && ucswidth(ch) > 0 ? ucswidth(ch) : INTISWIDE(ch) ? 2 : 1)
+#define CHAR_WIDTH(sp, ch)  wcwidth(ch)
 #else
-#define INTISWIDE(c)	    0
 #define CHAR_WIDTH(sp, ch)  1
 #endif
 
@@ -64,8 +53,6 @@ static void gtk_vi_screen_adjustment     (GtkAdjustment  *adjustment,
 				      GtkViScreen        *text);
 */
 
-static void gtk_vi_screen_draw              (GtkWidget         *widget,
-					 GdkRectangle      *area);
 static gint gtk_vi_screen_expose            (GtkWidget         *widget,
 					 GdkEventExpose    *event);
 
@@ -291,12 +278,10 @@ gtk_vi_screen_class_init (GtkViScreenClass *class)
   vi_screen_signals[RESIZED] =
     gtk_signal_new ("resized",
 		    GTK_RUN_FIRST,
-		    object_class->type,
+		    GTK_CLASS_TYPE(object_class),
 		    GTK_SIGNAL_OFFSET (GtkViScreenClass, resized),
 		    gtk_marshal_NONE__INT_INT,
 		    GTK_TYPE_NONE, 2, GTK_TYPE_INT, GTK_TYPE_INT, 0);
-
-  gtk_object_class_add_signals(object_class, vi_screen_signals, LAST_SIGNAL);
 
   gtk_object_add_arg_type ("GtkViScreen::vadjustment",
 			   GTK_TYPE_ADJUSTMENT,
@@ -314,7 +299,6 @@ gtk_vi_screen_class_init (GtkViScreenClass *class)
   */
   widget_class->size_request = gtk_vi_screen_size_request;
   widget_class->size_allocate = gtk_vi_screen_size_allocate;
-  widget_class->draw = gtk_vi_screen_draw;
   widget_class->expose_event = gtk_vi_screen_expose;
 
   class->rename = NULL;
@@ -492,8 +476,8 @@ gtk_vi_screen_realize (GtkWidget *widget)
   widget->window = gdk_window_new (gtk_widget_get_parent_window (widget), &attributes, attributes_mask);
   gdk_window_set_user_data (widget->window, vi);
   
-  attributes.x = (widget->style->klass->xthickness + VI_SCREEN_BORDER_ROOM);
-  attributes.y = (widget->style->klass->ythickness + VI_SCREEN_BORDER_ROOM);
+  attributes.x = (widget->style->xthickness + VI_SCREEN_BORDER_ROOM);
+  attributes.y = (widget->style->ythickness + VI_SCREEN_BORDER_ROOM);
   attributes.width = MAX (1, (gint)widget->allocation.width - (gint)attributes.x * 2);
   attributes.height = MAX (1, (gint)widget->allocation.height - (gint)attributes.y * 2);
   
@@ -535,8 +519,8 @@ gtk_vi_screen_size_request (GtkWidget      *widget,
   
   vi = GTK_VI_SCREEN (widget);
 
-  xthickness = widget->style->klass->xthickness + VI_SCREEN_BORDER_ROOM;
-  ythickness = widget->style->klass->ythickness + VI_SCREEN_BORDER_ROOM;
+  xthickness = widget->style->xthickness + VI_SCREEN_BORDER_ROOM;
+  ythickness = widget->style->ythickness + VI_SCREEN_BORDER_ROOM;
   
   vi->ch_ascent = widget->style->font->ascent;
   vi->ch_height = (widget->style->font->ascent + widget->style->font->descent) + 1;
@@ -568,11 +552,11 @@ gtk_vi_screen_size_allocate (GtkWidget     *widget,
 			      allocation->width, allocation->height);
       
       gdk_window_move_resize (vi->text_area,
-			      widget->style->klass->xthickness + VI_SCREEN_BORDER_ROOM,
-			      widget->style->klass->ythickness + VI_SCREEN_BORDER_ROOM,
-			      MAX (1, (gint)widget->allocation.width - (gint)(widget->style->klass->xthickness +
+			      widget->style->xthickness + VI_SCREEN_BORDER_ROOM,
+			      widget->style->ythickness + VI_SCREEN_BORDER_ROOM,
+			      MAX (1, (gint)widget->allocation.width - (gint)(widget->style->xthickness +
 							  (gint)VI_SCREEN_BORDER_ROOM) * 2),
-			      MAX (1, (gint)widget->allocation.height - (gint)(widget->style->klass->ythickness +
+			      MAX (1, (gint)widget->allocation.height - (gint)(widget->style->ythickness +
 							   (gint)VI_SCREEN_BORDER_ROOM) * 2));
       
       recompute_geometry (vi);
@@ -592,21 +576,6 @@ gtk_vi_screen_adjustment (GtkAdjustment *adjustment,
 }
 */
   
-static void
-gtk_vi_screen_draw (GtkWidget    *widget,
-	       GdkRectangle *area)
-{
-  g_return_if_fail (widget != NULL);
-  g_return_if_fail (GTK_IS_VI_SCREEN (widget));
-  g_return_if_fail (area != NULL);
-  
-  if (GTK_WIDGET_DRAWABLE (widget))
-    {
-      expose_text (GTK_VI_SCREEN (widget), area, TRUE);
-      gtk_widget_draw_focus (widget);
-    }
-}
-
 static gint
 gtk_vi_screen_expose (GtkWidget      *widget,
 		 GdkEventExpose *event)
@@ -618,10 +587,6 @@ gtk_vi_screen_expose (GtkWidget      *widget,
   if (event->window == GTK_VI_SCREEN (widget)->text_area)
     {
       expose_text (GTK_VI_SCREEN (widget), &event->area, TRUE);
-    }
-  else if (event->count == 0)
-    {
-      gtk_widget_draw_focus (widget);
     }
   
   return FALSE;
@@ -637,8 +602,8 @@ recompute_geometry (GtkViScreen* vi)
     gint rows, cols;
     gint i;
 
-    //xthickness = widget->style->klass->xthickness + VI_SCREEN_BORDER_ROOM;
-    //ythickness = widget->style->klass->ythickness + VI_SCREEN_BORDER_ROOM;
+    //xthickness = widget->style->xthickness + VI_SCREEN_BORDER_ROOM;
+    //ythickness = widget->style->ythickness + VI_SCREEN_BORDER_ROOM;
 
     gdk_window_get_size (vi->text_area, &width, &height);
 
@@ -717,14 +682,7 @@ draw_lines(GtkViScreen *vi, gint ymin, gint xmin, gint ymax, gint xmax)
 		fg = vi->gc;
 	    }
 	    pango = 0;
-	    if (INTIS9494(*(line+x))) {
-		font = gb_font;
-		buf[0] = INT9494R(*(line+x));
-		buf[1] = INT9494C(*(line+x));
-		p = buf;
-		blen = 2;
-	    } else if (INTISUCS(*(line+x))) {
-#ifdef HAVE_PANGO
+	    if (INTISUCS(*(line+x))) {
 		if (!vi->conx) {
 		    PangoFontDescription font_description;
 
@@ -735,22 +693,14 @@ draw_lines(GtkViScreen *vi, gint ymin, gint xmin, gint ymax, gint xmax)
 		    font_description.stretch = PANGO_STRETCH_NORMAL;
 		    font_description.size = 15000;
 
-		    vi->conx = pango_x_get_context (GDK_DISPLAY ());
+		    vi->conx = gdk_pango_context_get();
 		    pango_context_set_font_description (vi->conx, 
 			&font_description);
+		    pango_context_set_lang(vi->conx, "en_US");
 		    vi->alist = pango_attr_list_new();
 		}
 		blen = CHAR_WIDTH(NULL, *(line+x));
 		pango = 1;
-		if (0)
-#endif
-		{
-		    font = tfw;
-		    buf[0] = *(line+x) >> 8;
-		    buf[1] = (*(line+x)) & 0xFF;
-		    p = buf;
-		    blen = 2;
-		}
 	    } else {
 		font = GTK_WIDGET(vi)->style->font;
 		if (sizeof(CHAR_T) == sizeof(gchar))
@@ -772,7 +722,6 @@ draw_lines(GtkViScreen *vi, gint ymin, gint xmin, gint ymax, gint xmax)
 				xpos * vi->ch_width, 
 				y * vi->ch_height + vi->ch_ascent, 
 				p, blen);
-#ifdef HAVE_PANGO
 	    else {
 		PangoGlyphString *gs;
 		GList *list;
@@ -781,17 +730,15 @@ draw_lines(GtkViScreen *vi, gint ymin, gint xmin, gint ymax, gint xmax)
 		int len;
 
 		len = ucs2utf8(line+x, 1, buf);
-		list = pango_itemize(vi->conx, buf, len, vi->alist);
+		list = pango_itemize(vi->conx, buf, 0, len, vi->alist, NULL);
 		item = list->data;
 		gs = pango_glyph_string_new ();
 		pango_shape(buf, len, &item->analysis, gs);
 
-		pango_x_render(GDK_DISPLAY (), 
-		    GDK_WINDOW_XWINDOW(vi->text_area), GDK_GC_XGC(fg),
-		    item->analysis.font, gs, xpos * vi->ch_width, 
-		    y * vi->ch_height + vi->ch_ascent);
+		gdk_draw_glyphs (vi->text_area, fg, item->analysis.font,
+				xpos * vi->ch_width, 
+				y * vi->ch_height + vi->ch_ascent, gs);
 	    }
-#endif
 	}
     }
 }

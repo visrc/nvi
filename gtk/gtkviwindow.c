@@ -3,9 +3,11 @@
 
 #include <gdk/gdkkeysyms.h>
 #include <gtk/gtk.h>
+#if 0
 #ifdef HAVE_ZVT
 #include <zvt/zvtterm.h>
 #include <zvt/vt.h>
+#endif
 #endif
 
 #include "../common/common.h"
@@ -98,12 +100,10 @@ gtk_vi_window_class_init (GtkViWindowClass *class)
   vi_window_signals[RENAME] =
     gtk_signal_new ("rename",
 		    GTK_RUN_FIRST,
-		    object_class->type,
+		    GTK_CLASS_TYPE(object_class),
 		    GTK_SIGNAL_OFFSET (GtkViScreenClass, rename),
-		    gtk_marshal_NONE__STRING,
+		    gtk_marshal_VOID__STRING,
 		    GTK_TYPE_NONE, 1, GTK_TYPE_STRING, 0);
-
-  gtk_object_class_add_signals(object_class, vi_window_signals, LAST_SIGNAL);
 
   object_class->destroy = gtk_vi_window_destroy;
 }
@@ -147,7 +147,8 @@ gtk_vi_window_new (GtkVi *vi)
     gtk_table_attach(GTK_TABLE(table), vscroll, 1, 2, 0, 1,
 	(GtkAttachOptions)0, GTK_FILL, 0, 0);
     gtk_widget_show(table);
-    gtk_signal_connect(GTK_OBJECT(table), "map", vi_map, vi_widget/*->ipvi*/);
+    gtk_signal_connect(GTK_OBJECT(table), "map", GTK_SIGNAL_FUNC(vi_map), 
+			vi_widget/*->ipvi*/);
     window->table = table;
 
 
@@ -158,6 +159,7 @@ gtk_vi_window_new (GtkVi *vi)
     term = 0;
     fd = -1;
 
+#if 0
 #ifdef HAVE_ZVT
     term = zvt_term_new();
     zvt_term_set_blink(ZVT_TERM(term), FALSE);
@@ -166,12 +168,13 @@ gtk_vi_window_new (GtkVi *vi)
     gtk_widget_show(term);
     gtk_notebook_append_page(GTK_NOTEBOOK(window), term, NULL);
 #endif
+#endif
     window->term = term;
 
     vi_init_window(window, fd);
 
     gtk_signal_connect(GTK_OBJECT(vi_widget), "resized",
-	vi_resized, window->ipviwin);
+	GTK_SIGNAL_FUNC(vi_resized), window->ipviwin);
     gtk_signal_connect(GTK_OBJECT(vi_widget), "key_press_event",
 	(GtkSignalFunc) vi_key_press_event, window);
     window->value_changed = 
@@ -192,12 +195,20 @@ gtk_vi_window_destroy (GtkObject *object)
   
   vi_window = (GtkViWindow*) object;
 
-  gtk_signal_disconnect_by_data(GTK_OBJECT(vi_window->table), vi_window->vi_screen);
-  gtk_signal_disconnect_by_data(GTK_OBJECT(vi_window->vi_screen), vi_window->ipviwin);
-  gtk_signal_disconnect(GTK_OBJECT(GTK_VI_SCREEN(vi_window->vi_screen)->vadj), 
-	vi_window->value_changed);
+  if (vi_window->table) {
+    gtk_signal_disconnect_by_data(GTK_OBJECT(vi_window->table), 
+				  vi_window->vi_screen);
+    vi_window->table = 0;
+  }
 
-  gtk_widget_destroy(vi_window->vi_screen);
+  if (vi_window->vi_screen) {
+    gtk_signal_disconnect_by_data(GTK_OBJECT(vi_window->vi_screen), 
+				  vi_window->ipviwin);
+    gtk_signal_disconnect(GTK_OBJECT(GTK_VI_SCREEN(vi_window->vi_screen)->vadj), 
+	vi_window->value_changed);
+    gtk_widget_destroy(vi_window->vi_screen);
+    vi_window->vi_screen = 0;
+  }
 
   GTK_OBJECT_CLASS(parent_class)->destroy (object);
 }

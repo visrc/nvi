@@ -15,7 +15,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-
 #include "../common/common.h"
 #include "../ipc/ip.h"
 
@@ -52,6 +51,8 @@ main(argc, argv)
 	char *argv[];
 {
 	GtkVi	*vi;
+
+	gtk_set_locale ();
 
 	gtk_init (&argc, &argv);
 

@@ -94,9 +94,6 @@
 /* Define if you have flock(2) style locking. */
 #undef HAVE_LOCK_FLOCK
 
-/* Define is appropriate pango is available */
-#undef HAVE_PANGO
-
 /* Define if you want to compile in the Perl interpreter. */
 #undef HAVE_PERL_INTERP
 

@@ -215,7 +215,6 @@ AC_ARG_ENABLE(widechar,
 	[vi_cv_widechar="yes"], [vi_cv_widechar="no"])
 if test "$vi_cv_widechar" = "yes"; then
 	AC_DEFINE(USE_WIDECHAR)
-	LIBOBJS="wcwidth.o $LIBOBJS"
 fi
 AC_MSG_RESULT($vi_cv_widechar)
 
@@ -230,29 +229,42 @@ AC_ARG_ENABLE(gtk,
 	[vi_cv_gtk="yes"], [vi_cv_gtk="no"])
 AC_MSG_RESULT($vi_cv_gtk)
 if test "$vi_cv_gtk" = "yes"; then
+	#
+	# Find pkg-config
+	#
+	AC_PATH_PROG(PKG_CONFIG, pkg-config, no)
+	if test x$PKG_CONFIG = xno ; then
+	  AC_MSG_ERROR([*** pkg-config not found. See http://pkgconfig.sourceforge.net])
+	fi
+
+	if ! pkg-config --atleast-pkgconfig-version 0.5 ; then
+	  AC_MSG_ERROR([*** pkg-config too old; version 0.5 or better required.])
+	fi
+
 	vi_gtk=vi-gtk
 	vi_ipc=vi-ipc
-	AM_PATH_GTK(1.2.0)
-	GTKINCS="$GTK_CFLAGS"
-	GTKLIBS="$GTK_LIBS $LIBS"
+	AC_MSG_CHECKING(for gtk+)
+	if $PKG_CONFIG gtk+-2.0 ; then
+	      GTKINCS=`$PKG_CONFIG --cflags gtk+-2.0`
+	      GTKLIBS=`$PKG_CONFIG --libs gtk+-2.0`
+
+	      AC_MSG_RESULT(ok)
+	else
+	      AC_MSG_ERROR([
+*** gtk+-2.0 is required. The latest version of gtk
+*** is always available from ftp://ftp.gtk.org/.
+	  ])
+	fi
+
 	SAVELIBS="$LIBS"
-	AM_PATH_GDK_PIXBUF(0.4.0, pixbuf=yes, pixbuf=no)
-	if test "$pixbuf" != "no"; then
-		LIBS="-lutil $GDK_PIXBUF_LIBS $GTKLIBS"
-		AC_CHECK_LIB(nvizvt, zvt_get_ptys,
-			[vi_cv_zvt="yes"], [vi_cv_zvt="no"])
-		if test "$vi_cv_zvt" = "yes"; then
-			GTKLIBS="-lnvizvt $LIBS"
-			AC_DEFINE(HAVE_ZVT)
-		fi
-		LIBS="$SAVELIBS"
+	LIBS="-lutil $GTKLIBS"
+	AC_CHECK_LIB(nvizvt, zvt_get_ptys,
+		[vi_cv_zvt="yes"], [vi_cv_zvt="no"])
+	if test "$vi_cv_zvt" = "yes"; then
+		GTKLIBS="-lnvizvt $LIBS"
+		AC_DEFINE(HAVE_ZVT)
 	fi
-	AC_PATH_PROG(vi_cv_pango_config, pango-config, no)
-	if test "$vi_cv_pango_config" != "no"; then
-		PANGOLIBS=`$vi_cv_pango_config --libs pangox`
-		GTKLIBS="$PANGOLIBS $GTKLIBS"
-		AC_DEFINE(HAVE_PANGO)
-	fi
+	LIBS="$SAVELIBS"
 #	AC_PATH_PROG(vi_cv_gnome_config, gnome-config, no)
 #	if test "$vi_cv_gnome_config" != "no"; then
 #		ZVTLIBS=`$vi_cv_gnome_config zvt --libs`
