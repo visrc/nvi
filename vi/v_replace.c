@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_replace.c,v 5.9 1992/10/29 14:44:24 bostic Exp $ (Berkeley) $Date: 1992/10/29 14:44:24 $";
+static char sccsid[] = "$Id: v_replace.c,v 5.10 1992/11/11 18:26:54 bostic Exp $ (Berkeley) $Date: 1992/11/11 18:26:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -91,9 +91,18 @@ err:				if (p != emptybuf)
 		}
 		break;
 	default:
-		memset(p + fm->cno, vp->character, cnt);
-		if (file_sline(curf, fm->lno, p, len))
+		if ((np = malloc(len)) == NULL) {
+			msg("Error: %s", strerror(errno));
 			return (1);
+		}
+		bcopy(p, np, len);
+		memset(np + fm->cno, vp->character, cnt);
+		if (file_sline(curf, fm->lno, np, len)) {
+			free(np);
+			return (1);
+		}
+		free(np);
+
 		/* If a count, move to the end, otherwise don't move. */
 		rp->lno = fm->lno;
 		if (cnt == 1)

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ulcase.c,v 5.12 1992/10/29 14:44:39 bostic Exp $ (Berkeley) $Date: 1992/10/29 14:44:39 $";
+static char sccsid[] = "$Id: v_ulcase.c,v 5.13 1992/11/11 18:27:45 bostic Exp $ (Berkeley) $Date: 1992/11/11 18:27:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -33,16 +33,16 @@ v_ulcase(vp, fm, tm, rp)
 {
 	register int ch;
 	register u_char *p;
-	size_t cno, len;
+	size_t cno, len, nplen;
 	recno_t lno;
 	u_long cnt;
 	int change;
-	u_char *start;
+	u_char *np, *start;
 
 	lno = fm->lno;
 	cno = fm->cno;
 
-	if ((start = file_gline(curf, lno, &len)) == NULL) {
+	if ((p = file_gline(curf, lno, &len)) == NULL) {
 		if (file_lline(curf) == 0)
 			v_eof(NULL);
 		else
@@ -50,10 +50,14 @@ v_ulcase(vp, fm, tm, rp)
 		return (1);
 	}
 
-	p = start + cno;
+	np = NULL;
+	nplen = 0;
+	if (binc(&np, &nplen, len))
+		return (1);
+	bcopy(p, np, len);
 
+	p = np + cno;
 	cnt = vp->flags & VC_C1SET ? vp->count : 1;
-
 	for (change = 0; cnt--; ++cno) {
 		if (cno == len) {
 			if (change) {
@@ -63,15 +67,18 @@ v_ulcase(vp, fm, tm, rp)
 					return (1);
 				}
 			}
-			if ((start = file_gline(curf, ++lno, &len)) == NULL) {
+			if ((p = file_gline(curf, ++lno, &len)) == NULL) {
 				rp->lno = --lno;
 				rp->cno = len - 1;
 				return (0);
 			}
+			if (binc(&np, &nplen, len))
+				return (1);
 			change = 0;
 			cno = 0;
-			p = start;
+			p = np;
 		}
+
 		ch = *p;
 		if (islower(ch)) {
 			*p++ = toupper(ch);
@@ -85,7 +92,7 @@ v_ulcase(vp, fm, tm, rp)
 	rp->lno = lno;
 	rp->cno = cno;
 	if (change) {
-		if (file_sline(curf, lno, start, len))
+		if (file_sline(curf, lno, np, len))
 			return (1);
 	}
 	return (0);
