@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_display.c,v 8.24 1994/08/31 17:17:06 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:17:06 $";
+static char sccsid[] = "$Id: ex_display.c,v 8.25 1994/10/28 09:03:58 bostic Exp $ (Berkeley) $Date: 1994/10/28 09:03:58 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -83,7 +83,7 @@ bdisplay(sp, ep)
 	CB *cbp;
 
 	if (sp->gp->cutq.lh_first == NULL && sp->gp->dcbp == NULL) {
-		(void)ex_printf(EXCOOKIE, "No cut buffers to display.\n");
+		msgq(sp, M_INFO, "262|No cut buffers to display");
 		return (0);
 	}
 
