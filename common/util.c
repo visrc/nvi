@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.13 1993/09/27 11:42:06 bostic Exp $ (Berkeley) $Date: 1993/09/27 11:42:06 $";
+static char sccsid[] = "$Id: util.c,v 8.14 1993/10/04 10:17:54 bostic Exp $ (Berkeley) $Date: 1993/10/04 10:17:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -182,7 +182,7 @@ msg_rpt(sp, fp)
 	char *bp, *p, number[40];
 
 	if ((rval = O_VAL(sp, O_REPORT)) == 0)
-		goto clear;
+		goto norpt;
 
 	GET_SPACE(sp, bp, blen, 512);
 	p = bp;
@@ -218,7 +218,7 @@ msg_rpt(sp, fp)
 	FREE_SPACE(sp, bp, blen);
 
 	/* Clear after each report. */
-clear:	memset(sp->rptlines, 0, sizeof(sp->rptlines));
+norpt:	memset(sp->rptlines, 0, sizeof(sp->rptlines));
 	return (0);
 }
 
