@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_ex.c,v 5.21 1992/12/05 11:10:42 bostic Exp $ (Berkeley) $Date: 1992/12/05 11:10:42 $";
+static char sccsid[] = "$Id: v_ex.c,v 5.22 1992/12/20 15:10:08 bostic Exp $ (Berkeley) $Date: 1992/12/20 15:10:08 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -116,8 +116,8 @@ v_leaveex()
 {
 	if (extotalcount == 0)
 		return;
-	if (extotalcount >= SCREENSIZE(curf)) {
-		scr_ref(curf);
+	if (extotalcount >= SCREENSIZE(curf)) { 
+		FF_SET(curf, F_REDRAW);
 		return;
 	}
 	while (--extotalcount)
