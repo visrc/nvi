@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.31 1992/12/20 20:21:42 bostic Exp $ (Berkeley) $Date: 1992/12/20 20:21:42 $";
+static char sccsid[] = "$Id: options.c,v 5.32 1992/12/23 11:25:34 bostic Exp $ (Berkeley) $Date: 1992/12/23 11:25:34 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -28,14 +28,14 @@ static char sccsid[] = "$Id: options.c,v 5.31 1992/12/20 20:21:42 bostic Exp $ (
 #include "screen.h"
 #include "term.h"
 
-static int	f_columns __P((void *));
-static int	f_keytime __P((void *));
-static int	f_lines __P((void *));
-static int	f_ruler __P((void *));
-static int	f_shiftwidth __P((void *));
-static int	f_sidescroll __P((void *));
-static int	f_tabstop __P((void *));
-static int	f_wrapmargin __P((void *));
+static int	f_columns __P((EXF *, void *));
+static int	f_keytime __P((EXF *, void *));
+static int	f_lines __P((EXF *, void *));
+static int	f_ruler __P((EXF *, void *));
+static int	f_shiftwidth __P((EXF *, void *));
+static int	f_sidescroll __P((EXF *, void *));
+static int	f_tabstop __P((EXF *, void *));
+static int	f_wrapmargin __P((EXF *, void *));
 
 static long	s_columns	= 80;
 static long	s_keytime	=  2;
@@ -67,7 +67,7 @@ OPTIONS opts[] = {
 	"cc",		"cc -c",	NULL,		OPT_STR,
 /* O_COLUMNS */
 	"columns",	&s_columns,	f_columns,
-	    OPT_NOSAVE|OPT_NUM|OPT_REDRAW|OPT_SIZE,
+	    OPT_NOSAVE|OPT_NUM|OPT_REDRAW,
 /* O_COMMENT */
 	"comment",	NULL,		NULL,		OPT_0BOOL,
 /* O_DIGRAPH */
@@ -94,7 +94,7 @@ OPTIONS opts[] = {
 	"keytime",	&s_keytime,	f_keytime,	OPT_NUM,
 /* O_LINES */
 	"lines",	&s_lines,	f_lines,
-	    OPT_NOSAVE|OPT_NUM|OPT_REDRAW|OPT_SIZE,
+	    OPT_NOSAVE|OPT_NUM|OPT_REDRAW,
 /* O_LIST */
 	"list",		NULL,		NULL,		OPT_0BOOL|OPT_REDRAW,
 /* O_MAGIC */
@@ -376,7 +376,7 @@ found:		if (op == NULL || off && !ISFSETP(op, OPT_0BOOL|OPT_1BOOL)) {
 			}
 			FUNSETP(op, OPT_0BOOL | OPT_1BOOL);
 			FSETP(op, (off ? OPT_0BOOL : OPT_1BOOL) | OPT_SET);
-			if (op->func && op->func(&value)) {
+			if (op->func && op->func(curf, &value)) {
 				rval = 1;
 				break;
 			}
@@ -392,7 +392,7 @@ found:		if (op == NULL || off && !ISFSETP(op, OPT_0BOOL|OPT_1BOOL)) {
 				msg("set %s: illegal number %s", name, equals);
 				break;
 			}
-			if (op->func && op->func(&value)) {
+			if (op->func && op->func(curf, &value)) {
 				rval = 1;
 				break;
 			}
@@ -405,7 +405,7 @@ found:		if (op == NULL || off && !ISFSETP(op, OPT_0BOOL|OPT_1BOOL)) {
 				    name);
 				break;
 			}
-			if (op->func && op->func(&value)) {
+			if (op->func && op->func(curf, &value)) {
 				rval = 1;
 				break;
 			}
@@ -414,11 +414,9 @@ found:		if (op == NULL || off && !ISFSETP(op, OPT_0BOOL|OPT_1BOOL)) {
 			PVALP(op) = strdup(equals);
 			FSETP(op, OPT_ALLOCATED | OPT_SET);
 draw:			if (curf != NULL &&
-			    ISFSETP(op, OPT_REDRAW | OPT_SIZE)) {
+			    ISFSETP(op, OPT_REDRAW)) {
 				if (ISFSETP(op, OPT_REDRAW))
 					FF_SET(curf, F_REDRAW);
-				if (ISFSETP(op, OPT_SIZE))
-					FF_SET(curf, F_RESIZE);
 			}
 			break;
 		default:
@@ -431,10 +429,12 @@ draw:			if (curf != NULL &&
 }
 
 static int
-f_columns(valp)
+f_columns(ep, valp)
+	EXF *ep; 
 	void *valp;
 {
 	u_long val;
+	char buf[25];
 
 	val = *(u_long *)valp;
 
@@ -459,11 +459,14 @@ f_columns(valp)
 		msg("Screen columns too small, less than wrapmargin.\n");
 		return (1);
 	}
+	(void)snprintf(buf, sizeof(buf), "%lu", val);
+	(void)setenv("COLUMNS", buf, 1);
 	return (0);
 }
 
 static int
-f_keytime(valp)
+f_keytime(ep, valp)
+	EXF *ep; 
 	void *valp;
 {
 	u_long val;
@@ -479,10 +482,12 @@ f_keytime(valp)
 }
 
 static int
-f_lines(valp)
+f_lines(ep, valp)
+	EXF *ep; 
 	void *valp;
 {
 	u_long val;
+	char buf[25];
 
 	val = *(u_long *)valp;
 
@@ -491,11 +496,14 @@ f_lines(valp)
 		msg("Screen lines too small, less than %d.\n", MINLINES);
 		return (1);
 	}
+	(void)snprintf(buf, sizeof(buf), "%lu", val);
+	(void)setenv("ROWS", buf, 1);
 	return (0);
 }
 
 static int
-f_ruler(valp)
+f_ruler(ep, valp)
+	EXF *ep; 
 	void *valp;
 {
 	if (curf != NULL)
@@ -504,7 +512,8 @@ f_ruler(valp)
 }
 
 static int
-f_shiftwidth(valp)
+f_shiftwidth(ep, valp)
+	EXF *ep; 
 	void *valp;
 {
 	u_long val;
@@ -519,7 +528,8 @@ f_shiftwidth(valp)
 }
 
 static int
-f_sidescroll(valp)
+f_sidescroll(ep, valp)
+	EXF *ep; 
 	void *valp;
 {
 	u_long val;
@@ -534,7 +544,8 @@ f_sidescroll(valp)
 }
 
 static int
-f_tabstop(valp)
+f_tabstop(ep, valp)
+	EXF *ep; 
 	void *valp;
 {
 	u_long val;
@@ -559,7 +570,8 @@ f_tabstop(valp)
 }
 
 static int
-f_wrapmargin(valp)
+f_wrapmargin(ep, valp)
+	EXF *ep; 
 	void *valp;
 {
 	u_long val;
