@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 10.11 1995/10/16 15:34:35 bostic Exp $ (Berkeley) $Date: 1995/10/16 15:34:35 $";
+static char sccsid[] = "$Id: vs_smap.c,v 10.12 1995/10/20 10:14:13 bostic Exp $ (Berkeley) $Date: 1995/10/20 10:14:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -63,16 +63,10 @@ vs_change(sp, lno, op)
 	 *
 	 * Check for line #2 before going to the end of the file.
 	 */
-	if ((op == LINE_APPEND && lno == 0 ||
-	    op == LINE_INSERT && lno == 1) && !db_exist(sp, 2)) {
-		if (db_last(sp, &lline))
-			return (1);
-		if (lline == 1) {
-			SMAP_FLUSH(HMAP);
-			VI_SCR_CFLUSH(vip);
-			F_SET(vip, VIP_CUR_INVALID);
-			return (0);
-		}
+	if ((op == LINE_APPEND && lno == 0 || op == LINE_INSERT && lno == 1) &&
+	    !db_exist(sp, 2)) {
+		lno = 1;
+		op = LINE_RESET;
 	}
 
 	/* Appending is the same as inserting, if the line is incremented. */
