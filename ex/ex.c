@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 10.14 1995/10/03 10:23:12 bostic Exp $ (Berkeley) $Date: 1995/10/03 10:23:12 $";
+static char sccsid[] = "$Id: ex.c,v 10.15 1995/10/04 12:33:11 bostic Exp $ (Berkeley) $Date: 1995/10/04 12:33:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1086,11 +1086,8 @@ end_case23:		break;
 
 			/* Line specifications are always required. */
 			if (!isaddr) {
-				p = msg_print(sp, ecp->cp, &nf);
-				msgq(sp, M_ERR,
-				     "084|%s: bad line specification", p);
-				if (nf)
-					FREE_SPACE(sp, p, 0);
+				msgq_str(sp, M_ERR, ecp->cp,
+				     "084|%s: bad line specification");
 				goto err;
 			}
 			/*
@@ -2063,16 +2060,12 @@ ex_unknown(sp, cmd, len)
 	size_t len;
 {
 	size_t blen;
-	int nf;
-	char *bp, *p;
+	char *bp;
 
 	GET_SPACE_GOTO(sp, bp, blen, len + 1);
 	bp[len] = '\0';
 	memmove(bp, cmd, len);
-	p = msg_print(sp, bp, &nf);
-	msgq(sp, M_ERR, "098|The %s command is unknown", p);
-	if (nf)
-		FREE_SPACE(sp, p, 0);
+	msgq_str(sp, M_ERR, bp, "098|The %s command is unknown");
 	FREE_SPACE(sp, bp, blen);
 
 binc_err:
@@ -2181,7 +2174,7 @@ ex_badaddr(sp, cp, ba, nret)
 	 * underlying file, that's the real problem.
 	 */
 	if (sp->ep == NULL) {
-		ex_message(sp, cp->name, EXM_NOFILEYET);
+		ex_emsg(sp, cp->name, EXM_NOFILEYET);
 		return;
 	}
 
