@@ -12,7 +12,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: api.c,v 8.30 2000/06/25 17:34:37 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:37 $";
+static const char sccsid[] = "$Id: api.c,v 8.31 2000/07/14 14:29:15 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -85,7 +85,12 @@ api_aline(sp, lno, line, len)
 	char *line;
 	size_t len;
 {
-	return (db_append(sp, 1, lno, line, len));
+	size_t wblen;
+	CHAR_T *wbp;
+
+	CHAR2INT(sp, line, len, wbp, wblen);
+
+	return (db_append(sp, 1, lno, wbp, wblen));
 }
 
 /*
@@ -103,7 +108,7 @@ api_extend(sp, lno)
 	if (db_last(sp, &lastlno))
 	    return 1;
 	while(lastlno < lno)
-	    if (db_append(sp, 1, lastlno++, "", 0))
+	    if (db_append(sp, 1, lastlno++, NULL, 0))
 		return 1;
 	return 0;
 }
@@ -165,7 +170,12 @@ api_iline(sp, lno, line, len)
 	char *line;
 	size_t len;
 {
-	return (db_insert(sp, lno, line, len));
+	size_t wblen;
+	CHAR_T *wbp;
+
+	CHAR2INT(sp, line, len, wbp, wblen);
+
+	return (db_insert(sp, lno, wbp, wblen));
 }
 
 /*
@@ -195,7 +205,12 @@ api_sline(sp, lno, line, len)
 	char *line;
 	size_t len;
 {
-	return (db_set(sp, lno, line, len));
+	size_t wblen;
+	CHAR_T *wbp;
+
+	CHAR2INT(sp, line, len, wbp, wblen);
+
+	return (db_set(sp, lno, wbp, wblen));
 }
 
 /*
@@ -341,10 +356,13 @@ api_edit(sp, file, spp, newscreen)
 	int newscreen;
 {
 	EXCMD cmd;
+	size_t wlen;
+	CHAR_T *wp;
 
 	if (file) {
 		ex_cinit(sp, &cmd, C_EDIT, 0, OOBLNO, OOBLNO, 0);
-		argv_exp0(sp, &cmd, file, strlen(file));
+		CHAR2INT(sp, file, strlen(file) + 1, wp, wlen);
+		argv_exp0(sp, &cmd, wp, wlen - 1 /* terminating 0 */);
 	} else
 		ex_cinit(sp, &cmd, C_EDIT, 0, OOBLNO, OOBLNO, 0);
 	if (newscreen)
@@ -410,10 +428,14 @@ api_map(sp, name, map, len)
 	size_t len;
 {
 	EXCMD cmd;
+	size_t wlen;
+	CHAR_T *wp;
 
 	ex_cinit(sp, &cmd, C_MAP, 0, OOBLNO, OOBLNO, 0);
-	argv_exp0(sp, &cmd, name, strlen(name));
-	argv_exp0(sp, &cmd, map, len);
+	CHAR2INT(sp, name, strlen(name) + 1, wp, wlen);
+	argv_exp0(sp, &cmd, wp, wlen - 1);
+	CHAR2INT(sp, map, len, wp, wlen);
+	argv_exp0(sp, &cmd, wp, wlen);
 	return (cmd.cmd->fn(sp, &cmd));
 }
 
@@ -429,9 +451,12 @@ api_unmap(sp, name)
 	char *name;
 {
 	EXCMD cmd;
+	size_t wlen;
+	CHAR_T *wp;
 
 	ex_cinit(sp, &cmd, C_UNMAP, 0, OOBLNO, OOBLNO, 0);
-	argv_exp0(sp, &cmd, name, strlen(name));
+	CHAR2INT(sp, name, strlen(name) + 1, wp, wlen);
+	argv_exp0(sp, &cmd, wp, wlen - 1);
 	return (cmd.cmd->fn(sp, &cmd));
 }
 
@@ -505,6 +530,8 @@ api_opts_set(sp, name, str_value, num_value, bool_value)
 	int rval;
 	size_t blen;
 	char *bp;
+	size_t wblen;
+	CHAR_T *wbp;
 
 	if ((op = opts_search(name)) == NULL) {
 		opts_nomatch(sp, name);
@@ -526,7 +553,11 @@ api_opts_set(sp, name, str_value, num_value, bool_value)
 		a.len = snprintf(bp, 1024, "%s=%s", name, str_value);
 		break;
 	}
-	a.bp = bp;
+
+	CHAR2INT(sp, bp, a.len, wbp, wblen);
+	a.len = wblen;
+
+	a.bp = wbp;
 	b.len = 0;
 	b.bp = NULL;
 	ap[0] = &a;
@@ -549,7 +580,11 @@ api_run_str(sp, cmd)
 	SCR *sp;
 	char *cmd;
 {
-	return (ex_run_str(sp, NULL, cmd, strlen(cmd), 0, 0));
+	size_t wlen;
+	CHAR_T *wp;
+
+	CHAR2INT(sp, cmd, strlen(cmd)+1, wp, wlen);
+	return (ex_run_str(sp, NULL, wp, wlen - 1, 0, 0));
 }
 
 /*
@@ -586,16 +621,25 @@ api_tagq_add(sp, tqp, filename, search, msg)
 	char *filename, *search, *msg;
 {
 	TAG *tp;
+	CHAR_T *wp;
+	size_t wlen;
 	size_t flen = strlen(filename);
 	size_t slen = strlen(search);
+	size_t mlen = strlen(msg);
 
-	CALLOC_GOTO(sp, tp, TAG *, 1, sizeof(TAG) - 1 + flen + 1 + slen + 1);
-	tp->fname = tp->buf;
+	CALLOC_GOTO(sp, tp, TAG *, 1, 
+		    sizeof(TAG) - 1 + flen + 1 + slen + 1 + mlen + 1);
+	tp->fname = (char *)tp->buf;
 	memcpy(tp->fname, filename, flen + 1);
 	tp->fnlen = flen;
-	tp->search = tp->fname + flen + 1;
-	memcpy(tp->search, search, slen + 1);
+	tp->search = (CHAR_T *)((char *)tp->fname + flen + 1);
+	CHAR2INT(sp, search, slen + 1, wp, wlen);
+	memcpy(tp->search, wp, wlen);
 	tp->slen = slen;
+	tp->msg = tp->search + slen + 1;
+	CHAR2INT(sp, msg, mlen + 1, wp, wlen);
+	memcpy(tp->msg, wp, wlen);
+	tp->mlen = mlen;
 	CIRCLEQ_INSERT_TAIL(&tqp->tagq, tp, q);
 
 alloc_err:

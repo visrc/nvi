@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: ex.h,v 10.26 2000/04/21 19:00:35 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:35 $
+ *	$Id: ex.h,v 10.27 2000/07/14 14:29:19 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:19 $
  */
 
 #define	PROMPTCHAR	':'		/* Prompt using a colon. */
@@ -80,10 +80,10 @@ struct _excmd {
 	memset(&((cmdp)->cp), 0, ((char *)&(cmdp)->flags -		\
 	    (char *)&((cmdp)->cp)) + sizeof((cmdp)->flags))
 
-	char	 *cp;			/* Current command text. */
+	CHAR_T	 *cp;			/* Current command text. */
 	size_t	  clen;			/* Current command length. */
 
-	char	 *save_cmd;		/* Remaining command. */
+	CHAR_T	 *save_cmd;		/* Remaining command. */
 	size_t	  save_cmdlen;		/* Remaining command length. */
 
 	EXCMDLIST const *cmd;		/* Command: entry in command table. */
@@ -91,7 +91,7 @@ struct _excmd {
 
 	CIRCLEQ_HEAD(_rh, _range) rq;	/* @/global range: linked list. */
 	db_recno_t   range_lno;		/* @/global range: set line number. */
-	char	 *o_cp;			/* Original @/global command. */
+	CHAR_T	 *o_cp;			/* Original @/global command. */
 	size_t	  o_clen;		/* Original @/global command length. */
 #define	AGV_AT		0x01		/* @ buffer execution. */
 #define	AGV_AT_NORANGE	0x02		/* @ buffer execution without range. */
@@ -160,7 +160,7 @@ typedef struct _ex_private {
 	CIRCLEQ_HEAD(_tqh, _tagq) tq;	/* Tag queue. */
 	TAILQ_HEAD(_tagfh, _tagf) tagfq;/* Tag file list. */
 	LIST_HEAD(_csch, _csc) cscq;    /* Cscope connection list. */
-	char	*tag_last;		/* Saved last tag string. */
+	CHAR_T	*tag_last;		/* Saved last tag string. */
 
 	CHAR_T	*lastbcomm;		/* Last bang command. */
 
@@ -170,7 +170,7 @@ typedef struct _ex_private {
 
 	u_int32_t fdef;			/* Saved E_C_* default command flags. */
 
-	char	*ibp;			/* File line input buffer. */
+	CHAR_T	*ibp;			/* File line input buffer. */
 	size_t	 ibp_len;		/* File line input buffer length. */
 
 	/*

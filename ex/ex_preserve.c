@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_preserve.c,v 10.13 2000/04/21 19:00:36 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:36 $";
+static const char sccsid[] = "$Id: ex_preserve.c,v 10.14 2000/07/14 14:29:20 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -73,11 +73,14 @@ ex_recover(sp, cmdp)
 {
 	ARGS *ap;
 	FREF *frp;
+	char *np;
+	size_t nlen;
 
 	ap = cmdp->argv[0];
 
 	/* Set the alternate file name. */
-	set_alt_name(sp, ap->bp);
+	INT2CHAR(sp, ap->bp, ap->len+1, np, nlen);
+	set_alt_name(sp, np);
 
 	/*
 	 * Check for modifications.  Autowrite did not historically
@@ -87,7 +90,8 @@ ex_recover(sp, cmdp)
 		return (1);
 
 	/* Get a file structure for the file. */
-	if ((frp = file_add(sp, ap->bp)) == NULL)
+	INT2CHAR(sp, ap->bp, ap->len+1, np, nlen);
+	if ((frp = file_add(sp, np)) == NULL)
 		return (1);
 
 	/* Set the recover bit. */

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_bang.c,v 10.34 2000/04/21 19:00:35 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:35 $";
+static const char sccsid[] = "$Id: ex_bang.c,v 10.35 2000/07/14 14:29:20 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -58,6 +58,8 @@ ex_bang(sp, cmdp)
 	db_recno_t lno;
 	int rval;
 	const char *msg;
+	char *np;
+	size_t nlen;
 
 	ap = cmdp->argv[0];
 	if (ap->len == 0) {
@@ -69,7 +71,7 @@ ex_bang(sp, cmdp)
 	exp = EXP(sp);
 	if (exp->lastbcomm != NULL)
 		free(exp->lastbcomm);
-	if ((exp->lastbcomm = strdup(ap->bp)) == NULL) {
+	if ((exp->lastbcomm = v_wstrdup(sp, ap->bp, ap->len)) == NULL) {
 		msgq(sp, M_SYSERR, NULL);
 		return (1);
 	}
@@ -112,8 +114,9 @@ ex_bang(sp, cmdp)
 				    NULL);
 
 		/* If we're still in a vi screen, move out explicitly. */
+		INT2CHAR(sp, ap->bp, ap->len+1, np, nlen);
 		(void)ex_exec_proc(sp,
-		    cmdp, ap->bp, msg, !F_ISSET(sp, SC_EX | SC_SCR_EXWROTE));
+		    cmdp, np, msg, !F_ISSET(sp, SC_EX | SC_SCR_EXWROTE));
 	}
 
 	/*

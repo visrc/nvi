@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_subst.c,v 10.42 2000/06/27 17:19:06 skimo Exp $ (Berkeley) $Date: 2000/06/27 17:19:06 $";
+static const char sccsid[] = "$Id: ex_subst.c,v 10.43 2000/07/14 14:29:22 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -32,12 +32,12 @@ static const char sccsid[] = "$Id: ex_subst.c,v 10.42 2000/06/27 17:19:06 skimo 
 #define	SUB_FIRST	0x01		/* The 'r' flag isn't reasonable. */
 #define	SUB_MUSTSETR	0x02		/* The 'r' flag is required. */
 
-static int re_conv __P((SCR *, char **, size_t *, int *));
-static int re_cscope_conv __P((SCR *, char **, size_t *, int *));
+static int re_conv __P((SCR *, CHAR_T **, size_t *, int *));
+static int re_cscope_conv __P((SCR *, CHAR_T **, size_t *, int *));
 static int re_sub __P((SCR *,
-		char *, char **, size_t *, size_t *, regmatch_t [10]));
-static int re_tag_conv __P((SCR *, char **, size_t *, int *));
-static int s __P((SCR *, EXCMD *, char *, regex_t *, u_int));
+		CHAR_T *, CHAR_T **, size_t *, size_t *, regmatch_t [10]));
+static int re_tag_conv __P((SCR *, CHAR_T **, size_t *, int *));
+static int s __P((SCR *, EXCMD *, CHAR_T *, regex_t *, u_int));
 
 /*
  * ex_s --
@@ -56,7 +56,7 @@ ex_s(sp, cmdp)
 	size_t blen, len;
 	u_int flags;
 	int delim;
-	char *bp, *ptrn, *rep, *p, *t;
+	CHAR_T *bp, *p, *ptrn, *rep, *t;
 
 	/*
 	 * Skip leading white space.
@@ -323,20 +323,20 @@ ex_subtilde(sp, cmdp)
 #define	BUILD(sp, l, len) {						\
 	if (lbclen + (len) > lblen) {					\
 		lblen += MAX(lbclen + (len), 256);			\
-		REALLOC(sp, lb, char *, lblen);				\
+		REALLOC(sp, lb, CHAR_T *, lblen * sizeof(CHAR_T));	\
 		if (lb == NULL) {					\
 			lbclen = 0;					\
 			return (1);					\
 		}							\
 	}								\
-	memcpy(lb + lbclen, l, len);					\
+	memcpy(lb + lbclen, l, len * sizeof(CHAR_T));			\
 	lbclen += len;							\
 }
 
 #define	NEEDSP(sp, len, pnt) {						\
 	if (lbclen + (len) > lblen) {					\
 		lblen += MAX(lbclen + (len), 256);			\
-		REALLOC(sp, lb, char *, lblen);				\
+		REALLOC(sp, lb, CHAR_T *, lblen * sizeof(CHAR_T));	\
 		if (lb == NULL) {					\
 			lbclen = 0;					\
 			return (1);					\
@@ -349,7 +349,7 @@ static int
 s(sp, cmdp, s, re, flags)
 	SCR *sp;
 	EXCMD *cmdp;
-	char *s;
+	CHAR_T *s;
 	regex_t *re;
 	u_int flags;
 {
@@ -357,14 +357,15 @@ s(sp, cmdp, s, re, flags)
 	MARK from, to;
 	TEXTH tiq;
 	db_recno_t elno, lno, slno;
+	u_long ul;
 	regmatch_t match[10];
 	size_t blen, cnt, last, lbclen, lblen, len, llen;
 	size_t offset, saved_offset, scno;
 	int cflag, lflag, nflag, pflag, rflag;
 	int didsub, do_eol_match, eflags, empty_ok, eval;
 	int linechanged, matched, quit, rval;
-	char *bp, *lb;
-	CHAR_T *p;
+	CHAR_T *p, *lb, *bp;
+	enum nresult nret;
 
 	NEEDFILE(sp, cmdp);
 
@@ -417,13 +418,14 @@ s(sp, cmdp, s, re, flags)
 			if (lno != OOBLNO)
 				goto usage;
 			errno = 0;
-			lno = strtoul(s, &s, 10);
+			nret = nget_uslong(sp, &ul, s, &s, 10);
+			lno = ul;
 			if (*s == '\0')		/* Loop increment correction. */
 				--s;
-			if (errno == ERANGE) {
-				if (lno == LONG_MAX)
+			if (nret != NUM_OK) {
+				if (nret == NUM_OVER)
 					msgq(sp, M_ERR, "153|Count overflow");
-				else if (lno == LONG_MIN)
+				else if (nret == NUM_UNDER)
 					msgq(sp, M_ERR, "154|Count underflow");
 				else
 					msgq(sp, M_SYSERR, NULL);
@@ -517,9 +519,9 @@ noargs:	if (F_ISSET(sp, SC_VI) && sp->c_suffix && (lflag || nflag || pflag)) {
 		 */
 		if (sp->c_suffix) {
 			if (bp == NULL) {
-				GET_SPACE_RET(sp, bp, blen, llen);
+				GET_SPACE_RET(sp, bp, blen, llen * sizeof(CHAR_T));
 			} else
-				ADD_SPACE_RET(sp, bp, blen, llen);
+				ADD_SPACE_RET(sp, bp, blen, llen * sizeof(CHAR_T));
 			memcpy(bp, s, llen);
 			s = bp;
 		}
@@ -559,7 +561,7 @@ nextmatch:	match[0].rm_so = 0;
 		match[0].rm_eo = len;
 
 		/* Get the next match. */
-		eval = regexec(re, (char *)s + offset, 10, match, eflags);
+		eval = regexec(re, s + offset, 10, match, eflags);
 
 		/*
 		 * There wasn't a match or if there was an error, deal with
@@ -891,19 +893,19 @@ err:		rval = 1;
  *	Compile the RE.
  *
  * PUBLIC: int re_compile __P((SCR *,
- * PUBLIC:     char *, size_t, char **, size_t *, regex_t *, u_int));
+ * PUBLIC:     CHAR_T *, size_t, CHAR_T **, size_t *, regex_t *, u_int));
  */
 int
 re_compile(sp, ptrn, plen, ptrnp, lenp, rep, flags)
 	SCR *sp;
-	char *ptrn, **ptrnp;
+	CHAR_T *ptrn, **ptrnp;
 	size_t plen, *lenp;
 	regex_t *rep;
 	u_int flags;
 {
 	size_t len;
 	int reflags, replaced, rval;
-	char *p;
+	CHAR_T *p;
 
 	/* Set RE flags. */
 	reflags = 0;
@@ -978,9 +980,9 @@ iclower:	for (p = ptrn, len = plen; len > 0; ++p, --len)
 		 * Regcomp isn't 8-bit clean, so the pattern is nul-terminated
 		 * for now.  There's just no other solution.  
 		 */
-		MALLOC(sp, *ptrnp, char *, plen + 1);
+		MALLOC(sp, *ptrnp, CHAR_T *, (plen + 1) * sizeof(CHAR_T));
 		if (*ptrnp != NULL) {
-			memcpy(*ptrnp, ptrn, plen);
+			memcpy(*ptrnp, ptrn, plen * sizeof(CHAR_T));
 			(*ptrnp)[plen] = '\0';
 		}
 
@@ -1038,13 +1040,13 @@ iclower:	for (p = ptrn, len = plen; len > 0; ++p, --len)
 static int
 re_conv(sp, ptrnp, plenp, replacedp)
 	SCR *sp;
-	char **ptrnp;
+	CHAR_T **ptrnp;
 	size_t *plenp;
 	int *replacedp;
 {
 	size_t blen, len, needlen;
 	int magic;
-	char *bp, *p, *t;
+	CHAR_T *bp, *p, *t;
 
 	/*
 	 * First pass through, we figure out how much space we'll need.
@@ -1186,13 +1188,13 @@ re_conv(sp, ptrnp, plenp, replacedp)
 static int
 re_tag_conv(sp, ptrnp, plenp, replacedp)
 	SCR *sp;
-	char **ptrnp;
+	CHAR_T **ptrnp;
 	size_t *plenp;
 	int *replacedp;
 {
 	size_t blen, len;
 	int lastdollar;
-	char *bp, *p, *t;
+	CHAR_T *bp, *p, *t;
 
 	len = *plenp;
 
@@ -1255,18 +1257,23 @@ re_tag_conv(sp, ptrnp, plenp, replacedp)
 static int
 re_cscope_conv(sp, ptrnp, plenp, replacedp)
 	SCR *sp;
-	char **ptrnp;
+	CHAR_T **ptrnp;
 	size_t *plenp;
 	int *replacedp;
 {
 	size_t blen, len, nspaces;
-	char *bp, *p, *t;
+	CHAR_T *bp, *t;
+	CHAR_T *p;
+	CHAR_T *wp;
+	size_t wlen;
 
 	/*
 	 * Each space in the source line printed by cscope represents an
 	 * arbitrary sequence of spaces, tabs, and comments.
 	 */
 #define	CSCOPE_RE_SPACE		"([ \t]|/\\*([^*]|\\*/)*\\*/)*"
+#define CSCOPE_LEN	sizeof(CSCOPE_RE_SPACE) - 1
+	CHAR2INT(sp, CSCOPE_RE_SPACE, CSCOPE_LEN, wp, wlen);
 	for (nspaces = 0, p = *ptrnp, len = *plenp; len > 0; ++p, --len)
 		if (*p == ' ')
 			++nspaces;
@@ -1279,27 +1286,27 @@ re_cscope_conv(sp, ptrnp, plenp, replacedp)
 	 */
 	*replacedp = 1;
 	len = (p - *ptrnp) * 2 + (nspaces + 2) * sizeof(CSCOPE_RE_SPACE) + 3;
-	GET_SPACE_RET(sp, bp, blen, len);
+	GET_SPACE_RET(sp, bp, blen, len * sizeof(CHAR_T));
 
 	p = *ptrnp;
 	t = bp;
 
 	*t++ = '^';
-	memcpy(t, CSCOPE_RE_SPACE, sizeof(CSCOPE_RE_SPACE) - 1);
-	t += sizeof(CSCOPE_RE_SPACE) - 1;
+	memcpy(t, wp, wlen * sizeof(CHAR_T));
+	t += wlen;
 
 	for (len = *plenp; len > 0; ++p, --len)
 		if (*p == ' ') {
-			memcpy(t, CSCOPE_RE_SPACE, sizeof(CSCOPE_RE_SPACE) - 1);
-			t += sizeof(CSCOPE_RE_SPACE) - 1;
+			memcpy(t, wp, wlen * sizeof(CHAR_T));
+			t += wlen;
 		} else {
 			if (strchr("\\^.[]$*+?()|{}", *p))
 				*t++ = '\\';
 			*t++ = *p;
 		}
 
-	memcpy(t, CSCOPE_RE_SPACE, sizeof(CSCOPE_RE_SPACE) - 1);
-	t += sizeof(CSCOPE_RE_SPACE) - 1;
+	memcpy(t, wp, wlen * sizeof(CHAR_T));
+	t += wlen;
 	*t++ = '$';
 
 	*ptrnp = bp;
@@ -1339,8 +1346,8 @@ re_error(sp, errcode, preg)
 static int
 re_sub(sp, ip, lbp, lbclenp, lblenp, match)
 	SCR *sp;
-	char *ip;			/* Input line. */
-	char **lbp;
+	CHAR_T *ip;			/* Input line. */
+	CHAR_T **lbp;
 	size_t *lbclenp, *lblenp;
 	regmatch_t match[10];
 {
@@ -1348,11 +1355,11 @@ re_sub(sp, ip, lbp, lbclenp, lblenp, match)
 	size_t lbclen, lblen;		/* Local copies. */
 	size_t mlen;			/* Match length. */
 	size_t rpl;			/* Remaining replacement length. */
-	char *rp;			/* Replacement pointer. */
+	CHAR_T *rp;			/* Replacement pointer. */
 	int ch;
 	int no;				/* Match replacement offset. */
-	char *p, *t;			/* Buffer pointers. */
-	char *lb;			/* Local copies. */
+	CHAR_T *p, *t;			/* Buffer pointers. */
+	CHAR_T *lb;			/* Local copies. */
 
 	lb = *lbp;			/* Get local copies. */
 	lbclen = *lbclenp;

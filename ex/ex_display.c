@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_display.c,v 10.12 1996/04/10 11:31:30 bostic Exp $ (Berkeley) $Date: 1996/04/10 11:31:30 $";
+static const char sccsid[] = "$Id: ex_display.c,v 10.13 2000/07/14 14:29:20 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -26,7 +26,7 @@ static const char sccsid[] = "$Id: ex_display.c,v 10.12 1996/04/10 11:31:30 bost
 #include "tag.h"
 
 static int	bdisplay __P((SCR *));
-static void	db __P((SCR *, CB *, CHAR_T *));
+static void	db __P((SCR *, CB *, u_char *));
 
 /*
  * ex_display -- :display b[uffers] | c[onnections] | s[creens] | t[ags]
@@ -122,7 +122,7 @@ static void
 db(sp, cbp, name)
 	SCR *sp;
 	CB *cbp;
-	CHAR_T *name;
+	u_char *name;
 {
 	CHAR_T *p;
 	GS *gp;

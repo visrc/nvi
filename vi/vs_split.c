@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_split.c,v 10.37 2000/06/25 17:34:42 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:42 $";
+static const char sccsid[] = "$Id: vs_split.c,v 10.38 2000/07/14 14:29:25 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -628,20 +628,23 @@ vs_fg(sp, nspp, name, newscreen)
 	GS *gp;
 	WIN *wp;
 	SCR *nsp;
+	char *np;
+	size_t nlen;
 
 	gp = sp->gp;
 	wp = sp->wp;
 
+	INT2CHAR(sp, name, v_strlen(name) + 1, np, nlen);
 	if (newscreen)
 		/* Get the specified background screen. */
-		nsp = vs_getbg(sp, name);
+		nsp = vs_getbg(sp, np);
 	else
 		/* Swap screens. */
-		if (vs_swap(sp, &nsp, name))
+		if (vs_swap(sp, &nsp, np))
 			return (1);
 
 	if ((*nspp = nsp) == NULL) {
-		msgq_str(sp, M_ERR, name,
+		msgq_wstr(sp, M_ERR, name,
 		    name == NULL ?
 		    "223|There are no background screens" :
 		    "224|There's no background screen editing a file named %s");

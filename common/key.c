@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: key.c,v 10.41 2000/07/10 15:28:44 skimo Exp $ (Berkeley) $Date: 2000/07/10 15:28:44 $";
+static const char sccsid[] = "$Id: key.c,v 10.42 2000/07/14 14:29:16 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -206,7 +206,8 @@ void
 v_key_ilookup(sp)
 	SCR *sp;
 {
-	CHAR_T ch, *p, *t;
+	CHAR_T ch;
+	char *p, *t;
 	GS *gp;
 	size_t len;
 
@@ -240,18 +241,19 @@ v_key_len(sp, ch)
  *	Return the string that will display the key.  This routine
  *	is the backup for the KEY_NAME() macro.
  *
- * PUBLIC: CHAR_T *v_key_name __P((SCR *, ARG_CHAR_T));
+ * PUBLIC: u_char *v_key_name __P((SCR *, ARG_CHAR_T));
  */
-CHAR_T *
+u_char *
 v_key_name(sp, ach)
 	SCR *sp;
 	ARG_CHAR_T ach;
 {
 	static const char hexdigit[] = "0123456789abcdef";
 	static const char octdigit[] = "01234567";
-	CHAR_T ch, *chp, mask;
+	CHAR_T ch, mask;
 	size_t len;
 	int cnt, shift;
+	char *chp;
 
 	ch = ach;
 
@@ -667,7 +669,7 @@ newmap:	evp = &gp->i_event[gp->i_next];
 
 	/* If no map, return the character. */
 	if (qp == NULL) {
-nomap:		if (!isdigit(evp->e_c) && LF_ISSET(EC_MAPNODIGIT))
+nomap:		if (!ISDIGIT(evp->e_c) && LF_ISSET(EC_MAPNODIGIT))
 			goto not_digit;
 		*argp = *evp;
 		QREM(1);
@@ -679,7 +681,7 @@ nomap:		if (!isdigit(evp->e_c) && LF_ISSET(EC_MAPNODIGIT))
 	 * of the map is it, pretend we haven't seen the character.
 	 */
 	if (LF_ISSET(EC_MAPNODIGIT) &&
-	    qp->output != NULL && !isdigit(qp->output[0])) {
+	    qp->output != NULL && !ISDIGIT(qp->output[0])) {
 not_digit:	argp->e_c = CH_NOT_DIGIT;
 		argp->e_value = K_NOTUSED;
 		argp->e_event = E_CHARACTER;

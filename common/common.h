@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: common.h,v 10.16 2000/06/25 17:34:37 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:37 $
+ *	$Id: common.h,v 10.17 2000/07/14 14:29:15 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:15 $
  */
 
 /*
@@ -35,6 +35,7 @@
  */
 typedef struct _cb		CB;
 typedef struct _csc		CSC;
+typedef struct _conv	    	CONV;
 typedef struct _event		EVENT;
 typedef struct _excmd		EXCMD;
 typedef struct _exf		EXF;
@@ -99,5 +100,6 @@ typedef enum { SEQ_ABBREV, SEQ_COMMAND, SEQ_INPUT } seq_t;
 #include "exf.h"
 #include "log.h"
 #include "mem.h"
+#include "conv.h"
 
 #include "extern.h"

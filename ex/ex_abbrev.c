@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_abbrev.c,v 10.7 1996/03/06 19:52:03 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:52:03 $";
+static const char sccsid[] = "$Id: ex_abbrev.c,v 10.8 2000/07/14 14:29:19 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -109,7 +109,7 @@ ex_unabbr(sp, cmdp)
 	ap = cmdp->argv[0];
 	if (!F_ISSET(sp->gp, G_ABBREV) ||
 	    seq_delete(sp, ap->bp, ap->len, SEQ_ABBREV)) {
-		msgq_str(sp, M_ERR, ap->bp,
+		msgq_wstr(sp, M_ERR, ap->bp,
 		    "109|\"%s\" is not an abbreviation");
 		return (1);
 	}

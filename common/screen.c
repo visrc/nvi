@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: screen.c,v 10.17 2000/06/25 17:34:38 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:38 $";
+static const char sccsid[] = "$Id: screen.c,v 10.18 2000/07/14 14:29:17 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,6 +27,9 @@ static const char sccsid[] = "$Id: screen.c,v 10.17 2000/06/25 17:34:38 skimo Ex
 
 #include "common.h"
 #include "../vi/vi.h"
+
+CHAR_T RE_WSTART[] = {'[','[',':','<',':',']',']',0};
+CHAR_T RE_WSTOP[] = {'[','[',':','>',':',']',']',0};
 
 /*
  * screen_init --
@@ -50,9 +53,9 @@ screen_init(gp, orig, spp)
 	sp->id = ++gp->id;
 	sp->refcnt = 1;
 
-	sp->gp = gp;				/* All ref the GS structure. */
+	sp->gp = gp;			/* All ref the GS structure. */
 
-	sp->ccnt = 2;				/* Anything > 1 */
+	sp->ccnt = 2;			/* Anything > 1 */
 
 	/*
 	 * XXX
@@ -80,15 +83,15 @@ screen_init(gp, orig, spp)
 		/* Retain searching/substitution information. */
 		sp->searchdir = orig->searchdir == NOTSET ? NOTSET : FORWARD;
 		if (orig->re != NULL && (sp->re =
-		    v_strdup(sp, orig->re, orig->re_len)) == NULL)
+		    v_wstrdup(sp, orig->re, orig->re_len)) == NULL)
 			goto mem;
 		sp->re_len = orig->re_len;
 		if (orig->subre != NULL && (sp->subre =
-		    v_strdup(sp, orig->subre, orig->subre_len)) == NULL)
+		    v_wstrdup(sp, orig->subre, orig->subre_len)) == NULL)
 			goto mem;
 		sp->subre_len = orig->subre_len;
 		if (orig->repl != NULL && (sp->repl =
-		    v_strdup(sp, orig->repl, orig->repl_len)) == NULL)
+		    v_wstrdup(sp, orig->repl, orig->repl_len)) == NULL)
 			goto mem;
 		sp->repl_len = orig->repl_len;
 		if (orig->newl_len) {
@@ -114,6 +117,7 @@ mem:				msgq(orig, M_SYSERR, NULL);
 	if (v_screen_copy(orig, sp))		/* Vi. */
 		goto err;
 	sp->cl_private = 0;			/* XXX */
+	conv_init(sp);				/* XXX */
 
 	*spp = sp;
 	return (0);

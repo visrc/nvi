@@ -1,4 +1,4 @@
-/* $Id: acconfig.h,v 8.22 2000/07/11 12:15:34 skimo Exp $ (Berkeley) $Date: 2000/07/11 12:15:34 $ */
+/* $Id: acconfig.h,v 8.23 2000/07/14 14:29:18 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:18 $ */
 
 /* Define to `int' if <sys/types.h> doesn't define.  */
 #undef ssize_t
@@ -86,6 +86,9 @@
 
 /* Define when dynamically loading DB 3 */
 #undef USE_DYNAMIC_LOADING
+
+/* Define when using wide characters */
+#undef USE_WIDECHAR
 
 /* Define when fprintf prototype not in an obvious place */
 #undef NEED_FPRINTF_PROTO

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_visual.c,v 10.13 1996/06/28 15:28:41 bostic Exp $ (Berkeley) $Date: 1996/06/28 15:28:41 $";
+static const char sccsid[] = "$Id: ex_visual.c,v 10.14 2000/07/14 14:29:22 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -42,6 +42,8 @@ ex_visual(sp, cmdp)
 	size_t len;
 	int pos;
 	char buf[256];
+	size_t wlen;
+	CHAR_T *wp;
 
 	/* If open option off, disallow visual command. */
 	if (!O_ISSET(sp, O_OPEN)) {
@@ -84,7 +86,8 @@ ex_visual(sp, cmdp)
 		     "%luz%c%lu", sp->lno, pos, cmdp->count);
 	else
 		len = snprintf(buf, sizeof(buf), "%luz%c", sp->lno, pos);
-	(void)v_event_push(sp, NULL, buf, len, CH_NOMAP | CH_QUOTED);
+	CHAR2INT(sp, buf, len, wp, wlen);
+	(void)v_event_push(sp, NULL, wp, wlen, CH_NOMAP | CH_QUOTED);
 
 	/*
 	 * !!!

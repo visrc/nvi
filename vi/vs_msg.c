@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_msg.c,v 10.81 2000/07/12 19:52:00 skimo Exp $ (Berkeley) $Date: 2000/07/12 19:52:00 $";
+static const char sccsid[] = "$Id: vs_msg.c,v 10.82 2000/07/14 14:29:25 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -157,15 +157,15 @@ vs_home(sp)
  * vs_update --
  *	Update a command.
  *
- * PUBLIC: void vs_update __P((SCR *, const char *, const char *));
+ * PUBLIC: void vs_update __P((SCR *, const char *, const CHAR_T *));
  */
 void
-vs_update(sp, m1, m2)
-	SCR *sp;
-	const char *m1, *m2;
+vs_update(SCR *sp, const char *m1, const CHAR_T *m2)
 {
 	GS *gp;
 	size_t len, mlen, oldx, oldy;
+	CONST char *np;
+	size_t nlen;
 
 	gp = sp->gp;
 
@@ -178,8 +178,10 @@ vs_update(sp, m1, m2)
 	 * expanded, and by the ex substitution confirmation prompt.
 	 */
 	if (F_ISSET(sp, SC_SCR_EXWROTE)) {
+		if (m2 != NULL)
+			INT2CHAR(sp, m2, v_strlen(m2) + 1, np, nlen);
 		(void)ex_printf(sp,
-		    "%s\n", m1 == NULL? "" : m1, m2 == NULL ? "" : m2);
+		    "%s\n", m1 == NULL? "" : m1, m2 == NULL ? "" : np);
 		(void)ex_fflush(sp);
 	}
 
@@ -205,10 +207,10 @@ vs_update(sp, m1, m2)
 	} else
 		len = 0;
 	if (m2 != NULL) {
-		mlen = strlen(m2);
+		mlen = v_strlen(m2);
 		if (len + mlen > sp->cols - 2)
 			mlen = (sp->cols - 2) - len;
-		(void)gp->scr_addstr(sp, m2, mlen);
+		(void)gp->scr_waddstr(sp, m2, mlen);
 	}
 
 	(void)gp->scr_move(sp, oldy, oldx);
@@ -400,7 +402,7 @@ vs_output(sp, mtype, line, llen)
 	const char *line;
 	int llen;
 {
-	CHAR_T *kp;
+	char *kp;
 	GS *gp;
 	VI_PRIVATE *vip;
 	size_t chlen, notused;

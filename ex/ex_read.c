@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_read.c,v 10.39 2000/04/21 19:00:36 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:36 $";
+static const char sccsid[] = "$Id: ex_read.c,v 10.40 2000/07/14 14:29:21 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -46,7 +46,9 @@ ex_read(sp, cmdp)
 {
 	enum { R_ARG, R_EXPANDARG, R_FILTER } which;
 	struct stat sb;
-	CHAR_T *arg, *name;
+	CHAR_T *arg;
+	char *name;
+	size_t nlen;
 	EX_PRIVATE *exp;
 	FILE *fp;
 	FREF *frp;
@@ -56,6 +58,7 @@ ex_read(sp, cmdp)
 	size_t arglen;
 	int argc, rval;
 	char *p;
+	char *np;
 
 	gp = sp->gp;
 
@@ -116,7 +119,8 @@ ex_read(sp, cmdp)
 		if (exp->lastbcomm != NULL)
 			free(exp->lastbcomm);
 		if ((exp->lastbcomm =
-		    strdup(cmdp->argv[argc]->bp)) == NULL) {
+		    v_wstrdup(sp, cmdp->argv[argc]->bp,
+				cmdp->argv[argc]->len)) == NULL) {
 			msgq(sp, M_SYSERR, NULL);
 			return (1);
 		}
@@ -207,7 +211,8 @@ ex_read(sp, cmdp)
 			abort();
 			/* NOTREACHED */
 		case 2:
-			name = cmdp->argv[1]->bp;
+			INT2CHAR(sp, cmdp->argv[0]->bp, cmdp->argv[0]->len + 1, 
+				 name, nlen);
 			/*
 			 * !!!
 			 * Historically, the read and write commands renamed
@@ -216,8 +221,7 @@ ex_read(sp, cmdp)
 			 */
 			if (F_ISSET(sp->frp, FR_TMPFILE) &&
 			    !F_ISSET(sp->frp, FR_EXNAMED)) {
-				if ((p = v_strdup(sp, cmdp->argv[1]->bp,
-				    cmdp->argv[1]->len)) != NULL) {
+				if ((p = strdup(name)) != NULL) {
 					free(sp->frp->name);
 					sp->frp->name = p;
 				}
@@ -234,7 +238,9 @@ ex_read(sp, cmdp)
 				set_alt_name(sp, name);
 			break;
 		default:
-			ex_emsg(sp, cmdp->argv[0]->bp, EXM_FILECOUNT);
+			INT2CHAR(sp, cmdp->argv[0]->bp, 
+				 cmdp->argv[0]->len + 1, np, nlen);
+			ex_emsg(sp, np, EXM_FILECOUNT);
 			return (1);
 		
 		}

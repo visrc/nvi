@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_at.c,v 10.13 2000/06/25 17:34:39 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:39 $";
+static const char sccsid[] = "$Id: ex_at.c,v 10.14 2000/07/14 14:29:19 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -44,7 +44,7 @@ ex_at(sp, cmdp)
 	RANGE *rp;
 	TEXT *tp;
 	size_t len;
-	char *p;
+	CHAR_T *p;
 
 	/*
 	 * !!!
@@ -108,7 +108,7 @@ ex_at(sp, cmdp)
 	    tp != (void *)&cbp->textq; tp = tp->q.cqe_prev)
 		len += tp->len + 1;
 
-	MALLOC_RET(sp, ecp->cp, char *, len * 2);
+	MALLOC_RET(sp, ecp->cp, CHAR_T *, len * 2 * sizeof(CHAR_T));
 	ecp->o_cp = ecp->cp;
 	ecp->o_clen = len;
 	ecp->cp[len] = '\0';

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_ulcase.c,v 10.8 2000/04/21 19:00:41 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:41 $";
+static const char sccsid[] = "$Id: v_ulcase.c,v 10.9 2000/07/14 14:29:24 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -54,7 +54,7 @@ v_ulcase(sp, vp)
 	db_recno_t lno;
 	size_t cno, lcnt, len;
 	u_long cnt;
-	char *p;
+	CHAR_T *p;
 
 	lno = vp->m_start.lno;
 	cno = vp->m_start.cno;
@@ -154,7 +154,7 @@ ulcase(sp, lno, lp, len, scno, ecno)
 	size_t blen;
 	int change, rval;
 	CHAR_T ch, *p, *t;
-	char *bp;
+	CHAR_T *bp;
 
 	GET_SPACE_RET(sp, bp, blen, len);
 	memmove(bp, lp, len);

@@ -18,7 +18,7 @@ static const char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static const char sccsid[] = "$Id: main.c,v 10.55 2000/07/07 22:29:13 skimo Exp $ (Berkeley) $Date: 2000/07/07 22:29:13 $";
+static const char sccsid[] = "$Id: main.c,v 10.56 2000/07/14 14:29:16 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -66,6 +66,8 @@ editor(wp, argc, argv)
 	u_int flags;
 	int ch, flagchk, lflag, secure, startup, readonly, rval, silent;
 	char *tag_f, *wsizearg, path[256];
+	CHAR_T *w;
+	size_t wlen;
 
 	gp = wp->gp;
 
@@ -338,8 +340,11 @@ editor(wp, argc, argv)
 	}
 
 	/* Open a tag file if specified. */
-	if (tag_f != NULL && ex_tag_first(sp, tag_f))
-		goto err;
+	if (tag_f != NULL) {
+		CHAR2INT(sp, tag_f, strlen(tag_f) + 1, w, wlen);
+		if (ex_tag_first(sp, w))
+			goto err;
+	}
 
 	/*
 	 * Append any remaining arguments as file names.  Files are recovery
@@ -373,7 +378,7 @@ editor(wp, argc, argv)
 			if ((frp = file_add(sp, NULL)) == NULL)
 				goto err;
 		} else  {
-			if ((frp = file_add(sp, (CHAR_T *)sp->argv[0])) == NULL)
+			if ((frp = file_add(sp, sp->argv[0])) == NULL)
 				goto err;
 			if (F_ISSET(sp, SC_ARGRECOVER))
 				F_SET(frp, FR_RECOVER);

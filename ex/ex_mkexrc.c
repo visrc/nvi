@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_mkexrc.c,v 10.11 1996/03/06 19:52:26 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:52:26 $";
+static const char sccsid[] = "$Id: ex_mkexrc.c,v 10.12 2000/07/14 14:29:20 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -45,13 +45,15 @@ ex_mkexrc(sp, cmdp)
 	FILE *fp;
 	int fd, sverrno;
 	char *fname;
+	size_t flen;
 
 	switch (cmdp->argc) {
 	case 0:
 		fname = _PATH_EXRC;
 		break;
 	case 1:
-		fname = cmdp->argv[0]->bp;
+		INT2CHAR(sp, cmdp->argv[0]->bp, cmdp->argv[0]->len + 1, 
+			    fname, flen);
 		set_alt_name(sp, fname);
 		break;
 	default:

@@ -43,6 +43,7 @@
 #ifdef __REGEX_PRIVATE
 #include "config.h"
 #include "port.h"
+#include "../common/multibyte.h"
 #endif
 
 /* types */
@@ -51,7 +52,7 @@ typedef off_t regoff_t;
 typedef struct {
 	int re_magic;
 	size_t re_nsub;		/* number of parenthesized subexpressions */
-	const char *re_endp;	/* end pointer for REG_PEND */
+	const CHAR_T *re_endp;	/* end pointer for REG_PEND */
 	struct re_guts *re_g;	/* none of your business :-) */
 } regex_t;
 
@@ -98,10 +99,10 @@ typedef struct {
 #define	REG_LARGE	01000	/* force large representation */
 #define	REG_BACKR	02000	/* force use of backref code */
 
-int	regcomp __P((regex_t *, const char *, int));
+int	regcomp __P((regex_t *, const CHAR_T *, int));
 size_t	regerror __P((int, const regex_t *, char *, size_t));
 int	regexec __P((const regex_t *,
-	    const char *, size_t, regmatch_t [], int));
+	    const CHAR_T *, size_t, regmatch_t [], int));
 void	regfree __P((regex_t *));
 
 #endif /* !_REGEX_H_ */

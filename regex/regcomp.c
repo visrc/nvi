@@ -178,7 +178,7 @@ static int never = 0;		/* for use in asserts; shuts lint up */
 int				/* 0 success, otherwise REG_something */
 regcomp(preg, pattern, cflags)
 regex_t *preg;
-const char *pattern;
+const CHAR_T *pattern;
 int cflags;
 {
 	struct parse pa;

@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_funcs.c,v 8.19 2000/07/11 19:07:19 skimo Exp $ (Berkeley) $Date: 2000/07/11 19:07:19 $";
+static const char sccsid[] = "$Id: ip_funcs.c,v 8.20 2000/07/14 14:29:22 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,12 +29,31 @@ static const char sccsid[] = "$Id: ip_funcs.c,v 8.19 2000/07/11 19:07:19 skimo E
  * ip_addstr --
  *	Add len bytes from the string at the cursor, advancing the cursor.
  *
- * PUBLIC: int ip_addstr __P((SCR *, const CHAR_T *, size_t));
+ * PUBLIC: int ip_waddstr __P((SCR *, const CHAR_T *, size_t));
+ */
+int
+ip_waddstr(sp, str, len)
+	SCR *sp;
+	const CHAR_T *str;
+	size_t len;
+{
+	CONST char *np;
+	size_t nlen;
+
+	INT2CHAR(sp, str, len, np, nlen);
+	ip_addstr(sp, np, nlen);
+}
+
+/*
+ * ip_addstr --
+ *	Add len bytes from the string at the cursor, advancing the cursor.
+ *
+ * PUBLIC: int ip_addstr __P((SCR *, const char *, size_t));
  */
 int
 ip_addstr(sp, str, len)
 	SCR *sp;
-	const CHAR_T *str;
+	const char *str;
 	size_t len;
 {
 	IP_BUF ipb;
@@ -175,6 +194,7 @@ ip_child(sp)
 	    dup2(ipp->t_fd, 2);
 	    close(ipp->t_fd);
 	}
+	return 0;
 }
 
 /*

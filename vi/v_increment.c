@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_increment.c,v 10.13 2000/06/27 17:19:07 skimo Exp $ (Berkeley) $Date: 2000/06/27 17:19:07 $";
+static const char sccsid[] = "$Id: v_increment.c,v 10.14 2000/07/14 14:29:23 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -59,8 +59,8 @@ v_increment(sp, vp)
 	long change, ltmp, lval;
 	size_t beg, blen, end, len, nlen, wlen;
 	int base, isempty, rval;
-	char *bp, *ntype, *t, nbuf[100];
-	CHAR_T *p;
+	char *ntype, nbuf[100];
+	CHAR_T *bp, *p, *t;
 
 	/* Validate the operator. */
 	if (vp->character == '#')
@@ -189,7 +189,7 @@ nonum:			msgq(sp, M_ERR, "181|Cursor not in a number");
 	 * in signed longs.
 	 */
 	if (base == 10) {
-		if ((nret = nget_slong(&lval, t, NULL, 10)) != NUM_OK)
+		if ((nret = nget_slong(sp, &lval, t, NULL, 10)) != NUM_OK)
 			goto err;
 		ltmp = vp->character == '-' ? -change : change;
 		if (lval > 0 && ltmp > 0 && !NPFITS(LONG_MAX, lval, ltmp)) {
@@ -206,7 +206,7 @@ nonum:			msgq(sp, M_ERR, "181|Cursor not in a number");
 			ntype = fmt[DEC];
 		nlen = snprintf(nbuf, sizeof(nbuf), ntype, lval);
 	} else {
-		if ((nret = nget_uslong(&ulval, t, NULL, base)) != NUM_OK)
+		if ((nret = nget_uslong(sp, &ulval, t, NULL, base)) != NUM_OK)
 			goto err;
 		if (vp->character == '+') {
 			if (!NPFITS(ULONG_MAX, ulval, change)) {

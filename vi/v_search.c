@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_search.c,v 10.24 2000/06/25 17:34:41 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:41 $";
+static const char sccsid[] = "$Id: v_search.c,v 10.25 2000/07/14 14:29:24 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,7 +30,7 @@ static const char sccsid[] = "$Id: v_search.c,v 10.24 2000/06/25 17:34:41 skimo 
 #include "../ipc/ip.h"
 
 static int v_exaddr __P((SCR *, VICMD *, dir_t));
-static int v_search __P((SCR *, VICMD *, char *, size_t, u_int, dir_t));
+static int v_search __P((SCR *, VICMD *, CHAR_T *, size_t, u_int, dir_t));
 
 /*
  * v_srch -- [count]?RE[? offset]
@@ -77,7 +77,11 @@ v_exaddr(sp, vp, dir)
 	db_recno_t s_lno;
 	size_t len, s_cno, tlen;
 	int err, nb, type;
-	char *cmd, *t, buf[20];
+	char buf[20];
+	CHAR_T *cmd, *t;
+	static CHAR_T plus[] = { '+', 0 };
+	CHAR_T *w;
+	size_t wlen;
 
 	/*
 	 * !!!
@@ -246,7 +250,7 @@ v_exaddr(sp, vp, dir)
 
 		/* Default to z+. */
 		if (!type &&
-		    v_event_push(sp, NULL, "+", 1, CH_NOMAP | CH_QUOTED))
+		    v_event_push(sp, NULL, plus, 1, CH_NOMAP | CH_QUOTED))
 			return (1);
 
 		/* Push the user's command. */
@@ -256,7 +260,8 @@ v_exaddr(sp, vp, dir)
 		/* Push line number so get correct z display. */
 		tlen = snprintf(buf,
 		    sizeof(buf), "%lu", (u_long)vp->m_stop.lno);
-		if (v_event_push(sp, NULL, buf, tlen, CH_NOMAP | CH_QUOTED))
+		CHAR2INT(sp, buf, tlen, w, wlen);
+		if (v_event_push(sp, NULL, w, wlen, CH_NOMAP | CH_QUOTED))
 			return (1);
 		 
 		/* Don't refresh until after 'z' happens. */
@@ -332,11 +337,15 @@ v_searchw(sp, vp)
 {
 	size_t blen, len;
 	int rval;
-	char *bp;
+	CHAR_T *bp, *p;
 
 	len = VIP(sp)->klen + sizeof(RE_WSTART) + sizeof(RE_WSTOP);
-	GET_SPACE_RET(sp, bp, blen, len);
-	len = snprintf(bp, blen, "%s%s%s", RE_WSTART, VIP(sp)->keyw, RE_WSTOP);
+	GET_SPACE_RET(sp, bp, blen, len * sizeof(CHAR_T));
+	memcpy(bp, RE_WSTART, sizeof(RE_WSTART)); 
+	p = bp + sizeof(RE_WSTART)/sizeof(CHAR_T) - 1;
+	memcpy(p, VIP(sp)->keyw, VIP(sp)->klen * sizeof(CHAR_T));
+	p += VIP(sp)->klen;
+	memcpy(bp, RE_WSTOP, sizeof(RE_WSTOP)); 
 
 	rval = v_search(sp, vp, bp, len, SEARCH_SET, FORWARD);
 
@@ -387,7 +396,7 @@ v_search(sp, vp, ptrn, plen, flags, dir)
 	SCR *sp;
 	VICMD *vp;
 	u_int flags;
-	char *ptrn;
+	CHAR_T *ptrn;
 	size_t plen;
 	dir_t dir;
 {

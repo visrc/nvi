@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_util.c,v 10.12 2000/04/21 19:00:41 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:41 $";
+static const char sccsid[] = "$Id: v_util.c,v 10.13 2000/07/14 14:29:25 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -125,11 +125,11 @@ v_sol(sp)
  * v_isempty --
  *	Return if the line contains nothing but white-space characters.
  *
- * PUBLIC: int v_isempty __P((char *, size_t));
+ * PUBLIC: int v_isempty __P((CHAR_T *, size_t));
  */
 int
 v_isempty(p, len)
-	char *p;
+	CHAR_T *p;
 	size_t len;
 {
 	for (; len--; ++p)

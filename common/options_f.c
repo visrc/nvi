@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: options_f.c,v 10.27 2000/07/06 18:47:57 skimo Exp $ (Berkeley) $Date: 2000/07/06 18:47:57 $";
+static const char sccsid[] = "$Id: options_f.c,v 10.28 2000/07/14 14:29:17 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -368,4 +368,16 @@ f_window(sp, op, str, valp)
 	    (*valp = O_VAL(sp, O_LINES) - 1) == 0)
 		*valp = 1;
 	return (0);
+}
+
+/*
+ * PUBLIC: int f_fileencoding __P((SCR *, OPTION *, char *, u_long *));
+ */
+int
+f_fileencoding(sp, op, str, valp)
+	SCR *sp;
+	OPTION *op;
+	char *str;
+	u_long *valp;
+{
 }

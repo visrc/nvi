@@ -3,8 +3,26 @@ visrcdir= @srcdir@/..
 lib_LTLIBRARIES = libvi.la
 libvi_la_SOURCES = \
 	$(visrcdir)/common/api.c \
+	$(visrcdir)/common/conv.c \
+	$(visrcdir)/common/conv.h \
 	$(visrcdir)/common/cut.c \
 	$(visrcdir)/common/delete.c \
+	$(visrcdir)/common/args.h \
+	$(visrcdir)/common/common.h \
+	$(visrcdir)/common/cut.h \
+	$(visrcdir)/common/db.h \
+	$(visrcdir)/common/exf.h \
+	$(visrcdir)/common/gs.h \
+	$(visrcdir)/common/key.h \
+	$(visrcdir)/common/log.h \
+	$(visrcdir)/common/mark.h \
+	$(visrcdir)/common/mem.h \
+	$(visrcdir)/common/msg.h \
+	$(visrcdir)/common/options.h \
+	$(visrcdir)/common/options_def.h \
+	$(visrcdir)/common/screen.h \
+	$(visrcdir)/common/seq.h \
+	$(visrcdir)/common/util.h \
 	$(visrcdir)/ex/ex.c \
 	$(visrcdir)/ex/ex_abbrev.c \
 	$(visrcdir)/ex/ex_append.c \
@@ -54,8 +72,14 @@ libvi_la_SOURCES = \
 	$(visrcdir)/ex/ex_write.c \
 	$(visrcdir)/ex/ex_yank.c \
 	$(visrcdir)/ex/ex_z.c \
+	$(visrcdir)/ex/ex.h \
+	$(visrcdir)/ex/ex_def.h \
+	$(visrcdir)/ex/script.h \
+	$(visrcdir)/ex/tag.h \
+	$(visrcdir)/ex/version.h \
 	$(visrcdir)/common/exf.c \
 	$(visrcdir)/vi/getc.c \
+	$(visrcdir)/vi/vi.h \
 	$(visrcdir)/common/gs.c \
 	$(visrcdir)/common/key.c \
 	$(visrcdir)/common/db.c \

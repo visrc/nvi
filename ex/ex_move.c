@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_move.c,v 10.12 2000/06/27 17:19:06 skimo Exp $ (Berkeley) $Date: 2000/06/27 17:19:06 $";
+static const char sccsid[] = "$Id: ex_move.c,v 10.13 2000/07/14 14:29:20 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -95,7 +95,7 @@ ex_move(sp, cmdp)
 	db_recno_t cnt, diff, fl, tl, mfl, mtl;
 	size_t blen, len;
 	int mark_reset;
-	char *bp;
+	CHAR_T *bp;
 	CHAR_T *p;
 
 	NEEDFILE(sp, cmdp);

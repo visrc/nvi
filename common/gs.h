@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: gs.h,v 10.46 2000/07/11 22:05:09 skimo Exp $ (Berkeley) $Date: 2000/07/11 22:05:09 $
+ *	$Id: gs.h,v 10.47 2000/07/14 14:29:16 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:16 $
  */
 
 #define	TEMPORARY_FILE_STRING	"/tmp"	/* Default temporary file name. */
@@ -106,13 +106,13 @@ struct _gs {
 
 #define	MAX_FAST_KEY	255		/* Max fast check character.*/
 #define	KEY_LEN(sp, ch)							\
-	((unsigned char)(ch) <= MAX_FAST_KEY ?				\
+	((CHAR_T)(ch) <= MAX_FAST_KEY ?				\
 	    sp->gp->cname[(unsigned char)ch].len : v_key_len(sp, ch))
 #define	KEY_NAME(sp, ch)						\
-	((unsigned char)(ch) <= MAX_FAST_KEY ?				\
+	((CHAR_T)(ch) <= MAX_FAST_KEY ?				\
 	    sp->gp->cname[(unsigned char)ch].name : v_key_name(sp, ch))
 	struct {
-		CHAR_T	 name[MAX_CHARACTER_COLUMNS + 1];
+		u_char	 name[MAX_CHARACTER_COLUMNS + 1];
 		u_int8_t len;
 	} cname[MAX_FAST_KEY + 1];	/* Fast lookup table. */
 
@@ -137,7 +137,9 @@ struct _gs {
 
 	/* Screen interface functions. */
 					/* Add a string to the screen. */
-	int	(*scr_addstr) __P((SCR *, const CHAR_T *, size_t));
+	int	(*scr_addstr) __P((SCR *, const char *, size_t));
+					/* Add a string to the screen. */
+	int	(*scr_waddstr) __P((SCR *, const CHAR_T *, size_t));
 					/* Toggle a screen attribute. */
 	int	(*scr_attr) __P((SCR *, scr_attr_t, int));
 					/* Terminal baud rate. */
@@ -147,7 +149,7 @@ struct _gs {
 					/* Display a busy message. */
 	void	(*scr_busy) __P((SCR *, const char *, busy_t));
 					/* Prepare child. */
-	void	(*scr_child) __P((SCR *));
+	int	(*scr_child) __P((SCR *));
 					/* Clear to the end of the line. */
 	int	(*scr_clrtoeol) __P((SCR *));
 					/* Return the cursor location. */
@@ -190,7 +192,7 @@ struct _gs {
 	/* Threading stuff */
 	void	*th_private;
 
-	void	(*run) __P((WIN *, void (*)(void*), void *));
+	void	(*run) __P((WIN *, void *(*)(void*), void *));
 };
 
 /*

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cut.c,v 10.13 2000/07/10 15:28:43 skimo Exp $ (Berkeley) $Date: 2000/07/10 15:28:43 $";
+static const char sccsid[] = "$Id: cut.c,v 10.14 2000/07/14 14:29:15 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -307,12 +307,12 @@ cut_close(gp)
  * text_init --
  *	Allocate a new TEXT structure.
  *
- * PUBLIC: TEXT *text_init __P((SCR *, const char *, size_t, size_t));
+ * PUBLIC: TEXT *text_init __P((SCR *, const CHAR_T *, size_t, size_t));
  */
 TEXT *
 text_init(sp, p, len, total_len)
 	SCR *sp;
-	const char *p;
+	const CHAR_T *p;
 	size_t len, total_len;
 {
 	TEXT *tp;
@@ -328,7 +328,7 @@ text_init(sp, p, len, total_len)
 			return (NULL);
 		}
 		if (p != NULL && len != 0)
-			memcpy(tp->lb, p, len);
+			memcpy(tp->lb, p, len * sizeof(CHAR_T));
 	}
 	tp->len = len;
 	return (tp);

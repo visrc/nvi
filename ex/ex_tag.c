@@ -13,7 +13,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_tag.c,v 10.44 2000/07/12 12:23:29 skimo Exp $ (Berkeley) $Date: 2000/07/12 12:23:29 $";
+static const char sccsid[] = "$Id: ex_tag.c,v 10.45 2000/07/14 14:29:22 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:22 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -45,9 +45,9 @@ static const char sccsid[] = "$Id: ex_tag.c,v 10.44 2000/07/12 12:23:29 skimo Ex
 static char	*binary_search __P((char *, char *, char *));
 static int	 compare __P((char *, char *, char *));
 static void	 ctag_file __P((SCR *, TAGF *, char *, char **, size_t *));
-static int	 ctag_search __P((SCR *, char *, size_t, char *));
+static int	 ctag_search __P((SCR *, CHAR_T *, size_t, char *));
 static int	 ctag_sfile __P((SCR *, TAGF *, TAGQ *, char *));
-static TAGQ	*ctag_slist __P((SCR *, char *));
+static TAGQ	*ctag_slist __P((SCR *, CHAR_T *));
 static char	*linear_search __P((char *, char *, char *));
 static int	 tag_copy __P((SCR *, TAG *, TAG **));
 static int	 tag_pop __P((SCR *, TAGQ *, int));
@@ -59,18 +59,18 @@ static int	 tagq_copy __P((SCR *, TAGQ *, TAGQ **));
  * ex_tag_first --
  *	The tag code can be entered from main, e.g., "vi -t tag".
  *
- * PUBLIC: int ex_tag_first __P((SCR *, char *));
+ * PUBLIC: int ex_tag_first __P((SCR *, CHAR_T *));
  */
 int
 ex_tag_first(sp, tagarg)
 	SCR *sp;
-	char *tagarg;
+	CHAR_T *tagarg;
 {
 	EXCMD cmd;
 
 	/* Build an argument for the ex :tag command. */
 	ex_cinit(sp, &cmd, C_TAG, 0, OOBLNO, OOBLNO, 0);
-	argv_exp0(sp, &cmd, tagarg, strlen(tagarg));
+	argv_exp0(sp, &cmd, tagarg, v_strlen(tagarg));
 
 	/*
 	 * XXX
@@ -111,14 +111,15 @@ ex_tag_push(sp, cmdp)
 		if (exp->tag_last != NULL)
 			free(exp->tag_last);
 
-		if ((exp->tag_last = strdup(cmdp->argv[0]->bp)) == NULL) {
+		if ((exp->tag_last = v_wstrdup(sp, cmdp->argv[0]->bp,
+		    cmdp->argv[0]->len)) == NULL) {
 			msgq(sp, M_SYSERR, NULL);
 			return (1);
 		}
 
 		/* Taglength may limit the number of characters. */
 		if ((tl =
-		    O_VAL(sp, O_TAGLENGTH)) != 0 && strlen(exp->tag_last) > tl)
+		    O_VAL(sp, O_TAGLENGTH)) != 0 && v_strlen(exp->tag_last) > tl)
 			exp->tag_last[tl] = '\0';
 		break;
 	case 0:
@@ -156,6 +157,8 @@ ex_tag_next(sp, cmdp)
 	EX_PRIVATE *exp;
 	TAG *tp;
 	TAGQ *tqp;
+	char *np;
+	size_t nlen;
 
 	exp = EXP(sp);
 	if ((tqp = exp->tq.cqh_first) == (void *)&exp->tq) {
@@ -174,8 +177,11 @@ ex_tag_next(sp, cmdp)
 		(void)cscope_search(sp, tqp, tp);
 	else
 		(void)ctag_search(sp, tp->search, tp->slen, tqp->tag);
-	if (tqp->current->msg)
-	    msgq(sp, M_INFO, tqp->current->msg);
+	if (tqp->current->msg) {
+	    INT2CHAR(sp, tqp->current->msg, tqp->current->mlen + 1,
+		     np, nlen);
+	    msgq(sp, M_INFO, np);
+	}
 	return (0);
 }
 
@@ -193,6 +199,8 @@ ex_tag_prev(sp, cmdp)
 	EX_PRIVATE *exp;
 	TAG *tp;
 	TAGQ *tqp;
+	char *np;
+	size_t nlen;
 
 	exp = EXP(sp);
 	if ((tqp = exp->tq.cqh_first) == (void *)&exp->tq) {
@@ -211,8 +219,11 @@ ex_tag_prev(sp, cmdp)
 		(void)cscope_search(sp, tqp, tp);
 	else
 		(void)ctag_search(sp, tp->search, tp->slen, tqp->tag);
-	if (tqp->current->msg)
-	    msgq(sp, M_INFO, tqp->current->msg);
+	if (tqp->current->msg) {
+	    INT2CHAR(sp, tqp->current->msg, tqp->current->mlen + 1,
+		     np, nlen);
+	    msgq(sp, M_INFO, np);
+	}
 	return (0);
 }
 
@@ -326,6 +337,7 @@ ex_tag_pop(sp, cmdp)
 	size_t arglen;
 	long off;
 	char *arg, *p, *t;
+	size_t nlen;
 
 	/* Check for an empty stack. */
 	exp = EXP(sp);
@@ -340,7 +352,8 @@ ex_tag_pop(sp, cmdp)
 		dtqp = exp->tq.cqh_first;
 		break;
 	case 1:				/* Name or number. */
-		arg = cmdp->argv[0]->bp;
+		INT2CHAR(sp, cmdp->argv[0]->bp, cmdp->argv[0]->len+1, 
+			 arg, nlen);
 		off = strtol(arg, &p, 10);
 		if (*p != '\0')
 			goto filearg;
@@ -595,7 +608,8 @@ ex_tag_copy(orig, sp)
 
 	/* Copy the last tag. */
 	if (oexp->tag_last != NULL &&
-	    (nexp->tag_last = strdup(oexp->tag_last)) == NULL) {
+	    (nexp->tag_last = v_wstrdup(sp, oexp->tag_last, 
+					v_strlen(oexp->tag_last))) == NULL) {
 		msgq(sp, M_SYSERR, NULL);
 		return (1);
 	}
@@ -674,7 +688,7 @@ tag_copy(sp, otp, tpp)
 	memcpy(tp, otp, len);
 
 	if (otp->fname != NULL)
-		tp->fname = tp->buf;
+		tp->fname = (char *)tp->buf;
 	if (otp->search != NULL)
 		tp->search = tp->buf + (otp->search - otp->buf);
 	if (otp->msg != NULL)
@@ -748,6 +762,8 @@ tagq_push(sp, tqp, new_screen, force)
 	db_recno_t lno;
 	size_t cno;
 	int istmp;
+	char *np;
+	size_t nlen;
 
 	exp = EXP(sp);
 
@@ -806,8 +822,11 @@ tagq_push(sp, tqp, new_screen, force)
 
 	(void)ctag_search(sp,
 	    tqp->current->search, tqp->current->slen, tqp->tag);
-	if (tqp->current->msg)
-	    msgq(sp, M_INFO, tqp->current->msg);
+	if (tqp->current->msg) {
+	    INT2CHAR(sp, tqp->current->msg, tqp->current->mlen + 1,
+		     np, nlen);
+	    msgq(sp, M_INFO, np);
+	}
 
 	/*
 	 * Move the current context from the temporary save area into the
@@ -943,11 +962,14 @@ ex_tag_free(sp)
 static int
 ctag_search(sp, search, slen, tag)
 	SCR *sp;
-	char *search, *tag;
+	CHAR_T *search;
+	char *tag;
 	size_t slen;
 {
 	MARK m;
 	char *p;
+	char *np;
+	size_t nlen;
 
 	/*
 	 * !!!
@@ -956,7 +978,8 @@ ctag_search(sp, search, slen, tag)
 	 * people are still using the format.  POSIX 1003.2 permits it.
 	 */
 	if (isdigit(search[0])) {
-		m.lno = atoi(search);
+		INT2CHAR(sp, search, slen+1, np, nlen);
+		m.lno = atoi(np);
 		if (!db_exist(sp, m.lno)) {
 			tag_msg(sp, TAG_BADLNO, tag);
 			return (1);
@@ -970,9 +993,10 @@ ctag_search(sp, search, slen, tag)
 		m.cno = 0;
 		if (f_search(sp, &m, &m,
 		    search, slen, NULL, 
-		    SEARCH_FIRST | SEARCH_TAG | SEARCH_PARSE))
-			if ((p = strrchr(search, '(')) != NULL) {
-				slen = p - search;
+		    SEARCH_FIRST | SEARCH_TAG | SEARCH_PARSE)) {
+			INT2CHAR(sp, search, slen, np, nlen);
+			if ((p = strrchr(np, '(')) != NULL) {
+				slen = p - np;
 				if (f_search(sp, &m, &m, search, slen,
 				    NULL, SEARCH_FIRST | SEARCH_TAG))
 					goto notfound;
@@ -980,6 +1004,7 @@ ctag_search(sp, search, slen, tag)
 notfound:			tag_msg(sp, TAG_SEARCH, tag);
 				return (1);
 			}
+		}
 		/*
 		 * !!!
 		 * Historically, tags set the search direction if it wasn't
@@ -1006,22 +1031,25 @@ notfound:			tag_msg(sp, TAG_SEARCH, tag);
 static TAGQ *
 ctag_slist(sp, tag)
 	SCR *sp;
-	char *tag;
+	CHAR_T *tag;
 {
 	EX_PRIVATE *exp;
 	TAGF *tfp;
 	TAGQ *tqp;
 	size_t len;
 	int echk;
+	char *np;
+	size_t nlen;
 
 	exp = EXP(sp);
 
 	/* Allocate and initialize the tag queue structure. */
-	len = strlen(tag);
+	INT2CHAR(sp, tag, v_strlen(tag) + 1, np, nlen);
+	len = nlen - 1;
 	CALLOC_GOTO(sp, tqp, TAGQ *, 1, sizeof(TAGQ) + len + 1);
 	CIRCLEQ_INIT(&tqp->tagq);
 	tqp->tag = tqp->buf;
-	memcpy(tqp->tag, tag, (tqp->tlen = len) + 1);
+	memcpy(tqp->tag, np, (tqp->tlen = len) + 1);
 
 	/*
 	 * Find the tag, only display missing file messages once, and
@@ -1029,7 +1057,7 @@ ctag_slist(sp, tag)
 	 */
 	for (echk = 0,
 	    tfp = exp->tagfq.tqh_first; tfp != NULL; tfp = tfp->q.tqe_next)
-		if (ctag_sfile(sp, tfp, tqp, tag)) {
+		if (ctag_sfile(sp, tfp, tqp, tqp->tag)) {
 			echk = 1;
 			F_SET(tfp, TAGF_ERR);
 		} else
@@ -1037,7 +1065,7 @@ ctag_slist(sp, tag)
 
 	/* Check to see if we found anything. */
 	if (tqp->tagq.cqh_first == (void *)&tqp->tagq) {
-		msgq_str(sp, M_ERR, tag, "162|%s: tag not found");
+		msgq_str(sp, M_ERR, tqp->tag, "162|%s: tag not found");
 		if (echk)
 			for (tfp = exp->tagfq.tqh_first;
 			    tfp != NULL; tfp = tfp->q.tqe_next)
@@ -1178,7 +1206,7 @@ corrupt:		p = msg_print(sp, tname, &nf1);
 
 		CALLOC_GOTO(sp, tp,
 		    TAG *, 1, sizeof(TAG) + dlen + 2 + nlen + 1 + slen + 1);
-		tp->fname = tp->buf;
+		tp->fname = (char *)tp->buf;
 		if (dlen != 0) {
 			memcpy(tp->fname, dname, dlen);
 			tp->fname[dlen] = '/';
@@ -1186,7 +1214,7 @@ corrupt:		p = msg_print(sp, tname, &nf1);
 		}
 		memcpy(tp->fname + dlen, name, nlen + 1);
 		tp->fnlen = dlen + nlen;
-		tp->search = tp->fname + tp->fnlen + 1;
+		tp->search = (CHAR_T*)(tp->fname + tp->fnlen + 1);
 		memcpy(tp->search, search, (tp->slen = slen) + 1);
 		CIRCLEQ_INSERT_TAIL(&tqp->tagq, tp, q);
 	}

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: search.c,v 10.29 2000/06/27 17:19:05 skimo Exp $ (Berkeley) $Date: 2000/06/27 17:19:05 $";
+static const char sccsid[] = "$Id: search.c,v 10.30 2000/07/14 14:29:17 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,7 +30,7 @@ static const char sccsid[] = "$Id: search.c,v 10.29 2000/06/27 17:19:05 skimo Ex
 typedef enum { S_EMPTY, S_EOF, S_NOPREV, S_NOTFOUND, S_SOF, S_WRAP } smsg_t;
 
 static void	search_msg __P((SCR *, smsg_t));
-static int	search_init __P((SCR *, dir_t, char *, size_t, char **, u_int));
+static int	search_init __P((SCR *, dir_t, CHAR_T *, size_t, CHAR_T **, u_int));
 
 /*
  * search_init --
@@ -40,13 +40,13 @@ static int
 search_init(sp, dir, ptrn, plen, epp, flags)
 	SCR *sp;
 	dir_t dir;
-	char *ptrn, **epp;
+	CHAR_T *ptrn, **epp;
 	size_t plen;
 	u_int flags;
 {
 	db_recno_t lno;
 	int delim;
-	char *p, *t;
+	CHAR_T *p, *t;
 
 	/* If the file is empty, it's a fast search. */
 	if (sp->lno <= 1) {
@@ -138,13 +138,13 @@ prev:			if (sp->re == NULL) {
  *	Do a forward search.
  *
  * PUBLIC: int f_search __P((SCR *,
- * PUBLIC:    MARK *, MARK *, char *, size_t, char **, u_int));
+ * PUBLIC:    MARK *, MARK *, CHAR_T *, size_t, CHAR_T **, u_int));
  */
 int
 f_search(sp, fm, rm, ptrn, plen, eptrn, flags)
 	SCR *sp;
 	MARK *fm, *rm;
-	char *ptrn, **eptrn;
+	CHAR_T *ptrn, **eptrn;
 	size_t plen;
 	u_int flags;
 {
@@ -286,13 +286,13 @@ f_search(sp, fm, rm, ptrn, plen, eptrn, flags)
  *	Do a backward search.
  *
  * PUBLIC: int b_search __P((SCR *,
- * PUBLIC:    MARK *, MARK *, char *, size_t, char **, u_int));
+ * PUBLIC:    MARK *, MARK *, CHAR_T *, size_t, CHAR_T **, u_int));
  */
 int
 b_search(sp, fm, rm, ptrn, plen, eptrn, flags)
 	SCR *sp;
 	MARK *fm, *rm;
-	char *ptrn, **eptrn;
+	CHAR_T *ptrn, **eptrn;
 	size_t plen;
 	u_int flags;
 {

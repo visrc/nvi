@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_global.c,v 10.26 2000/06/27 17:19:05 skimo Exp $ (Berkeley) $Date: 2000/06/27 17:19:05 $";
+static const char sccsid[] = "$Id: ex_global.c,v 10.27 2000/07/14 14:29:20 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -175,11 +175,12 @@ usage:		ex_emsg(sp, cmdp->cmd->usage, EXM_USAGE);
 	 * parsing it.
 	 */
 	if ((len = cmdp->argv[0]->len - (p - cmdp->argv[0]->bp)) == 0) {
-		p = "pp";
+		static CHAR_T pp[] = {'p', 'p', 0};
+		p = pp;
 		len = 1;
 	}
 
-	MALLOC_RET(sp, ecp->cp, char *, len * 2);
+	MALLOC_RET(sp, ecp->cp, CHAR_T *, (len * 2) * sizeof(CHAR_T));
 	ecp->o_cp = ecp->cp;
 	ecp->o_clen = len;
 	memcpy(ecp->cp + len, p, len);

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: options.c,v 10.55 2000/06/27 17:19:04 skimo Exp $ (Berkeley) $Date: 2000/06/27 17:19:04 $";
+static const char sccsid[] = "$Id: options.c,v 10.56 2000/07/14 14:29:16 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -78,6 +78,8 @@ OPTLIST const optlist[] = {
 	{"extended",	f_recompile,	OPT_0BOOL,	0},
 /* O_FILEC	  4.4BSD */
 	{"filec",	NULL,		OPT_STR,	0},
+/* O_FILEENCODING */
+	{"fileencoding",f_fileencoding,	OPT_STR,	0},
 /* O_FLASH	    HPUX */
 	{"flash",	NULL,		OPT_1BOOL,	0},
 /* O_HARDTABS	    4BSD */
@@ -244,6 +246,7 @@ static OABBREV const abbrev[] = {
 	{"eb",		O_ERRORBELLS},		/*     4BSD */
 	{"ed",		O_EDCOMPATIBLE},	/*     4BSD */
 	{"ex",		O_EXRC},		/* System V (undocumented) */
+	{"fe",		O_FILEENCODING},
 	{"ht",		O_HARDTABS},		/*     4BSD */
 	{"ic",		O_IGNORECASE},		/*     4BSD */
 	{"li",		O_LINES},		/*   4.4BSD */
@@ -290,9 +293,13 @@ opts_init(sp, oargs)
 	OPTLIST const *op;
 	u_long isset, v;
 	int cnt, optindx;
-	char *s, b1[1024];
+	char *s;
+	char b1[1024];
+	CHAR_T b2[1024];
+	CHAR_T *wp;
+	size_t wlen;
 
-	a.bp = b1;
+	a.bp = b2;
 	b.bp = NULL;
 	a.len = b.len = 0;
 	argv[0] = &a;
@@ -300,9 +307,9 @@ opts_init(sp, oargs)
 
 	/* Set numeric and string default values. */
 #define	OI(indx, str) {							\
-	if (str != b1)		/* GCC puts strings in text-space. */	\
-		(void)strcpy(b1, str);					\
-	a.len = strlen(b1);						\
+	CHAR2INT(sp, str, strlen(str) + 1, wp, wlen);			\
+	a.len = wlen - 1;						\
+	(void)memcpy(b2	, wp, (a.len + 1) * sizeof(CHAR_T));		\
 	if (opts_set(sp, argv, NULL)) {					\
 		 optindx = indx;					\
 		goto err;						\
@@ -461,15 +468,19 @@ opts_set(sp, argv, usage)
 	OPTION *spo;
 	u_long isset, turnoff, value;
 	int ch, equals, nf, nf2, offset, qmark, rval;
-	char *endp, *name, *p, *sep, *t;
+	CHAR_T *endp, *name, *p, *sep, *t;
+	char *p2, *t2;
+	char *np;
+	size_t nlen;
 
 	disp = NO_DISPLAY;
 	for (rval = 0; argv[0]->len != 0; ++argv) {
+		static CHAR_T all[] = {'a', 'l', 'l', 0};
 		/*
 		 * The historic vi dumped the options for each occurrence of
 		 * "all" in the set list.  Puhleeze.
 		 */
-		if (!strcmp(argv[0]->bp, "all")) {
+		if (!memcmp(argv[0]->bp, all, sizeof(all))) {
 			disp = ALL_DISPLAY;
 			continue;
 		}
@@ -498,14 +509,17 @@ opts_set(sp, argv, usage)
 			*sep++ = '\0';
 
 		/* Search for the name, then name without any leading "no". */
-		if ((op = opts_search(name)) == NULL &&
+		INT2CHAR(sp, name, v_strlen(name) + 1, np, nlen);
+		if ((op = opts_search(np)) == NULL &&
 		    name[0] == 'n' && name[1] == 'o') {
 			turnoff = 1;
 			name += 2;
-			op = opts_search(name);
+			INT2CHAR(sp, name, v_strlen(name) + 1, np, nlen);
+			op = opts_search(np);
 		}
 		if (op == NULL) {
-			opts_nomatch(sp, name);
+			INT2CHAR(sp, name, v_strlen(name) + 1, np, nlen);
+			opts_nomatch(sp, np);
 			rval = 1;
 			continue;
 		}
@@ -531,7 +545,7 @@ opts_set(sp, argv, usage)
 		case OPT_1BOOL:
 			/* Some options may not be reset. */
 			if (F_ISSET(op, OPT_NOUNSET) && turnoff) {
-				msgq_str(sp, M_ERR, name,
+				msgq_wstr(sp, M_ERR, name,
 			    "291|set: the %s option may not be turned off");
 				rval = 1;
 				break;
@@ -539,14 +553,14 @@ opts_set(sp, argv, usage)
 
 			/* Some options may not be set. */
 			if (F_ISSET(op, OPT_NOSET) && !turnoff) {
-				msgq_str(sp, M_ERR, name,
+				msgq_wstr(sp, M_ERR, name,
 			    "313|set: the %s option may never be turned on");
 				rval = 1;
 				break;
 			}
 
 			if (equals) {
-				msgq_str(sp, M_ERR, name,
+				msgq_wstr(sp, M_ERR, name,
 			    "034|set: [no]%s option doesn't take a value");
 				rval = 1;
 				break;
@@ -589,7 +603,7 @@ opts_set(sp, argv, usage)
 			break;
 		case OPT_NUM:
 			if (turnoff) {
-				msgq_str(sp, M_ERR, name,
+				msgq_wstr(sp, M_ERR, name,
 				    "035|set: %s option isn't a boolean");
 				rval = 1;
 				break;
@@ -604,45 +618,53 @@ opts_set(sp, argv, usage)
 			if (!isdigit(sep[0]))
 				goto badnum;
 			if ((nret =
-			    nget_uslong(&value, sep, &endp, 10)) != NUM_OK) {
-				p = msg_print(sp, name, &nf);
-				t = msg_print(sp, sep, &nf2);
+			    nget_uslong(sp, &value, sep, &endp, 10)) != NUM_OK) {
+				INT2CHAR(sp, name, v_strlen(name) + 1, 
+					     np, nlen);
+				p2 = msg_print(sp, np, &nf);
+				INT2CHAR(sp, sep, v_strlen(sep) + 1, 
+					     np, nlen);
+				t2 = msg_print(sp, np, &nf2);
 				switch (nret) {
 				case NUM_ERR:
 					msgq(sp, M_SYSERR,
-					    "036|set: %s option: %s", p, t);
+					    "036|set: %s option: %s", p2, t2);
 					break;
 				case NUM_OVER:
 					msgq(sp, M_ERR,
-			    "037|set: %s option: %s: value overflow", p, t);
+			    "037|set: %s option: %s: value overflow", p2, t2);
 					break;
 				case NUM_OK:
 				case NUM_UNDER:
 					abort();
 				}
 				if (nf)
-					FREE_SPACE(sp, p, 0);
+					FREE_SPACE(sp, p2, 0);
 				if (nf2)
-					FREE_SPACE(sp, t, 0);
+					FREE_SPACE(sp, t2, 0);
 				rval = 1;
 				break;
 			}
 			if (*endp && !isblank(*endp)) {
-badnum:				p = msg_print(sp, name, &nf);
-				t = msg_print(sp, sep, &nf2);
+badnum:				INT2CHAR(sp, name, v_strlen(name) + 1, 
+					     np, nlen);
+				p2 = msg_print(sp, np, &nf);
+				INT2CHAR(sp, sep, v_strlen(sep) + 1, 
+					     np, nlen);
+				t2 = msg_print(sp, np, &nf2);
 				msgq(sp, M_ERR,
-		    "038|set: %s option: %s is an illegal number", p, t);
+		    "038|set: %s option: %s is an illegal number", p2, t2);
 				if (nf)
-					FREE_SPACE(sp, p, 0);
+					FREE_SPACE(sp, p2, 0);
 				if (nf2)
-					FREE_SPACE(sp, t, 0);
+					FREE_SPACE(sp, t2, 0);
 				rval = 1;
 				break;
 			}
 
 			/* Some options may never be set to zero. */
 			if (F_ISSET(op, OPT_NOZERO) && value == 0) {
-				msgq_str(sp, M_ERR, name,
+				msgq_wstr(sp, M_ERR, name,
 			    "314|set: the %s option may never be set to 0");
 				rval = 1;
 				break;
@@ -657,11 +679,12 @@ badnum:				p = msg_print(sp, name, &nf);
 				break;
 
 			/* Report to subsystems. */
+			INT2CHAR(sp, sep, v_strlen(sep) + 1, np, nlen);
 			if (op->func != NULL &&
-			    op->func(sp, spo, sep, &value) ||
-			    ex_optchange(sp, offset, sep, &value) ||
-			    v_optchange(sp, offset, sep, &value) ||
-			    sp->gp->scr_optchange(sp, offset, sep, &value)) {
+			    op->func(sp, spo, np, &value) ||
+			    ex_optchange(sp, offset, np, &value) ||
+			    v_optchange(sp, offset, np, &value) ||
+			    sp->gp->scr_optchange(sp, offset, np, &value)) {
 				rval = 1;
 				break;
 			}
@@ -672,7 +695,7 @@ badnum:				p = msg_print(sp, name, &nf);
 			break;
 		case OPT_STR:
 			if (turnoff) {
-				msgq_str(sp, M_ERR, name,
+				msgq_wstr(sp, M_ERR, name,
 				    "039|set: %s option isn't a boolean");
 				rval = 1;
 				break;
@@ -688,23 +711,24 @@ badnum:				p = msg_print(sp, name, &nf);
 			 * Do nothing if the value is unchanged, the underlying
 			 * functions can be expensive.
 			 */
+			INT2CHAR(sp, sep, v_strlen(sep) + 1, np, nlen);
 			if (!F_ISSET(op, OPT_ALWAYS) &&
 			    O_STR(sp, offset) != NULL &&
-			    !strcmp(O_STR(sp, offset), sep))
+			    !strcmp(O_STR(sp, offset), np))
 				break;
 
 			/* Report to subsystems. */
 			if (op->func != NULL &&
-			    op->func(sp, spo, sep, NULL) ||
-			    ex_optchange(sp, offset, sep, NULL) ||
-			    v_optchange(sp, offset, sep, NULL) ||
-			    sp->gp->scr_optchange(sp, offset, sep, NULL)) {
+			    op->func(sp, spo, np, NULL) ||
+			    ex_optchange(sp, offset, np, NULL) ||
+			    v_optchange(sp, offset, np, NULL) ||
+			    sp->gp->scr_optchange(sp, offset, np, NULL)) {
 				rval = 1;
 				break;
 			}
 
 			/* Set the value. */
-			if (o_set(sp, offset, OS_STRDUP, sep, 0))
+			if (o_set(sp, offset, OS_STRDUP, np, 0))
 				rval = 1;
 			break;
 		default:

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_map.c,v 10.9 1996/03/06 19:52:24 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:52:24 $";
+static const char sccsid[] = "$Id: ex_map.c,v 10.10 2000/07/14 14:29:20 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -113,7 +113,7 @@ ex_unmap(sp, cmdp)
 {
 	if (seq_delete(sp, cmdp->argv[0]->bp, cmdp->argv[0]->len,
 	    FL_ISSET(cmdp->iflags, E_C_FORCE) ? SEQ_INPUT : SEQ_COMMAND)) {
-		msgq_str(sp, M_INFO,
+		msgq_wstr(sp, M_INFO,
 		    cmdp->argv[0]->bp, "135|\"%s\" isn't currently mapped");
 		return (1);
 	}

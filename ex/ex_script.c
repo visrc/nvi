@@ -13,7 +13,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_script.c,v 10.34 2000/07/11 19:07:18 skimo Exp $ (Berkeley) $Date: 2000/07/11 19:07:18 $";
+static const char sccsid[] = "$Id: ex_script.c,v 10.35 2000/07/14 14:29:21 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -49,9 +49,9 @@ static void	sscr_check __P((SCR *));
 static int	sscr_getprompt __P((SCR *));
 static int	sscr_init __P((SCR *));
 static int	sscr_insert __P((SCR *));
-static int	sscr_matchprompt __P((SCR *, char *, size_t, size_t *));
+static int	sscr_matchprompt __P((SCR *, CHAR_T *, size_t, size_t *));
 static int	sscr_pty __P((int *, int *, char *, struct termios *, void *));
-static int	sscr_setprompt __P((SCR *, char *, size_t));
+static int	sscr_setprompt __P((SCR *, CHAR_T *, size_t));
 
 /*
  * ex_script -- : sc[ript][!] [file]
@@ -307,7 +307,7 @@ sscr_exec(sp, lno)
 	db_recno_t last_lno;
 	size_t blen, len, last_len, tlen;
 	int isempty, matchprompt, nw, rval;
-	char *bp;
+	CHAR_T *bp;
 	CHAR_T *p;
 
 	/* If there's a prompt on the last line, append the command. */
@@ -479,7 +479,7 @@ sscr_insert(sp)
 	size_t blen, len, tlen;
 	u_int value;
 	int nr, rval;
-	char *bp;
+	CHAR_T *bp;
 
 	/* Find out where the end of the file is. */
 	if (db_last(sp, &lno))
@@ -560,7 +560,7 @@ ret:	FREE_SPACE(sp, bp, blen);
 static int
 sscr_setprompt(sp, buf, len)
 	SCR *sp;
-	char *buf;
+	CHAR_T *buf;
 	size_t len;
 {
 	SCRIPT *sc;
@@ -587,7 +587,7 @@ sscr_setprompt(sp, buf, len)
 static int
 sscr_matchprompt(sp, lp, line_len, lenp)
 	SCR *sp;
-	char *lp;
+	CHAR_T *lp;
 	size_t line_len, *lenp;
 {
 	SCRIPT *sc;

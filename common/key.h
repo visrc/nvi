@@ -6,8 +6,10 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: key.h,v 10.24 2000/07/10 15:28:44 skimo Exp $ (Berkeley) $Date: 2000/07/10 15:28:44 $
+ *	$Id: key.h,v 10.25 2000/07/14 14:29:16 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:16 $
  */
+
+#include "multibyte.h"
 
 /*
  * Fundamental character types.
@@ -21,10 +23,27 @@
  *
  * If no integral type can hold a character, don't even try the port.
  */
-typedef	u_char		CHAR_T;
 typedef	u_int		ARG_CHAR_T;
 #define	MAX_CHAR_T	0xff
 #define CHAR_T_BLEN(sp,len)	len
+#define ROOM_FOR(name,len)	CHAR_T	name[len]
+
+#ifdef USE_WIDECHAR
+#define CHAR2INT(sp,n,nlen,w,wlen) \
+    sp->conv->char2int(sp->conv, n, nlen, &w, &wlen)
+#define INT2CHAR(sp,w,wlen,n,nlen) \
+    sp->conv->int2char(sp->conv, w, wlen, &n, &nlen)
+#define CONST
+#else
+#define CHAR2INT(sp,n,nlen,w,wlen) \
+    w = n; wlen = nlen
+#define INT2CHAR(sp,w,wlen,n,nlen) \
+    n = w; nlen = wlen
+#define CONST const
+#endif
+
+#define ISDIGIT(ch) \
+    isdigit((u_char)(ch))
 
 /* The maximum number of columns any character can take up on a screen. */
 #define	MAX_CHARACTER_COLUMNS	4
@@ -114,7 +133,7 @@ struct _event {
 
 typedef struct _keylist {
 	e_key_t value;			/* Special value. */
-	CHAR_T ch;			/* Key. */
+	CHAR_T	ch;			/* Key. */
 } KEYLIST;
 extern KEYLIST keylist[];
 

@@ -8,7 +8,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: tag.h,v 10.7 2000/07/12 12:23:29 skimo Exp $ (Berkeley) $Date: 2000/07/12 12:23:29 $
+ *	$Id: tag.h,v 10.8 2000/07/14 14:29:22 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:22 $
  */
 
 /*
@@ -84,12 +84,12 @@ struct _tag {			/* Tag list. */
 	char	*fname;		/* Filename. */
 	size_t	 fnlen;		/* Filename length. */
 	db_recno_t	 slno;		/* Search line number. */
-	char	*search;	/* Search string. */
+	CHAR_T	*search;	/* Search string. */
 	size_t	 slen;		/* Search string length. */
-	char	*msg;		/* Message string. */
+	CHAR_T	*msg;		/* Message string. */
 	size_t	 mlen;		/* Message string length. */
 
-	char	 buf[1];	/* Variable length buffer. */
+	CHAR_T	 buf[1];	/* Variable length buffer. */
 };
 
 struct _tagq {			/* Tag queue. */

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: msg.c,v 10.52 2000/06/25 17:34:38 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:38 $";
+static const char sccsid[] = "$Id: msg.c,v 10.53 2000/07/14 14:29:16 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:16 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -360,6 +360,26 @@ nofmt:	mp += len;
 ret:	FREE_SPACE(sp, bp, blen);
 alloc_err:
 	reenter = 0;
+}
+
+/*
+ * msgq_str --
+ *	Display a message with an embedded string.
+ *
+ * PUBLIC: void msgq_wstr __P((SCR *, mtype_t, CHAR_T *, char *));
+ */
+void
+msgq_wstr(sp, mtype, str, fmt)
+	SCR *sp;
+	mtype_t mtype;
+	CHAR_T *str;
+	char *fmt;
+{
+	size_t nlen;
+	char *nstr;
+
+	INT2CHAR(sp, str, v_strlen(str) + 1, nstr, nlen);
+	msgq_str(sp, mtype, nstr, fmt);
 }
 
 /*

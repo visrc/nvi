@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_print.c,v 10.20 2000/06/27 17:19:06 skimo Exp $ (Berkeley) $Date: 2000/06/27 17:19:06 $";
+static const char sccsid[] = "$Id: ex_print.c,v 10.21 2000/07/14 14:29:20 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -107,8 +107,10 @@ ex_print(sp, cmdp, fp, tp, flags)
 	GS *gp;
 	db_recno_t from, to;
 	size_t col, len;
-	CHAR_T *p;
+	char *p;
 	char buf[10];
+	CHAR_T *wp;
+	size_t wlen;
 
 	NEEDFILE(sp, cmdp);
 
@@ -136,8 +138,9 @@ ex_print(sp, cmdp, fp, tp, flags)
 		 * especially in handling end-of-line tabs, but they're almost
 		 * backward compatible.
 		 */
-		if (db_get(sp, from, DBG_FATAL, &p, &len))
+		if (db_get(sp, from, DBG_FATAL, &wp, &wlen))
 			return (1);
+		INT2CHAR(sp, wp, wlen, p, len);
 
 		if (len == 0 && !LF_ISSET(E_C_LIST))
 			(void)ex_puts(sp, "\n");
@@ -186,8 +189,10 @@ ex_scprint(sp, fp, tp)
 	SCR *sp;
 	MARK *fp, *tp;
 {
-	CHAR_T *p;
+	char *p;
 	size_t col, len;
+	CHAR_T *wp;
+	size_t wlen;
 
 	col = 0;
 	if (O_ISSET(sp, O_NUMBER)) {
@@ -196,8 +201,9 @@ ex_scprint(sp, fp, tp)
 			return (1);
 	}
 
-	if (db_get(sp, fp->lno, DBG_FATAL, &p, &len))
+	if (db_get(sp, fp->lno, DBG_FATAL, &wp, &wlen))
 		return (1);
+	INT2CHAR(sp, wp, wlen, p, len);
 
 	if (ex_prchars(sp, p, &col, fp->cno, 0, ' '))
 		return (1);
@@ -226,7 +232,8 @@ ex_prchars(sp, p, colp, len, flags, repeatc)
 	u_int flags;
 	int repeatc;
 {
-	CHAR_T ch, *kp;
+	CHAR_T ch;
+	char *kp;
 	GS *gp;
 	size_t col, tlen, ts;
 

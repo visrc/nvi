@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_term.c,v 10.23 1996/12/16 09:38:27 bostic Exp $ (Berkeley) $Date: 1996/12/16 09:38:27 $";
+static const char sccsid[] = "$Id: cl_term.c,v 10.24 2000/07/14 14:29:14 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -88,13 +88,24 @@ cl_term_init(sp)
 	SEQ *qp;
 	TKLIST const *tkp;
 	char *t;
+	CHAR_T name[60];
+	CHAR_T output[5];
+	CHAR_T ts[20];
+	CHAR_T *wp;
+	size_t wlen;
 
 	/* Command mappings. */
 	for (tkp = c_tklist; tkp->name != NULL; ++tkp) {
 		if ((t = tigetstr(tkp->ts)) == NULL || t == (char *)-1)
 			continue;
-		if (seq_set(sp, tkp->name, strlen(tkp->name), t, strlen(t),
-		    tkp->output, strlen(tkp->output), SEQ_COMMAND,
+		CHAR2INT(sp, tkp->name, strlen(tkp->name), wp, wlen);
+		memcpy(name, wp, wlen * sizeof(CHAR_T));
+		CHAR2INT(sp, t, strlen(t), wp, wlen);
+		memcpy(ts, wp, wlen * sizeof(CHAR_T));
+		CHAR2INT(sp, tkp->output, strlen(tkp->output), wp, wlen);
+		memcpy(output, wp, wlen * sizeof(CHAR_T));
+		if (seq_set(sp, name, strlen(tkp->name), ts, strlen(t),
+		    output, strlen(tkp->output), SEQ_COMMAND,
 		    SEQ_NOOVERWRITE | SEQ_SCREEN))
 			return (1);
 	}
@@ -108,7 +119,11 @@ cl_term_init(sp)
 				break;
 		if (kp == NULL)
 			continue;
-		if (seq_set(sp, tkp->name, strlen(tkp->name), t, strlen(t),
+		CHAR2INT(sp, tkp->name, strlen(tkp->name), wp, wlen);
+		memcpy(name, wp, wlen * sizeof(CHAR_T));
+		CHAR2INT(sp, t, strlen(t), wp, wlen);
+		memcpy(ts, wp, wlen * sizeof(CHAR_T));
+		if (seq_set(sp, name, strlen(tkp->name), ts, strlen(t),
 		    &kp->ch, 1, SEQ_INPUT, SEQ_NOOVERWRITE | SEQ_SCREEN))
 			return (1);
 	}
@@ -131,11 +146,18 @@ cl_term_init(sp)
 			    t, strlen(t), NULL, 0,
 			    SEQ_INPUT, SEQ_NOOVERWRITE | SEQ_SCREEN))
 				return (1);
-		} else
-			if (seq_set(sp, tkp->name, strlen(tkp->name),
-			    t, strlen(t), tkp->output, strlen(tkp->output),
+		} else {
+			CHAR2INT(sp, tkp->name, strlen(tkp->name), wp, wlen);
+			memcpy(name, wp, wlen * sizeof(CHAR_T));
+			CHAR2INT(sp, t, strlen(t), wp, wlen);
+			memcpy(ts, wp, wlen * sizeof(CHAR_T));
+			CHAR2INT(sp, tkp->output, strlen(tkp->output), wp, wlen);
+			memcpy(output, wp, wlen * sizeof(CHAR_T));
+			if (seq_set(sp, name, strlen(tkp->name),
+			    ts, strlen(t), output, strlen(tkp->output),
 			    SEQ_INPUT, SEQ_NOOVERWRITE | SEQ_SCREEN))
 				return (1);
+		}
 	}
 
 	/*

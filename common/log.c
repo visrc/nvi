@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: log.c,v 10.12 2000/04/21 21:26:19 skimo Exp $ (Berkeley) $Date: 2000/04/21 21:26:19 $";
+static const char sccsid[] = "$Id: log.c,v 10.13 2000/07/14 14:29:16 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -251,12 +251,13 @@ log_line(sp, lno, action)
 	 */
 	if (action == LOG_LINE_RESET_B) {
 		if (db_get(sp, lno, DBG_NOCACHE, &lp, &len)) {
+			static CHAR_T nul = 0;
 			if (lno != 1) {
 				db_err(sp, lno);
 				return (1);
 			}
 			len = 0;
-			lp = "";
+			lp = &nul;
 		}
 	} else
 		if (db_get(sp, lno, DBG_FATAL, &lp, &len))
@@ -422,8 +423,9 @@ log_backward(sp, rp)
 		case LOG_LINE_DELETE:
 			didop = 1;
 			memmove(&lno, p + sizeof(u_char), sizeof(db_recno_t));
-			if (db_insert(sp, lno, p + sizeof(u_char) +
-			    sizeof(db_recno_t), data.size - sizeof(u_char) -
+			if (db_insert(sp, lno, 
+			    (CHAR_T *)(p + sizeof(u_char) +
+			    sizeof(db_recno_t)), data.size - sizeof(u_char) -
 			    sizeof(db_recno_t)))
 				goto err;
 			++sp->rptlines[L_ADDED];
@@ -433,8 +435,9 @@ log_backward(sp, rp)
 		case LOG_LINE_RESET_B:
 			didop = 1;
 			memmove(&lno, p + sizeof(u_char), sizeof(db_recno_t));
-			if (db_set(sp, lno, p + sizeof(u_char) +
-			    sizeof(db_recno_t), data.size - sizeof(u_char) -
+			if (db_set(sp, lno, 
+			    (CHAR_T *)(p + sizeof(u_char) +
+			    sizeof(db_recno_t)), data.size - sizeof(u_char) -
 			    sizeof(db_recno_t)))
 				goto err;
 			if (sp->rptlchange != lno) {
@@ -530,8 +533,8 @@ log_setline(sp)
 		case LOG_LINE_RESET_B:
 			memmove(&lno, p + sizeof(u_char), sizeof(db_recno_t));
 			if (lno == sp->lno &&
-			    db_set(sp, lno, p + sizeof(u_char) +
-			    sizeof(db_recno_t), data.size - sizeof(u_char) -
+			    db_set(sp, lno, (CHAR_T *)(p + sizeof(u_char) +
+			    sizeof(db_recno_t)), data.size - sizeof(u_char) -
 			    sizeof(db_recno_t)))
 				goto err;
 			if (sp->rptlchange != lno) {
@@ -617,8 +620,9 @@ log_forward(sp, rp)
 			didop = 1;
 			memmove(&lno, p + sizeof(u_char), sizeof(db_recno_t));
 			--lno;
-			if (db_append(sp, 1, lno, p + sizeof(u_char) +
-			    sizeof(db_recno_t), data.size - sizeof(u_char) -
+			if (db_append(sp, 1, lno, 
+			    (CHAR_T *)(p + sizeof(u_char) +
+			    sizeof(db_recno_t)), data.size - sizeof(u_char) -
 			    sizeof(db_recno_t)))
 				goto err;
 			++sp->rptlines[L_ADDED];
@@ -626,8 +630,9 @@ log_forward(sp, rp)
 		case LOG_LINE_INSERT:
 			didop = 1;
 			memmove(&lno, p + sizeof(u_char), sizeof(db_recno_t));
-			if (db_insert(sp, lno, p + sizeof(u_char) +
-			    sizeof(db_recno_t), data.size - sizeof(u_char) -
+			if (db_insert(sp, lno, 
+			    (CHAR_T *)(p + sizeof(u_char) +
+			    sizeof(db_recno_t)), data.size - sizeof(u_char) -
 			    sizeof(db_recno_t)))
 				goto err;
 			++sp->rptlines[L_ADDED];
@@ -644,8 +649,9 @@ log_forward(sp, rp)
 		case LOG_LINE_RESET_F:
 			didop = 1;
 			memmove(&lno, p + sizeof(u_char), sizeof(db_recno_t));
-			if (db_set(sp, lno, p + sizeof(u_char) +
-			    sizeof(db_recno_t), data.size - sizeof(u_char) -
+			if (db_set(sp, lno, 
+			    (CHAR_T *)(p + sizeof(u_char) +
+			    sizeof(db_recno_t)), data.size - sizeof(u_char) -
 			    sizeof(db_recno_t)))
 				goto err;
 			if (sp->rptlchange != lno) {

@@ -118,6 +118,9 @@
 /* Define when dynamically loading DB 3 */
 #undef USE_DYNAMIC_LOADING
 
+/* Define when using wide characters */
+#undef USE_WIDECHAR
+
 /* Define when fprintf prototype not in an obvious place */
 #undef NEED_FPRINTF_PROTO
 

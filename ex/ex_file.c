@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_file.c,v 10.12 1996/07/12 20:55:26 bostic Exp $ (Berkeley) $Date: 1996/07/12 20:55:26 $";
+static const char sccsid[] = "$Id: ex_file.c,v 10.13 2000/07/14 14:29:20 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,8 +36,10 @@ ex_file(sp, cmdp)
 	SCR *sp;
 	EXCMD *cmdp;
 {
-	CHAR_T *p;
+	char *p;
 	FREF *frp;
+	char *np;
+	size_t nlen;
 
 	NEEDFILE(sp, cmdp);
 
@@ -48,8 +50,9 @@ ex_file(sp, cmdp)
 		frp = sp->frp;
 
 		/* Make sure can allocate enough space. */
-		if ((p = v_strdup(sp,
-		    cmdp->argv[0]->bp, cmdp->argv[0]->len)) == NULL)
+		INT2CHAR(sp, cmdp->argv[0]->bp, cmdp->argv[0]->len + 1, 
+			    np, nlen);
+		if ((p = v_strdup(sp, np, nlen - 1)) == NULL)
 			return (1);
 
 		/* If already have a file name, it becomes the alternate. */

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_init.c,v 10.28 2000/06/25 17:34:39 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:39 $";
+static const char sccsid[] = "$Id: ex_init.c,v 10.29 2000/07/14 14:29:20 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:20 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -61,7 +61,8 @@ ex_screen_copy(orig, sp)
 		oexp = EXP(orig);
 
 		if (oexp->lastbcomm != NULL &&
-		    (nexp->lastbcomm = strdup(oexp->lastbcomm)) == NULL) {
+		    (nexp->lastbcomm = v_wstrdup(sp, oexp->lastbcomm, 
+				     v_strlen(oexp->lastbcomm))) == NULL) {
 			msgq(sp, M_SYSERR, NULL);
 			return(1);
 		}
@@ -145,6 +146,8 @@ ex_exrc(sp)
 {
 	struct stat hsb, lsb;
 	char *p, path[MAXPATHLEN];
+	CHAR_T *wp;
+	size_t wlen;
 
 	/*
 	 * Source the system, environment, $HOME and local .exrc values.
@@ -187,10 +190,12 @@ ex_exrc(sp)
 		return (0);
 
 	if ((p = getenv("NEXINIT")) != NULL) {
-		if (ex_run_str(sp, "NEXINIT", p, strlen(p), 1, 0))
+		CHAR2INT(sp, p, strlen(p) + 1, wp, wlen);
+		if (ex_run_str(sp, "NEXINIT", wp, wlen - 1, 1, 0))
 			return (1);
 	} else if ((p = getenv("EXINIT")) != NULL) {
-		if (ex_run_str(sp, "EXINIT", p, strlen(p), 1, 0))
+		CHAR2INT(sp, p, strlen(p) + 1, wp, wlen);
+		if (ex_run_str(sp, "EXINIT", wp, wlen - 1, 1, 0))
 			return (1);
 	} else if ((p = getenv("HOME")) != NULL && *p) {
 		(void)snprintf(path, sizeof(path), "%s/%s", p, _PATH_NEXRC);
@@ -256,9 +261,12 @@ ex_run_file(sp, name)
 	char *name;
 {
 	EXCMD cmd;
+	CHAR_T *wp;
+	size_t wlen;
 
 	ex_cinit(sp, &cmd, C_SOURCE, 0, OOBLNO, OOBLNO, 0);
-	argv_exp0(sp, &cmd, name, strlen(name));
+	CHAR2INT(sp, name, strlen(name)+1, wp, wlen);
+	argv_exp0(sp, &cmd, wp, wlen - 1);
 	return (ex_source(sp, &cmd));
 }
 
@@ -266,12 +274,13 @@ ex_run_file(sp, name)
  * ex_run_str --
  *	Set up a string of ex commands to run.
  *
- * PUBLIC: int ex_run_str __P((SCR *, char *, char *, size_t, int, int));
+ * PUBLIC: int ex_run_str __P((SCR *, char *, CHAR_T *, size_t, int, int));
  */
 int
 ex_run_str(sp, name, str, len, ex_flags, nocopy)
 	SCR *sp;
-	char *name, *str;
+	char *name;
+	CHAR_T *str;
 	size_t len;
 	int ex_flags, nocopy;
 {
@@ -291,7 +300,7 @@ ex_run_str(sp, name, str, len, ex_flags, nocopy)
 	if (nocopy)
 		ecp->cp = str;
 	else
-		if ((ecp->cp = v_strdup(sp, str, len)) == NULL)
+		if ((ecp->cp = v_wstrdup(sp, str, len)) == NULL)
 			return (1);
 	ecp->clen = len;
 

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: seq.c,v 10.10 1996/03/30 13:46:57 bostic Exp $ (Berkeley) $Date: 1996/03/30 13:46:57 $";
+static const char sccsid[] = "$Id: seq.c,v 10.11 2000/07/14 14:29:17 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -59,7 +59,7 @@ seq_set(sp, name, nlen, input, ilen, output, olen, stype, flags)
 		if (output == NULL || olen == 0) {
 			p = NULL;
 			olen = 0;
-		} else if ((p = v_strdup(sp, output, olen)) == NULL) {
+		} else if ((p = v_wstrdup(sp, output, olen)) == NULL) {
 			sv_errno = errno;
 			goto mem1;
 		}
@@ -80,14 +80,14 @@ seq_set(sp, name, nlen, input, ilen, output, olen, stype, flags)
 	/* Name. */
 	if (name == NULL || nlen == 0)
 		qp->name = NULL;
-	else if ((qp->name = v_strdup(sp, name, nlen)) == NULL) {
+	else if ((qp->name = v_wstrdup(sp, name, nlen)) == NULL) {
 		sv_errno = errno;
 		goto mem2;
 	}
 	qp->nlen = nlen;
 
 	/* Input. */
-	if ((qp->input = v_strdup(sp, input, ilen)) == NULL) {
+	if ((qp->input = v_wstrdup(sp, input, ilen)) == NULL) {
 		sv_errno = errno;
 		goto mem3;
 	}
@@ -97,7 +97,7 @@ seq_set(sp, name, nlen, input, ilen, output, olen, stype, flags)
 	if (output == NULL) {
 		qp->output = NULL;
 		olen = 0;
-	} else if ((qp->output = v_strdup(sp, output, olen)) == NULL) {
+	} else if ((qp->output = v_wstrdup(sp, output, olen)) == NULL) {
 		sv_errno = errno;
 		free(qp->input);
 mem3:		if (qp->name != NULL)

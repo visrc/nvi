@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: util.c,v 10.14 2000/06/27 17:19:05 skimo Exp $ (Berkeley) $Date: 2000/06/27 17:19:05 $";
+static const char sccsid[] = "$Id: util.c,v 10.15 2000/07/14 14:29:17 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -123,17 +123,39 @@ tail(path)
  * v_strdup --
  *	Strdup for wide character strings with an associated length.
  *
- * PUBLIC: CHAR_T *v_strdup __P((SCR *, const CHAR_T *, size_t));
+ * PUBLIC: char *v_strdup __P((SCR *, const char *, size_t));
+ */
+char *
+v_strdup(sp, str, len)
+	SCR *sp;
+	const char *str;
+	size_t len;
+{
+	char *copy;
+
+	MALLOC(sp, copy, char *, (len + 1));
+	if (copy == NULL)
+		return (NULL);
+	memcpy(copy, str, len);
+	copy[len] = '\0';
+	return (copy);
+}
+
+/*
+ * v_strdup --
+ *	Strdup for wide character strings with an associated length.
+ *
+ * PUBLIC: CHAR_T *v_wstrdup __P((SCR *, const CHAR_T *, size_t));
  */
 CHAR_T *
-v_strdup(sp, str, len)
+v_wstrdup(sp, str, len)
 	SCR *sp;
 	const CHAR_T *str;
 	size_t len;
 {
 	CHAR_T *copy;
 
-	MALLOC(sp, copy, CHAR_T *, len + 1);
+	MALLOC(sp, copy, CHAR_T *, (len + 1) * sizeof(CHAR_T));
 	if (copy == NULL)
 		return (NULL);
 	memcpy(copy, str, len * sizeof(CHAR_T));
@@ -142,20 +164,39 @@ v_strdup(sp, str, len)
 }
 
 /*
+ * PUBLIC: size_t v_strlen __P((const CHAR_T *str));
+ */
+size_t
+v_strlen(const CHAR_T *str)
+{
+	size_t len = -1;
+
+	while(str[++len]);
+	return len;
+}
+
+/*
  * nget_uslong --
  *      Get an unsigned long, checking for overflow.
  *
- * PUBLIC: enum nresult nget_uslong __P((u_long *, const char *, char **, int));
+ * PUBLIC: enum nresult nget_uslong __P((SCR *, u_long *, const CHAR_T *, CHAR_T **, int));
  */
 enum nresult
-nget_uslong(valp, p, endp, base)
+nget_uslong(sp, valp, p, endp, base)
+	SCR *sp;
 	u_long *valp;
-	const char *p;
-	char **endp;
+	const CHAR_T *p;
+	CHAR_T **endp;
 	int base;
 {
+	CONST char *np;
+	char *endnp;
+	size_t nlen;
+
+	INT2CHAR(sp, p, v_strlen(p) + 1, np, nlen);
 	errno = 0;
-	*valp = strtoul(p, endp, base);
+	*valp = strtoul(np, &endnp, base);
+	*endp = (CHAR_T*)p + (endnp - np);
 	if (errno == 0)
 		return (NUM_OK);
 	if (errno == ERANGE && *valp == ULONG_MAX)
@@ -167,17 +208,24 @@ nget_uslong(valp, p, endp, base)
  * nget_slong --
  *      Convert a signed long, checking for overflow and underflow.
  *
- * PUBLIC: enum nresult nget_slong __P((long *, const char *, char **, int));
+ * PUBLIC: enum nresult nget_slong __P((SCR *, long *, const CHAR_T *, CHAR_T **, int));
  */
 enum nresult
-nget_slong(valp, p, endp, base)
+nget_slong(sp, valp, p, endp, base)
+	SCR *sp;
 	long *valp;
-	const char *p;
-	char **endp;
+	const CHAR_T *p;
+	CHAR_T **endp;
 	int base;
 {
+	CONST char *np;
+	char *endnp;
+	size_t nlen;
+
+	INT2CHAR(sp, p, v_strlen(p) + 1, np, nlen);
 	errno = 0;
-	*valp = strtol(p, endp, base);
+	*valp = strtol(np, &endnp, base);
+	*endp = (CHAR_T*)p + (endnp - np);
 	if (errno == 0)
 		return (NUM_OK);
 	if (errno == ERANGE) {

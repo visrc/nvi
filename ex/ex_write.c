@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_write.c,v 10.32 2000/06/27 17:19:07 skimo Exp $ (Berkeley) $Date: 2000/06/27 17:19:07 $";
+static const char sccsid[] = "$Id: ex_write.c,v 10.33 2000/07/14 14:29:22 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -138,7 +138,10 @@ exwr(sp, cmdp, cmd)
 {
 	MARK rm;
 	int flags;
-	char *name, *p;
+	char *name;
+	CHAR_T *p;
+	size_t nlen;
+	char *n;
 
 	NEEDFILE(sp, cmdp);
 
@@ -165,7 +168,7 @@ exwr(sp, cmdp, cmd)
 			ex_emsg(sp, cmdp->cmd->usage, EXM_USAGE);
 			return (1);
 		}
-		if (argv_exp1(sp, cmdp, p, strlen(p), 1))
+		if (argv_exp1(sp, cmdp, p, v_strlen(p), 1))
 			return (1);
 
 		/*
@@ -210,7 +213,7 @@ exwr(sp, cmdp, cmd)
 		    &cmdp->addr1, &cmdp->addr2, NULL, flags));
 
 	/* Build an argv so we get an argument count and file expansion. */
-	if (argv_exp2(sp, cmdp, p, strlen(p)))
+	if (argv_exp2(sp, cmdp, p, v_strlen(p)))
 		return (1);
 
 	/*
@@ -228,7 +231,8 @@ exwr(sp, cmdp, cmd)
 		abort();
 		/* NOTREACHED */
 	case 2:
-		name = cmdp->argv[1]->bp;
+		INT2CHAR(sp, cmdp->argv[1]->bp, cmdp->argv[1]->len+1,
+			 name, nlen);
 
 		/*
 		 * !!!
@@ -238,10 +242,9 @@ exwr(sp, cmdp, cmd)
 		 */
 		if (F_ISSET(sp->frp, FR_TMPFILE) &&
 		    !F_ISSET(sp->frp, FR_EXNAMED)) {
-			if ((p = v_strdup(sp,
-			    cmdp->argv[1]->bp, cmdp->argv[1]->len)) != NULL) {
+			if ((n = v_strdup(sp, name, nlen - 1)) != NULL) {
 				free(sp->frp->name);
-				sp->frp->name = p;
+				sp->frp->name = n;
 			}
 			/*
 			 * The file has a real name, it's no longer a
@@ -261,7 +264,8 @@ exwr(sp, cmdp, cmd)
 			set_alt_name(sp, name);
 		break;
 	default:
-		ex_emsg(sp, p, EXM_FILECOUNT);
+		INT2CHAR(sp, p, v_strlen(p) + 1, n, nlen);
+		ex_emsg(sp, n, EXM_FILECOUNT);
 		return (1);
 	}
 

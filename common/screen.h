@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: screen.h,v 10.34 2000/07/11 22:05:09 skimo Exp $ (Berkeley) $Date: 2000/07/11 22:05:09 $
+ *	$Id: screen.h,v 10.35 2000/07/14 14:29:17 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:17 $
  */
 
 /*
@@ -51,7 +51,8 @@ struct _win {
 	char	       *if_name;	/* Current associated file. */
 	db_recno_t	if_lno;		/* Current associated line number. */
 
-	CHAR_T	*tmp_bp;		/* Temporary buffer. */
+	/* For now, can be either char or CHAR_T buffer */
+	void	*tmp_bp;		/* Temporary buffer. */
 	size_t	 tmp_blen;		/* Temporary buffer size. */
 
 /* Flags. */
@@ -59,6 +60,8 @@ struct _win {
 	u_int32_t flags;
 };
 
+extern CHAR_T RE_WSTART[8];
+extern CHAR_T RE_WSTOP[8];
 /*
  * SCR --
  *	The screen structure.  To the extent possible, all screen information
@@ -114,10 +117,10 @@ struct _scr {
 
 	SCRIPT	*script;		/* Vi: script mode information .*/
 
-	db_recno_t	 defscroll;		/* Vi: ^D, ^U scroll information. */
+	db_recno_t	 defscroll;	/* Vi: ^D, ^U scroll information. */
 
 					/* Display character. */
-	CHAR_T	 cname[MAX_CHARACTER_COLUMNS + 1];
+	u_char	 cname[MAX_CHARACTER_COLUMNS + 1];
 	size_t	 clen;			/* Length of display character. */
 
 	enum {				/* Vi editor mode. */
@@ -129,14 +132,18 @@ struct _scr {
 	void	*perl_private;		/* Perl private area. */
 	void	*cl_private;		/* Curses private area. */
 
+	CONV	*conv;
+
 /* PARTIALLY OR COMPLETELY COPIED FROM PREVIOUS SCREEN. */
 	char	*alt_name;		/* Ex/vi: alternate file name. */
 
 	CHAR_T	 at_lbuf;		/* Ex/vi: Last executed at buffer. */
 
 					/* Ex/vi: re_compile flags. */
+#if 0
 #define	RE_WSTART	"[[:<:]]"	/* Ex/vi: not-in-word search pattern. */
 #define	RE_WSTOP	"[[:>:]]"
+#endif
 					/* Ex/vi: flags to search routines. */
 #define	SEARCH_CSCOPE	0x000001	/* Search for a cscope pattern. */
 #define	SEARCH_CSEARCH	0x000002	/* Compile search replacement. */
@@ -159,12 +166,12 @@ struct _scr {
 					/* Ex/vi: RE information. */
 	dir_t	 searchdir;		/* Last file search direction. */
 	regex_t	 re_c;			/* Search RE: compiled form. */
-	char	*re;			/* Search RE: uncompiled form. */
+	CHAR_T	*re;			/* Search RE: uncompiled form. */
 	size_t	 re_len;		/* Search RE: uncompiled length. */
 	regex_t	 subre_c;		/* Substitute RE: compiled form. */
-	char	*subre;			/* Substitute RE: uncompiled form. */
+	CHAR_T	*subre;			/* Substitute RE: uncompiled form. */
 	size_t	 subre_len;		/* Substitute RE: uncompiled length). */
-	char	*repl;			/* Substitute replacement. */
+	CHAR_T	*repl;			/* Substitute replacement. */
 	size_t	 repl_len;		/* Substitute replacement length.*/
 	size_t	*newl;			/* Newline offset array. */
 	size_t	 newl_len;		/* Newline array size. */

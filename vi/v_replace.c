@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_replace.c,v 10.19 2000/06/27 17:19:08 skimo Exp $ (Berkeley) $Date: 2000/06/27 17:19:08 $";
+static const char sccsid[] = "$Id: v_replace.c,v 10.20 2000/07/14 14:29:24 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -53,7 +53,7 @@ v_replace(sp, vp)
 	size_t blen, len;
 	u_long cnt;
 	int quote, rval;
-	char *bp;
+	CHAR_T *bp;
 	CHAR_T *p;
 
 	vip = VIP(sp);

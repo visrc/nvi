@@ -1,6 +1,5 @@
 /* change further to gtkviwindow have no knowledge of ipvi */
-#include "../common/common.h"
-#include "../ipc/ip.h"
+#include "config.h"
 
 #include <gdk/gdkkeysyms.h>
 #include <gtk/gtk.h>
@@ -8,6 +7,10 @@
 #include <zvt/zvtterm.h>
 #include <zvt/vt.h>
 #endif
+
+#include "../common/common.h"
+#include "../ipc/ip.h"
+
 #include "gtkvi.h"
 #include "gtkviscreen.h"
 #include "gtkviwindow.h"

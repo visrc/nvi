@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_source.c,v 10.12 1996/08/10 19:52:02 bostic Exp $ (Berkeley) $Date: 1996/08/10 19:52:02 $";
+static const char sccsid[] = "$Id: ex_source.c,v 10.13 2000/07/14 14:29:22 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -41,9 +41,13 @@ ex_source(sp, cmdp)
 {
 	struct stat sb;
 	int fd, len;
-	char *bp, *name;
+	char *bp;
+	char *name;
+	size_t nlen;
+	CHAR_T *wp, *dp;
+	size_t wlen;
 
-	name = cmdp->argv[0]->bp;
+	INT2CHAR(sp, cmdp->argv[0]->bp, cmdp->argv[0]->len + 1, name, nlen);
 	if ((fd = open(name, O_RDONLY, 0)) < 0 || fstat(fd, &sb))
 		goto err;
 
@@ -80,6 +84,9 @@ err:		msgq_str(sp, M_SYSERR, name, "%s");
 		return (1);
 	}
 
+	CHAR2INT(sp, bp, (size_t)sb.st_size + 1, wp, wlen);
+	dp = v_wstrdup(sp, wp, wlen - 1);
+	free(bp);
 	/* Put it on the ex queue. */
-	return (ex_run_str(sp, name, bp, (size_t)sb.st_size, 1, 1));
+	return (ex_run_str(sp, name, dp, (size_t)sb.st_size, 1, 1));
 }

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: db.c,v 10.26 2000/06/25 17:34:37 skimo Exp $ (Berkeley) $Date: 2000/06/25 17:34:37 $";
+static const char sccsid[] = "$Id: db.c,v 10.27 2000/07/14 14:29:15 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,7 +27,7 @@ static const char sccsid[] = "$Id: db.c,v 10.26 2000/06/25 17:34:37 skimo Exp $ 
 #include "../vi/vi.h"
 
 static int scr_update __P((SCR *, db_recno_t, lnop_t, int));
-static int append __P((SCR*, db_recno_t, char*, size_t));
+static int append __P((SCR*, db_recno_t, CHAR_T*, size_t));
 
 /*
  * db_eget --
@@ -173,14 +173,14 @@ err3:		if (lenp != NULL)
 
 	/* Reset the cache. */
 	ep->c_lno = lno;
-	ep->c_len = data.size;
+	ep->c_len = data.size / sizeof(CHAR_T);
 	ep->c_lp = data.data;
 
 #if defined(DEBUG) && 0
 	vtrace(sp, "retrieve DB line %lu\n", (u_long)lno);
 #endif
 	if (lenp != NULL)
-		*lenp = data.size;
+		*lenp = data.size / sizeof(CHAR_T);
 	if (pp != NULL)
 		*pp = ep->c_lp;
 	return (0);
@@ -256,7 +256,7 @@ static int
 append(sp, lno, p, len)
 	SCR *sp;
 	db_recno_t lno;
-	char *p;
+	CHAR_T *p;
 	size_t len;
 {
 	DBT data, key;
@@ -278,7 +278,7 @@ append(sp, lno, p, len)
 		goto err2;
 
 	    data.data = p;
-	    data.size = len;
+	    data.size = len * sizeof(CHAR_T);
 	    if ((sp->db_error = dbcp_put->c_put(dbcp_put, &key, &data, DB_AFTER)) != 0) {
 err2:
 		(void)dbcp_put->c_close(dbcp_put);
@@ -290,7 +290,7 @@ err2:
 		    goto err2;
 
 		data.data = p;
-		data.size = len;
+		data.size = len * sizeof(CHAR_T);
 		if ((sp->db_error = ep->db->put(ep->db, NULL, &key, &data, DB_APPEND)) != 0) {
 		    goto err2;
 		}
@@ -298,7 +298,7 @@ err2:
 		key.data = &lno;
 		key.size = sizeof(lno);
 		data.data = p;
-		data.size = len;
+		data.size = len * sizeof(CHAR_T);
 		if ((sp->db_error = dbcp_put->c_put(dbcp_put, &key, &data, DB_BEFORE)) != 0) {
 		    goto err2;
 		}
@@ -314,14 +314,14 @@ err2:
  * db_append --
  *	Append a line into the file.
  *
- * PUBLIC: int db_append __P((SCR *, int, db_recno_t, char *, size_t));
+ * PUBLIC: int db_append __P((SCR *, int, db_recno_t, CHAR_T *, size_t));
  */
 int
 db_append(sp, update, lno, p, len)
 	SCR *sp;
 	int update;
 	db_recno_t lno;
-	char *p;
+	CHAR_T *p;
 	size_t len;
 {
 	EXF *ep;
@@ -381,13 +381,13 @@ db_append(sp, update, lno, p, len)
  * db_insert --
  *	Insert a line into the file.
  *
- * PUBLIC: int db_insert __P((SCR *, db_recno_t, char *, size_t));
+ * PUBLIC: int db_insert __P((SCR *, db_recno_t, CHAR_T *, size_t));
  */
 int
 db_insert(sp, lno, p, len)
 	SCR *sp;
 	db_recno_t lno;
-	char *p;
+	CHAR_T *p;
 	size_t len;
 {
 	DBT data, key;
@@ -441,13 +441,13 @@ db_insert(sp, lno, p, len)
  * db_set --
  *	Store a line in the file.
  *
- * PUBLIC: int db_set __P((SCR *, db_recno_t, char *, size_t));
+ * PUBLIC: int db_set __P((SCR *, db_recno_t, CHAR_T *, size_t));
  */
 int
 db_set(sp, lno, p, len)
 	SCR *sp;
 	db_recno_t lno;
-	char *p;
+	CHAR_T *p;
 	size_t len;
 {
 	DBT data, key;
@@ -473,7 +473,7 @@ db_set(sp, lno, p, len)
 	key.size = sizeof(lno);
 	memset(&data, 0, sizeof(data));
 	data.data = p;
-	data.size = len;
+	data.size = len * sizeof(CHAR_T);
 	if ((sp->db_error = ep->db->put(ep->db, NULL, &key, &data, 0)) != 0) {
 		msgq(sp, M_DBERR, "006|unable to store line %lu", (u_long)lno);
 		return (1);
@@ -589,7 +589,7 @@ err1:
 	/* Fill the cache. */
 	memcpy(&lno, key.data, sizeof(lno));
 	ep->c_nlines = ep->c_lno = lno;
-	ep->c_len = data.size;
+	ep->c_len = data.size / sizeof(CHAR_T);
 	ep->c_lp = data.data;
 
 	/* Return the value. */

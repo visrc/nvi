@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: cl_funcs.c,v 10.59 2000/07/10 15:28:43 skimo Exp $ (Berkeley) $Date: 2000/07/10 15:28:43 $";
+static const char sccsid[] = "$Id: cl_funcs.c,v 10.60 2000/07/14 14:29:14 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:14 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -37,12 +37,31 @@ static void cl_rdiv __P((SCR *));
  * cl_addstr --
  *	Add len bytes from the string at the cursor, advancing the cursor.
  *
- * PUBLIC: int cl_addstr __P((SCR *, const CHAR_T *, size_t));
+ * PUBLIC: int cl_waddstr __P((SCR *, const CHAR_T *, size_t));
+ */
+int
+cl_waddstr(sp, str, len)
+	SCR *sp;
+	const CHAR_T *str;
+	size_t len;
+{
+	CONST char *np;
+	size_t nlen;
+
+	INT2CHAR(sp, str, len, np, nlen);
+	cl_addstr(sp, np, nlen);
+}
+
+/*
+ * cl_addstr --
+ *	Add len bytes from the string at the cursor, advancing the cursor.
+ *
+ * PUBLIC: int cl_addstr __P((SCR *, const char *, size_t));
  */
 int
 cl_addstr(sp, str, len)
 	SCR *sp;
-	const CHAR_T *str;
+	const char *str;
 	size_t len;
 {
 	CL_PRIVATE *clp;

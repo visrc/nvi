@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_append.c,v 10.31 2000/04/21 19:00:35 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:35 $";
+static const char sccsid[] = "$Id: ex_append.c,v 10.32 2000/07/14 14:29:19 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -175,7 +175,7 @@ ex_aci(sp, cmdp, cmd)
 			if (len != 0) {
 				++t;
 				if (--len == 0 &&
-				    db_append(sp, 1, lno++, "", 0))
+				    db_append(sp, 1, lno++, NULL, 0))
 					return (1);
 			}
 		}

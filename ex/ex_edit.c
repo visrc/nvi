@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_edit.c,v 10.11 1996/10/31 09:28:56 bostic Exp $ (Berkeley) $Date: 1996/10/31 09:28:56 $";
+static const char sccsid[] = "$Id: ex_edit.c,v 10.12 2000/07/14 14:29:20 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -52,6 +52,8 @@ ex_edit(sp, cmdp)
 {
 	FREF *frp;
 	int attach, setalt;
+	char *np;
+	size_t nlen;
 
 	switch (cmdp->argc) {
 	case 0:
@@ -72,11 +74,13 @@ ex_edit(sp, cmdp)
 		setalt = 0;
 		break;
 	case 1:
-		if ((frp = file_add(sp, cmdp->argv[0]->bp)) == NULL)
+		INT2CHAR(sp, cmdp->argv[0]->bp, cmdp->argv[0]->len + 1, 
+			 np, nlen);
+		if ((frp = file_add(sp, np)) == NULL)
 			return (1);
 		attach = 0;
 		setalt = 1;
-		set_alt_name(sp, cmdp->argv[0]->bp);
+		set_alt_name(sp, np);
 		break;
 	default:
 		abort();

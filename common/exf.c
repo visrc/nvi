@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: exf.c,v 10.55 2000/05/20 20:56:14 skimo Exp $ (Berkeley) $Date: 2000/05/20 20:56:14 $";
+static const char sccsid[] = "$Id: exf.c,v 10.56 2000/07/14 14:29:15 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:15 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -56,12 +56,12 @@ static int	file_spath __P((SCR *, FREF *, struct stat *, int *));
  * vi now remembers the last location in any file that it has ever edited,
  * not just the previously edited file.
  *
- * PUBLIC: FREF *file_add __P((SCR *, CHAR_T *));
+ * PUBLIC: FREF *file_add __P((SCR *, char *));
  */
 FREF *
 file_add(sp, name)
 	SCR *sp;
-	CHAR_T *name;
+	char *name;
 {
 	GS *gp;
 	FREF *frp, *tfrp;
@@ -556,6 +556,8 @@ file_cinit(sp)
 	MARK m;
 	size_t len;
 	int nb;
+	CHAR_T *wp;
+	size_t wlen;
 
 	/* Set some basic defaults. */
 	sp->lno = 1;
@@ -589,8 +591,9 @@ file_cinit(sp)
 			sp->lno = 1;
 			sp->cno = 0;
 		}
-		if (ex_run_str(sp,
-		    "-c option", gp->c_option, strlen(gp->c_option), 1, 1))
+		CHAR2INT(sp, gp->c_option, strlen(gp->c_option) + 1,
+			 wp, wlen);
+		if (ex_run_str(sp, "-c option", wp, wlen - 1, 1, 1))
 			return;
 		gp->c_option = NULL;
 	} else if (F_ISSET(sp, SC_EX)) {
@@ -1049,6 +1052,10 @@ file_backup(sp, name, bname)
 	size_t blen;
 	int flags, maxnum, nr, num, nw, rfd, wfd, version;
 	char *bp, *estr, *p, *pct, *slash, *t, *wfname, buf[8192];
+	CHAR_T *wp;
+	size_t wlen;
+	size_t nlen;
+	char *d = NULL;
 
 	rfd = wfd = -1;
 	bp = estr = wfname = NULL;
@@ -1084,7 +1091,8 @@ file_backup(sp, name, bname)
 		++bname;
 	} else
 		version = 0;
-	if (argv_exp2(sp, &cmd, bname, strlen(bname)))
+	CHAR2INT(sp, bname, strlen(bname) + 1, wp, wlen);
+	if (argv_exp2(sp, &cmd, wp, wlen - 1))
 		return (1);
 
 	/*
@@ -1109,8 +1117,12 @@ file_backup(sp, name, bname)
 	 */
 	if (version) {
 		GET_SPACE_GOTO(sp, bp, blen, cmd.argv[0]->len * 2 + 50);
-		for (t = bp, slash = NULL,
-		    p = cmd.argv[0]->bp; p[0] != '\0'; *t++ = *p++)
+		INT2CHAR(sp, cmd.argv[0]->bp, cmd.argv[0]->len + 1,
+			 p, nlen); 
+		d = strdup(p);
+		p = d;
+		for (t = bp, slash = NULL;
+		     p[0] != '\0'; *t++ = *p++)
 			if (p[0] == '%') {
 				if (p[1] != '%')
 					*t++ = '%';
@@ -1131,7 +1143,8 @@ file_backup(sp, name, bname)
 			p = slash + 1;
 		}
 		if (dirp == NULL) {
-			estr = cmd.argv[0]->bp;
+			INT2CHAR(sp, cmd.argv[0]->bp, cmd.argv[0]->len + 1,
+				estr, nlen);
 			goto err;
 		}
 
@@ -1145,7 +1158,8 @@ file_backup(sp, name, bname)
 		wfname = bp;
 	} else {
 		bp = NULL;
-		wfname = cmd.argv[0]->bp;
+		INT2CHAR(sp, cmd.argv[0]->bp, cmd.argv[0]->len + 1,
+			wfname, nlen);
 	}
 	
 	/* Open the backup file, avoiding lurkers. */
@@ -1205,6 +1219,8 @@ err:	if (rfd != -1)
 	}
 	if (estr)
 		msgq_str(sp, M_SYSERR, estr, "%s");
+	if (d != NULL)
+		free(d);
 	if (bp != NULL)
 		FREE_SPACE(sp, bp, blen);
 	return (1);

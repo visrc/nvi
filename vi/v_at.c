@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_at.c,v 10.8 1996/04/27 11:40:33 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:33 $";
+static const char sccsid[] = "$Id: v_at.c,v 10.9 2000/07/14 14:29:23 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -41,6 +41,9 @@ v_at(sp, vp)
 	TEXT *tp;
 	size_t len;
 	char nbuf[20];
+	CHAR_T wbuf[20];
+	CHAR_T *wp;
+	size_t wlen;
 
 	/*
 	 * !!!
@@ -88,12 +91,14 @@ v_at(sp, vp)
 	 * logging code to be available.
 	 */
 	for (tp = cbp->textq.cqh_last;
-	    tp != (void *)&cbp->textq; tp = tp->q.cqe_prev)
+	    tp != (void *)&cbp->textq; tp = tp->q.cqe_prev) {
+		static CHAR_T nl[] = { '\n', 0 };
 		if ((F_ISSET(cbp, CB_LMODE) ||
 		    tp->q.cqe_next != (void *)&cbp->textq) &&
-		    v_event_push(sp, NULL, "\n", 1, 0) ||
+		    v_event_push(sp, NULL, nl, 1, 0) ||
 		    v_event_push(sp, NULL, tp->lb, tp->len, 0))
 			return (1);
+	}
 
 	/*
 	 * !!!
@@ -102,7 +107,9 @@ v_at(sp, vp)
 	 */
 	if (F_ISSET(vp, VC_C1SET)) {
 		len = snprintf(nbuf, sizeof(nbuf), "%lu", vp->count);
-		if (v_event_push(sp, NULL, nbuf, len, 0))
+		CHAR2INT(sp, nbuf, len, wp, wlen);
+		memcpy(wbuf, wp, wlen * sizeof(CHAR_T));
+		if (v_event_push(sp, NULL, wp, wlen, 0))
 			return (1);
 	}
 	return (0);

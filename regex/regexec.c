@@ -155,7 +155,7 @@ static int nope = 0;		/* for use in asserts; shuts lint up */
 int				/* 0 success, REG_NOMATCH failure */
 regexec(preg, string, nmatch, pmatch, eflags)
 const regex_t *preg;
-const char *string;
+const CHAR_T *string;
 size_t nmatch;
 regmatch_t pmatch[];
 int eflags;

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex.c,v 10.65 2000/07/11 22:05:10 skimo Exp $ (Berkeley) $Date: 2000/07/11 22:05:10 $";
+static const char sccsid[] = "$Id: ex.c,v 10.66 2000/07/14 14:29:19 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,11 +35,11 @@ static const char sccsid[] = "$Id: ex.c,v 10.65 2000/07/11 22:05:10 skimo Exp $ 
 static void	ex_comlog __P((SCR *, EXCMD *));
 #endif
 static EXCMDLIST const *
-		ex_comm_search __P((char *, size_t));
+		ex_comm_search __P((SCR *, CHAR_T *, size_t));
 static int	ex_discard __P((SCR *));
 static int	ex_line __P((SCR *, EXCMD *, MARK *, int *, int *));
 static int	ex_load __P((SCR *));
-static void	ex_unknown __P((SCR *, char *, size_t));
+static void	ex_unknown __P((SCR *, CHAR_T *, size_t));
 
 /*
  * ex --
@@ -124,7 +124,8 @@ ex(spp)
 		 */
 		tp = sp->tiq.cqh_first;
 		if (tp->len == 0) {
-			wp->excmd.cp = " ";	/* __TK__ why not |? */
+			static CHAR_T space;
+			wp->excmd.cp = &space;	/* __TK__ why not |? */
 			wp->excmd.clen = 1;
 		} else {
 			wp->excmd.cp = tp->lb;
@@ -210,7 +211,8 @@ ex_cmd(sp)
 	int at_found, gv_found;
 	int ch, cnt, delim, isaddr, namelen;
 	int newscreen, notempty, tmp, vi_address;
-	char *arg1, *p, *s, *t;
+	CHAR_T *arg1, *s, *p, *t;
+	char *n;
 
 	gp = sp->gp;
 	wp = sp->wp;
@@ -419,7 +421,7 @@ loop:	ecp = wp->ecq.lh_first;
 		switch (p[0]) {
 		case 'd':
 			for (s = p,
-			    t = cmds[C_DELETE].name; *s == *t; ++s, ++t);
+			    n = cmds[C_DELETE].name; *s == *n; ++s, ++n);
 			if (s[0] == 'l' || s[0] == 'p' || s[0] == '+' ||
 			    s[0] == '-' || s[0] == '^' || s[0] == '#') {
 				len = (ecp->cp - p) - (s - p);
@@ -455,7 +457,7 @@ loop:	ecp = wp->ecq.lh_first;
 		 * follows the 's', but we limit the choices here to "cgr" so
 		 * that we get unknown command messages for wrong combinations.
 		 */
-		if ((ecp->cmd = ex_comm_search(p, namelen)) == NULL)
+		if ((ecp->cmd = ex_comm_search(sp, p, namelen)) == NULL)
 			switch (p[0]) {
 			case 'k':
 				if (namelen == 2) {
@@ -940,13 +942,13 @@ two_addr:	switch (ecp->addrcnt) {
 	}
 
 	ecp->flagoff = 0;
-	for (p = ecp->cmd->syntax; *p != '\0'; ++p) {
+	for (n = ecp->cmd->syntax; *n != '\0'; ++n) {
 		/*
 		 * The force flag is sensitive to leading whitespace, i.e.
 		 * "next !" is different from "next!".  Handle it before
 		 * skipping leading <blank>s.
 		 */
-		if (*p == '!') {
+		if (*n == '!') {
 			if (ecp->clen > 0 && *ecp->cp == '!') {
 				++ecp->cp;
 				--ecp->clen;
@@ -962,7 +964,7 @@ two_addr:	switch (ecp->addrcnt) {
 		if (ecp->clen == 0)
 			break;
 
-		switch (*p) {
+		switch (*n) {
 		case '1':				/* +, -, #, l, p */
 			/*
 			 * !!!
@@ -1017,7 +1019,7 @@ end_case1:		break;
 					FL_SET(ecp->iflags, E_C_CARAT);
 					break;
 				case '=':
-					if (*p == '3') {
+					if (*n == '3') {
 						FL_SET(ecp->iflags, E_C_EQUAL);
 						break;
 					}
@@ -1037,7 +1039,7 @@ end_case23:		break;
 			 */
 			if ((ecp->cp[0] == '+' || ecp->cp[0] == '-' ||
 			    ecp->cp[0] == '^' || ecp->cp[0] == '#') &&
-			    strchr(p, '1') != NULL)
+			    strchr(n, '1') != NULL)
 				break;
 			/*
 			 * !!!
@@ -1053,9 +1055,9 @@ end_case23:		break;
 			}
 			break;
 		case 'c':				/* count [01+a] */
-			++p;
+			++n;
 			/* Validate any signed value. */
-			if (!isdigit(*ecp->cp) && (*p != '+' ||
+			if (!isdigit(*ecp->cp) && (*n != '+' ||
 			    (*ecp->cp != '+' && *ecp->cp != '-')))
 				break;
 			/* If a signed value, set appropriate flags. */
@@ -1064,11 +1066,11 @@ end_case23:		break;
 			else if (*ecp->cp == '+')
 				FL_SET(ecp->iflags, E_C_COUNT_POS);
 			if ((nret =
-			    nget_slong(&ltmp, ecp->cp, &t, 10)) != NUM_OK) {
+			    nget_slong(sp, &ltmp, ecp->cp, &t, 10)) != NUM_OK) {
 				ex_badaddr(sp, NULL, A_NOTSET, nret);
 				goto err;
 			}
-			if (ltmp == 0 && *p != '0') {
+			if (ltmp == 0 && *n != '0') {
 				msgq(sp, M_ERR, "083|Count may not be zero");
 				goto err;
 			}
@@ -1084,7 +1086,7 @@ end_case23:		break;
 			 * join) do different things with counts than with
 			 * line addresses.
 			 */
-			if (*p == 'a') {
+			if (*n == 'a') {
 				ecp->addr1 = ecp->addr2;
 				ecp->addr2.lno = ecp->addr1.lno + ltmp - 1;
 			} else
@@ -1111,7 +1113,7 @@ end_case23:		break;
 
 			/* Line specifications are always required. */
 			if (!isaddr) {
-				msgq_str(sp, M_ERR, ecp->cp,
+				msgq_wstr(sp, M_ERR, ecp->cp,
 				     "084|%s: bad line specification");
 				goto err;
 			}
@@ -1191,14 +1193,14 @@ end_case23:		break;
 		case 'w':				/* word */
 			if (argv_exp3(sp, ecp, ecp->cp, ecp->clen))
 				goto err;
-arg_cnt_chk:		if (*++p != 'N') {		/* N */
+arg_cnt_chk:		if (*++n != 'N') {		/* N */
 				/*
 				 * If a number is specified, must either be
 				 * 0 or that number, if optional, and that
 				 * number, if required.
 				 */
-				tmp = *p - '0';
-				if ((*++p != 'o' || exp->argsoff != 0) &&
+				tmp = *n - '0';
+				if ((*++n != 'o' || exp->argsoff != 0) &&
 				    exp->argsoff != tmp)
 					goto usage;
 			}
@@ -1206,7 +1208,7 @@ arg_cnt_chk:		if (*++p != 'N') {		/* N */
 		default:
 			msgq(sp, M_ERR,
 			    "085|Internal syntax table error (%s: %s)",
-			    ecp->cmd->name, KEY_NAME(sp, *p));
+			    ecp->cmd->name, KEY_NAME(sp, *n));
 		}
 	}
 
@@ -1221,7 +1223,7 @@ arg_cnt_chk:		if (*++p != 'N') {		/* N */
 	 * There shouldn't be anything left, and no more required fields,
 	 * i.e neither 'l' or 'r' in the syntax string.
 	 */
-	if (ecp->clen != 0 || strpbrk(p, "lr")) {
+	if (ecp->clen != 0 || strpbrk(n, "lr")) {
 usage:		msgq(sp, M_ERR, "086|Usage: %s", ecp->cmd->usage);
 		goto err;
 	}
@@ -1827,8 +1829,8 @@ ex_line(sp, ecp, mp, isaddrp, errp)
 	GS *gp;
 	long total, val;
 	int isneg;
-	int (*sf) __P((SCR *, MARK *, MARK *, char *, size_t, char **, u_int));
-	char *endp;
+	int (*sf) __P((SCR *, MARK *, MARK *, CHAR_T *, size_t, CHAR_T **, u_int));
+	CHAR_T *endp;
 
 	gp = sp->gp;
 	exp = EXP(sp);
@@ -1859,7 +1861,7 @@ ex_line(sp, ecp, mp, isaddrp, errp)
 		*isaddrp = 1;
 		F_SET(ecp, E_ABSMARK);
 
-		if ((nret = nget_slong(&val, ecp->cp, &endp, 10)) != NUM_OK) {
+		if ((nret = nget_slong(sp, &val, ecp->cp, &endp, 10)) != NUM_OK) {
 			ex_badaddr(sp, NULL, A_NOTSET, nret);
 			*errp = 1;
 			return (0);
@@ -2023,7 +2025,7 @@ search:		mp->lno = sp->lno;
 					isneg = 0;
 
 				/* Get a signed long, add it to the total. */
-				if ((nret = nget_slong(&val,
+				if ((nret = nget_slong(sp, &val,
 				    ecp->cp, &endp, 10)) != NUM_OK ||
 				    (nret = NADD_SLONG(sp,
 				    total, val)) != NUM_OK) {
@@ -2194,16 +2196,16 @@ ex_discard(sp)
 static void
 ex_unknown(sp, cmd, len)
 	SCR *sp;
-	char *cmd;
+	CHAR_T *cmd;
 	size_t len;
 {
 	size_t blen;
-	char *bp;
+	CHAR_T *bp;
 
-	GET_SPACE_GOTO(sp, bp, blen, len + 1);
+	GET_SPACE_GOTO(sp, bp, blen, (len + 1) * sizeof(CHAR_T));
 	bp[len] = '\0';
-	memcpy(bp, cmd, len);
-	msgq_str(sp, M_ERR, bp, "098|The %s command is unknown");
+	memcpy(bp, cmd, len * sizeof(CHAR_T));
+	msgq_wstr(sp, M_ERR, bp, "098|The %s command is unknown");
 	FREE_SPACE(sp, bp, blen);
 
 alloc_err:
@@ -2216,16 +2218,14 @@ alloc_err:
  *	[un]abbreviate command, so it can turn off abbreviations.  See
  *	the usual ranting in the vi/v_txt_ev.c:txt_abbrev() routine.
  *
- * PUBLIC: int ex_is_abbrev __P((char *, size_t));
+ * PUBLIC: int ex_is_abbrev __P((SCR *, CHAR_T *, size_t));
  */
 int
-ex_is_abbrev(name, len)
-	char *name;
-	size_t len;
+ex_is_abbrev(SCR *sp, CHAR_T *name, size_t len)
 {
 	EXCMDLIST const *cp;
 
-	return ((cp = ex_comm_search(name, len)) != NULL &&
+	return ((cp = ex_comm_search(sp, name, len)) != NULL &&
 	    (cp == &cmds[C_ABBR] || cp == &cmds[C_UNABBREVIATE]));
 }
 
@@ -2235,12 +2235,10 @@ ex_is_abbrev(name, len)
  *	unmap command, so it can turn off input mapping.  See the usual
  *	ranting in the vi/v_txt_ev.c:txt_unmap() routine.
  *
- * PUBLIC: int ex_is_unmap __P((char *, size_t));
+ * PUBLIC: int ex_is_unmap __P((SCR *, CHAR_T *, size_t));
  */
 int
-ex_is_unmap(name, len)
-	char *name;
-	size_t len;
+ex_is_unmap(SCR *sp, CHAR_T *name, size_t len)
 {
 	EXCMDLIST const *cp;
 
@@ -2251,7 +2249,7 @@ ex_is_unmap(name, len)
 	if (name[len - 1] != '!')
 		return (0);
 	--len;
-	return ((cp = ex_comm_search(name, len)) != NULL &&
+	return ((cp = ex_comm_search(sp, name, len)) != NULL &&
 	    cp == &cmds[C_UNMAP]);
 }
 
@@ -2260,18 +2258,20 @@ ex_is_unmap(name, len)
  *	Search for a command name.
  */
 static EXCMDLIST const *
-ex_comm_search(name, len)
-	char *name;
-	size_t len;
+ex_comm_search(SCR *sp, CHAR_T *name, size_t len)
 {
 	EXCMDLIST const *cp;
+	size_t nlen;
+	char *nname;
+
+	INT2CHAR(sp, name, len, nname, nlen);
 
 	for (cp = cmds; cp->name != NULL; ++cp) {
-		if (cp->name[0] > name[0])
+		if (cp->name[0] > nname[0])
 			return (NULL);
-		if (cp->name[0] != name[0])
+		if (cp->name[0] != nname[0])
 			continue;
-		if (!memcmp(name, cp->name, len))
+		if (!memcmp(nname, cp->name, len))
 			return (cp);
 	}
 	return (NULL);

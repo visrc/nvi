@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_itxt.c,v 10.18 2000/06/27 17:19:07 skimo Exp $ (Berkeley) $Date: 2000/06/27 17:19:07 $";
+static const char sccsid[] = "$Id: v_itxt.c,v 10.19 2000/07/14 14:29:23 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -227,7 +227,8 @@ io(sp, vp, cmd)
 		len = 0;
 		ai_line = OOBLNO;
 	} else {
-insert:		p = "";
+		static CHAR_T nul = 0;
+insert:		p = &nul;
 		sp->cno = 0;
 		LOG_CORRECT;
 
@@ -265,7 +266,7 @@ v_change(sp, vp)
 	size_t blen, len;
 	u_int32_t flags;
 	int isempty, lmode, rval;
-	char *bp;
+	CHAR_T *bp;
 	CHAR_T *p;
 
 	/*

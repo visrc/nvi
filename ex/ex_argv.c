@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_argv.c,v 10.28 1996/12/17 14:50:33 bostic Exp $ (Berkeley) $Date: 1996/12/17 14:50:33 $";
+static const char sccsid[] = "$Id: ex_argv.c,v 10.29 2000/07/14 14:29:19 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,9 +31,9 @@ static const char sccsid[] = "$Id: ex_argv.c,v 10.28 1996/12/17 14:50:33 bostic 
 static int argv_alloc __P((SCR *, size_t));
 static int argv_comp __P((const void *, const void *));
 static int argv_fexp __P((SCR *, EXCMD *,
-	char *, size_t, char *, size_t *, char **, size_t *, int));
+	CHAR_T *, size_t, CHAR_T *, size_t *, CHAR_T **, size_t *, int));
 static int argv_lexp __P((SCR *, EXCMD *, char *));
-static int argv_sexp __P((SCR *, char **, size_t *, size_t *));
+static int argv_sexp __P((SCR *, CHAR_T **, size_t *, size_t *));
 
 /*
  * argv_init --
@@ -61,20 +61,20 @@ argv_init(sp, excp)
  * argv_exp0 --
  *	Append a string to the argument list.
  *
- * PUBLIC: int argv_exp0 __P((SCR *, EXCMD *, char *, size_t));
+ * PUBLIC: int argv_exp0 __P((SCR *, EXCMD *, CHAR_T *, size_t));
  */
 int
 argv_exp0(sp, excp, cmd, cmdlen)
 	SCR *sp;
 	EXCMD *excp;
-	char *cmd;
+	CHAR_T *cmd;
 	size_t cmdlen;
 {
 	EX_PRIVATE *exp;
 
 	exp = EXP(sp);
 	argv_alloc(sp, cmdlen);
-	memcpy(exp->args[exp->argsoff]->bp, cmd, cmdlen);
+	memcpy(exp->args[exp->argsoff]->bp, cmd, cmdlen * sizeof(CHAR_T));
 	exp->args[exp->argsoff]->bp[cmdlen] = '\0';
 	exp->args[exp->argsoff]->len = cmdlen;
 	++exp->argsoff;
@@ -88,19 +88,21 @@ argv_exp0(sp, excp, cmd, cmdlen)
  *	Do file name expansion on a string, and append it to the
  *	argument list.
  *
- * PUBLIC: int argv_exp1 __P((SCR *, EXCMD *, char *, size_t, int));
+ * PUBLIC: int argv_exp1 __P((SCR *, EXCMD *, CHAR_T *, size_t, int));
  */
 int
 argv_exp1(sp, excp, cmd, cmdlen, is_bang)
 	SCR *sp;
 	EXCMD *excp;
-	char *cmd;
+	CHAR_T *cmd;
 	size_t cmdlen;
 	int is_bang;
 {
 	EX_PRIVATE *exp;
 	size_t blen, len;
-	char *bp, *p, *t;
+	CHAR_T *p, *t, *bp;
+	size_t wlen;
+	CHAR_T *wp;
 
 	GET_SPACE_RET(sp, bp, blen, 512);
 
@@ -132,25 +134,30 @@ ret:	FREE_SPACE(sp, bp, blen);
  *	Do file name and shell expansion on a string, and append it to
  *	the argument list.
  *
- * PUBLIC: int argv_exp2 __P((SCR *, EXCMD *, char *, size_t));
+ * PUBLIC: int argv_exp2 __P((SCR *, EXCMD *, CHAR_T *, size_t));
  */
 int
 argv_exp2(sp, excp, cmd, cmdlen)
 	SCR *sp;
 	EXCMD *excp;
-	char *cmd;
+	CHAR_T *cmd;
 	size_t cmdlen;
 {
 	size_t blen, len, n;
 	int rval;
-	char *bp, *mp, *p;
+	CHAR_T *bp, *p;
+	char *mp, *np;
 
 	GET_SPACE_RET(sp, bp, blen, 512);
 
 #define	SHELLECHO	"echo "
 #define	SHELLOFFSET	(sizeof(SHELLECHO) - 1)
-	memcpy(bp, SHELLECHO, SHELLOFFSET);
-	p = bp + SHELLOFFSET;
+	p = bp;
+	*p++ = 'e'; 
+	*p++ = 'c'; 
+	*p++ = 'h'; 
+	*p++ = 'o'; 
+	*p++ = ' ';
 	len = SHELLOFFSET;
 
 #if defined(DEBUG) && 0
@@ -183,8 +190,8 @@ argv_exp2(sp, excp, cmd, cmdlen)
 	if (opts_empty(sp, O_SHELL, 1) || opts_empty(sp, O_SHELLMETA, 1))
 		n = 0;
 	else {
-		for (p = mp = O_STR(sp, O_SHELLMETA); *p != '\0'; ++p)
-			if (isblank(*p) || isalnum(*p))
+		for (np = mp = O_STR(sp, O_SHELLMETA); *np != '\0'; ++np)
+			if (isblank(*np) || isalnum(*np))
 				break;
 		p = bp + SHELLOFFSET;
 		n = len - SHELLOFFSET;
@@ -220,8 +227,15 @@ argv_exp2(sp, excp, cmd, cmdlen)
 		break;
 	case 1:
 		if (*p == '*') {
+			char *np, *d;
+			size_t nlen;
+
 			*p = '\0';
-			rval = argv_lexp(sp, excp, bp + SHELLOFFSET);
+			INT2CHAR(sp, bp + SHELLOFFSET, 
+				 v_strlen(bp + SHELLOFFSET) + 1, np, nlen);
+			d = strdup(np);
+			rval = argv_lexp(sp, excp, d);
+			free (d);
 			break;
 		}
 		/* FALLTHROUGH */
@@ -244,19 +258,19 @@ err:	FREE_SPACE(sp, bp, blen);
  *	Take a string and break it up into an argv, which is appended
  *	to the argument list.
  *
- * PUBLIC: int argv_exp3 __P((SCR *, EXCMD *, char *, size_t));
+ * PUBLIC: int argv_exp3 __P((SCR *, EXCMD *, CHAR_T *, size_t));
  */
 int
 argv_exp3(sp, excp, cmd, cmdlen)
 	SCR *sp;
 	EXCMD *excp;
-	char *cmd;
+	CHAR_T *cmd;
 	size_t cmdlen;
 {
 	EX_PRIVATE *exp;
 	size_t len;
 	int ch, off;
-	char *ap, *p;
+	CHAR_T *ap, *p;
 
 	for (exp = EXP(sp); cmdlen > 0; ++exp->argsoff) {
 		/* Skip any leading whitespace. */
@@ -319,13 +333,14 @@ static int
 argv_fexp(sp, excp, cmd, cmdlen, p, lenp, bpp, blenp, is_bang)
 	SCR *sp;
 	EXCMD *excp;
-	char *cmd, *p, **bpp;
+	CHAR_T *cmd, *p, **bpp;
 	size_t cmdlen, *lenp, *blenp;
 	int is_bang;
 {
 	EX_PRIVATE *exp;
-	char *bp, *t;
+	char *t;
 	size_t blen, len, off, tlen;
+	CHAR_T *bp;
 
 	/* Replace file name characters. */
 	for (bp = *bpp, blen = *blenp, len = *lenp; cmdlen > 0; --cmdlen, ++cmd)
@@ -339,7 +354,7 @@ argv_fexp(sp, excp, cmd, cmdlen, p, lenp, bpp, blenp, is_bang)
 				    "115|No previous command to replace \"!\"");
 				return (1);
 			}
-			len += tlen = strlen(exp->lastbcomm);
+			len += tlen = v_strlen(exp->lastbcomm);
 			off = p - bp;
 			ADD_SPACE_RET(sp, bp, blen, len);
 			p = bp + off;
@@ -512,17 +527,18 @@ argv_free(sp)
  *	buffer.
  */
 static int
-argv_lexp(sp, excp, path)
-	SCR *sp;
-	EXCMD *excp;
-	char *path;
+argv_lexp(SCR *sp, EXCMD *excp, char *path)
 {
 	struct dirent *dp;
 	DIR *dirp;
 	EX_PRIVATE *exp;
 	int off;
 	size_t dlen, len, nlen;
-	char *dname, *name, *p;
+	char *dname, *name;
+	char *p;
+	size_t wlen;
+	CHAR_T *wp;
+	CHAR_T *n;
 
 	exp = EXP(sp);
 
@@ -566,14 +582,16 @@ argv_lexp(sp, excp, path)
 
 		/* Directory + name + slash + null. */
 		argv_alloc(sp, dlen + len + 2);
-		p = exp->args[exp->argsoff]->bp;
+		n = exp->args[exp->argsoff]->bp;
 		if (dlen != 0) {
-			memcpy(p, dname, dlen);
-			p += dlen;
+			CHAR2INT(sp, dname, dlen, wp, wlen);
+			memcpy(n, wp, wlen * sizeof(CHAR_T));
+			n += dlen;
 			if (dlen > 1 || dname[0] != '/')
-				*p++ = '/';
+				*n++ = '/';
 		}
-		memcpy(p, dp->d_name, len + 1);
+		CHAR2INT(sp, dp->d_name, len + 1, wp, wlen);
+		memcpy(n, wp, wlen * sizeof(CHAR_T));
 		exp->args[exp->argsoff]->len = dlen + len + 1;
 		++exp->argsoff;
 		excp->argv = exp->args;
@@ -613,7 +631,7 @@ argv_comp(a, b)
 static int
 argv_sexp(sp, bpp, blenp, lenp)
 	SCR *sp;
-	char **bpp;
+	CHAR_T **bpp;
 	size_t *blenp, *lenp;
 {
 	enum { SEXP_ERR, SEXP_EXPANSION_ERR, SEXP_OK } rval;
@@ -621,7 +639,8 @@ argv_sexp(sp, bpp, blenp, lenp)
 	pid_t pid;
 	size_t blen, len;
 	int ch, std_output[2];
-	char *bp, *p, *sh, *sh_path;
+	CHAR_T *bp, *p;
+	char *sh, *sh_path;
 
 	/* Secure means no shell access. */
 	if (O_ISSET(sp, O_SECURE)) {

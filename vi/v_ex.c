@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_ex.c,v 10.47 2000/06/27 17:19:07 skimo Exp $ (Berkeley) $Date: 2000/06/27 17:19:07 $";
+static const char sccsid[] = "$Id: v_ex.c,v 10.48 2000/07/14 14:29:23 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -44,9 +44,10 @@ v_again(sp, vp)
 	VICMD *vp;
 {
 	EXCMD cmd;
+	static CHAR_T nul[] = { 0 };
 
 	ex_cinit(sp, &cmd, C_SUBAGAIN, 2, vp->m_start.lno, vp->m_start.lno, 1);
-	argv_exp0(sp, &cmd, "", 1);
+	argv_exp0(sp, &cmd, nul, 1);
 	return (v_exec_ex(sp, vp, &cmd));
 }
 
@@ -131,9 +132,10 @@ v_shiftl(sp, vp)
 	VICMD *vp;
 {
 	EXCMD cmd;
+	static CHAR_T lt[] = {'<', 0};
 
 	ex_cinit(sp, &cmd, C_SHIFTL, 2, vp->m_start.lno, vp->m_stop.lno, 0);
-	argv_exp0(sp, &cmd, "<", 2);
+	argv_exp0(sp, &cmd, lt, 2);
 	return (v_exec_ex(sp, vp, &cmd));
 }
 
@@ -149,9 +151,10 @@ v_shiftr(sp, vp)
 	VICMD *vp;
 {
 	EXCMD cmd;
+	static CHAR_T gt[] = {'>', 0};
 
 	ex_cinit(sp, &cmd, C_SHIFTR, 2, vp->m_start.lno, vp->m_stop.lno, 0);
-	argv_exp0(sp, &cmd, ">", 2);
+	argv_exp0(sp, &cmd, gt, 2);
 	return (v_exec_ex(sp, vp, &cmd));
 }
 
@@ -167,9 +170,10 @@ v_suspend(sp, vp)
 	VICMD *vp;
 {
 	EXCMD cmd;
+	static CHAR_T suspend[] = {'s', 'u', 's', 'p', 'e', 'n', 'd', 0};
 
 	ex_cinit(sp, &cmd, C_STOP, 0, OOBLNO, OOBLNO, 0);
-	argv_exp0(sp, &cmd, "suspend", sizeof("suspend"));
+	argv_exp0(sp, &cmd, suspend, sizeof(suspend)/sizeof(CHAR_T));
 	return (v_exec_ex(sp, vp, &cmd));
 }
 
@@ -186,6 +190,8 @@ v_switch(sp, vp)
 {
 	EXCMD cmd;
 	char *name;
+	CHAR_T *wp;
+	size_t wlen;
 
 	/*
 	 * Try the alternate file name, then the previous file
@@ -201,7 +207,8 @@ v_switch(sp, vp)
 		return (1);
 
 	ex_cinit(sp, &cmd, C_EDIT, 0, OOBLNO, OOBLNO, 0);
-	argv_exp0(sp, &cmd, name, strlen(name) + 1);
+	CHAR2INT(sp, name, strlen(name) + 1, wp, wlen);
+	argv_exp0(sp, &cmd, wp, wlen);
 	return (v_exec_ex(sp, vp, &cmd));
 }
 
@@ -219,7 +226,7 @@ v_tagpush(sp, vp)
 	EXCMD cmd;
 
 	ex_cinit(sp, &cmd, C_TAG, 0, OOBLNO, 0, 0);
-	argv_exp0(sp, &cmd, VIP(sp)->keyw, strlen(VIP(sp)->keyw) + 1);
+	argv_exp0(sp, &cmd, VIP(sp)->keyw, v_strlen(VIP(sp)->keyw) + 1);
 	return (v_exec_ex(sp, vp, &cmd));
 }
 
@@ -275,11 +282,12 @@ v_filter(sp, vp)
 	 */
 	if (F_ISSET(vp, VC_ISDOT) ||
 	    ISCMD(vp->rkp, 'N') || ISCMD(vp->rkp, 'n')) {
+		static CHAR_T bang[] = {'!', 0};
 		ex_cinit(sp,
 		    &cmd, C_BANG, 2, vp->m_start.lno, vp->m_stop.lno, 0);
 		EXP(sp)->argsoff = 0;			/* XXX */
 
-		if (argv_exp1(sp, &cmd, "!", 1, 1))
+		if (argv_exp1(sp, &cmd, bang, 1, 1))
 			return (1);
 		cmd.argc = EXP(sp)->argsoff;		/* XXX */
 		cmd.argv = EXP(sp)->args;		/* XXX */

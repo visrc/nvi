@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: mark.h,v 10.4 2000/04/21 19:00:33 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:33 $
+ *	$Id: mark.h,v 10.5 2000/07/14 14:29:16 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:16 $
  */
 
 /*
@@ -31,6 +31,7 @@ struct _lmark {
 	LIST_ENTRY(_lmark) q;		/* Linked list of marks. */
 	db_recno_t	 lno;			/* Line number. */
 	size_t	 cno;			/* Column number. */
+	/* XXXX Needed ? Can non ascii-chars be mark names ? */
 	CHAR_T	 name;			/* Mark name. */
 
 #define	MARK_DELETED	0x01		/* Mark was deleted. */

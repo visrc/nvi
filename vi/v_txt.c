@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.95 2000/07/10 15:28:45 skimo Exp $ (Berkeley) $Date: 2000/07/10 15:28:45 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.96 2000/07/14 14:29:24 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -242,14 +242,14 @@ txt_map_end(sp)
  *	Vi text input.
  *
  * PUBLIC: int v_txt __P((SCR *, VICMD *, MARK *,
- * PUBLIC:    const char *, size_t, ARG_CHAR_T, db_recno_t, u_long, u_int32_t));
+ * PUBLIC:    const CHAR_T *, size_t, ARG_CHAR_T, db_recno_t, u_long, u_int32_t));
  */
 int
 v_txt(sp, vp, tm, lp, len, prompt, ai_line, rcount, flags)
 	SCR *sp;
 	VICMD *vp;
 	MARK *tm;		/* To MARK. */
-	const char *lp;		/* Input line. */
+	const CHAR_T *lp;	/* Input line. */
 	size_t len;		/* Input line length. */
 	ARG_CHAR_T prompt;	/* Prompt to display. */
 	db_recno_t ai_line;	/* Line number to use for autoindent count. */
@@ -281,7 +281,7 @@ v_txt(sp, vp, tm, lp, len, prompt, ai_line, rcount, flags)
 	int showmatch;		/* Showmatch set on this character. */
 	int wm_set, wm_skip;	/* Wrapmargin happened, blank skip flags. */
 	int max, tmp;
-	char *p;
+	CHAR_T *p;
 
 	gp = sp->gp;
 	vip = VIP(sp);
@@ -665,6 +665,7 @@ replay:	if (LF_ISSET(TXT_REPLAY)) {
 	case K_NL:				/* New line. */
 		/* Return in script windows and the command line. */
 k_cr:		if (LF_ISSET(TXT_CR)) {
+			static CHAR_T cr[] = { '\r', 0 };
 			/*
 			 * If this was a map, we may have not displayed
 			 * the line.  Display it, just in case.
@@ -676,7 +677,7 @@ k_cr:		if (LF_ISSET(TXT_CR)) {
 				if (vs_change(sp, tp->lno, LINE_RESET))
 					goto err;
 			} else if (F_ISSET(sp, SC_SCRIPT))
-				(void)v_event_push(sp, NULL, "\r", 1, CH_NOMAP);
+				(void)v_event_push(sp, NULL, cr, 1, CH_NOMAP);
 
 			/* Set term condition: if empty. */
 			if (tp->cno <= tp->offset)
@@ -1565,7 +1566,7 @@ txt_abbrev(sp, tp, pushcp, isinfoline, didsubp, turnoffp)
 	 */
 search:	if (isinfoline)
 		if (off == tp->ai || off == tp->offset)
-			if (ex_is_abbrev(p, len)) {
+			if (ex_is_abbrev(sp, p, len)) {
 				*turnoffp = 1;
 				return (0);
 			} else
@@ -1644,7 +1645,7 @@ txt_unmap(sp, tp, ec_flagsp)
 	u_int32_t *ec_flagsp;
 {
 	size_t len, off;
-	char *p;
+	CHAR_T *p;
 
 	/* Find the beginning of this "word". */
 	for (off = tp->cno - 1, p = tp->lb + off, len = 0;; --p, --off) {
@@ -1670,7 +1671,7 @@ txt_unmap(sp, tp, ec_flagsp)
 	 * if the user erases the line and starts another command, we go ahead
 	 * an turn mapping back on.
 	 */
-	if ((off == tp->ai || off == tp->offset) && ex_is_unmap(p, len))
+	if ((off == tp->ai || off == tp->offset) && ex_is_unmap(sp, p, len))
 		FL_CLR(*ec_flagsp, EC_MAPINPUT);
 	else
 		FL_SET(*ec_flagsp, EC_MAPINPUT);
@@ -2018,6 +2019,8 @@ txt_fc(sp, tp, redrawp)
 	size_t indx, len, nlen, off;
 	int argc, trydir;
 	CHAR_T *p, *t;
+	char *np;
+	size_t nplen;
 
 	trydir = 0;
 	*redrawp = 0;
@@ -2073,13 +2076,15 @@ retry:		for (len = 0,
 		return (0);
 	case 1:				/* One match. */
 		/* If something changed, do the exchange. */
-		nlen = strlen(cmd.argv[0]->bp);
-		if (len != nlen || memcmp(cmd.argv[0]->bp, p, len))
+		nlen = v_strlen(cmd.argv[0]->bp);
+		if (len != nlen || memcmp(cmd.argv[0]->bp, p, len * sizeof(CHAR_T)))
 			break;
 
 		/* If haven't done a directory test, do it now. */
+		INT2CHAR(sp, cmd.argv[0]->bp, cmd.argv[0]->len + 1,
+			 np, nplen);
 		if (!trydir &&
-		    !stat(cmd.argv[0]->bp, &sb) && S_ISDIR(sb.st_mode)) {
+		    !stat(np, &sb) && S_ISDIR(sb.st_mode)) {
 			p += len;
 			goto isdir;
 		}
@@ -2129,19 +2134,20 @@ retry:		for (len = 0,
 		tp->len += nlen;
 
 		if (tp->insert != 0)
-			(void)memmove(p + nlen, p, tp->insert);
+			(void)memmove(p + nlen, p, tp->insert * sizeof(CHAR_T));
 		while (nlen--)
 			*p++ = *t++;
 	}
 
 	/* If a single match and it's a directory, retry it. */
-	if (argc == 1 && !stat(cmd.argv[0]->bp, &sb) && S_ISDIR(sb.st_mode)) {
+	INT2CHAR(sp, cmd.argv[0]->bp, cmd.argv[0]->len + 1, np, nplen);
+	if (argc == 1 && !stat(np, &sb) && S_ISDIR(sb.st_mode)) {
 isdir:		if (tp->owrite == 0) {
 			off = p - tp->lb;
 			BINC_RET(sp, tp->lb, tp->lb_len, tp->len + 1);
 			p = tp->lb + off;
 			if (tp->insert != 0)
-				(void)memmove(p + 1, p, tp->insert);
+				(void)memmove(p + 1, p, tp->insert * sizeof(CHAR_T));
 			++tp->len;
 		} else
 			--tp->owrite;
@@ -2170,17 +2176,21 @@ txt_fc_col(sp, argc, argv)
 	GS *gp;
 	size_t base, cnt, col, colwidth, numrows, numcols, prefix, row;
 	int ac, nf, reset;
+	char *np, *pp;
+	size_t nlen;
 
 	gp = sp->gp;
 
 	/* Trim any directory prefix common to all of the files. */
-	if ((p = strrchr(argv[0]->bp, '/')) == NULL)
+	INT2CHAR(sp, argv[0]->bp, argv[0]->len + 1, np, nlen);
+	if ((pp = strrchr(np, '/')) == NULL)
 		prefix = 0;
 	else {
-		prefix = (p - argv[0]->bp) + 1;
+		prefix = (pp - np) + 1;
 		for (ac = argc - 1, av = argv + 1; ac > 0; --ac, ++av)
 			if (av[0]->len < prefix ||
-			    memcmp(av[0]->bp, argv[0]->bp, prefix)) {
+			    memcmp(av[0]->bp, argv[0]->bp, 
+				   prefix * sizeof(CHAR_T))) {
 				prefix = 0;
 				break;
 			}
@@ -2218,8 +2228,10 @@ txt_fc_col(sp, argc, argv)
 	/* If the largest file name is too large, just print them. */
 	if (colwidth > sp->cols) {
 		for (ac = argc, av = argv; ac > 0; --ac, ++av) {
-			p = msg_print(sp, av[0]->bp + prefix, &nf);
-			(void)ex_printf(sp, "%s\n", p);
+			INT2CHAR(sp, av[0]->bp+prefix, av[0]->len+1-prefix,
+				 np, nlen);
+			pp = msg_print(sp, np, &nf);
+			(void)ex_printf(sp, "%s\n", pp);
 			if (F_ISSET(gp, G_INTERRUPTED))
 				break;
 		}
@@ -2239,8 +2251,10 @@ txt_fc_col(sp, argc, argv)
 		/* Display the files in sorted order. */
 		for (row = 0; row < numrows; ++row) {
 			for (base = row, col = 0; col < numcols; ++col) {
-				p = msg_print(sp, argv[base]->bp + prefix, &nf);
-				cnt = ex_printf(sp, "%s", p);
+				INT2CHAR(sp, argv[base]->bp+prefix, 
+					argv[base]->len+1-prefix, np, nlen);
+				pp = msg_print(sp, np, &nf);
+				cnt = ex_printf(sp, "%s", pp);
 				if (nf)
 					FREE_SPACE(sp, p, 0);
 				CHK_INTR;
@@ -2277,9 +2291,10 @@ txt_emark(sp, tp, cno)
 	TEXT *tp;
 	size_t cno;
 {
-	CHAR_T ch, *kp;
+	CHAR_T ch;
+	char *kp;
 	size_t chlen, nlen, olen;
-	char *p;
+	CHAR_T *p;
 
 	ch = CH_ENDMARK;
 
@@ -2299,7 +2314,7 @@ txt_emark(sp, tp, cno)
 	 * to fix it up.
 	 */
 	if (olen > nlen) {
-		BINC_RET(sp, tp->lb, tp->lb_len, tp->len + olen);
+		BINC_RET(sp, tp->lb, tp->lb_len, (tp->len + olen) * sizeof(CHAR_T));
 		chlen = olen - nlen;
 		if (tp->insert != 0)
 			memmove(tp->lb + cno + 1 + chlen,
@@ -2367,7 +2382,9 @@ txt_hex(sp, tp)
 	CHAR_T savec;
 	size_t len, off;
 	u_long value;
-	char *p, *wp;
+	CHAR_T *p, *wp;
+	char *np;
+	size_t nlen;
 
 	/*
 	 * Null-terminate the string.  Since nul isn't a legal hex value,
@@ -2394,7 +2411,8 @@ txt_hex(sp, tp)
 
 	/* Get the value. */
 	errno = 0;
-	value = strtol(wp, NULL, 16);
+	INT2CHAR(sp, wp, v_strlen(wp)+1, np, nlen);
+	value = strtol(np, NULL, 16);
 	if (errno || value > MAX_CHAR_T) {
 nothex:		tp->lb[tp->cno] = savec;
 		return (0);
@@ -2410,12 +2428,14 @@ nothex:		tp->lb[tp->cno] = savec;
 
 	/* Copy down any overwrite characters. */
 	if (tp->owrite)
-		memmove(tp->lb + tp->cno, tp->lb + tp->cno + len, tp->owrite);
+		memmove(tp->lb + tp->cno, tp->lb + tp->cno + len, 
+		    tp->owrite * sizeof(CHAR_T));
 
 	/* Copy down any insert characters. */
 	if (tp->insert)
 		memmove(tp->lb + tp->cno + tp->owrite,
-		    tp->lb + tp->cno + tp->owrite + len, tp->insert);
+		    tp->lb + tp->cno + tp->owrite + len, 
+		    tp->insert * sizeof(CHAR_T));
 
 	return (0);
 }
@@ -2446,9 +2466,10 @@ txt_insch(sp, tp, chp, flags)
 	CHAR_T *chp;
 	u_int flags;
 {
-	CHAR_T *kp, savech;
+	char *kp;
+	CHAR_T savech;
 	size_t chlen, cno, copydown, olen, nlen;
-	char *p;
+	CHAR_T *p;
 
 	/*
 	 * The 'R' command does one-for-one replacement, because there's
@@ -2500,10 +2521,11 @@ txt_insch(sp, tp, chp, flags)
 				nlen -= olen;
 			} else {
 				BINC_RET(sp,
-				    tp->lb, tp->lb_len, tp->len + olen);
+				    tp->lb, tp->lb_len, (tp->len + olen) * sizeof(CHAR_T));
 				chlen = olen - nlen;
 				memmove(tp->lb + cno + 1 + chlen,
-				    tp->lb + cno + 1, tp->owrite + tp->insert);
+				    tp->lb + cno + 1, 
+				    (tp->owrite + tp->insert) * sizeof(CHAR_T));
 
 				tp->len += chlen;
 				tp->owrite += chlen;
@@ -2814,7 +2836,7 @@ txt_margin(sp, tp, wmtp, didbreak, flags)
 {
 	VI_PRIVATE *vip;
 	size_t len, off;
-	char *p, *wp;
+	CHAR_T *p, *wp;
 
 	/* Find the nearest previous blank. */
 	for (off = tp->cno - 1, p = tp->lb + off, len = 0;; --off, --p, ++len) {

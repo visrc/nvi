@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_util.c,v 10.26 2000/04/21 19:00:38 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:38 $";
+static const char sccsid[] = "$Id: ex_util.c,v 10.27 2000/07/14 14:29:22 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -66,7 +66,7 @@ ex_getline(sp, fp, lenp)
 	EX_PRIVATE *exp;
 	size_t off;
 	int ch;
-	char *p;
+	CHAR_T *p;
 
 	exp = EXP(sp);
 	for (errno = 0, off = 0, p = exp->ibp;;) {

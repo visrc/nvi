@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_filter.c,v 10.35 2000/04/21 19:00:36 skimo Exp $ (Berkeley) $Date: 2000/04/21 19:00:36 $";
+static const char sccsid[] = "$Id: ex_filter.c,v 10.36 2000/07/14 14:29:20 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,14 +36,14 @@ static int filter_ldisplay __P((SCR *, FILE *));
  *	the utility.
  *
  * PUBLIC: int ex_filter __P((SCR *, 
- * PUBLIC:    EXCMD *, MARK *, MARK *, MARK *, char *, enum filtertype));
+ * PUBLIC:    EXCMD *, MARK *, MARK *, MARK *, CHAR_T *, enum filtertype));
  */
 int
 ex_filter(sp, cmdp, fm, tm, rp, cmd, ftype)
 	SCR *sp;
 	EXCMD *cmdp;
 	MARK *fm, *tm, *rp;
-	char *cmd;
+	CHAR_T *cmd;
 	enum filtertype ftype;
 {
 	FILE *ifp, *ofp;
@@ -51,6 +51,8 @@ ex_filter(sp, cmdp, fm, tm, rp, cmd, ftype)
 	db_recno_t nread;
 	int input[2], output[2], rval;
 	char *name;
+	char *np;
+	size_t nlen;
 
 	rval = 0;
 
@@ -285,7 +287,8 @@ err:		if (input[0] != -1)
 	 * Ignore errors on vi file reads, to make reads prettier.  It's
 	 * completely inconsistent, and historic practice.
 	 */
-uwait:	return (proc_wait(sp, (long)utility_pid, cmd,
+uwait:	INT2CHAR(sp, cmd, v_strlen(cmd) + 1, np, nlen);
+	return (proc_wait(sp, (long)utility_pid, np,
 	    ftype == FILTER_READ && F_ISSET(sp, SC_VI) ? 1 : 0, 0) || rval);
 }
 
@@ -303,12 +306,16 @@ filter_ldisplay(sp, fp)
 	FILE *fp;
 {
 	size_t len;
+	char *np;
+	size_t nlen;
 
 	EX_PRIVATE *exp;
 
-	for (exp = EXP(sp); !ex_getline(sp, fp, &len) && !INTERRUPTED(sp);)
-		if (ex_ldisplay(sp, exp->ibp, len, 0, 0))
+	for (exp = EXP(sp); !ex_getline(sp, fp, &len) && !INTERRUPTED(sp);) {
+		INT2CHAR(sp, exp->ibp, len, np, nlen);
+		if (ex_ldisplay(sp, np, nlen, 0, 0))
 			break;
+	}
 	if (ferror(fp))
 		msgq(sp, M_SYSERR, "filter read");
 	(void)fclose(fp);

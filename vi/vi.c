@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vi.c,v 10.68 2000/07/11 22:05:11 skimo Exp $ (Berkeley) $Date: 2000/07/11 22:05:11 $";
+static const char sccsid[] = "$Id: vi.c,v 10.69 2000/07/14 14:29:25 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -521,7 +521,7 @@ v_cmd(sp, dp, vp, ismotion, comcountp, mappedp)
 	 * a command.  When a count is specified, the dot command behaves
 	 * differently, pass the information back.
 	 */
-	if (isdigit(key) && key != '0') {
+	if (ISDIGIT(key) && key != '0') {
 		if (v_count(sp, vp, key, &vp->count))
 			return (GC_ERR);
 
@@ -685,7 +685,7 @@ usage:			if (ismotion == NULL)
 	/* Special case: 'z' command. */
 	if (vp->key == 'z') {
 		KEY(vp->character, 0);
-		if (isdigit(vp->character)) {
+		if (ISDIGIT(vp->character)) {
 			if (v_count(sp, vp, vp->character, &vp->count2))
 				return (GC_ERR);
 			F_SET(vp, VC_C2SET);
@@ -1170,7 +1170,7 @@ v_count(sp, vp, fkey, countp)
 				if (v_key(sp, vp, 0,
 				    EC_MAPCOMMAND | EC_MAPNODIGIT) != GC_OK)
 					return (1);
-			} while (isdigit(vp->ev.e_c));
+			} while (ISDIGIT(vp->ev.e_c));
 			msgq(sp, M_ERR,
 			    "235|Number larger than %lu", ULONG_MAX);
 			return (1);
@@ -1178,7 +1178,7 @@ v_count(sp, vp, fkey, countp)
 		count = tc;
 		if (v_key(sp, vp, 0, EC_MAPCOMMAND | EC_MAPNODIGIT) != GC_OK)
 			return (1);
-	} while (isdigit(vp->ev.e_c));
+	} while (ISDIGIT(vp->ev.e_c));
 	*countp = count;
 	return (0);
 }

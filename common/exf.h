@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: exf.h,v 10.10 2000/05/01 19:59:28 skimo Exp $ (Berkeley) $Date: 2000/05/01 19:59:28 $
+ *	$Id: exf.h,v 10.11 2000/07/14 14:29:15 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:15 $
  */
 					/* Undo direction. */
 /*
@@ -19,7 +19,7 @@ struct _exf {
 
 					/* Underlying database state. */
 	DB	*db;			/* File db structure. */
-	char	*c_lp;			/* Cached line. */
+	CHAR_T	*c_lp;			/* Cached line. */
 	size_t	 c_len;			/* Cached line length. */
 	db_recno_t	 c_lno;			/* Cached line number. */
 	db_recno_t	 c_nlines;		/* Cached lines in the file. */

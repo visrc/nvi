@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_shift.c,v 10.13 2000/06/27 17:19:06 skimo Exp $ (Berkeley) $Date: 2000/06/27 17:19:06 $";
+static const char sccsid[] = "$Id: ex_shift.c,v 10.14 2000/07/14 14:29:21 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -68,7 +68,7 @@ shift(sp, cmdp, rl)
 	size_t blen, len, newcol, newidx, oldcol, oldidx, sw;
 	int curset;
 	CHAR_T *p;
-	char *bp, *tbp;
+	CHAR_T *bp, *tbp;
 
 	NEEDFILE(sp, cmdp);
 

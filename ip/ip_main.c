@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_main.c,v 8.21 2000/07/11 22:05:11 skimo Exp $ (Berkeley) $Date: 2000/07/11 22:05:11 $";
+static const char sccsid[] = "$Id: ip_main.c,v 8.22 2000/07/14 14:29:22 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:22 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -36,7 +36,7 @@ static void	   perr __P((char *, char *));
 static int	   get_fds __P((char *ip_arg, int *i_fd, int *o_fd));
 static int  get_connection __P((WIN *wp, int main_ifd, int main_ofd, 
 				int *i_fd, int *o_fd, int *, int can_pass));
-static void run_editor __P((void * vp));
+static void *run_editor __P((void * vp));
 
 /*
  * ip_main --
@@ -116,7 +116,7 @@ main(argc, argv)
 	exit (rval);
 }
 
-static void 
+static void *
 run_editor(void * vp)
 {
 	GS *gp;
@@ -170,6 +170,7 @@ run_editor(void * vp)
 #if defined(DEBUG) || defined(PURIFY) || defined(LIBRARY)
 	free(ipp);
 #endif
+	return NULL;
 }
 
 /*
@@ -277,6 +278,7 @@ ip_func_std(gp)
 	GS *gp;
 {
 	gp->scr_addstr = ip_addstr;
+	gp->scr_waddstr = ip_waddstr;
 	gp->scr_attr = ip_attr;
 	gp->scr_baud = ip_baud;
 	gp->scr_bell = ip_bell;

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_cd.c,v 10.10 1996/08/12 20:23:59 bostic Exp $ (Berkeley) $Date: 1996/08/12 20:23:59 $";
+static const char sccsid[] = "$Id: ex_cd.c,v 10.11 2000/07/14 14:29:20 skimo Exp $ (Berkeley) $Date: 2000/07/14 14:29:20 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -43,6 +43,7 @@ ex_cd(sp, cmdp)
 	CHAR_T savech;
 	char *dir, *p, *t;	/* XXX: END OF THE STACK, DON'T TRUST GETCWD. */
 	char buf[MAXPATHLEN * 2];
+	size_t dlen;
 
 	/*
 	 * !!!
@@ -71,7 +72,8 @@ ex_cd(sp, cmdp)
 		}
 		break;
 	case 1:
-		dir = cmdp->argv[0]->bp;
+		INT2CHAR(sp, cmdp->argv[0]->bp, cmdp->argv[0]->len + 1, 
+			 dir, dlen);
 		break;
 	default:
 		abort();
