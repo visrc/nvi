@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 10.12 1995/11/23 15:48:54 bostic Exp $ (Berkeley) $Date: 1995/11/23 15:48:54 $";
+static char sccsid[] = "$Id: ex_argv.c,v 10.13 1996/01/08 07:25:00 bostic Exp $ (Berkeley) $Date: 1996/01/08 07:25:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -503,9 +503,9 @@ argv_sexp(sp, bpp, blenp, lenp)
 	 * There are two different processes running through this code, named
 	 * the utility (the shell) and the parent. The utility reads standard
 	 * input and writes standard output and standard error output.  The
-	 * parent writes to the utility, and reads its standard output and
-	 * standard error output.  Historically, the standard error output was
-	 * discarded by vi, as it produces a lot of noise when file patterns
+	 * parent writes to the utility, reads its standard output and ignores
+	 * its standard error output.  Historically, the standard error output
+	 * was discarded by vi, as it produces a lot of noise when file patterns
 	 * don't match.
 	 *
 	 * The parent reads std_output[0], and the utility writes std_output[1].
