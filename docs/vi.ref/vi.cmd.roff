@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: vi.cmd.roff,v 8.4 1994/04/27 20:30:01 bostic Exp $ (Berkeley) $Date: 1994/04/27 20:30:01 $
+.\"	$Id: vi.cmd.roff,v 8.5 1994/04/29 15:20:08 bostic Exp $ (Berkeley) $Date: 1994/04/29 15:20:08 $
 .\"
 #ifdef REFERENCE
 .Sh VI DESCRIPTION
@@ -845,12 +845,13 @@ and
 .Li motion
 arguments as standard input to the program named by the
 .Sy shell
-option, and replace those lines with the output (both standard error
-and standard output) of that command.
+option, and replace those lines with the output (both
+standard error and standard output) of that command.
 .Pp
 After the motion is entered,
 .Nm \&vi
 prompts for arguments to the command.
+.Pp
 Within the arguments of the command,
 .Dq Li \&%
 and
@@ -858,11 +859,11 @@ and
 are expanded to the current and alternate pathnames, respectively.
 The character
 .Dq Li \&!
-is expanded with the shell command text of the previous
+is expanded with the command text of the previous
 .Sy \&!
 or
 .Sy \&:!
-command.
+commands.
 (Therefore, the command
 .Sy \&!!
 repeats the previous
@@ -894,16 +895,16 @@ then executes the program named by the
 .Sy shell
 option, with a
 .Fl c
-flag followed by the arguments (bundled into a single argument).
+flag followed by the arguments (which are bundled into a single argument).
+.Pp
+The
+.Sy \&!
+command is permitted in an empty file.
 .Pp
 If the file has been modified since it was last completely written,
 the
 .Sy \&!
 command will warn you.
-.Pp
-The
-.Sy \&!
-command is permitted in an empty file.
 .Pp
 .Bl -tag -width "XOptions:" -compact
 .It "Line:"
@@ -1441,44 +1442,31 @@ None.
 #endif
 .sp
 .It Sy "[count] < motion"
-Shift lines left.
-#ifdef REFERENCE
-Shift the number lines in the region specified by the motion component,
-times
-.Li count ,
-left by the value of the
-.Sy shiftwidth
-option.
-Only whitespace characters are deleted; once the first column of the
-line contains a nonblank character, the
-.Sy shift
-command will succeed, but nothing will be changed.
-.Pp
-.Bl -tag -width "XOptions:" -compact
-.It "Line:"
-Unchanged.
-.It "Column:"
-Set to the first nonblank character of the line.
-.It "Options:"
-Affected by the
-.Sy shiftwidth
-option.
-.El
-#endif
-.sp
 .It Sy "[count] > motion"
-Shift lines right.
+Shift lines left or right.
 #ifdef REFERENCE
 Shift the number lines in the region specified by the motion component,
 times
 .Li count ,
-right by the value of the
+left (for the
+.Sy <
+command) or right (for the
+.Sy >
+command) by the number of columns specified by the
 .Sy shiftwidth
 option.
+Only whitespace characters are deleted when shifting left;
+once the first column of the line contains a nonblank character,
+the
+.Sy shift
+will succeed, but the line will not be modified.
 .Pp
 .Bl -tag -width "XOptions:" -compact
 .It "Line:"
-Unchanged.
+If the current line is set to one of the lines that are affected
+by the command, it is unchanged.
+Otherwise, it is set to the first nonblank character of the lowest
+numbered line shifted.
 .It "Column:"
 Set to the first nonblank character of the line.
 .It "Options:"
@@ -1488,7 +1476,7 @@ option.
 .El
 #endif
 .sp
-.It Sy "@buffer"
+.It Sy "@ buffer"
 Execute a named buffer.
 #ifdef REFERENCE
 Execute the named buffer as
@@ -1497,9 +1485,10 @@ commands
 (including
 .Nm \&ex
 commands).
-If the buffer is line oriented, or it contains more than a single
-line of text, <newlines> are logically appended to each line of
-the buffer.
+If the buffer is line oriented, <newlines> are logically appended
+to each line of the buffer.
+If the buffer is character oriented, <newlines> are logically
+appended to all but the last line in the buffer.
 .Pp
 If the buffer name is
 .Dq Li \&@ ,
@@ -2104,6 +2093,21 @@ Write the file and exit
 #ifdef REFERENCE
 The file is only written if it has been modified since the last
 complete write of the file to any file.
+.Pp
+The
+.Sy ZZ
+command will exit the editor after writing the file,
+if there are no further files to edit.
+Entering two
+.Dq quit
+commands (i.e.
+.Sy wq ,
+.Sy quit ,
+.Sy xit
+or
+.Sy ZZ )
+in a row) will override this check and the editor will exit,
+unless the write fails.
 #endif
 .sp
 .It Sy "[count] [["

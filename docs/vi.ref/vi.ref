@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: vi.ref,v 8.26 1994/04/27 20:29:58 bostic Exp $ (Berkeley) $Date: 1994/04/27 20:29:58 $
+.\"     $Id: vi.ref,v 8.27 1994/04/29 15:20:12 bostic Exp $ (Berkeley) $Date: 1994/04/29 15:20:12 $
 .\"
 .Dd "%Q%"
 .Dt "EX/VI REFERENCE MANUAL" 1
@@ -729,6 +729,11 @@ the line
 the current line toward the end of the file, and stopping at the
 first line containing a string matching the RE.
 (The trailing slash can be omitted at the end of the command line.)
+.Pp
+If no RE is specified, i.e. the pattern is
+.Dq Li \&// ,
+the last RE used in any command is used in the search.
+.Pp
 If the
 .Sy extended
 option is set, the RE is handled as an extended RE, not a basic RE.
@@ -737,6 +742,11 @@ If the
 option is set, the search wraps around to the beginning of the file
 and continues up to and including the current line, so that the entire
 file is searched.
+.Pp
+The form
+.Dq Li \&\e/
+is accepted for historic reasons, and is identical to
+.Dq Li \&// .
 .It
 An RE enclosed in question marks
 .Pq Dq Li "\&?"
@@ -745,6 +755,11 @@ addresses the first line found by searching backwards from the line
 the current line, toward the beginning of the file and stopping at the
 first line containing a string matching the RE.
 (The trailing question mark can be omitted at the end of a command line.)
+.Pp
+If no RE is specified, i.e. the pattern is
+.Dq Li \&?? ,
+the last RE used in any command is used in the search.
+.Pp
 If the
 .Sy extended
 option is set, the RE is handled as an extended RE, not a basic RE.
@@ -753,6 +768,11 @@ If the
 option is set, the search  wraps around from the beginning of the file to
 the end of the file and continues up to and including the current line,
 so that the entire file is searched.
+.Pp
+The form
+.Dq Li \&\e?
+is accepted for historic reasons, and is identical to
+.Dq Li \&?? .
 .It
 An address followed by a plus sign
 .Pq Dq Li "\&+"
@@ -868,13 +888,13 @@ screen on the queue.
 The command
 .Dq ":di[splay] s[creens]"
 lists the background screens.
-.It "Shell screens"
-The command
-.Dq ":sc[ript] [file ...]"
-runs a shell in the screen.
-Editing is unchanged, with the exception that a <carriage-return>
-enters the current line (stripped of any prompt) as input to the
-shell.
+.\".It "Shell screens"
+.\"The command
+.\".Dq ":sc[ript] [file ...]"
+.\"runs a shell in the screen.
+.\"Editing is unchanged, with the exception that a <carriage-return>
+.\"enters the current line (stripped of any prompt) as input to the
+.\"shell.
 .It "Tag stacks"
 Tags are now maintained in a stack.
 The command
