@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: db.c,v 10.40 2001/08/29 12:25:13 skimo Exp $ (Berkeley) $Date: 2001/08/29 12:25:13 $";
+static const char sccsid[] = "$Id: db.c,v 10.41 2001/09/11 20:01:03 skimo Exp $ (Berkeley) $Date: 2001/09/11 20:01:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -626,10 +626,8 @@ err1:
 	    FILE2INT(sp, data.data, data.size, wp, wlen);
 
 	    /* Fill the cache. */
-	    if (wp != data.data) {
-		BINC_GOTOW(sp, sp->c_lp, sp->c_blen, wlen);
-		MEMCPYW(sp->c_lp, wp, wlen);
-	    }
+	    BINC_GOTOW(sp, sp->c_lp, sp->c_blen, wlen);
+	    MEMCPYW(sp->c_lp, wp, wlen);
 	    sp->c_lno = lno;
 	    sp->c_len = wlen;
 	}
