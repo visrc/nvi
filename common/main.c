@@ -16,7 +16,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 10.6 1995/06/12 19:37:07 bostic Exp $ (Berkeley) $Date: 1995/06/12 19:37:07 $";
+static char sccsid[] = "$Id: main.c,v 10.7 1995/06/14 11:39:27 bostic Exp $ (Berkeley) $Date: 1995/06/14 11:39:27 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -267,11 +267,6 @@ v_init(argc, argv, rows, cols, gpp)
 		O_CLR(sp, O_WARN);
 		F_SET(sp, S_EX_SILENT);
 	}
-
-#ifdef DIGRAPHS
-	if (digraph_init(sp))		/* Digraph initialization. */
-		goto err;
-#endif
 
 	if (!silent) {			/* Read EXINIT, exrc files. */
 		if (ex_exrc(sp))
