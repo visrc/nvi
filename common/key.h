@@ -4,8 +4,42 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 8.3 1993/08/07 10:01:40 bostic Exp $ (Berkeley) $Date: 1993/08/07 10:01:40 $
+ *	$Id: key.h,v 8.4 1993/08/25 16:43:26 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:43:26 $
  */
+
+/* Structure for a key input buffer. */
+typedef struct _ibuf {
+	char	*buf;		/* Buffer itself. */
+	int	 cnt;		/* Count of characters. */
+	int	 len;		/* Buffer length. */
+	int	 next;		/* Offset of next character. */
+} IBUF;
+				/* Flush keys from expansion buffer. */
+#define	TERM_KEY_FLUSH(sp)	((sp)->key.cnt = (sp)->key.next = 0)
+				/* Return if more keys in expansion buffer. */
+#define	TERM_KEY_MORE(sp)	((sp)->key.cnt)
+
+/*
+ * Structure to name a character.  Used both as an interface to the screen
+ * and to name objects referenced by characters in error messages.
+ */
+typedef struct _chname {
+	char	*name;		/* Character name. */
+	u_char	 len;		/* Length of the character name. */
+} CHNAME;
+
+/*
+ * Ex/vi commands are generally separated by whitespace characters.  We
+ * can't use the standard isspace(3) macro because it returns true for
+ * characters like ^K in the ASCII character set.  The 4.4BSD isblank(3)
+ * macro does exactly what we want, but it's not portable yet.
+ *
+ * XXX
+ * Note side effect, ch is evaluated multiple times.
+ */
+#ifndef isblank
+#define	isblank(ch)	((ch) == ' ' || (ch) == '\t')
+#endif
 
 /* Special character lookup values. */
 #define	K_CARAT		 1
@@ -59,8 +93,7 @@
 	(TXT_BEAUTIFY | TXT_MAPCOMMAND | TXT_MAPINPUT)
 
 /* Support keyboard routines. */
-void	term_flush_pseudo __P((SCR *));
-int	term_init __P((SCR *));
-int	term_key __P((SCR *, u_int));
-int	term_more_pseudo __P((SCR *));
-int	term_waiting __P((SCR *));
+int	term_init __P((struct _scr *));
+int	term_key __P((struct _scr *, u_int));
+int	term_push __P((struct _scr *, IBUF *, char *, size_t));
+int	term_waiting __P((struct _scr *));
