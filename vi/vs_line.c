@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_line.c,v 5.19 1993/05/27 22:03:03 bostic Exp $ (Berkeley) $Date: 1993/05/27 22:03:03 $";
+static char sccsid[] = "$Id: vs_line.c,v 5.20 1993/05/27 22:07:17 bostic Exp $ (Berkeley) $Date: 1993/05/27 22:07:17 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -115,8 +115,8 @@ svi_line(sp, ep, smp, p, len, yp, xp)
 		p = file_gline(sp, ep, smp->lno, &len);
 	if (p == NULL || len == 0) {
 		if (yp != NULL && smp->lno == sp->lno) {
-			*xp = 0;
 			*yp = smp - HMAP;
+			*xp = O_ISSET(sp, O_NUMBER) ? O_NUMBER_LENGTH : 0;
 		}
 		if (file_lline(sp, ep, &lno))
 			return (1);
