@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_read.c,v 8.16 1996/12/18 10:28:03 bostic Exp $ (Berkeley) $Date: 1996/12/18 10:28:03 $";
+static const char sccsid[] = "$Id: ip_read.c,v 8.17 2000/04/30 17:15:55 skimo Exp $ (Berkeley) $Date: 2000/04/30 17:15:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -65,6 +65,10 @@ ip_event(sp, evp, flags, ms)
 		memmove(ipp->ibuf, ipp->ibuf + ipp->iskip, ipp->iblen);
 		ipp->iskip = 0;
 	}
+
+	/* Process possible remaining commands */
+	if (ipp->iblen >= IPO_CODE_LEN && ip_trans(sp, ipp, evp))
+		return 0;
 
 	/* Set timer. */
 	if (ms == 0)
