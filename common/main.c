@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.46 1993/02/19 14:45:02 bostic Exp $ (Berkeley) $Date: 1993/02/19 14:45:02 $";
+static char sccsid[] = "$Id: main.c,v 5.47 1993/02/20 12:57:23 bostic Exp $ (Berkeley) $Date: 1993/02/20 12:57:23 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -65,6 +65,7 @@ main(argc, argv)
 	static int reenter;
 	EXCMDARG cmd;
 	EXF *ep, fake_exf;
+	MSG *mp;
 	int ch;
 	char *excmdarg, *errf, *p, *tag, path[MAXPATHLEN];
 
@@ -131,41 +132,55 @@ main(argc, argv)
 	argc -= optind;
 	argv += optind;
 
+	/*
+	 * Fake up a file structure, so it's available for the ex/vi routines.
+	 * Do basic initialization, so it's not really used, but there's a
+	 * place to hang error messages and such.
+	 *
+	 * XXX
+	 * It's going to be difficult to verify that all of the necessary
+	 * fields are filled in (or that F_DUMMY is checked appropriately).
+	 */
+	ep = &fake_exf;
+	file_def(ep);
+	ep->cols = 80;
+	ep->flags = F_DUMMY | F_IGNORE;
+
 	/* Initialize the key sequence list. */
 	seq_init();
 
 	/* Initialize the options. */
-	if (opts_init(NULL)) {
-		msg_eflush(NULL);
+	if (opts_init(ep)) {
+		msg_eflush(ep);
 		exit(1);
 	}
 
 #ifndef NO_DIGRAPH
-	digraph_init(NULL);
+	digraph_init(ep);
 #endif
 
 	/* Initialize special key table. */
-	gb_init(NULL);
+	gb_init(ep);
 
 	/*
 	 * Source the system, ~user and local .exrc files.
 	 * XXX
 	 * Check the correct order for these.
 	 */
-	(void)ex_cfile(NULL, _PATH_SYSEXRC, 0);
+	(void)ex_cfile(ep, _PATH_SYSEXRC, 0);
 	if ((p = getenv("HOME")) != NULL && *p) {
 		(void)snprintf(path, sizeof(path), "%s/.exrc", p);
-		(void)ex_cfile(NULL, path, 0);
+		(void)ex_cfile(ep, path, 0);
 	}
 	if (ISSET(O_EXRC))
-		(void)ex_cfile(NULL, _PATH_EXRC, 0);
+		(void)ex_cfile(ep, _PATH_EXRC, 0);
 
 	/* Source the EXINIT environment variable. */
 	if ((p = getenv("EXINIT")) != NULL)
 		if ((p = strdup(p)) == NULL)
-			msg(NULL, M_ERROR, "Error: %s", strerror(errno));
+			msg(ep, M_ERROR, "Error: %s", strerror(errno));
 		else {
-			(void)ex_cstring(NULL, (u_char *)p, strlen(p), 1);
+			(void)ex_cstring(ep, (u_char *)p, strlen(p), 1);
 			free(p);
 		}
 
@@ -175,16 +190,6 @@ main(argc, argv)
 	/* Any remaining arguments are file names. */
 	if (argc)
 		file_set(argc, argv);
-
-	/*
-	 * Fake up a file structure, so it's available when we call
-	 * ex/vi routines.  Do basic initialization, so error messages
-	 * get printed.
-	 */
-	 ep = &fake_exf;
-	 file_def(ep);
-	 ep->cols = 80;
-	 ep->flags = F_IGNORE;
 
 	/* Use an error list file if specified. */
 #ifndef NO_ERRLIST
@@ -205,7 +210,13 @@ main(argc, argv)
 		exit(1);
 	}
 
-	/* Should have a real EXF structure by now. */
+	/*
+	 * Should have a real EXF structure by now.  Copy any messages
+	 * into the new one.
+	 */
+	for (mp = ep->msgp;
+	    mp != NULL && !(mp->flags & M_EMPTY); mp = mp->next)
+		msg(curf, mp->flags, "%s", mp->mbuf);
 	ep = curf;
 
 	/* Do any commands from the command line. */
