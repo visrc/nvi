@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 8.6 1993/08/19 15:04:33 bostic Exp $ (Berkeley) $Date: 1993/08/19 15:04:33 $";
+static char sccsid[] = "$Id: ex_global.c,v 8.7 1993/08/21 14:33:45 bostic Exp $ (Berkeley) $Date: 1993/08/21 14:33:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -127,19 +127,16 @@ global(sp, ep, cmdp, cmd)
 		F_SET(sp, S_RE_SET);
 	}
 
-	rval = 0;
-	F_CLR(sp, S_INTERRUPTED);
 	F_SET(sp, S_GLOBAL | S_INTERRUPTIBLE);
 
 	/* For each line... */
-	for (lno = cmdp->addr1.lno,
+	for (rval = 0, lno = cmdp->addr1.lno,
 	    elno = cmdp->addr2.lno; lno <= elno; ++lno) {
 
 		/* Get the line. */
 		if ((t = file_gline(sp, ep, lno, &len)) == NULL) {
 			GETLINE_ERR(sp, lno);
-			rval = 1;
-			goto quit;
+			goto err;
 		}
 
 		/* Search for a match. */
@@ -156,8 +153,7 @@ global(sp, ep, cmdp, cmd)
 			break;
 		default:
 			re_error(sp, eval, re);
-			rval = 1;
-			goto quit;
+			goto err;
 		}
 
 		/*
@@ -165,21 +161,21 @@ global(sp, ep, cmdp, cmd)
 		 * change, and adjusting for inserted/deleted lines.
 		 */
 		if (file_lline(sp, ep, &last1))
-			goto quit;
+			goto err;
 
 		sp->lno = lno;
 		(void)snprintf(cbuf, sizeof(cbuf), "%s", p);
-		if (ex_cmd(sp, ep, cbuf, 0)) {
-			rval = 1;
-			goto quit;
-		}
+		if (ex_cmd(sp, ep, cbuf, 0))
+			goto err;
 
 		/* Someone's unhappy, time to stop. */
 		if (F_ISSET(sp, S_INTERRUPTED))
-			goto quit;
+			break;
 
-		if (file_lline(sp, ep, &last2))
-			goto quit;
+		if (file_lline(sp, ep, &last2)) {
+err:			rval = 1;
+			break;
+		}
 		if (last2 > last1) {
 			last2 -= last1;
 			lno += last2;
@@ -194,6 +190,6 @@ global(sp, ep, cmdp, cmd)
 		sp->lno = lno;
 	}
 
-quit:	F_CLR(sp, S_GLOBAL | S_INTERRUPTED | S_INTERRUPTIBLE);
+	F_CLR(sp, S_GLOBAL);
 	return (rval);
 }
