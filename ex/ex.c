@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.14 1993/08/23 18:30:47 bostic Exp $ (Berkeley) $Date: 1993/08/23 18:30:47 $";
+static char sccsid[] = "$Id: ex.c,v 8.15 1993/08/25 16:47:24 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:47:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -162,10 +162,8 @@ ex_cstring(sp, ep, cmd, len)
 	F_CLR(sp, S_INTERRUPTED | S_INTERRUPTIBLE);
 
 	/* This is probably not necessary, but it's worth being safe. */
-	if (len == 0) {
-		sp->comm_len = 0;
+	if (len == 0)
 		return (0);
-	}
 
 	/*
 	 * QUOTING NOTE:
@@ -187,7 +185,7 @@ ex_cstring(sp, ep, cmd, len)
 	for (p = t = cmd;;) {
 		if (p == cmd) {
 			/* Skip leading whitespace. */
-			for (; len > 0 && isspace(*t); ++t, --len);
+			for (; len > 0 && isblank(*t); ++t, --len);
 
 			/* Special case ex/edit, RE commands. */
 			if (strchr("egvs", t[0] == ':' ? t[1] : t[0]))
@@ -216,7 +214,6 @@ cend:			if (p > cmd) {
 					if (len)
 						msgq(sp, M_ERR,
 		    "Ex command failed, remaining command input discarded.");
-					sp->comm_len = 0;
 					return (1);
 				}
 				p = cmd;
@@ -224,10 +221,8 @@ cend:			if (p > cmd) {
 			if (saved_mode !=
 			    F_ISSET(sp, S_MODE_EX | S_MODE_VI | S_MAJOR_CHANGE))
 				break;
-			if (len == 0) {
-				sp->comm_len = 0;
+			if (len == 0)
 				return (0);
-			}
 		} else
 			*p++ = ch;
 	}
@@ -236,40 +231,42 @@ cend:			if (p > cmd) {
 	 * switched files or is exiting.  There are two things that we may
 	 * have to save.  First, any "+cmd" field that ep_comm() set up will
 	 * have to be saved for later.  Also, there may be part of the
-	 * current ex command which we haven't executed,
+	 * current ex command which we haven't executed:
 	 *
 	 *	:edit +25 file.c|s/abc/ABC/|1
 	 *
 	 * for example.
 	 *
-	 * The historic vi just hung, of course; we handle it by building a
-	 * new comm field for the SCR structure.  If you really want to see
-	 * if a vi clone got the ex argument parsing right, try:
+	 * The historic vi just hung, of course; we handle by pushing the
+	 * keys onto the SCR's tty buffer.  If we're switching modes to
+	 * vi, since the commands are intended as ex commands, add the extra
+	 * characters to make it work.
+	 *
+	 * For the fun of it, if you want to see if a vi clone got the ex
+	 * argument parsing right, try:
 	 *
 	 *	echo 'foo|bar' > file1; echo 'foo/bar' > file2;
 	 *	vi
 	 *	:edit +1|s/|/PIPE/|w file1| e file2|1 | s/\//SLASH/|wq
 	 */
-	if (len == 0 && arg1_len == 0) {
-		sp->comm_len = 0;
+	if (arg1 == NULL && len == 0)
 		return (0);
+	if (F_ISSET(sp, S_MODE_VI) && term_push(sp, &sp->tty, "\n", 1))
+		goto err;
+	if (len != 0)
+		if (term_push(sp, &sp->tty, t, len))
+			goto err;
+	if (arg1 != NULL) {
+		if (F_ISSET(sp, S_MODE_VI) && len != 0 &&
+		    term_push(sp, &sp->tty, "|", 1))
+			goto err;
+		if (term_push(sp, &sp->tty, arg1, arg1_len))
+			goto err;
 	}
-	if ((p = malloc(len + arg1_len + 5)) == NULL) {
-		msgq(sp, M_ERR, "Error: remaining command input discarded: %s",
+	if (F_ISSET(sp, S_MODE_VI) && term_push(sp, &sp->tty, ":", 1))
+err:		msgq(sp, M_ERR, "Error: %s: remaining command input discarded",
 		    strerror(errno));
-		sp->comm_len = 0;
-	} else {
-		if (sp->comm != NULL)
-			free(sp->comm);
-		sp->comm = p;
-		sp->comm_len = arg1_len + len + 1;
 
-		if (arg1 != NULL)
-			memmove(p, arg1, arg1_len);
-		p += arg1_len;
-		*p++ = '|';		/* XXX: doesn't handle trailing ^V. */
-		memmove(p, t, len);
-	}
 	return (0);
 }
 
@@ -308,7 +305,7 @@ ex_cmd(sp, ep, exc, arg1_len)
 		return (0);
 
 	/* Skip whitespace. */
-	for (; isspace(*exc); ++exc);
+	for (; isblank(*exc); ++exc);
 
 	/* Initialize the argument structure. */
 	memset(&cmd, 0, sizeof(EXCMDARG));
@@ -322,7 +319,7 @@ ex_cmd(sp, ep, exc, arg1_len)
 		return (1);
 
 	/* Skip whitespace. */
-	for (; isspace(*exc); ++exc);
+	for (; isblank(*exc); ++exc);
 
 	/*
 	 * If no command, ex does the last specified of p, l, or #, and vi
@@ -507,14 +504,14 @@ two:		switch (cmd.addrcnt) {
 	 * However, require that there be *something*.
 	 */
 	if (cp->syntax[0] == 's') {
-		for (p = exc; *p && isspace(*p); ++p);
+		for (p = exc; *p && isblank(*p); ++p);
 		sp->ex_argv[0] = *p ? exc : NULL;
 		cmd.argc = 1;
 		cmd.argv = sp->ex_argv;
 		goto addr2;
 	}
 	for (lcount = 0, p = cp->syntax; *p; ++p) {
-		for (; isspace(*exc); ++exc);		/* Skip whitespace. */
+		for (; isblank(*exc); ++exc);		/* Skip whitespace. */
 		if (!*exc)
 			break;
 
@@ -638,14 +635,14 @@ end2:			break;
 			for (p = t = exc; (ch = *p) != '\0'; *t++ = ch, ++p)
 				if (sp->special[ch] == K_VLNEXT && p[1] != '\0')
 					ch = *++p;
-				else if (isspace(ch))
+				else if (isblank(ch))
 					break;
 			if (*p == '\0')
 				goto usage;
 			sp->ex_argv[0] = exc;
 
 			/* Delete leading whitespace. */
-			for (*t++ = '\0'; (ch = *++p) != '\0' && isspace(ch););
+			for (*t++ = '\0'; (ch = *++p) != '\0' && isblank(ch););
 
 			/* String. */
 			sp->ex_argv[1] = p;
@@ -681,7 +678,7 @@ countchk:		if (*++p != 'N') {		/* N */
 	 * Shouldn't be anything left, and no more required fields.
 	 * That means neither 'l' or 'r' in the syntax.
 	 */
-	for (; *exc && isspace(*exc); ++exc);
+	for (; *exc && isblank(*exc); ++exc);
 	if (*exc || strpbrk(p, "lr")) {
 usage:		msgq(sp, M_ERR, "Usage: %s.", cp->usage);
 		return (1);
@@ -906,7 +903,7 @@ ep_comm(sp, pp, tp, lenp, arg1p, arg1_lenp)
 	}
 	for (; len && islower(*p = *t); ++p, ++t, --len);
 	if (len == 0)
-		return;
+		goto ret;
 
 	/* Make sure it's the ex or edit command. */
 	cp = *pp;
@@ -916,7 +913,7 @@ ep_comm(sp, pp, tp, lenp, arg1p, arg1_lenp)
 	} else
 		cnt = (p - cp);
 	if (strncmp(cp, "ex", cnt) && strncmp(cp, "edit", cnt))
-		return;
+		goto ret;
 
 	/*
 	 * Move to the '+'.  We don't check syntax here, if it's not
@@ -924,11 +921,11 @@ ep_comm(sp, pp, tp, lenp, arg1p, arg1_lenp)
 	 */
 	while (len--) {
 		ch = *++p = *++t;
-		if (!isspace(ch))
+		if (!isblank(ch))
 			break;
 	}
 	if (len == 0 || *p != '+')
-		return;
+		goto ret;
 
 	/*
 	 * QUOTING NOTE:
@@ -949,7 +946,7 @@ ep_comm(sp, pp, tp, lenp, arg1p, arg1_lenp)
 			*p = *++t;
 			if (--len == 0)
 				break;
-		} else if (isspace(ch))
+		} else if (isblank(ch))
 			break;
 	}
 
@@ -958,7 +955,7 @@ ep_comm(sp, pp, tp, lenp, arg1p, arg1_lenp)
 	*arg1_lenp = (p - cp) - 1;
 
 	/* Restore the state. */
-	*pp = p;
+ret:	*pp = p;
 	*tp = t;
 	*lenp = len;
 }
@@ -983,7 +980,7 @@ ep_re(sp, pp, tp, lenp)
 	 * are all lower-case alphabetics, and there has to be a delimiter
 	 * to start the arguments.  If there isn't one, we're done.
 	 */
-	if (*p == ':') {
+	if (*t == ':') {
 		*p++ = *t++;
 		--len;
 	}
@@ -993,7 +990,7 @@ ep_re(sp, pp, tp, lenp)
 			break;
 	}
 	if (len == 0)
-		return;
+		goto ret;
 
 	/* Make sure it's the substitute, global or vglobal command. */
 	cp = *pp;
@@ -1004,21 +1001,21 @@ ep_re(sp, pp, tp, lenp)
 		cnt = (p - cp);
 	if (strncmp(cp, "substitute", cnt) &&
 	    strncmp(cp, "global", cnt) && strncmp(cp, "vglobal", cnt))
-		return;
+		goto ret;
 
 	/*
 	 * Move to the delimiter.  (The first character; if it's an illegal
 	 * one, the RE code will catch it.)
 	 */
-	if (isspace(ch))
+	if (isblank(ch))
 		while (len--) {
 			ch = *++p = *++t;
-			if (!isspace(ch))
+			if (!isblank(ch))
 				break;
 		}
 	delim = ch;
 	if (len == 0)
-		return;
+		goto ret;
 
 	/*
 	 * QUOTING NOTE:
@@ -1048,7 +1045,7 @@ ep_re(sp, pp, tp, lenp)
 	}
 
 	/* Restore the state. */
-	*pp = p;
+ret:	*pp = p;
 	*tp = t;
 	*lenp = len;
 }
