@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 10.17 1995/10/18 10:17:26 bostic Exp $ (Berkeley) $Date: 1995/10/18 10:17:26 $";
+static char sccsid[] = "$Id: ex_append.c,v 10.18 1995/10/18 10:36:19 bostic Exp $ (Berkeley) $Date: 1995/10/18 10:36:19 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -161,6 +161,8 @@ ex_aci(sp, cmdp, cmd)
 				if (F_ISSET(sp, S_EX_GLOBAL) &&
 				    t - p == 1 && p[0] == '.') {
 					++t;
+					if (len > 0)
+						--len;
 					break;
 				}
 				if (db_append(sp, 1, lno++, p, t - p))
