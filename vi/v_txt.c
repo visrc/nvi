@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 10.26 1995/11/10 12:43:56 bostic Exp $ (Berkeley) $Date: 1995/11/10 12:43:56 $";
+static char sccsid[] = "$Id: v_txt.c,v 10.27 1995/11/10 17:19:13 bostic Exp $ (Berkeley) $Date: 1995/11/10 17:19:13 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -345,6 +345,7 @@ newtp:		if ((tp = text_init(sp, lp, len, len + 32)) == NULL)
 		tp->lb[sp->cno] = CH_CURSOR;
 		++tp->len;
 		++tp->insert;
+		(void)vs_change(sp, tp->lno, LINE_RESET);
 	}
 
 	/*
