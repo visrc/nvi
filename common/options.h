@@ -6,24 +6,65 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: options.h,v 10.6 1996/02/06 10:45:37 bostic Exp $ (Berkeley) $Date: 1996/02/06 10:45:37 $
+ *	$Id: options.h,v 10.7 1996/02/06 11:55:47 bostic Exp $ (Berkeley) $Date: 1996/02/06 11:55:47 $
  */
+
+/*
+ * Edit option information.  Historically, if you set a boolean or numeric
+ * edit option value to its "default" value, it didn't show up in the :set
+ * display, i.e. it wasn't considered "changed".  String edit options would
+ * show up as changed, regardless.  We maintain a parallel set of values
+ * which are the default values and never consider an edit option changed
+ * if it was reset to the default value.
+ *
+ * Macros to retrieve boolean, integral and string option values, and to
+ * set, clear and test boolean option values.  Some options (secure, lines,
+ * columns, terminal type) are global in scope, and are therefore stored
+ * in the global area.  The offset in the global options array is stored
+ * in the screen's value field.  This is set up when the options are first
+ * initialized.
+ */
+#define	O_V(sp, o, fld)							\
+	(F_ISSET(&(sp)->opts[(o)], OPT_GLOBAL) ?			\
+	    (sp)->gp->opts[(sp)->opts[(o)].o_cur.val].fld :		\
+	    (sp)->opts[(o)].fld)
+
+/* Global option macros. */
+#define	OG_CLR(gp, o)		((gp)->opts[(o)].o_cur.val) = 1
+#define	OG_SET(gp, o)		((gp)->opts[(o)].o_cur.val) = 1
+#define	OG_ISSET(gp, o)		((gp)->opts[(o)].o_cur.val)
+#define	OG_STR(gp, o)		((gp)->opts[(o)].o_cur.str)
+#define	OG_D_STR(gp, o)		((gp)->opts[(o)].o_def.str)
+#define	OG_VAL(gp, o)		((gp)->opts[(o)].o_cur.val)
+#define	OG_D_VAL(gp, o)		((gp)->opts[(o)].o_def.val)
 
 struct _option {
 	union {
 		u_long	 val;		/* Value or boolean. */
 		char	*str;		/* String. */
 	} o_cur;
+#define	O_CLR(sp, o)		O_V(sp, o, o_cur.val) = 0
+#define	O_SET(sp, o)		O_V(sp, o, o_cur.val) = 1
+#define	O_ISSET(sp, o)		O_V(sp, o, o_cur.val)
+#define	O_STR(sp, o)		O_V(sp, o, o_cur.str)
+#define	O_VAL(sp, o)		O_V(sp, o, o_cur.val)
+
 	union {
 		u_long	 val;		/* Value or boolean. */
 		char	*str;		/* String. */
 	} o_def;
+#define	O_D_CLR(sp, o)		O_V(sp, o, o_def.val) = 0
+#define	O_D_SET(sp, o)		O_V(sp, o, o_def.val) = 1
+#define	O_D_ISSET(sp, o)	O_V(sp, o, o_def.val)
+#define	O_D_STR(sp, o)		O_V(sp, o, o_def.str)
+#define	O_D_VAL(sp, o)		O_V(sp, o, o_def.val)
 
 #define	OPT_GLOBAL	0x01		/* Option is global. */
 #define	OPT_SELECTED	0x02		/* Selected for display. */
 	u_int8_t flags;
 };
 
+/* List of option names, associated update functions and information. */
 struct _optlist {
 	char	*name;			/* Name. */
 					/* Change function. */
@@ -37,34 +78,6 @@ struct _optlist {
 #define	OPT_NOUNSET	0x08		/* Mkexrc command doesn't save. */
 	u_int8_t flags;
 };
-
-/*
- * Macros to retrieve boolean, integral and string option values, and to
- * set, clear and test boolean option values.  Some options (secure, lines,
- * columns, terminal type) are global in scope, and are therefore stored
- * in the global area.  The offset in the global options array is stored
- * in the screen's value field.  This is set up when the options are first
- * initialized.
- */
-#define	O_V(sp, o, fld)							\
-	(F_ISSET(&(sp)->opts[(o)], OPT_GLOBAL) ?			\
-	    (sp)->gp->opts[(sp)->opts[(o)].o_cur.val].fld :		\
-	    (sp)->opts[(o)].fld)
-#define	O_SET(sp, o)		O_V(sp, o, o_cur.val) = 1
-#define	O_CLR(sp, o)		O_V(sp, o, o_cur.val) = 0
-#define	O_ISSET(sp, o)		O_V(sp, o, o_cur.val)
-#define	O_D_SET(sp, o)		O_V(sp, o, o_def.val) = 1
-#define	O_D_CLR(sp, o)		O_V(sp, o, o_def.val) = 0
-#define	O_D_ISSET(sp, o)	O_V(sp, o, o_def.val)
-#define	O_STR(sp, o)		O_V(sp, o, o_cur.str)
-#define	O_D_STR(sp, o)		O_V(sp, o, o_def.str)
-#define	O_VAL(sp, o)		O_V(sp, o, o_cur.val)
-#define	O_D_VAL(sp, o)		O_V(sp, o, o_def.val)
-
-#define	OG_VAL(gp, o)		(gp)->opts[(o)].o_cur.val
-#define	OG_D_VAL(gp, o)		(gp)->opts[(o)].o_def.val
-#define	OG_STR(gp, o)		(gp)->opts[(o)].o_cur.str
-#define	OG_D_STR(gp, o)		(gp)->opts[(o)].o_def.str
 
 /* Option argument to opts_dump(). */
 enum optdisp { NO_DISPLAY, ALL_DISPLAY, CHANGED_DISPLAY, SELECT_DISPLAY };
