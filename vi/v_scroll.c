@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_scroll.c,v 5.9 1992/10/24 14:26:27 bostic Exp $ (Berkeley) $Date: 1992/10/24 14:26:27 $";
+static char sccsid[] = "$Id: v_scroll.c,v 5.10 1992/10/26 09:09:35 bostic Exp $ (Berkeley) $Date: 1992/10/26 09:09:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -40,16 +40,17 @@ v_lgoto(vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
+	recno_t last;
+
+	last = file_lline(curf);
 	if (vp->flags & VC_C1SET) {
-		if (file_gline(curf, vp->count, NULL) == NULL) {
-			bell();
-			if (ISSET(O_VERBOSE))
-				msg("Line %lu doesn't exist.", vp->count);
+		if (last > vp->count) {
+			v_eof(fm);
 			return (1);
 		}
 		rp->lno = vp->count;
 	} else
-		rp->lno = file_lline(curf);
+		rp->lno = last;
 	return (0);
 }
 
@@ -63,12 +64,14 @@ v_home(vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	size_t len;
-	u_long lno;
+	recno_t lno;
 
 	lno = curf->otop + (vp->flags & VC_C1SET ? vp->count : 0);
-
-	DOWN(lno);
+	if (lno > file_lline(curf)) {
+		v_eof(fm);
+		return (1);
+	}
+	rp->lno = lno;
 	return (0);
 }
 
@@ -82,9 +85,9 @@ v_middle(vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	u_long lno;
+	recno_t lno;
 
-	if (file_gline(curf, BOTLINE(curf), NULL) == NULL) {
+	if (file_gline(curf, BOTLINE(curf, curf->otop), NULL) == NULL) {
 		lno = file_lline(curf) / 2;
 		if (lno == 0)
 			lno = 1;
@@ -104,15 +107,14 @@ v_bottom(vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	recno_t lno;
-	u_long cnt;
+	recno_t cnt, lno;
 
-	if (file_gline(curf, BOTLINE(curf), NULL) == NULL) {
+	if (file_gline(curf, BOTLINE(curf, curf->otop), NULL) == NULL) {
 		lno = file_lline(curf) / 2;
 		if (lno == 0)
 			lno = 1;
 	} else
-		lno = BOTLINE(curf);
+		lno = BOTLINE(curf, curf->otop);
 
 	cnt = vp->flags & VC_C1SET ? vp->count : 0;
 	if (cnt >= lno) {
@@ -132,8 +134,8 @@ v_nbdown(vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
+	recno_t lno;
 	size_t len;
-	u_long lno;
 
 	lno = fm->lno + (vp->flags & VC_C1SET ? vp->count : 1);
 
@@ -150,8 +152,8 @@ v_down(vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
+	recno_t lno;
 	size_t len;
-	u_long lno;
 
 	lno = fm->lno + (vp->flags & VC_C1SET ? vp->count : 1);
 
@@ -168,28 +170,47 @@ v_hpagedown(vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	u_long lno;
+	recno_t last, lno, top;
 
 	/* 
-	 * Half screens set the scroll value even if the command ultimately
-	 * failed in historic vi.  It's probably a don't care.
+	 * Half screens always succeed unless already at EOF.  Half screens
+	 * set the scroll value, even if the command ultimately failed, in
+	 * historic vi.  It's probably a don't care.
 	 */
 	if (vp->flags & VC_C1SET)
 		LVAL(O_SCROLL) = vp->count;
 	else
 		vp->count = LVAL(O_SCROLL);
 
-	/* Half screens always succeed unless at the bottom of the file. */
-	lno = fm->lno + vp->count;
-
-	if (file_gline(curf, lno, NULL) == NULL) {
-		lno = file_lline(curf);
-		if (lno == fm->lno) {
-			v_eof(fm);
-			return (1);
-		}
+	/* Check for EOF. */
+	last = file_lline(curf);
+	if (fm->lno == last) {
+		v_eof(NULL);
+		return (1);
 	}
-	rp->lno = lno;
+
+	/*
+	 * Figure out the new top line.  Increment by the suggested amount.
+	 * If it's past the EOF, calculate a new one, but don't make any
+	 * change if the top line would be decremented (may be on a partial
+	 * screen).
+	 */
+	top = curf->top + vp->count;
+	if (last < BOTLINE(curf, top)) {
+		if (last > SCREENSIZE(curf)) {
+			top = last - SCREENSIZE(curf) + 1;
+			if (top > curf->top)
+				curf->top = top;
+		}
+	} else
+		curf->top = top;
+
+	/*
+	 * Figure out the new cursor line.  Increment by the suggested amount.
+	 * If it's past the EOF, calculate a new one.
+	 */
+	lno = fm->lno + vp->count;
+	rp->lno = last < lno ? last : lno;
 	return (0);
 }
 
@@ -202,14 +223,40 @@ v_pagedown(vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
+	recno_t cnt, last, lno, top;
 	size_t len;
-	u_long lno;
 
-	/* Calculation from POSIX 1003.2/D8. */
-	lno = fm->lno +
-	    (vp->flags & VC_C1SET ? vp->count : 1) * (curf->lines - 2);
+	/* Check for EOF. */
+	last = file_lline(curf);
+	if (fm->lno == last) {
+		v_eof(NULL);
+		return (1);
+	}
 
-	DOWN(lno);
+	/*
+	 * Figure out the new top line.  Increment by the suggested amount.
+	 * If it's past the EOF, calculate a new one, but don't make any
+	 * change if the top line would be decremented (may be on a partial
+	 * screen).
+	 * Calculation from POSIX 1003.2/D8.
+	 */
+	cnt = (vp->flags & VC_C1SET ? vp->count : 1) * SCREENSIZE(curf);
+	top = curf->top + cnt;
+	if (last < BOTLINE(curf, top)) {
+		if (last > SCREENSIZE(curf)) {
+			top = last - SCREENSIZE(curf) + 1;
+			if (top > curf->top)
+				curf->top = top;
+		}
+	} else
+		curf->top = top;
+
+	/*
+	 * Figure out the new cursor line.  Increment by the suggested amount.
+	 * If it's past the EOF, calculate a new one.
+	 */
+	lno = fm->lno + cnt;
+	rp->lno = last < lno ? last : lno;
 	return (0);
 }
 
@@ -222,12 +269,12 @@ v_linedown(vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
-	u_long off;
+	recno_t off;
 
 	off = vp->flags & VC_C1SET ? vp->count : 1;
 
 	/* Can't go past the end of the file. */
-	if (file_gline(curf, BOTLINE(curf) + off, NULL) == NULL) {
+	if (file_gline(curf, BOTLINE(curf, curf->otop) + off, NULL) == NULL) {
 		v_eof(fm);
 		return (1);
 	}
