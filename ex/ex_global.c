@@ -6,19 +6,24 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 8.8 1993/08/25 16:44:53 bostic Exp $ (Berkeley) $Date: 1993/08/25 16:44:53 $";
+static char sccsid[] = "$Id: ex_global.c,v 8.9 1993/09/10 10:26:16 bostic Exp $ (Berkeley) $Date: 1993/09/10 10:26:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 
 #include <ctype.h>
+#include <errno.h>
+#include <signal.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "vi.h"
 #include "excmd.h"
 
 enum which {GLOBAL, VGLOBAL};
-static int global __P((SCR *, EXF *, EXCMDARG *, enum which));
+
+static int	global __P((SCR *, EXF *, EXCMDARG *, enum which));
+static void	global_intr __P((int));
 
 /*
  * ex_global -- [line [,line]] g[lobal][!] /pattern/ [commands]
@@ -53,6 +58,7 @@ global(sp, ep, cmdp, cmd)
 	EXCMDARG *cmdp;
 	enum which cmd;
 {
+	struct termios nterm, term;
 	recno_t elno, last1, last2, lno;
 	regmatch_t match[1];
 	regex_t *re, lre;
@@ -127,7 +133,19 @@ global(sp, ep, cmdp, cmd)
 		F_SET(sp, S_RE_SET);
 	}
 
+	/* Turn on interrupts and install an interrupt catcher. */
 	F_SET(sp, S_GLOBAL | S_INTERRUPTIBLE);
+	(void)signal(SIGINT, global_intr);
+	if (tcgetattr(STDIN_FILENO, &term)) {
+		msgq(sp, M_ERR, "global: tcgetattr: %s", strerror(errno));
+		return (1);
+	}
+	nterm = term;
+	nterm.c_lflag |= ISIG;
+	if (tcsetattr(STDIN_FILENO, TCSANOW | TCSASOFT, &nterm)) {
+		msgq(sp, M_ERR, "global: tcsetattr: %s", strerror(errno));
+		return (1);
+	}
 
 	/* For each line... */
 	for (rval = 0, lno = cmdp->addr1.lno,
@@ -190,6 +208,33 @@ err:			rval = 1;
 		sp->lno = lno;
 	}
 
+	/* Restore ex/vi terminal settings. */
+	if (tcsetattr(STDIN_FILENO, TCSANOW | TCSASOFT, &term))
+		msgq(sp, M_ERR, "tcsetattr: %s", strerror(errno));
+
 	F_CLR(sp, S_GLOBAL);
 	return (rval);
+}
+
+/*
+ * global_intr --
+ *	Set the interrupt bit in any screen that is running an interruptible
+ *	global.
+ *
+ * XXX
+ * In the future this may be a problem.  The user should be able to move to
+ * another screen and keep typing while this runs.  If so, and the user has
+ * more than one global running, it will be hard to decide which one to
+ * stop.
+ */
+static void
+global_intr(signo)
+	int signo;
+{
+	SCR *sp;
+
+	for (sp = __global_list->scrhdr.next;
+	     sp != (SCR *)&__global_list->scrhdr; sp = sp->next)
+		if (F_ISSET(sp, S_GLOBAL) && F_ISSET(sp, S_INTERRUPTIBLE))
+			F_SET(sp, S_INTERRUPTED);
 }
