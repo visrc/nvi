@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 5.31 1993/05/10 15:32:39 bostic Exp $ (Berkeley) $Date: 1993/05/10 15:32:39 $
+ *	$Id: key.h,v 5.32 1993/05/10 22:37:27 bostic Exp $ (Berkeley) $Date: 1993/05/10 22:37:27 $
  */
 
 /* Special character lookup values. */
@@ -18,12 +18,14 @@
 #define	K_ESCAPE	 8
 #define	K_FORMFEED	 9
 #define	K_NL		10
-#define	K_TAB		11
-#define	K_VERASE	12
-#define	K_VKILL		13
-#define	K_VLNEXT	14
-#define	K_VWERASE	15
-#define	K_ZERO		16
+#define	K_RIGHTBRACE	11
+#define	K_RIGHTPAREN	12
+#define	K_TAB		13
+#define	K_VERASE	14
+#define	K_VKILL		15
+#define	K_VLNEXT	16
+#define	K_VWERASE	17
+#define	K_ZERO		18
 
 /* The mark at the end of a range. */
 #define	END_CH		'$'
@@ -46,6 +48,7 @@
 #define	TXT_REPLACE	0x004000	/* Replace; don't delete overwrite. */
 #define	TXT_REPLAY	0x008000	/* Replay the last input. */
 #define	TXT_RESOLVE	0x010000	/* Resolve the text into the file. */
+#define	TXT_SHOWMATCH	0x020000	/* Showmatch flag is set. */
 
 #define	TXT_VALID_VI							\
 	(TXT_APPENDEOL | TXT_AUTOINDENT | TXT_BEAUTIFY | TXT_CNTRLT |	\

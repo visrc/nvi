@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.64 1993/05/10 15:32:35 bostic Exp $ (Berkeley) $Date: 1993/05/10 15:32:35 $";
+static char sccsid[] = "$Id: key.c,v 5.65 1993/05/10 22:37:25 bostic Exp $ (Berkeley) $Date: 1993/05/10 22:37:25 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -76,7 +76,8 @@ term_init(sp)
 	sp->special['\033'] = K_ESCAPE;
 	sp->special['\f'] = K_FORMFEED;
 	sp->special['\n'] = K_NL;
-	sp->special['\t'] = K_TAB;
+	sp->special[')'] = K_RIGHTPAREN;
+	sp->special['}'] = K_RIGHTBRACE;
 	sp->special['\t'] = K_TAB;
 	sp->special[sp->gp->original_termios.c_cc[VERASE]] = K_VERASE;
 	sp->special[sp->gp->original_termios.c_cc[VKILL]] = K_VKILL;
