@@ -8,7 +8,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_trans.c,v 8.1 1996/11/27 10:09:06 bostic Exp $ (Berkeley) $Date: 1996/11/27 10:09:06 $";
+static const char sccsid[] = "$Id: ip_trans.c,v 8.2 1996/11/27 12:22:09 bostic Exp $ (Berkeley) $Date: 1996/11/27 12:22:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,6 +30,8 @@ static const char sccsid[] = "$Id: ip_trans.c,v 8.1 1996/11/27 10:09:06 bostic E
 /*
  * ip_trans --
  *	Translate vi messages into function calls.
+ *
+ * PUBLIC: int ip_trans __P((char *, size_t, size_t *));
  */
 int
 ip_trans(bp, len, skipp)

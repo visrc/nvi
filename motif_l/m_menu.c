@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_menu.c,v 8.7 1996/11/27 10:09:33 bostic Exp $ (Berkeley) $Date: 1996/11/27 10:09:33 $";
+static const char sccsid[] = "$Id: m_menu.c,v 8.8 1996/11/27 12:21:18 bostic Exp $ (Berkeley) $Date: 1996/11/27 12:21:18 $";
 #endif /* not lint */
 
 #include "X11/Intrinsic.h"
@@ -29,6 +29,7 @@ static const char sccsid[] = "$Id: m_menu.c,v 8.7 1996/11/27 10:09:33 bostic Exp
 
 #include "../common/common.h"
 #include "../ip_vi/ip.h"
+#include "ipc_extern.h"
 
 /* This module defines the menu structure for vi.  Each menu
  * item has an action routine associated with it.  For the most
