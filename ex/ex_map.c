@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_map.c,v 8.10 1994/04/17 17:19:57 bostic Exp $ (Berkeley) $Date: 1994/04/17 17:19:57 $";
+static char sccsid[] = "$Id: ex_map.c,v 8.11 1994/04/26 14:25:03 bostic Exp $ (Berkeley) $Date: 1994/04/26 14:25:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -54,7 +54,6 @@ ex_map(sp, ep, cmdp)
 	enum seqtype stype;
 	CHAR_T *input;
 	size_t nlen;
-	int key;
 	char *name, *t, keyname[64];
 
 	stype = F_ISSET(cmdp, E_FORCE) ? SEQ_INPUT : SEQ_COMMAND;
