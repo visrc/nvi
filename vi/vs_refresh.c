@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_refresh.c,v 5.50 1993/05/05 16:53:40 bostic Exp $ (Berkeley) $Date: 1993/05/05 16:53:40 $";
+static char sccsid[] = "$Id: vs_refresh.c,v 5.51 1993/05/05 17:17:05 bostic Exp $ (Berkeley) $Date: 1993/05/05 17:17:05 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -68,12 +68,16 @@ svi_refresh(sp, ep)
 	 * 2: Reformat the lines.
 	 *
 	 * If the lines themselves have changed (:set list, for example),
-	 * fill in the map from scratch.
+	 * fill in the map from scratch.  Adjust the screen that's being
+	 * displayed if the leftright flag is set.
 	 */
 	if (F_ISSET(sp, S_REFORMAT)) {
 		if (svi_sm_fill(sp, ep, HMAP->lno, P_TOP))
 			return (1);
-
+		if (O_ISSET(sp, O_LEFTRIGHT) &&
+		    (cnt = svi_screens(sp, ep, LNO, &CNO)) != 1)
+			for (smp = HMAP; smp <= TMAP; ++smp)
+				smp->off = cnt;
 		F_CLR(sp, S_REFORMAT);
 		F_SET(sp, S_REDRAW);
 	}
