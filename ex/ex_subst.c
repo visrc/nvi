@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.34 1994/03/01 13:41:30 bostic Exp $ (Berkeley) $Date: 1994/03/01 13:41:30 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.35 1994/03/03 17:39:38 bostic Exp $ (Berkeley) $Date: 1994/03/03 17:39:38 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -103,8 +103,11 @@ ex_substitute(sp, ep, cmdp)
 			*t = '\0';
 			break;
 		}
-		if (p[0] == '\\' && p[1] == delim)
-			++p;
+		if (p[0] == '\\')
+			if (p[1] == delim)
+				++p;
+			else if (p[1] == '\\')
+				*t++ = *p++;
 		*t++ = *p++;
 	}
 
@@ -196,7 +199,10 @@ ex_substitute(sp, ep, cmdp)
 			if (p[0] == '\\') {
 				if (p[1] == delim)
 					++p;
-				else if (p[1] == '~') {
+				else if (p[1] == '\\') {
+					*t++ = *p++;
+					++len;
+				} else if (p[1] == '~') {
 					++p;
 					if (!O_ISSET(sp, O_MAGIC))
 						goto tilde;
