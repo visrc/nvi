@@ -12,7 +12,7 @@ char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 5.65 1993/04/20 18:39:47 bostic Exp $ (Berkeley) $Date: 1993/04/20 18:39:47 $";
+static char sccsid[] = "$Id: main.c,v 5.66 1993/05/04 15:57:27 bostic Exp $ (Berkeley) $Date: 1993/05/04 15:57:27 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -197,8 +197,7 @@ main(argc, argv)
 #endif
 	/* Use a tag file if specified. */
 	if (tag != NULL) {
-		SETCMDARG(cmd, C_TAG, 0, OOBLNO, 0, 0, tag);
-		if (ex_tagpush(sp, NULL, &cmd))
+		if (ex_tagfirst(sp, tag))
 			goto err1;
 	} else if ((sp->ep = file_start(sp, file_first(sp, 1))) == NULL)
 		goto err1;
