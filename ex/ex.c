@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.96 1993/05/15 21:22:52 bostic Exp $ (Berkeley) $Date: 1993/05/15 21:22:52 $";
+static char sccsid[] = "$Id: ex.c,v 5.97 1993/05/16 12:15:56 bostic Exp $ (Berkeley) $Date: 1993/05/16 12:15:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -15,7 +15,6 @@ static char sccsid[] = "$Id: ex.c,v 5.96 1993/05/15 21:22:52 bostic Exp $ (Berke
 #include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <signal.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -47,13 +46,6 @@ ex(sp, ep)
 
 	if (sp->s_refresh(sp, ep))
 		return (ex_end(sp));
-
-	/*
-	 * XXX
-	 * Turn on signal handling.
-	 */
-	(void)signal(SIGHUP, onhup);
-	(void)signal(SIGINT, SIG_IGN);
 
 	for (eval = 0;;) {
 		if (sp->s_get(sp, ep,
