@@ -6,11 +6,13 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 5.3 1992/04/05 09:23:29 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:23:29 $";
+static char sccsid[] = "$Id: ex_bang.c,v 5.4 1992/04/05 18:48:26 bostic Exp $ (Berkeley) $Date: 1992/04/05 18:48:26 $";
 #endif /* not lint */
 
 #include <sys/types.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "vi.h"
 #include "options.h"
@@ -18,57 +20,116 @@ static char sccsid[] = "$Id: ex_bang.c,v 5.3 1992/04/05 09:23:29 bostic Exp $ (B
 #include "extern.h"
 
 /*
- * ex_bang (:!)
- *	Pass the rest of the line after the character to the program
- *	named by the SHELL environment variable.
+ * ex_bang (:[line [,line]] ! command)
+ *	Pass the rest of the line after the ! character to the
+ *	program named by the SHELL environment variable.
  */
 int
 ex_bang(cmdp)
 	CMDARG *cmdp;
 {
-	static char	prevextra[80];
-	char *extra;
+	static char *lastcom;
+	register int ch, l_alt, l_cur, l_last, len;
+	register char *p, *t;
+	char *com;
 
-	extra = cmdp->argv[0];
+	/* Make sure we got something. */
+	if (cmdp->string == NULL) {
+		msg("Usage: %s", cmdp->cmd->usage);
+		return (1);
+	}
 
-	/* if extra is "!", substitute previous command */
-	if (*extra == '!')
-	{
-		if (!*prevextra)
-		{
-			msg("No previous shell command to substitute for '!'");
+	/* Figure out how much space we could possibly need. */
+	l_alt = l_cur = l_last = 0;
+	len = strlen(cmdp->string) + 1;
+	for (p = cmdp->string; p = strpbrk(p, "!%#\\"); ++p)
+		switch (*p) {
+		case '!':
+			if (lastcom == NULL) {
+				msg("No previous command to replace \"!\".");
+				return (1);
+			}
+			len += l_last ? l_last : (l_last = strlen(lastcom));
+			break;
+		case '%':
+			if (!*origname) {
+				msg("No filename to substitute for %%.");
+				return (1);
+			}
+			len += l_cur ? l_cur : (l_cur = strlen(origname));
+			break;
+		case '#':
+			if (!*prevorig) {
+				msg("No filename to substitute for %%.");
+				return (1);
+			}
+			len += l_alt ? l_alt : (l_alt = strlen(origname));
+			break;
+		case '\\':
+			if (*p)
+				++p;
+			break;
+		}
+
+	/* Allocate it. */
+	if ((com = malloc(len)) == NULL) {
+		msg("Error: %s", strerror(errno));
+		return (1);
+	}
+
+	/* Fill it in. */
+	for (p = cmdp->string, t = com; ch = *p; ++p)
+		switch (ch) {
+		case '!':
+			bcopy(lastcom, t, l_last);
+			t += l_last;
+			break;
+		case '%':
+			bcopy(origname, t, l_cur);
+			t += l_cur;
+			break;
+		case '#':
+			bcopy(prevorig, t, l_alt);
+			t += l_alt;
+			break;
+		case '\\':
+			if (*p)
+				ch = *++p;
+			/* FALLTHROUGH */
+		default:
+			*t++ = ch;
+		}
+
+	/* Swap commands. */
+	if (lastcom)
+		free(lastcom);
+	lastcom = com;
+
+	/*
+	 * If autowrite set, write the file; otherwise warn the user if
+	 * the file has been modified but not written.
+	 */
+	if (ISSET(O_AUTOWRITE)) {
+		if (tmpsave(NULL, 0))
 			return (1);
-		}
-		extra = prevextra;
-	}
-	else if (strlen(extra) < sizeof(prevextra) - 1)
-	{
-		strcpy(prevextra, extra);
-	}
-
-	/* warn the user if the file hasn't been saved yet */
-	if (ISSET(O_WARN) && tstflag(file, MODIFIED))
-	{
+	} else if (ISSET(O_WARN) && tstflag(file, MODIFIED)) {
 		if (mode == MODE_VI)
-		{
 			mode = MODE_COLON;
-		}
-		msg("Warning: \"%s\" has been modified but not yet saved", origname);
+		msg("Warning: the file has been modified but not written.");
 	}
 
-	/* if no lines were specified, just run the command */
 	suspend_curses();
-	if (cmdp->addr1 == 0L)
-	{
-		system(extra);
-	}
-	else /* pipe lines from the file through the command */
-	{
-		filter(cmdp->addr1, cmdp->addr2, extra);
-	}
 
-	/* resume curses quietly for MODE_EX, but noisily otherwise */
+	/*
+	 * If no addresses were specified, just run the command, otherwise
+	 * pipe lines from the file through the command.
+	 */
+	if (cmdp->addrcnt == 0)
+		system(com);
+	else
+		filter(cmdp->addr1, cmdp->addr2, com);
+
+	/* Resume curses quietly for MODE_EX, otherwise noisily. */
 	resume_curses(mode == MODE_EX);
 	return (0);
 }
-
