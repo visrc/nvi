@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 8.3 1993/08/18 16:22:02 bostic Exp $ (Berkeley) $Date: 1993/08/18 16:22:02 $";
+static char sccsid[] = "$Id: ex_edit.c,v 8.4 1993/08/19 15:02:32 bostic Exp $ (Berkeley) $Date: 1993/08/19 15:02:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -52,13 +52,6 @@ ex_edit(sp, ep, cmdp)
 	sp->n_ep = tep;
 	sp->n_frp = frp;
 	F_SET(sp, F_ISSET(cmdp, E_FORCE) ? S_FSWITCH_FORCE : S_FSWITCH);
-
-	if (cmdp->plus)
-		if ((tep->icommand = strdup(cmdp->plus)) == NULL)
-			msgq(sp, M_ERR, "Command not executed: %s",
-			    strerror(errno));
-		else
-			F_SET(tep, F_ICOMMAND);
 	return (0);
 }
 
