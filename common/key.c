@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 5.7 1992/04/05 09:36:22 bostic Exp $ (Berkeley) $Date: 1992/04/05 09:36:22 $";
+static char sccsid[] = "$Id: key.c,v 5.8 1992/04/05 16:59:06 bostic Exp $ (Berkeley) $Date: 1992/04/05 16:59:06 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -21,7 +21,7 @@ static char sccsid[] = "$Id: key.c,v 5.7 1992/04/05 09:36:22 bostic Exp $ (Berke
 
 int
 ttyread(buf, len, time)
-	u_char *buf;		/* where to store the characters */
+	char *buf;		/* where to store the characters */
 	int len;		/* max characters to read */
 	int time;		/* max tenth seconds to read */
 {
