@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 9.12 1995/01/23 18:31:28 bostic Exp $ (Berkeley) $Date: 1995/01/23 18:31:28 $";
+static char sccsid[] = "$Id: options.c,v 9.13 1995/01/24 09:56:50 bostic Exp $ (Berkeley) $Date: 1995/01/24 09:56:50 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -402,8 +402,8 @@ opts_set(sp, argv, setdef, usage)
 	OPTLIST otmp;
 	OPTION *spo;
 	u_long value, turnoff;
-	int ch, equals, nf, offset, qmark, rval;
-	char *endp, *name, *p, *sep;
+	int ch, equals, nf, nf2, offset, qmark, rval;
+	char *endp, *name, *p, *sep, *t;
 
 	disp = NO_DISPLAY;
 	for (rval = 0; argv[0]->len != 0; ++argv) {
@@ -439,7 +439,7 @@ opts_set(sp, argv, setdef, usage)
 		if (sep != NULL)
 			*sep++ = '\0';
 
-		/* Check list of abbreviations. */
+		/* Check list of abbreviations, then options. */
 		atmp.name = name;
 		if ((ap = bsearch(&atmp, abbrev,
 		    sizeof(abbrev) / sizeof(OABBREV) - 1,
@@ -447,8 +447,6 @@ opts_set(sp, argv, setdef, usage)
 			op = optlist + ap->offset;
 			goto found;
 		}
-
-		/* Check list of options. */
 		otmp.name = name;
 		if ((op = bsearch(&otmp, optlist,
 		    sizeof(optlist) / sizeof(OPTLIST) - 1,
@@ -462,7 +460,7 @@ opts_set(sp, argv, setdef, usage)
 		} else
 			goto prefix;
 
-		/* Check list of abbreviations. */
+		/* Check list of abbreviations, then options. */
 		atmp.name = name;
 		if ((ap = bsearch(&atmp, abbrev,
 		    sizeof(abbrev) / sizeof(OABBREV) - 1,
@@ -470,8 +468,6 @@ opts_set(sp, argv, setdef, usage)
 			op = optlist + ap->offset;
 			goto found;
 		}
-
-		/* Check list of options. */
 		otmp.name = name;
 		if ((op = bsearch(&otmp, optlist,
 		    sizeof(optlist) / sizeof(OPTLIST) - 1,
@@ -488,6 +484,7 @@ found:		if (op == NULL) {
 			    p);
 			if (nf)
 				FREE_SPACE(sp, p, 0);
+			rval = 1;
 			continue;
 		}
 
@@ -516,6 +513,7 @@ found:		if (op == NULL) {
 			    "055|set: [no]%s option doesn't take a value", p);
 				if (nf)
 					FREE_SPACE(sp, p, 0);
+				rval = 1;
 				break;
 			}
 			if (qmark) {
@@ -543,6 +541,7 @@ found:		if (op == NULL) {
 				    "056|set: %s option isn't a boolean", p);
 				if (nf)
 					FREE_SPACE(sp, p, 0);
+				rval = 1;
 				break;
 			}
 			if (qmark || !equals) {
@@ -556,14 +555,15 @@ found:		if (op == NULL) {
 				goto badnum;
 			if ((nret = nget_uslong(sp,
 			    &value, sep, &endp, 10)) != NUM_OK) {
-				p = msg_print(sp, sep, &nf);
+				p = msg_print(sp, name, &nf);
+				t = msg_print(sp, sep, &nf2);
 				switch (nret) {
 				case NUM_ERR:
-					msgq(sp, M_SYSERR, "%s", p);
+					msgq(sp, M_SYSERR, "%s: %s", p, t);
 					break;
 				case NUM_OVER:
 					msgq(sp, M_ERR,
-					    "XXX|%s: option value overflow", p);
+				    "268|%s: %s: option value overflow", p, t);
 					break;
 				case NUM_UNDER:
 					abort();
@@ -571,14 +571,21 @@ found:		if (op == NULL) {
 				}
 				if (nf)
 					FREE_SPACE(sp, p, 0);
+				if (nf2)
+					FREE_SPACE(sp, t, 0);
+				rval = 1;
 				break;
 			}
 			if (*endp && !isblank(*endp)) {
-badnum:				p = msg_print(sp, sep, &nf);
+badnum:				p = msg_print(sp, name, &nf);
+				t = msg_print(sp, sep, &nf2);
 				msgq(sp, M_ERR,
-				    "057|set: illegal number %s", p);
+				    "057|%s: %s: illegal number", p, t);
 				if (nf)
 					FREE_SPACE(sp, p, 0);
+				if (nf2)
+					FREE_SPACE(sp, t, 0);
+				rval = 1;
 				break;
 			}
 			if (op->func != NULL) {
@@ -598,6 +605,7 @@ badnum:				p = msg_print(sp, sep, &nf);
 				    "058|set: %s option isn't a boolean", p);
 				if (nf)
 					FREE_SPACE(sp, p, 0);
+				rval = 1;
 				break;
 			}
 			if (qmark || !equals) {
@@ -627,6 +635,7 @@ badnum:				p = msg_print(sp, sep, &nf);
 			}
 			if (setdef)
 				O_D_STR(sp, offset) = O_STR(sp, offset);
+
 			/* Give underlying functions a chance. */
 change:			(void)ex_optchange(sp, offset);
 			(void)sex_optchange(sp, offset);
