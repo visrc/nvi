@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 8.88 1994/08/14 11:00:11 bostic Exp $ (Berkeley) $Date: 1994/08/14 11:00:11 $";
+static char sccsid[] = "$Id: vi.c,v 8.89 1994/08/14 13:39:52 bostic Exp $ (Berkeley) $Date: 1994/08/14 13:39:52 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -346,7 +346,6 @@ getcmd(sp, ep, dp, vp, ismotion, comcountp, mappedp)
 	u_int flags;
 	CH ikey;
 	CHAR_T key;
-	int cpartial;
 	char *s;
 
 	/* Refresh the command structure. */
