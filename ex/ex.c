@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.84 1993/12/22 18:38:14 bostic Exp $ (Berkeley) $Date: 1993/12/22 18:38:14 $";
+static char sccsid[] = "$Id: ex.c,v 8.85 1993/12/23 11:30:03 bostic Exp $ (Berkeley) $Date: 1993/12/23 11:30:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -178,6 +178,13 @@ ex_icmd(sp, ep, cmd, len)
 	return (ex_cmd(sp, ep, cmd, len));
 }
 
+/* Special command structure for :s as a repeat substitution command. */
+static EXCMDLIST const cmd_subagain = 
+	{"s",		ex_subagain,	E_ADDR2|E_NORC,
+	    "s",
+	    "[line [,line]] s [cgr] [count] [#lp]",
+	    "repeat the last subsitution"};
+
 /*
  * ex_cmd --
  *	Parse and execute a string containing ex commands.
@@ -302,6 +309,11 @@ loop:	if (nl) {
 		 * Historic vi permitted the mark to immediately follow the
 		 * 'k' in the 'k' command.  Make it work.
 		 *
+		 * !!!
+		 * Historic vi permitted pretty much anything to follow the
+		 * substitute command, e.g. "s/e/E/|s|sgc3p" was fine.  Make
+		 * it work.
+		 *
 		 * Use of msgq below is safe, command names are all alphabetics.
 		 */
 		if ((cp = ex_comm_search(p, namelen)) == NULL)
@@ -309,6 +321,10 @@ loop:	if (nl) {
 				cmd -= namelen - 1;
 				cmdlen += namelen - 1;
 				cp = &cmds[C_K];
+			} else if (p[0] == 's') {
+				cmd -= namelen - 1;
+				cmdlen += namelen - 1;
+				cp = &cmd_subagain;
 			} else {
 				msgq(sp, M_ERR,
 				    "The %.*s command is unknown.", namelen, p);
@@ -484,13 +500,18 @@ loop:	if (nl) {
 	} else if (cp == &cmds[C_SUBSTITUTE]) {
 		/*
 		 * Move to the next non-whitespace character, we'll use it as
-		 * the delimiter.  Ignore if it's legal, the RE code will take
-		 * care of it if it's not.
+		 * the delimiter.  If the character isn't an alphanumeric or
+		 * a '|', it's the delimiter, so parse it.  Otherwise, we're
+		 * into something like ":s g", so use the special substitute
+		 * command.
 		 */
 		for (; cmdlen > 0; --cmdlen, ++cmd)
-			if (!isblank(*cmd))
+			if (!isblank(cmd[0]))
 				break;
-		if (cmdlen > 0) {
+
+		if (isalnum(cmd[0]) || cmd[0] == '|')
+			cp = &cmd_subagain;
+		else if (cmdlen > 0) {
 			/*
 			 * QUOTING NOTE:
 			 *
