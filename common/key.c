@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: key.c,v 8.34 1993/12/09 19:42:16 bostic Exp $ (Berkeley) $Date: 1993/12/09 19:42:16 $";
+static char sccsid[] = "$Id: key.c,v 8.35 1993/12/16 14:42:53 bostic Exp $ (Berkeley) $Date: 1993/12/16 14:42:53 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -160,13 +160,13 @@ term_init(sp)
 	/* Set key sequences found in the termcap entry. */
 	switch (tgetent(buf, O_STR(sp, O_TERM))) {
 	case -1:
-		msgq(sp, M_ERR, "%s tgetent: %s.",
-		    O_STR(sp, O_TERM), strerror(errno));
-		return (1);
+		msgq(sp, M_ERR,
+		    "tgetent: %s: %s.", O_STR(sp, O_TERM), strerror(errno));
+		return (0);
 	case 0:
-		msgq(sp, M_ERR, "%s: unknown terminal type.",
-		    O_STR(sp, O_TERM), strerror(errno));
-		return (1);
+		msgq(sp, M_ERR,
+		    "%s: unknown terminal type.", O_STR(sp, O_TERM));
+		return (0);
 	}
 
 	for (tkp = tklist; tkp->name != NULL; ++tkp) {
