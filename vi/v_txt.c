@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.118 1994/07/17 13:50:30 bostic Exp $ (Berkeley) $Date: 1994/07/17 13:50:30 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.119 1994/08/02 10:11:11 bostic Exp $ (Berkeley) $Date: 1994/08/02 10:11:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1302,8 +1302,17 @@ txt_auto(sp, ep, lno, aitp, len, tp)
 	char *p, *t;
 
 	if (aitp == NULL) {
-		if ((t = file_gline(sp, ep, lno, &len)) == NULL)
+		/*
+		 * If the ex append command is executed with an address of 0,
+		 * it's possible to get here with a line number of 0.  Return
+		 * an indent of 0.
+		 */
+		if (lno == 0) {
+			tp->ai = 0;
 			return (0);
+		}
+		if ((t = file_gline(sp, ep, lno, &len)) == NULL)
+			return (1);
 	} else
 		t = aitp->lb;
 
