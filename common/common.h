@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: common.h,v 10.19 2001/11/02 11:52:06 skimo Exp $ (Berkeley) $Date: 2001/11/02 11:52:06 $
+ *	$Id: common.h,v 10.20 2002/03/02 23:36:22 skimo Exp $ (Berkeley) $Date: 2002/03/02 23:36:22 $
  */
 
 /*
@@ -98,9 +98,9 @@ typedef enum { SEQ_ABBREV, SEQ_COMMAND, SEQ_INPUT } seq_t;
 #include "../ex/ex.h"		/* Required by gs.h. */
 #include "gs.h"			/* Required by screen.h. */
 #include "conv.h"
+#include "log.h"		/* Required by screen.h */
 #include "screen.h"		/* Required by exf.h. */
 #include "exf.h"
-#include "log.h"
 #include "mem.h"
 #include "vi_auto.h"
 

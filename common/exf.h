@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: exf.h,v 10.18 2001/11/01 13:15:21 skimo Exp $ (Berkeley) $Date: 2001/11/01 13:15:21 $
+ *	$Id: exf.h,v 10.19 2002/03/02 23:36:23 skimo Exp $ (Berkeley) $Date: 2002/03/02 23:36:23 $
  */
 					/* Undo direction. */
 /*
@@ -27,6 +27,11 @@ struct _exf {
 	DB	*log;			/* Log db structure. */
 	db_recno_t	 l_high;	/* Log last + 1 record number. */
 	db_recno_t	 l_cur;		/* Log current record number. */
+#ifdef USE_DB4_LOGGING
+	DB_LSN	lsn_first;
+	DB_LSN	lsn_high;		/* LSN of last record. */
+	DB_LSN	lsn_cur;		/* LSN of first record to undo. */
+#endif
 	MARK	 l_cursor;		/* Log cursor position. */
 	dir_t	 lundo;			/* Last undo direction. */
 	WIN	*l_win;			/* Window owning transaction. */

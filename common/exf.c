@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: exf.c,v 10.69 2001/11/01 15:24:43 skimo Exp $ (Berkeley) $Date: 2001/11/01 15:24:43 $";
+static const char sccsid[] = "$Id: exf.c,v 10.70 2002/03/02 23:36:22 skimo Exp $ (Berkeley) $Date: 2002/03/02 23:36:22 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -1580,6 +1580,12 @@ file_lock(SCR *sp, char *name, int *fdp, int fd, int iswrite)
 #endif
 }
 
+#ifdef USE_DB4_LOGGING
+#define VI_DB_INIT_LOG	DB_INIT_LOG
+#else
+#define VI_DB_INIT_LOG	0
+#endif
+
 static int
 db_setup(SCR *sp, EXF *ep)
 {
@@ -1602,9 +1608,19 @@ db_setup(SCR *sp, EXF *ep)
 		msgq(sp, M_ERR, "env_create");
 		goto err;
 	}
+#ifdef USE_DB4_LOGGING
+	if ((sp->db_error = vi_db_init_recover(env))) {
+		msgq(sp, M_DBERR, "init_recover");
+		goto err;
+	}
+	if ((sp->db_error = __vi_init_recover(env))) {
+		msgq(sp, M_DBERR, "init_recover");
+		goto err;
+	}
+#endif
 	if ((sp->db_error = env->open(env, path, 
 	    DB_PRIVATE | DB_CREATE | DB_INIT_MPOOL | VI_DB_THREAD 
-	    /* | DB_INIT_LOG */, 0)) != 0) {
+	    | VI_DB_INIT_LOG, 0)) != 0) {
 		msgq(sp, M_DBERR, "env->open");
 		goto err;
 	}
