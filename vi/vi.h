@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 8.10 1993/10/09 12:39:53 bostic Exp $ (Berkeley) $Date: 1993/10/09 12:39:53 $
+ *	$Id: vi.h,v 8.11 1993/10/11 09:24:44 bostic Exp $ (Berkeley) $Date: 1993/10/11 09:24:44 $
  */
 
 /* Structure passed around to functions implementing vi commands. */
@@ -85,6 +85,7 @@ typedef struct _vikeys {	/* Underlying function. */
 #define	V_RCM_SETNNB	0x100000	/* RCM: set to next non-blank. */
 	u_long flags;
 	char *usage;		/* Usage line. */
+	char *help;		/* Help line. */
 } VIKEYS;
 
 #define	MAXVIKEY	126	/* List of vi commands. */

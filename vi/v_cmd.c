@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 8.14 1993/10/09 12:39:51 bostic Exp $ (Berkeley) $Date: 1993/10/09 12:39:51 $";
+static char sccsid[] = "$Id: v_cmd.c,v 8.15 1993/10/11 09:24:34 bostic Exp $ (Berkeley) $Date: 1993/10/11 09:24:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -15,145 +15,184 @@ static char sccsid[] = "$Id: v_cmd.c,v 8.14 1993/10/09 12:39:51 bostic Exp $ (Be
 #include "vcmd.h"
 
 /*
- * This array maps keystrokes to vi command functions.
+ * This array maps keystrokes to vi command functions.  It is known
+ * in ex/ex_usage.c that it takes four columns to name a vi character.
  */
 VIKEYS const vikeys [MAXVIKEY + 1] = {
 /* 000 NUL -- The code in vi.c expects key 0 to be undefined. */
 	{NULL},
 /* 001  ^A */
 	{v_searchw,	V_ABS|V_CNT|V_MOVE|V_KEYW|V_RCM_SET,
-	    "search forward for cursor word: [count]^A"},
+	    "[count]^A",
+	    "^A search forward for cursor word"},
 /* 002  ^B */
 	{v_pageup,	V_ABS|V_CNT|V_RCM_SETLFNB,
-	    "page up by screens: [count]^B"},
+	    "[count]^B",
+	    "^B page up by screens"},
 /* 003  ^C */
 	{NULL,		0,
-	    "interrupt a search: ^C"},
+	    "^C",
+	    "^C interrupt a search or global command"},
 /* 004  ^D */
 	{v_hpagedown,	V_ABS|V_CNT|V_RCM_SETLFNB,
-	    "page down by half screens (set count): [count]^D"},
+	    "[count]^D",
+	    "^D page down by half screens (setting count)"},
 /* 005  ^E */
 	{v_linedown,	V_CNT,
-	    "page down by lines: [count]^E"},
+	    "[count]^E",
+	    "^E page down by lines"},
 /* 006  ^F */
 	{v_pagedown,	V_ABS|V_CNT|V_RCM_SETLFNB,
-	    "page down by screens: [count]^F"},
+	    "[count]^F",
+	    "^F page down by screens"},
 /* 007  ^G */
 	{v_status,	0,
-	    "file status: ^G"},
+	    "^G",
+	    "^G file status"},
 /* 010  ^H */
 	{v_left,	V_CNT|V_MOVE|V_RCM_SET,
-	    "move left by columns: [count]^H"},
+	    "[count]^H",
+	    "^H move left by columns"},
 /* 011  ^I */
 	{NULL},
 /* 012  ^J */
 	{v_down,	V_CNT|V_LMODE|V_MOVE|V_RCM,
-	    "move down by lines: [count]^J"},
+	    "[count]^J",
+	    "^J move down by lines"},
 /* 013  ^K */
 	{NULL},
 /* 014  ^L */
 	{v_redraw,	0,
-	    "redraw screen: ^L"},
+	    "^L",
+	    "^L redraw screen"},
 /* 015  ^M */
 	{v_cr,		V_CNT|V_LMODE|V_MOVE|V_RCM_SETFNB,
-	    "move down by lines (first non-blank): [count]^M"},
+	    "[count]^M",
+	    "^M move down by lines (to first non-blank)"},
 /* 016  ^N */
 	{v_down,	V_CNT|V_LMODE|V_MOVE|V_RCM,
-	    "move down by lines: [count]^N"},
+	    "[count]^N",
+	    "^N move down by lines"},
 /* 017  ^O */
 	{NULL},
 /* 020  ^P */
 	{v_up,		V_CNT|V_LMODE|V_MOVE|V_RCM,
-	    "move up by lines: [count]^P"},
+	    "[count]^P",
+	    "^P move up by lines"},
 /* 021  ^Q -- not available, used for hardware flow control. */
 	{NULL},
 /* 022  ^R */
 	{v_redraw,	0,
-	    "redraw screen: ^R"},
+	    "^R",
+	    "^R redraw screen"},
 /* 023  ^S -- not available, used for hardware flow control. */
 	{NULL},
 /* 024  ^T */
 	{v_tagpop,	V_RCM_SET,
-	    "tag pop: ^T"},
+	    "^T",
+	    "^T tag pop"},
 /* 025  ^U */
 	{v_hpageup,	V_ABS|V_CNT|V_RCM_SETLFNB,
-	    "half page up (set count): [count]^U"},
+	    "[count]^U",
+	    "^U half page up (set count)"},
 /* 026  ^V */
 	{NULL,		0,
-	    "insert a literal character: ^V"},
+	    "^V",
+	    "^V input a literal character"},
 /* 027  ^W */
 	{v_window,	0,
-	    "switch windows: ^W"},
+	    "^W",
+	    "^W switch windows"},
 /* 030  ^X */
 	{NULL},
 /* 031  ^Y */
 	{v_lineup,	V_CNT,
-	    "page up by lines: [count]^Y"},
+	    "[count]^Y",
+	    "^Y page up by lines"},
 /* 032  ^Z */
 	{v_stop,	0,
-	    "suspend: ^Z"},
+	    "^Z",
+	    "^Z suspend editor"},
 /* 033  ^[ */
 	{NULL,		0,
-	    "return to command mode: ^["},
+	    "^[ <escape>",
+	    "^[ <escape> leave input mode, return to command mode"},
 /* 034  ^\ */
 	{NULL},
 /* 035  ^] */
 	{v_tagpush,	V_KEYW|V_RCM_SET,
-	    "tag push cursor word: ^]"},
+	    "^]",
+	    "^] tag push cursor word"},
 /* 036  ^^ */
 	{v_switch,	0,
-	    "change to previous file: ^^"},
+	    "^^",
+	    "^^ switch to previous file"},
 /* 037  ^_ */
 	{NULL},
 /* 040 ' ' */
 	{v_right,	V_CNT|V_MOVE|V_RCM_SET,
-	    "move right by columns: [count]' '"},
+	    "[count]' '",
+	    "   <space> move right by columns"},
 /* 041   ! */
 	{v_filter,	V_CNT|V_DOT|V_MOTION|V_RCM_SET,
-	    "filter through command(s): [count]![count]motion command(s)"},
+	    "[count]![count]motion command(s)",
+	    " ! filter through command(s) to motion"},
 /* 042   " */
 	{NULL},
 /* 043   # */
 	{v_increment,	V_CHAR|V_CNT|V_DOT|V_KEYNUM|V_RCM_SET,
-	    "number increment/decrement: [count]#[#+-]"},
+	    "[count]#[#+-]",
+	    " # number increment/decrement"},
 /* 044   $ */
 	{v_dollar,	V_CNT|V_MOVE|V_RCM_SETLAST,
-	    "move to last column: [count]$"},
+	    " [count]$",
+	    " $ move to last column"},
 /* 045   % */
 	{v_match,	V_ABS|V_MOVE|V_RCM_SET,
-	    "move to match: %"},
+	    "%",
+	    " % move to match"},
 /* 046   & */
 	{v_again,	0,
-	    "repeat substitution: &"},
+	    "&",
+	    " & repeat substitution"},
 /* 047   ' */
 	{v_gomark,	V_ABS|V_CHAR|V_LMODE|V_MOVE|V_RCM_SETFNB,
-	    "move to mark (first non-blank): '['a-z]"},
+	    "'['a-z]",
+	    " ' move to mark (to first non-blank)"},
 /* 050   ( */
 	{v_sentenceb,	V_CNT|V_MOVE|V_RCM_SET,
-	    "move back sentence: [count]("},
+	    "[count](",
+	    " ( move back sentence"},
 /* 051   ) */
 	{v_sentencef,	V_ABS|V_CNT|V_MOVE|V_RCM_SET,
-	    "move forward sentence: [count])"},
+	    "[count])",
+	    " ) move forward sentence"},
 /* 052   * */
 	{NULL},
 /* 053   + */
 	{v_down,	V_CNT|V_LMODE|V_MOVE|V_RCM_SETFNB,
-	    "move down by lines (first non-blank): [count]+"},
+	    "[count]+",
+	    " + move down by lines (to first non-blank)"},
 /* 054   , */
 	{v_chrrepeat,	V_CNT|V_MOVE|V_RCM_SET,
-	    "reverse last F, f, T or t search: [count],"},
+	    "[count],",
+	    " , reverse last F, f, T or t search"},
 /* 055   - */
 	{v_up,		V_CNT|V_LMODE|V_MOVE|V_RCM_SETFNB,
-	    "move up by lines (first non-blank): [count]-"},
+	    "[count]-",
+	    " - move up by lines (to first non-blank)"},
 /* 056   . */
 	{NULL,		0,
-	    "repeat the last command: ."},
+	    ".",
+	    " . repeat the last command"},
 /* 057   / */
 	{v_searchf,	V_ABS|V_MOVE|V_RCM_SET,
-	    "search forward: /RE[/ offset]"},
+	    "/RE[/ offset]",
+	    " / search forward"},
 /* 060   0 */
 	{v_zero,	V_MOVE|V_RCM_SET,
-	    "move to first character: 0"},
+	    "0",
+	    " 0 move to first character"},
 /* 061   1 */
 	{NULL},
 /* 062   2 */
@@ -174,206 +213,268 @@ VIKEYS const vikeys [MAXVIKEY + 1] = {
 	{NULL},
 /* 072   : */
 	{v_ex,		0,
-	    "ex command: :command [| command] ..."},
+	    ":command [| command] ...",
+	    " : ex command"},
 /* 073   ; */
 	{v_chrepeat,	V_CNT|V_MOVE|V_RCM_SET,
-	    "repeat last F, f, T or t search: [count];"},
+	    "[count];",
+	    " ; repeat last F, f, T or t search"},
 /* 074   < */
 	{v_shiftl,	V_CNT|V_DOT|V_MOTION|V_RCM_SET|VC_SH,
-	    "shift lines left: [count]<[count]motion"},
+	    "[count]<[count]motion",
+	    " < shift lines left to motion"},
 /* 075   = */
 	{NULL},
 /* 076   > */
 	{v_shiftr,	V_CNT|V_DOT|V_MOTION|V_RCM_SET|VC_SH,
-	    "shift lines right: [count]>[count]motion"},
+	    "[count]>[count]motion",
+	    " > shift lines right to motion"},
 /* 077   ? */
 	{v_searchb,	V_ABS|V_MOVE|V_RCM_SET,
-	    "search backward: ?RE[? offset]"},
+	    "?RE[? offset]",
+	    " ? search backward"},
 /* 100   @ */
 	{v_at,		V_RBUF|V_RCM_SET,
-	    "execute buffer: @buffer"},
+	    "@buffer",
+	    " @ execute buffer"},
 /* 101   A */
 	{v_iA,		V_CNT|V_DOT|V_RCM_SET,
-	    "append to line: [count]A"},
+	    "[count]A",
+	    " A append to the line"},
 /* 102   B */
 	{v_wordB,	V_CNT|V_MOVE|V_RCM_SET,
-	    "move back bigword: [count]B"},
+	    "[count]B",
+	    " B move back bigword"},
 /* 103   C */
 	{v_Change,	V_CNT|V_DOT|V_OBUF|V_RCM_SET,
-	    "change to end-of-line: [buffer][count]C"},
+	    "[buffer][count]C",
+	    " C change to end-of-line"},
 /* 104   D */
 	{v_Delete,	V_CNT|V_DOT|V_OBUF|V_RCM_SET,
-	    "delete to end-of-line: [buffer][count]D"},
+	    "[buffer][count]D",
+	    " D delete to end-of-line"},
 /* 105   E */
 	{v_wordE,	V_CNT|V_MOVE|V_RCM_SET,
-	    "move to end of bigword: [count]E"},
+	    "[count]E",
+	    " E move to end of bigword"},
 /* 106   F */
 	{v_chF,		V_CHAR|V_CNT|V_MOVE|V_RCM_SET,
-	    "character in line backward search: [count]F character"},
+	    "[count]F character",
+	    " F character in line backward search"},
 /* 107   G */
 	{v_lgoto,	V_ABS|V_CNT|V_LMODE|V_MOVE|V_RCM_SETFNB,
-	    "move to line: [count]G"},
+	    "[count]G",
+	    " G move to line"},
 /* 110   H */
 	{v_home,	V_CNT|V_LMODE|V_MOVE|V_RCM_SETNNB,
-	    "move to count lines from screen top: [count]H"},
+	    "[count]H",
+	    " H move to count lines from screen top"},
 /* 111   I */
 	{v_iI,		V_CNT|V_DOT|V_RCM_SET,
-	    "insert at line beginning: [count]I"},
+	    "[count]I",
+	    " I insert at line beginning"},
 /* 112   J */
 	{v_join,	V_CNT|V_DOT|V_RCM_SET,
-	    "join lines: [count]J"},
+	    "[count]J",
+	    " J join lines"},
 /* 113   K */
 	{NULL},
 /* 114   L */
 	{v_bottom,	V_CNT|V_LMODE|V_MOVE|V_RCM_SETNNB,
-	    "move to screen bottom: [count]L"},
+	    "[count]L",
+	    " L move to screen bottom"},
 /* 115   M */
 	{v_middle,	V_CNT|V_LMODE|V_MOVE|V_RCM_SETNNB,
-	    "move to screen middle: M"},
+	    "M",
+	    " M move to screen middle"},
 /* 116   N */
 	{v_searchN,	V_ABS|V_MOVE|V_RCM_SET,
-	    "reverse last search: n"},
+	    "n",
+	    " n reverse last search"},
 /* 117   O */
 	{v_iO,		V_CNT|V_DOT|V_RCM_SET,
-	    "insert above line: [count]O"},
+	    "[count]O",
+	    " O insert above line"},
 /* 120   P */
 	{v_Put,		V_CNT|V_DOT|V_OBUF|V_RCM_SET,
-	    "insert before cursor from buffer: [buffer]P"},
+	    "[buffer]P",
+	    " P insert before cursor from buffer"},
 /* 121   Q */
 	{v_exmode,	0,
-	    "switch to ex mode: Q"},
+	    "Q",
+	    " Q switch to ex mode"},
 /* 122   R */
 	{v_Replace,	V_CNT|V_DOT|V_RCM_SET,
-	    "replace characters: [count]R"},
+	    "[count]R",
+	    " R replace characters"},
 /* 123   S */
 	{v_Subst,	V_CNT|V_DOT|V_LMODE|V_OBUF|V_RCM_SET,
-	    "substitute lines: [buffer][count]S"},
+	    "[buffer][count]S",
+	    " S substitute for the line(s)"},
 /* 124   T */
 	{v_chT,		V_CHAR|V_CNT|V_MOVE|V_RCM_SET,
-	    "before character in line backward search: [count]T character"},
+	    "[count]T character",
+	    " T before character in line backward search"},
 /* 125   U */
 	{v_Undo,	V_RCM_SET,
-	    "undo current line: U"},
+	    "U",
+	    " U undo current line"},
 /* 126   V */
 	{NULL},
 /* 127   W */
 	{v_wordW,	V_CNT|V_MOVE|V_RCM_SET,
-	    "move to next bigword: [count]W"},
+	    "[count]W",
+	    " W move to next bigword"},
 /* 130   X */
 	{v_Xchar,	V_CNT|V_DOT|V_OBUF|V_RCM_SET,
-	    "delete character before cursor: [buffer][count]X"},
+	    "[buffer][count]X",
+	    " X delete character before cursor"},
 /* 131   Y */
 	{v_yank,	V_CNT|V_LMODE|V_OBUF,
-	    "copy line: [buffer][count]Y"},
+	    "[buffer][count]Y",
+	    " Y copy line"},
 /* 132   Z */
 	{v_exit,	0,
-	    "save file and exit: ZZ"},
+	    "ZZ",
+	    "ZZ save file and exit"},
 /* 133   [ */
 	{v_sectionb,	V_ABS|V_LMODE|V_MOVE|V_RCM_SET,
-	    "move back section: [["},
+	    "[[",
+	    "[[ move back section"},
 /* 134   \ */
 	{NULL},
 /* 135   ] */
 	{v_sectionf,	V_ABS|V_LMODE|V_MOVE|V_RCM_SET,
-	    "move forward section: ]]"},
+	    "]]",
+	    "]] move forward section"},
 /* 136   ^ */
 	{v_first,	V_CNT|V_MOVE|V_RCM_SETFNB,
-	    "move to first non-blank: ^"},
+	    "^",
+	    " ^ move to first non-blank"},
 /* 137   _ */
 	{v_cfirst,	V_CNT|V_MOVE|V_RCM_SETFNB,
-	    "move to first non-blank: _"},
+	    "_",
+	    " _ move to first non-blank"},
 /* 140   ` */
 	{v_gomark,	V_ABS|V_CHAR|V_MOVE|V_RCM_SET,
-	    "move to mark: `[`a-z]"},
+	    "`[`a-z]",
+	    " ` move to mark"},
 /* 141   a */
 	{v_ia,		V_CNT|V_DOT|V_RCM_SET,
-	    "append after cursor: [count]a"},
+	    "[count]a",
+	    " a append after cursor"},
 /* 142   b */
 	{v_wordb,	V_CNT|V_MOVE|V_RCM_SET,
-	    "move back word: [count]b"},
+	    "[count]b",
+	    " b move back word"},
 /* 143   c */
 	{v_change,	V_CNT|V_DOT|V_MOTION|V_OBUF|V_RCM_SET|VC_C,
-	    "change: [buffer][count]c[count]motion"},
+	    "[buffer][count]c[count]motion",
+	    " c change to motion"},
 /* 144   d */
 	{v_delete,	V_CNT|V_DOT|V_MOTION|V_OBUF|V_RCM_SET|VC_D,
-	    "delete: [buffer][count]d[count]motion"},
+	    "[buffer][count]d[count]motion",
+	    " d delete to motion"},
 /* 145   e */
 	{v_worde,	V_CNT|V_MOVE|V_RCM_SET,
-	    "move to end of word: [count]e"},
+	    "[count]e",
+	    " e move to end of word"},
 /* 146   f */
 	{v_chf,		V_CHAR|V_CNT|V_MOVE|V_RCM_SET,
-	    "character in line forward search: [count]f character"},
+	    "[count]f character",
+	    " f character in line forward search"},
 /* 147   g */
 	{NULL},
 /* 150   h */
 	{v_left,	V_CNT|V_MOVE|V_RCM_SET,
-	    "move left by columns: [count]h"},
+	    "[count]h",
+	    " h move left by columns"},
 /* 151   i */
 	{v_ii,		V_CNT|V_DOT|V_RCM_SET,
-	    "insert before cursor: [count]i"},
+	    "[count]i",
+	    " i insert before cursor"},
 /* 152   j */
 	{v_down,	V_CNT|V_LMODE|V_MOVE|V_RCM,
-	    "move down by lines: [count]j"},
+	    "[count]j",
+	    " j move down by lines"},
 /* 153   k */
 	{v_up,		V_CNT|V_LMODE|V_MOVE|V_RCM,
-	    "move up by lines: [count]k"},
+	    "[count]k",
+	    " k move up by lines"},
 /* 154   l */
 	{v_right,	V_CNT|V_MOVE|V_RCM_SET,
-	    "move right by columns: [count]l"},
+	    "[count]l",
+	    " l move right by columns"},
 /* 155   m */
 	{v_mark,	V_CHAR,
-	    "set mark: m[a-z]"},
+	    "m[a-z]",
+	    " m set mark"},
 /* 156   n */
 	{v_searchn,	V_ABS|V_MOVE|V_RCM_SET,
-	    "repeat last search: n"},
+	    "n",
+	    " n repeat last search"},
 /* 157   o */
 	{v_io,		V_CNT|V_DOT|V_RCM_SET,
-	    "append after line: [count]o"},
+	    "[count]o",
+	    " o append after line"},
 /* 160   p */
 	{v_put,		V_CNT|V_DOT|V_OBUF|V_RCM_SET,
-	    "insert after cursor from buffer: [buffer]p"},
+	    "[buffer]p",
+	    " p insert after cursor from buffer"},
 /* 161   q */
 	{NULL},
 /* 162   r */
 	{v_replace,	V_CNT|V_DOT|V_RCM_SET,
-	    "replace character: [count]r character"},
+	    "[count]r character",
+	    " r replace character"},
 /* 163   s */
 	{v_subst,	V_CNT|V_DOT|V_OBUF|V_RCM_SET,
-	    "substitute character: [buffer][count]s"},
+	    "[buffer][count]s",
+	    " s substitute character"},
 /* 164   t */
 	{v_cht,		V_CHAR|V_CNT|V_MOVE|V_RCM_SET,
-	    "before character in line forward search: [count]t character"},
+	    "[count]t character",
+	    " t before character in line forward search"},
 /* 165   u */
 	{v_undo,	V_RCM_SET,
-	    "undo last change: u"},
+	    "u",
+	    " u undo last change"},
 /* 166   v */
 	{NULL},
 /* 167   w */
 	{v_wordw,	V_CNT|V_MOVE|V_RCM_SET,
-	    "move to next word: [count]w"},
+	    "[count]w",
+	    " w move to next word"},
 /* 170   x */
 	{v_xchar,	V_CNT|V_DOT|V_OBUF|V_RCM_SET,
-	    "delete character: [buffer][count]x"},
+	    "[buffer][count]x",
+	    " x delete character"},
 /* 171   y */
 	{v_yank,	V_CNT|V_MOTION|V_OBUF|VC_Y,
-	    "copy text: [buffer][count]y[count]motion"},
+	    "[buffer][count]y[count]motion",
+	    " y copy text into a cut buffer to motion"},
 /* 172   z */
 	/*
 	 * DON'T set the V_CHAR flag, the char isn't required,
 	 * so it's handled specially in getcmd().
 	 */
 	{v_z, 		V_CNT|V_RCM_SETFNB,
-	    "redraw window: [line]z[window_size][-|.|+|^|<CR>]"},
+	    "[line]z[window_size][-|.|+|^|<CR>]",
+	    " z redraw window"},
 /* 173   { */
 	{v_paragraphb,	V_ABS|V_CNT|V_LMODE|V_MOVE|V_RCM_SET,
-	    "move back paragraph: [count]{"},
+	    "[count]{",
+	    " { move back paragraph"},
 /* 174   | */
 	{v_ncol,	V_ABS|V_CNT|V_MOVE|V_RCM_SET,
-	    "move to column: [count]|"},
+	    "[count]|",
+	    " | move to column"},
 /* 175   } */
 	{v_paragraphf,	V_ABS|V_CNT|V_LMODE|V_MOVE|V_RCM_SET,
-	    "move forward paragraph: [count]}"},
+	    "[count]}",
+	    " } move forward paragraph"},
 /* 176   ~ */
 	{v_ulcase,	V_CNT|V_DOT|V_RCM_SET,
-	    "reverse case: [count]~"},
+	    "[count]~",
+	    " ~ reverse case"},
 };
