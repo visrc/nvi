@@ -3,7 +3,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"     $Id: set.opt.roff,v 8.5 1994/03/22 18:43:26 bostic Exp $ (Berkeley) $Date: 1994/03/22 18:43:26 $
+.\"     $Id: set.opt.roff,v 8.6 1994/04/07 11:35:47 bostic Exp $ (Berkeley) $Date: 1994/04/07 11:35:47 $
 .\"
 There are a large number of options that may be set (or unset) to
 change the editor's behavior.
@@ -310,31 +310,23 @@ is used as the default value if it exists, otherwise
 is used.
 #endif
 .It Li "edcompatible, ed [off]"
-#ifdef MANUAL
-Modify the behavior of certain suffices for the
-.Nm ex
-.Sy substitute
-command.
-#endif
-#ifdef REFERENCE
-This option causes the presence or absence of
-.Sy \&g
+Remember the values of the
+.Dq \&c
 and
-.Sy \&c
-suffixes on
+.Dq \&g
+suffices to the
 .Sy substitute
-commands to be remembered,
-and to be toggled by repeating the suffices.
-The suffix
-.Sy \&r
-makes the substitution be as in the
-.Sy \&~
-command, instead of like the
-.Sy \&&
+commands, instead of initializing them as unset for each new
 command.
+#ifdef REFERENCE
+Specifying pattern and replacement strings to the
+.Sy substitute
+command unsets the
+.Dq \&c
+and
+.Dq \&g
+suffices as well.
 #endif
-.br
-.Em "This option is not yet implemented."
 .It Li "errorbells, eb [off]"
 .Nm \&Ex
 only.
