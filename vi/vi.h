@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: vi.h,v 9.1 1994/11/09 18:36:38 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:36:38 $
+ *	$Id: vi.h,v 9.2 1994/11/12 11:40:12 bostic Exp $ (Berkeley) $Date: 1994/11/12 11:40:12 $
  */
 
 typedef struct _vikeys VIKEYS;
@@ -225,7 +225,6 @@ VIPROTO(v_at);
 VIPROTO(v_bmark);
 VIPROTO(v_bottom);
 VIPROTO(v_cfirst);
-VIPROTO(v_Change);
 VIPROTO(v_change);
 VIPROTO(v_chF);
 VIPROTO(v_chf);
@@ -234,7 +233,6 @@ VIPROTO(v_chrrepeat);
 VIPROTO(v_chT);
 VIPROTO(v_cht);
 VIPROTO(v_cr);
-VIPROTO(v_Delete);
 VIPROTO(v_delete);
 VIPROTO(v_dollar);
 VIPROTO(v_down);
@@ -246,9 +244,7 @@ VIPROTO(v_fmark);
 VIPROTO(v_home);
 VIPROTO(v_hpagedown);
 VIPROTO(v_hpageup);
-VIPROTO(v_iA);
 VIPROTO(v_ia);
-VIPROTO(v_iI);
 VIPROTO(v_ii);
 VIPROTO(v_increment);
 VIPROTO(v_iO);
@@ -287,7 +283,6 @@ VIPROTO(v_shiftl);
 VIPROTO(v_shiftr);
 VIPROTO(v_status);
 VIPROTO(v_stop);
-VIPROTO(v_Subst);
 VIPROTO(v_subst);
 VIPROTO(v_switch);
 VIPROTO(v_tagpop);
@@ -304,7 +299,6 @@ VIPROTO(v_wordW);
 VIPROTO(v_wordw);
 VIPROTO(v_Xchar);
 VIPROTO(v_xchar);
-VIPROTO(v_Yank);
 VIPROTO(v_yank);
 VIPROTO(v_z);
 VIPROTO(v_zero);
