@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.90 1993/05/06 01:09:07 bostic Exp $ (Berkeley) $Date: 1993/05/06 01:09:07 $";
+static char sccsid[] = "$Id: ex.c,v 5.91 1993/05/09 11:37:02 bostic Exp $ (Berkeley) $Date: 1993/05/09 11:37:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -210,7 +210,7 @@ ex_cmd(sp, ep, exc)
 	recno_t lcount, num;
 	long flagoff;
 	u_int saved_mode;
-	int cmdlen, flags, uselastcmd;
+	int ch, cmdlen, flags, uselastcmd;
 	char *p, *endp;
 
 #if DEBUG && 1
@@ -280,6 +280,15 @@ ex_cmd(sp, ep, exc)
 			msgq(sp, M_ERR,
 "The %.*s command can't be used as part of a global command.", cmdlen, p);
 			return (1);
+		}
+
+		/*
+		 * Another "special" feature.
+		 * NOTE: cmd.string is NOT nul terminated in this case.
+		 */
+		if (*exc == '>' || *exc == '<') {
+			ch = *exc;
+			for (cmd.string = exc; *++exc == ch;);
 		}
 	} else {
 		cp = sp->lastcmd;
@@ -481,12 +490,12 @@ end2:			break;
 				exc = endp;
 				/*
 				 * Fix up the addresses.  Count's only occur
-				 * with commands taking two addresses.  Replace
-				 * the first with the second and recompute the
-				 * second.
+				 * with commands taking two addresses.  The
+				 * historic vi practice was to use the count
+				 * as an offset from the *second* address.
 				 */
 				cmd.addr1 = cmd.addr2;
-				cmd.addr2.lno = cmd.addr1.lno + lcount;
+				cmd.addr2.lno = cmd.addr1.lno + lcount - 1;
 			}
 			break;
 		case 'l':				/* line */
