@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.36 1993/12/29 16:11:34 bostic Exp $ (Berkeley) $Date: 1993/12/29 16:11:34 $";
+static char sccsid[] = "$Id: options.c,v 8.37 1994/03/06 10:44:00 bostic Exp $ (Berkeley) $Date: 1994/03/06 10:44:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -525,10 +525,10 @@ opts_dump(sp, type)
 	 * for no particular reason.  (Since we don't output tab characters,
 	 * we can ignore the terminal's tab settings.)  Ignore the user's tab
 	 * setting because we have no idea how reasonable it is.
+	 *
+	 * Find a column width we can live with.
 	 */
 #define	BOUND	6
-
-	/* Find a column width we can live with. */
 	for (cnt = 6; cnt > 1; --cnt) {
 		colwidth = (sp->cols - 1) / cnt & ~(BOUND - 1);
 		if (colwidth >= 10) {
@@ -539,10 +539,8 @@ opts_dump(sp, type)
 	}
 
 	/* 
-	 * Two passes.  First, get the set of options to list, entering them
-	 * into the column list or the overflow list.  No error checking,
-	 * since we know that at least one option (O_TERM) has the OPT_SET bit
-	 * set.
+	 * Get the set of options to list, entering them into
+	 * the column list or the overflow list.
 	 */
 	for (b_num = s_num = 0, op = optlist; op->name; ++op) {
 		cnt = op - optlist;
@@ -592,25 +590,29 @@ opts_dump(sp, type)
 			b_op[b_num++] = cnt;
 	}
 
-	numcols = (sp->cols - 1) / colwidth;
-	if (s_num > numcols) {
-		numrows = s_num / numcols;
-		if (s_num % numcols)
-			++numrows;
-	} else
-		numrows = 1;
+	if (s_num > 0) {
+		/* Figure out the number of columns. */
+		numcols = (sp->cols - 1) / colwidth;
+		if (s_num > numcols) {
+			numrows = s_num / numcols;
+			if (s_num % numcols)
+				++numrows;
+		} else
+			numrows = 1;
 
-	for (row = 0; row < numrows;) {
-		for (base = row, col = 0; col < numcols; ++col) {
-			cnt = opts_print(sp,
-			    &optlist[s_op[base]], &sp->opts[s_op[base]]);
-			if ((base += numrows) >= s_num)
-				break;
-			(void)ex_printf(EXCOOKIE,
-			    "%*s", (int)(colwidth - cnt), "");
+		/* Display the options in sorted order. */
+		for (row = 0; row < numrows;) {
+			for (base = row, col = 0; col < numcols; ++col) {
+				cnt = opts_print(sp, &optlist[s_op[base]],
+				    &sp->opts[s_op[base]]);
+				if ((base += numrows) >= s_num)
+					break;
+				(void)ex_printf(EXCOOKIE,
+				    "%*s", (int)(colwidth - cnt), "");
+			}
+			if (++row < numrows || b_num)
+				(void)ex_printf(EXCOOKIE, "\n");
 		}
-		if (++row < numrows || b_num)
-			(void)ex_printf(EXCOOKIE, "\n");
 	}
 
 	for (row = 0; row < b_num;) {
