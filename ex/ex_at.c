@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_at.c,v 8.24 1994/07/01 20:53:28 bostic Exp $ (Berkeley) $Date: 1994/07/01 20:53:28 $";
+static char sccsid[] = "$Id: ex_at.c,v 8.25 1994/08/01 16:16:21 bostic Exp $ (Berkeley) $Date: 1994/08/01 16:16:21 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -48,9 +48,15 @@ ex_at(sp, ep, cmdp)
 
 	exp = EXP(sp);
 
-	/* Historically, @@ and ** execute the last buffer. */
-	name = cmdp->buffer;
-	if (name == cmdp->cmd->name[0]) {
+	/*
+	 * !!!
+	 * Historically, [@*]<carriage-return> and [@*][@*] executed the most
+	 * recently executed buffer in ex mode.  In vi mode, only @@ repeated
+	 * the last buffer.  We change historic practice and make @* work from
+	 * vi mode as well, it's simpler and more consistent.
+	 */
+	name = F_ISSET(cmdp, E_BUFFER) ? cmdp->buffer : '@';
+	if (name == '@' || name == '*') {
 		if (!exp->at_lbuf_set) {
 			msgq(sp, M_ERR, "No previous buffer to execute");
 			return (1);
