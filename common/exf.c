@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 9.1 1994/11/09 18:37:41 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:37:41 $";
+static char sccsid[] = "$Id: exf.c,v 9.2 1994/11/09 19:21:31 bostic Exp $ (Berkeley) $Date: 1994/11/09 19:21:31 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -714,6 +714,10 @@ file_write(sp, fm, tm, name, flags)
 		return (1);
 	}
 
+	/* Try and get a lock. */
+	if (!noname && file_lock(sp, NULL, NULL, fd, 0) == LOCK_UNAVAIL)
+		msgq(sp, M_ERR, "%s: write lock was unavailable", name);
+
 	/* Use stdio for buffering. */
 	if ((fp = fdopen(fd, "w")) == NULL) {
 		(void)close(fd);
@@ -1147,7 +1151,7 @@ file_lock(sp, name, fdp, fd, iswrite)
 	char *name;
 	int fd, *fdp, iswrite;
 {
-	if (O_ISSET(sp, O_LOCK))
+	if (!O_ISSET(sp, O_LOCK))
 		return (LOCK_SUCCESS);
 	
 #if !defined(USE_FCNTL) && defined(LOCK_EX)
