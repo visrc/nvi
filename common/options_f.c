@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 5.6 1993/04/12 14:30:43 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:30:43 $";
+static char sccsid[] = "$Id: options_f.c,v 5.7 1993/05/05 16:34:48 bostic Exp $ (Berkeley) $Date: 1993/05/05 16:34:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -143,7 +143,7 @@ DECL(f_leftright)
 		O_CLR(sp, O_LEFTRIGHT);
 	else
 		O_SET(sp, O_LEFTRIGHT);
-	F_SET(sp, S_REDRAW);
+	F_SET(sp, S_REFORMAT | S_REDRAW);
 	return (0);
 }
 
