@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.5 1993/06/28 15:03:13 bostic Exp $ (Berkeley) $Date: 1993/06/28 15:03:13 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.6 1993/06/28 17:24:03 bostic Exp $ (Berkeley) $Date: 1993/06/28 17:24:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -47,7 +47,16 @@ ex_substitute(sp, ep, cmdp)
 		/* Delimiter is the first character. */
 		delim = *cmdp->string;
 
-		/* Get the substitute string, toss escaped characters. */
+		/*
+		 * Get the substitute string, toss escaped characters.
+		 *
+		 * ESCAPE CHARACTER NOTE:
+		 * Only toss an escaped character if it escapes a delimiter.
+		 * This means that "s/A/\\\\f" replaces "A" with "\\f".  It
+		 * would be nice to be more regular, i.e. for each layer of
+		 * escaping a single escape character is removed, but that's
+		 * not how the historic vi worked.
+		 */
 		for (sub = p = t = ++cmdp->string;;) {
 			if (p[0] == '\0' || p[0] == delim) {
 				if (p[0] == delim)
@@ -55,7 +64,7 @@ ex_substitute(sp, ep, cmdp)
 				*t = '\0';
 				break;
 			}
-			if (p[1] == delim && p[0] == '\\')
+			if (p[0] == '\\' && p[1] == delim)
 				++p;
 			*t++ = *p++;
 		}
@@ -72,7 +81,7 @@ ex_substitute(sp, ep, cmdp)
 				*t = '\0';
 				break;
 			}
-			if (p[1] == delim && p[0] == '\\')
+			if (p[0] == '\\' && p[1] == delim)
 				++p;
 			*t++ = *p++;
 		}
@@ -633,8 +642,16 @@ sub:			if (sp->match[no].rm_so != -1 &&
 			    sp->special[ch] == K_NL) {
 				NEEDNEWLINE(sp);
 				sp->newl[sp->newl_cnt++] = lbclen;
-			} else if (ch == '\\' && (*rp == '\\' || *rp == '&'))
+			}
+			/*
+			 * ESCAPE CHARACTER NOTE:
+			 * Toss all escape characters, this is the lowest level
+			 * of replacement.  Historic practice is the guideline.
+			 */
+			else if (ch == '\\' && rpl != 0) {
  				ch = *rp++;
+				--rpl;
+			}
 			NEEDSP(sp, 1, p);
  			*p++ = ch;
 			++lbclen;
