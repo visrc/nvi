@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_ex.c,v 10.26 1996/03/15 20:17:03 bostic Exp $ (Berkeley) $Date: 1996/03/15 20:17:03 $";
+static const char sccsid[] = "$Id: v_ex.c,v 10.27 1996/03/18 08:09:36 bostic Exp $ (Berkeley) $Date: 1996/03/18 08:09:36 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -625,8 +625,9 @@ v_ecl_init(sp)
 		(void)screen_end(new);
 		return (1);
 	}
+
 	/* This file isn't recoverable. */
-	F_SET(new->ep, F_RCV_ON);
+	F_CLR(new->ep, F_RCV_ON);
 
 	/* Grab a handle on the underlying file. */
 	sp->gp->ed_ep = new->ep;
