@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 9.20 1995/01/11 16:15:09 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:15:09 $";
+static char sccsid[] = "$Id: ex.c,v 9.21 1995/01/11 18:52:33 bostic Exp $ (Berkeley) $Date: 1995/01/11 18:52:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1191,6 +1191,8 @@ usage:		msgq(sp, M_ERR, "107|Usage: %s", cp->usage);
 	 * (They don't all pass through ep_line(), for instance.)  We're
 	 * assuming that any non-existent line doesn't exist because it's
 	 * past the end-of-file.  That's a pretty good guess.
+	 *
+	 * If it's a "default vi command", an address of zero is okay.
 	 */
 addr2:	switch (exc.addrcnt) {
 	case 2:
@@ -1203,7 +1205,8 @@ addr2:	switch (exc.addrcnt) {
 		 * fix it here.
 		 */
 		if (exc.addr2.lno == 0) {
-			if (!LF_ISSET(E_ZERO)) {
+			if (!LF_ISSET(E_ZERO) &&
+			    (IN_EX_MODE(sp) || uselastcmd != 1)) {
 				ex_badaddr(sp, cp, A_ZERO, NUM_OK);
 				goto err;
 			}
@@ -1218,11 +1221,6 @@ addr2:	switch (exc.addrcnt) {
 			}
 		/* FALLTHROUGH */
 	case 1:
-		/*
-		 * If it's a "default vi command", zero is okay.  Historic
-		 * vi allowed this, note, it's also the hack that allows
-		 * "vi +100 nonexistent_file" to work.
-		 */
 		if (exc.addr1.lno == 0) {
 			if (!LF_ISSET(E_ZERO) &&
 			    (IN_EX_MODE(sp) || uselastcmd != 1)) {
