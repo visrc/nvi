@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.57 1993/05/02 15:56:39 bostic Exp $ (Berkeley) $Date: 1993/05/02 15:56:39 $";
+static char sccsid[] = "$Id: exf.c,v 5.58 1993/05/03 09:35:00 bostic Exp $ (Berkeley) $Date: 1993/05/03 09:35:00 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -118,14 +118,11 @@ file_first(sp, all)
 {
 	EXF *tep;
 
-	for (tep = sp->gp->exfhdr.next;;) {
-		if (tep == (EXF *)&sp->gp->exfhdr)
-			return (NULL);
-		if (!all && F_ISSET(tep, F_IGNORE))
-			continue;
-		return (tep);
-	}
-	/* NOTREACHED */
+	for (tep = sp->gp->exfhdr.next;
+	    tep != (EXF *)&sp->gp->exfhdr; tep = tep->next)
+		if (all || !F_ISSET(tep, F_IGNORE))
+			return (tep);
+	return (NULL);
 }
 
 /*
