@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.58 1994/05/21 09:44:29 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:44:29 $";
+static char sccsid[] = "$Id: options.c,v 8.59 1994/07/15 16:14:16 bostic Exp $ (Berkeley) $Date: 1994/07/15 16:14:16 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -82,7 +82,7 @@ static OPTLIST const optlist[] = {
 /* O_IGNORECASE	    4BSD */
 	{"ignorecase",	NULL,		OPT_0BOOL,	0},
 /* O_KEYTIME	  4.4BSD */
-	{"keytime",	f_keytime,	OPT_NUM,	0},
+	{"keytime",	NULL,		OPT_NUM,	0},
 /* O_LEFTRIGHT	  4.4BSD */
 	{"leftright",	f_leftright,	OPT_0BOOL,	0},
 /* O_LINES	  4.4BSD */
@@ -99,7 +99,7 @@ static OPTLIST const optlist[] = {
 /* O_MAGIC	    4BSD */
 	{"magic",	NULL,		OPT_1BOOL,	0},
 /* O_MATCHTIME	  4.4BSD */
-	{"matchtime",	f_matchtime,	OPT_NUM,	0},
+	{"matchtime",	NULL,		OPT_NUM,	0},
 /* O_MESG	    4BSD */
 	{"mesg",	f_mesg,		OPT_1BOOL,	0},
 /* O_MODELINE	    4BSD */
@@ -127,7 +127,7 @@ static OPTLIST const optlist[] = {
 /* O_REPORT	    4BSD */
 	{"report",	NULL,		OPT_NUM,	OPT_NOSTR},
 /* O_RULER	  4.4BSD */
-	{"ruler",	f_ruler,	OPT_0BOOL,	0},
+	{"ruler",	NULL,		OPT_0BOOL,	0},
 /* O_SCROLL	    4BSD */
 	{"scroll",	NULL,		OPT_NUM,	0},
 /* O_SECTIONS	    4BSD */
@@ -143,7 +143,7 @@ static OPTLIST const optlist[] = {
 /* O_SHOWMODE	  4.4BSD */
 	{"showmode",	NULL,		OPT_0BOOL,	0},
 /* O_SIDESCROLL	  4.4BSD */
-	{"sidescroll",	f_sidescroll,	OPT_NUM,	0},
+	{"sidescroll",	NULL,		OPT_NUM,	0},
 /* O_SLOWOPEN	    4BSD  */
 	{"slowopen",	NULL,		OPT_0BOOL,	0},
 /* O_SOURCEANY	    4BSD (undocumented) */
@@ -177,7 +177,7 @@ static OPTLIST const optlist[] = {
 /* O_WINDOW	    4BSD */
 	{"window",	f_window,	OPT_NUM,	0},
 /* O_WRAPMARGIN	    4BSD */
-	{"wrapmargin",	f_wrapmargin,	OPT_NUM,	OPT_NOSTR},
+	{"wrapmargin",	NULL,		OPT_NUM,	OPT_NOSTR},
 /* O_WRAPSCAN	    4BSD */
 	{"wrapscan",	NULL,		OPT_1BOOL,	0},
 /* O_WRITEANY	    4BSD */

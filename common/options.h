@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: options.h,v 8.19 1994/04/09 17:45:13 bostic Exp $ (Berkeley) $Date: 1994/04/09 17:45:13 $
+ *	$Id: options.h,v 8.20 1994/07/15 16:14:43 bostic Exp $ (Berkeley) $Date: 1994/07/15 16:14:43 $
  */
 
 struct _option {
@@ -57,22 +57,18 @@ int	opts_set __P((SCR *, ARGS *[]));
 int	f_altwerase __P((SCR *, OPTION *, char *, u_long));
 int	f_cdpath __P((SCR *, OPTION *, char *, u_long));
 int	f_columns __P((SCR *, OPTION *, char *, u_long));
-int	f_keytime __P((SCR *, OPTION *, char *, u_long));
 int	f_leftright __P((SCR *, OPTION *, char *, u_long));
 int	f_lines __P((SCR *, OPTION *, char *, u_long));
 int	f_lisp __P((SCR *, OPTION *, char *, u_long));
 int	f_list __P((SCR *, OPTION *, char *, u_long));
-int	f_matchtime __P((SCR *, OPTION *, char *, u_long));
 int	f_mesg __P((SCR *, OPTION *, char *, u_long));
 int	f_modeline __P((SCR *, OPTION *, char *, u_long));
 int	f_number __P((SCR *, OPTION *, char *, u_long));
 int	f_octal __P((SCR *, OPTION *, char *, u_long));
 int	f_paragraph __P((SCR *, OPTION *, char *, u_long));
 int	f_readonly __P((SCR *, OPTION *, char *, u_long));
-int	f_ruler __P((SCR *, OPTION *, char *, u_long));
 int	f_section __P((SCR *, OPTION *, char *, u_long));
 int	f_shiftwidth __P((SCR *, OPTION *, char *, u_long));
-int	f_sidescroll __P((SCR *, OPTION *, char *, u_long));
 int	f_sourceany __P((SCR *, OPTION *, char *, u_long));
 int	f_tabstop __P((SCR *, OPTION *, char *, u_long));
 int	f_tags __P((SCR *, OPTION *, char *, u_long));
@@ -82,4 +78,3 @@ int	f_w1200 __P((SCR *, OPTION *, char *, u_long));
 int	f_w300 __P((SCR *, OPTION *, char *, u_long));
 int	f_w9600 __P((SCR *, OPTION *, char *, u_long));
 int	f_window __P((SCR *, OPTION *, char *, u_long));
-int	f_wrapmargin __P((SCR *, OPTION *, char *, u_long));

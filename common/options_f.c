@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 8.31 1994/05/21 09:44:31 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:44:31 $";
+static char sccsid[] = "$Id: options_f.c,v 8.32 1994/07/15 16:14:35 bostic Exp $ (Berkeley) $Date: 1994/07/15 16:14:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -73,36 +73,6 @@ DECL(f_columns)
 		    MINIMUM_SCREEN_COLS);
 		return (1);
 	}
-	if (val < O_VAL(sp, O_SHIFTWIDTH)) {
-		msgq(sp, M_ERR,
-		    "Screen columns too small, less than shiftwidth");
-		return (1);
-	}
-	if (val < O_VAL(sp, O_SIDESCROLL)) {
-		msgq(sp, M_ERR,
-		    "Screen columns too small, less than sidescroll");
-		return (1);
-	}
-	if (val < O_VAL(sp, O_TABSTOP)) {
-		msgq(sp, M_ERR,
-		    "Screen columns too small, less than tabstop");
-		return (1);
-	}
-	if (val < O_VAL(sp, O_WRAPMARGIN)) {
-		msgq(sp, M_ERR,
-		    "Screen columns too small, less than wrapmargin");
-		return (1);
-	}
-#ifdef XXX_NOT_RIGHT
-	/*
-	 * This has to be checked by reaching down into the screen code.
-	 */
-	if (val < O_NUMBER_LENGTH) {
-		msgq(sp, M_ERR,
-		    "Screen columns too small, less than number option");
-		return (1);
-	}
-#endif
 	/* Set the columns value in the environment for curses. */
 	(void)snprintf(buf, sizeof(buf), "COLUMNS=%lu", val);
 	if (opt_putenv(buf))
@@ -116,12 +86,6 @@ DECL(f_columns)
 	O_VAL(sp, O_COLUMNS) =  val;
 
 	F_SET(sp, S_RESIZE);
-	return (0);
-}
-
-DECL(f_keytime)
-{
-	O_VAL(sp, O_KEYTIME) = val;
 	return (0);
 }
 
@@ -186,12 +150,6 @@ DECL(f_list)
 		O_SET(sp, O_LIST);
 
 	F_SET(sp, S_REFORMAT | S_REDRAW);
-	return (0);
-}
-
-DECL(f_matchtime)
-{
-	O_VAL(sp, O_MATCHTIME) = val;
 	return (0);
 }
 
@@ -296,15 +254,6 @@ DECL(f_readonly)
 	return (0);
 }
 
-DECL(f_ruler)
-{
-	if (turnoff)
-		O_CLR(sp, O_RULER);
-	else
-		O_SET(sp, O_RULER);
-	return (0);
-}
-
 DECL(f_section)
 {
 	if (strlen(str) & 1) {
@@ -321,23 +270,7 @@ DECL(f_shiftwidth)
 		msgq(sp, M_ERR, "The shiftwidth can't be set to 0");
 		return (1);
 	}
-	if (val > O_VAL(sp, O_COLUMNS)) {
-		msgq(sp, M_ERR,
-		    "Shiftwidth can't be larger than screen size");
-		return (1);
-	}
 	O_VAL(sp, O_SHIFTWIDTH) = val;
-	return (0);
-}
-
-DECL(f_sidescroll)
-{
-	if (val > O_VAL(sp, O_COLUMNS)) {
-		msgq(sp, M_ERR,
-		    "Sidescroll can't be larger than screen size");
-		return (1);
-	}
-	O_VAL(sp, O_SIDESCROLL) = val;
 	return (0);
 }
 
@@ -368,12 +301,6 @@ DECL(f_tabstop)
 		    "Tab stops can't be larger than %d", MAXTABSTOP);
 		return (1);
 	}
-	if (val > O_VAL(sp, O_COLUMNS)) {
-		msgq(sp, M_ERR,
-		    "Tab stops can't be larger than screen size",
-		    MAXTABSTOP);
-		return (1);
-	}
 	O_VAL(sp, O_TABSTOP) = val;
 
 	F_SET(sp, S_REFORMAT | S_REDRAW);
@@ -395,13 +322,6 @@ DECL(f_term)
 	/* Set the terminal value in the environment for curses. */
 	(void)snprintf(buf, sizeof(buf), "TERM=%s", str);
 	if (opt_putenv(buf))
-		return (1);
-
-#ifdef SYSV_CURSES
-	(void)setterm(O_STR(sp, O_TERM));
-#endif
-
-	if (set_window_size(sp, 0, 0))
 		return (1);
 	return (0);
 }
@@ -483,17 +403,6 @@ DECL(f_window)
 	return (0);
 }
 
-DECL(f_wrapmargin)
-{
-	if (val > O_VAL(sp, O_COLUMNS)) {
-		msgq(sp, M_ERR,
-		    "Wrapmargin value can't be larger than screen size");
-		return (1);
-	}
-	O_VAL(sp, O_WRAPMARGIN) = val;
-	return (0);
-}
-
 /*
  * opt_dup --
  *	Copy a string value for user display.
@@ -538,7 +447,10 @@ opt_putenv(s)
 {
 	char *t;
 
-	/* Memory leak. */
+	/*
+	 * XXX
+	 * Memory leak.
+	 */
 	if ((t = strdup(s)) == NULL)
 		return (1);
 	return (putenv(t));
