@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: util.h,v 10.4 1996/03/06 19:51:05 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:51:05 $
+ *	$Id: util.h,v 10.5 1996/03/16 14:42:47 bostic Exp $ (Berkeley) $Date: 1996/03/16 14:42:47 $
  */
 
 /* Macros to init/set/clear/test flags. */
@@ -24,18 +24,6 @@
 #define	F_SET(p, f)	FL_SET((p)->flags, f)
 #define	F_CLR(p, f)	FL_CLR((p)->flags, f)
 #define	F_ISSET(p, f)	FL_ISSET((p)->flags, f)
-
-/*
- * XXX
- * MIN/MAX have traditionally been in <sys/param.h>.  Don't try to get them
- * from there, it's just not worth the effort.
- */
-#ifndef	MAX
-#define	MAX(_a,_b)	((_a)<(_b)?(_b):(_a))
-#endif
-#ifndef	MIN
-#define	MIN(_a,_b)	((_a)<(_b)?(_a):(_b))
-#endif
 
 /* Offset to next column of stop size, e.g. tab offsets. */
 #define	COL_OFF(c, stop)	((stop) - ((c) % (stop)))
