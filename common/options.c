@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 9.2 1994/11/09 18:47:04 bostic Exp $ (Berkeley) $Date: 1994/11/09 18:47:04 $";
+static char sccsid[] = "$Id: options.c,v 9.3 1994/11/09 23:04:59 bostic Exp $ (Berkeley) $Date: 1994/11/09 23:04:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -136,7 +136,7 @@ static OPTLIST const optlist[] = {
 /* O_REMAP	    4BSD */
 	{"remap",	NULL,		OPT_1BOOL,	0},
 /* O_REPORT	    4BSD */
-	{"report",	NULL,		OPT_NUM,	OPT_NOSTR},
+	{"report",	NULL,		OPT_NUM,	0},
 /* O_RULER	  4.4BSD */
 	{"ruler",	NULL,		OPT_0BOOL,	0},
 /* O_SCROLL	    4BSD */
@@ -162,7 +162,7 @@ static OPTLIST const optlist[] = {
 /* O_TABSTOP	    4BSD */
 	{"tabstop",	f_tabstop,	OPT_NUM,	0},
 /* O_TAGLENGTH	    4BSD */
-	{"taglength",	NULL,		OPT_NUM,	OPT_NOSTR},
+	{"taglength",	NULL,		OPT_NUM,	0},
 /* O_TAGS	    4BSD */
 	{"tags",	f_tags,		OPT_STR,	0},
 /* O_TERM	    4BSD */
@@ -188,9 +188,9 @@ static OPTLIST const optlist[] = {
 /* O_WINDOW	    4BSD */
 	{"window",	f_window,	OPT_NUM,	0},
 /* O_WRAPLEN	  4.4BSD */
-	{"wraplen",	NULL,		OPT_NUM,	OPT_NOSTR},
+	{"wraplen",	NULL,		OPT_NUM,	0},
 /* O_WRAPMARGIN	    4BSD */
-	{"wrapmargin",	NULL,		OPT_NUM,	OPT_NOSTR},
+	{"wrapmargin",	NULL,		OPT_NUM,	0},
 /* O_WRAPSCAN	    4BSD */
 	{"wrapscan",	NULL,		OPT_1BOOL,	0},
 /* O_WRITEANY	    4BSD */
@@ -516,18 +516,7 @@ found:		if (op == NULL) {
 				O_SET(sp, offset);
 			goto change;
 		case OPT_NUM:
-			/*
-			 * !!!
-			 * Extension to historic vi.  If the OPT_NOSTR flag is
-			 * set, a numeric option may be turned off by using a
-			 * "no" prefix, e.g. "nowrapmargin".  (We assume that
-			 * setting the value to 0 turns a numeric option off.)
-			 */
 			if (turnoff) {
-				if (F_ISSET(op, OPT_NOSTR)) {
-					value = 0;
-					goto nostr;
-				}
 				p = msg_print(sp, name, &nf);
 				msgq(sp, M_ERR,
 				    "056|set: %s option isn't a boolean", p);
@@ -550,7 +539,7 @@ found:		if (op == NULL) {
 					FREE_SPACE(sp, p, 0);
 				break;
 			}
-nostr:			if (op->func != NULL) {
+			if (op->func != NULL) {
 				if (op->func(sp, spo, sep, value)) {
 					rval = 1;
 					break;
