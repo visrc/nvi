@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 5.55 1993/05/01 09:35:32 bostic Exp $ (Berkeley) $Date: 1993/05/01 09:35:32 $";
+static char sccsid[] = "$Id: exf.c,v 5.56 1993/05/02 12:20:56 bostic Exp $ (Berkeley) $Date: 1993/05/02 12:20:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -125,7 +125,7 @@ file_set(sp, argc, argv)
 
 	for (; *argv; ++argv) {
 		if ((ep =
-		    file_get(sp, (EXF *)&sp->gp->exfhdr, *argv, 1)) == NULL)
+		    file_get(sp, (EXF *)&sp->gp->exfhdr, *argv, 0)) == NULL)
 			return (1);
 		F_CLR(ep, F_IGNORE);
 	}
@@ -200,8 +200,13 @@ file_start(sp, ep)
 	    (ep = file_get(sp, (EXF *)&sp->gp->exfhdr, NULL, 1)) == NULL)
 		return (NULL);
 
-	oname = ep->tname == NULL ? ep->name : ep->tname;
+	if (ep->refcnt > 0) {
+		++ep->refcnt;
+		return (ep);
+	}
 
+	oname = ep->tname == NULL ? ep->name : ep->tname;
+		
 	/* Open a db structure. */
 	ep->db = dbopen(oname, O_EXLOCK | O_NONBLOCK| O_RDONLY,
 	    DEFFILEMODE, DB_RECNO, NULL);
@@ -218,21 +223,20 @@ file_start(sp, ep)
 		return (NULL);
 	}
 
-	if (ep->refcnt == 0) {
-		/* Flush the line caches. */
-		ep->c_lno = ep->c_nlines = OOBLNO;
+	/* Flush the line caches. */
+	ep->c_lno = ep->c_nlines = OOBLNO;
 
-		/* Start logging. */
-		log_init(sp, ep);
+	/* Start logging. */
+	log_init(sp, ep);
 
-		/*
-		 * Reset any marks.
-		 *
-		 * XXX
-		 * This shouldn't be here.
-		 */
-		mark_reset(sp, ep);
-	}
+	/*
+	 * Reset any marks.
+	 *
+	 * XXX
+	 * This shouldn't be here.
+	 */
+	mark_reset(sp, ep);
+
 	++ep->refcnt;
 	return (ep);
 }
