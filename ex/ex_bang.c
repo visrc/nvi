@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 5.17 1992/10/29 14:38:32 bostic Exp $ (Berkeley) $Date: 1992/10/29 14:38:32 $";
+static char sccsid[] = "$Id: ex_bang.c,v 5.18 1992/11/01 14:10:32 bostic Exp $ (Berkeley) $Date: 1992/11/01 14:10:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,7 +35,6 @@ ex_bang(cmdp)
 	static u_char *lastcom;
 	register int ch, len, modified;
 	register u_char *p, *t;
-	EXF *ep;
 	u_char *com;
 
 	/* Make sure we got something. */
@@ -66,13 +65,11 @@ ex_bang(cmdp)
 			modified = 1;
 			break;
 		case '#':
-			if (ep == NULL)
-				ep = file_prev(curf);
-			if (ep == NULL || ep->flags & F_NONAME) {
+			if (curf->flags & F_NONAME) {
 				msg("No filename to substitute for #.");
 				return (1);
 			}
-			len += ep->nlen;
+			len += curf->nlen;
 			modified = 1;
 			break;
 		case '\\':
@@ -101,8 +98,8 @@ ex_bang(cmdp)
 				t += curf->nlen;
 				break;
 			case '#':
-				bcopy(ep->name, t, ep->nlen);
-				t += ep->nlen;
+				bcopy(curf->name, t, curf->nlen);
+				t += curf->nlen;
 				break;
 			case '\\':
 				if (*p)
