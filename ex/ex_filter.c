@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 8.13 1993/09/13 19:36:02 bostic Exp $ (Berkeley) $Date: 1993/09/13 19:36:02 $";
+static char sccsid[] = "$Id: ex_filter.c,v 8.14 1993/09/13 21:24:33 bostic Exp $ (Berkeley) $Date: 1993/09/13 21:24:33 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -280,13 +280,14 @@ uwait:	rval |= filter_wait(sp, utility_pid, cmd, 0);
  * filter_wait --
  *	Wait for one of the filter processes.
  */
-int
+static int
 filter_wait(sp, pid, cmd, okpipe)
 	SCR *sp;
 	pid_t pid;
 	char *cmd;
 	int okpipe;
 {
+	extern const char *const sys_siglist[];
 	size_t len;
 	int pstat;
 
