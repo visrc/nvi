@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.22 1993/08/29 14:22:23 bostic Exp $ (Berkeley) $Date: 1993/08/29 14:22:23 $";
+static char sccsid[] = "$Id: ex.c,v 8.23 1993/09/02 13:05:18 bostic Exp $ (Berkeley) $Date: 1993/09/02 13:05:18 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1208,8 +1208,8 @@ ep_line(sp, ep, cmd, cur)
 		case '/':		/* Search forward. */
 			sm.lno = sp->lno;
 			sm.cno = sp->cno;
-			if (f_search(sp, ep,
-			    &sm, &sm, cmd, &endp, SEARCH_MSG | SEARCH_PARSE))
+			if (f_search(sp, ep, &sm, &sm,
+			    cmd, &endp, SEARCH_MSG | SEARCH_PARSE | SEARCH_SET))
 				return (NULL);
 			cur->lno = sp->lno = sm.lno;
 			cur->cno = sp->cno = sm.cno;
@@ -1218,8 +1218,8 @@ ep_line(sp, ep, cmd, cur)
 		case '?':		/* Search backward. */
 			sm.lno = sp->lno;
 			sm.cno = sp->cno;
-			if (b_search(sp, ep,
-			    &sm, &sm, cmd, &endp, SEARCH_MSG | SEARCH_PARSE))
+			if (b_search(sp, ep, &sm, &sm,
+			    cmd, &endp, SEARCH_MSG | SEARCH_PARSE | SEARCH_SET))
 				return (NULL);
 			cur->lno = sp->lno = sm.lno;
 			cur->cno = sp->cno = sm.cno;
@@ -1241,7 +1241,7 @@ ep_line(sp, ep, cmd, cur)
 			cur->cno = sp->cno;
 			break;
 		default:
-			return cmd;
+			return (cmd);
 		}
 
 		/*
