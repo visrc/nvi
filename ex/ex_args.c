@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 10.1 1995/04/13 17:21:58 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:21:58 $";
+static char sccsid[] = "$Id: ex_args.c,v 10.2 1995/05/05 18:49:12 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:49:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -29,7 +29,6 @@ static char sccsid[] = "$Id: ex_args.c,v 10.1 1995/04/13 17:21:58 bostic Exp $ (
 #include <regex.h>
 
 #include "common.h"
-#include "../vi/vi.h"
 
 static int ex_N_next __P((SCR *, EXCMD *));
 
@@ -42,6 +41,8 @@ static int ex_N_next __P((SCR *, EXCMD *));
  * historic vi.  See nvi/docs/autowrite for details, but the basic
  * idea was that it ignored the force flag if the autowrite flag was
  * set.  This implementation handles them all identically.
+ *
+ * PUBLIC: int ex_next __P((SCR *, EXCMD *));
  */
 int
 ex_next(sp, cmdp)
@@ -178,6 +179,8 @@ ex_N_next(sp, cmdp)
 /*
  * ex_prev -- :prev
  *	Edit the previous file.
+ *
+ * PUBLIC: int ex_prev __P((SCR *, EXCMD *));
  */
 int
 ex_prev(sp, cmdp)
@@ -222,6 +225,8 @@ ex_prev(sp, cmdp)
  * and we can't clear the FR_CURSORSET bit for a single screen.  I don't see
  * anyone noticing, but if they do, we'll have to put information into the SCR
  * structure so we can keep track of it.
+ *
+ * PUBLIC: int ex_rew __P((SCR *, EXCMD *));
  */
 int
 ex_rew(sp, cmdp)
@@ -256,6 +261,8 @@ ex_rew(sp, cmdp)
 /*
  * ex_args -- :args
  *	Display the list of files.
+ *
+ * PUBLIC: int ex_args __P((SCR *, EXCMD *));
  */
 int
 ex_args(sp, cmdp)
@@ -276,22 +283,22 @@ ex_args(sp, cmdp)
 		if (col >= sp->cols - 1) {
 			col = len;
 			sep = 0;
-			(void)ex_printf(EXCOOKIE, "\n");
+			(void)ex_puts(sp, "\n");
 		} else if (cnt != 1) {
 			sep = 1;
-			(void)ex_printf(EXCOOKIE, " ");
+			(void)ex_puts(sp, " ");
 		}
 		++cnt;
 
 		if (ap == sp->cargv)
-			(void)ex_printf(EXCOOKIE, "[%s]", *ap);
+			(void)ex_printf(sp, "[%s]", *ap);
 		else
-			(void)ex_printf(EXCOOKIE, "%s", *ap);
+			(void)ex_puts(sp, *ap);
 		if (INTERRUPTED(sp))
 			break;
 	}
 	if (!INTERRUPTED(sp))
-		(void)ex_printf(EXCOOKIE, "\n");
+		(void)ex_puts(sp, "\n");
 	F_SET(sp, S_EX_WROTE);
 
 	return (0);

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_display.c,v 10.1 1995/04/13 17:22:06 bostic Exp $ (Berkeley) $Date: 1995/04/13 17:22:06 $";
+static char sccsid[] = "$Id: ex_display.c,v 10.2 1995/05/05 18:50:03 bostic Exp $ (Berkeley) $Date: 1995/05/05 18:50:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -37,6 +37,8 @@ static void	db __P((SCR *, CB *, CHAR_T *));
  * ex_display -- :display b[uffers] | s[creens] | t[ags]
  *
  *	Display buffers, tags or screens.
+ *
+ * PUBLIC: int ex_display __P((SCR *, EXCMD *));
  */
 int
 ex_display(sp, cmdp)
@@ -126,16 +128,16 @@ db(sp, cbp, name)
 	TEXT *tp;
 	size_t len;
 
-	(void)ex_printf(EXCOOKIE, "********** %s%s\n",
+	(void)ex_printf(sp, "********** %s%s\n",
 	    name == NULL ? KEY_NAME(sp, cbp->name) : name,
 	    F_ISSET(cbp, CB_LMODE) ? " (line mode)" : " (character mode)");
 	for (tp = cbp->textq.cqh_first;
 	    tp != (void *)&cbp->textq; tp = tp->q.cqe_next) {
 		for (len = tp->len, p = tp->lb; len--; ++p) {
-			(void)ex_printf(EXCOOKIE, "%s", KEY_NAME(sp, *p));
+			(void)ex_puts(sp, KEY_NAME(sp, *p));
 			if (INTERRUPTED(sp))
 				return;
 		}
-		(void)ex_printf(EXCOOKIE, "\n");
+		(void)ex_puts(sp, "\n");
 	}
 }
