@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_filter.c,v 8.5 1993/09/09 16:51:52 bostic Exp $ (Berkeley) $Date: 1993/09/09 16:51:52 $";
+static char sccsid[] = "$Id: ex_filter.c,v 8.6 1993/09/09 18:26:35 bostic Exp $ (Berkeley) $Date: 1993/09/09 18:26:35 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,8 +22,9 @@ static char sccsid[] = "$Id: ex_filter.c,v 8.5 1993/09/09 16:51:52 bostic Exp $ 
 #include "vi.h"
 #include "excmd.h"
 
-static int	ldisplay __P((SCR *, FILE *));
+static void	filter_intr __P((int));
 static int	filter_wait __P((SCR *, pid_t, char *, int));
+static int	filter_ldisplay __P((SCR *, FILE *));
 
 /*
  * filtercmd --
@@ -39,6 +40,7 @@ filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
 	char *cmd;
 	enum filtertype ftype;
 {
+	struct termios n, t;
 	FILE *ifp, *ofp;		/* GCC: can't be uninitialized. */
 	pid_t parent_writer_pid, utility_pid;
 	recno_t lno, nread;
@@ -85,6 +87,10 @@ filtercmd(sp, ep, fm, tm, rp, cmd, ftype)
 	if (pipe(output) < 0 || (ofp = fdopen(output[0], "r")) == NULL)
 		goto err;
 
+	/* Install an interrupt catcher so that only the utility dies. */
+	(void)tcgetattr(STDIN_FILENO, &t);
+	(void)signal(SIGINT, filter_intr);
+
 	/* Fork off the utility process. */
 	switch (utility_pid = vfork()) {
 	case -1:			/* Error. */
@@ -104,6 +110,15 @@ err:		if (input[0] != -1)
 		return (1);
 	case 0:				/* Utility. */
 		/*
+		 * Turn interrupts on; ISIG enables VINTR, VQUIT and VSUSP.
+		 * We want both VINTR and VSUSP, VQUIT is probably a don't
+		 * care.
+		 */
+		n = t;
+		n.c_lflag |= ISIG;
+		(void)tcsetattr(STDIN_FILENO, TCSANOW, &n);
+
+		/*
 		 * Redirect stdin from the read end of the input pipe,
 		 * and redirect stdout/stderr to the write end of the
 		 * output pipe.
@@ -122,6 +137,7 @@ err:		if (input[0] != -1)
 			name = O_STR(sp, O_SHELL);
 		else
 			++name;
+
 		execl(O_STR(sp, O_SHELL), name, "-c", cmd, NULL);
 		msgq(sp, M_ERR,
 		    "exec: %s: %s", O_STR(sp, O_SHELL), strerror(errno));
@@ -151,7 +167,7 @@ err:		if (input[0] != -1)
 			rp->lno = nread;
 		else
 			rp->lno += nread;
-		return (rval | filter_wait(sp, utility_pid, cmd, 0));
+		goto uwait;
 	}
 
 	/*
@@ -188,12 +204,11 @@ err:		if (input[0] != -1)
 	F_SET(ep, F_MULTILOCK);
 	switch (parent_writer_pid = fork()) {
 	case -1:			/* Error. */
+		rval = 1;
 		msgq(sp, M_ERR, "filter: %s", strerror(errno));
 		(void)close(input[1]);
 		(void)close(output[0]);
-		(void)filter_wait(sp, utility_pid, cmd, 0);
-		F_CLR(ep, F_MULTILOCK);
-		return (1);
+		break;
 	case 0:				/* Parent-writer. */
 		/*
 		 * Write the selected lines to the write end of the
@@ -208,9 +223,9 @@ err:		if (input[0] != -1)
 		if (ftype == FILTER_WRITE)
 			/*
 			 * Read the output from the read end of the output
-			 * pipe and display it.  Ldisplay closes ofp.
+			 * pipe and display it.  Filter_ldisplay closes ofp.
 			 */
-			rval = ldisplay(sp, ofp);
+			rval = filter_ldisplay(sp, ofp);
 		else {
 			/*
 			 * Read the output from the read end of the output
@@ -219,24 +234,33 @@ err:		if (input[0] != -1)
 			 */
 			rval = ex_readfp(sp, ep, "filter", ofp, tm, &nread, 0);
 			sp->rptlines[L_ADDED] += nread;
-
-			/* Delete any lines written to the utility. */
-			if (rval == 0) {
-				for (lno = tm->lno; lno >= fm->lno; --lno)
-					if (file_dline(sp, ep, lno)) {
-						rval = 1;
-						break;
-					}
-				if (rval == 0)
-					sp->rptlines[L_DELETED] +=
-					    (tm->lno - fm->lno) + 1;
-			}
 		}
+
+		/* Wait for the parent-writer. */
 		rval |= filter_wait(sp, parent_writer_pid, "parent-writer", 1);
+
+		/* Delete any lines written to the utility. */
+		if (ftype == FILTER && rval == 0) {
+			for (lno = tm->lno; lno >= fm->lno; --lno)
+				if (file_dline(sp, ep, lno)) {
+					rval = 1;
+					break;
+				}
+			if (rval == 0)
+				sp->rptlines[L_DELETED] +=
+				    (tm->lno - fm->lno) + 1;
+		}
 		break;
 	}
 	F_CLR(ep, F_MULTILOCK);
-	return (rval | filter_wait(sp, utility_pid, cmd, 0));
+
+uwait:	rval |= filter_wait(sp, utility_pid, cmd, 0);
+
+	/* Restore ex/vi terminal settings. */
+	if (tcsetattr(STDIN_FILENO, TCSANOW, &t))
+		msgq(sp, M_ERR, "tcsetattr: %s", strerror(errno));
+
+	return (rval);
 }
 
 /*
@@ -250,20 +274,11 @@ filter_wait(sp, pid, cmd, okpipe)
 	char *cmd;
 	int okpipe;
 {
-	sig_ret_t intsave, quitsave;
 	size_t len;
 	int pstat;
 
-	/* Save the parent's signal values. */
-	intsave = signal(SIGINT, SIG_IGN);
-	quitsave = signal(SIGQUIT, SIG_IGN);
-
 	/* Wait for the utility to finish. */
 	(void)waitpid(pid, &pstat, 0);
-
-	/* Restore the parent's signal masks. */
-	(void)signal(SIGINT, intsave);
-	(void)signal(SIGQUIT, quitsave);
 
 	/*
 	 * Display the utility's exit status.  Ignore SIGPIPE from the
@@ -271,6 +286,7 @@ filter_wait(sp, pid, cmd, okpipe)
 	 * exit before reading all of its input.
 	 */
 	if (WIFSIGNALED(pstat) && (!okpipe || WTERMSIG(pstat) != SIGPIPE)) {
+		for (; isblank(*cmd); ++cmd);
 		len = strlen(cmd);
 		msgq(sp, M_ERR, "%.*s%s: received signal: %s%s.",
 		    MIN(len, 20), cmd, len > 20 ? "..." : "",
@@ -279,6 +295,7 @@ filter_wait(sp, pid, cmd, okpipe)
 		return (1);
 	}
 	if (WIFEXITED(pstat) && WEXITSTATUS(pstat)) {
+		for (; isblank(*cmd); ++cmd);
 		len = strlen(cmd);
 		msgq(sp, M_ERR, "%.*s%s: exited with status %d",
 		    MIN(len, 20), cmd, len > 20 ? "..." : "",
@@ -289,7 +306,7 @@ filter_wait(sp, pid, cmd, okpipe)
 }
 
 /*
- * ldisplay --
+ * filter_ldisplay --
  *	Display a line output from a utility.
  *
  * XXX
@@ -297,7 +314,7 @@ filter_wait(sp, pid, cmd, okpipe)
  * into a single display routine.
  */
 static int
-ldisplay(sp, fp)
+filter_ldisplay(sp, fp)
 	SCR *sp;
 	FILE *fp;
 {
@@ -324,4 +341,15 @@ ldisplay(sp, fp)
 		return (1);
 	}
 	return (0);
+}
+
+/*
+ * filter_intr --
+ *	Ignore an interrupt signal.
+ */
+static void
+filter_intr(signo)
+	int signo;
+{
+	return;
 }
