@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vs_smap.c,v 8.10 1993/09/09 10:27:04 bostic Exp $ (Berkeley) $Date: 1993/09/09 10:27:04 $";
+static char sccsid[] = "$Id: vs_smap.c,v 8.11 1993/09/10 18:39:27 bostic Exp $ (Berkeley) $Date: 1993/09/10 18:39:27 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -44,7 +44,7 @@ svi_change(sp, ep, lno, op)
 		return (0);
 
 	/* Flush cached information from svi_screens(). */
-	((SVI_PRIVATE *)(sp->svi_private))->ss_lno = OOBLNO;
+	SVP(sp)->ss_lno = OOBLNO;
 
 	/*
 	 * If the line is before the map, and it's a decrement, decrement
@@ -72,7 +72,7 @@ svi_change(sp, ep, lno, op)
 
 	/* Invalidate the cursor, if it's on this line. */
 	if (sp->lno == lno)
-		F_SET(sp, S_CUR_INVALID);
+		F_SET(SVP(sp), SVI_CUR_INVALID);
 
 	getyx(stdscr, oldy, oldx);
 
@@ -508,7 +508,7 @@ svi_sm_up(sp, ep, rp, count, cursor_move)
 		 * If the line itself moved, invalidate the cursor, because
 		 * the comparison with the old line/new line won't be right
 		 */
-		F_SET(sp, S_CUR_INVALID);
+		F_SET(SVP(sp), SVI_CUR_INVALID);
 
 		/* It's an error if we didn't scroll enough. */
 		if (!scrolled || count) {
@@ -666,7 +666,7 @@ svi_sm_down(sp, ep, rp, count, cursor_move)
 		 * If the line itself moved, invalidate the cursor, because
 		 * the comparison with the old line/new line won't be right.
 		 */
-		F_SET(sp, S_CUR_INVALID);
+		F_SET(SVP(sp), SVI_CUR_INVALID);
 
 		/* It's an error if we didn't scroll enough. */
 		if (!scrolled || count) {
