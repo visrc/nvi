@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: gs.h,v 10.12 1995/09/28 13:14:52 bostic Exp $ (Berkeley) $Date: 1995/09/28 13:14:52 $
+ *	$Id: gs.h,v 10.13 1995/09/29 16:23:33 bostic Exp $ (Berkeley) $Date: 1995/09/29 16:23:33 $
  */
 
 #define	TEMPORARY_FILE_STRING	"/tmp"	/* Default temporary file name. */
@@ -153,8 +153,6 @@ struct _gs {
 	int	(*scr_cursor) __P((SCR *, size_t *, size_t *));
 					/* Delete a line. */
 	int	(*scr_deleteln) __P((SCR *));
-					/* Discard a screen. */
-	int	(*scr_discard) __P((SCR *, SCR **, dir_t *));
 					/* Get a keyboard event. */
 	int	(*scr_event) __P((SCR *, EVENT *, u_int32_t, int));
 					/* Ex: screen adjustment routine. */
@@ -175,12 +173,8 @@ struct _gs {
 	int	(*scr_refresh) __P((SCR *, int));
 					/* Rename the file. */
 	int	(*scr_rename) __P((SCR *));
-					/* Resize two screens. */
-	int	(*scr_resize) __P((SCR *, long, long, SCR *, long, long));
 					/* Set the screen type. */
 	int	(*scr_screen) __P((SCR *, u_int32_t));
-					/* Split the screen. */
-	int	(*scr_split) __P((SCR *, SCR *, int));
 					/* Suspend the editor. */
 	int	(*scr_suspend) __P((SCR *, int *));
 					/* Print usage message. */
