@@ -1,0 +1,18 @@
+/* $Id: pathnames.h.in,v 8.1 1996/03/06 19:48:21 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:48:21 $ */
+
+#define	_PATH_BSHELL	"@vi_cv_path_shell@"
+#define	_PATH_EXRC	".exrc"
+#define	_PATH_MSGCAT	"./"
+#define	_PATH_NEXRC	".nexrc"
+#define	_PATH_PRESERVE	"@vi_cv_path_preserve@/vi.recover"
+#define	_PATH_SENDMAIL	"@vi_cv_path_sendmail@"
+#define	_PATH_SYSEXRC	"/etc/vi.exrc"
+#define	_PATH_TAGS	"tags"
+
+#ifndef _PATH_TMP
+#define	_PATH_TMP	"/tmp"
+#endif
+
+#ifndef _PATH_TTY
+#define	_PATH_TTY	"/dev/tty"
+#endif
