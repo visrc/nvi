@@ -10,8 +10,25 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_menu.c,v 8.6 1996/11/27 09:28:38 bostic Exp $ (Berkeley) $Date: 1996/11/27 09:28:38 $";
+static const char sccsid[] = "$Id: m_menu.c,v 8.7 1996/11/27 10:09:33 bostic Exp $ (Berkeley) $Date: 1996/11/27 10:09:33 $";
 #endif /* not lint */
+
+#include "X11/Intrinsic.h"
+#include "X11/StringDefs.h"
+#include "Xm/PushB.h"
+#include "Xm/CascadeB.h"
+#include "Xm/RowColumn.h"
+#include "Xm/Separator.h"
+#include "Xm/FileSB.h"
+#include "Xm/SelectioB.h"
+
+#include <sys/queue.h>
+
+#include <bitstring.h>
+#include <stdio.h>
+
+#include "../common/common.h"
+#include "../ip_vi/ip.h"
 
 /* This module defines the menu structure for vi.  Each menu
  * item has an action routine associated with it.  For the most
@@ -36,29 +53,6 @@ static const char sccsid[] = "$Id: m_menu.c,v 8.6 1996/11/27 09:28:38 bostic Exp
  *		X menu structure.  The caller can place this
  *		anywhere in the widget heirarchy.
  */
-
-#include "config.h"
-
-#ifndef lint
-static const char sccsid[] = "";
-#endif /* not lint */
-
-#include "X11/Intrinsic.h"
-#include "X11/StringDefs.h"
-#include "Xm/PushB.h"
-#include "Xm/CascadeB.h"
-#include "Xm/RowColumn.h"
-#include "Xm/Separator.h"
-#include "Xm/FileSB.h"
-#include "Xm/SelectioB.h"
-
-#include <sys/queue.h>
-
-#include <bitstring.h>
-#include <stdio.h>
-
-#include "../common/common.h"
-#include "../ip_vi/ip.h"
 
 #define	BufferSize	1024
 

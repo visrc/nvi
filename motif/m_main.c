@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: m_main.c,v 8.8 1996/11/27 09:28:38 bostic Exp $ (Berkeley) $Date: 1996/11/27 09:28:38 $";
+static const char sccsid[] = "$Id: m_main.c,v 8.9 1996/11/27 10:09:32 bostic Exp $ (Berkeley) $Date: 1996/11/27 10:09:32 $";
 #endif /* not lint */
 
 #include "config.h"
@@ -1469,62 +1469,15 @@ main(argc, argv)
 	int argc;
 	char *argv[];
 {
-	extern int optind;	/* RAZ 29 Oct 96 */
-	fd_set fdset;
-	pid_t pid;
-	size_t blen, len, skip;
-	int ch, nr, rpipe[2], wpipe[2];
-
-	/* Initialize the X widgetry.
-	 * We must do this before picking off arguments as well-behaved
-	 * X programs have common argument lists (e.g. -rv for reverse
-	 * video).
-	 */
-	ip_x_init( &argc, argv );
-
-	while ((ch = getopt(argc, argv, "D")) != EOF)
-		switch (ch) {
-		case 'D':
-			attach();
-			break;
-		case '?':
-		default:
-			usage();
-		}
-	argc -= optind;
-	argv += optind;
-
 	/*
-	 * Open the communications pipes.  The pipes are named from our
-	 * viewpoint, so we read from rpipe[0] and write to wpipe[1].
-	 * Vi reads from wpipe[0], and writes to rpipe[1].
+	 * Initialize the X widgetry.  We must do this before picking off
+	 * arguments as well-behaved X programs have common argument lists
+	 * (e.g. -rv for reverse video).
 	 */
-	if (pipe(rpipe) == -1 || pipe(wpipe) == -1) {
-		perror("ip_cl: pipe");
-		exit (1);
-	}
-	i_fd = rpipe[0];
-	o_fd = wpipe[1];
+	ip_x_init(&argc, argv );
 
-	/*
-	 * Format our arguments, adding a -I to the list.  The first file
-	 * descriptor to the -I argument is vi's input, and the second is
-	 * vi's output.
-	 */
-	arg_format(&argc, &argv, wpipe[0], rpipe[1]);
-
-	/* Run vi. */
-	switch (pid = fork()) {
-	case -1:				/* Error. */
-		perror("ip_cl: fork");
-		exit (1);
-	case 0:					/* Vi. */
-		execv(VI, argv);
-		perror("ip_cl: execv ../build/nvi");
-		exit (1);
-	default:				/* Ip_cl. */
-		break;
-	}
+	/* Run vi: the child returns. */
+	run_vi("vi_motif", argc, argv, &i_fd, &o_fd);
 
 	/* Initialize signals. */
 	ip_siginit();
@@ -1540,38 +1493,6 @@ main(argc, argv)
 
 	/* Main loop. */
 	XtAppMainLoop( ctx );
-}
-
-/*
- * arg_format
- */
-void
-arg_format(argcp, argvp, i_fd, o_fd)
-	int *argcp, i_fd, o_fd;
-	char **argvp[];
-{
-	char **largv, *iarg, *p;
-
-	/* Get space for the argument array and the -I argument. */
-	if ((iarg = malloc(64)) == NULL ||
-	    (largv = (char **) malloc((*argcp + 3) * sizeof(char *))) == NULL) {
-		perror("ip_cl");
-		exit (1);
-	}
-	memcpy((char*)largv + 2, (char *)*argvp, *argcp * sizeof(char *) + 1);
-
-	/* Reset argv[0] to be the exec'd program. */
-	if ((p = strrchr(VI, '/')) == NULL)
-		largv[0] = VI;
-	else
-		largv[0] = p + 1;
-
-	/* Create the -I argument. */
-	(void)sprintf(iarg, "-I%d%s%d", i_fd, ".", o_fd);
-	largv[1] = iarg;
-
-	/* Reset the argument array. */
-	*argvp = largv;
 }
 
 /*
