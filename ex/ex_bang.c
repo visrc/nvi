@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 8.31 1994/08/07 15:21:00 bostic Exp $ (Berkeley) $Date: 1994/08/07 15:21:00 $";
+static char sccsid[] = "$Id: ex_bang.c,v 8.32 1994/08/08 06:53:47 bostic Exp $ (Berkeley) $Date: 1994/08/08 06:53:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -108,9 +108,6 @@ ex_bang(sp, ep, cmdp)
 		}
 	}
 
-	/* Autoprint is set historically, even if the command fails. */
-	F_SET(exp, EX_AUTOPRINT);
-
 	/*
 	 * If addresses were specified, pipe lines from the file through the
 	 * command.
@@ -121,6 +118,9 @@ ex_bang(sp, ep, cmdp)
 	 * vi's historic behavior.
 	 */
 	if (cmdp->addrcnt != 0) {
+		/* Autoprint is set historically, even if the command fails. */
+		F_SET(exp, EX_AUTOPRINT);
+
 		/* Vi gets a busy message. */
 		if (bp != NULL)
 			(void)sp->s_busy(sp, bp);
