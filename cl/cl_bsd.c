@@ -1,3 +1,15 @@
+/*-
+ * Copyright (c) 1995
+ *	Keith Bostic.  All rights reserved.
+ *
+ * %sccs.include.redist.c%
+ */
+
+#ifndef lint
+static char sccsid[] = "$Id: cl_bsd.c,v 8.6 1995/10/31 20:12:53 bostic Exp $ (Berkeley) $Date: 1995/10/31 20:12:53 $";
+#endif /* not lint */
+
+#ifdef BSD_CURSES_INTERFACE
 #include <curses.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -223,3 +235,4 @@ tigetnum(name)
 {
 	return (tgetnum(name));
 }
+#endif /* BSD_CURSES_INTERFACE */
