@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: exf.c,v 8.1 1993/06/09 22:20:47 bostic Exp $ (Berkeley) $Date: 1993/06/09 22:20:47 $";
+static char sccsid[] = "$Id: exf.c,v 8.2 1993/06/18 12:23:23 bostic Exp $ (Berkeley) $Date: 1993/06/18 12:23:23 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -231,23 +231,24 @@ file_start(sp, ep, rcv_fname)
 	/* Set up recovery. */
 	memset(&oinfo, 0, sizeof(RECNOINFO));
 	oinfo.bval = '\n';			/* Always set. */
-	oinfo.bfname = NULL;			/* Default. */
-	oinfo.psize = 0;			/* Default. */
+	oinfo.psize = psize;
 	oinfo.flags = F_ISSET(sp->gp, G_SNAPSHOT) ? R_SNAPSHOT : 0;
 	if (rcv_fname == NULL) {
 		if (rcv_tmp(sp, ep)) {
+			oinfo.bfname = NULL;
 			msgq(sp, M_ERR,
 		    "Modifications not recoverable if the system crashes.");
 		} else {
 			F_SET(ep, F_RCV_ON);
 			oinfo.bfname = ep->rcv_path;
-			oinfo.psize = psize;
 		}
 	} else if ((ep->rcv_path = strdup(rcv_fname)) == NULL) {
 		msgq(sp, M_ERR, "Error: %s", strerror(errno));
 		return (NULL);
-	} else
+	} else {
+		oinfo.bfname = ep->rcv_path;
 		F_SET(ep, F_MODIFIED);
+	}
 
 	/*
 	 * Open a db structure.
