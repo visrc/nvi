@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ip_run.c,v 8.5 1996/12/11 13:05:47 bostic Exp $ (Berkeley) $Date: 1996/12/11 13:05:47 $";
+static const char sccsid[] = "$Id: ip_run.c,v 8.6 1996/12/11 15:46:04 bostic Exp $ (Berkeley) $Date: 1996/12/11 15:46:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -108,9 +108,9 @@ vi_run(argc, argv, ip, op, pidp)
 
 	/*
 	 * Open the communications channels.  The pipes are named from the
-	 * parent's viewpoint, meaning we read from rpipe[0] and write to
-	 * wpipe[1].  The vi process reads from wpipe[0], and it writes to
-	 * rpipe[1].
+	 * parent's viewpoint, meaning the screen reads from rpipe[0] and
+	 * writes to wpipe[1].  The vi process reads from wpipe[0], and it
+	 * writes to rpipe[1].
 	 */
 	if (pipe(rpipe) == -1 || pipe(wpipe) == -1)
 		fatal();
@@ -130,6 +130,9 @@ vi_run(argc, argv, ip, op, pidp)
 		fatal();
 		/* NOTREACHED */
 	case 0:					/* Child: Vi. */
+		(void)close(rpipe[0]);
+		(void)close(wpipe[1]);
+
 		/*
 		 * If the user didn't override the path and there's a local
 		 * (debugging) nvi, run it, otherwise run the user's path,
@@ -149,6 +152,8 @@ vi_run(argc, argv, ip, op, pidp)
 		    vi_progname);
 		_exit (1);
 	default:				/* Parent: Screen. */
+		(void)close(rpipe[1]);
+		(void)close(wpipe[0]);
 		break;
 	}
 	return (0);
