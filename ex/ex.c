@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.11 1992/04/14 09:03:56 bostic Exp $ (Berkeley) $Date: 1992/04/14 09:03:56 $";
+static char sccsid[] = "$Id: ex.c,v 5.12 1992/04/15 09:11:38 bostic Exp $ (Berkeley) $Date: 1992/04/15 09:11:38 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -59,7 +59,7 @@ ex()
 		refresh();
 
 		/* Parse & execute the command. */
-		(void)excmd(cmdbuf);
+		(void)ex_cmd(cmdbuf);
 
 		/* Handle autoprint. */
 		if (significant || markline(cursor) != oldline) {
@@ -75,11 +75,11 @@ ex()
 }
 
 /*
- * exfile --
+ * ex_cfile --
  *	Execute EX commands from a file.
  */
 int
-exfile(filename, noexisterr)
+ex_cfile(filename, noexisterr)
 	char *filename;
 	int noexisterr;
 {
@@ -106,7 +106,7 @@ exfile(filename, noexisterr)
 	}
 	bp[sb.st_size] = '\0';
 
-	rval = exstring(bp, len);
+	rval = ex_cstring(bp, len);
 	free(bp);
 	(void)close(fd);
 	return (rval);
@@ -118,13 +118,13 @@ e1:	msg("%s: %s.", filename, strerror(errno));
 }
 
 /*
- * exstring --
+ * ex_cstring --
  *	Execute EX commands from a string.  The commands may be separated
  *	by newlines or by | characters, and may be quoted.  The string is
  *	expected to be EOS terminated.
  */
 int
-exstring(cmd, len)
+ex_cstring(cmd, len)
 	register char *cmd;
 	register int len;
 {
@@ -150,7 +150,7 @@ exstring(cmd, len)
 		case '\0':
 			if (p > cmd) {
 				QEND();
-				if (excmd(cmd))
+				if (ex_cmd(cmd))
 					return (1);
 			}
 			cmd = t = ++p;
@@ -172,11 +172,11 @@ exstring(cmd, len)
 }
 
 /*
- * excmd --
+ * ex_cmd --
  *    Parse and execute an ex command.
  */
 int
-excmd(exc)
+ex_cmd(exc)
 	register char *exc;
 {
 	extern int reading_exrc;
@@ -268,7 +268,8 @@ excmd(exc)
 	 * A nasty special case here, the '!' command takes 0, 1, or 2
 	 * addresses.
 	 */
-addr1:	if (cp->flags & E_ADDR1)
+addr1:	switch(cp->flags & (E_ADDR1|E_ADDR2|E_ADDR2_OR_0)) {
+	case E_ADDR1:				/* One address: */
 		switch(cmd.addrcnt) {
 		case 0:				/* Default to cursor. */
 			cmd.addrcnt = 1;
@@ -280,13 +281,20 @@ addr1:	if (cp->flags & E_ADDR1)
 			cmd.addrcnt = 1;
 			cmd.addr1 = cmd.addr2;
 		}
-	else if (cp->flags & E_ADDR2)
+		break;
+	case E_ADDR2_OR_0:			/* Zero or two addresses: */
+		if (cmd.addrcnt == 0) {		/* Default to entire file. */
+			cmd.addrcnt = 2;
+			cmd.addr1 = MARK_FIRST;
+			cmd.addr2 = MARK_LAST;
+			break;
+		}
+		/* FALLTHROUGH */
+	case E_ADDR2:				/* Two addresses: */
 		switch(cmd.addrcnt) {
 		case 0:				/* Default to cursor. */
-			if (strcmp(cp->name, "!")) {
-				cmd.addrcnt = 2;
-				cmd.addr1 = cmd.addr2 = cursor;
-			}
+			cmd.addrcnt = 2;
+			cmd.addr1 = cmd.addr2 = cursor;
 			break;
 		case 1:				/* Default to first address. */
 			cmd.addrcnt = 2;
@@ -295,8 +303,11 @@ addr1:	if (cp->flags & E_ADDR1)
 		case 2:
 			break;
 		}
-	else if (cmd.addrcnt)			/* Error. */
-		goto usage;
+		break;
+	default:
+		if (cmd.addrcnt)		/* Error. */
+			goto usage;
+	}
 		
 	for (count = 0, p = cp->syntax; *p; ++p) {
 		for (; isspace(*exc); ++exc);		/* Skip whitespace. */
@@ -354,7 +365,7 @@ end1:			break;
 end2:			break;
 		case '>':				/*  >> */
 			if (exc[0] == '>' && exc[1] == '>') {
-				cmd.flags |= E_F_RIGHT;
+				cmd.flags |= E_F_APPEND;
 				exc += 2;
 			}
 			break;
@@ -463,13 +474,13 @@ addr2:	switch(cmd.addrcnt) {
 	/* Write a newline if called from visual mode. */
 	if (flags & E_NL && mode != MODE_EX && !exwrote) {
 		addch('\n');
-		exrefresh();
+		ex_refresh();
 	}
 #if defined(DEBUG) && 1
 {
 	int __cnt;
 
-	TRACE("excmd: %s", cmd.cmd->name);
+	TRACE("ex_cmd: %s", cmd.cmd->name);
 	if (cmd.addrcnt > 0) {
 		TRACE("address 1: %d", cmd.addr1);
 		if (cmd.addrcnt > 1)
