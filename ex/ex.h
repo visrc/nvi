@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 8.55 1994/04/09 18:14:01 bostic Exp $ (Berkeley) $Date: 1994/04/09 18:14:01 $
+ *	$Id: ex.h,v 8.56 1994/04/12 09:53:43 bostic Exp $ (Berkeley) $Date: 1994/04/12 09:53:43 $
  */
 
 /* Ex command structure. */
@@ -114,29 +114,6 @@ typedef struct _ex_private {
 	u_int	flags;
 } EX_PRIVATE;
 #define	EXP(sp)	((EX_PRIVATE *)((sp)->ex_private))
-
-/* Macro to set up a command structure. */
-#define	SETCMDARG(s, cmd_id, naddr, lno1, lno2, force, arg) {		\
-	ARGS *__ap[2], __a;						\
-	memset(&s, 0, sizeof(EXCMDARG));				\
-	s.cmd = &cmds[cmd_id];						\
-	s.addrcnt = (naddr);						\
-	s.addr1.lno = (lno1);						\
-	s.addr2.lno = (lno2);						\
-	s.addr1.cno = s.addr2.cno = 1;					\
-	if (force)							\
-		s.flags |= E_FORCE;					\
-	if ((__a.bp = arg) == NULL) {					\
-		s.argc = 0;						\
-		__a.len = 0;						\
-	} else {							\
-		s.argc = 1;						\
-		__a.len = strlen(arg);					\
-	}								\
-	__ap[0] = &__a;							\
-	__ap[1] = NULL;							\
-	s.argv = __ap;							\
-}
 
 /*
  * !!!
