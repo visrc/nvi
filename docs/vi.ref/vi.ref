@@ -8,7 +8,7 @@
 .\"
 .\" See the LICENSE file for redistribution information.
 .\"
-.\"     $Id: vi.ref,v 8.85 1996/10/10 19:13:42 bostic Exp $ (Berkeley) $Date: 1996/10/10 19:13:42 $
+.\"     $Id: vi.ref,v 8.86 1996/10/10 19:37:04 bostic Exp $ (Berkeley) $Date: 1996/10/10 19:37:04 $
 .\"
 .\"
 .so ref.so
@@ -1849,6 +1849,8 @@ of the file.
 .nf
 .so index.so
 .fi
+.\" Force the TOC to an odd page, in case it's a duplex printer.
+.if o .bp
 .bp 3
 .1c
 .ce 1
