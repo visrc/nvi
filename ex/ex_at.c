@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_at.c,v 5.9 1992/04/19 08:53:40 bostic Exp $ (Berkeley) $Date: 1992/04/19 08:53:40 $";
+static char sccsid[] = "$Id: ex_at.c,v 5.10 1992/04/28 11:57:12 bostic Exp $ (Berkeley) $Date: 1992/04/28 11:57:12 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,6 +18,10 @@ static char sccsid[] = "$Id: ex_at.c,v 5.9 1992/04/19 08:53:40 bostic Exp $ (Ber
 #include "excmd.h"
 #include "extern.h"
 
+/*
+ * ex_at -- :@[buffer]
+ *	Execute the contents of the buffer.
+ */
 int
 ex_at(cmdp)
 	EXCMDARG *cmdp;
