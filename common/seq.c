@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: seq.c,v 5.3 1992/04/14 09:10:41 bostic Exp $ (Berkeley) $Date: 1992/04/14 09:10:41 $";
+static char sccsid[] = "$Id: seq.c,v 5.4 1992/04/15 09:06:22 bostic Exp $ (Berkeley) $Date: 1992/04/15 09:06:22 $";
 #endif /* not lint */
 
 #include <errno.h>
@@ -242,7 +242,7 @@ seq_dump(stype, isname)
 		}
 
 		addch('\n');
-		exrefresh();
+		ex_refresh();
 	}
 	return (0);
 }

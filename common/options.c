@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 5.7 1992/04/04 16:23:28 bostic Exp $ (Berkeley) $Date: 1992/04/04 16:23:28 $";
+static char sccsid[] = "$Id: options.c,v 5.8 1992/04/15 09:06:32 bostic Exp $ (Berkeley) $Date: 1992/04/15 09:06:32 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -511,7 +511,7 @@ opts_dump(all)
 		(void)opts_print(&opts[b_op[row]]);
 		addch('\n');
 	}
-	exrefresh();
+	ex_refresh();
 }
 
 /*
