@@ -4,8 +4,27 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: key.h,v 8.36 1994/03/22 15:21:52 bostic Exp $ (Berkeley) $Date: 1994/03/22 15:21:52 $
+ *	$Id: key.h,v 8.37 1994/03/22 18:19:09 bostic Exp $ (Berkeley) $Date: 1994/03/22 18:19:09 $
  */
+
+/*
+ * Fundamental character types.
+ *
+ * CHAR_T	An integral type that can hold any character.
+ * ARG_CHAR_T	The type of a CHAR_T when passed as an argument using
+ *		traditional promotion rules.  It should also be able
+ *		to be compared against any CHAR_T for equality without
+ *		problems.
+ * MAX_CHAR_T	The maximum value of any character.
+ *
+ * If no integral type can hold a character, don't even try the port.
+ */
+typedef	u_char		CHAR_T;
+typedef	u_int		ARG_CHAR_T;
+#define	MAX_CHAR_T	0xff
+
+/* The maximum number of columns any character can take up on a screen. */
+#define	MAX_CHARACTER_COLUMNS	4
 
 /* Structure to return a character and associated information. */
 struct _ch {
