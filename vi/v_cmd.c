@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_cmd.c,v 5.9 1992/04/15 09:06:49 bostic Exp $ (Berkeley) $Date: 1992/04/15 09:06:49 $";
+static char sccsid[] = "$Id: v_cmd.c,v 5.10 1992/04/15 10:24:45 bostic Exp $ (Berkeley) $Date: 1992/04/15 10:24:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -50,20 +50,12 @@ static int keymodes[] = {0, WHEN_REP1, WHEN_CUT, WHEN_MARK, WHEN_CHAR};
 #define NCOL		0x20	/* this command can't change the column# */
 #define NREL		0x40	/* this is "non-relative" -- set the '' mark */
 #define SDOT		0x80	/* set the "dot" variables, for the "." cmd */
-#ifndef NO_VISIBLE
 # define VIZ		0x100	/* commands which can be used with 'v' */
-#else
-# define VIZ		0
-#endif
 static struct keystru
 {
 	MARK	(*func)();	/* the function to run */
 	u_char	args;		/* description of the args needed */
-#ifndef NO_VISIBLE
 	short	flags;
-#else
-	u_char	flags;		/* other stuff */
-#endif
 }
 	vikeys[] =
 {
@@ -190,11 +182,7 @@ static struct keystru
 /*  T  not defined	*/	{NO_FUNC,	NO_ARGS,	NO_FLAGS},
 #endif
 /*  U  undo whole line	*/	{v_undoline,	CURSOR,		FRNT},
-#ifndef NO_VISIBLE
 /*  V  start visible	*/	{v_start,	CURSOR,		INCL|LNMD|VIZ},
-#else
-/*  V  not defined	*/	{NO_FUNC,	NO_ARGS,	NO_FLAGS},
-#endif
 /*  W  move forward Word*/	{m_fword,	CURSOR,		MVMT|INCL|VIZ},
 /*  X  delete to left	*/	{v_xchar,	CURSOR,		SDOT},
 /*  Y  yank text	*/	{v_yank,	CURSOR_MOVED,	NCOL},
@@ -234,11 +222,7 @@ static struct keystru
 /*  t  not defined	*/	{NO_FUNC,	NO_ARGS,	NO_FLAGS},
 #endif
 /*  u  undo		*/	{v_undo,	CURSOR,		NO_FLAGS},
-#ifndef NO_VISIBLE
 /*  v  start visible	*/	{v_start,	CURSOR,		INCL|VIZ},
-#else
-/*  v  not defined	*/	{NO_FUNC,	NO_ARGS,	NO_FLAGS},
-#endif
 /*  w  move fwd word	*/	{m_fword,	CURSOR,		MVMT|INCL|VIZ},
 /*  x  delete character	*/	{v_xchar,	CURSOR,		SDOT},
 /*  y  yank text	*/	{v_yank,	CURSOR_MOVED,	NCOL|VIZ},
@@ -323,7 +307,6 @@ void vi()
 			keyptr = &vikeys[key];
 		}
 
-#ifndef NO_VISIBLE
 		/* if we're in the middle of a v/V command, reject commands
 		 * that aren't operators or movement commands
 		 */
@@ -334,7 +317,6 @@ void vi()
 			count = 0;
 			continue;
 		}
-#endif
 
 		/* if we're in the middle of a d/c/y/</>/! command, reject
 		 * anything but movement.
@@ -350,9 +332,7 @@ void vi()
 		/* set the "dot" variables, if we're supposed to */
 		if (((keyptr->flags & SDOT)
 			|| (prevkey && vikeys[prevkey].flags & SDOT))
-#ifndef NO_VISIBLE
 		    && !V_from
-#endif
 		)
 		{
 			dotkey = key;
@@ -494,7 +474,6 @@ void vi()
 			break;
 	
 		  case CURSOR_MOVED:
-#ifndef NO_VISIBLE
 			if (V_from)
 			{
 				range = cursor;
@@ -505,7 +484,6 @@ void vi()
 				keyptr = &vikeys[key];
 			}
 			else
-#endif
 			{
 				prevkey = key;
 				range = cursor;
@@ -586,15 +564,11 @@ void vi()
 
 		/* was that the end of a d/c/y/</>/! command? */
 		if (prevkey && ((keyptr->flags & MVMT)
-#ifndef NO_VISIBLE
 					       || V_from
-#endif
 				) && count == 0L)
 		{
-#ifndef NO_VISIBLE
 			/* turn off the hilight */
 			V_from = 0L;
-#endif
 
 			/* if the movement command failed, cancel operation */
 			if (tcurs == MARK_UNSET)
