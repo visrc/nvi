@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 5.10 1992/04/05 19:02:46 bostic Exp $ (Berkeley) $Date: 1992/04/05 19:02:46 $";
+static char sccsid[] = "$Id: ex.c,v 5.11 1992/04/14 09:03:56 bostic Exp $ (Berkeley) $Date: 1992/04/14 09:03:56 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -223,8 +223,10 @@ excmd(exc)
 	for (; isspace(*exc); ++exc);
 
 	/* If no command, then do the last specified of p, l, or #. */
-	if (!*exc)
+	if (!*exc) {
 		cp = lastcmd;
+		goto addr1;
+	}
 
 	/*
 	 * Figure out how long the command name is.  There are a few
@@ -266,7 +268,7 @@ excmd(exc)
 	 * A nasty special case here, the '!' command takes 0, 1, or 2
 	 * addresses.
 	 */
-	if (cp->flags & E_ADDR1)
+addr1:	if (cp->flags & E_ADDR1)
 		switch(cmd.addrcnt) {
 		case 0:				/* Default to cursor. */
 			cmd.addrcnt = 1;
@@ -311,8 +313,9 @@ excmd(exc)
 		case '+':				/* +cmd */
 			if (*exc != '+')
 				break;
-				for (cmd.plus = ++exc; isalpha(*exc); ++exc);
-			*exc++ = '\0';
+			for (cmd.plus = ++exc; !isspace(*exc); ++exc);
+			if (*exc)
+				*exc++ = '\0';
 			break;
 		case '1':				/* #, l, p */
 			for (;; ++exc)
@@ -392,7 +395,7 @@ end2:			break;
 			break;
 		case 's':				/* string */
 			cmd.string = exc;
-			goto address;
+			goto addr2;
 		case 'f':				/* file */
 			if (buildargv(exc, 1, &cmd))
 				return (1);
@@ -411,7 +414,7 @@ countchk:		if (*++p != 'N') {		/* N */
 				    cmd.argc != num)
 					goto usage;
 			}
-			goto address;
+			goto addr2;
 		default:
 			msg("Internal syntax table error (%s).", cp->name);
 		}
@@ -427,8 +430,7 @@ usage:		msg("Usage: %s.", cp->usage);
 	}
 
 	/* Verify that the addresses are legal. */
-address:
-	switch(cmd.addrcnt) {
+addr2:	switch(cmd.addrcnt) {
 	case 2:
 		num = markline(cmd.addr2);
 		if (num < 0) {
