@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_right.c,v 9.2 1994/11/11 18:37:32 bostic Exp $ (Berkeley) $Date: 1994/11/11 18:37:32 $";
+static char sccsid[] = "$Id: v_right.c,v 9.3 1994/11/12 11:21:59 bostic Exp $ (Berkeley) $Date: 1994/11/12 11:21:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -114,12 +114,20 @@ v_dollar(sp, vp)
 			return (1);
 	}
 
-	/* It's illegal to use $ as a motion command on an empty line. */
+	/*
+	 * !!!
+	 * Historically, it was illegal to use $ as a motion command on
+	 * an empty line.  Unfortunately, even though C was historically
+	 * aliased to c$, it was special cased to work on empty lines.
+	 * Since we alias C to c$ too, we have a problem.  To fix it, we
+	 * let c$ go through, on the assumption that it's not a problem
+	 * to let it work.
+	 */
 	if (file_gline(sp, vp->m_stop.lno, &len) == NULL) {
 		if (file_lline(sp, &lno))
 			return (1);
 		if (lno == 0) {
-			if (ISMOTION(vp)) {
+			if (!ISCMD(vp->rkp, 'c')) {
 				v_eol(sp, NULL);
 				return (1);
 			}
@@ -129,7 +137,7 @@ v_dollar(sp, vp)
 		return (1);
 	}
 
-	if (len == 0 && ISMOTION(vp)) {
+	if (len == 0 && !ISCMD(vp->rkp, 'c')) {
 		v_eol(sp, NULL);
 		return (1);
 	}
