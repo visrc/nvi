@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex.c,v 10.73 2001/07/29 19:07:29 skimo Exp $ (Berkeley) $Date: 2001/07/29 19:07:29 $";
+static const char sccsid[] = "$Id: ex.c,v 10.74 2001/12/16 18:18:54 skimo Exp $ (Berkeley) $Date: 2001/12/16 18:18:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1255,7 +1255,7 @@ addr_verify:
 				ex_badaddr(sp, ecp->cmd, A_ZERO, NUM_OK);
 				goto err;
 			}
-		} else if (!db_exist(sp, ecp->addr2.lno))
+		} else if (!db_exist(sp, ecp->addr2.lno)) {
 			if (FL_ISSET(ecp->iflags, E_C_COUNT)) {
 				if (db_last(sp, &lno))
 					goto err;
@@ -1264,6 +1264,7 @@ addr_verify:
 				ex_badaddr(sp, NULL, A_EOF, NUM_OK);
 				goto err;
 			}
+		}
 		/* FALLTHROUGH */
 	case 1:
 		if (ecp->addr1.lno == 0) {
@@ -1384,8 +1385,8 @@ addr_verify:
 
 #ifdef DEBUG
 	/* Make sure no function left global temporary space locked. */
-	if (F_ISSET(gp, W_TMP_INUSE)) {
-		F_CLR(gp, W_TMP_INUSE);
+	if (F_ISSET(wp, W_TMP_INUSE)) {
+		F_CLR(wp, W_TMP_INUSE);
 		msgq(sp, M_ERR, "087|%s: temporary buffer not released",
 		    ecp->cmd->name);
 	}

@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: ex_abbrev.c,v 10.9 2001/06/25 15:19:13 skimo Exp $ (Berkeley) $Date: 2001/06/25 15:19:13 $";
+static const char sccsid[] = "$Id: ex_abbrev.c,v 10.10 2001/12/16 18:18:54 skimo Exp $ (Berkeley) $Date: 2001/12/16 18:18:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -69,7 +69,7 @@ ex_abbr(SCR *sp, EXCMD *cmdp)
 			return (1);
 	}
 	for (p = cmdp->argv[0]->bp; *p != '\0'; ++p)
-		if (isblank(p[0])) {
+		if (ISBLANK(p[0])) {
 			msgq(sp, M_ERR,
 			    "107|Abbreviations may not contain tabs or spaces");
 			return (1);
