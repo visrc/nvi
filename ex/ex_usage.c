@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_usage.c,v 8.8 1993/11/28 19:32:07 bostic Exp $ (Berkeley) $Date: 1993/11/28 19:32:07 $";
+static char sccsid[] = "$Id: ex_usage.c,v 8.9 1993/12/02 10:52:24 bostic Exp $ (Berkeley) $Date: 1993/12/02 10:52:24 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -54,7 +54,7 @@ ex_usage(sp, ep, cmdp)
 	
 	switch (cmdp->argc) {
 	case 1:
-		for (cp = cmds, p = cmdp->argv[0], len = strlen(p);
+		for (cp = cmds, p = cmdp->argv[0]->bp, len = strlen(p);
 		    cp->name != NULL && memcmp(p, cp->name, len); ++cp);
 		if (cp->name == NULL)
 			(void)ex_printf(EXCOOKIE,
@@ -89,12 +89,12 @@ ex_viusage(sp, ep, cmdp)
 
 	switch (cmdp->argc) {
 	case 1:
-		key = cmdp->argv[0][0];
+		key = cmdp->argv[0]->bp[0];
 		if (key > MAXVIKEY)
 			goto nokey;
 
 		/* Special case: '[' and ']' commands. */
-		if ((key == '[' || key == ']') && cmdp->argv[0][1] != key)
+		if ((key == '[' || key == ']') && cmdp->argv[0]->bp[1] != key)
 			goto nokey;
 
 		kp = &vikeys[key];
