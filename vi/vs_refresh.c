@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: vs_refresh.c,v 10.31 1996/04/27 11:40:41 bostic Exp $ (Berkeley) $Date: 1996/04/27 11:40:41 $";
+static const char sccsid[] = "$Id: vs_refresh.c,v 10.32 1996/04/30 21:06:39 bostic Exp $ (Berkeley) $Date: 1996/04/30 21:06:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -91,7 +91,7 @@ vs_refresh(sp, forcepaint)
 	 * screens other than the current one, the cursor will be trashed.
 	 */
 	pub_paint = SC_SCR_REFORMAT | SC_SCR_REDRAW;
-	priv_paint = VIP_N_REFRESH;
+	priv_paint = VIP_CUR_INVALID | VIP_N_REFRESH;
 	if (O_ISSET(sp, O_NUMBER))
 		priv_paint |= VIP_N_RENUMBER;
 	for (tsp = sp->gp->dq.cqh_first;
@@ -99,7 +99,9 @@ vs_refresh(sp, forcepaint)
 		if (tsp != sp && !F_ISSET(tsp, SC_EXIT | SC_EXIT_FORCE) &&
 		    (F_ISSET(tsp, pub_paint) ||
 		    F_ISSET(VIP(tsp), priv_paint))) {
-			(void)vs_paint(tsp, UPDATE_SCREEN);
+			(void)vs_paint(tsp,
+			    (F_ISSET(VIP(tsp), VIP_CUR_INVALID) ? 
+			    UPDATE_CURSOR : 0) | UPDATE_SCREEN);
 			F_SET(VIP(sp), VIP_CUR_INVALID);
 		}
 
