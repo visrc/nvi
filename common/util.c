@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: util.c,v 8.66 1994/06/27 09:32:56 bostic Exp $ (Berkeley) $Date: 1994/06/27 09:32:56 $";
+static char sccsid[] = "$Id: util.c,v 8.67 1994/07/05 09:50:44 bostic Exp $ (Berkeley) $Date: 1994/07/05 09:50:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -209,7 +209,7 @@ set_window_size(sp, set_row, sigwinch)
 	 * informative.
 	 */
 	if (row > 1000) {
-		msgq(sp, M_SYSERR, "%lu rows isn't believable", (u_long)row);
+		msgq(sp, M_ERR, "%lu rows isn't believable", (u_long)row);
 		return (1);
 	}
 	if (col > 1000) {
