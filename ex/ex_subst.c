@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_subst.c,v 8.52 1994/06/30 09:37:58 bostic Exp $ (Berkeley) $Date: 1994/06/30 09:37:58 $";
+static char sccsid[] = "$Id: ex_subst.c,v 8.53 1994/07/16 12:25:03 bostic Exp $ (Berkeley) $Date: 1994/07/16 12:25:03 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -244,15 +244,16 @@ tilde:				++p;
 			*t++ = *p++;
 			++len;
 		}
-		if (sp->repl != NULL)
-			FREE(sp->repl, sp->repl_len);
-		if ((sp->repl = malloc(len)) == NULL) {
-			msgq(sp, M_SYSERR, NULL);
-			FREE_SPACE(sp, bp, blen);
-			return (1);
+		if ((sp->repl_len = len) != 0) {
+			if (sp->repl != NULL)
+				free(sp->repl);
+			if ((sp->repl = malloc(len)) == NULL) {
+				msgq(sp, M_SYSERR, NULL);
+				FREE_SPACE(sp, bp, blen);
+				return (1);
+			}
+			memmove(sp->repl, bp, len);
 		}
-		memmove(sp->repl, bp, len);
-		sp->repl_len = len;
 		FREE_SPACE(sp, bp, blen);
 	}
 	return (substitute(sp, ep, cmdp, p, re, flags));
