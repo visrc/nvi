@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 10.32 1995/11/13 08:26:26 bostic Exp $ (Berkeley) $Date: 1995/11/13 08:26:26 $";
+static char sccsid[] = "$Id: ex.c,v 10.33 1995/11/17 11:18:39 bostic Exp $ (Berkeley) $Date: 1995/11/17 11:18:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -500,14 +500,9 @@ skip_srch:	if (ecp->cmd == &cmds[C_VISUAL_EX] && F_ISSET(sp, S_VI))
 		if (newscreen && !F_ISSET(ecp->cmd, E_NEWSCREEN))
 			goto unknown;
 
-		/*
-		 * Hook for commands that are either not yet implemented
-		 * or turned off.
-		 */
-		if (F_ISSET(ecp->cmd, E_NOPERM)) {
-			msgq(sp, M_ERR,
-			    "081|The %s command is not currently supported",
-			    ecp->cmd->name);
+		/* Secure means no shell access. */
+		if (F_ISSET(ecp->cmd, E_SECURE) && O_ISSET(sp, O_SECURE)) {
+			ex_emsg(sp, ecp->cmd->name, EXM_SECURE);
 			goto err;
 		}
 

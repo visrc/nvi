@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_script.c,v 10.10 1995/10/17 11:43:28 bostic Exp $ (Berkeley) $Date: 1995/10/17 11:43:28 $";
+static char sccsid[] = "$Id: ex_script.c,v 10.11 1995/11/17 11:19:02 bostic Exp $ (Berkeley) $Date: 1995/11/17 11:19:02 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -60,12 +60,6 @@ ex_script(sp, cmdp)
 	if (!F_ISSET(sp, S_VI)) {
 		msgq(sp, M_ERR,
 		    "150|The script command is only available in vi mode");
-		return (1);
-	}
-
-	/* Secure means no shell access. */
-	if (O_ISSET(sp, O_SECURE)) {
-		ex_emsg(sp, cmdp->cmd->name, EXM_SECURE);
 		return (1);
 	}
 

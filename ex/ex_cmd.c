@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_cmd.c,v 10.8 1995/11/13 08:32:13 bostic Exp $ (Berkeley) $Date: 1995/11/13 08:32:13 $";
+static char sccsid[] = "$Id: ex_cmd.c,v 10.9 1995/11/17 11:18:51 bostic Exp $ (Berkeley) $Date: 1995/11/17 11:18:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -54,7 +54,7 @@ EXCMDLIST const cmds[] = {
 	    "^D",
 	    "scroll lines"},
 /* C_BANG */
-	{"!",		ex_bang,	E_ADDR2_NONE,
+	{"!",		ex_bang,	E_ADDR2_NONE | E_SECURE,
 	    "S",
 	    "[line [,line]] ! command",
 	    "filter lines through commands or run commands"},
@@ -295,7 +295,7 @@ EXCMDLIST const cmds[] = {
 	    "[line [,line]] s [[/;]RE[/;]repl[/;] [cgr] [count] [#lp]]",
 	    "substitute on lines matching an RE"},
 /* C_SCRIPT */
-	{"script",	ex_script,	0,
+	{"script",	ex_script,	E_SECURE,
 	    "!f1o",
 	    "sc[ript][!] [file]",
 	    "run a shell in a screen"},
@@ -305,7 +305,7 @@ EXCMDLIST const cmds[] = {
 	    "se[t] [option[=[value]]...] [nooption ...] [option? ...] [all]",
 	    "set options (use \":set all\" to see all options)"},
 /* C_SHELL */
-	{"shell",	ex_shell,	0,
+	{"shell",	ex_shell,	E_SECURE,
 	    "",
 	    "sh[ell]",
 	    "suspend editing and run a shell"},
@@ -315,12 +315,12 @@ EXCMDLIST const cmds[] = {
 	    "so[urce] file",
 	    "read a file of ex commands"},
 /* C_STOP */
-	{"stop",	ex_stop,	0,
+	{"stop",	ex_stop,	E_SECURE,
 	    "!",
 	    "st[op][!]",
 	    "suspend the edit session"},
 /* C_SUSPEND */
-	{"suspend",	ex_stop,	0,
+	{"suspend",	ex_stop,	E_SECURE,
 	    "!",
 	    "su[spend][!]",
 	    "suspend the edit session"},
@@ -345,7 +345,7 @@ EXCMDLIST const cmds[] = {
 	    "tagt[op][!]",
 	    "return to the first tag"},
 /* C_TCLCMD */
-	{"tcl",		ex_tcl,		E_ADDR2_NONE,
+	{"tcl",		ex_tcl,		E_ADDR2_ALL | E_SECURE,
 	    "s",
 	    "tcl cmd",
 	    "run the tcl interpreter with the command"},

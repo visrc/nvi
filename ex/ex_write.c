@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_write.c,v 10.14 1995/11/13 08:55:19 bostic Exp $ (Berkeley) $Date: 1995/11/13 08:55:19 $";
+static char sccsid[] = "$Id: ex_write.c,v 10.15 1995/11/17 11:19:09 bostic Exp $ (Berkeley) $Date: 1995/11/17 11:19:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -160,6 +160,12 @@ exwr(sp, cmdp, cmd)
 
 	/* If "write !" it's a pipe to a utility. */
 	if (cmd == WRITE && *p == '!') {
+		/* Secure means no shell access. */
+		if (O_ISSET(sp, O_SECURE)) {
+			ex_emsg(sp, cmdp->cmd->name, EXM_SECURE_F);
+			return (1);
+		}
+
 		for (++p; *p && isblank(*p); ++p);
 		if (*p == '\0') {
 			ex_emsg(sp, cmdp->cmd->usage, EXM_USAGE);

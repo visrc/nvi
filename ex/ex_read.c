@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_read.c,v 10.21 1995/11/13 09:01:59 bostic Exp $ (Berkeley) $Date: 1995/11/13 09:01:59 $";
+static char sccsid[] = "$Id: ex_read.c,v 10.22 1995/11/17 11:18:59 bostic Exp $ (Berkeley) $Date: 1995/11/17 11:18:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -72,6 +72,12 @@ ex_read(sp, cmdp)
 			++arg;
 			--arglen;
 			which = R_FILTER;
+
+			/* Secure means no shell access. */
+			if (O_ISSET(sp, O_SECURE)) {
+				ex_emsg(sp, cmdp->cmd->name, EXM_SECURE_F);
+				return (1);
+			}
 		} else
 			which = R_EXPANDARG;
 		break;

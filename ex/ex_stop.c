@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_stop.c,v 10.7 1995/10/17 11:43:16 bostic Exp $ (Berkeley) $Date: 1995/10/17 11:43:16 $";
+static char sccsid[] = "$Id: ex_stop.c,v 10.8 1995/11/17 11:19:07 bostic Exp $ (Berkeley) $Date: 1995/11/17 11:19:07 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -37,12 +37,6 @@ ex_stop(sp, cmdp)
 	EXCMD *cmdp;
 {
 	int allowed;
-
-	/* Secure means no shell access. */
-	if (O_ISSET(sp, O_SECURE)) {
-		ex_emsg(sp, cmdp->cmd->name, EXM_SECURE);
-		return (1);
-	}
 
 	/* For some strange reason, the force flag turns off autowrite. */
 	if (!FL_ISSET(cmdp->iflags, E_C_FORCE) && file_aw(sp, FS_ALL))

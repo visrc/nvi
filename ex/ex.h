@@ -6,7 +6,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: ex.h,v 10.12 1995/11/01 19:12:06 bostic Exp $ (Berkeley) $Date: 1995/11/01 19:12:06 $
+ *	$Id: ex.h,v 10.13 1995/11/17 11:18:47 bostic Exp $ (Berkeley) $Date: 1995/11/17 11:18:47 $
  */
 
 #define	PROMPTCHAR	':'		/* Prompt using a colon. */
@@ -24,7 +24,7 @@ typedef struct _excmdlist {		/* Ex command table structure. */
 #define	E_AUTOPRINT	0x00000040	/* Command always sets autoprint. */
 #define	E_CLRFLAG	0x00000080	/* Clear the print (#, l, p) flags. */
 #define	E_NEWSCREEN	0x00000100	/* Create a new screen. */
-#define	E_NOPERM	0x00000200	/* Permission denied for now. */
+#define	E_SECURE	0x00000200	/* Permission denied if O_SECURE set. */
 #define	E_VIONLY	0x00000400	/* Meaningful only in vi. */
 #define	__INUSE1	0xfffff800	/* Same name space as EX_PRIVATE. */
 	u_int16_t flags;

@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_shell.c,v 10.21 1995/11/11 10:02:07 bostic Exp $ (Berkeley) $Date: 1995/11/11 10:02:07 $";
+static char sccsid[] = "$Id: ex_shell.c,v 10.22 1995/11/17 11:19:05 bostic Exp $ (Berkeley) $Date: 1995/11/17 11:19:05 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -70,12 +70,6 @@ ex_exec_proc(sp, cmdp, cmd, msg, need_newline)
 {
 	const char *name;
 	pid_t pid;
-
-	/* Secure means no shell access. */
-	if (O_ISSET(sp, O_SECURE)) {
-		ex_emsg(sp, cmdp->cmd->name, EXM_SECURE);
-		return (1);
-	}
 
 	/* Flush messages and enter canonical mode. */
 	if (F_ISSET(sp, S_VI)) {
