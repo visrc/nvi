@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_txt.c,v 8.3 1993/06/29 17:06:09 bostic Exp $ (Berkeley) $Date: 1993/06/29 17:06:09 $";
+static char sccsid[] = "$Id: v_txt.c,v 8.4 1993/08/16 18:17:43 bostic Exp $ (Berkeley) $Date: 1993/08/16 18:17:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -281,6 +281,16 @@ next_ch:	if (replay)
 
 			if (LF_ISSET(TXT_CR))
 				goto k_escape;
+
+			/*
+			 * Historic practice was to lose any whitespace
+			 * characters immediately after the inserted
+			 * newline.  This affects the 'R', 'c', and 's'
+			 * commands.
+			 */
+			for (p = tp->lb + sp->cno + tp->overwrite;
+			    tp->insert && isspace(*p);
+			    ++p, ++tp->overwrite, --tp->insert);
 
 			/*
 			 * Move any remaining insert characters into
