@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_word.c,v 5.5 1992/10/10 14:04:58 bostic Exp $ (Berkeley) $Date: 1992/10/10 14:04:58 $";
+static char sccsid[] = "$Id: v_word.c,v 5.6 1992/10/18 13:11:11 bostic Exp $ (Berkeley) $Date: 1992/10/18 13:11:11 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -87,7 +87,13 @@ fword(vp, fm, rp, spaceonly)
 	lno = fm->lno;
 	cno = fm->cno;
 
-	EGETLINE(p, lno, len);
+	if ((p = file_gline(curf, lno, &len)) == NULL) {
+		if (file_lline(curf) == 0)
+			v_eof(NULL);
+		else
+			GETLINE_ERR(lno);
+		return (1);
+	}
 
 	cnt = vp->flags & VC_C1SET ? vp->count : 1;
 
@@ -111,16 +117,18 @@ fword(vp, fm, rp, spaceonly)
 				FW(isspace(*p));
 			}
 		if (len == 0) {
-			GETLINE(p, ++lno, len);
-
 			/* If we hit EOF, stay there (historic practice). */
-			if (p == NULL) {
+			if ((p = file_gline(curf, ++lno, &len)) == NULL) {
 				/* If already at eof, complain. */
 				if (empty && !(vp->flags & VC_ISMOTION)) {
 					v_eof(NULL);
 					return (1);
 				}
-				EGETLINE(p, --lno, len);
+				if ((p =
+				    file_gline(curf, --lno, &len)) == NULL) {
+					GETLINE_ERR(lno);
+					return (1);
+				}
 				rp->lno = lno;
 				rp->cno = len ?
 				    vp->flags & VC_ISMOTION ? len : len - 1 : 0;
@@ -186,9 +194,14 @@ bword(vp, fm, rp, spaceonly)
 		return (1);
 	}
 
-	/* Get the line. */
-	EGETLINE(p, lno, len);
-
+	if ((p = file_gline(curf, lno, &len)) == NULL) {
+		if (file_lline(curf) == 0)
+			v_sof(NULL);
+		else
+			GETLINE_ERR(lno);
+		return (1);
+	}
+		
 	cnt = vp->flags & VC_C1SET ? vp->count : 1;
 
 	/*
@@ -240,7 +253,10 @@ line:			if (lno == 1) {
 			 * Get the line.  If the line is empty, decrement
 			 * count and get another one.
 			 */
-			EGETLINE(p, --lno, len);
+			if ((p = file_gline(curf, --lno, &len)) == NULL) {
+				GETLINE_ERR(lno);
+				return (1);
+			}
 			if (len == 0) {
 				if (--cnt == 0) {
 					rp->lno = lno;
@@ -319,7 +335,13 @@ eword(vp, fm, rp, spaceonly)
 	lno = fm->lno;
 	cno = fm->cno;
 
-	EGETLINE(p, lno, len);
+	if ((p = file_gline(curf, lno, &len)) == NULL) {
+		if (file_lline(curf) == 0)
+			v_eof(NULL);
+		else
+			GETLINE_ERR(lno);
+		return (1);
+	}
 
 	cnt = vp->flags & VC_C1SET ? vp->count : 1;
 
@@ -363,16 +385,18 @@ eword(vp, fm, rp, spaceonly)
 		}
 
 		if (cnt && len == 0) {
-line:			GETLINE(p, ++lno, len);
-
 			/* If we hit EOF, stay there (historic practice). */
-			if (p == NULL) {
+line:			if ((p = file_gline(curf, ++lno, &len)) == NULL) {
 				/* If already at eof, complain. */
 				if (empty) {
 					v_eof(NULL);
 					return (1);
 				}
-				EGETLINE(p, --lno, len);
+				if ((p =
+				    file_gline(curf, --lno, &len)) == NULL) {
+					GETLINE_ERR(lno);
+					return (1);
+				}
 				rp->lno = lno;
 				rp->cno = len ? len - 1 : 0;
 				return (0);

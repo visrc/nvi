@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_xchar.c,v 5.8 1992/10/17 16:11:19 bostic Exp $ (Berkeley) $Date: 1992/10/17 16:11:19 $";
+static char sccsid[] = "$Id: v_xchar.c,v 5.9 1992/10/18 13:10:57 bostic Exp $ (Berkeley) $Date: 1992/10/18 13:10:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -18,6 +18,13 @@ static char sccsid[] = "$Id: v_xchar.c,v 5.8 1992/10/17 16:11:19 bostic Exp $ (B
 #include "vcmd.h"
 #include "options.h"
 #include "extern.h"
+
+#define	NODEL {								\
+	bell();								\
+	if (ISSET(O_VERBOSE))						\
+		msg("No characters to delete.");			\
+	return (1);							\
+}
 
 /*
  * v_xchar --
@@ -33,13 +40,15 @@ v_xchar(vp, fm, tm, rp)
 	size_t len;
 	u_char *p;
 
-	EGETLINE(p, fm->lno, len);
-	if (len == 0) {
-		bell();
-		if (ISSET(O_VERBOSE))
-			msg("No characters to delete.");
+	if ((p = file_gline(curf, fm->lno, &len)) == NULL) {
+		if (file_lline(curf) == 0)
+			NODEL;
+		GETLINE_ERR(fm->lno);
 		return (1);
 	}
+
+	if (len == 0)
+		NODEL;
 
 	cnt = vp->flags & VC_C1SET ? vp->count : 1;
 	fm->lno = tm->lno = fm->lno;
