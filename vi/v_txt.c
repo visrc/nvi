@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: v_txt.c,v 10.68 1996/06/08 14:37:09 bostic Exp $ (Berkeley) $Date: 1996/06/08 14:37:09 $";
+static const char sccsid[] = "$Id: v_txt.c,v 10.69 1996/06/12 12:18:20 bostic Exp $ (Berkeley) $Date: 1996/06/12 12:18:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1849,7 +1849,7 @@ txt_dent(sp, tp, isindent)
 {
 	CHAR_T ch;
 	u_long sw, ts;
-	size_t cno, current, spaces, target, tabs;
+	size_t cno, current, spaces, target, tabs, off;
 	int ai_reset;
 
 	ts = O_VAL(sp, O_TABSTOP);
@@ -1898,9 +1898,13 @@ txt_dent(sp, tp, isindent)
 	for (; tp->cno > tp->offset; --tp->cno, ++tp->owrite)
 		if (tp->lb[tp->cno - 1] == ' ')
 			--current;
-		else if (tp->lb[tp->cno - 1] == '\t')
-			current -= COL_OFF(current, ts);
-		else
+		else if (tp->lb[tp->cno - 1] == '\t') {
+			off = COL_OFF(current, ts);
+			if (current > off)
+				current -= off;
+			else
+				current = 0;
+		} else
 			break;
 
 	/*
