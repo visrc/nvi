@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_replace.c,v 5.5 1992/05/15 11:14:18 bostic Exp $ (Berkeley) $Date: 1992/05/15 11:14:18 $";
+static char sccsid[] = "$Id: v_replace.c,v 5.6 1992/06/03 09:26:10 bostic Exp $ (Berkeley) $Date: 1992/06/03 09:26:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,8 +22,8 @@ v_replace(m, cnt, key)
 	int	key;	/* what to replace them with */
 {
 	static MARK rval;
-	REG char	*text;
-	REG int		i;
+	register char	*text;
+	register int		i;
 	size_t len, ilen;
 	char lbuf[1024];
 
