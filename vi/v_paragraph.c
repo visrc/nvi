@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_paragraph.c,v 5.14 1993/04/12 14:53:51 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:53:51 $";
+static char sccsid[] = "$Id: v_paragraph.c,v 5.15 1993/05/08 12:37:54 bostic Exp $ (Berkeley) $Date: 1993/05/08 12:37:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -20,11 +20,8 @@ static char sccsid[] = "$Id: v_paragraph.c,v 5.14 1993/04/12 14:53:51 bostic Exp
 
 /*
  * Paragraphs are empty lines after text or values from the paragraph or
- * section options.  The historic version of vi did some fairly strange
- * stuff when moving backwards through the file by paragraphs.  This code
- * duplicates its behavior.
+ * section options.
  */
-
 static char *makelist __P((SCR *));
 
 /*
@@ -38,6 +35,7 @@ v_paragraphf(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
+	enum { P_INTEXT, P_INBLANK } pstate;
 	size_t len;
 	recno_t cnt, lno;
 	char *p, *list, *lp;
@@ -46,40 +44,55 @@ v_paragraphf(sp, ep, vp, fm, tm, rp)
 	if ((list = makelist(sp)) == NULL)
 		return (1);
 
-	rp->cno = 0;
+	/* Figure out what state we're currently in. */
+	lno = fm->lno;
+	if ((p = file_gline(sp, ep, lno, &len)) == NULL)
+		goto eof;
 
-	/* If at an empty line, skip to text. */
-	for (lno = fm->lno + 1;; ++lno) {
-		if ((p = file_gline(sp, ep, lno, &len)) == NULL)
-			goto eof;
-		if (len)
-			break;
+	/*
+	 * If we start in text, we want to switch states 2 * N - 1
+	 * times, in non-text, 2 * N times.
+	 */
+	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
+	cnt *= 2;
+	if (len == 0)
+		pstate = P_INBLANK;
+	else {
+		--cnt;
+		pstate = P_INTEXT;
 	}
 
-	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
-	for (; p = file_gline(sp, ep, lno, &len); ++lno) {
-		if (len == 0) {
-			if (!--cnt)
-				goto found;
-			/* Skip to text. */
-			for (;;) {
-				if ((p =
-				    file_gline(sp, ep, lno++, &len)) == NULL)
-					goto eof;
-				if (len)
-					break;
+	for (;;) {
+		if ((p = file_gline(sp, ep, ++lno, &len)) == NULL)
+			goto eof;
+		switch (pstate) {
+		case P_INTEXT:
+			if (p[0] == '.' && len >= 2)
+				for (lp = list; *lp; lp += 2)
+					if (lp[0] == p[1] &&
+					    (lp[1] == ' ' || lp[1] == p[2]) &&
+					    !--cnt)
+						goto found;
+			if (len == 0) {
+				if (!--cnt)
+					goto found;
+				pstate = P_INBLANK;
 			}
+			break;
+		case P_INBLANK:
+			if (len != 0) {
+				if (!--cnt) {
+found:					rp->lno = lno;
+					rp->cno = 0;
+					free(list);
+					return (0);
+				}
+				pstate = P_INTEXT;
+			}
+			break;
+		default:
+			abort();
 		}
-		if (p[0] != '.' || len < 2)
-			continue;
-		/* Check for macro. */
-		for (lp = list; *lp; lp += 2)
-			if (lp[0] == p[1] &&
-			    (lp[1] == ' ' || lp[1] == p[2]) && !--cnt) {
-found:				rp->lno = lno;
-				free(list);
-				return (0);
-			}
 	}
 eof:	free(list);
 
@@ -114,6 +127,7 @@ v_paragraphb(sp, ep, vp, fm, tm, rp)
 	VICMDARG *vp;
 	MARK *fm, *tm, *rp;
 {
+	enum { P_INTEXT, P_INBLANK } pstate;
 	size_t len;
 	recno_t cnt, lno;
 	char *p, *list, *lp;
@@ -125,55 +139,74 @@ v_paragraphb(sp, ep, vp, fm, tm, rp)
 	/*
 	 * The { command historically moved to the beginning of the first
 	 * line if invoked on the first line.
+	 *
+	 * Check for SOF.
 	 */
-	rp->cno = 0;
-
-	/* Check for SOF. */
 	if (fm->lno <= 1) {
 		if (fm->cno == 0) {
 			v_sof(sp, NULL);
 			return (1);
 		}
+		rp->lno = 1;
+		rp->cno = 0;
 		return (0);
 	}
 
-	/* If at an empty line, skip to text. */
-	for (lno = fm->lno - 1;; --lno) {
-		if ((p = file_gline(sp, ep, lno, &len)) == NULL)
-			goto sof;
-		if (len)
-			break;
+	/* Figure out what state we're currently in. */
+	lno = fm->lno;
+	if ((p = file_gline(sp, ep, lno, &len)) == NULL)
+		goto sof;
+
+	/*
+	 * If we start in text, we want to switch states 2 * N - 1
+	 * times, in non-text, 2 * N times.
+	 */
+	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
+	cnt *= 2;
+	if (len == 0)
+		pstate = P_INBLANK;
+	else {
+		--cnt;
+		pstate = P_INTEXT;
 	}
 
-	cnt = F_ISSET(vp, VC_C1SET) ? vp->count : 1;
-	for (; p = file_gline(sp, ep, lno, &len); --lno) {
-		if (len == 0) {
-			if (!--cnt)
-				goto found;
-			/* Skip to text. */
-			for (;;) {
-				if ((p =
-				    file_gline(sp, ep, lno--, &len)) == NULL)
-					goto sof;
-				if (len)
-					break;
+	for (;;) {
+		if ((p = file_gline(sp, ep, --lno, &len)) == NULL)
+			goto sof;
+		switch (pstate) {
+		case P_INTEXT:
+			if (p[0] == '.' && len >= 2)
+				for (lp = list; *lp; lp += 2)
+					if (lp[0] == p[1] &&
+					    (lp[1] == ' ' || lp[1] == p[2]) &&
+					    !--cnt)
+						goto found;
+			if (len == 0) {
+				if (!--cnt)
+					goto found;
+				pstate = P_INBLANK;
 			}
+			break;
+		case P_INBLANK:
+			if (len != 0) {
+				if (!--cnt) {
+found:					rp->lno = lno;
+					rp->cno = 0;
+					free(list);
+					return (0);
+				}
+				pstate = P_INTEXT;
+			}
+			break;
+		default:
+			abort();
 		}
-		if (p[0] != '.' || len < 2)
-			continue;
-		/* Check for macro. */
-		for (lp = list; *lp; lp += 2)
-			if (lp[0] == p[1] &&
-			    (lp[1] == ' ' || lp[1] == p[2]) && !--cnt) {
-found:				rp->lno = lno;
-				free(list);
-				return (0);
-			}
 	}
 sof:	free(list);
 
 	/* SOF is a movement sink. */
 	rp->lno = 1;
+	rp->cno = 0;
 	return (0);
 }
 
