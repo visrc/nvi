@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options.c,v 8.71 1994/09/16 12:37:48 bostic Exp $ (Berkeley) $Date: 1994/09/16 12:37:48 $";
+static char sccsid[] = "$Id: options.c,v 8.72 1994/09/26 20:05:59 bostic Exp $ (Berkeley) $Date: 1994/09/26 20:05:59 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -259,7 +259,7 @@ opts_init(sp, oargs)
 	argv[0] = &a;
 	argv[1] = &b;
 
-#define	SET_DEF(opt, str) {						\
+#define	SET_DEF_NOCLR(opt, str) {					\
 	if (str != b1)		/* GCC puts strings in text-space. */	\
 		(void)strcpy(b1, str);					\
 	a.len = strlen(b1);						\
@@ -269,6 +269,9 @@ opts_init(sp, oargs)
 		    optlist[opt]);					\
 		return (1);						\
 	}								\
+}
+#define	SET_DEF(opt, str) {						\
+	SET_DEF_NOCLR(opt, str);					\
 	F_CLR(&sp->opts[opt], OPT_SET);					\
 }
 	/* Set default values. */
@@ -310,9 +313,14 @@ opts_init(sp, oargs)
 	SET_DEF(O_TABSTOP, "tabstop=8");
 	(void)snprintf(b1, sizeof(b1), "tags=%s", _PATH_TAGS);
 	SET_DEF(O_TAGS, b1);
+	/*
+	 * By default, the historic vi always displayed information
+	 * about two options, redraw and term.  Term seems sufficient.
+	 */
+	F_SET(&sp->opts[O_TERM], OPT_SET);
 	(void)snprintf(b1, sizeof(b1), "term=%s",
 	    (s = getenv("TERM")) == NULL ? "unknown" : s);
-	SET_DEF(O_TERM, b1);
+	SET_DEF_NOCLR(O_TERM, b1);
 
 	/*
 	 * XXX
@@ -340,17 +348,14 @@ opts_init(sp, oargs)
 	SET_DEF(O_WINDOW, b1);
 
 	/*
-	 * Some options can be initialized by the command name or the
-	 * command-line arguments.
+	 * !!!
+	 * Some options can be initialized by the command name or
+	 * the command-line arguments.  Leave them set, it's historic
+	 * practice.
 	 */
 	for (; *oargs != -1; ++oargs)
-		SET_DEF(*oargs, optlist[*oargs].name);
+		SET_DEF_NOCLR(*oargs, optlist[*oargs].name);
 
-	/*
-	 * By default, the historic vi always displayed information
-	 * about two options, redraw and term.  Term seems sufficient.
-	 */
-	F_SET(&sp->opts[O_TERM], OPT_SET);
 	return (0);
 }
 
