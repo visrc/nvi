@@ -14,7 +14,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: perl.xs,v 8.5 1996/03/19 08:52:51 bostic Exp $ (Berkeley) $Date: 1996/03/19 08:52:51 $";
+static const char sccsid[] = "$Id: perl.xs,v 8.6 1996/03/19 09:05:55 bostic Exp $ (Berkeley) $Date: 1996/03/19 09:05:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -31,7 +31,7 @@ static const char sccsid[] = "$Id: perl.xs,v 8.5 1996/03/19 08:52:51 bostic Exp 
 #include <termios.h>
 #include <unistd.h>
 
-#include "../../common/common.h"
+#include "../common/common.h"
 #include "perl_extern.h"
 
 #include <EXTERN.h>
