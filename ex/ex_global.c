@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 8.40 1994/08/09 09:03:29 bostic Exp $ (Berkeley) $Date: 1994/08/09 09:03:29 $";
+static char sccsid[] = "$Id: ex_global.c,v 8.41 1994/08/09 10:34:48 bostic Exp $ (Berkeley) $Date: 1994/08/09 10:34:48 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -154,10 +154,14 @@ global(sp, ep, cmdp, cmd)
 		F_SET(sp, S_SRE_SET);
 	}
 
-	/* Get a copy of the command string. */
+	/*
+	 * Get a copy of the command string; the default command is print.
+	 * Don't worry about a set of <blank>s with no command, that will
+	 * default to print in the ex parser.
+	 */
 	if ((clen = strlen(p)) == 0) {
-		msgq(sp, M_ERR, "No command string specified");
-		return (1);
+		p = "p";
+		clen = 1;
 	}
 	MALLOC_RET(sp, cb, char *, clen);
 	memmove(cb, p, clen);
