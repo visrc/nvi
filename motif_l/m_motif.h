@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	"$Id: m_motif.h,v 8.8 1996/12/16 09:42:53 bostic Exp $ (Berkeley) $Date: 1996/12/16 09:42:53 $";
+ *	"$Id: m_motif.h,v 8.9 1996/12/17 10:47:59 bostic Exp $ (Berkeley) $Date: 1996/12/17 10:47:59 $";
  */
 
 /*
@@ -92,6 +92,28 @@ typedef	struct {
 	optData	*ints;
 	optData	*others;
 } optSheet;
+
+/* Utilities for converting X resources...
+ *
+ * __XutConvertResources( Widget, String root, XutResource *, int count )
+ *	The resource block is loaded with converted values
+ *	If the X resource does not exist, no change is made to the value
+ *	'root' should be the application name.
+ */
+typedef	enum {
+    XutRKinteger,
+    XutRKboolean,
+    XutRKpixel,
+    XutRKpixelBackup,	/* if XutRKpixel fails */
+    XutRKfont,
+    XutRKcursor
+} XutResourceKind;
+
+typedef struct {
+    String		name;
+    XutResourceKind	kind;
+    void		*value;
+} XutResource;
 
 /* Internal use: */
 extern GC	   __vi_copy_gc;
