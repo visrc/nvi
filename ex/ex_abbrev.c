@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_abbrev.c,v 8.3 1993/11/27 15:52:30 bostic Exp $ (Berkeley) $Date: 1993/11/27 15:52:30 $";
+static char sccsid[] = "$Id: ex_abbrev.c,v 8.4 1993/11/30 11:14:41 bostic Exp $ (Berkeley) $Date: 1993/11/30 11:14:41 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -78,5 +78,5 @@ abbr_save(sp, fp)
 	SCR *sp;
 	FILE *fp;
 {
-	return (seq_save(sp, fp, NULL, SEQ_ABBREV));
+	return (seq_save(sp, fp, "abbreviate ", SEQ_ABBREV));
 }
