@@ -6,10 +6,10 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 5.32 1993/04/06 11:36:14 bostic Exp $ (Berkeley) $Date: 1993/04/06 11:36:14 $";
+static char sccsid[] = "$Id: cut.c,v 5.33 1993/04/12 14:21:22 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:21:22 $";
 #endif /* not lint */
 
-#include <sys/param.h>
+#include <sys/types.h>
 
 #include <ctype.h>
 #include <errno.h>
@@ -21,15 +21,9 @@ static char sccsid[] = "$Id: cut.c,v 5.32 1993/04/06 11:36:14 bostic Exp $ (Berk
 
 static int	cutline __P((SCR *, EXF *, recno_t, size_t, size_t, TEXT **));
 
-CB cuts[UCHAR_MAX + 2];		/* Set of cut buffers. */
-
 /* 
  * cut --
- *	Put a range of lines/columns into a malloced buffer for use
- *	later.
- * XXX
- * If the range is over some set amount (LINES lines?) should fall
- * back and use ex_write to dump the cut into a temporary file.
+ *	Put a range of lines/columns into a malloc'd buffer for later use.
  */
 int
 cut(sp, ep, buffer, fm, tm, lmode)
@@ -53,13 +47,14 @@ cut(sp, ep, buffer, fm, tm, lmode)
 	 */
 	if (append = isupper(buffer))
 		if (!lmode && cb->flags & CB_LMODE)
-			msgq(sp, M_DISPLAY, "Buffer %s changed to line mode",
+			msgq(sp, M_INFO, "Buffer %s changed to line mode",
 			    charname(sp, buffer));
 
-	/* Free old buffer. */
-	if (cb->head != NULL && !append) {
-		text_free(cb->head);
-		cb->head = NULL;
+	/* Initialize buffer. */
+	if (cb->txthdr.next == NULL) {
+		HDR_INIT(cb->txthdr, next, prev, TEXT);
+	} else if (!append) {
+		text_free(&cb->txthdr);
 		cb->len = 0;
 		cb->flags = 0;
 	}
@@ -72,7 +67,7 @@ cut(sp, ep, buffer, fm, tm, lmode)
 		for (lno = fm->lno; lno <= tm->lno; ++lno) {
 			if (cutline(sp, ep, lno, 0, 0, &tp))
 				goto mem;
-			TEXTAPPEND(cb, tp);
+			HDR_INSERT(tp, &cb->txthdr, next, prev, TEXT);
 			cb->len += tp->len;
 		}
 		cb->flags |= CB_LMODE;
@@ -84,27 +79,28 @@ cut(sp, ep, buffer, fm, tm, lmode)
 	if (cutline(sp, ep, fm->lno, fm->cno, len, &tp))
 		goto mem;
 
-	TEXTAPPEND(cb, tp);
+	HDR_INSERT(tp, &cb->txthdr, next, prev, TEXT);
 	cb->len += tp->len;
 
 	for (lno = fm->lno; ++lno < tm->lno;) {
 		if (cutline(sp, ep, lno, 0, 0, &tp))
 			goto mem;
-		TEXTAPPEND(cb, tp);
+		HDR_INSERT(tp, &cb->txthdr, next, prev, TEXT);
 		cb->len += tp->len;
 	}
 
 	if (tm->lno > fm->lno && tm->cno > 0) {
 		if (cutline(sp, ep, lno, 0, tm->cno, &tp)) {
 mem:			if (append)
-				msgq(sp,
-				    M_DISPLAY, "Contents of %s buffer lost.",
+				msgq(sp, M_ERR,
+				    "Contents of %s buffer lost.",
 				    charname(sp, buffer));
-			text_free(cb->head);
-			cb->head = NULL;
+			text_free(&cb->txthdr);
+			cb->len = 0;
+			cb->flags = 0;
 			return (1);
 		}
-		TEXTAPPEND(cb, tp);
+		HDR_INSERT(tp, &cb->txthdr, next, prev, TEXT);
 		cb->len += tp->len;
 	}
 	return (0);
@@ -132,10 +128,10 @@ cutline(sp, ep, lno, fcno, len, newp)
 		return (1);
 	}
 
-	if ((tp = malloc(sizeof(TEXT))) == NULL)
+	if ((*newp = tp = malloc(sizeof(TEXT))) == NULL)
 		goto mem;
 	if (llen == 0) {
-		tp->lp = NULL;
+		tp->lb = NULL;
 		tp->len = 0;
 #if DEBUG && 0
 		TRACE(ep, "{}\n");
@@ -145,18 +141,16 @@ cutline(sp, ep, lno, fcno, len, newp)
 			len = llen - fcno;
 		if ((lp = malloc(len)) == NULL) {
 			free(tp);
-mem:			msgq(sp, M_ERROR, "Error: %s", strerror(errno));
+mem:			msgq(sp, M_ERR, "Error: %s", strerror(errno));
 			return (1);
 		}
 		memmove(lp, p + fcno, len);
-		tp->lp = lp;
+		tp->lb = lp;
 		tp->len = len;
 #if DEBUG && 0
 		TRACE(ep, "\t{%.*s}\n", MIN(len, 20), p + fcno);
 #endif
 	}
-	tp->next = NULL;
-	*newp = tp;
 	return (0);
 }
 
@@ -182,7 +176,7 @@ put(sp, ep, buffer, cp, rp, append)
 	CBNAME(sp, buffer, cb);
 	CBEMPTY(sp, buffer, cb);
 
-	tp = cb->head;
+	tp = cb->txthdr.next;
 	lmode = cb->flags & CB_LMODE;
 
 	/*
@@ -193,19 +187,19 @@ put(sp, ep, buffer, cp, rp, append)
 	if (lmode) {
 		if (append) {
 			for (lno = cp->lno; tp; ++lno, tp = tp->next)
-				if (file_aline(sp, ep, lno, tp->lp, tp->len))
+				if (file_aline(sp, ep, lno, tp->lb, tp->len))
 					return (1);
 			rp->lno = cp->lno + 1;
 		} else if ((lno = cp->lno) != 1) {
 			for (--lno; tp; tp = tp->next, ++lno)
-				if (file_aline(sp, ep, lno, tp->lp, tp->len))
+				if (file_aline(sp, ep, lno, tp->lb, tp->len))
 					return (1);
 			rp->lno = cp->lno;
 		} else {
-			if (file_iline(sp, ep, (recno_t)1, tp->lp, tp->len))
+			if (file_iline(sp, ep, (recno_t)1, tp->lb, tp->len))
 				return (1);
 			for (lno = 1; tp = tp->next; ++lno)
-				if (file_aline(sp, ep, lno, tp->lp, tp->len))
+				if (file_aline(sp, ep, lno, tp->lb, tp->len))
 					return (1);
 			rp->lno = 1;
 		}
@@ -247,7 +241,7 @@ put(sp, ep, buffer, cp, rp, append)
 		}
 
 		/* First line from the CB. */
-		memmove(t, tp->lp, tp->len);
+		memmove(t, tp->lb, tp->len);
 		t += tp->len;
 
 		/* Calculate length left in original line. */
@@ -277,7 +271,7 @@ put(sp, ep, buffer, cp, rp, append)
 				tp = tp->next;
 				if (tp->next == NULL)
 					break;
-				if (file_aline(sp, ep, lno, tp->lp, tp->len))
+				if (file_aline(sp, ep, lno, tp->lb, tp->len))
 					goto mem;
 				++lno;
 			}
@@ -293,7 +287,7 @@ put(sp, ep, buffer, cp, rp, append)
 
 			t = bp;
 			if (tp->len) {
-				memmove(t, tp->lp, tp->len);
+				memmove(t, tp->lb, tp->len);
 				t += tp->len;
 			}
 
@@ -337,48 +331,19 @@ mem:				if (bp == gp->tmp_bp)
 }
 
 /*
- * text_copy --
- *	Copy a chain of text structures.
- */
-TEXT *
-text_copy(sp, tp)
-	SCR *sp;
-	TEXT *tp;
-{
-	TEXT **cp, *cp_start;
-
-	for (cp_start = NULL, cp = &cp_start; tp != NULL; tp = tp->next) {
-		if ((*cp = malloc(sizeof(TEXT))) == NULL)
-			goto nomem;
-		if (((*cp)->lp = malloc(tp->len)) == NULL) {
-			free(*cp);
-			*cp = NULL;
-nomem:			msgq(sp, M_ERROR,
-			    "Error: text copy: %s", strerror(errno));
-			if (cp_start != NULL)
-				text_free(cp_start);
-			return (NULL);
-		}
-		memmove((*cp)->lp, tp->lp, tp->len);
-		(*cp)->len = tp->len;
-		(*cp)->next = NULL;
-		cp = &(*cp)->next;
-	}
-	return (cp_start);
-}
-
-/*
  * text_free --
  *	Free a chain of text structures.
  */
 void
-text_free(cp)
-	TEXT *cp;
+text_free(hp)
+	HDR *hp;
 {
-	TEXT *np;
+	TEXT *tp;
 
-	do {
-		np = cp->next;
-		free(cp);
-	} while (cp = np);
+	while (hp->next != hp) {
+		tp = hp->next;
+		HDR_DELETE(tp, next, prev, TEXT);
+		free(tp->lb);
+		free(tp);
+	}
 }
