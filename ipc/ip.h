@@ -4,7 +4,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: ip.h,v 8.7 1996/12/04 18:17:58 bostic Exp $ (Berkeley) $Date: 1996/12/04 18:17:58 $
+ *	$Id: ip.h,v 8.8 1996/12/05 12:29:44 bostic Exp $ (Berkeley) $Date: 1996/12/05 12:29:44 $
  */
 
 typedef struct _ip_private {
@@ -63,18 +63,27 @@ typedef struct _ip_buf {
  *
  * IP events sent from the screen to vi.
  */
-#define	IPO_EOF		 1	/* End of input (NOT ^D). */
-#define	IPO_ERR		 2	/* Input error. */
-#define	IPO_INTERRUPT	 3	/* Interrupt. */
-#define	IPO_MOUSE_MOVE	 4	/* Mouse click move: IPO_INT, IPO_INT. */
-#define	IPO_QUIT	 5	/* Quit. */
-#define	IPO_RESIZE	 6	/* Screen resize: IPO_INT, IPO_INT. */
-#define	IPO_SIGHUP	 7	/* SIGHUP. */
-#define	IPO_SIGTERM	 8	/* SIGTERM. */
-#define	IPO_STRING	 9	/* Input string: IPO_STR. */
-#define	IPO_WQ		10	/* Write and quit. */
-#define	IPO_WRITE	11	/* Write. */
-#define	IPO_WRITEAS	12	/* Write as another file: IPO_STR. */
+#define	IPO_APPEND	 1	/* Enter append mode. */
+#define	IPO_EDIT	 2	/* Edit a file: IPO_STR. */
+#define	IPO_EDITSPLIT	 3	/* Split to a file: IPO_STR. */
+#define	IPO_EINSERT	 4	/* End text insertm mode. */
+#define	IPO_EOF		 5	/* End of input (NOT ^D). */
+#define	IPO_ERR		 6	/* Input error. */
+#define	IPO_INSERT	 7	/* Enter insert mode. */
+#define	IPO_INTERRUPT	 8	/* Interrupt. */
+#define	IPO_MOUSE_MOVE	 9	/* Mouse click move: IPO_INT, IPO_INT. */
+#define	IPO_QUIT	10	/* Quit. */
+#define	IPO_RESIZE	11	/* Screen resize: IPO_INT, IPO_INT. */
+#define	IPO_SIGHUP	12	/* SIGHUP. */
+#define	IPO_SIGTERM	13	/* SIGTERM. */
+#define	IPO_STRING	14	/* Input string: IPO_STR. */
+#define	IPO_TAG		15	/* Tag. */
+#define	IPO_TAGAS	16	/* Tag to a string: IPO_STR. */
+#define	IPO_TAGSPLIT	17	/* Split to a tag. */
+#define	IPO_UNDO	18	/* Undo. */
+#define	IPO_WQ		19	/* Write and quit. */
+#define	IPO_WRITE	20	/* Write. */
+#define	IPO_WRITEAS	21	/* Write as another file: IPO_STR. */
 
 /*
  * IP events sent from vi to the screen.
