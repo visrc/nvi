@@ -5,7 +5,7 @@
 .\"
 .\" %sccs.include.redist.roff%
 .\"
-.\"	$Id: ex.cmd.roff,v 8.32 1995/01/11 16:09:07 bostic Exp $ (Berkeley) $Date: 1995/01/11 16:09:07 $
+.\"	$Id: ex.cmd.roff,v 8.33 1995/01/12 12:10:58 bostic Exp $ (Berkeley) $Date: 1995/01/12 12:10:58 $
 .\"
 .SH 1 "Ex Description"
 .pp
@@ -1347,6 +1347,8 @@ argument is not specified, the
 from the previous
 .CO substitute
 command is used.
+Any character other than an alphabetic, numeric, <blank> or backslash
+character may be used as the delimiter.
 .sp
 If
 .LI options
