@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: vi.c,v 5.16 1992/05/28 13:49:14 bostic Exp $ (Berkeley) $Date: 1992/05/28 13:49:14 $";
+static char sccsid[] = "$Id: vi.c,v 5.17 1992/06/05 11:04:57 bostic Exp $ (Berkeley) $Date: 1992/06/05 11:04:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,6 +22,7 @@ static char sccsid[] = "$Id: vi.c,v 5.16 1992/05/28 13:49:14 bostic Exp $ (Berke
 #include "vcmd.h"
 #include "cut.h"
 #include "options.h"
+#include "screen.h"
 #include "extern.h"
 
 static int getcmd __P((VICMDARG *, VICMDARG *));
@@ -39,11 +40,12 @@ void
 vi()
 {
 	register VICMDARG *vp;
-	MARK fm, tm;
+	MARK fm, tm, m;
 	VICMDARG cmd;
 	u_int flags;
 	int erase;
 
+	scr_init();
 	scr_ref();
 	wrefresh(curscr);
 	for (;;) {
@@ -96,8 +98,11 @@ err:		if (msgcnt) {
 			goto err;
 
 		/* If a non-relative movement, set the '' mark. */
-		if (flags & V_ABS)
-			SETABSMARK(&cursor);
+		if (flags & V_ABS) {
+			m.lno = curf->lno;
+			m.cno = curf->cno;
+			SETABSMARK(&m);
+		}
 
 		/* Do any required motion. */
 		if (flags & V_MOTION) {
@@ -105,23 +110,23 @@ err:		if (msgcnt) {
 				bell();
 				goto err;
 			}
-		} else
-			fm = cursor;
+		} else {
+			fm.lno = curf->lno;
+			fm.cno = curf->cno;
+		}
 
-		/* Call the function, get the resulting mark. */
-		if ((vp->kp->func)(vp, &fm, &tm, &cursor))
+		/* Call the function, update the cursor. */
+		if ((vp->kp->func)(vp, &fm, &tm, &m))
 			goto err;
+		curf->lno = m.lno;
+		curf->cno = m.cno;
 
 		/*
 		 * If that command took us out of vi mode, then exit
 		 * the loop without further action.
 		 */
-		if (mode != MODE_VI) {
-			move(LINES - 1, 0);
-			clrtoeol();
-			refresh();
+		if (mode != MODE_VI)
 			break;
-		}
 
 		/* Update the screen. */
 		scr_cchange();
@@ -139,6 +144,7 @@ err:		if (msgcnt) {
 				dot.flags |= VC_C1SET;
 		}
 	}
+	scr_end();
 }
 
 #define	KEY(k) {							\
@@ -310,6 +316,7 @@ getmotion(vp, fm, tm)
 	VICMDARG *vp;
 	MARK *fm, *tm;
 {
+	MARK m;
 	VICMDARG motion;
 	u_long cnt;
 
@@ -349,15 +356,17 @@ getmotion(vp, fm, tm)
 		vp->flags |= VC_LMODE;
 
 		/* Set the end of the command. */
-		tm->lno = cursor.lno + motion.count - 1;
+		tm->lno = curf->lno + motion.count - 1;
 		tm->cno = 1;
 		if (file_gline(curf, tm->lno, NULL) == NULL) {
-			v_eof(&cursor);
+			m.lno = curf->lno;
+			m.cno = curf->cno;
+			v_eof(&m);
 			return (1);
 		}
 
 		/* Set the origin of the command. */
-		fm->lno = cursor.lno;
+		fm->lno = curf->lno;
 		fm->cno = 0;
 	} else {
 		/*
@@ -367,7 +376,9 @@ getmotion(vp, fm, tm)
 		 */
 		motion.flags |= vp->kp->flags & VC_COMMASK;
 
-		if ((motion.kp->func)(&motion, &cursor, NULL, tm))
+		m.lno = curf->lno;
+		m.cno = curf->cno;
+		if ((motion.kp->func)(&motion, &m, NULL, tm))
 			return (1);
 
 		/*
@@ -381,12 +392,15 @@ getmotion(vp, fm, tm)
 		 * If the motion is in a backward direction, switch the current
 		 * location so that we're always moving in the same direction.
 		 */
-		if (tm->lno < cursor.lno ||
-		    tm->lno == cursor.lno && tm->cno < cursor.cno) {
+		if (tm->lno < curf->lno ||
+		    tm->lno == curf->lno && tm->cno < curf->cno) {
 			*fm = *tm;
-			*tm = cursor;
-		} else
-			*fm = cursor;
+			tm->lno = curf->lno;
+			tm->cno = curf->cno;
+		} else {
+			fm->lno = curf->lno;
+			fm->cno = curf->cno;
+		}
 	}
 
 	/*
@@ -411,8 +425,8 @@ getkeyword(kp, flags)
 	size_t len;
 	char *p;
 
-	p = file_gline(curf, cursor.lno, &len);
-	beg = cursor.cno;
+	p = file_gline(curf, curf->lno, &len);
+	beg = curf->cno;
 
 	/* May not be a keyword at all. */
 	if (!len ||
@@ -445,10 +459,10 @@ noword:		bell();
 	}
 
 	if (flags & V_KEYW) {
-		for (end = cursor.cno; ++end < len && inword(p[end]););
+		for (end = curf->cno; ++end < len && inword(p[end]););
 		--end;
 	} else {
-		for (end = cursor.cno; ++end < len && innum(p[end]););
+		for (end = curf->cno; ++end < len && innum(p[end]););
 
 		/* Just a sign isn't a number. */
 		if (end == beg && (p[beg] == '+' || p[beg] == '-'))
@@ -460,8 +474,8 @@ noword:		bell();
 	 * Getting a keyword implies moving the cursor to its beginning.
 	 * Refresh now.
 	 */
-	if (beg != cursor.cno) {
-		cursor.cno = beg;
+	if (beg != curf->cno) {
+		curf->cno = beg;
 		scr_cchange();
 		refresh();
 	}

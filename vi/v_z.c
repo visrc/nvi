@@ -70,11 +70,11 @@ MARK *m_z(m, cnt, key)
 	/* make the new topline take effect */
 	if (newtop >= 1)
 	{
-		topline = newtop;
+		curf->top = newtop;
 	}
 	else
 	{
-		topline = 1L;
+		curf->top = 1L;
 	}
 
 	/* The cursor doesn't move */

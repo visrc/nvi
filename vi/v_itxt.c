@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 5.6 1992/05/28 13:52:42 bostic Exp $ (Berkeley) $Date: 1992/05/28 13:52:42 $";
+static char sccsid[] = "$Id: v_itxt.c,v 5.7 1992/06/05 11:05:30 bostic Exp $ (Berkeley) $Date: 1992/06/05 11:05:30 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -18,6 +18,7 @@ static char sccsid[] = "$Id: v_itxt.c,v 5.6 1992/05/28 13:52:42 bostic Exp $ (Be
 #include "vi.h"
 #include "vcmd.h"
 #include "cut.h"
+#include "screen.h"
 #include "term.h"
 #include "extern.h"
 
@@ -51,7 +52,7 @@ v_iA(vp, fm, tm, rp)
 		 * the line and repaint the screen.
 		 */
 		EGETLINE(p, fm->lno, len);
-		cursor.cno = len;
+		curf->cno = len;
 		scr_cchange();
 		refresh();
 
@@ -85,7 +86,7 @@ v_ia(vp, fm, tm, rp)
 		 */
 		EGETLINE(p, fm->lno, len);
 		if (len) {
-			++cursor.cno;
+			++curf->cno;
 			scr_cchange();
 			refresh();
 		}
@@ -118,8 +119,8 @@ v_iI(vp, fm, tm, rp)
 		 * repaint the screen.
 		 */
 		EGETLINE(p, fm->lno, len);
-		if (cursor.cno != 0) {
-			cursor.cno = 0;
+		if (curf->cno != 0) {
+			curf->cno = 0;
 			scr_cchange();
 			refresh();
 		}
@@ -174,11 +175,11 @@ v_iO(vp, fm, tm, rp)
 	for (cnt = vp->flags & VC_C1SET ? vp->count : 1;;) {
 		if (file_iline(curf, fm->lno, "", 0))
 			return (1);
-		EGETLINE(p, cursor.lno, len);
-		cursor.cno = 0;
+		EGETLINE(p, curf->lno, len);
+		curf->cno = 0;
 
 		/* XXX Scroll the screen +1. */
-		scr_lchange(cursor.lno, p, len);
+		scr_lchange(curf->lno, p, len);
 		scr_cchange();
 		refresh();
 		if (newtext(vp, NULL, p, len, rp, 0))
@@ -207,11 +208,11 @@ v_io(vp, fm, tm, rp)
 	for (cnt = vp->flags & VC_C1SET ? vp->count : 1;;) {
 		if (file_aline(curf, fm->lno, "", 0))
 			return (1);
-		EGETLINE(p, ++cursor.lno, len);
-		cursor.cno = 0;
+		EGETLINE(p, ++curf->lno, len);
+		curf->cno = 0;
 
 		/* XXX Scroll the screen +1. */
-		scr_lchange(cursor.lno, p, len);
+		scr_lchange(curf->lno, p, len);
 		scr_cchange();
 		refresh();
 		if (newtext(vp, NULL, p, len, rp, 0))
@@ -258,8 +259,8 @@ v_Change(vp, fm, tm, rp)
 		if (delete(fm, tm, 1))
 			return (1);
 		EGETLINE(p, --fm->lno, len);
-		cursor.lno = fm->lno;
-		cursor.cno = 0;
+		curf->lno = fm->lno;
+		curf->cno = 0;
 		scr_ref();
 		scr_cchange();
 		refresh();
@@ -300,8 +301,8 @@ v_change(vp, fm, tm, rp)
 		if (delete(fm, tm, lmode))
 			return (1);
 		EGETLINE(p, --fm->lno, len);
-		cursor.lno = fm->lno;
-		cursor.cno = 0;
+		curf->lno = fm->lno;
+		curf->cno = 0;
 		scr_ref();
 		scr_cchange();
 		refresh();
@@ -341,7 +342,8 @@ v_Replace(vp, fm, tm, rp)
 		 */
 		if (notfirst && len) {
 			++rp->cno;
-			cursor = *rp;
+			curf->lno = rp->lno;
+			curf->cno = rp->cno;
 			scr_ref();
 			scr_cchange();
 			refresh();
@@ -417,7 +419,8 @@ newtext(vp, tm, p, len, rp, flags)
 	}
 
 	/* Save the cursor position. */
-	ib.start = ib.stop = cursor;
+	ib.start.lno = ib.stop.lno = curf->lno;
+	ib.start.lno = ib.stop.lno = curf->cno;
 
 	/* Copy the current line for editing. */
 	if (len) {
@@ -427,11 +430,11 @@ newtext(vp, tm, p, len, rp, flags)
 		}
 		bcopy(p, ib.ilb, len);
 		if (flags & N_OVERWRITE) {
-			overwrite = tm->cno - cursor.cno;
+			overwrite = tm->cno - curf->cno;
 			insert = len - tm->cno;
 		} else {
 			overwrite = 0;
-			insert = len - cursor.cno;
+			insert = len - curf->cno;
 		}
 		if (flags & N_EMARK) {
 			ib.ilb[tm->cno - 1] = '$';
@@ -457,7 +460,7 @@ newtext(vp, tm, p, len, rp, flags)
 
 	/* Set up parameters. */
 	quoted = 0;
-	col = startcol = cursor.cno;
+	col = startcol = curf->cno;
 	p = ib.ilb + col;
 
 	for (;;) {
@@ -488,7 +491,8 @@ newtext(vp, tm, p, len, rp, flags)
 		switch(special[ch]) {
 		case K_ESCAPE:			/* Escape. */
 			/* Set the end cursor position. */
-			ib.stop = cursor;
+			ib.stop.lno = curf->lno;
+			ib.stop.cno = curf->cno;
 
 			/* If no input, return. */
 			if (ib.start.lno == ib.start.lno &&
@@ -542,8 +546,8 @@ newtext(vp, tm, p, len, rp, flags)
 			++ib.stop.lno;
 
 			/* Reset the cursor. */
-			++cursor.lno;
-			cursor.cno = 0;
+			++curf->lno;
+			curf->cno = 0;
 			break;
 		case K_VERASE:			/* Erase the last character. */
 			/*
@@ -556,7 +560,7 @@ newtext(vp, tm, p, len, rp, flags)
 				++overwrite;
 				--p;
 				--col;
-				--cursor.cno;
+				--curf->cno;
 			}
 			break;
 		case K_VWERASE:			/* Erase the last word. */
@@ -567,7 +571,7 @@ newtext(vp, tm, p, len, rp, flags)
 			bell();
 			break;
 		case K_VKILL:			/* Restart this line. */
-			col = cursor.cno = startcol;
+			col = curf->cno = startcol;
 			p = ib.ilb + col;
 			break;
 		case K_VLNEXT:			/* Quote the next character. */
@@ -581,7 +585,7 @@ insch:			if (overwrite)
 				bcopy(p, p + 1, insert);
 			*p++ = ch;
 			++col;
-			++cursor.cno;
+			++curf->cno;
 			break;
 		}
 		scr_cchange();
@@ -635,7 +639,8 @@ ib_err()
 	else if (m.cno >= len)
 		m.cno = len ? len - 1 : 0;
 
-	cursor = m;
+	curf->lno = m.lno;
+	curf->cno = m.cno;
 }
 
 /*
