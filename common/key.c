@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: key.c,v 10.25 1996/03/06 19:50:20 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:50:20 $";
+static const char sccsid[] = "$Id: key.c,v 10.26 1996/03/27 18:50:09 bostic Exp $ (Berkeley) $Date: 1996/03/27 18:50:09 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -224,7 +224,7 @@ v_key_ilookup(sp)
  * PUBLIC: size_t __v_key_len __P((SCR *, ARG_CHAR_T));
  */
 size_t
-__v_key_len(sp, ch)
+v_key_len(sp, ch)
 	SCR *sp;
 	ARG_CHAR_T ch;
 {
@@ -240,7 +240,7 @@ __v_key_len(sp, ch)
  * PUBLIC: CHAR_T *__v_key_name __P((SCR *, ARG_CHAR_T));
  */
 CHAR_T *
-__v_key_name(sp, ach)
+v_key_name(sp, ach)
 	SCR *sp;
 	ARG_CHAR_T ach;
 {
@@ -321,7 +321,7 @@ done:	sp->cname[sp->clen = len] = '\0';
  * PUBLIC: int __v_key_val __P((SCR *, ARG_CHAR_T));
  */
 int
-__v_key_val(sp, ch)
+v_key_val(sp, ch)
 	SCR *sp;
 	ARG_CHAR_T ch;
 {

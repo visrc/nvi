@@ -6,34 +6,34 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: mem.h,v 10.5 1996/03/06 19:50:37 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:50:37 $
+ *	$Id: mem.h,v 10.6 1996/03/27 18:50:10 bostic Exp $ (Berkeley) $Date: 1996/03/27 18:50:10 $
  */
 
 /* Increase the size of a malloc'd buffer.  Two versions, one that
  * returns, one that jumps to an error label.
  */
 #define	BINC_GOTO(sp, lp, llen, nlen) {					\
-	void *__bincp;							\
+	void *L__bincp;							\
 	if ((nlen) > llen) {						\
-		if ((__bincp = binc(sp, lp, &(llen), nlen)) == NULL)	\
+		if ((L__bincp = binc(sp, lp, &(llen), nlen)) == NULL)	\
 			goto alloc_err;					\
 		/*							\
 		 * !!!							\
 		 * Possible pointer conversion.				\
 		 */							\
-		lp = __bincp;						\
+		lp = L__bincp;						\
 	}								\
 }
 #define	BINC_RET(sp, lp, llen, nlen) {					\
-	void *__bincp;							\
+	void *L__bincp;							\
 	if ((nlen) > llen) {						\
-		if ((__bincp = binc(sp, lp, &(llen), nlen)) == NULL)	\
+		if ((L__bincp = binc(sp, lp, &(llen), nlen)) == NULL)	\
 			return (1);					\
 		/*							\
 		 * !!!							\
 		 * Possible pointer conversion.				\
 		 */							\
-		lp = __bincp;						\
+		lp = L__bincp;						\
 	}								\
 }
 
@@ -43,29 +43,29 @@
  * that jumps to an error label.
  */
 #define	GET_SPACE_GOTO(sp, bp, blen, nlen) {				\
-	GS *__gp = (sp) == NULL ? NULL : (sp)->gp;			\
-	if (__gp == NULL || F_ISSET(__gp, G_TMP_INUSE)) {		\
+	GS *L__gp = (sp) == NULL ? NULL : (sp)->gp;			\
+	if (L__gp == NULL || F_ISSET(L__gp, G_TMP_INUSE)) {		\
 		bp = NULL;						\
 		blen = 0;						\
 		BINC_GOTO(sp, bp, blen, nlen); 				\
 	} else {							\
-		BINC_GOTO(sp, __gp->tmp_bp, __gp->tmp_blen, nlen);	\
-		bp = __gp->tmp_bp;					\
-		blen = __gp->tmp_blen;					\
-		F_SET(__gp, G_TMP_INUSE);				\
+		BINC_GOTO(sp, L__gp->tmp_bp, L__gp->tmp_blen, nlen);	\
+		bp = L__gp->tmp_bp;					\
+		blen = L__gp->tmp_blen;					\
+		F_SET(L__gp, G_TMP_INUSE);				\
 	}								\
 }
 #define	GET_SPACE_RET(sp, bp, blen, nlen) {				\
-	GS *__gp = (sp) == NULL ? NULL : (sp)->gp;			\
-	if (__gp == NULL || F_ISSET(__gp, G_TMP_INUSE)) {		\
+	GS *L__gp = (sp) == NULL ? NULL : (sp)->gp;			\
+	if (L__gp == NULL || F_ISSET(L__gp, G_TMP_INUSE)) {		\
 		bp = NULL;						\
 		blen = 0;						\
 		BINC_RET(sp, bp, blen, nlen);				\
 	} else {							\
-		BINC_RET(sp, __gp->tmp_bp, __gp->tmp_blen, nlen);	\
-		bp = __gp->tmp_bp;					\
-		blen = __gp->tmp_blen;					\
-		F_SET(__gp, G_TMP_INUSE);				\
+		BINC_RET(sp, L__gp->tmp_bp, L__gp->tmp_blen, nlen);	\
+		bp = L__gp->tmp_bp;					\
+		blen = L__gp->tmp_blen;					\
+		F_SET(L__gp, G_TMP_INUSE);				\
 	}								\
 }
 
@@ -74,24 +74,24 @@
  * returns, one that jumps to an error label.
  */
 #define	ADD_SPACE_GOTO(sp, bp, blen, nlen) {				\
-	GS *__gp = (sp) == NULL ? NULL : (sp)->gp;			\
-	if (__gp == NULL || bp == __gp->tmp_bp) {			\
-		F_CLR(__gp, G_TMP_INUSE);				\
-		BINC_GOTO(sp, __gp->tmp_bp, __gp->tmp_blen, nlen);	\
-		bp = __gp->tmp_bp;					\
-		blen = __gp->tmp_blen;					\
-		F_SET(__gp, G_TMP_INUSE);				\
+	GS *L__gp = (sp) == NULL ? NULL : (sp)->gp;			\
+	if (L__gp == NULL || bp == L__gp->tmp_bp) {			\
+		F_CLR(L__gp, G_TMP_INUSE);				\
+		BINC_GOTO(sp, L__gp->tmp_bp, L__gp->tmp_blen, nlen);	\
+		bp = L__gp->tmp_bp;					\
+		blen = L__gp->tmp_blen;					\
+		F_SET(L__gp, G_TMP_INUSE);				\
 	} else								\
 		BINC_GOTO(sp, bp, blen, nlen);				\
 }
 #define	ADD_SPACE_RET(sp, bp, blen, nlen) {				\
-	GS *__gp = (sp) == NULL ? NULL : (sp)->gp;			\
-	if (__gp == NULL || bp == __gp->tmp_bp) {			\
-		F_CLR(__gp, G_TMP_INUSE);				\
-		BINC_RET(sp, __gp->tmp_bp, __gp->tmp_blen, nlen);	\
-		bp = __gp->tmp_bp;					\
-		blen = __gp->tmp_blen;					\
-		F_SET(__gp, G_TMP_INUSE);				\
+	GS *L__gp = (sp) == NULL ? NULL : (sp)->gp;			\
+	if (L__gp == NULL || bp == L__gp->tmp_bp) {			\
+		F_CLR(L__gp, G_TMP_INUSE);				\
+		BINC_RET(sp, L__gp->tmp_bp, L__gp->tmp_blen, nlen);	\
+		bp = L__gp->tmp_bp;					\
+		blen = L__gp->tmp_blen;					\
+		F_SET(L__gp, G_TMP_INUSE);				\
 	} else								\
 		BINC_RET(sp, bp, blen, nlen);				\
 }
@@ -108,9 +108,9 @@
 
 /* Free a GET_SPACE returned buffer. */
 #define	FREE_SPACE(sp, bp, blen) {					\
-	GS *__gp = (sp) == NULL ? NULL : (sp)->gp;			\
-	if (__gp != NULL && bp == __gp->tmp_bp)				\
-		F_CLR(__gp, G_TMP_INUSE);				\
+	GS *L__gp = (sp) == NULL ? NULL : (sp)->gp;			\
+	if (L__gp != NULL && bp == L__gp->tmp_bp)			\
+		F_CLR(L__gp, G_TMP_INUSE);				\
 	else								\
 		FREE(bp, blen);						\
 }

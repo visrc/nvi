@@ -6,7 +6,7 @@
  *
  * See the LICENSE file for redistribution information.
  *
- *	$Id: ex.h,v 10.14 1996/03/06 19:52:01 bostic Exp $ (Berkeley) $Date: 1996/03/06 19:52:01 $
+ *	$Id: ex.h,v 10.15 1996/03/27 18:49:39 bostic Exp $ (Berkeley) $Date: 1996/03/27 18:49:39 $
  */
 
 #define	PROMPTCHAR	':'		/* Prompt using a colon. */
@@ -102,10 +102,10 @@ struct _excmd {
 
 	/* Clear the structure before each ex command. */
 #define	CLEAR_EX_CMD(cmdp) {						\
-	u_int32_t __f = F_ISSET(cmdp, E_PRESERVE);			\
+	u_int32_t L__f = F_ISSET(cmdp, E_PRESERVE);			\
 	memset(&((cmdp)->buffer), 0, ((char *)&(cmdp)->flags -		\
 	    (char *)&((cmdp)->buffer)) + sizeof((cmdp)->flags));	\
-	F_SET(cmdp, __f);						\
+	F_SET(cmdp, L__f);						\
 }
 
 	CHAR_T	  buffer;		/* Command: named buffer. */
