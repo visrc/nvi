@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_xchar.c,v 8.6 1994/03/08 19:41:44 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:41:44 $";
+static char sccsid[] = "$Id: v_xchar.c,v 8.7 1994/05/17 10:44:34 bostic Exp $ (Berkeley) $Date: 1994/05/17 10:44:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -69,7 +69,7 @@ nodel:		msgq(sp, M_BERR, "No characters to delete.");
 	} else
 		vp->m_final.cno = vp->m_start.cno;
 
-	if (cut(sp, ep, NULL,
+	if (cut(sp, ep,
 	    F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
 	    &vp->m_start, &vp->m_stop, 0))
 		return (1);
@@ -102,7 +102,7 @@ v_Xchar(sp, ep, vp)
 	--vp->m_stop.cno;
 	vp->m_final.cno = vp->m_start.cno;
 
-	if (cut(sp, ep, NULL,
+	if (cut(sp, ep,
 	    F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
 	    &vp->m_start, &vp->m_stop, 0))
 		return (1);

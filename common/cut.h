@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: cut.h,v 8.15 1994/05/01 09:56:01 bostic Exp $ (Berkeley) $Date: 1994/05/01 09:56:01 $
+ *	$Id: cut.h,v 8.16 1994/05/17 10:44:06 bostic Exp $ (Berkeley) $Date: 1994/05/17 10:44:06 $
  */
 
 typedef struct _texth TEXTH;		/* TEXT list head structure. */
@@ -47,9 +47,9 @@ struct _text {				/* Text: a linked list of lines. */
  * Get named buffer 'name'.
  * Translate upper-case buffer names to lower-case buffer names.
  */
-#define	CBNAME(sp, cbp, name) {						\
+#define	CBNAME(sp, cbp, nch) {						\
 	CHAR_T __name;							\
-	__name = isupper(name) ? tolower(name) : (name);		\
+	__name = isupper(nch) ? tolower(nch) : (nch);			\
 	for (cbp = sp->gp->cutq.lh_first;				\
 	    cbp != NULL; cbp = cbp->q.le_next)				\
 		if (cbp->name == __name)				\
@@ -58,7 +58,8 @@ struct _text {				/* Text: a linked list of lines. */
 
 #define	CUT_DELETE	0x01		/* Delete (rotate numeric buffers). */
 #define	CUT_LINEMODE	0x02		/* Cut in line mode. */
-int	 cut __P((SCR *, EXF *, CB *, CHAR_T *, MARK *, MARK *, int));
+int	 cut __P((SCR *, EXF *, CHAR_T *, MARK *, MARK *, int));
+int	 cut_line __P((SCR *, EXF *, recno_t, size_t, size_t, CB *));
 int	 delete __P((SCR *, EXF *, MARK *, MARK *, int));
 int	 put __P((SCR *, EXF *, CB *, CHAR_T *, MARK *, MARK *, int));
 

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_yank.c,v 8.13 1994/03/08 19:41:45 bostic Exp $ (Berkeley) $Date: 1994/03/08 19:41:45 $";
+static char sccsid[] = "$Id: v_yank.c,v 8.14 1994/05/17 10:44:34 bostic Exp $ (Berkeley) $Date: 1994/05/17 10:44:34 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -58,7 +58,8 @@ v_yank(sp, ep, vp)
 		lmode = CUT_LINEMODE;
 	} else
 		lmode = 0;
-	if (cut(sp, ep, NULL, F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
+	if (cut(sp, ep,
+	    F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
 	    &vp->m_start, &vp->m_stop, lmode))
 		return (1);
 

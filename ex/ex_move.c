@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_move.c,v 8.11 1994/03/15 14:18:04 bostic Exp $ (Berkeley) $Date: 1994/03/15 14:18:04 $";
+static char sccsid[] = "$Id: ex_move.c,v 8.12 1994/05/17 10:44:20 bostic Exp $ (Berkeley) $Date: 1994/05/17 10:44:20 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -42,6 +42,8 @@ ex_copy(sp, ep, cmdp)
 	recno_t cnt;
 	int rval;
 
+	rval = 0;
+
 	/*
 	 * It's possible to copy things into the area that's being
 	 * copied, e.g. "2,5copy3" is legitimate.  Save the text to
@@ -51,8 +53,12 @@ ex_copy(sp, ep, cmdp)
 	fm2 = cmdp->addr2;
 	memset(&cb, 0, sizeof(cb));
 	CIRCLEQ_INIT(&cb.textq);
-	if (cut(sp, ep, &cb, NULL, &fm1, &fm2, CUT_LINEMODE))
-		return (1);
+	for (cnt = fm1.lno; cnt <= fm2.lno; ++cnt)
+		if (cut_line(sp, ep, cnt, 0, 0, &cb)) {
+			rval = 1;
+			goto err;
+		}
+	cb.flags |= CB_LMODE;
 
 	/* Put the text into place. */
 	tm.lno = cmdp->lineno;
@@ -70,9 +76,8 @@ ex_copy(sp, ep, cmdp)
 		sp->cno = 0;
 
 		sp->rptlines[L_COPIED] += cnt;
-		rval = 0;
 	}
-	text_lfree(&cb.textq);
+err:	text_lfree(&cb.textq);
 	return (rval);
 }
 

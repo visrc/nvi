@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: cut.c,v 8.26 1994/03/14 10:30:07 bostic Exp $ (Berkeley) $Date: 1994/03/14 10:30:07 $";
+static char sccsid[] = "$Id: cut.c,v 8.27 1994/05/17 10:44:04 bostic Exp $ (Berkeley) $Date: 1994/05/17 10:44:04 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,23 +30,22 @@ static char sccsid[] = "$Id: cut.c,v 8.26 1994/03/14 10:30:07 bostic Exp $ (Berk
 
 #include "vi.h"
 
-static int	cb_line __P((SCR *, EXF *, recno_t, size_t, size_t, CB *));
 static int	cb_rotate __P((SCR *));
 
 /*
  * cut --
- *	Put a range of lines/columns into a buffer.
+ *	Put a range of lines/columns into a TEXT buffer.
  *
  * There are two buffer areas, both found in the global structure.  The first
  * is the linked list of all the buffers the user has named, the second is the
- * default buffer storage.  There is a pointer, too, which is the current
- * default buffer, i.e. it may point to the default buffer or a named buffer
- * depending on into what buffer the last text was cut.  In both delete and
- * yank operations, text is cut into either the buffer named by the user or
- * the default buffer.  If it's a delete of information on more than a single
- * line, the contents of the numbered buffers are rotated up one, the contents
- * of the buffer named '9' are discarded, and the text is also cut into the
- * buffer named '1'.
+ * unnamed buffer storage.  There is a pointer, too, which is the current
+ * default buffer, i.e. it may point to the unnamed buffer or a named buffer
+ * depending on into what buffer the last text was cut.  Logically, in both
+ * delete and yank operations, if the user names a buffer, the text is cut
+ * into it.  If it's a delete of information on more than a single line, the
+ * contents of the numbered buffers are rotated up one, the contents of the
+ * buffer named '9' are discarded, and the text is cut into the buffer named
+ * '1'.  The text is always cut into the unnamed buffer.
  *
  * In all cases, upper-case buffer names are the same as lower-case names,
  * with the exception that they cause the buffer to be appended to instead
@@ -64,44 +63,57 @@ static int	cb_rotate __P((SCR *));
  * we just treat the numeric buffers like any other named buffer.
  */
 int
-cut(sp, ep, cbp, namep, fm, tm, flags)
+cut(sp, ep, namep, fm, tm, flags)
 	SCR *sp;
 	EXF *ep;
-	CB *cbp;
 	CHAR_T *namep;
 	int flags;
 	MARK *fm, *tm;
 {
+	enum { NOCOPY, NEEDCOPY, DOINGCOPY } copy;
+	CB *cbp;
 	CHAR_T name;
 	recno_t lno;
-	int append, namedbuffer, setdefcb;
+	int append, namedbuffer;
 
-	if (cbp == NULL) {
-		if (namep == NULL) {
-			if (LF_ISSET(CUT_DELETE) &&
-			    (LF_ISSET(CUT_LINEMODE) || fm->lno != tm->lno)) {
-				(void)cb_rotate(sp);
-				name = '1';
-				goto defcb;
-			}
-			cbp = sp->gp->dcb_store;
-			append = namedbuffer = 0;
-		} else {
-			name = *namep;
-defcb:			CBNAME(sp, cbp, name);
-			append = isupper(name);
-			namedbuffer = 1;
+	/*
+	 * If the user specified a buffer, put it there.  (This may
+	 * require a copy into the numeric buffers.  We do the copy
+	 * so that we don't have to reference count and so we don't
+	 * have to deal with thing like appends to buffers that are
+	 * used multiple times.)
+	 *
+	 * Otherwise, if it's a delete put it in the numeric buffer.
+	 *
+	 * Otherwise, put it in the unnamed buffer.
+	 */
+	copy = NOCOPY;
+	append = namedbuffer = 0;
+	if (namep != NULL) {
+		name = *namep;
+		if (LF_ISSET(CUT_DELETE) &&
+		    (LF_ISSET(CUT_LINEMODE) || fm->lno != tm->lno)) {
+			cb_rotate(sp);
+			copy = NEEDCOPY;
 		}
-		setdefcb = 1;
+namecb:		CBNAME(sp, cbp, name);
+		append = isupper(name);
+		namedbuffer = 1;
+	} else if (LF_ISSET(CUT_DELETE) &&
+	    (LF_ISSET(CUT_LINEMODE) || fm->lno != tm->lno)) {
+		name = '1';
+		cb_rotate(sp);
+		goto namecb;
 	} else
-		append = namedbuffer = setdefcb = 0;
+		cbp = sp->gp->dcb_store;
 
+copyloop:
 	/*
 	 * If this is a new buffer, create it and add it into the list.
 	 * Otherwise, if it's not an append, free its current contents.
 	 */
 	if (cbp == NULL) {
-		CALLOC(sp, cbp, CB *, 1, sizeof(CB));
+		CALLOC_RET(sp, cbp, CB *, 1, sizeof(CB));
 		cbp->name = name;
 		CIRCLEQ_INIT(&cbp->textq);
 		if (namedbuffer) {
@@ -114,39 +126,46 @@ defcb:			CBNAME(sp, cbp, name);
 		cbp->flags = 0;
 	}
 
+
 #define	ENTIRE_LINE	0
 	/* In line mode, it's pretty easy, just cut the lines. */
 	if (LF_ISSET(CUT_LINEMODE)) {
 		cbp->flags |= CB_LMODE;
 		for (lno = fm->lno; lno <= tm->lno; ++lno)
-			if (cb_line(sp, ep, lno, 0, 0, cbp))
-				goto cb_line_fail;
+			if (cut_line(sp, ep, lno, 0, 0, cbp))
+				goto cut_line_err;
 	} else {
 		/*
-		 * Get the first line.  A length of 0 causes cb_line
+		 * Get the first line.  A length of 0 causes cut_line
 		 * to cut from the MARK to the end of the line.
 		 */
-		if (cb_line(sp, ep, fm->lno, fm->cno,
-		    fm->lno != tm->lno ? ENTIRE_LINE : (tm->cno - fm->cno) + 1,
-		    cbp))
-			goto cb_line_fail;
+		if (cut_line(sp, ep, fm->lno, fm->cno, fm->lno != tm->lno ?
+		    ENTIRE_LINE : (tm->cno - fm->cno) + 1, cbp))
+			goto cut_line_err;
 
 		/* Get the intermediate lines. */
 		for (lno = fm->lno; ++lno < tm->lno;)
-			if (cb_line(sp, ep, lno, 0, ENTIRE_LINE, cbp))
-				goto cb_line_fail;
+			if (cut_line(sp, ep, lno, 0, ENTIRE_LINE, cbp))
+				goto cut_line_err;
 
 		/* Get the last line. */
 		if (tm->lno != fm->lno &&
-		    cb_line(sp, ep, lno, 0, tm->cno + 1, cbp)) {
-cb_line_fail:		text_lfree(&cbp->textq);
+		    cut_line(sp, ep, lno, 0, tm->cno + 1, cbp)) {
+cut_line_err:		text_lfree(&cbp->textq);
 			cbp->len = 0;
 			cbp->flags = 0;
 			return (1);
 		}
 	}
-	if (setdefcb)
+
+	if (copy != DOINGCOPY)
 		sp->gp->dcbp = cbp;	/* Repoint default buffer. */
+	if (copy == NEEDCOPY) {
+		name = '1';
+		copy = DOINGCOPY;
+		CBNAME(sp, cbp, name);
+		goto copyloop;
+	}
 	return (0);
 }
 
@@ -200,11 +219,11 @@ cb_rotate(sp)
 }
 
 /*
- * cb_line --
+ * cut_line --
  *	Cut a portion of a single line.
  */
-static int
-cb_line(sp, ep, lno, fcno, clen, cbp)
+int
+cut_line(sp, ep, lno, fcno, clen, cbp)
 	SCR *sp;
 	EXF *ep;
 	recno_t lno;

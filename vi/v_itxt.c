@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: v_itxt.c,v 8.35 1994/05/09 09:42:36 bostic Exp $ (Berkeley) $Date: 1994/05/09 09:42:36 $";
+static char sccsid[] = "$Id: v_itxt.c,v 8.36 1994/05/17 10:44:29 bostic Exp $ (Berkeley) $Date: 1994/05/17 10:44:29 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -479,7 +479,7 @@ v_CS(sp, ep, vp, iflags)
 
 		/* Cut the lines. */
 		if (cut(sp, ep,
-		    NULL, F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
+		    F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
 		    &vp->m_start, &vp->m_stop, CUT_LINEMODE))
 			return (1);
 
@@ -520,7 +520,7 @@ v_CS(sp, ep, vp, iflags)
 			} else
 				vp->m_stop.cno = len - 1;
 			if (cut(sp, ep,
-			    NULL, F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
+			    F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
 			    &vp->m_start, &vp->m_stop, CUT_LINEMODE))
 				return (1);
 			LF_SET(TXT_EMARK | TXT_OVERWRITE);
@@ -595,7 +595,7 @@ v_change(sp, ep, vp)
 			LF_SET(TXT_APPENDEOL);
 		} else {
 			if (cut(sp, ep,
-			    NULL, F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
+			    F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
 			    &vp->m_start, &vp->m_stop, lmode))
 				return (1);
 			if (len == 0)
@@ -616,7 +616,8 @@ v_change(sp, ep, vp)
 	 *
 	 * Copy the text.
 	 */
-	if (cut(sp, ep, NULL, F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
+	if (cut(sp, ep,
+	    F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
 	    &vp->m_start, &vp->m_stop, lmode))
 		return (1);
 
@@ -783,8 +784,8 @@ v_subst(sp, ep, vp)
 	if (vp->m_stop.cno > len - 1)
 		vp->m_stop.cno = len - 1;
 
-	if (p != NULL &&
-	    cut(sp, ep, NULL, F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
+	if (p != NULL && cut(sp, ep,
+	    F_ISSET(vp, VC_BUFFER) ? &vp->buffer : NULL,
 	    &vp->m_start, &vp->m_stop, 0))
 		return (1);
 
