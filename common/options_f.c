@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: options_f.c,v 8.37 1994/08/31 17:12:16 bostic Exp $ (Berkeley) $Date: 1994/08/31 17:12:16 $";
+static char sccsid[] = "$Id: options_f.c,v 8.38 1994/09/02 20:19:15 bostic Exp $ (Berkeley) $Date: 1994/09/02 20:19:15 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -120,18 +120,13 @@ DECL(f_lines)
 	if (O_VAL(sp, O_LINES) == val)
 		return (0);
 
-	/* Set the value. */
+	/* Set the value, and the related scroll value. */
 	O_VAL(sp, O_LINES) = val;
+	O_VAL(sp, O_SCROLL) = (val - 1) / 2;
 
-	/*
-	 * If no window value set, set a new default window and,
-	 * optionally, a new scroll value.
-	 */
-	if (!F_ISSET(&sp->opts[O_WINDOW], OPT_SET)) {
+	/* If no window value set, set a new default window. */
+	if (!F_ISSET(&sp->opts[O_WINDOW], OPT_SET))
 		O_VAL(sp, O_WINDOW) = val - 1;
-		if (!F_ISSET(&sp->opts[O_SCROLL], OPT_SET))
-			O_VAL(sp, O_SCROLL) = val / 2;
-	}
 
 	F_SET(sp, S_RESIZE);
 	return (0);
@@ -405,7 +400,6 @@ DECL(f_window)
 	if (val > O_VAL(sp, O_LINES) - 1)
 		val = O_VAL(sp, O_LINES) - 1;
 	O_VAL(sp, O_WINDOW) = val;
-	O_VAL(sp, O_SCROLL) = val / 2;
 
 	return (0);
 }
