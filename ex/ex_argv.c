@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_argv.c,v 8.33 1994/07/22 18:21:41 bostic Exp $ (Berkeley) $Date: 1994/07/22 18:21:41 $";
+static char sccsid[] = "$Id: ex_argv.c,v 8.34 1994/07/22 19:22:49 bostic Exp $ (Berkeley) $Date: 1994/07/22 19:22:49 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -146,7 +146,7 @@ argv_exp2(sp, ep, excp, cmd, cmdlen, is_bang)
 {
 	size_t blen, len, n;
 	int rval;
-	char *bp, *p;
+	char *bp, *mp, *p;
 
 	GET_SPACE_RET(sp, bp, blen, 512);
 
@@ -170,13 +170,31 @@ argv_exp2(sp, ep, excp, cmd, cmdlen, is_bang)
 #endif
 
 	/*
-	 * Do shell word expansion -- it's very, very hard to figure out
-	 * what magic characters the user's shell expects.  If it's not
-	 * pure vanilla, don't even try.
+	 * Do shell word expansion -- it's very, very hard to figure out what
+	 * magic characters the user's shell expects.  Historically, it was a
+	 * union of v7 shell and csh meta characters.  We match that practice
+	 * by default, so ":read \%" tries to read a file named '%'.  It would
+	 * make more sense to pass any special characters through the shell,
+	 * but then, if your shell was csh, the above example will behave
+	 * differently in nvi than in vi.  If you want to get other characters
+	 * passed through to your shell, change the "meta" option.
+	 *
+	 * To avoid a function call per character, we do a first pass through
+	 * the meta characters looking for characters that aren't expected
+	 * to be there.
 	 */
-	for (p = bp, n = len; n > 0; --n, ++p)
-		if (!isalnum(*p) && !isblank(*p) && *p != '/' && *p != '.')
+	for (p = mp = O_STR(sp, O_META); *p != '\0'; ++p)
+		if (isblank(*p) || isalnum(*p))
 			break;
+	if (*p != '\0') {
+		for (p = bp, n = len; n > 0; --n, ++p)
+			if (strchr(mp, *p) != NULL)
+				break;
+	} else
+		for (p = bp, n = len; n > 0; --n, ++p)
+			if (!isblank(*p) &&
+			    !isalnum(*p) && strchr(mp, *p) != NULL)
+				break;
 	if (n > 0) {
 		if (argv_sexp(sp, &bp, &blen, &len)) {
 			rval = 1;
@@ -334,8 +352,10 @@ argv_fexp(sp, excp, cmd, cmdlen, p, lenp, bpp, blenp, is_bang)
 			 * Strip any backslashes that protected the file
 			 * expansion characters.
 			 */
-			if (cmdlen > 1 && (cmd[1] == '%' || cmd[1] == '#'))
+			if (cmdlen > 1 && (cmd[1] == '%' || cmd[1] == '#')) {
 				++cmd;
+				--cmdlen;
+			}
 			/* FALLTHROUGH */
 		default:
 ins_ch:			++len;
