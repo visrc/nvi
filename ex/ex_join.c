@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_join.c,v 5.23 1993/04/12 14:36:59 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:36:59 $";
+static char sccsid[] = "$Id: ex_join.c,v 5.24 1993/05/05 10:57:44 bostic Exp $ (Berkeley) $Date: 1993/05/05 10:57:44 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -85,7 +85,7 @@ ex_join(sp, ep, cmdp)
 		 *
 		 * Echar is the last character in the last line joined.
 		 */
-		if (!first && !(cmdp->flags & E_FORCE)) {
+		if (!first && !F_ISSET(cmdp, E_FORCE)) {
 			if (isspace(echar))
 				while (len-- && isspace(*p))
 					++p;

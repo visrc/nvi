@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_map.c,v 5.23 1993/04/19 15:30:19 bostic Exp $ (Berkeley) $Date: 1993/04/19 15:30:19 $";
+static char sccsid[] = "$Id: ex_map.c,v 5.24 1993/05/05 10:57:45 bostic Exp $ (Berkeley) $Date: 1993/05/05 10:57:45 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -34,7 +34,7 @@ ex_map(sp, ep, cmdp)
 	int key;
 	char *name, *s, buf[10];
 
-	stype = cmdp->flags & E_FORCE ? SEQ_INPUT : SEQ_COMMAND;
+	stype = F_ISSET(cmdp, E_FORCE) ? SEQ_INPUT : SEQ_COMMAND;
 
 	if (cmdp->string == NULL) {
 		if (seq_dump(sp, stype, 1) == 0)
@@ -113,7 +113,7 @@ ex_unmap(sp, ep, cmdp)
 
 	input = cmdp->argv[0];
 	if (seq_delete(sp,
-	    input, cmdp->flags & E_FORCE ? SEQ_INPUT : SEQ_COMMAND)) {
+	    input, F_ISSET(cmdp, E_FORCE) ? SEQ_INPUT : SEQ_COMMAND)) {
 		msgq(sp, M_ERR, "\"%s\" isn't mapped.", input);
 		return (1);
 	}

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_args.c,v 5.39 1993/05/02 12:20:00 bostic Exp $ (Berkeley) $Date: 1993/05/02 12:20:00 $";
+static char sccsid[] = "$Id: ex_args.c,v 5.40 1993/05/05 10:57:37 bostic Exp $ (Berkeley) $Date: 1993/05/05 10:57:37 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,7 +30,7 @@ ex_next(sp, ep, cmdp)
 {
 	EXF *tep;
 
-	MODIFY_CHECK(sp, ep, cmdp->flags & E_FORCE);
+	MODIFY_CHECK(sp, ep, F_ISSET(cmdp, E_FORCE));
 
 	if (cmdp->argc) {
 		/* Mark all the current files as ignored. */
@@ -53,7 +53,7 @@ ex_next(sp, ep, cmdp)
 	}
 
 	sp->enext = tep;
-	F_SET(sp, cmdp->flags & E_FORCE ? S_FSWITCH_FORCE : S_FSWITCH);
+	F_SET(sp, F_ISSET(cmdp, E_FORCE) ? S_FSWITCH_FORCE : S_FSWITCH);
 	return (0);
 }
 
@@ -69,14 +69,14 @@ ex_prev(sp, ep, cmdp)
 {
 	EXF *tep;
 
-	MODIFY_CHECK(sp, ep, cmdp->flags & E_FORCE);
+	MODIFY_CHECK(sp, ep, F_ISSET(cmdp, E_FORCE));
 
 	if ((tep = sp->eprev) == NULL) {
 		msgq(sp, M_ERR, "No previous files to edit.");
 		return (1);
 	}
 
-	F_SET(sp, cmdp->flags & E_FORCE ? S_FSWITCH_FORCE : S_FSWITCH);
+	F_SET(sp, F_ISSET(cmdp, E_FORCE) ? S_FSWITCH_FORCE : S_FSWITCH);
 	sp->enext = tep;
 	return (0);
 }
@@ -100,10 +100,10 @@ ex_rew(sp, ep, cmdp)
 	}
 
 	/* Historic practice -- rewind! doesn't do autowrite. */
-	if (!(cmdp->flags & E_FORCE))
+	if (!F_ISSET(cmdp, E_FORCE))
 		MODIFY_CHECK(sp, ep, 0);
 
-	F_SET(sp, cmdp->flags & E_FORCE ? S_FSWITCH_FORCE : S_FSWITCH);
+	F_SET(sp, F_ISSET(cmdp, E_FORCE) ? S_FSWITCH_FORCE : S_FSWITCH);
 	sp->enext = tep;
 	return (0);
 }

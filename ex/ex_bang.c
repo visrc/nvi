@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_bang.c,v 5.36 1993/04/12 14:35:17 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:35:17 $";
+static char sccsid[] = "$Id: ex_bang.c,v 5.37 1993/05/05 10:57:39 bostic Exp $ (Berkeley) $Date: 1993/05/05 10:57:39 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -151,7 +151,7 @@ ex_bang(sp, ep, cmdp)
 	rval = esystem(sp, O_STR(sp, O_SHELL), com) ? 1 : 0;
 
 	/* Ex terminates with a bang. */
-	switch(sp->flags & (S_MODE_EX | S_MODE_VI)) {
+	switch (F_ISSET(sp, S_MODE_EX | S_MODE_VI)) {
 	case S_MODE_EX:
 		(void)write(STDOUT_FILENO, "!\n", 2);
 		break;

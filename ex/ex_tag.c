@@ -9,7 +9,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_tag.c,v 5.34 1993/05/04 17:02:51 bostic Exp $ (Berkeley) $Date: 1993/05/04 17:02:51 $";
+static char sccsid[] = "$Id: ex_tag.c,v 5.35 1993/05/05 10:57:51 bostic Exp $ (Berkeley) $Date: 1993/05/05 10:57:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -149,7 +149,7 @@ ex_tagpush(sp, ep, cmdp)
 	tp->cno = sp->cno;
 
 	/* Try to change. */
-	if (tag_change(sp, ep, tag, fname, search, cmdp->flags & E_FORCE)) {
+	if (tag_change(sp, ep, tag, fname, search, F_ISSET(cmdp, E_FORCE))) {
 		free(tag);
 		FREE(tp, sizeof(TAG));
 		return (1);
@@ -184,7 +184,7 @@ ex_tagpop(sp, ep, cmdp)
 		sp->lno = tp->lno;
 		sp->cno = tp->cno;
 	} else {
-		MODIFY_CHECK(sp, ep, cmdp->flags & E_FORCE);
+		MODIFY_CHECK(sp, ep, F_ISSET(cmdp, E_FORCE));
 		sp->enext = tp->ep;
 		F_SET(sp, S_FSWITCH);
 	}
@@ -218,7 +218,7 @@ ex_tagtop(sp, ep, cmdp)
 		sp->lno = tp->lno;
 		sp->cno = tp->cno;
 	} else {
-		MODIFY_CHECK(sp, ep, cmdp->flags & E_FORCE);
+		MODIFY_CHECK(sp, ep, F_ISSET(cmdp, E_FORCE));
 		sp->enext = tp->ep;
 		sp->enext->lno = tp->lno;
 		sp->enext->cno = tp->cno;
@@ -312,10 +312,10 @@ tag_get(sp, tag, tagp, filep, searchp)
 	p = NULL;
 	for (tfp = sp->tfhead; *tfp != NULL && p == NULL; ++tfp)
 		if (search((*tfp)->fname, tag, &p) &&
-		    (errno != ENOENT || !((*tfp)->flags & TAGF_ERROR))) {
+		    (errno != ENOENT || !F_ISSET((*tfp), TAGF_ERROR))) {
 			msgq(sp, M_ERR,
 			    "%s: %s", (*tfp)->fname, strerror(errno));
-			(*tfp)->flags |= TAGF_ERROR;
+			F_SET((*tfp),TAGF_ERROR);
 		}
 	
 	if (p == NULL) {

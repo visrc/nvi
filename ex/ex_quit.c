@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_quit.c,v 5.20 1993/05/05 10:41:14 bostic Exp $ (Berkeley) $Date: 1993/05/05 10:41:14 $";
+static char sccsid[] = "$Id: ex_quit.c,v 5.21 1993/05/05 10:57:43 bostic Exp $ (Berkeley) $Date: 1993/05/05 10:57:43 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -22,7 +22,7 @@ ex_quit(sp, ep, cmdp)
 {
 	int force;
 
-	force = cmdp->flags & E_FORCE;
+	force = F_ISSET(cmdp, E_FORCE);
 
 	/* Historic practice: quit! doesn't do autowrite. */
 	if (!force)
@@ -74,7 +74,7 @@ ex_xit(sp, ep, cmdp)
 {
 	int force;
 
-	force = cmdp->flags & E_FORCE;
+	force = F_ISSET(cmdp, E_FORCE);
 
 	MODIFY_CHECK(sp, ep, force);
 

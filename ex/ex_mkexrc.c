@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_mkexrc.c,v 5.19 1993/04/12 14:37:02 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:37:02 $";
+static char sccsid[] = "$Id: ex_mkexrc.c,v 5.20 1993/05/05 10:57:46 bostic Exp $ (Berkeley) $Date: 1993/05/05 10:57:46 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -47,15 +47,15 @@ ex_mkexrc(sp, ep, cmdp)
 	}
 
 	/* Create with max permissions of rw-r--r--. */
-	if ((fd = open(fname,
-	    (cmdp->flags & E_FORCE ? 0 : O_EXCL)|O_CREAT|O_TRUNC|O_WRONLY,
-	    S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) < 0) {
+	if ((fd = open(fname, (F_ISSET(cmdp, E_FORCE) ? 0 : O_EXCL) |
+	    O_CREAT | O_TRUNC | O_WRONLY,
+	    S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) < 0) {
 		msgq(sp, M_ERR, "%s: %s", fname, strerror(errno));
 		return (1);
 	}
 
 	/* In case it already existed, set the permissions. */
-	(void)fchmod(fd, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
+	(void)fchmod(fd, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 
 	if ((fp = fdopen(fd, "w")) == NULL) {
 		msgq(sp, M_ERR, "%s: %s", fname, strerror(errno));

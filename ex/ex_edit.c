@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_edit.c,v 5.33 1993/04/17 11:57:13 bostic Exp $ (Berkeley) $Date: 1993/04/17 11:57:13 $";
+static char sccsid[] = "$Id: ex_edit.c,v 5.34 1993/05/05 10:57:42 bostic Exp $ (Berkeley) $Date: 1993/05/05 10:57:42 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -42,10 +42,10 @@ ex_edit(sp, ep, cmdp)
 		abort();
 	}
 
-	MODIFY_CHECK(sp, ep, cmdp->flags & E_FORCE);
+	MODIFY_CHECK(sp, ep, F_ISSET(cmdp, E_FORCE));
 
 	/* Switch files. */
-	F_SET(sp, cmdp->flags & E_FORCE ? S_FSWITCH_FORCE : S_FSWITCH);
+	F_SET(sp, F_ISSET(cmdp, E_FORCE) ? S_FSWITCH_FORCE : S_FSWITCH);
 	sp->enext = tep;
 
 	if (cmdp->plus)
@@ -80,10 +80,10 @@ ex_visual(sp, ep, cmdp)
 		abort();
 	}
 
-	MODIFY_CHECK(sp, ep, cmdp->flags & E_FORCE);
+	MODIFY_CHECK(sp, ep, F_ISSET(cmdp, E_FORCE));
 
 	/* Switch files. */
-	F_SET(sp, cmdp->flags & E_FORCE ? S_FSWITCH_FORCE : S_FSWITCH);
+	F_SET(sp, F_ISSET(cmdp, E_FORCE) ? S_FSWITCH_FORCE : S_FSWITCH);
 	sp->enext = tep;
 
 	F_CLR(sp, S_MODE_EX);

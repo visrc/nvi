@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_print.c,v 5.30 1993/04/19 15:30:40 bostic Exp $ (Berkeley) $Date: 1993/04/19 15:30:40 $";
+static char sccsid[] = "$Id: ex_print.c,v 5.31 1993/05/05 10:57:47 bostic Exp $ (Berkeley) $Date: 1993/05/05 10:57:47 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -30,12 +30,12 @@ ex_list(sp, ep, cmdp)
 {
 	int flags;
 
-	flags = cmdp->flags & E_F_MASK;
-	if (flags & ~E_F_HASH) {
+	flags = F_ISSET(cmdp, E_F_MASK);
+	if (LF_ISSET(~E_F_HASH)) {
 		msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
 		return (1);
 	}
-	if (ex_print(sp, ep, &cmdp->addr1, &cmdp->addr2, E_F_LIST | flags))
+	if (ex_print(sp, ep, &cmdp->addr1, &cmdp->addr2, LF_ISSET(E_F_LIST)))
 		return (1);
 	sp->lno = cmdp->addr2.lno;
 	sp->cno = cmdp->addr2.cno;
@@ -55,12 +55,12 @@ ex_number(sp, ep, cmdp)
 {
 	int flags;
 
-	flags = cmdp->flags & E_F_MASK;
-	if (flags & ~E_F_LIST) {
+	flags = F_ISSET(cmdp, E_F_MASK);
+	if (LF_ISSET(~E_F_LIST)) {
 		msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
 		return (1);
 	}
-	if (ex_print(sp, ep, &cmdp->addr1, &cmdp->addr2, E_F_HASH | flags))
+	if (ex_print(sp, ep, &cmdp->addr1, &cmdp->addr2, LF_ISSET(E_F_HASH)))
 		return (1);
 	sp->lno = cmdp->addr2.lno;
 	sp->cno = cmdp->addr2.cno;
@@ -80,12 +80,12 @@ ex_pr(sp, ep, cmdp)
 {
 	int flags;
 
-	flags = cmdp->flags & E_F_MASK;
-	if (flags & ~(E_F_HASH | E_F_LIST)) {
+	flags = F_ISSET(cmdp, E_F_MASK);
+	if (LF_ISSET(~(E_F_HASH | E_F_LIST))) {
 		msgq(sp, M_ERR, "Usage: %s.", cmdp->cmd->usage);
 		return (1);
 	}
-	if (ex_print(sp, ep, &cmdp->addr1, &cmdp->addr2, E_F_PRINT | flags))
+	if (ex_print(sp, ep, &cmdp->addr1, &cmdp->addr2, LF_ISSET(E_F_PRINT)))
 		return (1);
 	sp->lno = cmdp->addr2.lno;
 	sp->cno = cmdp->addr2.cno;
@@ -111,7 +111,7 @@ ex_print(sp, ep, fp, tp, flags)
 
 	for (from = fp->lno, to = tp->lno; from <= to; ++from) {
 		/* Display the line number. */
-		if (flags & E_F_HASH)
+		if (LF_ISSET(E_F_HASH))
 			col = fprintf(sp->stdfp, "%7ld ", from);
 		else
 			col = 0;
@@ -136,7 +136,7 @@ ex_print(sp, ep, fp, tp, flags)
 }
 		for (rlen = len; rlen--;) {
 			ch = *p++;
-			if (flags & E_F_LIST)
+			if (LF_ISSET(E_F_LIST))
 				if (ch != '\t' && isprint(ch)) {
 					WCHECK(ch);
 				} else if (ch & 0x80) {
@@ -170,7 +170,7 @@ ex_print(sp, ep, fp, tp, flags)
 				}
 			}
 		}
-		if (flags & E_F_LIST) {
+		if (LF_ISSET(E_F_LIST)) {
 			WCHECK('$');
 		} else if (len == 0) {
 			/*
