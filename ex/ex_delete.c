@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_delete.c,v 5.19 1993/04/05 07:11:29 bostic Exp $ (Berkeley) $Date: 1993/04/05 07:11:29 $";
+static char sccsid[] = "$Id: ex_delete.c,v 5.20 1993/05/03 13:44:56 bostic Exp $ (Berkeley) $Date: 1993/05/03 13:44:56 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -35,7 +35,6 @@ ex_delete(sp, ep, cmdp)
 	sp->lno = cmdp->addr2.lno;
 	if (sp->lno > file_lline(sp, ep))
 		sp->lno = file_lline(sp, ep);
-	sp->cno = 0;
 
 	/* Set autoprint. */
 	F_SET(sp, S_AUTOPRINT);

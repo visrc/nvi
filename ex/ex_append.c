@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_append.c,v 5.32 1993/05/02 15:57:01 bostic Exp $ (Berkeley) $Date: 1993/05/02 15:57:01 $";
+static char sccsid[] = "$Id: ex_append.c,v 5.33 1993/05/03 13:44:55 bostic Exp $ (Berkeley) $Date: 1993/05/03 13:44:55 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -129,7 +129,6 @@ done:	if (rval == 0) {
 
 		/* Set the cursor. */
 		sp->lno = m.lno;
-		sp->cno = 0;
 	}
 
 	if (set)

@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_global.c,v 5.26 1993/04/12 14:36:58 bostic Exp $ (Berkeley) $Date: 1993/04/12 14:36:58 $";
+static char sccsid[] = "$Id: ex_global.c,v 5.27 1993/05/03 13:44:57 bostic Exp $ (Berkeley) $Date: 1993/05/03 13:44:57 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -180,8 +180,6 @@ global(sp, ep, cmdp, cmd)
 		nchanged += sp->rptlines;
 		sp->rptlines = 0;
 	}
-	/* Cursor is on column 0, regardless. */
-	sp->cno = 0;
 
 	/* Report statistics. */
 err:	sp->rptlines += nchanged;
