@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex_visual.c,v 8.10 1994/05/21 09:38:28 bostic Exp $ (Berkeley) $Date: 1994/05/21 09:38:28 $";
+static char sccsid[] = "$Id: ex_visual.c,v 8.11 1994/07/15 19:35:10 bostic Exp $ (Berkeley) $Date: 1994/07/15 19:35:10 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -69,9 +69,12 @@ ex_visual(sp, ep, cmdp)
 		pos = '.';
 		break;
 	case E_F_PLUS:
-	default:
 		pos = '+';
 		break;
+	default:
+		sp->frp->lno = sp->lno;
+		F_SET(sp->frp, FR_CURSORSET);
+		goto nopush;
 	}
 
 	if (F_ISSET(cmdp, E_COUNT))
@@ -100,7 +103,7 @@ ex_visual(sp, ep, cmdp)
 	}
 
 	/* Switch modes. */
-	F_CLR(sp, S_SCREENS);
+nopush:	F_CLR(sp, S_SCREENS);
 	F_SET(sp, sp->saved_vi_mode);
 
 	return (0);
