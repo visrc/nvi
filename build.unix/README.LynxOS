@@ -70,20 +70,23 @@ LynxOS.)
 Anyway, that's the most important thing about building nvi on LynxOS 2.4.0.
 Just make sure that you use a decent C compiler.
 
-If you are building nvi on a PowerPC or RS/6000 system, it is also very im-
-portant that you apply the two small patches given at the end of this file
-to your /usr/include/stdarg.h file.  These patches fix two serious bugs in
-that file which you really want to have fixed anyway, because without these
-fixes, anything that you compile which uses <stdarg.h> and/or ANSI standard
-variable length argument lists will very likely malfunction at run-time.
+If you are building nvi on a PowerPC or RS/6000 system, it is also important
+that you apply the two small patches given at the end of this file to your
+/usr/include/stdarg.h file.  These patches fix two serious bugs in that file
+which you really want to have fixed anyway, because without these fixes,
+anything that you compile which uses <stdarg.h> and/or ANSI standard variable
+length argument lists will very likely malfunction at run-time.
 
 Regardless of which LynxOS platform you are using (i.e. x86, PowerPC, Sparc,
-or m680x0) you may also want to apply the other small patch given below to
-your /usr/include/ioctl.h file.  This will prevent a few warnings during the
-build of nvi, but other than that, should have little, if any, noticeable
-effect.
+or m680x0) you may also want to apply the other small patches given below to
+your /usr/include/ioctl.h file and your /usr/include/wait.h file.  Doing so
+will prevent a few warnings during the build of nvi, and will also make your
+system include files a little more normal and a little more consistent with
+POSIX (in the case of the /usr/include/wait.h) and with other UNIX systems
+(in the case of /usr/include/ioctl.h).
 
-You can apply either or both of these patches simply by doing the following:
+You can apply all of the patches given at the end of this file simply by
+doing the following:
 
 	su root
 	cd /usr/include
@@ -117,6 +120,30 @@ May 18, 1996
 
 cut here for LynxOS 2.4.0 system include files patches
 -----------------------------------------------------------------------------
+*** wait.h	Fri Apr 26 10:02:45 1996
+--- wait.h	Sun May 19 05:36:50 1996
+***************
+*** 94,104 ****
+  /* Function prototypes */
+  #ifndef __LYNXOS
+- #ifdef _POSIX_SOURCE
+  extern pid_t wait		_AP((int *));
+  extern pid_t waitpid	_AP((pid_t, int *, int));
+! #else
+! extern int wait		_AP((union wait *));
+! extern int waitpid	_AP((int, union wait *, int));
+! extern int wait3	_AP((union wait *, int, struct rusage *));
+  #endif
+  #endif /* !__LYNXOS */
+--- 94,101 ----
+  /* Function prototypes */
+  #ifndef __LYNXOS
+  extern pid_t wait		_AP((int *));
+  extern pid_t waitpid	_AP((pid_t, int *, int));
+! #ifndef _POSIX_SOURCE
+! extern int wait3	_AP((int *, int, struct rusage *));
+  #endif
+  #endif /* !__LYNXOS */
 *** ioctl.h	Fri Apr 26 16:50:51 1996
 --- ioctl.h	Sat May 18 17:55:16 1996
 ***************
