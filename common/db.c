@@ -8,7 +8,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: db.c,v 9.7 1995/01/23 16:58:36 bostic Exp $ (Berkeley) $Date: 1995/01/23 16:58:36 $";
+static char sccsid[] = "$Id: db.c,v 9.8 1995/01/25 09:57:51 bostic Exp $ (Berkeley) $Date: 1995/01/25 09:57:51 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -468,7 +468,7 @@ file_lerr(sp, fname, fline, lno)
 	recno_t fline, lno;
 {
 	msgq(sp, M_ERR,
-	    "025|Error: %s/%d: unable to retrieve line %u",
+	    "270|Error: %s/%d: unable to retrieve line %u",
 	    tail(fname), fline, lno);
 }
 
