@@ -121,6 +121,9 @@
 /* Define when dynamically loading DB 3 */
 #undef USE_DYNAMIC_LOADING
 
+/* Define when iconv can be used */
+#undef USE_ICONV
+
 /* Define when using wide characters */
 #undef USE_WIDECHAR
 

@@ -225,6 +225,13 @@ if test "$vi_cv_widechar" = "yes"; then
 fi
 AC_MSG_RESULT($vi_cv_widechar)
 
+dnl Check whether we can use iconv
+AC_CHECK_HEADER(langinfo.h, [
+	AC_CHECK_HEADER(iconv.h, [
+		AC_DEFINE(USE_ICONV)
+	])
+])
+
 dnl If the user wants a Gtk IPC front-end for nvi, build it.
 AC_SUBST(vi_programs)
 AC_SUBST(vi_ipc)

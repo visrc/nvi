@@ -10,7 +10,7 @@
 #include "config.h"
 
 #ifndef lint
-static const char sccsid[] = "$Id: conv.c,v 1.24 2001/06/30 17:48:23 skimo Exp $ (Berkeley) $Date: 2001/06/30 17:48:23 $";
+static const char sccsid[] = "$Id: conv.c,v 1.25 2001/06/30 20:00:54 skimo Exp $ (Berkeley) $Date: 2001/06/30 20:00:54 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -27,8 +27,17 @@ static const char sccsid[] = "$Id: conv.c,v 1.24 2001/06/30 17:48:23 skimo Exp $
 
 #include "common.h"
 
+#ifdef USE_ICONV
 #include <langinfo.h>
 #include <iconv.h>
+
+#define LANGCODESET	nl_langinfo(CODESET)
+#else
+typedef int	iconv_t;
+
+#define LANGCODESET	""
+#endif
+
 #include <locale.h>
 
 #ifdef USE_WIDECHAR
@@ -56,6 +65,7 @@ raw2int(SCR *sp, const char * str, ssize_t len, CONVWIN *cw, size_t *tolen,
  * left has the number of bytes left in str and is adjusted
  * len contains the number of bytes put in the buffer
  */
+#ifdef USE_ICONV
 #define CONVERT(str, left, src, len)				    	\
     do {								\
 	size_t outleft;							\
@@ -71,6 +81,9 @@ raw2int(SCR *sp, const char * str, ssize_t len, CONVWIN *cw, size_t *tolen,
 	}				    				\
 	src = buffer;							\
     } while (0)
+#else
+#define CONVERT(str, left, src, len)
+#endif
 
 int 
 default_char2int(SCR *sp, const char * str, ssize_t len, CONVWIN *cw, 
@@ -91,12 +104,14 @@ default_char2int(SCR *sp, const char * str, ssize_t len, CONVWIN *cw,
     MEMSET(&mbs, 0, 1);
     BINC_RETW(NULL, *tostr, *blen, nlen);
 
+#ifdef USE_ICONV
     if (strcmp(nl_langinfo(CODESET), enc)) {
 	id = iconv_open(nl_langinfo(CODESET), enc);
 	if (id == (iconv_t)-1)
 	    goto err;
 	CONVERT(str, left, src, len);
     }
+#endif
 
     for (i = 0, j = 0; j < len; ) {
 	n = mbrtowc((*tostr)+i, src+j, len-j, &mbs);
@@ -149,7 +164,7 @@ int
 cs_char2int(SCR *sp, const char * str, ssize_t len, CONVWIN *cw, 
 	    size_t *tolen, CHAR_T **dst)
 {
-    default_char2int(sp, str, len, cw, tolen, dst, nl_langinfo(CODESET));
+    default_char2int(sp, str, len, cw, tolen, dst, LANGCODESET);
 }
 
 int 
@@ -211,6 +226,7 @@ default_int2char(SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw,
  * offset contains the offset in cw->bp and is adjusted
  * cw->bp is grown as required
  */
+#ifdef USE_ICONV
 #define CONVERT2(len, cw, offset)					\
     do {								\
 	char *bp = buffer;						\
@@ -228,18 +244,23 @@ default_int2char(SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw,
 	    offset = cw->blen1 - outleft;			        \
 	}							        \
     } while (0)
+#else
+#define CONVERT2(len, cw, offset)
+#endif
 
 
     MEMSET(&mbs, 0, 1);
     BINC_RET(NULL, *tostr, *blen, nlen);
     dst = *tostr; buflen = *blen;
 
+#ifdef USE_ICONV
     if (strcmp(nl_langinfo(CODESET), enc)) {
 	id = iconv_open(enc, nl_langinfo(CODESET));
 	if (id == (iconv_t)-1)
 	    goto err;
 	dst = buffer; buflen = CONV_BUFFER_SIZE;
     }
+#endif
 
     for (i = 0, j = 0; i < len; ++i) {
 	n = wcrtomb(dst+j, str[i], &mbs);
@@ -287,7 +308,7 @@ int
 cs_int2char(SCR *sp, const CHAR_T * str, ssize_t len, CONVWIN *cw, 
 	    size_t *tolen, char **dst)
 {
-    default_int2char(sp, str, len, cw, tolen, dst, nl_langinfo(CODESET));
+    default_int2char(sp, str, len, cw, tolen, dst, LANGCODESET);
 }
 
 #endif
@@ -307,15 +328,17 @@ conv_init (SCR *orig, SCR *sp)
 	sp->conv.int2file = fe_int2char;
 	sp->conv.input2int = ie_char2int;
 #endif
+#ifdef USE_ICONV
 	o_set(sp, O_FILEENCODING, OS_STRDUP, nl_langinfo(CODESET), 0);
 	o_set(sp, O_INPUTENCODING, OS_STRDUP, nl_langinfo(CODESET), 0);
+#endif
     }
 }
 
 int
 conv_enc (SCR *sp, int option, char *enc)
 {
-#ifdef USE_WIDECHAR
+#if defined(USE_WIDECHAR) && defined(USE_ICONV)
     iconv_t id;
     char2wchar_t    *c2w;
     wchar2char_t    *w2c;

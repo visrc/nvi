@@ -1,4 +1,4 @@
-/* $Id: acconfig.h,v 8.29 2001/06/17 16:04:33 skimo Exp $ (Berkeley) $Date: 2001/06/17 16:04:33 $ */
+/* $Id: acconfig.h,v 8.30 2001/06/30 20:00:54 skimo Exp $ (Berkeley) $Date: 2001/06/30 20:00:54 $ */
 
 /* Define to `int' if <sys/types.h> doesn't define.  */
 #undef ssize_t
@@ -95,6 +95,9 @@
 
 /* Define when dynamically loading DB 3 */
 #undef USE_DYNAMIC_LOADING
+
+/* Define when iconv can be used */
+#undef USE_ICONV
 
 /* Define when using S-Lang */
 #undef USE_SLANG_CURSES
