@@ -4,7 +4,7 @@
  *
  * %sccs.include.redist.c%
  *
- *	$Id: screen.h,v 8.90 1994/03/23 16:37:40 bostic Exp $ (Berkeley) $Date: 1994/03/23 16:37:40 $
+ *	$Id: screen.h,v 8.91 1994/03/23 16:40:30 bostic Exp $ (Berkeley) $Date: 1994/03/23 16:40:30 $
  */
 
 /*
@@ -139,7 +139,6 @@ struct _scr {
 
 	struct timeval	 busy_tod;	/* ITIMER_REAL: busy time-of-day. */
 	char const	*busy_msg;	/* ITIMER_REAL: busy message. */
-	struct timeval	 rcv_tod;	/* ITIMER_REAL: recovery time-of-day. */
 
 	struct sigaction intr_act;	/* Interrupt saved signal state. */
 	struct termios	 intr_term;	/* Interrupt saved terminal state. */
