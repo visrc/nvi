@@ -6,7 +6,7 @@
  */
 
 #ifndef lint
-static char sccsid[] = "$Id: ex.c,v 8.10 1993/08/20 12:57:36 bostic Exp $ (Berkeley) $Date: 1993/08/20 12:57:36 $";
+static char sccsid[] = "$Id: ex.c,v 8.11 1993/08/20 13:28:32 bostic Exp $ (Berkeley) $Date: 1993/08/20 13:28:32 $";
 #endif /* not lint */
 
 #include <sys/types.h>
@@ -1025,10 +1025,8 @@ ep_re(sp, pp, tp, lenp)
 			*++p = *++t;
 			if (--len == 0)
 				break;
-		} else if (ch == delim) {
+		} else if (ch == delim)
 			--cnt;
-			break;
-		}
 	}
 
 	/* Move past the delimiter if it's possible. */
