@@ -16,7 +16,7 @@ static char copyright[] =
 #endif /* not lint */
 
 #ifndef lint
-static char sccsid[] = "$Id: main.c,v 10.13 1995/09/24 15:58:27 bostic Exp $ (Berkeley) $Date: 1995/09/24 15:58:27 $";
+static char sccsid[] = "$Id: main.c,v 10.14 1995/09/28 12:54:55 bostic Exp $ (Berkeley) $Date: 1995/09/28 12:54:55 $";
 #endif /* not lint */
 
 #include <sys/param.h>
@@ -197,7 +197,7 @@ editor(gp, argc, argv, rows, cols)
 			break;
 		case '?':
 		default:
-			gp->scr_usage();
+			(void)gp->scr_usage();
 			return (1);
 		}
 	argc -= optind;
@@ -452,11 +452,8 @@ v_end(gp)
 	 * editor).
 	 */
 	while ((mp = gp->msgq.lh_first) != NULL) {
-		if (mp->mtype == M_NONE)
-			(void)fprintf(stderr, "%.*s", (int)mp->len, mp->buf);
-		else
-			(void)fprintf(stderr,
-			    "ex/vi: %.*s.\n", (int)mp->len, mp->buf);
+		(void)fprintf(stderr, "%s%.*s",
+		    mp->mtype == M_ERR ? "ex/vi: " : "", (int)mp->len, mp->buf);
 		LIST_REMOVE(mp, q);
 #if defined(DEBUG) || defined(PURIFY) || defined(LIBRARY)
 		free(mp->buf);
